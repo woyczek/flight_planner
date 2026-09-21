@@ -1,0 +1,11 @@
+# VERT_02_ALPILLES
+# Route field compatible SimBrief / IVAO / VATSIM style
+# Départ: LFTW
+# Arrivée: LFTW
+# Niveau/altitude proposée: A07500 / environ 7500 ft
+# Remarque: coordonnées au format DDMMNDDDMME, arrondies à la minute.
+
+DCT 4341N00438E DCT 4345N00448E DCT 4338N00506E DCT 4350N00502E
+
+# Variante avec aérodromes :
+LFTW DCT 4341N00438E DCT 4345N00448E DCT 4338N00506E DCT 4350N00502E DCT LFTW

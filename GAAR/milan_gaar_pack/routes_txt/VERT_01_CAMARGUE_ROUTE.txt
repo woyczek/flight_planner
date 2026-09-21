@@ -1,0 +1,11 @@
+# VERT_01_CAMARGUE
+# Route field compatible SimBrief / IVAO / VATSIM style
+# Départ: LFTW
+# Arrivée: LFTW
+# Niveau/altitude proposée: A06500 / environ 6500 ft
+# Remarque: coordonnées au format DDMMNDDDMME, arrondies à la minute.
+
+DCT 4334N00412E DCT 4327N00426E DCT 4323N00448E DCT 4341N00438E
+
+# Variante avec aérodromes :
+LFTW DCT 4334N00412E DCT 4327N00426E DCT 4323N00448E DCT 4341N00438E DCT LFTW

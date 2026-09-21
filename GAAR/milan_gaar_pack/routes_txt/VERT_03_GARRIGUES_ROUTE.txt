@@ -1,0 +1,11 @@
+# VERT_03_GARRIGUES
+# Route field compatible SimBrief / IVAO / VATSIM style
+# Départ: LFTW
+# Arrivée: LFTW
+# Niveau/altitude proposée: A07500 / environ 7500 ft
+# Remarque: coordonnées au format DDMMNDDDMME, arrondies à la minute.
+
+DCT 4401N00425E DCT 4408N00405E DCT 4415N00412E DCT 4401N00425E
+
+# Variante avec aérodromes :
+LFTW DCT 4401N00425E DCT 4408N00405E DCT 4415N00412E DCT 4401N00425E DCT LFTW
