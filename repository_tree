@@ -1,6 +1,6 @@
 window.REPOSITORY_TREE={
   version:2,
-  release:{date:"2026-09-21",version:"2.0.2",id:"XPS-2.0.2"},
+  release:{date:"2026-09-21",version:"2.0.7",id:"XPS-2.0.7"},
   defaults:{theme:"flight",language:true},
   themes:{
     gaar:{bar:"#773131",barText:"#ffffff",page:"#ffffff",accent:"#773131",favicon:"assets/favicon-gaar.svg"},
