@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Flight Performance & Fuel Planner</title>
+<link rel="stylesheet" href="./shared/repository_nav.css">
+<script src="./repository_tree"></script>
+<style>
+:root{font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;color-scheme:dark;--bg:#101317;--p:#181d23;--b:#2b3440;--a:#71b7ff;--mut:#9ba8b5}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:#eef3f7} header{padding:10px 18px;border-bottom:1px solid var(--b);position:sticky;top:0;background:#101317ee;backdrop-filter:blur(8px);z-index:20}.header-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.header-row+.header-row{margin-top:8px}.header-spacer{flex:1}.control{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--mut)}
+h1{font-size:18px;margin:0} button,input,select,textarea{background:#11161c;color:#eef3f7;border:1px solid var(--b);border-radius:7px;padding:8px}button{cursor:pointer}.primary{background:#173a5c;border-color:#2d6fa9}.wrap{max-width:1180px;margin:auto;padding:16px}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}.card{background:var(--p);border:1px solid var(--b);border-radius:10px;padding:14px}.span6{grid-column:span 6}.span12{grid-column:span 12}.span4{grid-column:span 4}h2{font-size:15px;margin:0 0 12px}.fields{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.field label{display:block;color:var(--mut);font-size:12px;margin-bottom:4px}.field input,.field select,.field textarea{width:100%}.field textarea{min-height:64px;resize:vertical}.big{font-size:26px;font-weight:700}.mut{color:var(--mut);font-size:12px}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.kv{display:grid;grid-template-columns:1fr auto;gap:5px 12px;font-size:13px}.kv div:nth-child(even){font-variant-numeric:tabular-nums;text-align:right}.mapval{display:block;margin-top:2px;color:#75c8ff;font-size:11px}.mapval small{color:#a9b9c9}.ok{color:#7ed69b}.warn{color:#f2c879}.err{color:#ff8d8d}dialog{background:var(--p);color:#eef3f7;border:1px solid var(--b);border-radius:12px;width:min(760px,92vw)}dialog::backdrop{background:#0009}.airlist{max-height:55vh;overflow:auto}.air{display:flex;justify-content:space-between;padding:9px;border-bottom:1px solid var(--b);cursor:pointer}.air:hover{background:#222a33}table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:7px;border-bottom:1px solid var(--b);text-align:right}th:first-child,td:first-child{text-align:left}@media(max-width:800px){.span6,.span4{grid-column:span 12}.fields{grid-template-columns:repeat(2,1fr)}}
+</style>
+<style>.wrap{max-width:none;width:100%}.editorGroup{grid-column:span 6;border:1px solid var(--b);border-radius:8px;padding:10px}.editorGroup h3{font-size:13px;margin:0 0 8px}.editorGroup .fields{grid-template-columns:repeat(2,1fr)}.editorGroup .wide{grid-column:span 2}@media(max-width:800px){.editorGroup{grid-column:span 2}}.lang-popup,.prefs-popup,.aircraft-popup{position:relative;display:inline-block}.lang-current,.prefs-current{height:34px;min-width:44px;padding:4px 8px;display:inline-flex;align-items:center;justify-content:center;gap:6px}.lang-current svg{width:27px;height:18px;display:block;border-radius:2px}.lang-menu,.prefs-menu,.aircraft-menu{position:absolute;top:calc(100% + 5px);z-index:50;padding:5px;background:#101319;border:1px solid var(--b);border-radius:8px;box-shadow:0 10px 30px #0008}.lang-menu,.prefs-menu{right:0;min-width:170px}.aircraft-menu{left:0;min-width:290px;max-width:420px;max-height:65vh;overflow:auto}.lang-menu[hidden],.prefs-menu[hidden],.aircraft-menu[hidden]{display:none}.lang-item,.prefs-item,.aircraft-item{width:100%;display:flex;align-items:center;gap:7px;padding:7px 8px;border:0;background:transparent;text-align:left;border-radius:5px;color:#eef3f7}.lang-item:hover,.prefs-item:hover,.aircraft-item:hover,.aircraft-item.active{background:#202735}.lang-item svg{width:27px;height:18px}.aircraft-current{min-width:250px;max-width:360px;height:36px;padding:4px 8px;display:inline-flex;align-items:center;gap:7px;text-align:left}.aircraft-current-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.caret{font-size:10px;color:var(--mut)}.ac-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;color:#b9c5d8;line-height:0}.ac-icon svg{display:block;width:23px;height:23px;overflow:visible;transform:scale(1.22);transform-origin:center}.ac-icon.wtc-M svg{width:24px;height:24px}.ac-icon.wtc-H svg{width:26px;height:26px}.ac-icon.wtc-J svg{width:28px;height:28px}.ac-icon.unknown{opacity:.58}.aircraft-item .ac-meta{color:var(--mut);font-size:11px;margin-left:auto;white-space:nowrap}.aircraft-group{margin:7px 7px 3px;padding:5px 2px 3px;border-bottom:1px solid var(--b);color:var(--mut);font-size:11px;font-weight:650;text-transform:uppercase;letter-spacing:.04em}@media(max-width:800px){header{padding:9px 12px}.aircraft-current{min-width:210px;max-width:calc(100vw - 24px)}.header-row{gap:7px}}</style>
+</head>
+<body>
+<header><div class="header-row"><h1>Flight Performance &amp; Fuel Planner</h1><span id="source" class="mut"></span><span class="header-spacer"></span><span class="control">Langue <span class="lang-popup"><button id="languageCurrent" class="lang-current" type="button" aria-haspopup="menu" aria-expanded="false"><span id="languageCurrentIcon"></span><span class="caret">▼</span></button><span id="languageMenu" class="lang-menu" role="menu" hidden><button class="lang-item" data-lang="fr">🇫🇷 Français</button><button class="lang-item" data-lang="en">🇬🇧 English</button></span></span></span><span class="prefs-popup"><button id="prefsCurrent" class="prefs-current" type="button" aria-haspopup="menu" aria-expanded="false" title="Préférences">⚙ <span class="caret">▼</span></button><span id="prefsMenu" class="prefs-menu" role="menu" hidden><button id="fuelUnitBtn" class="prefs-item">Affichage : kg</button><button id="prefsEditorBtn" class="prefs-item">Masquer les champs du profil</button></span></span></div><div class="header-row"><span class="control">Avion <button id="airBtn" hidden></button><span class="aircraft-popup"><button id="aircraftCurrent" class="aircraft-current primary" type="button" aria-haspopup="menu" aria-expanded="false"><span id="aircraftCurrentIcon" class="ac-icon"></span><span id="aircraftCurrentText" class="aircraft-current-text">Aucun avion</span><span class="caret">▾</span></button><span id="aircraftMenu" class="aircraft-menu" role="menu" hidden></span></span></span><button id="dirBtn">Dossier performances</button><button id="simBtn" class="primary">Récupérer dernier FPL SimBrief</button></div></header>
+<div class="wrap"><div class="grid">
+<section class="card span6"><h2>Devis carburant</h2><div class="fields">
+<div class="field"><label>Distance (NM)</label><input id="dist" type="number" value="500"></div>
+<div class="field"><label>Niveau (FL)</label><input id="fl" type="number" value="280"></div>
+<div class="field"><label>Route vraie (°)</label><input id="trk" type="number" value="270"></div>
+<div class="field"><label>Taxi (min)</label><input id="taxi" type="number" value="15"></div>
+<div class="field"><label>Vent de (°)</label><input id="wdir" type="number" placeholder="auto/typique"></div>
+<div class="field"><label>Vent (kt)</label><input id="wspd" type="number" placeholder="auto/typique"></div>
+<div class="field"><label>Réserve (min)</label><input id="reserve" type="number" value="45"></div>
+<div class="field"><label>Contingence (%)</label><input id="cont" type="number" value="5"></div>
+</div><div style="height:12px"></div><div class="row"><button id="calc" class="primary">Calculer</button><span id="windInfo" class="mut"></span></div></section>
+
+<section class="card span6"><h2>Résultat</h2><div class="row"><div><div class="mut">Block fuel</div><div id="block" class="big">—</div></div><div style="flex:1"></div><div><div class="mut">TOD</div><div id="tod" class="big">—</div></div></div><div style="height:10px"></div><div id="breakdown" class="kv"></div></section>
+
+<section class="card span6"><h2>Fiche performance moteur</h2><div class="fields">
+<div class="field"><label>RPM / N1</label><input id="rpm" type="number"></div>
+<div class="field"><label>Altitude (ft)</label><input id="alt" type="number" value="28000"></div>
+<div class="field"><label>Phase</label><select id="phase"><option>cruise</option><option>climb</option><option>descent</option><option>taxi</option></select></div>
+<div class="field"><label>&nbsp;</label><button id="rpmCalc">Interpoler</button></div>
+</div><div style="height:12px"></div><div class="row"><div><div class="mut">Débit total</div><div id="ff" class="big">—</div></div><span id="ffnote" class="mut"></span></div></section>
+
+<section class="card span6"><h2>Profil actif</h2><div id="profile" class="kv"><div>État</div><div>Aucun profil chargé</div></div><div style="height:12px"></div>
+<div class="field"><label>SimBrief Airframe Internal ID</label><input id="sbAirframeId" value="878804_1738673287258" placeholder="Internal ID ou URL de partage SimBrief"></div>
+<div style="height:8px"></div><div class="row"><button id="sbAirframeBtn" class="primary">Importer airframe SimBrief</button><button id="importBtn">Importer `.lnmperf` / JSON / CSV</button><button id="exportLnmBtn">Exporter `.lnmperf`</button><button id="exportBtn">Exporter JSON</button><button id="exportDbBtn">Exporter BDD locale</button><input id="fileInput" type="file" accept=".json,.csv,.lnmperf,application/xml,text/xml" multiple hidden></div>
+<div id="sbStatus" class="mut" style="margin-top:8px"></div></section>
+
+<section class="card span12"><div class="row"><h2 style="flex:1">Données du profil — JSON ⇄ Little Navmap</h2><button id="toggleProfileEditor">Masquer les champs</button></div><div class="mut">Champs exportés exactement dans le `.lnmperf`. Une case vide reste vide dans le JSON et bloque l’export XML : aucune valeur n’est ajoutée automatiquement.</div><div id="profileEditor" style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:12px"></div><div class="row" style="margin-top:10px"><button id="saveProfileBtn" class="primary">Enregistrer le profil</button><button id="deleteProfileBtn">Supprimer cet avion</button><span id="profileEditStatus" class="mut"></span></div></section>
+
+<section class="card span6"><h2>Calibration SimBrief depuis OFP</h2>
+<div class="mut">« Récupérer dernier FPL SimBrief » charge directement le dernier OFP de Woyczek. L’import JSON reste un secours si le navigateur bloque SimBrief.</div>
+<div style="height:10px"></div><div class="row"><button id="ofpFileBtn" class="primary">Importer OFP JSON</button><button id="calibrateBtn">Calibrer le profil actif</button><button id="exportAuditBtn">Exporter audit JSON</button><input id="ofpFile" type="file" accept=".json,application/json" hidden></div>
+<div id="ofpStatus" class="mut" style="margin-top:8px">Aucun OFP analysé.</div></section>
+
+<section class="card span6"><h2>Traçabilité de calibration</h2><div id="calibrationMeta" class="kv"><div>État</div><div>Pas de calibration OFP</div></div></section>
+
+<section class="card span12"><h2>Audit OFP — valeurs brutes et calculées</h2><table><thead><tr><th>Phase</th><th>Source</th><th>Temps</th><th>Distance</th><th>Carburant</th><th>FF calculé</th><th>TAS / GS</th><th>Vario</th></tr></thead><tbody id="ofpAudit"><tr><td colspan="8">Aucune donnée OFP.</td></tr></tbody></table></section>
+
+<section class="card span12"><div class="row"><h2 style="flex:1">JSON importé / SimBrief</h2><button id="copyJsonBtn">Copier JSON</button><button id="clearJsonBtn">Effacer</button></div>
+<div id="jsonMeta" class="mut">Aucun JSON chargé.</div>
+<pre id="jsonViewer" style="margin:10px 0 0;max-height:480px;overflow:auto;white-space:pre-wrap;word-break:break-word;background:#0c1014;border:1px solid var(--b);border-radius:8px;padding:12px;font-size:12px;line-height:1.4">—</pre></section>
+
+<section class="card span12"><h2>Table RPM / puissance → consommation</h2><table><thead><tr><th>RPM / N1</th><th>Min.</th><th>Nominal</th><th>Max.</th><th>Unité</th><th>Commentaire</th></tr></thead><tbody id="curve"></tbody></table></section>
+</div></div>
+
+<dialog id="dlg"><div class="row"><h2 style="flex:1">Choisir l’avion</h2><button onclick="dlg.close()">Fermer</button></div><input id="search" placeholder="Rechercher ICAO / nom…" style="width:100%;margin-bottom:8px"><div id="airlist" class="airlist"></div></dialog>
+
+<script src="./AircraftDB/aircraft_db.js"></script>
+<script src="./AircraftDB/aircraft_icons.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const DEFAULT={simbriefUser:"Woyczek",lastAircraft:null,profiles:{},settings:{dist:500,fl:280,trk:270,taxi:15,reserve:45,cont:5},displayFuelUnit:"kg"};
+let state=JSON.parse(localStorage.getItem("flightPerfState")||"null")||DEFAULT;
+let active=null, dirHandle=null, simAirframes=[],activeSavedSnapshot="",profileDirty=false;
+const fmt=(x,d=0)=>Number.isFinite(x)?x.toLocaleString("fr-FR",{maximumFractionDigits:d}):"—";
+const FLAG={fr:'<svg viewBox="0 0 60 36"><rect width="20" height="36" fill="#0055A4"/><rect x="20" width="20" height="36" fill="#fff"/><rect x="40" width="20" height="36" fill="#EF4135"/></svg>',en:'<svg viewBox="0 0 60 36"><rect width="60" height="36" fill="#012169"/><path d="M0 0L60 36M60 0L0 36" stroke="#fff" stroke-width="8"/><path d="M30 0V36M0 18H60" stroke="#C8102E" stroke-width="7"/></svg>'};
+function profileVisual(p){let [group,label]=window.AircraftDBIcons?.group(p)||["Autres","Autre"];return [group,window.AircraftDBIcons?.visual(p)||"other",label]}
+function aircraftIcon(p){return window.AircraftDBIcons?.icon(p)||'<span class="ac-icon">✈</span>'}
+function syncAircraftPicker(){let p=active;$('aircraftCurrentIcon').innerHTML=p?aircraftIcon(p):'<span class="ac-icon">✈</span>';$('aircraftCurrentText').textContent=p?(p.name||p.id):'Aucun avion';$('aircraftCurrent').title=p?`${p.type||p.icao||p.id} · ${p.name||p.id}`:'Choisir l’avion'}
+function closeHeaderMenus(){['languageMenu','prefsMenu','aircraftMenu'].forEach(id=>$(id).hidden=true);['languageCurrent','prefsCurrent','aircraftCurrent'].forEach(id=>$(id).setAttribute('aria-expanded','false'))}
+function applyHeaderPreferences(){let lang=state.uiLanguage||'fr';$('languageCurrentIcon').innerHTML=FLAG[lang]||FLAG.fr;document.querySelectorAll('.lang-item').forEach(b=>b.classList.toggle('active',b.dataset.lang===lang));$('prefsEditorBtn').textContent=state.profileEditorHidden?'Afficher les champs du profil':'Masquer les champs du profil';updateFuelUnitButton()}
+const KG_PER_LB=0.45359237;
+function fuelUnit(){return state.displayFuelUnit||active?.unit||"kg"}
+function convertFuel(value,from,to){if(!Number.isFinite(value)||!from||!to||from===to)return value;return from==="kg"?value/KG_PER_LB:value*KG_PER_LB}
+function fuelInput(value,from=active?.unit||fuelUnit()){let n=convertFuel(value,from,fuelUnit());return Number.isFinite(n)?String(Math.round(n*10)/10):""}
+function showFuel(value,d=0){return fmt(convertFuel(value,active?.unit||fuelUnit(),fuelUnit()),d)}
+function updateFuelUnitButton(){$("fuelUnitBtn").textContent=`Affichage carburant : ${fuelUnit()}`}
+function save(){["dist","fl","trk","taxi","reserve","cont","wdir","wspd"].forEach(k=>state.settings[k]=$(k).value);state.lastAircraft=active?.id||null;let next=JSON.stringify(state),previous=localStorage.getItem("flightPerfState");if(previous&&previous!==next)localStorage.setItem("flightPerfState.backup",previous);localStorage.setItem("flightPerfState",next)}
+function restore(){for(const [k,v] of Object.entries(state.settings||{}))if($(k)&&v!==undefined)$(k).value=v}
+function normalize(p,name="profil"){
+ p.id=p.id||p.icao||name.replace(/\.[^.]+$/,""); p.name=p.name||p.aircraft||p.id; p.unit=p.unit||"kg";
+ p.cruise=p.cruise||{}; p.climb=p.climb||{}; p.descent=p.descent||{}; p.taxi=p.taxi||{};
+ p.tod=p.tod||{gradientFtPerNm:300,bufferNm:5}; p.rpmFuelCurve=(p.rpmFuelCurve||[]).map(x=>({...x,_rowId:x._rowId||crypto.randomUUID()}));
+ return p;
+}
+const PROFILE_FIELDS=[
+ ["Identité et format","Nom","name","text"],["Identité et format","Type / ICAO","icao","text"],["Identité et format","Description","description","textarea"],["Identité et format","Carburant en volume","fuelAsVolume","bool"],["Identité et format","Carburant Jet","jetFuel","bool"],
+ ["Carburant et opération","Carburant utilisable","usableFuel","number"],["Carburant et opération","Taxi","taxiFuel","number"],["Carburant et opération","Taxi · régime nominal (RPM / N1)","taxi.rpmNominal","number",false],["Carburant et opération","Taxi · fuel flow","taxi.fuelFlowPerHour","number",false],["Carburant et opération","Réserve","reserveFuel","number"],["Carburant et opération","Contingence (%)","contingencyPercent","number"],["Carburant et opération","Carburant extra","extraFuel","number"],
+ ["Piste et alternat","Longueur piste mini (ft)","minRunwayLengthFt","number"],["Piste et alternat","Type de piste","runwayType","select:HARD,SOFT,WATER"],["Piste et alternat","Alternat · fuel flow","alternate.fuelFlowPerHour","number"],["Piste et alternat","Alternat · TAS (kt)","alternate.tasKt","number"],
+ ["Montée","Badin / IAS (kt)","climb.iasKt","number",false],["Montée","Régime nominal (RPM / N1)","climb.rpmNominal","number",false],["Montée","Fuel flow","climb.fuelFlowPerHour","number"],["Montée","TAS (kt)","climb.tasKt","number"],["Montée","Vario (ft/min)","climb.rateFpm","number"],
+ ["Croisière","Badin / IAS (kt)","cruise.iasKt","number",false],["Croisière","Régime nominal (RPM / N1)","cruise.rpmNominal","number",false],["Croisière","Fuel flow","cruise.fuelFlowPerHour","number"],["Croisière","TAS (kt)","cruise.tasKt","number"],
+ ["Descente","Badin / IAS (kt)","descent.iasKt","number",false],["Descente","Régime nominal (RPM / N1)","descent.rpmNominal","number",false],["Descente","Fuel flow","descent.fuelFlowPerHour","number"],["Descente","TAS (kt)","descent.tasKt","number"],["Descente","Vario (ft/min)","descent.rateFpm","number"],
+ ["Régime et consommation","Référence RPM / puissance","rpmPowerReference","textarea",false],["Régime et consommation","Données RPM / fuel flow","rpmFuelRaw","textarea",false],["Régime et consommation","Base / provenance","rpmFuelBasis","textarea",false]
+];
+function pathGet(o,path){return path.split(".").reduce((v,k)=>v?.[k],o)}
+function pathSet(o,path,value){let a=path.split("."),k=a.pop(),t=o;for(const x of a)t=t[x]??={};t[k]=value}
+const FUEL_PATHS=new Set(["usableFuel","taxiFuel","reserveFuel","extraFuel","taxi.fuelFlowPerHour","alternate.fuelFlowPerHour","climb.fuelFlowPerHour","cruise.fuelFlowPerHour","descent.fuelFlowPerHour"]);
+const FLIGHT_PHASES=["idle","parking","taxi","takeoff","climb","cruise","descent","approach"];
+function finiteProfileNumber(v){return v!==null&&v!==undefined&&String(v).trim()!==""&&Number.isFinite(Number(v))}
+function inferredCurvePhase(text){let x=String(text||"").toLowerCase();return FLIGHT_PHASES.find(p=>new RegExp(`\\b${p}\\b`,`i`).test(x))||""}
+function renderProfileEditor(){
+ const box=$("profileEditor");if(!active){box.innerHTML='<div class="mut">Choisis ou importe un profil.</div>';box.style.display="";return}
+ const groups=[...new Set(PROFILE_FIELDS.map(x=>x[0]))],field=([group,label,path,type])=>{let v=pathGet(active,path),isFuel=FUEL_PATHS.has(path);if(isFuel&&type==="number")v=fuelInput(v);let unit=isFuel?` (${fuelUnit()}${path.includes("fuelFlow")?"/h":""})`:"";if(type==="bool")return `<div class="field"><label>${label}</label><select data-profile-path="${path}" data-profile-type="bool"><option value="" ${v===null||v===undefined?"selected":""}>non renseigné</option><option value="1" ${v===true?"selected":""}>oui</option><option value="0" ${v===false?"selected":""}>non</option></select></div>`;if(type.startsWith("select:")){let opts=type.slice(7).split(",").map(x=>`<option ${v===x?"selected":""}>${x}</option>`).join("");return `<div class="field"><label>${label}</label><select data-profile-path="${path}" data-profile-type="text">${opts}</select></div>`}let tag=type==="textarea"?"textarea":"input",attrs=type==="number"?'type="number" step="any"':'type="text"',wide=type==="textarea"?" wide":"";return `<div class="field${wide}"><label>${label}${unit}</label><${tag} ${attrs} data-profile-path="${path}" data-profile-type="${type}" data-profile-fuel="${isFuel?1:0}" value="${tag==="input"?escXml(v??""):""}">${tag==="textarea"?escXml(v??""):""}</${tag}>`};
+ const curveRows=(active.rpmFuelCurve||[]).map(p=>`<tr><td><input type="number" step="any" data-curve-id="${p._rowId}" data-curve-key="rpm" value="${p.rpm??""}"></td><td><input type="number" step="any" data-curve-id="${p._rowId}" data-curve-key="fuelFlowMin" value="${fuelInput(p.fuelFlowMin??p.fuelFlowPerHour)}"></td><td><input type="number" step="any" data-curve-id="${p._rowId}" data-curve-key="fuelFlowPerHour" value="${fuelInput(p.fuelFlowPerHour)}"></td><td><input type="number" step="any" data-curve-id="${p._rowId}" data-curve-key="fuelFlowMax" value="${fuelInput(p.fuelFlowMax??p.fuelFlowPerHour)}"></td><td><select data-curve-id="${p._rowId}" data-curve-key="phaseLabel"><option value=""></option>${FLIGHT_PHASES.map(x=>`<option value="${x}" ${p.phaseLabel===x?"selected":""}>${x}</option>`).join("")}</select></td><td><input type="text" data-curve-id="${p._rowId}" data-curve-key="comment" value="${escXml(p.comment??"")}"></td><td><button type="button" class="removeCurve" data-curve-id="${p._rowId}">×</button></td></tr>`).join("");
+ box.innerHTML=groups.map(g=>`<section class="editorGroup" style="display:block"><h3>${g}</h3><div class="fields" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${PROFILE_FIELDS.filter(x=>x[0]===g).map(field).join("")}</div></section>`).join("")+`<section class="editorGroup" style="display:block"><h3>Courbe RPM / puissance → fuel flow (${fuelUnit()}/h)</h3><div class="mut">Une plage écrite dans le commentaire, par ex. « 1 000–1 300 kg/h total », remplit automatiquement min., nominal et max. à l’enregistrement.</div><table><thead><tr><th>RPM / N1</th><th>Min.</th><th>Nominal</th><th>Max.</th><th>Régime de vol</th><th>Commentaire</th><th></th></tr></thead><tbody id="curveEditRows">${curveRows}</tbody></table><button type="button" id="addCurvePoint" style="margin-top:8px">Ajouter un point</button></section>`;
+ box.querySelectorAll(".removeCurve").forEach(b=>b.onclick=()=>{try{commitProfileEditor(false);let i=active.rpmFuelCurve.findIndex(p=>p._rowId===b.dataset.curveId);if(i>=0)active.rpmFuelCurve.splice(i,1);profileDirty=true;renderProfileEditor()}catch(e){$("profileEditStatus").textContent=e.message}});box.querySelector("#addCurvePoint").onclick=()=>{try{commitProfileEditor(false);active.rpmFuelCurve.push({_rowId:crypto.randomUUID(),rpm:null,fuelFlowMin:null,fuelFlowPerHour:null,fuelFlowMax:null,phaseLabel:"",comment:""});profileDirty=true;renderProfileEditor()}catch(e){$("profileEditStatus").textContent=e.message}};box.querySelectorAll('[data-curve-key="comment"]').forEach(comment=>comment.addEventListener("input",()=>{let inferred=parseFuelRange(comment.value,fuelUnit()),i=comment.dataset.curveId,phase=box.querySelector(`[data-curve-id="${i}"][data-curve-key="phaseLabel"]`),detected=inferredCurvePhase(comment.value);if(phase&&!phase.value&&detected)phase.value=detected;if(!inferred)return;let plain=v=>String(Math.round(v*10)/10);[["fuelFlowMin",inferred.min],["fuelFlowPerHour",inferred.nominal],["fuelFlowMax",inferred.max]].forEach(([key,value])=>{let input=box.querySelector(`[data-curve-id="${i}"][data-curve-key="${key}"]`);if(input&&!input.value.trim())input.value=plain(value)});$("profileEditStatus").textContent=`Plage détectée : min. ${plain(inferred.min)}, nominal ${plain(inferred.nominal)}, max. ${plain(inferred.max)} ${fuelUnit()}/h.`}));box.oninput=()=>{profileDirty=true;window.updateProfileStatus?.()};box.onchange=box.oninput;
+ box.style.display=state.profileEditorHidden?"none":"";$("toggleProfileEditor").textContent=state.profileEditorHidden?"Afficher les champs":"Masquer les champs";
+}
+function commitProfileEditor(announce=true){
+ if(!active)throw Error("Aucun profil actif.");document.querySelectorAll("[data-profile-path]").forEach(el=>{if(isPristineInput(el))return;let type=el.dataset.profileType,v=el.value;if(type==="number"){v=v.trim()===""?null:Number(v);if(el.dataset.profileFuel==="1")v=convertFuel(v,fuelUnit(),active.unit)}else if(type==="bool")v=v===""?null:v==="1";else v=v.trim();pathSet(active,el.dataset.profilePath,v)});let rows={};document.querySelectorAll("[data-curve-id]").forEach(el=>{let i=el.dataset.curveId,k=el.dataset.curveKey;rows[i]??={_rowId:i};rows[i][k]=k==="comment"||k==="phaseLabel"?el.value.trim():(el.value.trim()===""?null:Number(el.value))});let curve=Object.values(rows).map(p=>{let inferred=(p.fuelFlowMin===null&&p.fuelFlowPerHour===null&&p.fuelFlowMax===null)?parseFuelRange(p.comment,fuelUnit()):null;let min=p.fuelFlowMin??inferred?.min??p.fuelFlowPerHour,max=p.fuelFlowMax??inferred?.max??p.fuelFlowPerHour,nom=p.fuelFlowPerHour??inferred?.nominal??(Number.isFinite(min)&&Number.isFinite(max)?(min+max)/2:null);return {_rowId:p._rowId,rpm:p.rpm,fuelFlowMin:convertFuel(min,fuelUnit(),active.unit),fuelFlowPerHour:convertFuel(nom,fuelUnit(),active.unit),fuelFlowMax:convertFuel(max,fuelUnit(),active.unit),phaseLabel:p.phaseLabel||inferredCurvePhase(p.comment),comment:p.comment||""}});active.rpmFuelCurve=curve;normalize(active);profileDirty=JSON.stringify(active)!==activeSavedSnapshot;renderProfile();if(announce)$("profileEditStatus").textContent=`Modifications en attente. ${curve.length} ligne(s) de cartographie conservée(s), y compris les lignes vides.`;window.updateProfileStatus?.()}
+const FUEL_KEYS=new Set(["fuelFlowPerHour","fuelFlowMin","fuelFlowMax","usableFuel","taxiFuel","reserveFuel","extraFuel"]);
+const SKIP_MERGE_KEYS=new Set(["_rowId","id","unit","source","mergedProfileIds","lnmSource"]);
+function isBlankValue(v){return v===null||v===undefined||(typeof v==="string"&&v.trim()==="")||(Array.isArray(v)&&!v.length)}
+function fuelConvertedCopy(o,from,to,ok){if(Array.isArray(o))return o.map(x=>fuelConvertedCopy(x,from,to,ok));if(o&&typeof o==="object"){let r={};for(const [k,v] of Object.entries(o))r[k]=FUEL_KEYS.has(k)&&typeof v==="number"?(ok?convertFuel(v,from,to):null):(k==="simbriefSnapshot"||k==="calibration"?structuredClone(v):fuelConvertedCopy(v,from,to,ok));return r}return o}
+function mergeCurves(t,s){t=Array.isArray(t)?t:[];s=Array.isArray(s)?s:[];const key=r=>r&&r.rpm!==null&&r.rpm!==undefined&&Number.isFinite(Number(r.rpm))?Math.round(Number(r.rpm)*1000):null;const out=[...t];for(const r of s){const k=key(r);if(k===null)continue;const cur=out.find(x=>key(x)===k);if(cur){if(isBlankValue(cur.phaseLabel)&&!isBlankValue(r.phaseLabel))cur.phaseLabel=r.phaseLabel;if(isBlankValue(cur.comment)&&!isBlankValue(r.comment))cur.comment=r.comment;continue}out.push(r)}return out}
+/* Fusion : les valeurs déjà présentes dans `target` gagnent ; seules les cases vides sont complétées depuis `source`. */
+function fillProfileGaps(target,source){if(!target||!source||target===source)return target;let src=structuredClone(source);if(src.unit&&target.unit&&src.unit!==target.unit)src=fuelConvertedCopy(src,src.unit,target.unit,["kg","lb"].includes(src.unit)&&["kg","lb"].includes(target.unit));
+ const merge=(t,s)=>{for(const [k,v] of Object.entries(s)){if(SKIP_MERGE_KEYS.has(k))continue;if(k==="rpmFuelCurve"){t[k]=mergeCurves(t[k],v);continue}if(isBlankValue(t[k])){if(!isBlankValue(v))t[k]=v;continue}if(v&&typeof v==="object"&&!Array.isArray(v)&&typeof t[k]==="object"&&!Array.isArray(t[k]))merge(t[k],v)}};merge(target,src);return target}
+function storeProfile(p){let old=state.profiles[p.id];if(old&&old!==p)fillProfileGaps(p,old);state.profiles[p.id]=p}
+function isPristineInput(el){if(el.tagName==="SELECT"){let d=[...el.options].findIndex(o=>o.defaultSelected);return el.selectedIndex===(d>=0?d:0)}return el.value===el.defaultValue}
+function setActive(p,source="local"){active=normalize(structuredClone(p));let stored=state.profiles[active.id];if(stored&&stored!==p&&p!==active)fillProfileGaps(active,stored);if(!stored){state.profiles[active.id]=structuredClone(active);stored=state.profiles[active.id]}activeSavedSnapshot=JSON.stringify(normalize(structuredClone(stored)));profileDirty=JSON.stringify(active)!==activeSavedSnapshot;$("airBtn").textContent=`Avion : ${active.id}`;$("source").textContent=source;syncAircraftPicker();updateFuelUnitButton();renderProfile();save();window.updateProfileStatus?.()}
+function clearActive(message="Aucun profil actif"){active=null;activeSavedSnapshot="";profileDirty=false;state.lastAircraft=null;$("airBtn").textContent="Avion : aucun";$("source").textContent=message;syncAircraftPicker();$("profile").innerHTML='<div>État</div><div>Aucun profil chargé</div>';$("curve").innerHTML='<tr><td colspan="6">Aucun profil.</td></tr>';renderProfileEditor();save();window.updateProfileStatus?.()}
+function phaseFuelDisplay(phaseName){let phase=active[phaseName]||{},rpm=finiteProfileNumber(phase.rpmNominal)?Number(phase.rpmNominal):null,map=rpm!==null?interpRange(active.rpmFuelCurve||[],rpm):null,ff=map?.nominal??phase.fuelFlowPerHour,text=`${showFuel(ff)} ${fuelUnit()}/h`;return rpm!==null?`${rpm} RPM · ${text}${map?" (cartographie)":""}`:text}
+function renderProfile(){
+ if(!active)return;
+ const vals=[["Nom",active.name],["Type / ICAO",active.type||active.icao||active.id],["Indicatif",active.callsign||"—"],["Immatriculation",active.registration||"—"],["Airframe SimBrief",active.simbriefAirframeId||"—"],["Unité stockée / affichée",`${active.unit} / ${fuelUnit()}`],["TAS croisière",`${active.cruise.tasKt||"—"} kt`],["Croisière",phaseFuelDisplay("cruise")],["Montée",`${active.climb.rateFpm||"—"} ft/min · ${phaseFuelDisplay("climb")}`],["Descente",`${active.descent.rateFpm||"—"} ft/min · ${phaseFuelDisplay("descent")}`],["TOD",`${active.tod.gradientFtPerNm||300} ft/NM + ${active.tod.bufferNm||0} NM`]];
+ $("profile").innerHTML=vals.map(x=>`<div>${x[0]}</div><div>${x[1]}</div>`).join("");
+ $("curve").innerHTML=(active.rpmFuelCurve||[]).sort((a,b)=>a.rpm-b.rpm).map(x=>`<tr><td>${x.rpm}</td><td>${showFuel(x.fuelFlowMin??x.fuelFlowPerHour)}</td><td>${showFuel(x.fuelFlowPerHour)}</td><td>${showFuel(x.fuelFlowMax??x.fuelFlowPerHour)}</td><td>${fuelUnit()}/h</td><td>${x.comment||""}</td></tr>`).join("")||'<tr><td colspan="6">Pas de courbe RPM dans ce profil.</td></tr>';
+ renderProfileEditor();
+}
+function windComponent(track,from,speed){return speed*Math.cos((from-track)*Math.PI/180)*-1} // + tailwind
+function calculate(){
+ if(!active)return alert("Choisis ou importe d’abord un profil avion.");
+ const D=+$("dist").value, FL=+$("fl").value, alt=FL*100, tas=active.cruise.tasKt||300;
+ let windKnown=$("wdir").value!==""&&$("wspd").value!=="", wc=0, low=0, high=0;
+ if(windKnown){wc=windComponent(+$("trk").value,+$("wdir").value,+$("wspd").value);low=high=wc;$("windInfo").textContent=`Composante ${wc>=0?"arrière":"face"} ${fmt(Math.abs(wc),0)} kt`;}
+ else {let supplied=$('wspd').value.trim(),band=supplied===""?(active.typicalWindKt??25):Math.abs(+$('wspd').value);low=-band;high=band;$("windInfo").textContent=supplied===""?`Vent inconnu : fourchette ±${band} kt sur la composante route`:`Direction inconnue : fourchette −${band} à +${band} kt sur la composante route`;}
+ const mappedPhase=phaseName=>{let phase=active[phaseName]||{},rpm=finiteProfileNumber(phase.rpmNominal)?Number(phase.rpmNominal):null,map=rpm!==null?interpRange(active.rpmFuelCurve||[],rpm):null;return {rpm,map,ff:map?.nominal??phase.fuelFlowPerHour}};
+ const climbPhase=mappedPhase("climb"),cruisePhase=mappedPhase("cruise"),descentPhase=mappedPhase("descent");
+ const climbMin=alt/(active.climb.rateFpm||1200), descentMin=alt/Math.abs(active.descent.rateFpm||1500);
+ const climbDist=(active.climb.tasKt||220)*climbMin/60, descentDist=(active.descent.tasKt||250)*descentMin/60;
+ const cruiseDist=Math.max(0,D-climbDist-descentDist);
+ const phaseFuel=(mins,ff)=>mins/60*(ff||0);
+ const climbFF=climbPhase.ff??cruisePhase.ff??0,cruiseFF=cruisePhase.ff??0,descentFF=descentPhase.ff??(cruiseFF*.45);
+ const climbFuel=phaseFuel(climbMin,climbFF);
+ const descentFuel=phaseFuel(descentMin,descentFF);
+ const taxiFuel=phaseFuel(+$("taxi").value,active.taxi.fuelFlowPerHour||cruiseFF*.25);
+ function cruiseFuelFor(w){let gs=Math.max(80,tas+w);return cruiseDist/gs*cruiseFF}
+ const cNom=cruiseFuelFor(windKnown?wc:0), cLo=cruiseFuelFor(low), cHi=cruiseFuelFor(high);
+ const reserve=phaseFuel(+$("reserve").value,active.reserveFuelFlowPerHour||cruiseFF*.65);
+ const trip=climbFuel+cNom+descentFuel, contingency=trip*(+$("cont").value/100), block=taxiFuel+trip+contingency+reserve;
+ const bLo=taxiFuel+climbFuel+cLo+descentFuel+(climbFuel+cLo+descentFuel)*(+$("cont").value/100)+reserve;
+ const bHi=taxiFuel+climbFuel+cHi+descentFuel+(climbFuel+cHi+descentFuel)*(+$("cont").value/100)+reserve;
+ $("block").textContent=windKnown?`${showFuel(block)} ${fuelUnit()}`:`${showFuel(Math.min(bLo,bHi))}–${showFuel(Math.max(bLo,bHi))} ${fuelUnit()}`;
+ const tod=alt/(active.tod.gradientFtPerNm||300)+(active.tod.bufferNm||0);$("tod").textContent=`${fmt(tod,1)} NM`;
+ const mapNote=phase=>phase.map?`<span class="mapval">${phase.rpm} RPM → ${showFuel(phase.map.nominal)} ${fuelUnit()}/h <small>(${showFuel(phase.map.min)}–${showFuel(phase.map.max)})</small></span>`:"";
+ const rows=[["Taxi",taxiFuel],["Montée"+mapNote(climbPhase),climbFuel],["Croisière (nominal)"+mapNote(cruisePhase),cNom],["Descente"+mapNote(descentPhase),descentFuel],["Contingence",contingency],["Réserve",reserve]];
+ $("breakdown").innerHTML=rows.map(x=>`<div>${x[0]}</div><div>${showFuel(x[1])} ${fuelUnit()}</div>`).join("");save()
+}
+function interp(curve,rpm){curve=[...curve].filter(p=>Number.isFinite(p.rpm)&&Number.isFinite(p.fuelFlowPerHour)).sort((a,b)=>a.rpm-b.rpm);if(!curve.length)return NaN;if(rpm<=curve[0].rpm)return curve[0].fuelFlowPerHour;if(rpm>=curve.at(-1).rpm)return curve.at(-1).fuelFlowPerHour;for(let i=1;i<curve.length;i++)if(rpm<=curve[i].rpm){let a=curve[i-1],b=curve[i],t=(rpm-a.rpm)/(b.rpm-a.rpm);return a.fuelFlowPerHour+t*(b.fuelFlowPerHour-a.fuelFlowPerHour)}}
+function numberText(value){return Number(String(value).replace(/[\s\u202f]/g,"").replace(",","."))}
+function parseFuelRange(text,targetUnit="kg"){
+ const n="(\\d{1,3}(?:[\\s\\u202f]\\d{3})*|\\d+)(?:[.,](\\d+))?",rx=new RegExp(`${n}\\s*(?:-|–|à|to)\\s*${n}\\s*(kg|kgs|lb|lbs)\\s*\\/?\\s*h\\b`,"i"),m=String(text||"").match(rx);
+ if(!m)return null;let a=numberText(`${m[1]}${m[2]?","+m[2]:""}`),b=numberText(`${m[3]}${m[4]?","+m[4]:""}`),from=/^kg/i.test(m[5])?"kg":"lb";a=convertFuel(a,from,targetUnit);b=convertFuel(b,from,targetUnit);return {min:Math.min(a,b),nominal:(a+b)/2,max:Math.max(a,b),sourceUnit:from};
+}
+function parseRpmFuelCurve(raw,targetUnit="kg"){let out=[],seen=new Set(),add=(rpm,range,comment)=>{rpm=numberText(rpm);if(!range||!Number.isFinite(rpm)||rpm<=0||seen.has(rpm))return;seen.add(rpm);out.push({rpm,fuelFlowMin:range.min,fuelFlowPerHour:range.nominal,fuelFlowMax:range.max,comment})};for(const part of String(raw||"").split(/;|\n/)){let rpm=part.match(/(\d{2,5}(?:[.,]\d+)?)\s*(?:rpm|n1|%\s*n1|%\s*power)\b/i)?.[1],range=parseFuelRange(part,targetUnit);if(rpm&&range){add(rpm,range,part.trim());continue}let m=part.match(/(\d{2,5}(?:[.,]\d+)?)\s*(?:rpm|n1|%\s*n1|%\s*power)?\s*(?:=|:|→|->|@)\s*~?\s*(\d+(?:[.,]\d+)?)(?:\s*(?:-|–|to)\s*~?(\d+(?:[.,]\d+)?))?/i);if(m){let a=numberText(m[2]),b=m[3]?numberText(m[3]):a;add(m[1],{min:a,nominal:(a+b)/2,max:b},part.trim())}else{m=part.match(/~?(\d+(?:[.,]\d+)?)(?:\s*(?:-|–|to)\s*~?(\d+(?:[.,]\d+)?))?\s*(?:lb\/?h|kg\/?h|gph)?\s*(?:@|at)\s*(\d{2,5}(?:[.,]\d+)?)/i);if(m){let a=numberText(m[1]),b=m[2]?numberText(m[2]):a;add(m[3],{min:a,nominal:(a+b)/2,max:b},part.trim())}}}return out.sort((a,b)=>a.rpm-b.rpm)}
+function interpRange(curve,rpm){let c=[...curve].filter(p=>Number.isFinite(p.rpm)&&[p.fuelFlowMin,p.fuelFlowPerHour,p.fuelFlowMax].some(Number.isFinite)).sort((a,b)=>a.rpm-b.rpm),value=(p,k,fallback)=>Number.isFinite(p[k])?p[k]:p[fallback];if(!c.length||!Number.isFinite(rpm))return null;let at=k=>({min:value(c[k],"fuelFlowMin","fuelFlowPerHour"),nominal:value(c[k],"fuelFlowPerHour","fuelFlowMin"),max:value(c[k],"fuelFlowMax","fuelFlowPerHour")});if(rpm<=c[0].rpm)return at(0);if(rpm>=c.at(-1).rpm)return at(c.length-1);for(let i=1;i<c.length;i++)if(rpm<=c[i].rpm){let a=c[i-1],b=c[i],t=(rpm-a.rpm)/(b.rpm-a.rpm),va=at(i-1),vb=at(i);return {min:va.min+t*(vb.min-va.min),nominal:va.nominal+t*(vb.nominal-va.nominal),max:va.max+t*(vb.max-va.max)}}}
+$("rpmCalc").onclick=()=>{if(!active)return;let v=interpRange(active.rpmFuelCurve||[],+$("rpm").value);$("ff").textContent=v?`${showFuel(v.nominal)} ${fuelUnit()}/h`:"—";$("ffnote").textContent=v?`${showFuel(v.min)}–${showFuel(v.max)} ${fuelUnit()}/h · interpolation linéaire` : "Courbe RPM absente du profil."};
+$("fuelUnitBtn").onclick=()=>{state.displayFuelUnit=fuelUnit()==="kg"?"lb":"kg";updateFuelUnitButton();if(active){renderProfile();calculate()}save()};
+$("calc").onclick=calculate;
+function parseDelimited(text,sep=";"){let rows=[],row=[],cell="",quote=false;for(let i=0;i<text.length;i++){let c=text[i];if(c==='"'){if(quote&&text[i+1]==='"'){cell+='"';i++}else quote=!quote}else if(c===sep&&!quote){row.push(cell);cell=""}else if((c==='\n'||c==='\r')&&!quote){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cell);if(row.some(x=>x!==""))rows.push(row);row=[];cell=""}else cell+=c}row.push(cell);if(row.some(x=>x!==""))rows.push(row);return rows}
+function parsePerformanceCsv(text,name){let rows=parseDelimited(text.replace(/^\uFEFF/,""));if(rows.length<2)throw Error("CSV sans données");let headers=rows.shift().map(x=>x.trim()),ix=h=>headers.indexOf(h),get=(r,h)=>r[ix(h)]?.trim()??"",num=(r,h)=>{let v=get(r,h);return v===""?null:Number(v.replace(",","."))};if(ix("Aircraft")<0||ix("ICAO")<0)throw Error("Colonnes Aircraft et ICAO requises");return rows.map(r=>{let reg=get(r,"Registration"),icao=get(r,"ICAO").toUpperCase(),aircraft=get(r,"Aircraft");return normalize({id:`DB_${icao}_${(reg||aircraft).replace(/[^A-Za-z0-9_-]/g,"_")}`,name:aircraft||icao,icao,type:icao,registration:reg,callsign:reg,unit:"lb",fuelAsVolume:false,jetFuel:null,confidence:get(r,"Confidence"),basis:get(r,"Basis"),description:get(r,"Basis"),usableFuel:num(r,"Usable fuel lb"),taxiFuel:num(r,"Taxi lb"),reserveFuel:num(r,"Reserve lb"),contingencyPercent:null,extraFuel:null,minRunwayLengthFt:null,runwayType:"",alternate:{fuelFlowPerHour:null,tasKt:null},climb:{fuelFlowPerHour:num(r,"Climb FF lb/h"),tasKt:num(r,"Climb TAS kt"),rateFpm:num(r,"Climb VS fpm")},cruise:{fuelFlowPerHour:num(r,"Cruise FF lb/h"),tasKt:num(r,"Cruise TAS kt")},descent:{fuelFlowPerHour:num(r,"Descent FF lb/h"),tasKt:num(r,"Descent TAS kt"),rateFpm:num(r,"Descent VS fpm")},source:{format:"PERFORMANCES_INTERPOLEES CSV",file:name,importedAt:new Date().toISOString()}},name)})}
+function profilesFromJson(obj,name){if(obj?.schema==="flight-performance-db/v1"&&Array.isArray(obj.profiles))return obj.profiles.map(p=>normalize(p,name));return [normalize(obj,name)]}
+function jsonKind(obj){
+ if(obj?.schema==="flight-performance-db/v1"&&Array.isArray(obj.profiles))return "Base de profils";
+ if(isSimbriefOfp(obj))return "OFP SimBrief";
+ if(obj&&typeof obj==="object"&&(obj.cruise||obj.climb||obj.descent||obj.icao||obj.aircraft))return "Profil performance JSON";
+ return "JSON générique";
+}
+function showJson(obj,name="JSON",kind=null){
+ try{window.__lastImportedJson=obj;const txt=JSON.stringify(obj,null,2);$("jsonViewer").textContent=txt;const keys=obj&&typeof obj==="object"&&!Array.isArray(obj)?Object.keys(obj):[];$("jsonMeta").textContent=`${name} · ${kind||jsonKind(obj)} · ${txt.length.toLocaleString("fr-FR")} caractères · clés racine : ${keys.join(", ")||"—"}`}
+ catch(e){$("jsonViewer").textContent=String(obj);$("jsonMeta").textContent=`${name} · affichage JSON impossible : ${e.message}`}
+}
+function isSimbriefOfp(o){
+ if(!o||typeof o!=="object"||Array.isArray(o))return false;
+ const k=new Set(Object.keys(o).map(x=>x.toLowerCase()));
+ if(k.has("navlog")&&(k.has("general")||k.has("aircraft")||k.has("origin")||k.has("destination")))return true;
+ if(k.has("general")&&k.has("aircraft")&&(k.has("fuel")||k.has("times")||k.has("params")))return true;
+ return !!(o.api_params&&o.general&&o.aircraft);
+}
+function deepValuesByKey(o,aliases,out=[],depth=0){
+ if(!o||typeof o!=="object"||depth>8)return out;
+ for(const [k,v] of Object.entries(o)){if(aliases.includes(k.toLowerCase())&&v!==null&&v!==undefined&&typeof v!=="object")out.push(v);if(v&&typeof v==="object")deepValuesByKey(v,aliases,out,depth+1)}
+ return out;
+}
+function deepFirstNum(o,aliases){for(const v of deepValuesByKey(o,aliases)){const x=n(v);if(x!==null)return x}return null}
+function deepFirstText(o,aliases){for(const v of deepValuesByKey(o,aliases)){if(String(v).trim())return String(v).trim()}return ""}
+function populatePlanFromOFP(ofp){
+ const general=ofp?.general||{}, fuel=ofp?.fuel||{}, params=ofp?.params||{}, times=ofp?.times||{};
+ const dist=firstNum(general,["route_distance","distance","air_distance","total_distance","route_dist"])??deepFirstNum(ofp,["route_distance","route_dist","total_distance"]);
+ if(dist!==null&&dist>0)$("dist").value=Math.round(dist*10)/10;
+ let alt=firstNum(general,["initial_altitude","cruise_altitude","cruise_altitude_feet","flight_level"])??deepFirstNum(ofp,["initial_altitude","cruise_altitude","flight_level"]);
+ if(alt!==null&&alt>0)$("fl").value=alt>1000?Math.round(alt/100):Math.round(alt);
+ const wd=firstNum(general,["avg_wind_dir","average_wind_dir","wind_dir"])??deepFirstNum(general,["avg_wind_dir","average_wind_dir"]);
+ const ws=firstNum(general,["avg_wind_spd","avg_wind_speed","average_wind_speed","wind_speed"])??deepFirstNum(general,["avg_wind_spd","avg_wind_speed","average_wind_speed"]);
+ if(wd!==null)$("wdir").value=Math.round(wd);if(ws!==null)$("wspd").value=Math.round(ws);
+ const taxiMin=firstNum(times,["taxi_out","taxi","taxi_time"]);if(taxiMin!==null){let t=taxiMin>300?taxiMin/60:taxiMin; if(t>0&&t<180)$("taxi").value=Math.round(t)}
+ const cont=firstNum(params,["contpct","cont_percent","contingency_percent"])??deepFirstNum(params,["contpct","cont_percent","contingency_percent"]);if(cont!==null&&cont>=0&&cont<=100)$("cont").value=cont;
+ const reserveMin=firstNum(params,["resvrule","reserve_minutes","reserve_mins"]);if(reserveMin!==null&&reserveMin>0&&reserveMin<300)$("reserve").value=Math.round(reserveMin);
+ save();
+}
+$("copyJsonBtn").onclick=async()=>{if(!window.__lastImportedJson)return;try{await navigator.clipboard.writeText(JSON.stringify(window.__lastImportedJson,null,2));$("jsonMeta").textContent+=" · copié"}catch(e){alert("Copie impossible : "+e.message)}};
+$("clearJsonBtn").onclick=()=>{window.__lastImportedJson=null;$("jsonViewer").textContent="—";$("jsonMeta").textContent="Aucun JSON chargé."};
+function parsePerformanceCsvEnriched(text,name){let rows=parseDelimited(text.replace(/^\uFEFF/,""));if(rows.length<2)throw Error("CSV sans données");let h=rows.shift().map(x=>x.trim()),ix=k=>h.indexOf(k),get=(r,k)=>r[ix(k)]?.trim()??"",num=(r,k)=>{let x=get(r,k);return x===""?null:Number(x.replace(",","."))};if(ix("Aircraft")<0||ix("ICAO")<0)throw Error("Colonnes Aircraft et ICAO requises");let out=rows.map(r=>{let reg=get(r,"Registration"),icao=get(r,"ICAO").toUpperCase(),aircraft=get(r,"Aircraft");if(!aircraft||!icao)return null;let runway=num(r,"LNM Min Runway ft")??num(r,"Min Runway Required ft (max TO/LDG)"),rpmRaw=get(r,"Fuel Flow vs RPM / Power");return normalize({id:`DB_${icao}_${(reg||aircraft).replace(/[^A-Za-z0-9_-]/g,"_")}`,name:aircraft,icao,type:icao,registration:reg,callsign:reg,unit:"lb",fuelAsVolume:false,jetFuel:null,confidence:get(r,"Confidence"),basis:get(r,"Basis"),description:get(r,"Basis"),usableFuel:num(r,"Usable fuel lb"),taxiFuel:num(r,"Taxi lb"),reserveFuel:num(r,"Reserve lb"),contingencyPercent:num(r,"Contingency %"),extraFuel:num(r,"Extra Fuel lb"),minRunwayLengthFt:runway,runwayBasis:get(r,"Runway Basis"),rpmPowerReference:get(r,"Typical RPM / Power Reference"),rpmFuelBasis:get(r,"RPM/Fuel Basis"),rpmFuelRaw:rpmRaw,rpmFuelCurve:parseRpmFuelCurve(rpmRaw,"lb"),alternate:{fuelFlowPerHour:null,tasKt:null},climb:{fuelFlowPerHour:num(r,"Climb FF lb/h"),tasKt:num(r,"Climb TAS kt"),rateFpm:num(r,"Climb VS fpm")},cruise:{fuelFlowPerHour:num(r,"Cruise FF lb/h"),tasKt:num(r,"Cruise TAS kt")},descent:{fuelFlowPerHour:num(r,"Descent FF lb/h"),tasKt:num(r,"Descent TAS kt"),rateFpm:num(r,"Descent VS fpm")},source:{format:"PERFORMANCES_INTERPOLEES enriched CSV",file:name,importedAt:new Date().toISOString()}},name)}).filter(Boolean);if(!out.length)throw Error("CSV sans lignes appareil valides : vérifie les guillemets et les séparateurs.");return out}
+$("importBtn").onclick=()=>$("fileInput").click();
+$("fileInput").onchange=async e=>{
+ let ok=0,last=null,ofpCount=0,errors=[];
+ for(const f of e.target.files){
+  try{
+   const txt=await f.text(), lower=f.name.toLowerCase();
+   if(lower.endsWith(".lnmperf")){const p=parseLnmperf(txt,f.name);storeProfile(p);last=p;ok++;continue}
+   if(lower.endsWith(".csv")){const profiles=parsePerformanceCsvEnriched(txt,f.name);for(const p of profiles){storeProfile(p);last=p;ok++}continue}
+   const obj=JSON.parse(txt);showJson(obj,f.name);
+   if(isSimbriefOfp(obj)){populatePlanFromOFP(obj);await importOFPProfile(obj,f.name,"OFP JSON importé");last=active;ofpCount++;ok++;}
+   else {const profiles=profilesFromJson(obj,f.name);for(const p of profiles){storeProfile(p);last=p;ok++}}
+  }catch(x){console.warn(f.name,x);errors.push(`${f.name}: ${x.message}`)}
+ }
+ if(last&&!ofpCount)setActive(last,`${ok} profil(s) importé(s)`);
+ if(!last&&!ofpCount)alert("Aucun profil reconnu."+(errors.length?"\n\n"+errors.join("\n"):""));
+ else if(errors.length)$("profileEditStatus").textContent=`Import partiel : ${errors.join(" | ")}`;
+ e.target.value="";
+};
+$("saveProfileBtn").onclick=()=>{try{commitProfileEditor()}catch(e){$("profileEditStatus").textContent=e.message}};
+$("toggleProfileEditor").onclick=()=>{state.profileEditorHidden=!state.profileEditorHidden;$("profileEditor").style.display=state.profileEditorHidden?"none":"";$("toggleProfileEditor").textContent=state.profileEditorHidden?"Afficher les champs":"Masquer les champs";save()};
+$("deleteProfileBtn").onclick=()=>{if(!active)return;let label=active.name||active.id;if(!confirm(`Supprimer définitivement le profil « ${label} » du stockage local ?`))return;delete state.profiles[active.id];clearActive(`Profil supprimé : ${label}`)};
+$("exportBtn").onclick=()=>{try{commitProfileEditor(false);let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(active,null,2)],{type:"application/json"}));a.download=`${active.id}.performance.json`;a.click();URL.revokeObjectURL(a.href)}catch(e){$("profileEditStatus").textContent=e.message}};
+$("exportDbBtn").onclick=async()=>{save();let text=JSON.stringify({schema:"flight-performance-db/v1",exportedAt:new Date().toISOString(),profiles:Object.values(state.profiles)},null,2);try{if(dirHandle){let h=await dirHandle.getFileHandle("flight_performance_database.fpdb.json",{create:true}),w=await h.createWritable();await w.write(text);await w.close();$("profileEditStatus").textContent="BDD locale écrite dans le dossier sélectionné : flight_performance_database.fpdb.json"}else downloadText("flight_performance_database.fpdb.json",text,"application/json")}catch(e){$("profileEditStatus").textContent="Écriture dans le dossier impossible : "+e.message}}
+$("dirBtn").onclick=async()=>{
+ if(!window.showDirectoryPicker)return alert("Ce navigateur ne permet pas l’accès direct à un dossier. Utilise Chrome/Edge ou importe les fichiers.");
+ try{dirHandle=await showDirectoryPicker({mode:"readwrite"});let count=0;for await(const [name,h] of dirHandle.entries()){if(h.kind==="file"&&(name.toLowerCase().endsWith(".json")||name.toLowerCase().endsWith(".lnmperf")||name.toLowerCase().endsWith(".csv"))){try{let f=await h.getFile(),txt=await f.text(),profiles=name.toLowerCase().endsWith(".lnmperf")?[parseLnmperf(txt,name)]:name.toLowerCase().endsWith(".csv")?parsePerformanceCsvEnriched(txt,name):profilesFromJson(JSON.parse(txt),name);for(const p of profiles){storeProfile(p);count++}}catch{}}}save();alert(`${count} profil(s) chargé(s). La BDD locale sera écrite ici via « Exporter BDD locale ».`)}catch(e){if(e.name!=="AbortError")alert(e.message)}
+};
+
+function xmlNum(root,tag,def=0){let n=root.querySelector(tag);return n?Number(n.textContent)||def:def}
+function xmlText(root,tag,def=""){let n=root.querySelector(tag);return n?n.textContent.trim():def}
+function parseLnmperf(txt,name="profil.lnmperf"){
+ const x=new DOMParser().parseFromString(txt,"application/xml");
+ if(x.querySelector("parsererror"))throw Error("XML .lnmperf invalide");
+ const ap=x.querySelector("AircraftPerf"), opt=ap?.querySelector("Options"), perf=ap?.querySelector("Perf");
+ if(!ap||!perf)throw Error("Structure Little Navmap non reconnue");
+ const fuelAsVolume=xmlNum(opt,"FuelAsVolume",0), unit=fuelAsVolume?"gal":"lb";
+ const phase=(tag,vert=false)=>{let q=perf.querySelector(tag);if(!q)return{};let z={fuelFlowPerHour:xmlNum(q,"FuelFlowLbsGalPerHour"),tasKt:xmlNum(q,"SpeedKtsTAS")};if(vert)z.rateFpm=Math.abs(xmlNum(q,"VertSpeedFtPerMin"));return z};
+ return normalize({
+   id:xmlText(opt,"AircraftType",name.replace(/\.lnmperf$/i,"")),
+   icao:xmlText(opt,"AircraftType",""),
+   name:xmlText(opt,"Name",name.replace(/\.lnmperf$/i,"")),
+   description:xmlText(opt,"Description",""),unit,
+   jetFuel:!!xmlNum(opt,"JetFuel",1),fuelAsVolume:!!fuelAsVolume,
+   contingencyPercent:xmlNum(perf,"ContingencyFuelPercent",0),
+   extraFuel:xmlNum(perf,"ExtraFuelLbsGal",0),reserveFuel:xmlNum(perf,"ReserveFuelLbsGal",0),
+   taxiFuel:xmlNum(perf,"TaxiFuelLbsGal",0),usableFuel:xmlNum(perf,"UsableFuelLbsGal",0),
+   minRunwayLengthFt:xmlNum(perf,"MinRunwayLengthFt",0),runwayType:xmlText(perf,"RunwayType","HARD"),
+   alternate:phase("Alternate"),climb:phase("Climb",true),cruise:phase("Cruise"),descent:phase("Descent",true),
+   lnmSource:true
+ },name);
+}
+function escXml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&apos;"}[c]))}
+function lnmPhase(tag,p,vertical=false){
+ p=p||{}; return `      <${tag}>\n        <FuelFlowLbsGalPerHour>${Number(p.fuelFlowPerHour||0).toFixed(3)}</FuelFlowLbsGalPerHour>\n        <SpeedKtsTAS>${Number(p.tasKt||0).toFixed(3)}</SpeedKtsTAS>${vertical?`\n        <VertSpeedFtPerMin>${Number(Math.abs(p.rateFpm||0)).toFixed(3)}</VertSpeedFtPerMin>`:""}\n      </${tag}>`;
+}
+function missingLnmperfFields(p){return PROFILE_FIELDS.filter(([,label,path,type,lnm=true])=>lnm!==false&&type!=="textarea"&&(pathGet(p,path)===null||pathGet(p,path)===undefined||pathGet(p,path)==="")).map(x=>x[1])}
+function toLnmperf(p){
+ const missing=missingLnmperfFields(p);if(missing.length)throw Error("Export `.lnmperf` bloqué : champs non renseignés : "+missing.join(" ; "));
+ p={...p,simbriefAirframeId:""}; // les métadonnées SimBrief restent JSON-only ; Description reste strictement identique
+ const now=new Date().toISOString();
+ return `<?xml version="1.0" encoding="UTF-8"?>\n<LittleNavmap xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.littlenavmap.org/schema/lnmperf.xsd">\n  <AircraftPerf>\n    <Header>\n      <CreationDate>${now}</CreationDate>\n      <FileVersion>1.0</FileVersion>\n      <ProgramName>Flight Performance &amp; Fuel Planner</ProgramName>\n      <ProgramVersion>0.2</ProgramVersion>\n      <Documentation>https://www.littlenavmap.org/lnmperf.html</Documentation>\n    </Header>\n    <Options>\n      <Name>${escXml(p.name||p.id)}</Name>\n      <AircraftType>${escXml(p.icao||p.id)}</AircraftType>\n      <Description>${escXml((p.description||"")+(p.simbriefAirframeId?` | SimBrief airframe ${p.simbriefAirframeId}`:""))}</Description>\n      <FuelAsVolume>${p.fuelAsVolume?1:0}</FuelAsVolume>\n      <JetFuel>${p.jetFuel===false?0:1}</JetFuel>\n    </Options>\n    <Perf>\n      <ContingencyFuelPercent>${Number(p.contingencyPercent||0).toFixed(1)}</ContingencyFuelPercent>\n      <ExtraFuelLbsGal>${Number(p.extraFuel||0).toFixed(3)}</ExtraFuelLbsGal>\n      <MinRunwayLengthFt>${Number(p.minRunwayLengthFt||0).toFixed(3)}</MinRunwayLengthFt>\n      <ReserveFuelLbsGal>${Number(p.reserveFuel||0).toFixed(3)}</ReserveFuelLbsGal>\n      <RunwayType>${escXml(p.runwayType||"HARD")}</RunwayType>\n      <TaxiFuelLbsGal>${Number(p.taxiFuel||0).toFixed(3)}</TaxiFuelLbsGal>\n      <UsableFuelLbsGal>${Number(p.usableFuel||0).toFixed(3)}</UsableFuelLbsGal>\n${lnmPhase("Alternate",p.alternate)}\n${lnmPhase("Climb",p.climb,true)}\n${lnmPhase("Cruise",p.cruise)}\n${lnmPhase("Descent",p.descent,true)}\n    </Perf>\n  </AircraftPerf>\n</LittleNavmap>\n`;
+}
+function downloadText(name,text,type="application/octet-stream"){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function walkAirframes(obj,out=[]){
+ if(!obj||typeof obj!=="object")return out;
+ if(obj.airframe_internal_id||obj.internal_id)out.push(obj);
+ for(const v of Object.values(obj))if(v&&typeof v==="object")walkAirframes(v,out);
+ return out;
+}
+function pick(o,...keys){for(const k of keys)if(o?.[k]!==undefined&&o[k]!==null&&o[k]!=="")return o[k]}
+function simbriefToProfile(a,id){
+ const icao=String(pick(a,"airframe_list_type","icao","type","aircraft_type")||"SIMBRIEF").toUpperCase();
+ // SimBrief's public airframe list is metadata. Preserve it all; phase performance is merged from a local LNM profile when available.
+ const base=Object.values(state.profiles||{}).find(p=>String(p.icao||p.id).toUpperCase()===icao);
+ let p=base?structuredClone(base):normalize({id:icao,icao,name:pick(a,"airframe_name","name","airframe_comments")||icao,unit:"lb"},icao);
+ p.id=`SB_${id}`; p.icao=icao; p.name=pick(a,"airframe_name","name","airframe_comments")||p.name||icao;
+ p.type=icao;p.callsign=pick(a,"callsign","atc_callsign","airframe_callsign")||p.callsign||"";p.registration=pick(a,"registration","reg","tail_number")||p.registration||"";
+ p.description=pick(a,"airframe_comments","comments","description")||p.description||"";
+ p.simbrief=true;p.simbriefAirframeId=id;p.simbriefAirframe=structuredClone(a);
+ const maxfuel=Number(pick(a,"maxfuel","airframe_maxfuel","max_fuel"));
+ if(Number.isFinite(maxfuel)&&maxfuel>0&&!p.usableFuel)p.usableFuel=maxfuel<1000?maxfuel*1000:maxfuel;
+ return p;
+}
+function profileFromOFP(ofp){
+ const ac=ofp?.aircraft||{}, atc=ofp?.atc||{}, general=ofp?.general||{}, params=ofp?.params||{};
+ const icao=String(pick(ac,"icaocode","icao","type","aircraft_type")||pick(general,"aircraft_type","type")||"SIMBRIEF").toUpperCase();
+ const name=pick(ac,"name","aircraft_name","airframe_name","fullname")||pick(general,"aircraft_name","aircraft")||icao;
+ const callsign=pick(atc,"callsign","flight_number","flightnum")||pick(ac,"callsign","atc_callsign")||pick(params,"callsign")||"";
+ const registration=pick(ac,"reg","registration","tailnumber","tail_number")||"";
+ const airframeId=active?.simbriefAirframeId||pick(ac,"airframe_internal_id","internal_id")||"";
+ const local=Object.values(state.profiles||{}).find(p=>String(p.icao||p.type||p.id).toUpperCase()===icao);
+ const key=`SB_${icao}_${(registration||callsign||airframeId||"latest").replace(/[^A-Za-z0-9_-]/g,"_")}`;
+ let p=local?structuredClone(local):normalize({id:key,icao,type:icao,name,unit:(String(pick(params,"units")||"").toLowerCase().includes("lb")?"lb":"kg"),simbrief:true},key);
+ p.id=key;p.icao=icao;p.type=icao;p.name=name;p.callsign=callsign;p.registration=registration;p.simbrief=true;p.simbriefAirframeId=airframeId||p.simbriefAirframeId||"";
+ const fuel=ofp?.fuel||{};
+ const usable=firstNum(ac,["max_fuel","maxfuel","fuel_capacity","fuelcapacity"]);if(usable!==null)p.usableFuel=usable;
+ const taxi=firstNum(fuel,["taxi","taxi_fuel","taxiout"]);if(taxi!==null)p.taxiFuel=taxi;
+ const reserve=firstNum(fuel,["reserve","reserve_fuel","final_reserve"]);if(reserve!==null)p.reserveFuel=reserve;
+ const extra=firstNum(fuel,["extra","extra_fuel"]);if(extra!==null)p.extraFuel=extra;
+ const cont=firstNum(params,["contpct","cont_percent","contingency_percent"]);if(cont!==null)p.contingencyPercent=cont;
+ p.simbriefSnapshot={fetchedAt:new Date().toISOString(),aircraft:ac,atc,params,times:ofp?.times||{},fuel};
+ return normalize(p,key);
+}
+function applyCalibration(p,c){for(const k of ["climb","cruise","descent"]){let q=c.phases[k],target=p[k]||{};if(q.fuelFlowPerHour!==null)target.fuelFlowPerHour=q.fuelFlowPerHour;if(q.tasKt!==null)target.tasKt=q.tasKt;if(q.rateFpm!==null&&k!=="cruise")target.rateFpm=q.rateFpm;p[k]=target}p.calibration=c;p.description=(p.description||"")+` | OFP calibration ${c.createdAt}`;return p}
+async function importOFPProfile(raw,fileName,source){
+ showJson(raw,fileName,"OFP SimBrief");populatePlanFromOFP(raw);
+ const p=profileFromOFP(raw);setActive(p,source);
+ try{const c=extractOfpCalibration(raw);applyCalibration(p,c);setActive(p,c.partial?"FPL SimBrief — calibration partielle":"FPL SimBrief — calibration complète");await storeOFP(raw,c,fileName);renderCalibration(c);$("ofpStatus").textContent=c.partial?`Profil ${p.name} créé. Calibration partielle : ${c.availablePhases.join(", ")||"aucune phase mesurable"}.`: `Profil ${p.name} créé et calibré depuis le FPL.`;return c}
+ catch(err){await storeOFP(raw,null,fileName);$("ofpStatus").textContent=`Profil ${p.name} créé avec les métadonnées du FPL ; calibration impossible : ${err.message}`;return null}
+}
+async function fetchJsonFirst(urls){
+ let errors=[];
+ for(const url of urls){
+   try{
+     const r=await fetch(url,{cache:"no-store",credentials:"omit"});
+     if(!r.ok){errors.push(`${r.status} ${url}`);continue}
+     const ct=r.headers.get("content-type")||"", txt=await r.text();
+     try{return {data:JSON.parse(txt),url}}catch{errors.push(`réponse non JSON ${url}`)}
+   }catch(e){errors.push(`${e.message} ${url}`)}
+ }
+ throw Error(errors.join(" ; "));
+}
+function findAirframeObject(obj,id){
+ if(!obj||typeof obj!=="object")return null;
+ if(String(obj.airframe_internal_id||obj.internal_id||obj.id||"")===id)return obj;
+ for(const v of Object.values(obj)){if(v&&typeof v==="object"){const f=findAirframeObject(v,id);if(f)return f}}
+ return null;
+}
+async function resolveSimbriefAirframe(id){
+ // 1) La liste publique reste le chemin le plus léger pour les profils qui y figurent.
+ try{
+   const r=await fetch("https://www.simbrief.com/api/inputs.airframes.json",{cache:"no-store"});
+   if(r.ok){const data=await r.json(),a=findAirframeObject(data,id);if(a)return {airframe:a,source:"inputs.airframes.json"}}
+ }catch{}
+ // 2) Un Internal ID personnalisé est officiellement un identifiant de TYPE pour Dispatch.
+ // Il n'existe pas, dans la doc publique, d'endpoint de lecture d'airframe personnel par ID seul.
+ // On tente les représentations JSON usuelles du lien de partage, sans prétendre qu'elles sont garanties.
+ const share=`https://dispatch.simbrief.com/airframes/share/${encodeURIComponent(id)}`;
+ try{
+   const got=await fetchJsonFirst([
+     `${share}?format=json`, `${share}.json`,
+     `https://dispatch.simbrief.com/api/airframes/share/${encodeURIComponent(id)}`
+   ]);
+   const a=findAirframeObject(got.data,id)||got.data;
+   return {airframe:a,source:got.url};
+ }catch{}
+ // 3) On conserve néanmoins l'Internal ID comme profil valide SimBrief.
+ // La génération Dispatch officielle pourra l'utiliser comme "type".
+ return {airframe:{airframe_internal_id:id,name:`SimBrief ${id}`},source:"internal-id-only",partial:true};
+}
+$("sbAirframeBtn").onclick=async()=>{
+ const raw=$("sbAirframeId").value.trim(); if(!raw)return;
+ const m=raw.match(/(\d+_\d+)/), id=m?m[1]:raw;
+ $("sbAirframeId").value=id;
+ $("sbStatus").textContent="Résolution de l’airframe SimBrief…";
+ try{
+   const res=await resolveSimbriefAirframe(id), p=simbriefToProfile(res.airframe,id);
+   setActive(p,res.partial?"SimBrief Internal ID":"SimBrief airframe");
+   await cachePut(`airframe:${id}`,{fetchedAt:new Date().toISOString(),source:res.source,airframe:res.airframe});
+   const hasPerf=p.cruise?.fuelFlowPerHour&&p.climb?.fuelFlowPerHour&&p.descent?.fuelFlowPerHour;
+   if(res.partial){
+     $("sbStatus").innerHTML=`Internal ID accepté : <b>${id}</b>. Il est utilisable comme <code>type</code> par l’API Dispatch SimBrief. SimBrief ne documente toutefois pas d’endpoint public permettant de lire les données complètes d’un airframe personnel à partir de cet ID seul. ${hasPerf?"Les performances LNM locales correspondantes ont été conservées.":"Charge un .lnmperf correspondant pour les performances LNM."}`;
+   }else{
+     $("sbStatus").textContent=`Airframe importé (${res.source}). ${hasPerf?"Performances LNM disponibles.":"Charge un .lnmperf correspondant pour compléter TAS, vario et débits."}`;
+   }
+ }catch(e){$("sbStatus").textContent="Échec : "+e.message}
+};
+$("exportLnmBtn").onclick=()=>{
+ try{commitProfileEditor(false);downloadText(`${(active.icao||active.id).replace(/[^\w.-]+/g,"_")}_${active.simbriefAirframeId||"profile"}.lnmperf`,toLnmperf(active),"application/xml")}catch(e){$("profileEditStatus").textContent=e.message}
+};
+
+async function cachePut(key,obj){return new Promise((res,rej)=>{let q=indexedDB.open("FlightPerfCache",1);q.onupgradeneeded=()=>q.result.createObjectStore("cache");q.onsuccess=()=>{let tx=q.result.transaction("cache","readwrite");tx.objectStore("cache").put(obj,key);tx.oncomplete=res;tx.onerror=rej}})}
+async function cacheGet(key){return new Promise((res,rej)=>{let q=indexedDB.open("FlightPerfCache",1);q.onupgradeneeded=()=>q.result.createObjectStore("cache");q.onsuccess=()=>{let tx=q.result.transaction("cache","readonly");let r=tx.objectStore("cache").get(key);r.onsuccess=()=>res(r.result);r.onerror=rej}})}
+async function storeOFP(raw,calibration,fileName){const saved={raw,calibration,fileName,fetchedAt:new Date().toISOString()};await cachePut("lastOFP",saved);state.lastOFP={fileName,fetchedAt:saved.fetchedAt,calibration};return saved}
+async function loadOFP(){return await cacheGet("lastOFP")}
+const n=v=>{let x=Number(String(v??"").replace(/,/g,""));return Number.isFinite(x)?x:null};
+const firstNum=(o,keys)=>{for(const k of keys){let v=o?.[k];if(v&&typeof v==="object")v=v["#text"]??v.text??v.value;let x=n(v);if(x!==null)return x}return null};
+const firstText=(o,keys)=>{for(const k of keys){let v=o?.[k];if(v&&typeof v==="object")v=v["#text"]??v.text??v.value;if(v!==undefined&&v!==null&&String(v).trim())return String(v).trim()}return ""};
+function findNavlog(o){if(!o||typeof o!=="object")return null;if(Array.isArray(o)&&o.length>1&&o.some(x=>typeof x==="object"&&firstNum(x,["altitude_feet","altitude","time_total","fuel_total"])!==null))return o;for(const [k,v] of Object.entries(o)){if(/navlog|waypoints?|fixes|fix/i.test(k)){if(Array.isArray(v))return v;if(Array.isArray(v?.fix))return v.fix;if(Array.isArray(v?.waypoint))return v.waypoint}if(v&&typeof v==="object"){let r=findNavlog(v);if(r)return r}}return null}
+function normalizeTime(v){let s=String(v??"").trim(),m=s.match(/^(\d+):(\d+)(?::(\d+))?$/);if(m)return +m[1]*60 + +m[2] + +(m[3]||0)/60;if(/^\d{3,4}$/.test(s)){let h=+s.slice(0,-2),min=+s.slice(-2);if(min<60)return h*60+min}let x=n(s);return x!==null?(x>10000?x/60:x):null}
+function extractOfpCalibration(ofp){
+ const nav=findNavlog(ofp); if(!nav||nav.length<2)throw Error("Navlog/waypoints exploitable absent : aucune calibration par phase possible.");
+ const pts=nav.map((x,i)=>({raw:x,i,alt:firstNum(x,["altitude_feet","altitude","altitude_ft","altitudefeet"]),time:normalizeTime(firstText(x,["time_total","time_enroute","time","time_remain"])),fuel:firstNum(x,["fuel_total","fuel_enroute","fuel","fuel_remain"]),dist:firstNum(x,["distance_total","distance","dist_total","distance_nm"]),airDist:firstNum(x,["air_distance","air_distance_nm","airdist"])}));
+ const maxAlt=Math.max(...pts.map(p=>p.alt??-Infinity)); if(!Number.isFinite(maxAlt))throw Error("Altitudes du navlog absentes : phases non identifiables sans les inventer.");
+ const cruiseFloor=maxAlt*.98; let phaseOf=i=>{let p=pts[i],q=pts[Math.max(0,i-1)];if(i===0)return "climb";if((p.alt??0)>=cruiseFloor)return "cruise";if((p.alt??0)>(q.alt??0)+100)return "climb";if((p.alt??0)<(q.alt??0)-100)return "descent";return i<pts.findIndex(z=>(z.alt??0)>=cruiseFloor)?"climb":"descent"};
+ const groups={climb:[],cruise:[],descent:[]};for(let i=1;i<pts.length;i++)groups[phaseOf(i)].push([pts[i-1],pts[i]]);
+ const phase=(name,segs)=>{let time=0,fuel=0,dist=0,air=0,altDelta=0,hasAir=false,source=[];for(const [a,b] of segs){let dt=a.time!==null&&b.time!==null?Math.abs(b.time-a.time):null;let df=a.fuel!==null&&b.fuel!==null?Math.abs(b.fuel-a.fuel):null;let dd=a.dist!==null&&b.dist!==null?Math.abs(b.dist-a.dist):null;let da=a.airDist!==null&&b.airDist!==null?Math.abs(b.airDist-a.airDist):null;if(dt!==null&&dt>0){time+=dt;if(df!==null)fuel+=df;if(dd!==null)dist+=dd;if(da!==null){air+=da;hasAir=true}if(a.alt!==null&&b.alt!==null)altDelta+=b.alt-a.alt}source.push(`${a.i}→${b.i}`)}
+  let ff=time&&fuel?fuel/(time/60):null, speed=time?(hasAir?air:dist)/(time/60):null, vr=time&&altDelta?Math.abs(altDelta)/time:null;
+  return {name,source:source.join(", "),timeMin:time||null,fuel:fuel||null,distanceNm:dist||null,airDistanceNm:hasAir?air:null,fuelFlowPerHour:ff,tasKt:hasAir?speed:null,groundSpeedKt:!hasAir?speed:null,rateFpm:vr,estimated:!hasAir&&speed!==null,altitudeDeltaFt:altDelta||null};};
+ const r={climb:phase("climb",groups.climb),cruise:phase("cruise",groups.cruise),descent:phase("descent",groups.descent)};
+ const available=Object.values(r).filter(p=>p.timeMin&&p.fuelFlowPerHour!==null).map(p=>p.name);
+ return {schema:"flight-perf/ofp-calibration-v1",createdAt:new Date().toISOString(),ofpTimestamp:firstText(ofp?.params||ofp,["time_generated","generated","created_at"])||null,airframeId:active?.simbriefAirframeId||null,aircraft:{icao:firstText(ofp?.aircraft||{},["icaocode","type"]),name:firstText(ofp?.aircraft||{},["name","reg"])},phases:r,availablePhases:available,partial:available.length<3,notes:["Distance air uniquement quand le navlog l’expose.","Une vitesse issue de distance sol est affichée comme GS et n’est pas écrite en TAS dans le profil.",available.length===3?"Trois phases mesurées.":`Calibration partielle : ${available.join(", ")||"aucune phase mesurable"}. Les autres valeurs sont laissées intactes.`]};
+}
+function renderCalibration(c){
+ const u=fuelUnit(), rows=Object.values(c.phases).map(p=>`<tr><td>${p.name}</td><td>${p.source}</td><td>${fmt(p.timeMin,1)} min</td><td>${fmt(p.airDistanceNm??p.distanceNm,1)} NM${p.airDistanceNm===null?" sol":" air"}</td><td>${showFuel(p.fuel)} ${u}</td><td>${showFuel(p.fuelFlowPerHour)} ${u}/h</td><td>${p.tasKt?fmt(p.tasKt)+" TAS":p.groundSpeedKt?fmt(p.groundSpeedKt)+" GS (estimé)":"—"}</td><td>${fmt(p.rateFpm)} ft/min</td></tr>`).join("");
+ $("ofpAudit").innerHTML=rows;$("calibrationMeta").innerHTML=[["OFP analysé",c.createdAt],["Airframe SimBrief",c.airframeId||"non associé"],["Provenance",c.ofpTimestamp||"timestamp absent"],["TAS",Object.values(c.phases).some(p=>p.tasKt)?"distance air navlog":"non disponible — aucune TAS écrite"]].map(x=>`<div>${x[0]}</div><div>${x[1]}</div>`).join("");
+}
+$("ofpFileBtn").onclick=()=>$("ofpFile").click();
+$("ofpFile").onchange=async e=>{try{const f=e.target.files[0];if(!f)return;const raw=JSON.parse(await f.text());showJson(raw,f.name);if(!isSimbriefOfp(raw))$("ofpStatus").textContent="JSON chargé, mais structure SimBrief non reconnue automatiquement ; tentative d’analyse…";await importOFPProfile(raw,f.name,"OFP JSON importé");save()}catch(err){$("ofpStatus").textContent="OFP refusé : "+err.message}finally{e.target.value=""}};
+$("calibrateBtn").onclick=async()=>{try{if(!active)throw Error("Récupère d’abord un FPL SimBrief ou choisis un profil.");let saved=await loadOFP();if(!saved?.calibration)throw Error("Récupère d’abord le dernier FPL ou importe un OFP JSON exploitable.");const c=saved.calibration;applyCalibration(active,c);setActive(active,"calibration OFP SimBrief");await cachePut(`calibration:${active.simbriefAirframeId||active.id}`,c);renderCalibration(c);$("ofpStatus").textContent=c.partial?`Calibration partielle appliquée : ${c.availablePhases.join(", ")||"aucune phase"}. Les autres valeurs restent vides.`:"Calibration complète appliquée."}catch(err){$("ofpStatus").textContent="Calibration non appliquée : "+err.message}};
+$("exportAuditBtn").onclick=async()=>{let saved=await loadOFP();if(!saved?.calibration)return alert("Aucun audit OFP à exporter.");downloadText(`simbrief_ofp_audit_${saved.calibration.createdAt.replace(/[:.]/g,"-")}.json`,JSON.stringify(saved,null,2),"application/json")};
+$("simBtn").onclick=async()=>{
+ try{
+  $("simBtn").disabled=true;$("source").textContent="SimBrief : récupération du dernier FPL…";
+  const u=state.simbriefUser||"Woyczek";
+  const ofp=await fetch(`https://www.simbrief.com/api/xml.fetcher.php?username=${encodeURIComponent(u)}&json=v2`).then(r=>{if(!r.ok)throw Error("SimBrief HTTP "+r.status);return r.json()});
+  await importOFPProfile(ofp,"SimBrief dernier FPL — "+u,"SimBrief : dernier FPL");
+  $("source").textContent=`SimBrief : dernier FPL ${active?.name||active?.icao||""} chargé`;
+ }catch(e){$("source").textContent="SimBrief indisponible";$("ofpStatus").textContent="Récupération directe impossible : "+e.message+". Importe le JSON OFP téléchargé depuis SimBrief."}finally{$("simBtn").disabled=false}
+};
+function listAircraft(){const all=Object.values(state.profiles||{}).sort((a,b)=>{let x=profileVisual(a),y=profileVisual(b);return x[0].localeCompare(y[0],"fr")||a.name.localeCompare(b.name,"fr",{numeric:true})}),groups=new Map();for(const p of all){let g=profileVisual(p);if(!groups.has(g[0]))groups.set(g[0],[]);groups.get(g[0]).push([p,g])}$("aircraftMenu").innerHTML=[...groups].map(([label,items])=>`<div class="aircraft-group">${label}</div>`+items.map(([p,g])=>`<button class="aircraft-item ${active?.id===p.id?"active":""}" type="button" role="menuitemradio" data-id="${escXml(p.id)}"><span>${aircraftIcon(p)}</span><span class="aircraft-current-text">${escXml(p.name||p.id)}</span><span class="ac-meta">${escXml(g[2])}</span></button>`).join("")).join("")||'<div class="mut" style="padding:8px">Aucun profil. Importe un fichier ou choisis le dossier performances.</div>';document.querySelectorAll(".aircraft-item").forEach(x=>x.onclick=()=>{setActive(state.profiles[x.dataset.id],"cache local");closeHeaderMenus()})}
+$("aircraftCurrent").onclick=e=>{e.stopPropagation();let open=$("aircraftMenu").hidden;closeHeaderMenus();if(open){listAircraft();$("aircraftMenu").hidden=false;$("aircraftCurrent").setAttribute("aria-expanded","true")}};
+$("languageCurrent").onclick=e=>{e.stopPropagation();let open=$("languageMenu").hidden;closeHeaderMenus();if(open){$("languageMenu").hidden=false;$("languageCurrent").setAttribute("aria-expanded","true")}};
+$("prefsCurrent").onclick=e=>{e.stopPropagation();let open=$("prefsMenu").hidden;closeHeaderMenus();if(open){$("prefsMenu").hidden=false;$("prefsCurrent").setAttribute("aria-expanded","true")}};
+document.querySelectorAll(".lang-item").forEach(b=>b.onclick=()=>{state.uiLanguage=b.dataset.lang;applyHeaderPreferences();closeHeaderMenus();save()});
+$("prefsEditorBtn").onclick=()=>{$("toggleProfileEditor").click();applyHeaderPreferences();closeHeaderMenus()};
+document.addEventListener("click",e=>{if(!e.target.closest(".lang-popup,.prefs-popup,.aircraft-popup"))closeHeaderMenus()});
+restore();applyHeaderPreferences();if(state.lastAircraft&&state.profiles[state.lastAircraft])setActive(state.profiles[state.lastAircraft],"état restauré");else syncAircraftPicker();
+</script>
+<script src="./shared/repository_nav.js"></script>
+<script src="./shared/app_framework.js"></script>
+<script src="./shared/flight_ui.js"></script>
+<script src="./shared/flight_i18n.js"></script>
+</body></html>
