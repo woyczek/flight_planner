@@ -46,7 +46,7 @@
 
   const dialog=document.createElement("dialog");dialog.id="unsavedDialog";dialog.innerHTML='<h2>Modifications non enregistrées</h2><p>Le profil courant a été modifié. Que veux-tu faire avant de changer d’avion ?</p><div class="dialog-actions"><button data-choice="stay">Rester</button><button data-choice="discard">Abandonner et changer</button><button class="primary" data-choice="save">Enregistrer et changer</button></div>';document.body.append(dialog);
   function requestSwitch(p){if(!profileDirty){rawSetActive(p,"base locale");closeHeaderMenus();return}dialog.showModal();dialog.querySelectorAll("button").forEach(b=>b.onclick=()=>{let choice=b.dataset.choice;dialog.close();if(choice==="stay")return;if(choice==="save")saveCurrent();rawSetActive(p,choice==="save"?"profil enregistré puis changé":"modifications abandonnées");closeHeaderMenus()})}
-  listAircraft=function(){rawListAircraft();document.querySelectorAll(".aircraft-item").forEach(x=>x.onclick=()=>requestSwitch(state.profiles[x.dataset.id]))};
+  listAircraft=function(){rawListAircraft();document.querySelectorAll(".aircraft-item").forEach(x=>x.onclick=()=>{const p=x.dataset.landing?newProfileFromLanding(x.dataset.id):state.profiles[x.dataset.id];if(p)requestSwitch(p)})};
   addEventListener("beforeunload",e=>{if(profileDirty){e.preventDefault();e.returnValue=""}});
 
   let curveSort={key:"rpm",dir:1};$("engineCurveTable")?.querySelector("thead").addEventListener("click",e=>{let key=e.target.dataset.sort;if(!key)return;curveSort.key===key?curveSort.dir*=-1:curveSort={key,dir:1};renderProfile()});

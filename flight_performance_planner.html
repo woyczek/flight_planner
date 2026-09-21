@@ -488,20 +488,37 @@ $("simBtn").onclick=async()=>{
   $("source").textContent=`SimBrief : dernier FPL ${active?.name||active?.icao||""} chargé`;
  }catch(e){$("source").textContent="SimBrief indisponible";$("ofpStatus").textContent="Récupération directe impossible : "+e.message+". Importe le JSON OFP téléchargé depuis SimBrief."}finally{$("simBtn").disabled=false}
 };
+/* ===== Avions connus du Landing Performance (cache IndexedDB écrit par la page landing) ===== */
+const LANDING_DB="LandingPerformanceDashboardCache",LANDING_STORE="datasets",LANDING_KEY="lastDataset";
+let landingAircraft=[],landingStamp="";
+function aKey(s){return String(s||"").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Z0-9]/g,"")}
+function readLandingCache(){return new Promise(resolve=>{try{if(!("indexedDB" in window))return resolve(null);const req=indexedDB.open(LANDING_DB,1);
+ req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(LANDING_STORE))req.result.createObjectStore(LANDING_STORE)}; /* même schéma que la page landing : ne jamais créer une base incompatible */
+ req.onerror=()=>resolve(null);req.onsuccess=()=>{const db=req.result;try{const g=db.transaction(LANDING_STORE,"readonly").objectStore(LANDING_STORE).get(LANDING_KEY);g.onsuccess=()=>{db.close();resolve(g.result||null)};g.onerror=()=>{db.close();resolve(null)}}catch{db.close();resolve(null)}}}catch{resolve(null)}})}
+function landingCsvRows(text){const rows=[];let row=[],field="",quoted=false;for(let i=0;i<text.length;i++){const c=text[i];if(quoted){if(c==='"'){if(text[i+1]==='"'){field+='"';i++}else quoted=false}else field+=c}else{if(c==='"')quoted=true;else if(c===","){row.push(field);field=""}else if(c==="\n"){row.push(field);field="";if(row.some(v=>v.trim()!==""))rows.push(row);row=[]}else if(c!=="\r")field+=c}}row.push(field);if(row.some(v=>v.trim()!==""))rows.push(row);return rows}
+/* mêmes règles que la page landing : format riche (colonnes nommées) ou historique (avion en colonne 2) */
+function landingAircraftFromCsv(text){const rows=landingCsvRows(text);if(!rows.length)return [];const first=rows[0].map(x=>x.trim().replace(/^\uFEFF/,"")),hasHeader=first.includes("Timestamp")&&first.includes("Aircraft"),rich=hasHeader&&["Score","TouchdownFPM","PeakG"].every(k=>first.includes(k)),col=k=>first.indexOf(k),out=new Set();
+ for(const r of rows.slice(hasHeader?1:0)){if(!String(r[rich?col("Timestamp"):0]??"").trim())continue;const name=String(rich?(r[col("PLANE_ICAO")]||r[col("ICAO")]||r[col("Aircraft")]||""):(r[1]??"")).trim().toUpperCase();if(name)out.add(name)}return [...out]}
+async function refreshLandingAircraft(){const rec=await readLandingCache(),stamp=rec?`${rec.savedAt}|${rec.size}|${rec.name}`:"";if(stamp===landingStamp)return false;landingStamp=stamp;landingAircraft=rec&&typeof rec.text==="string"?landingAircraftFromCsv(rec.text):[];return true}
+function landingName(code,rec){const m=String(rec?.model||"").trim();return m&&!/^(Aircraft Performance Database|Skip to aircraft details)$/i.test(m)?`${m} (${code})`:code}
+function landingOnlyAircraft(profiles){const db=window.AIRCRAFT_DB||{},resolve=n=>{const k=aKey(n);return db[k]||db[db.__aliases?.[k]]||null},known=new Set();
+ for(const p of profiles)for(const v of [p.id,p.icao,p.type,p.name]){const k=aKey(v);if(!k)continue;known.add(k);const r=resolve(v);if(r?.tdesig)known.add(aKey(r.tdesig))}
+ return landingAircraft.filter(n=>{const r=resolve(n);return !known.has(aKey(n))&&!(r?.tdesig&&known.has(aKey(r.tdesig)))}).map(n=>{const r=resolve(n);return normalize({id:n,icao:r?.tdesig||n,type:r?.tdesig||n,name:landingName(n,r),_landingOnly:true})})}
+function newProfileFromLanding(id){const s=landingOnlyAircraft(Object.values(state.profiles||{}).filter(p=>p&&typeof p==="object").map(p=>normalize(p))).find(p=>p.id===id);return s?normalize({id:s.id,icao:s.icao,type:s.type,name:s.name,description:"Créé depuis le Landing Performance : perfs à renseigner."}):null}
 function listAircraft(){
  const profiles=Object.values(state.profiles||{}).filter(p=>p&&typeof p==="object"&&String(p.id||p.icao||p.type||p.name||"").trim()).map(p=>normalize(p));
- const all=profiles.sort((a,b)=>{let x=profileVisual(a),y=profileVisual(b),group=String(x[0]||"").localeCompare(String(y[0]||""),"fr");return group||String(a.name||a.id||"").localeCompare(String(b.name||b.id||""),"fr",{numeric:true})}),groups=new Map();
+ const all=[...profiles,...landingOnlyAircraft(profiles)].sort((a,b)=>{let x=profileVisual(a),y=profileVisual(b),group=((x[0]==="Autres")-(y[0]==="Autres"))||String(x[0]||"").localeCompare(String(y[0]||""),"fr");return group||String(a.name||a.id||"").localeCompare(String(b.name||b.id||""),"fr",{numeric:true})}),groups=new Map();
  for(const p of all){let g=profileVisual(p);if(!groups.has(g[0]))groups.set(g[0],[]);groups.get(g[0]).push([p,g])}
- $("aircraftMenu").innerHTML=[...groups].map(([label,items])=>`<div class="aircraft-group">${escXml(label)}</div>`+items.map(([p,g])=>`<button class="aircraft-item ${active?.id===p.id?"active":""}" type="button" role="menuitemradio" aria-checked="${active?.id===p.id}" data-id="${escXml(p.id)}"><span>${aircraftIcon(p)}</span><span class="aircraft-current-text">${escXml(p.name||p.id)}</span><span class="ac-meta">${escXml(g[2]||"")}</span></button>`).join("")).join("")||'<div class="mut" style="padding:8px">Aucun profil. Importe un fichier ou choisis le dossier performances.</div>';
- $("aircraftMenu").querySelectorAll(".aircraft-item").forEach(x=>x.onclick=()=>{const p=state.profiles?.[x.dataset.id];if(p)setActive(p,"cache local");closeHeaderMenus()})
+ $("aircraftMenu").innerHTML=[...groups].map(([label,items])=>`<div class="aircraft-group">${escXml(label)}</div>`+items.map(([p,g])=>`<button class="aircraft-item ${active?.id===p.id?"active":""}" type="button" role="menuitemradio" aria-checked="${active?.id===p.id}" data-id="${escXml(p.id)}"${p._landingOnly?` data-landing="1" title="Connu du Landing Performance, pas encore de profil : un profil vide sera créé"`:""}><span>${aircraftIcon(p)}</span><span class="aircraft-current-text">${escXml(p.name||p.id)}</span><span class="ac-meta">${escXml(g[2]||"")}${p._landingOnly?" · landing":""}</span></button>`).join("")).join("")||'<div class="mut" style="padding:8px">Aucun avion. Importe un profil, choisis le dossier performances ou charge des atterrissages dans le Landing Performance.</div>';
+ $("aircraftMenu").querySelectorAll(".aircraft-item").forEach(x=>x.onclick=()=>{const p=x.dataset.landing?newProfileFromLanding(x.dataset.id):state.profiles?.[x.dataset.id];if(p)setActive(p,x.dataset.landing?"avion du Landing Performance":"cache local");closeHeaderMenus()})
 }
-$("aircraftCurrent").onclick=e=>{e.stopPropagation();let open=$("aircraftMenu").hidden;closeHeaderMenus();if(open){listAircraft();$("aircraftMenu").hidden=false;$("aircraftCurrent").setAttribute("aria-expanded","true")}};
+$("aircraftCurrent").onclick=e=>{e.stopPropagation();let open=$("aircraftMenu").hidden;closeHeaderMenus();if(open){listAircraft();$("aircraftMenu").hidden=false;$("aircraftCurrent").setAttribute("aria-expanded","true");refreshLandingAircraft().then(changed=>{if(changed&&!$("aircraftMenu").hidden)listAircraft()})}};
 $("languageCurrent").onclick=e=>{e.stopPropagation();let open=$("languageMenu").hidden;closeHeaderMenus();if(open){$("languageMenu").hidden=false;$("languageCurrent").setAttribute("aria-expanded","true")}};
 $("prefsCurrent").onclick=e=>{e.stopPropagation();let open=$("prefsMenu").hidden;closeHeaderMenus();if(open){$("prefsMenu").hidden=false;$("prefsCurrent").setAttribute("aria-expanded","true")}};
 document.querySelectorAll(".lang-item").forEach(b=>b.onclick=()=>{state.uiLanguage=b.dataset.lang;applyHeaderPreferences();closeHeaderMenus();save()});
 $("prefsEditorBtn").onclick=()=>{$("toggleProfileEditor").click();applyHeaderPreferences();closeHeaderMenus()};
 document.addEventListener("click",e=>{if(!e.target.closest(".lang-popup,.prefs-popup,.aircraft-popup"))closeHeaderMenus()});
-restore();applyHeaderPreferences();if(state.lastAircraft&&state.profiles[state.lastAircraft])setActive(state.profiles[state.lastAircraft],"état restauré");else syncAircraftPicker();
+refreshLandingAircraft();restore();applyHeaderPreferences();if(state.lastAircraft&&state.profiles[state.lastAircraft])setActive(state.profiles[state.lastAircraft],"état restauré");else syncAircraftPicker();
 </script>
 <script src="./shared/repository_nav.js"></script>
 <script src="./shared/app_framework.js"></script>

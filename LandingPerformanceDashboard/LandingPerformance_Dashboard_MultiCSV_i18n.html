@@ -77,8 +77,10 @@ tr:hover td{background:#1b2028}.small{font-size:12px;color:var(--muted)}.file-na
 .aircraft-current-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
 .aircraft-current-text{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
 .aircraft-current .caret{font-size:10px;color:var(--muted);margin-left:auto}
-.aircraft-menu{position:absolute;top:calc(100% + 5px);left:0;z-index:50;min-width:260px;max-width:340px;max-height:65vh;overflow:auto;padding:5px;background:#101319;border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.38)}
+.aircraft-menu{position:absolute;top:calc(100% + 5px);left:0;z-index:50;min-width:290px;max-width:420px;max-height:65vh;overflow:auto;padding:5px;background:#101319;border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.38)}
 .aircraft-menu[hidden]{display:none}
+.aircraft-group{margin:7px 7px 3px;padding:5px 2px 3px;border-bottom:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:650;text-transform:uppercase;letter-spacing:.04em}
+.aircraft-item.profile-only .ac-label{opacity:.78}
 .aircraft-item{width:100%;display:flex;align-items:center;gap:6px;padding:6px 7px;border:0;background:transparent;text-align:left;border-radius:5px;color:var(--text)}
 .aircraft-item:hover,.aircraft-item:focus{background:#1d222b}
 .aircraft-item.active{background:#202735}
@@ -1161,7 +1163,7 @@ function aircraftWingPosition(rec){
   if(/EC35|H135|EC45|H145|AS50|H125|AS65|S76|CH47|SA342|ALOUETTE/.test(key))return "rotor";
   if(/DHC2|DHC3|DHC5|DHC6|DHC7|DH8|Q400|AT42|AT45|AT46|AT72|AT75|AT76|ATR|L410|D228|DO228|C212|CN35|C295|C208|C206|C182|C172|C152|BN2|ISLANDER|TRISLANDER|F27|F50|SF34|SH33|SH36|A4M|A400|XC47C/.test(key))return "high";
   if(/AMPHIB|FLOAT|HYDRA|SEAPLANE/.test(key))return "water";
-  if(/STEARMAN|TIGERMOTH|BIPLANE|AN2/.test(key))return "biplane";
+  if(/STEARMAN|TIGERMOTH|BIPLANE/.test(key)||String(rec?.tdesig||"").toUpperCase()==="AN2")return "biplane";
   if(/PC12|BE58|B350|BE9L|C750|S210|MD88|DC3|P51|EPIC/.test(key))return "low";
   return "unknown";
 }
@@ -1231,7 +1233,7 @@ function aircraftVisualKey(rec){
   if(/DIRIGEABLE|BLIMP|AIRSHIP|ZEPPELIN/.test(k))return "other";
   if(/FIGHTER|CHASSEUR|RAFALE|MIRAGE|F16|F18|F35|EUROFIGHTER|TORNADO|MIG|SU[0-9]/.test(k))return "fighter";
   if(s.family==="A"||s.family==="S"||/HYDRAVION|SEAPLANE|FLOATPLANE|AMPHIB|XC47C/.test(k))return "seaplane";
-  if(/BIPLANE|BIPLAN|STEARMAN|TIGERMOTH|AN2/.test(k))return "biplane";
+  if(/BIPLANE|BIPLAN|STEARMAN|TIGERMOTH/.test(k)||String(rec?.tdesig||"").toUpperCase()==="AN2")return "biplane";
   if(s.power==="P"||s.power==="T"||s.power==="E"){
     if(/P51|MUSTANG/.test(k))return "fighter";
     if(s.engines>=4)return /A4M|A400/.test(k)?"quadHigh":"quadProp";
@@ -1245,7 +1247,7 @@ function aircraftVisualKey(rec){
   }
   if(s.power==="J"){
     if(s.engines>=4)return "quadJet";
-    if(/CITATION|LEAR|GULFSTREAM|FALCON|CHALLENGER|PHENOM|HAWKER|GLOBAL|C750|LJ|GLF|FA[0-9]/.test(k))return "bizJet";
+    if(/CITATION|LEAR|GULFSTREAM|FALCON|CHALLENGER|PHENOM|HAWKER|GLOBAL|C750|LJ|GLF|FA[0-9]/.test(k)||/^(C25[ABC]|C50[01]|C510|C52[56]|C55[01]|C560|C56X|C650|C68[A]?|C700|C750|CL30|CL35|CL60|E50P|E55P|EA50|FA[0-9]X?|FA50|FA7X|FA8X|GALX|GLEX|GL[5-7]T|GLF[2-7]|H25[ABC]|HDJT|LJ[0-9]{2}|PRM1|SF50|BE40|PC24|ASTR|WW24)$/.test(String(rec?.tdesig||"").toUpperCase()))return "bizJet";
     return "twinJet";
   }
   return "other";
@@ -1281,7 +1283,7 @@ function closeAircraftMenu(){
 }
 function toggleAircraftMenu(){
   const willOpen=$("aircraftMenu").hidden;
-  if(willOpen){closeLanguageMenu();closeOptionsMenu();}
+  if(willOpen){closeLanguageMenu();closeOptionsMenu();if(allRows.length)rebuildAircraftSelect();}
   $("aircraftMenu").hidden=!willOpen;
   $("aircraftCurrent").setAttribute("aria-expanded",willOpen?"true":"false");
 }
@@ -1293,12 +1295,30 @@ function setAircraftSelection(value,fire=true){
   syncAircraftPicker();
   if(fire && changed)select.dispatchEvent(new Event("change",{bubbles:true}));
 }
+const AIRCRAFT_GROUP_LABELS={"Hélicoptères":{fr:"Hélicoptères",en:"Helicopters",de:"Hubschrauber",es:"Helicópteros"},"Jets":{fr:"Jets",en:"Jets",de:"Jets",es:"Jets"},"Monomoteurs":{fr:"Monomoteurs",en:"Single-engine",de:"Einmotorige",es:"Monomotores"},"Turboprops / bimoteurs":{fr:"Turboprops / bimoteurs",en:"Turboprops / twins",de:"Turboprops / Zweimotorige",es:"Turbohélices / bimotores"},"Autres":{fr:"Autres",en:"Other",de:"Andere",es:"Otros"}};
+const AIRCRAFT_PROFILE_WORD={fr:"profil",en:"profile",de:"Profil",es:"perfil"};
+const AIRCRAFT_PROFILE_TIP={fr:"Profil du Flight Performance : aucun atterrissage enregistré pour cet avion",en:"Flight Performance profile: no landing recorded for this aircraft",de:"Flight-Performance-Profil: keine Landung für dieses Flugzeug gespeichert",es:"Perfil de Flight Performance: ningún aterrizaje registrado para este avión"};
+function aircraftGroupOf(code){const g=window.AircraftDBIcons?.group?.({icao:code,type:code,id:code,name:code});return g&&g[0]||"Autres"}
+/* avions ayant un profil dans le Flight Performance (même stockage navigateur) et sans atterrissage dans les données chargées */
+function profileOnlyAircraft(landingCodes){
+  let profiles=[];try{const st=JSON.parse(localStorage.getItem("flightPerfState")||"null");profiles=Object.values(st?.profiles||{})}catch(e){}
+  const db=aircraftDbCache(),resolveKey=n=>{const k=normalizeAircraftKey(n),r=db[k]||db[db.__aliases?.[k]];return [k,r?.tdesig?normalizeAircraftKey(r.tdesig):k]};
+  const known=new Set();landingCodes.forEach(a=>resolveKey(a).forEach(k=>k&&known.add(k)));
+  const out=[];
+  for(const p of profiles){if(!p||typeof p!=="object")continue;const code=String(p.icao||p.type||p.id||"").trim().toUpperCase();if(!code)continue;const keys=resolveKey(code);if(keys.some(k=>known.has(k)))continue;keys.forEach(k=>known.add(k));out.push(code)}
+  return out;
+}
 function rebuildAircraftSelect(){
-  const s=$("aircraftSelect"),menu=$("aircraftMenu"),old=s.value||prefs.aircraft||"__ALL__",as=[...new Set(allRows.map(r=>r.Aircraft))].sort(compareAircraftForMenu);
-  s.innerHTML=`<option value="__ALL__">${esc(t("all"))}</option>`+as.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join("");
+  const s=$("aircraftSelect"),menu=$("aircraftMenu"),old=s.value||prefs.aircraft||"__ALL__",landing=[...new Set(allRows.map(r=>r.Aircraft))],
+    entries=[...landing.map(value=>({value,profile:false})),...(allRows.length?profileOnlyAircraft(landing).map(value=>({value,profile:true})):[])],
+    L=k=>(k[lang]||k.en),groups=new Map();
+  s.innerHTML=`<option value="__ALL__">${esc(t("all"))}</option>`+entries.map(e=>`<option value="${esc(e.value)}">${esc(e.value)}</option>`).join("");
   s.value=[...s.options].some(o=>o.value===old)?old:"__ALL__";
+  for(const e of entries){const g=aircraftGroupOf(e.value);if(!groups.has(g))groups.set(g,[]);groups.get(g).push(e)}
+  const ordered=[...groups].sort((a,b)=>((a[0]==="Autres")-(b[0]==="Autres"))||a[0].localeCompare(b[0],"fr"));
   menu.innerHTML=`<button class="aircraft-item" type="button" role="menuitemradio" data-value="__ALL__">${aircraftAllIconHTML()}<span class="ac-label">${esc(t("all"))}</span></button>`+
-    as.map(a=>`<button class="aircraft-item" type="button" role="menuitemradio" data-value="${esc(a)}">${aircraftIconHTML(a)}<span class="ac-label">${esc(a)}</span><span class="ac-meta">${esc(aircraftTypeLabel(a))}</span></button>`).join("");
+    ordered.map(([g,items])=>`<div class="aircraft-group">${esc(L(AIRCRAFT_GROUP_LABELS[g]||AIRCRAFT_GROUP_LABELS["Autres"]))}</div>`+
+      items.sort((a,b)=>String(a.value).localeCompare(String(b.value),undefined,{numeric:true,sensitivity:"base"})).map(e=>`<button class="aircraft-item${e.profile?" profile-only":""}" type="button" role="menuitemradio" data-value="${esc(e.value)}"${e.profile?` title="${esc(L(AIRCRAFT_PROFILE_TIP))}"`:""}>${aircraftIconHTML(e.value)}<span class="ac-label">${esc(e.value)}</span><span class="ac-meta">${esc(aircraftTypeLabel(e.value))}${e.profile?" · "+esc(L(AIRCRAFT_PROFILE_WORD)):""}</span></button>`).join("")).join("");
   syncAircraftPicker();
 }
 function languageFlagSvg(code){
