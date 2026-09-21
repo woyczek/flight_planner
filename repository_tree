@@ -1,0 +1,15 @@
+window.REPOSITORY_TREE={
+  version:1,
+  defaults:{theme:"flight",language:true},
+  themes:{
+    gaar:{bar:"#773131",barText:"#ffffff",page:"#ffffff",accent:"#773131",favicon:"assets/favicon-gaar.svg"},
+    landing:{bar:"#101319",barText:"#eef3f7",page:"#0d1015",accent:"#69a7ff",favicon:"assets/favicon-landing.svg"},
+    flight:{bar:"#101317",barText:"#eef3f7",page:"#101317",accent:"#71b7ff",favicon:"assets/favicon-flight.svg"}
+  },
+  pages:[
+    {path:"GAAR/mission_stats.html",menu:"GAAR/Statistiques missions",label:"Statistiques missions",theme:"gaar",language:false},
+    {path:"GAAR/DEFA-Virtual.cr.gen.securite-civile.html",menu:"GAAR/Sécurité civile CR",label:"Sécurité civile CR",theme:"gaar",language:false},
+    {path:"LandingPerformanceDashboard/LandingPerformance_Dashboard_MultiCSV_i18n.html",menu:"Landing Performance Dashboard",label:"Landing Performance Dashboard",theme:"landing",language:true},
+    {path:"flight_performance_planner.html",menu:"Flight Performance & Fuel Planner",label:"Flight Performance & Fuel Planner",theme:"flight",language:true}
+  ]
+};
