@@ -45,6 +45,7 @@
     importError: L('Import impossible', 'Import failed', 'Import fehlgeschlagen', 'Importación imposible'),
     knownAircraft: L('Appareil connu : type, catégorie, indicatif et équipements repris (dernier enregistrement)', 'Known aircraft: type, category, callsign and equipment filled in (latest record)', 'Bekanntes Luftfahrzeug: Muster, Kategorie, Rufzeichen und Ausrüstung übernommen (letzter Eintrag)', 'Aeronave conocida: tipo, categoría, indicativo y equipamiento completados (último registro)'),
     unknownType: L('Type inconnu : il sera ajouté à la base locale lors de l’enregistrement', 'Unknown type: it will be added to the local base when saved', 'Unbekanntes Muster: wird beim Speichern der lokalen Datenbank hinzugefügt', 'Tipo desconocido: se añadirá a la base local al guardar'),
+    publicVersion: L('Version publique (données sensibles masquées : CR, impression, export)', 'Public version (sensitive data hidden: report, print, export)', 'Öffentliche Fassung (sensible Daten ausgeblendet: Bericht, Druck, Export)', 'Versión pública (datos sensibles ocultos: informe, impresión, exportación)'),
     reportTitle: L('Compte rendu', 'Report', 'Bericht', 'Informe'),
     render: L('Générer / actualiser le CR', 'Generate / refresh report', 'Bericht erzeugen / aktualisieren', 'Generar / actualizar el informe'),
     print: L('PDF / Imprimer', 'PDF / Print', 'PDF / Drucken', 'PDF / Imprimir'),
@@ -94,7 +95,8 @@
         <input type="file" accept=".yaml,.yml,.json,application/json,text/yaml" hidden></div>
         <p class="small mc-ledger-info"></p><p class="small mc-status"></p></section>
       <section class="mc-report-panel" data-block-id="mc-report"><h2></h2><div class="row mc-report-actions">
-        <button type="button" class="primary" data-action="render"></button><button type="button" class="secondary" data-action="print"></button></div>
+        <button type="button" class="primary" data-action="render"></button><button type="button" class="secondary" data-action="print"></button>
+        <label class="mc-public" hidden><input type="checkbox" data-action="public"> <span></span></label></div>
         <div class="report" id="mcReport"></div></section></form>
       <aside class="mc-aside"><div class="panel mc-kpi-panel"><h2></h2><div class="mc-kpi"></div><h3></h3><div class="small mc-context"></div></div></aside>`;
     const form = root.querySelector('form'), status = root.querySelector('.mc-status');
@@ -107,6 +109,9 @@
     root.querySelector('.mc-controls h2').textContent = t('ledgerTitle');
     root.querySelector('.mc-kpi-panel h2').textContent = t('kpiTitle');
     root.querySelector('.mc-report-panel h2').textContent = t('reportTitle');
+    // Familles avec champs sensibles (ex. LAW ENFORCEMENT) : version publique du CR.
+    const publicBox = root.querySelector('.mc-public'), isPublic = () => publicBox.querySelector('input').checked;
+    publicBox.hidden = !M.hasSensitive(family); publicBox.querySelector('span').textContent = t('publicVersion');
     root.querySelector('.mc-kpi-panel h3').textContent = t('context');
     root.querySelector('.mc-edit-banner h2').textContent = t('editBanner');
 
@@ -188,7 +193,8 @@
     let reportRows = [];
     function renderReport() {
       if (!window.MissionReport) return;
-      const { html, rows } = window.MissionReport.render(mission, family, view.context() || view.refresh());
+      const shown = isPublic() ? M.redact(mission, family) : mission;
+      const { html, rows } = window.MissionReport.render(shown, family, view.context() || view.refresh());
       root.querySelector('#mcReport').innerHTML = html;
       reportRows = rows; registerI18n();
     }
@@ -231,6 +237,7 @@
 
     $a('store').onclick = () => store();
     $a('render').onclick = () => renderReport();
+    $a('public').onchange = () => renderReport();
     // Impression : seul le compte rendu est imprimé (voir core.css, @media print).
     $a('print').onclick = () => { renderReport(); window.print(); };
     window.addEventListener('repository-language-change', () => setTimeout(renderReport));
@@ -266,9 +273,11 @@
     };
     $a('export').onclick = () => {
       mission.statistics = M.computeStatistics(mission);
-      const name = `${mission.metadata.missionId || family.id}_${mission.metadata.date || 'mission'}.yaml`.replace(/[\\/:*?"<>| ]+/g, '_');
+      // Version publique cochée : export expurgé des données sensibles (suffixe _public).
+      const exported = isPublic() ? M.redact(mission, family) : mission;
+      const name = `${mission.metadata.missionId || family.id}_${mission.metadata.date || 'mission'}${isPublic() ? '_public' : ''}.yaml`.replace(/[\\/:*?"<>| ]+/g, '_');
       const link = document.createElement('a');
-      link.href = URL.createObjectURL(new Blob([M.toYaml(mission)], { type: 'text/yaml;charset=utf-8' }));
+      link.href = URL.createObjectURL(new Blob([M.toYaml(exported)], { type: 'text/yaml;charset=utf-8' }));
       link.download = name; link.click(); setTimeout(() => URL.revokeObjectURL(link.href), 1000);
       say('exported', name);
     };

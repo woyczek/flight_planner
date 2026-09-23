@@ -93,3 +93,4 @@ main.mc-reporting{max-width:1280px;margin:20px auto;padding:0 16px 40px}
   .report h3{break-after:avoid}.report .box,.report tr{break-inside:avoid}
   @page{size:A4;margin:12mm}
 }
+.mc-public{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer}

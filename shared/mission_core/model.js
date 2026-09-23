@@ -124,5 +124,20 @@
   }
   const blockVisible = (mission, family, id) => { const block = (family.blocks || []).find(b => b.id === id); return !!block && (!block.when || block.when(context(mission, family))); };
 
-  window.MissionModel = { context, blockVisible, SCHEMA_VERSION, emptyMission, emptyAircraft, get, set, fillDefaults, minutes, between, num, computeStatistics, migrate, toYaml, parse };
+  // Version publique (§7) : copie de la mission sans les champs marqués `sensitive` par la
+  // famille (champ, ou bloc entier avec `sensitive: true`), collections comprises.
+  function redact(mission, family = {}) {
+    const copy = structuredClone(mission);
+    (family.blocks || []).forEach(block => {
+      if (block.collection) {
+        const list = get(copy, block.collection.path) || [];
+        block.collection.fields.filter(f => block.sensitive || f.sensitive).forEach(f => list.forEach(item => set(item, f.path, null)));
+      } else (block.fields || []).filter(f => block.sensitive || f.sensitive).forEach(f => { if (get(copy, f.path) !== undefined) set(copy, f.path, null); });
+    });
+    copy.publicVersion = true;
+    return copy;
+  }
+  const hasSensitive = (family = {}) => (family.blocks || []).some(b => b.sensitive || (b.collection ? b.collection.fields : b.fields || []).some(f => f.sensitive));
+
+  window.MissionModel = { redact, hasSensitive, context, blockVisible, SCHEMA_VERSION, emptyMission, emptyAircraft, get, set, fillDefaults, minutes, between, num, computeStatistics, migrate, toYaml, parse };
 })();
