@@ -10,6 +10,9 @@ window.REPOSITORY_TREE={
   pages:[
     {path:"GAAR/mission_stats.html",menu:"GAAR/Statistiques missions",label:"Statistiques missions",theme:"gaar",language:false},
     {path:"GAAR/DEFA-Virtual.cr.gen.securite-civile.html",menu:"GAAR/Sécurité civile CR",label:"Sécurité civile CR",theme:"gaar",language:false},
+    {path:"HEMS/hems_medevac_cr.html",menu:"HEMS/Générateur de CR",label:"Générateur de CR HEMS / MEDEVAC",theme:"gaar",language:true},
+    {path:"HEMS/hems_medevac_reporting.html",menu:"HEMS/Reporting missions",label:"Reporting HEMS / MEDEVAC",theme:"gaar",language:true},
+    {path:"mission_operations_reporting.html",menu:"Reporting opérations",label:"Synthèse GAAR + HEMS",theme:"landing",language:true},
     {path:"LandingPerformanceDashboard/LandingPerformance_Dashboard_MultiCSV_i18n.html",menu:"Landing Performance Dashboard",label:"Landing Performance Dashboard",theme:"landing",language:true},
     {path:"flight_performance_planner.html",menu:"Flight Performance & Fuel Planner",label:"Flight Performance & Fuel Planner",theme:"flight",language:true}
   ]

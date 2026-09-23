@@ -1,0 +1,31 @@
+(() => {
+  'use strict';
+  let rows = [];
+  const $ = id => document.getElementById(id);
+  const number = value => Number(String(value || '').replace(',', '.')) || 0;
+  const total = key => rows.reduce((sum, row) => sum + number(row[key]), 0);
+  const average = key => rows.length ? total(key) / rows.length : 0;
+  const minutes = value => { const n = Math.round(value || 0); return n >= 60 ? `${Math.floor(n / 60)}h${String(n % 60).padStart(2, '0')}` : `${n} min`; };
+  const escape = value => String(value || '').replace(/[&<>]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[char]));
+  function parse(text) { const lines = text.trim().split(/\r?\n/).filter(line => !line.startsWith('#')); const head = (lines.shift() || '').split(';'); rows = lines.map(line => Object.fromEntries(line.split(';').map((value, i) => [head[i], value.replace(/^"|"$/g, '')]))); render(); }
+  function groups(key) { const map = {}; rows.forEach(row => { const value = row[key] || '—'; map[value] = (map[value] || 0) + 1; }); return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 8); }
+  function card(label, value, sub = '') { return `<div class="card"><span class="small">${label}</span><b>${value}</b><span class="small">${sub}</span></div>`; }
+  function breakdown(title, key) { const data = groups(key), max = Math.max(1, ...data.map(item => item[1])); return `<div><h3>${title}</h3>${data.map(([name, count]) => `<div class="barrow"><span>${escape(name)}</span><span>${count}</span><span class="track"><span class="bar" style="display:block;width:${count * 100 / max}%"></span></span></div>`).join('')}</div>`; }
+  function render() { const completed = rows.filter(row => /Terminée|transporté/i.test(row.outcome)).length; const fuelUnit = rows.find(row => row.fuelUnit)?.fuelUnit || '—'; const target = rows.filter(row => number(row.alertToTakeoffMinutes) && number(row.alertToTakeoffMinutes) <= 15).length; $('cards').innerHTML = card('Missions', rows.length) + card('Missions terminées', completed, rows.length ? `${Math.round(completed * 100 / rows.length)} %` : '') + card('Patients transportés', total('patients'), 'anonymisé') + card('Carburant', Math.round(total('fuelUsed')), fuelUnit); $('durations').innerHTML = card('Temps de vol', minutes(total('flightMinutes')), `moy. ${minutes(average('flightMinutes'))}`) + card('Temps bloc', minutes(total('blockMinutes')), `moy. ${minutes(average('blockMinutes'))}`) + card('Temps sur zone', minutes(total('sceneMinutes')), `moy. ${minutes(average('sceneMinutes'))}`) + card('Alerte → décollage', minutes(average('alertToTakeoffMinutes')), `≤ 15 min : ${rows.length ? Math.round(target * 100 / rows.length) : 0} %`); $('breakdowns').innerHTML = breakdown('Par service', 'service') + breakdown('Par type de mission', 'missionType') + breakdown('Par appareil', 'aircraft') + breakdown('Par statut', 'outcome') + breakdown('Par destination', 'destination') + breakdown('Par base', 'baseDeparture'); const cols = ['missionId','date','service','missionType','aircraft','callsign','baseDeparture','destination','outcome','alertToTakeoffMinutes','sceneMinutes','blockMinutes','flightMinutes','fuelUsed','patients']; $('table').innerHTML = `<thead><tr>${cols.map(key => `<th>${key}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr>${cols.map(key => `<td>${escape(/Minutes$/.test(key) && row[key] ? minutes(row[key]) : row[key])}</td>`).join('')}</tr>`).join('')}</tbody>`; }
+  $('file').addEventListener('change', event => { const file = event.target.files[0]; if (!file) return; window.MissionReportingConfig?.write({ ledgerName: file.name }); $('ledgerName').value = file.name; const reader = new FileReader(); reader.onload = () => parse(reader.result); reader.readAsText(file); });
+  $('demo').addEventListener('click', () => parse('missionId;date;service;missionType;aircraft;callsign;baseDeparture;destination;outcome;alertToTakeoffMinutes;sceneMinutes;blockMinutes;flightMinutes;fuelUsed;fuelUnit;patients\nHEMS-001;2026-09-23;SAMU / SMUR;HEMS primaire;H145;HELISMUR 01;Base HEMS;CHU régional;Patient transporté;12;24;68;52;240;kg;1\nHEMS-002;2026-09-23;Sécurité civile;Secours / sauvetage;EC145;DRAGON 34;Base Dragon;DZ montagne;Terminée;18;46;97;78;310;kg;0'));
+  $('export').addEventListener('click', () => { const content = [['metric','value'],['missions',rows.length],['patients',total('patients')],['flight_minutes',total('flightMinutes')],['block_minutes',total('blockMinutes')],['fuel_used',total('fuelUsed')]].map(line => line.join(';')).join('\n'); const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([content], { type: 'text/csv' })); link.download = 'hems_reporting_summary.csv'; link.click(); });
+  const extra = document.createElement('section'); extra.innerHTML = '<h2>Analyse par appareil et délais</h2><div class="grid" id="aircraftAnalysis"></div>'; document.querySelector('main').append(extra);
+  function extraStats() {
+    const alerts = rows.map(row => number(row.alertToTakeoffMinutes)).filter(Boolean);
+    const aircraft = groups('aircraft').map(([aircraft]) => { const set = rows.filter(row => (row.aircraft || '—') === aircraft); return `${escape(aircraft)} : ${set.length} mission(s), ${minutes(set.reduce((s,row)=>s+number(row.flightMinutes),0))} vol, ${Math.round(set.reduce((s,row)=>s+number(row.fuelUsed),0))} carburant`; }).join('<br>') || 'Aucune donnée.';
+    const drops = total('drops') + total('eventDrops');
+    const delay = alerts.length ? `Minimum : ${minutes(Math.min(...alerts))}<br>Moyenne : ${minutes(average('alertToTakeoffMinutes'))}<br>Maximum : ${minutes(Math.max(...alerts))}` : 'Aucun délai renseigné.';
+    $('aircraftAnalysis').innerHTML = `<div><h3>Appareils</h3><p>${aircraft}</p></div><div><h3>Déclenchement → décollage</h3><p>${delay}<br>Largages incendie : ${drops}</p></div>`;
+  }
+  const originalRender = render; render = () => { originalRender(); extraStats(); };
+  window.addEventListener('mission-ledger-autoload', event => { if (event.detail.key === 'ledgerName') parse(event.detail.text); });
+  const reload = document.createElement('button'); reload.className = 'secondary'; reload.textContent = 'Recharger le fichier';
+  reload.addEventListener('click', () => { $('file').click(); }); $('file').before(reload);
+  render();
+})();
