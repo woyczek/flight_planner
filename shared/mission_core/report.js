@@ -69,7 +69,7 @@
     const section = (titleArr, body) => body && body.replace(/<[^>]+>/g, '').trim() ? `<h3>${esc(t(titleArr))}</h3>${body}` : '';
     const meta = inner => inner ? `<div class="meta">${inner}</div>` : '';
     const table = (spec, list) => {
-      const fields = spec.fields.filter(f => f.type !== 'checkgroup');
+      const fields = spec.fields.filter(f => f.type !== 'checkgroup' && f.report !== false);
       const used = fields.filter(f => list.some(item => { const v = M.get(item, f.path); return v !== '' && v != null; }));
       const items = list.filter(item => used.some(f => { const v = M.get(item, f.path); return v !== '' && v != null; }));
       if (!items.length) return '';

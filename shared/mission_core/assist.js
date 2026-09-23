@@ -193,18 +193,45 @@
     const tr = row => t(row);
 
     // ---- appareils : filtrage croisé
-    const ITEM = /^aircraft\.(\d+)\.(registration|callsign|type|variant|tacticalNumber)$/;
-    // Variante égale au modèle générique du type (déduite du type OACI) : pas un filtre.
+    const ITEM = /^aircraft\.(\d+)\.(registration|callsign|callsignPrefix|callsignNumber|type|variant|tacticalNumber)$/;
+    const split = M.splitCallsign;
+    // Indicatif complet comparé seulement s'il porte un numéro ; sinon, l'indicatif seul
+    // (série) filtre. Variante égale au modèle générique du type (déduite du type OACI) :
+    // pas un filtre.
+    // Catégorie choisie : voilure tournante → ni avions ni hydravions ; voilure fixe /
+    // amphibie → pas d'hélicoptères.
+    const sameCategory = (wanted, category) => !wanted || !category || (wanted === 'rotary' ? category === 'rotary' : category !== 'rotary');
     const matchesOf = (item, skip, generic = item.type && A.lookupType(item.type)?.model) => A.known().filter(a =>
-      (skip === 'registration' || !item.registration || A.regKey(a.registration) === A.regKey(item.registration))
-      && (skip === 'callsign' || !item.callsign || a.callsigns.some(c => A.regKey(c) === A.regKey(item.callsign)))
+      (skip === 'category' || sameCategory(item.category, a.category || A.lookupType(a.type)?.category))
+      && (skip === 'registration' || !item.registration || A.regKey(a.registration) === A.regKey(item.registration))
+      // Formes complète et plan de vol équivalentes (DRAGON76 = DRAGO76).
+      && (['callsign', 'callsignPrefix', 'callsignNumber'].includes(skip) || !item.callsign || !item.callsignNumber || a.callsigns.some(c => A.canonicalCallsign(c) === A.canonicalCallsign(item.callsign)))
+      && (['callsign', 'callsignPrefix'].includes(skip) || !item.callsignPrefix || a.callsigns.some(c => A.canonicalPrefix(split(c).prefix) === A.canonicalPrefix(item.callsignPrefix)))
       // Type / variante inconnus pour un appareil connu : ils ne l'excluent pas.
-      && (skip === 'type' || !item.type || !a.type || up(a.type) === up(item.type))
+      && (skip === 'type' || !item.type || !a.type || A.typeKey(a.type) === A.typeKey(item.type))
       && (skip === 'variant' || !item.variant || item.variant === generic || !a.variant || String(a.variant).toLowerCase() === String(item.variant).toLowerCase()));
     function aircraftSuggest(index, field) {
       const item = getMission().aircraft?.[index] || {}, matches = matchesOf(item, field);
       const history = ranked(pools.get(`aircraft.*.${field}`));
       if (field === 'registration') return matches.map(a => ({ value: a.registration, label: [a.type, a.variant, a.callsigns.join(' / '), a.tacticalNumber, a.operator, a.base].filter(Boolean).join(' — ') }));
+      // Indicatif (série) : ceux des appareils compatibles (type, immatriculation), l'opérateur
+      // de la mission en tête ; numéro : ceux de la série pour ce type.
+      if (field === 'callsignPrefix') {
+        const operator = getMission().organisation?.organisation || '', out = new Map();
+        const allowed = new Set(matches.flatMap(a => a.callsigns.map(c => A.canonicalPrefix(split(c).prefix))));
+        A.callsignSeries().filter(s => allowed.has(s.prefix))
+          .sort((a, b) => Number(b.operators.has(operator)) - Number(a.operators.has(operator)) || b.numbers.length - a.numbers.length)
+          .forEach(s => out.set(s.prefix, [s.abbreviations.size ? `plan de vol : ${[...s.abbreviations].join(', ')}` : '', [...s.types].join(', '), [...s.operators].join(', ')].filter(Boolean).join(' — ')));
+        if (!item.registration) ledgerMissions().forEach(m => (m.aircraft || []).forEach(a => { const p = a.callsignPrefix || split(a.callsign).prefix; if (p && (!item.type || A.typeKey(a.type) === A.typeKey(item.type)) && !out.has(up(p))) out.set(up(p), a.type || ''); }));
+        return [...out].map(([value, label]) => ({ value, label }));
+      }
+      if (field === 'callsignNumber') {
+        const out = new Map();
+        const wanted = item.callsignPrefix && A.canonicalPrefix(item.callsignPrefix);
+        matches.forEach(a => a.callsigns.forEach(c => { const s = split(c), prefix = A.canonicalPrefix(s.prefix); if (!wanted || prefix === wanted) out.set(s.number, [prefix + s.number, a.registration, a.type].filter(Boolean).join(' — ')); }));
+        out.delete('');
+        return [...out].sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true })).map(([value, label]) => ({ value, label }));
+      }
       if (field === 'callsign') {
         const out = new Map(); matches.forEach(a => a.callsigns.forEach(c => out.set(c, [a.registration, a.type].filter(Boolean).join(' — '))));
         // Indicatifs déjà utilisés avec ce type (appareils non immatriculés dans la base).
@@ -216,8 +243,8 @@
         if (constrained) return [...new Set(matches.map(a => up(a.type)).filter(v => /^[A-Z][A-Z0-9]{1,3}$/.test(v)))].map(value => ({ value, label: A.lookupType(value)?.model || '' }));
         const typed = up(item.type), known = [...new Set(A.known().map(a => up(a.type)).concat(history.map(up)))].filter(v => /^[A-Z][A-Z0-9]{1,3}$/.test(v));
         const all = known.map(value => ({ value, label: A.lookupType(value)?.model || '' }));
-        if (typed.length >= 1) A.listTypes().filter(ty => ty.tdesig.startsWith(typed) && !known.includes(ty.tdesig)).slice(0, 60).forEach(ty => all.push({ value: ty.tdesig, label: ty.model }));
-        return all;
+        if (typed.length >= 1) A.listTypes().filter(ty => ty.tdesig.startsWith(typed) && !known.includes(ty.tdesig) && sameCategory(item.category, ty.category)).slice(0, 60).forEach(ty => all.push({ value: ty.tdesig, label: ty.model }));
+        return all.filter(ty => sameCategory(item.category, A.lookupType(ty.value)?.category));
       }
       if (field === 'variant') {
         const values = new Set(matches.map(a => a.variant).filter(Boolean));
@@ -354,7 +381,20 @@
       if (key === 'metadata.date' || key === 'timeline.takeoff') { const done = await sun([], true); commit(done); }
       if (path === 'environment.metar' && value) commit(applyMetar(value));
     }
-    return { suggest, aircraftCommit, onCommit, decorate, airport, cachedAirport, remember, applyMetar, sun, status: text => status(text), T };
+    // Indicatif de la série quand il n'en reste qu'un pour ce type (et cet opérateur) :
+    // Sécurité civile + H145 → DRAGON ; SAMU + H145 → SAMU.
+    function seriesPrefix(index) {
+      const item = getMission().aircraft?.[index]; if (!item?.type) return '';
+      const operator = index === 0 ? getMission().organisation?.organisation || '' : '', type = A.typeKey(item.type);
+      // Appareils de ce type (et de cet opérateur) par indicatif de série.
+      let entries = A.callsignSeries().flatMap(s => s.numbers.filter(n => n.type === type).map(n => ({ ...n, prefix: s.prefix })));
+      const withOperator = entries.filter(n => n.operator === operator); if (operator && withOperator.length) entries = withOperator;
+      const counts = new Map(); entries.forEach(n => counts.set(n.prefix, (counts.get(n.prefix) || 0) + 1));
+      // Série unique, ou largement majoritaire (≥ 80 % : une coquille isolée ne bloque pas).
+      const [best] = [...counts].sort((a, b) => b[1] - a[1]);
+      return best && best[1] / entries.length >= 0.8 ? best[0] : '';
+    }
+    return { suggest, aircraftCommit, seriesPrefix, onCommit, decorate, airport, cachedAirport, remember, applyMetar, sun, status: text => status(text), T };
   }
 
   window.MissionAssist = { create, parseMetar, sunTimes, routePoints, airport, remember, loadAirports, T };

@@ -46,8 +46,14 @@
         // Immatriculation, indicatif, type et variante se filtrent mutuellement (valeurs
         // proposées cohérentes, remplissage quand il ne reste qu'une possibilité).
         f('registration', L('Immatriculation', 'Registration', 'Kennzeichen', 'Matrícula'), 'text', { upper: true, alias: 'registration', placeholder: L('F-ZBQU… (appareils connus proposés)', 'F-ZBQU… (known aircraft suggested)', 'F-ZBQU… (bekannte Luftfahrzeuge)', 'F-ZBQU… (aeronaves conocidas)') }),
-        f('callsign', L('Indicatif', 'Callsign', 'Rufzeichen', 'Indicativo'), 'text', { upper: true, alias: 'callsign' }),
         f('type', L('Type (OACI)', 'Type (ICAO)', 'Muster (ICAO)', 'Tipo (OACI)'), 'text', { upper: true, alias: 'aircraft', placeholder: L('EC45, CN35, C130…', 'EC45, CN35, C130…') }),
+        // Indicatif radio = indicatif de la série (DRAGON, PELICAN…) + numéro ; l'indicatif
+        // complet reste modifiable (champ libre) et se décompose à la saisie.
+        f('callsignPrefix', L('Indicatif', 'Callsign', 'Rufzeichen', 'Indicativo'), 'text', { upper: true, placeholder: L('DRAGON, PELICAN, SAMU…', 'DRAGON, PELICAN, SAMU…'), report: false }),
+        f('callsignNumber', L('Numéro', 'Number', 'Nummer', 'Número'), 'text', { upper: true, placeholder: L('76, 41, 74-1…', '76, 41, 74-1…'), report: false }),
+        f('callsign', L('Indicatif complet', 'Full callsign', 'Vollständiges Rufzeichen', 'Indicativo completo'), 'text', { upper: true, alias: 'callsign' }),
+        // Forme plan de vol : 7 caractères au plus (OACI), abrégée si besoin (DRAGON76 → DRAGO76).
+        f('callsignFpl', L('Indicatif plan de vol (7 car. max)', 'Flight plan callsign (7 chars max)', 'Flugplan-Rufzeichen (max. 7 Zeichen)', 'Indicativo plan de vuelo (máx. 7 car.)'), 'text', { upper: true, alias: 'callsignFpl', report: false }),
         f('category', L('Catégorie', 'Category', 'Kategorie', 'Categoría'), 'select', { options: V.aircraftCategories, blank: true, rerender: true }),
         f('variant', L('Variante / modèle', 'Variant / model', 'Variante / Modell', 'Variante / modelo')),
         f('tacticalNumber', L('Numéro tactique', 'Tactical number', 'Taktische Nummer', 'Número táctico'), 'text', { hideFor: ['HEMS', 'FI', 'SURVEY'] }),
@@ -87,8 +93,9 @@
 
   const capabilities = {
     id: 'capabilities', title: L('Capacités / techniques employées', 'Capabilities / techniques', 'Fähigkeiten / Verfahren', 'Capacidades / técnicas'),
-    // Replié : repris de la dernière mission de la même série à la création d'une mission.
-    collapsed: true, summary: L('Techniques employées (reprises de la dernière mission de la série)', 'Techniques used (from the last mission of the series)', 'Angewandte Verfahren (vom letzten Einsatz der Serie)', 'Técnicas empleadas (de la última misión de la serie)'),
+    // Masqué par défaut (framework) : repris de la dernière mission de la même série à la
+    // création d'une mission, à ne renseigner qu'une fois.
+    defaultHidden: true,
     fields: [f('capabilities', null, 'checkgroup', { groups: V.capabilityGroups, full: true })]
   };
 

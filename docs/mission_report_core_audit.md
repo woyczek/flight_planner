@@ -345,3 +345,23 @@ Retenues par défaut (à contester si besoin) :
   et que les données ont changé ; restauration / resynchronisation par fusion (la donnée
   la plus récente l'emporte, collections fusionnées entrée par entrée), aussi depuis un
   fichier ; les pages du Core relisent leur registre après restauration.
+
+## I. Étape 5 — indicatifs, catégories, blocs masqués par défaut (2026-09-24)
+
+- **Indicatif radio** décliné en *indicatif* (série : DRAGON, PELICAN, MILAN, SAMU,
+  CHOUCAS…) + *numéro* ; l'indicatif complet reste un champ libre, décomposé à la saisie.
+  Base des indicatifs connus dérivée de la flotte et des missions enregistrées
+  (`MissionAircraft.callsignSeries()`), rattachée aux séries d'appareils (type, opérateur) :
+  Sécurité civile + H145 → DRAGON, SAMU + H145 → SAMU (série majoritaire ≥ 80 %).
+- **Forme plan de vol** : 7 caractères au plus, sans tiret (OACI Doc 4444, app. 2,
+  case 7). Abréviations apprises de la base (DRAGO → DRAGON), sinon troncature
+  (PELICAN41 → PELIC41). Champ « Indicatif plan de vol » calculé et modifiable ; un
+  indicatif déposé ou saisi sous forme abrégée est ramené à sa forme complète ; le suivi
+  réseau utilise la forme plan de vol.
+- **Catégorie** : voilure tournante → ni avions ni hydravions proposés (types,
+  immatriculations, indicatifs) ; voilure fixe / amphibie → pas d'hélicoptères.
+- **Blocs masqués par défaut** : mécanisme afficher / masquer / déplacer du framework
+  (`app_framework.js`) étendu par `data-default-hidden="1"` ; réappliqué après chaque
+  rendu des pages du Core. Le bloc « Capacités / techniques employées » l'utilise.
+  (Les équipements d'un appareil restent un groupe repliable à l'intérieur du bloc
+  Appareil(s), le framework ne gérant que des blocs.)

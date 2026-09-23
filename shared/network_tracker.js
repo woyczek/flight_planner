@@ -100,7 +100,7 @@
     let network = value('onlineNetwork').toUpperCase();
     const ivao = value('ivaoId'), vatsim = value('vatsimId');
     if (!network) network = ivao && !vatsim ? 'IVAO' : vatsim && !ivao ? 'VATSIM' : ivao ? 'IVAO' : '';
-    return { network, id: network === 'IVAO' ? ivao : network === 'VATSIM' ? vatsim : '', callsign: value('callsign').toUpperCase().replace(/\s+/g, '') };
+    return { network, id: network === 'IVAO' ? ivao : network === 'VATSIM' ? vatsim : '', callsign: (value('callsignFpl') || value('callsign')).toUpperCase().replace(/\s+/g, '') }; // forme plan de vol = indicatif réseau
   }
 
   // Écrit un horaire : champ vide, ou déjà rempli par ce suivi (jamais une saisie du pilote).

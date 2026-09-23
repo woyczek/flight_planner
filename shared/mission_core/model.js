@@ -5,7 +5,7 @@
   // leurs données sous `missionData` sans toucher au tronc commun.
   const SCHEMA_VERSION = 2;
 
-  const emptyAircraft = () => ({ category: '', type: '', variant: '', registration: '', tacticalNumber: '', callsign: '', baseDeparture: '', baseReturn: '', massTakeoff: null, massLanding: null, enduranceMinutes: null, configuration: '', equipment: [] });
+  const emptyAircraft = () => ({ category: '', type: '', variant: '', registration: '', tacticalNumber: '', callsign: '', callsignPrefix: '', callsignNumber: '', callsignFpl: '', baseDeparture: '', baseReturn: '', massTakeoff: null, massLanding: null, enduranceMinutes: null, configuration: '', equipment: [] });
   const emptyMission = (family = '') => ({
     schemaVersion: SCHEMA_VERSION,
     family, series: '', subtype: '',
@@ -87,7 +87,24 @@
     onlineNetwork: 'network.onlineNetwork', ivaoId: 'network.ivaoId', vatsimId: 'network.vatsimId', trackerUrl: 'network.trackerUrl'
   };
   const LEGACY_ROLES = { captain: 'PIC', fo: 'COPILOT', doctor: 'DOCTOR', nurse: 'NURSE', rescuer: 'WINCH_OPERATOR', observer: 'OBSERVER' };
-  function migrate(input, family = '') {
+  // Indicatif radio = indicatif (série : DRAGON, PELICAN, SAMU…) + numéro (76, 41, 74-1…).
+  // Champ libre : ce qui ne suit pas ce schéma reste entièrement dans l'indicatif.
+  function splitCallsign(value) {
+    const text = String(value ?? '').trim().toUpperCase().replace(/\s+/g, ' ');
+    const m = /^([A-Z]+(?: [A-Z]+)*)[ -]?(\d[0-9A-Z-]*)$/.exec(text);
+    return m ? { prefix: m[1], number: m[2] } : { prefix: text, number: '' };
+  }
+  const joinCallsign = (prefix, number) => `${String(prefix ?? '').trim().toUpperCase()}${String(number ?? '').trim().toUpperCase()}`.replace(/\s+/g, '');
+  // Appareils : indicatif / numéro déduits de l'indicatif complet s'ils manquent.
+  function callsignParts(mission) {
+    (mission.aircraft || []).forEach(a => {
+      ['callsignPrefix', 'callsignNumber', 'callsignFpl'].forEach(k => { if (a[k] == null) a[k] = ''; });
+      if (a.callsign && !a.callsignPrefix && !a.callsignNumber) { const s = splitCallsign(a.callsign); a.callsignPrefix = s.prefix; a.callsignNumber = s.number; }
+    });
+    return mission;
+  }
+  const migrate = (input, family = '') => callsignParts(migrateRecord(input, family));
+  function migrateRecord(input, family = '') {
     if (!input || typeof input !== 'object') throw new Error('Mission illisible');
     if (Number(input.schemaVersion) >= 2) return fillDefaults(structuredClone(input), emptyMission(input.family || family));
     // Famille avec convertisseur dédié (HEMS, FIRE : anciens CSV / JSON plats) : prioritaire.
@@ -157,5 +174,5 @@
     return out.map(values => Object.fromEntries(head.map((h, i) => [h, values[i] ?? ''])));
   }
 
-  window.MissionModel = { parseCsv, redact, hasSensitive, context, blockVisible, SCHEMA_VERSION, emptyMission, emptyAircraft, get, set, fillDefaults, minutes, between, num, computeStatistics, migrate, toYaml, parse };
+  window.MissionModel = { parseCsv, redact, hasSensitive, context, blockVisible, SCHEMA_VERSION, emptyMission, emptyAircraft, splitCallsign, joinCallsign, get, set, fillDefaults, minutes, between, num, computeStatistics, migrate, toYaml, parse };
 })();

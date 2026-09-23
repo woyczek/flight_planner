@@ -114,20 +114,66 @@
     });
     return [...byReg.values()].sort((a, b) => a.registration.localeCompare(b.registration));
   }
+  // Type normalisé (alias OACI : H145 → EC45) pour comparer les séries d'appareils.
+  const typeKey = value => { const code = String(value || '').trim().toUpperCase(); return lookupType(code)?.tdesig || code; };
+  // ---- indicatifs : forme plan de vol
+  // Plan de vol OACI (Doc 4444, app. 2, case 7) : identification de 7 caractères
+  // alphanumériques au plus, sans tiret. D'où des formes abrégées (DRAGON76 → DRAGO76).
+  // Abréviations apprises de la base : un indicatif qui commence un autre indicatif connu
+  // (DRAGO / DRAGON) en est la forme courte ; à défaut, troncature à 7 caractères.
+  const FPL_MAX = 7;
+  const up = v => String(v ?? '').trim().toUpperCase();
+  const clean = v => up(v).replace(/[^A-Z0-9]/g, '');
+  function abbreviations() {
+    const split = window.MissionModel.splitCallsign, prefixes = new Set();
+    known().forEach(a => a.callsigns.forEach(c => { const p = split(c).prefix; if (p) prefixes.add(p); }));
+    const map = new Map(); // abrégé → complet
+    prefixes.forEach(short => prefixes.forEach(full => {
+      if (short.length >= 3 && full.length > short.length && full.startsWith(short) && (!map.has(short) || map.get(short).length > full.length)) map.set(short, full);
+    }));
+    return map;
+  }
+  const canonicalPrefix = (prefix, map = abbreviations()) => map.get(up(prefix)) || up(prefix);
+  const canonicalCallsign = (callsign, map = abbreviations()) => { const s = window.MissionModel.splitCallsign(callsign); return clean(canonicalPrefix(s.prefix, map) + s.number); };
+  function fplCallsign(prefix, number, map = abbreviations()) {
+    const p = clean(canonicalPrefix(prefix, map)), n = clean(number);
+    if ((p + n).length <= FPL_MAX) return p + n;
+    const known = [...map].filter(([, full]) => full === p).map(([short]) => clean(short)).filter(s => (s + n).length <= FPL_MAX).sort((a, b) => b.length - a.length)[0];
+    return (known || p.slice(0, Math.max(1, FPL_MAX - n.length))) + n;
+  }
+
+  // Base des indicatifs connus : indicatif (DRAGON, PELICAN, SAMU…) → numéros, appareils,
+  // types et opérateurs associés (flotte DEFA + appareils des missions enregistrées) ;
+  // les formes abrégées de plan de vol (DRAGO) sont rattachées à leur indicatif complet.
+  function callsignSeries() {
+    const split = window.MissionModel.splitCallsign, series = new Map(), map = abbreviations();
+    known().forEach(a => a.callsigns.forEach(callsign => {
+      const parts = split(callsign); if (!parts.prefix) return;
+      const prefix = canonicalPrefix(parts.prefix, map), number = parts.number;
+      const s = series.get(prefix) || { prefix, numbers: [], types: new Set(), operators: new Set(), abbreviations: new Set() };
+      if (parts.prefix !== prefix) s.abbreviations.add(parts.prefix);
+      if (s.numbers.some(n => n.number === number && n.registration === a.registration)) return; // DRAGON76 et DRAGO76 : un seul
+      s.numbers.push({ number, callsign: prefix + number, fpl: fplCallsign(prefix, number, map), registration: a.registration, type: typeKey(a.type), operator: a.operator || '' });
+      if (a.type) s.types.add(typeKey(a.type)); if (a.operator) s.operators.add(a.operator);
+      series.set(prefix, s);
+    }));
+    return [...series.values()].sort((a, b) => a.prefix.localeCompare(b.prefix));
+  }
   const find = registration => known().find(a => regKey(a.registration) === regKey(registration)) || null;
-  const findByCallsign = callsign => { const key = regKey(callsign); const hits = known().filter(a => a.callsigns.some(c => regKey(c) === key)); return hits.length === 1 ? hits[0] : null; };
+  // Indicatif complet ou forme plan de vol (DRAGON76 / DRAGO76) : même appareil.
+  const findByCallsign = callsign => { const map = abbreviations(), key = canonicalCallsign(callsign, map); const hits = known().filter(a => a.callsigns.some(c => canonicalCallsign(c, map) === key)); return hits.length === 1 ? hits[0] : null; };
 
   // Mémorise les appareils d'une mission enregistrée (équipements compris) et enrichit
   // la base de types avec les types inconnus.
   function recordMission(mission) {
     const registry = read(REGISTRY_KEY) || {}, date = mission?.metadata?.date || new Date().toISOString().slice(0, 10);
-    (mission?.aircraft || []).forEach(a => {
+    (mission?.aircraft || []).forEach((a, index) => {
       if (!regKey(a.registration)) return;
-      registry[regKey(a.registration)] = { registration: String(a.registration).toUpperCase(), type: a.type || '', variant: a.variant || '', category: a.category || '', callsign: String(a.callsign || '').toUpperCase(), tacticalNumber: a.tacticalNumber || '', configuration: a.configuration || '', equipment: a.equipment || [], date, updatedAt: new Date().toISOString() };
+      registry[regKey(a.registration)] = { registration: String(a.registration).toUpperCase(), type: a.type || '', variant: a.variant || '', category: a.category || '', callsign: String(a.callsign || '').toUpperCase(), tacticalNumber: a.tacticalNumber || '', configuration: a.configuration || '', equipment: a.equipment || [], operator: (index === 0 && mission.organisation?.organisation) || registry[regKey(a.registration)]?.operator || '', date, updatedAt: new Date().toISOString() };
       if (a.type) enrichType(a.type, { model: a.variant || a.type, category: a.category });
     });
     write(REGISTRY_KEY, registry);
   }
 
-  window.MissionAircraft = { regKey, categoryOf, lookupType, listTypes, enrichType, known, find, findByCallsign, recordMission };
+  window.MissionAircraft = { regKey, categoryOf, lookupType, listTypes, enrichType, known, find, findByCallsign, recordMission, callsignSeries, typeKey, abbreviations, canonicalPrefix, canonicalCallsign, fplCallsign, FPL_MAX };
 })();

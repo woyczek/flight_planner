@@ -115,6 +115,11 @@
     const known = fpl.registration ? A.find(fpl.registration) : null;
     set('aircraft.0.registration', known?.registration || fpl.registration);
     set('aircraft.0.callsign', fpl.callsign); set('aircraft.0.type', fpl.type);
+    // Indicatif déposé (forme plan de vol, ex. DRAGO76) → DRAGON / 76, forme plan de vol conservée.
+    if (done.includes('aircraft.0.callsign')) {
+      const parts = M.splitCallsign(item.callsign), prefix = A.canonicalPrefix(parts.prefix);
+      item.callsignPrefix = prefix; item.callsignNumber = parts.number; item.callsign = M.joinCallsign(prefix, parts.number); item.callsignFpl = String(fpl.callsign).replace(/[^A-Z0-9]/g, '');
+    }
     const type = A.lookupType(item.type || fpl.type);
     set('aircraft.0.variant', type?.model || fpl.variant); set('aircraft.0.category', type?.category);
     set('aircraft.0.baseDeparture', fpl.dep); set('aircraft.0.baseReturn', fpl.arr);

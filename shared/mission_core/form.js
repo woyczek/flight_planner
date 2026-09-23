@@ -11,7 +11,7 @@
   // par ligne » + champ d'ajout avec valeurs connues), only / hideFor (familles concernées),
   // pool (réserve de valeurs connues partagée, ex. « aerodrome »).
   // Familles : hide = [chemins de champs sans index (« aircraft.tacticalNumber ») ou id de blocs].
-  // Blocs : collapsed (contenu replié, résumé des cases cochées).
+  // Blocs : defaultHidden (masqué par défaut via le framework, comme « Masquer »).
   // Suggestions : à la prise de focus d'un champ texte / numérique, suggest(path, field,
   // saisie) fournit les valeurs proposées (liste commune #mc-suggest, rafraîchie à la frappe).
   const M = window.MissionModel, V = window.MissionVocab;
@@ -115,9 +115,10 @@
         const section = document.createElement('section');
         section.className = 'mc-block'; section.id = `mc-${block.id}`; section.dataset.blockId = `mc-${block.id}`;
         const grid = block.collection ? '<div class="mc-collection"></div>' : `<div class="mc-grid">${block.fields.map(field => fieldHtml(field, field.path)).join('')}</div>`;
-        // Bloc replié : résumé = nombre de cases cochées dans le bloc.
-        const count = block.collapsed ? block.fields.reduce((n, field) => n + (field.type === 'checkgroup' ? (M.get(getMission(), field.path) || []).length : 0), 0) : 0;
-        section.innerHTML = `<h2>${esc(txt(block.title))}</h2>` + (block.collapsed ? collapsible(`block:${block.id}`, block.summary || ['Afficher / modifier', 'Show / edit', 'Anzeigen / bearbeiten', 'Mostrar / modificar'], grid, count) : grid);
+        // Bloc masqué par défaut : mécanisme afficher / masquer / déplacer du framework
+        // (shared/app_framework.js), le choix de l'utilisateur restant mémorisé.
+        if (block.defaultHidden) section.dataset.defaultHidden = '1';
+        section.innerHTML = `<h2>${esc(txt(block.title))}</h2>` + grid;
         form.insertBefore(section, controls || null);
         if (block.collection) renderCollection(block, section.querySelector('.mc-collection'));
         else registerConditions(block, section);
