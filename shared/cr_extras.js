@@ -53,8 +53,8 @@
   });
 
   // --- Bouton retour rapide vers le reporting correspondant.
-  const isGaar = location.pathname.includes('/GAAR/');
-  const target = isGaar ? 'gaar_mission_reporting.html' : 'hems_medevac_reporting.html';
-  const label = isGaar ? 'Voir le reporting GAAR' : 'Voir le reporting HEMS';
+  const isGaar = location.pathname.includes('/FIRE/');
+  const target = isGaar ? 'fire_reporting.html' : 'hems_medevac_reporting.html';
+  const label = isGaar ? 'Voir le reporting FIRE / GAAR' : 'Voir le reporting HEMS';
   window.RepositoryNav?.addAction?.(label, () => { location.href = target; });
 })();

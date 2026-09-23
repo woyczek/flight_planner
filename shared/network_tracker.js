@@ -15,7 +15,7 @@
   //   (règle de même origine) : pas d'« habillage » possible des trackers.
   const form = document.getElementById('missionForm');
   if (!form) return;
-  const KIND = location.pathname.includes('/GAAR/') ? 'gaar' : 'hems';
+  const KIND = location.pathname.includes('/FIRE/') ? 'gaar' : 'hems';
   const STORE = `networkWatch:v1:${KIND}`;
   const POLL_MS = 20000, MAX_AGE_MS = 14 * 3600 * 1000;
   const FEEDS = {

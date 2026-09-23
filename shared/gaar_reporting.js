@@ -125,6 +125,8 @@ La suppression s'applique à la copie locale du registre (navigateur) ; pensez �
   });
 
   window.addEventListener('mission-ledger-autoload', event => { if (event.detail.key === 'gaarLedgerName') parse(event.detail.text, 'gaarLedgerName'); });
+  // Bouton rapide vers le générateur de compte rendu FIRE / GAAR (menu du framework).
+  window.RepositoryNav?.addAction?.('Nouveau compte rendu FIRE / GAAR', () => { location.href = 'fire_cr.html'; });
   window.TimePeriod.mount($('periodPicker'), { onChange: render });
   const reload = document.createElement('button'); reload.className = 'secondary'; reload.textContent = 'Recharger le fichier';
   reload.addEventListener('click', async () => { if (!await window.MissionReportingConfig?.load('gaarLedgerName')) $('file').click(); });
@@ -132,6 +134,6 @@ La suppression s'applique à la copie locale du registre (navigateur) ; pensez �
   render();
   window.addEventListener('load', () => {
     if (!window.RepositoryContentI18n) return;
-    const script = document.createElement('script'); script.src = new URL('gaar_i18n.js?v=20260923', moduleUrl).href; document.head.append(script);
+    const script = document.createElement('script'); script.src = new URL('gaar_i18n.js?v=20260923f', moduleUrl).href; document.head.append(script);
   });
 })();

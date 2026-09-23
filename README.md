@@ -1,6 +1,6 @@
 # X‑Plane Web Suite
 
-Ouvrir directement l’une des quatre pages HTML. Le bandeau commun calcule tous les liens depuis la racine du repository, y compris lorsqu’une page se trouve dans `GAAR/` ou `LandingPerformanceDashboard/`.
+Ouvrir directement l’une des quatre pages HTML. Le bandeau commun calcule tous les liens depuis la racine du repository, y compris lorsqu’une page se trouve dans `FIRE/` ou `LandingPerformanceDashboard/`.
 
 ## Fichiers communs
 

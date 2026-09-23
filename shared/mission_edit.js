@@ -10,9 +10,9 @@
   const form = document.getElementById('missionForm');
   if (!form) return;
   const $ = id => document.getElementById(id);
-  const isGaar = location.pathname.includes('/GAAR/');
+  const isGaar = location.pathname.includes('/FIRE/');
   const configKey = isGaar ? 'gaarLedgerName' : 'ledgerName';
-  const reportingPage = isGaar ? 'gaar_mission_reporting.html' : 'hems_medevac_reporting.html';
+  const reportingPage = isGaar ? 'fire_reporting.html' : 'hems_medevac_reporting.html';
   const DRAFT_KEY = 'missionEditDraft:v1';
   const field = name => form.querySelector(`[name="${name}"]`);
   const normId = value => String(value ?? '').trim().toUpperCase();

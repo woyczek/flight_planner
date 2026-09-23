@@ -19,7 +19,7 @@
   const cached = name => { try { return JSON.parse(localStorage.getItem(cacheKey(name)) || 'null'); } catch { return null; } };
   const candidates = (name, configKey) => {
     const leaf = String(name || '').replace(/^.*[\\/]/, ''), configured = window.RepositoryNav?.settings?.files?.[configKey];
-    return [...new Set([configured, name, (configKey === 'gaarLedgerName' ? 'GAAR/' : 'HEMS/') + leaf].filter(Boolean))];
+    return [...new Set([configured, name, (configKey === 'gaarLedgerName' ? 'FIRE/' : 'HEMS/') + leaf].filter(Boolean))];
   };
   const publish = (configKey, filename, text, source) => {
     cacheText(configKey, filename, text);
@@ -86,7 +86,7 @@
   // index = position de la ligne dans le registre (le n° de mission peut être dupliqué).
   const openEditor = ({ kind, configKey, filename, index, record }) => {
     localStorage.setItem('missionEditDraft:v1', JSON.stringify({ kind, configKey, filename, index, record, returnUrl: location.href }));
-    const page = kind === 'gaar' ? '../GAAR/DEFA-Virtual.cr.gen.securite-civile.html' : '../HEMS/hems_medevac_cr.html';
+    const page = kind === 'gaar' ? '../FIRE/fire_cr.html' : '../HEMS/hems_medevac_cr.html';
     location.href = new URL(page + '?edit=' + encodeURIComponent(record?.missionId || ''), moduleUrl).href;
   };
 
@@ -95,7 +95,7 @@
     const config = read();
     const ledger = document.getElementById('ledgerName');
     if (ledger) {
-      if (!ledger.dataset.missionConfig) ledger.dataset.missionConfig = location.pathname.includes('/GAAR/') ? 'gaarLedgerName' : 'ledgerName';
+      if (!ledger.dataset.missionConfig) ledger.dataset.missionConfig = location.pathname.includes('/FIRE/') ? 'gaarLedgerName' : 'ledgerName';
       const ledgerKey = ledger.dataset.missionConfig;
       if (config[ledgerKey]) ledger.value = config[ledgerKey];
       ledger.addEventListener('input', () => { if (ledger.value) write({ [ledgerKey]: ledger.value }); });

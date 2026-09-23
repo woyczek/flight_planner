@@ -15,16 +15,16 @@ window.REPOSITORY_TREE={
   },
   folders:{
     "":{theme:"flight",favicon:"assets/favicon-flight.svg"},
-    "GAAR":{theme:"gaar",favicon:"assets/favicon-gaar.svg",config:{gaarLedgerName:"mission_ledger.csv"},files:{gaarLedgerName:"mission_ledger.csv"}},
+    "FIRE":{theme:"gaar",favicon:"assets/favicon-gaar.svg",config:{gaarLedgerName:"mission_ledger.csv"},files:{gaarLedgerName:"mission_ledger.csv"}},
     "HEMS":{theme:"hems",favicon:"assets/favicon-hems.svg",config:{ledgerName:"hems_mission_ledger.csv"},files:{ledgerName:"hems_mission_ledger.csv"}},
     "LandingPerformanceDashboard":{theme:"landing",favicon:"assets/favicon-landing.svg"}
   },
   pages:[
-    {path:"GAAR/mission_stats.html",menu:"GAAR/Statistiques missions",label:"Statistiques missions"},
-    {path:"GAAR/DEFA-Virtual.cr.gen.securite-civile.html",menu:"GAAR/Sécurité civile CR",label:"Sécurité civile CR"},
+    {path:"FIRE/fire_cr.html",menu:"FIRE/Générateur de CR",label:"Générateur de CR FIRE / GAAR"},
+    {path:"FIRE/fire_reporting.html",menu:"FIRE/Reporting missions",label:"Reporting FIRE / GAAR"},
     {path:"HEMS/hems_medevac_cr.html",menu:"HEMS/Générateur de CR",label:"Générateur de CR HEMS / MEDEVAC"},
     {path:"HEMS/hems_medevac_reporting.html",menu:"HEMS/Reporting missions",label:"Reporting HEMS / MEDEVAC"},
-    {path:"mission_operations_reporting.html",menu:"Reporting opérations",label:"Synthèse GAAR + HEMS",theme:"landing",favicon:"assets/favicon-landing.svg",files:{gaarLedgerName:"GAAR/mission_ledger.csv",ledgerName:"HEMS/hems_mission_ledger.csv"}},
+    {path:"mission_operations_reporting.html",menu:"Reporting opérations",label:"Synthèse FIRE + HEMS",theme:"landing",favicon:"assets/favicon-landing.svg",files:{gaarLedgerName:"FIRE/mission_ledger.csv",ledgerName:"HEMS/hems_mission_ledger.csv"}},
     {path:"LandingPerformanceDashboard/LandingPerformance_Dashboard_MultiCSV_i18n.html",menu:"Landing Performance Dashboard",label:"Landing Performance Dashboard"},
     {path:"flight_performance_planner.html",menu:"Flight Performance & Fuel Planner",label:"Flight Performance & Fuel Planner"}
   ]
