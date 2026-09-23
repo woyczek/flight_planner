@@ -15,7 +15,8 @@
   const idbGet = async key => { try { const db = await idb(); return await new Promise(r => { const q = db.transaction(STORE).objectStore(STORE).get(key); q.onsuccess = () => r(q.result || null); q.onerror = () => r(null); }); } catch { return null; } };
   const idbSet = async (key, value) => { try { const db = await idb(); await new Promise(r => { const tx = db.transaction(STORE, 'readwrite'); tx.objectStore(STORE).put(value, key); tx.oncomplete = r; tx.onerror = r; }); } catch { /* navigateur sans IndexedDB */ } };
 
-  function open(family) {
+  // options.base : dossier de la famille relatif à la page (ex. « SAR/ » depuis le reporting général).
+  function open(family, options = {}) {
     const id = family.id, filename = `${id.toLowerCase()}_missions.yaml`, cacheKey = `missionCoreLedger:v1:${id}`;
     const state = { family: id, filename, missions: [], updatedAt: '', source: 'empty', folder: '' };
     let handle = null;
@@ -40,7 +41,7 @@
       const candidates = [];
       try { const dir = await folderFile(false); if (dir) { const file = await (await dir.getFileHandle(filename)).getFile(); candidates.push({ source: 'folder', ...fromText(await file.text()) }); } } catch { /* fichier pas encore créé */ }
       try { const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null'); if (cached?.text) candidates.push({ source: 'browser', ...fromText(cached.text) }); } catch { /* copie illisible */ }
-      if (!candidates.length) try { const response = await fetch(filename, { cache: 'no-store' }); if (response.ok) candidates.push({ source: 'file', ...fromText(await response.text()) }); } catch { /* file:// */ }
+      if (!candidates.length) try { const response = await fetch((options.base || '') + filename, { cache: 'no-store' }); if (response.ok) candidates.push({ source: 'file', ...fromText(await response.text()) }); } catch { /* file:// */ }
       const best = candidates.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))[0];
       if (best) Object.assign(state, { missions: best.missions, updatedAt: best.updatedAt, source: best.source });
       return state;
