@@ -16,6 +16,7 @@ window.REPOSITORY_TREE={
     airlift:{bar:"#1d4ed8",barText:"#ffffff",page:"#f5f6f8",accent:"#1d4ed8",favicon:"assets/favicon-airlift.svg"},
     maritime:{bar:"#0e7490",barText:"#ffffff",page:"#f5f6f8",accent:"#0e7490",favicon:"assets/favicon-maritime.svg"},
     hadr:{bar:"#b91c1c",barText:"#ffffff",page:"#f5f6f8",accent:"#b91c1c",favicon:"assets/favicon-hadr.svg"},
+    airborne:{bar:"#4d7c0f",barText:"#ffffff",page:"#f5f6f8",accent:"#4d7c0f",favicon:"assets/favicon-airborne.svg"},
     flight:{bar:"#101317",barText:"#eef3f7",page:"#101317",accent:"#71b7ff",favicon:"assets/favicon-flight.svg"}
   },
   folders:{
@@ -27,6 +28,7 @@ window.REPOSITORY_TREE={
     "AIRLIFT":{theme:"airlift",favicon:"assets/favicon-airlift.svg"},
     "MARITIME":{theme:"maritime",favicon:"assets/favicon-maritime.svg"},
     "HADR":{theme:"hadr",favicon:"assets/favicon-hadr.svg"},
+    "AIRBORNE":{theme:"airborne",favicon:"assets/favicon-airborne.svg"},
     "LandingPerformanceDashboard":{theme:"landing",favicon:"assets/favicon-landing.svg"}
   },
   pages:[
@@ -42,6 +44,8 @@ window.REPOSITORY_TREE={
     {path:"MARITIME/maritime_reporting.html",menu:"MARITIME/Reporting missions",label:"MARITIME — Reporting missions"},
     {path:"HADR/hadr_cr.html",menu:"HADR/Générateur de CR",label:"HADR / EVACUATION — Compte rendu de mission"},
     {path:"HADR/hadr_reporting.html",menu:"HADR/Reporting missions",label:"HADR / EVACUATION — Reporting missions"},
+    {path:"AIRBORNE/airborne_cr.html",menu:"AIRBORNE/Générateur de CR",label:"AIRBORNE / AIRDROP — Compte rendu de mission"},
+    {path:"AIRBORNE/airborne_reporting.html",menu:"AIRBORNE/Reporting missions",label:"AIRBORNE / AIRDROP — Reporting missions"},
     {path:"MissionCore/demo_cr.html",menu:"Mission Core/Démonstration — CR",label:"Démonstration — compte rendu de mission"},
     {path:"MissionCore/demo_reporting.html",menu:"Mission Core/Démonstration — reporting",label:"Démonstration — reporting missions"},
     {path:"mission_operations_reporting.html",menu:"Reporting opérations",label:"Synthèse FIRE + HEMS",theme:"landing",favicon:"assets/favicon-landing.svg",files:{gaarLedgerName:"FIRE/mission_ledger.csv",ledgerName:"HEMS/hems_mission_ledger.csv"}},
