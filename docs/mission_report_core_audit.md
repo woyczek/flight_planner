@@ -3,8 +3,9 @@
 > Étape « travail demandé avant codage » (§28 du cahier des charges).
 > État de référence : `repository_tree` v3 + branches `fix/explicit-option-values` (!1),
 > `feat/reporting-tables-tracking` (!2), `feat/network-tracker` (!3).
-> **Aucun fichier n'est modifié par ce document** ; les décisions à valider sont
-> regroupées en fin de document (§G).
+> **Aucun fichier n'est modifié par ce document.** Décisions validées le 2026-09-23 :
+> voir §G (stockage YAML + CSV généré, HEMS/FIRE reconstruits sur le Core, dossier
+> `FIRE/` sans redirection).
 
 ---
 
@@ -68,15 +69,16 @@ Non déclarée : **`GAAR/gaar_mission_reporting.html`** (atteinte seulement via 
 | `mission_values.js` | **Modifié** | Devient le registre des vocabulaires (listes par famille + communes) ; table de conversion FR conservée |
 | `mission_edit.js`, `mission_record_loader.js`, `cr_extras.js`, `network_tracker.js` | **Modifiés** | Adaptateur : globales HEMS/GAAR **ou** API du Core (`MissionCore.currentRecord()`…) |
 | `mission_extensions.js` | **Modifié puis éclaté** | Trace réseau → bloc commun du Core ; altitude-densité → module HEMS ; sélecteur FMS → module FIRE |
-| `hems_mission_sync.js` | **Retenu** (HEMS) | Remplacé plus tard par le modèle événementiel commun (étape 2b) |
-| `hems_reporting.js`, `gaar_reporting.js` | **Modifiés** | Deviennent des configurations du reporting commun `mission_core/reporting.js` |
+| `hems_mission_sync.js` | **Remplacé** (étape 2) | Par le modèle événementiel commun (horaires ⇄ événements pour toutes les familles) |
+| `hems_reporting.js`, `gaar_reporting.js` | **Remplacés** (étape 2) | Par le reporting commun `mission_core/reporting.js` configuré par famille |
 | `aircraft_directory.js`, `AircraftDB/*` | **Retenus** | Alimentent le bloc Appareil(s) de toutes les familles |
 | `*_i18n.js` existants | **Retenus** | Nouveaux dictionnaires par famille dans `shared/mission_core/i18n/` |
-| `HEMS/hems_medevac_cr.html`, `HEMS/hems_medevac_reporting.html` | **Retenus** | Aucune rupture ; migration non destructive (§F étape 2) |
-| `GAAR/DEFA-Virtual.cr.gen.securite-civile.html` | **Déplacé** → `FIRE/fire_cr.html` *(ou `GAAR/gaar_cr.html`, cf. §G)* | Titre « GAAR / FIRE — Compte rendu de mission » ; l'ancien nom devient une redirection |
-| `GAAR/gaar_mission_reporting.html` | **Déplacé** → `FIRE/fire_reporting.html` *(idem)* | Déclaré dans `repository_tree` |
-| `GAAR/mission_stats.html` | **Déprécié** | Redirection conservée pour les favoris |
-| `GAAR/DEFA-Virtual.cr_gen.secucivile.html` | **Déprécié** | Ancienne copie du générateur GAAR → redirection puis suppression |
+| `HEMS/hems_medevac_cr.html`, `HEMS/hems_medevac_reporting.html` | **Reconstruits** (étape 2) | Même adresse ; rendus par le Core (famille HEMS) une fois la parité validée |
+| `GAAR/DEFA-Virtual.cr.gen.securite-civile.html` | **Déplacé** → `FIRE/fire_cr.html` (étape 0), reconstruit (étape 2) | Titre « FIRE / GAAR — Compte rendu de mission » ; **pas de redirection** |
+| `GAAR/gaar_mission_reporting.html` | **Déplacé** → `FIRE/fire_reporting.html` | Déclaré dans `repository_tree` ; **pas de redirection** |
+| `GAAR/mission_stats.html` | **Supprimé** | Redirection devenue inutile |
+| `GAAR/DEFA-Virtual.cr_gen.secucivile.html` | **Supprimé** | Ancienne copie du générateur GAAR |
+| `GAAR/cl415_gaar_fms_pack/`, `GAAR/milan_gaar_pack/` | **Déplacés** → `FIRE/` | Chemins du sélecteur FMS relatifs à la page |
 | `mission_operations_reporting.html` | **Modifié** | Reporting multi-familles (filtre famille, stats communes + spécifiques) |
 | `shared/reporting_data_loader.js`, `shared/gaar_reporting_bridge.js` | **Dépréciés → supprimés** | Non référencés |
 | `DEFA_mission_reporting_HEMS_GAAR_2026-09-23.zip` | **À retirer du dépôt** | Archive de livraison versionnée par erreur |
@@ -101,10 +103,11 @@ flight_performance_planner.html
 LandingPerformanceDashboard/…         (inchangé)
 AircraftDB/…                          (inchangé)
 
-HEMS/   hems_medevac_cr.html  hems_medevac_reporting.html  hems_mission_ledger.csv
-FIRE/   fire_cr.html          fire_reporting.html           mission_ledger.csv  (+ packs FMS)
-GAAR/   anciens noms → redirections vers FIRE/        (cf. §G-2)
-SAR/    sar_cr.html           sar_reporting.html
+HEMS/   hems_medevac_cr.html  hems_medevac_reporting.html  hems_missions.yaml
+FIRE/   fire_cr.html          fire_reporting.html           fire_missions.yaml  (+ packs FMS)
+        (GAAR/ supprimé, sans redirection)
+SAR/    sar_cr.html           sar_reporting.html            sar_missions.yaml
+        (idem pour chaque famille : <famille>_missions.yaml)
 LE/     le_cr.html            le_reporting.html
 MARITIME/ maritime_cr.html    maritime_reporting.html
 ISR/    isr_cr.html           isr_reporting.html
@@ -130,7 +133,8 @@ shared/
                        weather.js fuel.js timeline.js events.js capabilities.js
                        results.js remarks.js network.js collection.js (listes dynamiques)
     report.js          rendu du CR (§21, sections vides omises) + résumé automatique (§22)
-    ledger.js          ligne de registre à plat + colonne payload JSON
+    ledger.js          registre YAML (lecture/écriture/fusion) + export CSV simplifié
+    vendor/js-yaml.min.js   bibliothèque YAML embarquée (MIT, aucune dépendance réseau)
     reporting.js       page de reporting commune (cartes, répartitions, SortedTable, export)
     stats.js           statistiques communes + points d'extension famille
     vocab.js           capacités, résultats, types d'événements communs
@@ -227,17 +231,24 @@ début→fin mission. Passage de minuit géré comme aujourd'hui.
 | FLIGHT INSPECTION | `airport, icao, runway, facility{type,id,frequency,channel}, procedure, inspectionType, passes[{kind,altitude,distance,radial,course,result,anomaly}], ils{locFreq,course,gpAngle,interceptAlt,locResult,gpResult,dmeResult,coverage}, serviceable` |
 | SURVEY | `project, organisation, pi, area{polygon}, lines[{number,plannedAlt,actualAlt,plannedSpeed,actualSpeed,start,end,status}], sensors[], dataQuantity, coverage, missedLines, repeatRequired, samples, weatherRecon{points[{altitude,pressure,temperature,humidity,wind,turbulence,icing,dropsonde}]}` |
 | SPECIAL | `vip{passengers,authority,schedule,delays,handling} | ferry{reason,technicalStatus,stops,defects} | test{card,points[{id,altitude,speed,config,result,pass}],repeatRequired} | training{instructor,trainee,exercises[{objective,repetitions,completed}],grading}` |
-| HEMS / FIRE | adaptateurs : ligne CSV existante ⇄ modèle commun (`schemaVersion: 1` = format plat actuel) |
+| HEMS | `service, outcome, medicalization, incidentType, patientProfile, sceneLocation, coordinates, destinations[{name,arrival,departure,note}], patients, densityAltitude, alertToTakeoffMinutes, sceneMinutes` (import des anciens CSV/JSON = `schemaVersion: 1`) |
+| FIRE / GAAR | `risk, sector, reloadBase, fms, load, drops, reloads, reloadTime, eventDrops, eventReloads, fireAlert, patrolStart, firstDrop, endIntervention` (import des anciens CSV/JSON = `schemaVersion: 1`) |
 
-### E.3 Registre (CSV) et compatibilité
+### E.3 Registre YAML, export CSV et compatibilité *(décision validée)*
 
-- **Une ligne par mission** : colonnes communes à plat (identifiants, dates, appareil principal,
-  temps calculés, résultat, réseau) + colonnes de stats spécifiques de la famille +
-  **colonne `payload`** contenant le JSON complet de la mission (`schemaVersion` inclus).
-  Le reporting ne lit que les colonnes plates ; le mode modification relit `payload`.
-- HEMS et FIRE gardent **exactement** leurs colonnes actuelles ; `payload` est ajoutée en
-  fin de ligne (les lignes existantes sans `payload` restent lues via l'adaptateur).
-- JSON sans `schemaVersion` = ancien CR HEMS/GAAR → migration à l'import (`model.js`).
+- **Source de vérité : un registre YAML par famille** (`<famille>_missions.yaml`) :
+  `schemaVersion`, `family`, puis `missions:` (liste de missions au format E.1, arborescent).
+  Chargement/écriture comme aujourd'hui : auto-chargement à côté de la page, dossier local
+  autorisé (Chrome/Edge), copie locale navigateur partagée entre pages.
+- **CSV = export simplifié généré** (une ligne par mission : identifiants, date, famille,
+  série, appareil principal, temps calculés, résultat, stats principales) pour les tableurs.
+  Il n'est plus relu comme source.
+- **Écriture YAML sûre** : dates, heures (`"10:39"`), identifiants et immatriculations
+  toujours entre guillemets ; lecture avec le schéma YAML 1.2 « core » (pas de conversion
+  implicite des dates) ; commentaires d'en-tête générés.
+- **Migration** : les anciens registres CSV HEMS/GAAR et les anciens JSON de CR (sans
+  `schemaVersion`) restent importables une fois, convertis vers le YAML (`model.js`).
+- JSON reste un format interne (mémoire, copie navigateur), pas un fichier utilisateur.
 
 ---
 
@@ -245,12 +256,13 @@ début→fin mission. Passage de minuit géré comme aujourd'hui.
 
 | # | Étape | Contenu | Validation |
 |---|---|---|---|
-| 0 | Nettoyage | fichiers inutilisés/archivés, `gaar_mission_reporting.html` déclarée, décision nommage (§G-2) | pages existantes identiques |
+| 0 | Nettoyage + FIRE | fichiers inutilisés/archivés supprimés ; `GAAR/` → `FIRE/` (pages, packs FMS, données locales) sans redirection ; titres corrigés ; `repository_tree` à jour | pages FIRE/HEMS/général fonctionnelles, registres rechargés |
 | 1a | Core : modèle + montage | `core.js`, `model.js`, blocs communs (identification, appareils[], équipage[], chronologie, météo, carburant, résultat, remarques, réseau), `collection.js`, capacités | page de démonstration ; export/import JSON ; i18n FR/EN/DE/ES |
 | 1b | Core : CR + résumé | `report.js` (sections §21 sans vides), résumé par famille, impression | rapport d'une mission de démo |
-| 1c | Core : registre + reporting | `ledger.js` (+ `payload`), `reporting.js`, `stats.js`, bascule CR ⇄ reporting, mode modification/suppression, doublons, suivi réseau branché | round-trip CR → registre → reporting → modification |
-| 2a | HEMS + FIRE (non destructif) | adaptateurs `families/hems.js`, `fire.js` ; reporting général multi-familles | anciens CSV/JSON importables, stats identiques |
-| 2b | *(optionnel)* HEMS/FIRE rendus par le Core | mêmes colonnes CSV, mêmes pages | comparaison champ à champ |
+| 1c | Core : registre + reporting | `ledger.js` (YAML + export CSV), `reporting.js`, `stats.js`, bascule CR ⇄ reporting, mode modification/suppression, doublons, suivi réseau branché | round-trip CR → registre YAML → reporting → modification |
+| 2a | HEMS reconstruit sur le Core | `families/hems.js` (mêmes champs, horaires ⇄ événements, destinations), import des anciens CSV/JSON, reporting HEMS par le Core | comparaison champ à champ avec l'ancienne page ; stats identiques |
+| 2b | FIRE reconstruit sur le Core | `families/fire.js` (largages, écopages, sélecteur FMS), import des anciens CSV/JSON | idem |
+| 2c | Reporting général multi-familles | filtre famille, stats communes + spécifiques, lecture des registres YAML | totaux identiques à l'étape 0 |
 | 3 | SAR / PR | famille complète (treuil, kit SAR, patterns) | CR H145 treuillage, H225 recherche maritime |
 | 4 | AIRLIFT | legs, manifeste, pistes | A400M tactique, Twin Otter polaire |
 | 5 | MARITIME | contacts navires, pollution | CN-235 / Atlantique 2 MARPAT |
@@ -269,17 +281,20 @@ persistance, `repository_tree` mis à jour (pages, dossier, thème, favicon).
 
 ---
 
-## G. Décisions à valider avant l'étape 0
+## G. Décisions
+
+Validées le 2026-09-23 :
 
 1. **Pages** : deux pages minces par famille (`<famille>_cr.html` + `<famille>_reporting.html`)
-   rendues par le Core — conforme à « deux pages par catégorie » sans dupliquer le générateur.
-2. **Nommage GAAR** : renommer le dossier en `FIRE/` (famille « FIRE / GAAR ») avec
-   redirections depuis `GAAR/…`, **ou** garder `GAAR/` et ne renommer que les fichiers
-   (`GAAR/gaar_cr.html`, `GAAR/gaar_reporting.html`). HEMS garde ses noms actuels.
-3. **Registre** : CSV plat + colonne `payload` JSON (proposé), plutôt qu'un fichier JSON
-   par mission à côté du CSV.
-4. **HEMS / FIRE** : migration non destructive par adaptateurs (2a) ; le passage de leurs
-   pages au rendu du Core (2b) reste optionnel.
+   rendues par le Core, avec boutons de bascule CR ⇄ reporting.
+2. **Nommage** : dossier `FIRE/` (famille « FIRE / GAAR »), `FIRE/fire_cr.html` et
+   `FIRE/fire_reporting.html`, **sans redirection** depuis `GAAR/`. HEMS garde ses noms.
+3. **Stockage** : registre **YAML** par famille (source de vérité) + **CSV simplifié généré**
+   pour les tableurs (§E.3). Pas de colonne JSON, pas de fichier JSON utilisateur.
+4. **HEMS / FIRE** : **reconstruits sur le Core** (étapes 2a/2b), anciennes données importées.
+
+Retenues par défaut (à contester si besoin) :
+
 5. **i18n** : libellés des familles déclarés en lignes `[fr, en, de, es]` et enregistrés dans
    le système commun `RepositoryContentI18n` (pas de second système).
 6. **Contexte militaire** (CSAR, SOF, ISR) : champs limités au niveau compte rendu de
