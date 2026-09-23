@@ -22,7 +22,7 @@
   const identification = [opt('POSITIVE', L('Positive', 'Positive', 'Positiv', 'Positiva')), opt('NEGATIVE', L('Négative', 'Negative', 'Negativ', 'Negativa')), opt('UNCONFIRMED', L('Non confirmée', 'Unconfirmed', 'Unbestätigt', 'No confirmada'))];
   const recoveryMethods = [opt('HOIST', L('Treuillage', 'Hoist', 'Winde', 'Grúa')), opt('LANDING', L('Posé', 'Landing', 'Landung', 'Aterrizaje')), opt('SWIMMER', L('Nageur-sauveteur', 'Rescue swimmer', 'Rettungsschwimmer', 'Nadador de rescate')), opt('SURFACE_UNIT', L('Unité de surface guidée', 'Surface unit vectored', 'Eingewiesene Überwassereinheit', 'Unidad de superficie guiada')), opt('GROUND_TEAM', L('Équipe au sol guidée', 'Ground team vectored', 'Eingewiesene Bodenmannschaft', 'Equipo de tierra guiado')), opt('NONE', L('Aucune', 'None', 'Keine', 'Ninguna'))];
 
-  window.MissionCore.registerFamily({
+  const SAR = window.MissionCore.registerFamily({
     id: 'SAR', idPrefix: 'SAR',
     pages: { cr: 'sar_cr.html', reporting: 'sar_reporting.html' },
     title: L('SAR / récupération de personnel', 'SAR / personnel recovery', 'SAR / Personalrettung', 'SAR / recuperación de personal'),
@@ -131,8 +131,8 @@
       { id: 'searches', label: L('Zones de recherche', 'Search areas', 'Suchgebiete', 'Zonas de búsqueda'), value: ms => ms.reduce((a, m) => a + (m.missionData?.sar?.searchAreas || []).filter(z => z.name || z.pattern).length, 0) },
       { id: 'located', label: L('Personnes localisées', 'Persons located', 'Geortete Personen', 'Personas localizadas'), value: ms => ms.reduce((a, m) => a + (Number(m.missionData?.sar?.personsLocated) || 0), 0) },
       { id: 'rescued', label: L('Personnes secourues', 'Persons rescued', 'Gerettete Personen', 'Personas rescatadas'), value: ms => ms.reduce((a, m) => a + (Number(m.missionData?.sar?.personsRecovered) || 0), 0) },
-      { id: 'hoists', label: L('Treuillages', 'Hoists', 'Windeneinsätze', 'Izados'), value: ms => ms.reduce((a, m) => a + (Number(m.missionData?.sar?.hoist?.cycles) || 0), 0) },
-      { id: 'kits', label: L('Kits SAR largués', 'SAR kits dropped', 'Abgeworfene SAR-Kits', 'Kits SAR lanzados'), value: ms => ms.reduce((a, m) => a + (Number(m.missionData?.sar?.kit?.count) || 0), 0) }
+      { id: 'hoists', label: L('Treuillages', 'Hoists', 'Windeneinsätze', 'Izados'), value: ms => ms.reduce((a, m) => a + (window.MissionModel.blockVisible(m, SAR, 'sar-hoist') ? Number(m.missionData?.sar?.hoist?.cycles) || 0 : 0), 0) },
+      { id: 'kits', label: L('Kits SAR largués', 'SAR kits dropped', 'Abgeworfene SAR-Kits', 'Kits SAR lanzados'), value: ms => ms.reduce((a, m) => a + (window.MissionModel.blockVisible(m, SAR, 'sar-kit') ? Number(m.missionData?.sar?.kit?.count) || 0 : 0), 0) }
     ],
     // Résumé automatique SAR (§22) — ex. « SAR maritime de 02:14 réalisée par … ».
     summary: (() => {
@@ -146,7 +146,7 @@
           h.aircraft.length && `${w.by} ${h.list(h.aircraft, w.and)}`, h.lead.baseDeparture && `${w.from} ${h.lead.baseDeparture}`, '.',
           zone && `${w.area} ${zone}.`, firstContact && `${w.contact} ${firstContact.time}.`,
           (located || recovered) && `${w.located(located)}, ${w.recovered(recovered)}.`,
-          sar.hoist?.cycles && `${w.hoists(sar.hoist.cycles)}.`,
+          h.visible('sar-hoist') && sar.hoist?.cycles && `${w.hoists(sar.hoist.cycles)}.`,
           t.landing && `${w.back} ${h.lead.baseReturn || h.lead.baseDeparture || ''} ${w.at} ${t.landing}.`,
           s.flightMinutes != null && `${w.flight} ${h.duration(s.flightMinutes)}${s.timeOnStationMinutes != null ? `, ${w.station} ${h.duration(s.timeOnStationMinutes)}` : ''}.`,
           h.outcome && `${w.outcome} ${h.outcome}.`);

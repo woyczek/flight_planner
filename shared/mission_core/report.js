@@ -138,9 +138,13 @@
     const date = mission.metadata?.date ? new Date(`${mission.metadata.date}T12:00:00`).toLocaleDateString(l, { day: 'numeric', month: 'long', year: 'numeric' }) : '';
     // Assemble des morceaux de phrase en ignorant ceux dont une donnée manque.
     const sentence = (...parts) => parts.filter(Boolean).join(' ').replace(/\s+([,.])/g, '$1').trim();
+    // Un résumé ne cite jamais les données d'un bloc masqué (ex. largages sans AIRDROP).
+    const ctx = M.context(mission, family), visible = id => M.blockVisible(mission, family, id);
     // Nombre formaté selon la langue (4,0 t en français, 4.0 t en anglais…).
     const number = (v, digits = 0) => Number(v || 0).toLocaleString(l, { minimumFractionDigits: digits, maximumFractionDigits: digits });
-    return { lang: l, number, pick, stats, duration, series: pick(series?.label) || mission.series || '', outcome: pick(outcome?.label) || '', caps, lead, aircraft, list, date, sentence, mission };
+    // Masse lisible : kg sous la tonne, t (1 décimale) au-delà.
+    const mass = kg => Number(kg) >= 1000 ? `${number(Number(kg) / 1000, 1)} t` : `${number(kg)} kg`;
+    return { lang: l, number, mass, visible, ctx, pick, stats, duration, series: pick(series?.label) || mission.series || '', outcome: pick(outcome?.label) || '', caps, lead, aircraft, list, date, sentence, mission };
   }
   function summary(mission, family, l = lang()) {
     const template = family.summary?.[l] || family.summary?.fr;

@@ -109,14 +109,7 @@
     }
 
     // ---- contexte d'affichage (§23) : famille, série, capacités, catégories d'appareil
-    function context() {
-      const mission = getMission();
-      const categories = (mission.aircraft || []).map(a => a.category).filter(Boolean);
-      if (!categories.length && family.defaultCategory) categories.push(family.defaultCategory);
-      // flags : objet fixe ou fonction de la mission (ex. SAR : maritime selon la série).
-      const flags = typeof family.flags === 'function' ? family.flags(mission) || {} : family.flags || {};
-      return { family: family.id, series: mission.series || '', mission, flags, capabilities: new Set(mission.capabilities || []), categories: new Set(categories) };
-    }
+    const context = () => M.context(getMission(), family);
     function refresh() {
       ctx = context();
       blocks.forEach(({ block, section }) => { section.hidden = block.when ? !block.when(ctx) : false; });

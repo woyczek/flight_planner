@@ -108,17 +108,17 @@
         return h.sentence(
           `${h.series || w.airlift}${h.date ? ` ${w.on} ${h.date}` : ''}`, h.aircraft.length && `${w.by} ${h.list(h.aircraft, w.and)}`,
           from && `${w.from} ${from}`, to && `${w.to} ${to}`, a.stops && `${w.via} ${a.stops}`, legs > 1 && `(${legs} ${w.legs})`, '.',
-          (pax || kg) && `${[pax && w.pax(pax), kg && w.cargo(h.number(kg / 1000, 1))].filter(Boolean).join(', ')}.`,
-          a.deliveredKg && `${w.delivered(h.number(num(a.deliveredKg) / 1000, 1))}.`,
+          (pax || kg) && `${[pax && w.pax(pax), kg && w.cargo(h.mass(kg))].filter(Boolean).join(', ')}.`,
+          a.deliveredKg && `${w.delivered(h.mass(a.deliveredKg))}.`,
           a.runwayType && a.runwayType !== 'PAVED' && `${w.runway}.`,
           s.flightMinutes != null && `${w.flight} ${h.duration(s.flightMinutes)}${s.blockMinutes != null ? `, ${w.block} ${h.duration(s.blockMinutes)}` : ''}.`,
           h.outcome && `${w.outcome} ${h.outcome}.`);
       };
       return {
-        fr: build({ airlift: 'Transport aérien', on: 'du', by: 'réalisé par', and: 'et', from: 'de', to: 'à', via: 'via', legs: 'étapes', pax: n => `${n} passager(s)`, cargo: t => `${t} t de fret`, delivered: t => `${t} t livrées`, runway: 'Posé sur piste non revêtue', flight: 'Temps de vol', block: 'temps bloc', outcome: 'Résultat :' }),
-        en: build({ airlift: 'Airlift', on: 'on', by: 'flown by', and: 'and', from: 'from', to: 'to', via: 'via', legs: 'legs', pax: n => `${n} passenger(s)`, cargo: t => `${t} t of cargo`, delivered: t => `${t} t delivered`, runway: 'Landing on an unpaved strip', flight: 'Flight time', block: 'block time', outcome: 'Outcome:' }),
-        de: build({ airlift: 'Lufttransport', on: 'am', by: 'durchgeführt mit', and: 'und', from: 'von', to: 'nach', via: 'über', legs: 'Etappen', pax: n => `${n} Passagier(e)`, cargo: t => `${t} t Fracht`, delivered: t => `${t} t ausgeliefert`, runway: 'Landung auf unbefestigter Piste', flight: 'Flugzeit', block: 'Blockzeit', outcome: 'Ergebnis:' }),
-        es: build({ airlift: 'Transporte aéreo', on: 'del', by: 'realizado por', and: 'y', from: 'de', to: 'a', via: 'vía', legs: 'tramos', pax: n => `${n} pasajero(s)`, cargo: t => `${t} t de carga`, delivered: t => `${t} t entregadas`, runway: 'Aterrizaje en pista no pavimentada', flight: 'Tiempo de vuelo', block: 'tiempo calzo a calzo', outcome: 'Resultado:' })
+        fr: build({ airlift: 'Transport aérien', on: 'du', by: 'réalisé par', and: 'et', from: 'de', to: 'à', via: 'via', legs: 'étapes', pax: n => `${n} passager(s)`, cargo: t => `${t} de fret`, delivered: t => `${t} livrés`, runway: 'Posé sur piste non revêtue', flight: 'Temps de vol', block: 'temps bloc', outcome: 'Résultat :' }),
+        en: build({ airlift: 'Airlift', on: 'on', by: 'flown by', and: 'and', from: 'from', to: 'to', via: 'via', legs: 'legs', pax: n => `${n} passenger(s)`, cargo: t => `${t} of cargo`, delivered: t => `${t} delivered`, runway: 'Landing on an unpaved strip', flight: 'Flight time', block: 'block time', outcome: 'Outcome:' }),
+        de: build({ airlift: 'Lufttransport', on: 'am', by: 'durchgeführt mit', and: 'und', from: 'von', to: 'nach', via: 'über', legs: 'Etappen', pax: n => `${n} Passagier(e)`, cargo: t => `${t} Fracht`, delivered: t => `${t} ausgeliefert`, runway: 'Landung auf unbefestigter Piste', flight: 'Flugzeit', block: 'Blockzeit', outcome: 'Ergebnis:' }),
+        es: build({ airlift: 'Transporte aéreo', on: 'del', by: 'realizado por', and: 'y', from: 'de', to: 'a', via: 'vía', legs: 'tramos', pax: n => `${n} pasajero(s)`, cargo: t => `${t} de carga`, delivered: t => `${t} entregados`, runway: 'Aterrizaje en pista no pavimentada', flight: 'Tiempo de vuelo', block: 'tiempo calzo a calzo', outcome: 'Resultado:' })
       };
     })()
   });
