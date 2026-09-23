@@ -77,7 +77,7 @@
     form.insertBefore(section, controls || null); addHeaders(['onlineNetwork','ivaoId','vatsimId','trackerUrl']);
     const ivao = form.querySelector('[name="ivaoId"]'), vatsim = form.querySelector('[name="vatsimId"]'), url = section.querySelector('[name="trackerUrl"]'), status = section.querySelector('#trackStatus');
     section.querySelectorAll('a.secondary').forEach(link => link.style.cssText = 'display:inline-block;padding:9px 12px;border-radius:9px;text-decoration:none;color:inherit');
-    const links = () => { section.querySelector('#ivaoTrackerLink').href = 'https://tracker.ivao.aero/?userId=' + encodeURIComponent(ivao.value.trim()); section.querySelector('#vatsimTrackerLink').href = 'https://statsim.net/flights/vatsimid/?vatsimid=' + encodeURIComponent(vatsim.value.trim()); };
+    const links = () => { section.querySelector('#ivaoTrackerLink').href = 'https://tracker.ivao.aero/?userId=' + encodeURIComponent(ivao.value.trim()); section.querySelector('#vatsimTrackerLink').href = 'https://stats.vatsim.net/stats/' + encodeURIComponent(vatsim.value.trim()); };
     ivao.addEventListener('input',links); vatsim.addEventListener('input',links); links();
     section.querySelector('#ivaoTrackerLink').onclick = event => { if (!ivao.value.trim()) { event.preventDefault(); ivao.focus(); } else url.value = event.currentTarget.href; };
     section.querySelector('#vatsimTrackerLink').onclick = event => { if (!vatsim.value.trim()) { event.preventDefault(); vatsim.focus(); } else url.value = event.currentTarget.href; };
