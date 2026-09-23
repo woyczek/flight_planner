@@ -138,7 +138,9 @@
     const date = mission.metadata?.date ? new Date(`${mission.metadata.date}T12:00:00`).toLocaleDateString(l, { day: 'numeric', month: 'long', year: 'numeric' }) : '';
     // Assemble des morceaux de phrase en ignorant ceux dont une donnée manque.
     const sentence = (...parts) => parts.filter(Boolean).join(' ').replace(/\s+([,.])/g, '$1').trim();
-    return { pick, stats, duration, series: pick(series?.label) || mission.series || '', outcome: pick(outcome?.label) || '', caps, lead, aircraft, list, date, sentence, mission };
+    // Nombre formaté selon la langue (4,0 t en français, 4.0 t en anglais…).
+    const number = (v, digits = 0) => Number(v || 0).toLocaleString(l, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    return { lang: l, number, pick, stats, duration, series: pick(series?.label) || mission.series || '', outcome: pick(outcome?.label) || '', caps, lead, aircraft, list, date, sentence, mission };
   }
   function summary(mission, family, l = lang()) {
     const template = family.summary?.[l] || family.summary?.fr;

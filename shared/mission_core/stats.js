@@ -58,7 +58,7 @@
     ].filter(card => card.always || card.show);
     const specific = (family?.stats || []).map(def => {
       const raw = def.value(missions);
-      const value = typeof def.format === 'function' ? def.format(raw) : def.format === 'duration' ? duration(raw) : raw;
+      const value = typeof def.format === 'function' ? def.format(raw) : def.format === 'duration' ? duration(raw) : typeof raw === 'number' ? raw.toLocaleString(['fr', 'en', 'de', 'es'][idx]) : raw;
       return { label: def.label, value, sub: def.sub ? def.sub(missions) : '', specific: true };
     });
     return list.concat(specific);
