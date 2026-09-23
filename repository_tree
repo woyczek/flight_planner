@@ -14,6 +14,7 @@ window.REPOSITORY_TREE={
     core:{bar:"#2f3b52",barText:"#ffffff",page:"#f5f6f8",accent:"#2f3b52",favicon:"assets/favicon-flight.svg"},
     sar:{bar:"#c2410c",barText:"#ffffff",page:"#f5f6f8",accent:"#c2410c",favicon:"assets/favicon-sar.svg"},
     airlift:{bar:"#1d4ed8",barText:"#ffffff",page:"#f5f6f8",accent:"#1d4ed8",favicon:"assets/favicon-airlift.svg"},
+    maritime:{bar:"#0e7490",barText:"#ffffff",page:"#f5f6f8",accent:"#0e7490",favicon:"assets/favicon-maritime.svg"},
     flight:{bar:"#101317",barText:"#eef3f7",page:"#101317",accent:"#71b7ff",favicon:"assets/favicon-flight.svg"}
   },
   folders:{
@@ -23,6 +24,7 @@ window.REPOSITORY_TREE={
     "MissionCore":{theme:"core",favicon:"assets/favicon-flight.svg"},
     "SAR":{theme:"sar",favicon:"assets/favicon-sar.svg"},
     "AIRLIFT":{theme:"airlift",favicon:"assets/favicon-airlift.svg"},
+    "MARITIME":{theme:"maritime",favicon:"assets/favicon-maritime.svg"},
     "LandingPerformanceDashboard":{theme:"landing",favicon:"assets/favicon-landing.svg"}
   },
   pages:[
@@ -34,6 +36,8 @@ window.REPOSITORY_TREE={
     {path:"SAR/sar_reporting.html",menu:"SAR/Reporting missions",label:"SAR / PR — Reporting missions"},
     {path:"AIRLIFT/airlift_cr.html",menu:"AIRLIFT/Générateur de CR",label:"AIRLIFT / LOGISTICS — Compte rendu de mission"},
     {path:"AIRLIFT/airlift_reporting.html",menu:"AIRLIFT/Reporting missions",label:"AIRLIFT / LOGISTICS — Reporting missions"},
+    {path:"MARITIME/maritime_cr.html",menu:"MARITIME/Générateur de CR",label:"MARITIME — Compte rendu de mission"},
+    {path:"MARITIME/maritime_reporting.html",menu:"MARITIME/Reporting missions",label:"MARITIME — Reporting missions"},
     {path:"MissionCore/demo_cr.html",menu:"Mission Core/Démonstration — CR",label:"Démonstration — compte rendu de mission"},
     {path:"MissionCore/demo_reporting.html",menu:"Mission Core/Démonstration — reporting",label:"Démonstration — reporting missions"},
     {path:"mission_operations_reporting.html",menu:"Reporting opérations",label:"Synthèse FIRE + HEMS",theme:"landing",favicon:"assets/favicon-landing.svg",files:{gaarLedgerName:"FIRE/mission_ledger.csv",ledgerName:"HEMS/hems_mission_ledger.csv"}},
