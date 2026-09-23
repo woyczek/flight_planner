@@ -47,6 +47,6 @@
     registration.addEventListener('change', () => complete('registration')); callsign.addEventListener('change', () => complete('callsign')); aircraft?.addEventListener('change', () => complete('aircraft')); refresh();
   });
   const extensions = document.createElement('script');
-  extensions.src = new URL('mission_extensions.js?v=20260923d', moduleUrl).href;
+  extensions.src = new URL('mission_extensions.js?v=20260923g', moduleUrl).href;
   document.head.append(extensions);
 })();
