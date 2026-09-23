@@ -135,7 +135,8 @@
     const lead = mission.aircraft?.[0] || {};
     const aircraft = (mission.aircraft || []).filter(a => a.type || a.registration).map(a => [a.type, a.registration && `(${a.registration})`].filter(Boolean).join(' '));
     const list = (items, and) => items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')} ${and} ${items[items.length - 1]}`;
-    const date = mission.metadata?.date ? new Date(`${mission.metadata.date}T12:00:00`).toLocaleDateString(l, { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+    const formatDate = iso => /^\d{4}-\d{2}-\d{2}$/.test(String(iso || '')) ? new Date(`${iso}T12:00:00`).toLocaleDateString(l, { day: 'numeric', month: 'long', year: 'numeric' }) : String(iso || '');
+    const date = formatDate(mission.metadata?.date);
     // Assemble des morceaux de phrase en ignorant ceux dont une donnée manque.
     const sentence = (...parts) => parts.filter(Boolean).join(' ').replace(/\s+([,.])/g, '$1').trim();
     // Un résumé ne cite jamais les données d'un bloc masqué (ex. largages sans AIRDROP).
@@ -144,7 +145,7 @@
     const number = (v, digits = 0) => Number(v || 0).toLocaleString(l, { minimumFractionDigits: digits, maximumFractionDigits: digits });
     // Masse lisible : kg sous la tonne, t (1 décimale) au-delà.
     const mass = kg => Number(kg) >= 1000 ? `${number(Number(kg) / 1000, 1)} t` : `${number(kg)} kg`;
-    return { lang: l, number, mass, visible, ctx, pick, stats, duration, series: pick(series?.label) || mission.series || '', outcome: pick(outcome?.label) || '', caps, lead, aircraft, list, date, sentence, mission };
+    return { lang: l, number, mass, formatDate, visible, ctx, pick, stats, duration, series: pick(series?.label) || mission.series || '', outcome: pick(outcome?.label) || '', caps, lead, aircraft, list, date, sentence, mission };
   }
   function summary(mission, family, l = lang()) {
     const template = family.summary?.[l] || family.summary?.fr;
