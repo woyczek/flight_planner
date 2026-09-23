@@ -45,8 +45,10 @@
     const input = field(name), time = input?.value, type = links[name];
     if (!time || !type) return;
     syncing = true;
+    // La ligne liée reste valable tant qu'elle existe et que son type n'a pas été
+    // changé à la main (le lien est alors retiré, voir l'écouteur "change" plus bas).
     let row = linked.get(name);
-    if (row && (!row.isConnected || selectFor(row)?.value !== type)) row = null;
+    if (row && !row.isConnected) row = null;
     if (!row) {
       const matching = eventRows(type);
       row = matching.find(item => timeFor(item).value === time) || matching.find(item => !timeFor(item).value) || null;
@@ -68,6 +70,7 @@
   Object.keys(links).forEach(name => { const input = field(name); if (input) onCommit(input, () => syncFieldToEvent(name)); });
   body.addEventListener('change', event => {
     const row = event.target.closest('tr');
+    if (row && event.target === selectFor(row)) linked.forEach((linkedRow, name) => { if (linkedRow === row) linked.delete(name); });
     if (row && !(event.target.matches('input[type="time"]') && document.activeElement === event.target)) syncEventToField(row);
   });
   body.addEventListener('focusout', event => { const row = event.target.closest('tr'); if (row && event.target.matches('input[type="time"]')) syncEventToField(row); });
