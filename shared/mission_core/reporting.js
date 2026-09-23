@@ -73,12 +73,11 @@
     function render() {
       const all = ledger.missions.map(toRow);
       const visible = window.TimePeriod ? window.TimePeriod.filterRows(all, 'date') : all;
-      const sum = key => visible.reduce((acc, r) => acc + (r[key] || 0), 0);
-      const card = (key, value, sub = '') => `<div class="card"><span class="small">${esc(t(key))}</span><b>${esc(value)}</b><span class="small">${esc(sub)}</span></div>`;
-      const ok = visible.filter(r => r.outcome === 'SUCCESS').length;
-      root.querySelector('#mcCards').innerHTML = card('missions', visible.length) + card('success', ok, visible.length ? `${Math.round(ok * 100 / visible.length)} %` : '')
-        + card('flight', duration(sum('flight')), visible.length ? `${t('average')} ${duration(sum('flight') / visible.length)}` : '')
-        + card('block', duration(sum('block'))) + card('onStation', duration(sum('station')));
+      // Statistiques communes (§20) + statistiques spécialisées de la famille (stats.js).
+      root.querySelector('#mcCards').innerHTML = window.MissionStats.cards(visible.map(r => r.mission), family).map(card => {
+        rows.set(card.label[0], card.label);
+        return `<div class="card${card.specific ? ' specific' : ''}"><span class="small">${esc(card.label[0])}</span><b>${esc(card.value)}</b><span class="small">${esc(card.sub || '')}</span></div>`;
+      }).join('');
       const groups = (titleKey, values) => {
         const counts = {}; values.forEach(v => { counts[v] = (counts[v] || 0) + 1; });
         const data = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8), max = Math.max(1, ...data.map(d => d[1]));
@@ -117,6 +116,7 @@
       if (count) { await persist(); status.textContent += ` · ${count} ${t('importedN')}`; render(); }
     };
     window.TimePeriod?.mount(root.querySelector('#mcPeriod'), { onChange: render });
+    window.addEventListener('repository-language-change', () => setTimeout(render));
     window.addEventListener('load', () => window.RepositoryNav?.addAction?.(`${t('newReport')} ${family.id}`, () => { location.href = family.pages.cr; }));
     const ready = ledger.load().then(render);
     return { family, ledger, ready, render };

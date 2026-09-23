@@ -45,6 +45,12 @@
         s.flightMinutes != null && `Tiempo de vuelo ${h.duration(s.flightMinutes)}${s.timeOnStationMinutes != null ? `, tiempo en zona ${h.duration(s.timeOnStationMinutes)}` : ''}.`,
         h.outcome && `Resultado: ${h.outcome}.`); }
     },
+    // Statistiques spécialisées (§20), affichées après les statistiques communes.
+    stats: [
+      { id: 'hoistCycles', label: L('Cycles de treuil', 'Hoist cycles', 'Windenzyklen', 'Ciclos de grúa'), value: ms => ms.reduce((a, m) => a + (Number(m.missionData?.hoist?.cycles) || 0), 0) },
+      { id: 'personsHoisted', label: L('Personnes treuillées', 'Persons hoisted', 'Gewindete Personen', 'Personas izadas'), value: ms => ms.reduce((a, m) => a + (Number(m.missionData?.hoist?.personsHoisted) || 0), 0) },
+      { id: 'airdropKg', label: L('Charge larguée (kg)', 'Load dropped (kg)', 'Abgeworfene Last (kg)', 'Carga lanzada (kg)'), value: ms => ms.reduce((a, m) => a + (Number(m.missionData?.airdrop?.loadKg) || 0), 0) }
+    ],
     blocks: [
       {
         id: 'demo-hoist', title: L('Treuillage', 'Hoist operations', 'Windeneinsatz', 'Operaciones de grúa'),
