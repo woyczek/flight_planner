@@ -143,6 +143,7 @@
     window.addEventListener('repository-language-change', () => setTimeout(render));
     window.addEventListener('load', () => window.RepositoryNav?.addAction?.(`${t('newReport')} ${family.id}`, () => { location.href = family.pages.cr; }));
     const ready = ledger.load().then(render);
+    window.addEventListener('local-store-restored', () => ledger.load().then(render));
     return { family, ledger, ready, render };
   }
 

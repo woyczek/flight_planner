@@ -23,7 +23,25 @@
   // Types de la flotte DEFA absents de la base OACI importée.
   const SUPPLEMENT = {
     H160: { tdesig: 'H160', model: 'Airbus Helicopters H160', category: 'rotary', wtc: 'L' },
-    CL2T: { tdesig: 'CL2T', model: 'Canadair CL-415 / CL-215T', category: 'amphibious', wtc: 'M' }
+    CL2T: { tdesig: 'CL2T', model: 'Canadair CL-415 / CL-215T', category: 'amphibious', wtc: 'M' },
+    AS32: { tdesig: 'AS32', model: 'AS332 Super Puma / H215', category: 'rotary', wtc: 'M' },
+    AS55: { tdesig: 'AS55', model: 'AS555 Fennec', category: 'rotary', wtc: 'L' },
+    CP10: { tdesig: 'CP10', model: 'Mudry CAP 10', category: 'fixed', wtc: 'L' },
+    E121: { tdesig: 'E121', model: 'Embraer EMB-121 Xingu', category: 'fixed', wtc: 'L' },
+    E2C: { tdesig: 'E2C', model: 'Northrop Grumman E-2C Hawkeye', category: 'fixed', wtc: 'M' },
+    E3CF: { tdesig: 'E3CF', model: 'Boeing E-3F Sentry', category: 'fixed', wtc: 'H' },
+    EC20: { tdesig: 'EC20', model: 'EC120 Colibri', category: 'rotary', wtc: 'L' },
+    EC25: { tdesig: 'EC25', model: 'EC225 / H225 Caracal', category: 'rotary', wtc: 'M' },
+    GAZL: { tdesig: 'GAZL', model: 'SA341 / SA342 Gazelle', category: 'rotary', wtc: 'L' },
+    MIR2: { tdesig: 'MIR2', model: 'Dassault Mirage 2000', category: 'fixed', wtc: 'M' },
+    NH90: { tdesig: 'NH90', model: 'NH Industries NH90 Caïman', category: 'rotary', wtc: 'M' },
+    PC21: { tdesig: 'PC21', model: 'Pilatus PC-21', category: 'fixed', wtc: 'L' },
+    PC6T: { tdesig: 'PC6T', model: 'Pilatus PC-6 Turbo Porter', category: 'fixed', wtc: 'L' },
+    PUMA: { tdesig: 'PUMA', model: 'SA330 Puma', category: 'rotary', wtc: 'M' },
+    RFAL: { tdesig: 'RFAL', model: 'Dassault Rafale', category: 'fixed', wtc: 'M' },
+    RQ9P: { tdesig: 'RQ9P', model: 'General Atomics MQ-9 Reaper (drone)', category: 'fixed', wtc: 'L' },
+    TBM7: { tdesig: 'TBM7', model: 'Daher TBM 700', category: 'fixed', wtc: 'L' },
+    TIGR: { tdesig: 'TIGR', model: 'Airbus Helicopters Tigre', category: 'rotary', wtc: 'L' }
   };
   const localTypes = () => ({ ...SUPPLEMENT, ...(read(TYPES_KEY) || {}) });
   // Libellés parasites présents dans la base OACI importée (texte de pages web récupéré
@@ -77,7 +95,8 @@
     }
     out.push(value); return out.map(v => v.trim());
   }
-  const FIELDS = ['registration', 'type', 'variant', 'category', 'callsign', 'tacticalNumber', 'configuration', 'equipment'];
+  // base / operator / number : flotte DEFA (base d'attache, opérateur, numéro de l'appareil).
+  const FIELDS = ['registration', 'type', 'variant', 'category', 'callsign', 'tacticalNumber', 'configuration', 'equipment', 'base', 'operator', 'number'];
   // Fusion par immatriculation, du plus ancien au plus récent : chaque champ non vide
   // écrase la valeur précédente → « la dernière en date ».
   function known() {
@@ -88,7 +107,7 @@
         const value = record[field];
         if (Array.isArray(value) ? value.length : value !== undefined && value !== null && String(value).trim() !== '') current[field] = field === 'registration' || field === 'callsign' ? String(value).toUpperCase() : value;
       });
-      if (record.callsign && !current.callsigns.includes(String(record.callsign).toUpperCase())) current.callsigns.push(String(record.callsign).toUpperCase());
+      [record.callsign, ...(Array.isArray(record.callsigns) ? record.callsigns : [])].forEach(c => { if (c && !current.callsigns.includes(String(c).toUpperCase())) current.callsigns.push(String(c).toUpperCase()); });
       current.date = record.date || current.date;
       if (!current.category && current.type) current.category = lookupType(current.type)?.category || '';
       byReg.set(key, current);

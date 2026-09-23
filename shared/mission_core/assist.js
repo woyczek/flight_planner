@@ -194,16 +194,17 @@
 
     // ---- appareils : filtrage croisé
     const ITEM = /^aircraft\.(\d+)\.(registration|callsign|type|variant|tacticalNumber)$/;
-    const matchesOf = (item, skip) => A.known().filter(a =>
+    // Variante égale au modèle générique du type (déduite du type OACI) : pas un filtre.
+    const matchesOf = (item, skip, generic = item.type && A.lookupType(item.type)?.model) => A.known().filter(a =>
       (skip === 'registration' || !item.registration || A.regKey(a.registration) === A.regKey(item.registration))
       && (skip === 'callsign' || !item.callsign || a.callsigns.some(c => A.regKey(c) === A.regKey(item.callsign)))
       // Type / variante inconnus pour un appareil connu : ils ne l'excluent pas.
       && (skip === 'type' || !item.type || !a.type || up(a.type) === up(item.type))
-      && (skip === 'variant' || !item.variant || !a.variant || String(a.variant).toLowerCase() === String(item.variant).toLowerCase()));
+      && (skip === 'variant' || !item.variant || item.variant === generic || !a.variant || String(a.variant).toLowerCase() === String(item.variant).toLowerCase()));
     function aircraftSuggest(index, field) {
       const item = getMission().aircraft?.[index] || {}, matches = matchesOf(item, field);
       const history = ranked(pools.get(`aircraft.*.${field}`));
-      if (field === 'registration') return matches.map(a => ({ value: a.registration, label: [a.type, a.callsigns.join(' / '), a.variant].filter(Boolean).join(' — ') }));
+      if (field === 'registration') return matches.map(a => ({ value: a.registration, label: [a.type, a.variant, a.callsigns.join(' / '), a.tacticalNumber, a.operator, a.base].filter(Boolean).join(' — ') }));
       if (field === 'callsign') {
         const out = new Map(); matches.forEach(a => a.callsigns.forEach(c => out.set(c, [a.registration, a.type].filter(Boolean).join(' — '))));
         // Indicatifs déjà utilisés avec ce type (appareils non immatriculés dans la base).

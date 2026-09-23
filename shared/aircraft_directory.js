@@ -3,7 +3,8 @@
   const moduleUrl = document.currentScript.src;
   const storageKey = 'missionAircraftDirectory:v1';
   // Flotte DEFA Virtual (shared/aircraft_fleet.js) : les associations locales s'ajoutent à cette base commune.
-  const seed = window.DEFA_FLEET || [];
+  // Un appareil de la flotte peut avoir plusieurs indicatifs : une entrée par indicatif.
+  const seed = (window.DEFA_FLEET || []).flatMap(e => (e.callsigns?.length ? e.callsigns : [e.callsign || '']).map(callsign => ({ ...e, callsign })));
   const key = value => String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const saved = () => { try { return JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch { return []; } };
   const entries = () => [...seed, ...saved()].filter((e, i, a) => a.findIndex(x => key(x.registration) === key(e.registration) && key(x.callsign) === key(e.callsign)) === i);

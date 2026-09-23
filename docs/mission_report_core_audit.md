@@ -328,3 +328,20 @@ Retenues par défaut (à contester si besoin) :
 - **Champs par famille** : `only` / `hideFor` sur les champs communs, `hide` par famille.
 - Sources impossibles depuis une page statique : aviationweather.gov (pas de CORS),
   plans de vol déposés IVAO (API authentifiée).
+
+## H. Étape 4 — flotte DEFA et données locales (2026-09-24)
+
+- **Flotte** : `shared/aircraft_fleet.js` généré depuis la page « Flotte virtuelle »
+  (flotte.defa-virtual.fr) par `python AircraftDB/update_fleet.py Flotte.html` :
+  205 appareils, 6 opérateurs (AAE, Marine nationale, ALAT, Sécurité civile, SAMU,
+  Gendarmerie), type OACI, variante (Rafale B/C/M, Mirage 2000-5/B/D, A330 MRTT…), code
+  tactique, numéro, indicatifs (plusieurs possibles), base d'attache. Un appareil connu
+  remplit aussi la base de départ et l'organisme (opérateur). Types absents de la base OACI
+  ajoutés en supplément (`aircraft.js`). Doublons de la source : F-ZBPD, F-YSBK.
+- **Données locales** (`shared/browser_store.js`, menu ☰ › Données locales) : tout le
+  localStorage du site (registres, brouillons, appareils, types, aérodromes, préférences,
+  caches, FMS, planificateur) copié dans `defa_local_store.yaml` d'un dossier choisi ;
+  sauvegarde automatique au départ de page et toutes les 5 min si le dossier est autorisé
+  et que les données ont changé ; restauration / resynchronisation par fusion (la donnée
+  la plus récente l'emporte, collections fusionnées entrée par entrée), aussi depuis un
+  fichier ; les pages du Core relisent leur registre après restauration.

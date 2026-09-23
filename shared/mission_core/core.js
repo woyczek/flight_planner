@@ -146,6 +146,7 @@
     // ---- appareils connus / types OACI
     const A = window.MissionAircraft;
     const autoFilled = new WeakMap(); // appareil → valeurs déduites automatiquement du type
+    let autoOperator = ''; // organisme repris de la flotte (remplacé si l'appareil change)
     function applyKnown(index, known) {
       const item = mission.aircraft[index];
       // Type d'abord (modèle OACI, catégorie), puis les valeurs de l'appareil connu, qui
@@ -156,9 +157,12 @@
       ['tacticalNumber', 'configuration'].forEach(k => { if (known[k] && !item[k]) take(k, known[k]); });
       if (!item.callsign && known.callsign) take('callsign', known.callsign);
       if (!item.registration) take('registration', known.registration);
+      // Flotte DEFA : base d'attache et opérateur, si non renseignés.
+      if (known.base && (!item.baseDeparture || item.baseDeparture === auto.baseDeparture)) take('baseDeparture', known.base);
+      if (known.operator && index === 0 && (!mission.organisation.organisation || mission.organisation.organisation === autoOperator)) mission.organisation.organisation = autoOperator = known.operator;
       autoFilled.set(item, auto);
       if (known.equipment?.length) item.equipment = [...new Set([...(item.equipment || []), ...known.equipment])];
-      view.rerenderCollectionOf(`aircraft.${index}.registration`); view.sync('aircraft.');
+      view.rerenderCollectionOf(`aircraft.${index}.registration`); view.sync();
       view.hint(`aircraft.${index}.registration`, t('knownAircraft') + (known.date && known.date > '0000-00-01' ? ` — ${known.date}` : ''));
       kpi(); changed();
     }
@@ -185,7 +189,7 @@
       const index = Number(m[1]), field = m[2], item = mission.aircraft[index];
       // Valeurs reprises d'un appareil précédemment choisi : effacées pour laisser place au nouveau choix.
       const auto = autoFilled.get(item) || {};
-      if (field !== 'variant') ['registration', 'callsign', 'type', 'variant', 'category', 'tacticalNumber', 'configuration'].forEach(k => { if (k !== field && item[k] && item[k] === auto[k]) { item[k] = ''; delete auto[k]; } });
+      if (field !== 'variant') ['registration', 'callsign', 'type', 'variant', 'category', 'tacticalNumber', 'configuration', 'baseDeparture'].forEach(k => { if (k !== field && item[k] && item[k] === auto[k]) { item[k] = ''; delete auto[k]; } });
       if (field === 'type') typeAssist(index, value);
       const regPath = `aircraft.${index}.registration`;
       // Appareil connu choisi par son immatriculation (ou par un indicatif qui lui est propre) :
@@ -355,6 +359,8 @@
     // Quitter la page sans avoir enregistré la mission dans le registre : avertissement
     // (le brouillon reste de toute façon conservé dans le navigateur).
     window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = t('leave'); } });
+    // Données locales restaurées (menu ☰ › Données locales) : registre relu.
+    window.addEventListener('local-store-restored', () => ledger.load().then(() => { ledgerInfo(); if (!edit && !dirty) { mission = fresh(); redraw(); } }));
     window.addEventListener('load', () => window.RepositoryNav?.addAction?.(`${t('viewReporting')} ${family.id}`, () => { location.href = family.pages.reporting; }));
 
     // ---- en-tête : famille / sous-type (série) de la mission
