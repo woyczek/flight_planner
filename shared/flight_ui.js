@@ -49,7 +49,11 @@
   listAircraft=function(){rawListAircraft();document.querySelectorAll(".aircraft-item").forEach(x=>x.onclick=()=>{const p=x.dataset.landing?newProfileFromLanding(x.dataset.id):state.profiles[x.dataset.id];if(p)requestSwitch(p)})};
   addEventListener("beforeunload",e=>{if(profileDirty){e.preventDefault();e.returnValue=""}});
 
-  let curveSort={key:"rpm",dir:1};$("engineCurveTable")?.querySelector("thead").addEventListener("click",e=>{let key=e.target.dataset.sort;if(!key)return;curveSort.key===key?curveSort.dir*=-1:curveSort={key,dir:1};renderProfile()});
+  // Table RPM : tri par colonne via le composant partagé du framework (shared/app_framework.js),
+  // repris ensuite par les reportings HEMS/GAAR/général et par le Landing Performance Dashboard.
+  let curveSort={key:"rpm",dir:1};
+  if(window.AppFramework?.sortableTable){window.AppFramework.sortableTable($("engineCurveTable")?.querySelector("thead"),curveSort,()=>renderProfile());}
+  else $("engineCurveTable")?.querySelector("thead").addEventListener("click",e=>{let key=e.target.dataset.sort;if(!key)return;curveSort.key===key?curveSort.dir*=-1:curveSort={key,dir:1};renderProfile()});
   renderProfile=function(){
     if(!active)return;
     const names={climb:"Montée",cruise:"Croisière",descent:"Descente",taxi:"Taxi",alternate:"Alternat"},labelOf={climb:"climb",cruise:"cruise",descent:"descent",taxi:"taxi"},num=v=>finiteProfileNumber(v)?Number(v):null;

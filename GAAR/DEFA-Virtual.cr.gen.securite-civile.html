@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Générateur CR Mission — Sécurité Civile - DEFA Virtual</title>
+  <link rel="icon" href="../assets/favicon-gaar.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../shared/repository_nav.css">
   <script src="../repository_tree"></script>
   <style>
@@ -277,6 +278,8 @@
           <div><label>CDB</label><input name="captain"></div>
           <div><label>OPL</label><input name="fo"></div>
           <div><label>Observateur / équipier</label><input name="observer"></div>
+          <div><label>ID IVAO</label><input name="ivaoId" placeholder="ID IVAO (VID)"></div>
+          <div><label>ID VATSIM</label><input name="vatsimId" placeholder="ID VATSIM (CID)"></div>
         </div>
       </section>
 
@@ -399,7 +402,7 @@
       'endIntervention', 'landing', 'engineStop', 'fuelStart', 'fuelEnd', 'fuelUnit',
       'fuelUsed', 'blockMinutes', 'flightMinutes', 'fuelRatePerHour', 'drops', 'reloads',
       'eventDrops', 'eventReloads', 'reloadTime', 'captain', 'fo', 'observer',
-      'opsNotes', 'techNotes', 'lessons'
+      'opsNotes', 'techNotes', 'lessons', 'onlineNetwork', 'ivaoId', 'vatsimId', 'trackerUrl'
     ];
 
     function byId(id) {
@@ -918,10 +921,13 @@
 
     init();
   </script>
-<script src="../shared/repository_nav.js"></script>
-<script src="../shared/aircraft_directory.js"></script>
-<script src="../shared/mission_record_loader.js"></script>
-<script src="../shared/content_i18n.js"></script><script src="../shared/gaar_i18n.js"></script>
-<script src="../shared/app_framework.js"></script>
+<script src="../shared/repository_nav.js?v=20260923"></script>
+<script src="../shared/mission_reporting_config.js?v=20260923b"></script>
+<script src="../shared/aircraft_directory.js?v=20260923"></script>
+<script src="../shared/mission_record_loader.js?v=20260923"></script>
+<script src="../shared/content_i18n.js?v=20260923b"></script><script src="../shared/gaar_i18n.js?v=20260923b"></script>
+<script src="../shared/app_framework.js?v=20260923"></script>
+<script src="../shared/mission_edit.js"></script>
+<script src="../shared/cr_extras.js"></script>
 </body>
 </html>

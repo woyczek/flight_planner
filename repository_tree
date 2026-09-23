@@ -1,19 +1,31 @@
 window.REPOSITORY_TREE={
-  version:2,
+  version:3,
   release:{date:"2026-09-21",version:"2.0.7",id:"XPS-2.0.7"},
-  defaults:{theme:"flight",language:true},
+  defaults:{
+    theme:"flight",
+    favicon:"assets/favicon-flight.svg",
+    language:true,
+    config:{ledgerName:"hems_mission_ledger.csv",gaarLedgerName:"mission_ledger.csv"}
+  },
   themes:{
     gaar:{bar:"#773131",barText:"#ffffff",page:"#ffffff",accent:"#773131",favicon:"assets/favicon-gaar.svg"},
+    hems:{bar:"#313177",barText:"#ffffff",page:"#ffffff",accent:"#313177",favicon:"assets/favicon-hems.svg"},
     landing:{bar:"#101319",barText:"#eef3f7",page:"#0d1015",accent:"#69a7ff",favicon:"assets/favicon-landing.svg"},
     flight:{bar:"#101317",barText:"#eef3f7",page:"#101317",accent:"#71b7ff",favicon:"assets/favicon-flight.svg"}
   },
+  folders:{
+    "":{theme:"flight",favicon:"assets/favicon-flight.svg"},
+    "GAAR":{theme:"gaar",favicon:"assets/favicon-gaar.svg",config:{gaarLedgerName:"mission_ledger.csv"},files:{gaarLedgerName:"mission_ledger.csv"}},
+    "HEMS":{theme:"hems",favicon:"assets/favicon-hems.svg",config:{ledgerName:"hems_mission_ledger.csv"},files:{ledgerName:"hems_mission_ledger.csv"}},
+    "LandingPerformanceDashboard":{theme:"landing",favicon:"assets/favicon-landing.svg"}
+  },
   pages:[
-    {path:"GAAR/mission_stats.html",menu:"GAAR/Statistiques missions",label:"Statistiques missions",theme:"gaar",language:false},
-    {path:"GAAR/DEFA-Virtual.cr.gen.securite-civile.html",menu:"GAAR/Sécurité civile CR",label:"Sécurité civile CR",theme:"gaar",language:false},
-    {path:"HEMS/hems_medevac_cr.html",menu:"HEMS/Générateur de CR",label:"Générateur de CR HEMS / MEDEVAC",theme:"gaar",language:true},
-    {path:"HEMS/hems_medevac_reporting.html",menu:"HEMS/Reporting missions",label:"Reporting HEMS / MEDEVAC",theme:"gaar",language:true},
-    {path:"mission_operations_reporting.html",menu:"Reporting opérations",label:"Synthèse GAAR + HEMS",theme:"landing",language:true},
-    {path:"LandingPerformanceDashboard/LandingPerformance_Dashboard_MultiCSV_i18n.html",menu:"Landing Performance Dashboard",label:"Landing Performance Dashboard",theme:"landing",language:true},
-    {path:"flight_performance_planner.html",menu:"Flight Performance & Fuel Planner",label:"Flight Performance & Fuel Planner",theme:"flight",language:true}
+    {path:"GAAR/mission_stats.html",menu:"GAAR/Statistiques missions",label:"Statistiques missions"},
+    {path:"GAAR/DEFA-Virtual.cr.gen.securite-civile.html",menu:"GAAR/Sécurité civile CR",label:"Sécurité civile CR"},
+    {path:"HEMS/hems_medevac_cr.html",menu:"HEMS/Générateur de CR",label:"Générateur de CR HEMS / MEDEVAC"},
+    {path:"HEMS/hems_medevac_reporting.html",menu:"HEMS/Reporting missions",label:"Reporting HEMS / MEDEVAC"},
+    {path:"mission_operations_reporting.html",menu:"Reporting opérations",label:"Synthèse GAAR + HEMS",theme:"landing",favicon:"assets/favicon-landing.svg",files:{gaarLedgerName:"GAAR/mission_ledger.csv",ledgerName:"HEMS/hems_mission_ledger.csv"}},
+    {path:"LandingPerformanceDashboard/LandingPerformance_Dashboard_MultiCSV_i18n.html",menu:"Landing Performance Dashboard",label:"Landing Performance Dashboard"},
+    {path:"flight_performance_planner.html",menu:"Flight Performance & Fuel Planner",label:"Flight Performance & Fuel Planner"}
   ]
 };

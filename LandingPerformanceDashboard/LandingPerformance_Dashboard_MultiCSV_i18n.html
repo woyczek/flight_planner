@@ -50,10 +50,10 @@ svg{width:100%;height:270px;display:block}
 .rating-legend{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:10px}.rating-legend-item{display:inline-flex;align-items:center;gap:4px}.rating-swatch{width:8px;height:8px;border-radius:50%;display:inline-block;border:1px solid #0f1115}.rating-swatch.crash{background:#8b0000}.rating-swatch.veryhard{background:#e53935}.rating-swatch.hard{background:#f57c00}.rating-swatch.acceptable{background:#fbc02d}.rating-swatch.good{background:#43a047}.rating-swatch.great{background:#00a58a}.rating-swatch.excellent{background:#00bcd4}.rating-swatch.butter{background:#64b5f6}.rating-swatch.unknown{background:#8a94a6}.zero{stroke:#7a8495;stroke-dasharray:3 3}
 .tooltip{position:fixed;pointer-events:none;z-index:100;display:none;background:#090b0f;color:white;border:1px solid #3b4351;border-radius:6px;padding:7px 9px;font-size:12px;max-width:340px;box-shadow:0 5px 25px rgba(0,0,0,.45)}
 .table-wrap{overflow:auto} table{width:100%;border-collapse:collapse;font-size:12px}
-#aircraftTable th.sortable{cursor:pointer;user-select:none}
-#aircraftTable th.sortable:hover{color:var(--text)}
-#aircraftTable .sort-arrow{display:inline-block;min-width:12px;margin-left:5px;opacity:.55;font-size:10px;vertical-align:1px}
-#aircraftTable th.sort-asc .sort-arrow,#aircraftTable th.sort-desc .sort-arrow{opacity:1;color:var(--accent)}
+#aircraftTable th.sortable,#landingTable th.sortable{cursor:pointer;user-select:none}
+#aircraftTable th.sortable:hover,#landingTable th.sortable:hover{color:var(--text)}
+#aircraftTable .sort-arrow,#landingTable .sort-arrow{display:inline-block;min-width:12px;margin-left:5px;opacity:.55;font-size:10px;vertical-align:1px}
+#aircraftTable th.sort-asc .sort-arrow,#aircraftTable th.sort-desc .sort-arrow,#landingTable th.sort-asc .sort-arrow,#landingTable th.sort-desc .sort-arrow{opacity:1;color:var(--accent)}
 .ac-cell{display:inline-flex;align-items:center;gap:4px}
 .ac-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;color:#b9c5d8;line-height:0}
 .ac-icon svg{display:block;width:23px;height:23px;overflow:visible;transform:scale(1.22);transform-origin:center center}
@@ -3204,7 +3204,11 @@ function spearman(y){y=finite(y);return y.length<2?0:pearson(rank(y.map((_,i)=>i
 
 /* ---------- DOM/SVG ---------- */
 function cardsHTML(cards){$("cards").innerHTML=cards.map(c=>`<div class="card"><div class="label">${esc(String(c[0]))}</div><div class="value">${esc(String(c[1]))}</div><div class="sub">${esc(String(c[2]??""))}</div></div>`).join("")}
-let aircraftTableSort={col:0,dir:1};
+// Composant framework partagé : tri par colonne au clic sur l'en-tête, réutilisable
+// pour n'importe quelle table (utilisé ici par #aircraftTable et #landingTable, et
+// c'est ce même patron — data-sort-value, .sort-arrow, sort-asc/sort-desc — qui sert
+// de référence au composant MissionTable des reportings HEMS/GAAR/général).
+const tableSortState={};
 function aircraftSortValue(s){
   const raw=String(s??"").trim(),normalized=raw.replace(/\u2212/g,"-").replace(/\s/g,"").replace(",",".");
   const m=normalized.match(/^[-+]?\d+(?:\.\d+)?(?:%|\b)/);
@@ -3212,18 +3216,20 @@ function aircraftSortValue(s){
   return {num:false,val:raw.toLocaleLowerCase()};
 }
 function aircraftCellSortValue(cell){return cell?.dataset?.sortValue||cell?.textContent||""}
-function applyAircraftTableSort(){
-  const table=$("aircraftTable");if(!table||!table.tBodies.length)return;
-  const {col,dir}=aircraftTableSort,rows=[...table.tBodies[0].rows];
+function applyAircraftTableSort(id){
+  const table=$(id);if(!table||!table.tBodies.length)return;
+  const state=tableSortState[id]||(tableSortState[id]={col:0,dir:1});
+  const {col,dir}=state,rows=[...table.tBodies[0].rows];
   rows.sort((a,b)=>{const av=aircraftSortValue(aircraftCellSortValue(a.cells[col])),bv=aircraftSortValue(aircraftCellSortValue(b.cells[col]));if(av.num&&bv.num)return(av.val-bv.val)*dir;return String(av.val).localeCompare(String(bv.val),undefined,{numeric:true,sensitivity:"base"})*dir});
   rows.forEach(r=>table.tBodies[0].appendChild(r));
   [...table.tHead.rows[0].cells].forEach((th,i)=>{th.classList.toggle("sort-asc",i===col&&dir===1);th.classList.toggle("sort-desc",i===col&&dir===-1);th.setAttribute("aria-sort",i===col?(dir===1?"ascending":"descending"):"none");const arrow=th.querySelector(".sort-arrow");if(arrow)arrow.textContent=i===col?(dir===1?"▲":"▼"):"↕"});
 }
-function initAircraftTableSort(){
-  const table=$("aircraftTable");if(!table||!table.tHead)return;
-  [...table.tHead.rows[0].cells].forEach((th,i)=>{th.classList.add("sortable");const arrow=document.createElement("span");arrow.className="sort-arrow";arrow.textContent="↕";th.appendChild(arrow);th.onclick=()=>{if(aircraftTableSort.col===i)aircraftTableSort.dir*=-1;else aircraftTableSort={col:i,dir:1};applyAircraftTableSort()}});applyAircraftTableSort();
+function initAircraftTableSort(id){
+  const table=$(id);if(!table||!table.tHead)return;
+  const state=tableSortState[id]||(tableSortState[id]={col:0,dir:1});
+  [...table.tHead.rows[0].cells].forEach((th,i)=>{th.classList.add("sortable");const arrow=document.createElement("span");arrow.className="sort-arrow";arrow.textContent="↕";th.appendChild(arrow);th.onclick=()=>{if(state.col===i)state.dir*=-1;else{state.col=i;state.dir=1;}applyAircraftTableSort(id)}});applyAircraftTableSort(id);
 }
-function tableHTML(id,heads,body){$(id).innerHTML=`<thead><tr>${heads.map(h=>`<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${body}</tbody>`;if(id==="aircraftTable")initAircraftTableSort()}
+function tableHTML(id,heads,body){$(id).innerHTML=`<thead><tr>${heads.map(h=>`<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${body}</tbody>`;if(id==="aircraftTable"||id==="landingTable")initAircraftTableSort(id)}
 function qualityPill(r){
   if(r._suspect){
     return `<span class="pill bad">${esc(t("implausible"))}: ${esc(r._issues.map(issueText).join(", "))}</span>`;

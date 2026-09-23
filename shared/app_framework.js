@@ -1,5 +1,6 @@
 (()=>{
   const key=()=>`repositoryFramework:${window.RepositoryNav?.page?.path||location.pathname}`;
+  const startupConfig=()=>({...(window.REPOSITORY_TREE?.defaults?.config||{}),...(window.RepositoryNav?.settings?.config||{}),files:{...(window.RepositoryNav?.settings?.files||{})}});
   const read=()=>{try{return JSON.parse(localStorage.getItem(key())||"{}")||{}}catch{return{}}},write=x=>localStorage.setItem(key(),JSON.stringify(x));
   function init(){
     const main=document.querySelector("main,.wrap");if(!main)return;const state=read();state.hidden??={};state.order??={};
@@ -15,5 +16,32 @@
   function parentKey(p){return `${p.tagName}:${[...p.parentElement?.children||[]].indexOf(p)}`}
   function footer(){const r=window.REPOSITORY_TREE?.release||{},f=document.querySelector("footer")||document.createElement("footer");f.className="repo-footer no-print";f.innerHTML=`CC RBR - DEFA Virtual - ${r.date||"2026-09-21"} - ${r.version||"2026.09"} - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a>`;if(!f.isConnected)document.body.append(f)}
   function label(k){const l=window.RepositoryNav?.getLanguage()||"en",d={fr:{move:"Déplacer",hide:"Masquer",show:"Afficher"},en:{move:"Move",hide:"Hide",show:"Show"},de:{move:"Verschieben",hide:"Ausblenden",show:"Anzeigen"},es:{move:"Mover",hide:"Ocultar",show:"Mostrar"}};return d[l][k]}
-  window.AppFramework={refresh:init};window.addEventListener("repository-language-change",()=>document.querySelectorAll(".repo-block").forEach(el=>{const b=el.querySelector(":scope>.repo-block-heading .repo-toggle"),d=el.querySelector(":scope>.repo-block-heading .repo-drag");if(b)b.textContent=label(el.classList.contains("repo-block-hidden")?"show":"hide");if(d)d.title=label("move")}));window.addEventListener("load",()=>{init();footer()});
+  // Composant partagé : tri par colonne au clic sur un en-tête <th data-sort="clé">,
+  // extrait de la table RPM du Flight Performance Planner (shared/flight_ui.js) pour
+  // être réutilisé tel quel par les reportings HEMS/GAAR/général et le Landing dashboard.
+  function sortableTable(theadEl,stateRef,onSort){
+    if(!theadEl) return;
+    theadEl.addEventListener("click",e=>{
+      const key=e.target.closest("[data-sort]")?.dataset.sort;
+      if(!key) return;
+      if(stateRef.key===key) stateRef.dir*=-1; else { stateRef.key=key; stateRef.dir=1; }
+      onSort(stateRef);
+    });
+  }
+  // Composant partagé : avertit avant de quitter une page si des données saisies n'ont
+  // pas été enregistrées (beforeunload + interception des liens de navigation internes).
+  function guardUnsavedChanges(isDirty,options){
+    options=options||{};
+    window.addEventListener("beforeunload",e=>{ if(isDirty()){ e.preventDefault(); e.returnValue=""; } });
+    if(options.linkSelector){
+      document.querySelectorAll(options.linkSelector).forEach(link=>{
+        link.addEventListener("click",e=>{
+          if(!isDirty()) return;
+          const message=options.message||"Des données saisies n'ont pas été enregistrées. Quitter quand même ?";
+          if(!window.confirm(message)) e.preventDefault();
+        });
+      });
+    }
+  }
+  window.AppFramework={refresh:init,getConfig:startupConfig,sortableTable,guardUnsavedChanges};window.RepositoryConfig=startupConfig();window.addEventListener("repository-language-change",()=>document.querySelectorAll(".repo-block").forEach(el=>{const b=el.querySelector(":scope>.repo-block-heading .repo-toggle"),d=el.querySelector(":scope>.repo-block-heading .repo-drag");if(b)b.textContent=label(el.classList.contains("repo-block-hidden")?"show":"hide");if(d)d.title=label("move")}));window.addEventListener("load",()=>{init();footer()});
 })();
