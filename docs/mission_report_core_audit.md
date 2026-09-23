@@ -391,8 +391,8 @@ Retenues par défaut (à contester si besoin) :
   alerte feu, rechargement, écopage — plus d'insertion / extraction.
 - **Capacités / techniques** : profils par famille (`capabilityProfiles`) pour FIRE, HEMS,
   contrôle en vol et levés ; les autres familles gardent la liste complète.
-- **Menu ☰** : « Missions › Nouveau compte rendu » (`mission_cr.html` : CR de la dernière
-  famille utilisée, choix de la famille au premier usage ou avec `?choisir`) et
+- **Menu ☰** : « Missions › Nouveau compte rendu » (`mission_cr.html` : choix de la
+  famille à chaque ouverture, la dernière utilisée en premier) et
   « Missions › Reporting missions » (reporting général). Les pages des familles restent
   déclarées dans `repository_tree` (thème, réglages) avec `menu:false` ; on passe de l'une
   à l'autre par la popup d'en-tête et les boutons CR ⇄ reporting.
