@@ -65,8 +65,8 @@
   // ---- Helpers partagés par les reportings HEMS, GAAR et général ----
   const escapeHtml = value => String(value ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const ivaoTrackerUrl = id => 'https://tracker.ivao.aero/?userId=' + encodeURIComponent(id);
-  // Page de trace VATSIM (statsim.net ; connexion requise pour le détail, consultation libre).
-  const vatsimTrackerUrl = id => 'https://statsim.net/flights/vatsimid/?vatsimid=' + encodeURIComponent(id);
+  // Page de statistiques VATSIM du pilote (stats.vatsim.net).
+  const vatsimTrackerUrl = id => 'https://stats.vatsim.net/stats/' + encodeURIComponent(id);
   // Lien HTML vers la trace réseau d'une mission : URL saisie, sinon IVAO / VATSIM à partir
   // des ID de la mission ou, à défaut, des ID du profil pilote.
   const traceLink = row => {
