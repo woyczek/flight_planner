@@ -127,17 +127,20 @@ shared/
   aircraft_directory.js  aircraft_icons.js
   hems_*.js  gaar_*.js  (existants, HEMS / FIRE)
   mission_core/
-    core.js            registre des familles, montage de page, schemaVersion, import/export
-    model.js           modèle Mission (§E), validation, migrations de schéma
-    blocks/            identification.js aircraft.js crew.js tasking.js navigation.js
-                       weather.js fuel.js timeline.js events.js capabilities.js
-                       results.js remarks.js network.js collection.js (listes dynamiques)
+    core.js            registre des familles, montage de page, brouillon, import/export   [1a]
+    model.js           modèle Mission (§E), calculs, migrations de schéma, YAML           [1a]
+    blocks.js          blocs communs déclaratifs : identification, appareils[], équipage[],
+                       tâche, capacités, environnement, navigation, chronologie, carburant,
+                       événements[], étapes[], résultat, remarques, réseau                 [1a]
+    form.js            rendu des blocs, collections dynamiques, règles d'affichage        [1a]
+    core.css           style des pages de saisie                                           [1a]
     report.js          rendu du CR (§21, sections vides omises) + résumé automatique (§22)
     ledger.js          registre YAML (lecture/écriture/fusion) + export CSV simplifié
     vendor/js-yaml.min.js   bibliothèque YAML embarquée (MIT, aucune dépendance réseau)
     reporting.js       page de reporting commune (cartes, répartitions, SortedTable, export)
     stats.js           statistiques communes + points d'extension famille
-    vocab.js           capacités, résultats, types d'événements communs
+    vocab.js           capacités, résultats, types d'événements, rôles d'équipage          [1a]
+    families/demo.js   famille de démonstration du moteur (page MissionCore/…_demo.html)   [1a]
     i18n/              core_i18n.js + <famille>_i18n.js (lignes [fr,en,de,es])
     families/          sar.js le.js maritime.js isr.js sof.js airlift.js hadr.js airborne.js
                        command.js flight_inspection.js survey.js special.js
