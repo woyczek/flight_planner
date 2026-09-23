@@ -54,6 +54,8 @@
         f('callsign', L('Indicatif complet', 'Full callsign', 'Vollständiges Rufzeichen', 'Indicativo completo'), 'text', { upper: true, alias: 'callsign' }),
         // Forme plan de vol : 7 caractères au plus (OACI), abrégée si besoin (DRAGON76 → DRAGO76).
         f('callsignFpl', L('Indicatif plan de vol (7 car. max)', 'Flight plan callsign (7 chars max)', 'Flugplan-Rufzeichen (max. 7 Zeichen)', 'Indicativo plan de vuelo (máx. 7 car.)'), 'text', { upper: true, alias: 'callsignFpl', report: false }),
+        // Désignateur OACI de l'exploitant (OPR/ de la case 18) : FRU, FAF, FGN…
+        f('operatorCode', L('Exploitant OACI (OPR/, case 18)', 'ICAO operator (OPR/, item 18)', 'ICAO-Betreiber (OPR/, Feld 18)', 'Operador OACI (OPR/, casilla 18)'), 'text', { upper: true, placeholder: L('FRU, FAF, FGN…', 'FRU, FAF, FGN…'), report: false }),
         f('category', L('Catégorie', 'Category', 'Kategorie', 'Categoría'), 'select', { options: V.aircraftCategories, blank: true, rerender: true }),
         f('variant', L('Variante / modèle', 'Variant / model', 'Variante / Modell', 'Variante / modelo')),
         f('tacticalNumber', L('Numéro tactique', 'Tactical number', 'Taktische Nummer', 'Número táctico'), 'text', { hideFor: ['HEMS', 'FI', 'SURVEY'] }),

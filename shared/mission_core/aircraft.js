@@ -119,24 +119,49 @@
   // ---- indicatifs : forme plan de vol
   // Plan de vol OACI (Doc 4444, app. 2, case 7) : identification de 7 caractères
   // alphanumériques au plus, sans tiret. D'où des formes abrégées (DRAGON76 → DRAGO76).
-  // Abréviations apprises de la base : un indicatif qui commence un autre indicatif connu
-  // (DRAGO / DRAGON) en est la forme courte ; à défaut, troncature à 7 caractères.
-  const FPL_MAX = 7;
-  const up = v => String(v ?? '').trim().toUpperCase();
+  // Ordre de priorité : table de correspondance (vocab.js : PELICAN ↔ PCAN, BENGALE ↔
+  // BENGA…, puis formes corrigées par le pilote, mémorisées), abréviations apprises de la
+  // base (un indicatif qui commence un autre indicatif connu : DRAGO / DRAGON), troncature.
+  const FPL_MAX = 7, LEARNED_KEY = 'missionCallsignTable:v1';
+  const up = v => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
   const clean = v => up(v).replace(/[^A-Z0-9]/g, '');
+  function table() {
+    const out = new Map();
+    (window.MissionVocab?.callsignTable || []).forEach(e => out.set(e.prefix, { ...e }));
+    (read(LEARNED_KEY) || []).forEach(e => out.set(e.prefix, { types: [], operator: '', designator: '', ...(out.get(e.prefix) || {}), fpl: e.fpl, learned: true }));
+    return [...out.values()];
+  }
+  // Forme plan de vol corrigée à la main (ex. KETOUPA12 → KETOU12) : mémorisée pour la suite.
+  function learnFpl(prefix, fplPrefix) {
+    const p = clean(prefix), f = clean(fplPrefix);
+    if (!p || !f || f.length >= p.length && f !== p) return false;
+    const list = (read(LEARNED_KEY) || []).filter(e => e.prefix !== p);
+    list.push({ prefix: p, fpl: f, updatedAt: new Date().toISOString() });
+    write(LEARNED_KEY, list); return true;
+  }
   function abbreviations() {
-    const split = window.MissionModel.splitCallsign, prefixes = new Set();
+    const split = window.MissionModel.splitCallsign, prefixes = new Set(), map = new Map(); // abrégé → complet
+    table().forEach(e => { if (clean(e.fpl) && clean(e.fpl) !== e.prefix) map.set(clean(e.fpl), e.prefix); });
     known().forEach(a => a.callsigns.forEach(c => { const p = split(c).prefix; if (p) prefixes.add(p); }));
-    const map = new Map(); // abrégé → complet
     prefixes.forEach(short => prefixes.forEach(full => {
-      if (short.length >= 3 && full.length > short.length && full.startsWith(short) && (!map.has(short) || map.get(short).length > full.length)) map.set(short, full);
+      if (map.has(short) || [...map.values()].includes(short)) return;
+      if (short.length >= 3 && full.length > short.length && full.startsWith(short)) map.set(short, map.get(full) || full);
     }));
     return map;
   }
+  // Désignateur OACI de l'exploitant (OPR/ de la case 18) d'après l'organisme.
+  const designatorOf = operator => {
+    const key = up(operator).replace(/[’`]/g, "'");
+    return Object.entries(window.MissionVocab?.operatorDesignators || {}).find(([name]) => up(name).replace(/[’`]/g, "'") === key)?.[1] || '';
+  };
+  const operatorOfDesignator = code => Object.entries(window.MissionVocab?.operatorDesignators || {}).find(([, d]) => d === clean(code))?.[0] || '';
   const canonicalPrefix = (prefix, map = abbreviations()) => map.get(up(prefix)) || up(prefix);
   const canonicalCallsign = (callsign, map = abbreviations()) => { const s = window.MissionModel.splitCallsign(callsign); return clean(canonicalPrefix(s.prefix, map) + s.number); };
   function fplCallsign(prefix, number, map = abbreviations()) {
     const p = clean(canonicalPrefix(prefix, map)), n = clean(number);
+    // Table de correspondance : forme plan de vol de la série, toujours (PCAN31, DRAGO74).
+    const entry = table().find(e => e.prefix === p);
+    if (entry && clean(entry.fpl)) { const short = clean(entry.fpl); return ((short + n).length <= FPL_MAX ? short : short.slice(0, Math.max(1, FPL_MAX - n.length))) + n; }
     if ((p + n).length <= FPL_MAX) return p + n;
     const known = [...map].filter(([, full]) => full === p).map(([short]) => clean(short)).filter(s => (s + n).length <= FPL_MAX).sort((a, b) => b.length - a.length)[0];
     return (known || p.slice(0, Math.max(1, FPL_MAX - n.length))) + n;
@@ -157,6 +182,13 @@
       if (a.type) s.types.add(typeKey(a.type)); if (a.operator) s.operators.add(a.operator);
       series.set(prefix, s);
     }));
+    // Séries de la table sans appareil connu (BENGALE, KETOUPA, FAF…).
+    table().forEach(e => {
+      const s = series.get(e.prefix) || { prefix: e.prefix, numbers: [], types: new Set(), operators: new Set(), abbreviations: new Set() };
+      e.types.forEach(t => s.types.add(typeKey(t))); if (e.operator) s.operators.add(e.operator);
+      if (clean(e.fpl) !== e.prefix) s.abbreviations.add(clean(e.fpl));
+      Object.assign(s, { table: e }); series.set(e.prefix, s);
+    });
     return [...series.values()].sort((a, b) => a.prefix.localeCompare(b.prefix));
   }
   const find = registration => known().find(a => regKey(a.registration) === regKey(registration)) || null;
@@ -175,5 +207,5 @@
     write(REGISTRY_KEY, registry);
   }
 
-  window.MissionAircraft = { regKey, categoryOf, lookupType, listTypes, enrichType, known, find, findByCallsign, recordMission, callsignSeries, typeKey, abbreviations, canonicalPrefix, canonicalCallsign, fplCallsign, FPL_MAX };
+  window.MissionAircraft = { regKey, categoryOf, lookupType, listTypes, enrichType, known, find, findByCallsign, recordMission, callsignSeries, typeKey, abbreviations, canonicalPrefix, canonicalCallsign, fplCallsign, FPL_MAX, table, learnFpl, designatorOf, operatorOfDesignator };
 })();

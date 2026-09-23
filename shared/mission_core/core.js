@@ -57,6 +57,7 @@
     fplVatsim: L('Plan de vol VATSIM (en cours ou déposé)', 'VATSIM flight plan (current or prefiled)', 'VATSIM-Flugplan (laufend oder vorab)', 'Plan de vuelo VATSIM (en curso o presentado)'),
     fplNone: L('Aucun plan de vol trouvé pour cet identifiant (vol terminé ou non déposé).', 'No flight plan found for this ID (flight ended or not filed).', 'Kein Flugplan für diese Kennung gefunden (Flug beendet oder nicht aufgegeben).', 'No se encontró ningún plan de vuelo para este identificador (vuelo terminado o no presentado).'),
     fplNeedId: L('Renseignez votre identifiant dans le menu ☰ › Profil pilote (ou dans le bloc « Trace réseau »).', 'Enter your ID in menu ☰ › Pilot profile (or in the “Network track” block).', 'Kennung im Menü ☰ › Pilotenprofil (oder im Block „Netzwerkspur“) eingeben.', 'Indique su identificador en el menú ☰ › Perfil de piloto (o en el bloque «Traza de red»).'),
+    fplLearned: L('Forme plan de vol mémorisée pour cet indicatif', 'Flight plan form remembered for this callsign', 'Flugplanform für dieses Rufzeichen gespeichert', 'Forma de plan de vuelo memorizada para este indicativo'),
     fplFilled: L('champs renseignés depuis', 'fields filled from', 'Felder ausgefüllt aus', 'campos rellenados desde'),
     render: L('Générer / actualiser le CR', 'Generate / refresh report', 'Bericht erzeugen / aktualisieren', 'Generar / actualizar el informe'),
     print: L('PDF / Imprimer', 'PDF / Print', 'PDF / Drucken', 'PDF / Imprimir'),
@@ -139,7 +140,7 @@
       onCommit: (path, value) => {
         aircraftAssist(path, value); assist.onCommit(path, value);
         // Opérateur (organisme) modifié : indicatif de série de l'appareil principal réévalué.
-        if (path === 'organisation.organisation' && autoSeries(0)) { view.sync('aircraft.'); changed(); }
+        if (path === 'organisation.organisation' && (operatorAssist(0) + autoSeries(0))) { view.sync('aircraft.'); changed(); }
       },
       suggest: (...args) => assist.suggest(...args)
     });
@@ -171,7 +172,7 @@
       // Flotte DEFA : base d'attache et opérateur, si non renseignés.
       if (known.base && (!item.baseDeparture || item.baseDeparture === auto.baseDeparture)) take('baseDeparture', known.base);
       if (known.operator && index === 0 && (!mission.organisation.organisation || mission.organisation.organisation === autoOperator)) mission.organisation.organisation = autoOperator = known.operator;
-      autoFilled.set(item, auto);
+      autoFilled.set(item, auto); operatorAssist(index, known);
       if (known.equipment?.length) item.equipment = [...new Set([...(item.equipment || []), ...known.equipment])];
       view.rerenderCollectionOf(`aircraft.${index}.registration`); view.sync();
       view.hint(`aircraft.${index}.registration`, t('knownAircraft') + (known.date && known.date > '0000-00-01' ? ` — ${known.date}` : ''));
@@ -206,9 +207,20 @@
       item.callsignPrefix = prefix; auto.callsignPrefix = prefix; autoFilled.set(item, auto);
       item.callsign = M.joinCallsign(prefix, item.callsignNumber); fplAssist(item, auto); return true;
     }
+    // Exploitant OACI (OPR/) : d'après l'organisme de la mission ou l'opérateur de l'appareil connu.
+    function operatorAssist(index, known = null) {
+      const item = mission.aircraft[index]; if (!item) return false;
+      const auto = autoFilled.get(item) || {};
+      if (item.operatorCode && item.operatorCode !== auto.operatorCode) return false;
+      const series = item.callsignPrefix && A.table().find(e => e.prefix === A.canonicalPrefix(item.callsignPrefix));
+      const code = A.designatorOf(index === 0 && mission.organisation.organisation) || A.designatorOf(known?.operator) || series?.designator || '';
+      if (code === item.operatorCode) return false;
+      item.operatorCode = code; auto.operatorCode = code; autoFilled.set(item, auto); return true;
+    }
     // Indicatif plan de vol (7 caractères OACI) : déduit de l'indicatif, sauf saisie du pilote.
     function fplAssist(item, auto) {
-      if (item.callsignFpl && item.callsignFpl !== auto.callsignFpl) return;
+      // Forme saisie par le pilote : conservée tant que l'indicatif ne change pas.
+      if (item.callsignFpl && item.callsignFpl !== auto.callsignFpl && auto.fplFor === item.callsign) return;
       const fpl = item.callsign ? A.fplCallsign(item.callsignPrefix, item.callsignNumber) : '';
       item.callsignFpl = fpl; auto.callsignFpl = fpl; autoFilled.set(item, auto);
     }
@@ -220,11 +232,19 @@
     function identityAssist(index, field, value, item) {
       // Indicatif complet ⇄ indicatif (série) + numéro.
       const CALLSIGN = ['callsign', 'callsignPrefix', 'callsignNumber'];
-      if (field === 'callsignFpl') { item.callsignFpl = String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, A.FPL_MAX); view.sync('aircraft.'); return; }
+      if (field === 'callsignFpl') {
+        item.callsignFpl = String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, A.FPL_MAX);
+        const own = autoFilled.get(item) || {}; own.fplFor = item.callsign; autoFilled.set(item, own); // saisie valable pour cet indicatif
+        // Forme plan de vol corrigée (KETOU12 pour KETOUPA12) : table de correspondance enrichie.
+        const number = String(item.callsignNumber || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+        if (item.callsignPrefix && number && item.callsignFpl.endsWith(number) && A.learnFpl(item.callsignPrefix, item.callsignFpl.slice(0, -number.length)))
+          view.hint(`aircraft.${index}.callsignFpl`, inLanguage(UI.fplLearned));
+        view.sync('aircraft.'); return;
+      }
       // Indicatif complet ou forme plan de vol saisis (DRAGO76) → DRAGON / 76.
       if (field === 'callsign') { const parts = M.splitCallsign(value); item.callsignPrefix = A.canonicalPrefix(parts.prefix); item.callsignNumber = parts.number; item.callsign = M.joinCallsign(item.callsignPrefix, parts.number); }
       if (field === 'callsignPrefix' || field === 'callsignNumber') { if (field === 'callsignPrefix') item.callsignPrefix = A.canonicalPrefix(item.callsignPrefix); item.callsign = M.joinCallsign(item.callsignPrefix, item.callsignNumber); value = item.callsign; }
-      if (CALLSIGN.includes(field)) { fplAssist(item, autoFilled.get(item) || {}); view.sync('aircraft.'); }
+      if (CALLSIGN.includes(field)) { fplAssist(item, autoFilled.get(item) || {}); operatorAssist(index); view.sync('aircraft.'); }
       // Valeurs reprises d'un appareil précédemment choisi : effacées pour laisser place au nouveau choix.
       const auto = autoFilled.get(item) || {};
       if (field !== 'variant') ['registration', ...CALLSIGN, 'type', 'variant', 'category', 'tacticalNumber', 'configuration', 'baseDeparture'].forEach(k => { if (k !== field && !(CALLSIGN.includes(field) && CALLSIGN.includes(k)) && item[k] && item[k] === auto[k]) { item[k] = ''; delete auto[k]; } });

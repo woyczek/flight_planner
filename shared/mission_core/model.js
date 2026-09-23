@@ -5,7 +5,7 @@
   // leurs données sous `missionData` sans toucher au tronc commun.
   const SCHEMA_VERSION = 2;
 
-  const emptyAircraft = () => ({ category: '', type: '', variant: '', registration: '', tacticalNumber: '', callsign: '', callsignPrefix: '', callsignNumber: '', callsignFpl: '', baseDeparture: '', baseReturn: '', massTakeoff: null, massLanding: null, enduranceMinutes: null, configuration: '', equipment: [] });
+  const emptyAircraft = () => ({ category: '', type: '', variant: '', registration: '', tacticalNumber: '', callsign: '', callsignPrefix: '', callsignNumber: '', callsignFpl: '', operatorCode: '', baseDeparture: '', baseReturn: '', massTakeoff: null, massLanding: null, enduranceMinutes: null, configuration: '', equipment: [] });
   const emptyMission = (family = '') => ({
     schemaVersion: SCHEMA_VERSION,
     family, series: '', subtype: '',
@@ -90,7 +90,8 @@
   // Indicatif radio = indicatif (série : DRAGON, PELICAN, SAMU…) + numéro (76, 41, 74-1…).
   // Champ libre : ce qui ne suit pas ce schéma reste entièrement dans l'indicatif.
   function splitCallsign(value) {
-    const text = String(value ?? '').trim().toUpperCase().replace(/\s+/g, ' ');
+    // Accents et points ignorés (PÉLICAN = PELICAN, F.M.N. = FMN).
+    const text = String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f.]/g, '').trim().toUpperCase().replace(/\s+/g, ' ');
     const m = /^([A-Z]+(?: [A-Z]+)*)[ -]?(\d[0-9A-Z-]*)$/.exec(text);
     return m ? { prefix: m[1], number: m[2] } : { prefix: text, number: '' };
   }
@@ -98,7 +99,7 @@
   // Appareils : indicatif / numéro déduits de l'indicatif complet s'ils manquent.
   function callsignParts(mission) {
     (mission.aircraft || []).forEach(a => {
-      ['callsignPrefix', 'callsignNumber', 'callsignFpl'].forEach(k => { if (a[k] == null) a[k] = ''; });
+      ['callsignPrefix', 'callsignNumber', 'callsignFpl', 'operatorCode'].forEach(k => { if (a[k] == null) a[k] = ''; });
       if (a.callsign && !a.callsignPrefix && !a.callsignNumber) { const s = splitCallsign(a.callsign); a.callsignPrefix = s.prefix; a.callsignNumber = s.number; }
     });
     return mission;

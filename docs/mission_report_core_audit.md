@@ -365,3 +365,19 @@ Retenues par défaut (à contester si besoin) :
   rendu des pages du Core. Le bloc « Capacités / techniques employées » l'utilise.
   (Les équipements d'un appareil restent un groupe repliable à l'intérieur du bloc
   Appareil(s), le framework ne gérant que des blocs.)
+
+## J. Étape 6 — table de correspondance des indicatifs, exploitant OPR/ (2026-09-24)
+
+- La forme **complète** reste celle des CR ; la **table de correspondance**
+  (`MissionVocab.callsignTable`) donne la forme plan de vol (case 7) et le désignateur OACI
+  de l'exploitant (OPR/, case 18) : PELICAN ↔ PCAN (FRU), MILAN, BENGALE ↔ BENGA, ICARE
+  (fonction), DRAGON ↔ DRAGO, CHOUCAS ↔ CHOUC (FGN), KETOUPA ↔ KETOU, MORANE (HBE), LAT,
+  FMN (F.M.N.), COTAM ↔ CTM, et désignateurs génériques FAF, FRU, FMY, FNY, FGN, FDO, DGAEV
+  (formes génériques ; les noms de série sont les indicatifs de mission parlés).
+- Priorité : table statique, formes corrigées par le pilote (mémorisées dans
+  `missionCallsignTable:v1`, donc dans la sauvegarde des données locales), abréviations
+  apprises de la base, troncature à 7 caractères. Accents et points ignorés (PÉLICAN).
+- Série automatique : appareils connus de l'opérateur, sinon table (Sécurité civile + BE20
+  → BENGALE ; Gendarmerie + EC135 → KETOUPA), hors indicatifs de fonction.
+- Champ **Exploitant OACI (OPR/)** : d'après l'organisme (Sécurité civile → FRU…), la série
+  ou l'appareil connu ; lu dans l'OPR/ des plans de vol importés (organisme déduit).

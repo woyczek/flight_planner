@@ -65,7 +65,7 @@
     const port = p => p?.icao_code ? { icao: up(p.icao_code), name: p.name || '', lat: num(p.pos_lat), lon: num(p.pos_long), elevation: num(p.elevation) } : null;
     return {
       source: 'SimBrief', callsign: up(d.atc?.callsign || `${g.icao_airline || ''}${g.flight_number || ''}`), type: up(d.aircraft?.icaocode || d.aircraft?.icao_code || ac.type),
-      registration: up(d.aircraft?.reg), variant: d.aircraft?.name || '', equipment: equipmentCodes(d.aircraft?.equip || ac.equip, d.aircraft?.transponder || ac.transponder, 'I'),
+      registration: up(d.aircraft?.reg), operatorCode: up(d.general?.icao_airline), variant: d.aircraft?.name || '', equipment: equipmentCodes(d.aircraft?.equip || ac.equip, d.aircraft?.transponder || ac.transponder, 'I'),
       dep: up(d.origin?.icao_code), arr: up(d.destination?.icao_code), altn: up(alternate.icao_code), route: up(g.route),
       waypoints: fixes.map(f => up(f.ident)), altitude: level(g.initial_altitude), speed: num(g.cruise_tas), distanceNm: num(g.route_distance || g.air_distance),
       metar: d.origin?.metar || '', taf: d.origin?.taf || '', massTakeoff: num(d.weights?.est_tow), massLanding: num(d.weights?.est_ldw),
@@ -81,7 +81,7 @@
     const fp = pilot.flightPlan;
     return {
       source: 'IVAO', network: 'IVAO', callsign: up(pilot.callsign), type: up(fp.aircraft?.icaoCode || fp.aircraftId), variant: fp.aircraft?.model || '',
-      registration: remark(fp.remarks, 'REG'), equipment: equipmentCodes(fp.aircraftEquipments, fp.aircraftTransponderTypes, fp.flightRules),
+      registration: remark(fp.remarks, 'REG'), operatorCode: remark(fp.remarks, 'OPR'), equipment: equipmentCodes(fp.aircraftEquipments, fp.aircraftTransponderTypes, fp.flightRules),
       dep: up(fp.departureId), arr: up(fp.arrivalId), altn: up(fp.alternativeId), route: up(fp.route).trim(), altitude: level(fp.level), speed: speed(fp.speed),
       pob: num(fp.peopleOnBoard), endurance: fp.endurance ? Math.round(fp.endurance / 60) : null, departureTime: hhmm(fp.departureTime), remarks: fp.remarks || ''
     };
@@ -95,7 +95,7 @@
     const hm = v => { const s = String(v || '').padStart(4, '0'); return /^\d{4}$/.test(s) ? Number(s.slice(0, 2)) * 60 + Number(s.slice(2)) : null; };
     return {
       source: `VATSIM${data.pilots?.includes(pilot) ? '' : ' (prefile)'}`, network: 'VATSIM', callsign: up(pilot.callsign), type: up(fp.aircraft_short || ac.type),
-      registration: remark(fp.remarks, 'REG'), equipment: equipmentCodes(ac.equip, ac.transponder, fp.flight_rules),
+      registration: remark(fp.remarks, 'REG'), operatorCode: remark(fp.remarks, 'OPR'), equipment: equipmentCodes(ac.equip, ac.transponder, fp.flight_rules),
       dep: up(fp.departure), arr: up(fp.arrival), altn: up(fp.alternate), route: up(fp.route), altitude: level(fp.altitude), speed: num(fp.cruise_tas),
       endurance: hm(fp.fuel_time), remarks: fp.remarks || ''
     };
@@ -122,6 +122,8 @@
     }
     const type = A.lookupType(item.type || fpl.type);
     set('aircraft.0.variant', type?.model || fpl.variant); set('aircraft.0.category', type?.category);
+    // Exploitant (OPR/) et organisme correspondant (FRU → Sécurité civile).
+    set('aircraft.0.operatorCode', fpl.operatorCode); set('organisation.organisation', A.operatorOfDesignator(fpl.operatorCode));
     set('aircraft.0.baseDeparture', fpl.dep); set('aircraft.0.baseReturn', fpl.arr);
     set('aircraft.0.massTakeoff', fpl.massTakeoff); set('aircraft.0.massLanding', fpl.massLanding);
     set('aircraft.0.enduranceMinutes', fpl.endurance);
