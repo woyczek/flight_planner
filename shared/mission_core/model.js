@@ -50,7 +50,8 @@
   };
 
   // ---- temps (§4.4) : minutes entre deux heures HH:MM, passage de minuit inclus
-  const minutes = text => { const m = /^(\d{1,2}):(\d{2})/.exec(String(text || '')); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+  // Heure invalide (ex. « 90:25 ») ignorée plutôt que de fausser les durées.
+  const minutes = text => { const m = /^(\d{1,2}):(\d{2})/.exec(String(text || '')); return m && +m[1] < 24 && +m[2] < 60 ? Number(m[1]) * 60 + Number(m[2]) : null; };
   const between = (a, b) => { a = minutes(a); b = minutes(b); if (a == null || b == null) return null; return b >= a ? b - a : b - a + 1440; };
   const num = v => (v === '' || v == null || !Number.isFinite(Number(v)) ? null : Number(v));
 
@@ -89,6 +90,9 @@
   function migrate(input, family = '') {
     if (!input || typeof input !== 'object') throw new Error('Mission illisible');
     if (Number(input.schemaVersion) >= 2) return fillDefaults(structuredClone(input), emptyMission(input.family || family));
+    // Famille avec convertisseur dédié (HEMS, FIRE : anciens CSV / JSON plats) : prioritaire.
+    const def = window.MissionCore?.families?.get?.(family);
+    if (def?.legacy?.fromRecord) return fillDefaults(def.legacy.fromRecord(input, { emptyMission, set, num }), emptyMission(family));
     const mission = emptyMission(family), legacy = {};
     Object.entries(input).forEach(([key, value]) => {
       if (key === 'events' && Array.isArray(value)) mission.events = value.map(e => ({ timeLocal: e.time || '', timeUtc: '', type: 'OTHER', position: e.position || '', altitude: null, speed: null, heading: null, fuel: null, description: [e.type, e.note].filter(Boolean).join(' — '), result: '' }));
@@ -139,5 +143,19 @@
   }
   const hasSensitive = (family = {}) => (family.blocks || []).some(b => b.sensitive || (b.collection ? b.collection.fields : b.fields || []).some(f => f.sensitive));
 
-  window.MissionModel = { redact, hasSensitive, context, blockVisible, SCHEMA_VERSION, emptyMission, emptyAircraft, get, set, fillDefaults, minutes, between, num, computeStatistics, migrate, toYaml, parse };
+  // Lecture d'un CSV « ; » (guillemets doublés) en objets { colonne: valeur }.
+  function parseCsv(text) {
+    const out = []; let row = [], value = '', quoted = false; text = String(text || '').replace(/^﻿/, '');
+    const push = () => { row.push(value); if (row.some(v => v !== '') && !String(row[0]).startsWith('#')) out.push(row); row = []; value = ''; };
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i], n = text[i + 1];
+      if (quoted && c === '"' && n === '"') { value += '"'; i++; } else if (c === '"') quoted = !quoted;
+      else if (!quoted && c === ';') { row.push(value); value = ''; } else if (!quoted && (c === '\n' || c === '\r')) { if (c === '\r' && n === '\n') i++; push(); } else value += c;
+    }
+    if (value || row.length) push();
+    const head = (out.shift() || []).map(h => String(h).trim());
+    return out.map(values => Object.fromEntries(head.map((h, i) => [h, values[i] ?? ''])));
+  }
+
+  window.MissionModel = { parseCsv, redact, hasSensitive, context, blockVisible, SCHEMA_VERSION, emptyMission, emptyAircraft, get, set, fillDefaults, minutes, between, num, computeStatistics, migrate, toYaml, parse };
 })();

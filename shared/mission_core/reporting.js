@@ -29,7 +29,9 @@
     rowTitle: L('Cliquer pour modifier la mission', 'Click to edit the mission', 'Klicken, um den Einsatz zu bearbeiten', 'Clic para modificar la misión'),
     saved: L('Registre enregistré', 'Ledger saved', 'Register gespeichert', 'Registro guardado'), browserOnly: L('enregistré dans le navigateur (choisir le dossier pour écrire le fichier)', 'saved in the browser (choose the folder to write the file)', 'im Browser gespeichert (Ordner wählen, um die Datei zu schreiben)', 'guardado en el navegador (elija la carpeta para escribir el archivo)'),
     importedN: L('missions importées', 'missions imported', 'Einsätze importiert', 'misiones importadas'), folderLabel: L('Dossier', 'Folder', 'Ordner', 'Carpeta'), browser: L('navigateur uniquement', 'browser only', 'nur Browser', 'solo navegador'),
-    none: L('Non renseigné', 'Not provided', 'Nicht angegeben', 'No indicado')
+    none: L('Non renseigné', 'Not provided', 'Nicht angegeben', 'No indicado'),
+    legacyUseCache: L('Utiliser l’ancien registre déjà chargé dans le navigateur ? (Annuler pour choisir un fichier CSV)', 'Use the legacy ledger already loaded in the browser? (Cancel to choose a CSV file)', 'Das bereits im Browser geladene alte Register verwenden? (Abbrechen, um eine CSV-Datei zu wählen)', '¿Usar el registro antiguo ya cargado en el navegador? (Cancelar para elegir un archivo CSV)'),
+    legacyDone: L('missions importées de l’ancien registre ; déjà présentes (même n° et date) :', 'missions imported from the legacy ledger; already present (same ID and date):', 'Einsätze aus dem alten Register importiert; bereits vorhanden (gleiche ID und Datum):', 'misiones importadas del registro antiguo; ya presentes (mismo ID y fecha):')
   };
 
   function mount({ family: familyId, root }) {
@@ -49,6 +51,7 @@
         <button type="button" class="secondary" data-action="import">${t('importYaml')}</button>
         <button type="button" class="secondary" data-action="folder">${t('folder')}</button>
         <button type="button" class="secondary" data-action="print">${t('print')}</button>
+        <button type="button" class="secondary" data-action="legacy" hidden></button><input type="file" accept=".csv,text/csv" data-legacy hidden>
         <input type="file" accept=".yaml,.yml,text/yaml" multiple hidden></div><p class="small mc-ledger-info"></p><p class="small mc-status"></p></section>
       <section><h2>${t('summary')}</h2><div class="mc-cards" id="mcCards"></div></section>
       <section><h2>${t('breakdowns')}</h2><div class="mc-breakdowns" id="mcBreakdowns"></div></section>
@@ -107,7 +110,24 @@
     $a('csv').onclick = () => ledger.downloadCsv();
     $a('print').onclick = () => print();
     $a('folder').onclick = async () => { try { await ledger.chooseFolder(); await ledger.load(); await persist(); render(); } catch (error) { status.textContent = error.message; } };
-    const picker = root.querySelector('input[type="file"]');
+    // Ancien registre CSV (HEMS / FIRE) → missions du Core, sans doublon (n° + date).
+    if (family.legacy) {
+      const button = $a('legacy'), legacyPicker = root.querySelector('[data-legacy]');
+      button.hidden = false; button.textContent = family.legacy.label[0]; rows.set(family.legacy.label[0], family.legacy.label);
+      const importText = async text => {
+        const key = m => `${String(m.metadata?.missionId || '').trim().toUpperCase()}|${m.metadata?.date || ''}`;
+        const known = new Set(ledger.missions.map(key)); let added = 0, skipped = 0;
+        M.parseCsv(text).forEach(record => { const mission = M.migrate(record, family.id); if (known.has(key(mission))) { skipped++; return; } known.add(key(mission)); ledger.add(mission); added++; });
+        if (added) await persist();
+        status.textContent = `${added} ${t('legacyDone')} ${skipped}`; render();
+      };
+      button.onclick = () => {
+        const cached = window.MissionReportingConfig?.cached?.(family.legacy.configKey);
+        if (cached?.text && confirm(t('legacyUseCache'))) importText(cached.text); else legacyPicker.click();
+      };
+      legacyPicker.onchange = async () => { const file = legacyPicker.files[0]; if (file) await importText(await file.text()); legacyPicker.value = ''; };
+    }
+    const picker = root.querySelector('input[type="file"]:not([data-legacy])');
     $a('import').onclick = () => picker.click();
     picker.onchange = async () => {
       let count = 0;
