@@ -22,6 +22,7 @@ window.REPOSITORY_TREE={
     le:{bar:"#1e3a8a",barText:"#ffffff",page:"#f5f6f8",accent:"#1e3a8a",favicon:"assets/favicon-le.svg"},
     isr:{bar:"#374151",barText:"#ffffff",page:"#f5f6f8",accent:"#374151",favicon:"assets/favicon-isr.svg"},
     command:{bar:"#6d28d9",barText:"#ffffff",page:"#f5f6f8",accent:"#6d28d9",favicon:"assets/favicon-command.svg"},
+    sof:{bar:"#3f3f46",barText:"#ffffff",page:"#f5f6f8",accent:"#3f3f46",favicon:"assets/favicon-sof.svg"},
     flight:{bar:"#101317",barText:"#eef3f7",page:"#101317",accent:"#71b7ff",favicon:"assets/favicon-flight.svg"}
   },
   folders:{
@@ -39,6 +40,7 @@ window.REPOSITORY_TREE={
     "LE":{theme:"le",favicon:"assets/favicon-le.svg"},
     "ISR":{theme:"isr",favicon:"assets/favicon-isr.svg"},
     "COMMAND":{theme:"command",favicon:"assets/favicon-command.svg"},
+    "SOF":{theme:"sof",favicon:"assets/favicon-sof.svg"},
     "LandingPerformanceDashboard":{theme:"landing",favicon:"assets/favicon-landing.svg"}
   },
   pages:[
@@ -66,6 +68,8 @@ window.REPOSITORY_TREE={
     {path:"ISR/isr_reporting.html",menu:"ISR/Reporting missions",label:"ISR / RECON — Reporting missions"},
     {path:"COMMAND/command_cr.html",menu:"COMMAND/Générateur de CR",label:"COMMAND / AEW / RELAY — Compte rendu de mission"},
     {path:"COMMAND/command_reporting.html",menu:"COMMAND/Reporting missions",label:"COMMAND / AEW / RELAY — Reporting missions"},
+    {path:"SOF/sof_cr.html",menu:"SOF/Générateur de CR",label:"SOF / TACTICAL — Compte rendu de mission"},
+    {path:"SOF/sof_reporting.html",menu:"SOF/Reporting missions",label:"SOF / TACTICAL — Reporting missions"},
     {path:"MissionCore/demo_cr.html",menu:"Mission Core/Démonstration — CR",label:"Démonstration — compte rendu de mission"},
     {path:"MissionCore/demo_reporting.html",menu:"Mission Core/Démonstration — reporting",label:"Démonstration — reporting missions"},
     {path:"mission_operations_reporting.html",menu:"Reporting opérations",label:"Synthèse FIRE + HEMS",theme:"landing",favicon:"assets/favicon-landing.svg",files:{gaarLedgerName:"FIRE/mission_ledger.csv",ledgerName:"HEMS/hems_mission_ledger.csv"}},
