@@ -23,6 +23,7 @@ window.REPOSITORY_TREE={
     isr:{bar:"#374151",barText:"#ffffff",page:"#f5f6f8",accent:"#374151",favicon:"assets/favicon-isr.svg"},
     command:{bar:"#6d28d9",barText:"#ffffff",page:"#f5f6f8",accent:"#6d28d9",favicon:"assets/favicon-command.svg"},
     sof:{bar:"#3f3f46",barText:"#ffffff",page:"#f5f6f8",accent:"#3f3f46",favicon:"assets/favicon-sof.svg"},
+    special:{bar:"#9d174d",barText:"#ffffff",page:"#f5f6f8",accent:"#9d174d",favicon:"assets/favicon-special.svg"},
     flight:{bar:"#101317",barText:"#eef3f7",page:"#101317",accent:"#71b7ff",favicon:"assets/favicon-flight.svg"}
   },
   folders:{
@@ -41,6 +42,7 @@ window.REPOSITORY_TREE={
     "ISR":{theme:"isr",favicon:"assets/favicon-isr.svg"},
     "COMMAND":{theme:"command",favicon:"assets/favicon-command.svg"},
     "SOF":{theme:"sof",favicon:"assets/favicon-sof.svg"},
+    "SPECIAL":{theme:"special",favicon:"assets/favicon-special.svg"},
     "LandingPerformanceDashboard":{theme:"landing",favicon:"assets/favicon-landing.svg"}
   },
   pages:[
@@ -70,6 +72,8 @@ window.REPOSITORY_TREE={
     {path:"COMMAND/command_reporting.html",menu:"COMMAND/Reporting missions",label:"COMMAND / AEW / RELAY — Reporting missions"},
     {path:"SOF/sof_cr.html",menu:"SOF/Générateur de CR",label:"SOF / TACTICAL — Compte rendu de mission"},
     {path:"SOF/sof_reporting.html",menu:"SOF/Reporting missions",label:"SOF / TACTICAL — Reporting missions"},
+    {path:"SPECIAL/special_cr.html",menu:"SPECIAL/Générateur de CR",label:"SPECIAL / TEST / TRAINING — Compte rendu de mission"},
+    {path:"SPECIAL/special_reporting.html",menu:"SPECIAL/Reporting missions",label:"SPECIAL / TEST / TRAINING — Reporting missions"},
     {path:"MissionCore/demo_cr.html",menu:"Mission Core/Démonstration — CR",label:"Démonstration — compte rendu de mission"},
     {path:"MissionCore/demo_reporting.html",menu:"Mission Core/Démonstration — reporting",label:"Démonstration — reporting missions"},
     {path:"mission_operations_reporting.html",menu:"Reporting opérations",label:"Synthèse FIRE + HEMS",theme:"landing",favicon:"assets/favicon-landing.svg",files:{gaarLedgerName:"FIRE/mission_ledger.csv",ledgerName:"HEMS/hems_mission_ledger.csv"}},
