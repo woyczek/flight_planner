@@ -31,7 +31,9 @@
     // (c'est ce qui provoquait le "0 patients HEMS" du reporting général).
     rawRows = data.map(values => {
       if (values.length < head.length) values = values.concat(Array(head.length - values.length).fill(''));
-      return Object.fromEntries(head.map((name, i) => [name, values[i] || '']));
+      const record = Object.fromEntries(head.map((name, i) => [name, values[i] || '']));
+      // Anciennes valeurs françaises des listes → valeurs de référence anglaises.
+      return window.MissionValues ? window.MissionValues.normalizeRecord(record) : record;
     });
     render();
   }
@@ -133,7 +135,7 @@
     reader.onload = () => { window.MissionReportingConfig?.rememberFile('gaarLedgerName', file, reader.result); parse(reader.result, 'gaarLedgerName'); };
     reader.readAsText(file);
   });
-  $('demo').addEventListener('click', () => parse('missionId;date;aircraft;registration;callsign;risk;missionType;sector;baseDeparture;flightMinutes;blockMinutes;fuelUsed;fuelUnit;drops;reloads\nGAAR-001;2026-07-06;Milan / Dash Q400MR;FZBMM;MILAN80;Vert;GAAR;Cévennes / grands causses;LFTW;99;135;1200;kg;1;0\nGAAR-002;2026-07-07;Canadair CL-415;F-ZBMM;PELICAN 36;Rouge;GAAR avec déroutement;Maures;LFTW;212;221;4550;kg;5;6'));
+  $('demo').addEventListener('click', () => parse('missionId;date;aircraft;registration;callsign;risk;missionType;sector;baseDeparture;flightMinutes;blockMinutes;fuelUsed;fuelUnit;drops;reloads\nGAAR-001;2026-07-06;Milan / Dash Q400MR;FZBMM;MILAN80;Green;GAAR;Cévennes / grands causses;LFTW;99;135;1200;kg;1;0\nGAAR-002;2026-07-07;Canadair CL-415;F-ZBMM;PELICAN 36;Red;GAAR with diversion;Maures;LFTW;212;221;4550;kg;5;6'));
   $('export').addEventListener('click', () => {
     const rows = window.TimePeriod.filterRows(rawRows, 'date');
     const content = [['metric', 'value'], ['missions', rows.length], ['flight_minutes', rows.reduce((s, r) => s + number(r.flightMinutes), 0)], ['block_minutes', rows.reduce((s, r) => s + number(r.blockMinutes), 0)], ['fuel_used', rows.reduce((s, r) => s + number(r.fuelUsed), 0)], ['drops', rows.reduce((s, r) => s + number(r.drops), 0)]].map(line => line.join(';')).join('\n');

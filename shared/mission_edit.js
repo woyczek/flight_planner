@@ -80,8 +80,10 @@
     const apply = record => {
       Object.entries(record || {}).forEach(([key, value]) => {
         const input = field(key); if (!input) return;
+        // Listes : valeurs de référence anglaises, anciennes valeurs françaises converties.
+        if (window.MissionValues) { window.MissionValues.setField(input, value); return; }
         if (input.tagName === 'SELECT' && value && ![...input.options].some(option => option.value === value)) {
-          const option = document.createElement('option'); option.textContent = value; input.append(option);
+          const option = document.createElement('option'); option.value = value; option.textContent = value; input.append(option);
         }
         input.value = value ?? '';
       });

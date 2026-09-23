@@ -31,7 +31,9 @@
     // ce qui provoquait le "0 patients" constaté dans le reporting général.
     rawRows = data.map(values => {
       if (values.length < head.length) values = values.concat(Array(head.length - values.length).fill(''));
-      return Object.fromEntries(head.map((name, i) => [name, values[i] || '']));
+      const record = Object.fromEntries(head.map((name, i) => [name, values[i] || '']));
+      // Anciennes valeurs françaises des listes → valeurs de référence anglaises.
+      return window.MissionValues ? window.MissionValues.normalizeRecord(record) : record;
     });
     render();
   }
@@ -107,7 +109,7 @@
   }
 
   function renderCardsAndBreakdowns(rows) {
-    const completed = rows.filter(row => /Termin|transport[eé]/i.test(row.outcome || '')).length;
+    const completed = rows.filter(row => /^(Completed|Patient transported)$|Termin|transport[eé]/i.test(row.outcome || '')).length;
     const fuelUnit = rows.find(row => row.fuelUnit)?.fuelUnit || '—';
     const alerts = rows.map(row => number(row.alertToTakeoffMinutes)).filter(Boolean);
     const target = rows.filter(row => number(row.alertToTakeoffMinutes) && number(row.alertToTakeoffMinutes) <= 15).length;
@@ -135,7 +137,7 @@
     reader.onload = () => { window.MissionReportingConfig?.rememberFile('ledgerName', file, reader.result); parse(reader.result, 'ledgerName'); };
     reader.readAsText(file);
   });
-  $('demo').addEventListener('click', () => parse('missionId;date;service;missionType;aircraft;callsign;baseDeparture;destination;outcome;alertToTakeoffMinutes;sceneMinutes;blockMinutes;flightMinutes;fuelUsed;fuelUnit;patients\nHEMS-001;2026-09-23;SAMU / SMUR;HEMS primaire;H145;HELISMUR 01;Base HEMS;CHU régional;Patient transporté;12;24;68;52;240;kg;1\nHEMS-002;2026-09-23;Sécurité civile;Secours / sauvetage;EC145;DRAGON 34;Base Dragon;DZ montagne;Terminée;18;46;97;78;310;kg;0'));
+  $('demo').addEventListener('click', () => parse('missionId;date;service;missionType;aircraft;callsign;baseDeparture;destination;outcome;alertToTakeoffMinutes;sceneMinutes;blockMinutes;flightMinutes;fuelUsed;fuelUnit;patients\nHEMS-001;2026-09-23;SAMU / SMUR;Primary HEMS;H145;HELISMUR 01;Base HEMS;CHU régional;Patient transported;12;24;68;52;240;kg;1\nHEMS-002;2026-09-23;Civil Security;Rescue;EC145;DRAGON 34;Base Dragon;DZ montagne;Completed;18;46;97;78;310;kg;0'));
   $('export').addEventListener('click', () => {
     const rows = window.TimePeriod.filterRows(rawRows, 'date');
     const content = [['metric', 'value'], ['missions', rows.length], ['patients', rows.reduce((s, r) => s + number(r.patients), 0)], ['flight_minutes', rows.reduce((s, r) => s + number(r.flightMinutes), 0)], ['block_minutes', rows.reduce((s, r) => s + number(r.blockMinutes), 0)], ['fuel_used', rows.reduce((s, r) => s + number(r.fuelUsed), 0)]].map(line => line.join(';')).join('\n');
@@ -156,6 +158,6 @@
   render();
   window.addEventListener('load', () => {
     if (!window.RepositoryContentI18n) return;
-    const script = document.createElement('script'); script.src = new URL('hems_i18n.js?v=20260923b', moduleUrl).href; document.head.append(script);
+    const script = document.createElement('script'); script.src = new URL('hems_i18n.js?v=20260923d', moduleUrl).href; document.head.append(script);
   });
 })();

@@ -6,10 +6,12 @@
   if (!form || !body || !addButton) return;
 
   const links = {
-    alert: 'Déclenchement', engineStart: 'Mise en route', takeoff: 'Décollage',
-    onScene: 'Arrivée zone', patientContact: 'Prise en charge',
-    sceneDeparture: 'Départ zone', destinationArrival: 'Arrivée destination',
-    landing: 'Atterrissage final', engineStop: 'Fin mission / arrêt moteurs'
+    // Valeurs de référence (anglais) des types d'événement : les libellés affichés
+    // sont traduits par la couche i18n, les valeurs restent stables.
+    alert: 'Dispatch', engineStart: 'Engine start', takeoff: 'Take-off',
+    onScene: 'On-scene arrival', patientContact: 'Patient contact',
+    sceneDeparture: 'Scene departure', destinationArrival: 'Destination arrival',
+    landing: 'Final landing', engineStop: 'Mission end / engine shutdown'
   };
   const reverse = Object.fromEntries(Object.entries(links).map(([field, type]) => [type, field]));
   // Ligne d'événement associée à chaque horaire : une correction de l'horaire met

@@ -271,8 +271,8 @@
         <div class="grid">
           <div><label>N° mission</label><input name="missionId" value="GAAR-001"></div>
           <div><label>Date</label><input type="date" name="date"></div>
-          <div><label>Niveau de risque</label><select name="risk"><option>Vert</option><option>Jaune</option><option>Orange</option><option>Rouge</option></select></div>
-          <div><label>Appareil</label><select name="aircraft"><option>Milan / Dash Q400MR</option><option>Canadair CL-415</option><option>Autre</option></select></div>
+          <div><label>Niveau de risque</label><select name="risk"><option value="Green">Vert</option><option value="Yellow">Jaune</option><option value="Orange">Orange</option><option value="Red">Rouge</option></select></div>
+          <div><label>Appareil</label><select name="aircraft"><option value="Milan / Dash Q400MR">Milan / Dash Q400MR</option><option value="Canadair CL-415">Canadair CL-415</option><option value="Other">Autre</option></select></div>
           <div><label>Immatriculation</label><input name="registration" placeholder="F-ZBxx"></div>
           <div><label>Indicatif radio</label><input name="callsign" placeholder="MILAN 73 / PELICAN 36"></div>
           <div><label>CDB</label><input name="captain"></div>
@@ -289,7 +289,7 @@
           <div><label>Base départ</label><input name="baseDeparture" value="LFTW"></div>
           <div><label>Base retour prévue</label><input name="baseReturn" value="LFTW"></div>
           <div><label>Base rechargement / écopage</label><input name="reloadBase" placeholder="LFMP / LFMK / lac / mer"></div>
-          <div><label>Type mission</label><select name="missionType"><option>GAAR</option><option>GAAR avec déroutement</option><option>Intervention</option><option>Entraînement</option></select></div>
+          <div><label>Type mission</label><select name="missionType"><option value="GAAR">GAAR</option><option value="GAAR with diversion">GAAR avec déroutement</option><option value="Response">Intervention</option><option value="Training">Entraînement</option></select></div>
           <div><label>Circuit / secteur</label><input name="sector" placeholder="Cévennes / Alpilles / Maures..."></div>
           <div><label>Fichier FMS</label><input name="fms" placeholder="GAAR_ORANGE_03.fms"></div>
           <div><label>Altitude prévue</label><input name="altitude" placeholder="FL100 / 2500 ft AMSL"></div>
@@ -312,7 +312,7 @@
           <div><label>Arrêt moteurs</label><input type="time" name="engineStop"></div>
           <div><label>Carburant départ</label><input type="number" step="1" name="fuelStart"></div>
           <div><label>Carburant arrivée</label><input type="number" step="1" name="fuelEnd"></div>
-          <div><label>Unité carburant</label><select name="fuelUnit"><option>kg</option><option>L</option></select></div>
+          <div><label>Unité carburant</label><select name="fuelUnit"><option value="kg">kg</option><option value="L">L</option></select></div>
           <div><label>Nb largages manuel</label><input type="number" step="1" name="drops" value="0"></div>
           <div><label>Nb rechargements / écopages manuel</label><input type="number" step="1" name="reloads" value="0"></div>
           <div><label>Temps moyen rechargement</label><input name="reloadTime" placeholder="8 min / écopage 12 s"></div>
@@ -420,7 +420,9 @@
 
     function setValue(name, value) {
       const el = field(name);
-      if (el) el.value = value ?? '';
+      if (!el) return;
+      if (window.MissionValues) window.MissionValues.setField(el, value);
+      else el.value = value ?? '';
     }
 
     function setText(id, value) {
@@ -519,15 +521,15 @@
         <td><input type="time" value="${escapeAttr(event.time || '')}"></td>
         <td>
           <select>
-            <option>Observation</option>
-            <option>Alerte feu</option>
-            <option>Déroutement</option>
-            <option>Arrivée secteur</option>
-            <option>Largage</option>
-            <option>Rechargement</option>
-            <option>Écopage</option>
-            <option>Retour</option>
-            <option>Anomalie</option>
+            <option value="Observation">Observation</option>
+            <option value="Fire alert">Alerte feu</option>
+            <option value="Diversion">Déroutement</option>
+            <option value="Sector arrival">Arrivée secteur</option>
+            <option value="Drop">Largage</option>
+            <option value="Reload">Rechargement</option>
+            <option value="Scooping">Écopage</option>
+            <option value="Return">Retour</option>
+            <option value="Issue">Anomalie</option>
           </select>
         </td>
         <td><input value="${escapeAttr(event.position || '')}"></td>
@@ -536,7 +538,9 @@
       `;
 
       eventsBody.appendChild(row);
-      row.querySelector('select').value = event.type || 'Observation';
+      const typeSelect = row.querySelector('select');
+      if (window.MissionValues) window.MissionValues.setSelect(typeSelect, event.type || 'Observation');
+      else typeSelect.value = event.type || 'Observation';
       row.querySelector('button').addEventListener('click', () => {
         row.remove();
         recalculateAndRender();
@@ -561,8 +565,8 @@
 
       const manualDrops = parseNumber('drops') ?? 0;
       const manualReloads = parseNumber('reloads') ?? 0;
-      const eventDrops = countEventsByTypes(['Largage']);
-      const eventReloads = countEventsByTypes(['Rechargement', 'Écopage']);
+      const eventDrops = countEventsByTypes(['Drop']);
+      const eventReloads = countEventsByTypes(['Reload', 'Scooping']);
 
       return {
         blockMinutes,
@@ -922,12 +926,13 @@
     init();
   </script>
 <script src="../shared/repository_nav.js?v=20260923"></script>
-<script src="../shared/mission_reporting_config.js?v=20260923b"></script>
-<script src="../shared/aircraft_directory.js?v=20260923"></script>
-<script src="../shared/mission_record_loader.js?v=20260923"></script>
+<script src="../shared/mission_values.js?v=20260923d"></script>
+<script src="../shared/mission_reporting_config.js?v=20260923d"></script>
+<script src="../shared/aircraft_directory.js?v=20260923d"></script>
+<script src="../shared/mission_record_loader.js?v=20260923d"></script>
 <script src="../shared/content_i18n.js?v=20260923b"></script><script src="../shared/gaar_i18n.js?v=20260923b"></script>
 <script src="../shared/app_framework.js?v=20260923"></script>
-<script src="../shared/mission_edit.js"></script>
+<script src="../shared/mission_edit.js?v=20260923d"></script>
 <script src="../shared/cr_extras.js"></script>
 </body>
 </html>
