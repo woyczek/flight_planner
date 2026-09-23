@@ -33,7 +33,7 @@
       if (field.options) return field.options;
       if (field.familySeries) return family.series || [];
       if (field.crewRoles) return family.crewRoles ? V.crewRoles.filter(o => family.crewRoles.includes(o.value)) : V.crewRoles;
-      if (field.eventTypes) return V.eventTypes.concat(family.events || []);
+      if (field.eventTypes) return V.eventTypesFor(family.id).concat(family.events || []);
       return [];
     };
     const attrs = (field, path, withAlias) => `data-path="${esc(path)}"${withAlias && field.alias ? ` name="${esc(field.alias)}"` : ''}${field.list ? ` list="${esc(field.list)}"` : ''}${field.upper ? ' data-upper="1" autocapitalize="characters"' : ''}`;
@@ -43,7 +43,7 @@
         `<option value="${esc(o.value)}"${o.value === value ? ' selected' : ''}>${esc(txt(o.label))}</option>`).join('')}${value && !known ? `<option value="${esc(value)}" selected>${esc(value)}</option>` : ''}</select>`;
     };
     const capabilitiesHtml = (field, path, selected, item) => {
-      const allowed = family.capabilities ? new Set(family.capabilities) : null;
+      const list = family.capabilities || V.capabilityProfiles?.[family.id], allowed = list ? new Set(list) : null;
       const category = item?.category || '';
       const html = `<div class="mc-capabilities${item ? ' compact' : ''}" data-path="${esc(path)}" data-kind="checkgroup">${field.groups.map(group => {
         // Équipements d'un appareil : seuls les groupes compatibles avec sa catégorie.

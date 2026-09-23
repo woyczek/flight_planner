@@ -74,6 +74,8 @@
     const family = families.get(familyId);
     if (!family) throw new Error(`Famille inconnue : ${familyId}`);
     document.body.dataset.family = family.id;
+    // Dernière famille utilisée : cible de ☰ › Missions › Nouveau compte rendu (mission_cr.html).
+    try { if (family.id !== 'DEMO') localStorage.setItem('missionCoreLastFamily:v1', family.id); } catch { /* stockage indisponible */ }
     const prefix = family.idPrefix || family.id;
     const ledger = window.MissionLedger.open(family);
     const params = new URLSearchParams(location.search);

@@ -381,3 +381,18 @@ Retenues par défaut (à contester si besoin) :
   → BENGALE ; Gendarmerie + EC135 → KETOUPA), hors indicatifs de fonction.
 - Champ **Exploitant OACI (OPR/)** : d'après l'organisme (Sécurité civile → FRU…), la série
   ou l'appareil connu ; lu dans l'OPR/ des plans de vol importés (organisme déduit).
+
+## K. Étape 7 — événements et capacités par famille, menu simplifié (2026-09-24)
+
+- **Événements** : base commune (décollage, atterrissage, début / fin de tâche, déroutement,
+  ravitaillement, technique, météo, interruption, autre) + événements spécialisés par
+  famille (`MissionVocab.eventProfiles` : contact, observation, prise en charge, largage,
+  treuillage, insertion, extraction) + événements propres de la famille. GAAR : largage,
+  alerte feu, rechargement, écopage — plus d'insertion / extraction.
+- **Capacités / techniques** : profils par famille (`capabilityProfiles`) pour FIRE, HEMS,
+  contrôle en vol et levés ; les autres familles gardent la liste complète.
+- **Menu ☰** : « Missions › Nouveau compte rendu » (`mission_cr.html` : CR de la dernière
+  famille utilisée, choix de la famille au premier usage ou avec `?choisir`) et
+  « Missions › Reporting missions » (reporting général). Les pages des familles restent
+  déclarées dans `repository_tree` (thème, réglages) avec `menu:false` ; on passe de l'une
+  à l'autre par la popup d'en-tête et les boutons CR ⇄ reporting.

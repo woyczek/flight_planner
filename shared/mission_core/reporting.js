@@ -38,6 +38,7 @@
     const family = window.MissionCore.families.get(familyId);
     if (!family) throw new Error(`Famille inconnue : ${familyId}`);
     document.body.dataset.family = family.id;
+    try { if (family.id !== 'DEMO') localStorage.setItem('missionCoreLastFamily:v1', family.id); } catch { /* stockage indisponible */ }
     const ledger = window.MissionLedger.open(family);
     const rows = new Map(); const t = key => { rows.set(UI[key][0], UI[key]); return UI[key][0]; };
     const label = (list, value) => { const o = list.find(x => x.value === value); if (o) rows.set(o.label[0], o.label); return o ? o.label[0] : value || t('none'); };

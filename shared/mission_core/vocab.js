@@ -129,6 +129,28 @@
     opt('OTHER', L('Autre', 'Other', 'Andere', 'Otro'))
   ];
 
+  // Événements communs à toutes les familles, puis événements spécialisés proposés
+  // seulement aux familles concernées (pas d'insertion / extraction en GAAR…). Les
+  // familles ajoutent leurs propres événements (family.events).
+  const BASE_EVENTS = ['TAKEOFF', 'LANDING', 'ON_TASK', 'OFF_TASK', 'DIVERSION', 'REFUEL', 'TECHNICAL', 'WEATHER', 'ABORT', 'OTHER'];
+  const eventProfiles = {
+    SAR: ['CONTACT', 'SIGHTING', 'PICKUP', 'DROP', 'HOIST', 'EXTRACTION'], HEMS: ['PICKUP', 'HOIST'], FIRE: ['DROP'],
+    AIRLIFT: ['PICKUP', 'DROP'], MARITIME: ['CONTACT', 'SIGHTING', 'DROP'], HADR: ['PICKUP', 'DROP', 'HOIST'],
+    AIRBORNE: ['DROP', 'INSERTION'], FI: [], SURVEY: [], LE: ['CONTACT', 'SIGHTING', 'INSERTION', 'EXTRACTION'],
+    ISR: ['CONTACT', 'SIGHTING'], COMMAND: ['CONTACT'], SOF: ['CONTACT', 'PICKUP', 'DROP', 'HOIST', 'INSERTION', 'EXTRACTION'], SPECIAL: [],
+    DEMO: eventTypes.map(o => o.value)
+  };
+  // Capacités / techniques proposées par famille (absente : toutes). Filtre aussi les
+  // équipements des appareils (sauf équipements du plan de vol).
+  const FLIGHT = ['IFR', 'VFR', 'SVFR', 'NIGHT', 'IMC', 'LOW_LEVEL', 'MOUNTAIN'];
+  const capabilityProfiles = {
+    FIRE: [...FLIGHT, 'SLING', 'SHORT_FIELD', 'ROUGH_FIELD', 'IR', 'CAMERA', 'WEATHER_RADAR'],
+    HEMS: [...FLIGHT, 'NVG', 'HOIST', 'RAPPEL', 'SLING', 'HOVER_EXIT', 'SHIPBOARD', 'CONFINED_AREA', 'IR', 'EO_IR', 'WEATHER_RADAR'],
+    FI: [...FLIGHT, 'MISSION_SENSOR', 'CAMERA'],
+    SURVEY: [...FLIGHT, 'TERRAIN_FOLLOWING', 'POLAR', 'SHORT_FIELD', 'UNPREPARED_STRIP', 'EO', 'IR', 'EO_IR', 'RADAR', 'SAR_RADAR', 'LIDAR', 'CAMERA', 'MULTISPECTRAL', 'MISSION_SENSOR']
+  };
+  const eventTypesFor = familyId => { const allowed = new Set([...BASE_EVENTS, ...(eventProfiles[familyId] || [])]); return eventTypes.filter(o => allowed.has(o.value)); };
+
   const crewRoles = [
     opt('PIC', L('Commandant de bord (PIC)', 'Aircraft commander (PIC)', 'Kommandant (PIC)', 'Comandante (PIC)')),
     opt('COPILOT', L('Copilote', 'Copilot', 'Kopilot', 'Copiloto')), opt('FLIGHT_ENGINEER', L('Mécanicien navigant', 'Flight engineer', 'Flugingenieur', 'Ingeniero de vuelo')),
@@ -150,5 +172,5 @@
   const fuelUnits = [opt('kg', L('kg', 'kg')), opt('lb', L('lb', 'lb')), opt('L', L('L', 'L')), opt('USG', L('US gal', 'US gal'))];
   const networks = [opt('', L('Hors réseau / non renseigné', 'Offline / not provided', 'Offline / nicht angegeben', 'Fuera de red / no indicado')), opt('IVAO', L('IVAO', 'IVAO')), opt('VATSIM', L('VATSIM', 'VATSIM'))];
 
-  window.MissionVocab = { L, opt, aircraftCategories, capabilityGroups, equipmentGroups, outcomes, interruptedOutcomes, eventTypes, crewRoles, context, classification, dayNight, fuelUnits, networks, families, callsignTable, operatorDesignators };
+  window.MissionVocab = { L, opt, aircraftCategories, capabilityGroups, equipmentGroups, outcomes, interruptedOutcomes, eventTypes, eventTypesFor, eventProfiles, capabilityProfiles, crewRoles, context, classification, dayNight, fuelUnits, networks, families, callsignTable, operatorDesignators };
 })();
