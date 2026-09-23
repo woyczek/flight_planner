@@ -42,21 +42,6 @@
   function card(label, value, sub = '') { return `<div class="card"><span class="small">${label}</span><b>${value}</b><span class="small">${sub}</span></div>`; }
   function breakdown(title, key, rows) { const data = groups(key, rows), max = Math.max(1, ...data.map(item => item[1])); return `<div><h3>${title}</h3>${data.map(([name, count]) => `<div class="barrow"><span>${escape(name)}</span><span>${count}</span><span class="track"><span class="bar" style="display:block;width:${count * 100 / max}%"></span></span></div>`).join('')}</div>`; }
 
-  // Construit un lien de trace IVAO/VATSIM à partir des champs de la mission (s'ils sont
-  // renseignés dans le registre) ou, à défaut, des identifiants par défaut enregistrés
-  // dans les préférences partagées.
-  function traceLink(row) {
-    if (row.trackerUrl) return `<a href="${escape(row.trackerUrl)}" target="_blank" rel="noopener">Trace</a>`;
-    const network = (row.onlineNetwork || '').toUpperCase();
-    const prefs = window.MissionReportingConfig?.read?.() || {};
-    if ((network === 'IVAO' || (!network && row.ivaoId)) && (row.ivaoId || prefs.ivaoId)) {
-      return `<a href="https://tracker.ivao.aero/?userId=${escape(row.ivaoId || prefs.ivaoId)}" target="_blank" rel="noopener">Trace IVAO</a>`;
-    }
-    if ((network === 'VATSIM' || (!network && row.vatsimId)) && (row.vatsimId || prefs.vatsimId)) {
-      return `<a href="https://stats.vatsim.net/stats/${escape(row.vatsimId || prefs.vatsimId)}" target="_blank" rel="noopener">Trace VATSIM</a>`;
-    }
-    return '—';
-  }
 
   const TABLE_COLUMNS = [
     { key: 'missionId', label: 'N° mission' },
@@ -73,39 +58,32 @@
     { key: 'fuelUsed', label: 'Carburant', type: 'number' },
     { key: 'drops', label: 'Largages', type: 'number' },
     { key: 'reloads', label: 'Recharges', type: 'number' },
-    { key: 'trackerUrl', label: 'Trace', format: (_, row) => traceLink(row) }
+    { key: 'trackerUrl', label: 'Trace', html: (_, row) => window.MissionReportingConfig.traceLink(row) }
   ];
 
   let table = null;
   function renderTable(rows) {
     if (!table) {
-      table = window.MissionTable.render($('table'), {
-        rows, columns: TABLE_COLUMNS, idKey: 'missionId', defaultSortKey: 'date',
-        onChange: updatedRows => { rawRows = mergeEdits(rawRows, updatedRows); persist(); renderCardsAndBreakdowns(window.TimePeriod.filterRows(rawRows, 'date')); },
-        onEdit: row => openInReport(row)
+      table = window.SortedTable.render($('table'), {
+        rows, columns: TABLE_COLUMNS, defaultSortKey: 'date', defaultDir: -1,
+        emptyText: 'Aucune mission pour la période sélectionnée.',
+        // Clic sur la ligne : ouverture du CR pré-rempli (mode modification).
+        onRowClick: row => openInReport(row), rowTitle: 'Cliquer pour modifier la mission',
+        deleteMessage: row => `Supprimer la mission ${row.missionId || ''} du ${row.date || ''} ?
+La suppression s'applique à la copie locale du registre (navigateur) ; pensez à exporter le registre modifié.`,
+        // Suppression par identité d'objet : le n° de mission peut être dupliqué.
+        onDelete: row => { rawRows = rawRows.filter(item => item !== row); persist(); renderCardsAndBreakdowns(window.TimePeriod.filterRows(rawRows, 'date')); }
       });
     } else table.setRows(rows);
   }
-  // Fusionne les lignes affichées (filtrées par période, potentiellement supprimées)
-  // dans le jeu de données complet, pour ne pas perdre les missions hors période.
-  // Fusion par identité d'objet : le n° de mission peut être dupliqué dans le registre.
-  function mergeEdits(all, visible) {
-    const inPeriod = new Set(window.TimePeriod.filterRows(all, 'date'));
-    const kept = new Set(visible);
-    return all.filter(row => !inPeriod.has(row) || kept.has(row));
-  }
-  function serialize() {
-    const head = ledgerHead.length ? ledgerHead : Object.keys(rawRows[0] || {});
-    return [head.join(';')].concat(rawRows.map(row => head.map(key => `"${String(row[key] ?? '').replace(/"/g, '""')}"`).join(';'))).join('\n') + '\n';
-  }
+  function serialize() { return window.MissionReportingConfig.serializeLedger(ledgerHead, rawRows); }
   // Garde la copie locale du registre (partagée avec les autres pages) alignée sur les
   // modifications/suppressions, pour qu'elles survivent à un aller-retour vers le CR.
   function persist() { if (persistKey) window.MissionReportingConfig?.cacheText(persistKey, $('ledgerName').value, serialize()); }
-  // « Modifier » : ouvre le générateur de CR pré-rempli avec cette ligne du registre.
+  // Ouvre le générateur de CR pré-rempli avec cette ligne du registre.
   function openInReport(row) {
     persist();
-    localStorage.setItem('missionEditDraft:v1', JSON.stringify({ kind: 'gaar', configKey: persistKey, filename: $('ledgerName').value, index: rawRows.indexOf(row), record: row }));
-    location.href = 'DEFA-Virtual.cr.gen.securite-civile.html?edit=' + encodeURIComponent(row.missionId || '');
+    window.MissionReportingConfig.openEditor({ kind: 'gaar', configKey: persistKey, filename: $('ledgerName').value, index: rawRows.indexOf(row), record: row });
   }
 
   function renderCardsAndBreakdowns(rows) {

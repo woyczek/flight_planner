@@ -60,7 +60,37 @@
     return false;
   };
   const rememberFile = (configKey, file, text) => { write({ [configKey]: file.name }); publish(configKey, file.name, text, 'selection'); };
-  window.MissionReportingConfig = { read, write, load, cached, cacheText, rememberFile, candidates };
+  const isLedgerKey = name => /ledgerName$/i.test(name);
+
+  // ---- Helpers partagés par les reportings HEMS, GAAR et général ----
+  const escapeHtml = value => String(value ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const ivaoTrackerUrl = id => 'https://tracker.ivao.aero/?userId=' + encodeURIComponent(id);
+  // Page de trace VATSIM (statsim.net ; connexion requise pour le détail, consultation libre).
+  const vatsimTrackerUrl = id => 'https://statsim.net/flights/vatsimid/?vatsimid=' + encodeURIComponent(id);
+  // Lien HTML vers la trace réseau d'une mission : URL saisie, sinon IVAO / VATSIM à partir
+  // des ID de la mission ou, à défaut, des ID du profil pilote.
+  const traceLink = row => {
+    const link = (href, label) => `<a href="${escapeHtml(href)}" target="_blank" rel="noopener">${escapeHtml(label)}</a>`;
+    if (/^https?:\/\//i.test(row.trackerUrl || '')) return link(row.trackerUrl, 'Trace');
+    const network = String(row.onlineNetwork || '').toUpperCase(), prefs = read();
+    if ((network === 'IVAO' || (!network && row.ivaoId)) && (row.ivaoId || prefs.ivaoId)) return link(ivaoTrackerUrl(row.ivaoId || prefs.ivaoId), 'Trace IVAO');
+    if ((network === 'VATSIM' || (!network && row.vatsimId)) && (row.vatsimId || prefs.vatsimId)) return link(vatsimTrackerUrl(row.vatsimId || prefs.vatsimId), 'Trace VATSIM');
+    return '—';
+  };
+  // Registre CSV (séparateur ;) à partir d'un en-tête et de lignes objets.
+  const serializeLedger = (head, rows) => {
+    head = head && head.length ? head : Object.keys(rows[0] || {});
+    return [head.join(';')].concat(rows.map(row => head.map(key => `"${String(row[key] ?? '').replace(/"/g, '""')}"`).join(';'))).join('\n') + '\n';
+  };
+  // Ouvre le générateur de CR pré-rempli avec une ligne du registre (mode modification).
+  // index = position de la ligne dans le registre (le n° de mission peut être dupliqué).
+  const openEditor = ({ kind, configKey, filename, index, record }) => {
+    localStorage.setItem('missionEditDraft:v1', JSON.stringify({ kind, configKey, filename, index, record, returnUrl: location.href }));
+    const page = kind === 'gaar' ? '../GAAR/DEFA-Virtual.cr.gen.securite-civile.html' : '../HEMS/hems_medevac_cr.html';
+    location.href = new URL(page + '?edit=' + encodeURIComponent(record?.missionId || ''), moduleUrl).href;
+  };
+
+  window.MissionReportingConfig = { read, write, load, cached, cacheText, rememberFile, candidates, traceLink, ivaoTrackerUrl, vatsimTrackerUrl, serializeLedger, openEditor };
   window.addEventListener('DOMContentLoaded', () => {
     const config = read();
     const ledger = document.getElementById('ledgerName');
@@ -75,10 +105,13 @@
       const name = input.dataset.missionConfig;
       // A remembered filename deliberately overrides the HTML placeholder.
       if (config[name]) input.value = config[name];
-      input.addEventListener('input', () => { if (input.value) write({ [name]: input.value }); });
-      input.addEventListener('change', () => { if (input.value) write({ [name]: input.value }); });
+      // Un nom de registre vide est ignoré ; un ID IVAO / VATSIM peut être effacé.
+      const save = () => { if (input.value || !isLedgerKey(name)) write({ [name]: input.value.trim() }); };
+      input.addEventListener('input', save);
+      input.addEventListener('change', save);
     });
-    const keys = [...new Set([...document.querySelectorAll('[data-mission-config]')].map(input => input.dataset.missionConfig))];
+    // Seuls les noms de registre désignent un fichier à charger (pas les ID IVAO / VATSIM).
+    const keys = [...new Set([...document.querySelectorAll('[data-mission-config]')].map(input => input.dataset.missionConfig))].filter(isLedgerKey);
     keys.forEach(load);
   });
 })();
