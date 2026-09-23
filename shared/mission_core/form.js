@@ -6,17 +6,28 @@
   // sont collectées pour le système de traduction commun (RepositoryContentI18n).
   // Options de champ : upper (majuscules), list (id de datalist), alias (attribut name
   // pour les modules partagés : suivi réseau, profil pilote), rerender (re-rendu de la
-  // collection), byCategory (groupes d'équipements selon la catégorie de l'appareil).
+  // collection), byCategory (groupes d'équipements selon la catégorie de l'appareil),
+  // collapsed (groupe de cases replié par défaut), appendList (zone de texte « une valeur
+  // par ligne » + champ d'ajout avec valeurs connues), only / hideFor (familles concernées),
+  // pool (réserve de valeurs connues partagée, ex. « aerodrome »).
+  // Familles : hide = [chemins de champs sans index (« aircraft.tacticalNumber ») ou id de blocs].
+  // Blocs : collapsed (contenu replié, résumé des cases cochées).
+  // Suggestions : à la prise de focus d'un champ texte / numérique, suggest(path, field,
+  // saisie) fournit les valeurs proposées (liste commune #mc-suggest, rafraîchie à la frappe).
   const M = window.MissionModel, V = window.MissionVocab;
   const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-  function create(form, { family, getMission, onChange, onCommit }) {
+  function create(form, { family, getMission, onChange, onCommit, suggest }) {
     const rows = new Map(); // fr → [fr,en,de,es]
     const txt = label => { if (!label) return ''; if (Array.isArray(label)) { rows.set(label[0], label); return label[0]; } return String(label); };
     const conditional = [];
     const blocks = [];
     const fieldsByPath = new Map(); // chemin absolu → définition (pour upper / rerender)
+    const openDetails = new Set(); // groupes repliables ouverts par le pilote (conservés au re-rendu)
     let ctx = null;
+    // Champ propre à certaines familles (only / hideFor du champ, hide de la famille).
+    const hidden = new Set(family.hide || []);
+    const shown = (field, key) => !(field.only && !field.only.includes(family.id)) && !(field.hideFor || []).includes(family.id) && !hidden.has(key);
 
     const optionsFor = field => {
       if (field.options) return field.options;
@@ -34,30 +45,36 @@
     const capabilitiesHtml = (field, path, selected, item) => {
       const allowed = family.capabilities ? new Set(family.capabilities) : null;
       const category = item?.category || '';
-      return `<div class="mc-capabilities${item ? ' compact' : ''}" data-path="${esc(path)}" data-kind="checkgroup">${field.groups.map(group => {
+      const html = `<div class="mc-capabilities${item ? ' compact' : ''}" data-path="${esc(path)}" data-kind="checkgroup">${field.groups.map(group => {
         // Équipements d'un appareil : seuls les groupes compatibles avec sa catégorie.
         if (field.byCategory && category && ((group.id === 'rotary' && category !== 'rotary') || (group.id === 'fixed' && category === 'rotary'))) return '';
-        const items = group.items.filter(it => !allowed || allowed.has(it.value));
+        const items = group.items.filter(it => group.unfiltered || !allowed || allowed.has(it.value));
         if (!items.length) return '';
         return `<fieldset class="mc-capgroup" data-group="${esc(group.id)}"><legend>${esc(txt(group.title))}</legend>${items.map(it =>
           `<label class="mc-chip"><input type="checkbox" value="${esc(it.value)}"${selected.includes(it.value) ? ' checked' : ''}><span>${esc(txt(it.label))}</span></label>`).join('')}</fieldset>`;
       }).join('')}</div>`;
+      // Replié par défaut (renseigné une fois, repris de l'appareil connu ou du plan de vol) :
+      // le résumé indique le nombre de cases cochées.
+      return field.collapsed ? collapsible(path, field.label, html, selected.length) : html;
     };
+    const collapsible = (key, label, html, count) => `<details class="mc-collapse" data-collapse="${esc(key)}"${openDetails.has(key) ? ' open' : ''}><summary><span>${esc(txt(label))}</span> <b class="mc-count">${count ? `(${count})` : ''}</b></summary>${html}</details>`;
     const controlHtml = (field, path, withAlias, item) => {
       const value = M.get(getMission(), path);
       const ph = field.placeholder ? ` placeholder="${esc(txt(field.placeholder))}"` : '';
       switch (field.type) {
         case 'select': return selectHtml(field, path, value ?? '', withAlias);
-        case 'textarea': return `<textarea ${attrs(field, path, withAlias)}${ph}>${esc(value)}</textarea>`;
+        case 'textarea': return `<textarea ${attrs(field, path, withAlias)}${ph}>${esc(value)}</textarea>`
+          + (field.appendList ? `<input class="mc-append" data-append="${esc(path)}" placeholder="${esc(txt(['+ ajouter (valeurs connues)…', '+ add (known values)…', '+ hinzufügen (bekannte Werte)…', '+ añadir (valores conocidos)…']))}">` : '');
         case 'number': return `<input type="number" step="any" ${attrs(field, path, withAlias)} value="${esc(value ?? '')}"${ph}>`;
         case 'date': case 'time': return `<input type="${field.type}" ${attrs(field, path, withAlias)} value="${esc(value)}">`;
         case 'checkgroup': return capabilitiesHtml(field, path, value || [], item);
         default: return `<input ${attrs(field, path, withAlias)} value="${esc(value)}"${ph}${field.familySubtypes ? ' list="mc-subtypes"' : ''}>`;
       }
     };
-    const fieldHtml = (field, path, withAlias = true, item = null) => {
+    const fieldHtml = (field, path, withAlias = true, item = null, key = path) => {
+      if (!shown(field, key)) return '';
       fieldsByPath.set(path, field);
-      return `<div class="mc-field${field.full ? ' full' : ''}" data-field="${esc(path)}">${field.label ? `<label>${esc(txt(field.label))}</label>` : ''}${controlHtml(field, path, withAlias, item)}<span class="mc-hint small" hidden></span></div>`;
+      return `<div class="mc-field${field.full ? ' full' : ''}" data-field="${esc(path)}">${field.label && !field.collapsed ? `<label>${esc(txt(field.label))}</label>` : ''}${controlHtml(field, path, withAlias, item)}<span class="mc-hint small" hidden></span></div>`;
     };
 
     // ---- collections dynamiques (appareils, équipage, événements, étapes…)
@@ -68,7 +85,7 @@
       M.set(getMission(), spec.path, list);
       collections.set(spec.path, { block, host });
       // L'alias (name) ne porte que sur le premier élément (appareil principal…).
-      host.innerHTML = list.map((item, i) => `<div class="mc-item" data-index="${i}"><div class="mc-item-head"><b>${esc(txt(spec.item))} ${i + 1}</b>${list.length > (spec.min || 0) ? `<button type="button" class="mc-remove" data-remove="${i}" title="${esc(txt(['Retirer', 'Remove', 'Entfernen', 'Quitar']))}">×</button>` : ''}</div><div class="mc-grid${spec.compact ? ' compact' : ''}">${spec.fields.map(field => fieldHtml(field, `${spec.path}.${i}.${field.path}`, i === 0, item)).join('')}</div></div>`).join('')
+      host.innerHTML = list.map((item, i) => `<div class="mc-item" data-index="${i}"><div class="mc-item-head"><b>${esc(txt(spec.item))} ${i + 1}</b>${list.length > (spec.min || 0) ? `<button type="button" class="mc-remove" data-remove="${i}" title="${esc(txt(['Retirer', 'Remove', 'Entfernen', 'Quitar']))}">×</button>` : ''}</div><div class="mc-grid${spec.compact ? ' compact' : ''}">${spec.fields.map(field => fieldHtml(field, `${spec.path}.${i}.${field.path}`, i === 0, item, `${spec.path}.${field.path}`)).join('')}</div></div>`).join('')
         + `<button type="button" class="secondary mc-add">${esc(txt(spec.add))}</button>`;
       host.querySelector('.mc-add').onclick = () => { list.push(spec.empty()); renderCollection(block, host); refresh(); onChange(spec.path); };
       host.querySelectorAll('[data-remove]').forEach(button => button.onclick = () => {
@@ -94,15 +111,19 @@
       const controls = form.querySelector('.controls');
       form.querySelectorAll('section.mc-block').forEach(section => section.remove());
       blockList.forEach(block => {
+        if (hidden.has(block.id) || (block.only && !block.only.includes(family.id))) return;
         const section = document.createElement('section');
         section.className = 'mc-block'; section.id = `mc-${block.id}`; section.dataset.blockId = `mc-${block.id}`;
-        section.innerHTML = `<h2>${esc(txt(block.title))}</h2>` + (block.collection ? '<div class="mc-collection"></div>' : `<div class="mc-grid">${block.fields.map(field => fieldHtml(field, field.path)).join('')}</div>`);
+        const grid = block.collection ? '<div class="mc-collection"></div>' : `<div class="mc-grid">${block.fields.map(field => fieldHtml(field, field.path)).join('')}</div>`;
+        // Bloc replié : résumé = nombre de cases cochées dans le bloc.
+        const count = block.collapsed ? block.fields.reduce((n, field) => n + (field.type === 'checkgroup' ? (M.get(getMission(), field.path) || []).length : 0), 0) : 0;
+        section.innerHTML = `<h2>${esc(txt(block.title))}</h2>` + (block.collapsed ? collapsible(`block:${block.id}`, block.summary || ['Afficher / modifier', 'Show / edit', 'Anzeigen / bearbeiten', 'Mostrar / modificar'], grid, count) : grid);
         form.insertBefore(section, controls || null);
         if (block.collection) renderCollection(block, section.querySelector('.mc-collection'));
         else registerConditions(block, section);
         blocks.push({ block, section });
       });
-      ['mc-subtypes', 'mc-known-registrations', 'mc-known-callsigns', 'mc-aircraft-types'].forEach(id => {
+      ['mc-subtypes', 'mc-suggest'].forEach(id => {
         if (!form.querySelector(`#${id}`)) { const list = document.createElement('datalist'); list.id = id; form.append(list); }
       });
       refresh();
@@ -123,7 +144,11 @@
     function sync(prefix = '') {
       form.querySelectorAll('[data-path]').forEach(el => {
         const path = el.dataset.path; if (prefix && !path.startsWith(prefix)) return;
-        if (el.dataset.kind === 'checkgroup') { const values = M.get(getMission(), path) || []; el.querySelectorAll('input').forEach(i => { i.checked = values.includes(i.value); }); return; }
+        if (el.dataset.kind === 'checkgroup') {
+          const values = M.get(getMission(), path) || []; el.querySelectorAll('input').forEach(i => { i.checked = values.includes(i.value); });
+          const details = el.closest('details.mc-collapse'); if (details) details.querySelector('.mc-count').textContent = countOf(details);
+          return;
+        }
         const value = M.get(getMission(), path);
         if (el.tagName === 'SELECT' && value && ![...el.options].some(o => o.value === value)) { const o = document.createElement('option'); o.value = value; o.textContent = value; el.append(o); }
         if (document.activeElement !== el) el.value = value ?? '';
@@ -137,8 +162,20 @@
       const target = event.target;
       const group = target.closest('[data-kind="checkgroup"]');
       if (group) {
-        M.set(getMission(), group.dataset.path, [...group.querySelectorAll('input:checked')].map(input => input.value));
+        const values = [...group.querySelectorAll('input:checked')].map(input => input.value);
+        M.set(getMission(), group.dataset.path, values);
+        const count = group.closest('details.mc-collapse')?.querySelector('.mc-count');
+        if (count) count.textContent = countOf(count.closest('details'));
         refresh(); onChange(group.dataset.path); return;
+      }
+      // Champ d'ajout d'une zone « une valeur par ligne » (points tournants…).
+      if (target.dataset?.append) {
+        if (event.type !== 'change' || !target.value.trim()) return;
+        const path = target.dataset.append, area = form.querySelector(`textarea[data-path="${CSS.escape(path)}"]`);
+        const lines = String(M.get(getMission(), path) || '').split('\n').map(s => s.trim()).filter(Boolean);
+        lines.push(fieldsByPath.get(path)?.upper ? target.value.trim().toUpperCase() : target.value.trim());
+        M.set(getMission(), path, lines.join('\n')); if (area) area.value = lines.join('\n');
+        target.value = ''; onCommit?.(path, lines.join('\n')); refresh(); onChange(path); return;
       }
       const path = target.dataset?.path; if (!path) return;
       // Majuscules (indicatifs, immatriculations, terrains) en conservant la position du curseur.
@@ -156,6 +193,29 @@
     }
     form.addEventListener('input', handle);
     form.addEventListener('change', handle);
+    const countOf = details => { const n = details.querySelectorAll('input[type=checkbox]:checked').length; return n ? `(${n})` : ''; };
+    form.addEventListener('toggle', event => {
+      const key = event.target.dataset?.collapse; if (!key) return;
+      if (event.target.open) openDetails.add(key); else openDetails.delete(key);
+    }, true);
+
+    // ---- valeurs proposées (datalist commune, remplie à la prise de focus et à la frappe)
+    const suggestible = el => (el.tagName === 'INPUT' && ['text', 'number', 'search', ''].includes(el.getAttribute('type') || '') && (el.dataset.path || el.dataset.append));
+    let offering = null; // dernier champ servi (une réponse tardive d'un autre champ est ignorée)
+    function offer(el) {
+      if (!suggest) return;
+      const path = el.dataset.path || el.dataset.append, field = fieldsByPath.get(path) || {};
+      const list = form.querySelector('#mc-suggest'); if (!list) return;
+      const token = offering = {};
+      Promise.resolve(suggest(path, field, el.dataset.path ? el.value : '', !!el.dataset.append)).then(values => {
+        if (offering !== token) return;
+        list.innerHTML = (values || []).slice(0, 80).map(v => `<option value="${esc(v.value)}"${v.label ? ` label="${esc(v.label)}"` : ''}>${v.label ? esc(v.label) : ''}</option>`).join('');
+        el.setAttribute('list', 'mc-suggest');
+      });
+    }
+    let offerTimer = null;
+    form.addEventListener('focusin', event => { if (suggestible(event.target)) offer(event.target); });
+    form.addEventListener('input', event => { if (suggestible(event.target)) { clearTimeout(offerTimer); offerTimer = setTimeout(() => offer(event.target), 120); } });
 
     return { render, refresh, sync, hint, rerenderCollectionOf, context: () => ctx, i18nRows: () => [...rows.values()], txt };
   }

@@ -94,3 +94,22 @@ main.mc-reporting{max-width:1280px;margin:20px auto;padding:0 16px 40px}
   @page{size:A4;margin:12mm}
 }
 .mc-public{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer}
+/* en-tête : famille / sous-type (popup compacte, l'en-tête est collé en haut de page) */
+header.mc-header{position:relative}
+.mc-switch{display:inline-block;margin-top:6px;position:relative}
+.mc-switch>summary{list-style:none;cursor:pointer;display:inline-flex;gap:4px;align-items:center;padding:4px 10px;border-radius:999px;background:#ffffff24;border:1px solid #ffffff55;font-size:13px}
+.mc-switch>summary::-webkit-details-marker{display:none}
+.mc-switch-pop{position:absolute;z-index:1100;top:calc(100% + 6px);left:0;display:grid;gap:10px;width:min(360px,calc(100vw - 32px));padding:12px;box-sizing:border-box;border-radius:12px;background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 8px 24px #0003}
+.mc-switch-pop label{display:grid;gap:4px;font-size:12px;color:var(--muted)}
+.mc-switch-pop select{width:100%;min-width:0;padding:8px;border-radius:8px;border:1px solid var(--line);font:inherit;font-size:13px;color:var(--ink);background:#fff}
+/* groupes repliables (équipements, techniques employées) */
+details.mc-collapse{border:1px dashed var(--line);border-radius:10px;padding:6px 10px}
+details.mc-collapse>summary{cursor:pointer;font-size:13px;color:var(--muted)}
+details.mc-collapse[open]>summary{margin-bottom:8px}
+details.mc-collapse .mc-count{color:var(--accent)}
+/* outils (plan de vol, météo) et ajout de points */
+.mc-tools{background:var(--soft);border-radius:10px;padding:8px 10px;margin-bottom:12px}
+.mc-tools .row button{padding:7px 10px;font-size:13px}
+.mc-tools p{margin:4px 0}
+.mc-form input.mc-append{margin-top:6px;font-size:13px;padding:6px 9px}
+@media print{.mc-switch,.mc-tools{display:none!important}}

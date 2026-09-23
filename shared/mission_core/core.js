@@ -12,6 +12,8 @@
   const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const duration = n => n == null ? '—' : n >= 60 ? `${Math.floor(n / 60)}h${String(n % 60).padStart(2, '0')}` : `${n} min`;
   const normId = v => String(v ?? '').trim().toUpperCase();
+  // Libellé [fr,en,de,es] dans la langue courante du framework (messages dynamiques).
+  const inLanguage = row => row[['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr')] || row[0];
   const UI = {
     kpiTitle: L('Calculs automatiques', 'Automatic calculations', 'Automatische Berechnungen', 'Cálculos automáticos'),
     block: L('Temps bloc', 'Block time', 'Blockzeit', 'Tiempo calzo a calzo'), flight: L('Temps de vol', 'Flight time', 'Flugzeit', 'Tiempo de vuelo'),
@@ -47,6 +49,15 @@
     unknownType: L('Type inconnu : il sera ajouté à la base locale lors de l’enregistrement', 'Unknown type: it will be added to the local base when saved', 'Unbekanntes Muster: wird beim Speichern der lokalen Datenbank hinzugefügt', 'Tipo desconocido: se añadirá a la base local al guardar'),
     publicVersion: L('Version publique (données sensibles masquées : CR, impression, export)', 'Public version (sensitive data hidden: report, print, export)', 'Öffentliche Fassung (sensible Daten ausgeblendet: Bericht, Druck, Export)', 'Versión pública (datos sensibles ocultos: informe, impresión, exportación)'),
     reportTitle: L('Compte rendu', 'Report', 'Bericht', 'Informe'),
+    switchFamily: L('Famille de mission', 'Mission family', 'Einsatzfamilie', 'Familia de misión'), switchSeries: L('Sous-type de mission', 'Mission sub-type', 'Einsatz-Untertyp', 'Subtipo de misión'),
+    allSeries: L('Tous les sous-types', 'All sub-types', 'Alle Untertypen', 'Todos los subtipos'),
+    fplTitle: L('Plan de vol déposé', 'Filed flight plan', 'Aufgegebener Flugplan', 'Plan de vuelo presentado'),
+    fplIntro: L('Remplit les champs vides : appareil, équipements OACI, route, points tournants, niveaux, terrains, METAR / TAF (SimBrief), masses et carburant prévus (SimBrief). Identifiants : menu ☰ › Profil pilote.', 'Fills empty fields: aircraft, ICAO equipment, route, waypoints, levels, aerodromes, METAR / TAF (SimBrief), planned masses and fuel (SimBrief). IDs: menu ☰ › Pilot profile.', 'Füllt leere Felder: Luftfahrzeug, ICAO-Ausrüstung, Route, Wegpunkte, Flughöhen, Flugplätze, METAR / TAF (SimBrief), geplante Massen und Kraftstoff (SimBrief). Kennungen: Menü ☰ › Pilotenprofil.', 'Rellena los campos vacíos: aeronave, equipos OACI, ruta, puntos, niveles, aeródromos, METAR / TAF (SimBrief), masas y combustible previstos (SimBrief). Identificadores: menú ☰ › Perfil de piloto.'),
+    fplSimbrief: L('Dernier OFP SimBrief', 'Latest SimBrief OFP', 'Letzter SimBrief-OFP', 'Último OFP de SimBrief'), fplIvao: L('Plan de vol IVAO (vol en cours)', 'IVAO flight plan (current flight)', 'IVAO-Flugplan (laufender Flug)', 'Plan de vuelo IVAO (vuelo en curso)'),
+    fplVatsim: L('Plan de vol VATSIM (en cours ou déposé)', 'VATSIM flight plan (current or prefiled)', 'VATSIM-Flugplan (laufend oder vorab)', 'Plan de vuelo VATSIM (en curso o presentado)'),
+    fplNone: L('Aucun plan de vol trouvé pour cet identifiant (vol terminé ou non déposé).', 'No flight plan found for this ID (flight ended or not filed).', 'Kein Flugplan für diese Kennung gefunden (Flug beendet oder nicht aufgegeben).', 'No se encontró ningún plan de vuelo para este identificador (vuelo terminado o no presentado).'),
+    fplNeedId: L('Renseignez votre identifiant dans le menu ☰ › Profil pilote (ou dans le bloc « Trace réseau »).', 'Enter your ID in menu ☰ › Pilot profile (or in the “Network track” block).', 'Kennung im Menü ☰ › Pilotenprofil (oder im Block „Netzwerkspur“) eingeben.', 'Indique su identificador en el menú ☰ › Perfil de piloto (o en el bloque «Traza de red»).'),
+    fplFilled: L('champs renseignés depuis', 'fields filled from', 'Felder ausgefüllt aus', 'campos rellenados desde'),
     render: L('Générer / actualiser le CR', 'Generate / refresh report', 'Bericht erzeugen / aktualisieren', 'Generar / actualizar el informe'),
     print: L('PDF / Imprimer', 'PDF / Print', 'PDF / Drucken', 'PDF / Imprimir'),
     leave: L('La mission n’a pas été enregistrée dans le registre. Quitter quand même ?', 'The mission has not been saved to the ledger. Leave anyway?', 'Der Einsatz wurde nicht im Register gespeichert. Trotzdem verlassen?', 'La misión no se ha guardado en el registro. ¿Salir de todos modos?')
@@ -74,8 +85,13 @@
       mission.metadata.missionId = ledger.nextId(prefix);
       mission.metadata.date = new Date().toISOString().slice(0, 10);
       mission.series = family.series?.[0]?.value || '';
-      if (family.defaultCategory) mission.aircraft[0].category = family.defaultCategory;
+      // Catégorie par défaut de la famille : valeur « automatique », remplacée par celle d'un appareil connu.
+      if (family.defaultCategory) { mission.aircraft[0].category = family.defaultCategory; autoFilled.set(mission.aircraft[0], { category: family.defaultCategory }); }
       const p = prefs(); mission.network.ivaoId = p.ivaoId || ''; mission.network.vatsimId = p.vatsimId || '';
+      // Techniques employées : reprises de la dernière mission de la même série (à ne
+      // renseigner qu'une fois).
+      const missions = ledger.missions || [], last = [...missions].reverse().find(m => m.series === mission.series) || missions[missions.length - 1];
+      if (last?.capabilities?.length) mission.capabilities = [...last.capabilities];
       return mission;
     };
     let mission = M.emptyMission(family.id), dirty = false;
@@ -116,53 +132,80 @@
     root.querySelector('.mc-edit-banner h2').textContent = t('editBanner');
 
     let saveTimer = null;
+    const changed = () => { dirty = true; kpi(); clearTimeout(saveTimer); saveTimer = setTimeout(() => { saveDraft(); renderReport(); }, 400); };
     const view = window.MissionForm.create(form, {
       family, getMission: () => mission,
-      onChange: () => { dirty = true; kpi(); clearTimeout(saveTimer); saveTimer = setTimeout(() => { saveDraft(); renderReport(); }, 400); },
-      onCommit: (path, value) => aircraftAssist(path, value)
+      onChange: changed,
+      onCommit: (path, value) => { aircraftAssist(path, value); assist.onCommit(path, value); },
+      suggest: (...args) => assist.suggest(...args)
     });
     const blockList = window.MissionBlocks.ORDER.flatMap(block => block === '__family__' ? family.blocks : [block]);
+    // Aides à la saisie : valeurs connues, filtrage croisé des appareils, terrains, météo, soleil.
+    const assist = window.MissionAssist.create({ family, form, view, getMission: () => mission, ledgerMissions: () => ledger.missions || [], onChange: changed, t: row => { ui.set(row[0], row); return inLanguage(row); } });
 
     // ---- appareils connus / types OACI
     const A = window.MissionAircraft;
     const autoFilled = new WeakMap(); // appareil → valeurs déduites automatiquement du type
-    function fillDatalists() {
-      const known = A.known();
-      form.querySelector('#mc-known-registrations').innerHTML = known.map(a => `<option value="${esc(a.registration)}">${esc([a.type, a.callsigns.join(' / ')].filter(Boolean).join(' — '))}</option>`).join('');
-      form.querySelector('#mc-known-callsigns').innerHTML = [...new Set(known.flatMap(a => a.callsigns))].sort().map(c => `<option value="${esc(c)}">`).join('');
-      form.querySelector('#mc-aircraft-types').innerHTML = A.listTypes().map(ty => `<option value="${esc(ty.tdesig)}">${esc(ty.model)}</option>`).join('');
-    }
     function applyKnown(index, known) {
       const item = mission.aircraft[index];
-      ['type', 'variant', 'category'].forEach(k => { if (known[k]) item[k] = known[k]; });
-      ['tacticalNumber', 'configuration'].forEach(k => { if (known[k] && !item[k]) item[k] = known[k]; });
-      if (!item.callsign && known.callsign) item.callsign = known.callsign;
-      if (!item.registration) item.registration = known.registration;
+      // Type d'abord (modèle OACI, catégorie), puis les valeurs de l'appareil connu, qui
+      // l'emportent. Les valeurs reprises sont mémorisées : un autre choix les remplacera.
+      if (known.type) { item.type = known.type; typeAssist(index, item.type); }
+      const auto = autoFilled.get(item) || {}, take = (k, value) => { item[k] = value; auto[k] = value; };
+      ['type', 'variant', 'category'].forEach(k => { if (known[k]) take(k, known[k]); });
+      ['tacticalNumber', 'configuration'].forEach(k => { if (known[k] && !item[k]) take(k, known[k]); });
+      if (!item.callsign && known.callsign) take('callsign', known.callsign);
+      if (!item.registration) take('registration', known.registration);
+      autoFilled.set(item, auto);
       if (known.equipment?.length) item.equipment = [...new Set([...(item.equipment || []), ...known.equipment])];
       view.rerenderCollectionOf(`aircraft.${index}.registration`); view.sync('aircraft.');
-      if (item.type) aircraftAssist(`aircraft.${index}.type`, item.type); // modèle OACI, catégorie si absente
       view.hint(`aircraft.${index}.registration`, t('knownAircraft') + (known.date && known.date > '0000-00-01' ? ` — ${known.date}` : ''));
-      kpi();
+      kpi(); changed();
     }
-    function aircraftAssist(path, value) {
-      const m = /^aircraft\.(\d+)\.(registration|callsign|type)$/.exec(path); if (!m) return;
-      const index = Number(m[1]), field = m[2], item = mission.aircraft[index];
-      if (field === 'registration') { const known = A.find(value); if (known) applyKnown(index, known); else view.hint(path, ''); }
-      if (field === 'callsign' && !item.registration) { const known = A.findByCallsign(value); if (known) applyKnown(index, known); }
-      if (field === 'type') {
-        // Variante / catégorie déduites du type : remplacées si elles avaient été déduites
-        // automatiquement d'un type précédent, jamais si le pilote les a saisies.
-        const type = A.lookupType(value), auto = autoFilled.get(item) || {};
-        const replace = key => !item[key] || item[key] === auto[key];
-        if (type) {
-          if (type.category && replace('category')) { item.category = type.category; auto.category = type.category; }
-          if (type.model && replace('variant')) { item.variant = type.model; auto.variant = type.model; }
-          autoFilled.set(item, auto); view.rerenderCollectionOf(path); view.sync('aircraft.'); view.hint(path, type.model);
-        } else {
-          ['variant', 'category'].forEach(key => { if (item[key] && item[key] === auto[key]) { item[key] = ''; delete auto[key]; } });
-          view.sync('aircraft.'); view.hint(path, value ? t('unknownType') : '');
-        }
+    // Variante / catégorie déduites du type : remplacées si elles avaient été déduites
+    // automatiquement d'un type précédent, jamais si le pilote les a saisies.
+    function typeAssist(index, value) {
+      const item = mission.aircraft[index], path = `aircraft.${index}.type`;
+      const type = A.lookupType(value), auto = autoFilled.get(item) || {};
+      const replace = key => !item[key] || item[key] === auto[key];
+      if (type) {
+        if (type.category && replace('category')) { item.category = type.category; auto.category = type.category; }
+        if (type.model && replace('variant')) { item.variant = type.model; auto.variant = type.model; }
+        autoFilled.set(item, auto); view.rerenderCollectionOf(path); view.sync('aircraft.'); view.hint(path, type.model);
+      } else {
+        ['variant', 'category'].forEach(key => { if (item[key] && item[key] === auto[key]) { item[key] = ''; delete auto[key]; } });
+        view.sync('aircraft.'); view.hint(path, value ? t('unknownType') : '');
       }
+    }
+    // Immatriculation, indicatif, type, variante : filtrage croisé avec les appareils connus.
+    // Une seule possibilité → l'appareil connu remplit les champs vides (indicatif compris) ;
+    // plusieurs → seules les valeurs communes à toutes sont reprises.
+    function aircraftAssist(path, value) {
+      const m = /^aircraft\.(\d+)\.(registration|callsign|type|variant)$/.exec(path); if (!m) return;
+      const index = Number(m[1]), field = m[2], item = mission.aircraft[index];
+      // Valeurs reprises d'un appareil précédemment choisi : effacées pour laisser place au nouveau choix.
+      const auto = autoFilled.get(item) || {};
+      if (field !== 'variant') ['registration', 'callsign', 'type', 'variant', 'category', 'tacticalNumber', 'configuration'].forEach(k => { if (k !== field && item[k] && item[k] === auto[k]) { item[k] = ''; delete auto[k]; } });
+      if (field === 'type') typeAssist(index, value);
+      const regPath = `aircraft.${index}.registration`;
+      // Appareil connu choisi par son immatriculation (ou par un indicatif qui lui est propre) :
+      // son identité l'emporte sur un indicatif / une immatriculation incompatible.
+      const picked = field === 'registration' ? A.find(value) : field === 'callsign' ? A.findByCallsign(value) : null;
+      if (picked) {
+        if (field === 'registration' && item.callsign && !picked.callsigns.includes(String(item.callsign).toUpperCase())) item.callsign = '';
+        if (field === 'callsign' && item.registration && A.regKey(item.registration) !== A.regKey(picked.registration)) item.registration = '';
+        if (item.type && picked.type && item.type.toUpperCase() !== String(picked.type).toUpperCase()) item.type = '';
+        applyKnown(index, picked); return;
+      }
+      const result = assist.aircraftCommit(index);
+      if (!result) { view.hint(regPath, ''); return; }
+      if (result.known) { applyKnown(index, result.known); return; }
+      if (result.none) { view.hint(regPath, inLanguage(window.MissionAssist.T.noMatch)); return; }
+      const common = result.common || {};
+      Object.assign(item, common);
+      if (common.type) typeAssist(index, common.type);
+      if (Object.keys(common).length) { view.rerenderCollectionOf(regPath); view.sync('aircraft.'); changed(); }
+      view.hint(regPath, `${result.count} ${inLanguage(window.MissionAssist.T.matches)}`);
     }
 
     // ---- brouillon, calculs, registre
@@ -198,7 +241,35 @@
       root.querySelector('#mcReport').innerHTML = html;
       reportRows = rows; registerI18n();
     }
-    function redraw() { view.render(blockList); fillDatalists(); kpi(); modeUi(); ledgerInfo(); renderReport(); registerI18n(); }
+    function redraw() { view.render(blockList); assist.decorate(); fplTools(); kpi(); modeUi(); ledgerInfo(); renderReport(); switcher.sync(); registerI18n(); }
+
+    // ---- plan de vol déposé (SimBrief, IVAO, VATSIM) : barre d'outils du bloc Navigation
+    function fplTools() {
+      const section = form.querySelector('#mc-navigation'); if (!section || section.querySelector('.mc-fpl')) return;
+      const bar = document.createElement('div'); bar.className = 'mc-tools mc-fpl';
+      bar.innerHTML = `<p class="small"><b></b> — <span></span></p><div class="row"><button type="button" class="secondary" data-fpl="simbrief"></button><button type="button" class="secondary" data-fpl="ivao"></button><button type="button" class="secondary" data-fpl="vatsim"></button></div><p class="small mc-tools-status"></p>`;
+      bar.querySelector('b').textContent = t('fplTitle'); bar.querySelector('span').textContent = t('fplIntro');
+      [['simbrief', 'fplSimbrief'], ['ivao', 'fplIvao'], ['vatsim', 'fplVatsim']].forEach(([k, key]) => { bar.querySelector(`[data-fpl="${k}"]`).textContent = t(key); });
+      const note = bar.querySelector('.mc-tools-status');
+      bar.querySelectorAll('[data-fpl]').forEach(button => button.onclick = async () => {
+        const source = button.dataset.fpl, p = prefs(), F = window.MissionFpl;
+        const id = source === 'simbrief' ? p.simbriefUser : source === 'ivao' ? (mission.network.ivaoId || p.ivaoId) : (mission.network.vatsimId || p.vatsimId);
+        if (!id) { note.textContent = inLanguage(UI.fplNeedId); return; }
+        button.disabled = true; note.textContent = '…';
+        try {
+          const fpl = await (source === 'simbrief' ? F.fromSimbrief(id) : source === 'ivao' ? F.fromIvao(id) : F.fromVatsim(id));
+          if (!fpl) { note.textContent = inLanguage(UI.fplNone); return; }
+          const done = F.apply(mission, fpl);
+          view.render(blockList); assist.decorate(); fplTools(); kpi(); registerI18n();
+          for (const path of ['navigation.dep', 'aircraft.0.baseDeparture']) if (M.get(mission, path)) { await assist.onCommit(path, M.get(mission, path)); break; }
+          changed();
+          const status = form.querySelector('.mc-fpl .mc-tools-status');
+          if (status) status.textContent = `${done.length} ${inLanguage(UI.fplFilled)} ${fpl.source}${fpl.callsign ? ` (${fpl.callsign} ${fpl.dep || ''}→${fpl.arr || ''})` : ''} : ${done.map(p => p.replace(/^\w+\.(\d+\.)?/, '')).join(', ') || '—'}`;
+        } catch (error) { note.textContent = `${fplError(error)}`; } finally { button.disabled = false; }
+      });
+      section.querySelector('h2').after(bar);
+    }
+    const fplError = error => /-id$/.test(error.message) ? inLanguage(UI.fplNeedId) : error.message;
 
     let i18nDone = new Set();
     function registerI18n() {
@@ -211,7 +282,7 @@
 
     async function persist(messageKey) {
       const result = await ledger.save();
-      ledgerInfo(); fillDatalists();
+      ledgerInfo();
       $a('download').hidden = result.written;
       status.textContent = result.written ? `${t(messageKey)} (${ledger.filename})` : `${t(messageKey)} — ${t('storedBrowserOnly')}`;
       return result;
@@ -286,6 +357,13 @@
     window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = t('leave'); } });
     window.addEventListener('load', () => window.RepositoryNav?.addAction?.(`${t('viewReporting')} ${family.id}`, () => { location.href = family.pages.reporting; }));
 
+    // ---- en-tête : famille / sous-type (série) de la mission
+    const switcher = headerSwitch({
+      family, kind: 'cr', t,
+      get: () => mission.series,
+      set: value => { mission.series = value; view.sync(); view.refresh(); kpi(); changed(); }
+    });
+
     // ---- initialisation : registre, puis mission à ouvrir (modification, brouillon ou nouvelle)
     redraw();
     const ready = (async () => {
@@ -308,5 +386,30 @@
     return { family, ledger, ready, get mission() { return mission; }, set mission(value) { mission = M.migrate(value, family.id); redraw(); }, get editing() { return edit; }, redraw, store, statistics: () => M.computeStatistics(mission), context: () => view.context() };
   }
 
-  window.MissionCore = { registerFamily, families, mount, L, UI };
+  // Sélecteur d'en-tête (pages CR et reporting) : changement de famille (même type de page)
+  // et sous-type (série) de la famille courante.
+  function headerSwitch({ family, kind, t, get, set, all = false }) {
+    const header = document.querySelector('header.mc-header');
+    if (!header) return { sync() {} };
+    // Popup compacte (l'en-tête reste collé en haut de page) : « HEMS · HEMS primaire ▾ ».
+    const box = document.createElement('details'); box.className = 'mc-switch';
+    const here = (window.MissionVocab.families || []).find(f => f.id === family.id);
+    const depth = here ? here[kind].split('/').length - 1 : 1, root = '../'.repeat(depth);
+    box.innerHTML = `<summary><b></b> · <span class="mc-switch-series"></span> ▾</summary><div class="mc-switch-pop"><label><span></span><select data-switch="family"></select></label><label><span></span><select data-switch="series"></select></label></div>`;
+    box.querySelector('summary b').textContent = family.id;
+    const [familyLabel, seriesLabel] = box.querySelectorAll('label span');
+    familyLabel.textContent = t('switchFamily'); seriesLabel.textContent = t('switchSeries');
+    const familySelect = box.querySelector('[data-switch="family"]'), seriesSelect = box.querySelector('[data-switch="series"]');
+    familySelect.innerHTML = (window.MissionVocab.families || []).map(f => `<option value="${esc(f.id)}"${f.id === family.id ? ' selected' : ''}>${esc(f.id)} — ${esc(f.label)}</option>`).join('');
+    familySelect.onchange = () => { const target = window.MissionVocab.families.find(f => f.id === familySelect.value); if (target) location.href = root + target[kind]; };
+    seriesSelect.innerHTML = (all ? `<option value="">${esc(t('allSeries'))}</option>` : '') + (family.series || []).map(s => `<option value="${esc(s.value)}">${esc(Array.isArray(s.label) ? s.label[0] : s.label || s.value)}</option>`).join('');
+    const summary = () => { box.querySelector('.mc-switch-series').textContent = seriesSelect.selectedOptions[0]?.textContent || '—'; };
+    seriesSelect.onchange = () => { set(seriesSelect.value); summary(); box.open = false; };
+    // Fermeture au clic hors de la popup.
+    document.addEventListener('click', event => { if (box.open && !box.contains(event.target)) box.open = false; });
+    header.append(box); summary();
+    return { sync() { const value = get() || ''; if ([...seriesSelect.options].some(o => o.value === value)) seriesSelect.value = value; summary(); } };
+  }
+
+  window.MissionCore = { registerFamily, families, mount, headerSwitch, inLanguage, L, UI };
 })();

@@ -305,3 +305,26 @@ Retenues par défaut (à contester si besoin) :
 6. **Contexte militaire** (CSAR, SOF, ISR) : champs limités au niveau compte rendu de
    simulation, mode générique non classifié par défaut, masquage des champs sensibles à
    l'export public.
+
+## G. Étape 3 — aides à la saisie (2026-09-24)
+
+- **Valeurs connues** : chaque champ texte propose les valeurs des missions enregistrées
+  (famille courante + registres des autres familles en cache), les plus récentes d'abord.
+  Réserves partagées : aérodromes, personnes, organismes, unités, autorités, opérations,
+  points tournants, altitudes (`pool` des champs, `shared/mission_core/assist.js`).
+- **Appareils** : immatriculation, indicatif, type OACI et variante se filtrent
+  mutuellement ; une seule possibilité → champs vides remplis ; valeurs reprises d'un
+  appareil précédent remplacées quand on en choisit un autre. Types H160 / CL2T ajoutés.
+- **Équipements / capacités techniques** : repliés par défaut (appareil connu, plan de
+  vol) ; groupe « Équipements plan de vol (OACI, case 10) ». Techniques employées :
+  bloc replié, reprises de la dernière mission de la même série.
+- **Plan de vol déposé** (`fpl.js`) : SimBrief (identifiant dans le profil pilote), IVAO
+  (vol en cours), VATSIM (vol en cours ou prefile) → appareil, équipements, route, points,
+  niveaux, terrains, METAR / TAF, masses et carburant prévus (champs vides uniquement).
+- **Météo / soleil** : METAR analysé à la saisie ; METAR actuel (metar.vatsim.net) ; météo
+  modèle à l'heure du vol (Open-Meteo) ; lever / coucher et jour / nuit calculés (heure
+  locale du terrain, base mondiale des aérodromes chargée à la demande via jsDelivr).
+- **En-tête** : popup famille / sous-type (CR : série de la mission ; reporting : filtre).
+- **Champs par famille** : `only` / `hideFor` sur les champs communs, `hide` par famille.
+- Sources impossibles depuis une page statique : aviationweather.gov (pas de CORS),
+  plans de vol déposés IVAO (API authentifiée).

@@ -7,27 +7,31 @@
   //            options | vocab, placeholder, full, when(ctx) }.
   const V = window.MissionVocab, L = V.L;
   const f = (path, label, type = 'text', extra = {}) => ({ path, label, type, ...extra });
+  // Spécialisation par famille (only : familles où le champ a du sens ; hideFor : familles
+  // où il n'en a pas). Les familles peuvent en plus masquer des champs / blocs (hide).
+  const CIVIL = ['HEMS', 'FIRE', 'HADR', 'AIRLIFT', 'SURVEY', 'FI'];
+  const ON_STATION = ['SAR', 'MARITIME', 'ISR', 'COMMAND', 'LE', 'FIRE', 'SURVEY', 'FI', 'HADR', 'SOF', 'AIRBORNE', 'DEMO'];
 
   const identification = {
     id: 'identification', title: L('Identification & organisation', 'Identification & organisation', 'Identifikation & Organisation', 'Identificación y organización'),
     fields: [
       f('metadata.missionId', L('N° mission', 'Mission ID', 'Einsatz-ID', 'ID de misión'), 'text', { upper: true, alias: 'missionId' }),
       f('metadata.missionNumber', L('Numéro d’ordre', 'Mission number', 'Einsatznummer', 'Número de misión')),
-      f('metadata.serial', L('N° de série', 'Serial number', 'Seriennummer', 'Número de serie')),
+      f('metadata.serial', L('N° de série', 'Serial number', 'Seriennummer', 'Número de serie'), 'text', { hideFor: ['HEMS', 'FIRE', 'SAR', 'HADR', 'MARITIME', 'LE'] }),
       f('series', L('Série', 'Series', 'Serie', 'Serie'), 'select', { familySeries: true }),
       f('subtype', L('Sous-type', 'Sub-type', 'Untertyp', 'Subtipo'), 'text', { familySubtypes: true }),
       f('metadata.date', L('Date', 'Date', 'Datum', 'Fecha'), 'date', { alias: 'date' }),
       f('metadata.timeLocal', L('Heure locale', 'Local time', 'Ortszeit', 'Hora local'), 'time'),
       f('metadata.timeUtc', L('Heure UTC', 'UTC time', 'UTC-Zeit', 'Hora UTC'), 'time'),
       f('metadata.context', L('Exercice / opération réelle', 'Exercise / real operation', 'Übung / realer Einsatz', 'Ejercicio / operación real'), 'select', { options: V.context }),
-      f('metadata.operationName', L('Nom de l’exercice / opération', 'Exercise / operation name', 'Name der Übung / Operation', 'Nombre del ejercicio / operación')),
-      f('metadata.classification', L('Classification', 'Classification', 'Einstufung', 'Clasificación'), 'select', { options: V.classification }),
-      f('metadata.orderRef', L('Référence ordre de mission', 'Tasking order reference', 'Auftragsreferenz', 'Referencia de la orden')),
-      f('organisation.organisation', L('Organisme', 'Organisation', 'Organisation', 'Organismo')),
-      f('organisation.unit', L('Unité', 'Unit', 'Einheit', 'Unidad')),
-      f('organisation.detachment', L('Détachement', 'Detachment', 'Abteilung', 'Destacamento')),
-      f('organisation.requestingAuthority', L('Autorité demandeuse', 'Requesting authority', 'Anfordernde Stelle', 'Autoridad solicitante')),
-      f('organisation.controllingAuthority', L('Autorité de contrôle', 'Controlling authority', 'Führende Stelle', 'Autoridad de control'))
+      f('metadata.operationName', L('Nom de l’exercice / opération', 'Exercise / operation name', 'Name der Übung / Operation', 'Nombre del ejercicio / operación'), 'text', { pool: 'operation' }),
+      f('metadata.classification', L('Classification', 'Classification', 'Einstufung', 'Clasificación'), 'select', { options: V.classification, hideFor: CIVIL }),
+      f('metadata.orderRef', L('Référence ordre de mission', 'Tasking order reference', 'Auftragsreferenz', 'Referencia de la orden'), 'text', { hideFor: ['HEMS'] }),
+      f('organisation.organisation', L('Organisme', 'Organisation', 'Organisation', 'Organismo'), 'text', { pool: 'organisation' }),
+      f('organisation.unit', L('Unité', 'Unit', 'Einheit', 'Unidad'), 'text', { pool: 'unit' }),
+      f('organisation.detachment', L('Détachement', 'Detachment', 'Abteilung', 'Destacamento'), 'text', { pool: 'unit', hideFor: ['HEMS', 'SURVEY', 'FI'] }),
+      f('organisation.requestingAuthority', L('Autorité demandeuse', 'Requesting authority', 'Anfordernde Stelle', 'Autoridad solicitante'), 'text', { pool: 'authority' }),
+      f('organisation.controllingAuthority', L('Autorité de contrôle', 'Controlling authority', 'Führende Stelle', 'Autoridad de control'), 'text', { pool: 'authority', hideFor: ['HEMS', 'SURVEY', 'FI'] })
     ]
   };
 
@@ -39,19 +43,21 @@
       fields: [
         // Immatriculation en premier : un appareil connu remplit type, catégorie, indicatif,
         // équipements… (shared/mission_core/aircraft.js, la donnée la plus récente l'emporte).
-        f('registration', L('Immatriculation', 'Registration', 'Kennzeichen', 'Matrícula'), 'text', { upper: true, list: 'mc-known-registrations', alias: 'registration', placeholder: L('F-ZBQU… (appareils connus proposés)', 'F-ZBQU… (known aircraft suggested)', 'F-ZBQU… (bekannte Luftfahrzeuge)', 'F-ZBQU… (aeronaves conocidas)') }),
-        f('callsign', L('Indicatif', 'Callsign', 'Rufzeichen', 'Indicativo'), 'text', { upper: true, list: 'mc-known-callsigns', alias: 'callsign' }),
-        f('type', L('Type (OACI)', 'Type (ICAO)', 'Muster (ICAO)', 'Tipo (OACI)'), 'text', { upper: true, list: 'mc-aircraft-types', alias: 'aircraft', placeholder: L('EC45, CN35, C130…', 'EC45, CN35, C130…') }),
+        // Immatriculation, indicatif, type et variante se filtrent mutuellement (valeurs
+        // proposées cohérentes, remplissage quand il ne reste qu'une possibilité).
+        f('registration', L('Immatriculation', 'Registration', 'Kennzeichen', 'Matrícula'), 'text', { upper: true, alias: 'registration', placeholder: L('F-ZBQU… (appareils connus proposés)', 'F-ZBQU… (known aircraft suggested)', 'F-ZBQU… (bekannte Luftfahrzeuge)', 'F-ZBQU… (aeronaves conocidas)') }),
+        f('callsign', L('Indicatif', 'Callsign', 'Rufzeichen', 'Indicativo'), 'text', { upper: true, alias: 'callsign' }),
+        f('type', L('Type (OACI)', 'Type (ICAO)', 'Muster (ICAO)', 'Tipo (OACI)'), 'text', { upper: true, alias: 'aircraft', placeholder: L('EC45, CN35, C130…', 'EC45, CN35, C130…') }),
         f('category', L('Catégorie', 'Category', 'Kategorie', 'Categoría'), 'select', { options: V.aircraftCategories, blank: true, rerender: true }),
         f('variant', L('Variante / modèle', 'Variant / model', 'Variante / Modell', 'Variante / modelo')),
-        f('tacticalNumber', L('Numéro tactique', 'Tactical number', 'Taktische Nummer', 'Número táctico')),
-        f('baseDeparture', L('Base de départ', 'Departure base', 'Startbasis', 'Base de salida'), 'text', { upper: true, alias: 'baseDeparture' }),
-        f('baseReturn', L('Base de retour', 'Return base', 'Rückkehrbasis', 'Base de regreso'), 'text', { upper: true }),
+        f('tacticalNumber', L('Numéro tactique', 'Tactical number', 'Taktische Nummer', 'Número táctico'), 'text', { hideFor: ['HEMS', 'FI', 'SURVEY'] }),
+        f('baseDeparture', L('Base de départ', 'Departure base', 'Startbasis', 'Base de salida'), 'text', { upper: true, alias: 'baseDeparture', pool: 'aerodrome' }),
+        f('baseReturn', L('Base de retour', 'Return base', 'Rückkehrbasis', 'Base de regreso'), 'text', { upper: true, pool: 'aerodrome' }),
         f('massTakeoff', L('Masse au décollage (kg)', 'Take-off mass (kg)', 'Startmasse (kg)', 'Masa al despegue (kg)'), 'number'),
-        f('massLanding', L('Masse à l’atterrissage (kg)', 'Landing mass (kg)', 'Landemasse (kg)', 'Masa al aterrizaje (kg)'), 'number'),
+        f('massLanding', L('Masse à l’atterrissage (kg)', 'Landing mass (kg)', 'Landemasse (kg)', 'Masa al aterrizaje (kg)'), 'number', { hideFor: ['HEMS'] }),
         f('enduranceMinutes', L('Endurance disponible (min)', 'Available endurance (min)', 'Verfügbare Flugdauer (min)', 'Autonomía disponible (min)'), 'number'),
         f('configuration', L('Configuration mission', 'Mission configuration', 'Missionskonfiguration', 'Configuración de misión')),
-        f('equipment', L('Équipements de l’appareil', 'Aircraft equipment', 'Ausrüstung des Luftfahrzeugs', 'Equipamiento de la aeronave'), 'checkgroup', { groups: V.equipmentGroups, full: true, byCategory: true })
+        f('equipment', L('Équipements / capacités techniques de l’appareil (repris de l’appareil connu ou du plan de vol)', 'Aircraft equipment / technical capabilities (from the known aircraft or the flight plan)', 'Ausrüstung / technische Fähigkeiten (vom bekannten Luftfahrzeug oder Flugplan)', 'Equipamiento / capacidades técnicas (de la aeronave conocida o del plan de vuelo)'), 'checkgroup', { groups: V.equipmentGroups, full: true, byCategory: true, collapsed: true })
       ]
     }
   };
@@ -63,7 +69,7 @@
       empty: () => ({ role: '', name: '', aircraft: 1, notes: '' }),
       fields: [
         f('role', L('Rôle', 'Role', 'Rolle', 'Función'), 'select', { crewRoles: true, blank: true }),
-        f('name', L('Nom / indicatif', 'Name / callsign', 'Name / Rufzeichen', 'Nombre / indicativo')),
+        f('name', L('Nom / indicatif', 'Name / callsign', 'Name / Rufzeichen', 'Nombre / indicativo'), 'text', { pool: 'person' }),
         f('aircraft', L('Appareil n°', 'Aircraft no.', 'Luftfahrzeug Nr.', 'Aeronave n.º'), 'number'),
         f('notes', L('Remarque', 'Note', 'Bemerkung', 'Observación'))
       ]
@@ -81,14 +87,16 @@
 
   const capabilities = {
     id: 'capabilities', title: L('Capacités / techniques employées', 'Capabilities / techniques', 'Fähigkeiten / Verfahren', 'Capacidades / técnicas'),
+    // Replié : repris de la dernière mission de la même série à la création d'une mission.
+    collapsed: true, summary: L('Techniques employées (reprises de la dernière mission de la série)', 'Techniques used (from the last mission of the series)', 'Angewandte Verfahren (vom letzten Einsatz der Serie)', 'Técnicas empleadas (de la última misión de la serie)'),
     fields: [f('capabilities', null, 'checkgroup', { groups: V.capabilityGroups, full: true })]
   };
 
   const environment = {
     id: 'environment', title: L('Environnement / météo', 'Environment / weather', 'Umgebung / Wetter', 'Entorno / meteorología'),
     fields: [
-      f('environment.metar', L('METAR', 'METAR'), 'text', { full: true }),
-      f('environment.taf', L('TAF', 'TAF'), 'text', { full: true }),
+      f('environment.metar', L('METAR (analysé à la saisie : vent, T°, QNH, visibilité, plafond)', 'METAR (parsed on entry: wind, temp, QNH, visibility, ceiling)', 'METAR (beim Eingeben ausgewertet: Wind, Temp., QNH, Sicht, Wolkenuntergrenze)', 'METAR (analizado al introducirlo: viento, T.ª, QNH, visibilidad, techo)'), 'text', { full: true, upper: true }),
+      f('environment.taf', L('TAF', 'TAF'), 'text', { full: true, upper: true }),
       f('environment.wind', L('Vent', 'Wind', 'Wind', 'Viento')),
       f('environment.temperature', L('Température (°C)', 'Temperature (°C)', 'Temperatur (°C)', 'Temperatura (°C)'), 'number'),
       f('environment.qnh', L('QNH (hPa)', 'QNH (hPa)'), 'number'),
@@ -109,20 +117,20 @@
   const navigation = {
     id: 'navigation', title: L('Navigation', 'Navigation', 'Navigation', 'Navegación'),
     fields: [
-      f('navigation.dep', L('Départ (DEP)', 'Departure (DEP)', 'Abflug (DEP)', 'Salida (DEP)'), 'text', { upper: true }),
-      f('navigation.arr', L('Arrivée (ARR)', 'Arrival (ARR)', 'Ankunft (ARR)', 'Llegada (ARR)'), 'text', { upper: true, alias: 'destination' }),
-      f('navigation.altn', L('Dégagement (ALTN)', 'Alternate (ALTN)', 'Ausweichflugplatz (ALTN)', 'Alternativo (ALTN)'), 'text', { upper: true }),
-      f('navigation.route', L('Route', 'Route', 'Route', 'Ruta'), 'text', { full: true }),
-      f('navigation.waypoints', L('Points tournants (un par ligne)', 'Waypoints (one per line)', 'Wegpunkte (einer pro Zeile)', 'Puntos de ruta (uno por línea)'), 'textarea', { full: true }),
-      f('navigation.coordinates', L('Coordonnées', 'Coordinates', 'Koordinaten', 'Coordenadas')),
-      f('navigation.altitude', L('Altitude / FL', 'Altitude / FL', 'Höhe / FL', 'Altitud / FL')),
-      f('navigation.minAltitude', L('Altitude minimale', 'Minimum altitude', 'Mindesthöhe', 'Altitud mínima')),
+      f('navigation.dep', L('Départ (ADEP)', 'Departure (ADEP)', 'Abflug (ADEP)', 'Salida (ADEP)'), 'text', { upper: true, pool: 'aerodrome' }),
+      f('navigation.arr', L('Destination (ADES)', 'Destination (ADES)', 'Ziel (ADES)', 'Destino (ADES)'), 'text', { upper: true, alias: 'destination', pool: 'aerodrome' }),
+      f('navigation.altn', L('Dégagement (ALTN)', 'Alternate (ALTN)', 'Ausweichflugplatz (ALTN)', 'Alternativo (ALTN)'), 'text', { upper: true, pool: 'aerodrome' }),
+      f('navigation.route', L('Route', 'Route', 'Route', 'Ruta'), 'text', { full: true, upper: true }),
+      f('navigation.waypoints', L('Points tournants (un par ligne)', 'Waypoints (one per line)', 'Wegpunkte (einer pro Zeile)', 'Puntos de ruta (uno por línea)'), 'textarea', { full: true, upper: true, appendList: true, pool: 'waypoint' }),
+      f('navigation.coordinates', L('Coordonnées', 'Coordinates', 'Koordinaten', 'Coordenadas'), 'text', { hideFor: ['HEMS'] }),
+      f('navigation.altitude', L('Altitude / FL', 'Altitude / FL', 'Höhe / FL', 'Altitud / FL'), 'text', { upper: true, pool: 'altitude' }),
+      f('navigation.minAltitude', L('Altitude minimale', 'Minimum altitude', 'Mindesthöhe', 'Altitud mínima'), 'text', { upper: true, pool: 'altitude' }),
       f('navigation.speed', L('Vitesse (kt)', 'Speed (kt)', 'Geschwindigkeit (kt)', 'Velocidad (kt)'), 'number'),
       f('navigation.distanceNm', L('Distance (NM)', 'Distance (NM)', 'Entfernung (NM)', 'Distancia (NM)'), 'number'),
-      f('navigation.area', L('Zone d’opération', 'Operating area', 'Einsatzgebiet', 'Zona de operación')),
-      f('navigation.radiusNm', L('Rayon (NM)', 'Radius (NM)', 'Radius (NM)', 'Radio (NM)'), 'number'),
-      f('navigation.corridor', L('Corridor', 'Corridor', 'Korridor', 'Corredor')),
-      f('navigation.orbit', L('Attente / orbite', 'Holding / orbit', 'Warteschleife / Orbit', 'Espera / órbita'))
+      f('navigation.area', L('Zone d’opération', 'Operating area', 'Einsatzgebiet', 'Zona de operación'), 'text', { pool: 'area' }),
+      f('navigation.radiusNm', L('Rayon (NM)', 'Radius (NM)', 'Radius (NM)', 'Radio (NM)'), 'number', { only: ['SAR', 'MARITIME', 'ISR', 'HADR', 'SURVEY', 'LE', 'COMMAND', 'DEMO'] }),
+      f('navigation.corridor', L('Corridor', 'Corridor', 'Korridor', 'Corredor'), 'text', { only: ['ISR', 'COMMAND', 'SOF', 'AIRBORNE', 'AIRLIFT', 'FI', 'SURVEY', 'LE', 'DEMO'] }),
+      f('navigation.orbit', L('Attente / orbite', 'Holding / orbit', 'Warteschleife / Orbit', 'Espera / órbita'), 'text', { only: ['ISR', 'COMMAND', 'MARITIME', 'SAR', 'LE', 'FI', 'SURVEY', 'SOF', 'DEMO'] })
     ]
   };
 
@@ -150,13 +158,13 @@
       f('fuel.start', L('FOB départ', 'FOB start', 'FOB Start', 'FOB inicial'), 'number'),
       f('fuel.taxi', L('Roulage', 'Taxi', 'Rollen', 'Rodaje'), 'number'),
       f('fuel.takeoff', L('Au décollage', 'At take-off', 'Beim Start', 'Al despegue'), 'number'),
-      f('fuel.onTaskArrival', L('Arrivée sur zone', 'Arrival on task', 'Ankunft im Einsatz', 'Llegada a la tarea'), 'number'),
-      f('fuel.onStation', L('Carburant sur zone', 'Fuel on station', 'Kraftstoff im Einsatzraum', 'Combustible en zona'), 'number'),
-      f('fuel.taskDeparture', L('Départ de zone', 'Task departure', 'Verlassen des Einsatzes', 'Salida de la tarea'), 'number'),
+      f('fuel.onTaskArrival', L('Arrivée sur zone', 'Arrival on task', 'Ankunft im Einsatz', 'Llegada a la tarea'), 'number', { only: ON_STATION }),
+      f('fuel.onStation', L('Carburant sur zone', 'Fuel on station', 'Kraftstoff im Einsatzraum', 'Combustible en zona'), 'number', { only: ON_STATION }),
+      f('fuel.taskDeparture', L('Départ de zone', 'Task departure', 'Verlassen des Einsatzes', 'Salida de la tarea'), 'number', { only: ON_STATION }),
       f('fuel.landing', L('À l’atterrissage', 'At landing', 'Bei der Landung', 'Al aterrizaje'), 'number'),
       f('fuel.block', L('Aux cales', 'At block-in', 'Bei On-Block', 'En calzos'), 'number'),
       f('fuel.reserve', L('Réserve', 'Reserve', 'Reserve', 'Reserva'), 'number'),
-      f('fuel.diversion', L('Carburant de dégagement', 'Diversion fuel', 'Ausweichkraftstoff', 'Combustible de alternativa'), 'number')
+      f('fuel.diversion', L('Carburant de dégagement', 'Diversion fuel', 'Ausweichkraftstoff', 'Combustible de alternativa'), 'number', { hideFor: ['HEMS'] })
     ]
   };
 
@@ -169,7 +177,7 @@
         f('timeLocal', L('Heure locale', 'Local time', 'Ortszeit', 'Hora local'), 'time'),
         f('timeUtc', L('UTC', 'UTC'), 'time'),
         f('type', L('Type', 'Type', 'Typ', 'Tipo'), 'select', { eventTypes: true, blank: true }),
-        f('position', L('Position', 'Position', 'Position', 'Posición')),
+        f('position', L('Position', 'Position', 'Position', 'Posición'), 'text', { upper: true, pool: 'waypoint' }),
         f('altitude', L('Altitude', 'Altitude', 'Höhe', 'Altitud'), 'number'),
         f('speed', L('Vitesse', 'Speed', 'Geschwindigkeit', 'Velocidad'), 'number'),
         f('heading', L('Cap', 'Heading', 'Steuerkurs', 'Rumbo'), 'number'),
@@ -186,7 +194,7 @@
       path: 'legs', min: 0, compact: true, item: L('Étape', 'Leg', 'Etappe', 'Tramo'), add: L('+ Ajouter une étape', '+ Add leg', '+ Etappe hinzufügen', '+ Añadir tramo'),
       empty: () => ({ from: '', to: '', takeoff: '', landing: '', pax: null, cargoKg: null, notes: '' }),
       fields: [
-        f('from', L('De', 'From', 'Von', 'Desde')), f('to', L('À', 'To', 'Nach', 'Hasta')),
+        f('from', L('De', 'From', 'Von', 'Desde'), 'text', { upper: true, pool: 'aerodrome' }), f('to', L('À', 'To', 'Nach', 'Hasta'), 'text', { upper: true, pool: 'aerodrome' }),
         f('takeoff', L('Décollage', 'Take-off', 'Start', 'Despegue'), 'time'), f('landing', L('Atterrissage', 'Landing', 'Landung', 'Aterrizaje'), 'time'),
         f('pax', L('Passagers', 'Passengers', 'Passagiere', 'Pasajeros'), 'number'), f('cargoKg', L('Fret (kg)', 'Cargo (kg)', 'Fracht (kg)', 'Carga (kg)'), 'number'),
         f('notes', L('Remarque', 'Note', 'Bemerkung', 'Observación'), 'text', { full: true })
@@ -225,5 +233,5 @@
 
   // Ordre du formulaire ; les blocs de la famille s'insèrent avant « events ».
   const ORDER = [identification, aircraft, crew, tasking, capabilities, environment, navigation, timeline, fuel, '__family__', events, legs, results, remarks, network];
-  window.MissionBlocks = { ORDER, identification, aircraft, crew, tasking, capabilities, environment, navigation, timeline, fuel, events, legs, results, remarks, network };
+  window.MissionBlocks = { ORDER, CIVIL, ON_STATION, identification, aircraft, crew, tasking, capabilities, environment, navigation, timeline, fuel, events, legs, results, remarks, network };
 })();

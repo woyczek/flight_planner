@@ -20,7 +20,12 @@
   const db = () => window.AIRCRAFT_DB || {};
   // Classe OACI (Doc 8643) : H2T → hélicoptère, L2J → avion, A/S → amphibie / hydravion.
   const categoryOf = description => ({ H: 'rotary', G: 'rotary', T: 'rotary', L: 'fixed', A: 'amphibious', S: 'amphibious' })[String(description || '').charAt(0).toUpperCase()] || '';
-  const localTypes = () => read(TYPES_KEY) || {};
+  // Types de la flotte DEFA absents de la base OACI importée.
+  const SUPPLEMENT = {
+    H160: { tdesig: 'H160', model: 'Airbus Helicopters H160', category: 'rotary', wtc: 'L' },
+    CL2T: { tdesig: 'CL2T', model: 'Canadair CL-415 / CL-215T', category: 'amphibious', wtc: 'M' }
+  };
+  const localTypes = () => ({ ...SUPPLEMENT, ...(read(TYPES_KEY) || {}) });
   // Libellés parasites présents dans la base OACI importée (texte de pages web récupéré
   // à la place du modèle) : traités comme un modèle absent.
   const JUNK_MODELS = new Set(['Aircraft Performance Database', 'Skip to aircraft details']);

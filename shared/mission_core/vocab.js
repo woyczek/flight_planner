@@ -55,8 +55,27 @@
   const equipmentGroups = [
     { id: 'avionics', title: L('Avionique / certification', 'Avionics / certification', 'Avionik / Zulassung', 'Aviónica / certificación'),
       items: capabilityGroups[0].items.filter(o => ['IFR', 'NIGHT', 'NVG'].includes(o.value)) },
-    ...capabilityGroups.slice(1)
+    ...capabilityGroups.slice(1),
+    // Équipements du plan de vol OACI (cases 10a/10b), repris d'un FPL déposé (SimBrief,
+    // IVAO, VATSIM) : jamais filtrés par la famille (unfiltered).
+    { id: 'fpl', unfiltered: true, title: L('Équipements plan de vol (OACI, case 10)', 'Flight plan equipment (ICAO item 10)', 'Flugplanausrüstung (ICAO Feld 10)', 'Equipos del plan de vuelo (OACI, casilla 10)'), items: [
+      opt('FPL_VOR_ILS', L('VHF / VOR / ILS (S)', 'VHF / VOR / ILS (S)')), opt('FPL_DME', L('DME (D)', 'DME (D)')), opt('FPL_ADF', L('ADF (F)', 'ADF (F)')),
+      opt('FPL_GNSS', L('GNSS (G)', 'GNSS (G)')), opt('FPL_PBN', L('PBN (R)', 'PBN (R)')), opt('FPL_RVSM', L('RVSM (W)', 'RVSM (W)')),
+      opt('FPL_833', L('VHF 8,33 kHz (Y)', 'VHF 8.33 kHz (Y)')), opt('FPL_HF', L('HF (H)', 'HF (H)')), opt('FPL_UHF', L('UHF (U)', 'UHF (U)')),
+      opt('FPL_CPDLC', L('CPDLC (J)', 'CPDLC (J)')), opt('FPL_ACARS', L('ACARS (E)', 'ACARS (E)')), opt('FPL_SATCOM', L('SATCOM (M)', 'SATCOM (M)')),
+      opt('FPL_MODE_S', L('Transpondeur mode S', 'Mode S transponder', 'Mode-S-Transponder', 'Transpondedor modo S')), opt('FPL_ADSB', L('ADS-B', 'ADS-B')), opt('FPL_ADSC', L('ADS-C', 'ADS-C'))
+    ] }
   ];
+
+  // Index statique des familles du Core (sélecteur d'en-tête : famille / série), chemins
+  // relatifs à la racine du site.
+  const families = [
+    ['HEMS', 'HEMS / MEDEVAC', 'HEMS/hems_core'], ['FIRE', 'FIRE / GAAR — sécurité civile', 'FIRE/fire_core'], ['SAR', 'SAR / récupération de personnel', 'SAR/sar'],
+    ['AIRLIFT', 'Transport aérien / logistique', 'AIRLIFT/airlift'], ['MARITIME', 'Surveillance maritime', 'MARITIME/maritime'], ['HADR', 'Aide humanitaire / évacuation', 'HADR/hadr'],
+    ['AIRBORNE', 'Largage / aéroporté', 'AIRBORNE/airborne'], ['FI', 'Contrôle en vol', 'FLIGHTINSPECTION/fi'], ['SURVEY', 'Levés / missions scientifiques', 'SURVEY/survey'],
+    ['LE', 'Police / douane / sécurité', 'LE/le'], ['ISR', 'Renseignement / reconnaissance', 'ISR/isr'], ['COMMAND', 'Commandement / guet aérien / relais', 'COMMAND/command'],
+    ['SOF', 'Opérations spéciales / tactiques', 'SOF/sof'], ['SPECIAL', 'Transport spécial / essais / formation', 'SPECIAL/special']
+  ].map(([id, label, base]) => ({ id, label, cr: `${base}_cr.html`, reporting: `${base}_reporting.html` }));
 
   const outcomes = [
     opt('SUCCESS', L('Succès', 'Success', 'Erfolgreich', 'Éxito')), opt('PARTIAL_SUCCESS', L('Succès partiel', 'Partial success', 'Teilweise erfolgreich', 'Éxito parcial')),
@@ -102,5 +121,5 @@
   const fuelUnits = [opt('kg', L('kg', 'kg')), opt('lb', L('lb', 'lb')), opt('L', L('L', 'L')), opt('USG', L('US gal', 'US gal'))];
   const networks = [opt('', L('Hors réseau / non renseigné', 'Offline / not provided', 'Offline / nicht angegeben', 'Fuera de red / no indicado')), opt('IVAO', L('IVAO', 'IVAO')), opt('VATSIM', L('VATSIM', 'VATSIM'))];
 
-  window.MissionVocab = { L, opt, aircraftCategories, capabilityGroups, equipmentGroups, outcomes, interruptedOutcomes, eventTypes, crewRoles, context, classification, dayNight, fuelUnits, networks };
+  window.MissionVocab = { L, opt, aircraftCategories, capabilityGroups, equipmentGroups, outcomes, interruptedOutcomes, eventTypes, crewRoles, context, classification, dayNight, fuelUnits, networks, families };
 })();

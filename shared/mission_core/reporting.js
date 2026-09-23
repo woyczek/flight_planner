@@ -72,9 +72,13 @@
       const s = M.computeStatistics(mission), a = mission.aircraft?.[0] || {};
       return { index, mission, missionId: mission.metadata?.missionId, date: mission.metadata?.date, series: mission.series, type: a.type, registration: a.registration, callsign: a.callsign, outcome: mission.results?.outcome, flight: s.flightMinutes, block: s.blockMinutes, station: s.timeOnStationMinutes, network: mission.network || {} };
     };
-    let table = null;
+    let table = null, seriesFilter = '';
+    // En-tête : famille (autre reporting) et sous-type (filtre des statistiques et du tableau).
+    const coreUi = key => { const row = window.MissionCore.UI[key]; rows.set(row[0], row); return row[0]; };
+    (family.series || []).forEach(s => { if (Array.isArray(s.label)) rows.set(s.label[0], s.label); });
+    window.MissionCore.headerSwitch({ family, kind: 'reporting', t: coreUi, all: true, get: () => seriesFilter, set: value => { seriesFilter = value; render(); } });
     function render() {
-      const all = ledger.missions.map(toRow);
+      const all = ledger.missions.map(toRow).filter(r => !seriesFilter || r.series === seriesFilter);
       const visible = window.TimePeriod ? window.TimePeriod.filterRows(all, 'date') : all;
       // Statistiques communes (§20) + statistiques spécialisées de la famille (stats.js).
       root.querySelector('#mcCards').innerHTML = window.MissionStats.cards(visible.map(r => r.mission), family).map(card => {

@@ -21,6 +21,8 @@
 
   window.MissionCore.registerFamily({
     id: 'HEMS', idPrefix: 'HEMS', defaultCategory: 'rotary',
+    // Étapes génériques inutiles (destinations HEMS dédiées).
+    hide: ['legs'],
     pages: { cr: 'hems_core_cr.html', reporting: 'hems_core_reporting.html' },
     title: L('HEMS / MEDEVAC', 'HEMS / MEDEVAC'),
     series: [

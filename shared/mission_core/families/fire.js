@@ -33,7 +33,7 @@
         fields: [
           f(P + 'risk', L('Niveau de risque', 'Risk level', 'Gefahrenstufe', 'Nivel de riesgo'), 'select', { options: risks, blank: true }),
           f(P + 'sector', L('Circuit / secteur', 'Circuit / sector', 'Route / Sektor', 'Circuito / sector')),
-          f(P + 'reloadBase', L('Base rechargement / écopage', 'Reload / scooping base', 'Nachlade- / Schöpfbasis', 'Base de recarga / amerizaje'), 'text', { upper: true }),
+          f(P + 'reloadBase', L('Base rechargement / écopage', 'Reload / scooping base', 'Nachlade- / Schöpfbasis', 'Base de recarga / amerizaje'), 'text', { upper: true, pool: 'aerodrome' }),
           f(P + 'fms', L('Fichier FMS', 'FMS file', 'FMS-Datei', 'Archivo FMS')), f(P + 'altitude', L('Altitude prévue', 'Planned altitude', 'Geplante Höhe', 'Altitud prevista')),
           f(P + 'weatherRemarks', L('Vent / météo synthétique', 'Wind / weather summary', 'Wind / Wetterlage', 'Viento / meteorología')), f(P + 'load', L('Charge eau / retardant', 'Water / retardant load', 'Wasser- / Retardantlast', 'Carga de agua / retardante'))
         ]

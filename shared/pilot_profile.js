@@ -1,20 +1,21 @@
 (() => {
   'use strict';
-  // Profil pilote partagé : ID IVAO (VID) et ID VATSIM (CID) saisis une seule fois dans
+  // Profil pilote partagé : ID IVAO (VID), ID VATSIM (CID) et identifiant SimBrief (import
+  // du plan de vol dans les CR du Mission Report Core) saisis une seule fois dans
   // le menu du framework, disponibles sur toutes les pages (chargé par repository_nav.js).
   // Même stockage que les préférences des reportings (mission_reporting_config.js) :
   // les champs de préférences des reportings et les champs ivaoId / vatsimId des CR
   // restent synchronisés, y compris entre onglets ouverts.
   const nav = window.RepositoryNav;
   if (!nav?.menu || document.getElementById('repoPilotProfile')) return;
-  const KEY = 'missionReportingConfig:v1', FIELDS = ['ivaoId', 'vatsimId'];
+  const KEY = 'missionReportingConfig:v1', FIELDS = ['ivaoId', 'vatsimId', 'simbriefUser'];
   const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch { return {}; } };
   const write = patch => { try { localStorage.setItem(KEY, JSON.stringify({ ...read(), ...patch })); } catch { /* stockage indisponible */ } };
   const TEXT = {
-    fr: { title: 'Profil pilote', ivaoId: 'ID IVAO (VID)', vatsimId: 'ID VATSIM (CID)' },
-    en: { title: 'Pilot profile', ivaoId: 'IVAO ID (VID)', vatsimId: 'VATSIM ID (CID)' },
-    de: { title: 'Pilotenprofil', ivaoId: 'IVAO-ID (VID)', vatsimId: 'VATSIM-ID (CID)' },
-    es: { title: 'Perfil de piloto', ivaoId: 'ID IVAO (VID)', vatsimId: 'ID VATSIM (CID)' }
+    fr: { title: 'Profil pilote', ivaoId: 'ID IVAO (VID)', vatsimId: 'ID VATSIM (CID)', simbriefUser: 'SimBrief (utilisateur ou ID)' },
+    en: { title: 'Pilot profile', ivaoId: 'IVAO ID (VID)', vatsimId: 'VATSIM ID (CID)', simbriefUser: 'SimBrief (username or ID)' },
+    de: { title: 'Pilotenprofil', ivaoId: 'IVAO-ID (VID)', vatsimId: 'VATSIM-ID (CID)', simbriefUser: 'SimBrief (Benutzer oder ID)' },
+    es: { title: 'Perfil de piloto', ivaoId: 'ID IVAO (VID)', vatsimId: 'ID VATSIM (CID)', simbriefUser: 'SimBrief (usuario o ID)' }
   };
 
   const style = document.createElement('style');
@@ -25,7 +26,7 @@
   const box = document.createElement('div');
   box.id = 'repoPilotProfile';
   box.innerHTML = '<div class="repo-sep"></div><div class="repo-group" data-profile-text="title"></div>'
-    + FIELDS.map(name => `<label class="repo-profile-field"><span data-profile-text="${name}"></span><input data-profile="${name}" inputmode="numeric" autocomplete="off"></label>`).join('');
+    + FIELDS.map(name => `<label class="repo-profile-field"><span data-profile-text="${name}"></span><input data-profile="${name}"${name === 'simbriefUser' ? '' : ' inputmode="numeric"'} autocomplete="off"></label>`).join('');
   const actions = nav.menu.querySelector('.repo-page-actions');
   nav.menu.insertBefore(box, actions || null);
   const inputs = Object.fromEntries(FIELDS.map(name => [name, box.querySelector(`[data-profile="${name}"]`)]));
