@@ -13,9 +13,11 @@
   //   authentification OAuth/API : le pilote, connecté sur tracker.ivao.aero, y lit
   //   les heures. Une page ne peut ni lire une autre page ni réutiliser sa session
   //   (règle de même origine) : pas d'« habillage » possible des trackers.
-  const form = document.getElementById('missionForm');
+  // CR HEMS / FIRE (#missionForm) ou page du Mission Report Core (#missionCoreForm, champs
+  // exposés sous les mêmes noms grâce aux alias des blocs communs).
+  const form = document.getElementById('missionForm') || document.getElementById('missionCoreForm');
   if (!form) return;
-  const KIND = location.pathname.includes('/FIRE/') ? 'gaar' : 'hems';
+  const KIND = document.body.dataset.family ? document.body.dataset.family.toLowerCase() : location.pathname.includes('/FIRE/') ? 'gaar' : 'hems';
   const STORE = `networkWatch:v1:${KIND}`;
   const POLL_MS = 20000, MAX_AGE_MS = 14 * 3600 * 1000;
   const FEEDS = {
@@ -181,7 +183,7 @@
     const tracker = field('trackerUrl');
     if (tracker && !tracker.value) tracker.value = who.network === 'IVAO' ? HISTORY.ivaoTracker(who.id) : HISTORY.vatsimStats(who.id);
     logLine(`démarrage ${who.network} ${who.id}${who.callsign ? ' ' + who.callsign : ''}`);
-    save(); paint(); clearTimeout(timer); poll();
+    save(); paint(); clearTimeout(timer); resumed = true; poll();
   }
   function stop() { clearTimeout(timer); if (watch) { watch.active = false; logLine('arrêt'); } save(); watch = null; save(); paint(); status(t('stopped')); }
 
@@ -262,16 +264,20 @@
     box.hidden = !watch?.log?.length; pre.textContent = (watch?.log || []).join('\n');
   }
 
+  let resumed = false;
   function mount() {
     if (panel.isConnected) return true;
-    const host = document.getElementById('networkTracking');
+    const host = document.getElementById('networkTracking') || document.getElementById('mc-network');
     if (!host) return false;
     host.append(panel); paint();
-    if (watch?.active) { status(t('resumed')); poll(); }
+    // Reprise du suivi une seule fois (la section peut être recréée par la page).
+    if (watch?.active && !resumed) { resumed = true; status(t('resumed')); poll(); }
     return true;
   }
-  // Section « Trace réseau » créée par mission_extensions.js (chargé dynamiquement).
-  const tryMount = () => { if (!mount()) { const observer = new MutationObserver(() => { if (mount()) observer.disconnect(); }); observer.observe(form, { childList: true, subtree: true }); } };
+  // Section « Trace réseau » : créée par mission_extensions.js (CR HEMS / FIRE, chargé
+  // dynamiquement) ou par le Mission Report Core, qui peut la recréer (re-rendu) : le
+  // panneau est rattaché à chaque fois.
+  const tryMount = () => { mount(); new MutationObserver(() => { if (!panel.isConnected) mount(); }).observe(form, { childList: true, subtree: true }); };
   if (document.readyState === 'loading') window.addEventListener('DOMContentLoaded', tryMount); else tryMount();
   window.addEventListener('repository-language-change', () => { if (panel.isConnected) paint(); });
   // Quitter la page arrête le suivi : avertissement tant qu'il est actif.

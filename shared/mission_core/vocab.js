@@ -50,6 +50,14 @@
     ] }
   ];
 
+  // Équipements d'un appareil (ce qu'il peut faire), distincts des capacités employées
+  // pendant la mission : mêmes codes, sans les techniques de vol pures.
+  const equipmentGroups = [
+    { id: 'avionics', title: L('Avionique / certification', 'Avionics / certification', 'Avionik / Zulassung', 'Aviónica / certificación'),
+      items: capabilityGroups[0].items.filter(o => ['IFR', 'NIGHT', 'NVG'].includes(o.value)) },
+    ...capabilityGroups.slice(1)
+  ];
+
   const outcomes = [
     opt('SUCCESS', L('Succès', 'Success', 'Erfolgreich', 'Éxito')), opt('PARTIAL_SUCCESS', L('Succès partiel', 'Partial success', 'Teilweise erfolgreich', 'Éxito parcial')),
     opt('ABORTED', L('Interrompue', 'Aborted', 'Abgebrochen', 'Abortada')), opt('CANCELLED', L('Annulée', 'Cancelled', 'Storniert', 'Cancelada')),
@@ -94,5 +102,5 @@
   const fuelUnits = [opt('kg', L('kg', 'kg')), opt('lb', L('lb', 'lb')), opt('L', L('L', 'L')), opt('USG', L('US gal', 'US gal'))];
   const networks = [opt('', L('Hors réseau / non renseigné', 'Offline / not provided', 'Offline / nicht angegeben', 'Fuera de red / no indicado')), opt('IVAO', L('IVAO', 'IVAO')), opt('VATSIM', L('VATSIM', 'VATSIM'))];
 
-  window.MissionVocab = { L, opt, aircraftCategories, capabilityGroups, outcomes, interruptedOutcomes, eventTypes, crewRoles, context, classification, dayNight, fuelUnits, networks };
+  window.MissionVocab = { L, opt, aircraftCategories, capabilityGroups, equipmentGroups, outcomes, interruptedOutcomes, eventTypes, crewRoles, context, classification, dayNight, fuelUnits, networks };
 })();

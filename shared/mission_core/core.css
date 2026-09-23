@@ -41,3 +41,30 @@ main.mc-page{max-width:1280px;margin:20px auto;padding:0 16px 40px;display:grid;
 @media(max-width:1000px){main.mc-page{grid-template-columns:1fr}.mc-aside{position:static}}
 @media(max-width:700px){.mc-grid,.mc-grid.compact{grid-template-columns:1fr 1fr}}
 @media print{header.mc-header,.mc-controls,.mc-aside{display:none!important}main.mc-page{display:block}}
+/* boutons, notes, aides */
+.mc-form .danger,.mc-reporting .danger{background:#7f1d1d;color:#fff}
+a.mc-button{display:inline-flex;align-items:center;border-radius:10px;padding:10px 14px;font-weight:650;text-decoration:none;color:var(--ink);background:#e5e7eb}
+a.mc-button.primary{background:var(--accent);color:#fff}
+.note{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px;font-size:13px;margin:0}
+.mc-hint{display:block;margin-top:3px;color:var(--accent)}
+.mc-capabilities.compact .mc-capgroup{padding:4px 8px}
+.mc-capabilities.compact .mc-chip{font-size:12px;margin:2px 8px 2px 0}
+.mc-edit-banner{border-color:var(--accent)!important;background:var(--soft)!important}
+/* reporting */
+main.mc-reporting{max-width:1280px;margin:20px auto;padding:0 16px 40px}
+.mc-reporting section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.mc-reporting h2{font-size:17px;margin:0 0 12px;border-bottom:1px solid var(--line);padding-bottom:8px}
+.mc-reporting h3{font-size:14px;margin:0 0 6px}
+.mc-reporting .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.mc-reporting button{border:0;border-radius:10px;padding:10px 14px;font:inherit;font-weight:650;cursor:pointer}
+.mc-reporting .secondary{background:#e5e7eb;color:var(--ink)}
+.mc-reporting .primary{background:var(--accent);color:#fff}
+.mc-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.mc-cards .card{border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:2px}
+.mc-cards .card b{font-size:23px}
+.mc-breakdowns{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.barrow{display:grid;grid-template-columns:1fr 42px 2fr;gap:8px;align-items:center;margin:7px 0;font-size:13px}
+.track{height:14px;background:#eee;border-radius:99px;overflow:hidden;display:block}
+.bar{display:block;height:100%;background:var(--accent)}
+@media(max-width:800px){.mc-breakdowns{grid-template-columns:1fr}}
+@media print{.mc-reporting section:nth-child(2){display:none}}

@@ -135,9 +135,10 @@ shared/
     form.js            rendu des blocs, collections dynamiques, règles d'affichage        [1a]
     core.css           style des pages de saisie                                           [1a]
     report.js          rendu du CR (§21, sections vides omises) + résumé automatique (§22)
-    ledger.js          registre YAML (lecture/écriture/fusion) + export CSV simplifié
+    ledger.js          registre YAML (dossier local / navigateur / fichier) + export CSV    [1a-bis]
+    aircraft.js        appareils connus (immatriculation), types OACI enrichissables        [1a-bis]
     vendor/js-yaml.min.js   bibliothèque YAML embarquée (MIT, aucune dépendance réseau)
-    reporting.js       page de reporting commune (cartes, répartitions, SortedTable, export)
+    reporting.js       page de reporting commune (cartes, répartitions, SortedTable, export) [1a-bis]
     stats.js           statistiques communes + points d'extension famille
     vocab.js           capacités, résultats, types d'événements, rôles d'équipage          [1a]
     families/demo.js   famille de démonstration du moteur (page MissionCore/…_demo.html)   [1a]
@@ -261,8 +262,9 @@ début→fin mission. Passage de minuit géré comme aujourd'hui.
 |---|---|---|---|
 | 0 | Nettoyage + FIRE | fichiers inutilisés/archivés supprimés ; `GAAR/` → `FIRE/` (pages, packs FMS, données locales) sans redirection ; titres corrigés ; `repository_tree` à jour | pages FIRE/HEMS/général fonctionnelles, registres rechargés |
 | 1a | Core : modèle + montage | `core.js`, `model.js`, blocs communs (identification, appareils[], équipage[], chronologie, météo, carburant, résultat, remarques, réseau), `collection.js`, capacités | page de démonstration ; export/import JSON ; i18n FR/EN/DE/ES |
+| 1a-bis | Core : registre, appareils, reporting *(avancé avant 1b, 2026-09-23)* | `ledger.js` (registre YAML + CSV), `aircraft.js` (appareils connus, types OACI enrichissables, équipements), `reporting.js`, mode modification/suppression, doublons, suivi réseau, pages `MissionCore/demo_cr.html` / `demo_reporting.html` | round-trip CR → registre → reporting → modification / suppression |
 | 1b | Core : CR + résumé | `report.js` (sections §21 sans vides), résumé par famille, impression | rapport d'une mission de démo |
-| 1c | Core : registre + reporting | `ledger.js` (YAML + export CSV), `reporting.js`, `stats.js`, bascule CR ⇄ reporting, mode modification/suppression, doublons, suivi réseau branché | round-trip CR → registre YAML → reporting → modification |
+| 1c | Core : statistiques | `stats.js` (statistiques communes + points d'extension famille, alimentant reporting famille et général) | totaux vérifiés sur registre de test |
 | 2a | HEMS reconstruit sur le Core | `families/hems.js` (mêmes champs, horaires ⇄ événements, destinations), import des anciens CSV/JSON, reporting HEMS par le Core | comparaison champ à champ avec l'ancienne page ; stats identiques |
 | 2b | FIRE reconstruit sur le Core | `families/fire.js` (largages, écopages, sélecteur FMS), import des anciens CSV/JSON | idem |
 | 2c | Reporting général multi-familles | filtre famille, stats communes + spécifiques, lecture des registres YAML | totaux identiques à l'étape 0 |

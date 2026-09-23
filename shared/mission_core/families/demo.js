@@ -7,6 +7,7 @@
   const f = (path, label, type = 'text', extra = {}) => ({ path, label, type, ...extra });
   window.MissionCore.registerFamily({
     id: 'DEMO', idPrefix: 'DEMO',
+    pages: { cr: 'demo_cr.html', reporting: 'demo_reporting.html' },
     title: L('Démonstration du moteur', 'Engine demonstration', 'Demonstration des Kerns', 'Demostración del motor'),
     series: [
       { value: 'DEMO-ROTARY', label: L('Démo voilure tournante', 'Rotary-wing demo', 'Drehflügler-Demo', 'Demo ala rotatoria'), subtypes: [L('Treuillage', 'Hoist'), L('Transport', 'Transport')] },

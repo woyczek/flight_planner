@@ -11,12 +11,12 @@
   const identification = {
     id: 'identification', title: L('Identification & organisation', 'Identification & organisation', 'Identifikation & Organisation', 'Identificación y organización'),
     fields: [
-      f('metadata.missionId', L('N° mission', 'Mission ID', 'Einsatz-ID', 'ID de misión')),
+      f('metadata.missionId', L('N° mission', 'Mission ID', 'Einsatz-ID', 'ID de misión'), 'text', { upper: true, alias: 'missionId' }),
       f('metadata.missionNumber', L('Numéro d’ordre', 'Mission number', 'Einsatznummer', 'Número de misión')),
       f('metadata.serial', L('N° de série', 'Serial number', 'Seriennummer', 'Número de serie')),
       f('series', L('Série', 'Series', 'Serie', 'Serie'), 'select', { familySeries: true }),
       f('subtype', L('Sous-type', 'Sub-type', 'Untertyp', 'Subtipo'), 'text', { familySubtypes: true }),
-      f('metadata.date', L('Date', 'Date', 'Datum', 'Fecha'), 'date'),
+      f('metadata.date', L('Date', 'Date', 'Datum', 'Fecha'), 'date', { alias: 'date' }),
       f('metadata.timeLocal', L('Heure locale', 'Local time', 'Ortszeit', 'Hora local'), 'time'),
       f('metadata.timeUtc', L('Heure UTC', 'UTC time', 'UTC-Zeit', 'Hora UTC'), 'time'),
       f('metadata.context', L('Exercice / opération réelle', 'Exercise / real operation', 'Übung / realer Einsatz', 'Ejercicio / operación real'), 'select', { options: V.context }),
@@ -37,18 +37,21 @@
       path: 'aircraft', min: 1, item: L('Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'), add: L('+ Ajouter un appareil', '+ Add aircraft', '+ Luftfahrzeug hinzufügen', '+ Añadir aeronave'),
       empty: () => window.MissionModel.emptyAircraft(),
       fields: [
-        f('category', L('Catégorie', 'Category', 'Kategorie', 'Categoría'), 'select', { options: V.aircraftCategories, blank: true }),
-        f('type', L('Type', 'Type', 'Typ', 'Tipo'), 'text', { placeholder: L('H145, CN-235, C-130…', 'H145, CN-235, C-130…') }),
-        f('variant', L('Variante', 'Variant', 'Variante', 'Variante')),
-        f('registration', L('Immatriculation', 'Registration', 'Kennzeichen', 'Matrícula')),
+        // Immatriculation en premier : un appareil connu remplit type, catégorie, indicatif,
+        // équipements… (shared/mission_core/aircraft.js, la donnée la plus récente l'emporte).
+        f('registration', L('Immatriculation', 'Registration', 'Kennzeichen', 'Matrícula'), 'text', { upper: true, list: 'mc-known-registrations', alias: 'registration', placeholder: L('F-ZBQU… (appareils connus proposés)', 'F-ZBQU… (known aircraft suggested)', 'F-ZBQU… (bekannte Luftfahrzeuge)', 'F-ZBQU… (aeronaves conocidas)') }),
+        f('callsign', L('Indicatif', 'Callsign', 'Rufzeichen', 'Indicativo'), 'text', { upper: true, list: 'mc-known-callsigns', alias: 'callsign' }),
+        f('type', L('Type (OACI)', 'Type (ICAO)', 'Muster (ICAO)', 'Tipo (OACI)'), 'text', { upper: true, list: 'mc-aircraft-types', alias: 'aircraft', placeholder: L('EC45, CN35, C130…', 'EC45, CN35, C130…') }),
+        f('category', L('Catégorie', 'Category', 'Kategorie', 'Categoría'), 'select', { options: V.aircraftCategories, blank: true, rerender: true }),
+        f('variant', L('Variante / modèle', 'Variant / model', 'Variante / Modell', 'Variante / modelo')),
         f('tacticalNumber', L('Numéro tactique', 'Tactical number', 'Taktische Nummer', 'Número táctico')),
-        f('callsign', L('Indicatif', 'Callsign', 'Rufzeichen', 'Indicativo')),
-        f('baseDeparture', L('Base de départ', 'Departure base', 'Startbasis', 'Base de salida')),
-        f('baseReturn', L('Base de retour', 'Return base', 'Rückkehrbasis', 'Base de regreso')),
+        f('baseDeparture', L('Base de départ', 'Departure base', 'Startbasis', 'Base de salida'), 'text', { upper: true, alias: 'baseDeparture' }),
+        f('baseReturn', L('Base de retour', 'Return base', 'Rückkehrbasis', 'Base de regreso'), 'text', { upper: true }),
         f('massTakeoff', L('Masse au décollage (kg)', 'Take-off mass (kg)', 'Startmasse (kg)', 'Masa al despegue (kg)'), 'number'),
         f('massLanding', L('Masse à l’atterrissage (kg)', 'Landing mass (kg)', 'Landemasse (kg)', 'Masa al aterrizaje (kg)'), 'number'),
         f('enduranceMinutes', L('Endurance disponible (min)', 'Available endurance (min)', 'Verfügbare Flugdauer (min)', 'Autonomía disponible (min)'), 'number'),
-        f('configuration', L('Configuration mission', 'Mission configuration', 'Missionskonfiguration', 'Configuración de misión'))
+        f('configuration', L('Configuration mission', 'Mission configuration', 'Missionskonfiguration', 'Configuración de misión')),
+        f('equipment', L('Équipements de l’appareil', 'Aircraft equipment', 'Ausrüstung des Luftfahrzeugs', 'Equipamiento de la aeronave'), 'checkgroup', { groups: V.equipmentGroups, full: true, byCategory: true })
       ]
     }
   };
@@ -106,9 +109,9 @@
   const navigation = {
     id: 'navigation', title: L('Navigation', 'Navigation', 'Navigation', 'Navegación'),
     fields: [
-      f('navigation.dep', L('Départ (DEP)', 'Departure (DEP)', 'Abflug (DEP)', 'Salida (DEP)')),
-      f('navigation.arr', L('Arrivée (ARR)', 'Arrival (ARR)', 'Ankunft (ARR)', 'Llegada (ARR)')),
-      f('navigation.altn', L('Dégagement (ALTN)', 'Alternate (ALTN)', 'Ausweichflugplatz (ALTN)', 'Alternativo (ALTN)')),
+      f('navigation.dep', L('Départ (DEP)', 'Departure (DEP)', 'Abflug (DEP)', 'Salida (DEP)'), 'text', { upper: true }),
+      f('navigation.arr', L('Arrivée (ARR)', 'Arrival (ARR)', 'Ankunft (ARR)', 'Llegada (ARR)'), 'text', { upper: true, alias: 'destination' }),
+      f('navigation.altn', L('Dégagement (ALTN)', 'Alternate (ALTN)', 'Ausweichflugplatz (ALTN)', 'Alternativo (ALTN)'), 'text', { upper: true }),
       f('navigation.route', L('Route', 'Route', 'Route', 'Ruta'), 'text', { full: true }),
       f('navigation.waypoints', L('Points tournants (un par ligne)', 'Waypoints (one per line)', 'Wegpunkte (einer pro Zeile)', 'Puntos de ruta (uno por línea)'), 'textarea', { full: true }),
       f('navigation.coordinates', L('Coordonnées', 'Coordinates', 'Koordinaten', 'Coordenadas')),
@@ -127,16 +130,16 @@
     id: 'timeline', title: L('Chronologie', 'Timeline', 'Zeitablauf', 'Cronología'),
     fields: [
       f('timeline.briefing', L('Briefing', 'Briefing', 'Briefing', 'Briefing'), 'time'),
-      f('timeline.engineStart', L('Mise en route', 'Engine start', 'Anlassen', 'Puesta en marcha'), 'time'),
+      f('timeline.engineStart', L('Mise en route', 'Engine start', 'Anlassen', 'Puesta en marcha'), 'time', { alias: 'engineStart' }),
       f('timeline.offBlock', L('Départ des cales', 'Off-block', 'Off-Block', 'Fuera calzos'), 'time'),
-      f('timeline.takeoff', L('Décollage', 'Take-off', 'Start', 'Despegue'), 'time'),
+      f('timeline.takeoff', L('Décollage', 'Take-off', 'Start', 'Despegue'), 'time', { alias: 'takeoff' }),
       f('timeline.zoneEntry', L('Entrée zone', 'Zone entry', 'Einflug Gebiet', 'Entrada en zona'), 'time'),
       f('timeline.missionStart', L('Début mission', 'Mission start', 'Missionsbeginn', 'Inicio de misión'), 'time'),
       f('timeline.missionEnd', L('Fin mission', 'Mission end', 'Missionsende', 'Fin de misión'), 'time'),
       f('timeline.zoneExit', L('Sortie zone', 'Zone exit', 'Ausflug Gebiet', 'Salida de zona'), 'time'),
-      f('timeline.landing', L('Atterrissage', 'Landing', 'Landung', 'Aterrizaje'), 'time'),
+      f('timeline.landing', L('Atterrissage', 'Landing', 'Landung', 'Aterrizaje'), 'time', { alias: 'landing' }),
       f('timeline.onBlock', L('Arrivée aux cales', 'On-block', 'On-Block', 'En calzos'), 'time'),
-      f('timeline.shutdown', L('Arrêt moteurs', 'Shutdown', 'Abstellen', 'Parada de motores'), 'time')
+      f('timeline.shutdown', L('Arrêt moteurs', 'Shutdown', 'Abstellen', 'Parada de motores'), 'time', { alias: 'engineStop' })
     ]
   };
 
@@ -213,10 +216,10 @@
   const network = {
     id: 'network', title: L('Trace réseau IVAO / VATSIM', 'IVAO / VATSIM network track', 'IVAO-/VATSIM-Netzwerkspur', 'Traza de red IVAO / VATSIM'),
     fields: [
-      f('network.onlineNetwork', L('Réseau', 'Network', 'Netzwerk', 'Red'), 'select', { options: V.networks }),
-      f('network.ivaoId', L('ID IVAO (VID)', 'IVAO ID (VID)', 'IVAO-ID (VID)', 'ID IVAO (VID)')),
-      f('network.vatsimId', L('ID VATSIM (CID)', 'VATSIM ID (CID)', 'VATSIM-ID (CID)', 'ID VATSIM (CID)')),
-      f('network.trackerUrl', L('URL de la trace', 'Track URL', 'URL der Spur', 'URL de la traza'), 'text', { full: true })
+      f('network.onlineNetwork', L('Réseau', 'Network', 'Netzwerk', 'Red'), 'select', { options: V.networks, alias: 'onlineNetwork' }),
+      f('network.ivaoId', L('ID IVAO (VID)', 'IVAO ID (VID)', 'IVAO-ID (VID)', 'ID IVAO (VID)'), 'text', { alias: 'ivaoId' }),
+      f('network.vatsimId', L('ID VATSIM (CID)', 'VATSIM ID (CID)', 'VATSIM-ID (CID)', 'ID VATSIM (CID)'), 'text', { alias: 'vatsimId' }),
+      f('network.trackerUrl', L('URL de la trace', 'Track URL', 'URL der Spur', 'URL de la traza'), 'text', { full: true, alias: 'trackerUrl' })
     ]
   };
 
