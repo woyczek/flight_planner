@@ -8,8 +8,8 @@
   //   La page les interroge pendant le vol et en déduit mise en route, décollage,
   //   atterrissage et fin de mission — à condition de rester ouverte.
   // - APRÈS LE VOL : l'historique VATSIM (connexions, plans de vol) est public mais
-  //   son serveur n'autorise pas la lecture depuis une autre page : on tente l'appel,
-  //   sinon le pilote ouvre le lien et colle le résultat. L'historique IVAO exige une
+  //   api.vatsim.net n'envoie aucun en-tête CORS : il s'ouvre dans un onglet, le pilote
+  //   le copie et la page lit le presse-papiers à son retour. L'historique IVAO exige une
   //   authentification OAuth/API : le pilote, connecté sur tracker.ivao.aero, y lit
   //   les heures. Une page ne peut ni lire une autre page ni réutiliser sa session
   //   (règle de même origine) : pas d'« habillage » possible des trackers.
@@ -24,7 +24,8 @@
   };
   const HISTORY = {
     vatsimConnections: cid => `https://api.vatsim.net/v2/members/${encodeURIComponent(cid)}/history?limit=50`,
-    vatsimStats: cid => `https://statsim.net/flights/vatsimid/?vatsimid=${encodeURIComponent(cid)}`,
+    vatsimStats: cid => `https://stats.vatsim.net/stats/${encodeURIComponent(cid)}`,
+    statsimFlights: cid => `https://statsim.net/flights/vatsimid/?vatsimid=${encodeURIComponent(cid)}`,
     ivaoTracker: vid => `https://tracker.ivao.aero/?userId=${encodeURIComponent(vid)}`
   };
 
@@ -36,7 +37,7 @@
       paste: 'Coller ici le contenu de la page d’historique VATSIM, puis « Analyser »', parse: 'Analyser', askId: 'Renseignez votre ID IVAO ou VATSIM (Identification ou menu ☰ › Profil pilote).',
       waiting: 'Suivi actif ({net} {id}) — pas encore connecté au réseau. Dernière vérification : {t}.', active: 'Suivi actif ({net} {id}, {cs}) — {state}. Dernière vérification : {t}.',
       stopped: 'Suivi arrêté.', feedError: 'Flux {net} indisponible ({err}) ; nouvel essai dans 20 s.', leave: 'Le suivi réseau est en cours : quitter la page l’arrête. Quitter quand même ?',
-      corsBlocked: 'Le serveur VATSIM refuse la lecture directe depuis cette page : l’historique vient de s’ouvrir dans un nouvel onglet. Copiez tout son contenu (Ctrl+A, Ctrl+C) et collez-le ci-dessous.',
+      corsBlocked: 'VATSIM n’autorise pas la lecture directe par une autre page : l’historique s’ouvre dans un nouvel onglet. Copiez tout son contenu (Ctrl+A puis Ctrl+C) et revenez ici : il est analysé automatiquement. Sinon, « Coller et analyser » ou Ctrl+V dans la zone ci-dessous.', vatsimStats: 'Ouvrir mes stats VATSIM', clip: 'Coller et analyser', clipDenied: 'Lecture du presse-papiers refusée : collez le contenu dans la zone (Ctrl+V).',
       noSession: 'Aucune connexion VATSIM trouvée le {date}{cs}.', filled: 'Heures renseignées depuis {src} : {list}.', approx: 'Connexion/déconnexion VATSIM ≈ mise en route / fin de mission (heures du réseau, à vérifier).',
       f_engineStart: 'mise en route', f_engineStop: 'fin de mission',
       resumed: 'Suivi en direct repris après rechargement de la page.', log: 'Journal du suivi'
@@ -48,7 +49,7 @@
       paste: 'Paste the VATSIM history page content here, then “Analyse”', parse: 'Analyse', askId: 'Enter your IVAO or VATSIM ID (Identification or menu ☰ › Pilot profile).',
       waiting: 'Tracking ({net} {id}) — not connected to the network yet. Last check: {t}.', active: 'Tracking ({net} {id}, {cs}) — {state}. Last check: {t}.',
       stopped: 'Tracking stopped.', feedError: '{net} feed unavailable ({err}); retrying in 20 s.', leave: 'Network tracking is running: leaving the page stops it. Leave anyway?',
-      corsBlocked: 'The VATSIM server refuses direct reading from this page: the history has opened in a new tab. Copy all of it (Ctrl+A, Ctrl+C) and paste it below.',
+      corsBlocked: 'VATSIM does not allow other pages to read it directly: the history opens in a new tab. Copy all of it (Ctrl+A then Ctrl+C) and come back here: it is analysed automatically. Otherwise use “Paste and analyse” or Ctrl+V in the box below.', vatsimStats: 'Open my VATSIM stats', clip: 'Paste and analyse', clipDenied: 'Clipboard access denied: paste the content into the box (Ctrl+V).',
       noSession: 'No VATSIM connection found on {date}{cs}.', filled: 'Times filled from {src}: {list}.', approx: 'VATSIM connection/disconnection ≈ engine start / mission end (network times, please check).',
       f_engineStart: 'engine start', f_engineStop: 'mission end',
       resumed: 'Live tracking resumed after page reload.', log: 'Tracking log'
@@ -60,7 +61,7 @@
       paste: 'Inhalt der VATSIM-Historienseite hier einfügen, dann „Auswerten“', parse: 'Auswerten', askId: 'IVAO- oder VATSIM-ID eingeben (Identifikation oder Menü ☰ › Pilotenprofil).',
       waiting: 'Tracking ({net} {id}) — noch nicht mit dem Netzwerk verbunden. Letzte Prüfung: {t}.', active: 'Tracking ({net} {id}, {cs}) — {state}. Letzte Prüfung: {t}.',
       stopped: 'Tracking beendet.', feedError: '{net}-Feed nicht verfügbar ({err}); neuer Versuch in 20 s.', leave: 'Das Netzwerk-Tracking läuft: Verlassen der Seite beendet es. Trotzdem verlassen?',
-      corsBlocked: 'Der VATSIM-Server verweigert das direkte Lesen: die Historie wurde in einem neuen Tab geöffnet. Alles kopieren (Strg+A, Strg+C) und unten einfügen.',
+      corsBlocked: 'VATSIM erlaubt anderen Seiten kein direktes Lesen: die Historie öffnet sich in einem neuen Tab. Alles kopieren (Strg+A, dann Strg+C) und hierher zurückkehren: sie wird automatisch ausgewertet. Sonst „Einfügen und auswerten“ oder Strg+V im Feld unten.', vatsimStats: 'Meine VATSIM-Statistik öffnen', clip: 'Einfügen und auswerten', clipDenied: 'Zugriff auf die Zwischenablage verweigert: Inhalt ins Feld einfügen (Strg+V).',
       noSession: 'Keine VATSIM-Verbindung am {date}{cs} gefunden.', filled: 'Zeiten aus {src} übernommen: {list}.', approx: 'VATSIM-Verbindung/Trennung ≈ Anlassen / Einsatzende (Netzwerkzeiten, bitte prüfen).',
       f_engineStart: 'Anlassen', f_engineStop: 'Einsatzende',
       resumed: 'Live-Tracking nach Neuladen fortgesetzt.', log: 'Tracking-Protokoll'
@@ -72,7 +73,7 @@
       paste: 'Pegue aquí el contenido de la página de historial VATSIM y pulse «Analizar»', parse: 'Analizar', askId: 'Indique su ID IVAO o VATSIM (Identificación o menú ☰ › Perfil de piloto).',
       waiting: 'Seguimiento ({net} {id}) — aún no conectado a la red. Última comprobación: {t}.', active: 'Seguimiento ({net} {id}, {cs}) — {state}. Última comprobación: {t}.',
       stopped: 'Seguimiento detenido.', feedError: 'Datos {net} no disponibles ({err}); nuevo intento en 20 s.', leave: 'El seguimiento de red está activo: salir de la página lo detiene. ¿Salir de todos modos?',
-      corsBlocked: 'El servidor VATSIM no permite la lectura directa: el historial se ha abierto en una nueva pestaña. Copie todo (Ctrl+A, Ctrl+C) y péguelo abajo.',
+      corsBlocked: 'VATSIM no permite que otras páginas lo lean directamente: el historial se abre en una nueva pestaña. Copie todo (Ctrl+A y luego Ctrl+C) y vuelva aquí: se analiza automáticamente. Si no, use «Pegar y analizar» o Ctrl+V en el cuadro de abajo.', vatsimStats: 'Abrir mis estadísticas VATSIM', clip: 'Pegar y analizar', clipDenied: 'Acceso al portapapeles denegado: pegue el contenido en el cuadro (Ctrl+V).',
       noSession: 'No se encontró ninguna conexión VATSIM el {date}{cs}.', filled: 'Horas rellenadas desde {src}: {list}.', approx: 'Conexión/desconexión VATSIM ≈ puesta en marcha / fin de misión (horas de red, a verificar).',
       f_engineStart: 'puesta en marcha', f_engineStop: 'fin de misión',
       resumed: 'Seguimiento en directo reanudado tras recargar la página.', log: 'Registro del seguimiento'
@@ -185,16 +186,17 @@
   function stop() { clearTimeout(timer); if (watch) { watch.active = false; logLine('arrêt'); } save(); watch = null; save(); paint(); status(t('stopped')); }
 
   // --------------------------------------------------------- historique VATSIM
-  function applyVatsimHistory(text) {
+  function applyVatsimHistory(text, silent = false) {
     let data;
-    try { data = JSON.parse(String(text).trim()); } catch { status(t('noSession', { date: value('date'), cs: '' })); return; }
-    const sessions = (data.items || data.results || (Array.isArray(data) ? data : [])).filter(s => s && s.start);
+    try { data = JSON.parse(String(text).trim()); } catch { if (!silent) status(t('noSession', { date: value('date'), cs: '' })); return false; }
+    const sessions = (data?.items || data?.results || (Array.isArray(data) ? data : [])).filter(s => s && s.start);
+    if (silent && !sessions.length) return false;
     const date = value('date'), callsign = value('callsign').toUpperCase().replace(/\s+/g, '');
     const utc = s => new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(s) ? s : s + 'Z');
     const localDay = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     let day = sessions.filter(s => Number(s.type ?? 1) === 1 && (!date || localDay(utc(s.start)) === date));
     if (callsign && day.some(s => String(s.callsign).toUpperCase() === callsign)) day = day.filter(s => String(s.callsign).toUpperCase() === callsign);
-    if (!day.length) { status(t('noSession', { date: date || '—', cs: callsign ? ` (${callsign})` : '' })); return; }
+    if (!day.length) { status(t('noSession', { date: date || '—', cs: callsign ? ` (${callsign})` : '' })); return true; }
     const first = day.reduce((a, b) => utc(a.start) < utc(b.start) ? a : b), last = day.reduce((a, b) => utc(a.end || a.start) > utc(b.end || b.start) ? a : b);
     const source = `VATSIM ${value('vatsimId')}`, done = [];
     if (fill('engineStart', utc(first.start), source)) done.push(t('f_engineStart'));
@@ -202,20 +204,28 @@
     if (!callsign && first.callsign && field('callsign')) { field('callsign').value = first.callsign; field('callsign').dispatchEvent(new Event('change', { bubbles: true })); }
     if (field('onlineNetwork') && !value('onlineNetwork')) field('onlineNetwork').value = 'VATSIM';
     status(`${t('filled', { src: 'VATSIM', list: done.join(', ') || '—' })} ${t('approx')}`);
+    const box = panel.querySelector('.nt-paste'); if (box) { box.hidden = true; box.querySelector('textarea').value = ''; }
+    return true;
   }
-  async function fetchVatsimHistory() {
+  function fetchVatsimHistory() {
     const cid = value('vatsimId');
     if (!cid) { status(t('askId')); field('vatsimId')?.focus(); return; }
-    try {
-      const response = await fetch(HISTORY.vatsimConnections(cid), { cache: 'no-store' });
-      applyVatsimHistory(await response.text());
-    } catch {
-      // CORS : lecture directe refusée → le pilote ouvre la page et colle le contenu.
-      window.open(HISTORY.vatsimConnections(cid), '_blank', 'noopener');
-      panel.querySelector('.nt-paste').hidden = false;
-      status(t('corsBlocked'));
-    }
+    // api.vatsim.net ne renvoie aucun en-tête CORS : une page tierce ne peut pas lire la
+    // réponse. On ouvre l'historique (JSON) dans un onglet ; au retour sur cette page, le
+    // presse-papiers est lu automatiquement (après Ctrl+A / Ctrl+C dans l'onglet).
+    window.open(HISTORY.vatsimConnections(cid), '_blank', 'noopener');
+    panel.querySelector('.nt-paste').hidden = false;
+    status(t('corsBlocked'));
+    awaitingClipboard = true;
   }
+  let awaitingClipboard = false;
+  async function readClipboard(silent) {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (applyVatsimHistory(text, silent)) awaitingClipboard = false;
+    } catch { if (!silent) status(t('clipDenied')); }
+  }
+  window.addEventListener('focus', () => { if (awaitingClipboard) setTimeout(() => readClipboard(true), 150); });
 
   // ------------------------------------------------------------------------ UI
   const panel = document.createElement('div');
@@ -227,17 +237,21 @@
       <div class="row" style="margin-top:8px"><button type="button" class="${on ? 'danger' : 'primary'} nt-toggle">${esc(t(on ? 'stop' : 'start'))}</button>
       <button type="button" class="secondary nt-history">${esc(t('history'))}</button>
       <a class="secondary nt-link" data-kind="ivao" target="_blank" rel="noopener">${esc(t('ivao'))}</a>
+      <a class="secondary nt-link" data-kind="vatsim" target="_blank" rel="noopener">${esc(t('vatsimStats'))}</a>
       <a class="secondary nt-link" data-kind="statsim" target="_blank" rel="noopener">${esc(t('statsim'))}</a></div>
-      <div class="nt-paste" hidden style="margin-top:8px"><label>${esc(t('paste'))}</label><textarea rows="4" style="width:100%"></textarea><button type="button" class="secondary nt-parse" style="margin-top:6px">${esc(t('parse'))}</button></div>
+      <div class="nt-paste" hidden style="margin-top:8px"><label>${esc(t('paste'))}</label><textarea rows="4" style="width:100%"></textarea><div class="row" style="margin-top:6px"><button type="button" class="primary nt-clip">${esc(t('clip'))}</button><button type="button" class="secondary nt-parse">${esc(t('parse'))}</button></div></div>
       <p class="small nt-status" style="margin-top:8px"></p><details class="nt-logbox"${watch?.log?.length ? '' : ' hidden'}><summary class="small">${esc(t('log'))}</summary><pre class="small nt-log" style="white-space:pre-wrap;margin:6px 0 0"></pre></details>`;
     panel.querySelectorAll('.nt-link').forEach(link => link.style.cssText = 'display:inline-block;padding:9px 12px;border-radius:9px;text-decoration:none;color:inherit');
     panel.querySelector('.nt-toggle').onclick = () => (watch?.active ? stop() : start());
     panel.querySelector('.nt-history').onclick = fetchVatsimHistory;
     panel.querySelector('.nt-parse').onclick = () => applyVatsimHistory(panel.querySelector('.nt-paste textarea').value);
+    panel.querySelector('.nt-clip').onclick = () => readClipboard(false);
+    // Ctrl+V dans la zone : analyse immédiate.
+    panel.querySelector('.nt-paste textarea').addEventListener('paste', event => setTimeout(() => applyVatsimHistory(event.target.value)));
     panel.querySelectorAll('.nt-link').forEach(link => link.onclick = event => {
-      const id = link.dataset.kind === 'ivao' ? value('ivaoId') : value('vatsimId');
+      const kind = link.dataset.kind, id = kind === 'ivao' ? value('ivaoId') : value('vatsimId');
       if (!id) { event.preventDefault(); status(t('askId')); return; }
-      link.href = link.dataset.kind === 'ivao' ? HISTORY.ivaoTracker(id) : HISTORY.vatsimStats(id);
+      link.href = kind === 'ivao' ? HISTORY.ivaoTracker(id) : kind === 'vatsim' ? HISTORY.vatsimStats(id) : HISTORY.statsimFlights(id);
     });
     paintLog();
   }
