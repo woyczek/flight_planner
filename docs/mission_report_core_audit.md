@@ -396,3 +396,22 @@ Retenues par défaut (à contester si besoin) :
   « Missions › Reporting missions » (reporting général). Les pages des familles restent
   déclarées dans `repository_tree` (thème, réglages) avec `menu:false` ; on passe de l'une
   à l'autre par la popup d'en-tête et les boutons CR ⇄ reporting.
+
+## L. Étape 8 — Paramétrage › Bases de données (2026-09-24)
+
+- Page `parametrage.html` (menu ☰ › Paramétrage › Bases de données, `shared/data_admin.js`) :
+  - **fichiers du dépôt** : flotte (`shared/aircraft_fleet.js`), types d'aéronefs + alias
+    (`AircraftDB/aircraft_db.js`, modifications reportées dans `aircraft_overrides.json` pour
+    le script), correspondance des indicatifs + organismes / OPR/
+    (`shared/mission_core/data/callsigns.js`, sorti de vocab.js) ; « Appliquer dans ce
+    navigateur » (modification locale prioritaire tant qu'elle est plus récente que le
+    fichier), « Enregistrer dans le dépôt » (dossier du dépôt autorisé une fois), « Télécharger »,
+    retour au fichier ; mode opératoire des scripts Python ;
+  - **données du navigateur** : appareils des missions, types ajoutés, indicatifs appris,
+    aérodromes — avec intégration dans les bases du dépôt ;
+  - **registres des missions** (base des opérations) : édition YAML par famille, contrôlée.
+- Format commun des fichiers de données (`AircraftDB/datafile.py` = `DataAdmin.render`) :
+  JSON une ligne par élément, date `META.updatedAt`, contenu du fichier (`fileData`) et
+  surcouche locale ; sortie identique octet pour octet entre le script et la page.
+- À rendre éditables ensuite : profils d'événements / capacités et index des familles
+  (vocab.js), listes des anciens CR (mission_values.js), icônes (aircraft_icons.js).

@@ -82,6 +82,7 @@ window.REPOSITORY_TREE={
     {path:"MissionCore/demo_reporting.html",menu:false,label:"Démonstration — reporting missions"},
     {path:"mission_cr.html",menu:"Missions/Nouveau compte rendu",label:"Nouveau compte rendu de mission",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"mission_operations_reporting.html",menu:"Missions/Reporting missions",label:"Reporting missions (toutes familles)",theme:"landing",favicon:"assets/favicon-landing.svg",files:{gaarLedgerName:"FIRE/mission_ledger.csv",ledgerName:"HEMS/hems_mission_ledger.csv"}},
+    {path:"parametrage.html",menu:"Paramétrage/Bases de données",label:"Paramétrage — bases de données",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"LandingPerformanceDashboard/LandingPerformance_Dashboard_MultiCSV_i18n.html",menu:"Landing Performance Dashboard",label:"Landing Performance Dashboard"},
     {path:"flight_performance_planner.html",menu:"Flight Performance & Fuel Planner",label:"Flight Performance & Fuel Planner"}
   ]

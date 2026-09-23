@@ -67,34 +67,10 @@
     ] }
   ];
 
-  // Indicatifs : forme complète (parlée, conservée dans les CR) ↔ forme plan de vol (OACI
-  // Doc 4444, app. 2, case 7 : 7 caractères, ex. PCAN31) ↔ désignateur OACI de l'exploitant
-  // (OPR/, case 18). Prioritaire sur les abréviations apprises et la troncature.
-  // types : types OACI normalisés de la série ; role : indicatif de fonction (pas de choix
-  // automatique) ; generic : désignateur générique de l'organisme (FAF1234…).
-  const T = (prefix, fpl, operator, designator, extra = {}) => ({ prefix, fpl, operator, designator, types: [], ...extra });
-  const callsignTable = [
-    T('PELICAN', 'PCAN', 'Sécurité civile', 'FRU', { types: ['CL2T'], note: 'Canadair — n° avion' }),
-    T('MILAN', 'MILAN', 'Sécurité civile', 'FRU', { types: ['DH8D'], note: 'Dash 8 — n° avion' }),
-    T('BENGALE', 'BENGA', 'Sécurité civile', 'FRU', { types: ['BE20'], note: 'Beech 200 — n° avion' }),
-    T('ICARE', 'ICARE', 'Sécurité civile', 'FRU', { types: ['BE20'], role: true, note: 'Beech coordination — n° ou nom de feu' }),
-    T('DRAGON', 'DRAGO', 'Sécurité civile', 'FRU', { types: ['EC45', 'EC35', 'H160'], note: 'Hélicoptère — n° département' }),
-    T('CHOUCAS', 'CHOUC', 'Gendarmerie nationale', 'FGN', { types: ['EC45'], note: 'EC145 / H145 — n° département' }),
-    T('KETOUPA', 'KETOU', 'Gendarmerie nationale', 'FGN', { types: ['EC35'], note: 'EC135 — n°' }),
-    T('MORANE', 'MORANE', 'Sécurité civile', '', { role: true, note: 'HBE contractuels' }),
-    T('LAT', 'LAT', 'ALAT', 'FMY', { role: true, note: 'certains vols / 6e RHC (LAT6xxx)' }),
-    T('FMN', 'FMN', 'Marine nationale', 'FNY', { role: true, telephony: 'F.M.N.', note: 'séries opérationnelles (FMN5xxx)' }),
-    T('COTAM', 'CTM', "Armée de l'Air et de l'Espace", 'CTM', { role: true, note: 'transport aérien militaire' }),
-    T('FAF', 'FAF', "Armée de l'Air et de l'Espace", 'FAF', { generic: true, telephony: 'FRENCH AIR FORCE' }),
-    T('FRU', 'FRU', 'Sécurité civile', 'FRU', { generic: true, telephony: 'FRENCH RESCUE' }),
-    T('FMY', 'FMY', 'ALAT', 'FMY', { generic: true, telephony: 'FRENCH ARMY' }),
-    T('FNY', 'FNY', 'Marine nationale', 'FNY', { generic: true, telephony: 'FRENCH NAVY' }),
-    T('FGN', 'FGN', 'Gendarmerie nationale', 'FGN', { generic: true, telephony: 'FRENCH GENDARMERIE' }),
-    T('FDO', 'FDO', 'Douane', 'FDO', { generic: true, telephony: 'FRENCH CUSTOM' }),
-    T('DGAEV', 'DGAEV', 'DGA Essais en vol', 'DGAEV', { generic: true })
-  ];
-  // Organisme → désignateur OACI de l'exploitant (OPR/ de la case 18).
-  const operatorDesignators = { "Armée de l'Air et de l'Espace": 'FAF', 'Sécurité civile': 'FRU', 'ALAT': 'FMY', 'Marine nationale': 'FNY', 'Gendarmerie nationale': 'FGN', 'Douane': 'FDO', 'COTAM': 'CTM', 'DGA Essais en vol': 'DGAEV' };
+  // Indicatifs (forme complète ↔ forme plan de vol ↔ exploitant OPR/) : fichier de données
+  // data/callsigns.js (éditable par la page Paramétrage › Bases de données).
+  const callsignTable = window.MISSION_CALLSIGNS?.table || [];
+  const operatorDesignators = window.MISSION_CALLSIGNS?.operators || {};
 
   // Index statique des familles du Core (sélecteur d'en-tête : famille / série), chemins
   // relatifs à la racine du site.

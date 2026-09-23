@@ -17,7 +17,16 @@
   const write = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* quota */ } };
 
   // ---- types
-  const db = () => window.AIRCRAFT_DB || {};
+  // Base OACI ; modifications de la page Paramétrage plus récentes que le fichier
+  // (dataOverride:aircraftDb:v1, pas encore enregistrées dans le dépôt) : prioritaires.
+  let overrideCache = { raw: undefined, value: null };
+  const db = () => {
+    const file = window.AIRCRAFT_DB || {};
+    let raw = null; try { raw = localStorage.getItem('dataOverride:aircraftDb:v1'); } catch { /* stockage indisponible */ }
+    if (raw !== overrideCache.raw) { let value = null; try { value = JSON.parse(raw || 'null'); } catch { value = null; } overrideCache = { raw, value }; }
+    const override = overrideCache.value;
+    return override?.data && override.updatedAt > String(file.__meta?.admin_saved || '') ? override.data : file;
+  };
   // Classe OACI (Doc 8643) : H2T → hélicoptère, L2J → avion, A/S → amphibie / hydravion.
   const categoryOf = description => ({ H: 'rotary', G: 'rotary', T: 'rotary', L: 'fixed', A: 'amphibious', S: 'amphibious' })[String(description || '').charAt(0).toUpperCase()] || '';
   // Types de la flotte DEFA absents de la base OACI importée.

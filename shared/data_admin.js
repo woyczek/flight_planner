@@ -1,0 +1,333 @@
+(() => {
+  'use strict';
+  // Paramétrage › Bases de données : édition des bases du site (fichiers de données JS du
+  // dépôt et données gardées par le navigateur), sans passer par les scripts Python.
+  //
+  // Fichiers du dépôt (flotte, types OACI, indicatifs) :
+  // - « Appliquer dans ce navigateur » : modification locale (dataOverride:<id>:v1), prise en
+  //   compte immédiatement par toutes les pages de ce navigateur tant qu'elle est plus récente
+  //   que le fichier (voir AircraftDB/datafile.py) ;
+  // - « Enregistrer dans le dépôt » : réécrit le fichier dans le dossier du dépôt (autorisé une
+  //   fois, File System Access API : Chrome / Edge) — à committer ensuite ;
+  // - « Télécharger » : le fichier, à déposer à la main dans le dépôt.
+  // Données du navigateur (appareils des missions, types ajoutés, indicatifs appris,
+  // aérodromes) : enregistrées directement (et sauvegardées par ☰ › Données locales).
+  // Registres des missions (« base des opérations ») : édition YAML par famille.
+  const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const read = key => { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch { return null; } };
+  const write = (key, value) => localStorage.setItem(key, JSON.stringify(value));
+  const now = () => new Date().toISOString();
+  const dumps = v => JSON.stringify(v);
+  const rows = [];
+  const T = (fr, en) => { rows.push([fr, en, en, en]); return fr; };
+
+  // ---- format commun des fichiers de données (identique à AircraftDB/datafile.py)
+  function render(commentLines, data, overrideKey, exportJs, updatedAt) {
+    const parts = Object.entries(data).map(([key, value]) => Array.isArray(value)
+      ? (value.length ? `  ${dumps(key)}: [\n${value.map(item => '    ' + dumps(item)).join(',\n')}\n  ]` : `  ${dumps(key)}: []`)
+      : `  ${dumps(key)}: ${dumps(value)}`);
+    return `(() => {
+  'use strict';
+${commentLines.map(line => `  // ${line}`).join('\n')}
+  // Édition : menu ☰ › Paramétrage › Bases de données (ou à la main : JSON, une ligne par élément).
+  const META = ${dumps({ updatedAt })};
+  let data = {\n${parts.join(',\n')}\n};
+  const fileData = data; // contenu du fichier (page Paramétrage : retour au fichier)
+  // Modifications locales plus récentes que ce fichier (page Paramétrage, pas encore
+  // enregistrées dans le dépôt) : prioritaires dans ce navigateur.
+  try { const o = JSON.parse(localStorage.getItem('${overrideKey}') || 'null'); if (o && o.updatedAt > META.updatedAt) data = o.data; } catch { /* stockage indisponible */ }
+  ${exportJs}
+})();
+`;
+  }
+
+  // ---- dossier du dépôt (IndexedDB partagée avec les registres du Core)
+  const idb = () => new Promise((resolve, reject) => { const r = indexedDB.open('missionCore', 1); r.onupgradeneeded = () => r.result.createObjectStore('handles'); r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error); });
+  const idbGet = async key => { try { const db = await idb(); return await new Promise(r => { const q = db.transaction('handles').objectStore('handles').get(key); q.onsuccess = () => r(q.result || null); q.onerror = () => r(null); }); } catch { return null; } };
+  const idbSet = async (key, value) => { const db = await idb(); await new Promise(r => { const tx = db.transaction('handles', 'readwrite'); tx.objectStore('handles').put(value, key); tx.oncomplete = r; tx.onerror = r; }); };
+  async function repo(request = true) {
+    let handle = await idbGet('folder:__repo');
+    if (handle) {
+      let permission = await handle.queryPermission?.({ mode: 'readwrite' });
+      if (permission !== 'granted' && request) permission = await handle.requestPermission?.({ mode: 'readwrite' });
+      if (permission === 'granted') return handle;
+      if (!request) return null;
+    }
+    if (!request) return null;
+    if (!window.showDirectoryPicker) throw new Error(T('Écriture directe impossible dans ce navigateur (Chrome / Edge requis) : utilisez « Télécharger ».', 'Direct writing unavailable in this browser (Chrome / Edge required): use “Download”.'));
+    handle = await window.showDirectoryPicker({ id: 'defa-repository', mode: 'readwrite' });
+    try { await handle.getFileHandle('repository_tree'); } catch {
+      if (!confirm(T('Ce dossier ne contient pas « repository_tree » : est-ce bien la racine du dépôt ?', 'This folder has no “repository_tree”: is it really the repository root?'))) throw new Error(T('Dossier refusé', 'Folder rejected'));
+    }
+    await idbSet('folder:__repo', handle); return handle;
+  }
+  async function writeRepoFile(path, text) {
+    let dir = await repo(true); const parts = path.split('/'), name = parts.pop();
+    for (const part of parts) dir = await dir.getDirectoryHandle(part, { create: true });
+    const writable = await (await dir.getFileHandle(name, { create: true })).createWritable();
+    await writable.write(text); await writable.close();
+  }
+  const download = (name, text, type = 'text/javascript') => {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: `${type};charset=utf-8` }));
+    a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+
+  // ---- éditeur de tableau
+  // colonnes : { key, label, type: text|number|bool|list|select, options?, width? }
+  function grid(host, { columns, data, onChange }) {
+    let filter = '', sort = { key: columns[0].key, dir: 1 };
+    const cell = (col, row, index) => {
+      const v = row[col.key], attrs = `data-row="${index}" data-key="${esc(col.key)}"`;
+      if (col.type === 'bool') return `<input type="checkbox" ${attrs}${v ? ' checked' : ''}>`;
+      if (col.type === 'select') return `<select ${attrs}>${['', ...col.options()].map(o => `<option${o === v ? ' selected' : ''}>${esc(o)}</option>`).join('')}${v && !col.options().includes(v) ? `<option selected>${esc(v)}</option>` : ''}</select>`;
+      const value = col.type === 'list' ? (v || []).join(', ') : v ?? '';
+      return `<input ${col.type === 'number' ? 'type="number" step="any" ' : ''}${attrs} value="${esc(value)}"${col.width ? ` style="min-width:${col.width}"` : ''}>`;
+    };
+    function paint() {
+      const text = filter.toLowerCase();
+      const order = data.map((row, index) => ({ row, index }))
+        .filter(({ row }) => !text || columns.some(c => String(c.type === 'list' ? (row[c.key] || []).join(' ') : row[c.key] ?? '').toLowerCase().includes(text)))
+        .sort((a, b) => String(a.row[sort.key] ?? '').localeCompare(String(b.row[sort.key] ?? ''), undefined, { numeric: true }) * sort.dir);
+      host.innerHTML = `<div class="da-grid-tools"><input type="search" class="da-filter" placeholder="${esc(T('Filtrer…', 'Filter…'))}" value="${esc(filter)}"><span class="small">${order.length} / ${data.length}</span><button type="button" class="secondary da-add">${esc(T('+ Ajouter une ligne', '+ Add row'))}</button></div>
+        <div class="da-scroll"><table class="da-table"><thead><tr>${columns.map(c => `<th data-sort="${esc(c.key)}">${esc(c.label)} ${sort.key === c.key ? (sort.dir > 0 ? '▲' : '▼') : '↕'}</th>`).join('')}<th></th></tr></thead>
+        <tbody>${order.map(({ row, index }) => `<tr>${columns.map(c => `<td>${cell(c, row, index)}</td>`).join('')}<td><button type="button" class="da-del" data-del="${index}" title="${esc(T('Supprimer la ligne', 'Delete row'))}">×</button></td></tr>`).join('')}</tbody></table></div>`;
+      const box = host.querySelector('.da-filter');
+      box.oninput = () => { filter = box.value; const pos = box.selectionStart; paint(); const b = host.querySelector('.da-filter'); b.focus(); b.setSelectionRange(pos, pos); };
+      host.querySelector('.da-add').onclick = () => { data.unshift(Object.fromEntries(columns.map(c => [c.key, c.type === 'list' ? [] : c.type === 'bool' ? false : '']))); filter = ''; onChange(); paint(); };
+      host.querySelectorAll('th[data-sort]').forEach(th => th.onclick = () => { sort = { key: th.dataset.sort, dir: sort.key === th.dataset.sort ? -sort.dir : 1 }; paint(); });
+      host.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { data.splice(Number(b.dataset.del), 1); onChange(); paint(); });
+    }
+    host.addEventListener('change', event => {
+      const el = event.target, index = el.dataset?.row; if (index == null) return;
+      const col = columns.find(c => c.key === el.dataset.key), row = data[Number(index)];
+      row[col.key] = col.type === 'bool' ? el.checked : col.type === 'number' ? (el.value === '' ? null : Number(el.value)) : col.type === 'list' ? el.value.split(',').map(s => s.trim()).filter(Boolean) : col.upper ? el.value.trim().toUpperCase() : el.value;
+      if (col.upper && el.value !== row[col.key]) el.value = row[col.key];
+      onChange();
+    });
+    paint();
+    return { paint };
+  }
+
+  // ---- bases éditables
+  const effective = (fileData, overrideKey, fileStamp) => { const o = read(overrideKey); return o?.data && o.updatedAt > fileStamp ? { data: structuredClone(o.data), local: o.updatedAt } : { data: structuredClone(fileData), local: '' }; };
+  const operatorNames = () => Object.keys(work.callsigns.operators || {}).concat(['SAMU']).filter((v, i, a) => a.indexOf(v) === i);
+  const FLEET_COMMENT = ['Flotte DEFA Virtual : base commune des appareils connus (CR HEMS / FIRE, Mission Report Core).',
+    'Source : page « Flotte virtuelle » de flotte.defa-virtual.fr (python AircraftDB/update_fleet.py Flotte.html),',
+    'complétée à la main ou par la page Paramétrage. Colonnes : opérateur, type OACI, variante,',
+    'immatriculation, code (numéro tactique), numéro, indicatifs, base, opérationnel.'];
+  const CALLSIGN_COMMENT = ['Indicatifs : forme complète (parlée, conservée dans les CR) ↔ forme plan de vol (OACI Doc 4444,',
+    'app. 2, case 7 : 7 caractères, ex. PCAN31) ↔ désignateur OACI de l\'exploitant (OPR/, case 18).',
+    'table : prefix (indicatif complet), fpl (forme plan de vol), operator, designator, types (types OACI',
+    'de la série), role (indicatif de fonction : pas de choix automatique), generic (désignateur générique),',
+    'telephony, note. operators : organisme → désignateur OACI (OPR/).'];
+  const FLEET_COLS = ['operator', 'type', 'variant', 'registration', 'tacticalNumber', 'number', 'callsigns', 'base', 'operational'];
+  const work = {};
+  function loadWork() {
+    const fleetFile = { rows: (window.DEFA_FLEET_FILE || window.DEFA_FLEET || []).map(r => Object.fromEntries(FLEET_COLS.map(k => [k, r[k] ?? (k === 'callsigns' ? [] : '')]))) };
+    work.fleet = effective(fleetFile, 'dataOverride:fleet:v1', window.DEFA_FLEET_META?.updatedAt || '');
+    const cs = window.MISSION_CALLSIGNS || {}, csFile = cs.file || cs;
+    work.callsigns = effective({ table: csFile.table || [], operators: csFile.operators || {} }, 'dataOverride:callsigns:v1', cs.META?.updatedAt || '');
+    work.callsigns.operatorRows = Object.entries(work.callsigns.data.operators).map(([name, designator]) => ({ name, designator }));
+    const dbFile = window.AIRCRAFT_DB || {};
+    work.aircraftDb = effective(dbFile, 'dataOverride:aircraftDb:v1', String(dbFile.__meta?.admin_saved || ''));
+    work.aircraftDb.original = dbFile;
+    const d = work.aircraftDb.data;
+    work.aircraftDb.records = Object.entries(d).filter(([k]) => !k.startsWith('__')).map(([k, v]) => ({ tdesig: k, model: v.model || '', description: v.description || '', wtc: v.wtc || '', wing_position: v.wing_position || '', source: v.source || '', _extra: v }));
+    work.aircraftDb.aliases = Object.entries(d.__aliases || {}).map(([alias, tdesig]) => ({ alias, tdesig }));
+  }
+
+  // Reconstitution des données à enregistrer.
+  const fleetData = () => ({ rows: work.fleet.data.rows.filter(r => r.registration).map(r => ({ ...r, registration: String(r.registration).toUpperCase() })) });
+  const callsignData = () => ({ table: work.callsigns.data.table.filter(r => r.prefix), operators: Object.fromEntries(work.callsigns.operatorRows.filter(r => r.name).map(r => [r.name, r.designator])) });
+  function aircraftDbData(stamp) {
+    const base = work.aircraftDb.data, out = { __meta: { ...(base.__meta || {}), admin_saved: stamp }, __aliases: Object.fromEntries(work.aircraftDb.aliases.filter(r => r.alias && r.tdesig).map(r => [r.alias.toUpperCase(), r.tdesig.toUpperCase()])) };
+    Object.keys(base).filter(k => k.startsWith('__') && !out[k]).forEach(k => { out[k] = base[k]; });
+    work.aircraftDb.records.filter(r => r.tdesig).forEach(r => {
+      const key = r.tdesig.toUpperCase(); const { _extra, ...fields } = r;
+      out[key] = { ...(_extra || {}), ...fields, tdesig: key };
+      Object.keys(out[key]).forEach(k => { if (out[key][k] === '' && !(_extra && k in _extra)) delete out[key][k]; });
+    });
+    return out;
+  }
+  // Types modifiés / ajoutés par rapport au fichier : reportés dans aircraft_overrides.json pour
+  // que le script de rafraîchissement ne les écrase pas.
+  async function overridesText(db) {
+    let overrides = { __meta: { schema: 1, note: 'Manual overrides merged after Wikidata/Wikipedia lookup.' }, __aliases: {}, __records: {} };
+    try { const r = await fetch('AircraftDB/aircraft_overrides.json', { cache: 'no-store' }); if (r.ok) overrides = await r.json(); } catch { /* fichier absent */ }
+    const original = work.aircraftDb.original;
+    Object.entries(db).filter(([k]) => !k.startsWith('__')).forEach(([k, v]) => {
+      if (JSON.stringify(original[k]) === JSON.stringify(v)) return;
+      overrides.__records = overrides.__records || {}; overrides.__records[k] = { ...v, source: v.source && v.source !== original[k]?.source ? v.source : 'manual/parametrage' };
+    });
+    Object.entries(db.__aliases).forEach(([a, t]) => { if (original.__aliases?.[a] !== t) { overrides.__aliases = overrides.__aliases || {}; overrides.__aliases[a] = t; } });
+    return JSON.stringify(overrides, null, 2) + '\n';
+  }
+
+  const DATASETS = [
+    {
+      id: 'fleet', group: T('Fichiers du dépôt', 'Repository files'), title: T('Flotte DEFA (appareils connus)', 'DEFA fleet (known aircraft)'), file: 'shared/aircraft_fleet.js', overrideKey: 'dataOverride:fleet:v1',
+      intro: T('Appareils proposés dans les CR : immatriculation, type, indicatifs, base, opérateur. Plusieurs indicatifs : séparés par des virgules.', 'Aircraft offered in reports: registration, type, callsigns, base, operator. Several callsigns: comma-separated.'),
+      tables: () => [{ columns: [
+        { key: 'operator', label: T('Opérateur', 'Operator'), type: 'select', options: operatorNames }, { key: 'type', label: T('Type OACI', 'ICAO type'), upper: true },
+        { key: 'variant', label: T('Variante', 'Variant') }, { key: 'registration', label: T('Immatriculation', 'Registration'), upper: true },
+        { key: 'tacticalNumber', label: T('Code', 'Code') }, { key: 'number', label: T('Numéro', 'Number') },
+        { key: 'callsigns', label: T('Indicatifs', 'Callsigns'), type: 'list', width: '12em' }, { key: 'base', label: T('Base', 'Base'), upper: true },
+        { key: 'operational', label: T('Opérationnel', 'Operational'), type: 'bool' }], data: work.fleet.data.rows }],
+      files: stamp => [['shared/aircraft_fleet.js', render(FLEET_COMMENT, fleetData(), 'dataOverride:fleet:v1', "window.DEFA_FLEET = data.rows.map(row => ({ ...row, callsign: (row.callsigns || [])[0] || '' })); window.DEFA_FLEET_META = META; window.DEFA_FLEET_FILE = fileData.rows;", stamp)]],
+      overlay: () => fleetData(),
+      howto: `<p>${T('Mise à jour complète depuis le site de la flotte :', 'Full update from the fleet website:')}</p>
+        <ol><li>${T('Ouvrir', 'Open')} <a href="https://flotte.defa-virtual.fr/flotte.php" target="_blank" rel="noopener">flotte.defa-virtual.fr › Flotte virtuelle</a>, ${T('puis Fichier › Enregistrer sous… (« Flotte.html »).', 'then File › Save as… (“Flotte.html”).')}</li>
+        <li>${T('À la racine du dépôt :', 'At the repository root:')} <code>python AircraftDB/update_fleet.py Flotte.html</code></li>
+        <li>${T('Les appareils de la page remplacent ceux du fichier ; les indicatifs supplémentaires et les appareils ajoutés ici sont conservés.', 'Aircraft from the page replace those of the file; extra callsigns and aircraft added here are kept.')}</li>
+        <li>${T('Recharger cette page ; supprimer les modifications locales si elles ont été intégrées.', 'Reload this page; delete local changes once integrated.')}</li></ol>`
+    },
+    {
+      id: 'aircraftDb', group: T('Fichiers du dépôt', 'Repository files'), title: T('Types d’aéronefs (base OACI)', 'Aircraft types (ICAO base)'), file: 'AircraftDB/aircraft_db.js', overrideKey: 'dataOverride:aircraftDb:v1',
+      intro: T('Désignateur OACI (Doc 8643), modèle, description (L2J, H1T…), catégorie de turbulence, position de l’aile. Les modifications sont aussi reportées dans aircraft_overrides.json.', 'ICAO designator (Doc 8643), model, description (L2J, H1T…), wake category, wing position. Changes are also written to aircraft_overrides.json.'),
+      tables: () => [
+        { title: T('Types', 'Types'), columns: [{ key: 'tdesig', label: T('Désignateur', 'Designator'), upper: true }, { key: 'model', label: T('Modèle', 'Model'), width: '16em' }, { key: 'description', label: T('Description OACI', 'ICAO description'), upper: true },
+          { key: 'wtc', label: 'WTC', upper: true }, { key: 'wing_position', label: T('Aile', 'Wing'), type: 'select', options: () => ['low', 'mid', 'high', 'none'] }, { key: 'source', label: T('Source', 'Source') }], data: work.aircraftDb.records },
+        { title: T('Alias (nom courant → désignateur)', 'Aliases (common name → designator)'), columns: [{ key: 'alias', label: T('Alias', 'Alias'), upper: true }, { key: 'tdesig', label: T('Désignateur', 'Designator'), upper: true }], data: work.aircraftDb.aliases }],
+      files: async stamp => { const db = aircraftDbData(stamp); return [['AircraftDB/aircraft_db.js', `window.AIRCRAFT_DB = ${dumps(db)};\n`], ['AircraftDB/aircraft_overrides.json', await overridesText(db)]]; },
+      overlay: stamp => aircraftDbData(stamp), stampKey: true,
+      howto: `<p>${T('Rafraîchissement par le script (sources : OACI Doc 8643, EUROCONTROL, Wikidata ; modifications manuelles d’aircraft_overrides.json prioritaires) — depuis le dossier AircraftDB :', 'Refresh with the script (sources: ICAO Doc 8643, EUROCONTROL, Wikidata; manual changes from aircraft_overrides.json take priority) — from the AircraftDB folder:')}</p>
+        <ul><li><code>python update_aircraft_db.py --no-network</code> — ${T('reconstruit la base avec les caches locaux', 'rebuilds the base from local caches')}</li>
+        <li><code>python update_aircraft_db.py --add RFAL MIR2</code> — ${T('ajoute des types (recherche en ligne)', 'adds types (online lookup)')}</li>
+        <li><code>python update_aircraft_db.py ../HEMS/hems_mission_ledger.csv</code> — ${T('types de la colonne Aircraft d’un CSV', 'types from a CSV Aircraft column')}</li>
+        <li><code>--refresh-icao</code> ${T('(force le téléchargement des PDF OACI),', '(forces the ICAO PDF download),')} <code>--delay 2</code> ${T('(pause entre requêtes)', '(pause between requests)')}</li></ul>
+        <p class="small">${T('Un type supprimé ici peut revenir au prochain rafraîchissement s’il fait partie de la liste de base du script.', 'A type deleted here may come back at the next refresh if it is in the script base list.')}</p>`
+    },
+    {
+      id: 'callsigns', group: T('Fichiers du dépôt', 'Repository files'), title: T('Correspondance des indicatifs', 'Callsign correspondence'), file: 'shared/mission_core/data/callsigns.js', overrideKey: 'dataOverride:callsigns:v1',
+      intro: T('Indicatif complet (conservé dans les CR) ↔ forme plan de vol (case 7, 7 caractères avec le numéro) ↔ exploitant OACI (OPR/, case 18). Types : types OACI de la série, séparés par des virgules.', 'Full callsign (kept in reports) ↔ flight plan form (item 7, 7 characters with the number) ↔ ICAO operator (OPR/, item 18). Types: ICAO types of the series, comma-separated.'),
+      tables: () => [
+        { title: T('Indicatifs', 'Callsigns'), columns: [{ key: 'prefix', label: T('Indicatif complet', 'Full callsign'), upper: true }, { key: 'fpl', label: T('Plan de vol', 'Flight plan'), upper: true },
+          { key: 'operator', label: T('Organisme', 'Organisation'), type: 'select', options: operatorNames }, { key: 'designator', label: 'OPR/', upper: true }, { key: 'types', label: T('Types', 'Types'), type: 'list' },
+          { key: 'role', label: T('Fonction', 'Role'), type: 'bool' }, { key: 'generic', label: T('Générique', 'Generic'), type: 'bool' }, { key: 'telephony', label: T('Radiotéléphonie', 'Telephony'), upper: true }, { key: 'note', label: T('Note', 'Note'), width: '14em' }], data: work.callsigns.data.table },
+        { title: T('Organismes → désignateur OACI (OPR/)', 'Organisations → ICAO designator (OPR/)'), columns: [{ key: 'name', label: T('Organisme', 'Organisation'), width: '16em' }, { key: 'designator', label: 'OPR/', upper: true }], data: work.callsigns.operatorRows }],
+      files: stamp => [['shared/mission_core/data/callsigns.js', render(CALLSIGN_COMMENT, callsignData(), 'dataOverride:callsigns:v1', 'window.MISSION_CALLSIGNS = { META, table: data.table, operators: data.operators, file: fileData };', stamp)]],
+      overlay: () => callsignData(),
+      howto: `<p>${T('Pas de script : cette page (ou le fichier, à la main) est la source. Les formes corrigées dans les CR apparaissent dans « Indicatifs appris » ci-dessous, à intégrer ici.', 'No script: this page (or the file, by hand) is the source. Forms corrected in reports appear in “Learned callsigns” below, to integrate here.')}</p>`
+    },
+    // ---- données du navigateur
+    { id: 'registry', group: T('Données du navigateur', 'Browser data'), title: T('Appareils des missions enregistrées', 'Aircraft from recorded missions'), key: 'missionAircraftRegistry:v1', byKey: r => String(r.registration || '').toUpperCase().replace(/[^A-Z0-9]/g, ''),
+      intro: T('Mémorisés à chaque enregistrement d’une mission (la donnée la plus récente l’emporte sur la flotte).', 'Remembered each time a mission is saved (latest data wins over the fleet).'),
+      columns: [{ key: 'registration', label: T('Immatriculation', 'Registration'), upper: true }, { key: 'type', label: T('Type', 'Type'), upper: true }, { key: 'variant', label: T('Variante', 'Variant') }, { key: 'category', label: T('Catégorie', 'Category'), type: 'select', options: () => ['fixed', 'rotary', 'amphibious'] }, { key: 'callsign', label: T('Indicatif', 'Callsign'), upper: true }, { key: 'tacticalNumber', label: T('Code', 'Code') }, { key: 'operator', label: T('Opérateur', 'Operator') }, { key: 'date', label: T('Date', 'Date') }] },
+    { id: 'localTypes', group: T('Données du navigateur', 'Browser data'), title: T('Types ajoutés localement', 'Locally added types'), key: 'missionAircraftTypes:v1', byKey: r => String(r.tdesig || '').toUpperCase(),
+      intro: T('Types inconnus saisis dans des missions. « Intégrer » les copie dans la base OACI (à enregistrer ensuite).', 'Unknown types entered in missions. “Integrate” copies them into the ICAO base (save it afterwards).'),
+      columns: [{ key: 'tdesig', label: T('Désignateur', 'Designator'), upper: true }, { key: 'model', label: T('Modèle', 'Model') }, { key: 'category', label: T('Catégorie', 'Category'), type: 'select', options: () => ['fixed', 'rotary', 'amphibious'] }, { key: 'addedAt', label: T('Ajouté le', 'Added') }],
+      integrate: list => { list.forEach(r => { if (r.tdesig && !work.aircraftDb.records.some(x => x.tdesig === r.tdesig)) work.aircraftDb.records.unshift({ tdesig: r.tdesig, model: r.model || r.tdesig, description: { rotary: 'H1T', amphibious: 'A1P', fixed: 'L1P' }[r.category] || '', wtc: '', wing_position: '', source: 'manual/parametrage' }); }); return 'aircraftDb'; } },
+    { id: 'learned', group: T('Données du navigateur', 'Browser data'), title: T('Indicatifs appris (formes plan de vol corrigées)', 'Learned callsigns (corrected flight plan forms)'), key: 'missionCallsignTable:v1', array: true,
+      intro: T('Formes plan de vol corrigées à la main dans les CR. « Intégrer » les ajoute à la table de correspondance (à enregistrer ensuite).', 'Flight plan forms corrected by hand in reports. “Integrate” adds them to the correspondence table (save it afterwards).'),
+      columns: [{ key: 'prefix', label: T('Indicatif complet', 'Full callsign'), upper: true }, { key: 'fpl', label: T('Plan de vol', 'Flight plan'), upper: true }, { key: 'updatedAt', label: T('Date', 'Date') }],
+      integrate: list => { list.forEach(r => { const row = work.callsigns.data.table.find(x => x.prefix === r.prefix); if (row) row.fpl = r.fpl; else if (r.prefix) work.callsigns.data.table.unshift({ prefix: r.prefix, fpl: r.fpl, operator: '', designator: '', types: [] }); }); return 'callsigns'; } },
+    { id: 'airports', group: T('Données du navigateur', 'Browser data'), title: T('Aérodromes utilisés (cache)', 'Aerodromes used (cache)'), key: 'missionAirports:v1', byKey: r => String(r.icao || '').toUpperCase(),
+      intro: T('Coordonnées et fuseaux des terrains utilisés (lever / coucher du soleil, météo).', 'Coordinates and time zones of aerodromes used (sunrise / sunset, weather).'),
+      columns: [{ key: 'icao', label: 'OACI', upper: true }, { key: 'name', label: T('Nom', 'Name'), width: '14em' }, { key: 'country', label: T('Pays', 'Country') }, { key: 'lat', label: 'Lat', type: 'number' }, { key: 'lon', label: 'Lon', type: 'number' }, { key: 'elevation', label: T('Altitude (ft)', 'Elevation (ft)'), type: 'number' }, { key: 'tz', label: T('Fuseau', 'Time zone') }] },
+    { id: 'ledgers', group: T('Missions', 'Missions'), title: T('Registres des missions (base des opérations)', 'Mission ledgers (operations base)'), custom: true,
+      intro: T('Un registre YAML par famille (source de vérité des reportings). Édition directe du YAML, avec contrôle avant enregistrement ; pour une mission, préférer le CR (clic sur la ligne du reporting).', 'One YAML ledger per family (source of truth of the reportings). Direct YAML editing, checked before saving; for a single mission, prefer the report (click its reporting row).') }
+  ];
+
+  // ---- page
+  function mount(root) {
+    loadWork();
+    const status = text => { root.querySelector('.da-status').textContent = text; };
+    const current = { id: new URLSearchParams(location.search).get('base') || 'fleet' };
+    const groups = [...new Set(DATASETS.map(d => d.group))];
+    root.innerHTML = `<aside class="da-nav">${groups.map(g => `<h3>${esc(g)}</h3>${DATASETS.filter(d => d.group === g).map(d => `<button type="button" data-set="${d.id}">${esc(d.title)}</button>`).join('')}`).join('')}
+      <p class="small">${esc(T('Dossier du dépôt : autorisé une fois (écriture des fichiers de données).', 'Repository folder: authorised once (writing data files).'))}</p><button type="button" class="secondary da-repo">${esc(T('Dossier du dépôt…', 'Repository folder…'))}</button></aside>
+      <section class="da-main"><h2></h2><p class="small da-intro"></p><div class="row da-actions"></div><p class="small da-status"></p><div class="da-body"></div><details class="da-howto"><summary>${esc(T('Mode opératoire', 'Procedure'))}</summary><div></div></details></section>`;
+    root.querySelector('.da-repo').onclick = async () => { try { const h = await repo(true); status(`${T('Dossier du dépôt', 'Repository folder')} : ${h.name}`); } catch (e) { status(e.message); } };
+    root.querySelectorAll('[data-set]').forEach(b => b.onclick = () => { if (dirty && !confirm(T('Modifications non enregistrées : changer de base quand même ?', 'Unsaved changes: switch anyway?'))) return; dirty = false; current.id = b.dataset.set; history.replaceState(null, '', `?base=${current.id}`); show(); });
+    let dirty = false;
+    const changed = () => { dirty = true; status(T('Modifié — non enregistré', 'Modified — not saved')); };
+    window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+    function actions(buttons) {
+      const host = root.querySelector('.da-actions'); host.innerHTML = '';
+      buttons.forEach(([label, fn, cls = 'secondary']) => { const b = document.createElement('button'); b.type = 'button'; b.className = cls; b.textContent = label; b.onclick = async () => { try { await fn(); } catch (e) { status(`${T('Échec', 'Failed')} : ${e.message}`); } }; host.append(b); });
+    }
+    function show() {
+      const set = DATASETS.find(d => d.id === current.id) || DATASETS[0];
+      root.querySelectorAll('[data-set]').forEach(b => b.classList.toggle('active', b.dataset.set === set.id));
+      root.querySelector('.da-main h2').textContent = set.title + (set.file ? ` — ${set.file}` : set.key ? ` — ${set.key}` : '');
+      root.querySelector('.da-intro').textContent = set.intro || '';
+      const howto = root.querySelector('.da-howto'); howto.hidden = !set.howto; howto.querySelector('div').innerHTML = set.howto || '';
+      const body = root.querySelector('.da-body'); body.innerHTML = '';
+      if (set.custom) return ledgers(body);
+      if (set.file) {
+        const w = work[set.id];
+        status(w.local ? `${T('Modifications locales du', 'Local changes from')} ${new Date(w.local).toLocaleString()} (${T('prioritaires dans ce navigateur, pas encore dans le dépôt', 'active in this browser, not yet in the repository')})` : T('Contenu du fichier du dépôt', 'Repository file content'));
+        set.tables().forEach(table => { if (table.title) body.insertAdjacentHTML('beforeend', `<h3>${esc(table.title)}</h3>`); const host = document.createElement('div'); body.append(host); grid(host, { columns: table.columns, data: table.data, onChange: changed }); });
+        actions([
+          [T('Appliquer dans ce navigateur', 'Apply in this browser'), async () => { const stamp = now(); write(set.overrideKey, { updatedAt: stamp, data: await set.overlay(stamp) }); w.local = stamp; dirty = false; status(`${T('Appliqué dans ce navigateur', 'Applied in this browser')} (${new Date(stamp).toLocaleString()}) — ${T('pensez à l’enregistrer dans le dépôt', 'remember to save it to the repository')}`); }, 'primary'],
+          [T('Enregistrer dans le dépôt', 'Save to repository'), async () => {
+            const stamp = now(), files = await set.files(stamp);
+            for (const [path, text] of files) await writeRepoFile(path, text);
+            // Même date que le fichier : ignorée dès que le nouveau fichier est chargé.
+            write(set.overrideKey, { updatedAt: stamp, data: await set.overlay(stamp) }); w.local = ''; dirty = false;
+            status(`${T('Enregistré dans le dépôt', 'Saved to repository')} : ${files.map(f => f[0]).join(', ')} — ${T('à committer', 'to be committed')}`);
+          }],
+          [T('Télécharger', 'Download'), async () => { const files = await set.files(now()); files.forEach(([path, text]) => download(path.split('/').pop(), text, path.endsWith('.json') ? 'application/json' : 'text/javascript')); }],
+          [T('Annuler les modifications', 'Discard changes'), () => { loadWork(); dirty = false; show(); }],
+          [T('Revenir au fichier du dépôt', 'Back to repository file'), () => { if (!confirm(T('Supprimer les modifications locales de cette base ?', 'Delete local changes of this base?'))) return; localStorage.removeItem(set.overrideKey); loadWork(); dirty = false; show(); }]
+        ]);
+        return;
+      }
+      // Données du navigateur : objet par clé ou tableau.
+      const raw = read(set.key) || (set.array ? [] : {}), list = set.array ? raw.map(r => ({ ...r })) : Object.values(raw).map(r => ({ ...r }));
+      status(`${list.length} ${T('entrées', 'entries')}`);
+      grid(body, { columns: set.columns, data: list, onChange: changed });
+      const buttons = [[T('Enregistrer', 'Save'), () => {
+        const value = set.array ? list.filter(r => Object.values(r).some(Boolean)) : Object.fromEntries(list.filter(r => set.byKey(r)).map(r => [set.byKey(r), { ...(raw[set.byKey(r)] || {}), ...r }]));
+        write(set.key, value); dirty = false; status(`${T('Enregistré dans le navigateur', 'Saved in the browser')} (${set.key})`);
+      }, 'primary'], [T('Annuler les modifications', 'Discard changes'), () => { dirty = false; show(); }]];
+      if (set.integrate) buttons.push([T('Intégrer à la base du dépôt', 'Integrate into repository base'), () => { const target = set.integrate(list); dirty = false; current.id = target; history.replaceState(null, '', `?base=${target}`); show(); changed(); }]);
+      actions(buttons);
+    }
+
+    // Registres des missions : YAML par famille.
+    async function ledgers(body) {
+      actions([]);
+      const M = window.MissionModel, families = window.MissionVocab.families;
+      body.innerHTML = `<table class="da-table"><thead><tr><th>${esc(T('Famille', 'Family'))}</th><th>${esc(T('Fichier', 'File'))}</th><th>${esc(T('Missions', 'Missions'))}</th><th>${esc(T('Source', 'Source'))}</th><th>${esc(T('Mis à jour', 'Updated'))}</th><th></th></tr></thead><tbody></tbody></table><div class="da-yaml" hidden><h3></h3><textarea spellcheck="false"></textarea><div class="row"><button type="button" class="primary" data-yaml="save"></button><button type="button" class="secondary" data-yaml="close"></button></div></div>`;
+      const tbody = body.querySelector('tbody'), editor = body.querySelector('.da-yaml');
+      editor.querySelector('[data-yaml="save"]').textContent = T('Contrôler et enregistrer', 'Check and save');
+      editor.querySelector('[data-yaml="close"]').textContent = T('Fermer', 'Close');
+      for (const f of families) {
+        const base = f.cr.split('/')[0] + '/', ledger = window.MissionLedger.open({ id: f.id }, { base });
+        try { await ledger.load(); } catch { /* registre illisible */ }
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><b>${esc(f.id)}</b> <span class="small">${esc(f.label)}</span></td><td>${esc(ledger.filename)}</td><td>${ledger.missions.length}</td><td>${esc(ledger.state.source)}${ledger.state.folder ? ` (${esc(ledger.state.folder)})` : ''}</td><td>${esc(ledger.state.updatedAt ? new Date(ledger.state.updatedAt).toLocaleString() : '—')}</td>
+          <td class="row"><button type="button" class="secondary" data-act="edit">${esc(T('Éditer (YAML)', 'Edit (YAML)'))}</button><button type="button" class="secondary" data-act="yaml">YAML</button><button type="button" class="secondary" data-act="csv">CSV</button><a class="secondary mc-button" href="${esc(f.reporting)}">${esc(T('Reporting', 'Reporting'))}</a></td>`;
+        tr.querySelector('[data-act="yaml"]').onclick = () => ledger.downloadYaml();
+        tr.querySelector('[data-act="csv"]').onclick = () => ledger.downloadCsv();
+        tr.querySelector('[data-act="edit"]').onclick = () => {
+          editor.hidden = false; editor.querySelector('h3').textContent = `${f.id} — ${ledger.filename}`;
+          const area = editor.querySelector('textarea');
+          area.value = M.toYaml({ schemaVersion: M.SCHEMA_VERSION, family: f.id, updatedAt: ledger.state.updatedAt, missions: ledger.missions }, `Registre des missions ${f.id} — Mission Report — DEFA Virtual`);
+          area.oninput = changed;
+          editor.querySelector('[data-yaml="close"]').onclick = () => { editor.hidden = true; dirty = false; };
+          editor.querySelector('[data-yaml="save"]').onclick = async () => {
+            let data;
+            try { data = window.jsyaml.load(area.value, { schema: window.jsyaml.CORE_SCHEMA }); } catch (e) { status(`${T('YAML invalide', 'Invalid YAML')} : ${e.message}`); return; }
+            const missions = Array.isArray(data) ? data : data?.missions;
+            if (!Array.isArray(missions)) { status(T('YAML sans liste « missions ».', 'YAML without a “missions” list.')); return; }
+            ledger.state.missions = missions.map(m => M.migrate(m, f.id));
+            const result = await ledger.save(); dirty = false;
+            status(`${ledger.missions.length} ${T('missions enregistrées', 'missions saved')} — ${result.written ? `${T('fichier', 'file')} ${ledger.state.folder}/${ledger.filename}` : T('navigateur (dossier du registre non autorisé : voir la page CR de la famille)', 'browser (ledger folder not authorised: see the family report page)')}`);
+            tr.children[2].textContent = ledger.missions.length;
+          };
+          editor.scrollIntoView({ behavior: 'smooth' });
+        };
+        tbody.append(tr);
+      }
+      status(T('Registres chargés (dossier autorisé, sinon copie du navigateur, sinon fichier du dépôt).', 'Ledgers loaded (authorised folder, else browser copy, else repository file).'));
+    }
+
+    show();
+    window.RepositoryContentI18n?.(rows);
+  }
+
+  window.DataAdmin = { mount, render, DATASETS };
+})();
