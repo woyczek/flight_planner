@@ -40,7 +40,6 @@ main.mc-page{max-width:1280px;margin:20px auto;padding:0 16px 40px;display:grid;
 .mc-kpi b{display:block;font-size:18px}
 @media(max-width:1000px){main.mc-page{grid-template-columns:1fr}.mc-aside{position:static}}
 @media(max-width:700px){.mc-grid,.mc-grid.compact{grid-template-columns:1fr 1fr}}
-@media print{header.mc-header,.mc-controls,.mc-aside{display:none!important}main.mc-page{display:block}}
 /* boutons, notes, aides */
 .mc-form .danger,.mc-reporting .danger{background:#7f1d1d;color:#fff}
 a.mc-button{display:inline-flex;align-items:center;border-radius:10px;padding:10px 14px;font-weight:650;text-decoration:none;color:var(--ink);background:#e5e7eb}
@@ -68,3 +67,29 @@ main.mc-reporting{max-width:1280px;margin:20px auto;padding:0 16px 40px}
 .bar{display:block;height:100%;background:var(--accent)}
 @media(max-width:800px){.mc-breakdowns{grid-template-columns:1fr}}
 @media print{.mc-reporting section:nth-child(2){display:none}}
+/* compte rendu (§21) */
+.mc-report-panel{margin-top:4px}
+.report{background:#fff;color:#111;padding:20px;border:1px solid var(--line);border-radius:10px;margin-top:12px}
+.report h2{font-size:20px;border:0;margin:0 0 8px;padding:0}
+.report h3{font-size:15px;margin:18px 0 6px;padding-bottom:4px;border-bottom:1px solid #e5e7eb}
+.report h4{font-size:13px;margin:12px 0 6px;color:#374151}
+.report .meta{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px}
+.report .box{border:1px solid #bbb;padding:8px;min-height:42px;white-space:pre-wrap;font-size:13px;margin-bottom:6px}
+.report .meta .box{margin-bottom:0}
+.report .box span{display:block;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.02em}
+.report table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:6px}
+.report th,.report td{border:1px solid #d1d5db;padding:6px;text-align:left;vertical-align:top}
+.report th{background:#f9fafb}
+.report .stamp{font-weight:800;color:var(--accent);letter-spacing:.05em;margin:0 0 6px}
+.report .mc-summary{font-size:14px;line-height:1.5;margin:0;padding:10px 12px;background:var(--soft);border-left:4px solid var(--accent);border-radius:6px}
+.mc-report-footer{margin-top:14px}
+@media(max-width:700px){.report .meta{grid-template-columns:1fr 1fr}}
+/* impression : uniquement le compte rendu */
+@media print{
+  header.mc-header,.mc-aside,.repo-header,.repo-footer,.mc-form>section:not(.mc-report-panel),.mc-report-actions,.mc-report-panel>h2,.repo-block-tools{display:none!important}
+  body{background:#fff}main.mc-page{display:block;max-width:none;margin:0;padding:0}
+  .mc-form section.mc-report-panel{border:0;box-shadow:none;padding:0;margin:0}
+  .report{border:0;padding:0;margin:0}
+  .report h3{break-after:avoid}.report .box,.report tr{break-inside:avoid}
+  @page{size:A4;margin:12mm}
+}

@@ -45,6 +45,9 @@
     importError: L('Import impossible', 'Import failed', 'Import fehlgeschlagen', 'Importación imposible'),
     knownAircraft: L('Appareil connu : type, catégorie, indicatif et équipements repris (dernier enregistrement)', 'Known aircraft: type, category, callsign and equipment filled in (latest record)', 'Bekanntes Luftfahrzeug: Muster, Kategorie, Rufzeichen und Ausrüstung übernommen (letzter Eintrag)', 'Aeronave conocida: tipo, categoría, indicativo y equipamiento completados (último registro)'),
     unknownType: L('Type inconnu : il sera ajouté à la base locale lors de l’enregistrement', 'Unknown type: it will be added to the local base when saved', 'Unbekanntes Muster: wird beim Speichern der lokalen Datenbank hinzugefügt', 'Tipo desconocido: se añadirá a la base local al guardar'),
+    reportTitle: L('Compte rendu', 'Report', 'Bericht', 'Informe'),
+    render: L('Générer / actualiser le CR', 'Generate / refresh report', 'Bericht erzeugen / aktualisieren', 'Generar / actualizar el informe'),
+    print: L('PDF / Imprimer', 'PDF / Print', 'PDF / Drucken', 'PDF / Imprimir'),
     leave: L('La mission n’a pas été enregistrée dans le registre. Quitter quand même ?', 'The mission has not been saved to the ledger. Leave anyway?', 'Der Einsatz wurde nicht im Register gespeichert. Trotzdem verlassen?', 'La misión no se ha guardado en el registro. ¿Salir de todos modos?')
   };
 
@@ -89,24 +92,28 @@
         <button type="button" class="secondary" data-action="folder"></button>
         <button type="button" class="secondary" data-action="download" hidden></button>
         <input type="file" accept=".yaml,.yml,.json,application/json,text/yaml" hidden></div>
-        <p class="small mc-ledger-info"></p><p class="small mc-status"></p></section></form>
+        <p class="small mc-ledger-info"></p><p class="small mc-status"></p></section>
+      <section class="mc-report-panel" data-block-id="mc-report"><h2></h2><div class="row mc-report-actions">
+        <button type="button" class="primary" data-action="render"></button><button type="button" class="secondary" data-action="print"></button></div>
+        <div class="report" id="mcReport"></div></section></form>
       <aside class="mc-aside"><div class="panel mc-kpi-panel"><h2></h2><div class="mc-kpi"></div><h3></h3><div class="small mc-context"></div></div></aside>`;
     const form = root.querySelector('form'), status = root.querySelector('.mc-status');
     const $a = action => root.querySelector(`[data-action="${action}"]`);
     const ui = new Map();
     const t = key => { const row = UI[key]; ui.set(row[0], row); return row[0]; };
     const say = (key, extra = '') => { status.textContent = t(key) + (extra ? ` : ${extra}` : ''); };
-    [['new', 'newMission'], ['import', 'importFile'], ['export', 'exportYaml'], ['reporting', 'viewReporting'], ['folder', 'chooseFolder'], ['download', 'downloadLedger'], ['delete', 'deleteMission']].forEach(([a, k]) => { $a(a).textContent = t(k); });
+    [['render', 'render'], ['print', 'print'], ['new', 'newMission'], ['import', 'importFile'], ['export', 'exportYaml'], ['reporting', 'viewReporting'], ['folder', 'chooseFolder'], ['download', 'downloadLedger'], ['delete', 'deleteMission']].forEach(([a, k]) => { $a(a).textContent = t(k); });
     $a('reporting').href = family.pages.reporting || '#';
     root.querySelector('.mc-controls h2').textContent = t('ledgerTitle');
     root.querySelector('.mc-kpi-panel h2').textContent = t('kpiTitle');
+    root.querySelector('.mc-report-panel h2').textContent = t('reportTitle');
     root.querySelector('.mc-kpi-panel h3').textContent = t('context');
     root.querySelector('.mc-edit-banner h2').textContent = t('editBanner');
 
     let saveTimer = null;
     const view = window.MissionForm.create(form, {
       family, getMission: () => mission,
-      onChange: () => { dirty = true; kpi(); clearTimeout(saveTimer); saveTimer = setTimeout(saveDraft, 400); },
+      onChange: () => { dirty = true; kpi(); clearTimeout(saveTimer); saveTimer = setTimeout(() => { saveDraft(); renderReport(); }, 400); },
       onCommit: (path, value) => aircraftAssist(path, value)
     });
     const blockList = window.MissionBlocks.ORDER.flatMap(block => block === '__family__' ? family.blocks : [block]);
@@ -177,12 +184,20 @@
       $a('store').textContent = t(edit ? 'saveChanges' : 'addToLedger');
       $a('delete').hidden = !edit;
     }
-    function redraw() { view.render(blockList); fillDatalists(); kpi(); modeUi(); ledgerInfo(); registerI18n(); }
+    // ---- compte rendu (§21) et résumé (§22), actualisés à la saisie et au changement de langue
+    let reportRows = [];
+    function renderReport() {
+      if (!window.MissionReport) return;
+      const { html, rows } = window.MissionReport.render(mission, family, view.context() || view.refresh());
+      root.querySelector('#mcReport').innerHTML = html;
+      reportRows = rows; registerI18n();
+    }
+    function redraw() { view.render(blockList); fillDatalists(); kpi(); modeUi(); ledgerInfo(); renderReport(); registerI18n(); }
 
     let i18nDone = new Set();
     function registerI18n() {
       if (!window.RepositoryContentI18n) return;
-      const pending = view.i18nRows().concat([...ui.values()], (family.i18n || [])).filter(row => !i18nDone.has(row[0]));
+      const pending = view.i18nRows().concat([...ui.values()], (family.i18n || []), reportRows).filter(row => !i18nDone.has(row[0]));
       if (!pending.length) return;
       pending.forEach(row => i18nDone.add(row[0]));
       window.RepositoryContentI18n(pending);
@@ -215,6 +230,10 @@
     }
 
     $a('store').onclick = () => store();
+    $a('render').onclick = () => renderReport();
+    // Impression : seul le compte rendu est imprimé (voir core.css, @media print).
+    $a('print').onclick = () => { renderReport(); window.print(); };
+    window.addEventListener('repository-language-change', () => setTimeout(renderReport));
     $a('delete').onclick = async () => {
       if (!edit || !confirm(t('confirmDelete'))) return;
       const current = ledger.missions[edit.index];

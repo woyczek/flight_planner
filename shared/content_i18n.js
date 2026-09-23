@@ -2,7 +2,7 @@
 window.RepositoryContentI18n = function(rows) {
   const languages=['fr','en','de','es'], index=new Map(), records=new WeakMap();
   rows.forEach(row=>row.forEach(value=>{if(value&&!index.has(value))index.set(value,row)}));
-  const excluded=el=>el?.closest('script,style,textarea,pre,[contenteditable],.repo-header-tools,.repo-block-tools');
+  const excluded=el=>el?.closest('script,style,textarea,pre,[contenteditable],[data-no-i18n],.repo-header-tools,.repo-block-tools');
   let observer, pending=false;
   function translate(value, owner, key, lang) {
     let all=records.get(owner);if(!all){all={};records.set(owner,all)}
