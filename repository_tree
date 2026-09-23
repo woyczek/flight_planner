@@ -12,6 +12,7 @@ window.REPOSITORY_TREE={
     hems:{bar:"#313177",barText:"#ffffff",page:"#ffffff",accent:"#313177",favicon:"assets/favicon-hems.svg"},
     landing:{bar:"#101319",barText:"#eef3f7",page:"#0d1015",accent:"#69a7ff",favicon:"assets/favicon-landing.svg"},
     core:{bar:"#2f3b52",barText:"#ffffff",page:"#f5f6f8",accent:"#2f3b52",favicon:"assets/favicon-flight.svg"},
+    sar:{bar:"#c2410c",barText:"#ffffff",page:"#f5f6f8",accent:"#c2410c",favicon:"assets/favicon-sar.svg"},
     flight:{bar:"#101317",barText:"#eef3f7",page:"#101317",accent:"#71b7ff",favicon:"assets/favicon-flight.svg"}
   },
   folders:{
@@ -19,6 +20,7 @@ window.REPOSITORY_TREE={
     "FIRE":{theme:"gaar",favicon:"assets/favicon-gaar.svg",config:{gaarLedgerName:"mission_ledger.csv"},files:{gaarLedgerName:"mission_ledger.csv"}},
     "HEMS":{theme:"hems",favicon:"assets/favicon-hems.svg",config:{ledgerName:"hems_mission_ledger.csv"},files:{ledgerName:"hems_mission_ledger.csv"}},
     "MissionCore":{theme:"core",favicon:"assets/favicon-flight.svg"},
+    "SAR":{theme:"sar",favicon:"assets/favicon-sar.svg"},
     "LandingPerformanceDashboard":{theme:"landing",favicon:"assets/favicon-landing.svg"}
   },
   pages:[
@@ -26,6 +28,8 @@ window.REPOSITORY_TREE={
     {path:"FIRE/fire_reporting.html",menu:"FIRE/Reporting missions",label:"Reporting FIRE / GAAR"},
     {path:"HEMS/hems_medevac_cr.html",menu:"HEMS/Générateur de CR",label:"Générateur de CR HEMS / MEDEVAC"},
     {path:"HEMS/hems_medevac_reporting.html",menu:"HEMS/Reporting missions",label:"Reporting HEMS / MEDEVAC"},
+    {path:"SAR/sar_cr.html",menu:"SAR/Générateur de CR",label:"SAR / PR — Compte rendu de mission"},
+    {path:"SAR/sar_reporting.html",menu:"SAR/Reporting missions",label:"SAR / PR — Reporting missions"},
     {path:"MissionCore/demo_cr.html",menu:"Mission Core/Démonstration — CR",label:"Démonstration — compte rendu de mission"},
     {path:"MissionCore/demo_reporting.html",menu:"Mission Core/Démonstration — reporting",label:"Démonstration — reporting missions"},
     {path:"mission_operations_reporting.html",menu:"Reporting opérations",label:"Synthèse FIRE + HEMS",theme:"landing",favicon:"assets/favicon-landing.svg",files:{gaarLedgerName:"FIRE/mission_ledger.csv",ledgerName:"HEMS/hems_mission_ledger.csv"}},

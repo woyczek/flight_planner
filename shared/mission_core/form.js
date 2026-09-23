@@ -113,7 +113,9 @@
       const mission = getMission();
       const categories = (mission.aircraft || []).map(a => a.category).filter(Boolean);
       if (!categories.length && family.defaultCategory) categories.push(family.defaultCategory);
-      return { family: family.id, series: mission.series || '', mission, flags: family.flags || {}, capabilities: new Set(mission.capabilities || []), categories: new Set(categories) };
+      // flags : objet fixe ou fonction de la mission (ex. SAR : maritime selon la série).
+      const flags = typeof family.flags === 'function' ? family.flags(mission) || {} : family.flags || {};
+      return { family: family.id, series: mission.series || '', mission, flags, capabilities: new Set(mission.capabilities || []), categories: new Set(categories) };
     }
     function refresh() {
       ctx = context();
