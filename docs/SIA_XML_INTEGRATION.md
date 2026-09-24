@@ -4,8 +4,8 @@
 communs, `<main>` et blocs (`data-block-id` : `sia-base`, `sia-mission`, `sia-zones`,
 `sia-elements`, `sia-outputs` ; `mission-import` … `mission-yaml` masqué par défaut,
 `mission-export`), thème `sia` et `assets/favicon-sia.svg`, js-yaml commun, couche AAR dans le
-studio. Restent : `FileAccess` / `pastePanel` pour le dossier SIA et le collage de mission, et la
-passerelle vers CR DEFA (§ 2, points 4 et 6).
+studio, dossier SIA mémorisé (`FileAccess`, `__sia`). Restent : `pastePanel` pour le collage de
+mission et la passerelle vers CR DEFA (§ 2, points 4 et 6).
 
 ## 1. Ce que contient le dossier
 
@@ -13,7 +13,6 @@ passerelle vers CR DEFA (§ 2, points 4 et 6).
 |---|---|
 | `mission_editor.html` — « Générateur complet de mission » | Import YAML (`schema: helo-xp-mission`) / Markdown de mission, identification, textes, éditeur YAML sans schéma, cartes du dossier (ZIP livré par le générateur de cartes), export Markdown et **PDF** (jsPDF). Brouillon : `missionGeneratorDraft` ; passage au générateur de cartes : `missionGeneratorHandoff`. |
 | `map_parser.html` — « Studio cartographique aéronautique SIA » | Dossier SIA XML (sélection de dossier, base mémorisée en IndexedDB `sia-map-parser`), fond (PNG local, OSM raster ou vectoriel MapLibre, couches réglables), mission (MD / YAML), zones R / D / P, CTR, TMA…, MORA (CSV / PDF), villes (GeoNames), sorties **SVG / PNG / ZIP** et carte d'assemblage. Réglages : `siaMapSource`, `siaOsmLayers`, `siaCities`, `siaPopulation`, `siaDetailLayerProfile`, `siaFolderName`. |
-| `generate_operational_map.py` + `README-map-generator.md` + `example_map_request.json` | Générateur de carte en ligne de commande (ImageMagick), ancêtre du studio. |
 | Données SIA (AIRAC 2026-10-01) | `XML_SIA_2026-10-01.xml` (27 Mo), `AIXM4.5_all_FR_OM_2026-10-01.xml` (44 Mo), `sia-airspaces-2026-10-01.xml` (6 Mo), `miam-enr-5-7-coordinates.xml` (MILAIP ENR 5.7 : axes de ravitaillement), `mora.csv`, `villes_geonames.csv`, fonds `Carte france vierge*.png`. |
 | Bibliothèques | `maplibre-gl.js/.css`, `pdf.min.js` + worker, `jspdf.umd.min.js`, `js-yaml.min.js` (doublon de `shared/mission_core/vendor/js-yaml.min.js`). |
 | `.git` propre | **Dépôt git imbriqué** (2 commits, PNG en Git LFS) — à décider avant intégration (§ 4). |
@@ -97,5 +96,5 @@ depuis le PDF officiel (`MIAM_OACI_ENR 5.7.pdf`, AMDT 10/24 du 05 SEP 24, pages 
 2. Données AIRAC hors dépôt (`.gitignore`).
 3. XML incomplet : corrigé par le XML nommé ci-dessus.
 4. Largeur : dans le PDF (14 NM) ; côté : seulement quand S2 existe.
-5. Sauvegardes `*.backup-*` supprimées ; `generate_operational_map.py` : générateur en ligne de
-   commande (ImageMagick) remplacé par le studio — conservation à décider.
+5. Sauvegardes `*.backup-*` et générateur Python en ligne de commande supprimés (remplacé par le
+   studio).

@@ -15,6 +15,7 @@
     __repo: { label: L('Dossier du dépôt', 'Repository folder', 'Repository-Ordner', 'Carpeta del repositorio'), expect: L('racine du dépôt : le dossier « Documentation » (celui qui contient repository_tree, shared/, CR DEFA/…)', 'repository root: the “Documentation” folder (containing repository_tree, shared/, CR DEFA/…)', 'Repository-Wurzel: Ordner „Documentation“ (mit repository_tree, shared/, CR DEFA/…)', 'raíz del repositorio: la carpeta «Documentation» (con repository_tree, shared/, CR DEFA/…)'), check: 'repository_tree' },
     __ledger: { label: L('Dossier du registre', 'Ledger folder', 'Registerordner', 'Carpeta del registro'), expect: L('dossier « CR DEFA » du dépôt (Documentation/CR DEFA : contient mission_cr.html ; missions.yaml y est écrit)', '“CR DEFA” folder of the repository (Documentation/CR DEFA: contains mission_cr.html; missions.yaml is written there)', 'Ordner „CR DEFA“ des Repositorys (enthält mission_cr.html; missions.yaml wird dort geschrieben)', 'carpeta «CR DEFA» del repositorio (contiene mission_cr.html; allí se escribe missions.yaml)'), check: 'mission_cr.html' },
     __store: { label: L('Dossier de sauvegarde locale', 'Local backup folder', 'Ordner der lokalen Sicherung', 'Carpeta de copia local'), expect: L('dossier de votre choix, idéalement synchronisé (defa_local_store.yaml y est écrit)', 'folder of your choice, ideally synchronised (defa_local_store.yaml is written there)', 'Ordner Ihrer Wahl, idealerweise synchronisiert (defa_local_store.yaml)', 'carpeta a su elección, idealmente sincronizada (defa_local_store.yaml)') },
+    __sia: { label: L('Dossier SIA XML', 'SIA XML folder', 'SIA-XML-Ordner', 'Carpeta SIA XML'), expect: L('dossier des données SIA (XML AIRAC, « Carte france vierge.png », villes_geonames.csv, mora.csv)', 'SIA data folder (AIRAC XML, “Carte france vierge.png”, villes_geonames.csv, mora.csv)', 'SIA-Datenordner (AIRAC-XML, „Carte france vierge.png“…)', 'carpeta de datos SIA (XML AIRAC, «Carte france vierge.png»…)'), check: 'Carte france vierge.png' },
     __perf: { label: L('Dossier performances', 'Performance folder', 'Leistungsordner', 'Carpeta de rendimiento'), expect: L('dossier des profils de performance (.lnmperf, .json ; la base flight_performance_database.fpdb.json y est écrite)', 'performance profiles folder (.lnmperf, .json; flight_performance_database.fpdb.json is written there)', 'Ordner der Leistungsprofile (.lnmperf, .json)', 'carpeta de perfiles de rendimiento (.lnmperf, .json)') }
   };
   const STATE = {
@@ -61,7 +62,7 @@
 
   // ---- ouverture de fichiers : sélecteur du système dans le dossier paramétré
   // Dossier par défaut selon la page (application CR DEFA : registre ; Paramétrage : dépôt).
-  const defaultFolder = () => /\/CR%20DEFA\/|\/CR DEFA\//.test(location.pathname) ? (/parametrage\.html$/.test(location.pathname) ? '__repo' : '__ledger') : /flight_performance_planner/.test(location.pathname) ? '__perf' : '';
+  const defaultFolder = () => /\/CR%20DEFA\/|\/CR DEFA\//.test(location.pathname) ? (/parametrage\.html$/.test(location.pathname) ? '__repo' : '__ledger') : /flight_performance_planner/.test(location.pathname) ? '__perf' : /\/SIA%20XML\/|\/SIA XML\//.test(location.pathname) ? '__sia' : '';
   const hash = s => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0; return Math.abs(h).toString(36); };
   function typesOf(accept) {
     const exts = String(accept || '').split(',').map(x => x.trim()).filter(x => /^\.[a-z0-9]+$/i.test(x));
@@ -79,7 +80,7 @@
   }
   if (window.showOpenFilePicker) {
     document.addEventListener('click', event => {
-      const input = event.target; if (!(input instanceof HTMLInputElement) || input.type !== 'file' || input.dataset.nativePicker) return;
+      const input = event.target; if (!(input instanceof HTMLInputElement) || input.type !== 'file' || input.dataset.nativePicker || input.webkitdirectory) return;
       event.preventDefault();
       openFiles(input).catch(error => { if (error?.name !== 'AbortError') { input.dataset.nativePicker = '1'; input.click(); delete input.dataset.nativePicker; } });
     }, true);

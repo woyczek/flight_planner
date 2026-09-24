@@ -21,6 +21,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - Studio : choix de **fonds vectoriels** (OSM Shortbread réglable, OpenFreeMap Liberty / Bright /
   Positron, VersaTiles Colorful / Graybeard / Shadow / Eclipse), relief et courbes ajoutés aux
   fonds publiés.
+- Studio : **profils d'affichage** (ajout, duplication, suppression) regroupés dans le bloc 3
+  avec les zones, et **carte de contrôle** en colonne de droite (carte de la mission au choix,
+  profil en cours, actualisée à chaque réglage) ; bouton « Retour » / « Transmettre » dans la
+  barre d'en-tête, menu ☰ à droite.
+- **Dossier SIA XML mémorisé** (`FileAccess`, clef `__sia`) : « Relire le dossier » après une
+  mise à jour AIRAC ; sélecteurs de fichiers des pages SIA ouverts dans ce dossier.
+- Supprimés : générateur Python en ligne de commande (`generate_operational_map.py`, son README,
+  son exemple de demande et sa carte de vérification), remplacé par le studio.
 - Corrections : un fond lent (OpenTopoMap) n'empêche plus les surcharges (points tournants,
   zones) ; une carte en échec n'arrête plus la génération (ZIP des cartes réussies,
   `rapport_generation.txt`, bouton « Réessayer seule ») ni la galerie d'aperçus.
