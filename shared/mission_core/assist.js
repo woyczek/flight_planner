@@ -57,6 +57,12 @@
       };
       walk(m, '');
     });
+    // Base DEFA (journal des vols) : trigrammes des pilotes, terrains de départ / arrivée.
+    try {
+      ((JSON.parse(localStorage.getItem('defaFlightLog:v1') || 'null') || {}).records || []).forEach(r => {
+        add('person', r.trigram, r.date); add('aerodrome', r.dep, r.date); add('aerodrome', r.arr, r.date);
+      });
+    } catch { /* base illisible : ignorée */ }
     return pools;
   }
   // Missions des autres familles du Core (copies navigateur des registres).

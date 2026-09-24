@@ -202,6 +202,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       intro: T('Indicatif complet (conservé dans les CR) ↔ forme plan de vol (case 7, 7 caractères avec le numéro) ↔ exploitant OACI (OPR/, case 18). Types : types OACI de la série, séparés par des virgules.', 'Full callsign (kept in reports) ↔ flight plan form (item 7, 7 characters with the number) ↔ ICAO operator (OPR/, item 18). Types: ICAO types of the series, comma-separated.'),
       tables: () => [
         { title: T('Indicatifs', 'Callsigns'), columns: [{ key: 'prefix', label: T('Indicatif complet', 'Full callsign'), upper: true }, { key: 'fpl', label: T('Plan de vol', 'Flight plan'), upper: true },
+          { key: 'aliases', label: T('Autres formes', 'Other forms'), type: 'list', width: '10em' },
           { key: 'operator', label: T('Organisme', 'Organisation'), type: 'select', options: operatorNames }, { key: 'designator', label: 'OPR/', upper: true }, { key: 'types', label: T('Types', 'Types'), type: 'list' },
           { key: 'role', label: T('Fonction', 'Role'), type: 'bool' }, { key: 'generic', label: T('Générique', 'Generic'), type: 'bool' }, { key: 'telephony', label: T('Radiotéléphonie', 'Telephony'), upper: true }, { key: 'note', label: T('Note', 'Note'), width: '14em' }], data: work.callsigns.data.table },
         { title: T('Organismes → désignateur OACI (OPR/)', 'Organisations → ICAO designator (OPR/)'), columns: [{ key: 'name', label: T('Organisme', 'Organisation'), width: '16em' }, { key: 'designator', label: 'OPR/', upper: true }], data: work.callsigns.operatorRows }],
@@ -224,6 +225,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     { id: 'airports', group: T('Données du navigateur', 'Browser data'), title: T('Aérodromes utilisés (cache)', 'Aerodromes used (cache)'), key: 'missionAirports:v1', byKey: r => String(r.icao || '').toUpperCase(),
       intro: T('Coordonnées et fuseaux des terrains utilisés (lever / coucher du soleil, météo).', 'Coordinates and time zones of aerodromes used (sunrise / sunset, weather).'),
       columns: [{ key: 'icao', label: 'OACI', upper: true }, { key: 'name', label: T('Nom', 'Name'), width: '14em' }, { key: 'country', label: T('Pays', 'Country') }, { key: 'lat', label: 'Lat', type: 'number' }, { key: 'lon', label: 'Lon', type: 'number' }, { key: 'elevation', label: T('Altitude (ft)', 'Elevation (ft)'), type: 'number' }, { key: 'tz', label: T('Fuseau', 'Time zone') }] },
+    { id: 'defaLog', group: T('Base DEFA', 'DEFA base'), title: T('Journal des vols DEFA (vols réalisés)', 'DEFA flight log (flights flown)'), custom: true,
+      intro: T('Base distincte du registre des missions : page « Log des vols » de la DEFA enregistrée (Ctrl+S, page web complète ou HTML seul), ou export CSV / JSON de cette base. Chargée à la demande, gardée dans ce navigateur seulement (hors dépôt et hors sauvegarde locale : trigrammes des pilotes). Les CR s’en servent pour les appareils connus (immatriculation → type, indicatifs utilisés), les trigrammes d’équipage et les terrains ; l’analyse des indicatifs alimente la table de correspondance.', 'Separate from the mission ledger: DEFA “Log des vols” page saved (Ctrl+S), or CSV / JSON export of this base. Loaded on demand, kept in this browser only (not in the repository nor the local backup: pilot trigrams). Reports use it for known aircraft, crew trigrams and aerodromes; the callsign analysis feeds the correspondence table.') },
     { id: 'send', group: T('Missions', 'Missions'), title: T('Envoi des comptes rendus (webservice)', 'Report sending (web service)'), custom: true,
       intro: T('Bouton « Envoyer le CR » des pages de saisie : POST JSON (mission, CR HTML et texte, calculs) vers l’adresse ci-dessous. La clef reste dans ce navigateur (missionSendKey:v1), hors sauvegarde locale. Le service doit accepter les appels de cette origine (CORS).', '“Send report” button of the entry pages: JSON POST (mission, report HTML and text, calculations) to the address below. The key stays in this browser (missionSendKey:v1), outside the local backup. The service must accept calls from this origin (CORS).') },
     { id: 'ledgers', group: T('Missions', 'Missions'), title: T('Registres des missions (base des opérations)', 'Mission ledgers (operations base)'), custom: true,
@@ -256,7 +259,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       root.querySelector('.da-intro').textContent = set.intro || '';
       const howto = root.querySelector('.da-howto'); howto.hidden = !set.howto; howto.querySelector('div').innerHTML = set.howto || '';
       const body = root.querySelector('.da-body'); body.innerHTML = '';
-      if (set.custom) return set.id === 'send' ? sendSettings(body) : ledgers(body);
+      if (set.custom) return set.id === 'send' ? sendSettings(body) : set.id === 'defaLog' ? defaLog(body) : ledgers(body);
       if (set.file) {
         const w = work[set.id];
         status(w.local ? `${T('Modifications locales du', 'Local changes from')} ${new Date(w.local).toLocaleString()} (${T('prioritaires dans ce navigateur, pas encore dans le dépôt', 'active in this browser, not yet in the repository')})` : T('Contenu du fichier du dépôt', 'Repository file content'));
@@ -286,6 +289,71 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       }, 'primary'], [T('Annuler les modifications', 'Discard changes'), () => { dirty = false; show(); }]];
       if (set.integrate) buttons.push([T('Intégrer à la base du dépôt', 'Integrate into repository base'), () => { const target = set.integrate(list); dirty = false; current.id = target; history.replaceState(null, '', `?base=${target}`); show(); changed(); }]);
       actions(buttons);
+    }
+
+    // Base DEFA : import du journal des vols, analyse des séries d'indicatifs (ajout / complément
+    // de la table de correspondance), consultation filtrée, export, effacement.
+    function defaLog(body) {
+      const D = window.DefaFlightLog, data = D.load(), list = data.records || [];
+      const up = v => String(v ?? '').trim().toUpperCase(), clean = v => up(v).replace(/[^A-Z0-9]/g, '');
+      const hours = m => `${Math.floor(m / 60)} h ${String(Math.round(m % 60)).padStart(2, '0')}`;
+      body.innerHTML = `<div class="row da-defa-import"><label class="secondary da-file">${esc(T('Charger le journal (HTML « Log des vols », CSV, JSON)…', 'Load the log (HTML “Log des vols”, CSV, JSON)…'))}<input type="file" accept=".html,.htm,.csv,.json,text/html,text/csv,application/json" hidden></label></div>
+        <p class="small da-defa-stats"></p>
+        <h3>${esc(T('Séries d’indicatifs', 'Callsign series'))}</h3><p class="small">${esc(T('Formes vues ramenées à une série (fautes, suffixes de patrouille : lettre, couleur, alphabet OTAN). « Ajouter » crée la ligne dans la correspondance des indicatifs (à vérifier : indicatif complet, organisme), « Compléter » y ajoute les formes et types vus.', 'Seen forms grouped into series (typos, patrol suffixes). “Add” creates the row in the callsign correspondence (check the full callsign and organisation), “Complete” adds the seen forms and types.'))}</p>
+        <div class="da-defa-series"></div>
+        <h3>${esc(T('Vols', 'Flights'))}</h3><div class="row"><input type="search" class="da-defa-filter" placeholder="${esc(T('Filtrer (indicatif, immatriculation, pilote, terrain, mission…)', 'Filter (callsign, registration, pilot, aerodrome, mission…)'))}"></div><div class="da-defa-flights"></div>`;
+      const input = body.querySelector('input[type=file]');
+      input.onchange = async () => {
+        const file = input.files[0]; if (!file) return;
+        try { const recs = D.parse(await file.text(), file.name); if (!recs.length) throw new Error(T('aucun vol reconnu', 'no flight recognised')); D.save(recs, file.name); status(`${recs.length} ${T('vols chargés depuis', 'flights loaded from')} ${file.name}`); defaLog(body); }
+        catch (e) { status(`${T('Échec', 'Failed')} : ${e.message}`); }
+      };
+      if (!list.length) { body.querySelector('.da-defa-stats').textContent = T('Aucun journal chargé dans ce navigateur.', 'No log loaded in this browser.'); actions([]); return; }
+      const dates = list.map(r => r.date).sort(), minutes = list.reduce((a, r) => a + (r.durationMin || 0), 0);
+      const count = key => new Set(list.map(r => r[key]).filter(Boolean)).size;
+      body.querySelector('.da-defa-stats').textContent = `${data.source || '—'} · ${T('chargé le', 'loaded on')} ${new Date(data.importedAt).toLocaleString()} · ${list.length} ${T('vols', 'flights')} · ${dates[0]} → ${dates[dates.length - 1]} · ${hours(minutes)} · ${count('trigram')} ${T('pilotes', 'pilots')} · ${count('registration')} ${T('appareils', 'aircraft')} · ${count('type')} types`;
+      // Séries : état dans la table de correspondance (indicatif, forme plan de vol ou autre forme).
+      const table = () => work.callsigns.data.table;
+      const entryOf = s => table().find(e => [e.prefix, e.fpl, ...(e.aliases || [])].map(clean).some(f => f === s.prefix || s.forms.has(f)));
+      const series = D.series(list);
+      // Types réellement employés par la série : au moins 2 vols ou 20 % des vols.
+      const topTypes = s => { const per = new Map(); s.types.forEach((n, t) => { const k = t.split(' ')[0]; per.set(k, (per.get(k) || 0) + n); }); return [...per].sort((a, b) => b[1] - a[1]).filter(([, n]) => n >= 2 || n >= 0.2 * s.count).map(([t]) => t).slice(0, 4); };
+      const rows = series.map(s => {
+        const e = entryOf(s), forms = [...s.forms].sort((a, b) => b[1] - a[1]).map(([f, n]) => `${f} (${n})`).join(', ');
+        const numbers = [...s.numbers].sort((a, b) => parseInt(a) - parseInt(b) || a.localeCompare(b));
+        const types = [...s.types].sort((a, b) => b[1] - a[1]).map(([t, n]) => `${t} (${n})`).join(', ');
+        // Désignateurs génériques et indicatifs de fonction (FAF, COTAM…) : pas de types de série.
+        const missing = e ? { forms: [...s.forms.keys()].filter(f => ![e.prefix, e.fpl, ...(e.aliases || [])].map(clean).includes(f)), types: e.generic || e.role ? [] : topTypes(s).filter(t => !(e.types || []).map(up).includes(t)) } : null;
+        const state = !e ? `<button type="button" class="primary" data-defa-add="${esc(s.prefix)}">${esc(T('Ajouter', 'Add'))}</button>`
+          : missing.forms.length || missing.types.length ? `<button type="button" data-defa-fill="${esc(s.prefix)}" title="${esc([...missing.forms, ...missing.types].join(', '))}">${esc(T('Compléter', 'Complete'))} (${esc(e.prefix)})</button>` : `✓ ${esc(e.prefix)}`;
+        return `<tr><td><b>${esc(s.prefix)}</b></td><td>${esc(forms)}</td><td class="num">${s.count}</td><td title="${esc(numbers.join(' '))}">${numbers.length ? `${numbers.length} : ${esc(numbers.slice(0, 8).join(' '))}${numbers.length > 8 ? '…' : ''}` : '—'}</td><td>${esc([...s.suffixes].join(' ') || '—')}</td><td>${esc(types)}</td><td>${esc(s.first)} → ${esc(s.last)}</td><td>${state}</td></tr>`;
+      }).join('');
+      body.querySelector('.da-defa-series').innerHTML = `<table class="da-table"><thead><tr><th>${esc(T('Série', 'Series'))}</th><th>${esc(T('Formes vues (vols)', 'Seen forms (flights)'))}</th><th>${esc(T('Vols', 'Flights'))}</th><th>${esc(T('Numéros', 'Numbers'))}</th><th>${esc(T('Suffixes', 'Suffixes'))}</th><th>Types</th><th>${esc(T('Période', 'Period'))}</th><th>${esc(T('Correspondance', 'Correspondence'))}</th></tr></thead><tbody>${rows}</tbody></table>`;
+      const toCallsigns = () => { current.id = 'callsigns'; history.replaceState(null, '', '?base=callsigns'); show(); changed(); status(T('Correspondance des indicatifs modifiée : vérifier, puis « Appliquer dans ce navigateur » ou « Enregistrer dans le dépôt ».', 'Callsign correspondence changed: check, then apply or save.')); };
+      body.querySelectorAll('[data-defa-add]').forEach(b => b.onclick = () => {
+        const s = series.find(x => x.prefix === b.dataset.defaAdd), forms = [...s.forms].sort((a, c) => c[1] - a[1]).map(([f]) => f);
+        const fpl = forms.filter(f => f.length <= 7).sort((a, c) => (s.forms.get(c) - s.forms.get(a)))[0] || s.prefix.slice(0, 7);
+        table().push({ prefix: s.prefix, fpl, aliases: forms.filter(f => f !== s.prefix && f !== fpl), operator: '', designator: '', types: topTypes(s), note: `${T('journal DEFA', 'DEFA log')} ${s.first} → ${s.last} : ${s.count} ${T('vols', 'flights')}${s.suffixes.size ? ` · ${T('suffixes', 'suffixes')} ${[...s.suffixes].join(' ')}` : ''}` });
+        toCallsigns();
+      });
+      body.querySelectorAll('[data-defa-fill]').forEach(b => b.onclick = () => {
+        const s = series.find(x => x.prefix === b.dataset.defaFill), e = entryOf(s);
+        e.aliases = [...new Set([...(e.aliases || []), ...[...s.forms.keys()].filter(f => ![e.prefix, e.fpl].map(clean).includes(f))])];
+        e.types = [...new Set([...(e.types || []).map(up), ...topTypes(s)])];
+        toCallsigns();
+      });
+      // Vols : filtre plein texte, 300 lignes affichées.
+      const flights = body.querySelector('.da-defa-flights'), filter = body.querySelector('.da-defa-filter');
+      const paint = () => {
+        const q = up(filter.value), shown = (q ? list.filter(r => up(Object.values(r).join(' ')).includes(q)) : list);
+        flights.innerHTML = `<p class="small">${shown.length} ${T('vols', 'flights')}${shown.length > 300 ? ` — ${T('300 premiers affichés', 'first 300 shown')}` : ''}</p><table class="da-table"><thead><tr>${['Date', T('Durée', 'Duration'), T('Pilote', 'Pilot'), T('Indicatif', 'Callsign'), T('Immat.', 'Reg.'), 'Type', T('Départ', 'Dep.'), T('Arrivée', 'Arr.'), 'Mission'].map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${shown.slice(0, 300).map(r => `<tr><td>${esc(r.date)} ${esc(r.time)}</td><td>${r.durationMin == null ? '—' : hours(r.durationMin)}</td><td>${esc(r.trigram)}</td><td>${esc(r.callsign)}</td><td>${r.fleetId ? `<a href="https://flotte.defa-virtual.fr/appareil.php?id=${esc(r.fleetId)}" target="_blank" rel="noopener">${esc(r.registration)}</a>` : esc(r.registration)}</td><td>${esc([r.type, r.variant].filter(Boolean).join(' '))}</td><td>${esc(r.dep)}</td><td>${esc(r.arr)}</td><td>${esc(r.mission)}</td></tr>`).join('')}</tbody></table>`;
+      };
+      filter.oninput = paint; paint();
+      actions([
+        [T('Exporter en CSV', 'Export CSV'), () => download('defa_log_des_vols.csv', D.toCsv(list), 'text/csv')],
+        [T('Exporter en JSON (rechargeable)', 'Export JSON (reloadable)'), () => download('defa_log_des_vols.json', JSON.stringify({ source: data.source, importedAt: data.importedAt, records: list }, null, 1), 'application/json')],
+        [T('Effacer la base DEFA de ce navigateur', 'Clear the DEFA base from this browser'), () => { if (!confirm(T('Effacer le journal des vols DEFA de ce navigateur ? (rechargeable depuis le fichier)', 'Clear the DEFA flight log from this browser? (reloadable from the file)'))) return; D.clear(); status(T('Base DEFA effacée', 'DEFA base cleared')); defaLog(body); }]
+      ]);
     }
 
     // Envoi des CR : adresse, en-tête, schéma et clef du webservice (encore à définir).

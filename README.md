@@ -53,6 +53,9 @@ Highlights:
   `RMK CALC OPEN-METEO`; real VATSIM METAR for a flight today, within the hour), sunrise /
   sunset (Open-Meteo, local calculation as fallback) and day / night phase. Only empty or
   automatically filled fields are written.
+- **DEFA base** (settings): flown-flights log loaded on demand (saved “Log des vols” page),
+  separate from the ledger; aircraft, callsigns, trigrams and aerodromes offered in reports;
+  callsign series analysis (≈ 60 series from 2025-2026 added to the correspondence table).
 - **Smart callsign**: typing `ctm58` in the callsign field gives COTAM / 58 / CTM58, OPR/ CTM
   and the organisation of the series.
 - **Send report**: “Send report” button posting the report (JSON) to a web service whose

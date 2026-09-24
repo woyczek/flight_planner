@@ -59,6 +59,8 @@ chaque champ, les valeurs déjà saisies dans vos missions sont proposées.
 
 Deux façons, au choix :
 
+- (si la **base DEFA** est chargée — ☰ › Paramétrage › Base DEFA — les appareils, indicatifs,
+  trigrammes et terrains des vols réalisés sont aussi proposés) ;
 - **par l'immatriculation** : commencer à taper `F-ZB…` — la liste propose les appareils de
   la flotte avec type, variante, indicatif, opérateur et base. Choisir `F-ZBME` ;
 - **par la série** : avec l'organisme « Sécurité civile » et le type `CL2T`, l'indicatif

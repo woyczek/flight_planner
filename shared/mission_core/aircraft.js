@@ -93,6 +93,9 @@
         if (registration) records.push({ registration, callsign: cells[at('callsign')] || '', type: cells[at('aircraft')] || '', date: cells[at('date')] || '' });
       });
     });
+    // Base DEFA (journal des vols réalisés, Paramétrage › Base DEFA) : type, variante et
+    // indicatifs utilisés par immatriculation — sans indicatif par défaut (numéro propre au vol).
+    ((read('defaFlightLog:v1') || {}).records || []).forEach(r => { if (r.registration) records.push({ registration: r.registration, type: r.type, variant: r.variant, callsigns: r.callsign ? [r.callsign] : [], date: r.date }); });
     Object.values(read(REGISTRY_KEY) || {}).forEach(e => records.push(e));
     return records;
   }
@@ -150,7 +153,11 @@
   }
   function abbreviations() {
     const split = window.MissionModel.splitCallsign, prefixes = new Set(), map = new Map(); // abrégé → complet
-    table().forEach(e => { if (clean(e.fpl) && clean(e.fpl) !== e.prefix) map.set(clean(e.fpl), e.prefix); });
+    table().forEach(e => {
+      if (clean(e.fpl) && clean(e.fpl) !== e.prefix) map.set(clean(e.fpl), e.prefix);
+      // Autres formes vues (fautes, formes longues / courtes : RAYAK / RYAK, PELIC / PELICAN).
+      (e.aliases || []).forEach(alias => { if (clean(alias) && clean(alias) !== e.prefix) map.set(clean(alias), e.prefix); });
+    });
     known().forEach(a => a.callsigns.forEach(c => { const p = split(c).prefix; if (p) prefixes.add(p); }));
     prefixes.forEach(short => prefixes.forEach(full => {
       if (map.has(short) || [...map.values()].includes(short)) return;

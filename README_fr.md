@@ -56,6 +56,10 @@ Points forts :
   `RMK CALC OPEN-METEO` ; METAR réel VATSIM pour un vol du jour, dans l'heure), lever /
   coucher du soleil (Open-Meteo, calcul local à défaut) et phase jour / nuit. Seuls les
   champs vides ou remplis automatiquement sont écrits.
+- **Base DEFA** (Paramétrage) : journal des vols réalisés chargé à la demande (page « Log des
+  vols » enregistrée), distinct du registre ; appareils, indicatifs, trigrammes et terrains
+  proposés dans les CR ; analyse des séries d'indicatifs (≈ 60 séries relevées sur 2025-2026
+  dans la table de correspondance).
 - **Indicatif intelligent** : `ctm58` saisi dans l'indicatif donne COTAM / 58 / CTM58,
   OPR/ CTM et l'organisme de la série.
 - **Envoi du CR** : bouton « Envoyer le CR » (POST JSON) vers un webservice dont l'adresse et

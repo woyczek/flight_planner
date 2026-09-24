@@ -530,3 +530,19 @@ Retenues par défaut (à contester si besoin) :
 - Documentation : README (trois applications + framework), `docs/FLIGHT_PLANNER.md`
   (reprend et complète la section d'origine du README), `docs/LANDING_DASHBOARD.md`,
   `docs/FRAMEWORK.md`.
+
+## U. Étape 16 — base DEFA (journal des vols), séries d'indicatifs (2026-09-24)
+
+- `shared/mission_core/defa_log.js` : lecture de la page « Log des vols » enregistrée (tableau
+  à 9 colonnes, lien vers la fiche flotte), d'un CSV ou d'un JSON ; stockage navigateur
+  `defaFlightLog:v1` (exclu de browser_store) ; séries d'indicatifs (suffixes de patrouille,
+  parasites, variantes `ALIASES`) ; export CSV / JSON.
+- Paramétrage › Base DEFA : chargement, statistiques, séries (Ajouter / Compléter la
+  correspondance), vols filtrables, export, effacement ; colonne « Autres formes » (`aliases`)
+  dans la correspondance des indicatifs.
+- `aircraft.js` : le journal est une source d'appareils connus (sans indicatif par défaut) ;
+  `aliases` pris en compte dans les abréviations. `assist.js` : trigrammes (équipage) et
+  terrains du journal dans les valeurs proposées.
+- `data/callsigns.js` : 49 séries relevées dans le journal de 2025-05 à 2026-09 (≥ 3 vols ;
+  organisme déduit seulement si tous les types concordent) et 4 séries complétées (DRAGON,
+  PELICAN, BENGALE, CHOUCAS) ; le journal lui-même n'est pas dans le dépôt.

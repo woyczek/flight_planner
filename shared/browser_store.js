@@ -14,7 +14,8 @@
   if (!nav?.menu || document.getElementById('repoLocalStore')) return;
   const FILE = 'defa_local_store.yaml', SCHEMA = 1;
   // Suivi réseau en cours (propre à l'onglet) ; clef du webservice d'envoi des CR (secret, jamais dans un fichier).
-  const SKIP = [/^networkWatch:/, /^missionSendKey:/];
+  // Base DEFA (journal des vols) : rechargeable depuis son fichier, gardée hors sauvegarde.
+  const SKIP = [/^networkWatch:/, /^missionSendKey:/, /^defaFlightLog:/];
   const META = 'defaLocalStore:v1'; // { savedAt, hash } — non sauvegardé lui-même
   const here = document.currentScript?.src || new URL('shared/browser_store.js', location.href).href;
 
