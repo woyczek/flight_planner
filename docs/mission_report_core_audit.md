@@ -453,3 +453,23 @@ Retenues par défaut (à contester si besoin) :
 - Menu ☰ : « Reporting missions » seul en tête ; « Nouveau compte rendu » par le bouton de
   l'en-tête des reportings ; « Paramétrage — bases de données » en bas, avant « Données locales »
   (`slot:"settings"` dans repository_tree).
+
+## P. Étape 11 — indicatif intelligent, METAR calculé, envoi des CR (2026-09-24)
+
+- Indicatif : une saisie avec numéro dans le champ indicatif (`ctm58`) est découpée
+  (COTAM / 58, forme plan de vol CTM58, OPR/ CTM) ; la série de la table de correspondance
+  renseigne l'organisme et, si elle n'en a qu'un, le type (`seriesAssist`, après l'effacement des
+  valeurs de l'appareil précédent).
+- Météo (`assist.js`) : `buildMetar()` — vent, visibilité (≥ 10 km supposés sans brouillard ni
+  précipitations quand l'archive n'en donne pas), temps présent (code WMO), nuages par étage (base
+  des nuages bas ≈ 400 ft par °C d'écart T / Td), T / Td, QNH, `CAVOK` si applicable,
+  `RMK CALC OPEN-METEO`. Lever / coucher Open-Meteo (`daily`), calcul NOAA local à défaut. Source
+  retenue seulement si elle a des valeurs (l'api de prévision renvoie des nulls pour un passé
+  lointain → archive-api).
+- `autoEnvironment()` : signature terrain de départ | date | heure ; requête 1,2 s après un
+  changement ; état de référence à l'ouverture d'une mission (pas de requête), requête immédiate
+  pour une nouvelle mission. Un remplissage automatique ne rend pas « modifiée » une mission non
+  touchée (`changed(path, auto)`).
+- « Envoyer le CR » : POST JSON, configuration `missionSendConfig:v1`, clef `missionSendKey:v1`
+  (exclue de browser_store), journal `missionSendLog:v1`. Testé avec un service local (201,
+  en-tête Bearer, corps complet) et un service injoignable (message CORS).

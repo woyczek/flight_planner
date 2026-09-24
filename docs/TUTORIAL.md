@@ -71,6 +71,9 @@ plan de vol `PCAN44`** (7 caractères OACI), exploitant **OPR/ FRU**, base **LFT
 - choisir un autre appareil remplace les valeurs reprises du précédent — jamais ce que vous
   avez saisi vous-même ;
 - une forme plan de vol corrigée à la main est mémorisée pour la suite ;
+- l'indicatif peut se saisir d'un bloc : `ctm58` dans le champ **Indicatif** devient
+  **COTAM** / **58**, indicatif plan de vol **CTM58**, **OPR/ CTM**, et l'organisme de la série
+  (et le type, si la série n'en a qu'un) ;
 - les équipements de l'appareil (repliés sous l'appareil) sont repris de l'appareil connu ou
   du plan de vol.
 
@@ -80,11 +83,15 @@ plan de vol `PCAN44`** (7 caractères OACI), exploitant **OPR/ FRU**, base **LFT
    IVAO / VATSIM »). Sont remplis — seulement s'ils sont vides — terrains de départ,
    destination et dégagement, route, points tournants, niveau, vitesse, équipements OACI,
    METAR / TAF, masses et carburant prévus.
-2. **Bloc Environnement / météo** : le METAR est analysé (vent, température, QNH, visibilité,
-   plafond, phénomènes). Boutons : « METAR actuel du terrain de départ (VATSIM) », « Météo à
-   l'heure du vol (Open-Meteo) », « Calculer lever / coucher du soleil » (heure locale du
-   terrain ; calcul automatique dès que le terrain de départ est connu, avec la phase
-   jour / nuit au décollage).
+2. **Bloc Environnement / météo** : **rien à faire**. Dès que le terrain de départ (ADEP ou
+   base de départ de l'appareil), la date et l'heure (décollage, sinon mise en route) sont
+   connus — saisis, repris de l'appareil connu ou importés — la page calcule un **METAR** à
+   l'heure du vol à partir du modèle Open-Meteo (marqué `RMK CALC OPEN-METEO` ; pour un vol du
+   jour dans l'heure, METAR réel VATSIM), le vent, la température, le QNH, la visibilité, le
+   plafond, le temps présent, le **lever / coucher du soleil** (heure locale du terrain) et la
+   phase jour / nuit. Changer d'heure ou de terrain met à jour ces valeurs ; ce que vous avez
+   saisi vous-même n'est jamais remplacé. Les boutons du bloc refont le calcul à la demande ;
+   un METAR collé est analysé.
 3. **Barre d'en-tête › Récupérer les infos (suivi réseau)** : « **Démarrer le suivi en
    direct** » avant la mise en route, et **garder la page ouverte** pendant le vol. Toutes les
    20 s, la page lit le flux public du réseau et remplit mise en route, décollage,
@@ -151,6 +158,10 @@ données sensibles.
 
 « Exporter la mission (YAML) » crée un fichier de cette seule mission ; « Nouvelle mission »
 repart d'un CR vierge.
+
+« **Envoyer le CR** » transmet le compte rendu (mission, CR en HTML et en texte, calculs) au
+webservice de la DEFA, une fois celui-ci réglé dans ☰ › Paramétrage › Envoi des comptes
+rendus. La bulle du bouton indique le dernier envoi de cette mission.
 
 ## 9. Le reporting
 

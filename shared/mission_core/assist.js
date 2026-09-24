@@ -147,23 +147,63 @@
   const WMO = { 0: 'ciel clair', 1: 'peu nuageux', 2: 'partiellement nuageux', 3: 'couvert', 45: 'brouillard', 48: 'brouillard givrant', 51: 'faible bruine', 53: 'bruine', 55: 'forte bruine', 56: 'bruine verglaçante', 57: 'bruine verglaçante', 61: 'faible pluie', 63: 'pluie', 65: 'forte pluie', 66: 'pluie verglaçante', 67: 'pluie verglaçante', 71: 'faible neige', 73: 'neige', 75: 'forte neige', 77: 'neige en grains', 80: 'averses', 81: 'averses', 82: 'fortes averses', 85: 'averses de neige', 86: 'averses de neige', 95: 'orage', 96: 'orage avec grêle', 99: 'orage avec grêle' };
   // Météo horaire (modèles / réanalyse) à l'heure et au lieu donnés : prévision ou passé
   // récent (api.open-meteo.com), sinon archive (archive-api.open-meteo.com).
-  async function archivedWeather(lat, lon, date, hour) {
-    const vars = 'temperature_2m,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,cloud_cover_low,weather_code';
-    const q = `latitude=${lat}&longitude=${lon}&hourly=${vars}&wind_speed_unit=kn&timezone=auto&start_date=${date}&end_date=${date}`;
+  async function archivedWeather(lat, lon, date, hour, icao = '') {
+    const vars = 'temperature_2m,dew_point_2m,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,cloud_cover_low,cloud_cover_mid,cloud_cover_high,weather_code';
+    const q = `latitude=${lat}&longitude=${lon}&hourly=${vars}&daily=sunrise,sunset&wind_speed_unit=kn&timezone=auto&start_date=${date}&end_date=${date}`;
     let data = null;
     for (const base of ['https://api.open-meteo.com/v1/forecast', 'https://archive-api.open-meteo.com/v1/archive']) {
-      try { const r = await fetch(`${base}?${q}`); if (r.ok) { data = await r.json(); if (data?.hourly?.time?.length) break; } } catch { /* source suivante */ }
+      try { const r = await fetch(`${base}?${q}`); if (r.ok) { const json = await r.json(); if (json?.hourly?.temperature_2m?.some(v => v != null)) { data = json; break; } } /* valeurs nulles : source suivante */ } catch { /* source suivante */ }
     }
     const h = data?.hourly; if (!h?.time?.length) return null;
     const i = Math.max(0, h.time.findIndex(t => Number(t.slice(11, 13)) === hour));
     const pick = k => h[k]?.[i];
     const dir = pick('wind_direction_10m'), speed = pick('wind_speed_10m'), gust = pick('wind_gusts_10m'), vis = pick('visibility');
+    const raw = { dir, speed, gust, vis, temp: pick('temperature_2m'), dew: pick('dew_point_2m'), qnh: pick('pressure_msl'), code: pick('weather_code'),
+      low: pick('cloud_cover_low'), mid: pick('cloud_cover_mid'), high: pick('cloud_cover_high') };
+    // Heure locale du terrain → heure UTC du METAR (décalage renvoyé par Open-Meteo).
+    const utc = new Date(Date.parse(`${h.time[i]}:00Z`) - (data.utc_offset_seconds || 0) * 1000);
+    const metar = icao ? buildMetar(icao, utc, raw) : '';
+    const hhmm = v => (typeof v === 'string' && v.length >= 16 ? v.slice(11, 16) : '');
     return {
-      time: h.time[i], wind: dir != null && speed != null ? `${pad(Math.round(dir / 10) * 10 % 360 || 360, 3)}${pad(Math.round(speed))}${gust != null && gust - speed >= 10 ? `G${pad(Math.round(gust))}` : ''}KT` : '',
+      time: h.time[i], metar, sunrise: hhmm(data.daily?.sunrise?.[0]), sunset: hhmm(data.daily?.sunset?.[0]),
+      wind: dir != null && speed != null ? `${pad(Math.round(dir / 10) * 10 % 360 || 360, 3)}${pad(Math.round(speed))}${gust != null && gust - speed >= 10 ? `G${pad(Math.round(gust))}` : ''}KT` : '',
       temperature: pick('temperature_2m') != null ? Math.round(pick('temperature_2m')) : null, qnh: pick('pressure_msl') != null ? Math.round(pick('pressure_msl')) : null,
       visibility: vis == null ? '' : vis >= 10000 ? '≥ 10 km' : vis >= 1000 ? `${Math.round(vis / 100) / 10} km` : `${Math.round(vis)} m`,
-      ceiling: pick('cloud_cover_low') > 0 ? `nuages bas ${pick('cloud_cover_low')} %` : '', precipitation: WMO[pick('weather_code')] || ''
+      ceiling: (metar && parseMetar(metar).ceiling) || (pick('cloud_cover_low') > 0 ? `nuages bas ${pick('cloud_cover_low')} %` : ''), precipitation: WMO[pick('weather_code')] || ''
     };
+  }
+  // METAR calculé à partir des valeurs du modèle (heure du vol) : vent, visibilité, temps
+  // présent (code WMO), nuages (couverture par étage ; base des nuages bas estimée par
+  // l'écart température / point de rosée, ≈ 400 ft par °C), T° / Td, QNH.
+  // Marqué « RMK CALC OPEN-METEO » : ce n'est pas une observation.
+  const WMO_METAR = { 45: 'FG', 48: 'FZFG', 51: '-DZ', 53: 'DZ', 55: '+DZ', 56: '-FZDZ', 57: 'FZDZ', 61: '-RA', 63: 'RA', 65: '+RA', 66: '-FZRA', 67: 'FZRA', 71: '-SN', 73: 'SN', 75: '+SN', 77: 'SG', 80: '-SHRA', 81: 'SHRA', 82: '+SHRA', 85: '-SHSN', 86: '+SHSN', 95: 'TSRA', 96: 'TSGR', 99: '+TSGR' };
+  function buildMetar(icao, utc, w) {
+    const parts = [up(icao), `${pad(utc.getUTCDate())}${pad(utc.getUTCHours())}${pad(utc.getUTCMinutes())}Z`];
+    if (w.dir != null && w.speed != null) {
+      const speed = Math.round(w.speed), dir = speed < 1 ? 0 : Math.round(w.dir / 10) * 10 % 360 || 360;
+      parts.push(`${pad(dir, 3)}${pad(speed)}${w.gust != null && w.gust - w.speed >= 10 ? `G${pad(Math.round(w.gust))}` : ''}KT`);
+    }
+    // Visibilité absente (archive) : ≥ 10 km s'il n'y a ni brouillard ni précipitations.
+    const seen = w.vis ?? (w.code != null && w.code < 45 ? 10000 : null);
+    const vis = seen == null ? null : seen >= 10000 ? 9999 : seen >= 5000 ? Math.floor(seen / 1000) * 1000 : Math.floor(seen / 100) * 100;
+    let wx = WMO_METAR[w.code] || '';
+    if (/FG$/.test(wx) && vis != null && vis >= 1000) wx = 'BR'; // brouillard du modèle, visibilité ≥ 1 km : brume
+    const octas = c => c == null || c < 12.5 ? '' : c <= 25 ? 'FEW' : c <= 50 ? 'SCT' : c <= 87.5 ? 'BKN' : 'OVC';
+    const spread = w.temp != null && w.dew != null ? Math.max(0, w.temp - w.dew) : null;
+    const lowBase = Math.min(6000, Math.max(200, Math.round((spread == null ? 2500 : spread * 400) / 100) * 100));
+    const layers = [[octas(w.low), lowBase], [octas(w.mid), Math.max(lowBase + 1000, 10000)], [octas(w.high), 25000]]
+      .filter(([cover]) => cover).map(([cover, base]) => `${cover}${pad(Math.round(base / 100), 3)}${/TS/.test(wx) && base === lowBase ? 'CB' : ''}`);
+    const lowest = layers.length ? Number(layers[0].slice(3, 6)) * 100 : Infinity;
+    if (vis === 9999 && !wx && lowest >= 5000) parts.push('CAVOK');
+    else {
+      if (vis != null) parts.push(pad(vis, 4));
+      if (wx) parts.push(wx);
+      parts.push(...(layers.length ? layers : ['NSC']));
+    }
+    const temp = v => (Math.round(v) < 0 ? `M${pad(-Math.round(v))}` : pad(Math.round(v)));
+    if (w.temp != null) parts.push(`${temp(w.temp)}/${w.dew != null ? temp(w.dew) : ''}`);
+    if (w.qnh != null) parts.push(`Q${pad(Math.round(w.qnh), 4)}`);
+    return `${parts.join(' ')} RMK CALC OPEN-METEO`;
   }
 
   // ---------------------------------------------------------------------- page
@@ -174,7 +214,8 @@
     unknownAd: L('Terrain inconnu de la base mondiale', 'Aerodrome not in the world database', 'Flugplatz nicht in der Weltdatenbank', 'Aeródromo no incluido en la base mundial'),
     weatherTitle: L('Sources météo et soleil', 'Weather and sun sources', 'Wetter- und Sonnenquellen', 'Fuentes de meteorología y sol'),
     metarNow: L('METAR actuel du terrain de départ (VATSIM)', 'Current departure METAR (VATSIM)', 'Aktuelles METAR des Startflugplatzes (VATSIM)', 'METAR actual del aeródromo de salida (VATSIM)'),
-    archive: L('Météo à l’heure du vol (Open-Meteo)', 'Weather at flight time (Open-Meteo)', 'Wetter zur Flugzeit (Open-Meteo)', 'Meteorología a la hora del vuelo (Open-Meteo)'),
+    archive: L('METAR calculé à l’heure du vol (Open-Meteo)', 'Computed METAR at flight time (Open-Meteo)', 'Berechnetes METAR zur Flugzeit (Open-Meteo)', 'METAR calculado a la hora del vuelo (Open-Meteo)'),
+    auto: L('Météo et soleil renseignés automatiquement (terrain de départ, date, heure)', 'Weather and sun filled automatically (departure aerodrome, date, time)', 'Wetter und Sonne automatisch ausgefüllt (Startflugplatz, Datum, Uhrzeit)', 'Meteorología y sol completados automáticamente (aeródromo de salida, fecha, hora)'),
     sun: L('Calculer lever / coucher du soleil', 'Compute sunrise / sunset', 'Sonnenauf-/-untergang berechnen', 'Calcular salida / puesta del sol'),
     needAd: L('Renseignez le terrain de départ (ADEP ou base de départ).', 'Enter the departure aerodrome (ADEP or departure base).', 'Startflugplatz angeben (ADEP oder Startbasis).', 'Indique el aeródromo de salida (ADEP o base de salida).'),
     noCoords: L('Coordonnées du terrain introuvables (base mondiale indisponible ou terrain inconnu).', 'Aerodrome coordinates not found (world database unavailable or unknown aerodrome).', 'Flugplatzkoordinaten nicht gefunden (Weltdatenbank nicht verfügbar oder Flugplatz unbekannt).', 'Coordenadas del aeródromo no encontradas (base mundial no disponible o aeródromo desconocido).'),
@@ -343,19 +384,44 @@
         commit(done); status(`${text} — ${report(done)}${getMission().metadata?.date !== today ? ` · ${tr(T.notToday)}` : ''}`);
       } catch (error) { status(`${tr(T.error)} : ${error.message}`); }
     }
-    async function archive() {
-      const icao = departure(); if (!icao) { status(tr(T.needAd)); return; }
-      const ad = await airport(icao); if (!ad) { status(tr(T.noCoords)); return; }
-      const m = getMission(), time = M.minutes(m.timeline?.takeoff || m.timeline?.engineStart || m.metadata?.timeLocal);
-      const w = await archivedWeather(ad.lat, ad.lon, m.metadata?.date || new Date().toISOString().slice(0, 10), time == null ? 12 : Math.floor(time / 60));
-      if (!w) { status(`${tr(T.error)} (Open-Meteo)`); return; }
+    const flightMinutes = m => M.minutes(m.timeline?.takeoff || m.timeline?.engineStart || m.metadata?.timeLocal);
+    async function archive(quiet = false) {
+      const icao = departure(); if (!icao) { if (!quiet) status(tr(T.needAd)); return; }
+      const ad = await airport(icao); if (!ad || !Number.isFinite(ad.lat)) { if (!quiet) status(tr(T.noCoords)); return; }
+      const m = getMission(), time = flightMinutes(m), date = m.metadata?.date || new Date().toISOString().slice(0, 10);
+      const w = await archivedWeather(ad.lat, ad.lon, date, time == null ? 12 : Math.floor(time / 60), icao);
+      if (!w) { if (!quiet) status(`${tr(T.error)} (Open-Meteo)`); return; }
       const done = [];
+      // Vol du jour, à moins d'une heure de maintenant : METAR réel (VATSIM) plutôt que calculé.
+      let metar = w.metar;
+      const now = new Date(), today = now.toISOString().slice(0, 10), nowMin = M.minutes(clock(now, ad.tz));
+      if (date === today && (time == null || Math.abs(time - nowMin) <= 60)) { try { metar = (await currentMetar(icao)) || metar; } catch { /* METAR calculé */ } }
+      setIfEmpty('environment.metar', metar, done);
+      if (metar !== w.metar) applyMetar(metar, done);
       ['wind', 'temperature', 'qnh', 'visibility', 'ceiling', 'precipitation'].forEach(k => setIfEmpty(`environment.${k}`, w[k], done));
-      await sun(done, true); commit(done);
-      status(`${tr(T.weatherFor)} ${icao} ${w.time.replace('T', ' ')} (${tr(T.local)}) — ${report(done)}`);
+      // Lever / coucher : calcul local (et phase jour / nuit), puis valeurs Open-Meteo si disponibles.
+      await sun(done, true);
+      setIfEmpty('environment.sunrise', w.sunrise, done); setIfEmpty('environment.sunset', w.sunset, done);
+      commit([...new Set(done)], quiet);
+      status(`${quiet ? `${tr(T.auto)} · ` : ''}${tr(T.weatherFor)} ${icao} ${w.time.replace('T', ' ')} (${tr(T.local)}) — ${report(done)}`);
+    }
+    // Renseignement automatique dès que le terrain de départ, la date ou l'heure du vol
+    // changent (saisie, appareil connu, import) : champs vides ou déjà remplis automatiquement.
+    let envSig = null, envTimer = null;
+    // mode 'reset' : mission (ré)ouverte, état de référence sans requête ;
+    // 'now' : nouvelle mission (terrain de départ par défaut) renseignée tout de suite.
+    function autoEnvironment(mode = '') {
+      const m = getMission(), time = flightMinutes(m);
+      const sig = [departure(), m.metadata?.date || '', time == null ? '' : Math.floor(time / 60)].join('|');
+      if (mode === 'reset' || (envSig === null && mode !== 'now')) { envSig = sig; clearTimeout(envTimer); return; }
+      if (sig === envSig && mode !== 'now') return; envSig = sig;
+      clearTimeout(envTimer);
+      if (!departure() || !m.metadata?.date) return;
+      envTimer = setTimeout(() => archive(true).catch(() => {}), 1200);
     }
     const report = done => done.length ? `${tr(T.filled)} : ${done.map(p => p.split('.').pop()).join(', ')}` : tr(T.nothing);
-    const commit = done => { if (!done.length) return; view.sync(); view.refresh(); onChange(done[0]); };
+    // auto : remplissage automatique, qui ne rend pas « modifiée » une mission non touchée.
+    const commit = (done, auto = false) => { if (!done.length) return; view.sync(); view.refresh(); onChange(done[0], auto); };
 
     // Barre d'outils du bloc météo (recréée à chaque rendu du formulaire).
     let statusEl = null;
@@ -368,7 +434,7 @@
       bar.querySelector('[data-tool="archive"]').textContent = tr(T.archive);
       bar.querySelector('[data-tool="sun"]').textContent = tr(T.sun);
       bar.querySelector('[data-tool="metar"]').onclick = metarNow;
-      bar.querySelector('[data-tool="archive"]').onclick = archive;
+      bar.querySelector('[data-tool="archive"]').onclick = () => archive();
       bar.querySelector('[data-tool="sun"]').onclick = async () => commit(await sun());
       section.querySelector('h2').after(bar); statusEl = bar.querySelector('.mc-tools-status');
     }
@@ -404,8 +470,8 @@
       const rows = A.table().filter(e => !e.role && !e.generic && e.types.some(t => A.typeKey(t) === type) && (!operator || up(e.operator) === up(operator)));
       return rows.length === 1 ? rows[0].prefix : '';
     }
-    return { suggest, aircraftCommit, seriesPrefix, onCommit, decorate, airport, cachedAirport, remember, applyMetar, sun, status: text => status(text), T };
+    return { suggest, aircraftCommit, seriesPrefix, onCommit, decorate, airport, cachedAirport, remember, applyMetar, sun, autoEnvironment, status: text => status(text), T };
   }
 
-  window.MissionAssist = { create, parseMetar, sunTimes, routePoints, airport, remember, loadAirports, T };
+  window.MissionAssist = { create, parseMetar, buildMetar, sunTimes, routePoints, airport, remember, loadAirports, T };
 })();

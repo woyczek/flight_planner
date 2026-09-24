@@ -50,9 +50,15 @@ Points forts :
   l'exploitant OACI (OPR/).
 - **Import du plan de vol déposé** : SimBrief, IVAO (vol en cours), VATSIM (en cours ou
   déposé à l'avance).
-- **Météo et soleil** : analyse du METAR, METAR actuel (VATSIM), météo modèle à l'heure du
-  vol (Open-Meteo), lever / coucher du soleil et jour / nuit au terrain de départ (heure
-  locale).
+- **Météo et soleil** : renseignés automatiquement dès que le terrain de départ, la date et
+  l'heure sont connus — METAR calculé à partir du modèle Open-Meteo à l'heure du vol (marqué
+  `RMK CALC OPEN-METEO` ; METAR réel VATSIM pour un vol du jour, dans l'heure), lever /
+  coucher du soleil (Open-Meteo, calcul local à défaut) et phase jour / nuit. Seuls les
+  champs vides ou remplis automatiquement sont écrits.
+- **Indicatif intelligent** : `ctm58` saisi dans l'indicatif donne COTAM / 58 / CTM58,
+  OPR/ CTM et l'organisme de la série.
+- **Envoi du CR** : bouton « Envoyer le CR » (POST JSON) vers un webservice dont l'adresse et
+  la clef se règlent dans Paramétrage (la clef reste dans le navigateur, hors sauvegardes).
 - **Suivi réseau en direct** (IVAO / VATSIM) : mise en route, décollage, atterrissage, fin de
   mission ; import de l'historique VATSIM.
 - **Registre unique** : toutes les familles dans un seul fichier YAML (`CR DEFA/missions.yaml`),
@@ -91,7 +97,8 @@ Points forts :
 
 ## Confidentialité
 
-Rien n'est envoyé à un serveur du projet (il n'y en a pas). Les pages n'appellent des
+Rien n'est envoyé à un serveur du projet (il n'y en a pas), hormis les CR que vous envoyez
+vous-même par « Envoyer le CR » au webservice configuré. Les pages n'appellent des
 services publics que lorsque vous utilisez la fonction correspondante : flux publics IVAO /
 VATSIM, METAR VATSIM, SimBrief (votre identifiant), Open-Meteo (coordonnées du terrain et
 date), jsDelivr (liste mondiale des aérodromes). Les données des missions restent dans

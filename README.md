@@ -47,8 +47,15 @@ Highlights:
   7-character ICAO flight plan form (DRAGON76 ↔ DRAGO76, PELICAN31 ↔ PCAN31) and ICAO
   operator (OPR/).
 - **Filed flight plan import**: SimBrief, IVAO (live), VATSIM (live or prefiled).
-- **Weather and sun**: METAR parsing, current METAR (VATSIM), model weather at flight time
-  (Open-Meteo), sunrise / sunset / day-night at the departure aerodrome (local time).
+- **Weather and sun**: filled automatically as soon as the departure aerodrome, date and time
+  are known — METAR computed from the Open-Meteo model at flight time (marked
+  `RMK CALC OPEN-METEO`; real VATSIM METAR for a flight today, within the hour), sunrise /
+  sunset (Open-Meteo, local calculation as fallback) and day / night phase. Only empty or
+  automatically filled fields are written.
+- **Smart callsign**: typing `ctm58` in the callsign field gives COTAM / 58 / CTM58, OPR/ CTM
+  and the organisation of the series.
+- **Send report**: “Send report” button posting the report (JSON) to a web service whose
+  address and key are set in Settings (the key stays in the browser, outside backups).
 - **Live network tracking** (IVAO / VATSIM) filling engine start, take-off, landing and
   mission end; VATSIM history import.
 - **Single ledger**: all families in one YAML file (`CR DEFA/missions.yaml`), written in the
@@ -86,7 +93,8 @@ Highlights:
 
 ## Privacy
 
-Nothing is sent to a server of this project (there is none). The pages call public
+Nothing is sent to a server of this project (there is none), except the reports you send
+yourself with “Send report” to the web service you configured. The pages call public
 services only when you use the related feature: IVAO / VATSIM public feeds, VATSIM METAR,
 SimBrief (your username), Open-Meteo (aerodrome coordinates and date), jsDelivr (world
 aerodrome list). Mission data stay in your browser and in the files you choose.

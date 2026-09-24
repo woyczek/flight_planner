@@ -164,3 +164,7 @@ header.mc-header a.mc-header-new{display:inline-flex;margin-top:8px;padding:6px 
 .mc-import-links{border-bottom:1px solid var(--line);padding-bottom:8px}
 .mc-import-links a{display:inline-flex;align-items:center;padding:5px 10px;border-radius:8px;background:var(--accent);color:#fff;text-decoration:none;font-size:12px;font-weight:700}
 .mc-import-links a:hover{filter:brightness(1.1)}
+
+/* Envoi du CR : bouton atténué tant que le webservice n'est pas configuré */
+.mc-header-tools .mc-send{border-color:#22c55e;color:#bbf7d0}
+.mc-header-tools .mc-send.mc-send-off{opacity:.55;border-style:dashed}

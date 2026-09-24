@@ -224,6 +224,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     { id: 'airports', group: T('Données du navigateur', 'Browser data'), title: T('Aérodromes utilisés (cache)', 'Aerodromes used (cache)'), key: 'missionAirports:v1', byKey: r => String(r.icao || '').toUpperCase(),
       intro: T('Coordonnées et fuseaux des terrains utilisés (lever / coucher du soleil, météo).', 'Coordinates and time zones of aerodromes used (sunrise / sunset, weather).'),
       columns: [{ key: 'icao', label: 'OACI', upper: true }, { key: 'name', label: T('Nom', 'Name'), width: '14em' }, { key: 'country', label: T('Pays', 'Country') }, { key: 'lat', label: 'Lat', type: 'number' }, { key: 'lon', label: 'Lon', type: 'number' }, { key: 'elevation', label: T('Altitude (ft)', 'Elevation (ft)'), type: 'number' }, { key: 'tz', label: T('Fuseau', 'Time zone') }] },
+    { id: 'send', group: T('Missions', 'Missions'), title: T('Envoi des comptes rendus (webservice)', 'Report sending (web service)'), custom: true,
+      intro: T('Bouton « Envoyer le CR » des pages de saisie : POST JSON (mission, CR HTML et texte, calculs) vers l’adresse ci-dessous. La clef reste dans ce navigateur (missionSendKey:v1), hors sauvegarde locale. Le service doit accepter les appels de cette origine (CORS).', '“Send report” button of the entry pages: JSON POST (mission, report HTML and text, calculations) to the address below. The key stays in this browser (missionSendKey:v1), outside the local backup. The service must accept calls from this origin (CORS).') },
     { id: 'ledgers', group: T('Missions', 'Missions'), title: T('Registres des missions (base des opérations)', 'Mission ledgers (operations base)'), custom: true,
       intro: T('Registre unique CR DEFA/missions.yaml (toutes familles, source de vérité des reportings). Édition directe du YAML, complète ou par famille, avec contrôle avant enregistrement ; pour une mission, préférer le CR (clic sur la ligne du reporting).', 'Single ledger CR DEFA/missions.yaml (all families, source of truth of the reportings). Direct YAML editing, full or per family, checked before saving; for a single mission, prefer the report (click its reporting row).') }
   ];
@@ -254,7 +256,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       root.querySelector('.da-intro').textContent = set.intro || '';
       const howto = root.querySelector('.da-howto'); howto.hidden = !set.howto; howto.querySelector('div').innerHTML = set.howto || '';
       const body = root.querySelector('.da-body'); body.innerHTML = '';
-      if (set.custom) return ledgers(body);
+      if (set.custom) return set.id === 'send' ? sendSettings(body) : ledgers(body);
       if (set.file) {
         const w = work[set.id];
         status(w.local ? `${T('Modifications locales du', 'Local changes from')} ${new Date(w.local).toLocaleString()} (${T('prioritaires dans ce navigateur, pas encore dans le dépôt', 'active in this browser, not yet in the repository')})` : T('Contenu du fichier du dépôt', 'Repository file content'));
@@ -284,6 +286,30 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       }, 'primary'], [T('Annuler les modifications', 'Discard changes'), () => { dirty = false; show(); }]];
       if (set.integrate) buttons.push([T('Intégrer à la base du dépôt', 'Integrate into repository base'), () => { const target = set.integrate(list); dirty = false; current.id = target; history.replaceState(null, '', `?base=${target}`); show(); changed(); }]);
       actions(buttons);
+    }
+
+    // Envoi des CR : adresse, en-tête, schéma et clef du webservice (encore à définir).
+    function sendSettings(body) {
+      const config = { header: 'Authorization', scheme: 'Bearer', ...(read('missionSendConfig:v1') || {}) };
+      const fields = [['url', T('Adresse du webservice (https://…)', 'Web service address (https://…)'), 'url'], ['header', T('En-tête de la clef', 'Key header'), 'text'], ['scheme', T('Préfixe (Bearer, vide pour la clef seule)', 'Prefix (Bearer, empty for the bare key)'), 'text'], ['key', T('Clef', 'Key'), 'password']];
+      body.innerHTML = `<div class="da-form">${fields.map(([k, label, type]) => `<label>${esc(label)}<input type="${type}" data-send="${k}" autocomplete="off" spellcheck="false"></label>`).join('')}</div>
+        <p class="small">${esc(T('Exemples d’en-tête : Authorization (Bearer <clef>), X-API-Key (clef seule).', 'Header examples: Authorization (Bearer <key>), X-API-Key (bare key).'))}</p>`;
+      const input = k => body.querySelector(`[data-send="${k}"]`);
+      ['url', 'header', 'scheme'].forEach(k => { input(k).value = config[k] || ''; });
+      input('key').value = localStorage.getItem('missionSendKey:v1') || '';
+      body.querySelectorAll('input').forEach(i => i.oninput = changed);
+      const log = read('missionSendLog:v1') || {};
+      status(`${Object.keys(log).length} ${T('CR envoyés depuis ce navigateur', 'reports sent from this browser')}`);
+      actions([
+        [T('Enregistrer', 'Save'), () => {
+          const url = input('url').value.trim();
+          if (url && !/^https?:\/\//i.test(url)) { status(T('Adresse invalide (http:// ou https://)', 'Invalid address (http:// or https://)')); return; }
+          write('missionSendConfig:v1', { url, header: input('header').value.trim() || 'Authorization', scheme: input('scheme').value.trim() });
+          const key = input('key').value.trim(); if (key) localStorage.setItem('missionSendKey:v1', key); else localStorage.removeItem('missionSendKey:v1');
+          dirty = false; status(T('Enregistré dans ce navigateur', 'Saved in this browser'));
+        }, 'primary'],
+        [T('Oublier la clef', 'Forget the key'), () => { localStorage.removeItem('missionSendKey:v1'); input('key').value = ''; status(T('Clef supprimée de ce navigateur', 'Key removed from this browser')); }]
+      ]);
     }
 
     // Registres des missions : YAML par famille.

@@ -62,6 +62,15 @@
     importIntro: L('Collez un plan de vol OACI « (FPL-…) », une page du tracker IVAO (détails d’un vol ou liste des connexions : Ctrl+A, Ctrl+C sur la page), la page d’un vol StatSim (VATSIM), l’historique VATSIM (JSON) ou un METAR : les champs vides sont remplis. Heures du tracker converties en heure locale du terrain de départ.', 'Paste an ICAO flight plan “(FPL-…)”, an IVAO tracker page (flight details or connection list: Ctrl+A, Ctrl+C on the page), the VATSIM history (JSON) or a METAR: empty fields are filled. Tracker times converted to local time at the departure aerodrome.', 'Einen ICAO-Flugplan „(FPL-…)“, eine IVAO-Tracker-Seite (Flugdetails oder Verbindungsliste: Strg+A, Strg+C auf der Seite), die VATSIM-Historie (JSON) oder ein METAR einfügen: leere Felder werden ausgefüllt. Tracker-Zeiten in Ortszeit des Startflugplatzes umgerechnet.', 'Pegue un plan de vuelo OACI «(FPL-…)», una página del tracker IVAO (detalle de un vuelo o lista de conexiones: Ctrl+A, Ctrl+C en la página), el historial VATSIM (JSON) o un METAR: se rellenan los campos vacíos. Horas del tracker convertidas a hora local del aeródromo de salida.'),
     importRun: L('Analyser et remplir', 'Analyse and fill', 'Auswerten und ausfüllen', 'Analizar y rellenar'), importClip: L('Coller depuis le presse-papiers', 'Paste from clipboard', 'Aus Zwischenablage einfügen', 'Pegar desde el portapapeles'),
     importBookmarklet: L('← à glisser dans la barre des favoris : un clic sur la page du tracker IVAO la copie ; revenez ici, elle est analysée.', '← drag to the bookmarks bar: one click on the IVAO tracker page copies it; come back here, it is analysed.', '← in die Lesezeichenleiste ziehen: ein Klick auf der IVAO-Tracker-Seite kopiert sie; hierher zurückkehren, sie wird ausgewertet.', '← arrastre a la barra de marcadores: un clic en la página del tracker IVAO la copia; vuelva aquí, se analiza.'),
+    sendReport: L('Envoyer le CR', 'Send report', 'Bericht senden', 'Enviar informe'),
+    sendNotConfigured: L('Envoi du CR : webservice non configuré (Paramétrage → Envoi des comptes rendus).', 'Report sending: web service not configured (Settings → Report sending).', 'Berichtversand: Webservice nicht konfiguriert (Einstellungen → Berichtversand).', 'Envío del informe: servicio web no configurado (Configuración → Envío de informes).'),
+    sendUnsaved: L('Cette mission n’est pas enregistrée dans le registre (ou a des modifications non enregistrées). L’envoyer quand même ?', 'This mission is not saved in the ledger (or has unsaved changes). Send it anyway?', 'Dieser Einsatz ist nicht im Register gespeichert (oder hat ungespeicherte Änderungen). Trotzdem senden?', 'Esta misión no está guardada en el registro (o tiene cambios sin guardar). ¿Enviarla de todos modos?'),
+    sendConfirm: L('Envoyer ce compte rendu au webservice', 'Send this report to the web service', 'Diesen Bericht an den Webservice senden', 'Enviar este informe al servicio web'),
+    sending: L('Envoi du CR…', 'Sending report…', 'Bericht wird gesendet…', 'Enviando informe…'),
+    sent: L('CR envoyé', 'Report sent', 'Bericht gesendet', 'Informe enviado'),
+    sendFailed: L('Échec de l’envoi du CR', 'Report sending failed', 'Berichtversand fehlgeschlagen', 'Error al enviar el informe'),
+    sendCors: L('service injoignable ou appel refusé par le navigateur (CORS : le service doit autoriser cette origine)', 'service unreachable or call blocked by the browser (CORS: the service must allow this origin)', 'Dienst nicht erreichbar oder vom Browser blockiert (CORS: der Dienst muss diese Herkunft erlauben)', 'servicio inaccesible o llamada bloqueada por el navegador (CORS: el servicio debe permitir este origen)'),
+    sentBefore: L('Déjà envoyé le', 'Already sent on', 'Bereits gesendet am', 'Ya enviado el'),
     importBookmarkletHelp: L('Ce lien s’utilise depuis la barre des favoris, sur la page du tracker (glisser-déposer le lien dans la barre).', 'Use this link from the bookmarks bar, on the tracker page (drag and drop the link into the bar).', 'Diesen Link aus der Lesezeichenleiste auf der Tracker-Seite verwenden (Link in die Leiste ziehen).', 'Use este enlace desde la barra de marcadores, en la página del tracker (arrastre el enlace a la barra).'),
     importFpl: L('Plan de vol OACI', 'ICAO flight plan', 'ICAO-Flugplan', 'Plan de vuelo OACI'), importIvaoDetails: L('Tracker IVAO — détails du vol', 'IVAO tracker — flight details', 'IVAO-Tracker — Flugdetails', 'Tracker IVAO — detalle del vuelo'),
     importIvaoList: L('Tracker IVAO — connexions', 'IVAO tracker — connections', 'IVAO-Tracker — Verbindungen', 'Tracker IVAO — conexiones'), importMetar: L('METAR', 'METAR'),
@@ -124,6 +133,7 @@
     tools.innerHTML = `<div class="mc-header-ledger"><span class="mc-header-label"></span>
         <button type="button" class="primary" data-action="store"></button>
         <button type="button" class="danger" data-action="delete" hidden></button>
+        <button type="button" class="mc-send" data-action="send"></button>
         <button type="button" data-action="new"></button>
         <button type="button" data-action="export"></button>
         <button type="button" data-action="import"></button>
@@ -171,7 +181,7 @@
     let saveTimer = null;
     // Valeurs remplies automatiquement (appareil connu, plan de vol, météo…) : texte simple en
     // majuscules comme la saisie, avant le brouillon et l'aperçu.
-    const changed = () => { dirty = true; kpi(); clearTimeout(saveTimer); saveTimer = setTimeout(() => { if (M.upperText(mission)) view.sync(); saveDraft(); renderReport(); }, 400); };
+    const changed = (path, auto = false) => { if (!auto) dirty = true; kpi(); assist.autoEnvironment(); clearTimeout(saveTimer); saveTimer = setTimeout(() => { if (M.upperText(mission)) view.sync(); if (dirty) saveDraft(); renderReport(); }, 400); };
     const view = window.MissionForm.create(form, {
       family, getMission: () => mission,
       onChange: changed,
@@ -245,6 +255,15 @@
       item.callsignPrefix = prefix; auto.callsignPrefix = prefix; autoFilled.set(item, auto);
       item.callsign = M.joinCallsign(prefix, item.callsignNumber); fplAssist(item, auto); return true;
     }
+    // Série de la table de correspondance (COTAM, DRAGON…) : organisme de la mission et type
+    // (s'il est unique pour la série), seulement s'ils sont vides ou déjà remplis automatiquement.
+    function seriesAssist(index) {
+      const item = mission.aircraft[index], entry = item?.callsignPrefix && A.table().find(e => e.prefix === A.canonicalPrefix(item.callsignPrefix));
+      if (!entry) return;
+      if (index === 0 && entry.operator && (!mission.organisation.organisation || mission.organisation.organisation === autoOperator)) mission.organisation.organisation = autoOperator = String(entry.operator).toUpperCase();
+      const auto = autoFilled.get(item) || {};
+      if ((entry.types || []).length === 1 && (!item.type || item.type === auto.type)) { item.type = entry.types[0]; auto.type = item.type; autoFilled.set(item, auto); typeAssist(index, item.type); }
+    }
     // Exploitant OACI (OPR/) : d'après l'organisme de la mission ou l'opérateur de l'appareil connu.
     function operatorAssist(index, known = null) {
       const item = mission.aircraft[index]; if (!item) return false;
@@ -265,7 +284,10 @@
     function aircraftAssist(path, value) {
       const m = /^aircraft\.(\d+)\.(registration|callsign|callsignPrefix|callsignNumber|callsignFpl|type|variant)$/.exec(path); if (!m) return;
       const index = Number(m[1]), item = mission.aircraft[index];
-      try { identityAssist(index, m[2], value, item); } finally { if (autoSeries(index)) { view.sync('aircraft.'); changed(); } }
+      try { identityAssist(index, m[2], value, item); } finally {
+        if (/^callsign/.test(m[2])) seriesAssist(index); // après l'effacement des valeurs de l'appareil précédent
+        autoSeries(index); view.sync(); changed();
+      }
     }
     function identityAssist(index, field, value, item) {
       // Indicatif complet ⇄ indicatif (série) + numéro.
@@ -287,8 +309,14 @@
       }
       // Indicatif complet ou forme plan de vol saisis (DRAGO76) → DRAGON / 76.
       if (field === 'callsign') { const parts = M.splitCallsign(value); item.callsignPrefix = A.canonicalPrefix(parts.prefix); item.callsignNumber = parts.number; item.callsign = M.joinCallsign(item.callsignPrefix, parts.number); }
+      // Indicatif saisi avec son numéro (« ctm58 ») : découpé comme l'indicatif complet.
+      if (field === 'callsignPrefix' && /\d/.test(item.callsignPrefix || '')) { const parts = M.splitCallsign(item.callsignPrefix); item.callsignPrefix = parts.prefix; if (parts.number) item.callsignNumber = parts.number; }
       if (field === 'callsignPrefix' || field === 'callsignNumber') { if (field === 'callsignPrefix') item.callsignPrefix = A.canonicalPrefix(item.callsignPrefix); item.callsign = M.joinCallsign(item.callsignPrefix, item.callsignNumber); value = item.callsign; }
-      if (CALLSIGN.includes(field)) { fplAssist(item, autoFilled.get(item) || {}); operatorAssist(index); view.sync('aircraft.'); }
+      if (CALLSIGN.includes(field)) {
+        fplAssist(item, autoFilled.get(item) || {}); operatorAssist(index); view.sync('aircraft.');
+        // Champ encore actif (ignoré par sync) : valeur découpée / normalisée affichée.
+        const input = form.querySelector(`[data-path="aircraft.${index}.${field}"]`); if (input && input.value !== (item[field] || '')) input.value = item[field] || '';
+      }
       // Valeurs reprises d'un appareil précédemment choisi : effacées pour laisser place au nouveau choix.
       const auto = autoFilled.get(item) || {};
       if (field !== 'variant') ['registration', ...CALLSIGN, 'type', 'variant', 'category', 'tacticalNumber', 'configuration', 'baseDeparture'].forEach(k => { if (k !== field && !(CALLSIGN.includes(field) && CALLSIGN.includes(k)) && item[k] && item[k] === auto[k]) { item[k] = ''; delete auto[k]; } });
@@ -348,7 +376,7 @@
       root.querySelector('#mcReport').innerHTML = html;
       reportRows = rows; registerI18n();
     }
-    function redraw() { view.render(blockList); assist.decorate(); fplTools(); kpi(); modeUi(); ledgerInfo(); renderReport(); switcher.sync(); registerI18n(); blockFramework(); }
+    function redraw() { view.render(blockList); assist.decorate(); assist.autoEnvironment('reset'); sendUi(); fplTools(); kpi(); modeUi(); ledgerInfo(); renderReport(); switcher.sync(); registerI18n(); blockFramework(); }
     // Blocs recréés : afficher / masquer / déplacer du framework réappliqués (état mémorisé).
     const blockFramework = () => { if (document.readyState === "complete") window.AppFramework?.refresh?.(); };
 
@@ -484,6 +512,43 @@
     }
 
     $a('store').onclick = () => store();
+    // ---- envoi du CR à un webservice JSON (adresse et clef : Paramétrage → Envoi des comptes rendus).
+    // La clef est conservée à part (missionSendKey:v1), hors sauvegarde locale.
+    const SEND_CONFIG = 'missionSendConfig:v1', SEND_KEY = 'missionSendKey:v1', SEND_LOG = 'missionSendLog:v1';
+    const readJson = key => { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch { return null; } };
+    const sendConfig = () => ({ header: 'Authorization', scheme: 'Bearer', ...(readJson(SEND_CONFIG) || {}), key: localStorage.getItem(SEND_KEY) || '' });
+    const sendLogKey = () => `${family.id}:${normId(mission.metadata?.missionId)}:${mission.metadata?.date || ''}`;
+    function sendUi() {
+      const button = $a('send'), config = sendConfig(), last = (readJson(SEND_LOG) || {})[sendLogKey()];
+      button.textContent = t('sendReport'); button.classList.toggle('mc-send-off', !config.url);
+      button.title = !config.url ? inLanguage(UI.sendNotConfigured) : `${inLanguage(UI.sendConfirm)} : ${config.url}${last ? `\n${inLanguage(UI.sentBefore)} ${new Date(last.at).toLocaleString()} (HTTP ${last.status})` : ''}`;
+    }
+    $a('send').onclick = async () => {
+      const config = sendConfig();
+      if (!config.url) { status.innerHTML = `${esc(inLanguage(UI.sendNotConfigured))} <a href="${esc(new URL('parametrage.html?base=send', window.MissionLedger.APP).href)}">↗</a>`; return; }
+      if ((!edit || dirty) && !confirm(inLanguage(UI.sendUnsaved))) return;
+      M.upperText(mission); renderReport();
+      const shown = isPublic() ? M.redact(mission, family) : mission, report = root.querySelector('#mcReport');
+      const p = prefs(), body = {
+        format: 'defa-mission-report', version: 1, sentAt: new Date().toISOString(),
+        family: family.id, series: mission.series || '', missionId: mission.metadata?.missionId || '', date: mission.metadata?.date || '',
+        public: isPublic(), mission: shown,
+        report: { html: report.innerHTML, text: report.innerText },
+        statistics: M.computeStatistics(mission),
+        sender: { ivaoId: mission.network?.ivaoId || p.ivaoId || '', vatsimId: mission.network?.vatsimId || p.vatsimId || '', page: location.href }
+      };
+      const headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
+      if (config.key) headers[config.header || 'Authorization'] = config.scheme ? `${config.scheme} ${config.key}` : config.key;
+      const button = $a('send'); button.disabled = true; status.textContent = t('sending');
+      try {
+        const response = await fetch(config.url, { method: 'POST', headers, body: JSON.stringify(body) });
+        const text = (await response.text().catch(() => '')).trim();
+        let reply = ''; try { const json = JSON.parse(text); reply = json.message || json.id || json.reference || ''; } catch { reply = text.slice(0, 120); }
+        if (response.ok) { const log = readJson(SEND_LOG) || {}; log[sendLogKey()] = { at: body.sentAt, status: response.status, url: config.url, reply: String(reply) }; localStorage.setItem(SEND_LOG, JSON.stringify(log)); }
+        status.textContent = `${t(response.ok ? 'sent' : 'sendFailed')} — HTTP ${response.status}${reply ? ` : ${reply}` : ''}`;
+      } catch (error) { status.textContent = `${t('sendFailed')} — ${inLanguage(UI.sendCors)} (${error.message})`; }
+      finally { button.disabled = false; sendUi(); }
+    };
     $a('render').onclick = () => renderReport();
     $a('public').onchange = () => renderReport();
     // Impression : seul le compte rendu est imprimé (voir core.css, @media print).
@@ -500,7 +565,7 @@
     $a('new').onclick = () => {
       if (dirty && !confirm(t('confirmNew'))) return;
       localStorage.removeItem(draftKey); edit = null; history.replaceState(null, '', location.pathname);
-      mission = fresh(); dirty = false; redraw();
+      mission = fresh(); dirty = false; redraw(); assist.autoEnvironment('now');
     };
     $a('folder').onclick = async () => { try { await ledger.chooseFolder(); await ledger.load(); ledgerInfo(); await persist('stored'); } catch (error) { status.textContent = error.message; } };
     $a('download').onclick = () => ledger.downloadYaml();
@@ -562,6 +627,7 @@
         mission = draft ? M.migrate(draft, family.id) : fresh(); dirty = !!draft;
       }
       redraw();
+      if (!edit && !dirty) assist.autoEnvironment('now'); // nouvelle mission : météo du terrain de départ par défaut
     })();
 
     return { family, ledger, ready, get mission() { return mission; }, set mission(value) { mission = M.migrate(value, family.id); redraw(); }, get editing() { return edit; }, redraw, store, statistics: () => M.computeStatistics(mission), context: () => view.context() };
