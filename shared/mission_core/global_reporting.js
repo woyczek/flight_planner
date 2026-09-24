@@ -153,7 +153,25 @@
         network: mission.network || {} };
     };
     // Position de la mission dans sa famille (adresse de modification du CR).
-    const allRows = () => { const seen = {}; return L2.store.missions.map(m => toRow(m, (seen[m.family] = (seen[m.family] ?? -1) + 1))); };
+    // Données des reportings : registre des missions (défaut) ou journal DEFA (vols réalisés,
+    // chargé dans Paramétrage › Base DEFA ; lecture seule). Choix commun à tous les reportings.
+    const SRC = { label: L('Données', 'Data', 'Daten', 'Datos'), ledger: L('Mes missions (registre)', 'My missions (ledger)', 'Meine Einsätze (Register)', 'Mis misiones (registro)'), defa: L('Journal DEFA (vols réalisés)', 'DEFA log (flights flown)', 'DEFA-Journal (durchgeführte Flüge)', 'Diario DEFA (vuelos realizados)'),
+      readOnly: L('Vol du journal DEFA : lecture seule (pas de CR à modifier).', 'DEFA log flight: read-only (no report to edit).', 'Flug aus dem DEFA-Journal: nur lesbar.', 'Vuelo del diario DEFA: solo lectura.') };
+    let logMissions = null;
+    const logSource = () => window.DefaFlightLog?.source?.() === 'defa';
+    const sourceMissions = () => logSource() ? (logMissions ||= window.DefaFlightLog.toMissions()) : null;
+    window.addEventListener('defa-log-change', () => { logMissions = null; });
+    function sourcePicker(host) {
+      const n = window.DefaFlightLog?.records?.().length || 0; if (!n || !host) return;
+      const label = document.createElement('label'); label.className = 'mc-source';
+      label.innerHTML = `<span>${esc(tr(SRC.label))}</span><select><option value="ledger">${esc(tr(SRC.ledger))}</option><option value="defa">${esc(tr(SRC.defa))} — ${n}</option></select>`;
+      const select = label.querySelector('select'); select.value = logSource() ? 'defa' : 'ledger';
+      select.onchange = () => { window.DefaFlightLog.setSource(select.value); };
+      window.addEventListener('mission-source-change', () => { select.value = logSource() ? 'defa' : 'ledger'; render(); });
+      host.append(label);
+    }
+    const allRows = () => { const seen = {}; return (sourceMissions() || L2.store.missions).map(m => toRow(m, (seen[m.family] = (seen[m.family] ?? -1) + 1))); };
+    sourcePicker(bar.querySelector('.mcg-header-row'));
 
     // ---- filtres par famille (puces colorées, état mémorisé)
     function chips(all) {
@@ -309,14 +327,14 @@
       ];
       if (!missionsTable) missionsTable = window.SortedTable.render($('#mcgMissions'), {
         rows: visible, columns, defaultSortKey: 'date', defaultDir: -1, emptyText, rowTitle: tr(UI.rowTitle),
-        onRowClick: r => { const cr = pagesOf(r.family).cr; if (cr) location.href = `${cr}?edit=${r.index}&id=${encodeURIComponent(r.missionId)}`; },
+        onRowClick: r => { if (r.mission.__readOnly) { status.textContent = tr(SRC.readOnly); return; } const cr = pagesOf(r.family).cr; if (cr) location.href = `${cr}?edit=${r.index}&id=${encodeURIComponent(r.missionId)}`; },
         deleteMessage: r => `${r.family} ${r.missionId} — ${r.date}\n${tr(UI.confirmDelete)}`,
-        onDelete: r => { const k = L2.store.missions.indexOf(r.mission); if (k >= 0) { L2.store.missions.splice(k, 1); persist().then(render); } return false; }
+        onDelete: r => { if (r.mission.__readOnly) { status.textContent = tr(SRC.readOnly); return false; } const k = L2.store.missions.indexOf(r.mission); if (k >= 0) { L2.store.missions.splice(k, 1); persist().then(render); } return false; }
       });
       else missionsTable.setRows(visible);
 
       if (L2.store.source === 'unavailable') status.textContent = `${L2.FILE} : ${tr(UI.unavailable)}`;
-      $('.mcg-ledger-info').textContent = `${L2.FILE} · ${L2.store.missions.length} ${tr(UI.missions).toLowerCase()} · ${tr(UI.folderLabel)} : ${L2.store.folder || tr(UI.browserOnly)}${L2.store.updatedAt ? ` · ${new Date(L2.store.updatedAt).toLocaleString()}` : ''}`;
+      $('.mcg-ledger-info').textContent = logSource() ? `${tr(SRC.defa)} · ${window.DefaFlightLog.records().length} ${tr(UI.missions).toLowerCase()} · ${window.DefaFlightLog.load().source || ''}` : `${L2.FILE} · ${L2.store.missions.length} ${tr(UI.missions).toLowerCase()} · ${tr(UI.folderLabel)} : ${L2.store.folder || tr(UI.browserOnly)}${L2.store.updatedAt ? ` · ${new Date(L2.store.updatedAt).toLocaleString()}` : ''}`;
       if (window.RepositoryContentI18n) { window.RepositoryContentI18n([...rows.values()]); }
     }
 

@@ -64,7 +64,7 @@ h1{font-size:18px;margin:0} button,input,select,textarea{background:#11161c;colo
 
 <dialog id="dlg"><div class="row"><h2 style="flex:1">Choisir l’avion</h2><button onclick="dlg.close()">Fermer</button></div><input id="search" placeholder="Rechercher ICAO / nom…" style="width:100%;margin-bottom:8px"><div id="airlist" class="airlist"></div></dialog>
 
-<script src="./AircraftDB/aircraft_db.js"></script>
+<script src="./AircraftDB/aircraft_db.js"></script><script src="./shared/aircraft_fleet.js?v=20260924zza"></script><script src="./shared/defa_reference.js?v=20260924zza"></script><script src="./shared/aircraft_catalog.js?v=20260924zza"></script>
 <script src="./AircraftDB/aircraft_icons.js"></script>
 <script>
 const $=id=>document.getElementById(id);
@@ -505,13 +505,14 @@ async function refreshLandingAircraft(){const rec=await readLandingCache(),stamp
 function landingName(code,rec){const m=String(rec?.model||"").trim();return m&&!/^(Aircraft Performance Database|Skip to aircraft details)$/i.test(m)?`${m} (${code})`:code}
 function landingOnlyAircraft(profiles){const db=window.AIRCRAFT_DB||{},resolve=n=>{const k=aKey(n);return db[k]||db[db.__aliases?.[k]]||null},known=new Set();
  for(const p of profiles)for(const v of [p.id,p.icao,p.type,p.name]){const k=aKey(v);if(!k)continue;known.add(k);const r=resolve(v);if(r?.tdesig)known.add(aKey(r.tdesig))}
- return landingAircraft.filter(n=>{const r=resolve(n);return !known.has(aKey(n))&&!(r?.tdesig&&known.has(aKey(r.tdesig)))}).map(n=>{const r=resolve(n);return normalize({id:n,icao:r?.tdesig||n,type:r?.tdesig||n,name:landingName(n,r),_landingOnly:true})})}
-function newProfileFromLanding(id){const s=landingOnlyAircraft(Object.values(state.profiles||{}).filter(p=>p&&typeof p==="object").map(p=>normalize(p))).find(p=>p.id===id);return s?normalize({id:s.id,icao:s.icao,type:s.type,name:s.name,description:"Créé depuis le Landing Performance : perfs à renseigner."}):null}
+ /* Types employés par la DEFA (catalogue commun : flotte, référence DEFA, missions) : proposés même sans profil. */const defa=new Set((window.AircraftCatalog?.defaTypes()||[]).map(t=>t.type));
+ return [...new Set([...landingAircraft,...defa])].filter(n=>{const r=resolve(n);return !known.has(aKey(n))&&!(r?.tdesig&&known.has(aKey(r.tdesig)))}).map(n=>{const r=resolve(n);return normalize({id:n,icao:r?.tdesig||n,type:r?.tdesig||n,name:landingName(n,r),_landingOnly:true,_defa:defa.has(n),_landing:landingAircraft.includes(n)})})}
+function newProfileFromLanding(id){const s=landingOnlyAircraft(Object.values(state.profiles||{}).filter(p=>p&&typeof p==="object").map(p=>normalize(p))).find(p=>p.id===id);return s?normalize({id:s.id,icao:s.icao,type:s.type,name:s.name,description:s._landing?"Créé depuis le Landing Performance : perfs à renseigner.":"Type utilisé par la DEFA : perfs à renseigner."}):null}
 function listAircraft(){
  const profiles=Object.values(state.profiles||{}).filter(p=>p&&typeof p==="object"&&String(p.id||p.icao||p.type||p.name||"").trim()).map(p=>normalize(p));
  const all=[...profiles,...landingOnlyAircraft(profiles)].sort((a,b)=>{let x=profileVisual(a),y=profileVisual(b),group=((x[0]==="Autres")-(y[0]==="Autres"))||String(x[0]||"").localeCompare(String(y[0]||""),"fr");return group||String(a.name||a.id||"").localeCompare(String(b.name||b.id||""),"fr",{numeric:true})}),groups=new Map();
  for(const p of all){let g=profileVisual(p);if(!groups.has(g[0]))groups.set(g[0],[]);groups.get(g[0]).push([p,g])}
- $("aircraftMenu").innerHTML=[...groups].map(([label,items])=>`<div class="aircraft-group">${escXml(label)}</div>`+items.map(([p,g])=>`<button class="aircraft-item ${active?.id===p.id?"active":""}" type="button" role="menuitemradio" aria-checked="${active?.id===p.id}" data-id="${escXml(p.id)}"${p._landingOnly?` data-landing="1" title="Connu du Landing Performance, pas encore de profil : un profil vide sera créé"`:""}><span>${aircraftIcon(p)}</span><span class="aircraft-current-text">${escXml(p.name||p.id)}</span><span class="ac-meta">${escXml(g[2]||"")}${p._landingOnly?" · landing":""}</span></button>`).join("")).join("")||'<div class="mut" style="padding:8px">Aucun avion. Importe un profil, choisis le dossier performances ou charge des atterrissages dans le Landing Performance.</div>';
+ $("aircraftMenu").innerHTML=[...groups].map(([label,items])=>`<div class="aircraft-group">${escXml(label)}</div>`+items.map(([p,g])=>`<button class="aircraft-item ${active?.id===p.id?"active":""}" type="button" role="menuitemradio" aria-checked="${active?.id===p.id}" data-id="${escXml(p.id)}"${p._landingOnly?` data-landing="1" title="${p._landing?"Connu du Landing Performance":"Utilisé par la DEFA"}, pas encore de profil : un profil vide sera créé"`:""}><span>${aircraftIcon(p)}</span><span class="aircraft-current-text">${escXml(p.name||p.id)}</span><span class="ac-meta">${escXml(g[2]||"")}${p._landingOnly?(p._landing?" · landing":" · DEFA, sans profil"):""}</span></button>`).join("")).join("")||'<div class="mut" style="padding:8px">Aucun avion. Importe un profil, choisis le dossier performances ou charge des atterrissages dans le Landing Performance.</div>';
  $("aircraftMenu").querySelectorAll(".aircraft-item").forEach(x=>x.onclick=()=>{const p=x.dataset.landing?newProfileFromLanding(x.dataset.id):state.profiles?.[x.dataset.id];if(p)setActive(p,x.dataset.landing?"avion du Landing Performance":"cache local");closeHeaderMenus()})
 }
 $("aircraftCurrent").onclick=e=>{e.stopPropagation();let open=$("aircraftMenu").hidden;closeHeaderMenus();if(open){listAircraft();$("aircraftMenu").hidden=false;$("aircraftCurrent").setAttribute("aria-expanded","true");refreshLandingAircraft().then(changed=>{if(changed&&!$("aircraftMenu").hidden)listAircraft()})}};
@@ -522,7 +523,7 @@ $("prefsEditorBtn").onclick=()=>{$("toggleProfileEditor").click();applyHeaderPre
 document.addEventListener("click",e=>{if(!e.target.closest(".lang-popup,.prefs-popup,.aircraft-popup"))closeHeaderMenus()});
 refreshLandingAircraft();restore();applyHeaderPreferences();if(state.lastAircraft&&state.profiles[state.lastAircraft])setActive(state.profiles[state.lastAircraft],"état restauré");else syncAircraftPicker();
 </script>
-<script src="./shared/repository_nav.js?v=20260924zu"></script>
+<script src="./shared/repository_nav.js?v=20260924zza"></script>
 <script src="./shared/app_framework.js"></script>
 <script src="./shared/flight_ui.js"></script>
 <script src="./shared/content_i18n.js"></script><script src="./shared/flight_i18n.js"></script>

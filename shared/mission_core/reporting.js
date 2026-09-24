@@ -103,8 +103,27 @@
     (family.series || []).forEach(s => { if (Array.isArray(s.label)) rows.set(s.label[0], s.label); });
     window.MissionCore.headerSwitch({ family, kind: 'reporting', t: coreUi, all: true, get: () => seriesFilter, set: value => { seriesFilter = value; render(); } });
     const switchBox = pageHeader?.querySelector('.mc-switch'); if (switchBox) tools.prepend(switchBox); // famille · série en tête de la barre
+    const tr = row => row[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'))] || row[0];
+    // Données des reportings : registre des missions (défaut) ou journal DEFA (vols réalisés,
+    // chargé dans Paramétrage › Base DEFA ; lecture seule). Choix commun à tous les reportings.
+    const SRC = { label: L('Données', 'Data', 'Daten', 'Datos'), ledger: L('Mes missions (registre)', 'My missions (ledger)', 'Meine Einsätze (Register)', 'Mis misiones (registro)'), defa: L('Journal DEFA (vols réalisés)', 'DEFA log (flights flown)', 'DEFA-Journal (durchgeführte Flüge)', 'Diario DEFA (vuelos realizados)'),
+      readOnly: L('Vol du journal DEFA : lecture seule (pas de CR à modifier).', 'DEFA log flight: read-only (no report to edit).', 'Flug aus dem DEFA-Journal: nur lesbar.', 'Vuelo del diario DEFA: solo lectura.') };
+    let logMissions = null;
+    const logSource = () => window.DefaFlightLog?.source?.() === 'defa';
+    const sourceMissions = () => logSource() ? (logMissions ||= window.DefaFlightLog.toMissions()) : null;
+    window.addEventListener('defa-log-change', () => { logMissions = null; });
+    function sourcePicker(host) {
+      const n = window.DefaFlightLog?.records?.().length || 0; if (!n || !host) return;
+      const label = document.createElement('label'); label.className = 'mc-source';
+      label.innerHTML = `<span>${esc(tr(SRC.label))}</span><select><option value="ledger">${esc(tr(SRC.ledger))}</option><option value="defa">${esc(tr(SRC.defa))} — ${n}</option></select>`;
+      const select = label.querySelector('select'); select.value = logSource() ? 'defa' : 'ledger';
+      select.onchange = () => { window.DefaFlightLog.setSource(select.value); };
+      window.addEventListener('mission-source-change', () => { select.value = logSource() ? 'defa' : 'ledger'; render(); });
+      host.append(label);
+    }
+    sourcePicker(tools);
     function render() {
-      const all = ledger.missions.map(toRow).filter(r => !seriesFilter || r.series === seriesFilter);
+      const source = sourceMissions(), all = (source ? source.filter(m => m.family === family.id) : ledger.missions).map(toRow).filter(r => !seriesFilter || r.series === seriesFilter);
       const visible = window.TimePeriod ? window.TimePeriod.filterRows(all, 'date') : all;
       // Statistiques communes (§20) + statistiques spécialisées de la famille (stats.js).
       root.querySelector('#mcCards').innerHTML = window.MissionStats.cards(visible.map(r => r.mission), family).map(card => {
@@ -136,9 +155,9 @@
         + groups('byCapability', visible.flatMap(r => r.mission.capabilities || []));
       if (!table) table = window.SortedTable.render(root.querySelector('#mcTable'), {
         rows: visible, columns, defaultSortKey: 'date', defaultDir: -1, emptyText: t('empty'), rowTitle: t('rowTitle'),
-        onRowClick: row => { location.href = `${family.pages.cr}?edit=${row.index}&id=${encodeURIComponent(row.missionId || '')}`; },
+        onRowClick: row => { if (row.mission.__readOnly) { status.textContent = tr(SRC.readOnly); return; } location.href = `${family.pages.cr}?edit=${row.index}&id=${encodeURIComponent(row.missionId || '')}`; },
         deleteMessage: row => `${row.missionId || ''} — ${row.date || ''}\n${t('confirmDelete')}`,
-        onDelete: row => { ledger.remove(row.index); persist().then(render); return false; }
+        onDelete: row => { if (row.mission.__readOnly) { status.textContent = tr(SRC.readOnly); return false; } ledger.remove(row.index); persist().then(render); return false; }
       });
       else table.setRows(visible);
       root.querySelector('.mc-ledger-info').textContent = `${ledger.filename} · ${ledger.missions.length} ${t('missions').toLowerCase()} · ${t('folderLabel')} : ${ledger.state.folder || t('browser')}`;

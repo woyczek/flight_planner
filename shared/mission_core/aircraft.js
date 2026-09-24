@@ -29,29 +29,9 @@
   };
   // Classe OACI (Doc 8643) : H2T → hélicoptère, L2J → avion, A/S → amphibie / hydravion.
   const categoryOf = description => ({ H: 'rotary', G: 'rotary', T: 'rotary', L: 'fixed', A: 'amphibious', S: 'amphibious' })[String(description || '').charAt(0).toUpperCase()] || '';
-  // Types de la flotte DEFA absents de la base OACI importée.
-  const SUPPLEMENT = {
-    H160: { tdesig: 'H160', model: 'Airbus Helicopters H160', category: 'rotary', wtc: 'L' },
-    CL2T: { tdesig: 'CL2T', model: 'Canadair CL-415 / CL-215T', category: 'amphibious', wtc: 'M' },
-    AS32: { tdesig: 'AS32', model: 'AS332 Super Puma / H215', category: 'rotary', wtc: 'M' },
-    AS55: { tdesig: 'AS55', model: 'AS555 Fennec', category: 'rotary', wtc: 'L' },
-    CP10: { tdesig: 'CP10', model: 'Mudry CAP 10', category: 'fixed', wtc: 'L' },
-    E121: { tdesig: 'E121', model: 'Embraer EMB-121 Xingu', category: 'fixed', wtc: 'L' },
-    E2C: { tdesig: 'E2C', model: 'Northrop Grumman E-2C Hawkeye', category: 'fixed', wtc: 'M' },
-    E3CF: { tdesig: 'E3CF', model: 'Boeing E-3F Sentry', category: 'fixed', wtc: 'H' },
-    EC20: { tdesig: 'EC20', model: 'EC120 Colibri', category: 'rotary', wtc: 'L' },
-    EC25: { tdesig: 'EC25', model: 'EC225 / H225 Caracal', category: 'rotary', wtc: 'M' },
-    GAZL: { tdesig: 'GAZL', model: 'SA341 / SA342 Gazelle', category: 'rotary', wtc: 'L' },
-    MIR2: { tdesig: 'MIR2', model: 'Dassault Mirage 2000', category: 'fixed', wtc: 'M' },
-    NH90: { tdesig: 'NH90', model: 'NH Industries NH90 Caïman', category: 'rotary', wtc: 'M' },
-    PC21: { tdesig: 'PC21', model: 'Pilatus PC-21', category: 'fixed', wtc: 'L' },
-    PC6T: { tdesig: 'PC6T', model: 'Pilatus PC-6 Turbo Porter', category: 'fixed', wtc: 'L' },
-    PUMA: { tdesig: 'PUMA', model: 'SA330 Puma', category: 'rotary', wtc: 'M' },
-    RFAL: { tdesig: 'RFAL', model: 'Dassault Rafale', category: 'fixed', wtc: 'M' },
-    RQ9P: { tdesig: 'RQ9P', model: 'General Atomics MQ-9 Reaper (drone)', category: 'fixed', wtc: 'L' },
-    TBM7: { tdesig: 'TBM7', model: 'Daher TBM 700', category: 'fixed', wtc: 'L' },
-    TIGR: { tdesig: 'TIGR', model: 'Airbus Helicopters Tigre', category: 'rotary', wtc: 'L' }
-  };
+  // Types de la flotte DEFA absents de la base OACI importée : catalogue commun
+  // (shared/aircraft_catalog.js, aussi utilisé par le Landing Dashboard et le Planner).
+  const SUPPLEMENT = window.AircraftCatalog?.SUPPLEMENT || {};
   const localTypes = () => ({ ...SUPPLEMENT, ...(read(TYPES_KEY) || {}) });
   // Libellés parasites présents dans la base OACI importée (texte de pages web récupéré
   // à la place du modèle) : traités comme un modèle absent.
@@ -96,6 +76,8 @@
     // Base DEFA (journal des vols réalisés, Paramétrage › Base DEFA) : type, variante et
     // indicatifs utilisés par immatriculation — sans indicatif par défaut (numéro propre au vol).
     ((read('defaFlightLog:v1') || {}).records || []).forEach(r => { if (r.registration) records.push({ registration: r.registration, type: r.type, variant: r.variant, callsigns: r.callsign ? [r.callsign] : [], date: r.date }); });
+    // Référence DEFA anonymisée (defa_reference.js) : type, indicatifs utilisés, terrains.
+    (window.DEFA_REFERENCE?.aircraft || []).forEach(r => records.push({ registration: r.registration, type: r.type, variant: r.variant, callsigns: r.callsigns || [], base: r.homeAd || '', date: r.last || '0000-00-01' }));
     Object.values(read(REGISTRY_KEY) || {}).forEach(e => records.push(e));
     return records;
   }

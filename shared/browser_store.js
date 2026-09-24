@@ -184,7 +184,7 @@
   // ---- rappel de sauvegarde : modifications comptées (au plus une par clé et par minute) ;
   // à partir de 10, bouton « Sauvegarder » en couleur de contraste dans l'en-tête, avec
   // l'horodatage de la dernière sauvegarde. Sauvegarde automatique si le dossier est autorisé.
-  const tracked = key => key && key !== META && key !== PENDING && !SKIP.some(re => re.test(key)) && !/^repositoryFramework:|^missionReportingPeriod:|^missionGlobalReporting:/.test(key);
+  const tracked = key => key && key !== META && key !== PENDING && !SKIP.some(re => re.test(key)) && !/^repositoryFramework:|^missionReportingPeriod:|^missionGlobalReporting:|^missionReportingSource:/.test(key);
   const lastHit = new Map(), pending = () => Number(localStorage.getItem(PENDING) || 0);
   const nativeSet = Storage.prototype.setItem, nativeRemove = Storage.prototype.removeItem;
   const hit = key => {

@@ -19,6 +19,8 @@ seuls sur chaque page. Ce document décrit chaque composant, son rôle et son in
 | Tableau triable | `shared/mission_table.js` | reportings |
 | Bases de données éditables | `shared/data_admin.js` (page Paramétrage) | CR DEFA |
 | Base des types d'aéronefs | `AircraftDB/` | les trois applications |
+| Catalogue commun (types, appareils DEFA) | `shared/aircraft_catalog.js` | les trois applications |
+| Référence DEFA anonymisée | `shared/defa_reference.js` | les trois applications |
 | Outils de maintenance | `tools/` | dépôt |
 
 ## 1. `repository_tree` — arborescence, thèmes, menu
@@ -181,10 +183,32 @@ que le fichier ; « Enregistrer dans le dépôt » réécrit le fichier (format 
 `update_aircraft_db.py` (mise à jour), `update_fleet.py` (flotte DEFA),
 `datafile.py` (format commun des fichiers de données).
 
+## 11 bis. `aircraft_catalog.js` et `defa_reference.js` — catalogue commun
+
+Chargés juste après `AircraftDB/aircraft_db.js` dans **toutes** les pages qui l'utilisent
+(CR, Paramétrage, Landing Dashboard, Flight Planner) :
+
+- **types** : base OACI (avec les modifications de Paramétrage plus récentes que le fichier),
+  types militaires absents de la base (`SUPPLEMENT` : RFAL, MIR2, A400, E3CF, H160, TIGR…) et
+  types ajoutés localement dans les CR (`missionAircraftTypes:v1`), fusionnés dans
+  `window.AIRCRAFT_DB` — les trois applications voient les mêmes types ;
+- **appareils DEFA** (`AircraftCatalog.defaAircraft()`) : flotte, référence DEFA, appareils des
+  missions enregistrées et journal DEFA chargé, par immatriculation (la donnée la plus récente
+  l'emporte) : type, variante, indicatifs, terrain de rattachement, dernier terrain connu ;
+  `defaTypes()` : types employés, avec leurs appareils ; `pilots()` : trigrammes.
+- `defa_reference.js` : référence **anonymisée** committée (pilotes : trigramme, période, vols,
+  types ; appareils : immatriculation, type, indicatifs utilisés, rattachement, dernier terrain,
+  statut, mise en service) — sans les vols ni les missions. Générée par
+  `tools/defa_reference.py` ou Paramétrage › Base DEFA, éditable dans Paramétrage.
+
+Base « lâche » : aide à la saisie, jamais une contrainte — une valeur absente reste saisissable.
+
 ## 12. `tools/` — maintenance
 
 - `tools/bump_versions.py` : nouveau numéro de version de cache (`?v=`) dans toutes les pages
   après une modification de code partagé (toujours supérieur au précédent).
+- `tools/defa_reference.py "Log des vols.html"` : référence DEFA anonymisée
+  (`shared/defa_reference.js`) depuis le journal des vols (complète sans rien supprimer).
 - `tools/new_family_pages.py` : crée les pages d'une nouvelle famille de missions dans
   `CR DEFA/`.
 

@@ -109,5 +109,75 @@
   const toCsv = (list = records()) => ['date;heure;duree_min;trigramme;indicatif;immatriculation;type;variante;depart;arrivee;mission']
     .concat(list.map(r => [r.date, r.time, r.durationMin ?? '', r.trigram, r.callsign, r.registration, r.type, r.variant, r.dep, r.arr, r.mission].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(';'))).join('\n') + '\n';
 
-  window.DefaFlightLog = { KEY, parse, load, save, clear, records, series, splitCallsign, aircraft, toCsv, ALIASES };
+  // Référence anonymisée (committée) : pilotes et appareils agrégés, sans les vols. Complète
+  // la référence existante sans rien supprimer ; le terrain de rattachement saisi est conservé.
+  function reference(list = records(), base = { pilots: [], aircraft: [] }) {
+    const k = v => up(v).replace(/[^A-Z0-9]/g, '');
+    const pilots = new Map((base.pilots || []).map(p => [p.trigram, { ...p }])), aircraft = new Map((base.aircraft || []).map(a => [k(a.registration), { ...a }]));
+    const count = (arr) => { const m = new Map(); arr.forEach(v => { if (v) m.set(v, (m.get(v) || 0) + 1); }); return [...m].sort((a, b) => b[1] - a[1]).map(([v]) => v); };
+    const byPilot = new Map(), byReg = new Map();
+    list.forEach(r => { if (r.trigram) (byPilot.get(r.trigram) || byPilot.set(r.trigram, []).get(r.trigram)).push(r); if (r.registration) (byReg.get(k(r.registration)) || byReg.set(k(r.registration), []).get(k(r.registration))).push(r); });
+    byPilot.forEach((fl, tri) => { const dates = fl.map(r => r.date).sort(); pilots.set(tri, { ...(pilots.get(tri) || { trigram: tri }), first: dates[0], last: dates[dates.length - 1], flights: fl.length, types: count(fl.map(r => r.type)).slice(0, 6) }); });
+    byReg.forEach((fl, key) => {
+      fl.sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
+      const last = fl[fl.length - 1], cur = aircraft.get(key) || { registration: last.registration };
+      const typePair = count(fl.map(r => `${r.type}|${r.variant}`))[0] || '|', [type, variant] = typePair.split('|');
+      aircraft.set(key, { ...cur, type: cur.type || type, variant: cur.variant || variant, fleetId: cur.fleetId || (fl.find(r => r.fleetId) || {}).fleetId || '',
+        callsigns: count(fl.map(r => up(r.callsign).replace(/\s+/g, '')).filter(c => c && !/^\/+$/.test(c))).slice(0, 12),
+        first: fl[0].date, last: last.date, flights: fl.length, lastAd: last.arr || last.dep, homeAd: cur.homeAd || count(fl.map(r => r.dep))[0] || '' });
+    });
+    return { pilots: [...pilots.values()].sort((a, b) => a.trigram.localeCompare(b.trigram)), aircraft: [...aircraft.values()].sort((a, b) => a.registration.localeCompare(b.registration)) };
+  }
+
+  // ---- journal « alternatif » des reportings : vols réalisés → missions (lecture seule)
+  // Famille déduite du libellé de mission, sinon de l'indicatif et du type ; à défaut SPECIAL.
+  const FAMILY_RULES = [
+    ['FIRE', /FEU|INCENDI|GAAR|FIRE|ECOPAGE|WATER ?BOMB|LARGAGE D.?EAU|FFS/],
+    ['SAR', /\bSAR\b|RECHERCHE|SAUVETAGE|RESCUE|TREUIL|HOIST/],
+    ['HEMS', /MEDEVAC|EVASAN|SMUR|HEMS|SANITAIRE|SAMU|SECOURS/],
+    ['AIRBORNE', /PARA|\bDROP\b|AEROLARG|LARGAGE|\bOAP\b/],
+    ['MARITIME', /SURMAR|MARITIM|PATMAR|POLMAR|\bASM\b|ANTI ?SOUS/],
+    ['COMMAND', /MASA|POLICE DU CIEL|AWACS|\bQRA\b|ALERTE|SURETE AERIENNE|GUET|RELAIS/],
+    ['ISR', /\bRECO|RENSEIGNEMENT|\bISR\b|ROEM|ROIM/],
+    ['LE', /DOUANE|GENDARMERIE|POLICE|SURVEILLANCE/],
+    ['FI', /CALIBRATION|CONTROLE EN VOL|FLIGHT INSPECTION/],
+    ['SURVEY', /PHOTO|\bLEVE|SCIENTIFIQUE|CARTO/],
+    ['SOF', /FORCES SPECIALES|\bCOS\b|\bSOF\b/],
+    ['HADR', /EVACUATION|HUMANITAIRE|HADR|RESSORTISSANT/],
+    ['AIRLIFT', /TRANSPORT|LOGISTI|POSITION|CONVOY|FRET|\bPAX\b|RAVITAILL|\bAAR\b|REFUEL|RETOUR BASE|\bRTB\b|LIAISON|TANKER/]
+  ];
+  function familyOf(r) {
+    const text = up(r.mission);
+    const rule = FAMILY_RULES.find(([, re]) => re.test(text)); if (rule) return rule[0];
+    const cs = up(r.callsign), type = up(r.type);
+    if (/^(PELIC|PCAN|MILAN)/.test(cs) || /^(CL2T|DH8D)$/.test(type)) return 'FIRE';
+    if (/^(DRAGO|SAMU|CHOUC)/.test(cs)) return 'HEMS';
+    if (/^(A400|C130|C30J|A332|A330|CN35|C160|A310)$/.test(type) || /^(CTM|VANT|CVEX|RILLE)/.test(cs)) return 'AIRLIFT';
+    if (/^(E3CF|E3TF)$/.test(type)) return 'COMMAND';
+    return 'SPECIAL';
+  }
+  const addMinutes = (time, minutes) => { const m = /^(\d{1,2}):(\d{2})$/.exec(time || ''); if (!m || minutes == null) return ''; const t = (Number(m[1]) * 60 + Number(m[2]) + minutes) % 1440; return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`; };
+  function toMissions(list = records()) {
+    const M = window.MissionModel;
+    return list.map((r, i) => {
+      const family = familyOf(r);
+      const raw = { schemaVersion: M?.SCHEMA_VERSION || 2, family, series: '', subtype: '', source: 'defa-log',
+        metadata: { missionId: `${r.callsign || 'DEFA'}-${r.date.replace(/-/g, '')}${r.time ? r.time.replace(':', '') : ''}`, date: r.date, timeLocal: r.time, context: 'EXERCISE' },
+        aircraft: [{ type: r.type, variant: r.variant, registration: r.registration, callsign: r.callsign }],
+        crew: r.trigram ? [{ role: 'PIC', name: r.trigram, aircraft: 1, notes: '' }] : [],
+        tasking: { objective: r.mission }, navigation: { dep: r.dep, arr: r.arr },
+        timeline: { takeoff: r.time, landing: addMinutes(r.time, r.durationMin) },
+        results: { outcome: 'SUCCESS' } }; // vol réalisé (journal des vols)
+      const mission = M?.migrate ? M.migrate(raw, family) : raw;
+      mission.source = 'defa-log';
+      Object.defineProperty(mission, '__readOnly', { value: true, enumerable: false });
+      return mission;
+    });
+  }
+  // Source des reportings : registre des missions (défaut) ou journal DEFA.
+  const SOURCE = 'missionReportingSource:v1';
+  const source = () => (localStorage.getItem(SOURCE) === 'defa' && records().length ? 'defa' : 'ledger');
+  const setSource = value => { localStorage.setItem(SOURCE, value === 'defa' ? 'defa' : 'ledger'); window.dispatchEvent(new CustomEvent('mission-source-change', { detail: source() })); };
+
+  window.DefaFlightLog = { familyOf, toMissions, source, setSource, reference, KEY, parse, load, save, clear, records, series, splitCallsign, aircraft, toCsv, ALIASES };
 })();

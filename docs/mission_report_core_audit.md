@@ -564,3 +564,16 @@ Retenues par défaut (à contester si besoin) :
   performances mémorisé.
 - `browser_store.js` : compteur de modifications, bouton « Sauvegarder » dans l'en-tête à partir
   de 10, horodatage de la dernière sauvegarde.
+
+## W. Étape 18 — référence DEFA, catalogue commun, journal alternatif (2026-09-24)
+
+- `shared/defa_reference.js` (committé) + `tools/defa_reference.py` + `DefaFlightLog.reference()` :
+  pilotes et appareils agrégés, sans vols ni missions ; jeu de données « Référence DEFA » dans
+  Paramétrage (statut, rattachement, mise en service modifiables).
+- `shared/aircraft_catalog.js` (framework) : types communs (OACI + SUPPLEMENT déplacé depuis
+  aircraft.js + types locaux) fusionnés dans `AIRCRAFT_DB`, appareils et types DEFA ; chargé
+  par les 16 pages CR / Paramétrage, le Landing Dashboard et le Planner.
+- Planner : types DEFA sans profil proposés (« DEFA, sans profil »). CR : référence comme source
+  d'appareils connus, trigrammes et terrains proposés.
+- Reportings : **Données** registre / journal DEFA (`DefaFlightLog.toMissions()`, familles par
+  règles de libellé, lecture seule) ; `defa_log.js` chargé par les 16 pages de reporting.

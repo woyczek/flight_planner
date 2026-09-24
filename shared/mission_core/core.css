@@ -235,3 +235,6 @@ header.mc-header:has(.mc-report-tools)>p{display:none}
 .mc-form .mc-now{min-width:0;border:1px solid var(--line);background:transparent;border-radius:7px;padding:3px 6px;cursor:pointer;font-size:13px;line-height:1}
 .mc-form .mc-now:hover{background:#eef2f7}
 @media print{.mc-head-add,.mc-now{display:none!important}}
+
+/* Reportings : choix des données (registre / journal DEFA) */
+.mc-source{display:inline-flex;gap:6px;align-items:center;font-size:12px;color:#ffffffd0}.mc-report-tools .mc-source select{font-weight:600}
