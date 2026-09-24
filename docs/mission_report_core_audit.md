@@ -546,3 +546,21 @@ Retenues par défaut (à contester si besoin) :
 - `data/callsigns.js` : 49 séries relevées dans le journal de 2025-05 à 2026-09 (≥ 3 vols ;
   organisme déduit seulement si tous les types concordent) et 4 séries complétées (DRAGON,
   PELICAN, BENGALE, CHOUCAS) ; le journal lui-même n'est pas dans le dépôt.
+
+## V. Étape 17 — saisie du CR, dossiers, rappel de sauvegarde (2026-09-24)
+
+- Formulaire : « + » dans le titre des collections (framework `form.js`), équipage au moins 1 ;
+  bouton « maintenant » sur toutes les dates / heures (option `now` du formulaire) ; bloc
+  Résultat en 2e position.
+- `core.js` : fuseau du terrain de départ (Europe/Paris par défaut) à la date de la mission ;
+  heure locale ⇄ UTC (identification, événements) ; heure du briefing → heure du CR ;
+  événements de la chronologie (types BRIEFING, ENGINE_START, OFF_BLOCK, MISSION_START,
+  MISSION_END, ON_BLOCK, SHUTDOWN ajoutés, `source: timeline.<champ>`) ; autorités (historique,
+  sinon département : `MissionVocab.departments`).
+- `checkMission` : date future, date invalide.
+- `shared/file_access.js` (framework, chargé par repository_nav) : dossiers mémorisés, libellés
+  et infobulles, sélecteur de fichiers ouvert dans le dossier paramétré pour tous les
+  `<input type=file>` ; Paramétrage : « Dossiers paramétrés » ; Flight Planner : dossier
+  performances mémorisé.
+- `browser_store.js` : compteur de modifications, bouton « Sauvegarder » dans l'en-tête à partir
+  de 10, horodatage de la dernière sauvegarde.

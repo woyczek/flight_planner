@@ -328,6 +328,7 @@
     $('[data-action="yaml"]').onclick = () => L2.downloadAll();
     $('[data-action="csv"]').onclick = () => L2.downloadAllCsv();
     $('[data-action="print"]').onclick = () => print();
+    const folderButton = $('[data-action="folder"]'); window.FileAccess?.decorate(folderButton, '__ledger'); window.addEventListener('load', () => window.FileAccess?.decorate(folderButton, '__ledger'));
     $('[data-action="folder"]').onclick = async () => { try { await L2.chooseFolder(); await L2.load(true); await persist(); render(); } catch (error) { status.textContent = error.message; } };
 
     // Anciens registres CSV (HEMS, FIRE / GAAR) → registre unique, sans doublon (n° + date).

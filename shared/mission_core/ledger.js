@@ -135,8 +135,10 @@
     return { written, text };
   }
   async function chooseFolder() {
+    if (window.FileAccess) { const picked = await window.FileAccess.pickFolder('__ledger'); handle = picked; store.folder = picked.name; loading = null; return picked.name; }
     if (!window.showDirectoryPicker) throw new Error('API dossier local indisponible (Chrome / Edge requis)');
-    const picked = await window.showDirectoryPicker({ mode: 'readwrite', id: 'missionCore-ledger' });
+    const current = handle || await idbGet(HANDLE);
+    const picked = await window.showDirectoryPicker({ mode: 'readwrite', id: 'missionCore-ledger', ...(current ? { startIn: current } : {}) });
     // Dossier attendu : « CR DEFA » (celui qui contient mission_cr.html).
     let isApp = false; try { await picked.getFileHandle('mission_cr.html'); isApp = true; } catch { /* autre dossier */ }
     if (!isApp && !confirm(`Le dossier « ${picked.name} » ne contient pas mission_cr.html : est-ce bien le dossier « CR DEFA » ? Le registre ${FILE} y sera écrit.`)) throw new Error('Dossier refusé');

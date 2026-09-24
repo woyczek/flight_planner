@@ -55,6 +55,25 @@ Le **n° de mission** est proposé (`GAAR-001`, puis le suivant), la **date** es
 Renseigner si besoin le nom de l'exercice, l'organisme (**Sécurité civile**), l'unité : dans
 chaque champ, les valeurs déjà saisies dans vos missions sont proposées.
 
+### Saisie rapide
+
+- **Appareils, équipage, événements, étapes** : « **+** » dans le titre du bloc pour ajouter
+  un élément ; il y a toujours au moins un appareil et un membre d'équipage.
+- Chaque **date / heure** a son bouton **⏱ maintenant** (📅 aujourd'hui) : heure locale du
+  terrain de départ (à défaut, heure de Paris, CET / CEST) ou UTC selon le champ.
+- **Heure locale ⇄ UTC** : l'une remplit l'autre (fuseau du terrain de départ à la date de la
+  mission, changement d'heure compris ; à défaut Europe/Paris). La date et l'heure du bloc
+  Identification sont celles de la mission : l'heure du **briefing** les remplit si elles sont
+  vides.
+- Les heures de la **chronologie** (briefing, mise en route, cales, décollage, entrée / sortie de
+  zone, début / fin de mission, atterrissage, arrêt) créent et tiennent à jour les
+  **événements horodatés** correspondants (un événement complété à la main n'est jamais retiré).
+- **Autorités** (demandeuse, de contrôle) : reprises de la dernière mission du même indicatif ou
+  du même organisme ; pour les séries numérotées par département (DRAGON74, CHOUCAS74) :
+  préfecture du département et CODIS / CORG / SAMU du département.
+- Contrôle : une date de mission dans le futur est signalée (un CR porte sur un vol réalisé).
+- Le bloc **Résultat** est en 2e position, sous l'identification.
+
 ## 4. L'appareil
 
 Deux façons, au choix :

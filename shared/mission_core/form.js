@@ -17,7 +17,15 @@
   const M = window.MissionModel, V = window.MissionVocab;
   const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-  function create(form, { family, getMission, onChange, onCommit, onClear, suggest }) {
+  // now(path, type) : valeur « maintenant » d'un champ date / heure (heure locale du terrain ou
+  // UTC selon le champ), fournie par la page (fuseau du terrain de départ).
+  const NOW_TITLE = {
+    time: ['Maintenant (heure locale du terrain ; à défaut, heure de Paris)', 'Now (aerodrome local time; otherwise Paris time)', 'Jetzt (Ortszeit des Flugplatzes; sonst Pariser Zeit)', 'Ahora (hora local del aeródromo; si no, hora de París)'],
+    utc: ['Maintenant (UTC)', 'Now (UTC)', 'Jetzt (UTC)', 'Ahora (UTC)'],
+    date: ['Aujourd’hui', 'Today', 'Heute', 'Hoy']
+  };
+  const EMPTY_HINT = ['Aucun élément : « + » dans le titre pour en ajouter.', 'No item: “+” in the title to add one.', 'Kein Element: „+“ im Titel zum Hinzufügen.', 'Ningún elemento: «+» en el título para añadir.'];
+  function create(form, { family, getMission, onChange, onCommit, onClear, suggest, now }) {
     const rows = new Map(); // fr → [fr,en,de,es]
     const txt = label => { if (!label) return ''; if (Array.isArray(label)) { rows.set(label[0], label); return label[0]; } return String(label); };
     const conditional = [];
@@ -67,7 +75,7 @@
         case 'textarea': return `<textarea ${attrs(field, path, withAlias)}${ph}>${esc(value)}</textarea>`
           + (field.appendList ? `<input class="mc-append" data-append="${esc(path)}" placeholder="${esc(txt(['+ ajouter (valeurs connues)…', '+ add (known values)…', '+ hinzufügen (bekannte Werte)…', '+ añadir (valores conocidos)…']))}">` : '');
         case 'number': return `<input type="number" step="any" ${attrs(field, path, withAlias)} value="${esc(value ?? '')}"${ph}>`;
-        case 'date': case 'time': return `<input type="${field.type}" ${attrs(field, path, withAlias)} value="${esc(value)}">`;
+        case 'date': case 'time': return `<span class="mc-when"><input type="${field.type}" ${attrs(field, path, withAlias)} value="${esc(value)}">${now ? `<button type="button" class="mc-now" data-now="${esc(path)}" data-kind="${field.type}" title="${esc(txt(NOW_TITLE[/utc/i.test(path) ? 'utc' : field.type]))}">${field.type === 'date' ? '📅' : '⏱'}</button>` : ''}</span>`;
         case 'checkgroup': return capabilitiesHtml(field, path, value || [], item);
         default: return `<input ${attrs(field, path, withAlias)} value="${esc(value)}"${ph}${field.familySubtypes ? ' list="mc-subtypes"' : ''}>`;
       }
@@ -87,8 +95,7 @@
       collections.set(spec.path, { block, host });
       // L'alias (name) ne porte que sur le premier élément (appareil principal…).
       host.innerHTML = list.map((item, i) => `<div class="mc-item" data-index="${i}"><div class="mc-item-head"><b>${esc(txt(spec.item))} ${i + 1}</b>${spec.clear ? `<button type="button" class="mc-clear" data-clear="${i}" title="${esc(txt(spec.clear.title))}">${esc(txt(spec.clear.label))}</button>` : ''}${list.length > (spec.min || 0) ? `<button type="button" class="mc-remove" data-remove="${i}" title="${esc(txt(['Retirer', 'Remove', 'Entfernen', 'Quitar']))}">×</button>` : ''}</div><div class="mc-grid${spec.compact ? ' compact' : ''}">${spec.fields.map(field => fieldHtml(field, `${spec.path}.${i}.${field.path}`, i === 0, item, `${spec.path}.${field.path}`)).join('')}</div></div>`).join('')
-        + `<button type="button" class="secondary mc-add">${esc(txt(spec.add))}</button>`;
-      host.querySelector('.mc-add').onclick = () => { list.push(spec.empty()); renderCollection(block, host); refresh(); onChange(spec.path); };
+        + (list.length ? '' : `<p class="small mc-empty-hint">${esc(txt(EMPTY_HINT))}</p>`);
       // Élément remis à zéro (ex. appareil mal identifié : la recherche repart de zéro).
       host.querySelectorAll('[data-clear]').forEach(button => button.onclick = () => {
         const index = Number(button.dataset.clear); list[index] = spec.empty(); renderCollection(block, host); refresh(); onClear?.(spec.path, index); onChange(spec.path);
@@ -123,9 +130,20 @@
         // Bloc masqué par défaut : mécanisme afficher / masquer / déplacer du framework
         // (shared/app_framework.js), le choix de l'utilisateur restant mémorisé.
         if (block.defaultHidden) section.dataset.defaultHidden = '1';
-        section.innerHTML = `<h2>${esc(txt(block.title))}</h2>` + grid;
+        // Collection : ajout par un « + » dans le titre du bloc (appareils, équipage, événements…).
+        const add = block.collection ? ` <button type="button" class="mc-head-add" data-add-to="${esc(block.collection.path)}" title="${esc(txt(block.collection.add))}" aria-label="${esc(txt(block.collection.add))}">+</button>` : '';
+        section.innerHTML = `<h2>${esc(txt(block.title))}${add}</h2>` + grid;
         form.insertBefore(section, controls || null);
-        if (block.collection) renderCollection(block, section.querySelector('.mc-collection'));
+        if (block.collection) {
+          const host = section.querySelector('.mc-collection');
+          renderCollection(block, host);
+          section.querySelector('.mc-head-add').onclick = event => {
+            event.preventDefault(); event.stopPropagation();
+            const list = M.get(getMission(), block.collection.path) || []; list.push(block.collection.empty()); M.set(getMission(), block.collection.path, list);
+            renderCollection(block, host); refresh(); onChange(block.collection.path);
+            host.querySelector('.mc-item:last-of-type [data-path]')?.focus();
+          };
+        }
         else registerConditions(block, section);
         blocks.push({ block, section });
       });
@@ -199,6 +217,14 @@
     }
     form.addEventListener('input', handle);
     form.addEventListener('change', handle);
+    // « Maintenant » : date ou heure courante (fuseau du champ), comme une saisie validée.
+    form.addEventListener('click', event => {
+      const button = event.target.closest('[data-now]'); if (!button || !now) return;
+      event.preventDefault();
+      const input = form.querySelector(`[data-path="${CSS.escape(button.dataset.now)}"]`), value = now(button.dataset.now, button.dataset.kind);
+      if (!input || !value) return;
+      input.value = value; handle({ type: 'input', target: input }); handle({ type: 'change', target: input });
+    });
     const countOf = details => { const n = details.querySelectorAll('input[type=checkbox]:checked').length; return n ? `(${n})` : ''; };
     form.addEventListener('toggle', event => {
       const key = event.target.dataset?.collapse; if (!key) return;

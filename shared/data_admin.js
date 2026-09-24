@@ -54,6 +54,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       if (!request) return null;
     }
     if (!request) return null;
+    if (window.FileAccess) return window.FileAccess.pickFolder('__repo');
     if (!window.showDirectoryPicker) throw new Error(T('Écriture directe impossible dans ce navigateur (Chrome / Edge requis) : utilisez « Télécharger ».', 'Direct writing unavailable in this browser (Chrome / Edge required): use “Download”.'));
     handle = await window.showDirectoryPicker({ id: 'defa-repository', mode: 'readwrite' });
     try { await handle.getFileHandle('repository_tree'); } catch {
@@ -240,9 +241,13 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     const current = { id: new URLSearchParams(location.search).get('base') || 'fleet' };
     const groups = [...new Set(DATASETS.map(d => d.group))];
     root.innerHTML = `<aside class="da-nav">${groups.map(g => `<h3>${esc(g)}</h3>${DATASETS.filter(d => d.group === g).map(d => `<button type="button" data-set="${d.id}">${esc(d.title)}</button>`).join('')}`).join('')}
-      <p class="small">${esc(T('Dossier du dépôt : autorisé une fois (écriture des fichiers de données).', 'Repository folder: authorised once (writing data files).'))}</p><button type="button" class="secondary da-repo">${esc(T('Dossier du dépôt…', 'Repository folder…'))}</button></aside>
+      <h3>${esc(T('Dossiers paramétrés', 'Configured folders'))}</h3><p class="small">${esc(T('Survol : dossier attendu ; clic : changer (le sélecteur s’ouvre sur le dossier actuel).', 'Hover: expected folder; click: change (the picker opens on the current folder).'))}</p>
+      <div class="da-folders">${['__repo', '__ledger', '__store', '__perf'].map(k => `<button type="button" class="secondary da-folder" data-folder="${k}"></button>`).join('')}</div></aside>
       <section class="da-main"><h2></h2><p class="small da-intro"></p><div class="row da-actions"></div><p class="small da-status"></p><div class="da-body"></div><details class="da-howto"><summary>${esc(T('Mode opératoire', 'Procedure'))}</summary><div></div></details></section>`;
-    root.querySelector('.da-repo').onclick = async () => { try { const h = await repo(true); status(`${T('Dossier du dépôt', 'Repository folder')} : ${h.name}`); } catch (e) { status(e.message); } };
+    // Dossiers : nom actuel ✓ (autorisé) / ⚠ (à ré-autoriser), dossier attendu en infobulle.
+    const paintFolders = () => root.querySelectorAll('.da-folder').forEach(b => window.FileAccess?.decorate(b, b.dataset.folder));
+    root.querySelectorAll('.da-folder').forEach(b => b.onclick = async () => { try { const h = await window.FileAccess.pickFolder(b.dataset.folder); status(`${b.textContent.split(' : ')[0]} : ${h.name}`); } catch (e) { if (e.name !== 'AbortError') status(e.message); } });
+    paintFolders(); window.addEventListener('load', paintFolders);
     root.querySelectorAll('[data-set]').forEach(b => b.onclick = () => { if (dirty && !confirm(T('Modifications non enregistrées : changer de base quand même ?', 'Unsaved changes: switch anyway?'))) return; dirty = false; current.id = b.dataset.set; history.replaceState(null, '', `?base=${current.id}`); show(); });
     let dirty = false;
     const changed = () => { dirty = true; status(T('Modifié — non enregistré', 'Modified — not saved')); };

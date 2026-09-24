@@ -226,3 +226,12 @@ header.mc-header a.mc-header-new{display:inline-flex;margin-top:8px;padding:6px 
 .mc-report-tools .tp-btn:hover:not(:disabled){background:#ffffff38}
 header.mc-header:has(.mc-report-tools)>p{display:none}
 @media print{.mc-report-tools .tp-nav,.mc-report-tools select,.mc-report-tools a{display:none!important}}
+
+/* Collections : « + » dans le titre ; dates / heures : bouton « maintenant » */
+.mc-form h2 .mc-head-add{display:inline-flex;align-items:center;justify-content:center;margin:0 0 0 10px;width:24px;height:24px;min-width:0;min-height:0;box-sizing:border-box;border-radius:50%;border:0;background:var(--accent);color:#fff;font-size:18px;line-height:1;font-weight:700;cursor:pointer;vertical-align:3px;padding:0 0 2px!important}
+.mc-form h2 .mc-head-add:hover{filter:brightness(1.15)}
+.mc-empty-hint{color:var(--muted);margin:4px 0}
+.mc-when{display:flex;gap:4px;align-items:center}.mc-when input{flex:1;min-width:0}
+.mc-form .mc-now{min-width:0;border:1px solid var(--line);background:transparent;border-radius:7px;padding:3px 6px;cursor:pointer;font-size:13px;line-height:1}
+.mc-form .mc-now:hover{background:#eef2f7}
+@media print{.mc-head-add,.mc-now{display:none!important}}

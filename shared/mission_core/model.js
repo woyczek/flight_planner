@@ -86,6 +86,10 @@
   const TIME_FIELDS = ['briefing', ...SEQUENCE, 'missionStart', 'missionEnd'];
   function checkMission(m) {
     const t = m.timeline || {}, issues = [];
+    // Date : un CR porte sur un vol réalisé (pas de date future ; année plausible).
+    const date = m.metadata?.date || '', today = new Date(), iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    if (date && (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < '2000-01-01')) issues.push({ kind: 'dateInvalid', path: 'metadata.date', value: date });
+    else if (date > iso) issues.push({ kind: 'future', path: 'metadata.date', value: date });
     TIME_FIELDS.forEach(k => { if (t[k] && minutes(t[k]) == null) issues.push({ kind: 'invalid', path: `timeline.${k}`, value: t[k] }); });
     const steps = SEQUENCE.filter(k => minutes(t[k]) != null);
     let span = 0;

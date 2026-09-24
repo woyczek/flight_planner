@@ -17,6 +17,8 @@
   // Base DEFA (journal des vols) : rechargeable depuis son fichier, gardée hors sauvegarde.
   const SKIP = [/^networkWatch:/, /^missionSendKey:/, /^defaFlightLog:/];
   const META = 'defaLocalStore:v1'; // { savedAt, hash } — non sauvegardé lui-même
+  const PENDING = 'defaLocalStore:pending'; // modifications depuis la dernière sauvegarde
+  const REMIND = 10; // bouton « Sauvegarder » au plus toutes les 10 modifications
   const here = document.currentScript?.src || new URL('shared/browser_store.js', location.href).href;
 
   const TEXT = {
@@ -47,9 +49,12 @@
     if (permission !== 'granted' && request) permission = await handle.requestPermission?.({ mode: 'readwrite' });
     return permission === 'granted' ? handle : null;
   }
+  // Choix du dossier : sélecteur ouvert sur le dossier actuel (composant FileAccess).
   async function chooseFolder() {
+    if (window.FileAccess) return window.FileAccess.pickFolder('__store');
     if (!window.showDirectoryPicker) throw new Error('File System Access API');
-    const handle = await window.showDirectoryPicker({ id: 'defa-local-store', mode: 'readwrite' });
+    const current = await idbGet('folder:__store');
+    const handle = await window.showDirectoryPicker({ id: 'defa-local-store', mode: 'readwrite', ...(current ? { startIn: current } : {}) });
     await idbSet('folder:__store', handle); return handle;
   }
 
@@ -59,7 +64,7 @@
     const entries = {};
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (!key || key === META || SKIP.some(re => re.test(key))) continue;
+      if (!key || key === META || key === PENDING || SKIP.some(re => re.test(key))) continue;
       entries[key] = parse(localStorage.getItem(key));
     }
     return entries;
@@ -100,7 +105,8 @@
     if (quiet && meta().hash === hash) return true; // rien de nouveau
     const writable = await (await dir.getFileHandle(FILE, { create: true })).createWritable();
     await writable.write(text); await writable.close();
-    try { localStorage.setItem(META, JSON.stringify({ savedAt, hash, folder: dir.name })); } catch { /* quota */ }
+    try { localStorage.setItem(META, JSON.stringify({ savedAt, hash, folder: dir.name })); localStorage.setItem(PENDING, '0'); } catch { /* quota */ }
+    reminder();
     if (!quiet) status(`${t('saved')} : ${dir.name}/${FILE} — ${count} ${t('keys')}`);
     return true;
   }
@@ -161,9 +167,13 @@
   box.querySelector('[data-store="download"]').onclick = run(download);
   box.querySelector('[data-store="file"]').onclick = () => picker.click();
   picker.onchange = run(async () => { const file = picker.files[0]; if (file) await restoreText(await file.text()); picker.value = ''; });
-  const translate = () => { box.querySelectorAll('[data-store-text]').forEach(el => { el.textContent = t(el.dataset.storeText); }); idle(); };
+  const translate = () => {
+    box.querySelectorAll('[data-store-text]').forEach(el => { el.textContent = t(el.dataset.storeText); }); idle();
+    // Dossier de sauvegarde actuel (nom, autorisation, dossier attendu en infobulle).
+    window.FileAccess?.decorate(box.querySelector('[data-store="folder"]'), '__store');
+    reminder();
+  };
   window.addEventListener('repository-language-change', translate);
-  translate();
 
   // Sauvegarde automatique (dossier déjà autorisé, sans demande) : départ de la page et
   // toutes les 5 minutes, seulement si les données ont changé.
@@ -171,5 +181,37 @@
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') auto(); });
   setInterval(auto, 5 * 60 * 1000);
 
-  window.LocalStore = { save, restore, restoreText, download, chooseFolder, snapshot, merge, FILE };
+  // ---- rappel de sauvegarde : modifications comptées (au plus une par clé et par minute) ;
+  // à partir de 10, bouton « Sauvegarder » en couleur de contraste dans l'en-tête, avec
+  // l'horodatage de la dernière sauvegarde. Sauvegarde automatique si le dossier est autorisé.
+  const tracked = key => key && key !== META && key !== PENDING && !SKIP.some(re => re.test(key)) && !/^repositoryFramework:|^missionReportingPeriod:|^missionGlobalReporting:/.test(key);
+  const lastHit = new Map(), pending = () => Number(localStorage.getItem(PENDING) || 0);
+  const nativeSet = Storage.prototype.setItem, nativeRemove = Storage.prototype.removeItem;
+  const hit = key => {
+    if (!tracked(key)) return; const now = Date.now();
+    if (now - (lastHit.get(key) || 0) < 60000) return; lastHit.set(key, now);
+    nativeSet.call(localStorage, PENDING, String(pending() + 1)); reminder();
+  };
+  Storage.prototype.setItem = function (key, value) { const changed = this === localStorage && this.getItem(key) !== String(value); nativeSet.call(this, key, value); if (changed) hit(key); };
+  Storage.prototype.removeItem = function (key) { const had = this === localStorage && this.getItem(key) !== null; nativeRemove.call(this, key); if (had) hit(key); };
+  const BTN = { fr: ['Sauvegarder', '{n} modifications depuis la dernière sauvegarde ({last}) — sauvegarder les données locales'], en: ['Back up', '{n} changes since the last backup ({last}) — back up local data'], de: ['Sichern', '{n} Änderungen seit der letzten Sicherung ({last})'], es: ['Guardar copia', '{n} cambios desde la última copia ({last})'] };
+  const button = document.createElement('button');
+  button.type = 'button'; button.className = 'repo-backup-button'; button.hidden = true;
+  const tools = document.querySelector('.repo-header-tools'); if (tools) tools.prepend(button);
+  if (!document.getElementById('repoBackupStyle')) document.head.insertAdjacentHTML('beforeend', '<style id="repoBackupStyle">.repo-backup-button{height:32px;border:0!important;border-radius:7px!important;padding:4px 10px!important;background:#f59e0b!important;color:#111827!important;font:600 12px/1 Inter,system-ui,Segoe UI,Arial,sans-serif;cursor:pointer;white-space:nowrap}.repo-backup-button:hover{background:#fbbf24!important}@media print{.repo-backup-button{display:none!important}}</style>');
+  function reminder() {
+    const n = pending(), m = meta(), row = BTN[nav.getLanguage?.()] || BTN.fr;
+    const last = m.savedAt ? new Date(m.savedAt).toLocaleString() : t('never');
+    button.hidden = n < REMIND;
+    button.textContent = `💾 ${row[0]} (${n}) · ${m.savedAt ? new Date(m.savedAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }) : t('never')}`;
+    button.title = row[1].replace('{n}', n).replace('{last}', last);
+  }
+  button.onclick = run(async () => {
+    if (await save({ request: true })) return;
+    if (window.showDirectoryPicker && !(await idbGet('folder:__store'))) { await chooseFolder(); if (await save({ request: true })) return; }
+    await download(); nativeSet.call(localStorage, PENDING, '0'); reminder();
+  });
+  translate(); // libellés, dossier actuel, rappel (après la déclaration du bouton)
+
+  window.LocalStore = { save, restore, restoreText, download, chooseFolder, snapshot, merge, FILE, pending };
 })();

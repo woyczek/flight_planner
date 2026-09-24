@@ -76,7 +76,7 @@
   const crew = {
     id: 'crew', title: L('Équipage', 'Crew', 'Besatzung', 'Tripulación'),
     collection: {
-      path: 'crew', min: 0, item: L('Membre d’équipage', 'Crew member', 'Besatzungsmitglied', 'Tripulante'), add: L('+ Ajouter un membre', '+ Add crew member', '+ Mitglied hinzufügen', '+ Añadir tripulante'),
+      path: 'crew', min: 1, item: L('Membre d’équipage', 'Crew member', 'Besatzungsmitglied', 'Tripulante'), add: L('+ Ajouter un membre', '+ Add crew member', '+ Mitglied hinzufügen', '+ Añadir tripulante'),
       empty: () => ({ role: '', name: '', aircraft: 1, notes: '' }),
       fields: [
         f('role', L('Rôle', 'Role', 'Rolle', 'Función'), 'select', { crewRoles: true, blank: true }),
@@ -245,7 +245,8 @@
 
   // Ordre du formulaire ; les blocs de la famille s'insèrent avant « events » ; navigation et
   // météo (souvent remplies par le plan de vol et les sources météo) en bas de page.
-  const ORDER = [identification, aircraft, crew, tasking, capabilities, timeline, fuel, '__family__', events, legs, results, remarks, network, navigation, environment];
+  // Résultat de la mission en 2e position, sous l'identification (lecture du CR).
+  const ORDER = [identification, results, aircraft, crew, tasking, capabilities, timeline, fuel, '__family__', events, legs, remarks, network, navigation, environment];
   // Champs de texte simple des blocs communs : en majuscules (saisie, registres, migration).
   window.MissionModel.registerUpperFields(ORDER.filter(block => typeof block === 'object'));
   // Messages des contrôles de cohérence (MissionModel.checkMission), dans la langue demandée
@@ -254,6 +255,8 @@
     invalid: L('heure invalide', 'invalid time', 'ungültige Uhrzeit', 'hora no válida'),
     order: L('avant', 'before', 'vor', 'antes de'),
     span: L('chronologie de plus de 20 h — vérifier les heures', 'timeline longer than 20 h — check the times', 'Zeitablauf länger als 20 h — Uhrzeiten prüfen', 'cronología de más de 20 h — revisar las horas'),
+    future: L('date future — un CR porte sur un vol réalisé', 'future date — a report covers a flight already flown', 'Datum in der Zukunft — ein Bericht betrifft einen durchgeführten Flug', 'fecha futura — un informe trata de un vuelo realizado'),
+    dateInvalid: L('date invalide', 'invalid date', 'ungültiges Datum', 'fecha no válida'),
     fuel: L('carburant final supérieur au carburant de départ', 'final fuel above starting fuel', 'Endkraftstoff höher als Startkraftstoff', 'combustible final superior al inicial')
   };
   const fieldLabel = (path, i) => { const field = [timeline, fuel].flatMap(b => b.fields).find(x => x.path === path); return field ? field.label[i] || field.label[0] : path; };
@@ -261,6 +264,7 @@
     const w = row => row[i] || row[0];
     if (issue.kind === 'invalid') return `${fieldLabel(issue.path, i)} « ${issue.value} » : ${w(ISSUE.invalid)}`;
     if (issue.kind === 'order') return `${fieldLabel(issue.path, i)} (${issue.value}) ${w(ISSUE.order)} ${fieldLabel(issue.before, i)} (${issue.other})`;
+    if (issue.kind === 'future' || issue.kind === 'dateInvalid') return `${w(L('Date', 'Date', 'Datum', 'Fecha'))} ${issue.value} : ${w(ISSUE[issue.kind])}`;
     if (issue.kind === 'span') return `${w(ISSUE.span)} (${Math.floor(issue.minutes / 60)}h${String(issue.minutes % 60).padStart(2, '0')})`;
     return `${w(ISSUE.fuel)} (${issue.value} > ${issue.other})`;
   };

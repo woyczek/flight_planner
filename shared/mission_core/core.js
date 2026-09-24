@@ -204,7 +204,7 @@
     let saveTimer = null;
     // Valeurs remplies automatiquement (appareil connu, plan de vol, météo…) : texte simple en
     // majuscules comme la saisie, avant le brouillon et l'aperçu.
-    const changed = (path, auto = false) => { if (!auto) dirty = true; kpi(); assist.autoEnvironment(); clearTimeout(saveTimer); saveTimer = setTimeout(() => { if (M.upperText(mission)) view.sync(); if (dirty) saveDraft(); renderReport(); }, 400); };
+    const changed = (path, auto = false) => { if (!auto) dirty = true; kpi(); assist.autoEnvironment(); timelineEvents(); clearTimeout(saveTimer); saveTimer = setTimeout(() => { if (M.upperText(mission)) view.sync(); if (dirty) saveDraft(); renderReport(); }, 400); };
     const view = window.MissionForm.create(form, {
       family, getMission: () => mission,
       onChange: changed,
@@ -215,11 +215,12 @@
         form.querySelector(`[data-path="aircraft.${index}.registration"]`)?.focus();
       },
       onCommit: (path, value) => {
-        aircraftAssist(path, value); assist.onCommit(path, value);
+        aircraftAssist(path, value); assist.onCommit(path, value); timeAssist(path, value);
         // Opérateur (organisme) modifié : indicatif de série de l'appareil principal réévalué.
         if (path === 'organisation.organisation' && (operatorAssist(0) + autoSeries(0))) { view.sync('aircraft.'); changed(); }
       },
-      suggest: (...args) => assist.suggest(...args)
+      suggest: (...args) => assist.suggest(...args),
+      now: (path, kind) => nowFor(path, kind)
     });
     const blockList = window.MissionBlocks.ORDER.flatMap(block => block === '__family__' ? family.blocks : [block]);
     // Aides à la saisie : valeurs connues, filtrage croisé des appareils, terrains, météo, soleil.
@@ -284,6 +285,75 @@
       item.callsignPrefix = prefix; auto.callsignPrefix = prefix; autoFilled.set(item, auto);
       item.callsign = M.joinCallsign(prefix, item.callsignNumber); fplAssist(item, auto); return true;
     }
+    // ---- heures : fuseau du terrain de départ (à défaut Europe/Paris, CET / CEST), à la date
+    // de la mission (à défaut, aujourd'hui) — changement d'heure pris en compte.
+    const zone = () => assist.cachedAirport?.(mission.navigation?.dep || mission.aircraft?.[0]?.baseDeparture)?.tz || 'Europe/Paris';
+    const partsIn = (date, tz) => { const p = {}; new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(date).forEach(x => { p[x.type] = x.value; }); return p; };
+    const offsetMin = (tz, ms) => { const p = partsIn(new Date(ms), tz); return (Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute) - Math.floor(ms / 60000) * 60000) / 60000; };
+    const missionDate = () => /^\d{4}-\d{2}-\d{2}$/.test(mission.metadata?.date || '') ? mission.metadata.date : nowFor('metadata.date', 'date');
+    function convert(time, toUtc) {
+      const m = /^(\d{1,2}):(\d{2})$/.exec(time || ''); if (!m) return '';
+      const [y, mo, d] = missionDate().split('-').map(Number), naive = Date.UTC(y, mo - 1, d, +m[1], +m[2]), tz = zone();
+      const ms = toUtc ? naive - offsetMin(tz, naive - offsetMin(tz, naive) * 60000) * 60000 : naive;
+      const p = partsIn(new Date(ms), toUtc ? 'UTC' : tz); return `${p.hour}:${p.minute}`;
+    }
+    function nowFor(path, kind) {
+      const p = partsIn(new Date(), /utc/i.test(path) ? 'UTC' : zone());
+      return kind === 'date' ? `${p.year}-${p.month}-${p.day}` : `${p.hour}:${p.minute}`;
+    }
+    // Heure locale ⇄ UTC (identification, événements) ; l'heure du briefing devient celle du CR
+    // si elle est vide ou déjà reprise automatiquement.
+    const autoTime = new Map();
+    function timeAssist(path, value) {
+      const pair = /^(metadata|events\.\d+)\.time(Local|Utc)$/.exec(path);
+      const setAuto = (target, v) => { const cur = M.get(mission, target); if (v && (!cur || cur === autoTime.get(target))) { M.set(mission, target, v); autoTime.set(target, v); return true; } return false; };
+      let touched = false;
+      if (pair) touched = setAuto(`${pair[1]}.time${pair[2] === 'Local' ? 'Utc' : 'Local'}`, convert(value, pair[2] === 'Local'));
+      if (path === 'timeline.briefing' && value && setAuto('metadata.timeLocal', value)) { setAuto('metadata.timeUtc', convert(value, true)); touched = true; }
+      if (touched) view.sync();
+    }
+    // Événements de la chronologie : créés / mis à jour / retirés d'après les heures saisies
+    // (ou importées : plan de vol, tracker, suivi réseau). Un événement complété à la main
+    // (position, description…) n'est jamais retiré.
+    const TIMELINE_EVENT = { briefing: 'BRIEFING', engineStart: 'ENGINE_START', offBlock: 'OFF_BLOCK', takeoff: 'TAKEOFF', zoneEntry: 'ON_TASK', missionStart: 'MISSION_START', missionEnd: 'MISSION_END', zoneExit: 'OFF_TASK', landing: 'LANDING', onBlock: 'ON_BLOCK', shutdown: 'SHUTDOWN' };
+    let timelineSig = null;
+    function timelineEvents(reset = false) {
+      const sig = JSON.stringify(Object.keys(TIMELINE_EVENT).map(k => mission.timeline?.[k] || ''));
+      if (reset || timelineSig === null) { timelineSig = sig; return; }
+      if (sig === timelineSig) return; timelineSig = sig;
+      const list = mission.events || (mission.events = []);
+      const touchedByHand = e => ['position', 'description', 'result'].some(k => e[k]) || ['altitude', 'speed', 'heading', 'fuel'].some(k => e[k] != null && e[k] !== '');
+      Object.entries(TIMELINE_EVENT).forEach(([key, type]) => {
+        const time = mission.timeline?.[key] || '', source = `timeline.${key}`, index = list.findIndex(e => e.source === source);
+        if (!time) { if (index >= 0 && !touchedByHand(list[index])) list.splice(index, 1); return; }
+        const event = index >= 0 ? list[index] : { timeLocal: '', timeUtc: '', type, position: '', altitude: null, speed: null, heading: null, fuel: null, description: '', result: '', source };
+        event.timeLocal = time; event.timeUtc = convert(time, true); if (!event.type) event.type = type;
+        if (index < 0) list.push(event);
+      });
+      // Ordre chronologique depuis la première heure de la chronologie (passage de minuit).
+      const first = M.minutes(Object.keys(TIMELINE_EVENT).map(k => mission.timeline?.[k]).find(Boolean)) ?? 0;
+      const rank = e => { const t = M.minutes(e.timeLocal); return t == null ? 1e9 : (t - first + 1440) % 1440; };
+      list.sort((a, b) => rank(a) - rank(b));
+      view.rerenderCollectionOf('events.0'); view.sync('events.');
+    }
+    // Autorités (demandeuse, de contrôle) : dernière mission du même indicatif (ou du même
+    // organisme), sinon d'après le département des séries numérotées par département
+    // (DRAGON74, CHOUCAS74 : préfecture, CODIS / CORG / SAMU du département).
+    const autoAuthority = {};
+    function authorityAssist(entry) {
+      const item = mission.aircraft[0], o = mission.organisation; if (!item) return;
+      const set = (k, v) => { if (v && (!o[k] || o[k] === autoAuthority[k])) { o[k] = autoAuthority[k] = String(v).toUpperCase(); } };
+      const history = (window.MissionLedger?.store?.missions || []).slice().sort((a, b) => String(b.metadata?.date).localeCompare(String(a.metadata?.date)));
+      const sameCallsign = history.find(m => m !== mission && item.callsign && String(m.aircraft?.[0]?.callsign || '').toUpperCase() === String(item.callsign).toUpperCase() && (m.organisation?.requestingAuthority || m.organisation?.controllingAuthority));
+      const sameOrg = history.find(m => m !== mission && o.organisation && String(m.organisation?.organisation || '').toUpperCase() === String(o.organisation).toUpperCase() && (m.organisation?.requestingAuthority || m.organisation?.controllingAuthority));
+      const source = sameCallsign || sameOrg;
+      if (source) { set('requestingAuthority', source.organisation.requestingAuthority); set('controllingAuthority', source.organisation.controllingAuthority); return; }
+      const number = String(item.callsignNumber || '').toUpperCase(), dept = /d[ée]partement/i.test(entry?.note || '') ? (V.departments[number] ? number : V.departments[number.slice(0, 2)] ? number.slice(0, 2) : '') : '';
+      if (!dept) return;
+      const name = V.departments[dept], op = String(entry.operator || o.organisation || '').toUpperCase();
+      set('requestingAuthority', `PRÉFECTURE ${name} (${dept})`);
+      set('controllingAuthority', /GENDARMERIE/.test(op) ? `CORG ${dept}` : /SAMU/.test(op) ? `SAMU ${dept}` : `CODIS ${dept}`);
+    }
     // Série de la table de correspondance (COTAM, DRAGON…) : organisme de la mission et type
     // (s'il est unique pour la série), seulement s'ils sont vides ou déjà remplis automatiquement.
     function seriesAssist(index) {
@@ -292,6 +362,7 @@
       if (index === 0 && entry.operator && (!mission.organisation.organisation || mission.organisation.organisation === autoOperator)) mission.organisation.organisation = autoOperator = String(entry.operator).toUpperCase();
       const auto = autoFilled.get(item) || {};
       if ((entry.types || []).length === 1 && (!item.type || item.type === auto.type)) { item.type = entry.types[0]; auto.type = item.type; autoFilled.set(item, auto); typeAssist(index, item.type); }
+      if (index === 0) { authorityAssist(entry); view.sync('organisation.'); }
     }
     // Exploitant OACI (OPR/) : d'après l'organisme de la mission ou l'opérateur de l'appareil connu.
     function operatorAssist(index, known = null) {
@@ -397,9 +468,10 @@
       list.innerHTML = issues.map(issue => `<li><button type="button" data-goto="${esc(issue.path)}">⚠ ${esc(window.MissionBlocks.describeIssue(issue, i))}</button></li>`).join('');
       list.querySelectorAll('[data-goto]').forEach(b => b.onclick = () => { const el = form.querySelector(`[data-path="${b.dataset.goto}"]`); el?.scrollIntoView({ block: 'center' }); el?.focus(); });
       const flagged = new Set(issues.map(x => x.path));
-      form.querySelectorAll('[data-path^="timeline."],[data-path^="fuel."]').forEach(el => el.classList.toggle('mc-invalid', flagged.has(el.dataset.path)));
+      form.querySelectorAll('[data-path^="timeline."],[data-path^="fuel."],[data-path="metadata.date"]').forEach(el => el.classList.toggle('mc-invalid', flagged.has(el.dataset.path)));
     }
     function ledgerInfo() {
+      window.FileAccess?.decorate($a('folder'), '__ledger');
       tools.querySelector('.mc-ledger-info').textContent = `${ledger.filename} · ${family.id} : ${ledger.missions.length} ${t('missions')} · ${t('folder')} : ${ledger.state.folder || t('browserOnly')}`;
     }
     function modeUi() {
@@ -417,7 +489,7 @@
       root.querySelector('#mcReport').innerHTML = html;
       reportRows = rows; registerI18n();
     }
-    function redraw() { view.render(blockList); assist.decorate(); assist.autoEnvironment('reset'); sendUi(); fplTools(); kpi(); modeUi(); ledgerInfo(); renderReport(); switcher.sync(); registerI18n(); blockFramework(); }
+    function redraw() { view.render(blockList); assist.decorate(); assist.autoEnvironment('reset'); timelineEvents(true); sendUi(); fplTools(); kpi(); modeUi(); ledgerInfo(); renderReport(); switcher.sync(); registerI18n(); blockFramework(); }
     // Blocs recréés : afficher / masquer / déplacer du framework réappliqués (état mémorisé).
     const blockFramework = () => { if (document.readyState === "complete") window.AppFramework?.refresh?.(); };
 

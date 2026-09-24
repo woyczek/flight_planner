@@ -153,6 +153,7 @@
     $a('yaml').onclick = () => ledger.downloadYaml();
     $a('csv').onclick = () => ledger.downloadCsv();
     $a('print').onclick = () => print();
+    window.FileAccess?.decorate($a('folder'), '__ledger'); window.addEventListener('load', () => window.FileAccess?.decorate($a('folder'), '__ledger'));
     $a('folder').onclick = async () => { try { await ledger.chooseFolder(); await ledger.load(); await persist(); render(); } catch (error) { status.textContent = error.message; } };
     // Ancien registre CSV (HEMS / FIRE) → missions du Core, sans doublon (n° + date).
     if (family.legacy) {

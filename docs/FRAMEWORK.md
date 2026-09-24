@@ -12,7 +12,8 @@ seuls sur chaque page. Ce document décrit chaque composant, son rôle et son in
 | Blocs (déplacer / masquer) | `shared/app_framework.js` | toutes les pages |
 | Traduction des textes | `shared/content_i18n.js` | CR DEFA, Planner, reportings |
 | Profil pilote | `shared/pilot_profile.js` | toutes les pages (menu ☰) |
-| Données locales ⇄ fichier | `shared/browser_store.js` | toutes les pages (menu ☰) |
+| Données locales ⇄ fichier, rappel de sauvegarde | `shared/browser_store.js` | toutes les pages (menu ☰, en-tête) |
+| Dossiers autorisés, ouverture des fichiers | `shared/file_access.js` | toutes les pages |
 | Période d'analyse (zoom) | `shared/time_period.js` | reportings, Landing Dashboard |
 | Graphiques SVG | `shared/mission_core/charts.js` | reportings |
 | Tableau triable | `shared/mission_table.js` | reportings |
@@ -81,6 +82,32 @@ copié dans `defa_local_store.yaml`, dans un dossier choisi une fois (idéalemen
 synchronisé du dépôt) — écriture automatique au départ de chaque page, restauration par
 fusion (la donnée la plus récente l'emporte). Exclus : le suivi réseau en cours, la clef du
 webservice d'envoi des CR. Événement `local-store-restored` après une restauration.
+
+### Rappel de sauvegarde
+
+Chaque modification des données locales est comptée (au plus une par clé et par minute ;
+disposition des blocs, période et préférences d'affichage exclues). À partir de **10**, un
+bouton **💾 Sauvegarder (n) · date de la dernière sauvegarde** apparaît en couleur de contraste
+dans l'en-tête : il écrit la sauvegarde dans le dossier autorisé (sinon le fait choisir, ou
+télécharge le fichier) et remet le compteur à zéro. La sauvegarde automatique (dossier
+autorisé : toutes les 5 minutes et au départ de la page) remet aussi le compteur à zéro.
+
+## 6 bis. `file_access.js` — dossiers et fichiers
+
+- Dossiers mémorisés (IndexedDB `missionCore` › `handles`) : **dépôt** (`__repo` : le dossier
+  « Documentation », qui contient `repository_tree`), **registre** (`__ledger` :
+  `Documentation/CR DEFA`, qui contient `mission_cr.html`), **sauvegarde locale** (`__store`),
+  **performances** (`__perf`, Flight Planner).
+- `FileAccess.pickFolder(clé)` : le sélecteur s'ouvre sur le dossier actuel ; contrôle du
+  contenu attendu (fichier témoin) avec confirmation.
+- `FileAccess.decorate(bouton, clé)` : le bouton affiche « Dossier du registre : CR DEFA ✓ »
+  (✓ autorisé, ⚠ à ré-autoriser au prochain accès) ; l'infobulle donne le dossier attendu et
+  l'état — l'explication au survol plutôt qu'à l'écran.
+- **Tout** `<input type="file">` de la suite ouvre le sélecteur du système **directement dans
+  le dossier paramétré** : `data-picker-folder="__ledger"` sur le champ, sinon dossier par
+  défaut de la page (application CR DEFA : registre ; Paramétrage : dépôt ; Flight Planner :
+  performances), sinon le dernier dossier utilisé pour ce bouton. Le code des pages ne change
+  pas (événement `change` habituel). Navigateurs sans l'API : sélecteur natif.
 
 ## 7. `time_period.js` — période d'analyse et zoom
 
