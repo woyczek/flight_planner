@@ -499,3 +499,15 @@ Retenues par défaut (à contester si besoin) :
   network_tracker, ● rouge pendant le suivi), Mission ▾ (nouvelle, export, suppression),
   Registre des missions ▾ (infos, reporting, dossier, téléchargement, paramétrage de l'envoi,
   Paramétrage). Un seul menu ouvert, fermeture au clic extérieur ; `data-action` inchangés.
+
+## S. Étape 14 — contrôles de cohérence, graphiques des reportings de famille (2026-09-24)
+
+- `MissionModel.checkMission` : heures invalides, chronologie inversée (écart ≥ 12 h entre deux
+  étapes de mise en route → arrêt, fin de mission ≥ 20 h après le début), chronologie > 20 h,
+  carburant final > départ. Libellés : `MissionBlocks.describeIssue(issue, langue)`.
+- CR : liste ⚠ sous les calculs (clic = champ), champs surlignés (`.mc-invalid`).
+- Reporting général : section « Contrôle des données » (missions à corriger, clic = CR).
+- Reporting de famille : graphique par période empilé par série (`charts.js` chargé par les
+  15 pages), colonne « Contrôle » ; bouton « Nouveau compte rendu » en double retiré du corps
+  (il est dans l'en-tête).
+- `charts.js` injecte ses styles (thème par variables `--muted`, `--soft`, `--mcg-grid`…).

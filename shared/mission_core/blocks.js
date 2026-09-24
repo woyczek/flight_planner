@@ -248,5 +248,21 @@
   const ORDER = [identification, aircraft, crew, tasking, capabilities, timeline, fuel, '__family__', events, legs, results, remarks, network, navigation, environment];
   // Champs de texte simple des blocs communs : en majuscules (saisie, registres, migration).
   window.MissionModel.registerUpperFields(ORDER.filter(block => typeof block === 'object'));
-  window.MissionBlocks = { ORDER, CIVIL, ON_STATION, identification, aircraft, crew, tasking, capabilities, environment, navigation, timeline, fuel, events, legs, results, remarks, network };
+  // Messages des contrôles de cohérence (MissionModel.checkMission), dans la langue demandée
+  // (index 0 fr, 1 en, 2 de, 3 es) ; libellés des champs repris des blocs.
+  const ISSUE = {
+    invalid: L('heure invalide', 'invalid time', 'ungültige Uhrzeit', 'hora no válida'),
+    order: L('avant', 'before', 'vor', 'antes de'),
+    span: L('chronologie de plus de 20 h — vérifier les heures', 'timeline longer than 20 h — check the times', 'Zeitablauf länger als 20 h — Uhrzeiten prüfen', 'cronología de más de 20 h — revisar las horas'),
+    fuel: L('carburant final supérieur au carburant de départ', 'final fuel above starting fuel', 'Endkraftstoff höher als Startkraftstoff', 'combustible final superior al inicial')
+  };
+  const fieldLabel = (path, i) => { const field = [timeline, fuel].flatMap(b => b.fields).find(x => x.path === path); return field ? field.label[i] || field.label[0] : path; };
+  const describeIssue = (issue, i = 0) => {
+    const w = row => row[i] || row[0];
+    if (issue.kind === 'invalid') return `${fieldLabel(issue.path, i)} « ${issue.value} » : ${w(ISSUE.invalid)}`;
+    if (issue.kind === 'order') return `${fieldLabel(issue.path, i)} (${issue.value}) ${w(ISSUE.order)} ${fieldLabel(issue.before, i)} (${issue.other})`;
+    if (issue.kind === 'span') return `${w(ISSUE.span)} (${Math.floor(issue.minutes / 60)}h${String(issue.minutes % 60).padStart(2, '0')})`;
+    return `${w(ISSUE.fuel)} (${issue.value} > ${issue.other})`;
+  };
+  window.MissionBlocks = { ORDER, CIVIL, ON_STATION, identification, aircraft, crew, tasking, capabilities, environment, navigation, timeline, fuel, events, legs, results, remarks, network, describeIssue };
 })();

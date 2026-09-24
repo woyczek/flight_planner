@@ -69,7 +69,10 @@
     colMissions: L('Missions', 'Missions', 'Einsätze', 'Misiones'), colSuccess: L('Réussite (%)', 'Success (%)', 'Erfolg (%)', 'Éxito (%)'),
     colFlightAvg: L('Vol moyen', 'Average flight', 'Mittlerer Flug', 'Vuelo medio'), colSpecific: L('Indicateurs de la famille', 'Family indicators', 'Familienkennzahlen', 'Indicadores de la familia'),
     colLast: L('Dernière mission', 'Last mission', 'Letzter Einsatz', 'Última misión'), colName: L('Nom', 'Name', 'Name', 'Nombre'), colRoles: L('Fonctions', 'Roles', 'Funktionen', 'Funciones'),
-    colReporting: L('Reporting', 'Reporting', 'Auswertung', 'Informe')
+    colReporting: L('Reporting', 'Reporting', 'Auswertung', 'Informe'),
+    checks: L('Contrôle des données', 'Data checks', 'Datenprüfung', 'Control de datos'),
+    checksSub: L('missions à corriger (clic pour ouvrir le CR)', 'missions to correct (click to open the report)', 'zu korrigierende Einsätze (Klick öffnet den Bericht)', 'misiones por corregir (clic para abrir el informe)'),
+    colIssues: L('Anomalies', 'Issues', 'Auffälligkeiten', 'Anomalías')
   };
   const METRICS = [
     { id: 'missions', label: UI.missions, value: () => 1, format: v => String(Math.round(v)) },
@@ -112,6 +115,7 @@
         <div class="row mcg-options"><label>${t('unit')}<select data-pref="unit">${UNITS.map(u => `<option value="${u}">${t(u)}</option>`).join('')}</select></label>
         <label>${t('metric')}<select data-pref="metric">${METRICS.map(m => `<option value="${m.id}">${esc(m.label[0])}</option>`).join('')}</select></label></div></section>
       <section class="cards mcg-cards" id="mcgCards"></section>
+      <section class="section mcg-wide mcg-checks" hidden><h2>${t('checks')} <span class="mcg-sub" id="mcgChecksSub"></span></h2><div class="inside" id="mcgChecks"></div></section>
       <section class="section mcg-wide"><h2>${t('activity')} <span class="mcg-sub" id="mcgActivitySub"></span></h2><div class="inside"><div id="mcgActivity"></div><div class="mcg-series-legend" id="mcgActivityLegend"></div></div></section>
       <div class="mcg-grid">
         <section class="section"><h2>${t('byFamily')}</h2><div class="inside" id="mcgFamilies"></div></section>
@@ -272,6 +276,19 @@
         { key: 'name', label: t('colName') }, { key: 'roles', label: t('colRoles'), format: v => v || '—' }, { key: 'families', label: t('colFamily'), html: v => v.map(tag).join(' '), sortValue: r => r.families.join(' ') },
         { key: 'missions', label: t('colMissions'), type: 'number' }, { key: 'flight', label: t('flight'), type: 'number', format: duration }, { key: 'last', label: t('colLast') }
       ], 'missions');
+
+      // Contrôle des données : chronologie inversée, heure invalide, carburant incohérent.
+      const flawed = visible.map(r => ({ ...r, issues: M.checkMission(r.mission) })).filter(r => r.issues.length);
+      $('.mcg-checks').hidden = !flawed.length;
+      $('#mcgChecksSub').textContent = `${flawed.length} ${tr(UI.checksSub)}`;
+      if (flawed.length || tables.mcgChecks) {
+        const rowsList = flawed.map(r => ({ ...r, text: r.issues.map(x => window.MissionBlocks.describeIssue(x, idx())).join(' · ') }));
+        if (tables.mcgChecks) tables.mcgChecks.setRows(rowsList);
+        else tables.mcgChecks = window.SortedTable.render($('#mcgChecks'), { rows: rowsList, columns: [
+          { key: 'family', label: t('colFamily'), html: v => tag(v) }, { key: 'missionId', label: t('colId') }, { key: 'date', label: t('colDate') },
+          { key: 'text', label: t('colIssues'), html: v => `<span class="mcg-issue">⚠ ${esc(v)}</span>` }
+        ], defaultSortKey: 'date', defaultDir: -1, rowTitle: tr(UI.rowTitle), onRowClick: r => { const cr = pagesOf(r.family).cr; if (cr) location.href = `${cr}?edit=${r.index}&id=${encodeURIComponent(r.missionId)}`; } });
+      }
 
       // Missions
       const columns = [

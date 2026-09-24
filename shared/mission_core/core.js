@@ -167,7 +167,7 @@
     if (header) header.append(tools);
     root.innerHTML = `<form id="missionCoreForm" class="mc-form" autocomplete="off">
       <section class="mc-edit-banner" hidden><h2></h2><p class="note mc-edit-info"></p></section></form>
-      <aside class="mc-aside"><div class="panel mc-kpi-panel"><h2></h2><div class="mc-kpi"></div><h3></h3><div class="small mc-context"></div></div>
+      <aside class="mc-aside"><div class="panel mc-kpi-panel"><h2></h2><div class="mc-kpi"></div><ul class="mc-issues" hidden></ul><h3></h3><div class="small mc-context"></div></div>
         <div class="panel mc-report-panel" data-block-id="mc-report"><h2></h2><div class="row mc-report-actions">
         <button type="button" class="primary" data-action="render"></button><button type="button" class="secondary" data-action="print"></button>
         <label class="mc-public" hidden><input type="checkbox" data-action="public"> <span></span></label></div>
@@ -384,8 +384,20 @@
         + cell('transitOut', duration(s.transitOutMinutes)) + cell('onStation', duration(s.timeOnStationMinutes))
         + cell('transitIn', duration(s.transitInMinutes)) + cell('mission', duration(s.missionMinutes))
         + cell('fuelUsed', s.fuelUsed == null ? '—' : `${s.fuelUsed} ${unit}`) + cell('fuelOnStation', s.fuelOnStation == null ? '—' : `${s.fuelOnStation} ${unit}`);
+      checks();
       const ctx = view.context() || {};
       root.querySelector('.mc-context').innerHTML = `<b>${esc(family.id)}</b> · ${esc(mission.series || '—')}<br>${esc(t('categories'))} : ${esc([...(ctx.categories || [])].join(', ') || t('none'))}<br>${esc(t('capabilities'))} : ${esc([...(ctx.capabilities || [])].join(', ') || t('none'))}`;
+    }
+    // Contrôles de cohérence : liste sous les calculs (clic = champ concerné) et marque sur les
+    // champs (heure inversée ou invalide, carburant incohérent).
+    function checks() {
+      const i = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'));
+      const issues = M.checkMission(mission), list = root.querySelector('.mc-issues');
+      list.hidden = !issues.length;
+      list.innerHTML = issues.map(issue => `<li><button type="button" data-goto="${esc(issue.path)}">⚠ ${esc(window.MissionBlocks.describeIssue(issue, i))}</button></li>`).join('');
+      list.querySelectorAll('[data-goto]').forEach(b => b.onclick = () => { const el = form.querySelector(`[data-path="${b.dataset.goto}"]`); el?.scrollIntoView({ block: 'center' }); el?.focus(); });
+      const flagged = new Set(issues.map(x => x.path));
+      form.querySelectorAll('[data-path^="timeline."],[data-path^="fuel."]').forEach(el => el.classList.toggle('mc-invalid', flagged.has(el.dataset.path)));
     }
     function ledgerInfo() {
       tools.querySelector('.mc-ledger-info').textContent = `${ledger.filename} · ${family.id} : ${ledger.missions.length} ${t('missions')} · ${t('folder')} : ${ledger.state.folder || t('browserOnly')}`;

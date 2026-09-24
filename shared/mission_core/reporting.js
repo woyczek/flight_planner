@@ -30,6 +30,11 @@
     saved: L('Registre enregistré', 'Ledger saved', 'Register gespeichert', 'Registro guardado'), browserOnly: L('enregistré dans le navigateur (choisir le dossier pour écrire le fichier)', 'saved in the browser (choose the folder to write the file)', 'im Browser gespeichert (Ordner wählen, um die Datei zu schreiben)', 'guardado en el navegador (elija la carpeta para escribir el archivo)'),
     importedN: L('missions importées', 'missions imported', 'Einsätze importiert', 'misiones importadas'), folderLabel: L('Dossier', 'Folder', 'Ordner', 'Carpeta'), browser: L('navigateur uniquement', 'browser only', 'nur Browser', 'solo navegador'),
     none: L('Non renseigné', 'Not provided', 'Nicht angegeben', 'No indicado'),
+    activity: L('Activité par période', 'Activity by period', 'Aktivität nach Zeitraum', 'Actividad por periodo'),
+    unit: L('Regroupement', 'Grouping', 'Gruppierung', 'Agrupación'), metric: L('Mesure', 'Measure', 'Messgröße', 'Medida'),
+    auto: L('Automatique', 'Automatic', 'Automatisch', 'Automático'), day: L('Jour', 'Day', 'Tag', 'Día'), week: L('Semaine', 'Week', 'Woche', 'Semana'),
+    month: L('Mois', 'Month', 'Monat', 'Mes'), quarter: L('Trimestre', 'Quarter', 'Quartal', 'Trimestre'), year: L('Année', 'Year', 'Jahr', 'Año'),
+    colIssues: L('Contrôle', 'Check', 'Prüfung', 'Control'),
     legacyUseCache: L('Utiliser l’ancien registre déjà chargé dans le navigateur ? (Annuler pour choisir un fichier CSV)', 'Use the legacy ledger already loaded in the browser? (Cancel to choose a CSV file)', 'Das bereits im Browser geladene alte Register verwenden? (Abbrechen, um eine CSV-Datei zu wählen)', '¿Usar el registro antiguo ya cargado en el navegador? (Cancelar para elegir un archivo CSV)'),
     legacyDone: L('missions importées de l’ancien registre ; déjà présentes (même n° et date) :', 'missions imported from the legacy ledger; already present (same ID and date):', 'Einsätze aus dem alten Register importiert; bereits vorhanden (gleiche ID und Datum):', 'misiones importadas del registro antiguo; ya presentes (mismo ID y fecha):')
   };
@@ -46,7 +51,6 @@
     root.classList.add('mc-reporting');
     root.innerHTML = `<section><h2>${t('period')}</h2><div id="mcPeriod"></div></section>
       <section><h2>${t('data')}</h2><div class="row">
-        <a class="primary mc-button" data-action="new">${t('newReport')}</a>
         <button type="button" class="secondary" data-action="yaml">${t('exportYaml')}</button>
         <button type="button" class="secondary" data-action="csv">${t('exportCsv')}</button>
         <button type="button" class="secondary" data-action="import">${t('importYaml')}</button>
@@ -55,10 +59,20 @@
         <button type="button" class="secondary" data-action="legacy" hidden></button><input type="file" accept=".csv,text/csv" data-legacy hidden>
         <input type="file" accept=".yaml,.yml,text/yaml" multiple hidden></div><p class="small mc-ledger-info"></p><p class="small mc-status"></p></section>
       <section><h2>${t('summary')}</h2><div class="mc-cards" id="mcCards"></div></section>
+      <section><h2>${t('activity')}</h2><div class="row mc-activity-options"><label>${t('unit')}<select data-pref="unit">${['auto', 'day', 'week', 'month', 'quarter', 'year'].map(u => `<option value="${u}">${t(u)}</option>`).join('')}</select></label>
+        <label>${t('metric')}<select data-pref="metric"><option value="missions">${t('missions')}</option><option value="flight">${t('flight')}</option><option value="block">${t('block')}</option><option value="station">${t('onStation')}</option></select></label></div>
+        <div id="mcActivity"></div><div class="mcg-series-legend" id="mcActivityLegend"></div></section>
       <section><h2>${t('breakdowns')}</h2><div class="mc-breakdowns" id="mcBreakdowns"></div></section>
       <section><h2>${t('missionsTitle')}</h2><div id="mcTable"></div></section>`;
     const $a = action => root.querySelector(`[data-action="${action}"]`), status = root.querySelector('.mc-status');
-    $a('new').href = family.pages.cr || '#';
+    // Regroupement et mesure du graphique : préférences partagées avec le reporting général.
+    const PREFS = 'missionGlobalReporting:v1';
+    const prefs = (() => { try { return { unit: 'auto', metric: 'missions', ...JSON.parse(localStorage.getItem(PREFS) || '{}') }; } catch { return { unit: 'auto', metric: 'missions' }; } })();
+    root.querySelectorAll('[data-pref]').forEach(select => {
+      if ([...select.options].some(o => o.value === prefs[select.dataset.pref])) select.value = prefs[select.dataset.pref];
+      select.onchange = () => { prefs[select.dataset.pref] = select.value; try { localStorage.setItem(PREFS, JSON.stringify(prefs)); } catch { /* stockage indisponible */ } render(); };
+    });
+    const PALETTE = ['#67b6ff', '#bb8cff', '#65d394', '#fbbf24', '#f472b6', '#2dd4bf', '#fb923c', '#a3e635', '#818cf8', '#f87171'];
 
     const columns = [
       { key: 'missionId', label: t('colId') }, { key: 'date', label: t('colDate') }, { key: 'series', label: t('colSeries'), format: v => label(family.series || [], v) },
@@ -67,11 +81,14 @@
       { key: 'flight', label: t('colFlight'), type: 'number', format: v => v == null ? '—' : duration(v) },
       { key: 'block', label: t('colBlock'), type: 'number', format: v => v == null ? '—' : duration(v) },
       { key: 'station', label: t('colStation'), type: 'number', format: v => v == null ? '—' : duration(v) },
-      { key: 'trace', label: t('colTrace'), html: (_, row) => window.MissionReportingConfig?.traceLink?.(row.network) || '—' }
+      { key: 'trace', label: t('colTrace'), html: (_, row) => window.MissionReportingConfig?.traceLink?.(row.network) || '—' },
+      // Contrôle de cohérence (chronologie, heures, carburant) : détail au survol.
+      { key: 'issues', label: t('colIssues'), type: 'number', html: (v, row) => v ? `<span class="mc-issue-flag" title="${esc(row.issueText)}">⚠ ${v}</span>` : '✓' }
     ];
     const toRow = (mission, index) => {
       const s = M.computeStatistics(mission), a = mission.aircraft?.[0] || {};
-      return { index, mission, missionId: mission.metadata?.missionId, date: mission.metadata?.date, series: mission.series, type: a.type, registration: a.registration, callsign: a.callsign, outcome: mission.results?.outcome, flight: s.flightMinutes, block: s.blockMinutes, station: s.timeOnStationMinutes, network: mission.network || {} };
+      const issues = M.checkMission(mission), lang = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'));
+      return { issues: issues.length, issueText: issues.map(x => window.MissionBlocks.describeIssue(x, lang)).join('\n'), index, mission, missionId: mission.metadata?.missionId, date: mission.metadata?.date, series: mission.series, type: a.type, registration: a.registration, callsign: a.callsign, outcome: mission.results?.outcome, flight: s.flightMinutes, block: s.blockMinutes, station: s.timeOnStationMinutes, network: mission.network || {} };
     };
     let table = null, seriesFilter = '';
     // En-tête : famille (autre reporting) et sous-type (filtre des statistiques et du tableau).
@@ -89,6 +106,18 @@
         rows.set(card.label[0], card.label);
         return `<div class="card${card.specific ? ' specific' : ''}"><span class="small">${esc(card.label[0])}</span><b>${esc(card.value)}</b><span class="small">${esc(card.sub || '')}</span></div>`;
       }).join('');
+      // Activité par période, empilée par série (sous-type) de la famille.
+      if (window.MissionCharts) {
+        const C = window.MissionCharts, range = window.TimePeriod ? window.TimePeriod.range() : {};
+        const value = r => prefs.metric === 'missions' ? 1 : Number(r[prefs.metric === 'onStation' ? 'station' : prefs.metric]) || 0;
+        const hours = v => `${(v / 60).toFixed(v >= 600 ? 0 : 1).replace('.', ',')} h`, format = prefs.metric === 'missions' ? v => String(Math.round(v)) : hours;
+        const b = C.buckets(visible.map(r => r.date), { start: range.start || '', end: range.end || '', unit: prefs.unit, lang: window.RepositoryNav?.getLanguage?.() || 'fr' });
+        const seriesIds = [...new Set(visible.map(r => r.series || ''))], grid = {};
+        visible.forEach(r => { if (!r.date) return; const k = b.keyOf(r.date); (grid[k] ||= {})[r.series || ''] = (grid[k]?.[r.series || ''] || 0) + value(r); });
+        const series = seriesIds.map((id, i) => ({ id, label: label(family.series || [], id), color: PALETTE[i % PALETTE.length] }));
+        root.querySelector('#mcActivity').innerHTML = C.stackedBars({ buckets: b.list, series, value: (k, id) => grid[k]?.[id] || 0, format, height: 220, empty: t('empty') });
+        root.querySelector('#mcActivityLegend').innerHTML = series.map(s => `<span><i style="background:${s.color}"></i>${esc(s.label)}</span>`).join('');
+      }
       const groups = (titleKey, values) => {
         const counts = {}; values.forEach(v => { counts[v] = (counts[v] || 0) + 1; });
         const data = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8), max = Math.max(1, ...data.map(d => d[1]));

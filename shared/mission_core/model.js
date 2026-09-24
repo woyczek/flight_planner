@@ -78,6 +78,30 @@
     return Object.fromEntries(Object.entries(stats).filter(([, v]) => v != null));
   }
 
+  // ---- contrôle de cohérence (saisie, reporting) : heures invalides, chronologie inversée,
+  // carburant qui augmente. Résultat structuré ; libellés : MissionBlocks.describeIssues.
+  // Chronologie : chaque heure suit la précédente (passage de minuit admis), aucun écart d'au
+  // moins 12 h entre deux étapes, 20 h au plus du premier au dernier événement.
+  const SEQUENCE = ['engineStart', 'offBlock', 'takeoff', 'zoneEntry', 'zoneExit', 'landing', 'onBlock', 'shutdown'];
+  const TIME_FIELDS = ['briefing', ...SEQUENCE, 'missionStart', 'missionEnd'];
+  function checkMission(m) {
+    const t = m.timeline || {}, issues = [];
+    TIME_FIELDS.forEach(k => { if (t[k] && minutes(t[k]) == null) issues.push({ kind: 'invalid', path: `timeline.${k}`, value: t[k] }); });
+    const steps = SEQUENCE.filter(k => minutes(t[k]) != null);
+    let span = 0;
+    for (let i = 1; i < steps.length; i++) {
+      const a = steps[i - 1], b = steps[i], d = between(t[a], t[b]);
+      if (d >= 720) issues.push({ kind: 'order', path: `timeline.${b}`, before: `timeline.${a}`, value: t[b], other: t[a] });
+      else span += d;
+    }
+    if (span > 1200) issues.push({ kind: 'span', path: `timeline.${steps[steps.length - 1]}`, minutes: span });
+    if (minutes(t.missionStart) != null && minutes(t.missionEnd) != null && between(t.missionStart, t.missionEnd) >= 1200)
+      issues.push({ kind: 'order', path: 'timeline.missionEnd', before: 'timeline.missionStart', value: t.missionEnd, other: t.missionStart });
+    const f = m.fuel || {}, end = num(f.block) ?? num(f.landing);
+    if (num(f.start) != null && end != null && end > num(f.start)) issues.push({ kind: 'fuel', path: num(f.block) != null ? 'fuel.block' : 'fuel.landing', value: end, other: num(f.start) });
+    return issues;
+  }
+
   // ---- anciens formats (HEMS / GAAR plats, sans schemaVersion) → modèle commun.
   // Correspondance des champs communs ; le reste est conservé sous missionData.legacy
   // (reprise complète par les modules HEMS / FIRE à l'étape 2).
@@ -222,5 +246,5 @@
     return out.map(values => Object.fromEntries(head.map((h, i) => [h, values[i] ?? ''])));
   }
 
-  window.MissionModel = { parseCsv, redact, hasSensitive, context, blockVisible, SCHEMA_VERSION, emptyMission, emptyAircraft, splitCallsign, joinCallsign, formatRegistration, isUpperField, registerUpperFields, upperText, upperPaths, get, set, fillDefaults, minutes, between, num, computeStatistics, migrate, toYaml, parse };
+  window.MissionModel = { parseCsv, redact, hasSensitive, context, blockVisible, SCHEMA_VERSION, emptyMission, emptyAircraft, splitCallsign, joinCallsign, formatRegistration, isUpperField, registerUpperFields, upperText, upperPaths, get, set, fillDefaults, minutes, between, num, computeStatistics, checkMission, migrate, toYaml, parse };
 })();

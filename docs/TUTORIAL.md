@@ -33,7 +33,9 @@ Repères sur la page :
   **Masquer / Afficher**. La disposition est mémorisée. Le bloc « Capacités / techniques
   employées » est masqué par défaut : il est repris de la dernière mission de la même série ;
 - à droite, **Calculs automatiques** : temps bloc, temps de vol, transits, carburant… mis à
-  jour pendant la saisie ;
+  jour pendant la saisie ; en dessous, les **anomalies** éventuelles (⚠ heure invalide, heure
+  avant l'étape précédente — ex. sortie de zone avant l'entrée —, chronologie de plus de 20 h,
+  carburant final supérieur au départ) : clic pour aller au champ, surligné en orange ;
 - dans la **barre d'en-tête**, sept entrées de gauche à droite :
   **famille · série ▾** (changer de famille ou de sous-type), **Ajouter au registre** /
   **Enregistrer les modifications**, **Envoyer le CR**, **Analyse / import… ▾** (texte collé,
@@ -185,9 +187,13 @@ l'est pas, le bouton est en pointillés et propose d'ouvrir ce paramétrage. La 
   réel — survol pour le détail.
 - Synthèses par famille (avec les indicateurs propres : largages, délai alerte → décollage…),
   par appareil et par membre d'équipage ; tableau des missions (clic = CR en modification).
+- **Contrôle des données** (en tête, seulement s'il y a lieu) : missions à corriger, avec
+  l'anomalie ; clic pour ouvrir le CR.
 - Anciens registres CSV HEMS / GAAR : « Importer un ancien registre CSV » (bas de page).
 
-**Une famille** :
+**Une famille** : mêmes cartes et répartitions, graphique **activité par période** empilé
+par série (regroupement et mesure partagés avec le reporting général), colonne **Contrôle**
+(⚠ nombre d'anomalies, détail au survol) dans le tableau.
 
 1. « **Voir le reporting** » (ou la popup d'en-tête).
 2. **Période** : filtre des statistiques et du tableau. **Sous-type** : popup d'en-tête.
