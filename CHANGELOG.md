@@ -42,6 +42,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   indisponibles. Remplace l'import PDF : la carte ENR 6.1 n'a pas de grille (ses valeurs sont
   celles de zones irrégulières), l'ancien `mora.csv` était faux. `mora.csv` régénéré (150
   cellules, 1000 à 18 100 ft). Valeurs non certifiées.
+- Studio : grille MORA affichée en **valeurs seules** (le quadrillage fait la grille), centrées dans
+  les carrés ; en zoom arrière, cellules fusionnées par 2 × 2 puis 4 × 4 (valeur la plus haute),
+  seuil réglable (« espacement minimal des valeurs »), blocs calés sur le quadrillage.
+- Studio, sélection des zones : groupes « R 145 — 2 zones (A à B) » dans la complétion ; zones
+  déjà ajoutées retirées des choix.
 - Studio : **quadrillage** au pas adapté à l'emprise (1′ à 5°), libellés en degrés et minutes ;
   quadrillage et MORA aussi sur la carte de contrôle dynamique.
 - Studio : **sélection des zones** refaite : liste de zones (puces supprimables, nombre de contours
