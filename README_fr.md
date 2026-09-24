@@ -11,19 +11,20 @@ et dans le navigateur.
 
 - Dépôt : <https://framagit.org/asr/flight_planner>
 - Installation : [INSTALL.md](INSTALL.md)
-- Tutoriel — votre premier compte rendu : [docs/TUTORIAL.md](docs/TUTORIAL.md)
-- Manuel d'exploitation (données, sauvegardes, bases, maintenance) : [docs/MANUEL_EXPLOITATION.md](docs/MANUEL_EXPLOITATION.md)
-- Notes de conception / audit du Mission Report Core : [docs/mission_report_core_audit.md](docs/mission_report_core_audit.md)
 
-## Contenu
+## Trois applications, un framework commun
 
-| Menu ☰ | Page | Rôle |
-|---|---|---|
-| Missions › Nouveau compte rendu | `CR DEFA/mission_cr.html` | Choisir la famille de mission, puis rédiger le CR |
-| Reporting missions | `CR DEFA/mission_operations_reporting.html` | Reporting toutes familles sur le registre unique : filtres par famille (couleurs), indicateurs, graphiques par période (jour / semaine / mois / trimestre / année), répartitions, synthèses par famille / appareil / équipage, tableau des missions |
-| Paramétrage › Bases de données | `CR DEFA/parametrage.html` | Éditer la flotte, les types d'aéronefs, les indicatifs, les registres… |
-| Landing Performance Dashboard | `LandingPerformanceDashboard/…` | Analyse des atterrissages à partir de journaux CSV |
-| Flight Performance & Fuel Planner | `flight_performance_planner.html` | Performances et carburant |
+| Application | Pages | Rôle | Documentation |
+|---|---|---|---|
+| **CR DEFA** (Mission Report Core) | `CR DEFA/` — ☰ › Reporting missions, Nouveau compte rendu, Paramétrage | Comptes rendus de mission de 14 familles, registre unique, reporting et graphiques, bases de la flotte et des indicatifs, envoi des CR | [Tutoriel](docs/TUTORIAL.md) · [Manuel d'exploitation](docs/MANUEL_EXPLOITATION.md) · [Notes de conception](docs/mission_report_core_audit.md) |
+| **Landing Performance Dashboard** | `LandingPerformanceDashboard/LandingPerformance_Dashboard_MultiCSV_i18n.html` | Analyse des atterrissages (score, FPM, G) à partir des journaux CSV / LOG, tendances, filtres | [docs/LANDING_DASHBOARD.md](docs/LANDING_DASHBOARD.md) · [mise à jour de la base d'aéronefs](LandingPerformanceDashboard/README.md) |
+| **Flight Performance & Fuel Planner** | `flight_performance_planner.html` | Profils de performance par avion, devis carburant, altitude optimale, calibration SimBrief, échange Little Navmap | [docs/FLIGHT_PLANNER.md](docs/FLIGHT_PLANNER.md) |
+| **Framework commun** | `repository_tree`, `shared/`, `AircraftDB/`, `tools/` | Bandeau et menu ☰, langues, blocs, période et zoom (TimePeriod), graphiques, tableaux, profil pilote, données locales, bases d'aéronefs | [docs/FRAMEWORK.md](docs/FRAMEWORK.md) |
+
+Les trois applications se parlent par le framework : même profil pilote (IVAO, VATSIM,
+SimBrief), même composant de période (zoom par glisser sur les graphiques, boutons ◀ 🔍− ▶
+dans l'en-tête), même base de types d'aéronefs ; le Planner reprend les avions du dernier
+fichier du Landing Dashboard.
 
 ### Mission Report Core — l’application « CR DEFA »
 
@@ -75,7 +76,7 @@ Points forts :
 - **Sauvegarde des données locales** : tout ce que garde le navigateur peut être copié dans
   `defa_local_store.yaml` et restauré (menu ☰ › Données locales).
 
-### Cadre commun
+### Framework commun (résumé — détail : [docs/FRAMEWORK.md](docs/FRAMEWORK.md))
 
 - `repository_tree` : arborescence des pages, libellés, thèmes, favicons (fichier JavaScript
   sans extension).
@@ -85,6 +86,9 @@ Points forts :
   blocs masqués par défaut quand c'est pertinent).
 - `AircraftDB/` : base des types d'aéronefs OACI (`aircraft_db.js`) et son script de mise à
   jour (`update_aircraft_db.py`), mise à jour de la flotte (`update_fleet.py`).
+- `shared/time_period.js` : période d'analyse commune (préréglages, dates, ◀ zoom arrière ▶,
+  zoom par glisser sur les graphiques) — reportings et Landing Dashboard.
+- `shared/mission_core/charts.js`, `shared/mission_table.js` : graphiques SVG, tableaux triables.
 - `tools/` : scripts de maintenance (nouvelle famille de missions, version de cache).
 
 ## Démarrage rapide

@@ -14,7 +14,7 @@
   // Styles de base, injectés une fois (thème de la page par ses variables --muted, --soft,
   // --panel, --mcg-grid, --mcg-base).
   (() => { if (document.getElementById('mcg-style')) return; const style = document.createElement('style'); style.id = 'mcg-style';
-    style.textContent = '.mcg-chart{width:100%;height:auto;display:block}.mcg-chart .mcg-gridline{stroke:var(--mcg-grid,#e5e7eb);stroke-width:1}.mcg-chart .mcg-base{stroke:var(--mcg-base,#9ca3af);stroke-width:1.2}.mcg-chart .mcg-axis{fill:var(--muted,#6b7280);font-size:13px}.mcg-chart .mcg-hover{fill:transparent}.mcg-chart g:hover .mcg-hover{fill:rgba(103,182,255,.08)}.mcg-series-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--muted,#6b7280)}.mcg-series-legend i,.mcg-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}.mcg-donut{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:center}.mcg-donut svg{width:150px;height:150px}.mcg-donut path,.mcg-donut circle{stroke:var(--panel,var(--card,#fff));stroke-width:1.5}.mcg-donut .mcg-total{fill:var(--text,var(--ink,#111827));font-size:19px;font-weight:700}.mcg-legend{list-style:none;margin:0;padding:0;font-size:12px;display:grid;gap:5px}.mcg-legend li{display:grid;grid-template-columns:auto 1fr auto 42px;gap:6px;align-items:center}.mcg-legend em{font-style:normal;color:var(--muted,#6b7280);text-align:right}.mcg-hbars{display:grid;gap:7px}.mcg-hrow{display:grid;grid-template-columns:minmax(90px,1.1fr) 2fr 58px;gap:8px;align-items:center;font-size:12px}.mcg-hlabel{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mcg-htrack{height:11px;background:var(--soft,#eef2f7);border-radius:9px;overflow:hidden}.mcg-htrack i{display:block;height:100%;border-radius:9px}.mcg-hrow b{text-align:right}.mcg-more,.mcg-empty{color:var(--muted,#6b7280);font-size:12px;margin:6px 0 0}@media(max-width:760px){.mcg-donut{grid-template-columns:120px 1fr}.mcg-donut svg{width:120px;height:120px}}'; document.head.append(style); })();
+    style.textContent = '.mcg-chart{width:100%;height:auto;display:block}.mcg-chart .mcg-gridline{stroke:var(--mcg-grid,#e5e7eb);stroke-width:1}.mcg-chart .mcg-base{stroke:var(--mcg-base,#9ca3af);stroke-width:1.2}.mcg-chart .mcg-axis{fill:var(--muted,#6b7280);font-size:13px}.mcg-chart .mcg-hover{fill:transparent}.mcg-chart g:hover .mcg-hover{fill:rgba(103,182,255,.08)}.mcg-series-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--muted,#6b7280)}.mcg-series-legend i,.mcg-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}.mcg-donut{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:center}.mcg-donut svg{width:150px;height:150px}.mcg-donut path,.mcg-donut circle{stroke:var(--panel,var(--card,#fff));stroke-width:1.5}.mcg-donut .mcg-total{fill:var(--text,var(--ink,#111827));font-size:19px;font-weight:700}.mcg-legend{list-style:none;margin:0;padding:0;font-size:12px;display:grid;gap:5px}.mcg-legend li{display:grid;grid-template-columns:auto 1fr auto 42px;gap:6px;align-items:center}.mcg-legend em{font-style:normal;color:var(--muted,#6b7280);text-align:right}.mcg-hbars{display:grid;gap:7px}.mcg-hrow{display:grid;grid-template-columns:minmax(90px,1.1fr) 2fr 58px;gap:8px;align-items:center;font-size:12px}.mcg-hlabel{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mcg-htrack{height:11px;background:var(--soft,#eef2f7);border-radius:9px;overflow:hidden}.mcg-htrack i{display:block;height:100%;border-radius:9px}.mcg-hrow b{text-align:right}.mcg-zoomable{cursor:crosshair;touch-action:none;user-select:none}.mcg-chart .mcg-drag{fill:rgba(103,182,255,.22);stroke:#67b6ff;stroke-width:1}.mcg-more,.mcg-empty{color:var(--muted,#6b7280);font-size:12px;margin:6px 0 0}@media(max-width:760px){.mcg-donut{grid-template-columns:120px 1fr}.mcg-donut svg{width:120px;height:120px}}'; document.head.append(style); })();
 
   // ---- périodes
   // Unité automatique selon l'étendue : jour (≤ 45 j), semaine (≤ 200 j), mois (≤ 3 ans), année.
@@ -37,6 +37,14 @@
     if (unit === 'quarter') { const [y, q] = key.split('-Q').map(Number); return q === 4 ? `${y + 1}-Q1` : `${y}-Q${q + 1}`; }
     return String(Number(key) + 1);
   }
+  // Premier et dernier jour d'une période (zoom depuis le graphique).
+  function startOf(key, unit) {
+    if (unit === 'day' || unit === 'week') return key;
+    if (unit === 'month') return `${key}-01`;
+    if (unit === 'quarter') { const [y, q] = key.split('-Q').map(Number); return `${y}-${pad(q * 3 - 2)}-01`; }
+    return `${key}-01-01`;
+  }
+  const spanOf = (key, unit) => [startOf(key, unit), iso(new Date(parse(startOf(next(key, unit), unit)).getTime() - DAY))];
   const QUARTER = { fr: 'T', en: 'Q', de: 'Q', es: 'T' }, WEEK = { fr: 'S', en: 'W', de: 'KW', es: 'S' };
   function label(key, unit, lang = 'fr') {
     const locale = { fr: 'fr-FR', en: 'en-GB', de: 'de-DE', es: 'es-ES' }[lang] || 'fr-FR';
@@ -62,7 +70,7 @@
     const count = x => { let n = 0, k = keyOf(from, x); const last = keyOf(to, x); while (k <= last && n < 401) { n++; k = next(k, x); } return n; };
     while (u !== 'year' && count(u) > 400) u = order[order.indexOf(u) + 1];
     const list = []; let k = keyOf(from, u); const last = keyOf(to, u);
-    while (k <= last) { list.push({ key: k, label: label(k, u, lang) }); k = next(k, u); }
+    while (k <= last) { const [s, e] = spanOf(k, u); list.push({ key: k, label: label(k, u, lang), start: s, end: e }); k = next(k, u); }
     return { unit: u, list, keyOf: d => keyOf(d, u) };
   }
 
@@ -82,7 +90,7 @@
     const totals = list.map(b => series.reduce((a, s) => a + (value(b.key, s.id) || 0), 0));
     const max = niceMax(Math.max(...totals)), step = iw / list.length, bw = Math.max(2, Math.min(56, step * 0.72));
     const y = v => m.t + ih - (v / max) * ih;
-    let svg = `<svg class="mcg-chart" viewBox="0 0 ${W} ${H}" role="img">`;
+    let svg = `<svg class="mcg-chart mcg-zoomable" viewBox="0 0 ${W} ${H}" role="img" data-left="${m.l}" data-step="${step}" data-top="${m.t}" data-height="${ih}">`;
     for (let i = 0; i <= 4; i++) {
       const v = max * i / 4, yy = y(v);
       svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${yy}" y2="${yy}" class="mcg-gridline"/><text x="${m.l - 8}" y="${yy + 4}" text-anchor="end" class="mcg-axis">${esc(format(v))}</text>`;
@@ -91,7 +99,7 @@
     list.forEach((b, i) => {
       const x = m.l + i * step + (step - bw) / 2; let acc = 0;
       const tip = [`${b.label} — ${format(totals[i])}`].concat(series.map(s => [s, value(b.key, s.id) || 0]).filter(([, v]) => v).map(([s, v]) => `${s.label} : ${format(v)}`)).join('\n');
-      svg += `<g><title>${esc(tip)}</title><rect x="${m.l + i * step}" y="${m.t}" width="${step}" height="${ih}" class="mcg-hover"/>`;
+      svg += `<g data-start="${esc(b.start || '')}" data-end="${esc(b.end || '')}"><title>${esc(tip)}</title><rect x="${m.l + i * step}" y="${m.t}" width="${step}" height="${ih}" class="mcg-hover"/>`;
       series.forEach(s => {
         const v = value(b.key, s.id) || 0; if (!v) return;
         const top = y(acc + v), h = y(acc) - top; acc += v;
@@ -131,5 +139,34 @@
     return `<div class="mcg-hbars">${shown.map(i => `<div class="mcg-hrow" title="${esc(`${i.label} : ${format(i.value)}`)}"><span class="mcg-hlabel">${esc(i.label)}</span><span class="mcg-htrack"><i style="width:${(i.value * 100 / max).toFixed(1)}%;background:${i.color || 'var(--accent)'}"></i></span><b>${esc(format(i.value))}</b></div>`).join('')}${rest > 0 ? `<p class="mcg-more">+ ${rest}</p>` : ''}</div>`;
   }
 
-  window.MissionCharts = { buckets, stackedBars, donut, hbars, niceMax, label };
+  // Zoom depuis le graphique (composant TimePeriod) : glisser sur les barres sélectionne leurs
+  // périodes, un clic zoome sur une barre, un double-clic dézoome (×2).
+  function enableZoom(container) {
+    const svg = container.querySelector('svg.mcg-zoomable'); if (!svg || !window.TimePeriod?.zoomTo) return;
+    const groups = [...svg.querySelectorAll('g[data-start]')]; if (!groups.length) return;
+    const left = Number(svg.dataset.left), step = Number(svg.dataset.step), top = Number(svg.dataset.top), height = Number(svg.dataset.height);
+    const toX = e => { const r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal; return (e.clientX - r.left) / r.width * vb.width; };
+    const index = x => Math.max(0, Math.min(groups.length - 1, Math.floor((x - left) / step)));
+    let drag = null, preview = null, timer = null;
+    svg.addEventListener('pointerdown', e => {
+      if (e.button !== 0) return;
+      drag = { x: toX(e) };
+      preview = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      Object.entries({ x: drag.x, y: top, width: 1, height, class: 'mcg-drag' }).forEach(([k, v]) => preview.setAttribute(k, v));
+      svg.append(preview); try { svg.setPointerCapture(e.pointerId); } catch { /* capture indisponible */ }
+      e.preventDefault();
+    });
+    svg.addEventListener('pointermove', e => { if (!drag) return; const x = toX(e); preview.setAttribute('x', Math.min(drag.x, x)); preview.setAttribute('width', Math.max(1, Math.abs(x - drag.x))); });
+    const finish = e => {
+      if (!drag) return; const x = toX(e), a = index(Math.min(drag.x, x)), b = index(Math.max(drag.x, x)), moved = Math.abs(x - drag.x) >= 5;
+      preview?.remove(); drag = null; preview = null;
+      const go = () => window.TimePeriod.zoomTo(groups[a].dataset.start, groups[b].dataset.end);
+      // Clic simple : attendre un éventuel double-clic (dézoom) avant de zoomer sur la barre.
+      if (moved) go(); else { clearTimeout(timer); timer = setTimeout(go, 260); }
+    };
+    svg.addEventListener('pointerup', finish); svg.addEventListener('pointercancel', () => { preview?.remove(); drag = null; });
+    svg.addEventListener('dblclick', () => { clearTimeout(timer); window.TimePeriod.zoomOut(); });
+  }
+
+  window.MissionCharts = { buckets, stackedBars, donut, hbars, niceMax, label, enableZoom };
 })();

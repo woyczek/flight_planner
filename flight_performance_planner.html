@@ -482,7 +482,7 @@ $("exportAuditBtn").onclick=async()=>{let saved=await loadOFP();if(!saved?.calib
 $("simBtn").onclick=async()=>{
  try{
   $("simBtn").disabled=true;$("source").textContent="SimBrief : récupération du dernier FPL…";
-  const u=state.simbriefUser||"Woyczek";
+  const u=(()=>{try{return JSON.parse(localStorage.getItem("missionReportingConfig:v1")||"{}").simbriefUser}catch{return ""}})()||state.simbriefUser||"Woyczek"; /* profil pilote commun (☰ › Profil pilote) d'abord */
   const ofp=await fetch(`https://www.simbrief.com/api/xml.fetcher.php?username=${encodeURIComponent(u)}&json=v2`).then(r=>{if(!r.ok)throw Error("SimBrief HTTP "+r.status);return r.json()});
   await importOFPProfile(ofp,"SimBrief dernier FPL — "+u,"SimBrief : dernier FPL");
   $("source").textContent=`SimBrief : dernier FPL ${active?.name||active?.icao||""} chargé`;
@@ -520,7 +520,7 @@ $("prefsEditorBtn").onclick=()=>{$("toggleProfileEditor").click();applyHeaderPre
 document.addEventListener("click",e=>{if(!e.target.closest(".lang-popup,.prefs-popup,.aircraft-popup"))closeHeaderMenus()});
 refreshLandingAircraft();restore();applyHeaderPreferences();if(state.lastAircraft&&state.profiles[state.lastAircraft])setActive(state.profiles[state.lastAircraft],"état restauré");else syncAircraftPicker();
 </script>
-<script src="./shared/repository_nav.js?v=20260924zk"></script>
+<script src="./shared/repository_nav.js?v=20260924zn"></script>
 <script src="./shared/app_framework.js"></script>
 <script src="./shared/flight_ui.js"></script>
 <script src="./shared/content_i18n.js"></script><script src="./shared/flight_i18n.js"></script>

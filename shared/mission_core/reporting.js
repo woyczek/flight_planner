@@ -49,7 +49,15 @@
     const label = (list, value) => { const o = list.find(x => x.value === value); if (o) rows.set(o.label[0], o.label); return o ? o.label[0] : value || t('none'); };
 
     root.classList.add('mc-reporting');
-    root.innerHTML = `<section><h2>${t('period')}</h2><div id="mcPeriod"></div></section>
+    // En-tête collé : nouveau CR, période (◀ zoom − ▶, composant TimePeriod), regroupement et
+    // mesure du graphique ; la famille / série reste dans la popup d'en-tête.
+    const pageHeader = document.querySelector('header.mc-header');
+    const tools = document.createElement('div'); tools.className = 'mc-report-tools';
+    tools.innerHTML = `<a class="mc-header-new" href="${esc(family.pages.cr || '../mission_cr.html')}">+&nbsp;<span>${t('newReport')}</span></a><div id="mcPeriod"></div>
+      <label>${t('unit')}<select data-pref="unit">${['auto', 'day', 'week', 'month', 'quarter', 'year'].map(u => `<option value="${u}">${t(u)}</option>`).join('')}</select></label>
+      <label>${t('metric')}<select data-pref="metric"><option value="missions">${t('missions')}</option><option value="flight">${t('flight')}</option><option value="block">${t('block')}</option><option value="station">${t('onStation')}</option></select></label>`;
+    if (pageHeader) pageHeader.append(tools); else root.before(tools);
+    root.innerHTML = `
       <section><h2>${t('data')}</h2><div class="row">
         <button type="button" class="secondary" data-action="yaml">${t('exportYaml')}</button>
         <button type="button" class="secondary" data-action="csv">${t('exportCsv')}</button>
@@ -59,8 +67,7 @@
         <button type="button" class="secondary" data-action="legacy" hidden></button><input type="file" accept=".csv,text/csv" data-legacy hidden>
         <input type="file" accept=".yaml,.yml,text/yaml" multiple hidden></div><p class="small mc-ledger-info"></p><p class="small mc-status"></p></section>
       <section><h2>${t('summary')}</h2><div class="mc-cards" id="mcCards"></div></section>
-      <section><h2>${t('activity')}</h2><div class="row mc-activity-options"><label>${t('unit')}<select data-pref="unit">${['auto', 'day', 'week', 'month', 'quarter', 'year'].map(u => `<option value="${u}">${t(u)}</option>`).join('')}</select></label>
-        <label>${t('metric')}<select data-pref="metric"><option value="missions">${t('missions')}</option><option value="flight">${t('flight')}</option><option value="block">${t('block')}</option><option value="station">${t('onStation')}</option></select></label></div>
+      <section><h2>${t('activity')}</h2>
         <div id="mcActivity"></div><div class="mcg-series-legend" id="mcActivityLegend"></div></section>
       <section><h2>${t('breakdowns')}</h2><div class="mc-breakdowns" id="mcBreakdowns"></div></section>
       <section><h2>${t('missionsTitle')}</h2><div id="mcTable"></div></section>`;
@@ -68,7 +75,7 @@
     // Regroupement et mesure du graphique : préférences partagées avec le reporting général.
     const PREFS = 'missionGlobalReporting:v1';
     const prefs = (() => { try { return { unit: 'auto', metric: 'missions', ...JSON.parse(localStorage.getItem(PREFS) || '{}') }; } catch { return { unit: 'auto', metric: 'missions' }; } })();
-    root.querySelectorAll('[data-pref]').forEach(select => {
+    tools.querySelectorAll('[data-pref]').forEach(select => {
       if ([...select.options].some(o => o.value === prefs[select.dataset.pref])) select.value = prefs[select.dataset.pref];
       select.onchange = () => { prefs[select.dataset.pref] = select.value; try { localStorage.setItem(PREFS, JSON.stringify(prefs)); } catch { /* stockage indisponible */ } render(); };
     });
@@ -95,9 +102,7 @@
     const coreUi = key => { const row = window.MissionCore.UI[key]; rows.set(row[0], row); return row[0]; };
     (family.series || []).forEach(s => { if (Array.isArray(s.label)) rows.set(s.label[0], s.label); });
     window.MissionCore.headerSwitch({ family, kind: 'reporting', t: coreUi, all: true, get: () => seriesFilter, set: value => { seriesFilter = value; render(); } });
-    // En-tête : nouveau compte rendu de la famille.
-    const pageHeader = document.querySelector('header.mc-header');
-    if (pageHeader) { const link = document.createElement('a'); link.className = 'mc-header-new'; link.href = family.pages.cr || '../mission_cr.html'; link.textContent = `+ ${t('newReport')}`; pageHeader.append(link); }
+    const switchBox = pageHeader?.querySelector('.mc-switch'); if (switchBox) tools.prepend(switchBox); // famille · série en tête de la barre
     function render() {
       const all = ledger.missions.map(toRow).filter(r => !seriesFilter || r.series === seriesFilter);
       const visible = window.TimePeriod ? window.TimePeriod.filterRows(all, 'date') : all;
@@ -115,7 +120,9 @@
         const seriesIds = [...new Set(visible.map(r => r.series || ''))], grid = {};
         visible.forEach(r => { if (!r.date) return; const k = b.keyOf(r.date); (grid[k] ||= {})[r.series || ''] = (grid[k]?.[r.series || ''] || 0) + value(r); });
         const series = seriesIds.map((id, i) => ({ id, label: label(family.series || [], id), color: PALETTE[i % PALETTE.length] }));
+        const dates = all.map(r => r.date).filter(Boolean).sort(); periodCtrl?.setBounds(dates[0] || null, dates[dates.length - 1] || null);
         root.querySelector('#mcActivity').innerHTML = C.stackedBars({ buckets: b.list, series, value: (k, id) => grid[k]?.[id] || 0, format, height: 220, empty: t('empty') });
+        C.enableZoom(root.querySelector('#mcActivity'));
         root.querySelector('#mcActivityLegend').innerHTML = series.map(s => `<span><i style="background:${s.color}"></i>${esc(s.label)}</span>`).join('');
       }
       const groups = (titleKey, values) => {
@@ -172,7 +179,8 @@
       picker.value = '';
       if (count) { await persist(); status.textContent += ` · ${count} ${t('importedN')}`; render(); }
     };
-    window.TimePeriod?.mount(root.querySelector('#mcPeriod'), { onChange: render });
+    let periodCtrl = null;
+    periodCtrl = window.TimePeriod?.mount(tools.querySelector('#mcPeriod'), { onChange: () => render() }) || null;
     window.addEventListener('repository-language-change', () => setTimeout(render));
     window.addEventListener('load', () => window.RepositoryNav?.addAction?.(`${t('newReport')} ${family.id}`, () => { location.href = family.pages.cr; }));
     const ready = ledger.load().then(render);

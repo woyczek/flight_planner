@@ -175,10 +175,15 @@ l'est pas, le bouton est en pointillés et propose d'ouvrir ce paramétrage. La 
 
 **Toutes familles** : ☰ › **Reporting missions** (registre unique `missions.yaml`).
 
-- **Période** (partagée avec les reportings de famille), **familles** (puces colorées :
-  clic pour masquer / afficher, Ctrl + clic pour n'en garder qu'une), **regroupement**
-  (automatique, jour, semaine, mois, trimestre, année) et **mesure** des graphiques (missions,
-  heures de vol, bloc, sur zone, mission, sorties, distance).
+- Dans l'**en-tête** (toujours visible) : **période** — préréglage, dates de début / fin,
+  **◀ reculer · 🔍− zoom arrière · ▶ avancer** —, **familles** (puces colorées : clic pour
+  masquer / afficher, Ctrl + clic pour n'en garder qu'une), **regroupement** (automatique,
+  jour, semaine, mois, trimestre, année) et **mesure** des graphiques (missions, heures de
+  vol, bloc, sur zone, mission, sorties, distance).
+- **Zoom depuis le graphique « Activité par période »** : glisser sur plusieurs barres, ou
+  cliquer une barre, pour ne garder que cette période (tout le reporting suit) ; double-clic
+  pour dézoomer. La période est partagée avec les reportings de famille — et le même
+  composant sert au Landing Performance Dashboard.
 - Indicateurs : missions, réussite, heures de vol / bloc / sur zone (moyennes sur les missions
   renseignées), distance, carburant par unité, personnes / fret, vols de nuit, en réseau
   (IVAO / VATSIM), opérations réelles, appareils, équipage.
@@ -191,8 +196,8 @@ l'est pas, le bouton est en pointillés et propose d'ouvrir ce paramétrage. La 
   l'anomalie ; clic pour ouvrir le CR.
 - Anciens registres CSV HEMS / GAAR : « Importer un ancien registre CSV » (bas de page).
 
-**Une famille** : mêmes cartes et répartitions, graphique **activité par période** empilé
-par série (regroupement et mesure partagés avec le reporting général), colonne **Contrôle**
+**Une famille** : période, regroupement et mesure dans l'en-tête (même zoom), mêmes cartes
+et répartitions, graphique **activité par période** empilé par série (regroupement et mesure partagés avec le reporting général), colonne **Contrôle**
 (⚠ nombre d'anomalies, détail au survol) dans le tableau.
 
 1. « **Voir le reporting** » (ou la popup d'en-tête).

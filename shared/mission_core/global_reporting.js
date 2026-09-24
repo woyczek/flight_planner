@@ -104,16 +104,17 @@
 
     // ---- en-tête de page
     document.title = UI.title[0];
+    // Période (composant TimePeriod : préréglages, dates, ◀ zoom − ▶) et filtres dans l'en-tête
+    // collé en haut de page ; le titre, la langue et le menu ☰ (repository_nav) restent en place.
     const header = document.querySelector('header');
-    if (header) {
-      header.innerHTML = `<h1>${t('title')}</h1><p>${t('subtitle')}</p><div class="mcg-header-row"><a class="mcg-new" href="mission_cr.html">+&nbsp;<span>${t('newReport')}</span></a></div>`;
-    }
+    const bar = document.createElement('div'); bar.className = 'mcg-header-tools';
+    bar.innerHTML = `<div class="mcg-header-row"><a class="mcg-new" href="mission_cr.html">+&nbsp;<span>${t('newReport')}</span></a><div id="periodPicker"></div></div>
+      <div class="mcg-header-row"><div class="mcg-chips"><span class="mcg-label">${t('families')}</span><div class="mcg-chip-list"></div></div>
+        <label class="mcg-inline">${t('unit')}<select data-pref="unit">${UNITS.map(u => `<option value="${u}">${t(u)}</option>`).join('')}</select></label>
+        <label class="mcg-inline">${t('metric')}<select data-pref="metric">${METRICS.map(m => `<option value="${m.id}">${esc(m.label[0])}</option>`).join('')}</select></label></div>`;
+    (header || root.parentElement).append(bar);
 
     root.innerHTML = `
-      <section class="panel mcg-filters"><h2>${t('period')}</h2><div id="periodPicker"></div>
-        <div class="mcg-chips"><span class="mcg-label">${t('families')}</span><div class="mcg-chip-list"></div></div>
-        <div class="row mcg-options"><label>${t('unit')}<select data-pref="unit">${UNITS.map(u => `<option value="${u}">${t(u)}</option>`).join('')}</select></label>
-        <label>${t('metric')}<select data-pref="metric">${METRICS.map(m => `<option value="${m.id}">${esc(m.label[0])}</option>`).join('')}</select></label></div></section>
       <section class="cards mcg-cards" id="mcgCards"></section>
       <section class="section mcg-wide mcg-checks" hidden><h2>${t('checks')} <span class="mcg-sub" id="mcgChecksSub"></span></h2><div class="inside" id="mcgChecks"></div></section>
       <section class="section mcg-wide"><h2>${t('activity')} <span class="mcg-sub" id="mcgActivitySub"></span></h2><div class="inside"><div id="mcgActivity"></div><div class="mcg-series-legend" id="mcgActivityLegend"></div></div></section>
@@ -137,10 +138,10 @@
         <button type="button" data-action="folder">${t('folder')}</button><button type="button" data-action="print">${t('print')}</button>
         <label class="mcg-legacy">${t('legacy')}<select data-legacy><option value=""></option></select></label><input type="file" accept=".csv,text/csv" hidden></div>
         <p class="note mcg-ledger-info"></p><p class="note mcg-status"></p></section>`;
-    const $ = sel => root.querySelector(sel), status = $('.mcg-status');
+    const $ = sel => root.querySelector(sel) || bar.querySelector(sel), status = $('.mcg-status');
     $('[data-pref="unit"]').value = UNITS.includes(prefs.unit) ? prefs.unit : 'auto';
     $('[data-pref="metric"]').value = METRICS.some(m => m.id === prefs.metric) ? prefs.metric : 'missions';
-    root.querySelectorAll('[data-pref]').forEach(select => select.onchange = () => { prefs[select.dataset.pref] = select.value; writePrefs(prefs); render(); });
+    bar.querySelectorAll('[data-pref]').forEach(select => select.onchange = () => { prefs[select.dataset.pref] = select.value; writePrefs(prefs); render(); });
 
     // ---- données
     const L2 = window.MissionLedger;
@@ -179,6 +180,7 @@
     function render() {
       const all = allRows();
       chips(all);
+      const dates = all.filter(r => !new Set(prefs.hidden).has(r.family)).map(r => r.date).filter(Boolean).sort();
       const hidden = new Set(prefs.hidden);
       const visible = window.TimePeriod.filterRows(all, 'date').filter(r => !hidden.has(r.family));
       const missions = visible.map(r => r.mission), metric = METRICS.find(m => m.id === prefs.metric) || METRICS[0];
@@ -216,7 +218,9 @@
       const range = window.TimePeriod.range();
       const b = C.buckets(visible.map(r => r.date), { start: range.start || '', end: range.end || '', unit: prefs.unit, lang: lang() });
       const grid = {}; visible.forEach(r => { if (!r.date) return; const k = b.keyOf(r.date); (grid[k] ||= {})[r.family] = (grid[k]?.[r.family] || 0) + metricOf(r); });
+      periodCtrl?.setBounds(dates[0] || null, dates[dates.length - 1] || null);
       $('#mcgActivity').innerHTML = C.stackedBars({ buckets: b.list, series: familyIds.map(id => ({ id, label: familyShort(id), color: colorOf(id) })), value: (k, id) => grid[k]?.[id] || 0, format: metric.format, empty: emptyText });
+      C.enableZoom($('#mcgActivity'));
       $('#mcgActivitySub').textContent = `${tr(metric.label)} · ${tr(UI[b.unit] || UI.month)}`;
       $('#mcgActivityLegend').innerHTML = familyIds.map(id => `<span><i style="background:${colorOf(id)}"></i>${esc(familyName(id))}</span>`).join('');
 
@@ -346,8 +350,9 @@
     };
     picker.onchange = async () => { const file = picker.files[0], family = legacyFamilies.find(f => f.id === picker.dataset.family); if (file && family) await importLegacy(family, await file.text()); picker.value = ''; };
 
-    window.TimePeriod.mount($('#periodPicker'), { onChange: render });
-    window.addEventListener('repository-language-change', () => setTimeout(() => { if (header) { header.querySelector('h1').textContent = UI.title[0]; } render(); }));
+    let periodCtrl = null;
+    periodCtrl = window.TimePeriod.mount($('#periodPicker'), { onChange: () => render() });
+    window.addEventListener('repository-language-change', () => setTimeout(render));
     window.addEventListener('local-store-restored', () => L2.load(true).then(render));
     const ready = L2.load().then(render).catch(error => { status.textContent = error.message; render(); });
     return { ready, render };

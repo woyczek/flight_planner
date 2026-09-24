@@ -10,19 +10,20 @@ browser.
 
 - Repository: <https://framagit.org/asr/flight_planner>
 - Installation: [INSTALL.md](INSTALL.md) (French)
-- Tutorial — your first mission report: [docs/TUTORIAL.md](docs/TUTORIAL.md) (French)
-- Operations manual (data, backups, databases, maintenance): [docs/MANUEL_EXPLOITATION.md](docs/MANUEL_EXPLOITATION.md) (French)
-- Design notes / audit of the Mission Report Core: [docs/mission_report_core_audit.md](docs/mission_report_core_audit.md)
 
-## What's inside
+## Three applications, one shared framework
 
-| Menu ☰ | Page | Purpose |
-|---|---|---|
-| Missions › Nouveau compte rendu | `CR DEFA/mission_cr.html` | Choose a mission family, then write the report |
-| Reporting missions | `CR DEFA/mission_operations_reporting.html` | All-family reporting from the single ledger: family filters (colours), indicators, charts by period (day / week / month / quarter / year), breakdowns, summaries by family / aircraft / crew, missions table |
-| Paramétrage › Bases de données | `CR DEFA/parametrage.html` | Edit the fleet, aircraft types, callsigns, ledgers… |
-| Landing Performance Dashboard | `LandingPerformanceDashboard/…` | Landing analysis from CSV logs |
-| Flight Performance & Fuel Planner | `flight_performance_planner.html` | Performance and fuel planning |
+| Application | Pages | Purpose | Documentation (French) |
+|---|---|---|---|
+| **CR DEFA** (Mission Report Core) | `CR DEFA/` — ☰ › Reporting missions, new report, settings | Mission reports for 14 families, single ledger, reporting and charts, fleet and callsign databases, report sending | [Tutorial](docs/TUTORIAL.md) · [Operations manual](docs/MANUEL_EXPLOITATION.md) · [Design notes](docs/mission_report_core_audit.md) |
+| **Landing Performance Dashboard** | `LandingPerformanceDashboard/LandingPerformance_Dashboard_MultiCSV_i18n.html` | Landing analysis (score, FPM, G) from CSV / LOG journals, trends, filters | [docs/LANDING_DASHBOARD.md](docs/LANDING_DASHBOARD.md) · [aircraft database updater](LandingPerformanceDashboard/README.md) |
+| **Flight Performance & Fuel Planner** | `flight_performance_planner.html` | Aircraft performance profiles, fuel quote, optimum altitude, SimBrief calibration, Little Navmap exchange | [docs/FLIGHT_PLANNER.md](docs/FLIGHT_PLANNER.md) |
+| **Shared framework** | `repository_tree`, `shared/`, `AircraftDB/`, `tools/` | Header and ☰ menu, languages, blocks, period and zoom (TimePeriod), charts, tables, pilot profile, local data, aircraft databases | [docs/FRAMEWORK.md](docs/FRAMEWORK.md) |
+
+The three applications talk through the framework: same pilot profile (IVAO, VATSIM,
+SimBrief), same period component (drag-to-zoom on charts, ◀ 🔍− ▶ buttons in the header),
+same aircraft type database; the Planner lists the aircraft of the Landing Dashboard's last
+file.
 
 ### Mission Report Core — the “CR DEFA” application
 
@@ -71,7 +72,7 @@ Highlights:
 - **Local data backup**: everything the browser keeps can be saved to / restored from
   `defa_local_store.yaml` (menu ☰ › Données locales).
 
-### Shared framework
+### Shared framework (summary — details: [docs/FRAMEWORK.md](docs/FRAMEWORK.md))
 
 - `repository_tree`: page tree, labels, themes, favicons (JavaScript file without
   extension).
@@ -81,6 +82,9 @@ Highlights:
   blocks hidden by default where relevant).
 - `AircraftDB/`: ICAO aircraft type database (`aircraft_db.js`) and its updater
   (`update_aircraft_db.py`), fleet updater (`update_fleet.py`).
+- `shared/time_period.js`: common analysis period (presets, dates, ◀ zoom out ▶, drag-to-zoom
+  on charts) — reportings and Landing Dashboard.
+- `shared/mission_core/charts.js`, `shared/mission_table.js`: SVG charts, sortable tables.
 - `tools/`: maintenance scripts (new mission family, cache version bump).
 
 ## Quick start

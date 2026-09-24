@@ -94,6 +94,8 @@ tr:hover td{background:#1b2028}.small{font-size:12px;color:var(--muted)}.file-na
 .lang-item .auto-mark{width:27px;text-align:center;font-size:15px}
 .lang-item .lang-name{flex:1}
 .range-btn{min-width:34px;height:34px;padding:5px 8px;display:inline-flex;align-items:center;justify-content:center}
+.landing-period input[type=date]{color:var(--text);background:#11141a;border:1px solid var(--line);border-radius:7px;color-scheme:dark}
+.landing-period .tp-picker{gap:7px}.landing-period .tp-picker label{font-size:13px}.landing-period select,.landing-period input{height:34px}.landing-period .tp-btn{width:auto}
 .range-btn svg{width:15px;height:15px;fill:currentColor}
 button:disabled{opacity:.38;cursor:default}
 .chart-box{min-height:380px}
@@ -379,27 +381,9 @@ svg.timeline-chart{height:330px;touch-action:pan-y;cursor:crosshair}
       </div>
     </label>
 
-    <label class="control"><span id="startLabel">Start</span>
-      <input id="startDate" type="date">
-    </label>
-    <label class="control"><span id="endLabel">End</span>
-      <input id="endDate" type="date">
-    </label>
-
-    <button id="shiftBackBtn" class="range-btn" type="button" aria-label="Move period backward" title="Move period backward">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 4L7.5 12l8 8 1.6-1.6L10.7 12l6.4-6.4z"/></svg>
-    </button>
-
-    <button id="zoomOutBtn" class="zoom-button" type="button" aria-label="Zoom out" title="Zoom out">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="10.5" cy="10.5" r="6.5"></circle>
-        <path d="M7.2 10.5h6.6M15.3 15.3L21 21"></path>
-      </svg>
-    </button>
-
-    <button id="shiftForwardBtn" class="range-btn" type="button" aria-label="Move period forward" title="Move period forward">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4l8 8-8 8-1.6-1.6 6.4-6.4-6.4-6.4z"/></svg>
-    </button>
+    <!-- Période : composant de framework TimePeriod (shared/time_period.js), piloté par la page
+         (période mémorisée par fichier) ; même composant que les reportings de missions. -->
+    <div id="landingPeriod" class="control landing-period"></div>
 
     <div class="header-secondary-right">
       <label class="control"><span id="trendModeLabel">Trend method</span>
@@ -499,6 +483,7 @@ svg.timeline-chart{height:330px;touch-action:pan-y;cursor:crosshair}
 </main>
 <div id="tooltip" class="tooltip"></div>
 
+<script src="../shared/time_period.js?v=20260924zn"></script>
 <script src="../AircraftDB/aircraft_db.js"></script>
 <script src="../AircraftDB/aircraft_icons.js"></script>
 <script>
@@ -1386,12 +1371,6 @@ function applyLanguage(){
   $("fileButton").textContent=t("chooseFile");
   if(!sourceName) $("fileName").textContent=prefs.lastFileName||t("noFile");
   $("aircraftLabel").textContent=t("aircraft");
-  $("startLabel").textContent=t("start");
-  $("endLabel").textContent=t("end");
-  $("zoomOutBtn").title=t("zoomOut2");
-  $("zoomOutBtn").setAttribute("aria-label",t("zoomOut2"));
-  $("shiftBackBtn").title=t("shiftBack");$("shiftBackBtn").setAttribute("aria-label",t("shiftBack"));
-  $("shiftForwardBtn").title=t("shiftForward");$("shiftForwardBtn").setAttribute("aria-label",t("shiftForward"));
   $("optionsButton").title=t("options");$("optionsButton").setAttribute("aria-label",t("options"));
   $("analysisSmallerBtn").title=t("analysisSmaller");$("analysisSmallerBtn").setAttribute("aria-label",t("analysisSmaller"));
   $("analysisLargerBtn").title=t("analysisLarger");$("analysisLargerBtn").setAttribute("aria-label",t("analysisLarger"));
@@ -1484,11 +1463,9 @@ window.addEventListener("languagechange",()=>{
 $("fileButton").addEventListener("click",()=>$("fileInput").click());
 $("fileInput").addEventListener("change",e=>{const f=e.target.files[0];if(f){$("fileName").textContent=f.name;loadFile(f)}});
 $("aircraftSelect").addEventListener("change",()=>{rememberPreference("aircraft",$("aircraftSelect").value);ensureRangeForAircraft();persistCurrentRange();render()});
-$("startDate").addEventListener("change",applyDateInputRange);
-$("endDate").addEventListener("change",applyDateInputRange);
-$("shiftBackBtn").addEventListener("click",()=>shiftRange(-1));
-$("zoomOutBtn").addEventListener("click",zoomOutRange);
-$("shiftForwardBtn").addEventListener("click",()=>shiftRange(1));
+// Période : composant TimePeriod piloté (état = rangeStartMs / rangeEndMs, mémorisé par fichier).
+// Préréglages, dates, ◀ / zoom arrière / ▶ et zoom par glisser sur le graphique passent par lui.
+var periodCtrl=window.TimePeriod.mount($("landingPeriod"),{storage:false,summary:false,onChange:applyPeriodState});
 $("qualityFilter").addEventListener("change",()=>{rememberPreference("qualityFilter",$("qualityFilter").checked);render()});
 $("p95Filter").addEventListener("change",()=>{rememberPreference("p95Filter",$("p95Filter").checked);render()});
 $("crashFilter").addEventListener("change",()=>{rememberPreference("crashFilter",$("crashFilter").checked);render()});
@@ -2233,15 +2210,28 @@ function chartUniverseRows(){
   return applyAnalysisFilters(aircraftUniverseRows());
 }
 function syncDateInputs(){
-  if(rangeStartMs!=null)$("startDate").value=toDateInputValue(new Date(rangeStartMs));
-  if(rangeEndMs!=null)$("endDate").value=toDateInputValue(new Date(rangeEndMs));
+  if(typeof periodCtrl==="undefined"||rangeStartMs==null||rangeEndMs==null)return;
+  const u=aircraftUniverseRows(),eps=1000;
+  const full=u.length&&rangeStartMs<=u[0]._date.getTime()+eps&&rangeEndMs>=u[u.length-1]._date.getTime()-eps;
+  periodCtrl.set(full?{preset:"all",start:"",end:""}:{preset:"custom",start:rangeStartMs,end:rangeEndMs});
+}
+// Période choisie dans le composant (préréglage, dates, navigation, zoom) → plage du tableau de bord.
+function applyPeriodState(state){
+  const u=aircraftUniverseRows();
+  if(!u.length)return;
+  const lo=u[0]._date.getTime(),hi=u[u.length-1]._date.getTime(),r=window.TimePeriod.rangeMs(state);
+  let s=Math.max(lo,r.start??lo),e=Math.min(hi,r.end??hi);
+  // Préréglage hors des données (ex. 7 derniers jours sur un fichier ancien) : toute la période.
+  if(e<=s){s=lo;e=hi}
+  rangeStartMs=s;rangeEndMs=e;
+  syncDateInputs();
+  persistCurrentRange();
+  render();
 }
 function updateDateInputLimits(){
   const u=aircraftUniverseRows();
-  if(!u.length)return;
-  const lo=toDateInputValue(u[0]._date),hi=toDateInputValue(u[u.length-1]._date);
-  $("startDate").min=lo;$("startDate").max=hi;
-  $("endDate").min=lo;$("endDate").max=hi;
+  if(!u.length||typeof periodCtrl==="undefined")return;
+  periodCtrl.setBounds(u[0]._date.getTime(),u[u.length-1]._date.getTime());
 }
 function initializeDateRange(){
   if(!allRows.length)return;
@@ -2264,34 +2254,9 @@ function selectedRange(){
     end:rangeEndMs==null?null:new Date(rangeEndMs)
   };
 }
-function applyDateInputRange(){
-  const u=aircraftUniverseRows();
-  if(!u.length)return;
-  const lo=u[0]._date.getTime(),hi=u[u.length-1]._date.getTime();
-  let s=parseDateInputValue($("startDate").value,false);
-  let e=parseDateInputValue($("endDate").value,true);
-  if(s==null)s=rangeStartMs??lo;
-  if(e==null)e=rangeEndMs??hi;
-  if(s>e){const z=s;s=e;e=z}
-  rangeStartMs=Math.max(lo,s);
-  rangeEndMs=Math.min(hi,e);
-  if(rangeEndMs<=rangeStartMs){
-    rangeStartMs=lo;rangeEndMs=hi;
-  }
-  syncDateInputs();
-  persistCurrentRange();
-  render();
-}
 function setSelectedRangeMs(a,b){
-  const u=aircraftUniverseRows();
-  if(!u.length)return;
-  const minT=u[0]._date.getTime(),maxT=u[u.length-1]._date.getTime();
-  let s=Math.max(minT,Math.min(a,b)),e=Math.min(maxT,Math.max(a,b));
-  if(e-s<1000)return;
-  rangeStartMs=s;rangeEndMs=e;
-  syncDateInputs();
-  persistCurrentRange();
-  render();
+  // Zoom par glisser sur le graphique : même composant que les boutons et les reportings.
+  periodCtrl.zoomTo(Math.min(a,b),Math.max(a,b));
 }
 function ensureRangeForAircraft(){
   const u=aircraftUniverseRows();
@@ -2306,51 +2271,11 @@ function ensureRangeForAircraft(){
   if(rangeEndMs<=rangeStartMs){setRangeToFull();return}
   syncDateInputs();
 }
-function shiftRange(direction){
-  const u=aircraftUniverseRows();
-  if(!u.length)return;
-  const lo=u[0]._date.getTime(),hi=u[u.length-1]._date.getTime();
-  let s=rangeStartMs??lo,e=rangeEndMs??hi;
-  const width=e-s,total=hi-lo;
-  if(width<=0||width>=total){setRangeToFull();render();return}
-  let ns=s+direction*width,ne=e+direction*width;
-  if(ns<lo){ns=lo;ne=lo+width}
-  if(ne>hi){ne=hi;ns=hi-width}
-  rangeStartMs=ns;rangeEndMs=ne;
-  syncDateInputs();
-  persistCurrentRange();
-  render();
-}
-function zoomOutRange(){
-  const u=aircraftUniverseRows();
-  if(!u.length)return;
-  const lo=u[0]._date.getTime(),hi=u[u.length-1]._date.getTime(),total=hi-lo;
-  let s=rangeStartMs??lo,e=rangeEndMs??hi;
-  const width=Math.max(1000,e-s);
-  if(total<=0||width>=total){setRangeToFull();render();return}
-
-  const center=(s+e)/2;
-  const newWidth=Math.min(total,width*2);
-  let ns=center-newWidth/2,ne=center+newWidth/2;
-  if(ns<lo){ns=lo;ne=lo+newWidth}
-  if(ne>hi){ne=hi;ns=hi-newWidth}
-  rangeStartMs=ns;rangeEndMs=ne;
-  syncDateInputs();
-  persistCurrentRange();
-  render();
-}
+function shiftRange(direction){periodCtrl.shift(direction)}
+function zoomOutRange(){periodCtrl.zoomOut()}
 function updateRangeButtons(){
-  const u=aircraftUniverseRows();
-  if(!u.length){
-    $("shiftBackBtn").disabled=true;$("shiftForwardBtn").disabled=true;$("zoomOutBtn").disabled=true;
-    return;
-  }
-  const lo=u[0]._date.getTime(),hi=u[u.length-1]._date.getTime();
-  const s=rangeStartMs??lo,e=rangeEndMs??hi;
-  const eps=1000;
-  $("shiftBackBtn").disabled=s<=lo+eps;
-  $("shiftForwardBtn").disabled=e>=hi-eps;
-  $("zoomOutBtn").disabled=(e-s)>=(hi-lo)-eps;
+  // États des boutons ◀ / zoom / ▶ : tenus par le composant TimePeriod (bornes = données).
+  updateDateInputLimits();syncDateInputs();
 }
 function scopeRows(){
   const a=$("aircraftSelect").value;
@@ -3322,7 +3247,7 @@ if(prefs.lastFileName && !$("fileName").textContent.trim()){
 restoreCachedDataset();
 </script>
 <footer class="repo-footer no-print">CC RBR - DEFA Virtual - 2026-09-21 - 2.0.4 - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a></footer>
-<script src="../shared/repository_nav.js?v=20260924zk"></script>
+<script src="../shared/repository_nav.js?v=20260924zn"></script>
 <script src="../shared/landing_ui.js"></script>
 <script src="../shared/app_framework.js"></script>
 </body>

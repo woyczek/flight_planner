@@ -511,3 +511,22 @@ Retenues par défaut (à contester si besoin) :
   15 pages), colonne « Contrôle » ; bouton « Nouveau compte rendu » en double retiré du corps
   (il est dans l'en-tête).
 - `charts.js` injecte ses styles (thème par variables `--muted`, `--soft`, `--mcg-grid`…).
+
+## T. Étape 15 — période et zoom unifiés, en-têtes des reportings, documentation de la suite (2026-09-24)
+
+- `shared/time_period.js` réécrit en composant unique : préréglages, dates toujours visibles,
+  ◀ / zoom arrière ×2 / ▶ bornés par les données, `zoomTo()` / `zoomOut()` appelés par les
+  graphiques ; mode partagé (reportings) ou piloté (Landing Dashboard, période par fichier) ;
+  précision à la milliseconde pour les événements horodatés, arrondi aux jours sinon.
+  API ancienne (`mount`, `read`, `write`, `range`, `filterRows`) conservée.
+- `charts.js` : périodes des barres (`start` / `end`), `enableZoom()` (glisser, clic, double-clic).
+- Reporting général : période et filtres dans l'en-tête collé ; le `<header>` n'est plus
+  réécrit (le menu ☰ et la langue avaient disparu). Reportings de famille : famille · série,
+  nouveau CR, période, regroupement et mesure dans l'en-tête.
+- Landing Dashboard : dates et ◀ 🔍 ▶ remplacés par le composant (mode piloté) ; le zoom par
+  glisser de ses graphiques passe par lui ; comportement conservé (largeur de période,
+  mémoire par fichier).
+- Flight Planner : l'identifiant SimBrief du profil pilote commun est utilisé en premier.
+- Documentation : README (trois applications + framework), `docs/FLIGHT_PLANNER.md`
+  (reprend et complète la section d'origine du README), `docs/LANDING_DASHBOARD.md`,
+  `docs/FRAMEWORK.md`.
