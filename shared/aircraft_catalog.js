@@ -49,9 +49,12 @@
   // ---- appareils DEFA (par immatriculation ; la donnée la plus récente l'emporte)
   function defaAircraft() {
     const out = new Map();
+    // Fusions mémorisées (fiche appareil › fusionner) : A → B.
+    const map = (read('missionMergeMap:v1') || {}).aircraft || {};
+    const mapped = reg => { let k = key(reg); for (let i = 0; i < 5 && map[k]; i++) k = map[k]; return k; };
     const merge = (r, date = '') => {
-      const k = key(r.registration); if (!k) return;
-      const cur = out.get(k) || { registration: r.registration, callsigns: [], sources: [] };
+      const k = mapped(r.registration); if (!k) return;
+      const cur = out.get(k) || { registration: k === key(r.registration) ? r.registration : (/^[A-Z]{5}$/.test(k) ? `${k[0]}-${k.slice(1)}` : k), callsigns: [], sources: [] };
       const newer = String(date) >= String(cur.date || '');
       ['type', 'variant', 'operator', 'base', 'homeAd', 'fleetId', 'category'].forEach(f => { if (r[f] && (newer || !cur[f])) cur[f] = r[f]; });
       if (r.lastAd && newer) cur.lastAd = r.lastAd;

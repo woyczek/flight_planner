@@ -32,6 +32,9 @@
       const data = JSON.parse(source), list = Array.isArray(data) ? data : data.records || [];
       return list.filter(r => r && r.date);
     }
+    // Page copiée (Ctrl+A, Ctrl+C sur « Log des vols ») : cellules séparées par des tabulations.
+    const tabbed = source.split(/\r?\n/).map(l => l.split('\t').map(c => c.trim())).filter(c => c.length >= 9 && /^\d{4}-\d{2}-\d{2}/.test(c[0]));
+    if (tabbed.length && !/<table|<tr/i.test(source)) return tabbed.map(c => record(c)).filter(r => /^\d{4}-\d{2}-\d{2}$/.test(r.date));
     if (/<table|<tr/i.test(source)) {
       const doc = new DOMParser().parseFromString(source, 'text/html');
       const rows = [...doc.querySelectorAll('tr')].map(tr => [...tr.querySelectorAll('td')]);
@@ -50,9 +53,16 @@
 
   // ---- stockage (navigateur uniquement)
   function load() { return read() || { importedAt: '', source: '', records: [] }; }
-  function save(records, source) {
+  // Mise à jour : fusion avec le journal déjà chargé (sans doublon) — l'historique s'accumule
+  // d'une copie à l'autre ; ou remplacement.
+  // Clé = ligne complète : seuls les vrais doublons (lignes identiques) sont fusionnés ; un aller /
+  // retour à la même minute (départ / arrivée différents) reste deux vols.
+  const recordKey = r => [r.date, r.time, r.durationMin, r.callsign, r.registration, r.trigram, r.type, r.variant, r.dep, r.arr, r.mission].map(up).join('|');
+  function save(records, source, { merge = false } = {}) {
+    let added = records.length;
+    if (merge) { const byKey = new Map((read()?.records || []).map(r => [recordKey(r), r])); const before = byKey.size; records.forEach(r => byKey.set(recordKey(r), r)); added = byKey.size - before; records = [...byKey.values()]; }
     const sorted = records.slice().sort((a, b) => `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`));
-    const data = { importedAt: new Date().toISOString(), source, records: sorted };
+    const data = { importedAt: new Date().toISOString(), source, records: sorted, added };
     localStorage.setItem(KEY, JSON.stringify(data));
     window.dispatchEvent(new CustomEvent('defa-log-change', { detail: data }));
     return data;
@@ -158,8 +168,10 @@
   }
   const addMinutes = (time, minutes) => { const m = /^(\d{1,2}):(\d{2})$/.exec(time || ''); if (!m || minutes == null) return ''; const t = (Number(m[1]) * 60 + Number(m[2]) + minutes) % 1440; return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`; };
   function toMissions(list = records()) {
-    const M = window.MissionModel;
-    return list.map((r, i) => {
+    const M = window.MissionModel, G = window.MissionGridEdit;
+    // Fusions / renommages mémorisés (fiches appareil / équipage) : appliqués au journal rechargé.
+    const regOf = v => (G && v ? M.formatRegistration(G.mapAircraft(v)) : v), crewOf = v => (G && v ? G.mapCrew(v) : v);
+    return list.map(r0 => ({ ...r0, registration: regOf(r0.registration), trigram: crewOf(r0.trigram) })).map((r, i) => {
       const family = familyOf(r);
       const raw = { schemaVersion: M?.SCHEMA_VERSION || 2, family, series: '', subtype: '', source: 'defa-log',
         metadata: { missionId: `${r.callsign || 'DEFA'}-${r.date.replace(/-/g, '')}${r.time ? r.time.replace(':', '') : ''}`, date: r.date, timeLocal: r.time, context: 'EXERCISE' },
@@ -179,5 +191,50 @@
   const source = () => (localStorage.getItem(SOURCE) === 'defa' && records().length ? 'defa' : 'ledger');
   const setSource = value => { localStorage.setItem(SOURCE, value === 'defa' ? 'defa' : 'ledger'); window.dispatchEvent(new CustomEvent('mission-source-change', { detail: source() })); };
 
-  window.DefaFlightLog = { familyOf, toMissions, source, setSource, reference, KEY, parse, load, save, clear, records, series, splitCallsign, aircraft, toCsv, ALIASES };
+  // ---- chargement / mise à jour (reportings, Paramétrage) : page DEFA copiée ou enregistrée
+  const LOADER = {
+    title: ['Journal DEFA — charger / mettre à jour', 'DEFA log — load / update', 'DEFA-Journal — laden / aktualisieren', 'Diario DEFA — cargar / actualizar'],
+    step1: ['1. Ouvrir « Log des vols » sur le site de la DEFA (connexion DEFA) :', '1. Open “Log des vols” on the DEFA website (DEFA login):', '1. „Log des vols“ auf der DEFA-Website öffnen:', '1. Abrir «Log des vols» en el sitio DEFA:'],
+    step2: ['2. Sur cette page : Ctrl+A puis Ctrl+C, et coller ici (Ctrl+V) — ou choisir la page enregistrée (Ctrl+S).', '2. On that page: Ctrl+A then Ctrl+C, and paste here (Ctrl+V) — or choose the saved page (Ctrl+S).', '2. Dort: Strg+A, Strg+C, hier einfügen — oder die gespeicherte Seite wählen.', '2. En esa página: Ctrl+A y Ctrl+C, y pegar aquí — o elegir la página guardada.'],
+    merge: ['Mettre à jour (ajoute les nouveaux vols, garde l’historique)', 'Update (adds new flights, keeps history)', 'Aktualisieren (neue Flüge hinzufügen, Historie behalten)', 'Actualizar (añade vuelos nuevos, conserva el historial)'],
+    replace: ['Remplacer le journal', 'Replace the log', 'Journal ersetzen', 'Reemplazar el diario'],
+    file: ['Page enregistrée…', 'Saved page…', 'Gespeicherte Seite…', 'Página guardada…'], load: ['Charger', 'Load', 'Laden', 'Cargar'], close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
+    done: ['{n} vols lus, {a} nouveaux — journal : {t} vols ({d1} → {d2})', '{n} flights read, {a} new — log: {t} flights ({d1} → {d2})', '{n} Flüge gelesen, {a} neu — Journal: {t} Flüge ({d1} → {d2})', '{n} vuelos leídos, {a} nuevos — diario: {t} vuelos ({d1} → {d2})'],
+    none: ['Aucun vol reconnu dans ce texte.', 'No flight recognised in this text.', 'Kein Flug erkannt.', 'Ningún vuelo reconocido.']
+  };
+  const LOG_URL = 'https://flotte.defa-virtual.fr/log_vols.php';
+  function loaderDialog({ onLoaded } = {}) {
+    const lang = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr')), T = k => LOADER[k][lang] || LOADER[k][0];
+    const dialog = document.createElement('dialog'); dialog.className = 'defa-loader';
+    dialog.innerHTML = `<form method="dialog"><h3></h3><p class="small"></p><p><a target="_blank" rel="noopener"></a></p><p class="small"></p>
+      <textarea rows="7" spellcheck="false" placeholder="Ctrl+V"></textarea>
+      <div class="dl-row"><label><input type="radio" name="mode" value="merge" checked> <span data-t="merge"></span></label><label><input type="radio" name="mode" value="replace"> <span data-t="replace"></span></label></div>
+      <div class="dl-row"><button type="button" data-a="load" class="primary"></button><label class="dl-file"><span data-t="file"></span><input type="file" accept=".html,.htm,.csv,.json,text/html" hidden></label><button type="submit" data-a="close"></button></div>
+      <p class="small dl-result"></p></form>`;
+    dialog.querySelector('h3').textContent = T('title');
+    const ps = dialog.querySelectorAll('p.small'); ps[0].textContent = T('step1'); ps[1].textContent = T('step2');
+    const link = dialog.querySelector('a'); link.href = LOG_URL; link.textContent = `${LOG_URL} ↗`;
+    dialog.querySelectorAll('[data-t]').forEach(el => { el.textContent = T(el.dataset.t); });
+    dialog.querySelector('[data-a="load"]').textContent = T('load'); dialog.querySelector('[data-a="close"]').textContent = T('close');
+    const area = dialog.querySelector('textarea'), result = dialog.querySelector('.dl-result');
+    const run = (text, name) => {
+      let list = []; try { list = parse(text, name); } catch (e) { result.textContent = e.message; return; }
+      if (!list.length) { result.textContent = T('none'); return; }
+      const merge = dialog.querySelector('[name="mode"]:checked').value === 'merge';
+      const data = save(list, name || `copie ${new Date().toLocaleString()}`, { merge });
+      const dates = data.records.map(r => r.date).sort();
+      result.textContent = T('done').replace('{n}', list.length).replace('{a}', merge ? data.added : list.length).replace('{t}', data.records.length).replace('{d1}', dates[0]).replace('{d2}', dates[dates.length - 1]);
+      area.value = ''; onLoaded?.(data);
+    };
+    dialog.querySelector('[data-a="load"]').onclick = () => run(area.value, '');
+    area.addEventListener('paste', () => setTimeout(() => run(area.value, '')));
+    const file = dialog.querySelector('input[type=file]');
+    file.onchange = async () => { const f = file.files[0]; if (f) run(await f.text(), f.name); file.value = ''; };
+    if (!document.getElementById('defa-loader-style')) document.head.insertAdjacentHTML('beforeend', '<style id="defa-loader-style">.defa-loader{max-width:640px;width:calc(100vw - 32px);border:1px solid #cbd5e1;border-radius:12px;padding:16px;color:#111827;background:#fff}.defa-loader::backdrop{background:#0006}.defa-loader h3{margin:0 0 8px}.defa-loader textarea{width:100%;box-sizing:border-box;font:12px/1.4 ui-monospace,Consolas,monospace}.defa-loader .dl-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}.defa-loader button,.defa-loader .dl-file{padding:6px 12px;border-radius:8px;border:1px solid #cbd5e1;background:#f1f5f9;cursor:pointer;font:inherit}.defa-loader button.primary{background:#2f3b52;color:#fff;border-color:#2f3b52}.defa-loader .dl-result{color:#047857;font-weight:600}</style>');
+    dialog.addEventListener('close', () => dialog.remove());
+    document.body.append(dialog); dialog.showModal(); area.focus();
+    return dialog;
+  }
+
+  window.DefaFlightLog = { loaderDialog, LOG_URL, familyOf, toMissions, source, setSource, reference, KEY, parse, load, save, clear, records, series, splitCallsign, aircraft, toCsv, ALIASES };
 })();

@@ -316,17 +316,14 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       const D = window.DefaFlightLog, data = D.load(), list = data.records || [];
       const up = v => String(v ?? '').trim().toUpperCase(), clean = v => up(v).replace(/[^A-Z0-9]/g, '');
       const hours = m => `${Math.floor(m / 60)} h ${String(Math.round(m % 60)).padStart(2, '0')}`;
-      body.innerHTML = `<div class="row da-defa-import"><label class="secondary da-file">${esc(T('Charger le journal (HTML « Log des vols », CSV, JSON)…', 'Load the log (HTML “Log des vols”, CSV, JSON)…'))}<input type="file" accept=".html,.htm,.csv,.json,text/html,text/csv,application/json" hidden></label></div>
+      body.innerHTML = `<div class="row da-defa-import"><button type="button" class="primary" data-defa-load>${esc(T('Charger / mettre à jour le journal (page « Log des vols » copiée ou enregistrée)…', 'Load / update the log (copied or saved “Log des vols” page)…'))}</button></div>
         <p class="small da-defa-stats"></p>
         <h3>${esc(T('Séries d’indicatifs', 'Callsign series'))}</h3><p class="small">${esc(T('Formes vues ramenées à une série (fautes, suffixes de patrouille : lettre, couleur, alphabet OTAN). « Ajouter » crée la ligne dans la correspondance des indicatifs (à vérifier : indicatif complet, organisme), « Compléter » y ajoute les formes et types vus.', 'Seen forms grouped into series (typos, patrol suffixes). “Add” creates the row in the callsign correspondence (check the full callsign and organisation), “Complete” adds the seen forms and types.'))}</p>
         <div class="da-defa-series"></div>
         <h3>${esc(T('Vols', 'Flights'))}</h3><div class="row"><input type="search" class="da-defa-filter" placeholder="${esc(T('Filtrer (indicatif, immatriculation, pilote, terrain, mission…)', 'Filter (callsign, registration, pilot, aerodrome, mission…)'))}"></div><div class="da-defa-flights"></div>`;
-      const input = body.querySelector('input[type=file]');
-      input.onchange = async () => {
-        const file = input.files[0]; if (!file) return;
-        try { const recs = D.parse(await file.text(), file.name); if (!recs.length) throw new Error(T('aucun vol reconnu', 'no flight recognised')); D.save(recs, file.name); status(`${recs.length} ${T('vols chargés depuis', 'flights loaded from')} ${file.name}`); defaLog(body); }
-        catch (e) { status(`${T('Échec', 'Failed')} : ${e.message}`); }
-      };
+      // Chargement / mise à jour : même fenêtre que les reportings (copier-coller ou page enregistrée ;
+      // fusion sans doublon par défaut, l'historique s'accumule).
+      body.querySelector('[data-defa-load]').onclick = () => D.loaderDialog({ onLoaded: data => { status(`${data.records.length} ${T('vols dans le journal', 'flights in the log')} (+${data.added})`); defaLog(body); } });
       if (!list.length) { body.querySelector('.da-defa-stats').textContent = T('Aucun journal chargé dans ce navigateur.', 'No log loaded in this browser.'); actions([]); return; }
       const dates = list.map(r => r.date).sort(), minutes = list.reduce((a, r) => a + (r.durationMin || 0), 0);
       const count = key => new Set(list.map(r => r[key]).filter(Boolean)).size;

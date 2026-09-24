@@ -70,6 +70,9 @@
   }
   // Missions des autres familles du Core (copies navigateur des registres).
   function otherMissions(familyId) {
+    // Registre unique : missions des autres familles ; anciens registres par famille à défaut.
+    const store = window.MissionLedger?.store?.missions;
+    if (store?.length) return store.filter(m => m.family !== familyId);
     const out = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
@@ -336,6 +339,21 @@
         }
         return out;
       }
+      // Route : seulement l'historique du même trajet — départ → destination, ou tout couple
+      // de terrains dans l'ordre des étapes saisies (LFTW-LFBD-LFRN-LFRD : LFTW→LFRD,
+      // LFTW→LFRN, LFBD→LFRD…).
+      if (keyOf(path) === 'navigation.route') {
+        const m = getMission(), seq = [m.navigation?.dep || m.aircraft?.[0]?.baseDeparture, ...(m.legs || []).flatMap(l => [l.from, l.to]), m.navigation?.arr].map(up).filter(Boolean).filter((v, i, a) => a[i - 1] !== v);
+        const pairs = new Set(); seq.forEach((a, i) => seq.slice(i + 1).forEach(b => { if (a !== b) pairs.add(`${a}>${b}`); }));
+        if (!pairs.size) return [];
+        const found = new Map(), text = up(typed);
+        ledgerMissions().concat(otherMissions(family.id)).filter(x => x !== m).forEach(x => {
+          const r = up(x.navigation?.route).replace(/\s+/g, ' '), d = up(x.navigation?.dep || x.aircraft?.[0]?.baseDeparture), ar = up(x.navigation?.arr);
+          if (!r || !pairs.has(`${d}>${ar}`) || (text && !r.startsWith(text))) return;
+          const e = found.get(r) || { n: 0, date: '', d, ar }; e.n++; if ((x.metadata?.date || '') > e.date) e.date = x.metadata?.date || ''; found.set(r, e);
+        });
+        return [...found].sort((a, b) => b[1].n - a[1].n || b[1].date.localeCompare(a[1].date)).map(([value, e]) => ({ value, label: `${e.d} → ${e.ar}` }));
+      }
       if (pool === 'waypoint' && append) {
         // Points de la route saisie, puis points déjà utilisés.
         const route = routePoints(getMission().navigation?.route), current = new Set(String(getMission().navigation?.waypoints || '').split('\n').map(up));
@@ -409,7 +427,7 @@
       if (metar !== w.metar) applyMetar(metar, done);
       ['wind', 'temperature', 'qnh', 'visibility', 'ceiling', 'precipitation'].forEach(k => setIfEmpty(`environment.${k}`, w[k], done));
       // Lever / coucher : calcul local (et phase jour / nuit), puis valeurs Open-Meteo si disponibles.
-      await sun(done, true);
+      await sun(done, true); await densityAltitude(done);
       setIfEmpty('environment.sunrise', w.sunrise, done); setIfEmpty('environment.sunset', w.sunset, done);
       commit([...new Set(done)], quiet);
       status(`${quiet ? `${tr(T.auto)} · ` : ''}${tr(T.weatherFor)} ${icao} ${w.time.replace('T', ' ')} (${tr(T.local)}) — ${report(done)}`);
@@ -427,6 +445,17 @@
       clearTimeout(envTimer);
       if (!departure() || !m.metadata?.date) return;
       envTimer = setTimeout(() => archive(true).catch(() => {}), 1200);
+    }
+    // Altitude densité (ft) au terrain de départ : altitude pression = altitude terrain +
+    // (1013,25 − QNH) × 27 ft ; ISA = 15 − 1,98 °C / 1000 ft ; AD = AP + 118,8 × (T − ISA).
+    async function densityAltitude(done = []) {
+      const env = getMission().environment || {}, t = Number(env.temperature), q = Number(env.qnh);
+      if (env.temperature === '' || env.temperature == null || !Number.isFinite(t) || !(q > 800)) return done;
+      const ad = departure() ? await airport(departure()) : null, elev = Number(ad?.elevation);
+      if (!Number.isFinite(elev)) return done;
+      const pa = elev + (1013.25 - q) * 27, isa = 15 - 1.98 * pa / 1000;
+      setIfEmpty('environment.densityAltitude', Math.round((pa + 118.8 * (t - isa)) / 10) * 10, done);
+      return done;
     }
     const report = done => done.length ? `${tr(T.filled)} : ${done.map(p => p.split('.').pop()).join(', ')}` : tr(T.nothing);
     // auto : remplissage automatique, qui ne rend pas « modifiée » une mission non touchée.
@@ -460,6 +489,7 @@
       }
       if (key === 'metadata.date' || key === 'timeline.takeoff') { const done = await sun([], true); commit(done); }
       if (path === 'environment.metar' && value) commit(applyMetar(value));
+      if (['environment.metar', 'environment.temperature', 'environment.qnh', 'navigation.dep', 'aircraft.0.baseDeparture'].includes(path)) commit(await densityAltitude([]));
     }
     // Indicatif de la série quand il n'en reste qu'un pour ce type (et cet opérateur) :
     // Sécurité civile + H145 → DRAGON ; SAMU + H145 → SAMU.

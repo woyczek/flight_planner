@@ -93,13 +93,34 @@
       while (list.length < (spec.min || 0)) list.push(spec.empty());
       M.set(getMission(), spec.path, list);
       collections.set(spec.path, { block, host });
+      // Tableau compact (événements, étapes, équipage, positions… : tout sauf layout « cards ») :
+      // une ligne par élément, champs longs (texte libre, description) sur une 2e ligne.
+      if (spec.layout !== 'cards') return renderTable(block, host, spec, list);
       // L'alias (name) ne porte que sur le premier élément (appareil principal…).
-      host.innerHTML = list.map((item, i) => `<div class="mc-item" data-index="${i}"><div class="mc-item-head"><b>${esc(txt(spec.item))} ${i + 1}</b>${spec.clear ? `<button type="button" class="mc-clear" data-clear="${i}" title="${esc(txt(spec.clear.title))}">${esc(txt(spec.clear.label))}</button>` : ''}${list.length > (spec.min || 0) ? `<button type="button" class="mc-remove" data-remove="${i}" title="${esc(txt(['Retirer', 'Remove', 'Entfernen', 'Quitar']))}">×</button>` : ''}</div><div class="mc-grid${spec.compact ? ' compact' : ''}">${spec.fields.map(field => fieldHtml(field, `${spec.path}.${i}.${field.path}`, i === 0, item, `${spec.path}.${field.path}`)).join('')}</div></div>`).join('')
+      host.innerHTML = list.map((item, i) => `<div class="mc-item" data-index="${i}"><div class="mc-item-head"><b>${esc(txt(spec.item))} ${i + 1}</b>${(() => { const l = spec.link?.(item); return l ? `<a class="mc-item-link" href="${esc(l.href)}" target="_blank" rel="noopener">${esc(txt(l.label))}</a>` : ''; })()}${spec.clear ? `<button type="button" class="mc-clear" data-clear="${i}" title="${esc(txt(spec.clear.title))}">${esc(txt(spec.clear.label))}</button>` : ''}${list.length > (spec.min || 0) ? `<button type="button" class="mc-remove" data-remove="${i}" title="${esc(txt(['Retirer', 'Remove', 'Entfernen', 'Quitar']))}">×</button>` : ''}</div><div class="mc-grid${spec.compact ? ' compact' : ''}">${spec.fields.map(field => fieldHtml(field, `${spec.path}.${i}.${field.path}`, i === 0, item, `${spec.path}.${field.path}`)).join('')}</div></div>`).join('')
         + (list.length ? '' : `<p class="small mc-empty-hint">${esc(txt(EMPTY_HINT))}</p>`);
       // Élément remis à zéro (ex. appareil mal identifié : la recherche repart de zéro).
       host.querySelectorAll('[data-clear]').forEach(button => button.onclick = () => {
         const index = Number(button.dataset.clear); list[index] = spec.empty(); renderCollection(block, host); refresh(); onClear?.(spec.path, index); onChange(spec.path);
       });
+      host.querySelectorAll('[data-remove]').forEach(button => button.onclick = () => {
+        list.splice(Number(button.dataset.remove), 1); renderCollection(block, host); refresh(); onChange(spec.path);
+      });
+      registerConditions(block, host);
+    }
+    function renderTable(block, host, spec, list) {
+      const visible = spec.fields.filter(field => shown(field, `${spec.path}.${field.path}`));
+      const long = field => field.full || field.type === 'textarea' || field.type === 'checkgroup';
+      const short = visible.filter(f => !long(f)), wide = visible.filter(long);
+      const cell = (field, i, item) => {
+        const path = `${spec.path}.${i}.${field.path}`; fieldsByPath.set(path, field);
+        return `<div class="mc-field" data-field="${esc(path)}">${controlHtml(field, path, i === 0, item)}<span class="mc-hint small" hidden></span></div>`;
+      };
+      const canRemove = list.length > (spec.min || 0);
+      host.innerHTML = list.length ? `<div class="mc-table-wrap"><table class="mc-table"><thead><tr><th class="mc-idx">#</th>${short.map(f => `<th>${esc(txt(f.label))}</th>`).join('')}<th class="mc-idx"></th></tr></thead><tbody>${list.map((item, i) =>
+        `<tr data-index="${i}"><td class="mc-idx">${i + 1}</td>${short.map(f => `<td>${cell(f, i, item)}</td>`).join('')}<td class="mc-idx">${canRemove ? `<button type="button" class="mc-remove" data-remove="${i}" title="${esc(txt(['Retirer', 'Remove', 'Entfernen', 'Quitar']))}">×</button>` : ''}</td></tr>`
+        + (wide.length ? `<tr class="mc-row2" data-index="${i}"><td></td><td colspan="${short.length}">${wide.map(f => `<label class="mc-row2-field"><span>${esc(txt(f.label))}</span>${cell(f, i, item)}</label>`).join('')}</td><td></td></tr>` : '')).join('')}</tbody></table></div>`
+        : `<p class="small mc-empty-hint">${esc(txt(EMPTY_HINT))}</p>`;
       host.querySelectorAll('[data-remove]').forEach(button => button.onclick = () => {
         list.splice(Number(button.dataset.remove), 1); renderCollection(block, host); refresh(); onChange(spec.path);
       });

@@ -65,6 +65,12 @@ chaque champ, les valeurs déjà saisies dans vos missions sont proposées.
   mission, changement d'heure compris ; à défaut Europe/Paris). La date et l'heure du bloc
   Identification sont celles de la mission : l'heure du **briefing** les remplit si elles sont
   vides.
+- **Événements, étapes, équipage, points…** : un tableau compact, une ligne par élément (les
+  champs longs — description, notes — sur une 2e ligne).
+- **Route** (navigation) : seules les routes déjà utilisées pour le même trajet sont proposées —
+  départ → destination, ou tout couple de terrains dans l'ordre des étapes saisies.
+- **Altitude densité** (météo) : calculée au terrain de départ (altitude du terrain, QNH,
+  température).
 - Les heures de la **chronologie** (briefing, mise en route, cales, décollage, entrée / sortie de
   zone, début / fin de mission, atterrissage, arrêt) créent et tiennent à jour les
   **événements horodatés** correspondants (un événement complété à la main n'est jamais retiré).
@@ -102,6 +108,7 @@ plan de vol `PCAN44`** (7 caractères OACI), exploitant **OPR/ FRU**, base **LFT
   (et le type, si la série n'en a qu'un) ;
 - les équipements de l'appareil (repliés sous l'appareil) sont repris de l'appareil connu ou
   du plan de vol ;
+- « **Fiche appareil ↗** » (en tête de la carte de l'appareil) ouvre sa fiche ;
 - mauvais appareil ou mauvais type ? « **⟲ Effacer** » (en tête de la carte de l'appareil)
   vide l'appareil — et l'organisme repris de la flotte — pour relancer la recherche.
 
@@ -217,8 +224,19 @@ l'est pas, le bouton est en pointillés et propose d'ouvrir ce paramétrage. La 
   **fiche appareil** ; **par membre d'équipage** → **fiche équipage** (voir ci-dessous).
 - Sous le tableau des missions, quand une période est choisie : **◀ n avant la période**,
   **− / +** (zoom arrière / avant), **m après la période ▶**.
-- **Données** (en-tête, si le journal DEFA est chargé) : « Mes missions (registre) » ou
-  « Journal DEFA (vols réalisés) » — historique complet, en lecture seule.
+- **Données** (en-tête) : « Mes missions (registre) », « Journal DEFA (vols réalisés) » —
+  historique complet, en lecture seule — ou **« Charger / mettre à jour le journal DEFA… »** :
+  ouvrir « Log des vols » sur le site de la DEFA (lien dans la fenêtre), **Ctrl+A, Ctrl+C**, puis
+  **Ctrl+V** dans la fenêtre (ou choisir la page enregistrée par Ctrl+S). « Mettre à jour »
+  ajoute les nouveaux vols et garde l'historique (seules les lignes identiques sont fusionnées) ;
+  à refaire régulièrement.
+- **✎ Modifier dans le tableau** (titre du tableau des missions, reporting général ou de
+  famille) : date, n° de mission, série, immatriculation, indicatif, résultat, départ / arrivée,
+  temps de vol et bloc se corrigent directement ; chaque cellule est enregistrée dans le registre
+  unique (les reportings restent cohérents) avec une trace dans la mission. Durées : si les
+  heures existent, la fin est déplacée (l'atterrissage suit) ; si une seule heure existe, l'autre
+  est créée ; sans heures, la durée est « déclarée » (≈), comptée, et signalée au contrôle des
+  données jusqu'à la saisie des heures dans le CR.
 - **Contrôle des données** (en tête, seulement s'il y a lieu) : missions à corriger, avec
   l'anomalie ; clic pour ouvrir le CR.
 - Anciens registres CSV HEMS / GAAR : « Importer un ancien registre CSV » (bas de page).
@@ -278,6 +296,11 @@ le [manuel d'exploitation](MANUEL_EXPLOITATION.md).
 
 **Fiche équipage** (`CR DEFA/equipage.html?name=PLN`) : nom, rattachement, qualifications,
 notes (modifiables) ; fonctions tenues, heures par type, activité, missions et vols.
+
+**Fusionner avec… / renommer** (dans chaque fiche) : deux appareils ou deux pilotes n'en font
+plus qu'un (ex. GRR → RBR) — les missions du registre prennent la nouvelle valeur (trace dans
+chaque mission), la fiche complète celle de la cible, et l'équivalence est mémorisée pour le
+journal DEFA rechargé et le catalogue (`missionMergeMap:v1`).
 
 Base « lâche » : tout ce qui est connu est repris (flotte, référence DEFA, missions, journal),
 rien n'est obligatoire ; ce qui est saisi dans une fiche reste dans le navigateur

@@ -251,3 +251,19 @@ header.mc-header:has(.mc-report-tools)>p{display:none}
 .sh-table{border-collapse:collapse;width:100%;font-size:13px}.sh-table th,.sh-table td{padding:4px 6px;border-bottom:1px solid var(--line);text-align:left}
 .mc-reporting h2 .mc-head-add{display:inline-flex;align-items:center;justify-content:center;margin-left:10px;width:24px;height:24px;border-radius:50%;border:0;background:var(--accent);color:#fff;font-size:18px;font-weight:700;cursor:pointer;padding:0 0 2px;vertical-align:3px}
 .sh-curve{max-width:640px;margin:8px 0}
+
+/* Collections en tableau compact (événements, étapes, équipage, positions…) */
+.mc-table-wrap{overflow-x:auto}
+.mc-table{width:100%;border-collapse:collapse;font-size:12px}
+.mc-table th{text-align:left;font-weight:600;color:var(--muted);padding:3px 4px;border-bottom:1px solid var(--line);white-space:nowrap}
+.mc-table td{padding:2px 3px;vertical-align:top;border-bottom:1px solid #eef1f5}
+.mc-table tr.mc-row2 td{border-bottom:1px solid var(--line);padding-bottom:5px}
+.mc-table tr:has(+ .mc-row2) td{border-bottom:0}
+.mc-form .mc-table input,.mc-form .mc-table select{padding:4px 5px;font-size:12px;min-width:56px;width:100%;box-sizing:border-box}
+.mc-form .mc-table input[type=number]{min-width:52px}
+.mc-table .mc-idx{width:1%;white-space:nowrap;color:var(--muted);text-align:center}
+.mc-table .mc-field{margin:0}.mc-table .mc-when{gap:2px}.mc-form .mc-table .mc-now{padding:2px 4px;font-size:11px}
+.mc-row2-field{display:flex;gap:6px;align-items:center;margin:2px 0}.mc-row2-field>span{font-size:11px;color:var(--muted);white-space:nowrap}.mc-row2-field .mc-field{flex:1}
+.mc-form .mc-table .mc-remove{padding:0 6px;font-size:16px}
+.mc-item-link{margin-left:10px;font-size:12px;font-weight:600;color:var(--accent);text-decoration:none}.mc-item-link:hover{text-decoration:underline}
+.sh-merge{margin-top:12px;border-top:1px dashed var(--line);padding-top:8px}.sh-merge summary{cursor:pointer;font-weight:600;font-size:13px}.sh-merge input{padding:6px 8px;border:1px solid var(--line);border-radius:7px}

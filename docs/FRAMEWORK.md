@@ -204,6 +204,12 @@ Chargés juste après `AircraftDB/aircraft_db.js` dans **toutes** les pages qui 
 
 Base « lâche » : aide à la saisie, jamais une contrainte — une valeur absente reste saisissable.
 
+### Collections du formulaire (`form.js`)
+
+Toute collection est affichée en **tableau compact** (une ligne par élément ; champs longs —
+`full`, `textarea` — sur une 2e ligne), sauf `layout: 'cards'` (appareils : une carte par
+appareil). `link(item)` : lien en tête de carte (fiche appareil). Ajout par le « + » du titre.
+
 ## 12. `tools/` — maintenance
 
 - `tools/bump_versions.py` : nouveau numéro de version de cache (`?v=`) dans toutes les pages

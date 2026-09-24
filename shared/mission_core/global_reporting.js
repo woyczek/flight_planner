@@ -136,7 +136,7 @@
       <section class="section mcg-wide"><h2>${t('familyTable')}</h2><div class="inside" id="mcgFamilyTable"></div></section>
       <section class="section mcg-wide"><h2>${t('aircraftTable')}</h2><div class="inside" id="mcgAircraftTable"></div></section>
       <section class="section mcg-wide"><h2>${t('crewTable')}</h2><div class="inside" id="mcgCrewTable"></div></section>
-      <section class="section mcg-wide"><h2>${t('missionsTable')}</h2><div class="inside"><div id="mcgMissions"></div><div id="mcgEdges" hidden></div></div></section>
+      <section class="section mcg-wide"><h2>${t('missionsTable')}<button type="button" class="ge-toggle" data-grid-edit></button></h2><div class="inside"><div id="mcgMissions"></div><div id="mcgEdges" hidden></div></div></section>
       <section class="panel mcg-ledger"><h2>${t('ledger')}</h2><div class="row">
         <button type="button" data-action="yaml">${t('exportYaml')}</button><button type="button" data-action="csv">${t('exportCsv')}</button>
         <button type="button" data-action="folder">${t('folder')}</button><button type="button" data-action="print">${t('print')}</button>
@@ -149,12 +149,19 @@
 
     // ---- données
     const L2 = window.MissionLedger;
+    // Modification dans le tableau (MissionGridEdit) : même registre pour tous les reportings.
+    const GE = { toggle: L('✎ Modifier dans le tableau', '✎ Edit in the table', '✎ In der Tabelle bearbeiten', '✎ Modificar en la tabla'), done: L('✓ Terminer', '✓ Done', '✓ Fertig', '✓ Terminar'),
+      saved: L('Mission modifiée et enregistrée', 'Mission changed and saved', 'Einsatz geändert und gespeichert', 'Misión modificada y guardada'), declared: L('durée déclarée (sans heures)', 'declared duration (no times)', 'angegebene Dauer (ohne Uhrzeiten)', 'duración declarada (sin horas)'),
+      error: L('Valeur refusée', 'Value rejected', 'Wert abgelehnt', 'Valor rechazado') };
+    let editMode = false, uidSeq = 0; const byUid = new Map();
+    const editable = (field, r, fallback) => { if (!editMode) return fallback; const html = window.MissionGridEdit?.input(field, r.mission, r.uid, { series: familyInfo(r.family)?.series || [], outcomes: V.outcomes, label: o => tr(o.label) }); return html ?? fallback; };
     const toRow = (mission, index) => {
-      const s = M.computeStatistics(mission), a = mission.aircraft?.[0] || {};
-      return { mission, s, index, family: mission.family || '', missionId: mission.metadata?.missionId || '', date: mission.metadata?.date || '', series: mission.series || '',
+      const s = M.computeStatistics(mission), a = mission.aircraft?.[0] || {}, uid = ++uidSeq;
+      const row = { uid, mission, s, index, family: mission.family || '', missionId: mission.metadata?.missionId || '', date: mission.metadata?.date || '', series: mission.series || '',
         type: a.type || '', registration: a.registration || '', callsign: a.callsign || '', dep: mission.navigation?.dep || a.baseDeparture || '', arr: mission.navigation?.arr || a.baseReturn || '',
         outcome: mission.results?.outcome || '', flight: s.flightMinutes, block: s.blockMinutes, station: s.timeOnStationMinutes, dayNight: mission.environment?.dayNight || '',
         network: mission.network || {} };
+      byUid.set(uid, row); return row;
     };
     // Position de la mission dans sa famille (adresse de modification du CR).
     // Données des reportings : registre des missions (défaut) ou journal DEFA (vols réalisés,
@@ -165,13 +172,24 @@
     const logSource = () => window.DefaFlightLog?.source?.() === 'defa';
     const sourceMissions = () => logSource() ? (logMissions ||= window.DefaFlightLog.toMissions()) : null;
     window.addEventListener('defa-log-change', () => { logMissions = null; });
+    // Menu « Données » toujours visible : registre, journal DEFA (s'il est chargé) et chargement /
+    // mise à jour du journal (page DEFA copiée ou enregistrée) sans passer par le Paramétrage.
+    const SRC_LOAD = L('Charger / mettre à jour le journal DEFA…', 'Load / update the DEFA log…', 'DEFA-Journal laden / aktualisieren…', 'Cargar / actualizar el diario DEFA…');
     function sourcePicker(host) {
-      const n = window.DefaFlightLog?.records?.().length || 0; if (!n || !host) return;
+      if (!host || !window.DefaFlightLog) return;
       const label = document.createElement('label'); label.className = 'mc-source';
-      label.innerHTML = `<span>${esc(tr(SRC.label))}</span><select><option value="ledger">${esc(tr(SRC.ledger))}</option><option value="defa">${esc(tr(SRC.defa))} — ${n}</option></select>`;
-      const select = label.querySelector('select'); select.value = logSource() ? 'defa' : 'ledger';
-      select.onchange = () => { window.DefaFlightLog.setSource(select.value); };
-      window.addEventListener('mission-source-change', () => { select.value = logSource() ? 'defa' : 'ledger'; render(); });
+      const paint = () => {
+        const n = window.DefaFlightLog.records().length, dates = n ? window.DefaFlightLog.records().map(r => r.date).sort() : [];
+        label.innerHTML = `<span>${esc(tr(SRC.label))}</span><select><option value="ledger">${esc(tr(SRC.ledger))}</option>${n ? `<option value="defa">${esc(tr(SRC.defa))} — ${n} (${esc(dates[0])} → ${esc(dates[n - 1])})</option>` : ''}<option value="load">${esc(tr(SRC_LOAD))}</option></select>`;
+        const select = label.querySelector('select'); select.value = logSource() ? 'defa' : 'ledger';
+        select.onchange = () => {
+          if (select.value === 'load') { select.value = logSource() ? 'defa' : 'ledger'; window.DefaFlightLog.loaderDialog({ onLoaded: () => { logMissions = null; window.DefaFlightLog.setSource('defa'); paint(); } }); return; }
+          window.DefaFlightLog.setSource(select.value);
+        };
+      };
+      paint();
+      window.addEventListener('mission-source-change', () => { paint(); render(); });
+      window.addEventListener('defa-log-change', () => { logMissions = null; paint(); });
       host.append(label);
     }
     const allRows = () => { const seen = {}; return (sourceMissions() || L2.store.missions).map(m => toRow(m, (seen[m.family] = (seen[m.family] ?? -1) + 1))); };
@@ -317,21 +335,23 @@
       }
 
       // Missions
+      // Durée déclarée (sans heures) : « ≈ ».
+      const dur = (v, r, k) => v == null ? '—' : `${r.mission.timeline?.declared?.[k] != null ? '≈ ' : ''}${duration(v)}`;
       const columns = [
-        { key: 'family', label: t('colFamily'), html: v => tag(v) }, { key: 'missionId', label: t('colId') }, { key: 'date', label: t('colDate') },
-        { key: 'series', label: t('colSeries'), format: (v, r) => { const o = (familyInfo(r.family)?.series || []).find(x => x.value === v); return o ? tr(o.label) : v || '—'; } },
-        { key: 'type', label: t('colType') }, { key: 'registration', label: t('colReg') }, { key: 'callsign', label: t('colCallsign') },
-        { key: 'dep', label: t('colRoute'), format: (v, r) => v || r.arr ? `${v || '…'} → ${r.arr || '…'}` : '—' },
-        { key: 'outcome', label: t('colOutcome'), html: v => v ? `<span class="mcg-pill" style="--c:${OUTCOME_COLORS[v] || '#64748b'}">${esc(opt(V.outcomes, v))}</span>` : '—' },
-        { key: 'flight', label: t('colFlight'), type: 'number', format: v => v == null ? '—' : duration(v) },
-        { key: 'block', label: t('colBlock'), type: 'number', format: v => v == null ? '—' : duration(v) },
+        { key: 'family', label: t('colFamily'), html: v => tag(v) }, { key: 'missionId', label: t('colId'), html: (v, r) => editable('missionId', r, esc(v)) }, { key: 'date', label: t('colDate'), html: (v, r) => editable('date', r, esc(v)) },
+        { key: 'series', label: t('colSeries'), html: (v, r) => editable('series', r, esc((() => { const o = (familyInfo(r.family)?.series || []).find(x => x.value === v); return o ? tr(o.label) : v || '—'; })())) },
+        { key: 'type', label: t('colType') }, { key: 'registration', label: t('colReg'), html: (v, r) => editable('registration', r, esc(v)) }, { key: 'callsign', label: t('colCallsign'), html: (v, r) => editable('callsign', r, esc(v)) },
+        { key: 'dep', label: t('colRoute'), html: (v, r) => editMode && !r.mission.__readOnly ? `<span class="ge-route">${editable('dep', r, '')}→${editable('arr', r, '')}</span>` : esc(v || r.arr ? `${v || '…'} → ${r.arr || '…'}` : '—') },
+        { key: 'outcome', label: t('colOutcome'), html: (v, r) => editable('outcome', r, v ? `<span class="mcg-pill" style="--c:${OUTCOME_COLORS[v] || '#64748b'}">${esc(opt(V.outcomes, v))}</span>` : '—') },
+        { key: 'flight', label: t('colFlight'), type: 'number', html: (v, r) => editable('flight', r, esc(dur(v, r, 'flightMinutes'))) },
+        { key: 'block', label: t('colBlock'), type: 'number', html: (v, r) => editable('block', r, esc(dur(v, r, 'blockMinutes'))) },
         { key: 'station', label: t('colStation'), type: 'number', format: v => v == null ? '—' : duration(v) },
         { key: 'dayNight', label: t('colDayNight'), format: v => v ? opt(V.dayNight, v) : '—' },
         { key: 'trace', label: t('colTrace'), html: (_, r) => window.MissionReportingConfig?.traceLink?.(r.network) || '—' }
       ];
       if (!missionsTable) missionsTable = window.SortedTable.render($('#mcgMissions'), {
         rows: visible, columns, defaultSortKey: 'date', defaultDir: -1, emptyText, rowTitle: tr(UI.rowTitle),
-        onRowClick: r => { if (r.mission.__readOnly) { status.textContent = tr(SRC.readOnly); return; } const cr = pagesOf(r.family).cr; if (cr) location.href = `${cr}?edit=${r.index}&id=${encodeURIComponent(r.missionId)}`; },
+        onRowClick: r => { if (editMode) return; if (r.mission.__readOnly) { status.textContent = tr(SRC.readOnly); return; } const cr = pagesOf(r.family).cr; if (cr) location.href = `${cr}?edit=${r.index}&id=${encodeURIComponent(r.missionId)}`; },
         deleteMessage: r => `${r.family} ${r.missionId} — ${r.date}\n${tr(UI.confirmDelete)}`,
         onDelete: r => { if (r.mission.__readOnly) { status.textContent = tr(SRC.readOnly); return false; } const k = L2.store.missions.indexOf(r.mission); if (k >= 0) { L2.store.missions.splice(k, 1); persist().then(render); } return false; }
       });
@@ -342,6 +362,22 @@
       $('.mcg-ledger-info').textContent = logSource() ? `${tr(SRC.defa)} · ${window.DefaFlightLog.records().length} ${tr(UI.missions).toLowerCase()} · ${window.DefaFlightLog.load().source || ''}` : `${L2.FILE} · ${L2.store.missions.length} ${tr(UI.missions).toLowerCase()} · ${tr(UI.folderLabel)} : ${L2.store.folder || tr(UI.browserOnly)}${L2.store.updatedAt ? ` · ${new Date(L2.store.updatedAt).toLocaleString()}` : ''}`;
       if (window.RepositoryContentI18n) { window.RepositoryContentI18n([...rows.values()]); }
     }
+
+    // Mode « modifier dans le tableau » : bascule, puis enregistrement de chaque cellule modifiée.
+    const toggle = root.querySelector('[data-grid-edit]');
+    const paintToggle = () => { toggle.textContent = tr(editMode ? GE.done : GE.toggle); toggle.classList.toggle('on', editMode); };
+    toggle.onclick = () => { editMode = !editMode; paintToggle(); missionsTable = null; $('#mcgMissions').innerHTML = ''; render(); };
+    paintToggle();
+    $('#mcgMissions').addEventListener('change', async event => {
+      const el = event.target.closest('[data-edit]'); if (!el) return;
+      const row = byUid.get(Number(el.dataset.uid)); if (!row) return;
+      const result = window.MissionGridEdit.apply(row.mission, el.dataset.edit, el.value);
+      if (result.error) { status.textContent = `${tr(GE.error)} : ${el.value}`; el.focus(); return; }
+      if (!result.changed) return;
+      await persist();
+      status.textContent = `${tr(GE.saved)} : ${row.mission.metadata?.missionId || ''}${result.note === 'declared' ? ` — ${tr(GE.declared)}` : ''}`;
+      render();
+    });
 
     async function persist() {
       const result = await L2.save();

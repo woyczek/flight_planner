@@ -587,3 +587,17 @@ Retenues par défaut (à contester si besoin) :
 - `TimePeriod.zoomIn()`, `shift()`, `edges()` : repères avant / après et zoom sous les tableaux.
 - Flight Planner : `?aircraft=<type>` (alias OACI résolus), liens vers les fiches des appareils
   DEFA du type actif.
+
+## Y. Étape 20 — modification en grille, fusions, journal DEFA depuis les reportings (2026-09-24)
+
+- `shared/mission_core/grid_edit.js` : modification en grille (règles validées : fin déplacée,
+  heure créée, durée déclarée `timeline.declared`, trace `mission.history`) ; fusion / renommage
+  d'appareils et de pilotes (`missionMergeMap:v1`, fiches fusionnées). `computeStatistics` et
+  `checkMission` prennent en compte les durées déclarées.
+- Reportings : bouton « ✎ Modifier dans le tableau » ; menu « Données » toujours visible avec
+  « Charger / mettre à jour le journal DEFA… » (`DefaFlightLog.loaderDialog` : copier-coller
+  tabulé ou page enregistrée, fusion sans doublon — clé = ligne complète).
+- `form.js` : collections en tableau compact (`layout: 'cards'` pour les appareils), lien
+  « Fiche appareil » ; routes proposées pour le même trajet (départ / destination, couples
+  d'étapes) ; altitude densité ; `otherMissions` sur le registre unique.
+- Fiche appareil : performances à 1 décimale.

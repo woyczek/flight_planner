@@ -70,7 +70,7 @@
       <section><h2>${t('activity')}</h2>
         <div id="mcActivity"></div><div class="mcg-series-legend" id="mcActivityLegend"></div></section>
       <section><h2>${t('breakdowns')}</h2><div class="mc-breakdowns" id="mcBreakdowns"></div></section>
-      <section><h2>${t('missionsTitle')}</h2><div id="mcTable"></div><div id="mcEdges" hidden></div></section>`;
+      <section><h2>${t('missionsTitle')}<button type="button" class="ge-toggle" data-grid-edit></button></h2><div id="mcTable"></div><div id="mcEdges" hidden></div></section>`;
     const $a = action => root.querySelector(`[data-action="${action}"]`), status = root.querySelector('.mc-status');
     // Regroupement et mesure du graphique : préférences partagées avec le reporting général.
     const PREFS = 'missionGlobalReporting:v1';
@@ -81,21 +81,31 @@
     });
     const PALETTE = ['#67b6ff', '#bb8cff', '#65d394', '#fbbf24', '#f472b6', '#2dd4bf', '#fb923c', '#a3e635', '#818cf8', '#f87171'];
 
+    // Cellules éditables en mode « modifier dans le tableau » ; durée déclarée (sans heures) : « ≈ ».
+    const dur = (v, r, k) => v == null ? '—' : `${r.mission.timeline?.declared?.[k] != null ? '≈ ' : ''}${duration(v)}`;
     const columns = [
-      { key: 'missionId', label: t('colId') }, { key: 'date', label: t('colDate') }, { key: 'series', label: t('colSeries'), format: v => label(family.series || [], v) },
-      { key: 'type', label: t('colType') }, { key: 'registration', label: t('colReg') }, { key: 'callsign', label: t('colCallsign') },
-      { key: 'outcome', label: t('colOutcome'), format: v => v ? label(V.outcomes, v) : '—' },
-      { key: 'flight', label: t('colFlight'), type: 'number', format: v => v == null ? '—' : duration(v) },
-      { key: 'block', label: t('colBlock'), type: 'number', format: v => v == null ? '—' : duration(v) },
+      { key: 'missionId', label: t('colId'), html: (v, r) => editable('missionId', r, esc(v)) }, { key: 'date', label: t('colDate'), html: (v, r) => editable('date', r, esc(v)) },
+      { key: 'series', label: t('colSeries'), html: (v, r) => editable('series', r, esc(label(family.series || [], v))) },
+      { key: 'type', label: t('colType') }, { key: 'registration', label: t('colReg'), html: (v, r) => editable('registration', r, esc(v)) }, { key: 'callsign', label: t('colCallsign'), html: (v, r) => editable('callsign', r, esc(v)) },
+      { key: 'outcome', label: t('colOutcome'), html: (v, r) => editable('outcome', r, esc(v ? label(V.outcomes, v) : '—')) },
+      { key: 'flight', label: t('colFlight'), type: 'number', html: (v, r) => editable('flight', r, esc(dur(v, r, 'flightMinutes'))) },
+      { key: 'block', label: t('colBlock'), type: 'number', html: (v, r) => editable('block', r, esc(dur(v, r, 'blockMinutes'))) },
       { key: 'station', label: t('colStation'), type: 'number', format: v => v == null ? '—' : duration(v) },
       { key: 'trace', label: t('colTrace'), html: (_, row) => window.MissionReportingConfig?.traceLink?.(row.network) || '—' },
       // Contrôle de cohérence (chronologie, heures, carburant) : détail au survol.
       { key: 'issues', label: t('colIssues'), type: 'number', html: (v, row) => v ? `<span class="mc-issue-flag" title="${esc(row.issueText)}">⚠ ${v}</span>` : '✓' }
     ];
+    // Modification dans le tableau (MissionGridEdit) : même registre pour tous les reportings.
+    const GE = { toggle: L('✎ Modifier dans le tableau', '✎ Edit in the table', '✎ In der Tabelle bearbeiten', '✎ Modificar en la tabla'), done: L('✓ Terminer', '✓ Done', '✓ Fertig', '✓ Terminar'),
+      saved: L('Mission modifiée et enregistrée', 'Mission changed and saved', 'Einsatz geändert und gespeichert', 'Misión modificada y guardada'), declared: L('durée déclarée (sans heures)', 'declared duration (no times)', 'angegebene Dauer (ohne Uhrzeiten)', 'duración declarada (sin horas)'),
+      error: L('Valeur refusée', 'Value rejected', 'Wert abgelehnt', 'Valor rechazado') };
+    let editMode = false, uidSeq = 0; const byUid = new Map();
+    const editable = (field, r, fallback) => { if (!editMode) return fallback; const html = window.MissionGridEdit?.input(field, r.mission, r.uid, { series: family.series || [], outcomes: V.outcomes, label: o => tr(o.label) }); return html ?? fallback; };
     const toRow = (mission, index) => {
-      const s = M.computeStatistics(mission), a = mission.aircraft?.[0] || {};
+      const s = M.computeStatistics(mission), a = mission.aircraft?.[0] || {}, uid = ++uidSeq;
       const issues = M.checkMission(mission), lang = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'));
-      return { issues: issues.length, issueText: issues.map(x => window.MissionBlocks.describeIssue(x, lang)).join('\n'), index, mission, missionId: mission.metadata?.missionId, date: mission.metadata?.date, series: mission.series, type: a.type, registration: a.registration, callsign: a.callsign, outcome: mission.results?.outcome, flight: s.flightMinutes, block: s.blockMinutes, station: s.timeOnStationMinutes, network: mission.network || {} };
+      const row = { uid, issues: issues.length, issueText: issues.map(x => window.MissionBlocks.describeIssue(x, lang)).join('\n'), index, mission, missionId: mission.metadata?.missionId, date: mission.metadata?.date, series: mission.series, type: a.type, registration: a.registration, callsign: a.callsign, outcome: mission.results?.outcome, flight: s.flightMinutes, block: s.blockMinutes, station: s.timeOnStationMinutes, network: mission.network || {} };
+      byUid.set(uid, row); return row;
     };
     let table = null, seriesFilter = '';
     // En-tête : famille (autre reporting) et sous-type (filtre des statistiques et du tableau).
@@ -112,13 +122,24 @@
     const logSource = () => window.DefaFlightLog?.source?.() === 'defa';
     const sourceMissions = () => logSource() ? (logMissions ||= window.DefaFlightLog.toMissions()) : null;
     window.addEventListener('defa-log-change', () => { logMissions = null; });
+    // Menu « Données » toujours visible : registre, journal DEFA (s'il est chargé) et chargement /
+    // mise à jour du journal (page DEFA copiée ou enregistrée) sans passer par le Paramétrage.
+    const SRC_LOAD = L('Charger / mettre à jour le journal DEFA…', 'Load / update the DEFA log…', 'DEFA-Journal laden / aktualisieren…', 'Cargar / actualizar el diario DEFA…');
     function sourcePicker(host) {
-      const n = window.DefaFlightLog?.records?.().length || 0; if (!n || !host) return;
+      if (!host || !window.DefaFlightLog) return;
       const label = document.createElement('label'); label.className = 'mc-source';
-      label.innerHTML = `<span>${esc(tr(SRC.label))}</span><select><option value="ledger">${esc(tr(SRC.ledger))}</option><option value="defa">${esc(tr(SRC.defa))} — ${n}</option></select>`;
-      const select = label.querySelector('select'); select.value = logSource() ? 'defa' : 'ledger';
-      select.onchange = () => { window.DefaFlightLog.setSource(select.value); };
-      window.addEventListener('mission-source-change', () => { select.value = logSource() ? 'defa' : 'ledger'; render(); });
+      const paint = () => {
+        const n = window.DefaFlightLog.records().length, dates = n ? window.DefaFlightLog.records().map(r => r.date).sort() : [];
+        label.innerHTML = `<span>${esc(tr(SRC.label))}</span><select><option value="ledger">${esc(tr(SRC.ledger))}</option>${n ? `<option value="defa">${esc(tr(SRC.defa))} — ${n} (${esc(dates[0])} → ${esc(dates[n - 1])})</option>` : ''}<option value="load">${esc(tr(SRC_LOAD))}</option></select>`;
+        const select = label.querySelector('select'); select.value = logSource() ? 'defa' : 'ledger';
+        select.onchange = () => {
+          if (select.value === 'load') { select.value = logSource() ? 'defa' : 'ledger'; window.DefaFlightLog.loaderDialog({ onLoaded: () => { logMissions = null; window.DefaFlightLog.setSource('defa'); paint(); } }); return; }
+          window.DefaFlightLog.setSource(select.value);
+        };
+      };
+      paint();
+      window.addEventListener('mission-source-change', () => { paint(); render(); });
+      window.addEventListener('defa-log-change', () => { logMissions = null; paint(); });
       host.append(label);
     }
     sourcePicker(tools);
@@ -155,7 +176,7 @@
         + groups('byCapability', visible.flatMap(r => r.mission.capabilities || []));
       if (!table) table = window.SortedTable.render(root.querySelector('#mcTable'), {
         rows: visible, columns, defaultSortKey: 'date', defaultDir: -1, emptyText: t('empty'), rowTitle: t('rowTitle'),
-        onRowClick: row => { if (row.mission.__readOnly) { status.textContent = tr(SRC.readOnly); return; } location.href = `${family.pages.cr}?edit=${row.index}&id=${encodeURIComponent(row.missionId || '')}`; },
+        onRowClick: row => { if (editMode) return; if (row.mission.__readOnly) { status.textContent = tr(SRC.readOnly); return; } location.href = `${family.pages.cr}?edit=${row.index}&id=${encodeURIComponent(row.missionId || '')}`; },
         deleteMessage: row => `${row.missionId || ''} — ${row.date || ''}\n${t('confirmDelete')}`,
         onDelete: row => { if (row.mission.__readOnly) { status.textContent = tr(SRC.readOnly); return false; } ledger.remove(row.index); persist().then(render); return false; }
       });
@@ -164,6 +185,21 @@
       root.querySelector('.mc-ledger-info').textContent = `${ledger.filename} · ${ledger.missions.length} ${t('missions').toLowerCase()} · ${t('folderLabel')} : ${ledger.state.folder || t('browser')}`;
       if (window.RepositoryContentI18n) { window.RepositoryContentI18n([...rows.values()]); rows.clear(); }
     }
+    // Mode « modifier dans le tableau » (même registre que le reporting général).
+    const toggle = root.querySelector('[data-grid-edit]');
+    const paintToggle = () => { toggle.textContent = tr(editMode ? GE.done : GE.toggle); toggle.classList.toggle('on', editMode); };
+    toggle.onclick = () => { editMode = !editMode; paintToggle(); table = null; root.querySelector('#mcTable').innerHTML = ''; render(); };
+    paintToggle();
+    root.querySelector('#mcTable').addEventListener('change', async event => {
+      const el = event.target.closest('[data-edit]'); if (!el) return;
+      const row = byUid.get(Number(el.dataset.uid)); if (!row) return;
+      const result = window.MissionGridEdit.apply(row.mission, el.dataset.edit, el.value);
+      if (result.error) { status.textContent = `${tr(GE.error)} : ${el.value}`; el.focus(); return; }
+      if (!result.changed) return;
+      await persist();
+      status.textContent = `${tr(GE.saved)} : ${row.mission.metadata?.missionId || ''}${result.note === 'declared' ? ` — ${tr(GE.declared)}` : ''}`;
+      render();
+    });
     async function persist() {
       const result = await ledger.save();
       status.textContent = result.written ? `${t('saved')} (${ledger.filename})` : `${t('saved')} — ${t('browserOnly')}`;

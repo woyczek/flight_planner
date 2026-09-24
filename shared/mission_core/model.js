@@ -62,8 +62,10 @@
     // inversée (sortie de zone avant l'entrée) n'est pas un passage de minuit mais une erreur.
     const flight = between(t.takeoff, t.landing), part = (a, b) => { const v = between(a, b); return v != null && flight != null && v > flight ? null : v; };
     const stats = {
-      blockMinutes: between(t.offBlock, t.onBlock) ?? between(t.engineStart, t.shutdown),
-      flightMinutes: flight,
+      // Durée « déclarée » (modifiée depuis un reporting, sans les heures) : à défaut des heures.
+      blockMinutes: between(t.offBlock, t.onBlock) ?? between(t.engineStart, t.shutdown) ?? num(t.declared?.blockMinutes),
+      flightMinutes: flight ?? num(t.declared?.flightMinutes),
+      declared: t.declared && (flight == null && num(t.declared.flightMinutes) != null || between(t.offBlock, t.onBlock) == null && between(t.engineStart, t.shutdown) == null && num(t.declared.blockMinutes) != null) ? true : null,
       transitOutMinutes: part(t.takeoff, t.zoneEntry),
       timeOnStationMinutes: part(t.zoneEntry, t.zoneExit),
       transitInMinutes: part(t.zoneExit, t.landing),
@@ -101,6 +103,8 @@
     if (span > 1200) issues.push({ kind: 'span', path: `timeline.${steps[steps.length - 1]}`, minutes: span });
     if (minutes(t.missionStart) != null && minutes(t.missionEnd) != null && between(t.missionStart, t.missionEnd) >= 1200)
       issues.push({ kind: 'order', path: 'timeline.missionEnd', before: 'timeline.missionStart', value: t.missionEnd, other: t.missionStart });
+    // Durées déclarées sans heures (modification depuis un reporting) : à compléter dans le CR.
+    ['flightMinutes', 'blockMinutes'].forEach(k => { if (t.declared?.[k] != null) issues.push({ kind: 'declared', path: k === 'flightMinutes' ? 'timeline.takeoff' : 'timeline.offBlock', value: t.declared[k], measure: k }); });
     const f = m.fuel || {}, end = num(f.block) ?? num(f.landing);
     if (num(f.start) != null && end != null && end > num(f.start)) issues.push({ kind: 'fuel', path: num(f.block) != null ? 'fuel.block' : 'fuel.landing', value: end, other: num(f.start) });
     return issues;

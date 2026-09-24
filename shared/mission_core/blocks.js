@@ -38,7 +38,9 @@
   const aircraft = {
     id: 'aircraft', title: L('Appareil(s)', 'Aircraft', 'Luftfahrzeug(e)', 'Aeronave(s)'),
     collection: {
-      path: 'aircraft', min: 1, item: L('Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'), add: L('+ Ajouter un appareil', '+ Add aircraft', '+ Luftfahrzeug hinzufügen', '+ Añadir aeronave'),
+      path: 'aircraft', min: 1, layout: 'cards', // nombreux champs : une carte par appareil
+      // Fiche de l'appareil (statut, activité, performances) depuis le CR.
+      link: item => item.registration ? { href: new URL(`appareil.html?reg=${encodeURIComponent(item.registration)}`, window.MissionLedger?.APP || location.href).href, label: L('Fiche appareil ↗', 'Aircraft sheet ↗', 'Luftfahrzeugblatt ↗', 'Ficha de aeronave ↗') } : null, item: L('Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'), add: L('+ Ajouter un appareil', '+ Add aircraft', '+ Luftfahrzeug hinzufügen', '+ Añadir aeronave'),
       empty: () => window.MissionModel.emptyAircraft(),
       // Appareil mal identifié (mauvais type, mauvaise immatriculation…) : tout effacer pour
       // relancer la recherche parmi les appareils connus.
@@ -112,6 +114,8 @@
       f('environment.wind', L('Vent', 'Wind', 'Wind', 'Viento')),
       f('environment.temperature', L('Température (°C)', 'Temperature (°C)', 'Temperatur (°C)', 'Temperatura (°C)'), 'number'),
       f('environment.qnh', L('QNH (hPa)', 'QNH (hPa)'), 'number'),
+      // Altitude densité au terrain de départ : calculée (altitude du terrain, QNH, température).
+      f('environment.densityAltitude', L('Altitude densité (ft)', 'Density altitude (ft)', 'Dichtehöhe (ft)', 'Altitud densidad (ft)'), 'number'),
       f('environment.visibility', L('Visibilité', 'Visibility', 'Sicht', 'Visibilidad')),
       f('environment.ceiling', L('Plafond', 'Ceiling', 'Wolkenuntergrenze', 'Techo')),
       f('environment.precipitation', L('Précipitations', 'Precipitation', 'Niederschlag', 'Precipitación')),
@@ -255,6 +259,7 @@
     invalid: L('heure invalide', 'invalid time', 'ungültige Uhrzeit', 'hora no válida'),
     order: L('avant', 'before', 'vor', 'antes de'),
     span: L('chronologie de plus de 20 h — vérifier les heures', 'timeline longer than 20 h — check the times', 'Zeitablauf länger als 20 h — Uhrzeiten prüfen', 'cronología de más de 20 h — revisar las horas'),
+    declared: L('durée déclarée sans heures — saisir les heures dans le CR', 'declared duration without times — enter the times in the report', 'angegebene Dauer ohne Uhrzeiten — Uhrzeiten im Bericht eintragen', 'duración declarada sin horas — introducir las horas en el informe'),
     future: L('date future — un CR porte sur un vol réalisé', 'future date — a report covers a flight already flown', 'Datum in der Zukunft — ein Bericht betrifft einen durchgeführten Flug', 'fecha futura — un informe trata de un vuelo realizado'),
     dateInvalid: L('date invalide', 'invalid date', 'ungültiges Datum', 'fecha no válida'),
     fuel: L('carburant final supérieur au carburant de départ', 'final fuel above starting fuel', 'Endkraftstoff höher als Startkraftstoff', 'combustible final superior al inicial')
@@ -265,6 +270,7 @@
     if (issue.kind === 'invalid') return `${fieldLabel(issue.path, i)} « ${issue.value} » : ${w(ISSUE.invalid)}`;
     if (issue.kind === 'order') return `${fieldLabel(issue.path, i)} (${issue.value}) ${w(ISSUE.order)} ${fieldLabel(issue.before, i)} (${issue.other})`;
     if (issue.kind === 'future' || issue.kind === 'dateInvalid') return `${w(L('Date', 'Date', 'Datum', 'Fecha'))} ${issue.value} : ${w(ISSUE[issue.kind])}`;
+    if (issue.kind === 'declared') return `${w(issue.measure === 'flightMinutes' ? L('Temps de vol', 'Flight time', 'Flugzeit', 'Tiempo de vuelo') : L('Temps bloc', 'Block time', 'Blockzeit', 'Tiempo calzo'))} ≈ ${Math.floor(issue.value / 60)}h${String(issue.value % 60).padStart(2, '0')} : ${w(ISSUE.declared)}`;
     if (issue.kind === 'span') return `${w(ISSUE.span)} (${Math.floor(issue.minutes / 60)}h${String(issue.minutes % 60).padStart(2, '0')})`;
     return `${w(ISSUE.fuel)} (${issue.value} > ${issue.other})`;
   };

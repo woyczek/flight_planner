@@ -40,6 +40,10 @@
     qualifications: L('Qualifications (une par ligne)', 'Qualifications (one per line)', 'Qualifikationen (eine pro Zeile)', 'Calificaciones (una por línea)'),
     roles: L('Fonctions tenues', 'Roles held', 'Ausgeübte Funktionen', 'Funciones ejercidas'), byType: L('Par type', 'By type', 'Nach Muster', 'Por tipo'),
     unknown: L('Inconnu dans les bases : la fiche se remplira au fil des CR (base « lâche »).', 'Unknown in the bases: the sheet will fill as reports come in (loose base).', 'In den Datenbanken unbekannt: das Blatt füllt sich mit den Berichten.', 'Desconocido en las bases: la ficha se completará con los informes.'),
+    merge: L('Fusionner avec… / renommer', 'Merge with… / rename', 'Zusammenführen mit… / umbenennen', 'Fusionar con… / renombrar'),
+    mergeHint: L('Les missions du registre qui portent cette valeur prennent la nouvelle (trace dans chaque mission) ; cette fiche complète celle de la cible ; le journal DEFA rechargé suivra.', 'Ledger missions carrying this value take the new one (traced in each mission); this sheet completes the target one; the reloaded DEFA log will follow.', 'Einsätze mit diesem Wert übernehmen den neuen (Spur im Einsatz); dieses Blatt ergänzt das Ziel.', 'Las misiones con este valor toman el nuevo (traza en cada misión); esta ficha completa la de destino.'),
+    mergeGo: L('Fusionner', 'Merge', 'Zusammenführen', 'Fusionar'),
+    mergeConfirm: L('{n} mission(s) du registre passeront de {a} à {b}. Continuer ?', '{n} ledger mission(s) will change from {a} to {b}. Continue?', '{n} Einsatz/Einsätze wechseln von {a} zu {b}. Fortfahren?', '{n} misión(es) pasarán de {a} a {b}. ¿Continuar?'),
     back: L('← Reporting missions', '← Mission reporting', '← Einsatzauswertung', '← Informe de misiones')
   };
   const STATUS = [['', '—'], ['DISPONIBLE', L('Disponible', 'Available', 'Verfügbar', 'Disponible')], ['INDISPONIBLE', L('Indisponible', 'Unavailable', 'Nicht verfügbar', 'No disponible')], ['MAINTENANCE', L('En maintenance', 'In maintenance', 'In Wartung', 'En mantenimiento')], ['RETIRÉ', L('Retiré du service', 'Retired', 'Außer Dienst', 'Retirado')]];
@@ -77,6 +81,23 @@
   }
   const cards = items => `<div class="mc-cards">${items.map(([label, value, sub = '']) => `<div class="card"><span class="small">${esc(tr(label))}</span><b>${esc(value)}</b><span class="small">${esc(sub)}</span></div>`).join('')}</div>`;
 
+  // Fusion / renommage (appareil : immatriculation ; équipage : trigramme ou nom).
+  function mergeBox(kind, current, candidates, urlOf) {
+    const id = `sh-cands-${kind}`;
+    return {
+      html: `<details class="sh-merge"><summary>${esc(tr(UI.merge))}</summary><p class="small">${esc(tr(UI.mergeHint))}</p><div class="row"><input list="${id}" data-merge-target placeholder="${kind === 'aircraft' ? 'F-XXXX' : 'ABC'}"><datalist id="${id}">${candidates.filter(c => key(c) !== key(current)).map(c => `<option value="${esc(c)}">`).join('')}</datalist><button type="button" data-merge-go>${esc(tr(UI.mergeGo))}</button></div></details>`,
+      bind(root) {
+        root.querySelector('[data-merge-go]').onclick = async () => {
+          const target = root.querySelector('[data-merge-target]').value.trim(); if (!target) return;
+          const G = window.MissionGridEdit, n = G.affected(kind, current).length;
+          if (!confirm(tr(UI.mergeConfirm).replace('{n}', n).replace('{a}', current).replace('{b}', target.toUpperCase()))) return;
+          const result = await G.rename(kind, current, target);
+          location.href = urlOf(result.target || target);
+        };
+      }
+    };
+  }
+
   // ---- fiche appareil
   const AIRCRAFT_SHEETS = 'missionAircraftSheets:v1';
   async function mountAircraft(root, registration) {
@@ -94,6 +115,8 @@
     document.title = `${known.registration} — ${tr(UI.aircraft)}`;
     const h1 = document.querySelector('header h1'); if (h1) h1.textContent = `${known.registration} — ${[known.type, typeInfo?.model].filter(Boolean).join(' · ') || tr(UI.aircraft)}`;
     const status = sheet.status || known.status || '';
+    const regs = [...new Set(catalog.map(a => a.registration).concat((window.MissionLedger?.store?.missions || []).flatMap(m => (m.aircraft || []).map(a => a.registration)).filter(Boolean)))].sort();
+    const merger = mergeBox('aircraft', known.registration, regs, target => `appareil.html?reg=${encodeURIComponent(target)}`);
     root.innerHTML = `
       <section class="sh-head"><div class="sh-badges">
           <span class="sh-status" style="--c:${STATUS_COLOR[status] || '#94a3b8'}">${esc(tr((STATUS.find(s => s[0] === status) || STATUS[0])[1]))}</span>
@@ -112,7 +135,7 @@
         <div class="sh-wide"><span class="small">${esc(tr(UI.callsigns))}</span><div class="sh-chips">${[...callsigns].sort((a, b) => b[1] - a[1]).map(([c, n]) => `<span class="sh-chip">${esc(c)}${n ? ` <em>${n}</em>` : ''}</span>`).join('') || '—'}</div></div>
         <div class="sh-wide"><span class="small">${esc(tr(UI.equipment))}</span><div class="sh-chips">${[...equipment].map(e => `<span class="sh-chip">${esc(e)}</span>`).join('') || '—'}</div></div>
         <label class="sh-wide">${esc(tr(UI.notes))}<textarea data-sheet="notes" rows="2">${esc(sheet.notes)}</textarea></label>
-      </div><div class="row"><button type="button" class="primary" data-save>${esc(tr(UI.save))}</button><span class="small sh-saved"></span></div></section>
+      </div><div class="row"><button type="button" class="primary" data-save>${esc(tr(UI.save))}</button><span class="small sh-saved"></span></div>${merger.html}</section>
       <section><h2>${esc(tr(UI.activity))}</h2>${cards([[UI.flights, all.length], [UI.flightTime, hours(flight)], [UI.blockTime, hours(block)], [UI.first, all[all.length - 1]?.m.metadata?.date || known.first || '—'], [UI.last, all[0]?.m.metadata?.date || known.last || '—']])}<div class="sh-chart"></div></section>
       <section><h2>${esc(tr(UI.events))} <button type="button" class="mc-head-add" data-add-event title="${esc(tr(UI.addEvent))}">+</button></h2><div class="sh-events"></div></section>
       <section><h2>${esc(tr(UI.perf))}</h2><div class="sh-perf"></div></section>
@@ -124,6 +147,7 @@
       root.querySelector('.sh-saved').textContent = `${tr(UI.saved)} · ${new Date().toLocaleTimeString()}`;
     };
     root.querySelector('[data-save]').onclick = () => { saveSheet(); mountAircraft(root, registration); };
+    merger.bind(root);
     // Événements de la vie de l'appareil.
     const paintEvents = () => {
       const host = root.querySelector('.sh-events');
@@ -141,9 +165,11 @@
     const planner = new URL(`../flight_performance_planner.html?aircraft=${encodeURIComponent(profile?.id || resolved || t)}`, location.href).href;
     if (!profile) perf.innerHTML = `<p class="small">${esc(tr(UI.noProfile))}</p><a class="mc-button" href="${esc(planner)}">${esc(tr(UI.openPlanner))} ↗</a>`;
     else {
-      const u = profile.unit || 'kg', phase = (label, p) => p ? `<div class="card"><span class="small">${label}</span><b>${esc(p.fuelFlowPerHour ?? '—')} ${esc(u)}/h</b><span class="small">TAS ${esc(p.tasKt ?? '—')} kt${p.rateFpm ? ` · ${esc(p.rateFpm)} ft/min` : ''}</span></div>` : '';
+      // Valeurs du profil : 1 chiffre après la virgule.
+      const d1 = v => v == null || v === '' || !Number.isFinite(Number(v)) ? '—' : Number(v).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+      const u = profile.unit || 'kg', phase = (label, p) => p ? `<div class="card"><span class="small">${label}</span><b>${d1(p.fuelFlowPerHour)} ${esc(u)}/h</b><span class="small">TAS ${d1(p.tasKt)} kt${p.rateFpm ? ` · ${d1(p.rateFpm)} ft/min` : ''}</span></div>` : '';
       const curve = Array.isArray(profile.rpmFuelCurve) ? profile.rpmFuelCurve : [];
-      perf.innerHTML = `<p class="small">${esc(profile.name || profile.id)}${profile.calibration ? ` · calibration ${esc(profile.calibration.createdAt || '')}` : ''}</p><div class="mc-cards">${phase('Montée', profile.climb)}${phase('Croisière', profile.cruise)}${phase('Descente', profile.descent)}${profile.reserveFuelFlowPerHour ? `<div class="card"><span class="small">Réserve</span><b>${esc(profile.reserveFuelFlowPerHour)} ${esc(u)}/h</b></div>` : ''}</div>
+      perf.innerHTML = `<p class="small">${esc(profile.name || profile.id)}${profile.calibration ? ` · calibration ${esc(profile.calibration.createdAt || '')}` : ''}</p><div class="mc-cards">${phase('Montée', profile.climb)}${phase('Croisière', profile.cruise)}${phase('Descente', profile.descent)}${profile.reserveFuelFlowPerHour ? `<div class="card"><span class="small">Réserve</span><b>${d1(profile.reserveFuelFlowPerHour)} ${esc(u)}/h</b></div>` : ''}</div>
         ${curve.length ? `<div class="sh-curve">${curveSvg(curve)}</div>` : ''}<a class="mc-button" href="${esc(planner)}">${esc(tr(UI.openPlanner))} ↗</a>`;
     }
     activityChart(root.querySelector('.sh-chart'), all);
@@ -156,7 +182,7 @@
     if (pts.length < 2) return '';
     const W = 600, H = 180, m = 36, xs = pts.map(p => p.x), ys = pts.map(p => p.y), x0 = Math.min(...xs), x1 = Math.max(...xs), y1 = Math.max(...ys) * 1.1;
     const X = v => m + (v - x0) / (x1 - x0 || 1) * (W - 2 * m), Y = v => H - m + 10 - v / (y1 || 1) * (H - 2 * m);
-    return `<svg viewBox="0 0 ${W} ${H}" class="mcg-chart"><polyline fill="none" stroke="#67b6ff" stroke-width="2.5" points="${pts.map(p => `${X(p.x)},${Y(p.y)}`).join(' ')}"/>${pts.map(p => `<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="3.5" fill="#67b6ff"><title>${p.x} → ${p.y}</title></circle>`).join('')}<text x="${m}" y="${H - 4}" class="mcg-axis">${x0}</text><text x="${W - m}" y="${H - 4}" text-anchor="end" class="mcg-axis">${x1}</text><text x="4" y="${Y(Math.max(...ys)) + 4}" class="mcg-axis">${Math.max(...ys)}</text></svg>`;
+    return `<svg viewBox="0 0 ${W} ${H}" class="mcg-chart"><polyline fill="none" stroke="#67b6ff" stroke-width="2.5" points="${pts.map(p => `${X(p.x)},${Y(p.y)}`).join(' ')}"/>${pts.map(p => `<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="3.5" fill="#67b6ff"><title>${p.x} → ${Number(p.y).toFixed(1)}</title></circle>`).join('')}<text x="${m}" y="${H - 4}" class="mcg-axis">${x0}</text><text x="${W - m}" y="${H - 4}" text-anchor="end" class="mcg-axis">${x1}</text><text x="4" y="${Y(Math.max(...ys)) + 4}" class="mcg-axis">${Math.max(...ys).toFixed(1)}</text></svg>`;
   }
 
   // ---- fiche membre d'équipage
@@ -168,6 +194,8 @@
     const flight = all.reduce((a, x) => a + (x.s.flightMinutes || 0), 0);
     const byType = new Map(), roles = new Map();
     all.forEach(x => { const t = x.m.aircraft?.[0]?.type || '—'; byType.set(t, (byType.get(t) || 0) + (x.s.flightMinutes || 0)); (x.m.crew || []).filter(c => String(c.name || '').trim().toUpperCase() === id).forEach(c => { if (c.role) roles.set(c.role, (roles.get(c.role) || 0) + 1); }); });
+    const names = [...new Set((window.DEFA_REFERENCE?.pilots || []).map(p => p.trigram).concat((window.MissionLedger?.store?.missions || []).flatMap(m => (m.crew || []).map(c => String(c.name || '').trim().toUpperCase())).filter(Boolean)))].sort();
+    const merger = mergeBox('crew', id, names, target => `equipage.html?name=${encodeURIComponent(target)}`);
     document.title = `${id} — ${tr(UI.crew)}`;
     const h1 = document.querySelector('header h1'); if (h1) h1.textContent = `${id}${sheet.name ? ` — ${sheet.name}` : ''} — ${tr(UI.crew)}`;
     root.innerHTML = `
@@ -177,7 +205,7 @@
         <div><span class="small">${esc(tr(UI.roles))}</span><div class="sh-chips">${[...roles].map(([r, n]) => `<span class="sh-chip">${esc(tr((V.crewRoles.find(o => o.value === r) || {}).label || r))} <em>${n}</em></span>`).join('') || '—'}</div></div>
         <label class="sh-wide">${esc(tr(UI.qualifications))}<textarea data-sheet="qualifications" rows="3">${esc(sheet.qualifications)}</textarea></label>
         <label class="sh-wide">${esc(tr(UI.notes))}<textarea data-sheet="notes" rows="2">${esc(sheet.notes)}</textarea></label>
-      </div><div class="row"><button type="button" class="primary" data-save>${esc(tr(UI.save))}</button><span class="small sh-saved"></span></div></section>
+      </div><div class="row"><button type="button" class="primary" data-save>${esc(tr(UI.save))}</button><span class="small sh-saved"></span></div>${merger.html}</section>
       <section><h2>${esc(tr(UI.activity))}</h2>${cards([[UI.flights, all.length || ref?.flights || 0], [UI.flightTime, hours(flight)], [UI.first, all[all.length - 1]?.m.metadata?.date || ref?.first || '—'], [UI.last, all[0]?.m.metadata?.date || ref?.last || '—']])}
         <h3>${esc(tr(UI.byType))}</h3><div class="sh-chips">${[...byType].sort((a, b) => b[1] - a[1]).map(([t, m]) => `<span class="sh-chip">${esc(t)} <em>${hours(m)}</em></span>`).join('') || (ref?.types || []).map(t => `<span class="sh-chip">${esc(t)}</span>`).join('') || '—'}</div><div class="sh-chart"></div></section>
       <section><h2>${esc(tr(UI.missions))}</h2><div class="sh-missions"></div></section>`;
@@ -186,6 +214,7 @@
       sheet.updatedAt = new Date().toISOString(); const s2 = read(CREW_SHEETS) || {}; s2[id] = sheet; write(CREW_SHEETS, s2);
       root.querySelector('.sh-saved').textContent = `${tr(UI.saved)} · ${new Date().toLocaleTimeString()}`;
     };
+    merger.bind(root);
     activityChart(root.querySelector('.sh-chart'), all);
     missionsTable(root.querySelector('.sh-missions'), all, [...commonColumns().slice(0, 4), { key: 'registration', label: 'Immat.', html: v => v ? `<a href="appareil.html?reg=${encodeURIComponent(v)}">${esc(v)}</a>` : '—' }, { key: 'type', label: tr(UI.type) }, ...commonColumns().slice(4)]);
     window.RepositoryContentI18n?.(Object.values(UI));
