@@ -39,7 +39,7 @@ h1{font-size:18px;margin:0} button,input,select,textarea{background:#11161c;colo
 
 <section class="card span6" data-block-id="rpm-table"><h2>Table RPM / puissance → consommation</h2><table id="engineCurveTable"><thead><tr><th>RPM / N1</th><th>Min.</th><th>Nominal</th><th>Max.</th><th>Unité</th><th>Commentaire</th></tr></thead><tbody id="curve"></tbody></table></section>
 
-<section class="card span6" data-block-id="flight-regimes"><h2>Profil actif</h2><div id="profile" class="kv"><div>État</div><div>Aucun profil chargé</div></div><div style="height:12px"></div>
+<section class="card span6" data-block-id="flight-regimes"><h2>Profil actif</h2><div id="profile" class="kv"><div>État</div><div>Aucun profil chargé</div></div><div id="defaSheets" class="small" style="margin-top:8px"></div><div style="height:12px"></div>
 <div class="field"><label>SimBrief Airframe Internal ID</label><input id="sbAirframeId" value="878804_1738673287258" placeholder="Internal ID ou URL de partage SimBrief"></div>
 <div style="height:8px"></div><div class="row"><button id="sbAirframeBtn" class="primary">Importer airframe SimBrief</button><button id="importBtn">Importer `.lnmperf` / JSON / CSV</button><button id="exportLnmBtn">Exporter `.lnmperf`</button><button id="exportBtn">Exporter JSON</button><button id="exportDbBtn">Exporter BDD locale</button><input id="fileInput" type="file" accept=".json,.csv,.lnmperf,application/xml,text/xml" multiple hidden></div>
 <div id="sbStatus" class="mut" style="margin-top:8px"></div></section>
@@ -64,7 +64,7 @@ h1{font-size:18px;margin:0} button,input,select,textarea{background:#11161c;colo
 
 <dialog id="dlg"><div class="row"><h2 style="flex:1">Choisir l’avion</h2><button onclick="dlg.close()">Fermer</button></div><input id="search" placeholder="Rechercher ICAO / nom…" style="width:100%;margin-bottom:8px"><div id="airlist" class="airlist"></div></dialog>
 
-<script src="./AircraftDB/aircraft_db.js"></script><script src="./shared/aircraft_fleet.js?v=20260924zza"></script><script src="./shared/defa_reference.js?v=20260924zza"></script><script src="./shared/aircraft_catalog.js?v=20260924zza"></script>
+<script src="./AircraftDB/aircraft_db.js"></script><script src="./shared/aircraft_fleet.js?v=20260924zzd"></script><script src="./shared/defa_reference.js?v=20260924zzd"></script><script src="./shared/aircraft_catalog.js?v=20260924zzd"></script>
 <script src="./AircraftDB/aircraft_icons.js"></script>
 <script>
 const $=id=>document.getElementById(id);
@@ -130,7 +130,7 @@ function setActive(p,source="local"){active=normalize(structuredClone(p));let st
 function clearActive(message="Aucun profil actif"){active=null;activeSavedSnapshot="";profileDirty=false;state.lastAircraft=null;$("airBtn").textContent="Avion : aucun";$("source").textContent=message;syncAircraftPicker();$("profile").innerHTML='<div>État</div><div>Aucun profil chargé</div>';$("curve").innerHTML='<tr><td colspan="6">Aucun profil.</td></tr>';renderProfileEditor();save();window.updateProfileStatus?.()}
 function phaseFuelDisplay(phaseName){let phase=active[phaseName]||{},rpm=finiteProfileNumber(phase.rpmNominal)?Number(phase.rpmNominal):null,map=rpm!==null?interpRange(active.rpmFuelCurve||[],rpm):null,ff=map?.nominal??phase.fuelFlowPerHour,text=`${showFuel(ff)} ${fuelUnit()}/h`;return rpm!==null?`${rpm} RPM · ${text}${map?" (cartographie)":""}`:text}
 function renderProfile(){
- if(!active)return;
+ if(!active)return;renderDefaSheets();
  const vals=[["Nom",active.name],["Type / ICAO",active.type||active.icao||active.id],["Indicatif",active.callsign||"—"],["Immatriculation",active.registration||"—"],["Airframe SimBrief",active.simbriefAirframeId||"—"],["Unité stockée / affichée",`${active.unit} / ${fuelUnit()}`],["TAS croisière",`${active.cruise.tasKt||"—"} kt`],["Croisière",phaseFuelDisplay("cruise")],["Montée",`${active.climb.rateFpm||"—"} ft/min · ${phaseFuelDisplay("climb")}`],["Descente",`${active.descent.rateFpm||"—"} ft/min · ${phaseFuelDisplay("descent")}`],["TOD",`${active.tod.gradientFtPerNm||300} ft/NM + ${active.tod.bufferNm||0} NM`]];
  $("profile").innerHTML=vals.map(x=>`<div>${x[0]}</div><div>${x[1]}</div>`).join("");
  $("curve").innerHTML=(active.rpmFuelCurve||[]).sort((a,b)=>a.rpm-b.rpm).map(x=>`<tr><td>${x.rpm}</td><td>${showFuel(x.fuelFlowMin??x.fuelFlowPerHour)}</td><td>${showFuel(x.fuelFlowPerHour)}</td><td>${showFuel(x.fuelFlowMax??x.fuelFlowPerHour)}</td><td>${fuelUnit()}/h</td><td>${x.comment||""}</td></tr>`).join("")||'<tr><td colspan="6">Pas de courbe RPM dans ce profil.</td></tr>';
@@ -521,9 +521,12 @@ $("prefsCurrent").onclick=e=>{e.stopPropagation();let open=$("prefsMenu").hidden
 document.querySelectorAll(".lang-item").forEach(b=>b.onclick=()=>{state.uiLanguage=b.dataset.lang;applyHeaderPreferences();closeHeaderMenus();save()});
 $("prefsEditorBtn").onclick=()=>{$("toggleProfileEditor").click();applyHeaderPreferences();closeHeaderMenus()};
 document.addEventListener("click",e=>{if(!e.target.closest(".lang-popup,.prefs-popup,.aircraft-popup"))closeHeaderMenus()});
-refreshLandingAircraft();restore();applyHeaderPreferences();if(state.lastAircraft&&state.profiles[state.lastAircraft])setActive(state.profiles[state.lastAircraft],"état restauré");else syncAircraftPicker();
+/* Fiches appareils DEFA du type actif (CR DEFA/appareil.html) : même catalogue commun que les CR et le reporting. */
+function renderDefaSheets(){const box=$("defaSheets");if(!box)return;const t=aKey(active?.type||active?.icao||active?.id),db=window.AIRCRAFT_DB||{},r=t&&(db.__aliases?.[t]||t);const list=(window.AircraftCatalog?.defaAircraft()||[]).filter(a=>{const k=aKey(a.type);return k&&(k===t||k===r||aKey(db.__aliases?.[k])===r)});box.innerHTML=list.length?`Appareils DEFA de ce type (fiche : statut, terrain, activité) : ${list.map(a=>`<a href="CR DEFA/appareil.html?reg=${encodeURIComponent(a.registration)}">${escXml(a.registration)}</a>`).join(" · ")}`:""}
+/* ?aircraft=<type ou profil> : ouverture depuis une fiche appareil (profil existant, sinon créé depuis le type DEFA). */
+refreshLandingAircraft();restore();applyHeaderPreferences();{const wanted=new URLSearchParams(location.search).get("aircraft"),k=aKey(wanted||""),db=window.AIRCRAFT_DB||{},res=aKey(db.__aliases?.[k]||k),same=v=>{const x=aKey(v);return x&&(x===k||x===res||aKey(db.__aliases?.[x])===res)},found=k&&Object.values(state.profiles||{}).find(p=>[p.id,p.icao,p.type].some(same)),cand=k&&!found&&landingOnlyAircraft(Object.values(state.profiles||{}).filter(p=>p&&typeof p==="object").map(p=>normalize(p))).find(p=>[p.id,p.icao,p.type].some(same)),created=cand&&newProfileFromLanding(cand.id);if(found)setActive(found,"fiche appareil");else if(created)setActive(created,"fiche appareil (type DEFA)");else if(state.lastAircraft&&state.profiles[state.lastAircraft])setActive(state.profiles[state.lastAircraft],"état restauré");else syncAircraftPicker();}
 </script>
-<script src="./shared/repository_nav.js?v=20260924zza"></script>
+<script src="./shared/repository_nav.js?v=20260924zzd"></script>
 <script src="./shared/app_framework.js"></script>
 <script src="./shared/flight_ui.js"></script>
 <script src="./shared/content_i18n.js"></script><script src="./shared/flight_i18n.js"></script>

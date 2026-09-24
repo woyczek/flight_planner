@@ -108,6 +108,23 @@
   // Zoom sur une période (glisser sur un graphique) : toutes les instances de la page.
   const zoomTo = (a, b) => instances.forEach(ctrl => ctrl.zoomTo(a, b));
   const zoomOut = () => instances.forEach(ctrl => ctrl.zoomOut());
+  const zoomIn = () => instances.forEach(ctrl => ctrl.zoomIn());
+  const shift = direction => instances.forEach(ctrl => ctrl.shift(direction));
+  // Repères de bas de tableau : lignes avant / après la période (◀ reculer, ▶ avancer) et
+  // zoom − / + ; masqués pour « toutes les dates ».
+  const EDGE = { before: L('avant la période', 'before the period', 'vor dem Zeitraum', 'antes del periodo'), after: L('après la période', 'after the period', 'nach dem Zeitraum', 'después del periodo'),
+    zoomIn: L('Zoom avant ×2', 'Zoom in ×2', 'Hineinzoomen ×2', 'Acercar ×2') };
+  function edges(host, rows, dateField = 'date') {
+    if (!host) return;
+    const r = rangeMs(); if (r.start == null && r.end == null) { host.innerHTML = ''; host.hidden = true; return; }
+    const t = row => { const v = String(row[dateField] || ''); return v ? ms(v.slice(0, 10), 'start') : null; };
+    const before = rows.filter(row => { const x = t(row); return x != null && r.start != null && x + DAY - 1 < r.start; }).length;
+    const after = rows.filter(row => { const x = t(row); return x != null && r.end != null && x > r.end; }).length;
+    host.hidden = false; host.className = 'tp-edges';
+    host.innerHTML = `<button type="button" data-edge="back"${before ? '' : ' disabled'}>◀ ${before} ${tr(EDGE.before)}</button><span class="tp-edge-zoom"><button type="button" data-edge="out" title="${tr(TEXT.zoomOut)}">−</button><button type="button" data-edge="in" title="${tr(EDGE.zoomIn)}">+</button></span><button type="button" data-edge="forward"${after ? '' : ' disabled'}>${after} ${tr(EDGE.after)} ▶</button>`;
+    host.querySelector('[data-edge="back"]').onclick = () => shift(-1); host.querySelector('[data-edge="forward"]').onclick = () => shift(1);
+    host.querySelector('[data-edge="out"]').onclick = zoomOut; host.querySelector('[data-edge="in"]').onclick = zoomIn;
+  }
 
   let styleInjected = false;
   function injectStyle() {
@@ -122,7 +139,10 @@
 .tp-btn svg{width:15px;height:15px}
 .tp-btn .tp-fill{fill:currentColor}.tp-btn .tp-line{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
 .tp-btn:disabled{opacity:.4;cursor:default}
-.tp-summary{font-size:12px;color:var(--tp-muted,var(--muted,#6b7280))}`;
+.tp-summary{font-size:12px;color:var(--tp-muted,var(--muted,#6b7280))}
+.tp-edges{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px;font-size:12px}
+.tp-edges button{padding:4px 10px;border-radius:7px;cursor:pointer;font:inherit}.tp-edges button:disabled{opacity:.4;cursor:default}
+.tp-edge-zoom{display:inline-flex;gap:4px}.tp-edge-zoom button{min-width:30px;font-weight:700}`;
     document.head.appendChild(style);
   }
   const ICON = {
@@ -207,6 +227,12 @@
         if (bounds.end != null && e > bounds.end) { e = bounds.end; s = e - width + 1; }
         const next = custom(s, e, dayPrecision()); if (next) commit(next);
       },
+      // Zoom avant ×2 autour du centre (au moins un jour pour une période en jours).
+      zoomIn() {
+        const r = effective(); if (r.start == null || r.end == null) return;
+        const width = r.end - r.start + 1, center = (r.start + r.end) / 2, half = Math.max(dayPrecision() ? DAY / 2 : 500, width / 4);
+        const next = custom(center - half, center + half, dayPrecision()); if (next) commit(next);
+      },
       zoomOut() {
         const r = effective(); if (r.start == null || r.end == null) return;
         const width = Math.max(DAY, r.end - r.start + 1), center = (r.start + r.end) / 2;
@@ -232,5 +258,5 @@
     return ctrl;
   }
 
-  window.TimePeriod = { mount, read, write, range, rangeMs, filterRows, zoomTo, zoomOut, toText: text, toMs: ms, PRESETS, EVENT };
+  window.TimePeriod = { mount, read, write, range, rangeMs, filterRows, zoomTo, zoomOut, zoomIn, shift, edges, toText: text, toMs: ms, PRESETS, EVENT };
 })();

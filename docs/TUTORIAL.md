@@ -213,6 +213,12 @@ l'est pas, le bouton est en pointillés et propose d'ouvrir ce paramétrage. La 
   réel — survol pour le détail.
 - Synthèses par famille (avec les indicateurs propres : largages, délai alerte → décollage…),
   par appareil et par membre d'équipage ; tableau des missions (clic = CR en modification).
+- Clic sur une ligne : **Synthèse par famille** → reporting de la famille ; **par appareil** →
+  **fiche appareil** ; **par membre d'équipage** → **fiche équipage** (voir ci-dessous).
+- Sous le tableau des missions, quand une période est choisie : **◀ n avant la période**,
+  **− / +** (zoom arrière / avant), **m après la période ▶**.
+- **Données** (en-tête, si le journal DEFA est chargé) : « Mes missions (registre) » ou
+  « Journal DEFA (vols réalisés) » — historique complet, en lecture seule.
 - **Contrôle des données** (en tête, seulement s'il y a lieu) : missions à corriger, avec
   l'anomalie ; clic pour ouvrir le CR.
 - Anciens registres CSV HEMS / GAAR : « Importer un ancien registre CSV » (bas de page).
@@ -252,3 +258,27 @@ Sur un autre poste : « Restaurer / resynchroniser ».
 
 Le mode opératoire des scripts Python est affiché en bas de chaque base, et détaillé dans
 le [manuel d'exploitation](MANUEL_EXPLOITATION.md).
+
+## 12. Fiches appareil et équipage
+
+**Fiche appareil** (`CR DEFA/appareil.html?reg=F-ZBPN`, depuis la synthèse par appareil, la fiche
+équipage ou le Flight Planner) :
+
+- en tête : **statut** (disponible, indisponible, en maintenance, retiré), **📍 actuellement à**
+  (dernier terrain connu : arrivée de la dernière mission ou du dernier vol du journal),
+  **🏠 terrain de rattachement** (modifiable) ;
+- identité : type, variante, voilure, turbulence de sillage, opérateur, fiche de la flotte DEFA,
+  **mise en service** (modifiable), indicatifs utilisés (avec leur nombre), équipements, notes ;
+- activité : missions / vols, heures de vol et bloc, premier / dernier vol, graphique par période ;
+- **vie de l'appareil** : maintenance, inspections, incidents, modifications, convoyages (« + ») ;
+- **performances** : profil du Flight Planner pour ce type (consommations et vitesses par phase,
+  courbe RPM / puissance → consommation), bouton « Ouvrir dans le Flight Planner » ; dans le
+  Planner, les appareils DEFA du type actif renvoient à leur fiche ;
+- missions et vols (clic : CR en modification pour les missions du registre).
+
+**Fiche équipage** (`CR DEFA/equipage.html?name=PLN`) : nom, rattachement, qualifications,
+notes (modifiables) ; fonctions tenues, heures par type, activité, missions et vols.
+
+Base « lâche » : tout ce qui est connu est repris (flotte, référence DEFA, missions, journal),
+rien n'est obligatoire ; ce qui est saisi dans une fiche reste dans le navigateur
+(`missionAircraftSheets:v1`, `missionCrewSheets:v1`, inclus dans la sauvegarde locale).

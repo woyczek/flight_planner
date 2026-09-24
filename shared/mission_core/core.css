@@ -238,3 +238,16 @@ header.mc-header:has(.mc-report-tools)>p{display:none}
 
 /* Reportings : choix des données (registre / journal DEFA) */
 .mc-source{display:inline-flex;gap:6px;align-items:center;font-size:12px;color:#ffffffd0}.mc-report-tools .mc-source select{font-weight:600}
+
+/* Fiches appareil / équipage */
+.sh-badges{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.sh-status{--c:#94a3b8;padding:5px 12px;border-radius:999px;background:color-mix(in srgb,var(--c) 16%,transparent);color:var(--c);border:1px solid var(--c);font-weight:700}
+.sh-now,.sh-home{padding:5px 12px;border-radius:999px;background:var(--soft,#eef2f7);font-size:13px}
+.sh-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 16px;margin-bottom:10px}
+.sh-grid label,.sh-grid>div{display:grid;gap:4px;font-size:13px}.sh-grid .small{color:var(--muted)}.sh-wide{grid-column:1/-1}
+.sh-grid input,.sh-grid select,.sh-grid textarea,.sh-table input,.sh-table select{padding:6px 8px;border:1px solid var(--line);border-radius:7px;font:inherit}
+.sh-chips{display:flex;flex-wrap:wrap;gap:6px}.sh-chip{padding:3px 9px;border-radius:999px;background:var(--soft,#eef2f7);font-size:12px}.sh-chip em{font-style:normal;color:var(--muted)}
+.sh-tag{--c:#64748b;display:inline-block;font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;background:color-mix(in srgb,var(--c) 18%,transparent);color:var(--c)}
+.sh-table{border-collapse:collapse;width:100%;font-size:13px}.sh-table th,.sh-table td{padding:4px 6px;border-bottom:1px solid var(--line);text-align:left}
+.mc-reporting h2 .mc-head-add{display:inline-flex;align-items:center;justify-content:center;margin-left:10px;width:24px;height:24px;border-radius:50%;border:0;background:var(--accent);color:#fff;font-size:18px;font-weight:700;cursor:pointer;padding:0 0 2px;vertical-align:3px}
+.sh-curve{max-width:640px;margin:8px 0}

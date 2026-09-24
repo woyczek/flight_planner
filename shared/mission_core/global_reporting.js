@@ -70,6 +70,10 @@
     colFlightAvg: L('Vol moyen', 'Average flight', 'Mittlerer Flug', 'Vuelo medio'), colSpecific: L('Indicateurs de la famille', 'Family indicators', 'Familienkennzahlen', 'Indicadores de la familia'),
     colLast: L('Dernière mission', 'Last mission', 'Letzter Einsatz', 'Última misión'), colName: L('Nom', 'Name', 'Name', 'Nombre'), colRoles: L('Fonctions', 'Roles', 'Funktionen', 'Funciones'),
     colReporting: L('Reporting', 'Reporting', 'Auswertung', 'Informe'),
+    openFamily: L('Cliquer pour ouvrir le reporting de la famille', 'Click to open the family reporting', 'Klicken, um die Familienauswertung zu öffnen', 'Clic para abrir el informe de la familia'),
+    openAircraft: L('Cliquer pour ouvrir la fiche de l’appareil', 'Click to open the aircraft sheet', 'Klicken, um das Luftfahrzeugblatt zu öffnen', 'Clic para abrir la ficha de la aeronave'),
+    openCrew: L('Cliquer pour ouvrir la fiche du membre d’équipage', 'Click to open the crew member sheet', 'Klicken, um das Besatzungsblatt zu öffnen', 'Clic para abrir la ficha del tripulante'),
+    before: L('avant la période', 'before the period', 'vor dem Zeitraum', 'antes del periodo'), after: L('après la période', 'after the period', 'nach dem Zeitraum', 'después del periodo'),
     checks: L('Contrôle des données', 'Data checks', 'Datenprüfung', 'Control de datos'),
     checksSub: L('missions à corriger (clic pour ouvrir le CR)', 'missions to correct (click to open the report)', 'zu korrigierende Einsätze (Klick öffnet den Bericht)', 'misiones por corregir (clic para abrir el informe)'),
     colIssues: L('Anomalies', 'Issues', 'Auffälligkeiten', 'Anomalías')
@@ -132,7 +136,7 @@
       <section class="section mcg-wide"><h2>${t('familyTable')}</h2><div class="inside" id="mcgFamilyTable"></div></section>
       <section class="section mcg-wide"><h2>${t('aircraftTable')}</h2><div class="inside" id="mcgAircraftTable"></div></section>
       <section class="section mcg-wide"><h2>${t('crewTable')}</h2><div class="inside" id="mcgCrewTable"></div></section>
-      <section class="section mcg-wide"><h2>${t('missionsTable')}</h2><div class="inside" id="mcgMissions"></div></section>
+      <section class="section mcg-wide"><h2>${t('missionsTable')}</h2><div class="inside"><div id="mcgMissions"></div><div id="mcgEdges" hidden></div></div></section>
       <section class="panel mcg-ledger"><h2>${t('ledger')}</h2><div class="row">
         <button type="button" data-action="yaml">${t('exportYaml')}</button><button type="button" data-action="csv">${t('exportCsv')}</button>
         <button type="button" data-action="folder">${t('folder')}</button><button type="button" data-action="print">${t('print')}</button>
@@ -191,9 +195,9 @@
 
     // ---- rendu
     let missionsTable = null; const tables = {};
-    const table = (id, rowsList, columns, sortKey, dir = -1) => {
+    const table = (id, rowsList, columns, sortKey, dir = -1, onRowClick = null, rowTitle = '') => {
       if (tables[id]) tables[id].setRows(rowsList);
-      else tables[id] = window.SortedTable.render($(`#${id}`), { rows: rowsList, columns, defaultSortKey: sortKey, defaultDir: dir, emptyText: tr(UI.empty) });
+      else tables[id] = window.SortedTable.render($(`#${id}`), { rows: rowsList, columns, defaultSortKey: sortKey, defaultDir: dir, emptyText: tr(UI.empty), onRowClick, rowTitle });
     };
     function render() {
       const all = allRows();
@@ -271,7 +275,7 @@
         { key: 'block', label: t('block'), type: 'number', format: v => v ? duration(v) : '—' }, { key: 'station', label: t('station'), type: 'number', format: v => v ? duration(v) : '—' },
         { key: 'distance', label: t('distance'), type: 'number', format: v => v || '—' }, { key: 'fuel', label: t('fuel'), format: v => v || '—' },
         { key: 'specific', label: t('colSpecific'), format: v => v || '—' }, { key: 'reporting', label: t('colReporting'), html: v => v ? `<a href="${esc(v)}">↗</a>` : '' }
-      ], 'missions');
+      ], 'missions', -1, r => { if (r.reporting) location.href = r.reporting; }, tr(UI.openFamily));
 
       // Synthèse par appareil (immatriculation, sinon type)
       const aircraft = new Map();
@@ -284,7 +288,7 @@
         { key: 'registration', label: t('colReg') }, { key: 'type', label: t('colType') }, { key: 'callsigns', label: t('colCallsign'), format: v => v || '—' },
         { key: 'families', label: t('colFamily'), html: v => v.map(tag).join(' '), sortValue: r => r.families.join(' ') }, { key: 'missions', label: t('colMissions'), type: 'number' },
         { key: 'flight', label: t('flight'), type: 'number', format: duration }, { key: 'block', label: t('block'), type: 'number', format: v => v ? duration(v) : '—' }, { key: 'last', label: t('colLast') }
-      ], 'missions');
+      ], 'missions', -1, r => { if (r.registration && r.registration !== '—') location.href = `appareil.html?reg=${encodeURIComponent(r.registration)}`; }, tr(UI.openAircraft));
 
       // Synthèse par membre d'équipage
       const people = new Map();
@@ -297,7 +301,7 @@
       table('mcgCrewTable', [...people.values()].map(e => ({ ...e, roles: [...e.roles].join(', '), families: [...e.families] })), [
         { key: 'name', label: t('colName') }, { key: 'roles', label: t('colRoles'), format: v => v || '—' }, { key: 'families', label: t('colFamily'), html: v => v.map(tag).join(' '), sortValue: r => r.families.join(' ') },
         { key: 'missions', label: t('colMissions'), type: 'number' }, { key: 'flight', label: t('flight'), type: 'number', format: duration }, { key: 'last', label: t('colLast') }
-      ], 'missions');
+      ], 'missions', -1, r => { location.href = `equipage.html?name=${encodeURIComponent(r.name)}`; }, tr(UI.openCrew));
 
       // Contrôle des données : chronologie inversée, heure invalide, carburant incohérent.
       const flawed = visible.map(r => ({ ...r, issues: M.checkMission(r.mission) })).filter(r => r.issues.length);
@@ -332,6 +336,7 @@
         onDelete: r => { if (r.mission.__readOnly) { status.textContent = tr(SRC.readOnly); return false; } const k = L2.store.missions.indexOf(r.mission); if (k >= 0) { L2.store.missions.splice(k, 1); persist().then(render); } return false; }
       });
       else missionsTable.setRows(visible);
+      window.TimePeriod.edges?.($('#mcgEdges'), all.filter(r => !hidden.has(r.family)));
 
       if (L2.store.source === 'unavailable') status.textContent = `${L2.FILE} : ${tr(UI.unavailable)}`;
       $('.mcg-ledger-info').textContent = logSource() ? `${tr(SRC.defa)} · ${window.DefaFlightLog.records().length} ${tr(UI.missions).toLowerCase()} · ${window.DefaFlightLog.load().source || ''}` : `${L2.FILE} · ${L2.store.missions.length} ${tr(UI.missions).toLowerCase()} · ${tr(UI.folderLabel)} : ${L2.store.folder || tr(UI.browserOnly)}${L2.store.updatedAt ? ` · ${new Date(L2.store.updatedAt).toLocaleString()}` : ''}`;

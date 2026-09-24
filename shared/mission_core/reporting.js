@@ -70,7 +70,7 @@
       <section><h2>${t('activity')}</h2>
         <div id="mcActivity"></div><div class="mcg-series-legend" id="mcActivityLegend"></div></section>
       <section><h2>${t('breakdowns')}</h2><div class="mc-breakdowns" id="mcBreakdowns"></div></section>
-      <section><h2>${t('missionsTitle')}</h2><div id="mcTable"></div></section>`;
+      <section><h2>${t('missionsTitle')}</h2><div id="mcTable"></div><div id="mcEdges" hidden></div></section>`;
     const $a = action => root.querySelector(`[data-action="${action}"]`), status = root.querySelector('.mc-status');
     // Regroupement et mesure du graphique : préférences partagées avec le reporting général.
     const PREFS = 'missionGlobalReporting:v1';
@@ -160,6 +160,7 @@
         onDelete: row => { if (row.mission.__readOnly) { status.textContent = tr(SRC.readOnly); return false; } ledger.remove(row.index); persist().then(render); return false; }
       });
       else table.setRows(visible);
+      window.TimePeriod?.edges?.(root.querySelector('#mcEdges'), all);
       root.querySelector('.mc-ledger-info').textContent = `${ledger.filename} · ${ledger.missions.length} ${t('missions').toLowerCase()} · ${t('folderLabel')} : ${ledger.state.folder || t('browser')}`;
       if (window.RepositoryContentI18n) { window.RepositoryContentI18n([...rows.values()]); rows.clear(); }
     }

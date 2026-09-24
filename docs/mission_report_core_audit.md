@@ -577,3 +577,13 @@ Retenues par défaut (à contester si besoin) :
   d'appareils connus, trigrammes et terrains proposés.
 - Reportings : **Données** registre / journal DEFA (`DefaFlightLog.toMissions()`, familles par
   règles de libellé, lecture seule) ; `defa_log.js` chargé par les 16 pages de reporting.
+
+## X. Étape 19 — fiches appareil / équipage, navigation des reportings (2026-09-24)
+
+- `shared/mission_core/sheets.js`, `CR DEFA/appareil.html`, `CR DEFA/equipage.html` : fiches
+  « lâches » (catalogue commun, registre, journal DEFA, profil du Flight Planner) ; saisie locale
+  (statut, rattachement, mise en service, événements, qualifications).
+- Reporting général : clic famille → reporting de famille, appareil → fiche, équipage → fiche.
+- `TimePeriod.zoomIn()`, `shift()`, `edges()` : repères avant / après et zoom sous les tableaux.
+- Flight Planner : `?aircraft=<type>` (alias OACI résolus), liens vers les fiches des appareils
+  DEFA du type actif.

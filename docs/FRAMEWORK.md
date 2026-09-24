@@ -137,7 +137,8 @@ const ctrl = TimePeriod.mount(element, {
 ctrl.setBounds(debut, fin); ctrl.set(state); ctrl.zoomTo(a, b); ctrl.shift(±1); ctrl.zoomOut();
 TimePeriod.filterRows(lignes, 'date');   // lignes de la période (état partagé)
 TimePeriod.range(); TimePeriod.rangeMs(state);   // période effective (jours / millisecondes)
-TimePeriod.zoomTo(a, b); TimePeriod.zoomOut();   // toutes les instances de la page
+TimePeriod.zoomTo(a, b); TimePeriod.zoomOut(); TimePeriod.zoomIn(); TimePeriod.shift(±1);
+TimePeriod.edges(conteneur, lignes, 'date');     // repères sous un tableau : ◀ n avant · − + · m après ▶
 ```
 
 - **Mode partagé** (reportings) : état dans `missionReportingPeriod:v1`, synchronisé entre
