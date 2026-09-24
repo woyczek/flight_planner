@@ -90,5 +90,39 @@
     const d = await describe(key); return `${tr(STATE.opensIn)} : ${d.label} — ${d.name || tr(STATE.none)}`;
   }
 
-  window.FileAccess = { FOLDERS, get, set, status, pickFolder, describe, decorate, fileHint, defaultFolder };
+  // ---- panneaux de copier-coller (analyse de texte, journal DEFA, historique VATSIM…)
+  //   · « × » en haut à droite et bouton « Fermer » ;
+  //   · bouton de chargement désactivé tant que la zone est vide ; après un chargement réussi
+  //     (panel.done()), il devient « Valider » (vert) et ferme le panneau ; il redevient
+  //     « Charger » dès que la zone est de nouveau remplie.
+  const PASTE = { close: L('Fermer', 'Close', 'Schließen', 'Cerrar'), load: L('Charger', 'Load', 'Laden', 'Cargar'), validate: L('Valider', 'Confirm', 'Bestätigen', 'Validar') };
+  function pastePanel({ root, area, run, close, runLabel = null, closeButton = true }) {
+    if (!root || !area || !run || root.dataset.pastePanel) return null;
+    root.dataset.pastePanel = '1';
+    if (!document.getElementById('fa-paste-style')) document.head.insertAdjacentHTML('beforeend', '<style id="fa-paste-style">.fa-x{position:absolute;top:6px;right:8px;width:28px;height:28px;border:0!important;border-radius:50%!important;background:transparent!important;color:inherit!important;font-size:20px!important;line-height:1;cursor:pointer;opacity:.7;padding:0!important;min-width:0!important}.fa-x:hover{opacity:1;background:#0000001a!important}.fa-valid{background:#16a34a!important;border-color:#16a34a!important;color:#fff!important}button.fa-run:disabled{opacity:.45;cursor:not-allowed}</style>');
+    // « × » positionné dans le panneau (sans toucher à un panneau déjà positionné : popup absolue).
+    if (getComputedStyle(root).position === 'static') root.style.position = 'relative';
+    const x = document.createElement('button'); x.type = 'button'; x.className = 'fa-x'; x.textContent = '×';
+    root.prepend(x);
+    let closer = null;
+    if (closeButton) { closer = document.createElement('button'); closer.type = 'button'; closer.className = 'fa-close'; run.after(closer); }
+    run.classList.add('fa-run');
+    let loaded = false;
+    const label = () => typeof runLabel === 'function' ? runLabel() : Array.isArray(runLabel) ? tr(runLabel) : runLabel || tr(PASTE.load);
+    const paint = () => {
+      x.title = tr(PASTE.close); x.setAttribute('aria-label', tr(PASTE.close)); if (closer) closer.textContent = tr(PASTE.close);
+      const empty = !area.value.trim();
+      if (loaded && empty) { run.textContent = `✓ ${tr(PASTE.validate)}`; run.classList.add('fa-valid'); run.disabled = false; }
+      else { loaded = false; run.textContent = label(); run.classList.remove('fa-valid'); run.disabled = empty; }
+    };
+    const shut = () => { loaded = false; paint(); close(); };
+    x.onclick = shut; if (closer) closer.onclick = shut;
+    // « Valider » : ferme au lieu de relancer le chargement (avant le gestionnaire de la page).
+    root.addEventListener('click', event => { if (loaded && event.target.closest('.fa-run') === run) { event.preventDefault(); event.stopImmediatePropagation(); shut(); } }, true);
+    ['input', 'change', 'paste'].forEach(type => area.addEventListener(type, () => setTimeout(paint)));
+    window.addEventListener('repository-language-change', paint);
+    paint();
+    return { done() { loaded = true; if (area.value.trim()) area.value = ''; paint(); }, reset() { loaded = false; paint(); }, paint };
+  }
+  window.FileAccess = { pastePanel, PASTE, FOLDERS, get, set, status, pickFolder, describe, decorate, fileHint, defaultFolder };
 })();

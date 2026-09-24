@@ -271,6 +271,9 @@
     panel.querySelector('.nt-toggle').onclick = () => (watch?.active ? stop() : start());
     panel.querySelector('.nt-history').onclick = fetchVatsimHistory;
     panel.querySelector('.nt-parse').onclick = () => applyVatsimHistory(panel.querySelector('.nt-paste textarea').value);
+    // Zone de copier-coller : « × », « Fermer », bouton désactivé si vide (framework FileAccess).
+    const box = panel.querySelector('.nt-paste'), attach = () => window.FileAccess?.pastePanel({ root: box, area: box.querySelector('textarea'), run: box.querySelector('.nt-parse'), close: () => { box.hidden = true; }, runLabel: () => t('parse') });
+    if (window.FileAccess) attach(); else window.addEventListener('load', attach, { once: true });
     panel.querySelector('.nt-clip').onclick = () => readClipboard(false);
     // Ctrl+V dans la zone : analyse immédiate.
     panel.querySelector('.nt-paste textarea').addEventListener('paste', event => setTimeout(() => applyVatsimHistory(event.target.value)));

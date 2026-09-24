@@ -111,6 +111,18 @@ autorisé : toutes les 5 minutes et au départ de la page) remet aussi le compte
   performances), sinon le dernier dossier utilisé pour ce bouton. Le code des pages ne change
   pas (événement `change` habituel). Navigateurs sans l'API : sélecteur natif.
 
+### Panneaux de copier-coller (`FileAccess.pastePanel`)
+
+Toute fenêtre où l'on colle un texte (CR › Analyse / import, journal DEFA, historique VATSIM du
+suivi réseau) : **×** en haut à droite et bouton **Fermer** ; le bouton de chargement est
+**désactivé** tant que la zone est vide, devient **✓ Valider** (vert, ferme la fenêtre) après un
+chargement réussi, et redevient « Charger » dès que la zone est de nouveau remplie.
+
+```js
+const panel = FileAccess.pastePanel({ root, area, run, close, runLabel });
+panel.done();   // après un chargement réussi
+```
+
 ## 7. `time_period.js` — période d'analyse et zoom
 
 Composant unique pour choisir la période analysée **et zoomer** — reporting général,

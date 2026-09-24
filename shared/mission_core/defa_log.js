@@ -209,13 +209,13 @@
     dialog.innerHTML = `<form method="dialog"><h3></h3><p class="small"></p><p><a target="_blank" rel="noopener"></a></p><p class="small"></p>
       <textarea rows="7" spellcheck="false" placeholder="Ctrl+V"></textarea>
       <div class="dl-row"><label><input type="radio" name="mode" value="merge" checked> <span data-t="merge"></span></label><label><input type="radio" name="mode" value="replace"> <span data-t="replace"></span></label></div>
-      <div class="dl-row"><button type="button" data-a="load" class="primary"></button><label class="dl-file"><span data-t="file"></span><input type="file" accept=".html,.htm,.csv,.json,text/html" hidden></label><button type="submit" data-a="close"></button></div>
+      <div class="dl-row"><button type="button" data-a="load" class="primary"></button><label class="dl-file"><span data-t="file"></span><input type="file" accept=".html,.htm,.csv,.json,text/html" hidden></label></div>
       <p class="small dl-result"></p></form>`;
     dialog.querySelector('h3').textContent = T('title');
     const ps = dialog.querySelectorAll('p.small'); ps[0].textContent = T('step1'); ps[1].textContent = T('step2');
     const link = dialog.querySelector('a'); link.href = LOG_URL; link.textContent = `${LOG_URL} ↗`;
     dialog.querySelectorAll('[data-t]').forEach(el => { el.textContent = T(el.dataset.t); });
-    dialog.querySelector('[data-a="load"]').textContent = T('load'); dialog.querySelector('[data-a="close"]').textContent = T('close');
+    dialog.querySelector('[data-a="load"]').textContent = T('load');
     const area = dialog.querySelector('textarea'), result = dialog.querySelector('.dl-result');
     const run = (text, name) => {
       let list = []; try { list = parse(text, name); } catch (e) { result.textContent = e.message; return; }
@@ -224,7 +224,7 @@
       const data = save(list, name || `copie ${new Date().toLocaleString()}`, { merge });
       const dates = data.records.map(r => r.date).sort();
       result.textContent = T('done').replace('{n}', list.length).replace('{a}', merge ? data.added : list.length).replace('{t}', data.records.length).replace('{d1}', dates[0]).replace('{d2}', dates[dates.length - 1]);
-      area.value = ''; onLoaded?.(data);
+      area.value = ''; panel?.done(); onLoaded?.(data);
     };
     dialog.querySelector('[data-a="load"]').onclick = () => run(area.value, '');
     area.addEventListener('paste', () => setTimeout(() => run(area.value, '')));
@@ -232,6 +232,9 @@
     file.onchange = async () => { const f = file.files[0]; if (f) run(await f.text(), f.name); file.value = ''; };
     if (!document.getElementById('defa-loader-style')) document.head.insertAdjacentHTML('beforeend', '<style id="defa-loader-style">.defa-loader{max-width:640px;width:calc(100vw - 32px);border:1px solid #cbd5e1;border-radius:12px;padding:16px;color:#111827;background:#fff}.defa-loader::backdrop{background:#0006}.defa-loader h3{margin:0 0 8px}.defa-loader textarea{width:100%;box-sizing:border-box;font:12px/1.4 ui-monospace,Consolas,monospace}.defa-loader .dl-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}.defa-loader button,.defa-loader .dl-file{padding:6px 12px;border-radius:8px;border:1px solid #cbd5e1;background:#f1f5f9;cursor:pointer;font:inherit}.defa-loader button.primary{background:#2f3b52;color:#fff;border-color:#2f3b52}.defa-loader .dl-result{color:#047857;font-weight:600}</style>');
     dialog.addEventListener('close', () => dialog.remove());
+    // « × », « Fermer », « Charger » désactivé si vide puis « Valider » (framework FileAccess).
+    const panel = window.FileAccess?.pastePanel({ root: dialog.querySelector('form'), area, run: dialog.querySelector('[data-a="load"]'), close: () => dialog.close(), runLabel: () => T('load') });
+    if (!panel) { const close = document.createElement('button'); close.type = 'submit'; close.textContent = T('close'); dialog.querySelector('.dl-row:last-of-type').append(close); }
     document.body.append(dialog); dialog.showModal(); area.focus();
     return dialog;
   }

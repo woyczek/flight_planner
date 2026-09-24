@@ -541,7 +541,7 @@
     openLink('ivao', 'importOpenIvao'); openLink('statsim', 'importOpenStatsim');
     async function importText(text, silent = false) {
       const TI = window.MissionTextImport, result = TI.analyse(text);
-      if (result.kind === 'vatsim-history') { window.NetworkTracker?.applyVatsimHistory(text); importResult.textContent = inLanguage(UI.importVatsim); importArea.value = ''; return true; }
+      if (result.kind === 'vatsim-history') { window.NetworkTracker?.applyVatsimHistory(text); importResult.textContent = inLanguage(UI.importVatsim); importArea.value = ''; importPanel?.done(); return true; }
       if (!KINDS[result.kind]) { if (!silent) importResult.textContent = inLanguage(UI.importUnknown); return false; }
       const dep = result.fpl?.dep || result.dep || result.sessions?.[0]?.dep || mission.navigation.dep || mission.aircraft[0]?.baseDeparture;
       const ad = dep && !/^ZZZZ$/.test(dep) ? await assist.airport(dep) : null;
@@ -557,9 +557,14 @@
       changed(); switcher.sync();
       importResult.textContent = `${inLanguage(UI[KINDS[result.kind]])} — ${done.length} ${inLanguage(UI.fplFilled)} : ${done.map(p => p.replace(/^\w+\.(\d+\.)?/, '')).join(', ') || '—'}${ad?.tz ? ` · ${inLanguage(UI.importLocal)} ${ad.icao} (${ad.tz})` : ''}${notes.length ? ` · ${notes.join(' · ')}` : ''}`;
       importArea.value = '';
+      importPanel?.done(); // bouton « Valider » (ferme la fenêtre)
       return true;
     }
     importBox.querySelector('[data-import="run"]').onclick = () => importText(importArea.value);
+    // Fenêtre de copier-coller : « × », « Fermer », bouton désactivé si vide, puis « Valider ».
+    let importPanel = null;
+    const attachImportPanel = () => { importPanel = window.FileAccess?.pastePanel({ root: importBox.querySelector('.mc-import-pop'), area: importArea, run: importBox.querySelector('[data-import="run"]'), close: () => { importBox.open = false; }, runLabel: () => inLanguage(UI.importRun) }) || importPanel; };
+    if (window.FileAccess) attachImportPanel(); else window.addEventListener('load', attachImportPanel, { once: true });
     importArea.addEventListener('paste', () => setTimeout(() => importText(importArea.value)));
     // Presse-papiers : une lecture à la fois. La demande d'autorisation de Chrome fait perdre
     // puis reprendre le focus à la page : une lecture automatique au retour ne doit jamais

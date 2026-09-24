@@ -601,3 +601,9 @@ Retenues par défaut (à contester si besoin) :
   « Fiche appareil » ; routes proposées pour le même trajet (départ / destination, couples
   d'étapes) ; altitude densité ; `otherMissions` sur le registre unique.
 - Fiche appareil : performances à 1 décimale.
+
+## Z. Correctif — fenêtres de copier-coller (2026-09-24)
+
+`FileAccess.pastePanel` (framework) appliqué à « Analyse / import » (CR), à la fenêtre du journal
+DEFA et à la zone de l'historique VATSIM : × et « Fermer », bouton désactivé si vide, « Valider »
+après chargement (ferme), retour à « Charger » à la saisie.
