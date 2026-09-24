@@ -36,10 +36,25 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   la famille du type de mission (MEDEVAC → HEMS, TRAINING → SPECIAL…), pré-rempli : nom et numéro,
   objectif, terrains (OACI du nom), points et coordonnées, appareils (type OACI du catalogue,
   indicatif ; à défaut, équipes dotées d'un aéronef), exploitant, charge.
+- Studio : **grille MORA calculée** (1° × 1°) : point le plus haut — relief Terrarium (z9 puis
+  z12 autour des maxima), sommets OSM, obstacles de l'AIXM SIA (13 836) — + 1000 ft (2000 ft
+  au-delà de 5000 ft), arrondi à la centaine ; relief majoré de 100 m si les sommets OSM sont
+  indisponibles. Remplace l'import PDF : la carte ENR 6.1 n'a pas de grille (ses valeurs sont
+  celles de zones irrégulières), l'ancien `mora.csv` était faux. `mora.csv` régénéré (150
+  cellules, 1000 à 18 100 ft). Valeurs non certifiées.
+- Studio : **quadrillage** au pas adapté à l'emprise (1′ à 5°), libellés en degrés et minutes ;
+  quadrillage et MORA aussi sur la carte de contrôle dynamique.
+- Studio : coche globale « toutes » pour les zones R / D / P et les espaces contrôlés ; profil
+  « Désactivé » par carte (carte ni générée, ni prévisualisée, ni sur l'assemblage).
+- Générateur de mission : nom des exports `S1-M11_AIRLIFT_Pont_logistique_vers_Solenzara`
+  (série-numéro, type, titre ou cible) ; résumé et description proposés depuis les données quand
+  le fichier n'en contient pas (points, rendez-vous et participants, zone, consignes, axe de
+  ravitaillement ENR 5.7 : route, longueur, largeur, sens des virages).
 - **Dossier SIA XML mémorisé** (`FileAccess`, clef `__sia`) : « Relire le dossier » après une
   mise à jour AIRAC ; sélecteurs de fichiers des pages SIA ouverts dans ce dossier.
 - Supprimés : générateur Python en ligne de commande (`generate_operational_map.py`, son README,
-  son exemple de demande et sa carte de vérification), remplacé par le studio.
+  son exemple de demande et sa carte de vérification), remplacé par le studio ; pdf.js (import
+  MORA abandonné).
 - Corrections : image vide « carte de contrôle » affichée à côté de la carte dynamique ; un fond
   lent (OpenTopoMap) n'empêche plus les surcharges (points tournants,
   zones) ; une carte en échec n'arrête plus la génération (ZIP des cartes réussies,
