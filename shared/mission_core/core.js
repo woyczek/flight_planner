@@ -68,6 +68,7 @@
     importVatsim: L('Historique VATSIM analysé (voir le suivi réseau dans l’en-tête).', 'VATSIM history analysed (see network tracking in the header).', 'VATSIM-Historie ausgewertet (siehe Netzwerk-Tracking in der Kopfzeile).', 'Historial VATSIM analizado (ver el seguimiento de red en la cabecera).'),
     importUnknown: L('Texte non reconnu : plan de vol « (FPL-…) », page du tracker IVAO, historique VATSIM (JSON) ou METAR attendus.', 'Text not recognised: flight plan “(FPL-…)”, IVAO tracker page, VATSIM history (JSON) or METAR expected.', 'Text nicht erkannt: Flugplan „(FPL-…)“, IVAO-Tracker-Seite, VATSIM-Historie (JSON) oder METAR erwartet.', 'Texto no reconocido: se espera un plan de vuelo «(FPL-…)», una página del tracker IVAO, el historial VATSIM (JSON) o un METAR.'),
     importClipDenied: L('Lecture du presse-papiers refusée : collez dans la zone (Ctrl+V).', 'Clipboard access denied: paste into the box (Ctrl+V).', 'Zugriff auf die Zwischenablage verweigert: in das Feld einfügen (Strg+V).', 'Acceso al portapapeles denegado: pegue en el cuadro (Ctrl+V).'),
+    importPasteHint: L('Collez avec Ctrl+V dans la zone (analyse immédiate). « Coller depuis le presse-papiers » demande l’autorisation une fois ; ensuite, le retour depuis le tracker (favori « → CR DEFA ») est analysé automatiquement.', 'Paste with Ctrl+V in the box (immediate analysis). “Paste from clipboard” asks for permission once; then returning from the tracker (“→ CR DEFA” bookmark) is analysed automatically.', 'Mit Strg+V in das Feld einfügen (sofortige Auswertung). „Aus Zwischenablage einfügen“ fragt einmal nach der Erlaubnis; danach wird die Rückkehr vom Tracker (Lesezeichen „→ CR DEFA“) automatisch ausgewertet.', 'Pegue con Ctrl+V en el cuadro (análisis inmediato). «Pegar desde el portapapeles» pide permiso una vez; después, la vuelta desde el tracker (marcador «→ CR DEFA») se analiza automáticamente.'),
     importLocal: L('heures locales', 'local times', 'Ortszeiten', 'horas locales'),
     fplFilled: L('champs renseignés depuis', 'fields filled from', 'Felder ausgefüllt aus', 'campos rellenados desde'),
     render: L('Générer / actualiser le CR', 'Generate / refresh report', 'Bericht erzeugen / aktualisieren', 'Generar / actualizar el informe'),
@@ -401,10 +402,32 @@
     }
     importBox.querySelector('[data-import="run"]').onclick = () => importText(importArea.value);
     importArea.addEventListener('paste', () => setTimeout(() => importText(importArea.value)));
-    const readClipboard = async silent => { try { const text = await navigator.clipboard.readText(); if (text) return importText(text, silent); } catch { if (!silent) importResult.textContent = inLanguage(UI.importClipDenied); } return false; };
+    // Presse-papiers : une lecture à la fois. La demande d'autorisation de Chrome fait perdre
+    // puis reprendre le focus à la page : une lecture automatique au retour ne doit jamais
+    // déclencher cette demande (sinon boucle). Ctrl+V dans la zone ne demande rien.
+    let clipBusy = false, clipArmed = false, lastClip = '';
+    const readClipboard = async silent => {
+      if (clipBusy) return false; clipBusy = true;
+      try {
+        const text = await navigator.clipboard.readText();
+        if (!text || (silent && text === lastClip)) return false; // déjà analysé
+        const ok = await importText(text, silent); if (ok) lastClip = text; return ok;
+      }
+      catch { if (!silent) importResult.textContent = inLanguage(UI.importClipDenied); }
+      finally { clipBusy = false; }
+      return false;
+    };
+    const clipGranted = async () => { try { return (await navigator.permissions.query({ name: 'clipboard-read' })).state === 'granted'; } catch { return false; } };
     importBox.querySelector('[data-import="clip"]').onclick = () => readClipboard(false);
-    // Retour sur la page (après le favori « → CR DEFA » sur le tracker) : analyse du presse-papiers.
-    window.addEventListener('focus', () => { if (importBox.open && !importArea.value) setTimeout(() => readClipboard(true), 150); });
+    importBox.addEventListener('toggle', () => { if (importBox.open) { importArea.focus(); importResult.textContent = inLanguage(UI.importPasteHint); } });
+    // Départ vers le tracker, retour sur la page (favori « → CR DEFA ») : une seule lecture, et
+    // seulement si l'autorisation est déjà accordée (jamais de demande automatique).
+    window.addEventListener('blur', () => { if (importBox.open && !clipBusy) clipArmed = true; });
+    window.addEventListener('focus', async () => {
+      if (!clipArmed || clipBusy || !importBox.open || importArea.value) return;
+      clipArmed = false;
+      if (await clipGranted()) readClipboard(true);
+    });
 
     let i18nDone = new Set();
     function registerI18n() {

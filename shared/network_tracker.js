@@ -220,14 +220,19 @@
     status(t('corsBlocked'));
     awaitingClipboard = true;
   }
-  let awaitingClipboard = false;
+  // Presse-papiers : une lecture à la fois ; au retour sur la page, lecture seulement si
+  // l'autorisation est déjà accordée (la demande de Chrome fait perdre / reprendre le focus :
+  // une lecture automatique qui la déclencherait tournerait en boucle).
+  let awaitingClipboard = false, clipBusy = false;
   async function readClipboard(silent) {
+    if (clipBusy) return; clipBusy = true;
     try {
       const text = await navigator.clipboard.readText();
       if (applyVatsimHistory(text, silent)) awaitingClipboard = false;
-    } catch { if (!silent) status(t('clipDenied')); }
+    } catch { if (!silent) status(t('clipDenied')); } finally { clipBusy = false; }
   }
-  window.addEventListener('focus', () => { if (awaitingClipboard) setTimeout(() => readClipboard(true), 150); });
+  const clipGranted = async () => { try { return (await navigator.permissions.query({ name: 'clipboard-read' })).state === 'granted'; } catch { return false; } };
+  window.addEventListener('focus', async () => { if (awaitingClipboard && !clipBusy && await clipGranted()) readClipboard(true); });
 
   // ------------------------------------------------------------------------ UI
   const panel = document.createElement('div');
