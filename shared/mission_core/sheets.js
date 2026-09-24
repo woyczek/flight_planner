@@ -71,13 +71,29 @@
     { key: 'date', label: tr(UI.date), format: (v, r) => `${v} ${r.time || ''}` }, { key: 'family', label: tr(UI.family), html: v => tag(v) }, { key: 'missionId', label: 'N°' },
     { key: 'callsign', label: tr(UI.callsign) }, { key: 'route', label: tr(UI.route) }, { key: 'flight', label: tr(UI.flightTime), type: 'number', format: v => v == null ? '—' : duration(v) },
     { key: 'src', label: tr(UI.source), format: v => tr(v === 'log' ? UI.log : UI.ledger) }];
+  // Période : même composant et même état que les reportings (en-tête de la fiche) ; le
+  // graphique, les cartes et le tableau suivent ; l'identité reste calculée sur tout l'historique.
+  let periodCtrl = null, periodPaint = null;
+  function period(all, paint) {
+    periodPaint = paint;
+    if (!periodCtrl && window.TimePeriod) {
+      const header = document.querySelector('header.mc-header'), bar = document.createElement('div'); bar.className = 'mc-report-tools';
+      bar.innerHTML = '<div class="sh-period"></div>'; (header || document.body).append(bar);
+      periodCtrl = window.TimePeriod.mount(bar.querySelector('.sh-period'), { onChange: () => periodPaint?.() });
+    }
+    const dates = all.map(x => x.m.metadata?.date).filter(Boolean).sort();
+    periodCtrl?.setBounds(dates[0] || null, dates[dates.length - 1] || null);
+  }
+  const inPeriod = list => window.TimePeriod ? window.TimePeriod.filterRows(list.map(x => ({ x, date: x.m.metadata?.date || '' })), 'date').map(o => o.x) : list;
   function activityChart(host, list) {
     if (!C || !list.length) { host.innerHTML = ''; return; }
-    const b = C.buckets(list.map(x => x.m.metadata?.date).filter(Boolean), { unit: 'auto', lang: ['fr', 'en', 'de', 'es'][idx()] });
+    const range = window.TimePeriod?.range() || {};
+    const b = C.buckets(list.map(x => x.m.metadata?.date).filter(Boolean), { start: range.start || '', end: range.end || '', unit: 'auto', lang: ['fr', 'en', 'de', 'es'][idx()] });
     const fams = [...new Set(list.map(x => x.m.family))], grid = {};
     list.forEach(x => { const d = x.m.metadata?.date; if (!d) return; const k = b.keyOf(d); (grid[k] ||= {})[x.m.family] = (grid[k]?.[x.m.family] || 0) + (x.s.flightMinutes || 0) / 60; });
     host.innerHTML = C.stackedBars({ buckets: b.list, series: fams.map(f => ({ id: f, label: f, color: COLORS[f] || '#64748b' })), value: (k, id) => grid[k]?.[id] || 0, format: v => `${v.toFixed(v >= 10 ? 0 : 1)} h`, height: 200 })
       + `<div class="mcg-series-legend">${fams.map(f => `<span><i style="background:${COLORS[f] || '#64748b'}"></i>${esc(f)}</span>`).join('')}</div>`;
+    C.enableZoom?.(host); // glisser / clic : zoom ; double-clic : zoom arrière
   }
   const cards = items => `<div class="mc-cards">${items.map(([label, value, sub = '']) => `<div class="card"><span class="small">${esc(tr(label))}</span><b>${esc(value)}</b><span class="small">${esc(sub)}</span></div>`).join('')}</div>`;
 
@@ -136,10 +152,10 @@
         <div class="sh-wide"><span class="small">${esc(tr(UI.equipment))}</span><div class="sh-chips">${[...equipment].map(e => `<span class="sh-chip">${esc(e)}</span>`).join('') || '—'}</div></div>
         <label class="sh-wide">${esc(tr(UI.notes))}<textarea data-sheet="notes" rows="2">${esc(sheet.notes)}</textarea></label>
       </div><div class="row"><button type="button" class="primary" data-save>${esc(tr(UI.save))}</button><span class="small sh-saved"></span></div>${merger.html}</section>
-      <section><h2>${esc(tr(UI.activity))}</h2>${cards([[UI.flights, all.length], [UI.flightTime, hours(flight)], [UI.blockTime, hours(block)], [UI.first, all[all.length - 1]?.m.metadata?.date || known.first || '—'], [UI.last, all[0]?.m.metadata?.date || known.last || '—']])}<div class="sh-chart"></div></section>
+      <section><h2>${esc(tr(UI.activity))}</h2><div class="sh-activity"></div><div class="sh-chart"></div></section>
       <section><h2>${esc(tr(UI.events))} <button type="button" class="mc-head-add" data-add-event title="${esc(tr(UI.addEvent))}">+</button></h2><div class="sh-events"></div></section>
       <section><h2>${esc(tr(UI.perf))}</h2><div class="sh-perf"></div></section>
-      <section><h2>${esc(tr(UI.missions))}</h2><div class="sh-missions"></div></section>`;
+      <section><h2>${esc(tr(UI.missions))}</h2><div class="sh-missions"></div><div class="sh-edges" hidden></div></section>`;
     // Enregistrement de la fiche (navigateur).
     const saveSheet = () => {
       root.querySelectorAll('[data-sheet]').forEach(el => { sheet[el.dataset.sheet] = el.dataset.sheet === 'homeAd' ? el.value.trim().toUpperCase() : el.value; });
@@ -172,8 +188,14 @@
       perf.innerHTML = `<p class="small">${esc(profile.name || profile.id)}${profile.calibration ? ` · calibration ${esc(profile.calibration.createdAt || '')}` : ''}</p><div class="mc-cards">${phase('Montée', profile.climb)}${phase('Croisière', profile.cruise)}${phase('Descente', profile.descent)}${profile.reserveFuelFlowPerHour ? `<div class="card"><span class="small">Réserve</span><b>${d1(profile.reserveFuelFlowPerHour)} ${esc(u)}/h</b></div>` : ''}</div>
         ${curve.length ? `<div class="sh-curve">${curveSvg(curve)}</div>` : ''}<a class="mc-button" href="${esc(planner)}">${esc(tr(UI.openPlanner))} ↗</a>`;
     }
-    activityChart(root.querySelector('.sh-chart'), all);
-    missionsTable(root.querySelector('.sh-missions'), all, [...commonColumns().slice(0, 5), { key: 'crew', label: tr(UI.pilot) }, ...commonColumns().slice(5)]);
+    const paint = () => {
+      const list = inPeriod(all), f = list.reduce((a, x) => a + (x.s.flightMinutes || 0), 0), b = list.reduce((a, x) => a + (x.s.blockMinutes || 0), 0);
+      root.querySelector('.sh-activity').innerHTML = cards([[UI.flights, list.length], [UI.flightTime, hours(f)], [UI.blockTime, hours(b)], [UI.first, list[list.length - 1]?.m.metadata?.date || known.first || '—'], [UI.last, list[0]?.m.metadata?.date || known.last || '—']]);
+      activityChart(root.querySelector('.sh-chart'), list);
+      missionsTable(root.querySelector('.sh-missions'), list, [...commonColumns().slice(0, 5), { key: 'crew', label: tr(UI.pilot) }, ...commonColumns().slice(5)]);
+      window.TimePeriod?.edges?.(root.querySelector('.sh-edges'), all.map(x => ({ date: x.m.metadata?.date || '' })));
+    };
+    period(all, paint); paint();
     window.RepositoryContentI18n?.(Object.values(UI));
   }
   // Courbe RPM / puissance → consommation (points du profil).
@@ -206,17 +228,24 @@
         <label class="sh-wide">${esc(tr(UI.qualifications))}<textarea data-sheet="qualifications" rows="3">${esc(sheet.qualifications)}</textarea></label>
         <label class="sh-wide">${esc(tr(UI.notes))}<textarea data-sheet="notes" rows="2">${esc(sheet.notes)}</textarea></label>
       </div><div class="row"><button type="button" class="primary" data-save>${esc(tr(UI.save))}</button><span class="small sh-saved"></span></div>${merger.html}</section>
-      <section><h2>${esc(tr(UI.activity))}</h2>${cards([[UI.flights, all.length || ref?.flights || 0], [UI.flightTime, hours(flight)], [UI.first, all[all.length - 1]?.m.metadata?.date || ref?.first || '—'], [UI.last, all[0]?.m.metadata?.date || ref?.last || '—']])}
-        <h3>${esc(tr(UI.byType))}</h3><div class="sh-chips">${[...byType].sort((a, b) => b[1] - a[1]).map(([t, m]) => `<span class="sh-chip">${esc(t)} <em>${hours(m)}</em></span>`).join('') || (ref?.types || []).map(t => `<span class="sh-chip">${esc(t)}</span>`).join('') || '—'}</div><div class="sh-chart"></div></section>
-      <section><h2>${esc(tr(UI.missions))}</h2><div class="sh-missions"></div></section>`;
+      <section><h2>${esc(tr(UI.activity))}</h2><div class="sh-activity"></div><div class="sh-chart"></div></section>
+      <section><h2>${esc(tr(UI.missions))}</h2><div class="sh-missions"></div><div class="sh-edges" hidden></div></section>`;
     root.querySelector('[data-save]').onclick = () => {
       root.querySelectorAll('[data-sheet]').forEach(el => { sheet[el.dataset.sheet] = el.value; });
       sheet.updatedAt = new Date().toISOString(); const s2 = read(CREW_SHEETS) || {}; s2[id] = sheet; write(CREW_SHEETS, s2);
       root.querySelector('.sh-saved').textContent = `${tr(UI.saved)} · ${new Date().toLocaleTimeString()}`;
     };
     merger.bind(root);
-    activityChart(root.querySelector('.sh-chart'), all);
-    missionsTable(root.querySelector('.sh-missions'), all, [...commonColumns().slice(0, 4), { key: 'registration', label: 'Immat.', html: v => v ? `<a href="appareil.html?reg=${encodeURIComponent(v)}">${esc(v)}</a>` : '—' }, { key: 'type', label: tr(UI.type) }, ...commonColumns().slice(4)]);
+    const paint = () => {
+      const list = inPeriod(all), f = list.reduce((a, x) => a + (x.s.flightMinutes || 0), 0), types = new Map();
+      list.forEach(x => { const t = x.m.aircraft?.[0]?.type || '—'; types.set(t, (types.get(t) || 0) + (x.s.flightMinutes || 0)); });
+      root.querySelector('.sh-activity').innerHTML = cards([[UI.flights, list.length || (all.length ? 0 : ref?.flights || 0)], [UI.flightTime, hours(f)], [UI.first, list[list.length - 1]?.m.metadata?.date || ref?.first || '—'], [UI.last, list[0]?.m.metadata?.date || ref?.last || '—']])
+        + `<h3>${esc(tr(UI.byType))}</h3><div class="sh-chips">${[...types].sort((a, b) => b[1] - a[1]).map(([t, m]) => `<span class="sh-chip">${esc(t)} <em>${hours(m)}</em></span>`).join('') || (all.length ? '—' : (ref?.types || []).map(t => `<span class="sh-chip">${esc(t)}</span>`).join('') || '—')}</div>`;
+      activityChart(root.querySelector('.sh-chart'), list);
+      missionsTable(root.querySelector('.sh-missions'), list, [...commonColumns().slice(0, 4), { key: 'registration', label: 'Immat.', html: v => v ? `<a href="appareil.html?reg=${encodeURIComponent(v)}">${esc(v)}</a>` : '—' }, { key: 'type', label: tr(UI.type) }, ...commonColumns().slice(4)]);
+      window.TimePeriod?.edges?.(root.querySelector('.sh-edges'), all.map(x => ({ date: x.m.metadata?.date || '' })));
+    };
+    period(all, paint); paint();
     window.RepositoryContentI18n?.(Object.values(UI));
   }
 

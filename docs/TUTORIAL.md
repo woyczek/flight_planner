@@ -294,6 +294,10 @@ le [manuel d'exploitation](MANUEL_EXPLOITATION.md).
   Planner, les appareils DEFA du type actif renvoient à leur fiche ;
 - missions et vols (clic : CR en modification pour les missions du registre).
 
+Les fiches ont la **période** des reportings dans leur en-tête (préréglages, dates, ◀ zoom − ▶,
+zoom par glisser sur le graphique) : cartes, graphique et tableau suivent la période ;
+l'identité reste calculée sur tout l'historique.
+
 **Fiche équipage** (`CR DEFA/equipage.html?name=PLN`) : nom, rattachement, qualifications,
 notes (modifiables) ; fonctions tenues, heures par type, activité, missions et vols.
 

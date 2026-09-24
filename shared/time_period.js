@@ -120,7 +120,7 @@
     const t = row => { const v = String(row[dateField] || ''); return v ? ms(v.slice(0, 10), 'start') : null; };
     const before = rows.filter(row => { const x = t(row); return x != null && r.start != null && x + DAY - 1 < r.start; }).length;
     const after = rows.filter(row => { const x = t(row); return x != null && r.end != null && x > r.end; }).length;
-    host.hidden = false; host.className = 'tp-edges';
+    host.hidden = false; host.classList.add('tp-edges'); // classes de la page conservées
     host.innerHTML = `<button type="button" data-edge="back"${before ? '' : ' disabled'}>◀ ${before} ${tr(EDGE.before)}</button><span class="tp-edge-zoom"><button type="button" data-edge="out" title="${tr(TEXT.zoomOut)}">−</button><button type="button" data-edge="in" title="${tr(EDGE.zoomIn)}">+</button></span><button type="button" data-edge="forward"${after ? '' : ' disabled'}>${after} ${tr(EDGE.after)} ▶</button>`;
     host.querySelector('[data-edge="back"]').onclick = () => shift(-1); host.querySelector('[data-edge="forward"]').onclick = () => shift(1);
     host.querySelector('[data-edge="out"]').onclick = zoomOut; host.querySelector('[data-edge="in"]').onclick = zoomIn;

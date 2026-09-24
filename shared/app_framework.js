@@ -16,7 +16,7 @@
   }
   function blockChildren(parent){return Array.from(parent?.children||[]).filter(x=>x?.classList?.contains("repo-block"))}
   function parentKey(p){return `${p.tagName}:${[...p.parentElement?.children||[]].indexOf(p)}`}
-  function footer(){const r=window.REPOSITORY_TREE?.release||{},f=document.querySelector("footer")||document.createElement("footer");f.className="repo-footer no-print";f.innerHTML=`CC RBR - DEFA Virtual - ${r.date||"2026-09-21"} - ${r.version||"2026.09"} - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a>`;if(!f.isConnected)document.body.append(f)}
+  function footer(){const r=window.REPOSITORY_TREE?.release||{},f=document.querySelector("footer")||document.createElement("footer");f.className="repo-footer no-print";f.innerHTML=`CC RBR - DEFA Virtual - ${r.date||"2026-09-21"} - <a href="${r.changelog||"https://framagit.org/asr/flight_planner/-/blob/master/CHANGELOG.md"}" target="_blank" rel="noopener" title="Changelog / notes de version">v${r.version||"2026.09"}</a> - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a>`;if(!f.isConnected)document.body.append(f)}
   function label(k){const l=window.RepositoryNav?.getLanguage()||"en",d={fr:{move:"Déplacer",hide:"Masquer",show:"Afficher"},en:{move:"Move",hide:"Hide",show:"Show"},de:{move:"Verschieben",hide:"Ausblenden",show:"Anzeigen"},es:{move:"Mover",hide:"Ocultar",show:"Mostrar"}};return d[l][k]}
   // Composant partagé : tri par colonne au clic sur un en-tête <th data-sort="clé">,
   // extrait de la table RPM du Flight Performance Planner (shared/flight_ui.js) pour

@@ -28,7 +28,8 @@ seuls sur chaque page. Ce document décrit chaque composant, son rôle et son in
 Fichier JavaScript **sans extension** (à servir en `text/javascript`, voir INSTALL) qui
 définit `window.REPOSITORY_TREE` :
 
-- `release` : version de la suite ; `defaults` : thème, favicon, configuration commune ;
+- `release` : version de la suite (`version`, `date`, `changelog` : lien affiché en pied de page de
+  chaque page vers `CHANGELOG.md`) ; `defaults` : thème, favicon, configuration commune ;
 - `themes` : couleurs de bandeau / page / accent et favicon par thème (`flight`, `landing`,
   `core`, un par famille de missions…) ;
 - `folders` : thème et favicon par dossier (clé = chemin complet, ex. `"CR DEFA/HEMS"`) ;

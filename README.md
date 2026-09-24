@@ -10,6 +10,7 @@ browser.
 
 - Repository: <https://framagit.org/asr/flight_planner>
 - Installation: [INSTALL.md](INSTALL.md) (French)
+- Changelog (French): [CHANGELOG.md](CHANGELOG.md) — current version 2.1.0 (page footer link)
 
 ## Three applications, one shared framework
 

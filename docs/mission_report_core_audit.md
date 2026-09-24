@@ -607,3 +607,11 @@ Retenues par défaut (à contester si besoin) :
 `FileAccess.pastePanel` (framework) appliqué à « Analyse / import » (CR), à la fenêtre du journal
 DEFA et à la zone de l'historique VATSIM : × et « Fermer », bouton désactivé si vide, « Valider »
 après chargement (ferme), retour à « Charger » à la saisie.
+
+## AA. Version 2.1.0, changelog, période sur les fiches (2026-09-24)
+
+- `repository_tree` : `release` 2.1.0 (+ `changelog`) ; pied de page (`app_framework.js`) : la
+  version renvoie à `CHANGELOG.md` sur framagit ; `CHANGELOG.md` créé (2.0.7 → 2.1.0).
+- Fiches appareil / équipage : période commune dans l'en-tête, cartes / graphique / tableau
+  filtrés, zoom sur le graphique, repères avant / après.
+- `TimePeriod.edges()` conserve les classes du conteneur (le 2e rendu perdait le conteneur).
