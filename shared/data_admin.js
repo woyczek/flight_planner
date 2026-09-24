@@ -153,7 +153,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
   // que le script de rafraîchissement ne les écrase pas.
   async function overridesText(db) {
     let overrides = { __meta: { schema: 1, note: 'Manual overrides merged after Wikidata/Wikipedia lookup.' }, __aliases: {}, __records: {} };
-    try { const r = await fetch('AircraftDB/aircraft_overrides.json', { cache: 'no-store' }); if (r.ok) overrides = await r.json(); } catch { /* fichier absent */ }
+    try { const r = await fetch(new URL('AircraftDB/aircraft_overrides.json', window.RepositoryNav?.root || new URL('../', location.href)), { cache: 'no-store' }); if (r.ok) overrides = await r.json(); } catch { /* fichier absent */ }
     const original = work.aircraftDb.original;
     Object.entries(db).filter(([k]) => !k.startsWith('__')).forEach(([k, v]) => {
       if (JSON.stringify(original[k]) === JSON.stringify(v)) return;
@@ -193,7 +193,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       howto: `<p>${T('Rafraîchissement par le script (sources : OACI Doc 8643, EUROCONTROL, Wikidata ; modifications manuelles d’aircraft_overrides.json prioritaires) — depuis le dossier AircraftDB :', 'Refresh with the script (sources: ICAO Doc 8643, EUROCONTROL, Wikidata; manual changes from aircraft_overrides.json take priority) — from the AircraftDB folder:')}</p>
         <ul><li><code>python update_aircraft_db.py --no-network</code> — ${T('reconstruit la base avec les caches locaux', 'rebuilds the base from local caches')}</li>
         <li><code>python update_aircraft_db.py --add RFAL MIR2</code> — ${T('ajoute des types (recherche en ligne)', 'adds types (online lookup)')}</li>
-        <li><code>python update_aircraft_db.py ../HEMS/hems_mission_ledger.csv</code> — ${T('types de la colonne Aircraft d’un CSV', 'types from a CSV Aircraft column')}</li>
+        <li><code>python update_aircraft_db.py "../CR DEFA/HEMS/hems_mission_ledger.csv"</code> — ${T('types de la colonne Aircraft d’un CSV', 'types from a CSV Aircraft column')}</li>
         <li><code>--refresh-icao</code> ${T('(force le téléchargement des PDF OACI),', '(forces the ICAO PDF download),')} <code>--delay 2</code> ${T('(pause entre requêtes)', '(pause between requests)')}</li></ul>
         <p class="small">${T('Un type supprimé ici peut revenir au prochain rafraîchissement s’il fait partie de la liste de base du script.', 'A type deleted here may come back at the next refresh if it is in the script base list.')}</p>`
     },

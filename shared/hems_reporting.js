@@ -3,7 +3,7 @@
   const moduleUrl = document.currentScript.src;
   // Le thème commun reste GAAR, mais les pages HEMS portent leur repère médical.
   const favicon = document.querySelector('link[rel~="icon"]') || document.head.appendChild(document.createElement('link'));
-  favicon.rel = 'icon'; favicon.type = 'image/svg+xml'; favicon.href = '../assets/favicon-hems.svg';
+  favicon.rel = 'icon'; favicon.type = 'image/svg+xml'; favicon.href = new URL('../assets/favicon-hems.svg', document.currentScript?.src || new URL('../../shared/', location.href)).href;
   document.documentElement.style.setProperty('--accent', 'var(--repo-accent)');
 
   let rawRows = [], ledgerHead = [], persistKey = null; // persistKey : registre réel (null pour l'exemple)

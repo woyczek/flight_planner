@@ -1,0 +1,694 @@
+# Registre des missions HEMS — Mission Report — DEFA Virtual
+# schemaVersion 2 — 2026-09-23T19:17:08.588Z
+schemaVersion: 2
+family: "HEMS"
+updatedAt: "2026-09-23T19:17:08.587Z"
+missions:
+  - schemaVersion: 2
+    family: "HEMS"
+    series: "Primary HEMS"
+    subtype: ""
+    metadata:
+      missionId: "HEMS-001"
+      missionNumber: ""
+      serial: ""
+      date: "2026-09-23"
+      timeLocal: ""
+      timeUtc: ""
+      classification: "UNCLASSIFIED"
+      context: "EXERCISE"
+      operationName: ""
+      orderRef: ""
+    organisation:
+      organisation: ""
+      unit: ""
+      detachment: ""
+      requestingAuthority: ""
+      controllingAuthority: ""
+    aircraft:
+      - category: "rotary"
+        type: "EC135"
+        variant: ""
+        registration: "F-HBOR"
+        tacticalNumber: ""
+        callsign: "SAMU35"
+        baseDeparture: "LFRN"
+        baseReturn: ""
+        massTakeoff: null
+        massLanding: null
+        enduranceMinutes: null
+        configuration: ""
+        equipment: []
+    crew:
+      - role: "PIC"
+        name: "grr"
+        aircraft: 1
+        notes: ""
+    tasking:
+      objective: ""
+      instructions: ""
+      priority: ""
+    environment:
+      metar: ""
+      taf: ""
+      wind: ""
+      temperature: null
+      qnh: null
+      visibility: ""
+      ceiling: ""
+      precipitation: ""
+      turbulence: ""
+      icing: ""
+      seaState: ""
+      illumination: ""
+      sunrise: ""
+      sunset: ""
+      dayNight: ""
+    navigation:
+      dep: ""
+      arr: ""
+      altn: ""
+      route: ""
+      waypoints: ""
+      coordinates: ""
+      altitude: ""
+      minAltitude: ""
+      speed: null
+      distanceNm: null
+      area: ""
+      radiusNm: null
+      corridor: ""
+      orbit: ""
+    capabilities: []
+    timeline:
+      briefing: ""
+      engineStart: "09:12"
+      offBlock: ""
+      takeoff: "09:20"
+      zoneEntry: "90:25"
+      missionStart: ""
+      missionEnd: ""
+      zoneExit: "10:02"
+      landing: "10:15"
+      onBlock: ""
+      shutdown: "10:40"
+    fuel:
+      unit: "kg"
+      start: null
+      taxi: null
+      takeoff: null
+      onTaskArrival: null
+      onStation: null
+      taskDeparture: null
+      landing: null
+      block: null
+      reserve: null
+      diversion: null
+    legs: []
+    events: []
+    missionData:
+      hems:
+        service: "SAMU / SMUR"
+        outcome: "Completed"
+        resources: ""
+        incidentType: ""
+        patientProfile: ""
+        medicalization: "Physician-staffed"
+        patients: 0
+        sceneLocation: ""
+        coordinates: ""
+        conditions: ""
+        weatherRemarks: ""
+        densityAltitude: ""
+        medicalNotes: ""
+        alert: "09:10"
+        patientContact: "09:50"
+        destinationArrival: "10:10"
+        destinations: []
+    results:
+      outcome: "SUCCESS"
+      detail: ""
+      interruptionReason: ""
+      incidents: ""
+      anomalies: ""
+    remarks:
+      observations: ""
+      lessonsLearned: ""
+    network:
+      onlineNetwork: ""
+      ivaoId: ""
+      vatsimId: ""
+      trackerUrl: ""
+    statistics: {}
+  - schemaVersion: 2
+    family: "HEMS"
+    series: "Primary HEMS"
+    subtype: ""
+    metadata:
+      missionId: "HEMS-002"
+      missionNumber: ""
+      serial: ""
+      date: "2026-09-23"
+      timeLocal: ""
+      timeUtc: ""
+      classification: "UNCLASSIFIED"
+      context: "EXERCISE"
+      operationName: ""
+      orderRef: ""
+    organisation:
+      organisation: ""
+      unit: ""
+      detachment: ""
+      requestingAuthority: ""
+      controllingAuthority: ""
+    aircraft:
+      - category: "rotary"
+        type: "EC135"
+        variant: ""
+        registration: "F-HBOR"
+        tacticalNumber: ""
+        callsign: "SAMU35"
+        baseDeparture: "LFRN"
+        baseReturn: ""
+        massTakeoff: null
+        massLanding: null
+        enduranceMinutes: null
+        configuration: ""
+        equipment: []
+    crew:
+      - role: "PIC"
+        name: "grr"
+        aircraft: 1
+        notes: ""
+    tasking:
+      objective: ""
+      instructions: ""
+      priority: ""
+    environment:
+      metar: ""
+      taf: ""
+      wind: ""
+      temperature: null
+      qnh: null
+      visibility: ""
+      ceiling: ""
+      precipitation: ""
+      turbulence: ""
+      icing: ""
+      seaState: ""
+      illumination: ""
+      sunrise: ""
+      sunset: ""
+      dayNight: ""
+    navigation:
+      dep: ""
+      arr: ""
+      altn: ""
+      route: ""
+      waypoints: ""
+      coordinates: ""
+      altitude: ""
+      minAltitude: ""
+      speed: null
+      distanceNm: null
+      area: ""
+      radiusNm: null
+      corridor: ""
+      orbit: ""
+    capabilities: []
+    timeline:
+      briefing: ""
+      engineStart: "19:17"
+      offBlock: ""
+      takeoff: "19:20"
+      zoneEntry: "19:40"
+      missionStart: ""
+      missionEnd: ""
+      zoneExit: "21:00"
+      landing: "21:15"
+      onBlock: ""
+      shutdown: "21:40"
+    fuel:
+      unit: "kg"
+      start: null
+      taxi: null
+      takeoff: null
+      onTaskArrival: null
+      onStation: null
+      taskDeparture: null
+      landing: null
+      block: null
+      reserve: null
+      diversion: null
+    legs: []
+    events: []
+    missionData:
+      hems:
+        service: "SAMU / SMUR"
+        outcome: "Completed"
+        resources: ""
+        incidentType: ""
+        patientProfile: ""
+        medicalization: "Physician-staffed"
+        patients: 0
+        sceneLocation: ""
+        coordinates: ""
+        conditions: ""
+        weatherRemarks: ""
+        densityAltitude: ""
+        medicalNotes: ""
+        alert: "19:15"
+        patientContact: "19:50"
+        destinationArrival: "21:10"
+        destinations: []
+    results:
+      outcome: "SUCCESS"
+      detail: ""
+      interruptionReason: ""
+      incidents: ""
+      anomalies: ""
+    remarks:
+      observations: ""
+      lessonsLearned: ""
+    network:
+      onlineNetwork: ""
+      ivaoId: ""
+      vatsimId: ""
+      trackerUrl: ""
+    statistics: {}
+  - schemaVersion: 2
+    family: "HEMS"
+    series: "Primary HEMS"
+    subtype: ""
+    metadata:
+      missionId: "HEMS-003"
+      missionNumber: ""
+      serial: ""
+      date: "2026-09-23"
+      timeLocal: ""
+      timeUtc: ""
+      classification: "UNCLASSIFIED"
+      context: "EXERCISE"
+      operationName: ""
+      orderRef: ""
+    organisation:
+      organisation: ""
+      unit: ""
+      detachment: ""
+      requestingAuthority: ""
+      controllingAuthority: ""
+    aircraft:
+      - category: "rotary"
+        type: "EC135"
+        variant: ""
+        registration: "F-HBOR"
+        tacticalNumber: ""
+        callsign: "SAMU35"
+        baseDeparture: "LFRN"
+        baseReturn: ""
+        massTakeoff: null
+        massLanding: null
+        enduranceMinutes: null
+        configuration: ""
+        equipment: []
+    crew:
+      - role: "PIC"
+        name: "grr"
+        aircraft: 1
+        notes: ""
+    tasking:
+      objective: ""
+      instructions: ""
+      priority: ""
+    environment:
+      metar: ""
+      taf: ""
+      wind: ""
+      temperature: null
+      qnh: null
+      visibility: ""
+      ceiling: ""
+      precipitation: ""
+      turbulence: ""
+      icing: ""
+      seaState: ""
+      illumination: ""
+      sunrise: ""
+      sunset: ""
+      dayNight: ""
+    navigation:
+      dep: ""
+      arr: ""
+      altn: ""
+      route: ""
+      waypoints: ""
+      coordinates: ""
+      altitude: ""
+      minAltitude: ""
+      speed: null
+      distanceNm: null
+      area: ""
+      radiusNm: null
+      corridor: ""
+      orbit: ""
+    capabilities: []
+    timeline:
+      briefing: ""
+      engineStart: "19:17"
+      offBlock: ""
+      takeoff: "19:20"
+      zoneEntry: "19:40"
+      missionStart: ""
+      missionEnd: ""
+      zoneExit: "21:00"
+      landing: "21:15"
+      onBlock: ""
+      shutdown: "21:40"
+    fuel:
+      unit: "kg"
+      start: null
+      taxi: null
+      takeoff: null
+      onTaskArrival: null
+      onStation: null
+      taskDeparture: null
+      landing: null
+      block: null
+      reserve: null
+      diversion: null
+    legs: []
+    events: []
+    missionData:
+      hems:
+        service: "SAMU / SMUR"
+        outcome: "Completed"
+        resources: ""
+        incidentType: ""
+        patientProfile: ""
+        medicalization: "Physician-staffed"
+        patients: 0
+        sceneLocation: ""
+        coordinates: ""
+        conditions: ""
+        weatherRemarks: ""
+        densityAltitude: ""
+        medicalNotes: ""
+        alert: "19:15"
+        patientContact: "19:50"
+        destinationArrival: "21:10"
+        destinations: []
+    results:
+      outcome: "SUCCESS"
+      detail: ""
+      interruptionReason: ""
+      incidents: ""
+      anomalies: ""
+    remarks:
+      observations: ""
+      lessonsLearned: ""
+    network:
+      onlineNetwork: ""
+      ivaoId: ""
+      vatsimId: ""
+      trackerUrl: ""
+    statistics: {}
+  - schemaVersion: 2
+    family: "HEMS"
+    series: "Primary HEMS"
+    subtype: ""
+    metadata:
+      missionId: "HEMS-014"
+      missionNumber: ""
+      serial: ""
+      date: "2026-08-13"
+      timeLocal: ""
+      timeUtc: ""
+      classification: "UNCLASSIFIED"
+      context: "EXERCISE"
+      operationName: ""
+      orderRef: ""
+    organisation:
+      organisation: ""
+      unit: ""
+      detachment: ""
+      requestingAuthority: ""
+      controllingAuthority: ""
+    aircraft:
+      - category: "rotary"
+        type: "EC45"
+        variant: ""
+        registration: "F-ZBPD"
+        tacticalNumber: ""
+        callsign: "DRAGON30"
+        baseDeparture: "LFRF"
+        baseReturn: ""
+        massTakeoff: null
+        massLanding: null
+        enduranceMinutes: null
+        configuration: ""
+        equipment: []
+    crew:
+      - role: "PIC"
+        name: "GRR"
+        aircraft: 1
+        notes: ""
+    tasking:
+      objective: ""
+      instructions: ""
+      priority: ""
+    environment:
+      metar: ""
+      taf: ""
+      wind: ""
+      temperature: null
+      qnh: null
+      visibility: ""
+      ceiling: ""
+      precipitation: ""
+      turbulence: ""
+      icing: ""
+      seaState: ""
+      illumination: ""
+      sunrise: ""
+      sunset: ""
+      dayNight: ""
+    navigation:
+      dep: ""
+      arr: ""
+      altn: ""
+      route: ""
+      waypoints: ""
+      coordinates: ""
+      altitude: ""
+      minAltitude: ""
+      speed: null
+      distanceNm: null
+      area: ""
+      radiusNm: null
+      corridor: ""
+      orbit: ""
+    capabilities: []
+    timeline:
+      briefing: ""
+      engineStart: "08:00"
+      offBlock: ""
+      takeoff: "08:08"
+      zoneEntry: "08:32"
+      missionStart: ""
+      missionEnd: ""
+      zoneExit: "08:01"
+      landing: "08:54"
+      onBlock: ""
+      shutdown: "08:46"
+    fuel:
+      unit: "kg"
+      start: null
+      taxi: null
+      takeoff: null
+      onTaskArrival: null
+      onStation: null
+      taskDeparture: null
+      landing: null
+      block: null
+      reserve: null
+      diversion: null
+    legs: []
+    events: []
+    missionData:
+      hems:
+        service: "Civil Security"
+        outcome: "Patient transported"
+        resources: ""
+        incidentType: ""
+        patientProfile: ""
+        medicalization: "Physician-staffed"
+        patients: 0
+        sceneLocation: "LFRD"
+        coordinates: ""
+        conditions: ""
+        weatherRemarks: ""
+        densityAltitude: ""
+        medicalNotes: "Transport médecin SMUR vers Rennes"
+        alert: "07:55"
+        patientContact: ""
+        destinationArrival: "08:44"
+        destinations:
+          - name: "LFRN"
+            arrival: "08:44"
+            departure: ""
+            note: ""
+    results:
+      outcome: "SUCCESS"
+      detail: ""
+      interruptionReason: ""
+      incidents: ""
+      anomalies: ""
+    remarks:
+      observations: "Mission patrouille plages Granville - Carolles"
+      lessonsLearned: ""
+    network:
+      onlineNetwork: ""
+      ivaoId: ""
+      vatsimId: ""
+      trackerUrl: ""
+    statistics: {}
+  - schemaVersion: 2
+    family: "HEMS"
+    series: "Primary HEMS"
+    subtype: ""
+    metadata:
+      missionId: "HEMS-004"
+      missionNumber: ""
+      serial: ""
+      date: "2026-08-13"
+      timeLocal: ""
+      timeUtc: ""
+      classification: "UNCLASSIFIED"
+      context: "EXERCISE"
+      operationName: ""
+      orderRef: ""
+    organisation:
+      organisation: ""
+      unit: ""
+      detachment: ""
+      requestingAuthority: ""
+      controllingAuthority: ""
+    aircraft:
+      - category: "rotary"
+        type: "EC45"
+        variant: ""
+        registration: "F-ZBPD"
+        tacticalNumber: ""
+        callsign: "DRAGON30"
+        baseDeparture: "LFRF"
+        baseReturn: ""
+        massTakeoff: null
+        massLanding: null
+        enduranceMinutes: null
+        configuration: ""
+        equipment: []
+    crew:
+      - role: "PIC"
+        name: "GRR"
+        aircraft: 1
+        notes: ""
+    tasking:
+      objective: ""
+      instructions: ""
+      priority: ""
+    environment:
+      metar: ""
+      taf: ""
+      wind: ""
+      temperature: null
+      qnh: null
+      visibility: ""
+      ceiling: ""
+      precipitation: ""
+      turbulence: ""
+      icing: ""
+      seaState: ""
+      illumination: ""
+      sunrise: ""
+      sunset: ""
+      dayNight: ""
+    navigation:
+      dep: ""
+      arr: ""
+      altn: ""
+      route: ""
+      waypoints: ""
+      coordinates: ""
+      altitude: ""
+      minAltitude: ""
+      speed: null
+      distanceNm: null
+      area: ""
+      radiusNm: null
+      corridor: ""
+      orbit: ""
+    capabilities: []
+    timeline:
+      briefing: ""
+      engineStart: "08:00"
+      offBlock: ""
+      takeoff: "08:08"
+      zoneEntry: "08:32"
+      missionStart: ""
+      missionEnd: ""
+      zoneExit: "08:01"
+      landing: "08:54"
+      onBlock: ""
+      shutdown: "08:46"
+    fuel:
+      unit: "kg"
+      start: null
+      taxi: null
+      takeoff: null
+      onTaskArrival: null
+      onStation: null
+      taskDeparture: null
+      landing: null
+      block: null
+      reserve: null
+      diversion: null
+    legs: []
+    events: []
+    missionData:
+      hems:
+        service: "Civil Security"
+        outcome: "Patient transported"
+        resources: ""
+        incidentType: ""
+        patientProfile: ""
+        medicalization: "Physician-staffed"
+        patients: 0
+        sceneLocation: "LFRD"
+        coordinates: ""
+        conditions: ""
+        weatherRemarks: ""
+        densityAltitude: ""
+        medicalNotes: "Transport médecin SMUR vers Rennes"
+        alert: "07:55"
+        patientContact: ""
+        destinationArrival: "08:44"
+        destinations:
+          - name: "LFRN"
+            arrival: "08:44"
+            departure: ""
+            note: ""
+    results:
+      outcome: "SUCCESS"
+      detail: ""
+      interruptionReason: ""
+      incidents: ""
+      anomalies: ""
+    remarks:
+      observations: "Mission patrouille plages Granville - Carolles"
+      lessonsLearned: ""
+    network:
+      onlineNetwork: ""
+      ivaoId: ""
+      vatsimId: ""
+      trackerUrl: ""
+    statistics: {}

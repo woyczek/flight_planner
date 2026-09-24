@@ -86,8 +86,11 @@
   // index = position de la ligne dans le registre (le n° de mission peut être dupliqué).
   const openEditor = ({ kind, configKey, filename, index, record }) => {
     localStorage.setItem('missionEditDraft:v1', JSON.stringify({ kind, configKey, filename, index, record, returnUrl: location.href }));
-    const page = kind === 'gaar' ? '../FIRE/fire_cr.html' : '../HEMS/hems_medevac_cr.html';
-    location.href = new URL(page + '?edit=' + encodeURIComponent(record?.missionId || ''), moduleUrl).href;
+    // Adresse de la page d'après repository_tree (application dans « CR DEFA/ »).
+    const file = kind === 'gaar' ? 'fire_cr.html' : 'hems_medevac_cr.html';
+    const known = (window.REPOSITORY_TREE?.pages || []).find(p => p.path.endsWith('/' + file));
+    const page = known ? new URL(known.path, new URL('../', moduleUrl)).href : new URL(`../CR DEFA/${kind === 'gaar' ? 'FIRE' : 'HEMS'}/${file}`, moduleUrl).href;
+    location.href = `${page}?edit=${encodeURIComponent(record?.missionId || '')}`;
   };
 
   window.MissionReportingConfig = { read, write, load, cached, cacheText, rememberFile, candidates, traceLink, ivaoTrackerUrl, vatsimTrackerUrl, serializeLedger, openEditor };

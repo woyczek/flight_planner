@@ -35,8 +35,8 @@ OneDrive…) — les registres de missions et la sauvegarde des données locales
 python -m http.server 8000 --bind 127.0.0.1
 ```
 
-puis ouvrir <http://127.0.0.1:8000/mission_cr.html> (nouveau compte rendu) ou
-<http://127.0.0.1:8000/mission_operations_reporting.html> (reporting). Toutes les pages sont
+puis ouvrir <http://127.0.0.1:8000/CR%20DEFA/mission_cr.html> (nouveau compte rendu) ou
+<http://127.0.0.1:8000/CR%20DEFA/mission_operations_reporting.html> (reporting). Toutes les pages sont
 accessibles par le menu ☰.
 
 Pourquoi un serveur : ouvertes directement depuis le disque (`file://`), les pages
@@ -46,7 +46,7 @@ restent alors lisibles.
 
 ### Ouverture directe
 
-Double-cliquer sur `mission_cr.html` (ou toute autre page) : les pages calculent leurs liens
+Double-cliquer sur `CR DEFA/mission_cr.html` (ou toute autre page) : les pages calculent leurs liens
 depuis la racine du dépôt. Voir la limite ci-dessus.
 
 ### Hébergement web
@@ -75,7 +75,7 @@ les registres présents dans le dépôt sont lus en lecture seule.
    SimBrief. Ils sont repris par toutes les pages.
 2. **Langue** — drapeau du bandeau : automatique, FR, EN, DE, ES.
 3. **Dossier des registres** — sur une page de CR : « Dossier du registre… », choisir le
-   dossier de la famille dans le dépôt (ex. `HEMS/`). Autorisé une fois par famille ; le
+   dossier de la famille dans le dépôt (ex. `CR DEFA/HEMS/`). Autorisé une fois par famille ; le
    registre `<famille>_missions.yaml` y est ensuite écrit à chaque enregistrement.
 4. **Sauvegarde des données locales** — menu ☰ › Données locales › « Dossier de
    sauvegarde… » : choisir un dossier synchronisé (hors dépôt si vous ne voulez pas le

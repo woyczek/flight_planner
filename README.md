@@ -18,19 +18,22 @@ browser.
 
 | Menu ☰ | Page | Purpose |
 |---|---|---|
-| Missions › Nouveau compte rendu | `mission_cr.html` | Choose a mission family, then write the report |
-| Missions › Reporting missions | `mission_operations_reporting.html` | All-family reporting, statistics, missions table |
-| Paramétrage › Bases de données | `parametrage.html` | Edit the fleet, aircraft types, callsigns, ledgers… |
+| Missions › Nouveau compte rendu | `CR DEFA/mission_cr.html` | Choose a mission family, then write the report |
+| Missions › Reporting missions | `CR DEFA/mission_operations_reporting.html` | All-family reporting, statistics, missions table |
+| Paramétrage › Bases de données | `CR DEFA/parametrage.html` | Edit the fleet, aircraft types, callsigns, ledgers… |
 | Landing Performance Dashboard | `LandingPerformanceDashboard/…` | Landing analysis from CSV logs |
 | Flight Performance & Fuel Planner | `flight_performance_planner.html` | Performance and fuel planning |
 
-### Mission Report Core
+### Mission Report Core — the “CR DEFA” application
+
+All the pages and ledgers of the application live in the `CR DEFA/` folder;
+shared code stays in `shared/`, `AircraftDB/` and `assets/`.
 
 One engine (`shared/mission_core/`) drives the report and reporting pages of every
 family: HEMS / MEDEVAC, FIRE / GAAR (aerial firefighting), SAR, AIRLIFT, MARITIME, HADR,
 AIRBORNE, FLIGHT INSPECTION, SURVEY, LAW ENFORCEMENT, ISR, COMMAND / AEW, SOF, SPECIAL
-(test / training). Each family has a report page (`<FOLDER>/<family>_cr.html`) and a
-reporting page (`<FOLDER>/<family>_reporting.html`); the header popup switches family and
+(test / training). Each family has a report page (`CR DEFA/<FOLDER>/<family>_cr.html`) and a
+reporting page (`CR DEFA/<FOLDER>/<family>_reporting.html`); the header popup switches family and
 mission sub-type.
 
 Highlights:
@@ -48,7 +51,7 @@ Highlights:
   (Open-Meteo), sunrise / sunset / day-night at the departure aerodrome (local time).
 - **Live network tracking** (IVAO / VATSIM) filling engine start, take-off, landing and
   mission end; VATSIM history import.
-- **Ledgers**: one YAML file per family (`<FOLDER>/<family>_missions.yaml`), written in a
+- **Ledgers**: one YAML file per family (`CR DEFA/<FOLDER>/<family>_missions.yaml`), written in a
   local folder authorised once (Chrome / Edge), with a simplified CSV export. Legacy
   HEMS / GAAR CSV ledgers can be imported.
 - **Report**: 14-section mission report generated in four languages (FR / EN / DE / ES),
@@ -72,7 +75,7 @@ Highlights:
 
 1. Get the repository (clone or download) — see [INSTALL.md](INSTALL.md).
 2. Serve it locally, e.g. `python -m http.server 8000` at the repository root, and open
-   <http://127.0.0.1:8000/mission_cr.html> in Chrome or Edge.
+   <http://127.0.0.1:8000/CR%20DEFA/mission_cr.html> in Chrome or Edge.
 3. ☰ › Profil pilote: enter your IVAO / VATSIM IDs (and SimBrief username).
 4. Follow [docs/TUTORIAL.md](docs/TUTORIAL.md).
 

@@ -16,10 +16,16 @@
   };
   const rows = () => Object.values(T).concat([...window.MissionCore.families.values()].map(f => f.title).filter(Boolean));
 
-  // Dossier de la famille d'après repository_tree (page dont le chemin se termine par la page CR).
+  // Racine du site d'après l'adresse de ce fichier (shared/mission_core/global.js) : connue dès
+  // le chargement, même si le bandeau commun (chargé plus bas dans la page) n'est pas encore prêt.
+  const SITE_ROOT = document.currentScript?.src ? new URL('../../', document.currentScript.src) : null;
+  // Dossier de la famille d'après repository_tree (page dont le chemin se termine par la page CR),
+  // en adresse absolue : juste quelle que soit la page appelante (l'application est dans « CR DEFA/ »).
   const folderOf = family => {
     const page = (window.REPOSITORY_TREE?.pages || []).find(p => p.path.endsWith('/' + family.pages.cr));
-    return page ? page.path.slice(0, page.path.lastIndexOf('/') + 1) : '';
+    if (!page) return '';
+    const folder = page.path.slice(0, page.path.lastIndexOf('/') + 1), root = window.RepositoryNav?.root || SITE_ROOT;
+    return root ? new URL(folder, root).href : folder;
   };
   async function load() {
     entries.length = 0;

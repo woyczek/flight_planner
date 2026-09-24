@@ -19,20 +19,23 @@ et dans le navigateur.
 
 | Menu ☰ | Page | Rôle |
 |---|---|---|
-| Missions › Nouveau compte rendu | `mission_cr.html` | Choisir la famille de mission, puis rédiger le CR |
-| Missions › Reporting missions | `mission_operations_reporting.html` | Reporting toutes familles, statistiques, tableau des missions |
-| Paramétrage › Bases de données | `parametrage.html` | Éditer la flotte, les types d'aéronefs, les indicatifs, les registres… |
+| Missions › Nouveau compte rendu | `CR DEFA/mission_cr.html` | Choisir la famille de mission, puis rédiger le CR |
+| Missions › Reporting missions | `CR DEFA/mission_operations_reporting.html` | Reporting toutes familles, statistiques, tableau des missions |
+| Paramétrage › Bases de données | `CR DEFA/parametrage.html` | Éditer la flotte, les types d'aéronefs, les indicatifs, les registres… |
 | Landing Performance Dashboard | `LandingPerformanceDashboard/…` | Analyse des atterrissages à partir de journaux CSV |
 | Flight Performance & Fuel Planner | `flight_performance_planner.html` | Performances et carburant |
 
-### Mission Report Core
+### Mission Report Core — l’application « CR DEFA »
+
+Toutes les pages et tous les registres de l’application sont dans le dossier `CR DEFA/` ;
+le code commun reste dans `shared/`, `AircraftDB/` et `assets/`.
 
 Un moteur unique (`shared/mission_core/`) anime les pages de CR et de reporting de toutes
 les familles : HEMS / MEDEVAC, FIRE / GAAR (lutte contre les feux de forêt), SAR,
 AIRLIFT, MARITIME, HADR, AIRBORNE, CONTRÔLE EN VOL, LEVÉS, POLICE / DOUANE, ISR,
 COMMANDEMENT / GUET AÉRIEN, OPÉRATIONS SPÉCIALES, SPÉCIAL (essais / formation). Chaque
-famille a une page de CR (`<DOSSIER>/<famille>_cr.html`) et une page de reporting
-(`<DOSSIER>/<famille>_reporting.html`) ; la popup de l'en-tête change de famille et de
+famille a une page de CR (`CR DEFA/<DOSSIER>/<famille>_cr.html`) et une page de reporting
+(`CR DEFA/<DOSSIER>/<famille>_reporting.html`) ; la popup de l'en-tête change de famille et de
 sous-type de mission.
 
 Points forts :
@@ -52,7 +55,7 @@ Points forts :
   locale).
 - **Suivi réseau en direct** (IVAO / VATSIM) : mise en route, décollage, atterrissage, fin de
   mission ; import de l'historique VATSIM.
-- **Registres** : un fichier YAML par famille (`<DOSSIER>/<famille>_missions.yaml`), écrit
+- **Registres** : un fichier YAML par famille (`CR DEFA/<DOSSIER>/<famille>_missions.yaml`), écrit
   dans un dossier local autorisé une fois (Chrome / Edge), export CSV simplifié. Import des
   anciens registres CSV HEMS / GAAR.
 - **Compte rendu** en 14 sections, généré en quatre langues (FR / EN / DE / ES), imprimable
@@ -76,7 +79,7 @@ Points forts :
 
 1. Récupérer le dépôt (clone ou archive) — voir [INSTALL.md](INSTALL.md).
 2. Le servir localement, par exemple `python -m http.server 8000` à la racine du dépôt, puis
-   ouvrir <http://127.0.0.1:8000/mission_cr.html> dans Chrome ou Edge.
+   ouvrir <http://127.0.0.1:8000/CR%20DEFA/mission_cr.html> dans Chrome ou Edge.
 3. ☰ › Profil pilote : saisir ses ID IVAO / VATSIM (et l'identifiant SimBrief).
 4. Suivre le [tutoriel](docs/TUTORIAL.md).
 

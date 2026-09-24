@@ -108,9 +108,9 @@ données sensibles.
 
 ## 8. Enregistrer dans le registre
 
-1. La première fois : « **Dossier du registre…** » et choisir le dossier `FIRE/` du dépôt
+1. La première fois : « **Dossier du registre…** » et choisir le dossier `CR DEFA/FIRE/` du dépôt
    (autorisation du navigateur, une fois).
-2. « **Ajouter au registre** » : la mission est écrite dans `FIRE/fire_missions.yaml`. Si le
+2. « **Ajouter au registre** » : la mission est écrite dans `CR DEFA/FIRE/fire_missions.yaml`. Si le
    n° existe déjà, une alerte le signale.
 3. La page passe en mode modification : le bouton devient « Enregistrer les modifications »,
    et « Supprimer cette mission » apparaît.

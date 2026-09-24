@@ -415,3 +415,16 @@ Retenues par défaut (à contester si besoin) :
   surcouche locale ; sortie identique octet pour octet entre le script et la page.
 - À rendre éditables ensuite : profils d'événements / capacités et index des familles
   (vocab.js), listes des anciens CR (mission_values.js), icônes (aircraft_icons.js).
+
+## M. Réorganisation — dossier « CR DEFA » (2026-09-24)
+
+- Toutes les pages de l'application (familles, anciens CR HEMS / GAAR, démonstration,
+  « Nouveau compte rendu », reporting général, Paramétrage) et leurs registres sont dans
+  `CR DEFA/` ; le code commun reste dans `shared/`, `AircraftDB/`, `assets/`. Menu ☰ inchangé.
+- Chemins : liens relatifs entre pages de l'application inchangés ; liens vers la racine
+  (`shared/`, `AircraftDB/`, `assets/`, `repository_tree`) d'un niveau de plus ; adresses
+  calculées depuis la racine du site dans `global.js` (d'après son propre emplacement),
+  `mission_reporting_config.js` (d'après repository_tree), `data_admin.js` et les favicons
+  des anciens reportings. `repository_tree` : dossiers et pages préfixés par `CR DEFA/`.
+- Autorisations de dossiers des registres : à redonner une fois par famille (« Dossier du
+  registre… ») si elles visaient les anciens dossiers.

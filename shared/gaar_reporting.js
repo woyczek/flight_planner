@@ -2,7 +2,7 @@
   'use strict';
   const moduleUrl = document.currentScript.src;
   const favicon = document.querySelector('link[rel~="icon"]') || document.head.appendChild(document.createElement('link'));
-  favicon.rel = 'icon'; favicon.type = 'image/svg+xml'; favicon.href = '../assets/favicon-gaar.svg';
+  favicon.rel = 'icon'; favicon.type = 'image/svg+xml'; favicon.href = new URL('../assets/favicon-gaar.svg', document.currentScript?.src || new URL('../../shared/', location.href)).href;
   document.documentElement.style.setProperty('--accent', 'var(--repo-accent)');
 
   let rawRows = []; // toutes les missions chargées depuis le registre
