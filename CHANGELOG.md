@@ -44,6 +44,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   cellules, 1000 à 18 100 ft). Valeurs non certifiées.
 - Studio : **quadrillage** au pas adapté à l'emprise (1′ à 5°), libellés en degrés et minutes ;
   quadrillage et MORA aussi sur la carte de contrôle dynamique.
+- Studio : **sélection des zones** refaite : liste de zones (puces supprimables, nombre de contours
+  reconnus), champ d'ajout avec complétion (« R 45 A », « CTR BEZIERS 2 »), mode **liste blanche /
+  liste noire**, liste des zones retenues à côté ; comparaison sans espaces, tirets ni accents
+  (l'ancienne liste ne reconnaissait pas « LF-R 45 A »).
 - Studio : coche globale « toutes » pour les zones R / D / P et les espaces contrôlés ; profil
   « Désactivé » par carte (carte ni générée, ni prévisualisée, ni sur l'assemblage).
 - Générateur de mission : nom des exports `S1-M11_AIRLIFT_Pont_logistique_vers_Solenzara`
