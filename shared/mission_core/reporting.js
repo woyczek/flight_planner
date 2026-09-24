@@ -78,6 +78,9 @@
     const coreUi = key => { const row = window.MissionCore.UI[key]; rows.set(row[0], row); return row[0]; };
     (family.series || []).forEach(s => { if (Array.isArray(s.label)) rows.set(s.label[0], s.label); });
     window.MissionCore.headerSwitch({ family, kind: 'reporting', t: coreUi, all: true, get: () => seriesFilter, set: value => { seriesFilter = value; render(); } });
+    // En-tête : nouveau compte rendu de la famille.
+    const pageHeader = document.querySelector('header.mc-header');
+    if (pageHeader) { const link = document.createElement('a'); link.className = 'mc-header-new'; link.href = family.pages.cr || '../mission_cr.html'; link.textContent = `+ ${t('newReport')}`; pageHeader.append(link); }
     function render() {
       const all = ledger.missions.map(toRow).filter(r => !seriesFilter || r.series === seriesFilter);
       const visible = window.TimePeriod ? window.TimePeriod.filterRows(all, 'date') : all;

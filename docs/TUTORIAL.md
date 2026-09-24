@@ -21,7 +21,7 @@ Ces réglages sont repris par toutes les pages.
 
 ## 2. Ouvrir un nouveau compte rendu
 
-1. **☰ › Missions › Nouveau compte rendu**.
+1. **☰ › Reporting missions**, puis le bouton **+ Nouveau compte rendu** de l'en-tête.
 2. Choisir **FIRE** dans la grille. La dernière famille utilisée apparaît toujours en premier
    (« Continuer avec … »).
 3. La page de CR s'ouvre. En haut, la pastille **« FIRE · GAAR ▾ »** : un clic ouvre la popup
@@ -91,6 +91,24 @@ plan de vol `PCAN44`** (7 caractères OACI), exploitant **OPR/ FRU**, base **LFT
    atterrissage et fin de mission.
 
 ## 6. Pendant et après le vol
+
+**Analyser / importer…** (barre d'en-tête) : coller un texte, les champs vides sont remplis.
+
+- un **plan de vol OACI** « (FPL-…) » : appareil, indicatif, immatriculation (REG/), exploitant
+  (OPR/), route et points tournants, niveau, vitesse, terrains, date du vol (DOF/), EOBT, VFR / IFR,
+  remarques (RMK/) ;
+- une page du **tracker IVAO** (tracker.ivao.aero, connecté) : sur la page « détails » d'un vol,
+  Ctrl+A puis Ctrl+C, et coller — plan de vol, connexion / déconnexion (début / fin de mission),
+  décollage et atterrissage déduits de la trace (si la connexion commence / finit au sol),
+  distance parcourue ; sur la liste des connexions : heures de connexion du jour de la mission ;
+- l'**historique VATSIM** (JSON ouvert par « Récupérer l'historique VATSIM ») : heures de connexion
+  du jour de la mission ≈ mise en route / fin de mission ;
+- un **METAR**.
+
+Plus rapide : glisser le lien **→ CR DEFA** de la fenêtre dans la barre des favoris ; sur la page
+du tracker, un clic copie la page ; au retour sur le CR (fenêtre ouverte), elle est analysée.
+Les heures du tracker (UTC) sont converties en heure locale du terrain de départ.
+
 
 - **Chronologie** : compléter ou corriger les heures (format HH:MM, heure locale). Les durées
   se calculent seules.

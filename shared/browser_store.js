@@ -139,6 +139,15 @@
     + '<div class="repo-store-status" style="padding:4px 8px;font-size:11px;opacity:.8"></div><input type="file" accept=".yaml,.yml,text/yaml" hidden>';
   const actions = nav.menu.querySelector('.repo-page-actions');
   nav.menu.insertBefore(box, actions || null);
+  // Pages de réglage (repository_tree : slot:"settings", ex. Paramétrage — bases de données) :
+  // en bas du menu, juste avant « Données locales ».
+  const settingsPages = (window.REPOSITORY_TREE?.pages || []).filter(p => p.slot === 'settings');
+  settingsPages.reverse().forEach(p => {
+    const link = document.createElement('a');
+    link.className = `repo-link${p.path === nav.page?.path ? ' active' : ''}`; link.href = new URL(p.path, nav.root).href; link.textContent = p.label;
+    box.insertBefore(link, box.firstChild);
+  });
+  if (settingsPages.length) box.insertBefore(Object.assign(document.createElement('div'), { className: 'repo-sep' }), box.firstChild);
   const picker = box.querySelector('input[type=file]');
   const statusEl = box.querySelector('.repo-store-status');
   function status(text) { statusEl.textContent = text; }

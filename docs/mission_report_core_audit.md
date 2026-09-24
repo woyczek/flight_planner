@@ -441,3 +441,15 @@ Retenues par défaut (à contester si besoin) :
 - **Page de CR** : barre d'outils dans l'en-tête (registre des missions ; suivi réseau en mode
   compact, mode d'emploi en infobulle), aperçu du CR dans la colonne de droite (collée,
   défilement propre, calculs sur 4 colonnes), blocs Navigation et Météo en bas de page.
+
+## O. Étape 10 — analyse de textes collés, menu (2026-09-24)
+
+- `shared/mission_core/text_import.js` (« Analyser / importer… » dans l'en-tête des CR) : plan de
+  vol OACI (cases 7 à 19), page « détails » du tracker IVAO (plan de vol, connexion / déconnexion,
+  trace → décollage, atterrissage, distance, altitude max ; heures converties en heure locale du
+  terrain), liste des connexions IVAO, historique VATSIM (JSON), METAR ; favori « → CR DEFA »
+  (copie de la page du tracker, analysée au retour). Une page d'un autre site n'est pas lisible
+  par la page du CR : copier-coller ou favori.
+- Menu ☰ : « Reporting missions » seul en tête ; « Nouveau compte rendu » par le bouton de
+  l'en-tête des reportings ; « Paramétrage — bases de données » en bas, avant « Données locales »
+  (`slot:"settings"` dans repository_tree).

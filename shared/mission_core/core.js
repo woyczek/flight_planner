@@ -58,6 +58,17 @@
     fplNone: L('Aucun plan de vol trouvé pour cet identifiant (vol terminé ou non déposé).', 'No flight plan found for this ID (flight ended or not filed).', 'Kein Flugplan für diese Kennung gefunden (Flug beendet oder nicht aufgegeben).', 'No se encontró ningún plan de vuelo para este identificador (vuelo terminado o no presentado).'),
     fplNeedId: L('Renseignez votre identifiant dans le menu ☰ › Profil pilote (ou dans le bloc « Trace réseau »).', 'Enter your ID in menu ☰ › Pilot profile (or in the “Network track” block).', 'Kennung im Menü ☰ › Pilotenprofil (oder im Block „Netzwerkspur“) eingeben.', 'Indique su identificador en el menú ☰ › Perfil de piloto (o en el bloque «Traza de red»).'),
     fplLearned: L('Forme plan de vol mémorisée pour cet indicatif', 'Flight plan form remembered for this callsign', 'Flugplanform für dieses Rufzeichen gespeichert', 'Forma de plan de vuelo memorizada para este indicativo'),
+    importTitle: L('Analyser / importer…', 'Analyse / import…', 'Auswerten / importieren…', 'Analizar / importar…'),
+    importIntro: L('Collez un plan de vol OACI « (FPL-…) », une page du tracker IVAO (détails d’un vol ou liste des connexions : Ctrl+A, Ctrl+C sur la page), l’historique VATSIM (JSON) ou un METAR : les champs vides sont remplis. Heures du tracker converties en heure locale du terrain de départ.', 'Paste an ICAO flight plan “(FPL-…)”, an IVAO tracker page (flight details or connection list: Ctrl+A, Ctrl+C on the page), the VATSIM history (JSON) or a METAR: empty fields are filled. Tracker times converted to local time at the departure aerodrome.', 'Einen ICAO-Flugplan „(FPL-…)“, eine IVAO-Tracker-Seite (Flugdetails oder Verbindungsliste: Strg+A, Strg+C auf der Seite), die VATSIM-Historie (JSON) oder ein METAR einfügen: leere Felder werden ausgefüllt. Tracker-Zeiten in Ortszeit des Startflugplatzes umgerechnet.', 'Pegue un plan de vuelo OACI «(FPL-…)», una página del tracker IVAO (detalle de un vuelo o lista de conexiones: Ctrl+A, Ctrl+C en la página), el historial VATSIM (JSON) o un METAR: se rellenan los campos vacíos. Horas del tracker convertidas a hora local del aeródromo de salida.'),
+    importRun: L('Analyser et remplir', 'Analyse and fill', 'Auswerten und ausfüllen', 'Analizar y rellenar'), importClip: L('Coller depuis le presse-papiers', 'Paste from clipboard', 'Aus Zwischenablage einfügen', 'Pegar desde el portapapeles'),
+    importBookmarklet: L('← à glisser dans la barre des favoris : un clic sur la page du tracker IVAO la copie ; revenez ici, elle est analysée.', '← drag to the bookmarks bar: one click on the IVAO tracker page copies it; come back here, it is analysed.', '← in die Lesezeichenleiste ziehen: ein Klick auf der IVAO-Tracker-Seite kopiert sie; hierher zurückkehren, sie wird ausgewertet.', '← arrastre a la barra de marcadores: un clic en la página del tracker IVAO la copia; vuelva aquí, se analiza.'),
+    importBookmarkletHelp: L('Ce lien s’utilise depuis la barre des favoris, sur la page du tracker (glisser-déposer le lien dans la barre).', 'Use this link from the bookmarks bar, on the tracker page (drag and drop the link into the bar).', 'Diesen Link aus der Lesezeichenleiste auf der Tracker-Seite verwenden (Link in die Leiste ziehen).', 'Use este enlace desde la barra de marcadores, en la página del tracker (arrastre el enlace a la barra).'),
+    importFpl: L('Plan de vol OACI', 'ICAO flight plan', 'ICAO-Flugplan', 'Plan de vuelo OACI'), importIvaoDetails: L('Tracker IVAO — détails du vol', 'IVAO tracker — flight details', 'IVAO-Tracker — Flugdetails', 'Tracker IVAO — detalle del vuelo'),
+    importIvaoList: L('Tracker IVAO — connexions', 'IVAO tracker — connections', 'IVAO-Tracker — Verbindungen', 'Tracker IVAO — conexiones'), importMetar: L('METAR', 'METAR'),
+    importVatsim: L('Historique VATSIM analysé (voir le suivi réseau dans l’en-tête).', 'VATSIM history analysed (see network tracking in the header).', 'VATSIM-Historie ausgewertet (siehe Netzwerk-Tracking in der Kopfzeile).', 'Historial VATSIM analizado (ver el seguimiento de red en la cabecera).'),
+    importUnknown: L('Texte non reconnu : plan de vol « (FPL-…) », page du tracker IVAO, historique VATSIM (JSON) ou METAR attendus.', 'Text not recognised: flight plan “(FPL-…)”, IVAO tracker page, VATSIM history (JSON) or METAR expected.', 'Text nicht erkannt: Flugplan „(FPL-…)“, IVAO-Tracker-Seite, VATSIM-Historie (JSON) oder METAR erwartet.', 'Texto no reconocido: se espera un plan de vuelo «(FPL-…)», una página del tracker IVAO, el historial VATSIM (JSON) o un METAR.'),
+    importClipDenied: L('Lecture du presse-papiers refusée : collez dans la zone (Ctrl+V).', 'Clipboard access denied: paste into the box (Ctrl+V).', 'Zugriff auf die Zwischenablage verweigert: in das Feld einfügen (Strg+V).', 'Acceso al portapapeles denegado: pegue en el cuadro (Ctrl+V).'),
+    importLocal: L('heures locales', 'local times', 'Ortszeiten', 'horas locales'),
     fplFilled: L('champs renseignés depuis', 'fields filled from', 'Felder ausgefüllt aus', 'campos rellenados desde'),
     render: L('Générer / actualiser le CR', 'Generate / refresh report', 'Bericht erzeugen / aktualisieren', 'Generar / actualizar el informe'),
     print: L('PDF / Imprimer', 'PDF / Print', 'PDF / Drucken', 'PDF / Imprimir'),
@@ -111,6 +122,11 @@
         <button type="button" data-action="new"></button>
         <button type="button" data-action="export"></button>
         <button type="button" data-action="import"></button>
+        <details class="mc-import"><summary></summary><div class="mc-import-pop"><p class="small mc-import-intro"></p>
+          <textarea spellcheck="false" rows="8"></textarea>
+          <div class="mc-import-row"><button type="button" class="primary" data-import="run"></button><button type="button" data-import="clip"></button>
+          <a class="mc-bookmarklet" draggable="true"></a><span class="small mc-import-hint"></span></div>
+          <p class="small mc-import-result"></p></div></details>
         <a class="mc-button" data-action="reporting"></a>
         <button type="button" data-action="folder"></button>
         <button type="button" data-action="download" hidden></button>
@@ -350,6 +366,45 @@
       section.querySelector('h2').after(bar);
     }
     const fplError = error => /-id$/.test(error.message) ? inLanguage(UI.fplNeedId) : error.message;
+
+    // ---- analyse d'un texte collé : plan de vol OACI, tracker IVAO (détails / liste),
+    // historique VATSIM (JSON), METAR (shared/mission_core/text_import.js)
+    const importBox = tools.querySelector('.mc-import'), importArea = importBox.querySelector('textarea'), importResult = importBox.querySelector('.mc-import-result');
+    importBox.querySelector('summary').textContent = t('importTitle');
+    importBox.querySelector('.mc-import-intro').textContent = t('importIntro');
+    importBox.querySelector('[data-import="run"]').textContent = t('importRun');
+    importBox.querySelector('[data-import="clip"]').textContent = t('importClip');
+    importBox.querySelector('.mc-import-hint').textContent = t('importBookmarklet');
+    const bookmarklet = importBox.querySelector('.mc-bookmarklet');
+    bookmarklet.textContent = '→ CR DEFA'; bookmarklet.href = window.MissionTextImport?.BOOKMARKLET || '#';
+    bookmarklet.onclick = event => { event.preventDefault(); importResult.textContent = inLanguage(UI.importBookmarkletHelp); };
+    const KINDS = { fpl: 'importFpl', 'ivao-details': 'importIvaoDetails', 'ivao-list': 'importIvaoList', metar: 'importMetar' };
+    async function importText(text, silent = false) {
+      const TI = window.MissionTextImport, result = TI.analyse(text);
+      if (result.kind === 'vatsim-history') { window.NetworkTracker?.applyVatsimHistory(text); importResult.textContent = inLanguage(UI.importVatsim); importArea.value = ''; return true; }
+      if (!KINDS[result.kind]) { if (!silent) importResult.textContent = inLanguage(UI.importUnknown); return false; }
+      const dep = result.fpl?.dep || result.dep || result.sessions?.[0]?.dep || mission.navigation.dep || mission.aircraft[0]?.baseDeparture;
+      const ad = dep && !/^ZZZZ$/.test(dep) ? await assist.airport(dep) : null;
+      const rotary = mission.aircraft[0]?.category === 'rotary' || A.lookupType(result.fpl?.type)?.category === 'rotary';
+      const { done, notes } = TI.apply(mission, result, { tz: ad?.tz || '', rotary });
+      // Mêmes aides que la saisie : appareil connu, indicatif de série, terrains, METAR, soleil.
+      const lead = mission.aircraft[0] || {};
+      if (done.includes('aircraft.0.registration') && lead.registration) aircraftAssist('aircraft.0.registration', lead.registration);
+      else if (done.includes('aircraft.0.callsign') && lead.callsign) aircraftAssist('aircraft.0.callsign', lead.callsign);
+      if (done.includes('environment.metar')) assist.applyMetar(mission.environment.metar);
+      view.render(blockList); assist.decorate(); fplTools(); kpi(); registerI18n(); blockFramework();
+      for (const path of ['navigation.dep', 'aircraft.0.baseDeparture']) if (M.get(mission, path)) { await assist.onCommit(path, M.get(mission, path)); break; }
+      changed(); switcher.sync();
+      importResult.textContent = `${inLanguage(UI[KINDS[result.kind]])} — ${done.length} ${inLanguage(UI.fplFilled)} : ${done.map(p => p.replace(/^\w+\.(\d+\.)?/, '')).join(', ') || '—'}${ad?.tz ? ` · ${inLanguage(UI.importLocal)} ${ad.icao} (${ad.tz})` : ''}${notes.length ? ` · ${notes.join(' · ')}` : ''}`;
+      importArea.value = '';
+      return true;
+    }
+    importBox.querySelector('[data-import="run"]').onclick = () => importText(importArea.value);
+    importArea.addEventListener('paste', () => setTimeout(() => importText(importArea.value)));
+    const readClipboard = async silent => { try { const text = await navigator.clipboard.readText(); if (text) return importText(text, silent); } catch { if (!silent) importResult.textContent = inLanguage(UI.importClipDenied); } return false; };
+    importBox.querySelector('[data-import="clip"]').onclick = () => readClipboard(false);
+    // Retour sur la page (après le favori « → CR DEFA » sur le tracker) : analyse du presse-papiers.
+    window.addEventListener('focus', () => { if (importBox.open && !importArea.value) setTimeout(() => readClipboard(true), 150); });
 
     let i18nDone = new Set();
     function registerI18n() {

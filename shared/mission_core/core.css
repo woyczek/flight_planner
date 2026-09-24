@@ -144,3 +144,19 @@ header.mc-header h1{font-size:20px}
 .mc-aside .mc-kpi .small{font-size:11px}
 header.mc-header:has(.mc-header-tools)>p{display:none}
 @media(max-width:1000px){.mc-aside{max-height:none;overflow:visible}.mc-aside .mc-kpi{grid-template-columns:repeat(2,1fr)}}
+/* « Analyser / importer… » : fenêtre sous l'en-tête (texte collé : FPL, tracker IVAO, VATSIM, METAR) */
+.mc-import{position:relative;display:inline-block}
+.mc-import>summary{list-style:none;cursor:pointer;border:1px solid #ffffff59;background:#ffffff1f;color:#fff;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600}
+.mc-import>summary::-webkit-details-marker{display:none}
+.mc-import[open]>summary{background:#fff;color:var(--accent)}
+.mc-import-pop{position:absolute;z-index:1100;top:calc(100% + 6px);left:0;width:min(640px,calc(100vw - 32px));box-sizing:border-box;padding:12px;border-radius:12px;background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 8px 24px #0003;display:grid;gap:8px}
+.mc-import-pop p{margin:0}
+.mc-import-pop textarea{width:100%;box-sizing:border-box;font:12px/1.4 ui-monospace,Consolas,monospace;padding:8px;border:1px solid var(--line);border-radius:8px;color:var(--ink)}
+.mc-import-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.mc-header-tools .mc-import-pop button{background:#e5e7eb;color:var(--ink)!important;border-color:#e5e7eb}
+.mc-header-tools .mc-import-pop button.primary{background:var(--accent);color:#fff!important;border-color:var(--accent)}
+.mc-bookmarklet{display:inline-block;padding:4px 10px;border:1px dashed var(--accent);border-radius:999px;color:var(--accent);font-weight:700;text-decoration:none;cursor:grab;font-size:12px}
+.mc-import-result{color:var(--accent)}
+/* en-tête des reportings : nouveau compte rendu */
+header.mc-header a.mc-header-new{display:inline-flex;margin-top:8px;padding:6px 12px;border-radius:8px;background:#fff;color:var(--accent);font-weight:700;text-decoration:none;font-size:13px}
+@media print{a.mc-header-new{display:none!important}}

@@ -1,0 +1,192 @@
+(() => {
+  'use strict';
+  // Mission Report Core — analyse d'un texte collé (champ « Analyser / importer » de l'en-tête).
+  //
+  // Reconnaît :
+  // - un message de plan de vol OACI « (FPL-…) » (cases 7 à 19) ;
+  // - une page « détails » du tracker IVAO copiée (Ctrl+A, Ctrl+C) : plan de vol (dernière
+  //   révision), connexion / déconnexion, table des positions (heure, lat, lon, altitude,
+  //   vitesse sol) → décollage, atterrissage, distance, altitude maximale ;
+  // - la liste des connexions du tracker IVAO (callsign, trajet, début, fin) ;
+  // - l'historique des connexions VATSIM (JSON de api.vatsim.net) → délégué au suivi réseau ;
+  // - un METAR.
+  // Une page d'un autre site ne peut pas être lue par la page du CR (règle de même origine) :
+  // copier-coller, ou favori « → CR DEFA » (BOOKMARKLET) qui copie la page du tracker.
+  const M = window.MissionModel;
+  const up = v => String(v ?? '').trim().toUpperCase();
+  // Espaces normalisés ; « | » du tracker IVAO (« 2026-07-07 | 12:59:42 ») traité comme un séparateur.
+  const flat = text => String(text || '').replace(/[\u00a0|]/g, ' ').replace(/\s+/g, ' ').trim();
+  const pad = n => String(n).padStart(2, '0');
+
+  // ---------------------------------------------------------------- plan de vol OACI
+  function parseFpl(text) {
+    const m = /\(FPL-([\s\S]*?)\)/.exec(text); if (!m) return null;
+    const parts = flat(m[1]).split(/\s*-\s*(?=\S)/);
+    const [callsign, rulesType, item9, item10, item13, item15, item16, ...rest] = parts;
+    if (!callsign || !item13) return null;
+    const i9 = /^(?:(\d+)\/)?([A-Z0-9]{2,4})\/([LMHJ])$/.exec(up(item9)) || [];
+    const [equip = '', transponder = ''] = up(item10).split('/');
+    const dep = up(item13).slice(0, 4), eobt = up(item13).slice(4, 8);
+    const route15 = up(item15).split(' '), first = route15.shift() || '';
+    const sl = /^([NKM]\d{3,4})(F\d{3}|A\d{3}|S\d{4}|M\d{4}|VFR)$/.exec(first) || [];
+    const d16 = up(item16).split(' ');
+    // Case 18 : indicateurs XXX/… jusqu'au suivant ; case 19 (E/, P/…) après un tiret.
+    const text18 = rest.join(' - ');
+    const item18 = {}; (text18.match(/[A-Z]{2,4}\/.*?(?=\s[A-Z]{2,4}\/|$)/g) || []).forEach(token => { const i = token.indexOf('/'); item18[token.slice(0, i)] = token.slice(i + 1).trim(); });
+    const endurance = /(?:^|\s)E\/(\d{4})/.exec(text18), persons = /(?:^|\s)P\/(\d{1,3})/.exec(text18);
+    const dof = /^(\d{2})(\d{2})(\d{2})$/.exec(item18.DOF || '');
+    const hm = v => /^\d{4}$/.test(v || '') ? `${v.slice(0, 2)}:${v.slice(2)}` : '';
+    const minutes = v => /^\d{4}$/.test(v || '') ? Number(v.slice(0, 2)) * 60 + Number(v.slice(2)) : null;
+    const rules = up(rulesType).charAt(0);
+    return {
+      source: 'FPL', callsign: up(callsign), rules, flightType: up(rulesType).charAt(1),
+      type: i9[2] || up(item9).split('/')[0], wake: i9[3] || '', count: Number(i9[1] || 1),
+      equipment: window.MissionFpl?.equipmentCodes(equip, transponder, rules) || [],
+      dep: dep === 'ZZZZ' ? up(item18.DEP) : dep, eobt: hm(eobt),
+      speed: sl[1] ? (sl[1][0] === 'K' ? Math.round(Number(sl[1].slice(1)) / 1.852) : sl[1][0] === 'N' ? Number(sl[1].slice(1)) : null) : null,
+      altitude: sl[2] ? window.MissionFpl?.level(sl[2]) || sl[2] : '',
+      route: route15.join(' '), waypoints: [...new Set(window.MissionAssist?.routePoints(route15.join(' ')) || [])], arr: d16[0] ? (d16[0].slice(0, 4) === 'ZZZZ' ? up(item18.DEST) : d16[0].slice(0, 4)) : '',
+      eet: minutes(d16[0]?.slice(4)), altn: d16[1] || '', altn2: d16[2] || '',
+      registration: item18.REG || '', operatorCode: item18.OPR || '', date: dof ? `20${dof[1]}-${dof[2]}-${dof[3]}` : '',
+      remarks: item18.RMK || '', item18, endurance: endurance ? minutes(endurance[1]) : null, pob: persons ? Number(persons[1]) : null
+    };
+  }
+
+  // ------------------------------------------------------------------ tracker IVAO
+  const utc = (date, time) => new Date(`${date}T${time}Z`);
+  function parseIvaoDetails(text) {
+    const t = flat(text);
+    if (!/Tracks|Flight Plans|Connected/i.test(t) || !/IVAO/i.test(t)) return null;
+    const samples = [];
+    const re = /(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) (-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?) (-?\d+) ?ft (\d+) ?knots/g;
+    let m; while ((m = re.exec(t))) samples.push({ time: utc(m[1], m[2]), lat: Number(m[3]), lon: Number(m[4]), alt: Number(m[5]), gs: Number(m[6]) });
+    const con = /Connected (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) Disconnected (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})/.exec(t)
+      || /\bOn (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) Off (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})/.exec(t);
+    const leg = /\bLeg ([A-Z0-9]{3,4}) ?- ?([A-Z0-9]{3,4})\b/.exec(t), flight = /\bFlight ([A-Z0-9]{2,10})\b/.exec(t);
+    if (!samples.length && !con) return null;
+    return {
+      source: 'IVAO', callsign: flight?.[1] || '', dep: leg?.[1] || '', arr: leg?.[2] || '',
+      connected: con ? utc(con[1], con[2]) : null, disconnected: con ? utc(con[3], con[4]) : null,
+      samples, fpl: parseFpl(text)
+    };
+  }
+  function parseIvaoList(text) {
+    const t = flat(text); if (!/IVAO/i.test(t)) return [];
+    const re = /\b([A-Z0-9]{2,10}) ([^()\d]{2,40}?) \((\d{3,8})\) ([A-Z0-9]{3,4}) ?- ?([A-Z0-9]{3,4}) (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) (\d{2}:\d{2})\b/g;
+    const out = []; let m;
+    while ((m = re.exec(t))) out.push({ callsign: m[1], user: m[2], vid: m[3], dep: m[4], arr: m[5], start: utc(m[6], m[7]), end: utc(m[8], m[9]) });
+    return out;
+  }
+
+  // Analyse de la trace : sol / vol (vitesse sol et altitude), décollage, atterrissage, distance.
+  function analyseTrack(samples, rotary = false) {
+    if (samples.length < 2) return null;
+    const minAlt = Math.min(...samples.map(s => s.alt));
+    const onGround = s => rotary ? s.gs < 15 && s.alt <= minAlt + 150 : s.gs < 40 && s.alt <= minAlt + 300;
+    let takeoff = null, landing = null, nm = 0;
+    for (let i = 1; i < samples.length; i++) {
+      const a = samples[i - 1], b = samples[i];
+      if (onGround(a) && !onGround(b) && !takeoff) takeoff = b.time;
+      if (!onGround(a) && onGround(b)) landing = b.time;
+      const rad = Math.PI / 180, dLat = (b.lat - a.lat) * rad, dLon = (b.lon - a.lon) * rad;
+      const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLon / 2) ** 2;
+      nm += 3440.065 * 2 * Math.asin(Math.sqrt(h));
+    }
+    return {
+      takeoff, landing, distanceNm: Math.round(nm), maxAlt: Math.max(...samples.map(s => s.alt)),
+      startsOnGround: onGround(samples[0]), endsOnGround: onGround(samples[samples.length - 1]),
+      first: samples[0].time, last: samples[samples.length - 1].time
+    };
+  }
+
+  // ------------------------------------------------------------------- détection
+  function analyse(text) {
+    const raw = String(text || '').trim();
+    if (!raw) return { kind: 'empty' };
+    if (/^[[{]/.test(raw)) {
+      try { const data = JSON.parse(raw); const list = data?.items || data?.results || (Array.isArray(data) ? data : null); if (list?.some?.(s => s?.start)) return { kind: 'vatsim-history', text: raw }; } catch { /* pas du JSON */ }
+    }
+    const details = parseIvaoDetails(raw);
+    if (details && (details.samples.length || details.connected)) return { kind: 'ivao-details', ...details };
+    const list = parseIvaoList(raw);
+    if (list.length) return { kind: 'ivao-list', sessions: list };
+    const fpl = parseFpl(raw);
+    if (fpl) return { kind: 'fpl', fpl };
+    const metar = /\b([A-Z]{4} \d{6}Z .+?)(?:=|$)/m.exec(raw);
+    if (metar) return { kind: 'metar', metar: flat(metar[1]) };
+    return { kind: 'unknown' };
+  }
+
+  // Heure locale (HH:MM) d'un instant UTC dans le fuseau du terrain (sinon UTC).
+  const clock = (date, tz) => { try { return new Intl.DateTimeFormat('fr-FR', { timeZone: tz || 'UTC', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(date); } catch { return `${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`; } };
+  const day = (date, tz) => { try { return new Intl.DateTimeFormat('en-CA', { timeZone: tz || 'UTC', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date); } catch { return date.toISOString().slice(0, 10); } };
+
+  // Remplit les champs vides de la mission. options : { tz, rotary, today }. Renvoie
+  // { done: [chemins], notes: [textes] }.
+  function apply(mission, result, { tz = '', rotary = false, today = new Date().toISOString().slice(0, 10) } = {}) {
+    const done = [], notes = [];
+    const set = (path, value, { force = false } = {}) => {
+      if (value == null || value === '' || (Array.isArray(value) && !value.length)) return;
+      const cur = M.get(mission, path);
+      if (!force && cur != null && cur !== '' && !(Array.isArray(cur) && !cur.length)) return;
+      M.set(mission, path, value); done.push(path);
+    };
+    // La date du jour proposée par défaut est remplacée par celle du vol (DOF / tracker).
+    const setDate = date => { if (date && (!mission.metadata.date || mission.metadata.date === today) && mission.metadata.date !== date) { mission.metadata.date = date; done.push('metadata.date'); } };
+    const applyFpl = fpl => {
+      if (!fpl) return;
+      done.push(...(window.MissionFpl?.apply(mission, fpl) || []));
+      setDate(fpl.date);
+      set('metadata.timeUtc', fpl.eobt);
+      set('aircraft.0.enduranceMinutes', fpl.endurance);
+      if (fpl.rules) { const caps = new Set(mission.capabilities || []), before = caps.size; ({ I: ['IFR'], V: ['VFR'], Y: ['IFR', 'VFR'], Z: ['VFR', 'IFR'] }[fpl.rules] || []).forEach(c => caps.add(c)); if (caps.size !== before) { mission.capabilities = [...caps]; done.push('capabilities'); } }
+      set('remarks.observations', fpl.remarks);
+      if (fpl.altn2) notes.push(`2e dégagement : ${fpl.altn2}`);
+      if (fpl.eet != null) notes.push(`EET ${pad(Math.floor(fpl.eet / 60))}h${pad(fpl.eet % 60)}`);
+    };
+    if (result.kind === 'fpl') applyFpl(result.fpl);
+    if (result.kind === 'metar') set('environment.metar', result.metar);
+    if (result.kind === 'ivao-details') {
+      applyFpl(result.fpl);
+      set('aircraft.0.callsign', result.callsign); set('navigation.dep', result.dep); set('navigation.arr', result.arr);
+      set('network.onlineNetwork', 'IVAO');
+      const track = analyseTrack(result.samples, rotary);
+      if (result.connected) setDate(day(result.connected, tz));
+      // Début / fin de mission ≈ connexion / déconnexion (période volée sur le réseau).
+      if (result.connected) set('timeline.missionStart', clock(result.connected, tz));
+      if (result.disconnected) set('timeline.missionEnd', clock(result.disconnected, tz));
+      if (track) {
+        // Mise en route / arrêt ≈ connexion / déconnexion, seulement si la trace commence / finit au sol.
+        if (track.startsOnGround && result.connected) set('timeline.engineStart', clock(result.connected, tz)); else notes.push('connexion en vol : décollage et mise en route absents de la trace');
+        if (track.takeoff) set('timeline.takeoff', clock(track.takeoff, tz));
+        if (track.landing) set('timeline.landing', clock(track.landing, tz));
+        if (track.endsOnGround && result.disconnected) set('timeline.shutdown', clock(result.disconnected, tz)); else notes.push('déconnexion en vol : atterrissage et arrêt absents de la trace');
+        set('navigation.distanceNm', track.distanceNm);
+        notes.push(`trace : ${result.samples.length} points, ${clock(track.first, tz)}–${clock(track.last, tz)}, ${track.distanceNm} NM, altitude max ${track.maxAlt} ft`);
+      } else if (result.connected) {
+        set('timeline.engineStart', clock(result.connected, tz)); set('timeline.shutdown', clock(result.disconnected, tz));
+        notes.push('connexion / déconnexion ≈ mise en route / fin de mission (heures du réseau)');
+      }
+      if (result.connected) set('metadata.timeUtc', `${pad(result.connected.getUTCHours())}:${pad(result.connected.getUTCMinutes())}`);
+    }
+    if (result.kind === 'ivao-list') {
+      // Connexion du jour de la mission (même indicatif de préférence), sinon la plus récente.
+      const date = mission.metadata.date, callsign = up(mission.aircraft?.[0]?.callsignFpl || mission.aircraft?.[0]?.callsign).replace(/\s+/g, '');
+      let sessions = result.sessions.filter(s => day(s.start, tz) === date);
+      if (callsign && sessions.some(s => s.callsign === callsign)) sessions = sessions.filter(s => s.callsign === callsign);
+      if (!sessions.length) { sessions = [result.sessions[0]]; setDate(day(sessions[0].start, tz)); notes.push(`aucune connexion le ${date} : dernière connexion reprise`); }
+      const first = sessions.reduce((a, b) => a.start < b.start ? a : b), last = sessions.reduce((a, b) => a.end > b.end ? a : b);
+      set('aircraft.0.callsign', first.callsign); set('navigation.dep', first.dep === 'ZZZZ' ? '' : first.dep); set('navigation.arr', last.arr === 'ZZZZ' ? '' : last.arr);
+      set('timeline.engineStart', clock(first.start, tz)); set('timeline.shutdown', clock(last.end, tz));
+      set('network.onlineNetwork', 'IVAO'); set('network.ivaoId', first.vid);
+      notes.push(`${sessions.length} connexion(s) IVAO : ${clock(first.start, tz)}–${clock(last.end, tz)} ≈ mise en route / fin de mission (heures du réseau). Pour les heures de vol : copier la page « détails » du vol.`);
+    }
+    return { done: [...new Set(done)], notes };
+  }
+
+  // Favori (bookmarklet) à glisser dans la barre des favoris : sur la page du tracker, copie
+  // son texte ; la page du CR l'analyse au retour (lecture du presse-papiers au focus).
+  const BOOKMARKLET = "javascript:(()=>{const t=document.body.innerText;navigator.clipboard.writeText(t).then(()=>alert('Copié pour CR DEFA ('+t.length+' caractères) : revenez sur la page du compte rendu.'),()=>{prompt('Copiez ce texte (Ctrl+C) :',t)})})()";
+
+  window.MissionTextImport = { analyse, apply, parseFpl, parseIvaoDetails, parseIvaoList, analyseTrack, BOOKMARKLET };
+})();
