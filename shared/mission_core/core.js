@@ -67,6 +67,7 @@
   function registerFamily(def) {
     if (!def?.id) throw new Error('Famille sans identifiant');
     families.set(def.id, { blocks: [], series: [], pages: {}, ...def });
+    M.registerUpperFields(def.blocks || []); // champs de texte simple de la famille : majuscules
     return families.get(def.id);
   }
 
@@ -100,32 +101,42 @@
     let mission = M.emptyMission(family.id), dirty = false;
 
     root.classList.add('mc-page');
-    root.innerHTML = `<form id="missionCoreForm" class="mc-form" autocomplete="off">
-      <section class="mc-edit-banner" hidden><h2></h2><p class="note mc-edit-info"></p></section>
-      <section class="controls mc-controls"><h2></h2><div class="row">
+    // Barre d'outils dans l'en-tête (collé en haut de page) : registre des missions et suivi
+    // réseau ; colonne de droite : calculs puis aperçu du compte rendu.
+    const header = document.querySelector('header.mc-header');
+    const tools = document.createElement('div'); tools.className = 'mc-header-tools';
+    tools.innerHTML = `<div class="mc-header-ledger"><span class="mc-header-label"></span>
         <button type="button" class="primary" data-action="store"></button>
         <button type="button" class="danger" data-action="delete" hidden></button>
-        <button type="button" class="secondary" data-action="new"></button>
-        <button type="button" class="secondary" data-action="export"></button>
-        <button type="button" class="secondary" data-action="import"></button>
-        <a class="secondary mc-button" data-action="reporting"></a>
-        <button type="button" class="secondary" data-action="folder"></button>
-        <button type="button" class="secondary" data-action="download" hidden></button>
-        <input type="file" accept=".yaml,.yml,.json,application/json,text/yaml" hidden></div>
-        <p class="small mc-ledger-info"></p><p class="small mc-status"></p></section>
-      <section class="mc-report-panel" data-block-id="mc-report"><h2></h2><div class="row mc-report-actions">
+        <button type="button" data-action="new"></button>
+        <button type="button" data-action="export"></button>
+        <button type="button" data-action="import"></button>
+        <a class="mc-button" data-action="reporting"></a>
+        <button type="button" data-action="folder"></button>
+        <button type="button" data-action="download" hidden></button>
+        <input type="file" accept=".yaml,.yml,.json,application/json,text/yaml" hidden>
+        <span class="mc-ledger-info"></span><span class="mc-status"></span></div>
+      <div id="mc-header-tracker"></div>`;
+    if (header) header.append(tools);
+    root.innerHTML = `<form id="missionCoreForm" class="mc-form" autocomplete="off">
+      <section class="mc-edit-banner" hidden><h2></h2><p class="note mc-edit-info"></p></section></form>
+      <aside class="mc-aside"><div class="panel mc-kpi-panel"><h2></h2><div class="mc-kpi"></div><h3></h3><div class="small mc-context"></div></div>
+        <div class="panel mc-report-panel" data-block-id="mc-report"><h2></h2><div class="row mc-report-actions">
         <button type="button" class="primary" data-action="render"></button><button type="button" class="secondary" data-action="print"></button>
         <label class="mc-public" hidden><input type="checkbox" data-action="public"> <span></span></label></div>
-        <div class="report" id="mcReport"></div></section></form>
-      <aside class="mc-aside"><div class="panel mc-kpi-panel"><h2></h2><div class="mc-kpi"></div><h3></h3><div class="small mc-context"></div></div></aside>`;
-    const form = root.querySelector('form'), status = root.querySelector('.mc-status');
-    const $a = action => root.querySelector(`[data-action="${action}"]`);
+        <div class="report" id="mcReport"></div></div></aside>`;
+    if (!header) root.querySelector('form').prepend(tools);
+    const form = root.querySelector('form'), status = tools.querySelector('.mc-status');
+    const $a = action => root.querySelector(`[data-action="${action}"]`) || tools.querySelector(`[data-action="${action}"]`);
+    // Hauteur de l'en-tête (collé) : position de la colonne de droite, elle aussi collée.
+    const measure = () => document.documentElement.style.setProperty('--mc-top', `${(header?.getBoundingClientRect().height || 0) + 8}px`);
+    window.addEventListener('resize', measure); new ResizeObserver(measure).observe(header || document.body);
     const ui = new Map();
     const t = key => { const row = UI[key]; ui.set(row[0], row); return row[0]; };
     const say = (key, extra = '') => { status.textContent = t(key) + (extra ? ` : ${extra}` : ''); };
     [['render', 'render'], ['print', 'print'], ['new', 'newMission'], ['import', 'importFile'], ['export', 'exportYaml'], ['reporting', 'viewReporting'], ['folder', 'chooseFolder'], ['download', 'downloadLedger'], ['delete', 'deleteMission']].forEach(([a, k]) => { $a(a).textContent = t(k); });
     $a('reporting').href = family.pages.reporting || '#';
-    root.querySelector('.mc-controls h2').textContent = t('ledgerTitle');
+    tools.querySelector('.mc-header-label').textContent = t('ledgerTitle');
     root.querySelector('.mc-kpi-panel h2').textContent = t('kpiTitle');
     root.querySelector('.mc-report-panel h2').textContent = t('reportTitle');
     // Familles avec champs sensibles (ex. LAW ENFORCEMENT) : version publique du CR.
@@ -135,7 +146,9 @@
     root.querySelector('.mc-edit-banner h2').textContent = t('editBanner');
 
     let saveTimer = null;
-    const changed = () => { dirty = true; kpi(); clearTimeout(saveTimer); saveTimer = setTimeout(() => { saveDraft(); renderReport(); }, 400); };
+    // Valeurs remplies automatiquement (appareil connu, plan de vol, météo…) : texte simple en
+    // majuscules comme la saisie, avant le brouillon et l'aperçu.
+    const changed = () => { dirty = true; kpi(); clearTimeout(saveTimer); saveTimer = setTimeout(() => { if (M.upperText(mission)) view.sync(); saveDraft(); renderReport(); }, 400); };
     const view = window.MissionForm.create(form, {
       family, getMission: () => mission,
       onChange: changed,
@@ -173,7 +186,7 @@
       fplAssist(item, auto);
       // Flotte DEFA : base d'attache et opérateur, si non renseignés.
       if (known.base && (!item.baseDeparture || item.baseDeparture === auto.baseDeparture)) take('baseDeparture', known.base);
-      if (known.operator && index === 0 && (!mission.organisation.organisation || mission.organisation.organisation === autoOperator)) mission.organisation.organisation = autoOperator = known.operator;
+      if (known.operator && index === 0 && (!mission.organisation.organisation || mission.organisation.organisation === autoOperator)) mission.organisation.organisation = autoOperator = String(known.operator).toUpperCase();
       autoFilled.set(item, auto); operatorAssist(index, known);
       if (known.equipment?.length) item.equipment = [...new Set([...(item.equipment || []), ...known.equipment])];
       view.rerenderCollectionOf(`aircraft.${index}.registration`); view.sync();
@@ -289,7 +302,7 @@
       root.querySelector('.mc-context').innerHTML = `<b>${esc(family.id)}</b> · ${esc(mission.series || '—')}<br>${esc(t('categories'))} : ${esc([...(ctx.categories || [])].join(', ') || t('none'))}<br>${esc(t('capabilities'))} : ${esc([...(ctx.capabilities || [])].join(', ') || t('none'))}`;
     }
     function ledgerInfo() {
-      root.querySelector('.mc-ledger-info').textContent = `${ledger.filename} · ${ledger.missions.length} ${t('missions')} · ${t('folder')} : ${ledger.state.folder || t('browserOnly')}`;
+      tools.querySelector('.mc-ledger-info').textContent = `${ledger.filename} · ${family.id} : ${ledger.missions.length} ${t('missions')} · ${t('folder')} : ${ledger.state.folder || t('browserOnly')}`;
     }
     function modeUi() {
       root.querySelector('.mc-edit-banner').hidden = !edit;
@@ -355,6 +368,7 @@
       return result;
     }
     async function store() {
+      if (M.upperText(mission)) view.sync();
       mission.statistics = M.computeStatistics(mission);
       if (edit) {
         const current = ledger.missions[edit.index];
@@ -394,7 +408,7 @@
     };
     $a('folder').onclick = async () => { try { await ledger.chooseFolder(); await ledger.load(); ledgerInfo(); await persist('stored'); } catch (error) { status.textContent = error.message; } };
     $a('download').onclick = () => ledger.downloadYaml();
-    const picker = root.querySelector('input[type="file"]');
+    const picker = tools.querySelector('input[type="file"]');
     $a('import').onclick = () => picker.click();
     picker.onchange = () => {
       const file = picker.files[0]; if (!file) return;
@@ -423,7 +437,7 @@
     // (le brouillon reste de toute façon conservé dans le navigateur).
     window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = t('leave'); } });
     // Données locales restaurées (menu ☰ › Données locales) : registre relu.
-    window.addEventListener('local-store-restored', () => ledger.load().then(() => { ledgerInfo(); if (!edit && !dirty) { mission = fresh(); redraw(); } }));
+    window.addEventListener('local-store-restored', () => ledger.load(true).then(() => { ledgerInfo(); if (!edit && !dirty) { mission = fresh(); redraw(); } }));
     window.addEventListener('load', () => window.RepositoryNav?.addAction?.(`${t('viewReporting')} ${family.id}`, () => { location.href = family.pages.reporting; }));
 
     // ---- en-tête : famille / sous-type (série) de la mission
@@ -476,7 +490,7 @@
     seriesSelect.onchange = () => { set(seriesSelect.value); summary(); box.open = false; };
     // Fermeture au clic hors de la popup.
     document.addEventListener('click', event => { if (box.open && !box.contains(event.target)) box.open = false; });
-    header.append(box); summary();
+    header.insertBefore(box, header.querySelector('.mc-header-tools')); summary(); // avant la barre d'outils
     return { sync() { const value = get() || ''; if ([...seriesSelect.options].some(o => o.value === value)) seriesSelect.value = value; summary(); } };
   }
 

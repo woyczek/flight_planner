@@ -55,9 +55,15 @@ Points forts :
   locale).
 - **Suivi réseau en direct** (IVAO / VATSIM) : mise en route, décollage, atterrissage, fin de
   mission ; import de l'historique VATSIM.
-- **Registres** : un fichier YAML par famille (`CR DEFA/<DOSSIER>/<famille>_missions.yaml`), écrit
-  dans un dossier local autorisé une fois (Chrome / Edge), export CSV simplifié. Import des
-  anciens registres CSV HEMS / GAAR.
+- **Registre unique** : toutes les familles dans un seul fichier YAML (`CR DEFA/missions.yaml`),
+  écrit dans le dossier `CR DEFA` autorisé une fois (Chrome / Edge), export CSV simplifié ;
+  anciens registres par famille repris automatiquement. Import des anciens registres CSV
+  HEMS / GAAR.
+- **Champs de texte simple en majuscules** (indicatifs, terrains, points tournants,
+  équipage…), anciennes saisies converties à la lecture ; zones de texte libre inchangées.
+- **Page de CR** : boutons du registre et du suivi réseau dans la barre d'en-tête (mode
+  d'emploi au survol), aperçu du compte rendu dans la colonne de droite, navigation et météo
+  en bas de page.
 - **Compte rendu** en 14 sections, généré en quatre langues (FR / EN / DE / ES), imprimable
   en PDF, avec une version publique masquant les données sensibles quand il y a lieu.
 - **Sauvegarde des données locales** : tout ce que garde le navigateur peut être copié dans

@@ -36,7 +36,8 @@
       if (field.eventTypes) return V.eventTypesFor(family.id).concat(family.events || []);
       return [];
     };
-    const attrs = (field, path, withAlias) => `data-path="${esc(path)}"${withAlias && field.alias ? ` name="${esc(field.alias)}"` : ''}${field.list ? ` list="${esc(field.list)}"` : ''}${field.upper ? ' data-upper="1" autocapitalize="characters"' : ''}`;
+    // Texte simple : toujours en majuscules (règle commune MissionModel.isUpperField).
+    const attrs = (field, path, withAlias) => `data-path="${esc(path)}"${withAlias && field.alias ? ` name="${esc(field.alias)}"` : ''}${field.list ? ` list="${esc(field.list)}"` : ''}${M.isUpperField(field) ? ' data-upper="1" autocapitalize="characters"' : ''}`;
     const selectHtml = (field, path, value, withAlias) => {
       const opts = optionsFor(field), known = opts.some(o => o.value === value);
       return `<select ${attrs(field, path, withAlias)}>${field.blank || field.familySeries ? '<option value="">—</option>' : ''}${opts.map(o =>

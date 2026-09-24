@@ -193,6 +193,8 @@
     const tr = row => t(row);
 
     // ---- appareils : filtrage croisé
+    // Organismes comparés sans tenir compte de la casse (champs saisis en majuscules).
+    const hasOperator = (series, operator) => [...series.operators].some(o => up(o) === up(operator));
     const ITEM = /^aircraft\.(\d+)\.(registration|callsign|callsignPrefix|callsignNumber|type|variant|tacticalNumber)$/;
     const split = M.splitCallsign;
     // Indicatif complet comparé seulement s'il porte un numéro ; sinon, l'indicatif seul
@@ -223,7 +225,7 @@
         const type = item.type && A.typeKey(item.type);
         A.callsignSeries().forEach(s => { if (s.table && !item.registration && (!type || !s.table.types.length || s.types.has(type))) allowed.add(s.prefix); });
         A.callsignSeries().filter(s => allowed.has(s.prefix))
-          .sort((a, b) => Number(b.operators.has(operator)) - Number(a.operators.has(operator)) || b.numbers.length - a.numbers.length)
+          .sort((a, b) => Number(hasOperator(b, operator)) - Number(hasOperator(a, operator)) || b.numbers.length - a.numbers.length)
           .forEach(s => out.set(s.prefix, [s.table?.telephony, s.abbreviations.size ? `plan de vol : ${[...s.abbreviations].join(', ')}` : '', s.table?.note, [...s.types].join(', '), [...s.operators].join(', ')].filter(Boolean).join(' — ')));
         if (!item.registration) ledgerMissions().forEach(m => (m.aircraft || []).forEach(a => { const p = a.callsignPrefix || split(a.callsign).prefix; if (p && (!item.type || A.typeKey(a.type) === A.typeKey(item.type)) && !out.has(up(p))) out.set(up(p), a.type || ''); }));
         return [...out].map(([value, label]) => ({ value, label }));
@@ -392,14 +394,14 @@
       // Appareils de ce type (et de cet opérateur) par indicatif de série.
       let entries = A.callsignSeries().flatMap(s => s.numbers.filter(n => n.type === type).map(n => ({ ...n, prefix: s.prefix })));
       // Opérateur renseigné : seuls ses appareils comptent (à défaut, la table décide).
-      if (operator) entries = entries.filter(n => n.operator === operator);
+      if (operator) entries = entries.filter(n => up(n.operator) === up(operator));
       const counts = new Map(); entries.forEach(n => counts.set(n.prefix, (counts.get(n.prefix) || 0) + 1));
       // Série unique, ou largement majoritaire (≥ 80 % : une coquille isolée ne bloque pas).
       const [best] = [...counts].sort((a, b) => b[1] - a[1]);
       if (best) return best[1] / entries.length >= 0.8 ? best[0] : '';
       // Aucun appareil connu : table de correspondance (Sécurité civile + BE20 → BENGALE),
       // hors indicatifs de fonction (ICARE) et désignateurs génériques.
-      const rows = A.table().filter(e => !e.role && !e.generic && e.types.some(t => A.typeKey(t) === type) && (!operator || e.operator === operator));
+      const rows = A.table().filter(e => !e.role && !e.generic && e.types.some(t => A.typeKey(t) === type) && (!operator || up(e.operator) === up(operator)));
       return rows.length === 1 ? rows[0].prefix : '';
     }
     return { suggest, aircraftCommit, seriesPrefix, onCommit, decorate, airport, cachedAirport, remember, applyMetar, sun, status: text => status(text), T };

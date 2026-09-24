@@ -233,8 +233,24 @@
   const panel = document.createElement('div');
   panel.id = 'networkTrackerPanel';
   panel.style.cssText = 'margin-top:12px;padding-top:10px;border-top:1px dashed var(--line,#d1d5db)';
+  // Mode compact (barre d'outils de l'en-tête des pages du Core) : boutons seuls, mode
+  // d'emploi en infobulle (survol du « ? » et du bouton principal).
+  const compact = () => panel.parentElement?.id === 'mc-header-tracker';
   function paint() {
     const on = !!watch?.active;
+    if (compact()) {
+      panel.style.cssText = '';
+      panel.innerHTML = `<div class="nt-row"><span class="mc-header-label">${esc(t('title'))}</span><span class="nt-help" title="${esc(t('intro'))}">?</span>
+        <button type="button" class="${on ? 'danger' : ''} nt-toggle" title="${esc(t('intro'))}">${esc(t(on ? 'stop' : 'start'))}</button>
+        <button type="button" class="nt-history" title="${esc(t('corsBlocked'))}">${esc(t('history'))}</button>
+        <a class="nt-link" data-kind="ivao" target="_blank" rel="noopener">${esc(t('ivao'))}</a>
+        <a class="nt-link" data-kind="vatsim" target="_blank" rel="noopener">${esc(t('vatsimStats'))}</a>
+        <a class="nt-link" data-kind="statsim" target="_blank" rel="noopener">${esc(t('statsim'))}</a>
+        <span class="nt-status"></span></div>
+        <div class="nt-paste" hidden><label class="small">${esc(t('paste'))}</label><br><textarea rows="3"></textarea><div class="nt-row"><button type="button" class="primary nt-clip">${esc(t('clip'))}</button><button type="button" class="nt-parse">${esc(t('parse'))}</button></div></div>
+        <details class="nt-logbox"${watch?.log?.length ? '' : ' hidden'}><summary>${esc(t('log'))}</summary><pre class="nt-log" style="white-space:pre-wrap;margin:4px 0 0"></pre></details>`;
+      bind(); return;
+    }
     panel.innerHTML = `<h3 style="margin:0 0 6px;font-size:15px">${esc(t('title'))}</h3><p class="small">${esc(t('intro'))}</p>
       <div class="row" style="margin-top:8px"><button type="button" class="${on ? 'danger' : 'primary'} nt-toggle">${esc(t(on ? 'stop' : 'start'))}</button>
       <button type="button" class="secondary nt-history">${esc(t('history'))}</button>
@@ -244,6 +260,9 @@
       <div class="nt-paste" hidden style="margin-top:8px"><label>${esc(t('paste'))}</label><textarea rows="4" style="width:100%"></textarea><div class="row" style="margin-top:6px"><button type="button" class="primary nt-clip">${esc(t('clip'))}</button><button type="button" class="secondary nt-parse">${esc(t('parse'))}</button></div></div>
       <p class="small nt-status" style="margin-top:8px"></p><details class="nt-logbox"${watch?.log?.length ? '' : ' hidden'}><summary class="small">${esc(t('log'))}</summary><pre class="small nt-log" style="white-space:pre-wrap;margin:6px 0 0"></pre></details>`;
     panel.querySelectorAll('.nt-link').forEach(link => link.style.cssText = 'display:inline-block;padding:9px 12px;border-radius:9px;text-decoration:none;color:inherit');
+    bind();
+  }
+  function bind() {
     panel.querySelector('.nt-toggle').onclick = () => (watch?.active ? stop() : start());
     panel.querySelector('.nt-history').onclick = fetchVatsimHistory;
     panel.querySelector('.nt-parse').onclick = () => applyVatsimHistory(panel.querySelector('.nt-paste textarea').value);
@@ -267,7 +286,8 @@
   let resumed = false;
   function mount() {
     if (panel.isConnected) return true;
-    const host = document.getElementById('networkTracking') || document.getElementById('mc-network');
+    // Hôtes : section des anciens CR, barre d'outils de l'en-tête (Core), bloc « Trace réseau ».
+    const host = document.getElementById('networkTracking') || document.getElementById('mc-header-tracker') || document.getElementById('mc-network');
     if (!host) return false;
     host.append(panel); paint();
     // Reprise du suivi une seule fois (la section peut être recréée par la page).

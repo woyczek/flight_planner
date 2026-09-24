@@ -34,7 +34,12 @@ Repères sur la page :
   employées » est masqué par défaut : il est repris de la dernière mission de la même série ;
 - à droite, **Calculs automatiques** : temps bloc, temps de vol, transits, carburant… mis à
   jour pendant la saisie ;
-- en bas, le **compte rendu** généré et les boutons du registre.
+- dans la **barre d'en-tête** : les boutons du registre (ajouter / enregistrer, supprimer,
+  nouvelle mission, export, import, reporting, dossier) et du suivi réseau — le mode d'emploi
+  s'affiche au survol du « ? » ;
+- à droite, sous les calculs, l'**aperçu du compte rendu**, mis à jour pendant la saisie ;
+- en bas de page, les blocs **Navigation** et **Météo** ;
+- les champs de texte simple s'écrivent en **majuscules** (indicatifs, terrains, équipage…).
 
 Le brouillon est enregistré dans le navigateur à chaque saisie : vous pouvez fermer la page
 et revenir plus tard.
@@ -80,7 +85,7 @@ plan de vol `PCAN44`** (7 caractères OACI), exploitant **OPR/ FRU**, base **LFT
    l'heure du vol (Open-Meteo) », « Calculer lever / coucher du soleil » (heure locale du
    terrain ; calcul automatique dès que le terrain de départ est connu, avec la phase
    jour / nuit au décollage).
-3. **Bloc Trace réseau IVAO / VATSIM › Récupérer les infos** : « **Démarrer le suivi en
+3. **Barre d'en-tête › Récupérer les infos (suivi réseau)** : « **Démarrer le suivi en
    direct** » avant la mise en route, et **garder la page ouverte** pendant le vol. Toutes les
    20 s, la page lit le flux public du réseau et remplit mise en route, décollage,
    atterrissage et fin de mission.
@@ -108,9 +113,9 @@ données sensibles.
 
 ## 8. Enregistrer dans le registre
 
-1. La première fois : « **Dossier du registre…** » et choisir le dossier `CR DEFA/FIRE/` du dépôt
-   (autorisation du navigateur, une fois).
-2. « **Ajouter au registre** » : la mission est écrite dans `CR DEFA/FIRE/fire_missions.yaml`. Si le
+1. La première fois : « **Dossier du registre…** » (barre d'en-tête) et choisir le dossier
+   `CR DEFA` du dépôt (autorisation du navigateur, une fois pour toutes les familles).
+2. « **Ajouter au registre** » : la mission est écrite dans le registre unique `CR DEFA/missions.yaml`. Si le
    n° existe déjà, une alerte le signale.
 3. La page passe en mode modification : le bouton devient « Enregistrer les modifications »,
    et « Supprimer cette mission » apparaît.

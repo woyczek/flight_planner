@@ -104,7 +104,38 @@
     });
     return mission;
   }
-  const migrate = (input, family = '') => callsignParts(migrateRecord(input, family));
+  // ---- casse : champs de texte simple en MAJUSCULES (indicatifs, terrains, points tournants,
+  // équipage, organismes…). Les blocs communs et ceux des familles déclarent leurs champs
+  // (registerUpperFields) ; zones de texte libre, listes de codes et URL non concernées.
+  const upperPaths = new Set();
+  const isUpperField = field => !field.keepCase && ((!field.type || field.type === 'text') || (field.type === 'textarea' && field.upper));
+  function registerUpperFields(blocks) {
+    (blocks || []).forEach(block => {
+      if (!block || typeof block !== 'object') return;
+      if (block.collection) block.collection.fields.filter(isUpperField).forEach(f => upperPaths.add(`${block.collection.path}.*.${f.path}`));
+      else (block.fields || []).filter(isUpperField).forEach(f => upperPaths.add(f.path));
+    });
+  }
+  // Convertit les champs déclarés ; renvoie le nombre de valeurs modifiées.
+  function upperText(mission) {
+    let changed = 0;
+    const walk = (node, parts) => {
+      if (node == null) return;
+      const [head, ...rest] = parts;
+      if (head === '*') { if (Array.isArray(node)) node.forEach(item => walk(item, rest)); return; }
+      if (!rest.length) { const v = node[head]; if (typeof v === 'string' && v !== v.toUpperCase()) { node[head] = v.toUpperCase(); changed++; } return; }
+      walk(node[head], rest);
+    };
+    upperPaths.forEach(path => walk(mission, split(path)));
+    return changed;
+  }
+  // Lecture d'une mission : format courant, casse, indicatif décomposé. __caseChanged signale
+  // au registre une conversion à enregistrer (migration des anciennes saisies en minuscules).
+  const migrate = (input, family = '') => {
+    const mission = callsignParts(migrateRecord(input, family));
+    if (upperText(mission)) Object.defineProperty(mission, '__caseChanged', { value: true, configurable: true, enumerable: false });
+    return mission;
+  };
   function migrateRecord(input, family = '') {
     if (!input || typeof input !== 'object') throw new Error('Mission illisible');
     if (Number(input.schemaVersion) >= 2) return fillDefaults(structuredClone(input), emptyMission(input.family || family));
@@ -175,5 +206,5 @@
     return out.map(values => Object.fromEntries(head.map((h, i) => [h, values[i] ?? ''])));
   }
 
-  window.MissionModel = { parseCsv, redact, hasSensitive, context, blockVisible, SCHEMA_VERSION, emptyMission, emptyAircraft, splitCallsign, joinCallsign, get, set, fillDefaults, minutes, between, num, computeStatistics, migrate, toYaml, parse };
+  window.MissionModel = { parseCsv, redact, hasSensitive, context, blockVisible, SCHEMA_VERSION, emptyMission, emptyAircraft, splitCallsign, joinCallsign, isUpperField, registerUpperFields, upperText, upperPaths, get, set, fillDefaults, minutes, between, num, computeStatistics, migrate, toYaml, parse };
 })();

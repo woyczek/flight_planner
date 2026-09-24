@@ -74,9 +74,9 @@ les registres présents dans le dépôt sont lus en lecture seule.
 1. **Profil pilote** — menu ☰ › Profil pilote : ID IVAO (VID), ID VATSIM (CID), identifiant
    SimBrief. Ils sont repris par toutes les pages.
 2. **Langue** — drapeau du bandeau : automatique, FR, EN, DE, ES.
-3. **Dossier des registres** — sur une page de CR : « Dossier du registre… », choisir le
-   dossier de la famille dans le dépôt (ex. `CR DEFA/HEMS/`). Autorisé une fois par famille ; le
-   registre `<famille>_missions.yaml` y est ensuite écrit à chaque enregistrement.
+3. **Dossier du registre** — sur une page de CR (barre d'en-tête) : « Dossier du registre… »,
+   choisir le dossier `CR DEFA` du dépôt. Autorisé une fois pour toutes les familles ; le
+   registre unique `missions.yaml` y est ensuite écrit à chaque enregistrement.
 4. **Sauvegarde des données locales** — menu ☰ › Données locales › « Dossier de
    sauvegarde… » : choisir un dossier synchronisé (hors dépôt si vous ne voulez pas le
    versionner). Sauvegarde automatique ensuite.

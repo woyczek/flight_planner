@@ -428,3 +428,16 @@ Retenues par défaut (à contester si besoin) :
   des anciens reportings. `repository_tree` : dossiers et pages préfixés par `CR DEFA/`.
 - Autorisations de dossiers des registres : à redonner une fois par famille (« Dossier du
   registre… ») si elles visaient les anciens dossiers.
+
+## N. Étape 9 — registre unique, majuscules, disposition de la page de CR (2026-09-24)
+
+- **Registre unique** `CR DEFA/missions.yaml` (toutes familles ; `shared/mission_core/ledger.js`) :
+  vues par famille (même interface), une seule autorisation de dossier (« CR DEFA »), migration
+  automatique et idempotente des anciens registres par famille (`legacyImported`).
+- **Majuscules** : champs de texte simple déclarés par les blocs communs et des familles
+  (`MissionModel.registerUpperFields`, `isUpperField`, exception `keepCase` pour les URL) ;
+  saisie convertie à la frappe, valeurs remplies automatiquement converties, anciennes
+  missions converties à la lecture puis réenregistrées.
+- **Page de CR** : barre d'outils dans l'en-tête (registre des missions ; suivi réseau en mode
+  compact, mode d'emploi en infobulle), aperçu du CR dans la colonne de droite (collée,
+  défilement propre, calculs sur 4 colonnes), blocs Navigation et Météo en bas de page.

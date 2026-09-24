@@ -236,11 +236,14 @@
       f('network.onlineNetwork', L('Réseau', 'Network', 'Netzwerk', 'Red'), 'select', { options: V.networks, alias: 'onlineNetwork' }),
       f('network.ivaoId', L('ID IVAO (VID)', 'IVAO ID (VID)', 'IVAO-ID (VID)', 'ID IVAO (VID)'), 'text', { alias: 'ivaoId' }),
       f('network.vatsimId', L('ID VATSIM (CID)', 'VATSIM ID (CID)', 'VATSIM-ID (CID)', 'ID VATSIM (CID)'), 'text', { alias: 'vatsimId' }),
-      f('network.trackerUrl', L('URL de la trace', 'Track URL', 'URL der Spur', 'URL de la traza'), 'text', { full: true, alias: 'trackerUrl' })
+      f('network.trackerUrl', L('URL de la trace', 'Track URL', 'URL der Spur', 'URL de la traza'), 'text', { full: true, alias: 'trackerUrl', keepCase: true })
     ]
   };
 
-  // Ordre du formulaire ; les blocs de la famille s'insèrent avant « events ».
-  const ORDER = [identification, aircraft, crew, tasking, capabilities, environment, navigation, timeline, fuel, '__family__', events, legs, results, remarks, network];
+  // Ordre du formulaire ; les blocs de la famille s'insèrent avant « events » ; navigation et
+  // météo (souvent remplies par le plan de vol et les sources météo) en bas de page.
+  const ORDER = [identification, aircraft, crew, tasking, capabilities, timeline, fuel, '__family__', events, legs, results, remarks, network, navigation, environment];
+  // Champs de texte simple des blocs communs : en majuscules (saisie, registres, migration).
+  window.MissionModel.registerUpperFields(ORDER.filter(block => typeof block === 'object'));
   window.MissionBlocks = { ORDER, CIVIL, ON_STATION, identification, aircraft, crew, tasking, capabilities, environment, navigation, timeline, fuel, events, legs, results, remarks, network };
 })();

@@ -51,9 +51,14 @@ Highlights:
   (Open-Meteo), sunrise / sunset / day-night at the departure aerodrome (local time).
 - **Live network tracking** (IVAO / VATSIM) filling engine start, take-off, landing and
   mission end; VATSIM history import.
-- **Ledgers**: one YAML file per family (`CR DEFA/<FOLDER>/<family>_missions.yaml`), written in a
-  local folder authorised once (Chrome / Edge), with a simplified CSV export. Legacy
-  HEMS / GAAR CSV ledgers can be imported.
+- **Single ledger**: all families in one YAML file (`CR DEFA/missions.yaml`), written in the
+  `CR DEFA` folder authorised once (Chrome / Edge), with a simplified CSV export; former
+  per-family ledgers are merged automatically. Legacy HEMS / GAAR CSV ledgers can be imported.
+- **Plain text fields in capitals** (callsigns, aerodromes, waypoints, crew…), older entries
+  converted on reading; free text areas keep their case.
+- **Report page layout**: ledger and network-tracking buttons in the header bar (usage
+  shown on hover), live report preview in the right column, navigation and weather at
+  the bottom.
 - **Report**: 14-section mission report generated in four languages (FR / EN / DE / ES),
   printable to PDF, with a public version hiding sensitive data where relevant.
 - **Local data backup**: everything the browser keeps can be saved to / restored from

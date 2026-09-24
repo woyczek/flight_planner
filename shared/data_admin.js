@@ -225,7 +225,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       intro: T('Coordonnées et fuseaux des terrains utilisés (lever / coucher du soleil, météo).', 'Coordinates and time zones of aerodromes used (sunrise / sunset, weather).'),
       columns: [{ key: 'icao', label: 'OACI', upper: true }, { key: 'name', label: T('Nom', 'Name'), width: '14em' }, { key: 'country', label: T('Pays', 'Country') }, { key: 'lat', label: 'Lat', type: 'number' }, { key: 'lon', label: 'Lon', type: 'number' }, { key: 'elevation', label: T('Altitude (ft)', 'Elevation (ft)'), type: 'number' }, { key: 'tz', label: T('Fuseau', 'Time zone') }] },
     { id: 'ledgers', group: T('Missions', 'Missions'), title: T('Registres des missions (base des opérations)', 'Mission ledgers (operations base)'), custom: true,
-      intro: T('Un registre YAML par famille (source de vérité des reportings). Édition directe du YAML, avec contrôle avant enregistrement ; pour une mission, préférer le CR (clic sur la ligne du reporting).', 'One YAML ledger per family (source of truth of the reportings). Direct YAML editing, checked before saving; for a single mission, prefer the report (click its reporting row).') }
+      intro: T('Registre unique CR DEFA/missions.yaml (toutes familles, source de vérité des reportings). Édition directe du YAML, complète ou par famille, avec contrôle avant enregistrement ; pour une mission, préférer le CR (clic sur la ligne du reporting).', 'Single ledger CR DEFA/missions.yaml (all families, source of truth of the reportings). Direct YAML editing, full or per family, checked before saving; for a single mission, prefer the report (click its reporting row).') }
   ];
 
   // ---- page
@@ -288,41 +288,55 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
 
     // Registres des missions : YAML par famille.
     async function ledgers(body) {
-      actions([]);
-      const M = window.MissionModel, families = window.MissionVocab.families;
-      body.innerHTML = `<table class="da-table"><thead><tr><th>${esc(T('Famille', 'Family'))}</th><th>${esc(T('Fichier', 'File'))}</th><th>${esc(T('Missions', 'Missions'))}</th><th>${esc(T('Source', 'Source'))}</th><th>${esc(T('Mis à jour', 'Updated'))}</th><th></th></tr></thead><tbody></tbody></table><div class="da-yaml" hidden><h3></h3><textarea spellcheck="false"></textarea><div class="row"><button type="button" class="primary" data-yaml="save"></button><button type="button" class="secondary" data-yaml="close"></button></div></div>`;
-      const tbody = body.querySelector('tbody'), editor = body.querySelector('.da-yaml');
+      const M = window.MissionModel, families = window.MissionVocab.families, L = window.MissionLedger;
+      await L.load(true);
+      const store = L.store;
+      body.innerHTML = `<p class="small"></p><table class="da-table"><thead><tr><th>${esc(T('Famille', 'Family'))}</th><th>${esc(T('Missions', 'Missions'))}</th><th></th></tr></thead><tbody></tbody></table><div class="da-yaml" hidden><h3></h3><textarea spellcheck="false"></textarea><div class="row"><button type="button" class="primary" data-yaml="save"></button><button type="button" class="secondary" data-yaml="close"></button></div></div>`;
+      const info = () => { body.querySelector('p.small').textContent = `${L.FILE} (CR DEFA) · ${store.missions.length} ${T('missions', 'missions')} · ${T('source', 'source')} : ${store.source}${store.folder ? ` (${store.folder})` : ''} · ${T('mis à jour', 'updated')} ${store.updatedAt ? new Date(store.updatedAt).toLocaleString() : '—'}${Object.keys(store.legacyImported || {}).length ? ` · ${T('anciens registres repris', 'legacy ledgers merged')} : ${Object.keys(store.legacyImported).join(', ')}` : ''}`; };
+      info();
+      const tbody = body.querySelector('tbody'), editor = body.querySelector('.da-yaml'), area = editor.querySelector('textarea');
       editor.querySelector('[data-yaml="save"]').textContent = T('Contrôler et enregistrer', 'Check and save');
+      editor.querySelector('[data-yaml="close"]').onclick = () => { editor.hidden = true; dirty = false; };
       editor.querySelector('[data-yaml="close"]').textContent = T('Fermer', 'Close');
-      for (const f of families) {
-        const base = f.cr.split('/')[0] + '/', ledger = window.MissionLedger.open({ id: f.id }, { base });
-        try { await ledger.load(); } catch { /* registre illisible */ }
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td><b>${esc(f.id)}</b> <span class="small">${esc(f.label)}</span></td><td>${esc(ledger.filename)}</td><td>${ledger.missions.length}</td><td>${esc(ledger.state.source)}${ledger.state.folder ? ` (${esc(ledger.state.folder)})` : ''}</td><td>${esc(ledger.state.updatedAt ? new Date(ledger.state.updatedAt).toLocaleString() : '—')}</td>
-          <td class="row"><button type="button" class="secondary" data-act="edit">${esc(T('Éditer (YAML)', 'Edit (YAML)'))}</button><button type="button" class="secondary" data-act="yaml">YAML</button><button type="button" class="secondary" data-act="csv">CSV</button><a class="secondary mc-button" href="${esc(f.reporting)}">${esc(T('Reporting', 'Reporting'))}</a></td>`;
-        tr.querySelector('[data-act="yaml"]').onclick = () => ledger.downloadYaml();
-        tr.querySelector('[data-act="csv"]').onclick = () => ledger.downloadCsv();
-        tr.querySelector('[data-act="edit"]').onclick = () => {
-          editor.hidden = false; editor.querySelector('h3').textContent = `${f.id} — ${ledger.filename}`;
-          const area = editor.querySelector('textarea');
-          area.value = M.toYaml({ schemaVersion: M.SCHEMA_VERSION, family: f.id, updatedAt: ledger.state.updatedAt, missions: ledger.missions }, `Registre des missions ${f.id} — Mission Report — DEFA Virtual`);
-          area.oninput = changed;
-          editor.querySelector('[data-yaml="close"]').onclick = () => { editor.hidden = true; dirty = false; };
-          editor.querySelector('[data-yaml="save"]').onclick = async () => {
-            let data;
-            try { data = window.jsyaml.load(area.value, { schema: window.jsyaml.CORE_SCHEMA }); } catch (e) { status(`${T('YAML invalide', 'Invalid YAML')} : ${e.message}`); return; }
-            const missions = Array.isArray(data) ? data : data?.missions;
-            if (!Array.isArray(missions)) { status(T('YAML sans liste « missions ».', 'YAML without a “missions” list.')); return; }
-            ledger.state.missions = missions.map(m => M.migrate(m, f.id));
-            const result = await ledger.save(); dirty = false;
-            status(`${ledger.missions.length} ${T('missions enregistrées', 'missions saved')} — ${result.written ? `${T('fichier', 'file')} ${ledger.state.folder}/${ledger.filename}` : T('navigateur (dossier du registre non autorisé : voir la page CR de la famille)', 'browser (ledger folder not authorised: see the family report page)')}`);
-            tr.children[2].textContent = ledger.missions.length;
-          };
-          editor.scrollIntoView({ behavior: 'smooth' });
+      const result = r => `${r.written ? `${T('fichier', 'file')} ${store.folder}/${L.FILE}` : T('navigateur (dossier « CR DEFA » non autorisé : « Dossier du registre… »)', 'browser (“CR DEFA” folder not authorised: “Ledger folder…”)')}`;
+      // Éditeur YAML : registre complet (family absent) ou missions d'une famille.
+      function edit(familyId) {
+        const view = familyId ? L.open({ id: familyId }) : null;
+        editor.hidden = false; editor.querySelector('h3').textContent = familyId ? `${familyId} — ${L.FILE}` : `${T('Registre complet', 'Full ledger')} — ${L.FILE}`;
+        area.value = M.toYaml({ schemaVersion: M.SCHEMA_VERSION, updatedAt: store.updatedAt, missions: view ? view.missions : store.missions }, familyId ? `Missions ${familyId}` : 'Registre des missions — toutes familles');
+        area.oninput = changed;
+        editor.querySelector('[data-yaml="save"]').onclick = async () => {
+          let data;
+          try { data = window.jsyaml.load(area.value, { schema: window.jsyaml.CORE_SCHEMA }); } catch (e) { status(`${T('YAML invalide', 'Invalid YAML')} : ${e.message}`); return; }
+          const missions = Array.isArray(data) ? data : data?.missions;
+          if (!Array.isArray(missions)) { status(T('YAML sans liste « missions ».', 'YAML without a “missions” list.')); return; }
+          if (!familyId && missions.some(m => !m?.family)) { status(T('Registre complet : chaque mission doit avoir sa famille (family).', 'Full ledger: each mission needs its family.')); return; }
+          const parsed = missions.map(m => M.migrate(m, m.family || familyId));
+          if (view) view.setMissions(parsed); else L.setAll(parsed);
+          const r = await L.save(); dirty = false; status(`${parsed.length} ${T('missions enregistrées', 'missions saved')} — ${result(r)}`); paint(); info();
         };
-        tbody.append(tr);
+        editor.scrollIntoView({ behavior: 'smooth' });
       }
-      status(T('Registres chargés (dossier autorisé, sinon copie du navigateur, sinon fichier du dépôt).', 'Ledgers loaded (authorised folder, else browser copy, else repository file).'));
+      function paint() {
+        tbody.innerHTML = '';
+        families.forEach(f => {
+          const view = L.open({ id: f.id }), tr = document.createElement('tr');
+          tr.innerHTML = `<td><b>${esc(f.id)}</b> <span class="small">${esc(f.label)}</span></td><td>${view.missions.length}</td>
+            <td class="row"><button type="button" class="secondary" data-act="edit">${esc(T('Éditer (YAML)', 'Edit (YAML)'))}</button><button type="button" class="secondary" data-act="yaml">YAML</button><button type="button" class="secondary" data-act="csv">CSV</button><a class="secondary mc-button" href="${esc(f.reporting)}">${esc(T('Reporting', 'Reporting'))}</a></td>`;
+          tr.querySelector('[data-act="yaml"]').onclick = () => view.downloadYaml();
+          tr.querySelector('[data-act="csv"]').onclick = () => view.downloadCsv();
+          tr.querySelector('[data-act="edit"]').onclick = () => edit(f.id);
+          tbody.append(tr);
+        });
+      }
+      paint();
+      actions([
+        [T('Éditer le registre complet (YAML)', 'Edit the full ledger (YAML)'), () => edit(null), 'primary'],
+        [T('Dossier du registre…', 'Ledger folder…'), async () => { await L.chooseFolder(); await L.load(true); const r = await L.save(); status(result(r)); info(); paint(); }],
+        [T('Télécharger le registre (YAML)', 'Download the ledger (YAML)'), () => L.downloadAll()],
+        [T('Exporter en CSV (tableur)', 'Export CSV (spreadsheet)'), () => L.downloadAllCsv()]
+      ]);
+      status(T('Registre unique : dossier autorisé, sinon copie du navigateur, sinon fichier du dépôt ; anciens registres par famille repris automatiquement.', 'Single ledger: authorised folder, else browser copy, else repository file; legacy per-family ledgers merged automatically.'));
     }
 
     show();
