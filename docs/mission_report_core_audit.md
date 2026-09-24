@@ -489,3 +489,13 @@ Retenues par défaut (à contester si besoin) :
   `save()` relit d'abord le registre. Anciens registres servis absents : une vérification par jour.
 - `model.js` : transit / temps sur zone jamais plus longs que le vol (heure inversée = erreur,
   pas un passage de minuit).
+
+## R. Étape 13 — barre d'en-tête des CR (2026-09-24)
+
+- Une ligne, sept entrées par ordre d'importance : famille · série (popup déplacée dans la
+  barre), Ajouter / Enregistrer (principal), Envoyer le CR (vert ; en pointillés tant que le
+  webservice n'est pas paramétré, avec proposition d'ouvrir le paramétrage), Analyse / import ▾
+  (le fichier YAML / JSON y rejoint le texte collé), Suivi réseau ▾ (panneau compact du
+  network_tracker, ● rouge pendant le suivi), Mission ▾ (nouvelle, export, suppression),
+  Registre des missions ▾ (infos, reporting, dossier, téléchargement, paramétrage de l'envoi,
+  Paramétrage). Un seul menu ouvert, fermeture au clic extérieur ; `data-action` inchangés.

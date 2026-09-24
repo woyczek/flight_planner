@@ -145,6 +145,41 @@ header.mc-header h1{font-size:20px}
 .mc-aside .mc-kpi b{font-size:15px}
 .mc-aside .mc-kpi .small{font-size:11px}
 header.mc-header:has(.mc-header-tools)>p{display:none}
+/* Barre d'outils de l'en-tête : une ligne, sept entrées au plus, menus déroulants */
+.mc-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.mc-toolbar>.mc-switch,.mc-toolbar>.mc-import{margin:0}
+.mc-header-tools .mc-toolbar>button,.mc-toolbar>details>summary{min-height:30px;box-sizing:border-box}
+.mc-header-tools .mc-toolbar>button.primary{font-size:13px;padding:5px 14px}
+.mc-header-tools button.mc-send{background:#16a34a;border-color:#16a34a;font-size:13px;padding:5px 14px}
+.mc-header-tools button.mc-send:hover{background:#15803d}
+.mc-header-tools button.mc-send.mc-send-off{background:#ffffff1f;border:1px dashed #ffffffb0;opacity:1}
+.mc-menu{position:relative;display:inline-block}
+.mc-menu>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:8px;border:1px solid #ffffff59;background:#ffffff1f;font-size:12px;font-weight:600;color:#fff}
+.mc-menu>summary::after{content:'▾';font-size:10px;opacity:.85}
+.mc-menu>summary::-webkit-details-marker{display:none}
+.mc-menu>summary:hover,.mc-menu[open]>summary{background:#ffffff38}
+.mc-toolbar>.mc-import>summary{border-radius:8px;padding:4px 12px;font-size:12px}
+.mc-net:has(.nt-toggle.danger)>summary::before{content:'●';color:#f87171;margin-right:2px}
+.mc-pop{position:absolute;z-index:1100;top:calc(100% + 6px);left:0;min-width:240px;box-sizing:border-box;padding:10px;border-radius:12px;background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 8px 24px #0003}
+.mc-list{display:grid;gap:2px;min-width:270px}
+.mc-list hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+.mc-list .mc-ledger-info{margin:0 4px 6px;color:var(--muted);font-size:11px}
+.mc-header-tools .mc-pop button,.mc-header-tools .mc-pop a.mc-button,.mc-header-tools .mc-pop a.nt-link{background:transparent;border:0;color:var(--ink)!important;justify-content:flex-start;text-align:left;border-radius:7px;padding:7px 10px;font-size:13px;font-weight:500}
+.mc-header-tools .mc-pop button:hover,.mc-header-tools .mc-pop a:hover{background:#eef2f7}
+.mc-header-tools .mc-pop button.danger{color:#b91c1c!important}
+.mc-header-tools .mc-pop button.primary{background:var(--accent);color:#fff!important;font-weight:600;justify-content:center}
+.mc-net-pop{width:min(560px,calc(100vw - 32px))}
+.mc-net-pop .nt-row{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.mc-net-pop .mc-header-label{flex-basis:100%;color:var(--muted);opacity:1}
+.mc-net-pop .nt-help{border-color:var(--line)!important;color:var(--muted)}
+.mc-net-pop .nt-status{flex-basis:100%;color:var(--muted);opacity:1}
+.mc-header-tools .mc-net-pop button.nt-toggle{background:var(--accent)!important;color:#fff!important;font-weight:600!important}
+.mc-header-tools .mc-net-pop button.nt-toggle.danger{background:#b91c1c!important}
+.mc-import-file{border-top:1px solid var(--line);padding-top:8px}
+.mc-header-tools .mc-import-pop button:not(.primary){background:#e5e7eb;justify-content:center;font-weight:600;font-size:12px}
+.mc-header-tools .mc-import-pop a{color:var(--accent)}
+.mc-header-tools .mc-status{flex:1 1 200px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:700px){.mc-pop{position:fixed;left:16px;right:16px;top:auto;min-width:0;width:auto}}
 @media(max-width:1000px){.mc-aside{max-height:none;overflow:visible}.mc-aside .mc-kpi{grid-template-columns:repeat(2,1fr)}}
 /* « Analyser / importer… » : fenêtre sous l'en-tête (texte collé : FPL, tracker IVAO, VATSIM, METAR) */
 .mc-import{position:relative;display:inline-block;margin:6px 0 0 8px;vertical-align:top}

@@ -34,9 +34,12 @@ Repères sur la page :
   employées » est masqué par défaut : il est repris de la dernière mission de la même série ;
 - à droite, **Calculs automatiques** : temps bloc, temps de vol, transits, carburant… mis à
   jour pendant la saisie ;
-- dans la **barre d'en-tête** : les boutons du registre (ajouter / enregistrer, supprimer,
-  nouvelle mission, export, import, reporting, dossier) et du suivi réseau — le mode d'emploi
-  s'affiche au survol du « ? » ;
+- dans la **barre d'en-tête**, sept entrées de gauche à droite :
+  **famille · série ▾** (changer de famille ou de sous-type), **Ajouter au registre** /
+  **Enregistrer les modifications**, **Envoyer le CR**, **Analyse / import… ▾** (texte collé,
+  trackers, fichier de mission), **Suivi réseau ▾** (● rouge pendant le suivi), **Mission ▾**
+  (nouvelle, export YAML, suppression) et **Registre des missions ▾** (reporting, dossier,
+  téléchargement, **paramétrage de l'envoi des CR**, Paramétrage) ;
 - à droite, sous les calculs, l'**aperçu du compte rendu**, mis à jour pendant la saisie ;
 - en bas de page, les blocs **Navigation** et **Météo** ;
 - les champs de texte simple s'écrivent en **majuscules** (indicatifs, terrains, équipage…).
@@ -94,7 +97,7 @@ plan de vol `PCAN44`** (7 caractères OACI), exploitant **OPR/ FRU**, base **LFT
    phase jour / nuit. Changer d'heure ou de terrain met à jour ces valeurs ; ce que vous avez
    saisi vous-même n'est jamais remplacé. Les boutons du bloc refont le calcul à la demande ;
    un METAR collé est analysé.
-3. **Barre d'en-tête › Récupérer les infos (suivi réseau)** : « **Démarrer le suivi en
+3. **Barre d'en-tête › Suivi réseau ▾** : « **Démarrer le suivi en
    direct** » avant la mise en route, et **garder la page ouverte** pendant le vol. Toutes les
    20 s, la page lit le flux public du réseau et remplit mise en route, décollage,
    atterrissage et fin de mission.
@@ -151,19 +154,20 @@ données sensibles.
 
 ## 8. Enregistrer dans le registre
 
-1. La première fois : « **Dossier du registre…** » (barre d'en-tête) et choisir le dossier
+1. La première fois : **Registre des missions ▾ › Dossier du registre…** et choisir le dossier
    `CR DEFA` du dépôt (autorisation du navigateur, une fois pour toutes les familles).
 2. « **Ajouter au registre** » : la mission est écrite dans le registre unique `CR DEFA/missions.yaml`. Si le
    n° existe déjà, une alerte le signale.
 3. La page passe en mode modification : le bouton devient « Enregistrer les modifications »,
    et « Supprimer cette mission » apparaît.
 
-« Exporter la mission (YAML) » crée un fichier de cette seule mission ; « Nouvelle mission »
-repart d'un CR vierge.
+**Mission ▾ › Exporter la mission (YAML)** crée un fichier de cette seule mission ;
+**Mission ▾ › Nouvelle mission** repart d'un CR vierge.
 
 « **Envoyer le CR** » transmet le compte rendu (mission, CR en HTML et en texte, calculs) au
-webservice de la DEFA, une fois celui-ci réglé dans ☰ › Paramétrage › Envoi des comptes
-rendus. La bulle du bouton indique le dernier envoi de cette mission.
+webservice de la DEFA, une fois celui-ci réglé : **Registre des missions ▾ › Paramétrer
+l'envoi des CR (webservice)…** (ou ☰ › Paramétrage › Envoi des comptes rendus). Tant qu'il ne
+l'est pas, le bouton est en pointillés et propose d'ouvrir ce paramétrage. La bulle du bouton indique le dernier envoi de cette mission.
 
 ## 9. Le reporting
 

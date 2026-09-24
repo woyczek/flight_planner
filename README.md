@@ -63,8 +63,8 @@ Highlights:
   per-family ledgers are merged automatically. Legacy HEMS / GAAR CSV ledgers can be imported.
 - **Plain text fields in capitals** (callsigns, aerodromes, waypoints, crew…), older entries
   converted on reading; free text areas keep their case.
-- **Report page layout**: ledger and network-tracking buttons in the header bar (usage
-  shown on hover), live report preview in the right column, navigation and weather at
+- **Report page layout**: seven-entry header bar (family · series, save, send, import,
+  network tracking, mission, ledger), live report preview in the right column, navigation and weather at
   the bottom.
 - **Report**: 14-section mission report generated in four languages (FR / EN / DE / ES),
   printable to PDF, with a public version hiding sensitive data where relevant.

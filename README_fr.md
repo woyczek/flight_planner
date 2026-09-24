@@ -67,8 +67,8 @@ Points forts :
   HEMS / GAAR.
 - **Champs de texte simple en majuscules** (indicatifs, terrains, points tournants,
   équipage…), anciennes saisies converties à la lecture ; zones de texte libre inchangées.
-- **Page de CR** : boutons du registre et du suivi réseau dans la barre d'en-tête (mode
-  d'emploi au survol), aperçu du compte rendu dans la colonne de droite, navigation et météo
+- **Page de CR** : barre d'en-tête de sept entrées (famille · série, enregistrer, envoyer,
+  importer, suivi réseau, mission, registre), aperçu du compte rendu dans la colonne de droite, navigation et météo
   en bas de page.
 - **Compte rendu** en 14 sections, généré en quatre langues (FR / EN / DE / ES), imprimable
   en PDF, avec une version publique masquant les données sensibles quand il y a lieu.

@@ -63,6 +63,11 @@
     importRun: L('Analyser et remplir', 'Analyse and fill', 'Auswerten und ausfüllen', 'Analizar y rellenar'), importClip: L('Coller depuis le presse-papiers', 'Paste from clipboard', 'Aus Zwischenablage einfügen', 'Pegar desde el portapapeles'),
     importBookmarklet: L('← à glisser dans la barre des favoris : un clic sur la page du tracker IVAO la copie ; revenez ici, elle est analysée.', '← drag to the bookmarks bar: one click on the IVAO tracker page copies it; come back here, it is analysed.', '← in die Lesezeichenleiste ziehen: ein Klick auf der IVAO-Tracker-Seite kopiert sie; hierher zurückkehren, sie wird ausgewertet.', '← arrastre a la barra de marcadores: un clic en la página del tracker IVAO la copia; vuelva aquí, se analiza.'),
     ledgerUnavailable: L('registre illisible (serveur ou fichier indisponible) — mission conservée en brouillon, réessayez.', 'ledger unreadable (server or file unavailable) — mission kept as a draft, try again.', 'Register nicht lesbar (Server oder Datei nicht verfügbar) — Einsatz als Entwurf behalten, erneut versuchen.', 'registro ilegible (servidor o archivo no disponible) — misión conservada como borrador, reinténtelo.'),
+    menuNetwork: L('Suivi réseau', 'Network tracking', 'Netzwerk-Tracking', 'Seguimiento de red'),
+    menuMission: L('Mission', 'Mission', 'Einsatz', 'Misión'),
+    sendSettings: L('Paramétrer l’envoi des CR (webservice)…', 'Report sending settings (web service)…', 'Berichtversand einrichten (Webservice)…', 'Configurar el envío de informes (servicio web)…'),
+    settingsPage: L('Paramétrage — bases de données…', 'Settings — databases…', 'Einstellungen — Datenbanken…', 'Configuración — bases de datos…'),
+    sendSetupNow: L('Le webservice d’envoi des CR n’est pas encore paramétré (adresse, clef). Ouvrir le paramétrage ?', 'The report web service is not set up yet (address, key). Open the settings?', 'Der Webservice für den Berichtversand ist noch nicht eingerichtet (Adresse, Schlüssel). Einstellungen öffnen?', 'El servicio web de envío de informes aún no está configurado (dirección, clave). ¿Abrir la configuración?'),
     sendReport: L('Envoyer le CR', 'Send report', 'Bericht senden', 'Enviar informe'),
     sendNotConfigured: L('Envoi du CR : webservice non configuré (Paramétrage → Envoi des comptes rendus).', 'Report sending: web service not configured (Settings → Report sending).', 'Berichtversand: Webservice nicht konfiguriert (Einstellungen → Berichtversand).', 'Envío del informe: servicio web no configurado (Configuración → Envío de informes).'),
     sendUnsaved: L('Cette mission n’est pas enregistrée dans le registre (ou a des modifications non enregistrées). L’envoyer quand même ?', 'This mission is not saved in the ledger (or has unsaved changes). Send it anyway?', 'Dieser Einsatz ist nicht im Register gespeichert (oder hat ungespeicherte Änderungen). Trotzdem senden?', 'Esta misión no está guardada en el registro (o tiene cambios sin guardar). ¿Enviarla de todos modos?'),
@@ -131,26 +136,34 @@
     // réseau ; colonne de droite : calculs puis aperçu du compte rendu.
     const header = document.querySelector('header.mc-header');
     const tools = document.createElement('div'); tools.className = 'mc-header-tools';
-    tools.innerHTML = `<div class="mc-header-ledger"><span class="mc-header-label"></span>
+    // Sept entrées au plus, par ordre d'importance : contexte (famille · série, ajoutée plus
+    // bas), actions principales (enregistrer, envoyer), puis menus (importer, suivi réseau,
+    // mission, registre). Les actions gardent leur data-action, quel que soit leur menu.
+    tools.innerHTML = `<div class="mc-toolbar">
         <button type="button" class="primary" data-action="store"></button>
-        <button type="button" class="danger" data-action="delete" hidden></button>
         <button type="button" class="mc-send" data-action="send"></button>
-        <button type="button" data-action="new"></button>
-        <button type="button" data-action="export"></button>
-        <button type="button" data-action="import"></button>
-        <details class="mc-import"><summary></summary><div class="mc-import-pop">
+        <details class="mc-import mc-menu"><summary></summary><div class="mc-import-pop mc-pop">
           <div class="mc-import-row mc-import-links"><a data-open="ivao" target="_blank" rel="noopener"></a><a data-open="statsim" target="_blank" rel="noopener"></a></div>
           <p class="small mc-import-intro"></p>
           <textarea spellcheck="false" rows="8"></textarea>
           <div class="mc-import-row"><button type="button" class="primary" data-import="run"></button><button type="button" data-import="clip"></button>
           <a class="mc-bookmarklet" draggable="true"></a><span class="small mc-import-hint"></span></div>
-          <p class="small mc-import-result"></p></div></details>
-        <a class="mc-button" data-action="reporting"></a>
-        <button type="button" data-action="folder"></button>
-        <button type="button" data-action="download" hidden></button>
+          <p class="small mc-import-result"></p>
+          <div class="mc-import-row mc-import-file"><button type="button" data-action="import"></button></div></div></details>
+        <details class="mc-menu mc-net"><summary data-menu="network"></summary><div class="mc-pop mc-net-pop"><div id="mc-header-tracker"></div></div></details>
+        <details class="mc-menu"><summary data-menu="mission"></summary><div class="mc-pop mc-list">
+          <button type="button" data-action="new"></button>
+          <button type="button" data-action="export"></button>
+          <button type="button" class="danger" data-action="delete" hidden></button></div></details>
+        <details class="mc-menu"><summary data-menu="ledger"></summary><div class="mc-pop mc-list">
+          <p class="small mc-ledger-info"></p>
+          <a class="mc-button" data-action="reporting"></a>
+          <button type="button" data-action="folder"></button>
+          <button type="button" data-action="download" hidden></button>
+          <hr><a class="mc-button" data-action="sendSettings"></a>
+          <a class="mc-button" data-action="settings"></a></div></details>
         <input type="file" accept=".yaml,.yml,.json,application/json,text/yaml" hidden>
-        <span class="mc-ledger-info"></span><span class="mc-status"></span></div>
-      <div id="mc-header-tracker"></div>`;
+        <span class="mc-status"></span></div>`;
     if (header) header.append(tools);
     root.innerHTML = `<form id="missionCoreForm" class="mc-form" autocomplete="off">
       <section class="mc-edit-banner" hidden><h2></h2><p class="note mc-edit-info"></p></section></form>
@@ -170,7 +183,16 @@
     const say = (key, extra = '') => { status.textContent = t(key) + (extra ? ` : ${extra}` : ''); };
     [['render', 'render'], ['print', 'print'], ['new', 'newMission'], ['import', 'importFile'], ['export', 'exportYaml'], ['reporting', 'viewReporting'], ['folder', 'chooseFolder'], ['download', 'downloadLedger'], ['delete', 'deleteMission']].forEach(([a, k]) => { $a(a).textContent = t(k); });
     $a('reporting').href = family.pages.reporting || '#';
-    tools.querySelector('.mc-header-label').textContent = t('ledgerTitle');
+    // Menus de la barre d'outils : libellés, liens vers le paramétrage, un seul menu ouvert.
+    [['network', 'menuNetwork'], ['mission', 'menuMission'], ['ledger', 'ledgerTitle']].forEach(([k, key]) => { tools.querySelector(`[data-menu="${k}"]`).textContent = t(key); });
+    const settingsUrl = base => new URL(`parametrage.html${base ? `?base=${base}` : ''}`, window.MissionLedger.APP).href;
+    $a('sendSettings').textContent = t('sendSettings'); $a('sendSettings').href = settingsUrl('send');
+    $a('settings').textContent = t('settingsPage'); $a('settings').href = settingsUrl('');
+    const menus = [...tools.querySelectorAll('details.mc-menu')];
+    menus.forEach(menu => menu.addEventListener('toggle', () => { if (menu.open) menus.forEach(other => { if (other !== menu) other.open = false; }); }));
+    document.addEventListener('click', event => menus.forEach(menu => { if (menu.open && !menu.contains(event.target)) menu.open = false; }));
+    // Choix dans un menu (hors import et suivi réseau, qui restent ouverts) : menu refermé.
+    tools.querySelectorAll('.mc-list').forEach(list => list.addEventListener('click', event => { if (event.target.closest('button,a')) list.closest('details').open = false; }));
     root.querySelector('.mc-kpi-panel h2').textContent = t('kpiTitle');
     root.querySelector('.mc-report-panel h2').textContent = t('reportTitle');
     // Familles avec champs sensibles (ex. LAW ENFORCEMENT) : version publique du CR.
@@ -534,7 +556,7 @@
     }
     $a('send').onclick = async () => {
       const config = sendConfig();
-      if (!config.url) { status.innerHTML = `${esc(inLanguage(UI.sendNotConfigured))} <a href="${esc(new URL('parametrage.html?base=send', window.MissionLedger.APP).href)}">↗</a>`; return; }
+      if (!config.url) { if (confirm(inLanguage(UI.sendSetupNow))) window.open(settingsUrl('send'), '_blank'); else status.textContent = inLanguage(UI.sendNotConfigured); return; }
       if ((!edit || dirty) && !confirm(inLanguage(UI.sendUnsaved))) return;
       M.upperText(mission); renderReport();
       const shown = isPublic() ? M.redact(mission, family) : mission, report = root.querySelector('#mcReport');
@@ -616,8 +638,8 @@
       get: () => mission.series,
       set: value => { mission.series = value; view.sync(); view.refresh(); kpi(); changed(); }
     });
-    // « Analyser / importer… » sur la ligne de la popup famille / sous-type (au-dessus du registre).
-    if (header) header.insertBefore(importBox, tools);
+    // Famille · série : première entrée de la barre d'outils (contexte de la saisie).
+    const switchBox = header?.querySelector('.mc-switch'); if (switchBox) tools.querySelector('.mc-toolbar').prepend(switchBox);
 
     // ---- initialisation : registre, puis mission à ouvrir (modification, brouillon ou nouvelle)
     redraw();
