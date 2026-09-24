@@ -36,6 +36,8 @@
     duplicate: L('Ce n° de mission figure déjà dans le registre. L’ajouter quand même (doublon) ? Annuler pour corriger le n° de mission.', 'This mission ID is already in the ledger. Add it anyway (duplicate)? Cancel to correct the mission ID.', 'Diese Einsatz-ID ist bereits im Register. Trotzdem hinzufügen (Duplikat)? Abbrechen, um die ID zu korrigieren.', 'Este ID de misión ya figura en el registro. ¿Añadirlo de todos modos (duplicado)? Cancelar para corregir el ID.'),
     confirmDelete: L('Supprimer définitivement cette mission du registre ?', 'Permanently delete this mission from the ledger?', 'Diesen Einsatz endgültig aus dem Register löschen?', '¿Eliminar definitivamente esta misión del registro?'),
     editBanner: L('Modification d’une mission du registre', 'Editing a ledger mission', 'Bearbeitung eines Registereinsatzes', 'Modificación de una misión del registro'),
+    fromSia: L('Mission générée (SIA XML) reprise', 'Generated mission (SIA XML) imported', 'Generierte Mission (SIA XML) übernommen', 'Misión generada (SIA XML) importada'),
+    fromSiaReplace: L('Remplacer le brouillon en cours par la mission générée (SIA XML) ?', 'Replace the current draft with the generated mission (SIA XML)?', 'Aktuellen Entwurf durch die generierte Mission (SIA XML) ersetzen?', '¿Reemplazar el borrador actual por la misión generada (SIA XML)?'),
     editGone: L('La mission demandée n’existe plus à cette position du registre (modifié entre-temps) : ouverture d’une nouvelle mission.', 'The requested mission is no longer at this ledger position (changed meanwhile): opening a new mission.', 'Der angeforderte Einsatz ist nicht mehr an dieser Registerposition (zwischenzeitlich geändert): neuer Einsatz wird geöffnet.', 'La misión solicitada ya no está en esta posición del registro (modificado mientras tanto): se abre una nueva misión.'),
     draftSaved: L('Brouillon enregistré dans le navigateur', 'Draft saved in the browser', 'Entwurf im Browser gespeichert', 'Borrador guardado en el navegador'),
     stored: L('Mission enregistrée dans le registre', 'Mission saved to the ledger', 'Einsatz im Register gespeichert', 'Misión guardada en el registro'),
@@ -746,11 +748,55 @@
         let draft = null; try { draft = JSON.parse(localStorage.getItem(draftKey) || 'null'); } catch { draft = null; }
         mission = draft ? M.migrate(draft, family.id) : fresh(); dirty = !!draft;
       }
+      // Mission générée par le générateur SIA XML (« Créer le CR DEFA ») : nouveau CR pré-rempli.
+      let sia = null;
+      if (!edit && params.get('from') === 'sia') {
+        try { sia = JSON.parse(localStorage.getItem(SIA_KEY) || 'null'); } catch { sia = null; }
+        if (sia && dirty && !confirm(t('fromSiaReplace'))) sia = null;
+        if (sia) { mission = fresh(); fromSia(mission, sia); dirty = true; localStorage.removeItem(SIA_KEY); }
+        history.replaceState(null, '', location.pathname);
+      }
       redraw();
+      if (sia) {
+        const lead = mission.aircraft[0] || {};
+        if (lead.callsign) aircraftAssist('aircraft.0.callsign', lead.callsign); else if (lead.type) aircraftAssist('aircraft.0.type', lead.type);
+        if (mission.navigation.dep) await assist.onCommit('navigation.dep', mission.navigation.dep);
+        changed(); say('fromSia', sia.title || '');
+      }
       if (!edit && !dirty) assist.autoEnvironment('now'); // nouvelle mission : météo du terrain de départ par défaut
     })();
 
     return { family, ledger, ready, get mission() { return mission; }, set mission(value) { mission = M.migrate(value, family.id); redraw(); }, get editing() { return edit; }, redraw, store, statistics: () => M.computeStatistics(mission), context: () => view.context() };
+  }
+
+  // ---- mission générée (SIA XML, schéma helo-xp-mission) → champs du CR
+  const SIA_KEY = 'siaMissionToCr:v1';
+  // « A400M Atlas », « C-130J-30 Super Hercules » → type OACI du catalogue commun (A4M, C130…).
+  function siaType(text) {
+    const A = window.MissionAircraft; text = String(text || '').trim(); if (!A || !text) return null;
+    const first = text.split(/\s+/)[0], key = v => v.normalize('NFD').replace(/[^a-z0-9]/gi, '').toLowerCase();
+    for (const c of [text, first, first.replace(/[^a-z0-9]/gi, '')]) for (let n = c.length; n >= 4; n--) { const r = A.lookupType(c.slice(0, n)); if (r) return r; }
+    return key(first).length < 3 ? null : (A.listTypes?.() || []).find(t => t.model && key(t.model).includes(key(first))) || null;
+  }
+  function fromSia(m, y) {
+    const M = window.MissionModel, meta = y.mission || {}, icao = p => (/\(([A-Z0-9]{4})\)/.exec(p?.name || '') || [])[1] || '';
+    const place = p => p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon) ? `${p.name || p.id} ${(+p.lat).toFixed(5)} ${(+p.lon).toFixed(5)}` : '';
+    m.metadata.operationName = y.title || '';
+    if (meta.id != null) m.metadata.missionNumber = String(meta.id);
+    m.tasking.objective = y.summary || '';
+    m.tasking.instructions = y.detailed_description || y.description_detaillee || '';
+    m.navigation.dep = icao(y.origin); m.navigation.arr = icao(y.destination) || m.navigation.dep;
+    const points = y.turning_points || [];
+    m.navigation.waypoints = points.map(p => p.name || p.id).join(' ');
+    m.navigation.coordinates = [y.origin, ...points, ...(y.rendezvous || []), y.target, y.destination].map(place).filter(Boolean).filter((v, i, all) => all.indexOf(v) === i).join('\n');
+    if (y.target?.name) m.navigation.area = y.target.name;
+    // Appareils : bloc aircraft, sinon équipes dont le type est un aéronef connu (indicatif = nom de l'équipe).
+    let aircraft = (y.aircraft || []).filter(a => a && (a.type || a.callsign));
+    if (!aircraft.length) aircraft = (y.teams || []).filter(tm => siaType(tm?.type)).map(tm => ({ type: tm.type, callsign: tm.name, operator: tm.service }));
+    if (aircraft.length) m.aircraft = aircraft.map((a, i) => { const known = siaType(a.type); return Object.assign(i ? M.emptyAircraft() : m.aircraft[0] || M.emptyAircraft(), { type: known?.tdesig || a.type || '', variant: known ? a.type : '', ...(known?.category ? { category: known.category } : {}), callsign: String(a.callsign || '').replace(/\s+/g, '') }); });
+    m.organisation.organisation = aircraft[0]?.operator || m.organisation.organisation;
+    const payload = y.payload ? [y.payload.category, y.payload.description, y.payload.mass_kg ? `${y.payload.mass_kg} kg` : '', y.payload.passengers ? `${y.payload.passengers} PAX` : ''].filter(Boolean).join(' — ') : '';
+    m.remarks.observations = [`Mission générée (SIA XML) : ${[meta.type, meta.subtype].filter(Boolean).join(' / ')} — ${y.title || ''}`, payload && `Charge : ${payload}`].filter(Boolean).join('\n');
   }
 
   // Sélecteur d'en-tête (pages CR et reporting) : changement de famille (même type de page)

@@ -25,11 +25,23 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   avec les zones, et **carte de contrôle** en colonne de droite (carte de la mission au choix,
   profil en cours, actualisée à chaque réglage) ; bouton « Retour » / « Transmettre » dans la
   barre d'en-tête, menu ☰ à droite.
+- Studio : les **autres éléments** (points tournants, hippodromes, cercle de zone, quadrillage,
+  MORA, tailles et couleurs des libellés) font partie du profil, comme les zones et les couches ;
+  chaque carte est dessinée avec les réglages de son profil. Bloc 4 : données complémentaires
+  (import MORA, calibration du fond local).
+- Studio : **couches OSM sur tous les fonds vectoriels** (OpenFreeMap, VersaTiles : couches du
+  style regroupées par source ; POI et numéros masqués) ; seuls les fonds raster les désactivent.
+- Studio : collage de mission dans la fenêtre de copier-coller commune.
+- **Passerelle vers CR DEFA** : « Créer le CR DEFA » (générateur de mission) ouvre un nouveau CR de
+  la famille du type de mission (MEDEVAC → HEMS, TRAINING → SPECIAL…), pré-rempli : nom et numéro,
+  objectif, terrains (OACI du nom), points et coordonnées, appareils (type OACI du catalogue,
+  indicatif ; à défaut, équipes dotées d'un aéronef), exploitant, charge.
 - **Dossier SIA XML mémorisé** (`FileAccess`, clef `__sia`) : « Relire le dossier » après une
   mise à jour AIRAC ; sélecteurs de fichiers des pages SIA ouverts dans ce dossier.
 - Supprimés : générateur Python en ligne de commande (`generate_operational_map.py`, son README,
   son exemple de demande et sa carte de vérification), remplacé par le studio.
-- Corrections : un fond lent (OpenTopoMap) n'empêche plus les surcharges (points tournants,
+- Corrections : image vide « carte de contrôle » affichée à côté de la carte dynamique ; un fond
+  lent (OpenTopoMap) n'empêche plus les surcharges (points tournants,
   zones) ; une carte en échec n'arrête plus la génération (ZIP des cartes réussies,
   `rapport_generation.txt`, bouton « Réessayer seule ») ni la galerie d'aperçus.
 

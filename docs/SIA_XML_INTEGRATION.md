@@ -4,8 +4,9 @@
 communs, `<main>` et blocs (`data-block-id` : `sia-base`, `sia-mission`, `sia-zones`,
 `sia-elements`, `sia-outputs` ; `mission-import` … `mission-yaml` masqué par défaut,
 `mission-export`), thème `sia` et `assets/favicon-sia.svg`, js-yaml commun, couche AAR dans le
-studio, dossier SIA mémorisé (`FileAccess`, `__sia`). Restent : `pastePanel` pour le collage de
-mission et la passerelle vers CR DEFA (§ 2, points 4 et 6).
+studio, dossier SIA mémorisé (`FileAccess`, `__sia`). Faits ensuite : collage de mission
+(`pastePanel`) et passerelle vers CR DEFA (`?from=sia`, clef `siaMissionToCr:v1`,
+`MissionVocab.familyForType`, `fromSia` dans `core.js`).
 
 ## 1. Ce que contient le dossier
 
