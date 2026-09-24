@@ -92,7 +92,7 @@ plan de vol `PCAN44`** (7 caractères OACI), exploitant **OPR/ FRU**, base **LFT
 
 ## 6. Pendant et après le vol
 
-**Analyser / importer…** (barre d'en-tête) : coller un texte, les champs vides sont remplis.
+**Analyser / importer…** (à côté de la pastille famille / sous-type) : coller un texte, les champs vides sont remplis. En haut de la fenêtre, les liens **↗ Tracker IVAO** et **↗ Mes vols StatSim** ouvrent vos pages (identifiants du profil pilote).
 
 - un **plan de vol OACI** « (FPL-…) » : appareil, indicatif, immatriculation (REG/), exploitant
   (OPR/), route et points tournants, niveau, vitesse, terrains, date du vol (DOF/), EOBT, VFR / IFR,
@@ -101,6 +101,9 @@ plan de vol `PCAN44`** (7 caractères OACI), exploitant **OPR/ FRU**, base **LFT
   Ctrl+A puis Ctrl+C, et coller — plan de vol, connexion / déconnexion (début / fin de mission),
   décollage et atterrissage déduits de la trace (si la connexion commence / finit au sol),
   distance parcourue ; sur la liste des connexions : heures de connexion du jour de la mission ;
+- la page d'un **vol StatSim** (VATSIM, statsim.net › mes vols › un vol) : indicatif, appareil et
+  équipements, route, niveau, terrains, heures de départ / d'arrivée (décollage / atterrissage),
+  table des positions (mise en route / arrêt, distance) — Ctrl+A, Ctrl+C ou favori « → CR DEFA » ;
 - l'**historique VATSIM** (JSON ouvert par « Récupérer l'historique VATSIM ») : heures de connexion
   du jour de la mission ≈ mise en route / fin de mission ;
 - un **METAR**.

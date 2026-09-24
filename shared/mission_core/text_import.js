@@ -8,6 +8,8 @@
   //   révision), connexion / déconnexion, table des positions (heure, lat, lon, altitude,
   //   vitesse sol) → décollage, atterrissage, distance, altitude maximale ;
   // - la liste des connexions du tracker IVAO (callsign, trajet, début, fin) ;
+  // - la page d'un vol StatSim (VATSIM, statsim.net) : indicatif, appareil, route, départ /
+  //   arrivée (décollage / atterrissage), table des positions → mêmes calculs que le tracker IVAO ;
   // - l'historique des connexions VATSIM (JSON de api.vatsim.net) → délégué au suivi réseau ;
   // - un METAR.
   // Une page d'un autre site ne peut pas être lue par la page du CR (règle de même origine) :
@@ -74,6 +76,34 @@
       samples, fpl: parseFpl(text)
     };
   }
+  // ------------------------------------------------------------------ StatSim (VATSIM)
+  // Page d'un vol (statsim.net) : « Flight info » (indicatif, temps de vol, altitude, route,
+  // appareil au format plan de vol), départ / arrivée (heure et terrain), table des positions
+  // (heure, lat, lon, altitude, vitesse, cap). Heures UTC.
+  function parseStatsimFlight(text) {
+    const t = flat(text);
+    if (!/Flight info/i.test(t) || !/\bCallsign\b/i.test(t)) return null;
+    const samples = [];
+    const re = /(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}(?::\d{2})?) (-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?) (-?\d+) ?ft (\d+) ?kts?\b/g;
+    let m; while ((m = re.exec(t))) samples.push({ time: utc(m[1], m[2].length === 5 ? `${m[2]}:00` : m[2]), lat: Number(m[3]), lon: Number(m[4]), alt: Number(m[5]), gs: Number(m[6]) });
+    const field = (label, next) => new RegExp(`\\b${label} (.+?) (?=${next}\\b)`, 'i').exec(t)?.[1]?.trim() || '';
+    const callsign = up(/\bCallsign ([A-Z0-9]{2,10})\b/i.exec(t)?.[1]);
+    const point = label => { const x = new RegExp(`\\b${label} Time (\\d{4}-\\d{2}-\\d{2}) (\\d{2}:\\d{2}) Airport (.+?) \\(([A-Z0-9]{3,4})\\)`, 'i').exec(t); return x ? { time: utc(x[1], `${x[2]}:00`), name: x[3], icao: up(x[4]) } : null; };
+    const departure = point('Departure'), arrival = point('Arrival');
+    const aircraftText = field('Aircraft', 'Departure'), route = field('Route', 'Aircraft'), altitude = /\bAltitude (\d{3,5})\b/i.exec(t)?.[1] || '';
+    if (!callsign && !samples.length) return null;
+    const ac = window.MissionFpl?.splitAircraft(aircraftText) || {};
+    const leg = /\b[A-Z0-9]{2,10} ([A-Z0-9]{4})-([A-Z0-9]{4})\b/.exec(t);
+    const dep = departure?.icao || leg?.[1] || '', arr = arrival?.icao || leg?.[2] || '';
+    return {
+      source: 'StatSim', network: 'VATSIM', callsign, dep, arr, samples,
+      connected: samples[0]?.time || null, disconnected: samples[samples.length - 1]?.time || null,
+      takeoffTime: departure?.time || null, landingTime: arrival?.time || null,
+      fpl: { source: 'StatSim', callsign, type: ac.type || '', equipment: window.MissionFpl?.equipmentCodes(ac.equip, ac.transponder, '') || [], dep, arr, route: up(route),
+        waypoints: [...new Set(window.MissionAssist?.routePoints(route) || [])], altitude: altitude ? window.MissionFpl?.level(altitude) : '', network: 'VATSIM' }
+    };
+  }
+
   function parseIvaoList(text) {
     const t = flat(text); // lignes reconnues à leur forme (indicatif, pilote (VID), trajet, début, fin, durée)
     const re = /\b([A-Z0-9]{2,10}) ([^()\d]{2,40}?) \((\d{3,8})\) ([A-Z0-9]{3,4}) ?- ?([A-Z0-9]{3,4}) (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) (\d{2}:\d{2})\b/g;
@@ -115,6 +145,10 @@
     const details = parseIvaoDetails(raw);
     if (details && (details.samples.length || details.connected)) return { kind: 'ivao-details', trackerUrl: session, ...details };
     if (session && raw.replace(session, '').trim().length < 3) return { kind: 'tracker-url', trackerUrl: session };
+    // Page d'un vol StatSim (VATSIM) : adresse du vol copiée par le favori.
+    const statsimUrl = /https?:\/\/(?:www\.)?statsim\.net\/\S+/.exec(raw)?.[0] || '';
+    const statsim = parseStatsimFlight(raw);
+    if (statsim) return { kind: 'statsim-flight', trackerUrl: statsimUrl, ...statsim };
     const list = parseIvaoList(raw);
     if (list.length) return { kind: 'ivao-list', sessions: list };
     const fpl = parseFpl(raw);
@@ -156,13 +190,17 @@
     // URL de la trace : celle de la session remplace une adresse générique du tracker.
     if (result.trackerUrl) {
       const current = mission.network?.trackerUrl || '';
-      if (!current || !/\/sessions\/\d+/.test(current)) { M.set(mission, 'network.trackerUrl', result.trackerUrl); done.push('network.trackerUrl'); }
-      set('network.onlineNetwork', 'IVAO');
+      if (!current || !/\/sessions\/\d+|flightid=|\/flights?\/\d/.test(current)) { M.set(mission, 'network.trackerUrl', result.trackerUrl); done.push('network.trackerUrl'); }
+      set('network.onlineNetwork', result.network || 'IVAO');
     }
-    if (result.kind === 'ivao-details') {
+    // Page de vol : tracker IVAO (détails) ou StatSim (VATSIM) — même traitement de la trace.
+    if (result.kind === 'ivao-details' || result.kind === 'statsim-flight') {
       applyFpl(result.fpl);
       set('aircraft.0.callsign', result.callsign); set('navigation.dep', result.dep); set('navigation.arr', result.arr);
-      set('network.onlineNetwork', 'IVAO');
+      set('network.onlineNetwork', result.network || 'IVAO');
+      // Heures de départ / arrivée calculées par StatSim : décollage / atterrissage.
+      if (result.takeoffTime) set('timeline.takeoff', clock(result.takeoffTime, tz));
+      if (result.landingTime) set('timeline.landing', clock(result.landingTime, tz));
       const track = analyseTrack(result.samples, rotary);
       if (result.tracksMissing) notes.push('table des positions absente (section « Tracks Table » repliée) : utilisez le favori « → CR DEFA », qui déplie tout, ou dépliez « Tracks Table » avant de copier');
       if (result.connected) setDate(day(result.connected, tz));

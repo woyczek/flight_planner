@@ -161,3 +161,6 @@ header.mc-header:has(.mc-header-tools)>p{display:none}
 /* en-tête des reportings : nouveau compte rendu */
 header.mc-header a.mc-header-new{display:inline-flex;margin-top:8px;padding:6px 12px;border-radius:8px;background:#fff;color:var(--accent);font-weight:700;text-decoration:none;font-size:13px}
 @media print{a.mc-header-new{display:none!important}}
+.mc-import-links{border-bottom:1px solid var(--line);padding-bottom:8px}
+.mc-import-links a{display:inline-flex;align-items:center;padding:5px 10px;border-radius:8px;background:var(--accent);color:#fff;text-decoration:none;font-size:12px;font-weight:700}
+.mc-import-links a:hover{filter:brightness(1.1)}
