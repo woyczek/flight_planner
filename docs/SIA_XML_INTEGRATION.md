@@ -65,14 +65,34 @@ restants (zones EPT en quadrilatères de la page 5, groupes irréguliers) à tra
 (polygone), branche retour ; `toGeoJson(tracks)` pour MapLibre / SVG ; `nearest(tracks, point)`
 pour retrouver l'axe d'un point de mission.
 
-## 4. Questions avant le « go »
+### XML corrigé et nommé depuis le PDF MILAIP
 
-1. **Dépôt imbriqué** `SIA XML/.git` : fusionner son historique dans le dépôt de la suite
-   (`git subtree`), l'intégrer sans historique, ou le garder séparé (sous-module) ?
-2. **Données SIA** (~ 80 Mo par cycle AIRAC) : les laisser hors du dépôt (chargées par le
-   sélecteur de dossier, comme aujourd'hui) — recommandé — ou les versionner (Git LFS) ?
-3. **Noms des axes ENR 5.7** : le XML n'en contient pas ; table de noms à constituer (depuis le
-   PDF MILAIP) — qui la fournit, et sous quelle forme ?
-4. **Axes sans S2** (21 sur 25) : largeur et côté par défaut (proposition : 10 NM, virages à
-   droite) ou valeurs de la MILAIP à saisir dans la table des noms ?
-5. **Fichiers `*.backup-*`** et `generate_operational_map.py` : à exclure de l'intégration ?
+Le XML d'origine étant incomplet (pas de noms, points EPT mêlés), un second fichier est produit
+depuis le PDF officiel (`MIAM_OACI_ENR 5.7.pdf`, AMDT 10/24 du 05 SEP 24, pages 1 à 5) :
+`SIA XML/miam-enr-5-7-tracks.xml` (le fichier d'origine est conservé).
+
+- `parseEnr57(textePages)` (texte extrait par pdf.js) : points DMS nommés et minutes décimales,
+  **comparés** ; axes IP / CP / points particuliers ; noms complets (colonne du tableau : SIM →
+  SIMONE, SCY → STACY) ; renvois communs à toutes les pages (3, 8, 9 : 30 NM ; 5 : 40 NM ;
+  4 : « ne pas dégager à l'ouest » ; 6, 11) ; axes « heavy » FOXnn → ROMnn par paires.
+- Règles de la MILAIP : lignes droites **48 NM** sauf renvoi (30 NM pour la page 4), **largeur
+  14 NM** (distance entre deux points particuliers) ; **côté** donné par S2 — inconnu sans S2
+  (16 axes : YVETTE, OLIVIA, ZOE, FABIOLA, TANIA, NADIA, KATIA, URSULA, REGINA, VIVIANE, ZORA,
+  VALENTINA, TIPHAINE, OCEANE, STEPHANIE, ALOHA).
+- `toXml(résultat)` → XML 2.0 (`miam:Track name kind page lengthNm expectedLengthNm widthNm
+  heading side remark`, points avec rôle ARIP / ARCP / S1 / S2 et leurs deux écritures
+  d'origine, liste `miam:issues`) ; `parseTrackXml(xml)` le relit ; `trackRacetrack(axe)` trace.
+- Résultat : 31 axes + 6 circuits heavy. **Anomalies du PDF** relevées :
+  AMEIP (DMS 000°45'43.80W recopiée de LUCIP ; minutes décimales 000°23.87'W retenues → AMELIE
+  30,1 NM) et A1 (0,3 NM, minutes décimales retenues) ; TANIA, NADIA, KATIA, REGINA, TIPHAINE
+  mesurent 30 NM sans renvoi ; URSULA 30 NM pour un renvoi « 40 NM » et U à 3,7 NM du milieu ;
+  LUCIE 36,9 NM pour 30 NM (L1 à 2,9 NM du milieu) ; DIANA 49,5 NM (D1 à 0,7 NM du milieu).
+
+## 4. Réponses (2026-09-24)
+
+1. Dépôt imbriqué : historique rejoué linéairement sous `SIA XML/`, `.git` imbriqué supprimé.
+2. Données AIRAC hors dépôt (`.gitignore`).
+3. XML incomplet : corrigé par le XML nommé ci-dessus.
+4. Largeur : dans le PDF (14 NM) ; côté : seulement quand S2 existe.
+5. Sauvegardes `*.backup-*` supprimées ; `generate_operational_map.py` : générateur en ligne de
+   commande (ImageMagick) remplacé par le studio — conservation à décider.

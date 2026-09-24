@@ -1,0 +1,896 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<miam:TrackDataset xmlns:miam="https://example.org/miam/enr-5-7" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:aixm="http://www.aixm.aero/schema/4.5" version="2.0">
+  <miam:metadata>
+    <miam:sourceTitle>MILAIP France ENR 5.7 - Axes de ravitaillement</miam:sourceTitle>
+    <miam:sourceEdition>AMDT 10/24 — 05 SEP 24</miam:sourceEdition>
+    <miam:rules>Lignes droites 48 NM sauf renvoi (30 ou 40 NM) ; largeur 14 NM (distance entre deux points particuliers) ; côté donné par S2 (inconnu sans S2).</miam:rules>
+    <miam:coordinateReferenceSystem>WGS 84 (EPSG:4326), gml:pos order latitude longitude</miam:coordinateReferenceSystem>
+    <miam:tracks>37</miam:tracks>
+  </miam:metadata>
+  <miam:tracksList>
+    <miam:Track name="SIMONE" kind="track" page="1" lengthNm="48" expectedLengthNm="48" widthNm="14" heading="9.9" side="L">
+      <aixm:DesignatedPoint gml:id="SIMIP" miam:role="ARIP">
+        <aixm:designator>SIMIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="SIMIP-location"><gml:pos srsName="EPSG:4326">46.44416667 1.48600000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>46°26’39.00''N - 001°29’09.60''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>46°26.65'N - 001°29.16'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="SIMCP" miam:role="ARCP">
+        <aixm:designator>SIMCP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="SIMCP-location"><gml:pos srsName="EPSG:4326">47.23183333 1.68900000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>47°13’54.60''N - 001°41’20.40''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>47°13.91'N - 001°41.34'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="S1" miam:role="S1">
+        <aixm:designator>S1</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="S1-location"><gml:pos srsName="EPSG:4326">46.83800000 1.58750000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>46°50’16.80''N - 001°35'15.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>46°50.28'N - 001°35.25'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="S2" miam:role="S2">
+        <aixm:designator>S2</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="S2-location"><gml:pos srsName="EPSG:4326">46.87983333 1.24950000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>46°52’47.40''N - 001°14’58.20''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>46°52.79'N - 001°14.97'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="JUDITH" kind="track" page="1" lengthNm="48" expectedLengthNm="48" widthNm="14" heading="359" side="L">
+      <aixm:DesignatedPoint gml:id="JUDIP" miam:role="ARIP">
+        <aixm:designator>JUDIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="JUDIP-location"><gml:pos srsName="EPSG:4326">42.72933333 2.53700000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>42°43’45.60''N - 002°32’13.20''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>42°43.76'N - 002°32.22'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="JUDCP" miam:role="ARCP">
+        <aixm:designator>JUDCP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="JUDCP-location"><gml:pos srsName="EPSG:4326">43.52916667 2.51783333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>43°31’45.00''N - 002°31’04.20''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>43°31.75'N - 002°31.07'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="J1" miam:role="S1">
+        <aixm:designator>J1</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="J1-location"><gml:pos srsName="EPSG:4326">43.12916667 2.52750000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>43°07’45.00''N - 002°31’39.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>43°07.75'N - 002°31.65'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="J2" miam:role="S2">
+        <aixm:designator>J2</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="J2-location"><gml:pos srsName="EPSG:4326">43.12466667 2.20783333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>43°07’28.80''N - 002°12’28.20''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>43°07.48'N - 002°12.47'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="YVETTE" kind="track" page="1" note="3" lengthNm="29.9" expectedLengthNm="30" widthNm="14" heading="230" side="unknown" remark="Branches de 30 Nm, 14 Nm de large.">
+      <aixm:DesignatedPoint gml:id="YVEIP" miam:role="ARIP">
+        <aixm:designator>YVEIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="YVEIP-location"><gml:pos srsName="EPSG:4326">48.66666667 -0.54666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>48°40'00.00'’N - 000°32'48.00'’W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>48°40.00'N - 000°32.80'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="YVECP" miam:role="ARCP">
+        <aixm:designator>YVECP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="YVECP-location"><gml:pos srsName="EPSG:4326">48.34500000 -1.12166667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>48°20'42.00'’N - 001°07’18.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>48°20.70'N - 001°07.30'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="Y1" miam:role="S1">
+        <aixm:designator>Y1</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="Y1-location"><gml:pos srsName="EPSG:4326">48.50666667 -0.83500000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>48°30'24.00''N - 000°50'06.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>48°30.40'N - 000°50.10'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="MARIE" kind="track" page="1" lengthNm="48" expectedLengthNm="48" widthNm="14" heading="0" side="L">
+      <aixm:DesignatedPoint gml:id="MARIP" miam:role="ARIP">
+        <aixm:designator>MARIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="MARIP-location"><gml:pos srsName="EPSG:4326">48.10000000 7.50000000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>48°06'00.00''N - 007°30'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>48°06.00'N - 007°30.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="MARCP" miam:role="ARCP">
+        <aixm:designator>MARCP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="MARCP-location"><gml:pos srsName="EPSG:4326">48.90000000 7.50000000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>48°54'00.00''N - 007°30'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>48°54.00'N - 007°30.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="M1" miam:role="S1">
+        <aixm:designator>M1</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="M1-location"><gml:pos srsName="EPSG:4326">48.50000000 7.50000000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>48°30'00.00''N - 007°30'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>48°30.00'N - 007°30.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="M2" miam:role="S2">
+        <aixm:designator>M2</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="M2-location"><gml:pos srsName="EPSG:4326">48.49950000 7.14783333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>48°29'58.20''N - 007°08'52.20''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>48°29.97'N - 007°08.87'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="LEA" kind="track" page="1" lengthNm="48" expectedLengthNm="48" widthNm="14" heading="180" side="L">
+      <aixm:DesignatedPoint gml:id="LEAIP" miam:role="ARIP">
+        <aixm:designator>LEAIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="LEAIP-location"><gml:pos srsName="EPSG:4326">42.53333333 7.06666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>42°32'00.00''N - 007°04'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>42°32.00'N - 007°04.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="LEACP" miam:role="ARCP">
+        <aixm:designator>LEACP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="LEACP-location"><gml:pos srsName="EPSG:4326">41.73333333 7.06666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>41°44'00.00''N - 007°04'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>41°44.00'N - 007°04.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="L1" miam:role="S1">
+        <aixm:designator>L1</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="L1-location"><gml:pos srsName="EPSG:4326">42.13333333 7.06666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>42°08'00.00''N - 007°04'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>42°08.00'N - 007°04.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="L2" miam:role="S2">
+        <aixm:designator>L2</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="L2-location"><gml:pos srsName="EPSG:4326">42.13333333 7.38000000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>42°08'00.00''N - 007°22'48.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>42°08.00'N - 007°22.80'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="OLIVIA" kind="track" page="1" note="3" lengthNm="29.9" expectedLengthNm="30" widthNm="14" heading="267.8" side="unknown" remark="Branches de 30 Nm, 14 Nm de large.">
+      <aixm:DesignatedPoint gml:id="OLIIP" miam:role="ARIP">
+        <aixm:designator>OLIIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="OLIIP-location"><gml:pos srsName="EPSG:4326">47.19950000 -0.07316667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>47°11'58.20''N - 000°04'23.40''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>47°11.97'N - 000°04.39'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="OLICP" miam:role="ARCP">
+        <aixm:designator>OLICP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="OLICP-location"><gml:pos srsName="EPSG:4326">47.17783333 -0.80516667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>47°10'40.20''N - 000°48’18.60''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>47°10.67'N - 000°48.31'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="O1" miam:role="S1">
+        <aixm:designator>O1</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="O1-location"><gml:pos srsName="EPSG:4326">47.18916667 -0.43883333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>47°11’21.00''N - 000°26'19.80''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>47°11.35'N - 000°26.33'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="AGATHE" kind="track" page="1" lengthNm="48.1" expectedLengthNm="48" widthNm="14" heading="9.9" side="L">
+      <aixm:DesignatedPoint gml:id="AGAIP" miam:role="ARIP">
+        <aixm:designator>AGAIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="AGAIP-location"><gml:pos srsName="EPSG:4326">44.02266667 -1.86333333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>44°01’21.60''N - 001°51'48.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>44°01.36'N - 001°51.80'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="AGACP" miam:role="ARCP">
+        <aixm:designator>AGACP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="AGACP-location"><gml:pos srsName="EPSG:4326">44.81066667 -1.66883333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>44°48’38.40''N - 001°40'07.80''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>44°48.64'N - 001°40.13'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="A1" miam:role="S1">
+        <aixm:designator>A1</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="A1-location"><gml:pos srsName="EPSG:4326">44.41666667 -1.76666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>44°25’00.00''N - 001°46'00.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>44°25.00'N - 001°46.00'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="A2" miam:role="S2">
+        <aixm:designator>A2</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="A2-location"><gml:pos srsName="EPSG:4326">44.45483333 -2.07283333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>44°27'17.40''N - 002°04'22.20''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>44°27.29'N - 002°04.37'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="EDWIGE" kind="track" page="1" lengthNm="47.9" expectedLengthNm="48" widthNm="14" heading="89.6" side="L">
+      <aixm:DesignatedPoint gml:id="EDWIP" miam:role="ARIP">
+        <aixm:designator>EDWIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="EDWIP-location"><gml:pos srsName="EPSG:4326">48.16666667 -6.29666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>48°10'00.00''N - 006°17'48.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>48°10.00'N - 006°17.80'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="EDWCP" miam:role="ARCP">
+        <aixm:designator>EDWCP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="EDWCP-location"><gml:pos srsName="EPSG:4326">48.16666667 -5.10166667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>48°10’00.00''N - 005°06'06.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>48°10.00'N - 005°06.10'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="ED1" miam:role="S1">
+        <aixm:designator>ED1</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="ED1-location"><gml:pos srsName="EPSG:4326">48.16666667 -5.70000000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>48°10'00.00''N - 005°42'00.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>48°10.00'N - 005°42.00'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="ED2" miam:role="S2">
+        <aixm:designator>ED2</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="ED2-location"><gml:pos srsName="EPSG:4326">48.40000000 -5.70000000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>48°24'00.00''N - 005°42'00.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>48°24.00'N - 005°42.00'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="CECILE" kind="track" page="1" lengthNm="48.1" expectedLengthNm="48" widthNm="14" heading="41.7" side="L">
+      <aixm:DesignatedPoint gml:id="CECIP" miam:role="ARIP">
+        <aixm:designator>CECIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="CECIP-location"><gml:pos srsName="EPSG:4326">43.48550000 -0.58550000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>43°29'07.80''N - 000°35'07.80''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>43°29.13'N - 000°35.13'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="CECCP" miam:role="ARCP">
+        <aixm:designator>CECCP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="CECCP-location"><gml:pos srsName="EPSG:4326">44.08000000 0.15600000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>44°04'48.00''N - 000°09'21.60''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>44°04.80'N - 000°09.36'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="C1" miam:role="S1">
+        <aixm:designator>C1</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="C1-location"><gml:pos srsName="EPSG:4326">43.78333333 -0.21666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>43°47'00.00''N - 000°13'00.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>43°47.00'N - 000°13.00'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="C2" miam:role="S2">
+        <aixm:designator>C2</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="C2-location"><gml:pos srsName="EPSG:4326">43.93166667 -0.44566667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>43°55'54.00''N - 000°26'44.40''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>43°55.90'N - 000°26.74'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="DIANA" kind="track" page="1" lengthNm="49.5" expectedLengthNm="48" widthNm="14" heading="328.1" side="L">
+      <aixm:DesignatedPoint gml:id="DIAIP" miam:role="ARIP">
+        <aixm:designator>DIAIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="DIAIP-location"><gml:pos srsName="EPSG:4326">43.82616667 4.59716667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>43°49’34.20''N - 004°35’49.80''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>43°49.57'N - 004°35.83'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="DIACP" miam:role="ARCP">
+        <aixm:designator>DIACP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="DIACP-location"><gml:pos srsName="EPSG:4326">44.52366667 3.98616667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>44°31'25.20''N - 003°59’10.20''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>44°31.42'N - 003°59.17'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="D1" miam:role="S1">
+        <aixm:designator>D1</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="D1-location"><gml:pos srsName="EPSG:4326">44.18500000 4.28500000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>44°11’06.00''N - 004°17'06.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>44°11.10'N - 004°17.10'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="D2" miam:role="S2">
+        <aixm:designator>D2</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="D2-location"><gml:pos srsName="EPSG:4326">44.06500000 4.01000000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>44°03'54.00''N - 004°00'36.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>44°03.90'N - 004°00.60'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="IRENE" kind="track" page="1" lengthNm="48" expectedLengthNm="48" widthNm="14" heading="353" side="L">
+      <aixm:DesignatedPoint gml:id="IREIP" miam:role="ARIP">
+        <aixm:designator>IREIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="IREIP-location"><gml:pos srsName="EPSG:4326">42.59216667 3.71733333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>42°35'31.80''N - 003°43'02.40''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>42°35.53'N - 003°43.04'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="IRECP" miam:role="ARCP">
+        <aixm:designator>IRECP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="IRECP-location"><gml:pos srsName="EPSG:4326">43.38616667 3.58400000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>43°23'10.20''N - 003°35'02.40''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>43°23.17'N - 003°35.04'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="I1" miam:role="S1">
+        <aixm:designator>I1</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="I1-location"><gml:pos srsName="EPSG:4326">42.98916667 3.65116667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>42°59'21.00''N - 003°39'04.20''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>42°59.35'N - 003°39.07'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="I2" miam:role="S2">
+        <aixm:designator>I2</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="I2-location"><gml:pos srsName="EPSG:4326">42.96166667 3.34333333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>42°57'42.00''N - 003°20'36.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>42°57.70'N - 003°20.60'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="GISELE" kind="track" page="1" lengthNm="48.2" expectedLengthNm="48" widthNm="14" heading="66.6" side="L">
+      <aixm:DesignatedPoint gml:id="GISIP" miam:role="ARIP">
+        <aixm:designator>GISIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="GISIP-location"><gml:pos srsName="EPSG:4326">48.70900000 4.92533333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>48°42’32.40''N - 004°55'31.20''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>48°42.54'N - 004°55.52'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="GISCP" miam:role="ARCP">
+        <aixm:designator>GISCP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="GISCP-location"><gml:pos srsName="EPSG:4326">49.02166667 6.04483333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>49°01'18.00''N - 006°02'41.40''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>49°01.30'N - 006°02.69'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="G1" miam:role="S1">
+        <aixm:designator>G1</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="G1-location"><gml:pos srsName="EPSG:4326">48.86666667 5.48333333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>48°52'00.00''N - 005°29'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>48°52.00'N - 005°29.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="G2" miam:role="S2">
+        <aixm:designator>G2</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="G2-location"><gml:pos srsName="EPSG:4326">49.08150000 5.34416667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>49°04'53.40''N - 005°20'39.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>49°04.89'N - 005°20.65'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="ZOE" kind="track" page="1" note="3" lengthNm="30" expectedLengthNm="30" widthNm="14" heading="0" side="unknown" remark="Branches de 30 Nm, 14 Nm de large.">
+      <aixm:DesignatedPoint gml:id="ZOEIP" miam:role="ARIP">
+        <aixm:designator>ZOEIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="ZOEIP-location"><gml:pos srsName="EPSG:4326">41.53333333 10.18333333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>41°32’00.00''N - 010°11'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>41°32.00'N - 010°11.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="ZOECP" miam:role="ARCP">
+        <aixm:designator>ZOECP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="ZOECP-location"><gml:pos srsName="EPSG:4326">42.03333333 10.18333333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>42°02’00.00''N - 010°11'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>42°02.00'N - 010°11.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="Z1" miam:role="S1">
+        <aixm:designator>Z1</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="Z1-location"><gml:pos srsName="EPSG:4326">41.78333333 10.18333333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>41°47'00.00''N - 010°11'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>41°47.00'N - 010°11.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="FABIOLA" kind="track" page="2" note="4" lengthNm="47.9" expectedLengthNm="48" widthNm="14" heading="276.5" side="unknown" remark="Ne pas dégager à l’ouest de l’axe.">
+      <aixm:DesignatedPoint gml:id="FABIP" miam:role="ARIP">
+        <aixm:designator>FABIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="FABIP-location"><gml:pos srsName="EPSG:4326">49.47333333 0.11000000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>49°28'24.00''N - 000°06'36.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>49°28.40'N - 000°06.60'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="FABCP" miam:role="ARCP">
+        <aixm:designator>FABCP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="FABCP-location"><gml:pos srsName="EPSG:4326">49.55666667 -1.11166667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>49°33'24.00''N - 001°06'42.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>49°33.40'N - 001°06.70'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="F" miam:role="S1">
+        <aixm:designator>F</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="F-location"><gml:pos srsName="EPSG:4326">49.51666667 -0.50000000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>49°31'00.00''N - 000°30'00.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>49°31.00'N - 000°30.00'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="TANIA" kind="track" page="2" lengthNm="30" expectedLengthNm="48" widthNm="14" heading="154.6" side="unknown">
+      <aixm:DesignatedPoint gml:id="TANIP" miam:role="ARIP">
+        <aixm:designator>TANIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="TANIP-location"><gml:pos srsName="EPSG:4326">47.41666667 4.10000000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>47°25'00.00''N - 004°06'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>47°25.00'N - 004°06.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="TANCP" miam:role="ARCP">
+        <aixm:designator>TANCP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="TANCP-location"><gml:pos srsName="EPSG:4326">46.96500000 4.41333333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>46°57’54.00''N - 004°24'48.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>46°57.90'N - 004°24.80'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="T" miam:role="S1">
+        <aixm:designator>T</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="T-location"><gml:pos srsName="EPSG:4326">47.19000000 4.25500000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>47°11'24.00''N - 004°15'18.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>47°11.40'N - 004°15.30'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="NADIA" kind="track" page="2" lengthNm="29.9" expectedLengthNm="48" widthNm="14" heading="88.8" side="unknown">
+      <aixm:DesignatedPoint gml:id="NADIP" miam:role="ARIP">
+        <aixm:designator>NADIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="NADIP-location"><gml:pos srsName="EPSG:4326">48.99500000 -5.16333333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>48°59’42.00''N - 005°09'48.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>48°59.70'N - 005°09.80'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="NADCP" miam:role="ARCP">
+        <aixm:designator>NADCP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="NADCP-location"><gml:pos srsName="EPSG:4326">49.00333333 -4.40333333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>49°00'12.00''N - 004°24'12.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>49°00.20'N - 004°24.20'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="N" miam:role="S1">
+        <aixm:designator>N</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="N-location"><gml:pos srsName="EPSG:4326">49.00000000 -4.78333333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>49°00'00.00''N - 004°47'00.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>49°00.00'N - 004°47.00'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="KATIA" kind="track" page="2" lengthNm="30" expectedLengthNm="48" widthNm="14" heading="180" side="unknown">
+      <aixm:DesignatedPoint gml:id="KATIP" miam:role="ARIP">
+        <aixm:designator>KATIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="KATIP-location"><gml:pos srsName="EPSG:4326">42.38333333 7.06666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>42°23'00.00''N - 007°04'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>42°23.00'N - 007°04.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="KATCP" miam:role="ARCP">
+        <aixm:designator>KATCP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="KATCP-location"><gml:pos srsName="EPSG:4326">41.88333333 7.06666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>41°53'00.00''N - 007°04'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>41°53.00'N - 007°04.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="K" miam:role="S1">
+        <aixm:designator>K</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="K-location"><gml:pos srsName="EPSG:4326">42.13333333 7.06666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>42°08'00.00''N - 007°04'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>42°08.00'N - 007°04.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="URSULA" kind="track" page="2" note="5" lengthNm="29.9" expectedLengthNm="40" widthNm="14" heading="230" side="unknown" remark="Axe limité à 40 Nm de long.">
+      <aixm:DesignatedPoint gml:id="URSIP" miam:role="ARIP">
+        <aixm:designator>URSIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="URSIP-location"><gml:pos srsName="EPSG:4326">48.66666667 -0.54666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>48°40'00.00''N - 000°32'48.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>48°40.00'N - 000°32.80'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="URSCP" miam:role="ARCP">
+        <aixm:designator>URSCP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="URSCP-location"><gml:pos srsName="EPSG:4326">48.34500000 -1.12166667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>48°20'42.00''N - 001°07'18.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>48°20.70'N - 001°07.30'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="U" miam:role="S1">
+        <aixm:designator>U</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="U-location"><gml:pos srsName="EPSG:4326">48.56666667 -0.83500000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>48°34'00.00''N - 000°50'06.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>48°34.00'N - 000°50.10'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="REGINA" kind="track" page="2" lengthNm="29.9" expectedLengthNm="48" widthNm="14" heading="270.3" side="unknown">
+      <aixm:DesignatedPoint gml:id="REGIP" miam:role="ARIP">
+        <aixm:designator>REGIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="REGIP-location"><gml:pos srsName="EPSG:4326">49.00000000 5.66666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>49°00'00.00''N - 005°40'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>49°00.00'N - 005°40.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="REGCP" miam:role="ARCP">
+        <aixm:designator>REGCP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="REGCP-location"><gml:pos srsName="EPSG:4326">49.00000000 4.90666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>49°00'00.00''N - 004°54'24.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>49°00.00'N - 004°54.40'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="R" miam:role="S1">
+        <aixm:designator>R</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="R-location"><gml:pos srsName="EPSG:4326">49.00000000 5.28666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>49°00'00.00''N - 005°17'12.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>49°00.00'N - 005°17.20'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="VIVIANE" kind="track" page="2" note="6" lengthNm="30" expectedLengthNm="48" widthNm="14" heading="24.7" side="unknown" remark="Sous reserve d’accord CRG Sud Ouest.">
+      <aixm:DesignatedPoint gml:id="VIVIP" miam:role="ARIP">
+        <aixm:designator>VIVIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="VIVIP-location"><gml:pos srsName="EPSG:4326">45.69000000 0.41666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>45°41'24.00''N - 000°25'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>45°41.40'N - 000°25.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="VIVCP" miam:role="ARCP">
+        <aixm:designator>VIVCP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="VIVCP-location"><gml:pos srsName="EPSG:4326">46.14333333 0.71833333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>46°08'36.00''N - 000°43'06.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>46°08.60'N - 000°43.10'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="V" miam:role="S1">
+        <aixm:designator>V</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="V-location"><gml:pos srsName="EPSG:4326">45.91666667 0.56666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>45°55'00.00''N - 000°34'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>45°55.00'N - 000°34.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="ZORA" kind="track" page="2" note="3" lengthNm="30" expectedLengthNm="30" widthNm="14" heading="0" side="unknown" remark="Branches de 30 Nm, 14 Nm de large.">
+      <aixm:DesignatedPoint gml:id="ZORIP" miam:role="ARIP">
+        <aixm:designator>ZORIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="ZORIP-location"><gml:pos srsName="EPSG:4326">41.53333333 10.18333333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>41°32'00.00''N - 010°11'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>41°32.00'N - 010°11.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="ZORCP" miam:role="ARCP">
+        <aixm:designator>ZORCP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="ZORCP-location"><gml:pos srsName="EPSG:4326">42.03333333 10.18333333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>42°02'00.00''N - 010°11'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>42°02.00'N - 010°11.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="ZR" miam:role="S1">
+        <aixm:designator>ZR</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="ZR-location"><gml:pos srsName="EPSG:4326">41.78333333 10.18333333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>41°47'00.00''N - 010°11'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>41°47.00'N - 010°11.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="VALENTINA" kind="track" page="3" note="8" lengthNm="30" expectedLengthNm="30" widthNm="14" heading="0" side="unknown" remark="Branches de 30 Nm, 14 Nm de large.">
+      <aixm:DesignatedPoint gml:id="VALIP" miam:role="ARIP">
+        <aixm:designator>VALIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="VALIP-location"><gml:pos srsName="EPSG:4326">41.58333333 9.58333333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>41°35'00.00''N - 009°35'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>41°35.00'N - 009°35.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="VALCP" miam:role="ARCP">
+        <aixm:designator>VALCP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="VALCP-location"><gml:pos srsName="EPSG:4326">42.08333333 9.58333333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>42°05'00.00''N - 009°35'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>42°05.00'N - 009°35.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="V1" miam:role="S1">
+        <aixm:designator>V1</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="V1-location"><gml:pos srsName="EPSG:4326">41.83333333 9.58333333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>41°50'00.00''N - 009°35'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>41°50.00'N - 009°35.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="NINA" kind="track" page="3" lengthNm="48.1" expectedLengthNm="48" widthNm="14" heading="73.1" side="L">
+      <aixm:DesignatedPoint gml:id="NINIP" miam:role="ARIP">
+        <aixm:designator>NINIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="NINIP-location"><gml:pos srsName="EPSG:4326">48.94383333 -5.65083333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>48°56'37.80''N - 005°39'03.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>48°56.63'N - 005°39.05'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="NINCP" miam:role="ARCP">
+        <aixm:designator>NINCP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="NINCP-location"><gml:pos srsName="EPSG:4326">49.16983333 -4.47983333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>49°10'11.40''N - 004°28'47.40''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>49°10.19'N - 004°28.79'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="N1" miam:role="S1">
+        <aixm:designator>N1</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="N1-location"><gml:pos srsName="EPSG:4326">49.05833333 -5.06666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>49°03'30.00''N - 005°04'00.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>49°03.50'N - 005°04.00'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="N2" miam:role="S2">
+        <aixm:designator>N2</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="N2-location"><gml:pos srsName="EPSG:4326">49.28333333 -5.16666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>49°17’00.00''N - 005°10'00.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>49°17.00'N - 005°10.00'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="STACY" kind="track" page="3" lengthNm="48" expectedLengthNm="48" widthNm="14" heading="89.6" side="L">
+      <aixm:DesignatedPoint gml:id="SCYIP" miam:role="ARIP">
+        <aixm:designator>SCYIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="SCYIP-location"><gml:pos srsName="EPSG:4326">46.91666667 -4.20216667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>46°55’00.00''N - 004°12'07.80''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>46°55.00'N - 004°12.13'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="SCYCP" miam:role="ARCP">
+        <aixm:designator>SCYCP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="SCYCP-location"><gml:pos srsName="EPSG:4326">46.91666667 -3.03100000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>46°55'00.00''N - 003°01’51.60''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>46°55.00'N - 003°01.86'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="SC1" miam:role="S1">
+        <aixm:designator>SC1</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="SC1-location"><gml:pos srsName="EPSG:4326">46.91666667 -3.61666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>46°55’00.00''N - 003°37’00.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>46°55.00'N - 003°37.00'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="SC2" miam:role="S2">
+        <aixm:designator>SC2</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="SC2-location"><gml:pos srsName="EPSG:4326">47.15000000 -3.61666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>47°09’00.00''N - 003°37’00.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>47°09.00'N - 003°37.00'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="TIPHAINE" kind="track" page="3" lengthNm="30" expectedLengthNm="48" widthNm="14" heading="154.6" side="unknown">
+      <aixm:DesignatedPoint gml:id="TIPIP" miam:role="ARIP">
+        <aixm:designator>TIPIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="TIPIP-location"><gml:pos srsName="EPSG:4326">47.41666667 4.10000000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>47°25’00.00''N - 004°06'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>47°25.00'N - 004°06.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="TIPCP" miam:role="ARCP">
+        <aixm:designator>TIPCP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="TIPCP-location"><gml:pos srsName="EPSG:4326">46.96500000 4.41333333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>46°57’54.00''N - 004°24'48.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>46°57.90'N - 004°24.80'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="TI1" miam:role="S1">
+        <aixm:designator>TI1</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="TI1-location"><gml:pos srsName="EPSG:4326">47.19000000 4.25500000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>47°11’24.00''N - 004°15'18.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>47°11.40'N - 004°15.30'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="BARBARA" kind="track" page="3" note="9" lengthNm="30.1" expectedLengthNm="30" widthNm="14" heading="276.8" side="L" remark="Branches de 30 Nm, 14 Nm de large (Axe uniquement utilisable durant les créneaux d’activation des LF-D300A/B).">
+      <aixm:DesignatedPoint gml:id="BARIP" miam:role="ARIP">
+        <aixm:designator>BARIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="BARIP-location"><gml:pos srsName="EPSG:4326">46.00933333 -1.11666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>46°00’33.60''N - 001°07’00.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>46°00.56'N - 001°07.00'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="BARCP" miam:role="ARCP">
+        <aixm:designator>BARCP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="BARCP-location"><gml:pos srsName="EPSG:4326">46.06666667 -1.83333333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>46°04’00.00''N - 001°50’00.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>46°04.00'N - 001°50.00'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="B1" miam:role="S1">
+        <aixm:designator>B1</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="B1-location"><gml:pos srsName="EPSG:4326">46.03800000 -1.47500000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>46°02’16.80''N - 001°28’30.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>46°02.28'N - 001°28.50'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="B2" miam:role="S2">
+        <aixm:designator>B2</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="B2-location"><gml:pos srsName="EPSG:4326">45.80850000 -1.50133333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>45°48’30.60''N - 001°30’04.80''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>45°48.51'N - 001°30.08'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="OCEANE" kind="track" page="4" lengthNm="30" expectedLengthNm="30" widthNm="14" heading="15.9" side="unknown">
+      <aixm:DesignatedPoint gml:id="OCEIP" miam:role="ARIP">
+        <aixm:designator>OCEIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="OCEIP-location"><gml:pos srsName="EPSG:4326">46.77633333 1.64966667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>46°46‘34.80''N - 001°38‘58.80''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>46°46.58'N - 001°38.98'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="OCECP" miam:role="ARCP">
+        <aixm:designator>OCECP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="OCECP-location"><gml:pos srsName="EPSG:4326">47.25700000 1.85116667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>47°15‘25.20''N - 001°51‘04.20''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>47°15.42'N - 001°51.07'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="OC" miam:role="S1">
+        <aixm:designator>OC</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="OC-location"><gml:pos srsName="EPSG:4326">47.01666667 1.75000000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>47°01‘00.00''N - 001°45‘00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>47°01.00'N - 001°45.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="STEPHANIE" kind="track" page="4" lengthNm="30" expectedLengthNm="30" widthNm="14" heading="216.3" side="unknown">
+      <aixm:DesignatedPoint gml:id="STEIP" miam:role="ARIP">
+        <aixm:designator>STEIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="STEIP-location"><gml:pos srsName="EPSG:4326">45.46850000 2.26016667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>45°28‘06.60''N - 002°15‘36.60''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>45°28.11'N - 002°15.61'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="STECP" miam:role="ARCP">
+        <aixm:designator>STECP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="STECP-location"><gml:pos srsName="EPSG:4326">45.06450000 1.84133333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>45°03‘52.20''N - 001°50‘28.80''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>45°03.87'N - 001°50.48'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="ST" miam:role="S1">
+        <aixm:designator>ST</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="ST-location"><gml:pos srsName="EPSG:4326">45.26666667 2.05000000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>45°16'00.00‘'N - 002°03'00.00‘'E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>45°16.00'N - 002°03.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="LUCIE" kind="track" page="4" lengthNm="36.9" expectedLengthNm="30" widthNm="14" heading="81.7" side="L">
+      <aixm:DesignatedPoint gml:id="LUCIP" miam:role="ARIP">
+        <aixm:designator>LUCIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="LUCIP-location"><gml:pos srsName="EPSG:4326">43.54966667 -0.76216667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>43°32’58.80''N - 000°45'43.80''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>43°32.98'N - 000°45.73'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="LUCCP" miam:role="ARCP">
+        <aixm:designator>LUCCP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="LUCCP-location"><gml:pos srsName="EPSG:4326">43.63550000 0.07750000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>43°38'07.80''N - 000°04’39.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>43°38.13'N - 000°04.65'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="L1" miam:role="S1">
+        <aixm:designator>L1</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="L1-location"><gml:pos srsName="EPSG:4326">43.59266667 -0.41016667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>43°35’33.60’'N - 000°24’36.60’’W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>43°35.56'N - 000°24.61’W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="L2" miam:role="S2">
+        <aixm:designator>L2</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="L2-location"><gml:pos srsName="EPSG:4326">43.82300000 -0.47416667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>43°49’22.80’'N - 000°28’27.00’’W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>43°49.38'N - 000°28.54’W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="AMELIE" kind="track" page="4" lengthNm="30.1" expectedLengthNm="30" widthNm="14" heading="68.5" side="L">
+      <aixm:DesignatedPoint gml:id="AMEIP" miam:role="ARIP">
+        <aixm:designator>AMEIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="AMEIP-location"><gml:pos srsName="EPSG:4326">43.59166667 -0.39783333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>43°35’30.00N – 000°45’43.80W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>43°35.50’N – 000°23.87’W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="AMECP" miam:role="ARCP">
+        <aixm:designator>AMECP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="AMECP-location"><gml:pos srsName="EPSG:4326">43.77333333 0.24666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>43°46’24.00’’N – 000°14’48.00’’E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>43°46.40’N – 000°14.80’E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="A1" miam:role="S1">
+        <aixm:designator>A1</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="A1-location"><gml:pos srsName="EPSG:4326">43.68250000 -0.07416667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>43°40’57.00’'N - 000°04’01.80’’W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>43°40.95'N - 000°04.45’W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="A2" miam:role="S2">
+        <aixm:designator>A2</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="A2-location"><gml:pos srsName="EPSG:4326">43.90050000 -0.20050000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>43°54’01.80’'N - 000°12’01.80’’W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>43°54.03'N - 000°12.03’W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="ALOHA" kind="track" page="4" lengthNm="30" expectedLengthNm="30" widthNm="14" heading="10" side="unknown">
+      <aixm:DesignatedPoint gml:id="ALOIP" miam:role="ARIP">
+        <aixm:designator>ALOIP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="ALOIP-location"><gml:pos srsName="EPSG:4326">44.17050000 -1.82750000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>44°10’13.80''N - 001°49'39.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>44°10.23'N - 001°49.65'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="ALOCP" miam:role="ARCP">
+        <aixm:designator>ALOCP</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="ALOCP-location"><gml:pos srsName="EPSG:4326">44.66283333 -1.70533333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>44°39’46.20''N - 001°42'19.20''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>44°39.77'N - 001°42.32'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="AL" miam:role="S1">
+        <aixm:designator>AL</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="AL-location"><gml:pos srsName="EPSG:4326">44.41666667 -1.76666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>44°25'00.00’'N - 001°46'00.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>44°25.00'N - 001°46.00'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="FOX09/10" kind="heavy" page="5" lengthNm="54.2" widthNm="5.1" heading="355.7">
+      <aixm:DesignatedPoint gml:id="FOX09" miam:role="leg1-start">
+        <aixm:designator>FOX09</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="FOX09-location"><gml:pos srsName="EPSG:4326">46.38333333 1.51666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>46°23'00.00''N - 001°31'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>46°23.00'N - 001°31.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="ROM09" miam:role="leg1-end">
+        <aixm:designator>ROM09</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="ROM09-location"><gml:pos srsName="EPSG:4326">47.28333333 1.41666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>47°17'00.00''N - 001°25'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>47°17.00'N - 001°25.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="FOX10" miam:role="leg2-start">
+        <aixm:designator>FOX10</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="FOX10-location"><gml:pos srsName="EPSG:4326">47.33333333 1.31666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>47°20'00.00''N - 001°19'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>47°20.00'N - 001°19.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="ROM10" miam:role="leg2-end">
+        <aixm:designator>ROM10</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="ROM10-location"><gml:pos srsName="EPSG:4326">46.41666667 1.05000000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>46°25'00.00''N - 001°03'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>46°25.00'N - 001°03.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="FOX05/06" kind="heavy" page="5" lengthNm="55.1" widthNm="20.2" heading="34.4">
+      <aixm:DesignatedPoint gml:id="FOX05" miam:role="leg1-start">
+        <aixm:designator>FOX05</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="FOX05-location"><gml:pos srsName="EPSG:4326">43.34516667 -0.64850000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>43°20'42.60''N - 000°38'54.60''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>43°20.71'N - 000°38.91'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="ROM05" miam:role="leg1-end">
+        <aixm:designator>ROM05</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="ROM05-location"><gml:pos srsName="EPSG:4326">44.09766667 0.07200000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>44°05'51.60''N - 000°04'19.20''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>44°05.86'N - 000°04.32'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="FOX06" miam:role="leg2-start">
+        <aixm:designator>FOX06</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="FOX06-location"><gml:pos srsName="EPSG:4326">44.29000000 -0.31233333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>44°17'24.00''N - 000°18'44.40''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>44°17.40'N - 000°18.74'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="ROM06" miam:role="leg2-end">
+        <aixm:designator>ROM06</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="ROM06-location"><gml:pos srsName="EPSG:4326">43.53333333 -1.02650000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>43°32'00.00''N - 001°01'35.40''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>43°32.00'N - 001°01.59'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="FOX01B/02B" kind="heavy" page="5" lengthNm="65" widthNm="20.3" heading="189.9">
+      <aixm:DesignatedPoint gml:id="FO01B" miam:role="leg1-start">
+        <aixm:designator>FO01B</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="FO01B-location"><gml:pos srsName="EPSG:4326">45.11000000 -2.01500000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>45°06'36.00''N - 002°00'54.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>45°06.60'N - 002°00.90'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="RO01B" miam:role="leg1-end">
+        <aixm:designator>RO01B</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="RO01B-location"><gml:pos srsName="EPSG:4326">44.04333333 -2.27500000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>44°02'36.00''N - 002°16'30.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>44°02.60'N - 002°16.50'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="FO02B" miam:role="leg2-start">
+        <aixm:designator>FO02B</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="FO02B-location"><gml:pos srsName="EPSG:4326">43.98666667 -1.81166667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>43°59'12.00''N - 001°48'42.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>43°59.20'N - 001°48.70'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="RO02B" miam:role="leg2-end">
+        <aixm:designator>RO02B</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="RO02B-location"><gml:pos srsName="EPSG:4326">45.05333333 -1.55166667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>45°03'12.00''N - 001°33'06.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>45°03.20'N - 001°33.10'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="FOX66/67" kind="heavy" page="5" lengthNm="55" widthNm="20.3" heading="180">
+      <aixm:DesignatedPoint gml:id="FOX66" miam:role="leg1-start">
+        <aixm:designator>FOX66</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="FOX66-location"><gml:pos srsName="EPSG:4326">48.40000000 -6.45000000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>48°24'00.00''N - 006°27'00.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>48°24.00'N - 006°27.00'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="ROM66" miam:role="leg1-end">
+        <aixm:designator>ROM66</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="ROM66-location"><gml:pos srsName="EPSG:4326">47.48333333 -6.45000000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>47°29'00.00''N - 006°27'00.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>47°29.00'N - 006°27.00'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="FOX67" miam:role="leg2-start">
+        <aixm:designator>FOX67</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="FOX67-location"><gml:pos srsName="EPSG:4326">47.48333333 -5.95000000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>47°29'00.00''N - 005°57'00.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>47°29.00'N - 005°57.00'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="ROM67" miam:role="leg2-end">
+        <aixm:designator>ROM67</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="ROM67-location"><gml:pos srsName="EPSG:4326">48.40000000 -5.95000000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>48°24'00.00''N - 005°57'00.00''W</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>48°24.00'N - 005°57.00'W</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="FOX03/04" kind="heavy" page="5" lengthNm="66.9" widthNm="21" heading="270.5">
+      <aixm:DesignatedPoint gml:id="FOX03" miam:role="leg1-start">
+        <aixm:designator>FOX03</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="FOX03-location"><gml:pos srsName="EPSG:4326">42.05000000 7.33333333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>42°03'00.00''N - 007°20'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>42°03.00'N - 007°20.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="ROM03" miam:role="leg1-end">
+        <aixm:designator>ROM03</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="ROM03-location"><gml:pos srsName="EPSG:4326">42.05000000 5.83333333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>42°03'00.00''N - 005°50'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>42°03.00'N - 005°50.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="FOX04" miam:role="leg2-start">
+        <aixm:designator>FOX04</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="FOX04-location"><gml:pos srsName="EPSG:4326">41.70000000 5.83333333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>41°42'00.00''N - 005°50'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>41°42.00'N - 005°50.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="ROM04" miam:role="leg2-end">
+        <aixm:designator>ROM04</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="ROM04-location"><gml:pos srsName="EPSG:4326">41.70000000 7.33333333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>41°42'00.00''N - 007°20'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>41°42.00'N - 007°20.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+    <miam:Track name="FOX07/08" kind="heavy" page="5" lengthNm="55.1" widthNm="17.9" heading="333.1">
+      <aixm:DesignatedPoint gml:id="FOX07" miam:role="leg1-start">
+        <aixm:designator>FOX07</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="FOX07-location"><gml:pos srsName="EPSG:4326">41.73333333 9.58333333</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>41°44'00.00''N - 009°35'00.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>41°44.00'N - 009°35.00'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="ROM07" miam:role="leg1-end">
+        <aixm:designator>ROM07</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="ROM07-location"><gml:pos srsName="EPSG:4326">42.54833333 9.02000000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>42°32'54.00''N - 009°01'12.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>42°32.90'N - 009°01.20'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="FOX08" miam:role="leg2-start">
+        <aixm:designator>FOX08</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="FOX08-location"><gml:pos srsName="EPSG:4326">42.41166667 8.66000000</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>42°24'42.00''N - 008°39'36.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>42°24.70'N - 008°39.60'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+      <aixm:DesignatedPoint gml:id="ROM08" miam:role="leg2-end">
+        <aixm:designator>ROM08</aixm:designator>
+        <aixm:location><aixm:ElevatedPoint gml:id="ROM08-location"><gml:pos srsName="EPSG:4326">41.59666667 9.22666667</gml:pos></aixm:ElevatedPoint></aixm:location>
+        <miam:sourceCoordinate>41°35'48.00''N - 009°13'36.00''E</miam:sourceCoordinate>
+        <miam:sourceDecimalMinutes>41°35.80'N - 009°13.60'E</miam:sourceDecimalMinutes>
+      </aixm:DesignatedPoint>
+    </miam:Track>
+  </miam:tracksList>
+  <miam:issues>
+    <miam:issue page="4" kind="coordinates">AMEIP : 43°35’30.00N – 000°45’43.80W ≠ 43°35.50’N – 000°23.87’W (15.8 NM)</miam:issue>
+    <miam:issue page="4" kind="coordinates">A1 : 43°40’57.00’'N - 000°04’01.80’’W ≠ 43°40.95'N - 000°04.45’W (0.3 NM)</miam:issue>
+    <miam:issue page="1" kind="length">DIANA : DIAIP–DIACP 49.5 NM pour 48 NM annoncés</miam:issue>
+    <miam:issue page="1" kind="midpoint">DIANA : D1 à 0.7 NM du milieu de l'axe</miam:issue>
+    <miam:issue page="2" kind="length">TANIA : TANIP–TANCP 30.0 NM pour 48 NM annoncés</miam:issue>
+    <miam:issue page="2" kind="length">NADIA : NADIP–NADCP 29.9 NM pour 48 NM annoncés</miam:issue>
+    <miam:issue page="2" kind="length">KATIA : KATIP–KATCP 30.0 NM pour 48 NM annoncés</miam:issue>
+    <miam:issue page="2" kind="length">URSULA : URSIP–URSCP 29.9 NM pour 40 NM annoncés</miam:issue>
+    <miam:issue page="2" kind="midpoint">URSULA : U à 3.7 NM du milieu de l'axe</miam:issue>
+    <miam:issue page="2" kind="length">REGINA : REGIP–REGCP 29.9 NM pour 48 NM annoncés</miam:issue>
+    <miam:issue page="2" kind="length">VIVIANE : VIVIP–VIVCP 30.0 NM pour 48 NM annoncés</miam:issue>
+    <miam:issue page="3" kind="length">TIPHAINE : TIPIP–TIPCP 30.0 NM pour 48 NM annoncés</miam:issue>
+    <miam:issue page="4" kind="length">LUCIE : LUCIP–LUCCP 36.9 NM pour 30 NM annoncés</miam:issue>
+    <miam:issue page="4" kind="midpoint">LUCIE : L1 à 2.9 NM du milieu de l'axe</miam:issue>
+    <miam:issue page="4" kind="corrected">AMEIP : minutes décimales retenues (43°35.50’N – 000°23.87’W) — cohérentes avec l'axe</miam:issue>
+    <miam:issue page="4" kind="corrected">A1 : minutes décimales retenues (43°40.95'N - 000°04.45’W) — cohérentes avec l'axe</miam:issue>
+  </miam:issues>
+</miam:TrackDataset>
