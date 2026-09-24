@@ -1,8 +1,11 @@
 # Intégration de l'application « SIA XML » — analyse et plan
 
-État au 2026-09-24 : **analyse seulement**, aucun fichier du dossier `SIA XML/` n'est modifié
-(application en cours de développement). Préparé hors du dossier : `shared/aar_tracks.js`
-(géométrie des hippodromes de ravitaillement en vol), testé sur les données réelles.
+État au 2026-09-24 : **intégration faite** (« go » donné) — points 1 à 5 du § 2 : en-tête et menu
+communs, `<main>` et blocs (`data-block-id` : `sia-base`, `sia-mission`, `sia-zones`,
+`sia-elements`, `sia-outputs` ; `mission-import` … `mission-yaml` masqué par défaut,
+`mission-export`), thème `sia` et `assets/favicon-sia.svg`, js-yaml commun, couche AAR dans le
+studio. Restent : `FileAccess` / `pastePanel` pour le dossier SIA et le collage de mission, et la
+passerelle vers CR DEFA (§ 2, points 4 et 6).
 
 ## 1. Ce que contient le dossier
 

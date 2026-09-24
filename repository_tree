@@ -24,6 +24,7 @@ window.REPOSITORY_TREE={
     command:{bar:"#6d28d9",barText:"#ffffff",page:"#f5f6f8",accent:"#6d28d9",favicon:"assets/favicon-command.svg"},
     sof:{bar:"#3f3f46",barText:"#ffffff",page:"#f5f6f8",accent:"#3f3f46",favicon:"assets/favicon-sof.svg"},
     special:{bar:"#9d174d",barText:"#ffffff",page:"#f5f6f8",accent:"#9d174d",favicon:"assets/favicon-special.svg"},
+    sia:{bar:"#075ca8",barText:"#ffffff",page:"#edf3f6",accent:"#075ca8",favicon:"assets/favicon-sia.svg"},
     flight:{bar:"#101317",barText:"#eef3f7",page:"#101317",accent:"#71b7ff",favicon:"assets/favicon-flight.svg"}
   },
   folders:{
@@ -44,6 +45,7 @@ window.REPOSITORY_TREE={
     "CR DEFA/COMMAND":{theme:"command",favicon:"assets/favicon-command.svg"},
     "CR DEFA/SOF":{theme:"sof",favicon:"assets/favicon-sof.svg"},
     "CR DEFA/SPECIAL":{theme:"special",favicon:"assets/favicon-special.svg"},
+    "SIA XML":{theme:"sia",favicon:"assets/favicon-sia.svg"},
     "LandingPerformanceDashboard":{theme:"landing",favicon:"assets/favicon-landing.svg"}
   },
   pages:[
@@ -87,6 +89,8 @@ window.REPOSITORY_TREE={
     {path:"CR DEFA/equipage.html",menu:false,label:"Fiche équipage",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"CR DEFA/parametrage.html",menu:false,slot:"settings",label:"Paramétrage — bases de données",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"LandingPerformanceDashboard/LandingPerformance_Dashboard_MultiCSV_i18n.html",menu:"Landing Performance Dashboard",label:"Landing Performance Dashboard"},
+    {path:"SIA XML/mission_editor.html",menu:"Générateur de mission (SIA)",label:"Générateur complet de mission"},
+    {path:"SIA XML/map_parser.html",menu:"Studio cartographique (SIA)",label:"Studio cartographique aéronautique SIA"},
     {path:"flight_performance_planner.html",menu:"Flight Performance & Fuel Planner",label:"Flight Performance & Fuel Planner"}
   ]
 };

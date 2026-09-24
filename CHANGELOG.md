@@ -8,6 +8,23 @@ La version affichée en pied de page de chaque page (lien vers ce fichier) vient
 
 Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n`.
 
+## [Non publié]
+
+### Missions SIA (nouvelle application, dossier `SIA XML/`)
+
+- **Générateur de mission** et **studio cartographique** intégrés à la suite : bandeau et menu
+  communs (thème et favicon SIA), blocs masquables / déplaçables, pied de page de version,
+  js-yaml commun ; historique du dépôt d'origine repris.
+- Studio : **hippodromes de ravitaillement** (MILAIP ENR 5.7) tracés exactement pour les axes
+  de la mission (cap, longueur, largeur, côté ; côté non publié en pointillés) ;
+  `miam-enr-5-7-tracks.xml` nommé et corrigé depuis le PDF (`shared/aar_tracks.js`).
+- Studio : choix de **fonds vectoriels** (OSM Shortbread réglable, OpenFreeMap Liberty / Bright /
+  Positron, VersaTiles Colorful / Graybeard / Shadow / Eclipse), relief et courbes ajoutés aux
+  fonds publiés.
+- Corrections : un fond lent (OpenTopoMap) n'empêche plus les surcharges (points tournants,
+  zones) ; une carte en échec n'arrête plus la génération (ZIP des cartes réussies,
+  `rapport_generation.txt`, bouton « Réessayer seule ») ni la galerie d'aperçus.
+
 ## [2.1.0] — 2026-09-24
 
 Application **CR DEFA** (Mission Report Core), bases DEFA, reportings unifiés, framework enrichi.
