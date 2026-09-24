@@ -1,3 +1,5 @@
 *.json
 *.csv
 __pycache__/
+*.yaml
+Missions/
