@@ -7,3 +7,11 @@ Missions/
 Stub/IVAO Tracker_files/
 
 Stub/
+
+# SIA XML : données AIRAC chargées depuis le dossier (hors dépôt), sauvegardes intermédiaires
+SIA XML/AIXM*.xml
+SIA XML/XML_SIA_*.xml
+SIA XML/sia-airspaces-*.xml
+*.backup-*.html
+# SIA XML : catalogues de l’application versionnés malgré la règle *.csv
+!SIA XML/*.csv
