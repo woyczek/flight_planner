@@ -47,6 +47,8 @@
   }
   const readFile = async (dir, name) => { try { return await (await (await dir.getFileHandle(name)).getFile()).text(); } catch { return null; } };
   const fetchText = async url => { try { const r = await fetch(url, { cache: 'no-store' }); return r.ok ? await r.text() : null; } catch { return null; } };
+  // Statut conservé : un fichier absent (404) n'est pas une erreur de chargement.
+  const fetchStatus = async url => { try { const r = await fetch(url, { cache: 'no-store' }); return { status: r.status, text: r.ok ? await r.text() : null }; } catch { return { status: 0, text: null }; } };
 
   // Anciens registres par famille : la version la plus récente de chaque famille.
   const familyFolders = () => [...(window.MissionVocab?.families || []).map(f => [f.id, f.cr.split('/')[0]]), ['DEMO', 'MissionCore']];
@@ -57,7 +59,15 @@
       const dir = await directory(false, `folder:${id}`);
       if (dir) { const text = await readFile(dir, name); if (text) candidates.push(text); }
       try { const cached = JSON.parse(localStorage.getItem(`missionCoreLedger:v1:${id}`) || 'null'); if (cached?.text) candidates.push(cached.text); } catch { /* copie illisible */ }
-      const served = await fetchText(new URL(`${folder}/${name}`, APP)); if (served) candidates.push(served);
+      // Fichier servi absent (cas normal depuis le registre unique) : pas de nouvelle requête
+      // avant un jour (évite une série d'erreurs 404 à chaque chargement).
+      const absentKey = 'missionCoreLedger:legacyAbsent:v1';
+      let absent = {}; try { absent = JSON.parse(localStorage.getItem(absentKey) || '{}'); } catch { absent = {}; }
+      if (!(Date.now() - (absent[id] || 0) < 86400000)) {
+        const served = await fetchText(new URL(`${folder}/${name}`, APP));
+        if (served) { candidates.push(served); delete absent[id]; } else absent[id] = Date.now();
+        try { localStorage.setItem(absentKey, JSON.stringify(absent)); } catch { /* stockage indisponible */ }
+      }
       const parsed = candidates.map(text => { try { return parse(text, id); } catch { return null; } }).filter(Boolean);
       const best = parsed.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))[0];
       if (best?.missions.length) out.push({ id, ...best });
@@ -72,7 +82,15 @@
       const dir = await directory(false);
       if (dir) { const text = await readFile(dir, FILE); if (text) try { candidates.push({ source: 'folder', ...parse(text) }); } catch { /* illisible */ } }
       try { const cached = JSON.parse(localStorage.getItem(CACHE) || 'null'); if (cached?.text) candidates.push({ source: 'browser', ...parse(cached.text) }); } catch { /* copie illisible */ }
-      if (!candidates.length) { const served = await fetchText(new URL(FILE, APP)); if (served) try { candidates.push({ source: 'file', ...parse(served) }); } catch { /* illisible */ } }
+      let unavailable = false;
+      if (!candidates.length) {
+        const served = await fetchStatus(new URL(FILE, APP));
+        if (served.text) try { candidates.push({ source: 'file', ...parse(served.text) }); } catch { unavailable = true; }
+        else unavailable = served.status !== 404; // erreur réseau / serveur : registre inconnu, pas « vide »
+      }
+      // Registre illisible : rien n'est migré ni enregistré (sinon une copie partielle
+      // remplacerait le registre complet) ; nouvel essai au prochain chargement / enregistrement.
+      if (unavailable) { Object.assign(store, { missions: [], updatedAt: '', source: 'unavailable', legacyImported: {} }); store.migrated = 0; loading = null; return store; }
       const best = candidates.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))[0];
       if (best) Object.assign(store, { missions: best.missions, updatedAt: best.updatedAt, source: best.source, legacyImported: best.legacyImported || {} });
       // Migration des anciens registres par famille (une fois par version de chacun).
@@ -98,6 +116,14 @@
   const yaml = (missions = store.missions, title = 'Registre des missions — toutes familles — Mission Report — DEFA Virtual') => M.toYaml({ ...doc(), missions }, title);
   // Écrit la copie navigateur et, si autorisé, CR DEFA/missions.yaml.
   async function save({ request = true } = {}) {
+    // Registre non chargé (erreur réseau) : nouvel essai, puis fusion des missions saisies
+    // entre-temps ; jamais d'écriture d'un registre partiel.
+    if (store.source === 'unavailable') {
+      const pending = store.missions.slice();
+      await load(true);
+      if (store.source === 'unavailable') throw new Error(`Registre ${FILE} illisible (serveur ou fichier indisponible) : mission conservée en brouillon, réessayez.`);
+      const known = new Set(store.missions.map(key)); pending.forEach(m => { if (!known.has(key(m))) store.missions.push(m); });
+    }
     store.updatedAt = new Date().toISOString();
     const text = yaml();
     try { localStorage.setItem(CACHE, JSON.stringify({ filename: FILE, text, updatedAt: store.updatedAt })); } catch { /* quota : le dossier local ou le téléchargement prennent le relais */ }

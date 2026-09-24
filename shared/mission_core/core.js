@@ -62,6 +62,7 @@
     importIntro: L('Collez un plan de vol OACI « (FPL-…) », une page du tracker IVAO (détails d’un vol ou liste des connexions : Ctrl+A, Ctrl+C sur la page), la page d’un vol StatSim (VATSIM), l’historique VATSIM (JSON) ou un METAR : les champs vides sont remplis. Heures du tracker converties en heure locale du terrain de départ.', 'Paste an ICAO flight plan “(FPL-…)”, an IVAO tracker page (flight details or connection list: Ctrl+A, Ctrl+C on the page), the VATSIM history (JSON) or a METAR: empty fields are filled. Tracker times converted to local time at the departure aerodrome.', 'Einen ICAO-Flugplan „(FPL-…)“, eine IVAO-Tracker-Seite (Flugdetails oder Verbindungsliste: Strg+A, Strg+C auf der Seite), die VATSIM-Historie (JSON) oder ein METAR einfügen: leere Felder werden ausgefüllt. Tracker-Zeiten in Ortszeit des Startflugplatzes umgerechnet.', 'Pegue un plan de vuelo OACI «(FPL-…)», una página del tracker IVAO (detalle de un vuelo o lista de conexiones: Ctrl+A, Ctrl+C en la página), el historial VATSIM (JSON) o un METAR: se rellenan los campos vacíos. Horas del tracker convertidas a hora local del aeródromo de salida.'),
     importRun: L('Analyser et remplir', 'Analyse and fill', 'Auswerten und ausfüllen', 'Analizar y rellenar'), importClip: L('Coller depuis le presse-papiers', 'Paste from clipboard', 'Aus Zwischenablage einfügen', 'Pegar desde el portapapeles'),
     importBookmarklet: L('← à glisser dans la barre des favoris : un clic sur la page du tracker IVAO la copie ; revenez ici, elle est analysée.', '← drag to the bookmarks bar: one click on the IVAO tracker page copies it; come back here, it is analysed.', '← in die Lesezeichenleiste ziehen: ein Klick auf der IVAO-Tracker-Seite kopiert sie; hierher zurückkehren, sie wird ausgewertet.', '← arrastre a la barra de marcadores: un clic en la página del tracker IVAO la copia; vuelva aquí, se analiza.'),
+    ledgerUnavailable: L('registre illisible (serveur ou fichier indisponible) — mission conservée en brouillon, réessayez.', 'ledger unreadable (server or file unavailable) — mission kept as a draft, try again.', 'Register nicht lesbar (Server oder Datei nicht verfügbar) — Einsatz als Entwurf behalten, erneut versuchen.', 'registro ilegible (servidor o archivo no disponible) — misión conservada como borrador, reinténtelo.'),
     sendReport: L('Envoyer le CR', 'Send report', 'Bericht senden', 'Enviar informe'),
     sendNotConfigured: L('Envoi du CR : webservice non configuré (Paramétrage → Envoi des comptes rendus).', 'Report sending: web service not configured (Settings → Report sending).', 'Berichtversand: Webservice nicht konfiguriert (Einstellungen → Berichtversand).', 'Envío del informe: servicio web no configurado (Configuración → Envío de informes).'),
     sendUnsaved: L('Cette mission n’est pas enregistrée dans le registre (ou a des modifications non enregistrées). L’envoyer quand même ?', 'This mission is not saved in the ledger (or has unsaved changes). Send it anyway?', 'Dieser Einsatz ist nicht im Register gespeichert (oder hat ungespeicherte Änderungen). Trotzdem senden?', 'Esta misión no está guardada en el registro (o tiene cambios sin guardar). ¿Enviarla de todos modos?'),
@@ -185,6 +186,12 @@
     const view = window.MissionForm.create(form, {
       family, getMission: () => mission,
       onChange: changed,
+      // Appareil effacé : l'organisme repris de cet appareil (flotte, série) part avec lui.
+      onClear: (path, index) => {
+        if (path !== 'aircraft') return;
+        if (index === 0 && autoOperator && mission.organisation.organisation === autoOperator) { mission.organisation.organisation = ''; autoOperator = ''; view.sync('organisation.'); }
+        form.querySelector(`[data-path="aircraft.${index}.registration"]`)?.focus();
+      },
       onCommit: (path, value) => {
         aircraftAssist(path, value); assist.onCommit(path, value);
         // Opérateur (organisme) modifié : indicatif de série de l'appareil principal réévalué.
@@ -492,6 +499,8 @@
       return result;
     }
     async function store() {
+      // Registre illisible au chargement (erreur réseau) : nouvel essai avant toute écriture.
+      if (ledger.state.source === 'unavailable') { await ledger.load(true); ledgerInfo(); if (ledger.state.source === 'unavailable') { status.textContent = `${window.MissionLedger.FILE} : ${inLanguage(UI.ledgerUnavailable)}`; return; } }
       if (M.upperText(mission)) view.sync();
       mission.statistics = M.computeStatistics(mission);
       if (edit) {

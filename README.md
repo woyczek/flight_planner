@@ -19,7 +19,7 @@ browser.
 | Menu ☰ | Page | Purpose |
 |---|---|---|
 | Missions › Nouveau compte rendu | `CR DEFA/mission_cr.html` | Choose a mission family, then write the report |
-| Missions › Reporting missions | `CR DEFA/mission_operations_reporting.html` | All-family reporting, statistics, missions table |
+| Reporting missions | `CR DEFA/mission_operations_reporting.html` | All-family reporting from the single ledger: family filters (colours), indicators, charts by period (day / week / month / quarter / year), breakdowns, summaries by family / aircraft / crew, missions table |
 | Paramétrage › Bases de données | `CR DEFA/parametrage.html` | Edit the fleet, aircraft types, callsigns, ledgers… |
 | Landing Performance Dashboard | `LandingPerformanceDashboard/…` | Landing analysis from CSV logs |
 | Flight Performance & Fuel Planner | `flight_performance_planner.html` | Performance and fuel planning |

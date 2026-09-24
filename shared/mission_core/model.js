@@ -58,12 +58,15 @@
   function computeStatistics(m) {
     const t = m.timeline || {}, f = m.fuel || {};
     const fuelEnd = num(f.block) ?? num(f.landing);
+    // Segments du vol (transit, sur zone) : jamais plus longs que le vol lui-même — une heure
+    // inversée (sortie de zone avant l'entrée) n'est pas un passage de minuit mais une erreur.
+    const flight = between(t.takeoff, t.landing), part = (a, b) => { const v = between(a, b); return v != null && flight != null && v > flight ? null : v; };
     const stats = {
       blockMinutes: between(t.offBlock, t.onBlock) ?? between(t.engineStart, t.shutdown),
-      flightMinutes: between(t.takeoff, t.landing),
-      transitOutMinutes: between(t.takeoff, t.zoneEntry),
-      timeOnStationMinutes: between(t.zoneEntry, t.zoneExit),
-      transitInMinutes: between(t.zoneExit, t.landing),
+      flightMinutes: flight,
+      transitOutMinutes: part(t.takeoff, t.zoneEntry),
+      timeOnStationMinutes: part(t.zoneEntry, t.zoneExit),
+      transitInMinutes: part(t.zoneExit, t.landing),
       missionMinutes: between(t.missionStart, t.missionEnd),
       fuelUsed: num(f.start) != null && fuelEnd != null && num(f.start) >= fuelEnd ? num(f.start) - fuelEnd : null,
       fuelOnStation: num(f.onTaskArrival) != null && num(f.taskDeparture) != null ? num(f.onTaskArrival) - num(f.taskDeparture) : null,

@@ -75,7 +75,9 @@ plan de vol `PCAN44`** (7 caractères OACI), exploitant **OPR/ FRU**, base **LFT
   **COTAM** / **58**, indicatif plan de vol **CTM58**, **OPR/ CTM**, et l'organisme de la série
   (et le type, si la série n'en a qu'un) ;
 - les équipements de l'appareil (repliés sous l'appareil) sont repris de l'appareil connu ou
-  du plan de vol.
+  du plan de vol ;
+- mauvais appareil ou mauvais type ? « **⟲ Effacer** » (en tête de la carte de l'appareil)
+  vide l'appareil — et l'organisme repris de la flotte — pour relancer la recherche.
 
 ## 5. Avant le vol : plan de vol, météo, suivi réseau
 
@@ -165,8 +167,25 @@ rendus. La bulle du bouton indique le dernier envoi de cette mission.
 
 ## 9. Le reporting
 
-1. « **Voir le reporting** » (ou la popup d'en-tête, ou ☰ › Missions › Reporting missions
-   pour toutes les familles).
+**Toutes familles** : ☰ › **Reporting missions** (registre unique `missions.yaml`).
+
+- **Période** (partagée avec les reportings de famille), **familles** (puces colorées :
+  clic pour masquer / afficher, Ctrl + clic pour n'en garder qu'une), **regroupement**
+  (automatique, jour, semaine, mois, trimestre, année) et **mesure** des graphiques (missions,
+  heures de vol, bloc, sur zone, mission, sorties, distance).
+- Indicateurs : missions, réussite, heures de vol / bloc / sur zone (moyennes sur les missions
+  renseignées), distance, carburant par unité, personnes / fret, vols de nuit, en réseau
+  (IVAO / VATSIM), opérations réelles, appareils, équipage.
+- Graphiques : activité par période (barres empilées par famille), répartition par famille,
+  résultats, séries, types, capacités, terrains de départ, jour / nuit, réseau, exercice /
+  réel — survol pour le détail.
+- Synthèses par famille (avec les indicateurs propres : largages, délai alerte → décollage…),
+  par appareil et par membre d'équipage ; tableau des missions (clic = CR en modification).
+- Anciens registres CSV HEMS / GAAR : « Importer un ancien registre CSV » (bas de page).
+
+**Une famille** :
+
+1. « **Voir le reporting** » (ou la popup d'en-tête).
 2. **Période** : filtre des statistiques et du tableau. **Sous-type** : popup d'en-tête.
 3. Cartes de synthèse (missions, heures de vol, temps sur zone, statistiques propres au
    GAAR), répartitions (séries, résultats, types, techniques).

@@ -17,7 +17,7 @@
   const M = window.MissionModel, V = window.MissionVocab;
   const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-  function create(form, { family, getMission, onChange, onCommit, suggest }) {
+  function create(form, { family, getMission, onChange, onCommit, onClear, suggest }) {
     const rows = new Map(); // fr → [fr,en,de,es]
     const txt = label => { if (!label) return ''; if (Array.isArray(label)) { rows.set(label[0], label); return label[0]; } return String(label); };
     const conditional = [];
@@ -86,9 +86,13 @@
       M.set(getMission(), spec.path, list);
       collections.set(spec.path, { block, host });
       // L'alias (name) ne porte que sur le premier élément (appareil principal…).
-      host.innerHTML = list.map((item, i) => `<div class="mc-item" data-index="${i}"><div class="mc-item-head"><b>${esc(txt(spec.item))} ${i + 1}</b>${list.length > (spec.min || 0) ? `<button type="button" class="mc-remove" data-remove="${i}" title="${esc(txt(['Retirer', 'Remove', 'Entfernen', 'Quitar']))}">×</button>` : ''}</div><div class="mc-grid${spec.compact ? ' compact' : ''}">${spec.fields.map(field => fieldHtml(field, `${spec.path}.${i}.${field.path}`, i === 0, item, `${spec.path}.${field.path}`)).join('')}</div></div>`).join('')
+      host.innerHTML = list.map((item, i) => `<div class="mc-item" data-index="${i}"><div class="mc-item-head"><b>${esc(txt(spec.item))} ${i + 1}</b>${spec.clear ? `<button type="button" class="mc-clear" data-clear="${i}" title="${esc(txt(spec.clear.title))}">${esc(txt(spec.clear.label))}</button>` : ''}${list.length > (spec.min || 0) ? `<button type="button" class="mc-remove" data-remove="${i}" title="${esc(txt(['Retirer', 'Remove', 'Entfernen', 'Quitar']))}">×</button>` : ''}</div><div class="mc-grid${spec.compact ? ' compact' : ''}">${spec.fields.map(field => fieldHtml(field, `${spec.path}.${i}.${field.path}`, i === 0, item, `${spec.path}.${field.path}`)).join('')}</div></div>`).join('')
         + `<button type="button" class="secondary mc-add">${esc(txt(spec.add))}</button>`;
       host.querySelector('.mc-add').onclick = () => { list.push(spec.empty()); renderCollection(block, host); refresh(); onChange(spec.path); };
+      // Élément remis à zéro (ex. appareil mal identifié : la recherche repart de zéro).
+      host.querySelectorAll('[data-clear]').forEach(button => button.onclick = () => {
+        const index = Number(button.dataset.clear); list[index] = spec.empty(); renderCollection(block, host); refresh(); onClear?.(spec.path, index); onChange(spec.path);
+      });
       host.querySelectorAll('[data-remove]').forEach(button => button.onclick = () => {
         list.splice(Number(button.dataset.remove), 1); renderCollection(block, host); refresh(); onChange(spec.path);
       });

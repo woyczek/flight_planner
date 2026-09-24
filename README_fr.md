@@ -20,7 +20,7 @@ et dans le navigateur.
 | Menu ☰ | Page | Rôle |
 |---|---|---|
 | Missions › Nouveau compte rendu | `CR DEFA/mission_cr.html` | Choisir la famille de mission, puis rédiger le CR |
-| Missions › Reporting missions | `CR DEFA/mission_operations_reporting.html` | Reporting toutes familles, statistiques, tableau des missions |
+| Reporting missions | `CR DEFA/mission_operations_reporting.html` | Reporting toutes familles sur le registre unique : filtres par famille (couleurs), indicateurs, graphiques par période (jour / semaine / mois / trimestre / année), répartitions, synthèses par famille / appareil / équipage, tableau des missions |
 | Paramétrage › Bases de données | `CR DEFA/parametrage.html` | Éditer la flotte, les types d'aéronefs, les indicatifs, les registres… |
 | Landing Performance Dashboard | `LandingPerformanceDashboard/…` | Analyse des atterrissages à partir de journaux CSV |
 | Flight Performance & Fuel Planner | `flight_performance_planner.html` | Performances et carburant |

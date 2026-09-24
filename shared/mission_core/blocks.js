@@ -40,6 +40,9 @@
     collection: {
       path: 'aircraft', min: 1, item: L('Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'), add: L('+ Ajouter un appareil', '+ Add aircraft', '+ Luftfahrzeug hinzufügen', '+ Añadir aeronave'),
       empty: () => window.MissionModel.emptyAircraft(),
+      // Appareil mal identifié (mauvais type, mauvaise immatriculation…) : tout effacer pour
+      // relancer la recherche parmi les appareils connus.
+      clear: { label: L('⟲ Effacer', '⟲ Clear', '⟲ Leeren', '⟲ Borrar'), title: L('Effacer cet appareil (immatriculation, type, indicatif…) et relancer la recherche', 'Clear this aircraft (registration, type, callsign…) and restart the search', 'Dieses Luftfahrzeug leeren (Kennzeichen, Muster, Rufzeichen…) und die Suche neu starten', 'Borrar esta aeronave (matrícula, tipo, indicativo…) y reiniciar la búsqueda') },
       fields: [
         // Immatriculation en premier : un appareil connu remplit type, catégorie, indicatif,
         // équipements… (shared/mission_core/aircraft.js, la donnée la plus récente l'emporte).

@@ -473,3 +473,19 @@ Retenues par défaut (à contester si besoin) :
 - « Envoyer le CR » : POST JSON, configuration `missionSendConfig:v1`, clef `missionSendKey:v1`
   (exclue de browser_store), journal `missionSendLog:v1`. Testé avec un service local (201,
   en-tête Bearer, corps complet) et un service injoignable (message CORS).
+
+## Q. Étape 12 — reporting général, effacement de l'appareil, robustesse du registre (2026-09-24)
+
+- `CR DEFA/mission_operations_reporting.html` réécrite sur le registre unique
+  (`shared/mission_core/global_reporting.js`) : titre « Reporting missions — CR DEFA », puces de
+  familles colorées (`COLORS`), indicateurs, graphiques SVG autonomes (`charts.js` : barres
+  empilées par période avec unité automatique ou choisie, anneaux, classements), synthèses par
+  famille (indicateurs `family.stats`), appareil, équipage ; import des anciens CSV HEMS / GAAR.
+  Les anciens chargements CSV de la page et `global.js` sont supprimés.
+- Carte d'appareil : bouton « ⟲ Effacer » (option `collection.clear` de form.js, crochet
+  `onClear` : l'organisme repris de la flotte est retiré).
+- `ledger.js` : un registre illisible (erreur réseau, ≠ 404) n'est plus traité comme vide — plus
+  de migration ni d'écriture d'une copie partielle (qui remplaçait le registre complet) ;
+  `save()` relit d'abord le registre. Anciens registres servis absents : une vérification par jour.
+- `model.js` : transit / temps sur zone jamais plus longs que le vol (heure inversée = erreur,
+  pas un passage de minuit).
