@@ -56,22 +56,26 @@
   const utc = (date, time) => new Date(`${date}T${time}Z`);
   function parseIvaoDetails(text) {
     const t = flat(text);
-    if (!/Tracks|Flight Plans|Connected/i.test(t) || !/IVAO/i.test(t)) return null;
+    // Page reconnue à sa structure (le texte copié ne contient pas forcément « IVAO ») ;
+    // intitulés en majuscules ou non selon la copie.
+    if (!/Tracks Table|Flight Plans|Tracks Map|\bConnected\b/i.test(t)) return null;
     const samples = [];
     const re = /(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) (-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?) (-?\d+) ?ft (\d+) ?knots/g;
     let m; while ((m = re.exec(t))) samples.push({ time: utc(m[1], m[2]), lat: Number(m[3]), lon: Number(m[4]), alt: Number(m[5]), gs: Number(m[6]) });
-    const con = /Connected (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) Disconnected (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})/.exec(t)
-      || /\bOn (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) Off (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})/.exec(t);
-    const leg = /\bLeg ([A-Z0-9]{3,4}) ?- ?([A-Z0-9]{3,4})\b/.exec(t), flight = /\bFlight ([A-Z0-9]{2,10})\b/.exec(t);
+    const con = /\bConnected (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) Disconnected (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})/i.exec(t)
+      || /\bOn (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) Off (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})/i.exec(t);
+    const leg = /\bLeg ([A-Z0-9]{3,4}) ?- ?([A-Z0-9]{3,4})\b/i.exec(t), flight = /\bFlight (?!plans\b)([A-Z0-9]{2,10})\b/i.exec(t);
     if (!samples.length && !con) return null;
     return {
-      source: 'IVAO', callsign: flight?.[1] || '', dep: leg?.[1] || '', arr: leg?.[2] || '',
+      source: 'IVAO', callsign: up(flight?.[1]), dep: up(leg?.[1]), arr: up(leg?.[2]),
+      // Table des positions absente : sections repliées lors d'un copier-coller manuel.
+      tracksMissing: !samples.length && /Tracks Table/i.test(t),
       connected: con ? utc(con[1], con[2]) : null, disconnected: con ? utc(con[3], con[4]) : null,
       samples, fpl: parseFpl(text)
     };
   }
   function parseIvaoList(text) {
-    const t = flat(text); if (!/IVAO/i.test(t)) return [];
+    const t = flat(text); // lignes reconnues à leur forme (indicatif, pilote (VID), trajet, début, fin, durée)
     const re = /\b([A-Z0-9]{2,10}) ([^()\d]{2,40}?) \((\d{3,8})\) ([A-Z0-9]{3,4}) ?- ?([A-Z0-9]{3,4}) (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) (\d{2}:\d{2})\b/g;
     const out = []; let m;
     while ((m = re.exec(t))) out.push({ callsign: m[1], user: m[2], vid: m[3], dep: m[4], arr: m[5], start: utc(m[6], m[7]), end: utc(m[8], m[9]) });
@@ -151,6 +155,7 @@
       set('aircraft.0.callsign', result.callsign); set('navigation.dep', result.dep); set('navigation.arr', result.arr);
       set('network.onlineNetwork', 'IVAO');
       const track = analyseTrack(result.samples, rotary);
+      if (result.tracksMissing) notes.push('table des positions absente (section « Tracks Table » repliée) : utilisez le favori « → CR DEFA », qui déplie tout, ou dépliez « Tracks Table » avant de copier');
       if (result.connected) setDate(day(result.connected, tz));
       // Début / fin de mission ≈ connexion / déconnexion (période volée sur le réseau).
       if (result.connected) set('timeline.missionStart', clock(result.connected, tz));
@@ -184,9 +189,43 @@
     return { done: [...new Set(done)], notes };
   }
 
-  // Favori (bookmarklet) à glisser dans la barre des favoris : sur la page du tracker, copie
-  // son texte ; la page du CR l'analyse au retour (lecture du presse-papiers au focus).
-  const BOOKMARKLET = "javascript:(()=>{const t=document.body.innerText;navigator.clipboard.writeText(t).then(()=>alert('Copié pour CR DEFA ('+t.length+' caractères) : revenez sur la page du compte rendu.'),()=>{prompt('Copiez ce texte (Ctrl+C) :',t)})})()";
+  // Favori (bookmarklet) à glisser dans la barre des favoris. Sur la page « détails » du
+  // tracker IVAO : déplie les sections repliées (révisions, « Tracks Table »), fait défiler la
+  // table des positions jusqu'au bout (chargement progressif), puis copie le texte de TOUTE
+  // la page, sections masquées comprises, un élément par ligne (un Ctrl+A / Ctrl+C ne copie que
+  // ce qui est affiché). La page du CR l'analyse au retour. Pas de commentaire de ligne ni de
+  // « % » dans cette fonction : elle devient une adresse javascript: sur une seule ligne.
+  async function trackerCopy() {
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    document.querySelectorAll('.card-header button, .accordion button').forEach(button => {
+      const card = button.closest('.card'), collapse = card && card.querySelector('.collapse');
+      if (collapse && !collapse.classList.contains('show')) button.click();
+    });
+    await sleep(700);
+    let last = -1;
+    for (let i = 0; i < 40; i++) {
+      document.querySelectorAll('.infinite-scroll-component, .list_table_scroll').forEach(el => { el.scrollTop = el.scrollHeight; if (el.parentElement) el.parentElement.scrollTop = el.parentElement.scrollHeight; });
+      await sleep(350);
+      const count = document.body.getElementsByTagName('*').length;
+      if (count === last) break;
+      last = count;
+    }
+    const lines = [];
+    const walk = node => {
+      if (node.nodeType === 3) { const text = node.nodeValue.trim(); if (text) lines.push(text); return; }
+      if (/^(SCRIPT|STYLE|NOSCRIPT|SVG)$/i.test(node.nodeName)) return;
+      node.childNodes.forEach(walk);
+    };
+    walk(document.body);
+    const text = lines.join('\n');
+    try { await navigator.clipboard.writeText(text); alert('CR DEFA : page copiée (' + lines.length + ' éléments). Revenez sur le compte rendu.'); }
+    catch (error) {
+      const area = document.createElement('textarea'); area.value = text; document.body.append(area); area.select();
+      const ok = document.execCommand('copy'); area.remove();
+      alert(ok ? 'CR DEFA : page copiée. Revenez sur le compte rendu.' : 'CR DEFA : copie impossible (' + error.message + ').');
+    }
+  }
+  const BOOKMARKLET = 'javascript:(' + trackerCopy.toString().replace(/\s*\n\s*/g, ' ') + ')()';
 
   window.MissionTextImport = { analyse, apply, parseFpl, parseIvaoDetails, parseIvaoList, analyseTrack, BOOKMARKLET };
 })();

@@ -105,8 +105,16 @@ plan de vol `PCAN44`** (7 caractères OACI), exploitant **OPR/ FRU**, base **LFT
   du jour de la mission ≈ mise en route / fin de mission ;
 - un **METAR**.
 
-Plus rapide : glisser le lien **→ CR DEFA** de la fenêtre dans la barre des favoris ; sur la page
-du tracker, un clic copie la page ; au retour sur le CR (fenêtre ouverte), elle est analysée.
+Plus rapide et plus complet : glisser le lien **→ CR DEFA** de la fenêtre dans la barre des
+favoris ; sur la page « détails » du tracker, un clic **déplie les sections repliées** (révisions,
+« Tracks Table »), charge toute la table des positions et copie la page entière ; au retour sur
+le CR (fenêtre ouverte), elle est analysée. Avec un Ctrl+A / Ctrl+C manuel, seules les sections
+dépliées sont copiées : déplier « Tracks Table » avant de copier, sinon décollage, atterrissage et
+distance ne peuvent pas être calculés.
+
+La première fois, « Coller depuis le presse-papiers » demande à Chrome l'autorisation de lire le
+presse-papiers ; une fois accordée, l'analyse au retour est automatique. Ctrl+V dans la zone
+fonctionne toujours, sans autorisation.
 Les heures du tracker (UTC) sont converties en heure locale du terrain de départ.
 
 
