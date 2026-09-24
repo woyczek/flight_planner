@@ -96,9 +96,22 @@
     return m ? { prefix: m[1], number: m[2] } : { prefix: text, number: '' };
   }
   const joinCallsign = (prefix, number) => `${String(prefix ?? '').trim().toUpperCase()}${String(number ?? '').trim().toUpperCase()}`.replace(/\s+/g, '');
-  // Appareils : indicatif / numéro déduits de l'indicatif complet s'ils manquent.
+  // Immatriculation affichée et enregistrée avec le tiret de la marque de nationalité :
+  // FZBMM → F-ZBMM, HBJVE → HB-JVE, 9HABC → 9H-ABC ; N123AB (États-Unis) et saisies déjà
+  // tirées inchangées. La recherche ignore le tiret (MissionAircraft.regKey).
+  const TWO_LETTER_MARKS = new Set(('HB OO OE OK OM PH EC EI ES LX LY LZ SE SP SX TC UR YL YR YU OH OY LN CS TF HA S5 9A 9H 4X VH ZS ZK VT HS PK RP 9M 9V A6 A7 HZ SU CN EP YI JY OD 5B 5Y ZP LV CC HK YV OB CX HP TG TI XA XB XC EW ER UK UN EX EY EZ 4K 4L EK RA RF PP PR PT PU HI T7 3A HL').split(' '));
+  function formatRegistration(value) {
+    const s = String(value ?? '').trim().toUpperCase().replace(/\s+/g, '');
+    if (!s || s.includes('-')) return s.replace(/-+/g, '-');
+    if (/^N\d/.test(s)) return s;
+    if (TWO_LETTER_MARKS.has(s.slice(0, 2)) && s.length > 3) return `${s.slice(0, 2)}-${s.slice(2)}`;
+    if (/^[A-Z]{5}$/.test(s)) return `${s[0]}-${s.slice(1)}`;
+    return s;
+  }
+  // Appareils : indicatif / numéro déduits de l'indicatif complet s'ils manquent ; immatriculation formatée.
   function callsignParts(mission) {
     (mission.aircraft || []).forEach(a => {
+      if (a.registration) a.registration = formatRegistration(a.registration);
       ['callsignPrefix', 'callsignNumber', 'callsignFpl', 'operatorCode'].forEach(k => { if (a[k] == null) a[k] = ''; });
       if (a.callsign && !a.callsignPrefix && !a.callsignNumber) { const s = splitCallsign(a.callsign); a.callsignPrefix = s.prefix; a.callsignNumber = s.number; }
     });
@@ -206,5 +219,5 @@
     return out.map(values => Object.fromEntries(head.map((h, i) => [h, values[i] ?? ''])));
   }
 
-  window.MissionModel = { parseCsv, redact, hasSensitive, context, blockVisible, SCHEMA_VERSION, emptyMission, emptyAircraft, splitCallsign, joinCallsign, isUpperField, registerUpperFields, upperText, upperPaths, get, set, fillDefaults, minutes, between, num, computeStatistics, migrate, toYaml, parse };
+  window.MissionModel = { parseCsv, redact, hasSensitive, context, blockVisible, SCHEMA_VERSION, emptyMission, emptyAircraft, splitCallsign, joinCallsign, formatRegistration, isUpperField, registerUpperFields, upperText, upperPaths, get, set, fillDefaults, minutes, between, num, computeStatistics, migrate, toYaml, parse };
 })();

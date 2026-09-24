@@ -69,6 +69,7 @@
     importUnknown: L('Texte non reconnu : plan de vol « (FPL-…) », page du tracker IVAO, historique VATSIM (JSON) ou METAR attendus.', 'Text not recognised: flight plan “(FPL-…)”, IVAO tracker page, VATSIM history (JSON) or METAR expected.', 'Text nicht erkannt: Flugplan „(FPL-…)“, IVAO-Tracker-Seite, VATSIM-Historie (JSON) oder METAR erwartet.', 'Texto no reconocido: se espera un plan de vuelo «(FPL-…)», una página del tracker IVAO, el historial VATSIM (JSON) o un METAR.'),
     importClipDenied: L('Lecture du presse-papiers refusée : collez dans la zone (Ctrl+V).', 'Clipboard access denied: paste into the box (Ctrl+V).', 'Zugriff auf die Zwischenablage verweigert: in das Feld einfügen (Strg+V).', 'Acceso al portapapeles denegado: pegue en el cuadro (Ctrl+V).'),
     importPasteHint: L('Collez avec Ctrl+V dans la zone (analyse immédiate). « Coller depuis le presse-papiers » demande l’autorisation une fois ; ensuite, le retour depuis le tracker (favori « → CR DEFA ») est analysé automatiquement.', 'Paste with Ctrl+V in the box (immediate analysis). “Paste from clipboard” asks for permission once; then returning from the tracker (“→ CR DEFA” bookmark) is analysed automatically.', 'Mit Strg+V in das Feld einfügen (sofortige Auswertung). „Aus Zwischenablage einfügen“ fragt einmal nach der Erlaubnis; danach wird die Rückkehr vom Tracker (Lesezeichen „→ CR DEFA“) automatisch ausgewertet.', 'Pegue con Ctrl+V en el cuadro (análisis inmediato). «Pegar desde el portapapeles» pide permiso una vez; después, la vuelta desde el tracker (marcador «→ CR DEFA») se analiza automáticamente.'),
+    importTrackerUrl: L('Adresse de la trace IVAO', 'IVAO track address', 'Adresse der IVAO-Spur', 'Dirección de la traza IVAO'),
     importLocal: L('heures locales', 'local times', 'Ortszeiten', 'horas locales'),
     fplFilled: L('champs renseignés depuis', 'fields filled from', 'Felder ausgefüllt aus', 'campos rellenados desde'),
     render: L('Générer / actualiser le CR', 'Generate / refresh report', 'Bericht erzeugen / aktualisieren', 'Generar / actualizar el informe'),
@@ -264,6 +265,12 @@
     function identityAssist(index, field, value, item) {
       // Indicatif complet ⇄ indicatif (série) + numéro.
       const CALLSIGN = ['callsign', 'callsignPrefix', 'callsignNumber'];
+      // Immatriculation saisie avec ou sans tiret : affichée et enregistrée « F-ZBMM ».
+      if (field === 'registration') {
+        const formatted = M.formatRegistration(value);
+        if (formatted !== item.registration) { item.registration = formatted; const input = form.querySelector(`[data-path="aircraft.${index}.registration"]`); if (input) input.value = formatted; }
+        value = formatted;
+      }
       if (field === 'callsignFpl') {
         item.callsignFpl = String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, A.FPL_MAX);
         const own = autoFilled.get(item) || {}; own.fplFor = item.callsign; autoFilled.set(item, own); // saisie valable pour cet indicatif
@@ -379,7 +386,7 @@
     const bookmarklet = importBox.querySelector('.mc-bookmarklet');
     bookmarklet.textContent = '→ CR DEFA'; bookmarklet.href = window.MissionTextImport?.BOOKMARKLET || '#';
     bookmarklet.onclick = event => { event.preventDefault(); importResult.textContent = inLanguage(UI.importBookmarkletHelp); };
-    const KINDS = { fpl: 'importFpl', 'ivao-details': 'importIvaoDetails', 'ivao-list': 'importIvaoList', metar: 'importMetar' };
+    const KINDS = { fpl: 'importFpl', 'ivao-details': 'importIvaoDetails', 'ivao-list': 'importIvaoList', metar: 'importMetar', 'tracker-url': 'importTrackerUrl' };
     async function importText(text, silent = false) {
       const TI = window.MissionTextImport, result = TI.analyse(text);
       if (result.kind === 'vatsim-history') { window.NetworkTracker?.applyVatsimHistory(text); importResult.textContent = inLanguage(UI.importVatsim); importArea.value = ''; return true; }
@@ -524,6 +531,8 @@
       get: () => mission.series,
       set: value => { mission.series = value; view.sync(); view.refresh(); kpi(); changed(); }
     });
+    // « Analyser / importer… » sur la ligne de la popup famille / sous-type (au-dessus du registre).
+    if (header) header.insertBefore(importBox, tools);
 
     // ---- initialisation : registre, puis mission à ouvrir (modification, brouillon ou nouvelle)
     redraw();

@@ -27,7 +27,7 @@
   const HISTORY = {
     vatsimConnections: cid => `https://api.vatsim.net/v2/members/${encodeURIComponent(cid)}/history?limit=50`,
     vatsimStats: cid => `https://stats.vatsim.net/stats/${encodeURIComponent(cid)}`,
-    statsimFlights: cid => `https://statsim.net/flights/vatsimid/?vatsimid=${encodeURIComponent(cid)}`,
+    statsimFlights: cid => `https://statsim.net/flights/vatsimid/${encodeURIComponent(cid)}`,
     ivaoTracker: vid => `https://tracker.ivao.aero/?userId=${encodeURIComponent(vid)}`
   };
 

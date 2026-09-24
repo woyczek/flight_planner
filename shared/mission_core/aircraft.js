@@ -111,10 +111,10 @@
   function known() {
     const byReg = new Map();
     sources().filter(r => regKey(r.registration)).sort((a, b) => String(a.date || '').localeCompare(String(b.date || ''))).forEach(record => {
-      const key = regKey(record.registration), current = byReg.get(key) || { registration: String(record.registration).toUpperCase(), callsigns: [] };
+      const key = regKey(record.registration), current = byReg.get(key) || { registration: window.MissionModel.formatRegistration(record.registration), callsigns: [] };
       FIELDS.forEach(field => {
         const value = record[field];
-        if (Array.isArray(value) ? value.length : value !== undefined && value !== null && String(value).trim() !== '') current[field] = field === 'registration' || field === 'callsign' ? String(value).toUpperCase() : value;
+        if (Array.isArray(value) ? value.length : value !== undefined && value !== null && String(value).trim() !== '') current[field] = field === 'registration' ? window.MissionModel.formatRegistration(value) : field === 'callsign' ? String(value).toUpperCase() : value;
       });
       [record.callsign, ...(Array.isArray(record.callsigns) ? record.callsigns : [])].forEach(c => { if (c && !current.callsigns.includes(String(c).toUpperCase())) current.callsigns.push(String(c).toUpperCase()); });
       current.date = record.date || current.date;
@@ -210,7 +210,7 @@
     const registry = read(REGISTRY_KEY) || {}, date = mission?.metadata?.date || new Date().toISOString().slice(0, 10);
     (mission?.aircraft || []).forEach((a, index) => {
       if (!regKey(a.registration)) return;
-      registry[regKey(a.registration)] = { registration: String(a.registration).toUpperCase(), type: a.type || '', variant: a.variant || '', category: a.category || '', callsign: String(a.callsign || '').toUpperCase(), tacticalNumber: a.tacticalNumber || '', configuration: a.configuration || '', equipment: a.equipment || [], operator: (index === 0 && mission.organisation?.organisation) || registry[regKey(a.registration)]?.operator || '', date, updatedAt: new Date().toISOString() };
+      registry[regKey(a.registration)] = { registration: window.MissionModel.formatRegistration(a.registration), type: a.type || '', variant: a.variant || '', category: a.category || '', callsign: String(a.callsign || '').toUpperCase(), tacticalNumber: a.tacticalNumber || '', configuration: a.configuration || '', equipment: a.equipment || [], operator: (index === 0 && mission.organisation?.organisation) || registry[regKey(a.registration)]?.operator || '', date, updatedAt: new Date().toISOString() };
       if (a.type) enrichType(a.type, { model: a.variant || a.type, category: a.category });
     });
     write(REGISTRY_KEY, registry);

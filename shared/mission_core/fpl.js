@@ -113,7 +113,7 @@
     const item = mission.aircraft[0] || (mission.aircraft[0] = M.emptyAircraft());
     // Immatriculation du plan de vol (REG/FZBMM) → forme connue (F-ZBMM) si l'appareil existe.
     const known = fpl.registration ? A.find(fpl.registration) : null;
-    set('aircraft.0.registration', known?.registration || fpl.registration);
+    set('aircraft.0.registration', known?.registration || M.formatRegistration(fpl.registration));
     set('aircraft.0.callsign', fpl.callsign); set('aircraft.0.type', fpl.type);
     // Indicatif déposé (forme plan de vol, ex. DRAGO76) → DRAGON / 76, forme plan de vol conservée.
     if (done.includes('aircraft.0.callsign')) {

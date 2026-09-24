@@ -110,8 +110,11 @@
     if (/^[[{]/.test(raw)) {
       try { const data = JSON.parse(raw); const list = data?.items || data?.results || (Array.isArray(data) ? data : null); if (list?.some?.(s => s?.start)) return { kind: 'vatsim-history', text: raw }; } catch { /* pas du JSON */ }
     }
+    // Adresse exacte de la trace (session) du tracker IVAO : copiée par le favori, ou collée seule.
+    const session = /https?:\/\/tracker\.ivao\.aero\/sessions\/\d+/.exec(raw)?.[0] || '';
     const details = parseIvaoDetails(raw);
-    if (details && (details.samples.length || details.connected)) return { kind: 'ivao-details', ...details };
+    if (details && (details.samples.length || details.connected)) return { kind: 'ivao-details', trackerUrl: session, ...details };
+    if (session && raw.replace(session, '').trim().length < 3) return { kind: 'tracker-url', trackerUrl: session };
     const list = parseIvaoList(raw);
     if (list.length) return { kind: 'ivao-list', sessions: list };
     const fpl = parseFpl(raw);
@@ -150,6 +153,12 @@
     };
     if (result.kind === 'fpl') applyFpl(result.fpl);
     if (result.kind === 'metar') set('environment.metar', result.metar);
+    // URL de la trace : celle de la session remplace une adresse générique du tracker.
+    if (result.trackerUrl) {
+      const current = mission.network?.trackerUrl || '';
+      if (!current || !/\/sessions\/\d+/.test(current)) { M.set(mission, 'network.trackerUrl', result.trackerUrl); done.push('network.trackerUrl'); }
+      set('network.onlineNetwork', 'IVAO');
+    }
     if (result.kind === 'ivao-details') {
       applyFpl(result.fpl);
       set('aircraft.0.callsign', result.callsign); set('navigation.dep', result.dep); set('navigation.arr', result.arr);
@@ -217,6 +226,7 @@
       node.childNodes.forEach(walk);
     };
     walk(document.body);
+    lines.unshift(location.href);
     const text = lines.join('\n');
     try { await navigator.clipboard.writeText(text); alert('CR DEFA : page copiée (' + lines.length + ' éléments). Revenez sur le compte rendu.'); }
     catch (error) {
