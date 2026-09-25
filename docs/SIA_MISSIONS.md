@@ -67,11 +67,25 @@ format à blocs (`TYPE:`, `SOUS-TYPE:`, `TARGET:`, `TURNING POINTS:` avec lignes
 `- PT1 | SIMIP | 46.444167 | 1.486000 | rôle`, `RDV:`, `ZONE:`, `MAPS TO PRODUCE:`, `NOTES:`) —
 exemple : `SIA XML/Mission 02.md` (ravitaillement en vol sur l'axe SIMONE).
 
+Le Markdown des missions générées (`summaryNN.md`) porte aussi ses données, lues même sans le YAML :
+lignes `Type :`, `Sous-type :`, `Aéronef :`, `Callsign :`, `Départ :`, `Destination :` (avec
+« — lat, lon » éventuel) de l'introduction, tableau `## Points tournants`, liste `## Rendez-vous`
+(`**RDV-1 — Nom** — lat, lon — participants : A, B — rôle`), tableau `## Équipes engagées`,
+`## Charge / personnel`, objectifs, `## Ravitaillement en vol` (`- clé: valeur`), risques. Le YAML
+prime quand les deux sont chargés. La cible et les zones n'ont pas de coordonnées dans ce Markdown
+(elles viennent du YAML) ; les Markdown MEDEVAC n'ont que textes, équipes et risques.
+
+**Une mission par chargement** : `missionNN.yaml` et / ou `summaryNN.md` d'un même numéro. Une
+sélection de plusieurs missions (dossier de série entier) est refusée avec un message ; les fichiers
+annexes d'une série (`maps_manifest.md`, `AAR_TRACKS_REFERENCE.md`, `VALIDATION.txt`, consignes)
+sont ignorés et signalés.
+
 ## 3. Générateur de mission (brief)
 
 Page `SIA XML/mission_editor.html`.
 
-1. **Importer une mission** : un ou plusieurs YAML / Markdown (fusionnés), et les cartes (PNG ou
+1. **Importer une mission** : YAML et / ou Markdown d'une mission (fusionnés, lecture commune avec le
+   studio : `SiaMission.fromTexts`), et les cartes (PNG ou
    ZIP livré par le studio).
 2. **Identification** : titre, numéro, série, type, sous-type, auteur, date, schéma.
 3. **Textes de mission** : résumé, description détaillée, rubriques libres. Quand le fichier

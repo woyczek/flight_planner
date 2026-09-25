@@ -71,6 +71,108 @@
   }
 
   /** Métadonnées d'une mission Markdown (titre, type, appareils, terrains, points) au format YAML de la mission. */
+
+  // ---- format actuel des missions générées (summaryNN.md) : titres « ## », lignes « Clé : valeur », tableaux, listes.
+  // Lu en complément de l'ancien format (blocs TYPE: / TURNING POINTS:) : les valeurs de l'ancien format priment.
+  // La cible et les zones n'ont pas de coordonnées dans ce Markdown : elles viennent du YAML de la mission.
+
+  /** Texte de la section « ## titre » (titre normalisé comparé aux motifs) ; « » si absente. */
+  function mdSection(text, ...patterns) {
+    const parts = String(text).split(/^##\s+/m).slice(1);
+    const hit = parts.find(part => patterns.some(re => re.test(norm(part.split('\n')[0]))));
+    return hit ? hit.slice(hit.indexOf('\n') + 1) : '';
+  }
+  /** Lignes « Clé : valeur » d'une section (clé en gras tolérée) : { clé normalisée : valeur }. */
+  function mdPairs(block) {
+    const out = {};
+    for (const line of String(block).split('\n')) {
+      const m = /^\s*(?:\*\*)?([^:*|\n-][^:*\n]*?)\s*:\s*(?:\*\*)?\s*(.+?)\s*$/.exec(line);
+      if (m && !/^https?$/i.test(m[1].trim())) out[norm(m[1])] = m[2].trim();
+    }
+    return out;
+  }
+  /** Tableau Markdown d'une section → lignes { colonne normalisée : valeur }. */
+  function mdTable(block) {
+    const rows = String(block).split('\n').filter(l => /^\s*\|/.test(l)).map(l => l.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim()));
+    if (rows.length < 2) return [];
+    const head = rows[0].map(norm);
+    return rows.slice(1).filter(r => !r.every(c => /^:?-{2,}:?$/.test(c))).map(r => Object.fromEntries(head.map((h, i) => [h, r[i] ?? ''])));
+  }
+  /** Éléments de liste « - … » d'une section. */
+  const mdList = block => String(block).split('\n').map(l => /^\s*-\s+(.*)$/.exec(l)?.[1]?.trim()).filter(Boolean);
+  /** Valeur de liste typée : True / False (vrai / faux, oui / non), nombre, sinon texte. */
+  const mdValue = v => /^(true|vrai|oui)$/i.test(v) ? true : /^(false|faux|non)$/i.test(v) ? false : /^-?\d+(?:[.,]\d+)?$/.test(v) ? Number(v.replace(',', '.')) : v;
+  /** « Nom (OACI) — lat, lon » → { name, icao?, lat?, lon? } ; null si vide. */
+  function mdPlace(text) {
+    const m = /^(.*?)(?:\s*—\s*([-+]?\d+(?:\.\d+)?)\s*,\s*([-+]?\d+(?:\.\d+)?))?\s*$/.exec(String(text || '').trim());
+    const name = (m?.[1] || '').trim(), icao = /\(([A-Z0-9]{4})\)\s*$/.exec(name)?.[1];
+    if (!name) return null;
+    const out = { name };
+    if (icao) out.icao = icao;
+    if (m?.[2] != null) { out.lat = +m[2]; out.lon = +m[3]; }
+    return out;
+  }
+
+  /** Données d'une mission au format Markdown actuel ; seuls les champs trouvés sont présents. */
+  function modernMdMetadata(text) {
+    const y = { mission: {} };
+    const intro = mdPairs(mdSection(text, /^introduction/));
+    const pick = (...keys) => keys.map(k => intro[k]).find(Boolean);
+    if (pick('type')) y.mission.type = pick('type');
+    if (pick('sous_type', 'subtype')) y.mission.subtype = pick('sous_type', 'subtype');
+    if (pick('serie')) y.mission.series = pick('serie');
+    // aéronef : « A400M Atlas », ou « H135 — SAMU66 » (type — indicatif)
+    const plane = pick('aeronef', 'aeronef_concerne'), cs = pick('callsign', 'indicatif');
+    if (plane || cs) {
+      const [type, callsign] = String(plane || '').split(/\s+—\s+/);
+      y.aircraft = [{ id: 'AC1', type: (type || '').trim(), callsign: (cs || callsign || '').trim(), role: 'aéronef principal' }];
+    }
+    const origin = mdPlace(pick('depart')), destination = mdPlace(pick('destination'));
+    if (origin) y.origin = origin;
+    if (destination) y.destination = destination;
+    // points tournants : | ID | Nom | Latitude | Longitude | Rôle |
+    const tps = mdTable(mdSection(text, /^points_tournants/, /^turning_points/)).map(r => ({
+      id: r.id || '', name: r.nom || r.name || '', lat: Number(r.latitude ?? r.lat), lon: Number(r.longitude ?? r.lon), role: r.role || ''
+    })).filter(pt => Number.isFinite(pt.lat) && Number.isFinite(pt.lon));
+    if (tps.length) y.turning_points = tps;
+    // rendez-vous : « - **RDV-1 — Nom** — lat, lon — participants : A, B — rôle »
+    const rdv = mdList(mdSection(text, /^rendez_vous/)).map(item => {
+      const m = /^\*\*(.+?)\*\*\s*—\s*([-+]?\d+(?:\.\d+)?)\s*,\s*([-+]?\d+(?:\.\d+)?)\s*(?:—\s*participants?\s*:\s*(.+?))?(?:\s*—\s*(.+))?$/i.exec(item);
+      if (!m) return null;
+      const [id, ...name] = m[1].split(/\s+—\s+/);
+      return { id: id.trim(), name: name.join(' — ').trim() || id.trim(), lat: +m[2], lon: +m[3], participants: (m[4] || '').split(',').map(x => x.trim()).filter(Boolean), role: (m[5] || '').trim() };
+    }).filter(Boolean);
+    if (rdv.length) y.rendezvous = rdv;
+    // équipes engagées : | Nom / callsign | Arme / service | Département | Type | Rôle |
+    const teams = mdTable(mdSection(text, /^equipes/)).map(r => ({
+      name: r.nom_callsign || r.nom || '', service: r.arme_service || r.service || '', department: r.departement || '', type: r.type || '', role: r.role || ''
+    })).filter(t => t.name);
+    if (teams.length) y.teams = teams;
+    // charge / personnel
+    const loadBlock = mdSection(text, /^charge/);
+    if (loadBlock) {
+      const [head, tail = ''] = loadBlock.split(/contraintes\s*:/i), kv = mdPairs(head), mass = kv.masse || kv.masse_fret || kv.masse_totale, list = mdList(tail);
+      y.payload = { category: kv.categorie || '', description: kv.description || '' };
+      if (mass) y.payload.mass_kg = Number(String(mass).replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+      if (kv.passagers != null) y.payload.passengers = Number(kv.passagers) || 0;
+      if (list.length) y.payload.constraints = list;
+    }
+    // objectifs
+    const primary = mdSection(text, /^objectif_principal/).trim(), secondary = mdList(mdSection(text, /^objectifs_secondaires/));
+    if (primary || secondary.length) y.objectives = { primary: primary.split('\n')[0].trim(), secondary };
+    // ravitaillement en vol : « - clé: valeur »
+    const aar = mdList(mdSection(text, /^ravitaillement/)).map(l => /^([\w ]+?)\s*:\s*(.+)$/.exec(l)).filter(Boolean);
+    if (aar.length) y.air_refueling = Object.fromEntries(aar.map(([, k, v]) => [norm(k), mdValue(v.trim())]));
+    // risques : « - **Danger** — conséquence : X — mesure : Y » (ou « … . Mesure: Y »)
+    const risks = mdList(mdSection(text, /^risques/)).map(item => {
+      const m = /^\*\*(.+?)\*\*\s*—\s*conséquence\s*:\s*(.+?)(?:\s*(?:—|\.)\s*mesure\s*:\s*(.+))?$/i.exec(item);
+      return m ? { hazard: m[1].trim(), consequence: m[2].trim().replace(/\.$/, ''), mitigation: (m[3] || '').trim() } : { hazard: item.replace(/\*\*/g, '').trim() };
+    });
+    if (risks.length) y.risks = risks;
+    if (!Object.keys(y.mission).length) delete y.mission;
+    return y;
+  }
+
   function extractMdMetadata(text, parsed) {
     const y = {
       title: parsed.title || 'Mission',
@@ -131,7 +233,7 @@
     if (maps.length) y.maps = maps;
     const notes = legacyBlock(text, 'NOTES', ['$']).split(/\r?\n/).map(x => x.replace(/^\s*-\s*/, '').trim()).filter(Boolean);
     if (notes.length) y.notes = notes;
-    return y
+    return mergeYaml(modernMdMetadata(text), y)
   }
 
   /** Fusion profonde de deux documents YAML (extra complète et remplace base). */
@@ -145,31 +247,50 @@
   }
 
   // Plusieurs fichiers YAML / Markdown → document (YAML fusionné, textes du Markdown).
+  // Fichiers d'une mission : YAML (données) et / ou Markdown (textes, plus les données du format actuel).
+  // Fichiers annexes d'une série ignorés (manifeste des cartes, références, consignes, VALIDATION.txt) ;
+  // une sélection qui contient plusieurs missions (dossier de série entier) est refusée avec un message clair.
+  const isYaml = f => /\.ya?ml$/i.test(f.name) || /^\s*[\[{]/.test(f.text) || /^\s*(schema|mission)\s*:/m.test(f.text) && !/^\s*#/.test(f.text);
+  /** Vrai pour le Markdown d'une mission (ancien format TYPE: / TURNING POINTS:, ou format actuel ## Introduction / ## Summary). */
+  const isMissionMd = f => (/\.(md|markdown|txt)$/i.test(f.name) || /^\s*#/.test(f.text)) && (/^##\s+(introduction|summary|résumé|resume)\b/im.test(f.text) || /^\s*(TYPE|TURNING POINTS|POINTS TOURNANTS)\s*:/m.test(f.text));
+  /** Missions distinctes d'une sélection : identifiant du YAML (mission.id) ou n° du titre Markdown (« Mission 51 »). */
+  function missionIds(yamls, mds) {
+    const ids = new Set();
+    yamls.forEach(({ parsed }) => { const id = parsed?.mission?.id ?? parsed?.mission?.number; if (id != null && id !== '') ids.add(String(Number(id) || id)); });
+    mds.forEach(f => { const m = /^#\s+Mission\s+(\d+)/im.exec(f.text); if (m) ids.add(String(Number(m[1]))); });
+    return [...ids];
+  }
+
+  /** Plusieurs fichiers YAML / Markdown d'UNE mission → document { yaml, narrative, sourceNames, ignored }.
+   *  Lève une erreur si la sélection contient plusieurs missions ou aucun fichier de mission. */
   function fromTexts(files) {
-    let yaml = {};
-    const narrative = {
-      summary: '',
-      detailed: '',
-      sections: []
-    };
-    for (const f of files.filter(f => /\.ya?ml$/i.test(f.name) || /^\s*[\[{]/.test(f.text) || /^\s*(schema|mission)\s*:/m.test(f.text) && !/^\s*#/m.test(f.text))) {
+    const parsedYamls = files.filter(isYaml).map(f => {
       const parsed = window.jsyaml.load(f.text);
       if (!parsed || typeof parsed !== 'object') throw Error(`${f.name} ne contient pas un objet YAML.`);
-      yaml = mergeYaml(yaml, parsed);
-    }
-    for (const f of files.filter(f => !(/\.ya?ml$/i.test(f.name) || /^\s*[\[{]/.test(f.text) || /^\s*(schema|mission)\s*:/m.test(f.text) && !/^\s*#/m.test(f.text)))) {
+      return { f, parsed };
+    });
+    // un YAML / JSON sans clé de mission (ex. VALIDATION.txt d'une série, en JSON) est un fichier annexe
+    const isMission = ({ f, parsed }) => /\.ya?ml$/i.test(f.name) || ['schema', 'mission', 'turning_points', 'target', 'aircraft'].some(k => k in parsed);
+    const yamls = parsedYamls.filter(isMission);
+    const mds = files.filter(f => !isYaml(f) && isMissionMd(f));
+    const ignored = [...parsedYamls.filter(y => !isMission(y)).map(y => y.f.name), ...files.filter(f => !isYaml(f) && !isMissionMd(f)).map(f => f.name)];
+    if (!yamls.length && !mds.length) throw Error(`Aucun fichier de mission (YAML ou Markdown de mission) dans : ${files.map(f => f.name).join(', ')}.`);
+    const ids = missionIds(yamls, mds);
+    if (ids.length > 1) throw Error(`La sélection contient ${ids.length} missions (${ids.join(', ')}) : choisir les fichiers d'une seule mission (missionNN.yaml et summaryNN.md).`);
+    let yaml = {};
+    const narrative = { summary: '', detailed: '', sections: [] };
+    for (const { parsed } of yamls) yaml = mergeYaml(yaml, parsed);
+    for (const f of mds) {
       const p = parseMarkdown(f.text);
-      yaml = mergeYaml(extractMdMetadata(f.text, p), yaml);
+      yaml = mergeYaml(extractMdMetadata(f.text, p), yaml);   // les valeurs du YAML priment
       if (p.title && !yaml.title) yaml.title = p.title;
       if (p.summary) narrative.summary = p.summary;
       if (p.detailed) narrative.detailed = p.detailed;
       narrative.sections.push(...p.sections);
     }
-    return {
-      yaml,
-      narrative,
-      sourceNames: files.map(f => f.name)
-    };
+    // ligne de séparation d'un tableau Markdown recopiée comme équipe par certains générateurs (« --- », « ---: »)
+    if (Array.isArray(yaml.teams)) yaml.teams = yaml.teams.filter(t => !t || typeof t !== 'object' || !Object.values(t).every(v => /^\s*:?-{2,}:?\s*$/.test(String(v ?? ''))));
+    return { yaml, narrative, sourceNames: files.map(f => f.name).filter(n => !ignored.includes(n)), ignored };
   }
 
   // ---- stockage partagé
