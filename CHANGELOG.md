@@ -27,6 +27,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   (« évasan hélico », « ravito », « police du ciel »…) est comparée aux mots-clés de chaque famille
   (synonymes FR / EN, appareils et indicatifs typiques, expressions) ; familles classées, les autres
   estompées, Entrée ouvre la première. Recherche locale, sans service en ligne.
+- Planificateur : **triangle des optimums de montée** (Vy, montée rapide — temps de bloc, montée
+  économique — carburant, gaz compris pour une hélice), lois de Badin selon l'altitude, table
+  comparative montée / trajet ; altitude optimale : un optimum par courbe (profil, économique, vitesse)
+  au lieu d'un minimum mélangé, relevé de jauge coloré ; textes du planificateur dans les 4 langues.
 - Planificateur : jauges déplaçables et valeurs sous les courbes de montée et RPM / consommation ;
   légendes aux couleurs des courbes.
 - **Flight Performance & Fuel Planner — Profil vertical** : bloc de coupe le long d'une route

@@ -69,12 +69,19 @@ et studio SIA). Mécanique du vol simplifiée, **calibrée sur le profil** et in
 **Altitude optimale** (courbes NM / carburant du trajet selon le niveau, montée et descente comprises) :
 régime **économique** (distance max. : ≈ 1,32 × traînée mini pour un réacteur, traînée mini pour une
 hélice) et régime **du profil** (Mach de croisière, Badin limité à 290 kt, ou puissance de croisière,
-plein gaz au-dessus) ; optimum **carburant** (vert) et optimum **vitesse** (durée, orange) ; croisière
+plein gaz au-dessus) ; un optimum par courbe : **carburant au régime du profil** (bleu), **carburant au
+régime économique** (vert, avec son écart de carburant et de durée) et **vitesse** (durée, orange) ; la
+jauge donne carburant, durée et TAS des deux régimes ; croisière
 seule (rendement max., plage à 1 % : la courbe d'un avion à hélice est plate) ; comparaison au niveau du
 plan ; plancher pratique 1000 ft.
 
-**Montée optimale** : Vy (vario max.) et Vx (pente max.) selon l'altitude, vario, débit et **carburant par
-1000 ft** (courbes et table, cumuls depuis le sol) ; montée au niveau du plan au Badin du profil ou à Vy
+**Montée optimale** — trois optimums incompatibles : **Vy** (vario max., niveau atteint au plus tôt),
+**montée rapide** (temps de bloc minimal) et **montée économique** (carburant du trajet minimal ; pour une
+hélice, gaz optimisés) ; pour les deux dernières, la distance parcourue en montée est retranchée de la
+croisière, le vario reste ≥ 50 % du vario max., et un réacteur est limité à 250 kt sous FL100. Lois de
+Badin selon l'altitude (seconde courbe, jauge), table comparant Badin du profil, Vy, rapide et
+économique (montée et trajet entier, meilleur marqué ★). Vx (pente max.), vario, débit et **carburant
+par 1000 ft** selon l'altitude (courbe et table, cumuls depuis le sol) ; montée au niveau du plan au Badin du profil ou à Vy
 (temps, distance, carburant, et lequel économise sur le trajet) ; **régimes de la table RPM / N1** : gaz,
 vario au sol et à mi-montée, carburant par 1000 ft, le plus économique marqué ★.
 
