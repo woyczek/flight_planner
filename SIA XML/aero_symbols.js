@@ -49,7 +49,7 @@
         bearing: main ? brg.get(id + '|' + main.desig) ?? +(main.desig.match(/^(\d{2})/)?.[1] || 0) * 10 : 0 });
     }
     // Radionavigation : VOR (+ DME associé = VOR-DME ; TACAN co-implanté = VOR-TACAN), DME, TACAN, NDB.
-    const navaids = [], vorByMid = new Map();
+    const navaids = [], vorByMid = new Map(), ilsDme = new Set([...text.matchAll(/<Ils>[\s\S]*?<DmeUid mid="(\d+)"/g)].map(m => m[1]));
     for (const b of blocks(text, 'Vor')) {
       const mid = /<VorUid mid="(\d+)"/.exec(b)?.[1], p = geo(b); if (!Number.isFinite(p.lat)) continue;
       const n = { kind: 'VOR', id: /<VorUid[^>]*>\s*<codeId>([^<]+)/.exec(b)?.[1] || '', name: tag(b, 'txtName'), freq: tag(b, 'valFreq'), ...p };
@@ -59,7 +59,7 @@
     for (const b of blocks(text, 'Dme')) {
       const vor = vorByMid.get(/<VorUid mid="(\d+)"/.exec(b)?.[1]), p = geo(b); if (!Number.isFinite(p.lat)) continue;
       if (vor) { vor.dme = true; continue; }
-      navaids.push({ kind: 'DME', id: /<DmeUid[^>]*>\s*<codeId>([^<]+)/.exec(b)?.[1] || '', name: tag(b, 'txtName'), freq: tag(b, 'valGhostFreq'), channel: tag(b, 'codeChannel'), ...p });
+      navaids.push({ kind: 'DME', ils: ilsDme.has(/<DmeUid mid="(\d+)"/.exec(b)?.[1]), id: /<DmeUid[^>]*>\s*<codeId>([^<]+)/.exec(b)?.[1] || '', name: tag(b, 'txtName'), freq: tag(b, 'valGhostFreq'), channel: tag(b, 'codeChannel'), ...p });
     }
     for (const b of blocks(text, 'Tcn')) {
       const id = /<TcnUid[^>]*>\s*<codeId>([^<]+)/.exec(b)?.[1] || '', p = geo(b); if (!Number.isFinite(p.lat)) continue;
@@ -119,7 +119,7 @@
   function screenBox(ring, toC) { let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity; for (const [lat, lon] of ring) { const p = toC(lat, lon); x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); } return { x0, y0, x1, y1, w: x1 - x0, h: y1 - y0 }; }
 
   // Espaces aériens au formalisme de la carte : bande intérieure (clip + trait double largeur).
-  function drawAirspaces(ctx, zones, toC, { W, H, scale = 1, font = 10, labels = true, shapes = true, limits = true, smallCross = true, smallPx = 14, placer: pl = null } = {}) {
+  function drawAirspaces(ctx, zones, toC, { W, H, scale = 1, font = 10, labels = true, shapes = true, limits = true, smallCross = true, smallPx = 14, placer: pl = null, alpha = .6 } = {}) {
     const band = Math.max(2.5, 4.5 * scale), todo = [];
     const order = { E: 0, D: 1, C: 1, B: 1, A: 2 }, isRdp = a => a.type === 'R' || a.type === 'D' || a.type === 'P';
     const sorted = [...zones].sort((a, c) => (isRdp(a) ? 3 : order[a.cls] ?? 1) - (isRdp(c) ? 3 : order[c.cls] ?? 1));
@@ -143,7 +143,7 @@
         else if (a.type === 'TRA') { stroke = 'rgba(214,23,63,.25)'; line = C.red; }
         else if (a.cls === 'E' || a.cls === 'G' || a.type === 'SIV') { stroke = C.bandE; line = C.lineE; lineW = Math.max(1, scale); }
         else { stroke = C.bandBCD; line = C.blue; lineW = Math.max(1.4, 2 * scale); }
-        ctx.beginPath(); ringPath(ctx, r, toC); ctx.lineWidth = band * 2; ctx.strokeStyle = stroke; ctx.stroke(); ctx.restore();
+        ctx.beginPath(); ringPath(ctx, r, toC); ctx.lineWidth = band * 2; ctx.strokeStyle = stroke; ctx.globalAlpha = alpha; ctx.stroke(); ctx.restore();
         ctx.save(); ctx.beginPath(); ringPath(ctx, r, toC); ctx.lineWidth = lineW; ctx.strokeStyle = line; if (/^(RMZ|TMZ|RMZ-TMZ|TRA)$/.test(a.type)) ctx.setLineDash([6 * scale, 3 * scale, 1.5 * scale, 3 * scale]); ctx.stroke(); ctx.restore();
       }
       if (labels) todo.push({ a, box, ring });
@@ -169,6 +169,23 @@
     return { w: Math.max(wt, wl), h: font * 1.15 * (up || low ? 3 : 1), left: !red && a.cls && /^[A-G]$/.test(a.cls) ? font * 1.2 + 4 : 0 };
   }
   const zoneTitle = a => (a.type === 'SIV' ? 'SIV ' : a.type + ' ') + a.name;
+  // Installations portant une marque distinctive (survol interdit < 1000 m / 3300 ft, type SUR) :
+  // contour et symbole ⊗ rouge ; parcs et réserves naturels (PRN) : contour vert tireté.
+  function drawSites(ctx, zones, toC, { W, H, scale = 1, placer: pl = null } = {}) {
+    for (const a of zones) {
+      const ring = bigRing(a); if (!ring.length) continue;
+      const box = screenBox(ring, toC); if (box.x1 < 0 || box.y1 < 0 || box.x0 > W || box.y0 > H) continue;
+      const sur = a.type === 'SUR', col = sur ? '#c2185b' : '#2e7d32';
+      ctx.save(); ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = Math.max(1, 1.3 * scale); if (!sur) ctx.setLineDash([5 * scale, 3 * scale]);
+      for (const r of a.rings) { if (r.length < 3) continue; ctx.beginPath(); ringPath(ctx, r, toC); ctx.stroke(); if (sur) { ctx.globalAlpha = .15; ctx.fill(); ctx.globalAlpha = 1; } }
+      ctx.restore();
+      if (!sur) continue;
+      const x = (box.x0 + box.x1) / 2, y = (box.y0 + box.y1) / 2, s = 4 * scale + 2, k = s * .7;
+      ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = Math.max(1.2, 1.6 * scale); ctx.beginPath(); ctx.arc(x, y, s, 0, Math.PI * 2);
+      ctx.moveTo(x - k, y - k); ctx.lineTo(x + k, y + k); ctx.moveTo(x + k, y - k); ctx.lineTo(x - k, y + k); ctx.stroke(); ctx.restore();
+      if (pl) pl.add({ x0: x - s, y0: y - s, x1: x + s, y1: y + s });
+    }
+  }
   // Cartouche : « TMA ST-YAN 1 », plafond, trait, plancher, classe en carré ; R / D / P en rouge.
   function zoneLabel(ctx, a, x, y, font, align = 'center', limits = true) {
     const red = a.type === 'R' || a.type === 'D' || a.type === 'P', color = red ? C.red : C.blue, up = limits ? chartLimit(a.upper) : '', low = limits ? chartLimit(a.lower) : '';
@@ -194,6 +211,7 @@
   // Aérodromes : piste en dur > 2300 m (piste orientée), 1000–2300 m, < 1000 m, bande, hélistation,
   // hydrobase ; ouvert à la CAP (plein, 4 repères), agréé / restreint (clair, sans repère), État (rouge).
   function drawAerodrome(ctx, ad, p, s, labelFont) {
+    if (labelFont && labelFont.labelOnly) return aerodromeLabel(ctx, ad, p, s, labelFont);
     const main = ad.state ? C.red : C.blue, pale = ad.state ? C.redPale : C.bluePale, open = ad.public && !ad.state;
     const rot = (ad.bearing || 0) * Math.PI / 180;
     ctx.save(); ctx.translate(p.x, p.y); ctx.lineWidth = Math.max(1, s / 5); ctx.strokeStyle = main; ctx.fillStyle = main;
@@ -209,11 +227,16 @@
     else if (ad.hardLen > 0) { circle('#fff'); ctx.rotate(rot); ctx.fillStyle = main; ctx.fillRect(-s * .2, -s * .95, s * .4, s * 1.9); ctx.rotate(-rot); ticks(); }
     else { circle('#fff'); ticks(); }
     ctx.restore();
+    if (labelFont) aerodromeLabel(ctx, ad, p, s, labelFont);
+  }
+  function aerodromeLabel(ctx, ad, p, s, labelFont) {
+    const main = ad.state ? C.red : C.blue;
     const label = ad.icao || (labelFont && labelFont.full ? ad.name : ''); if (labelFont && label) { ctx.save(); ctx.font = `700 ${+labelFont}px Arial,sans-serif`; const w = ctx.measureText(label).width; ctx.restore(); const r = { x0: p.x - w / 2 - 2, y0: p.y + s * 1.9, x1: p.x + w / 2 + 2, y1: p.y + s * 1.9 + +labelFont + 2 }; if (!place || place.take(r)) haloText(ctx, label, p.x, p.y + s * 1.9, +labelFont, main, 'center', 'top'); }
   }
   // VOR (hexagone), VOR-DME (hexagone dans un carré), VOR-TACAN / TACAN (lobes), DME (carré), NDB
   // (cercles pointillés) ; cartouche « (D) ROA 110.25 » et nom en clair au-dessus.
-  function drawNavaid(ctx, n, p, s, labelFont, magVar = 0, rose = 3.2) {
+  function drawNavaid(ctx, n, p, s, labelFont, magVar = 0, rose = 3.2, labelOnly = false) {
+    if (!labelOnly) {
     ctx.save(); ctx.translate(p.x, p.y); ctx.strokeStyle = C.blue; ctx.fillStyle = C.blue; ctx.lineWidth = Math.max(1, s / 6);
     const hex = r => { ctx.beginPath(); for (let k = 0; k < 6; k++) { const t = Math.PI / 3 * k; ctx.lineTo(r * Math.cos(t), r * Math.sin(t)); } ctx.closePath(); ctx.stroke(); };
     const dot = r => { ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); };
@@ -232,10 +255,11 @@
       }
     }
     ctx.restore();
+    }
     if (!labelFont) return;
     const d = n.dme || n.tacan || n.kind === 'DME' || n.kind === 'TACAN' ? '(D) ' : '', f = n.freq ? ` ${n.freq}` : n.channel ? ` CH ${n.channel}` : '', pre = n.kind === 'ILS' ? `ILS ${n.rwy} ` : '';
-    const text = `${pre}${d}${n.id}${f}`; ctx.save(); ctx.font = `700 ${labelFont}px Arial,sans-serif`; const w = ctx.measureText(text).width, x = p.x + s * 1.4, y = p.y - s * 1.4 - labelFont;
-    if (place && !place.take({ x0: x - 2, y0: y - labelFont * .8 - 3, x1: x + w + 2, y1: y + labelFont + 2 })) { ctx.restore(); return; }
+    const text = `${pre}${d}${n.id}${f}`; ctx.save(); ctx.font = `700 ${labelFont}px Arial,sans-serif`; const w = ctx.measureText(text).width, x = p.x + s * 1.5, y = p.y - s * 1.4 - labelFont;
+    if (place && !place.take({ x0: x - 1, y0: y - (n.name && n.kind !== 'NDB' ? labelFont * .8 : 0) - 3, x1: x + w + 2, y1: y + labelFont + 2 })) { ctx.restore(); return; }
     ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillRect(x - 2, y - 2, w + 4, labelFont + 4); ctx.strokeStyle = C.blue; ctx.lineWidth = 1; ctx.strokeRect(x - 2, y - 2, w + 4, labelFont + 4);
     ctx.fillStyle = C.blue; ctx.textBaseline = 'top'; ctx.fillText(text, x, y); if (n.name && n.kind !== 'NDB') { ctx.font = `700 ${labelFont * .72}px Arial,sans-serif`; ctx.textBaseline = 'bottom'; ctx.fillText(n.name, x, y - 3); }
     ctx.restore();
@@ -256,18 +280,28 @@
     ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(2, size * .28); ctx.strokeText(text, x, y); ctx.fillStyle = color; ctx.fillText(text, x, y); ctx.restore();
   }
   // Points aéronautiques de l'emprise ; densité : obstacles filtrés par hauteur, libellés selon le zoom.
-  const NAV_RANK = n => n.kind === 'TACAN' || n.tacan ? 5 : n.kind === 'VOR' ? 4 : n.kind === 'DME' ? 3 : n.kind === 'NDB' ? 2 : 1;
-  function drawPoints(ctx, data, toC, { W, H, scale = 1, font = 10, aerodromes, navaids, obstacles, obstacleMin = 300, pxPerDegree = 100, placer: pl = null, rose = 3.2 } = {}) {
+  const NAV_RANK = n => n.kind === 'TACAN' || n.tacan ? 6 : n.kind === 'VOR' ? 5 : n.kind === 'DME' ? (n.ils ? 1 : 4) : n.kind === 'NDB' ? 3 : 2;
+  const AD_RANK = a => (a.controlled ? 10 : 0) + (a.hardLen > 2300 ? 3 : a.hardLen >= 1000 ? 2 : a.hardLen > 0 ? 1 : 0) + (a.public || a.state ? 1 : 0) - (a.type === 'HP' ? 1 : 0);
+  function drawPoints(ctx, data, toC, { W, H, scale = 1, font = 10, aerodromes, navaids, obstacles, obstacleMin = 300, pxPerDegree = 100, placer: pl = null, rose = 3.2, adLabels = true, navLabels = true } = {}) {
     place = pl;
     const inside = p => p.x > -30 && p.y > -30 && p.x < W + 30 && p.y < H + 30, detailed = pxPerDegree >= 180, s = Math.max(4, 6 * scale);
     const nearestMag = (lat, lon) => { let best = null, d = Infinity; for (const a of data.aerodromes || []) { const e = (a.lat - lat) ** 2 + (a.lon - lon) ** 2; if (a.magVar && e < d) { d = e; best = a; } } return best?.magVar || 0; };
-    // Symbole posé seulement s'il ne recouvre pas un élément de priorité supérieure (déjà posé).
-    const claim = p => { const r = { x0: p.x - s * 1.2, y0: p.y - s * 1.2, x1: p.x + s * 1.2, y1: p.y + s * 1.2 }; return !place || place.take(r); };
-    const navs = navaids ? (data.navaids || []).map(n => ({ n, p: toC(n.lat, n.lon) })).filter(x => inside(x.p)).sort((a, b) => NAV_RANK(b.n) - NAV_RANK(a.n)) : [];
-    const drawNav = x => { if (claim(x.p)) drawNavaid(ctx, x.n, x.p, s, font * .85, detailed ? nearestMag(x.n.lat, x.n.lon) : 0, detailed ? rose : 0); };
-    navs.filter(x => NAV_RANK(x.n) >= 3).forEach(drawNav);
-    if (aerodromes) for (const a of data.aerodromes || []) { if (!detailed && !a.public && !a.state) continue; const p = toC(a.lat, a.lon); if (inside(p) && claim(p)) drawAerodrome(ctx, a, p, s, Object.assign(new Number(font * .85), { full: pxPerDegree >= 900 })); }
-    navs.filter(x => NAV_RANK(x.n) < 3).forEach(drawNav);
+    // Aérodromes et balises se disputent la place chacun de leur côté (un aérodrome ne masque pas sa
+    // balise) ; leurs symboles sont réservés pour les libellés (zones, villes…), qui les évitent.
+    const adPl = placer(), navPl = placer(), sym = (p, k = 1.2) => ({ x0: p.x - s * k, y0: p.y - s * k, x1: p.x + s * k, y1: p.y + s * k });
+    const reserve = r => { if (place) place.add(r); };
+    if (aerodromes) {
+      const ads = (data.aerodromes || []).filter(a => detailed || a.public || a.state).map(a => ({ a, p: toC(a.lat, a.lon) })).filter(x => inside(x.p)).sort((x, y) => AD_RANK(y.a) - AD_RANK(x.a));
+      const shown = ads.filter(x => adPl.take(sym(x.p, x.a.hardLen > 2300 ? 1.7 : 1.2)));
+      shown.forEach(x => { drawAerodrome(ctx, x.a, x.p, s, 0); reserve(sym(x.p)); });
+      if (adLabels) shown.forEach(x => drawAerodrome(ctx, x.a, x.p, s, Object.assign(new Number(font * .85), { full: pxPerDegree >= 900, labelOnly: true })));
+    }
+    if (navaids) {
+      const navs = (data.navaids || []).map(n => ({ n, p: toC(n.lat, n.lon) })).filter(x => inside(x.p)).sort((a, b) => NAV_RANK(b.n) - NAV_RANK(a.n));
+      const shown = navs.filter(x => navPl.take(sym(x.p)));
+      shown.forEach(x => { drawNavaid(ctx, x.n, x.p, s, 0, detailed ? nearestMag(x.n.lat, x.n.lon) : 0, detailed ? rose : 0); reserve(sym(x.p)); });
+      if (navLabels) shown.forEach(x => drawNavaid(ctx, x.n, x.p, s, font * .85, 0, 0, true));
+    }
     // Obstacles regroupés à l'écran (cellule ~ 3 symboles) : le plus haut représente le groupe.
     if (obstacles) { const cell = s * (detailed ? 2.2 : 3.5), keep = new Map();
       for (const o of data.obstacles || []) { if (o.hgt < obstacleMin || (!detailed && o.hgt < 500)) continue; const p = toC(o.lat, o.lon); if (!inside(p)) continue;
@@ -276,5 +310,5 @@
     place = null;
   }
 
-  window.SiaAero = { parseAixm, limitFt, chartLimit, drawAirspaces, zoneLabel, labelSize, placer, drawPoints, drawAerodrome, drawNavaid, drawObstacle };
+  window.SiaAero = { parseAixm, limitFt, chartLimit, drawAirspaces, drawSites, zoneLabel, labelSize, placer, drawPoints, drawAerodrome, drawNavaid, drawObstacle };
 })();

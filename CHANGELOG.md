@@ -8,6 +8,27 @@ La version affichée en pied de page de chaque page (lien vers ce fichier) vient
 
 Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n`.
 
+## [2.2.1] — 2026-09-25
+
+Corrections du studio cartographique (Missions SIA).
+
+- **Outre-mer** : toutes les zones, aérodromes et balises sont de nouveau sélectionnables (Nouméa,
+  Polynésie…) ; seul le dessin est limité à l'emprise affichée (rien de l'autre côté du globe).
+- **Aérodromes** : ne sont plus masqués par leurs propres balises (LFRN restait invisible derrière
+  le DME et l'ILS de Rennes) ; priorité aux plus grands et aux contrôlés ; liste blanche opérante.
+- **Radionavigation** : TACAN visibles (au-dessus des symboles de bases aériennes) ; priorité
+  TACAN > VOR > DME > NDB > ILS > DME d'ILS (bout de piste) ; libellés rétablis (ils se rejetaient
+  eux-mêmes) ; cases « libellés » séparées pour les aérodromes, les balises et les espaces.
+- Nouvel onglet **Aérodromes et radionav** ; **installations portant une marque distinctive**
+  (survol interdit < 1000 m / 3300 ft, 198 sites de l'AIXM, symbole ⊗) et parcs / réserves.
+- Espaces : **opacité réglable** (50 % par défaut) ; libellés de villes et de points tournants
+  réservés avant les cartouches de zones (plus de recouvrement).
+- **Libellés de villes** sans recouvrement : les villes les plus peuplées d'abord, une ville dont le
+  libellé recouvrirait un autre n'est pas écrite (PNG, SVG, carte de contrôle).
+- Blocs : 1. Mission (avec « Afficher toutes les cartes » et « Générer »), 2. Profils, 3. Cartes.
+- Fenêtre séparée : synchronisée aussi pour le profil de chaque carte et les cartes ajoutées ;
+  carte agrandie (⤢) et fenêtre séparée réduites à la carte et à ses commandes.
+
 ## [2.2.0] — 2026-09-25
 
 Nouvelle application **Missions SIA** (générateur de mission et studio cartographique), corrections

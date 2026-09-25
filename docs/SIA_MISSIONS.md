@@ -108,8 +108,9 @@ Brouillon : la mission partagée est le brouillon ; « Mémoriser / Recharger »
 Page `SIA XML/map_parser.html`. Une mission décrit ses cartes ; chaque carte est dessinée avec
 un **profil d'affichage**, puis le studio produit PNG / SVG et un ZIP.
 
-Blocs : 1. Mission · 2. Sorties · 3. Profils d'affichage · 4. Base de données SIA · 5. Données
-complémentaires.
+Blocs : 1. Mission (et boutons « Afficher toutes les cartes », « Générer les cartes et le ZIP ») ·
+2. Profils d'affichage · 3. Cartes (aperçus, carte d'assemblage) · 4. Base de données SIA ·
+5. Données complémentaires.
 
 ### 4.1 Mission (bloc 1)
 
@@ -117,14 +118,15 @@ Fichier Markdown / YAML ou **collage** dans la fenêtre commune (× / Fermer / L
 Valider) : la mission devient la **mission partagée** avec le générateur ; à l'ouverture, le studio
 reprend la mission partagée.
 
-### 4.2 Sorties (bloc 2)
+### 4.2 Cartes (bloc 3)
 
-Aperçu de toutes les cartes, **carte d'assemblage**, **Générer les cartes et le ZIP** (voir
-§ 4.5). Type de sortie (PNG, SVG éditable) et largeur des PNG : **menu ☰**.
+Aperçus de toutes les cartes et **carte d'assemblage** ; « Afficher toutes les cartes » et
+« Générer les cartes et le ZIP » sont dans le bloc Mission (voir § 4.5). Type de sortie (PNG,
+SVG éditable) et largeur des PNG : **menu ☰ › Sorties des cartes**.
 
-### 4.3 Profils d'affichage (bloc 3)
+### 4.3 Profils d'affichage (bloc 2)
 
-À gauche, trois onglets de réglages ; à droite, la **carte de contrôle**, ses commandes, la liste
+À gauche, quatre onglets de réglages (Fond de carte, Zones, Aérodromes et radionav, Éléments) ; à droite, la **carte de contrôle**, ses commandes, la liste
 des cartes et le **profil de la carte choisie** (nom, **fond de carte**, Sauvegarder / Nouveau /
 Dupliquer / Supprimer — « Nouveau » et « Dupliquer » affectent le profil à la carte choisie). Le
 profil modifié est toujours celui de la carte sélectionnée dans la liste. Colonnes 60 / 40 réglables par la barre
@@ -137,11 +139,12 @@ Graybeard / Shadow / Eclipse.
 
 - **Onglet Fond de carte** : couches OSM (sol, agglomérations, hydrographie, routes / rail,
   bâtiments, frontières — sur tous les fonds vectoriels ; relief ombré, courbes de niveau,
-  sommets), libellés de villes (population minimale), libellés des sommets. Points d'intérêt
+  sommets), libellés de villes (population minimale ; les plus peuplées d'abord, sans
+  recouvrement), libellés des sommets. Points d'intérêt
   et numéros de rue masqués sur les fonds publiés.
 - **Onglet Zones** : familles R / D / P, contrôlés (CTR, TMA, CTA, SIV), autres (TRA, RMZ, TMZ,
-  PJE — parachutage), case « toutes » par famille ; **territoire** automatique (emprise des points
-  de la mission élargie : l'outre-mer ne sort pas sur une mission en métropole, et inversement) ;
+  PJE — parachutage), case « toutes » par famille ; toutes les zones (outre-mer compris) sont sélectionnables, seules celles de l'emprise affichée
+  sont dessinées ; **opacité** des espaces, **libellés** des espaces (case) ;
   taille des libellés des espaces, **affichage des altitudes** (facultatif) ;
   **sélection des zones** :
   - **liste blanche** (seules les zones de la liste ; liste vide = toutes les zones des
@@ -166,19 +169,22 @@ Graybeard / Shadow / Eclipse.
     de son contour ; celui qui ne trouve pas de place libre n'est pas écrit. Ordre : symboles des
     balises et aérodromes, puis libellés des zones (les plus grandes d'abord), puis valeurs MORA,
     décalées d'une case si elles recouvrent un symbole ou un libellé.
-- **Onglet Éléments** — un bloc par élément, réglages grisés quand il est décoché :
-  **aérodromes** (piste en dur > 2300 m orientée, 1000–2300 m, < 1000 m, bande, hélistation ;
+- **Onglet Aérodromes et radionav** : **aérodromes** (piste en dur > 2300 m orientée, 1000–2300 m, < 1000 m, bande, hélistation ;
   ouvert à la CAP en bleu plein avec repères, restreint en clair, État en rouge ; **filtres** :
   civils ouverts à la CAP, restreints, État / militaires, hélistations, bandes / ULM, et
   contrôlés — tour ou situés dans une CTR — / non contrôlés) ;
   **radionavigation** (types au choix : VOR / VOR-DME, TACAN / VOR-TACAN, DME, NDB, **ILS** ;
   cartouche « (D) ROA 110.25 », nom en clair, rose au nord magnétique de taille réglable en vue
-  détaillée ; **priorité** en cas de recouvrement : TACAN > VOR > DME > aérodrome > NDB > ILS — un
-  symbole recouvert par un élément prioritaire n'est pas dessiné) ;
+  détaillée ; **priorité** en cas de recouvrement entre balises : TACAN > VOR > DME > NDB > ILS >
+  DME d'ILS (bout de piste) ; entre aérodromes : les plus grands et contrôlés d'abord ; une balise
+  ne masque pas un aérodrome, elle est dessinée par-dessus) ;
   **listes** d'aérodromes et de balises (blanche / noire, complétion, « LFR* », fragment de nom),
-  comme pour les zones ; **obstacles** (≥ 300 / 500 / 1000 ft
-  AGL, élevés, groupes, balisés de nuit, éoliennes ; cote AMSL et (hauteur) en vue détaillée ;
-  regroupés à l'écran, le plus haut représentant le groupe) ;
+  comme pour les zones ; cases « libellés » séparées ; **installations portant une marque
+  distinctive** (survol interdit au-dessous de 1000 m / 3300 ft, symbole ⊗ ; 198 sites de l'AIXM) et
+  parcs / réserves naturels ; **obstacles** (≥ 300 / 500 / 1000 ft AGL, élevés, groupes, balisés de
+  nuit, éoliennes ; cote AMSL et (hauteur) en vue détaillée ; regroupés à l'écran, le plus haut
+  représentant le groupe).
+- **Onglet Éléments** — un bloc par élément, réglages grisés quand il est décoché :
   points tournants (libellés, taille) ; méridiens et parallèles (libellés en bordure en degrés
   et minutes) ; grille MORA (valeurs, opacité, espacement minimal) ; libellés des zones et des
   villes ; hippodrome de ravitaillement ; cercle de la zone de mission.
