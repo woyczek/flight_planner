@@ -116,6 +116,8 @@ Folder `SIA XML/`; details (French): [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md
 
 Version 2.2.2. Workarounds at the end of each line.
 
+- **SIA studio — vertical profile**: terrain comes from an elevation model (≈ 150 m) and airspaces
+  are those selected for the general map; “ASFC” limits follow that model, not the actual ground.
 - **SIA studio — generating in a hidden tab**: browsers suspend rendering of background tabs, so
   PNG generation can fail (“Délai dépassé pendant le chargement du fond de carte”). Keep the studio
   tab visible while generating.

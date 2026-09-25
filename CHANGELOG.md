@@ -29,6 +29,10 @@ Studio cartographique (Missions SIA) : symboles OACI.
 - Onglet Fond de carte : cadre **Villes et agglomérations** (libellés, population, symboles OACI,
   surfaces bâties) ; onglet Symboles OACI : **obstacles** regroupés avec survol interdit et parcs.
 - Correctif : surfaces bâties absentes quand la carte se chargeait en arrière-plan (source intégrée au style).
+- **Profil vertical** (nouveau) : cheminement (points de la mission, aérodromes, balises,
+  coordonnées, altitude prévue « /3000 » ou « /FL65 »), coupe relief / obstacles / espaces traversés
+  en second aperçu, image `profil_vertical.png` dans le ZIP (facultative) et dans le brief PDF ;
+  réglages enregistrés dans le YAML de la mission (`vertical_profile`).
 - Tour de commentaires dans le code (en-têtes de fichiers, sections) ; section **Bugs connus**.
 
 ## [2.2.1] — 2026-09-25

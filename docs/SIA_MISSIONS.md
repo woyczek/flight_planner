@@ -272,6 +272,25 @@ plus de points sont à moins de 2 km d'un point de la mission, ou dont le nom fi
 mission (la raison est affichée : « SIMONE — SIMIP, SIMCP, S1, S2 à moins de 2 km »), et / ou
 n'importe lesquels des 31 axes ; rien de coché = aucun hippodrome.
 
+### 4.8 Profil vertical
+
+Sous l'aperçu de la carte, cadre **Profil vertical** : un **cheminement** (virgules ou lignes)
+fait de points de la mission (id ou nom), d'aérodromes (OACI), de balises ou de coordonnées
+« lat lon », chacun avec une **altitude prévue** facultative (`SIMIP/3000`, `TARGET/FL65`) ;
+vide = points tournants de la mission dans l'ordre. Exemple :
+`LFOT, SIMIP/3000, TARGET/FL65, SIMCP/5500, LFOT`.
+
+**Tracer le profil** dessine la coupe (second aperçu, cliquable pour l'agrandir) : relief le long
+du trajet (tuiles Terrarium z10, maximum sur ± 1 km), obstacles de l'AIXM à moins de 1 NM (trait,
+cote AMSL des plus hauts), espaces retenus pour la carte générale traversés (bande plancher →
+plafond, planchers / plafonds ASFC suivant le relief ; ceux entièrement au-dessus du plafond de
+la coupe sont omis), points avec distances cumulées (NM) et altitude prévue (violet). Plafond de
+la coupe réglable (0 = automatique).
+
+Cheminement, plafond et case **« profil_vertical.png dans les sorties »** sont enregistrés dans le
+YAML de la mission (`vertical_profile: {route, ceiling_ft, output}`), donc partagés avec le
+générateur ; l'image est ajoutée au ZIP (largeur des PNG) et le brief PDF la place après les cartes.
+
 ## 5. Stockage dans le navigateur
 
 | Clé | Contenu |
