@@ -6,10 +6,21 @@
   // Libellés en français (source) + lignes [fr,en,de,es] pour la traduction commune ;
   // le résumé, phrase générée, est produit directement dans la langue d'affichage par
   // le modèle de la famille (family.summary[lang]).
-  const M = window.MissionModel, V = window.MissionVocab, B = window.MissionBlocks, L = V.L;
-  const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const M = window.MissionModel,
+    V = window.MissionVocab,
+    B = window.MissionBlocks,
+    L = V.L;
+  const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;'
+  } [c]));
   const LANGS = ['fr', 'en', 'de', 'es'];
-  const lang = () => { const l = window.RepositoryNav?.getLanguage?.() || 'fr'; return LANGS.includes(l) ? l : 'fr'; };
+  const lang = () => {
+    const l = window.RepositoryNav?.getLanguage?.() || 'fr';
+    return LANGS.includes(l) ? l : 'fr';
+  };
   const duration = n => n == null ? '' : n >= 60 ? `${Math.floor(n / 60)}h${String(n % 60).padStart(2, '0')}` : `${n} min`;
   const S = {
     stamp: L('EXERCICE / SIMULATION', 'EXERCISE / SIMULATION', 'ÜBUNG / SIMULATION', 'EJERCICIO / SIMULACIÓN'),
@@ -30,15 +41,21 @@
     s13: L('13. Remarques', '13. Remarks', '13. Bemerkungen', '13. Observaciones'),
     s14: L('14. Enseignements', '14. Lessons learned', '14. Erkenntnisse', '14. Lecciones aprendidas'),
     capabilitiesUsed: L('Capacités employées', 'Capabilities used', 'Eingesetzte Fähigkeiten', 'Capacidades empleadas'),
-    events: L('Événements', 'Events', 'Ereignisse', 'Eventos'), legs: L('Étapes / sorties', 'Legs / sorties', 'Etappen / Einsätze', 'Tramos / salidas'),
-    trace: L('Trace réseau', 'Network track', 'Netzwerkspur', 'Traza de red'), openTrace: L('Ouvrir la trace', 'Open track', 'Spur öffnen', 'Abrir traza'),
-    family: L('Famille', 'Family', 'Familie', 'Familia'), footer: L('Généré localement dans le navigateur — aucune donnée transmise.', 'Generated locally in the browser — no data transmitted.', 'Lokal im Browser erzeugt — keine Datenübertragung.', 'Generado localmente en el navegador — ningún dato transmitido.'),
+    events: L('Événements', 'Events', 'Ereignisse', 'Eventos'),
+    legs: L('Étapes / sorties', 'Legs / sorties', 'Etappen / Einsätze', 'Tramos / salidas'),
+    trace: L('Trace réseau', 'Network track', 'Netzwerkspur', 'Traza de red'),
+    openTrace: L('Ouvrir la trace', 'Open track', 'Spur öffnen', 'Abrir traza'),
+    family: L('Famille', 'Family', 'Familie', 'Familia'),
+    footer: L('Généré localement dans le navigateur — aucune donnée transmise.', 'Generated locally in the browser — no data transmitted.', 'Lokal im Browser erzeugt — keine Datenübertragung.', 'Generado localmente en el navegador — ningún dato transmitido.'),
     equipment: L('Équipements', 'Equipment', 'Ausrüstung', 'Equipamiento')
   };
   const KPI = [
-    ['blockMinutes', L('Temps bloc', 'Block time', 'Blockzeit', 'Tiempo calzo a calzo')], ['flightMinutes', L('Temps de vol', 'Flight time', 'Flugzeit', 'Tiempo de vuelo')],
-    ['transitOutMinutes', L('Transit aller', 'Transit outbound', 'Anflug', 'Tránsito de ida')], ['timeOnStationMinutes', L('Temps sur zone', 'Time on station', 'Zeit im Einsatzraum', 'Tiempo en zona')],
-    ['transitInMinutes', L('Transit retour', 'Transit inbound', 'Rückflug', 'Tránsito de vuelta')], ['missionMinutes', L('Temps mission', 'Mission time', 'Missionszeit', 'Tiempo de misión')]
+    ['blockMinutes', L('Temps bloc', 'Block time', 'Blockzeit', 'Tiempo calzo a calzo')],
+    ['flightMinutes', L('Temps de vol', 'Flight time', 'Flugzeit', 'Tiempo de vuelo')],
+    ['transitOutMinutes', L('Transit aller', 'Transit outbound', 'Anflug', 'Tránsito de ida')],
+    ['timeOnStationMinutes', L('Temps sur zone', 'Time on station', 'Zeit im Einsatzraum', 'Tiempo en zona')],
+    ['transitInMinutes', L('Transit retour', 'Transit inbound', 'Rückflug', 'Tránsito de vuelta')],
+    ['missionMinutes', L('Temps mission', 'Mission time', 'Missionszeit', 'Tiempo de misión')]
   ];
 
   // ---- valeurs affichables (libellé d'option, capacités, unités)
@@ -50,17 +67,31 @@
     return [];
   }
   const allCapabilityItems = V.capabilityGroups.flatMap(g => g.items);
+
   function display(field, value, family, rows, unit) {
-    const label = arr => { rows.set(arr[0], arr); return arr[0]; };
+    const label = arr => {
+      rows.set(arr[0], arr);
+      return arr[0];
+    };
     if (value == null || value === '' || (Array.isArray(value) && !value.length)) return '';
-    if (field.type === 'select') { const o = optionsFor(field, family).find(x => x.value === value); return o ? label(o.label) : String(value); }
-    if (field.type === 'checkgroup') return value.map(code => { const o = allCapabilityItems.find(x => x.value === code); return o ? label(o.label) : code; }).join(', ');
+    if (field.type === 'select') {
+      const o = optionsFor(field, family).find(x => x.value === value);
+      return o ? label(o.label) : String(value);
+    }
+    if (field.type === 'checkgroup') return value.map(code => {
+      const o = allCapabilityItems.find(x => x.value === code);
+      return o ? label(o.label) : code;
+    }).join(', ');
     if (field.type === 'number' && unit) return `${value} ${unit}`;
     return String(value);
   }
 
   function render(mission, family, ctx) {
-    const rows = new Map(); const t = arr => { rows.set(arr[0], arr); return arr[0]; };
+    const rows = new Map();
+    const t = arr => {
+      rows.set(arr[0], arr);
+      return arr[0];
+    };
     const box = (labelArr, value) => value === '' || value == null ? '' : `<div class="box"><span>${esc(t(labelArr))}</span>${esc(value)}</div>`;
     const fieldsBoxes = (fields, base = mission, prefix = '', unit = '') => fields.filter(f => f.label && (!f.when || f.when(ctx))).map(f => {
       const value = M.get(base, prefix + f.path);
@@ -70,12 +101,19 @@
     const meta = inner => inner ? `<div class="meta">${inner}</div>` : '';
     const table = (spec, list) => {
       const fields = spec.fields.filter(f => f.type !== 'checkgroup' && f.report !== false);
-      const used = fields.filter(f => list.some(item => { const v = M.get(item, f.path); return v !== '' && v != null; }));
-      const items = list.filter(item => used.some(f => { const v = M.get(item, f.path); return v !== '' && v != null; }));
+      const used = fields.filter(f => list.some(item => {
+        const v = M.get(item, f.path);
+        return v !== '' && v != null;
+      }));
+      const items = list.filter(item => used.some(f => {
+        const v = M.get(item, f.path);
+        return v !== '' && v != null;
+      }));
       if (!items.length) return '';
       return `<table><thead><tr>${used.map(f => `<th>${esc(t(f.label))}</th>`).join('')}</tr></thead><tbody>${items.map(item => `<tr>${used.map(f => `<td>${esc(display(f, M.get(item, f.path), family, rows))}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
     };
-    const stats = M.computeStatistics(mission), unit = mission.fuel?.unit || '';
+    const stats = M.computeStatistics(mission),
+      unit = mission.fuel?.unit || '';
     const seriesLabel = (family.series || []).find(s => s.value === mission.series);
 
     // 1. Identification
@@ -86,8 +124,11 @@
     // 7. Chronologie + durées calculées
     const durations = KPI.map(([key, label]) => box(label, duration(stats[key]))).join('');
     // 8. Exécution : navigation, capacités employées, événements, étapes
-    const capabilities = mission.capabilities?.length ? meta(box(S.capabilitiesUsed, display({ type: 'checkgroup' }, mission.capabilities, family, rows))) : '';
-    const events = table(B.events.collection, mission.events || []), legs = table(B.legs.collection, mission.legs || []);
+    const capabilities = mission.capabilities?.length ? meta(box(S.capabilitiesUsed, display({
+      type: 'checkgroup'
+    }, mission.capabilities, family, rows))) : '';
+    const events = table(B.events.collection, mission.events || []),
+      legs = table(B.legs.collection, mission.legs || []);
     const execution = meta(fieldsBoxes(B.navigation.fields)) + capabilities + (events ? `<h4>${esc(t(S.events))}</h4>${events}` : '') + (legs ? `<h4>${esc(t(S.legs))}</h4>${legs}` : '');
     // 9. Données spécifiques de la famille (blocs visibles uniquement)
     const specific = (family.blocks || []).filter(b => !b.when || b.when(ctx)).map(b => {
@@ -121,7 +162,10 @@
       ${section(S.s13, remarks)}
       ${section(S.s14, lessons)}
       <p class="small mc-report-footer">${esc(t(S.footer))}</p>`;
-    return { html, rows: [...rows.values()] };
+    return {
+      html,
+      rows: [...rows.values()]
+    };
   }
 
   // ---- résumé automatique (§22) : modèle propre à chaque famille, dans la langue demandée
@@ -135,23 +179,60 @@
     const lead = mission.aircraft?.[0] || {};
     const aircraft = (mission.aircraft || []).filter(a => a.type || a.registration).map(a => [a.type, a.registration && `(${a.registration})`].filter(Boolean).join(' '));
     const list = (items, and) => items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')} ${and} ${items[items.length - 1]}`;
-    const formatDate = iso => /^\d{4}-\d{2}-\d{2}$/.test(String(iso || '')) ? new Date(`${iso}T12:00:00`).toLocaleDateString(l, { day: 'numeric', month: 'long', year: 'numeric' }) : String(iso || '');
+    const formatDate = iso => /^\d{4}-\d{2}-\d{2}$/.test(String(iso || '')) ? new Date(`${iso}T12:00:00`).toLocaleDateString(l, {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }) : String(iso || '');
     const date = formatDate(mission.metadata?.date);
     // Assemble des morceaux de phrase en ignorant ceux dont une donnée manque.
     const sentence = (...parts) => parts.filter(Boolean).join(' ').replace(/\s+([,.])/g, '$1').trim();
     // Un résumé ne cite jamais les données d'un bloc masqué (ex. largages sans AIRDROP).
-    const ctx = M.context(mission, family), visible = id => M.blockVisible(mission, family, id);
+    const ctx = M.context(mission, family),
+      visible = id => M.blockVisible(mission, family, id);
     // Nombre formaté selon la langue (4,0 t en français, 4.0 t en anglais…).
-    const number = (v, digits = 0) => Number(v || 0).toLocaleString(l, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    const number = (v, digits = 0) => Number(v || 0).toLocaleString(l, {
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits
+    });
     // Masse lisible : kg sous la tonne, t (1 décimale) au-delà.
     const mass = kg => Number(kg) >= 1000 ? `${number(Number(kg) / 1000, 1)} t` : `${number(kg)} kg`;
-    return { lang: l, number, mass, formatDate, visible, ctx, pick, stats, duration, series: pick(series?.label) || mission.series || '', outcome: pick(outcome?.label) || '', caps, lead, aircraft, list, date, sentence, mission };
+    return {
+      lang: l,
+      number,
+      mass,
+      formatDate,
+      visible,
+      ctx,
+      pick,
+      stats,
+      duration,
+      series: pick(series?.label) || mission.series || '',
+      outcome: pick(outcome?.label) || '',
+      caps,
+      lead,
+      aircraft,
+      list,
+      date,
+      sentence,
+      mission
+    };
   }
+
   function summary(mission, family, l = lang()) {
     const template = family.summary?.[l] || family.summary?.fr;
     if (typeof template !== 'function') return '';
-    try { return template(helpers(mission, family, l)).replace(/\s+/g, ' ').trim(); } catch { return ''; }
+    try {
+      return template(helpers(mission, family, l)).replace(/\s+/g, ' ').trim();
+    } catch {
+      return '';
+    }
   }
 
-  window.MissionReport = { render, summary, helpers, lang };
+  window.MissionReport = {
+    render,
+    summary,
+    helpers,
+    lang
+  };
 })();

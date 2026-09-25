@@ -5,26 +5,136 @@
   // leurs données sous `missionData` sans toucher au tronc commun.
   const SCHEMA_VERSION = 2;
 
-  const emptyAircraft = () => ({ category: '', type: '', variant: '', registration: '', tacticalNumber: '', callsign: '', callsignPrefix: '', callsignNumber: '', callsignFpl: '', operatorCode: '', baseDeparture: '', baseReturn: '', massTakeoff: null, massLanding: null, enduranceMinutes: null, configuration: '', equipment: [] });
+  const emptyAircraft = () => ({
+    category: '',
+    type: '',
+    variant: '',
+    registration: '',
+    tacticalNumber: '',
+    callsign: '',
+    callsignPrefix: '',
+    callsignNumber: '',
+    callsignFpl: '',
+    operatorCode: '',
+    baseDeparture: '',
+    baseReturn: '',
+    massTakeoff: null,
+    massLanding: null,
+    enduranceMinutes: null,
+    configuration: '',
+    equipment: []
+  });
   const emptyMission = (family = '') => ({
     schemaVersion: SCHEMA_VERSION,
-    family, series: '', subtype: '',
-    metadata: { missionId: '', missionNumber: '', serial: '', date: '', timeLocal: '', timeUtc: '', classification: 'UNCLASSIFIED', context: 'EXERCISE', operationName: '', orderRef: '' },
-    organisation: { organisation: '', unit: '', detachment: '', requestingAuthority: '', controllingAuthority: '' },
+    family,
+    series: '',
+    subtype: '',
+    metadata: {
+      missionId: '',
+      missionNumber: '',
+      serial: '',
+      date: '',
+      timeLocal: '',
+      timeUtc: '',
+      classification: 'UNCLASSIFIED',
+      context: 'EXERCISE',
+      operationName: '',
+      orderRef: ''
+    },
+    organisation: {
+      organisation: '',
+      unit: '',
+      detachment: '',
+      requestingAuthority: '',
+      controllingAuthority: ''
+    },
     aircraft: [emptyAircraft()],
     crew: [],
-    tasking: { objective: '', instructions: '', priority: '' },
-    environment: { metar: '', taf: '', wind: '', temperature: null, qnh: null, visibility: '', ceiling: '', precipitation: '', turbulence: '', icing: '', seaState: '', illumination: '', sunrise: '', sunset: '', dayNight: '' },
-    navigation: { dep: '', arr: '', altn: '', route: '', waypoints: '', coordinates: '', altitude: '', minAltitude: '', speed: null, distanceNm: null, area: '', radiusNm: null, corridor: '', orbit: '' },
+    tasking: {
+      objective: '',
+      instructions: '',
+      priority: ''
+    },
+    environment: {
+      metar: '',
+      taf: '',
+      wind: '',
+      temperature: null,
+      qnh: null,
+      visibility: '',
+      ceiling: '',
+      precipitation: '',
+      turbulence: '',
+      icing: '',
+      seaState: '',
+      illumination: '',
+      sunrise: '',
+      sunset: '',
+      dayNight: ''
+    },
+    navigation: {
+      dep: '',
+      arr: '',
+      altn: '',
+      route: '',
+      waypoints: '',
+      coordinates: '',
+      altitude: '',
+      minAltitude: '',
+      speed: null,
+      distanceNm: null,
+      area: '',
+      radiusNm: null,
+      corridor: '',
+      orbit: ''
+    },
     capabilities: [],
-    timeline: { briefing: '', engineStart: '', offBlock: '', takeoff: '', zoneEntry: '', missionStart: '', missionEnd: '', zoneExit: '', landing: '', onBlock: '', shutdown: '' },
-    fuel: { unit: 'kg', start: null, taxi: null, takeoff: null, onTaskArrival: null, onStation: null, taskDeparture: null, landing: null, block: null, reserve: null, diversion: null },
+    timeline: {
+      briefing: '',
+      engineStart: '',
+      offBlock: '',
+      takeoff: '',
+      zoneEntry: '',
+      missionStart: '',
+      missionEnd: '',
+      zoneExit: '',
+      landing: '',
+      onBlock: '',
+      shutdown: ''
+    },
+    fuel: {
+      unit: 'kg',
+      start: null,
+      taxi: null,
+      takeoff: null,
+      onTaskArrival: null,
+      onStation: null,
+      taskDeparture: null,
+      landing: null,
+      block: null,
+      reserve: null,
+      diversion: null
+    },
     legs: [],
     events: [],
     missionData: {},
-    results: { outcome: '', detail: '', interruptionReason: '', incidents: '', anomalies: '' },
-    remarks: { observations: '', lessonsLearned: '' },
-    network: { onlineNetwork: '', ivaoId: '', vatsimId: '', trackerUrl: '' },
+    results: {
+      outcome: '',
+      detail: '',
+      interruptionReason: '',
+      incidents: '',
+      anomalies: ''
+    },
+    remarks: {
+      observations: '',
+      lessonsLearned: ''
+    },
+    network: {
+      onlineNetwork: '',
+      ivaoId: '',
+      vatsimId: '',
+      trackerUrl: ''
+    },
     statistics: {}
   });
 
@@ -32,7 +142,8 @@
   const split = path => String(path).split('.').filter(Boolean);
   const get = (obj, path) => split(path).reduce((node, key) => node == null ? undefined : node[key], obj);
   const set = (obj, path, value) => {
-    const keys = split(path); let node = obj;
+    const keys = split(path);
+    let node = obj;
     keys.slice(0, -1).forEach((key, i) => {
       if (node[key] == null || typeof node[key] !== 'object') node[key] = /^\d+$/.test(keys[i + 1]) ? [] : {};
       node = node[key];
@@ -51,16 +162,29 @@
 
   // ---- temps (§4.4) : minutes entre deux heures HH:MM, passage de minuit inclus
   // Heure invalide (ex. « 90:25 ») ignorée plutôt que de fausser les durées.
-  const minutes = text => { const m = /^(\d{1,2}):(\d{2})/.exec(String(text || '')); return m && +m[1] < 24 && +m[2] < 60 ? Number(m[1]) * 60 + Number(m[2]) : null; };
-  const between = (a, b) => { a = minutes(a); b = minutes(b); if (a == null || b == null) return null; return b >= a ? b - a : b - a + 1440; };
+  const minutes = text => {
+    const m = /^(\d{1,2}):(\d{2})/.exec(String(text || ''));
+    return m && +m[1] < 24 && +m[2] < 60 ? Number(m[1]) * 60 + Number(m[2]) : null;
+  };
+  const between = (a, b) => {
+    a = minutes(a);
+    b = minutes(b);
+    if (a == null || b == null) return null;
+    return b >= a ? b - a : b - a + 1440;
+  };
   const num = v => (v === '' || v == null || !Number.isFinite(Number(v)) ? null : Number(v));
 
   function computeStatistics(m) {
-    const t = m.timeline || {}, f = m.fuel || {};
+    const t = m.timeline || {},
+      f = m.fuel || {};
     const fuelEnd = num(f.block) ?? num(f.landing);
     // Segments du vol (transit, sur zone) : jamais plus longs que le vol lui-même — une heure
     // inversée (sortie de zone avant l'entrée) n'est pas un passage de minuit mais une erreur.
-    const flight = between(t.takeoff, t.landing), part = (a, b) => { const v = between(a, b); return v != null && flight != null && v > flight ? null : v; };
+    const flight = between(t.takeoff, t.landing),
+      part = (a, b) => {
+        const v = between(a, b);
+        return v != null && flight != null && v > flight ? null : v;
+      };
     const stats = {
       // Durée « déclarée » (modifiée depuis un reporting, sans les heures) : à défaut des heures.
       blockMinutes: between(t.offBlock, t.onBlock) ?? between(t.engineStart, t.shutdown) ?? num(t.declared?.blockMinutes),
@@ -86,27 +210,76 @@
   // moins 12 h entre deux étapes, 20 h au plus du premier au dernier événement.
   const SEQUENCE = ['engineStart', 'offBlock', 'takeoff', 'zoneEntry', 'zoneExit', 'landing', 'onBlock', 'shutdown'];
   const TIME_FIELDS = ['briefing', ...SEQUENCE, 'missionStart', 'missionEnd'];
+
   function checkMission(m) {
-    const t = m.timeline || {}, issues = [];
+    const t = m.timeline || {},
+      issues = [];
     // Date : un CR porte sur un vol réalisé (pas de date future ; année plausible).
-    const date = m.metadata?.date || '', today = new Date(), iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    if (date && (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < '2000-01-01')) issues.push({ kind: 'dateInvalid', path: 'metadata.date', value: date });
-    else if (date > iso) issues.push({ kind: 'future', path: 'metadata.date', value: date });
-    TIME_FIELDS.forEach(k => { if (t[k] && minutes(t[k]) == null) issues.push({ kind: 'invalid', path: `timeline.${k}`, value: t[k] }); });
+    const date = m.metadata?.date || '',
+      today = new Date(),
+      iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    if (date && (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < '2000-01-01')) issues.push({
+      kind: 'dateInvalid',
+      path: 'metadata.date',
+      value: date
+    });
+    else if (date > iso) issues.push({
+      kind: 'future',
+      path: 'metadata.date',
+      value: date
+    });
+    TIME_FIELDS.forEach(k => {
+      if (t[k] && minutes(t[k]) == null) issues.push({
+        kind: 'invalid',
+        path: `timeline.${k}`,
+        value: t[k]
+      });
+    });
     const steps = SEQUENCE.filter(k => minutes(t[k]) != null);
     let span = 0;
     for (let i = 1; i < steps.length; i++) {
-      const a = steps[i - 1], b = steps[i], d = between(t[a], t[b]);
-      if (d >= 720) issues.push({ kind: 'order', path: `timeline.${b}`, before: `timeline.${a}`, value: t[b], other: t[a] });
+      const a = steps[i - 1],
+        b = steps[i],
+        d = between(t[a], t[b]);
+      if (d >= 720) issues.push({
+        kind: 'order',
+        path: `timeline.${b}`,
+        before: `timeline.${a}`,
+        value: t[b],
+        other: t[a]
+      });
       else span += d;
     }
-    if (span > 1200) issues.push({ kind: 'span', path: `timeline.${steps[steps.length - 1]}`, minutes: span });
+    if (span > 1200) issues.push({
+      kind: 'span',
+      path: `timeline.${steps[steps.length - 1]}`,
+      minutes: span
+    });
     if (minutes(t.missionStart) != null && minutes(t.missionEnd) != null && between(t.missionStart, t.missionEnd) >= 1200)
-      issues.push({ kind: 'order', path: 'timeline.missionEnd', before: 'timeline.missionStart', value: t.missionEnd, other: t.missionStart });
+      issues.push({
+        kind: 'order',
+        path: 'timeline.missionEnd',
+        before: 'timeline.missionStart',
+        value: t.missionEnd,
+        other: t.missionStart
+      });
     // Durées déclarées sans heures (modification depuis un reporting) : à compléter dans le CR.
-    ['flightMinutes', 'blockMinutes'].forEach(k => { if (t.declared?.[k] != null) issues.push({ kind: 'declared', path: k === 'flightMinutes' ? 'timeline.takeoff' : 'timeline.offBlock', value: t.declared[k], measure: k }); });
-    const f = m.fuel || {}, end = num(f.block) ?? num(f.landing);
-    if (num(f.start) != null && end != null && end > num(f.start)) issues.push({ kind: 'fuel', path: num(f.block) != null ? 'fuel.block' : 'fuel.landing', value: end, other: num(f.start) });
+    ['flightMinutes', 'blockMinutes'].forEach(k => {
+      if (t.declared?.[k] != null) issues.push({
+        kind: 'declared',
+        path: k === 'flightMinutes' ? 'timeline.takeoff' : 'timeline.offBlock',
+        value: t.declared[k],
+        measure: k
+      });
+    });
+    const f = m.fuel || {},
+      end = num(f.block) ?? num(f.landing);
+    if (num(f.start) != null && end != null && end > num(f.start)) issues.push({
+      kind: 'fuel',
+      path: num(f.block) != null ? 'fuel.block' : 'fuel.landing',
+      value: end,
+      other: num(f.start)
+    });
     return issues;
   }
 
@@ -114,27 +287,59 @@
   // Correspondance des champs communs ; le reste est conservé sous missionData.legacy
   // (reprise complète par les modules HEMS / FIRE à l'étape 2).
   const LEGACY_MAP = {
-    missionId: 'metadata.missionId', date: 'metadata.date', aircraft: 'aircraft.0.type', registration: 'aircraft.0.registration',
-    callsign: 'aircraft.0.callsign', baseDeparture: 'aircraft.0.baseDeparture', baseReturn: 'aircraft.0.baseReturn',
-    weather: 'environment.wind', engineStart: 'timeline.engineStart', takeoff: 'timeline.takeoff', onScene: 'timeline.zoneEntry',
-    landing: 'timeline.landing', engineStop: 'timeline.shutdown', fuelStart: 'fuel.start', fuelEnd: 'fuel.landing', fuelUnit: 'fuel.unit',
-    opsNotes: 'remarks.observations', lessons: 'remarks.lessonsLearned', techNotes: 'results.anomalies', outcome: 'results.detail',
-    onlineNetwork: 'network.onlineNetwork', ivaoId: 'network.ivaoId', vatsimId: 'network.vatsimId', trackerUrl: 'network.trackerUrl'
+    missionId: 'metadata.missionId',
+    date: 'metadata.date',
+    aircraft: 'aircraft.0.type',
+    registration: 'aircraft.0.registration',
+    callsign: 'aircraft.0.callsign',
+    baseDeparture: 'aircraft.0.baseDeparture',
+    baseReturn: 'aircraft.0.baseReturn',
+    weather: 'environment.wind',
+    engineStart: 'timeline.engineStart',
+    takeoff: 'timeline.takeoff',
+    onScene: 'timeline.zoneEntry',
+    landing: 'timeline.landing',
+    engineStop: 'timeline.shutdown',
+    fuelStart: 'fuel.start',
+    fuelEnd: 'fuel.landing',
+    fuelUnit: 'fuel.unit',
+    opsNotes: 'remarks.observations',
+    lessons: 'remarks.lessonsLearned',
+    techNotes: 'results.anomalies',
+    outcome: 'results.detail',
+    onlineNetwork: 'network.onlineNetwork',
+    ivaoId: 'network.ivaoId',
+    vatsimId: 'network.vatsimId',
+    trackerUrl: 'network.trackerUrl'
   };
-  const LEGACY_ROLES = { captain: 'PIC', fo: 'COPILOT', doctor: 'DOCTOR', nurse: 'NURSE', rescuer: 'WINCH_OPERATOR', observer: 'OBSERVER' };
+  const LEGACY_ROLES = {
+    captain: 'PIC',
+    fo: 'COPILOT',
+    doctor: 'DOCTOR',
+    nurse: 'NURSE',
+    rescuer: 'WINCH_OPERATOR',
+    observer: 'OBSERVER'
+  };
   // Indicatif radio = indicatif (série : DRAGON, PELICAN, SAMU…) + numéro (76, 41, 74-1…).
   // Champ libre : ce qui ne suit pas ce schéma reste entièrement dans l'indicatif.
   function splitCallsign(value) {
     // Accents et points ignorés (PÉLICAN = PELICAN, F.M.N. = FMN).
     const text = String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f.]/g, '').trim().toUpperCase().replace(/\s+/g, ' ');
     const m = /^([A-Z]+(?: [A-Z]+)*)[ -]?(\d[0-9A-Z-]*)$/.exec(text);
-    return m ? { prefix: m[1], number: m[2] } : { prefix: text, number: '' };
+    return m ? {
+      prefix: m[1],
+      number: m[2]
+    } : {
+      prefix: text,
+      number: ''
+    };
   }
   const joinCallsign = (prefix, number) => `${String(prefix ?? '').trim().toUpperCase()}${String(number ?? '').trim().toUpperCase()}`.replace(/\s+/g, '');
   // Immatriculation affichée et enregistrée avec le tiret de la marque de nationalité :
   // FZBMM → F-ZBMM, HBJVE → HB-JVE, 9HABC → 9H-ABC ; N123AB (États-Unis) et saisies déjà
   // tirées inchangées. La recherche ignore le tiret (MissionAircraft.regKey).
   const TWO_LETTER_MARKS = new Set(('HB OO OE OK OM PH EC EI ES LX LY LZ SE SP SX TC UR YL YR YU OH OY LN CS TF HA S5 9A 9H 4X VH ZS ZK VT HS PK RP 9M 9V A6 A7 HZ SU CN EP YI JY OD 5B 5Y ZP LV CC HK YV OB CX HP TG TI XA XB XC EW ER UK UN EX EY EZ 4K 4L EK RA RF PP PR PT PU HI T7 3A HL').split(' '));
+
   function formatRegistration(value) {
     const s = String(value ?? '').trim().toUpperCase().replace(/\s+/g, '');
     if (!s || s.includes('-')) return s.replace(/-+/g, '-');
@@ -147,8 +352,14 @@
   function callsignParts(mission) {
     (mission.aircraft || []).forEach(a => {
       if (a.registration) a.registration = formatRegistration(a.registration);
-      ['callsignPrefix', 'callsignNumber', 'callsignFpl', 'operatorCode'].forEach(k => { if (a[k] == null) a[k] = ''; });
-      if (a.callsign && !a.callsignPrefix && !a.callsignNumber) { const s = splitCallsign(a.callsign); a.callsignPrefix = s.prefix; a.callsignNumber = s.number; }
+      ['callsignPrefix', 'callsignNumber', 'callsignFpl', 'operatorCode'].forEach(k => {
+        if (a[k] == null) a[k] = '';
+      });
+      if (a.callsign && !a.callsignPrefix && !a.callsignNumber) {
+        const s = splitCallsign(a.callsign);
+        a.callsignPrefix = s.prefix;
+        a.callsignNumber = s.number;
+      }
     });
     return mission;
   }
@@ -157,11 +368,12 @@
   // (registerUpperFields) ; zones de texte libre, listes de codes et URL non concernées.
   const upperPaths = new Set();
   const isUpperField = field => !field.keepCase && ((!field.type || field.type === 'text') || (field.type === 'textarea' && field.upper));
+
   function registerUpperFields(blocks) {
     (blocks || []).forEach(block => {
       if (!block || typeof block !== 'object') return;
       if (block.collection) block.collection.fields.filter(isUpperField).forEach(f => upperPaths.add(`${block.collection.path}.*.${f.path}`));
-      else (block.fields || []).filter(isUpperField).forEach(f => upperPaths.add(f.path));
+      else(block.fields || []).filter(isUpperField).forEach(f => upperPaths.add(f.path));
     });
   }
   // Convertit les champs déclarés ; renvoie le nombre de valeurs modifiées.
@@ -170,8 +382,18 @@
     const walk = (node, parts) => {
       if (node == null) return;
       const [head, ...rest] = parts;
-      if (head === '*') { if (Array.isArray(node)) node.forEach(item => walk(item, rest)); return; }
-      if (!rest.length) { const v = node[head]; if (typeof v === 'string' && v !== v.toUpperCase()) { node[head] = v.toUpperCase(); changed++; } return; }
+      if (head === '*') {
+        if (Array.isArray(node)) node.forEach(item => walk(item, rest));
+        return;
+      }
+      if (!rest.length) {
+        const v = node[head];
+        if (typeof v === 'string' && v !== v.toUpperCase()) {
+          node[head] = v.toUpperCase();
+          changed++;
+        }
+        return;
+      }
       walk(node[head], rest);
     };
     upperPaths.forEach(path => walk(mission, split(path)));
@@ -181,21 +403,48 @@
   // au registre une conversion à enregistrer (migration des anciennes saisies en minuscules).
   const migrate = (input, family = '') => {
     const mission = callsignParts(migrateRecord(input, family));
-    if (upperText(mission)) Object.defineProperty(mission, '__caseChanged', { value: true, configurable: true, enumerable: false });
+    if (upperText(mission)) Object.defineProperty(mission, '__caseChanged', {
+      value: true,
+      configurable: true,
+      enumerable: false
+    });
     return mission;
   };
+
   function migrateRecord(input, family = '') {
     if (!input || typeof input !== 'object') throw new Error('Mission illisible');
     if (Number(input.schemaVersion) >= 2) return fillDefaults(structuredClone(input), emptyMission(input.family || family));
     // Famille avec convertisseur dédié (HEMS, FIRE : anciens CSV / JSON plats) : prioritaire.
     const def = window.MissionCore?.families?.get?.(family);
-    if (def?.legacy?.fromRecord) return fillDefaults(def.legacy.fromRecord(input, { emptyMission, set, num }), emptyMission(family));
-    const mission = emptyMission(family), legacy = {};
+    if (def?.legacy?.fromRecord) return fillDefaults(def.legacy.fromRecord(input, {
+      emptyMission,
+      set,
+      num
+    }), emptyMission(family));
+    const mission = emptyMission(family),
+      legacy = {};
     Object.entries(input).forEach(([key, value]) => {
-      if (key === 'events' && Array.isArray(value)) mission.events = value.map(e => ({ timeLocal: e.time || '', timeUtc: '', type: 'OTHER', position: e.position || '', altitude: null, speed: null, heading: null, fuel: null, description: [e.type, e.note].filter(Boolean).join(' — '), result: '' }));
+      if (key === 'events' && Array.isArray(value)) mission.events = value.map(e => ({
+        timeLocal: e.time || '',
+        timeUtc: '',
+        type: 'OTHER',
+        position: e.position || '',
+        altitude: null,
+        speed: null,
+        heading: null,
+        fuel: null,
+        description: [e.type, e.note].filter(Boolean).join(' — '),
+        result: ''
+      }));
       else if (LEGACY_MAP[key]) set(mission, LEGACY_MAP[key], ['fuelStart', 'fuelEnd'].includes(key) ? num(value) : value ?? '');
-      else if (LEGACY_ROLES[key]) { if (value) mission.crew.push({ role: LEGACY_ROLES[key], name: value, aircraft: 1, notes: '' }); }
-      else if (key !== 'kpi') legacy[key] = value;
+      else if (LEGACY_ROLES[key]) {
+        if (value) mission.crew.push({
+          role: LEGACY_ROLES[key],
+          name: value,
+          aircraft: 1,
+          notes: ''
+        });
+      } else if (key !== 'kpi') legacy[key] = value;
     });
     if (Object.keys(legacy).length) mission.missionData.legacy = legacy;
     return mission;
@@ -205,12 +454,21 @@
   // et lecture en schéma YAML 1.2 « core » (aucune conversion implicite de date).
   function toYaml(mission, header = 'Mission Report — DEFA Virtual') {
     if (!window.jsyaml) throw new Error('Bibliothèque YAML absente');
-    const body = window.jsyaml.dump(mission, { forceQuotes: true, quotingType: '"', lineWidth: -1, noRefs: true, sortKeys: false });
+    const body = window.jsyaml.dump(mission, {
+      forceQuotes: true,
+      quotingType: '"',
+      lineWidth: -1,
+      noRefs: true,
+      sortKeys: false
+    });
     return `# ${header}\n# schemaVersion ${mission.schemaVersion} — ${new Date().toISOString()}\n${body}`;
   }
+
   function parse(text, family = '') {
     const source = String(text || '').replace(/^﻿/, '');
-    const data = /^\s*[{[]/.test(source) ? JSON.parse(source) : window.jsyaml.load(source, { schema: window.jsyaml.CORE_SCHEMA });
+    const data = /^\s*[{[]/.test(source) ? JSON.parse(source) : window.jsyaml.load(source, {
+      schema: window.jsyaml.CORE_SCHEMA
+    });
     return migrate(data, family);
   }
 
@@ -221,9 +479,19 @@
     const categories = (mission.aircraft || []).map(a => a.category).filter(Boolean);
     if (!categories.length && family.defaultCategory) categories.push(family.defaultCategory);
     const flags = typeof family.flags === 'function' ? family.flags(mission) || {} : family.flags || {};
-    return { family: family.id, series: mission.series || '', mission, flags, capabilities: new Set(mission.capabilities || []), categories: new Set(categories) };
+    return {
+      family: family.id,
+      series: mission.series || '',
+      mission,
+      flags,
+      capabilities: new Set(mission.capabilities || []),
+      categories: new Set(categories)
+    };
   }
-  const blockVisible = (mission, family, id) => { const block = (family.blocks || []).find(b => b.id === id); return !!block && (!block.when || block.when(context(mission, family))); };
+  const blockVisible = (mission, family, id) => {
+    const block = (family.blocks || []).find(b => b.id === id);
+    return !!block && (!block.when || block.when(context(mission, family)));
+  };
 
   // Version publique (§7) : copie de la mission sans les champs marqués `sensitive` par la
   // famille (champ, ou bloc entier avec `sensitive: true`), collections comprises.
@@ -233,7 +501,9 @@
       if (block.collection) {
         const list = get(copy, block.collection.path) || [];
         block.collection.fields.filter(f => block.sensitive || f.sensitive).forEach(f => list.forEach(item => set(item, f.path, null)));
-      } else (block.fields || []).filter(f => block.sensitive || f.sensitive).forEach(f => { if (get(copy, f.path) !== undefined) set(copy, f.path, null); });
+      } else(block.fields || []).filter(f => block.sensitive || f.sensitive).forEach(f => {
+        if (get(copy, f.path) !== undefined) set(copy, f.path, null);
+      });
     });
     copy.publicVersion = true;
     return copy;
@@ -242,17 +512,63 @@
 
   // Lecture d'un CSV « ; » (guillemets doublés) en objets { colonne: valeur }.
   function parseCsv(text) {
-    const out = []; let row = [], value = '', quoted = false; text = String(text || '').replace(/^﻿/, '');
-    const push = () => { row.push(value); if (row.some(v => v !== '') && !String(row[0]).startsWith('#')) out.push(row); row = []; value = ''; };
+    const out = [];
+    let row = [],
+      value = '',
+      quoted = false;
+    text = String(text || '').replace(/^﻿/, '');
+    const push = () => {
+      row.push(value);
+      if (row.some(v => v !== '') && !String(row[0]).startsWith('#')) out.push(row);
+      row = [];
+      value = '';
+    };
     for (let i = 0; i < text.length; i++) {
-      const c = text[i], n = text[i + 1];
-      if (quoted && c === '"' && n === '"') { value += '"'; i++; } else if (c === '"') quoted = !quoted;
-      else if (!quoted && c === ';') { row.push(value); value = ''; } else if (!quoted && (c === '\n' || c === '\r')) { if (c === '\r' && n === '\n') i++; push(); } else value += c;
+      const c = text[i],
+        n = text[i + 1];
+      if (quoted && c === '"' && n === '"') {
+        value += '"';
+        i++;
+      } else if (c === '"') quoted = !quoted;
+      else if (!quoted && c === ';') {
+        row.push(value);
+        value = '';
+      } else if (!quoted && (c === '\n' || c === '\r')) {
+        if (c === '\r' && n === '\n') i++;
+        push();
+      } else value += c;
     }
     if (value || row.length) push();
     const head = (out.shift() || []).map(h => String(h).trim());
     return out.map(values => Object.fromEntries(head.map((h, i) => [h, values[i] ?? ''])));
   }
 
-  window.MissionModel = { parseCsv, redact, hasSensitive, context, blockVisible, SCHEMA_VERSION, emptyMission, emptyAircraft, splitCallsign, joinCallsign, formatRegistration, isUpperField, registerUpperFields, upperText, upperPaths, get, set, fillDefaults, minutes, between, num, computeStatistics, checkMission, migrate, toYaml, parse };
+  window.MissionModel = {
+    parseCsv,
+    redact,
+    hasSensitive,
+    context,
+    blockVisible,
+    SCHEMA_VERSION,
+    emptyMission,
+    emptyAircraft,
+    splitCallsign,
+    joinCallsign,
+    formatRegistration,
+    isUpperField,
+    registerUpperFields,
+    upperText,
+    upperPaths,
+    get,
+    set,
+    fillDefaults,
+    minutes,
+    between,
+    num,
+    computeStatistics,
+    checkMission,
+    migrate,
+    toYaml,
+    parse
+  };
 })();
