@@ -4,7 +4,8 @@
 
 A set of static web pages for virtual flight operations (X-Plane, IVAO, VATSIM): mission
 reports for 14 mission families, reporting and statistics, fleet and aircraft databases,
-landing performance analysis and flight / fuel planning. No server, no account, no build
+landing performance analysis, flight / fuel planning, and mission briefs with aeronautical
+maps built from official French AIS (SIA) data. No server, no account, no build
 step: the pages run in the browser and keep their data in local files (YAML) and in the
 browser.
 
@@ -12,19 +13,20 @@ browser.
 - Installation: [INSTALL.md](INSTALL.md) (French)
 - Changelog (French): [CHANGELOG.md](CHANGELOG.md) — current version 2.1.0 (page footer link)
 
-## Three applications, one shared framework
+## Four applications, one shared framework
 
 | Application | Pages | Purpose | Documentation (French) |
 |---|---|---|---|
 | **CR DEFA** (Mission Report Core) | `CR DEFA/` — ☰ › Reporting missions, new report, settings | Mission reports for 14 families, single ledger, reporting and charts, fleet and callsign databases, report sending | [Tutorial](docs/TUTORIAL.md) · [Operations manual](docs/MANUEL_EXPLOITATION.md) · [Design notes](docs/mission_report_core_audit.md) |
 | **Landing Performance Dashboard** | `LandingPerformanceDashboard/LandingPerformance_Dashboard_MultiCSV_i18n.html` | Landing analysis (score, FPM, G) from CSV / LOG journals, trends, filters | [docs/LANDING_DASHBOARD.md](docs/LANDING_DASHBOARD.md) · [aircraft database updater](LandingPerformanceDashboard/README.md) |
 | **Flight Performance & Fuel Planner** | `flight_performance_planner.html` | Aircraft performance profiles, fuel quote, optimum altitude, SimBrief calibration, Little Navmap exchange | [docs/FLIGHT_PLANNER.md](docs/FLIGHT_PLANNER.md) |
+| **SIA missions** | `SIA XML/` — ☰ › Générateur de mission (SIA), Studio cartographique (SIA) | Mission brief (texts, points, final PDF) and PNG / SVG maps from SIA AIRAC data: airspaces, MORA, graticule, air-to-air refuelling tracks, OSM base maps; opens a pre-filled CR DEFA report | [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md) |
 | **Shared framework** | `repository_tree`, `shared/`, `AircraftDB/`, `tools/` | Header and ☰ menu, languages, blocks, period and zoom (TimePeriod), charts, tables, pilot profile, local data, aircraft databases | [docs/FRAMEWORK.md](docs/FRAMEWORK.md) |
 
-The three applications talk through the framework: same pilot profile (IVAO, VATSIM,
+The applications talk through the framework: same pilot profile (IVAO, VATSIM,
 SimBrief), same period component (drag-to-zoom on charts, ◀ 🔍− ▶ buttons in the header),
 same aircraft type database; the Planner lists the aircraft of the Landing Dashboard's last
-file.
+file; an SIA mission opens a pre-filled CR DEFA report.
 
 ### Mission Report Core — the “CR DEFA” application
 
@@ -76,6 +78,21 @@ Highlights:
 - **Local data backup**: everything the browser keeps can be saved to / restored from
   `defa_local_store.yaml` (menu ☰ › Données locales).
 
+### SIA missions — mission generator and map studio
+
+Folder `SIA XML/`; details (French): [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md).
+
+- **Mission generator (brief)**: YAML (`helo-xp-mission`) or Markdown import, texts proposed
+  from the data when missing (points, rendezvous, instructions, refuelling track), YAML /
+  Markdown / **final PDF** exports named `S1-M11_AIRLIFT_Pont_logistique_vers_Solenzara`,
+  hand-off to the studio, **pre-filled CR DEFA report** (family from the mission type).
+- **Map studio**: SIA database (AIXM 4.5, AIRAC cycle) read from the remembered folder;
+  **display profiles** (local PNG, OSM, OpenTopoMap, OpenFreeMap / VersaTiles vector styles;
+  layers, airspaces, elements) with a live control map; airspace selection by allow / block
+  list, completion, groups and aliases (**@RTBA**); vertical limits; degree / minute
+  graticule; computed **MORA grid** (terrain, peaks, SIA obstacles); exact **air-to-air
+  refuelling racetracks** (MILAIP ENR 5.7); robust PNG / SVG / ZIP generation.
+
 ### Shared framework (summary — details: [docs/FRAMEWORK.md](docs/FRAMEWORK.md))
 
 - `repository_tree`: page tree, labels, themes, favicons (JavaScript file without
@@ -89,6 +106,10 @@ Highlights:
 - `shared/time_period.js`: common analysis period (presets, dates, ◀ zoom out ▶, drag-to-zoom
   on charts) — reportings and Landing Dashboard.
 - `shared/mission_core/charts.js`, `shared/mission_table.js`: SVG charts, sortable tables.
+- `shared/file_access.js`: configured folders (ledger, backup, performance, SIA XML), file
+  pickers opening in the right folder, shared paste panels.
+- `shared/aar_tracks.js`: ENR 5.7 refuelling tracks (MILAIP PDF reader, named XML, racetrack
+  geometry).
 - `tools/`: maintenance scripts (new mission family, cache version bump).
 
 ## Quick start
@@ -105,10 +126,13 @@ Nothing is sent to a server of this project (there is none), except the reports 
 yourself with “Send report” to the web service you configured. The pages call public
 services only when you use the related feature: IVAO / VATSIM public feeds, VATSIM METAR,
 SimBrief (your username), Open-Meteo (aerodrome coordinates and date), jsDelivr (world
-aerodrome list). Mission data stay in your browser and in the files you choose.
+aerodrome list); for SIA missions, OpenStreetMap, OpenTopoMap, OpenFreeMap, VersaTiles tiles,
+Terrarium terrain (AWS) and Overpass API (peaks). Mission data stay in your browser and in the files you choose.
 
 ## Licence and credits
 
 CC RBR — DEFA Virtual. Bundled third-party code: js-yaml 4.1.0 (MIT,
-`shared/mission_core/vendor/`). World aerodrome data: github.com/mwgg/Airports (MIT),
-loaded on demand.
+`shared/mission_core/vendor/`); MapLibre GL JS (BSD-3-Clause) and jsPDF (MIT) in
+`SIA XML/`. World aerodrome data: github.com/mwgg/Airports (MIT), loaded on demand.
+Aeronautical data: SIA (AIP France, AIXM 4.5) and DIRCAM (MILAIP ENR 5.7); cities: GeoNames
+(CC BY 4.0); maps © OpenStreetMap contributors, OpenTopoMap (CC-BY-SA).

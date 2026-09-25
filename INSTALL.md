@@ -98,6 +98,15 @@ Aucune dépendance externe (bibliothèque standard uniquement) :
 | `tools/bump_versions.py` | change la version de cache des scripts (après modification du code) |
 | `tools/new_family_pages.py famille.json` | crée les pages d'une nouvelle famille de missions |
 
+### Données SIA (Missions SIA)
+
+Le studio cartographique utilise les données AIRAC du SIA, **hors dépôt** (≈ 80 Mo par cycle) :
+télécharger l'export XML sur le site du SIA (produits numériques en libre disposition) et déposer
+`AIXM4.5_all_FR_OM_<date>.xml`, `XML_SIA_<date>.xml` et `sia-airspaces-<date>.xml` dans
+`SIA XML/`. Au premier lancement : studio › « Dossier SIA XML » (dossier mémorisé). Les autres
+données (villes, MORA, axes de ravitaillement, fond local) sont dans le dépôt. Détail :
+[docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md).
+
 Détails : [manuel d'exploitation](docs/MANUEL_EXPLOITATION.md).
 
 ## 6. Mise à jour

@@ -309,3 +309,28 @@ journal DEFA rechargé et le catalogue (`missionMergeMap:v1`).
 Base « lâche » : tout ce qui est connu est repris (flotte, référence DEFA, missions, journal),
 rien n'est obligatoire ; ce qui est saisi dans une fiche reste dans le navigateur
 (`missionAircraftSheets:v1`, `missionCrewSheets:v1`, inclus dans la sauvegarde locale).
+
+## 13. Préparer une mission SIA : brief, cartes, compte rendu
+
+Exemple : `SIA XML/Mission 02.md` (ravitaillement en vol sur l'axe SIMONE). Détail :
+[SIA_MISSIONS.md](SIA_MISSIONS.md).
+
+1. **Données** (une fois par cycle AIRAC) : ☰ › Studio cartographique (SIA) › bloc 1 ›
+   « Dossier SIA XML » → choisir `SIA XML/` (voir [INSTALL.md](../INSTALL.md)).
+2. **Brief** : ☰ › Générateur de mission (SIA) › « YAML et/ou Markdown » → `Mission 02.md`.
+   Le fichier n'a ni résumé ni description : ils sont **proposés** (type, cible, zone,
+   participants MISTRAL 41/42 et VAILLANT 31, axe SIMONE 010°, 48 NM, 14 NM, virages par la
+   gauche, points, rendez-vous, consignes) — relire et compléter.
+3. **Cartes** : « Transmettre au studio cartographique → ». Dans le studio :
+   - bloc 3, onglet **Fond de carte** : choisir un profil (IFR, VFR détaillé…) et un fond ;
+   - onglet **Zones** : familles à afficher ; ajouter par exemple « @RTBA » ou « R 166 »
+     (complétion) ; les zones retenues s'affichent à côté ;
+   - onglet **Éléments** : points tournants, quadrillage, grille MORA ; « Axe de la mission :
+     Automatique (SIMONE) » trace l'hippodrome exact ;
+   - la **carte de contrôle** (à droite, ⤢ pour l'agrandir) suit chaque réglage ;
+   - bloc 5 : un profil par carte (ou « Désactivé »), puis **Générer les cartes et le ZIP**.
+4. **Dossier final** : retour au générateur (« ← Retour ») › « Cartes ou ZIP livré par le
+   générateur » → le ZIP ; **Exporter le PDF final** (`M02_TRAINING_VAILLANT_31_Axe_SIMONE.pdf`).
+5. **Après le vol** : « Créer le CR DEFA → » ouvre un nouveau compte rendu de la bonne famille
+   (TRAINING → SPECIAL), déjà rempli (nom, objectif, points, appareils) ; compléter comme aux
+   § 3 à 8.

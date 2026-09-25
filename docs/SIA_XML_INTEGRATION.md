@@ -1,12 +1,14 @@
 # Intégration de l'application « SIA XML » — analyse et plan
 
-État au 2026-09-24 : **intégration faite** (« go » donné) — points 1 à 5 du § 2 : en-tête et menu
-communs, `<main>` et blocs (`data-block-id` : `sia-base`, `sia-mission`, `sia-zones`,
-`sia-elements`, `sia-outputs` ; `mission-import` … `mission-yaml` masqué par défaut,
-`mission-export`), thème `sia` et `assets/favicon-sia.svg`, js-yaml commun, couche AAR dans le
-studio, dossier SIA mémorisé (`FileAccess`, `__sia`). Faits ensuite : collage de mission
-(`pastePanel`) et passerelle vers CR DEFA (`?from=sia`, clef `siaMissionToCr:v1`,
-`MissionVocab.familyForType`, `fromSia` dans `core.js`).
+Notes de conception de l'intégration (2026-09-24 / 25). **Documentation de l'application :
+[SIA_MISSIONS.md](SIA_MISSIONS.md).** Tout le plan du § 2 est réalisé : en-tête et menu communs,
+blocs, thème `sia` et `assets/favicon-sia.svg`, js-yaml commun, dossier SIA mémorisé
+(`FileAccess`, `__sia`), collage de mission et de listes de zones (`pastePanel`), couche des
+hippodromes, passerelle vers CR DEFA (`?from=sia`, `siaMissionToCr:v1`,
+`MissionVocab.familyForType`, `fromSia` dans `core.js`). Évolutions ensuite : profils d'affichage
+(onglets, carte de contrôle), sélection des zones (listes, groupes, alias RTBA), grille MORA
+calculée (l'import de la carte ENR 6.1 est abandonné : elle n'a pas de grille), générateur
+Python et pdf.js retirés. Le tableau du § 1 décrit l'état **initial** du dossier.
 
 ## 1. Ce que contient le dossier
 
@@ -24,7 +26,7 @@ MISTRAL 41/42 + tanker VAILLANT 31), `Missions/AIRLIFT_serie_1_precomplete/` (mi
 YAML `helo-xp-mission`, résumés, `maps_manifest.md`), `Missions/MEDEVAC_serie_1..3_OSM/` (cartes
 produites : général, cible, détail cible, zone, assemblage).
 
-## 2. Intégration dans la suite (à faire au « go »)
+## 2. Intégration dans la suite (plan — réalisé)
 
 1. **Emplacement** : garder `SIA XML/` comme dossier de l'application (menu ☰ : « Missions SIA ›
    Générateur de mission », « Missions SIA › Studio cartographique »), thème et favicon existants

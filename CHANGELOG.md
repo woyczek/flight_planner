@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Missions SIA (nouvelle application, dossier `SIA XML/`)
 
+- **Documentation** : [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md) (générateur de mission et studio :
+  données, format des missions, profils, zones, MORA, hippodromes, stockage, services) ; README
+  EN / FR (quatre applications), INSTALL (données SIA), tutoriel (§ 13, mission SIMONE), manuel
+  d'exploitation (§ 9.1 : cycle AIRAC, MORA, axes ENR 5.7), FRAMEWORK (`aar_tracks.js`,
+  passerelle mission → CR, dossier `__sia`).
+
 - **Générateur de mission** et **studio cartographique** intégrés à la suite : bandeau et menu
   communs (thème et favicon SIA), blocs masquables / déplaçables, pied de page de version,
   js-yaml commun ; historique du dépôt d'origine repris.

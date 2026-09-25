@@ -100,7 +100,8 @@ autorisé : toutes les 5 minutes et au départ de la page) remet aussi le compte
 - Dossiers mémorisés (IndexedDB `missionCore` › `handles`) : **dépôt** (`__repo` : le dossier
   « Documentation », qui contient `repository_tree`), **registre** (`__ledger` :
   `Documentation/CR DEFA`, qui contient `mission_cr.html`), **sauvegarde locale** (`__store`),
-  **performances** (`__perf`, Flight Planner).
+  **performances** (`__perf`, Flight Planner), **SIA XML** (`__sia` : données AIRAC, témoin
+  `Carte france vierge.png`).
 - `FileAccess.pickFolder(clé)` : le sélecteur s'ouvre sur le dossier actuel ; contrôle du
   contenu attendu (fichier témoin) avec confirmation.
 - `FileAccess.decorate(bouton, clé)` : le bouton affiche « Dossier du registre : CR DEFA ✓ »
@@ -109,13 +110,14 @@ autorisé : toutes les 5 minutes et au départ de la page) remet aussi le compte
 - **Tout** `<input type="file">` de la suite ouvre le sélecteur du système **directement dans
   le dossier paramétré** : `data-picker-folder="__ledger"` sur le champ, sinon dossier par
   défaut de la page (application CR DEFA : registre ; Paramétrage : dépôt ; Flight Planner :
-  performances), sinon le dernier dossier utilisé pour ce bouton. Le code des pages ne change
-  pas (événement `change` habituel). Navigateurs sans l'API : sélecteur natif.
+  performances ; Missions SIA : SIA XML), sinon le dernier dossier utilisé pour ce bouton. Le code des pages ne change
+  pas (événement `change` habituel). Navigateurs sans l'API : sélecteur natif. Les sélecteurs
+  de **dossier** (`webkitdirectory`) gardent le sélecteur natif.
 
 ### Panneaux de copier-coller (`FileAccess.pastePanel`)
 
 Toute fenêtre où l'on colle un texte (CR › Analyse / import, journal DEFA, historique VATSIM du
-suivi réseau) : **×** en haut à droite et bouton **Fermer** ; le bouton de chargement est
+suivi réseau, mission et liste de zones du studio SIA) : **×** en haut à droite et bouton **Fermer** ; le bouton de chargement est
 **désactivé** tant que la zone est vide, devient **✓ Valider** (vert, ferme la fenêtre) après un
 chargement réussi, et redevient « Charger » dès que la zone est de nouveau remplie.
 
@@ -223,10 +225,32 @@ Toute collection est affichée en **tableau compact** (une ligne par élément ;
 `full`, `textarea` — sur une 2e ligne), sauf `layout: 'cards'` (appareils : une carte par
 appareil). `link(item)` : lien en tête de carte (fiche appareil). Ajout par le « + » du titre.
 
+## 11 ter. `aar_tracks.js` — axes de ravitaillement (MILAIP ENR 5.7)
+
+- `AarTracks.parseEnr57(textesDesPages)` : lecture du PDF ENR 5.7 (texte extrait par pdf.js) —
+  points en minutes décimales et en DMS comparés, noms complets des axes, renvois (30 / 40 NM),
+  largeur 14 NM, côté donné par S2, circuits heavy FOX / ROM ; anomalies listées.
+- `AarTracks.toXml(résultat)` → `SIA XML/miam-enr-5-7-tracks.xml` ; `parseTrackXml(xml)` le relit.
+- `AarTracks.trackRacetrack(axe, { defaultSide })` / `racetrack(…)` : contour exact de
+  l'hippodrome (branche aller IP → CP, retour décalé, demi-cercles), cap, longueur, largeur, côté.
+- `toGeoJson`, `nearest` : tracés MapLibre / SVG, axe le plus proche d'un point.
+
+## 11 quater. Passerelle mission → CR DEFA
+
+- `MissionVocab.familyForType(type)` (`shared/mission_core/vocab.js`) : famille de CR d'après
+  un type de mission libre (MEDEVAC → HEMS, TRAINING → SPECIAL…).
+- Une page de CR ouverte avec `?from=sia` lit `localStorage['siaMissionToCr:v1']` (mission
+  `helo-xp-mission`), crée un nouveau CR pré-rempli (`fromSia` dans `core.js` : nom, numéro,
+  objectif, terrains, points, appareils au type OACI du catalogue, exploitant, charge), puis
+  applique les aides habituelles (appareil connu, terrain) ; confirmation avant de remplacer
+  un brouillon.
+
 ## 12. `tools/` — maintenance
 
 - `tools/bump_versions.py` : nouveau numéro de version de cache (`?v=`) dans toutes les pages
-  après une modification de code partagé (toujours supérieur au précédent).
+  après une modification de code partagé (toujours supérieur au précédent) ; met aussi à jour
+  les chargements internes de `repository_nav.js` (profil pilote, données locales, accès aux
+  dossiers).
 - `tools/defa_reference.py "Log des vols.html"` : référence DEFA anonymisée
   (`shared/defa_reference.js`) depuis le journal des vols (complète sans rien supprimer).
 - `tools/new_family_pages.py` : crée les pages d'une nouvelle famille de missions dans

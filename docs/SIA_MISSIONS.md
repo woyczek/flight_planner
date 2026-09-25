@@ -1,0 +1,217 @@
+# Missions SIA — générateur de mission et studio cartographique
+
+Dossier `SIA XML/` — ☰ › **Générateur de mission (SIA)** et ☰ › **Studio cartographique (SIA)**.
+Application de la suite qui prépare le **dossier de mission** d'un vol de simulation : le
+brief (textes, points, participants, consignes, PDF final) et les **cartes** produites depuis
+les données aéronautiques officielles du SIA (cycle AIRAC), sur fond OpenStreetMap ou local.
+
+```
+Mission (YAML / Markdown) ──► Générateur de mission ──► Studio cartographique ──► cartes PNG / SVG + ZIP
+                                   │   ▲                                               │
+                                   │   └─────────── ZIP des cartes ◄───────────────────┘
+                                   ├──► PDF final du dossier (textes + cartes)
+                                   └──► Créer le CR DEFA (compte rendu pré-rempli)
+```
+
+Code : les deux pages, `shared/aar_tracks.js` (axes de ravitaillement ENR 5.7), composants du
+framework (bandeau et menu ☰, blocs, `FileAccess`, fenêtres de copier-coller, sauvegarde locale).
+Bibliothèques livrées dans le dossier : MapLibre GL (`maplibre-gl.js/.css`), jsPDF
+(`jspdf.umd.min.js`) ; js-yaml est celui du framework. Notes de conception :
+[SIA_XML_INTEGRATION.md](SIA_XML_INTEGRATION.md).
+
+## 1. Données
+
+| Fichier | Rôle | Dépôt |
+|---|---|---|
+| `AIXM4.5_all_FR_OM_<date>.xml` | AIXM 4.5 complet du SIA : contours R / D / P / CTR / TMA avec limites verticales, zones AZBA (RTBA), **13 800 obstacles** (grille MORA) | hors dépôt (≈ 44 Mo par cycle) |
+| `sia-airspaces-<date>.xml` | Contours d'espaces (SIV et compléments) | hors dépôt |
+| `XML_SIA_<date>.xml` | Export XML-SIA complet (inventaire) | hors dépôt |
+| `miam-enr-5-7-tracks.xml` | **Axes de ravitaillement** MILAIP ENR 5.7 nommés et corrigés (31 axes + 6 circuits heavy) | versionné |
+| `miam-enr-5-7-coordinates.xml` | Coordonnées ENR 5.7 d'origine (sans noms) | versionné |
+| `mora.csv` | **Grille MORA** 1° × 1° calculée (§ 4.6) | versionné |
+| `villes_geonames.csv` | Villes (GeoNames cities500, CC BY 4.0) | versionné |
+| `Carte france vierge.png` | Fond local (Lambert, calibré ouest −6,5° / sud 40,5° / est 12,5° / nord 52°) | versionné |
+
+Les données AIRAC se téléchargent sur le site du SIA (produits numériques, export XML) et se
+déposent dans le dossier `SIA XML/` ; `.gitignore` les tient hors du dépôt.
+
+**Dossier mémorisé** : « Dossier SIA XML : … » (studio, bloc 1) choisit le dossier une fois ;
+il est retenu comme les autres dossiers de la suite (☰ › Paramétrage) et les sélecteurs de
+fichiers des deux pages s'y ouvrent. « Relire le dossier » après un nouveau cycle AIRAC. La base
+analysée (contours, villes, MORA, obstacles, axes ENR 5.7) est gardée dans le navigateur
+(IndexedDB `sia-map-parser`) : le studio s'ouvre sans relire les 80 Mo d'XML. Une base d'une
+version précédente est relue automatiquement si l'accès au dossier est déjà accordé.
+
+## 2. Format des missions
+
+Schéma YAML `helo-xp-mission` (exemples : `Missions/AIRLIFT_serie_1_precomplete/mission11.yaml`,
+`Missions/MEDEVAC_serie_*`) :
+
+| Clé | Contenu |
+|---|---|
+| `schema`, `schema_version` | `helo-xp-mission`, `1.0` |
+| `mission` | `series`, `number`, `id`, `type` (AIRLIFT, MEDEVAC, TRAINING…), `subtype` |
+| `title`, `summary`, `detailed_description` | Titre et textes du brief |
+| `aircraft` | `type`, `callsign`, `operator`, `role` |
+| `origin`, `destination`, `target` | `name` (code OACI entre parenthèses : « BA 123 Orléans-Bricy (LFOJ) »), `lat`, `lon` |
+| `turning_points`, `rendezvous` | `id`, `name`, `lat`, `lon`, `role`, `participants` |
+| `teams` | Équipes (nom, service, département, type — un aéronef connu devient appareil du CR) |
+| `payload`, `objectives`, `risks`, `notes`, `zones` | Charge, objectifs, risques (conséquence / parade), consignes |
+| `maps` | Cartes à produire : `filename`, `type` (general, target, detail, zone…), `description`, emprise (`bbox`, ou `centre_ref` + `range_km` / `width_km` × `height_km`) |
+| `rendering` | `north_up`, `draw_routes`, `add_markers`, `attribution_required` |
+
+Le **Markdown** est accepté aussi : titres `## Summary` / `## Description détaillée`, ou ancien
+format à blocs (`TYPE:`, `SOUS-TYPE:`, `TARGET:`, `TURNING POINTS:` avec lignes
+`- PT1 | SIMIP | 46.444167 | 1.486000 | rôle`, `RDV:`, `ZONE:`, `MAPS TO PRODUCE:`, `NOTES:`) —
+exemple : `SIA XML/Mission 02.md` (ravitaillement en vol sur l'axe SIMONE).
+
+## 3. Générateur de mission (brief)
+
+Page `SIA XML/mission_editor.html`.
+
+1. **Importer une mission** : un ou plusieurs YAML / Markdown (fusionnés), et les cartes (PNG ou
+   ZIP livré par le studio).
+2. **Identification** : titre, numéro, série, type, sous-type, auteur, date, schéma.
+3. **Textes de mission** : résumé, description détaillée, rubriques libres. Quand le fichier
+   n'a ni résumé ni description, ils sont **proposés à partir des données** (à relire) : type,
+   cible, zone, participants des rendez-vous, points tournants et rendez-vous avec
+   coordonnées, consignes (`NOTES`) et, pour un ravitaillement, l'**axe ENR 5.7** (entrée, fin
+   d'axe, route, longueur des branches, largeur, sens des virages).
+4. **Toutes les données YAML** (bloc masqué par défaut) : éditeur sans schéma imposé, clés
+   supplémentaires conservées.
+5. **Cartes du dossier final** : ordre et légendes ; la carte d'assemblage passe en tête du PDF.
+
+Exports : **YAML**, **Markdown**, **PDF final** (jsPDF : faits de la mission, aéronef,
+coordination, résumé, description, risques, rubriques, cartes). Nom des fichiers :
+`S<série>-M<numéro>_<TYPE>_<titre>` — par ex. `S1-M11_AIRLIFT_Pont_logistique_vers_Solenzara` ;
+quand le titre n'est que « Mission 02 », la cible le remplace
+(`M02_TRAINING_VAILLANT_31_Axe_SIMONE`).
+
+En-tête : **Transmettre au studio cartographique →** (la mission passe au studio) et **Créer le
+CR DEFA →** : nouveau compte rendu de la famille correspondant au type (MEDEVAC → HEMS,
+AIRLIFT → AIRLIFT, TRAINING → SPECIAL…), pré-rempli : nom et numéro, objectif, terrains de
+départ / arrivée, points et coordonnées, appareils (type OACI du catalogue commun : A400M Atlas
+→ A4M ; indicatif), exploitant, charge. Le CR demande confirmation avant de remplacer un
+brouillon.
+
+Brouillon : « Mémoriser / Recharger le brouillon » (navigateur).
+
+## 4. Studio cartographique
+
+Page `SIA XML/map_parser.html`. Une mission décrit ses cartes ; chaque carte est dessinée avec
+un **profil d'affichage**, puis le studio produit PNG / SVG et un ZIP.
+
+### 4.1 Base de données SIA (bloc 1)
+
+Dossier SIA XML (mémorisé), inventaire des XML analysés, rechargement de la base mémorisée.
+
+### 4.2 Mission (bloc 2)
+
+Fichier Markdown / YAML, **collage** dans la fenêtre commune (× / Fermer / Lire la mission →
+Valider), ou mission transmise par le générateur.
+
+### 4.3 Profils d'affichage (bloc 3)
+
+Barre de profil (choix, nom, **fond de carte**, Sauvegarder / Nouveau / Dupliquer / Supprimer)
+et trois onglets ; à droite, la **carte de contrôle**. Colonnes 60 / 40 réglables par la barre
+de redimensionnement (double-clic : 60 / 40). Profils communs à toutes les missions, gardés dans
+le navigateur et dans la sauvegarde locale de la suite.
+
+**Fonds de carte** : fond local PNG ; raster OSM standard, OpenTopoMap (relief et courbes) ;
+vectoriels OSM Shortbread, OpenFreeMap Liberty / Bright / Positron, VersaTiles Colorful /
+Graybeard / Shadow / Eclipse.
+
+- **Onglet Fond de carte** : couches OSM (sol, agglomérations, hydrographie, routes / rail,
+  bâtiments, frontières — sur tous les fonds vectoriels ; relief ombré, courbes de niveau,
+  sommets), libellés de villes (population minimale), libellés des sommets. Points d'intérêt
+  et numéros de rue masqués sur les fonds publiés.
+- **Onglet Zones** : familles R / D / P et CTR / TMA / SIV (case « toutes » par famille) ;
+  **sélection des zones** :
+  - **liste blanche** (seules les zones de la liste ; liste vide = toutes les zones des
+    familles cochées) ou **liste noire** (toutes sauf celles de la liste) ;
+  - ajout avec **complétion** sur toutes les familles, limites verticales indiquées ;
+    **groupes** « R 166 — 4 zones (A1, A2, B, C) » (tout ce qui partage l'identifiant de base,
+    sans confondre R 1 et R 12) ; **fragments** (« R 1 » : tout ce qui contient R1) ; zones
+    déjà retenues retirées des choix ;
+  - **Coller une liste** (une zone par ligne), **Tout supprimer**, puces supprimables avec le
+    nombre de contours reconnus ;
+  - **alias** communs aux profils (« @RTBA » : proposé d'après les zones publiées sur les
+    cartes AZBA, modifiable ; autres alias à créer) ;
+  - **zones retenues** listées à côté, triées par famille (R, P, D, CTR, TMA, SIV) puis par
+    numéro (12 avant 118). Comparaison sans espaces, tirets ni accents (« LF-R 45 A » = « R 45 A »).
+- **Onglet Éléments** — un bloc par élément, réglages grisés quand il est décoché :
+  points tournants (libellés, taille) ; méridiens et parallèles (libellés en bordure en degrés
+  et minutes) ; grille MORA (valeurs, opacité, espacement minimal) ; libellés des zones et des
+  villes ; hippodrome de ravitaillement ; cercle de la zone de mission.
+
+**Carte de contrôle** : la carte choisie de la mission, dessinée avec le profil **en cours de
+modification**, actualisée à chaque réglage ; bouton ⤢ pour l'agrandir (Échap pour revenir).
+Zones avec leurs libellés et limites (« R 69 — 800 ft ASFC – 2700 ft ASFC »), quadrillage, MORA,
+hippodrome, points tournants, villes.
+
+### 4.4 Données complémentaires (bloc 4)
+
+Calcul de la grille MORA (§ 4.6), sources (GeoNames, SIA, IGN) et calibration du fond local.
+
+### 4.5 Sorties (bloc 5)
+
+- **Profil par carte** : chaque carte de la mission reçoit un profil (proposé : détail, cible,
+  rendez-vous → VFR détaillé ; mission dont le titre contient « IFR » → IFR ; sinon VFR
+  simplifié) ; **Désactivé** = carte ni générée, ni prévisualisée,
+  ni sur l'assemblage.
+- **Emprise** : `bbox` de la mission, sinon centre + rayon / largeur × hauteur, sinon d'après le
+  nom du fichier (général : tous les points ; cible ≈ 50 km ; détail ≈ 8 × 5 km ; zone).
+- Aperçu de toutes les cartes, **carte d'assemblage** (emprises de toutes les cartes).
+- **Générer les cartes et le ZIP** : PNG (largeur réglable) et / ou SVG ; chaque carte est
+  indépendante — une carte en échec (fond indisponible, délai) n'arrête pas les autres : le ZIP
+  contient les cartes réussies et `rapport_generation.txt`, et « Réessayer seule » relance la
+  carte en échec. Un fond lent (OpenTopoMap) est utilisé tel quel, avec l'avertissement « fond
+  partiel ».
+
+### 4.6 Grille MORA
+
+Grille de 1° × 1° **calculée** (valeurs non certifiées) : pour chaque cellule, le point le plus
+haut entre le relief (tuiles Terrarium, AWS Terrain Tiles : passe à ~200 m puis relecture à
+~25 m autour des maxima), les sommets OpenStreetMap (`natural=peak`, Overpass) et les obstacles
+de l'AIXM SIA ; + 1000 ft (2000 ft au-delà de 5000 ft) ; arrondi à la centaine supérieure.
+Sans les sommets OSM (Overpass indisponible), le relief est majoré de 100 m pour couvrir
+l'écrêtage des sommets par le modèle de terrain. Le `mora.csv` versionné (150 cellules,
+1000 à 18 100 ft) a été calculé ainsi.
+
+Affichage : **valeurs seules**, centrées dans les carrés du quadrillage (notation 3⁵ = 3500 ft) ;
+en zoom arrière, cellules fusionnées par 2 × 2 puis 4 × 4 en gardant la valeur la plus haute,
+sous l'« espacement minimal » réglable.
+
+La carte ENR 6.1 du SIA ne porte pas de grille MORA (ses valeurs sont celles de zones
+irrégulières) : elle ne sert pas de source.
+
+### 4.7 Hippodromes de ravitaillement en vol
+
+`miam-enr-5-7-tracks.xml` (produit depuis le PDF MILAIP ENR 5.7, voir
+[MANUEL_EXPLOITATION.md](MANUEL_EXPLOITATION.md)) donne, pour chaque axe, ARIP, ARCP, points
+particuliers S1 (milieu) et S2 (largeur, côté). Géométrie exacte (`shared/aar_tracks.js`) :
+branche aller IP → CP, branche retour décalée de la largeur (14 NM) du côté de S2, virages en
+demi-cercles ; côté non publié (pas de S2) → tracé en pointillés.
+
+**Axe de la mission** (onglet Éléments) : **Automatique** = l'axe dont le plus de points sont à
+moins de 2 km d'un point de la mission, ou dont le nom figure dans la mission (la raison est
+affichée : « SIMONE — SIMIP, SIMCP, S1, S2 à moins de 2 km ») ; **Aucun** ; ou l'un des 31 axes.
+Un seul hippodrome est tracé.
+
+## 5. Stockage dans le navigateur
+
+| Clé | Contenu |
+|---|---|
+| `missionGeneratorDraft` | Brouillon du générateur |
+| `missionGeneratorHandoff` | Mission transmise au studio |
+| `siaMissionToCr:v1` | Mission transmise au CR DEFA (effacée à la lecture) |
+| `siaDisplayProfiles` | Profils d'affichage |
+| `siaZoneAliases` | Alias de zones |
+| `siaProfileTab`, `siaProfileSplit` | Onglet ouvert, rapport des colonnes |
+| IndexedDB `sia-map-parser` | Base SIA analysée (contours, villes, MORA, obstacles, axes) |
+
+## 6. Services externes
+
+Appelés seulement quand la fonction est utilisée : tuiles OpenStreetMap, OpenTopoMap,
+OpenFreeMap, VersaTiles, relief Terrarium (AWS), Overpass API (sommets). Les données de mission
+et SIA restent dans le navigateur et les fichiers choisis.
