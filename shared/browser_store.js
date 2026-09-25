@@ -194,21 +194,21 @@
   };
   Storage.prototype.setItem = function (key, value) { const changed = this === localStorage && this.getItem(key) !== String(value); nativeSet.call(this, key, value); if (changed) hit(key); };
   Storage.prototype.removeItem = function (key) { const had = this === localStorage && this.getItem(key) !== null; nativeRemove.call(this, key); if (had) hit(key); };
-  const BTN = { fr: ['Sauvegarder', '{n} modifications depuis la dernière sauvegarde ({last}) — sauvegarder les données locales'], en: ['Back up', '{n} changes since the last backup ({last}) — back up local data'], de: ['Sichern', '{n} Änderungen seit der letzten Sicherung ({last})'], es: ['Guardar copia', '{n} cambios desde la última copia ({last})'] };
+  const BTN = { fr: ['Sauvegarder dans le dossier', '{n} modifications depuis la dernière sauvegarde ({last}) — écrire les données locales dans le dossier de sauvegarde', 'dernière :'], en: ['Save to folder', '{n} changes since the last backup ({last}) — write local data to the backup folder', 'last:'], de: ['Im Ordner sichern', '{n} Änderungen seit der letzten Sicherung ({last}) — lokale Daten in den Sicherungsordner schreiben', 'letzte:'], es: ['Guardar en la carpeta', '{n} cambios desde la última copia ({last}) — escribir los datos locales en la carpeta de copia', 'última:'] };
   const button = document.createElement('button');
   button.type = 'button'; button.className = 'repo-backup-button'; button.hidden = true;
   const tools = document.querySelector('.repo-header-tools'); if (tools) tools.prepend(button);
-  if (!document.getElementById('repoBackupStyle')) document.head.insertAdjacentHTML('beforeend', '<style id="repoBackupStyle">.repo-backup-button{height:32px;border:0!important;border-radius:7px!important;padding:4px 10px!important;background:#f59e0b!important;color:#111827!important;font:600 12px/1 Inter,system-ui,Segoe UI,Arial,sans-serif;cursor:pointer;white-space:nowrap}.repo-backup-button:hover{background:#fbbf24!important}@media print{.repo-backup-button{display:none!important}}</style>');
+  if (!document.getElementById('repoBackupStyle')) document.head.insertAdjacentHTML('beforeend', '<style id="repoBackupStyle">.repo-backup-button{height:32px;border:0!important;border-radius:7px!important;padding:4px 10px!important;background:#dc2626!important;color:#fff!important;font:600 12px/1 Inter,system-ui,Segoe UI,Arial,sans-serif;cursor:pointer;white-space:nowrap}.repo-backup-button:hover{background:#b91c1c!important}@media print{.repo-backup-button{display:none!important}}</style>');
   function reminder() {
     const n = pending(), m = meta(), row = BTN[nav.getLanguage?.()] || BTN.fr;
     const last = m.savedAt ? new Date(m.savedAt).toLocaleString() : t('never');
     button.hidden = n < REMIND;
-    button.textContent = `💾 ${row[0]} (${n}) · ${m.savedAt ? new Date(m.savedAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }) : t('never')}`;
+    button.textContent = `💾 ${row[0]} (${n}) · ${row[2]} ${m.savedAt ? new Date(m.savedAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }) : t('never')}`;
     button.title = row[1].replace('{n}', n).replace('{last}', last);
   }
   button.onclick = run(async () => {
-    if (await save({ request: true })) return;
-    if (window.showDirectoryPicker && !(await idbGet('folder:__store'))) { await chooseFolder(); if (await save({ request: true })) return; }
+    if (await save({ request: true })) { reminder(); return; }
+    if (window.showDirectoryPicker && !(await idbGet('folder:__store'))) { await chooseFolder(); if (await save({ request: true })) { reminder(); return; } }
     await download(); nativeSet.call(localStorage, PENDING, '0'); reminder();
   });
   translate(); // libellés, dossier actuel, rappel (après la déclaration du bouton)

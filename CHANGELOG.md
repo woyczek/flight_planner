@@ -1,14 +1,30 @@
 # Changelog — X-Plane Web Suite (DEFA Virtual)
 
 Toutes les évolutions notables de la suite (CR DEFA, Landing Performance Dashboard, Flight
-Performance & Fuel Planner, framework commun). Format inspiré de
+Performance & Fuel Planner, Missions SIA, framework commun). Format inspiré de
 [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) ; numérotation `majeur.mineur.correctif`.
 La version affichée en pied de page de chaque page (lien vers ce fichier) vient de
 `repository_tree` (`release`).
 
 Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n`.
 
-## [Non publié]
+## [2.2.0] — 2026-09-25
+
+Nouvelle application **Missions SIA** (générateur de mission et studio cartographique), corrections
+de la suite.
+
+### Suite
+
+- **Fusions / renommages** (pilotes, appareils) : une fusion faite dans un sens puis renommée dans
+  l'autre créait une boucle (A → B et B → A) qui échangeait les deux noms (cas GRR / RBR) et
+  empêchait tout nouveau renommage. Le renommage retire l'équivalence contraire, les chaînes sont
+  suivies sans boucle ; Paramétrage › **Fusions et renommages** liste les équivalences, signale
+  les boucles et permet de les supprimer.
+- **Rappel de sauvegarde** : bouton rouge « Sauvegarder dans le dossier (n) · dernière : … » après
+  10 modifications des données du navigateur ; il disparaît après la sauvegarde.
+- En-têtes des pages Missions SIA alignés sur ceux des autres applications (bandeau pleine largeur,
+  titre, boutons, menu ☰ à droite) ; sorties des cartes (PNG, SVG, largeur) dans le menu ☰ comme
+  le profil pilote.
 
 ### Missions SIA (nouvelle application, dossier `SIA XML/`)
 
@@ -123,6 +139,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   lent (OpenTopoMap) n'empêche plus les surcharges (points tournants,
   zones) ; une carte en échec n'arrête plus la génération (ZIP des cartes réussies,
   `rapport_generation.txt`, bouton « Réessayer seule ») ni la galerie d'aperçus.
+
+### Demandes de fusion
+
+!48 Missions SIA (générateur, studio, symbologie OACI, MORA, hippodromes), mission partagée,
+corrections de la suite.
 
 ## [2.1.0] — 2026-09-24
 

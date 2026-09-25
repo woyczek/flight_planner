@@ -15,3 +15,6 @@ SIA XML/sia-airspaces-*.xml
 *.backup-*.html
 # SIA XML : catalogues de l’application versionnés malgré la règle *.csv
 !SIA XML/*.csv
+
+# Archives de release (publiées sur framagit, hors dépôt)
+dist/

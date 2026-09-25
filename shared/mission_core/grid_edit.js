@@ -96,8 +96,12 @@
   const read = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch { return null; } };
   const mergeMap = () => ({ aircraft: {}, crew: {}, ...(read(MAP_KEY) || {}) });
   // Équivalences mémorisées (journal DEFA rechargé, référence, catalogue) : A → B.
-  const mapAircraft = reg => { const m = mergeMap().aircraft; let r = reg; for (let i = 0; i < 5 && m[key(r)]; i++) r = m[key(r)]; return r; };
-  const mapCrew = name => { const m = mergeMap().crew; let r = up(name); for (let i = 0; i < 5 && m[r]; i++) r = m[r]; return r; };
+  // Chaîne A → B → C suivie jusqu'au bout ; une boucle (A → B puis B → A) est arrêtée au premier
+  // retour : elle ne fait plus « échanger » deux noms (bug GRR / RBR).
+  const resolve = (m, k) => { const seen = new Set([k]); let r = k; while (m[r] && !seen.has(m[r])) { r = m[r]; seen.add(r); } return r; };
+  const loops = m => Object.keys(m).filter(k => { const seen = new Set([k]); let r = k; while (m[r]) { r = m[r]; if (seen.has(r)) return true; seen.add(r); } return false; });
+  const mapAircraft = reg => { const m = mergeMap().aircraft; return m[key(reg)] ? resolve(m, key(reg)) : reg; };
+  const mapCrew = name => resolve(mergeMap().crew, up(name));
   function affected(kind, from) {
     const missions = window.MissionLedger?.store?.missions || [];
     return missions.filter(m => kind === 'aircraft' ? (m.aircraft || []).some(a => key(a.registration) === key(from)) : (m.crew || []).some(c => up(c.name) === up(from)));
@@ -112,7 +116,13 @@
       (m.history ||= []).push({ at, field: kind === 'aircraft' ? 'registration' : 'crew', from: kind === 'aircraft' ? M.formatRegistration(from) : up(from), to: target, via: 'merge' });
     });
     // Équivalence mémorisée (données rechargées plus tard : journal DEFA, référence).
-    const map = mergeMap(); map[kind][kind === 'aircraft' ? key(from) : up(from)] = kind === 'aircraft' ? key(target) : target; localStorage.setItem(MAP_KEY, JSON.stringify(map));
+    // Équivalence : les entrées contraires (cible → … → source) sont retirées, tout ce qui menait à la
+    // source mène désormais à la cible — renommer GRR en RBR après une fusion RBR → GRR fonctionne.
+    const map = mergeMap(), m = map[kind], mFrom = kind === 'aircraft' ? key(from) : up(from), mTo = kind === 'aircraft' ? key(target) : target;
+    for (let r = mTo, guard = 0; m[r] && guard < 50; guard++) { const next = m[r]; if (next === mFrom || resolve(m, next) === mFrom) { delete m[r]; break; } r = next; }
+    if (m[mTo] === mFrom) delete m[mTo];
+    for (const k of Object.keys(m)) if (m[k] === mFrom) m[k] = mTo;
+    m[mFrom] = mTo; localStorage.setItem(MAP_KEY, JSON.stringify(map));
     // Fiches : celle de la source complète celle de la cible (événements concaténés).
     const sheetKey = kind === 'aircraft' ? 'missionAircraftSheets:v1' : 'missionCrewSheets:v1', sheets = read(sheetKey) || {};
     const sk = kind === 'aircraft' ? key(from) : up(from), tk = kind === 'aircraft' ? key(target) : target;
@@ -126,6 +136,9 @@
     if (list.length) await window.MissionLedger.save();
     return { count: list.length, target };
   }
+
+  // Suppression d'une équivalence (Paramétrage › Fusions et renommages).
+  function unmerge(kind, from) { const map = mergeMap(); delete map[kind][kind === 'aircraft' ? key(from) : up(from)]; localStorage.setItem(MAP_KEY, JSON.stringify(map)); }
 
   // Cellule éditable (mode « modifier dans le tableau ») : champ lié à la ligne (data-uid).
   const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -144,5 +157,5 @@
   // Style commun des cellules éditables (injecté une fois).
   if (!document.getElementById('ge-style')) document.head.insertAdjacentHTML('beforeend', '<style id="ge-style">.ge-input{font:inherit;font-size:12px;padding:3px 5px;border:1px solid #f59e0b;border-radius:6px;background:#fffbeb;color:#111827;max-width:150px}.ge-input.ge-dur{width:62px}.ge-declared{border-style:dashed;font-style:italic}.ge-toggle{margin-left:10px;font-size:12px;padding:3px 10px;border-radius:7px;border:1px solid #f59e0b;background:transparent;color:inherit;cursor:pointer}.ge-toggle.on{background:#f59e0b;color:#111827}.ge-route{display:inline-flex;gap:3px;align-items:center}</style>');
 
-  window.MissionGridEdit = { input, EDITABLE, apply, valueOf, parseDuration, rename, affected, mergeMap, mapAircraft, mapCrew };
+  window.MissionGridEdit = { input, EDITABLE, apply, valueOf, parseDuration, rename, unmerge, affected, mergeMap, mapAircraft, mapCrew, resolve, loops };
 })();

@@ -242,6 +242,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     },
     { id: 'defaLog', group: T('Base DEFA', 'DEFA base'), title: T('Journal des vols DEFA (vols réalisés)', 'DEFA flight log (flights flown)'), custom: true,
       intro: T('Base distincte du registre des missions : page « Log des vols » de la DEFA enregistrée (Ctrl+S, page web complète ou HTML seul), ou export CSV / JSON de cette base. Chargée à la demande, gardée dans ce navigateur seulement (hors dépôt et hors sauvegarde locale : trigrammes des pilotes). Les CR s’en servent pour les appareils connus (immatriculation → type, indicatifs utilisés), les trigrammes d’équipage et les terrains ; l’analyse des indicatifs alimente la table de correspondance.', 'Separate from the mission ledger: DEFA “Log des vols” page saved (Ctrl+S), or CSV / JSON export of this base. Loaded on demand, kept in this browser only (not in the repository nor the local backup: pilot trigrams). Reports use it for known aircraft, crew trigrams and aerodromes; the callsign analysis feeds the correspondence table.') },
+    { id: 'merges', group: T('Base DEFA', 'DEFA base'), title: T('Fusions et renommages (pilotes, appareils)', 'Merges and renames (pilots, aircraft)'), custom: true,
+      intro: T('Équivalences mémorisées par « Fusionner avec… / renommer » des fiches : appliquées au journal DEFA rechargé, à la référence et au catalogue. Une boucle (A → B et B → A) échange les deux noms : supprime l’entrée fautive, puis refais la fusion depuis la fiche.', 'Equivalences stored by the sheets’ “Merge with… / rename”: applied to the reloaded DEFA log, the reference and the catalogue. A loop (A → B and B → A) swaps both names: delete the wrong entry, then redo the merge from the sheet.') },
     { id: 'send', group: T('Missions', 'Missions'), title: T('Envoi des comptes rendus (webservice)', 'Report sending (web service)'), custom: true,
       intro: T('Bouton « Envoyer le CR » des pages de saisie : POST JSON (mission, CR HTML et texte, calculs) vers l’adresse ci-dessous. La clef reste dans ce navigateur (missionSendKey:v1), hors sauvegarde locale. Le service doit accepter les appels de cette origine (CORS).', '“Send report” button of the entry pages: JSON POST (mission, report HTML and text, calculations) to the address below. The key stays in this browser (missionSendKey:v1), outside the local backup. The service must accept calls from this origin (CORS).') },
     { id: 'ledgers', group: T('Missions', 'Missions'), title: T('Registres des missions (base des opérations)', 'Mission ledgers (operations base)'), custom: true,
@@ -278,7 +280,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       root.querySelector('.da-intro').textContent = set.intro || '';
       const howto = root.querySelector('.da-howto'); howto.hidden = !set.howto; howto.querySelector('div').innerHTML = set.howto || '';
       const body = root.querySelector('.da-body'); body.innerHTML = '';
-      if (set.custom) return set.id === 'send' ? sendSettings(body) : set.id === 'defaLog' ? defaLog(body) : ledgers(body);
+      if (set.custom) return set.id === 'send' ? sendSettings(body) : set.id === 'defaLog' ? defaLog(body) : set.id === 'merges' ? merges(body) : ledgers(body);
       if (set.file) {
         const w = work[set.id];
         status(w.local ? `${T('Modifications locales du', 'Local changes from')} ${new Date(w.local).toLocaleString()} (${T('prioritaires dans ce navigateur, pas encore dans le dépôt', 'active in this browser, not yet in the repository')})` : T('Contenu du fichier du dépôt', 'Repository file content'));
@@ -399,6 +401,18 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         }, 'primary'],
         [T('Oublier la clef', 'Forget the key'), () => { localStorage.removeItem('missionSendKey:v1'); input('key').value = ''; status(T('Clef supprimée de ce navigateur', 'Key removed from this browser')); }]
       ]);
+    }
+
+    // Fusions / renommages : équivalences A → B, boucles signalées, suppression.
+    function merges(body) {
+      const G = window.MissionGridEdit; if (!G) { body.textContent = T('Module de fusion absent de cette page.', 'Merge module missing on this page.'); return; }
+      const draw = () => {
+        const map = G.mergeMap(), rows = ['crew', 'aircraft'].flatMap(kind => { const m = map[kind] || {}, bad = new Set(G.loops(m)); return Object.entries(m).map(([from, to]) => ({ kind, from, to, end: G.resolve(m, from), loop: bad.has(from) })); });
+        body.innerHTML = rows.length ? `<table class="da-table"><thead><tr><th>${esc(T('Type', 'Type'))}</th><th>${esc(T('Ancien', 'Old'))}</th><th>${esc(T('Devient', 'Becomes'))}</th><th>${esc(T('Résultat', 'Result'))}</th><th></th></tr></thead><tbody>${rows.map((r, i) => `<tr${r.loop ? ' style="background:#fee2e2"' : ''}><td>${esc(r.kind === 'crew' ? T('Pilote', 'Pilot') : T('Appareil', 'Aircraft'))}</td><td><b>${esc(r.from)}</b></td><td>${esc(r.to)}</td><td>${r.loop ? `⚠ ${esc(T('boucle', 'loop'))}` : esc(r.end)}</td><td><button type="button" class="secondary" data-unmerge="${i}">${esc(T('Supprimer', 'Delete'))}</button></td></tr>`).join('')}</tbody></table>` : `<p class="small">${esc(T('Aucune fusion mémorisée.', 'No stored merge.'))}</p>`;
+        body.querySelectorAll('[data-unmerge]').forEach(b => b.onclick = () => { const r = rows[+b.dataset.unmerge]; if (!confirm(`${T('Supprimer l’équivalence', 'Delete the equivalence')} ${r.from} → ${r.to} ?`)) return; G.unmerge(r.kind, r.from); status(`${r.from} → ${r.to} : ${T('supprimée', 'deleted')}`); draw(); });
+        const n = rows.filter(r => r.loop).length; status(n ? `${n} ${T('entrée(s) en boucle : les noms concernés sont échangés. Supprime l’une des deux, puis refais la fusion depuis la fiche.', 'looping entr(ies): the names are swapped. Delete one, then redo the merge from the sheet.')}` : `${rows.length} ${T('équivalence(s)', 'equivalence(s)')}`);
+      };
+      draw();
     }
 
     // Registres des missions : YAML par famille.

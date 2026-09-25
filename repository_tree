@@ -1,6 +1,6 @@
 window.REPOSITORY_TREE={
   version:3,
-  release:{date:"2026-09-24",version:"2.1.0",id:"XPS-2.1.0",changelog:"https://framagit.org/asr/flight_planner/-/blob/master/CHANGELOG.md"},
+  release:{date:"2026-09-25",version:"2.2.0",id:"XPS-2.2.0",changelog:"https://framagit.org/asr/flight_planner/-/blob/master/CHANGELOG.md"},
   defaults:{
     theme:"flight",
     favicon:"assets/favicon-flight.svg",
