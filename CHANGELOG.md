@@ -54,6 +54,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   d'après les zones AZBA de la base SIA).
 - Studio : libellés des zones avec leurs limites verticales (« 800 ft ASFC – 2700 ft ASFC ») ;
   libellés des zones, quadrillage et MORA lisibles sur la carte de contrôle (échelle écran).
+- Studio, bloc « Profils d'affichage » compact : barre de profil, onglets Fond de carte / Zones /
+  Éléments, colonnes 60 / 40 réglables par une barre de redimensionnement (double-clic : 60 / 40),
+  carte de contrôle agrandissable (⤢, Échap).
+- Studio : **hippodrome choisi explicitement** par mission (Automatique — axe détecté et raison —,
+  Aucun, ou l'un des 31 axes) ; axes ENR 5.7 mémorisés avec la base (fonctionne sans relire le
+  dossier, y compris en `file://`) ; base mémorisée d'une version précédente relue automatiquement.
+- Studio : valeurs MORA lisibles (12 pt, opacité 90 %, halo non atténué).
 - Studio : « Autres éléments » regroupés par élément (case à cocher en titre, réglages grisés
   quand l'élément est décoché).
 - Studio : **quadrillage** au pas adapté à l'emprise (1′ à 5°), libellés en degrés et minutes ;
