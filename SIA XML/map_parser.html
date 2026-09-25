@@ -205,16 +205,19 @@ function project(lat,lon){const w=+$('west').value,s=+$('south').value,e=+$('eas
 // liste noire (toutes sauf celles-ci). Comparaison sans espaces, tirets, accents ni casse.
 const zoneNorm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]/g,'');
 function zoneListOf(p){return Array.isArray(p?.zoneList)?p.zoneList:(p?.allZones===false?String(p?.zoneList||'').split(/\r?\n|,/).map(x=>x.trim()).filter(Boolean):[])}
-// « R 145 * » : toutes les zones R 145 suivies d'une lettre (A, B…) ; sinon fragment (« R 1 » : tout ce qui contient R1).
-const zoneHit=(a,q)=>{if(/\*\s*$/.test(q)){const base=zoneNorm(q);return!!base&&[a.type+a.name,'LF'+a.type+a.name].some(v=>{const n=zoneNorm(v);return n.startsWith(base)&&/^[A-Z]?$/.test(n.slice(base.length))})}const n=zoneNorm(q);return!!n&&[a.name,a.key,a.type+a.name].some(v=>zoneNorm(v).includes(n))};
+// Identifiant de base d'une zone : numéro de tête (« 166 A1 » → 166, « 1 /2 » → 1) ou nom sans son numéro
+// final (« BEZIERS 2 » → BEZIERS). « R 166 * » : toutes les zones R 166 (A1, A2, B, C…), pas R 1660 ;
+// sinon fragment (« R 1 » : tout ce qui contient R1).
+const zoneCore=name=>{const n=String(name||'').trim(),d=/^(\d+)/.exec(n);if(d)return d[1];const w=/^(.*\D)\s+\d+\S*$/.exec(n);return w?w[1].trim():n};
+const zoneHit=(a,q)=>{if(/\*\s*$/.test(q)){const base=zoneNorm(q),core=zoneCore(a.name);return!!base&&[a.type+core,'LF'+a.type+core].some(v=>zoneNorm(v)===base)}const n=zoneNorm(q);return!!n&&[a.name,a.key,a.type+a.name].some(v=>zoneNorm(v).includes(n))};
 const zoneChipLabel=q=>/\*\s*$/.test(q)?q.replace(/\s*\*\s*$/,' (toutes)'):q;
 function selectedAirspaces(mapDef){const p=profileForMap(mapDef),types=new Set(p.zones||[]),list=zoneListOf(p);if(!types.size)return[];return airspaces.filter(a=>types.has(a.type)&&(!list.length||(p.zoneMode==='black'?!list.some(q=>zoneHit(a,q)):list.some(q=>zoneHit(a,q)))))}
 let zoneItems=[],zoneModeValue='white';
 function renderZonePick(){const p=activeProfile();if(!p)return;const types=new Set(p.zones||[]),pool=airspaces.filter(a=>!types.size||types.has(a.type)),black=zoneModeValue==='black';
  $('zoneMode').textContent=black?'Liste noire':'Liste blanche';$('zoneMode').classList.toggle('black',black);$('zoneModeHelp').textContent=black?'Toutes les zones des familles cochées, sauf celles de la liste.':zoneItems.length?'Seules les zones de la liste sont tracées.':'Liste vide : toutes les zones des familles cochées.';
  $('zoneChips').innerHTML=zoneItems.map((q,i)=>{const n=pool.filter(a=>zoneHit(a,q)).length;return`<li class="${n?'':'none'}" title="${n} contour(s) reconnu(s)">${esc(zoneChipLabel(q))} <span class="small">${n}</span><button type="button" data-zone-remove="${i}" aria-label="Retirer ${esc(q)}">×</button></li>`}).join('');
- const free=pool.filter(a=>a.name&&!zoneItems.some(q=>zoneHit(a,q))),options=new Map,groups=new Map;for(const a of free){const label=`${a.type} ${a.name}`;options.set(label,{value:label,label});const m=/^(.*\S)\s+([A-Z])$/.exec(label);if(m)(groups.get(m[1])??groups.set(m[1],new Set).get(m[1])).add(m[2])}
- for(const[base,letters]of groups)if(letters.size>1){const l=[...letters].sort();options.set(base+' *',{value:base+' *',label:`${base} — ${l.length} zones (${l[0]} à ${l[l.length-1]})`})}
+ const free=pool.filter(a=>a.name&&!zoneItems.some(q=>zoneHit(a,q))),options=new Map,groups=new Map;for(const a of free){const label=`${a.type} ${a.name}`;options.set(label,{value:label,label});const base=`${a.type} ${zoneCore(a.name)}`;(groups.get(base)??groups.set(base,new Set).get(base)).add(a.name.slice(zoneCore(a.name).length).trim()||zoneCore(a.name))}
+ for(const[base,parts]of groups){const l=[...parts].sort((x,y)=>x.localeCompare(y,'fr',{numeric:true}));if(l.length>1)options.set(base+' *',{value:base+' *',label:`${base} — ${l.length} zone${l.length>1?'s':''} (${l.slice(0,6).join(', ')}${l.length>6?'…':''})`})}
  $('zoneOptions').innerHTML=[...options.values()].sort((a,b)=>a.value.localeCompare(b.value,'fr',{numeric:true})).map(o=>`<option value="${esc(o.value)}" label="${esc(o.label)}">`).join('');
  const kept=selectedAirspaces({_profileId:p.id}),label=[...new Set(kept.map(a=>`${a.type} ${a.name}${a.key?` (${a.key})`:''}`))].sort((a,b)=>a.localeCompare(b,'fr'));$('zoneMatched').querySelector('summary').textContent=`Zones retenues : ${label.length}${airspaces.length?'':' (base SIA non chargée)'}`;$('zoneMatched').querySelector('ul').innerHTML=label.slice(0,400).map(x=>`<li>${esc(x)}</li>`).join('')+(label.length>400?`<li>… ${label.length-400} autres</li>`:'')}
 function zoneCommit(){readProfileFromUi();renderZonePick();assemblyRenderKey='';updateGenerate();schedulePreview()}

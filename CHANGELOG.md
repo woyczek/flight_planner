@@ -45,7 +45,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - Studio : grille MORA affichée en **valeurs seules** (le quadrillage fait la grille), centrées dans
   les carrés ; en zoom arrière, cellules fusionnées par 2 × 2 puis 4 × 4 (valeur la plus haute),
   seuil réglable (« espacement minimal des valeurs »), blocs calés sur le quadrillage.
-- Studio, sélection des zones : groupes « R 145 — 2 zones (A à B) » dans la complétion ; zones
+- Studio, sélection des zones : groupes « R 166 — 4 zones (A1, A2, B, C) » dans la complétion
+  (identifiant de base : numéro de tête, ou nom sans son numéro final) ; zones
   déjà ajoutées retirées des choix.
 - Studio : **quadrillage** au pas adapté à l'emprise (1′ à 5°), libellés en degrés et minutes ;
   quadrillage et MORA aussi sur la carte de contrôle dynamique.
