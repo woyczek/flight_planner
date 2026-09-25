@@ -10,6 +10,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Correctif — menu ☰ et menu des langues** : ils passaient sous les boutons de la ligne 2 de l'en-tête (CR,
+  reporting : « Mission ▾ », « Registre ▾ ») ; ils sont maintenant au-dessus.
 - **Correctif — lecture des missions générées (YAML + Markdown)** : le Markdown actuel des séries
   (`summaryNN.md` : AAR, AIRLIFT, COMMAND, LE, MARITIME, MEDEVAC) n'était lu qu'au titre près — seul, il donnait
   une mission sans points. Ses données sont maintenant lues (points tournants, rendez-vous, équipes, charge,
