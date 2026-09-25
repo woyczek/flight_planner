@@ -361,7 +361,7 @@ svg.timeline-chart{height:330px;touch-action:pan-y;cursor:crosshair}
   </div>
       <div class="control"><span id="csvLabel">Data file</span>
     <button id="fileButton" type="button">Choose file</button>
-    <span id="fileName" class="file-name">No file selected</span>
+    <span id="fileName" data-no-i18n class="file-name">No file selected</span>
     <input id="fileInput" type="file" accept=".csv,.log,text/csv,text/plain" hidden>
   </div>
     </div>
@@ -374,10 +374,10 @@ svg.timeline-chart{height:330px;touch-action:pan-y;cursor:crosshair}
       <div id="aircraftPopup" class="aircraft-popup">
         <button id="aircraftCurrent" class="aircraft-current" type="button" aria-haspopup="menu" aria-expanded="false" title="Aircraft">
           <span id="aircraftCurrentIconSlot" class="aircraft-current-icon"></span>
-          <span id="aircraftCurrentText" class="aircraft-current-text">All</span>
+          <span id="aircraftCurrentText" data-no-i18n class="aircraft-current-text">All</span>
           <span class="caret">▾</span>
         </button>
-        <div id="aircraftMenu" class="aircraft-menu" role="menu" hidden></div>
+        <div id="aircraftMenu" data-no-i18n class="aircraft-menu" role="menu" hidden></div>
       </div>
     </label>
 
@@ -433,9 +433,9 @@ svg.timeline-chart{height:330px;touch-action:pan-y;cursor:crosshair}
           </div>
           <label>
             <input id="estimateMissing" type="checkbox" checked>
-            <span id="estimateMissingLabel">use estimated missing fields</span>
+            <span id="estimateMissingLabel">Use estimated missing fields</span>
           </label>
-          <div id="calibrationInfo" class="options-info"></div>
+          <div id="calibrationInfo" data-no-i18n class="options-info"></div>
         </div>
       </div>
     </div>
@@ -444,47 +444,47 @@ svg.timeline-chart{height:330px;touch-action:pan-y;cursor:crosshair}
 
 <main>
 <div id="status" class="status">
-  <span id="statusText">Choose or drop a CSV or LOG file.</span>
+  <span id="statusText" data-no-i18n>Choose or drop a CSV or LOG file.</span>
 </div>
 <div id="dashboard" class="hidden">
-  <div id="formatNote" class="format-note"></div>
+  <div id="formatNote" data-no-i18n class="format-note"></div>
   <div id="analysisDock" class="analysis-dock analysis-size-1">
-    <div id="generalTrendDock" class="general-trend-dock">
+    <div id="generalTrendDock" data-no-i18n class="general-trend-dock">
       <span id="generalTrendIcon" class="trend-state trend-state-large unknown" aria-label="Undetermined" title="Undetermined">×</span>
     </div>
-    <div id="cards" class="grid-cards"></div>
+    <div id="cards" data-no-i18n class="grid-cards"></div>
     <div class="analysis-size-controls">
       <button id="analysisSmallerBtn" type="button" aria-label="Smaller analysis data" title="Smaller analysis data">−</button>
       <button id="analysisLargerBtn" type="button" aria-label="Larger analysis data" title="Larger analysis data">+</button>
     </div>
   </div>
-  <div id="trendCard" class="trend-card"></div>
+  <div id="trendCard" data-no-i18n class="trend-card"></div>
 
   <section class="section">
     <h2 id="evolutionTitle">Evolution</h2>
-    <div id="chartGrid" class="chart-grid"></div>
+    <div id="chartGrid" data-no-i18n class="chart-grid"></div>
   </section>
 
   <section class="section">
     <h2 id="summaryTitle">Summary by aircraft</h2>
-    <div class="table-wrap"><table id="aircraftTable"></table></div>
+    <div class="table-wrap"><table id="aircraftTable" data-no-i18n></table></div>
   </section>
 
   <section class="section">
     <h2 id="qualityTitle">Data quality</h2>
-    <div id="qualityBox" class="quality-box"></div>
+    <div id="qualityBox" data-no-i18n class="quality-box"></div>
   </section>
 
   <section class="section">
     <h2 id="landingsTitle">Landings</h2>
-    <div class="table-wrap" style="max-height:500px"><table id="landingTable"></table></div>
+    <div class="table-wrap" style="max-height:500px"><table id="landingTable" data-no-i18n></table></div>
   </section>
 </div>
 </main>
-<div id="tooltip" class="tooltip"></div>
+<div id="tooltip" data-no-i18n class="tooltip"></div>
 
-<script src="../shared/time_period.js?v=20260925y"></script>
-<script src="../AircraftDB/aircraft_db.js"></script><script src="../shared/aircraft_fleet.js?v=20260925y"></script><script src="../shared/defa_reference.js?v=20260925y"></script><script src="../shared/aircraft_catalog.js?v=20260925y"></script>
+<script src="../shared/time_period.js?v=20260925za"></script>
+<script src="../AircraftDB/aircraft_db.js"></script><script src="../shared/aircraft_fleet.js?v=20260925za"></script><script src="../shared/defa_reference.js?v=20260925za"></script><script src="../shared/aircraft_catalog.js?v=20260925za"></script>
 <script src="../AircraftDB/aircraft_icons.js"></script>
 <script>
 "use strict";
@@ -1079,6 +1079,16 @@ function restoreRangeForCurrentFile(){
 let languageMode=(()=>{try{return prefs.languageMode||localStorage.getItem("landingLanguageModeV4")||"auto"}catch(e){return "auto"}})();
 let lang=languageMode==="auto"?detectLanguage():languageMode;
 function t(k,vars={}){let x=(TR[lang]&&TR[lang][k])||TR.en[k]||TR.fr[k]||k;for(const [a,b] of Object.entries(vars))x=x.replaceAll("{"+a+"}",b);return x}
+// Lignes [fr, en, de, es] des libellés statiques pour RepositoryContentI18n : clés de TR, filtres crash et 95P.
+function landingI18nRows(){
+  const L=["fr","en","de","es"],keys=["title","language","dataFile","chooseFile","noFile","aircraft","all","options","analysisSmaller","analysisLarger","exclude","estimateMissing","trendMode","modeAsymptote","modeFirstLast","modeMoving","smoothing","print","evolution","summary","quality","landings","choose","stateUnknown"];
+  const inLang=(code,fn)=>{const keep=lang;lang=code;try{return fn()}finally{lang=keep}};
+  const rows=keys.filter(k=>TR.fr[k]||TR.en[k]).map(k=>L.map(c=>TR[c]?.[k]??TR.en[k]??TR.fr[k]));
+  for(const k of ["label","logic","or","and","fpmOnly","gOnly"])rows.push(L.map(c=>inLang(c,()=>crashText(k))));
+  rows.push(L.map(c=>inLang(c,()=>p95Text("label"))));
+  rows.push(["Options de l’analyse","Analysis options","Analyseoptionen","Opciones del análisis"]);   // groupe du menu ☰ (landing_ui.js)
+  return rows.filter(r=>!r.some(v=>/\{\w+\}/.test(v)));
+}
 function updateTrendControls(){
   const moving=$("trendMode")&&$("trendMode").value==="moving";
   if($("movingWindowControl"))$("movingWindowControl").style.display=moving?"flex":"none";
@@ -1363,39 +1373,20 @@ function updateCrashOptionLanguage(){
   const s=$("crashLogic");
   if(s){s.options[0].textContent=crashText("or");s.options[1].textContent=crashText("and");s.options[2].textContent=crashText("fpmOnly");s.options[3].textContent=crashText("gOnly");}
 }
+// Langue de la page. Les libellés statiques (titres, options, boutons) sont traduits par le traducteur commun
+// (shared/content_i18n.js, lignes LANDING_I18N_ROWS ci-dessous) ; restent ici les textes composés par t() :
+// nom de fichier, liste des appareils, état, et le rendu complet (cartes, courbes, tables) dans la langue courante.
 function applyLanguage(){
   document.documentElement.lang=lang;
-  $("pageTitle").textContent=t("title");
-  $("languageLabel").textContent=t("language");
   $("languageCurrentIcon").innerHTML=languageFlagSvg(lang);
   const names={en:"English",fr:"Français",de:"Deutsch",es:"Español"};
   $("languageCurrent").title=languageMode==="auto"?`${t("autoLanguage")} → ${names[lang]||"English"}`:(names[lang]||"English");
   document.querySelectorAll(".lang-item").forEach(btn=>btn.classList.toggle("active",btn.dataset.lang===languageMode));
   const autoLabel=document.querySelector('.lang-item[data-lang="auto"] [data-label="auto"]');
   if(autoLabel)autoLabel.textContent=`${t("autoLanguage")} → ${names[detectLanguage()]||"English"}`;
-  $("csvLabel").textContent=t("dataFile");
-  $("fileButton").textContent=t("chooseFile");
   if(!sourceName) $("fileName").textContent=prefs.lastFileName||t("noFile");
-  $("aircraftLabel").textContent=t("aircraft");
-  $("optionsButton").title=t("options");$("optionsButton").setAttribute("aria-label",t("options"));
-  $("analysisSmallerBtn").title=t("analysisSmaller");$("analysisSmallerBtn").setAttribute("aria-label",t("analysisSmaller"));
-  $("analysisLargerBtn").title=t("analysisLarger");$("analysisLargerBtn").setAttribute("aria-label",t("analysisLarger"));
-  $("qualityLabel").textContent=t("exclude");
-  $("p95Label").textContent=p95Text("label");
-  updateCrashOptionLanguage();
-  $("estimateMissingLabel").textContent=t("estimateMissing");
   updateCalibrationInfo();
-  $("trendModeLabel").textContent=t("trendMode");
-  $("trendMode").options[0].textContent=t("modeAsymptote");
-  $("trendMode").options[1].textContent=t("modeFirstLast");
-  $("trendMode").options[2].textContent=t("modeMoving");
-  $("movingWindowLabel").textContent=t("smoothing");
-  $("printBtn").textContent=t("print");
   updateTrendControls();
-  $("evolutionTitle").textContent=t("evolution");
-  $("summaryTitle").textContent=t("summary");
-  $("qualityTitle").textContent=t("quality");
-  $("landingsTitle").textContent=t("landings");
   rebuildAircraftSelect();
   if(allRows.length)render(); else {
     $("statusText").textContent=t("choose");
@@ -3267,8 +3258,10 @@ if(prefs.lastFileName && !$("fileName").textContent.trim()){
 restoreCachedDataset();
 </script>
 <footer class="repo-footer no-print">CC RBR - DEFA Virtual - 2026-09-21 - 2.0.4 - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a></footer>
-<script src="../shared/repository_nav.js?v=20260925y"></script>
-<script src="../shared/landing_ui.js"></script>
-<script src="../shared/app_framework.js"></script>
+<script src="../shared/repository_nav.js?v=20260925za"></script>
+<script src="../shared/landing_ui.js?v=20260925za"></script>
+<script src="../shared/app_framework.js?v=20260925za"></script>
+<!-- Traducteur commun de la suite (libellés statiques + typographie) : mêmes règles que les autres pages -->
+<script src="../shared/content_i18n.js?v=20260925za"></script><script>RepositoryContentI18n(landingI18nRows())</script>
 </body>
 </html>

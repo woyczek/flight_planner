@@ -2,7 +2,10 @@
 window.RepositoryContentI18n = function(rows) {
   const languages=['fr','en','de','es'], index=new Map(), records=new WeakMap();
   rows.forEach(row=>row.forEach(value=>{if(value&&!index.has(value))index.set(value,row)}));
-  const excluded=el=>el?.closest('script,style,textarea,pre,[contenteditable],[data-no-i18n],.repo-header-tools,.repo-block-tools');
+  // Zones non traduites : code, saisie, [data-no-i18n] (textes déjà composés dans la langue courante), outils de
+  // l'en-tête et des blocs (traduits par le menu). Un conteneur [data-i18n] placé dans ces outils (ex. options de
+  // page rangées dans le menu ☰) est de nouveau traduit.
+  const excluded=el=>{const x=el?.closest('script,style,textarea,pre,[contenteditable],[data-no-i18n],.repo-header-tools,.repo-block-tools');if(!x)return false;const opt=el.closest('[data-i18n]');return !(opt&&x.contains(opt)&&!opt.closest('[data-no-i18n]'))};
   let observer, pending=false;
   // Typographie de la langue affichée, appliquée à l'affichage (nœuds texte et attributs), jamais aux sources où
   // le texte côtoie du code : voir RepositoryContentI18n.typography plus bas.

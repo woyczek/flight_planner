@@ -85,6 +85,11 @@ avant `: ; ! ? »` et après `«` ; dans les autres langues, pas d'espace avant 
 écrire une espace simple : la page corrige. `RepositoryContentI18n.typography(texte, langue)` pour un texte
 posé hors du DOM (export, presse-papiers).
 
+**Zones.** `[data-no-i18n]` : texte déjà composé dans la langue courante (tables, graphiques, états) —
+typographie seule. Les outils de l'en-tête et des blocs sont traduits par le menu, sauf un conteneur
+`[data-i18n]` qu'une page y range (ex. options du Landing dashboard dans le menu ☰). Le Landing
+dashboard fournit ses lignes depuis ses propres dictionnaires (`landingI18nRows()`).
+
 `window.RepositoryContentI18n(lignes)` : lignes `[fr, en, de, es]`. Les nœuds texte (et
 `title`, `placeholder`) dont la valeur est un des textes connus sont traduits dans la langue
 du bandeau, y compris ceux ajoutés plus tard (observateur). Les textes composés par le code
