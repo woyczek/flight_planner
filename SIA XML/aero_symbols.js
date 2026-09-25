@@ -171,20 +171,50 @@
   const zoneTitle = a => (a.type === 'SIV' ? 'SIV ' : a.type + ' ') + a.name;
   // Installations portant une marque distinctive (survol interdit < 1000 m / 3300 ft, type SUR) :
   // contour et symbole ⊗ rouge ; parcs et réserves naturels (PRN) : contour vert tireté.
+  // Les symboles ne se recouvrent pas (entre eux ni avec ce qui est déjà posé) : les plus grands
+  // sites d'abord, un symbole sans place n'est pas dessiné (le contour, lui, reste).
+  // Parcs et réserves réduits à un point dans l'AIXM : symbole vert (cercle et sapin).
   function drawSites(ctx, zones, toC, { W, H, scale = 1, placer: pl = null } = {}) {
+    const own = placer(), items = [];
     for (const a of zones) {
       const ring = bigRing(a); if (!ring.length) continue;
       const box = screenBox(ring, toC); if (box.x1 < 0 || box.y1 < 0 || box.x0 > W || box.y0 > H) continue;
-      const sur = a.type === 'SUR', col = sur ? '#c2185b' : '#2e7d32';
+      items.push({ a, box, sur: a.type === 'SUR', point: ring.length < 3 });
+    }
+    items.sort((x, y) => (y.box.w * y.box.h) - (x.box.w * x.box.h));
+    for (const { a, sur } of items) {
+      const col = sur ? '#c2185b' : '#2e7d32';
       ctx.save(); ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = Math.max(1, 1.3 * scale); if (!sur) ctx.setLineDash([5 * scale, 3 * scale]);
       for (const r of a.rings) { if (r.length < 3) continue; ctx.beginPath(); ringPath(ctx, r, toC); ctx.stroke(); if (sur) { ctx.globalAlpha = .15; ctx.fill(); ctx.globalAlpha = 1; } }
       ctx.restore();
-      if (!sur) continue;
-      const x = (box.x0 + box.x1) / 2, y = (box.y0 + box.y1) / 2, s = 4 * scale + 2, k = s * .7;
-      ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = Math.max(1.2, 1.6 * scale); ctx.beginPath(); ctx.arc(x, y, s, 0, Math.PI * 2);
-      ctx.moveTo(x - k, y - k); ctx.lineTo(x + k, y + k); ctx.moveTo(x + k, y - k); ctx.lineTo(x - k, y + k); ctx.stroke(); ctx.restore();
-      if (pl) pl.add({ x0: x - s, y0: y - s, x1: x + s, y1: y + s });
     }
+    for (const { box, sur, point } of items) {
+      if (!sur && !point) continue;
+      const x = (box.x0 + box.x1) / 2, y = (box.y0 + box.y1) / 2, s = 4 * scale + 2, k = s * .7, r = { x0: x - s - 1, y0: y - s - 1, x1: x + s + 1, y1: y + s + 1 };
+      if (!own.free(r) || (pl && !pl.free(r))) continue;
+      own.add(r); if (pl) pl.add(r);
+      ctx.save(); ctx.lineWidth = Math.max(1.2, 1.6 * scale);
+      if (sur) {
+        ctx.strokeStyle = '#c2185b'; ctx.beginPath(); ctx.arc(x, y, s, 0, Math.PI * 2);
+        ctx.moveTo(x - k, y - k); ctx.lineTo(x + k, y + k); ctx.moveTo(x + k, y - k); ctx.lineTo(x - k, y + k); ctx.stroke();
+      } else {
+        ctx.strokeStyle = ctx.fillStyle = '#2e7d32'; ctx.beginPath(); ctx.arc(x, y, s, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, y - s * .7); ctx.lineTo(x + s * .5, y + s * .35); ctx.lineTo(x - s * .5, y + s * .35); ctx.closePath(); ctx.fill();
+        ctx.fillRect(x - s * .1, y + s * .35, s * .2, s * .3);
+      }
+      ctx.restore();
+    }
+  }
+  // Agglomérations (symbologie OACI) : grande ville = tache orange, ville = tache jaune cerclée
+  // d'orange, localité = point jaune cerclé de noir.
+  function cityGlyph(pop, scale = 1) {
+    return pop >= 100000 ? { r: (4 + Math.min(4, Math.log10(pop / 100000) * 3)) * scale, fill: '#f39c34', stroke: '#b35c00' }
+      : pop >= 20000 ? { r: 3.5 * scale, fill: '#f7d23e', stroke: '#d9861c' } : { r: 2.5 * scale, fill: '#f7d23e', stroke: '#17202a' };
+  }
+  function drawCity(ctx, pop, p, scale = 1) {
+    const g = cityGlyph(pop, scale);
+    ctx.save(); ctx.beginPath(); ctx.arc(p.x, p.y, g.r, 0, Math.PI * 2); ctx.fillStyle = g.fill; ctx.fill();
+    ctx.lineWidth = Math.max(.8, scale); ctx.strokeStyle = g.stroke; ctx.stroke(); ctx.restore(); return g.r;
   }
   // Cartouche : « TMA ST-YAN 1 », plafond, trait, plancher, classe en carré ; R / D / P en rouge.
   function zoneLabel(ctx, a, x, y, font, align = 'center', limits = true) {
@@ -310,5 +340,5 @@
     place = null;
   }
 
-  window.SiaAero = { parseAixm, limitFt, chartLimit, drawAirspaces, drawSites, zoneLabel, labelSize, placer, drawPoints, drawAerodrome, drawNavaid, drawObstacle };
+  window.SiaAero = { parseAixm, limitFt, chartLimit, drawAirspaces, drawSites, cityGlyph, drawCity, zoneLabel, labelSize, placer, drawPoints, drawAerodrome, drawNavaid, drawObstacle };
 })();

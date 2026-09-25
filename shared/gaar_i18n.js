@@ -1,3 +1,5 @@
+// Traductions (fr / en / de / es) des pages FIRE / GAAR historiques (fire_cr.html, fire_reporting.html)
+// et des libellés communs repris par hems_medevac_cr.html ; appliquées par RepositoryContentI18n.
 (()=>{
   if(!window.RepositoryNav)return;
   const rows=[

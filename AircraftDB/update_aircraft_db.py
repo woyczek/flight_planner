@@ -248,7 +248,7 @@ def load_js_db(path):
 
 def save_js_db(path, obj):
     path = Path(path)
-    payload = "window.AIRCRAFT_DB = " + json.dumps(obj, ensure_ascii=False, separators=(",", ":")) + ";\n"
+    payload = "// Base des types d'appareils OACI (Doc 8643, recoupée EUROCONTROL / Wikidata), GÉNÉRÉE par\n// AircraftDB/update_aircraft_db.py : ne pas éditer à la main (corrections : champ __meta.manual_fixes).\n" + "window.AIRCRAFT_DB = " + json.dumps(obj, ensure_ascii=False, separators=(",", ":")) + ";\n"
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(payload, encoding="utf-8")
     tmp.replace(path)

@@ -1,3 +1,5 @@
+// Traductions (fr / en / de / es) des pages HEMS / MEDEVAC historiques (hems_medevac_cr.html et son
+// reporting) ; appliquées par RepositoryContentI18n (content_i18n.js).
 (()=>{if(!window.RepositoryNav)return;window.RepositoryContentI18n([
 ["Générateur CR Mission — HEMS / MEDEVAC - DEFA Virtual","Mission report generator — HEMS / MEDEVAC - DEFA Virtual","Einsatzbericht-Generator — HEMS / MEDEVAC - DEFA Virtual","Generador de informe de misión — HEMS / MEDEVAC - DEFA Virtual"],
 ["Formulaire local de simulation, export PDF/CSV/JSON, archivage local ou Synology/WebDAV","Local simulation form, PDF/CSV/JSON export, local or Synology/WebDAV archive","Lokales Simulationsformular, PDF/CSV/JSON-Export, lokales oder Synology/WebDAV-Archiv","Formulario local de simulación, exportación PDF/CSV/JSON, archivo local o Synology/WebDAV"],

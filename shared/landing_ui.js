@@ -1,3 +1,5 @@
+// Tableau de bord des atterrissages : range ses options (langue, fichiers CSV / LOG, impression)
+// dans le menu ☰ de l'en-tête commun (repository_nav.js) au lieu de son ancien bouton « Options ».
 (()=>{
   if(!window.RepositoryNav)return;
   const button=document.getElementById("optionsButton"),menu=document.getElementById("optionsMenu"),host=RepositoryNav.menu.querySelector(".repo-page-actions");

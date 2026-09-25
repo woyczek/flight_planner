@@ -1,4 +1,7 @@
 <!doctype html>
+<!-- Générateur de CR FIRE / GAAR historique (autonome, avant le Mission Report Core) : formulaire,
+     événements (largages, remplissages…), calculs, CR imprimable, exports CSV / JSON et archivage
+     dans le registre CSV (dossier local ou WebDAV). Les nouveaux CR passent par FIRE/fire_core_cr.html. -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -405,6 +408,7 @@
       'opsNotes', 'techNotes', 'lessons', 'onlineNetwork', 'ivaoId', 'vatsimId', 'trackerUrl'
     ];
 
+    // --- Accès aux champs, conversions heures / nombres, échappement HTML ---
     function byId(id) {
       return document.getElementById(id);
     }
@@ -496,6 +500,7 @@
       return `<div class="box"><span>${escapeHtml(label)}</span>${escapeHtml(value || '—')}</div>`;
     }
 
+    // --- Tableau des événements de mission (ajout, lecture, décomptes par type) ---
     function getEvents() {
       return Array.from(eventsBody.querySelectorAll('tr'))
         .map(row => {
@@ -547,6 +552,7 @@
       });
     }
 
+    // --- Calculs : temps bloc / vol, carburant consommé et horaire, largages et remplissages ; indicateurs ---
     function calculateMission() {
       const blockMinutes = minutesBetween(getValue('engineStart'), getValue('engineStop'));
       const flightMinutes = minutesBetween(getValue('takeoff'), getValue('landing'));
@@ -600,6 +606,7 @@
       setText('calcStatus', status.length ? status.join(' — ') : 'Calculs à jour.');
     }
 
+    // --- Données du formulaire et compte rendu mis en page (aperçu, impression) ---
     function collectData() {
       const formData = new FormData(form);
       const d = Object.fromEntries(formData.entries());
@@ -708,6 +715,7 @@
       renderReport();
     }
 
+    // --- Exports : ligne CSV du registre (séparateur « ; »), JSON, PDF par impression ---
     function csvEscape(value) {
       return '"' + String(value ?? '').replace(/"/g, '""') + '"';
     }
@@ -784,6 +792,7 @@
       window.print();
     }
 
+    // --- Archivage : configuration mémorisée, ajout au registre CSV d'un dossier local ou en WebDAV ---
     function saveConfig() {
       const cfg = {
         mode: byId('storageMode').value,
@@ -893,6 +902,7 @@
       }
     }
 
+    // --- Branchement des boutons et démarrage ---
     function attachEvents() {
       byId('chooseDirBtn').addEventListener('click', chooseLocalDir);
       byId('saveConfigBtn').addEventListener('click', saveConfig);

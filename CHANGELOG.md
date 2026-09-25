@@ -8,6 +8,22 @@ La version affichée en pied de page de chaque page (lien vers ce fichier) vient
 
 Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n`.
 
+## [2.2.2] — 2026-09-25
+
+Studio cartographique (Missions SIA) : symboles OACI.
+
+- Onglet **Aérodromes et radionav** renommé **Symboles OACI**.
+- **Survol interdit** (installations portant une marque distinctive) : les symboles ⊗ ne se
+  recouvrent plus (les plus grands sites d'abord).
+- **Parcs et réserves naturels** de nouveau affichés : 117 des 143 de l'AIXM ne sont qu'un point
+  et étaient écartés ; ils ont maintenant un symbole vert (base à relire une fois).
+- **Agglomérations** dans l'onglet Symboles OACI : surfaces bâties OSM en jaune cerclé d'orange
+  (ou **contour seul**), tirées d'OpenMapTiles pour être visibles dès l'échelle régionale ; villes en
+  symboles OACI (grande ville tache orange, ville jaune, localité point jaune), affichées même sans
+  « Libellés de villes » (symbole seul).
+- Correctif : le contour orange des surfaces bâties s'affichait même couche décochée.
+- Tour de commentaires dans le code (en-têtes de fichiers, sections) ; section **Bugs connus**.
+
 ## [2.2.1] — 2026-09-25
 
 Corrections du studio cartographique (Missions SIA).
@@ -19,7 +35,7 @@ Corrections du studio cartographique (Missions SIA).
 - **Radionavigation** : TACAN visibles (au-dessus des symboles de bases aériennes) ; priorité
   TACAN > VOR > DME > NDB > ILS > DME d'ILS (bout de piste) ; libellés rétablis (ils se rejetaient
   eux-mêmes) ; cases « libellés » séparées pour les aérodromes, les balises et les espaces.
-- Nouvel onglet **Aérodromes et radionav** ; **installations portant une marque distinctive**
+- Nouvel onglet **Aérodromes et radionav** (devenu **Symboles OACI** en 2.2.2) ; **installations portant une marque distinctive**
   (survol interdit < 1000 m / 3300 ft, 198 sites de l'AIXM, symbole ⊗) et parcs / réserves.
 - Espaces : **opacité réglable** (50 % par défaut) ; libellés de villes et de points tournants
   réservés avant les cartouches de zones (plus de recouvrement).

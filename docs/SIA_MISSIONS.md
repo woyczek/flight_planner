@@ -126,7 +126,7 @@ SVG éditable) et largeur des PNG : **menu ☰ › Sorties des cartes**.
 
 ### 4.3 Profils d'affichage (bloc 2)
 
-À gauche, quatre onglets de réglages (Fond de carte, Zones, Aérodromes et radionav, Éléments) ; à droite, la **carte de contrôle**, ses commandes, la liste
+À gauche, quatre onglets de réglages (Fond de carte, Zones, Symboles OACI, Éléments) ; à droite, la **carte de contrôle**, ses commandes, la liste
 des cartes et le **profil de la carte choisie** (nom, **fond de carte**, Sauvegarder / Nouveau /
 Dupliquer / Supprimer — « Nouveau » et « Dupliquer » affectent le profil à la carte choisie). Le
 profil modifié est toujours celui de la carte sélectionnée dans la liste. Colonnes 60 / 40 réglables par la barre
@@ -169,7 +169,7 @@ Graybeard / Shadow / Eclipse.
     de son contour ; celui qui ne trouve pas de place libre n'est pas écrit. Ordre : symboles des
     balises et aérodromes, puis libellés des zones (les plus grandes d'abord), puis valeurs MORA,
     décalées d'une case si elles recouvrent un symbole ou un libellé.
-- **Onglet Aérodromes et radionav** : **aérodromes** (piste en dur > 2300 m orientée, 1000–2300 m, < 1000 m, bande, hélistation ;
+- **Onglet Symboles OACI** : **aérodromes** (piste en dur > 2300 m orientée, 1000–2300 m, < 1000 m, bande, hélistation ;
   ouvert à la CAP en bleu plein avec repères, restreint en clair, État en rouge ; **filtres** :
   civils ouverts à la CAP, restreints, État / militaires, hélistations, bandes / ULM, et
   contrôlés — tour ou situés dans une CTR — / non contrôlés) ;
@@ -179,9 +179,14 @@ Graybeard / Shadow / Eclipse.
   DME d'ILS (bout de piste) ; entre aérodromes : les plus grands et contrôlés d'abord ; une balise
   ne masque pas un aérodrome, elle est dessinée par-dessus) ;
   **listes** d'aérodromes et de balises (blanche / noire, complétion, « LFR* », fragment de nom),
-  comme pour les zones ; cases « libellés » séparées ; **installations portant une marque
-  distinctive** (survol interdit au-dessous de 1000 m / 3300 ft, symbole ⊗ ; 198 sites de l'AIXM) et
-  parcs / réserves naturels ; **obstacles** (≥ 300 / 500 / 1000 ft AGL, élevés, groupes, balisés de
+  comme pour les zones ; cases « libellés » séparées ; **survol interdit** (installations portant une marque
+  distinctive : au-dessous de 1000 m / 3300 ft, symbole ⊗ ; 198 sites de l'AIXM ; symboles non
+  superposés, les plus grands sites d'abord) et parcs / réserves naturels (contour vert tireté,
+  ou symbole vert pour les 117 que l'AIXM réduit à un point) ; **agglomérations** : surfaces bâties
+  en jaune cerclé d'orange, ou contour seul (occupation du sol OpenMapTiles / OpenFreeMap, visible
+  dès l'échelle régionale ; les fichiers du SIA ne décrivent aucun contour d'agglomération) ; villes
+  en symboles OACI (≥ 100 000 hab. tache orange, ≥ 20 000 jaune cerclée d'orange, localité point
+  jaune), au-dessus de la population minimale, avec libellé si « Libellés de villes » est coché ; **obstacles** (≥ 300 / 500 / 1000 ft AGL, élevés, groupes, balisés de
   nuit, éoliennes ; cote AMSL et (hauteur) en vue détaillée ; regroupés à l'écran, le plus haut
   représentant le groupe).
 - **Onglet Éléments** — un bloc par élément, réglages grisés quand il est décoché :

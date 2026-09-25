@@ -1,3 +1,6 @@
+// Pages de CR historiques (FIRE / GAAR, HEMS / MEDEVAC) : bouton « Charger depuis le registre »
+// (lit le registre CSV « ; », reprend une mission dans le formulaire) et numérotation automatique
+// du prochain N° de mission quand le registre est chargé d'office (événement mission-ledger-autoload).
 (() => {
   'use strict';
   const form = document.getElementById('missionForm');

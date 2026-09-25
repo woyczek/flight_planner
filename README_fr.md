@@ -11,7 +11,7 @@ et dans le navigateur.
 
 - Dépôt : <https://framagit.org/asr/flight_planner>
 - Installation : [INSTALL.md](INSTALL.md)
-- Notes de version : [CHANGELOG.md](CHANGELOG.md) — version 2.2.1 (lien en pied de page)
+- Notes de version : [CHANGELOG.md](CHANGELOG.md) — version 2.2.2 (lien en pied de page)
 
 ## Quatre applications, un framework commun
 
