@@ -26,6 +26,9 @@ Studio cartographique (Missions SIA) : symboles OACI.
 - Correctif : le contour orange des surfaces bâties s'affichait même couche décochée ; les surfaces
   bâties n'apparaissaient pas à l'échelle régionale sur le fond vectoriel par défaut.
 - Libellés courts, détails en sous-titre (villes OACI, parcs et réserves).
+- Onglet Fond de carte : cadre **Villes et agglomérations** (libellés, population, symboles OACI,
+  surfaces bâties) ; onglet Symboles OACI : **obstacles** regroupés avec survol interdit et parcs.
+- Correctif : surfaces bâties absentes quand la carte se chargeait en arrière-plan (source intégrée au style).
 - Tour de commentaires dans le code (en-têtes de fichiers, sections) ; section **Bugs connus**.
 
 ## [2.2.1] — 2026-09-25

@@ -137,10 +137,16 @@ le navigateur et dans la sauvegarde locale de la suite.
 vectoriels OSM Shortbread, OpenFreeMap Liberty / Bright / Positron, VersaTiles Colorful /
 Graybeard / Shadow / Eclipse.
 
-- **Onglet Fond de carte** : couches OSM (sol, agglomérations, hydrographie, routes / rail,
-  bâtiments, frontières — sur tous les fonds vectoriels ; relief ombré, courbes de niveau,
-  sommets), libellés de villes (population minimale ; les plus peuplées d'abord, sans
-  recouvrement), libellés des sommets. Points d'intérêt
+- **Onglet Fond de carte** : couches OSM (sol, hydrographie, routes / rail, bâtiments,
+  frontières — sur tous les fonds vectoriels ; relief ombré, courbes de niveau, sommets),
+  libellés des sommets ; cadre **Villes et agglomérations** : libellés de villes (population
+  minimale ; les plus peuplées d'abord, sans recouvrement), villes en symboles OACI (≥ 100 000 hab.
+  tache orange, ≥ 20 000 jaune cerclée d'orange, localité point jaune — symbole seul si les
+  libellés sont décochés), **surfaces bâties** aucune / contour (orange) / remplissage (jaune) /
+  les deux, dessinées par le studio sur tous les fonds, seulement autour des villes d'au moins
+  N habitants (réglable, 20 000 par défaut ; polygones d'occupation du sol OpenMapTiles /
+  OpenFreeMap, visibles dès l'échelle régionale — les fichiers du SIA ne décrivent aucun contour
+  d'agglomération). Points d'intérêt
   et numéros de rue masqués sur les fonds publiés.
 - **Onglet Zones** : familles R / D / P, contrôlés (CTR, TMA, CTA, SIV), autres (TRA, RMZ, TMZ,
   PJE — parachutage), case « toutes » par famille ; toutes les zones (outre-mer compris) sont sélectionnables, seules celles de l'emprise affichée
@@ -182,13 +188,8 @@ Graybeard / Shadow / Eclipse.
   comme pour les zones ; cases « libellés » séparées ; **survol interdit** (installations portant une marque
   distinctive : au-dessous de 1000 m / 3300 ft, symbole ⊗ ; 198 sites de l'AIXM ; symboles non
   superposés, les plus grands sites d'abord) et parcs / réserves naturels (contour vert tireté,
-  ou symbole vert pour les 117 que l'AIXM réduit à un point) ; **agglomérations** : surfaces bâties
-  aucune / contour (orange) / remplissage (jaune) / les deux, dessinées par le studio sur tous les
-  fonds, seulement autour des villes d'au moins N habitants (réglable, 20 000 par défaut ; polygones
-  d'occupation du sol OpenMapTiles / OpenFreeMap, visibles dès l'échelle régionale — les fichiers du
-  SIA ne décrivent aucun contour d'agglomération) ; villes
-  en symboles OACI (≥ 100 000 hab. tache orange, ≥ 20 000 jaune cerclée d'orange, localité point
-  jaune), au-dessus de la population minimale, avec libellé si « Libellés de villes » est coché ; **obstacles** (≥ 300 / 500 / 1000 ft AGL, élevés, groupes, balisés de
+  ou symbole vert pour les 117 que l'AIXM réduit à un point), dans le même cadre que les
+  **obstacles** (≥ 300 / 500 / 1000 ft AGL, élevés, groupes, balisés de
   nuit, éoliennes ; cote AMSL et (hauteur) en vue détaillée ; regroupés à l'écran, le plus haut
   représentant le groupe).
 - **Onglet Éléments** — un bloc par élément, réglages grisés quand il est décoché :
