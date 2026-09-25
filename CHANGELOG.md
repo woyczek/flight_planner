@@ -10,6 +10,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+## [2.2.5] — 2026-09-25
+
 - **Profil vertical (studio et planificateur) — changement de niveau entre deux points** : une ligne `FL105`
   ou `5500 ft` seule dans le cheminement fait monter ou descendre vers ce niveau après le point précédent (sans
   point ni groupe vitesse / niveau).
