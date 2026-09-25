@@ -96,5 +96,12 @@ window.REPOSITORY_TREE={
     {path:"SIA XML/mission_editor.html",menu:"Générateur de mission (SIA)",label:"Générateur complet de mission"},
     {path:"SIA XML/map_parser.html",menu:"Studio cartographique (SIA)",label:"Studio cartographique aéronautique SIA"},
     {path:"flight_performance_planner.html",menu:"Flight Performance & Fuel Planner",label:"Flight Performance & Fuel Planner"}
-  ]
+  ],
+  // Libellés du menu ☰ dans les 4 langues (fr, en, de, es) : clé = libellé français de menu / label.
+  labels:{
+    "Reporting missions":["Reporting missions","Mission reporting","Einsatzberichte","Informes de misiones"],
+    "Générateur de mission (SIA)":["Générateur de mission (SIA)","Mission generator (SIA)","Missionsgenerator (SIA)","Generador de misiones (SIA)"],
+    "Studio cartographique (SIA)":["Studio cartographique (SIA)","Map studio (SIA)","Kartenstudio (SIA)","Estudio cartográfico (SIA)"],
+    "Paramétrage — bases de données":["Paramétrage — bases de données","Settings — databases","Einstellungen — Datenbanken","Configuración — bases de datos"]
+  }
 };

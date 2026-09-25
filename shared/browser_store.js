@@ -152,7 +152,7 @@
   const settingsPages = (window.REPOSITORY_TREE?.pages || []).filter(p => p.slot === 'settings');
   settingsPages.reverse().forEach(p => {
     const link = document.createElement('a');
-    link.className = `repo-link${p.path === nav.page?.path ? ' active' : ''}`; link.href = new URL(p.path, nav.root).href; link.textContent = p.label;
+    link.className = `repo-link${p.path === nav.page?.path ? ' active' : ''}`; link.href = new URL(p.path, nav.root).href; link.dataset.label = p.label; link.textContent = nav.trLabel ? nav.trLabel(p.label) : p.label;
     box.insertBefore(link, box.firstChild);
   });
   if (settingsPages.length) box.insertBefore(Object.assign(document.createElement('div'), { className: 'repo-sep' }), box.firstChild);

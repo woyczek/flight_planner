@@ -19,6 +19,8 @@
 (() => {
   'use strict';
   const KT_FPM = 101.269; // 1 kt de vitesse verticale = 101,27 ft/min
+  // Messages dans la langue de la page (fr, en, de, es).
+  const tl = (...r) => r[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'))] || r[0];
   function isa(h) {
     const T0 = 288.15, h1 = 36089.24, T = h <= h1 ? T0 - 0.0019812 * h : 216.65, theta = T / T0;
     const delta = h <= h1 ? Math.pow(theta, 5.25588) : Math.pow(216.65 / T0, 5.25588) * Math.exp(-(h - h1) / 20805.7);
@@ -28,9 +30,9 @@
   const S_TROP = 0.29707, LAPSE = { jet: s => s >= S_TROP ? Math.pow(s, 0.75) : Math.pow(S_TROP, 0.75) * s / S_TROP, turboprop: s => Math.pow(s, 0.7), piston: s => Math.max(0, 1.132 * s - 0.132) };
   // Valeurs types par classe : k = Ve croisière / Ve_md, finesse max, altitude de croisière, plafond, vario au sol.
   const CLASS = {
-    jet: { k: 1.2, climb: 1.38, ld: 17, href: 35000, ceil: 41000, roc: 2500, label: 'réacteur' },
-    turboprop: { k: 1.25, climb: 1.1, ld: 14, href: 20000, ceil: 30000, roc: 1500, label: 'turbopropulseur' },
-    piston: { k: 1.3, climb: 1, ld: 10, href: 7500, ceil: 14000, roc: 700, label: 'piston' }
+    jet: { k: 1.2, climb: 1.38, ld: 17, href: 35000, ceil: 41000, roc: 2500, label: ['réacteur', 'jet', 'Strahltriebwerk', 'reactor'] },
+    turboprop: { k: 1.25, climb: 1.1, ld: 14, href: 20000, ceil: 30000, roc: 1500, label: ['turbopropulseur', 'turboprop', 'Turboprop', 'turbohélice'] },
+    piston: { k: 1.3, climb: 1, ld: 10, href: 7500, ceil: 14000, roc: 700, label: ['piston', 'piston', 'Kolbenmotor', 'pistón'] }
   };
   const bisect = (f, lo, hi, n = 60) => { let flo = f(lo); for (let i = 0; i < n; i++) { const m = (lo + hi) / 2, fm = f(m); if ((fm > 0) === (flo > 0)) { lo = m; flo = fm; } else hi = m; } return (lo + hi) / 2; };
   const golden = (f, lo, hi, n = 50) => { const g = (Math.sqrt(5) - 1) / 2; let c = hi - g * (hi - lo), d = lo + g * (hi - lo); for (let i = 0; i < n; i++) { if (f(c) > f(d)) hi = d; else lo = c; c = hi - g * (hi - lo); d = lo + g * (hi - lo); } return (lo + hi) / 2; };
@@ -49,7 +51,7 @@
     const num = v => v === null || v === undefined || v === '' ? NaN : +v;
     const cr = profile.cruise || {}, cl = profile.climb || {}, de = profile.descent || {};
     const tasRef = num(cr.tasKt), ffRef = num(cr.fuelFlowPerHour);
-    if (!(tasRef > 0) || !(ffRef > 0)) throw Error('Profil incomplet : TAS et fuel flow de croisière nécessaires.');
+    if (!(tasRef > 0) || !(ffRef > 0)) throw Error(tl('Profil incomplet : TAS et fuel flow de croisière nécessaires.', 'Incomplete profile: cruise TAS and fuel flow required.', 'Profil unvollständig: Reiseflug-TAS und -Verbrauch erforderlich.', 'Perfil incompleto: se requieren TAS y flujo de crucero.'));
     const ceilGiven = num(cr.ceilingFt) > 0 ? num(cr.ceilingFt) : null, rocAvg = Math.abs(num(cl.rateFpm)) > 0 ? Math.abs(num(cl.rateFpm)) : null;
     const climbFFProfile = num(cl.fuelFlowPerHour) > 0 ? num(cl.fuelFlowPerHour) : null;
 
@@ -91,20 +93,21 @@
     const calibrate = hRef => make(hRef, C.ld, calibrateP0(hRef, C.ld));
 
     // Altitude de référence du point de croisière.
-    let hRef = num(cr.refAltFt), refSrc = 'profil (altitude de référence)';
-    if (!(hRef > 0) && num(cr.iasKt) > 0 && tasRef > num(cr.iasKt)) { hRef = altFromSigma((num(cr.iasKt) / tasRef) ** 2); refSrc = 'déduite du Badin et de la TAS de croisière'; }
+    let estimated = false;
+    let hRef = num(cr.refAltFt), refSrc = tl('profil (altitude de référence)', 'profile (reference altitude)', 'Profil (Bezugshöhe)', 'perfil (altitud de referencia)');
+    if (!(hRef > 0) && num(cr.iasKt) > 0 && tasRef > num(cr.iasKt)) { hRef = altFromSigma((num(cr.iasKt) / tasRef) ** 2); refSrc = tl('déduite du Badin et de la TAS de croisière', 'derived from cruise IAS and TAS', 'aus Reiseflug-IAS und -TAS abgeleitet', 'deducida de la IAS y la TAS de crucero'); }
     if (!(hRef > 0) && climbFFProfile && rocAvg) {
       // celle pour laquelle le débit moyen de montée du modèle égale celui du profil
       let best = null; const top = Math.min(ceilGiven || C.ceil * 1.2, 51000);
       for (let h = 2000; h <= top; h += 1000) { const m = make(h, C.ld, calibrateP0(h, C.ld)), c = climbWith(m, h); if (!c) continue; const e = Math.abs(c.ffAvg / climbFFProfile - 1); if (!best || e < best.e) best = { h, e }; }
-      if (best && best.e < .15) { hRef = best.h; refSrc = `déduite de la cohérence montée / croisière (écart ${Math.round(best.e * 100)} %)`; }
+      if (best && best.e < .15) { hRef = best.h; refSrc = tl(`déduite de la cohérence montée / croisière (écart ${Math.round(best.e * 100)} %)`, `derived from climb / cruise consistency (deviation ${Math.round(best.e * 100)} %)`, `aus der Stimmigkeit Steigflug / Reiseflug abgeleitet (Abweichung ${Math.round(best.e * 100)} %)`, `deducida de la coherencia ascenso / crucero (desviación ${Math.round(best.e * 100)} %)`); }
     }
-    if (!(hRef > 0)) { hRef = ceilGiven ? Math.min(C.href, ceilGiven * .85) : C.href; refSrc = `estimée (valeur type ${C.label}) — renseigne « Altitude de référence (ft) » ou calibre sur un OFP SimBrief`; }
+    if (!(hRef > 0)) { hRef = ceilGiven ? Math.min(C.href, ceilGiven * .85) : C.href; refSrc = tl(`estimée (valeur type ${tl(...C.label)}) — renseigne « Altitude de référence (ft) » ou calibre sur un OFP SimBrief`, `estimated (typical ${tl(...C.label)} value) — fill in “Reference altitude (ft)” or calibrate on a SimBrief OFP`, `geschätzt (typischer Wert ${tl(...C.label)}) — „Bezugshöhe (ft)“ ausfüllen oder mit einem SimBrief-OFP kalibrieren`, `estimada (valor típico ${tl(...C.label)}) — rellene «Altitud de referencia (ft)» o calibre con un OFP de SimBrief`); estimated = true; }
     const M = calibrate(hRef), modelCeil = ceilingOf(M), ceiling = ceilGiven ? Math.min(modelCeil, ceilGiven) : modelCeil;
-    if (ceilGiven && ceilGiven < modelCeil) notes.push(`Plafond limité par le profil : ${Math.round(ceilGiven)} ft (le modèle atteindrait ${Math.round(modelCeil)} ft à ${rocCeil} ft/min).`);
-    if (ceilGiven && ceilGiven > modelCeil + 1000) notes.push(`Plafond du profil (${Math.round(ceilGiven)} ft) au-dessus du plafond de performance du modèle (${Math.round(modelCeil)} ft à ${rocCeil} ft/min).`);
+    if (ceilGiven && ceilGiven < modelCeil) notes.push(tl(`Plafond limité par le profil : ${Math.round(ceilGiven)} ft (le modèle atteindrait ${Math.round(modelCeil)} ft à ${rocCeil} ft/min).`, `Ceiling limited by the profile: ${Math.round(ceilGiven)} ft (the model would reach ${Math.round(modelCeil)} ft at ${rocCeil} ft/min).`, `Gipfelhöhe durch das Profil begrenzt: ${Math.round(ceilGiven)} ft (das Modell erreichte ${Math.round(modelCeil)} ft bei ${rocCeil} ft/min).`, `Techo limitado por el perfil: ${Math.round(ceilGiven)} ft (el modelo alcanzaría ${Math.round(modelCeil)} ft a ${rocCeil} ft/min).`));
+    if (ceilGiven && ceilGiven > modelCeil + 1000) notes.push(tl(`Plafond du profil (${Math.round(ceilGiven)} ft) au-dessus du plafond de performance du modèle (${Math.round(modelCeil)} ft à ${rocCeil} ft/min).`, `Profile ceiling (${Math.round(ceilGiven)} ft) above the model’s performance ceiling (${Math.round(modelCeil)} ft at ${rocCeil} ft/min).`, `Gipfelhöhe des Profils (${Math.round(ceilGiven)} ft) über der Leistungsgipfelhöhe des Modells (${Math.round(modelCeil)} ft bei ${rocCeil} ft/min).`, `Techo del perfil (${Math.round(ceilGiven)} ft) por encima del techo de rendimiento del modelo (${Math.round(modelCeil)} ft a ${rocCeil} ft/min).`));
     // Facteur de débit en montée : débit moyen de montée du profil / débit du modèle (borné 0,5–2).
-    let climbFactor = 1; M.climbFactor = 1; { const c = climbFFProfile ? climbWith(M, Math.min(hRef, ceiling)) : null; if (c?.ffAvg > 0) { climbFactor = M.climbFactor = Math.min(2, Math.max(.5, climbFFProfile / c.ffAvg)); if (Math.abs(climbFactor - 1) > .05) notes.push(`Débit de montée recalé sur le profil (× ${climbFactor.toFixed(2)}).`); } }
+    let climbFactor = 1; M.climbFactor = 1; { const c = climbFFProfile ? climbWith(M, Math.min(hRef, ceiling)) : null; if (c?.ffAvg > 0) { climbFactor = M.climbFactor = Math.min(2, Math.max(.5, climbFFProfile / c.ffAvg)); if (Math.abs(climbFactor - 1) > .05) notes.push(tl(`Débit de montée recalé sur le profil (× ${climbFactor.toFixed(2)}).`, `Climb fuel flow adjusted to the profile (× ${climbFactor.toFixed(2)}).`, `Steigflugverbrauch an das Profil angepasst (× ${climbFactor.toFixed(2)}).`, `Flujo de ascenso ajustado al perfil (× ${climbFactor.toFixed(2)}).`)); } }
 
     // Croisière à l'altitude h : régime « eco » (distance max : Ve = 3^¼·Ve_md réacteur, Ve_md hélice) ou
     // « normal » (réacteur : Mach du profil, Badin plafonné ; hélice : puissance du profil, plein gaz au-dessus).
@@ -140,7 +143,7 @@
     // carburant par 1000 ft à l'altitude h (au-delà du disponible : plein gaz).
     function settingAt(ffRow, h) { const full = M.ffAt(h, 1, M.vy(h).tas) * climbFactor, frac = Math.min(1, ffRow / full), y = M.vy(h, frac), ff = full * frac; return { frac, roc: y.roc, ias: y.ve, ff, fuelPer1000: y.roc > 20 ? ff / y.roc * 1000 / 60 : Infinity }; }
 
-    return { kind, label: C.label, hRef, refSrc, estimatedRef: /estimée/.test(refSrc), ceiling, modelCeiling: modelCeil, ceilingGiven: ceilGiven, climbFactor, ld: M.ld, veMd: M.veMd, mRef: M.mRef, notes,
+    return { kind, label: tl(...C.label), hRef, refSrc, estimatedRef: estimated, ceiling, modelCeiling: modelCeil, ceilingGiven: ceilGiven, climbFactor, ld: M.ld, veMd: M.veMd, mRef: M.mRef, notes,
       cruise, trip, climbPoint, climbTo: (h, o) => climbWith(M, h, o), settingAt, desc, isa,
       // Vario et TAS au Badin de montée du profil à l'altitude h (profil vertical du studio et du planificateur).
       climbAt: h => { if (h > ceiling) return { roc: 0, tas: 0 }; const ve = climbVe(M, h); return { roc: M.roc(h, ve), tas: M.tasOf(h, ve) }; } };
