@@ -124,8 +124,10 @@ Aperçu de toutes les cartes, **carte d'assemblage**, **Générer les cartes et 
 
 ### 4.3 Profils d'affichage (bloc 3)
 
-Barre de profil (choix, nom, **fond de carte**, Sauvegarder / Nouveau / Dupliquer / Supprimer)
-et trois onglets ; à droite, la **carte de contrôle**. Colonnes 60 / 40 réglables par la barre
+À gauche, trois onglets de réglages ; à droite, la **carte de contrôle**, ses commandes, la liste
+des cartes et le **profil de la carte choisie** (nom, **fond de carte**, Sauvegarder / Nouveau /
+Dupliquer / Supprimer — « Nouveau » et « Dupliquer » affectent le profil à la carte choisie). Le
+profil modifié est toujours celui de la carte sélectionnée dans la liste. Colonnes 60 / 40 réglables par la barre
 de redimensionnement (double-clic : 60 / 40). Profils communs à toutes les missions, gardés dans
 le navigateur et dans la sauvegarde locale de la suite.
 
@@ -158,18 +160,23 @@ Graybeard / Shadow / Eclipse.
   - **symbologie des cartes OACI** (légende SIA / IGN au 1 : 500 000) : espaces contrôlés par
     classe (A bande rouge, B / C / D trait et bande bleus, E bande bleu clair, classe en carré dans
     le cartouche), R / D hachurées, P quadrillées, **RTBA** en bande rouge hachurée de blanc,
-    croix rouge pour une zone trop petite à l'échelle (facultative), cartouches « nom / plafond /
-    plancher » ;
+    croix rouge pour une zone trop petite à l'échelle (cochée par défaut), cartouches « nom /
+    plafond / plancher » ;
   - **libellés sans recouvrement** : chaque cartouche est posé au centre de la zone, sinon le long
-    de son contour ; celui qui ne trouve pas de place libre n'est pas écrit (aérodromes, balises et
-    obstacles suivent la même règle).
+    de son contour ; celui qui ne trouve pas de place libre n'est pas écrit. Ordre : symboles des
+    balises et aérodromes, puis libellés des zones (les plus grandes d'abord), puis valeurs MORA,
+    décalées d'une case si elles recouvrent un symbole ou un libellé.
 - **Onglet Éléments** — un bloc par élément, réglages grisés quand il est décoché :
   **aérodromes** (piste en dur > 2300 m orientée, 1000–2300 m, < 1000 m, bande, hélistation ;
   ouvert à la CAP en bleu plein avec repères, restreint en clair, État en rouge ; **filtres** :
   civils ouverts à la CAP, restreints, État / militaires, hélistations, bandes / ULM, et
   contrôlés — tour ou situés dans une CTR — / non contrôlés) ;
-  **radionavigation** (types au choix : VOR / VOR-DME, TACAN / VOR-TACAN, DME, NDB ; cartouche « (D) ROA 110.25 »,
-  nom en clair, rose au nord magnétique en vue détaillée) ; **obstacles** (≥ 300 / 500 / 1000 ft
+  **radionavigation** (types au choix : VOR / VOR-DME, TACAN / VOR-TACAN, DME, NDB, **ILS** ;
+  cartouche « (D) ROA 110.25 », nom en clair, rose au nord magnétique de taille réglable en vue
+  détaillée ; **priorité** en cas de recouvrement : TACAN > VOR > DME > aérodrome > NDB > ILS — un
+  symbole recouvert par un élément prioritaire n'est pas dessiné) ;
+  **listes** d'aérodromes et de balises (blanche / noire, complétion, « LFR* », fragment de nom),
+  comme pour les zones ; **obstacles** (≥ 300 / 500 / 1000 ft
   AGL, élevés, groupes, balisés de nuit, éoliennes ; cote AMSL et (hauteur) en vue détaillée ;
   regroupés à l'écran, le plus haut représentant le groupe) ;
   points tournants (libellés, taille) ; méridiens et parallèles (libellés en bordure en degrés
@@ -184,12 +191,17 @@ Zones avec leurs libellés et limites (« R 69 — 800 ft ASFC – 2700 ft ASFC 
 hippodrome, points tournants, villes. La position (zoom, déplacement à la souris) est **conservée**
 quand on change un réglage ; ⌂ revient à la position définie.
 
+**Erreurs de fond de carte** : message expliqué (fond inaccessible, trop lent, moteur absent,
+erreur inattendue), **secours** automatique sur OSM standard pour un fond vectoriel ou
+OpenTopoMap, et bouton **Copier le rapport d'erreur** (détail technique à coller dans la
+conversation de développement).
+
 Sous la carte :
 
-- **Emprise** de la carte choisie : − / + (zoom), ← ↑ ↓ → (déplacement d'un quart), **Vue
-  affichée** (reprend la vue déplacée à la souris), ⌂ (revenir à la position définie), **Rétablir**
-  (emprise de la mission), **Appliquer** (écrit l'emprise `bbox: [O, S, E, N]` dans la mission
-  partagée). Les valeurs de la mission sont gardées tant qu'on n'applique pas ; ✎ marque une carte
+- **Commandes** : Refresh ; **Reprendre le cadre** (le cadre zoomé / déplacé à la souris devient
+  l'emprise de la carte) ; ⌂ (revenir à la position définie) ; **Rétablir** (emprise de la mission) ;
+  **Appliquer** (écrit l'emprise `bbox: [O, S, E, N]` dans la mission partagée) ; ⧉ fenêtre
+  séparée ; ⤢ agrandir. Les valeurs de la mission sont gardées tant qu'on n'applique pas ; ✎ marque une carte
   dont l'emprise est modifiée.
 - **Cartes de la mission**, une ligne chacune : affichage dans la carte de contrôle, **profil**
   (ou **Désactivé** : carte ni générée, ni prévisualisée, ni sur l'assemblage), suppression (×).

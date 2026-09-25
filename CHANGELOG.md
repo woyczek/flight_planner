@@ -73,6 +73,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - Studio : **aérodromes** (type de piste, orientation, CAP / restreint / État), **radionavigation**
   (VOR, VOR-DME, VOR-TACAN, TACAN, DME, NDB, rose magnétique), **obstacles** (hauteur minimale,
   balisage, groupes, éoliennes) lus dans l'AIXM SIA (`SIA XML/aero_symbols.js`).
+- Studio : colonne de droite = carte de contrôle, commandes (Refresh, **Reprendre le cadre**,
+  ⌂, Rétablir, Appliquer, ⧉, ⤢), liste des cartes, **profil de la carte choisie** (plus de liste
+  déroulante de carte ni de profil) ; cases à cocher de taille fixe ; champ d'ajout de carte élargi.
+- Studio : **ILS** ; priorité des balises (TACAN > VOR > DME > aérodrome > NDB > ILS, élément
+  recouvert masqué) ; libellés des grandes zones prioritaires ; MORA décalée pour ne rien
+  recouvrir ; taille de la rose des VOR ; **listes** d'aérodromes et de balises (blanche / noire) ;
+  croix des petites zones cochée par défaut.
+- Studio : erreurs de fond expliquées, secours OSM standard, rapport d'erreur à copier ; course
+  entre deux rafraîchissements corrigée (« reading 'layers' »).
 - **Mission partagée** générateur ⇄ studio (`SIA XML/mission_store.js`) : un seul document avec
   révision, enregistré à chaque modification et relu par l'autre page ; lecture Markdown / YAML
   commune. Studio : **emprise** de chaque carte modifiable (zoom, déplacement, vue affichée),

@@ -29,9 +29,11 @@
       const len = +tag(b, 'valLen') * (/FT/i.test(tag(b, 'uomDimRwy')) ? .3048 : 1), comp = tag(b, 'codeComposition');
       const list = rwy.get(ad) || []; list.push({ desig: /<txtDesig>([^<]+)/.exec(b)?.[1] || '', len, hard: HARD.test(comp), water: /WATE/i.test(comp) }); rwy.set(ad, list);
     }
+    const rdnBrg = new Map();
     for (const b of blocks(text, 'Rdn')) {
       const ad = /<AhpUid[^>]*>\s*<codeId>([^<]+)/.exec(b)?.[1], d = /<RwyUid[^>]*>[\s\S]*?<txtDesig>([^<]+)/.exec(b)?.[1], t = +tag(b, 'valTrueBrg');
       if (ad && d && Number.isFinite(t) && !brg.has(ad + '|' + d)) brg.set(ad + '|' + d, t);
+      const thr = /<\/RwyUid>\s*<txtDesig>([^<]+)/.exec(b)?.[1]; if (ad && thr && Number.isFinite(t)) rdnBrg.set(ad + '|' + thr, t);
     }
     const twr = new Set(), afis = new Set();
     for (const b of blocks(text, 'Uni')) { const ad = /<AhpUid[^>]*>\s*<codeId>([^<]+)/.exec(b)?.[1], t = tag(b, 'codeType'); if (!ad) continue; if (t === 'TWR') twr.add(ad); else if (t === 'AFIS') afis.add(ad); }
@@ -68,6 +70,11 @@
     for (const b of blocks(text, 'Ndb')) {
       const p = geo(b); if (!Number.isFinite(p.lat)) continue;
       navaids.push({ kind: 'NDB', id: /<NdbUid[^>]*>\s*<codeId>([^<]+)/.exec(b)?.[1] || '', name: tag(b, 'txtName'), freq: tag(b, 'valFreq'), ...p });
+    }
+    for (const b of blocks(text, 'Ils')) {
+      const ilz = /<Ilz>([\s\S]*?)<\/Ilz>/.exec(b)?.[1]; if (!ilz) continue; const p = geo(ilz); if (!Number.isFinite(p.lat)) continue;
+      const ad = /<AhpUid[^>]*>\s*<codeId>([^<]+)/.exec(b)?.[1] || '', thr = /<\/RwyUid>\s*<txtDesig>([^<]+)/.exec(b)?.[1] || '';
+      navaids.push({ kind: 'ILS', id: tag(ilz, 'codeId'), name: `${ad} ${thr}`.trim(), freq: tag(ilz, 'valFreq'), ad, rwy: thr, bearing: rdnBrg.get(ad + '|' + thr), dme: /<DmeUid/.test(b), ...p });
     }
     // Obstacles : altitude du sommet (AMSL) et hauteur (AGL) en ft, balisage, groupe, nature.
     const obstacles = [];
@@ -112,7 +119,7 @@
   function screenBox(ring, toC) { let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity; for (const [lat, lon] of ring) { const p = toC(lat, lon); x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); } return { x0, y0, x1, y1, w: x1 - x0, h: y1 - y0 }; }
 
   // Espaces aériens au formalisme de la carte : bande intérieure (clip + trait double largeur).
-  function drawAirspaces(ctx, zones, toC, { W, H, scale = 1, font = 10, labels = true, limits = true, smallCross = false, smallPx = 14, placer: pl = null } = {}) {
+  function drawAirspaces(ctx, zones, toC, { W, H, scale = 1, font = 10, labels = true, shapes = true, limits = true, smallCross = true, smallPx = 14, placer: pl = null } = {}) {
     const band = Math.max(2.5, 4.5 * scale), todo = [];
     const order = { E: 0, D: 1, C: 1, B: 1, A: 2 }, isRdp = a => a.type === 'R' || a.type === 'D' || a.type === 'P';
     const sorted = [...zones].sort((a, c) => (isRdp(a) ? 3 : order[a.cls] ?? 1) - (isRdp(c) ? 3 : order[c.cls] ?? 1));
@@ -121,11 +128,11 @@
       const box = screenBox(ring, toC); if (box.x1 < 0 || box.y1 < 0 || box.x0 > W || box.y0 > H) continue;
       const restricted = isRdp(a);
       if (smallCross && restricted && Math.max(box.w, box.h) < smallPx * scale) { // zone de faible superficie : croix rouge
-        const x = (box.x0 + box.x1) / 2, y = (box.y0 + box.y1) / 2, s = 6 * scale; ctx.save(); ctx.strokeStyle = C.red; ctx.lineWidth = Math.max(1.5, 2.2 * scale);
-        ctx.beginPath(); ctx.moveTo(x - s, y); ctx.lineTo(x + s, y); ctx.moveTo(x, y - s); ctx.lineTo(x, y + s); ctx.stroke(); ctx.restore();
+        const x = (box.x0 + box.x1) / 2, y = (box.y0 + box.y1) / 2, s = 6 * scale; if (shapes) { ctx.save(); ctx.strokeStyle = C.red; ctx.lineWidth = Math.max(1.5, 2.2 * scale);
+        ctx.beginPath(); ctx.moveTo(x - s, y); ctx.lineTo(x + s, y); ctx.moveTo(x, y - s); ctx.lineTo(x, y + s); ctx.stroke(); ctx.restore(); }
         if (labels) todo.push({ a, box, spots: [{ x: x + s + 2, y, align: 'left' }] }); continue;
       }
-      for (const r of a.rings) {
+      if (shapes) for (const r of a.rings) {
         ctx.save(); ctx.beginPath(); ringPath(ctx, r, toC); ctx.clip();
         let stroke, line, lineW = Math.max(1, 1.4 * scale);
         if (a.azba) { stroke = hatch(ctx, 'rtba'); line = C.red; }
@@ -143,6 +150,7 @@
     }
     if (!labels) return;
     const pl2 = pl || placer(), cx = b => (b.x0 + b.x1) / 2, cy = b => (b.y0 + b.y1) / 2;
+    todo.sort((a, b) => b.box.w * b.box.h - a.box.w * a.box.h); // plus la zone est grande, plus son libellé est prioritaire
     for (const t of todo) {
       const size = labelSize(ctx, t.a, font, limits);
       // Candidats : centre de l'emprise, puis le long du contour, un peu vers l'intérieur.
@@ -205,27 +213,28 @@
   }
   // VOR (hexagone), VOR-DME (hexagone dans un carré), VOR-TACAN / TACAN (lobes), DME (carré), NDB
   // (cercles pointillés) ; cartouche « (D) ROA 110.25 » et nom en clair au-dessus.
-  function drawNavaid(ctx, n, p, s, labelFont, magVar = 0) {
+  function drawNavaid(ctx, n, p, s, labelFont, magVar = 0, rose = 3.2) {
     ctx.save(); ctx.translate(p.x, p.y); ctx.strokeStyle = C.blue; ctx.fillStyle = C.blue; ctx.lineWidth = Math.max(1, s / 6);
     const hex = r => { ctx.beginPath(); for (let k = 0; k < 6; k++) { const t = Math.PI / 3 * k; ctx.lineTo(r * Math.cos(t), r * Math.sin(t)); } ctx.closePath(); ctx.stroke(); };
     const dot = r => { ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); };
-    if (n.kind === 'NDB') { for (const r of [s * .55, s * .85, s * 1.15]) { ctx.setLineDash([1, 2.2]); ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke(); } ctx.setLineDash([]); ctx.beginPath(); ctx.arc(0, 0, s * .3, 0, Math.PI * 2); ctx.stroke(); dot(s * .12); }
+    if (n.kind === 'ILS') { ctx.rotate(((n.bearing ?? 0) + 180) * Math.PI / 180); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-s * .45, -s * 2.6); ctx.lineTo(0, -s * 2.2); ctx.lineTo(s * .45, -s * 2.6); ctx.closePath(); ctx.globalAlpha = .75; ctx.fill(); ctx.globalAlpha = 1; dot(s * .14); }
+    else if (n.kind === 'NDB') { for (const r of [s * .55, s * .85, s * 1.15]) { ctx.setLineDash([1, 2.2]); ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke(); } ctx.setLineDash([]); ctx.beginPath(); ctx.arc(0, 0, s * .3, 0, Math.PI * 2); ctx.stroke(); dot(s * .12); }
     else if (n.kind === 'DME') { ctx.strokeRect(-s * .7, -s * .7, s * 1.4, s * 1.4); dot(s * .12); }
     else {
       if (n.kind === 'VOR' || n.tacan) hex(s * .7);
       if (n.kind === 'TACAN' || n.tacan) for (let k = 0; k < 3; k++) { ctx.save(); ctx.rotate(Math.PI / 6 + k * 2 * Math.PI / 3 + Math.PI / 2); ctx.fillRect(-s * .35, s * .6, s * .7, s * .38); ctx.restore(); }
       if (n.dme && !n.tacan) ctx.strokeRect(-s * .95, -s * .95, s * 1.9, s * 1.9);
       dot(s * .12);
-      if (n.kind === 'VOR' && s >= 6) { // rose au nord magnétique
-        ctx.save(); ctx.rotate(magVar * Math.PI / 180); ctx.lineWidth = Math.max(.6, s / 12); ctx.globalAlpha = .6; ctx.beginPath(); ctx.arc(0, 0, s * 3.2, 0, Math.PI * 2); ctx.stroke();
-        for (let k = 0; k < 36; k++) { const t = k * Math.PI / 18, l = k % 9 === 0 ? s * .9 : k % 3 === 0 ? s * .5 : s * .25; ctx.beginPath(); ctx.moveTo(Math.sin(t) * s * 3.2, -Math.cos(t) * s * 3.2); ctx.lineTo(Math.sin(t) * (s * 3.2 - l), -Math.cos(t) * (s * 3.2 - l)); ctx.stroke(); }
+      if (n.kind === 'VOR' && rose > 0 && s >= 4) { // rose au nord magnétique, taille réglable
+        ctx.save(); ctx.rotate(magVar * Math.PI / 180); ctx.lineWidth = Math.max(.6, s / 12); ctx.globalAlpha = .6; ctx.beginPath(); ctx.arc(0, 0, s * rose, 0, Math.PI * 2); ctx.stroke();
+        for (let k = 0; k < 36; k++) { const t = k * Math.PI / 18, l = k % 9 === 0 ? s * .9 : k % 3 === 0 ? s * .5 : s * .25; ctx.beginPath(); ctx.moveTo(Math.sin(t) * s * rose, -Math.cos(t) * s * rose); ctx.lineTo(Math.sin(t) * (s * rose - l), -Math.cos(t) * (s * rose - l)); ctx.stroke(); }
         ctx.restore();
       }
     }
     ctx.restore();
     if (!labelFont) return;
-    const d = n.dme || n.tacan || n.kind === 'DME' || n.kind === 'TACAN' ? '(D) ' : '', f = n.freq ? ` ${n.freq}` : n.channel ? ` CH ${n.channel}` : '';
-    const text = `${d}${n.id}${f}`; ctx.save(); ctx.font = `700 ${labelFont}px Arial,sans-serif`; const w = ctx.measureText(text).width, x = p.x + s * 1.4, y = p.y - s * 1.4 - labelFont;
+    const d = n.dme || n.tacan || n.kind === 'DME' || n.kind === 'TACAN' ? '(D) ' : '', f = n.freq ? ` ${n.freq}` : n.channel ? ` CH ${n.channel}` : '', pre = n.kind === 'ILS' ? `ILS ${n.rwy} ` : '';
+    const text = `${pre}${d}${n.id}${f}`; ctx.save(); ctx.font = `700 ${labelFont}px Arial,sans-serif`; const w = ctx.measureText(text).width, x = p.x + s * 1.4, y = p.y - s * 1.4 - labelFont;
     if (place && !place.take({ x0: x - 2, y0: y - labelFont * .8 - 3, x1: x + w + 2, y1: y + labelFont + 2 })) { ctx.restore(); return; }
     ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillRect(x - 2, y - 2, w + 4, labelFont + 4); ctx.strokeStyle = C.blue; ctx.lineWidth = 1; ctx.strokeRect(x - 2, y - 2, w + 4, labelFont + 4);
     ctx.fillStyle = C.blue; ctx.textBaseline = 'top'; ctx.fillText(text, x, y); if (n.name && n.kind !== 'NDB') { ctx.font = `700 ${labelFont * .72}px Arial,sans-serif`; ctx.textBaseline = 'bottom'; ctx.fillText(n.name, x, y - 3); }
@@ -247,17 +256,23 @@
     ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(2, size * .28); ctx.strokeText(text, x, y); ctx.fillStyle = color; ctx.fillText(text, x, y); ctx.restore();
   }
   // Points aéronautiques de l'emprise ; densité : obstacles filtrés par hauteur, libellés selon le zoom.
-  function drawPoints(ctx, data, toC, { W, H, scale = 1, font = 10, aerodromes, navaids, obstacles, obstacleMin = 300, pxPerDegree = 100, placer: pl = null } = {}) {
+  const NAV_RANK = n => n.kind === 'TACAN' || n.tacan ? 5 : n.kind === 'VOR' ? 4 : n.kind === 'DME' ? 3 : n.kind === 'NDB' ? 2 : 1;
+  function drawPoints(ctx, data, toC, { W, H, scale = 1, font = 10, aerodromes, navaids, obstacles, obstacleMin = 300, pxPerDegree = 100, placer: pl = null, rose = 3.2 } = {}) {
     place = pl;
     const inside = p => p.x > -30 && p.y > -30 && p.x < W + 30 && p.y < H + 30, detailed = pxPerDegree >= 180, s = Math.max(4, 6 * scale);
+    const nearestMag = (lat, lon) => { let best = null, d = Infinity; for (const a of data.aerodromes || []) { const e = (a.lat - lat) ** 2 + (a.lon - lon) ** 2; if (a.magVar && e < d) { d = e; best = a; } } return best?.magVar || 0; };
+    // Symbole posé seulement s'il ne recouvre pas un élément de priorité supérieure (déjà posé).
+    const claim = p => { const r = { x0: p.x - s * 1.2, y0: p.y - s * 1.2, x1: p.x + s * 1.2, y1: p.y + s * 1.2 }; return !place || place.take(r); };
+    const navs = navaids ? (data.navaids || []).map(n => ({ n, p: toC(n.lat, n.lon) })).filter(x => inside(x.p)).sort((a, b) => NAV_RANK(b.n) - NAV_RANK(a.n)) : [];
+    const drawNav = x => { if (claim(x.p)) drawNavaid(ctx, x.n, x.p, s, font * .85, detailed ? nearestMag(x.n.lat, x.n.lon) : 0, detailed ? rose : 0); };
+    navs.filter(x => NAV_RANK(x.n) >= 3).forEach(drawNav);
+    if (aerodromes) for (const a of data.aerodromes || []) { if (!detailed && !a.public && !a.state) continue; const p = toC(a.lat, a.lon); if (inside(p) && claim(p)) drawAerodrome(ctx, a, p, s, Object.assign(new Number(font * .85), { full: pxPerDegree >= 900 })); }
+    navs.filter(x => NAV_RANK(x.n) < 3).forEach(drawNav);
     // Obstacles regroupés à l'écran (cellule ~ 3 symboles) : le plus haut représente le groupe.
     if (obstacles) { const cell = s * (detailed ? 2.2 : 3.5), keep = new Map();
       for (const o of data.obstacles || []) { if (o.hgt < obstacleMin || (!detailed && o.hgt < 500)) continue; const p = toC(o.lat, o.lon); if (!inside(p)) continue;
         const k = Math.floor(p.x / cell) + '|' + Math.floor(p.y / cell), cur = keep.get(k); if (!cur) keep.set(k, { o, p, n: 1 }); else { cur.n++; if (o.elev > cur.o.elev) { cur.o = o; cur.p = p; } } }
       for (const { o, p, n } of keep.values()) drawObstacle(ctx, n > 1 ? { ...o, group: true } : o, p, s * .9, detailed ? font * .85 : 0); }
-    const nearestMag = (lat, lon) => { let best = null, d = Infinity; for (const a of data.aerodromes || []) { const e = (a.lat - lat) ** 2 + (a.lon - lon) ** 2; if (a.magVar && e < d) { d = e; best = a; } } return best?.magVar || 0; };
-    if (navaids) for (const n of data.navaids || []) { const p = toC(n.lat, n.lon); if (inside(p)) drawNavaid(ctx, n, p, s, font * .85, detailed ? nearestMag(n.lat, n.lon) : 0); }
-    if (aerodromes) for (const a of data.aerodromes || []) { if (!detailed && !a.public && !a.state) continue; const p = toC(a.lat, a.lon); if (inside(p)) drawAerodrome(ctx, a, p, s, Object.assign(new Number(font * .85), { full: pxPerDegree >= 900 })); }
     place = null;
   }
 
