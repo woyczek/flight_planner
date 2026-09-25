@@ -17,11 +17,15 @@ Studio cartographique (Missions SIA) : symboles OACI.
   recouvrent plus (les plus grands sites d'abord).
 - **Parcs et réserves naturels** de nouveau affichés : 117 des 143 de l'AIXM ne sont qu'un point
   et étaient écartés ; ils ont maintenant un symbole vert (base à relire une fois).
-- **Agglomérations** dans l'onglet Symboles OACI : surfaces bâties OSM en jaune cerclé d'orange
-  (ou **contour seul**), tirées d'OpenMapTiles pour être visibles dès l'échelle régionale ; villes en
-  symboles OACI (grande ville tache orange, ville jaune, localité point jaune), affichées même sans
-  « Libellés de villes » (symbole seul).
-- Correctif : le contour orange des surfaces bâties s'affichait même couche décochée.
+- **Agglomérations** dans l'onglet Symboles OACI : surfaces bâties dessinées par le studio sur tous
+  les fonds (raster compris), au choix **aucune / contour / remplissage / contour + remplissage**
+  (orange / jaune OACI), seulement autour des villes d'au moins **N habitants** (réglable, 20 000
+  par défaut) ; polygones OpenMapTiles, visibles dès l'échelle régionale, contour sans coutures de
+  tuiles. Villes en symboles OACI (grande ville tache orange, ville jaune, localité point jaune),
+  affichées même sans « Libellés de villes » (symbole seul).
+- Correctif : le contour orange des surfaces bâties s'affichait même couche décochée ; les surfaces
+  bâties n'apparaissaient pas à l'échelle régionale sur le fond vectoriel par défaut.
+- Libellés courts, détails en sous-titre (villes OACI, parcs et réserves).
 - Tour de commentaires dans le code (en-têtes de fichiers, sections) ; section **Bugs connus**.
 
 ## [2.2.1] — 2026-09-25

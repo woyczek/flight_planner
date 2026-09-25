@@ -183,8 +183,10 @@ Graybeard / Shadow / Eclipse.
   distinctive : au-dessous de 1000 m / 3300 ft, symbole ⊗ ; 198 sites de l'AIXM ; symboles non
   superposés, les plus grands sites d'abord) et parcs / réserves naturels (contour vert tireté,
   ou symbole vert pour les 117 que l'AIXM réduit à un point) ; **agglomérations** : surfaces bâties
-  en jaune cerclé d'orange, ou contour seul (occupation du sol OpenMapTiles / OpenFreeMap, visible
-  dès l'échelle régionale ; les fichiers du SIA ne décrivent aucun contour d'agglomération) ; villes
+  aucune / contour (orange) / remplissage (jaune) / les deux, dessinées par le studio sur tous les
+  fonds, seulement autour des villes d'au moins N habitants (réglable, 20 000 par défaut ; polygones
+  d'occupation du sol OpenMapTiles / OpenFreeMap, visibles dès l'échelle régionale — les fichiers du
+  SIA ne décrivent aucun contour d'agglomération) ; villes
   en symboles OACI (≥ 100 000 hab. tache orange, ≥ 20 000 jaune cerclée d'orange, localité point
   jaune), au-dessus de la population minimale, avec libellé si « Libellés de villes » est coché ; **obstacles** (≥ 300 / 500 / 1000 ft AGL, élevés, groupes, balisés de
   nuit, éoliennes ; cote AMSL et (hauteur) en vue détaillée ; regroupés à l'écran, le plus haut
