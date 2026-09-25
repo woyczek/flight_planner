@@ -10,6 +10,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Base des types — passe EUROCONTROL APD** (252 types) : 173 fiches de performances dans
+  `AircraftDB/aircraft_perf.js` (comparées aux profils dans le planificateur), 141 noms de modèle réparés dans
+  `aircraft_db.js` (« Aircraft Performance Database », « Skip to aircraft details »), 79 types sans fiche APD.
+- Code : carte et spécification des fonctions du planificateur (`flight_performance_planner.html`) et de
+  `flight_ui.js` (commentaires seulement).
 - **Planificateur** : aide au survol de chaque champ du profil (contenu et usage par le modèle, 4 langues,
   `shared/flight_profile_help.js`) ; Vx partout où figure Vy (fiche du curseur, panneaux, relevés, courbe
   des vitesses en pointillés fins).
