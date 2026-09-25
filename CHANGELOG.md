@@ -10,6 +10,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Planificateur** : aide au survol de chaque champ du profil (contenu et usage par le modèle, 4 langues,
+  `shared/flight_profile_help.js`) ; Vx partout où figure Vy (fiche du curseur, panneaux, relevés, courbe
+  des vitesses en pointillés fins).
 ## [2.2.4] — 2026-09-25
 
 - **CR DEFA — description de famille dans l'en-tête** : elle était posée mais masquée (règle CSS qui cachait le

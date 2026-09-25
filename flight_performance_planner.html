@@ -30,6 +30,8 @@ h1{font-size:18px;margin:0} button,input,select,textarea{background:#11161c;colo
 .readout:not(:empty){margin:6px 0;padding:6px 8px;border-radius:8px;background:#ffffff08}.reading{color:var(--mut)}.perf-warn{color:#f0b86e}
 .legend{list-style:none;padding:0;margin:6px 0}.legend li{margin:2px 0}.sw{display:inline-block;width:18px;border-top:2px solid;vertical-align:middle;margin-right:6px}.sw.dash{border-top-style:dashed}
 abbr[title]{text-decoration:underline dotted;cursor:help}
+.field.has-help>label{cursor:help;text-decoration:underline dotted #5d6b79;text-underline-offset:3px}
+.opt-chart .curve-vx{fill:none;stroke:#75c8ff;stroke-width:1.3;stroke-dasharray:1 3}
 #perfPinned .pinned{margin:10px 0 0;padding:8px 10px;border:1px solid #eef3f744;border-radius:8px;font-size:13px}#perfPinned .pin-head{display:flex;gap:8px;align-items:center;justify-content:space-between}.mini{padding:2px 8px;font-size:12px}
 .apd-bar{margin-top:8px;line-height:1.6}.apd-tag{margin-top:4px;padding:1px 7px;font-size:11px;border-radius:10px;border:1px solid currentColor;background:transparent;cursor:pointer}.apd-same{color:#7ed69b}.apd-diff{color:#f0b86e}.apd-empty{color:#75c8ff}
 @media(max-width:800px){.side-panel{max-height:none}}
@@ -102,11 +104,11 @@ abbr[title]{text-decoration:underline dotted;cursor:help}
 
 <dialog id="dlg"><div class="row"><h2 style="flex:1">Choisir l’avion</h2><button onclick="dlg.close()">Fermer</button></div><input id="search" placeholder="Rechercher ICAO / nom…" style="width:100%;margin-bottom:8px"><div id="airlist" class="airlist"></div></dialog>
 
-<script src="./AircraftDB/aircraft_db.js"></script><script src="./shared/aircraft_fleet.js?v=20260925zd"></script><script src="./shared/defa_reference.js?v=20260925zd"></script><script src="./shared/aircraft_catalog.js?v=20260925zd"></script>
+<script src="./AircraftDB/aircraft_db.js"></script><script src="./shared/aircraft_fleet.js?v=20260925ze"></script><script src="./shared/defa_reference.js?v=20260925ze"></script><script src="./shared/aircraft_catalog.js?v=20260925ze"></script>
 <script src="./AircraftDB/aircraft_icons.js"></script>
 <script src="./AircraftDB/aircraft_perf.js"></script>
-<script src="./shared/sticky_frame.js?v=20260925zd"></script><script src="./shared/flight_perf_view.js?v=20260925zd"></script>
-<script src="./shared/flight_performance_model.js?v=20260925zd"></script>
+<script src="./shared/sticky_frame.js?v=20260925ze"></script><script src="./shared/flight_profile_help.js?v=20260925ze"></script><script src="./shared/flight_perf_view.js?v=20260925ze"></script>
+<script src="./shared/flight_performance_model.js?v=20260925ze"></script>
 <script>
 // Planificateur de performances : profils d'appareils (SimBrief, Little Navmap, CSV, calibration par
 // OFP), devis carburant par phase, niveau optimal. Habillage (blocs, barre d'état) : shared/flight_ui.js.
@@ -205,6 +207,7 @@ function renderProfileEditor(){
  curveBox.innerHTML=`<div class="mut">Une plage écrite dans le commentaire, par ex. « 1 000–1 300 kg/h total », remplit automatiquement min., nominal et max. à l’enregistrement.</div><table><thead><tr><th>RPM / N1</th><th>Min.</th><th>Nominal</th><th>Max.</th><th>Régime de vol</th><th>Commentaire</th><th></th></tr></thead><tbody id="curveEditRows">${curveRows}</tbody></table><button type="button" id="addCurvePoint" style="margin-top:8px">Ajouter un point</button>`;
  curveBox.querySelectorAll(".removeCurve").forEach(b=>b.onclick=()=>{try{commitProfileEditor(false);let i=active.rpmFuelCurve.findIndex(p=>p._rowId===b.dataset.curveId);if(i>=0)active.rpmFuelCurve.splice(i,1);profileDirty=true;renderProfileEditor()}catch(e){$("profileEditStatus").textContent=e.message}});curveBox.querySelector("#addCurvePoint").onclick=()=>{try{commitProfileEditor(false);active.rpmFuelCurve.push({_rowId:crypto.randomUUID(),rpm:null,fuelFlowMin:null,fuelFlowPerHour:null,fuelFlowMax:null,phaseLabel:"",comment:""});profileDirty=true;renderProfileEditor()}catch(e){$("profileEditStatus").textContent=e.message}};curveBox.querySelectorAll('[data-curve-key="comment"]').forEach(comment=>comment.addEventListener("change",()=>{let inferred=parseFuelRange(comment.value,fuelUnit()),i=comment.dataset.curveId,phase=curveBox.querySelector(`[data-curve-id="${i}"][data-curve-key="phaseLabel"]`),detected=inferredCurvePhase(comment.value);if(phase&&!phase.value&&detected)phase.value=detected;if(!inferred)return;let plain=v=>String(Math.round(v*10)/10);[["fuelFlowMin",inferred.min],["fuelFlowPerHour",inferred.nominal],["fuelFlowMax",inferred.max]].forEach(([key,value])=>{let input=curveBox.querySelector(`[data-curve-id="${i}"][data-curve-key="${key}"]`);if(input&&!input.value.trim())input.value=plain(value)});$("profileEditStatus").textContent=`Plage détectée : min. ${plain(inferred.min)}, nominal ${plain(inferred.nominal)}, max. ${plain(inferred.max)} ${fuelUnit()}/h.`}));box.oninput=curveBox.oninput=()=>{profileDirty=true;window.updateProfileStatus?.()};box.onchange=box.oninput;curveBox.onchange=curveBox.oninput;
  decorateApd(box);
+ FlightProfileHelp?.annotate(box,window.RepositoryNav?.getLanguage?.()||"fr"); // aide au survol de chaque champ (shared/flight_profile_help.js)
  box.style.display=state.profileEditorHidden?"none":"grid";box.style.gridTemplateColumns="repeat(3,minmax(0,1fr))";$("toggleProfileEditor").textContent=state.profileEditorHidden?"Afficher les champs":"Masquer les champs";
 }
 function commitProfileEditor(announce=true){
@@ -272,6 +275,7 @@ const tl=(...r)=>r[Math.max(0,["fr","en","de","es"].indexOf(window.RepositoryNav
 // Typographie : espace avant « : » et « ; » en français seulement.
 // Vue des courbes (jauges, loi réglable, limites, panneaux) : shared/flight_perf_view.js
 const typo=t=>(window.RepositoryNav?.getLanguage?.()||"fr")==="fr"?t:String(t).replace(/ ([:;])/g,"$1");
+window.addEventListener("repository-language-change",()=>setTimeout(()=>FlightProfileHelp?.annotate($("profileEditor"),window.RepositoryNav?.getLanguage?.()||"fr")));
 window.addEventListener("repository-language-change",()=>setTimeout(()=>{if(active&&window.altitudeOptimum)try{calculate()}catch{}}));
 const flTxt=h=>"FL"+String(Math.round(h/100)).padStart(3,"0"),hmTxt=x=>`${Math.floor(x/60)} h ${String(Math.round(x%60)).padStart(2,"0")}`,f3=v=>Number.isFinite(v)?v.toLocaleString("fr-FR",{minimumFractionDigits:3,maximumFractionDigits:3}):"—";
 // ===== Imports : CSV de performances, courbe RPM / consommation, JSON de profils =====
@@ -584,10 +588,10 @@ function renderDefaSheets(){const box=$("defaSheets");if(!box)return;const t=aKe
 /* ?aircraft=<type ou profil> : ouverture depuis une fiche appareil (profil existant, sinon créé depuis le type DEFA). */
 refreshLandingAircraft();restore();applyHeaderPreferences();{const wanted=new URLSearchParams(location.search).get("aircraft"),k=aKey(wanted||""),db=window.AIRCRAFT_DB||{},res=aKey(db.__aliases?.[k]||k),same=v=>{const x=aKey(v);return x&&(x===k||x===res||aKey(db.__aliases?.[x])===res)},found=k&&Object.values(state.profiles||{}).find(p=>[p.id,p.icao,p.type].some(same)),cand=k&&!found&&landingOnlyAircraft(Object.values(state.profiles||{}).filter(p=>p&&typeof p==="object").map(p=>normalize(p))).find(p=>[p.id,p.icao,p.type].some(same)),created=cand&&newProfileFromLanding(cand.id);if(found)setActive(found,"fiche appareil");else if(created)setActive(created,"fiche appareil (type DEFA)");else if(state.lastAircraft&&state.profiles[state.lastAircraft])setActive(state.profiles[state.lastAircraft],"état restauré");else syncAircraftPicker();}
 </script>
-<script src="./shared/repository_nav.js?v=20260925zd"></script>
-<script src="./shared/app_framework.js?v=20260925zd"></script>
-<script src="./shared/flight_ui.js?v=20260925zd"></script>
-<script src="./SIA%20XML/aero_symbols.js?v=20260925j"></script><script src="./SIA%20XML/vertical_profile.js?v=20260925j"></script><script src="./shared/flight_vertical_profile.js?v=20260925zd"></script>
+<script src="./shared/repository_nav.js?v=20260925ze"></script>
+<script src="./shared/app_framework.js?v=20260925ze"></script>
+<script src="./shared/flight_ui.js?v=20260925ze"></script>
+<script src="./SIA%20XML/aero_symbols.js?v=20260925j"></script><script src="./SIA%20XML/vertical_profile.js?v=20260925j"></script><script src="./shared/flight_vertical_profile.js?v=20260925ze"></script>
 <script src="./shared/content_i18n.js"></script><script src="./shared/flight_i18n.js"></script>
 <footer class="repo-footer no-print">CC RBR - DEFA Virtual - 2026-09-21 - 2.0.7 - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a></footer>
 </body></html>

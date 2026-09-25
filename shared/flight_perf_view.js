@@ -264,6 +264,7 @@
         <dt>${lab(L.prof(), COL.prof)}</dt><dd>${trip(o.norm[k])}</dd>
         <dt>${lab(L.eco(), COL.eco)}</dt><dd>${trip(o.eco[k])}</dd>
         <dt>${tl("Vario max", "Max. rate", "Max. Steigrate", "Régimen máx.")} (${def("Vy")})</dt><dd>${cp ? `${fmt(cp.roc, 0)} ft/min · ${fmt(cp.vyIas, 0)} kt` : tl("au-dessus du plafond", "above the ceiling", "über der Gipfelhöhe", "por encima del techo")}</dd>
+        ${cp ? `<dt>${tl("Pente max", "Max. angle", "Max. Steigwinkel", "Ángulo máx.")} (${def("Vx")})</dt><dd>${fmt(cp.vxIas, 0)} kt</dd>` : ""}
         <dt>${lab(L.fast(), COL.fast)}</dt><dd>${spd(law("time"))}</dd>
         <dt>${lab(L.fuelLaw(), COL.eco)}</dt><dd>${spd(law("fuel"))}</dd>
         ${man && h <= m.ceiling ? `<dt>${lab(L.man(), COL.man)}</dt><dd>${spd(m.manualPoint(h, man))}</dd>` : ""}
@@ -485,16 +486,16 @@
     try { [mv, mt, mf] = K.mid ||= ["vy", "time", "fuel"].map(o => m.climbOpt(hMidC, o, kC)); } catch (e) { console.error("Vue des courbes — lois optimales :", e); }
     guard("panelSpeed", "climbSpeedChart", tl("Vitesses de montée", "Climb speeds", "Steiggeschwindigkeiten", "Velocidades de ascenso"), () => {
       const sv = $("climbSpeedChart"), W = 540, H = 200, Lm = 52, R = 12, T = 12, B = 30;
-      const sch = (K.sch ||= pts.filter(p => p.h <= hTarget || hTarget < step).map(p => ({ h: p.h, vy: m.climbOpt(p.h, "vy", kC), t: m.climbOpt(p.h, "time", kC), f: m.climbOpt(p.h, "fuel", kC), pr: active.climb?.iasKt ? +active.climb.iasKt : null })))
+      const sch = (K.sch ||= pts.filter(p => p.h <= hTarget || hTarget < step).map(p => ({ h: p.h, vy: m.climbOpt(p.h, "vy", kC), t: m.climbOpt(p.h, "time", kC), f: m.climbOpt(p.h, "fuel", kC), vx: p.vxIas, pr: active.climb?.iasKt ? +active.climb.iasKt : null })))
         .map(r => ({ ...r, mn: m.manualPoint(r.h, man) }));
-      const xm = Math.max(hTarget, step), all = sch.flatMap(r => [r.vy?.ias, r.t?.ias, r.f?.ias, r.pr, r.mn.ias]).filter(Number.isFinite);
+      const xm = Math.max(hTarget, step), all = sch.flatMap(r => [r.vy?.ias, r.t?.ias, r.f?.ias, r.pr, r.mn.ias, r.vx]).filter(Number.isFinite);
       const vmin = Math.min(...all) * .92, vmax = Math.max(...all) * 1.06, X = h => Lm + h / xm * (W - Lm - R), Y = v => T + (1 - (v - vmin) / (vmax - vmin || 1)) * (H - T - B);
       let g = "";
       for (let i = 0; i <= 4; i++) { const v = vmin + (vmax - vmin) * i / 4; g += `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${Lm - 5}" y="${Y(v) + 4}" text-anchor="end">${fmt(v, 0)}</text>`; }
       const tk = xm > 30000 ? 10000 : xm > 12000 ? 5000 : 2000;
       for (let h = 0; h <= xm; h += tk) g += `<text x="${X(h)}" y="${H - B + 14}" text-anchor="middle">${flTxt(h)}</text>`;
       const pth = (f, cls) => { const d = sch.map(r => [r.h, f(r)]).filter(x => Number.isFinite(x[1])).map((x, i) => `${i ? "L" : "M"}${X(x[0]).toFixed(1)},${Y(x[1]).toFixed(1)}`).join(""); return d ? `<path class="${cls}" d="${d}"/>` : ""; };
-      g += `<line class="axis" x1="${Lm}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/>${pth(r => r.pr, "band")}${pth(r => r.vy?.ias, "curve")}${pth(r => r.t?.ias, "curve-fuel")}${pth(r => r.f?.ias, "curve-eco")}${pth(r => r.mn.ias, "curve-man")}`
+      g += `<line class="axis" x1="${Lm}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/>${pth(r => r.pr, "band")}${pth(r => r.vx, "curve-vx")}${pth(r => r.vy?.ias, "curve")}${pth(r => r.t?.ias, "curve-fuel")}${pth(r => r.f?.ias, "curve-eco")}${pth(r => r.mn.ias, "curve-man")}`
         + `<text x="${(Lm + W - R) / 2}" y="${H - 3}" text-anchor="middle">${tl("Altitude", "Altitude", "Höhe", "Altitud")}</text><text x="11" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(-90 11 ${(T + H - B) / 2})">kt</text>`
         + `<line id="climbSpeedCursor" class="cursor" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/><rect id="climbSpeedHit" x="${Lm}" y="${T}" width="${W - Lm - R}" height="${H - T - B}" fill="transparent"/>`;
       sv.innerHTML = typo(g); sv.hidden = false; sv.dataset.t = T; sv.dataset.b = B;
@@ -502,14 +503,14 @@
       sync.add({ svg: sv, hit: $("climbSpeedHit"), W, L: Lm, R, T, bottom: H - B, xmax: xm,
         show: h => {
           const r = sch.reduce((a, x) => Math.abs(x.h - h) < Math.abs(a.h - h) ? x : a, sch[0]); if (!r) return; cursorAt("climbSpeedCursor", X(r.h));
-          $("climbSpeedReadout").innerHTML = typo(`<b>⌖ ${flTxt(r.h)}</b><dl class="kvp">${one(r.vy, COL.prof, "Vy")}${one(r.t, COL.fast, L.fast())}${one(r.f, COL.eco, L.fuelLaw())}${one(r.mn, COL.man, L.man())}</dl>`);
+          $("climbSpeedReadout").innerHTML = typo(`<b>⌖ ${flTxt(r.h)}</b><dl class="kvp">${one(r.vy, COL.prof, "Vy")}${one(r.t, COL.fast, L.fast())}${one(r.f, COL.eco, L.fuelLaw())}${one(r.mn, COL.man, L.man())}<dt>${def("Vx")}</dt><dd>${fmt(r.vx, 0)} kt</dd></dl>`);
         },
         leave: () => { $("climbSpeedCursor").setAttribute("visibility", "hidden"); $("climbSpeedReadout").textContent = ""; } });
       const law = (x, col, name) => `<dt>${lab(name, col)}</dt><dd>${x ? `${fmt(x.ias, 0)} kt · ${fmt(x.roc, 0)} ft/min${m.kind !== "jet" ? ` · ${tl("gaz", "throttle", "Leistung", "gases")} ${fmt(x.frac * 100, 0)} %` : ""}` : "—"}</dd>`;
       panel("panelSpeed", tl("Vitesses de montée", "Climb speeds", "Steiggeschwindigkeiten", "Velocidades de ascenso"),
-        `<p>${tl("Badin à tenir, à mi-montée", "IAS to fly, at mid-climb", "Zu fliegende IAS, halber Steigflug", "IAS a mantener, a media subida")} (${flTxt(hMidC)}) :</p><dl class="kvp">${law(mv, COL.prof, def("Vy"))}${law(mt, COL.fast, L.fast())}${law(mf, COL.eco, L.fuelLaw())}${law(m.manualPoint(hMidC, man), COL.man, L.man())}</dl>`,
+        `<p>${tl("Badin à tenir, à mi-montée", "IAS to fly, at mid-climb", "Zu fliegende IAS, halber Steigflug", "IAS a mantener, a media subida")} (${flTxt(hMidC)}) :</p><dl class="kvp">${law(mv, COL.prof, def("Vy"))}${law(mt, COL.fast, L.fast())}${law(mf, COL.eco, L.fuelLaw())}${law(m.manualPoint(hMidC, man), COL.man, L.man())}<dt>${def("Vx")} (${tl("pente max", "max. angle", "max. Steigwinkel", "ángulo máx.")})</dt><dd>${fmt(m.climbPoint(hMidC).vxIas, 0)} kt</dd></dl>`,
         `<div id="climbSpeedReadout" class="readout"></div>`,
-        reading(tl(`trois objectifs incompatibles : ${def("Vy")} gagne l’altitude au plus vite ; la loi rapide arrive au plus tôt (plus vite, moins de vario) ; la loi économique dépense le moins. Pointillés : ${def("climbSpd", L.climbSpd())}. Les curseurs violets (vario à gauche, Badin à droite) règlent votre propre loi.`, `three incompatible goals: ${def("Vy")} gains altitude fastest; the fast law arrives soonest (faster, less rate); the economy law burns least. Dashed: ${def("climbSpd", L.climbSpd())}. The violet sliders (rate left, IAS right) set your own law.`, `drei unvereinbare Ziele: ${def("Vy")} gewinnt am schnellsten Höhe; das schnelle Gesetz kommt am frühesten an (schneller, weniger Steigrate); das sparsame verbraucht am wenigsten. Gestrichelt: ${def("climbSpd", L.climbSpd())}. Die violetten Regler (Steigrate links, IAS rechts) stellen Ihr eigenes Gesetz ein.`, `tres objetivos incompatibles: ${def("Vy")} gana altitud lo antes posible; la ley rápida llega antes (más rápida, menos régimen); la económica gasta lo mínimo. Punteado: ${def("climbSpd", L.climbSpd())}. Los cursores violetas (régimen a la izquierda, IAS a la derecha) ajustan su propia ley.`)));
+        reading(tl(`trois objectifs incompatibles : ${def("Vy")} gagne l’altitude au plus vite ; la loi rapide arrive au plus tôt (plus vite, moins de vario) ; la loi économique dépense le moins. Pointillés : ${def("climbSpd", L.climbSpd())} ; pointillés fins bleus : ${def("Vx")} (obstacle à franchir). Les curseurs violets (vario à gauche, Badin à droite) règlent votre propre loi.`, `three incompatible goals: ${def("Vy")} gains altitude fastest; the fast law arrives soonest (faster, less rate); the economy law burns least. Dashed: ${def("climbSpd", L.climbSpd())}; thin blue dots: ${def("Vx")} (obstacle clearance). The violet sliders (rate left, IAS right) set your own law.`, `drei unvereinbare Ziele: ${def("Vy")} gewinnt am schnellsten Höhe; das schnelle Gesetz kommt am frühesten an (schneller, weniger Steigrate); das sparsame verbraucht am wenigsten. Gestrichelt: ${def("climbSpd", L.climbSpd())}; feine blaue Punkte: ${def("Vx")} (Hindernisfreiheit). Die violetten Regler (Steigrate links, IAS rechts) stellen Ihr eigenes Gesetz ein.`, `tres objetivos incompatibles: ${def("Vy")} gana altitud lo antes posible; la ley rápida llega antes (más rápida, menos régimen); la económica gasta lo mínimo. Punteado: ${def("climbSpd", L.climbSpd())}; puntos azules finos: ${def("Vx")} (franqueo de obstáculos). Los cursores violetas (régimen a la izquierda, IAS a la derecha) ajustan su propia ley.`)));
     });
 
     // --- comparaison des lois : montée au niveau du plan et trajet entier ----------------------------------
