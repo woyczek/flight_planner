@@ -3,7 +3,7 @@
 *[English version: README.md](README.md)*
 
 Un ensemble de pages web statiques pour les opérations aériennes virtuelles (X-Plane,
-IVAO, VATSIM) : comptes rendus de mission pour 14 familles de missions, reporting et
+IVAO, VATSIM) : comptes rendus de mission pour 15 familles de missions, reporting et
 statistiques, bases de la flotte et des aéronefs, analyse des atterrissages, préparation
 des performances et du carburant, dossiers de mission et cartes aéronautiques (données SIA). Ni serveur, ni compte, ni compilation : les pages
 fonctionnent dans le navigateur et gardent leurs données dans des fichiers locaux (YAML)
@@ -17,7 +17,7 @@ et dans le navigateur.
 
 | Application | Pages | Rôle | Documentation |
 |---|---|---|---|
-| **CR DEFA** (Mission Report Core) | `CR DEFA/` — ☰ › Reporting missions, Nouveau compte rendu, Paramétrage | Comptes rendus de mission de 14 familles, registre unique, reporting et graphiques, bases de la flotte et des indicatifs, envoi des CR | [Tutoriel](docs/TUTORIAL.md) · [Manuel d'exploitation](docs/MANUEL_EXPLOITATION.md) · [Notes de conception](docs/mission_report_core_audit.md) |
+| **CR DEFA** (Mission Report Core) | `CR DEFA/` — ☰ › Reporting missions, Nouveau compte rendu, Paramétrage | Comptes rendus de mission de 15 familles, registre unique, reporting et graphiques, bases de la flotte et des indicatifs, envoi des CR | [Tutoriel](docs/TUTORIAL.md) · [Manuel d'exploitation](docs/MANUEL_EXPLOITATION.md) · [Notes de conception](docs/mission_report_core_audit.md) |
 | **Landing Performance Dashboard** | `LandingPerformanceDashboard/LandingPerformance_Dashboard_MultiCSV_i18n.html` | Analyse des atterrissages (score, FPM, G) à partir des journaux CSV / LOG, tendances, filtres | [docs/LANDING_DASHBOARD.md](docs/LANDING_DASHBOARD.md) · [mise à jour de la base d'aéronefs](LandingPerformanceDashboard/README.md) |
 | **Flight Performance & Fuel Planner** | `flight_performance_planner.html` | Profils de performance par avion, devis carburant, altitude optimale, calibration SimBrief, échange Little Navmap | [docs/FLIGHT_PLANNER.md](docs/FLIGHT_PLANNER.md) |
 | **Missions SIA** | `SIA XML/` — ☰ › Générateur de mission (SIA), Studio cartographique (SIA) | Brief de mission (textes, points, PDF final) et cartes PNG / SVG depuis les données AIRAC du SIA : zones, MORA, quadrillage, hippodromes de ravitaillement, fonds OSM ; passerelle vers un CR DEFA pré-rempli | [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md) |
@@ -35,7 +35,7 @@ le code commun reste dans `shared/`, `AircraftDB/` et `assets/`.
 
 Un moteur unique (`shared/mission_core/`) anime les pages de CR et de reporting de toutes
 les familles : HEMS / MEDEVAC, FIRE / GAAR (lutte contre les feux de forêt), SAR,
-AIRLIFT, MARITIME, HADR, AIRBORNE, CONTRÔLE EN VOL, LEVÉS, POLICE / DOUANE, ISR,
+AIRLIFT, AAR (ravitaillement en vol), MARITIME, HADR, AIRBORNE, CONTRÔLE EN VOL, LEVÉS, POLICE / DOUANE, ISR,
 COMMANDEMENT / GUET AÉRIEN, OPÉRATIONS SPÉCIALES, SPÉCIAL (essais / formation). Chaque
 famille a une page de CR (`CR DEFA/<DOSSIER>/<famille>_cr.html`) et une page de reporting
 (`CR DEFA/<DOSSIER>/<famille>_reporting.html`) ; la popup de l'en-tête change de famille et de

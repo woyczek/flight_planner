@@ -96,7 +96,7 @@ apparaissent dans le générateur (et dans ses exports YAML / Markdown / PDF), e
 
 En-tête : **Transmettre au studio cartographique →** (ouvre le studio sur la mission partagée) et **Créer le
 CR DEFA →** : nouveau compte rendu de la famille correspondant au type (MEDEVAC → HEMS,
-AIRLIFT → AIRLIFT, TRAINING → SPECIAL…), pré-rempli : nom et numéro, objectif, terrains de
+AIRLIFT → AIRLIFT, AIR-TO-AIR REFUELLING → AAR, TRAINING → SPECIAL…), pré-rempli : nom et numéro, objectif, terrains de
 départ / arrivée, points et coordonnées, appareils (type OACI du catalogue commun : A400M Atlas
 → A4M ; indicatif), exploitant, charge. Le CR demande confirmation avant de remplacer un
 brouillon.

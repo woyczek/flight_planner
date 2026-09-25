@@ -72,6 +72,24 @@
   const callsignTable = window.MISSION_CALLSIGNS?.table || [];
   const operatorDesignators = window.MISSION_CALLSIGNS?.operators || {};
 
+  // Mots-clés de recherche (page « Nouveau compte rendu ») : types de mission, synonymes, appareils typiques.
+  const familyKeywords = {
+    HEMS: 'hems medevac evasan evacuation sanitaire samu smur helismur secours medical blesse malade patient hopital transfert inter hospitalier helico helicoptere dragon ambulance casevac urgence',
+    FIRE: 'feu feux incendie foret gaar canadair dash pelican milan bombardier d eau largage retardant securite civile tracker cl415 guet arme',
+    SAR: 'sar recherche sauvetage disparu naufrage naufrages montagne cross csar recuperation personnel treuil caiman dauphin rescue search',
+    AIRLIFT: 'transport logistique fret cargo passagers pax a400m atlas c130 hercules transall casa cn235 liaison materiel palette rotation escale airlift',
+    AAR: 'ravitaillement en vol ravito ravitailleur tanker mrtt phenix kc135 c135 kc10 perche panier refuelling refueling boom drogue hippodrome receveur ravitaille aar carburant transfere',
+    MARITIME: 'maritime surmar patmar patrouille mer navire bateau pollution atlantique atl2 falcon 50 surveillance cotiere peche sous marin',
+    HADR: 'humanitaire catastrophe evacuation ressortissants seisme ouragan tsunami inondation aide population hadr',
+    AIRBORNE: 'largage parachutiste parachutistes para aeroporte airdrop saut chuteurs zone de saut dz materiel lot',
+    FI: 'controle en vol calibration ils vor dme balisage flight inspection procedure radionavigation',
+    SURVEY: 'leve leves photo aerienne cartographie scientifique mesure lidar observation terre releve survey',
+    LE: 'police douane gendarmerie frontiere poursuite interception surveillance ordre public law enforcement',
+    ISR: 'renseignement reconnaissance isr roem roim drone reaper patroller reco photo tactique surveillance',
+    COMMAND: 'commandement awacs e3 guet aerien relais radio c2 poste de commandement qra police du ciel surete aerienne alerte',
+    SOF: 'forces speciales cos commando infiltration exfiltration insertion extraction tactique operations speciales',
+    SPECIAL: 'vip essais essai formation instruction entrainement convoyage special test vol technique autre'
+  };
   // Index statique des familles du Core (sélecteur d'en-tête : famille / série), chemins
   // relatifs à la racine du site.
   const families = [
@@ -80,7 +98,7 @@
     ['AIRBORNE', 'Largage / aéroporté', 'AIRBORNE/airborne'], ['FI', 'Contrôle en vol', 'FLIGHTINSPECTION/fi'], ['SURVEY', 'Levés / missions scientifiques', 'SURVEY/survey'],
     ['LE', 'Police / douane / sécurité', 'LE/le'], ['ISR', 'Renseignement / reconnaissance', 'ISR/isr'], ['COMMAND', 'Commandement / guet aérien / relais', 'COMMAND/command'],
     ['SOF', 'Opérations spéciales / tactiques', 'SOF/sof'], ['SPECIAL', 'Transport spécial / essais / formation', 'SPECIAL/special']
-  ].map(([id, label, base]) => ({ id, label, cr: `${base}_cr.html`, reporting: `${base}_reporting.html` }));
+  ].map(([id, label, base]) => ({ id, label, cr: `${base}_cr.html`, reporting: `${base}_reporting.html`, keywords: familyKeywords[id] || '' }));
 
   // Famille de CR d'après le type d'une mission générée (SIA XML, helo-xp-mission : mission.type).
   const familyAliases = [[/^(HEMS|MEDEVAC|CASEVAC|EVASAN|SMUR)\b/, 'HEMS'], [/FIRE|GAAR|FEU|INCENDIE/, 'FIRE'], [/^(SAR|CSAR|PR)\b|RESCUE|SAUVETAGE/, 'SAR'], [/\bAAR\b|REFUEL|RAVITAILL|TANKER|AIR[- ]TO[- ]AIR/, 'AAR'], [/AIRLIFT|LOGIST|TRANSPORT|CARGO/, 'AIRLIFT'], [/MARITIME|SURMAR|PATMAR/, 'MARITIME'], [/HADR|HUMANIT|EVAC/, 'HADR'], [/AIRBORNE|AIRDROP|LARGAGE|PARA/, 'AIRBORNE'], [/^FI\b|FLIGHT ?INSPECTION|CALIBRATION/, 'FI'], [/SURVEY|SCIEN|LEV[EÉ]/, 'SURVEY'], [/^LE\b|POLICE|DOUANE|LAW/, 'LE'], [/ISR|RECON|RENSEIGN/, 'ISR'], [/COMMAND|AEW|AWACS|RELAY|RELAIS/, 'COMMAND'], [/^SOF\b|TACTI|OPS? SP[EÉ]CIALES?/, 'SOF']];

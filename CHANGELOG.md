@@ -16,6 +16,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   carburant, breakaways, incidents ; statistiques et synthèse ; pages `CR DEFA/AAR/`. Les missions
   « ravitaillement / refuelling / tanker » (brief SIA, journal DEFA) y sont rangées (auparavant
   transport / spécial).
+- « Nouveau compte rendu » : **champ de recherche** de la famille — la description de la mission
+  (« évasan hélico », « ravito », « police du ciel »…) est comparée aux mots-clés de chaque famille
+  (synonymes FR / EN, appareils et indicatifs typiques, expressions) ; familles classées, les autres
+  estompées, Entrée ouvre la première. Recherche locale, sans service en ligne.
 - Planificateur : jauges déplaçables et valeurs sous les courbes de montée et RPM / consommation ;
   légendes aux couleurs des courbes.
 - **Flight Performance & Fuel Planner — Profil vertical** : bloc de coupe le long d'une route

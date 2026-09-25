@@ -3,7 +3,7 @@
 *[Version française : README_fr.md](README_fr.md)*
 
 A set of static web pages for virtual flight operations (X-Plane, IVAO, VATSIM): mission
-reports for 14 mission families, reporting and statistics, fleet and aircraft databases,
+reports for 15 mission families, reporting and statistics, fleet and aircraft databases,
 landing performance analysis, flight / fuel planning, and mission briefs with aeronautical
 maps built from official French AIS (SIA) data. No server, no account, no build
 step: the pages run in the browser and keep their data in local files (YAML) and in the
@@ -17,7 +17,7 @@ browser.
 
 | Application | Pages | Purpose | Documentation (French) |
 |---|---|---|---|
-| **CR DEFA** (Mission Report Core) | `CR DEFA/` — ☰ › Reporting missions, new report, settings | Mission reports for 14 families, single ledger, reporting and charts, fleet and callsign databases, report sending | [Tutorial](docs/TUTORIAL.md) · [Operations manual](docs/MANUEL_EXPLOITATION.md) · [Design notes](docs/mission_report_core_audit.md) |
+| **CR DEFA** (Mission Report Core) | `CR DEFA/` — ☰ › Reporting missions, new report, settings | Mission reports for 15 families, single ledger, reporting and charts, fleet and callsign databases, report sending | [Tutorial](docs/TUTORIAL.md) · [Operations manual](docs/MANUEL_EXPLOITATION.md) · [Design notes](docs/mission_report_core_audit.md) |
 | **Landing Performance Dashboard** | `LandingPerformanceDashboard/ LandingPerformance_Dashboard_MultiCSV_i18n.html` | Landing analysis (score, FPM, G) from CSV / LOG journals, trends, filters | [docs/LANDING_DASHBOARD.md](docs/LANDING_DASHBOARD.md) · [aircraft database updater](LandingPerformanceDashboard/README.md) |
 | **Flight Performance & Fuel Planner** | `flight_performance_planner.html` | Aircraft performance profiles, fuel quote, optimum altitude, SimBrief calibration, Little Navmap exchange | [docs/FLIGHT_PLANNER.md](docs/FLIGHT_PLANNER.md) |
 | **SIA missions** | `SIA XML/` — ☰ › Générateur de mission (SIA), Studio cartographique (SIA) | Mission brief (texts, points, final PDF) and PNG / SVG maps from SIA AIRAC data: airspaces, MORA, graticule, air-to-air refuelling tracks, OSM base maps; opens a pre-filled CR DEFA report | [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md) |
@@ -34,7 +34,7 @@ All the pages and ledgers of the application live in the `CR DEFA/` folder;
 shared code stays in `shared/`, `AircraftDB/` and `assets/`.
 
 One engine (`shared/mission_core/`) drives the report and reporting pages of every
-family: HEMS / MEDEVAC, FIRE / GAAR (aerial firefighting), SAR, AIRLIFT, MARITIME, HADR,
+family: HEMS / MEDEVAC, FIRE / GAAR (aerial firefighting), SAR, AIRLIFT, AAR (air-to-air refuelling), MARITIME, HADR,
 AIRBORNE, FLIGHT INSPECTION, SURVEY, LAW ENFORCEMENT, ISR, COMMAND / AEW, SOF, SPECIAL
 (test / training). Each family has a report page (`CR DEFA/<FOLDER>/<family>_cr.html`) and a
 reporting page (`CR DEFA/<FOLDER>/<family>_reporting.html`); the header popup switches family and

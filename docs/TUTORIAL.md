@@ -22,7 +22,9 @@ Ces réglages sont repris par toutes les pages.
 ## 2. Ouvrir un nouveau compte rendu
 
 1. **☰ › Reporting missions**, puis le bouton **+ Nouveau compte rendu** de l'en-tête.
-2. Choisir **FIRE** dans la grille. La dernière famille utilisée apparaît toujours en premier
+2. Choisir **FIRE** dans la grille — ou le trouver en décrivant la mission dans le champ de
+   recherche (« feu de forêt », « canadair », « ravitaillement de Rafale »… : familles classées,
+   Entrée ouvre la première). La dernière famille utilisée apparaît toujours en premier
    (« Continuer avec … »).
 3. La page de CR s'ouvre. En haut, la pastille **« FIRE · GAAR ▾ »** : un clic ouvre la popup
    qui permet de changer de famille ou de **sous-type** de mission (GAAR, GAAR avec déroutement, intervention, entraînement).
