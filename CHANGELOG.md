@@ -73,6 +73,21 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - Studio : **aérodromes** (type de piste, orientation, CAP / restreint / État), **radionavigation**
   (VOR, VOR-DME, VOR-TACAN, TACAN, DME, NDB, rose magnétique), **obstacles** (hauteur minimale,
   balisage, groupes, éoliennes) lus dans l'AIXM SIA (`SIA XML/aero_symbols.js`).
+- **Mission partagée** générateur ⇄ studio (`SIA XML/mission_store.js`) : un seul document avec
+  révision, enregistré à chaque modification et relu par l'autre page ; lecture Markdown / YAML
+  commune. Studio : **emprise** de chaque carte modifiable (zoom, déplacement, vue affichée),
+  **Appliquer** l'écrit dans la mission (`bbox`), valeurs d'origine gardées jusque-là ; cartes
+  **ajoutées / supprimées** ; position de la carte conservée au rafraîchissement, ⌂ pour revenir
+  à la position définie.
+- Studio : blocs réordonnés (Mission, Sorties, Profils, Base SIA, Données complémentaires) ; liste
+  des cartes et profils sous la carte de contrôle ; type de sortie et largeur PNG dans le menu ☰.
+- Studio : lecture AIXM corrigée — **arcs** dans le bon sens (du sommet porteur au suivant) et
+  **cercles** (185 espaces, dont CTR RENNES absente et CTR NANTES tronquée) ; familles CTA, TRA,
+  RMZ, TMZ, PJE ; **territoire** de la mission (plus d'espaces ni d'aérodromes d'outre-mer sur une
+  mission en métropole) ; filtres des aérodromes (CAP, restreints, État, hélistations, bandes ;
+  contrôlés / non contrôlés) et des balises (VOR, TACAN, DME, NDB) ; libellés sans recouvrement
+  (centre puis contour) ; taille des libellés des espaces et altitudes facultatives dans l'onglet
+  Zones ; bande OACI uniforme, croix des petites zones facultative.
 - Studio : plusieurs hippodromes à la fois (liste à cocher) ; carte de contrôle dans une
   **fenêtre séparée synchronisée** (⧉) ; colonnes redimensionnables jusqu'à 25 / 75 sans
   débordement du bloc de sélection des zones.

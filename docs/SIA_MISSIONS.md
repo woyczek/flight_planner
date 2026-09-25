@@ -89,28 +89,38 @@ coordination, résumé, description, risques, rubriques, cartes). Nom des fichie
 quand le titre n'est que « Mission 02 », la cible le remplace
 (`M02_TRAINING_VAILLANT_31_Axe_SIMONE`).
 
-En-tête : **Transmettre au studio cartographique →** (la mission passe au studio) et **Créer le
+**Mission partagée avec le studio** (`SIA XML/mission_store.js`) : un seul document (YAML, textes,
+fichiers d'origine) avec numéro de révision, enregistré à chaque modification et relu aussitôt par
+l'autre page ouverte — emprises appliquées, cartes ajoutées ou supprimées dans le studio
+apparaissent dans le générateur (et dans ses exports YAML / Markdown / PDF), et inversement.
+
+En-tête : **Transmettre au studio cartographique →** (ouvre le studio sur la mission partagée) et **Créer le
 CR DEFA →** : nouveau compte rendu de la famille correspondant au type (MEDEVAC → HEMS,
 AIRLIFT → AIRLIFT, TRAINING → SPECIAL…), pré-rempli : nom et numéro, objectif, terrains de
 départ / arrivée, points et coordonnées, appareils (type OACI du catalogue commun : A400M Atlas
 → A4M ; indicatif), exploitant, charge. Le CR demande confirmation avant de remplacer un
 brouillon.
 
-Brouillon : « Mémoriser / Recharger le brouillon » (navigateur).
+Brouillon : la mission partagée est le brouillon ; « Mémoriser / Recharger » l'enregistrent / le relisent.
 
 ## 4. Studio cartographique
 
 Page `SIA XML/map_parser.html`. Une mission décrit ses cartes ; chaque carte est dessinée avec
 un **profil d'affichage**, puis le studio produit PNG / SVG et un ZIP.
 
-### 4.1 Base de données SIA (bloc 1)
+Blocs : 1. Mission · 2. Sorties · 3. Profils d'affichage · 4. Base de données SIA · 5. Données
+complémentaires.
 
-Dossier SIA XML (mémorisé), inventaire des XML analysés, rechargement de la base mémorisée.
+### 4.1 Mission (bloc 1)
 
-### 4.2 Mission (bloc 2)
+Fichier Markdown / YAML ou **collage** dans la fenêtre commune (× / Fermer / Lire la mission →
+Valider) : la mission devient la **mission partagée** avec le générateur ; à l'ouverture, le studio
+reprend la mission partagée.
 
-Fichier Markdown / YAML, **collage** dans la fenêtre commune (× / Fermer / Lire la mission →
-Valider), ou mission transmise par le générateur.
+### 4.2 Sorties (bloc 2)
+
+Aperçu de toutes les cartes, **carte d'assemblage**, **Générer les cartes et le ZIP** (voir
+§ 4.5). Type de sortie (PNG, SVG éditable) et largeur des PNG : **menu ☰**.
 
 ### 4.3 Profils d'affichage (bloc 3)
 
@@ -127,7 +137,10 @@ Graybeard / Shadow / Eclipse.
   bâtiments, frontières — sur tous les fonds vectoriels ; relief ombré, courbes de niveau,
   sommets), libellés de villes (population minimale), libellés des sommets. Points d'intérêt
   et numéros de rue masqués sur les fonds publiés.
-- **Onglet Zones** : familles R / D / P et CTR / TMA / SIV (case « toutes » par famille) ;
+- **Onglet Zones** : familles R / D / P, contrôlés (CTR, TMA, CTA, SIV), autres (TRA, RMZ, TMZ,
+  PJE — parachutage), case « toutes » par famille ; **territoire** automatique (emprise des points
+  de la mission élargie : l'outre-mer ne sort pas sur une mission en métropole, et inversement) ;
+  taille des libellés des espaces, **affichage des altitudes** (facultatif) ;
   **sélection des zones** :
   - **liste blanche** (seules les zones de la liste ; liste vide = toutes les zones des
     familles cochées) ou **liste noire** (toutes sauf celles de la liste) ;
@@ -145,11 +158,17 @@ Graybeard / Shadow / Eclipse.
   - **symbologie des cartes OACI** (légende SIA / IGN au 1 : 500 000) : espaces contrôlés par
     classe (A bande rouge, B / C / D trait et bande bleus, E bande bleu clair, classe en carré dans
     le cartouche), R / D hachurées, P quadrillées, **RTBA** en bande rouge hachurée de blanc,
-    **croix rouge** pour une zone trop petite à l'échelle, cartouches « nom / plafond / plancher ».
+    croix rouge pour une zone trop petite à l'échelle (facultative), cartouches « nom / plafond /
+    plancher » ;
+  - **libellés sans recouvrement** : chaque cartouche est posé au centre de la zone, sinon le long
+    de son contour ; celui qui ne trouve pas de place libre n'est pas écrit (aérodromes, balises et
+    obstacles suivent la même règle).
 - **Onglet Éléments** — un bloc par élément, réglages grisés quand il est décoché :
   **aérodromes** (piste en dur > 2300 m orientée, 1000–2300 m, < 1000 m, bande, hélistation ;
-  ouvert à la CAP en bleu plein avec repères, restreint en clair, État en rouge) ;
-  **radionavigation** (VOR, VOR-DME, VOR-TACAN, TACAN, DME, NDB ; cartouche « (D) ROA 110.25 »,
+  ouvert à la CAP en bleu plein avec repères, restreint en clair, État en rouge ; **filtres** :
+  civils ouverts à la CAP, restreints, État / militaires, hélistations, bandes / ULM, et
+  contrôlés — tour ou situés dans une CTR — / non contrôlés) ;
+  **radionavigation** (types au choix : VOR / VOR-DME, TACAN / VOR-TACAN, DME, NDB ; cartouche « (D) ROA 110.25 »,
   nom en clair, rose au nord magnétique en vue détaillée) ; **obstacles** (≥ 300 / 500 / 1000 ft
   AGL, élevés, groupes, balisés de nuit, éoliennes ; cote AMSL et (hauteur) en vue détaillée ;
   regroupés à l'écran, le plus haut représentant le groupe) ;
@@ -162,18 +181,32 @@ modification**, actualisée à chaque réglage ; bouton ⤢ pour l'agrandir (Éc
 bouton ⧉ pour l'ouvrir dans une **fenêtre séparée synchronisée** (même page réduite à la carte,
 `#fenetre` ; mission, profils, alias et carte choisie transmis à chaque réglage).
 Zones avec leurs libellés et limites (« R 69 — 800 ft ASFC – 2700 ft ASFC »), quadrillage, MORA,
-hippodrome, points tournants, villes.
+hippodrome, points tournants, villes. La position (zoom, déplacement à la souris) est **conservée**
+quand on change un réglage ; ⌂ revient à la position définie.
 
-### 4.4 Données complémentaires (bloc 4)
+Sous la carte :
 
-Calcul de la grille MORA (§ 4.6), sources (GeoNames, SIA, IGN) et calibration du fond local.
+- **Emprise** de la carte choisie : − / + (zoom), ← ↑ ↓ → (déplacement d'un quart), **Vue
+  affichée** (reprend la vue déplacée à la souris), ⌂ (revenir à la position définie), **Rétablir**
+  (emprise de la mission), **Appliquer** (écrit l'emprise `bbox: [O, S, E, N]` dans la mission
+  partagée). Les valeurs de la mission sont gardées tant qu'on n'applique pas ; ✎ marque une carte
+  dont l'emprise est modifiée.
+- **Cartes de la mission**, une ligne chacune : affichage dans la carte de contrôle, **profil**
+  (ou **Désactivé** : carte ni générée, ni prévisualisée, ni sur l'assemblage), suppression (×).
+- **+ Carte** : nouvelle carte (nom, type générale / cible / détail / zone) avec la vue affichée
+  pour emprise, ajoutée à la mission partagée.
 
-### 4.5 Sorties (bloc 5)
+### 4.4 Base de données SIA (bloc 4) et données complémentaires (bloc 5)
 
-- **Profil par carte** : chaque carte de la mission reçoit un profil (proposé : détail, cible,
-  rendez-vous → VFR détaillé ; mission dont le titre contient « IFR » → IFR ; sinon VFR
-  simplifié) ; **Désactivé** = carte ni générée, ni prévisualisée,
-  ni sur l'assemblage.
+Dossier SIA XML (mémorisé), inventaire des XML analysés, rechargement de la base mémorisée.
+Bloc 5 : calcul de la grille MORA (§ 4.6), sources (GeoNames, SIA, IGN) et calibration du fond
+local (utile au seul fond « PNG local »).
+
+### 4.5 Production des cartes
+
+- **Profil par carte** : proposé d'après la carte (détail, cible, rendez-vous → VFR détaillé ;
+  mission dont le titre contient « IFR » → IFR ; sinon VFR simplifié), modifiable sous la carte de
+  contrôle.
 - **Emprise** : `bbox` de la mission, sinon centre + rayon / largeur × hauteur, sinon d'après le
   nom du fichier (général : tous les points ; cible ≈ 50 km ; détail ≈ 8 × 5 km ; zone).
 - Aperçu de toutes les cartes, **carte d'assemblage** (emprises de toutes les cartes).
@@ -217,8 +250,8 @@ n'importe lesquels des 31 axes ; rien de coché = aucun hippodrome.
 
 | Clé | Contenu |
 |---|---|
-| `missionGeneratorDraft` | Brouillon du générateur |
-| `missionGeneratorHandoff` | Mission transmise au studio |
+| `siaMissionShared:v1` | **Mission partagée** générateur ⇄ studio (YAML, textes, révision) ; copie dans `missionGeneratorDraft` pour les anciennes versions |
+| `siaOutput` | Sorties (PNG, SVG, largeur) |
 | `siaMissionToCr:v1` | Mission transmise au CR DEFA (effacée à la lecture) |
 | `siaDisplayProfiles` | Profils d'affichage |
 | `siaZoneAliases` | Alias de zones |
