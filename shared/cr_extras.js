@@ -16,16 +16,27 @@
   // considérée "sale" jusqu'à un archivage/export explicite.
   if (form) {
     let dirty = false;
-    form.addEventListener('input', () => { dirty = true; });
-    form.addEventListener('change', () => { dirty = true; });
+    form.addEventListener('input', () => {
+      dirty = true;
+    });
+    form.addEventListener('change', () => {
+      dirty = true;
+    });
     ['archiveBtn', 'downloadCsvBtn', 'saveJsonBtn', 'renderBtn'].forEach(id => {
-      $(id)?.addEventListener('click', () => { dirty = false; });
+      $(id)?.addEventListener('click', () => {
+        dirty = false;
+      });
     });
     if (window.AppFramework?.guardUnsavedChanges) {
-      window.AppFramework.guardUnsavedChanges(() => dirty, { linkSelector: 'a[href]:not([target="_blank"])' });
+      window.AppFramework.guardUnsavedChanges(() => dirty, {
+        linkSelector: 'a[href]:not([target="_blank"])'
+      });
     } else {
       window.addEventListener('beforeunload', event => {
-        if (dirty) { event.preventDefault(); event.returnValue = ''; }
+        if (dirty) {
+          event.preventDefault();
+          event.returnValue = '';
+        }
       });
     }
   }
@@ -47,8 +58,16 @@
       const field = form?.querySelector(`[name="${name}"]`);
       if (!field) return;
       if (config[name] && !field.value) field.value = config[name];
-      field.addEventListener('input', () => { if (field.value) window.MissionReportingConfig?.write?.({ [name]: field.value }); });
-      field.addEventListener('change', () => { if (field.value) window.MissionReportingConfig?.write?.({ [name]: field.value }); });
+      field.addEventListener('input', () => {
+        if (field.value) window.MissionReportingConfig?.write?.({
+          [name]: field.value
+        });
+      });
+      field.addEventListener('change', () => {
+        if (field.value) window.MissionReportingConfig?.write?.({
+          [name]: field.value
+        });
+      });
     });
   });
 
@@ -56,5 +75,7 @@
   const isGaar = location.pathname.includes('/FIRE/');
   const target = isGaar ? 'fire_reporting.html' : 'hems_medevac_reporting.html';
   const label = isGaar ? 'Voir le reporting FIRE / GAAR' : 'Voir le reporting HEMS';
-  window.RepositoryNav?.addAction?.(label, () => { location.href = target; });
+  window.RepositoryNav?.addAction?.(label, () => {
+    location.href = target;
+  });
 })();

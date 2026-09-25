@@ -14,23 +14,46 @@
   const configKey = isGaar ? 'gaarLedgerName' : 'ledgerName';
   const reportingPage = isGaar ? 'fire_reporting.html' : 'hems_medevac_reporting.html';
   const DRAFT_KEY = 'missionEditDraft:v1';
+  /** Champ du formulaire de CR par son nom. */
   const field = name => form.querySelector(`[name="${name}"]`);
+  /** N° de mission normalisé (majuscules, sans blancs). */
   const normId = value => String(value ?? '').trim().toUpperCase();
+  /** Ligne CSV « ; » (valeurs entre guillemets, guillemets doublés). */
   const csvLine = values => values.map(value => '"' + String(value ?? '').replace(/"/g, '""') + '"').join(';');
+  /** Lecteur CSV « ; » (guillemets doublés) : tableau de lignes (tableaux de cellules). */
   const parseCsv = text => {
-    const out = []; let row = [], value = '', quoted = false; text = String(text || '');
-    const push = () => { row.push(value); if (row.some(Boolean) && !String(row[0]).startsWith('#')) out.push(row); row = []; value = ''; };
+    const out = [];
+    let row = [],
+      value = '',
+      quoted = false;
+    text = String(text || '');
+    const push = () => {
+      row.push(value);
+      if (row.some(Boolean) && !String(row[0]).startsWith('#')) out.push(row);
+      row = [];
+      value = '';
+    };
     for (let i = 0; i < text.length; i++) {
-      const char = text[i], next = text[i + 1];
-      if (quoted && char === '"' && next === '"') { value += '"'; i++; }
-      else if (char === '"') quoted = !quoted;
-      else if (!quoted && char === ';') { row.push(value); value = ''; }
-      else if (!quoted && (char === '\n' || char === '\r')) { if (char === '\r' && next === '\n') i++; push(); }
-      else value += char;
+      const char = text[i],
+        next = text[i + 1];
+      if (quoted && char === '"' && next === '"') {
+        value += '"';
+        i++;
+      } else if (char === '"') quoted = !quoted;
+      else if (!quoted && char === ';') {
+        row.push(value);
+        value = '';
+      } else if (!quoted && (char === '\n' || char === '\r')) {
+        if (char === '\r' && next === '\n') i++;
+        push();
+      } else value += char;
     }
     if (value || row.length) push();
     const head = (out.shift() || []).map(name => String(name).replace(/^﻿/, '').trim());
-    return { head, rows: out };
+    return {
+      head,
+      rows: out
+    };
   };
 
   // Ligne CSV courante du formulaire, construite par le script de la page
@@ -40,7 +63,9 @@
       const head = isGaar ? ledgerHeader : headers;
       const values = isGaar ? flattenRow() : row(data());
       return Object.fromEntries(head.map((name, index) => [name, values[index] ?? '']));
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   }
 
   // Texte du registre : fichier du dossier local autorisé, sinon copie locale partagée,
@@ -48,7 +73,10 @@
   async function ledgerText() {
     const handle = typeof dirHandle !== 'undefined' ? dirHandle : null;
     if ($('storageMode')?.value === 'localfs' && handle) {
-      try { return await (await (await handle.getFileHandle($('ledgerName')?.value || '')).getFile()).text(); } catch { /* fichier absent : repli sur la copie locale */ }
+      try {
+        return await (await (await handle.getFileHandle($('ledgerName')?.value || '')).getFile()).text();
+      } catch {
+        /* fichier absent : repli sur la copie locale */ }
     }
     const stored = window.MissionReportingConfig?.cached?.(configKey);
     if (stored?.text) return stored.text;
@@ -59,58 +87,94 @@
   // ---------------------------------------------------------------- mode modification
   let draft = null;
   if (new URLSearchParams(location.search).has('edit')) {
-    try { draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch { draft = null; }
+    try {
+      draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
+    } catch {
+      draft = null;
+    }
     if (draft && draft.kind !== (isGaar ? 'gaar' : 'hems')) draft = null;
   }
   // Lu par mission_reporting_config.js / mission_record_loader.js pour ne pas
   // renuméroter la mission éditée.
-  window.MissionEditMode = draft ? { missionId: draft.record?.missionId || '' } : null;
+  window.MissionEditMode = draft ? {
+    missionId: draft.record?.missionId || ''
+  } : null;
 
   if (draft) {
     const banner = document.createElement('section');
     banner.id = 'missionEditBanner';
     banner.innerHTML = '<h2>Modification d’une mission du registre</h2><div class="note" id="missionEditInfo"></div><div class="row"><button type="button" class="primary" id="saveEditBtn">Générer / actualiser les modifications</button><button type="button" class="secondary" id="backToReportingBtn">Retour au reporting</button><button type="button" class="secondary" id="leaveEditBtn">Nouvelle mission (quitter la modification)</button><button type="button" class="danger" id="deleteEditBtn">Supprimer cette mission</button></div><p class="small" id="missionEditStatus"></p>';
     form.prepend(banner);
+    /** Bandeau du mode modification : mission, ligne et registre modifiés. */
     const info = () => {
-      $('missionEditInfo').textContent = `Mission ${draft.record?.missionId || '—'} — ligne ${draft.index + 1} du registre ${draft.filename || ''}. `
-        + (draft.configKey ? 'Les modifications remplacent cette ligne dans la copie locale du registre ; utilisez ensuite « Exporter le registre modifié » depuis le reporting pour mettre à jour le fichier CSV.' : 'Données d’exemple : les modifications ne peuvent pas être réenregistrées dans un registre.');
+      $('missionEditInfo').textContent = `Mission ${draft.record?.missionId || '—'} — ligne ${draft.index + 1} du registre ${draft.filename || ''}. ` +
+        (draft.configKey ? 'Les modifications remplacent cette ligne dans la copie locale du registre ; utilisez ensuite « Exporter le registre modifié » depuis le reporting pour mettre à jour le fichier CSV.' : 'Données d’exemple : les modifications ne peuvent pas être réenregistrées dans un registre.');
     };
     info();
-    const status = text => { $('missionEditStatus').textContent = text; };
+    /** Message d'état du mode modification. */
+    const status = text => {
+      $('missionEditStatus').textContent = text;
+    };
 
+    /** Recopie la ligne de registre éditée dans le formulaire de CR. */
     const apply = record => {
       Object.entries(record || {}).forEach(([key, value]) => {
-        const input = field(key); if (!input) return;
+        const input = field(key);
+        if (!input) return;
         // Mission sans ID IVAO / VATSIM (registres antérieurs) : on garde l'ID du profil pilote.
         if ((key === 'ivaoId' || key === 'vatsimId') && !String(value ?? '').trim()) return;
         // Listes : valeurs de référence anglaises, anciennes valeurs françaises converties.
-        if (window.MissionValues) { window.MissionValues.setField(input, value); return; }
+        if (window.MissionValues) {
+          window.MissionValues.setField(input, value);
+          return;
+        }
         if (input.tagName === 'SELECT' && value && ![...input.options].some(option => option.value === value)) {
-          const option = document.createElement('option'); option.value = value; option.textContent = value; input.append(option);
+          const option = document.createElement('option');
+          option.value = value;
+          option.textContent = value;
+          input.append(option);
         }
         input.value = value ?? '';
       });
-      form.dispatchEvent(new Event('input', { bubbles: true }));
-      form.dispatchEvent(new Event('change', { bubbles: true }));
+      form.dispatchEvent(new Event('input', {
+        bubbles: true
+      }));
+      form.dispatchEvent(new Event('change', {
+        bubbles: true
+      }));
       $('renderBtn')?.click();
     };
     // Après "load" : les champs injectés dynamiquement (mission_extensions.js :
     // altitude-densité, trace réseau) existent alors dans le formulaire.
-    if (document.readyState === 'complete') apply(draft.record); else window.addEventListener('load', () => apply(draft.record));
+    if (document.readyState === 'complete') apply(draft.record);
+    else window.addEventListener('load', () => apply(draft.record));
 
     // Ligne éditée dans la copie locale du registre, après contrôle qu'elle correspond
     // toujours à la mission ouverte (null + alerte sinon).
     const ledgerTarget = () => {
       const stored = window.MissionReportingConfig?.cached?.(draft.configKey);
-      if (!stored?.text) { alert('Copie locale du registre introuvable : rouvrez le reporting, rechargez le registre puis cliquez à nouveau sur la mission.'); return null; }
-      const { head, rows } = parseCsv(stored.text);
-      const target = rows[draft.index], idColumn = head.indexOf('missionId');
+      if (!stored?.text) {
+        alert('Copie locale du registre introuvable : rouvrez le reporting, rechargez le registre puis cliquez à nouveau sur la mission.');
+        return null;
+      }
+      const {
+        head,
+        rows
+      } = parseCsv(stored.text);
+      const target = rows[draft.index],
+        idColumn = head.indexOf('missionId');
       if (!target || normId(target[idColumn]) !== normId(draft.record?.missionId)) {
         alert(`La ligne ${draft.index + 1} du registre ne correspond plus à la mission ${draft.record?.missionId || ''} (registre rechargé ou modifié entre-temps). Rouvrez le reporting puis cliquez à nouveau sur la mission.`);
         return null;
       }
-      return { stored, head, rows, target };
+      return {
+        stored,
+        head,
+        rows,
+        target
+      };
     };
+    /** Réécrit le registre (en-tête + lignes) dans le cache du reporting pour qu'il retrouve la mission modifiée. */
     const writeLedger = (stored, head, rows) => {
       const text = csvLine(head) + '\n' + rows.map(values => csvLine(head.map((_, index) => values[index] ?? ''))).join('\n') + '\n';
       window.MissionReportingConfig.cacheText(draft.configKey, stored.filename, text);
@@ -118,14 +182,26 @@
       alert('Enregistrement impossible dans le stockage du navigateur (quota dépassé ?). Exportez le CSV de la mission à la place.');
       return false;
     };
-    const back = () => { location.href = draft.returnUrl || reportingPage; };
+    /** Retour à la page de reporting d'origine. */
+    const back = () => {
+      location.href = draft.returnUrl || reportingPage;
+    };
 
     $('saveEditBtn').addEventListener('click', () => {
       $('renderBtn')?.click();
-      if (!draft.configKey) { status('Données d’exemple : rien à enregistrer. Utilisez « Ajouter au fichier mission » pour créer une nouvelle ligne.'); return; }
+      if (!draft.configKey) {
+        status('Données d’exemple : rien à enregistrer. Utilisez « Ajouter au fichier mission » pour créer une nouvelle ligne.');
+        return;
+      }
       const record = currentRecord();
-      const found = record && ledgerTarget(); if (!found) return;
-      const { stored, head, rows, target } = found;
+      const found = record && ledgerTarget();
+      if (!found) return;
+      const {
+        stored,
+        head,
+        rows,
+        target
+      } = found;
       // Colonnes du registre conservées dans leur ordre ; colonnes nouvelles du CR ajoutées à la fin.
       const newHead = head.concat(Object.keys(record).filter(name => !head.includes(name)));
       rows[draft.index] = newHead.map((name, index) => name in record ? record[name] : (target[index] ?? ''));
@@ -138,8 +214,12 @@
     });
     $('backToReportingBtn').addEventListener('click', back);
     $('deleteEditBtn').addEventListener('click', () => {
-      if (!draft.configKey) { status('Données d’exemple : rien à supprimer.'); return; }
-      const found = ledgerTarget(); if (!found) return;
+      if (!draft.configKey) {
+        status('Données d’exemple : rien à supprimer.');
+        return;
+      }
+      const found = ledgerTarget();
+      if (!found) return;
       if (!confirm(`Supprimer la mission ${draft.record?.missionId || ''} du ${draft.record?.date || ''} ?\nLa suppression s'applique à la copie locale du registre (navigateur) ; pensez à exporter le registre modifié depuis le reporting.`)) return;
       found.rows.splice(draft.index, 1);
       if (!writeLedger(found.stored, found.head, found.rows)) return;
@@ -150,7 +230,10 @@
       $('renderBtn')?.click();
       back();
     });
-    $('leaveEditBtn').addEventListener('click', () => { localStorage.removeItem(DRAFT_KEY); location.href = location.pathname; });
+    $('leaveEditBtn').addEventListener('click', () => {
+      localStorage.removeItem(DRAFT_KEY);
+      location.href = location.pathname;
+    });
   }
 
   // ------------------------------------------ contrôle des doublons à l'archivage
@@ -159,22 +242,34 @@
     const button = event.target.closest?.('#archiveBtn');
     if (!button || bypass) return;
     // Intercepte le clic avant les gestionnaires de la page, puis le rejoue si validé.
-    event.stopImmediatePropagation(); event.preventDefault();
+    event.stopImmediatePropagation();
+    event.preventDefault();
     const id = normId(field('missionId')?.value);
     let count = 0;
     if (id) try {
-      const { head, rows } = parseCsv(await ledgerText());
+      const {
+        head,
+        rows
+      } = parseCsv(await ledgerText());
       const column = head.indexOf('missionId');
       if (column >= 0) count = rows.filter(values => normId(values[column]) === id).length;
-    } catch { /* registre illisible : pas de contrôle possible */ }
+    } catch {
+      /* registre illisible : pas de contrôle possible */ }
     if (count) {
       const label = field('missionId').value.trim();
-      const message = draft && normId(draft.record?.missionId) === id
-        ? `La mission ${label} est en cours de modification et figure déjà dans le registre.\nPour mettre à jour la ligne existante, utilisez « Générer / actualiser les modifications ».\n\nAjouter quand même une NOUVELLE ligne ${label} au fichier mission ?`
-        : `Le n° de mission ${label} figure déjà${count > 1 ? ' ' + count + ' fois' : ''} dans le registre.\n\nAjouter quand même cette mission au fichier (doublon) ?\nAnnuler pour corriger le n° de mission.`;
-      if (!confirm(message)) { field('missionId').focus(); return; }
+      const message = draft && normId(draft.record?.missionId) === id ?
+        `La mission ${label} est en cours de modification et figure déjà dans le registre.\nPour mettre à jour la ligne existante, utilisez « Générer / actualiser les modifications ».\n\nAjouter quand même une NOUVELLE ligne ${label} au fichier mission ?` :
+        `Le n° de mission ${label} figure déjà${count > 1 ? ' ' + count + ' fois' : ''} dans le registre.\n\nAjouter quand même cette mission au fichier (doublon) ?\nAnnuler pour corriger le n° de mission.`;
+      if (!confirm(message)) {
+        field('missionId').focus();
+        return;
+      }
     }
     bypass = true;
-    try { button.click(); } finally { bypass = false; }
+    try {
+      button.click();
+    } finally {
+      bypass = false;
+    }
   }, true);
 })();

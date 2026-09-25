@@ -1,49 +1,203 @@
-(()=>{
+(() => {
   // Blocs : déplacer / masquer, mémorisé par page. data-default-hidden="1" : bloc masqué tant
   // que l'utilisateur ne l'a pas affiché (son choix est ensuite mémorisé).
-  const key=()=>`repositoryFramework:${window.RepositoryNav?.page?.path||location.pathname}`;
-  const startupConfig=()=>({...(window.REPOSITORY_TREE?.defaults?.config||{}),...(window.RepositoryNav?.settings?.config||{}),files:{...(window.RepositoryNav?.settings?.files||{})}});
-  const read=()=>{try{return JSON.parse(localStorage.getItem(key())||"{}")||{}}catch{return{}}},write=x=>localStorage.setItem(key(),JSON.stringify(x));
-  function init(){
-    const main=document.querySelector("main,.wrap");if(!main)return;const state=read();state.hidden??={};state.order??={};
-    const blocks=[...main.querySelectorAll("section,.panel,.format-note,.analysis-dock,.trend-card")].filter(el=>!el.closest("section")||el.matches("section,.panel"));
-    const parents=new Map();blocks.forEach((el,i)=>{
-      const id=el.dataset.blockId||el.id||`block-${i+1}`;el.dataset.blockId=id;el.classList.add("repo-block");const parent=el.parentElement;if(!parents.has(parent))parents.set(parent,[]);parents.get(parent).push(el);
-      let h=el.querySelector(":scope>h2,:scope>.row>h2"),head=h?.parentElement?.classList.contains("row")&&h.parentElement.parentElement===el?h.parentElement:null;if(h&&!head){head=document.createElement("div");head.className="repo-block-heading";h.before(head);head.append(h)}if(head){head.classList.add("repo-block-heading");if(!head.querySelector(".repo-block-tools")){const t=document.createElement("span");t.className="repo-block-tools";t.innerHTML='<button type="button" class="repo-drag">↕</button><button type="button" class="repo-toggle"></button>';head.append(t)}const b=head.querySelector(".repo-toggle"),isHidden=()=>id in state.hidden?!!state.hidden[id]:el.dataset.defaultHidden==="1",apply=()=>{const hide=isHidden();el.classList.toggle("repo-block-hidden",hide);b.textContent=label(hide?"show":"hide");head.querySelector(".repo-drag").title=label("move")};apply();b.onclick=()=>{state.hidden[id]=!isHidden();apply();write(state)};head.querySelector(".repo-drag").onpointerdown=()=>el.draggable=true}
-      el.ondragstart=e=>{el.classList.add("repo-block-dragging");e.dataTransfer.effectAllowed="move"};el.ondragend=()=>{el.draggable=false;el.classList.remove("repo-block-dragging");document.querySelectorAll(".repo-block-drop-before").forEach(x=>x.classList.remove("repo-block-drop-before"));for(const p of parents.keys())state.order[parentKey(p)]=blockChildren(p).map(x=>x.dataset.blockId);write(state)};el.ondragover=e=>{e.preventDefault();el.classList.add("repo-block-drop-before")};el.ondragleave=()=>el.classList.remove("repo-block-drop-before");el.ondrop=e=>{e.preventDefault();const moving=el.parentElement.querySelector(".repo-block-dragging");if(moving&&moving!==el)el.parentElement.insertBefore(moving,el);el.classList.remove("repo-block-drop-before")};
+  /** Clé de stockage de la disposition des blocs de la page courante (ordre, blocs masqués). */
+  const key = () => `repositoryFramework:${window.RepositoryNav?.page?.path||location.pathname}`;
+  /** Réglages de démarrage de la page : défauts de repository_tree, réglages du dossier et de la page, fichiers associés. */
+  const startupConfig = () => ({
+    ...(window.REPOSITORY_TREE?.defaults?.config || {}),
+    ...(window.RepositoryNav?.settings?.config || {}),
+    files: {
+      ...(window.RepositoryNav?.settings?.files || {})
+    }
+  });
+  /** Disposition mémorisée des blocs de la page ({ hidden, order }) ; objet vide si absente ou illisible. */
+  const read = () => {
+      try {
+        return JSON.parse(localStorage.getItem(key()) || "{}") || {}
+      } catch {
+        return {}
+      }
+    },
+    write = x => localStorage.setItem(key(), JSON.stringify(x));
+
+  /** Transforme les sections de la page en blocs : en-tête avec poignée de déplacement ↕ et bouton Masquer / Afficher, glisser-déposer entre blocs frères, disposition mémorisée par page et réappliquée ; data-default-hidden="1" : bloc masqué tant que l'utilisateur ne l'a pas affiché. */
+  function init() {
+    const main = document.querySelector("main,.wrap");
+    if (!main) return;
+    const state = read();
+    state.hidden ??= {};
+    state.order ??= {};
+    const blocks = [...main.querySelectorAll("section,.panel,.format-note,.analysis-dock,.trend-card")].filter(el => !el.closest("section") || el.matches("section,.panel"));
+    const parents = new Map();
+    blocks.forEach((el, i) => {
+      const id = el.dataset.blockId || el.id || `block-${i+1}`;
+      el.dataset.blockId = id;
+      el.classList.add("repo-block");
+      const parent = el.parentElement;
+      if (!parents.has(parent)) parents.set(parent, []);
+      parents.get(parent).push(el);
+      let h = el.querySelector(":scope>h2,:scope>.row>h2"),
+        head = h?.parentElement?.classList.contains("row") && h.parentElement.parentElement === el ? h.parentElement : null;
+      if (h && !head) {
+        head = document.createElement("div");
+        head.className = "repo-block-heading";
+        h.before(head);
+        head.append(h)
+      }
+      if (head) {
+        head.classList.add("repo-block-heading");
+        if (!head.querySelector(".repo-block-tools")) {
+          const t = document.createElement("span");
+          t.className = "repo-block-tools";
+          t.innerHTML = '<button type="button" class="repo-drag">↕</button><button type="button" class="repo-toggle"></button>';
+          head.append(t)
+        }
+        const b = head.querySelector(".repo-toggle"),
+          isHidden = () => id in state.hidden ? !!state.hidden[id] : el.dataset.defaultHidden === "1",
+          apply = () => {
+            const hide = isHidden();
+            el.classList.toggle("repo-block-hidden", hide);
+            b.textContent = label(hide ? "show" : "hide");
+            head.querySelector(".repo-drag").title = label("move")
+          };
+        apply();
+        b.onclick = () => {
+          state.hidden[id] = !isHidden();
+          apply();
+          write(state)
+        };
+        head.querySelector(".repo-drag").onpointerdown = () => el.draggable = true
+      }
+      el.ondragstart = e => {
+        el.classList.add("repo-block-dragging");
+        e.dataTransfer.effectAllowed = "move"
+      };
+      el.ondragend = () => {
+        el.draggable = false;
+        el.classList.remove("repo-block-dragging");
+        document.querySelectorAll(".repo-block-drop-before").forEach(x => x.classList.remove("repo-block-drop-before"));
+        for (const p of parents.keys()) state.order[parentKey(p)] = blockChildren(p).map(x => x.dataset.blockId);
+        write(state)
+      };
+      el.ondragover = e => {
+        e.preventDefault();
+        el.classList.add("repo-block-drop-before")
+      };
+      el.ondragleave = () => el.classList.remove("repo-block-drop-before");
+      el.ondrop = e => {
+        e.preventDefault();
+        const moving = el.parentElement.querySelector(".repo-block-dragging");
+        if (moving && moving !== el) el.parentElement.insertBefore(moving, el);
+        el.classList.remove("repo-block-drop-before")
+      };
     });
-    for(const p of parents.keys()){const map=new Map(blockChildren(p).map(x=>[x.dataset.blockId,x]));(state.order[parentKey(p)]||[]).forEach(id=>{const e=map.get(id);if(e)p.append(e)})}
+    for (const p of parents.keys()) {
+      const map = new Map(blockChildren(p).map(x => [x.dataset.blockId, x]));
+      (state.order[parentKey(p)] || []).forEach(id => {
+        const e = map.get(id);
+        if (e) p.append(e)
+      })
+    }
   }
-  function blockChildren(parent){return Array.from(parent?.children||[]).filter(x=>x?.classList?.contains("repo-block"))}
-  function parentKey(p){return `${p.tagName}:${[...p.parentElement?.children||[]].indexOf(p)}`}
-  function footer(){const r=window.REPOSITORY_TREE?.release||{},f=document.querySelector("footer")||document.createElement("footer");f.className="repo-footer no-print";f.innerHTML=`CC RBR - DEFA Virtual - ${r.date||"2026-09-21"} - <a href="${r.changelog||"https://framagit.org/asr/flight_planner/-/blob/master/CHANGELOG.md"}" target="_blank" rel="noopener" title="Changelog / notes de version">v${r.version||"2026.09"}</a> - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a>`;if(!f.isConnected)document.body.append(f)}
-  function label(k){const l=window.RepositoryNav?.getLanguage()||"en",d={fr:{move:"Déplacer",hide:"Masquer",show:"Afficher"},en:{move:"Move",hide:"Hide",show:"Show"},de:{move:"Verschieben",hide:"Ausblenden",show:"Anzeigen"},es:{move:"Mover",hide:"Ocultar",show:"Mostrar"}};return d[l][k]}
+
+  /** Blocs (.repo-block) enfants directs d'un élément. */
+  function blockChildren(parent) {
+    return Array.from(parent?.children || []).filter(x => x?.classList?.contains("repo-block"))
+  }
+
+  /** Identifiant stable d'un conteneur de blocs (balise et rang), pour mémoriser l'ordre de ses blocs. */
+  function parentKey(p) {
+    return `${p.tagName}:${[...p.parentElement?.children||[]].indexOf(p)}`
+  }
+
+  /** Pied de page commun : version et date de publication (repository_tree.release), liens du dépôt. */
+  function footer() {
+    const r = window.REPOSITORY_TREE?.release || {},
+      f = document.querySelector("footer") || document.createElement("footer");
+    f.className = "repo-footer no-print";
+    f.innerHTML = `CC RBR - DEFA Virtual - ${r.date||"2026-09-21"} - <a href="${r.changelog||"https://framagit.org/asr/flight_planner/-/blob/master/CHANGELOG.md"}" target="_blank" rel="noopener" title="Changelog / notes de version">v${r.version||"2026.09"}</a> - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a>`;
+    if (!f.isConnected) document.body.append(f)
+  }
+
+  /** Libellé d'un bouton de bloc (show / hide / move…) dans la langue de la page. */
+  function label(k) {
+    const l = window.RepositoryNav?.getLanguage() || "en",
+      d = {
+        fr: {
+          move: "Déplacer",
+          hide: "Masquer",
+          show: "Afficher"
+        },
+        en: {
+          move: "Move",
+          hide: "Hide",
+          show: "Show"
+        },
+        de: {
+          move: "Verschieben",
+          hide: "Ausblenden",
+          show: "Anzeigen"
+        },
+        es: {
+          move: "Mover",
+          hide: "Ocultar",
+          show: "Mostrar"
+        }
+      };
+    return d[l][k]
+  }
   // Composant partagé : tri par colonne au clic sur un en-tête <th data-sort="clé">,
   // extrait de la table RPM du Flight Performance Planner (shared/flight_ui.js) pour
   // être réutilisé tel quel par les reportings HEMS/GAAR/général et le Landing dashboard.
-  function sortableTable(theadEl,stateRef,onSort){
-    if(!theadEl) return;
-    theadEl.addEventListener("click",e=>{
-      const key=e.target.closest("[data-sort]")?.dataset.sort;
-      if(!key) return;
-      if(stateRef.key===key) stateRef.dir*=-1; else { stateRef.key=key; stateRef.dir=1; }
+  function sortableTable(theadEl, stateRef, onSort) {
+    if (!theadEl) return;
+    theadEl.addEventListener("click", e => {
+      const key = e.target.closest("[data-sort]")?.dataset.sort;
+      if (!key) return;
+      if (stateRef.key === key) stateRef.dir *= -1;
+      else {
+        stateRef.key = key;
+        stateRef.dir = 1;
+      }
       onSort(stateRef);
     });
   }
   // Composant partagé : avertit avant de quitter une page si des données saisies n'ont
   // pas été enregistrées (beforeunload + interception des liens de navigation internes).
-  function guardUnsavedChanges(isDirty,options){
-    options=options||{};
-    window.addEventListener("beforeunload",e=>{ if(isDirty()){ e.preventDefault(); e.returnValue=""; } });
-    if(options.linkSelector){
-      document.querySelectorAll(options.linkSelector).forEach(link=>{
-        link.addEventListener("click",e=>{
-          if(!isDirty()) return;
-          const message=options.message||"Des données saisies n'ont pas été enregistrées. Quitter quand même ?";
-          if(!window.confirm(message)) e.preventDefault();
+  function guardUnsavedChanges(isDirty, options) {
+    options = options || {};
+    window.addEventListener("beforeunload", e => {
+      if (isDirty()) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    });
+    if (options.linkSelector) {
+      document.querySelectorAll(options.linkSelector).forEach(link => {
+        link.addEventListener("click", e => {
+          if (!isDirty()) return;
+          const message = options.message || "Des données saisies n'ont pas été enregistrées. Quitter quand même ?";
+          if (!window.confirm(message)) e.preventDefault();
         });
       });
     }
   }
-  window.AppFramework={refresh:init,getConfig:startupConfig,sortableTable,guardUnsavedChanges};window.RepositoryConfig=startupConfig();window.addEventListener("repository-language-change",()=>document.querySelectorAll(".repo-block").forEach(el=>{const b=el.querySelector(":scope>.repo-block-heading .repo-toggle"),d=el.querySelector(":scope>.repo-block-heading .repo-drag");if(b)b.textContent=label(el.classList.contains("repo-block-hidden")?"show":"hide");if(d)d.title=label("move")}));window.addEventListener("load",()=>{init();footer()});
+  window.AppFramework = {
+    refresh: init,
+    getConfig: startupConfig,
+    sortableTable,
+    guardUnsavedChanges
+  };
+  window.RepositoryConfig = startupConfig();
+  window.addEventListener("repository-language-change", () => document.querySelectorAll(".repo-block").forEach(el => {
+    const b = el.querySelector(":scope>.repo-block-heading .repo-toggle"),
+      d = el.querySelector(":scope>.repo-block-heading .repo-drag");
+    if (b) b.textContent = label(el.classList.contains("repo-block-hidden") ? "show" : "hide");
+    if (d) d.title = label("move")
+  }));
+  window.addEventListener("load", () => {
+    init();
+    footer()
+  });
 })();

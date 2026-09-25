@@ -2,88 +2,163 @@
 // (IVAO / VATSIM…) mémorisées, lecture du registre à côté de la page, sinon du cache, sinon du registre
 // embarqué (mission_ledger_defaults.js).
 (() => {
-  'use strict';
-  const moduleUrl = document.currentScript.src;
-  const defaultsReady = new Promise(resolve => {
-    if (window.MissionLedgerDefaultsB64) return resolve();
-    const script = document.createElement('script'); script.src = new URL('mission_ledger_defaults.js', moduleUrl).href;
-    script.onload = script.onerror = resolve; document.head.append(script);
-  });
-  const key = 'missionReportingConfig:v1';
-  const baseDefaults = { ledgerName: 'hems_mission_ledger.csv', gaarLedgerName: 'mission_ledger.csv' };
-  const defaults = () => ({ ...baseDefaults, ...(window.RepositoryNav?.settings?.config || {}) });
-  const read = () => { try { return { ...defaults(), ...JSON.parse(localStorage.getItem(key) || '{}') }; } catch { return defaults(); } };
-  const write = patch => localStorage.setItem(key, JSON.stringify({ ...read(), ...patch }));
-  const cacheKey = name => `missionReportingData:v1:${name}`;
-  const cacheText = (name, filename, text) => {
-    if (!name || !text) return;
-    try { localStorage.setItem(cacheKey(name), JSON.stringify({ filename, text, updatedAt: new Date().toISOString() })); } catch { /* A large ledger can still be loaded from its file input. */ }
-  };
-  const cached = name => { try { return JSON.parse(localStorage.getItem(cacheKey(name)) || 'null'); } catch { return null; } };
-  const candidates = (name, configKey) => {
-    const leaf = String(name || '').replace(/^.*[\\/]/, ''), configured = window.RepositoryNav?.settings?.files?.[configKey];
-    return [...new Set([configured, name, (configKey === 'gaarLedgerName' ? 'FIRE/' : 'HEMS/') + leaf].filter(Boolean))];
-  };
-  const publish = (configKey, filename, text, source) => {
-    cacheText(configKey, filename, text);
-    window.dispatchEvent(new CustomEvent('mission-ledger-autoload', { detail: { key: configKey, name: filename, text, source } }));
-    const mission = document.querySelector('[name="missionId"]');
-    // En mode modification (mission_edit.js), le n° de la mission éditée est conservé.
-    if (mission && !window.MissionEditMode && (!mission.value || /-001$/.test(mission.value))) {
-      const prefix = configKey === 'gaarLedgerName' ? 'GAAR' : 'HEMS';
-      const numbers = [...String(text).matchAll(new RegExp('(?:^|[\\r\\n])"?' + prefix + '-(\\d+)', 'g'))].map(match => Number(match[1]));
-      if (numbers.length) {
-        mission.value = prefix + '-' + String(Math.max(...numbers) + 1).padStart(3, '0');
-        mission.dispatchEvent(new Event('input',{bubbles:true}));
-        mission.dispatchEvent(new Event('change',{bubbles:true}));
+    'use strict';
+    const moduleUrl = document.currentScript.src;
+    const defaultsReady = new Promise(resolve => {
+      if (window.MissionLedgerDefaultsB64) return resolve();
+      const script = document.createElement('script');
+      script.src = new URL('mission_ledger_defaults.js', moduleUrl).href;
+      script.onload = script.onerror = resolve;
+      document.head.append(script);
+    });
+    const key = 'missionReportingConfig:v1';
+    const baseDefaults = {
+      ledgerName: 'hems_mission_ledger.csv',
+      gaarLedgerName: 'mission_ledger.csv'
+    };
+    /** Réglages par défaut des reportings (noms de registres, IDs réseau). */
+    const defaults = () => ({
+      ...baseDefaults,
+      ...(window.RepositoryNav?.settings?.config || {})
+    });
+    /** Réglages mémorisés (missionReportingConfig:v1) complétés par les défauts. */
+    const read = () => {
+      try {
+        return {
+          ...defaults(),
+          ...JSON.parse(localStorage.getItem(key) || '{}')
+        };
+      } catch {
+        return defaults();
       }
-    }
-    // Refresh generated reports even when the form restored an existing mission id.
-    setTimeout(() => document.getElementById('renderBtn')?.click(), 0);
-  };
-  const load = async configKey => {
-    const config = read(), name = config[configKey], stored = cached(configKey);
-    if (stored?.text && (!name || stored.filename === name || stored.filename?.endsWith('/' + String(name).replace(/^.*[\\/]/, '')))) {
-      publish(configKey, stored.filename || name, stored.text, 'cache');
-      return true;
-    }
-    for (const candidate of candidates(name, configKey)) try {
-      const response = await fetch(new URL(candidate, location.href), { cache: 'no-store' });
-      if (!response.ok) continue;
-      publish(configKey, candidate, await response.text(), 'file');
-      return true;
-    } catch { /* file:// isolation: cached/manual data is the supported fallback. */ }
-    await defaultsReady;
-    const encoded = window.MissionLedgerDefaultsB64?.[configKey];
-    if (encoded) {
-      const binary = atob(encoded), bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
-      publish(configKey, name, new TextDecoder().decode(bytes), 'default');
-      return true;
-    }
-    return false;
-  };
-  const rememberFile = (configKey, file, text) => { write({ [configKey]: file.name }); publish(configKey, file.name, text, 'selection'); };
-  const isLedgerKey = name => /ledgerName$/i.test(name);
+    };
+    /** Met à jour les réglages (fusion) et les mémorise. */
+    const write = patch => localStorage.setItem(key, JSON.stringify({
+      ...read(),
+      ...patch
+    }));
+    /** Clé de cache du contenu d'un registre. */
+    const cacheKey = name => `missionReportingData:v1:${name}`;
+    /** Garde en cache le texte d'un registre lu (nom de fichier, date) pour une ouverture hors dossier. */
+    const cacheText = (name, filename, text) => {
+      if (!name || !text) return;
+      try {
+        localStorage.setItem(cacheKey(name), JSON.stringify({
+          filename,
+          text,
+          updatedAt: new Date().toISOString()
+        }));
+      } catch {
+        /* A large ledger can still be loaded from its file input. */ }
+    };
+    /** Registre gardé en cache ({ filename, text }) ; null sinon. */
+    const cached = name => {
+      try {
+        return JSON.parse(localStorage.getItem(cacheKey(name)) || 'null');
+      } catch {
+        return null;
+      }
+    };
+    /** Chemins où chercher un registre : fichier déclaré dans repository_tree, nom configuré, puis FIRE/ ou HEMS/ + nom du fichier. */
+    const candidates = (name, configKey) => {
+      const leaf = String(name || '').replace(/^.*[\\/]/, ''),
+        configured = window.RepositoryNav?.settings?.files?.[configKey];
+      return [...new Set([configured, name, (configKey === 'gaarLedgerName' ? 'FIRE/' : 'HEMS/') + leaf].filter(Boolean))];
+    };
+    /** Met en cache le registre lu, le transmet à la page (événement mission-ledger-autoload), propose le prochain n° de mission (hors mode modification) et relance le rendu du rapport. */
+    const publish = (configKey, filename, text, source) => {
+      cacheText(configKey, filename, text);
+      window.dispatchEvent(new CustomEvent('mission-ledger-autoload', {
+        detail: {
+          key: configKey,
+          name: filename,
+          text,
+          source
+        }
+      }));
+      const mission = document.querySelector('[name="missionId"]');
+      // En mode modification (mission_edit.js), le n° de la mission éditée est conservé.
+      if (mission && !window.MissionEditMode && (!mission.value || /-001$/.test(mission.value))) {
+        const prefix = configKey === 'gaarLedgerName' ? 'GAAR' : 'HEMS';
+        const numbers = [...String(text).matchAll(new RegExp('(?:^|[\\r\\n])"?' + prefix + '-(\\d+)', 'g'))].map(match => Number(match[1]));
+        if (numbers.length) {
+          mission.value = prefix + '-' + String(Math.max(...numbers) + 1).padStart(3, '0');
+          mission.dispatchEvent(new Event('input', {
+            bubbles: true
+          }));
+          mission.dispatchEvent(new Event('change', {
+            bubbles: true
+          }));
+        }
+      }
+      // Refresh generated reports even when the form restored an existing mission id.
+      setTimeout(() => document.getElementById('renderBtn')?.click(), 0);
+    };
+    /** Charge le registre configKey : cache s'il correspond au nom configuré, sinon fichier (chemins candidats), sinon registre embarqué (mission_ledger_defaults.js, pages en file://). Retourne vrai si un registre a été publié. */
+    const load = async configKey => {
+      const config = read(),
+        name = config[configKey],
+        stored = cached(configKey);
+      if (stored?.text && (!name || stored.filename === name || stored.filename?.endsWith('/' + String(name).replace(/^.*[\\/]/, '')))) {
+        publish(configKey, stored.filename || name, stored.text, 'cache');
+        return true;
+      }
+      for (const candidate of candidates(name, configKey)) try {
+        const response = await fetch(new URL(candidate, location.href), {
+          cache: 'no-store'
+        });
+        if (!response.ok) continue;
+        publish(configKey, candidate, await response.text(), 'file');
+        return true;
+      } catch {
+        /* file:// isolation: cached/manual data is the supported fallback. */ }
+      await defaultsReady;
+      const encoded = window.MissionLedgerDefaultsB64?.[configKey];
+      if (encoded) {
+        const binary = atob(encoded),
+          bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
+        publish(configKey, name, new TextDecoder().decode(bytes), 'default');
+        return true;
+      }
+      return false;
+    };
+    /** Mémorise un registre choisi à la main (nom et contenu). */
+    const rememberFile = (configKey, file, text) => {
+      write({
+        [configKey]: file.name
+      });
+      publish(configKey, file.name, text, 'selection');
+    };
+    /** Vrai pour un réglage de nom de registre (…LedgerName). */
+    const isLedgerKey = name => /ledgerName$/i.test(name);
 
-  // ---- Helpers partagés par les reportings HEMS, GAAR et général ----
-  const escapeHtml = value => String(value ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const ivaoTrackerUrl = id => 'https://tracker.ivao.aero/?userId=' + encodeURIComponent(id);
-  // Page de statistiques VATSIM du pilote (stats.vatsim.net).
-  const vatsimTrackerUrl = id => 'https://stats.vatsim.net/stats/' + encodeURIComponent(id);
-  // Lien HTML vers la trace réseau d'une mission : URL saisie, sinon IVAO / VATSIM à partir
-  // des ID de la mission ou, à défaut, des ID du profil pilote.
-  const traceLink = row => {
-    const link = (href, label) => `<a href="${escapeHtml(href)}" target="_blank" rel="noopener">${escapeHtml(label)}</a>`;
-    if (/^https?:\/\//i.test(row.trackerUrl || '')) return link(row.trackerUrl, 'Trace');
-    const network = String(row.onlineNetwork || '').toUpperCase(), prefs = read();
-    if ((network === 'IVAO' || (!network && row.ivaoId)) && (row.ivaoId || prefs.ivaoId)) return link(ivaoTrackerUrl(row.ivaoId || prefs.ivaoId), 'Trace IVAO');
-    if ((network === 'VATSIM' || (!network && row.vatsimId)) && (row.vatsimId || prefs.vatsimId)) return link(vatsimTrackerUrl(row.vatsimId || prefs.vatsimId), 'Trace VATSIM');
-    return '—';
-  };
-  // Registre CSV (séparateur ;) à partir d'un en-tête et de lignes objets.
-  const serializeLedger = (head, rows) => {
-    head = head && head.length ? head : Object.keys(rows[0] || {});
-    return [head.join(';')].concat(rows.map(row => head.map(key => `"${String(row[key] ?? '').replace(/"/g, '""')}"`).join(';'))).join('\n') + '\n';
+    // ---- Helpers partagés par les reportings HEMS, GAAR et général ----
+    /** Échappe un texte pour HTML. */
+    const escapeHtml = value => String(value ?? '').replace(/[&<>"]/g, c => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;'
+    } [c]));
+    /** Page du traceur IVAO d'un pilote. */
+    const ivaoTrackerUrl = id => 'https://tracker.ivao.aero/?userId=' + encodeURIComponent(id);
+    // Page de statistiques VATSIM du pilote (stats.vatsim.net).
+    const vatsimTrackerUrl = id => 'https://stats.vatsim.net/stats/' + encodeURIComponent(id);
+    // Lien HTML vers la trace réseau d'une mission : URL saisie, sinon IVAO / VATSIM à partir
+    // des ID de la mission ou, à défaut, des ID du profil pilote.
+    const traceLink = row => {
+      const link = (href, label) => `<a href="${escapeHtml(href)}" target="_blank" rel="noopener">${escapeHtml(label)}</a>`;
+      if (/^https?:\/\//i.test(row.trackerUrl || '')) return link(row.trackerUrl, 'Trace');
+      const network = String(row.onlineNetwork || '').toUpperCase(),
+        prefs = read();
+      if ((network === 'IVAO' || (!network && row.ivaoId)) && (row.ivaoId || prefs.ivaoId)) return link(ivaoTrackerUrl(row.ivaoId || prefs.ivaoId), 'Trace IVAO');
+      if ((network === 'VATSIM' || (!network && row.vatsimId)) && (row.vatsimId || prefs.vatsimId)) return link(vatsimTrackerUrl(row.vatsimId || prefs.vatsimId), 'Trace VATSIM');
+      return '—';
+    };
+    // Registre CSV (séparateur ;) à partir d'un en-tête et de lignes objets.
+    const serializeLedger = (head, rows) => {
+        head = head && head.length ? head : Object.keys(rows[0] || {});
+        return [head.join(';')].concat(rows.map(row => head.map(key => `"${String(row[key] ?? '').replace(/"/g, '""')}"`).join(';'))).join('\n') + '\n';
   };
   // Ouvre le générateur de CR pré-rempli avec une ligne du registre (mode modification).
   // index = position de la ligne dans le registre (le n° de mission peut être dupliqué).
@@ -121,3 +196,4 @@
     keys.forEach(load);
   });
 })();
+

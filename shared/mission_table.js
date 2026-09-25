@@ -16,8 +16,11 @@
   // }) → { setRows(rows), getRows() }
 
   let styleInjected = false;
+
+  /** Ajoute une fois la feuille de style des tableaux de missions. */
   function injectStyle() {
-    if (styleInjected) return; styleInjected = true;
+    if (styleInjected) return;
+    styleInjected = true;
     const style = document.createElement('style');
     style.textContent = `.st-wrap{overflow:auto}
 .st-table{width:100%;border-collapse:collapse;font-size:12px}
@@ -38,20 +41,42 @@
     document.head.appendChild(style);
   }
 
-  const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  /** Échappe un texte pour HTML. */
+  const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;'
+  } [c]));
   // Même règle de tri que le tableau des atterrissages : nombres comparés numériquement,
   // texte avec localeCompare numérique insensible à la casse.
   const sortable = v => {
-    const raw = String(v ?? '').trim(), normalized = raw.replace(/−/g, '-').replace(/\s/g, '').replace(',', '.');
+    const raw = String(v ?? '').trim(),
+      normalized = raw.replace(/−/g, '-').replace(/\s/g, '').replace(',', '.');
     const m = normalized.match(/^[-+]?\d+(?:\.\d+)?(?:%|\b)/);
-    if (m) { const n = parseFloat(m[0]); if (Number.isFinite(n)) return { num: true, val: n }; }
-    return { num: false, val: raw.toLocaleLowerCase() };
+    if (m) {
+      const n = parseFloat(m[0]);
+      if (Number.isFinite(n)) return {
+        num: true,
+        val: n
+      };
+    }
+    return {
+      num: false,
+      val: raw.toLocaleLowerCase()
+    };
   };
   // Clé technique unique par ligne : le n° de mission est un champ libre et peut
   // être dupliqué dans le registre, il ne peut donc pas servir d'identifiant.
-  const rowKeys = new WeakMap(); let rowSeq = 0;
-  const keyOf = row => { if (!rowKeys.has(row)) rowKeys.set(row, 'r' + (++rowSeq)); return rowKeys.get(row); };
+  const rowKeys = new WeakMap();
+  let rowSeq = 0;
+  /** Identifiant stable d'une ligne (pour la délégation d'événements), attribué au premier rendu. */
+  const keyOf = row => {
+    if (!rowKeys.has(row)) rowKeys.set(row, 'r' + (++rowSeq));
+    return rowKeys.get(row);
+  };
 
+  /** Tableau triable dans container (options détaillées en tête de fichier : rows, columns, defaultSortKey / defaultDir, onRowClick, onDelete, deleteMessage, onChange, emptyText) ; tri au clic sur un en-tête, ligne cliquable hors liens et contrôles, suppression confirmée. Retourne { setRows, getRows }. */
   function render(container, opts) {
     injectStyle();
     opts = opts || {};
@@ -61,25 +86,35 @@
     let sortDir = opts.defaultDir || 1;
     const hasActions = typeof opts.onDelete === 'function';
 
+    /** Valeur de tri d'une cellule (sortValue de la colonne, sinon valeur brute). */
     const cellValue = (col, row) => col.sortValue ? col.sortValue(row) : row[col.key];
+
+    /** Lignes triées selon la colonne et le sens courants. */
     function sorted() {
       const col = columns.find(c => c.key === sortKey);
       if (!col) return rows;
       return rows.slice().sort((a, b) => {
-        const av = sortable(cellValue(col, a)), bv = sortable(cellValue(col, b));
+        const av = sortable(cellValue(col, a)),
+          bv = sortable(cellValue(col, b));
         if (col.type === 'number' || (av.num && bv.num)) {
-          const x = av.num ? av.val : -Infinity, y = bv.num ? bv.val : -Infinity;
+          const x = av.num ? av.val : -Infinity,
+            y = bv.num ? bv.val : -Infinity;
           return (x === y ? 0 : x > y ? 1 : -1) * sortDir;
         }
-        return String(av.val).localeCompare(String(bv.val), undefined, { numeric: true, sensitivity: 'base' }) * sortDir;
+        return String(av.val).localeCompare(String(bv.val), undefined, {
+          numeric: true,
+          sensitivity: 'base'
+        }) * sortDir;
       });
     }
+    /** HTML d'une cellule : html() de la colonne (contenu de confiance), sinon format() ou valeur, échappés. */
     const cell = (col, row) => {
       const value = row[col.key];
       if (col.html) return col.html(value, row);
       return esc(col.format ? col.format(value, row) : value);
     };
 
+    /** Redessine l'en-tête (flèche de tri) et les lignes. */
     function paint() {
       const view = sorted();
       const head = `<tr>${columns.map(c => {
@@ -90,8 +125,8 @@
       }).join('')}${hasActions ? '<th class="st-actions"></th>' : ''}</tr>`;
       const span = columns.length + (hasActions ? 1 : 0);
       const body = view.length ? view.map(row => `<tr data-id="${keyOf(row)}"${opts.onRowClick ? ` class="st-clickable" title="${esc(opts.rowTitle || 'Cliquer pour modifier')}"` : ''}>${columns.map(c =>
-        `<td${c.type === 'number' ? ' class="st-num"' : ''}>${cell(c, row)}</td>`).join('')}${hasActions ? `<td class="st-actions"><button type="button" class="st-delete">${esc(opts.deleteLabel || 'Supprimer')}</button></td>` : ''}</tr>`).join('')
-        : `<tr><td colspan="${span}" class="st-empty">${esc(opts.emptyText || 'Aucune donnée pour la période sélectionnée.')}</td></tr>`;
+        `<td${c.type === 'number' ? ' class="st-num"' : ''}>${cell(c, row)}</td>`).join('')}${hasActions ? `<td class="st-actions"><button type="button" class="st-delete">${esc(opts.deleteLabel || 'Supprimer')}</button></td>` : ''}</tr>`).join('') :
+        `<tr><td colspan="${span}" class="st-empty">${esc(opts.emptyText || 'Aucune donnée pour la période sélectionnée.')}</td></tr>`;
       container.innerHTML = `<div class="st-wrap"><table class="st-table"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
     }
 
@@ -101,18 +136,26 @@
       const th = event.target.closest('th[data-key]');
       if (th) {
         const key = th.dataset.key;
-        if (sortKey === key) sortDir *= -1; else { sortKey = key; sortDir = 1; }
-        paint(); return;
+        if (sortKey === key) sortDir *= -1;
+        else {
+          sortKey = key;
+          sortDir = 1;
+        }
+        paint();
+        return;
       }
-      const tr = event.target.closest('tbody tr[data-id]'); if (!tr) return;
-      const row = find(tr.dataset.id); if (!row) return;
+      const tr = event.target.closest('tbody tr[data-id]');
+      if (!tr) return;
+      const row = find(tr.dataset.id);
+      if (!row) return;
       if (event.target.closest('.st-delete')) {
         const message = opts.deleteMessage ? opts.deleteMessage(row) : 'Supprimer cette ligne ?';
         if (!window.confirm(message)) return;
         if (opts.onDelete(row) === false) return;
         rows = rows.filter(r => r !== row);
         if (typeof opts.onChange === 'function') opts.onChange(rows.slice());
-        paint(); return;
+        paint();
+        return;
       }
       // Les liens (ex. trace IVAO/VATSIM) et contrôles restent utilisables normalement.
       if (event.target.closest('a,button,input,select,textarea')) return;
@@ -121,12 +164,21 @@
 
     paint();
     return {
-      setRows(newRows) { rows = (newRows || []).slice(); paint(); },
-      getRows() { return rows.slice(); }
+      /** Remplace les lignes et redessine. */
+      setRows(newRows) {
+        rows = (newRows || []).slice();
+        paint();
+      },
+      /** Copie des lignes affichées. */
+      getRows() {
+        return rows.slice();
+      }
     };
   }
 
-  window.SortedTable = { render };
+  window.SortedTable = {
+    render
+  };
   // Nom historique conservé pour les pages existantes.
   window.MissionTable = window.SortedTable;
 })();
