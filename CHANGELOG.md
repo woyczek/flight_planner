@@ -10,6 +10,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Profil vertical (studio et planificateur) — changement de niveau entre deux points** : une ligne `FL105`
+  ou `5500 ft` seule dans le cheminement fait monter ou descendre vers ce niveau après le point précédent (sans
+  point ni groupe vitesse / niveau).
 - **Studio — profil vertical** : champ **Niveau de croisière** (`FL65` ou `6500`, enregistré dans la mission) —
   sans niveau ni altitude dans le cheminement, la trajectoire n'était pas tracée, sans explication (un message le
   dit désormais). Le cheminement proposé suit origine → points tournants → destination (il passait par la

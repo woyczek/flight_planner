@@ -143,7 +143,8 @@ cumulées, et **plan de vol** : trajectoire prévue (montée, paliers, descente)
   (radiale / distance), « lat lon » ou « NOM lat lon » ; **groupes vitesse / niveau** du plan de
   vol (`N0450F350` : 450 kt au FL 350 ; vitesse N nœuds, K km/h, M Mach ; niveau F niveau de vol,
   A altitude, S niveau métrique, M altitude métrique) après un point ou seuls ; « /3000 » = altitude
-  à atteindre au point ; **VFR** = pas de niveau (pas de trajectoire). La **case 15** d'un plan de
+  à atteindre au point ; **niveau seul** entre deux points (`FL105`, `5500 ft`) = montée ou descente
+  vers ce niveau après le point précédent ; **VFR** = pas de niveau (pas de trajectoire). La **case 15** d'un plan de
   vol (séparée par des espaces : `LFBO N0450F350 DCT TOU UN460 NTS/N0440F370 LFRN`) est acceptée :
   DCT, voies aériennes et SID / STAR sont sautés (tracé direct), coordonnées `4630N00130E`.
 - **OFP SimBrief** : l'import d'en-tête (« Récupérer dernier FPL SimBrief » ou OFP JSON) remplit la

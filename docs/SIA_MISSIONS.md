@@ -301,7 +301,9 @@ origine, points tournants dans l'ordre et destination ; les **points de la missi
 destination, cible, points tournants, rendez-vous) sont listés sous le champ, un clic les ajoute
 (avant la destination si le cheminement s'y termine). Exemple : `LFOJ, BRY/4500, REN300010, SIMIP/3000, TARGET/FL65, SIMCP/5500, LFOT`.
 « /3000 » = altitude à atteindre au point ; **groupes vitesse / niveau** du plan de vol
-(`N0180A085`, `N0450F350`…) = niveau à partir du point ; **VFR** = pas de niveau ; la case 15 d'un
+(`N0180A085`, `N0450F350`…) = niveau à partir du point ; **niveau seul** sur une ligne entre deux
+points (`FL105`, `5500 ft`) = « on monte (ou on descend) au FL105 » après le point précédent
+(exemple : `LFOT` / `FL105` / `SIMIP` / `SIMCP` / `FL065` / `LFOJ`) ; **VFR** = pas de niveau ; la case 15 d'un
 plan de vol est acceptée. **Niveau de croisière** (`FL65` ou `6500`) : niveau par défaut dès le départ,
 quand le cheminement n'en donne pas au premier point ; les altitudes du cheminement restent prioritaires.
 Sans niveau ni altitude, la trajectoire n'est pas tracée (message sous le bouton). La **trajectoire prévue** (violet) monte selon l'**appareil** choisi parmi les

@@ -58,6 +58,8 @@
   //   point de la mission, aérodrome, balise, point RNAV, « lat lon » ou « NOM lat lon » ; « /3000 » ou
   //   « /FL65 » = altitude à atteindre au point ; « /N0450F350 » ou un groupe seul après le point =
   //   niveau de croisière à partir de ce point ; « VFR » = pas de niveau ;
+  //   un niveau seul entre deux points (« FL105 », « 5500 ft ») = montée ou descente vers ce niveau à
+  //   partir du point précédent (au départ s'il est en tête) ;
   // - case 15 du plan de vol (séparée par des espaces) : « LFBO N0450F350 DCT TOU UN460 NTS/N0440F370
   //   LFRN » — DCT, voies aériennes et SID / STAR sautés (tracé direct), coordonnées « 4630N00130E ».
   // resolve(nom) → {name, lat, lon} ou null.
@@ -79,6 +81,18 @@
       if (up === 'VFR' || up === 'IFR') {
         if (up === 'VFR') setLevel({
           vfr: true
+        });
+        continue;
+      }
+      // niveau seul : « FL105 », « 5500 ft » (sans vitesse)
+      const bare = /^(?:FL\s*(\d{2,3})|(\d{3,5})\s*FT)$/.exec(up);
+      if (bare) {
+        setLevel(bare[1] ? {
+          ft: +bare[1] * 100,
+          label: `FL${bare[1].padStart(3, '0')}`
+        } : {
+          ft: +bare[2],
+          label: `${+bare[2]} ft`
         });
         continue;
       }
