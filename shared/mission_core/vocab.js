@@ -136,7 +136,10 @@
     ['SOF', 'Opérations spéciales / tactiques', 'SOF/sof'], ['SPECIAL', 'Transport spécial / essais / formation', 'SPECIAL/special']
   ].map(([id, label, base]) => ({ id, label, cr: `${base}_cr.html`, reporting: `${base}_reporting.html`, keywords: familyKeywords[id] || '', labels: familyLabels[id] || [label, label, label, label], descriptions: familyDescriptions[id] || null }));
   // Sous-titre de l'en-tête d'une page de famille : sa description (traduite par la couche de traduction).
-  const describeHeader = id => { const f = families.find(x => x.id === id), p = document.querySelector('header.mc-header p'); if (!f?.descriptions || !p) return; p.textContent = f.descriptions[0]; p.classList.add('mc-family-description'); window.RepositoryContentI18n?.([f.descriptions, ...families.map(x => x.labels)]); };
+  // Sous-titre de l'en-tête d'une page de CR / reporting = description de la famille (la même qu'au survol des tuiles de
+  // « Nouveau compte rendu »), traduite par le système commun. Pages Mission Core (header.mc-header) et anciennes pages
+  // (premier <p> du <header>), qui l'appellent après avoir chargé ce fichier.
+  const describeHeader = id => { const f = families.find(x => x.id === id), p = document.querySelector('header.mc-header > p') || document.querySelector('body > header > p, header > p'); if (!f?.descriptions || !p) return; p.textContent = f.descriptions[0]; p.classList.add('mc-family-description'); window.RepositoryContentI18n?.([f.descriptions, ...families.map(x => x.labels)]); };
 
   // Famille de CR d'après le type d'une mission générée (SIA XML, helo-xp-mission : mission.type).
   const familyAliases = [[/^(HEMS|MEDEVAC|CASEVAC|EVASAN|SMUR)\b/, 'HEMS'], [/FIRE|GAAR|FEU|INCENDIE/, 'FIRE'], [/^(SAR|CSAR|PR)\b|RESCUE|SAUVETAGE/, 'SAR'], [/\bAAR\b|REFUEL|RAVITAILL|TANKER|AIR[- ]TO[- ]AIR/, 'AAR'], [/AIRLIFT|LOGIST|TRANSPORT|CARGO/, 'AIRLIFT'], [/MARITIME|SURMAR|PATMAR/, 'MARITIME'], [/HADR|HUMANIT|EVAC/, 'HADR'], [/AIRBORNE|AIRDROP|LARGAGE|PARA/, 'AIRBORNE'], [/^FI\b|FLIGHT ?INSPECTION|CALIBRATION/, 'FI'], [/SURVEY|SCIEN|LEV[EÉ]/, 'SURVEY'], [/^LE\b|POLICE|DOUANE|LAW/, 'LE'], [/ISR|RECON|RENSEIGN/, 'ISR'], [/COMMAND|AEW|AWACS|RELAY|RELAIS/, 'COMMAND'], [/^SOF\b|TACTI|OPS? SP[EÉ]CIALES?/, 'SOF']];

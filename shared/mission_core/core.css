@@ -144,7 +144,9 @@ header.mc-header h1{font-size:20px}
 .mc-aside .mc-kpi div{padding:6px 8px}
 .mc-aside .mc-kpi b{font-size:15px}
 .mc-aside .mc-kpi .small{font-size:11px}
-header.mc-header:has(.mc-header-tools)>p{display:none}
+header.mc-header:has(.mc-header-tools)>p:not(.mc-family-description){display:none}
+/* description de la famille (même texte qu'au survol des tuiles de « Nouveau compte rendu ») */
+.mc-family-description{margin:2px 0 6px;font-size:13px;line-height:1.4;color:var(--muted,#9ba8b5);max-width:110ch}
 /* Barre d'outils de l'en-tête : une ligne, sept entrées au plus, menus déroulants */
 .mc-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .mc-toolbar>.mc-switch,.mc-toolbar>.mc-import{margin:0}
@@ -224,7 +226,7 @@ header.mc-header a.mc-header-new{display:inline-flex;margin-top:8px;padding:6px 
 .mc-report-tools select,.mc-report-tools input{border:1px solid #ffffff59;background:#fff;color:var(--ink);border-radius:7px;padding:4px 7px;font:inherit;font-size:12px}
 .mc-report-tools .tp-btn{border:1px solid #ffffff59;background:#ffffff1f;color:#fff;border-radius:7px;min-width:30px;height:28px}
 .mc-report-tools .tp-btn:hover:not(:disabled){background:#ffffff38}
-header.mc-header:has(.mc-report-tools)>p{display:none}
+header.mc-header:has(.mc-report-tools)>p:not(.mc-family-description){display:none}
 @media print{.mc-report-tools .tp-nav,.mc-report-tools select,.mc-report-tools a{display:none!important}}
 
 /* Collections : « + » dans le titre ; dates / heures : bouton « maintenant » */
