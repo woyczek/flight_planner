@@ -76,14 +76,14 @@
   // relatifs à la racine du site.
   const families = [
     ['HEMS', 'HEMS / MEDEVAC', 'HEMS/hems_core'], ['FIRE', 'FIRE / GAAR — sécurité civile', 'FIRE/fire_core'], ['SAR', 'SAR / récupération de personnel', 'SAR/sar'],
-    ['AIRLIFT', 'Transport aérien / logistique', 'AIRLIFT/airlift'], ['MARITIME', 'Surveillance maritime', 'MARITIME/maritime'], ['HADR', 'Aide humanitaire / évacuation', 'HADR/hadr'],
+    ['AIRLIFT', 'Transport aérien / logistique', 'AIRLIFT/airlift'], ['AAR', 'Ravitaillement en vol', 'AAR/aar'], ['MARITIME', 'Surveillance maritime', 'MARITIME/maritime'], ['HADR', 'Aide humanitaire / évacuation', 'HADR/hadr'],
     ['AIRBORNE', 'Largage / aéroporté', 'AIRBORNE/airborne'], ['FI', 'Contrôle en vol', 'FLIGHTINSPECTION/fi'], ['SURVEY', 'Levés / missions scientifiques', 'SURVEY/survey'],
     ['LE', 'Police / douane / sécurité', 'LE/le'], ['ISR', 'Renseignement / reconnaissance', 'ISR/isr'], ['COMMAND', 'Commandement / guet aérien / relais', 'COMMAND/command'],
     ['SOF', 'Opérations spéciales / tactiques', 'SOF/sof'], ['SPECIAL', 'Transport spécial / essais / formation', 'SPECIAL/special']
   ].map(([id, label, base]) => ({ id, label, cr: `${base}_cr.html`, reporting: `${base}_reporting.html` }));
 
   // Famille de CR d'après le type d'une mission générée (SIA XML, helo-xp-mission : mission.type).
-  const familyAliases = [[/^(HEMS|MEDEVAC|CASEVAC|EVASAN|SMUR)\b/, 'HEMS'], [/FIRE|GAAR|FEU|INCENDIE/, 'FIRE'], [/^(SAR|CSAR|PR)\b|RESCUE|SAUVETAGE/, 'SAR'], [/AIRLIFT|LOGIST|TRANSPORT|CARGO/, 'AIRLIFT'], [/MARITIME|SURMAR|PATMAR/, 'MARITIME'], [/HADR|HUMANIT|EVAC/, 'HADR'], [/AIRBORNE|AIRDROP|LARGAGE|PARA/, 'AIRBORNE'], [/^FI\b|FLIGHT ?INSPECTION|CALIBRATION/, 'FI'], [/SURVEY|SCIEN|LEV[EÉ]/, 'SURVEY'], [/^LE\b|POLICE|DOUANE|LAW/, 'LE'], [/ISR|RECON|RENSEIGN/, 'ISR'], [/COMMAND|AEW|AWACS|RELAY|RELAIS/, 'COMMAND'], [/^SOF\b|TACTI|OPS? SP[EÉ]CIALES?/, 'SOF']];
+  const familyAliases = [[/^(HEMS|MEDEVAC|CASEVAC|EVASAN|SMUR)\b/, 'HEMS'], [/FIRE|GAAR|FEU|INCENDIE/, 'FIRE'], [/^(SAR|CSAR|PR)\b|RESCUE|SAUVETAGE/, 'SAR'], [/\bAAR\b|REFUEL|RAVITAILL|TANKER|AIR[- ]TO[- ]AIR/, 'AAR'], [/AIRLIFT|LOGIST|TRANSPORT|CARGO/, 'AIRLIFT'], [/MARITIME|SURMAR|PATMAR/, 'MARITIME'], [/HADR|HUMANIT|EVAC/, 'HADR'], [/AIRBORNE|AIRDROP|LARGAGE|PARA/, 'AIRBORNE'], [/^FI\b|FLIGHT ?INSPECTION|CALIBRATION/, 'FI'], [/SURVEY|SCIEN|LEV[EÉ]/, 'SURVEY'], [/^LE\b|POLICE|DOUANE|LAW/, 'LE'], [/ISR|RECON|RENSEIGN/, 'ISR'], [/COMMAND|AEW|AWACS|RELAY|RELAIS/, 'COMMAND'], [/^SOF\b|TACTI|OPS? SP[EÉ]CIALES?/, 'SOF']];
   const familyForType = type => { const t = String(type || '').toUpperCase().trim(); return families.find(f => f.id === t)?.id || familyAliases.find(([re]) => re.test(t))?.[1] || 'SPECIAL'; };
 
   const outcomes = [
@@ -122,7 +122,7 @@
   const BASE_EVENTS = ['TAKEOFF', 'LANDING', 'ON_TASK', 'OFF_TASK', 'DIVERSION', 'REFUEL', 'TECHNICAL', 'WEATHER', 'ABORT', 'OTHER'];
   const eventProfiles = {
     SAR: ['CONTACT', 'SIGHTING', 'PICKUP', 'DROP', 'HOIST', 'EXTRACTION'], HEMS: ['PICKUP', 'HOIST'], FIRE: ['DROP'],
-    AIRLIFT: ['PICKUP', 'DROP'], MARITIME: ['CONTACT', 'SIGHTING', 'DROP'], HADR: ['PICKUP', 'DROP', 'HOIST'],
+    AIRLIFT: ['PICKUP', 'DROP'], AAR: ['CONTACT'], MARITIME: ['CONTACT', 'SIGHTING', 'DROP'], HADR: ['PICKUP', 'DROP', 'HOIST'],
     AIRBORNE: ['DROP', 'INSERTION'], FI: [], SURVEY: [], LE: ['CONTACT', 'SIGHTING', 'INSERTION', 'EXTRACTION'],
     ISR: ['CONTACT', 'SIGHTING'], COMMAND: ['CONTACT'], SOF: ['CONTACT', 'PICKUP', 'DROP', 'HOIST', 'INSERTION', 'EXTRACTION'], SPECIAL: [],
     DEMO: eventTypes.map(o => o.value)

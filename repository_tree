@@ -25,6 +25,7 @@ window.REPOSITORY_TREE={
     sof:{bar:"#3f3f46",barText:"#ffffff",page:"#f5f6f8",accent:"#3f3f46",favicon:"assets/favicon-sof.svg"},
     special:{bar:"#9d174d",barText:"#ffffff",page:"#f5f6f8",accent:"#9d174d",favicon:"assets/favicon-special.svg"},
     sia:{bar:"#075ca8",barText:"#ffffff",page:"#edf3f6",accent:"#075ca8",favicon:"assets/favicon-sia.svg"},
+    aar:{bar:"#0f766e",barText:"#ffffff",page:"#f5f6f8",accent:"#0f766e",favicon:"assets/favicon-aar.svg"},
     flight:{bar:"#101317",barText:"#eef3f7",page:"#101317",accent:"#71b7ff",favicon:"assets/favicon-flight.svg"}
   },
   folders:{
@@ -46,6 +47,7 @@ window.REPOSITORY_TREE={
     "CR DEFA/SOF":{theme:"sof",favicon:"assets/favicon-sof.svg"},
     "CR DEFA/SPECIAL":{theme:"special",favicon:"assets/favicon-special.svg"},
     "SIA XML":{theme:"sia",favicon:"assets/favicon-sia.svg"},
+    "CR DEFA/AAR":{theme:"aar",favicon:"assets/favicon-aar.svg"},
     "LandingPerformanceDashboard":{theme:"landing",favicon:"assets/favicon-landing.svg"}
   },
   pages:[
@@ -81,6 +83,8 @@ window.REPOSITORY_TREE={
     {path:"CR DEFA/HEMS/hems_core_reporting.html",menu:false,label:"HEMS / MEDEVAC — Reporting missions (Core, validation)"},
     {path:"CR DEFA/FIRE/fire_core_cr.html",menu:false,label:"FIRE / GAAR — Compte rendu de mission (Core, validation)"},
     {path:"CR DEFA/FIRE/fire_core_reporting.html",menu:false,label:"FIRE / GAAR — Reporting missions (Core, validation)"},
+    {path:"CR DEFA/AAR/aar_cr.html",menu:false,label:"AAR / RAVITAILLEMENT EN VOL — Compte rendu de mission"},
+    {path:"CR DEFA/AAR/aar_reporting.html",menu:false,label:"AAR / RAVITAILLEMENT EN VOL — Reporting missions"},
     {path:"CR DEFA/MissionCore/demo_cr.html",menu:false,label:"Démonstration — compte rendu de mission"},
     {path:"CR DEFA/MissionCore/demo_reporting.html",menu:false,label:"Démonstration — reporting missions"},
     {path:"CR DEFA/mission_cr.html",menu:false,label:"Nouveau compte rendu de mission",theme:"core",favicon:"assets/favicon-flight.svg"},

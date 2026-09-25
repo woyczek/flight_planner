@@ -15,7 +15,7 @@
   const write = (k, v) => localStorage.setItem(k, JSON.stringify(v));
   const duration = v => { v = Math.round(v || 0); return v >= 60 ? `${Math.floor(v / 60)}h${String(v % 60).padStart(2, '0')}` : `${v} min`; };
   const hours = v => `${((v || 0) / 60).toFixed(v >= 6000 ? 0 : 1).replace('.', ',')} h`;
-  const COLORS = { HEMS: '#ef4444', FIRE: '#f97316', SAR: '#eab308', AIRLIFT: '#3b82f6', MARITIME: '#06b6d4', HADR: '#22c55e', AIRBORNE: '#84cc16', FI: '#a855f7', SURVEY: '#14b8a6', LE: '#6366f1', ISR: '#94a3b8', COMMAND: '#0ea5e9', SOF: '#a8a29e', SPECIAL: '#ec4899' };
+  const COLORS = { HEMS: '#ef4444', FIRE: '#f97316', SAR: '#eab308', AIRLIFT: '#3b82f6', AAR: '#0f766e', MARITIME: '#06b6d4', HADR: '#22c55e', AIRBORNE: '#84cc16', FI: '#a855f7', SURVEY: '#14b8a6', LE: '#6366f1', ISR: '#94a3b8', COMMAND: '#0ea5e9', SOF: '#a8a29e', SPECIAL: '#ec4899' };
   const UI = {
     aircraft: L('Fiche appareil', 'Aircraft sheet', 'Luftfahrzeugblatt', 'Ficha de aeronave'), crew: L('Fiche équipage', 'Crew sheet', 'Besatzungsblatt', 'Ficha de tripulante'),
     identity: L('Identité', 'Identity', 'Identität', 'Identidad'), activity: L('Activité', 'Activity', 'Aktivität', 'Actividad'),

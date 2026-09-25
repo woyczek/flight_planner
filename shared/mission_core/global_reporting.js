@@ -14,7 +14,7 @@
   const idx = () => Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(lang()));
 
   // Couleur de chaque famille (graphiques, étiquettes, filtres).
-  const COLORS = { HEMS: '#ef4444', FIRE: '#f97316', SAR: '#eab308', AIRLIFT: '#3b82f6', MARITIME: '#06b6d4', HADR: '#22c55e', AIRBORNE: '#84cc16', FI: '#a855f7', SURVEY: '#14b8a6', LE: '#6366f1', ISR: '#94a3b8', COMMAND: '#0ea5e9', SOF: '#a8a29e', SPECIAL: '#ec4899' };
+  const COLORS = { HEMS: '#ef4444', FIRE: '#f97316', SAR: '#eab308', AIRLIFT: '#3b82f6', AAR: '#0f766e', MARITIME: '#06b6d4', HADR: '#22c55e', AIRBORNE: '#84cc16', FI: '#a855f7', SURVEY: '#14b8a6', LE: '#6366f1', ISR: '#94a3b8', COMMAND: '#0ea5e9', SOF: '#a8a29e', SPECIAL: '#ec4899' };
   const colorOf = id => COLORS[id] || '#67b6ff';
   const OUTCOME_COLORS = { SUCCESS: '#22c55e', PARTIAL_SUCCESS: '#eab308', DIVERTED: '#f59e0b', ABORTED: '#ef4444', CANCELLED: '#94a3b8', NO_CONTACT: '#f97316', TARGET_NOT_FOUND: '#f97316', WEATHER: '#38bdf8', TECHNICAL: '#e879f9', OPERATIONAL: '#fb7185', OTHER: '#a8a29e' };
   const PALETTE = ['#67b6ff', '#bb8cff', '#65d394', '#fbbf24', '#f472b6', '#2dd4bf', '#fb923c', '#a3e635', '#818cf8', '#f87171'];

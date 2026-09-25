@@ -10,6 +10,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **CR DEFA — nouvelle famille AAR / ravitaillement en vol** : rôle (ravitailleur / ravitaillé),
+  hippodrome du MIAM ENR 5.7 ou autre zone, niveau, type de rendez-vous, système (perche, panier,
+  nacelles), ravitaillés (indicatif, type, carburant prévu / transféré, contacts, résultat), bilan
+  carburant, breakaways, incidents ; statistiques et synthèse ; pages `CR DEFA/AAR/`. Les missions
+  « ravitaillement / refuelling / tanker » (brief SIA, journal DEFA) y sont rangées (auparavant
+  transport / spécial).
+- Planificateur : jauges déplaçables et valeurs sous les courbes de montée et RPM / consommation ;
+  légendes aux couleurs des courbes.
 - **Flight Performance & Fuel Planner — Profil vertical** : bloc de coupe le long d'une route
   saisie ou reprise de l'OFP importé en en-tête (paliers compris) ; trajectoire prévue aux taux
   de montée / descente du profil avion actif, **TOC** et **TOD** ; profil d'affichage du studio SIA

@@ -154,7 +154,8 @@
     ['SURVEY', /PHOTO|\bLEVE|SCIENTIFIQUE|CARTO/],
     ['SOF', /FORCES SPECIALES|\bCOS\b|\bSOF\b/],
     ['HADR', /EVACUATION|HUMANITAIRE|HADR|RESSORTISSANT/],
-    ['AIRLIFT', /TRANSPORT|LOGISTI|POSITION|CONVOY|FRET|\bPAX\b|RAVITAILL|\bAAR\b|REFUEL|RETOUR BASE|\bRTB\b|LIAISON|TANKER/]
+    ['AAR', /RAVITAILL|\bAAR\b|REFUEL|TANKER|\bMRTT\b/],
+    ['AIRLIFT', /TRANSPORT|LOGISTI|POSITION|CONVOY|FRET|\bPAX\b|RETOUR BASE|\bRTB\b|LIAISON/]
   ];
   function familyOf(r) {
     const text = up(r.mission);
@@ -162,6 +163,7 @@
     const cs = up(r.callsign), type = up(r.type);
     if (/^(PELIC|PCAN|MILAN)/.test(cs) || /^(CL2T|DH8D)$/.test(type)) return 'FIRE';
     if (/^(DRAGO|SAMU|CHOUC)/.test(cs)) return 'HEMS';
+    if (/^(K35R|K35E|C135|KC10|K46|KC46)$/.test(type)) return 'AAR';
     if (/^(A400|C130|C30J|A332|A330|CN35|C160|A310)$/.test(type) || /^(CTM|VANT|CVEX|RILLE)/.test(cs)) return 'AIRLIFT';
     if (/^(E3CF|E3TF)$/.test(type)) return 'COMMAND';
     return 'SPECIAL';

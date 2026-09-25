@@ -10,7 +10,7 @@
   // Spécialisation par famille (only : familles où le champ a du sens ; hideFor : familles
   // où il n'en a pas). Les familles peuvent en plus masquer des champs / blocs (hide).
   const CIVIL = ['HEMS', 'FIRE', 'HADR', 'AIRLIFT', 'SURVEY', 'FI'];
-  const ON_STATION = ['SAR', 'MARITIME', 'ISR', 'COMMAND', 'LE', 'FIRE', 'SURVEY', 'FI', 'HADR', 'SOF', 'AIRBORNE', 'DEMO'];
+  const ON_STATION = ['SAR', 'MARITIME', 'ISR', 'COMMAND', 'LE', 'FIRE', 'SURVEY', 'FI', 'HADR', 'SOF', 'AIRBORNE', 'AAR', 'DEMO'];
 
   const identification = {
     id: 'identification', title: L('Identification & organisation', 'Identification & organisation', 'Identifikation & Organisation', 'Identificación y organización'),
@@ -145,8 +145,8 @@
       f('navigation.distanceNm', L('Distance (NM)', 'Distance (NM)', 'Entfernung (NM)', 'Distancia (NM)'), 'number'),
       f('navigation.area', L('Zone d’opération', 'Operating area', 'Einsatzgebiet', 'Zona de operación'), 'text', { pool: 'area' }),
       f('navigation.radiusNm', L('Rayon (NM)', 'Radius (NM)', 'Radius (NM)', 'Radio (NM)'), 'number', { only: ['SAR', 'MARITIME', 'ISR', 'HADR', 'SURVEY', 'LE', 'COMMAND', 'DEMO'] }),
-      f('navigation.corridor', L('Corridor', 'Corridor', 'Korridor', 'Corredor'), 'text', { only: ['ISR', 'COMMAND', 'SOF', 'AIRBORNE', 'AIRLIFT', 'FI', 'SURVEY', 'LE', 'DEMO'] }),
-      f('navigation.orbit', L('Attente / orbite', 'Holding / orbit', 'Warteschleife / Orbit', 'Espera / órbita'), 'text', { only: ['ISR', 'COMMAND', 'MARITIME', 'SAR', 'LE', 'FI', 'SURVEY', 'SOF', 'DEMO'] })
+      f('navigation.corridor', L('Corridor', 'Corridor', 'Korridor', 'Corredor'), 'text', { only: ['ISR', 'COMMAND', 'SOF', 'AIRBORNE', 'AIRLIFT', 'AAR', 'FI', 'SURVEY', 'LE', 'DEMO'] }),
+      f('navigation.orbit', L('Attente / orbite', 'Holding / orbit', 'Warteschleife / Orbit', 'Espera / órbita'), 'text', { only: ['AAR', 'ISR', 'COMMAND', 'MARITIME', 'SAR', 'LE', 'FI', 'SURVEY', 'SOF', 'DEMO'] })
     ]
   };
 
