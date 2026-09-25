@@ -145,8 +145,14 @@ header.mc-header h1{font-size:20px}
 .mc-aside .mc-kpi b{font-size:15px}
 .mc-aside .mc-kpi .small{font-size:11px}
 header.mc-header:has(.mc-header-tools)>p:not(.mc-family-description){display:none}
+/* Contraste (WCAG ≥ 4,5:1) : dans les menus déroulants (fond blanc), les textes secondaires reprennent un gris
+   foncé opaque (l'opacité .85 et le blanc des textes de l'en-tête coloré n'y valent rien), et les boutons
+   de liens restent blancs sur la couleur du thème. */
+.mc-header-tools .mc-pop .mc-ledger-info,.mc-header-tools .mc-pop .mc-status,.mc-header-tools .mc-pop .nt-status,.mc-header-tools .mc-pop .small{opacity:1;color:#4b5563}
+.mc-header-tools .mc-import-pop .mc-import-links a{color:#fff}
+.mc-report-tools .mc-switch-pop label{color:#4b5563}
 /* description de la famille (même texte qu'au survol des tuiles de « Nouveau compte rendu ») */
-.mc-family-description{margin:2px 0 6px;font-size:13px;line-height:1.4;color:var(--muted,#9ba8b5);max-width:110ch}
+.mc-family-description{margin:2px 0 6px;font-size:13px;line-height:1.4;color:inherit;max-width:110ch} /* texte de l'en-tête (blanc sur la couleur du thème), jamais un gris : contraste */
 /* Barre d'outils de l'en-tête : une ligne, sept entrées au plus, menus déroulants */
 .mc-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .mc-toolbar>.mc-switch,.mc-toolbar>.mc-import{margin:0}
