@@ -51,6 +51,27 @@ réserve (min), contingence (%).
 
 ## 2 bis. Modèle de performances — altitude et montée optimales
 
+**Lecture.** Le bloc repliable « Comment lire ces courbes » donne la marche à suivre. La ligne
+**Limites** indique le plafond retenu et sa source (champ « Plafond max (ft) » du profil ou calcul du
+modèle), le niveau demandé et le niveau le plus haut possible sur la distance ; chaque
+« inatteignable » donne sa cause et le champ à modifier. Les trois courbes en altitude partagent une
+jauge ; un clic épingle un niveau, résumé dans la fiche ⌖ / 📌 du bloc Résultat.
+
+**Loi réglable (violet).** Deux curseurs : Badin de montée et vario visé. Les gaz sont réduits pour
+tenir le vario, plein gaz au-delà (le vario baisse jusqu'au plafond) ; réacteur : Badin puis Mach de
+croisière. La loi apparaît sur les deux courbes de montée, dans la table comparative et dans la fiche.
+
+**Croisière limitée par la poussée.** Au-dessus du niveau où le Mach du profil n'est plus tenable,
+un réacteur vole à la plus grande vitesse permise par 92 % de la poussée (« poussée max. ») ; le
+niveau n'est refusé qu'au-delà du plafond de croisière. La montée au Badin du profil passe en Mach
+au-dessus de l'altitude de conjonction.
+
+**Données EUROCONTROL APD.** Si `AircraftDB/aircraft_perf.js` contient le type, l'éditeur de profil
+affiche une étiquette APD à côté des champs correspondants (vert : identique à ±3 %, orange :
+différent, bleu : vide localement) ; un clic reprend la valeur, « remplir les champs vides » les
+reprend toutes. Vario moyen de montée / descente calculé par tranches APD jusqu'à l'altitude de
+référence ; altitude de référence déduite du couple TAS / Mach.
+
 `shared/flight_performance_model.js`, commun au devis, aux courbes et aux profils verticaux (planificateur
 et studio SIA). Mécanique du vol simplifiée, **calibrée sur le profil** et indépendante du niveau saisi :
 

@@ -69,7 +69,9 @@
       const vx = h => golden(v => roc(h, v) / tasOf(h, v), .8 * veMd, 2.6 * veMd);
       return { hRef, ld, p0, aR, veRef, veMd, dw, tasOf, K, sfc, eta, avail, roc, ffAt, vy, vx, mRef: tasRef / aR.a, pRef: dw(veRef) * tasRef };
     }
-    const climbVe = (m, h) => num(cl.iasKt) > 0 ? num(cl.iasKt) : num(cl.tasKt) > 0 ? num(cl.tasKt) * Math.sqrt(isa(m.hRef / 2).sigma) : m.vy(h).ve;
+    // Badin de montée du profil ; réacteur : Badin puis Mach au-dessus de l'altitude de conjonction (Mach de montée =
+    // Mach de croisière du profil), sans quoi un Badin constant dépasse le Mach critique en altitude.
+    const climbVe = (m, h) => { const v = num(cl.iasKt) > 0 ? num(cl.iasKt) : num(cl.tasKt) > 0 ? num(cl.tasKt) * Math.sqrt(isa(m.hRef / 2).sigma) : m.vy(h).ve; if (!jet || !(m.mRef > 0)) return v; const at = isa(h); return Math.min(v, m.mRef * at.a * Math.sqrt(at.sigma)); };
     // Montée intégrée de 0 à hTop (vitesse de montée du profil, ou Vy) : temps, distance air, carburant.
     // speed : 'profile' (Badin du profil), 'vy', ou fonction h → { ve, frac } (loi de montée optimale).
     function climbWith(m, hTop, { speed = 'profile', frac = 1 } = {}) {
@@ -117,15 +119,23 @@
     function cruise(h, mode = 'normal') {
       if (h > ceiling + 1) return { h, ok: false, reason: 'ceiling' };
       const at = isa(h), s = Math.sqrt(at.sigma); let ve;
-      if (mode === 'eco') ve = jet ? Math.pow(3, .25) * M.veMd : M.veMd;
+      if (mode === 'eco') ve = jet ? Math.min(Math.pow(3, .25) * M.veMd, M.mRef * at.a * s, veCap) : M.veMd; // jamais plus rapide que la croisière du profil
       else if (jet) ve = Math.min(M.mRef * at.a * s, veCap);
       else ve = powerSpeed(h, Math.min(M.pRef, .98 * M.avail(h)));
       if (!ve) return { h, ok: false, reason: 'thrust' };
       let tas = ve / s; if (jet && tas > mmo * at.a) { tas = mmo * at.a; ve = tas * s; }
+      // Réacteur : si la vitesse demandée (Mach du profil, ou vitesse de distance max.) n'est pas tenable avec
+      // 92 % de la poussée disponible, on vole à la plus grande vitesse tenable (poussée max. croisière), comme un
+      // équipage ; le niveau n'est refusé que si même la vitesse de traînée minimale ne l'est pas (plafond de croisière).
+      let limited = false;
+      if (jet && !(M.dw(ve) <= M.avail(h) * .92)) {
+        const cap = M.avail(h) * .92; if (!(M.dw(M.veMd) <= cap)) return { h, ok: false, reason: 'thrust' };
+        ve = bisect(v => M.dw(v) - cap, M.veMd, ve); tas = ve / s; limited = true;
+      }
       const need = jet ? M.dw(ve) : M.dw(ve) * tas;
       if (!(need <= M.avail(h) * (jet ? .92 : .98) * 1.001)) return { h, ok: false, reason: 'thrust' };
       const ff = jet ? M.K * M.sfc(h, tas) * M.dw(ve) : M.K * need;
-      return { h, ok: true, mode, tas, ias: ve, mach: tas / at.a, ff, sr: tas / ff, powerPct: jet ? need / M.avail(h) * 100 : need / M.avail(0) * 100 };
+      return { h, ok: true, mode, limited, tas, ias: ve, mach: tas / at.a, ff, sr: tas / ff, powerPct: jet ? need / M.avail(h) * 100 : need / M.avail(0) * 100 };
     }
     // Descente : vario, TAS et débit du profil (sinon valeurs types).
     const desc = { rate: Math.abs(num(de.rateFpm)) || (jet ? 2000 : 700), tas: num(de.tasKt) || tasRef * .85, ff: num(de.fuelFlowPerHour) || ffRef * (jet ? .3 : .5) };
@@ -137,7 +147,7 @@
       const td = h / desc.rate, dd = desc.tas * td / 60, fd = desc.ff * td / 60, dcr = D - c.nm - dd;
       if (dcr < 0) return { h, ok: false, reason: 'short' };
       const gs = Math.max(60, k.tas + wc), tcr = dcr / gs * 60, fuel = c.fuel + fd + k.ff * tcr / 60;
-      return { h, ok: true, mode, fuel, minutes: c.minutes + td + tcr, eff: D / fuel, tas: k.tas, ias: k.ias, mach: k.mach, ff: k.ff, gs, climb: c, cruiseNm: dcr };
+      return { h, ok: true, mode, limited: k.limited, fuel, minutes: c.minutes + td + tcr, eff: D / fuel, tas: k.tas, ias: k.ias, mach: k.mach, ff: k.ff, gs, climb: c, cruiseNm: dcr };
     }
     // Triangle des optimums de montée à l'altitude h (vitesse Ve et gaz) :
     // - 'vy'   : vario maximal (altitude atteinte au plus tôt) ;
@@ -175,10 +185,22 @@
     function climbPoint(h) { const y = M.vy(h), xve = M.vx(h), ff = M.ffAt(h, 1, y.tas) * climbFactor; return { h, vyIas: y.ve, vyTas: y.tas, roc: y.roc, vxIas: xve, ff, fuelPer1000: y.roc > 0 ? ff / y.roc * 1000 / 60 : Infinity, profileRoc: M.roc(h, climbVe(M, h)) }; }
     // Régimes de la table RPM / N1 : poussée / puissance correspondant au débit de la ligne, vario à Vy et
     // carburant par 1000 ft à l'altitude h (au-delà du disponible : plein gaz).
+    // Loi de montée réglée par le pilote : Badin constant (réacteur : puis Mach de croisière du profil) et vario
+    // visé (vsFpm) ; les gaz sont réduits pour tenir ce vario (le vario est linéaire en gaz), plein gaz dès qu'il n'est
+    // plus tenable — le vario baisse alors jusqu'au plafond. vsFpm nul ou absent : plein gaz partout.
+    function manualLaw(iasKt, vsFpm) {
+      return h => {
+        let ve = iasKt; if (jet) { const at = isa(h); ve = Math.min(ve, M.mRef * at.a * Math.sqrt(at.sigma)); }
+        const r0 = M.roc(h, ve, 0), r1 = M.roc(h, ve, 1), frac = vsFpm > 0 && r1 > r0 ? Math.min(1, Math.max(.05, (vsFpm - r0) / (r1 - r0))) : 1;
+        return { ve, frac };
+      };
+    }
+    // Point de la loi réglée à l'altitude h : Badin, TAS, gaz, vario, débit, carburant par 1000 ft.
+    function manualPoint(h, law) { const { ve, frac } = law(h), tas = M.tasOf(h, ve), roc = M.roc(h, ve, frac), ff = M.ffAt(h, frac, tas) * climbFactor; return { h, ias: ve, tas, frac, roc, ff, fuelPer1000: roc > 20 ? ff / roc * 1000 / 60 : Infinity }; }
     function settingAt(ffRow, h) { const full = M.ffAt(h, 1, M.vy(h).tas) * climbFactor, frac = Math.min(1, ffRow / full), y = M.vy(h, frac), ff = full * frac; return { frac, roc: y.roc, ias: y.ve, ff, fuelPer1000: y.roc > 20 ? ff / y.roc * 1000 / 60 : Infinity }; }
 
     return { kind, label: tl(...C.label), hRef, refSrc, estimatedRef: estimated, ceiling, modelCeiling: modelCeil, ceilingGiven: ceilGiven, climbFactor, ld: M.ld, veMd: M.veMd, mRef: M.mRef, notes,
-      cruise, trip, climbPoint, climbTo: (h, o) => climbWith(M, h, o), settingAt, desc, isa, climbOpt, climbLaw,
+      cruise, trip, climbPoint, climbTo: (h, o) => climbWith(M, h, o), settingAt, desc, isa, climbOpt, climbLaw, manualLaw, manualPoint,
       // Vario et TAS au Badin de montée du profil à l'altitude h (profil vertical du studio et du planificateur).
       climbAt: h => { if (h > ceiling) return { roc: 0, tas: 0 }; const ve = climbVe(M, h); return { roc: M.roc(h, ve), tas: M.tasOf(h, ve) }; } };
   }

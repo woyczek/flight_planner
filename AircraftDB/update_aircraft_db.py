@@ -158,7 +158,7 @@ class HttpClient:
             return
         tmp = self.cache_path.with_suffix(self.cache_path.suffix + ".tmp")
         tmp.write_text(json.dumps(self.cache, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-        tmp.replace(self.cache_path)
+        replace_retry(tmp, self.cache_path)
 
     def _request(self, url, params=None, accept="*/*"):
         params = params or {}
@@ -238,6 +238,17 @@ class HttpClient:
 HTTP = None
 
 
+def replace_retry(tmp, target, tries=10):
+    """Remplacement atomique ; sous Windows, un client de synchronisation (Synology Drive, OneDrive…) peut verrouiller
+    brièvement le fichier cible : on réessaie quelques fois avant d'abandonner."""
+    for i in range(tries):
+        try:
+            tmp.replace(target); return
+        except PermissionError:
+            if i == tries - 1: raise
+            time.sleep(0.5 * (i + 1))
+
+
 def load_js_db(path):
     txt = Path(path).read_text(encoding="utf-8-sig")
     m = re.search(r"window\.AIRCRAFT_DB\s*=\s*(\{.*\})\s*;?\s*$", txt, re.S)
@@ -251,7 +262,7 @@ def save_js_db(path, obj):
     payload = "// Base des types d'appareils OACI (Doc 8643, recoupée EUROCONTROL / Wikidata), GÉNÉRÉE par\n// AircraftDB/update_aircraft_db.py : ne pas éditer à la main (corrections : champ __meta.manual_fixes).\n" + "window.AIRCRAFT_DB = " + json.dumps(obj, ensure_ascii=False, separators=(",", ":")) + ";\n"
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(payload, encoding="utf-8")
-    tmp.replace(path)
+    replace_retry(tmp, path)
 
 
 def load_overrides(path):
@@ -541,6 +552,93 @@ def next_after(lines, label, validator=None, max_scan=5):
     return ""
 
 
+def junk_model(name):
+    """Libellés de navigation de la page APD lus à tort comme nom de modèle."""
+    low = str(name or "").lower()
+    return not low or "skip to" in low or "performance database" in low or low in {"performance", "show all photos"}
+
+
+# ---------------- EUROCONTROL APD : tableau de performances ----------------
+# Bloc « Show performance table » de la fiche : sections (décollage, montée par tranches, croisière, descente,
+# approche, atterrissage) puis couples libellé / valeur / unité. Aucun débit carburant ni table RPM dans l'APD.
+APD_SECTIONS = [("take-off", "takeoff"), ("initial climb", "climbInitial"), ("climb (to fl 150)", "climb150"),
+                ("climb (to fl 240)", "climb240"), ("mach climb", "machClimb"), ("cruise", "cruise"),
+                ("initial descent", "descentInitial"), ("descent (to fl 100)", "descent"), ("approach", "approach"),
+                ("landing", "landing")]
+APD_FIELDS = {"v2 (ias)": "v2Kt", "distance": "distanceM", "mtow": "mtowKg", "ias": "iasKt", "roc": "rocFpm",
+              "mach": "mach", "tas": "tasKt", "ceiling": "ceilingFL", "range": "rangeNm", "rod": "rodFpm",
+              "mcs": "mcsKt", "vat (ias)": "vatKt"}
+
+
+def parse_apd_performance(html):
+    parser = TextExtractor(); parser.feed(html); lines = parser.text()
+    try:
+        start = lines.index("Show performance table")
+    except ValueError:
+        return None
+    end = next((i for i in range(start, len(lines)) if lines[i] == "Type of Aircraft"), min(len(lines), start + 200))
+    out, sec = {}, None
+    for k in range(start + 1, end):
+        low = lines[k].lower().strip()
+        key = next((v for label, v in APD_SECTIONS if low.startswith(label)), None)
+        if key:
+            sec = out.setdefault(key, {}); continue
+        field = APD_FIELDS.get(low)
+        if sec is None or not field:
+            continue
+        for tok in lines[k + 1:k + 3]:  # « Ceiling », « FL », « 390 » : l'unité peut précéder la valeur
+            t = tok.replace(",", "").strip()
+            if re.fullmatch(r"\d+(?:\.\d+)?", t):
+                v = float(t); sec[field] = int(v) if v.is_integer() else v; break
+    out = {k: v for k, v in out.items() if v}
+    return out or None
+
+
+def apd_pass(db, out_path, only=None):
+    """Passe APD : tableau de performances de chaque type (fichier séparé aircraft_perf.js) et réparation des noms
+    de modèle mal lus lors des passes précédentes. Pages en cache HTTP ; pause entre requêtes."""
+    perf = load_perf_db(out_path)
+    codes = sorted(k for k in db if not str(k).startswith("__") and (not only or k in only))
+    fixed = found = 0
+    for n, code in enumerate(codes, 1):
+        try:
+            html = HTTP.get_text(EUROCONTROL_DETAILS.format(urllib.parse.quote(code)))
+        except Exception as exc:
+            print(f"[{n:03d}/{len(codes):03d}] {code}: erreur {exc}"); continue
+        data = parse_apd_performance(html)
+        rec = db[code]
+        if junk_model(rec.get("model")):
+            info = parse_eurocontrol_details(html, code)
+            if info and info.get("model") and not junk_model(info["model"]):
+                rec["model"] = info["model"]; fixed += 1
+        if data:
+            data["url"] = EUROCONTROL_DETAILS.format(code); data["fetched"] = dt.date.today().isoformat()
+            perf[code] = data; found += 1
+        print(f"[{n:03d}/{len(codes):03d}] {code}: {'APD ' + ', '.join(data) if data else 'pas de données APD'} | {rec.get('model', '')}", flush=True)
+        if n % 10 == 0:
+            save_perf_db(out_path, perf); HTTP.save_cache()
+    perf["__meta"] = {"source": "EUROCONTROL Aircraft Performance Database", "generated": dt.date.today().isoformat(), "entries": found}
+    save_perf_db(out_path, perf); HTTP.save_cache()
+    print(f"APD : {found} fiche(s) de performances, {fixed} nom(s) de modèle réparé(s).")
+    return fixed
+
+
+def load_perf_db(path):
+    if not Path(path).exists():
+        return {}
+    txt = Path(path).read_text(encoding="utf-8-sig")
+    m = re.search(r"window\.AIRCRAFT_PERF\s*=\s*(\{.*\})\s*;?\s*$", txt, re.S)
+    return json.loads(m.group(1)) if m else {}
+
+
+def save_perf_db(path, obj):
+    path = Path(path)
+    payload = ("// Performances par type (EUROCONTROL Aircraft Performance Database), GÉNÉRÉ par\n"
+               "// AircraftDB/update_aircraft_db.py --apd : ne pas éditer à la main. Unités : kt, ft/min, FL, NM, m, kg.\n"
+               "window.AIRCRAFT_PERF = " + json.dumps(obj, ensure_ascii=False, separators=(",", ":")) + ";\n")
+    tmp = path.with_suffix(path.suffix + ".tmp"); tmp.write_text(payload, encoding="utf-8"); replace_retry(tmp, path)
+
+
 def parse_eurocontrol_details(html, requested_code):
     parser = TextExtractor(); parser.feed(html); lines = parser.text()
     code = normalize_key(requested_code)
@@ -555,12 +653,20 @@ def parse_eurocontrol_details(html, requested_code):
     wing = "high" if ("high" in wr or "parasol" in wr) else "low" if "low" in wr else "mid" if "mid" in wr else "unknown"
 
     model = ""
+    # Fiche : « A320 », « A320 », « by », « AIRBUS » -> « AIRBUS A320 ». Le premier « A320 » de la page est le titre
+    # (suivi de « Aircraft Performance Database » ou « Skip to aircraft details ») : ne pas le prendre pour le modèle.
+    for i in exact_line_positions:
+        if i + 3 < len(lines) and lines[i + 2].lower() == "by":
+            name, maker = lines[i + 1].strip(), lines[i + 3].strip()
+            if name and not junk_model(name):
+                model = name if not maker or maker.lower() in name.lower() else f"{maker} {name}"
+            break
     pos = exact_line_positions[0]
-    for candidate in lines[pos + 1:pos + 8]:
+    for candidate in ([] if model else lines[pos + 1:pos + 8]):
         low = candidate.lower()
         if low in {"performance", "take-off", "type of aircraft", "technical", "recognition"}:
             break
-        if normalize_key(candidate) != code and len(candidate) > 2 and "skip to" not in low:
+        if normalize_key(candidate) != code and len(candidate) > 2 and not junk_model(candidate):
             model = candidate; break
 
     alt_names = []
@@ -799,12 +905,18 @@ def main():
     ap.add_argument("--retries", type=int, default=6, help="retries on HTTP 429/network errors")
     ap.add_argument("--add", nargs="*", default=[], help="extra designators/names")
     ap.add_argument("--no-network", action="store_true", help="no web lookup; use cached ICAO docs/index only")
+    ap.add_argument("--apd", nargs="*", metavar="CODE", help="passe EUROCONTROL APD seule : performances -> aircraft_perf.js et réparation des noms de modèle (tous les types, ou les codes donnés)")
+    ap.add_argument("--perf-out", default="aircraft_perf.js", help="sortie de la passe APD")
     args = ap.parse_args()
 
     global HTTP
     HTTP = HttpClient(args.cache, args.delay, args.retries)
 
     db = load_js_db(args.db)
+    if args.apd is not None:
+        if apd_pass(db, args.perf_out, {normalize_key(x) for x in args.apd} or None):
+            save_js_db(args.out, db)
+        return 0
     overrides = load_overrides(args.overrides)
     aliases = normalize_alias_map(ALIASES_DEFAULT)
     aliases.update(normalize_alias_map(db.get("__aliases", {})))

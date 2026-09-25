@@ -10,6 +10,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Planificateur** : fiche curseur (⌖ survol, 📌 épinglé) dans le bloc Résultat ; **loi de montée réglable**
+  (Badin et vario visé, en violet sur les courbes, dans la table et la fiche) ; croisière d'un réacteur
+  **limitée par la poussée** au lieu d'un niveau « inatteignable » ; montée au Badin du profil **puis en Mach**
+  (un Badin constant dépassait Mach 0,9 en altitude) ; croisière économique jamais plus rapide que celle
+  du profil ; jauges : un seul enregistrement par courbe redessinée.
+- **Base des types — EUROCONTROL APD** : `update_aircraft_db.py --apd` lit le tableau de performances de
+  chaque type → `AircraftDB/aircraft_perf.js` et répare les noms de modèle mal lus (143 entrées) ;
+  écritures atomiques réessayées si un client de synchronisation verrouille le fichier. L'éditeur de
+  profil compare les champs aux valeurs APD (étiquettes identique / différent / vide, reprise au clic).
+
 ## [2.2.3] — 2026-09-25
 
 - **Planificateur — courbes de performance plus lisibles** : bloc « Comment lire ces courbes » (marche à suivre
