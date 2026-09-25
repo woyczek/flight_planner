@@ -10,7 +10,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
-- **Planificateur** : fiche curseur (⌖ survol, 📌 épinglé) dans le bloc Résultat ; **loi de montée réglable**
+- **Planificateur** : fiche curseur (⌖ survol, 📌 épinglé) dans le bloc Résultat, suivie du groupe **Régimes de vol**
+  (ancien bloc « Profil actif ») ; le bloc Résultat **reste fixe au défilement** jusqu'à la rangée moteur / RPM ; **loi de montée réglable**
   (Badin et vario visé, en violet sur les courbes, dans la table et la fiche) ; croisière d'un réacteur
   **limitée par la poussée** au lieu d'un niveau « inatteignable » ; montée au Badin du profil **puis en Mach**
   (un Badin constant dépassait Mach 0,9 en altitude) ; croisière économique jamais plus rapide que celle

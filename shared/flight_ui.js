@@ -19,6 +19,17 @@
   if(engineCard&&curveCard){engineCard.querySelector("h2").textContent="Performances moteur — RPM / puissance / consommation";engineCard.classList.remove("span12");engineCard.classList.add("span6");let svg=document.createElementNS("http://www.w3.org/2000/svg","svg");svg.id="engineCurveChart";svg.classList.add("engine-chart");svg.setAttribute("viewBox","0 0 760 255");let table=curveCard.querySelector("table"),group=document.createElement("section"),heading=document.createElement("h3");heading.textContent="Courbe RPM / puissance → consommation";group.className="engine-performance-group";table.id="engineCurveTable";table.querySelector("thead").innerHTML='<tr><th data-sort="rpm">RPM / N1 ↕</th><th data-sort="fuelFlowMin">Min. ↕</th><th data-sort="fuelFlowPerHour">Nominal ↕</th><th data-sort="fuelFlowMax">Max. ↕</th><th data-sort="phaseLabel">Régime de vol ↕</th><th>Commentaire</th></tr>';group.append(heading,svg);engineCard.append(group);curveCard.dataset.blockId="rpm-table";curveCard.classList.remove("span12");curveCard.classList.add("span6");engineCard.after(curveCard)}
 
   const profileCard=$("profile")?.closest(".card");if(profileCard)profileCard.querySelector("h2").textContent="Régimes de vol — profil ↔ cartographie";
+  // Régimes de vol : groupe du bloc Résultat, sous la fiche du curseur (⌖ / 📌). Le bloc Résultat reste visible au
+  // défilement (collant sous l'en-tête, --hdr-h) jusqu'à la rangée moteur / RPM : voir la grille de la page.
+  const resultCard=document.querySelector('[data-block-id="result"]');
+  if(profileCard&&resultCard){const group=document.createElement("div"),title=document.createElement("h3");group.className="result-group";group.dataset.group="flight-regimes";title.textContent=profileCard.querySelector("h2").textContent;group.append(title,...[...profileCard.children].filter(x=>x.tagName!=="H2"));resultCard.append(group);profileCard.remove()}
+  // CSS sticky ne borne un élément de grille que par la grille entière : on le fait remonter (translateY) dès que son bas
+  // atteindrait la rangée moteur / RPM, pour qu'il reste fixe « jusqu'aux RPM » et pas jusqu'au bas de la page.
+  {const hdr=document.querySelector("header"),stick=()=>{const h=(hdr?.offsetHeight||0)+8;document.documentElement.style.setProperty("--hdr-h",`${h}px`);if(!resultCard)return;
+    const stop=document.querySelector('[data-block-id="engine-performance"]')||document.querySelector('[data-block-id="rpm-table"]');let dy=0;
+    if(stop&&getComputedStyle(resultCard).position==="sticky"){const top=resultCard.getBoundingClientRect().top+(resultCard._dy||0);dy=Math.max(0,top+resultCard.offsetHeight-(stop.getBoundingClientRect().top-12))}
+    resultCard._dy=dy;resultCard.style.transform=dy?`translateY(${-dy}px)`:""};
+   stick();addEventListener("scroll",stick,{passive:true});addEventListener("resize",stick);if(hdr&&window.ResizeObserver)new ResizeObserver(stick).observe(hdr);if(resultCard&&window.ResizeObserver)new ResizeObserver(stick).observe(resultCard)}
   const calibrationCard=[...document.querySelectorAll(".card")].find(c=>c.querySelector("h2")?.textContent.includes("Calibration SimBrief"));
   const traceCard=[...document.querySelectorAll(".card")].find(c=>c.querySelector("h2")?.textContent.includes("Traçabilité"));
   if(calibrationCard&&traceCard){let h=document.createElement("h3");h.textContent="Traçabilité de calibration";h.style.marginTop="16px";calibrationCard.append(h,$("calibrationMeta"));traceCard.remove();calibrationCard.classList.remove("span6");calibrationCard.classList.add("span12")}
