@@ -315,18 +315,45 @@
   /** Redessine tout avec le modèle m (sans le reconstruire) : appelé par renderAltitudeOptimum et par les curseurs.
    *  stop(msg) : affichage d'un message à la place des courbes (niveau introuvable). */
   function renderAll(m, c, stop = () => {}) {
-    const K = S.cache ||= buildCache(m, c);
-    if (!K.bestFuel) return stop(tl(`Aucun niveau atteignable sur ${fmt(c.D, 0)} NM : même à 1000 ft, monter puis redescendre est plus long que le trajet, ou la croisière n’est tenable nulle part. Allonger la distance ou vérifier le profil.`, `No level reachable over ${fmt(c.D, 0)} NM: even at 1000 ft, climbing then descending is longer than the trip, or cruise cannot be held anywhere. Increase the distance or check the profile.`, `Auf ${fmt(c.D, 0)} NM ist keine Flughöhe erreichbar: selbst auf 1000 ft sind Steig- und Sinkflug länger als die Strecke, oder der Reiseflug ist nirgends haltbar. Entfernung erhöhen oder Profil prüfen.`, `Ningún nivel alcanzable en ${fmt(c.D, 0)} NM: incluso a 1000 ft, subir y bajar es más largo que el trayecto, o el crucero no se mantiene en ningún nivel. Aumente la distancia o revise el perfil.`));
-    $("optEmpty").hidden = true;
-    const man = manualLaw(m);
-    K.manTrips = K.hs.map(h => m.trip(h, c.D, c.wc, "normal", man));
-    window.altitudeOptimum = { model: m, c, bestFuel: K.bestFuel, bestProf: K.bestProf, bestEco: K.bestEco, fastest: K.fastest, plan: K.plan, eco: K.eco, norm: K.norm };
-    drawAltitude(m, c, K);
-    drawClimb(m, c, K);
+    let K;
+    try { K = S.cache ||= buildCache(m, c); }
+    catch (e) { console.error("Vue des courbes — calcul :", e); return stop(`${failTxt()} : ${e.message}`); }
+    const man = manualLaw(m), altOk = !!K.bestFuel;
+    // altitude optimale : absente si aucun niveau n'est tenable ; les courbes de montée restent affichées
+    $("optEmpty").hidden = altOk;
+    window.altitudeOptimum = altOk ? { model: m, c, bestFuel: K.bestFuel, bestProf: K.bestProf, bestEco: K.bestEco, fastest: K.fastest, plan: K.plan, eco: K.eco, norm: K.norm } : null;
+    if (altOk) guard("panelOpt", "optChart", tl("Altitude optimale", "Optimum altitude", "Optimale Flughöhe", "Altitud óptima"), () => {
+      K.manTrips = K.hs.map(h => m.trip(h, c.D, c.wc, "normal", man));
+      drawAltitude(m, c, K);
+    });
+    else {
+      $("optChart").hidden = true; $("optEmpty").textContent = noLevelTxt(m, c);
+      guard("panelOpt", "optChart", tl("Altitude optimale", "Optimum altitude", "Optimale Flughöhe", "Altitud óptima"), () =>
+        panel("panelOpt", tl("Altitude optimale", "Optimum altitude", "Optimale Flughöhe", "Altitud óptima"), `<p class="perf-warn">⚠ ${noLevelTxt(m, c)}</p>`, `<details class="limits" open><summary>${tl("Limites", "Limits", "Grenzen", "Límites")}</summary>${limitsHtml(m, c, K.hs)}</details>`));
+    }
+    if (K.top > 0) guard("panelClimb", "climbChart", tl("Montée", "Climb", "Steigflug", "Ascenso"), () => drawClimb(m, c, K)); else $("climbBlock").hidden = true;
     syncSliders();
     if (sync.pinned != null) sync.charts.forEach(ch => sync.drawPin(ch, sync.pinned));
     renderPinned();
     StickyFrame.refresh();
+  }
+
+  /** Libellé « courbe indisponible » (4 langues). */
+  const failTxt = () => tl("Courbe indisponible", "Curve unavailable", "Kurve nicht verfügbar", "Curva no disponible");
+  /** Exécute le dessin d'une courbe sans laisser une erreur arrêter les autres : en cas d'échec, la courbe (svgId)
+   *  est masquée et son panneau (panelId) affiche la cause ; l'erreur complète part dans la console. */
+  function guard(panelId, svgId, title, fn) {
+    try { fn(); }
+    catch (e) {
+      console.error(`Vue des courbes — ${title} :`, e);
+      if ($(svgId)) $(svgId).hidden = true;
+      panel(panelId, title, `<p class="perf-warn">⚠ ${failTxt()} : ${escXml(e.message || String(e))}</p>`);
+    }
+  }
+  /** Cause d'une courbe d'altitude vide : plafond sous le plancher de calcul (1000 ft) ou trajet trop court. */
+  function noLevelTxt(m, c) {
+    if (m.ceiling < 1000) return tl(`Plafond ${fmt(m.ceiling, 0)} ft : sous le plancher de calcul (1000 ft). Vérifier le ${F_CEIL()} ou les données de montée (vario, Badin, débit).`, `Ceiling ${fmt(m.ceiling, 0)} ft: below the 1000 ft computation floor. Check the ${F_CEIL()} or the climb data (rate, IAS, fuel flow).`, `Gipfelhöhe ${fmt(m.ceiling, 0)} ft: unter der Rechenuntergrenze (1000 ft). ${F_CEIL()} oder Steigflugdaten (Steigrate, IAS, Verbrauch) prüfen.`, `Techo ${fmt(m.ceiling, 0)} ft: por debajo del suelo de cálculo (1000 ft). Revise el ${F_CEIL()} o los datos de ascenso (régimen, IAS, flujo).`);
+    return tl(`Aucun niveau atteignable sur ${fmt(c.D, 0)} NM : même à 1000 ft, monter puis redescendre est plus long que le trajet, ou la croisière n’est tenable nulle part. Allonger la ${F_DIST()} ou vérifier le profil.`, `No level reachable over ${fmt(c.D, 0)} NM: even at 1000 ft, climbing then descending is longer than the trip, or cruise cannot be held anywhere. Increase the ${F_DIST()} or check the profile.`, `Auf ${fmt(c.D, 0)} NM ist keine Flughöhe erreichbar: selbst auf 1000 ft sind Steig- und Sinkflug länger als die Strecke, oder der Reiseflug ist nirgends haltbar. ${F_DIST()} erhöhen oder Profil prüfen.`, `Ningún nivel alcanzable en ${fmt(c.D, 0)} NM: incluso a 1000 ft, subir y bajar es más largo que el trayecto, o el crucero no se mantiene en ningún nivel. Aumente la ${F_DIST()} o revise el perfil.`);
   }
 
   /** Calculs lourds, faits une fois par calcul (réutilisés quand on bouge les curseurs) :
@@ -418,7 +445,7 @@
     const hTarget = Math.min(c.FL * 100, top), kC = m.cruise(hTarget, "normal");
 
     // --- 2. vario selon l'altitude ------------------------------------------------------------------
-    {
+    guard("panelClimb", "climbChart", tl("Montée — vario", "Climb — rate", "Steigflug — Steigrate", "Ascenso — régimen"), () => {
       const svg = $("climbChart"), W = 540, H = 230, Lm = 52, R = 44, T = 14, B = 30, xmax = Math.max(top, 1000);
       const rmax = Math.max(...pts.map((p, i) => Math.max(p.roc, p.profileRoc, mpts[i].roc))) * 1.08;
       const fmax = Math.max(...pts.filter(p => Number.isFinite(p.fuelPer1000) && p.roc > 100).map(p => cv(p.fuelPer1000))) * 1.08 || 1;
@@ -450,12 +477,13 @@
           [sw(COL.man), lab(L.man(), COL.man), `${manualTxt()} — ${tl("curseurs verticaux : vario à gauche, Badin à droite", "vertical sliders: rate on the left, IAS on the right", "senkrechte Regler: Steigrate links, IAS rechts", "cursores verticales: régimen a la izquierda, IAS a la derecha")}`]]),
         `<div id="climbReadout" class="readout"></div>`,
         reading(tl("au trait blanc (niveau épinglé), le vario encore disponible : il baisse jusqu’au plafond. Violet sous le bleu : la loi réglée monte moins vite que Vy, en réduisant les gaz.", "at the white line (pinned level), the rate still available: it drops towards the ceiling. Violet below blue: the set law climbs slower than Vy, with reduced throttle.", "an der weißen Linie (angeheftete Höhe) die noch verfügbare Steigrate: sie sinkt bis zur Gipfelhöhe. Violett unter Blau: das eingestellte Gesetz steigt langsamer als Vy, mit reduzierter Leistung.", "en la línea blanca (nivel fijado), el régimen aún disponible: baja hasta el techo. Violeta bajo el azul: la ley ajustada sube más despacio que Vy, con gases reducidos.")));
-    }
+    });
 
     // --- 3. Badin des lois de montée selon l'altitude ----------------------------------------------------
     const hMidC = Math.round(hTarget / 2 / 500) * 500;
-    const [mv, mt, mf] = K.mid ||= ["vy", "time", "fuel"].map(o => m.climbOpt(hMidC, o, kC));
-    {
+    let mv = null, mt = null, mf = null;
+    try { [mv, mt, mf] = K.mid ||= ["vy", "time", "fuel"].map(o => m.climbOpt(hMidC, o, kC)); } catch (e) { console.error("Vue des courbes — lois optimales :", e); }
+    guard("panelSpeed", "climbSpeedChart", tl("Vitesses de montée", "Climb speeds", "Steiggeschwindigkeiten", "Velocidades de ascenso"), () => {
       const sv = $("climbSpeedChart"), W = 540, H = 200, Lm = 52, R = 12, T = 12, B = 30;
       const sch = (K.sch ||= pts.filter(p => p.h <= hTarget || hTarget < step).map(p => ({ h: p.h, vy: m.climbOpt(p.h, "vy", kC), t: m.climbOpt(p.h, "time", kC), f: m.climbOpt(p.h, "fuel", kC), pr: active.climb?.iasKt ? +active.climb.iasKt : null })))
         .map(r => ({ ...r, mn: m.manualPoint(r.h, man) }));
@@ -482,10 +510,10 @@
         `<p>${tl("Badin à tenir, à mi-montée", "IAS to fly, at mid-climb", "Zu fliegende IAS, halber Steigflug", "IAS a mantener, a media subida")} (${flTxt(hMidC)}) :</p><dl class="kvp">${law(mv, COL.prof, def("Vy"))}${law(mt, COL.fast, L.fast())}${law(mf, COL.eco, L.fuelLaw())}${law(m.manualPoint(hMidC, man), COL.man, L.man())}</dl>`,
         `<div id="climbSpeedReadout" class="readout"></div>`,
         reading(tl(`trois objectifs incompatibles : ${def("Vy")} gagne l’altitude au plus vite ; la loi rapide arrive au plus tôt (plus vite, moins de vario) ; la loi économique dépense le moins. Pointillés : ${def("climbSpd", L.climbSpd())}. Les curseurs violets (vario à gauche, Badin à droite) règlent votre propre loi.`, `three incompatible goals: ${def("Vy")} gains altitude fastest; the fast law arrives soonest (faster, less rate); the economy law burns least. Dashed: ${def("climbSpd", L.climbSpd())}. The violet sliders (rate left, IAS right) set your own law.`, `drei unvereinbare Ziele: ${def("Vy")} gewinnt am schnellsten Höhe; das schnelle Gesetz kommt am frühesten an (schneller, weniger Steigrate); das sparsame verbraucht am wenigsten. Gestrichelt: ${def("climbSpd", L.climbSpd())}. Die violetten Regler (Steigrate links, IAS rechts) stellen Ihr eigenes Gesetz ein.`, `tres objetivos incompatibles: ${def("Vy")} gana altitud lo antes posible; la ley rápida llega antes (más rápida, menos régimen); la económica gasta lo mínimo. Punteado: ${def("climbSpd", L.climbSpd())}. Los cursores violetas (régimen a la izquierda, IAS a la derecha) ajustan su propia ley.`)));
-    }
+    });
 
     // --- comparaison des lois : montée au niveau du plan et trajet entier ----------------------------------
-    {
+    guard("panelCompare", "climbCompare", tl("Comparaison des lois", "Law comparison", "Vergleich der Gesetze", "Comparación de leyes"), () => {
       const laws = [["profile", L.climbSpd(), COL.ref], ["vy", "Vy", COL.prof], ["time", L.fast(), COL.fast], ["fuel", L.fuelLaw(), COL.eco]];
       const res = [...(K.res ||= laws.map(([id, label, col]) => ({ id, label, col, t: m.trip(hTarget, c.D, c.wc, "normal", id) }))),
         { id: man, label: `${L.man()} (${manualTxt()})`, col: COL.man, t: m.trip(hTarget, c.D, c.wc, "normal", man) }];
@@ -497,10 +525,10 @@
         : `<tr><td>${lab(r.label, r.col)}</td><td colspan="5" class="unreach">${tl("inatteignable", "unreachable", "nicht erreichbar", "inalcanzable")} — ${whyNot(m, c, r.t, hTarget, r.id)}</td></tr>`).join("")}</tbody></table>`);
       panel("panelCompare", tl("Comparaison des lois", "Law comparison", "Vergleich der Gesetze", "Comparación de leyes"),
         reading(tl(`montée jusqu’au niveau du plan (${flTxt(hTarget)}) puis trajet entier de ${fmt(c.D, 0)} NM, pour chaque loi. ★ : meilleur de la colonne. Lois rapide et économique : la distance parcourue en montée est retranchée de la croisière ; vario ≥ 50 % du vario max ; réacteur limité à 250 kt sous FL100.`, `climb to the plan level (${flTxt(hTarget)}) then the whole ${fmt(c.D, 0)} NM trip, for each law. ★: best in the column. Fast and economy laws: the distance covered while climbing is deducted from the cruise; rate ≥ 50 % of the maximum; jets limited to 250 kt below FL100.`, `Steigflug auf die Planhöhe (${flTxt(hTarget)}) und gesamte Strecke von ${fmt(c.D, 0)} NM, je Gesetz. ★: bester Wert der Spalte. Schnelles und sparsames Gesetz: die Steigstrecke wird vom Reiseflug abgezogen; Steigrate ≥ 50 % des Maximums; Strahlflugzeuge unter FL100 auf 250 kt begrenzt.`, `ascenso al nivel del plan (${flTxt(hTarget)}) y trayecto completo de ${fmt(c.D, 0)} NM, para cada ley. ★: mejor de la columna. Leyes rápida y económica: la distancia en ascenso se descuenta del crucero; régimen ≥ 50 % del máximo; reactores limitados a 250 kt bajo FL100.`)));
-    }
+    });
 
     // --- table par altitude (cumuls à Vy) et régimes de la table RPM / N1 -----------------------------------
-    {
+    guard("panelTable", "climbTable", tl("Montée par altitude", "Climb by altitude", "Steigflug nach Höhe", "Ascenso por altitud"), () => {
       const every = Math.max(step, Math.round(top / 6 / 1000) * 1000 || step);
       const rows = pts.filter(p => p.h % every === 0 || p.h === top).map(p => {
         const k = p.h ? m.climbTo(p.h, { speed: "vy" }) : { minutes: 0, nm: 0, fuel: 0 };
@@ -515,7 +543,7 @@
       panel("panelTable", tl("Montée par altitude", "Climb by altitude", "Steigflug nach Höhe", "Ascenso por altitud"),
         reading(tl(`montée à ${def("Vy")} : vario, débit et carburant par 1000 ft à chaque altitude, cumuls depuis le sol.`, `climb at ${def("Vy")}: rate, fuel flow and fuel per 1000 ft at each altitude, totals from the ground.`, `Steigflug mit ${def("Vy")}: Steigrate, Verbrauch und Kraftstoff je 1000 ft auf jeder Höhe, Summen ab Boden.`, `ascenso a ${def("Vy")}: régimen, flujo y combustible por 1000 ft a cada altitud, acumulados desde el suelo.`)),
         rpm.length ? `<p>${tl(`Table RPM / N1 : vario et carburant par pied gagné à ${flTxt(hMid)} pour chaque régime de la table (au-delà de la puissance disponible : plein gaz). ★ : le plus économique.`, `RPM / N1 table: rate and fuel per foot gained at ${flTxt(hMid)} for each setting of the table (beyond the power available: full throttle). ★: most economical.`, `RPM-/N1-Tabelle: Steigrate und Kraftstoff je gewonnenem Fuß auf ${flTxt(hMid)} für jede Einstellung (über der verfügbaren Leistung: Vollgas). ★: am sparsamsten.`, `Tabla RPM / N1: régimen y combustible por pie ganado a ${flTxt(hMid)} para cada régimen de la tabla (por encima de la potencia disponible: gases a fondo). ★: el más económico.`)}${mf && m.kind !== "jet" ? ` ${tl(`Loi économique : gaz ${fmt(mf.frac * 100, 0)} %, ${showFuel(mf.ff)} ${unit}/h.`, `Economy law: throttle ${fmt(mf.frac * 100, 0)} %, ${showFuel(mf.ff)} ${unit}/h.`, `Sparsames Gesetz: Leistung ${fmt(mf.frac * 100, 0)} %, ${showFuel(mf.ff)} ${unit}/h.`, `Ley económica: gases ${fmt(mf.frac * 100, 0)} %, ${showFuel(mf.ff)} ${unit}/h.`)}` : ""}</p>` : "");
-    }
+    });
   }
 
   addEventListener("resize", () => alignSliders());

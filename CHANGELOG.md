@@ -10,6 +10,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Planificateur — vue des courbes robuste** : chaque courbe et table est dessinée isolément ; une erreur
+  n'emporte que sa courbe (cause affichée dans son panneau, détail en console). Sans niveau atteignable, les
+  courbes de montée restent affichées et la cause est précisée (plafond sous 1000 ft, trajet trop court).
 - **Landing dashboard — traducteur commun** : libellés statiques (titres, options, menus) traduits par
   `content_i18n.js` à partir des dictionnaires de la page, typographie commune partout ; zones calculées
   (cartes, courbes, tables, état) en `data-no-i18n`. Traducteur : conteneur `[data-i18n]` traduit même
