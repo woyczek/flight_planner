@@ -72,23 +72,41 @@
   const callsignTable = window.MISSION_CALLSIGNS?.table || [];
   const operatorDesignators = window.MISSION_CALLSIGNS?.operators || {};
 
-  // Mots-clés de recherche (page « Nouveau compte rendu ») : types de mission, synonymes, appareils typiques.
+  // Mots-clés de recherche (page « Nouveau compte rendu ») : types de mission, synonymes, appareils typiques,
+  // en français, anglais, allemand et espagnol (sans accents). Libellés des familles dans les 4 langues.
+  const familyLabels = {
+    HEMS: ['HEMS / MEDEVAC', 'HEMS / MEDEVAC', 'HEMS / MEDEVAC', 'HEMS / MEDEVAC'],
+    FIRE: ['FIRE / GAAR — sécurité civile', 'FIRE / aerial firefighting', 'FIRE / Waldbrandbekämpfung', 'FIRE / extinción de incendios'],
+    SAR: ['SAR / récupération de personnel', 'SAR / personnel recovery', 'SAR / Personenbergung', 'SAR / recuperación de personal'],
+    AIRLIFT: ['Transport aérien / logistique', 'Airlift / logistics', 'Lufttransport / Logistik', 'Transporte aéreo / logística'],
+    AAR: ['Ravitaillement en vol', 'Air-to-air refuelling', 'Luftbetankung', 'Reabastecimiento en vuelo'],
+    MARITIME: ['Surveillance maritime', 'Maritime surveillance', 'Seeüberwachung', 'Vigilancia marítima'],
+    HADR: ['Aide humanitaire / évacuation', 'Humanitarian aid / evacuation', 'Humanitäre Hilfe / Evakuierung', 'Ayuda humanitaria / evacuación'],
+    AIRBORNE: ['Largage / aéroporté', 'Airdrop / airborne', 'Abwurf / Luftlande', 'Lanzamiento / aerotransportado'],
+    FI: ['Contrôle en vol', 'Flight inspection', 'Flugvermessung', 'Inspección en vuelo'],
+    SURVEY: ['Levés / missions scientifiques', 'Survey / scientific missions', 'Vermessung / Forschungsflüge', 'Levantamientos / misiones científicas'],
+    LE: ['Police / douane / sécurité', 'Police / customs / security', 'Polizei / Zoll / Sicherheit', 'Policía / aduana / seguridad'],
+    ISR: ['Renseignement / reconnaissance', 'Intelligence / reconnaissance', 'Aufklärung / Nachrichtengewinnung', 'Inteligencia / reconocimiento'],
+    COMMAND: ['Commandement / guet aérien / relais', 'Command / airborne early warning / relay', 'Führung / Luftraumüberwachung / Relais', 'Mando / alerta temprana / relé'],
+    SOF: ['Opérations spéciales / tactiques', 'Special / tactical operations', 'Spezial- / taktische Operationen', 'Operaciones especiales / tácticas'],
+    SPECIAL: ['Transport spécial / essais / formation', 'Special transport / trials / training', 'Sondertransport / Erprobung / Ausbildung', 'Transporte especial / ensayos / formación']
+  };
   const familyKeywords = {
-    HEMS: 'hems medevac evasan evacuation sanitaire samu smur helismur secours medical blesse malade patient hopital transfert inter hospitalier helico helicoptere dragon ambulance casevac urgence',
-    FIRE: 'feu feux incendie foret gaar canadair dash pelican milan bombardier d eau largage retardant securite civile tracker cl415 guet arme',
-    SAR: 'sar recherche sauvetage disparu naufrage naufrages montagne cross csar recuperation personnel treuil caiman dauphin rescue search',
-    AIRLIFT: 'transport logistique fret cargo passagers pax a400m atlas c130 hercules transall casa cn235 liaison materiel palette rotation escale airlift',
-    AAR: 'ravitaillement en vol ravito ravitailleur tanker mrtt phenix kc135 c135 kc10 perche panier refuelling refueling boom drogue hippodrome receveur ravitaille aar carburant transfere',
-    MARITIME: 'maritime surmar patmar patrouille mer navire bateau pollution atlantique atl2 falcon 50 surveillance cotiere peche sous marin',
-    HADR: 'humanitaire catastrophe evacuation ressortissants seisme ouragan tsunami inondation aide population hadr',
-    AIRBORNE: 'largage parachutiste parachutistes para aeroporte airdrop saut chuteurs zone de saut dz materiel lot',
-    FI: 'controle en vol calibration ils vor dme balisage flight inspection procedure radionavigation',
-    SURVEY: 'leve leves photo aerienne cartographie scientifique mesure lidar observation terre releve survey',
-    LE: 'police douane gendarmerie frontiere poursuite interception surveillance ordre public law enforcement',
-    ISR: 'renseignement reconnaissance isr roem roim drone reaper patroller reco photo tactique surveillance',
-    COMMAND: 'commandement awacs e3 guet aerien relais radio c2 poste de commandement qra police du ciel surete aerienne alerte',
-    SOF: 'forces speciales cos commando infiltration exfiltration insertion extraction tactique operations speciales',
-    SPECIAL: 'vip essais essai formation instruction entrainement convoyage special test vol technique autre'
+    HEMS: 'hems medevac evasan evacuation sanitaire samu smur helismur secours medical blesse malade patient hopital transfert inter hospitalier helico helicoptere dragon ambulance casevac urgence air ambulance medical evacuation hospital injured casualty emergency rescue helicopter rettungshubschrauber luftrettung krankenhaus verletzter patient notarzt intensivtransport evacuacion medica ambulancia aerea hospital herido urgencia helicoptero sanitario',
+    FIRE: 'feu feux incendie foret gaar canadair dash pelican milan bombardier d eau largage retardant securite civile tracker cl415 guet arme fire firefighting wildfire forest water bomber tanker drop retardant waldbrand feuer brandbekampfung loschflugzeug loschwasser incendio forestal fuego extincion avion anfibio hidroavion descarga retardante',
+    SAR: 'sar recherche sauvetage disparu naufrage naufrages montagne cross csar recuperation personnel treuil caiman dauphin search rescue missing shipwreck mountain personnel recovery hoist suche rettung vermisst seenot bergrettung winde busqueda salvamento rescate desaparecido naufragio montana grua',
+    AIRLIFT: 'transport logistique fret cargo passagers pax a400m atlas c130 hercules transall casa cn235 liaison materiel palette rotation escale airlift logistics freight passengers liaison flight pallet lufttransport logistik fracht passagiere verbindungsflug transporte aereo logistica carga pasajeros enlace',
+    AAR: 'ravitaillement en vol ravito ravitailleur tanker mrtt phenix kc135 c135 kc10 perche panier hippodrome receveur ravitaille aar carburant transfere air to air refuelling refueling aerial refuelling boom drogue hose receiver track offload luftbetankung tankflugzeug betankung empfanger tankschlauch reabastecimiento en vuelo avion cisterna repostaje en vuelo receptor manguera pertiga',
+    MARITIME: 'maritime surmar patmar patrouille mer navire bateau pollution atlantique atl2 falcon 50 surveillance cotiere peche sous marin maritime patrol sea ship vessel coastal surveillance fishery submarine seeuberwachung seefernaufklarung schiff kuste fischerei u boot patrulla maritima mar buque barco vigilancia costera pesca submarino',
+    HADR: 'humanitaire catastrophe evacuation ressortissants seisme ouragan tsunami inondation aide population hadr humanitarian disaster relief evacuation nationals earthquake hurricane flood aid humanitar katastrophe hilfe evakuierung erdbeben hurrikan uberschwemmung humanitaria catastrofe ayuda evacuacion terremoto huracan inundacion',
+    AIRBORNE: 'largage parachutiste parachutistes para aeroporte airdrop saut chuteurs zone de saut dz materiel lot airborne parachute paratroopers jump drop zone cargo drop fallschirmjager fallschirmabwurf absetzen luftlande sprung paracaidistas lanzamiento aerotransportado salto zona de salto',
+    FI: 'controle en vol calibration ils vor dme balisage flight inspection procedure radionavigation flight check navaid calibration flugvermessung kalibrierung navigationsanlage inspeccion en vuelo calibracion radioayuda',
+    SURVEY: 'leve leves photo aerienne cartographie scientifique mesure lidar observation terre releve survey aerial photography mapping scientific measurement earth observation vermessung luftbild kartierung wissenschaftlich messflug levantamiento fotografia aerea cartografia cientifica medicion',
+    LE: 'police douane gendarmerie frontiere poursuite surveillance ordre public trafic contrebande police customs border pursuit law enforcement smuggling polizei zoll grenze verfolgung schmuggel policia aduana guardia civil frontera persecucion contrabando',
+    ISR: 'renseignement reconnaissance isr roem roim drone reaper patroller reco photo tactique surveillance intelligence reconnaissance surveillance drone uav aufklarung nachrichtengewinnung uberwachung drohne inteligencia reconocimiento vigilancia dron',
+    COMMAND: 'commandement awacs e3 guet aerien relais radio c2 poste de commandement qra police du ciel surete aerienne alerte interception interception en vol identification intercepter chasse command control airborne early warning air policing quick reaction alert intercept interception relay fuhrung luftraumuberwachung alarmrotte abfangen abfangjager relais mando control alerta temprana policia aerea interceptacion interceptar alerta de reaccion rapida',
+    SOF: 'forces speciales cos commando infiltration exfiltration insertion extraction tactique operations speciales special forces special operations infiltration exfiltration insertion extraction spezialkrafte kommando spezialoperation fuerzas especiales operaciones especiales infiltracion extraccion',
+    SPECIAL: 'vip essais essai formation instruction entrainement convoyage special test vol technique autre training test flight ferry flight trials instruction other ausbildung testflug uberfuhrung erprobung sonstiges formacion entrenamiento vuelo de prueba traslado ensayos otro'
   };
   // Index statique des familles du Core (sélecteur d'en-tête : famille / série), chemins
   // relatifs à la racine du site.
@@ -98,7 +116,7 @@
     ['AIRBORNE', 'Largage / aéroporté', 'AIRBORNE/airborne'], ['FI', 'Contrôle en vol', 'FLIGHTINSPECTION/fi'], ['SURVEY', 'Levés / missions scientifiques', 'SURVEY/survey'],
     ['LE', 'Police / douane / sécurité', 'LE/le'], ['ISR', 'Renseignement / reconnaissance', 'ISR/isr'], ['COMMAND', 'Commandement / guet aérien / relais', 'COMMAND/command'],
     ['SOF', 'Opérations spéciales / tactiques', 'SOF/sof'], ['SPECIAL', 'Transport spécial / essais / formation', 'SPECIAL/special']
-  ].map(([id, label, base]) => ({ id, label, cr: `${base}_cr.html`, reporting: `${base}_reporting.html`, keywords: familyKeywords[id] || '' }));
+  ].map(([id, label, base]) => ({ id, label, cr: `${base}_cr.html`, reporting: `${base}_reporting.html`, keywords: familyKeywords[id] || '', labels: familyLabels[id] || [label, label, label, label] }));
 
   // Famille de CR d'après le type d'une mission générée (SIA XML, helo-xp-mission : mission.type).
   const familyAliases = [[/^(HEMS|MEDEVAC|CASEVAC|EVASAN|SMUR)\b/, 'HEMS'], [/FIRE|GAAR|FEU|INCENDIE/, 'FIRE'], [/^(SAR|CSAR|PR)\b|RESCUE|SAUVETAGE/, 'SAR'], [/\bAAR\b|REFUEL|RAVITAILL|TANKER|AIR[- ]TO[- ]AIR/, 'AAR'], [/AIRLIFT|LOGIST|TRANSPORT|CARGO/, 'AIRLIFT'], [/MARITIME|SURMAR|PATMAR/, 'MARITIME'], [/HADR|HUMANIT|EVAC/, 'HADR'], [/AIRBORNE|AIRDROP|LARGAGE|PARA/, 'AIRBORNE'], [/^FI\b|FLIGHT ?INSPECTION|CALIBRATION/, 'FI'], [/SURVEY|SCIEN|LEV[EÉ]/, 'SURVEY'], [/^LE\b|POLICE|DOUANE|LAW/, 'LE'], [/ISR|RECON|RENSEIGN/, 'ISR'], [/COMMAND|AEW|AWACS|RELAY|RELAIS/, 'COMMAND'], [/^SOF\b|TACTI|OPS? SP[EÉ]CIALES?/, 'SOF']];
