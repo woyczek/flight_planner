@@ -10,6 +10,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Données — inventaire et sauvegarde** : `docs/DONNEES.md` recense chaque base (référence importée par un
+  outil, donnée utilisateur sauvegardée, ou cache reconstructible). Les sauvegardes des données locales
+  incluent désormais les bases IndexedDB de données utilisateur (OFP / calibrations du planificateur, journal
+  d'atterrissages chargé), restaurées par fusion.
 - **Base des types — passe EUROCONTROL APD** (252 types) : 173 fiches de performances dans
   `AircraftDB/aircraft_perf.js` (comparées aux profils dans le planificateur), 141 noms de modèle réparés dans
   `aircraft_db.js` (« Aircraft Performance Database », « Skip to aircraft details »), 79 types sans fiche APD.

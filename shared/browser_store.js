@@ -58,6 +58,58 @@
     await idbSet('folder:__store', handle); return handle;
   }
 
+  // ---- bases IndexedDB de données utilisateur, sauvegardées avec le localStorage
+  // Les autres bases IndexedDB sont reconstructibles et restent hors sauvegarde : « sia-map-parser » (base SIA,
+  // relue depuis le dossier SIA officiel), « missionCore / handles » (autorisations de dossiers, non exportables).
+  const IDB_SAVED = [
+    { db: 'FlightPerfCache', store: 'cache' },                          // planificateur : OFP SimBrief, calibrations, airframes
+    { db: 'LandingPerformanceDashboardCache', store: 'datasets' },      // Landing Performance : dernier journal chargé
+  ];
+  const idbLabel = spec => `${spec.db}/${spec.store}`;
+  /** Vrai si la base existe déjà (ne jamais la créer à vide : la page propriétaire ne recréerait pas son magasin). */
+  const idbExists = async name => { try { return (await indexedDB.databases?.())?.some(d => d.name === name) ?? false; } catch { return false; } };
+  /** Contenu { clé : valeur } d'un magasin IndexedDB sauvegardé ; null si la base ou le magasin n'existe pas. */
+  async function idbDump(spec) {
+    if (!await idbExists(spec.db)) return null;
+    return new Promise(resolve => {
+      const r = indexedDB.open(spec.db);
+      r.onerror = () => resolve(null);
+      r.onsuccess = () => {
+        const db = r.result;
+        if (!db.objectStoreNames.contains(spec.store)) { db.close(); return resolve(null); }
+        const out = {}, q = db.transaction(spec.store).objectStore(spec.store).openCursor();
+        q.onsuccess = () => { const c = q.result; if (c) { out[String(c.key)] = c.value; c.continue(); } else { db.close(); resolve(out); } };
+        q.onerror = () => { db.close(); resolve(null); };
+      };
+    });
+  }
+  /** Écrit dans un magasin IndexedDB les valeurs sauvegardées absentes ou plus récentes (fetchedAt / savedAt / createdAt).
+   *  Crée la base au besoin, avec le même schéma que la page propriétaire (version 1, un magasin). Sortie : { added, updated, kept }. */
+  async function idbRestore(spec, saved) {
+    const counts = { added: 0, updated: 0, kept: 0 };
+    const when = v => String(v?.fetchedAt || v?.savedAt || v?.createdAt || '');
+    const local = await idbDump(spec) || {};
+    const writes = Object.entries(saved || {}).filter(([k, v]) => {
+      if (!(k in local)) { counts.added++; return true; }
+      if (when(v) > when(local[k])) { counts.updated++; return true; }
+      counts.kept++; return false;
+    });
+    if (!writes.length) return counts;
+    await new Promise(resolve => {
+      const r = indexedDB.open(spec.db, 1);
+      r.onupgradeneeded = () => { if (!r.result.objectStoreNames.contains(spec.store)) r.result.createObjectStore(spec.store); };
+      r.onerror = () => resolve();
+      r.onsuccess = () => { const db = r.result, tx = db.transaction(spec.store, 'readwrite'); writes.forEach(([k, v]) => tx.objectStore(spec.store).put(v, k)); tx.oncomplete = tx.onerror = () => { db.close(); resolve(); }; };
+    });
+    return counts;
+  }
+  /** Contenu de toutes les bases IndexedDB sauvegardées : { « base/magasin » : { clé : valeur } }. */
+  async function indexedSnapshot() {
+    const out = {};
+    for (const spec of IDB_SAVED) { const d = await idbDump(spec); if (d && Object.keys(d).length) out[idbLabel(spec)] = d; }
+    return out;
+  }
+
   // ---- instantané / fusion
   const parse = text => { try { return JSON.parse(text); } catch { return text; } };
   function snapshot() {
@@ -89,10 +141,10 @@
     return { value: local, action: 'kept' };
   }
   async function toText() {
-    const Y = await yaml(), entries = snapshot(), savedAt = new Date().toISOString();
+    const Y = await yaml(), entries = snapshot(), indexed = await indexedSnapshot(), savedAt = new Date().toISOString();
     const text = `# Données locales du navigateur — DEFA Virtual (${location.origin})\n# Restauration : menu ☰ › ${TEXT.fr.title} › ${TEXT.fr.restore}\n`
-      + Y.dump({ schema: SCHEMA, savedAt, origin: location.origin, entries }, { lineWidth: -1, noRefs: true });
-    return { text, count: Object.keys(entries).length, savedAt };
+      + Y.dump({ schema: SCHEMA, savedAt, origin: location.origin, entries, indexed }, { lineWidth: -1, noRefs: true });
+    return { text, count: Object.keys(entries).length + Object.values(indexed).reduce((n, d) => n + Object.keys(d).length, 0), savedAt };
   }
   const hashOf = text => { let h = 0; for (let i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) | 0; return String(h); };
   const meta = () => { try { return JSON.parse(localStorage.getItem(META) || '{}'); } catch { return {}; } };
@@ -127,6 +179,11 @@
         try { localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value)); counts[action]++; } catch { /* quota */ }
       } else if (action === 'kept') counts.kept++;
     });
+    // bases IndexedDB sauvegardées (section « indexed », absente des sauvegardes anciennes)
+    for (const spec of IDB_SAVED) {
+      const saved = data.indexed?.[idbLabel(spec)]; if (!saved) continue;
+      const c = await idbRestore(spec, saved); counts.added += c.added; counts.updated += c.updated; counts.kept += c.kept;
+    }
     status(t('restored', counts));
     // Les pages ouvertes relisent leurs données (registres, préférences…).
     window.dispatchEvent(new CustomEvent('local-store-restored', { detail: counts }));
@@ -213,5 +270,5 @@
   });
   translate(); // libellés, dossier actuel, rappel (après la déclaration du bouton)
 
-  window.LocalStore = { save, restore, restoreText, download, chooseFolder, snapshot, merge, FILE, pending };
+  window.LocalStore = { save, restore, restoreText, download, chooseFolder, snapshot, indexedSnapshot, merge, FILE, pending, IDB_SAVED };
 })();

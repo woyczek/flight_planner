@@ -111,6 +111,11 @@ synchronisé du dépôt) — écriture automatique au départ de chaque page, re
 fusion (la donnée la plus récente l'emporte). Exclus : le suivi réseau en cours, la clef du
 webservice d'envoi des CR. Événement `local-store-restored` après une restauration.
 
+**Bases IndexedDB sauvegardées** (section `indexed` du fichier) : `FlightPerfCache` (OFP, calibrations,
+airframes du planificateur) et `LandingPerformanceDashboardCache` (journal d'atterrissages chargé) — liste
+`IDB_SAVED`. Hors sauvegarde : base SIA (relue depuis le dossier officiel), autorisations de dossiers.
+Inventaire complet des données et de leur provenance : [DONNEES.md](DONNEES.md).
+
 ### Rappel de sauvegarde
 
 Chaque modification des données locales est comptée (au plus une par clé et par minute ;

@@ -7,8 +7,8 @@
 <script src="../repository_tree"></script>
 <script src="../shared/mission_core/vendor/js-yaml.min.js"></script>
 <script src="mission_store.js?v=20260925a"></script>
-<script src="../shared/aar_tracks.js?v=20260925ze"></script>
-<script src="../shared/mission_core/vocab.js?v=20260925ze"></script>
+<script src="../shared/aar_tracks.js?v=20260925zf"></script>
+<script src="../shared/mission_core/vocab.js?v=20260925zf"></script>
 <script src="jspdf.umd.min.js"></script>
 <style>
 :root{font:15px/1.45 system-ui,sans-serif;color:#17242b;background:#edf3f6}*{box-sizing:border-box}body{max-width:1240px;margin:0 auto;padding:0 18px 60px}header,section{background:#fff;border:1px solid #d3dfe5;border-radius:12px;padding:20px;margin:14px 0;box-shadow:0 2px 8px #18313e0d}h1{margin:0;font-size:1.65rem}h2{margin:0 0 14px;font-size:1.15rem}h3{margin:8px 0 10px;font-size:1rem}.sub,.small{color:#5c6d76}.small{font-size:.88rem}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(225px,1fr));gap:12px}.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}.actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center}label{display:block;font-weight:650;margin:7px 0}input,textarea,select{width:100%;margin-top:4px;padding:8px;border:1px solid #afc1ca;border-radius:7px;font:inherit;font-weight:400;background:#fff}textarea{min-height:118px;resize:vertical;font-family:inherit;font-weight:400}.long{min-height:240px}button,.buttonLink{border:0;border-radius:8px;background:#075ca8;color:#fff;padding:9px 14px;font:inherit;font-weight:750;cursor:pointer;text-decoration:none;display:inline-block}.secondary{background:#526a76}.danger{background:#a12622}.ghost{background:#e9f0f4;color:#17354a}.status{padding:10px 12px;border-radius:8px;background:#eef5f8;margin-top:10px}.ok{color:#08723c}.err{color:#a12622}.sectionCard,.arrayItem{border:1px solid #d8e3e8;border-radius:9px;padding:12px;margin:10px 0;background:#fbfdfe}.arrayItem{position:relative}.arrayItem>.danger{position:absolute;right:8px;top:8px;padding:4px 8px}.node{border-left:3px solid #d9e7ed;padding-left:12px;margin:10px 0}.nodeTitle{font-weight:800;color:#244b61}.maps{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}.mapCard{border:1px solid #d8e3e8;border-radius:9px;padding:10px}.mapCard.ready{border-color:#45a273;background:#f1fbf6}.mapCard.missing{border-color:#d6a23c;background:#fffaf0}.badge{display:inline-block;border-radius:999px;padding:2px 8px;font-size:.8rem;background:#e5eef3;margin-left:6px}details>summary{font-weight:800;cursor:pointer;padding:7px 0}.toolbar{position:sticky;bottom:8px;z-index:4;background:#fff;border:1px solid #b9cbd4;border-radius:10px;padding:10px;box-shadow:0 5px 20px #17354a26}.fieldRow{display:grid;grid-template-columns:minmax(150px,240px) 1fr;gap:10px;align-items:start;margin:7px 0}.fieldRow>label{margin:0;padding-top:8px}.inlineAdd{display:grid;grid-template-columns:1fr auto;gap:8px}.note{border-left:4px solid #2b7bb4;background:#eef7fc;padding:10px 12px}@media(max-width:760px){.two,.fieldRow{grid-template-columns:1fr}.fieldRow>label{padding:0}}
@@ -146,7 +146,7 @@ SiaMission.subscribe('generator',d=>{state={...state,yaml:d.yaml,narrative:d.nar
 // Passerelle vers CR DEFA : la mission (YAML) est confiée au CR de la famille correspondante.
 $('openCr').onclick=()=>{try{syncNarrative();const family=window.MissionVocab.familyForType(state.yaml?.mission?.type),target=window.MissionVocab.families.find(f=>f.id===family);localStorage.setItem('siaMissionToCr:v1',JSON.stringify(state.yaml));location.href=`../CR DEFA/${target.cr}?from=sia`}catch(e){$('exportStatus').textContent=e.message}};
 </script>
-<script src="../shared/repository_nav.js?v=20260925ze"></script>
-<script src="../shared/app_framework.js?v=20260925ze"></script>
-<script src="../shared/content_i18n.js?v=20260925ze"></script><script src="sia_i18n.js?v=20260925a"></script>
+<script src="../shared/repository_nav.js?v=20260925zf"></script>
+<script src="../shared/app_framework.js?v=20260925zf"></script>
+<script src="../shared/content_i18n.js?v=20260925zf"></script><script src="sia_i18n.js?v=20260925a"></script>
 </body></html>
