@@ -24,6 +24,7 @@
   };
   let studio = null,
     terrain = null;
+  /** Réglages mémorisés du bloc Profil vertical (route saisie, profil d'affichage, options). */
   const saved = (() => {
     try {
       return JSON.parse(localStorage.getItem(KEY) || '{}');
@@ -31,6 +32,7 @@
       return {};
     }
   })();
+  /** Mémorise les réglages du bloc Profil vertical. */
   const store = () => {
     try {
       localStorage.setItem(KEY, JSON.stringify({
@@ -44,6 +46,7 @@
   $('vpRoute').value = saved.route || '';
   $('vpFloor').value = saved.floor || 0;
   $('vpCeil').value = saved.ceiling || 0;
+  /** Message d'état du bloc (err : en erreur), typographie de la langue appliquée. */
   const status = (text, err) => {
     text = (window.RepositoryNav?.getLanguage?.() || 'fr') === 'fr' ? text : String(text).replace(/ ([:;])/g, '$1');
     $('vpStatus').innerHTML = err ? `<span style="color:#ff8a80">${esc(text)}</span>` : esc(text);
@@ -76,6 +79,7 @@
       group = ft => tas > 0 && ft > 0 ? `N${String(tas).padStart(4, '0')}F${String(Math.round(ft / 100)).padStart(3, '0')}` : '';
     let level = num(gen.initial_altitude) || 0,
       lastId = '';
+    /** Point de route (identifiant, position) pour la coupe. */
     const point = (id, lat, lon) => {
       lat = num(lat);
       lon = num(lon);
@@ -135,6 +139,7 @@
     };
   };
 
+  /** Dessine la coupe verticale : route saisie ou issue de l'OFP, espaces aériens traversés (base SIA du studio), relief, plan de vol (montée / croisière / descente selon le modèle de l'avion actif). */
   async function draw() {
     if (!studio) await loadData();
     const base = studio.base || {},
@@ -193,6 +198,7 @@
   // route : storeOFP (enregistrement de l'OFP par la page) est complété pour la reprendre et tracer.
   if (typeof storeOFP === 'function') {
     const original = storeOFP;
+    /** Accroche sur l'enregistrement d'un OFP : la route du nouvel OFP est reprise et la coupe redessinée. */
     storeOFP = async function(raw, ...rest) {
       const out = await original.call(this, raw, ...rest);
       try {

@@ -13,6 +13,7 @@
     return m ? m[1].trim() : '';
   };
 
+  /** Coordonnée AIXM en degrés-minutes-secondes (« 481530N ») → degrés décimaux. */
   function dms(v) {
     v = String(v || '').trim();
     if (!v) return NaN;
@@ -26,12 +27,14 @@
   }
   // Blocs d'un type, sans la référence à l'organisme (son txtName précède celui de l'objet).
   const blocks = (text, t) => text.split(`<${t}>`).slice(1).map(c => c.slice(0, c.indexOf(`</${t}>`)).replace(/<OrgUid[\s\S]*?<\/OrgUid>/, ''));
+  /** Position { lat, lon } d'un bloc AIXM (geoLat / geoLong). */
   const geo = b => ({
     lat: dms(tag(b, 'geoLat')),
     lon: dms(tag(b, 'geoLong'))
   });
   const HARD = /^(ASPH|CONC|BITUM|BIT|PEM|ASPC|MACADAM|PAVED|CONC\+ASPH|ASPH\+CONC)/i;
 
+  /** Lecture de l'export AIXM du SIA : aérodromes (pistes, fréquences, statut), radionavigation, points, obstacles, espaces aériens (anneaux, planchers, plafonds), sites à survol interdit, parcs. */
   function parseAixm(text) {
     // Pistes : longueur (m), revêtement, orientation (Rdn : relèvement vrai du premier seuil).
     const rwy = new Map(),
@@ -113,6 +116,7 @@
       navaids.push(n);
       if (mid) vorByMid.set(mid, n);
     }
+    /** Vrai si deux positions sont voisines (≈ 2 km). */
     const near = (a, c) => Math.abs(a.lat - c.lat) < .02 && Math.abs(a.lon - c.lon) < .03;
     for (const b of blocks(text, 'Dme')) {
       const vor = vorByMid.get(/<VorUid mid="(\d+)"/.exec(b)?.[1]),
@@ -224,6 +228,7 @@
     const v = +m[2].replace(',', '.');
     return m[1] ? v * 100 : / M\b/.test(t) ? v * 3.28084 : v;
   }
+  /** Limite verticale au format carte (FL 065, 1500 ft AMSL…). */
   const chartLimit = t => String(t || '').replace(/^FL\s*(\d+)$/, (_, n) => 'FL ' + n.padStart(3, '0')).replace(/ ft /, ' ').replace(/ m /, ' m ');
 
   // ---- placement des libellés : un rectangle n'est posé que s'il ne recouvre aucun autre
@@ -232,10 +237,14 @@
   function placer(cell = 64) {
     const grid = new Map(),
       big = [],
+      /** Vrai si deux rectangles se chevauchent. */
       hit = (r, q) => r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0;
+    /** Cellules de la grille couvertes par un rectangle. */
     const span = r => [Math.floor(r.x0 / cell), Math.floor(r.x1 / cell), Math.floor(r.y0 / cell), Math.floor(r.y1 / cell)];
+    /** Vrai pour un rectangle trop grand pour la grille (liste à part). */
     const large = ([i0, i1, j0, j1]) => (i1 - i0 + 1) * (j1 - j0 + 1) > 256;
     return {
+      /** Vrai si le rectangle r ne chevauche aucun élément déjà placé. */
       free(r) {
         if (big.some(q => hit(r, q))) return false;
         const sp = span(r),
@@ -252,6 +261,7 @@
           }
         return true;
       },
+      /** Réserve le rectangle r dans la grille de placement. */
       add(r) {
         const sp = span(r),
           [i0, i1, j0, j1] = sp;
@@ -265,6 +275,7 @@
             }
         return true;
       },
+      /** Réserve r s'il est libre ; vrai si réservé. */
       take(r) {
         return this.free(r) ? this.add(r) : false;
       }
@@ -284,6 +295,7 @@
   };
   const patterns = new WeakMap();
 
+  /** Motif de hachures d'un type d'espace (zone réglementée, dangereuse, interdite…), mis en cache par contexte. */
   function hatch(ctx, kind) {
     let m = patterns.get(ctx);
     if (!m) patterns.set(ctx, m = {});
@@ -315,6 +327,7 @@
     g.stroke();
     return m[kind] = ctx.createPattern(c, 'repeat');
   }
+  /** Trace un anneau (lat, lon) dans le contexte, projection toC. */
   const ringPath = (ctx, ring, toC) => {
     ring.forEach(([lat, lon], i) => {
       const p = toC(lat, lon);
@@ -322,8 +335,10 @@
     });
     ctx.closePath();
   };
+  /** Anneau principal (le plus grand) d'un espace aérien. */
   const bigRing = a => a.rings.reduce((best, r) => r.length > best.length ? r : best, []);
 
+  /** Rectangle écran englobant un anneau. */
   function screenBox(ring, toC) {
     let x0 = Infinity,
       y0 = Infinity,
@@ -495,6 +510,7 @@
     }
   }
 
+  /** Taille de l'étiquette d'un espace (titre, limites verticales) dans une police donnée. */
   function labelSize(ctx, a, font, limits = true) {
     const red = a.type === 'R' || a.type === 'D' || a.type === 'P',
       up = limits ? chartLimit(a.upper) : '',
@@ -513,6 +529,7 @@
   }
   // Noms abrégés (option du profil) : nom seul, sans le type de zone.
   let abbrevNames = false;
+  /** Titre d'un espace : type + nom, ou nom seul (option noms abrégés). */
   const zoneTitle = a => abbrevNames ? a.name : (a.type === 'SIV' ? 'SIV ' : a.type + ' ') + a.name;
   // Installations portant une marque distinctive (survol interdit < 1000 m / 3300 ft, type SUR) :
   // contour et symbole ⊗ rouge ; parcs et réserves naturels (PRN) : contour vert tireté.
@@ -772,6 +789,7 @@
     if (labelFont) aerodromeLabel(ctx, ad, p, s, labelFont);
   }
 
+  /** Étiquette d'un aérodrome (code OACI, nom, altitude, fréquence) près de son symbole. */
   function aerodromeLabel(ctx, ad, p, s, labelFont) {
     const main = ad.state ? C.red : C.blue;
     const label = ad.icao || (labelFont && labelFont.full ? ad.name : '');
@@ -960,6 +978,7 @@
     }
   }
 
+  /** Texte avec halo clair (lisible sur le fond de carte). */
   function haloText(ctx, text, x, y, size, color, align = 'left', base = 'middle', weight = '700') {
     ctx.save();
     ctx.font = `${weight} ${size}px Arial,sans-serif`;
@@ -975,8 +994,10 @@
   }
   // Points aéronautiques de l'emprise ; densité : obstacles filtrés par hauteur, libellés selon le zoom.
   const NAV_RANK = n => n.kind === 'TACAN' || n.tacan ? 6 : n.kind === 'VOR' ? 5 : n.kind === 'DME' ? (n.ils ? 1 : 4) : n.kind === 'NDB' ? 3 : 2;
+  /** Rang d'importance d'un aérodrome (contrôlé, longueur de piste en dur, public) : ordre de dessin et priorité des étiquettes. */
   const AD_RANK = a => (a.controlled ? 10 : 0) + (a.hardLen > 2300 ? 3 : a.hardLen >= 1000 ? 2 : a.hardLen > 0 ? 1 : 0) + (a.public || a.state ? 1 : 0) - (a.type === 'HP' ? 1 : 0);
 
+  /** Dessine les points de la carte (aérodromes, radionavigation, obstacles, points de report) avec placement des étiquettes sans chevauchement. */
   function drawPoints(ctx, data, toC, {
     W,
     H,
@@ -993,9 +1014,11 @@
     navLabels = true
   } = {}) {
     place = pl;
+    /** Vrai si un point est dans le cadre (marge de 30 px). */
     const inside = p => p.x > -30 && p.y > -30 && p.x < W + 30 && p.y < H + 30,
       detailed = pxPerDegree >= 180,
       s = Math.max(4, 6 * scale);
+    /** Déclinaison magnétique du point de la base le plus proche. */
     const nearestMag = (lat, lon) => {
       let best = null,
         d = Infinity;
@@ -1018,6 +1041,7 @@
         x1: p.x + s * k,
         y1: p.y + s * k
       });
+    /** Réserve la place d'un symbole ou d'une étiquette (placement sans chevauchement). */
     const reserve = r => {
       if (place) place.add(r);
     };

@@ -10,12 +10,14 @@
     FT = 3.28084,
     R = 6371000,
     rad = d => d * Math.PI / 180;
+  /** Distance (NM) entre deux points (grand cercle). */
   const dist = (a, b) => {
     const dLat = rad(b.lat - a.lat),
       dLon = rad(b.lon - a.lon),
       h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon / 2) ** 2;
     return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
   };
+  /** Point interpolé entre a et b (fraction t). */
   const lerp = (a, b, t) => ({
     lat: a.lat + (b.lat - a.lat) * t,
     lon: a.lon + (b.lon - a.lon) * t
@@ -38,6 +40,7 @@
       label: m[3] === 'F' ? `FL${m[4].slice(-3)}` : m[3] === 'A' ? `${n * 100} ft` : `${n * 10} m`
     };
   }
+  /** Coordonnée de plan de vol OACI (4830N00210E, 48N002E…) → { lat, lon } ; null sinon. */
   const icaoCoord = t => {
     const m = /^(\d{2})(\d{2})?([NS])(\d{3})(\d{2})?([EW])$/.exec(t);
     if (!m) return null;
@@ -65,6 +68,7 @@
     const out = [],
       unknown = [];
     let pending = null;
+    /** Groupe vitesse / niveau de la route (N0450F350…) appliqué aux points suivants. */
     const setLevel = lvl => {
       if (out.length) out[out.length - 1].lvl = lvl;
       else pending = lvl;
@@ -279,6 +283,7 @@
       w: Math.min(...points.map(p => p.lon)) - .7,
       e: Math.max(...points.map(p => p.lon)) + .7
     };
+    /** Vrai si le point est dans l'anneau (règle pair-impair). */
     const inRing = (lat, lon, ring) => {
       let c = false;
       for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
@@ -390,7 +395,9 @@
     const terrainMax = Math.max(0, ...data.samples.map(q => q.terrain)),
       obsMax = Math.max(0, ...data.obstacles.map(o => o.elev || 0)),
       altMax = Math.max(0, ...data.marks.map(m => m.alt || m.lvl?.ft || 0), data.plan?.top || 0);
+    /** Vrai pour une limite relative au sol (ASFC, AGL, SFC). */
     const rel = t => /ASFC|AGL|SFC/i.test(t || '') && !/AMSL/i.test(t || '');
+    /** Plancher d'un espace sur un tronçon de la coupe (relief ajouté pour une limite ASFC). */
     const floorOf = c => {
       const mid = Math.round((c.i0 + c.i1) / 2);
       return (rel(c.a.lower) ? data.samples[mid].center : 0) + limitFt(c.a.lower, false);
@@ -532,6 +539,7 @@
     for (const l of labels.sort((a, b) => b.w - a.w)) {
       const w = Math.max(ctx.measureText(l.text).width, ctx.measureText(l.sub).width) + 8 * scale,
         hgt = f * 2.3;
+      /** Abscisse d'étiquette ramenée dans le cadre. */
       const cx = x => Math.min(iR - w / 2, Math.max(iL + w / 2, x)),
         rect = (x, y) => ({
           x0: x - w / 2,
@@ -683,6 +691,7 @@
 
   // ===== Espaces d'un profil d'affichage (mêmes règles que les cartes du studio) =====
   const zNorm = v => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  /** Nom d'espace réduit à son cœur (sans type ni numéro), pour les correspondances de profil. */
   const zCore = name => {
     const n = String(name || '').trim(),
       d = /^(\d+)/.exec(n);
@@ -690,7 +699,9 @@
     const w = /^(.*\D)\s+\d+\S*$/.exec(n);
     return w ? w[1].trim() : n;
   };
+  /** Vrai si le type t fait partie des types choisis (RMZ-TMZ couvre RMZ et TMZ). */
   const zFamily = (types, t) => types.has(t) || (t === 'RMZ-TMZ' && (types.has('RMZ') || types.has('TMZ')));
+  /** Alias de zone (« @nom ») du profil d'affichage correspondant à la requête. */
   const zAlias = (q, aliases) => /^@/.test(String(q).trim()) ? Object.keys(aliases || {}).find(k => zNorm(k) === zNorm(q)) : null;
   // Une entrée de liste désigne-t-elle cet espace ? « @ALIAS » (groupe), « R 166* » (toutes les parties),
   // fragment de nom ou d'identifiant.
@@ -705,6 +716,7 @@
     const n = zNorm(q);
     return !!n && [a.name, a.key, a.type + a.name].some(v => zNorm(v).includes(n));
   }
+  /** Liste des zones choisies dans un profil d'affichage. */
   const zoneList = p => Array.isArray(p?.zoneList) ? p.zoneList : (p?.allZones === false ? String(p?.zoneList || '').split(/\r?\n|,/).map(x => x.trim()).filter(Boolean) : []);
   // Valeur d'un réglage d'élément d'un profil (défaut si absent).
   const opt = (profile, id, def) => {
@@ -712,6 +724,7 @@
     return v === undefined || v === '' ? def : v;
   };
 
+  /** Espaces aériens à afficher selon le profil d'affichage (types, zones choisies, alias, zones du brief). */
   function selectAirspaces(profile, airspaces, {
     aliases = {},
     limitFt
@@ -770,6 +783,7 @@
       }
       return b;
     };
+    /** Déclinaison magnétique au point (radionavigation la plus proche). */
     const magVarAt = (lat, lon) => {
       let best = 0,
         d = Infinity;
@@ -783,12 +797,14 @@
       }
       return best;
     };
+    /** Balise de radionavigation d'identifiant k (VOR / DME préférés). */
     const navaid = k => {
       const c = (aero.navaids || []).filter(n => String(n.id || '').toUpperCase() === k && n.kind in NAV_PREF);
       if (!c.length) return null;
       const best = Math.min(...c.map(n => NAV_PREF[n.kind]));
       return near(c.filter(n => NAV_PREF[n.kind] === best));
     };
+    /** Point de route connu d'identifiant k (brief, aérodrome, balise, point RNAV). */
     const find = k => {
       if (brief.has(k)) return brief.get(k);
       const ad = (aero.aerodromes || []).find(a => String(a.icao || '').toUpperCase() === k);
@@ -829,6 +845,7 @@
   // ===== Relief : tuiles d'altitude Terrarium (AWS), z10 ≈ 150 m, gardées en mémoire =====
   function terrainSampler(z = 10) {
     const tiles = new Map();
+    /** Tuile de relief (altitudes) pour l'échantillonnage du terrain le long de la route. */
     const tile = (x, y) => {
       const key = `${x}/${y}`;
       if (!tiles.has(key)) tiles.set(key, (async () => {

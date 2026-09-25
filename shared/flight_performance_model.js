@@ -22,6 +22,7 @@
   // Messages dans la langue de la page (fr, en, de, es).
   const tl = (...r) => r[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'))] || r[0];
 
+  /** Atmosphère type ISA à l'altitude h (ft) : { theta (T / T0), delta (p / p0), sigma (ρ / ρ0), a (vitesse du son, kt) } ; tropopause à 36 089 ft. */
   function isa(h) {
     const T0 = 288.15,
       h1 = 36089.24,
@@ -35,6 +36,7 @@
       a: 38.9679 * Math.sqrt(T)
     };
   }
+  /** Altitude ISA (ft) de rapport de densité s (inverse de isa, par dichotomie). */
   const altFromSigma = s => {
     if (s >= 1) return 0;
     let lo = 0,
@@ -81,6 +83,7 @@
       label: ['piston', 'piston', 'Kolbenmotor', 'pistón']
     }
   };
+  /** Racine de f sur [lo, hi] par dichotomie (n itérations) ; suppose un changement de signe. */
   const bisect = (f, lo, hi, n = 60) => {
     let flo = f(lo);
     for (let i = 0; i < n; i++) {
@@ -93,6 +96,7 @@
     }
     return (lo + hi) / 2;
   };
+  /** Maximum de f sur [lo, hi] par section dorée (n itérations) : abscisse du maximum. */
   const golden = (f, lo, hi, n = 50) => {
     const g = (Math.sqrt(5) - 1) / 2;
     let c = hi - g * (hi - lo),
@@ -119,6 +123,7 @@
     return profile?.jetFuel ? (tas > 320 ? 'jet' : 'turboprop') : 'piston';
   }
 
+  /** Modèle de performances calibré sur un profil d'appareil (et la base des types db pour la motorisation) : polaire, poussée / puissance, consommation, plafond. Lève une erreur si la TAS ou le débit de croisière manquent. Retourne les calculs exportés (cruise, trip, climbTo, climbPoint, climbOpt, manualLaw…). */
   function create(profile, {
     db
   } = {}) {
@@ -127,6 +132,7 @@
       lapse = LAPSE[kind],
       jet = kind === 'jet',
       notes = [];
+    /** Nombre d'un champ du profil ; NaN si vide. */
     const num = v => v === null || v === undefined || v === '' ? NaN : +v;
     const cr = profile.cruise || {},
       cl = profile.climb || {},
@@ -146,19 +152,24 @@
       const a = 1 / (2 * ld * veMd * veMd),
         b = veMd * veMd / (2 * ld),
         dw = ve => a * ve * ve + b / (ve * ve);
+      /** TAS (kt) d'une vitesse équivalente ve à l'altitude h. */
       const tasOf = (h, ve) => ve / Math.sqrt(isa(h).sigma);
+      /** Consommation spécifique relative d'un réacteur : √θ × (1 + 0,8 M). */
       const sfc = (h, tas) => {
           const at = isa(h);
           return Math.sqrt(at.theta) * (1 + .8 * tas / at.a);
         },
         eta = ve => Math.min(1, .55 + .45 * ve / (1.4 * veMd));
       const K = jet ? ffRef / (sfc(hRef, tasRef) * dw(veRef)) : ffRef / (dw(veRef) * tasRef);
+      /** Poussée (réacteur) ou puissance (hélice) disponible à l'altitude h, gaz à fond. */
       const avail = h => p0 * lapse(isa(h).sigma);
+      /** Vario (ft/min) à l'altitude h, vitesse équivalente ve, fraction de gaz frac. */
       const roc = (h, ve, frac = 1) => {
         const tas = tasOf(h, ve);
         return jet ? KT_FPM * tas * (frac * avail(h) - dw(ve)) : KT_FPM * (frac * avail(h) * eta(ve) - dw(ve) * tas);
       };
       const ffAt = (h, frac = 1, tas = tasOf(h, veMd * 1.4)) => jet ? K * sfc(h, tas) * frac * avail(h) : K * frac * avail(h);
+      /** Vitesse du meilleur taux de montée à l'altitude h : { ve, tas, roc }. */
       const vy = (h, frac = 1) => {
         const ve = golden(v => roc(h, v, frac), .8 * veMd, 2.6 * veMd);
         return {
@@ -167,6 +178,7 @@
           roc: roc(h, ve, frac)
         };
       };
+      /** Vitesse du meilleur angle de montée (Ve) à l'altitude h. */
       const vx = h => golden(v => roc(h, v) / tasOf(h, v), .8 * veMd, 2.6 * veMd);
       return {
         hRef,
@@ -236,6 +248,7 @@
         const ve = num(cl.iasKt) > 0 || num(cl.tasKt) > 0 ? climbVe(base, 0) : 1.3 * base.veMd;
         return jet ? C.roc / (KT_FPM * ve) + base.dw(ve) : (C.roc / KT_FPM + base.dw(ve) * ve) / base.eta(ve);
       } // vario type au sol
+      /** Vario moyen jusqu'à l'altitude de référence pour une poussée / puissance au sol p0 (calibrage). */
       const avg = p0 => {
         const c = climbWith(make(hRef, ld, p0), hRef);
         return c ? hRef / c.minutes : 0;
@@ -244,10 +257,12 @@
     }
     // Plafond pratique du modèle : vario max = 300 ft/min (réacteur, turbopropulseur) ou 100 ft/min (piston).
     const rocCeil = kind === 'piston' ? 100 : 300;
+    /** Plafond (ft) d'un modèle : altitude où le vario à Vy tombe au vario résiduel (300 ft/min, 100 pour un piston). */
     const ceilingOf = m => {
       if (m.vy(0).roc < rocCeil) return 0;
       return bisect(h => m.vy(h).roc - rocCeil, 0, 70000, 40);
     };
+    /** Modèle calibré pour une altitude de référence (poussée / puissance au sol ajustée sur le vario du profil). */
     const calibrate = hRef => make(hRef, C.ld, calibrateP0(hRef, C.ld));
 
     // Altitude de référence du point de croisière.
@@ -303,6 +318,7 @@
     const mmo = M.mRef + .04,
       veCap = Math.max(M.veRef, 290);
 
+    /** Vitesse équivalente (au-dessus de la traînée minimale) à laquelle la puissance P équilibre la traînée ; null si P ne suffit pas. */
     function powerSpeed(h, P) {
       const s = Math.sqrt(isa(h).sigma),
         g = ve => M.dw(ve) * ve / s - P,
@@ -311,6 +327,7 @@
       return bisect(g, vmp, 6 * M.veMd);
     }
 
+    /** Croisière à l'altitude h : 'normal' (Mach ou puissance du profil ; réacteur limité par la poussée au-dessus) ou 'eco' (distance maximale, jamais plus rapide). Sortie : { ok, tas, ias, mach, ff, sr, limited, powerPct } ou { ok: false, reason: 'ceiling' | 'thrust' }. */
     function cruise(h, mode = 'normal') {
       if (h > ceiling + 1) return {
         h,
@@ -375,6 +392,7 @@
       ff: num(de.fuelFlowPerHour) || ffRef * (jet ? .3 : .5)
     };
 
+    /** Trajet entier de D NM au niveau h, vent wc (kt, + arrière) : montée (loi climbSpeed), croisière (mode), descente. Sortie : { ok, fuel, minutes, climb, cruiseNm, tas, ias, mach, ff, gs, limited } ou { ok: false, reason: 'ceiling' | 'thrust' | 'short' }. */
     function trip(h, D, wc = 0, mode = 'normal', climbSpeed = 'profile') {
       const k = cruise(h, mode);
       if (!k.ok) return {
@@ -432,6 +450,7 @@
     //            les gaz sont aussi optimisés (55 à 100 %).
     // Lois « temps » et « carburant » : vario au moins égal à 50 % du vario max (et 300 / 500 ft/min).
     // Badin limité à 250 kt sous 10 000 ft (réacteur) et au Mach de croisière + 0,04.
+    /** Point optimal de montée à l'altitude h pour un objectif ('vy' vario, 'time' temps de bloc, 'fuel' carburant), croisière visée k : { ve, ias, tas, frac, roc, ff } ; null au-delà du plafond. */
     function climbOpt(h, objective, k) {
       const vc = k?.tas || tasRef,
         ffc = k?.ff || ffRef,
@@ -444,6 +463,7 @@
       const vyRoc = M.vy(h).roc;
       if (!(vyRoc > 20)) return null;
       const rMin = objective === 'vy' ? 20 : Math.max(.5 * vyRoc, Math.min(jet ? 500 : 300, .9 * vyRoc));
+      /** Coût d'un pied gagné pour l'objectif (temps ou carburant, distance de montée retranchée de la croisière) ; Infinity si le vario est sous le minimum. */
       const cost = (ve, frac) => {
         const r = M.roc(h, ve, frac);
         if (!(r >= rMin)) return Infinity;
@@ -548,6 +568,7 @@
       };
     }
 
+    /** Régime de la table RPM (débit ffRow) à l'altitude h : fraction de gaz, vario, Badin, débit, carburant par 1000 ft (plein gaz au-delà de la puissance disponible). */
     function settingAt(ffRow, h) {
       const full = M.ffAt(h, 1, M.vy(h).tas) * climbFactor,
         frac = Math.min(1, ffRow / full),

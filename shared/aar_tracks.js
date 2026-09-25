@@ -19,10 +19,12 @@
 
   // Plan local (est, nord) en km autour d'une origine : précis à mieux que 0,1 % sur 100 km.
   const toLocal = (o, p) => [rad(p.lon - o.lon) * Math.cos(rad(o.lat)) * R, rad(p.lat - o.lat) * R];
+  /** Point géographique d'une position du plan local (km) autour de l'origine o. */
   const toGeo = (o, [x, y]) => ({
     lat: o.lat + deg(y / R),
     lon: o.lon + deg(x / (R * Math.cos(rad(o.lat))))
   });
+  /** Route vraie (°) de a vers b. */
   const bearing = (a, b) => {
     const y = Math.sin(rad(b.lon - a.lon)) * Math.cos(rad(b.lat)),
       x = Math.cos(rad(a.lat)) * Math.sin(rad(b.lat)) - Math.sin(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.cos(rad(b.lon - a.lon));
@@ -132,12 +134,14 @@
       r = widthKm / 2;
     const ip2 = [a[0] + n[0] * widthKm, a[1] + n[1] * widthKm],
       cp2 = [b[0] + n[0] * widthKm, b[1] + n[1] * widthKm];
+    /** Demi-cercle de virage de l'hippodrome (points) autour d'un centre. */
     const turn = (center, fromAngle) => Array.from({
       length: segments + 1
     }, (_, k) => {
       const t = fromAngle + (side === 'L' ? 1 : -1) * Math.PI * k / segments;
       return [center[0] + r * Math.cos(t), center[1] + r * Math.sin(t)];
     });
+    /** Angle d'un vecteur du plan local. */
     const angle = v => Math.atan2(v[1], v[0]);
     // Contour : IP → CP, virage autour du milieu CP–CP', CP' → IP', virage autour du milieu IP'–IP.
     const cEnd = [(b[0] + cp2[0]) / 2, (b[1] + cp2[1]) / 2],
@@ -219,11 +223,15 @@
     QQ = "(?:''|[\"”″]|['’‘′]{2})?";
   const DMS = new RegExp(`(\\d{1,3})°\\s*(\\d{1,2})\\s*${Q}\\s*(\\d{1,2}(?:[.,]\\d+)?)\\s*${QQ}\\s*([NS])\\s*[-–]\\s*(\\d{1,3})°\\s*(\\d{1,2})\\s*${Q}\\s*(\\d{1,2}(?:[.,]\\d+)?)\\s*${QQ}\\s*([EW])\\s*\\(\\s*([A-Z0-9 ]+?)\\s*\\)`, 'g');
   const DM = new RegExp(`(\\d{1,3})°(\\d{1,2}[.,]\\d+)${Q}\\s*([NS])\\s*[-–]\\s*(\\d{1,3})°(\\d{1,2}[.,]\\d+)${Q}\\s*([EW])(?!\\s*\\()`, 'g');
+  /** Nombre d'un texte (virgule décimale acceptée). */
   const num = v => Number(String(v).replace(',', '.'));
+  /** Coordonnée signée selon l'hémisphère (S / W négatifs). */
   const sign = (v, h) => (h === 'S' || h === 'W' ? -v : v);
+  /** Distance (NM) entre deux points. */
   const distNm = (a, b) => Math.hypot(...toLocal(a, b)) / NM;
   // Mots du tableau qui ne sont pas des noms de circuits.
   const NOT_NAMES = new Set(['FLB', 'TRA', 'UNL', 'SFC', 'ASML', 'AMSL', 'NORD', 'SUD', 'EST', 'OUEST', 'AARA', 'ARIP', 'ARCP', 'NOM', 'NAME', 'ATC', 'AAR', 'LF', 'FL']);
+  /** Milieu de deux points. */
   const middle = (a, b) => ({
     lat: (a.lat + b.lat) / 2,
     lon: (a.lon + b.lon) / 2
@@ -236,6 +244,7 @@
     fromDecimal: true
   }] : [p];
 
+  /** Axes de ravitaillement lus dans le texte de l'ENR 5.7 (MILAIP) : noms, points IP / CP / S1 / S2, axes « heavy » à branches, coordonnées recoupées avec la géométrie. */
   function parseEnr57(pagesText) {
     const tracks = [],
       issues = [],
@@ -291,6 +300,7 @@
         word: m[1],
         note: m[2] || ''
       })).filter(w => !NOT_NAMES.has(w.word) && !pointNames.has(w.word) && !/(IP|CP)$/.test(w.word));
+      /** Nom complet d'un circuit à partir de son préfixe (mots du tableau). */
       const fullName = prefix => words.find(w => w.word.startsWith(prefix)) || words.find(w => w.word[0] === prefix[0] && new RegExp('^' + prefix.split('').join('.*')).test(w.word)) || null;
       // Axes « heavy » : branches FOXnn → ROMnn, deux branches consécutives = un circuit.
       const heavy = named.filter(p => /^(FOX?|ROM?)\d/.test(p.name));
@@ -370,6 +380,7 @@
           e
         };
       }));
+      /** Choix de l'écriture cohérente d'un point dont les deux formes divergent. */
       const pick = (from, to) => {
         if (to.fromDecimal) {
           t.points[t.points.indexOf(from)] = to;
@@ -458,14 +469,17 @@
   });
 
   // ---- XML corrigé : axes nommés, points nommés, largeur / longueur / cap, anomalies
+  /** Échappe un texte pour XML. */
   const x = v => String(v ?? '').replace(/[&<>"]/g, c => ({
     '&': '&amp;',
     '<': '&lt;',
     '>': '&gt;',
     '"': '&quot;'
   } [c]));
+  /** Coordonnée décimale à 8 chiffres. */
   const f6 = v => Number(v).toFixed(8);
 
+  /** XML corrigé des axes (format 2.0) : axes nommés, points nommés avec leur rôle, largeur / longueur / cap, anomalies relevées. */
   function toXml({
     tracks,
     issues
@@ -473,6 +487,7 @@
     source = 'MILAIP France ENR 5.7',
     edition = ''
   } = {}) {
+    /** Élément aixm:DesignatedPoint d'un point d'axe (rôle IP, CP, S1, S2). */
     const pt = (p, role) => `      <aixm:DesignatedPoint gml:id="${x(p.name)}" miam:role="${role}">
         <aixm:designator>${x(p.name)}</aixm:designator>
         <aixm:location><aixm:ElevatedPoint gml:id="${x(p.name)}-location"><gml:pos srsName="EPSG:4326">${f6(p.lat)} ${f6(p.lon)}</gml:pos></aixm:ElevatedPoint></aixm:location>
@@ -513,6 +528,7 @@ ${problems}
           lon
         };
       });
+      /** Point d'un axe par son rôle. */
       const role = r => pts.find(p => p.role === r),
         attr = k => el.getAttribute(k);
       return {

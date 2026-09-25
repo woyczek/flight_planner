@@ -6,7 +6,9 @@
   // missions Markdown / YAML (schéma helo-xp-mission) commune aux deux pages.
   const KEY = 'siaMissionShared:v1',
     LEGACY = 'missionGeneratorDraft';
+  /** Clé de texte : minuscules sans accents, mots séparés par « _ ». */
   const norm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+  /** Copie profonde (JSON). */
   const deepClone = v => JSON.parse(JSON.stringify(v));
 
   // ---- lecture Markdown (titres « ## Summary », ancien format à blocs TYPE: / TURNING POINTS: …)
@@ -22,6 +24,7 @@
         content: text.slice(start, end).trim()
       })
     }
+    /** Section Markdown dont le titre contient l'un des mots. */
     const find = words => sections.find(s => words.some(w => norm(s.title).includes(w))),
       sum = find(['summary', 'resume', 'synthese']),
       det = find(['description_detaillee', 'description_complete', 'deroulement']);
@@ -33,17 +36,20 @@
     }
   }
 
+  /** Valeur d'une ligne « LIBELLÉ: valeur » de l'ancien format Markdown. */
   function legacyValue(text, label) {
     const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
       m = text.match(new RegExp('^(?:\\*\\*)?' + escaped + '(?:\\*\\*)?\\s*:\\s*(?:\\r?\\n\\s*)?([^\\r\\n]+)', 'mi'));
     return m ? m[1].trim() : ''
   }
 
+  /** Premier nombre d'un texte (virgule décimale acceptée) ; null sinon. */
   function legacyNumber(value) {
     const m = String(value || '').replace(',', '.').match(/[-+]?\d+(?:\.\d+)?/);
     return m ? +m[0] : NaN
   }
 
+  /** Texte d'un bloc de l'ancien format (de start au titre suivant). */
   function legacyBlock(text, start, endNames) {
     const ends = endNames.map(x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'),
       re = new RegExp('^' + start.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*:\\s*\\r?\\n([\\s\\S]*?)(?=^(?:' + ends + ')\\s*:\\s*$|(?![\\s\\S]))', 'mi'),
@@ -51,6 +57,7 @@
     return m ? m[1].trim() : ''
   }
 
+  /** Points tournants de l'ancien format (nom, position). */
   function parseLegacyPoints(block) {
     const out = [];
     for (const m of block.matchAll(/^\s*-\s*([^|\n]+)\|\s*([^|\n]+)\|\s*(-?\d+(?:[.,]\d+)?)\s*\|\s*(-?\d+(?:[.,]\d+)?)(?:\s*\|\s*([^\n]+))?/gm)) out.push({
@@ -63,6 +70,7 @@
     return out
   }
 
+  /** Métadonnées d'une mission Markdown (titre, type, appareils, terrains, points) au format YAML de la mission. */
   function extractMdMetadata(text, parsed) {
     const y = {
       title: parsed.title || 'Mission',
@@ -126,6 +134,7 @@
     return y
   }
 
+  /** Fusion profonde de deux documents YAML (extra complète et remplace base). */
   function mergeYaml(base, extra) {
     if (extra == null) return base;
     if (Array.isArray(extra)) return extra;
@@ -164,6 +173,7 @@
   }
 
   // ---- stockage partagé
+  /** Document de mission partagé entre le générateur et le studio (localStorage) ; null sinon. */
   function load() {
     try {
       const d = JSON.parse(localStorage.getItem(KEY) || 'null');
@@ -182,6 +192,7 @@
   }
   const channel = 'BroadcastChannel' in window ? new BroadcastChannel('sia-mission') : null;
 
+  /** Enregistre le document de mission partagé (YAML, textes, fichiers sources, révision) et sa copie à l'ancien format, puis prévient les autres pages et onglets (BroadcastChannel) ; by : page auteure (pas d'auto-notification). Lève une erreur si le stockage est plein. */
   function save(doc, by) {
     const current = load(),
       out = {
@@ -214,6 +225,7 @@
   }
   // Rappel à chaque modification faite par une AUTRE page (ou un autre onglet).
   function subscribe(me, cb) {
+    /** Transmet le document courant à l'abonné s'il vient d'une autre page. */
     const fire = () => {
       const d = load();
       if (d && d.by !== me) cb(d);
