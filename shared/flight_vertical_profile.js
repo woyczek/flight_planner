@@ -2,7 +2,7 @@
 // de l'OFP SimBrief importé par le bouton d'en-tête) avec le module du studio SIA
 // (SIA XML/vertical_profile.js) : relief, espaces et obstacles selon un profil d'affichage du studio (par
 // défaut celui choisi dans le studio pour le profil vertical), base SIA mémorisée par le studio (même
-// navigateur), trajectoire prévue aux taux de montée / descente du profil avion actif (TOC, TOD).
+// navigateur), trajectoire prévue selon le modèle de performances de l'avion actif (TOC, TOD).
 (() => {
   const $ = id => document.getElementById(id);
   if (!$('vpDraw') || !window.SiaProfile) return;
@@ -48,7 +48,12 @@
   }
 
   // Taux recommandés du profil avion actif (sinon valeurs par défaut du module).
-  const rates = () => { const a = typeof active !== 'undefined' ? active : null; return { climb: { fpm: +a?.climb?.rateFpm, kt: +a?.climb?.tasKt }, descent: { fpm: Math.abs(+a?.descent?.rateFpm), kt: +a?.descent?.tasKt } }; };
+  // Montée : modèle de performances de l'avion actif (vario et TAS selon l'altitude), sinon ses taux constants.
+  const rates = () => {
+    const a = typeof active !== 'undefined' ? active : null, descent = { fpm: Math.abs(+a?.descent?.rateFpm), kt: +a?.descent?.tasKt };
+    try { if (a && window.FlightPerfModel) { const m = FlightPerfModel.create(a, { db: window.AIRCRAFT_DB }); return { climb: { at: m.climbAt, name: a.name || a.icao, ceiling: m.ceiling }, descent }; } } catch { /* profil incomplet : taux constants */ }
+    return { climb: { fpm: +a?.climb?.rateFpm, kt: +a?.climb?.tasKt }, descent };
+  };
 
   async function draw() {
     if (!studio) await loadData();
@@ -65,7 +70,7 @@
     $('vpImg').src = c.toDataURL('image/png'); $('vpImg').hidden = false;
     const p = data.plan, nm = m => (m / 1852).toFixed(0);
     status(`${(data.total / 1852).toFixed(1)} NM, ${data.crossed.length} traversée(s) d’espace, ${data.obstacles.length} obstacle(s) — profil « ${profile.name} »`
-      + (p ? ` ; montée ${p.climb.fpm} ft/min à ${p.climb.kt} kt, descente ${p.descent.fpm} ft/min à ${p.descent.kt} kt${r.climb.fpm > 0 ? '' : ' (valeurs par défaut : profil avion sans taux)'} ; TOC ${nm(p.toc.s)} NM, TOD ${nm(p.tod.s)} NM.` : ' ; pas de niveau indiqué (VFR) : trajectoire non tracée.'));
+      + (p ? ` ; montée ${p.climb.at ? `selon le modèle de performances de ${p.climb.name}` : `${p.climb.fpm} ft/min à ${p.climb.kt} kt${r.climb.fpm > 0 ? '' : ' (valeurs par défaut : profil avion incomplet)'}`}, descente ${p.descent.fpm} ft/min à ${p.descent.kt} kt ; TOC ${nm(p.toc.s)} NM, TOD ${nm(p.tod.s)} NM.` : ' ; pas de niveau indiqué (VFR) : trajectoire non tracée.'));
   }
 
   // L'OFP importé par le bouton d'en-tête (« Récupérer dernier FPL SimBrief ») ou le fichier OFP donne la

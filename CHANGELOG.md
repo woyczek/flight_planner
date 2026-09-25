@@ -17,6 +17,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - Profil vertical (studio et planificateur) : **groupes vitesse / niveau** du plan de vol
   (`N0450F350`, K / M, F / A / S / M), **VFR**, case 15 (DCT, voies aériennes, coordonnées
   `4630N00130E`) ; trajectoire tracée sur la coupe.
+- **Flight Performance & Fuel Planner — modèle de performances** (`shared/flight_performance_model.js`) :
+  mécanique du vol calibrée sur le profil (polaire, poussée / puissance selon la densité et la
+  motorisation, consommation) ; **altitude optimale** carburant et vitesse (régime économique et régime
+  du profil, montée et descente comprises), **montée optimale** (Vy, Vx, vario et carburant par 1000 ft
+  selon l'altitude, régimes RPM / N1) ; devis carburant au niveau du plan par le même modèle.
+  Correctif : l'optimum ne dépend plus du niveau saisi (il servait de référence quand le profil n'en
+  avait pas) ; la calibration OFP enregistre le niveau de croisière et le Badin moyen de chaque phase ;
+  champ « Motorisation ».
+- Profil vertical : montée selon le modèle de l'appareil (planificateur : avion actif ; studio : appareil
+  choisi parmi les profils du planificateur), taux saisis en secours.
 - Surfaces bâties : contour **orange** autour des agglomérations des villes ≥ 100 000 hab.,
   **jaune** autour des autres.
 - Studio SIA : **plancher** de la coupe réglable (en plus du plafond) ; points « NOM lat lon ».

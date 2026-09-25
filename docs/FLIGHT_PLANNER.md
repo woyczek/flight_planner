@@ -35,18 +35,48 @@ Profil vertical : `shared/flight_vertical_profile.js` et le module du studio SIA
 Entrées : distance (NM), niveau (FL), route vraie, roulage (min), vent (direction / force),
 réserve (min), contingence (%).
 
-- Montée et descente d'après les vitesses verticales et consommations du profil ; croisière
-  = distance restante / vitesse sol × consommation de croisière.
+- Montée et croisière au niveau du plan d'après le **modèle de performances** (§ 2 bis) :
+  montée intégrée au Badin de montée du profil (vario et débit selon l'altitude), TAS et
+  débit de croisière à ce niveau ; descente au vario et au débit du profil ; croisière =
+  distance restante / vitesse sol × débit.
 - **Vent connu** (direction et force) : composante de face / arrière sur la route.
   **Vent inconnu** : fourchette ± vent typique du profil (25 kt par défaut) sur la
   composante — le carburant bloc est donné en fourchette.
 - Résultat : roulage, délestage (montée + croisière + descente), contingence, réserve,
   **carburant bloc** ; affichage en kg ou lb (bouton « Affichage »).
-- **Altitude optimale** : courbe de rendement selon le niveau (atmosphère standard, TAS
-  d'après l'IAS et le niveau de référence du profil) ; lecture au survol.
+- **Altitude optimale** et **montée optimale** : voir § 2 bis.
 - « Récupérer dernier FPL SimBrief » : distance, niveau, vent moyen… repris du dernier OFP
   de l'identifiant SimBrief du profil pilote commun (☰ › Profil pilote ; à défaut, celui de
   la base du planificateur).
+
+## 2 bis. Modèle de performances — altitude et montée optimales
+
+`shared/flight_performance_model.js`, commun au devis, aux courbes et aux profils verticaux (planificateur
+et studio SIA). Mécanique du vol simplifiée, **calibrée sur le profil** et indépendante du niveau saisi :
+
+- atmosphère type (ISA) ; polaire parabolique (finesse max, vitesse de traînée mini calée sur le Badin de
+  montée : montée économique d'un réacteur ≈ 1,38 × traînée mini, Vy d'un avion à hélice ≈ traînée mini) ;
+- **réacteur** : débit ∝ poussée × √θ × (1 + 0,8 M), poussée ∝ σ^0,75 puis ∝ σ au-dessus de la
+  tropopause ; **turbopropulseur / piston** : débit ∝ puissance, puissance ∝ σ^0,7 ou (1,132 σ − 0,132),
+  rendement d'hélice réduit à basse vitesse ; motorisation d'après la base OACI (champ « Motorisation »
+  pour la forcer) ;
+- calibration : débit par le point de croisière (TAS, débit, **altitude de référence** — écrite par la
+  calibration OFP avec le Badin moyen de chaque phase ; sinon Badin / TAS, sinon cohérence du débit de
+  montée, sinon valeur type signalée — jamais le niveau du plan) ; poussée / puissance par le vario moyen
+  de montée ; débit de montée recalé sur celui du profil ; plafond du modèle (vario 300 ft/min, 100 pour un
+  piston) limité par le plafond du profil.
+
+**Altitude optimale** (courbes NM / carburant du trajet selon le niveau, montée et descente comprises) :
+régime **économique** (distance max. : ≈ 1,32 × traînée mini pour un réacteur, traînée mini pour une
+hélice) et régime **du profil** (Mach de croisière, Badin limité à 290 kt, ou puissance de croisière,
+plein gaz au-dessus) ; optimum **carburant** (vert) et optimum **vitesse** (durée, orange) ; croisière
+seule (rendement max., plage à 1 % : la courbe d'un avion à hélice est plate) ; comparaison au niveau du
+plan ; plancher pratique 1000 ft.
+
+**Montée optimale** : Vy (vario max.) et Vx (pente max.) selon l'altitude, vario, débit et **carburant par
+1000 ft** (courbes et table, cumuls depuis le sol) ; montée au niveau du plan au Badin du profil ou à Vy
+(temps, distance, carburant, et lequel économise sur le trajet) ; **régimes de la table RPM / N1** : gaz,
+vario au sol et à mi-montée, carburant par 1000 ft, le plus économique marqué ★.
 
 ## 3. Fiche performance moteur
 
@@ -83,9 +113,9 @@ cumulées, et **plan de vol** : trajectoire prévue (montée, paliers, descente)
 - **OFP SimBrief** : l'import d'en-tête (« Récupérer dernier FPL SimBrief » ou OFP JSON) remplit la
   route et trace le profil — départ, groupe vitesse / niveau initial (TAS de croisière, niveau
   initial), points du navlog, paliers de croisière (step climbs), arrivée ; TOC / TOD recalculés.
-- **Montée / descente** aux taux recommandés du profil avion actif (vitesse verticale et TAS de
-  montée / descente ; à défaut 1000 ft/min à 140 kt et 800 ft/min à 160 kt) : pente = taux × 60 /
-  vitesse ; départ et arrivée au sol (altitude du terrain), paliers aux niveaux déposés.
+- **Montée** selon le modèle de performances de l'avion actif (vario et TAS selon l'altitude), à défaut
+  ses taux constants (ou 1000 ft/min à 140 kt) ; **descente** au vario et à la TAS du profil ; départ et
+  arrivée au sol (altitude du terrain), paliers aux niveaux déposés.
 - **Profil d'affichage** : ceux du studio cartographique ; par défaut celui choisi dans le studio
   pour le profil vertical (« Profil vertical » : toutes les familles d'espaces). Il décide des
   espaces, des obstacles et des noms abrégés.

@@ -52,11 +52,13 @@
   }
 
   // Trajectoire verticale prévue : niveau en vigueur (groupe vitesse / niveau à partir d'un point,
-  // « /altitude » = altitude à atteindre au point puis conservée), montée et descente aux taux
-  // recommandés (pente = taux × 60 / vitesse) ; départ et arrivée au sol (ou à l'altitude donnée pour
+  // « /altitude » = altitude à atteindre au point puis conservée), montée selon le modèle de l'appareil
+  // (climb.at(h) → vario et TAS, shared/flight_performance_model.js) ou à taux constant, descente au taux
+  // recommandé (pente = taux × 60 / vitesse) ; départ et arrivée au sol (ou à l'altitude donnée pour
   // ces points) ; VFR = pas de niveau (pas de tracé). TOC / TOD : début et fin du palier le plus haut.
   function planPath(samples, marks, total, { climb, descent }) {
-    const gc = climb.fpm * 60 / climb.kt / NM, gd = descent.fpm * 60 / descent.kt / NM; // ft par mètre
+    // pente de montée (ft par mètre) : modèle d'appareil (vario et TAS selon l'altitude) ou taux constants
+    const gcAt = climb.at ? h => { const c = climb.at(h); return c.roc > 0 && c.tas > 0 ? c.roc * 60 / c.tas / NM : 0; } : () => climb.fpm * 60 / climb.kt / NM, gd = descent.fpm * 60 / descent.kt / NM;
     const seg = []; let level = null, any = false;
     for (let k = 0; k < marks.length - 1; k++) {
       const m = marks[k], next = marks[k + 1];
@@ -73,7 +75,7 @@
       const q = samples[i]; while (k < seg.length - 1 && q.s > seg[k].to + 1e-6) k++;
       const t = seg[k].target, ds = i ? q.s - samples[i - 1].s : 0;
       if (t == null) { alt.push(null); continue; }
-      if (t > a) a = Math.min(t, a + gc * ds); else if (t < a) a = Math.max(t, a - gd * ds);
+      if (t > a) a = Math.min(t, a + gcAt(a) * ds); else if (t < a) a = Math.max(t, a - gd * ds);
       alt.push(Math.min(a, end + gd * (total - q.s)));
     }
     // TOC = fin de la première montée, TOD = début de la descente finale (paliers intermédiaires possibles)
@@ -134,7 +136,7 @@
       }
     }
     const marks = [0, ...legs.map(l => l.from + l.d)].map((s, i) => ({ s, name: points[i].name, alt: points[i].alt, lvl: points[i].lvl }));
-    const ok = r => r && +r.fpm > 0 && +r.kt > 0 ? { fpm: Math.abs(+r.fpm), kt: +r.kt } : null;
+    const ok = r => r?.at ? r : r && +r.fpm > 0 && +r.kt > 0 ? { fpm: Math.abs(+r.fpm), kt: +r.kt } : null;
     const plan = planPath(samples, marks, total, { climb: ok(climb) || { fpm: 1000, kt: 140 }, descent: ok(descent) || { fpm: 800, kt: 160 } });
     return { total, samples, crossed, obstacles: near, marks, plan };
   }

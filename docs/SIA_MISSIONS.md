@@ -286,8 +286,10 @@ homonymes : le plus proche du point précédent ; vide = points tournants de la 
 l'ordre. Exemple : `LFOJ, BRY/4500, REN300010, SIMIP/3000, TARGET/FL65, SIMCP/5500, LFOT`.
 « /3000 » = altitude à atteindre au point ; **groupes vitesse / niveau** du plan de vol
 (`N0180A085`, `N0450F350`…) = niveau à partir du point ; **VFR** = pas de niveau ; la case 15 d'un
-plan de vol est acceptée. La **trajectoire prévue** (violet) monte et descend aux taux réglés
-(montée / descente en ft/min et kt, enregistrés dans la mission), avec **TOC** et **TOD** ; départ
+plan de vol est acceptée. La **trajectoire prévue** (violet) monte selon l'**appareil** choisi parmi les
+profils du Flight Performance & Fuel Planner (modèle de performances : vario et TAS selon l'altitude) et
+descend à son vario ; à défaut, aux taux saisis (montée / descente en ft/min et kt) ; appareil et taux
+enregistrés dans la mission ; **TOC** et **TOD** ; départ
 et arrivée au sol, sauf altitude donnée pour ces points.
 Le cheminement est **tracé sur les cartes** (tireté violet ; case à décocher).
 
