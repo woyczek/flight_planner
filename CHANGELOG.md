@@ -48,6 +48,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - Studio, sélection des zones : groupes « R 166 — 4 zones (A1, A2, B, C) » dans la complétion
   (identifiant de base : numéro de tête, ou nom sans son numéro final) ; zones
   déjà ajoutées retirées des choix.
+- Studio, sélection des zones : tri par famille (R, P, D, CTR, TMA, SIV) puis par numéro (12 avant
+  118) ; « Tout supprimer » ; collage d'une liste (une zone par ligne) ; complétion sur toutes les
+  familles avec limites verticales ; **alias** modifiables communs aux profils (« @RTBA », proposé
+  d'après les zones AZBA de la base SIA).
+- Studio : libellés des zones avec leurs limites verticales (« 800 ft ASFC – 2700 ft ASFC ») ;
+  libellés des zones, quadrillage et MORA lisibles sur la carte de contrôle (échelle écran).
+- Studio : « Autres éléments » regroupés par élément (case à cocher en titre, réglages grisés
+  quand l'élément est décoché).
 - Studio : **quadrillage** au pas adapté à l'emprise (1′ à 5°), libellés en degrés et minutes ;
   quadrillage et MORA aussi sur la carte de contrôle dynamique.
 - Studio : **sélection des zones** refaite : liste de zones (puces supprimables, nombre de contours
