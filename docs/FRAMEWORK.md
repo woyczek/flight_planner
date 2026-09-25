@@ -79,6 +79,12 @@ redimensionnement et quand l'ancre ou le cadre changent de taille.
 
 ## 4. `content_i18n.js` — traduction
 
+**Typographie** (à l'affichage, après traduction, sur les nœuds texte et les attributs `title` /
+`placeholder` / `aria-label`, hors `code`, `kbd`, `samp`) : en français, espace fine insécable U+202F
+avant `: ; ! ? »` et après `«` ; dans les autres langues, pas d'espace avant `: ; ! ?`. Dans les sources,
+écrire une espace simple : la page corrige. `RepositoryContentI18n.typography(texte, langue)` pour un texte
+posé hors du DOM (export, presse-papiers).
+
 `window.RepositoryContentI18n(lignes)` : lignes `[fr, en, de, es]`. Les nœuds texte (et
 `title`, `placeholder`) dont la valeur est un des textes connus sont traduits dans la langue
 du bandeau, y compris ceux ajoutés plus tard (observateur). Les textes composés par le code

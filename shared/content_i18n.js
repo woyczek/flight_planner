@@ -4,6 +4,9 @@ window.RepositoryContentI18n = function(rows) {
   rows.forEach(row=>row.forEach(value=>{if(value&&!index.has(value))index.set(value,row)}));
   const excluded=el=>el?.closest('script,style,textarea,pre,[contenteditable],[data-no-i18n],.repo-header-tools,.repo-block-tools');
   let observer, pending=false;
+  // Typographie de la langue affichée, appliquée à l'affichage (nœuds texte et attributs), jamais aux sources où
+  // le texte côtoie du code : voir RepositoryContentI18n.typography plus bas.
+  const frTypo=(value,lang,el)=>!value||el?.closest?.('code,kbd,samp')?value:window.RepositoryContentI18n.typography(value,lang);
   function translate(value, owner, key, lang) {
     let all=records.get(owner);if(!all){all={};records.set(owner,all)}
     let rec=all[key];
@@ -16,11 +19,19 @@ window.RepositoryContentI18n = function(rows) {
     const lang=window.RepositoryNav?.getLanguage()||'en';
     try {
       const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let node;
-      while(node=walker.nextNode()){if(excluded(node.parentElement))continue;const next=translate(node.nodeValue,node,'text',lang);if(next!==node.nodeValue)node.nodeValue=next}
-      document.querySelectorAll('[title],[placeholder],[aria-label]').forEach(el=>{if(excluded(el.tagName==='TEXTAREA'?el.parentElement:el))return; /* attributs d'une zone de texte traduits, son contenu non */for(const key of ['title','placeholder','aria-label']){const value=el.getAttribute(key);if(value!==null){const next=translate(value,el,key,lang);if(next!==value)el.setAttribute(key,next)}}});
+      while(node=walker.nextNode()){const el=node.parentElement;if(el?.closest('script,style,textarea,pre,[contenteditable]'))continue;/* outils d'en-tête / de bloc : typographie seule (traduits par le menu) */const next=frTypo(excluded(el)?node.nodeValue:translate(node.nodeValue,node,'text',lang),lang,el);if(next!==node.nodeValue)node.nodeValue=next}
+      document.querySelectorAll('[title],[placeholder],[aria-label]').forEach(el=>{if(excluded(el.tagName==='TEXTAREA'?el.parentElement:el))return; /* attributs d'une zone de texte traduits, son contenu non */for(const key of ['title','placeholder','aria-label']){const value=el.getAttribute(key);if(value!==null){const next=frTypo(translate(value,el,key,lang),lang,el);if(next!==value)el.setAttribute(key,next)}}});
       document.querySelectorAll('input[readonly][value]').forEach(el=>{if(excluded(el))return;const value=el.value,next=translate(value,el,'value',lang);if(next!==value)el.value=next});
     } finally {observer?.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['title','placeholder','aria-label']})}
   }
   observer=new MutationObserver(()=>{if(!pending){pending=true;requestAnimationFrame(()=>{pending=false;apply()})}});
   window.addEventListener('repository-language-change',apply);apply();
 };
+// Typographie d'une chaîne selon la langue :
+//  - fr : espace fine insécable (U+202F) avant « : ; ! ? » » et après « « », à la place d'une espace simple ou
+//    insécable — sans elle, le retour à la ligne peut rejeter la ponctuation en début de ligne ;
+//  - en / de / es : pas d'espace avant « : ; ! ? » (textes source français restés tels quels dans une traduction).
+window.RepositoryContentI18n.typography=(value,lang)=>{const v=String(value??'');return lang==='fr'
+  ? v.replace(/[ \u00A0](?=[:;!?»])/g,'\u202F').replace(/«[ \u00A0]/g,'«\u202F')
+  : v.replace(/[ \u00A0\u202F]+(?=[:;!?](?:\s|$))/g,'')};
+window.RepositoryContentI18n.frTypo=value=>window.RepositoryContentI18n.typography(value,'fr');
