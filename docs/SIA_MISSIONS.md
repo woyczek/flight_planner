@@ -285,12 +285,20 @@ homonymes : le plus proche du point précédent ; vide = points tournants de la 
 l'ordre. Exemple : `LFOJ, BRY/4500, REN300010, SIMIP/3000, TARGET/FL65, SIMCP/5500, LFOT`.
 Le cheminement est **tracé sur les cartes** (tireté violet ; case à décocher).
 
+Le profil vertical est une **carte comme les autres** : entrée `profil_vertical.png` dans la liste
+des cartes, avec son **profil d'affichage** (par défaut **Profil vertical**, créé automatiquement :
+toutes les familles d'espaces, aucune autre case) ; la choisir montre le cheminement dans la carte
+de contrôle et règle ce profil ; son emprise suit le cheminement.
+
 **Tracer le profil** dessine la coupe (second aperçu, cliquable pour l'agrandir) : relief le long
-du trajet (tuiles Terrarium z10, maximum sur ± 1 km), obstacles de l'AIXM à moins de 1 NM (trait,
-cote AMSL des plus hauts), espaces retenus pour la carte générale traversés (bande plancher →
-plafond, planchers / plafonds ASFC suivant le relief ; ceux entièrement au-dessus du plafond de
-la coupe sont omis), points avec distances cumulées (NM) et altitude prévue (violet). Plafond de
-la coupe réglable (0 = automatique).
+du trajet (tuiles Terrarium z10, maximum sur ± 1 km), obstacles de l'AIXM à moins de 1 NM si le
+profil les coche (trait, cote AMSL des plus hauts), espaces du profil traversés (bande plancher →
+plafond, planchers / plafonds ASFC suivant le relief ; ceux entièrement au-dessus du plafond de la
+coupe sont omis) avec les **libellés de tous** (place libre, sinon trait de rappel vers la bande),
+points avec distances cumulées (NM, sur deux lignes si nécessaire) et altitude prévue (violet).
+Plafond de la coupe réglable (0 = automatique : relief, obstacles, altitudes prévues et planchers
+des espaces traversés jusqu'au FL 195). Case **Noms abrégés** (onglet Zones) : nom seul, sans le
+type de zone, sur les cartes comme sur la coupe.
 
 Cheminement, plafond et case **« profil_vertical.png dans les sorties »** sont enregistrés dans le
 YAML de la mission (`vertical_profile: {route, ceiling_ft, output}`), donc partagés avec le

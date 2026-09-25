@@ -118,6 +118,9 @@ Version 2.2.2. Workarounds at the end of each line.
 
 - **SIA studio — vertical profile**: terrain comes from an elevation model (≈ 150 m) and airspaces
   are those selected for the general map; “ASFC” limits follow that model, not the actual ground.
+- **SIA studio — live preview while scrolling**: when scrolling the page, the preview's background
+  map may vanish faster than its frame (overlays stay). Refresh the preview; generated maps are
+  not affected.
 - **SIA studio — generating in a hidden tab**: browsers suspend rendering of background tabs, so
   PNG generation can fail (“Délai dépassé pendant le chargement du fond de carte”). Keep the studio
   tab visible while generating.

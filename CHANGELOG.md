@@ -35,11 +35,17 @@ Studio cartographique (Missions SIA) : symboles OACI.
   réglages enregistrés dans le YAML de la mission (`vertical_profile`). Cheminement fait de tous
   les points connus : brief, aérodromes, balises, points RNAV de l'AIXM, radiale / distance
   « REN300010 » ; tracé sur les cartes (aperçu et PNG).
+- Le profil vertical est une **carte comme les autres** : entrée `profil_vertical.png` dans la liste
+  des cartes, avec son profil d'affichage (nouveau profil par défaut **Profil vertical** : toutes
+  les familles d'espaces, aucune autre case) ; espaces et obstacles de la coupe selon ce profil ;
+  libellés de **tous** les espaces traversés (place libre, sinon trait de rappel) ; plafond
+  automatique couvrant leurs planchers (jusqu'au FL 195).
+- Case **Noms abrégés** (onglet Zones) : nom seul, sans le type de zone (cartes et coupe).
 - Villes : curseurs de population logarithmiques dès 1 000 habitants, seuils séparés pour les
   symboles, les libellés et les surfaces bâties ; villes de l'aperçu dessinées sur le canvas
   (placement accéléré par grille : des milliers de villes).
-- Correctif : colonne de l'aperçu plus haute que la fenêtre (bas inaccessible) ; fond de carte
-  qui s'effaçait en faisant défiler la page (calque WebGL isolé).
+- Correctif : colonne de l'aperçu plus haute que la fenêtre (bas inaccessible). Le fond de
+  l'aperçu interactif qui s'efface au défilement reste un bug connu.
 - Tour de commentaires dans le code (en-têtes de fichiers, sections) ; section **Bugs connus**.
 
 ## [2.2.1] — 2026-09-25

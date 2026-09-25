@@ -71,10 +71,13 @@
   const COLORS = { R: '#d32f2f', P: '#b71c1c', D: '#ef6c00', TRA: '#ef6c00', CTR: '#1565c0', TMA: '#1565c0', CTA: '#3949ab', SIV: '#2e7d32', RMZ: '#555', TMZ: '#555' };
   // Coupe : axe des distances (NM) et des altitudes (ft AMSL), espaces derrière le relief, puis
   // obstacles, points et altitude prévue ; libellés d'espaces sans recouvrement.
-  function draw(ctx, data, { W, H, ceiling = 0, scale = 1, limitFt, title = '' } = {}) {
-    const f = 11 * scale, padL = 58 * scale, padR = 16 * scale, padT = (title ? 34 : 18) * scale, padB = 40 * scale;
+  function draw(ctx, data, { W, H, ceiling = 0, scale = 1, limitFt, title = '', abbrev = false } = {}) {
+    const f = 11 * scale, padL = 58 * scale, padR = 16 * scale, padT = (title ? 34 : 18) * scale, padB = 64 * scale;
     const terrainMax = Math.max(0, ...data.samples.map(q => q.terrain)), obsMax = Math.max(0, ...data.obstacles.map(o => o.elev || 0)), altMax = Math.max(0, ...data.marks.map(m => m.alt || 0));
-    const top = ceiling > 0 ? ceiling : Math.ceil((Math.max(terrainMax + 3000, obsMax + 1500, altMax + 1500, 5000)) / 1000) * 1000;
+    const rel = t => /ASFC|AGL|SFC/i.test(t || '') && !/AMSL/i.test(t || '');
+    const floorOf = c => { const mid = Math.round((c.i0 + c.i1) / 2); return (rel(c.a.lower) ? data.samples[mid].center : 0) + limitFt(c.a.lower, false); };
+    const zoneMax = Math.max(0, ...data.crossed.map(floorOf).filter(v => v <= 19500).map(v => v + 1500));
+    const top = ceiling > 0 ? ceiling : Math.ceil((Math.max(terrainMax + 3000, obsMax + 1500, altMax + 1500, zoneMax, 5000)) / 1000) * 1000;
     const X = s => padL + (W - padL - padR) * s / data.total, Y = ft => padT + (H - padT - padB) * (1 - Math.min(ft, top) / top);
     ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.font = `${f}px Arial, sans-serif`; ctx.textBaseline = 'middle';
     if (title) { ctx.fillStyle = '#17202a'; ctx.font = `bold ${f * 1.3}px Arial, sans-serif`; ctx.fillText(title, padL, 16 * scale); ctx.font = `${f}px Arial, sans-serif`; }
@@ -85,7 +88,7 @@
     // espaces : bande plancher → plafond (plancher / plafond ASFC suivant le relief)
     const labels = [], taken = [], free = r => !taken.some(q => r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0);
     for (const c of data.crossed) {
-      const a = c.a, col = COLORS[a.type] || '#6d4c41', rel = t => /ASFC|AGL|SFC/i.test(t || '') && !/AMSL/i.test(t || '');
+      const a = c.a, col = COLORS[a.type] || '#6d4c41';
       const lo = i => (rel(a.lower) ? data.samples[i].center : 0) + limitFt(a.lower, false), hi = i => { const v = limitFt(a.upper, true); return Number.isFinite(v) ? (rel(a.upper) ? data.samples[i].center : 0) + v : top; };
       let below = false; for (let i = c.i0; i <= c.i1; i++) if (lo(i) < top) { below = true; break; }
       if (!below) continue; // espace entièrement au-dessus du plafond de la coupe
@@ -93,7 +96,7 @@
       for (let i = c.i0; i <= c.i1; i++) { const x = X(data.samples[i].s), y = Y(hi(i)); i === c.i0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
       for (let i = c.i1; i >= c.i0; i--) ctx.lineTo(X(data.samples[i].s), Y(lo(i)));
       ctx.closePath(); ctx.globalAlpha = .13; ctx.fillStyle = col; ctx.fill(); ctx.globalAlpha = 1; ctx.strokeStyle = col; ctx.lineWidth = 1.2 * scale; ctx.stroke();
-      const mid = Math.round((c.i0 + c.i1) / 2); labels.push({ col, x: X(data.samples[mid].s), y0: Y(hi(mid)), y1: Y(lo(mid)), text: `${a.type === 'R' || a.type === 'D' || a.type === 'P' ? a.type + ' ' : ''}${a.name}`, sub: `${a.lower || 'SFC'} – ${a.upper || 'UNL'}`, w: X(data.samples[c.i1].s) - X(data.samples[c.i0].s) });
+      const mid = Math.round((c.i0 + c.i1) / 2); labels.push({ col, x: X(data.samples[mid].s), y0: Y(hi(mid)), y1: Y(lo(mid)), text: abbrev ? a.name : `${a.type} ${a.name}`, sub: `${a.lower || 'SFC'} – ${a.upper || 'UNL'}`, xa: X(data.samples[c.i0].s), xb: X(data.samples[c.i1].s), w: X(data.samples[c.i1].s) - X(data.samples[c.i0].s) });
     }
     // relief (profil maximal du corridor)
     ctx.beginPath(); ctx.moveTo(X(0), Y(0)); for (const q of data.samples) ctx.lineTo(X(q.s), Y(q.terrain)); ctx.lineTo(X(data.total), Y(0)); ctx.closePath();
@@ -103,23 +106,38 @@
     const tall = [...data.obstacles].sort((a, b) => (b.elev || 0) - (a.elev || 0)).slice(0, 12);
     for (const o of data.obstacles) { const x = X(o.s), yT = Y(o.elev || 0), yB = Y(Math.max(0, (o.elev || 0) - (o.hgt || 0))); ctx.lineWidth = Math.max(1, 1.4 * scale); ctx.beginPath(); ctx.moveTo(x, yB); ctx.lineTo(x, yT); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x - 3 * scale, yT + 4 * scale); ctx.lineTo(x, yT); ctx.lineTo(x + 3 * scale, yT + 4 * scale); ctx.stroke(); }
     for (const o of tall) { const x = X(o.s), y = Y(o.elev || 0) - 9 * scale, r = { x0: x - 18 * scale, y0: y - f / 2, x1: x + 18 * scale, y1: y + f / 2 }; if (free(r)) { taken.push(r); ctx.fillText(String(Math.round(o.elev || 0)), x, y); } }
-    // libellés des espaces : dans la bande si elle est assez large, sinon au-dessus
+    // libellés de TOUS les espaces traversés (visibles dans la coupe) : dans la bande, au-dessus, en
+    // dessous, puis première place libre en balayant la coupe (trait de rappel vers la bande) ; faute de
+    // place, posé quand même dans la bande.
     ctx.textAlign = 'center';
+    const iL = padL, iR = W - padR, iT = padT, iB = H - padB;
     for (const l of labels.sort((a, b) => b.w - a.w)) {
       const w = Math.max(ctx.measureText(l.text).width, ctx.measureText(l.sub).width) + 8 * scale, hgt = f * 2.3;
-      for (const y of [Math.max(padT + hgt / 2, (Math.max(l.y0, padT) + l.y1) / 2), l.y0 - hgt / 2 - 2 * scale, l.y1 + hgt / 2 + 2 * scale]) {
-        const r = { x0: l.x - w / 2, y0: y - hgt / 2, x1: l.x + w / 2, y1: y + hgt / 2 };
-        if (r.y0 < padT - 2 || r.y1 > H - padB || r.x0 < padL || r.x1 > W - padR || !free(r)) continue;
-        taken.push(r); ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillRect(r.x0, r.y0, w, hgt); ctx.fillStyle = l.col;
-        ctx.font = `bold ${f}px Arial, sans-serif`; ctx.fillText(l.text, l.x, y - f * .55); ctx.font = `${f * .9}px Arial, sans-serif`; ctx.fillText(l.sub, l.x, y + f * .6); ctx.font = `${f}px Arial, sans-serif`; break;
+      const cx = x => Math.min(iR - w / 2, Math.max(iL + w / 2, x)), rect = (x, y) => ({ x0: x - w / 2, y0: y - hgt / 2, x1: x + w / 2, y1: y + hgt / 2, x, y });
+      const ok = r => r.y0 >= iT - 2 && r.y1 <= iB && r.x0 >= iL - 1 && r.x1 <= iR + 1 && free(r);
+      const cands = [rect(cx(l.x), Math.max(iT + hgt / 2, (Math.max(l.y0, iT) + l.y1) / 2)), rect(cx(l.x), l.y0 - hgt / 2 - 2 * scale), rect(cx(l.x), l.y1 + hgt / 2 + 2 * scale)];
+      const xs = [l.x, (l.xa + l.x) / 2, (l.x + l.xb) / 2, l.xa + w / 2, l.xb - w / 2, l.x - w, l.x + w, l.x - 2 * w, l.x + 2 * w].map(cx);
+      for (let y = iT + hgt / 2; y <= iB - hgt / 2; y += hgt / 2) for (const x of xs) cands.push(rect(x, y));
+      const r = cands.find(ok) || cands[0]; taken.push(r);
+      if (r.y1 < l.y0 || r.y0 > l.y1 || r.x < l.xa || r.x > l.xb) { // trait de rappel vers la bande
+        const bx = Math.min(l.xb, Math.max(l.xa, r.x)), by = Math.min(l.y1, Math.max(Math.max(l.y0, iT), r.y));
+        ctx.strokeStyle = l.col; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(r.x, r.y < by ? r.y1 : r.y0); ctx.lineTo(bx, by); ctx.stroke();
       }
+      ctx.fillStyle = 'rgba(255,255,255,.88)'; ctx.fillRect(r.x0, r.y0, w, hgt); ctx.strokeStyle = l.col; ctx.lineWidth = .8; ctx.strokeRect(r.x0, r.y0, w, hgt); ctx.fillStyle = l.col;
+      ctx.font = `bold ${f}px Arial, sans-serif`; ctx.fillText(l.text, r.x, r.y - f * .55); ctx.font = `${f * .9}px Arial, sans-serif`; ctx.fillText(l.sub, r.x, r.y + f * .6); ctx.font = `${f}px Arial, sans-serif`;
     }
-    // points du cheminement et distances cumulées
+    // points du cheminement et distances cumulées ; noms décalés sur une seconde ligne s'ils se chevauchent
     ctx.textAlign = 'center';
+    const rowEnd = [-Infinity, -Infinity];
     for (const m of data.marks) {
       const x = X(m.s); ctx.strokeStyle = '#17202a'; ctx.setLineDash([4 * scale, 3 * scale]); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, H - padB); ctx.stroke(); ctx.setLineDash([]);
-      ctx.fillStyle = '#17202a'; ctx.font = `bold ${f}px Arial, sans-serif`; ctx.fillText(m.name, Math.min(W - padR - 20 * scale, Math.max(padL + 20 * scale, x)), H - padB + 12 * scale);
-      ctx.font = `${f * .9}px Arial, sans-serif`; ctx.fillStyle = '#56626b'; ctx.fillText(`${(m.s / NM).toFixed(m.s / NM < 10 ? 1 : 0)} NM`, Math.min(W - padR - 20 * scale, Math.max(padL + 20 * scale, x)), H - padB + 26 * scale); ctx.font = `${f}px Arial, sans-serif`;
+      ctx.font = `bold ${f}px Arial, sans-serif`;
+      const dist = `${(m.s / NM).toFixed(m.s / NM < 10 ? 1 : 0)} NM`, w = Math.max(ctx.measureText(m.name).width, ctx.measureText(dist).width) + 8 * scale;
+      const tx = Math.min(W - padR - w / 2, Math.max(padL + w / 2, x)), row = tx - w / 2 >= rowEnd[0] ? 0 : tx - w / 2 >= rowEnd[1] ? 1 : (rowEnd[0] <= rowEnd[1] ? 0 : 1);
+      rowEnd[row] = tx + w / 2; const y = H - padB + (12 + row * 28) * scale;
+      if (row) { ctx.strokeStyle = '#9aa5ad'; ctx.beginPath(); ctx.moveTo(x, H - padB); ctx.lineTo(tx, y - f * .7); ctx.stroke(); }
+      ctx.fillStyle = '#17202a'; ctx.fillText(m.name, tx, y);
+      ctx.font = `${f * .9}px Arial, sans-serif`; ctx.fillStyle = '#56626b'; ctx.fillText(dist, tx, y + 13 * scale); ctx.font = `${f}px Arial, sans-serif`;
     }
     // altitude prévue (points avec « /altitude », interpolée entre eux)
     const planned = data.marks.filter(m => Number.isFinite(m.alt));

@@ -124,6 +124,9 @@ Version 2.2.2. Contournements indiqués en fin de ligne.
 
 - **Studio SIA — profil vertical** : le relief vient d'un modèle de terrain (≈ 150 m) et les espaces
   sont ceux retenus pour la carte générale ; les limites « ASFC » suivent ce relief, pas le sol réel.
+- **Studio SIA — aperçu interactif au défilement** : en faisant défiler la page, le fond de carte de
+  l'aperçu peut disparaître plus vite que le cadre (les surcouches restent). Recharger l'aperçu
+  (Refresh) ; sans effet sur les cartes générées.
 - **Studio SIA — génération dans un onglet caché** : le navigateur suspend le rendu des onglets
   en arrière-plan ; la génération des PNG peut alors échouer (« Délai dépassé pendant le chargement
   du fond de carte »). Garder l'onglet du studio visible pendant la génération.

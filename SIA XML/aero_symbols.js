@@ -140,7 +140,8 @@
   function screenBox(ring, toC) { let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity; for (const [lat, lon] of ring) { const p = toC(lat, lon); x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); } return { x0, y0, x1, y1, w: x1 - x0, h: y1 - y0 }; }
 
   // Espaces aériens au formalisme de la carte : bande intérieure (clip + trait double largeur).
-  function drawAirspaces(ctx, zones, toC, { W, H, scale = 1, font = 10, labels = true, shapes = true, limits = true, smallCross = true, smallPx = 14, placer: pl = null, alpha = .6 } = {}) {
+  function drawAirspaces(ctx, zones, toC, { W, H, scale = 1, font = 10, labels = true, shapes = true, limits = true, smallCross = true, smallPx = 14, placer: pl = null, alpha = .6, abbrev = false } = {}) {
+    abbrevNames = abbrev;
     const band = Math.max(2.5, 4.5 * scale), todo = [];
     const order = { E: 0, D: 1, C: 1, B: 1, A: 2 }, isRdp = a => a.type === 'R' || a.type === 'D' || a.type === 'P';
     const sorted = [...zones].sort((a, c) => (isRdp(a) ? 3 : order[a.cls] ?? 1) - (isRdp(c) ? 3 : order[c.cls] ?? 1));
@@ -189,7 +190,9 @@
     const wl = Math.max(ctx.measureText(up).width, ctx.measureText(low).width); ctx.restore();
     return { w: Math.max(wt, wl), h: font * 1.15 * (up || low ? 3 : 1), left: !red && a.cls && /^[A-G]$/.test(a.cls) ? font * 1.2 + 4 : 0 };
   }
-  const zoneTitle = a => (a.type === 'SIV' ? 'SIV ' : a.type + ' ') + a.name;
+  // Noms abrégés (option du profil) : nom seul, sans le type de zone.
+  let abbrevNames = false;
+  const zoneTitle = a => abbrevNames ? a.name : (a.type === 'SIV' ? 'SIV ' : a.type + ' ') + a.name;
   // Installations portant une marque distinctive (survol interdit < 1000 m / 3300 ft, type SUR) :
   // contour et symbole ⊗ rouge ; parcs et réserves naturels (PRN) : contour vert tireté.
   // Les symboles ne se recouvrent pas (entre eux ni avec ce qui est déjà posé) : les plus grands
