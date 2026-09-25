@@ -253,13 +253,13 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260925zj", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260925zk", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260925zj", script.src).href;
+    files.src = new URL("file_access.js?v=20260925zk", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260925zj", script.src).href;
+    store.src = new URL("browser_store.js?v=20260925zk", script.src).href;
     document.head.append(store)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

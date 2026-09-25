@@ -10,6 +10,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Scrapper des types (update_aircraft_db.py)** : la source OACI Doc 8643 était hors service (PDF en 404) —
+  remplacée par la liste officielle JSON de l'OACI (7 262 entrées, nom représentatif par désignateur) ;
+  position d'aile cohérente avec la classe OACI (plus de « rotor » pour le Rafale ou le MQ-9) ; option
+  `--only`. Les 20 types militaires écrits en dur dans `aircraft_catalog.js` viennent maintenant de la base
+  (E2C → E2, RQ9P → Q9 en alias dans `aircraft_overrides.json`).
 - **Données — inventaire et sauvegarde** : `docs/DONNEES.md` recense chaque base (référence importée par un
   outil, donnée utilisateur sauvegardée, ou cache reconstructible). Les sauvegardes des données locales
   incluent désormais les bases IndexedDB de données utilisateur (OFP / calibrations du planificateur, journal

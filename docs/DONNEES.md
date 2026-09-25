@@ -7,13 +7,15 @@ Règle : **aucune donnée ne reste seulement dans le navigateur.** Chaque base e
 - soit un **cache** reconstructible depuis l'une des deux premières.
 
 Une correction de référence passe par un outil (surcharge traçable, ou correction du scrapper), jamais
-par une valeur écrite dans le code.
+par une valeur écrite dans le code. Exemple : les codes de la flotte DEFA E2C et RQ9P sont des alias vers les
+désignateurs OACI E2 et Q9 dans `aircraft_overrides.json` ; les 20 types militaires autrefois écrits dans
+`aircraft_catalog.js` viennent désormais de la liste OACI.
 
 ## 1. Références importées (fichiers du dépôt)
 
 | Base | Fichier | Source | Outil de mise à jour | Corrections |
 |---|---|---|---|---|
-| Types d'aéronefs OACI | `AircraftDB/aircraft_db.js` | OACI Doc 8643 (PDF), EUROCONTROL, Wikidata (repli) | `python update_aircraft_db.py [--add CODE…]` (dans `AircraftDB/`) | `aircraft_overrides.json` (appliqué par l'outil) ; page Paramétrage |
+| Types d'aéronefs OACI | `AircraftDB/aircraft_db.js` | OACI Doc 8643 (liste officielle JSON, doc8643.icao.int), EUROCONTROL (aile), Wikidata (repli, filtré) | `python update_aircraft_db.py [--add CODE…] [--only CODE…]` (dans `AircraftDB/`) | `aircraft_overrides.json` (alias et fiches, appliqués par l'outil) ; page Paramétrage |
 | Performances par type | `AircraftDB/aircraft_perf.js` | EUROCONTROL Aircraft Performance Database | `python update_aircraft_db.py --apd [CODE…]` | aucune : on corrige le parseur |
 | Flotte DEFA | `shared/aircraft_fleet.js` | page « Flotte virtuelle » de flotte.defa-virtual.fr (enregistrée) | `python AircraftDB/update_fleet.py Flotte.html` | page Paramétrage (conservées par l'outil) |
 | Référence DEFA (pilotes, appareils, terrains) | `shared/defa_reference.js` | journal des vols DEFA (page enregistrée, non committée) | `python tools/defa_reference.py "Log des vols.html"` | page Paramétrage (conservées par l'outil) |

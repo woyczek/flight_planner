@@ -3,7 +3,7 @@
   // Catalogue d'aéronefs commun aux trois applications (CR DEFA, Landing Performance
   // Dashboard, Flight Planner) — chargé juste après AircraftDB/aircraft_db.js :
   //   · types : base OACI (aircraft_db.js, avec les modifications de la page Paramétrage plus
-  //     récentes que le fichier), types militaires absents de la base (SUPPLEMENT), types ajoutés
+  //     récentes que le fichier), types ajoutés
   //     localement dans les CR (missionAircraftTypes:v1) — fusionnés dans window.AIRCRAFT_DB :
   //     toutes les pages voient les mêmes types ;
   //   · appareils DEFA : flotte (aircraft_fleet.js), référence DEFA anonymisée (defa_reference.js),
@@ -18,129 +18,10 @@
   };
   /** Clé de comparaison : majuscules, lettres et chiffres seulement. */
   const key = v => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-  // Types de la flotte DEFA absents de la base OACI importée.
-  const SUPPLEMENT = {
-    H160: {
-      tdesig: 'H160',
-      model: 'Airbus Helicopters H160',
-      category: 'rotary',
-      wtc: 'L'
-    },
-    CL2T: {
-      tdesig: 'CL2T',
-      model: 'Canadair CL-415 / CL-215T',
-      category: 'amphibious',
-      wtc: 'M'
-    },
-    AS32: {
-      tdesig: 'AS32',
-      model: 'AS332 Super Puma / H215',
-      category: 'rotary',
-      wtc: 'M'
-    },
-    AS55: {
-      tdesig: 'AS55',
-      model: 'AS555 Fennec',
-      category: 'rotary',
-      wtc: 'L'
-    },
-    CP10: {
-      tdesig: 'CP10',
-      model: 'Mudry CAP 10',
-      category: 'fixed',
-      wtc: 'L'
-    },
-    E121: {
-      tdesig: 'E121',
-      model: 'Embraer EMB-121 Xingu',
-      category: 'fixed',
-      wtc: 'L'
-    },
-    E2C: {
-      tdesig: 'E2C',
-      model: 'Northrop Grumman E-2C Hawkeye',
-      category: 'fixed',
-      wtc: 'M'
-    },
-    E3CF: {
-      tdesig: 'E3CF',
-      model: 'Boeing E-3F Sentry',
-      category: 'fixed',
-      wtc: 'H'
-    },
-    EC20: {
-      tdesig: 'EC20',
-      model: 'EC120 Colibri',
-      category: 'rotary',
-      wtc: 'L'
-    },
-    EC25: {
-      tdesig: 'EC25',
-      model: 'EC225 / H225 Caracal',
-      category: 'rotary',
-      wtc: 'M'
-    },
-    GAZL: {
-      tdesig: 'GAZL',
-      model: 'SA341 / SA342 Gazelle',
-      category: 'rotary',
-      wtc: 'L'
-    },
-    MIR2: {
-      tdesig: 'MIR2',
-      model: 'Dassault Mirage 2000',
-      category: 'fixed',
-      wtc: 'M'
-    },
-    NH90: {
-      tdesig: 'NH90',
-      model: 'NH Industries NH90 Caïman',
-      category: 'rotary',
-      wtc: 'M'
-    },
-    PC21: {
-      tdesig: 'PC21',
-      model: 'Pilatus PC-21',
-      category: 'fixed',
-      wtc: 'L'
-    },
-    PC6T: {
-      tdesig: 'PC6T',
-      model: 'Pilatus PC-6 Turbo Porter',
-      category: 'fixed',
-      wtc: 'L'
-    },
-    PUMA: {
-      tdesig: 'PUMA',
-      model: 'SA330 Puma',
-      category: 'rotary',
-      wtc: 'M'
-    },
-    RFAL: {
-      tdesig: 'RFAL',
-      model: 'Dassault Rafale',
-      category: 'fixed',
-      wtc: 'M'
-    },
-    RQ9P: {
-      tdesig: 'RQ9P',
-      model: 'General Atomics MQ-9 Reaper (drone)',
-      category: 'fixed',
-      wtc: 'L'
-    },
-    TBM7: {
-      tdesig: 'TBM7',
-      model: 'Daher TBM 700',
-      category: 'fixed',
-      wtc: 'L'
-    },
-    TIGR: {
-      tdesig: 'TIGR',
-      model: 'Airbus Helicopters Tigre',
-      category: 'rotary',
-      wtc: 'L'
-    }
-  };
+  // Plus de types écrits dans le code : les types de la flotte DEFA viennent de la base OACI (aircraft_db.js, liste
+  // officielle Doc 8643 via AircraftDB/update_aircraft_db.py), les codes propres à la DEFA (E2C, RQ9P) y sont des
+  // alias (aircraft_overrides.json). Objet vide gardé pour les modules qui le lisent encore.
+  const SUPPLEMENT = {};
 
   // ---- types : base commune enrichie (en place : les pages gardent leur lecture de AIRCRAFT_DB)
   const file = window.AIRCRAFT_DB || (window.AIRCRAFT_DB = {});
@@ -159,7 +40,6 @@
       local
     };
   };
-  Object.entries(SUPPLEMENT).forEach(([code, entry]) => addType(code, entry, 'supplement'));
   Object.entries(read('missionAircraftTypes:v1') || {}).forEach(([code, entry]) => addType(code, entry || {}, 'local'));
 
   // ---- appareils DEFA (par immatriculation ; la donnée la plus récente l'emporte)

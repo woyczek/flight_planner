@@ -52,6 +52,11 @@ ICAO_PART2_URLS = [
     "https://cfapps.icao.int/doc8643/reports/Part2-By%20Type%20Designator%28Decode%29.pdf",
     "https://cfapps.icao.int/doc8643/reports/Part2-By%20Type%20Designator(Decode).pdf",
 ]
+# Liste officielle OACI des indicatifs de types (Doc 8643), service JSON public de l'outil de recherche
+# (POST sans corps) : désignateur, modèle, constructeur, description (L2J…), catégorie de turbulence.
+# Source principale depuis que les rapports PDF ci-dessous ne sont plus publiés (404) ; les PDF restent
+# en repli s'ils sont déjà en cache.
+ICAO_JSON_URL = "https://doc8643.icao.int/external/aircrafttypes"
 ICAO_PART3_URLS = [
     "https://cfapps.icao.int/doc8643/reports/Doc8643-Ed40/Part3-By%20Model%20Number_Name.pdf",
     "https://cfapps.icao.int/doc8643/reports/Part3-By%20Model%20Number_Name.pdf",
@@ -420,9 +425,86 @@ def build_icao_alias_index(by_designator, part3_entries):
     return {k: sorted(v) for k, v in index.items()}
 
 
+def fetch_icao_json(path, max_age_days=30, force_refresh=False, use_network=True):
+    """Liste OACI (JSON) en cache dans path, rafraîchie au-delà de max_age_days. Retourne la liste ou None."""
+    if use_network and (force_refresh or not file_is_fresh(path, max_age_days)):
+        try:
+            print("ICAO Doc 8643 : liste officielle (JSON)...", flush=True)
+            req = urllib.request.Request(ICAO_JSON_URL, data=b"", method="POST",
+                                         headers={"User-Agent": "Mozilla/5.0 (X-Plane Web Suite aircraft DB)", "Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            if isinstance(data, list) and len(data) > 1000:
+                tmp = path.with_suffix(".json.tmp"); tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8"); replace_retry(tmp, path)
+            else:
+                print(f"ICAO Doc 8643 : réponse JSON inattendue ({type(data).__name__})", file=sys.stderr)
+        except Exception as exc:
+            print(f"ICAO Doc 8643 : liste JSON indisponible ({exc})", file=sys.stderr)
+    if path.exists():
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            return None
+    return None
+
+
+def index_from_icao_json(items):
+    """Index OACI (même forme que celui des PDF) à partir de la liste JSON : by_designator (désignateur →
+    modèle « CONSTRUCTEUR Modèle », description, WTC) et entrées nom de modèle → désignateur (alias)."""
+    by_designator, part3 = {}, []
+    # Nom représentatif d'un désignateur, choisi parmi ses entrées OACI (voir representative).
+    from collections import Counter
+    groups = {}
+    for it in items:
+        groups.setdefault(normalize_key(it.get("Designator")), []).append(it)
+    def representative(entries):
+        # Nom dont les mots sont partagés par le plus d'entrées (« Gazelle », « Mirage », « MQ-9 ») : écarte les
+        # désignations étrangères isolées (« Vajra », « H-45 Partizan ») ; puis constructeur le plus fréquent, nom court.
+        words = lambda e: set(re.findall(r"[A-Z0-9][A-Z0-9-]*", str(e.get("ModelFullName") or "").upper()))
+        freq = Counter(w for e in entries for w in words(e))
+        makers = Counter(str(e.get("ManufacturerCode") or "").strip() for e in entries)
+        shared = lambda e: sum(freq[w] for w in words(e)) / max(1, len(words(e)))
+        # proximité avec le désignateur lui-même (MIR2 → « Mirage 2000 », PC21 → « PC-21 », E121 → « EMB-121 ») :
+        # lettres du code présentes dans le nom, bonus si ses chiffres y figurent d'un seul tenant
+        code = normalize_key(entries[0].get("Designator")); digits = "".join(ch for ch in code if ch.isdigit())
+        def near(e):
+            n = normalize_key(e.get("ModelFullName"))
+            return sum(1 for ch in code if ch in n) + (3 if digits and digits in n else 0)
+        best = max(entries, key=lambda e: (near(e), round(shared(e), 3), makers[str(e.get("ManufacturerCode") or "").strip()], -len(str(e.get("ModelFullName") or ""))))
+        model, maker = str(best.get("ModelFullName") or "").strip(), str(best.get("ManufacturerCode") or "").strip()
+        return model if not maker or maker.lower() in model.lower() else f"{maker} {model}"
+    names = {code: representative(v) for code, v in groups.items() if code}
+    for it in items:
+        code = normalize_key(it.get("Designator"))
+        model, maker = str(it.get("ModelFullName") or "").strip(), str(it.get("ManufacturerCode") or "").strip()
+        desc, wtc = str(it.get("Description") or "").strip().upper(), str(it.get("WTC") or "").strip().upper()
+        if not code or not model:
+            continue
+        full = model if not maker or maker.lower() in model.lower() else f"{maker} {model}"
+        part3.append({"name": f"{model}, {maker}" if maker else model, "tdesig": code, "wtc": wtc})
+        if it.get("ShowInPart3Only") or not re.fullmatch(r"[LASHGT][0-9C][JPTER]", desc):
+            continue
+        rec = by_designator.setdefault(code, {"tdesig": code, "models": [], "model": names.get(code, full), "description": desc, "wtc": wtc, "source": "ICAO Doc 8643"})
+        if full not in rec["models"]:
+            rec["models"].append(full)
+    return by_designator, part3
+
+
 def load_or_build_icao_index(cache_dir, max_age_days=30, force_refresh=False, use_network=True):
     cache_dir = Path(cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
+    # Source principale : liste officielle JSON ; les rapports PDF ne servent plus qu'en repli.
+    items = fetch_icao_json(cache_dir / "icao_doc8643_types.json", max_age_days, force_refresh, use_network)
+    if items:
+        part2, part3 = index_from_icao_json(items)
+        if len(part2) >= 500:
+            return {
+                "__meta": {"generated": dt.datetime.now().isoformat(timespec="seconds"), "source": "ICAO Doc 8643 (liste JSON)",
+                           "part2_entries": len(part2), "part3_entries": len(part3)},
+                "by_designator": part2,
+                "alias_candidates": build_icao_alias_index(part2, part3),
+                "part3_entries": part3,
+            }
     p2 = cache_dir / "icao_doc8643_part2.pdf"
     p3 = cache_dir / "icao_doc8643_part3.pdf"
     idx = cache_dir / "icao_doc8643_index.json"
@@ -778,6 +860,18 @@ def classify_wing_from_wikipedia(page):
     return "unknown"
 
 
+def sane_wing(rec):
+    """Position d'aile cohérente avec la classe OACI (1re lettre de la description) : hélicoptère (H) → « rotor » ;
+    avion, amphibie, hydravion (L, A, S) jamais « rotor » (faux positif de Wikipedia : article citant un
+    hélicoptère) → « unknown », à redéterminer. Modifie rec ; retourne vrai si la valeur a changé."""
+    cls, wing = str(rec.get("description") or "")[:1].upper(), rec.get("wing_position")
+    if cls == "H" and wing != "rotor":
+        rec["wing_position"] = "rotor"; return True
+    if cls in ("L", "A", "S") and wing == "rotor":
+        rec["wing_position"] = "unknown"; return True
+    return False
+
+
 # ---------------- MERGE / UPDATE ----------------
 def merge_nonempty(base, incoming, fields=None, overwrite=False):
     fields = fields or ("tdesig", "model", "description", "wtc", "wing_position", "source")
@@ -814,7 +908,7 @@ def add_safe_aliases(aliases, canonical, alternative_names):
         if existing in (None, canonical): aliases[nk] = canonical
 
 
-def update_one(db, aliases, raw_designator, icao_index, use_network=True):
+def update_one(db, aliases, raw_designator, icao_index, use_network=True, force=False):
     # Resolve with explicit aliases + ICAO Part 3 model/name index.
     status, canonical, candidates = icao_resolve_input(raw_designator, aliases, icao_index)
     if status == "ambiguous":
@@ -824,9 +918,10 @@ def update_one(db, aliases, raw_designator, icao_index, use_network=True):
 
     # Manual overrides remain authoritative. ICAO-complete entries can be skipped.
     if record_complete(existing) and source_is_manual(existing.get("source")):
-        return canonical, existing, "skip", ""
-    if record_complete(existing) and source_has_icao(existing.get("source")):
-        return canonical, existing, "skip", ""
+        return canonical, existing, "skip", ""   # corrections manuelles : toujours prioritaires
+    # force (--only) : retraitement explicite, même d'une entrée OACI complète
+    if not force and record_complete(existing) and source_has_icao(existing.get("source")) and existing.get("wing_position") != "unknown":
+        return canonical, existing, "skip", ""   # aile inconnue : on retente EUROCONTROL / Wikipedia
 
     # Strong source: exact ICAO Doc 8643 record.
     strong = icao_record(canonical, icao_index) if canonical else None
@@ -864,11 +959,14 @@ def update_one(db, aliases, raw_designator, icao_index, use_network=True):
             rec["source"] = "EUROCONTROL"
         add_safe_aliases(aliases, canonical, euro.get("alternative_names"))
 
+    sane_wing(rec)  # hélicoptère : rotor sans consulter Wikipedia
     # Validated Wikipedia is now only a last-resort wing-position source.
     if canonical and rec.get("wing_position") in (None, "", "unknown"):
         validated = choose_valid_wikipedia_page(canonical, rec.get("model", ""))
         if validated:
             wing = classify_wing_from_wikipedia(validated[0])
+            if wing == "rotor" and str(rec.get("description") or "")[:1].upper() in ("L", "A", "S"):
+                wing = "unknown"  # avion : un article qui parle d'hélicoptères n'en fait pas un hélicoptère
             if wing != "unknown":
                 rec["wing_position"] = wing
                 rec["source"] = (rec.get("source") + " + Wikipedia/Wikidata (wing)") if rec.get("source") else "Wikipedia/Wikidata (wing)"
@@ -905,6 +1003,7 @@ def main():
     ap.add_argument("--retries", type=int, default=6, help="retries on HTTP 429/network errors")
     ap.add_argument("--add", nargs="*", default=[], help="extra designators/names")
     ap.add_argument("--no-network", action="store_true", help="no web lookup; use cached ICAO docs/index only")
+    ap.add_argument("--only", nargs="+", metavar="CODE", help="ne traiter que ces types (au lieu de toute la base)")
     ap.add_argument("--apd", nargs="*", metavar="CODE", help="passe EUROCONTROL APD seule : performances -> aircraft_perf.js et réparation des noms de modèle (tous les types, ou les codes donnés)")
     ap.add_argument("--perf-out", default="aircraft_perf.js", help="sortie de la passe APD")
     args = ap.parse_args()
@@ -941,6 +1040,8 @@ def main():
     wanted |= designators_from_csv(args.csv)
     wanted |= {normalize_key(k) for k in db if not str(k).startswith("__")}
     wanted = sorted(x for x in wanted if x)
+    if args.only:
+        wanted = sorted({normalize_key(x) for x in args.only})
 
     print(f"Refresh aircraft_db.js : {len(wanted)} appareils | pause mini {args.delay:.2f}s")
     stats = {"updated":0, "skip":0, "partial":0, "unresolved":0, "ambiguous":0}
@@ -977,13 +1078,16 @@ def main():
                 prefix += f" -> {resolved0}"
 
             existing = db.get(resolved0, {}) if resolved0 else {}
-            if record_complete(existing) and (source_is_manual(existing.get("source")) or source_has_icao(existing.get("source"))):
+            recheck = bool(existing) and sane_wing(existing) and existing.get("wing_position") == "unknown"
+            if recheck:  # aile incohérente effacée : l'entrée est retraitée (EUROCONTROL / Wikipedia filtré)
+                print(f"{prefix}: position d'aile incohérente effacée ({existing.get('description')})")
+            if not recheck and not args.only and record_complete(existing) and (source_is_manual(existing.get("source")) or source_has_icao(existing.get("source"))):
                 stats["skip"] += 1
                 print(f"{prefix}: SKIP (déjà complet) | {existing.get('model','')} | {existing.get('description','?')} | WTC {existing.get('wtc','?')} | wing={existing.get('wing_position','?')}")
                 continue
 
             print(f"{prefix}: UPDATE...", end="", flush=True)
-            canonical, rec, status, reason = update_one(db, aliases, raw, icao_index, use_network=not args.no_network)
+            canonical, rec, status, reason = update_one(db, aliases, raw, icao_index, use_network=not args.no_network, force=bool(args.only))
             stats[status] = stats.get(status, 0) + 1
             if status in ("updated", "partial"):
                 print(f" | {rec.get('description') or '?'} | WTC {rec.get('wtc') or '?'} | wing={rec.get('wing_position') or '?'} | source={rec.get('source') or '?'}", flush=True)

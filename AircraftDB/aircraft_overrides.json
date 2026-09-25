@@ -1,7 +1,8 @@
 {
   "__meta": {
     "schema": 1,
-    "note": "Manual overrides merged after Wikidata/Wikipedia lookup."
+    "note": "Manual overrides merged after Wikidata/Wikipedia lookup.",
+    "notes_aliases_defa": "E2C → E2 (E-2 Hawkeye) et RQ9P → Q9 (MQ-9 Reaper) : codes de la flotte DEFA ramenés aux désignateurs OACI (Doc 8643)."
   },
   "__aliases": {
     "AS350": "AS50",
@@ -56,7 +57,9 @@
     "CN235": "CN35",
     "SAAB340": "SF34",
     "SF340": "SF34",
-    "SF3": "SF34"
+    "SF3": "SF34",
+    "E2C": "E2",
+    "RQ9P": "Q9"
   },
   "__records": {
     "C152": {
