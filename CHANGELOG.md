@@ -10,6 +10,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Studio — profil vertical** : champ **Niveau de croisière** (`FL65` ou `6500`, enregistré dans la mission) —
+  sans niveau ni altitude dans le cheminement, la trajectoire n'était pas tracée, sans explication (un message le
+  dit désormais). Le cheminement proposé suit origine → points tournants → destination (il passait par la
+  destination en 2ᵉ point : 906 NM au lieu de 380 sur COMMAND 41) ; les points de la mission sont listés sous le
+  champ et s'ajoutent d'un clic.
 - **Correctif — menu ☰ et menu des langues** : ils passaient sous les boutons de la ligne 2 de l'en-tête (CR,
   reporting : « Mission ▾ », « Registre ▾ ») ; ils sont maintenant au-dessus.
 - **Correctif — lecture des missions générées (YAML + Markdown)** : le Markdown actuel des séries

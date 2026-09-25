@@ -296,11 +296,15 @@ tournants, cible, rendez-vous…, par id ou par nom), aérodromes (OACI), balise
 DME), points RNAV / points de report de l'AIXM, **radiale / distance** « REN300010 » (balise REN,
 radiale magnétique 300, 10 NM ; déclinaison de l'aérodrome le plus proche) ou coordonnées
 « lat lon » —, chacun avec une **altitude prévue** facultative (`SIMIP/3000`, `TARGET/FL65`) ;
-homonymes : le plus proche du point précédent ; vide = points tournants de la mission dans
-l'ordre. Exemple : `LFOJ, BRY/4500, REN300010, SIMIP/3000, TARGET/FL65, SIMCP/5500, LFOT`.
+homonymes : le plus proche du point précédent. Sans cheminement enregistré, le studio **propose**
+origine, points tournants dans l'ordre et destination ; les **points de la mission** (origine,
+destination, cible, points tournants, rendez-vous) sont listés sous le champ, un clic les ajoute
+(avant la destination si le cheminement s'y termine). Exemple : `LFOJ, BRY/4500, REN300010, SIMIP/3000, TARGET/FL65, SIMCP/5500, LFOT`.
 « /3000 » = altitude à atteindre au point ; **groupes vitesse / niveau** du plan de vol
 (`N0180A085`, `N0450F350`…) = niveau à partir du point ; **VFR** = pas de niveau ; la case 15 d'un
-plan de vol est acceptée. La **trajectoire prévue** (violet) monte selon l'**appareil** choisi parmi les
+plan de vol est acceptée. **Niveau de croisière** (`FL65` ou `6500`) : niveau par défaut dès le départ,
+quand le cheminement n'en donne pas au premier point ; les altitudes du cheminement restent prioritaires.
+Sans niveau ni altitude, la trajectoire n'est pas tracée (message sous le bouton). La **trajectoire prévue** (violet) monte selon l'**appareil** choisi parmi les
 profils du Flight Performance & Fuel Planner (modèle de performances : vario et TAS selon l'altitude) et
 descend à son vario ; à défaut, aux taux saisis (montée / descente en ft/min et kt) ; appareil et taux
 enregistrés dans la mission ; **TOC** et **TOD** ; départ
@@ -324,8 +328,8 @@ type de zone, sur les cartes comme sur la coupe. La même coupe est proposée da
 Performance & Fuel Planner** (route saisie ou importée de SimBrief, profil d'affichage du studio,
 base SIA mémorisée par le studio) : voir [FLIGHT_PLANNER.md](FLIGHT_PLANNER.md).
 
-Cheminement, plafond et case **« profil_vertical.png dans les sorties »** sont enregistrés dans le
-YAML de la mission (`vertical_profile: {route, ceiling_ft, output}`), donc partagés avec le
+Cheminement, niveau de croisière, plafond et case **« profil_vertical.png dans les sorties »** sont enregistrés dans le
+YAML de la mission (`vertical_profile: {route, cruise, ceiling_ft, output}`), donc partagés avec le
 générateur ; l'image est ajoutée au ZIP (largeur des PNG) et le brief PDF la place après les cartes.
 
 ## 5. Stockage dans le navigateur
