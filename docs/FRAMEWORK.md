@@ -63,6 +63,20 @@ Chaque `section` / `.panel` du `<main>` devient un bloc avec les boutons ↕ (d�
 `data-block-id` : identifiant stable (sinon `id`, sinon rang). Après un nouveau rendu de
 blocs : `window.AppFramework.refresh()`.
 
+## 3 bis. `sticky_frame.js` — cadres semi-mobiles
+
+Blocs de colonne latérale qui restent lisibles pendant le défilement (`window.StickyFrame`).
+
+| Appel | Comportement | Utilisé par |
+|---|---|---|
+| `StickyFrame.stick(el, { top })` | collant CSS sous l'en-tête ; plus haut que la fenêtre : décalage négatif, on défile jusqu'à son bas avant qu'il se colle | Studio cartographique (colonne d'aperçu) |
+| `StickyFrame.follow(el, { anchor, stack, gap, media })` | suit un bloc « ancre » d'une autre colonne : arrive avec lui, reste collé sous l'en-tête (et sous les cadres `stack` précédents), repart avec le bas de l'ancre ; pas de chevauchement entre cadres d'un même conteneur ; classe `is-stuck` pendant qu'il est retenu (la page peut le compacter) ; inactif hors `media` (défaut : plus de 800 px) | Planificateur : bloc Résultat (ancre : Devis carburant, `stack`) et panneaux d'explications (ancre : rangée de leur courbe) |
+| `StickyFrame.refresh()` | recalcul après un redessin | vues qui changent des hauteurs |
+| `StickyFrame.headerBottom()` | bas de l'en-tête collant (px) | — |
+
+Positionnement absolu dans le conteneur (rendu `position: relative`), recalculé au défilement, au
+redimensionnement et quand l'ancre ou le cadre changent de taille.
+
 ## 4. `content_i18n.js` — traduction
 
 `window.RepositoryContentI18n(lignes)` : lignes `[fr, en, de, es]`. Les nœuds texte (et

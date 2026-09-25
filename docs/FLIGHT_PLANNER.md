@@ -51,13 +51,21 @@ réserve (min), contingence (%).
 
 ## 2 bis. Modèle de performances — altitude et montée optimales
 
-**Lecture.** Le bloc repliable « Comment lire ces courbes » donne la marche à suivre. La ligne
-**Limites** indique le plafond retenu et sa source (champ « Plafond max (ft) » du profil ou calcul du
+**Mise en page.** Colonne gauche : saisie, courbes (altitude optimale, vario de montée, vitesses de
+montée), comparaison des lois, table par altitude. Colonne droite : bloc Résultat, puis un panneau
+d'explications par courbe (optimums, relevé de la jauge, légende, lecture) ; ces cadres suivent leur
+courbe (framework `StickyFrame`). Collé, le bloc Résultat se réduit à Block fuel · TOD. Code :
+`shared/flight_perf_view.js` (fonctions documentées).
+
+**Lecture.** Chaque panneau dit comment lire sa courbe ; définitions (Vy, Vx, Badin, TAS…) au survol
+des termes soulignés. Couleur : une par série, sur le trait et le libellé seulement. Le bloc
+**Limites** (panneau de l'altitude optimale) indique le plafond retenu et sa source (champ « Plafond max (ft) » du profil ou calcul du
 modèle), le niveau demandé et le niveau le plus haut possible sur la distance ; chaque
 « inatteignable » donne sa cause et le champ à modifier. Les trois courbes en altitude partagent une
 jauge ; un clic épingle un niveau, résumé dans la fiche ⌖ / 📌 du bloc Résultat.
 
-**Loi réglable (violet).** Deux curseurs : Badin de montée et vario visé. Les gaz sont réduits pour
+**Loi réglable (violet).** Deux curseurs verticaux autour de chaque courbe : vario visé à gauche,
+Badin à droite (partagés par les trois courbes ; ligne pointillée violette : vario visé). Les gaz sont réduits pour
 tenir le vario, plein gaz au-delà (le vario baisse jusqu'au plafond) ; réacteur : Badin puis Mach de
 croisière. La loi apparaît sur les deux courbes de montée, dans la table comparative et dans la fiche.
 

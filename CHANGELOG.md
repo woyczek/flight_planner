@@ -10,6 +10,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Framework — `sticky_frame.js`** : cadres semi-mobiles (`StickyFrame.stick` / `follow`), repris par le
+  Studio cartographique (colonne d'aperçu, même comportement) et le planificateur.
+- **Planificateur — vue des courbes réorganisée** (`shared/flight_perf_view.js`, fonctions documentées) :
+  courbes à gauche ; à droite le bloc Résultat (compact une fois collé) et un panneau d'explications par
+  courbe qui la suit au défilement ; loi réglable en **curseurs verticaux** (vario à gauche, Badin à
+  droite) sur chaque courbe, courbe violette aussi sur l'altitude optimale ; couleur au libellé seulement,
+  une taille de texte ; définitions au survol ; groupe Régimes de vol repliable.
 - **Planificateur** : fiche curseur (⌖ survol, 📌 épinglé) dans le bloc Résultat, suivie du groupe **Régimes de vol**
   (ancien bloc « Profil actif ») ; le bloc Résultat **reste fixe au défilement** jusqu'à la rangée moteur / RPM ; **loi de montée réglable**
   (Badin et vario visé, en violet sur les courbes, dans la table et la fiche) ; croisière d'un réacteur
