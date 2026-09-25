@@ -6,6 +6,7 @@
   const V = window.MissionVocab,
     L = V.L,
     opt = V.opt;
+  /** Définition d'un champ de la famille : chemin dans la mission, libellé [fr, en, de, es], type, options (extra). */
   const f = (path, label, type = 'text', extra = {}) => ({
     path,
     label,
@@ -13,6 +14,7 @@
     ...extra
   });
   const P = 'missionData.fire.';
+  /** Nombre d'une saisie (0, ou null selon la famille, si vide ou invalide). */
   const num = v => (v === '' || v == null || !Number.isFinite(Number(v)) ? null : Number(v));
   const risks = [opt('Green', L('Vert', 'Green', 'Grün', 'Verde')), opt('Yellow', L('Jaune', 'Yellow', 'Gelb', 'Amarillo')), opt('Orange', L('Orange', 'Orange', 'Orange', 'Naranja')), opt('Red', L('Rouge', 'Red', 'Rot', 'Rojo'))];
   const LEGACY = {
@@ -32,6 +34,7 @@
     'Retour': 'Return',
     'Anomalie': 'Issue'
   };
+  /** Valeur de référence d'une ancienne valeur française (anciens registres CSV / JSON). */
   const norm = v => LEGACY[String(v ?? '').trim()] ?? String(v ?? '').trim();
   const EVENT = {
     'Observation': 'OTHER',
@@ -126,6 +129,7 @@
       }
     }],
     summary: (() => {
+      /** Modèle du résumé automatique (§22) : w = mots de liaison d'une langue, h = outils du résumé (MissionReport.helpers : mission, statistiques, appareils, listes, dates) → texte du résumé ; les morceaux dont une donnée manque sont omis. */
       const build = w => h => {
         const m = h.mission,
           d = fire(m),

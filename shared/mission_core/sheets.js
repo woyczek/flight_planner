@@ -10,15 +10,20 @@
     V = window.MissionVocab,
     L = V.L,
     C = window.MissionCharts;
+  /** Échappe un texte pour HTML. */
   const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
     '&': '&amp;',
     '<': '&lt;',
     '>': '&gt;',
     '"': '&quot;'
   } [c]));
+  /** Rang (0–3) de la langue de la page. */
   const idx = () => Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'));
+  /** Texte d'une ligne [fr, en, de, es] dans la langue de la page. */
   const tr = row => Array.isArray(row) ? row[idx()] || row[0] : String(row ?? '');
+  /** Clé : majuscules, lettres et chiffres seulement. */
   const key = v => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  /** Valeur JSON d'une clé du localStorage ; null sinon. */
   const read = k => {
     try {
       return JSON.parse(localStorage.getItem(k) || 'null');
@@ -26,11 +31,14 @@
       return null;
     }
   };
+  /** Écrit une valeur JSON dans le localStorage. */
   const write = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+  /** Minutes → « 1h05 ». */
   const duration = v => {
     v = Math.round(v || 0);
     return v >= 60 ? `${Math.floor(v / 60)}h${String(v % 60).padStart(2, '0')}` : `${v} min`;
   };
+  /** Minutes → heures décimales « 12,5 h ». */
   const hours = v => `${((v || 0) / 60).toFixed(v >= 6000 ? 0 : 1).replace('.', ',')} h`;
   const COLORS = {
     HEMS: '#ef4444',
@@ -120,6 +128,7 @@
   const EVENT_KINDS = ['MAINTENANCE', 'INSPECTION', 'INCIDENT', 'MODIFICATION', 'CONVOYAGE', 'AUTRE'];
 
   // ---- missions connues (registre + journal DEFA chargé)
+  /** Missions connues pour les fiches : registre des missions et journal DEFA chargé. */
   async function missions() {
     try {
       await window.MissionLedger?.load();
@@ -139,12 +148,15 @@
       s: M.computeStatistics(x.m)
     }));
   }
+  /** Lien vers la mission dans la page de CR de sa famille. */
   const crPage = (family, index, id) => {
     const f = V.families.find(x => x.id === family);
     return f ? `${f.cr}?edit=${index}&id=${encodeURIComponent(id || '')}` : '';
   };
+  /** Pastille colorée d'une famille. */
   const tag = id => `<span class="sh-tag" style="--c:${COLORS[id] || '#64748b'}">${esc(id)}</span>`;
 
+  /** Tableau triable des missions d'une fiche (SortedTable), clic = ouvrir la mission. */
   function missionsTable(host, list, columns) {
     window.SortedTable.render(host, {
       rows: list.map(x => ({
@@ -173,6 +185,7 @@
       }
     });
   }
+  /** Colonnes communes du tableau des missions (date, famille, n°, appareil, durées…). */
   const commonColumns = () => [{
     key: 'date',
     label: tr(UI.date),
@@ -205,6 +218,7 @@
   let periodCtrl = null,
     periodPaint = null;
 
+  /** Composant de période des fiches (TimePeriod), borné aux missions, repeint à chaque changement. */
   function period(all, paint) {
     periodPaint = paint;
     if (!periodCtrl && window.TimePeriod) {
@@ -220,11 +234,13 @@
     const dates = all.map(x => x.m.metadata?.date).filter(Boolean).sort();
     periodCtrl?.setBounds(dates[0] || null, dates[dates.length - 1] || null);
   }
+  /** Missions de la période courante. */
   const inPeriod = list => window.TimePeriod ? window.TimePeriod.filterRows(list.map(x => ({
     x,
     date: x.m.metadata?.date || ''
   })), 'date').map(o => o.x) : list;
 
+  /** Graphique d'activité (heures par période et par famille) d'une fiche. */
   function activityChart(host, list) {
     if (!C || !list.length) {
       host.innerHTML = '';
@@ -259,6 +275,7 @@
       `<div class="mcg-series-legend">${fams.map(f => `<span><i style="background:${COLORS[f] || '#64748b'}"></i>${esc(f)}</span>`).join('')}</div>`;
     C.enableZoom?.(host); // glisser / clic : zoom ; double-clic : zoom arrière
   }
+  /** Cartes de synthèse [libellé, valeur, sous-titre]. */
   const cards = items => `<div class="mc-cards">${items.map(([label, value, sub = '']) => `<div class="card"><span class="small">${esc(tr(label))}</span><b>${esc(value)}</b><span class="small">${esc(sub)}</span></div>`).join('')}</div>`;
 
   // Fusion / renommage (appareil : immatriculation ; équipage : trigramme ou nom).
@@ -282,6 +299,7 @@
 
   // ---- fiche appareil
   const AIRCRAFT_SHEETS = 'missionAircraftSheets:v1';
+  /** Fiche d'un appareil (appareil.html?reg=) : identité, statut, terrain, profil de performances, courbe RPM, événements, activité et missions de la période, fusion / renommage. */
   async function mountAircraft(root, registration) {
     const reg = key(registration),
       catalog = window.AircraftCatalog?.defaAircraft?.() || [];
@@ -436,6 +454,7 @@
     window.RepositoryContentI18n?.(Object.values(UI));
   }
   // Courbe RPM / puissance → consommation (points du profil).
+  /** Courbe RPM / puissance → consommation (SVG) des points du profil. */
   function curveSvg(points) {
     const pts = points.map(p => ({
       x: Number(p.rpm ?? p.power ?? p.x),
@@ -457,6 +476,7 @@
 
   // ---- fiche membre d'équipage
   const CREW_SHEETS = 'missionCrewSheets:v1';
+  /** Fiche d'un membre d'équipage (equipage.html?name=) : activité, appareils, missions de la période, fusion / renommage. */
   async function mountCrew(root, person) {
     const id = String(person || '').trim().toUpperCase(),
       sheets = read(CREW_SHEETS) || {},
@@ -538,7 +558,9 @@
     window.RepositoryContentI18n?.(Object.values(UI));
   }
 
+  /** Lien vers la fiche d'un appareil. */
   const aircraftUrl = (base, reg) => `${base}appareil.html?reg=${encodeURIComponent(reg)}`;
+  /** Lien vers la fiche d'un membre d'équipage. */
   const crewUrl = (base, name) => `${base}equipage.html?name=${encodeURIComponent(name)}`;
   window.MissionSheets = {
     mountAircraft,

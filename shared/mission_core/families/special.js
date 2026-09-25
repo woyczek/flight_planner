@@ -6,6 +6,7 @@
   const V = window.MissionVocab,
     L = V.L,
     opt = V.opt;
+  /** Définition d'un champ de la famille : chemin dans la mission, libellé [fr, en, de, es], type, options (extra). */
   const f = (path, label, type = 'text', extra = {}) => ({
     path,
     label,
@@ -13,6 +14,7 @@
     ...extra
   });
   const P = 'missionData.special.';
+  /** Nombre d'une saisie (0, ou null selon la famille, si vide ou invalide). */
   const num = v => Number(v) || 0;
   const group = series => String(series || '').split('-')[0];
   const inGroup = g => ctx => group(ctx.series) === g;
@@ -188,6 +190,7 @@
     }],
     // Résumé propre à chaque sous-module (VIP, convoyage, essai, formation).
     summary: (() => {
+      /** Modèle du résumé automatique (§22) : w = mots de liaison d'une langue, h = outils du résumé (MissionReport.helpers : mission, statistiques, appareils, listes, dates) → texte du résumé ; les morceaux dont une donnée manque sont omis. */
       const build = w => h => {
         const m = h.mission,
           d = sp(m),

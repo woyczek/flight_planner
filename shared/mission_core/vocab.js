@@ -4,7 +4,9 @@
   // Valeurs = codes stables (écrits dans les registres YAML) ; libellés [fr, en, de, es]
   // traduits par le système commun RepositoryContentI18n. Les codes opérationnels
   // internationaux (NVG, HOIST, EO/IR…) restent identiques, seule leur description change.
+  /** Ligne de traduction [fr, en, de, es] (de / es : anglais à défaut). */
   const L = (fr, en, de, es) => [fr, en, de ?? en, es ?? en];
+  /** Option de liste { value : code stable, label : [fr, en, de, es] }. */
   const opt = (value, label) => ({
     value,
     label
@@ -206,6 +208,7 @@
     [/COMMAND|AEW|AWACS|RELAY|RELAIS/, 'COMMAND'],
     [/^SOF\b|TACTI|OPS? SP[EÉ]CIALES?/, 'SOF']
   ];
+  /** Famille d'une mission d'après un code de famille ou un texte libre (alias : AAR, COMMAND…) ; SPECIAL à défaut. */
   const familyForType = type => {
     const t = String(type || '').toUpperCase().trim();
     return families.find(f => f.id === t)?.id || familyAliases.find(([re]) => re.test(t))?.[1] || 'SPECIAL';
@@ -272,6 +275,7 @@
     FI: [...FLIGHT, 'MISSION_SENSOR', 'CAMERA'],
     SURVEY: [...FLIGHT, 'TERRAIN_FOLLOWING', 'POLAR', 'SHORT_FIELD', 'UNPREPARED_STRIP', 'EO', 'IR', 'EO_IR', 'RADAR', 'SAR_RADAR', 'LIDAR', 'CAMERA', 'MULTISPECTRAL', 'MISSION_SENSOR']
   };
+  /** Types d'événements de chronologie proposés pour une famille (communs + profil de la famille). */
   const eventTypesFor = familyId => {
     const allowed = new Set([...BASE_EVENTS, ...TIMELINE_EVENTS, ...(eventProfiles[familyId] || [])]);
     return eventTypes.filter(o => allowed.has(o.value));

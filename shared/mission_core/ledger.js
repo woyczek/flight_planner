@@ -21,12 +21,14 @@
     const APP = new URL('../../CR%20DEFA/', HERE); // dossier de l'application (à côté de shared/)
     const DB = 'missionCore',
       STORE = 'handles';
+    /** Base IndexedDB « missionCore » (magasin handles) : dossier du registre. */
     const idb = () => new Promise((resolve, reject) => {
       const request = indexedDB.open(DB, 1);
       request.onupgradeneeded = () => request.result.createObjectStore(STORE);
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
+    /** Valeur d'une clé du magasin handles ; null si absente. */
     const idbGet = async key => {
       try {
         const db = await idb();
@@ -39,6 +41,7 @@
         return null;
       }
     };
+    /** Écrit une valeur dans le magasin handles. */
     const idbSet = async (key, value) => {
       try {
         const db = await idb();
@@ -61,8 +64,10 @@
     };
     let handle = null,
       loading = null;
+    /** Clé d'identité d'une mission : famille | n° de mission | date (doublons à l'import). */
     const key = m => `${m.family}|${String(m.metadata?.missionId || '').trim().toUpperCase()}|${m.metadata?.date || ''}`;
 
+    /** Contenu d'un fichier de registre YAML : { missions, … } au schéma courant. */
     const parse = (text, family = '') => {
       const data = window.jsyaml.load(String(text).replace(/^﻿/, ''), {
         schema: window.jsyaml.CORE_SCHEMA
@@ -75,6 +80,7 @@
         missions: missions.map(m => M.migrate(m, m?.family || data.family || family))
       };
     };
+    /** Dossier du registre (CR DEFA) autorisé ; request : demande l'autorisation. null sinon. */
     async function directory(request = false, id = HANDLE) {
       const h = id === HANDLE ? (handle = handle || await idbGet(HANDLE)) : await idbGet(id);
       if (!h) return null;
@@ -94,6 +100,7 @@
       if (id === HANDLE) store.folder = h.name;
       return h;
     }
+    /** Texte d'un fichier du dossier ; null s'il n'existe pas. */
     const readFile = async (dir, name) => {
       try {
         return await (await (await dir.getFileHandle(name)).getFile()).text();
@@ -101,6 +108,7 @@
         return null;
       }
     };
+    /** Texte d'une URL (fichier à côté de la page) ; null en cas d'échec. */
     const fetchText = async url => {
       try {
         const r = await fetch(url, {
@@ -131,6 +139,7 @@
 
     // Anciens registres par famille : la version la plus récente de chaque famille.
     const familyFolders = () => [...(window.MissionVocab?.families || []).map(f => [f.id, f.cr.split('/')[0]]), ['DEMO', 'MissionCore']];
+    /** Anciens registres par famille (fichiers <famille>_missions.yaml), la version la plus récente de chacun, pour la reprise dans le registre unique. */
     async function legacyLedgers() {
       const out = [];
       for (const [id, folder] of familyFolders()) {
@@ -182,6 +191,7 @@
       return out;
     }
 
+    /** Charge le registre unique : dossier autorisé, fichier à côté de la page, copie navigateur ; retient la source la plus récente (updatedAt), puis reprend les missions des anciens registres de famille qui n'y sont pas. Un seul chargement à la fois (force : recharge). */
     async function load(force = false) {
       if (loading && !force) return loading;
       loading = (async () => {
@@ -268,12 +278,14 @@
       return loading;
     }
 
+    /** Document du registre (schéma, date, missions) à écrire. */
     const doc = () => ({
       schemaVersion: M.SCHEMA_VERSION,
       updatedAt: store.updatedAt,
       legacyImported: store.legacyImported,
       missions: store.missions
     });
+    /** Texte YAML du registre (ou d'une sélection de missions). */
     const yaml = (missions = store.missions, title = 'Registre des missions — toutes familles — Mission Report — DEFA Virtual') => M.toYaml({
       ...doc(),
       missions
@@ -322,6 +334,7 @@
         text
       };
     }
+    /** Choix du dossier du registre (CR DEFA), puis rechargement. */
     async function chooseFolder() {
       if (window.FileAccess) {
         const picked = await window.FileAccess.pickFolder('__ledger');
@@ -354,6 +367,7 @@
       return picked.name;
     }
 
+    /** Fait télécharger un fichier. */
     const download = (name, text, type) => {
       const a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([text], {
@@ -387,14 +401,19 @@
       ['onlineNetwork', m => m.network?.onlineNetwork],
       ['trackerUrl', m => m.network?.trackerUrl]
     ];
+    /** Registre en CSV « ; » (colonnes CSV_COLUMNS). */
     const csv = missions => [CSV_COLUMNS.map(c => c[0]).join(';')].concat(missions.map(m => CSV_COLUMNS.map(([, get]) => `"${String(get(m) ?? '').replace(/"/g, '""')}"`).join(';'))).join('\n') + '\n';
+  /** N° de mission normalisé (majuscules, sans blancs). */
   const normId = v => String(v ?? '').trim().toUpperCase();
 
   // Vue d'une famille sur le registre unique.
   function open(family) {
     const id = family.id;
+    /** Missions de la famille ouverte. */
     const list = () => store.missions.filter(m => m.family === id);
+    /** Rang dans le registre unique de la index-ième mission de la famille ; −1 sinon. */
     const position = index => { let n = -1; for (let k = 0; k < store.missions.length; k++) if (store.missions[k].family === id && ++n === index) return k; return -1; };
+    /** Copie de la mission rattachée à la famille ouverte. */
     const withFamily = mission => ({ ...structuredClone(mission), family: id });
     return {
       filename: FILE,

@@ -19,7 +19,9 @@
       arr: /^arr/i,
       mission: /^miss/i
     };
+    /** Texte en majuscules sans accents ni blancs de bord. */
     const up = v => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
+    /** Journal DEFA mémorisé (defaFlightLog:v1) ; null sinon. */
     const read = () => {
       try {
         return JSON.parse(localStorage.getItem(KEY) || 'null');
@@ -42,6 +44,7 @@
       };
     };
 
+    /** Vol du journal à partir des 9 cellules d'une ligne (date, durée, trigramme, indicatif, immatriculation, appareil, départ, arrivée, mission) : champs normalisés, type et variante séparés. */
     function record(cells, fleetId = '') {
       const c = Object.fromEntries(COLUMNS.map((k, i) => [k, String(cells[i] ?? '').replace(/\s+/g, ' ').trim()]));
       const [date, time = ''] = c.date.split(/[ T]/), {
@@ -85,6 +88,7 @@
       }
       const lines = source.replace(/^\uFEFF/, '').split(/\r?\n/).filter(l => l.trim());
       const sep = (lines[0].match(/;/g) || []).length >= (lines[0].match(/,/g) || []).length ? ';' : ',';
+      /** Cellules d'une ligne CSV (séparateur détecté, guillemets retirés). */
       const cells = line => line.split(sep).map(v => v.replace(/^"|"$/g, '').replace(/""/g, '"'));
       const head = cells(lines.shift()),
         order = COLUMNS.map(k => head.findIndex(h => HEADERS[k].test(h.trim())));
@@ -96,6 +100,7 @@
     }
 
     // ---- stockage (navigateur uniquement)
+    /** Journal DEFA du navigateur ({ records, source, importedAt }) ; vide si absent. */
     function load() {
       return read() || {
         importedAt: '',
@@ -109,6 +114,7 @@
     // retour à la même minute (départ / arrivée différents) reste deux vols.
     const recordKey = r => [r.date, r.time, r.durationMin, r.callsign, r.registration, r.trigram, r.type, r.variant, r.dep, r.arr, r.mission].map(up).join('|');
 
+    /** Mémorise le journal (merge : fusion sans doublon — seules les lignes identiques sont fusionnées ; sinon remplacement), trié du plus récent, et prévient les pages (defa-log-change). Retourne { importedAt, source, records, added }. */
     function save(records, source, {
       merge = false
     } = {}) {
@@ -134,12 +140,14 @@
       return data;
     }
 
+    /** Efface le journal DEFA du navigateur. */
     function clear() {
       localStorage.removeItem(KEY);
       window.dispatchEvent(new CustomEvent('defa-log-change', {
         detail: null
       }));
     }
+    /** Vols du journal DEFA. */
     const records = () => load().records || [];
 
     // ---- indicatifs : séries
@@ -149,6 +157,7 @@
     // Registration utilisée comme indicatif, champ vide ou parasite : pas une série.
     const NOISE = /^(\/+|F[A-Z]{4}|FNY\d\d[A-Z]\d|FMY?XX|FA)$/;
 
+    /** Série et numéro d'un indicatif du journal (séparateurs et formes plan de vol tolérés). */
     function splitCallsign(raw) {
       let c = up(raw).replace(/[^A-Z0-9]/g, (ch) => ch === '-' || ch === '/' || ch === ' ' ? ' ' : '').trim().split(' ')[0];
       if (!c || NOISE.test(c)) return null;
@@ -218,6 +227,7 @@
       RESCUEA: 'RESCUE',
       RESCUEB: 'RESCUE'
     };
+    /** Indicatif complet d'une série d'après la table de correspondance. */
     const canonical = prefix => {
       const table = window.MissionAircraft?.canonicalPrefix;
       const own = ALIASES[prefix] || prefix;
@@ -276,8 +286,10 @@
   // Référence anonymisée (committée) : pilotes et appareils agrégés, sans les vols. Complète
   // la référence existante sans rien supprimer ; le terrain de rattachement saisi est conservé.
   function reference(list = records(), base = { pilots: [], aircraft: [] }) {
+    /** Clé : majuscules, lettres et chiffres seulement. */
     const k = v => up(v).replace(/[^A-Z0-9]/g, '');
     const pilots = new Map((base.pilots || []).map(p => [p.trigram, { ...p }])), aircraft = new Map((base.aircraft || []).map(a => [k(a.registration), { ...a }]));
+    /** Valeurs d'une liste, de la plus fréquente à la moins fréquente. */
     const count = (arr) => { const m = new Map(); arr.forEach(v => { if (v) m.set(v, (m.get(v) || 0) + 1); }); return [...m].sort((a, b) => b[1] - a[1]).map(([v]) => v); };
     const byPilot = new Map(), byReg = new Map();
     list.forEach(r => { if (r.trigram) (byPilot.get(r.trigram) || byPilot.set(r.trigram, []).get(r.trigram)).push(r); if (r.registration) (byReg.get(k(r.registration)) || byReg.set(k(r.registration), []).get(k(r.registration))).push(r); });
@@ -311,6 +323,7 @@
     ['AAR', /RAVITAILL|\bAAR\b|REFUEL|TANKER|\bMRTT\b/],
     ['AIRLIFT', /TRANSPORT|LOGISTI|POSITION|CONVOY|FRET|\bPAX\b|RETOUR BASE|\bRTB\b|LIAISON/]
   ];
+  /** Famille de mission d'un vol du journal : règles FAMILY_RULES sur le texte de la mission, puis indicatif et type d'appareil (PELIC → FIRE, DRAGO → HEMS, K35R → AAR…). */
   function familyOf(r) {
     const text = up(r.mission);
     const rule = FAMILY_RULES.find(([, re]) => re.test(text)); if (rule) return rule[0];
@@ -323,6 +336,7 @@
     return 'SPECIAL';
   }
   const addMinutes = (time, minutes) => { const m = /^(\d{1,2}):(\d{2})$/.exec(time || ''); if (!m || minutes == null) return ''; const t = (Number(m[1]) * 60 + Number(m[2]) + minutes) % 1440; return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`; };
+  /** Vols du journal convertis en missions du Core (reportings sur « journal DEFA ») : famille, heures, appareil, équipage, fusions / renommages appliqués. */
   function toMissions(list = records()) {
     const M = window.MissionModel, G = window.MissionGridEdit;
     // Fusions / renommages mémorisés (fiches appareil / équipage) : appliqués au journal rechargé.
@@ -344,7 +358,9 @@
   }
   // Source des reportings : registre des missions (défaut) ou journal DEFA.
   const SOURCE = 'missionReportingSource:v1';
+  /** Source des reportings : « defa » (journal chargé et choisi) ou « ledger » (registre des missions). */
   const source = () => (localStorage.getItem(SOURCE) === 'defa' && records().length ? 'defa' : 'ledger');
+  /** Choisit la source des reportings et prévient les pages (mission-source-change). */
   const setSource = value => { localStorage.setItem(SOURCE, value === 'defa' ? 'defa' : 'ledger'); window.dispatchEvent(new CustomEvent('mission-source-change', { detail: source() })); };
 
   // ---- chargement / mise à jour (reportings, Paramétrage) : page DEFA copiée ou enregistrée
@@ -359,6 +375,7 @@
     none: ['Aucun vol reconnu dans ce texte.', 'No flight recognised in this text.', 'Kein Flug erkannt.', 'Ningún vuelo reconocido.']
   };
   const LOG_URL = 'https://flotte.defa-virtual.fr/log_vols.php';
+  /** Fenêtre de chargement du journal DEFA (fichier ou copier-coller de la page « Log des vols »), onLoaded appelé après chargement. */
   function loaderDialog({ onLoaded } = {}) {
     const lang = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr')), T = k => LOADER[k][lang] || LOADER[k][0];
     const dialog = document.createElement('dialog'); dialog.className = 'defa-loader';
@@ -373,6 +390,7 @@
     dialog.querySelectorAll('[data-t]').forEach(el => { el.textContent = T(el.dataset.t); });
     dialog.querySelector('[data-a="load"]').textContent = T('load');
     const area = dialog.querySelector('textarea'), result = dialog.querySelector('.dl-result');
+    /** Lit un journal collé ou choisi, le mémorise (fusion) et affiche le résultat. */
     const run = (text, name) => {
       let list = []; try { list = parse(text, name); } catch (e) { result.textContent = e.message; return; }
       if (!list.length) { result.textContent = T('none'); return; }

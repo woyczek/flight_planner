@@ -16,9 +16,13 @@
   //      affichée « ≈ », signalée par le contrôle des données, remplacée dès que les heures
   //      sont saisies dans le CR.
   const M = window.MissionModel;
+  /** Texte en majuscules sans blancs de bord. */
   const up = v => String(v ?? '').trim().toUpperCase();
+  /** Texte en majuscules, lettres et chiffres seulement. */
   const key = v => up(v).replace(/[^A-Z0-9]/g, '');
+  /** Heure « HH:MM » → minutes (MissionModel.minutes). */
   const minutes = t => M.minutes(t);
+  /** Minutes (modulo 24 h) → « HH:MM ». */
   const hhmm = n => {
     n = ((Math.round(n) % 1440) + 1440) % 1440;
     return `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
@@ -45,6 +49,7 @@
     if (before != null && after != null && minutes(e.timeUtc) != null) e.timeUtc = hhmm(minutes(e.timeUtc) + after - before);
   }
 
+  /** Durée saisie dans le tableau (total minutes) : fin = début + durée pour la première paire d'heures renseignée (ou début = fin − durée), événement de chronologie déplacé ; sinon durée déclarée (declaredKey). */
   function setDuration(mission, pairs, declaredKey, total) {
     const t = mission.timeline || (mission.timeline = {});
     const [start, end] = pairs.find(([a, b]) => t[a] || t[b]) || pairs[0];
@@ -94,6 +99,7 @@
     } [field] ?? '';
   }
 
+  /** Applique une saisie du tableau (mode « modifier dans le tableau ») à la mission : heure, durée, appareil, indicatif, équipage… Mission en lecture seule : { error: 'readOnly' }. */
   function apply(mission, field, raw) {
     if (mission.__readOnly) return {
       error: 'readOnly'
@@ -190,6 +196,7 @@
 
   // ---- fusion / renommage (appareil : immatriculation ; équipage : nom / trigramme)
   const MAP_KEY = 'missionMergeMap:v1';
+  /** Valeur JSON d'une clé du localStorage ; null sinon. */
   const read = k => {
     try {
       return JSON.parse(localStorage.getItem(k) || 'null');
@@ -197,6 +204,7 @@
       return null;
     }
   };
+  /** Table des fusions / renommages : { aircraft : { A : B }, crew : { … } }. */
   const mergeMap = () => ({
     aircraft: {},
     crew: {},
@@ -214,6 +222,7 @@
     }
     return r;
   };
+  /** Clés d'une table de fusions qui bouclent (A → B → A). */
   const loops = m => Object.keys(m).filter(k => {
     const seen = new Set([k]);
     let r = k;
@@ -224,16 +233,20 @@
     }
     return false;
   });
+  /** Immatriculation après fusions (renommages suivis jusqu'au bout). */
   const mapAircraft = reg => {
     const m = mergeMap().aircraft;
     return m[key(reg)] ? resolve(m, key(reg)) : reg;
   };
+  /** Nom d'équipage après fusions. */
   const mapCrew = name => resolve(mergeMap().crew, up(name));
 
+  /** Missions du registre qui citent l'appareil ou le membre d'équipage from. */
   function affected(kind, from) {
     const missions = window.MissionLedger?.store?.missions || [];
     return missions.filter(m => kind === 'aircraft' ? (m.aircraft || []).some(a => key(a.registration) === key(from)) : (m.crew || []).some(c => up(c.name) === up(from)));
   }
+  /** Renomme un appareil ou un membre d'équipage dans tout le registre et mémorise l'équivalence (from → to) ; enregistre le registre. */
   async function rename(kind, from, to) {
     const target = kind === 'aircraft' ? M.formatRegistration(to) : up(to);
     if (!key(from) || !key(target) || key(from) === key(target)) return {
@@ -321,14 +334,17 @@
   }
 
   // Cellule éditable (mode « modifier dans le tableau ») : champ lié à la ligne (data-uid).
+  /** Échappe un texte pour HTML. */
   const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
     '&': '&amp;',
     '<': '&lt;',
     '>': '&gt;',
     '"': '&quot;'
   } [c]));
+  /** Minutes → « 1h05 ». */
   const dur = v => v == null || v === '' ? '' : `${Math.floor(v / 60)}h${String(Math.round(v % 60)).padStart(2, '0')}`;
 
+  /** Champ de saisie d'une cellule éditable (liée à la ligne par data-uid), avec suggestions (séries, appareils). */
   function input(field, mission, uid, {
     series = [],
     outcomes = [],

@@ -16,6 +16,7 @@
   // saisie) fournit les valeurs proposées (liste commune #mc-suggest, rafraîchie à la frappe).
   const M = window.MissionModel,
     V = window.MissionVocab;
+  /** Échappe un texte pour HTML. */
   const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
     '&': '&amp;',
     '<': '&lt;',
@@ -32,6 +33,7 @@
   };
   const EMPTY_HINT = ['Aucun élément : « + » dans le titre pour en ajouter.', 'No item: “+” in the title to add one.', 'Kein Element: „+“ im Titel zum Hinzufügen.', 'Ningún elemento: «+» en el título para añadir.'];
 
+  /** Formulaire de mission d'une famille dans form : blocs et collections rendus depuis leurs définitions, liés au modèle (data-path), conditions d'affichage, suggestions. Retourne { render, refresh, sync, hint, rerenderCollectionOf, context, i18nRows, txt }. */
   function create(form, {
     family,
     getMission,
@@ -42,6 +44,7 @@
     now
   }) {
     const rows = new Map(); // fr → [fr,en,de,es]
+    /** Texte source (français) d'un libellé [fr, en, de, es], ligne enregistrée pour le traducteur commun. */
     const txt = label => {
       if (!label) return '';
       if (Array.isArray(label)) {
@@ -57,8 +60,10 @@
     let ctx = null;
     // Champ propre à certaines familles (only / hideFor du champ, hide de la famille).
     const hidden = new Set(family.hide || []);
+    /** Vrai si le champ s'affiche pour la famille et n'est pas masqué par une condition. */
     const shown = (field, key) => !(field.only && !field.only.includes(family.id)) && !(field.hideFor || []).includes(family.id) && !hidden.has(key);
 
+    /** Options d'une liste : celles du champ, sinon vocabulaire commun ou de la famille. */
     const optionsFor = field => {
       if (field.options) return field.options;
       if (field.familySeries) return family.series || [];
@@ -68,12 +73,14 @@
     };
     // Texte simple : toujours en majuscules (règle commune MissionModel.isUpperField).
     const attrs = (field, path, withAlias) => `data-path="${esc(path)}"${withAlias && field.alias ? ` name="${esc(field.alias)}"` : ''}${field.list ? ` list="${esc(field.list)}"` : ''}${M.isUpperField(field) ? ' data-upper="1" autocapitalize="characters"' : ''}`;
+    /** HTML d'une liste de choix liée au chemin path. */
     const selectHtml = (field, path, value, withAlias) => {
       const opts = optionsFor(field),
         known = opts.some(o => o.value === value);
       return `<select ${attrs(field, path, withAlias)}>${field.blank || field.familySeries ? '<option value="">—</option>' : ''}${opts.map(o =>
         `<option value="${esc(o.value)}"${o.value === value ? ' selected' : ''}>${esc(txt(o.label))}</option>`).join('')}${value && !known ? `<option value="${esc(value)}" selected>${esc(value)}</option>` : ''}</select>`;
     };
+    /** HTML des cases de capacités (profil de la famille), groupées et repliables. */
     const capabilitiesHtml = (field, path, selected, item) => {
       const list = family.capabilities || V.capabilityProfiles?.[family.id],
         allowed = list ? new Set(list) : null;
@@ -90,7 +97,9 @@
       // le résumé indique le nombre de cases cochées.
       return field.collapsed ? collapsible(path, field.label, html, selected.length) : html;
     };
+    /** Groupe repliable (état ouvert mémorisé) avec compteur de cases cochées. */
     const collapsible = (key, label, html, count) => `<details class="mc-collapse" data-collapse="${esc(key)}"${openDetails.has(key) ? ' open' : ''}><summary><span>${esc(txt(label))}</span> <b class="mc-count">${count ? `(${count})` : ''}</b></summary>${html}</details>`;
+    /** HTML du contrôle d'un champ selon son type (texte, nombre, heure, liste, zone de texte, cases…). */
     const controlHtml = (field, path, withAlias, item) => {
       const value = M.get(getMission(), path);
       const ph = field.placeholder ? ` placeholder="${esc(txt(field.placeholder))}"` : '';
@@ -111,6 +120,7 @@
           return `<input ${attrs(field, path, withAlias)} value="${esc(value)}"${ph}${field.familySubtypes ? ' list="mc-subtypes"' : ''}>`;
       }
     };
+    /** HTML d'un champ avec son libellé et sa ligne d'aide ; vide s'il est masqué. */
     const fieldHtml = (field, path, withAlias = true, item = null, key = path) => {
       if (!shown(field, key)) return '';
       fieldsByPath.set(path, field);
@@ -119,6 +129,7 @@
 
     // ---- collections dynamiques (appareils, équipage, événements, étapes…)
     const collections = new Map(); // chemin → { block, host }
+    /** Collection d'un bloc (étapes, personnes, largages…) : tableau éditable, ajout et suppression de lignes. */
     function renderCollection(block, host) {
       const spec = block.collection,
         list = M.get(getMission(), spec.path) || [];
@@ -152,11 +163,14 @@
       registerConditions(block, host);
     }
 
+    /** Tableau des lignes d'une collection : champs courts en colonnes, champs longs en ligne dessous. */
     function renderTable(block, host, spec, list) {
       const visible = spec.fields.filter(field => shown(field, `${spec.path}.${field.path}`));
+      /** Vrai pour un champ affiché en pleine largeur (zone de texte, cases, full). */
       const long = field => field.full || field.type === 'textarea' || field.type === 'checkgroup';
       const short = visible.filter(f => !long(f)),
         wide = visible.filter(long);
+      /** Cellule d'une ligne de collection. */
       const cell = (field, i, item) => {
         const path = `${spec.path}.${i}.${field.path}`;
         fieldsByPath.set(path, field);
@@ -175,6 +189,7 @@
       });
       registerConditions(block, host);
     }
+    /** Redessine la collection qui contient le chemin modifié. */
     const rerenderCollectionOf = path => {
       const entry = [...collections.entries()].find(([prefix]) => path.startsWith(prefix + '.'));
       if (entry) {
@@ -183,6 +198,7 @@
       }
     };
 
+    /** Recense les champs à affichage conditionnel (when) d'un bloc, réévalués à chaque saisie. */
     function registerConditions(block, root) {
       const fields = block.collection ? block.collection.fields : block.fields;
       fields.filter(field => field.when).forEach(field => root.querySelectorAll(`[data-field$=".${field.path}"],[data-field="${field.path}"]`).forEach(el => conditional.push({
@@ -198,6 +214,7 @@
       }));
     }
 
+    /** Rend les blocs de la famille dans le formulaire (sections, champs, collections) et branche les écouteurs. */
     function render(blockList) {
       conditional.length = 0;
       blocks.length = 0;
@@ -252,6 +269,7 @@
     // ---- contexte d'affichage (§23) : famille, série, capacités, catégories d'appareil
     const context = () => M.context(getMission(), family);
 
+    /** Réévalue le contexte (série, capacités, catégories) et les conditions d'affichage des champs et blocs. */
     function refresh() {
       ctx = context();
       blocks.forEach(({
@@ -295,6 +313,7 @@
         if (document.activeElement !== el) el.value = value ?? '';
       });
     }
+    /** Affiche un message d'aide sous un champ. */
     const hint = (path, text) => {
       const el = form.querySelector(`[data-field="${CSS.escape(path)}"] .mc-hint`);
       if (el) {
@@ -304,8 +323,10 @@
     };
 
     // ---- saisie → modèle
+    /** Valeur saisie convertie pour le modèle (nombre ou null pour un champ numérique). */
     const coerce = (el, raw) => el.type === 'number' ? (raw === '' ? null : Number(raw)) : raw;
 
+    /** Saisie dans le formulaire → modèle (chemin data-path), majuscules si la règle s'applique, conditions réévaluées, page prévenue. */
     function handle(event) {
       const target = event.target;
       const group = target.closest('[data-kind="checkgroup"]');
@@ -373,6 +394,7 @@
         target: input
       });
     });
+    /** Met à jour le compteur de cases cochées d'un groupe repliable. */
     const countOf = details => {
       const n = details.querySelectorAll('input[type=checkbox]:checked').length;
       return n ? `(${n})` : '';
@@ -387,6 +409,7 @@
     // ---- valeurs proposées (datalist commune, remplie à la prise de focus et à la frappe)
     const suggestible = el => (el.tagName === 'INPUT' && ['text', 'number', 'search', ''].includes(el.getAttribute('type') || '') && (el.dataset.path || el.dataset.append));
     let offering = null; // dernier champ servi (une réponse tardive d'un autre champ est ignorée)
+    /** Propose les valeurs connues pour un champ (liste de suggestions commune), à la prise de focus et à la frappe. */
     function offer(el) {
       if (!suggest) return;
       const path = el.dataset.path || el.dataset.append,

@@ -11,8 +11,11 @@
   // (cases 10a / 10b) sont ajoutés aux équipements de l'appareil.
   const M = window.MissionModel,
     A = window.MissionAircraft;
+  /** Texte en majuscules sans blancs de bord. */
   const up = v => String(v ?? '').trim().toUpperCase();
+  /** Nombre d'une valeur ; null si vide ou invalide. */
   const num = v => (v === '' || v == null || !Number.isFinite(Number(v)) ? null : Number(v));
+  /** Valeur ramenée à un tableau (élément seul, ou vide). */
   const arr = v => (Array.isArray(v) ? v : v ? [v] : []);
 
   // Case 10a (équipements radio / navigation) et 10b (surveillance) → codes FPL_*.
@@ -59,6 +62,7 @@
       type: up(text).split('/')[0]
     };
   }
+  /** Valeur d'un indicateur de la case 18 (ex. REG/, OPR/) dans les remarques. */
   const remark = (remarks, key) => {
     const m = new RegExp(`(?:^|\\s)${key}/(\\S+)`).exec(up(remarks));
     return m ? m[1] : '';
@@ -75,6 +79,7 @@
     }
     return v === 'VFR' ? 'VFR' : v;
   }
+  /** Vitesse de plan de vol en nœuds : N0450 → 450, K0800 → 432 ; sinon valeur numérique. */
   const speed = value => {
     const v = up(value);
     let m;
@@ -82,9 +87,11 @@
     if ((m = /^K(\d{4})$/.exec(v))) return Math.round(Number(m[1]) / 1.852);
     return num(v);
   };
+  /** Durée en secondes → « HH:MM ». */
   const hhmm = seconds => seconds == null ? '' : `${String(Math.floor(seconds / 3600) % 24).padStart(2, '0')}:${String(Math.floor(seconds / 60) % 60).padStart(2, '0')}`;
 
   // ------------------------------------------------------------------ sources
+  /** Plan de vol du dernier OFP SimBrief (identifiant numérique ou nom d'utilisateur) : départ, destination, dégagement, route, niveau, vitesse, appareil, équipements, heures. Lève une erreur sans identifiant ou si SimBrief ne répond pas. */
   async function fromSimbrief(user) {
     const id = String(user || '').trim();
     if (!id) throw new Error('simbrief-id');
@@ -99,6 +106,7 @@
     const alternate = arr(d.alternate)[0] || {};
     const fixes = arr(d.navlog?.fix).filter(f => f.ident && !['apt'].includes(f.type) && f.ident !== 'TOC' && f.ident !== 'TOD');
     const unit = /lb/i.test(d.params?.units) ? 'lb' : 'kg';
+    /** Aérodrome d'un OFP SimBrief → { icao, name, lat, lon, … } ; null sans code OACI. */
     const port = p => p?.icao_code ? {
       icao: up(p.icao_code),
       name: p.name || '',
@@ -138,6 +146,7 @@
       airports: [port(d.origin), port(d.destination), port(alternate)].filter(Boolean)
     };
   }
+  /** Plan de vol en cours d'un pilote IVAO (flux public whazzup) ; null s'il n'est pas connecté avec un plan. */
   async function fromIvao(vid) {
     const id = String(vid || '').trim();
     if (!id) throw new Error('ivao-id');
@@ -168,6 +177,7 @@
       remarks: fp.remarks || ''
     };
   }
+  /** Plan de vol d'un pilote VATSIM (flux public : vol en cours, sinon plan déposé) ; null sans plan. Lève une erreur sans identifiant. */
   async function fromVatsim(cid) {
     const id = String(cid || '').trim();
     if (!id) throw new Error('vatsim-id');
@@ -178,6 +188,7 @@
     if (!pilot?.flight_plan) return null;
     const fp = pilot.flight_plan,
       ac = splitAircraft(fp.aircraft);
+    /** Heure « HHMM » du plan VATSIM → « HH:MM ». */
     const hm = v => {
       const s = String(v || '').padStart(4, '0');
       return /^\d{4}$/.test(s) ? Number(s.slice(0, 2)) * 60 + Number(s.slice(2)) : null;
@@ -205,6 +216,7 @@
   // Remplit les champs vides de la mission ; renvoie la liste des chemins renseignés.
   function apply(mission, fpl) {
     const done = [];
+    /** Écrit une valeur du plan de vol dans un champ vide de la mission et le note comme renseigné. */
     const set = (path, value) => {
       if (value == null || value === '' || (Array.isArray(value) && !value.length)) return;
       const cur = M.get(mission, path);

@@ -19,6 +19,7 @@
   const M = window.MissionModel,
     A = window.MissionAircraft,
     L = window.MissionVocab.L;
+  /** Valeur JSON d'une clé du localStorage ; null sinon. */
   const read = key => {
     try {
       return JSON.parse(localStorage.getItem(key) || 'null');
@@ -26,16 +27,20 @@
       return null;
     }
   };
+  /** Écrit une valeur JSON dans le localStorage (quota plein : ignoré). */
   const write = (key, value) => {
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch {
       /* quota */ }
   };
+  /** Texte en majuscules sans blancs de bord. */
   const up = v => String(v ?? '').trim().toUpperCase();
+  /** Nombre complété de zéros (w chiffres). */
   const pad = (n, w = 2) => String(n).padStart(w, '0');
 
   // ------------------------------------------------------------ valeurs connues
+  /** Chemin générique d'un champ (indices remplacés par *) : clé de réserve des valeurs connues. */
   const keyOf = path => String(path).replace(/\.\d+(?=\.|$)/g, '.*');
   // Réserves partagées : chemin générique → pool (en plus du pool déclaré par le champ).
   const POOL_OF = {
@@ -63,8 +68,10 @@
   // Points d'une route : sans voies aériennes, procédures ni vitesses / niveaux.
   const routePoints = route => String(route || '').toUpperCase().split(/\s+/).map(t => t.split('/')[0]).filter(t => t && !AIRWAY.test(t) && !PROCEDURE.test(t) && /^[A-Z0-9]{2,11}$/.test(t));
 
+  /** Réserves de valeurs connues tirées des missions (par champ ou réserve partagée) : pour chaque valeur, nombre d'emplois et date la plus récente. */
   function collect(missions) {
     const pools = new Map(); // pool → Map(valeur → { n, date })
+    /** Ajoute une valeur à une réserve (compte, date la plus récente). */
     const add = (pool, value, date) => {
       const v = String(value ?? '').trim();
       if (!v || v.length > 120) return;
@@ -80,6 +87,7 @@
     };
     missions.forEach(m => {
       const date = m?.metadata?.date || '';
+      /** Parcourt une mission et verse chaque valeur dans la réserve de son champ. */
       const walk = (value, path) => {
         if (value == null) return;
         if (Array.isArray(value)) {
@@ -142,6 +150,7 @@
     }
     return out;
   }
+  /** Valeurs d'une réserve, des plus récentes et fréquentes aux autres. */
   const ranked = map => [...(map || new Map()).entries()].sort((a, b) => b[1].date.localeCompare(a[1].date) || b[1].n - a[1].n).map(([value]) => value);
 
   // ------------------------------------------------------------------ aérodromes
@@ -149,7 +158,9 @@
   const AP_KEY = 'missionAirports:v1';
   let airportDb = null,
     airportLoad = null;
+  /** Base mondiale des aérodromes (chargée une fois, à la demande). */
   const loadAirports = () => airportLoad ||= fetch(AIRPORTS_URL).then(r => r.ok ? r.json() : null).then(data => (airportDb = data)).catch(() => null);
+  /** Aérodrome réduit aux champs utiles (OACI, nom, ville, pays, position, altitude, fuseau). */
   const slim = a => a && {
     icao: a.icao,
     name: a.name,
@@ -178,10 +189,12 @@
     write(AP_KEY, cache);
     return cache[icao];
   }
+  /** Aérodrome mémorisé ou de la base déjà chargée ; null sinon (sans chargement). */
   const cachedAirport = code => (read(AP_KEY) || {})[up(code)] || slim(airportDb?.[up(code)]) || null;
   // (ville non affichée : peu fiable dans la base mondiale)
   const airportLabel = a => a ? [a.name, a.country].filter(Boolean).join(', ') : '';
 
+  /** Mémorise un aérodrome (cache local des terrains utilisés). */
   function remember(entry) {
     if (!entry?.icao) return;
     const cache = read(AP_KEY) || {};
@@ -214,6 +227,7 @@
     VA: 'cendres'
   };
 
+  /** Champs d'un METAR : vent, visibilité, nuages, température, point de rosée, QNH. */
   function parseMetar(text) {
     const out = {};
     const tokens = up(text).replace(/=$/, '').split(/\s+/).filter(Boolean);
@@ -268,6 +282,7 @@
       set: toDate(transit + w)
     };
   }
+  /** Heure locale « HH:MM » d'un instant dans un fuseau. */
   const clock = (date, tz) => {
     try {
       return new Intl.DateTimeFormat('fr-FR', {
@@ -341,6 +356,7 @@
     const h = data?.hourly;
     if (!h?.time?.length) return null;
     const i = Math.max(0, h.time.findIndex(t => Number(t.slice(11, 13)) === hour));
+    /** Valeur horaire d'une variable météo à l'heure du vol. */
     const pick = k => h[k]?.[i];
     const dir = pick('wind_direction_10m'),
       speed = pick('wind_speed_10m'),
@@ -362,6 +378,7 @@
     // Heure locale du terrain → heure UTC du METAR (décalage renvoyé par Open-Meteo).
     const utc = new Date(Date.parse(`${h.time[i]}:00Z`) - (data.utc_offset_seconds || 0) * 1000);
     const metar = icao ? buildMetar(icao, utc, raw) : '';
+    /** Heure « HH:MM » d'une date ISO. */
     const hhmm = v => (typeof v === 'string' && v.length >= 16 ? v.slice(11, 16) : '');
     return {
       time: h.time[i],
@@ -407,6 +424,7 @@
     99: '+TSGR'
   };
 
+  /** METAR reconstitué à partir de données météo horaires (vent, visibilité, nuages, température, QNH), pour une mission passée. */
   function buildMetar(icao, utc, w) {
     const parts = [up(icao), `${pad(utc.getUTCDate())}${pad(utc.getUTCHours())}${pad(utc.getUTCMinutes())}Z`];
     if (w.dir != null && w.speed != null) {
@@ -419,6 +437,7 @@
     const vis = seen == null ? null : seen >= 10000 ? 9999 : seen >= 5000 ? Math.floor(seen / 1000) * 1000 : Math.floor(seen / 100) * 100;
     let wx = WMO_METAR[w.code] || '';
     if (/FG$/.test(wx) && vis != null && vis >= 1000) wx = 'BR'; // brouillard du modèle, visibilité ≥ 1 km : brume
+    /** Couverture nuageuse (%) → FEW / SCT / BKN / OVC. */
     const octas = c => c == null || c < 12.5 ? '' : c <= 25 ? 'FEW' : c <= 50 ? 'SCT' : c <= 87.5 ? 'BKN' : 'OVC';
     const spread = w.temp != null && w.dew != null ? Math.max(0, w.temp - w.dew) : null;
     const lowBase = Math.min(6000, Math.max(200, Math.round((spread == null ? 2500 : spread * 400) / 100) * 100));
@@ -435,6 +454,7 @@
       if (wx) parts.push(wx);
       parts.push(...(layers.length ? layers : ['NSC']));
     }
+    /** Température au format METAR (M05 sous zéro). */
     const temp = v => (Math.round(v) < 0 ? `M${pad(-Math.round(v))}` : pad(Math.round(v)));
     if (w.temp != null) parts.push(`${temp(w.temp)}/${w.dew != null ? temp(w.dew) : ''}`);
     if (w.qnh != null) parts.push(`Q${pad(Math.round(w.qnh), 4)}`);
@@ -476,9 +496,11 @@
     t
   }) {
     let pools = null;
+    /** Recalcule les valeurs connues (registre de la famille + autres familles). */
     const refreshPools = () => {
       pools = collect(ledgerMissions().concat(otherMissions(family.id)));
     };
+    /** Texte d'une ligne [fr, en, de, es] dans la langue de la page. */
     const tr = row => t(row);
 
     // ---- appareils : filtrage croisé
@@ -504,6 +526,7 @@
       (skip === 'type' || !item.type || !a.type || A.typeKey(a.type) === A.typeKey(item.type)) &&
       (skip === 'variant' || !item.variant || item.variant === generic || !a.variant || String(a.variant).toLowerCase() === String(item.variant).toLowerCase()));
 
+    /** Suggestions pour un champ de l'appareil index (immatriculation, indicatif, série, numéro, type, variante), filtrées par ce qui est déjà saisi (organisme, catégorie, type). */
     function aircraftSuggest(index, field) {
       const item = getMission().aircraft?.[index] || {},
         matches = matchesOf(item, field);
@@ -598,6 +621,7 @@
       return [];
     }
     // Remplit les champs vides quand toutes les possibilités restantes concordent.
+    /** Remplit les champs vides de l'appareil quand toutes les possibilités restantes concordent. */
     function aircraftCommit(index) {
       const item = getMission().aircraft?.[index];
       if (!item) return null;
@@ -621,6 +645,7 @@
     }
 
     // ---- suggestions (appel par form.js)
+    /** Suggestions d'un champ (appel par form.js) : valeurs connues, appareils, terrains ; typed : texte saisi ; append : ajout à la liste existante. */
     async function suggest(path, field, typed, append) {
       if (!pools) refreshPools();
       const m = ITEM.exec(path);
@@ -698,6 +723,7 @@
     }
 
     // ---- terrains : nom en aide, coordonnées mémorisées
+    /** Nom du terrain en aide sous un champ OACI ; coordonnées mémorisées pour les calculs (soleil, météo). */
     async function aerodromeHint(path, value) {
       if (!value) {
         view.hint(path, '');
@@ -708,12 +734,14 @@
     }
 
     // ---- météo, soleil
+    /** Code OACI du terrain de départ de la mission. */
     const departure = () => {
       const m = getMission();
       return up(m.navigation?.dep || m.aircraft?.[0]?.baseDeparture || '');
     };
     // Écrit un champ vide ou déjà rempli automatiquement (jamais une saisie du pilote).
     const auto = new Map();
+    /** Écrit une valeur dans un champ vide de la mission et le note comme rempli. */
     const setIfEmpty = (path, value, done) => {
       if (value == null || value === '') return;
       const cur = M.get(getMission(), path);
@@ -723,11 +751,13 @@
       done.push(path);
     };
 
+    /** Remplit les champs météo vides à partir d'un METAR. */
     function applyMetar(text, done = []) {
       const w = parseMetar(text);
       ['wind', 'temperature', 'qnh', 'visibility', 'ceiling', 'precipitation'].forEach(k => setIfEmpty(`environment.${k}`, w[k], done));
       return done;
     }
+    /** Lever / coucher du soleil et crépuscules au terrain de départ, à la date de la mission. */
     async function sun(done = [], quiet = false) {
       const m = getMission(),
         icao = departure();
@@ -759,6 +789,7 @@
       if (!quiet) status(`${tr(T.sunNote)} ${icao} (${ad.tz || 'UTC'}, ${tr(T.local)}) — ${report(done)}`);
       return done;
     }
+    /** METAR actuel du terrain de départ (VATSIM) appliqué aux champs météo vides. */
     async function metarNow() {
       const icao = departure();
       if (!icao) {
@@ -781,7 +812,9 @@
         status(`${tr(T.error)} : ${error.message}`);
       }
     }
+    /** Heure du vol (décollage, mise en route ou heure de la mission) en minutes. */
     const flightMinutes = m => M.minutes(m.timeline?.takeoff || m.timeline?.engineStart || m.metadata?.timeLocal);
+    /** Météo passée à l'heure du vol (Open-Meteo, archive ou prévision récente), METAR reconstitué et champs remplis. */
     async function archive(quiet = false) {
       const icao = departure();
       if (!icao) {
@@ -860,6 +893,7 @@
       setIfEmpty('environment.densityAltitude', Math.round((pa + 118.8 * (t - isa)) / 10) * 10, done);
       return done;
     }
+    /** Message « rempli : champs… » ou « rien à remplir ». */
     const report = done => done.length ? `${tr(T.filled)} : ${done.map(p => p.split('.').pop()).join(', ')}` : tr(T.nothing);
     // auto : remplissage automatique, qui ne rend pas « modifiée » une mission non touchée.
     const commit = (done, auto = false) => {
@@ -871,10 +905,12 @@
 
     // Barre d'outils du bloc météo (recréée à chaque rendu du formulaire).
     let statusEl = null;
+    /** Message d'état du bloc Environnement. */
     const status = text => {
       if (statusEl) statusEl.textContent = text;
     };
 
+    /** Ajoute au bloc Environnement ses boutons (METAR actuel, météo passée, soleil) et son message d'état. */
     function decorate() {
       const section = form.querySelector('#mc-environment');
       if (!section || section.querySelector('.mc-tools')) return;
@@ -893,6 +929,7 @@
 
     // ---- saisie validée (change) : appareils, terrains, METAR, soleil automatique
     const AERODROME = new Set(['aircraft.*.baseDeparture', 'aircraft.*.baseReturn', 'navigation.dep', 'navigation.arr', 'navigation.altn']);
+    /** Après une saisie validée : valeurs connues à recalculer ; terrain → aide et, au départ, lever / coucher du soleil ; date ou décollage → soleil ; METAR → champs météo ; METAR, température, QNH ou départ → altitude densité. */
     async function onCommit(path, value) {
       pools = null; // valeurs connues recalculées au prochain focus
       const key = keyOf(path);

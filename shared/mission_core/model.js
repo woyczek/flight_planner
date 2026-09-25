@@ -5,6 +5,7 @@
   // leurs données sous `missionData` sans toucher au tronc commun.
   const SCHEMA_VERSION = 2;
 
+  /** Appareil vide d'une mission (catégorie, type, variante, immatriculation, indicatif et ses parties, bases, masses, endurance, configuration, équipements). */
   const emptyAircraft = () => ({
     category: '',
     type: '',
@@ -24,6 +25,7 @@
     configuration: '',
     equipment: []
   });
+  /** Mission vide au schéma courant (métadonnées, chronologie, appareils, carburant, collections de la famille). */
   const emptyMission = (family = '') => ({
     schemaVersion: SCHEMA_VERSION,
     family,
@@ -139,8 +141,11 @@
   });
 
   // ---- accès par chemin « a.b.0.c »
+  /** Chemin « a.b.0.c » → liste de clés. */
   const split = path => String(path).split('.').filter(Boolean);
+  /** Valeur au chemin donné ; undefined si un maillon manque. */
   const get = (obj, path) => split(path).reduce((node, key) => node == null ? undefined : node[key], obj);
+  /** Écrit une valeur au chemin donné, en créant objets et tableaux intermédiaires. */
   const set = (obj, path, value) => {
     const keys = split(path);
     let node = obj;
@@ -166,14 +171,17 @@
     const m = /^(\d{1,2}):(\d{2})/.exec(String(text || ''));
     return m && +m[1] < 24 && +m[2] < 60 ? Number(m[1]) * 60 + Number(m[2]) : null;
   };
+  /** Durée en minutes entre deux heures « HH:MM » (passage de minuit compris) ; null si une heure manque ou est invalide. */
   const between = (a, b) => {
     a = minutes(a);
     b = minutes(b);
     if (a == null || b == null) return null;
     return b >= a ? b - a : b - a + 1440;
   };
+  /** Nombre d'une saisie ; null si vide ou invalide. */
   const num = v => (v === '' || v == null || !Number.isFinite(Number(v)) ? null : Number(v));
 
+  /** Statistiques d'une mission : durées (vol, transit, sur zone, bloc…), carburant consommé, etc. ; segments jamais plus longs que le vol (heure inversée = erreur, pas un passage de minuit). Sortie : { nom : valeur } sans les valeurs nulles. */
   function computeStatistics(m) {
     const t = m.timeline || {},
       f = m.fuel || {};
@@ -211,6 +219,7 @@
   const SEQUENCE = ['engineStart', 'offBlock', 'takeoff', 'zoneEntry', 'zoneExit', 'landing', 'onBlock', 'shutdown'];
   const TIME_FIELDS = ['briefing', ...SEQUENCE, 'missionStart', 'missionEnd'];
 
+  /** Contrôles de cohérence d'une mission (date plausible et non future, heures dans l'ordre, carburant cohérent…). Sortie : liste d'anomalies { kind, … } affichées dans le CR. */
   function checkMission(m) {
     const t = m.timeline || {},
       issues = [];
@@ -334,12 +343,14 @@
       number: ''
     };
   }
+  /** Indicatif complet à partir de la série et du numéro (majuscules, sans espaces). */
   const joinCallsign = (prefix, number) => `${String(prefix ?? '').trim().toUpperCase()}${String(number ?? '').trim().toUpperCase()}`.replace(/\s+/g, '');
   // Immatriculation affichée et enregistrée avec le tiret de la marque de nationalité :
   // FZBMM → F-ZBMM, HBJVE → HB-JVE, 9HABC → 9H-ABC ; N123AB (États-Unis) et saisies déjà
   // tirées inchangées. La recherche ignore le tiret (MissionAircraft.regKey).
   const TWO_LETTER_MARKS = new Set(('HB OO OE OK OM PH EC EI ES LX LY LZ SE SP SX TC UR YL YR YU OH OY LN CS TF HA S5 9A 9H 4X VH ZS ZK VT HS PK RP 9M 9V A6 A7 HZ SU CN EP YI JY OD 5B 5Y ZP LV CC HK YV OB CX HP TG TI XA XB XC EW ER UK UN EX EY EZ 4K 4L EK RA RF PP PR PT PU HI T7 3A HL').split(' '));
 
+  /** Immatriculation normalisée (majuscules, tiret après la marque de nationalité : F-HABC). */
   function formatRegistration(value) {
     const s = String(value ?? '').trim().toUpperCase().replace(/\s+/g, '');
     if (!s || s.includes('-')) return s.replace(/-+/g, '-');
@@ -367,8 +378,10 @@
   // équipage, organismes…). Les blocs communs et ceux des familles déclarent leurs champs
   // (registerUpperFields) ; zones de texte libre, listes de codes et URL non concernées.
   const upperPaths = new Set();
+  /** Vrai si le champ se saisit en majuscules (texte, ou zone de texte marquée upper ; sauf keepCase). */
   const isUpperField = field => !field.keepCase && ((!field.type || field.type === 'text') || (field.type === 'textarea' && field.upper));
 
+  /** Recense les champs à mettre en majuscules des blocs d'une famille. */
   function registerUpperFields(blocks) {
     (blocks || []).forEach(block => {
       if (!block || typeof block !== 'object') return;
@@ -379,6 +392,7 @@
   // Convertit les champs déclarés ; renvoie le nombre de valeurs modifiées.
   function upperText(mission) {
     let changed = 0;
+    /** Parcourt la mission et met en majuscules les valeurs des champs recensés. */
     const walk = (node, parts) => {
       if (node == null) return;
       const [head, ...rest] = parts;
@@ -411,6 +425,7 @@
     return mission;
   };
 
+  /** Mission lue ramenée au schéma courant : schéma ≥ 2 complété par les défauts ; sinon convertisseur de la famille (legacy.fromRecord : anciens CSV / JSON HEMS, FIRE) ou reprise générique des champs plats. Lève une erreur si l'entrée n'est pas un objet. */
   function migrateRecord(input, family = '') {
     if (!input || typeof input !== 'object') throw new Error('Mission illisible');
     if (Number(input.schemaVersion) >= 2) return fillDefaults(structuredClone(input), emptyMission(input.family || family));
@@ -464,6 +479,7 @@
     return `# ${header}\n# schemaVersion ${mission.schemaVersion} — ${new Date().toISOString()}\n${body}`;
   }
 
+  /** Missions d'un texte YAML (registre complet, registre de famille, liste ou mission seule), migrées au schéma courant. */
   function parse(text, family = '') {
     const source = String(text || '').replace(/^﻿/, '');
     const data = /^\s*[{[]/.test(source) ? JSON.parse(source) : window.jsyaml.load(source, {
@@ -488,6 +504,7 @@
       categories: new Set(categories)
     };
   }
+  /** Vrai si le bloc id de la famille est affiché pour cette mission (condition when du bloc). */
   const blockVisible = (mission, family, id) => {
     const block = (family.blocks || []).find(b => b.id === id);
     return !!block && (!block.when || block.when(context(mission, family)));
@@ -508,6 +525,7 @@
     copy.publicVersion = true;
     return copy;
   }
+  /** Vrai si la famille a des champs ou blocs sensibles (masqués à l'export public). */
   const hasSensitive = (family = {}) => (family.blocks || []).some(b => b.sensitive || (b.collection ? b.collection.fields : b.fields || []).some(f => f.sensitive));
 
   // Lecture d'un CSV « ; » (guillemets doublés) en objets { colonne: valeur }.
@@ -517,6 +535,7 @@
       value = '',
       quoted = false;
     text = String(text || '').replace(/^﻿/, '');
+    /** Termine une ligne CSV en cours de lecture. */
     const push = () => {
       row.push(value);
       if (row.some(v => v !== '') && !String(row[0]).startsWith('#')) out.push(row);

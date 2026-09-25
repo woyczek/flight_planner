@@ -6,6 +6,7 @@
   const V = window.MissionVocab,
     L = V.L,
     opt = V.opt;
+  /** Définition d'un champ de la famille : chemin dans la mission, libellé [fr, en, de, es], type, options (extra). */
   const f = (path, label, type = 'text', extra = {}) => ({
     path,
     label,
@@ -29,6 +30,7 @@
     opt('DIVERSION', L('Déroutement imposé', 'Enforced diversion', 'Erzwungene Umleitung', 'Desvío impuesto')), opt('LANDING', L('Atterrissage imposé', 'Enforced landing', 'Erzwungene Landung', 'Aterrizaje impuesto')),
     opt('RADIO_RESTORED', L('Contact radio rétabli', 'Radio contact restored', 'Funkkontakt wiederhergestellt', 'Contacto radio restablecido')), opt('WARNING', L('Signaux d’avertissement', 'Warning signals', 'Warnsignale', 'Señales de advertencia'))
   ];
+  /** Nombre d'une saisie (0, ou null selon la famille, si vide ou invalide). */
   const num = v => Number(v) || 0;
   const unitTypes = [opt('AIRCRAFT', L('Aéronef', 'Aircraft', 'Luftfahrzeug', 'Aeronave')), opt('HELICOPTER', L('Hélicoptère', 'Helicopter', 'Hubschrauber', 'Helicóptero')), opt('GROUND', L('Unité au sol', 'Ground unit', 'Bodeneinheit', 'Unidad de tierra')), opt('SHIP', L('Navire', 'Ship', 'Schiff', 'Buque')), opt('CENTRE', L('Centre / PC', 'Centre / command post', 'Zentrale / Gefechtsstand', 'Centro / puesto de mando')), opt('OTHER', L('Autre', 'Other', 'Andere', 'Otro'))];
   const logKinds = [opt('HANDOVER', L('Passage de relais', 'Handover', 'Übergabe', 'Relevo')), opt('COORDINATION', L('Coordination', 'Coordination', 'Koordination', 'Coordinación')), opt('RELAY', L('Relais radio', 'Radio relay', 'Funkrelais', 'Retransmisión')), opt('CONTACT', L('Contact', 'Contact', 'Kontakt', 'Contacto')), opt('OUTAGE', L('Coupure de communication', 'Communication outage', 'Kommunikationsausfall', 'Corte de comunicación'))];
@@ -189,6 +191,7 @@
       value: ms => ms.reduce((a, m) => a + log(m).filter(e => e.kind === 'OUTAGE').length, 0)
     }],
     summary: (() => {
+      /** Modèle du résumé automatique (§22) : w = mots de liaison d'une langue, h = outils du résumé (MissionReport.helpers : mission, statistiques, appareils, listes, dates) → texte du résumé ; les morceaux dont une donnée manque sont omis. */
       const build = w => h => {
         const m = h.mission,
           d = c2(m),

@@ -7,6 +7,7 @@
   //            options | vocab, placeholder, full, when(ctx) }.
   const V = window.MissionVocab,
     L = V.L;
+  /** Définition d'un champ de bloc : chemin dans la mission, libellé [fr, en, de, es], type, options (extra). */
   const f = (path, label, type = 'text', extra = {}) => ({
     path,
     label,
@@ -527,11 +528,14 @@
     dateInvalid: L('date invalide', 'invalid date', 'ungültiges Datum', 'fecha no válida'),
     fuel: L('carburant final supérieur au carburant de départ', 'final fuel above starting fuel', 'Endkraftstoff höher als Startkraftstoff', 'combustible final superior al inicial')
   };
+  /** Libellé (langue de rang i) d'un champ de la chronologie ou du carburant, pour les messages de cohérence. */
   const fieldLabel = (path, i) => {
     const field = [timeline, fuel].flatMap(b => b.fields).find(x => x.path === path);
     return field ? field.label[i] || field.label[0] : path;
   };
+  /** Texte d'une anomalie de cohérence (MissionModel.checkMission) dans la langue de rang i. */
   const describeIssue = (issue, i = 0) => {
+    /** Texte d'une ligne [fr, en, de, es] au rang de langue demandé. */
     const w = row => row[i] || row[0];
     if (issue.kind === 'invalid') return `${fieldLabel(issue.path, i)} « ${issue.value} » : ${w(ISSUE.invalid)}`;
     if (issue.kind === 'order') return `${fieldLabel(issue.path, i)} (${issue.value}) ${w(ISSUE.order)} ${fieldLabel(issue.before, i)} (${issue.other})`;

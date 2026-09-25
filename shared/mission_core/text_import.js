@@ -15,9 +15,11 @@
   // Une page d'un autre site ne peut pas être lue par la page du CR (règle de même origine) :
   // copier-coller, ou favori « → CR DEFA » (BOOKMARKLET) qui copie la page du tracker.
   const M = window.MissionModel;
+  /** Texte en majuscules sans blancs de bord. */
   const up = v => String(v ?? '').trim().toUpperCase();
   // Espaces normalisés ; « | » du tracker IVAO (« 2026-07-07 | 12:59:42 ») traité comme un séparateur.
   const flat = text => String(text || '').replace(/[\u00a0|]/g, ' ').replace(/\s+/g, ' ').trim();
+  /** Nombre sur deux chiffres. */
   const pad = n => String(n).padStart(2, '0');
 
   // ---------------------------------------------------------------- plan de vol OACI
@@ -45,7 +47,9 @@
     const endurance = /(?:^|\s)E\/(\d{4})/.exec(text18),
       persons = /(?:^|\s)P\/(\d{1,3})/.exec(text18);
     const dof = /^(\d{2})(\d{2})(\d{2})$/.exec(item18.DOF || '');
+    /** Heure « HHMM » → « HH:MM ». */
     const hm = v => /^\d{4}$/.test(v || '') ? `${v.slice(0, 2)}:${v.slice(2)}` : '';
+    /** Durée « HHMM » → minutes. */
     const minutes = v => /^\d{4}$/.test(v || '') ? Number(v.slice(0, 2)) * 60 + Number(v.slice(2)) : null;
     const rules = up(rulesType).charAt(0);
     return {
@@ -78,8 +82,10 @@
   }
 
   // ------------------------------------------------------------------ tracker IVAO
+  /** Instant UTC d'une date et d'une heure. */
   const utc = (date, time) => new Date(`${date}T${time}Z`);
 
+  /** Détails d'un vol copiés depuis le tracker IVAO (page « flight details ») : indicatif, appareil, départ, arrivée, heures, trace. */
   function parseIvaoDetails(text) {
     const t = flat(text);
     // Page reconnue à sa structure (le texte copié ne contient pas forcément « IVAO ») ;
@@ -130,8 +136,10 @@
       alt: Number(m[5]),
       gs: Number(m[6])
     });
+    /** Valeur d'une rubrique de la page copiée (texte entre label et la rubrique suivante). */
     const field = (label, next) => new RegExp(`\\b${label} (.+?) (?=${next}\\b)`, 'i').exec(t)?.[1]?.trim() || '';
     const callsign = up(/\bCallsign ([A-Z0-9]{2,10})\b/i.exec(t)?.[1]);
+    /** Départ ou arrivée d'une page copiée : heure, terrain, code OACI. */
     const point = label => {
       const x = new RegExp(`\\b${label} Time (\\d{4}-\\d{2}-\\d{2}) (\\d{2}:\\d{2}) Airport (.+?) \\(([A-Z0-9]{3,4})\\)`, 'i').exec(t);
       return x ? {
@@ -176,6 +184,7 @@
     };
   }
 
+  /** Liste de sessions copiée depuis le tracker IVAO : vols reconnus (indicatif, pilote, trajet, début, fin, durée). */
   function parseIvaoList(text) {
     const t = flat(text); // lignes reconnues à leur forme (indicatif, pilote (VID), trajet, début, fin, durée)
     const re = /\b([A-Z0-9]{2,10}) ([^()\d]{2,40}?) \((\d{3,8})\) ([A-Z0-9]{3,4}) ?- ?([A-Z0-9]{3,4}) (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) (\d{2}:\d{2})\b/g;
@@ -197,6 +206,7 @@
   function analyseTrack(samples, rotary = false) {
     if (samples.length < 2) return null;
     const minAlt = Math.min(...samples.map(s => s.alt));
+    /** Vrai si un point de trace est au sol (vitesse et hauteur basses ; seuils hélicoptère plus bas). */
     const onGround = s => rotary ? s.gs < 15 && s.alt <= minAlt + 150 : s.gs < 40 && s.alt <= minAlt + 300;
     let takeoff = null,
       landing = null,
@@ -294,6 +304,7 @@
       return `${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
     }
   };
+  /** Date locale (AAAA-MM-JJ) d'un instant UTC dans le fuseau du terrain (sinon UTC). */
   const day = (date, tz) => {
     try {
       return new Intl.DateTimeFormat('en-CA', {
@@ -332,6 +343,7 @@
         done.push('metadata.date');
       }
     };
+    /** Recopie un plan de vol OACI analysé dans les champs vides de la mission (terrains, route, niveau, appareil, équipements, heures). */
     const applyFpl = fpl => {
       if (!fpl) return;
       done.push(...(window.MissionFpl?.apply(mission, fpl) || []));
@@ -435,6 +447,7 @@
   // ce qui est affiché). La page du CR l'analyse au retour. Pas de commentaire de ligne ni de
   // « % » dans cette fonction : elle devient une adresse javascript: sur une seule ligne.
   async function trackerCopy() {
+    /** Attente de ms millisecondes. */
     const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
     document.querySelectorAll('.card-header button, .accordion button').forEach(button => {
       const card = button.closest('.card'),
@@ -454,6 +467,7 @@
       last = count;
     }
     const lines = [];
+    /** Parcourt la page du tracker et en extrait le texte visible. */
     const walk = node => {
       if (node.nodeType === 3) {
         const text = node.nodeValue.trim();

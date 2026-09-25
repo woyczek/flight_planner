@@ -7,12 +7,14 @@
   const M = window.MissionModel,
     V = window.MissionVocab,
     L = V.L;
+  /** Échappe un texte pour HTML. */
   const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
     '&': '&amp;',
     '<': '&lt;',
     '>': '&gt;',
     '"': '&quot;'
   } [c]));
+  /** Minutes → « 1h05 ». */
   const duration = n => {
     n = Math.round(n || 0);
     return n >= 60 ? `${Math.floor(n / 60)}h${String(n % 60).padStart(2, '0')}` : `${n} min`;
@@ -74,6 +76,7 @@
     legacyDone: L('missions importées de l’ancien registre ; déjà présentes (même n° et date) :', 'missions imported from the legacy ledger; already present (same ID and date):', 'Einsätze aus dem alten Register importiert; bereits vorhanden (gleiche ID und Datum):', 'misiones importadas del registro antiguo; ya presentes (mismo ID y fecha):')
   };
 
+  /** Page de reporting d'une famille : période, statistiques, graphiques, tableau des missions (modifiable dans le tableau), import / export, source (registre ou journal DEFA). */
   function mount({
     family: familyId,
     root
@@ -88,10 +91,12 @@
       /* stockage indisponible */ }
     const ledger = window.MissionLedger.open(family);
     const rows = new Map();
+    /** Texte source (français) d'un libellé de l'interface, ligne enregistrée pour le traducteur commun. */
     const t = key => {
       rows.set(UI[key][0], UI[key]);
       return UI[key][0];
     };
+    /** Libellé d'une valeur de liste (vocabulaire). */
     const label = (list, value) => {
       const o = list.find(x => x.value === value);
       if (o) rows.set(o.label[0], o.label);
@@ -127,6 +132,7 @@
       status = root.querySelector('.mc-status');
     // Regroupement et mesure du graphique : préférences partagées avec le reporting général.
     const PREFS = 'missionGlobalReporting:v1';
+    /** Préférences d'affichage des graphiques (unité de période, indicateur : missions ou heures), mémorisées (missionGlobalReporting:v1). */
     const prefs = (() => {
       try {
         return {
@@ -222,6 +228,7 @@
     let editMode = false,
       uidSeq = 0;
     const byUid = new Map();
+    /** Cellule du tableau : champ éditable en mode « modifier dans le tableau », sinon texte. */
     const editable = (field, r, fallback) => {
       if (!editMode) return fallback;
       const html = window.MissionGridEdit?.input(field, r.mission, r.uid, {
@@ -231,6 +238,7 @@
       });
       return html ?? fallback;
     };
+    /** Ligne du tableau d'une mission : statistiques, résultat, anomalies de cohérence. */
     const toRow = (mission, index) => {
       const s = M.computeStatistics(mission),
         a = mission.aircraft?.[0] || {},
@@ -282,6 +290,7 @@
     });
     const switchBox = pageHeader?.querySelector('.mc-switch');
     if (switchBox) tools.prepend(switchBox); // famille · série en tête de la barre
+    /** Texte d'une ligne [fr, en, de, es] dans la langue de la page. */
     const tr = row => row[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'))] || row[0];
     // Données des reportings : registre des missions (défaut) ou journal DEFA (vols réalisés,
     // chargé dans Paramétrage › Base DEFA ; lecture seule). Choix commun à tous les reportings.
@@ -292,7 +301,9 @@
       readOnly: L('Vol du journal DEFA : lecture seule (pas de CR à modifier).', 'DEFA log flight: read-only (no report to edit).', 'Flug aus dem DEFA-Journal: nur lesbar.', 'Vuelo del diario DEFA: solo lectura.')
     };
     let logMissions = null;
+    /** Vrai si les reportings lisent le journal DEFA. */
     const logSource = () => window.DefaFlightLog?.source?.() === 'defa';
+    /** Missions du journal DEFA (converties une fois), ou null si la source est le registre. */
     const sourceMissions = () => logSource() ? (logMissions ||= window.DefaFlightLog.toMissions()) : null;
     window.addEventListener('defa-log-change', () => {
       logMissions = null;
@@ -301,6 +312,7 @@
     // mise à jour du journal (page DEFA copiée ou enregistrée) sans passer par le Paramétrage.
     const SRC_LOAD = L('Charger / mettre à jour le journal DEFA…', 'Load / update the DEFA log…', 'DEFA-Journal laden / aktualisieren…', 'Cargar / actualizar el diario DEFA…');
 
+    /** Choix de la source des reportings (registre / journal DEFA) et chargement du journal. */
     function sourcePicker(host) {
       if (!host || !window.DefaFlightLog) return;
       const label = document.createElement('label');
@@ -339,6 +351,7 @@
     }
     sourcePicker(tools);
 
+    /** Rendu du reporting pour la période et le sous-type : cartes, graphiques, répartitions, tableau. */
     function render() {
       const source = sourceMissions(),
         all = (source ? source.filter(m => m.family === family.id) : ledger.missions).map(toRow).filter(r => !seriesFilter || r.series === seriesFilter);
@@ -386,6 +399,7 @@
         C.enableZoom(root.querySelector('#mcActivity'));
         root.querySelector('#mcActivityLegend').innerHTML = series.map(s => `<span><i style="background:${s.color}"></i>${esc(s.label)}</span>`).join('');
       }
+      /** Répartition des missions par valeur (barres horizontales). */
       const groups = (titleKey, values) => {
         const counts = {};
         values.forEach(v => {
@@ -436,6 +450,7 @@
     }
     // Mode « modifier dans le tableau » (même registre que le reporting général).
     const toggle = root.querySelector('[data-grid-edit]');
+    /** Libellé du bouton « modifier dans le tableau » / « terminé ». */
     const paintToggle = () => {
       toggle.textContent = tr(editMode ? GE.done : GE.toggle);
       toggle.classList.toggle('on', editMode);
@@ -464,6 +479,7 @@
       status.textContent = `${tr(GE.saved)} : ${row.mission.metadata?.missionId || ''}${result.note === 'declared' ? ` — ${tr(GE.declared)}` : ''}`;
       render();
     });
+    /** Enregistre le registre après une modification dans le tableau et affiche le résultat. */
     async function persist() {
       const result = await ledger.save();
       status.textContent = result.written ? `${t('saved')} (${ledger.filename})` : `${t('saved')} — ${t('browserOnly')}`;
@@ -492,6 +508,7 @@
       button.hidden = false;
       button.textContent = family.legacy.label[0];
       rows.set(family.legacy.label[0], family.legacy.label);
+      /** Importe des missions (YAML / JSON) dans le registre de la famille, sans doublon (n° + date). */
       const importText = async text => {
         const key = m => `${String(m.metadata?.missionId || '').trim().toUpperCase()}|${m.metadata?.date || ''}`;
         const known = new Set(ledger.missions.map(key));

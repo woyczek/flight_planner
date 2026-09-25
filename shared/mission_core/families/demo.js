@@ -4,6 +4,7 @@
   // familles. Illustre les règles d'affichage du §23 : ROTARY + HOIST → bloc treuil,
   // FIXED WING + AIRDROP → bloc largage.
   const L = window.MissionVocab.L;
+  /** Définition d'un champ de la famille : chemin dans la mission, libellé [fr, en, de, es], type, options (extra). */
   const f = (path, label, type = 'text', extra = {}) => ({
     path,
     label,

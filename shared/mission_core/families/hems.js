@@ -7,6 +7,7 @@
   const V = window.MissionVocab,
     L = V.L,
     opt = V.opt;
+  /** Définition d'un champ de la famille : chemin dans la mission, libellé [fr, en, de, es], type, options (extra). */
   const f = (path, label, type = 'text', extra = {}) => ({
     path,
     label,
@@ -14,6 +15,7 @@
     ...extra
   });
   const P = 'missionData.hems.';
+  /** Nombre d'une saisie (0, ou null selon la famille, si vide ou invalide). */
   const num = v => (v === '' || v == null || !Number.isFinite(Number(v)) ? null : Number(v));
   const services = [opt('SAMU / SMUR', L('SAMU / SMUR', 'SAMU / SMUR')), opt('Civil Security', L('Sécurité civile', 'Civil Security', 'Zivilschutz', 'Protección Civil')), opt('Private HEMS', L('HEMS privé', 'Private HEMS', 'Privater HEMS', 'HEMS privado')), opt('Gendarmerie / rescue', L('Gendarmerie / secours', 'Gendarmerie / rescue', 'Gendarmerie / Rettung', 'Gendarmería / rescate')), opt('Other', L('Autre', 'Other', 'Andere', 'Otro'))];
   const outcomes = [opt('Completed', L('Terminée', 'Completed', 'Abgeschlossen', 'Finalizada')), opt('Patient transported', L('Patient transporté', 'Patient transported', 'Patient transportiert', 'Paciente transportado')), opt('Mission cancelled', L('Mission annulée', 'Mission cancelled', 'Einsatz abgebrochen', 'Misión cancelada')), opt('Not dispatched', L('Non engagement', 'Not dispatched', 'Nicht eingesetzt', 'Sin activación')), opt('Diverted', L('Déroutée', 'Diverted', 'Umgeleitet', 'Desviada')), opt('Interrupted', L('Interrompue', 'Interrupted', 'Unterbrochen', 'Interrumpida'))];
@@ -51,6 +53,7 @@
     'Annulation': 'Cancellation',
     'Anomalie': 'Issue'
   };
+  /** Valeur de référence d'une ancienne valeur française (anciens registres CSV / JSON). */
   const norm = v => LEGACY[String(v ?? '').trim()] ?? String(v ?? '').trim();
   const OUTCOME = {
     'Completed': 'SUCCESS',
@@ -197,6 +200,7 @@
       }).length
     }],
     summary: (() => {
+      /** Modèle du résumé automatique (§22) : w = mots de liaison d'une langue, h = outils du résumé (MissionReport.helpers : mission, statistiques, appareils, listes, dates) → texte du résumé ; les morceaux dont une donnée manque sont omis. */
       const build = w => h => {
         const m = h.mission,
           d = hems(m),

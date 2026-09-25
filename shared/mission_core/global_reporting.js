@@ -9,25 +9,31 @@
     V = window.MissionVocab,
     L = V.L,
     C = window.MissionCharts;
+  /** Échappe un texte pour HTML. */
   const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
     '&': '&amp;',
     '<': '&lt;',
     '>': '&gt;',
     '"': '&quot;'
   } [c]));
+  /** Nombre d'une valeur ; 0 si invalide. */
   const n = v => {
     const x = Number(v);
     return Number.isFinite(x) ? x : 0;
   };
+  /** Minutes → « 1h05 ». */
   const duration = v => {
     v = Math.round(v || 0);
     return v >= 60 ? `${Math.floor(v / 60)}h${String(v % 60).padStart(2, '0')}` : `${v} min`;
   };
+  /** Minutes → heures « 12,5 h ». */
   const hours = v => {
     const h = (v || 0) / 60;
     return h >= 100 ? `${Math.round(h)} h` : `${h.toFixed(h >= 10 ? 0 : 1).replace('.', ',')} h`;
   };
+  /** Langue de la page. */
   const lang = () => window.RepositoryNav?.getLanguage?.() || 'fr';
+  /** Rang (0–3) de la langue de la page. */
   const idx = () => Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(lang()));
 
   // Couleur de chaque famille (graphiques, étiquettes, filtres).
@@ -48,6 +54,7 @@
     SOF: '#a8a29e',
     SPECIAL: '#ec4899'
   };
+  /** Couleur d'une famille (graphiques, puces). */
   const colorOf = id => COLORS[id] || '#67b6ff';
   const OUTCOME_COLORS = {
     SUCCESS: '#22c55e',
@@ -200,6 +207,7 @@
   }];
   const UNITS = ['auto', 'day', 'week', 'month', 'quarter', 'year'];
   const PREFS = 'missionGlobalReporting:v1';
+  /** Préférences du reporting général : familles masquées, unité de période, indicateur (missions par défaut). */
   const readPrefs = () => {
     try {
       return {
@@ -216,6 +224,7 @@
       };
     }
   };
+  /** Mémorise les préférences du reporting général. */
   const writePrefs = p => {
     try {
       localStorage.setItem(PREFS, JSON.stringify(p));
@@ -223,6 +232,7 @@
       /* stockage indisponible */ }
   };
 
+  /** Reporting général (toutes familles) : période, puces de familles, cartes, graphiques d'activité, répartitions, tableau des missions (modifiable dans le tableau), source (registre ou journal DEFA), reprise des anciens registres. */
   function mount(root) {
     const rows = new Map(),
       tr = row => {
@@ -236,17 +246,22 @@
       rows.set(row[0], row);
       return row[0];
     };
+    /** Libellé d'une valeur de liste. */
     const opt = (list, value) => {
       const o = list.find(x => x.value === value);
       return o ? tr(o.label) : value;
     };
+    /** Définition d'une famille enregistrée ; null sinon. */
     const familyInfo = id => window.MissionCore.families.get(id) || null;
+    /** Nom d'une famille dans la langue de la page. */
     const familyName = id => {
       const f = familyInfo(id),
         vocab = V.families.find(x => x.id === id);
       return f?.title ? tr(f.title) : vocab?.labels ? vocab.labels[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'))] || vocab.label : vocab?.label || id;
     };
+    /** Nom court d'une famille (puces, tableau). */
     const familyShort = id => id === 'FI' ? 'FI' : id;
+    /** Pages de CR et de reporting d'une famille. */
     const pagesOf = id => {
       const f = familyInfo(id),
         vocab = V.families.find(x => x.id === id);
@@ -255,8 +270,10 @@
         reporting: f?.pages?.reporting && vocab ? vocab.reporting.replace(/[^/]+$/, f.pages.reporting) : vocab?.reporting || ''
       };
     };
+    /** Pastille colorée d'une famille (nom complet en infobulle). */
     const tag = id => `<span class="mcg-tag" style="--c:${colorOf(id)}" title="${esc(familyName(id))}">${esc(familyShort(id))}</span>`;
     const prefs = readPrefs();
+    /** Clé d'immatriculation. */
     const A = reg => String(reg || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 
     // ---- en-tête de page
@@ -319,6 +336,7 @@
     let editMode = false,
       uidSeq = 0;
     const byUid = new Map();
+    /** Cellule du tableau : champ éditable en mode « modifier dans le tableau », sinon texte. */
     const editable = (field, r, fallback) => {
       if (!editMode) return fallback;
       const html = window.MissionGridEdit?.input(field, r.mission, r.uid, {
@@ -328,6 +346,7 @@
       });
       return html ?? fallback;
     };
+    /** Ligne du tableau d'une mission : famille, statistiques, résultat, anomalies. */
     const toRow = (mission, index) => {
       const s = M.computeStatistics(mission),
         a = mission.aircraft?.[0] || {},
@@ -366,7 +385,9 @@
       readOnly: L('Vol du journal DEFA : lecture seule (pas de CR à modifier).', 'DEFA log flight: read-only (no report to edit).', 'Flug aus dem DEFA-Journal: nur lesbar.', 'Vuelo del diario DEFA: solo lectura.')
     };
     let logMissions = null;
+    /** Vrai si le reporting lit le journal DEFA. */
     const logSource = () => window.DefaFlightLog?.source?.() === 'defa';
+    /** Missions du journal DEFA (converties une fois), ou null si la source est le registre. */
     const sourceMissions = () => logSource() ? (logMissions ||= window.DefaFlightLog.toMissions()) : null;
     window.addEventListener('defa-log-change', () => {
       logMissions = null;
@@ -375,6 +396,7 @@
     // mise à jour du journal (page DEFA copiée ou enregistrée) sans passer par le Paramétrage.
     const SRC_LOAD = L('Charger / mettre à jour le journal DEFA…', 'Load / update the DEFA log…', 'DEFA-Journal laden / aktualisieren…', 'Cargar / actualizar el diario DEFA…');
 
+    /** Choix de la source (registre / journal DEFA) et chargement du journal. */
     function sourcePicker(host) {
       if (!host || !window.DefaFlightLog) return;
       const label = document.createElement('label');
@@ -411,6 +433,7 @@
       });
       host.append(label);
     }
+    /** Lignes de toutes les missions de la source (journal DEFA ou registre), avec leur rang dans leur famille. */
     const allRows = () => {
       const seen = {};
       return (sourceMissions() || L2.store.missions).map(m => toRow(m, (seen[m.family] = (seen[m.family] ?? -1) + 1)));
@@ -418,6 +441,7 @@
     sourcePicker(bar.querySelector('.mcg-header-row'));
 
     // ---- filtres par famille (puces colorées, état mémorisé)
+    /** Puces de filtre par famille (couleur, nombre de missions), état mémorisé. */
     function chips(all) {
       const counts = {};
       all.forEach(r => {
@@ -445,6 +469,7 @@
     // ---- rendu
     let missionsTable = null;
     const tables = {};
+    /** Tableau triable (SortedTable) créé une fois, puis mis à jour. */
     const table = (id, rowsList, columns, sortKey, dir = -1, onRowClick = null, rowTitle = '') => {
       if (tables[id]) tables[id].setRows(rowsList);
       else tables[id] = window.SortedTable.render($(`#${id}`), {
@@ -458,6 +483,7 @@
       });
     };
 
+    /** Rendu pour la période et les familles choisies : cartes, graphiques, répartitions, classements, tableau. */
     function render() {
       const all = allRows();
       chips(all);
@@ -467,6 +493,7 @@
       const missions = visible.map(r => r.mission),
         metric = METRICS.find(m => m.id === prefs.metric) || METRICS[0];
       const familyIds = [...new Set(visible.map(r => r.family))].sort((a, b) => V.families.findIndex(f => f.id === a) - V.families.findIndex(f => f.id === b));
+      /** Valeur de l'indicateur choisi (missions, heures de vol, bloc, sur zone…) pour une ligne. */
       const metricOf = r => n(metric.value(r.mission, r.s));
       const emptyText = tr(UI.empty);
 
@@ -483,6 +510,7 @@
         const count = visible.filter(r => r.s[k] != null).length;
         return count ? `${tr(UI.average)} ${duration(total / count)}` : '';
       };
+      /** Carte de synthèse (libellé, valeur, sous-titre, couleur). */
       const card = (key, value, sub = '', color = '') => `<div class="card"${color ? ` style="--c:${color}"` : ''}><div class="label">${esc(tr(UI[key]))}</div><div class="value">${esc(value)}</div><div class="sub">${esc(sub)}</div></div>`;
       $('#mcgCards').innerHTML = [
         card('missions', c.missions, familyIds.map(familyShort).join(' · '), '#67b6ff'),
@@ -532,6 +560,7 @@
       $('#mcgActivityLegend').innerHTML = familyIds.map(id => `<span><i style="background:${colorOf(id)}"></i>${esc(familyName(id))}</span>`).join('');
 
       // Répartitions
+      /** Totaux de l'indicateur par clé (répartitions). */
       const sumBy = (list, keyFn, colorFn = () => '') => {
         const acc = new Map();
         list.forEach(r => [].concat(keyFn(r)).forEach(k => {
@@ -545,6 +574,7 @@
         }));
         return acc;
       };
+      /** Éléments d'un graphique (libellé, valeur, couleur) à partir de totaux. */
       const items = (map, labelFn = k => k, colorFn) => [...map].map(([k, e], i) => ({
         label: labelFn(k),
         value: e.value,
@@ -952,6 +982,7 @@
 
     // Mode « modifier dans le tableau » : bascule, puis enregistrement de chaque cellule modifiée.
     const toggle = root.querySelector('[data-grid-edit]');
+    /** Libellé du bouton « modifier dans le tableau » / « terminé ». */
     const paintToggle = () => {
       toggle.textContent = tr(editMode ? GE.done : GE.toggle);
       toggle.classList.toggle('on', editMode);
@@ -981,6 +1012,7 @@
       render();
     });
 
+    /** Enregistre le registre après une modification dans le tableau et affiche le résultat. */
     async function persist() {
       const result = await L2.save();
       status.textContent = `${tr(UI.saved)}${result.written ? ` (${L2.FILE})` : ` — ${tr(UI.browserOnly)}`}`;
@@ -1009,6 +1041,7 @@
     const legacyFamilies = [...window.MissionCore.families.values()].filter(f => f.legacy);
     legacySelect.insertAdjacentHTML('beforeend', legacyFamilies.map(f => `<option value="${esc(f.id)}">${esc(tr(f.legacy.label))}</option>`).join(''));
     legacySelect.closest('label').hidden = !legacyFamilies.length;
+    /** Reprend dans le registre unique les missions d'un ancien registre de famille (sans doublon). */
     async function importLegacy(family, text) {
       const view = L2.open(family),
         key = m => `${String(m.metadata?.missionId || '').trim().toUpperCase()}|${m.metadata?.date || ''}`;

@@ -7,6 +7,7 @@
   const V = window.MissionVocab,
     L = V.L,
     opt = V.opt;
+  /** Définition d'un champ de la famille : chemin dans la mission, libellé [fr, en, de, es], type, options (extra). */
   const f = (path, label, type = 'text', extra = {}) => ({
     path,
     label,
@@ -17,6 +18,7 @@
   const S = {
     sensitive: true
   };
+  /** Nombre d'une saisie (0, ou null selon la famille, si vide ou invalide). */
   const num = v => Number(v) || 0;
   const zoneKinds = [opt('PZ', L('PZ (zone d’embarquement)', 'PZ (pickup zone)', 'PZ (Aufnahmezone)', 'PZ (zona de embarque)')), opt('LZ', L('LZ (zone de poser)', 'LZ (landing zone)', 'LZ (Landezone)', 'LZ (zona de aterrizaje)')), opt('DZ', L('DZ (zone de largage)', 'DZ (drop zone)', 'DZ (Absetzzone)', 'DZ (zona de lanzamiento)'))];
   const methods = [opt('LANDING', L('Posé', 'Landing', 'Landung', 'Aterrizaje')), opt('FAST_ROPE', L('Corde lisse', 'Fast rope', 'Fast Rope', 'Cuerda rápida')), opt('RAPPEL', L('Rappel', 'Rappel', 'Abseilen', 'Rápel')), opt('HOVER_EXIT', L('Sortie en stationnaire', 'Hover exit', 'Ausstieg im Schwebeflug', 'Salida en estacionario')), opt('HOIST', L('Treuil', 'Hoist', 'Winde', 'Grúa')), opt('PARACHUTE', L('Parachute', 'Parachute', 'Fallschirm', 'Paracaídas')), opt('SHIP', L('Pont de navire', 'Ship deck', 'Schiffsdeck', 'Cubierta de buque'))];
@@ -146,6 +148,7 @@
     }],
     // Résumé sans donnée sensible (ni équipe, ni coordonnées, ni itinéraires).
     summary: (() => {
+      /** Modèle du résumé automatique (§22) : w = mots de liaison d'une langue, h = outils du résumé (MissionReport.helpers : mission, statistiques, appareils, listes, dates) → texte du résumé ; les morceaux dont une donnée manque sont omis. */
       const build = w => h => {
         const m = h.mission,
           d = sof(m),

@@ -13,7 +13,9 @@
   // la donnée la plus récente l'emporte, champ par champ.
   const TYPES_KEY = 'missionAircraftTypes:v1',
     REGISTRY_KEY = 'missionAircraftRegistry:v1';
+  /** Clé d'immatriculation : majuscules, lettres et chiffres seulement. */
   const regKey = value => String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  /** Valeur JSON d'une clé du localStorage ; null si absente ou illisible. */
   const read = key => {
     try {
       return JSON.parse(localStorage.getItem(key) || 'null');
@@ -21,6 +23,7 @@
       return null;
     }
   };
+  /** Écrit une valeur JSON dans le localStorage (quota plein : ignoré). */
   const write = (key, value) => {
     try {
       localStorage.setItem(key, JSON.stringify(value));
@@ -35,6 +38,7 @@
     raw: undefined,
     value: null
   };
+  /** Base des types en vigueur : fichier OACI (AIRCRAFT_DB), modifications de Paramétrage plus récentes, types ajoutés localement. */
   const db = () => {
     const file = window.AIRCRAFT_DB || {};
     let raw = null;
@@ -69,6 +73,7 @@
   // Types de la flotte DEFA absents de la base OACI importée : catalogue commun
   // (shared/aircraft_catalog.js, aussi utilisé par le Landing Dashboard et le Planner).
   const SUPPLEMENT = window.AircraftCatalog?.SUPPLEMENT || {};
+  /** Types ajoutés localement dans les CR (missionAircraftTypes:v1) et supplément. */
   const localTypes = () => ({
     ...SUPPLEMENT,
     ...(read(TYPES_KEY) || {})
@@ -76,8 +81,10 @@
   // Libellés parasites présents dans la base OACI importée (texte de pages web récupéré
   // à la place du modèle) : traités comme un modèle absent.
   const JUNK_MODELS = new Set(['Aircraft Performance Database', 'Skip to aircraft details']);
+  /** Nom de modèle, vide s'il s'agit d'un libellé de navigation mal lu par le scrapper. */
   const cleanModel = model => JUNK_MODELS.has(String(model || '').trim()) ? '' : model || '';
 
+  /** Type OACI d'une saisie (code ou alias) : { tdesig, model, category, wtc, local (absent du fichier OACI) } ; null si inconnu. */
   function lookupType(value) {
     const code = String(value || '').trim().toUpperCase().replace(/\s+/g, '');
     if (!code) return null;
@@ -94,6 +101,7 @@
     };
   }
 
+  /** Liste des types connus (base + ajouts locaux), pour les suggestions de saisie. */
   function listTypes() {
     const base = db(),
       out = new Map();
@@ -113,6 +121,7 @@
     return [...out.values()].sort((a, b) => a.tdesig.localeCompare(b.tdesig));
   }
 
+  /** Ajoute un type inconnu aux types locaux (modèle, catégorie) pour qu'il soit reconnu ensuite. */
   function enrichType(type, {
     model = '',
     category = ''
@@ -131,6 +140,7 @@
   }
 
   // ---- registre des appareils connus
+  /** Appareils connus de toutes les sources (flotte DEFA, annuaire local, registres HEMS / FIRE en cache, registre des missions…), chacun avec sa date pour départager. */
   function sources() {
     const records = [];
     (window.DEFA_FLEET || []).forEach(e => records.push({
@@ -147,6 +157,7 @@
       if (!text) return;
       const lines = text.replace(/^﻿/, '').split(/\r?\n/).filter(Boolean),
         head = splitCsv(lines.shift() || '');
+      /** Rang d'une colonne dans l'en-tête du registre lu. */
       const at = name => head.indexOf(name);
       lines.forEach(line => {
         const cells = splitCsv(line),
@@ -183,6 +194,7 @@
     return records;
   }
 
+  /** Découpe une ligne CSV « ; » (guillemets doublés) en cellules. */
   function splitCsv(line) {
     const out = [];
     let value = '',
@@ -205,6 +217,7 @@
   const FIELDS = ['registration', 'type', 'variant', 'category', 'callsign', 'tacticalNumber', 'configuration', 'equipment', 'base', 'operator', 'number'];
   // Fusion par immatriculation, du plus ancien au plus récent : chaque champ non vide
   // écrase la valeur précédente → « la dernière en date ».
+  /** Registre des appareils connus : une entrée par immatriculation, la donnée la plus récente l'emporte. */
   function known() {
     const byReg = new Map();
     sources().filter(r => regKey(r.registration)).sort((a, b) => String(a.date || '').localeCompare(String(b.date || ''))).forEach(record => {
@@ -239,9 +252,12 @@
   // base (un indicatif qui commence un autre indicatif connu : DRAGO / DRAGON), troncature.
   const FPL_MAX = 7,
     LEARNED_KEY = 'missionCallsignTable:v1';
+  /** Texte en majuscules sans accents ni blancs de bord. */
   const up = v => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
+  /** Texte en majuscules, lettres et chiffres seulement. */
   const clean = v => up(v).replace(/[^A-Z0-9]/g, '');
 
+  /** Table des indicatifs en vigueur (fichier callsigns.js, modifications locales, formes apprises). */
   function table() {
     const out = new Map();
     (window.MissionVocab?.callsignTable || []).forEach(e => out.set(e.prefix, {
@@ -272,6 +288,7 @@
     return true;
   }
 
+  /** Correspondances forme plan de vol → indicatif complet (DRAGO → DRAGON), tirées de la table. */
   function abbreviations() {
     const split = window.MissionModel.splitCallsign,
       prefixes = new Set(),
@@ -298,6 +315,7 @@
     const key = up(operator).replace(/[’`]/g, "'");
     return Object.entries(window.MissionVocab?.operatorDesignators || {}).find(([name]) => up(name).replace(/[’`]/g, "'") === key)?.[1] || '';
   };
+  /** Organisme d'un désignateur OACI d'exploitant (OPR/) ; « » si inconnu. */
   const operatorOfDesignator = code => Object.entries(window.MissionVocab?.operatorDesignators || {}).find(([, d]) => d === clean(code))?.[0] || '';
   const canonicalPrefix = (prefix, map = abbreviations()) => map.get(up(prefix)) || up(prefix);
   const canonicalCallsign = (callsign, map = abbreviations()) => {
@@ -305,6 +323,7 @@
     return clean(canonicalPrefix(s.prefix, map) + s.number);
   };
 
+  /** Indicatif sous forme plan de vol (7 caractères au plus, OACI Doc 4444) pour une série et un numéro. */
   function fplCallsign(prefix, number, map = abbreviations()) {
     const p = clean(canonicalPrefix(prefix, map)),
       n = clean(number);
@@ -371,6 +390,7 @@
     });
     return [...series.values()].sort((a, b) => a.prefix.localeCompare(b.prefix));
   }
+  /** Appareil connu d'une immatriculation ; null sinon. */
   const find = registration => known().find(a => regKey(a.registration) === regKey(registration)) || null;
   // Indicatif complet ou forme plan de vol (DRAGON76 / DRAGO76) : même appareil.
   const findByCallsign = callsign => {
@@ -382,6 +402,7 @@
 
   // Mémorise les appareils d'une mission enregistrée (équipements compris) et enrichit
   // la base de types avec les types inconnus.
+  /** Enregistre les appareils d'une mission dans le registre local (type, indicatif, date) et complète la base des types avec les types inconnus. */
   function recordMission(mission) {
     const registry = read(REGISTRY_KEY) || {},
       date = mission?.metadata?.date || new Date().toISOString().slice(0, 10);

@@ -11,13 +11,16 @@
     M = window.MissionModel,
     L = V.L;
   const families = new Map();
+  /** Échappe un texte pour HTML. */
   const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
     '&': '&amp;',
     '<': '&lt;',
     '>': '&gt;',
     '"': '&quot;'
   } [c]));
+  /** Minutes → « 1h05 » (« — » si absent). */
   const duration = n => n == null ? '—' : n >= 60 ? `${Math.floor(n / 60)}h${String(n % 60).padStart(2, '0')}` : `${n} min`;
+  /** N° de mission normalisé (majuscules, sans blancs). */
   const normId = v => String(v ?? '').trim().toUpperCase();
   // Libellé [fr,en,de,es] dans la langue courante du framework (messages dynamiques).
   const inLanguage = row => row[['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr')] || row[0];
@@ -118,6 +121,7 @@
     leave: L('La mission n’a pas été enregistrée dans le registre. Quitter quand même ?', 'The mission has not been saved to the ledger. Leave anyway?', 'Der Einsatz wurde nicht im Register gespeichert. Trotzdem verlassen?', 'La misión no se ha guardado en el registro. ¿Salir de todos modos?')
   };
 
+  /** Enregistre une famille de mission (id, blocs, séries, pages, résumé…) ; ses champs de texte simple passent en majuscules. Lève une erreur sans identifiant. Retourne la définition complétée. */
   function registerFamily(def) {
     if (!def?.id) throw new Error('Famille sans identifiant');
     families.set(def.id, {
@@ -130,6 +134,7 @@
     return families.get(def.id);
   }
 
+  /** Page de compte rendu d'une famille : en-tête et barre d'outils, formulaire (blocs), assistants de saisie (appareil, indicatif, heures, autorités), brouillon, aperçu du CR et résumé, contrôles, registre (enregistrer, modifier une mission ?edit=), plan de vol, import de texte, envoi. Lève une erreur si la famille est inconnue. */
   function mount({
     family: familyId,
     root
@@ -148,6 +153,7 @@
     const editIndex = params.has('edit') ? Number(params.get('edit')) : null;
     let edit = null; // { index, missionId } en mode modification
     const draftKey = `missionCoreDraft:v1:${family.id}`;
+    /** Profil pilote (missionReportingConfig:v1) : IDs réseau, identifiants… repris dans une nouvelle mission. */
     const prefs = () => {
       try {
         return JSON.parse(localStorage.getItem('missionReportingConfig:v1') || '{}');
@@ -155,6 +161,7 @@
         return {};
       }
     };
+    /** Nouvelle mission de la famille pré-remplie : n° suivant du registre, date du jour, première série, catégorie par défaut, IDs réseau du profil pilote, techniques de la dernière mission de la même série. */
     const fresh = () => {
       const mission = M.emptyMission(family.id);
       mission.metadata.missionId = ledger.nextId(prefix);
@@ -232,11 +239,13 @@
     window.addEventListener('resize', measure);
     new ResizeObserver(measure).observe(header || document.body);
     const ui = new Map();
+    /** Texte source (français) d'un libellé de l'interface, ligne enregistrée pour le traducteur commun. */
     const t = key => {
       const row = UI[key];
       ui.set(row[0], row);
       return row[0];
     };
+    /** Message d'état de la page (libellé + détail). */
     const say = (key, extra = '') => {
       status.textContent = t(key) + (extra ? ` : ${extra}` : '');
     };
@@ -262,6 +271,7 @@
     ].forEach(([k, key]) => {
       tools.querySelector(`[data-menu="${k}"]`).textContent = t(key);
     });
+    /** Lien vers Paramétrage (base donnée ouverte). */
     const settingsUrl = base => new URL(`parametrage.html${base ? `?base=${base}` : ''}`, window.MissionLedger.APP).href;
     $a('sendSettings').textContent = t('sendSettings');
     $a('sendSettings').href = settingsUrl('send');
@@ -351,6 +361,7 @@
     const A = window.MissionAircraft;
     const autoFilled = new WeakMap(); // appareil → valeurs déduites automatiquement du type
     let autoOperator = ''; // organisme repris de la flotte (remplacé si l'appareil change)
+    /** Complète l'appareil index avec un appareil connu (flotte, registre) : type, variante, indicatif, bases… seulement dans les champs vides ou remplis automatiquement. */
     function applyKnown(index, known) {
       const item = mission.aircraft[index];
       // Type d'abord (modèle OACI, catégorie), puis les valeurs de l'appareil connu, qui
@@ -399,11 +410,13 @@
     }
     // Variante / catégorie déduites du type : remplacées si elles avaient été déduites
     // automatiquement d'un type précédent, jamais si le pilote les a saisies.
+    /** Type d'appareil saisi : catégorie, modèle et valeurs dépendantes complétées (sans écraser une saisie du pilote). */
     function typeAssist(index, value) {
       const item = mission.aircraft[index],
         path = `aircraft.${index}.type`;
       const type = A.lookupType(value),
         auto = autoFilled.get(item) || {};
+      /** Vrai si le champ peut être rempli automatiquement (vide ou déjà rempli par l'assistant). */
       const replace = key => !item[key] || item[key] === auto[key];
       if (type) {
         if (type.category && replace('category')) {
@@ -451,6 +464,7 @@
     // ---- heures : fuseau du terrain de départ (à défaut Europe/Paris, CET / CEST), à la date
     // de la mission (à défaut, aujourd'hui) — changement d'heure pris en compte.
     const zone = () => assist.cachedAirport?.(mission.navigation?.dep || mission.aircraft?.[0]?.baseDeparture)?.tz || 'Europe/Paris';
+    /** Composantes (année, mois, jour, heure, minute) d'un instant dans un fuseau. */
     const partsIn = (date, tz) => {
       const p = {};
       new Intl.DateTimeFormat('en-CA', {
@@ -466,12 +480,15 @@
       });
       return p;
     };
+    /** Décalage d'un fuseau par rapport à UTC (minutes) à un instant donné. */
     const offsetMin = (tz, ms) => {
       const p = partsIn(new Date(ms), tz);
       return (Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute) - Math.floor(ms / 60000) * 60000) / 60000;
     };
+    /** Date de la mission (sinon aujourd'hui). */
     const missionDate = () => /^\d{4}-\d{2}-\d{2}$/.test(mission.metadata?.date || '') ? mission.metadata.date : nowFor('metadata.date', 'date');
 
+    /** Heure locale ⇄ UTC dans le fuseau du terrain, à la date de la mission (changement d'heure pris en compte). */
     function convert(time, toUtc) {
       const m = /^(\d{1,2}):(\d{2})$/.exec(time || '');
       if (!m) return '';
@@ -481,6 +498,7 @@
       return `${p.hour}:${p.minute}`;
     }
 
+    /** Valeur « maintenant » d'un champ (heure locale ou UTC, date) pour le bouton ⏱. */
     function nowFor(path, kind) {
       const p = partsIn(new Date(), /utc/i.test(path) ? 'UTC' : zone());
       return kind === 'date' ? `${p.year}-${p.month}-${p.day}` : `${p.hour}:${p.minute}`;
@@ -489,6 +507,7 @@
     // si elle est vide ou déjà reprise automatiquement.
     const autoTime = new Map();
 
+    /** Heure saisie (locale ou UTC) : l'autre forme est complétée automatiquement. */
     function timeAssist(path, value) {
       const pair = /^(metadata|events\.\d+)\.time(Local|Utc)$/.exec(path);
       const setAuto = (target, v) => {
@@ -526,6 +545,7 @@
     };
     let timelineSig = null;
 
+    /** Chronologie : ajoute ou déplace les événements liés aux heures de la mission (mise en route, décollage, atterrissage…) quand ces heures changent ; événements modifiés à la main respectés. */
     function timelineEvents(reset = false) {
       const sig = JSON.stringify(Object.keys(TIMELINE_EVENT).map(k => mission.timeline?.[k] || ''));
       if (reset || timelineSig === null) {
@@ -564,6 +584,7 @@
       });
       // Ordre chronologique depuis la première heure de la chronologie (passage de minuit).
       const first = M.minutes(Object.keys(TIMELINE_EVENT).map(k => mission.timeline?.[k]).find(Boolean)) ?? 0;
+      /** Rang chronologique d'un événement (heure locale). */
       const rank = e => {
         const t = M.minutes(e.timeLocal);
         return t == null ? 1e9 : (t - first + 1440) % 1440;
@@ -577,6 +598,7 @@
     // (DRAGON74, CHOUCAS74 : préfecture, CODIS / CORG / SAMU du département).
     const autoAuthority = {};
 
+    /** Autorité / organisme de la mission complété d'après l'appareil ou la série (sans écraser une saisie). */
     function authorityAssist(entry) {
       const item = mission.aircraft[0],
         o = mission.organisation;
@@ -646,6 +668,7 @@
       autoFilled.set(item, auto);
     }
 
+    /** Aiguillage des assistants de l'appareil selon le champ modifié (immatriculation, indicatif, série, numéro, type, variante). */
     function aircraftAssist(path, value) {
       const m = /^aircraft\.(\d+)\.(registration|callsign|callsignPrefix|callsignNumber|callsignFpl|type|variant)$/.exec(path);
       if (!m) return;
@@ -661,6 +684,7 @@
       }
     }
 
+    /** Indicatif complet ⇄ série + numéro ; immatriculation formatée ; appareil connu retrouvé par immatriculation ou par indicatif. */
     function identityAssist(index, field, value, item) {
       // Indicatif complet ⇄ indicatif (série) + numéro.
       const CALLSIGN = ['callsign', 'callsignPrefix', 'callsignNumber'];
@@ -762,8 +786,10 @@
     }
 
     // ---- brouillon, calculs, registre
+    /** Clé du brouillon (distincte en mode modification d'une mission). */
     const draftSlot = () => edit ? `${draftKey}:edit:${edit.index}:${normId(edit.missionId)}` : draftKey;
 
+    /** Mémorise le brouillon de la mission en cours. */
     function saveDraft(silent = false) {
       try {
         localStorage.setItem(draftSlot(), JSON.stringify(mission));
@@ -772,9 +798,11 @@
         /* quota */ }
     }
 
+    /** Calculs de la colonne de droite : bloc, vol, transit, sur zone, carburant… */
     function kpi() {
       const s = M.computeStatistics(mission),
         unit = mission.fuel?.unit || '';
+      /** Case d'un calcul (libellé, valeur). */
       const cell = (key, value) => `<div><span class="small">${esc(t(key))}</span><b>${esc(value)}</b></div>`;
       root.querySelector('.mc-kpi').innerHTML = cell('block', duration(s.blockMinutes)) + cell('flight', duration(s.flightMinutes)) +
         cell('transitOut', duration(s.transitOutMinutes)) + cell('onStation', duration(s.timeOnStationMinutes)) +
@@ -788,6 +816,7 @@
     }
     // Contrôles de cohérence : liste sous les calculs (clic = champ concerné) et marque sur les
     // champs (heure inversée ou invalide, carburant incohérent).
+    /** Affiche les anomalies de cohérence de la mission (heures, carburant, date). */
     function checks() {
       const i = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'));
       const issues = M.checkMission(mission),
@@ -805,11 +834,13 @@
       form.querySelectorAll('[data-path^="timeline."],[data-path^="fuel."],[data-path="metadata.date"]').forEach(el => el.classList.toggle('mc-invalid', flagged.has(el.dataset.path)));
     }
 
+    /** Bandeau du registre : dossier, nombre de missions, source. */
     function ledgerInfo() {
       window.FileAccess?.decorate($a('folder'), '__ledger');
       tools.querySelector('.mc-ledger-info').innerHTML = `${esc(ledger.filename)} · ${esc(family.id)} : ${ledger.missions.length} <span>${esc(t('missions'))}</span> · <span>${esc(t('folder'))}</span> : ${ledger.state.folder ? esc(ledger.state.folder) : `<span>${esc(t('browserOnly'))}</span>`}`;
     }
 
+    /** Interface du mode modification (bandeau, libellés des boutons). */
     function modeUi() {
       root.querySelector('.mc-edit-banner').hidden = !edit;
       if (edit) root.querySelector('.mc-edit-info').textContent = `${edit.missionId} — ${ledger.filename} #${edit.index + 1}`;
@@ -819,6 +850,7 @@
     // ---- compte rendu (§21) et résumé (§22), actualisés à la saisie et au changement de langue
     let reportRows = [];
 
+    /** Aperçu du compte rendu et résumé automatique (dans la langue de la page). */
     function renderReport() {
       if (!window.MissionReport) return;
       const shown = isPublic() ? M.redact(mission, family) : mission;
@@ -831,6 +863,7 @@
       registerI18n();
     }
 
+    /** Redessine le formulaire, les calculs, les contrôles et l'aperçu. */
     function redraw() {
       view.render(blockList);
       assist.decorate();
@@ -908,6 +941,7 @@
       });
       section.querySelector('h2').after(bar);
     }
+    /** Message d'erreur d'import de plan de vol (identifiant manquant traduit). */
     const fplError = error => /-id$/.test(error.message) ? inLanguage(UI.fplNeedId) : error.message;
 
     // ---- analyse d'un texte collé : plan de vol OACI, tracker IVAO (détails / liste),
@@ -948,6 +982,7 @@
     };
     openLink('ivao', 'importOpenIvao');
     openLink('statsim', 'importOpenStatsim');
+    /** Import d'un texte collé (plan de vol OACI, pages du tracker IVAO, historique VATSIM…) : reconnu, appliqué aux champs vides de la mission, résultat affiché. Retourne vrai si quelque chose a été appliqué. */
     async function importText(text, silent = false) {
       const TI = window.MissionTextImport,
         result = TI.analyse(text);
@@ -998,6 +1033,7 @@
     importBox.querySelector('[data-import="run"]').onclick = () => importText(importArea.value);
     // Fenêtre de copier-coller : « × », « Fermer », bouton désactivé si vide, puis « Valider ».
     let importPanel = null;
+    /** Branche le panneau de copier-coller de l'import (FileAccess.pastePanel). */
     const attachImportPanel = () => {
       importPanel = window.FileAccess?.pastePanel({
         root: importBox.querySelector('.mc-import-pop'),
@@ -1020,6 +1056,7 @@
     let clipBusy = false,
       clipArmed = false,
       lastClip = '';
+    /** Lit le presse-papiers et tente l'import (une lecture à la fois) ; silent : sans message. */
     const readClipboard = async silent => {
       if (clipBusy) return false;
       clipBusy = true;
@@ -1036,6 +1073,7 @@
       }
       return false;
     };
+    /** Vrai si la lecture du presse-papiers est déjà autorisée. */
     const clipGranted = async () => {
       try {
         return (await navigator.permissions.query({
@@ -1065,6 +1103,7 @@
 
     let i18nDone = new Set();
 
+    /** Transmet au traducteur commun les libellés du formulaire, de l'interface et du compte rendu. */
     function registerI18n() {
       if (!window.RepositoryContentI18n) return;
       const pending = view.i18nRows().concat([...ui.values()], (family.i18n || []), reportRows).filter(row => !i18nDone.has(row[0]));
@@ -1073,6 +1112,7 @@
       window.RepositoryContentI18n(pending);
     }
 
+    /** Enregistre le registre et affiche le résultat (fichier ou navigateur). */
     async function persist(messageKey) {
       const result = await ledger.save();
       ledgerInfo();
@@ -1080,6 +1120,7 @@
       status.textContent = result.written ? `${t(messageKey)} (${ledger.filename})` : `${t(messageKey)} — ${t('storedBrowserOnly')}`;
       return result;
     }
+    /** Range la mission dans le registre (nouvelle, ou remplacement en mode modification) : registre rechargé s'il était illisible, majuscules, statistiques, appareils mémorisés, puis enregistrement. */
     async function store() {
       // Registre illisible au chargement (erreur réseau) : nouvel essai avant toute écriture.
       if (ledger.state.source === 'unavailable') {
@@ -1129,6 +1170,7 @@
     const SEND_CONFIG = 'missionSendConfig:v1',
       SEND_KEY = 'missionSendKey:v1',
       SEND_LOG = 'missionSendLog:v1';
+    /** Valeur JSON d'une clé du localStorage ; null sinon. */
     const readJson = key => {
       try {
         return JSON.parse(localStorage.getItem(key) || 'null');
@@ -1136,14 +1178,17 @@
         return null;
       }
     };
+    /** Réglages d'envoi des CR (adresse, en-tête, schéma, clef) de Paramétrage. */
     const sendConfig = () => ({
       header: 'Authorization',
       scheme: 'Bearer',
       ...(readJson(SEND_CONFIG) || {}),
       key: localStorage.getItem(SEND_KEY) || ''
     });
+    /** Clé du journal d'envoi de la mission (famille, n°, date). */
     const sendLogKey = () => `${family.id}:${normId(mission.metadata?.missionId)}:${mission.metadata?.date || ''}`;
 
+    /** Bouton d'envoi du CR : état (configuré ou non), dernier envoi de cette mission ; envoi au webservice. */
     function sendUi() {
       const button = $a('send'),
         config = sendConfig(),
@@ -1432,6 +1477,7 @@
   // ---- mission générée (SIA XML, schéma helo-xp-mission) → champs du CR
   const SIA_KEY = 'siaMissionToCr:v1';
   // « A400M Atlas », « C-130J-30 Super Hercules » → type OACI du catalogue commun (A4M, C130…).
+  /** Type OACI du catalogue commun d'après un nom d'appareil du générateur SIA (« A400M Atlas » → A4M). */
   function siaType(text) {
     const A = window.MissionAircraft;
     text = String(text || '').trim();
@@ -1446,10 +1492,12 @@
     return key(first).length < 3 ? null : (A.listTypes?.() || []).find(t => t.model && key(t.model).includes(key(first))) || null;
   }
 
+  /** Pré-remplit une mission depuis une mission du générateur SIA (titre, appareils, terrains, zones, route). */
   function fromSia(m, y) {
     const M = window.MissionModel,
       meta = y.mission || {},
       icao = p => (/\(([A-Z0-9]{4})\)/.exec(p?.name || '') || [])[1] || '';
+    /** Texte « nom lat lon » d'un point SIA. */
     const place = p => p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon) ? `${p.name || p.id} ${(+p.lat).toFixed(5)} ${(+p.lon).toFixed(5)}` : '';
     m.metadata.operationName = y.title || '';
     if (meta.id != null) m.metadata.missionNumber = String(meta.id);
@@ -1486,6 +1534,7 @@
 
   // Sélecteur d'en-tête (pages CR et reporting) : changement de famille (même type de page)
   // et sous-type (série) de la famille courante.
+  /** Sélecteur de famille et de sous-type de l'en-tête (CR et reporting) ; changer de famille ouvre sa page. */
   function headerSwitch({
     family,
     kind,
@@ -1511,6 +1560,7 @@
     seriesLabel.textContent = t('switchSeries');
     const familySelect = box.querySelector('[data-switch="family"]'),
       seriesSelect = box.querySelector('[data-switch="series"]');
+    /** Options du sélecteur de famille, libellés dans la langue de la page. */
     const familyOptions = () => {
       familySelect.innerHTML = (window.MissionVocab.families || []).map(f => `<option value="${esc(f.id)}"${f.id === family.id ? ' selected' : ''}>${esc(f.id)} — ${esc(inLanguage(f.labels || [f.label]))}</option>`).join('');
     };
@@ -1521,6 +1571,7 @@
       if (target) location.href = root + target[kind];
     };
     seriesSelect.innerHTML = (all ? `<option value="">${esc(t('allSeries'))}</option>` : '') + (family.series || []).map(s => `<option value="${esc(s.value)}">${esc(Array.isArray(s.label) ? s.label[0] : s.label || s.value)}</option>`).join('');
+    /** Résumé affiché du sélecteur (famille · sous-type). */
     const summary = () => {
       box.querySelector('.mc-switch-series').textContent = seriesSelect.selectedOptions[0]?.textContent || '—';
     };

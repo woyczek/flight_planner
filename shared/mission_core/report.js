@@ -10,6 +10,7 @@
     V = window.MissionVocab,
     B = window.MissionBlocks,
     L = V.L;
+  /** Échappe un texte pour HTML. */
   const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
     '&': '&amp;',
     '<': '&lt;',
@@ -17,10 +18,12 @@
     '"': '&quot;'
   } [c]));
   const LANGS = ['fr', 'en', 'de', 'es'];
+  /** Langue de la page (fr / en / de / es). */
   const lang = () => {
     const l = window.RepositoryNav?.getLanguage?.() || 'fr';
     return LANGS.includes(l) ? l : 'fr';
   };
+  /** Durée en minutes → « 1h05 » (ou « 45 min »). */
   const duration = n => n == null ? '' : n >= 60 ? `${Math.floor(n / 60)}h${String(n % 60).padStart(2, '0')}` : `${n} min`;
   const S = {
     stamp: L('EXERCICE / SIMULATION', 'EXERCISE / SIMULATION', 'ÜBUNG / SIMULATION', 'EJERCICIO / SIMULACIÓN'),
@@ -68,6 +71,7 @@
   }
   const allCapabilityItems = V.capabilityGroups.flatMap(g => g.items);
 
+  /** Texte affichable d'une valeur de champ : libellé d'option, liste de capacités, oui / non, unité. */
   function display(field, value, family, rows, unit) {
     const label = arr => {
       rows.set(arr[0], arr);
@@ -86,19 +90,25 @@
     return String(value);
   }
 
+  /** HTML du compte rendu d'une mission : sections par bloc visible, champs renseignés, tableaux des collections ; libellés enregistrés pour la traduction. */
   function render(mission, family, ctx) {
     const rows = new Map();
     const t = arr => {
       rows.set(arr[0], arr);
       return arr[0];
     };
+    /** Case « libellé : valeur » du compte rendu (omise si vide). */
     const box = (labelArr, value) => value === '' || value == null ? '' : `<div class="box"><span>${esc(t(labelArr))}</span>${esc(value)}</div>`;
+    /** Cases des champs renseignés d'un bloc (conditions when respectées). */
     const fieldsBoxes = (fields, base = mission, prefix = '', unit = '') => fields.filter(f => f.label && (!f.when || f.when(ctx))).map(f => {
       const value = M.get(base, prefix + f.path);
       return box(f.label, display(f, value, family, rows, f.path.startsWith('fuel.') && f.path !== 'fuel.unit' ? unit : ''));
     }).join('');
+    /** Section titrée du compte rendu (omise si son contenu est vide). */
     const section = (titleArr, body) => body && body.replace(/<[^>]+>/g, '').trim() ? `<h3>${esc(t(titleArr))}</h3>${body}` : '';
+    /** Bandeau d'informations en tête du compte rendu. */
     const meta = inner => inner ? `<div class="meta">${inner}</div>` : '';
+    /** Tableau d'une collection (étapes, personnes, largages…). */
     const table = (spec, list) => {
       const fields = spec.fields.filter(f => f.type !== 'checkgroup' && f.report !== false);
       const used = fields.filter(f => list.some(item => {
@@ -169,8 +179,10 @@
   }
 
   // ---- résumé automatique (§22) : modèle propre à chaque famille, dans la langue demandée
+  /** Outils du résumé automatique pour une langue : choix de libellé, statistiques, listes, dates, nombres, masses. */
   function helpers(mission, family, l) {
     const idx = Math.max(0, LANGS.indexOf(l));
+    /** Texte d'une ligne [fr, en, de, es] dans la langue du résumé. */
     const pick = arr => Array.isArray(arr) ? arr[idx] || arr[1] || arr[0] : arr;
     const stats = M.computeStatistics(mission);
     const series = (family.series || []).find(s => s.value === mission.series);
@@ -178,7 +190,9 @@
     const caps = (mission.capabilities || []).map(code => pick(allCapabilityItems.find(x => x.value === code)?.label) || code);
     const lead = mission.aircraft?.[0] || {};
     const aircraft = (mission.aircraft || []).filter(a => a.type || a.registration).map(a => [a.type, a.registration && `(${a.registration})`].filter(Boolean).join(' '));
+    /** Énumération « a, b et c » dans la langue du résumé. */
     const list = (items, and) => items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')} ${and} ${items[items.length - 1]}`;
+    /** Date AAAA-MM-JJ en toutes lettres dans la langue du résumé. */
     const formatDate = iso => /^\d{4}-\d{2}-\d{2}$/.test(String(iso || '')) ? new Date(`${iso}T12:00:00`).toLocaleDateString(l, {
       day: 'numeric',
       month: 'long',
@@ -219,6 +233,7 @@
     };
   }
 
+  /** Résumé automatique d'une mission dans la langue l, par le modèle de phrases de la famille (§22) ; les données d'un bloc masqué ne sont jamais citées. */
   function summary(mission, family, l = lang()) {
     const template = family.summary?.[l] || family.summary?.fr;
     if (typeof template !== 'function') return '';

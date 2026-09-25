@@ -12,8 +12,11 @@
     '>': '&gt;',
     '"': '&quot;'
   } [c]));
+  /** Nombre sur deux chiffres. */
   const pad = n => String(n).padStart(2, '0');
+  /** Date UTC au format AAAA-MM-JJ. */
   const iso = d => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+  /** Date AAAA-MM-JJ (début de texte) → Date UTC à minuit. */
   const parse = s => new Date(`${String(s).slice(0, 10)}T00:00:00Z`);
   const DAY = 86400000;
   // Styles de base, injectés une fois (thème de la page par ses variables --muted, --soft,
@@ -33,6 +36,7 @@
     return days <= 45 ? 'day' : days <= 200 ? 'week' : days <= 1100 ? 'month' : 'year';
   }
 
+  /** Clé de la période (jour, semaine, mois, trimestre, année) contenant une date. */
   function keyOf(date, unit) {
     const d = parse(date);
     if (unit === 'day') return iso(d);
@@ -45,6 +49,7 @@
     return String(d.getUTCFullYear());
   }
 
+  /** Clé de la période suivante. */
   function next(key, unit) {
     if (unit === 'day') return iso(new Date(parse(key).getTime() + DAY));
     if (unit === 'week') return iso(new Date(parse(key).getTime() + 7 * DAY));
@@ -68,6 +73,7 @@
     }
     return `${key}-01-01`;
   }
+  /** Premier et dernier jour d'une période : [début, fin]. */
   const spanOf = (key, unit) => [startOf(key, unit), iso(new Date(parse(startOf(next(key, unit), unit)).getTime() - DAY))];
   const QUARTER = {
       fr: 'T',
@@ -82,6 +88,7 @@
       es: 'S'
     };
 
+  /** Libellé court d'une période dans la langue (axe des graphiques). */
   function label(key, unit, lang = 'fr') {
     const locale = {
       fr: 'fr-FR',
@@ -127,6 +134,7 @@
     let u = unit === 'auto' ? autoUnit(from, to) : unit;
     // Jamais plus de 400 barres : unité supérieure si nécessaire.
     const order = ['day', 'week', 'month', 'quarter', 'year'];
+    /** Nombre de missions d'une période. */
     const count = x => {
       let n = 0,
         k = keyOf(from, x);
@@ -192,6 +200,7 @@
     const max = niceMax(Math.max(...totals)),
       step = iw / list.length,
       bw = Math.max(2, Math.min(56, step * 0.72));
+    /** Ordonnée SVG d'une valeur. */
     const y = v => m.t + ih - (v / max) * ih;
     let svg = `<svg class="mcg-chart mcg-zoomable" viewBox="0 0 ${W} ${H}" role="img" data-left="${m.l}" data-step="${step}" data-top="${m.t}" data-height="${ih}">`;
     for (let i = 0; i <= 4; i++) {
@@ -234,6 +243,7 @@
       C = 100;
     let angle = -Math.PI / 2,
       paths = '';
+    /** Coordonnées d'un point de l'anneau (rayon, angle). */
     const point = (rad, a) => `${(C + rad * Math.cos(a)).toFixed(2)} ${(C + rad * Math.sin(a)).toFixed(2)}`;
     items.forEach(i => {
       const share = i.value / total,
@@ -274,11 +284,13 @@
       step = Number(svg.dataset.step),
       top = Number(svg.dataset.top),
       height = Number(svg.dataset.height);
+    /** Abscisse SVG du pointeur. */
     const toX = e => {
       const r = svg.getBoundingClientRect(),
         vb = svg.viewBox.baseVal;
       return (e.clientX - r.left) / r.width * vb.width;
     };
+    /** Rang de la barre sous une abscisse. */
     const index = x => Math.max(0, Math.min(groups.length - 1, Math.floor((x - left) / step)));
     let drag = null,
       preview = null,
@@ -309,6 +321,7 @@
       preview.setAttribute('x', Math.min(drag.x, x));
       preview.setAttribute('width', Math.max(1, Math.abs(x - drag.x)));
     });
+    /** Fin d'un glisser sur le graphique : zoom sur les périodes couvertes. */
     const finish = e => {
       if (!drag) return;
       const x = toX(e),
@@ -318,6 +331,7 @@
       preview?.remove();
       drag = null;
       preview = null;
+      /** Zoom de la période de la page sur les barres sélectionnées. */
       const go = () => window.TimePeriod.zoomTo(groups[a].dataset.start, groups[b].dataset.end);
       // Clic simple : attendre un éventuel double-clic (dézoom) avant de zoomer sur la barre.
       if (moved) go();

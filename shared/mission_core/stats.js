@@ -7,19 +7,23 @@
   // Utilisées par le reporting de famille et le reporting général (étape 2c).
   const M = window.MissionModel,
     L = window.MissionVocab.L;
+  /** Nombre d'une valeur ; 0 si invalide. */
   const n = v => {
     const x = Number(v);
     return Number.isFinite(x) ? x : 0;
   };
+  /** Durée en minutes → texte « 1h05 » (ou « 45 min »). */
   const duration = v => {
     v = Math.round(v || 0);
     return v >= 60 ? `${Math.floor(v / 60)}h${String(v % 60).padStart(2, '0')}` : `${v} min`;
   };
+  /** Somme des valeurs numériques fn(élément) d'une liste. */
   const sumBy = (list, fn) => list.reduce((acc, item) => acc + n(fn(item)), 0);
 
   // Une mission sans étape détaillée compte pour une sortie.
   const sorties = m => Math.max(1, (m.legs || []).filter(l => l.from || l.to || l.takeoff).length);
 
+  /** Totaux communs à toutes les familles sur une liste de missions : nombre, sorties, heures de vol, carburant par unité, durées moyennes… */
   function common(missions) {
     const st = missions.map(m => ({
       m,

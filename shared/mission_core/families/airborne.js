@@ -6,6 +6,7 @@
   const V = window.MissionVocab,
     L = V.L,
     opt = V.opt;
+  /** Définition d'un champ de la famille : chemin dans la mission, libellé [fr, en, de, es], type, options (extra). */
   const f = (path, label, type = 'text', extra = {}) => ({
     path,
     label,
@@ -13,6 +14,7 @@
     ...extra
   });
   const P = 'missionData.airborne.';
+  /** Nombre d'une saisie (0, ou null selon la famille, si vide ou invalide). */
   const num = v => Number(v) || 0;
   const dropTypes = [opt('PERSONNEL', L('Personnel', 'Personnel', 'Personal', 'Personal')), opt('CARGO', L('Matériel', 'Cargo', 'Material', 'Carga')), opt('MIXED', L('Mixte', 'Mixed', 'Gemischt', 'Mixto'))];
   const results = [opt('ON_DZ', L('Sur la DZ', 'On DZ', 'In der DZ', 'En la DZ')), opt('OFF_DZ', L('Hors DZ', 'Off DZ', 'Außerhalb der DZ', 'Fuera de la DZ')), opt('NOT_OBSERVED', L('Non observé', 'Not observed', 'Nicht beobachtet', 'No observado')), opt('NO_DROP', L('Pas de largage (passage à vide)', 'No drop (dry pass)', 'Kein Abwurf (Leeranflug)', 'Sin lanzamiento (pasada en seco)'))];
@@ -128,6 +130,7 @@
       value: ms => ms.reduce((a, m) => a + passes(m).filter(p => p.result === 'ON_DZ').length, 0)
     }],
     summary: (() => {
+      /** Modèle du résumé automatique (§22) : w = mots de liaison d'une langue, h = outils du résumé (MissionReport.helpers : mission, statistiques, appareils, listes, dates) → texte du résumé ; les morceaux dont une donnée manque sont omis. */
       const build = w => h => {
         const m = h.mission,
           d = m.missionData?.airborne || {},
