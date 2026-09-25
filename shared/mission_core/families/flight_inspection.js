@@ -18,7 +18,7 @@
   window.MissionCore.registerFamily({
     id: 'FI', idPrefix: 'FI', defaultCategory: 'fixed',
     pages: { cr: 'fi_cr.html', reporting: 'fi_reporting.html' },
-    title: L('Contrôle en vol', 'Flight inspection', 'Flugvermessung', 'Inspección en vuelo'),
+    title: L('Contrôle en vol des aides radio', 'Flight inspection (navaids)', 'Flugvermessung (Navigationsanlagen)', 'Inspección en vuelo (radioayudas)'),
     series: [
       { value: 'ILS', label: L('ILS', 'ILS') }, { value: 'LOC', label: L('Localiser (LOC)', 'Localizer (LOC)', 'Landekurssender (LOC)', 'Localizador (LOC)') },
       { value: 'GLIDE_PATH', label: L('Glide path', 'Glide path', 'Gleitweg', 'Senda de planeo') }, { value: 'VOR', label: L('VOR', 'VOR') }, { value: 'DME', label: L('DME', 'DME') },

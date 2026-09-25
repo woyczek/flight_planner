@@ -40,6 +40,7 @@
   };
 
   function mount({ family: familyId, root }) {
+    window.MissionVocab.describeHeader?.(familyId);
     const family = window.MissionCore.families.get(familyId);
     if (!family) throw new Error(`Famille inconnue : ${familyId}`);
     document.body.dataset.family = family.id;

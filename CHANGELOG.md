@@ -16,6 +16,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   carburant, breakaways, incidents ; statistiques et synthèse ; pages `CR DEFA/AAR/`. Les missions
   « ravitaillement / refuelling / tanker » (brief SIA, journal DEFA) y sont rangées (auparavant
   transport / spécial).
+- CR DEFA : **police du ciel / interception (QRA)**, nouveau sous-type de COMMAND (aéronef intercepté,
+  motif, délai alerte → décollage, mesure prise, déroutement ; événements scramble, interception,
+  identification) ; libellés plus clairs (« Commandement / police du ciel / guet aérien », « Contrôle en
+  vol des aides radio ») ; **description de chaque famille** (4 langues) en sous-titre des pages de CR /
+  reporting et au survol dans « Nouveau compte rendu ». Recherche de famille dans les 4 langues.
+- Traduction : morceaux de texte composés (« Types d’appareil : aucune », « Dossier : navigateur
+  uniquement », liste des familles de l’en-tête) désormais traduits en entier.
 - « Nouveau compte rendu » : **champ de recherche** de la famille — la description de la mission
   (« évasan hélico », « ravito », « police du ciel »…) est comparée aux mots-clés de chaque famille
   (synonymes FR / EN, appareils et indicatifs typiques, expressions) ; familles classées, les autres

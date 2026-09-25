@@ -99,7 +99,7 @@
     const t = key => { const row = UI[key]; rows.set(row[0], row); return row[0]; };
     const opt = (list, value) => { const o = list.find(x => x.value === value); return o ? tr(o.label) : value; };
     const familyInfo = id => window.MissionCore.families.get(id) || null;
-    const familyName = id => { const f = familyInfo(id), vocab = V.families.find(x => x.id === id); return f?.title ? tr(f.title) : vocab?.label || id; };
+    const familyName = id => { const f = familyInfo(id), vocab = V.families.find(x => x.id === id); return f?.title ? tr(f.title) : vocab?.labels ? vocab.labels[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'))] || vocab.label : vocab?.label || id; };
     const familyShort = id => id === 'FI' ? 'FI' : id;
     const pagesOf = id => { const f = familyInfo(id), vocab = V.families.find(x => x.id === id); return { cr: f?.pages?.cr && vocab ? vocab.cr.replace(/[^/]+$/, f.pages.cr) : vocab?.cr || '', reporting: f?.pages?.reporting && vocab ? vocab.reporting.replace(/[^/]+$/, f.pages.reporting) : vocab?.reporting || '' }; };
     const tag = id => `<span class="mcg-tag" style="--c:${colorOf(id)}" title="${esc(familyName(id))}">${esc(familyShort(id))}</span>`;

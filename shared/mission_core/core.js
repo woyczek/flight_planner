@@ -137,6 +137,7 @@
     // Barre d'outils dans l'en-tête (collé en haut de page) : registre des missions et suivi
     // réseau ; colonne de droite : calculs puis aperçu du compte rendu.
     const header = document.querySelector('header.mc-header');
+    window.MissionVocab.describeHeader?.(familyId);
     const tools = document.createElement('div'); tools.className = 'mc-header-tools';
     // Sept entrées au plus, par ordre d'importance : contexte (famille · série, ajoutée plus
     // bas), actions principales (enregistrer, envoyer), puis menus (importer, suivi réseau,
@@ -459,7 +460,9 @@
         + cell('fuelUsed', s.fuelUsed == null ? '—' : `${s.fuelUsed} ${unit}`) + cell('fuelOnStation', s.fuelOnStation == null ? '—' : `${s.fuelOnStation} ${unit}`);
       checks();
       const ctx = view.context() || {};
-      root.querySelector('.mc-context').innerHTML = `<b>${esc(family.id)}</b> · ${esc(mission.series || '—')}<br>${esc(t('categories'))} : ${esc([...(ctx.categories || [])].join(', ') || t('none'))}<br>${esc(t('capabilities'))} : ${esc([...(ctx.capabilities || [])].join(', ') || t('none'))}`;
+      // un morceau traduisible par élément (la couche de traduction remplace des nœuds de texte entiers)
+      const listOrNone = set => [...(set || [])].length ? esc([...set].join(', ')) : `<span>${esc(t('none'))}</span>`;
+      root.querySelector('.mc-context').innerHTML = `<b>${esc(family.id)}</b> · ${esc(mission.series || '—')}<br><span>${esc(t('categories'))}</span> : ${listOrNone(ctx.categories)}<br><span>${esc(t('capabilities'))}</span> : ${listOrNone(ctx.capabilities)}`;
     }
     // Contrôles de cohérence : liste sous les calculs (clic = champ concerné) et marque sur les
     // champs (heure inversée ou invalide, carburant incohérent).
@@ -474,7 +477,7 @@
     }
     function ledgerInfo() {
       window.FileAccess?.decorate($a('folder'), '__ledger');
-      tools.querySelector('.mc-ledger-info').textContent = `${ledger.filename} · ${family.id} : ${ledger.missions.length} ${t('missions')} · ${t('folder')} : ${ledger.state.folder || t('browserOnly')}`;
+      tools.querySelector('.mc-ledger-info').innerHTML = `${esc(ledger.filename)} · ${esc(family.id)} : ${ledger.missions.length} <span>${esc(t('missions'))}</span> · <span>${esc(t('folder'))}</span> : ${ledger.state.folder ? esc(ledger.state.folder) : `<span>${esc(t('browserOnly'))}</span>`}`;
     }
     function modeUi() {
       root.querySelector('.mc-edit-banner').hidden = !edit;
@@ -813,7 +816,8 @@
     const [familyLabel, seriesLabel] = box.querySelectorAll('label span');
     familyLabel.textContent = t('switchFamily'); seriesLabel.textContent = t('switchSeries');
     const familySelect = box.querySelector('[data-switch="family"]'), seriesSelect = box.querySelector('[data-switch="series"]');
-    familySelect.innerHTML = (window.MissionVocab.families || []).map(f => `<option value="${esc(f.id)}"${f.id === family.id ? ' selected' : ''}>${esc(f.id)} — ${esc(f.label)}</option>`).join('');
+    const familyOptions = () => { familySelect.innerHTML = (window.MissionVocab.families || []).map(f => `<option value="${esc(f.id)}"${f.id === family.id ? ' selected' : ''}>${esc(f.id)} — ${esc(inLanguage(f.labels || [f.label]))}</option>`).join(''); };
+    familyOptions(); window.addEventListener('repository-language-change', () => setTimeout(familyOptions));
     familySelect.onchange = () => { const target = window.MissionVocab.families.find(f => f.id === familySelect.value); if (target) location.href = root + target[kind]; };
     seriesSelect.innerHTML = (all ? `<option value="">${esc(t('allSeries'))}</option>` : '') + (family.series || []).map(s => `<option value="${esc(s.value)}">${esc(Array.isArray(s.label) ? s.label[0] : s.label || s.value)}</option>`).join('');
     const summary = () => { box.querySelector('.mc-switch-series').textContent = seriesSelect.selectedOptions[0]?.textContent || '—'; };
