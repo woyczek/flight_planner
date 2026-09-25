@@ -32,7 +32,14 @@ Studio cartographique (Missions SIA) : symboles OACI.
 - **Profil vertical** (nouveau) : cheminement (points de la mission, aérodromes, balises,
   coordonnées, altitude prévue « /3000 » ou « /FL65 »), coupe relief / obstacles / espaces traversés
   en second aperçu, image `profil_vertical.png` dans le ZIP (facultative) et dans le brief PDF ;
-  réglages enregistrés dans le YAML de la mission (`vertical_profile`).
+  réglages enregistrés dans le YAML de la mission (`vertical_profile`). Cheminement fait de tous
+  les points connus : brief, aérodromes, balises, points RNAV de l'AIXM, radiale / distance
+  « REN300010 » ; tracé sur les cartes (aperçu et PNG).
+- Villes : curseurs de population logarithmiques dès 1 000 habitants, seuils séparés pour les
+  symboles, les libellés et les surfaces bâties ; villes de l'aperçu dessinées sur le canvas
+  (placement accéléré par grille : des milliers de villes).
+- Correctif : colonne de l'aperçu plus haute que la fenêtre (bas inaccessible) ; fond de carte
+  qui s'effaçait en faisant défiler la page (calque WebGL isolé).
 - Tour de commentaires dans le code (en-têtes de fichiers, sections) ; section **Bugs connus**.
 
 ## [2.2.1] — 2026-09-25

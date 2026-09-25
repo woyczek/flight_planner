@@ -82,7 +82,10 @@
       const p = geo(b), k = /^M$/i.test(tag(b, 'uomDistVer')) ? 3.28084 : 1; if (!Number.isFinite(p.lat)) continue;
       obstacles.push({ ...p, elev: Math.round(+tag(b, 'valElev') * k) || 0, hgt: Math.round(+tag(b, 'valHgt') * k) || 0, lit: tag(b, 'codeLgt') === 'Y', group: tag(b, 'codeGroup') === 'Y', wind: /olienne/i.test(tag(b, 'txtDescrType')) });
     }
-    return { aerodromes, navaids, obstacles };
+    // Points désignés (Dpn : points RNAV, points de report) : pour les cheminements.
+    const points = [];
+    for (const b of blocks(text, 'Dpn')) { const p = geo(b); if (Number.isFinite(p.lat)) points.push({ id: /<DpnUid[^>]*>\s*<codeId>([^<]+)/.exec(b)?.[1] || '', type: tag(b, 'codeType'), ...p }); }
+    return { aerodromes, navaids, obstacles, points };
   }
 
   // ---- limites verticales (numériques, ft) et libellés « carte »
@@ -95,10 +98,28 @@
   const chartLimit = t => String(t || '').replace(/^FL\s*(\d+)$/, (_, n) => 'FL ' + n.padStart(3, '0')).replace(/ ft /, ' ').replace(/ m /, ' m ');
 
   // ---- placement des libellés : un rectangle n'est posé que s'il ne recouvre aucun autre
-  function placer() {
-    const rects = [];
-    return { free: r => !rects.some(q => r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0), add: r => { rects.push(r); return true; },
-      take(r) { return this.free(r) ? this.add(r) : false; } };
+  // Grille de cases de 64 px : un rectangle n'est comparé qu'à ceux des cases qu'il touche (des milliers
+  // de villes restent rapides) ; les très grands rectangles sont tenus à part.
+  function placer(cell = 64) {
+    const grid = new Map(), big = [], hit = (r, q) => r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0;
+    const span = r => [Math.floor(r.x0 / cell), Math.floor(r.x1 / cell), Math.floor(r.y0 / cell), Math.floor(r.y1 / cell)];
+    const large = ([i0, i1, j0, j1]) => (i1 - i0 + 1) * (j1 - j0 + 1) > 256;
+    return {
+      free(r) {
+        if (big.some(q => hit(r, q))) return false;
+        const sp = span(r), [i0, i1, j0, j1] = sp;
+        if (large(sp)) { for (const l of grid.values()) if (l.some(q => hit(r, q))) return false; return true; }
+        for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) { const l = grid.get(i + ',' + j); if (l && l.some(q => hit(r, q))) return false; }
+        return true;
+      },
+      add(r) {
+        const sp = span(r), [i0, i1, j0, j1] = sp;
+        if (large(sp)) big.push(r);
+        else for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) { const k = i + ',' + j; if (!grid.has(k)) grid.set(k, []); grid.get(k).push(r); }
+        return true;
+      },
+      take(r) { return this.free(r) ? this.add(r) : false; }
+    };
   }
   let place = null; // placeur de l'image en cours (drawPoints)
 

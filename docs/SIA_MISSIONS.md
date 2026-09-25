@@ -139,12 +139,13 @@ Graybeard / Shadow / Eclipse.
 
 - **Onglet Fond de carte** : couches OSM (sol, hydrographie, routes / rail, bâtiments,
   frontières — sur tous les fonds vectoriels ; relief ombré, courbes de niveau, sommets),
-  libellés des sommets ; cadre **Villes et agglomérations** : libellés de villes (population
-  minimale ; les plus peuplées d'abord, sans recouvrement), villes en symboles OACI (≥ 100 000 hab.
-  tache orange, ≥ 20 000 jaune cerclée d'orange, localité point jaune — symbole seul si les
-  libellés sont décochés), **surfaces bâties** aucune / contour (orange) / remplissage (jaune) /
-  les deux, dessinées par le studio sur tous les fonds, seulement autour des villes d'au moins
-  N habitants (réglable, 20 000 par défaut ; polygones d'occupation du sol OpenMapTiles /
+  libellés des sommets ; cadre **Villes et agglomérations**, trois lignes à curseur de population
+  logarithmique (1 000, 2 000, 5 000, 10 000… habitants) : villes en **symboles OACI** (≥ 100 000
+  hab. tache orange, ≥ 20 000 jaune cerclée d'orange, localité point jaune) au-dessus de leur
+  seuil ; **libellés de villes** au-dessus du leur (les plus peuplées d'abord, sans recouvrement) ;
+  **surfaces bâties** aucune / contour (orange) / remplissage (jaune) / les deux, dessinées par le
+  studio sur tous les fonds, seulement autour des villes au-dessus du troisième seuil (20 000 par
+  défaut ; polygones d'occupation du sol OpenMapTiles /
   OpenFreeMap, visibles dès l'échelle régionale — les fichiers du SIA ne décrivent aucun contour
   d'agglomération). Points d'intérêt
   et numéros de rue masqués sur les fonds publiés.
@@ -275,10 +276,14 @@ n'importe lesquels des 31 axes ; rien de coché = aucun hippodrome.
 ### 4.8 Profil vertical
 
 Sous l'aperçu de la carte, cadre **Profil vertical** : un **cheminement** (virgules ou lignes)
-fait de points de la mission (id ou nom), d'aérodromes (OACI), de balises ou de coordonnées
-« lat lon », chacun avec une **altitude prévue** facultative (`SIMIP/3000`, `TARGET/FL65`) ;
-vide = points tournants de la mission dans l'ordre. Exemple :
-`LFOT, SIMIP/3000, TARGET/FL65, SIMCP/5500, LFOT`.
+fait de tous les points connus — points du brief (tout point du YAML avec coordonnées : points
+tournants, cible, rendez-vous…, par id ou par nom), aérodromes (OACI), balises (VOR > TACAN > NDB >
+DME), points RNAV / points de report de l'AIXM, **radiale / distance** « REN300010 » (balise REN,
+radiale magnétique 300, 10 NM ; déclinaison de l'aérodrome le plus proche) ou coordonnées
+« lat lon » —, chacun avec une **altitude prévue** facultative (`SIMIP/3000`, `TARGET/FL65`) ;
+homonymes : le plus proche du point précédent ; vide = points tournants de la mission dans
+l'ordre. Exemple : `LFOJ, BRY/4500, REN300010, SIMIP/3000, TARGET/FL65, SIMCP/5500, LFOT`.
+Le cheminement est **tracé sur les cartes** (tireté violet ; case à décocher).
 
 **Tracer le profil** dessine la coupe (second aperçu, cliquable pour l'agrandir) : relief le long
 du trajet (tuiles Terrarium z10, maximum sur ± 1 km), obstacles de l'AIXM à moins de 1 NM (trait,
