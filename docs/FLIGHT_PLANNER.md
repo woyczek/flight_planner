@@ -71,12 +71,21 @@ réserve (min), contingence (%).
 
 Bloc **Profil vertical** : coupe le long d'une **route** — relief (tuiles d'altitude, ± 1 km),
 espaces aériens traversés (plancher → plafond, libellés de tous), obstacles, points avec distances
-cumulées et altitude prévue.
+cumulées, et **plan de vol** : trajectoire prévue (montée, paliers, descente) avec **TOC** et **TOD**.
 
 - **Route** : même syntaxe que le studio SIA — OACI, balises, points RNAV, « REN300010 »
-  (radiale / distance), « lat lon » ou « NOM lat lon », « /FL65 » ou « /3000 » pour l'altitude
-  prévue. **Route SimBrief (dernier OFP)** la remplit depuis l'OFP mémorisé (départ, points du
-  navlog avec leur altitude, arrivée) ; sans OFP, déclenche « Récupérer dernier FPL SimBrief ».
+  (radiale / distance), « lat lon » ou « NOM lat lon » ; **groupes vitesse / niveau** du plan de
+  vol (`N0450F350` : 450 kt au FL 350 ; vitesse N nœuds, K km/h, M Mach ; niveau F niveau de vol,
+  A altitude, S niveau métrique, M altitude métrique) après un point ou seuls ; « /3000 » = altitude
+  à atteindre au point ; **VFR** = pas de niveau (pas de trajectoire). La **case 15** d'un plan de
+  vol (séparée par des espaces : `LFBO N0450F350 DCT TOU UN460 NTS/N0440F370 LFRN`) est acceptée :
+  DCT, voies aériennes et SID / STAR sont sautés (tracé direct), coordonnées `4630N00130E`.
+- **OFP SimBrief** : l'import d'en-tête (« Récupérer dernier FPL SimBrief » ou OFP JSON) remplit la
+  route et trace le profil — départ, groupe vitesse / niveau initial (TAS de croisière, niveau
+  initial), points du navlog, paliers de croisière (step climbs), arrivée ; TOC / TOD recalculés.
+- **Montée / descente** aux taux recommandés du profil avion actif (vitesse verticale et TAS de
+  montée / descente ; à défaut 1000 ft/min à 140 kt et 800 ft/min à 160 kt) : pente = taux × 60 /
+  vitesse ; départ et arrivée au sol (altitude du terrain), paliers aux niveaux déposés.
 - **Profil d'affichage** : ceux du studio cartographique ; par défaut celui choisi dans le studio
   pour le profil vertical (« Profil vertical » : toutes les familles d'espaces). Il décide des
   espaces, des obstacles et des noms abrégés.
@@ -85,8 +94,7 @@ cumulées et altitude prévue.
   mémorise dans le navigateur — ouvrir le studio (Missions SIA) et y charger le dossier SIA une
   fois, dans le même navigateur et à la même adresse. Sans elle : points en coordonnées ou
   SimBrief seulement, sans espaces.
-- **Enregistrer l'image** : `profil_vertical.png`. Route, plancher et plafond sont mémorisés
-  (localStorage `flightPerfVerticalProfile`).
+- Route, plancher et plafond sont mémorisés (localStorage `flightPerfVerticalProfile`).
 
 ## 6. Données et sauvegardes
 

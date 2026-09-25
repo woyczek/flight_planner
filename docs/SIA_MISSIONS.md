@@ -143,7 +143,8 @@ Graybeard / Shadow / Eclipse.
   logarithmique (1 000, 2 000, 5 000, 10 000… habitants) : villes en **symboles OACI** (≥ 100 000
   hab. tache orange, ≥ 20 000 jaune cerclée d'orange, localité point jaune) au-dessus de leur
   seuil ; **libellés de villes** au-dessus du leur (les plus peuplées d'abord, sans recouvrement) ;
-  **surfaces bâties** aucune / contour (orange) / remplissage (jaune) / les deux, dessinées par le
+  **surfaces bâties** aucune / contour / remplissage (jaune) / les deux — contour orange autour des
+  villes ≥ 100 000 hab., jaune autour des autres —, dessinées par le
   studio sur tous les fonds, seulement autour des villes au-dessus du troisième seuil (20 000 par
   défaut ; polygones d'occupation du sol OpenMapTiles /
   OpenFreeMap, visibles dès l'échelle régionale — les fichiers du SIA ne décrivent aucun contour
@@ -283,6 +284,11 @@ radiale magnétique 300, 10 NM ; déclinaison de l'aérodrome le plus proche) ou
 « lat lon » —, chacun avec une **altitude prévue** facultative (`SIMIP/3000`, `TARGET/FL65`) ;
 homonymes : le plus proche du point précédent ; vide = points tournants de la mission dans
 l'ordre. Exemple : `LFOJ, BRY/4500, REN300010, SIMIP/3000, TARGET/FL65, SIMCP/5500, LFOT`.
+« /3000 » = altitude à atteindre au point ; **groupes vitesse / niveau** du plan de vol
+(`N0180A085`, `N0450F350`…) = niveau à partir du point ; **VFR** = pas de niveau ; la case 15 d'un
+plan de vol est acceptée. La **trajectoire prévue** (violet) monte et descend aux taux réglés
+(montée / descente en ft/min et kt, enregistrés dans la mission), avec **TOC** et **TOD** ; départ
+et arrivée au sol, sauf altitude donnée pour ces points.
 Le cheminement est **tracé sur les cartes** (tireté violet ; case à décocher).
 
 Le profil vertical est une **carte comme les autres** : entrée `profil_vertical.png` dans la liste

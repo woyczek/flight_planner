@@ -10,25 +10,91 @@
   const dist = (a, b) => { const dLat = rad(b.lat - a.lat), dLon = rad(b.lon - a.lon), h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon / 2) ** 2; return 2 * R * Math.asin(Math.min(1, Math.sqrt(h))); };
   const lerp = (a, b, t) => ({ lat: a.lat + (b.lat - a.lat) * t, lon: a.lon + (b.lon - a.lon) * t });
 
-  // « LFOT, SIMIP/3000, TARGET/FL65, 46.5 1.4, LFOT » (virgules, points-virgules ou lignes) :
-  // point de la mission (id ou nom), aérodrome (OACI), balise, « lat lon » ou « NOM lat lon » décimaux ;
-  // « /altitude » facultatif (ft AMSL ou FL). resolve(nom) → {name, lat, lon} ou null.
+  // Groupe vitesse / niveau du plan de vol OACI (case 15) : vitesse N (nœuds), K (km/h), M (Mach,
+  // centièmes) ; niveau F (niveau de vol), A (altitude, centaines de ft), S (niveau métrique) ou
+  // M (altitude métrique), en dizaines de mètres. Ex. N0450F350 = 450 kt au FL 350.
+  function speedLevel(t) {
+    const m = /^([NKM])(\d{3,4})([FASM])(\d{3,4})$/.exec(String(t).toUpperCase().trim()); if (!m) return null;
+    const v = +m[2], n = +m[4], kt = m[1] === 'N' ? v : m[1] === 'K' ? v / 1.852 : v / 100 * 573;
+    const ft = m[3] === 'F' || m[3] === 'A' ? n * 100 : n * 10 * FT;
+    return { ft: Math.round(ft), kt: Math.round(kt), code: m[0], label: m[3] === 'F' ? `FL${m[4].slice(-3)}` : m[3] === 'A' ? `${n * 100} ft` : `${n * 10} m` };
+  }
+  const icaoCoord = t => { const m = /^(\d{2})(\d{2})?([NS])(\d{3})(\d{2})?([EW])$/.exec(t); if (!m) return null; const lat = (+m[1] + (+m[2] || 0) / 60) * (m[3] === 'S' ? -1 : 1), lon = (+m[4] + (+m[5] || 0) / 60) * (m[6] === 'W' ? -1 : 1); return { name: t, lat, lon }; };
+
+  // Deux écritures :
+  // - liste (virgules, points-virgules ou lignes) : « LFOT, SIMIP/3000, TARGET/FL65, 46.5 1.4, LFOT » —
+  //   point de la mission, aérodrome, balise, point RNAV, « lat lon » ou « NOM lat lon » ; « /3000 » ou
+  //   « /FL65 » = altitude à atteindre au point ; « /N0450F350 » ou un groupe seul après le point =
+  //   niveau de croisière à partir de ce point ; « VFR » = pas de niveau ;
+  // - case 15 du plan de vol (séparée par des espaces) : « LFBO N0450F350 DCT TOU UN460 NTS/N0440F370
+  //   LFRN » — DCT, voies aériennes et SID / STAR sautés (tracé direct), coordonnées « 4630N00130E ».
+  // resolve(nom) → {name, lat, lon} ou null.
   function parseRoute(text, resolve) {
-    const out = [], unknown = [];
-    for (const raw of String(text || '').split(/[,;\n]+/).map(x => x.trim()).filter(Boolean)) {
+    const src = String(text || '').trim(), item15 = !/[,;\n]/.test(src) && /\s/.test(src);
+    const tokens = item15 ? src.split(/\s+/) : src.split(/[,;\n]+/).map(x => x.trim()).filter(Boolean);
+    const out = [], unknown = []; let pending = null;
+    const setLevel = lvl => { if (out.length) out[out.length - 1].lvl = lvl; else pending = lvl; };
+    for (const raw of tokens) {
+      const up = raw.toUpperCase();
+      if (up === 'DCT') continue;
+      if (up === 'VFR' || up === 'IFR') { if (up === 'VFR') setLevel({ vfr: true }); continue; }
+      const group = speedLevel(up); if (group) { setLevel(group); continue; }
       const [spec, altRaw] = raw.split('/').map(x => x.trim());
-      let alt = null;
-      if (altRaw) { const m = /^(FL)?\s*(\d+)/i.exec(altRaw); if (m) alt = m[1] ? +m[2] * 100 : +m[2]; }
+      let alt = null, lvl = null;
+      if (altRaw) { const g = speedLevel(altRaw); if (g) lvl = g; else if (/^VFR$/i.test(altRaw)) lvl = { vfr: true }; else { const m = /^(FL)?\s*(\d+)/i.exec(altRaw); if (m) alt = m[1] ? +m[2] * 100 : +m[2]; } }
       const c = /^(?:(\S*[A-Za-z]\S*)\s+)?(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)$/.exec(spec);
-      const p = c ? { name: c[1] || spec, lat: +c[2], lon: +c[3] } : resolve(spec);
-      if (p && Number.isFinite(p.lat) && Number.isFinite(p.lon)) out.push({ ...p, alt }); else unknown.push(spec);
+      const p = c ? { name: c[1] || spec, lat: +c[2], lon: +c[3] } : icaoCoord(spec.toUpperCase()) || resolve(spec);
+      if (p && Number.isFinite(p.lat) && Number.isFinite(p.lon)) { out.push({ ...p, alt, lvl: lvl || pending }); pending = null; }
+      else if (item15 && (/^[A-Z]{1,2}\d{1,4}[A-Z]?$/.test(up) || /^[A-Z]{2,5}\d[A-Z]$/.test(up))) continue; // voie aérienne, SID / STAR
+      else unknown.push(spec);
     }
     return { points: out, unknown };
   }
 
+  // Trajectoire verticale prévue : niveau en vigueur (groupe vitesse / niveau à partir d'un point,
+  // « /altitude » = altitude à atteindre au point puis conservée), montée et descente aux taux
+  // recommandés (pente = taux × 60 / vitesse) ; départ et arrivée au sol (ou à l'altitude donnée pour
+  // ces points) ; VFR = pas de niveau (pas de tracé). TOC / TOD : début et fin du palier le plus haut.
+  function planPath(samples, marks, total, { climb, descent }) {
+    const gc = climb.fpm * 60 / climb.kt / NM, gd = descent.fpm * 60 / descent.kt / NM; // ft par mètre
+    const seg = []; let level = null, any = false;
+    for (let k = 0; k < marks.length - 1; k++) {
+      const m = marks[k], next = marks[k + 1];
+      if (m.lvl) level = m.lvl.vfr ? null : m.lvl.ft;
+      const target = Number.isFinite(next.alt) ? next.alt : level;
+      seg.push({ from: m.s, to: next.s, target }); if (target != null) any = true;
+      if (Number.isFinite(next.alt) && !next.lvl) level = next.alt;
+    }
+    if (!any) return null;
+    const first = marks[0], last = marks[marks.length - 1], n = samples.length - 1;
+    const start = Number.isFinite(first.alt) ? first.alt : samples[0].center, end = Number.isFinite(last.alt) ? last.alt : samples[n].center;
+    const alt = []; let a = start, k = 0;
+    for (let i = 0; i <= n; i++) {
+      const q = samples[i]; while (k < seg.length - 1 && q.s > seg[k].to + 1e-6) k++;
+      const t = seg[k].target, ds = i ? q.s - samples[i - 1].s : 0;
+      if (t == null) { alt.push(null); continue; }
+      if (t > a) a = Math.min(t, a + gc * ds); else if (t < a) a = Math.max(t, a - gd * ds);
+      alt.push(Math.min(a, end + gd * (total - q.s)));
+    }
+    // TOC = fin de la première montée, TOD = début de la descente finale (paliers intermédiaires possibles)
+    const vals = alt.filter(v => v != null), top = Math.max(...vals), eps = 1;
+    let iToc = alt.findIndex(v => v != null);
+    while (iToc < n && alt[iToc + 1] != null && alt[iToc + 1] > alt[iToc] + eps / 10) iToc++;
+    let iTod = n; while (iTod > 0 && alt[iTod - 1] != null && alt[iTod - 1] > alt[iTod] + eps / 10) iTod--;
+    if (iTod < iToc) iTod = iToc;
+    // paliers (≥ 2 % du trajet) pour les libellés de niveau
+    const levels = []; let run = 0;
+    for (let i = 1; i <= n + 1; i++) {
+      if (i <= n && alt[i] != null && alt[i - 1] != null && Math.abs(alt[i] - alt[i - 1]) < eps) continue;
+      if (alt[run] != null && samples[Math.min(i, n)].s - samples[run].s > total * .02 && alt[run] > start + 100) levels.push({ s: (samples[run].s + samples[Math.min(i - 1, n)].s) / 2, alt: alt[run] });
+      run = i;
+    }
+    return { alt, toc: { s: samples[iToc].s, alt: alt[iToc] }, tod: { s: samples[iTod].s, alt: alt[iTod] }, top, levels, climb, descent };
+  }
+
   // Échantillonnage : ~4 points par NM (100 à 800), relief = maximum sur la ligne et ± corridorM de part
   // et d'autre ; elevation(lat, lon) → mètres (promesse). Obstacles à moins de corridorNm du trajet.
-  async function build({ points, elevation, airspaces = [], obstacles = [], corridorM = 1000, corridorNm = 1 }) {
+  async function build({ points, elevation, airspaces = [], obstacles = [], corridorM = 1000, corridorNm = 1, climb = { fpm: 1000, kt: 140 }, descent = { fpm: 800, kt: 160 } }) {
     if (points.length < 2) throw Error('Cheminement : au moins deux points.');
     const legs = []; let total = 0;
     for (let i = 1; i < points.length; i++) { const d = dist(points[i - 1], points[i]); legs.push({ a: points[i - 1], b: points[i], from: total, d }); total += d; }
@@ -67,8 +133,10 @@
         if (dm <= corridorNm * NM) { near.push({ ...o, s: l.from + l.d * t }); break; }
       }
     }
-    const marks = [0, ...legs.map(l => l.from + l.d)].map((s, i) => ({ s, name: points[i].name, alt: points[i].alt }));
-    return { total, samples, crossed, obstacles: near, marks };
+    const marks = [0, ...legs.map(l => l.from + l.d)].map((s, i) => ({ s, name: points[i].name, alt: points[i].alt, lvl: points[i].lvl }));
+    const ok = r => r && +r.fpm > 0 && +r.kt > 0 ? { fpm: Math.abs(+r.fpm), kt: +r.kt } : null;
+    const plan = planPath(samples, marks, total, { climb: ok(climb) || { fpm: 1000, kt: 140 }, descent: ok(descent) || { fpm: 800, kt: 160 } });
+    return { total, samples, crossed, obstacles: near, marks, plan };
   }
 
   const COLORS = { R: '#d32f2f', P: '#b71c1c', D: '#ef6c00', TRA: '#ef6c00', CTR: '#1565c0', TMA: '#1565c0', CTA: '#3949ab', SIV: '#2e7d32', RMZ: '#555', TMZ: '#555' };
@@ -76,7 +144,7 @@
   // obstacles, points et altitude prévue ; libellés d'espaces sans recouvrement.
   function draw(ctx, data, { W, H, ceiling = 0, floor = 0, scale = 1, limitFt, title = '', abbrev = false } = {}) {
     const f = 11 * scale, padL = 58 * scale, padR = 16 * scale, padT = (title ? 34 : 18) * scale, padB = 64 * scale;
-    const terrainMax = Math.max(0, ...data.samples.map(q => q.terrain)), obsMax = Math.max(0, ...data.obstacles.map(o => o.elev || 0)), altMax = Math.max(0, ...data.marks.map(m => m.alt || 0));
+    const terrainMax = Math.max(0, ...data.samples.map(q => q.terrain)), obsMax = Math.max(0, ...data.obstacles.map(o => o.elev || 0)), altMax = Math.max(0, ...data.marks.map(m => m.alt || m.lvl?.ft || 0), data.plan?.top || 0);
     const rel = t => /ASFC|AGL|SFC/i.test(t || '') && !/AMSL/i.test(t || '');
     const floorOf = c => { const mid = Math.round((c.i0 + c.i1) / 2); return (rel(c.a.lower) ? data.samples[mid].center : 0) + limitFt(c.a.lower, false); };
     const zoneMax = Math.max(0, ...data.crossed.map(floorOf).filter(v => v <= 19500).map(v => v + 1500));
@@ -142,9 +210,20 @@
       ctx.fillStyle = '#17202a'; ctx.fillText(m.name, tx, y);
       ctx.font = `${f * .9}px Arial, sans-serif`; ctx.fillStyle = '#56626b'; ctx.fillText(dist, tx, y + 13 * scale); ctx.font = `${f}px Arial, sans-serif`;
     }
-    // altitude prévue (points avec « /altitude », interpolée entre eux)
-    const planned = data.marks.filter(m => Number.isFinite(m.alt));
-    if (planned.length >= 2) { ctx.strokeStyle = '#6a1b9a'; ctx.lineWidth = 2.2 * scale; ctx.beginPath(); planned.forEach((m, i) => { const x = X(m.s), y = Y(m.alt); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke(); ctx.fillStyle = '#6a1b9a'; for (const m of planned) { ctx.beginPath(); ctx.arc(X(m.s), Y(m.alt), 3 * scale, 0, Math.PI * 2); ctx.fill(); } }
+    // plan de vol : trajectoire prévue (violet), TOC / TOD, niveaux des paliers
+    const plan = data.plan;
+    if (plan) {
+      const col = '#6a1b9a'; ctx.strokeStyle = col; ctx.lineWidth = 2.4 * scale; ctx.lineJoin = 'round'; ctx.beginPath(); let pen = false;
+      plan.alt.forEach((v, i) => { if (v == null) { pen = false; return; } const x = X(data.samples[i].s), y = Y(v); pen ? ctx.lineTo(x, y) : ctx.moveTo(x, y); pen = true; }); ctx.stroke();
+      ctx.fillStyle = col; ctx.textAlign = 'center';
+      for (const [m, name] of [[plan.toc, 'TOC'], [plan.tod, 'TOD']]) {
+        if (!m || (name === 'TOD' && Math.abs(plan.tod.s - plan.toc.s) < data.total * .005)) continue;
+        const x = X(m.s), y = Y(m.alt); ctx.beginPath(); ctx.moveTo(x, y - 4 * scale); ctx.lineTo(x + 4 * scale, y); ctx.lineTo(x, y + 4 * scale); ctx.lineTo(x - 4 * scale, y); ctx.closePath(); ctx.fill();
+        const t = `${name} ${(m.s / NM).toFixed(0)} NM`, w = ctx.measureText(t).width + 6 * scale, r = { x0: x - w / 2, y0: y - 20 * scale, x1: x + w / 2, y1: y - 6 * scale };
+        ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillRect(r.x0, r.y0, w, r.y1 - r.y0); ctx.fillStyle = col; ctx.font = `bold ${f}px Arial, sans-serif`; ctx.fillText(t, x, (r.y0 + r.y1) / 2); ctx.font = `${f}px Arial, sans-serif`; taken.push(r);
+      }
+      for (const l of plan.levels) { const x = X(l.s), y = Y(l.alt) + 9 * scale, t = l.alt >= 10000 || l.alt % 100 ? `FL${String(Math.round(l.alt / 100)).padStart(3, '0')}` : `${Math.round(l.alt)} ft`, w = ctx.measureText(t).width + 6 * scale, r = { x0: x - w / 2, y0: y - f * .6, x1: x + w / 2, y1: y + f * .6 }; if (!free(r)) continue; taken.push(r); ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillRect(r.x0, r.y0, w, r.y1 - r.y0); ctx.fillStyle = col; ctx.fillText(t, x, y); }
+    }
     ctx.strokeStyle = '#17202a'; ctx.lineWidth = 1; ctx.strokeRect(padL, padT, W - padL - padR, H - padT - padB);
     ctx.restore();
   }
@@ -222,5 +301,5 @@
     return { base, profiles, aliases: json('siaZoneAliases', {}), profileId: vp.profile || 'vprof', vertical: vp };
   }
 
-  window.SiaProfile = { parseRoute, build, draw, zones: { norm: zNorm, core: zCore, family: zFamily, hit: zHit, list: zoneList }, selectAirspaces, resolver, destination, terrainSampler, loadStudio, opt };
+  window.SiaProfile = { parseRoute, speedLevel, build, draw, zones: { norm: zNorm, core: zCore, family: zFamily, hit: zHit, list: zoneList }, selectAirspaces, resolver, destination, terrainSampler, loadStudio, opt };
 })();

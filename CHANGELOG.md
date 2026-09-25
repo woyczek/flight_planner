@@ -11,8 +11,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ## [Non publié]
 
 - **Flight Performance & Fuel Planner — Profil vertical** : bloc de coupe le long d'une route
-  saisie ou importée du dernier OFP SimBrief ; profil d'affichage du studio SIA (par défaut celui
-  choisi dans le studio pour le profil vertical) et base SIA mémorisée par le studio.
+  saisie ou reprise de l'OFP importé en en-tête (paliers compris) ; trajectoire prévue aux taux
+  de montée / descente du profil avion actif, **TOC** et **TOD** ; profil d'affichage du studio SIA
+  (par défaut celui choisi dans le studio) et base SIA mémorisée par le studio.
+- Profil vertical (studio et planificateur) : **groupes vitesse / niveau** du plan de vol
+  (`N0450F350`, K / M, F / A / S / M), **VFR**, case 15 (DCT, voies aériennes, coordonnées
+  `4630N00130E`) ; trajectoire tracée sur la coupe.
+- Surfaces bâties : contour **orange** autour des agglomérations des villes ≥ 100 000 hab.,
+  **jaune** autour des autres.
 - Studio SIA : **plancher** de la coupe réglable (en plus du plafond) ; points « NOM lat lon ».
 - Module `SIA XML/vertical_profile.js` partagé : sélection des espaces d'un profil, résolution
   des points, relief (le studio s'en sert aussi).
