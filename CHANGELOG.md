@@ -67,6 +67,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   Aucun, ou l'un des 31 axes) ; axes ENR 5.7 mémorisés avec la base (fonctionne sans relire le
   dossier, y compris en `file://`) ; base mémorisée d'une version précédente relue automatiquement.
 - Studio : valeurs MORA lisibles (12 pt, opacité 90 %, halo non atténué).
+- Studio : **symbologie des cartes OACI** (légende SIA / IGN) : espaces contrôlés par classe,
+  R / D hachurées, P quadrillées, RTBA, croix des petites zones, cartouches nom / plafond /
+  plancher ; **tranche d'altitude** affichée (plancher / plafond).
+- Studio : **aérodromes** (type de piste, orientation, CAP / restreint / État), **radionavigation**
+  (VOR, VOR-DME, VOR-TACAN, TACAN, DME, NDB, rose magnétique), **obstacles** (hauteur minimale,
+  balisage, groupes, éoliennes) lus dans l'AIXM SIA (`SIA XML/aero_symbols.js`).
+- Studio : plusieurs hippodromes à la fois (liste à cocher) ; carte de contrôle dans une
+  **fenêtre séparée synchronisée** (⧉) ; colonnes redimensionnables jusqu'à 25 / 75 sans
+  débordement du bloc de sélection des zones.
 - Studio : « Autres éléments » regroupés par élément (case à cocher en titre, réglages grisés
   quand l'élément est décoché).
 - Studio : **quadrillage** au pas adapté à l'emprise (1′ à 5°), libellés en degrés et minutes ;

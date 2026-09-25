@@ -13,7 +13,9 @@ Mission (YAML / Markdown) ──► Générateur de mission ──► Studio car
                                    └──► Créer le CR DEFA (compte rendu pré-rempli)
 ```
 
-Code : les deux pages, `shared/aar_tracks.js` (axes de ravitaillement ENR 5.7), composants du
+Code : les deux pages, `SIA XML/aero_symbols.js` (lecture de l'AIXM : aérodromes, pistes,
+radionavigation, obstacles ; symbologie de la carte), `shared/aar_tracks.js` (axes de
+ravitaillement ENR 5.7), composants du
 framework (bandeau et menu ☰, blocs, `FileAccess`, fenêtres de copier-coller, sauvegarde locale).
 Bibliothèques livrées dans le dossier : MapLibre GL (`maplibre-gl.js/.css`), jsPDF
 (`jspdf.umd.min.js`) ; js-yaml est celui du framework. Notes de conception :
@@ -23,7 +25,7 @@ Bibliothèques livrées dans le dossier : MapLibre GL (`maplibre-gl.js/.css`), j
 
 | Fichier | Rôle | Dépôt |
 |---|---|---|
-| `AIXM4.5_all_FR_OM_<date>.xml` | AIXM 4.5 complet du SIA : contours R / D / P / CTR / TMA avec limites verticales, zones AZBA (RTBA), **13 800 obstacles** (grille MORA) | hors dépôt (≈ 44 Mo par cycle) |
+| `AIXM4.5_all_FR_OM_<date>.xml` | AIXM 4.5 complet du SIA : contours R / D / P / CTR / TMA avec classes et limites verticales, zones AZBA (RTBA), aérodromes et pistes, VOR / DME / TACAN / NDB, **13 800 obstacles** | hors dépôt (≈ 44 Mo par cycle) |
 | `sia-airspaces-<date>.xml` | Contours d'espaces (SIV et compléments) | hors dépôt |
 | `XML_SIA_<date>.xml` | Export XML-SIA complet (inventaire) | hors dépôt |
 | `miam-enr-5-7-tracks.xml` | **Axes de ravitaillement** MILAIP ENR 5.7 nommés et corrigés (31 axes + 6 circuits heavy) | versionné |
@@ -138,14 +140,27 @@ Graybeard / Shadow / Eclipse.
   - **alias** communs aux profils (« @RTBA » : proposé d'après les zones publiées sur les
     cartes AZBA, modifiable ; autres alias à créer) ;
   - **zones retenues** listées à côté, triées par famille (R, P, D, CTR, TMA, SIV) puis par
-    numéro (12 avant 118). Comparaison sans espaces, tirets ni accents (« LF-R 45 A » = « R 45 A »).
+    numéro (12 avant 118). Comparaison sans espaces, tirets ni accents (« LF-R 45 A » = « R 45 A ») ;
+  - **tranche affichée** (plancher / plafond en ft) : seules les zones qui la recoupent ;
+  - **symbologie des cartes OACI** (légende SIA / IGN au 1 : 500 000) : espaces contrôlés par
+    classe (A bande rouge, B / C / D trait et bande bleus, E bande bleu clair, classe en carré dans
+    le cartouche), R / D hachurées, P quadrillées, **RTBA** en bande rouge hachurée de blanc,
+    **croix rouge** pour une zone trop petite à l'échelle, cartouches « nom / plafond / plancher ».
 - **Onglet Éléments** — un bloc par élément, réglages grisés quand il est décoché :
+  **aérodromes** (piste en dur > 2300 m orientée, 1000–2300 m, < 1000 m, bande, hélistation ;
+  ouvert à la CAP en bleu plein avec repères, restreint en clair, État en rouge) ;
+  **radionavigation** (VOR, VOR-DME, VOR-TACAN, TACAN, DME, NDB ; cartouche « (D) ROA 110.25 »,
+  nom en clair, rose au nord magnétique en vue détaillée) ; **obstacles** (≥ 300 / 500 / 1000 ft
+  AGL, élevés, groupes, balisés de nuit, éoliennes ; cote AMSL et (hauteur) en vue détaillée ;
+  regroupés à l'écran, le plus haut représentant le groupe) ;
   points tournants (libellés, taille) ; méridiens et parallèles (libellés en bordure en degrés
   et minutes) ; grille MORA (valeurs, opacité, espacement minimal) ; libellés des zones et des
   villes ; hippodrome de ravitaillement ; cercle de la zone de mission.
 
 **Carte de contrôle** : la carte choisie de la mission, dessinée avec le profil **en cours de
-modification**, actualisée à chaque réglage ; bouton ⤢ pour l'agrandir (Échap pour revenir).
+modification**, actualisée à chaque réglage ; bouton ⤢ pour l'agrandir (Échap pour revenir),
+bouton ⧉ pour l'ouvrir dans une **fenêtre séparée synchronisée** (même page réduite à la carte,
+`#fenetre` ; mission, profils, alias et carte choisie transmis à chaque réglage).
 Zones avec leurs libellés et limites (« R 69 — 800 ft ASFC – 2700 ft ASFC »), quadrillage, MORA,
 hippodrome, points tournants, villes.
 
@@ -193,10 +208,10 @@ particuliers S1 (milieu) et S2 (largeur, côté). Géométrie exacte (`shared/aa
 branche aller IP → CP, branche retour décalée de la largeur (14 NM) du côté de S2, virages en
 demi-cercles ; côté non publié (pas de S2) → tracé en pointillés.
 
-**Axe de la mission** (onglet Éléments) : **Automatique** = l'axe dont le plus de points sont à
-moins de 2 km d'un point de la mission, ou dont le nom figure dans la mission (la raison est
-affichée : « SIMONE — SIMIP, SIMCP, S1, S2 à moins de 2 km ») ; **Aucun** ; ou l'un des 31 axes.
-Un seul hippodrome est tracé.
+**Hippodromes de la mission** (onglet Éléments, liste à cocher) : **Automatique** = l'axe dont le
+plus de points sont à moins de 2 km d'un point de la mission, ou dont le nom figure dans la
+mission (la raison est affichée : « SIMONE — SIMIP, SIMCP, S1, S2 à moins de 2 km »), et / ou
+n'importe lesquels des 31 axes ; rien de coché = aucun hippodrome.
 
 ## 5. Stockage dans le navigateur
 
@@ -208,7 +223,7 @@ Un seul hippodrome est tracé.
 | `siaDisplayProfiles` | Profils d'affichage |
 | `siaZoneAliases` | Alias de zones |
 | `siaProfileTab`, `siaProfileSplit` | Onglet ouvert, rapport des colonnes |
-| IndexedDB `sia-map-parser` | Base SIA analysée (contours, villes, MORA, obstacles, axes) |
+| IndexedDB `sia-map-parser` | Base SIA analysée (contours, villes, MORA, aérodromes, radionavigation, obstacles, axes) |
 
 ## 6. Services externes
 
