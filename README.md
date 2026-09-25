@@ -112,6 +112,32 @@ Folder `SIA XML/`; details (French): [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md
   geometry).
 - `tools/`: maintenance scripts (new mission family, cache version bump).
 
+## Known bugs
+
+Version 2.2.2. Workarounds at the end of each line.
+
+- **SIA studio — generating in a hidden tab**: browsers suspend rendering of background tabs, so
+  PNG generation can fail (“Délai dépassé pendant le chargement du fond de carte”). Keep the studio
+  tab visible while generating.
+- **SIA studio — freeze when all navaid types are unchecked**: reported, not reproduced. Reload the
+  page if it happens and report the display profile used.
+- **SIA studio — city labels**: they no longer overlap each other but can still overlap a ⊗
+  (overflight prohibited) or a park symbol.
+- **SIA studio — built-up areas**: kept by distance to the cities of the cities file (radius grows
+  with population), so a neighbouring town may be included and a sprawling suburb cut. Not drawn on
+  the SVG output over the “Carte France vierge” background.
+- **SIA studio — parks and reserves**: only 26 of the 143 in the AIXM have an outline; the others
+  are a single point (symbol only). SIA data limitation.
+- **SIA studio — online backgrounds and data** (OpenFreeMap, OpenTopoMap, Overpass, elevation
+  tiles): no background map or peaks offline; peaks are only fetched for small areas. MORA values
+  are computed, not certified.
+- **After an update**: the browser may keep the old page in cache (Ctrl + F5); the studio asks to
+  read the SIA folder again once (base cached by a previous version).
+- **Pages opened as `file://`**: CSV ledgers next to the pages cannot be read (browser security);
+  legacy reportings fall back to the embedded ledger. Serve the folder over HTTP or pick the folder
+  (Chrome / Edge).
+- **Saving to a folder** (File System Access): Chrome and Edge only; other browsers download the files.
+
 ## Quick start
 
 1. Get the repository (clone or download) — see [INSTALL.md](INSTALL.md).

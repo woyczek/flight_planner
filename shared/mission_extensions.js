@@ -1,3 +1,6 @@
+// Compléments des CR historiques (FIRE / GAAR, HEMS) : colonnes supplémentaires du registre (réseau
+// en ligne, identifiants IVAO / VATSIM, altitude-densité HEMS), liste des circuits FMS connus, mise à
+// jour du registre en cache après chaque CR.
 (() => {
   'use strict';
   const message = values => values[window.RepositoryNav?.getLanguage?.() || 'fr'] || values.fr;
@@ -23,6 +26,7 @@
     for(let i=0;i<String(text||'').length;i++){const char=text[i],next=text[i+1];if(quoted&&char==='"'&&next==='"'){value+='"';i++;}else if(char==='"')quoted=!quoted;else if(!quoted&&char===';'){row.push(value);value='';}else if(!quoted&&(char==='\n'||char==='\r')){if(char==='\r'&&next==='\n')i++;row.push(value);if(row.some(Boolean)&&!String(row[0]).startsWith('#'))out.push(row);row=[];value='';}else value+=char;}row.push(value);if(row.some(Boolean)&&!String(row[0]).startsWith('#'))out.push(row);return out;
   };
   const csvLine = values => values.map(value => '"' + String(value ?? '').replace(/"/g,'""') + '"').join(';');
+  // Ajoute le CR courant au registre en cache (reporting à jour sans relire le fichier).
   function cacheCurrentMission(){
     try {
       const isHems=location.pathname.includes('/HEMS/'),configKey=isHems?'ledgerName':'gaarLedgerName';

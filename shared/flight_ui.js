@@ -1,3 +1,6 @@
+// Planificateur de performances (flight_performance_planner.html) : habillage commun — blocs repliables
+// et déplaçables, barre d'état « profil modifié » (enregistrer / recharger / supprimer), confirmation avant
+// de quitter un profil non enregistré, tri de la table RPM, rendu du profil moteur.
 (()=>{
   const clone=o=>structuredClone(o);
   const rawSetActive=setActive,rawListAircraft=listAircraft;
@@ -40,6 +43,7 @@
   ["importBtn","exportLnmBtn","exportBtn","exportDbBtn","sbAirframeBtn"].forEach(id=>{if($(id))$(id).style.display="none"});if($("dirBtn"))$("dirBtn").style.display="none";
   document.body.classList.add("has-status-bar");const status=document.createElement("div");status.className="status-bar";status.innerHTML='<span id="persistentStatus" class="status-text">Base locale prête.</span><button id="statusReload">Recharger la base locale</button><button id="statusSave" class="primary">Enregistrer le profil</button><button id="statusDelete">Supprimer cet avion</button>';document.body.append(status);
   window.updateProfileStatus=()=>{status.classList.toggle("dirty",profileDirty);$("persistentStatus").textContent=!active?"Aucun profil actif.":profileDirty?`Modifications non enregistrées — ${active.name||active.id}`:`Profil enregistré — ${active.name||active.id}`};
+  // Profil d'appareil : enregistrement, rechargement, changement avec confirmation.
   function saveCurrent(){try{commitProfileEditor(false);state.profiles[active.id]=clone(active);activeSavedSnapshot=JSON.stringify(active);profileDirty=false;save();$("profileEditStatus").textContent="Profil enregistré dans la base locale.";updateProfileStatus()}catch(e){$("profileEditStatus").textContent=e.message}}
   $("statusSave").onclick=saveCurrent;$("saveProfileBtn").onclick=saveCurrent;$("statusDelete").onclick=()=>$("deleteProfileBtn").click();
   $("statusReload").onclick=()=>{let restored=JSON.parse(localStorage.getItem("flightPerfState")||"null");if(!restored?.profiles)return alert("Aucune base locale enregistrée.");state=restored;let id=state.lastAircraft;if(id&&state.profiles[id])rawSetActive(state.profiles[id],"base locale rechargée");else clearActive("Base locale rechargée");updateProfileStatus()};
@@ -54,6 +58,7 @@
   let curveSort={key:"rpm",dir:1};
   if(window.AppFramework?.sortableTable){window.AppFramework.sortableTable($("engineCurveTable")?.querySelector("thead"),curveSort,()=>renderProfile());}
   else $("engineCurveTable")?.querySelector("thead").addEventListener("click",e=>{let key=e.target.dataset.sort;if(!key)return;curveSort.key===key?curveSort.dir*=-1:curveSort={key,dir:1};renderProfile()});
+  // Profil moteur : régimes par phase (montée, croisière…) déduits de la courbe RPM / consommation.
   renderProfile=function(){
     if(!active)return;
     const names={climb:"Montée",cruise:"Croisière",descent:"Descente",taxi:"Taxi",alternate:"Alternat"},labelOf={climb:"climb",cruise:"cruise",descent:"descent",taxi:"taxi"},num=v=>finiteProfileNumber(v)?Number(v):null;

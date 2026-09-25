@@ -118,6 +118,33 @@ Dossier `SIA XML/` ; détail : [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md).
   géométrie des hippodromes).
 - `tools/` : scripts de maintenance (nouvelle famille de missions, version de cache).
 
+## Bugs connus
+
+Version 2.2.2. Contournements indiqués en fin de ligne.
+
+- **Studio SIA — génération dans un onglet caché** : le navigateur suspend le rendu des onglets
+  en arrière-plan ; la génération des PNG peut alors échouer (« Délai dépassé pendant le chargement
+  du fond de carte »). Garder l'onglet du studio visible pendant la génération.
+- **Studio SIA — gel en décochant tous les types de balises** : signalé, non reproduit. Recharger
+  la page si cela se produit et signaler le profil utilisé.
+- **Studio SIA — libellés de villes** : placés sans recouvrement entre eux, mais ils peuvent encore
+  chevaucher un symbole ⊗ (survol interdit) ou un symbole de parc.
+- **Studio SIA — agglomérations** : les surfaces bâties retenues le sont par distance aux villes du
+  fichier des villes (rayon croissant avec la population) : une commune voisine peut être incluse,
+  une banlieue très étendue coupée. Non dessinées sur la sortie SVG au fond « Carte France vierge ».
+- **Studio SIA — parcs et réserves** : 26 des 143 de l'AIXM ont un contour ; les autres ne sont
+  qu'un point (symbole seul). Limite des données du SIA.
+- **Studio SIA — fonds et données en ligne** (OpenFreeMap, OpenTopoMap, Overpass, tuiles d'altitude) :
+  sans réseau, pas de fond de carte ni de sommets ; les sommets ne sont cherchés que sur les petites
+  emprises. La MORA est calculée, non certifiée.
+- **Après une mise à jour** : le navigateur peut garder l'ancienne page en cache (Ctrl + F5) ; le
+  studio demande de relire une fois le dossier SIA (base mémorisée d'une version précédente).
+- **Pages ouvertes en `file://`** : les registres CSV à côté des pages ne sont pas lus (sécurité du
+  navigateur) ; les reportings historiques retombent sur le registre embarqué. Servir le dossier en
+  HTTP ou choisir le dossier (Chrome / Edge).
+- **Enregistrement dans un dossier** (File System Access) : Chrome et Edge seulement ; ailleurs,
+  téléchargement des fichiers.
+
 ## Démarrage rapide
 
 1. Récupérer le dépôt (clone ou archive) — voir [INSTALL.md](INSTALL.md).

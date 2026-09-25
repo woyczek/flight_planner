@@ -488,6 +488,8 @@ svg.timeline-chart{height:330px;touch-action:pan-y;cursor:crosshair}
 <script src="../AircraftDB/aircraft_icons.js"></script>
 <script>
 "use strict";
+// Tableau de bord des atterrissages : fichiers CSV / LOG d'atterrissages (formats riche et hérité),
+// période, appareil, notes, tendances, graphiques et tableaux ; traductions fr / en / de / es.
 
 const TR={
 fr:{title:"Landing Performance — Synthèse",language:"Langue",aircraft:"Appareil",all:"Tous",exclude:"exclure les mesures manifestement aberrantes",window:"Fenêtre récente",print:"Imprimer / PDF",choose:"Choisis ou dépose un fichier CSV ou LOG.",evolution:"Évolution",summary:"Synthèse par appareil",quality:"Qualité des données",landings:"Atterrissages",used:"mesure(s) utilisées",allAircraft:"tous appareils",filterOn:"filtre de plausibilité actif",filterOff:"filtre désactivé",richTitle:"Format riche détecté.",richNote:"La progression est évaluée principalement sur le Score fourni par la source ; FPM et G servent à l’interprétation.",legacyTitle:"Format historique allégé détecté.",legacyNote:"Il ne contient ni Score final ni G final. La progression est estimée à partir du landing rate brut, de la qualité de flare, de la vitesse de nez et du float.",unknown:"Metric2, Metric6 et Metric7 restent non interprétées et ne participent pas à la conclusion.",nLandings:"Atterrissages",avgScore:"Score moyen",minmaxScore:"Score min / max",avgFpm:"FPM moyen",minmaxFpm:"FPM min / max",avgG:"G moyen",minmaxG:"G min / max",butter:"Butter / Very Good",median:"médiane",signed:"valeurs signées",relative:"Indice technique",avgLanding:"Landing rate brut moy.",minmaxLanding:"Landing rate min / max",proxy:"proxy du taux de toucher",avgNose:"|Nose rate| moyen",avgFloat:"Float moyen",flareGood:"Flare Good / Very good",usable:"Mesures exploitables",afterFilter:"après filtre",raw:"brutes",insufficient:"Progression : données insuffisantes",need4:"Il faut au moins quatre mesures exploitables.",noTrend:"Aucune progression nette",progress:"Progression probable",slightProgress:"Légère progression",regress:"Régression probable",slightRegress:"Légère régression",robust:"Pente robuste",projected:"variation projetée",recent:"Moyenne des {n} derniers",previous:"contre {v} pour les {n} précédents",scoreMain:"Le Score fourni par la source est utilisé comme indicateur principal de progression.",relativeIndex:"Indice technique relatif",signals:"Signaux",better:"mieux",worse:"moins bien",stable:"stable/indéterminé",notOfficial:"L’indice n’est pas un score officiel : 45 % landing rate brut, 25 % qualité de flare, 20 % |nose rate|, 10 % float, normalisés par appareil.",scoreChart:"Score — chronologie et tendance",fpmChart:"Touchdown — FPM",gChart:"Peak G",scatter:"FPM × G — qualité du toucher",relativeChart:"Indice technique relatif — chronologie",landingChart:"Landing rate brut — proxy FPM",noseChart:"Nose rate — °/s",floatChart:"Float — secondes",total:"Mesures totales",plausible:"Jugées plausibles",flagged:"Signalées comme aberrantes",reasons:"Motifs",richRules:"Règles : groundspeed < 25 ou > 250 kt ; |FPM| > 5000 ; G < 0,10 ou > 12 ; |pitch| > 40° ; |bank| > 45°.",legacyRules:"Règles : landing rate non fini ou |rate| > 5000 ; |nose rate| > 50°/s ; float > 60 s. Les colonnes inconnues ne servent pas à filtrer.",noData:"Aucune donnée",insufficientShort:"données insuffisantes",noTrendShort:"pas de tendance nette",ok:"OK",conclusion:"Conclusion",date:"Date",dataQuality:"Qualité donnée",index:"Indice relatif",rawLanding:"Landing rate brut",error:"Erreur"},
@@ -787,6 +789,7 @@ Object.assign(TR.es,{
   notEnoughMoving:"No hay suficientes datos para una media móvil de {n} aterrizajes."
 });
 
+// ===== Langue de la page (tables TR / EXTRA ci-dessus) =====
 function detectLanguage(){
   const candidates=[];
   try{
@@ -1031,6 +1034,7 @@ Object.assign(TR.es,{
 });
 
 const PREF_KEY="LandingPerformanceDashboardPrefsV12";
+// ===== Préférences mémorisées : plage de dates par fichier, tendances, options =====
 function loadPreferences(){
   try{
     const raw=localStorage.getItem(PREF_KEY);
@@ -1102,6 +1106,7 @@ function restorePersistentControls(){
   updateTrendControls();
   updateCalibrationInfo();
 }
+// ===== Appareils : type OACI (AircraftDB), catégorie, silhouette, tri du menu ; sélecteur d'appareil =====
 function normalizeAircraftKey(s){return String(s||"").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Z0-9]/g,"")}
 function aircraftDbCache(){
   if(!aircraftDbCache._v){
@@ -1306,6 +1311,7 @@ function rebuildAircraftSelect(){
       items.sort((a,b)=>String(a.value).localeCompare(String(b.value),undefined,{numeric:true,sensitivity:"base"})).map(e=>`<button class="aircraft-item${e.profile?" profile-only":""}" type="button" role="menuitemradio" data-value="${esc(e.value)}"${e.profile?` title="${esc(L(AIRCRAFT_PROFILE_TIP))}"`:""}>${aircraftIconHTML(e.value)}<span class="ac-label">${esc(e.value)}</span><span class="ac-meta">${esc(aircraftTypeLabel(e.value))}${e.profile?" · "+esc(L(AIRCRAFT_PROFILE_WORD)):""}</span></button>`).join("")).join("");
   syncAircraftPicker();
 }
+// ===== Menus langue et options ; libellés P95 / crash =====
 function languageFlagSvg(code){
   if(code==="fr")return '<svg viewBox="0 0 60 36" aria-hidden="true"><rect width="20" height="36" x="0" fill="#0055A4"/><rect width="20" height="36" x="20" fill="#fff"/><rect width="20" height="36" x="40" fill="#EF4135"/></svg>';
   if(code==="de")return '<svg viewBox="0 0 60 36" aria-hidden="true"><rect width="60" height="12" y="0" fill="#000"/><rect width="60" height="12" y="12" fill="#DD0000"/><rect width="60" height="12" y="24" fill="#FFCE00"/></svg>';
@@ -1408,6 +1414,7 @@ let analysisSize=(()=>{
     return Number.isInteger(v)&&v>=0&&v<=3?v:1;
   }catch(e){return 1}
 })();
+// Taille des graphiques de l'analyse.
 function applyAnalysisSize(){
   const dock=$("analysisDock");
   if(!dock)return;
@@ -1485,6 +1492,7 @@ const CACHE_DB_NAME="LandingPerformanceDashboardCache";
 const CACHE_STORE="datasets";
 const CACHE_KEY="lastDataset";
 
+// ===== Données : cache IndexedDB du dernier fichier, chargement des CSV / LOG =====
 function openCacheDb(){
   return new Promise((resolve,reject)=>{
     if(!("indexedDB" in window)){reject(new Error("IndexedDB unavailable"));return}
@@ -1597,6 +1605,8 @@ const CALIBRATION_KEY="LandingPerformanceCalibrationV13";
 let learnedCalibration=loadLearnedCalibration();
 let calibrationModels=null;
 
+// ===== Calibration apprise : régression ridge sur les atterrissages complets (format riche) pour
+// estimer les mesures absentes des anciens formats ; confiance et note des estimations =====
 function loadLearnedCalibration(){
   try{
     const raw=localStorage.getItem(CALIBRATION_KEY);
@@ -1936,6 +1946,7 @@ function updateCalibrationInfo(){
     `${esc(t("learnedPairs",{n:learnedOnly}))}<br>`+
     `${esc(t("estimatesNote"))}`;
 }
+// ===== Import : format riche et format hérité (legacy), contrôles de qualité =====
 function ingest(rows){
   const first=rows[0].map(x=>x.trim().replace(/^\uFEFF/,""));
   const hasHeader=first.includes("Timestamp")&&first.includes("Aircraft");
@@ -2104,6 +2115,7 @@ function parseDateInputValue(value,endOfDay=false){
     ? new Date(+m[1],+m[2]-1,+m[3],23,59,59,999).getTime()
     : new Date(+m[1],+m[2]-1,+m[3],0,0,0,0).getTime();
 }
+// ===== Notes d'atterrissage, seuils de crash, filtres (crash, accidents au-delà du P95) =====
 function landingRatingRaw(r){
   // Prefer the rating emitted by the landing log when available.
   // Fall back to the richer CSV rating, then to the legacy FPM-derived class.
@@ -2202,6 +2214,7 @@ function applyAnalysisFilters(rows){
   const noCrash=applyCrashFilter(plausible);
   return applyP95AccidentFilter(noCrash);
 }
+// ===== Période analysée : plage de dates, zoom, décalage ; lignes retenues =====
 function aircraftUniverseRows(){
   const a=$("aircraftSelect").value;
   return allRows.filter(r=>a==="__ALL__"||r.Aircraft===a);
@@ -2289,6 +2302,7 @@ function scopeRows(){
 function currentRows(){
   return applyAnalysisFilters(scopeRows());
 }
+// ===== Rendu : cartes, tendances, graphiques, tableaux (format riche puis hérité) =====
 function render(){
   const rows=currentRows(),selected=$("aircraftSelect").value,filter=$("qualityFilter").checked,p95=$("p95Filter").checked,crash=$("crashFilter").checked;
   updateRangeButtons();
@@ -2560,6 +2574,7 @@ function renderLandingTableLegacy(rows){
 }
 
 /* ---------- trend modes ---------- */
+// ===== Tendances : régressions, quartiles chronologiques, classement amélioration / dégradation =====
 function linearRegressionXY(x,y){
   if(x.length<2||y.length<2)return {a:0,b:0,r2:0,sse:Infinity};
   const mx=mean(x),my=mean(y);
@@ -2768,6 +2783,7 @@ function trendShort(sl,rho,s){
 }
 
 /* ---------- quality ---------- */
+// Contrôles de qualité des données affichés.
 function renderQuality(){
   const scoped=scopeRows();
   const suspect=scoped.filter(r=>r._suspect);
@@ -2798,6 +2814,7 @@ function renderQuality(){
     (txt?`<div class="small">${esc(t("reasons"))} : ${esc(txt)}</div>`:"");
 }
 /* ---------- charts ---------- */
+// ===== Graphiques SVG : chronologie (plage sélectionnable à la souris), nuage de points =====
 function chartBox(id,title,showHint=true){
   return `<div class="chart-box"><div class="chart-title">${esc(title)}${showHint?`<span class="chart-hint">${esc(t("dragSelect"))}</span>`:""}</div><div id="${id}_summary" class="chart-summary"></div><svg id="${id}" class="${showHint?"timeline-chart":""}"></svg></div>`;
 }
@@ -3115,6 +3132,7 @@ function scatter(id,rows){
   yl.setAttribute("transform",`rotate(-90 13 ${(T+H-B)/2})`);
 }
 /* ---------- stats ---------- */
+// ===== Statistiques : moyenne, médiane, quantiles, pente de Theil-Sen, corrélations =====
 function finite(a){return a.filter(Number.isFinite)}
 function mean(a){a=finite(a);return a.length?a.reduce((x,y)=>x+y,0)/a.length:null}
 function min(a){a=finite(a);return a.length?Math.min(...a):null}
@@ -3128,6 +3146,7 @@ function pearson(a,b){if(a.length<2)return 0;const ma=mean(a),mb=mean(b);let n=0
 function spearman(y){y=finite(y);return y.length<2?0:pearson(rank(y.map((_,i)=>i)),rank(y))}
 
 /* ---------- DOM/SVG ---------- */
+// ===== Cartes et tableaux HTML (tri par colonne) =====
 function cardsHTML(cards){$("cards").innerHTML=cards.map(c=>`<div class="card"><div class="label">${esc(String(c[0]))}</div><div class="value">${esc(String(c[1]))}</div><div class="sub">${esc(String(c[2]??""))}</div></div>`).join("")}
 // Composant framework partagé : tri par colonne au clic sur l'en-tête, réutilisable
 // pour n'importe quelle table (utilisé ici par #aircraftTable et #landingTable, et
@@ -3169,6 +3188,7 @@ function qualityPill(r){
   }
   return `<span class="pill good">${esc(t("ok"))}</span>`;
 }
+// ===== Aides : groupement, éléments SVG, infobulles, formatage =====
 function period(rows){return rows.length?`${dateShort(rows[0]._date)} → ${dateShort(rows[rows.length-1]._date)}`:"—"}
 function groupBy(a,fn){const m=new Map();a.forEach(x=>{const k=fn(x);if(!m.has(k))m.set(k,[]);m.get(k).push(x)});return m}
 function clearSVG(s){while(s.firstChild)s.removeChild(s.firstChild)}

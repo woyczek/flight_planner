@@ -1,3 +1,5 @@
+// CR HEMS / MEDEVAC historique : horaires du formulaire (alerte, décollage, arrivée sur les lieux…)
+// et lignes du tableau des événements tenus en cohérence dans les deux sens.
 (() => {
   'use strict';
   const form = document.getElementById('missionForm');

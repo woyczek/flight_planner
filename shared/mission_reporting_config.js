@@ -1,3 +1,6 @@
+// Configuration des reportings (window.MissionReportingConfig) : nom des registres CSV, préférences
+// (IVAO / VATSIM…) mémorisées, lecture du registre à côté de la page, sinon du cache, sinon du registre
+// embarqué (mission_ledger_defaults.js).
 (() => {
   'use strict';
   const moduleUrl = document.currentScript.src;
