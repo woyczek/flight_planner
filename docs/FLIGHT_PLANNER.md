@@ -8,6 +8,8 @@ Code : la page elle-même, `shared/flight_ui.js` (actions du menu ☰, préfére
 `shared/flight_i18n.js` (traductions FR / EN / DE / ES), et les composants du framework
 (bandeau, menu ☰, blocs déplaçables / masquables — voir [FRAMEWORK.md](FRAMEWORK.md)).
 Bases partagées : `AircraftDB/aircraft_db.js` (types OACI) et `AircraftDB/aircraft_icons.js`.
+Profil vertical : `shared/flight_vertical_profile.js` et le module du studio SIA
+(`SIA XML/vertical_profile.js`, `SIA XML/aero_symbols.js`).
 
 ## 1. Profils avion
 
@@ -65,7 +67,28 @@ réserve (min), contingence (%).
   l'airframe (Internal ID) — sans garantie, l'API publique ne permet pas de lire un airframe
   privé par son seul identifiant.
 
-## 5. Données et sauvegardes
+## 5. Profil vertical
+
+Bloc **Profil vertical** : coupe le long d'une **route** — relief (tuiles d'altitude, ± 1 km),
+espaces aériens traversés (plancher → plafond, libellés de tous), obstacles, points avec distances
+cumulées et altitude prévue.
+
+- **Route** : même syntaxe que le studio SIA — OACI, balises, points RNAV, « REN300010 »
+  (radiale / distance), « lat lon » ou « NOM lat lon », « /FL65 » ou « /3000 » pour l'altitude
+  prévue. **Route SimBrief (dernier OFP)** la remplit depuis l'OFP mémorisé (départ, points du
+  navlog avec leur altitude, arrivée) ; sans OFP, déclenche « Récupérer dernier FPL SimBrief ».
+- **Profil d'affichage** : ceux du studio cartographique ; par défaut celui choisi dans le studio
+  pour le profil vertical (« Profil vertical » : toutes les familles d'espaces). Il décide des
+  espaces, des obstacles et des noms abrégés.
+- **Plancher / plafond** de la coupe (0 = automatique).
+- **Base SIA** (espaces, aérodromes, balises, points RNAV, obstacles) : celle que le studio
+  mémorise dans le navigateur — ouvrir le studio (Missions SIA) et y charger le dossier SIA une
+  fois, dans le même navigateur et à la même adresse. Sans elle : points en coordonnées ou
+  SimBrief seulement, sans espaces.
+- **Enregistrer l'image** : `profil_vertical.png`. Route, plancher et plafond sont mémorisés
+  (localStorage `flightPerfVerticalProfile`).
+
+## 6. Données et sauvegardes
 
 - Base locale persistante dans le navigateur (`flightPerfState`) : profils, réglages du
   devis, dernier avion. La version précédente est gardée (`flightPerfState.backup`) :
@@ -79,14 +102,14 @@ réserve (min), contingence (%).
 - Comme toutes les pages, la base est incluse dans la sauvegarde locale commune
   (☰ › Données locales, `defa_local_store.yaml`).
 
-## 6. Menu ☰ (actions de la page)
+## 7. Menu ☰ (actions de la page)
 
 Importer profils / CSV / JSON · Importer un airframe SimBrief · Choisir le dossier
 performances · Exporter le profil `.lnmperf` · Exporter le profil JSON · Enregistrer /
 exporter la BDD locale · Restaurer la sauvegarde locale précédente · Exporter / Importer les
 préférences.
 
-## 7. Services externes
+## 8. Services externes
 
 SimBrief (dernier OFP de l'identifiant saisi dans le profil pilote, liste publique des
 airframes). Rien d'autre ne quitte le navigateur.

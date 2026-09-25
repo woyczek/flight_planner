@@ -296,9 +296,11 @@ profil les coche (trait, cote AMSL des plus hauts), espaces du profil traversés
 plafond, planchers / plafonds ASFC suivant le relief ; ceux entièrement au-dessus du plafond de la
 coupe sont omis) avec les **libellés de tous** (place libre, sinon trait de rappel vers la bande),
 points avec distances cumulées (NM, sur deux lignes si nécessaire) et altitude prévue (violet).
-Plafond de la coupe réglable (0 = automatique : relief, obstacles, altitudes prévues et planchers
+Plancher et plafond de la coupe réglables (plafond 0 = automatique : relief, obstacles, altitudes prévues et planchers
 des espaces traversés jusqu'au FL 195). Case **Noms abrégés** (onglet Zones) : nom seul, sans le
-type de zone, sur les cartes comme sur la coupe.
+type de zone, sur les cartes comme sur la coupe. La même coupe est proposée dans le **Flight
+Performance & Fuel Planner** (route saisie ou importée de SimBrief, profil d'affichage du studio,
+base SIA mémorisée par le studio) : voir [FLIGHT_PLANNER.md](FLIGHT_PLANNER.md).
 
 Cheminement, plafond et case **« profil_vertical.png dans les sorties »** sont enregistrés dans le
 YAML de la mission (`vertical_profile: {route, ceiling_ft, output}`), donc partagés avec le

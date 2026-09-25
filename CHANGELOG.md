@@ -8,6 +8,15 @@ La version affichée en pied de page de chaque page (lien vers ce fichier) vient
 
 Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n`.
 
+## [Non publié]
+
+- **Flight Performance & Fuel Planner — Profil vertical** : bloc de coupe le long d'une route
+  saisie ou importée du dernier OFP SimBrief ; profil d'affichage du studio SIA (par défaut celui
+  choisi dans le studio pour le profil vertical) et base SIA mémorisée par le studio.
+- Studio SIA : **plancher** de la coupe réglable (en plus du plafond) ; points « NOM lat lon ».
+- Module `SIA XML/vertical_profile.js` partagé : sélection des espaces d'un profil, résolution
+  des points, relief (le studio s'en sert aussi).
+
 ## [2.2.2] — 2026-09-25
 
 Studio cartographique (Missions SIA) : symboles OACI.

@@ -1,23 +1,26 @@
 // Profil vertical (coupe) le long d'un cheminement : relief, obstacles, espaces aériens traversés
 // (plancher → plafond, planchers ASFC suivant le relief), points du cheminement et altitude prévue.
-// Indépendant du studio : les données (altitude du terrain, espaces, obstacles, points connus) sont
-// fournies par l'appelant. Exposé : window.SiaProfile = { parseRoute, build, draw }.
+// Partagé par le studio cartographique et le planificateur de performances : sélection des espaces
+// d'un profil d'affichage, noms des points (brief, aérodromes, balises, points RNAV, radiale /
+// distance), relief (tuiles Terrarium), lecture de la base SIA mémorisée par le studio.
+// Exposé : window.SiaProfile = { parseRoute, build, draw, zones, selectAirspaces, resolver,
+// destination, terrainSampler, loadStudio, opt }.
 (() => {
   const NM = 1852, FT = 3.28084, R = 6371000, rad = d => d * Math.PI / 180;
   const dist = (a, b) => { const dLat = rad(b.lat - a.lat), dLon = rad(b.lon - a.lon), h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon / 2) ** 2; return 2 * R * Math.asin(Math.min(1, Math.sqrt(h))); };
   const lerp = (a, b, t) => ({ lat: a.lat + (b.lat - a.lat) * t, lon: a.lon + (b.lon - a.lon) * t });
 
   // « LFOT, SIMIP/3000, TARGET/FL65, 46.5 1.4, LFOT » (virgules, points-virgules ou lignes) :
-  // point de la mission (id ou nom), aérodrome (OACI), balise, ou « lat lon » décimaux ; « /altitude »
-  // facultatif (ft AMSL ou FL). resolve(nom) → {name, lat, lon} ou null.
+  // point de la mission (id ou nom), aérodrome (OACI), balise, « lat lon » ou « NOM lat lon » décimaux ;
+  // « /altitude » facultatif (ft AMSL ou FL). resolve(nom) → {name, lat, lon} ou null.
   function parseRoute(text, resolve) {
     const out = [], unknown = [];
     for (const raw of String(text || '').split(/[,;\n]+/).map(x => x.trim()).filter(Boolean)) {
       const [spec, altRaw] = raw.split('/').map(x => x.trim());
       let alt = null;
       if (altRaw) { const m = /^(FL)?\s*(\d+)/i.exec(altRaw); if (m) alt = m[1] ? +m[2] * 100 : +m[2]; }
-      const c = /^(-?\d+(?:\.\d+)?)[\s]+(-?\d+(?:\.\d+)?)$/.exec(spec);
-      const p = c ? { name: spec, lat: +c[1], lon: +c[2] } : resolve(spec);
+      const c = /^(?:(\S*[A-Za-z]\S*)\s+)?(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)$/.exec(spec);
+      const p = c ? { name: c[1] || spec, lat: +c[2], lon: +c[3] } : resolve(spec);
       if (p && Number.isFinite(p.lat) && Number.isFinite(p.lon)) out.push({ ...p, alt }); else unknown.push(spec);
     }
     return { points: out, unknown };
@@ -71,27 +74,27 @@
   const COLORS = { R: '#d32f2f', P: '#b71c1c', D: '#ef6c00', TRA: '#ef6c00', CTR: '#1565c0', TMA: '#1565c0', CTA: '#3949ab', SIV: '#2e7d32', RMZ: '#555', TMZ: '#555' };
   // Coupe : axe des distances (NM) et des altitudes (ft AMSL), espaces derrière le relief, puis
   // obstacles, points et altitude prévue ; libellés d'espaces sans recouvrement.
-  function draw(ctx, data, { W, H, ceiling = 0, scale = 1, limitFt, title = '', abbrev = false } = {}) {
+  function draw(ctx, data, { W, H, ceiling = 0, floor = 0, scale = 1, limitFt, title = '', abbrev = false } = {}) {
     const f = 11 * scale, padL = 58 * scale, padR = 16 * scale, padT = (title ? 34 : 18) * scale, padB = 64 * scale;
     const terrainMax = Math.max(0, ...data.samples.map(q => q.terrain)), obsMax = Math.max(0, ...data.obstacles.map(o => o.elev || 0)), altMax = Math.max(0, ...data.marks.map(m => m.alt || 0));
     const rel = t => /ASFC|AGL|SFC/i.test(t || '') && !/AMSL/i.test(t || '');
     const floorOf = c => { const mid = Math.round((c.i0 + c.i1) / 2); return (rel(c.a.lower) ? data.samples[mid].center : 0) + limitFt(c.a.lower, false); };
     const zoneMax = Math.max(0, ...data.crossed.map(floorOf).filter(v => v <= 19500).map(v => v + 1500));
     const top = ceiling > 0 ? ceiling : Math.ceil((Math.max(terrainMax + 3000, obsMax + 1500, altMax + 1500, zoneMax, 5000)) / 1000) * 1000;
-    const X = s => padL + (W - padL - padR) * s / data.total, Y = ft => padT + (H - padT - padB) * (1 - Math.min(ft, top) / top);
+    const bottom = Math.max(0, Math.min(+floor || 0, top - 1000)), X = s => padL + (W - padL - padR) * s / data.total, Y = ft => padT + (H - padT - padB) * (1 - (Math.min(Math.max(ft, bottom), top) - bottom) / (top - bottom));
     ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.font = `${f}px Arial, sans-serif`; ctx.textBaseline = 'middle';
     if (title) { ctx.fillStyle = '#17202a'; ctx.font = `bold ${f * 1.3}px Arial, sans-serif`; ctx.fillText(title, padL, 16 * scale); ctx.font = `${f}px Arial, sans-serif`; }
     // grille des altitudes
-    const step = top > 20000 ? 5000 : top > 8000 ? 2000 : 1000;
+    const span = top - bottom, step = span > 20000 ? 5000 : span > 8000 ? 2000 : 1000;
     ctx.strokeStyle = '#e3e8ec'; ctx.lineWidth = 1; ctx.fillStyle = '#56626b'; ctx.textAlign = 'right';
-    for (let a = 0; a <= top; a += step) { const y = Y(a); ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke(); ctx.fillText(a >= 10000 && a % 1000 === 0 ? `FL ${a / 100}` : `${a} ft`, padL - 6 * scale, y); }
+    for (let a = Math.ceil(bottom / step) * step; a <= top; a += step) { const y = Y(a); ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke(); ctx.fillText(a >= 10000 && a % 1000 === 0 ? `FL ${a / 100}` : `${a} ft`, padL - 6 * scale, y); }
     // espaces : bande plancher → plafond (plancher / plafond ASFC suivant le relief)
     const labels = [], taken = [], free = r => !taken.some(q => r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0);
     for (const c of data.crossed) {
       const a = c.a, col = COLORS[a.type] || '#6d4c41';
       const lo = i => (rel(a.lower) ? data.samples[i].center : 0) + limitFt(a.lower, false), hi = i => { const v = limitFt(a.upper, true); return Number.isFinite(v) ? (rel(a.upper) ? data.samples[i].center : 0) + v : top; };
-      let below = false; for (let i = c.i0; i <= c.i1; i++) if (lo(i) < top) { below = true; break; }
-      if (!below) continue; // espace entièrement au-dessus du plafond de la coupe
+      let seen = false; for (let i = c.i0; i <= c.i1; i++) if (lo(i) < top && hi(i) > bottom) { seen = true; break; }
+      if (!seen) continue; // espace entièrement au-dessus du plafond ou au-dessous du plancher de la coupe
       ctx.beginPath();
       for (let i = c.i0; i <= c.i1; i++) { const x = X(data.samples[i].s), y = Y(hi(i)); i === c.i0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
       for (let i = c.i1; i >= c.i0; i--) ctx.lineTo(X(data.samples[i].s), Y(lo(i)));
@@ -145,5 +148,79 @@
     ctx.strokeStyle = '#17202a'; ctx.lineWidth = 1; ctx.strokeRect(padL, padT, W - padL - padR, H - padT - padB);
     ctx.restore();
   }
-  window.SiaProfile = { parseRoute, build, draw };
+
+  // ===== Espaces d'un profil d'affichage (mêmes règles que les cartes du studio) =====
+  const zNorm = v => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const zCore = name => { const n = String(name || '').trim(), d = /^(\d+)/.exec(n); if (d) return d[1]; const w = /^(.*\D)\s+\d+\S*$/.exec(n); return w ? w[1].trim() : n; };
+  const zFamily = (types, t) => types.has(t) || (t === 'RMZ-TMZ' && (types.has('RMZ') || types.has('TMZ')));
+  const zAlias = (q, aliases) => /^@/.test(String(q).trim()) ? Object.keys(aliases || {}).find(k => zNorm(k) === zNorm(q)) : null;
+  // Une entrée de liste désigne-t-elle cet espace ? « @ALIAS » (groupe), « R 166* » (toutes les parties),
+  // fragment de nom ou d'identifiant.
+  function zHit(a, q, aliases, depth = 0) {
+    const alias = zAlias(q, aliases); if (alias) return depth < 1 && (aliases[alias] || []).some(m => zHit(a, m, aliases, depth + 1));
+    if (/\*\s*$/.test(q)) { const base = zNorm(q), core = zCore(a.name); return !!base && [a.type + core, 'LF' + a.type + core].some(v => zNorm(v) === base); }
+    const n = zNorm(q); return !!n && [a.name, a.key, a.type + a.name].some(v => zNorm(v).includes(n));
+  }
+  const zoneList = p => Array.isArray(p?.zoneList) ? p.zoneList : (p?.allZones === false ? String(p?.zoneList || '').split(/\r?\n|,/).map(x => x.trim()).filter(Boolean) : []);
+  // Valeur d'un réglage d'élément d'un profil (défaut si absent).
+  const opt = (profile, id, def) => { const v = profile?.elements?.[id]; return v === undefined || v === '' ? def : v; };
+  function selectAirspaces(profile, airspaces, { aliases = {}, limitFt } = {}) {
+    const types = new Set(profile?.zones || []), list = zoneList(profile), lo = parseFloat(opt(profile, 'zoneFloor', '')), hi = parseFloat(opt(profile, 'zoneCeil', ''));
+    if (!types.size) return [];
+    return (airspaces || []).filter(a => zFamily(types, a.type) && (!(lo > 0) || limitFt(a.upper, true) > lo) && (!(hi > 0) || limitFt(a.lower, false) < hi)
+      && (!list.length || (profile.zoneMode === 'black' ? !list.some(q => zHit(a, q, aliases)) : list.some(q => zHit(a, q, aliases)))));
+  }
+
+  // ===== Noms des points =====
+  // Point à une distance (NM) et un relèvement vrai (°) d'un autre (grand cercle).
+  function destination(p, brgDeg, nm) {
+    const d = nm / 3440.065, t = rad(brgDeg), f1 = rad(p.lat), l1 = rad(p.lon), f2 = Math.asin(Math.sin(f1) * Math.cos(d) + Math.cos(f1) * Math.sin(d) * Math.cos(t));
+    const l2 = l1 + Math.atan2(Math.sin(t) * Math.sin(d) * Math.cos(f1), Math.cos(d) - Math.sin(f1) * Math.sin(f2));
+    return { lat: f2 * 180 / Math.PI, lon: (l2 * 180 / Math.PI + 540) % 360 - 180 };
+  }
+  // Résolution : points connus (brief : Map NOM → point), aérodromes (OACI), balises (VOR > TACAN > NDB >
+  // DME), points RNAV (AIXM), « REN300010 » = balise REN, radiale magnétique 300 (déclinaison de
+  // l'aérodrome le plus proche), 10 NM. Homonymes : le plus proche du point précédent (ou de ref).
+  function resolver({ brief = new Map(), aero = {}, ref = { lat: 46.5, lon: 2.5 } } = {}) {
+    const NAV_PREF = { VOR: 0, TACAN: 1, NDB: 2, DME: 3 }; let last = null;
+    const near = list => { const r = last || ref; let b = null, d = Infinity; for (const x of list) { const e = (x.lat - r.lat) ** 2 + (x.lon - r.lon) ** 2; if (e < d) { d = e; b = x; } } return b; };
+    const magVarAt = (lat, lon) => { let best = 0, d = Infinity; for (const a of aero.aerodromes || []) { if (!a.magVar) continue; const e = (a.lat - lat) ** 2 + ((a.lon - lon) * Math.cos(rad(lat))) ** 2; if (e < d) { d = e; best = a.magVar; } } return best; };
+    const navaid = k => { const c = (aero.navaids || []).filter(n => String(n.id || '').toUpperCase() === k && n.kind in NAV_PREF); if (!c.length) return null; const best = Math.min(...c.map(n => NAV_PREF[n.kind])); return near(c.filter(n => NAV_PREF[n.kind] === best)); };
+    const find = k => {
+      if (brief.has(k)) return brief.get(k);
+      const ad = (aero.aerodromes || []).find(a => String(a.icao || '').toUpperCase() === k); if (ad) return { name: ad.icao, lat: ad.lat, lon: ad.lon };
+      const nv = navaid(k); if (nv) return { name: nv.id, lat: nv.lat, lon: nv.lon };
+      const rn = near((aero.points || []).filter(p => String(p.id).toUpperCase() === k)); if (rn) return { name: rn.id, lat: rn.lat, lon: rn.lon };
+      const m = /^([A-Z]{2,3})(\d{3})(\d{3})$/.exec(k); if (m) { const b = navaid(m[1]); if (b) return { name: k, ...destination(b, +m[2] + magVarAt(b.lat, b.lon), +m[3]) }; }
+      return null;
+    };
+    return name => { const p = find(String(name).trim().toUpperCase()); if (p) last = p; return p; };
+  }
+
+  // ===== Relief : tuiles d'altitude Terrarium (AWS), z10 ≈ 150 m, gardées en mémoire =====
+  function terrainSampler(z = 10) {
+    const tiles = new Map();
+    const tile = (x, y) => { const key = `${x}/${y}`; if (!tiles.has(key)) tiles.set(key, (async () => {
+      const r = await fetch(`https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`); if (!r.ok) throw Error(`Tuile de relief ${z}/${x}/${y} : ${r.status}`);
+      const img = await createImageBitmap(await r.blob()), c = new OffscreenCanvas(256, 256), g = c.getContext('2d'); g.drawImage(img, 0, 0); return g.getImageData(0, 0, 256, 256).data;
+    })().catch(e => { tiles.delete(key); throw e; })); return tiles.get(key); };
+    return async (lat, lon) => {
+      const n = 2 ** z, xf = (lon + 180) / 360 * n, r = rad(lat), yf = (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n, x = Math.floor(xf), y = Math.floor(yf);
+      const d = await tile(x, y), px = Math.min(255, Math.floor((xf - x) * 256)), py = Math.min(255, Math.floor((yf - y) * 256)), i = (py * 256 + px) * 4;
+      return d[i] * 256 + d[i + 1] + d[i + 2] / 256 - 32768;
+    };
+  }
+
+  // ===== Données mémorisées par le studio (même navigateur) =====
+  // Base SIA (IndexedDB 'sia-map-parser' : espaces, aérodromes, balises, obstacles, points RNAV), profils
+  // d'affichage, alias de zones, et profil choisi pour le profil vertical dans la mission partagée.
+  async function loadStudio() {
+    const base = await new Promise(ok => { try { const r = indexedDB.open('sia-map-parser', 1); r.onupgradeneeded = () => r.result.createObjectStore('cache'); r.onerror = () => ok(null);
+      r.onsuccess = () => { try { const q = r.result.transaction('cache').objectStore('cache').get('base'); q.onsuccess = () => ok(q.result || null); q.onerror = () => ok(null); } catch { ok(null); } }; } catch { ok(null); } });
+    const json = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || 'null') ?? d; } catch { return d; } };
+    const profiles = json('siaDisplayProfiles', []), mission = json('siaMissionShared:v1', null), vp = mission?.yaml?.vertical_profile || {};
+    return { base, profiles, aliases: json('siaZoneAliases', {}), profileId: vp.profile || 'vprof', vertical: vp };
+  }
+
+  window.SiaProfile = { parseRoute, build, draw, zones: { norm: zNorm, core: zCore, family: zFamily, hit: zHit, list: zoneList }, selectAirspaces, resolver, destination, terrainSampler, loadStudio, opt };
 })();
