@@ -19,7 +19,8 @@
   const now = () => new Date().toISOString();
   const dumps = v => JSON.stringify(v);
   const rows = [];
-  const T = (fr, en) => { rows.push([fr, en, en, en]); return fr; };
+  // allemand et espagnol : table DataAdminI18n (shared/data_admin_i18n.js), repérée par le texte français ; sinon anglais
+  const T = (fr, en) => { const x = window.DataAdminI18n?.[fr]; rows.push([fr, en, x?.[0] || en, x?.[1] || en]); return fr; };
 
   // ---- format commun des fichiers de données (identique à AircraftDB/datafile.py)
   function render(commentLines, data, overrideKey, exportJs, updatedAt) {

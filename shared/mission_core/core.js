@@ -724,7 +724,7 @@
     window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = t('leave'); } });
     // Données locales restaurées (menu ☰ › Données locales) : registre relu.
     window.addEventListener('local-store-restored', () => ledger.load(true).then(() => { ledgerInfo(); if (!edit && !dirty) { mission = fresh(); redraw(); } }));
-    window.addEventListener('load', () => window.RepositoryNav?.addAction?.(`${t('viewReporting')} ${family.id}`, () => { location.href = family.pages.reporting; }));
+    window.addEventListener('load', () => window.RepositoryNav?.addAction?.(UI.viewReporting.map(x => `${x} ${family.id}`), () => { location.href = family.pages.reporting; }));
 
     // ---- en-tête : famille / sous-type (série) de la mission
     const switcher = headerSwitch({

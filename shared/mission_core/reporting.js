@@ -183,7 +183,8 @@
       });
       else table.setRows(visible);
       window.TimePeriod?.edges?.(root.querySelector('#mcEdges'), all);
-      root.querySelector('.mc-ledger-info').textContent = `${ledger.filename} · ${ledger.missions.length} ${t('missions').toLowerCase()} · ${t('folderLabel')} : ${ledger.state.folder || t('browser')}`;
+      // un morceau traduisible par élément (la couche de traduction remplace des nœuds de texte entiers)
+      root.querySelector('.mc-ledger-info').innerHTML = `${esc(ledger.filename)} · ${ledger.missions.length} <span>${esc(t('missions'))}</span> · <span>${esc(t('folderLabel'))}</span> : ${ledger.state.folder ? esc(ledger.state.folder) : `<span>${esc(t('browser'))}</span>`}`;
       if (window.RepositoryContentI18n) { window.RepositoryContentI18n([...rows.values()]); rows.clear(); }
     }
     // Mode « modifier dans le tableau » (même registre que le reporting général).

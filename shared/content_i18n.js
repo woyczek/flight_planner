@@ -17,7 +17,7 @@ window.RepositoryContentI18n = function(rows) {
     try {
       const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let node;
       while(node=walker.nextNode()){if(excluded(node.parentElement))continue;const next=translate(node.nodeValue,node,'text',lang);if(next!==node.nodeValue)node.nodeValue=next}
-      document.querySelectorAll('[title],[placeholder],[aria-label]').forEach(el=>{if(excluded(el.tagName==='TEXTAREA'?el.parentElement:el))return; // attributs d'une zone de texte traduits, son contenu nonfor(const key of ['title','placeholder','aria-label']){const value=el.getAttribute(key);if(value!==null){const next=translate(value,el,key,lang);if(next!==value)el.setAttribute(key,next)}}});
+      document.querySelectorAll('[title],[placeholder],[aria-label]').forEach(el=>{if(excluded(el.tagName==='TEXTAREA'?el.parentElement:el))return; /* attributs d'une zone de texte traduits, son contenu non */for(const key of ['title','placeholder','aria-label']){const value=el.getAttribute(key);if(value!==null){const next=translate(value,el,key,lang);if(next!==value)el.setAttribute(key,next)}}});
       document.querySelectorAll('input[readonly][value]').forEach(el=>{if(excluded(el))return;const value=el.value,next=translate(value,el,'value',lang);if(next!==value)el.value=next});
     } finally {observer?.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['title','placeholder','aria-label']})}
   }

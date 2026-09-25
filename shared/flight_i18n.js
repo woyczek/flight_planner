@@ -106,7 +106,9 @@
     ["Max.", "Max.", "Max.", "Máx."],
     ["état restauré", "state restored", "Zustand wiederhergestellt", "estado restaurado"],
     ["fiche appareil (type DEFA)", "aircraft sheet (DEFA type)", "Flugzeugblatt (DEFA-Muster)", "ficha de aeronave (tipo DEFA)"],
-    ["base locale", "local database", "lokale Datenbank", "base local"]
+    ["base locale", "local database", "lokale Datenbank", "base local"],
+    ["VFR détaillé", "VFR detailed", "VFR detailliert", "VFR detallado"],
+    ["VFR simplifié", "VFR simplified", "VFR vereinfacht", "VFR simplificado"]
   ];
   window.RepositoryContentI18n(rows);
 })();

@@ -152,13 +152,20 @@
       const veMax = Math.min(3 * M.veMd, jet ? Math.min(h < 10000 ? 250 : 340, (M.mRef + .04) * at.a * s) : 3 * M.veMd);
       // vario plancher pour les lois « temps » et « carburant » : ≥ 50 % du vario max et ≥ 300 ft/min (500 réacteur),
       // sinon l'optimum dégénère en montée quasi nulle (croisière basse presque aussi rapide pour un avion à hélice)
-      const rMin = objective === 'vy' ? 20 : Math.max(jet ? 500 : 300, .5 * M.vy(h).roc);
+      // (près du plafond, le plancher fixe est ramené à 90 % du vario max pour que la loi existe toujours)
+      const vyRoc = M.vy(h).roc; if (!(vyRoc > 20)) return null;
+      const rMin = objective === 'vy' ? 20 : Math.max(.5 * vyRoc, Math.min(jet ? 500 : 300, .9 * vyRoc));
       const cost = (ve, frac) => { const r = M.roc(h, ve, frac); if (!(r >= rMin)) return Infinity; const tas = M.tasOf(h, ve), ff = M.ffAt(h, frac, tas) * climbFactor;
         return objective === 'vy' ? -r : objective === 'time' ? (1 - tas / vc) / r : (ff - tas * ffc / vc) / r; };
       const fracs = objective === 'fuel' && !jet ? [.55, .6, .65, .7, .75, .8, .85, .9, .95, 1] : [1];
       let best = null;
-      for (const frac of fracs) { const ve = golden(v => { const c = cost(v, frac); return Number.isFinite(c) ? -c : -1e6 + M.roc(h, v, frac); }, // hors domaine : pénalité en pente vers le domaine
-         .8 * M.veMd, Math.max(.9 * M.veMd, veMax)); const c = cost(ve, frac); if (Number.isFinite(c) && (!best || c < best.c)) best = { c, ve, frac }; }
+      for (const frac of fracs) {
+        let ve = golden(v => { const c = cost(v, frac); return Number.isFinite(c) ? -c : -1e6 + M.roc(h, v, frac); }, // hors domaine : pénalité en pente vers le domaine
+          .8 * M.veMd, Math.max(.9 * M.veMd, veMax));
+        // l'optimum colle souvent à la limite de vario : s'il tombe juste au-delà, revenir vers Vy jusqu'au domaine
+        if (!Number.isFinite(cost(ve, frac))) { const vyVe = M.vy(h, frac).ve; for (let t = .02; t <= 1.001; t += .02) { const v2 = ve + (vyVe - ve) * t; if (Number.isFinite(cost(v2, frac))) { ve = v2; break; } } }
+        const c = cost(ve, frac); if (Number.isFinite(c) && (!best || c < best.c)) best = { c, ve, frac };
+      }
       if (!best) return null;
       const tas = M.tasOf(h, best.ve); return { h, ve: best.ve, ias: best.ve, tas, frac: best.frac, roc: M.roc(h, best.ve, best.frac), ff: M.ffAt(h, best.frac, tas) * climbFactor };
     }
