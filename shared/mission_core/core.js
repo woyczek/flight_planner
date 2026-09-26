@@ -224,7 +224,7 @@
         <span class="mc-status"></span></div>`;
     if (header) header.append(tools);
     root.innerHTML = `<form id="missionCoreForm" class="mc-form" autocomplete="off">
-      <section class="mc-edit-banner" hidden><h2></h2><p class="note mc-edit-info"></p></section></form>
+      <section class="mc-edit-banner" data-icon="edit" hidden><h2></h2><p class="note mc-edit-info"></p></section></form>
       <aside class="mc-aside"><div class="panel mc-kpi-panel" data-icon="chart"><h2></h2><div class="mc-kpi"></div><ul class="mc-issues" hidden></ul><h3></h3><div class="small mc-context"></div></div>
         <div class="panel mc-report-panel" data-block-id="mc-report" data-icon="file-text"><h2></h2><div class="row mc-report-actions">
         <button type="button" class="primary" data-action="render"></button><button type="button" class="secondary" data-action="print"></button>
@@ -498,7 +498,7 @@
       return `${p.hour}:${p.minute}`;
     }
 
-    /** Valeur « maintenant » d'un champ (heure locale ou UTC, date) pour le bouton ⏱. */
+    /** Valeur « maintenant » d'un champ (heure locale ou UTC, date) pour le bouton « maintenant » (icône horloge ou calendrier). */
     function nowFor(path, kind) {
       const p = partsIn(new Date(), /utc/i.test(path) ? 'UTC' : zone());
       return kind === 'date' ? `${p.year}-${p.month}-${p.day}` : `${p.hour}:${p.minute}`;

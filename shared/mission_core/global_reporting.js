@@ -291,26 +291,26 @@
 
     root.innerHTML = `
       <section class="cards mcg-cards" id="mcgCards"></section>
-      <section class="section mcg-wide mcg-checks" hidden><h2>${t('checks')} <span class="mcg-sub" id="mcgChecksSub"></span></h2><div class="inside" id="mcgChecks"></div></section>
-      <section class="section mcg-wide"><h2>${t('activity')} <span class="mcg-sub" id="mcgActivitySub"></span></h2><div class="inside"><div id="mcgActivity"></div><div class="mcg-series-legend" id="mcgActivityLegend"></div></div></section>
+      <section class="section mcg-wide mcg-checks" data-icon="alert" hidden><h2>${t('checks')} <span class="mcg-sub" id="mcgChecksSub"></span></h2><div class="inside" id="mcgChecks"></div></section>
+      <section class="section mcg-wide" data-icon="calendar"><h2>${t('activity')} <span class="mcg-sub" id="mcgActivitySub"></span></h2><div class="inside"><div id="mcgActivity"></div><div class="mcg-series-legend" id="mcgActivityLegend"></div></div></section>
       <div class="mcg-grid">
-        <section class="section"><h2>${t('byFamily')}</h2><div class="inside" id="mcgFamilies"></div></section>
-        <section class="section"><h2>${t('byOutcome')}</h2><div class="inside" id="mcgOutcomes"></div></section>
-        <section class="section"><h2>${t('bySeries')}</h2><div class="inside" id="mcgSeries"></div></section>
-        <section class="section"><h2>${t('byType')}</h2><div class="inside" id="mcgTypes"></div></section>
-        <section class="section"><h2>${t('byCapability')}</h2><div class="inside" id="mcgCapabilities"></div></section>
-        <section class="section"><h2>${t('byAerodrome')}</h2><div class="inside" id="mcgAerodromes"></div></section>
-        <section class="section"><h2>${t('byDayNight')}</h2><div class="inside" id="mcgDayNight"></div></section>
-        <section class="section"><h2>${t('byNetwork')}</h2><div class="inside" id="mcgNetwork"></div></section>
-        <section class="section"><h2>${t('byContext')}</h2><div class="inside" id="mcgContext"></div></section>
+        <section class="section" data-icon="layers"><h2>${t('byFamily')}</h2><div class="inside" id="mcgFamilies"></div></section>
+        <section class="section" data-icon="check"><h2>${t('byOutcome')}</h2><div class="inside" id="mcgOutcomes"></div></section>
+        <section class="section" data-icon="hash"><h2>${t('bySeries')}</h2><div class="inside" id="mcgSeries"></div></section>
+        <section class="section" data-icon="box"><h2>${t('byType')}</h2><div class="inside" id="mcgTypes"></div></section>
+        <section class="section" data-icon="wrench"><h2>${t('byCapability')}</h2><div class="inside" id="mcgCapabilities"></div></section>
+        <section class="section" data-icon="pin"><h2>${t('byAerodrome')}</h2><div class="inside" id="mcgAerodromes"></div></section>
+        <section class="section" data-icon="clock"><h2>${t('byDayNight')}</h2><div class="inside" id="mcgDayNight"></div></section>
+        <section class="section" data-icon="send"><h2>${t('byNetwork')}</h2><div class="inside" id="mcgNetwork"></div></section>
+        <section class="section" data-icon="globe"><h2>${t('byContext')}</h2><div class="inside" id="mcgContext"></div></section>
       </div>
-      <section class="section mcg-wide"><h2>${t('familyTable')}</h2><div class="inside" id="mcgFamilyTable"></div></section>
-      <section class="section mcg-wide"><h2>${t('aircraftTable')}</h2><div class="inside" id="mcgAircraftTable"></div></section>
-      <section class="section mcg-wide"><h2>${t('crewTable')}</h2><div class="inside" id="mcgCrewTable"></div></section>
-      <section class="section mcg-wide"><h2>${t('missionsTable')}<button type="button" class="ge-toggle" data-grid-edit></button></h2><div class="inside"><div id="mcgMissions"></div><div id="mcgEdges" hidden></div></div></section>
-      <section class="panel mcg-ledger"><h2>${t('ledger')}</h2><div class="row">
-        <button type="button" data-action="yaml">${t('exportYaml')}</button><button type="button" data-action="csv">${t('exportCsv')}</button>
-        <button type="button" data-action="folder">${t('folder')}</button><button type="button" data-action="print">${t('print')}</button>
+      <section class="section mcg-wide" data-icon="layers"><h2>${t('familyTable')}</h2><div class="inside" id="mcgFamilyTable"></div></section>
+      <section class="section mcg-wide" data-icon="plane"><h2>${t('aircraftTable')}</h2><div class="inside" id="mcgAircraftTable"></div></section>
+      <section class="section mcg-wide" data-icon="users"><h2>${t('crewTable')}</h2><div class="inside" id="mcgCrewTable"></div></section>
+      <section class="section mcg-wide" data-icon="list"><h2>${t('missionsTable')}<button type="button" class="ge-toggle" data-grid-edit></button></h2><div class="inside"><div id="mcgMissions"></div><div id="mcgEdges" hidden></div></div></section>
+      <section class="panel mcg-ledger" data-icon="database"><h2>${t('ledger')}</h2><div class="row">
+        <button type="button" data-action="yaml" data-icon="download">${t('exportYaml')}</button><button type="button" data-action="csv" data-icon="download">${t('exportCsv')}</button>
+        <button type="button" data-action="folder" data-icon="folder">${t('folder')}</button><button type="button" data-action="print" data-icon="printer">${t('print')}</button>
         <label class="mcg-legacy">${t('legacy')}<select data-legacy><option value=""></option></select></label><input type="file" accept=".csv,text/csv" hidden></div>
         <p class="note mcg-ledger-info"></p><p class="note mcg-status"></p></section>`;
     const $ = sel => root.querySelector(sel) || bar.querySelector(sel),

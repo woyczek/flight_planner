@@ -346,7 +346,7 @@
           <span class="sh-now">📍 ${esc(tr(UI.now))} <b>${esc(nowAt || '—')}</b></span>
           <span class="sh-home">🏠 ${esc(tr(UI.home))} <b>${esc(sheet.homeAd || known.homeAd || '—')}</b></span></div>
         ${!catalog.some(a => key(a.registration) === reg) && !all.length ? `<p class="small">${esc(tr(UI.unknown))}</p>` : ''}</section>
-      <section><h2>${esc(tr(UI.identity))}</h2><div class="sh-grid">
+      <section data-icon="hash"><h2>${esc(tr(UI.identity))}</h2><div class="sh-grid">
         <label>${esc(tr(UI.status))}<select data-sheet="status">${STATUS.map(([v, l]) => `<option value="${esc(v)}"${v === status ? ' selected' : ''}>${esc(tr(l))}</option>`).join('')}</select></label>
         <label>${esc(tr(UI.home))}<input data-sheet="homeAd" value="${esc(sheet.homeAd)}" placeholder="${esc(known.homeAd || 'LFxx')}"></label>
         <label>${esc(tr(UI.commissioned))}<input type="date" data-sheet="commissioned" value="${esc(sheet.commissioned || known.commissioned || '')}"></label>
@@ -359,10 +359,11 @@
         <div class="sh-wide"><span class="small">${esc(tr(UI.equipment))}</span><div class="sh-chips">${[...equipment].map(e => `<span class="sh-chip">${esc(e)}</span>`).join('') || '—'}</div></div>
         <label class="sh-wide">${esc(tr(UI.notes))}<textarea data-sheet="notes" rows="2">${esc(sheet.notes)}</textarea></label>
       </div><div class="row"><button type="button" class="primary" data-save>${esc(tr(UI.save))}</button><span class="small sh-saved"></span></div>${merger.html}</section>
-      <section><h2>${esc(tr(UI.activity))}</h2><div class="sh-activity"></div><div class="sh-chart"></div></section>
-      <section><h2>${esc(tr(UI.events))} <button type="button" class="mc-head-add" data-add-event title="${esc(tr(UI.addEvent))}">+</button></h2><div class="sh-events"></div></section>
-      <section><h2>${esc(tr(UI.perf))}</h2><div class="sh-perf"></div></section>
-      <section><h2>${esc(tr(UI.missions))}</h2><div class="sh-missions"></div><div class="sh-edges" hidden></div></section>`;
+      <section data-icon="calendar"><h2>${esc(tr(UI.activity))}</h2><div class="sh-activity"></div><div class="sh-chart"></div></section>
+      <section data-icon="pin"><h2>${esc(tr(UI.events))} <button type="button" class="mc-head-add" data-add-event title="${esc(tr(UI.addEvent))}">+</button></h2><div class="sh-events"></div></section>
+      <section data-icon="chart"><h2>${esc(tr(UI.perf))}</h2><div class="sh-perf"></div></section>
+      <section data-icon="list"><h2>${esc(tr(UI.missions))}</h2><div class="sh-missions"></div><div class="sh-edges" hidden></div></section>`;
+    window.AppFramework?.refresh?.();   // blocs du framework (masquer, déplacer) et icônes de blocs (block_icons.js)
     // Enregistrement de la fiche (navigateur).
     const saveSheet = () => {
       root.querySelectorAll('[data-sheet]').forEach(el => {
@@ -505,15 +506,16 @@
     const h1 = document.querySelector('header h1');
     if (h1) h1.textContent = `${id}${sheet.name ? ` — ${sheet.name}` : ''} — ${tr(UI.crew)}`;
     root.innerHTML = `
-      <section><h2>${esc(tr(UI.identity))}</h2><div class="sh-grid">
+      <section data-icon="hash"><h2>${esc(tr(UI.identity))}</h2><div class="sh-grid">
         <label>${esc(tr(UI.name))}<input data-sheet="name" value="${esc(sheet.name)}"></label>
         <label>${esc(tr(UI.home))}<input data-sheet="homeBase" value="${esc(sheet.homeBase)}"></label>
         <div><span class="small">${esc(tr(UI.roles))}</span><div class="sh-chips">${[...roles].map(([r, n]) => `<span class="sh-chip">${esc(tr((V.crewRoles.find(o => o.value === r) || {}).label || r))} <em>${n}</em></span>`).join('') || '—'}</div></div>
         <label class="sh-wide">${esc(tr(UI.qualifications))}<textarea data-sheet="qualifications" rows="3">${esc(sheet.qualifications)}</textarea></label>
         <label class="sh-wide">${esc(tr(UI.notes))}<textarea data-sheet="notes" rows="2">${esc(sheet.notes)}</textarea></label>
       </div><div class="row"><button type="button" class="primary" data-save>${esc(tr(UI.save))}</button><span class="small sh-saved"></span></div>${merger.html}</section>
-      <section><h2>${esc(tr(UI.activity))}</h2><div class="sh-activity"></div><div class="sh-chart"></div></section>
-      <section><h2>${esc(tr(UI.missions))}</h2><div class="sh-missions"></div><div class="sh-edges" hidden></div></section>`;
+      <section data-icon="calendar"><h2>${esc(tr(UI.activity))}</h2><div class="sh-activity"></div><div class="sh-chart"></div></section>
+      <section data-icon="list"><h2>${esc(tr(UI.missions))}</h2><div class="sh-missions"></div><div class="sh-edges" hidden></div></section>`;
+    window.AppFramework?.refresh?.();   // blocs du framework (masquer, déplacer) et icônes de blocs (block_icons.js)
     root.querySelector('[data-save]').onclick = () => {
       root.querySelectorAll('[data-sheet]').forEach(el => {
         sheet[el.dataset.sheet] = el.value;

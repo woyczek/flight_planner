@@ -69,8 +69,8 @@
 
 /* ---- adaptation aux designs existants (forme seulement) */
 html[data-design="aero"] .repo-block-step{box-shadow:0 3px 10px color-mix(in srgb,var(--repo-bar) 35%,transparent)}
-html[data-design="aero"] .repo-card{border-radius:16px}
-html[data-design="aero"] .repo-dropzone,html[data-design="aero"] .repo-notice{border-radius:14px}
+html[data-design="aero"] .repo-card{border-radius:10px}
+html[data-design="aero"] .repo-dropzone,html[data-design="aero"] .repo-notice{border-radius:10px}
 html[data-design="ops"] .repo-block-step{min-width:22px;height:22px;border-radius:3px;font-size:12px}
 html[data-design="ops"] .repo-block-icon svg{--rs:18px}
 html[data-design="ops"] .repo-block-subtitle,html[data-design="ops"] .repo-card-subtitle{font-size:12px}
@@ -102,4 +102,5 @@ html[data-design="console"] textarea{border-radius:6px!important}
 html[data-icons="fine"] .repo-svg{stroke-width:1.5}
 html[data-icons="bold"] .repo-svg{stroke-width:2.6}
 html[data-icons="off"] .repo-icon,html[data-icons="off"] .repo-block-icon,html[data-icons="off"] .repo-card-icon,html[data-icons="off"] .repo-dropzone-badge{display:none!important}
+html[data-icons="off"] .repo-icon-only>.repo-icon{display:inline-flex!important}
 

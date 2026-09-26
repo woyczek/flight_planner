@@ -158,7 +158,10 @@
     if (!button) return;
     const refresh = async () => {
       const d = await describe(key);
+      // libellé seul remplacé : l'icône éventuelle du bouton (data-icon, block_icons.js) est conservée
+      const icons = [...button.querySelectorAll(':scope>.repo-icon')];
       button.textContent = withLabel ? `${d.label} : ${d.short}` : d.short;
+      if (icons.length) button.prepend(...icons);
       button.title = d.title;
       button.dataset.folderState = d.permission;
     };

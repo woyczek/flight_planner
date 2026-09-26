@@ -116,6 +116,8 @@
   function decorateInline(el) {
     if (el.dataset.iconDone || el.matches('section,.repo-block,.repo-card,input,select,textarea')) return;
     el.dataset.iconDone = '1';
+    // bouton sans texte (icône seule, libellé en title / aria-label) : l'icône reste affichée même en jeu « aucune icône »
+    if (el.matches('button') && !el.textContent.trim()) el.classList.add('repo-icon-only');
     const start = el.dataset.icon && icon(el.dataset.icon, 'repo-icon-start'),
       end = el.dataset.iconEnd && icon(el.dataset.iconEnd, 'repo-icon-end');
     if (start && el.matches('label')) {
@@ -274,11 +276,15 @@
     pending = true;
     requestAnimationFrame(() => { pending = false; decorate(); });
   });
-  window.addEventListener('load', () => {
+  // Dès que le DOM est prêt (ce script, chargé à la volée, arrive souvent après) : les icônes paraissent sans attendre
+  // images, polices et cartes ; nouvelle passe au chargement complet (decorate est ré-exécutable).
+  const start = () => {
     hookRefresh();
     decorate();
     observer.observe(document.body, { childList: true, subtree: true });
-  });
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+  window.addEventListener('load', () => { hookRefresh(); decorate(); });
   window.addEventListener('repository-language-change', () => document.querySelectorAll('.repo-dropzone').forEach(z => z._render?.()));
   window.addEventListener('repository-design-change', () => requestAnimationFrame(decorate));
 

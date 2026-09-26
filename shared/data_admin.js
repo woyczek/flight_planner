@@ -853,7 +853,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     root.innerHTML = `<aside class="da-nav">${groups.map(g => `<h3>${esc(g)}</h3>${DATASETS.filter(d => d.group === g).map(d => `<button type="button" data-set="${d.id}">${esc(d.title)}</button>`).join('')}`).join('')}
       <h3>${esc(T('Dossiers paramétrés', 'Configured folders'))}</h3><p class="small">${esc(T('Survol : dossier attendu ; clic : changer (le sélecteur s’ouvre sur le dossier actuel).', 'Hover: expected folder; click: change (the picker opens on the current folder).'))}</p>
       <div class="da-folders">${['__repo', '__ledger', '__store', '__perf'].map(k => `<button type="button" class="secondary da-folder" data-folder="${k}"></button>`).join('')}</div></aside>
-      <section class="da-main"><h2></h2><p class="small da-intro"></p><div class="row da-actions"></div><p class="small da-status"></p><div class="da-body"></div><details class="da-howto"><summary>${esc(T('Mode opératoire', 'Procedure'))}</summary><div></div></details></section>`;
+      <section class="da-main" data-icon="database"><h2></h2><p class="small da-intro"></p><div class="row da-actions"></div><p class="small da-status"></p><div class="da-body"></div><details class="da-howto"><summary>${esc(T('Mode opératoire', 'Procedure'))}</summary><div></div></details></section>`;
     // Dossiers : nom actuel ✓ (autorisé) / ⚠ (à ré-autoriser), dossier attendu en infobulle.
     const paintFolders = () => root.querySelectorAll('.da-folder').forEach(b => window.FileAccess?.decorate(b, b.dataset.folder));
     root.querySelectorAll('.da-folder').forEach(b => b.onclick = async () => {

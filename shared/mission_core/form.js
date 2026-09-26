@@ -113,7 +113,7 @@
           return `<input type="number" step="any" ${attrs(field, path, withAlias)} value="${esc(value ?? '')}"${ph}>`;
         case 'date':
         case 'time':
-          return `<span class="mc-when"><input type="${field.type}" ${attrs(field, path, withAlias)} value="${esc(value)}">${now ? `<button type="button" class="mc-now" data-now="${esc(path)}" data-kind="${field.type}" title="${esc(txt(NOW_TITLE[/utc/i.test(path) ? 'utc' : field.type]))}">${field.type === 'date' ? '📅' : '⏱'}</button>` : ''}</span>`;
+          return `<span class="mc-when"><input type="${field.type}" ${attrs(field, path, withAlias)} value="${esc(value)}">${now ? `<button type="button" class="mc-now" data-now="${esc(path)}" data-kind="${field.type}" title="${esc(txt(NOW_TITLE[/utc/i.test(path) ? 'utc' : field.type]))}" aria-label="${esc(txt(NOW_TITLE[/utc/i.test(path) ? 'utc' : field.type]))}" data-icon="${field.type === 'date' ? 'calendar' : 'clock'}"></button>` : ''}</span>`;
         case 'checkgroup':
           return capabilitiesHtml(field, path, value || [], item);
         default:

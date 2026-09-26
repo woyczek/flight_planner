@@ -612,16 +612,19 @@
   button.hidden = true;
   const tools = document.querySelector('.repo-header-tools');
   if (tools) tools.prepend(button);
-  if (!document.getElementById('repoBackupStyle')) document.head.insertAdjacentHTML('beforeend', '<style id="repoBackupStyle">.repo-backup-button{height:32px;border:0!important;border-radius:7px!important;padding:4px 10px!important;background:#dc2626!important;color:#fff!important;font:600 12px/1 Inter,system-ui,Segoe UI,Arial,sans-serif;cursor:pointer;white-space:nowrap}.repo-backup-button:hover{background:#b91c1c!important}@media print{.repo-backup-button{display:none!important}}</style>');
+  if (!document.getElementById('repoBackupStyle')) document.head.insertAdjacentHTML('beforeend', '<style id="repoBackupStyle">.repo-backup-button{height:32px;border:0!important;border-radius:7px!important;padding:4px 10px!important;background:#dc2626!important;color:#fff!important;font:600 12px/1 Inter,system-ui,Segoe UI,Arial,sans-serif;cursor:pointer;white-space:nowrap}.repo-backup-button:hover{background:#b91c1c!important}.repo-backup-button .repo-svg{vertical-align:-2px;margin-right:2px}@media print{.repo-backup-button{display:none!important}}</style>');
 
-  /** Bouton rouge « 💾 Sauvegarder (n) · dernière : … » de l'en-tête : affiché à partir de REMIND modifications non sauvegardées. */
+  /** Bouton rouge « Sauvegarder (n) · dernière : … » de l'en-tête : affiché à partir de REMIND modifications non sauvegardées. */
   function reminder() {
     const n = pending(),
       m = meta(),
       row = BTN[nav.getLanguage?.()] || BTN.fr;
     const last = m.savedAt ? new Date(m.savedAt).toLocaleString() : t('never');
     button.hidden = n < REMIND;
-    button.textContent = `💾 ${row[0]} (${n}) · ${row[2]} ${m.savedAt ? new Date(m.savedAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }) : t('never')}`;
+    const label = `${row[0]} (${n}) · ${row[2]} ${m.savedAt ? new Date(m.savedAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }) : t('never')}`,
+      icon = window.RepositoryIcons?.svg('save', { size: 14 });
+    button.textContent = icon ? ' ' + label : '💾 ' + label;
+    if (icon) button.insertAdjacentHTML('afterbegin', icon);
     button.title = row[1].replace('{n}', n).replace('{last}', last);
   }
   button.onclick = run(async () => {

@@ -34,7 +34,7 @@ window.REPOSITORY_TREE={
     default:"standard",
     list:{
       standard:{label:["Standard","Standard","Standard","Estándar"],title:["Design d’origine des pages","Original page design","Ursprüngliches Seitendesign","Diseño original de las páginas"]},
-      aero:{label:["Aéro","Aero","Aero","Aero"],title:["Arrondi, ombres douces, en-tête en dégradé","Rounded, soft shadows, gradient header","Abgerundet, weiche Schatten, Kopfzeile mit Verlauf","Redondeado, sombras suaves, cabecera en degradado"]},
+      aero:{label:["Aéro","Aero","Aero","Aero"],title:["Arrondis doux, ombres légères, en-tête en dégradé","Soft corners, light shadows, gradient header","Sanfte Ecken, leichte Schatten, Kopfzeile mit Verlauf","Esquinas suaves, sombras ligeras, cabecera en degradado"]},
       ops:{label:["Opérationnel","Operational","Operativ","Operativo"],title:["Dense, angles vifs, liseré de thème, titres en capitales","Dense, sharp corners, theme edge, uppercase titles","Kompakt, scharfe Ecken, Themenkante, Titel in Großbuchstaben","Denso, esquinas vivas, borde del tema, títulos en mayúsculas"]},
       console:{label:["Console","Console","Konsole","Consola"],title:["Barre latérale, blocs aérés, titres en capitales, icônes","Side bar, airy blocks, uppercase titles, icons","Seitenleiste, luftige Blöcke, Titel in Großbuchstaben, Symbole","Barra lateral, bloques espaciosos, títulos en mayúsculas, iconos"]}
     }

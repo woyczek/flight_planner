@@ -196,6 +196,10 @@
     if (b) b.textContent = label(el.classList.contains("repo-block-hidden") ? "show" : "hide");
     if (d) d.title = label("move")
   }));
+  // Blocs dès que le DOM est prêt (sans attendre images, polices et cartes : en-têtes et icônes paraissent avec la
+  // page), puis de nouveau au chargement complet pour les blocs ajoutés entre-temps (init est ré-exécutable).
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => init());
+  else init();
   window.addEventListener("load", () => {
     init();
     footer()

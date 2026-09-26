@@ -115,19 +115,19 @@
     if (pageHeader) pageHeader.append(tools);
     else root.before(tools);
     root.innerHTML = `
-      <section><h2>${t('data')}</h2><div class="row">
-        <button type="button" class="secondary" data-action="yaml">${t('exportYaml')}</button>
-        <button type="button" class="secondary" data-action="csv">${t('exportCsv')}</button>
-        <button type="button" class="secondary" data-action="import">${t('importYaml')}</button>
-        <button type="button" class="secondary" data-action="folder">${t('folder')}</button>
-        <button type="button" class="secondary" data-action="print">${t('print')}</button>
+      <section data-icon="database"><h2>${t('data')}</h2><div class="row">
+        <button type="button" class="secondary" data-action="yaml" data-icon="download">${t('exportYaml')}</button>
+        <button type="button" class="secondary" data-action="csv" data-icon="download">${t('exportCsv')}</button>
+        <button type="button" class="secondary" data-action="import" data-icon="upload">${t('importYaml')}</button>
+        <button type="button" class="secondary" data-action="folder" data-icon="folder">${t('folder')}</button>
+        <button type="button" class="secondary" data-action="print" data-icon="printer">${t('print')}</button>
         <button type="button" class="secondary" data-action="legacy" hidden></button><input type="file" accept=".csv,text/csv" data-legacy hidden>
         <input type="file" accept=".yaml,.yml,text/yaml" multiple hidden></div><p class="small mc-ledger-info"></p><p class="small mc-status"></p></section>
-      <section><h2>${t('summary')}</h2><div class="mc-cards" id="mcCards"></div></section>
-      <section><h2>${t('activity')}</h2>
+      <section data-icon="chart"><h2>${t('summary')}</h2><div class="mc-cards" id="mcCards"></div></section>
+      <section data-icon="calendar"><h2>${t('activity')}</h2>
         <div id="mcActivity"></div><div class="mcg-series-legend" id="mcActivityLegend"></div></section>
-      <section><h2>${t('breakdowns')}</h2><div class="mc-breakdowns" id="mcBreakdowns"></div></section>
-      <section><h2>${t('missionsTitle')}<button type="button" class="ge-toggle" data-grid-edit></button></h2><div id="mcTable"></div><div id="mcEdges" hidden></div></section>`;
+      <section data-icon="layers"><h2>${t('breakdowns')}</h2><div class="mc-breakdowns" id="mcBreakdowns"></div></section>
+      <section data-icon="list"><h2>${t('missionsTitle')}<button type="button" class="ge-toggle" data-grid-edit></button></h2><div id="mcTable"></div><div id="mcEdges" hidden></div></section>`;
     const $a = action => root.querySelector(`[data-action="${action}"]`),
       status = root.querySelector('.mc-status');
     // Regroupement et mesure du graphique : préférences partagées avec le reporting général.
