@@ -50,4 +50,11 @@ s = io.open(nav, encoding='utf-8', newline='').read()
 t = re.sub(r'((?:pilot_profile|browser_store|file_access|block_icons|side_nav|icons/repository_icons)\.js|designs\.css)\?v=\w+', lambda m: f'{m.group(1)}?v={version}', s)
 if t != s:
     io.open(nav, 'w', encoding='utf-8', newline='').write(t)
+# textures des designs à matières (shared/textures/*.webp) : adresses versionnées dans la feuille des designs, sinon
+# un navigateur garde les anciennes images après une mise à jour (les scripts reprennent la version de leur ?v=)
+for css in [os.path.join(ROOT, 'shared', 'designs_skeuo.css')]:
+    s = io.open(css, encoding='utf-8', newline='').read()
+    t = re.sub(r'(textures/[\w-]+\.webp)(?:\?v=\w+)?', lambda m: f'{m.group(1)}?v={version}', s)
+    if t != s:
+        io.open(css, 'w', encoding='utf-8', newline='').write(t)
 print(f'Version {version} : {changed} page(s) mise(s) à jour.')

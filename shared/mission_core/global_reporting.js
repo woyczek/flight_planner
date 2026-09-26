@@ -283,7 +283,7 @@
     const header = document.querySelector('header');
     const bar = document.createElement('div');
     bar.className = 'mcg-header-tools';
-    bar.innerHTML = `<div class="mcg-header-row"><a class="mcg-new" href="mission_cr.html">+&nbsp;<span>${t('newReport')}</span></a><div id="periodPicker"></div></div>
+    bar.innerHTML = `<div class="mcg-header-row"><a class="mcg-new mc-button primary" data-icon="plus" href="mission_cr.html"><span>${t('newReport')}</span></a><div id="periodPicker"></div></div>
       <div class="mcg-header-row"><div class="mcg-chips"><span class="mcg-label">${t('families')}</span><div class="mcg-chip-list"></div></div>
         <label class="mcg-inline">${t('unit')}<select data-pref="unit">${UNITS.map(u => `<option value="${u}">${t(u)}</option>`).join('')}</select></label>
         <label class="mcg-inline">${t('metric')}<select data-pref="metric">${METRICS.map(m => `<option value="${m.id}">${esc(m.label[0])}</option>`).join('')}</select></label></div>`;

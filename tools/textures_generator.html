@@ -88,7 +88,10 @@ function worn(lo, hi, metal, s, chipF, t = .74) {
 async function run() {
   const out = document.getElementById('out'), list = document.getElementById('list'), t0 = performance.now();
   let ok = 0;
-  for (const [name, [w, recipe]] of Object.entries(RECIPES)) {
+  // matières photographiques (cuir, bois, papier, métaux, peintures) : tools/textures_from_photos.html ; ici, par
+  // défaut, seulement les matières dessinées (?all : toutes les recettes, en secours sans les photos)
+  const DRAWN = ['rubber', 'topo', 'topo-dark', 'radar'], all = location.search.includes('all');
+  for (const [name, [w, recipe]] of Object.entries(RECIPES).filter(([k]) => all || DRAWN.includes(k))) {
     const px = material(w, recipe), c = document.createElement('canvas'); c.width = c.height = w; const x = c.getContext('2d'), im = x.createImageData(w, w), d = im.data;
     for (let j = 0; j < w; j++) for (let i = 0; i < w; i++) { const [r, g, b] = px(i, j), k = (j * w + i) * 4; d[k] = r; d[k + 1] = g; d[k + 2] = b; d[k + 3] = 255; }
     x.putImageData(im, 0, 0);
@@ -98,7 +101,7 @@ async function run() {
     list.insertAdjacentHTML('beforeend', `<figure><img src="${URL.createObjectURL(blob)}"><figcaption>${name}.webp · ${Math.round(blob.size / 1024)} Ko ${res?.ok ? '✓' : '✗'}</figcaption></figure>`);
     await new Promise(r => setTimeout(r, 0));
   }
-  out.textContent = `${ok} / ${Object.keys(RECIPES).length} textures écrites en ${Math.round(performance.now() - t0)} ms.`;
+  out.textContent = `${ok} textures écrites en ${Math.round(performance.now() - t0)} ms.`;
 }
 run();
 </script></body></html>

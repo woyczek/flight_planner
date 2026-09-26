@@ -7,7 +7,7 @@
   'use strict';
   const nav = window.RepositoryNav;
   if (!nav || window.RepositoryDeco) return;
-  const script = document.currentScript, TX = new URL('textures/', script.src).href;
+  const script = document.currentScript, TX = new URL('textures/', script.src).href, V = new URL(script.src).search;   // version des textures : celle du script
   const L = ['fr', 'en', 'de', 'es'], li = () => Math.max(0, L.indexOf(nav.getLanguage?.() || 'fr'));
   const T = {
     ops: ['Opérations cartographiques', 'Mapping operations', 'Kartografische Einsätze', 'Operaciones cartográficas'],
@@ -17,7 +17,7 @@
     radar: ['Radar de veille', 'Surveillance radar', 'Überwachungsradar', 'Radar de vigilancia']
   };
   const tr = k => T[k][li()] || T[k][0];
-  const pat = (id, img, size) => `<pattern id="${id}" patternUnits="userSpaceOnUse" width="${size}" height="${size}"><image href="${TX}${img}.webp" width="${size}" height="${size}"/></pattern>`;
+  const pat = (id, img, size) => `<pattern id="${id}" patternUnits="userSpaceOnUse" width="${size}" height="${size}"><image href="${TX}${img}.webp${V}" width="${size}" height="${size}"/></pattern>`;
   const brass = id => `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0b8"/><stop offset=".35" stop-color="#d6ae55"/><stop offset=".7" stop-color="#8a6526"/><stop offset="1" stop-color="#4a3510"/></linearGradient>`;
 
   /** Frise de bureau (Cabinet) : SVG 1200 × 130 étiré en largeur, matières par motifs de textures. */

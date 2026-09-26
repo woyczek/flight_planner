@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Textures photographiques</title>
+<style>body{font:14px system-ui;margin:20px;background:#222;color:#eee}figure{display:inline-block;margin:6px;text-align:center;font-size:12px}figure img{width:200px;height:200px;display:block;border:1px solid #555}</style></head>
+<body>
+<!-- Textures photographiques des designs à matières (Cabinet, Durci, Aqua) : matières CC0 d'ambientCG (ambientcg.com,
+     domaine public, sans attribution obligatoire ; liste dans shared/textures/CREDITS.md). Pour chaque matière : carte
+     de couleur + carte de relief (normales OpenGL) 1K ; le relief est « cuit » dans l'image (lumière rasante venant du
+     haut à gauche, reflet), la couleur éventuellement reteinte (cuir marine, peinture olive / kaki / gris-vert), puis
+     l'image est réduite en tuile de 512 px (raccordable : les matières d'ambientCG le sont) et encodée en WebP.
+     Usage : python tools/save_textures.py --src <dossier des JPG>, puis http://localhost:8765/tools/textures_from_photos.html
+     Les matières dessinées (cartes, radar, caoutchouc) viennent de tools/textures_generator.html. -->
+<h1>Textures photographiques (ambientCG, CC0)</h1><p id="out">Traitement…</p><div id="list"></div>
+<script>
+const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+/** tint : [ombre, lumière] (luminance → dégradé), ou null (couleur d'origine) ; mul : multiplicateur de couleur
+ *  (peinture blanche → teinte ; éclats sombres conservés) ; bump : force du relief cuit ; spec : reflet ;
+ *  gain : correction de luminosité ; size : taille de la tuile. */
+const RECIPES = {
+  'leather-brown': { src: 'Leather033A', detail: 1.6, bump: 2.2, spec: .18, gain: 1.05 },
+  'leather-navy': { src: 'Leather030', tint: ['#030916', '#3d66a3'], detail: 1, bump: 2.6, spec: .22, gain: 1 },
+  'wood': { src: 'Wood067', detail: 1.4, bump: 1.4, spec: .35, gain: 1.05 },
+  'parchment': { src: 'Paper005', tint: ['#b58a52', '#fdf2d8'], detail: 1, bump: 2.4, spec: .03, gain: 1.02 },
+  'parchment-dark': { src: 'Paper005', tint: ['#0a0f1a', '#2f3d5c'], detail: 1, bump: 2, spec: .03, gain: 1 },
+  'brass': { src: 'Metal048C', tint: ['#8a6424', '#fbe7a6'], z: .15, detail: 1, bump: 1.6, spec: .3, gain: 1, size: 256 },
+  'brushed-light': { src: 'Metal009', tint: ['#b9c0c9', '#f4f6f9'], detail: 1, bump: 1.2, spec: .15, gain: 1, size: 256 },
+  'steel-dark': { src: 'Metal046A', tint: ['#0e1011', '#4a4f4c'], detail: 1, bump: 2, spec: .15, gain: 1 },
+  'olive': { src: 'PaintedMetal012', mul: '#5b6a3c', detail: 1.2, bump: 2.2, spec: .12, gain: 1 },
+  'steel': { src: 'PaintedMetal012', mul: '#9aa08c', detail: 1.2, bump: 2.2, spec: .12, gain: 1 },
+  'khaki': { src: 'PaintedMetal012', mul: '#d6cda6', detail: 1.2, bump: 2.2, spec: .1, gain: 1, size: 256 }
+};
+const load = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error(src)); i.src = src; });
+function pixels(img, w) { const c = document.createElement('canvas'); c.width = c.height = w; const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(img, 0, 0, w, w); return x.getImageData(0, 0, w, w); }
+async function run() {
+  const out = document.getElementById('out'), list = document.getElementById('list'), t0 = performance.now();
+  const L = [-.55, .65, .52], ln = Math.hypot(...L), l = L.map(v => v / ln), hv = [l[0], l[1], l[2] + 1], hn = Math.hypot(...hv), h = hv.map(v => v / hn);
+  let ok = 0;
+  for (const [name, r] of Object.entries(RECIPES)) {
+    const w = r.size || 512, [ci, ni] = await Promise.all([load(`/src/${r.src}_color.jpg`), load(`/src/${r.src}_normal.jpg`)]);
+    const C = pixels(ci, w), N = pixels(ni, w), d = C.data, n = N.data;
+    const lo = r.tint && hex(r.tint[0]), hi = r.tint && hex(r.tint[1]), mul = r.mul && hex(r.mul);
+    // statistiques de luminance : étirement automatique du contraste (le détail survit à la réduction en 512 px)
+    let sum = 0, sum2 = 0, cnt = d.length / 4; const mean = [0, 0, 0];
+    for (let k = 0; k < d.length; k += 4) { const y = (.2126 * d[k] + .7152 * d[k + 1] + .0722 * d[k + 2]) / 255; sum += y; sum2 += y * y; mean[0] += d[k]; mean[1] += d[k + 1]; mean[2] += d[k + 2]; }
+    const m = sum / cnt, sd = Math.sqrt(Math.max(1e-6, sum2 / cnt - m * m)); mean.forEach((v, i) => mean[i] = v / cnt / 255);
+    for (let k = 0; k < d.length; k += 4) {
+      let rgb = [d[k] / 255, d[k + 1] / 255, d[k + 2] / 255];
+      if (r.detail !== 1) rgb = rgb.map((v, i) => clamp(mean[i] + (v - mean[i]) * r.detail));
+      if (r.tint) { const y = (.2126 * d[k] + .7152 * d[k + 1] + .0722 * d[k + 2]) / 255, z = clamp(.5 + (y - m) / sd * (r.z || .2)); rgb = lo.map((a, i) => a + (hi[i] - a) * z); }
+      if (mul) rgb = rgb.map((v, i) => v * mul[i] * 1.08);
+      // normale OpenGL (y vers le haut) : relief atténué (bump), lumière du haut à gauche
+      let nx = (n[k] / 255 * 2 - 1) * r.bump, ny = (n[k + 1] / 255 * 2 - 1) * r.bump, nz = n[k + 2] / 255 * 2 - 1; const nl = Math.hypot(nx, ny, nz) || 1; nx /= nl; ny /= nl; nz /= nl;
+      const diff = clamp(nx * l[0] + ny * l[1] + nz * l[2]), sp = Math.pow(clamp(nx * h[0] + ny * h[1] + nz * h[2]), 24) * r.spec, k2 = (.55 + .6 * diff) * r.gain;
+      for (let i = 0; i < 3; i++) d[k + i] = clamp(rgb[i] * k2 + sp) * 255;
+    }
+    const c = document.createElement('canvas'); c.width = c.height = w; c.getContext('2d').putImageData(C, 0, 0);
+    const blob = await new Promise(res => c.toBlob(res, 'image/webp', .8));
+    const res = await fetch(`/shared/textures/${name}.webp`, { method: 'PUT', body: blob }).catch(() => null);
+    if (res?.ok) ok++;
+    list.insertAdjacentHTML('beforeend', `<figure><img src="${URL.createObjectURL(blob)}"><figcaption>${name}.webp · ${r.src} · ${Math.round(blob.size / 1024)} Ko ${res?.ok ? '✓' : '✗'}</figcaption></figure>`);
+  }
+  out.textContent = `${ok} / ${Object.keys(RECIPES).length} textures écrites en ${Math.round(performance.now() - t0)} ms.`;
+}
+run().catch(e => document.getElementById('out').textContent = 'Erreur : ' + e.message);
+</script></body></html>

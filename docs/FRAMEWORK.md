@@ -88,8 +88,11 @@ liste `DISPLAY` : design, icônes, couleurs, barre latérale, langue, onglets, s
   de sauvegarde de la barre d'état, `browser_store.js`). Aqua a une variante sombre (graphite, verre fumé) sur les
   thèmes sombres : les graphiques gardent leurs couleurs. Illustrations du décor complet (`design_deco.js`, chargé
   avec la feuille) : frise de bureau de Cabinet (cuir, corde, longue-vue, carte tamponnée), panneaux de Durci (plaque
-  DEFA, radar tournant, voyants de sauvegarde). Textures : matières éclairées (carte de hauteurs, normales, reflet)
-  par le générateur. À l'impression, tout s'efface.
+  DEFA, radar tournant, voyants de sauvegarde). Textures : photographies CC0 d'ambientCG (cuir, bois, papier, métaux,
+  peintures ; relief cuit et reteinte par `tools/textures_from_photos.html`, crédits dans `shared/textures/CREDITS.md`)
+  et matières dessinées (cartes, radar : `tools/textures_generator.html`) ; adresses versionnées par
+  `bump_versions.py`. Classe `repo-plain` : bouton qui garde son propre dessin (vignettes, sélecteurs). À l'impression,
+  tout s'efface.
 - **Réglages** : boutons « Apparence » et « Paramètres » en tête du menu ☰ ; dans la barre latérale, groupe du bas
   (Apparence, Paramètres, Menu).
 - **Icônes** (`repositoryIcons`, `<html data-icons>`) : trait normal, fin, épais, **Matière** (`matter` : chaque icône
