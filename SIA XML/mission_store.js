@@ -256,8 +256,8 @@
   /** Missions distinctes d'une sélection : identifiant du YAML (mission.id) ou n° du titre Markdown (« Mission 51 »). */
   function missionIds(yamls, mds) {
     const ids = new Set();
-    yamls.forEach(({ parsed }) => { const id = parsed?.mission?.id ?? parsed?.mission?.number; if (id != null && id !== '') ids.add(String(Number(id) || id)); });
-    mds.forEach(f => { const m = /^#\s+Mission\s+(\d+)/im.exec(f.text); if (m) ids.add(String(Number(m[1]))); });
+    yamls.forEach(({ parsed }) => { const id = parsed?.mission?.id ?? parsed?.mission?.number; if (id != null && id !== '') ids.add(String(id).trim().toUpperCase().replace(/^0+(?=\d)/, '')); });
+    mds.forEach(f => { const m = /^#\s+Mission\s+(\d+[A-Z]?)\b/im.exec(f.text); if (m) ids.add(m[1].toUpperCase().replace(/^0+(?=\d)/, '')); }); // 41A ≠ 41B (une mission par équipe)
     return [...ids];
   }
 

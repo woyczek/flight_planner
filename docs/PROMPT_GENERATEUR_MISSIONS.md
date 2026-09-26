@@ -18,12 +18,12 @@ GÉNÉRATEUR DE SÉRIE DE MISSIONS — HELO XP
 PARAMÈTRES DE CETTE EXÉCUTION
   TYPE            = aléatoire        (ou un code de famille du § 2, ex. AAR)
   SERIE           = 4                (entier 1 à 9)
-  NOMBRE_MISSIONS = 5                (1 à 9)
+  NOMBRE_MISSIONS = 5                (1 à 9 : nombre d'opérations)
   THÉÂTRE         = aléatoire       (métropole, Corse, Antilles, Guyane, Réunion, Mayotte,
                                      Nouvelle-Calédonie, Polynésie… ; plusieurs possibles, liés
                                      par « + », ex. « Guyane + métropole » — voir § 5)
-  ÉQUIPES_DEFA    = 2                (1 à 5 : aéronefs DEFA en vol ; chacun peut avoir sa propre
-                                     mission dans l'opération — voir § 4 aircraft)
+  ÉQUIPES_DEFA    = 2                (1 à 5 : équipes DEFA en vol par opération ; UNE mission
+                                     complète par équipe — voir § 3)
 
 Tu produis une série cohérente de NOMBRE_MISSIONS missions de simulation aérienne de la famille TYPE.
 Si TYPE = aléatoire, choisis UNE famille du § 2 et garde-la pour toute la série.
@@ -94,11 +94,21 @@ SPECIAL   (VIP, essais, formation, convoyage) sous-type libre et court (ex. VIP,
 ────────────────────────────────────────────────────────────────────────────
 3. LIVRABLES ET NUMÉROTATION
 ────────────────────────────────────────────────────────────────────────────
-Pour chaque mission n (1 à NOMBRE_MISSIONS) : NN = SERIE × 10 + n (série 4 → 41, 42, … 45).
+OPÉRATION ET MISSIONS. Chaque opération n (1 à NOMBRE_MISSIONS) engage ÉQUIPES_DEFA équipes DEFA en vol ; chaque
+équipe reçoit SA mission complète — son brief, son PDF, son compte rendu : propre aéronef, propre terrain de
+départ, propres points tournants, propres cartes de situation. Les missions d'une opération se coordonnent
+(rendez-vous communs, relèves, créneaux, commandement) et partagent le récit d'ensemble. Exemples : FIRE — un
+Milan (DH8D, largage depuis Nîmes-Garons), un Dragon (EC45, reconnaissance et secours depuis sa base) et un avion
+de commandement (BE20 ou TBM9, coordination au-dessus du feu) = trois missions ; AIRLIFT — un A400M parti de
+métropole et un hélicoptère au-dessus de la Corse avec un rendez-vous commun = deux missions ; AAR — ravitailleur
+et receveurs = une mission par équipe, points tournants différents, même axe et même rendez-vous.
+
+Numérotation : NN = SERIE × 10 + n (série 4 → opérations 41, 42…). Une seule équipe : mission NN (« 41 »).
+Plusieurs équipes : missions NN + lettre, une par équipe dans l'ordre (« 41A », « 41B », « 41C »).
 Deux fichiers par mission, chacun dans son propre bloc de code, précédé d'une ligne « Fichier : … » :
-  missionNN.yaml   (bloc ```yaml)
-  summaryNN.md     (bloc ```markdown)
-Ordre : mission41.yaml, summary41.md, mission42.yaml, summary42.md, …
+  missionNNX.yaml   (bloc ```yaml)
+  summaryNNX.md     (bloc ```markdown)
+Ordre : mission41A.yaml, summary41A.md, mission41B.yaml, summary41B.md, … puis l'opération suivante.
 Aucun autre fichier (pas d'images, pas de manifeste). Puis le bloc VALIDATION (§ 10).
 
 ────────────────────────────────────────────────────────────────────────────
@@ -116,9 +126,13 @@ schema_version: '1.0'
 mission:
   series: 4                    # = SERIE
   number: 1                    # = n
-  id: '41'                     # = NN, en texte
+  id: '41A'                    # = NN, + lettre de l'équipe s'il y en a plusieurs (en texte)
   type: AAR                    # code de famille (§ 2)
   subtype: TRAINING            # code de sous-type (§ 2)
+operation:                     # opération commune aux missions de ses équipes (identique dans chacune)
+  id: '41'
+  name: "Nom de l'opération"
+  missions: ['41A', '41B']       # toutes les missions de l'opération, dans l'ordre
 title: "AXE CECILE — ravitaillement d'une patrouille Rafale"   # court, sans le numéro
 summary: |-                   # bloc LITTÉRAL « |- » (jamais « >- » ni « > », qui recollent les lignes)
   Paragraphe 1 (2 à 3 phrases) : la situation — qui, où, ce qui se passe.
@@ -136,25 +150,16 @@ detailed_description: |-
   Décisions et imprévus (2 à 3 phrases) : critères d'interruption, carburant, météo, plan B.
 
   Retour et fin de mission (1 à 3 phrases) : retour, déroutement éventuel, ce qui marque la fin.
-aircraft:                      # EXACTEMENT ÉQUIPES_DEFA aéronefs : les équipages DEFA en vol (un indicatif
-                               # chacun, le premier est l'aéronef principal). Les autres acteurs (équipes sol :
-                               # VSAV, SMUR, CROSS, PGHM, commandement sol… ; aéronefs non DEFA) vont dans teams.
+aircraft:                      # l'aéronef DEFA de CETTE mission (une équipe = un aéronef ; une patrouille de
+                               # deux appareils sous un même indicatif reste une équipe). Les autres équipes DEFA
+                               # de l'opération et les autres acteurs (VSAV, SMUR, CROSS, PGHM, commandement
+                               # sol, aéronefs non DEFA) vont dans teams.
   - id: AC1
     type: "A332 A330 MRTT Phénix"   # COMMENCE par le désignateur OACI du § 6, puis le nom usuel
     callsign: COTAM3510        # sans espace, 3 à 9 caractères, lettres et chiffres
     operator: "Armée de l'Air et de l'Espace"
     role: aéronef principal
-    # Mission propre de cet équipage (obligatoire dès que ÉQUIPES_DEFA ≥ 2) :
-    task: "Ravitailler la patrouille sur CECILE puis rester en attente pour un second contact"
-    objective: "Transférer 18 t aux deux Rafale avant 11 h 30"
-    route: [ORIGIN, PT1, RDV-1, PT2, DESTINATION]   # identifiants de points de CE fichier, dans l'ordre du vol
-    # departure: { name: "…", lat: 0.000000, lon: 0.000000 }   # seulement si sa base diffère de origin (§ 5)
-  # Plusieurs équipes DEFA : chaque aéronef a sa mission distincte dans l'opération (rôle, trajet, objectif,
-  # terrain de départ si besoin), et elles se coordonnent (rendez-vous, relève, créneaux). Exemple FIRE :
-  # un Milan (DH8D, largage de retardant depuis Nîmes-Garons), un Dragon (EC45, reconnaissance et secours depuis
-  # sa base) et un avion de commandement (BE20 ou TBM9, coordination au-dessus du feu). Les points sont communs
-  # (turning_points, rendezvous, zones) ; chaque route n'en cite que les siens.
-origin:                        # terrain de départ de l'aéronef principal (§ 5)
+origin:                        # terrain de départ de CETTE équipe (§ 5)
   name: "BA 125 Istres-Le Tubé (LFMI)"
   lat: 43.522778
   lon: 4.923889
@@ -173,7 +178,8 @@ turning_points:                # 2 à 6 points dans l'ordre du vol, id PT1, PT2�
     lat: 0.000000
     lon: 0.000000
     role: "transit / entrée zone / point de report / …"
-rendezvous:                    # 0 à 3 rendez-vous, id RDV-1, RDV-2…
+rendezvous:                    # 0 à 3 rendez-vous, id RDV-1, RDV-2… ; un rendez-vous commun à plusieurs missions
+                               # de l'opération a le MÊME id, le même nom et les mêmes coordonnées dans chacune
   - id: RDV-1
     name: "Lieu du rendez-vous"
     lat: 0.000000
@@ -371,16 +377,12 @@ Destination : <destination.name> — <lat>, <lon>
 |---|---|---|---|---|
 | <name> | <service> | <department> | <type> | <role> |
 
-## Missions des équipes
+## Coordination de l'opération
 
-### <CALLSIGN> — <type>
+Opération : <operation.name> — missions <operation.missions>
+- <autre mission> — <callsign> (<type>) : <son rôle en une phrase>, <rendez-vous ou créneau commun>
 
-Départ : <departure.name, ou origin.name>
-Mission : <task>
-Objectif : <objective>
-Trajet : <route, identifiants séparés par « → »>
-
-(une sous-section « ### » par aéronef DEFA, dans l'ordre de aircraft)
+(section présente seulement s'il y a plusieurs équipes)
 
 ## Charge / personnel
 
@@ -438,10 +440,11 @@ liste des corrections faites :
   [ ] départ = base réelle de l'unité (Dragon, SMUR, pélicandrome, base militaire…)
   [ ] toutes les coordonnées dans le ou les théâtres (escales comprises), signes corrects (ouest / sud négatifs), 6 décimales,
       lieux réels, points en mer réellement en mer
-  [ ] aircraft : exactement ÉQUIPES_DEFA aéronefs DEFA, indicatifs distincts, tous repris dans teams ;
-      rôle de chacun dans la mission (pas de figurant)
-  [ ] ÉQUIPES_DEFA ≥ 2 : task, objective et route pour chaque aéronef ; missions distinctes et coordonnées ;
-      route = identifiants existants ; departure seulement si la base diffère ; section « Missions des équipes »
+  [ ] aircraft : l'aéronef DEFA de la mission (une équipe), repris dans teams ; indicatifs distincts d'une mission
+      à l'autre ; rôle de chacun dans l'opération (pas de figurant)
+  [ ] ÉQUIPES_DEFA ≥ 2 : une mission complète par équipe (41A, 41B…), chacune avec son aéronef, son départ, ses
+      points tournants et ses cartes ; bloc operation identique partout ; rendez-vous communs identiques
+      (id, nom, coordonnées) ; autres équipes DEFA dans teams ; section « Coordination de l'opération »
   [ ] aéronefs : désignateur du § 6 en tête du type ; aéronef capable de la mission
   [ ] tous les id cités (centre_ref, route, participants) existent
   [ ] distances totales compatibles avec l'autonomie ; hauteurs et niveaux réalistes
