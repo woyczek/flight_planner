@@ -12,7 +12,8 @@
      - altimètre : grande aiguille = centaines de pieds, petite = milliers ; fenêtre numérique (ft, FL) ;
      - carburant : carburant du trajet entier volé à cette altitude (unité d'affichage kg / lbs) et sa durée ;
        un clic (bouton ou cadran) change la lecture, une par courbe et dans sa couleur : loi réglée (violet) → profil
-       (bleu) → croisière économique (vert) → montée rapide (jaune) → Vy (bleu) → montée économique (vert).
+       (bleu) → croisière économique (vert) → montée rapide (jaune) → Vy (bleu) → montée économique (vert) ;
+     - horloge : temps de vol du même trajet (même lecture, même couleur ; un clic sur l'un change les deux).
    Badin et vario se règlent aussi sur l'instrument : glisser verticalement ou molette (mêmes pas que les
    curseurs : 5 kt, 50 ft/min) — FlightInstruments.onSet(clé, valeur) renvoie la valeur à la vue.
 
@@ -53,7 +54,7 @@
     host = document.createElement("div");
     host.className = "fp-instruments";
     host.hidden = true;
-    host.innerHTML = ["ias", "vs", "alt", "fuel"].map(k => `<figure class="fp-gauge" data-k="${k}"><svg viewBox="0 0 100 100" aria-hidden="true"></svg><figcaption></figcaption>${k === "fuel" ? '<button type="button" class="fp-fuel-mode"></button>' : ""}</figure>`).join("");
+    host.innerHTML = ["ias", "vs", "alt", "fuel", "time"].map(k => `<figure class="fp-gauge" data-k="${k}"><svg viewBox="0 0 100 100" aria-hidden="true"></svg><figcaption></figcaption>${k === "fuel" || k === "time" ? '<button type="button" class="fp-fuel-mode"></button>' : ""}</figure>`).join("");
     if (col) col.append(host);
     else {
       const tools = line.querySelector(".repo-header-tools");
@@ -65,14 +66,14 @@
     const cycleFuel = () => {
       fuelMode = FUEL_MODES[(FUEL_MODES.indexOf(fuelMode) + 1) % FUEL_MODES.length];
       try { localStorage.setItem("flightPerfFuelGauge", fuelMode); } catch {}
-      api.onRefresh ? api.onRefresh() : state && drawFuel(state); // la vue recalcule la lecture choisie
+      api.onRefresh ? api.onRefresh() : state && (drawFuel(state), drawTime(state)); // la vue recalcule la lecture choisie
     };
-    host.querySelector(".fp-fuel-mode").onclick = cycleFuel;
-    faces.fuel.querySelector("svg").addEventListener("click", cycleFuel);
+    // carburant et horloge partagent la lecture : un clic sur l'un change les deux
+    for (const k of ["fuel", "time"]) { faces[k].querySelector(".fp-fuel-mode").onclick = cycleFuel; faces[k].querySelector("svg").addEventListener("click", cycleFuel); }
     const css = document.createElement("style");
     css.textContent = `.fp-instruments{display:flex;gap:6px;align-items:center;margin:2px 6px}.fp-instruments[hidden]{display:none}
 .fp-gauge{margin:0;display:flex;flex-direction:column;align-items:center;gap:1px}.fp-gauge svg{width:62px;height:62px;display:block;border-radius:50%;box-shadow:0 0 0 2px #2b3440,0 2px 6px #0008;background:#0b0e12}
-.fp-gauge[data-k="ias"] svg,.fp-gauge[data-k="vs"] svg{cursor:ns-resize;touch-action:none}.fp-gauge[data-k="fuel"] svg{cursor:pointer}
+.fp-gauge[data-k="ias"] svg,.fp-gauge[data-k="vs"] svg{cursor:ns-resize;touch-action:none}.fp-gauge[data-k="fuel"] svg,.fp-gauge[data-k="time"] svg{cursor:pointer}
 .fp-fuel-mode{margin-top:3px;padding:2px 10px;border-radius:999px;border:1px solid currentColor;background:transparent;font:600 10.5px/1.3 Inter,system-ui,Segoe UI,Arial,sans-serif;cursor:pointer}
 .fp-gauge figcaption{font:10px/1.15 Inter,system-ui,Segoe UI,Arial,sans-serif;text-align:center;white-space:nowrap;opacity:.95;font-variant-numeric:tabular-nums}
 @media (max-width:720px){.fp-gauge svg{width:46px;height:46px}.fp-gauge figcaption{font-size:9px}}`;
@@ -171,6 +172,25 @@
     fig.querySelector("figcaption").textContent = `${tl("Carburant trajet", "Trip fuel", "Streckenkraftstoff", "Combustible del trayecto")} ${nf(s.fuel)} ${s.fuelUnit || ""}${h}`;
   }
 
+  /** Horloge : temps de vol du trajet entier à l'altitude courante, même lecture que la jauge carburant (courbe
+   *  choisie, dans sa couleur) ; petite aiguille = heures (tour de 12 h), grande = minutes. */
+  function drawTime(s) {
+    const fig = faces.time, x = s.fuelBy?.[fuelMode], col = s.fuelColors?.[fuelMode] || "#f0b86e", btn = fig.querySelector(".fp-fuel-mode"), src = faces.fuel.querySelector(".fp-fuel-mode");
+    btn.textContent = src.textContent; btn.style.color = src.style.color; btn.title = src.title;
+    fig.hidden = !s.fuelBy;
+    if (!x || !Number.isFinite(x.minutes)) { fig.querySelector("svg").innerHTML = hub; fig.querySelector("figcaption").textContent = `${tl("Temps de vol", "Flight time", "Flugzeit", "Tiempo de vuelo")} —`; return; }
+    const min = x.minutes, hh = Math.floor(min / 60), mm = Math.round(min % 60), txt = `${hh} h ${String(mm).padStart(2, "0")}`;
+    let g = "";
+    for (let i = 0; i < 60; i++) g += tick(i * 6, i % 5 ? 43 : 39, 46, i % 5 ? .6 : 1.3);
+    for (let i = 1; i <= 12; i++) g += num(i * 30, 32, i, 9);
+    // arc de la durée (couleur de la courbe) sur le tour des minutes
+    g += `<path d="${arc(0.001, Math.max(.5, Math.min(359.5, (min % 60) / 60 * 360)), 47.5)}" stroke="${col}" stroke-width="2" fill="none" opacity=".75"/>`;
+    g += `<rect x="31" y="60" width="38" height="11" rx="1.5" fill="#000" stroke="#2b3440"/><text x="50" y="68.5" font-size="7.5" text-anchor="middle" fill="${col}" font-family="ui-monospace,Consolas,monospace">${txt}</text>`;
+    g += needle((min / 60) % 12 * 30, 24, 3, "#e8edf2") + needle((min % 60) * 6, 40, 1.8, col) + hub;
+    fig.querySelector("svg").innerHTML = g;
+    fig.querySelector("figcaption").textContent = `${tl("Temps de vol", "Flight time", "Flugzeit", "Tiempo de vuelo")} ${txt}`;
+  }
+
   const api = {
     /** Rappel de réglage depuis un cadran : (clé 'ias' | 'vs', valeur) ; défini par la vue. */
     onSet: null,
@@ -187,7 +207,7 @@
       // échelles fixes pour une plage de curseurs donnée (pas de « saut » d'échelle en survolant les courbes)
       scale.ias = Math.ceil(Math.max(s.iasMax * 1.15, (s.tasMax || 0) * 1.05) / 50) * 50;
       scale.vs = [500, 1000, 2000, 3000, 4000, 6000, 8000].find(v => v >= s.vsMax * 1.05) || Math.ceil(s.vsMax / 2000) * 2000;
-      drawIas(s); drawVs(s); drawAlt(s); drawFuel(s);
+      drawIas(s); drawVs(s); drawAlt(s); drawFuel(s); drawTime(s);
       host.title = tl("Instruments de la loi réglée à l’altitude courante (survolée, épinglée, sinon niveau du plan). Badin et vario : glisser ou molette pour régler.",
         "Instruments of the set law at the current altitude (hovered, pinned, otherwise plan level). IAS and V/S: drag or scroll to adjust.",
         "Instrumente des eingestellten Gesetzes auf der aktuellen Höhe (überfahren, angeheftet, sonst Planhöhe). IAS und Steigrate: ziehen oder Mausrad zum Einstellen.",

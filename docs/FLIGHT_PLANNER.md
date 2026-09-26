@@ -111,7 +111,9 @@ et 50 ft/min), curseurs et courbes suivent. Aiguille bleue semi-transparente du 
 **carburant** : carburant du trajet entier volé à l'altitude courante (kg ou lbs selon l'unité affichée) et sa
 durée ; un clic sur le cadran ou sur son bouton change la lecture, une par courbe et dans sa couleur — loi
 réglée (violet), profil (bleu), croisière économique (vert), montée rapide (jaune), Vy (bleu), montée économique
-(vert) ; lecture mémorisée dans le navigateur.
+(vert) ; lecture mémorisée dans le navigateur. Cinquième cadran, **horloge** : temps de vol du même trajet
+(petite aiguille : heures, grande : minutes, dans la couleur de la lecture) ; les deux cadrans partagent la
+lecture, un clic sur l'un change les deux.
 
 **Liens vers les champs.** Les messages qui citent un champ (profil incomplet, limites, altitude de référence
 estimée) en font un lien : il déplie l'éditeur de profil au besoin, amène le champ à l'écran et le met en évidence.
