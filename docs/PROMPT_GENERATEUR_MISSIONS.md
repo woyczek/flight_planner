@@ -1,0 +1,377 @@
+# Prompt — générateur de série de missions (Helo XP)
+
+Prompt à donner à un assistant externe (ChatGPT…) pour produire une série de missions directement
+lisible par la suite : générateur de mission, studio cartographique, profil vertical, CR DEFA et
+statistiques. Il décrit **exactement** ce que lisent `SIA XML/mission_store.js` (YAML + Markdown),
+`SIA XML/map_parser.html` (cartes, zones, profil vertical) et `shared/mission_core/core.js`
+(passerelle mission → CR : famille, appareils, terrains). À mettre à jour avec eux.
+
+Copier tout le bloc ci-dessous, régler les trois paramètres en tête.
+
+---
+
+```text
+GÉNÉRATEUR DE SÉRIE DE MISSIONS — HELO XP
+
+PARAMÈTRES DE CETTE EXÉCUTION
+  TYPE            = aléatoire        (ou un code de famille du § 2, ex. AAR)
+  SERIE           = 4                (entier 1 à 9)
+  NOMBRE_MISSIONS = 5                (1 à 9)
+  RÉGION          = France métropolitaine et Corse (par défaut)
+
+Tu produis une série cohérente de NOMBRE_MISSIONS missions de simulation aérienne de la famille TYPE.
+Si TYPE = aléatoire, choisis UNE famille du § 2 et garde-la pour toute la série.
+
+Les fichiers alimentent automatiquement un briefing, des cartes OpenStreetMap, un PDF de mission, une
+coupe verticale, un compte rendu de mission (CR) et des statistiques. Le YAML est la SOURCE DE VÉRITÉ ;
+le Markdown en est un produit dérivé qui reprend les MÊMES valeurs. Un programme lit ces fichiers : le
+format ci-dessous est un contrat, pas une suggestion.
+
+────────────────────────────────────────────────────────────────────────────
+1. PRINCIPES
+────────────────────────────────────────────────────────────────────────────
+- Exercices de simulation aérienne. Ne jamais employer le mot « joueur ». Employer selon le contexte :
+  équipage, appareil, aéronef, équipier, patrouille, leader, élément, formation, équipe au sol,
+  détachement.
+- Missions réalistes, opérationnellement cohérentes, directement utilisables, intéressantes en
+  simulateur, toutes différentes : pas cinq variantes superficielles de la même mission. Varier
+  sous-types, terrains, relief / mer / ville, durée, météo évoquée, contraintes, nombre d'acteurs.
+- Lieux réels uniquement, coordonnées plausibles ET vérifiables (§ 5). En cas de doute sur un lieu,
+  choisis-en un autre plus connu plutôt que d'inventer.
+- Langue : français. Pas de texte hors des fichiers demandés (§ 3), sauf le bloc VALIDATION final.
+
+────────────────────────────────────────────────────────────────────────────
+2. FAMILLES ET SOUS-TYPES (codes EXACTS)
+────────────────────────────────────────────────────────────────────────────
+mission.type = un code de famille ci-dessous, tel quel (il choisit la page de CR).
+mission.subtype = un code de sous-type de la famille, tel quel. Les cinq missions couvrent au moins
+trois sous-types différents quand la famille en a trois ou plus.
+
+HEMS      (HEMS / MEDEVAC)             Primary HEMS · Interhospital transfer (MEDEVAC) · Rescue ·
+                                       Search / evacuation · Specialized transport · Training
+FIRE      (feux de forêt / GAAR)       GAAR · GAAR with diversion · Response · Training
+SAR       (recherche et sauvetage)     SAR-LAND · SAR-MARITIME · SAR-AIRCRAFT · PR · CSAR
+AIRLIFT   (transport aérien)           STRATEGIC · TACTICAL · REMOTE · OFFSHORE · POLAR · HUMANITARIAN ·
+                                       PERSONNEL · CARGO · COMBI
+AAR       (ravitaillement en vol)      TRAINING · OPERATIONAL · QRA · DRAG · EXERCISE · TRIALS
+MARITIME  (surveillance maritime)      MARPAT · FISHERY · CUSTOMS · POLLUTION · SHIPPING · ICE · SHIP_ID ·
+                                       ANTI_POLLUTION · OFFSHORE
+HADR      (aide humanitaire)           DISASTER_RELIEF · FLOOD · EARTHQUAKE · CYCLONE · STORM · VOLCANO ·
+                                       HUMANITARIAN · NEO · CIVIL_EVACUATION · ISOLATED_COMMUNITY · SUPPLY_DROP
+AIRBORNE  (largage / aéroporté)        PERSONNEL_PARADROP · CARGO_AIRDROP · RESUPPLY · HUMANITARIAN_AIRDROP ·
+                                       SAR_KIT_DROP · TRAINING_DROP
+FI        (contrôle en vol)            ILS · LOC · GLIDE_PATH · VOR · DME · NDB · TACAN · RADAR · PAPI_VASI ·
+                                       RNAV_GNSS · PROCEDURE_VALIDATION · AIRPORT_LIGHTING
+SURVEY    (levés / scientifique)       AERIAL_PHOTO · MAPPING · LIDAR · PHOTOGRAMMETRY · GEOPHYSICS ·
+                                       ATMOSPHERIC · WEATHER_RECON · VOLCANO · WILDLIFE · ENVIRONMENT · ICE ·
+                                       OCEANOGRAPHIC
+LE        (police / douane)            POLICE_OBSERVATION · GENDARMERIE · BORDER · CUSTOMS · TRAFFIC · PURSUIT ·
+                                       MISSING_PERSON · TACTICAL_SUPPORT · EVENT_SECURITY
+ISR       (renseignement)              ISR · RECON · EO_IR · IMINT · SIGINT · ELINT · COMINT · BORDER_ISR ·
+                                       MARITIME_ISR · INFRASTRUCTURE_ISR
+COMMAND   (commandement / guet / relais) AIR_POLICING · AIRBORNE_COMMAND · AEW · AIR_COORDINATION ·
+                                       COMM_RELAY · DISASTER_RELAY · FIRE_COORDINATION · SAR_COORDINATION
+SOF       (opérations spéciales)       INSERTION · EXTRACTION · INFILTRATION · EXFILTRATION ·
+                                       TACTICAL_TRANSPORT · SR_SUPPORT · FAST_ROPE · RAPPEL ·
+                                       PARACHUTE_INSERTION · LZ_INSERTION · SHIP_INSERTION
+SPECIAL   (VIP, essais, formation, convoyage) sous-type libre et court (ex. VIP, TEST_FLIGHT, FERRY, TRAINING)
+
+────────────────────────────────────────────────────────────────────────────
+3. LIVRABLES ET NUMÉROTATION
+────────────────────────────────────────────────────────────────────────────
+Pour chaque mission n (1 à NOMBRE_MISSIONS) : NN = SERIE × 10 + n (série 4 → 41, 42, … 45).
+Deux fichiers par mission, chacun dans son propre bloc de code, précédé d'une ligne « Fichier : … » :
+  missionNN.yaml   (bloc ```yaml)
+  summaryNN.md     (bloc ```markdown)
+Ordre : mission41.yaml, summary41.md, mission42.yaml, summary42.md, …
+Aucun autre fichier (pas d'images, pas de manifeste). Puis le bloc VALIDATION (§ 10).
+
+────────────────────────────────────────────────────────────────────────────
+4. YAML — SCHÉMA EXACT (helo-xp-mission 1.0)
+────────────────────────────────────────────────────────────────────────────
+Règles de syntaxe : YAML 1.2 valide, indentation 2 espaces, PAS d'ancres ni d'alias (&id / *id) :
+répéter les valeurs. Textes contenant « : », « # » ou commençant par un caractère spécial entre
+guillemets doubles. id de mission entre guillemets ('41'). Booléens true / false. Nombres sans unité.
+Coordonnées : degrés décimaux WGS84, 6 décimales, lat puis lon, ouest et sud négatifs.
+
+schema: helo-xp-mission
+schema_version: '1.0'
+mission:
+  series: 4                    # = SERIE
+  number: 1                    # = n
+  id: '41'                     # = NN, en texte
+  type: AAR                    # code de famille (§ 2)
+  subtype: TRAINING            # code de sous-type (§ 2)
+title: "AXE CECILE — ravitaillement d'une patrouille Rafale"   # court, sans le numéro
+summary: >-
+  3 à 5 phrases : qui, quoi, où, pourquoi, contrainte principale.
+detailed_description: >-
+  8 à 15 phrases : déroulé du départ au retour (transits, points, rendez-vous, action sur l'objectif,
+  retour), distances et durées estimées, niveaux ou hauteurs de vol, critères de décision,
+  coordination avec les autres acteurs, fin de mission.
+aircraft:                      # 1 à 4 aéronefs ; le premier est l'aéronef principal
+  - id: AC1
+    type: "A332 A330 MRTT Phénix"   # COMMENCE par le désignateur OACI du § 6, puis le nom usuel
+    callsign: COTAM3510        # sans espace, 3 à 9 caractères, lettres et chiffres
+    operator: "Armée de l'Air et de l'Espace"
+    role: aéronef principal
+origin:                        # terrain de départ (§ 5)
+  name: "BA 125 Istres-Le Tubé (LFMI)"
+  lat: 43.522778
+  lon: 4.923889
+destination:                   # terrain d'arrivée (peut être identique à origin : répéter les valeurs)
+  name: "BA 125 Istres-Le Tubé (LFMI)"
+  lat: 43.522778
+  lon: 4.923889
+target:                        # objectif / point central de la mission (id TOUJOURS TARGET)
+  id: TARGET
+  name: "Nom précis du lieu"
+  lat: 0.000000
+  lon: 0.000000
+turning_points:                # 2 à 6 points dans l'ordre du vol, id PT1, PT2…
+  - id: PT1
+    name: "Nom réel du point (ville, cap, sommet, balise…)"
+    lat: 0.000000
+    lon: 0.000000
+    role: "transit / entrée zone / point de report / …"
+rendezvous:                    # 0 à 3 rendez-vous, id RDV-1, RDV-2…
+  - id: RDV-1
+    name: "Lieu du rendez-vous"
+    lat: 0.000000
+    lon: 0.000000
+    participants: [COTAM3510, CERBERES51]   # callsigns présents dans aircraft ou teams
+    role: "ralliement / relève / largage / poser / …"
+zones:                         # 0 à 2 zones de travail, id ZONE-1…
+  - id: ZONE-1
+    name: "Nom de la zone"
+    centre: { lat: 0.000000, lon: 0.000000 }
+    radius_km: 20
+    role: "zone de recherche / zone AAR / zone de largage / …"
+teams:                         # tous les acteurs, aéronefs compris (2 à 5)
+  - name: CERBERES51/52        # callsign ou nom d'équipe
+    service: "Armée de l'Air et de l'Espace"   # ou SAMU, gendarmerie, douane, SDIS, Marine nationale…
+    department: Landes         # département français (nom) ou « — »
+    type: "RFAL Rafale"        # aéronef : désignateur OACI + nom ; équipe au sol : sa nature
+    role: receveurs
+payload:
+  category: FUEL               # FUEL, CARGO, PERSONNEL, PASSENGERS, MEDICAL, SENSOR, EQUIPMENT, NONE
+  description: "Nature précise de la charge"
+  mass_kg: 18000               # 0 si sans objet
+  passengers: 0
+  constraints:
+    - "contrainte 1"
+    - "contrainte 2"
+objectives:
+  primary: "Une phrase, vérifiable en fin de mission."
+  secondary:
+    - "objectif 2"
+    - "objectif 3"
+risks:                         # 2 à 5
+  - hazard: "Danger (2 à 4 mots)"
+    consequence: "Conséquence"
+    mitigation: "Mesure"
+air_refueling:                 # AAR, ou toute mission comportant un ravitaillement en vol ; sinon OMETTRE le bloc
+  capable: true
+  planned: true
+  role: tanker                 # tanker | receiver
+  track: CECILE                # nom d'axe de la liste du § 7
+vertical_profile:              # coupe verticale du studio
+  route: "ORIGIN, FL100, PT1, PT2, TARGET, FL060, DESTINATION"
+  cruise: FL100                # niveau par défaut : FL + 3 chiffres, ou altitude « 1500 ft »
+maps:                          # voir § 8
+  - id: general
+    filename: general41.png
+    type: general
+    description: "Vue générale couvrant départ, destination, points tournants, RDV, cible et zones"
+    include: { origin: true, destination: true, turning_points: true, target: true, rendezvous: true, zones: true }
+  - id: cible
+    filename: cible41.png
+    type: target
+    description: "Vue locale centrée sur TARGET, rayon approximatif 50 km"
+    centre_ref: TARGET
+    range_km: 50
+  - id: detail_cible
+    filename: detail_cible41.png
+    type: detail
+    description: "Vue détaillée 8 × 5 km autour de TARGET"
+    centre_ref: TARGET
+    width_km: 8
+    height_km: 5
+rendering:
+  north_up: true
+  draw_routes: false
+  add_markers: false
+  attribution_required: true
+notes:
+  - "Exercice de simulation aérienne."
+  - "Toute coordonnée approximative est signalée ici (point et raison)."
+
+Références internes : ORIGIN, DESTINATION et TARGET sont des identifiants réservés ; tout id cité
+(centre_ref, route du profil vertical, participants) DOIT exister dans le fichier. Pas d'autre clé que
+celles du schéma.
+
+────────────────────────────────────────────────────────────────────────────
+5. GÉOGRAPHIE — CONTRE LES ERREURS
+────────────────────────────────────────────────────────────────────────────
+- Terrains (origin, destination, et tout terrain cité) : format « Nom (OACI) », code OACI à 4 lettres
+  entre parenthèses — le CR en dépend. Utilise de préférence cette table (coordonnées vérifiées) :
+    BA 105 Évreux-Fauville (LFOE)        49.028611, 1.220000
+    BA 115 Orange-Caritat (LFMO)         44.140000, 4.866667
+    BA 118 Mont-de-Marsan (LFBM)         43.911667, -0.507500
+    BA 120 Cazaux (LFBC)                 44.535000, -1.131667
+    BA 123 Orléans-Bricy (LFOJ)          47.987778, 1.760556
+    BA 125 Istres-Le Tubé (LFMI)         43.522778, 4.923889
+    BA 126 Solenzara (LFKS)              41.926389, 9.405278
+    BA 702 Avord (LFOA)                  47.053333, 2.632500
+    BAN Lanvéoc-Poulmic (LFRL)           48.282500, -4.443611
+    Brest Bretagne (LFRB)                48.447911, -4.418540
+    Pau Pyrénées (LFBP)                  43.380000, -0.418611
+    Calvi Sainte-Catherine (LFKC)        42.524444, 8.793056
+    Ajaccio Napoléon Bonaparte (LFKJ)    41.923889, 8.802500
+  Un autre terrain n'est admis que si tu es CERTAIN de son code OACI et de sa position (aérodrome
+  public connu). Ne jamais inventer un code OACI. Un hôpital, une DZ, un point en mer ou un secteur
+  n'est pas un terrain : pas de parenthèses, pas de code.
+- Tous les points : dans la RÉGION (France métropolitaine : lat 41.3 à 51.1, lon −5.2 à 9.6), sauf
+  point en mer explicitement « en mer » (alors réellement en mer, à plus de 5 km de la côte, et le
+  préciser dans role). Un point « sommet » est sur le sommet, un point « port » sur le port.
+- Distances cohérentes : somme des branches ≤ 70 % de l'autonomie de l'aéronef principal
+  (hélicoptère : 150 à 400 NM selon le type) ; indiquer distances et durées estimées dans
+  detailed_description. Points successifs espacés d'au moins 3 NM.
+- Hauteurs réalistes : hélicoptère 500 à 3 000 ft sol en transit (relief en plus) ; avion de transport
+  FL100 à FL300 ; chasse / tanker FL200 à FL300 sur les axes AAR ; largage de personnel 1 200 ft sol
+  (ouverture automatique) ou FL100+ (chute libre).
+- Coordonnée approximative (point non référencé, lieu sans position exacte connue) : autorisée
+  seulement si le lieu est réel et la position à moins de 2 km ; la signaler dans notes.
+
+────────────────────────────────────────────────────────────────────────────
+6. AÉRONEFS — DÉSIGNATEURS OACI RECONNUS
+────────────────────────────────────────────────────────────────────────────
+Le champ type (aircraft et teams) COMMENCE par l'un de ces désignateurs, suivi du nom usuel
+(ex. « EC35 H135 », « A400 A400M Atlas ») :
+  Transport : A400 (A400M Atlas) · C30J (C-130J Super Hercules) · C130 (C-130H Hercules) · C295 (C295) ·
+              CN35 (CN-235) · A332 (A330 MRTT Phénix) · A320 · DHC6 (Twin Otter) · PC6T (Pilatus Porter) ·
+              TBM9 (TBM 900) · B350 (King Air 350) · BE20 (King Air 200)
+  Chasse / surveillance : RFAL (Rafale) · E3CF (E-3F AWACS) · E2 (E-2C / E-2D Hawkeye) · FA50 (Falcon 50) ·
+              Q9 (MQ-9 Reaper) · PC21 (PC-21)
+  Hélicoptères : EC35 (H135) · EC45 (H145) · H160 (H160) · AS65 (Dauphin / Panther) · AS50 (Écureuil H125) ·
+              AS55 (Fennec / Écureuil 2) · AS32 (Super Puma / Cougar) · EC25 (H225M Caracal) · NH90 (NH90 TTH / NFH
+              Caïman) · A139 (AW139) · TIGR (Tigre)
+N'utiliser AUCUN autre type. L'aéronef doit être capable de la mission (rayon d'action, charge,
+treuil, perche de ravitaillement, capacité de largage…).
+
+────────────────────────────────────────────────────────────────────────────
+7. RAVITAILLEMENT EN VOL (AAR et missions qui en comportent)
+────────────────────────────────────────────────────────────────────────────
+Axes autorisés (MIAM ENR 5.7) : AGATHE, ALOHA, AMELIE, BARBARA, CECILE, DIANA, EDWIGE, FABIOLA, GISELE,
+IRENE, JUDITH, KATIA, LEA, LUCIE, MARIE, NADIA, NINA, OCEANE, OLIVIA, REGINA, SIMONE, STACY,
+STEPHANIE, TANIA, TIPHAINE, URSULA, VALENTINA, VIVIANE, YVETTE, ZOE, ZORA.
+- air_refueling.track = un de ces noms ; turning_points : « <AXE> ARIP » (entrée) et « <AXE> ARCP »
+  (point de contact) ; RDV-1 à l'ARIP. Le studio recale l'axe sur la base ENR 5.7 : si tu n'es pas sûr
+  des coordonnées ARIP / ARCP, donne une position plausible dans la région de l'axe et écris dans notes
+  « coordonnées de l'axe <AXE> à recaler sur l'ENR 5.7 ».
+- Tanker : A332 ou A400 (configuration tanker) ou C30J (ravitaillement d'hélicoptères) ; receveurs
+  compatibles (Rafale : panier ; hélicoptère ravitaillable : EC25 Caracal).
+
+────────────────────────────────────────────────────────────────────────────
+8. CARTES (bloc maps)
+────────────────────────────────────────────────────────────────────────────
+Obligatoires : general (include : tout à true), cible (TARGET, range_km 30 à 80), detail_cible
+(TARGET, 8 × 5 km). En plus : une carte detail_rdv par rendez-vous (id detail_rdv_1, filename
+detail_rdvNN-1.png, type detail_rdv, centre_ref RDV-1, 8 × 5 km) et une carte zone par zone (id zone_1,
+filename zoneNN.png, type zone, centre_ref ZONE-1, range_km ≈ 2 × radius_km). filename : NN = id de la
+mission. description : une phrase.
+
+────────────────────────────────────────────────────────────────────────────
+9. MARKDOWN (summaryNN.md) — FORMAT EXACT
+────────────────────────────────────────────────────────────────────────────
+Mêmes valeurs que le YAML, dans cet ordre de titres (« ## » exactement, libellés exacts) ; les lignes
+« Clé : valeur » ont un espace avant et après les deux-points.
+Section « Ravitaillement en vol » : seulement si le bloc air_refueling existe. Section « Rendez-vous » :
+seulement s'il y a des rendez-vous. Les chevrons <…> sont à remplacer, ils n'apparaissent pas dans le fichier.
+
+# Mission 41 — <CALLSIGN> — « <title> »
+
+## Introduction
+
+Type : <mission.type>
+Sous-type : <mission.subtype>
+Aéronef : <aircraft[0].type>
+Callsign : <aircraft[0].callsign>
+Départ : <origin.name> — <lat>, <lon>
+Destination : <destination.name> — <lat>, <lon>
+
+## Summary
+
+<summary>
+
+## Description détaillée
+
+<detailed_description>
+
+## Équipes engagées
+
+| Nom / callsign | Arme / service | Département | Type | Rôle |
+|---|---|---|---|---|
+| <name> | <service> | <department> | <type> | <role> |
+
+## Charge / personnel
+
+Catégorie : <payload.category>
+Description : <payload.description>
+Masse : <mass_kg> kg
+Passagers : <passengers>
+
+Contraintes :
+- <contrainte>
+
+## Objectif principal
+
+<objectives.primary>
+
+## Objectifs secondaires
+
+- <objectif>
+
+## Points tournants
+
+| ID | Nom | Latitude | Longitude | Rôle |
+|---|---|---:|---:|---|
+| PT1 | <name> | <lat> | <lon> | <role> |
+
+## Rendez-vous
+
+- **RDV-1 — <name>** — <lat>, <lon> — participants : <A>, <B> — <role>
+
+## Ravitaillement en vol
+
+- capable: true
+- planned: true
+- role: tanker
+- track: CECILE
+
+## Risques à prendre en compte
+
+- **<hazard>** — conséquence : <consequence> — mesure : <mitigation>
+
+## Cartographie prévue
+
+- `general41.png` — <description>
+
+> Scénario de simulation — ne pas utiliser pour une mission réelle.
+
+────────────────────────────────────────────────────────────────────────────
+10. VALIDATION (à faire avant de répondre, puis à afficher en fin de réponse)
+────────────────────────────────────────────────────────────────────────────
+Pour chaque mission, vérifie et corrige avant d'écrire, puis affiche une ligne « NN : OK » ou la
+liste des corrections faites :
+  [ ] YAML valide, sans ancre ni alias, clés du schéma seulement
+  [ ] mission.type et mission.subtype = codes exacts du § 2 ; id = NN en texte
+  [ ] terrains au format « Nom (OACI) » issus de la table ou certains ; aucun code inventé
+  [ ] toutes les coordonnées dans la région, 6 décimales, lieux réels, points en mer réellement en mer
+  [ ] aéronefs : désignateur du § 6 en tête du type ; aéronef capable de la mission
+  [ ] tous les id cités (centre_ref, route, participants) existent
+  [ ] distances totales compatibles avec l'autonomie ; hauteurs et niveaux réalistes
+  [ ] cartes obligatoires présentes, filenames avec le bon NN
+  [ ] Markdown : titres exacts, mêmes valeurs que le YAML
+  [ ] série : sous-types variés, missions réellement différentes, pas de mot « joueur »
+```

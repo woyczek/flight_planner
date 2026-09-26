@@ -46,6 +46,9 @@ version précédente est relue automatiquement si l'accès au dossier est déjà
 
 ## 2. Format des missions
 
+Pour faire produire une série par un assistant externe (ChatGPT…) : prompt complet, aligné sur ce que lit
+la suite, dans [PROMPT_GENERATEUR_MISSIONS.md](PROMPT_GENERATEUR_MISSIONS.md).
+
 Schéma YAML `helo-xp-mission` (exemples : `Missions/AIRLIFT_serie_1_precomplete/mission11.yaml`,
 `Missions/MEDEVAC_serie_*`) :
 
