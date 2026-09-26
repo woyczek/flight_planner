@@ -127,6 +127,16 @@
       l.setAttribute("visibility", h > c.xmax + 1 ? "hidden" : "visible");
     },
   };
+  /** Largeur logique (viewBox) d'une courbe de hauteur logique H : la hauteur affichée reste bornée (≈ 36 % de la
+   *  fenêtre, 200 à 330 px pour la plus haute) — sur une colonne large, la courbe s'élargit au lieu de grandir ;
+   *  même échelle (taille de texte) pour toutes les courbes. Met à jour le viewBox du SVG. */
+  function chartW(svg, H) {
+    const wrapW = Math.max(300, (svg.parentElement?.clientWidth || 540) - 90),   // moins les deux curseurs verticaux
+      px = Math.min(330, Math.max(200, innerHeight * .36)) / 270,                  // pixels par unité, commun aux courbes
+      W = Math.max(540, Math.round(wrapW / px));
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    return W;
+  }
   /** Prolonge une série au-delà du plafond ceil : un point non calculable (ok faux) y est remplacé par l'extrapolation
    *  linéaire des deux derniers points valides (valeurs keys, bornées à 0 ; extrap: true). Sous le plafond : inchangée. */
   function extendSeries(list, ceil, keys) {
@@ -393,7 +403,7 @@
    *  si un écart ISA est saisi, croisière du profil en atmosphère standard en pointillés (effet de la température).
    *  Jauge synchronisée avec les autres courbes ; relevé : TAS, Badin et Mach de chaque série. */
   function drawTas(m, c, K) {
-    const svg = $("tasChart"), W = 540, H = 220, Lm = 52, R = 12, T = 12, B = 30, xmax = Math.max(K.topX, 1000), man = manualLaw(m);
+    const svg = $("tasChart"), H = 220, W = chartW(svg, H), Lm = 52, R = 12, T = 12, B = 30, xmax = Math.max(K.topX, 1000), man = manualLaw(m);
     let m0 = null;
     if (m.dIsa) try { m0 = perfModel(0); } catch { m0 = null; }
     const step = xmax > 20000 ? 1000 : 500, rows = [];
@@ -483,7 +493,7 @@
   /** Courbe d'altitude optimale (NM par unité de carburant sur le trajet entier, selon le niveau) et son panneau. */
   function drawAltitude(m, c, K) {
     const { hs, ok, eco, norm, bands, bestProf, bestEco, fastest, plan, step } = K, unit = fuelUnit(), man = K.manTrips;
-    const svg = $("optChart"), W = 540, H = 270, Lm = 52, R = 12, T = 16, B = 30, xmax = Math.max(K.topX, 1000);
+    const svg = $("optChart"), H = 270, W = chartW(svg, H), Lm = 52, R = 12, T = 16, B = 30, xmax = Math.max(K.topX, 1000);
     const eff = r => c.D / cv(r.fuel);
     const vals = [eco, norm, man, ...bands].flat().filter(ok).map(eff), ymax = Math.max(...vals) * 1.05, ymin = Math.max(0, Math.min(...vals) * .92);
     const X = h => Lm + h / xmax * (W - Lm - R), Y = v => T + (1 - (v - ymin) / (ymax - ymin || 1)) * (H - T - B);
@@ -552,7 +562,7 @@
 
     // --- 2. vario selon l'altitude ------------------------------------------------------------------
     guard("panelClimb", "climbChart", tl("Montée — vario", "Climb — rate", "Steigflug — Steigrate", "Ascenso — régimen"), () => {
-      const svg = $("climbChart"), W = 540, H = 230, Lm = 52, R = 44, T = 14, B = 30, xmax = Math.max(K.topX, 1000);
+      const svg = $("climbChart"), H = 230, W = chartW(svg, H), Lm = 52, R = 44, T = 14, B = 30, xmax = Math.max(K.topX, 1000);
       const rmax = Math.max(...pts.map((p, i) => Math.max(p.roc, p.profileRoc, mpts[i].roc))) * 1.08;
       const fmax = Math.max(...pts.filter(p => Number.isFinite(p.fuelPer1000) && p.roc > 100).map(p => cv(p.fuelPer1000))) * 1.08 || 1;
       const X = h => Lm + h / xmax * (W - Lm - R), Y = v => T + (1 - v / rmax) * (H - T - B), Yf = v => T + (1 - v / fmax) * (H - T - B);
@@ -591,7 +601,7 @@
     let mv = null, mt = null, mf = null;
     try { [mv, mt, mf] = K.mid ||= ["vy", "time", "fuel"].map(o => m.climbOpt(hMidC, o, kC)); } catch (e) { console.error("Vue des courbes — lois optimales :", e); }
     guard("panelSpeed", "climbSpeedChart", tl("Vitesses de montée", "Climb speeds", "Steiggeschwindigkeiten", "Velocidades de ascenso"), () => {
-      const sv = $("climbSpeedChart"), W = 540, H = 200, Lm = 52, R = 12, T = 12, B = 30;
+      const sv = $("climbSpeedChart"), H = 200, W = chartW(sv, H), Lm = 52, R = 12, T = 12, B = 30;
       const sch = (K.sch ||= pts.filter(p => p.h <= hTarget || hTarget < step).map(p => ({ h: p.h, vy: m.climbOpt(p.h, "vy", kC), t: m.climbOpt(p.h, "time", kC), f: m.climbOpt(p.h, "fuel", kC), vx: p.vxIas, pr: active.climb?.iasKt ? +active.climb.iasKt : null })))
         .map(r => ({ ...r, mn: m.manualPoint(r.h, man) }));
       // Badin (traits pleins) et TAS (pointillés, même couleur) de chaque loi
@@ -656,6 +666,12 @@
   }
 
   addEventListener("resize", () => alignSliders());
+  // largeur de colonne ou hauteur de fenêtre changée : courbes redessinées à la nouvelle taille (sans recalcul du cache)
+  { let last = "", t = 0;
+    addEventListener("resize", () => { clearTimeout(t); t = setTimeout(() => {
+      const w = document.querySelector("#optBlock .chart-wrap")?.clientWidth || 0, key = `${Math.round(w / 20)}|${Math.round(innerHeight / 20)}`;
+      if (key !== last && S.m) { last = key; renderAll(S.m, S.c); window.StickyFrame?.resetGrow?.(); }
+    }, 250); }); }
   window.renderAltitudeOptimum = renderAltitudeOptimum;
   window.FlightPerfView = { sync, renderAll: () => S.m && renderAll(S.m, S.c), state: S,
     /** Loi réglée par les curseurs pour le profil actif : { ias, vs, full } ; null avant le premier calcul. */

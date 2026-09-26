@@ -101,6 +101,10 @@ sinon extrapolation linéaire des deux derniers points. Optimums, devis et fiche
 loi réglée ; en pointillés, la croisière du profil en atmosphère standard quand un écart ISA est saisi.
 Jauge synchronisée avec les autres courbes (TAS, Badin, Mach).
 
+**Courbes compactes** : hauteur affichée bornée par la fenêtre (≈ 36 % de sa hauteur, 200 à 330 px pour la plus
+haute) — sur une colonne large, une courbe s'élargit au lieu de grandir ; redessinées au changement de taille.
+Une rangée ne prend de la hauteur en plus que si son panneau d'explications la déborderait.
+
 **Mise en page** : trois colonnes sur écran large — saisie et courbes | Résultat et panneaux | instruments —,
 largeurs réglables à la souris (poignées entre les colonnes, double-clic : largeurs par défaut ; framework
 `column_resize.js`). Les blocs pleine largeur (données du profil…) couvrent les trois colonnes.

@@ -96,7 +96,7 @@
         if (hidden) continue;
         // ancre agrandie à la hauteur du cadre : les rangées suivantes (et leurs cadres) descendent d'autant
         // l'ancre ne fait que grandir (pas de va-et-vient pendant un réglage) ; resetGrow() la remet à la mesure
-        if (it.grow) { const need = el.offsetHeight + gap * 2; if (need > (parseFloat(anchor.style.minHeight) || 0) + 1) anchor.style.minHeight = need + "px"; }
+        if (it.grow) { const need = el.offsetHeight + gap; if (need > (parseFloat(anchor.style.minHeight) || 0) + 1) anchor.style.minHeight = need + "px"; }
         const a = anchor.getBoundingClientRect(), h = el.offsetHeight, room = innerHeight - line - gap - gap;
         // cadre plus haut que la place restante : son bas se colle au bas de la fenêtre (tout reste lisible)
         const stuck = h > room ? innerHeight - gap - h : line + gap;

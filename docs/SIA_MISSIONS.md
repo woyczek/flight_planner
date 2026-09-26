@@ -89,7 +89,8 @@ Page `SIA XML/mission_editor.html`.
 
 1. **Importer une mission** : YAML et / ou Markdown d'une mission, ou **collage** de son contenu ; sous-bloc
    **Créer une mission avec ChatGPT** à côté du collage : type, théâtre (ou aléatoire), série, nombre d'**équipes
-   DEFA en vol** (1 à 5 ; les équipes sol s'ajoutent selon la mission) ; « ChatGPT → » copie le prompt réglé pour
+   DEFA en vol** (1 à 5 ; les équipes sol s'ajoutent selon la mission), second théâtre facultatif (mission reliant
+   deux théâtres : acheminement Guyane – métropole, relève Corse – continent…) ; « ChatGPT → » copie le prompt réglé pour
    une seule mission et ouvre ChatGPT dans un nouvel onglet (coller, envoyer, puis charger ou coller
    `missionNN.yaml` et `summaryNN.md`). Le prompt vient de
    [PROMPT_GENERATEUR_MISSIONS.md](PROMPT_GENERATEUR_MISSIONS.md), embarqué dans `SIA XML/mission_prompt.js` par

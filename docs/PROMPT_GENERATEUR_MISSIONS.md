@@ -20,13 +20,15 @@ PARAMÈTRES DE CETTE EXÉCUTION
   SERIE           = 4                (entier 1 à 9)
   NOMBRE_MISSIONS = 5                (1 à 9)
   THÉÂTRE         = aléatoire       (métropole, Corse, Antilles, Guyane, Réunion, Mayotte,
-                                     Nouvelle-Calédonie, Polynésie… — voir § 5)
+                                     Nouvelle-Calédonie, Polynésie… ; plusieurs possibles, liés
+                                     par « + », ex. « Guyane + métropole » — voir § 5)
   ÉQUIPES_DEFA    = 2                (1 à 5 : aéronefs DEFA en vol, voir § 4 aircraft)
 
 Tu produis une série cohérente de NOMBRE_MISSIONS missions de simulation aérienne de la famille TYPE.
 Si TYPE = aléatoire, choisis UNE famille du § 2 et garde-la pour toute la série.
-Si THÉÂTRE = aléatoire, choisis le théâtre de chaque mission (§ 5) ; varier les théâtres dans la série est
-bienvenu quand la famille s'y prête (unités réellement présentes).
+Si THÉÂTRE = aléatoire, choisis le ou les théâtres de chaque mission (§ 5) ; varier les théâtres dans la série est
+bienvenu quand la famille s'y prête (unités réellement présentes). Plusieurs théâtres (« A + B ») : la mission
+les relie réellement (§ 5).
 
 Les fichiers alimentent automatiquement un briefing, des cartes OpenStreetMap, un PDF de mission, une
 coupe verticale, un compte rendu de mission (CR) et des statistiques. Le YAML est la SOURCE DE VÉRITÉ ;
@@ -264,13 +266,16 @@ celles du schéma.
     arrivée ou départ sur un terrain civil possible (déploiement, transport, entraînement, déroutement).
 - Théâtres : métropole et Corse, et les outre-mer, théâtres d'activité réels : Antilles (Guadeloupe,
   Martinique, Saint-Martin), Guyane, La Réunion, Mayotte, Nouvelle-Calédonie, Polynésie française,
-  Saint-Pierre-et-Miquelon, Wallis-et-Futuna. Une mission reste dans un seul théâtre (sauf transport
-  stratégique explicite) ; aéronefs et unités présents sur ce théâtre (ex. Guyane : Puma / Fennec / Caracal
+  Saint-Pierre-et-Miquelon, Wallis-et-Futuna. Une mission peut couvrir plusieurs théâtres quand l'opération
+  les relie réellement : acheminement Guyane – métropole (escales réalistes : Açores, Cap-Vert, Dakar…), relève
+  Corse – continent, évacuation Antilles – Guyane, renfort métropole – Réunion ; sinon elle reste dans un seul
+  théâtre. Aéronefs et unités présents sur le ou les théâtres ; l'autonomie de l'aéronef impose les escales
+  (points tournants sur les terrains d'escale) ; aéronefs et unités présents sur ce théâtre (ex. Guyane : Puma / Fennec / Caracal
   de l'escadron d'hélicoptères, CN-235 ; Réunion : Dragon 974, Gendarmerie ; Polynésie : Falcon 200,
   Dauphin / Panther de la Marine). Longitude négative à l'ouest de Greenwich (Antilles, Guyane,
   Polynésie, Saint-Pierre) ; latitude négative dans l'hémisphère sud (Réunion, Mayotte, Nouvelle-Calédonie,
   Polynésie, Wallis).
-- Tous les points sont dans le théâtre choisi, sur le bon relief : un point « en mer » réellement en mer
+- Tous les points sont dans le ou les théâtres choisis (et sur les escales du trajet qui les relie), sur le bon relief : un point « en mer » réellement en mer
   (à plus de 2 km de la côte, préciser dans role), un « sommet » sur le sommet, un « port » sur le port,
   un « lac » sur l'eau.
 - Distances cohérentes : somme des branches ≤ 70 % de l'autonomie de l'aéronef principal
@@ -409,7 +414,7 @@ liste des corrections faites :
   [ ] mission.type et mission.subtype = codes exacts du § 2 ; id = NN en texte
   [ ] terrains au format « Nom (OACI) », codes certains, aucun code inventé ; hélistations sans code
   [ ] départ = base réelle de l'unité (Dragon, SMUR, pélicandrome, base militaire…)
-  [ ] toutes les coordonnées dans le théâtre, signes corrects (ouest / sud négatifs), 6 décimales,
+  [ ] toutes les coordonnées dans le ou les théâtres (escales comprises), signes corrects (ouest / sud négatifs), 6 décimales,
       lieux réels, points en mer réellement en mer
   [ ] aircraft : exactement ÉQUIPES_DEFA aéronefs DEFA, indicatifs distincts, tous repris dans teams ;
       rôle de chacun dans la mission (pas de figurant)

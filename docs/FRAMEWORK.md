@@ -86,7 +86,7 @@ Chaque `section` / `.panel` du `<main>` devient un bloc avec les boutons ↕ (d�
 `data-block-id` : identifiant stable (sinon `id`, sinon rang). Après un nouveau rendu de
 blocs : `window.AppFramework.refresh()`.
 
-Option `grow: true` de `StickyFrame.follow` : l'ancre prend au moins la hauteur du cadre (+ 2 × gap), pour
+Option `grow: true` de `StickyFrame.follow` : l'ancre prend au moins la hauteur du cadre (+ gap), pour
 qu'un cadre plus haut que sa rangée ne déborde pas sur le cadre suivant (panneaux du planificateur). L'ancre ne
 fait que grandir (pas de va-et-vient pendant un réglage) ; `StickyFrame.resetGrow()` la remet à la mesure après
 un nouveau contenu complet.
