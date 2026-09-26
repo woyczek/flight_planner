@@ -238,7 +238,9 @@ Sous la carte :
   séparée ; ⤢ agrandir. Les valeurs de la mission sont gardées tant qu'on n'applique pas ; ✎ marque une carte
   dont l'emprise est modifiée.
 - **Cartes de la mission**, une ligne chacune : affichage dans la carte de contrôle, **profil**
-  (ou **Désactivé** : carte ni générée, ni prévisualisée, ni sur l'assemblage), suppression (×).
+  (ou **Désactivé** : carte ni générée, ni prévisualisée, ni sur l'assemblage), case **ZIP** (cochée à chaque
+  chargement de mission ; décochée : carte non générée, absente du ZIP, mais toujours prévisualisable et sur
+  l'assemblage — le choix n'est pas enregistré dans la mission), suppression (×).
 - **+ Carte** : nouvelle carte (nom, type générale / cible / détail / zone) avec la vue affichée
   pour emprise, ajoutée à la mission partagée.
 
