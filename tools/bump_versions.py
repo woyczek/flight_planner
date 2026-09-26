@@ -31,10 +31,16 @@ else:
         suffix = latest[8:] or '`'
         version = latest[:8] + (suffix[:-1] + chr(ord(suffix[-1]) + 1) if suffix[-1] != 'z' else suffix + 'a')
 
+# prompt de génération de missions : régénéré depuis docs/ (tools/build_mission_prompt.py)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import build_mission_prompt
+build_mission_prompt.build(verbose=False)
+
 changed = 0
 for p in pages:
     s = io.open(p, encoding='utf-8', newline='').read()
     t = REF.sub(lambda m: f'{m.group(1)}?v={version}', s)
+    t = re.sub(r'(mission_prompt\.js)\?v=\w+', lambda m: f'{m.group(1)}?v={version}', t)
     if t != s:
         io.open(p, 'w', encoding='utf-8', newline='').write(t); changed += 1
 s = io.open(nav, encoding='utf-8', newline='').read()

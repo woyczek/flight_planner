@@ -6,7 +6,9 @@ statistiques. Il décrit **exactement** ce que lisent `SIA XML/mission_store.js`
 `SIA XML/map_parser.html` (cartes, zones, profil vertical) et `shared/mission_core/core.js`
 (passerelle mission → CR : famille, appareils, terrains). À mettre à jour avec eux.
 
-Copier tout le bloc ci-dessous, régler les trois paramètres en tête.
+Copier tout le bloc ci-dessous, régler les paramètres en tête — ou utiliser « Créer une mission avec ChatGPT » du
+générateur de mission (bloc 1), qui les règle et copie le prompt. Après modification de ce document : lancer
+`python tools/build_mission_prompt.py` (ou `tools/bump_versions.py`), qui régénère `SIA XML/mission_prompt.js`.
 
 ---
 
