@@ -189,18 +189,22 @@
     const FI = window.FlightInstruments, m = S.m, q = S.manual;
     if (!FI) return;
     FI.onSet ||= (k, v) => setManual(k, v);
+    FI.onRefresh ||= () => feedInstruments(); // changement de lecture de la jauge carburant
     if (!m || !q) return FI.update(null);
     try {
       const h = hover ?? sync.pinned ?? (S.c?.FL > 0 ? S.c.FL * 100 : 0), above = h > m.ceiling, hh = Math.min(h, m.ceiling),
         p = m.manualPoint(hh, manualLaw(m)), a = FlightPerfModel.isa(hh).a;
       const tasMax = Math.max(p.tas, m.manualPoint(m.ceiling, manualLaw(m)).tas || 0, m.cruise(Math.min((S.c?.FL || 0) * 100, m.ceiling), "normal")?.tas || 0);
       // carburant du trajet entier volé à ce niveau (montée à la loi réglée) ; échelle : trajet le plus coûteux des courbes
-      // trois lectures (bouton de la jauge) : loi réglée (montée des curseurs), croisière économique, profil
-      const D = S.c?.D, wc = S.c?.wc || 0, tr = r => r?.ok ? { fuel: cv(r.fuel), minutes: r.minutes } : null,
-        fuelBy = D > 0 ? { man: tr(m.trip(hh, D, wc, "normal", manualLaw(m))), eco: tr(m.trip(hh, D, wc, "eco")), prof: tr(m.trip(hh, D, wc, "normal")) } : null,
+      // lecture choisie sur la jauge (une seule calculée : les lois optimisées sont coûteuses) — une par courbe :
+      // loi réglée, profil, croisière économique, montée rapide, Vy, montée économique
+      const D = S.c?.D, wc = S.c?.wc || 0, tr = r => r?.ok ? { fuel: cv(r.fuel), minutes: r.minutes } : null, mode = FI.fuelMode?.() || "man";
+      const tripFor = { man: () => m.trip(hh, D, wc, "normal", manualLaw(m)), prof: () => m.trip(hh, D, wc, "normal", "profile"), eco: () => m.trip(hh, D, wc, "eco"),
+        fast: () => m.trip(hh, D, wc, "normal", "time"), vy: () => m.trip(hh, D, wc, "normal", "vy"), fuel: () => m.trip(hh, D, wc, "normal", "fuel") };
+      const fuelBy = D > 0 ? { [mode]: tr((tripFor[mode] || tripFor.man)()) } : null,
         fuelMax = Math.max(...[...(S.cache?.norm || []), ...(S.cache?.eco || [])].filter(r => r?.ok).map(r => cv(r.fuel)), ...Object.values(fuelBy || {}).filter(Boolean).map(x => x.fuel), 0);
       FI.update({ h, ias: p.ias, iasSet: q.ias, iasMin: q.iMin, iasMax: q.iMax, tas: p.tas, tasMax, mach: p.tas / a,
-        fuelBy, fuelMax, fuelUnit: fuelUnit(), fuelColors: { man: COL.man, eco: COL.eco, prof: COL.prof }, roc: above ? 0 : p.roc, vsSet: q.vs, vsMax: q.vMax, full: q.full, above });
+        fuelBy, fuelMax, fuelUnit: fuelUnit(), fuelColors: { man: COL.man, prof: COL.prof, eco: COL.eco, fast: COL.fast, vy: COL.prof, fuel: COL.eco }, roc: above ? 0 : p.roc, vsSet: q.vs, vsMax: q.vMax, full: q.full, above });
     } catch (e) { console.error("Instruments :", e); FI.update(null); }
   }
   /** Hauteur des curseurs = hauteur de la zone tracée (marges T / B du viewBox, en data-t / data-b du SVG). */

@@ -109,8 +109,9 @@ fenêtre numérique et FL). Altitude courante : celle survolée sur une courbe, 
 niveau du plan. Badin et vario se règlent aussi sur l'instrument (glisser verticalement ou molette, pas de 5 kt
 et 50 ft/min), curseurs et courbes suivent. Aiguille bleue semi-transparente du Badin : la TAS. Quatrième cadran,
 **carburant** : carburant du trajet entier volé à l'altitude courante (kg ou lbs selon l'unité affichée) et sa
-durée ; un clic sur le cadran ou sur son bouton change la lecture — loi réglée (violet), croisière économique
-(vert), croisière du profil (bleu) — dans la couleur de la courbe correspondante.
+durée ; un clic sur le cadran ou sur son bouton change la lecture, une par courbe et dans sa couleur — loi
+réglée (violet), profil (bleu), croisière économique (vert), montée rapide (jaune), Vy (bleu), montée économique
+(vert) ; lecture mémorisée dans le navigateur.
 
 **Liens vers les champs.** Les messages qui citent un champ (profil incomplet, limites, altitude de référence
 estimée) en font un lien : il déplie l'éditeur de profil au besoin, amène le champ à l'écran et le met en évidence.

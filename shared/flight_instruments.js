@@ -11,7 +11,8 @@
        (« PG » : plein gaz) ;
      - altimètre : grande aiguille = centaines de pieds, petite = milliers ; fenêtre numérique (ft, FL) ;
      - carburant : carburant du trajet entier volé à cette altitude (unité d'affichage kg / lbs) et sa durée ;
-       bouton à trois états : loi réglée (violet) → croisière économique (vert) → croisière du profil (bleu).
+       un clic (bouton ou cadran) change la lecture, une par courbe et dans sa couleur : loi réglée (violet) → profil
+       (bleu) → croisière économique (vert) → montée rapide (jaune) → Vy (bleu) → montée économique (vert).
    Badin et vario se règlent aussi sur l'instrument : glisser verticalement ou molette (mêmes pas que les
    curseurs : 5 kt, 50 ft/min) — FlightInstruments.onSet(clé, valeur) renvoie la valeur à la vue.
 
@@ -39,7 +40,7 @@
 
   let host = null, faces = {}, state = null, scale = {};
   // lecture de la jauge carburant (mémorisée dans le navigateur) : loi réglée, croisière économique, profil
-  const FUEL_MODES = ["man", "eco", "prof"];
+  const FUEL_MODES = ["man", "prof", "eco", "fast", "vy", "fuel"];
   let fuelMode = (() => { try { const v = localStorage.getItem("flightPerfFuelGauge"); return FUEL_MODES.includes(v) ? v : "man"; } catch { return "man"; } })();
 
   /** Crée une fois le bandeau d'instruments dans l'en-tête (avant la langue et le menu ☰). */
@@ -64,7 +65,7 @@
     const cycleFuel = () => {
       fuelMode = FUEL_MODES[(FUEL_MODES.indexOf(fuelMode) + 1) % FUEL_MODES.length];
       try { localStorage.setItem("flightPerfFuelGauge", fuelMode); } catch {}
-      if (state) drawFuel(state);
+      api.onRefresh ? api.onRefresh() : state && drawFuel(state); // la vue recalcule la lecture choisie
     };
     host.querySelector(".fp-fuel-mode").onclick = cycleFuel;
     faces.fuel.querySelector("svg").addEventListener("click", cycleFuel);
@@ -149,10 +150,11 @@
    *  descente), dans l'unité d'affichage ; échelle 0 → trajet le plus coûteux des courbes. */
   function drawFuel(s) {
     const fig = faces.fuel, x = s.fuelBy?.[fuelMode], col = s.fuelColors?.[fuelMode] || "#f0b86e",
-      name = { man: tl("loi réglée", "set law", "eingestelltes Gesetz", "ley ajustada"), eco: tl("éco", "eco", "Spar", "eco"), prof: tl("profil", "profile", "Profil", "perfil") }[fuelMode];
+      name = { man: tl("loi réglée", "set law", "eingestelltes Gesetz", "ley ajustada"), prof: tl("profil", "profile", "Profil", "perfil"), eco: tl("croisière éco", "eco cruise", "Sparflug", "crucero eco"),
+        fast: tl("rapide", "fast", "schnell", "rápida"), vy: "Vy", fuel: tl("montée éco", "eco climb", "Spar-Steigflug", "ascenso eco") }[fuelMode];
     const btn = fig.querySelector(".fp-fuel-mode");
     btn.textContent = name; btn.style.color = col;
-    btn.title = tl("Lecture : loi réglée (curseurs) → croisière économique → croisière du profil ; clic pour changer", "Reading: set law (sliders) → economy cruise → profile cruise; click to change", "Anzeige: eingestelltes Gesetz (Regler) → Sparflug → Profil-Reiseflug; Klick zum Wechseln", "Lectura: ley ajustada (cursores) → crucero económico → crucero del perfil; clic para cambiar");
+    btn.title = tl("Lecture (clic pour changer) : loi réglée → profil → croisière économique → montée rapide → Vy → montée économique ; couleur de la courbe correspondante", "Reading (click to change): set law → profile → economy cruise → fast climb → Vy → economy climb; colour of the matching curve", "Anzeige (Klick zum Wechseln): eingestelltes Gesetz → Profil → Sparflug → schneller Steigflug → Vy → sparsamer Steigflug; Farbe der Kurve", "Lectura (clic para cambiar): ley ajustada → perfil → crucero económico → ascenso rápido → Vy → ascenso económico; color de la curva");
     if (!x) { fig.querySelector("svg").innerHTML = hub; fig.querySelector("figcaption").textContent = `${tl("Carburant trajet", "Trip fuel", "Streckenkraftstoff", "Combustible del trayecto")} —`; fig.hidden = !s.fuelBy; return; }
     fig.hidden = false;
     s = { ...s, fuel: x.fuel, fuelMin: x.minutes };
@@ -172,6 +174,10 @@
   const api = {
     /** Rappel de réglage depuis un cadran : (clé 'ias' | 'vs', valeur) ; défini par la vue. */
     onSet: null,
+    /** Rappel pour recalculer les instruments (changement de lecture de la jauge carburant) ; défini par la vue. */
+    onRefresh: null,
+    /** Lecture choisie de la jauge carburant : 'man' | 'prof' | 'eco' | 'fast' | 'vy' | 'fuel'. */
+    fuelMode: () => fuelMode,
     /** Met à jour les cadrans (s : voir l'en-tête) ; null masque le bandeau. */
     update(s) {
       if (!mount()) return;
