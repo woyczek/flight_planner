@@ -19,7 +19,8 @@
        stack  : true si les cadres suivants se collent sous celui-ci (ex. bloc Résultat) ;
        gap    : écart en px entre cadres et sous l'en-tête (défaut 10) ;
        grow   : true pour que l'ancre soit au moins aussi haute que le cadre (+ gap) : un cadre plus haut que
-                son ancre ne déborde plus sur le cadre suivant ;
+                son ancre ne déborde plus sur le cadre suivant ; l'ancre ne fait que grandir, resetGrow() la
+                remet à la mesure (après un nouveau contenu complet) ;
        media  : requête média où le cadre est actif (défaut « (min-width: 801px) ») ; ailleurs, le
                 cadre reste dans le flux normal (écrans étroits, colonnes empilées).
      Un cadre vide ou dont l'ancre est masquée est caché. Pendant qu'il est retenu (collé sous l'en-tête ou
@@ -94,7 +95,8 @@
         Object.assign(el.style, { position: "absolute", left: "0", right: "0" });
         if (hidden) continue;
         // ancre agrandie à la hauteur du cadre : les rangées suivantes (et leurs cadres) descendent d'autant
-        if (it.grow) { const need = el.offsetHeight + gap * 2; if (Math.abs((parseFloat(anchor.style.minHeight) || 0) - need) > 1) anchor.style.minHeight = need + "px"; }
+        // l'ancre ne fait que grandir (pas de va-et-vient pendant un réglage) ; resetGrow() la remet à la mesure
+        if (it.grow) { const need = el.offsetHeight + gap * 2; if (need > (parseFloat(anchor.style.minHeight) || 0) + 1) anchor.style.minHeight = need + "px"; }
         const a = anchor.getBoundingClientRect(), h = el.offsetHeight, room = innerHeight - line - gap - gap;
         // cadre plus haut que la place restante : son bas se colle au bas de la fenêtre (tout reste lisible)
         const stuck = h > room ? innerHeight - gap - h : line + gap;
@@ -111,5 +113,7 @@
 
   addEventListener("scroll", schedule, { passive: true });
   addEventListener("resize", schedule);
-  window.StickyFrame = { stick, follow, refresh: layout, headerBottom };
+  /** Remet les ancres « grow » à la hauteur de leur cadre actuel (après un nouveau contenu complet, pas pendant un réglage). */
+  function resetGrow() { for (const it of followed) if (it.grow) it.anchor.style.minHeight = ""; layout(); }
+  window.StickyFrame = { stick, follow, refresh: layout, headerBottom, resetGrow };
 })();

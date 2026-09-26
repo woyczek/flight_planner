@@ -69,6 +69,13 @@ Badin à droite (partagés par les trois courbes ; ligne pointillée violette : 
 tenir le vario, plein gaz au-delà (le vario baisse jusqu'au plafond) ; réacteur : Badin puis Mach de
 croisière. La loi apparaît sur les deux courbes de montée, dans la table comparative et dans la fiche.
 
+**Altitude de référence et plafond.** Sans « Altitude de référence (ft) » ni « Plafond max (ft) » dans le
+profil, le modèle prend la fiche EUROCONTROL APD du type (`AircraftDB/aircraft_perf.js`) : plafond pratique, et
+pour un réacteur l'altitude où le Mach de croisière APD donne la TAS du profil ; à défaut, le Badin et la TAS de
+croisière, la cohérence des débits de montée / croisière (retenue seulement si l'optimum est à l'intérieur de la
+plage plausible de la classe), puis l'altitude type de la classe. La source retenue est indiquée sous la courbe
+d'altitude optimale. Renseigner ces deux champs reste le plus fiable.
+
 **Devis (bloc Résultat) et réglages des courbes.** Block fuel, temps de vol, détail et TOD suivent les
 réglages des courbes, sans nouveau clic sur « Calculer » : la montée est volée à la **loi réglée** par les curseurs
 (au départ : Badin et vario du profil) — si elle n'atteint pas le niveau, montée modélisée du profil, signalée ;

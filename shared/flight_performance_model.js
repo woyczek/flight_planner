@@ -63,6 +63,7 @@
       climb: 1.38,
       ld: 17,
       href: 35000,
+      refRange: [18000, 43000],
       ceil: 41000,
       roc: 2500,
       label: ['réacteur', 'jet', 'Strahltriebwerk', 'reactor']
@@ -72,6 +73,7 @@
       climb: 1.1,
       ld: 14,
       href: 20000,
+      refRange: [8000, 31000],
       ceil: 30000,
       roc: 1500,
       label: ['turbopropulseur', 'turboprop', 'Turboprop', 'turbohélice']
@@ -81,6 +83,7 @@
       climb: 1,
       ld: 10,
       href: 7500,
+      refRange: [2000, 18000],
       ceil: 14000,
       roc: 700,
       label: ['piston', 'piston', 'Kolbenmotor', 'pistón']
@@ -129,7 +132,8 @@
   /** Modèle de performances calibré sur un profil d'appareil (et la base des types db pour la motorisation) : polaire, poussée / puissance, consommation, plafond. Lève une erreur si la TAS ou le débit de croisière manquent. Retourne les calculs exportés (cruise, trip, climbTo, climbPoint, climbOpt, manualLaw…). */
   function create(profile, {
     db,
-    dIsa = 0
+    dIsa = 0,
+    apd = null
   } = {}) {
     const kind = kindOf(profile, db),
       C = CLASS[kind],
@@ -144,7 +148,13 @@
     const tasRef = num(cr.tasKt),
       ffRef = num(cr.fuelFlowPerHour);
     if (!(tasRef > 0) || !(ffRef > 0)) throw Error(tl('Profil incomplet : TAS et fuel flow de croisière nécessaires.', 'Incomplete profile: cruise TAS and fuel flow required.', 'Profil unvollständig: Reiseflug-TAS und -Verbrauch erforderlich.', 'Perfil incompleto: se requieren TAS y flujo de crucero.'));
-    const ceilGiven = num(cr.ceilingFt) > 0 ? num(cr.ceilingFt) : null,
+    // Fiche EUROCONTROL APD du type (AircraftDB/aircraft_perf.js), si fournie : plafond pratique (FL) et Mach de
+    // croisière — références quand le profil ne donne ni plafond ni altitude de référence.
+    const apdCr = apd?.cruise || {},
+      apdCeil = num(apdCr.ceilingFL) > 0 ? num(apdCr.ceilingFL) * 100 : null,
+      apdMach = num(apdCr.mach) > 0 ? num(apdCr.mach) : null;
+    const ceilGiven = num(cr.ceilingFt) > 0 ? num(cr.ceilingFt) : apdCeil,
+      ceilSrc = num(cr.ceilingFt) > 0 ? 'profile' : apdCeil ? 'apd' : null,
       rocAvg = Math.abs(num(cl.rateFpm)) > 0 ? Math.abs(num(cl.rateFpm)) : null;
     const climbFFProfile = num(cl.fuelFlowPerHour) > 0 ? num(cl.fuelFlowPerHour) : null;
     // Météo : écart ISA (°C). Le profil (et son calibrage) est en atmosphère standard ; les calculs de vol
@@ -283,11 +293,19 @@
       hRef = altFromSigma((num(cr.iasKt) / tasRef) ** 2);
       refSrc = tl('déduite du Badin et de la TAS de croisière', 'derived from cruise IAS and TAS', 'aus Reiseflug-IAS und -TAS abgeleitet', 'deducida de la IAS y la TAS de crucero');
     }
+    if (!(hRef > 0) && jet && apdMach) {
+      // réacteur : altitude où le Mach de croisière APD donne la TAS de croisière du profil (au-dessus de la
+      // tropopause la vitesse du son ne baisse plus : niveau type de la classe, sous le plafond)
+      const f = h => apdMach * isa(h).a - tasRef;
+      hRef = f(0) < 0 ? C.href : f(36089) > 0 ? Math.min(C.href, (ceilGiven || C.ceil) - 2000) : bisect(f, 0, 36089);
+      hRef = Math.round(Math.min(Math.max(hRef, C.refRange[0]), (ceilGiven || C.ceil) - 1000) / 500) * 500;
+      refSrc = tl(`déduite du Mach de croisière EUROCONTROL (M${apdMach.toFixed(2)}) et de la TAS du profil`, `derived from the EUROCONTROL cruise Mach (M${apdMach.toFixed(2)}) and the profile TAS`, `aus der EUROCONTROL-Reisemachzahl (M${apdMach.toFixed(2)}) und der Profil-TAS abgeleitet`, `deducida del Mach de crucero EUROCONTROL (M${apdMach.toFixed(2)}) y la TAS del perfil`);
+    }
     if (!(hRef > 0) && climbFFProfile && rocAvg) {
       // celle pour laquelle le débit moyen de montée du modèle égale celui du profil
       let best = null;
-      const top = Math.min(ceilGiven || C.ceil * 1.2, 51000);
-      for (let h = 2000; h <= top; h += 1000) {
+      const top = Math.min(ceilGiven ? ceilGiven - 1000 : C.ceil * 1.2, C.refRange[1], 51000);
+      for (let h = C.refRange[0]; h <= top; h += 1000) {
         const m = make(h, C.ld, calibrateP0(h, C.ld)),
           c = climbWith(m, h);
         if (!c) continue;
@@ -297,7 +315,8 @@
           e
         };
       }
-      if (best && best.e < .15) {
+      // optimum en bord de plage = estimation non concluante (le débit de montée seul ne situe pas la croisière)
+      if (best && best.e < .15 && best.h > C.refRange[0] && best.h < top) {
         hRef = best.h;
         refSrc = tl(`déduite de la cohérence montée / croisière (écart ${Math.round(best.e * 100)} %)`, `derived from climb / cruise consistency (deviation ${Math.round(best.e * 100)} %)`, `aus der Stimmigkeit Steigflug / Reiseflug abgeleitet (Abweichung ${Math.round(best.e * 100)} %)`, `deducida de la coherencia ascenso / crucero (desviación ${Math.round(best.e * 100)} %)`);
       }
@@ -311,7 +330,7 @@
       M = dIsa ? make(hRef, C.ld, M0.p0, atm) : M0,
       modelCeil = ceilingOf(M),
       ceiling = ceilGiven ? Math.min(modelCeil, ceilGiven) : modelCeil;
-    if (ceilGiven && ceilGiven < modelCeil) notes.push(tl(`Plafond limité par le profil : ${Math.round(ceilGiven)} ft (le modèle atteindrait ${Math.round(modelCeil)} ft à ${rocCeil} ft/min).`, `Ceiling limited by the profile: ${Math.round(ceilGiven)} ft (the model would reach ${Math.round(modelCeil)} ft at ${rocCeil} ft/min).`, `Gipfelhöhe durch das Profil begrenzt: ${Math.round(ceilGiven)} ft (das Modell erreichte ${Math.round(modelCeil)} ft bei ${rocCeil} ft/min).`, `Techo limitado por el perfil: ${Math.round(ceilGiven)} ft (el modelo alcanzaría ${Math.round(modelCeil)} ft a ${rocCeil} ft/min).`));
+    if (ceilGiven && ceilGiven < modelCeil) notes.push(ceilSrc === 'apd' ? tl(`Plafond limité au plafond EUROCONTROL du type : ${Math.round(ceilGiven)} ft (le modèle atteindrait ${Math.round(modelCeil)} ft à ${rocCeil} ft/min).`, `Ceiling limited to the type’s EUROCONTROL ceiling: ${Math.round(ceilGiven)} ft (the model would reach ${Math.round(modelCeil)} ft at ${rocCeil} ft/min).`, `Gipfelhöhe auf die EUROCONTROL-Gipfelhöhe des Typs begrenzt: ${Math.round(ceilGiven)} ft (das Modell erreichte ${Math.round(modelCeil)} ft bei ${rocCeil} ft/min).`, `Techo limitado al techo EUROCONTROL del tipo: ${Math.round(ceilGiven)} ft (el modelo alcanzaría ${Math.round(modelCeil)} ft a ${rocCeil} ft/min).`) : tl(`Plafond limité par le profil : ${Math.round(ceilGiven)} ft (le modèle atteindrait ${Math.round(modelCeil)} ft à ${rocCeil} ft/min).`, `Ceiling limited by the profile: ${Math.round(ceilGiven)} ft (the model would reach ${Math.round(modelCeil)} ft at ${rocCeil} ft/min).`, `Gipfelhöhe durch das Profil begrenzt: ${Math.round(ceilGiven)} ft (das Modell erreichte ${Math.round(modelCeil)} ft bei ${rocCeil} ft/min).`, `Techo limitado por el perfil: ${Math.round(ceilGiven)} ft (el modelo alcanzaría ${Math.round(modelCeil)} ft a ${rocCeil} ft/min).`));
     if (ceilGiven && ceilGiven > modelCeil + 1000) notes.push(tl(`Plafond du profil (${Math.round(ceilGiven)} ft) au-dessus du plafond de performance du modèle (${Math.round(modelCeil)} ft à ${rocCeil} ft/min).`, `Profile ceiling (${Math.round(ceilGiven)} ft) above the model’s performance ceiling (${Math.round(modelCeil)} ft at ${rocCeil} ft/min).`, `Gipfelhöhe des Profils (${Math.round(ceilGiven)} ft) über der Leistungsgipfelhöhe des Modells (${Math.round(modelCeil)} ft bei ${rocCeil} ft/min).`, `Techo del perfil (${Math.round(ceilGiven)} ft) por encima del techo de rendimiento del modelo (${Math.round(modelCeil)} ft a ${rocCeil} ft/min).`));
     // Facteur de débit en montée : débit moyen de montée du profil / débit du modèle (borné 0,5–2).
     let climbFactor = 1;

@@ -10,6 +10,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Correctif — plafond et altitude de référence du modèle** : sans « Altitude de référence » dans le profil,
+  l'estimation par cohérence des débits de montée / croisière tombait sur la borne basse (Caravelle III calibrée à
+  2 000 ft → plafond 17 600 ft ; courbes arrêtées vers le FL150). Désormais : fiche EUROCONTROL APD du type en
+  référence (plafond pratique ; réacteur : altitude où le Mach APD donne la TAS du profil), recherche bornée à la
+  plage plausible de la classe et retenue seulement si l'optimum est intérieur, sinon altitude type de la classe
+  (Caravelle III : plafond 37 300 ft ; Citation X : 40 900 ft ; Twin Otter plafonné à son plafond APD).
+- **Correctif — planificateur** : plus de clignotement des colonnes quand on bouge les curseurs (rangées de
+  courbes qui ne font que grandir pendant un réglage — `StickyFrame.resetGrow()` au calcul suivant ; hauteur fixe
+  de la ligne de rappel du devis).
 - **Planificateur — le devis suit les courbes** : block fuel, temps de vol, détail et TOD recalculés aussitôt avec
   la loi de montée des curseurs et le niveau épinglé (à la place du niveau du plan) ; rappel du niveau et de la loi
   retenus sous le block fuel.

@@ -36,7 +36,7 @@ abbr[title]{text-decoration:underline dotted;cursor:help}
 .apd-bar{margin-top:8px;line-height:1.6}.apd-tag{margin-top:4px;padding:1px 7px;font-size:11px;border-radius:10px;border:1px solid currentColor;background:transparent;cursor:pointer}.apd-same{color:#7ed69b}.apd-diff{color:#f0b86e}.apd-empty{color:#75c8ff}
 @media(max-width:800px){.side-panel{max-height:none}}
 </style>
-<style id="fpColumns">.quote-basis{font-size:12px;margin:-4px 0 8px}
+<style id="fpColumns">.quote-basis{font-size:12px;margin:-4px 0 8px;min-height:2.9em}
 .wx-impact h4{margin:10px 0 4px;font-size:13px}.wx-impact:empty{display:none}
 /* Trois colonnes (écran large) : saisie + courbes | Résultat + panneaux | instruments ; largeurs réglables
    (shared/column_resize.js). Les blocs pleine largeur (span12) couvrent les trois colonnes : plus de colonnes
@@ -124,11 +124,11 @@ abbr[title]{text-decoration:underline dotted;cursor:help}
 
 <dialog id="dlg"><div class="row"><h2 style="flex:1">Choisir l’avion</h2><button onclick="dlg.close()">Fermer</button></div><input id="search" placeholder="Rechercher ICAO / nom…" style="width:100%;margin-bottom:8px"><div id="airlist" class="airlist"></div></dialog>
 
-<script src="./AircraftDB/aircraft_db.js"></script><script src="./shared/aircraft_fleet.js?v=20260926o"></script><script src="./shared/defa_reference.js?v=20260926o"></script><script src="./shared/aircraft_catalog.js?v=20260926o"></script>
+<script src="./AircraftDB/aircraft_db.js"></script><script src="./shared/aircraft_fleet.js?v=20260926r"></script><script src="./shared/defa_reference.js?v=20260926r"></script><script src="./shared/aircraft_catalog.js?v=20260926r"></script>
 <script src="./AircraftDB/aircraft_icons.js"></script>
 <script src="./AircraftDB/aircraft_perf.js"></script>
-<script src="./shared/sticky_frame.js?v=20260926o"></script><script src="./shared/flight_profile_help.js?v=20260926o"></script><script src="./shared/column_resize.js?v=20260926o"></script><script src="./shared/flight_instruments.js?v=20260926o"></script><script src="./shared/flight_perf_view.js?v=20260926o"></script>
-<script src="./shared/flight_performance_model.js?v=20260926o"></script>
+<script src="./shared/sticky_frame.js?v=20260926r"></script><script src="./shared/flight_profile_help.js?v=20260926r"></script><script src="./shared/column_resize.js?v=20260926r"></script><script src="./shared/flight_instruments.js?v=20260926r"></script><script src="./shared/flight_perf_view.js?v=20260926r"></script>
+<script src="./shared/flight_performance_model.js?v=20260926r"></script>
 <script>
 // Planificateur de performances : profils d'appareils (SimBrief, Little Navmap, CSV, calibration par
 // OFP), devis carburant par phase, niveau optimal. Habillage (blocs, barre d'état) : shared/flight_ui.js.
@@ -350,7 +350,8 @@ function calculate(opts){
    indépendant du niveau saisi dans le plan : seules les données du profil (et des OFP qui l'ont calibré) comptent. */
 // Météo : écart ISA (°C) du devis, passé au modèle (dIsa ; 0 = atmosphère standard du profil).
 const isaDev=()=>{const v=+$("isaDev").value;return Number.isFinite(v)?Math.max(-60,Math.min(60,v)):0};
-const perfModel=(dIsa=isaDev())=>FlightPerfModel.create(active,{db:window.AIRCRAFT_DB,dIsa});
+/** Modèle de performances du profil actif ; fiche EUROCONTROL APD du type (plafond, Mach) en référence. */
+const perfModel=(dIsa=isaDev())=>FlightPerfModel.create(active,{db:window.AIRCRAFT_DB,dIsa,apd:window.AIRCRAFT_PERF?.[String(active?.icao||"").toUpperCase()]||null});
 /** Température ISA (°C) à l'altitude pression ft. */
 const isaTemp=ft=>ft<=36089?15-1.98*ft/1000:-56.5;
 /** Champs météo liés : l'écart ISA, la température au sol (avec l'altitude du terrain) et la température au niveau
@@ -769,10 +770,10 @@ function renderDefaSheets(){const box=$("defaSheets");if(!box)return;const t=aKe
 /* ?aircraft=<type ou profil> : ouverture depuis une fiche appareil (profil existant, sinon créé depuis le type DEFA). */
 refreshLandingAircraft();restore();applyHeaderPreferences();{const wanted=new URLSearchParams(location.search).get("aircraft"),k=aKey(wanted||""),db=window.AIRCRAFT_DB||{},res=aKey(db.__aliases?.[k]||k),same=v=>{const x=aKey(v);return x&&(x===k||x===res||aKey(db.__aliases?.[x])===res)},found=k&&Object.values(state.profiles||{}).find(p=>[p.id,p.icao,p.type].some(same)),cand=k&&!found&&landingOnlyAircraft(Object.values(state.profiles||{}).filter(p=>p&&typeof p==="object").map(p=>normalize(p))).find(p=>[p.id,p.icao,p.type].some(same)),created=cand&&newProfileFromLanding(cand.id);if(found)setActive(found,"fiche appareil");else if(created)setActive(created,"fiche appareil (type DEFA)");else if(state.lastAircraft&&state.profiles[state.lastAircraft])setActive(state.profiles[state.lastAircraft],"état restauré");else syncAircraftPicker();}
 </script>
-<script src="./shared/repository_nav.js?v=20260926o"></script>
-<script src="./shared/app_framework.js?v=20260926o"></script>
-<script src="./shared/flight_ui.js?v=20260926o"></script>
-<script src="./SIA%20XML/aero_symbols.js?v=20260925j"></script><script src="./SIA%20XML/vertical_profile.js?v=20260925k"></script><script src="./shared/flight_vertical_profile.js?v=20260926o"></script>
+<script src="./shared/repository_nav.js?v=20260926r"></script>
+<script src="./shared/app_framework.js?v=20260926r"></script>
+<script src="./shared/flight_ui.js?v=20260926r"></script>
+<script src="./SIA%20XML/aero_symbols.js?v=20260925j"></script><script src="./SIA%20XML/vertical_profile.js?v=20260925k"></script><script src="./shared/flight_vertical_profile.js?v=20260926r"></script>
 <script src="./shared/content_i18n.js"></script><script src="./shared/flight_i18n.js"></script>
 <footer class="repo-footer no-print">CC RBR - DEFA Virtual - 2026-09-21 - 2.0.7 - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a></footer>
 <script>/* Colonnes redimensionnables (framework : shared/column_resize.js) ; poignées sur la hauteur des deux premières rangées */

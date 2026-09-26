@@ -327,6 +327,7 @@
     let m; try { m = perfModel(); } catch (e) { return stop(e.message); }
     S.m = m; S.c = c; S.cache = null; sync.reset(); ensureManual(m);
     renderAll(m, c, stop);
+    window.StickyFrame?.resetGrow?.(); // nouveau calcul : rangées remises à la hauteur de leurs panneaux
   }
 
   /** Redessine tout avec le modèle m (sans le reconstruire) : appelé par renderAltitudeOptimum et par les curseurs.
