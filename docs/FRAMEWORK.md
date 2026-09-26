@@ -9,6 +9,7 @@ seuls sur chaque page. Ce document décrit chaque composant, son rôle et son in
 |---|---|---|
 | Arborescence et thèmes | `repository_tree` | toutes les pages |
 | Bandeau, menu ☰, langue | `shared/repository_nav.js`, `.css` | toutes les pages |
+| Designs graphiques | `shared/designs.css` (liste dans `repository_tree`) | toutes les pages |
 | Blocs (déplacer / masquer) | `shared/app_framework.js` | toutes les pages |
 | Traduction des textes | `shared/content_i18n.js` | CR DEFA, Planner, reportings |
 | Profil pilote | `shared/pilot_profile.js` | toutes les pages (menu ☰) |
@@ -32,6 +33,8 @@ définit `window.REPOSITORY_TREE` :
   chaque page vers `CHANGELOG.md`) ; `defaults` : thème, favicon, configuration commune ;
 - `themes` : couleurs de bandeau / page / accent et favicon par thème (`flight`, `landing`,
   `core`, un par famille de missions…) ;
+- `designs` : designs graphiques proposés dans le menu ☰ (`list` : clé → libellé et description
+  [fr, en, de, es] ; `default`) — voir § 2 bis ;
 - `folders` : thème et favicon par dossier (clé = chemin complet, ex. `"CR DEFA/HEMS"`) ;
 - `pages` : `{ path, label, menu, theme, favicon, files, slot }` —
   `menu: "Groupe/Libellé"` place la page dans le menu ☰, `menu: false` la cache (pages de
@@ -54,6 +57,22 @@ Interface `window.RepositoryNav` : `root` (racine du site), `page`, `menu`, `set
 
 > Une page ne doit jamais réécrire tout le `<header>` (`innerHTML`) après le chargement du
 > bandeau : elle y **ajoute** ses éléments (sinon la langue et le menu ☰ disparaissent).
+
+## 2 bis. `designs.css` — designs graphiques
+
+Menu ☰ › **Design** : Standard (styles propres des pages), **Aéro** (arrondi, ombres douces teintées,
+en-tête en dégradé, boutons en pilule, fond légèrement teinté), **Opérationnel** (dense, angles vifs,
+liseré du thème à gauche des blocs, titres en capitales, chiffres tabulaires), **Brief** (aspect
+document : titres à empattement, blocs séparés par un double filet, champs soulignés). Choix mémorisé
+dans le navigateur (`repositoryDesign`), posé sur `<html data-design="…">` dès le chargement ;
+événement `repository-design-change` ; `RepositoryNav.getDesign()`.
+
+Règles : un design ne change que la **forme** (arrondis, ombres, bordures, typographie, densité) des
+éléments communs — en-tête `.repo-header`, blocs `.repo-block` (posés par `app_framework.js`) et
+`.card`, boutons, champs, tableaux. Les **couleurs viennent toujours du thème** de `repository_tree`
+(`--repo-bar`, `--repo-bar-text`, `--repo-page`, `--repo-accent`) et les surfaces claires ou sombres
+des pages sont conservées : les contrastes validés restent valables. Ajouter un design : une entrée
+dans `repository_tree.designs.list` et ses règles `html[data-design="clé"] …` dans `designs.css`.
 
 ## 3. `app_framework.js` — blocs
 
@@ -147,7 +166,7 @@ autorisé : toutes les 5 minutes et au départ de la page) remet aussi le compte
 ### Panneaux de copier-coller (`FileAccess.pastePanel`)
 
 Toute fenêtre où l'on colle un texte (CR › Analyse / import, journal DEFA, historique VATSIM du
-suivi réseau, mission et liste de zones du studio SIA) : **×** en haut à droite et bouton **Fermer** ; le bouton de chargement est
+suivi réseau, mission et liste de zones du studio SIA, mission du générateur) : **×** en haut à droite et bouton **Fermer** ; le bouton de chargement est
 **désactivé** tant que la zone est vide, devient **✓ Valider** (vert, ferme la fenêtre) après un
 chargement réussi, et redevient « Charger » dès que la zone est de nouveau remplie.
 

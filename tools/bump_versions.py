@@ -6,7 +6,7 @@ Usage (à la racine du dépôt) :
     python tools/bump_versions.py 20261001a  → version imposée
 
 Concerne les références shared/…js|css?v=… des pages HTML, et les chargements internes de
-shared/repository_nav.js (profil pilote, données locales, accès aux dossiers). Les fichiers sans ?v= (données
+shared/repository_nav.js (profil pilote, données locales, accès aux dossiers, designs). Les fichiers sans ?v= (données
 régénérées par script, ex. AircraftDB/aircraft_db.js) ne sont pas concernés.
 """
 import datetime as dt, glob, io, os, re, sys
@@ -38,7 +38,7 @@ for p in pages:
     if t != s:
         io.open(p, 'w', encoding='utf-8', newline='').write(t); changed += 1
 s = io.open(nav, encoding='utf-8', newline='').read()
-t = re.sub(r'((?:pilot_profile|browser_store|file_access)\.js)\?v=\w+', lambda m: f'{m.group(1)}?v={version}', s)
+t = re.sub(r'((?:pilot_profile|browser_store|file_access)\.js|designs\.css)\?v=\w+', lambda m: f'{m.group(1)}?v={version}', s)
 if t != s:
     io.open(nav, 'w', encoding='utf-8', newline='').write(t)
 print(f'Version {version} : {changed} page(s) mise(s) à jour.')

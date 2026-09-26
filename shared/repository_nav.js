@@ -38,6 +38,22 @@
       "--repo-accent": theme.accent || "#69a7ff",
       "--accent": theme.accent || "#69a7ff"
     })) doc.style.setProperty(k, v);
+  // Design graphique (REPOSITORY_TREE.designs, règles dans designs.css) : choix mémorisé (repositoryDesign),
+  // posé dès le chargement sur <html data-design> pour éviter un changement visible.
+  const designs = cfg.designs?.list || {
+      standard: {
+        label: ["Standard"]
+      }
+    },
+    savedDesign = localStorage.getItem("repositoryDesign");
+  let design = designs[savedDesign] ? savedDesign : (designs[cfg.designs?.default] ? cfg.designs.default : "standard");
+  doc.dataset.design = design;
+  {
+    const css = document.createElement("link");
+    css.rel = "stylesheet";
+    css.href = new URL("designs.css?v=20260926a", script.src).href;
+    document.head.append(css)
+  }
   if (favicon) {
     let f = document.querySelector('link[rel~="icon"]');
     if (!f) {
@@ -148,7 +164,28 @@
       host.append(a)
     }
   }
-  menu.insertAdjacentHTML("beforeend", '<div class="repo-page-actions"></div>');
+  menu.insertAdjacentHTML("beforeend", '<div class="repo-page-actions"></div><div class="repo-sep"></div><div class="repo-group repo-design-title">Design</div><div class="repo-design-row"></div>');
+  const designRow = menu.querySelector(".repo-design-row");
+  /** Boutons du choix de design (libellé et description dans la langue courante, design actif coché). */
+  const renderDesigns = () => {
+    const i = ["fr", "en", "de", "es"].indexOf(language);
+    designRow.innerHTML = Object.entries(designs).map(([id, d]) => `<button type="button" data-design="${esc(id)}" aria-pressed="${id===design}" title="${esc(d.title?.[i]||d.title?.[0]||"")}">${esc(d.label?.[i]||d.label?.[0]||id)}</button>`).join("")
+  };
+  designRow.onclick = e => {
+    const id = e.target.closest("button")?.dataset.design;
+    if (!id || !designs[id]) return;
+    design = id;
+    doc.dataset.design = id;
+    try {
+      localStorage.setItem("repositoryDesign", id)
+    } catch {}
+    renderDesigns();
+    window.dispatchEvent(new CustomEvent("repository-design-change", {
+      detail: {
+        design: id
+      }
+    }))
+  };
   /** Ferme le menu ☰ et le menu des langues. */
   const close = () => {
     menu.hidden = true;
@@ -185,6 +222,7 @@
       const r = JSON.parse(b.dataset.i18nLabel);
       b.textContent = r[["fr", "en", "de", "es"].indexOf(language)] || r[0]
     });
+    renderDesigns();
     tools.querySelector(".repo-language-label").textContent = labels[language];
     tools.querySelector(".repo-language-flag").innerHTML = flagSvg(language);
     languageButton.title = names[language];
@@ -219,6 +257,8 @@
     },
     getLanguage: () => language,
     getLanguageMode: () => mode,
+    /** Design graphique courant (clé de REPOSITORY_TREE.designs.list). */
+    getDesign: () => design,
     /** Ajoute une action de page au menu ☰ (groupe « Page ») : label = texte ou [fr, en, de, es] (retraduit au changement de langue), handler = fonction appelée au clic. Retourne le bouton. */
     addAction(label, handler) {
       const host = menu.querySelector(".repo-page-actions");
@@ -253,13 +293,13 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260925zs", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260926a", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260925zs", script.src).href;
+    files.src = new URL("file_access.js?v=20260926a", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260925zs", script.src).href;
+    store.src = new URL("browser_store.js?v=20260926a", script.src).href;
     document.head.append(store)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

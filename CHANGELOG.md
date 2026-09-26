@@ -10,6 +10,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Designs graphiques** (menu ☰ › Design) : Standard, **Aéro**, **Opérationnel**, **Brief** — configurés par
+  le framework (`shared/designs.css`, liste dans `repository_tree`), sur toutes les pages ; couleurs du thème de
+  chaque page conservées.
+- **Générateur de mission** : fenêtre de collage (Markdown ou YAML), comme dans le studio.
 ## [2.2.5] — 2026-09-25
 
 - **Profil vertical (studio et planificateur) — changement de niveau entre deux points** : une ligne `FL105`

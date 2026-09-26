@@ -28,6 +28,17 @@ window.REPOSITORY_TREE={
     aar:{bar:"#115e59",barText:"#ffffff",page:"#f5f6f8",accent:"#115e59",favicon:"assets/favicon-aar.svg"},
     flight:{bar:"#101317",barText:"#eef3f7",page:"#101317",accent:"#71b7ff",favicon:"assets/favicon-flight.svg"}
   },
+  // Designs graphiques (menu ☰ › Design ; règles dans shared/designs.css, couleurs = thème ci-dessus) :
+  // libellé et description [fr, en, de, es] ; default = design des nouveaux navigateurs.
+  designs:{
+    default:"standard",
+    list:{
+      standard:{label:["Standard","Standard","Standard","Estándar"],title:["Design d’origine des pages","Original page design","Ursprüngliches Seitendesign","Diseño original de las páginas"]},
+      aero:{label:["Aéro","Aero","Aero","Aero"],title:["Arrondi, ombres douces, en-tête en dégradé","Rounded, soft shadows, gradient header","Abgerundet, weiche Schatten, Kopfzeile mit Verlauf","Redondeado, sombras suaves, cabecera en degradado"]},
+      ops:{label:["Opérationnel","Operational","Operativ","Operativo"],title:["Dense, angles vifs, liseré de thème, titres en capitales","Dense, sharp corners, theme edge, uppercase titles","Kompakt, scharfe Ecken, Themenkante, Titel in Großbuchstaben","Denso, esquinas vivas, borde del tema, títulos en mayúsculas"]},
+      brief:{label:["Brief","Brief","Briefing","Briefing"],title:["Aspect document : titres à empattement, filets","Document look: serif titles, rules","Dokumentoptik: Serifentitel, Linien","Aspecto de documento: títulos con serifa, filetes"]}
+    }
+  },
   folders:{
     "":{theme:"flight",favicon:"assets/favicon-flight.svg"},
     "CR DEFA":{theme:"core",favicon:"assets/favicon-flight.svg"},

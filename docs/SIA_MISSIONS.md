@@ -84,7 +84,8 @@ sont ignorés et signalés.
 
 Page `SIA XML/mission_editor.html`.
 
-1. **Importer une mission** : YAML et / ou Markdown d'une mission (fusionnés, lecture commune avec le
+1. **Importer une mission** : YAML et / ou Markdown d'une mission, ou **collage** de son contenu
+   (« ou coller son contenu… », Markdown reconnu à ses titres `##`) (fusionnés, lecture commune avec le
    studio : `SiaMission.fromTexts`), et les cartes (PNG ou
    ZIP livré par le studio).
 2. **Identification** : titre, numéro, série, type, sous-type, auteur, date, schéma.
