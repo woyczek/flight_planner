@@ -88,7 +88,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260926zz", script.src).href;
+    css.href = new URL("designs.css?v=20260926zza", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -327,23 +327,75 @@
     }
   };
   applyLanguage();
+  // ---- Barre latérale (design « console » ou préférence repositorySidenav) : construite ici, dès l'exécution, pour
+  // paraître avec l'en-tête (styles dans repository_nav.css) ; les icônes, chargées ensuite, sont posées par
+  // side_nav.js dans les emplacements réservés (span[data-sidenav-icon], taille fixe : pas de décalage).
+  // Entrées : REPOSITORY_TREE.sidebar si présent, sinon la liste ci-dessous ; seules les pages déclarées sont retenues.
+  {
+    const items = cfg.sidebar || [
+      { icon: "target", path: "SIA XML/mission_editor.html", label: ["Missions", "Missions", "Missionen", "Misiones"] },
+      { icon: "map", path: "SIA XML/map_parser.html", label: ["Cartes", "Maps", "Karten", "Mapas"] },
+      { icon: "clipboard", path: "CR DEFA/mission_cr.html", match: "CR DEFA/", label: ["CR DEFA", "DEFA report", "DEFA-Bericht", "Informe DEFA"] },
+      { icon: "chart", path: "CR DEFA/mission_operations_reporting.html", match: "_reporting.html", label: ["Reporting", "Reporting", "Berichte", "Informes"] },
+      { icon: "fuel", path: "flight_performance_planner.html", label: ["Carburant", "Fuel", "Kraftstoff", "Combustible"] },
+      { icon: "plane", path: "LandingPerformanceDashboard/LandingPerformance_Dashboard_MultiCSV_i18n.html", label: ["Atterrissages", "Landings", "Landungen", "Aterrizajes"] },
+      { sep: true },
+      { icon: "settings", path: "CR DEFA/parametrage.html", label: ["Paramètres", "Settings", "Einstellungen", "Ajustes"] },
+      { icon: "help", menu: true, label: ["Menu", "Menu", "Menü", "Menú"], title: ["Toutes les pages, profil, données locales, design", "All pages, profile, local data, design", "Alle Seiten, Profil, lokale Daten, Design", "Todas las páginas, perfil, datos locales, diseño"] }
+    ];
+    const known = new Set(cfg.pages.map(p => p.path)), current = page?.path || "";
+    // entrée active : la page elle-même, sinon la première entrée dont « match » est contenu dans le chemin courant
+    let active = items.findIndex(x => x.path === current);
+    if (active < 0) active = items.findIndex(x => x.match && current.includes(x.match));
+    const side = document.createElement("nav");
+    side.className = "repo-sidenav no-print";
+    side.setAttribute("aria-label", "Applications");
+    side.setAttribute("data-no-i18n", "");
+    side.innerHTML = '<div class="repo-sidenav-brand" aria-hidden="true"><span class="repo-sidenav-ic" data-sidenav-icon="map" data-size="30"></span></div><ul></ul>';
+    const ul = side.querySelector("ul");
+    items.forEach((it, i) => {
+      const li = document.createElement("li");
+      if (it.sep) { li.className = "repo-sidenav-sep"; ul.append(li); return; }
+      if (it.path && !known.has(it.path)) return;
+      const a = document.createElement(it.menu ? "button" : "a");
+      a.className = "repo-sidenav-item";
+      if (it.menu) { a.type = "button"; a.onclick = e => { e.stopPropagation(); document.querySelector(".repo-menu-button")?.click(); }; }
+      else a.href = new URL(it.path, root).href;
+      if (i === active) a.setAttribute("aria-current", "page");
+      a.innerHTML = `<span class="repo-sidenav-ic" data-sidenav-icon="${esc(it.icon)}"></span><span class="repo-sidenav-label"></span>`;
+      a._it = it;
+      li.append(a);
+      ul.append(li);
+    });
+    document.body.prepend(side);
+    const label = () => {
+      const i = Math.max(0, supported.indexOf(language));
+      side.querySelectorAll(".repo-sidenav-item").forEach(a => {
+        a.querySelector(".repo-sidenav-label").textContent = a._it.label[i] || a._it.label[0];
+        a.title = a._it.title?.[i] || a._it.title?.[0] || a._it.label[i] || a._it.label[0];
+      });
+    };
+    label();
+    window.addEventListener("repository-language-change", label);
+    window.RepositorySideNav = { element: side, set: on => window.RepositoryNav.appearance.setSidenav(on) };
+  }
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260926zz", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260926zza", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260926zz", script.src).href;
+    files.src = new URL("file_access.js?v=20260926zza", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
-    /* Icônes, numéros et sous-titres de blocs, sous-cartes, zones de dépôt, barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260926zz", "block_icons.js?v=20260926zz", "side_nav.js?v=20260926zz"]) {
+    /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
+    for (const f of ["icons/repository_icons.js?v=20260926zza", "block_icons.js?v=20260926zza", "side_nav.js?v=20260926zza"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260926zz", script.src).href;
+    store.src = new URL("browser_store.js?v=20260926zza", script.src).href;
     document.head.append(store)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

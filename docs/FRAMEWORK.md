@@ -9,7 +9,7 @@ seuls sur chaque page. Ce document décrit chaque composant, son rôle et son in
 |---|---|---|
 | Arborescence et thèmes | `repository_tree` | toutes les pages |
 | Bandeau, menu ☰, langue | `shared/repository_nav.js`, `.css` | toutes les pages |
-| Apparence (designs, icônes, barre latérale, couleurs) | `shared/designs.css`, `block_icons.js/.css`, `icons/repository_icons.js`, `side_nav.js`, `appearance_admin.js` | toutes les pages ; réglages dans Paramétrage |
+| Apparence (designs, icônes, barre latérale, couleurs) | `shared/designs.css`, `block_icons.js/.css`, `icons/repository_icons.js`, `side_nav.js`, `appearance_page.js`, `appearance_admin.js` | toutes les pages ; réglages sur la page Apparence |
 | Colonnes redimensionnables | `shared/column_resize.js` | Planner |
 | Blocs (déplacer / masquer) | `shared/app_framework.js` | toutes les pages |
 | Traduction des textes | `shared/content_i18n.js` | CR DEFA, Planner, reportings |
@@ -75,7 +75,8 @@ liste `DISPLAY` : design, icônes, couleurs, barre latérale, langue, onglets, s
   Règles : `designs.css` (formes communes) et `block_icons.css` (Console, icônes, numéros).
 - **Icônes** (`repositoryIcons`, `<html data-icons>`) : trait normal, fin, épais, ou aucune.
 - **Barre latérale** (`repositorySidenav`, `<html data-sidenav>`) : selon le design (affichée en Console),
-  toujours, ou jamais. Entrées : `REPOSITORY_TREE.sidebar` s'il existe, sinon la liste de `side_nav.js`.
+  toujours, ou jamais. Entrées : `REPOSITORY_TREE.sidebar` s'il existe, sinon la liste de `repository_nav.js`, qui construit la barre dès son exécution (styles dans `repository_nav.css`,
+  chargé dans l'en-tête) ; `side_nav.js` y pose ensuite les icônes, dans des emplacements de taille fixe.
 - **Couleurs des thèmes** (`repositoryColors`) : pour chaque thème, une **famille** (`REPOSITORY_TREE.colorFamilies` :
   teinte, saturation) et un **ton** (clarté) plutôt que des valeurs absolues ; bandeau, texte du bandeau (blanc
   ou noir selon le meilleur contraste) et accent (ajusté jusqu'à ≥ 4,5:1 sur le fond de page) en sont calculés.

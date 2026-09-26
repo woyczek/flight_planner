@@ -21,14 +21,17 @@
     host.style.gridColumn = '1/-1';
     main.append(host);
     const render = () => {
-      host.innerHTML = `<h2></h2><p class="repo-block-subtitle"></p><p><a class="primary" href="apparence.html"></a></p>`;
+      host.innerHTML = `<h2></h2><p class="repo-block-subtitle"></p><p><button type="button" class="primary" data-icon="eye"></button></p>`;
       host.querySelector('h2').textContent = t(T.title);
       host.querySelector('.repo-block-subtitle').textContent = t(T.text);
-      host.querySelector('a').textContent = t(T.open);
+      const b = host.querySelector('button');
+      b.textContent = t(T.open);
+      b.style.cssText = 'background:var(--accent);color:#fff;border-color:var(--accent)';
+      b.onclick = () => { location.href = 'apparence.html'; };
+      window.AppFramework?.refresh?.();   // icône du bouton (block_icons.js)
     };
     render();
     window.addEventListener('repository-language-change', render);
-    window.AppFramework?.refresh?.();
     return true;
   }
   if (!mount()) window.addEventListener('repository-nav-ready', mount, { once: true });

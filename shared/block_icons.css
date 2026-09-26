@@ -65,20 +65,7 @@
 .repo-header-titles>h1{margin:0}
 .repo-header-subtitle{font:12.5px/1.3 Inter,system-ui,"Segoe UI",Arial,sans-serif;color:color-mix(in srgb,var(--repo-bar-text) 84%,transparent)}
 
-/* ---- barre latérale (side_nav.js) : préférence html[data-sidenav="on"] ou design « console » */
-:root{--repo-sidenav-w:84px}
-.repo-sidenav{display:none;position:fixed;z-index:1100;left:0;top:0;bottom:0;width:var(--repo-sidenav-w);flex-direction:column;overflow-y:auto;background:color-mix(in srgb,var(--repo-bar) 86%,#000);color:var(--repo-bar-text);border-right:1px solid color-mix(in srgb,var(--repo-bar-text) 14%,transparent)}
-html[data-sidenav="on"] .repo-sidenav,html[data-design="console"]:not([data-sidenav="off"]) .repo-sidenav{display:flex}
-html[data-sidenav="on"],html[data-design="console"]:not([data-sidenav="off"]){padding-left:var(--repo-sidenav-w)}
-.repo-sidenav-brand{display:flex;align-items:center;justify-content:center;min-height:64px}
-.repo-sidenav ul{list-style:none;margin:0;padding:0}
-.repo-sidenav-item{display:flex;flex-direction:column;align-items:center;gap:5px;width:100%;padding:11px 4px;border:0;border-left:3px solid transparent;border-radius:0;background:transparent;color:inherit;font:600 11.5px/1.2 Inter,system-ui,"Segoe UI",Arial,sans-serif;text-align:center;text-decoration:none;cursor:pointer}
-.repo-sidenav-item:hover{background:color-mix(in srgb,var(--repo-bar-text) 10%,transparent)}
-.repo-sidenav-item[aria-current="page"]{background:color-mix(in srgb,var(--repo-bar-text) 17%,transparent);border-left-color:var(--repo-bar-text)}
-.repo-sidenav-item:focus-visible{outline:2px solid var(--repo-bar-text);outline-offset:-4px}
-.repo-sidenav-sep{height:1px;margin:10px 14px;background:color-mix(in srgb,var(--repo-bar-text) 20%,transparent)}
-@media (max-width:760px){html[data-sidenav],html[data-design="console"]{padding-left:0!important}.repo-sidenav{display:none!important}}
-@media print{html{padding-left:0!important}.repo-sidenav,.repo-dropzone-badge{display:none!important}}
+@media print{.repo-dropzone-badge{display:none!important}}
 
 /* ---- adaptation aux designs existants (forme seulement) */
 html[data-design="aero"] .repo-block-step{box-shadow:0 3px 10px color-mix(in srgb,var(--repo-bar) 35%,transparent)}
@@ -116,4 +103,3 @@ html[data-icons="fine"] .repo-svg{stroke-width:1.5}
 html[data-icons="bold"] .repo-svg{stroke-width:2.6}
 html[data-icons="off"] .repo-icon,html[data-icons="off"] .repo-block-icon,html[data-icons="off"] .repo-card-icon,html[data-icons="off"] .repo-dropzone-badge{display:none!important}
 
-.repo-sidenav .repo-svg{--rs:22px}

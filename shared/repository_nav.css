@@ -8,3 +8,20 @@
 .has-status-bar .repo-footer{margin-bottom:58px}
 .repo-header [hidden]{display:none!important}.repo-language-flag,.repo-language-menu svg{display:inline-block;width:27px;height:18px;border-radius:2px;vertical-align:middle}.repo-auto-mark{display:inline-flex;width:27px;height:18px;align-items:center;justify-content:center;border:1px solid currentColor;border-radius:2px;font-size:11px}.repo-header .repo-unit-control{margin-left:auto}.repo-block{margin-bottom:14px}.repo-block:not(.card){margin-bottom:18px!important}.repo-tree-group summary{font-size:13px;text-transform:none;border-bottom:0;letter-spacing:0}.repo-tree-group{border:0}@media print{.repo-header,.repo-footer,.repo-block-tools{display:none!important}}@media(max-width:600px){.repo-language-name{display:none}.repo-header-line1{gap:6px}.repo-header-tools{gap:5px}}
 .repo-language-label{font:12px/1 Inter,system-ui,Segoe UI,Arial,sans-serif;color:inherit;white-space:nowrap}.repo-language-flag{display:inline-flex!important;align-items:center;justify-content:center;width:27px!important;height:18px!important;overflow:hidden;flex:0 0 27px}.repo-language-flag svg,.repo-language-menu svg{display:block!important;width:27px!important;height:18px!important;min-width:27px!important;min-height:18px!important;max-width:27px!important;max-height:18px!important;border-radius:2px!important}.repo-language-button{min-width:48px;justify-content:center}@media(max-width:600px){.repo-language-label{font-size:11px}}
+/* ---- barre latérale (construite par repository_nav.js dès son exécution, icônes posées par side_nav.js) : ici et non
+   dans block_icons.css (chargé plus tard) pour que la barre et la marge du contenu paraissent avec l'en-tête ; préférence html[data-sidenav="on"] ou design « console » */
+:root{--repo-sidenav-w:84px}
+.repo-sidenav{display:none;position:fixed;z-index:1100;left:0;top:0;bottom:0;width:var(--repo-sidenav-w);flex-direction:column;overflow-y:auto;background:color-mix(in srgb,var(--repo-bar) 86%,#000);color:var(--repo-bar-text);border-right:1px solid color-mix(in srgb,var(--repo-bar-text) 14%,transparent)}
+html[data-sidenav="on"] .repo-sidenav,html[data-design="console"]:not([data-sidenav="off"]) .repo-sidenav{display:flex}
+html[data-sidenav="on"],html[data-design="console"]:not([data-sidenav="off"]){padding-left:var(--repo-sidenav-w)}
+.repo-sidenav-brand{display:flex;align-items:center;justify-content:center;min-height:64px}
+.repo-sidenav ul{list-style:none;margin:0;padding:0}
+.repo-sidenav-item{display:flex;flex-direction:column;align-items:center;gap:5px;width:100%;padding:11px 4px;border:0;border-left:3px solid transparent;border-radius:0;background:transparent;color:inherit;font:600 11.5px/1.2 Inter,system-ui,"Segoe UI",Arial,sans-serif;text-align:center;text-decoration:none;cursor:pointer}
+.repo-sidenav-item:hover{background:color-mix(in srgb,var(--repo-bar-text) 10%,transparent)}
+.repo-sidenav-item[aria-current="page"]{background:color-mix(in srgb,var(--repo-bar-text) 17%,transparent);border-left-color:var(--repo-bar-text)}
+.repo-sidenav-item:focus-visible{outline:2px solid var(--repo-bar-text);outline-offset:-4px}
+.repo-sidenav-sep{height:1px;margin:10px 14px;background:color-mix(in srgb,var(--repo-bar-text) 20%,transparent)}
+@media (max-width:760px){html[data-sidenav],html[data-design="console"]{padding-left:0!important}.repo-sidenav{display:none!important}}
+.repo-sidenav .repo-svg{--rs:22px}
+.repo-sidenav-ic{display:block;width:22px;height:22px}.repo-sidenav-brand .repo-sidenav-ic{width:30px;height:30px}
+@media print{html{padding-left:0!important}.repo-sidenav{display:none!important}}

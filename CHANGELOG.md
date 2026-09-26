@@ -16,6 +16,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   et aperçu du thème sur la page ; lien vers la démonstration, réinitialisation. Le menu ☰ « Apparence… » y mène,
   Paramétrage garde un lien.
 - **Missions** : plus de numéros 1 / 2 / 3 en tête des blocs du générateur et du studio.
+- **Barre latérale immédiate** : construite par `repository_nav.js` dès son exécution, styles dans `repository_nav.css`
+  (chargé dans l'en-tête) ; elle paraît avec l'en-tête au lieu d'arriver en dernier, les icônes se posent ensuite dans
+  des emplacements de taille fixe (`side_nav.js`). Paramétrage : bouton « Ouvrir la page Apparence ».
 - **Icônes et sous-titres de blocs — migration** : CR (les 16 familles : icône et sous-titre des blocs communs, icône par
   défaut des blocs propres aux familles, panneaux de calculs et de compte rendu), Landing, planificateur, générateur de
   mission et studio (blocs numérotés, zones de dépôt de fichiers, boutons à icône) ; sous-titres en 4 langues.
