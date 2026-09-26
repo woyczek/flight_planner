@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Icônes et décors des planches</title>
+<style>body{font:13px system-ui;margin:20px;background:#555 linear-gradient(45deg,#666 25%,transparent 25%,transparent 75%,#666 75%) 0 0/20px 20px;color:#fff}
+figure{display:inline-block;margin:6px;text-align:center;vertical-align:top}figure img{display:block;max-width:300px;max-height:140px;margin:auto}figcaption{background:#222;padding:2px 4px;margin-top:3px}</style></head>
+<body>
+<!-- Icônes et éléments décoratifs des designs à matières, DÉCOUPÉS dans les planches de maquette de l'utilisateur
+     (Cabinet, Durci, Aqua ; images raster 1448 × 1086) : coordonnées ci-dessous (centre + rayon pour les médaillons et
+     bulles, rectangle sinon), détourage par masque (rond, rectangle arrondi, bords adoucis) ou par couleur de fond
+     (fond uni de la planche retiré), export WebP transparent dans shared/icons/skeuo/<design>/ (icônes 96 px, nommées
+     comme le registre RepositoryIcons) et shared/deco/<design>/ (décors, taille d'origine).
+     Usage : python tools/save_textures.py --src <dossier des planches 10/11/12.webp>, puis
+     http://localhost:8765/tools/icons_from_sheets.html -->
+<h1>Icônes et décors des planches</h1><p id="out">Découpe…</p><div id="list"></div>
+<script>
+const SHEETS = { cabinet: '11.webp', field: '10.webp', aqua: '12.webp' };
+const circ = (name, x, y, r) => ({ name, kind: 'icon', box: [x - r, y - r, 2 * r, 2 * r], mask: 'circle' });
+const tile = (name, x, y, w = 68, h = 60) => ({ name, kind: 'icon', box: [x - w / 2, y - h / 2, w, h], mask: 'round', radius: 9 });
+const deco = (name, x0, y0, x1, y1, mask = 'rect', extra = {}) => ({ name, kind: 'deco', box: [x0, y0, x1 - x0, y1 - y0], mask, ...extra });
+const ITEMS = {
+  cabinet: [
+    ...['book', 'plus', 'bookmark', 'refresh', 'sparkles', 'download', 'printer', 'x'].map((n, i) => circ(n, [923, 991, 1058, 1126, 1193, 1261, 1328, 1394][i], 326, 28.5)),
+    circ('info', 1020, 668, 16.5),
+    deco('compass', 400, 843, 523, 980, 'key', { tol: [26, 60] }),
+    deco('clip', 166, 852, 384, 950, 'key', { tol: [26, 60] }),
+    deco('map', 1150, 824, 1424, 962, 'soft'),
+    deco('footer', 28, 990, 1422, 1064, 'rect'),
+    deco('medal-1', 38, 402, 104, 468, 'circle'),
+    deco('tack', 568, 422, 598, 452, 'circle')
+  ],
+  field: [
+    ...[['file-text', 'book', 'x', 'settings'], ['map', 'plane', 'target', 'refresh'], ['info', 'alert', 'globe', 'sparkles']].flatMap((row, j) => row.map((n, i) => tile(n, [1159, 1238, 1315, 1388][i], [572, 632, 691][j]))),
+    tile('plane-plate', 772, 789, 66, 62),
+    deco('handle-v', 22, 872, 79, 1066, 'key', { tol: [16, 40] }),
+    deco('handle-slim', 90, 872, 134, 1064, 'key', { tol: [16, 40] }),
+    deco('handle-h', 146, 873, 294, 936, 'key', { tol: [16, 40] }),
+    deco('grille', 148, 942, 246, 1050, 'key', { tol: [16, 40] }),
+    deco('plate-small', 260, 1000, 361, 1054, 'key', { tol: [16, 40] }),
+    deco('plate-defa', 388, 877, 628, 939, 'key', { tol: [16, 40] }),
+    deco('plate-attention', 388, 944, 628, 1002, 'key', { tol: [16, 40] }),
+    deco('plate-wings', 388, 1006, 568, 1066, 'key', { tol: [16, 40] }),
+    deco('screw', 309, 886, 351, 928, 'circle'),
+    deco('screw-x', 258, 946, 297, 985, 'circle'),   // vis cruciforme (vis d'angle des panneaux)
+    deco('nut', 309, 942, 355, 988, 'key', { tol: [16, 40] }),
+    deco('topo', 934, 881, 1236, 973, 'rect'),
+    deco('radar', 934, 981, 1236, 1065, 'rect'),
+    deco('stencil-mission', 1256, 876, 1430, 928, 'rect'),
+    deco('stencil-defa', 1262, 932, 1412, 994, 'key', { tol: [18, 44] }),
+    deco('stencil-ops', 1256, 1002, 1434, 1062, 'key', { tol: [18, 44] })
+  ],
+  aqua: [
+    ...[['settings', 'folder', 'pin'], ['file-text', 'users', 'info']].flatMap((row, j) => row.map((n, i) => circ(n, [1230, 1301, 1374][i], [360, 428][j], 32))),
+    circ('check', 881, 824, 13), circ('alert', 1038, 824, 13), circ('x', 1328, 826, 24)
+  ]
+};
+const load = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error(src)); i.src = src; });
+/** Découpe box (coordonnées de planche) en size px (icônes) ou taille d'origine (décors), avec masque. */
+function cut(img, it) {
+  const [x, y, w, h] = it.box, S = it.kind === 'icon' ? 96 : null, W = S || Math.round(w), Hh = S ? Math.round(96 * h / w) : Math.round(h);
+  const c = document.createElement('canvas'); c.width = W; c.height = Hh; const g = c.getContext('2d'); g.imageSmoothingQuality = 'high';
+  g.drawImage(img, x, y, w, h, 0, 0, W, Hh);
+  const im = g.getImageData(0, 0, W, Hh), d = im.data;
+  // couleur de fond : moyenne des quatre coins (fond uni de la planche)
+  const corner = (cx, cy) => { const k = (cy * W + cx) * 4; return [d[k], d[k + 1], d[k + 2]]; }, cs = [corner(1, 1), corner(W - 2, 1), corner(1, Hh - 2), corner(W - 2, Hh - 2)], bg = [0, 1, 2].map(i => cs.reduce((a, c) => a + c[i], 0) / 4);
+  for (let j = 0; j < Hh; j++) for (let i = 0; i < W; i++) {
+    const k = (j * W + i) * 4; let a = 1;
+    if (it.mask === 'circle') { const r = Math.min(W, Hh) / 2, dd = Math.hypot(i + .5 - W / 2, j + .5 - Hh / 2); a = Math.max(0, Math.min(1, r - dd - .5)); }
+    else if (it.mask === 'round') { const r = it.radius * W / it.box[2], dx = Math.max(0, Math.abs(i + .5 - W / 2) - (W / 2 - r)), dy = Math.max(0, Math.abs(j + .5 - Hh / 2) - (Hh / 2 - r)); a = Math.max(0, Math.min(1, r - Math.hypot(dx, dy) - .5)); }
+    else if (it.mask === 'soft') { const e = Math.min(i, j, W - 1 - i, Hh - 1 - j); a = Math.min(1, e / 10); }
+    else if (it.mask === 'key') { const dist = Math.hypot(d[k] - bg[0], d[k + 1] - bg[1], d[k + 2] - bg[2]), [t0, t1] = it.tol; a = Math.max(0, Math.min(1, (dist - t0) / (t1 - t0))); }
+    d[k + 3] = Math.round(d[k + 3] * a);
+  }
+  g.putImageData(im, 0, 0);
+  return c;
+}
+async function run() {
+  const out = document.getElementById('out'), list = document.getElementById('list'); let ok = 0, n = 0;
+  for (const [design, file] of Object.entries(SHEETS)) {
+    const img = await load(`/src/${file}`);
+    list.insertAdjacentHTML('beforeend', `<h2>${design}</h2>`);
+    for (const it of ITEMS[design]) {
+      const c = cut(img, it), blob = await new Promise(r => c.toBlob(r, 'image/webp', .9)), dir = it.kind === 'icon' ? `icons/skeuo/${design}` : `deco/${design}`;
+      const res = await fetch(`/shared/${dir}/${it.name}.webp`, { method: 'PUT', body: blob }).catch(() => null); n++; if (res?.ok) ok++;
+      list.insertAdjacentHTML('beforeend', `<figure><img src="${URL.createObjectURL(blob)}"><figcaption>${it.name} · ${c.width}×${c.height} ${res?.ok ? '✓' : '✗'}</figcaption></figure>`);
+    }
+  }
+  out.textContent = `${ok} / ${n} fichiers écrits.`;
+}
+run().catch(e => document.getElementById('out').textContent = 'Erreur : ' + e.message);
+</script></body></html>

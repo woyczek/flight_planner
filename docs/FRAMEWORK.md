@@ -91,7 +91,12 @@ liste `DISPLAY` : design, icônes, couleurs, barre latérale, langue, onglets, s
   DEFA, radar tournant, voyants de sauvegarde). Textures : photographies CC0 d'ambientCG (cuir, bois, papier, métaux,
   peintures ; relief cuit et reteinte par `tools/textures_from_photos.html`, crédits dans `shared/textures/CREDITS.md`)
   et matières dessinées (cartes, radar : `tools/textures_generator.html`) ; adresses versionnées par
-  `bump_versions.py`. Classe `repo-plain` : bouton qui garde son propre dessin (vignettes, sélecteurs). À l'impression,
+  `bump_versions.py`. **Icônes et décors des planches** : icônes et éléments découpés dans les planches de maquette
+  (`tools/icons_from_sheets.html` → `shared/icons/skeuo/<design>/`, `shared/deco/<design>/`) ; en jeu Matière, les
+  icônes posées (blocs, sous-cartes, barre latérale, boutons à icône seule, zones de dépôt, bandeaux) prennent l'image
+  de la planche (règles générées par `tools/build_skeuo_icons_css.py`, attribut `data-i` des icônes), sinon un
+  médaillon, une plaque ou une bulle dessinés ; `design_deco.js` dissémine les décors (frise de pied, entre les blocs,
+  dans les marges des grands écrans). Classe `repo-plain` : bouton qui garde son propre dessin (vignettes, sélecteurs). À l'impression,
   tout s'efface.
 - **Réglages** : boutons « Apparence » et « Paramètres » en tête du menu ☰ ; dans la barre latérale, groupe du bas
   (Apparence, Paramètres, Menu).

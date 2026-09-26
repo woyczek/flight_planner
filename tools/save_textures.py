@@ -26,13 +26,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         return super().translate_path(path)
 
     def do_PUT(self):
-        m = re.fullmatch(r'/shared/textures/([a-z0-9-]+\.webp)', self.path)
+        # textures, icônes et éléments décoratifs des designs à matières (tools/icons_from_sheets.html)
+        m = re.fullmatch(r'/shared/((?:textures|icons/skeuo/(?:cabinet|field|aqua)|deco/(?:cabinet|field|aqua))/[a-z0-9-]+\.webp)', self.path)
         if not m:
             self.send_error(403)
             return
         data = self.rfile.read(int(self.headers.get('Content-Length', 0)))
-        os.makedirs(OUT, exist_ok=True)
-        with open(os.path.join(OUT, m.group(1)), 'wb') as f:
+        path = os.path.join(ROOT, 'shared', *m.group(1).split('/'))
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'wb') as f:
             f.write(data)
         self.send_response(204)
         self.end_headers()

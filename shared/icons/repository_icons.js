@@ -113,7 +113,7 @@
       // taille explicite : variable --rs (block_icons.css l'impose, même face à une règle « svg{…} » de la page) ;
       // sinon, taille du contexte (bloc, sous-carte, bouton…)
       const px = size || 20, rs = size ? ` style="--rs:${size}px"` : '';
-      return `<svg class="repo-svg" viewBox="0 0 24 24" width="${px}" height="${px}"${rs} fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${a11y}>${title ? `<title>${esc(title)}</title>` : ''}<g class="ri-shade">${body}</g><g class="ri-case">${body}</g><g class="ri-ink">${body}</g></svg>`;
+      return `<svg class="repo-svg" data-i="${esc(name)}" viewBox="0 0 24 24" width="${px}" height="${px}"${rs} fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${a11y}>${title ? `<title>${esc(title)}</title>` : ''}<g class="ri-shade">${body}</g><g class="ri-case">${body}</g><g class="ri-ink">${body}</g></svg>`;
     },
     has: name => name in P,
     names: () => Object.keys(P),
