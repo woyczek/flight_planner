@@ -79,10 +79,15 @@ lignes `Type :`, `Sous-type :`, `Aéronef :`, `Callsign :`, `Départ :`, `Destin
 prime quand les deux sont chargés. La cible et les zones n'ont pas de coordonnées dans ce Markdown
 (elles viennent du YAML) ; les Markdown MEDEVAC n'ont que textes, équipes et risques.
 
-**Une mission par chargement** : `missionNN.yaml` et / ou `summaryNN.md` d'un même numéro. Une
-sélection de plusieurs missions (dossier de série entier) est refusée avec un message ; les fichiers
-annexes d'une série (`maps_manifest.md`, `AAR_TRACKS_REFERENCE.md`, `VALIDATION.txt`, consignes)
-sont ignorés et signalés.
+**Lot de missions** (opération à plusieurs équipes, série) : une sélection de plusieurs missions — fichiers
+(`mission41A.yaml`, `summary41A.md`, `mission41B.yaml`…) ou texte collé d'un seul tenant (réponse de ChatGPT :
+lignes « Fichier : … » suivies de blocs de code, ou plusieurs « # Mission … ») — est découpée et regroupée par
+mission (identifiant `mission.id`, ou titre « # Mission 41A ») ; la première est affichée, les autres avec
+**◀ Mission 41A — titre (1/3) ▶** dans l'en-tête du générateur et du studio (même lot, partagé entre les deux
+pages et mémorisé dans le navigateur : `siaMissionBatch:v1`). Les modifications de chaque mission sont gardées
+en passant de l'une à l'autre. Générateur : **Exporter les N PDF** — un brief par mission. Les fichiers annexes
+d'une série (`maps_manifest.md`, `AAR_TRACKS_REFERENCE.md`, `VALIDATION.txt`, consignes) sont ignorés et
+signalés. Un chargement d'une seule mission efface le lot.
 
 ## 3. Générateur de mission (brief)
 

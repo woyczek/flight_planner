@@ -5,7 +5,8 @@
   // notification des autres pages ouvertes (BroadcastChannel + événement storage). Lecture des
   // missions Markdown / YAML (schéma helo-xp-mission) commune aux deux pages.
   const KEY = 'siaMissionShared:v1',
-    LEGACY = 'missionGeneratorDraft';
+    LEGACY = 'missionGeneratorDraft',
+    BATCH = 'siaMissionBatch:v1';   // lot de missions (opération à plusieurs équipes) : { docs, index }
   /** Clé de texte : minuscules sans accents, mots séparés par « _ ». */
   const norm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
   /** Copie profonde (JSON). */
@@ -338,12 +339,130 @@
     } catch (e) {
       throw Error('Mission non enregistrée dans le navigateur : ' + e.message);
     }
+    // lot : la mission enregistrée remplace sa copie dans le lot (même identifiant) et devient la courante
+    const b = loadBatch();
+    if (b) {
+      const i = b.docs.findIndex(d => missionId(d) === missionId(out));
+      if (i >= 0) {
+        b.docs[i] = { yaml: out.yaml, narrative: out.narrative, sourceNames: out.sourceNames };
+        b.index = i;
+        storeBatch(b);
+      }
+    }
     channel?.postMessage({
       rev: out.rev,
       by
     });
     return out;
   }
+
+  // ---- lot de missions (opération à plusieurs équipes : 41A, 41B…) --------------------------------------
+  /** Identifiant d'une mission (mission.id, sinon numéro), normalisé : « 41A », « 11 » ; « » si absent. */
+  const missionId = d => String(d?.yaml?.mission?.id ?? d?.yaml?.mission?.number ?? '').trim().toUpperCase().replace(/^0+(?=\d)/, '');
+  /** Lot mémorisé { docs: [{ yaml, narrative, sourceNames }], index } ; null sans lot (ou lot d'une seule mission). */
+  function loadBatch() {
+    try {
+      const b = JSON.parse(localStorage.getItem(BATCH) || 'null');
+      return b && Array.isArray(b.docs) && b.docs.length > 1 ? { docs: b.docs, index: Math.min(Math.max(0, b.index | 0), b.docs.length - 1) } : null;
+    } catch { return null; }
+  }
+  /** Enregistre le lot (null : l'efface) et prévient les autres pages. */
+  function storeBatch(b) {
+    try { b ? localStorage.setItem(BATCH, JSON.stringify(b)) : localStorage.removeItem(BATCH); } catch (e) { throw Error('Lot de missions non enregistré dans le navigateur : ' + e.message); }
+    channel?.postMessage({ batch: true });
+    window.dispatchEvent(new CustomEvent('sia-mission-batch'));
+  }
+  /** Passe à la mission i du lot : la courante (avec ses dernières modifications) est rangée, la mission i devient
+   *  la mission partagée (by : page auteure). Retourne le document enregistré ; null sans lot. */
+  function go(i, by) {
+    const b = loadBatch();
+    if (!b) return null;
+    const cur = load();
+    if (cur && missionId(cur) === missionId(b.docs[b.index])) b.docs[b.index] = { yaml: cur.yaml, narrative: cur.narrative, sourceNames: cur.sourceNames };
+    b.index = (i + b.docs.length) % b.docs.length;
+    storeBatch(b);
+    return save(b.docs[b.index], by);
+  }
+
+  /** Découpe un texte collé contenant plusieurs fichiers (réponse de ChatGPT : ligne « Fichier : mission41A.yaml »
+   *  puis bloc de code) ou plusieurs missions Markdown (« # Mission 41A », « # Mission 41B »…) en fichiers
+   *  { name, text } ; texte simple : tableau vide. */
+  function splitBundle(text) {
+    const src = String(text || '').replace(/\r\n/g, '\n'), out = [];
+    const re = /^[ \t>*_-]*(?:fichier|file|datei|archivo)\s*:?\s*[*_`]*\s*([\w.\-]+\.(?:ya?ml|md|markdown))\s*[*_`]*\s*\n+\s*```[\w-]*\n([\s\S]*?)\n\s*```/gim;
+    for (let m; (m = re.exec(src));) out.push({ name: m[1], text: m[2] });
+    if (out.length) return out;
+    // blocs de code sans nom : nommés d'après leur contenu
+    const blocks = [...src.matchAll(/```([\w-]*)\n([\s\S]*?)\n\s*```/g)];
+    if (blocks.length > 1) return blocks.map((b, i) => ({ name: /ya?ml/i.test(b[1]) || /^\s*(schema|mission)\s*:/m.test(b[2]) ? `bloc${i + 1}.yaml` : `bloc${i + 1}.md`, text: b[2] }));
+    // plusieurs missions Markdown à la suite
+    const heads = [...src.matchAll(/^#\s+Mission\s+\d+[A-Z]?\b.*$/gim)];
+    if (heads.length > 1) return heads.map((h, i) => ({ name: `mission${i + 1}.md`, text: src.slice(h.index, heads[i + 1]?.index ?? src.length) }));
+    return [];
+  }
+
+  /** Comme fromTexts, pour une sélection qui peut contenir PLUSIEURS missions (fichiers d'une opération, ou un
+   *  texte collé à découper) : { docs (une par mission, ordre des identifiants : 41A, 41B…), ignored }. */
+  function fromTextsBatch(files) {
+    const expanded = files.flatMap(f => { const parts = splitBundle(f.text); return parts.length ? parts : [f]; });
+    const idOfFile = f => {
+      if (isYaml(f)) { try { const y = window.jsyaml.load(f.text); return missionId({ yaml: y }); } catch { return ''; } }
+      const m = /^#\s+Mission\s+(\d+[A-Z]?)\b/im.exec(f.text);
+      return m ? m[1].toUpperCase().replace(/^0+(?=\d)/, '') : '';
+    };
+    const groups = new Map(), loose = [];
+    for (const f of expanded) { const id = idOfFile(f); id ? (groups.has(id) || groups.set(id, []), groups.get(id).push(f)) : loose.push(f); }
+    if (groups.size <= 1) { const d = fromTexts(expanded); return { docs: [d], ignored: d.ignored }; }
+    const ids = [...groups.keys()].sort((a, b) => a.localeCompare(b, 'fr', { numeric: true }));
+    const docs = ids.map(id => fromTexts(groups.get(id))), ignored = [...new Set([...loose.map(f => f.name), ...docs.flatMap(d => d.ignored)])];
+    return { docs, ignored };
+  }
+
+  /** Lit une sélection (fichiers ou texte collé) et l'enregistre comme mission partagée (by : page auteure) ;
+   *  plusieurs missions : lot, la première devient la courante (« mission suivante » dans l'en-tête).
+   *  Retourne { doc (mission courante enregistrée), docs, count, ignored }. */
+  function importTexts(files, by) {
+    const { docs, ignored } = fromTextsBatch(files);
+    storeBatch(docs.length > 1 ? { docs: docs.map(d => ({ yaml: d.yaml, narrative: d.narrative, sourceNames: d.sourceNames })), index: 0 } : null);
+    return { doc: save(docs[0], by), docs, count: docs.length, ignored };
+  }
+
+  /** Navigation du lot dans l'en-tête de la page : « ◀ Mission 41A — titre (1/3) ▶ », masquée sans lot.
+   *  apply(doc) : la page affiche la mission choisie. me : identifiant de la page (générateur, studio). */
+  function mountNav(me, apply) {
+    const mount = () => {
+      const line = document.querySelector('body>header .repo-header-line1') || document.querySelector('body>header');
+      if (!line || document.getElementById('siaBatchNav')) return;
+      const nav = document.createElement('div');
+      nav.id = 'siaBatchNav'; nav.className = 'sia-batch-nav'; nav.hidden = true;
+      nav.innerHTML = '<button type="button" data-step="-1" title="Mission précédente">◀</button><select title="Mission du lot"></select><button type="button" data-step="1" title="Mission suivante">▶</button>';
+      const title = line.querySelector('h1');
+      title ? title.after(nav) : line.prepend(nav);
+      const css = document.createElement('style');
+      css.textContent = '.sia-batch-nav{display:inline-flex;align-items:center;gap:4px;margin:0 10px}.sia-batch-nav[hidden]{display:none}.sia-batch-nav select{max-width:320px;padding:3px 6px;border-radius:6px;font:inherit;font-size:13px}.sia-batch-nav button{padding:3px 9px;border-radius:6px;font-size:13px;cursor:pointer}';
+      document.head.append(css);
+      const sel = nav.querySelector('select');
+      const render = () => {
+        const b = loadBatch();
+        nav.hidden = !b;
+        if (!b) return;
+        sel.innerHTML = b.docs.map((d, i) => `<option value="${i}">Mission ${esc(missionId(d) || i + 1)} — ${esc(String(d.yaml?.title || '').slice(0, 48))} (${i + 1}/${b.docs.length})</option>`).join('');
+        sel.value = String(b.index);
+      };
+      const goTo = i => { try { const d = go(i, me); if (d) apply(d); } catch (e) { alert(e.message); } render(); };
+      sel.onchange = () => goTo(+sel.value);
+      nav.addEventListener('click', e => { const st = e.target.closest('[data-step]')?.dataset.step; if (st) goTo((loadBatch()?.index || 0) + +st); });
+      window.addEventListener('sia-mission-batch', render);
+      window.addEventListener('storage', e => { if (e.key === BATCH || e.key === KEY) render(); });
+      channel?.addEventListener('message', () => setTimeout(render, 0));
+      render();
+    };
+    if (document.querySelector('body>header .repo-header-line1')) mount();
+    else window.addEventListener('repository-nav-ready', () => setTimeout(mount, 0), { once: true });
+    setTimeout(mount, 1500); // secours : en-tête sans bandeau commun
+  }
+  /** Échappe un texte pour HTML. */
+  const esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
   // Rappel à chaque modification faite par une AUTRE page (ou un autre onglet).
   function subscribe(me, cb) {
     /** Transmet le document courant à l'abonné s'il vient d'une autre page. */
@@ -364,6 +483,12 @@
     save,
     subscribe,
     fromTexts,
+    fromTextsBatch,
+    splitBundle,
+    importTexts,
+    loadBatch,
+    go,
+    mountNav,
     parseMarkdown,
     extractMdMetadata,
     mergeYaml
