@@ -147,7 +147,7 @@
       de = profile.descent || {};
     const tasRef = num(cr.tasKt),
       ffRef = num(cr.fuelFlowPerHour);
-    if (!(tasRef > 0) || !(ffRef > 0)) throw Error(tl('Profil incomplet : TAS et fuel flow de croisière nécessaires.', 'Incomplete profile: cruise TAS and fuel flow required.', 'Profil unvollständig: Reiseflug-TAS und -Verbrauch erforderlich.', 'Perfil incompleto: se requieren TAS y flujo de crucero.'));
+    if (!(tasRef > 0) || !(ffRef > 0)) throw Object.assign(Error(tl('Profil incomplet : TAS et fuel flow de croisière nécessaires.', 'Incomplete profile: cruise TAS and fuel flow required.', 'Profil unvollständig: Reiseflug-TAS und -Verbrauch erforderlich.', 'Perfil incompleto: se requieren TAS y flujo de crucero.')), { fields: [!(tasRef > 0) && 'cruise.tasKt', !(ffRef > 0) && 'cruise.fuelFlowPerHour'].filter(Boolean) }); // champs manquants (liens de la page)
     // Fiche EUROCONTROL APD du type (AircraftDB/aircraft_perf.js), si fournie : plafond pratique (FL) et Mach de
     // croisière — références quand le profil ne donne ni plafond ni altitude de référence.
     const apdCr = apd?.cruise || {},

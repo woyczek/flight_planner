@@ -10,6 +10,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Planificateur** : TAS (tirets de la couleur de chaque loi) sur la courbe « Vitesses de montée — Badin et TAS » ;
+  cadran **carburant** (carburant du trajet au niveau courant, kg / lbs, durée) à trois lectures — loi réglée,
+  économique, profil — changées d'un clic, dans la couleur de la courbe ; liens des messages d'erreur vers les
+  champs à renseigner (profil incomplet, limites, altitude de référence estimée).
 - **Studio** : case « ZIP » aussi sur la carte de contrôle et sur les aperçus ; bouton « Générer les cartes et le
   ZIP » doublé dans une barre fixe en bas de page ; bloc **Créer une mission avec ChatGPT** (type, théâtre, série,
   équipes DEFA en vol 1 à 5, ou aléatoire) : prompt copié et ChatGPT ouvert dans un nouvel onglet.

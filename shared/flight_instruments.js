@@ -9,7 +9,9 @@
        repère violet = consigne du curseur ; aiguille bleue semi-transparente = TAS ; arc violet = plage du curseur ;
      - vario : aiguille = vario obtenu à cette altitude (zéro à 9 h, montée vers le haut), repère = vario visé
        (« PG » : plein gaz) ;
-     - altimètre : grande aiguille = centaines de pieds, petite = milliers ; fenêtre numérique (ft, FL).
+     - altimètre : grande aiguille = centaines de pieds, petite = milliers ; fenêtre numérique (ft, FL) ;
+     - carburant : carburant du trajet entier volé à cette altitude (unité d'affichage kg / lbs) et sa durée ;
+       bouton à trois états : loi réglée (violet) → croisière économique (vert) → croisière du profil (bleu).
    Badin et vario se règlent aussi sur l'instrument : glisser verticalement ou molette (mêmes pas que les
    curseurs : 5 kt, 50 ft/min) — FlightInstruments.onSet(clé, valeur) renvoie la valeur à la vue.
 
@@ -36,6 +38,9 @@
   const niceStep = (span, n) => { const raw = span / n, p = 10 ** Math.floor(Math.log10(raw)), k = raw / p; return (k <= 1 ? 1 : k <= 2 ? 2 : k <= 5 ? 5 : 10) * p; };
 
   let host = null, faces = {}, state = null, scale = {};
+  // lecture de la jauge carburant (mémorisée dans le navigateur) : loi réglée, croisière économique, profil
+  const FUEL_MODES = ["man", "eco", "prof"];
+  let fuelMode = (() => { try { const v = localStorage.getItem("flightPerfFuelGauge"); return FUEL_MODES.includes(v) ? v : "man"; } catch { return "man"; } })();
 
   /** Crée une fois le bandeau d'instruments dans l'en-tête (avant la langue et le menu ☰). */
   function mount() {
@@ -47,17 +52,27 @@
     host = document.createElement("div");
     host.className = "fp-instruments";
     host.hidden = true;
-    host.innerHTML = ["ias", "vs", "alt"].map(k => `<figure class="fp-gauge" data-k="${k}"><svg viewBox="0 0 100 100" aria-hidden="true"></svg><figcaption></figcaption></figure>`).join("");
+    host.innerHTML = ["ias", "vs", "alt", "fuel"].map(k => `<figure class="fp-gauge" data-k="${k}"><svg viewBox="0 0 100 100" aria-hidden="true"></svg><figcaption></figcaption>${k === "fuel" ? '<button type="button" class="fp-fuel-mode"></button>' : ""}</figure>`).join("");
     if (col) col.append(host);
     else {
       const tools = line.querySelector(".repo-header-tools");
       tools ? line.insertBefore(host, tools) : line.append(host);
     }
-    host.querySelectorAll(".fp-gauge").forEach(f => { faces[f.dataset.k] = f; if (f.dataset.k !== "alt") drag(f); });
+    host.querySelectorAll(".fp-gauge").forEach(f => { faces[f.dataset.k] = f; if (f.dataset.k === "ias" || f.dataset.k === "vs") drag(f); });
+    // bouton à trois états de la jauge carburant : loi réglée → économique → profil (couleur de la série)
+    // (clic sur le bouton ou sur le cadran lui-même)
+    const cycleFuel = () => {
+      fuelMode = FUEL_MODES[(FUEL_MODES.indexOf(fuelMode) + 1) % FUEL_MODES.length];
+      try { localStorage.setItem("flightPerfFuelGauge", fuelMode); } catch {}
+      if (state) drawFuel(state);
+    };
+    host.querySelector(".fp-fuel-mode").onclick = cycleFuel;
+    faces.fuel.querySelector("svg").addEventListener("click", cycleFuel);
     const css = document.createElement("style");
     css.textContent = `.fp-instruments{display:flex;gap:6px;align-items:center;margin:2px 6px}.fp-instruments[hidden]{display:none}
 .fp-gauge{margin:0;display:flex;flex-direction:column;align-items:center;gap:1px}.fp-gauge svg{width:62px;height:62px;display:block;border-radius:50%;box-shadow:0 0 0 2px #2b3440,0 2px 6px #0008;background:#0b0e12}
-.fp-gauge[data-k="ias"] svg,.fp-gauge[data-k="vs"] svg{cursor:ns-resize;touch-action:none}
+.fp-gauge[data-k="ias"] svg,.fp-gauge[data-k="vs"] svg{cursor:ns-resize;touch-action:none}.fp-gauge[data-k="fuel"] svg{cursor:pointer}
+.fp-fuel-mode{margin-top:3px;padding:2px 10px;border-radius:999px;border:1px solid currentColor;background:transparent;font:600 10.5px/1.3 Inter,system-ui,Segoe UI,Arial,sans-serif;cursor:pointer}
 .fp-gauge figcaption{font:10px/1.15 Inter,system-ui,Segoe UI,Arial,sans-serif;text-align:center;white-space:nowrap;opacity:.95;font-variant-numeric:tabular-nums}
 @media (max-width:720px){.fp-gauge svg{width:46px;height:46px}.fp-gauge figcaption{font-size:9px}}`;
     document.head.append(css);
@@ -130,6 +145,30 @@
     faces.alt.querySelector("figcaption").textContent = `${tl("Altimètre", "Altimeter", "Höhenmesser", "Altímetro")} FL${String(Math.round(h / 100)).padStart(3, "0")}`;
   }
 
+  /** Carburant : carburant du trajet entier volé à l'altitude courante (montée à la loi réglée, croisière,
+   *  descente), dans l'unité d'affichage ; échelle 0 → trajet le plus coûteux des courbes. */
+  function drawFuel(s) {
+    const fig = faces.fuel, x = s.fuelBy?.[fuelMode], col = s.fuelColors?.[fuelMode] || "#f0b86e",
+      name = { man: tl("loi réglée", "set law", "eingestelltes Gesetz", "ley ajustada"), eco: tl("éco", "eco", "Spar", "eco"), prof: tl("profil", "profile", "Profil", "perfil") }[fuelMode];
+    const btn = fig.querySelector(".fp-fuel-mode");
+    btn.textContent = name; btn.style.color = col;
+    btn.title = tl("Lecture : loi réglée (curseurs) → croisière économique → croisière du profil ; clic pour changer", "Reading: set law (sliders) → economy cruise → profile cruise; click to change", "Anzeige: eingestelltes Gesetz (Regler) → Sparflug → Profil-Reiseflug; Klick zum Wechseln", "Lectura: ley ajustada (cursores) → crucero económico → crucero del perfil; clic para cambiar");
+    if (!x) { fig.querySelector("svg").innerHTML = hub; fig.querySelector("figcaption").textContent = `${tl("Carburant trajet", "Trip fuel", "Streckenkraftstoff", "Combustible del trayecto")} —`; fig.hidden = !s.fuelBy; return; }
+    fig.hidden = false;
+    s = { ...s, fuel: x.fuel, fuelMin: x.minutes };
+    const max = Math.max(1, s.fuelMax || s.fuel) * 1.1, st = niceStep(max, 5), top = Math.ceil(max / st) * st, A = v => -120 + 240 * Math.min(1, Math.max(0, v / top));
+    let g = `<path d="${arc(A(0), A(top), 44)}" stroke="#2b3440" stroke-width="3" fill="none"/><path d="${arc(A(0), A(s.fuel), 44)}" stroke="${col}" stroke-width="3" fill="none" opacity=".85"/>`;
+    for (let v = 0; v <= top + 1e-6; v += st / 2) g += tick(A(v), (v / st) % 1 ? 42 : 39, 46, (v / st) % 1 ? .7 : 1.2);
+    const k = top >= 10000 ? 1000 : 1;
+    for (let v = 0; v <= top + 1e-6; v += st) g += num(A(v), 31, nf(v / k, k > 1 && st < 1000 ? 1 : 0), 7.5);
+    g += `<text x="50" y="62" font-size="6" text-anchor="middle" fill="#9ba8b5">${k > 1 ? "×1000 " : ""}${String(s.fuelUnit || "").toUpperCase()}</text>`;
+    g += `<rect x="29" y="68" width="42" height="11" rx="1.5" fill="#000" stroke="#2b3440"/><text x="50" y="76.5" font-size="7.5" text-anchor="middle" fill="${col}" font-family="ui-monospace,Consolas,monospace">${nf(s.fuel)}</text>`;
+    g += needle(A(s.fuel), 40, 2.2, "#fff") + hub;
+    fig.querySelector("svg").innerHTML = g;
+    const h = Number.isFinite(s.fuelMin) ? ` · ${Math.floor(s.fuelMin / 60)} h ${String(Math.round(s.fuelMin % 60)).padStart(2, "0")}` : "";
+    fig.querySelector("figcaption").textContent = `${tl("Carburant trajet", "Trip fuel", "Streckenkraftstoff", "Combustible del trayecto")} ${nf(s.fuel)} ${s.fuelUnit || ""}${h}`;
+  }
+
   const api = {
     /** Rappel de réglage depuis un cadran : (clé 'ias' | 'vs', valeur) ; défini par la vue. */
     onSet: null,
@@ -142,7 +181,7 @@
       // échelles fixes pour une plage de curseurs donnée (pas de « saut » d'échelle en survolant les courbes)
       scale.ias = Math.ceil(Math.max(s.iasMax * 1.15, (s.tasMax || 0) * 1.05) / 50) * 50;
       scale.vs = [500, 1000, 2000, 3000, 4000, 6000, 8000].find(v => v >= s.vsMax * 1.05) || Math.ceil(s.vsMax / 2000) * 2000;
-      drawIas(s); drawVs(s); drawAlt(s);
+      drawIas(s); drawVs(s); drawAlt(s); drawFuel(s);
       host.title = tl("Instruments de la loi réglée à l’altitude courante (survolée, épinglée, sinon niveau du plan). Badin et vario : glisser ou molette pour régler.",
         "Instruments of the set law at the current altitude (hovered, pinned, otherwise plan level). IAS and V/S: drag or scroll to adjust.",
         "Instrumente des eingestellten Gesetzes auf der aktuellen Höhe (überfahren, angeheftet, sonst Planhöhe). IAS und Steigrate: ziehen oder Mausrad zum Einstellen.",

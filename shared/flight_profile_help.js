@@ -56,5 +56,43 @@
       field.title = text; el.title = text; field.classList.add("has-help");
     });
   }
-  window.FlightProfileHelp = { texts: H, annotate };
+  // ---- liens vers un champ (messages d'erreur, limites) ---------------------------------------------------------
+  // Cible : chemin d'un champ du profil (« cruise.tasKt », attribut data-profile-path de l'éditeur) ou « #id » d'un
+  // champ de la page (#fl, #dist). Un clic déplie l'éditeur de profil s'il est replié, amène le champ au centre de
+  // l'écran, lui donne le focus et le fait clignoter.
+  const css = document.createElement("style");
+  css.textContent = ".field-link{color:inherit;text-decoration:underline dotted;text-underline-offset:2px;cursor:pointer}.field-link:hover{text-decoration-style:solid}.field-flash{outline:2px solid #f0b86e!important;outline-offset:2px;transition:outline-color .3s}";
+  document.head.append(css);
+  const esc = v => String(v ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
+  /** Élément d'une cible (chemin du profil ou #id) ; null s'il n'existe pas. */
+  const find = t => t.startsWith("#") ? document.querySelector(t) : document.querySelector(`[data-profile-path="${CSS.escape(t)}"]`);
+  /** Libellé affiché d'un champ (texte de son <label>), sinon le chemin. */
+  function labelOf(t) {
+    const el = find(t), lab = el?.closest(".field")?.querySelector("label") || (el?.id && document.querySelector(`label[for="${el.id}"]`));
+    return (lab?.textContent || t).trim();
+  }
+  /** Lien HTML vers un champ (label : texte du lien, par défaut le libellé du champ). */
+  const link = (t, label) => `<a href="#" class="field-link" data-goto-field="${esc(t)}" title="${esc(labelOf(t))}">${label ?? esc(labelOf(t))}</a>`;
+  /** Amène le champ t à l'écran (éditeur de profil déplié au besoin), focus et clignotement. */
+  function goto(t) {
+    let el = find(t);
+    if (el && el.offsetParent === null) {
+      const toggle = document.getElementById("toggleProfileEditor");
+      if (toggle && el.closest("#profileEditor, [data-block-id='profile-data']")) toggle.click();
+      el = find(t);
+    }
+    if (!el) return false;
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    setTimeout(() => el.focus({ preventScroll: true }), 250);
+    el.classList.add("field-flash");
+    setTimeout(() => el.classList.remove("field-flash"), 2200);
+    return true;
+  }
+  document.addEventListener("click", e => {
+    const a = e.target.closest("[data-goto-field]");
+    if (!a) return;
+    e.preventDefault();
+    goto(a.dataset.gotoField);
+  });
+  window.FlightProfileHelp = { texts: H, annotate, link, goto, labelOf };
 })();

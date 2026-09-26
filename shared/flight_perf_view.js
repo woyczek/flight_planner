@@ -194,7 +194,13 @@
       const h = hover ?? sync.pinned ?? (S.c?.FL > 0 ? S.c.FL * 100 : 0), above = h > m.ceiling, hh = Math.min(h, m.ceiling),
         p = m.manualPoint(hh, manualLaw(m)), a = FlightPerfModel.isa(hh).a;
       const tasMax = Math.max(p.tas, m.manualPoint(m.ceiling, manualLaw(m)).tas || 0, m.cruise(Math.min((S.c?.FL || 0) * 100, m.ceiling), "normal")?.tas || 0);
-      FI.update({ h, ias: p.ias, iasSet: q.ias, iasMin: q.iMin, iasMax: q.iMax, tas: p.tas, tasMax, mach: p.tas / a, roc: above ? 0 : p.roc, vsSet: q.vs, vsMax: q.vMax, full: q.full, above });
+      // carburant du trajet entier volé à ce niveau (montée à la loi réglée) ; échelle : trajet le plus coûteux des courbes
+      // trois lectures (bouton de la jauge) : loi réglée (montée des curseurs), croisière économique, profil
+      const D = S.c?.D, wc = S.c?.wc || 0, tr = r => r?.ok ? { fuel: cv(r.fuel), minutes: r.minutes } : null,
+        fuelBy = D > 0 ? { man: tr(m.trip(hh, D, wc, "normal", manualLaw(m))), eco: tr(m.trip(hh, D, wc, "eco")), prof: tr(m.trip(hh, D, wc, "normal")) } : null,
+        fuelMax = Math.max(...[...(S.cache?.norm || []), ...(S.cache?.eco || [])].filter(r => r?.ok).map(r => cv(r.fuel)), ...Object.values(fuelBy || {}).filter(Boolean).map(x => x.fuel), 0);
+      FI.update({ h, ias: p.ias, iasSet: q.ias, iasMin: q.iMin, iasMax: q.iMax, tas: p.tas, tasMax, mach: p.tas / a,
+        fuelBy, fuelMax, fuelUnit: fuelUnit(), fuelColors: { man: COL.man, eco: COL.eco, prof: COL.prof }, roc: above ? 0 : p.roc, vsSet: q.vs, vsMax: q.vMax, full: q.full, above });
     } catch (e) { console.error("Instruments :", e); FI.update(null); }
   }
   /** Hauteur des curseurs = hauteur de la zone tracée (marges T / B du viewBox, en data-t / data-b du SVG). */
@@ -218,9 +224,11 @@
   // Limites du calcul et causes d'un « inatteignable »
   // ---------------------------------------------------------------------------------------------------
 
-  const F_CEIL = () => tl("champ « Plafond max (ft) » du profil (Croisière)", "profile field “Maximum ceiling (ft)” (Cruise)", "Profilfeld „Maximale Gipfelhöhe (ft)“ (Reiseflug)", "campo «Techo máximo (ft)» del perfil (Crucero)"),
-    F_FL = () => tl("champ « Niveau (FL) »", "“Level (FL)” field", "Feld „Flugfläche (FL)“", "campo «Nivel (FL)»"),
-    F_DIST = () => tl("champ « Distance (NM) »", "“Distance (NM)” field", "Feld „Distanz (NM)“", "campo «Distancia (NM)»");
+  // Mentions de champs : liens qui amènent au champ (FlightProfileHelp.link ; texte seul si le module manque).
+  const fieldLink = (target, text) => window.FlightProfileHelp?.link ? FlightProfileHelp.link(target, text) : text;
+  const F_CEIL = () => fieldLink("cruise.ceilingFt", tl("champ « Plafond max (ft) » du profil (Croisière)", "profile field “Maximum ceiling (ft)” (Cruise)", "Profilfeld „Maximale Gipfelhöhe (ft)“ (Reiseflug)", "campo «Techo máximo (ft)» del perfil (Crucero)")),
+    F_FL = () => fieldLink("#fl", tl("champ « Niveau (FL) »", "“Level (FL)” field", "Feld „Flugfläche (FL)“", "campo «Nivel (FL)»")),
+    F_DIST = () => fieldLink("#dist", tl("champ « Distance (NM) »", "“Distance (NM)” field", "Feld „Distanz (NM)“", "campo «Distancia (NM)»"));
 
   /** Distance minimale (NM) pour monter à h avec la loi law ('profile' | 'vy' | 'time' | 'fuel' | fonction) puis
    *  redescendre ; null si le niveau n'est pas tenable. */
@@ -318,13 +326,15 @@
   /** Point d'entrée (calculate) : modèle du profil actif, puis toute la vue. c : voir l'en-tête du fichier. */
   function renderAltitudeOptimum(c) {
     setupFrames();
-    const stop = msg => {
-      S.m = null; $("optChart").hidden = true; $("climbBlock").hidden = true; $("optEmpty").textContent = msg; $("optEmpty").hidden = false;
+    const stop = (msg, fields = []) => {
+      S.m = null; $("optChart").hidden = true; $("climbBlock").hidden = true; $("optEmpty").hidden = false;
+      // champs manquants : liens vers l'éditeur de profil
+      $("optEmpty").innerHTML = typo(escXml(msg) + (fields.length ? ` — ${tl("à renseigner", "to fill in", "auszufüllen", "por rellenar")} : ${fields.map(f => fieldLink(f)).join(", ")}` : ""));
       ["panelOpt", "panelClimb", "panelSpeed", "panelTas", "panelCompare", "panelTable"].forEach(id => { if ($(id)) $(id).innerHTML = ""; });
       window.altitudeOptimum = null; renderPinned(); syncSliders(); StickyFrame.refresh();
     };
     if (!(c.D > 0)) return stop(tl("Distance nulle : renseigne une distance pour tracer les courbes.", "Zero distance: enter a distance to draw the curves.", "Entfernung null: eine Entfernung eingeben, um die Kurven zu zeichnen.", "Distancia nula: introduzca una distancia para trazar las curvas."));
-    let m; try { m = perfModel(); } catch (e) { return stop(e.message); }
+    let m; try { m = perfModel(); } catch (e) { return stop(e.message, e.fields || []); }
     S.m = m; S.c = c; S.cache = null; sync.reset(); ensureManual(m);
     renderAll(m, c, stop);
     window.StickyFrame?.resetGrow?.(); // nouveau calcul : rangées remises à la hauteur de leurs panneaux
@@ -345,7 +355,7 @@
       drawAltitude(m, c, K);
     });
     else {
-      $("optChart").hidden = true; $("optEmpty").textContent = noLevelTxt(m, c);
+      $("optChart").hidden = true; $("optEmpty").innerHTML = typo(noLevelTxt(m, c));
       guard("panelOpt", "optChart", tl("Altitude optimale", "Optimum altitude", "Optimale Flughöhe", "Altitud óptima"), () =>
         panel("panelOpt", tl("Altitude optimale", "Optimum altitude", "Optimale Flughöhe", "Altitud óptima"), `<p class="perf-warn">⚠ ${noLevelTxt(m, c)}</p>`, `<details class="limits" open><summary>${tl("Limites", "Limits", "Grenzen", "Límites")}</summary>${limitsHtml(m, c, K.hs)}</details>`));
     }
@@ -482,7 +492,7 @@
       `<div id="optReadout" class="readout"></div>`,
       `<details class="limits"${limitsWarn(m, c) ? " open" : ""}><summary>${tl("Limites", "Limits", "Grenzen", "Límites")}</summary>${limitsHtml(m, c, hs)}</details>`,
       reading(tl("chaque point est le trajet entier (montée, croisière, descente) volé à ce niveau : plus la courbe est haute, moins on consomme par mille. Pointillés : fourchette de vent inconnu. Clic : épingler un niveau, reporté sur les courbes de montée.", "each point is the whole trip (climb, cruise, descent) flown at that level: the higher the curve, the less fuel per mile. Dashed: unknown-wind range. Click: pin a level, carried over to the climb curves.", "jeder Punkt ist die gesamte Strecke (Steig-, Reise-, Sinkflug) auf dieser Höhe: je höher die Kurve, desto weniger Kraftstoff pro Meile. Gestrichelt: Bereich bei unbekanntem Wind. Klick: Höhe anheften, auf die Steigkurven übertragen.", "cada punto es el trayecto completo (ascenso, crucero, descenso) a ese nivel: cuanto más alta la curva, menos combustible por milla. Punteado: horquilla de viento desconocido. Clic: fijar un nivel, trasladado a las curvas de ascenso.")),
-      (m.estimatedRef || m.notes.length) ? `<p class="mut">${[m.estimatedRef ? `${tl("Point de croisière", "Cruise reference", "Reiseflug-Bezug", "Referencia de crucero")} : ${escXml(m.refSrc)}` : "", ...m.notes.map(escXml)].filter(Boolean).join(" · ")}</p>` : "",
+      (m.estimatedRef || m.notes.length) ? `<p class="mut">${[m.estimatedRef ? `${tl("Point de croisière", "Cruise reference", "Reiseflug-Bezug", "Referencia de crucero")} : ${escXml(m.refSrc)} (${fieldLink("cruise.refAltFt")}, ${fieldLink("cruise.ceilingFt")})` : "", ...m.notes.map(escXml)].filter(Boolean).join(" · ")}</p>` : "",
       `<details><summary>${tl("Hypothèses du modèle", "Model assumptions", "Modellannahmen", "Hipótesis del modelo")}</summary><p class="mut">${assumptions(m, c)}</p></details>`);
   }
   /** Vrai si les limites contiennent un avertissement (le bloc Limites s'ouvre alors de lui-même). */
@@ -553,18 +563,20 @@
       const sv = $("climbSpeedChart"), W = 540, H = 200, Lm = 52, R = 12, T = 12, B = 30;
       const sch = (K.sch ||= pts.filter(p => p.h <= hTarget || hTarget < step).map(p => ({ h: p.h, vy: m.climbOpt(p.h, "vy", kC), t: m.climbOpt(p.h, "time", kC), f: m.climbOpt(p.h, "fuel", kC), vx: p.vxIas, pr: active.climb?.iasKt ? +active.climb.iasKt : null })))
         .map(r => ({ ...r, mn: m.manualPoint(r.h, man) }));
-      const xm = Math.max(hTarget, step), all = sch.flatMap(r => [r.vy?.ias, r.t?.ias, r.f?.ias, r.pr, r.mn.ias, r.vx]).filter(Number.isFinite);
+      // Badin (traits pleins) et TAS (pointillés, même couleur) de chaque loi
+      const xm = Math.max(hTarget, step), all = sch.flatMap(r => [r.vy?.ias, r.t?.ias, r.f?.ias, r.pr, r.mn.ias, r.vx, r.vy?.tas, r.t?.tas, r.f?.tas, r.mn.tas]).filter(Number.isFinite);
       const vmin = Math.min(...all) * .92, vmax = Math.max(...all) * 1.06, X = h => Lm + h / xm * (W - Lm - R), Y = v => T + (1 - (v - vmin) / (vmax - vmin || 1)) * (H - T - B);
       let g = "";
       for (let i = 0; i <= 4; i++) { const v = vmin + (vmax - vmin) * i / 4; g += `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${Lm - 5}" y="${Y(v) + 4}" text-anchor="end">${fmt(v, 0)}</text>`; }
       const tk = xm > 30000 ? 10000 : xm > 12000 ? 5000 : 2000;
       for (let h = 0; h <= xm; h += tk) g += `<text x="${X(h)}" y="${H - B + 14}" text-anchor="middle">${flTxt(h)}</text>`;
-      const pth = (f, cls) => { const d = sch.map(r => [r.h, f(r)]).filter(x => Number.isFinite(x[1])).map((x, i) => `${i ? "L" : "M"}${X(x[0]).toFixed(1)},${Y(x[1]).toFixed(1)}`).join(""); return d ? `<path class="${cls}" d="${d}"/>` : ""; };
+      const pth = (f, cls, col) => { const d = sch.map(r => [r.h, f(r)]).filter(x => Number.isFinite(x[1])).map((x, i) => `${i ? "L" : "M"}${X(x[0]).toFixed(1)},${Y(x[1]).toFixed(1)}`).join(""); return d ? `<path class="${cls}" d="${d}"${col ? ` style="stroke:${col}"` : ""}/>` : ""; };
       g += `<line class="axis" x1="${Lm}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/>${pth(r => r.pr, "band")}${pth(r => r.vx, "curve-vx")}${pth(r => r.vy?.ias, "curve")}${pth(r => r.t?.ias, "curve-fuel")}${pth(r => r.f?.ias, "curve-eco")}${pth(r => r.mn.ias, "curve-man")}`
+        + `${pth(r => r.vy?.tas, "tas-line", COL.prof)}${pth(r => r.t?.tas, "tas-line", COL.fast)}${pth(r => r.f?.tas, "tas-line", COL.eco)}${pth(r => r.mn.tas, "tas-line", COL.man)}`
         + `<text x="${(Lm + W - R) / 2}" y="${H - 3}" text-anchor="middle">${tl("Altitude", "Altitude", "Höhe", "Altitud")}</text><text x="11" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(-90 11 ${(T + H - B) / 2})">kt</text>`
         + `<line id="climbSpeedCursor" class="cursor" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/><rect id="climbSpeedHit" x="${Lm}" y="${T}" width="${W - Lm - R}" height="${H - T - B}" fill="transparent"/>`;
       sv.innerHTML = typo(g); sv.hidden = false; sv.dataset.t = T; sv.dataset.b = B;
-      const one = (x, col, name) => `<dt>${lab(name, col)}</dt><dd>${x ? `${fmt(x.ias, 0)} kt · ${fmt(x.roc, 0)} ft/min · ${showFuel(x.ff)} ${unit}/h${m.kind !== "jet" ? ` · ${fmt(x.frac * 100, 0)} %` : ""}` : "—"}</dd>`;
+      const one = (x, col, name) => `<dt>${lab(name, col)}</dt><dd>${x ? `${fmt(x.ias, 0)} kt (TAS ${fmt(x.tas, 0)}) · ${fmt(x.roc, 0)} ft/min · ${showFuel(x.ff)} ${unit}/h${m.kind !== "jet" ? ` · ${fmt(x.frac * 100, 0)} %` : ""}` : "—"}</dd>`;
       sync.add({ svg: sv, hit: $("climbSpeedHit"), W, L: Lm, R, T, bottom: H - B, xmax: xm,
         show: h => {
           const r = sch.reduce((a, x) => Math.abs(x.h - h) < Math.abs(a.h - h) ? x : a, sch[0]); if (!r) return; cursorAt("climbSpeedCursor", X(r.h));
@@ -575,7 +587,7 @@
       panel("panelSpeed", tl("Vitesses de montée", "Climb speeds", "Steiggeschwindigkeiten", "Velocidades de ascenso"),
         `<p>${tl("Badin à tenir, à mi-montée", "IAS to fly, at mid-climb", "Zu fliegende IAS, halber Steigflug", "IAS a mantener, a media subida")} (${flTxt(hMidC)}) :</p><dl class="kvp">${law(mv, COL.prof, def("Vy"))}${law(mt, COL.fast, L.fast())}${law(mf, COL.eco, L.fuelLaw())}${law(m.manualPoint(hMidC, man), COL.man, L.man())}<dt>${def("Vx")} (${tl("pente max", "max. angle", "max. Steigwinkel", "ángulo máx.")})</dt><dd>${fmt(m.climbPoint(hMidC).vxIas, 0)} kt</dd></dl>`,
         `<div id="climbSpeedReadout" class="readout"></div>`,
-        reading(tl(`trois objectifs incompatibles : ${def("Vy")} gagne l’altitude au plus vite ; la loi rapide arrive au plus tôt (plus vite, moins de vario) ; la loi économique dépense le moins. Pointillés : ${def("climbSpd", L.climbSpd())} ; pointillés fins bleus : ${def("Vx")} (obstacle à franchir). Les curseurs violets (vario à gauche, Badin à droite) règlent votre propre loi.`, `three incompatible goals: ${def("Vy")} gains altitude fastest; the fast law arrives soonest (faster, less rate); the economy law burns least. Dashed: ${def("climbSpd", L.climbSpd())}; thin blue dots: ${def("Vx")} (obstacle clearance). The violet sliders (rate left, IAS right) set your own law.`, `drei unvereinbare Ziele: ${def("Vy")} gewinnt am schnellsten Höhe; das schnelle Gesetz kommt am frühesten an (schneller, weniger Steigrate); das sparsame verbraucht am wenigsten. Gestrichelt: ${def("climbSpd", L.climbSpd())}; feine blaue Punkte: ${def("Vx")} (Hindernisfreiheit). Die violetten Regler (Steigrate links, IAS rechts) stellen Ihr eigenes Gesetz ein.`, `tres objetivos incompatibles: ${def("Vy")} gana altitud lo antes posible; la ley rápida llega antes (más rápida, menos régimen); la económica gasta lo mínimo. Punteado: ${def("climbSpd", L.climbSpd())}; puntos azules finos: ${def("Vx")} (franqueo de obstáculos). Los cursores violetas (régimen a la izquierda, IAS a la derecha) ajustan su propia ley.`)));
+        reading(tl(`trois objectifs incompatibles : ${def("Vy")} gagne l’altitude au plus vite ; la loi rapide arrive au plus tôt (plus vite, moins de vario) ; la loi économique dépense le moins. Pointillés : ${def("climbSpd", L.climbSpd())} ; pointillés fins bleus : ${def("Vx")} (obstacle à franchir) ; tirets de la couleur de chaque loi : sa TAS (vitesse vraie), qui s’écarte du Badin en montant. Les curseurs violets (vario à gauche, Badin à droite) règlent votre propre loi.`, `three incompatible goals: ${def("Vy")} gains altitude fastest; the fast law arrives soonest (faster, less rate); the economy law burns least. Dashed: ${def("climbSpd", L.climbSpd())}; thin blue dots: ${def("Vx")} (obstacle clearance). The violet sliders (rate left, IAS right) set your own law.`, `drei unvereinbare Ziele: ${def("Vy")} gewinnt am schnellsten Höhe; das schnelle Gesetz kommt am frühesten an (schneller, weniger Steigrate); das sparsame verbraucht am wenigsten. Gestrichelt: ${def("climbSpd", L.climbSpd())}; feine blaue Punkte: ${def("Vx")} (Hindernisfreiheit). Die violetten Regler (Steigrate links, IAS rechts) stellen Ihr eigenes Gesetz ein.`, `tres objetivos incompatibles: ${def("Vy")} gana altitud lo antes posible; la ley rápida llega antes (más rápida, menos régimen); la económica gasta lo mínimo. Punteado: ${def("climbSpd", L.climbSpd())}; puntos azules finos: ${def("Vx")} (franqueo de obstáculos). Los cursores violetas (régimen a la izquierda, IAS a la derecha) ajustan su propia ley.`)));
     });
 
     // --- comparaison des lois : montée au niveau du plan et trajet entier ----------------------------------

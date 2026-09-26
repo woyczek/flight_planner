@@ -107,7 +107,13 @@ curseur ; TAS et Mach en clair), **vario** (zéro à 9 h, montée vers le haut ;
 vario visé, « PG » = plein gaz) et **altimètre** (grande aiguille : centaines de pieds ; petite : milliers ;
 fenêtre numérique et FL). Altitude courante : celle survolée sur une courbe, sinon le niveau épinglé, sinon le
 niveau du plan. Badin et vario se règlent aussi sur l'instrument (glisser verticalement ou molette, pas de 5 kt
-et 50 ft/min), curseurs et courbes suivent.
+et 50 ft/min), curseurs et courbes suivent. Aiguille bleue semi-transparente du Badin : la TAS. Quatrième cadran,
+**carburant** : carburant du trajet entier volé à l'altitude courante (kg ou lbs selon l'unité affichée) et sa
+durée ; un clic sur le cadran ou sur son bouton change la lecture — loi réglée (violet), croisière économique
+(vert), croisière du profil (bleu) — dans la couleur de la courbe correspondante.
+
+**Liens vers les champs.** Les messages qui citent un champ (profil incomplet, limites, altitude de référence
+estimée) en font un lien : il déplie l'éditeur de profil au besoin, amène le champ à l'écran et le met en évidence.
 
 **Croisière limitée par la poussée.** Au-dessus du niveau où le Mach du profil n'est plus tenable,
 un réacteur vole à la plus grande vitesse permise par 92 % de la poussée (« poussée max. ») ; le
