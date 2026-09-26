@@ -41,6 +41,12 @@ format ci-dessous est un contrat, pas une suggestion.
   sous-types, terrains, relief / mer / ville, durée, météo évoquée, contraintes, nombre d'acteurs.
 - Lieux réels uniquement, coordonnées plausibles ET vérifiables (§ 5). En cas de doute sur un lieu,
   choisis-en un autre plus connu plutôt que d'inventer.
+- Ton : le titre et la description (summary, detailed_description) comportent chacun un trait d'humour
+  ou une situation décalée — le randonneur qui « arrive dans 5 min » depuis trois heures, le colis urgent
+  qui s'avère être le gâteau d'anniversaire du colonel, le cargo qui refuse obstinément de répondre à la
+  VHF… L'humour vient de la situation ou des personnages, jamais au détriment de la victime, de la
+  sécurité ou du réalisme opérationnel : la mission reste crédible et exécutable. Un trait par texte
+  suffit ; varier les ressorts d'une mission à l'autre.
 - Langue : français. Pas de texte hors des fichiers demandés (§ 3), sauf le bloc VALIDATION final.
 
 ────────────────────────────────────────────────────────────────────────────
@@ -393,4 +399,5 @@ liste des corrections faites :
   [ ] cartes obligatoires présentes, filenames avec le bon NN
   [ ] Markdown : titres exacts, mêmes valeurs que le YAML
   [ ] série : sous-types variés, missions réellement différentes, pas de mot « joueur »
+  [ ] titre et description : un trait d'humour ou une situation décalée chacun, sans nuire au réalisme
 ```
