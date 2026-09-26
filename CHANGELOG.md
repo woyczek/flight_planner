@@ -15,6 +15,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   préférence), théâtres d'outre-mer (Antilles, Guyane, Réunion, Mayotte, Nouvelle-Calédonie, Polynésie…),
   signes des coordonnées ; désignateurs Sécurité civile (CL2T, DH8D, BE9L).
   Titre et description avec un trait d'humour ou une situation décalée, sans nuire au réalisme.
+  Textes aérés : résumé en 2 paragraphes, description détaillée en 5 (contexte, transit, action, décisions,
+  retour), blocs YAML littéraux « |- » (« >- » recollait les lignes).
 - **Planificateur — trois colonnes redimensionnables** : saisie et courbes | Résultat | instruments (Badin, vario,
   altimètre, empilés et collés sous l'en-tête) ; poignées entre les colonnes (framework `column_resize.js`,
   double-clic : largeurs par défaut). Correctif : la colonne Résultat s'arrêtait 120 px avant le bord des blocs

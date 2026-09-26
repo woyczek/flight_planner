@@ -98,6 +98,8 @@ Aucun autre fichier (pas d'images, pas de manifeste). Puis le bloc VALIDATION (�
 ────────────────────────────────────────────────────────────────────────────
 4. YAML — SCHÉMA EXACT (helo-xp-mission 1.0)
 ────────────────────────────────────────────────────────────────────────────
+Textes longs (summary, detailed_description) : bloc littéral « |- », paragraphes séparés par UNE ligne
+vide, une idée par paragraphe, 4 phrases au plus par paragraphe. Jamais un seul bloc compact.
 Règles de syntaxe : YAML 1.2 valide, indentation 2 espaces, PAS d'ancres ni d'alias (&id / *id) :
 répéter les valeurs. Textes contenant « : », « # » ou commençant par un caractère spécial entre
 guillemets doubles. id de mission entre guillemets ('41'). Booléens true / false. Nombres sans unité.
@@ -112,12 +114,22 @@ mission:
   type: AAR                    # code de famille (§ 2)
   subtype: TRAINING            # code de sous-type (§ 2)
 title: "AXE CECILE — ravitaillement d'une patrouille Rafale"   # court, sans le numéro
-summary: >-
-  3 à 5 phrases : qui, quoi, où, pourquoi, contrainte principale.
-detailed_description: >-
-  8 à 15 phrases : déroulé du départ au retour (transits, points, rendez-vous, action sur l'objectif,
-  retour), distances et durées estimées, niveaux ou hauteurs de vol, critères de décision,
-  coordination avec les autres acteurs, fin de mission.
+summary: |-                   # bloc LITTÉRAL « |- » (jamais « >- » ni « > », qui recollent les lignes)
+  Paragraphe 1 (2 à 3 phrases) : la situation — qui, où, ce qui se passe.
+
+  Paragraphe 2 (1 à 2 phrases) : ce que doit faire l'équipage et la contrainte principale.
+detailed_description: |-
+  Contexte (2 à 4 phrases) : situation, acteurs, pourquoi maintenant.
+
+  Départ et transit (2 à 4 phrases) : terrain, route, points tournants, niveaux ou hauteurs, distance
+  et durée estimées.
+
+  Action sur l'objectif (3 à 5 phrases) : ce qui se passe à TARGET, aux rendez-vous et dans les zones,
+  coordination avec les autres acteurs.
+
+  Décisions et imprévus (2 à 3 phrases) : critères d'interruption, carburant, météo, plan B.
+
+  Retour et fin de mission (1 à 3 phrases) : retour, déroutement éventuel, ce qui marque la fin.
 aircraft:                      # 1 à 4 aéronefs ; le premier est l'aéronef principal
   - id: AC1
     type: "A332 A330 MRTT Phénix"   # COMMENCE par le désignateur OACI du § 6, puis le nom usuel
@@ -325,11 +337,11 @@ Destination : <destination.name> — <lat>, <lon>
 
 ## Summary
 
-<summary>
+<summary — mêmes paragraphes que le YAML, séparés par une ligne vide>
 
 ## Description détaillée
 
-<detailed_description>
+<detailed_description — mêmes paragraphes que le YAML, séparés par une ligne vide>
 
 ## Équipes engagées
 
@@ -399,5 +411,7 @@ liste des corrections faites :
   [ ] cartes obligatoires présentes, filenames avec le bon NN
   [ ] Markdown : titres exacts, mêmes valeurs que le YAML
   [ ] série : sous-types variés, missions réellement différentes, pas de mot « joueur »
+  [ ] summary : 2 paragraphes ; detailed_description : 5 paragraphes ; séparés par une ligne vide, en « |- »
+      dans le YAML, identiques dans le Markdown
   [ ] titre et description : un trait d'humour ou une situation décalée chacun, sans nuire au réalisme
 ```
