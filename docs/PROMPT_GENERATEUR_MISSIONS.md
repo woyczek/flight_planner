@@ -17,10 +17,13 @@ PARAMÈTRES DE CETTE EXÉCUTION
   TYPE            = aléatoire        (ou un code de famille du § 2, ex. AAR)
   SERIE           = 4                (entier 1 à 9)
   NOMBRE_MISSIONS = 5                (1 à 9)
-  RÉGION          = France métropolitaine et Corse (par défaut)
+  THÉÂTRE         = aléatoire       (métropole, Corse, Antilles, Guyane, Réunion, Mayotte,
+                                     Nouvelle-Calédonie, Polynésie… — voir § 5)
 
 Tu produis une série cohérente de NOMBRE_MISSIONS missions de simulation aérienne de la famille TYPE.
 Si TYPE = aléatoire, choisis UNE famille du § 2 et garde-la pour toute la série.
+Si THÉÂTRE = aléatoire, choisis le théâtre de chaque mission (§ 5) ; varier les théâtres dans la série est
+bienvenu quand la famille s'y prête (unités réellement présentes).
 
 Les fichiers alimentent automatiquement un briefing, des cartes OpenStreetMap, un PDF de mission, une
 coupe verticale, un compte rendu de mission (CR) et des statistiques. Le YAML est la SOURCE DE VÉRITÉ ;
@@ -213,27 +216,39 @@ celles du schéma.
 ────────────────────────────────────────────────────────────────────────────
 5. GÉOGRAPHIE — CONTRE LES ERREURS
 ────────────────────────────────────────────────────────────────────────────
-- Terrains (origin, destination, et tout terrain cité) : format « Nom (OACI) », code OACI à 4 lettres
-  entre parenthèses — le CR en dépend. Utilise de préférence cette table (coordonnées vérifiées) :
-    BA 105 Évreux-Fauville (LFOE)        49.028611, 1.220000
-    BA 115 Orange-Caritat (LFMO)         44.140000, 4.866667
-    BA 118 Mont-de-Marsan (LFBM)         43.911667, -0.507500
-    BA 120 Cazaux (LFBC)                 44.535000, -1.131667
-    BA 123 Orléans-Bricy (LFOJ)          47.987778, 1.760556
-    BA 125 Istres-Le Tubé (LFMI)         43.522778, 4.923889
-    BA 126 Solenzara (LFKS)              41.926389, 9.405278
-    BA 702 Avord (LFOA)                  47.053333, 2.632500
-    BAN Lanvéoc-Poulmic (LFRL)           48.282500, -4.443611
-    Brest Bretagne (LFRB)                48.447911, -4.418540
-    Pau Pyrénées (LFBP)                  43.380000, -0.418611
-    Calvi Sainte-Catherine (LFKC)        42.524444, 8.793056
-    Ajaccio Napoléon Bonaparte (LFKJ)    41.923889, 8.802500
-  Un autre terrain n'est admis que si tu es CERTAIN de son code OACI et de sa position (aérodrome
-  public connu). Ne jamais inventer un code OACI. Un hôpital, une DZ, un point en mer ou un secteur
-  n'est pas un terrain : pas de parenthèses, pas de code.
-- Tous les points : dans la RÉGION (France métropolitaine : lat 41.3 à 51.1, lon −5.2 à 9.6), sauf
-  point en mer explicitement « en mer » (alors réellement en mer, à plus de 5 km de la côte, et le
-  préciser dans role). Un point « sommet » est sur le sommet, un point « port » sur le port.
+- Tu connais les terrains, bases et hôpitaux français et leurs coordonnées : utilise-les, avec les
+  coordonnées du point de référence de l'aérodrome (ARP) ou de l'hélistation. Pas de liste imposée,
+  mais ces règles :
+  • Terrain d'aviation (origin, destination, tout terrain cité) : « Nom (OACI) », code OACI à 4 lettres
+    entre parenthèses — le CR en tire le terrain de départ / d'arrivée. Ne jamais inventer un code : si
+    tu n'es pas certain du code, choisis un autre terrain. Bases militaires sous leur nom d'usage
+    (« BA 123 Orléans-Bricy (LFOJ) », « BAN Lann-Bihoué (LFRH) », « BA 367 Cayenne-Rochambeau (SOCA) »).
+  • Hélistation, hôpital, DZ, point en mer, secteur : pas de parenthèses ni de code (« Hélistation du CHU
+    de Grenoble », « DZ de … »).
+- Terrain de départ selon l'unité (le départ est la base réelle de l'appareil, pas un terrain au hasard) :
+  • Dragon (Sécurité civile, EC45 H145) : la base Dragon du secteur (souvent sur un aérodrome, ex. Dragon 66
+    à Perpignan) ; retour à cette base ou vers l'hôpital de destination.
+  • SAMU / HEMS (EC35, EC45, A139, AS65 civil) : la base SMUR héliportée — hélistation d'un centre hospitalier
+    ou aérodrome proche ; destination : hôpital adapté (CHU, centre de traumatologie, grands brûlés…).
+  • Gendarmerie (EC35, EC45, AS50) : base de la section aérienne ; Marine (NH90, AS65) : BAN ou bâtiment ;
+    Douane (BE20, B350, AS55) : base douanière (aérodrome).
+  • FIRE avec Dash 8 (DH8D), Canadair (CL2T) ou Tracker : départ du pélicandrome d'affectation ou de la base
+    avions de la Sécurité civile (Nîmes-Garons) ; pélicandromes permanents ou saisonniers connus
+    uniquement (Marignane, Cannes, Bastia, Ajaccio, Carcassonne, Bordeaux…). Écopage : plan d'eau réel et
+    autorisé (lac, étang, mer).
+  • Militaire : départ d'un terrain militaire de préférence (BA, BAN, ALAT, base de défense outre-mer) ;
+    arrivée ou départ sur un terrain civil possible (déploiement, transport, entraînement, déroutement).
+- Théâtres : métropole et Corse, et les outre-mer, théâtres d'activité réels : Antilles (Guadeloupe,
+  Martinique, Saint-Martin), Guyane, La Réunion, Mayotte, Nouvelle-Calédonie, Polynésie française,
+  Saint-Pierre-et-Miquelon, Wallis-et-Futuna. Une mission reste dans un seul théâtre (sauf transport
+  stratégique explicite) ; aéronefs et unités présents sur ce théâtre (ex. Guyane : Puma / Fennec / Caracal
+  de l'escadron d'hélicoptères, CN-235 ; Réunion : Dragon 974, Gendarmerie ; Polynésie : Falcon 200,
+  Dauphin / Panther de la Marine). Longitude négative à l'ouest de Greenwich (Antilles, Guyane,
+  Polynésie, Saint-Pierre) ; latitude négative dans l'hémisphère sud (Réunion, Mayotte, Nouvelle-Calédonie,
+  Polynésie, Wallis).
+- Tous les points sont dans le théâtre choisi, sur le bon relief : un point « en mer » réellement en mer
+  (à plus de 2 km de la côte, préciser dans role), un « sommet » sur le sommet, un « port » sur le port,
+  un « lac » sur l'eau.
 - Distances cohérentes : somme des branches ≤ 70 % de l'autonomie de l'aéronef principal
   (hélicoptère : 150 à 400 NM selon le type) ; indiquer distances et durées estimées dans
   detailed_description. Points successifs espacés d'au moins 3 NM.
@@ -253,10 +268,12 @@ Le champ type (aircraft et teams) COMMENCE par l'un de ces désignateurs, suivi 
               TBM9 (TBM 900) · B350 (King Air 350) · BE20 (King Air 200)
   Chasse / surveillance : RFAL (Rafale) · E3CF (E-3F AWACS) · E2 (E-2C / E-2D Hawkeye) · FA50 (Falcon 50) ·
               Q9 (MQ-9 Reaper) · PC21 (PC-21)
+  Sécurité civile (avions) : CL2T (Canadair CL-415) · DH8D (Dash 8 Q400 MR) · BE9L (King Air 90)
   Hélicoptères : EC35 (H135) · EC45 (H145) · H160 (H160) · AS65 (Dauphin / Panther) · AS50 (Écureuil H125) ·
               AS55 (Fennec / Écureuil 2) · AS32 (Super Puma / Cougar) · EC25 (H225M Caracal) · NH90 (NH90 TTH / NFH
               Caïman) · A139 (AW139) · TIGR (Tigre)
-N'utiliser AUCUN autre type. L'aéronef doit être capable de la mission (rayon d'action, charge,
+Un autre appareil (ex. Tracker, Falcon 200, Puma) : écrire son désignateur OACI s'il est certain, puis le nom ;
+le CR ne le reconnaîtra pas automatiquement, à signaler dans notes. L'aéronef doit être capable de la mission (rayon d'action, charge,
 treuil, perche de ravitaillement, capacité de largage…).
 
 ────────────────────────────────────────────────────────────────────────────
@@ -366,8 +383,10 @@ Pour chaque mission, vérifie et corrige avant d'écrire, puis affiche une ligne
 liste des corrections faites :
   [ ] YAML valide, sans ancre ni alias, clés du schéma seulement
   [ ] mission.type et mission.subtype = codes exacts du § 2 ; id = NN en texte
-  [ ] terrains au format « Nom (OACI) » issus de la table ou certains ; aucun code inventé
-  [ ] toutes les coordonnées dans la région, 6 décimales, lieux réels, points en mer réellement en mer
+  [ ] terrains au format « Nom (OACI) », codes certains, aucun code inventé ; hélistations sans code
+  [ ] départ = base réelle de l'unité (Dragon, SMUR, pélicandrome, base militaire…)
+  [ ] toutes les coordonnées dans le théâtre, signes corrects (ouest / sud négatifs), 6 décimales,
+      lieux réels, points en mer réellement en mer
   [ ] aéronefs : désignateur du § 6 en tête du type ; aéronef capable de la mission
   [ ] tous les id cités (centre_ref, route, participants) existent
   [ ] distances totales compatibles avec l'autonomie ; hauteurs et niveaux réalistes
