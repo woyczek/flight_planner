@@ -8,6 +8,7 @@
 // rapports de contraste WCAG affichés (texte ≥ 4,5:1, éléments graphiques ≥ 3:1).
 (() => {
   'use strict';
+  const VER = new URL(document.currentScript?.src || location.href).search;   // version des images (celle de ce script)
   const LANGS = ['fr', 'en', 'de', 'es'];
   const T = {
     sub: ['DEFA Virtual — design, icônes, barre latérale et couleurs, pour toutes les pages de la suite', 'DEFA Virtual — design, icons, side bar and colours, for every page of the suite', 'DEFA Virtual — Design, Symbole, Seitenleiste und Farben für alle Seiten der Suite', 'DEFA Virtual — diseño, iconos, barra lateral y colores, para todas las páginas'],
@@ -15,7 +16,7 @@
     designSub: ['La forme des pages : arrondis, densité, titres, barre latérale. Cabinet, Durci et Aqua ajoutent leurs matières (cuir, bois, laiton, acier, verre) ; les couleurs d’information restent celles du thème.', 'The shape of the pages: corners, density, titles, side bar. Cabinet, Rugged and Aqua add their materials (leather, wood, brass, steel, glass); information colours stay those of the theme.', 'Die Form der Seiten: Ecken, Dichte, Titel, Seitenleiste. Kabinett, Robust und Aqua bringen eigene Materialien (Leder, Holz, Messing, Stahl, Glas); Informationsfarben bleiben die des Themas.', 'La forma de las páginas: esquinas, densidad, títulos, barra lateral. Gabinete, Robusto y Aqua añaden sus materiales (cuero, madera, latón, acero, vidrio); los colores de información siguen siendo los del tema.'],
     icons: ['Icônes', 'Icons', 'Symbole', 'Iconos'],
     iconsSub: ['Épaisseur du trait des icônes, ou pas d’icônes du tout.', 'Stroke width of the icons, or no icons at all.', 'Strichstärke der Symbole oder gar keine Symbole.', 'Grosor del trazo de los iconos, o ningún icono.'],
-    iconSet: { fine: ['Trait fin', 'Thin stroke', 'Dünne Linie', 'Trazo fino'], line: ['Trait normal', 'Normal stroke', 'Normale Linie', 'Trazo normal'], bold: ['Trait épais', 'Bold stroke', 'Dicke Linie', 'Trazo grueso'], matter: ['Matière (relief)', 'Material (relief)', 'Material (Relief)', 'Material (relieve)'], off: ['Aucune icône', 'No icons', 'Keine Symbole', 'Sin iconos'] },
+    iconSet: { auto: ['Selon le design', 'Depending on design', 'Je nach Design', 'Según el diseño'], fine: ['Trait fin', 'Thin stroke', 'Dünne Linie', 'Trazo fino'], line: ['Trait normal', 'Normal stroke', 'Normale Linie', 'Trazo normal'], bold: ['Trait épais', 'Bold stroke', 'Dicke Linie', 'Trazo grueso'], brass: ['Laiton (médaillons)', 'Brass (medallions)', 'Messing (Medaillons)', 'Latón (medallones)'], steel: ['Acier (plaques)', 'Steel (plates)', 'Stahl (Platten)', 'Acero (placas)'], gel: ['Gel (bulles)', 'Gel (bubbles)', 'Gel (Blasen)', 'Gel (burbujas)'], off: ['Aucune icône', 'No icons', 'Keine Symbole', 'Sin iconos'] },
     side: ['Barre latérale', 'Side bar', 'Seitenleiste', 'Barra lateral'],
     decor: ['Décor (Cabinet, Durci)', 'Decoration (Cabinet, Rugged)', 'Dekor (Kabinett, Robust)', 'Decoración (Gabinete, Robusto)'],
     decorSet: { auto: ['Selon la page', 'Depending on page', 'Je nach Seite', 'Según la página'], full: ['Complet', 'Full', 'Vollständig', 'Completo'], sober: ['Sobre', 'Plain', 'Schlicht', 'Sobrio'] },
@@ -64,7 +65,11 @@
       <b>${esc(d.label?.[i] || d.label?.[0] || id)}</b><small>${esc(typo(d.title?.[i] || d.title?.[0] || ''))}</small></button>`).join('');
     // --- icônes : une rangée d'aperçu par variante
     const sample = ['target', 'map', 'upload', 'fuel', 'plane', 'clipboard', 'chart', 'settings'];
-    const iconRows = Object.entries(T.iconSet).map(([id, row]) => `<button type="button" class="ap-iconrow repo-plain" data-icons="${id}" aria-pressed="${id === cur.icons}"><b>${esc(t(row))}</b><span class="ap-iconset" data-set="${id}">${id === 'off' ? '' : sample.map(n => `<span class="ap-ic">${icon(n, 22)}</span>`).join('')}</span></button>`).join('');
+    const SK = { brass: 'cabinet', steel: 'field', gel: 'aqua' }, ICO = new URL('shared/icons/skeuo/', nav().root).href;
+    const stroke = n => `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${window.RepositoryIcons?.paths(n) || ''}</svg>`;
+    const sampleOf = id => id === 'off' ? '' : id === 'auto' ? sampleOf(a.designs[cur.design]?.icons || 'line') : SK[id] ? sample.map(n => `<img class="ap-ic" src="${ICO}${SK[id]}/${n}.webp${VER}" alt="" width="34" height="34">`).join('') : sample.map(n => `<span class="ap-ic">${stroke(n)}</span>`).join('');
+    const iconSel = cur.iconsSaved && cur.iconsSaved !== 'matter' ? cur.iconsSaved : 'auto';
+    const iconRows = Object.entries(T.iconSet).map(([id, row]) => `<button type="button" class="ap-iconrow repo-plain" data-icons="${id}" aria-pressed="${id === iconSel}"><b>${esc(t(row))}</b><span class="ap-iconset" data-set="${id}">${sampleOf(id)}</span></button>`).join('');
     const decor = cur.decorSaved || 'auto', decorBtns = Object.entries(T.decorSet).map(([id, row]) => `<button type="button" class="ap-seg repo-plain" data-decor="${id}" aria-pressed="${id === decor}">${esc(t(row))}</button>`).join('');
     const side = cur.sidenav || 'auto', sideBtns = Object.entries(T.sideSet).map(([id, row]) => `<button type="button" class="ap-seg repo-plain" data-side="${id}" aria-pressed="${id === side}">${esc(t(row))}</button>`).join('');
     // --- couleurs : une carte par thème, groupées (applications, familles de CR)
@@ -113,6 +118,8 @@
     const TX = new URL('shared/textures/', nav().root).href, TV = new URL(document.querySelector('script[src*="appearance_page.js"]')?.src || location.href).search;   // textures des vignettes (même version que ce script)
     const css = document.createElement('style');
     css.textContent = `
+main.ap-page{--ink:#17242b;--muted:#5b6673;--line:#cfd9e1;--card:#fff}
+main.ap-page :is(.ap-thumb,.ap-iconrow,.ap-seg,.ap-card,.ap-show,[id=apReset]){color:var(--ink)!important}main.ap-page :is(.repo-plain,.ap-card) :is(b,strong,small,label,span,header):not([style]):not(.ap-pill):not(.ap-pill *){color:inherit!important}main.ap-page .ap-seg[aria-pressed="true"]{color:#fff!important}main.ap-page .ap-help{color:inherit;opacity:.85}
 .ap-thumbs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:12px}
 .ap-thumb{display:grid;gap:6px;text-align:left;padding:10px;border:2px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);cursor:pointer;font:inherit}
 .ap-thumb[aria-pressed="true"]{border-color:var(--repo-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--repo-accent) 25%,transparent)}
@@ -147,12 +154,7 @@
 .ap-iconrow{display:grid;grid-template-columns:150px 1fr;align-items:center;gap:12px;padding:8px 12px;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer;font:inherit;text-align:left}
 .ap-iconrow[aria-pressed="true"]{border-color:var(--repo-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--repo-accent) 25%,transparent)}
 .ap-iconset{display:flex;gap:14px;color:var(--repo-accent);min-height:22px}
-.ap-iconset[data-set="fine"] .repo-svg{stroke-width:1.5!important}.ap-iconset[data-set="line"] .repo-svg{stroke-width:2!important}.ap-iconset[data-set="bold"] .repo-svg{stroke-width:2.6!important}
-.ap-iconset[data-set="matter"] .repo-svg .ri-shade,.ap-iconset[data-set="matter"] .repo-svg .ri-case{display:inline!important}
-.ap-iconset[data-set="matter"] .repo-svg .ri-shade{stroke:var(--ri-shade,rgba(0,0,0,.35));stroke-width:4.6;transform:translate(.5px,.9px)}
-.ap-iconset[data-set="matter"] .repo-svg .ri-case{stroke:url(#riCase);stroke-width:4}
-.ap-iconset[data-set="matter"] .repo-svg .ri-ink{stroke:var(--ri-ink,color-mix(in srgb,var(--repo-accent) 80%,#000));stroke-width:1.6!important}
-.ap-iconset:not([data-set="matter"]) .repo-svg :is(.ri-shade,.ri-case){display:none!important}.ap-iconset:not([data-set="matter"]) .repo-svg .ri-ink{stroke:currentColor!important;stroke-width:inherit!important}
+.ap-iconset[data-set="fine"] svg{stroke-width:1.5}.ap-iconset[data-set="line"] svg{stroke-width:2}.ap-iconset[data-set="bold"] svg{stroke-width:2.6}.ap-iconset img.ap-ic{width:34px;height:34px;object-fit:contain}
 .ap-iconset .ap-ic{display:inline-flex}.ap-iconset .repo-svg{display:block!important}
 .ap-sidebar{display:flex;align-items:center;gap:14px;margin-top:14px;flex-wrap:wrap}
 .ap-segs{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
@@ -185,7 +187,7 @@ main.ap-page h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;col
       const a = AP(), b = e.target.closest('button');
       if (!b) return;
       if (b.dataset.design) { a.setDesign(b.dataset.design); render(); }
-      else if (b.dataset.icons) { a.setIcons(b.dataset.icons); render(); }
+      else if (b.dataset.icons) { a.setIcons(b.dataset.icons === 'auto' ? null : b.dataset.icons); render(); }
       else if (b.dataset.decor) { a.setDecor(b.dataset.decor === 'auto' ? null : b.dataset.decor); render(); }
       else if (b.dataset.side) { a.setSidenav(b.dataset.side === 'auto' ? null : b.dataset.side === 'on'); render(); }
       else if (b.classList.contains('ap-dot')) {

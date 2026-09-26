@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Jeux d'icônes skeuomorphes</title>
+<style>body{font:13px system-ui;margin:20px;background:#666;color:#fff}h2{margin:18px 0 6px}figure{display:inline-block;margin:4px;text-align:center;width:74px;font-size:10.5px}figure img{width:56px;height:56px;object-fit:contain;display:block;margin:auto}figure.sheet figcaption{color:#ffd76a}</style></head>
+<body>
+<!-- Jeux d'icônes skeuomorphes Laiton (Cabinet), Acier (Durci), Gel (Aqua) : pour chaque icône du registre
+     (shared/icons/repository_icons.js) SANS image découpée dans les planches (tools/icons_from_sheets.html, noms
+     SHEET ci-dessous, jamais écrasés), une image fabriquée dans le style de la planche : médaillon de laiton et de
+     bronze texturé (textures du dépôt), plaque d'acier sombre biseautée à vis cruciformes (vis de la planche), bulle de
+     gel ; pictogramme du registre gravé (ombre portée, reflet). Export WebP 96 px dans shared/icons/skeuo/<dossier>/.
+     Usage : python tools/save_textures.py, puis http://localhost:8765/tools/icons_skeuo_generator.html ;
+     ensuite python tools/build_skeuo_icons_css.py (règles CSS) et python tools/bump_versions.py. -->
+<h1>Jeux d'icônes skeuomorphes</h1><p id="out">Génération…</p><div id="list"></div>
+<script src="../shared/icons/repository_icons.js"></script>
+<script>
+const SETS = {
+  brass: { dir: 'cabinet', sheet: ['book', 'plus', 'bookmark', 'refresh', 'sparkles', 'download', 'printer', 'x', 'info'], skip: ['save'] },
+  steel: { dir: 'field', sheet: ['file-text', 'book', 'x', 'settings', 'map', 'plane', 'target', 'refresh', 'info', 'alert', 'globe', 'sparkles'], skip: ['file'] },
+  gel: { dir: 'aqua', sheet: ['settings', 'folder', 'pin', 'file-text', 'users', 'info', 'check', 'alert', 'x'], skip: ['file'] }
+};
+const GEL = ['#2f7de1', '#8a96a6', '#8e5ad6', '#2fa65a', '#1aa0b8', '#e08a1e', '#d8464a', '#3558c9'];
+const load = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error(src)); i.src = src; });
+const glyph = (name, color, width) => load('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="192" height="192" fill="none" stroke="${color}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round">${RepositoryIcons.paths(name)}</svg>`));
+function pattern(g, img, scale = 1) { const p = g.createPattern(img, 'repeat'); p.setTransform(new DOMMatrix().scale(scale)); return p; }
+/** Pictogramme gravé : ombre sombre décalée vers le bas, reflet clair vers le haut, puis le trait. */
+function engrave(g, dark, light, main, x, y, s) {
+  g.save(); g.shadowColor = 'rgba(0,0,0,.75)'; g.shadowOffsetY = 2.2; g.shadowBlur = 2.5; g.drawImage(dark, x, y + .8, s, s); g.restore();
+  g.save(); g.globalAlpha = .45; g.drawImage(light, x, y - 1, s, s); g.restore();
+  g.drawImage(main, x, y, s, s);
+}
+async function brass(name, T) {
+  const c = new OffscreenCanvas(96, 96), g = c.getContext('2d'), cx = 48, cy = 48;
+  // rebord de laiton
+  let gr = g.createLinearGradient(0, 4, 0, 92); gr.addColorStop(0, '#fff0b8'); gr.addColorStop(.35, '#d6ae55'); gr.addColorStop(.7, '#8a6526'); gr.addColorStop(1, '#4a3510');
+  g.beginPath(); g.arc(cx, cy, 46, 0, 7); g.fillStyle = gr; g.fill();
+  g.save(); g.clip(); g.globalCompositeOperation = 'soft-light'; g.fillStyle = pattern(g, T.brass, .5); g.fillRect(0, 0, 96, 96); g.restore();
+  g.beginPath(); g.arc(cx, cy, 46, 0, 7); g.lineWidth = 1.5; g.strokeStyle = '#3a2808'; g.stroke();
+  // gorge et disque de bronze
+  g.beginPath(); g.arc(cx, cy, 39.5, 0, 7); g.lineWidth = 3; g.strokeStyle = '#4a3510'; g.stroke();
+  gr = g.createRadialGradient(40, 34, 4, 48, 48, 40); gr.addColorStop(0, '#7e5832'); gr.addColorStop(.6, '#4a2c14'); gr.addColorStop(1, '#23130a');
+  g.beginPath(); g.arc(cx, cy, 38, 0, 7); g.fillStyle = gr; g.fill();
+  g.save(); g.clip(); g.globalCompositeOperation = 'overlay'; g.globalAlpha = .45; g.fillStyle = pattern(g, T.leather, .45); g.fillRect(0, 0, 96, 96);
+  g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; const sh = g.createLinearGradient(0, 10, 0, 40); sh.addColorStop(0, 'rgba(0,0,0,.55)'); sh.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = sh; g.fillRect(0, 0, 96, 40); g.restore();
+  const [d, l, m] = await Promise.all([glyph(name, '#140a03', 2.3), glyph(name, '#fff4cf', 2.3), glyph(name, '#efdcae', 2.3)]);
+  engrave(g, d, l, m, 23, 23, 50);
+  // reflet
+  g.save(); g.beginPath(); g.ellipse(40, 26, 26, 12, -.4, 0, 7); g.fillStyle = 'rgba(255,255,255,.08)'; g.fill(); g.restore();
+  return c;
+}
+async function steel(name, T) {
+  const c = new OffscreenCanvas(96, 88), g = c.getContext('2d'), r = 10, rr = (x, y, w, h, k) => { g.beginPath(); g.roundRect(x, y, w, h, k); };
+  rr(2, 2, 92, 84, r); g.fillStyle = '#0b0d08'; g.fill();
+  rr(4, 4, 88, 80, r - 2); g.fillStyle = pattern(g, T.steelDark, .35); g.fill();
+  g.save(); rr(4, 4, 88, 80, r - 2); g.clip();
+  let gr = g.createLinearGradient(0, 4, 0, 84); gr.addColorStop(0, 'rgba(255,255,255,.22)'); gr.addColorStop(.12, 'rgba(255,255,255,.04)'); gr.addColorStop(.85, 'rgba(0,0,0,.1)'); gr.addColorStop(1, 'rgba(0,0,0,.45)'); g.fillStyle = gr; g.fillRect(0, 0, 96, 88);
+  g.restore();
+  rr(4.5, 4.5, 87, 79, r - 2); g.lineWidth = 1; g.strokeStyle = 'rgba(255,255,255,.18)'; g.stroke();
+  rr(9, 9, 78, 70, 6); g.lineWidth = 1; g.strokeStyle = 'rgba(0,0,0,.45)'; g.stroke();
+  for (const [x, y] of [[9, 9], [79, 9], [9, 71], [79, 71]]) g.drawImage(T.screw, x, y, 9, 9);
+  const [d, l, m] = await Promise.all([glyph(name, '#000', 2.5), glyph(name, '#ffffff', 2.5), glyph(name, '#e4e3d8', 2.5)]);
+  engrave(g, d, l, m, 25, 20, 46);
+  return c;
+}
+async function gel(name) {
+  const c = new OffscreenCanvas(96, 96), g = c.getContext('2d'), base = GEL[[...name].reduce((a, ch) => a + ch.charCodeAt(0), 0) % GEL.length];
+  const mix = (h, t, w) => { const a = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)), b = [1, 3, 5].map(i => parseInt(t.slice(i, i + 2), 16)); return `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * w)).join(',')})`; };
+  g.save(); g.shadowColor = 'rgba(20,40,80,.35)'; g.shadowBlur = 6; g.shadowOffsetY = 3;
+  g.beginPath(); g.arc(48, 46, 42, 0, 7); g.fillStyle = '#fff'; g.fill(); g.restore();
+  let gr = g.createRadialGradient(48, 88, 4, 48, 50, 44); gr.addColorStop(0, mix(base, '#ffffff', .55)); gr.addColorStop(.55, base); gr.addColorStop(1, mix(base, '#000000', .35));
+  g.beginPath(); g.arc(48, 46, 39, 0, 7); g.fillStyle = gr; g.fill();
+  const [d, , m] = await Promise.all([glyph(name, 'rgba(0,0,0,.45)', 2.6), null, glyph(name, '#ffffff', 2.6)]);
+  g.save(); g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowOffsetY = 1.5; g.shadowBlur = 2; g.drawImage(m, 25, 23, 46, 46); g.restore();
+  gr = g.createLinearGradient(0, 8, 0, 44); gr.addColorStop(0, 'rgba(255,255,255,.85)'); gr.addColorStop(1, 'rgba(255,255,255,.05)');
+  g.beginPath(); g.ellipse(48, 24, 27, 15, 0, 0, 7); g.fillStyle = gr; g.fill();
+  g.beginPath(); g.arc(48, 46, 41, 0, 7); g.lineWidth = 2; g.strokeStyle = 'rgba(255,255,255,.9)'; g.stroke();
+  return c;
+}
+async function run() {
+  const out = document.getElementById('out'), list = document.getElementById('list');
+  const T = { brass: await load('/shared/textures/brass.webp'), leather: await load('/shared/textures/leather-brown.webp'), steelDark: await load('/shared/textures/steel-dark.webp'), screw: await load('/shared/deco/field/screw-x.webp') };
+  const make = { brass, steel, gel }; let ok = 0, n = 0;
+  for (const [set, cfg] of Object.entries(SETS)) {
+    list.insertAdjacentHTML('beforeend', `<h2>${set}</h2>`);
+    for (const name of RepositoryIcons.names()) {
+      if (cfg.skip.includes(name)) continue;
+      if (cfg.sheet.includes(name)) { list.insertAdjacentHTML('beforeend', `<figure class="sheet"><img src="/shared/icons/skeuo/${cfg.dir}/${name}.webp"><figcaption>${name} (planche)</figcaption></figure>`); continue; }
+      const c = await make[set](name, T), blob = await c.convertToBlob({ type: 'image/webp', quality: .9 });
+      const res = await fetch(`/shared/icons/skeuo/${cfg.dir}/${name}.webp`, { method: 'PUT', body: blob }).catch(() => null); n++; if (res?.ok) ok++;
+      list.insertAdjacentHTML('beforeend', `<figure><img src="${URL.createObjectURL(blob)}"><figcaption>${name}</figcaption></figure>`);
+    }
+  }
+  out.textContent = `${ok} / ${n} icônes fabriquées (les icônes des planches sont conservées).`;
+}
+run().catch(e => document.getElementById('out').textContent = 'Erreur : ' + e.message);
+</script></body></html>

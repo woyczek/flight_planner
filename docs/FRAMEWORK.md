@@ -100,10 +100,14 @@ liste `DISPLAY` : design, icônes, couleurs, barre latérale, langue, onglets, s
   tout s'efface.
 - **Réglages** : boutons « Apparence » et « Paramètres » en tête du menu ☰ ; dans la barre latérale, groupe du bas
   (Apparence, Paramètres, Menu).
-- **Icônes** (`repositoryIcons`, `<html data-icons>`) : trait normal, fin, épais, **Matière** (`matter` : chaque icône
-  tracée trois fois — ombre, corps en matière peint par le dégradé `#riCase`, trait d'encre — palette `--ri-*` du
-  design ; icônes de blocs en médaillons, plaques ou bulles), ou aucune. Sans choix mémorisé : jeu du design
-  (`designs.list[id].icons`, « matter » pour Cabinet, Durci, Aqua), sinon trait normal.
+- **Icônes** (`repositoryIcons`, `<html data-icons>`) : trait normal, fin, épais ; trois jeux **skeuomorphes** en
+  images, utilisables dans tous les designs — **Laiton** (`brass` : médaillons de bronze cerclés de laiton), **Acier**
+  (`steel` : plaques d'acier vissées), **Gel** (`gel` : bulles) ; ou aucune. En jeu skeuomorphe, l'image
+  (`shared/icons/skeuo/<cabinet|field|aqua>/<nom>.webp`) remplace le tracé de chaque icône (`svg.repo-svg[data-i]`)
+  partout : icônes découpées dans les planches de maquette (`tools/icons_from_sheets.html`), les autres fabriquées dans
+  leur style (`tools/icons_skeuo_generator.html`) ; règles générées dans `block_icons.css` par
+  `tools/build_skeuo_icons_css.py`. Sans choix mémorisé : jeu du design (`designs.list[id].icons` : Laiton pour
+  Cabinet, Acier pour Durci, Gel pour Aqua), sinon trait normal.
 - **Barre latérale** (`repositorySidenav`, `<html data-sidenav>`) : selon le design (affichée en Console),
   toujours, ou jamais. Entrées : `REPOSITORY_TREE.sidebar` s'il existe, sinon la liste de `repository_nav.js`, qui construit la barre dès son exécution (styles dans `repository_nav.css`,
   chargé dans l'en-tête) ; `side_nav.js` y pose ensuite les icônes, dans des emplacements de taille fixe.

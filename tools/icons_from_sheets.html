@@ -42,7 +42,7 @@ const ITEMS = {
     deco('screw-x', 258, 946, 297, 985, 'circle'),   // vis cruciforme (vis d'angle des panneaux)
     deco('nut', 309, 942, 355, 988, 'key', { tol: [16, 40] }),
     deco('topo', 934, 881, 1236, 973, 'rect'),
-    deco('radar', 934, 981, 1236, 1065, 'rect'),
+    deco('radar', 8, 160, 1664, 712, 'rect', { src: '13.webp', out: [1200, 400] }),   // écran radar haute définition (image fournie à part)
     deco('stencil-mission', 1256, 876, 1430, 928, 'rect'),
     deco('stencil-defa', 1262, 932, 1412, 994, 'key', { tol: [18, 44] }),
     deco('stencil-ops', 1256, 1002, 1434, 1062, 'key', { tol: [18, 44] })
@@ -55,7 +55,7 @@ const ITEMS = {
 const load = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error(src)); i.src = src; });
 /** Découpe box (coordonnées de planche) en size px (icônes) ou taille d'origine (décors), avec masque. */
 function cut(img, it) {
-  const [x, y, w, h] = it.box, S = it.kind === 'icon' ? 96 : null, W = S || Math.round(w), Hh = S ? Math.round(96 * h / w) : Math.round(h);
+  const [x, y, w, h] = it.box, S = it.kind === 'icon' ? 96 : null, W = it.out?.[0] || S || Math.round(w), Hh = it.out?.[1] || (S ? Math.round(96 * h / w) : Math.round(h));
   const c = document.createElement('canvas'); c.width = W; c.height = Hh; const g = c.getContext('2d'); g.imageSmoothingQuality = 'high';
   g.drawImage(img, x, y, w, h, 0, 0, W, Hh);
   const im = g.getImageData(0, 0, W, Hh), d = im.data;
@@ -78,7 +78,7 @@ async function run() {
     const img = await load(`/src/${file}`);
     list.insertAdjacentHTML('beforeend', `<h2>${design}</h2>`);
     for (const it of ITEMS[design]) {
-      const c = cut(img, it), blob = await new Promise(r => c.toBlob(r, 'image/webp', .9)), dir = it.kind === 'icon' ? `icons/skeuo/${design}` : `deco/${design}`;
+      const c = cut(it.src ? await load(`/src/${it.src}`) : img, it), blob = await new Promise(r => c.toBlob(r, 'image/webp', .9)), dir = it.kind === 'icon' ? `icons/skeuo/${design}` : `deco/${design}`;
       const res = await fetch(`/shared/${dir}/${it.name}.webp`, { method: 'PUT', body: blob }).catch(() => null); n++; if (res?.ok) ok++;
       list.insertAdjacentHTML('beforeend', `<figure><img src="${URL.createObjectURL(blob)}"><figcaption>${it.name} · ${c.width}×${c.height} ${res?.ok ? '✓' : '✗'}</figcaption></figure>`);
     }

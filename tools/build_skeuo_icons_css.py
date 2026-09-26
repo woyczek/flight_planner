@@ -1,40 +1,41 @@
-"""Section « jeux d'icônes raster » de shared/designs_skeuo.css : une règle par icône découpée dans les planches
-(tools/icons_from_sheets.html → shared/icons/skeuo/<design>/<nom>.webp) ; SETS : nom du registre → image (alias
-permis, ex. save → bookmark). Relancer après une nouvelle découpe : python tools/build_skeuo_icons_css.py
+"""Section « jeux d'icônes skeuomorphes » de shared/block_icons.css : Laiton (brass), Acier (steel), Gel (gel).
+
+Chaque icône du registre a une image dans shared/icons/skeuo/<dossier>/<nom>.webp : découpée dans les planches de
+maquette (tools/icons_from_sheets.html) ou fabriquée dans leur style (tools/icons_skeuo_generator.html). En jeu
+skeuomorphe (html[data-icons="brass" | "steel" | "gel"], quel que soit le design), l'image remplace le tracé
+(svg.repo-svg[data-i]) partout, un peu plus grande que le trait. ALIASES : nom sans image propre → image d'un autre.
+Relancer après une nouvelle découpe ou génération : python tools/build_skeuo_icons_css.py, puis bump_versions.py.
 """
 import os
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/'
-SETS = {
-    'cabinet': {'book': 'book', 'plus': 'plus', 'bookmark': 'bookmark', 'save': 'bookmark', 'refresh': 'refresh', 'sparkles': 'sparkles',
-                'download': 'download', 'printer': 'printer', 'x': 'x', 'info': 'info'},
-    'field': {'file-text': 'file-text', 'file': 'file-text', 'book': 'book', 'x': 'x', 'settings': 'settings', 'map': 'map', 'plane': 'plane',
-              'target': 'target', 'refresh': 'refresh', 'info': 'info', 'alert': 'alert', 'globe': 'globe', 'sparkles': 'sparkles'},
-    'aqua': {'settings': 'settings', 'folder': 'folder', 'pin': 'pin', 'file-text': 'file-text', 'file': 'file-text', 'users': 'users',
-             'info': 'info', 'check': 'check', 'alert': 'alert', 'x': 'x'},
-}
-CTX = ':is(.repo-block-icon,.repo-card-icon,.repo-sidenav-item,.repo-icon-only,.repo-dropzone-badge,.repo-notice,.repo-raster)'
-out = ['''/* ================================================================================================ JEUX D'ICÔNES RASTER
-   Jeu « Matière » : icônes découpées dans les planches de maquette (tools/icons_from_sheets.html →
-   shared/icons/skeuo/<design>/), substituées au tracé (svg[data-i]) dans les emplacements d'icône « posée » : blocs,
-   sous-cartes, barre latérale, boutons à icône seule, zones de dépôt, bandeaux. Icônes sans image : médaillon
-   (Cabinet), plaque d'acier (Durci) ou bulle (Aqua) dessinés, même allure. Section générée : liste des images. */''']
-for d, m in SETS.items():
-    names = sorted(m)
-    sel = ','.join(f'[data-i="{n}"]' for n in names)
-    pre = f'html[data-design="{d}"][data-icons="matter"]'
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SETS = {'brass': 'cabinet', 'steel': 'field', 'gel': 'aqua'}
+ALIASES = {'brass': {'save': 'bookmark', 'file': 'file'}, 'steel': {'file': 'file-text'}, 'gel': {'file': 'file-text'}}
+BEGIN = '/* ==== JEUX D\'ICÔNES SKEUOMORPHES (généré par tools/build_skeuo_icons_css.py) ==== */'
+END = '/* ==== fin des jeux skeuomorphes ==== */'
+ANY = 'html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"])'
+out = [BEGIN,
+       f'{ANY} .repo-svg[data-i]{{background-position:center;background-size:contain;background-repeat:no-repeat;--rs:1.6em}}',
+       f'{ANY} .repo-svg[data-i]>*{{display:none}}',
+       f'{ANY} :is(.repo-block-icon,.repo-card-icon){{background:none!important;box-shadow:none!important;border-radius:0!important;width:auto!important;height:auto!important}}',
+       f'{ANY} :is(.repo-block-icon,.repo-card-icon) .repo-svg[data-i]{{--rs:46px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}}',
+       f'{ANY} .repo-card-icon .repo-svg[data-i]{{--rs:38px}}',
+       f'{ANY} .repo-sidenav-item .repo-svg[data-i]{{--rs:36px}}',
+       f'{ANY} .repo-dropzone-badge{{background:none!important}}{ANY} .repo-dropzone-badge .repo-svg[data-i]{{--rs:42px}}',
+       f'{ANY} .repo-notice>.repo-icon .repo-svg[data-i]{{--rs:30px}}',
+       f'{ANY} .repo-sidenav-brand .repo-svg[data-i]{{--rs:34px}}']
+for key, d in SETS.items():
+    folder = os.path.join(ROOT, 'shared', 'icons', 'skeuo', d)
+    names = sorted(f[:-5] for f in os.listdir(folder) if f.endswith('.webp'))
     for n in names:
-        out.append(f'{pre} {CTX} .repo-svg[data-i="{n}"]{{background-image:url("icons/skeuo/{d}/{m[n]}.webp")!important}}')
-    out.append(f'{pre} {CTX} .repo-svg:is({sel}){{background-position:center!important;background-size:contain!important;background-repeat:no-repeat!important}}')
-    out.append(f'{pre} {CTX} .repo-svg:is({sel})>g{{display:none}}')
-    out.append(f'{pre} :is(.repo-block-icon,.repo-card-icon):has(>.repo-svg:is({sel})){{background:none!important;box-shadow:none!important;border-radius:0!important}}')
-    out.append(f'{pre} :is(.repo-block-icon,.repo-card-icon):has(>.repo-svg:is({sel}))>.repo-svg{{--rs:44px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}}')
-    out.append(f'{pre} .repo-sidenav-item .repo-svg:is({sel}){{--rs:36px;padding:0!important;box-shadow:none!important;border-radius:0!important;background-color:transparent!important}}')
-    out.append(f'{pre} :is(.repo-icon-only,.repo-dropzone-badge,.repo-notice) .repo-svg:is({sel}){{--rs:28px}}')
-p = ROOT + 'shared/designs_skeuo.css'
-s = open(p, encoding='utf-8').read()
-start = s.find('/* ================================================================================================ JEUX D\'ICÔNES RASTER')
-if start >= 0:
-    end = s.find('/* ---- fin des jeux raster */', start); s = s[:start] + s[end + len('/* ---- fin des jeux raster */\n'):]
-s = s.rstrip('\n') + '\n' + '\n'.join(out) + '\n/* ---- fin des jeux raster */\n'
-open(p, 'w', encoding='utf-8', newline='\n').write(s)
-print(len(out))
+        out.append(f'html[data-icons="{key}"] .repo-svg[data-i="{n}"]{{background-image:url("icons/skeuo/{d}/{n}.webp")}}')
+    for n, target in ALIASES[key].items():
+        if n not in names and target in names:
+            out.append(f'html[data-icons="{key}"] .repo-svg[data-i="{n}"]{{background-image:url("icons/skeuo/{d}/{target}.webp")}}')
+out.append(END)
+p = os.path.join(ROOT, 'shared', 'block_icons.css')
+raw = open(p, 'rb').read().decode('utf-8'); crlf = '\r\n' in raw; s = raw.replace('\r\n', '\n')
+if BEGIN in s:
+    s = s[:s.index(BEGIN)] + s[s.index(END) + len(END):].lstrip('\n')
+s = s.rstrip('\n') + '\n' + '\n'.join(out) + '\n'
+open(p, 'wb').write((s.replace('\n', '\r\n') if crlf else s).encode('utf-8'))
+print(f'{len(out) - 2} règles')

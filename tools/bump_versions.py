@@ -52,7 +52,7 @@ if t != s:
     io.open(nav, 'w', encoding='utf-8', newline='').write(t)
 # textures, décors et icônes des designs à matières (shared/textures, shared/deco, shared/icons/skeuo) : adresses versionnées dans la feuille des designs, sinon
 # un navigateur garde les anciennes images après une mise à jour (les scripts reprennent la version de leur ?v=)
-for css in [os.path.join(ROOT, 'shared', 'designs_skeuo.css')]:
+for css in [os.path.join(ROOT, 'shared', 'designs_skeuo.css'), os.path.join(ROOT, 'shared', 'block_icons.css')]:
     s = io.open(css, encoding='utf-8', newline='').read()
     t = re.sub(r'((?:textures|deco/\w+|icons/skeuo/\w+)/[\w-]+\.webp)(?:\?v=\w+)?', lambda m: f'{m.group(1)}?v={version}', s)
     if t != s:

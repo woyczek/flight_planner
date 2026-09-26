@@ -86,14 +86,15 @@
     savedDesign = readPref("repositoryDesign", null);
   let design = designs[savedDesign] ? savedDesign : (designs[cfg.designs?.default] ? cfg.designs.default : "standard");
   doc.dataset.design = design;
-  // jeu d'icônes (line : trait normal, fine, bold, matter : matière, off) : choix mémorisé, sinon celui du design
-  // (designs.list[id].icons : « matter » pour Cabinet, Durci, Aqua), sinon trait normal
-  const iconsFor = id => readPref("repositoryIcons", null) || designs[id]?.icons || "line";
+  // jeu d'icônes (line : trait normal, fine, bold ; brass, steel, gel : jeux skeuomorphes Laiton, Acier, Gel ; off) :
+  // choix mémorisé, sinon celui du design (designs.list[id].icons : brass pour Cabinet, steel pour Durci, gel pour
+  // Aqua), sinon trait normal (ancien choix « matter » : remplacé par le jeu du design)
+  const iconsFor = id => { const v = readPref("repositoryIcons", null); return (v && v !== "matter" ? v : null) || designs[id]?.icons || "line"; };
   doc.dataset.icons = iconsFor(design);
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260926zzl", script.src).href;
+    css.href = new URL("designs.css?v=20260926zzp", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -339,7 +340,7 @@
       setDecor(v) { try { v ? localStorage.setItem("repositoryDecor", v) : localStorage.removeItem("repositoryDecor"); } catch {} doc.dataset.decor = v || decorDefault; window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { decor: doc.dataset.decor } })); },
       renderEmblem,
       setDesign,
-      /** Jeu d'icônes : "line" (défaut), "fine", "bold", "off". */
+      /** Jeu d'icônes : "line" (défaut), "fine", "bold", "brass" (laiton), "steel" (acier), "gel", "off" ; null : jeu du design. */
       setIcons(v) { if (!v) { try { localStorage.removeItem("repositoryIcons"); } catch {} doc.dataset.icons = iconsFor(design); return; } doc.dataset.icons = v; try { localStorage.setItem("repositoryIcons", v); } catch {} window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { icons: v } })); },
       /** Barre latérale : true, false, ou null (selon le design). */
       setSidenav(on) { if (on == null) { delete doc.dataset.sidenav; try { localStorage.removeItem("repositorySidenav"); } catch {} } else { doc.dataset.sidenav = on ? "on" : "off"; try { localStorage.setItem("repositorySidenav", on ? "on" : "off"); } catch {} } },
@@ -429,20 +430,20 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260926zzl", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260926zzp", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260926zzl", script.src).href;
+    files.src = new URL("file_access.js?v=20260926zzp", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260926zzl", "block_icons.js?v=20260926zzl", "side_nav.js?v=20260926zzl"]) {
+    for (const f of ["icons/repository_icons.js?v=20260926zzp", "block_icons.js?v=20260926zzp", "side_nav.js?v=20260926zzp"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260926zzl", script.src).href;
+    store.src = new URL("browser_store.js?v=20260926zzp", script.src).href;
     document.head.append(store)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

@@ -94,16 +94,6 @@
     }
   };
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  // Jeu d'icônes « Matière » (html[data-icons="matter"], block_icons.css) : chaque icône est tracée trois fois
-  // (ombre portée, corps en matière, trait d'encre) ; le corps est peint par ces dégradés, communs à la page, dont
-  // les couleurs viennent de variables CSS (--ri-hi, --ri-mid, --ri-lo : palette du design).
-  const defs = () => {
-    if (document.getElementById('repoIconDefs') || !document.body) return;
-    document.body.insertAdjacentHTML('beforeend', '<svg id="repoIconDefs" width="0" height="0" style="position:absolute" aria-hidden="true"><defs>'
-      + '<linearGradient id="riCase" x1="0" y1="3" x2="0" y2="21" gradientUnits="userSpaceOnUse"><stop offset="0" style="stop-color:var(--ri-hi,#fff)"/><stop offset=".5" style="stop-color:var(--ri-mid,#c9ced6)"/><stop offset="1" style="stop-color:var(--ri-lo,#7d8590)"/></linearGradient>'
-      + '</defs></svg>');
-  };
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', defs); else defs();
   window.RepositoryIcons = {
     /** SVG d'une icône (chaîne) ; décorative (aria-hidden) sauf si title est donné. Nom inconnu : chaîne vide. */
     svg(name, { size, title = '' } = {}) {
@@ -113,7 +103,7 @@
       // taille explicite : variable --rs (block_icons.css l'impose, même face à une règle « svg{…} » de la page) ;
       // sinon, taille du contexte (bloc, sous-carte, bouton…)
       const px = size || 20, rs = size ? ` style="--rs:${size}px"` : '';
-      return `<svg class="repo-svg" data-i="${esc(name)}" viewBox="0 0 24 24" width="${px}" height="${px}"${rs} fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${a11y}>${title ? `<title>${esc(title)}</title>` : ''}<g class="ri-shade">${body}</g><g class="ri-case">${body}</g><g class="ri-ink">${body}</g></svg>`;
+      return `<svg class="repo-svg" data-i="${esc(name)}" viewBox="0 0 24 24" width="${px}" height="${px}"${rs} fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${a11y}>${title ? `<title>${esc(title)}</title>` : ''}${body}</svg>`;
     },
     has: name => name in P,
     names: () => Object.keys(P),
