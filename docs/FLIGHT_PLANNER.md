@@ -69,8 +69,12 @@ Badin à droite (partagés par les trois courbes ; ligne pointillée violette : 
 tenir le vario, plein gaz au-delà (le vario baisse jusqu'au plafond) ; réacteur : Badin puis Mach de
 croisière. La loi apparaît sur les deux courbes de montée, dans la table comparative et dans la fiche.
 
-**Instruments du bandeau** (`shared/flight_instruments.js`). Trois cadrans fictifs dans l'en-tête collé, donc
-visibles pendant le défilement : **Badin** (aiguille = Badin tenu par la loi réglée à l'altitude courante —
+**Mise en page** : trois colonnes sur écran large — saisie et courbes | Résultat et panneaux | instruments —,
+largeurs réglables à la souris (poignées entre les colonnes, double-clic : largeurs par défaut ; framework
+`column_resize.js`). Les blocs pleine largeur (données du profil…) couvrent les trois colonnes.
+
+**Instruments** (`shared/flight_instruments.js`). Trois cadrans fictifs empilés dans la colonne de droite, collés
+sous l'en-tête, donc visibles pendant le défilement : **Badin** (aiguille = Badin tenu par la loi réglée à l'altitude courante —
 réacteur : limité par le Mach en altitude ; repère violet = consigne du curseur ; arc violet = plage du
 curseur ; TAS et Mach en clair), **vario** (zéro à 9 h, montée vers le haut ; aiguille = vario obtenu ; repère =
 vario visé, « PG » = plein gaz) et **altimètre** (grande aiguille : centaines de pieds ; petite : milliers ;

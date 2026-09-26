@@ -10,6 +10,7 @@ seuls sur chaque page. Ce document décrit chaque composant, son rôle et son in
 | Arborescence et thèmes | `repository_tree` | toutes les pages |
 | Bandeau, menu ☰, langue | `shared/repository_nav.js`, `.css` | toutes les pages |
 | Designs graphiques | `shared/designs.css` (liste dans `repository_tree`) | toutes les pages |
+| Colonnes redimensionnables | `shared/column_resize.js` | Planner |
 | Blocs (déplacer / masquer) | `shared/app_framework.js` | toutes les pages |
 | Traduction des textes | `shared/content_i18n.js` | CR DEFA, Planner, reportings |
 | Profil pilote | `shared/pilot_profile.js` | toutes les pages (menu ☰) |
@@ -67,6 +68,9 @@ document : titres à empattement, blocs séparés par un double filet, champs so
 dans le navigateur (`repositoryDesign`), posé sur `<html data-design="…">` dès le chargement ;
 événement `repository-design-change` ; `RepositoryNav.getDesign()`.
 
+Les formes (boutons, menus déroulants, champs) valent pour **toute la page** : en-tête, menu ☰, sélecteurs et
+listes des en-têtes de CR (`summary`), boutons ↕ / Masquer des blocs.
+
 Règles : un design ne change que la **forme** (arrondis, ombres, bordures, typographie, densité) des
 éléments communs — en-tête `.repo-header`, blocs `.repo-block` (posés par `app_framework.js`) et
 `.card`, boutons, champs, tableaux. Les **couleurs viennent toujours du thème** de `repository_tree`
@@ -81,6 +85,15 @@ Chaque `section` / `.panel` du `<main>` devient un bloc avec les boutons ↕ (d�
 `data-default-hidden="1"` : bloc masqué tant que l'utilisateur ne l'a pas affiché.
 `data-block-id` : identifiant stable (sinon `id`, sinon rang). Après un nouveau rendu de
 blocs : `window.AppFramework.refresh()`.
+
+## 3 ter. `column_resize.js` — colonnes redimensionnables
+
+`ColumnResize.attach(grille, { key, defaults, min, media, until, title })` pose une poignée entre chaque paire
+de colonnes d'une grille CSS : glisser répartit la largeur entre les deux voisines, double-clic revient aux
+largeurs par défaut. Largeurs gardées en fractions (`fr`, grille fluide), mémorisées sous `key` ; `media` :
+requête où la grille a ses colonnes (poignées masquées ailleurs) ; `until()` : élément dont le bas limite la
+hauteur des poignées. Retour : `{ reset(), refresh() }`. Utilisé par le planificateur (saisie et courbes |
+Résultat | instruments).
 
 ## 3 bis. `sticky_frame.js` — cadres semi-mobiles
 

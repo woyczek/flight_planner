@@ -1,7 +1,8 @@
 /* =====================================================================================================
    Flight Performance Planner — instruments fictifs du bandeau (Badin, vario, altimètre)
    -----------------------------------------------------------------------------------------------------
-   Trois cadrans ronds (SVG) dans l'en-tête collé de la page, donc visibles pendant le défilement des courbes.
+   Trois cadrans ronds (SVG) dans la colonne de droite de la page (#fpInstrCol, collée sous l'en-tête ; à défaut
+   dans l'en-tête), donc visibles pendant le défilement des courbes.
    Ils montrent la loi de montée réglée par les curseurs verticaux (shared/flight_perf_view.js) à l'altitude
    courante (survolée sur une courbe, sinon épinglée, sinon niveau du plan) :
      - Badin : aiguille = Badin tenu à cette altitude (réacteur : limité par le Mach de croisière en altitude),
@@ -38,14 +39,19 @@
   /** Crée une fois le bandeau d'instruments dans l'en-tête (avant la langue et le menu ☰). */
   function mount() {
     if (host) return true;
-    const line = document.querySelector("body>header .repo-header-line1, body>header .header-row");
-    if (!line) return false;
+    // colonne dédiée de la page (#fpInstrCol) si elle existe, sinon l'en-tête
+    const col = document.querySelector("#fpInstrCol .fp-instr-sticky") || document.getElementById("fpInstrCol"),
+      line = col ? null : document.querySelector("body>header .repo-header-line1, body>header .header-row");
+    if (!col && !line) return false;
     host = document.createElement("div");
     host.className = "fp-instruments";
     host.hidden = true;
     host.innerHTML = ["ias", "vs", "alt"].map(k => `<figure class="fp-gauge" data-k="${k}"><svg viewBox="0 0 100 100" aria-hidden="true"></svg><figcaption></figcaption></figure>`).join("");
-    const tools = line.querySelector(".repo-header-tools");
-    tools ? line.insertBefore(host, tools) : line.append(host);
+    if (col) col.append(host);
+    else {
+      const tools = line.querySelector(".repo-header-tools");
+      tools ? line.insertBefore(host, tools) : line.append(host);
+    }
     host.querySelectorAll(".fp-gauge").forEach(f => { faces[f.dataset.k] = f; if (f.dataset.k !== "alt") drag(f); });
     const css = document.createElement("style");
     css.textContent = `.fp-instruments{display:flex;gap:6px;align-items:center;margin:2px 6px}.fp-instruments[hidden]{display:none}

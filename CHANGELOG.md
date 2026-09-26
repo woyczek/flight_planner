@@ -10,6 +10,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Planificateur — trois colonnes redimensionnables** : saisie et courbes | Résultat | instruments (Badin, vario,
+  altimètre, empilés et collés sous l'en-tête) ; poignées entre les colonnes (framework `column_resize.js`,
+  double-clic : largeurs par défaut). Correctif : la colonne Résultat s'arrêtait 120 px avant le bord des blocs
+  pleine largeur (colonnes implicites de l'ancienne grille à 12 colonnes).
+- **Designs** : formes appliquées à toute la page — boutons et listes déroulantes de l'en-tête (sélecteurs des CR,
+  menu ☰, langue), boutons ↕ / Masquer des blocs (ex. Brief : tout carré).
 - **Prompt de génération de missions** (`docs/PROMPT_GENERATEUR_MISSIONS.md`) : schéma YAML exact, format Markdown,
   codes de familles et sous-types, désignateurs OACI reconnus, terrains de référence, axes AAR, cartes, profil
   vertical et contrôles de validation, pour produire des séries directement lisibles.

@@ -36,6 +36,17 @@ abbr[title]{text-decoration:underline dotted;cursor:help}
 .apd-bar{margin-top:8px;line-height:1.6}.apd-tag{margin-top:4px;padding:1px 7px;font-size:11px;border-radius:10px;border:1px solid currentColor;background:transparent;cursor:pointer}.apd-same{color:#7ed69b}.apd-diff{color:#f0b86e}.apd-empty{color:#75c8ff}
 @media(max-width:800px){.side-panel{max-height:none}}
 </style>
+<style id="fpColumns">/* Trois colonnes (écran large) : saisie + courbes | Résultat + panneaux | instruments ; largeurs réglables
+   (shared/column_resize.js). Les blocs pleine largeur (span12) couvrent les trois colonnes : plus de colonnes
+   implicites (l'ancienne grille à 12 colonnes laissait 10 écarts vides à droite du Résultat). */
+@media(min-width:801px){.wrap>.grid{grid-template-columns:minmax(0,1fr) minmax(0,.62fr) minmax(0,.17fr);grid-template-areas:"fuel result instr" "engine rpmtable instr"!important}
+.wrap>.grid>.span12{grid-column:1/-1!important}}
+.instr-col{grid-area:instr;min-width:0}
+.fp-instr-sticky{position:sticky;top:70px}
+.instr-col .fp-instruments{flex-direction:column;align-items:stretch;gap:12px;margin:0}
+.instr-col .fp-gauge svg{width:100%!important;height:auto!important;max-width:210px;aspect-ratio:1;margin:0 auto}
+.instr-col .fp-gauge figcaption{white-space:normal;font-size:11px}
+@media(max-width:800px){.instr-col{grid-area:auto}.fp-instr-sticky{position:static}.instr-col .fp-instruments{flex-direction:row;justify-content:center}.instr-col .fp-gauge svg{width:90px!important}}</style>
 </head>
 <body>
 <header><div class="header-row"><h1>Flight Performance &amp; Fuel Planner</h1><span id="source" class="mut"></span><span class="header-spacer"></span><span class="control">Langue <span class="lang-popup"><button id="languageCurrent" class="lang-current" type="button" aria-haspopup="menu" aria-expanded="false"><span id="languageCurrentIcon"></span><span class="caret">▼</span></button><span id="languageMenu" class="lang-menu" role="menu" hidden><button class="lang-item" data-lang="fr">🇫🇷 Français</button><button class="lang-item" data-lang="en">🇬🇧 English</button></span></span></span><span class="prefs-popup"><button id="prefsCurrent" class="prefs-current" type="button" aria-haspopup="menu" aria-expanded="false" title="Préférences">⚙ <span class="caret">▼</span></button><span id="prefsMenu" class="prefs-menu" role="menu" hidden><button id="fuelUnitBtn" class="prefs-item">Affichage : kg</button><button id="prefsEditorBtn" class="prefs-item">Masquer les champs du profil</button></span></span></div><div class="header-row"><span class="control">Avion <button id="airBtn" hidden></button><span class="aircraft-popup"><button id="aircraftCurrent" class="aircraft-current primary" type="button" aria-haspopup="menu" aria-expanded="false"><span id="aircraftCurrentIcon" class="ac-icon"></span><span id="aircraftCurrentText" class="aircraft-current-text">Aucun avion</span><span class="caret">▾</span></button><span id="aircraftMenu" class="aircraft-menu" role="menu" hidden></span></span></span><button id="dirBtn">Dossier performances</button><button id="simBtn" class="primary">Récupérer dernier FPL SimBrief</button></div></header>
@@ -66,6 +77,7 @@ abbr[title]{text-decoration:underline dotted;cursor:help}
 <div class="side-panel" id="panelCompare" data-row="rowCompare"></div>
 <div class="side-panel" id="panelTable" data-row="rowTable"></div>
 </aside>
+<aside id="fpInstrCol" class="instr-col" aria-label="Instruments"><div class="fp-instr-sticky"></div></aside>
 
 
 <section class="card span6 engine-card" data-block-id="engine-performance"><h2>Fiche performance moteur</h2><div class="fields">
@@ -104,11 +116,11 @@ abbr[title]{text-decoration:underline dotted;cursor:help}
 
 <dialog id="dlg"><div class="row"><h2 style="flex:1">Choisir l’avion</h2><button onclick="dlg.close()">Fermer</button></div><input id="search" placeholder="Rechercher ICAO / nom…" style="width:100%;margin-bottom:8px"><div id="airlist" class="airlist"></div></dialog>
 
-<script src="./AircraftDB/aircraft_db.js"></script><script src="./shared/aircraft_fleet.js?v=20260926d"></script><script src="./shared/defa_reference.js?v=20260926d"></script><script src="./shared/aircraft_catalog.js?v=20260926d"></script>
+<script src="./AircraftDB/aircraft_db.js"></script><script src="./shared/aircraft_fleet.js?v=20260926g"></script><script src="./shared/defa_reference.js?v=20260926g"></script><script src="./shared/aircraft_catalog.js?v=20260926g"></script>
 <script src="./AircraftDB/aircraft_icons.js"></script>
 <script src="./AircraftDB/aircraft_perf.js"></script>
-<script src="./shared/sticky_frame.js?v=20260926d"></script><script src="./shared/flight_profile_help.js?v=20260926d"></script><script src="./shared/flight_instruments.js?v=20260926d"></script><script src="./shared/flight_perf_view.js?v=20260926d"></script>
-<script src="./shared/flight_performance_model.js?v=20260926d"></script>
+<script src="./shared/sticky_frame.js?v=20260926g"></script><script src="./shared/flight_profile_help.js?v=20260926g"></script><script src="./shared/column_resize.js?v=20260926g"></script><script src="./shared/flight_instruments.js?v=20260926g"></script><script src="./shared/flight_perf_view.js?v=20260926g"></script>
+<script src="./shared/flight_performance_model.js?v=20260926g"></script>
 <script>
 // Planificateur de performances : profils d'appareils (SimBrief, Little Navmap, CSV, calibration par
 // OFP), devis carburant par phase, niveau optimal. Habillage (blocs, barre d'état) : shared/flight_ui.js.
@@ -713,10 +725,13 @@ function renderDefaSheets(){const box=$("defaSheets");if(!box)return;const t=aKe
 /* ?aircraft=<type ou profil> : ouverture depuis une fiche appareil (profil existant, sinon créé depuis le type DEFA). */
 refreshLandingAircraft();restore();applyHeaderPreferences();{const wanted=new URLSearchParams(location.search).get("aircraft"),k=aKey(wanted||""),db=window.AIRCRAFT_DB||{},res=aKey(db.__aliases?.[k]||k),same=v=>{const x=aKey(v);return x&&(x===k||x===res||aKey(db.__aliases?.[x])===res)},found=k&&Object.values(state.profiles||{}).find(p=>[p.id,p.icao,p.type].some(same)),cand=k&&!found&&landingOnlyAircraft(Object.values(state.profiles||{}).filter(p=>p&&typeof p==="object").map(p=>normalize(p))).find(p=>[p.id,p.icao,p.type].some(same)),created=cand&&newProfileFromLanding(cand.id);if(found)setActive(found,"fiche appareil");else if(created)setActive(created,"fiche appareil (type DEFA)");else if(state.lastAircraft&&state.profiles[state.lastAircraft])setActive(state.profiles[state.lastAircraft],"état restauré");else syncAircraftPicker();}
 </script>
-<script src="./shared/repository_nav.js?v=20260926d"></script>
-<script src="./shared/app_framework.js?v=20260926d"></script>
-<script src="./shared/flight_ui.js?v=20260926d"></script>
-<script src="./SIA%20XML/aero_symbols.js?v=20260925j"></script><script src="./SIA%20XML/vertical_profile.js?v=20260925k"></script><script src="./shared/flight_vertical_profile.js?v=20260926d"></script>
+<script src="./shared/repository_nav.js?v=20260926g"></script>
+<script src="./shared/app_framework.js?v=20260926g"></script>
+<script src="./shared/flight_ui.js?v=20260926g"></script>
+<script src="./SIA%20XML/aero_symbols.js?v=20260925j"></script><script src="./SIA%20XML/vertical_profile.js?v=20260925k"></script><script src="./shared/flight_vertical_profile.js?v=20260926g"></script>
 <script src="./shared/content_i18n.js"></script><script src="./shared/flight_i18n.js"></script>
 <footer class="repo-footer no-print">CC RBR - DEFA Virtual - 2026-09-21 - 2.0.7 - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a></footer>
+<script>/* Colonnes redimensionnables (framework : shared/column_resize.js) ; poignées sur la hauteur des deux premières rangées */
+(()=>{const grid=document.querySelector('.wrap>.grid');if(!grid||!window.ColumnResize)return;const cols=ColumnResize.attach(grid,{key:'flightPerfColumns',defaults:[1,.62,.17],min:150,media:'(min-width:801px)',until:()=>{const a=document.querySelector('[data-block-id="engine-performance"]'),b=document.querySelector('[data-block-id="rpm-table"]');return[a,b].filter(x=>x&&x.offsetParent).sort((x,y)=>y.getBoundingClientRect().bottom-x.getBoundingClientRect().bottom)[0]||null},title:tl('Glisser : largeur des colonnes — double-clic : largeurs par défaut','Drag: column widths — double-click: default widths','Ziehen: Spaltenbreite — Doppelklick: Standardbreiten','Arrastrar: ancho de columnas — doble clic: anchos por defecto')});
+ /* instruments collés sous l'en-tête */const st=document.querySelector('.fp-instr-sticky'),top=()=>{st.style.top=((window.StickyFrame?.headerBottom?.()||document.querySelector('body>header')?.getBoundingClientRect().height||60)+8)+'px'};top();addEventListener('resize',top);window.addEventListener('repository-language-change',()=>{document.querySelectorAll('.col-split').forEach(d=>d.title=tl('Glisser : largeur des colonnes — double-clic : largeurs par défaut','Drag: column widths — double-click: default widths','Ziehen: Spaltenbreite — Doppelklick: Standardbreiten','Arrastrar: ancho de columnas — doble clic: anchos por defecto'))});setTimeout(()=>cols?.refresh(),800)})();</script>
 </body></html>
