@@ -91,7 +91,14 @@ en passant de l'une à l'autre. Générateur : **Exporter les N PDF** — un bri
 **Afficher toutes les cartes (N missions)** — aperçus de toutes les missions, groupés par mission ;
 **Générer les N missions** (bloc et pied de page) — un seul ZIP, un dossier par mission avec ses cartes et sa
 carte d'assemblage ; profils et cases ZIP de chaque carte gardés d'une mission à l'autre pendant la session.
-Le générateur lit ce ZIP : chaque mission y trouve ses cartes et sa propre carte d'assemblage. Les fichiers annexes
+Le générateur lit ce ZIP : chaque mission y trouve ses cartes et sa propre carte d'assemblage.
+
+**Assemblage de l'opération.** Studio : **carte de l'opération** (`carte_operation.png`, à la racine du ZIP de
+toutes les missions, et en tête des aperçus) — points de toutes les missions (rendez-vous communs une fois), trajet
+de chaque équipe (départ → points tournants → arrivée) dans sa couleur, légende (mission, indicatif, aéronef),
+emprise englobant tout, profil de la carte générale. Générateur : **Dossier d'opération (un PDF)** — page de garde
+(nom de l'opération, tableau des missions : indicatif, aéronef, départ, titre ; rendez-vous communs à plusieurs
+missions ; carte de l'opération si le ZIP a été chargé), puis le brief complet de chaque mission à la suite. Les fichiers annexes
 d'une série (`maps_manifest.md`, `AAR_TRACKS_REFERENCE.md`, `VALIDATION.txt`, consignes) sont ignorés et
 signalés. Une mission dont le bloc `operation` annonce d'autres missions affiche déjà le sélecteur (missions non
 chargées grisées, « à charger ») ; une mission de la même opération collée ou ouverte ensuite **rejoint** le lot
