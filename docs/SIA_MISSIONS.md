@@ -242,7 +242,7 @@ Sous la carte :
   chargement de mission ; décochée : carte non générée, absente du ZIP, mais toujours prévisualisable et sur
   l'assemblage — le choix n'est pas enregistré dans la mission ; même case sur la carte de contrôle et sur chaque
   aperçu de « Afficher toutes les cartes »), suppression (×). Le bouton **Générer les cartes et le ZIP** est
-  doublé dans la barre fixe en bas de page.
+  doublé dans le pied de page semi-fixe (collé en bas de la fenêtre, avec le nombre de cartes du ZIP).
 
 **Créer une mission avec ChatGPT** (sous la zone mission) : type, théâtre (ou aléatoire), série et nombre
 d'**équipes DEFA en vol** (1 à 5 ; les équipes sol s'ajoutent selon la mission) ; « ChatGPT → » copie le prompt
