@@ -161,6 +161,9 @@
     // utilisent l'atmosphère du jour (atm) : air chaud = moins dense → TAS plus grande à Badin égal, poussée /
     // puissance et plafond plus faibles, consommation spécifique du réacteur plus forte (√θ).
     dIsa = Number.isFinite(+dIsa) ? Math.max(-60, Math.min(60, +dIsa)) : 0;
+    // Calculs au-delà du plafond (prolongement des courbes, zone grisée) : m.unbounded(fn) lève le refus de croisière
+    // au-dessus du plafond et abaisse le vario minimal de montée (50 → 5 ft/min) pendant fn.
+    let beyond = false;
     const atm = h => isa(h, dIsa);
 
     // Modèle pour une altitude de référence, une finesse et une poussée / puissance au sol données.
@@ -246,7 +249,7 @@
           fr = law ? law.frac : frac,
           ve = law ? law.ve : speed === 'vy' ? m.vy(hm, fr).ve : climbVe(m, hm),
           r = m.roc(hm, ve, fr);
-        if (!(r > 50)) return null;
+        if (!(r > (beyond ? 5 : 50))) return null; // au-delà du plafond (prolongement des courbes) : seuil abaissé
         const tas = m.tasOf(hm, ve),
           dt = step / r;
         t += dt;
@@ -359,7 +362,7 @@
 
     /** Croisière à l'altitude h : 'normal' (Mach ou puissance du profil ; réacteur limité par la poussée au-dessus) ou 'eco' (distance maximale, jamais plus rapide). Sortie : { ok, tas, ias, mach, ff, sr, limited, powerPct } ou { ok: false, reason: 'ceiling' | 'thrust' }. */
     function cruise(h, mode = 'normal') {
-      if (h > ceiling + 1) return {
+      if (!beyond && h > ceiling + 1) return {
         h,
         ok: false,
         reason: 'ceiling'
@@ -623,6 +626,11 @@
     return {
       kind,
       dIsa,
+      /** Exécute fn sans le refus de croisière au-dessus du plafond (prolongement des courbes) ; retourne son résultat. */
+      unbounded(fn) {
+        beyond = true;
+        try { return fn(); } finally { beyond = false; }
+      },
       /** Atmosphère du jour (écart ISA du modèle) à l'altitude pression h. */
       atm,
       label: tl(...C.label),

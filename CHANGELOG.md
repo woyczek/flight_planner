@@ -10,6 +10,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Planificateur — au-dessus du plafond** : courbes (altitude optimale, montée, TAS) jusqu'à 110 % du plafond,
+  zone grisée « inaccessible », courbes prolongées (modèle au-delà du plafond, sinon extrapolation) ; optimums et
+  devis inchangés, sous le plafond.
 - **Planificateur — cadran horloge** : temps de vol du trajet au niveau courant, même lecture que le cadran
   carburant (une par courbe, dans sa couleur, changée d'un clic sur l'un ou l'autre).
 - **Planificateur** : TAS (tirets de la couleur de chaque loi) sur la courbe « Vitesses de montée — Badin et TAS » ;

@@ -92,6 +92,11 @@ Résultat compare au standard : trajet au niveau du plan (temps, carburant, TAS)
 QNH n'entre pas dans le calcul : les niveaux de vol sont des altitudes pression, les performances en croisière
 n'en dépendent pas (il ne change que l'altitude vraie, utile pour le relief, pas pour le carburant).
 
+**Au-dessus du plafond.** Les courbes indexées sur le niveau (altitude optimale, montée, TAS) vont jusqu'à 110 %
+du plafond ; la zone au-dessus est grisée (« inaccessible »). Les courbes y sont prolongées : valeurs du modèle tant
+qu'il peut les calculer (`m.unbounded` : pas de refus de croisière au plafond, vario minimal de montée abaissé),
+sinon extrapolation linéaire des deux derniers points. Optimums, devis et fiche restent sous le plafond.
+
 **TAS selon le niveau.** Courbe de la vitesse vraie : croisière du profil, croisière économique, montée à la
 loi réglée ; en pointillés, la croisière du profil en atmosphère standard quand un écart ISA est saisi.
 Jauge synchronisée avec les autres courbes (TAS, Badin, Mach).
