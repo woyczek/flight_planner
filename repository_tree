@@ -36,7 +36,7 @@ window.REPOSITORY_TREE={
       standard:{label:["Standard","Standard","Standard","Estándar"],title:["Design d’origine des pages","Original page design","Ursprüngliches Seitendesign","Diseño original de las páginas"]},
       aero:{label:["Aéro","Aero","Aero","Aero"],title:["Arrondi, ombres douces, en-tête en dégradé","Rounded, soft shadows, gradient header","Abgerundet, weiche Schatten, Kopfzeile mit Verlauf","Redondeado, sombras suaves, cabecera en degradado"]},
       ops:{label:["Opérationnel","Operational","Operativ","Operativo"],title:["Dense, angles vifs, liseré de thème, titres en capitales","Dense, sharp corners, theme edge, uppercase titles","Kompakt, scharfe Ecken, Themenkante, Titel in Großbuchstaben","Denso, esquinas vivas, borde del tema, títulos en mayúsculas"]},
-      console:{label:["Console","Console","Konsole","Consola"],title:["Barre latérale, blocs aérés numérotés, titres en capitales, icônes","Side bar, airy numbered blocks, uppercase titles, icons","Seitenleiste, luftige nummerierte Blöcke, Titel in Großbuchstaben, Symbole","Barra lateral, bloques numerados espaciosos, títulos en mayúsculas, iconos"]}
+      console:{label:["Console","Console","Konsole","Consola"],title:["Barre latérale, blocs aérés, titres en capitales, icônes","Side bar, airy blocks, uppercase titles, icons","Seitenleiste, luftige Blöcke, Titel in Großbuchstaben, Symbole","Barra lateral, bloques espaciosos, títulos en mayúsculas, iconos"]}
     }
   },
   // Familles de couleurs (Paramétrage › Apparence) : teinte (h, degrés) et saturation (s, %) ; la clarté (« ton »)
@@ -124,6 +124,7 @@ window.REPOSITORY_TREE={
     {path:"CR DEFA/appareil.html",menu:false,label:"Fiche appareil",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"CR DEFA/equipage.html",menu:false,label:"Fiche équipage",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"CR DEFA/parametrage.html",menu:false,slot:"settings",label:"Paramétrage — bases de données",theme:"core",favicon:"assets/favicon-flight.svg"},
+    {path:"CR DEFA/apparence.html",menu:false,slot:"settings",label:"Apparence",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"LandingPerformanceDashboard/LandingPerformance_Dashboard_MultiCSV_i18n.html",menu:"Landing Performance Dashboard",label:"Landing Performance Dashboard"},
     {path:"SIA XML/mission_editor.html",menu:"Générateur de mission (SIA)",label:"Générateur complet de mission"},
     {path:"SIA XML/map_parser.html",menu:"Studio cartographique (SIA)",label:"Studio cartographique aéronautique SIA"},
@@ -135,6 +136,7 @@ window.REPOSITORY_TREE={
     "Générateur de mission (SIA)":["Générateur de mission (SIA)","Mission generator (SIA)","Missionsgenerator (SIA)","Generador de misiones (SIA)"],
     "Studio cartographique (SIA)":["Studio cartographique (SIA)","Map studio (SIA)","Kartenstudio (SIA)","Estudio cartográfico (SIA)"],
     "Paramétrage — bases de données":["Paramétrage — bases de données","Settings — databases","Einstellungen — Datenbanken","Configuración — bases de datos"],
+    "Apparence":["Apparence","Appearance","Darstellung","Apariencia"],
     "Apparence…":["Apparence (design, icônes, couleurs)…","Appearance (design, icons, colours)…","Darstellung (Design, Symbole, Farben)…","Apariencia (diseño, iconos, colores)…"]
   }
 };

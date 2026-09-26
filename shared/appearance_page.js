@@ -1,0 +1,188 @@
+// Page Apparence (CR DEFA/apparence.html) : design, jeu d'icônes, barre latérale et couleurs des thèmes de la suite.
+// Réglages mémorisés dans ce navigateur et appliqués à toutes les pages par repository_nav.js
+// (RepositoryNav.appearance) ; ils ne comptent pas comme modifications à sauvegarder (browser_store.js).
+// La page elle-même montre le résultat : design et icônes s'y appliquent aussitôt, et « Voir sur cette page »
+// prête à la page les couleurs d'un thème.
+// Couleurs : pour chaque thème de repository_tree, une FAMILLE (teinte et saturation : REPOSITORY_TREE.colorFamilies)
+// et un TON (clarté), au lieu de valeurs absolues ; bandeau, texte du bandeau et accent en sont calculés, avec les
+// rapports de contraste WCAG affichés (texte ≥ 4,5:1, éléments graphiques ≥ 3:1).
+(() => {
+  'use strict';
+  const LANGS = ['fr', 'en', 'de', 'es'];
+  const T = {
+    sub: ['DEFA Virtual — design, icônes, barre latérale et couleurs, pour toutes les pages de la suite', 'DEFA Virtual — design, icons, side bar and colours, for every page of the suite', 'DEFA Virtual — Design, Symbole, Seitenleiste und Farben für alle Seiten der Suite', 'DEFA Virtual — diseño, iconos, barra lateral y colores, para todas las páginas'],
+    design: ['Design', 'Design', 'Design', 'Diseño'],
+    designSub: ['La forme des pages : arrondis, densité, titres, barre latérale. Les couleurs restent celles du thème.', 'The shape of the pages: corners, density, titles, side bar. Colours stay those of the theme.', 'Die Form der Seiten: Ecken, Dichte, Titel, Seitenleiste. Die Farben bleiben die des Themas.', 'La forma de las páginas: esquinas, densidad, títulos, barra lateral. Los colores siguen siendo los del tema.'],
+    icons: ['Icônes', 'Icons', 'Symbole', 'Iconos'],
+    iconsSub: ['Épaisseur du trait des icônes, ou pas d’icônes du tout.', 'Stroke width of the icons, or no icons at all.', 'Strichstärke der Symbole oder gar keine Symbole.', 'Grosor del trazo de los iconos, o ningún icono.'],
+    iconSet: { fine: ['Trait fin', 'Thin stroke', 'Dünne Linie', 'Trazo fino'], line: ['Trait normal', 'Normal stroke', 'Normale Linie', 'Trazo normal'], bold: ['Trait épais', 'Bold stroke', 'Dicke Linie', 'Trazo grueso'], off: ['Aucune icône', 'No icons', 'Keine Symbole', 'Sin iconos'] },
+    side: ['Barre latérale', 'Side bar', 'Seitenleiste', 'Barra lateral'],
+    sideSet: { auto: ['Selon le design', 'Depending on design', 'Je nach Design', 'Según el diseño'], on: ['Toujours', 'Always', 'Immer', 'Siempre'], off: ['Jamais', 'Never', 'Nie', 'Nunca'] },
+    colors: ['Couleurs des thèmes', 'Theme colours', 'Themenfarben', 'Colores de los temas'],
+    colorsSub: ['Pour chaque thème : une famille de couleurs et un ton. Bandeau, texte et accent en sont calculés ; les contrastes WCAG sont vérifiés en direct.', 'For each theme: a colour family and a tone. Bar, text and accent are derived from them; WCAG contrast is checked live.', 'Je Thema: eine Farbfamilie und ein Ton. Leiste, Text und Akzent werden daraus berechnet; der WCAG-Kontrast wird live geprüft.', 'Para cada tema: una familia de colores y un tono. Barra, texto y acento se calculan a partir de ellos; el contraste WCAG se comprueba en directo.'],
+    groupPages: ['Applications', 'Applications', 'Anwendungen', 'Aplicaciones'],
+    groupCr: ['Familles de comptes rendus', 'Report families', 'Berichtsfamilien', 'Familias de informes'],
+    origin: ['Couleurs d’origine', 'Original colours', 'Ursprungsfarben', 'Colores originales'],
+    tone: ['Ton', 'Tone', 'Ton', 'Tono'], dark: ['sombre', 'dark', 'dunkel', 'oscuro'], light: ['clair', 'light', 'hell', 'claro'],
+    barText: ['texte / bandeau', 'text / bar', 'Text / Leiste', 'texto / barra'], accPage: ['accent / page', 'accent / page', 'Akzent / Seite', 'acento / página'], accCard: ['accent / carte', 'accent / card', 'Akzent / Karte', 'acento / tarjeta'],
+    preview: ['Voir sur cette page', 'Show on this page', 'Auf dieser Seite zeigen', 'Ver en esta página'], previewOn: ['Affiché sur cette page', 'Shown on this page', 'Auf dieser Seite angezeigt', 'Mostrado en esta página'],
+    button: ['Bouton', 'Button', 'Schaltfläche', 'Botón'], title: ['Titre', 'Title', 'Titel', 'Título'], link: ['Lien, icône', 'Link, icon', 'Link, Symbol', 'Enlace, icono'],
+    reset: ['Tout réinitialiser', 'Reset everything', 'Alles zurücksetzen', 'Restablecer todo'],
+    demo: ['Démonstration complète (maquette du générateur, catalogue d’icônes, contrastes de tous les thèmes)', 'Full demonstration (generator mock-up, icon catalogue, contrast of every theme)', 'Vollständige Demo (Generator-Entwurf, Symbolkatalog, Kontraste aller Themen)', 'Demostración completa (maqueta del generador, catálogo de iconos, contrastes de todos los temas)'],
+    thumbBlock: ['Importer une mission', 'Import a mission', 'Mission importieren', 'Importar una misión']
+  };
+  // Libellé court de chaque thème de repository_tree (sinon le nom du thème)
+  const NAMES = {
+    flight: ['Carburant (planificateur)', 'Fuel (planner)', 'Kraftstoff (Planer)', 'Combustible (planificador)'],
+    landing: ['Atterrissages', 'Landings', 'Landungen', 'Aterrizajes'],
+    sia: ['Missions SIA (générateur, studio)', 'SIA missions (generator, studio)', 'SIA-Missionen (Generator, Studio)', 'Misiones SIA (generador, estudio)'],
+    core: ['CR DEFA (pages communes)', 'DEFA reports (common pages)', 'DEFA-Berichte (gemeinsame Seiten)', 'Informes DEFA (páginas comunes)']
+  };
+  const APPS = ['flight', 'landing', 'sia', 'core'];
+  const nav = () => window.RepositoryNav, AP = () => nav().appearance;
+  const li = () => Math.max(0, LANGS.indexOf(nav()?.getLanguage?.() || 'fr'));
+  const typo = s => window.RepositoryContentI18n?.typography?.(s, LANGS[li()]) ?? s;
+  const t = row => typo(row[li()] || row[0]);
+  const esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+  const icon = (n, size) => window.RepositoryIcons?.svg(n, size ? { size } : undefined) || '';
+  const lightness = h => { const x = String(h || '').replace('#', ''), v = [0, 2, 4].map(i => parseInt(x.slice(i, i + 2), 16) / 255); return (Math.max(...v) + Math.min(...v)) / 2 * 100; };
+  const toneOf = hex => Math.round(Math.max(0, Math.min(100, (lightness(hex) - 12) / .42)));
+  let host = null, previewTheme = null;
+
+  /** Section-bloc du framework (icône, sous-titre) ; html : contenu. */
+  const block = (id, ic, title, sub, html) => `<section data-block-id="${id}" data-icon="${ic}" data-no-i18n><h2>${esc(title)}</h2><p class="repo-block-subtitle">${esc(sub)}</p>${html}</section>`;
+
+  function render() {
+    const a = AP(), cur = a.current(), i = li(), fam = Object.entries(a.families);
+    // --- design : vignettes dessinées dans chaque design
+    const thumbs = Object.entries(a.designs).map(([id, d]) => `<button type="button" class="ap-thumb" data-design="${esc(id)}" aria-pressed="${id === cur.design}">
+      <span class="ap-mini" data-d="${esc(id)}" aria-hidden="true"><span class="ap-mini-side"></span><span class="ap-mini-body"><span class="ap-mini-bar"></span><span class="ap-mini-block"><span class="ap-mini-ic"></span><span class="ap-mini-title">${esc(t(T.thumbBlock))}</span><span class="ap-mini-line"></span><span class="ap-mini-line s"></span><span class="ap-mini-btn"></span></span></span></span>
+      <b>${esc(d.label?.[i] || d.label?.[0] || id)}</b><small>${esc(typo(d.title?.[i] || d.title?.[0] || ''))}</small></button>`).join('');
+    // --- icônes : une rangée d'aperçu par variante
+    const sample = ['target', 'map', 'upload', 'fuel', 'plane', 'clipboard', 'chart', 'settings'];
+    const iconRows = Object.entries(T.iconSet).map(([id, row]) => `<button type="button" class="ap-iconrow" data-icons="${id}" aria-pressed="${id === cur.icons}"><b>${esc(t(row))}</b><span class="ap-iconset" data-set="${id}">${id === 'off' ? '' : sample.map(n => `<span class="ap-ic">${icon(n, 22)}</span>`).join('')}</span></button>`).join('');
+    const side = cur.sidenav || 'auto', sideBtns = Object.entries(T.sideSet).map(([id, row]) => `<button type="button" class="ap-seg" data-side="${id}" aria-pressed="${id === side}">${esc(t(row))}</button>`).join('');
+    // --- couleurs : une carte par thème, groupées (applications, familles de CR)
+    const card = name => {
+      const o = cur.colors[name] || null, base = a.themes[name], tone = o ? o.tone : toneOf(base.bar);
+      const dots = `<button type="button" class="ap-dot ap-origin" data-fam="" title="${esc(t(T.origin))}" aria-pressed="${!o}" style="background:${esc(base.bar)}">↺</button>` + fam.map(([id, f]) => `<button type="button" class="ap-dot" data-fam="${esc(id)}" title="${esc(f.label?.[i] || f.label?.[0] || id)}" aria-pressed="${o?.family === id}" style="background:${a.familyColors(f, 45, '#ffffff').bar}"></button>`).join('');
+      const label = NAMES[name] ? t(NAMES[name]) : name;
+      return `<article class="ap-card" data-theme="${esc(name)}"><header><b>${esc(label)}</b><small>${esc(name)}</small></header>
+        <div class="ap-sample"></div>
+        <div class="ap-dots" role="group" aria-label="${esc(label)}">${dots}</div>
+        <label class="ap-tone"><span>${esc(t(T.tone))}</span><small>${esc(t(T.dark))}</small><input type="range" min="0" max="100" value="${tone}"${o ? '' : ' disabled'}><small>${esc(t(T.light))}</small></label>
+        <div class="ap-wcag"></div>
+        <button type="button" class="ap-show" aria-pressed="${previewTheme === name}">${esc(t(previewTheme === name ? T.previewOn : T.preview))}</button></article>`;
+    };
+    const names = Object.keys(a.themes), crs = names.filter(n => !APPS.includes(n));
+    host.innerHTML =
+      block('ap-design', 'layers', t(T.design), t(T.designSub), `<div class="ap-thumbs">${thumbs}</div>`) +
+      block('ap-icons', 'box', t(T.icons), t(T.iconsSub), `<div class="ap-iconrows">${iconRows}</div><div class="ap-sidebar"><b>${esc(t(T.side))}</b><span class="ap-segs">${sideBtns}</span></div>`) +
+      block('ap-colors', 'eye', t(T.colors), t(T.colorsSub), `<h3>${esc(t(T.groupPages))}</h3><div class="ap-cards">${APPS.filter(n => a.themes[n]).map(card).join('')}</div><h3>${esc(t(T.groupCr))}</h3><div class="ap-cards">${crs.map(card).join('')}</div>`) +
+      `<p class="ap-foot"><a href="${esc(new URL('docs/demo_design_icones.html', nav().root).href)}">${esc(t(T.demo))}</a><button type="button" id="apReset">${esc(t(T.reset))}</button></p>`;
+    host.querySelectorAll('.ap-card').forEach(paint);
+    window.AppFramework?.refresh?.();
+  }
+
+  /** Aperçu et contrastes d'une carte de thème (famille et ton affichés, ou couleurs d'origine). */
+  function paint(cardEl) {
+    const a = AP(), name = cardEl.dataset.theme, base = a.themes[name], famId = cardEl.querySelector('.ap-dot[aria-pressed="true"]')?.dataset.fam || '', tone = +cardEl.querySelector('input[type=range]').value;
+    const c = famId ? { ...base, ...a.familyColors(a.families[famId], tone, base.page) } : { ...base };
+    const r1 = a.contrast(c.barText, c.bar), r2 = a.contrast(c.accent, c.page), r3 = a.contrast(c.accent, '#ffffff');
+    cardEl.querySelector('.ap-sample').innerHTML = `<span class="ap-s-bar" style="background:${c.bar};color:${c.barText}">${esc(t(T.title))}</span><span class="ap-s-page" style="background:${c.page}"><span class="ap-s-btn" style="background:${c.accent};color:${a.contrast('#ffffff', c.accent) >= a.contrast('#0b0f14', c.accent) ? '#fff' : '#0b0f14'}">${esc(t(T.button))}</span><span style="color:${c.accent}">${icon('map', 16)} ${esc(t(T.link))}</span></span>`;
+    const pill = (v, min, lab) => `<span class="ap-pill ${v >= min ? 'ok' : 'ko'}" title="${esc(lab)} : ${v.toFixed(2)} (${v >= min ? '≥' : '<'} ${min}:1)">${v >= min ? '✓' : '✗'} ${v.toFixed(1)}<small>${esc(lab)}</small></span>`;
+    cardEl.querySelector('.ap-wcag').innerHTML = pill(r1, 4.5, t(T.barText)) + pill(r2, 4.5, t(T.accPage)) + pill(r3, 3, t(T.accCard));
+  }
+
+  /** Enregistre la famille / le ton d'une carte (famille vide : couleurs d'origine) et rafraîchit l'aperçu de la page. */
+  function saveCard(cardEl) {
+    const a = AP(), name = cardEl.dataset.theme, famId = cardEl.querySelector('.ap-dot[aria-pressed="true"]')?.dataset.fam || '';
+    a.setColor(name, famId ? { family: famId, tone: +cardEl.querySelector('input[type=range]').value } : null);
+    if (previewTheme === name) nav().setTheme(name);
+  }
+
+  function mount() {
+    host = document.getElementById('appearancePage');
+    if (!host || !AP()) return;
+    window.RepositoryContentI18n?.([T.sub, ['Apparence', 'Appearance', 'Darstellung', 'Apariencia']]);
+    const css = document.createElement('style');
+    css.textContent = `
+.ap-thumbs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:12px}
+.ap-thumb{display:grid;gap:6px;text-align:left;padding:10px;border:2px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);cursor:pointer;font:inherit}
+.ap-thumb[aria-pressed="true"]{border-color:var(--repo-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--repo-accent) 25%,transparent)}
+.ap-thumb small{color:var(--muted);font-size:12px;line-height:1.35}
+.ap-mini{display:flex;height:112px;border-radius:8px;overflow:hidden;background:color-mix(in srgb,var(--repo-page) 92%,#fff);border:1px solid var(--line)}
+.ap-mini-side{width:0;background:color-mix(in srgb,var(--repo-bar) 86%,#000)}
+.ap-mini-body{flex:1;display:flex;flex-direction:column}
+.ap-mini-bar{height:22px;background:var(--repo-bar)}
+.ap-mini-block{margin:10px;padding:8px 10px;background:#fff;border:1px solid #d3dfe5;border-radius:8px;display:grid;grid-template-columns:auto 1fr;gap:4px 8px;align-items:center}
+.ap-mini-ic{display:none;width:14px;height:14px;border-radius:4px;background:color-mix(in srgb,var(--repo-accent) 30%,transparent)}
+.ap-mini-title{grid-column:1/-1;font-size:11px;font-weight:700;color:#17242b}
+.ap-mini-line{grid-column:1/-1;height:5px;border-radius:3px;background:#dfe7ec}.ap-mini-line.s{width:60%}
+.ap-mini-btn{grid-column:1/-1;width:52px;height:12px;border-radius:5px;background:var(--repo-accent)}
+.ap-mini[data-d="aero"] .ap-mini-bar{background:linear-gradient(115deg,var(--repo-bar),color-mix(in srgb,var(--repo-bar) 70%,#000))}
+.ap-mini[data-d="aero"] .ap-mini-block{border-radius:14px;box-shadow:0 6px 16px color-mix(in srgb,var(--repo-accent) 22%,transparent)}.ap-mini[data-d="aero"] .ap-mini-btn{border-radius:99px}
+.ap-mini[data-d="ops"] .ap-mini-block{border-radius:2px;border-left:4px solid var(--repo-accent);padding:5px 8px;margin:6px}.ap-mini[data-d="ops"] .ap-mini-title{text-transform:uppercase;font-size:9.5px;letter-spacing:.06em}.ap-mini[data-d="ops"] .ap-mini-btn{border-radius:2px}
+.ap-mini[data-d="console"] .ap-mini-side{width:22px}.ap-mini[data-d="console"] .ap-mini-ic{display:inline-block}.ap-mini[data-d="console"] .ap-mini-title{grid-column:auto;text-transform:uppercase;font-weight:800}.ap-mini[data-d="console"] .ap-mini-block{border-radius:8px;padding:10px 12px}.ap-mini[data-d="console"] .ap-mini-btn{height:14px;border-radius:5px}
+.ap-iconrows{display:grid;gap:8px;margin-top:12px}
+.ap-iconrow{display:grid;grid-template-columns:150px 1fr;align-items:center;gap:12px;padding:8px 12px;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer;font:inherit;text-align:left}
+.ap-iconrow[aria-pressed="true"]{border-color:var(--repo-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--repo-accent) 25%,transparent)}
+.ap-iconset{display:flex;gap:14px;color:var(--repo-accent);min-height:22px}
+.ap-iconset[data-set="fine"] .repo-svg{stroke-width:1.5!important}.ap-iconset[data-set="line"] .repo-svg{stroke-width:2!important}.ap-iconset[data-set="bold"] .repo-svg{stroke-width:2.6!important}
+.ap-iconset .ap-ic{display:inline-flex}.ap-iconset .repo-svg{display:block!important}
+.ap-sidebar{display:flex;align-items:center;gap:14px;margin-top:14px;flex-wrap:wrap}
+.ap-segs{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.ap-seg{border:0;padding:7px 14px;background:var(--card);color:var(--ink);cursor:pointer;font:inherit}.ap-seg+.ap-seg{border-left:1px solid var(--line)}
+.ap-seg[aria-pressed="true"]{background:var(--repo-accent);color:#fff;font-weight:700}
+main.ap-page h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:16px 0 8px}
+.ap-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.ap-card{display:grid;gap:9px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.ap-card header{display:flex;align-items:baseline;justify-content:space-between;gap:8px}.ap-card header small{color:var(--muted);font-family:ui-monospace,Consolas,monospace;font-size:11px}
+.ap-sample{border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.ap-s-bar{display:block;padding:7px 10px;font-weight:800;font-size:13px}
+.ap-s-page{display:flex;align-items:center;gap:12px;padding:9px 10px;font-size:12.5px;font-weight:650}
+.ap-s-page .repo-svg{display:inline-block!important;vertical-align:-3px}
+.ap-s-btn{padding:4px 10px;border-radius:6px;font-weight:700}
+.ap-dots{display:flex;flex-wrap:wrap;gap:5px}
+.ap-dot{width:22px;height:22px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0;color:#fff;font-size:12px;line-height:1}
+.ap-dot[aria-pressed="true"]{box-shadow:0 0 0 2px var(--ink);transform:scale(1.12)}
+.ap-tone{display:grid;grid-template-columns:auto auto 1fr auto;align-items:center;gap:6px;font-size:12.5px}.ap-tone small{color:var(--muted)}.ap-tone input{width:100%}
+.ap-wcag{display:flex;flex-wrap:wrap;gap:5px}
+.ap-pill{display:inline-flex;align-items:baseline;gap:4px;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:800}.ap-pill small{font-weight:500}
+.ap-pill.ok{background:#e3f4e8;color:#14532d}.ap-pill.ko{background:#fde2e1;color:#8a1c14}
+.ap-show{justify-self:start;border:1px solid var(--line);border-radius:8px;padding:5px 10px;background:transparent;color:var(--ink);cursor:pointer;font:inherit;font-size:12.5px}
+.ap-show[aria-pressed="true"]{background:var(--repo-bar);color:var(--repo-bar-text);border-color:var(--repo-bar)}
+.ap-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+#apReset{border:1px solid var(--line);border-radius:8px;padding:7px 12px;background:transparent;color:var(--ink);cursor:pointer;font:inherit}`;
+    document.head.append(css);
+    render();
+    host.addEventListener('click', e => {
+      const a = AP(), b = e.target.closest('button');
+      if (!b) return;
+      if (b.dataset.design) { a.setDesign(b.dataset.design); render(); }
+      else if (b.dataset.icons) { a.setIcons(b.dataset.icons); render(); }
+      else if (b.dataset.side) { a.setSidenav(b.dataset.side === 'auto' ? null : b.dataset.side === 'on'); render(); }
+      else if (b.classList.contains('ap-dot')) {
+        const cardEl = b.closest('.ap-card');
+        cardEl.querySelectorAll('.ap-dot').forEach(d => d.setAttribute('aria-pressed', String(d === b)));
+        const range = cardEl.querySelector('input[type=range]');
+        range.disabled = !b.dataset.fam;
+        paint(cardEl); saveCard(cardEl);
+      } else if (b.classList.contains('ap-show')) {
+        const name = b.closest('.ap-card').dataset.theme;
+        previewTheme = previewTheme === name ? null : name;
+        nav().setTheme(previewTheme || nav().settings.theme);
+        render();
+      } else if (b.id === 'apReset') {
+        Object.keys(a.current().colors).forEach(n => a.setColor(n, null));
+        a.setIcons('line'); a.setSidenav(null); a.setDesign(window.REPOSITORY_TREE.designs?.default || 'standard');
+        previewTheme = null; nav().setTheme(nav().settings.theme); render();
+      }
+    });
+    host.addEventListener('input', e => { if (e.target.type === 'range') paint(e.target.closest('.ap-card')); });
+    host.addEventListener('change', e => { if (e.target.type === 'range') saveCard(e.target.closest('.ap-card')); });
+    window.addEventListener('repository-language-change', render);
+  }
+  // les icônes (repository_icons.js) arrivent après ce script : construction au chargement complet de la page
+  if (document.readyState === 'complete') mount(); else window.addEventListener('load', mount);
+})();

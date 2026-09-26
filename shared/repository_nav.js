@@ -88,7 +88,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260926zy", script.src).href;
+    css.href = new URL("designs.css?v=20260926zz", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -202,9 +202,9 @@
       host.append(a)
     }
   }
-  // Apparence : réglée dans Paramétrage › Apparence (design, icônes, barre latérale, couleurs) ; le menu ☰ y mène.
+  // Apparence : page CR DEFA/apparence.html (design, icônes, barre latérale, couleurs) ; le menu ☰ et Paramétrage y mènent.
   menu.insertAdjacentHTML("beforeend", '<div class="repo-page-actions"></div><div class="repo-sep"></div><a class="repo-link repo-appearance-link" data-label="Apparence…"></a>');
-  menu.querySelector(".repo-appearance-link").href = new URL("CR DEFA/parametrage.html#appearance", root).href;
+  menu.querySelector(".repo-appearance-link").href = new URL("CR DEFA/apparence.html", root).href;
   /** Enregistre et applique le design id (événement « repository-design-change »). */
   const setDesign = id => {
     if (!designs[id]) return;
@@ -330,20 +330,20 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260926zy", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260926zz", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260926zy", script.src).href;
+    files.src = new URL("file_access.js?v=20260926zz", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, numéros et sous-titres de blocs, sous-cartes, zones de dépôt, barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260926zy", "block_icons.js?v=20260926zy", "side_nav.js?v=20260926zy"]) {
+    for (const f of ["icons/repository_icons.js?v=20260926zz", "block_icons.js?v=20260926zz", "side_nav.js?v=20260926zz"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260926zy", script.src).href;
+    store.src = new URL("browser_store.js?v=20260926zz", script.src).href;
     document.head.append(store)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Studio cartographique aéronautique SIA</title>
-<link rel="stylesheet" href="../shared/repository_nav.css?v=20260926zy">
-<script src="../repository_tree?v=20260926zy"></script>
+<link rel="stylesheet" href="../shared/repository_nav.css?v=20260926zz">
+<script src="../repository_tree?v=20260926zz"></script>
 <link rel="stylesheet" href="maplibre-gl.css">
 <script src="maplibre-gl.js"></script>
 <script src="../shared/mission_core/vendor/js-yaml.min.js"></script>
 <script src="mission_store.js?v=20260926d"></script>
-<script src="aero_symbols.js?v=20260925j"></script><script src="vertical_profile.js?v=20260925k"></script><script src="../AircraftDB/aircraft_db.js"></script><script src="../shared/flight_performance_model.js?v=20260926zy"></script>
-<script src="../shared/aar_tracks.js?v=20260926zy"></script><script src="../shared/sticky_frame.js?v=20260926zy"></script>
+<script src="aero_symbols.js?v=20260925j"></script><script src="vertical_profile.js?v=20260925k"></script><script src="../AircraftDB/aircraft_db.js"></script><script src="../shared/flight_performance_model.js?v=20260926zz"></script>
+<script src="../shared/aar_tracks.js?v=20260926zz"></script><script src="../shared/sticky_frame.js?v=20260926zz"></script>
 <style>
 :root{font:15px/1.45 system-ui,sans-serif;color:#18242b;background:#edf3f6}body{max-width:1500px;margin:0 auto;padding:0 18px 50px}header,section{background:#fff;border:1px solid #d3dfe5;border-radius:12px;padding:20px;margin:14px 0;box-shadow:0 2px 8px #18313e0d}h1{margin:0;font-size:1.65rem}h2{margin:0 0 13px;font-size:1.1rem}.sub{color:#586a74;margin:.35rem 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:14px}.box{border:1px solid #dce5e9;border-radius:9px;padding:12px}.check{display:flex;gap:8px;align-items:center;margin:7px 0;font-weight:600}.check input{width:18px;height:18px}label{display:block;font-weight:650;margin:7px 0}input[type=file],input[type=number],textarea{width:100%;box-sizing:border-box;margin-top:4px;padding:8px;border:1px solid #afc1ca;border-radius:7px;font:inherit}textarea{min-height:105px;font-family:ui-monospace,monospace}button,.buttonLink{border:0;border-radius:8px;background:#075ca8;color:#fff;padding:10px 16px;font:inherit;font-weight:750;cursor:pointer;text-decoration:none;display:inline-block}button:disabled{opacity:.45;cursor:not-allowed}.warn{background:#fff7d9;border-left:4px solid #dfa400;padding:9px 11px}.ok{color:#08723c}.err{color:#a12622}code{background:#eef2f4;padding:2px 5px;border-radius:4px}#maps{padding-left:20px}.actions{display:flex;gap:10px;flex-wrap:wrap}.small{font-size:.88rem;color:#5c6d76}progress{width:100%;height:18px}
 input[type=range]{width:100%;margin:5px 0}select{width:100%;box-sizing:border-box;margin-top:4px;padding:8px;border:1px solid #afc1ca;border-radius:7px;background:#fff;font:inherit}
@@ -27,13 +27,13 @@ header{margin:0!important;border:0!important;border-radius:0!important;box-shado
 <header><div class="header-row"><h1>Studio cartographique aéronautique SIA</h1><a class="headerButton" href="mission_editor.html">← Retour au générateur de mission</a></div></header>
 
 <main>
-<section data-block-id="sia-mission" data-step="1" data-icon="target" data-subtitle="Ouvrir, coller ou reprendre la mission partagée avec le générateur."><h2>Mission</h2><div class="grid">
+<section data-block-id="sia-mission" data-icon="target" data-subtitle="Ouvrir, coller ou reprendre la mission partagée avec le générateur."><h2>Mission</h2><div class="grid">
 <label>Ouvrir une mission Markdown ou YAML<input id="missionFile" type="file" multiple accept=".md,.markdown,.yaml,.yml,text/markdown,text/yaml,text/plain,application/yaml" data-dropzone></label>
 <div class="actions"><button id="openMissionPaste" data-icon="link" class="buttonLink" type="button">ou coller son contenu…</button></div>
 </div><div id="missionPaste" class="box" hidden><strong>Coller le contenu Markdown ou YAML de la mission</strong><textarea id="missionText" placeholder="Colle ici le contenu Markdown ou YAML de la mission…"></textarea><div class="actions"><button id="parseMission" data-icon="eye" type="button">Lire la mission</button></div></div><p id="missionStatus" class="small">Formats acceptés : Markdown, YAML <code>helo-xp-mission</code>.</p><div class="box"><div class="actions"><button id="previewAll" data-icon="eye" type="button" disabled>Afficher toutes les cartes</button><button id="generate" data-icon="download" disabled>Générer les cartes et le ZIP</button><button id="generateAll" data-icon="layers" type="button" hidden>Générer toutes les missions</button></div><p id="outputSummary" class="small"></p><p><progress id="progress" value="0" max="1" hidden></progress></p><div id="result"></div></div>
 </section>
 
-<section data-block-id="sia-profiles" data-step="2" data-icon="eye" data-subtitle="Fond de carte, espaces, symboles et éléments de chaque carte."><h2>Profils d’affichage</h2>
+<section data-block-id="sia-profiles" data-icon="eye" data-subtitle="Fond de carte, espaces, symboles et éléments de chaque carte."><h2>Profils d’affichage</h2>
 <div class="profileLayout" id="profileEditor">
 <div class="profileLeft">
 <div class="profileTabs" role="tablist"><button type="button" data-tab="fond" class="on">Fond de carte</button><button type="button" data-tab="zones">Zones</button><button type="button" data-tab="aero">Symboles OACI</button><button type="button" data-tab="elements">Éléments</button></div>
@@ -91,19 +91,19 @@ header{margin:0!important;border:0!important;border-radius:0!important;box-shado
 <p id="previewStatus" class="small">Carte choisie, dessinée avec le profil en cours de modification ; actualisée à chaque réglage.</p><div id="vprofBox" class="box osmLayers"><strong>Profil vertical</strong><label>Cheminement<textarea id="vprofRoute" rows="2" placeholder="Vide : origine, points tournants et destination de la mission. Ex. : LFOT, SIMIP/3000, TARGET/FL65, 46.5 1.4, LFOT"></textarea></label><span class="small">Points du brief (id ou nom), aérodromes (OACI), balises, points RNAV, « REN300010 » (radiale / distance) ou « lat lon » ; « /3000 » ou « /FL65 » : altitude à atteindre au point ; « N0450F350 » : niveau de croisière (groupe vitesse / niveau) ; « FL105 » ou « 5500 ft » seul sur une ligne : montée ou descente vers ce niveau après le point précédent ; « VFR » : pas de niveau. La case 15 d’un plan de vol (séparée par des espaces) est acceptée.</span><div id="vprofPtsBox" class="small" hidden><span>Points de la mission (clic : ajouter au cheminement) :</span> <span id="vprofPts"></span></div><div class="profileBar"><label>Niveau de croisière (FL65 ou 6500)<input id="vprofCruise" type="text" placeholder="FL65" size="7"></label><label>Plancher de la coupe (ft)<input id="vprofFloor" type="number" min="0" step="500" value="0"></label><label>Plafond de la coupe (ft, 0 = auto)<input id="vprofCeil" type="number" min="0" step="500" value="0"></label><label>Appareil (profils du planificateur)<select id="vprofAircraft"><option value="">— taux ci-dessous —</option></select></label><label>Montée (ft/min · kt)<span style="display:flex;gap:4px"><input id="vprofClimb" type="number" min="100" step="100" value="1000"><input id="vprofClimbKt" type="number" min="40" step="10" value="140"></span></label><label>Descente (ft/min · kt)<span style="display:flex;gap:4px"><input id="vprofDesc" type="number" min="100" step="100" value="800"><input id="vprofDescKt" type="number" min="40" step="10" value="160"></span></label><label class="check"><input id="vprofOut" type="checkbox"> Image <code>profil_vertical.png</code> dans les sorties</label><label class="check"><input id="vprofMap" type="checkbox" checked> Tracer le cheminement sur les cartes</label><button type="button" id="vprofDraw">Tracer le profil</button></div><p id="vprofStatus" class="small">Relief (tuiles d’altitude, ± 1 km) ; espaces et obstacles (à moins de 1 NM) selon le profil d’affichage de <code>profil_vertical.png</code> (liste des cartes).</p><img id="vprofImg" alt="Profil vertical" hidden style="width:100%;cursor:zoom-in;border:1px solid #c8d6dd;border-radius:8px;margin-top:6px"></div></aside></div>
 </section>
 
-<section data-block-id="sia-outputs" data-step="3" data-icon="map" data-subtitle="Cartes de la mission, aperçus et génération du ZIP."><h2>Cartes</h2>
+<section data-block-id="sia-outputs" data-icon="map" data-subtitle="Cartes de la mission, aperçus et génération du ZIP."><h2>Cartes</h2>
 <div hidden><input id="svg" type="checkbox"><input id="png" type="checkbox" checked><input id="pngWidth" type="number" value="1600"></div><p id="galleryStatus" class="small">Les aperçus ne créent aucun fichier.</p>
 <div id="previewGallery"></div>
 <h3>Carte d’assemblage</h3><img id="assemblyPreview" alt="Carte d’assemblage" hidden><p id="assemblyStatus" class="small">Elle s’affichera automatiquement dès que le fond et la mission seront disponibles.</p>
 </section>
 
-<section data-block-id="sia-base" data-step="4" data-icon="database" data-subtitle="Dossier SIA (AIXM) lu et gardé dans le navigateur."><h2>Base de données SIA</h2>
+<section data-block-id="sia-base" data-icon="database" data-subtitle="Dossier SIA (AIXM) lu et gardé dans le navigateur."><h2>Base de données SIA</h2>
 <div class="folderBar"><button id="pickSiaFolder" type="button" hidden>Dossier SIA XML : …</button><button id="reloadSiaFolder" class="buttonLink" type="button" hidden>Relire le dossier</button><label id="folderInputLabel">Choisir le dossier SIA XML<input id="folderInput" type="file" webkitdirectory directory multiple></label></div>
 <p class="small">Le dossier choisi est mémorisé (comme les autres dossiers de la suite) : « Relire le dossier » après une mise à jour AIRAC. La page recherche automatiquement le fond <code>Carte france vierge.png</code>, le catalogue de villes et analyse chaque fichier XML du dossier. Les données de mission restent séparées.</p>
 <div class="actions"><button id="loadCachedFolder" type="button" disabled>Recharger la base mémorisée</button></div><p id="cachedFolderInfo" class="small">Aucun dossier mémorisé.</p>
 <div id="inputStatus">Choisis le dossier de base ; aucun XML particulier n'est demandé.</div><div id="xmlInventory"></div></section>
 
-<section data-block-id="sia-data" data-step="5" data-icon="layers" data-subtitle="Villes, grille MORA, relief et autres couches."><h2>Données complémentaires</h2><div class="grid">
+<section data-block-id="sia-data" data-icon="layers" data-subtitle="Villes, grille MORA, relief et autres couches."><h2>Données complémentaires</h2><div class="grid">
 <div class="box"><strong>Catalogue et grille MORA</strong><div class="actions"><button id="computeMora" type="button">Calculer la grille MORA</button></div><span id="moraStatus" class="small">Grille de 1° × 1° : point le plus haut (relief, sommets OSM, obstacles de l’AIXM SIA) + 1000 ft (2000 ft au-delà de 5000 ft). Valeurs calculées, non certifiées.</span><br><span class="small">Villes : <a href="https://download.geonames.org/export/dump/cities500.zip" target="_blank" rel="noopener">GeoNames cities500</a> — CC BY 4.0.<br>MORA publiée : <a href="https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/eaip.html" target="_blank" rel="noopener">SIA eAIP, cartes ENR 6</a>.<br>Terrain de calcul possible : <a href="https://www.data.gouv.fr/datasets/rge-alti-r" target="_blank" rel="noopener">IGN RGE ALTI</a>. Le terrain seul ne constitue pas une MORA certifiée.</span></div>
 <div class="box"><label>Ouest<input id="west" type="number" step="0.1" value="-6.5"></label><label>Sud<input id="south" type="number" step="0.1" value="40.5"></label><label>Est<input id="east" type="number" step="0.1" value="12.5"></label><label>Nord<input id="north" type="number" step="0.1" value="52.0"></label><span class="small">Calibration du fond entier, WGS84.</span></div>
 </div></section>
@@ -784,7 +784,7 @@ window.addEventListener('repository-nav-ready',e=>addOutputActions(e.detail));if
  // Base absente ou d'une version précédente : relecture du dossier mémorisé si l'accès est déjà accordé.
  if(!cachedOk)for(let i=0;i<50&&!window.FileAccess;i++)await new Promise(r=>setTimeout(r,100));if(!cachedOk&&window.FileAccess){const st=await FileAccess.status('__sia');if(st.handle&&st.permission==='granted')readSiaFolder(false);else if(st.handle)$('inputStatus').innerHTML=`<span class="err">Base à reconstruire (nouvelle version : cercles et arcs des CTR, CTA / TRA, tours de contrôle) : clique sur « Relire le dossier ».</span>`}})();
 </script>
-<script src="../shared/repository_nav.js?v=20260926zy"></script>
-<script src="../shared/app_framework.js?v=20260926zy"></script>
-<script src="../shared/content_i18n.js?v=20260926zy"></script><script src="sia_i18n.js?v=20260926e"></script>
+<script src="../shared/repository_nav.js?v=20260926zz"></script>
+<script src="../shared/app_framework.js?v=20260926zz"></script>
+<script src="../shared/content_i18n.js?v=20260926zz"></script><script src="sia_i18n.js?v=20260926e"></script>
 </body></html>

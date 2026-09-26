@@ -61,8 +61,10 @@ Interface `window.RepositoryNav` : `root` (racine du site), `page`, `menu`, `set
 
 ## 2 bis. Apparence — designs, icônes, barre latérale, couleurs
 
-Réglée dans **Paramétrage › Apparence** (`CR DEFA/parametrage.html#appearance`, bloc construit par
-`shared/appearance_admin.js` ; le menu ☰ y mène par « Apparence… »), mémorisée dans le navigateur et appliquée
+Réglée sur la page **Apparence** (`CR DEFA/apparence.html`, construite par `shared/appearance_page.js` : vignettes
+des designs dessinées dans chaque design, rangées d'icônes par épaisseur de trait, barre latérale, une carte par thème
+avec famille, ton, aperçu, contrastes WCAG et « Voir sur cette page » ; le menu ☰ « Apparence… » et un bloc-lien de
+Paramétrage, `shared/appearance_admin.js`, y mènent), mémorisée dans le navigateur et appliquée
 sur toutes les pages par `repository_nav.js` dès le chargement (`RepositoryNav.appearance`). Ces réglages sont
 sauvegardés avec les données locales mais **ne comptent pas** comme modifications à sauvegarder (`browser_store.js`,
 liste `DISPLAY` : design, icônes, couleurs, barre latérale, langue, onglets, séparateurs, colonnes, cadrans…).
