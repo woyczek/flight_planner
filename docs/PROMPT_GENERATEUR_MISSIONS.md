@@ -110,6 +110,9 @@ Deux fichiers par mission, chacun dans son propre bloc de code, précédé d'une
   summaryNNX.md     (bloc ```markdown)
 Ordre : mission41A.yaml, summary41A.md, mission41B.yaml, summary41B.md, … puis l'opération suivante.
 Aucun autre fichier (pas d'images, pas de manifeste). Puis le bloc VALIDATION (§ 10).
+Réponse trop longue pour tout livrer d'un coup : livrer les missions une par une, chacune COMPLÈTE (YAML +
+Markdown), puis écrire « Mission suivante : 11B — répondre « suite » » et attendre ; le bloc VALIDATION suit
+la dernière mission. Ne jamais tronquer un fichier.
 
 ────────────────────────────────────────────────────────────────────────────
 4. YAML — SCHÉMA EXACT (helo-xp-mission 1.0)

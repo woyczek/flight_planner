@@ -10,6 +10,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Missions — opérations chargées en plusieurs fois** : sélecteur de l'en-tête affiché dès qu'une mission annonce
+  son opération (missions manquantes grisées) ; une mission de la même opération collée ensuite rejoint le lot ;
+  prompt : livraison mission par mission (« suite ») quand la réponse est trop longue.
 - **Missions — lots (opérations à plusieurs équipes)** : plusieurs missions chargées d'un coup, par fichiers ou
   texte collé (réponse ChatGPT découpée sur « Fichier : … » ou « # Mission … ») ; navigation ◀ ▶ dans l'en-tête du
   générateur et du studio (lot partagé, modifications gardées) ; générateur : **Exporter les N PDF** (un brief par

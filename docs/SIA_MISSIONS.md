@@ -87,7 +87,9 @@ mission (identifiant `mission.id`, ou titre « # Mission 41A ») ; la première 
 pages et mémorisé dans le navigateur : `siaMissionBatch:v1`). Les modifications de chaque mission sont gardées
 en passant de l'une à l'autre. Générateur : **Exporter les N PDF** — un brief par mission. Les fichiers annexes
 d'une série (`maps_manifest.md`, `AAR_TRACKS_REFERENCE.md`, `VALIDATION.txt`, consignes) sont ignorés et
-signalés. Un chargement d'une seule mission efface le lot.
+signalés. Une mission dont le bloc `operation` annonce d'autres missions affiche déjà le sélecteur (missions non
+chargées grisées, « à charger ») ; une mission de la même opération collée ou ouverte ensuite **rejoint** le lot
+(réponse de ChatGPT livrée mission par mission). Un chargement d'une mission hors de l'opération efface le lot.
 
 ## 3. Générateur de mission (brief)
 

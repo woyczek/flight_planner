@@ -359,11 +359,16 @@
   // ---- lot de missions (opération à plusieurs équipes : 41A, 41B…) --------------------------------------
   /** Identifiant d'une mission (mission.id, sinon numéro), normalisé : « 41A », « 11 » ; « » si absent. */
   const missionId = d => String(d?.yaml?.mission?.id ?? d?.yaml?.mission?.number ?? '').trim().toUpperCase().replace(/^0+(?=\d)/, '');
-  /** Lot mémorisé { docs: [{ yaml, narrative, sourceNames }], index } ; null sans lot (ou lot d'une seule mission). */
+  /** Identifiant d'opération d'une mission (bloc operation) ; « » sans opération. */
+  const operationId = d => String(d?.yaml?.operation?.id ?? '').trim().toUpperCase();
+  /** Missions annoncées par l'opération d'un lot (operation.missions de ses documents), normalisées. */
+  const plannedIds = docs => [...new Set(docs.flatMap(d => (Array.isArray(d?.yaml?.operation?.missions) ? d.yaml.operation.missions : []).map(x => String(x).trim().toUpperCase().replace(/^0+(?=\d)/, ''))))];
+  /** Lot mémorisé { docs: [{ yaml, narrative, sourceNames }], index } (plusieurs missions, ou une mission d'une
+   *  opération dont les autres restent à charger) ; null sans lot. */
   function loadBatch() {
     try {
       const b = JSON.parse(localStorage.getItem(BATCH) || 'null');
-      return b && Array.isArray(b.docs) && b.docs.length > 1 ? { docs: b.docs, index: Math.min(Math.max(0, b.index | 0), b.docs.length - 1) } : null;
+      return b && Array.isArray(b.docs) && b.docs.length ? { docs: b.docs, index: Math.min(Math.max(0, b.index | 0), b.docs.length - 1) } : null;
     } catch { return null; }
   }
   /** Enregistre le lot (null : l'efface) et prévient les autres pages. */
@@ -422,9 +427,19 @@
    *  plusieurs missions : lot, la première devient la courante (« mission suivante » dans l'en-tête).
    *  Retourne { doc (mission courante enregistrée), docs, count, ignored }. */
   function importTexts(files, by) {
-    const { docs, ignored } = fromTextsBatch(files);
-    storeBatch(docs.length > 1 ? { docs: docs.map(d => ({ yaml: d.yaml, narrative: d.narrative, sourceNames: d.sourceNames })), index: 0 } : null);
-    return { doc: save(docs[0], by), docs, count: docs.length, ignored };
+    const { docs, ignored } = fromTextsBatch(files), slim = d => ({ yaml: d.yaml, narrative: d.narrative, sourceNames: d.sourceNames });
+    const prev = loadBatch(), op = operationId(docs[0]);
+    let b = null;
+    if (prev && op && docs.every(d => operationId(d) === op) && prev.docs.some(d => operationId(d) === op)) {
+      // missions de la MÊME opération chargées en plusieurs fois (ex. réponse de ChatGPT collée mission par mission) : elles rejoignent le lot
+      const all = [...prev.docs];
+      for (const d of docs) { const i = all.findIndex(x => missionId(x) === missionId(d)); i >= 0 ? all[i] = slim(d) : all.push(slim(d)); }
+      all.sort((x, y) => missionId(x).localeCompare(missionId(y), 'fr', { numeric: true }));
+      b = { docs: all, index: all.findIndex(x => missionId(x) === missionId(docs[0])) };
+    } else if (docs.length > 1 || plannedIds(docs).length > 1) b = { docs: docs.map(slim), index: 0 };
+    storeBatch(b);
+    const planned = plannedIds(b?.docs || docs), loaded = (b?.docs || docs).map(missionId), missing = planned.filter(id => !loaded.includes(id));
+    return { doc: save(docs[0], by), docs, count: docs.length, ignored, batchSize: b?.docs.length || 1, missing, operation: docs[0].yaml?.operation?.name || '' };
   }
 
   /** Navigation du lot dans l'en-tête de la page : « ◀ Mission 41A — titre (1/3) ▶ », masquée sans lot.
@@ -443,11 +458,18 @@
       document.head.append(css);
       const sel = nav.querySelector('select');
       const render = () => {
-        const b = loadBatch();
-        nav.hidden = !b;
-        if (!b) return;
-        sel.innerHTML = b.docs.map((d, i) => `<option value="${i}">Mission ${esc(missionId(d) || i + 1)} — ${esc(String(d.yaml?.title || '').slice(0, 48))} (${i + 1}/${b.docs.length})</option>`).join('');
+        const b = loadBatch(), planned = b ? plannedIds(b.docs) : [], loaded = b ? b.docs.map(missionId) : [];
+        const all = [...new Set([...loaded, ...planned])].sort((x, y) => x.localeCompare(y, 'fr', { numeric: true }));
+        nav.hidden = !b || all.length < 2;
+        if (nav.hidden) return;
+        sel.innerHTML = all.map((id, k) => {
+          const i = loaded.indexOf(id), d = b.docs[i];
+          return i >= 0 ? `<option value="${i}">Mission ${esc(id)} — ${esc(String(d.yaml?.title || '').slice(0, 48))} (${k + 1}/${all.length})</option>`
+            : `<option disabled>Mission ${esc(id)} — à charger : coller ou ouvrir ses fichiers (${k + 1}/${all.length})</option>`;
+        }).join('');
         sel.value = String(b.index);
+        nav.querySelectorAll('[data-step]').forEach(x => { x.disabled = b.docs.length < 2; });
+        nav.title = b.docs[0]?.yaml?.operation?.name ? `Opération : ${b.docs[0].yaml.operation.name}` : '';
       };
       const goTo = i => { try { const d = go(i, me); if (d) apply(d); } catch (e) { alert(e.message); } render(); };
       sel.onchange = () => goTo(+sel.value);
