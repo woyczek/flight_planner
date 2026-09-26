@@ -73,7 +73,9 @@ liste `DISPLAY` : design, icônes, couleurs, barre latérale, langue, onglets, s
   ombres douces, en-tête en dégradé), **Opérationnel** (dense, angles vifs, liseré du thème, titres en capitales),
   **Console** (barre latérale, blocs aérés, titres en capitales, icônes ; remplace l'ancien Brief).
   Règles : `designs.css` (formes communes) et `block_icons.css` (Console, icônes, numéros).
-- **Designs à matières** : **Cabinet** (cabinet de navigation : sous-main en cuir, cadre en bois, en-tête en cuir
+- **Designs à matières** : **Carnet de vol** (`flightlog`, déclinaison aéronautique de Cabinet : cadre d'aluminium riveté
+  des blocs, plaques d'aluminium brossé, emblème à hélice ailée, cadrans et plan de vol en décor, icônes « Avionique »),
+  **Cabinet** (cabinet de navigation : sous-main en cuir, cadre en bois, en-tête en cuir
   marine, blocs en parchemin cerclés de cuir, plaques de titre en laiton gravé, médaillon rose des vents), **Durci**
   (clé `field` : console de terrain, fond de carte topographique, châssis en peinture olive écaillée, panneaux d'acier,
   plaques kaki, champs noirs, bouton principal vert à voyant, radar) et **Aqua** (métal brossé, verre dépoli, boutons
@@ -102,7 +104,7 @@ liste `DISPLAY` : design, icônes, couleurs, barre latérale, langue, onglets, s
   (Apparence, Paramètres, Menu).
 - **Icônes** (`repositoryIcons`, `<html data-icons>`) : trait normal, fin, épais ; trois jeux **skeuomorphes** en
   images, utilisables dans tous les designs — **Laiton** (`brass` : médaillons de bronze cerclés de laiton), **Acier**
-  (`steel` : plaques d'acier vissées), **Gel** (`gel` : bulles) ; ou aucune. En jeu skeuomorphe, l'image
+  (`steel` : plaques d'acier vissées), **Gel** (`gel` : bulles), **Avionique** (`avio` : boutons ronds de métal sombre, Carnet de vol) ; ou aucune. En jeu skeuomorphe, l'image
   (`shared/icons/skeuo/<cabinet|field|aqua>/<nom>.webp`) remplace le tracé de chaque icône (`svg.repo-svg[data-i]`)
   partout : icônes découpées dans les planches de maquette (`tools/icons_from_sheets.html`), les autres fabriquées dans
   leur style (`tools/icons_skeuo_generator.html`) ; règles générées dans `block_icons.css` par

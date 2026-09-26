@@ -27,7 +27,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def do_PUT(self):
         # textures, icônes et éléments décoratifs des designs à matières (tools/icons_from_sheets.html)
-        m = re.fullmatch(r'/shared/((?:textures|icons/skeuo/(?:cabinet|field|aqua)|deco/(?:cabinet|field|aqua))/[a-z0-9-]+\.webp)', self.path)
+        m = re.fullmatch(r'/shared/((?:textures|icons/skeuo/(?:cabinet|field|aqua|flightlog)|deco/(?:cabinet|field|aqua|flightlog))/[a-z0-9-]+\.webp)', self.path)
         if not m:
             self.send_error(403)
             return

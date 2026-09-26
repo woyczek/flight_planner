@@ -68,7 +68,10 @@
   };
   // Emblèmes d'en-tête des designs à matières (designs.list[id].emblem, repository_nav.js) : dessins en couleurs
   // propres (laiton, acier), avec dégradés ; identifiants de dégradés préfixés pour coexister dans la page.
+  const SRC = document.currentScript?.src || location.href, VER = new URL(SRC).search;   // images : même version que ce script
   const EMBLEMS = {
+    // Carnet de vol : hélice ailée découpée dans la planche (shared/deco/flightlog/emblem.webp)
+    propeller: () => `<img src="${new URL('../deco/flightlog/emblem.webp' + VER, SRC).href}" alt="">`,
     compass() {
       let ticks = '';
       for (let i = 0; i < 72; i++) {

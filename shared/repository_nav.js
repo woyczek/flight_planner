@@ -94,7 +94,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260926zzw", script.src).href;
+    css.href = new URL("designs.css?v=20260926zzy", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -340,7 +340,7 @@
       setDecor(v) { try { v ? localStorage.setItem("repositoryDecor", v) : localStorage.removeItem("repositoryDecor"); } catch {} doc.dataset.decor = v || decorDefault; window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { decor: doc.dataset.decor } })); },
       renderEmblem,
       setDesign,
-      /** Jeu d'icônes : "line" (défaut), "fine", "bold", "brass" (laiton), "steel" (acier), "gel", "off" ; null : jeu du design. */
+      /** Jeu d'icônes : "line" (défaut), "fine", "bold", "brass" (laiton), "steel" (acier), "gel", "avio" (avionique), "off" ; null : jeu du design. */
       setIcons(v) { if (!v) { try { localStorage.removeItem("repositoryIcons"); } catch {} doc.dataset.icons = iconsFor(design); window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { icons: doc.dataset.icons } })); return; } doc.dataset.icons = v; try { localStorage.setItem("repositoryIcons", v); } catch {} window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { icons: v } })); },
       /** Barre latérale : true, false, ou null (selon le design). */
       setSidenav(on) { if (on == null) { delete doc.dataset.sidenav; try { localStorage.removeItem("repositorySidenav"); } catch {} } else { doc.dataset.sidenav = on ? "on" : "off"; try { localStorage.setItem("repositorySidenav", on ? "on" : "off"); } catch {} } },
@@ -402,7 +402,7 @@
     // jeux d'icônes skeuomorphes (Laiton, Acier, Gel) : images posées tout de suite (<img>, téléchargées avec la
     // page), sans attendre le registre d'icônes ni block_icons.css ; les tracés arrivent ensuite (side_nav.js) et ne
     // servent que dans les jeux au trait
-    const SKEUO = { brass: "cabinet", steel: "field", gel: "aqua" }, ver = new URL(script.src).search;
+    const SKEUO = { brass: "cabinet", steel: "field", gel: "aqua", avio: "flightlog" }, ver = new URL(script.src).search;
     const skImg = name => { const d = SKEUO[doc.dataset.icons]; return d ? `<img class="repo-sidenav-img" src="${new URL(`icons/skeuo/${d}/${name}.webp${ver}`, script.src).href}" alt="">` : ""; };
     side.innerHTML = `<div class="repo-sidenav-brand" aria-hidden="true"><span class="repo-sidenav-ic" data-sidenav-icon="map" data-size="30">${skImg("map")}</span></div><ul></ul>`;
     const ul = side.querySelector("ul");
@@ -440,20 +440,20 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260926zzw", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260926zzy", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260926zzw", script.src).href;
+    files.src = new URL("file_access.js?v=20260926zzy", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260926zzw", "block_icons.js?v=20260926zzw", "side_nav.js?v=20260926zzw"]) {
+    for (const f of ["icons/repository_icons.js?v=20260926zzy", "block_icons.js?v=20260926zzy", "side_nav.js?v=20260926zzy"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260926zzw", script.src).href;
+    store.src = new URL("browser_store.js?v=20260926zzy", script.src).href;
     document.head.append(store)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

@@ -23,6 +23,11 @@
       between: [['clip', 150], ['tack', 22, 'pair']],
       sides: [['compass', 118], ['map', 230], ['clip', 190], ['medal-1', 60]]
     },
+    flightlog: {
+      foot: img => `<img class="repo-deco-strip" src="${img('footer')}" alt="">`,
+      between: [['clip', 130], ['gauge-attitude', 84], ['gauge-speed', 84], ['gauge-alt', 84]],
+      sides: [['gauge-speed', 120], ['chart', 230], ['gauge-attitude', 120], ['clip', 150], ['gauge-alt', 120]]
+    },
     field: {
       foot: img => `<div class="repo-deco-plate-img"><img src="${img('plate-defa')}" alt=""></div>
         <div class="repo-deco-radar" title="${tr('radar')}"><img src="${img('radar')}" alt=""><span class="repo-deco-sweep"></span><i style="left:30%;top:36%;--c:#7dff8a"></i><i style="left:44%;top:66%;--c:#7dff8a"></i></div>

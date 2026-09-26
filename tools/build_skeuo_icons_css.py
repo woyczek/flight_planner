@@ -8,11 +8,11 @@ Relancer après une nouvelle découpe ou génération : python tools/build_skeuo
 """
 import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SETS = {'brass': 'cabinet', 'steel': 'field', 'gel': 'aqua'}
-ALIASES = {'brass': {'save': 'bookmark', 'file': 'file'}, 'steel': {'file': 'file-text'}, 'gel': {'file': 'file-text'}}
+SETS = {'brass': 'cabinet', 'steel': 'field', 'gel': 'aqua', 'avio': 'flightlog'}
+ALIASES = {'brass': {'save': 'bookmark', 'file': 'file'}, 'steel': {'file': 'file-text'}, 'gel': {'file': 'file-text'}, 'avio': {'save': 'bookmark', 'file': 'file'}}
 BEGIN = '/* ==== JEUX D\'ICÔNES SKEUOMORPHES (généré par tools/build_skeuo_icons_css.py) ==== */'
 END = '/* ==== fin des jeux skeuomorphes ==== */'
-ANY = 'html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"])'
+ANY = 'html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"])'
 out = [BEGIN,
        f'{ANY} .repo-svg[data-i]{{background-position:center;background-size:contain;background-repeat:no-repeat;--rs:1.6em}}',
        f'{ANY} .repo-svg[data-i]>*{{display:none}}',

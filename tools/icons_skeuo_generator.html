@@ -15,6 +15,7 @@
 const SETS = {
   brass: { dir: 'cabinet', sheet: ['book', 'plus', 'bookmark', 'refresh', 'sparkles', 'download', 'printer', 'x', 'info'], skip: ['save'] },
   steel: { dir: 'field', sheet: ['file-text', 'book', 'x', 'settings', 'map', 'plane', 'target', 'refresh', 'info', 'alert', 'globe', 'sparkles'], skip: ['file'] },
+  avio: { dir: 'flightlog', sheet: ['plus', 'bookmark', 'refresh', 'sparkles', 'download', 'printer', 'x', 'info'], skip: ['save', 'file'] },   // Carnet de vol
   gel: { dir: 'aqua', sheet: ['settings', 'folder', 'pin', 'file-text', 'users', 'info', 'check', 'alert', 'x'], skip: ['file'] }
 };
 const GEL = ['#2f7de1', '#8a96a6', '#8e5ad6', '#2fa65a', '#1aa0b8', '#e08a1e', '#d8464a', '#3558c9'];
@@ -44,6 +45,21 @@ async function brass(name, T) {
   engrave(g, d, l, m, 23, 23, 50);
   // reflet
   g.save(); g.beginPath(); g.ellipse(40, 26, 26, 12, -.4, 0, 7); g.fillStyle = 'rgba(255,255,255,.08)'; g.fill(); g.restore();
+  return c;
+}
+async function avio(name, T) {
+  const c = new OffscreenCanvas(96, 96), g = c.getContext('2d'), cx = 48, cy = 48;
+  // cerclage d'acier et de laiton patiné, disque de métal sombre (boutons ronds de la planche Carnet de vol)
+  let gr = g.createLinearGradient(0, 4, 0, 92); gr.addColorStop(0, '#f4ecd6'); gr.addColorStop(.35, '#b9ac8a'); gr.addColorStop(.7, '#6d6450'); gr.addColorStop(1, '#2e2a20');
+  g.save(); g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = 4; g.shadowOffsetY = 2; g.beginPath(); g.arc(cx, cy, 45, 0, 7); g.fillStyle = gr; g.fill(); g.restore();
+  g.save(); g.beginPath(); g.arc(cx, cy, 45, 0, 7); g.clip(); g.globalCompositeOperation = 'soft-light'; g.fillStyle = pattern(g, T.brass, .5); g.fillRect(0, 0, 96, 96); g.restore();
+  gr = g.createRadialGradient(40, 32, 4, 48, 48, 40); gr.addColorStop(0, '#3a3a38'); gr.addColorStop(.6, '#1c1c1b'); gr.addColorStop(1, '#0c0c0b');
+  g.beginPath(); g.arc(cx, cy, 38, 0, 7); g.fillStyle = gr; g.fill();
+  g.save(); g.clip(); g.globalCompositeOperation = 'overlay'; g.globalAlpha = .35; g.fillStyle = pattern(g, T.steelDark, .5); g.fillRect(0, 0, 96, 96); g.restore();
+  g.beginPath(); g.arc(cx, cy, 38, 0, 7); g.lineWidth = 1.5; g.strokeStyle = 'rgba(0,0,0,.8)'; g.stroke();
+  const [d, l, m] = await Promise.all([glyph(name, '#000', 2.4), glyph(name, '#ffffff', 2.4), glyph(name, '#efe4c6', 2.4)]);
+  engrave(g, d, l, m, 24, 24, 48);
+  g.save(); g.beginPath(); g.ellipse(40, 28, 24, 11, -.4, 0, 7); g.fillStyle = 'rgba(255,255,255,.07)'; g.fill(); g.restore();
   return c;
 }
 async function steel(name, T) {
@@ -77,7 +93,7 @@ async function gel(name) {
 async function run() {
   const out = document.getElementById('out'), list = document.getElementById('list');
   const T = { brass: await load('/shared/textures/brass.webp'), leather: await load('/shared/textures/leather-brown.webp'), steelDark: await load('/shared/textures/steel-dark.webp'), screw: await load('/shared/deco/field/screw-x.webp') };
-  const make = { brass, steel, gel }; let ok = 0, n = 0;
+  const make = { brass, steel, gel, avio }; let ok = 0, n = 0;
   for (const [set, cfg] of Object.entries(SETS)) {
     list.insertAdjacentHTML('beforeend', `<h2>${set}</h2>`);
     for (const name of RepositoryIcons.names()) {

@@ -1,6 +1,6 @@
 window.REPOSITORY_TREE={
   version:3,
-  release:{date:"2026-09-25",version:"2.2.2",id:"XPS-2.2.2",changelog:"https://framagit.org/asr/flight_planner/-/blob/master/CHANGELOG.md"},
+  release:{date:"2026-09-26",version:"2.3.0",id:"XPS-2.3.0",changelog:"https://framagit.org/asr/flight_planner/-/blob/master/CHANGELOG.md"},
   defaults:{
     theme:"flight",
     favicon:"assets/favicon-flight.svg",
@@ -40,6 +40,7 @@ window.REPOSITORY_TREE={
       // designs à matières (textures shared/textures/, règles shared/designs_skeuo.css chargées à la demande : css) ;
       // emblem : emblème d'en-tête (RepositoryIcons.emblem)
       cabinet:{css:"designs_skeuo.css",icons:"brass",emblem:"compass",label:["Cabinet","Cabinet","Kabinett","Gabinete"],title:["Cabinet de navigation : cuir, bois, parchemin, laiton","Navigation cabinet: leather, wood, parchment, brass","Navigationskabinett: Leder, Holz, Pergament, Messing","Gabinete de navegación: cuero, madera, pergamino, latón"]},
+      flightlog:{css:"designs_skeuo.css",icons:"avio",emblem:"propeller",label:["Carnet de vol","Flight log","Flugbuch","Cuaderno de vuelo"],title:["Cabinet aéronautique : aluminium riveté, cadrans, plan de vol, cuir marine","Aviation cabinet: riveted aluminium, gauges, flight plan, navy leather","Luftfahrt-Kabinett: genietetes Aluminium, Instrumente, Flugplan, marineblaues Leder","Gabinete aeronáutico: aluminio remachado, instrumentos, plan de vuelo, cuero azul"]},
       field:{css:"designs_skeuo.css",icons:"steel",emblem:"wings-globe",label:["Durci","Rugged","Robust","Robusto"],title:["Console de terrain : peinture olive, acier, champs noirs, voyants","Field console: olive paint, steel, black fields, lights","Feldkonsole: olivgrüner Lack, Stahl, schwarze Felder, Leuchten","Consola de campaña: pintura oliva, acero, campos negros, pilotos"]},
       aqua:{css:"designs_skeuo.css",icons:"gel",label:["Aqua","Aqua","Aqua","Aqua"],title:["Métal brossé, verre dépoli, boutons gel","Brushed metal, frosted glass, gel buttons","Gebürstetes Metall, Milchglas, Gel-Schaltflächen","Metal cepillado, vidrio esmerilado, botones de gel"]}
     }

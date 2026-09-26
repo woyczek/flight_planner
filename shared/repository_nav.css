@@ -21,9 +21,9 @@ html[data-sidenav="on"],html[data-design="console"]:not([data-sidenav="off"]){pa
 /* barre plus haute que la fenêtre : défilement sans barre visible (elle mangerait la largeur des entrées) */
 .repo-sidenav{scrollbar-width:none}.repo-sidenav::-webkit-scrollbar{display:none}
 /* jeux skeuomorphes (icônes de 50 px) : entrées resserrées, pour tenir dans une fenêtre de 800 px */
-html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"]) .repo-sidenav-item{padding:5px 2px!important;gap:2px!important}
-html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"]) .repo-sidenav-brand{min-height:52px!important}
-html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"]) .repo-sidenav-sep{margin:6px 14px!important}
+html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) .repo-sidenav-item{padding:5px 2px!important;gap:2px!important}
+html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) .repo-sidenav-brand{min-height:52px!important}
+html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) .repo-sidenav-sep{margin:6px 14px!important}
 .repo-sidenav ul{list-style:none;margin:0;padding:0 0 8px;flex:1;display:flex;flex-direction:column}.repo-sidenav-bottom{margin-top:auto!important}
 .repo-sidenav-item{display:flex;flex-direction:column;align-items:center;gap:5px;width:100%;padding:11px 4px;border:0;border-left:3px solid transparent;border-radius:0;background:transparent;color:inherit;font:600 11.5px/1.2 Inter,system-ui,"Segoe UI",Arial,sans-serif;text-align:center;text-decoration:none;cursor:pointer}
 .repo-sidenav-item:hover{background:color-mix(in srgb,var(--repo-bar-text) 10%,transparent)}
@@ -34,7 +34,7 @@ html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"]) .repo-side
 .repo-sidenav .repo-svg{--rs:22px}
 .repo-sidenav-ic{display:grid;place-items:center;width:22px;height:22px}.repo-sidenav-brand .repo-sidenav-ic{width:30px;height:30px}
 /* jeux skeuomorphes : images posées dès la construction de la barre (taille réservée : pas de décalage) ; tracé masqué */
-html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"]) .repo-sidenav-ic{width:50px;height:50px}html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"]) .repo-sidenav-brand .repo-sidenav-ic{width:40px;height:40px}
+html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) .repo-sidenav-ic{width:50px;height:50px}html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) .repo-sidenav-brand .repo-sidenav-ic{width:40px;height:40px}
 .repo-sidenav-img{width:100%;height:100%;object-fit:contain;grid-area:1/1}.repo-sidenav-ic:has(>.repo-sidenav-img) .repo-svg{display:none!important}.repo-sidenav-ic .repo-svg{grid-area:1/1}
 @media print{html{padding-left:0!important}.repo-sidenav{display:none!important}}
 /* réglages en tête du menu ☰ (Apparence, Paramètres), en boutons */

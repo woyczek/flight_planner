@@ -12,7 +12,7 @@ figure{display:inline-block;margin:6px;text-align:center;vertical-align:top}figu
      http://localhost:8765/tools/icons_from_sheets.html -->
 <h1>Icônes et décors des planches</h1><p id="out">Découpe…</p><div id="list"></div>
 <script>
-const SHEETS = { cabinet: '11.webp', field: '10.webp', aqua: '12.webp' };
+const SHEETS = { cabinet: '11.webp', field: '10.webp', aqua: '12.webp', flightlog: '15.webp' };
 const circ = (name, x, y, r) => ({ name, kind: 'icon', box: [x - r, y - r, 2 * r, 2 * r], mask: 'circle' });
 const tile = (name, x, y, w = 68, h = 60) => ({ name, kind: 'icon', box: [x - w / 2, y - h / 2, w, h], mask: 'round', radius: 9 });
 const deco = (name, x0, y0, x1, y1, mask = 'rect', extra = {}) => ({ name, kind: 'deco', box: [x0, y0, x1 - x0, y1 - y0], mask, ...extra });
@@ -46,6 +46,23 @@ const ITEMS = {
     deco('stencil-mission', 1256, 876, 1430, 928, 'rect'),
     deco('stencil-defa', 1262, 932, 1412, 994, 'key', { tol: [18, 44] }),
     deco('stencil-ops', 1256, 1002, 1434, 1062, 'key', { tol: [18, 44] })
+  ],
+  // Carnet de vol (déclinaison aéronautique de Cabinet) : icônes rondes en métal sombre, emblème à hélice ailée, cadre
+  // d'aluminium riveté des panneaux (bordure des blocs), cadrans, presse-papier « Flight plan », carte, bandeau
+  flightlog: [
+    ...['book', 'plus', 'bookmark', 'refresh', 'sparkles', 'download', 'printer', 'x'].map((n, i) => circ(n, [928, 995, 1063, 1131, 1199, 1266, 1333, 1397][i], 321, 30)),
+    circ('info', 1026, 655, 16.5),
+    deco('emblem', 30, 44, 176, 150, 'soft'),
+    deco('medal-1', 44, 399, 108, 463, 'circle'),
+    deco('plane-plaque', 438, 402, 522, 456, 'soft'),
+    deco('frame', 26, 502, 450, 790, 'rect'),
+    deco('blueprint', 290, 530, 425, 770, 'soft'),
+    deco('clip', 96, 822, 272, 938, 'key', { tol: [26, 60] }),
+    deco('gauge-speed', 297, 828, 421, 952, 'circle'),
+    deco('gauge-attitude', 426, 828, 550, 952, 'circle'),
+    deco('gauge-alt', 554, 828, 678, 952, 'circle'),
+    deco('chart', 1162, 802, 1430, 940, 'soft'),
+    deco('footer', 28, 964, 1422, 1072, 'rect')
   ],
   aqua: [
     ...[['settings', 'folder', 'pin'], ['file-text', 'users', 'info']].flatMap((row, j) => row.map((n, i) => circ(n, [1230, 1301, 1374][i], [360, 428][j], 32))),
