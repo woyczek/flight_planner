@@ -240,7 +240,14 @@ Sous la carte :
 - **Cartes de la mission**, une ligne chacune : affichage dans la carte de contrôle, **profil**
   (ou **Désactivé** : carte ni générée, ni prévisualisée, ni sur l'assemblage), case **ZIP** (cochée à chaque
   chargement de mission ; décochée : carte non générée, absente du ZIP, mais toujours prévisualisable et sur
-  l'assemblage — le choix n'est pas enregistré dans la mission), suppression (×).
+  l'assemblage — le choix n'est pas enregistré dans la mission ; même case sur la carte de contrôle et sur chaque
+  aperçu de « Afficher toutes les cartes »), suppression (×). Le bouton **Générer les cartes et le ZIP** est
+  doublé dans la barre fixe en bas de page.
+
+**Créer une mission avec ChatGPT** (sous la zone mission) : type, théâtre (ou aléatoire), série et nombre
+d'**équipes DEFA en vol** (1 à 5 ; les équipes sol s'ajoutent selon la mission) ; « ChatGPT → » copie le prompt
+([PROMPT_GENERATEUR_MISSIONS.md](PROMPT_GENERATEUR_MISSIONS.md), réglé pour une seule mission) et ouvre ChatGPT
+dans un nouvel onglet : coller, envoyer, puis charger ici `missionNN.yaml` et `summaryNN.md`.
 - **+ Carte** : nouvelle carte (nom, type générale / cible / détail / zone) avec la vue affichée
   pour emprise, ajoutée à la mission partagée.
 

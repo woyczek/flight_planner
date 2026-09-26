@@ -19,6 +19,7 @@ PARAMÈTRES DE CETTE EXÉCUTION
   NOMBRE_MISSIONS = 5                (1 à 9)
   THÉÂTRE         = aléatoire       (métropole, Corse, Antilles, Guyane, Réunion, Mayotte,
                                      Nouvelle-Calédonie, Polynésie… — voir § 5)
+  ÉQUIPES_DEFA    = 2                (1 à 5 : aéronefs DEFA en vol, voir § 4 aircraft)
 
 Tu produis une série cohérente de NOMBRE_MISSIONS missions de simulation aérienne de la famille TYPE.
 Si TYPE = aléatoire, choisis UNE famille du § 2 et garde-la pour toute la série.
@@ -130,7 +131,9 @@ detailed_description: |-
   Décisions et imprévus (2 à 3 phrases) : critères d'interruption, carburant, météo, plan B.
 
   Retour et fin de mission (1 à 3 phrases) : retour, déroutement éventuel, ce qui marque la fin.
-aircraft:                      # 1 à 4 aéronefs ; le premier est l'aéronef principal
+aircraft:                      # EXACTEMENT ÉQUIPES_DEFA aéronefs : les équipages DEFA en vol (un indicatif
+                               # chacun, le premier est l'aéronef principal). Les autres acteurs (équipes sol :
+                               # VSAV, SMUR, CROSS, PGHM, commandement sol… ; aéronefs non DEFA) vont dans teams.
   - id: AC1
     type: "A332 A330 MRTT Phénix"   # COMMENCE par le désignateur OACI du § 6, puis le nom usuel
     callsign: COTAM3510        # sans espace, 3 à 9 caractères, lettres et chiffres
@@ -168,7 +171,8 @@ zones:                         # 0 à 2 zones de travail, id ZONE-1…
     centre: { lat: 0.000000, lon: 0.000000 }
     radius_km: 20
     role: "zone de recherche / zone AAR / zone de largage / …"
-teams:                         # tous les acteurs, aéronefs compris (2 à 5)
+teams:                         # tous les acteurs : les ÉQUIPES_DEFA aéronefs, plus autant d'équipes sol ou
+                               # d'autres acteurs que la mission le demande
   - name: CERBERES51/52        # callsign ou nom d'équipe
     service: "Armée de l'Air et de l'Espace"   # ou SAMU, gendarmerie, douane, SDIS, Marine nationale…
     department: Landes         # département français (nom) ou « — »
@@ -405,6 +409,8 @@ liste des corrections faites :
   [ ] départ = base réelle de l'unité (Dragon, SMUR, pélicandrome, base militaire…)
   [ ] toutes les coordonnées dans le théâtre, signes corrects (ouest / sud négatifs), 6 décimales,
       lieux réels, points en mer réellement en mer
+  [ ] aircraft : exactement ÉQUIPES_DEFA aéronefs DEFA, indicatifs distincts, tous repris dans teams ;
+      rôle de chacun dans la mission (pas de figurant)
   [ ] aéronefs : désignateur du § 6 en tête du type ; aéronef capable de la mission
   [ ] tous les id cités (centre_ref, route, participants) existent
   [ ] distances totales compatibles avec l'autonomie ; hauteurs et niveaux réalistes
