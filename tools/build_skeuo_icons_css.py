@@ -19,10 +19,11 @@ out = [BEGIN,
        f'{ANY} :is(.repo-block-icon,.repo-card-icon){{background:none!important;box-shadow:none!important;border-radius:0!important;width:auto!important;height:auto!important}}',
        f'{ANY} :is(.repo-block-icon,.repo-card-icon) .repo-svg[data-i]{{--rs:46px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}}',
        f'{ANY} .repo-card-icon .repo-svg[data-i]{{--rs:38px}}',
-       f'{ANY} .repo-sidenav-item .repo-svg[data-i]{{--rs:36px}}',
+       f'{ANY} :is(button,.buttonLink,a.mc-button,a.headerButton,summary) .repo-svg[data-i]{{--rs:2.2em;margin:-.35em 0}}',
+       f'{ANY} .repo-sidenav-item .repo-svg[data-i]{{--rs:50px!important;margin:0}}',   # après les boutons (« Menu » est un bouton)
        f'{ANY} .repo-dropzone-badge{{background:none!important}}{ANY} .repo-dropzone-badge .repo-svg[data-i]{{--rs:42px}}',
        f'{ANY} .repo-notice>.repo-icon .repo-svg[data-i]{{--rs:30px}}',
-       f'{ANY} .repo-sidenav-brand .repo-svg[data-i]{{--rs:34px}}']
+       f'{ANY} .repo-sidenav-brand .repo-svg[data-i]{{--rs:40px!important}}']
 for key, d in SETS.items():
     folder = os.path.join(ROOT, 'shared', 'icons', 'skeuo', d)
     names = sorted(f[:-5] for f in os.listdir(folder) if f.endswith('.webp'))

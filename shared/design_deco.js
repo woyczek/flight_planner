@@ -25,7 +25,7 @@
     },
     field: {
       foot: img => `<div class="repo-deco-plate-img"><img src="${img('plate-defa')}" alt=""></div>
-        <div class="repo-deco-radar" title="${tr('radar')}"><img src="${img('radar')}" alt=""><span class="repo-deco-sweep"></span><i style="left:73%;top:44%"></i><i style="left:30%;top:64%;--c:#7dff8a"></i></div>
+        <div class="repo-deco-radar" title="${tr('radar')}"><img src="${img('radar')}" alt=""><span class="repo-deco-sweep"></span><i style="left:30%;top:36%;--c:#7dff8a"></i><i style="left:44%;top:66%;--c:#7dff8a"></i></div>
         <div class="repo-deco-status"><img src="${img('plane-plate')}" alt="" onerror="this.remove()"><span class="repo-deco-leds"><i class="led-save"></i><i class="led-on"></i><i></i></span><span class="repo-deco-state"></span></div>`,
       between: [['plate-attention', 210], ['handle-h', 120], ['plate-wings', 170], ['plate-defa', 200]],
       sides: [['stencil-mission', 150], ['grille', 80], ['stencil-defa', 130], ['plate-small', 90], ['stencil-ops', 160], ['nut', 40]]
