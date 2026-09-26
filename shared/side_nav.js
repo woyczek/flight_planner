@@ -8,7 +8,6 @@
   const el = window.RepositorySideNav?.element, I = window.RepositoryIcons;
   window.RepositoryNav?.appearance?.renderEmblem?.();   // emblème d'en-tête des designs à matières (même registre)
   if (!el || !I) return;
-  el.querySelectorAll('span[data-sidenav-icon]').forEach(sp => {
-    sp.outerHTML = I.svg(sp.dataset.sidenavIcon, { size: +sp.dataset.size || 22 }) || '<span class="repo-sidenav-ic"></span>';
-  });
+  // tracé ajouté DANS l'emplacement (qui garde l'image éventuelle d'un jeu skeuomorphe, posée par repository_nav.js)
+  el.querySelectorAll('span[data-sidenav-icon]').forEach(sp => sp.insertAdjacentHTML('beforeend', I.svg(sp.dataset.sidenavIcon, { size: +sp.dataset.size || 22 })));
 })();

@@ -10,6 +10,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Barre latérale : icônes skeuomorphes affichées en premier** — images posées dès la construction de la barre
+  (téléchargées avec la page, taille réservée), sans attendre le registre d'icônes ni `block_icons.css` ; mises à
+  jour au changement de jeu ou de design.
 - Icônes skeuomorphes plus grandes dans la barre latérale (50 px) et sur les boutons ; barre latérale de Durci texturée
   (peinture olive assombrie : deux règles de la feuille étaient avalées par un reste de ligne orpheline) ; radar
   de Durci : balayage centré sur la cible de l'image et limité à son cercle.

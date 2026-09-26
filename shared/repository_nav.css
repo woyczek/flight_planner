@@ -23,7 +23,10 @@ html[data-sidenav="on"],html[data-design="console"]:not([data-sidenav="off"]){pa
 .repo-sidenav-sep{height:1px;margin:10px 14px;background:color-mix(in srgb,var(--repo-bar-text) 20%,transparent)}
 @media (max-width:760px){html[data-sidenav],html[data-design="console"]{padding-left:0!important}.repo-sidenav{display:none!important}}
 .repo-sidenav .repo-svg{--rs:22px}
-.repo-sidenav-ic{display:block;width:22px;height:22px}.repo-sidenav-brand .repo-sidenav-ic{width:30px;height:30px}
+.repo-sidenav-ic{display:grid;place-items:center;width:22px;height:22px}.repo-sidenav-brand .repo-sidenav-ic{width:30px;height:30px}
+/* jeux skeuomorphes : images posées dès la construction de la barre (taille réservée : pas de décalage) ; tracé masqué */
+html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"]) .repo-sidenav-ic{width:50px;height:50px}html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"]) .repo-sidenav-brand .repo-sidenav-ic{width:40px;height:40px}
+.repo-sidenav-img{width:100%;height:100%;object-fit:contain;grid-area:1/1}.repo-sidenav-ic:has(>.repo-sidenav-img) .repo-svg{display:none!important}.repo-sidenav-ic .repo-svg{grid-area:1/1}
 @media print{html{padding-left:0!important}.repo-sidenav{display:none!important}}
 /* réglages en tête du menu ☰ (Apparence, Paramètres), en boutons */
 .repo-settings-row{display:flex;gap:6px;padding:4px 4px 8px;margin-bottom:6px;border-bottom:1px solid color-mix(in srgb,var(--repo-bar-text) 18%,transparent)}
