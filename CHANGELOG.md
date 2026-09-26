@@ -10,6 +10,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+## [2.2.6] — 2026-09-26
+
 - **Planificateur — courbes compactes** : hauteur bornée par la fenêtre (les courbes s'élargissent sur une colonne
   large au lieu de grandir), redessinées au changement de taille ; espace entre courbes ajouté seulement quand un
   panneau déborderait.
