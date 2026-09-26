@@ -57,7 +57,7 @@ Schéma YAML `helo-xp-mission` (exemples : `Missions/AIRLIFT_serie_1_precomplete
 | `schema`, `schema_version` | `helo-xp-mission`, `1.0` |
 | `mission` | `series`, `number`, `id`, `type` (AIRLIFT, MEDEVAC, TRAINING…), `subtype` |
 | `title`, `summary`, `detailed_description` | Titre et textes du brief |
-| `aircraft` | `type`, `callsign`, `operator`, `role` |
+| `aircraft` | `type`, `callsign`, `operator`, `role` ; plusieurs équipes : mission propre de chacune — `task`, `objective`, `route` (identifiants de points), `departure` si sa base diffère |
 | `origin`, `destination`, `target` | `name` (code OACI entre parenthèses : « BA 123 Orléans-Bricy (LFOJ) »), `lat`, `lon` |
 | `turning_points`, `rendezvous` | `id`, `name`, `lat`, `lon`, `role`, `participants` |
 | `teams` | Équipes (nom, service, département, type — un aéronef connu devient appareil du CR) |

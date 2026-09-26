@@ -22,7 +22,8 @@ PARAMÈTRES DE CETTE EXÉCUTION
   THÉÂTRE         = aléatoire       (métropole, Corse, Antilles, Guyane, Réunion, Mayotte,
                                      Nouvelle-Calédonie, Polynésie… ; plusieurs possibles, liés
                                      par « + », ex. « Guyane + métropole » — voir § 5)
-  ÉQUIPES_DEFA    = 2                (1 à 5 : aéronefs DEFA en vol, voir § 4 aircraft)
+  ÉQUIPES_DEFA    = 2                (1 à 5 : aéronefs DEFA en vol ; chacun peut avoir sa propre
+                                     mission dans l'opération — voir § 4 aircraft)
 
 Tu produis une série cohérente de NOMBRE_MISSIONS missions de simulation aérienne de la famille TYPE.
 Si TYPE = aléatoire, choisis UNE famille du § 2 et garde-la pour toute la série.
@@ -143,7 +144,17 @@ aircraft:                      # EXACTEMENT ÉQUIPES_DEFA aéronefs : les équip
     callsign: COTAM3510        # sans espace, 3 à 9 caractères, lettres et chiffres
     operator: "Armée de l'Air et de l'Espace"
     role: aéronef principal
-origin:                        # terrain de départ (§ 5)
+    # Mission propre de cet équipage (obligatoire dès que ÉQUIPES_DEFA ≥ 2) :
+    task: "Ravitailler la patrouille sur CECILE puis rester en attente pour un second contact"
+    objective: "Transférer 18 t aux deux Rafale avant 11 h 30"
+    route: [ORIGIN, PT1, RDV-1, PT2, DESTINATION]   # identifiants de points de CE fichier, dans l'ordre du vol
+    # departure: { name: "…", lat: 0.000000, lon: 0.000000 }   # seulement si sa base diffère de origin (§ 5)
+  # Plusieurs équipes DEFA : chaque aéronef a sa mission distincte dans l'opération (rôle, trajet, objectif,
+  # terrain de départ si besoin), et elles se coordonnent (rendez-vous, relève, créneaux). Exemple FIRE :
+  # un Milan (DH8D, largage de retardant depuis Nîmes-Garons), un Dragon (EC45, reconnaissance et secours depuis
+  # sa base) et un avion de commandement (BE20 ou TBM9, coordination au-dessus du feu). Les points sont communs
+  # (turning_points, rendezvous, zones) ; chaque route n'en cite que les siens.
+origin:                        # terrain de départ de l'aéronef principal (§ 5)
   name: "BA 125 Istres-Le Tubé (LFMI)"
   lat: 43.522778
   lon: 4.923889
@@ -360,6 +371,17 @@ Destination : <destination.name> — <lat>, <lon>
 |---|---|---|---|---|
 | <name> | <service> | <department> | <type> | <role> |
 
+## Missions des équipes
+
+### <CALLSIGN> — <type>
+
+Départ : <departure.name, ou origin.name>
+Mission : <task>
+Objectif : <objective>
+Trajet : <route, identifiants séparés par « → »>
+
+(une sous-section « ### » par aéronef DEFA, dans l'ordre de aircraft)
+
 ## Charge / personnel
 
 Catégorie : <payload.category>
@@ -418,6 +440,8 @@ liste des corrections faites :
       lieux réels, points en mer réellement en mer
   [ ] aircraft : exactement ÉQUIPES_DEFA aéronefs DEFA, indicatifs distincts, tous repris dans teams ;
       rôle de chacun dans la mission (pas de figurant)
+  [ ] ÉQUIPES_DEFA ≥ 2 : task, objective et route pour chaque aéronef ; missions distinctes et coordonnées ;
+      route = identifiants existants ; departure seulement si la base diffère ; section « Missions des équipes »
   [ ] aéronefs : désignateur du § 6 en tête du type ; aéronef capable de la mission
   [ ] tous les id cités (centre_ref, route, participants) existent
   [ ] distances totales compatibles avec l'autonomie ; hauteurs et niveaux réalistes

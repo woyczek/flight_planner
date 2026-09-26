@@ -10,6 +10,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Prompt de génération** : avec plusieurs équipes DEFA, chaque aéronef peut avoir sa mission distincte dans
+  l'opération (`task`, `objective`, `route`, `departure` ; section Markdown « Missions des équipes ») — ex. FIRE : Milan,
+  Dragon et avion de commandement.
 ## [2.2.6] — 2026-09-26
 
 - **Planificateur — courbes compactes** : hauteur bornée par la fenêtre (les courbes s'élargissent sur une colonne
