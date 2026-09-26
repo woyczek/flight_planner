@@ -1,5 +1,5 @@
 /* Designs graphiques de la suite (menu ☰ › Design), chargés par repository_nav.js : html[data-design="…"].
-   « standard » = aucune règle (styles propres des pages). Les designs changent la forme (arrondis, ombres,
+   « standard » = aucune règle (styles propres des pages). Designs : Standard, Aéro, Opérationnel, Console. Les designs changent la forme (arrondis, ombres,
    bordures, typographie, densité) ; les couleurs viennent TOUJOURS du thème de repository_tree
    (--repo-bar, --repo-bar-text, --repo-page, --repo-accent) : pas de couleur fixe, surfaces claires ou
    sombres des pages conservées (contrastes inchangés). Liste et libellés : REPOSITORY_TREE.designs.
@@ -28,15 +28,7 @@ html[data-design="ops"] input:not([type=checkbox]):not([type=radio]):not([type=r
 html[data-design="ops"] :where(body>:not(.repo-header):not(.repo-footer)) input:not([type=checkbox]):not([type=radio]):not([type=range]),html[data-design="ops"] :where(body>:not(.repo-header):not(.repo-footer)) select{padding-top:5px!important;padding-bottom:5px!important}
 html[data-design="ops"] :where(body>:not(.repo-header):not(.repo-footer)) th,html[data-design="ops"] :where(body>:not(.repo-header):not(.repo-footer)) td{padding-top:4px!important;padding-bottom:4px!important}
 
-/* ---- Brief : aspect document imprimé — titres à empattement, blocs séparés par un double filet du thème, sans ombre */
-html[data-design="brief"] .repo-header{border-bottom:4px double color-mix(in srgb,var(--repo-bar-text) 55%,var(--repo-bar))!important}
-html[data-design="brief"] .repo-header h1,html[data-design="brief"] :where(body>:not(.repo-header):not(.repo-footer)) h2,html[data-design="brief"] :where(body>:not(.repo-header):not(.repo-footer)) h3{font-family:Georgia,"Times New Roman",serif!important;font-weight:600!important}
-html[data-design="brief"] .repo-block,html[data-design="brief"] .card{border-radius:0!important;box-shadow:none!important;border-width:0!important;border-top:3px double var(--repo-accent)!important;border-bottom:1px solid color-mix(in srgb,var(--repo-accent) 25%,transparent)!important}
-html[data-design="brief"] .repo-block h2{color:var(--repo-accent);border-bottom:1px solid color-mix(in srgb,var(--repo-accent) 30%,transparent);padding-bottom:4px}
-html[data-design="brief"] button:not(.col-split),html[data-design="brief"] .buttonLink,html[data-design="brief"] .mc-header-tools summary,html[data-design="brief"] .mc-header-tools a,html[data-design="brief"] .mc-report-tools summary,html[data-design="brief"] .mc-report-tools a,html[data-design="brief"] .mc-bookmarklet,html[data-design="brief"] .repo-block-tools button{border-radius:0!important;letter-spacing:.03em}
-html[data-design="brief"] .repo-menu,html[data-design="brief"] .repo-language-menu,html[data-design="brief"] .mc-pop,html[data-design="brief"] .mc-switch-pop,html[data-design="brief"] .mc-import-pop,html[data-design="brief"] .lang-menu,html[data-design="brief"] .aircraft-menu,html[data-design="brief"] .dropdown-menu,html[data-design="brief"] .popover,html[data-design="brief"] [role="menu"]{border-radius:0!important}
-html[data-design="brief"] input:not([type=checkbox]):not([type=radio]):not([type=range]),html[data-design="brief"] select,html[data-design="brief"] textarea{border-radius:0!important}
-html[data-design="brief"] :where(body>:not(.repo-header):not(.repo-footer)) input:not([type=checkbox]):not([type=radio]):not([type=range]),html[data-design="brief"] :where(body>:not(.repo-header):not(.repo-footer)) select,html[data-design="brief"] :where(body>:not(.repo-header):not(.repo-footer)) textarea{border-width:0 0 1px!important}
+/* ---- Console : règles dans block_icons.css (barre latérale, blocs aérés numérotés, titres en capitales) */
 
 /* ---- choix du design dans le menu ☰ */
 .repo-design-row{display:flex;flex-wrap:wrap;gap:4px;padding:2px 4px 6px}

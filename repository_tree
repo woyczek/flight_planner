@@ -36,8 +36,29 @@ window.REPOSITORY_TREE={
       standard:{label:["Standard","Standard","Standard","Estándar"],title:["Design d’origine des pages","Original page design","Ursprüngliches Seitendesign","Diseño original de las páginas"]},
       aero:{label:["Aéro","Aero","Aero","Aero"],title:["Arrondi, ombres douces, en-tête en dégradé","Rounded, soft shadows, gradient header","Abgerundet, weiche Schatten, Kopfzeile mit Verlauf","Redondeado, sombras suaves, cabecera en degradado"]},
       ops:{label:["Opérationnel","Operational","Operativ","Operativo"],title:["Dense, angles vifs, liseré de thème, titres en capitales","Dense, sharp corners, theme edge, uppercase titles","Kompakt, scharfe Ecken, Themenkante, Titel in Großbuchstaben","Denso, esquinas vivas, borde del tema, títulos en mayúsculas"]},
-      brief:{label:["Brief","Brief","Briefing","Briefing"],title:["Aspect document : titres à empattement, filets","Document look: serif titles, rules","Dokumentoptik: Serifentitel, Linien","Aspecto de documento: títulos con serifa, filetes"]}
+      console:{label:["Console","Console","Konsole","Consola"],title:["Barre latérale, blocs aérés numérotés, titres en capitales, icônes","Side bar, airy numbered blocks, uppercase titles, icons","Seitenleiste, luftige nummerierte Blöcke, Titel in Großbuchstaben, Symbole","Barra lateral, bloques numerados espaciosos, títulos en mayúsculas, iconos"]}
     }
+  },
+  // Familles de couleurs (Paramétrage › Apparence) : teinte (h, degrés) et saturation (s, %) ; la clarté (« ton »)
+  // est réglée par thème, les couleurs du bandeau, du texte et de l'accent en sont calculées avec un contraste
+  // WCAG vérifié (≥ 4,5:1). Sans réglage, un thème garde ses couleurs ci-dessus.
+  colorFamilies:{
+    rouge:{h:0,s:68,label:["Rouge","Red","Rot","Rojo"]},
+    brique:{h:14,s:62,label:["Brique","Brick","Ziegel","Ladrillo"]},
+    orange:{h:26,s:78,label:["Orange","Orange","Orange","Naranja"]},
+    ambre:{h:38,s:82,label:["Ambre","Amber","Bernstein","Ámbar"]},
+    olive:{h:72,s:42,label:["Olive","Olive","Oliv","Oliva"]},
+    vert:{h:140,s:52,label:["Vert","Green","Grün","Verde"]},
+    emeraude:{h:158,s:64,label:["Émeraude","Emerald","Smaragd","Esmeralda"]},
+    sarcelle:{h:176,s:60,label:["Sarcelle","Teal","Petrol","Verde azulado"]},
+    cyan:{h:192,s:70,label:["Cyan","Cyan","Cyan","Cian"]},
+    bleu:{h:214,s:72,label:["Bleu","Blue","Blau","Azul"]},
+    indigo:{h:232,s:55,label:["Indigo","Indigo","Indigo","Índigo"]},
+    violet:{h:262,s:60,label:["Violet","Violet","Violett","Violeta"]},
+    pourpre:{h:286,s:48,label:["Pourpre","Purple","Purpur","Púrpura"]},
+    framboise:{h:334,s:60,label:["Framboise","Raspberry","Himbeere","Frambuesa"]},
+    ardoise:{h:215,s:16,label:["Ardoise","Slate","Schiefer","Pizarra"]},
+    graphite:{h:0,s:0,label:["Graphite","Graphite","Graphit","Grafito"]}
   },
   folders:{
     "":{theme:"flight",favicon:"assets/favicon-flight.svg"},
@@ -113,6 +134,7 @@ window.REPOSITORY_TREE={
     "Reporting missions":["Reporting missions","Mission reporting","Einsatzberichte","Informes de misiones"],
     "Générateur de mission (SIA)":["Générateur de mission (SIA)","Mission generator (SIA)","Missionsgenerator (SIA)","Generador de misiones (SIA)"],
     "Studio cartographique (SIA)":["Studio cartographique (SIA)","Map studio (SIA)","Kartenstudio (SIA)","Estudio cartográfico (SIA)"],
-    "Paramétrage — bases de données":["Paramétrage — bases de données","Settings — databases","Einstellungen — Datenbanken","Configuración — bases de datos"]
+    "Paramétrage — bases de données":["Paramétrage — bases de données","Settings — databases","Einstellungen — Datenbanken","Configuración — bases de datos"],
+    "Apparence…":["Apparence (design, icônes, couleurs)…","Appearance (design, icons, colours)…","Darstellung (Design, Symbole, Farben)…","Apariencia (diseño, iconos, colores)…"]
   }
 };

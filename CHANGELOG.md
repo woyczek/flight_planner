@@ -10,6 +10,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Apparence (Paramétrage › Apparence)** : design (Standard, Aéro, Opérationnel, **Console** — remplace Brief),
+  jeu d'icônes (trait normal, fin, épais, aucune), barre latérale, **couleurs des thèmes par famille** (teinte /
+  saturation) et ton, avec aperçu et contrastes WCAG calculés ; page de démonstration accessible depuis ce bloc.
+  Le menu ☰ mène à ces réglages (« Apparence… »).
+- **Framework — icônes, numéros, sous-titres, zones de dépôt, barre latérale** (`block_icons.js`,
+  `icons/repository_icons.js`, `side_nav.js`), chargés sur toutes les pages ; page pilote : générateur de mission
+  (blocs numérotés à icône et sous-titre, zones « glisser-déposer », boutons à icône).
+- **Compteur de sauvegarde** : les préférences d'affichage (design, icônes, couleurs, langue, onglets et séparateurs
+  du studio, colonnes et cadrans du planificateur, formats de sortie…) ne comptent plus comme modifications.
+- `repository_tree` versionné (`?v=`) dans toutes les pages, comme les scripts partagés.
 - **Opérations — assemblage** : studio — carte de l'opération (trajets de toutes les équipes en couleurs, légende,
   rendez-vous communs), à la racine du ZIP de toutes les missions et en tête des aperçus ; générateur — **dossier
   d'opération en un PDF** (page de garde : missions et équipes, rendez-vous communs, carte de l'opération ; puis

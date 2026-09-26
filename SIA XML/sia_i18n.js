@@ -5,6 +5,16 @@
   if (!window.RepositoryContentI18n) return;
   window.RepositoryContentI18n([
     // ---- générateur de mission
+    ["Importer une mission", "Import a mission", "Mission importieren", "Importar una misión"],
+    ["Choisissez vos fichiers, collez une réponse ou générez une mission avec ChatGPT.", "Choose your files, paste a reply or generate a mission with ChatGPT.", "Dateien wählen, eine Antwort einfügen oder eine Mission mit ChatGPT erzeugen.", "Elija sus archivos, pegue una respuesta o genere una misión con ChatGPT."],
+    ["Identification", "Identification", "Identifikation", "Identificación"],
+    ["Titre, numéro, série, type, auteur et date de la mission.", "Mission title, number, series, type, author and date.", "Titel, Nummer, Serie, Typ, Autor und Datum der Mission.", "Título, número, serie, tipo, autor y fecha de la misión."],
+    ["Textes de mission", "Mission texts", "Missionstexte", "Textos de la misión"],
+    ["Résumé, description détaillée et rubriques du brief.", "Summary, detailed description and sections of the brief.", "Zusammenfassung, ausführliche Beschreibung und Rubriken des Briefings.", "Resumen, descripción detallada y apartados del briefing."],
+    ["Toutes les données YAML", "All YAML data", "Alle YAML-Daten", "Todos los datos YAML"],
+    ["Éditeur libre de toutes les clés du YAML de la mission.", "Free editor for every key of the mission YAML.", "Freier Editor für alle Schlüssel des Missions-YAML.", "Editor libre de todas las claves del YAML de la misión."],
+    ["Cartes du dossier final", "Maps of the final package", "Karten des Endpakets", "Mapas del dosier final"],
+    ["Cartes jointes au PDF, dans l’ordre du dossier.", "Maps attached to the PDF, in the order of the file.", "Dem PDF beigefügte Karten, in der Reihenfolge des Dossiers.", "Mapas adjuntos al PDF, en el orden del dossier."],
     ["Générateur complet de mission", "Complete mission generator", "Vollständiger Missionsgenerator", "Generador completo de misiones"],
     ["Transmettre au studio cartographique →", "Send to the map studio →", "An das Kartenstudio übergeben →", "Enviar al estudio cartográfico →"],
     ["Créer le CR DEFA →", "Create the DEFA report →", "DEFA-Bericht erstellen →", "Crear el informe DEFA →"],

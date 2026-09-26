@@ -9,7 +9,7 @@ seuls sur chaque page. Ce document décrit chaque composant, son rôle et son in
 |---|---|---|
 | Arborescence et thèmes | `repository_tree` | toutes les pages |
 | Bandeau, menu ☰, langue | `shared/repository_nav.js`, `.css` | toutes les pages |
-| Designs graphiques | `shared/designs.css` (liste dans `repository_tree`) | toutes les pages |
+| Apparence (designs, icônes, barre latérale, couleurs) | `shared/designs.css`, `block_icons.js/.css`, `icons/repository_icons.js`, `side_nav.js`, `appearance_admin.js` | toutes les pages ; réglages dans Paramétrage |
 | Colonnes redimensionnables | `shared/column_resize.js` | Planner |
 | Blocs (déplacer / masquer) | `shared/app_framework.js` | toutes les pages |
 | Traduction des textes | `shared/content_i18n.js` | CR DEFA, Planner, reportings |
@@ -59,24 +59,46 @@ Interface `window.RepositoryNav` : `root` (racine du site), `page`, `menu`, `set
 > Une page ne doit jamais réécrire tout le `<header>` (`innerHTML`) après le chargement du
 > bandeau : elle y **ajoute** ses éléments (sinon la langue et le menu ☰ disparaissent).
 
-## 2 bis. `designs.css` — designs graphiques
+## 2 bis. Apparence — designs, icônes, barre latérale, couleurs
 
-Menu ☰ › **Design** : Standard (styles propres des pages), **Aéro** (arrondi, ombres douces teintées,
-en-tête en dégradé, boutons en pilule, fond légèrement teinté), **Opérationnel** (dense, angles vifs,
-liseré du thème à gauche des blocs, titres en capitales, chiffres tabulaires), **Brief** (aspect
-document : titres à empattement, blocs séparés par un double filet, champs soulignés). Choix mémorisé
-dans le navigateur (`repositoryDesign`), posé sur `<html data-design="…">` dès le chargement ;
-événement `repository-design-change` ; `RepositoryNav.getDesign()`.
+Réglée dans **Paramétrage › Apparence** (`CR DEFA/parametrage.html#appearance`, bloc construit par
+`shared/appearance_admin.js` ; le menu ☰ y mène par « Apparence… »), mémorisée dans le navigateur et appliquée
+sur toutes les pages par `repository_nav.js` dès le chargement (`RepositoryNav.appearance`). Ces réglages sont
+sauvegardés avec les données locales mais **ne comptent pas** comme modifications à sauvegarder (`browser_store.js`,
+liste `DISPLAY` : design, icônes, couleurs, barre latérale, langue, onglets, séparateurs, colonnes, cadrans…).
 
-Les formes (boutons, menus déroulants, champs) valent pour **toute la page** : en-tête, menu ☰, sélecteurs et
-listes des en-têtes de CR (`summary`), boutons ↕ / Masquer des blocs.
+- **Design** (`repositoryDesign`, `<html data-design>`) : Standard (styles propres des pages), **Aéro** (arrondi,
+  ombres douces, en-tête en dégradé), **Opérationnel** (dense, angles vifs, liseré du thème, titres en capitales),
+  **Console** (barre latérale, blocs aérés numérotés, titres en capitales, icônes ; remplace l'ancien Brief).
+  Règles : `designs.css` (formes communes) et `block_icons.css` (Console, icônes, numéros).
+- **Icônes** (`repositoryIcons`, `<html data-icons>`) : trait normal, fin, épais, ou aucune.
+- **Barre latérale** (`repositorySidenav`, `<html data-sidenav>`) : selon le design (affichée en Console),
+  toujours, ou jamais. Entrées : `REPOSITORY_TREE.sidebar` s'il existe, sinon la liste de `side_nav.js`.
+- **Couleurs des thèmes** (`repositoryColors`) : pour chaque thème, une **famille** (`REPOSITORY_TREE.colorFamilies` :
+  teinte, saturation) et un **ton** (clarté) plutôt que des valeurs absolues ; bandeau, texte du bandeau (blanc
+  ou noir selon le meilleur contraste) et accent (ajusté jusqu'à ≥ 4,5:1 sur le fond de page) en sont calculés.
+  Le bloc affiche l'aperçu et les rapports WCAG (texte / bandeau, accent / page ≥ 4,5:1 ; accent / carte ≥ 3:1).
+  Sans réglage : couleurs de `repository_tree`.
+- **Page de démonstration** (`docs/demo_design_icones.html`, lien dans le bloc) : la maquette du générateur
+  reconstruite avec les composants, catalogue d'icônes, tableau des contrastes de tous les thèmes ; design, icônes
+  et barre latérale choisis là sont les réglages de l'apparence.
 
-Règles : un design ne change que la **forme** (arrondis, ombres, bordures, typographie, densité) des
-éléments communs — en-tête `.repo-header`, blocs `.repo-block` (posés par `app_framework.js`) et
-`.card`, boutons, champs, tableaux. Les **couleurs viennent toujours du thème** de `repository_tree`
-(`--repo-bar`, `--repo-bar-text`, `--repo-page`, `--repo-accent`) et les surfaces claires ou sombres
-des pages sont conservées : les contrastes validés restent valables. Ajouter un design : une entrée
-dans `repository_tree.designs.list` et ses règles `html[data-design="clé"] …` dans `designs.css`.
+Règles d'un design : il ne change que la **forme** (arrondis, ombres, bordures, typographie, densité) des éléments
+communs — en-tête, blocs, `.card`, boutons, menus, champs, tableaux ; les **couleurs viennent du thème**
+(`--repo-bar`, `--repo-bar-text`, `--repo-page`, `--repo-accent`). Ajouter un design : une entrée dans
+`repository_tree.designs.list` et ses règles `html[data-design="clé"] …`.
+
+### Icônes, numéros, sous-titres, zones de dépôt (`block_icons.js`, `icons/repository_icons.js`)
+
+Chargés sur toutes les pages par `repository_nav.js`. Une page **déclare**, le framework dessine :
+`<section data-step="1" data-icon="upload" data-subtitle="…">` (pastille, icône et sous-titre du bloc ; le titre
+`<h2>` n'a plus de numéro), `<div class="repo-card" data-icon="file" data-subtitle="…">` (sous-carte),
+`<button data-icon="plus">`, `<label data-icon="globe">`, `<p class="repo-notice" data-icon="info">`,
+`<input type="file" data-dropzone>` (zone « Choisir des fichiers ou glisser-déposer ici » : même événement
+`change`). Sous-titres traduits par les lignes `[fr, en, de, es]` de la page. Couleur des icônes choisie d'après
+la surface réelle du bloc (≥ 3:1). Registre : 43 icônes au trait (grille 24), `RepositoryIcons.add` pour en
+ajouter. Détails et plan de migration des pages : [PROPOSITION_DESIGN_ICONES.md](PROPOSITION_DESIGN_ICONES.md)
+(page pilote : générateur de mission).
 
 ## 3. `app_framework.js` — blocs
 

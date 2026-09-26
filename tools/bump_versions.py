@@ -41,10 +41,13 @@ for p in pages:
     s = io.open(p, encoding='utf-8', newline='').read()
     t = REF.sub(lambda m: f'{m.group(1)}?v={version}', s)
     t = re.sub(r'(mission_prompt\.js)\?v=\w+', lambda m: f'{m.group(1)}?v={version}', t)
+    # repository_tree (arborescence, thèmes, designs, familles de couleurs) : versionné aussi, sinon le navigateur
+    # garde une ancienne copie après une mise à jour
+    t = re.sub(r'((?:\.\./|\./)*repository_tree)(?:\?v=\w+)?"', lambda m: f'{m.group(1)}?v={version}"', t)
     if t != s:
         io.open(p, 'w', encoding='utf-8', newline='').write(t); changed += 1
 s = io.open(nav, encoding='utf-8', newline='').read()
-t = re.sub(r'((?:pilot_profile|browser_store|file_access)\.js|designs\.css)\?v=\w+', lambda m: f'{m.group(1)}?v={version}', s)
+t = re.sub(r'((?:pilot_profile|browser_store|file_access|block_icons|side_nav|icons/repository_icons)\.js|designs\.css)\?v=\w+', lambda m: f'{m.group(1)}?v={version}', s)
 if t != s:
     io.open(nav, 'w', encoding='utf-8', newline='').write(t)
 print(f'Version {version} : {changed} page(s) mise(s) à jour.')

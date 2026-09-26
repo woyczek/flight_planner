@@ -572,7 +572,11 @@
   // à partir de 10, bouton « Sauvegarder » en couleur de contraste dans l'en-tête, avec
   // l'horodatage de la dernière sauvegarde. Sauvegarde automatique si le dossier est autorisé.
   /** Vrai si une modification de cette clé compte pour le rappel de sauvegarde (hors méta-données, exclusions, disposition, période et préférences d'affichage). */
-  const tracked = key => key && key !== META && key !== PENDING && !SKIP.some(re => re.test(key)) && !/^repositoryFramework:|^missionReportingPeriod:|^missionGlobalReporting:|^missionReportingSource:/.test(key);
+  // Préférences d'affichage (disposition, design, icônes, couleurs, langue, onglets, séparateurs, colonnes, cadrans,
+  // formats de sortie, copie automatique de l'état du planificateur) : sauvegardées, mais sans compter comme des
+  // modifications à sauvegarder.
+  const DISPLAY = /^(?:repositoryFramework:|missionReportingPeriod:|missionGlobalReporting:|missionReportingSource:|repositoryDesign$|repositoryIcons$|repositoryColors$|repositorySidenav$|repositoryLanguageMode$|landingLanguageModeV\d+$|LandingPerformanceDashboardPrefsV\d+$|landingAnalysisSize$|flightPerfColumns$|flightPerfFuelGauge$|flightPerfState\.backup$|siaProfileTab$|siaProfileSplit$|siaOutput$|missionCoreLastFamily:)/;
+  const tracked = key => key && key !== META && key !== PENDING && !SKIP.some(re => re.test(key)) && !DISPLAY.test(key);
   const lastHit = new Map(),
     pending = () => Number(localStorage.getItem(PENDING) || 0);
   const nativeSet = Storage.prototype.setItem,

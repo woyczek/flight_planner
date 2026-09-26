@@ -30,14 +30,51 @@
     ...(page?.files || {})
   };
   const favicon = page?.favicon || folderSettings.favicon || theme.favicon || cfg.defaults.favicon;
-  // Couleurs du thème (variables CSS) et favicon.
-  for (const [k, v] of Object.entries({
-      "--repo-bar": theme.bar || "#101319",
-      "--repo-bar-text": theme.barText || "#fff",
-      "--repo-page": theme.page || "#fff",
-      "--repo-accent": theme.accent || "#69a7ff",
-      "--accent": theme.accent || "#69a7ff"
-    })) doc.style.setProperty(k, v);
+  // ---- Apparence (Paramétrage › Apparence) : design, jeu d'icônes, barre latérale, couleurs des thèmes -------------
+  // Couleurs : un thème peut être rattaché à une famille de couleurs (REPOSITORY_TREE.colorFamilies : teinte,
+  // saturation) et à un ton (clarté) ; bandeau, texte du bandeau et accent en sont calculés avec un contraste WCAG
+  // d'au moins 4,5:1 (texte du bandeau / bandeau, accent / fond de page). Sans réglage : couleurs de repository_tree.
+  const readPref = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
+  const readJson = k => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } };
+  /** « #rrggbb » → [r, g, b] (0–255). */
+  const hexRgb = h => { const x = String(h || "").replace("#", ""), v = x.length === 3 ? x.split("").map(ch => ch + ch).join("") : x; return [0, 2, 4].map(i => parseInt(v.slice(i, i + 2), 16) || 0); };
+  /** Luminance relative WCAG d'une couleur « #rrggbb ». */
+  const luminance = h => { const [r, g, b] = hexRgb(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }); return .2126 * r + .7152 * g + .0722 * b; };
+  /** Rapport de contraste WCAG entre deux couleurs (1 à 21). */
+  const contrast = (a, b) => { const x = luminance(a), y = luminance(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+  /** Couleur HSL (degrés, %, %) → « #rrggbb ». */
+  const hslHex = (h, s, l) => { s /= 100; l /= 100; const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = n => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1)); return "#" + [f(0), f(8), f(4)].map(v => Math.round(v * 255).toString(16).padStart(2, "0")).join(""); };
+  /** Couleurs calculées d'une famille (fam : { h, s }) au ton tone (0 = sombre, 100 = clair) pour un fond de page page. */
+  function familyColors(fam, tone, page) {
+    const L = 12 + Math.max(0, Math.min(100, +tone || 0)) * .42, bar = hslHex(fam.h, fam.s, L),
+      barText = contrast("#ffffff", bar) >= contrast("#0b0f14", bar) ? "#ffffff" : "#0b0f14", dark = luminance(page || "#ffffff") < .3;
+    let a = dark ? Math.max(60, L + 20) : L, accent = hslHex(fam.h, Math.max(fam.s, dark ? 50 : 0), a);
+    for (let i = 0; i < 40 && contrast(accent, page || "#ffffff") < 4.5; i++) { a += dark ? 2 : -2; accent = hslHex(fam.h, Math.max(fam.s, dark ? 50 : 0), Math.max(3, Math.min(97, a))); }
+    return { bar, barText, accent };
+  }
+  /** Couleurs effectives d'un thème : réglage de Paramétrage › Apparence (famille + ton) s'il existe, sinon repository_tree. */
+  function themeColors(name) {
+    const t = cfg.themes[name] || {}, o = (readJson("repositoryColors") || {})[name], fam = o && cfg.colorFamilies?.[o.family];
+    return fam ? { ...t, ...familyColors(fam, o.tone, t.page), family: o.family, tone: +o.tone } : { ...t };
+  }
+  let currentTheme = themeName;
+  /** Pose les variables CSS du thème name (couleurs effectives). */
+  function applyTheme(name) {
+    const t = themeColors(name);
+    currentTheme = name;
+    for (const [k, v] of Object.entries({
+        "--repo-bar": t.bar || "#101319",
+        "--repo-bar-text": t.barText || "#fff",
+        "--repo-page": t.page || "#fff",
+        "--repo-accent": t.accent || "#69a7ff",
+        "--accent": t.accent || "#69a7ff"
+      })) doc.style.setProperty(k, v);
+    if (document.body) document.body.style.backgroundColor = t.page || "";
+  }
+  applyTheme(themeName);
+  // jeu d'icônes (line : trait normal, fine, bold, off) et barre latérale (on / off), posés dès le chargement
+  doc.dataset.icons = readPref("repositoryIcons", "line");
+  { const sn = readPref("repositorySidenav", null); if (sn) doc.dataset.sidenav = sn; }
   // Design graphique (REPOSITORY_TREE.designs, règles dans designs.css) : choix mémorisé (repositoryDesign),
   // posé dès le chargement sur <html data-design> pour éviter un changement visible.
   const designs = cfg.designs?.list || {
@@ -45,13 +82,14 @@
         label: ["Standard"]
       }
     },
-    savedDesign = localStorage.getItem("repositoryDesign");
+    savedDesign = readPref("repositoryDesign", null);
   let design = designs[savedDesign] ? savedDesign : (designs[cfg.designs?.default] ? cfg.designs.default : "standard");
   doc.dataset.design = design;
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260926zo", script.src).href;
+    css.href = new URL("designs.css?v=20260926zt", script.src).href;
+    css.id = "repoDesignsCss";
     document.head.append(css)
   }
   if (favicon) {
@@ -164,27 +202,16 @@
       host.append(a)
     }
   }
-  menu.insertAdjacentHTML("beforeend", '<div class="repo-page-actions"></div><div class="repo-sep"></div><div class="repo-group repo-design-title">Design</div><div class="repo-design-row"></div>');
-  const designRow = menu.querySelector(".repo-design-row");
-  /** Boutons du choix de design (libellé et description dans la langue courante, design actif coché). */
-  const renderDesigns = () => {
-    const i = ["fr", "en", "de", "es"].indexOf(language);
-    designRow.innerHTML = Object.entries(designs).map(([id, d]) => `<button type="button" data-design="${esc(id)}" aria-pressed="${id===design}" title="${esc(d.title?.[i]||d.title?.[0]||"")}">${esc(d.label?.[i]||d.label?.[0]||id)}</button>`).join("")
-  };
-  designRow.onclick = e => {
-    const id = e.target.closest("button")?.dataset.design;
-    if (!id || !designs[id]) return;
+  // Apparence : réglée dans Paramétrage › Apparence (design, icônes, barre latérale, couleurs) ; le menu ☰ y mène.
+  menu.insertAdjacentHTML("beforeend", '<div class="repo-page-actions"></div><div class="repo-sep"></div><a class="repo-link repo-appearance-link" data-label="Apparence…"></a>');
+  menu.querySelector(".repo-appearance-link").href = new URL("CR DEFA/parametrage.html#appearance", root).href;
+  /** Enregistre et applique le design id (événement « repository-design-change »). */
+  const setDesign = id => {
+    if (!designs[id]) return;
     design = id;
     doc.dataset.design = id;
-    try {
-      localStorage.setItem("repositoryDesign", id)
-    } catch {}
-    renderDesigns();
-    window.dispatchEvent(new CustomEvent("repository-design-change", {
-      detail: {
-        design: id
-      }
-    }))
+    try { localStorage.setItem("repositoryDesign", id); } catch {}
+    window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { design: id } }));
   };
   /** Ferme le menu ☰ et le menu des langues. */
   const close = () => {
@@ -222,7 +249,6 @@
       const r = JSON.parse(b.dataset.i18nLabel);
       b.textContent = r[["fr", "en", "de", "es"].indexOf(language)] || r[0]
     });
-    renderDesigns();
     tools.querySelector(".repo-language-label").textContent = labels[language];
     tools.querySelector(".repo-language-flag").innerHTML = flagSvg(language);
     languageButton.title = names[language];
@@ -259,6 +285,25 @@
     getLanguageMode: () => mode,
     /** Design graphique courant (clé de REPOSITORY_TREE.designs.list). */
     getDesign: () => design,
+    /** Apparence (Paramétrage › Apparence) : lecture et réglage du design, des icônes, de la barre latérale et des
+     *  couleurs des thèmes ; outils de couleur (contraste WCAG, familles). Chaque réglage est mémorisé et appliqué. */
+    appearance: {
+      designs,
+      families: cfg.colorFamilies || {},
+      themes: cfg.themes,
+      current: () => ({ design, icons: doc.dataset.icons || "line", sidenav: doc.dataset.sidenav || "", colors: readJson("repositoryColors") || {}, theme: currentTheme }),
+      setDesign,
+      /** Jeu d'icônes : "line" (défaut), "fine", "bold", "off". */
+      setIcons(v) { doc.dataset.icons = v; try { localStorage.setItem("repositoryIcons", v); } catch {} window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { icons: v } })); },
+      /** Barre latérale : true, false, ou null (selon le design). */
+      setSidenav(on) { if (on == null) { delete doc.dataset.sidenav; try { localStorage.removeItem("repositorySidenav"); } catch {} } else { doc.dataset.sidenav = on ? "on" : "off"; try { localStorage.setItem("repositorySidenav", on ? "on" : "off"); } catch {} } },
+      /** Couleurs du thème name : { family, tone } (famille de REPOSITORY_TREE.colorFamilies), ou null pour revenir à repository_tree. */
+      setColor(name, v) { const all = readJson("repositoryColors") || {}; v ? all[name] = { family: v.family, tone: +v.tone } : delete all[name]; try { Object.keys(all).length ? localStorage.setItem("repositoryColors", JSON.stringify(all)) : localStorage.removeItem("repositoryColors"); } catch {} if (name === currentTheme) applyTheme(name); window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { colors: name } })); },
+      themeColors,
+      familyColors,
+      contrast,
+      luminance
+    },
     /** Ajoute une action de page au menu ☰ (groupe « Page ») : label = texte ou [fr, en, de, es] (retraduit au changement de langue), handler = fonction appelée au clic. Retourne le bouton. */
     addAction(label, handler) {
       const host = menu.querySelector(".repo-page-actions");
@@ -277,29 +322,28 @@
     },
     /** Applique un thème de repository_tree (couleurs de l'en-tête, variables CSS) ; sans effet si le thème est inconnu. */
     setTheme(name) {
-      const t = cfg.themes[name];
-      if (!t) return;
-      for (const [k, v] of Object.entries({
-          "--repo-bar": t.bar,
-          "--repo-bar-text": t.barText,
-          "--repo-page": t.page,
-          "--repo-accent": t.accent,
-          "--accent": t.accent
-        })) doc.style.setProperty(k, v);
-      document.body.style.backgroundColor = t.page
+      if (!cfg.themes[name]) return;
+      applyTheme(name);
     }
   };
   applyLanguage();
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260926zo", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260926zt", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260926zo", script.src).href;
+    files.src = new URL("file_access.js?v=20260926zt", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
+    /* Icônes, numéros et sous-titres de blocs, sous-cartes, zones de dépôt, barre latérale (ordre conservé) */
+    for (const f of ["icons/repository_icons.js?v=20260926zt", "block_icons.js?v=20260926zt", "side_nav.js?v=20260926zt"]) {
+      const sc = document.createElement("script");
+      sc.src = new URL(f, script.src).href;
+      sc.async = false;
+      document.head.append(sc);
+    }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260926zo", script.src).href;
+    store.src = new URL("browser_store.js?v=20260926zt", script.src).href;
     document.head.append(store)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {
