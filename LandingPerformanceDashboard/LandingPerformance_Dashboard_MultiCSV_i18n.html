@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Landing Performance — Synthèse multi-CSV</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2712%27 fill=%27%230f1115%27/%3E%3Cpath d=%27M10 47h44%27 stroke=%27%236fa8ff%27 stroke-width=%275%27 stroke-linecap=%27round%27/%3E%3Cpath d=%27M17 16l14 23 16-9%27 fill=%27none%27 stroke=%27%23e8eaf0%27 stroke-width=%275%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3Ccircle cx=%2731%27 cy=%2747%27 r=%275%27 fill=%27%2344c06a%27/%3E%3C/svg%3E">
-<link rel="stylesheet" href="../shared/repository_nav.css?v=20260926zw">
-<script src="../repository_tree?v=20260926zw"></script>
+<link rel="stylesheet" href="../shared/repository_nav.css?v=20260926zy">
+<script src="../repository_tree?v=20260926zy"></script>
 <style>
 :root{
   --bg:#0f1115;--panel:#171a21;--panel2:#1d212a;--text:#e8eaf0;--muted:#9aa3b2;
@@ -460,22 +460,22 @@ svg.timeline-chart{height:330px;touch-action:pan-y;cursor:crosshair}
   </div>
   <div id="trendCard" data-no-i18n class="trend-card"></div>
 
-  <section class="section">
+  <section class="section" data-icon="chart" data-subtitle="Landing indicators over the period.">
     <h2 id="evolutionTitle">Evolution</h2>
     <div id="chartGrid" data-no-i18n class="chart-grid"></div>
   </section>
 
-  <section class="section">
+  <section class="section" data-icon="plane" data-subtitle="Per aircraft: count, averages, best and worst landings.">
     <h2 id="summaryTitle">Summary by aircraft</h2>
     <div class="table-wrap"><table id="aircraftTable" data-no-i18n></table></div>
   </section>
 
-  <section class="section">
+  <section class="section" data-icon="alert" data-subtitle="Rows discarded or incomplete in the loaded files.">
     <h2 id="qualityTitle">Data quality</h2>
     <div id="qualityBox" data-no-i18n class="quality-box"></div>
   </section>
 
-  <section class="section">
+  <section class="section" data-icon="list" data-subtitle="Details of every loaded landing.">
     <h2 id="landingsTitle">Landings</h2>
     <div class="table-wrap" style="max-height:500px"><table id="landingTable" data-no-i18n></table></div>
   </section>
@@ -483,8 +483,8 @@ svg.timeline-chart{height:330px;touch-action:pan-y;cursor:crosshair}
 </main>
 <div id="tooltip" data-no-i18n class="tooltip"></div>
 
-<script src="../shared/time_period.js?v=20260926zw"></script>
-<script src="../AircraftDB/aircraft_db.js"></script><script src="../shared/aircraft_fleet.js?v=20260926zw"></script><script src="../shared/defa_reference.js?v=20260926zw"></script><script src="../shared/aircraft_catalog.js?v=20260926zw"></script>
+<script src="../shared/time_period.js?v=20260926zy"></script>
+<script src="../AircraftDB/aircraft_db.js"></script><script src="../shared/aircraft_fleet.js?v=20260926zy"></script><script src="../shared/defa_reference.js?v=20260926zy"></script><script src="../shared/aircraft_catalog.js?v=20260926zy"></script>
 <script src="../AircraftDB/aircraft_icons.js"></script>
 <script>
 "use strict";
@@ -1087,6 +1087,11 @@ function landingI18nRows(){
   for(const k of ["label","logic","or","and","fpmOnly","gOnly"])rows.push(L.map(c=>inLang(c,()=>crashText(k))));
   rows.push(L.map(c=>inLang(c,()=>p95Text("label"))));
   rows.push(["Options de l’analyse","Analysis options","Analyseoptionen","Opciones del análisis"]);   // groupe du menu ☰ (landing_ui.js)
+  // sous-titres des blocs (icônes et sous-titres : block_icons.js)
+  rows.push(["Évolution des indicateurs d’atterrissage sur la période.", "Landing indicators over the period.", "Entwicklung der Landekennzahlen im Zeitraum.", "Evolución de los indicadores de aterrizaje en el periodo."]);
+  rows.push(["Par appareil : nombre, moyennes, meilleurs et moins bons atterrissages.", "Per aircraft: count, averages, best and worst landings.", "Je Luftfahrzeug: Anzahl, Mittelwerte, beste und schlechteste Landungen.", "Por aeronave: número, medias, mejores y peores aterrizajes."]);
+  rows.push(["Lignes écartées ou incomplètes des fichiers chargés.", "Rows discarded or incomplete in the loaded files.", "Verworfene oder unvollständige Zeilen der geladenen Dateien.", "Filas descartadas o incompletas de los archivos cargados."]);
+  rows.push(["Détail de chaque atterrissage chargé.", "Details of every loaded landing.", "Einzelheiten jeder geladenen Landung.", "Detalle de cada aterrizaje cargado."]);
   return rows.filter(r=>!r.some(v=>/\{\w+\}/.test(v)));
 }
 function updateTrendControls(){
@@ -3258,10 +3263,10 @@ if(prefs.lastFileName && !$("fileName").textContent.trim()){
 restoreCachedDataset();
 </script>
 <footer class="repo-footer no-print">CC RBR - DEFA Virtual - 2026-09-21 - 2.0.4 - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a></footer>
-<script src="../shared/repository_nav.js?v=20260926zw"></script>
-<script src="../shared/landing_ui.js?v=20260926zw"></script>
-<script src="../shared/app_framework.js?v=20260926zw"></script>
+<script src="../shared/repository_nav.js?v=20260926zy"></script>
+<script src="../shared/landing_ui.js?v=20260926zy"></script>
+<script src="../shared/app_framework.js?v=20260926zy"></script>
 <!-- Traducteur commun de la suite (libellés statiques + typographie) : mêmes règles que les autres pages -->
-<script src="../shared/content_i18n.js?v=20260926zw"></script><script>RepositoryContentI18n(landingI18nRows())</script>
+<script src="../shared/content_i18n.js?v=20260926zy"></script><script>RepositoryContentI18n(landingI18nRows())</script>
 </body>
 </html>

@@ -232,9 +232,12 @@
         // Bloc masqué par défaut : mécanisme afficher / masquer / déplacer du framework
         // (shared/app_framework.js), le choix de l'utilisateur restant mémorisé.
         if (block.defaultHidden) section.dataset.defaultHidden = '1';
+        // icône et sous-titre (block_icons.js, chargé par repository_nav.js) : blocs communs de blocks.js, blocs propres
+        // aux familles (icône par défaut « layers »)
+        section.dataset.icon = block.icon || 'layers';
         // Collection : ajout par un « + » dans le titre du bloc (appareils, équipage, événements…).
         const add = block.collection ? ` <button type="button" class="mc-head-add" data-add-to="${esc(block.collection.path)}" title="${esc(txt(block.collection.add))}" aria-label="${esc(txt(block.collection.add))}">+</button>` : '';
-        section.innerHTML = `<h2>${esc(txt(block.title))}${add}</h2>` + grid;
+        section.innerHTML = `<h2>${esc(txt(block.title))}${add}</h2>` + (block.subtitle ? `<p class="repo-block-subtitle">${esc(txt(block.subtitle))}</p>` : '') + grid;
         form.insertBefore(section, controls || null);
         if (block.collection) {
           const host = section.querySelector('.mc-collection');

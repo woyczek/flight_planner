@@ -225,8 +225,8 @@
     if (header) header.append(tools);
     root.innerHTML = `<form id="missionCoreForm" class="mc-form" autocomplete="off">
       <section class="mc-edit-banner" hidden><h2></h2><p class="note mc-edit-info"></p></section></form>
-      <aside class="mc-aside"><div class="panel mc-kpi-panel"><h2></h2><div class="mc-kpi"></div><ul class="mc-issues" hidden></ul><h3></h3><div class="small mc-context"></div></div>
-        <div class="panel mc-report-panel" data-block-id="mc-report"><h2></h2><div class="row mc-report-actions">
+      <aside class="mc-aside"><div class="panel mc-kpi-panel" data-icon="chart"><h2></h2><div class="mc-kpi"></div><ul class="mc-issues" hidden></ul><h3></h3><div class="small mc-context"></div></div>
+        <div class="panel mc-report-panel" data-block-id="mc-report" data-icon="file-text"><h2></h2><div class="row mc-report-actions">
         <button type="button" class="primary" data-action="render"></button><button type="button" class="secondary" data-action="print"></button>
         <label class="mc-public" hidden><input type="checkbox" data-action="public"> <span></span></label></div>
         <div class="report" id="mcReport"></div></div></aside>`;

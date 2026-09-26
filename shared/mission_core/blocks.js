@@ -22,6 +22,8 @@
   const identification = {
     id: 'identification',
     title: L('Identification & organisation', 'Identification & organisation', 'Identifikation & Organisation', 'Identificación y organización'),
+    icon: 'hash',
+    subtitle: L('Numéros, date, série, exercice ou opération réelle, organisation.', 'Numbers, date, series, exercise or real operation, organisation.', 'Nummern, Datum, Serie, Übung oder Einsatz, Organisation.', 'Números, fecha, serie, ejercicio u operación real, organización.'),
     fields: [
       f('metadata.missionId', L('N° mission', 'Mission ID', 'Einsatz-ID', 'ID de misión'), 'text', {
         upper: true,
@@ -78,6 +80,8 @@
   const aircraft = {
     id: 'aircraft',
     title: L('Appareil(s)', 'Aircraft', 'Luftfahrzeug(e)', 'Aeronave(s)'),
+    icon: 'plane',
+    subtitle: L('Appareils engagés : type, immatriculation, indicatif.', 'Aircraft involved: type, registration, callsign.', 'Eingesetzte Luftfahrzeuge: Muster, Kennzeichen, Rufzeichen.', 'Aeronaves empleadas: tipo, matrícula, indicativo.'),
     collection: {
       path: 'aircraft',
       min: 1,
@@ -176,6 +180,8 @@
   const crew = {
     id: 'crew',
     title: L('Équipage', 'Crew', 'Besatzung', 'Tripulación'),
+    icon: 'users',
+    subtitle: L('Membres d’équipage et leurs fonctions.', 'Crew members and their roles.', 'Besatzungsmitglieder und ihre Funktionen.', 'Miembros de la tripulación y sus funciones.'),
     collection: {
       path: 'crew',
       min: 1,
@@ -204,6 +210,8 @@
   const tasking = {
     id: 'tasking',
     title: L('Tâche / ordre de mission', 'Tasking', 'Auftrag', 'Tarea / orden de misión'),
+    icon: 'clipboard',
+    subtitle: L('Objectif et consignes de la mission.', 'Mission objective and instructions.', 'Auftrag und Anweisungen der Mission.', 'Objetivo e instrucciones de la misión.'),
     fields: [
       f('tasking.objective', L('Objectif', 'Objective', 'Ziel', 'Objetivo'), 'textarea', {
         full: true
@@ -218,6 +226,8 @@
   const capabilities = {
     id: 'capabilities',
     title: L('Capacités / techniques employées', 'Capabilities / techniques', 'Fähigkeiten / Verfahren', 'Capacidades / técnicas'),
+    icon: 'wrench',
+    subtitle: L('Techniques et moyens employés en vol.', 'Techniques and means used in flight.', 'Im Flug eingesetzte Verfahren und Mittel.', 'Técnicas y medios empleados en vuelo.'),
     // Masqué par défaut (framework) : repris de la dernière mission de la même série à la
     // création d'une mission, à ne renseigner qu'une fois.
     defaultHidden: true,
@@ -230,6 +240,8 @@
   const environment = {
     id: 'environment',
     title: L('Environnement / météo', 'Environment / weather', 'Umgebung / Wetter', 'Entorno / meteorología'),
+    icon: 'globe',
+    subtitle: L('Conditions météo et d’environnement rencontrées.', 'Weather and environmental conditions met.', 'Angetroffene Wetter- und Umgebungsbedingungen.', 'Condiciones meteorológicas y del entorno.'),
     fields: [
       f('environment.metar', L('METAR (analysé à la saisie : vent, T°, QNH, visibilité, plafond)', 'METAR (parsed on entry: wind, temp, QNH, visibility, ceiling)', 'METAR (beim Eingeben ausgewertet: Wind, Temp., QNH, Sicht, Wolkenuntergrenze)', 'METAR (analizado al introducirlo: viento, T.ª, QNH, visibilidad, techo)'), 'text', {
         full: true,
@@ -268,6 +280,8 @@
   const navigation = {
     id: 'navigation',
     title: L('Navigation', 'Navigation', 'Navigation', 'Navegación'),
+    icon: 'map',
+    subtitle: L('Terrains, route, points et zone de travail.', 'Airfields, route, points and working area.', 'Flugplätze, Route, Punkte und Einsatzgebiet.', 'Aeródromos, ruta, puntos y zona de trabajo.'),
     fields: [
       f('navigation.dep', L('Départ (ADEP)', 'Departure (ADEP)', 'Abflug (ADEP)', 'Salida (ADEP)'), 'text', {
         upper: true,
@@ -323,6 +337,8 @@
   const timeline = {
     id: 'timeline',
     title: L('Chronologie', 'Timeline', 'Zeitablauf', 'Cronología'),
+    icon: 'calendar',
+    subtitle: L('Heures clés du vol, du bloc au bloc.', 'Key times of the flight, block to block.', 'Wichtige Zeiten des Flugs, Block bis Block.', 'Horas clave del vuelo, de calzos a calzos.'),
     fields: [
       f('timeline.briefing', L('Briefing', 'Briefing', 'Briefing', 'Briefing'), 'time'),
       f('timeline.engineStart', L('Mise en route', 'Engine start', 'Anlassen', 'Puesta en marcha'), 'time', {
@@ -349,6 +365,8 @@
   const fuel = {
     id: 'fuel',
     title: L('Carburant (appareil principal)', 'Fuel (lead aircraft)', 'Kraftstoff (Führungsluftfahrzeug)', 'Combustible (aeronave principal)'),
+    icon: 'fuel',
+    subtitle: L('Carburant embarqué, consommé et restant.', 'Fuel on board, used and remaining.', 'Getankter, verbrauchter und verbleibender Kraftstoff.', 'Combustible embarcado, consumido y restante.'),
     fields: [
       f('fuel.unit', L('Unité', 'Unit', 'Einheit', 'Unidad'), 'select', {
         options: V.fuelUnits
@@ -377,6 +395,8 @@
   const events = {
     id: 'events',
     title: L('Événements horodatés', 'Timed events', 'Ereignisse mit Zeitstempel', 'Eventos con hora'),
+    icon: 'pin',
+    subtitle: L('Événements notables, avec leur heure.', 'Notable events, with their time.', 'Wichtige Ereignisse mit Uhrzeit.', 'Eventos destacados, con su hora.'),
     collection: {
       path: 'events',
       min: 0,
@@ -421,6 +441,8 @@
   const legs = {
     id: 'legs',
     title: L('Étapes / sorties / rotations', 'Legs / sorties / rotations', 'Etappen / Einsätze / Umläufe', 'Tramos / salidas / rotaciones'),
+    icon: 'layers',
+    subtitle: L('Étapes, sorties et rotations du vol.', 'Legs, sorties and rotations of the flight.', 'Etappen, Einsätze und Umläufe des Flugs.', 'Tramos, salidas y rotaciones del vuelo.'),
     collection: {
       path: 'legs',
       min: 0,
@@ -456,6 +478,8 @@
   const results = {
     id: 'results',
     title: L('Résultat', 'Results', 'Ergebnis', 'Resultado'),
+    icon: 'check',
+    subtitle: L('Résultat de la mission et suites à donner.', 'Mission outcome and follow-up.', 'Ergebnis der Mission und weiteres Vorgehen.', 'Resultado de la misión y seguimiento.'),
     fields: [
       f('results.outcome', L('Résultat', 'Outcome', 'Ergebnis', 'Resultado'), 'select', {
         options: V.outcomes,
@@ -479,6 +503,8 @@
   const remarks = {
     id: 'remarks',
     title: L('Remarques', 'Remarks', 'Bemerkungen', 'Observaciones'),
+    icon: 'file-text',
+    subtitle: L('Observations libres, enseignements.', 'Free remarks, lessons learned.', 'Freie Bemerkungen, Erkenntnisse.', 'Observaciones libres, enseñanzas.'),
     fields: [
       f('remarks.observations', L('Observations', 'Observations', 'Beobachtungen', 'Observaciones'), 'textarea', {
         full: true
@@ -492,6 +518,8 @@
   const network = {
     id: 'network',
     title: L('Trace réseau IVAO / VATSIM', 'IVAO / VATSIM network track', 'IVAO-/VATSIM-Netzwerkspur', 'Traza de red IVAO / VATSIM'),
+    icon: 'send',
+    subtitle: L('Trace du vol sur IVAO ou VATSIM.', 'Flight track on IVAO or VATSIM.', 'Flugspur auf IVAO oder VATSIM.', 'Traza del vuelo en IVAO o VATSIM.'),
     fields: [
       f('network.onlineNetwork', L('Réseau', 'Network', 'Netzwerk', 'Red'), 'select', {
         options: V.networks,
