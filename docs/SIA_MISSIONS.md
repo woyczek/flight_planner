@@ -87,7 +87,11 @@ le texte hors mission (introduction, VALIDATION, « Mission suivante ») est éc
 mission (identifiant `mission.id`, ou titre « # Mission 41A ») ; la première est affichée, les autres avec
 **◀ Mission 41A — titre (1/3) ▶** dans l'en-tête du générateur et du studio (même lot, partagé entre les deux
 pages et mémorisé dans le navigateur : `siaMissionBatch:v1`). Les modifications de chaque mission sont gardées
-en passant de l'une à l'autre. Générateur : **Exporter les N PDF** — un brief par mission. Les fichiers annexes
+en passant de l'une à l'autre. Générateur : **Exporter les N PDF** — un brief par mission. Studio :
+**Afficher toutes les cartes (N missions)** — aperçus de toutes les missions, groupés par mission ;
+**Générer les N missions** (bloc et pied de page) — un seul ZIP, un dossier par mission avec ses cartes et sa
+carte d'assemblage ; profils et cases ZIP de chaque carte gardés d'une mission à l'autre pendant la session.
+Le générateur lit ce ZIP : chaque mission y trouve ses cartes et sa propre carte d'assemblage. Les fichiers annexes
 d'une série (`maps_manifest.md`, `AAR_TRACKS_REFERENCE.md`, `VALIDATION.txt`, consignes) sont ignorés et
 signalés. Une mission dont le bloc `operation` annonce d'autres missions affiche déjà le sélecteur (missions non
 chargées grisées, « à charger ») ; une mission de la même opération collée ou ouverte ensuite **rejoint** le lot
