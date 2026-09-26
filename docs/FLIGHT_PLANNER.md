@@ -69,6 +69,15 @@ Badin à droite (partagés par les trois courbes ; ligne pointillée violette : 
 tenir le vario, plein gaz au-delà (le vario baisse jusqu'au plafond) ; réacteur : Badin puis Mach de
 croisière. La loi apparaît sur les deux courbes de montée, dans la table comparative et dans la fiche.
 
+**Instruments du bandeau** (`shared/flight_instruments.js`). Trois cadrans fictifs dans l'en-tête collé, donc
+visibles pendant le défilement : **Badin** (aiguille = Badin tenu par la loi réglée à l'altitude courante —
+réacteur : limité par le Mach en altitude ; repère violet = consigne du curseur ; arc violet = plage du
+curseur ; TAS et Mach en clair), **vario** (zéro à 9 h, montée vers le haut ; aiguille = vario obtenu ; repère =
+vario visé, « PG » = plein gaz) et **altimètre** (grande aiguille : centaines de pieds ; petite : milliers ;
+fenêtre numérique et FL). Altitude courante : celle survolée sur une courbe, sinon le niveau épinglé, sinon le
+niveau du plan. Badin et vario se règlent aussi sur l'instrument (glisser verticalement ou molette, pas de 5 kt
+et 50 ft/min), curseurs et courbes suivent.
+
 **Croisière limitée par la poussée.** Au-dessus du niveau où le Mach du profil n'est plus tenable,
 un réacteur vole à la plus grande vitesse permise par 92 % de la poussée (« poussée max. ») ; le
 niveau n'est refusé qu'au-delà du plafond de croisière. La montée au Badin du profil passe en Mach

@@ -181,6 +181,20 @@
       }
     });
     alignSliders();
+    feedInstruments();
+  }
+  /** Instruments du bandeau (shared/flight_instruments.js) : loi réglée à l'altitude survolée (hover), sinon
+   *  épinglée, sinon niveau du plan ; masqués sans modèle. Badin et vario réglés sur l'instrument → setManual. */
+  function feedInstruments(hover) {
+    const FI = window.FlightInstruments, m = S.m, q = S.manual;
+    if (!FI) return;
+    FI.onSet ||= (k, v) => setManual(k, v);
+    if (!m || !q) return FI.update(null);
+    try {
+      const h = hover ?? sync.pinned ?? (S.c?.FL > 0 ? S.c.FL * 100 : 0), above = h > m.ceiling, hh = Math.min(h, m.ceiling),
+        p = m.manualPoint(hh, manualLaw(m)), a = FlightPerfModel.isa(hh).a;
+      FI.update({ h, ias: p.ias, iasSet: q.ias, iasMin: q.iMin, iasMax: q.iMax, tas: p.tas, mach: p.tas / a, roc: above ? 0 : p.roc, vsSet: q.vs, vsMax: q.vMax, full: q.full, above });
+    } catch (e) { console.error("Instruments :", e); FI.update(null); }
   }
   /** Hauteur des curseurs = hauteur de la zone tracée (marges T / B du viewBox, en data-t / data-b du SVG). */
   function alignSliders() {
@@ -249,6 +263,7 @@
   /** Fiche ⌖ / 📌 du bloc Résultat : trajet, montée et vitesses à l'altitude survolée (hover) ou épinglée.
    *  hover : altitude (ft) sous le pointeur, ou rien pour afficher le niveau épinglé. */
   function renderPinned(hover) {
+    feedInstruments(hover);
     const box = $("perfPinned"), pinned = sync.pinned, o = window.altitudeOptimum, h = hover ?? pinned;
     if (!box) return;
     if (h == null || !o) { box.innerHTML = ""; StickyFrame.refresh(); return; }
