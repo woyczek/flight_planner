@@ -63,11 +63,14 @@
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   window.RepositoryIcons = {
     /** SVG d'une icône (chaîne) ; décorative (aria-hidden) sauf si title est donné. Nom inconnu : chaîne vide. */
-    svg(name, { size = 20, title = '' } = {}) {
+    svg(name, { size, title = '' } = {}) {
       const body = P[name];
       if (!body) return '';
       const a11y = title ? `role="img" aria-label="${esc(title)}"` : 'aria-hidden="true" focusable="false"';
-      return `<svg class="repo-svg" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${a11y}>${title ? `<title>${esc(title)}</title>` : ''}${body}</svg>`;
+      // taille explicite : variable --rs (block_icons.css l'impose, même face à une règle « svg{…} » de la page) ;
+      // sinon, taille du contexte (bloc, sous-carte, bouton…)
+      const px = size || 20, rs = size ? ` style="--rs:${size}px"` : '';
+      return `<svg class="repo-svg" viewBox="0 0 24 24" width="${px}" height="${px}"${rs} fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${a11y}>${title ? `<title>${esc(title)}</title>` : ''}${body}</svg>`;
     },
     has: name => name in P,
     names: () => Object.keys(P),

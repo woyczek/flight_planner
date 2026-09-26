@@ -22,7 +22,7 @@
   {
     const css = document.createElement('link');
     css.rel = 'stylesheet';
-    css.href = new URL('block_icons.css', script.src).href;
+    css.href = new URL('block_icons.css' + new URL(script.src).search, script.src).href; // même version (?v=) que ce script
     document.head.append(css);
   }
   const LANGS = ['fr', 'en', 'de', 'es'];
