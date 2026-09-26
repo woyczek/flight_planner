@@ -36,7 +36,8 @@ abbr[title]{text-decoration:underline dotted;cursor:help}
 .apd-bar{margin-top:8px;line-height:1.6}.apd-tag{margin-top:4px;padding:1px 7px;font-size:11px;border-radius:10px;border:1px solid currentColor;background:transparent;cursor:pointer}.apd-same{color:#7ed69b}.apd-diff{color:#f0b86e}.apd-empty{color:#75c8ff}
 @media(max-width:800px){.side-panel{max-height:none}}
 </style>
-<style id="fpColumns">/* Trois colonnes (écran large) : saisie + courbes | Résultat + panneaux | instruments ; largeurs réglables
+<style id="fpColumns">.wx-impact h4{margin:10px 0 4px;font-size:13px}.wx-impact:empty{display:none}
+/* Trois colonnes (écran large) : saisie + courbes | Résultat + panneaux | instruments ; largeurs réglables
    (shared/column_resize.js). Les blocs pleine largeur (span12) couvrent les trois colonnes : plus de colonnes
    implicites (l'ancienne grille à 12 colonnes laissait 10 écarts vides à droite du Résultat). */
 @media(min-width:801px){.wrap>.grid{grid-template-columns:minmax(0,1fr) minmax(0,.62fr) minmax(0,.17fr);grid-template-areas:"fuel result instr" "engine rpmtable instr"!important}
@@ -60,20 +61,26 @@ abbr[title]{text-decoration:underline dotted;cursor:help}
 <div class="field"><label>Vent (kt)</label><input id="wspd" type="number" placeholder="auto/typique"></div>
 <div class="field"><label>Réserve (min)</label><input id="reserve" type="number" value="45"></div>
 <div class="field"><label>Contingence (%)</label><input id="cont" type="number" value="5"></div>
+<div class="field" title="Écart à l’atmosphère standard (ISA), en °C : + = air plus chaud, moins dense (TAS plus grande, poussée et plafond plus faibles). Se règle aussi par la température au sol ou au niveau."><label>Écart ISA (°C)</label><input id="isaDev" type="number" step="1" value="0"></div>
+<div class="field" title="Température mesurée au terrain (METAR) : l’écart ISA en est déduit avec l’altitude du terrain."><label>Température sol (°C)</label><input id="tGround" type="number" step="1" placeholder="15"></div>
+<div class="field" title="Altitude du terrain de la température au sol (ft)."><label>Altitude terrain (ft)</label><input id="elevFt" type="number" step="10" value="0"></div>
+<div class="field" title="Température prévue au niveau de croisière (prévision TEMSI / vents et températures en altitude, OFP) : l’écart ISA en est déduit."><label>Température au niveau (°C)</label><input id="tLevel" type="number" step="1"></div>
 </div><div style="height:12px"></div><div class="row"><button id="calc" class="primary">Calculer</button><span id="windInfo" class="mut"></span></div><div id="optBlock">
 <div class="perf-row" id="rowOpt"><h3>Altitude optimale — carburant et vitesse</h3><div id="optEmpty" class="mut">Lance « Calculer » pour tracer les courbes d’altitude et de montée optimales.</div><div class="chart-wrap"><svg id="optChart" class="opt-chart" viewBox="0 0 540 270" hidden></svg></div></div>
 <div id="climbBlock" hidden>
 <div class="perf-row" id="rowClimb"><h3>Montée optimale — vario et carburant</h3><div class="chart-wrap"><svg id="climbChart" class="opt-chart" viewBox="0 0 540 230" hidden></svg></div></div>
 <div class="perf-row" id="rowSpeed"><h3>Vitesses de montée — Badin selon l’altitude</h3><div class="chart-wrap"><svg id="climbSpeedChart" class="opt-chart" viewBox="0 0 540 200" hidden></svg></div></div>
+<div class="perf-row" id="rowTas"><h3>TAS selon le niveau — croisière et montée</h3><div class="chart-wrap"><svg id="tasChart" class="opt-chart" viewBox="0 0 540 220" hidden></svg></div></div>
 <div class="perf-row" id="rowCompare"><h3>Comparaison des lois de montée</h3><div id="climbCompare"></div></div>
 <div class="perf-row" id="rowTable"><h3>Montée par altitude — régimes RPM / N1</h3><div id="climbTable"></div></div>
 </div></div></section>
 
 <aside id="perfSide" class="perf-side">
-<section class="card span6" data-block-id="result"><h2>Résultat</h2><div class="row"><div><div class="mut">Block fuel</div><div id="block" class="big">—</div></div><div style="flex:1"></div><div><div class="mut">TOD</div><div id="tod" class="big">—</div></div></div><div style="height:10px"></div><div id="breakdown" class="kv"></div><div id="perfPinned"></div></section>
+<section class="card span6" data-block-id="result"><h2>Résultat</h2><div class="row"><div><div class="mut">Block fuel</div><div id="block" class="big">—</div></div><div style="flex:1"></div><div><div class="mut">Temps de vol</div><div id="tripTime" class="big">—</div></div><div style="flex:1"></div><div><div class="mut">TOD</div><div id="tod" class="big">—</div></div></div><div style="height:10px"></div><div id="breakdown" class="kv"></div><div id="wxImpact" class="wx-impact" data-no-i18n></div><div id="perfPinned"></div></section>
 <div class="side-panel" id="panelOpt" data-row="rowOpt"></div>
 <div class="side-panel" id="panelClimb" data-row="rowClimb"></div>
 <div class="side-panel" id="panelSpeed" data-row="rowSpeed"></div>
+<div class="side-panel" id="panelTas" data-row="rowTas"></div>
 <div class="side-panel" id="panelCompare" data-row="rowCompare"></div>
 <div class="side-panel" id="panelTable" data-row="rowTable"></div>
 </aside>
@@ -116,11 +123,11 @@ abbr[title]{text-decoration:underline dotted;cursor:help}
 
 <dialog id="dlg"><div class="row"><h2 style="flex:1">Choisir l’avion</h2><button onclick="dlg.close()">Fermer</button></div><input id="search" placeholder="Rechercher ICAO / nom…" style="width:100%;margin-bottom:8px"><div id="airlist" class="airlist"></div></dialog>
 
-<script src="./AircraftDB/aircraft_db.js"></script><script src="./shared/aircraft_fleet.js?v=20260926g"></script><script src="./shared/defa_reference.js?v=20260926g"></script><script src="./shared/aircraft_catalog.js?v=20260926g"></script>
+<script src="./AircraftDB/aircraft_db.js"></script><script src="./shared/aircraft_fleet.js?v=20260926j"></script><script src="./shared/defa_reference.js?v=20260926j"></script><script src="./shared/aircraft_catalog.js?v=20260926j"></script>
 <script src="./AircraftDB/aircraft_icons.js"></script>
 <script src="./AircraftDB/aircraft_perf.js"></script>
-<script src="./shared/sticky_frame.js?v=20260926g"></script><script src="./shared/flight_profile_help.js?v=20260926g"></script><script src="./shared/column_resize.js?v=20260926g"></script><script src="./shared/flight_instruments.js?v=20260926g"></script><script src="./shared/flight_perf_view.js?v=20260926g"></script>
-<script src="./shared/flight_performance_model.js?v=20260926g"></script>
+<script src="./shared/sticky_frame.js?v=20260926j"></script><script src="./shared/flight_profile_help.js?v=20260926j"></script><script src="./shared/column_resize.js?v=20260926j"></script><script src="./shared/flight_instruments.js?v=20260926j"></script><script src="./shared/flight_perf_view.js?v=20260926j"></script>
+<script src="./shared/flight_performance_model.js?v=20260926j"></script>
 <script>
 // Planificateur de performances : profils d'appareils (SimBrief, Little Navmap, CSV, calibration par
 // OFP), devis carburant par phase, niveau optimal. Habillage (blocs, barre d'état) : shared/flight_ui.js.
@@ -172,9 +179,9 @@ function showFuel(value,d=0){return fmt(convertFuel(value,active?.unit||fuelUnit
 function updateFuelUnitButton(){$("fuelUnitBtn").textContent=`Affichage carburant : ${fuelUnit()}`}
 // ===== État mémorisé (localStorage flightPerfState) : profils d'appareils, réglages, préférences =====
 /** Enregistre l'état : réglages du devis (champs du formulaire), dernier avion, puis localStorage « flightPerfState » ; l'état précédent est gardé en « flightPerfState.backup » s'il a changé. */
-function save(){["dist","fl","trk","taxi","reserve","cont","wdir","wspd"].forEach(k=>state.settings[k]=$(k).value);state.lastAircraft=active?.id||null;let next=JSON.stringify(state),previous=localStorage.getItem("flightPerfState");if(previous&&previous!==next)localStorage.setItem("flightPerfState.backup",previous);localStorage.setItem("flightPerfState",next)}
+function save(){["dist","fl","trk","taxi","reserve","cont","wdir","wspd","isaDev","tGround","elevFt","tLevel"].forEach(k=>state.settings[k]=$(k).value);state.lastAircraft=active?.id||null;let next=JSON.stringify(state),previous=localStorage.getItem("flightPerfState");if(previous&&previous!==next)localStorage.setItem("flightPerfState.backup",previous);localStorage.setItem("flightPerfState",next)}
 /** Recopie les réglages mémorisés (state.settings) dans les champs du devis. */
-function restore(){for(const [k,v] of Object.entries(state.settings||{}))if($(k)&&v!==undefined)$(k).value=v}
+function restore(){for(const [k,v] of Object.entries(state.settings||{}))if($(k)&&v!==undefined)$(k).value=v;if(typeof syncWeather==="function")syncWeather("isaDev")}
 /** Complète un profil sur place (id, nom, unité, phases, TOD, identifiants de lignes RPM). Entrée : profil, nom de fichier (id par défaut). Sortie : le même objet. */
 function normalize(p,name="profil"){
  p.id=p.id||p.icao||name.replace(/\.[^.]+$/,""); p.name=p.name||p.aircraft||p.id; p.unit=p.unit||"kg";
@@ -321,6 +328,8 @@ function calculate(){
  const bHi=taxiFuel+climbFuel+cHi+descentFuel+(climbFuel+cHi+descentFuel)*(+$("cont").value/100)+reserve;
  $("block").textContent=windKnown?`${showFuel(block)} ${fuelUnit()}`:`${showFuel(Math.min(bLo,bHi))}–${showFuel(Math.max(bLo,bHi))} ${fuelUnit()}`;
  const tod=alt/(active.tod.gradientFtPerNm||300)+(active.tod.bufferNm||0);$("tod").textContent=`${fmt(tod,1)} NM`;
+ const cruiseMin=cruiseDist/Math.max(80,tasAlt+(windKnown?wc:0))*60;$("tripTime").textContent=hmTxt(climbMin+cruiseMin+descentMin);
+ try{$("wxImpact").innerHTML=weatherImpact(perf,D,alt,windKnown?wc:0)}catch(e){console.warn("Météo :",e);$("wxImpact").innerHTML=""}
  const mapNote=phase=>phase.map?`<span class="mapval">${phase.rpm} RPM → ${showFuel(phase.map.nominal)} ${fuelUnit()}/h <small>(${showFuel(phase.map.min)}–${showFuel(phase.map.max)})</small></span>`:"";
  const rows=[["Taxi",taxiFuel],["Montée"+mapNote(climbPhase),climbFuel],["Croisière (nominal)"+mapNote(cruisePhase),cNom],["Descente"+mapNote(descentPhase),descentFuel],["Contingence",contingency],["Réserve",reserve]];
  $("breakdown").innerHTML=rows.map(x=>`<div>${x[0]}</div><div>${showFuel(x[1])} ${fuelUnit()}</div>`).join("");
@@ -331,7 +340,32 @@ function calculate(){
 /* ===== Altitude et montée optimales : modèle de performances calibré sur le profil =====
    Mécanique du vol (polaire, poussée / puissance disponibles, consommation) dans shared/flight_performance_model.js ;
    indépendant du niveau saisi dans le plan : seules les données du profil (et des OFP qui l'ont calibré) comptent. */
-const perfModel=()=>FlightPerfModel.create(active,{db:window.AIRCRAFT_DB});
+// Météo : écart ISA (°C) du devis, passé au modèle (dIsa ; 0 = atmosphère standard du profil).
+const isaDev=()=>{const v=+$("isaDev").value;return Number.isFinite(v)?Math.max(-60,Math.min(60,v)):0};
+const perfModel=(dIsa=isaDev())=>FlightPerfModel.create(active,{db:window.AIRCRAFT_DB,dIsa});
+/** Température ISA (°C) à l'altitude pression ft. */
+const isaTemp=ft=>ft<=36089?15-1.98*ft/1000:-56.5;
+/** Champs météo liés : l'écart ISA, la température au sol (avec l'altitude du terrain) et la température au niveau
+ *  se déduisent l'un de l'autre ; src : champ modifié par l'utilisateur. */
+function syncWeather(src){const r1=v=>Math.round(v*10)/10,elev=+$("elevFt").value||0,lvl=(+$("fl").value||0)*100;let d=isaDev();
+ if(src==="tGround"&&$("tGround").value!=="")d=+$("tGround").value-isaTemp(elev);
+ else if(src==="tLevel"&&$("tLevel").value!=="")d=+$("tLevel").value-isaTemp(lvl);
+ d=r1(Math.max(-60,Math.min(60,d)));if(src!=="isaDev")$("isaDev").value=d;
+ if(src!=="tGround")$("tGround").value=r1(isaTemp(elev)+d);if(src!=="tLevel")$("tLevel").value=r1(isaTemp(lvl)+d)}
+["isaDev","tGround","elevFt","tLevel"].forEach(id=>$(id).addEventListener("input",()=>syncWeather(id==="elevFt"?"isaDev":id)));
+$("fl").addEventListener("input",()=>syncWeather("isaDev"));
+/** Effet de la météo (écart ISA non nul) sur le trajet : niveau du plan et niveau optimal, comparés à l'atmosphère
+ *  standard du profil — temps, carburant, plafond. HTML (vide en atmosphère standard ou sans modèle). */
+function weatherImpact(perf,D,alt,wc){const d=perf?.dIsa||0;if(!d)return"";let p0;try{p0=perfModel(0)}catch{return""}
+ const best=m=>{let b=null;for(let h=1000;h<=m.ceiling;h+=500){const r=m.trip(h,D,wc,"normal");if(r?.ok&&(!b||r.fuel<b.fuel))b={...r,h}}return b},
+  lv=Math.min(alt,perf.ceiling,p0.ceiling),a=p0.trip(lv,D,wc,"normal"),b=perf.trip(lv,D,wc,"normal"),o0=best(p0),o1=best(perf),
+  dMin=x=>`${x>=0?"+":"−"}${fmt(Math.abs(x),0)} min`,dF=x=>`${x>=0?"+":"−"}${showFuel(Math.abs(x))} ${fuelUnit()}`,isa=`ISA${d>0?"+":"−"}${fmt(Math.abs(d),0)} °C`;
+ const rows=[];
+ if(alt>perf.ceiling)rows.push(`<dt>⚠</dt><dd>${flTxt(alt)} ${tl("au-dessus du plafond du jour","above today’s ceiling","über der heutigen Gipfelhöhe","por encima del techo del día")} (${flTxt(perf.ceiling)}) : ${tl("trajet calculé au plafond","trip computed at the ceiling","Strecke auf Gipfelhöhe berechnet","trayecto calculado en el techo")}</dd>`);
+ if(a?.ok&&b?.ok)rows.push(`<dt>${tl("Trajet au",`Trip at`,"Strecke auf","Trayecto a")} ${flTxt(lv)}</dt><dd>${hmTxt(b.minutes)} (${dMin(b.minutes-a.minutes)}) · ${showFuel(b.fuel)} ${fuelUnit()} (${dF(b.fuel-a.fuel)}) · TAS ${fmt(b.tas,0)} kt (${b.tas>=a.tas?"+":"−"}${fmt(Math.abs(b.tas-a.tas),0)})</dd>`);
+ if(o0&&o1)rows.push(`<dt>${tl("Niveau optimal","Optimum level","Optimale Flughöhe","Nivel óptimo")}</dt><dd>${flTxt(o1.h)}${o1.h!==o0.h?` (ISA : ${flTxt(o0.h)})`:` (${tl("inchangé","unchanged","unverändert","sin cambio")})`} · ${showFuel(o1.fuel)} ${fuelUnit()} · ${hmTxt(o1.minutes)}</dd>`);
+ rows.push(`<dt>${tl("Plafond","Ceiling","Gipfelhöhe","Techo")}</dt><dd>${flTxt(perf.ceiling)} (ISA : ${flTxt(p0.ceiling)})</dd>`);
+ return typo(`<h4>${tl("Météo","Weather","Wetter","Meteorología")} ${isa} — ${tl("écart à l’atmosphère standard","difference from the standard atmosphere","Abweichung von der Standardatmosphäre","diferencia con la atmósfera estándar")}</h4><dl class="kvp">${rows.join("")}</dl>`)}
 // Textes générés (résultats, courbes) dans la langue de la page : tl(fr, en, de, es) ; redessinés au changement de langue.
 const tl=(...r)=>r[Math.max(0,["fr","en","de","es"].indexOf(window.RepositoryNav?.getLanguage?.()||"fr"))]||r[0];
 // Typographie : espace avant « : » et « ; » en français seulement.
@@ -725,10 +759,10 @@ function renderDefaSheets(){const box=$("defaSheets");if(!box)return;const t=aKe
 /* ?aircraft=<type ou profil> : ouverture depuis une fiche appareil (profil existant, sinon créé depuis le type DEFA). */
 refreshLandingAircraft();restore();applyHeaderPreferences();{const wanted=new URLSearchParams(location.search).get("aircraft"),k=aKey(wanted||""),db=window.AIRCRAFT_DB||{},res=aKey(db.__aliases?.[k]||k),same=v=>{const x=aKey(v);return x&&(x===k||x===res||aKey(db.__aliases?.[x])===res)},found=k&&Object.values(state.profiles||{}).find(p=>[p.id,p.icao,p.type].some(same)),cand=k&&!found&&landingOnlyAircraft(Object.values(state.profiles||{}).filter(p=>p&&typeof p==="object").map(p=>normalize(p))).find(p=>[p.id,p.icao,p.type].some(same)),created=cand&&newProfileFromLanding(cand.id);if(found)setActive(found,"fiche appareil");else if(created)setActive(created,"fiche appareil (type DEFA)");else if(state.lastAircraft&&state.profiles[state.lastAircraft])setActive(state.profiles[state.lastAircraft],"état restauré");else syncAircraftPicker();}
 </script>
-<script src="./shared/repository_nav.js?v=20260926g"></script>
-<script src="./shared/app_framework.js?v=20260926g"></script>
-<script src="./shared/flight_ui.js?v=20260926g"></script>
-<script src="./SIA%20XML/aero_symbols.js?v=20260925j"></script><script src="./SIA%20XML/vertical_profile.js?v=20260925k"></script><script src="./shared/flight_vertical_profile.js?v=20260926g"></script>
+<script src="./shared/repository_nav.js?v=20260926j"></script>
+<script src="./shared/app_framework.js?v=20260926j"></script>
+<script src="./shared/flight_ui.js?v=20260926j"></script>
+<script src="./SIA%20XML/aero_symbols.js?v=20260925j"></script><script src="./SIA%20XML/vertical_profile.js?v=20260925k"></script><script src="./shared/flight_vertical_profile.js?v=20260926j"></script>
 <script src="./shared/content_i18n.js"></script><script src="./shared/flight_i18n.js"></script>
 <footer class="repo-footer no-print">CC RBR - DEFA Virtual - 2026-09-21 - 2.0.7 - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a></footer>
 <script>/* Colonnes redimensionnables (framework : shared/column_resize.js) ; poignées sur la hauteur des deux premières rangées */

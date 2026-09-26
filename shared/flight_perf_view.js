@@ -319,7 +319,7 @@
     setupFrames();
     const stop = msg => {
       S.m = null; $("optChart").hidden = true; $("climbBlock").hidden = true; $("optEmpty").textContent = msg; $("optEmpty").hidden = false;
-      ["panelOpt", "panelClimb", "panelSpeed", "panelCompare", "panelTable"].forEach(id => { if ($(id)) $(id).innerHTML = ""; });
+      ["panelOpt", "panelClimb", "panelSpeed", "panelTas", "panelCompare", "panelTable"].forEach(id => { if ($(id)) $(id).innerHTML = ""; });
       window.altitudeOptimum = null; renderPinned(); syncSliders(); StickyFrame.refresh();
     };
     if (!(c.D > 0)) return stop(tl("Distance nulle : renseigne une distance pour tracer les courbes.", "Zero distance: enter a distance to draw the curves.", "Entfernung null: eine Entfernung eingeben, um die Kurven zu zeichnen.", "Distancia nula: introduzca una distancia para trazar las curvas."));
@@ -348,10 +348,58 @@
         panel("panelOpt", tl("Altitude optimale", "Optimum altitude", "Optimale Flughöhe", "Altitud óptima"), `<p class="perf-warn">⚠ ${noLevelTxt(m, c)}</p>`, `<details class="limits" open><summary>${tl("Limites", "Limits", "Grenzen", "Límites")}</summary>${limitsHtml(m, c, K.hs)}</details>`));
     }
     if (K.top > 0) guard("panelClimb", "climbChart", tl("Montée", "Climb", "Steigflug", "Ascenso"), () => drawClimb(m, c, K)); else $("climbBlock").hidden = true;
+    if (K.top > 0) guard("panelTas", "tasChart", tl("TAS selon le niveau", "TAS by level", "TAS nach Flughöhe", "TAS según el nivel"), () => drawTas(m, c, K));
     syncSliders();
     if (sync.pinned != null) sync.charts.forEach(ch => sync.drawPin(ch, sync.pinned));
     renderPinned();
     StickyFrame.refresh();
+  }
+
+  // --- TAS selon le niveau ---------------------------------------------------------------------------------
+  /** Courbe TAS (vitesse vraie) selon le niveau : croisière du profil, croisière économique, montée à la loi réglée ;
+   *  si un écart ISA est saisi, croisière du profil en atmosphère standard en pointillés (effet de la température).
+   *  Jauge synchronisée avec les autres courbes ; relevé : TAS, Badin et Mach de chaque série. */
+  function drawTas(m, c, K) {
+    const svg = $("tasChart"), W = 540, H = 220, Lm = 52, R = 12, T = 12, B = 30, xmax = Math.max(K.top, 1000), man = manualLaw(m);
+    let m0 = null;
+    if (m.dIsa) try { m0 = perfModel(0); } catch { m0 = null; }
+    const step = xmax > 20000 ? 1000 : 500, rows = [];
+    for (let h = 0; h <= xmax + 1; h += step) {
+      const cr = m.cruise(h, "normal"), ec = m.cruise(h, "eco"), mp = h <= m.ceiling ? m.manualPoint(h, man) : null, c0 = m0?.cruise(h, "normal");
+      const a = m.atm(h).a, a0 = FlightPerfModel.isa(h).a, pt = (x, sa) => ({ tas: x.tas, ias: x.ias, mach: x.tas / sa });
+      rows.push({ h, prof: cr?.ok ? pt(cr, a) : null, eco: ec?.ok ? pt(ec, a) : null, man: mp && mp.roc > 0 ? pt(mp, a) : null, isa: c0?.ok ? pt(c0, a0) : null });
+    }
+    const all = rows.flatMap(r => [r.prof, r.eco, r.man, r.isa].filter(Boolean).map(x => x.tas));
+    if (!all.length) throw Error(tl("aucune vitesse calculable", "no computable speed", "keine berechenbare Geschwindigkeit", "ninguna velocidad calculable"));
+    const vmin = Math.min(...all) * .94, vmax = Math.max(...all) * 1.04, X = h => Lm + h / xmax * (W - Lm - R), Y = v => T + (1 - (v - vmin) / (vmax - vmin || 1)) * (H - T - B);
+    let g = "";
+    for (let i = 0; i <= 4; i++) { const v = vmin + (vmax - vmin) * i / 4; g += `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${Lm - 5}" y="${Y(v) + 4}" text-anchor="end">${fmt(v, 0)}</text>`; }
+    const tk = xmax > 30000 ? 10000 : xmax > 12000 ? 5000 : 2000;
+    for (let h = 0; h <= xmax; h += tk) g += `<line class="grid-line" x1="${X(h)}" x2="${X(h)}" y1="${T}" y2="${H - B}"/><text x="${X(h)}" y="${H - B + 14}" text-anchor="middle">${flTxt(h)}</text>`;
+    const pth = (k, cls) => { let d = "", pen = false; for (const r of rows) { if (!r[k]) { pen = false; continue; } d += `${pen ? "L" : "M"}${X(r.h).toFixed(1)},${Y(r[k].tas).toFixed(1)}`; pen = true; } return d ? `<path class="${cls}" d="${d}"/>` : ""; };
+    g += `<line class="axis" x1="${Lm}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/><line class="axis" x1="${Lm}" x2="${Lm}" y1="${T}" y2="${H - B}"/>${pth("isa", "band")}${pth("eco", "curve-eco")}${pth("prof", "curve")}${pth("man", "curve-man")}`
+      + `<text x="${(Lm + W - R) / 2}" y="${H - 3}" text-anchor="middle">${tl("Niveau", "Level", "Flughöhe", "Nivel")}</text><text x="11" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(-90 11 ${(T + H - B) / 2})">TAS (kt)</text>`
+      + `<line id="tasCursor" class="cursor" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/><rect id="tasHit" x="${Lm}" y="${T}" width="${W - Lm - R}" height="${H - T - B}" fill="transparent"/>`;
+    svg.innerHTML = typo(g); svg.hidden = false; svg.dataset.t = T; svg.dataset.b = B;
+    const one = (x, col, name) => `<dt>${lab(name, col)}</dt><dd>${x ? `TAS ${fmt(x.tas, 0)} kt · ${tl("Badin", "IAS", "IAS", "IAS")} ${fmt(x.ias, 0)} kt${x.mach >= .3 ? ` · M${x.mach.toFixed(2)}` : ""}` : "—"}</dd>`;
+    const isaName = tl("croisière en ISA", "cruise at ISA", "Reiseflug bei ISA", "crucero en ISA"), climbName = `${L.man()} (${tl("montée", "climb", "Steigflug", "ascenso")})`;
+    sync.add({ svg, hit: $("tasHit"), W, L: Lm, R, T, bottom: H - B, xmax,
+      show: h => {
+        const r = rows.reduce((a, x) => Math.abs(x.h - h) < Math.abs(a.h - h) ? x : a, rows[0]); cursorAt("tasCursor", X(r.h));
+        $("tasReadout").innerHTML = typo(`<b>⌖ ${flTxt(r.h)}</b><dl class="kvp">${one(r.prof, COL.prof, L.prof())}${one(r.eco, COL.eco, L.eco())}${one(r.man, COL.man, climbName)}${m0 ? one(r.isa, COL.ref, isaName) : ""}</dl>`);
+      },
+      leave: () => { $("tasCursor").setAttribute("visibility", "hidden"); $("tasReadout").textContent = ""; } });
+    const plan = rows.reduce((a, x) => Math.abs(x.h - c.FL * 100) < Math.abs(a.h - c.FL * 100) ? x : a, rows[0]);
+    panel("panelTas", tl("TAS selon le niveau", "TAS by level", "TAS nach Flughöhe", "TAS según el nivel"),
+      legend([[sw(COL.prof), lab(L.prof(), COL.prof), ""], [sw(COL.eco), lab(L.eco(), COL.eco), ""],
+        [sw(COL.man), lab(climbName, COL.man), tl("TAS de montée à la loi des curseurs", "climb TAS at the slider law", "Steig-TAS nach dem Reglergesetz", "TAS de ascenso con la ley de los cursores")],
+        ...(m0 ? [[sw(COL.ref, true), lab(isaName, COL.ref), tl("même croisière en atmosphère standard", "same cruise in the standard atmosphere", "gleicher Reiseflug in der Standardatmosphäre", "mismo crucero en atmósfera estándar")]] : [])]),
+      `<p>${tl("Au niveau du plan", "At the plan level", "Auf der Planhöhe", "Al nivel del plan")} (${flTxt(plan.h)}) :</p><dl class="kvp">${one(plan.prof, COL.prof, L.prof())}${m0 ? one(plan.isa, COL.ref, isaName) : ""}</dl>`,
+      `<div id="tasReadout" class="readout"></div>`,
+      reading(tl("la TAS (vitesse vraie) croît avec le niveau à Badin égal (air moins dense, environ 2 % par 1000 ft) ; un réacteur tenu au Mach voit sa TAS baisser avec la température au-dessus de l’altitude de conjonction. Air plus chaud que l’ISA : TAS plus grande à Badin égal (≈ 1 % pour 5 °C), mais poussée et plafond plus faibles.",
+        "TAS (true airspeed) increases with level at a given IAS (thinner air, about 2 % per 1000 ft); a jet flown at constant Mach sees its TAS fall with temperature above the crossover altitude. Air warmer than ISA: higher TAS at a given IAS (≈ 1 % per 5 °C), but less thrust and a lower ceiling.",
+        "Die TAS (wahre Fluggeschwindigkeit) steigt bei gleicher IAS mit der Flughöhe (dünnere Luft, etwa 2 % je 1000 ft); ein mit konstanter Machzahl geflogener Jet verliert über der Übergangshöhe TAS mit der Temperatur. Wärmer als ISA: höhere TAS bei gleicher IAS (≈ 1 % je 5 °C), aber weniger Schub und niedrigere Gipfelhöhe.",
+        "la TAS (velocidad verdadera) crece con el nivel a IAS igual (aire menos denso, cerca del 2 % por 1000 ft); un reactor a Mach constante pierde TAS con la temperatura por encima de la altitud de cruce. Aire más cálido que la ISA: TAS mayor a IAS igual (≈ 1 % por 5 °C), pero menos empuje y techo más bajo.")));
   }
 
   /** Libellé « courbe indisponible » (4 langues). */

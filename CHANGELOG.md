@@ -10,6 +10,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Planificateur — météo (écart ISA)** : écart ISA, ou température au sol (avec l'altitude du terrain), ou
+  température au niveau ; appliqué au modèle (densité, vitesse du son, poussée / puissance, consommation, plafond ;
+  profil calibré en standard) : devis, courbes et fiche. Nouveau **temps de vol** dans le Résultat et encart de
+  comparaison au standard (trajet, niveau optimal, plafond).
+- **Planificateur — courbe TAS** selon le niveau (croisière, croisière économique, montée à la loi réglée,
+  croisière en ISA en pointillés), jauge synchronisée.
+- **Correctif — modèle de performances** : au plafond d'un réacteur (« coin de cercueil » : traînée minimale
+  au-delà du Mach permis), la croisière limitée en poussée donnait une vitesse supérieure au Mach du profil ;
+  le palier est maintenant refusé (poussée insuffisante).
 - **Prompt de génération de missions** : consignes au lieu d'une liste fermée de terrains — départ depuis la base
   réelle de l'unité (Dragon, SMUR / hôpital, pélicandrome pour Dash 8 / Canadair / Tracker, terrain militaire de
   préférence), théâtres d'outre-mer (Antilles, Guyane, Réunion, Mayotte, Nouvelle-Calédonie, Polynésie…),

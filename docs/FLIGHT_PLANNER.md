@@ -69,6 +69,20 @@ Badin à droite (partagés par les trois courbes ; ligne pointillée violette : 
 tenir le vario, plein gaz au-delà (le vario baisse jusqu'au plafond) ; réacteur : Badin puis Mach de
 croisière. La loi apparaît sur les deux courbes de montée, dans la table comparative et dans la fiche.
 
+**Météo — écart ISA.** Dans le devis : **Écart ISA (°C)**, ou **Température sol** (avec l'**Altitude terrain**),
+ou **Température au niveau** ; chacun se déduit des autres (ISA : 15 °C au niveau de la mer, −1,98 °C / 1000 ft,
+−56,5 °C au-dessus de 36 089 ft). Le profil reste calibré en atmosphère standard ; les calculs de vol utilisent
+l'atmosphère du jour : air plus chaud = moins dense → TAS plus grande à Badin égal (et à Mach égal : vitesse du
+son plus grande), poussée / puissance, vario et plafond plus faibles, consommation spécifique du réacteur plus
+forte. Le devis (carburant, **temps de vol**), les courbes et la fiche en tiennent compte ; un encart du
+Résultat compare au standard : trajet au niveau du plan (temps, carburant, TAS), niveau optimal et plafond. Le
+QNH n'entre pas dans le calcul : les niveaux de vol sont des altitudes pression, les performances en croisière
+n'en dépendent pas (il ne change que l'altitude vraie, utile pour le relief, pas pour le carburant).
+
+**TAS selon le niveau.** Courbe de la vitesse vraie : croisière du profil, croisière économique, montée à la
+loi réglée ; en pointillés, la croisière du profil en atmosphère standard quand un écart ISA est saisi.
+Jauge synchronisée avec les autres courbes (TAS, Badin, Mach).
+
 **Mise en page** : trois colonnes sur écran large — saisie et courbes | Résultat et panneaux | instruments —,
 largeurs réglables à la souris (poignées entre les colonnes, double-clic : largeurs par défaut ; framework
 `column_resize.js`). Les blocs pleine largeur (données du profil…) couvrent les trois colonnes.

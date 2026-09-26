@@ -22,13 +22,16 @@
   // Messages dans la langue de la page (fr, en, de, es).
   const tl = (...r) => r[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'))] || r[0];
 
-  /** Atmosphère type ISA à l'altitude h (ft) : { theta (T / T0), delta (p / p0), sigma (ρ / ρ0), a (vitesse du son, kt) } ; tropopause à 36 089 ft. */
-  function isa(h) {
+  /** Atmosphère à l'altitude pression h (ft), écart ISA dT (°C, 0 = standard) : { theta (T / T0), delta (p / p0),
+   *  sigma (ρ / ρ0), a (vitesse du son, kt) } ; tropopause à 36 089 ft. La pression dépend de l'altitude pression
+   *  seule (niveaux de vol) ; l'écart de température change la densité et la vitesse du son. */
+  function isa(h, dT = 0) {
     const T0 = 288.15,
       h1 = 36089.24,
-      T = h <= h1 ? T0 - 0.0019812 * h : 216.65,
+      Ts = h <= h1 ? T0 - 0.0019812 * h : 216.65,
+      T = Ts + dT,
       theta = T / T0;
-    const delta = h <= h1 ? Math.pow(theta, 5.25588) : Math.pow(216.65 / T0, 5.25588) * Math.exp(-(h - h1) / 20805.7);
+    const delta = h <= h1 ? Math.pow(Ts / T0, 5.25588) : Math.pow(216.65 / T0, 5.25588) * Math.exp(-(h - h1) / 20805.7);
     return {
       theta,
       delta,
@@ -125,7 +128,8 @@
 
   /** Modèle de performances calibré sur un profil d'appareil (et la base des types db pour la motorisation) : polaire, poussée / puissance, consommation, plafond. Lève une erreur si la TAS ou le débit de croisière manquent. Retourne les calculs exportés (cruise, trip, climbTo, climbPoint, climbOpt, manualLaw…). */
   function create(profile, {
-    db
+    db,
+    dIsa = 0
   } = {}) {
     const kind = kindOf(profile, db),
       C = CLASS[kind],
@@ -143,9 +147,14 @@
     const ceilGiven = num(cr.ceilingFt) > 0 ? num(cr.ceilingFt) : null,
       rocAvg = Math.abs(num(cl.rateFpm)) > 0 ? Math.abs(num(cl.rateFpm)) : null;
     const climbFFProfile = num(cl.fuelFlowPerHour) > 0 ? num(cl.fuelFlowPerHour) : null;
+    // Météo : écart ISA (°C). Le profil (et son calibrage) est en atmosphère standard ; les calculs de vol
+    // utilisent l'atmosphère du jour (atm) : air chaud = moins dense → TAS plus grande à Badin égal, poussée /
+    // puissance et plafond plus faibles, consommation spécifique du réacteur plus forte (√θ).
+    dIsa = Number.isFinite(+dIsa) ? Math.max(-60, Math.min(60, +dIsa)) : 0;
+    const atm = h => isa(h, dIsa);
 
     // Modèle pour une altitude de référence, une finesse et une poussée / puissance au sol données.
-    function make(hRef, ld, p0) {
+    function make(hRef, ld, p0, A = isa) {
       const aR = isa(hRef),
         veRef = tasRef * Math.sqrt(aR.sigma),
         veMd = num(cl.iasKt) > 0 ? num(cl.iasKt) / C.climb : veRef / C.k;
@@ -153,16 +162,17 @@
         b = veMd * veMd / (2 * ld),
         dw = ve => a * ve * ve + b / (ve * ve);
       /** TAS (kt) d'une vitesse équivalente ve à l'altitude h. */
-      const tasOf = (h, ve) => ve / Math.sqrt(isa(h).sigma);
+      const tasOf = (h, ve) => ve / Math.sqrt(A(h).sigma);
       /** Consommation spécifique relative d'un réacteur : √θ × (1 + 0,8 M). */
-      const sfc = (h, tas) => {
-          const at = isa(h);
-          return Math.sqrt(at.theta) * (1 + .8 * tas / at.a);
+      const sfcIn = at => (h, tas) => {
+          const x = at(h);
+          return Math.sqrt(x.theta) * (1 + .8 * tas / x.a);
         },
+        sfc = sfcIn(A),
         eta = ve => Math.min(1, .55 + .45 * ve / (1.4 * veMd));
-      const K = jet ? ffRef / (sfc(hRef, tasRef) * dw(veRef)) : ffRef / (dw(veRef) * tasRef);
+      const K = jet ? ffRef / (sfcIn(isa)(hRef, tasRef) * dw(veRef)) : ffRef / (dw(veRef) * tasRef); // calibrage : standard
       /** Poussée (réacteur) ou puissance (hélice) disponible à l'altitude h, gaz à fond. */
-      const avail = h => p0 * lapse(isa(h).sigma);
+      const avail = h => p0 * lapse(A(h).sigma);
       /** Vario (ft/min) à l'altitude h, vitesse équivalente ve, fraction de gaz frac. */
       const roc = (h, ve, frac = 1) => {
         const tas = tasOf(h, ve);
@@ -206,7 +216,7 @@
     const climbVe = (m, h) => {
       const v = num(cl.iasKt) > 0 ? num(cl.iasKt) : num(cl.tasKt) > 0 ? num(cl.tasKt) * Math.sqrt(isa(m.hRef / 2).sigma) : m.vy(h).ve;
       if (!jet || !(m.mRef > 0)) return v;
-      const at = isa(h);
+      const at = atm(h);
       return Math.min(v, m.mRef * at.a * Math.sqrt(at.sigma));
     };
     // Montée intégrée de 0 à hTop (vitesse de montée du profil, ou Vy) : temps, distance air, carburant.
@@ -297,7 +307,8 @@
       refSrc = tl(`estimée (valeur type ${tl(...C.label)}) — renseigne « Altitude de référence (ft) » ou calibre sur un OFP SimBrief`, `estimated (typical ${tl(...C.label)} value) — fill in “Reference altitude (ft)” or calibrate on a SimBrief OFP`, `geschätzt (typischer Wert ${tl(...C.label)}) — „Bezugshöhe (ft)“ ausfüllen oder mit einem SimBrief-OFP kalibrieren`, `estimada (valor típico ${tl(...C.label)}) — rellene «Altitud de referencia (ft)» o calibre con un OFP de SimBrief`);
       estimated = true;
     }
-    const M = calibrate(hRef),
+    const M0 = calibrate(hRef),
+      M = dIsa ? make(hRef, C.ld, M0.p0, atm) : M0,
       modelCeil = ceilingOf(M),
       ceiling = ceilGiven ? Math.min(modelCeil, ceilGiven) : modelCeil;
     if (ceilGiven && ceilGiven < modelCeil) notes.push(tl(`Plafond limité par le profil : ${Math.round(ceilGiven)} ft (le modèle atteindrait ${Math.round(modelCeil)} ft à ${rocCeil} ft/min).`, `Ceiling limited by the profile: ${Math.round(ceilGiven)} ft (the model would reach ${Math.round(modelCeil)} ft at ${rocCeil} ft/min).`, `Gipfelhöhe durch das Profil begrenzt: ${Math.round(ceilGiven)} ft (das Modell erreichte ${Math.round(modelCeil)} ft bei ${rocCeil} ft/min).`, `Techo limitado por el perfil: ${Math.round(ceilGiven)} ft (el modelo alcanzaría ${Math.round(modelCeil)} ft a ${rocCeil} ft/min).`));
@@ -320,7 +331,7 @@
 
     /** Vitesse équivalente (au-dessus de la traînée minimale) à laquelle la puissance P équilibre la traînée ; null si P ne suffit pas. */
     function powerSpeed(h, P) {
-      const s = Math.sqrt(isa(h).sigma),
+      const s = Math.sqrt(atm(h).sigma),
         g = ve => M.dw(ve) * ve / s - P,
         vmp = Math.pow(3, -.25) * M.veMd;
       if (g(vmp) > 0) return null;
@@ -334,7 +345,7 @@
         ok: false,
         reason: 'ceiling'
       };
-      const at = isa(h),
+      const at = atm(h),
         s = Math.sqrt(at.sigma);
       let ve;
       if (mode === 'eco') ve = jet ? Math.min(Math.pow(3, .25) * M.veMd, M.mRef * at.a * s, veCap) : M.veMd; // jamais plus rapide que la croisière du profil
@@ -356,6 +367,13 @@
       let limited = false;
       if (jet && !(M.dw(ve) <= M.avail(h) * .92)) {
         const cap = M.avail(h) * .92;
+        // coin de cercueil : la vitesse de traînée minimale dépasse la vitesse permise (Mach) — ralentir ne ferait
+        // qu'augmenter la traînée, accélérer dépasserait le Mach : palier non tenable
+        if (M.veMd >= ve) return {
+          h,
+          ok: false,
+          reason: 'thrust'
+        };
         if (!(M.dw(M.veMd) <= cap)) return {
           h,
           ok: false,
@@ -454,7 +472,7 @@
     function climbOpt(h, objective, k) {
       const vc = k?.tas || tasRef,
         ffc = k?.ff || ffRef,
-        at = isa(h),
+        at = atm(h),
         s = Math.sqrt(at.sigma);
       const veMax = Math.min(3 * M.veMd, jet ? Math.min(h < 10000 ? 250 : 340, (M.mRef + .04) * at.a * s) : 3 * M.veMd);
       // vario plancher pour les lois « temps » et « carburant » : ≥ 50 % du vario max et ≥ 300 ft/min (500 réacteur),
@@ -539,7 +557,7 @@
       return h => {
         let ve = iasKt;
         if (jet) {
-          const at = isa(h);
+          const at = atm(h);
           ve = Math.min(ve, M.mRef * at.a * Math.sqrt(at.sigma));
         }
         const r0 = M.roc(h, ve, 0),
@@ -585,6 +603,9 @@
 
     return {
       kind,
+      dIsa,
+      /** Atmosphère du jour (écart ISA du modèle) à l'altitude pression h. */
+      atm,
       label: tl(...C.label),
       hRef,
       refSrc,
