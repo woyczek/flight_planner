@@ -39,9 +39,9 @@ window.REPOSITORY_TREE={
       console:{label:["Console","Console","Konsole","Consola"],title:["Barre latérale, blocs aérés, titres en capitales, icônes","Side bar, airy blocks, uppercase titles, icons","Seitenleiste, luftige Blöcke, Titel in Großbuchstaben, Symbole","Barra lateral, bloques espaciosos, títulos en mayúsculas, iconos"]},
       // designs à matières (textures shared/textures/, règles shared/designs_skeuo.css chargées à la demande : css) ;
       // emblem : emblème d'en-tête (RepositoryIcons.emblem)
-      cabinet:{css:"designs_skeuo.css",emblem:"compass",label:["Cabinet","Cabinet","Kabinett","Gabinete"],title:["Cabinet de navigation : cuir, bois, parchemin, laiton","Navigation cabinet: leather, wood, parchment, brass","Navigationskabinett: Leder, Holz, Pergament, Messing","Gabinete de navegación: cuero, madera, pergamino, latón"]},
-      field:{css:"designs_skeuo.css",emblem:"wings-globe",label:["Durci","Rugged","Robust","Robusto"],title:["Console de terrain : peinture olive, acier, champs noirs, voyants","Field console: olive paint, steel, black fields, lights","Feldkonsole: olivgrüner Lack, Stahl, schwarze Felder, Leuchten","Consola de campaña: pintura oliva, acero, campos negros, pilotos"]},
-      aqua:{css:"designs_skeuo.css",label:["Aqua","Aqua","Aqua","Aqua"],title:["Métal brossé, verre dépoli, boutons gel","Brushed metal, frosted glass, gel buttons","Gebürstetes Metall, Milchglas, Gel-Schaltflächen","Metal cepillado, vidrio esmerilado, botones de gel"]}
+      cabinet:{css:"designs_skeuo.css",icons:"matter",emblem:"compass",label:["Cabinet","Cabinet","Kabinett","Gabinete"],title:["Cabinet de navigation : cuir, bois, parchemin, laiton","Navigation cabinet: leather, wood, parchment, brass","Navigationskabinett: Leder, Holz, Pergament, Messing","Gabinete de navegación: cuero, madera, pergamino, latón"]},
+      field:{css:"designs_skeuo.css",icons:"matter",emblem:"wings-globe",label:["Durci","Rugged","Robust","Robusto"],title:["Console de terrain : peinture olive, acier, champs noirs, voyants","Field console: olive paint, steel, black fields, lights","Feldkonsole: olivgrüner Lack, Stahl, schwarze Felder, Leuchten","Consola de campaña: pintura oliva, acero, campos negros, pilotos"]},
+      aqua:{css:"designs_skeuo.css",icons:"matter",label:["Aqua","Aqua","Aqua","Aqua"],title:["Métal brossé, verre dépoli, boutons gel","Brushed metal, frosted glass, gel buttons","Gebürstetes Metall, Milchglas, Gel-Schaltflächen","Metal cepillado, vidrio esmerilado, botones de gel"]}
     }
   },
   // Familles de couleurs (Paramétrage › Apparence) : teinte (h, degrés) et saturation (s, %) ; la clarté (« ton »)
@@ -143,6 +143,7 @@ window.REPOSITORY_TREE={
     "Studio cartographique (SIA)":["Studio cartographique (SIA)","Map studio (SIA)","Kartenstudio (SIA)","Estudio cartográfico (SIA)"],
     "Paramétrage — bases de données":["Paramétrage — bases de données","Settings — databases","Einstellungen — Datenbanken","Configuración — bases de datos"],
     "Apparence":["Apparence","Appearance","Darstellung","Apariencia"],
+    "Paramètres":["Paramètres","Settings","Einstellungen","Ajustes"],
     "Apparence…":["Apparence (design, icônes, couleurs)…","Appearance (design, icons, colours)…","Darstellung (Design, Symbole, Farben)…","Apariencia (diseño, iconos, colores)…"]
   }
 };

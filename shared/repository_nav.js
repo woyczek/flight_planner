@@ -74,8 +74,7 @@
     doc.dataset.tone = luminance(t.page || "#ffffff") < .3 ? "dark" : "light";
   }
   applyTheme(themeName);
-  // jeu d'icônes (line : trait normal, fine, bold, off) et barre latérale (on / off), posés dès le chargement
-  doc.dataset.icons = readPref("repositoryIcons", "line");
+  // barre latérale (on / off), posée dès le chargement ; jeu d'icônes : après le design (défaut propre au design)
   { const sn = readPref("repositorySidenav", null); if (sn) doc.dataset.sidenav = sn; }
   // Design graphique (REPOSITORY_TREE.designs, règles dans designs.css) : choix mémorisé (repositoryDesign),
   // posé dès le chargement sur <html data-design> pour éviter un changement visible.
@@ -87,10 +86,14 @@
     savedDesign = readPref("repositoryDesign", null);
   let design = designs[savedDesign] ? savedDesign : (designs[cfg.designs?.default] ? cfg.designs.default : "standard");
   doc.dataset.design = design;
+  // jeu d'icônes (line : trait normal, fine, bold, matter : matière, off) : choix mémorisé, sinon celui du design
+  // (designs.list[id].icons : « matter » pour Cabinet, Durci, Aqua), sinon trait normal
+  const iconsFor = id => readPref("repositoryIcons", null) || designs[id]?.icons || "line";
+  doc.dataset.icons = iconsFor(design);
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260926zze", script.src).href;
+    css.href = new URL("designs.css?v=20260926zzg", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -104,6 +107,10 @@
     l.dataset.designCss = f;
     l.href = new URL(f + new URL(script.src).search, script.src).href;
     document.head.append(l);
+    // illustrations du décor complet (frise de Cabinet, radar de Durci), même version
+    const d = document.createElement("script");
+    d.src = new URL("design_deco.js" + new URL(script.src).search, script.src).href;
+    document.head.append(d);
   };
   designCss(design);
   // Décor des designs à matières : « full » (vis, filigranes, poignées, radar) ou « sober » (matières et plaques
@@ -233,13 +240,17 @@
     }
   }
   // Apparence : page CR DEFA/apparence.html (design, icônes, barre latérale, couleurs) ; le menu ☰ et Paramétrage y mènent.
-  menu.insertAdjacentHTML("beforeend", '<div class="repo-page-actions"></div><div class="repo-sep"></div><a class="repo-link repo-appearance-link" data-label="Apparence…"></a>');
+  // Réglages en tête du menu, en boutons : Apparence (design, icônes, couleurs) et Paramètres (bases de données).
+  menu.insertAdjacentHTML("afterbegin", '<div class="repo-settings-row"><a class="repo-settings-button repo-appearance-link" data-label="Apparence"></a><a class="repo-settings-button repo-parametrage-link" data-label="Paramètres"></a></div>');
   menu.querySelector(".repo-appearance-link").href = new URL("CR DEFA/apparence.html", root).href;
+  menu.querySelector(".repo-parametrage-link").href = new URL("CR DEFA/parametrage.html", root).href;
+  menu.insertAdjacentHTML("beforeend", '<div class="repo-page-actions"></div>');
   /** Enregistre et applique le design id (événement « repository-design-change »). */
   const setDesign = id => {
     if (!designs[id]) return;
     design = id;
     doc.dataset.design = id;
+    doc.dataset.icons = iconsFor(id);
     designCss(id);
     renderEmblem();
     try { localStorage.setItem("repositoryDesign", id); } catch {}
@@ -323,13 +334,13 @@
       designs,
       families: cfg.colorFamilies || {},
       themes: cfg.themes,
-      current: () => ({ design, icons: doc.dataset.icons || "line", sidenav: doc.dataset.sidenav || "", decor: doc.dataset.decor, decorSaved: readPref("repositoryDecor", null), colors: readJson("repositoryColors") || {}, theme: currentTheme }),
+      current: () => ({ design, icons: doc.dataset.icons || "line", iconsSaved: readPref("repositoryIcons", null), sidenav: doc.dataset.sidenav || "", decor: doc.dataset.decor, decorSaved: readPref("repositoryDecor", null), colors: readJson("repositoryColors") || {}, theme: currentTheme }),
       /** Décor des designs à matières : "full", "sober", ou null (réglage de chaque page). */
       setDecor(v) { try { v ? localStorage.setItem("repositoryDecor", v) : localStorage.removeItem("repositoryDecor"); } catch {} doc.dataset.decor = v || decorDefault; window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { decor: doc.dataset.decor } })); },
       renderEmblem,
       setDesign,
       /** Jeu d'icônes : "line" (défaut), "fine", "bold", "off". */
-      setIcons(v) { doc.dataset.icons = v; try { localStorage.setItem("repositoryIcons", v); } catch {} window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { icons: v } })); },
+      setIcons(v) { if (!v) { try { localStorage.removeItem("repositoryIcons"); } catch {} doc.dataset.icons = iconsFor(design); return; } doc.dataset.icons = v; try { localStorage.setItem("repositoryIcons", v); } catch {} window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { icons: v } })); },
       /** Barre latérale : true, false, ou null (selon le design). */
       setSidenav(on) { if (on == null) { delete doc.dataset.sidenav; try { localStorage.removeItem("repositorySidenav"); } catch {} } else { doc.dataset.sidenav = on ? "on" : "off"; try { localStorage.setItem("repositorySidenav", on ? "on" : "off"); } catch {} } },
       /** Couleurs du thème name : { family, tone } (famille de REPOSITORY_TREE.colorFamilies), ou null pour revenir à repository_tree. */
@@ -374,7 +385,8 @@
       { icon: "chart", path: "CR DEFA/mission_operations_reporting.html", match: "_reporting.html", label: ["Reporting", "Reporting", "Berichte", "Informes"] },
       { icon: "fuel", path: "flight_performance_planner.html", label: ["Carburant", "Fuel", "Kraftstoff", "Combustible"] },
       { icon: "plane", path: "LandingPerformanceDashboard/LandingPerformance_Dashboard_MultiCSV_i18n.html", label: ["Atterrissages", "Landings", "Landungen", "Aterrizajes"] },
-      { sep: true },
+      { sep: true, bottom: true },   // réglages : groupés en bas de la colonne
+      { icon: "palette", path: "CR DEFA/apparence.html", label: ["Apparence", "Appearance", "Darstellung", "Apariencia"] },
       { icon: "settings", path: "CR DEFA/parametrage.html", label: ["Paramètres", "Settings", "Einstellungen", "Ajustes"] },
       { icon: "help", menu: true, label: ["Menu", "Menu", "Menü", "Menú"], title: ["Toutes les pages, profil, données locales, design", "All pages, profile, local data, design", "Alle Seiten, Profil, lokale Daten, Design", "Todas las páginas, perfil, datos locales, diseño"] }
     ];
@@ -390,7 +402,7 @@
     const ul = side.querySelector("ul");
     items.forEach((it, i) => {
       const li = document.createElement("li");
-      if (it.sep) { li.className = "repo-sidenav-sep"; ul.append(li); return; }
+      if (it.sep) { li.className = "repo-sidenav-sep" + (it.bottom ? " repo-sidenav-bottom" : ""); ul.append(li); return; }
       if (it.path && !known.has(it.path)) return;
       const a = document.createElement(it.menu ? "button" : "a");
       a.className = "repo-sidenav-item";
@@ -417,20 +429,20 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260926zze", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260926zzg", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260926zze", script.src).href;
+    files.src = new URL("file_access.js?v=20260926zzg", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260926zze", "block_icons.js?v=20260926zze", "side_nav.js?v=20260926zze"]) {
+    for (const f of ["icons/repository_icons.js?v=20260926zzg", "block_icons.js?v=20260926zzg", "side_nav.js?v=20260926zzg"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260926zze", script.src).href;
+    store.src = new URL("browser_store.js?v=20260926zzg", script.src).href;
     document.head.append(store)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

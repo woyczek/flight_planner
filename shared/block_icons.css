@@ -101,6 +101,15 @@ html[data-design="console"] textarea{border-radius:6px!important}
 /* ---- jeu d'icônes (Paramétrage › Apparence : html[data-icons]) : trait normal (défaut), fin, épais, ou aucune icône */
 html[data-icons="fine"] .repo-svg{stroke-width:1.5}
 html[data-icons="bold"] .repo-svg{stroke-width:2.6}
+/* jeu « Matière » : trois tracés par icône (repository_icons.js) — ombre portée, corps en matière (dégradé #riCase,
+   couleurs --ri-hi / --ri-mid / --ri-lo), trait d'encre (--ri-ink) ; hors de ce jeu, seul le trait d'encre est dessiné */
+.repo-svg .ri-shade,.repo-svg .ri-case{display:none}
+html[data-icons="matter"]{--ri-hi:#ffffff;--ri-mid:#c9ced6;--ri-lo:#6f7883;--ri-ink:color-mix(in srgb,var(--repo-accent) 80%,#000);--ri-shade:rgba(0,0,0,.35)}
+html[data-icons="matter"] .repo-svg .ri-shade,html[data-icons="matter"] .repo-svg .ri-case{display:inline}
+html[data-icons="matter"] .repo-svg .ri-shade{stroke:var(--ri-shade);stroke-width:4.6;transform:translate(.5px,.9px)}
+html[data-icons="matter"] .repo-svg .ri-case{stroke:url(#riCase);stroke-width:4}
+html[data-icons="matter"] .repo-svg .ri-ink{stroke:var(--ri-ink);stroke-width:1.6}
+html[data-icons="matter"] .repo-svg{overflow:visible}
 html[data-icons="off"] .repo-icon,html[data-icons="off"] .repo-block-icon,html[data-icons="off"] .repo-card-icon,html[data-icons="off"] .repo-dropzone-badge{display:none!important}
 html[data-icons="off"] .repo-icon-only>.repo-icon{display:inline-flex!important}
 

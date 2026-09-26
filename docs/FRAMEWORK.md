@@ -85,8 +85,17 @@ liste `DISPLAY` : design, icônes, couleurs, barre latérale, langue, onglets, s
   (thème clair ou sombre : Cabinet « carte de nuit »), `<html data-decor>` (**Décor** `repositoryDecor` : complet ou
   sobre ; défaut par page ou dossier, clé `decor` de `repository_tree` : sobre sur les CR, le planificateur et Landing),
   `.repo-header-emblem` (emblème `designs.list[id].emblem`, `RepositoryIcons.emblem`), `<html data-dirty>` (voyant
-  de sauvegarde de la barre d'état, `browser_store.js`). À l'impression, tout s'efface.
-- **Icônes** (`repositoryIcons`, `<html data-icons>`) : trait normal, fin, épais, ou aucune.
+  de sauvegarde de la barre d'état, `browser_store.js`). Aqua a une variante sombre (graphite, verre fumé) sur les
+  thèmes sombres : les graphiques gardent leurs couleurs. Illustrations du décor complet (`design_deco.js`, chargé
+  avec la feuille) : frise de bureau de Cabinet (cuir, corde, longue-vue, carte tamponnée), panneaux de Durci (plaque
+  DEFA, radar tournant, voyants de sauvegarde). Textures : matières éclairées (carte de hauteurs, normales, reflet)
+  par le générateur. À l'impression, tout s'efface.
+- **Réglages** : boutons « Apparence » et « Paramètres » en tête du menu ☰ ; dans la barre latérale, groupe du bas
+  (Apparence, Paramètres, Menu).
+- **Icônes** (`repositoryIcons`, `<html data-icons>`) : trait normal, fin, épais, **Matière** (`matter` : chaque icône
+  tracée trois fois — ombre, corps en matière peint par le dégradé `#riCase`, trait d'encre — palette `--ri-*` du
+  design ; icônes de blocs en médaillons, plaques ou bulles), ou aucune. Sans choix mémorisé : jeu du design
+  (`designs.list[id].icons`, « matter » pour Cabinet, Durci, Aqua), sinon trait normal.
 - **Barre latérale** (`repositorySidenav`, `<html data-sidenav>`) : selon le design (affichée en Console),
   toujours, ou jamais. Entrées : `REPOSITORY_TREE.sidebar` s'il existe, sinon la liste de `repository_nav.js`, qui construit la barre dès son exécution (styles dans `repository_nav.css`,
   chargé dans l'en-tête) ; `side_nav.js` y pose ensuite les icônes, dans des emplacements de taille fixe.

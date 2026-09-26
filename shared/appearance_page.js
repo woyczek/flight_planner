@@ -15,7 +15,7 @@
     designSub: ['La forme des pages : arrondis, densité, titres, barre latérale. Cabinet, Durci et Aqua ajoutent leurs matières (cuir, bois, laiton, acier, verre) ; les couleurs d’information restent celles du thème.', 'The shape of the pages: corners, density, titles, side bar. Cabinet, Rugged and Aqua add their materials (leather, wood, brass, steel, glass); information colours stay those of the theme.', 'Die Form der Seiten: Ecken, Dichte, Titel, Seitenleiste. Kabinett, Robust und Aqua bringen eigene Materialien (Leder, Holz, Messing, Stahl, Glas); Informationsfarben bleiben die des Themas.', 'La forma de las páginas: esquinas, densidad, títulos, barra lateral. Gabinete, Robusto y Aqua añaden sus materiales (cuero, madera, latón, acero, vidrio); los colores de información siguen siendo los del tema.'],
     icons: ['Icônes', 'Icons', 'Symbole', 'Iconos'],
     iconsSub: ['Épaisseur du trait des icônes, ou pas d’icônes du tout.', 'Stroke width of the icons, or no icons at all.', 'Strichstärke der Symbole oder gar keine Symbole.', 'Grosor del trazo de los iconos, o ningún icono.'],
-    iconSet: { fine: ['Trait fin', 'Thin stroke', 'Dünne Linie', 'Trazo fino'], line: ['Trait normal', 'Normal stroke', 'Normale Linie', 'Trazo normal'], bold: ['Trait épais', 'Bold stroke', 'Dicke Linie', 'Trazo grueso'], off: ['Aucune icône', 'No icons', 'Keine Symbole', 'Sin iconos'] },
+    iconSet: { fine: ['Trait fin', 'Thin stroke', 'Dünne Linie', 'Trazo fino'], line: ['Trait normal', 'Normal stroke', 'Normale Linie', 'Trazo normal'], bold: ['Trait épais', 'Bold stroke', 'Dicke Linie', 'Trazo grueso'], matter: ['Matière (relief)', 'Material (relief)', 'Material (Relief)', 'Material (relieve)'], off: ['Aucune icône', 'No icons', 'Keine Symbole', 'Sin iconos'] },
     side: ['Barre latérale', 'Side bar', 'Seitenleiste', 'Barra lateral'],
     decor: ['Décor (Cabinet, Durci)', 'Decoration (Cabinet, Rugged)', 'Dekor (Kabinett, Robust)', 'Decoración (Gabinete, Robusto)'],
     decorSet: { auto: ['Selon la page', 'Depending on page', 'Je nach Seite', 'Según la página'], full: ['Complet', 'Full', 'Vollständig', 'Completo'], sober: ['Sobre', 'Plain', 'Schlicht', 'Sobrio'] },
@@ -147,6 +147,11 @@
 .ap-iconrow[aria-pressed="true"]{border-color:var(--repo-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--repo-accent) 25%,transparent)}
 .ap-iconset{display:flex;gap:14px;color:var(--repo-accent);min-height:22px}
 .ap-iconset[data-set="fine"] .repo-svg{stroke-width:1.5!important}.ap-iconset[data-set="line"] .repo-svg{stroke-width:2!important}.ap-iconset[data-set="bold"] .repo-svg{stroke-width:2.6!important}
+.ap-iconset[data-set="matter"] .repo-svg .ri-shade,.ap-iconset[data-set="matter"] .repo-svg .ri-case{display:inline!important}
+.ap-iconset[data-set="matter"] .repo-svg .ri-shade{stroke:var(--ri-shade,rgba(0,0,0,.35));stroke-width:4.6;transform:translate(.5px,.9px)}
+.ap-iconset[data-set="matter"] .repo-svg .ri-case{stroke:url(#riCase);stroke-width:4}
+.ap-iconset[data-set="matter"] .repo-svg .ri-ink{stroke:var(--ri-ink,color-mix(in srgb,var(--repo-accent) 80%,#000));stroke-width:1.6!important}
+.ap-iconset:not([data-set="matter"]) .repo-svg :is(.ri-shade,.ri-case){display:none!important}.ap-iconset:not([data-set="matter"]) .repo-svg .ri-ink{stroke:currentColor!important;stroke-width:inherit!important}
 .ap-iconset .ap-ic{display:inline-flex}.ap-iconset .repo-svg{display:block!important}
 .ap-sidebar{display:flex;align-items:center;gap:14px;margin-top:14px;flex-wrap:wrap}
 .ap-segs{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
@@ -194,7 +199,7 @@ main.ap-page h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;col
         render();
       } else if (b.id === 'apReset') {
         Object.keys(a.current().colors).forEach(n => a.setColor(n, null));
-        a.setIcons('line'); a.setSidenav(null); a.setDecor(null); a.setDesign(window.REPOSITORY_TREE.designs?.default || 'standard');
+        a.setIcons(null); a.setSidenav(null); a.setDecor(null); a.setDesign(window.REPOSITORY_TREE.designs?.default || 'standard');
         previewTheme = null; nav().setTheme(nav().settings.theme); render();
       }
     });

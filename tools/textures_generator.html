@@ -1,69 +1,102 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><title>Générateur de textures</title>
-<style>body{font:14px system-ui;margin:20px;background:#222;color:#eee}figure{display:inline-block;margin:6px;text-align:center;font-size:12px}figure img{width:160px;height:160px;display:block;border:1px solid #555}</style></head>
+<style>body{font:14px system-ui;margin:20px;background:#222;color:#eee}figure{display:inline-block;margin:6px;text-align:center;font-size:12px}figure img{width:200px;height:200px;display:block;border:1px solid #555}</style></head>
 <body>
-<!-- Textures des designs à matières (Cabinet, Durci, Aqua ; shared/designs_skeuo.css) : générées ici par un bruit procédural
-     raccordable (tuiles sans couture), encodées en WebP et écrites dans shared/textures/ par tools/save_textures.py
-     (serveur local : python tools/save_textures.py, puis http://localhost:8765/tools/textures_generator.html).
+<!-- Textures des designs à matières (Cabinet, Durci, Aqua ; shared/designs_skeuo.css). Chaque matière est décrite par
+     une CARTE DE HAUTEURS (grain du cuir, pores du bois, fibres et plis du papier, brossage, éclats de peinture…) et
+     une COULEUR ; le relief est éclairé (normales, lumière rasante venant du haut à gauche, reflet spéculaire) : c'est
+     ce qui donne le rendu « matière ». Tuiles raccordables, encodées en WebP, écrites dans shared/textures/ par
+     tools/save_textures.py (python tools/save_textures.py, puis http://localhost:8765/tools/textures_generator.html).
      Relancer après modification d'une recette ; les fichiers produits sont versionnés. -->
 <h1>Textures des designs à matières</h1><p id="out">Génération…</p><div id="list"></div>
 <script>
 const H = (x, y, s) => { let n = Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(s, 982451653); n = Math.imul(n ^ (n >>> 13), 1274126177); n ^= n >>> 16; return (n >>> 0) / 4294967295; };
-const sm = t => t * t * (3 - 2 * t), mod = (a, p) => ((a % p) + p) % p;
+const sm = t => t * t * (3 - 2 * t), mod = (a, p) => ((a % p) + p) % p, clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
 /** Bruit de valeur raccordable (période px × py). */
 function vnoise(x, y, px, py, s) {
   const xi = Math.floor(x), yi = Math.floor(y), xf = sm(x - xi), yf = sm(y - yi), x0 = mod(xi, px), x1 = mod(xi + 1, px), y0 = mod(yi, py), y1 = mod(yi + 1, py);
   const a = H(x0, y0, s), b = H(x1, y0, s), c = H(x0, y1, s), d = H(x1, y1, s);
   return a + (b - a) * xf + (c - a) * yf + (a - b - c + d) * xf * yf;
 }
-/** Bruit fractal (fréquences fx, fy entières : tuile raccordable). */
+/** Bruit fractal raccordable (fréquences fx, fy entières). */
 function fbm(u, v, fx, fy, oct, s) { let t = 0, a = .5, n = 0; for (let o = 0; o < oct; o++) { const k = 1 << o; t += a * vnoise(u * fx * k, v * fy * k, fx * k, fy * k, s + o * 17); n += a; a *= .5; } return t / n; }
-/** Cellules de Voronoï raccordables : distances au 1er et 2e germe (grain du cuir). */
+/** Bruit « en crêtes » (plis, froissures, rayures). */
+function ridged(u, v, fx, fy, oct, s) { let t = 0, a = .5, n = 0; for (let o = 0; o < oct; o++) { const k = 1 << o; t += a * (1 - Math.abs(2 * vnoise(u * fx * k, v * fy * k, fx * k, fy * k, s + o * 23) - 1)); n += a; a *= .5; } return t / n; }
+/** Cellules de Voronoï raccordables : distances au 1er et 2e germe. */
 function voro(u, v, N, s) { const x = u * N, y = v * N, ci = Math.floor(x), cj = Math.floor(y); let f1 = 9, f2 = 9;
-  for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) { const i = ci + di, j = cj + dj, px = i + H(mod(i, N), mod(j, N), s), py = j + H(mod(i, N), mod(j, N), s + 1), d = Math.hypot(px - x, py - y); if (d < f1) { f2 = f1; f1 = d; } else if (d < f2) f2 = d; }
+  for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) { const i = ci + di, j = cj + dj, px = i + .15 + .7 * H(mod(i, N), mod(j, N), s), py = j + .15 + .7 * H(mod(i, N), mod(j, N), s + 1), d = Math.hypot(px - x, py - y); if (d < f1) { f2 = f1; f1 = d; } else if (d < f2) f2 = d; }
   return [f1, f2]; }
 const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
-const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * Math.max(0, Math.min(1, t)));
-const leather = (dark, light, N, s) => (u, v) => { const [f1, f2] = voro(u, v, N, s), edge = Math.min(1, (f2 - f1) * 3.2), m = fbm(u, v, 4, 4, 4, s + 2), fine = vnoise(u * 256, v * 256, 256, 256, s + 5);
-  return mix(hex(dark), hex(light), .28 + edge * .42 + (m - .5) * .75 + (fine - .5) * .12 - f1 * .14); };
-const worn = (lo, hi, chipCol, s, chipF = 18) => (u, v) => { const b = fbm(u, v, 4, 4, 5, s), chip = fbm(u, v, chipF, chipF, 4, s + 2), sc = fbm(u, v, 1, 90, 3, s + 4), grit = vnoise(u * 512, v * 512, 512, 512, s + 6);
-  let c = mix(hex(lo), hex(hi), .5 + (b - .5) * 1.2 + (grit - .5) * .12); if (sc > .7) c = mix(c, hex('#a6a998'), (sc - .7) * 2);
-  if (chip > .7) c = mix(c, hex(chipCol), Math.min(1, (chip - .7) * 12)); else if (chip > .68) c = mix(c, hex('#1a1d15'), .5); return c; };
+const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * clamp(t));
+const ramp = (stops, t) => { t = clamp(t); for (let i = 1; i < stops.length; i++) if (t <= stops[i][0]) return mix(hex(stops[i - 1][1]), hex(stops[i][1]), (t - stops[i - 1][0]) / (stops[i][0] - stops[i - 1][0])); return hex(stops.at(-1)[1]); };
+
+/** Matière éclairée : height(u,v) → hauteur 0..1 ; color(u,v,h) → [r,g,b] ; bump : force du relief ; spec : reflet
+ *  (0 mat … 1 verni / métal) ; shine : finesse du reflet ; aniso : brossage (reflet étiré horizontalement). */
+function material(w, { height, color, bump = 4, spec = .15, shine = 20, ambient = .55 }) {
+  const hmap = new Float32Array(w * w), cols = new Array(w * w);
+  for (let j = 0; j < w; j++) for (let i = 0; i < w; i++) { const u = i / w, v = j / w, h = height(u, v); hmap[j * w + i] = h; cols[j * w + i] = [u, v, h]; }
+  const L = [-.55, -.65, .52], Ln = Math.hypot(...L), l = L.map(x => x / Ln), Hh = [l[0], l[1], l[2] + 1], Hn = Math.hypot(...Hh), hv = Hh.map(x => x / Hn);
+  return (i, j) => {
+    const at = (x, y) => hmap[mod(y, w) * w + mod(x, w)], dx = (at(i + 1, j) - at(i - 1, j)) * bump, dy = (at(i, j + 1) - at(i, j - 1)) * bump;
+    const nl = Math.hypot(dx, dy, 1), n = [-dx / nl, -dy / nl, 1 / nl], diff = clamp(n[0] * l[0] + n[1] * l[1] + n[2] * l[2]), sp = Math.pow(clamp(n[0] * hv[0] + n[1] * hv[1] + n[2] * hv[2]), shine) * spec;
+    const [u, v, h] = cols[j * w + i], c = color(u, v, h), k = ambient + (1 - ambient) * 1.25 * diff;
+    return c.map(x => clamp(x * k + 255 * sp, 0, 255));
+  };
+}
+const leather = (stops, N, s) => ({
+  height: (u, v) => { const [f1, f2] = voro(u, v, N, s), crease = clamp((f2 - f1) * 4), pebble = 1 - clamp(f1 * 1.25) ** 2; return .55 * pebble * crease + .25 * crease + .2 * fbm(u, v, 64, 64, 2, s + 9); },
+  color: (u, v, h) => ramp(stops, .35 + (fbm(u, v, 4, 4, 4, s + 2) - .5) * .9 + h * .35),
+  bump: 5, spec: .22, shine: 14, ambient: .5 });
 const RECIPES = {
   // ---- Cabinet
-  'wood': [512, (u, v) => { const t = v * 9 + fbm(u, v, 2, 3, 4, 1) * 2.4, ring = .5 + .5 * Math.sin(t * Math.PI * 2), fib = fbm(u, v, 3, 96, 3, 7), pore = fbm(u, v, 24, 160, 2, 9);
-    return mix(hex('#2a1208'), hex('#7c4521'), .15 + ring ** 1.8 * .55 + (fib - .5) * .7 + (pore - .5) * .25); }],
-  'leather-brown': [256, leather('#2e170b', '#7a4a2a', 34, 3)],
-  'leather-navy': [256, leather('#081427', '#27456f', 38, 11)],
-  'parchment': [512, (u, v) => { const b = fbm(u, v, 3, 3, 6, 21), st = fbm(u, v, 5, 5, 4, 23), fib = fbm(u, v, 40, 6, 2, 25), sp = H(Math.floor(u * 512), Math.floor(v * 512), 27) > .9985 ? -.25 : 0;
-    return mix(hex('#cdb07a'), hex('#f6ebcf'), .55 + (b - .5) * 1.1 - Math.max(0, st - .62) * 1.6 + (fib - .5) * .18 + sp); }],
-  'parchment-dark': [512, (u, v) => { const b = fbm(u, v, 3, 3, 6, 121), st = fbm(u, v, 5, 5, 4, 123); return mix(hex('#121826'), hex('#26314a'), .5 + (b - .5) * 1.1 - Math.max(0, st - .62) * 1.2); }],
-  'brass': [256, (u, v) => { const s = fbm(u, v, 2, 96, 3, 31), m = fbm(u, v, 5, 5, 4, 33), n = vnoise(u * 256, v * 256, 256, 256, 35);
-    return mix(hex('#8a6526'), hex('#e7c978'), .55 + (s - .5) * .8 + (n - .5) * .15 - Math.max(0, m - .6) * 1.4); }],
+  'wood': [512, { height: (u, v) => { const g = v * 22 + fbm(u, v, 2, 4, 4, 1) * 3.2, ring = .5 + .5 * Math.sin(g * Math.PI * 2), pore = fbm(u, v, 12, 200, 2, 9); return ring * .5 + (pore < .42 ? 0 : .5) * .5; },
+    color: (u, v, h) => { const g = v * 22 + fbm(u, v, 2, 4, 4, 1) * 3.2, ring = .5 + .5 * Math.sin(g * Math.PI * 2), fib = fbm(u, v, 3, 120, 3, 7); return ramp([[0, '#1f0c05'], [.35, '#4a200d'], [.7, '#7a3a17'], [1, '#9a5226']], .12 + ring ** 1.6 * .6 + (fib - .5) * .8); },
+    bump: 1.6, spec: .35, shine: 40, ambient: .6 }],
+  'leather-brown': [256, leather([[0, '#24110a'], [.5, '#5a2f17'], [1, '#8a5530']], 30, 3)],
+  'leather-navy': [256, leather([[0, '#06101f'], [.5, '#15294a'], [1, '#2c4f80']], 34, 11)],
+  'parchment': [512, { height: (u, v) => .6 * ridged(u, v, 3, 3, 5, 21) + .25 * fbm(u, v, 48, 8, 2, 25) + .15 * fbm(u, v, 12, 12, 3, 27),
+    color: (u, v, h) => { const st = fbm(u, v, 5, 5, 4, 23), sp = H(Math.floor(u * 512), Math.floor(v * 512), 27) > .9985 ? .3 : 0; return ramp([[0, '#b8925a'], [.45, '#dcc497'], [1, '#f7ecd2']], .72 + (fbm(u, v, 3, 3, 5, 29) - .5) * .7 - Math.max(0, st - .6) * 1.8 - sp); },
+    bump: 2.2, spec: .04, shine: 8, ambient: .7 }],
+  'parchment-dark': [512, { height: (u, v) => .6 * ridged(u, v, 3, 3, 5, 121) + .4 * fbm(u, v, 48, 8, 2, 125),
+    color: (u, v) => ramp([[0, '#0e1320'], [1, '#27334d']], .5 + (fbm(u, v, 3, 3, 6, 123) - .5) * 1.1), bump: 1.8, spec: .05, ambient: .7 }],
+  'brass': [256, { height: (u, v) => .7 * fbm(u, v, 2, 128, 3, 31) + .3 * ridged(u, v, 1, 24, 3, 36),
+    color: (u, v, h) => { const pat = fbm(u, v, 5, 5, 4, 33); let c = ramp([[0, '#7a551d'], [.5, '#c09544'], [1, '#f0d690']], .55 + (h - .5) * .6); if (pat > .7) c = mix(c, hex('#6d5528'), (pat - .7) * 1.6); return c; },
+    bump: 1.2, spec: .5, shine: 30, ambient: .6 }],
   // ---- Durci
-  'olive': [512, worn('#353c27', '#5d6843', '#8a8c84', 41)],
-  'steel': [512, worn('#7c8270', '#a8ac98', '#5a5f50', 51, 14)],
-  'steel-dark': [512, worn('#1d201b', '#34382f', '#6d7065', 131, 16)],
-  'khaki': [256, worn('#a39b78', '#d4ccaa', '#6e6c60', 61, 8)],
-  'rubber': [128, (u, v) => { const n = vnoise(u * 128, v * 128, 128, 128, 71), rib = (Math.floor(v * 32) % 2) ? .1 : 0, g = 22 + n * 18 + rib * 60; return [g, g, g]; }],
-  'topo': [512, (u, v) => { const h = fbm(u, v, 3, 3, 5, 81), st = fbm(u, v, 4, 4, 3, 83), f = (h * 22) % 1, line = Math.abs(f - .5) > .44, major = Math.abs(((h * 22 / 5) % 1) - .5) > .488, grid = (u * 512 % 128 < 1) || (v * 512 % 128 < 1);
-    let c = mix(hex('#bfb391'), hex('#e6dcbf'), .5 + (st - .5) * 1.2 + (h - .5) * .5); if (h < .38) c = mix(c, hex('#9fb6b8'), .5); if (line) c = mix(c, hex('#8a6a45'), major ? .85 : .45); if (grid) c = mix(c, hex('#5a6f8a'), .5); return c; }],
-  'topo-dark': [256, (u, v) => { const h = fbm(u, v, 3, 3, 5, 91), f = (h * 18) % 1, line = Math.abs(f - .5) > .45; let c = mix(hex('#3c4533'), hex('#6f7a58'), h); if (line) c = mix(c, hex('#1d2217'), .7); return c; }],
-  'radar': [256, (u, v) => { const h = fbm(u, v, 4, 4, 5, 101), f = (h * 14) % 1, line = Math.abs(f - .5) > .46; return line ? [30, 110, 50] : [6, 26 + h * 20, 12]; }],
+  'olive': [512, worn('#2e3522', '#56613d', '#8a8c84', 41, 16)],
+  'steel': [512, worn('#6f7564', '#a1a693', '#55594b', 51, 12, .76)],
+  'steel-dark': [512, worn('#16181a', '#303430', '#77797a', 131, 16)],
+  'khaki': [256, worn('#978f6c', '#d2caa6', '#6e6c60', 61, 8, .72)],
+  'rubber': [128, { height: (u, v) => { const a = (u + v) * 16 % 1, b = (u - v + 1) * 16 % 1; return Math.min(Math.abs(a - .5), Math.abs(b - .5)) < .18 ? 1 : 0; }, color: () => [34, 34, 34], bump: 3, spec: .12, shine: 10, ambient: .55 }],
+  'topo': [512, { height: (u, v) => .5 * fbm(u, v, 48, 8, 2, 85) + .5 * ridged(u, v, 3, 3, 4, 87),
+    color: (u, v) => { const h = fbm(u, v, 3, 3, 5, 81), st = fbm(u, v, 4, 4, 3, 83), f = (h * 22) % 1, line = Math.abs(f - .5) > .44, major = Math.abs(((h * 22 / 5) % 1) - .5) > .488, grid = (u * 512 % 128 < 1.2) || (v * 512 % 128 < 1.2);
+      let c = mix(hex('#bfb391'), hex('#e9dfc2'), .5 + (st - .5) * 1.2 + (h - .5) * .5); if (h < .38) c = mix(c, hex('#9fb6b8'), .55); if (h > .66) c = mix(c, hex('#c8a877'), (h - .66) * 2); if (line) c = mix(c, hex('#8a6a45'), major ? .85 : .45); if (grid) c = mix(c, hex('#5a6f8a'), .5); return c; },
+    bump: 1.2, spec: .02, ambient: .78 }],
+  'topo-dark': [256, { height: u => 0, color: (u, v) => { const h = fbm(u, v, 3, 3, 5, 91), f = (h * 18) % 1, line = Math.abs(f - .5) > .45; let c = mix(hex('#3c4533'), hex('#6f7a58'), h); if (line) c = mix(c, hex('#1d2217'), .7); return c; }, bump: 0, spec: 0, ambient: 1 }],
+  'radar': [256, { height: u => 0, color: (u, v) => { const h = fbm(u, v, 4, 4, 5, 101), f = (h * 14) % 1, line = Math.abs(f - .5) > .46; return line ? [30, 110, 50] : [6, 26 + h * 20, 12]; }, bump: 0, spec: 0, ambient: 1 }],
   // ---- Aqua
-  'brushed-light': [256, (u, v) => { const s = fbm(u, v, 2, 128, 3, 141), n = vnoise(u * 256, v * 256, 256, 256, 143), g = 222 + (s - .5) * 46 + (n - .5) * 10; return [g, g + 1, g + 4]; }]
+  'brushed-light': [256, { height: (u, v) => .8 * fbm(u, v, 2, 160, 3, 141) + .2 * vnoise(u * 256, v * 256, 256, 256, 143), color: () => [214, 218, 224], bump: 1, spec: .35, shine: 25, ambient: .75 }]
 };
+/** Peinture usée sur métal : couche de peinture en relief, éclats laissant voir le métal (en creux), rayures. */
+function worn(lo, hi, metal, s, chipF, t = .74) {
+  return {
+    height: (u, v) => { const chip = fbm(u, v, chipF, chipF, 4, s + 2), sc = ridged(u, v, 3, 70, 2, s + 4); return (chip > t ? 0 : .8) + .12 * fbm(u, v, 64, 64, 2, s + 8) - (sc > .93 ? .5 : 0); },
+    color: (u, v, h) => { const b = fbm(u, v, 4, 4, 5, s), chip = fbm(u, v, chipF, chipF, 4, s + 2), sc = ridged(u, v, 3, 70, 2, s + 4);
+      let c = ramp([[0, lo], [1, hi]], .5 + (b - .5) * 1.3); if (chip > t) c = mix(hex(metal), hex('#c8c9c0'), fbm(u, v, 1, 80, 2, s + 6)); if (sc > .93) c = mix(c, hex('#b9bcae'), .6); if (chip > t - .02 && chip <= t) c = mix(c, hex('#15170f'), .5); return c; },
+    bump: 3.2, spec: .18, shine: 18, ambient: .55 };
+}
 async function run() {
   const out = document.getElementById('out'), list = document.getElementById('list'), t0 = performance.now();
   let ok = 0;
-  for (const [name, [w, fn]] of Object.entries(RECIPES)) {
-    const c = document.createElement('canvas'); c.width = c.height = w; const x = c.getContext('2d'), im = x.createImageData(w, w), d = im.data;
-    for (let j = 0; j < w; j++) for (let i = 0; i < w; i++) { const [r, g, b] = fn(i / w, j / w), k = (j * w + i) * 4; d[k] = r; d[k + 1] = g; d[k + 2] = b; d[k + 3] = 255; }
+  for (const [name, [w, recipe]] of Object.entries(RECIPES)) {
+    const px = material(w, recipe), c = document.createElement('canvas'); c.width = c.height = w; const x = c.getContext('2d'), im = x.createImageData(w, w), d = im.data;
+    for (let j = 0; j < w; j++) for (let i = 0; i < w; i++) { const [r, g, b] = px(i, j), k = (j * w + i) * 4; d[k] = r; d[k + 1] = g; d[k + 2] = b; d[k + 3] = 255; }
     x.putImageData(im, 0, 0);
-    const blob = await new Promise(r => c.toBlob(r, 'image/webp', .8));
+    const blob = await new Promise(r => c.toBlob(r, 'image/webp', .82));
     const res = await fetch(`/shared/textures/${name}.webp`, { method: 'PUT', body: blob }).catch(() => null);
     if (res?.ok) ok++;
     list.insertAdjacentHTML('beforeend', `<figure><img src="${URL.createObjectURL(blob)}"><figcaption>${name}.webp · ${Math.round(blob.size / 1024)} Ko ${res?.ok ? '✓' : '✗'}</figcaption></figure>`);
+    await new Promise(r => setTimeout(r, 0));
   }
   out.textContent = `${ok} / ${Object.keys(RECIPES).length} textures écrites en ${Math.round(performance.now() - t0)} ms.`;
 }

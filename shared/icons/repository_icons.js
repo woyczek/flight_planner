@@ -32,6 +32,7 @@
     printer: '<path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="1.5"/><path d="M7 14h10v7H7z"/>',
     clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
     trash: '<path d="M4 7h16M10 11v6M14 11v6M9 7V4h6v3"/><path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/>',
+    palette: '<path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-1 2-2 0-.8-.5-1.3-.5-2s.6-1.5 1.5-1.5H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10.5" cy="7" r="1.2"/><circle cx="15" cy="7.5" r="1.2"/>',
     edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
     save: '<path d="M5 3h11l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M7 3v5h8M7 21v-7h10v7"/>',
     bookmark: '<path d="M6 3h12v18l-6-4-6 4z"/>',
@@ -93,6 +94,16 @@
     }
   };
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  // Jeu d'icônes « Matière » (html[data-icons="matter"], block_icons.css) : chaque icône est tracée trois fois
+  // (ombre portée, corps en matière, trait d'encre) ; le corps est peint par ces dégradés, communs à la page, dont
+  // les couleurs viennent de variables CSS (--ri-hi, --ri-mid, --ri-lo : palette du design).
+  const defs = () => {
+    if (document.getElementById('repoIconDefs') || !document.body) return;
+    document.body.insertAdjacentHTML('beforeend', '<svg id="repoIconDefs" width="0" height="0" style="position:absolute" aria-hidden="true"><defs>'
+      + '<linearGradient id="riCase" x1="0" y1="3" x2="0" y2="21" gradientUnits="userSpaceOnUse"><stop offset="0" style="stop-color:var(--ri-hi,#fff)"/><stop offset=".5" style="stop-color:var(--ri-mid,#c9ced6)"/><stop offset="1" style="stop-color:var(--ri-lo,#7d8590)"/></linearGradient>'
+      + '</defs></svg>');
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', defs); else defs();
   window.RepositoryIcons = {
     /** SVG d'une icône (chaîne) ; décorative (aria-hidden) sauf si title est donné. Nom inconnu : chaîne vide. */
     svg(name, { size, title = '' } = {}) {
@@ -102,7 +113,7 @@
       // taille explicite : variable --rs (block_icons.css l'impose, même face à une règle « svg{…} » de la page) ;
       // sinon, taille du contexte (bloc, sous-carte, bouton…)
       const px = size || 20, rs = size ? ` style="--rs:${size}px"` : '';
-      return `<svg class="repo-svg" viewBox="0 0 24 24" width="${px}" height="${px}"${rs} fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${a11y}>${title ? `<title>${esc(title)}</title>` : ''}${body}</svg>`;
+      return `<svg class="repo-svg" viewBox="0 0 24 24" width="${px}" height="${px}"${rs} fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${a11y}>${title ? `<title>${esc(title)}</title>` : ''}<g class="ri-shade">${body}</g><g class="ri-case">${body}</g><g class="ri-ink">${body}</g></svg>`;
     },
     has: name => name in P,
     names: () => Object.keys(P),

@@ -15,7 +15,7 @@
 html[data-sidenav="on"] .repo-sidenav,html[data-design="console"]:not([data-sidenav="off"]) .repo-sidenav{display:flex}
 html[data-sidenav="on"],html[data-design="console"]:not([data-sidenav="off"]){padding-left:var(--repo-sidenav-w)}
 .repo-sidenav-brand{display:flex;align-items:center;justify-content:center;min-height:64px}
-.repo-sidenav ul{list-style:none;margin:0;padding:0}
+.repo-sidenav ul{list-style:none;margin:0;padding:0 0 8px;flex:1;display:flex;flex-direction:column}.repo-sidenav-bottom{margin-top:auto!important}
 .repo-sidenav-item{display:flex;flex-direction:column;align-items:center;gap:5px;width:100%;padding:11px 4px;border:0;border-left:3px solid transparent;border-radius:0;background:transparent;color:inherit;font:600 11.5px/1.2 Inter,system-ui,"Segoe UI",Arial,sans-serif;text-align:center;text-decoration:none;cursor:pointer}
 .repo-sidenav-item:hover{background:color-mix(in srgb,var(--repo-bar-text) 10%,transparent)}
 .repo-sidenav-item[aria-current="page"]{background:color-mix(in srgb,var(--repo-bar-text) 17%,transparent);border-left-color:var(--repo-bar-text)}
@@ -25,3 +25,7 @@ html[data-sidenav="on"],html[data-design="console"]:not([data-sidenav="off"]){pa
 .repo-sidenav .repo-svg{--rs:22px}
 .repo-sidenav-ic{display:block;width:22px;height:22px}.repo-sidenav-brand .repo-sidenav-ic{width:30px;height:30px}
 @media print{html{padding-left:0!important}.repo-sidenav{display:none!important}}
+/* réglages en tête du menu ☰ (Apparence, Paramètres), en boutons */
+.repo-settings-row{display:flex;gap:6px;padding:4px 4px 8px;margin-bottom:6px;border-bottom:1px solid color-mix(in srgb,var(--repo-bar-text) 18%,transparent)}
+.repo-settings-button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 10px;border:1px solid color-mix(in srgb,var(--repo-bar-text) 30%,transparent);border-radius:7px;background:color-mix(in srgb,var(--repo-bar-text) 10%,transparent);color:inherit!important;text-decoration:none!important;font:600 12.5px/1.2 Inter,system-ui,Segoe UI,Arial,sans-serif}
+.repo-settings-button:hover{background:color-mix(in srgb,var(--repo-bar-text) 20%,transparent)}
