@@ -18,6 +18,8 @@
        anchor : élément de référence (obligatoire) ;
        stack  : true si les cadres suivants se collent sous celui-ci (ex. bloc Résultat) ;
        gap    : écart en px entre cadres et sous l'en-tête (défaut 10) ;
+       grow   : true pour que l'ancre soit au moins aussi haute que le cadre (+ gap) : un cadre plus haut que
+                son ancre ne déborde plus sur le cadre suivant ;
        media  : requête média où le cadre est actif (défaut « (min-width: 801px) ») ; ailleurs, le
                 cadre reste dans le flux normal (écrans étroits, colonnes empilées).
      Un cadre vide ou dont l'ancre est masquée est caché. Pendant qu'il est retenu (collé sous l'en-tête ou
@@ -53,9 +55,9 @@
   }
 
   /** Enregistre un cadre qui suit son ancre (voir l'en-tête). Retourne { refresh }. */
-  function follow(el, { anchor, stack = false, gap = 10, media = "(min-width: 801px)" } = {}) {
+  function follow(el, { anchor, stack = false, gap = 10, grow = false, media = "(min-width: 801px)" } = {}) {
     if (!el || !anchor) throw Error("StickyFrame.follow : el et anchor requis");
-    const item = { el, anchor, stack, gap, mq: matchMedia(media) };
+    const item = { el, anchor, stack, gap, grow, mq: matchMedia(media) };
     followed.push(item);
     const box = el.parentElement; if (box && getComputedStyle(box).position === "static") box.style.position = "relative";
     const ro = new ResizeObserver(schedule); ro.observe(el); ro.observe(anchor);
@@ -86,11 +88,13 @@
       let line = hb, prevBottom = -Infinity;
       for (const it of items) {
         const { el, anchor, gap } = it;
-        if (!it.mq.matches) { Object.assign(el.style, { position: "", top: "", left: "", right: "", maxHeight: "", visibility: "" }); continue; }
+        if (!it.mq.matches) { Object.assign(el.style, { position: "", top: "", left: "", right: "", maxHeight: "", visibility: "" }); if (it.grow) anchor.style.minHeight = ""; continue; }
         const hidden = anchor.offsetParent === null || !el.textContent.trim() && !el.querySelector("svg,canvas,img,table");
         el.style.visibility = hidden ? "hidden" : "";
         Object.assign(el.style, { position: "absolute", left: "0", right: "0" });
         if (hidden) continue;
+        // ancre agrandie à la hauteur du cadre : les rangées suivantes (et leurs cadres) descendent d'autant
+        if (it.grow) { const need = el.offsetHeight + gap * 2; if (Math.abs((parseFloat(anchor.style.minHeight) || 0) - need) > 1) anchor.style.minHeight = need + "px"; }
         const a = anchor.getBoundingClientRect(), h = el.offsetHeight, room = innerHeight - line - gap - gap;
         // cadre plus haut que la place restante : son bas se colle au bas de la fenêtre (tout reste lisible)
         const stuck = h > room ? innerHeight - gap - h : line + gap;

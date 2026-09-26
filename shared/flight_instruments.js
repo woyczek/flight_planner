@@ -6,7 +6,7 @@
    Ils montrent la loi de montée réglée par les curseurs verticaux (shared/flight_perf_view.js) à l'altitude
    courante (survolée sur une courbe, sinon épinglée, sinon niveau du plan) :
      - Badin : aiguille = Badin tenu à cette altitude (réacteur : limité par le Mach de croisière en altitude),
-       repère violet = consigne du curseur ; TAS et Mach en clair ; arc violet = plage du curseur ;
+       repère violet = consigne du curseur ; aiguille bleue semi-transparente = TAS ; arc violet = plage du curseur ;
      - vario : aiguille = vario obtenu à cette altitude (zéro à 9 h, montée vers le haut), repère = vario visé
        (« PG » : plein gaz) ;
      - altimètre : grande aiguille = centaines de pieds, petite = milliers ; fenêtre numérique (ft, FL).
@@ -14,7 +14,8 @@
    curseurs : 5 kt, 50 ft/min) — FlightInstruments.onSet(clé, valeur) renvoie la valeur à la vue.
 
    Interface : window.FlightInstruments = { update(état | null), onSet } ;
-     état = { h, ias, iasSet, iasMin, iasMax, tas, mach, roc, vsSet, vsMax, full, above }.
+     état = { h, ias, iasSet, iasMin, iasMax, tas, tasMax, mach, roc, vsSet, vsMax, full, above } (tasMax : TAS
+     la plus grande de la loi, pour l'échelle du Badin).
    ===================================================================================================== */
 (() => {
   "use strict";
@@ -97,7 +98,9 @@
     for (let v = 0; v <= max + 1e-6; v += st / 2) g += tick(A(v), v % st ? 42 : 39, 46, v % st ? .7 : 1.2);
     for (let v = 0; v <= max + 1e-6; v += st) g += num(A(v), 31, nf(v));
     g += `<text x="50" y="66" font-size="7" text-anchor="middle" fill="#9ba8b5">KT</text>`;
-    g += bug(A(s.iasSet)) + needle(A(s.ias), 42, 2.2, "#fff") + hub;
+    // aiguille TAS semi-transparente (même échelle) : écart Badin / vitesse vraie selon l'altitude et la température
+    g += bug(A(s.iasSet)) + `<g opacity=".45">${needle(A(s.tas), 44, 2.6, "#75c8ff")}</g>` + needle(A(s.ias), 42, 2.2, "#fff") + hub;
+    g += `<text x="50" y="76" font-size="6" text-anchor="middle" fill="#75c8ff" opacity=".8">TAS</text>`;
     faces.ias.querySelector("svg").innerHTML = g;
     faces.ias.querySelector("figcaption").textContent = `${tl("Badin", "IAS", "IAS", "IAS")} ${nf(s.ias)} kt · TAS ${nf(s.tas)}${s.mach >= .3 ? ` · M${nf(s.mach, 2)}` : ""}`;
   }
@@ -137,7 +140,7 @@
       host.hidden = !s;
       if (!s) return;
       // échelles fixes pour une plage de curseurs donnée (pas de « saut » d'échelle en survolant les courbes)
-      scale.ias = Math.ceil(s.iasMax * 1.15 / 50) * 50;
+      scale.ias = Math.ceil(Math.max(s.iasMax * 1.15, (s.tasMax || 0) * 1.05) / 50) * 50;
       scale.vs = [500, 1000, 2000, 3000, 4000, 6000, 8000].find(v => v >= s.vsMax * 1.05) || Math.ceil(s.vsMax / 2000) * 2000;
       drawIas(s); drawVs(s); drawAlt(s);
       host.title = tl("Instruments de la loi réglée à l’altitude courante (survolée, épinglée, sinon niveau du plan). Badin et vario : glisser ou molette pour régler.",

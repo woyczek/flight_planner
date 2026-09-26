@@ -193,7 +193,8 @@
     try {
       const h = hover ?? sync.pinned ?? (S.c?.FL > 0 ? S.c.FL * 100 : 0), above = h > m.ceiling, hh = Math.min(h, m.ceiling),
         p = m.manualPoint(hh, manualLaw(m)), a = FlightPerfModel.isa(hh).a;
-      FI.update({ h, ias: p.ias, iasSet: q.ias, iasMin: q.iMin, iasMax: q.iMax, tas: p.tas, mach: p.tas / a, roc: above ? 0 : p.roc, vsSet: q.vs, vsMax: q.vMax, full: q.full, above });
+      const tasMax = Math.max(p.tas, m.manualPoint(m.ceiling, manualLaw(m)).tas || 0, m.cruise(Math.min((S.c?.FL || 0) * 100, m.ceiling), "normal")?.tas || 0);
+      FI.update({ h, ias: p.ias, iasSet: q.ias, iasMin: q.iMin, iasMax: q.iMax, tas: p.tas, tasMax, mach: p.tas / a, roc: above ? 0 : p.roc, vsSet: q.vs, vsMax: q.vMax, full: q.full, above });
     } catch (e) { console.error("Instruments :", e); FI.update(null); }
   }
   /** Hauteur des curseurs = hauteur de la zone tracée (marges T / B du viewBox, en data-t / data-b du SVG). */
@@ -301,7 +302,7 @@
     if (!side || !res) return;
     framesReady = true;
     StickyFrame.follow(res, { anchor: document.querySelector('[data-block-id="fuel-plan"]') || side, stack: true });
-    side.querySelectorAll(".side-panel").forEach(p => StickyFrame.follow(p, { anchor: $(p.dataset.row) }));
+    side.querySelectorAll(".side-panel").forEach(p => StickyFrame.follow(p, { anchor: $(p.dataset.row), grow: true }));
   }
   /** Contenu d'un panneau : titre, puis blocs HTML (les vides sont omis). */
   const panel = (id, title, ...parts) => { const p = $(id); if (p) p.innerHTML = typo(`<h4>${title}</h4>${parts.filter(Boolean).join("")}`); };

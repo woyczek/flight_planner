@@ -86,6 +86,9 @@ Chaque `section` / `.panel` du `<main>` devient un bloc avec les boutons ↕ (d�
 `data-block-id` : identifiant stable (sinon `id`, sinon rang). Après un nouveau rendu de
 blocs : `window.AppFramework.refresh()`.
 
+Option `grow: true` de `StickyFrame.follow` : l'ancre prend au moins la hauteur du cadre (+ 2 × gap), pour
+qu'un cadre plus haut que sa rangée ne déborde pas sur le cadre suivant (panneaux du planificateur).
+
 ## 3 ter. `column_resize.js` — colonnes redimensionnables
 
 `ColumnResize.attach(grille, { key, defaults, min, media, until, title })` pose une poignée entre chaque paire
