@@ -10,6 +10,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+## [2.2.8] — 2026-09-26
+
 - **Studio — opérations** : aperçus de toutes les cartes de toutes les missions, groupés par mission ; « Générer les
   N missions » en un ZIP (un dossier par mission, chacune avec sa carte d'assemblage) ; réglages des cartes gardés
   d'une mission à l'autre. Générateur : lecture de ce ZIP (carte d'assemblage de chaque mission).

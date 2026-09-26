@@ -114,7 +114,7 @@ Folder `SIA XML/`; details (French): [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md
 
 ## Known bugs
 
-Version 2.2.7. Workarounds at the end of each line.
+Version 2.2.8. Workarounds at the end of each line.
 
 - **SIA studio — vertical profile**: terrain comes from an elevation model (≈ 150 m) and airspaces
   are those selected for the general map; “ASFC” limits follow that model, not the actual ground.
