@@ -71,8 +71,21 @@ liste `DISPLAY` : design, icônes, couleurs, barre latérale, langue, onglets, s
 
 - **Design** (`repositoryDesign`, `<html data-design>`) : Standard (styles propres des pages), **Aéro** (arrondi,
   ombres douces, en-tête en dégradé), **Opérationnel** (dense, angles vifs, liseré du thème, titres en capitales),
-  **Console** (barre latérale, blocs aérés numérotés, titres en capitales, icônes ; remplace l'ancien Brief).
+  **Console** (barre latérale, blocs aérés, titres en capitales, icônes ; remplace l'ancien Brief).
   Règles : `designs.css` (formes communes) et `block_icons.css` (Console, icônes, numéros).
+- **Designs à matières** : **Cabinet** (cabinet de navigation : sous-main en cuir, cadre en bois, en-tête en cuir
+  marine, blocs en parchemin cerclés de cuir, plaques de titre en laiton gravé, médaillon rose des vents), **Durci**
+  (clé `field` : console de terrain, fond de carte topographique, châssis en peinture olive écaillée, panneaux d'acier,
+  plaques kaki, champs noirs, bouton principal vert à voyant, radar) et **Aqua** (métal brossé, verre dépoli, boutons
+  gel). Règles : `designs_skeuo.css`, chargé **à la demande** (`designs.list[id].css`) ; textures WebP de
+  `shared/textures/` (≈ 140 Ko en tout, produites par `tools/textures_generator.html` + `tools/save_textures.py`).
+  Les **matières** ont une palette propre au design ; les **couleurs d'information** restent celles du thème
+  (Cabinet : bandeau assombri ; Durci : bande d'unité à gauche des blocs ; Aqua : gel des boutons). Icônes de blocs
+  en « matière » : médaillons de bronze, plaques d'acier vissées, bulles de gel. Accroches : `<html data-tone>`
+  (thème clair ou sombre : Cabinet « carte de nuit »), `<html data-decor>` (**Décor** `repositoryDecor` : complet ou
+  sobre ; défaut par page ou dossier, clé `decor` de `repository_tree` : sobre sur les CR, le planificateur et Landing),
+  `.repo-header-emblem` (emblème `designs.list[id].emblem`, `RepositoryIcons.emblem`), `<html data-dirty>` (voyant
+  de sauvegarde de la barre d'état, `browser_store.js`). À l'impression, tout s'efface.
 - **Icônes** (`repositoryIcons`, `<html data-icons>`) : trait normal, fin, épais, ou aucune.
 - **Barre latérale** (`repositorySidenav`, `<html data-sidenav>`) : selon le design (affichée en Console),
   toujours, ou jamais. Entrées : `REPOSITORY_TREE.sidebar` s'il existe, sinon la liste de `repository_nav.js`, qui construit la barre dès son exécution (styles dans `repository_nav.css`,

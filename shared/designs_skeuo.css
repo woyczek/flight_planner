@@ -1,0 +1,263 @@
+/* Designs à matières : Cabinet (cabinet de navigation), Durci (console de terrain), Aqua (métal brossé, verre, gel).
+   Chargé à la demande par repository_nav.js (designs.list[id].css de repository_tree), versionné comme les autres.
+   Principe (docs/FRAMEWORK.md § 2 bis) :
+   - les MATIÈRES (cuir, bois, parchemin, laiton, peinture olive, acier, verre) ont une palette propre au design,
+     textures WebP de shared/textures/ (générées par tools/textures_generator.html) ;
+   - les COULEURS D'INFORMATION restent celles du thème : Cabinet assombrit le bandeau du thème (bandeau, boutons
+     principaux), Durci en fait une bande d'unité (liseré des blocs), Aqua en fait le gel des boutons principaux ;
+   - html[data-decor="sober"] (pages denses, réglable) retire le décor (vis, piqûres, poignées, radar, filigranes) et
+     garde matières et plaques ; html[data-tone="dark"] (thème sombre) donne la variante nocturne de Cabinet ;
+   - contrastes texte / fond ≥ 4,5:1 (mesurés sur la couleur moyenne des textures) ; le laiton n'est jamais une
+     couleur de texte ; à l'impression, tout s'efface (encre noire, fond blanc). */
+
+/* ================================================================================================ CABINET */
+html[data-design="cabinet"]{
+  --cab-bar:color-mix(in srgb,var(--repo-bar) 50%,#0b0d14);
+  --cab-cream:#f4ecd8;            /* crème / cuir marine ou bandeau assombri : ≥ 10:1 */
+  --cab-ink:#2b2418;              /* encre / parchemin #efe3c4 : 12,6:1 */
+  --cab-ink-2:#5b4a2e;            /* encre secondaire / parchemin : 7:1 */
+  --cab-navy:#1d3557;             /* titres / parchemin : 10,4:1 */
+  --cab-rule:#9c7a44;
+  --cab-brass-hi:#f3de98;--cab-brass:#c9a24a;--cab-brass-lo:#8a6526;--cab-engrave:#2a1d08;
+  --cab-paper:#efe3c4;--cab-field:#fbf5e6;
+  --cab-screw:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cdefs%3E%3CradialGradient id='g' cx='.35' cy='.3' r='.8'%3E%3Cstop offset='0' stop-color='%23fff4c8'/%3E%3Cstop offset='.45' stop-color='%23c9a24a'/%3E%3Cstop offset='1' stop-color='%235a4012'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='10' cy='10.6' r='8.6' fill='%233a2a0c' opacity='.5'/%3E%3Ccircle cx='10' cy='10' r='8' fill='url(%23g)'/%3E%3Cpath d='M5 13 15 7' stroke='%234a3510' stroke-width='1.8' stroke-linecap='round'/%3E%3Cpath d='M5.3 13.8 15.3 7.8' stroke='%23fff0bd' stroke-width='.6' stroke-linecap='round' opacity='.7'/%3E%3C/svg%3E");
+  --cab-rose:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-50 -50 100 100'%3E%3Cg fill='none' stroke='%232b2418' stroke-width='.6'%3E%3Ccircle r='46'/%3E%3Ccircle r='40'/%3E%3Ccircle r='12'/%3E%3C/g%3E%3Cg fill='%232b2418'%3E%3Cpath d='M0-44 5-5 0 0-5-5zM0 44 5 5 0 0-5 5zM-44 0-5-5 0 0-5 5zM44 0 5-5 0 0 5 5z'/%3E%3Cpath d='M-26-26-3 0 0 0 0-3zM26 26 3 0 0 0 0 3zM26-26 0-3 0 0 3 0zM-26 26 0 3 0 0-3 0z' opacity='.6'/%3E%3C/g%3E%3C/svg%3E");
+  --repo-surface:#efe3c4;
+  background:#3a2112 url("textures/leather-brown.webp") center/256px!important;
+}
+html[data-design="cabinet"][data-tone="dark"]{
+  --cab-ink:#efe6cf;--cab-ink-2:#cdbf9c;--cab-navy:#f3de98;--cab-rule:#7a6440;--cab-paper:#1c2230;--cab-field:#121722;--repo-surface:#1c2230;
+  --cab-rose:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-50 -50 100 100'%3E%3Cg fill='none' stroke='%23efe6cf' stroke-width='.6'%3E%3Ccircle r='46'/%3E%3Ccircle r='40'/%3E%3Ccircle r='12'/%3E%3C/g%3E%3Cg fill='%23efe6cf'%3E%3Cpath d='M0-44 5-5 0 0-5-5zM0 44 5 5 0 0-5 5zM-44 0-5-5 0 0-5 5zM44 0 5-5 0 0 5 5z'/%3E%3C/g%3E%3C/svg%3E");
+}
+/* cadre : la page est un meuble en bois verni posé sur un sous-main en cuir (piqûre en décor complet) */
+html[data-design="cabinet"] body{position:relative;margin-top:14px!important;margin-bottom:14px!important;padding-top:12px!important;border-radius:14px;
+  background:#4a2712 url("textures/wood.webp") center/512px!important;color:var(--cab-ink);
+  box-shadow:0 18px 40px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,220,170,.35),inset 0 0 0 1px #1c0d05,inset 0 0 24px rgba(0,0,0,.5)}
+html[data-design="cabinet"][data-decor="full"]::before{content:"";position:fixed;inset:8px;border:2px dashed rgba(233,200,140,.4);border-radius:10px;pointer-events:none;z-index:0}
+/* en-tête : cuir marine (bandeau du thème assombri par-dessus), piqûre, rivets laiton, médaillon rose des vents */
+html[data-design="cabinet"] .repo-header{border-radius:10px!important;border:0!important;margin:0 0 6px!important;
+  background:linear-gradient(color-mix(in srgb,var(--cab-bar) 55%,transparent),color-mix(in srgb,var(--cab-bar) 55%,transparent)),#0f2140 url("textures/leather-navy.webp") center/256px!important;
+  color:var(--cab-cream)!important;box-shadow:inset 0 0 0 1px #0b1628,inset 0 2px 0 rgba(160,190,240,.18),inset 0 -8px 20px rgba(0,0,0,.45),0 3px 0 #1c0d05!important}
+html[data-design="cabinet"][data-decor="full"] .repo-header::after{content:"";position:absolute;inset:5px;border:1.5px dashed rgba(214,186,120,.55);border-radius:7px;pointer-events:none}
+html[data-design="cabinet"][data-decor="full"] .repo-header::before{content:"";position:absolute;inset:0;pointer-events:none;background:var(--cab-screw) 9px 9px/11px no-repeat,var(--cab-screw) right 9px top 9px/11px no-repeat,var(--cab-screw) 9px calc(100% - 9px)/11px no-repeat,var(--cab-screw) right 9px bottom 9px/11px no-repeat}
+html[data-design="cabinet"] .repo-header h1{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif!important;font-weight:700;color:var(--cab-cream)!important;text-shadow:0 2px 0 #06101f}
+html[data-design="cabinet"] .repo-header-subtitle{font-style:italic;color:color-mix(in srgb,var(--cab-cream) 85%,transparent)!important}
+html[data-design="cabinet"] .repo-header-emblem{width:68px;height:68px;margin:-6px 4px -6px -4px;flex:none;filter:drop-shadow(0 5px 6px rgba(0,0,0,.55))}
+html[data-design="cabinet"] .repo-header-emblem svg{width:100%;height:100%;display:block}
+html[data-design="cabinet"] .repo-header :is(button,select,.headerButton):not(.repo-menu-button):not(.repo-language-button){font-family:"Palatino Linotype",Georgia,serif}
+html[data-design="cabinet"] :is(.repo-menu-button,.repo-language-button){background:linear-gradient(#27446f,#122746)!important;color:var(--cab-brass-hi)!important;border:1px solid var(--cab-brass)!important;border-radius:5px!important}
+html[data-design="cabinet"] :is(.repo-menu,.repo-language-menu){background:#f6ecd2 url("textures/parchment.webp") center/400px!important;color:var(--cab-ink)!important;border:2px solid var(--cab-brass-lo)!important;box-shadow:0 10px 24px rgba(0,0,0,.45)!important}
+html[data-design="cabinet"] .repo-menu :is(a,button,summary){color:var(--cab-ink)!important}
+/* blocs : parchemin dans un cadre de cuir brun piqué, vis laiton aux coins, filigrane rose des vents */
+html[data-design="cabinet"] .repo-block{isolation:isolate;position:relative;border:6px solid transparent!important;border-radius:10px!important;
+  background:url("textures/parchment.webp") center/512px padding-box,url("textures/leather-brown.webp") center/256px border-box #4a2712!important;
+  color:var(--cab-ink)!important;box-shadow:inset 0 0 36px rgba(120,80,30,.4),0 4px 8px rgba(40,20,5,.45)!important}
+html[data-design="cabinet"][data-tone="dark"] .repo-block{background:url("textures/parchment-dark.webp") center/512px padding-box,url("textures/leather-brown.webp") center/256px border-box #4a2712!important;box-shadow:inset 0 0 36px rgba(0,0,0,.45),0 4px 8px rgba(0,0,0,.5)!important}
+html[data-design="cabinet"][data-decor="full"] .repo-block::after{content:"";position:absolute;inset:-4px;pointer-events:none;border-radius:8px;outline:1.5px dashed rgba(233,200,140,.45);outline-offset:-3px;
+  background:var(--cab-screw) 2px 2px/12px no-repeat,var(--cab-screw) right 2px top 2px/12px no-repeat,var(--cab-screw) 2px calc(100% - 2px)/12px no-repeat,var(--cab-screw) right 2px bottom 2px/12px no-repeat}
+html[data-design="cabinet"][data-decor="full"] .repo-block::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.07;background:var(--cab-rose) right -40px bottom -50px/280px 280px no-repeat}
+/* titre de bloc : plaque de laiton gravée, vis aux deux bouts */
+html[data-design="cabinet"] .repo-block-titles>h2,html[data-design="cabinet"] .repo-block-heading>h2{position:relative;display:inline-block;padding:7px 30px!important;border-radius:4px;
+  font:700 1.05rem/1.2 "Palatino Linotype","Book Antiqua",Palatino,Georgia,serif!important;letter-spacing:.1em;text-transform:uppercase;color:var(--cab-engrave)!important;text-shadow:0 1px 0 rgba(255,244,200,.75),0 -1px 0 rgba(60,40,10,.3);
+  background:#c9a24a url("textures/brass.webp") center/256px!important;box-shadow:0 0 0 1px #5a4012,inset 0 1px 0 #fff7d1,inset 0 -2px 0 rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.35)}
+html[data-design="cabinet"] .repo-block-titles>h2::before,html[data-design="cabinet"] .repo-block-titles>h2::after,html[data-design="cabinet"] .repo-block-heading>h2::before,html[data-design="cabinet"] .repo-block-heading>h2::after{content:"";position:absolute;top:50%;width:10px;height:10px;margin-top:-5px;background:var(--cab-screw) center/10px no-repeat}
+html[data-design="cabinet"] :is(.repo-block-titles,.repo-block-heading)>h2::before{left:9px}
+html[data-design="cabinet"] :is(.repo-block-titles,.repo-block-heading)>h2::after{right:9px}
+html[data-design="cabinet"] .repo-block-subtitle{font-family:"Palatino Linotype",Georgia,serif;font-style:italic;color:var(--cab-ink-2)!important}
+html[data-design="cabinet"] .repo-block-step{border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3c4,#c9a24a 55%,#6b4d15)!important;color:var(--cab-engrave)!important;box-shadow:inset 0 0 0 2px rgba(0,0,0,.25),0 2px 3px rgba(0,0,0,.4)!important;font-family:Georgia,serif}
+html[data-design="cabinet"] .repo-block-tools button{background:linear-gradient(#27446f,#122746)!important;color:var(--cab-cream)!important;border:1px solid var(--cab-brass)!important;border-radius:4px!important}
+/* sous-cartes, zones de dépôt, bandeaux */
+html[data-design="cabinet"] .repo-card{position:relative;background:color-mix(in srgb,var(--cab-field) 55%,transparent)!important;border:1px solid var(--cab-rule)!important;border-radius:6px!important;box-shadow:inset 0 0 18px rgba(130,90,35,.25),0 2px 4px rgba(60,35,10,.3)!important}
+html[data-design="cabinet"][data-decor="full"] .repo-card::after{content:"";position:absolute;inset:4px;pointer-events:none;background:var(--cab-screw) 0 0/10px no-repeat,var(--cab-screw) right 0 top 0/10px no-repeat,var(--cab-screw) 0 100%/10px no-repeat,var(--cab-screw) right 0 bottom 0/10px no-repeat}
+html[data-design="cabinet"] .repo-card-titles>:is(strong,h3){font-family:"Palatino Linotype",Georgia,serif;color:var(--cab-navy)!important}
+html[data-design="cabinet"] .repo-card-subtitle{color:var(--cab-ink-2)!important}
+html[data-design="cabinet"] .repo-dropzone{background:color-mix(in srgb,var(--cab-field) 70%,transparent)!important;border:1.5px solid var(--cab-rule)!important;border-radius:6px!important;box-shadow:inset 0 1px 4px rgba(80,50,15,.4)!important;color:var(--cab-ink)!important}
+html[data-design="cabinet"] .repo-dropzone-pick{color:var(--cab-navy)!important;font-weight:700}
+html[data-design="cabinet"] .repo-dropzone-state{color:var(--cab-ink-2)!important}
+html[data-design="cabinet"] .repo-notice{background:color-mix(in srgb,var(--cab-field) 55%,transparent)!important;border:1px solid var(--cab-rule)!important;outline:1px solid color-mix(in srgb,var(--cab-rule) 55%,transparent);outline-offset:-5px;border-radius:6px!important;color:var(--cab-ink)!important}
+/* textes, champs */
+html[data-design="cabinet"] .repo-block :is(label,legend,th){color:var(--cab-navy)!important;font-family:"Palatino Linotype",Georgia,serif}
+html[data-design="cabinet"] .repo-block :is(p,li,td,.small,.note,.muted,.hint,summary){color:var(--cab-ink)}
+html[data-design="cabinet"] .repo-block :is(.small,.note,.muted,.hint){color:var(--cab-ink-2)!important}
+html[data-design="cabinet"] .repo-block :is(h3,h4){color:var(--cab-navy)!important;font-family:"Palatino Linotype",Georgia,serif}
+html[data-design="cabinet"] .repo-block :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),select,textarea){background:var(--cab-field)!important;color:var(--cab-ink)!important;border:1px solid var(--cab-rule)!important;border-radius:4px!important;box-shadow:inset 0 1px 3px rgba(80,50,15,.4)!important;font-variant-numeric:tabular-nums}
+html[data-design="cabinet"] .repo-block textarea{background:repeating-linear-gradient(transparent 0 23px,rgba(29,53,87,.1) 23px 24px),var(--cab-field)!important}
+html[data-design="cabinet"] .repo-block :is(table){background:color-mix(in srgb,var(--cab-field) 60%,transparent)}
+html[data-design="cabinet"] :is(input,select,textarea,button):focus-visible{outline:2px solid var(--cab-navy)!important;outline-offset:2px}
+/* boutons : cuir marine à bord laiton (principal : bandeau du thème assombri), parchemin (secondaire), cuir brun (discret) */
+html[data-design="cabinet"] button:where(:not(.repo-menu-button):not(.repo-language-button):not(.repo-sidenav-item):not(.col-split):not(.repo-block-tools button):not([role=menuitem]):not(.repo-icon-only)),
+html[data-design="cabinet"] .buttonLink,html[data-design="cabinet"] a.mc-button{
+  font-family:"Palatino Linotype","Book Antiqua",Georgia,serif!important;font-weight:700;border:0!important;border-radius:6px!important;color:var(--cab-cream)!important;text-shadow:0 1px 0 #000;
+  background:linear-gradient(color-mix(in srgb,var(--cab-bar) 45%,transparent),color-mix(in srgb,var(--cab-bar) 45%,transparent)),#0f2140 url("textures/leather-navy.webp") center/200px!important;
+  box-shadow:0 0 0 2px var(--cab-brass),0 0 0 3px #5a4012,inset 0 1px 0 rgba(255,255,255,.22),inset 0 -6px 12px rgba(0,0,0,.4),0 4px 6px rgba(0,0,0,.4)!important}
+html[data-design="cabinet"] button.secondary:not(.repo-block-tools button){color:var(--cab-navy)!important;text-shadow:0 1px 0 rgba(255,255,255,.6);background:#efe3c4 url("textures/parchment.webp") center/300px!important}
+html[data-design="cabinet"] button:is(.ghost,.danger):not(.repo-block-tools button){background:#4a2712 url("textures/leather-brown.webp") center/200px!important}
+html[data-design="cabinet"] button:not(:disabled):hover{filter:brightness(1.12)}
+html[data-design="cabinet"] button:disabled{filter:grayscale(.6) opacity(.6)}
+html[data-design="cabinet"] .repo-header button.headerButton{font-size:13px}
+/* icônes « matière » : médaillons de bronze à bord laiton (blocs, sous-cartes, bandeaux) */
+html[data-design="cabinet"]:not([data-icons="off"]) :is(.repo-block-icon,.repo-card-icon){display:inline-grid;place-items:center;width:40px;height:40px;border-radius:50%;color:#f4e7c6!important;
+  background:radial-gradient(circle at 40% 35%,#6b4a26,#3a2410 70%);box-shadow:0 0 0 2.5px #c9a24a,0 0 0 3.5px #5a4012,inset 0 2px 3px rgba(0,0,0,.6),0 3px 5px rgba(0,0,0,.4)}
+html[data-design="cabinet"] :is(.repo-block-icon,.repo-card-icon) .repo-svg{--rs:22px}
+html[data-design="cabinet"] .repo-notice>.repo-icon{color:var(--cab-navy)}
+/* barre latérale : bois ; pied : bois, voyant de sauvegarde */
+html[data-design="cabinet"] .repo-sidenav{background:#3a1e0e url("textures/wood.webp") center/512px!important;border-right:3px solid var(--cab-brass-lo)!important;color:var(--cab-cream)!important}
+html[data-design="cabinet"] .repo-footer{margin:14px 0 0!important;padding:8px 14px!important;border-radius:6px;background:#efe3c4 url("textures/parchment.webp") center/300px!important;color:var(--cab-ink)!important;box-shadow:inset 0 2px 5px rgba(0,0,0,.4),0 0 0 2px #7a5a2c!important}
+html[data-design="cabinet"] .repo-footer a{color:var(--cab-navy)!important}
+
+/* ================================================================================================ DURCI */
+html[data-design="field"]{
+  --fd-text:#e8ecd9;          /* / panneau acier assombri #3f4632 : 8,2:1 */
+  --fd-text-2:#c9d1b0;        /* 6,2:1 */
+  --fd-plate-ink:#1b1d14;     /* / plaque kaki #cfc7a4 : 10,9:1 */
+  --fd-field:#121410;--fd-field-ink:#e6ecd6;   /* 15,3:1 */
+  --fd-go:#3fa83f;--fd-led:#9fe870;
+  --fd-unit:var(--repo-accent);
+  --fd-screw:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cdefs%3E%3CradialGradient id='g' cx='.35' cy='.3' r='.85'%3E%3Cstop offset='0' stop-color='%23f2f4f0'/%3E%3Cstop offset='.5' stop-color='%23959a90'/%3E%3Cstop offset='1' stop-color='%23353a30'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='10' cy='10.6' r='8.6' fill='%23000' opacity='.55'/%3E%3Ccircle cx='10' cy='10' r='8' fill='url(%23g)'/%3E%3Cpath d='M10 5v10M5 10h10' stroke='%232a2e25' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  --repo-surface:#4a5040;
+  background:#cfc4a4 url("textures/topo.webp") center/512px!important;
+}
+html[data-design="field"] body{position:relative;margin-top:16px!important;margin-bottom:16px!important;padding-top:12px!important;border-radius:14px;color:var(--fd-text);
+  background:#465034 url("textures/olive.webp") center/512px!important;font-family:Bahnschrift,"DIN Alternate","Roboto Condensed","Arial Narrow",system-ui,sans-serif;
+  box-shadow:0 20px 40px rgba(0,0,0,.6),inset 0 2px 0 rgba(220,230,190,.25),inset 0 0 0 2px #1d2116,inset 0 0 30px rgba(0,0,0,.45)}
+@media (min-width:1100px){
+  html[data-design="field"][data-decor="full"] body::before,html[data-design="field"][data-decor="full"] body::after{content:"";position:absolute;top:140px;width:24px;height:160px;border-radius:10px;
+    background:#1a1a1a url("textures/rubber.webp") center/48px;box-shadow:inset 0 0 0 5px #9aa095,inset 0 0 0 6px #2a2e25,0 4px 8px rgba(0,0,0,.6)}
+  html[data-design="field"][data-decor="full"] body::before{left:-13px}
+  html[data-design="field"][data-decor="full"] body::after{right:-13px}
+}
+html[data-design="field"] .repo-header{border-radius:10px!important;border:0!important;margin:0 0 8px!important;color:var(--fd-text)!important;
+  background:#23261e url("textures/steel-dark.webp") center/512px!important;box-shadow:inset 0 0 0 2px #0d0f08,inset 0 2px 0 rgba(255,255,255,.12),0 3px 0 #14170d,inset 0 -3px 0 var(--fd-unit)!important}
+html[data-design="field"][data-decor="full"] .repo-header::before{content:"";position:absolute;inset:0;pointer-events:none;background:var(--fd-screw) 8px 8px/12px no-repeat,var(--fd-screw) right 8px top 8px/12px no-repeat,var(--fd-screw) 8px calc(100% - 8px)/12px no-repeat,var(--fd-screw) right 8px bottom 8px/12px no-repeat}
+html[data-design="field"] .repo-header h1{font-family:Bahnschrift,"Arial Narrow",Impact,sans-serif!important;font-stretch:condensed;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#e7e6d6!important;text-shadow:0 2px 0 #1a1d14}
+html[data-design="field"] .repo-header-emblem{width:84px;height:32px;flex:none;margin-right:4px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.6))}
+html[data-design="field"] .repo-header-emblem svg{width:100%;height:100%;display:block}
+html[data-design="field"] :is(.repo-menu-button,.repo-language-button){background:linear-gradient(#3a3f37,#15180f)!important;color:#e7e6d6!important;border:1px solid #0b0d08!important;border-radius:5px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18)!important}
+html[data-design="field"] :is(.repo-menu,.repo-language-menu){background:#1d201b url("textures/steel-dark.webp") center/400px!important;color:var(--fd-text)!important;border:2px solid #0b0d08!important}
+html[data-design="field"] .repo-menu :is(a,button,summary){color:var(--fd-text)!important}
+/* blocs : panneaux d'acier gris-vert usé, vis cruciformes, bande d'unité (couleur du thème) à gauche */
+html[data-design="field"] .repo-block{position:relative;border-radius:10px!important;border:2px solid #2a2e22!important;border-left:6px solid var(--fd-unit)!important;color:var(--fd-text)!important;
+  background:linear-gradient(rgba(40,46,32,.55),rgba(40,46,32,.55)),#7c8270 url("textures/steel.webp") center/512px!important;box-shadow:inset 0 2px 0 rgba(255,255,255,.18),inset 0 0 26px rgba(0,0,0,.35),0 4px 10px rgba(0,0,0,.5)!important}
+html[data-design="field"][data-decor="full"] :is(.repo-block,.repo-card)::after{content:"";position:absolute;inset:4px;pointer-events:none;background:var(--fd-screw) 0 0/12px no-repeat,var(--fd-screw) right 0 top 0/12px no-repeat,var(--fd-screw) 0 100%/12px no-repeat,var(--fd-screw) right 0 bottom 0/12px no-repeat}
+html[data-design="field"] :is(.repo-block-titles,.repo-block-heading)>h2{position:relative;display:inline-block;padding:6px 26px 5px!important;border-radius:4px;
+  font:700 1.15rem/1.2 Bahnschrift,"Arial Narrow",Impact,sans-serif!important;font-stretch:condensed;text-transform:uppercase;letter-spacing:.06em;color:var(--fd-plate-ink)!important;
+  background:#cfc7a4 url("textures/khaki.webp") center/256px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,0,0,.2),0 0 0 2px #2a2e22,0 3px 5px rgba(0,0,0,.45)}
+html[data-design="field"] :is(.repo-block-titles,.repo-block-heading)>h2::before,html[data-design="field"] :is(.repo-block-titles,.repo-block-heading)>h2::after{content:"";position:absolute;top:50%;width:11px;height:11px;margin-top:-5.5px;background:var(--fd-screw) center/11px no-repeat}
+html[data-design="field"] :is(.repo-block-titles,.repo-block-heading)>h2::before{left:8px}
+html[data-design="field"] :is(.repo-block-titles,.repo-block-heading)>h2::after{right:8px}
+html[data-design="field"] .repo-block-subtitle{color:var(--fd-text-2)!important}
+html[data-design="field"] .repo-block-step{border-radius:4px!important;background:linear-gradient(#26291f,#0c0e08)!important;color:#eef0e6!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 0 0 2px #4a4f40!important}
+html[data-design="field"] .repo-block-tools button{background:linear-gradient(#30352b,#12150e)!important;color:#eef0e6!important;border:1px solid #0b0d08!important;border-radius:4px!important;text-transform:uppercase;letter-spacing:.04em}
+html[data-design="field"] .repo-card{position:relative;border-radius:8px!important;border:1px solid #3b4032!important;color:var(--fd-text)!important;
+  background:linear-gradient(rgba(40,46,32,.35),rgba(40,46,32,.35)),#7c8270 url("textures/steel.webp") 30% 60%/400px!important;box-shadow:inset 0 2px 0 rgba(255,255,255,.25),inset 0 0 18px rgba(0,0,0,.3),0 3px 6px rgba(0,0,0,.4)!important}
+html[data-design="field"] .repo-card-titles>:is(strong,h3){text-transform:uppercase;letter-spacing:.05em;color:#f2f4ea!important}
+html[data-design="field"] .repo-card-subtitle{color:var(--fd-text-2)!important}
+html[data-design="field"] .repo-dropzone{background:var(--fd-field)!important;border:1.5px dashed #7f8a66!important;border-radius:4px!important;box-shadow:inset 0 2px 8px rgba(0,0,0,.7)!important;color:var(--fd-field-ink)!important}
+html[data-design="field"] .repo-dropzone:hover{border-color:var(--fd-led)!important;border-style:solid!important}
+html[data-design="field"] .repo-dropzone-pick{color:var(--fd-led)!important;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+html[data-design="field"] .repo-dropzone-state{color:#b9c1a2!important}
+html[data-design="field"] .repo-notice{background:#121410!important;border:0!important;border-left:4px solid #d9a441!important;border-radius:6px!important;color:var(--fd-field-ink)!important;box-shadow:inset 0 2px 6px #000,0 0 0 2px #3b4032!important}
+html[data-design="field"] .repo-notice>.repo-icon{color:#e8b85a}
+html[data-design="field"] .repo-block :is(label,legend,th,h3,h4){color:#eef0e6!important}
+html[data-design="field"] .repo-block :is(p,li,td,summary,strong,b,em,dt,dd){color:var(--fd-text)}
+html[data-design="field"] .repo-block :is(.small,.note,.muted,.hint){color:var(--fd-text-2)!important}
+html[data-design="field"] .repo-block :is(table,thead,tbody,tr,th,td){background-color:transparent!important;border-color:#2a2e22!important}
+html[data-design="field"] .repo-block thead th{background-color:rgba(10,12,8,.45)!important}
+html[data-design="field"] .repo-block a{color:var(--fd-led)}
+html[data-design="field"] .repo-block :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),select,textarea){background:var(--fd-field)!important;color:var(--fd-field-ink)!important;border:1px solid #000!important;border-radius:4px!important;box-shadow:inset 0 2px 4px rgba(0,0,0,.7),0 1px 0 rgba(255,255,255,.1)!important;font-variant-numeric:tabular-nums}
+html[data-design="field"] .repo-block :is(input,textarea)::placeholder{color:#8b907f}
+html[data-design="field"] select option{background:#121410;color:#e6ecd6}
+html[data-design="field"] :is(input,select,textarea,button):focus-visible{outline:2px solid var(--fd-led)!important;outline-offset:2px}
+/* boutons : noir canon de fusil ; principal et en-tête : vert lumineux à voyant ; secondaire : bleu nuit */
+html[data-design="field"] button:where(:not(.repo-menu-button):not(.repo-language-button):not(.repo-sidenav-item):not(.col-split):not(.repo-block-tools button):not([role=menuitem]):not(.repo-icon-only)),
+html[data-design="field"] .buttonLink,html[data-design="field"] a.mc-button{
+  font-family:Bahnschrift,"Roboto Condensed","Arial Narrow",sans-serif!important;font-weight:600;border:0!important;border-radius:5px!important;color:#eef0e6!important;text-shadow:0 1px 0 #000;
+  background:linear-gradient(#30352b,#12150e)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 0 1px #0b0d08,0 0 0 3px #4a4f40,0 3px 5px rgba(0,0,0,.6)!important}
+html[data-design="field"] :is(button.primary,.repo-header button.headerButton:first-of-type,button[data-icon="sparkles"]){background:linear-gradient(#3fa83f,#146b1c)!important;color:#fff!important;border-color:transparent!important;box-shadow:inset 0 1px 0 rgba(220,255,200,.45),0 0 0 1px #0b2a0b,0 0 0 3px #4a4f40,0 0 14px rgba(80,255,90,.4),0 3px 5px rgba(0,0,0,.6)!important}
+html[data-design="field"] :is(button.primary,.repo-header button.headerButton:first-of-type,button[data-icon="sparkles"])::after{content:"";display:inline-block;width:7px;height:7px;margin-left:8px;border-radius:50%;background:#aaffa0;box-shadow:0 0 6px #6dff5e;vertical-align:1px}
+html[data-design="field"] button.secondary:not(.repo-block-tools button),html[data-design="field"] .repo-header button.headerButton{background:linear-gradient(#26364e,#0f1a2a)!important}
+html[data-design="field"] button.danger{background:linear-gradient(#7a2a20,#3c120c)!important}
+html[data-design="field"] button:not(:disabled):hover{filter:brightness(1.15)}
+html[data-design="field"] button:disabled{filter:grayscale(.7) opacity(.55)}
+/* icônes « matière » : plaques d'acier vissées */
+html[data-design="field"]:not([data-icons="off"]) :is(.repo-block-icon,.repo-card-icon){display:inline-grid;place-items:center;width:38px;height:38px;border-radius:6px;color:#20241a!important;
+  background:linear-gradient(#e0e3da,#8e9388);box-shadow:inset 0 1px 0 #fff,inset 0 -2px 0 rgba(0,0,0,.25),0 0 0 1px #20241a,0 2px 4px rgba(0,0,0,.6)}
+html[data-design="field"] :is(.repo-block-icon,.repo-card-icon) .repo-svg{--rs:22px;stroke-width:2.4}
+/* barre latérale : noir mat, entrée active à voyant ; pied : barre d'état, voyant de sauvegarde, radar */
+html[data-design="field"] .repo-sidenav{background:#15180f url("textures/steel-dark.webp") center/400px!important;border-right:3px solid #0b0d08!important;color:#e7e6d6!important}
+html[data-design="field"] .repo-sidenav-item[aria-current="page"]{border-left-color:var(--fd-led)!important}
+html[data-design="field"] .repo-footer{position:relative;margin:14px 0 0!important;padding:8px 14px 8px 34px!important;border-radius:6px;background:#15180f!important;color:#cfd2c4!important;box-shadow:inset 0 2px 6px #000,0 0 0 3px #4a4f40!important}
+html[data-design="field"] .repo-footer a{color:var(--fd-led)!important}
+html[data-design="field"][data-decor="full"] .repo-footer::after{content:"";position:absolute;right:10px;top:50%;width:30px;height:30px;margin-top:-15px;border-radius:50%;
+  background:conic-gradient(from 0deg,rgba(159,232,112,.6),transparent 70deg),repeating-radial-gradient(circle,transparent 0 5px,rgba(159,232,112,.35) 5px 6px),#07100a url("textures/radar.webp") center/60px;
+  box-shadow:0 0 0 2px #2f7a1c;animation:repo-sweep 4s linear infinite}
+@keyframes repo-sweep{to{transform:rotate(1turn)}}
+
+/* ================================================================================================ AQUA */
+html[data-design="aqua"]{
+  --aq-ink:#1c2733;--aq-ink-2:#4f5d6b;   /* / verre blanc : 14,5:1 et 6,6:1 */
+  --aq-gel:var(--repo-accent);
+  --repo-surface:#f6f9fc;
+  background:linear-gradient(180deg,#e9eff5,#d9e3ec)!important;
+}
+html[data-design="aqua"] body{background:transparent!important;color:var(--aq-ink);font-family:"Segoe UI Variable","Segoe UI",-apple-system,"Helvetica Neue",Inter,system-ui,sans-serif}
+html[data-design="aqua"] .repo-header{border-radius:12px!important;border:1px solid #9aa6b2!important;margin:12px 0 10px!important;color:var(--aq-ink)!important;
+  background:linear-gradient(rgba(255,255,255,.45),rgba(255,255,255,0) 50%,rgba(0,0,0,.05)),#d8dde2 url("textures/brushed-light.webp") center/256px!important;
+  box-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 rgba(0,0,0,.12),0 6px 16px rgba(40,60,90,.18)!important}
+html[data-design="aqua"] .repo-header h1{color:var(--aq-ink)!important;text-shadow:0 1px 0 rgba(255,255,255,.8)}
+html[data-design="aqua"] .repo-header-subtitle,html[data-design="aqua"] .repo-language-label{color:var(--aq-ink-2)!important}
+html[data-design="aqua"] :is(.repo-menu-button,.repo-language-button){background:linear-gradient(#ffffff,#dfe6ee)!important;color:var(--aq-ink)!important;border:1px solid #9aa6b2!important;border-radius:8px!important;box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(0,0,0,.15)!important}
+html[data-design="aqua"] :is(.repo-menu,.repo-language-menu){background:rgba(248,251,254,.92)!important;color:var(--aq-ink)!important;border:1px solid #b8c3ce!important;border-radius:12px!important;box-shadow:0 14px 34px rgba(30,50,80,.25)!important;backdrop-filter:blur(10px)}
+html[data-design="aqua"] .repo-menu :is(a,button,summary){color:var(--aq-ink)!important}
+html[data-design="aqua"] .repo-block{border-radius:14px!important;border:1px solid rgba(255,255,255,.9)!important;color:var(--aq-ink)!important;
+  background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(244,248,252,.86))!important;box-shadow:0 1px 0 rgba(0,0,0,.04),0 10px 28px rgba(40,70,110,.14),inset 0 1px 0 #fff!important}
+html[data-design="aqua"] :is(.repo-block-titles,.repo-block-heading)>h2{color:var(--aq-ink)!important;font-weight:650!important;letter-spacing:0}
+html[data-design="aqua"] .repo-block-subtitle{color:var(--aq-ink-2)!important}
+html[data-design="aqua"] .repo-block-tools button{background:linear-gradient(#fff,#e3e9f0)!important;color:var(--aq-ink)!important;border:1px solid #aeb9c5!important;border-radius:8px!important}
+html[data-design="aqua"] .repo-card{border-radius:12px!important;border:1px solid #d5dde6!important;background:linear-gradient(#fbfdff,#eef3f8)!important;box-shadow:inset 0 1px 0 #fff,0 2px 6px rgba(40,70,110,.08)!important}
+html[data-design="aqua"] .repo-dropzone{border-radius:10px!important;border:1px solid #c3ced9!important;background:linear-gradient(#f7fafd,#e9eff5)!important;box-shadow:inset 0 1px 3px rgba(40,70,110,.12)!important}
+html[data-design="aqua"] .repo-notice{border-radius:12px!important;border:1px solid color-mix(in srgb,var(--aq-gel) 35%,#fff)!important;background:linear-gradient(color-mix(in srgb,var(--aq-gel) 8%,#fff),color-mix(in srgb,var(--aq-gel) 14%,#fff))!important;color:var(--aq-ink)!important}
+html[data-design="aqua"] .repo-block :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),select,textarea){background:#fff!important;color:var(--aq-ink)!important;border:1px solid #b3bfcb!important;border-radius:8px!important;box-shadow:inset 0 1px 2px rgba(20,40,70,.12)!important}
+html[data-design="aqua"] .repo-block :is(input,select,textarea):focus{border-color:var(--aq-gel)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--aq-gel) 30%,transparent),inset 0 1px 2px rgba(20,40,70,.12)!important;outline:0}
+/* boutons : gel (couleur du thème) par défaut, verre clair (secondaire), ardoise (discret) */
+html[data-design="aqua"] button:where(:not(.repo-menu-button):not(.repo-language-button):not(.repo-sidenav-item):not(.col-split):not(.repo-block-tools button):not([role=menuitem]):not(.repo-icon-only)),
+html[data-design="aqua"] .buttonLink,html[data-design="aqua"] a.mc-button{border-radius:9px!important;font-weight:600;
+  border:1px solid color-mix(in srgb,var(--aq-gel) 70%,#000)!important;color:#fff!important;text-shadow:0 -1px 0 rgba(0,0,0,.25);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--aq-gel) 55%,#fff) 0%,var(--aq-gel) 50%,color-mix(in srgb,var(--aq-gel) 85%,#000) 51%,color-mix(in srgb,var(--aq-gel) 70%,#fff) 100%)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 2px 5px color-mix(in srgb,var(--aq-gel) 40%,transparent)!important}
+html[data-design="aqua"] :is(button.secondary,.repo-header button.headerButton:not(:first-of-type)):not(.repo-block-tools button){border-color:#9aa6b2!important;color:var(--aq-ink)!important;text-shadow:0 1px 0 #fff;background:linear-gradient(#ffffff,#e9eef3 50%,#dde4eb 51%,#f1f4f7)!important;box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.15)!important}
+html[data-design="aqua"] button.ghost:not(.repo-block-tools button){border-color:#3c4a58!important;background:linear-gradient(#7d8b99,#56646f 50%,#4a5763 51%,#6b7885)!important}
+html[data-design="aqua"] button.danger{--aq-gel:#d33a2c}
+html[data-design="aqua"] button:disabled{filter:grayscale(1) opacity(.5)}
+html[data-design="aqua"] button:not(:disabled):hover{filter:brightness(1.06) saturate(1.1)}
+/* icônes « matière » : bulles de gel */
+html[data-design="aqua"]:not([data-icons="off"]) :is(.repo-block-icon,.repo-card-icon){position:relative;display:inline-grid;place-items:center;width:38px;height:38px;border-radius:50%;color:#fff!important;
+  background:radial-gradient(circle at 50% 110%,color-mix(in srgb,var(--aq-gel) 60%,#fff),var(--aq-gel) 55%,color-mix(in srgb,var(--aq-gel) 70%,#000));box-shadow:0 3px 8px color-mix(in srgb,var(--aq-gel) 45%,transparent),inset 0 -2px 4px rgba(0,0,0,.2)}
+html[data-design="aqua"]:not([data-icons="off"]) :is(.repo-block-icon,.repo-card-icon)::before{content:"";position:absolute;left:18%;right:18%;top:6%;height:42%;border-radius:50%;background:linear-gradient(rgba(255,255,255,.85),rgba(255,255,255,.1))}
+html[data-design="aqua"] :is(.repo-block-icon,.repo-card-icon) .repo-svg{--rs:20px;position:relative}
+html[data-design="aqua"] .repo-sidenav{background:#d8dde2 url("textures/brushed-light.webp") center/256px!important;color:var(--aq-ink)!important;border-right:1px solid #9aa6b2!important}
+html[data-design="aqua"] .repo-sidenav-item[aria-current="page"]{background:rgba(255,255,255,.55)!important;border-left-color:var(--aq-gel)!important}
+html[data-design="aqua"] .repo-footer{margin:12px 0 0!important;padding:8px 14px!important;border-radius:10px;background:rgba(255,255,255,.7)!important;color:var(--aq-ink-2)!important;border:1px solid #d5dde6}
+
+/* ================================================================================================ COMMUN */
+/* voyant de sauvegarde dans la barre d'état (html[data-dirty], browser_store.js) : vert si tout est sauvegardé */
+html:is([data-design="cabinet"],[data-design="field"]) .repo-footer::before{content:"";position:absolute;left:12px;top:50%;width:11px;height:11px;margin-top:-5.5px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#d9ffd0,#35c24a 45%,#0f5a1b);box-shadow:0 0 7px #3dff6a,0 0 0 2px #1a1208}
+html:is([data-design="cabinet"],[data-design="field"])[data-dirty="1"] .repo-footer::before{background:radial-gradient(circle at 35% 30%,#fff1c9,#e8b85a 55%,#8a5d12);box-shadow:0 0 7px #e8b85a,0 0 0 2px #1a1208}
+html[data-design="cabinet"] .repo-footer{position:relative;padding-left:34px!important}
+@media (prefers-reduced-motion:reduce){html[data-design="field"] .repo-footer::after{animation:none}}
+/* petits écrans : cadre réduit, décor allégé */
+@media (max-width:760px){
+  html:is([data-design="cabinet"],[data-design="field"]) body{margin:6px!important;border-radius:8px}
+  html:is([data-design="cabinet"],[data-design="field"]) .repo-header-emblem{width:44px;height:44px;margin:0}
+  html[data-design="field"] .repo-header-emblem{width:60px;height:24px}
+  html:is([data-design="cabinet"],[data-design="field"]) :is(.repo-block-titles,.repo-block-heading)>h2{font-size:.95rem!important;padding-left:22px!important;padding-right:22px!important}
+}
+/* impression : les matières s'effacent */
+@media print{
+  html[data-design],html[data-design] body{background:#fff!important;box-shadow:none!important;margin:0!important;padding:0!important}
+  html:is([data-design="cabinet"],[data-design="field"],[data-design="aqua"]) :is(.repo-block,.repo-card,.repo-notice,.repo-dropzone,.repo-block-titles>h2,.repo-block-heading>h2,button,input,select,textarea){background:#fff!important;color:#000!important;box-shadow:none!important;text-shadow:none!important;border-color:#999!important}
+  html:is([data-design="cabinet"],[data-design="field"],[data-design="aqua"]) :is(.repo-block,.repo-card,.repo-block-titles>h2,.repo-block-heading>h2,body,.repo-footer)::before,
+  html:is([data-design="cabinet"],[data-design="field"],[data-design="aqua"]) :is(.repo-block,.repo-card,.repo-block-titles>h2,.repo-block-heading>h2,body,.repo-footer)::after,html[data-design]::before{display:none!important}
+  html[data-design] .repo-block :is(p,li,td,th,label,.small,.note,h3,h4){color:#000!important}
+}

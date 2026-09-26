@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Générateur de textures</title>
+<style>body{font:14px system-ui;margin:20px;background:#222;color:#eee}figure{display:inline-block;margin:6px;text-align:center;font-size:12px}figure img{width:160px;height:160px;display:block;border:1px solid #555}</style></head>
+<body>
+<!-- Textures des designs à matières (Cabinet, Durci, Aqua ; shared/designs_skeuo.css) : générées ici par un bruit procédural
+     raccordable (tuiles sans couture), encodées en WebP et écrites dans shared/textures/ par tools/save_textures.py
+     (serveur local : python tools/save_textures.py, puis http://localhost:8765/tools/textures_generator.html).
+     Relancer après modification d'une recette ; les fichiers produits sont versionnés. -->
+<h1>Textures des designs à matières</h1><p id="out">Génération…</p><div id="list"></div>
+<script>
+const H = (x, y, s) => { let n = Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(s, 982451653); n = Math.imul(n ^ (n >>> 13), 1274126177); n ^= n >>> 16; return (n >>> 0) / 4294967295; };
+const sm = t => t * t * (3 - 2 * t), mod = (a, p) => ((a % p) + p) % p;
+/** Bruit de valeur raccordable (période px × py). */
+function vnoise(x, y, px, py, s) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = sm(x - xi), yf = sm(y - yi), x0 = mod(xi, px), x1 = mod(xi + 1, px), y0 = mod(yi, py), y1 = mod(yi + 1, py);
+  const a = H(x0, y0, s), b = H(x1, y0, s), c = H(x0, y1, s), d = H(x1, y1, s);
+  return a + (b - a) * xf + (c - a) * yf + (a - b - c + d) * xf * yf;
+}
+/** Bruit fractal (fréquences fx, fy entières : tuile raccordable). */
+function fbm(u, v, fx, fy, oct, s) { let t = 0, a = .5, n = 0; for (let o = 0; o < oct; o++) { const k = 1 << o; t += a * vnoise(u * fx * k, v * fy * k, fx * k, fy * k, s + o * 17); n += a; a *= .5; } return t / n; }
+/** Cellules de Voronoï raccordables : distances au 1er et 2e germe (grain du cuir). */
+function voro(u, v, N, s) { const x = u * N, y = v * N, ci = Math.floor(x), cj = Math.floor(y); let f1 = 9, f2 = 9;
+  for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) { const i = ci + di, j = cj + dj, px = i + H(mod(i, N), mod(j, N), s), py = j + H(mod(i, N), mod(j, N), s + 1), d = Math.hypot(px - x, py - y); if (d < f1) { f2 = f1; f1 = d; } else if (d < f2) f2 = d; }
+  return [f1, f2]; }
+const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * Math.max(0, Math.min(1, t)));
+const leather = (dark, light, N, s) => (u, v) => { const [f1, f2] = voro(u, v, N, s), edge = Math.min(1, (f2 - f1) * 3.2), m = fbm(u, v, 4, 4, 4, s + 2), fine = vnoise(u * 256, v * 256, 256, 256, s + 5);
+  return mix(hex(dark), hex(light), .28 + edge * .42 + (m - .5) * .75 + (fine - .5) * .12 - f1 * .14); };
+const worn = (lo, hi, chipCol, s, chipF = 18) => (u, v) => { const b = fbm(u, v, 4, 4, 5, s), chip = fbm(u, v, chipF, chipF, 4, s + 2), sc = fbm(u, v, 1, 90, 3, s + 4), grit = vnoise(u * 512, v * 512, 512, 512, s + 6);
+  let c = mix(hex(lo), hex(hi), .5 + (b - .5) * 1.2 + (grit - .5) * .12); if (sc > .7) c = mix(c, hex('#a6a998'), (sc - .7) * 2);
+  if (chip > .7) c = mix(c, hex(chipCol), Math.min(1, (chip - .7) * 12)); else if (chip > .68) c = mix(c, hex('#1a1d15'), .5); return c; };
+const RECIPES = {
+  // ---- Cabinet
+  'wood': [512, (u, v) => { const t = v * 9 + fbm(u, v, 2, 3, 4, 1) * 2.4, ring = .5 + .5 * Math.sin(t * Math.PI * 2), fib = fbm(u, v, 3, 96, 3, 7), pore = fbm(u, v, 24, 160, 2, 9);
+    return mix(hex('#2a1208'), hex('#7c4521'), .15 + ring ** 1.8 * .55 + (fib - .5) * .7 + (pore - .5) * .25); }],
+  'leather-brown': [256, leather('#2e170b', '#7a4a2a', 34, 3)],
+  'leather-navy': [256, leather('#081427', '#27456f', 38, 11)],
+  'parchment': [512, (u, v) => { const b = fbm(u, v, 3, 3, 6, 21), st = fbm(u, v, 5, 5, 4, 23), fib = fbm(u, v, 40, 6, 2, 25), sp = H(Math.floor(u * 512), Math.floor(v * 512), 27) > .9985 ? -.25 : 0;
+    return mix(hex('#cdb07a'), hex('#f6ebcf'), .55 + (b - .5) * 1.1 - Math.max(0, st - .62) * 1.6 + (fib - .5) * .18 + sp); }],
+  'parchment-dark': [512, (u, v) => { const b = fbm(u, v, 3, 3, 6, 121), st = fbm(u, v, 5, 5, 4, 123); return mix(hex('#121826'), hex('#26314a'), .5 + (b - .5) * 1.1 - Math.max(0, st - .62) * 1.2); }],
+  'brass': [256, (u, v) => { const s = fbm(u, v, 2, 96, 3, 31), m = fbm(u, v, 5, 5, 4, 33), n = vnoise(u * 256, v * 256, 256, 256, 35);
+    return mix(hex('#8a6526'), hex('#e7c978'), .55 + (s - .5) * .8 + (n - .5) * .15 - Math.max(0, m - .6) * 1.4); }],
+  // ---- Durci
+  'olive': [512, worn('#353c27', '#5d6843', '#8a8c84', 41)],
+  'steel': [512, worn('#7c8270', '#a8ac98', '#5a5f50', 51, 14)],
+  'steel-dark': [512, worn('#1d201b', '#34382f', '#6d7065', 131, 16)],
+  'khaki': [256, worn('#a39b78', '#d4ccaa', '#6e6c60', 61, 8)],
+  'rubber': [128, (u, v) => { const n = vnoise(u * 128, v * 128, 128, 128, 71), rib = (Math.floor(v * 32) % 2) ? .1 : 0, g = 22 + n * 18 + rib * 60; return [g, g, g]; }],
+  'topo': [512, (u, v) => { const h = fbm(u, v, 3, 3, 5, 81), st = fbm(u, v, 4, 4, 3, 83), f = (h * 22) % 1, line = Math.abs(f - .5) > .44, major = Math.abs(((h * 22 / 5) % 1) - .5) > .488, grid = (u * 512 % 128 < 1) || (v * 512 % 128 < 1);
+    let c = mix(hex('#bfb391'), hex('#e6dcbf'), .5 + (st - .5) * 1.2 + (h - .5) * .5); if (h < .38) c = mix(c, hex('#9fb6b8'), .5); if (line) c = mix(c, hex('#8a6a45'), major ? .85 : .45); if (grid) c = mix(c, hex('#5a6f8a'), .5); return c; }],
+  'topo-dark': [256, (u, v) => { const h = fbm(u, v, 3, 3, 5, 91), f = (h * 18) % 1, line = Math.abs(f - .5) > .45; let c = mix(hex('#3c4533'), hex('#6f7a58'), h); if (line) c = mix(c, hex('#1d2217'), .7); return c; }],
+  'radar': [256, (u, v) => { const h = fbm(u, v, 4, 4, 5, 101), f = (h * 14) % 1, line = Math.abs(f - .5) > .46; return line ? [30, 110, 50] : [6, 26 + h * 20, 12]; }],
+  // ---- Aqua
+  'brushed-light': [256, (u, v) => { const s = fbm(u, v, 2, 128, 3, 141), n = vnoise(u * 256, v * 256, 256, 256, 143), g = 222 + (s - .5) * 46 + (n - .5) * 10; return [g, g + 1, g + 4]; }]
+};
+async function run() {
+  const out = document.getElementById('out'), list = document.getElementById('list'), t0 = performance.now();
+  let ok = 0;
+  for (const [name, [w, fn]] of Object.entries(RECIPES)) {
+    const c = document.createElement('canvas'); c.width = c.height = w; const x = c.getContext('2d'), im = x.createImageData(w, w), d = im.data;
+    for (let j = 0; j < w; j++) for (let i = 0; i < w; i++) { const [r, g, b] = fn(i / w, j / w), k = (j * w + i) * 4; d[k] = r; d[k + 1] = g; d[k + 2] = b; d[k + 3] = 255; }
+    x.putImageData(im, 0, 0);
+    const blob = await new Promise(r => c.toBlob(r, 'image/webp', .8));
+    const res = await fetch(`/shared/textures/${name}.webp`, { method: 'PUT', body: blob }).catch(() => null);
+    if (res?.ok) ok++;
+    list.insertAdjacentHTML('beforeend', `<figure><img src="${URL.createObjectURL(blob)}"><figcaption>${name}.webp · ${Math.round(blob.size / 1024)} Ko ${res?.ok ? '✓' : '✗'}</figcaption></figure>`);
+  }
+  out.textContent = `${ok} / ${Object.keys(RECIPES).length} textures écrites en ${Math.round(performance.now() - t0)} ms.`;
+}
+run();
+</script></body></html>

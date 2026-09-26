@@ -70,6 +70,8 @@
         "--accent": t.accent || "#69a7ff"
       })) doc.style.setProperty(k, v);
     if (document.body) document.body.style.backgroundColor = t.page || "";
+    // ton de la page (fond clair ou sombre) : variantes des designs à matières (Cabinet « carte de nuit »)
+    doc.dataset.tone = luminance(t.page || "#ffffff") < .3 ? "dark" : "light";
   }
   applyTheme(themeName);
   // jeu d'icônes (line : trait normal, fine, bold, off) et barre latérale (on / off), posés dès le chargement
@@ -88,10 +90,26 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260926zzc", script.src).href;
+    css.href = new URL("designs.css?v=20260926zze", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
+  // Designs à matières (Cabinet, Durci, Aqua : textures, plaques, vis) : feuille propre (designs.list[id].css),
+  // chargée seulement quand l'un d'eux est choisi, avec la même version que ce script.
+  const designCss = id => {
+    const f = designs[id]?.css;
+    if (!f || document.querySelector(`link[data-design-css="${f}"]`)) return;
+    const l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.dataset.designCss = f;
+    l.href = new URL(f + new URL(script.src).search, script.src).href;
+    document.head.append(l);
+  };
+  designCss(design);
+  // Décor des designs à matières : « full » (vis, filigranes, poignées, radar) ou « sober » (matières et plaques
+  // seulement) ; préférence repositoryDecor, sinon réglage de la page / du dossier (decor), sinon complet.
+  const decorDefault = page?.decor || folderSettings.decor || "full";
+  doc.dataset.decor = readPref("repositoryDecor", null) || decorDefault;
   if (favicon) {
     let f = document.querySelector('link[rel~="icon"]');
     if (!f) {
@@ -124,6 +142,18 @@
     header.prepend(line)
   }
   line.classList.add("repo-header-line1");
+  // Emblème d'en-tête (designs.list[id].emblem : rose des vents, ailes…) : emplacement posé ici, dessin par
+  // renderEmblem() dès que le registre d'icônes est chargé (side_nav.js) et à chaque changement de design.
+  const emblem = document.createElement("span");
+  emblem.className = "repo-header-emblem";
+  emblem.setAttribute("aria-hidden", "true");
+  line.prepend(emblem);
+  const renderEmblem = () => {
+    const name = designs[design]?.emblem;
+    emblem.hidden = !name;
+    emblem.innerHTML = name ? window.RepositoryIcons?.emblem?.(name) || "" : "";
+  };
+  renderEmblem();
   ["#languagePopup", "#languageLabel", "#languageCurrent"].forEach(s => {
     const el = header.querySelector(s),
       box = el?.closest(".control");
@@ -210,6 +240,8 @@
     if (!designs[id]) return;
     design = id;
     doc.dataset.design = id;
+    designCss(id);
+    renderEmblem();
     try { localStorage.setItem("repositoryDesign", id); } catch {}
     window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { design: id } }));
   };
@@ -291,7 +323,10 @@
       designs,
       families: cfg.colorFamilies || {},
       themes: cfg.themes,
-      current: () => ({ design, icons: doc.dataset.icons || "line", sidenav: doc.dataset.sidenav || "", colors: readJson("repositoryColors") || {}, theme: currentTheme }),
+      current: () => ({ design, icons: doc.dataset.icons || "line", sidenav: doc.dataset.sidenav || "", decor: doc.dataset.decor, decorSaved: readPref("repositoryDecor", null), colors: readJson("repositoryColors") || {}, theme: currentTheme }),
+      /** Décor des designs à matières : "full", "sober", ou null (réglage de chaque page). */
+      setDecor(v) { try { v ? localStorage.setItem("repositoryDecor", v) : localStorage.removeItem("repositoryDecor"); } catch {} doc.dataset.decor = v || decorDefault; window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { decor: doc.dataset.decor } })); },
+      renderEmblem,
       setDesign,
       /** Jeu d'icônes : "line" (défaut), "fine", "bold", "off". */
       setIcons(v) { doc.dataset.icons = v; try { localStorage.setItem("repositoryIcons", v); } catch {} window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { icons: v } })); },
@@ -382,20 +417,20 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260926zzc", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260926zze", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260926zzc", script.src).href;
+    files.src = new URL("file_access.js?v=20260926zze", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260926zzc", "block_icons.js?v=20260926zzc", "side_nav.js?v=20260926zzc"]) {
+    for (const f of ["icons/repository_icons.js?v=20260926zze", "block_icons.js?v=20260926zze", "side_nav.js?v=20260926zze"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260926zzc", script.src).href;
+    store.src = new URL("browser_store.js?v=20260926zze", script.src).href;
     document.head.append(store)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

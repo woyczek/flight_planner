@@ -36,7 +36,12 @@ window.REPOSITORY_TREE={
       standard:{label:["Standard","Standard","Standard","Estándar"],title:["Design d’origine des pages","Original page design","Ursprüngliches Seitendesign","Diseño original de las páginas"]},
       aero:{label:["Aéro","Aero","Aero","Aero"],title:["Arrondis doux, ombres légères, en-tête en dégradé","Soft corners, light shadows, gradient header","Sanfte Ecken, leichte Schatten, Kopfzeile mit Verlauf","Esquinas suaves, sombras ligeras, cabecera en degradado"]},
       ops:{label:["Opérationnel","Operational","Operativ","Operativo"],title:["Dense, angles vifs, liseré de thème, titres en capitales","Dense, sharp corners, theme edge, uppercase titles","Kompakt, scharfe Ecken, Themenkante, Titel in Großbuchstaben","Denso, esquinas vivas, borde del tema, títulos en mayúsculas"]},
-      console:{label:["Console","Console","Konsole","Consola"],title:["Barre latérale, blocs aérés, titres en capitales, icônes","Side bar, airy blocks, uppercase titles, icons","Seitenleiste, luftige Blöcke, Titel in Großbuchstaben, Symbole","Barra lateral, bloques espaciosos, títulos en mayúsculas, iconos"]}
+      console:{label:["Console","Console","Konsole","Consola"],title:["Barre latérale, blocs aérés, titres en capitales, icônes","Side bar, airy blocks, uppercase titles, icons","Seitenleiste, luftige Blöcke, Titel in Großbuchstaben, Symbole","Barra lateral, bloques espaciosos, títulos en mayúsculas, iconos"]},
+      // designs à matières (textures shared/textures/, règles shared/designs_skeuo.css chargées à la demande : css) ;
+      // emblem : emblème d'en-tête (RepositoryIcons.emblem)
+      cabinet:{css:"designs_skeuo.css",emblem:"compass",label:["Cabinet","Cabinet","Kabinett","Gabinete"],title:["Cabinet de navigation : cuir, bois, parchemin, laiton","Navigation cabinet: leather, wood, parchment, brass","Navigationskabinett: Leder, Holz, Pergament, Messing","Gabinete de navegación: cuero, madera, pergamino, latón"]},
+      field:{css:"designs_skeuo.css",emblem:"wings-globe",label:["Durci","Rugged","Robust","Robusto"],title:["Console de terrain : peinture olive, acier, champs noirs, voyants","Field console: olive paint, steel, black fields, lights","Feldkonsole: olivgrüner Lack, Stahl, schwarze Felder, Leuchten","Consola de campaña: pintura oliva, acero, campos negros, pilotos"]},
+      aqua:{css:"designs_skeuo.css",label:["Aqua","Aqua","Aqua","Aqua"],title:["Métal brossé, verre dépoli, boutons gel","Brushed metal, frosted glass, gel buttons","Gebürstetes Metall, Milchglas, Gel-Schaltflächen","Metal cepillado, vidrio esmerilado, botones de gel"]}
     }
   },
   // Familles de couleurs (Paramétrage › Apparence) : teinte (h, degrés) et saturation (s, %) ; la clarté (« ton »)
@@ -62,7 +67,8 @@ window.REPOSITORY_TREE={
   },
   folders:{
     "":{theme:"flight",favicon:"assets/favicon-flight.svg"},
-    "CR DEFA":{theme:"core",favicon:"assets/favicon-flight.svg"},
+    // decor:"sober" : décor sobre par défaut des designs à matières (pages denses ; réglable sur la page Apparence)
+    "CR DEFA":{theme:"core",favicon:"assets/favicon-flight.svg",decor:"sober"},
     "CR DEFA/FIRE":{theme:"gaar",favicon:"assets/favicon-gaar.svg",config:{gaarLedgerName:"mission_ledger.csv"},files:{gaarLedgerName:"mission_ledger.csv"}},
     "CR DEFA/HEMS":{theme:"hems",favicon:"assets/favicon-hems.svg",config:{ledgerName:"hems_mission_ledger.csv"},files:{ledgerName:"hems_mission_ledger.csv"}},
     "CR DEFA/MissionCore":{theme:"core",favicon:"assets/favicon-flight.svg"},
@@ -80,7 +86,7 @@ window.REPOSITORY_TREE={
     "CR DEFA/SPECIAL":{theme:"special",favicon:"assets/favicon-special.svg"},
     "SIA XML":{theme:"sia",favicon:"assets/favicon-sia.svg"},
     "CR DEFA/AAR":{theme:"aar",favicon:"assets/favicon-aar.svg"},
-    "LandingPerformanceDashboard":{theme:"landing",favicon:"assets/favicon-landing.svg"}
+    "LandingPerformanceDashboard":{theme:"landing",favicon:"assets/favicon-landing.svg",decor:"sober"}
   },
   pages:[
     {path:"CR DEFA/FIRE/fire_cr.html",menu:false,label:"Générateur de CR FIRE / GAAR"},
@@ -124,11 +130,11 @@ window.REPOSITORY_TREE={
     {path:"CR DEFA/appareil.html",menu:false,label:"Fiche appareil",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"CR DEFA/equipage.html",menu:false,label:"Fiche équipage",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"CR DEFA/parametrage.html",menu:false,slot:"settings",label:"Paramétrage — bases de données",theme:"core",favicon:"assets/favicon-flight.svg"},
-    {path:"CR DEFA/apparence.html",menu:false,slot:"settings",label:"Apparence",theme:"core",favicon:"assets/favicon-flight.svg"},
+    {path:"CR DEFA/apparence.html",menu:false,slot:"settings",label:"Apparence",decor:"full",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"LandingPerformanceDashboard/LandingPerformance_Dashboard_MultiCSV_i18n.html",menu:"Landing Performance Dashboard",label:"Landing Performance Dashboard"},
     {path:"SIA XML/mission_editor.html",menu:"Générateur de mission (SIA)",label:"Générateur complet de mission"},
     {path:"SIA XML/map_parser.html",menu:"Studio cartographique (SIA)",label:"Studio cartographique aéronautique SIA"},
-    {path:"flight_performance_planner.html",menu:"Flight Performance & Fuel Planner",label:"Flight Performance & Fuel Planner"}
+    {path:"flight_performance_planner.html",menu:"Flight Performance & Fuel Planner",label:"Flight Performance & Fuel Planner",decor:"sober"}
   ],
   // Libellés du menu ☰ dans les 4 langues (fr, en, de, es) : clé = libellé français de menu / label.
   labels:{

@@ -575,7 +575,7 @@
   // Préférences d'affichage (disposition, design, icônes, couleurs, langue, onglets, séparateurs, colonnes, cadrans,
   // formats de sortie, copie automatique de l'état du planificateur) : sauvegardées, mais sans compter comme des
   // modifications à sauvegarder.
-  const DISPLAY = /^(?:repositoryFramework:|missionReportingPeriod:|missionGlobalReporting:|missionReportingSource:|repositoryDesign$|repositoryIcons$|repositoryColors$|repositorySidenav$|repositoryLanguageMode$|landingLanguageModeV\d+$|LandingPerformanceDashboardPrefsV\d+$|landingAnalysisSize$|flightPerfColumns$|flightPerfFuelGauge$|flightPerfState\.backup$|siaProfileTab$|siaProfileSplit$|siaOutput$|missionCoreLastFamily:)/;
+  const DISPLAY = /^(?:repositoryFramework:|missionReportingPeriod:|missionGlobalReporting:|missionReportingSource:|repositoryDesign$|repositoryIcons$|repositoryColors$|repositorySidenav$|repositoryDecor$|repositoryLanguageMode$|landingLanguageModeV\d+$|LandingPerformanceDashboardPrefsV\d+$|landingAnalysisSize$|flightPerfColumns$|flightPerfFuelGauge$|flightPerfState\.backup$|siaProfileTab$|siaProfileSplit$|siaOutput$|missionCoreLastFamily:)/;
   const tracked = key => key && key !== META && key !== PENDING && !SKIP.some(re => re.test(key)) && !DISPLAY.test(key);
   const lastHit = new Map(),
     pending = () => Number(localStorage.getItem(PENDING) || 0);
@@ -621,6 +621,8 @@
       row = BTN[nav.getLanguage?.()] || BTN.fr;
     const last = m.savedAt ? new Date(m.savedAt).toLocaleString() : t('never');
     button.hidden = n < REMIND;
+    // voyant de la barre d'état des designs à matières (designs_skeuo.css) : vert si tout est sauvegardé, ambre sinon
+    document.documentElement.dataset.dirty = n > 0 ? '1' : '0';
     const label = `${row[0]} (${n}) · ${row[2]} ${m.savedAt ? new Date(m.savedAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }) : t('never')}`,
       icon = window.RepositoryIcons?.svg('save', { size: 14 });
     button.textContent = icon ? ' ' + label : '💾 ' + label;

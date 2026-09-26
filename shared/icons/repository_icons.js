@@ -65,6 +65,33 @@
     alert: '<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/>',
     check: '<path d="m5 12 5 5L20 7"/>'
   };
+  // Emblèmes d'en-tête des designs à matières (designs.list[id].emblem, repository_nav.js) : dessins en couleurs
+  // propres (laiton, acier), avec dégradés ; identifiants de dégradés préfixés pour coexister dans la page.
+  const EMBLEMS = {
+    compass() {
+      let ticks = '';
+      for (let i = 0; i < 72; i++) {
+        const a = i * 5 * Math.PI / 180, r1 = i % 18 ? 25.5 : 23.5, f = n => n.toFixed(2);
+        ticks += `<path d="M${f(32 + 27 * Math.sin(a))} ${f(32 - 27 * Math.cos(a))}L${f(32 + r1 * Math.sin(a))} ${f(32 - r1 * Math.cos(a))}" stroke-width="${i % 18 ? .6 : 1.3}"/>`;
+      }
+      const pt = (a, l, w) => { const r = x => x * Math.PI / 180, P2 = (d, k) => `${(32 + k * Math.sin(r(d))).toFixed(2)} ${(32 - k * Math.cos(r(d))).toFixed(2)}`;
+        return `<path d="M32 32L${P2(a - 90, w)}L${P2(a, l)}z" fill="#1d3557"/><path d="M32 32L${P2(a + 90, w)}L${P2(a, l)}z" fill="url(#emB)" stroke="#6b4d15" stroke-width=".4"/>`; };
+      return `<svg viewBox="0 0 64 64"><defs><radialGradient id="emR" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#fff3c4"/><stop offset=".55" stop-color="#c9a24a"/><stop offset="1" stop-color="#6b4d15"/></radialGradient>
+        <linearGradient id="emB" x2="0" y2="1"><stop offset="0" stop-color="#fff3c4"/><stop offset=".5" stop-color="#c9a24a"/><stop offset="1" stop-color="#6b4d15"/></linearGradient>
+        <radialGradient id="emP" cx=".45" cy=".4" r=".7"><stop offset="0" stop-color="#fffaf0"/><stop offset="1" stop-color="#e3cf9f"/></radialGradient></defs>
+        <circle cx="32" cy="32" r="31" fill="url(#emR)" stroke="#5a4012"/><circle cx="32" cy="32" r="28.3" fill="none" stroke="#6b4d15" stroke-width="1.2"/><circle cx="32" cy="32" r="27.5" fill="url(#emP)"/>
+        <g stroke="#1d3557">${ticks}</g>${[45, 135, 225, 315].map(a => pt(a, 15, 3)).join('')}${[0, 90, 180, 270].map(a => pt(a, 21, 4.2)).join('')}
+        <circle cx="32" cy="32" r="2.6" fill="url(#emR)" stroke="#6b4d15" stroke-width=".6"/>
+        <g font-family="Georgia,serif" font-size="6.5" font-weight="700" fill="#1d3557" text-anchor="middle"><text x="32" y="17">N</text><text x="32" y="52.5">S</text><text x="48.5" y="34.3">E</text><text x="15.5" y="34.3">O</text></g>
+        <ellipse cx="25" cy="18" rx="15" ry="8" fill="#fff" opacity=".18" transform="rotate(-25 25 18)"/></svg>`;
+    },
+    'wings-globe'() {
+      const wing = sx => `<g transform="translate(60 22) scale(${sx} 1)"><path d="M10-2C24-11 42-12 58-8L52-3 60-1 50 3 56 6 44 8 46 11 32 10C22 10 14 7 10 2z" fill="url(#emS)" stroke="#2a2e25"/><path d="M16 1C26-4 38-5 50-4M18 5C28 3 36 3 46 4" fill="none" stroke="#2a2e25" stroke-width=".8" opacity=".7"/></g>`;
+      return `<svg viewBox="0 0 120 44"><defs><linearGradient id="emS" x2="0" y2="1"><stop offset="0" stop-color="#f2f4f0"/><stop offset=".5" stop-color="#9aa095"/><stop offset="1" stop-color="#3a3f36"/></linearGradient>
+        <radialGradient id="emG" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#f2f4f0"/><stop offset=".55" stop-color="#9aa095"/><stop offset="1" stop-color="#3a3f36"/></radialGradient></defs>
+        ${wing(1)}${wing(-1)}<circle cx="60" cy="22" r="11" fill="url(#emG)" stroke="#20241a" stroke-width="1.2"/><path d="M49 22h22M60 11v22M51.5 16h17M51.5 28h17" stroke="#20241a" fill="none"/><ellipse cx="60" cy="22" rx="5" ry="11" fill="none" stroke="#20241a"/></svg>`;
+    }
+  };
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   window.RepositoryIcons = {
     /** SVG d'une icône (chaîne) ; décorative (aria-hidden) sauf si title est donné. Nom inconnu : chaîne vide. */
@@ -81,6 +108,8 @@
     names: () => Object.keys(P),
     /** Ajoute (ou remplace) une icône : tracés SVG sur la grille 24 × 24, sans couleur ni épaisseur propres. */
     add(name, paths) { P[name] = paths; },
+    /** Emblème en couleurs (compass, wings-globe) : chaîne SVG, vide si inconnu. */
+    emblem: name => EMBLEMS[name]?.() || '',
     /** Tracés bruts (pour composer une image CSS, ex. masque). */
     paths: name => P[name] || ''
   };

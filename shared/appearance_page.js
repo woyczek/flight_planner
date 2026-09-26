@@ -12,11 +12,14 @@
   const T = {
     sub: ['DEFA Virtual — design, icônes, barre latérale et couleurs, pour toutes les pages de la suite', 'DEFA Virtual — design, icons, side bar and colours, for every page of the suite', 'DEFA Virtual — Design, Symbole, Seitenleiste und Farben für alle Seiten der Suite', 'DEFA Virtual — diseño, iconos, barra lateral y colores, para todas las páginas'],
     design: ['Design', 'Design', 'Design', 'Diseño'],
-    designSub: ['La forme des pages : arrondis, densité, titres, barre latérale. Les couleurs restent celles du thème.', 'The shape of the pages: corners, density, titles, side bar. Colours stay those of the theme.', 'Die Form der Seiten: Ecken, Dichte, Titel, Seitenleiste. Die Farben bleiben die des Themas.', 'La forma de las páginas: esquinas, densidad, títulos, barra lateral. Los colores siguen siendo los del tema.'],
+    designSub: ['La forme des pages : arrondis, densité, titres, barre latérale. Cabinet, Durci et Aqua ajoutent leurs matières (cuir, bois, laiton, acier, verre) ; les couleurs d’information restent celles du thème.', 'The shape of the pages: corners, density, titles, side bar. Cabinet, Rugged and Aqua add their materials (leather, wood, brass, steel, glass); information colours stay those of the theme.', 'Die Form der Seiten: Ecken, Dichte, Titel, Seitenleiste. Kabinett, Robust und Aqua bringen eigene Materialien (Leder, Holz, Messing, Stahl, Glas); Informationsfarben bleiben die des Themas.', 'La forma de las páginas: esquinas, densidad, títulos, barra lateral. Gabinete, Robusto y Aqua añaden sus materiales (cuero, madera, latón, acero, vidrio); los colores de información siguen siendo los del tema.'],
     icons: ['Icônes', 'Icons', 'Symbole', 'Iconos'],
     iconsSub: ['Épaisseur du trait des icônes, ou pas d’icônes du tout.', 'Stroke width of the icons, or no icons at all.', 'Strichstärke der Symbole oder gar keine Symbole.', 'Grosor del trazo de los iconos, o ningún icono.'],
     iconSet: { fine: ['Trait fin', 'Thin stroke', 'Dünne Linie', 'Trazo fino'], line: ['Trait normal', 'Normal stroke', 'Normale Linie', 'Trazo normal'], bold: ['Trait épais', 'Bold stroke', 'Dicke Linie', 'Trazo grueso'], off: ['Aucune icône', 'No icons', 'Keine Symbole', 'Sin iconos'] },
     side: ['Barre latérale', 'Side bar', 'Seitenleiste', 'Barra lateral'],
+    decor: ['Décor (Cabinet, Durci)', 'Decoration (Cabinet, Rugged)', 'Dekor (Kabinett, Robust)', 'Decoración (Gabinete, Robusto)'],
+    decorSet: { auto: ['Selon la page', 'Depending on page', 'Je nach Seite', 'Según la página'], full: ['Complet', 'Full', 'Vollständig', 'Completo'], sober: ['Sobre', 'Plain', 'Schlicht', 'Sobrio'] },
+    decorHelp: ['Complet : vis, piqûres, poignées, radar. Sobre : matières et plaques seulement (par défaut sur les CR, le planificateur et Landing).', 'Full: screws, stitching, handles, radar. Plain: materials and plates only (default on reports, planner and Landing).', 'Vollständig: Schrauben, Nähte, Griffe, Radar. Schlicht: nur Materialien und Schilder (Standard bei Berichten, Planer und Landing).', 'Completo: tornillos, costuras, asas, radar. Sobrio: solo materiales y placas (por defecto en informes, planificador y Landing).'],
     sideSet: { auto: ['Selon le design', 'Depending on design', 'Je nach Design', 'Según el diseño'], on: ['Toujours', 'Always', 'Immer', 'Siempre'], off: ['Jamais', 'Never', 'Nie', 'Nunca'] },
     colors: ['Couleurs des thèmes', 'Theme colours', 'Themenfarben', 'Colores de los temas'],
     colorsSub: ['Pour chaque thème : une famille de couleurs et un ton. Bandeau, texte et accent en sont calculés ; les contrastes WCAG sont vérifiés en direct.', 'For each theme: a colour family and a tone. Bar, text and accent are derived from them; WCAG contrast is checked live.', 'Je Thema: eine Farbfamilie und ein Ton. Leiste, Text und Akzent werden daraus berechnet; der WCAG-Kontrast wird live geprüft.', 'Para cada tema: una familia de colores y un tono. Barra, texto y acento se calculan a partir de ellos; el contraste WCAG se comprueba en directo.'],
@@ -61,6 +64,7 @@
     // --- icônes : une rangée d'aperçu par variante
     const sample = ['target', 'map', 'upload', 'fuel', 'plane', 'clipboard', 'chart', 'settings'];
     const iconRows = Object.entries(T.iconSet).map(([id, row]) => `<button type="button" class="ap-iconrow" data-icons="${id}" aria-pressed="${id === cur.icons}"><b>${esc(t(row))}</b><span class="ap-iconset" data-set="${id}">${id === 'off' ? '' : sample.map(n => `<span class="ap-ic">${icon(n, 22)}</span>`).join('')}</span></button>`).join('');
+    const decor = cur.decorSaved || 'auto', decorBtns = Object.entries(T.decorSet).map(([id, row]) => `<button type="button" class="ap-seg" data-decor="${id}" aria-pressed="${id === decor}">${esc(t(row))}</button>`).join('');
     const side = cur.sidenav || 'auto', sideBtns = Object.entries(T.sideSet).map(([id, row]) => `<button type="button" class="ap-seg" data-side="${id}" aria-pressed="${id === side}">${esc(t(row))}</button>`).join('');
     // --- couleurs : une carte par thème, groupées (applications, familles de CR)
     const card = name => {
@@ -76,7 +80,7 @@
     };
     const names = Object.keys(a.themes), crs = names.filter(n => !APPS.includes(n));
     host.innerHTML =
-      block('ap-design', 'layers', t(T.design), t(T.designSub), `<div class="ap-thumbs">${thumbs}</div>`) +
+      block('ap-design', 'layers', t(T.design), t(T.designSub), `<div class="ap-thumbs">${thumbs}</div><div class="ap-sidebar"><b>${esc(t(T.decor))}</b><span class="ap-segs">${decorBtns}</span><small class="ap-help">${esc(t(T.decorHelp))}</small></div>`) +
       block('ap-icons', 'box', t(T.icons), t(T.iconsSub), `<div class="ap-iconrows">${iconRows}</div><div class="ap-sidebar"><b>${esc(t(T.side))}</b><span class="ap-segs">${sideBtns}</span></div>`) +
       block('ap-colors', 'eye', t(T.colors), t(T.colorsSub), `<h3>${esc(t(T.groupPages))}</h3><div class="ap-cards">${APPS.filter(n => a.themes[n]).map(card).join('')}</div><h3>${esc(t(T.groupCr))}</h3><div class="ap-cards">${crs.map(card).join('')}</div>`) +
       `<p class="ap-foot"><a href="${esc(new URL('docs/demo_design_icones.html', nav().root).href)}">${esc(t(T.demo))}</a><button type="button" id="apReset">${esc(t(T.reset))}</button></p>`;
@@ -105,6 +109,7 @@
     host = document.getElementById('appearancePage');
     if (!host || !AP()) return;
     window.RepositoryContentI18n?.([T.sub, ['Apparence', 'Appearance', 'Darstellung', 'Apariencia']]);
+    const TX = new URL('shared/textures/', nav().root).href;   // textures des vignettes des designs à matières
     const css = document.createElement('style');
     css.textContent = `
 .ap-thumbs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:12px}
@@ -123,6 +128,19 @@
 .ap-mini[data-d="aero"] .ap-mini-bar{background:linear-gradient(115deg,var(--repo-bar),color-mix(in srgb,var(--repo-bar) 70%,#000))}
 .ap-mini[data-d="aero"] .ap-mini-block{border-radius:10px;box-shadow:0 6px 16px color-mix(in srgb,var(--repo-accent) 22%,transparent)}.ap-mini[data-d="aero"] .ap-mini-btn{border-radius:6px}
 .ap-mini[data-d="ops"] .ap-mini-block{border-radius:2px;border-left:4px solid var(--repo-accent);padding:5px 8px;margin:6px}.ap-mini[data-d="ops"] .ap-mini-title{text-transform:uppercase;font-size:9.5px;letter-spacing:.06em}.ap-mini[data-d="ops"] .ap-mini-btn{border-radius:2px}
+.ap-help{flex-basis:100%;color:var(--muted);font-size:12px}
+.ap-mini[data-d="cabinet"]{background:url(${TX}leather-brown.webp) center/128px;padding:5px}.ap-mini[data-d="cabinet"] .ap-mini-body{border-radius:6px;overflow:hidden;background:url(${TX}wood.webp) center/256px;padding:4px}
+.ap-mini[data-d="cabinet"] .ap-mini-bar{height:20px;border-radius:4px;background:url(${TX}leather-navy.webp) center/128px;box-shadow:inset 0 0 0 1px #c9a24a}
+.ap-mini[data-d="cabinet"] .ap-mini-block{margin:6px 0 0;border:4px solid #5a3218;border-radius:6px;background:url(${TX}parchment.webp) center/256px}
+.ap-mini[data-d="cabinet"] .ap-mini-title{justify-self:start;padding:1px 8px;border-radius:2px;background:url(${TX}brass.webp) center/128px;color:#2a1d08;font-family:Georgia,serif;text-transform:uppercase;font-size:9px;letter-spacing:.08em}
+.ap-mini[data-d="cabinet"] .ap-mini-btn{background:#1d3557;box-shadow:0 0 0 1.5px #c9a24a}.ap-mini[data-d="cabinet"] .ap-mini-line{background:rgba(90,60,20,.18)}
+.ap-mini[data-d="field"]{background:url(${TX}topo.webp) center/256px;padding:5px}.ap-mini[data-d="field"] .ap-mini-body{border-radius:6px;overflow:hidden;background:url(${TX}olive.webp) center/256px;padding:4px}
+.ap-mini[data-d="field"] .ap-mini-bar{height:20px;border-radius:4px;background:url(${TX}steel-dark.webp) center/256px}
+.ap-mini[data-d="field"] .ap-mini-block{margin:6px 0 0;border:2px solid #2a2e22;border-left:5px solid var(--repo-accent);border-radius:6px;background:linear-gradient(rgba(40,46,32,.5),rgba(40,46,32,.5)),url(${TX}steel.webp) center/256px}
+.ap-mini[data-d="field"] .ap-mini-title{justify-self:start;padding:1px 8px;border-radius:2px;background:url(${TX}khaki.webp) center/128px;color:#1b1d14;font-family:Bahnschrift,"Arial Narrow",sans-serif;text-transform:uppercase;font-size:9.5px}
+.ap-mini[data-d="field"] .ap-mini-btn{background:linear-gradient(#3fa83f,#146b1c);box-shadow:0 0 6px rgba(80,255,90,.5)}.ap-mini[data-d="field"] .ap-mini-line{background:#121410}
+.ap-mini[data-d="aqua"]{background:linear-gradient(#e9eff5,#d9e3ec)}.ap-mini[data-d="aqua"] .ap-mini-bar{margin:5px 5px 0;height:18px;border-radius:5px;border:1px solid #9aa6b2;background:url(${TX}brushed-light.webp) center/128px}
+.ap-mini[data-d="aqua"] .ap-mini-block{border-radius:10px;border:1px solid #fff;box-shadow:0 6px 14px rgba(40,70,110,.15)}.ap-mini[data-d="aqua"] .ap-mini-btn{border-radius:6px;background:linear-gradient(color-mix(in srgb,var(--repo-accent) 55%,#fff),var(--repo-accent) 50%,color-mix(in srgb,var(--repo-accent) 85%,#000) 51%,color-mix(in srgb,var(--repo-accent) 70%,#fff))}
 .ap-mini[data-d="console"] .ap-mini-side{width:22px}.ap-mini[data-d="console"] .ap-mini-ic{display:inline-block}.ap-mini[data-d="console"] .ap-mini-title{grid-column:auto;text-transform:uppercase;font-weight:800}.ap-mini[data-d="console"] .ap-mini-block{border-radius:8px;padding:10px 12px}.ap-mini[data-d="console"] .ap-mini-btn{height:14px;border-radius:5px}
 .ap-iconrows{display:grid;gap:8px;margin-top:12px}
 .ap-iconrow{display:grid;grid-template-columns:150px 1fr;align-items:center;gap:12px;padding:8px 12px;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer;font:inherit;text-align:left}
@@ -161,6 +179,7 @@ main.ap-page h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;col
       if (!b) return;
       if (b.dataset.design) { a.setDesign(b.dataset.design); render(); }
       else if (b.dataset.icons) { a.setIcons(b.dataset.icons); render(); }
+      else if (b.dataset.decor) { a.setDecor(b.dataset.decor === 'auto' ? null : b.dataset.decor); render(); }
       else if (b.dataset.side) { a.setSidenav(b.dataset.side === 'auto' ? null : b.dataset.side === 'on'); render(); }
       else if (b.classList.contains('ap-dot')) {
         const cardEl = b.closest('.ap-card');
@@ -175,7 +194,7 @@ main.ap-page h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;col
         render();
       } else if (b.id === 'apReset') {
         Object.keys(a.current().colors).forEach(n => a.setColor(n, null));
-        a.setIcons('line'); a.setSidenav(null); a.setDesign(window.REPOSITORY_TREE.designs?.default || 'standard');
+        a.setIcons('line'); a.setSidenav(null); a.setDecor(null); a.setDesign(window.REPOSITORY_TREE.designs?.default || 'standard');
         previewTheme = null; nav().setTheme(nav().settings.theme); render();
       }
     });
