@@ -389,21 +389,42 @@
     return save(b.docs[b.index], by);
   }
 
-  /** Découpe un texte collé contenant plusieurs fichiers (réponse de ChatGPT : ligne « Fichier : mission41A.yaml »
-   *  puis bloc de code) ou plusieurs missions Markdown (« # Mission 41A », « # Mission 41B »…) en fichiers
-   *  { name, text } ; texte simple : tableau vide. */
+  /** Découpe un texte collé contenant plusieurs fichiers ou plusieurs missions en fichiers { name, text } ; texte
+   *  d'un seul fichier : tableau vide. Formes reconnues, dans l'ordre :
+   *   1. « Fichier : mission41A.yaml » puis bloc de code ``` (réponse de ChatGPT copiée en Markdown) ;
+   *   2. « Fichier : … » sans ``` (réponse copiée depuis la page affichée : étiquette « yaml », « Copier le code ») ;
+   *   3. plusieurs blocs de code ``` sans nom ;
+   *   4. YAML et Markdown des missions à la suite, sans rien autour (débuts : « schema: helo-xp-mission »,
+   *      « # Mission 41A »). Le texte hors mission (introduction, VALIDATION, « Mission suivante ») est écarté. */
   function splitBundle(text) {
     const src = String(text || '').replace(/\r\n/g, '\n'), out = [];
     const re = /^[ \t>*_-]*(?:fichier|file|datei|archivo)\s*:?\s*[*_`]*\s*([\w.\-]+\.(?:ya?ml|md|markdown))\s*[*_`]*\s*\n+\s*```[\w-]*\n([\s\S]*?)\n\s*```/gim;
     for (let m; (m = re.exec(src));) out.push({ name: m[1], text: m[2] });
     if (out.length) return out;
-    // blocs de code sans nom : nommés d'après leur contenu
+    // 2. repères « Fichier : nom » sans blocs de code : un segment par repère, nettoyé
+    const marks = [...src.matchAll(/^[ \t>*_#-]*(?:fichier|file|datei|archivo)\s*:?\s*[*_`]*\s*([\w.\-]+\.(?:ya?ml|md|markdown))\s*[*_`]*\s*$/gim)];
+    if (marks.length > 1) return marks.map((m, k) => ({ name: m[1], text: cleanSegment(src.slice(m.index + m[0].length, marks[k + 1]?.index ?? src.length)) })).filter(f => f.text);
+    // 3. blocs de code sans nom : nommés d'après leur contenu
     const blocks = [...src.matchAll(/```([\w-]*)\n([\s\S]*?)\n\s*```/g)];
     if (blocks.length > 1) return blocks.map((b, i) => ({ name: /ya?ml/i.test(b[1]) || /^\s*(schema|mission)\s*:/m.test(b[2]) ? `bloc${i + 1}.yaml` : `bloc${i + 1}.md`, text: b[2] }));
-    // plusieurs missions Markdown à la suite
-    const heads = [...src.matchAll(/^#\s+Mission\s+\d+[A-Z]?\b.*$/gim)];
-    if (heads.length > 1) return heads.map((h, i) => ({ name: `mission${i + 1}.md`, text: src.slice(h.index, heads[i + 1]?.index ?? src.length) }));
+    // 4. débuts de fichiers à la suite : YAML (« schema: helo-xp-mission ») et Markdown (« # Mission 41A »)
+    const starts = [...src.matchAll(/^(?:schema\s*:\s*['"]?helo-xp-mission\b.*|#\s+Mission\s+\d+[A-Z]?\b.*)$/gim)];
+    if (starts.length > 1) return starts.map((m, k) => {
+      const yaml = /^schema/i.test(m[0]);
+      return { name: `${yaml ? 'mission' : 'summary'}${k + 1}.${yaml ? 'yaml' : 'md'}`, text: cleanSegment(src.slice(m.index, starts[k + 1]?.index ?? src.length)) };
+    }).filter(f => f.text);
     return [];
+  }
+  /** Nettoie un segment de texte collé : étiquettes et boutons des blocs de code copiés depuis ChatGPT (« yaml »,
+   *  « markdown », « Copier le code », ```), puis coupe au bloc VALIDATION ou à « Mission suivante ». */
+  function cleanSegment(seg) {
+    const lines = String(seg).split('\n');
+    while (lines.length && /^\s*(?:```[\w-]*|yaml|yml|markdown|md|text|plaintext|copier(?: le code)?|copy(?: code)?|code copié|copied!?)?\s*$/i.test(lines[0])) lines.shift();
+    // arrêt : titre seul « VALIDATION » (pas une phrase qui commence par « Validation de… »), ou « Mission suivante »
+    const stop = lines.findIndex(l => /^\s*(?:#+\s*)?(?:\*\*)?\s*(?:\d+\.\s*)?(?:bloc\s+)?validation\s*(?:\*\*)?\s*:?\s*$/i.test(l) || /^\s*(?:\*\*)?\s*(?:mission suivante|next mission)\b/i.test(l));
+    const kept = stop >= 0 ? lines.slice(0, stop) : lines;
+    while (kept.length && /^\s*(?:```|copier(?: le code)?|copy(?: code)?)?\s*$/i.test(kept[kept.length - 1])) kept.pop();
+    return kept.join('\n').trim();
   }
 
   /** Comme fromTexts, pour une sélection qui peut contenir PLUSIEURS missions (fichiers d'une opération, ou un

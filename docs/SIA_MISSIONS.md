@@ -80,8 +80,10 @@ prime quand les deux sont chargés. La cible et les zones n'ont pas de coordonn�
 (elles viennent du YAML) ; les Markdown MEDEVAC n'ont que textes, équipes et risques.
 
 **Lot de missions** (opération à plusieurs équipes, série) : une sélection de plusieurs missions — fichiers
-(`mission41A.yaml`, `summary41A.md`, `mission41B.yaml`…) ou texte collé d'un seul tenant (réponse de ChatGPT :
-lignes « Fichier : … » suivies de blocs de code, ou plusieurs « # Mission … ») — est découpée et regroupée par
+(`mission41A.yaml`, `summary41A.md`, `mission41B.yaml`…) ou texte collé d'un seul tenant — réponse de ChatGPT
+copiée en Markdown (« Fichier : … » + blocs ```), copiée depuis la page (« Fichier : … », « yaml », « Copier le
+code »), ou YAML et Markdown des missions simplement à la suite (« schema: helo-xp-mission », « # Mission … ») ;
+le texte hors mission (introduction, VALIDATION, « Mission suivante ») est écarté — est découpée et regroupée par
 mission (identifiant `mission.id`, ou titre « # Mission 41A ») ; la première est affichée, les autres avec
 **◀ Mission 41A — titre (1/3) ▶** dans l'en-tête du générateur et du studio (même lot, partagé entre les deux
 pages et mémorisé dans le navigateur : `siaMissionBatch:v1`). Les modifications de chaque mission sont gardées

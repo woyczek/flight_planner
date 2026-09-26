@@ -10,6 +10,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Missions — collage de plusieurs missions en un** : réponse de ChatGPT copiée depuis la page (étiquettes « yaml »,
+  « Copier le code », sans ```), ou YAML et Markdown des missions à la suite ; texte hors mission écarté.
 - **Missions — opérations chargées en plusieurs fois** : sélecteur de l'en-tête affiché dès qu'une mission annonce
   son opération (missions manquantes grisées) ; une mission de la même opération collée ensuite rejoint le lot ;
   prompt : livraison mission par mission (« suite ») quand la réponse est trop longue.
