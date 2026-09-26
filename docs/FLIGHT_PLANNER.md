@@ -69,6 +69,12 @@ Badin à droite (partagés par les trois courbes ; ligne pointillée violette : 
 tenir le vario, plein gaz au-delà (le vario baisse jusqu'au plafond) ; réacteur : Badin puis Mach de
 croisière. La loi apparaît sur les deux courbes de montée, dans la table comparative et dans la fiche.
 
+**Devis (bloc Résultat) et réglages des courbes.** Block fuel, temps de vol, détail et TOD suivent les
+réglages des courbes, sans nouveau clic sur « Calculer » : la montée est volée à la **loi réglée** par les curseurs
+(au départ : Badin et vario du profil) — si elle n'atteint pas le niveau, montée modélisée du profil, signalée ;
+un **niveau épinglé** remplace le niveau du plan (« FL240 📌 (plan FL280) »), désépingler revient au plan. La ligne
+sous le Block fuel rappelle le niveau et la loi de montée retenus.
+
 **Météo — écart ISA.** Dans le devis : **Écart ISA (°C)**, ou **Température sol** (avec l'**Altitude terrain**),
 ou **Température au niveau** ; chacun se déduit des autres (ISA : 15 °C au niveau de la mer, −1,98 °C / 1000 ft,
 −56,5 °C au-dessus de 36 089 ft). Le profil reste calibré en atmosphère standard ; les calculs de vol utilisent

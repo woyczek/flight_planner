@@ -115,9 +115,9 @@
       for (const c of this.charts) (lvl == null || lvl > c.xmax + 1) ? c.leave() : c.show(lvl);
     },
     /** Épingle l'altitude h (arrondie à 100 ft) : trait blanc sur toutes les courbes. */
-    pin(h) { this.pinned = Math.round(h / 100) * 100; this.charts.forEach(c => this.drawPin(c, this.pinned)); renderPinned(); },
+    pin(h) { this.pinned = Math.round(h / 100) * 100; this.charts.forEach(c => this.drawPin(c, this.pinned)); renderPinned(); window.planQuote?.(); },
     /** Retire l'épingle. */
-    unpin() { this.pinned = null; this.charts.forEach(c => c.svg.querySelector(".pin")?.setAttribute("visibility", "hidden")); this.at(null); },
+    unpin() { this.pinned = null; this.charts.forEach(c => c.svg.querySelector(".pin")?.setAttribute("visibility", "hidden")); this.at(null); window.planQuote?.(); },
     /** Trait d'épingle de la courbe c à l'altitude h (créé au besoin, sous la zone de survol). */
     drawPin(c, h) {
       let l = c.svg.querySelector(".pin");
@@ -211,7 +211,7 @@
     if (key === "vs") { q.vs = v; q.full = v >= q.vMax; } else q.ias = v;
     syncSliders();
     clearTimeout(setManual.t);
-    setManual.t = setTimeout(() => { if (S.m) renderAll(S.m, S.c); }, 40);
+    setManual.t = setTimeout(() => { if (S.m) renderAll(S.m, S.c); window.planQuote?.(); }, 40);
   }
 
   // ---------------------------------------------------------------------------------------------------
@@ -613,5 +613,7 @@
 
   addEventListener("resize", () => alignSliders());
   window.renderAltitudeOptimum = renderAltitudeOptimum;
-  window.FlightPerfView = { sync, renderAll: () => S.m && renderAll(S.m, S.c), state: S };
+  window.FlightPerfView = { sync, renderAll: () => S.m && renderAll(S.m, S.c), state: S,
+    /** Loi réglée par les curseurs pour le profil actif : { ias, vs, full } ; null avant le premier calcul. */
+    manual: () => S.manual && S.manual.pid.startsWith(`${active?.id}|`) ? { ias: S.manual.ias, vs: S.manual.vs, full: S.manual.full } : null };
 })();

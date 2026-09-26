@@ -36,7 +36,8 @@ abbr[title]{text-decoration:underline dotted;cursor:help}
 .apd-bar{margin-top:8px;line-height:1.6}.apd-tag{margin-top:4px;padding:1px 7px;font-size:11px;border-radius:10px;border:1px solid currentColor;background:transparent;cursor:pointer}.apd-same{color:#7ed69b}.apd-diff{color:#f0b86e}.apd-empty{color:#75c8ff}
 @media(max-width:800px){.side-panel{max-height:none}}
 </style>
-<style id="fpColumns">.wx-impact h4{margin:10px 0 4px;font-size:13px}.wx-impact:empty{display:none}
+<style id="fpColumns">.quote-basis{font-size:12px;margin:-4px 0 8px}
+.wx-impact h4{margin:10px 0 4px;font-size:13px}.wx-impact:empty{display:none}
 /* Trois colonnes (écran large) : saisie + courbes | Résultat + panneaux | instruments ; largeurs réglables
    (shared/column_resize.js). Les blocs pleine largeur (span12) couvrent les trois colonnes : plus de colonnes
    implicites (l'ancienne grille à 12 colonnes laissait 10 écarts vides à droite du Résultat). */
@@ -76,7 +77,7 @@ abbr[title]{text-decoration:underline dotted;cursor:help}
 </div></div></section>
 
 <aside id="perfSide" class="perf-side">
-<section class="card span6" data-block-id="result"><h2>Résultat</h2><div class="row"><div><div class="mut">Block fuel</div><div id="block" class="big">—</div></div><div style="flex:1"></div><div><div class="mut">Temps de vol</div><div id="tripTime" class="big">—</div></div><div style="flex:1"></div><div><div class="mut">TOD</div><div id="tod" class="big">—</div></div></div><div style="height:10px"></div><div id="breakdown" class="kv"></div><div id="wxImpact" class="wx-impact" data-no-i18n></div><div id="perfPinned"></div></section>
+<section class="card span6" data-block-id="result"><h2>Résultat</h2><div class="row"><div><div class="mut">Block fuel</div><div id="block" class="big">—</div></div><div style="flex:1"></div><div><div class="mut">Temps de vol</div><div id="tripTime" class="big">—</div></div><div style="flex:1"></div><div><div class="mut">TOD</div><div id="tod" class="big">—</div></div></div><div style="height:10px"></div><div id="quoteBasis" class="mut quote-basis" data-no-i18n></div><div id="breakdown" class="kv"></div><div id="wxImpact" class="wx-impact" data-no-i18n></div><div id="perfPinned"></div></section>
 <div class="side-panel" id="panelOpt" data-row="rowOpt"></div>
 <div class="side-panel" id="panelClimb" data-row="rowClimb"></div>
 <div class="side-panel" id="panelSpeed" data-row="rowSpeed"></div>
@@ -123,11 +124,11 @@ abbr[title]{text-decoration:underline dotted;cursor:help}
 
 <dialog id="dlg"><div class="row"><h2 style="flex:1">Choisir l’avion</h2><button onclick="dlg.close()">Fermer</button></div><input id="search" placeholder="Rechercher ICAO / nom…" style="width:100%;margin-bottom:8px"><div id="airlist" class="airlist"></div></dialog>
 
-<script src="./AircraftDB/aircraft_db.js"></script><script src="./shared/aircraft_fleet.js?v=20260926m"></script><script src="./shared/defa_reference.js?v=20260926m"></script><script src="./shared/aircraft_catalog.js?v=20260926m"></script>
+<script src="./AircraftDB/aircraft_db.js"></script><script src="./shared/aircraft_fleet.js?v=20260926o"></script><script src="./shared/defa_reference.js?v=20260926o"></script><script src="./shared/aircraft_catalog.js?v=20260926o"></script>
 <script src="./AircraftDB/aircraft_icons.js"></script>
 <script src="./AircraftDB/aircraft_perf.js"></script>
-<script src="./shared/sticky_frame.js?v=20260926m"></script><script src="./shared/flight_profile_help.js?v=20260926m"></script><script src="./shared/column_resize.js?v=20260926m"></script><script src="./shared/flight_instruments.js?v=20260926m"></script><script src="./shared/flight_perf_view.js?v=20260926m"></script>
-<script src="./shared/flight_performance_model.js?v=20260926m"></script>
+<script src="./shared/sticky_frame.js?v=20260926o"></script><script src="./shared/flight_profile_help.js?v=20260926o"></script><script src="./shared/column_resize.js?v=20260926o"></script><script src="./shared/flight_instruments.js?v=20260926o"></script><script src="./shared/flight_perf_view.js?v=20260926o"></script>
+<script src="./shared/flight_performance_model.js?v=20260926o"></script>
 <script>
 // Planificateur de performances : profils d'appareils (SimBrief, Little Navmap, CSV, calibration par
 // OFP), devis carburant par phase, niveau optimal. Habillage (blocs, barre d'état) : shared/flight_ui.js.
@@ -301,16 +302,20 @@ function renderProfile(){
 /** Composante de vent sur la route (kt ; positive = arrière). Entrées : route vraie, direction d'où vient le vent, vitesse (°, °, kt). */
 function windComponent(track,from,speed){return speed*Math.cos((from-track)*Math.PI/180)*-1} // + tailwind
 /** Devis carburant du plan saisi : vent (connu ou fourchette), montée et croisière par le modèle calibré (sinon valeurs du profil), descente, roulage, contingence, réserve ; bloc et TOD affichés dans Résultat ; puis courbes de performances (renderAltitudeOptimum) et enregistrement de l'état. */
-function calculate(){
+// Devis (bloc Résultat). Niveau : niveau épinglé sur une courbe s'il y en a un, sinon celui du plan ; montée : loi
+// réglée par les curseurs verticaux (au départ, Badin et vario du profil). opts.quoteOnly : devis seul, sans
+// redessiner les courbes (appelé par les curseurs et l'épingle, via planQuote).
+function calculate(opts){
  if(!active)return alert("Choisis ou importe d’abord un profil avion.");
- const D=+$("dist").value, FL=+$("fl").value, alt=FL*100, tas=active.cruise.tasKt||300;
+ const quoteOnly=opts?.quoteOnly===true,pinned=window.FlightPerfView?.sync?.pinned??null,mq=window.FlightPerfView?.manual?.()||null;
+ const D=+$("dist").value, FL=+$("fl").value, alt=pinned!=null?pinned:FL*100, tas=active.cruise.tasKt||300;
  let windKnown=$("wdir").value!==""&&$("wspd").value!=="", wc=0, low=0, high=0;
  if(windKnown){wc=windComponent(+$("trk").value,+$("wdir").value,+$("wspd").value);low=high=wc;$("windInfo").textContent=wc>=0?tl(`Composante arrière ${fmt(wc,0)} kt`,`Tailwind component ${fmt(wc,0)} kt`,`Rückenwindkomponente ${fmt(wc,0)} kt`,`Componente de cola ${fmt(wc,0)} kt`):tl(`Composante face ${fmt(-wc,0)} kt`,`Headwind component ${fmt(-wc,0)} kt`,`Gegenwindkomponente ${fmt(-wc,0)} kt`,`Componente de cara ${fmt(-wc,0)} kt`);}
  else {let supplied=$('wspd').value.trim(),band=supplied===""?(active.typicalWindKt??25):Math.abs(+$('wspd').value);low=-band;high=band;$("windInfo").textContent=supplied===""?tl(`Vent inconnu : fourchette ±${band} kt sur la composante route`,`Unknown wind: ±${band} kt range on the track component`,`Wind unbekannt: Bereich ±${band} kt auf der Streckenkomponente`,`Viento desconocido: horquilla ±${band} kt en la componente de ruta`):tl(`Direction inconnue : fourchette −${band} à +${band} kt sur la composante route`,`Unknown direction: −${band} to +${band} kt range on the track component`,`Richtung unbekannt: Bereich −${band} bis +${band} kt auf der Streckenkomponente`,`Dirección desconocida: horquilla −${band} a +${band} kt en la componente de ruta`);}
  const mappedPhase=phaseName=>{let phase=active[phaseName]||{},rpm=finiteProfileNumber(phase.rpmNominal)?Number(phase.rpmNominal):null,map=rpm!==null?interpRange(active.rpmFuelCurve||[],rpm):null;return {rpm,map,ff:map?.nominal??phase.fuelFlowPerHour}};
  const climbPhase=mappedPhase("climb"),cruisePhase=mappedPhase("cruise"),descentPhase=mappedPhase("descent");
  // Montée et croisière au niveau du plan : modèle de performances calibré (sinon valeurs constantes du profil).
- const perf=(()=>{try{return perfModel()}catch{return null}})(),pClimb=perf&&alt>0?perf.climbTo(Math.min(alt,perf.ceiling)):null,pCruise=perf?perf.cruise(alt,"normal"):null;
+ const perf=(()=>{try{return perfModel()}catch{return null}})(),law0=perf&&mq?perf.manualLaw(mq.ias,mq.full?0:mq.vs):null,lawClimb=law0&&alt>0?perf.climbTo(Math.min(alt,perf.ceiling),{speed:law0}):null,law=lawClimb?law0:null,/* loi réglée qui n'atteint pas le niveau : montée modélisée du profil */pClimb=lawClimb||(perf&&alt>0?perf.climbTo(Math.min(alt,perf.ceiling)):null),pCruise=perf?perf.cruise(alt,"normal"):null;
  const climbMin=pClimb?pClimb.minutes:alt/(active.climb.rateFpm||1200), descentMin=alt/Math.abs(active.descent.rateFpm||1500);
  const climbDist=pClimb?pClimb.nm:(active.climb.tasKt||220)*climbMin/60, descentDist=(active.descent.tasKt||250)*descentMin/60;
  const cruiseDist=Math.max(0,D-climbDist-descentDist);
@@ -333,7 +338,10 @@ function calculate(){
  const mapNote=phase=>phase.map?`<span class="mapval">${phase.rpm} RPM → ${showFuel(phase.map.nominal)} ${fuelUnit()}/h <small>(${showFuel(phase.map.min)}–${showFuel(phase.map.max)})</small></span>`:"";
  const rows=[["Taxi",taxiFuel],["Montée"+mapNote(climbPhase),climbFuel],["Croisière (nominal)"+mapNote(cruisePhase),cNom],["Descente"+mapNote(descentPhase),descentFuel],["Contingence",contingency],["Réserve",reserve]];
  $("breakdown").innerHTML=rows.map(x=>`<div>${x[0]}</div><div>${showFuel(x[1])} ${fuelUnit()}</div>`).join("");
+ $("quoteBasis").innerHTML=typo(`${tl("Niveau","Level","Flughöhe","Nivel")} ${flTxt(alt)}${pinned!=null?` 📌 (${tl("plan","plan","Plan","plan")} ${flTxt(FL*100)})`:""} · ${tl("montée","climb","Steigflug","ascenso")} ${law?`${tl("loi réglée","set law","eingestelltes Gesetz","ley ajustada")} ${mq.ias} kt, ${mq.full?tl("plein gaz","full throttle","Vollgas","gases a fondo"):`${fmt(mq.vs,0)} ft/min`}`:tl("du profil","of the profile","des Profils","del perfil")}${law0&&!law?` — ⚠ ${tl("la loi réglée n’atteint pas ce niveau : montée du profil","the set law does not reach this level: profile climb","das eingestellte Gesetz erreicht diese Höhe nicht: Steigflug des Profils","la ley ajustada no alcanza este nivel: ascenso del perfil")}`:""}${pClimb?"":` (${tl("valeurs du profil","profile values","Profilwerte","valores del perfil")})`}`);
+ if(quoteOnly)return;
  try{renderAltitudeOptimum({D,FL,windKnown,wc:windKnown?wc:0,low,high,climbFF,cruiseFF,descentFF})}catch(e){console.warn("Altitude optimale :",e);$("optEmpty").hidden=false;$("optEmpty").textContent="Courbe indisponible : "+e.message}
+ if(!mq&&window.FlightPerfView?.manual?.())calculate({quoteOnly:true});
  save()
 }
 
@@ -392,7 +400,9 @@ $("rpmCalc").onclick=()=>{if(!active)return;let rpm=+$("rpm").value,v=interpRang
 // Préférence : bascule l'unité de carburant affichée (kg ↔ lb), recalcule et enregistre.
 $("fuelUnitBtn").onclick=()=>{state.displayFuelUnit=fuelUnit()==="kg"?"lb":"kg";updateFuelUnitButton();if(active){renderProfile();calculate()}save()};
 // Bouton « Calculer » : devis carburant et courbes.
-$("calc").onclick=calculate;
+$("calc").onclick=()=>calculate();
+/** Devis refait (sans redessiner les courbes) après un réglage des curseurs ou une épingle — appelé par la vue. */
+window.planQuote=()=>{clearTimeout(window.planQuote.t);window.planQuote.t=setTimeout(()=>{if(active)try{calculate({quoteOnly:true})}catch(e){console.warn("Devis :",e)}},60)};
 /** Lecteur CSV (séparateur sep, guillemets doublés, fins de ligne CR / LF). Sortie : tableau de lignes (tableaux de cellules), lignes vides omises. */
 function parseDelimited(text,sep=";"){let rows=[],row=[],cell="",quote=false;for(let i=0;i<text.length;i++){let c=text[i];if(c==='"'){if(quote&&text[i+1]==='"'){cell+='"';i++}else quote=!quote}else if(c===sep&&!quote){row.push(cell);cell=""}else if((c==='\n'||c==='\r')&&!quote){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cell);if(row.some(x=>x!==""))rows.push(row);row=[];cell=""}else cell+=c}row.push(cell);if(row.some(x=>x!==""))rows.push(row);return rows}
 /** Profils d'un CSV « PERFORMANCES_INTERPOLEES » (colonnes Aircraft, ICAO…, carburant en lb). Lève une erreur si les colonnes requises manquent. */
@@ -759,10 +769,10 @@ function renderDefaSheets(){const box=$("defaSheets");if(!box)return;const t=aKe
 /* ?aircraft=<type ou profil> : ouverture depuis une fiche appareil (profil existant, sinon créé depuis le type DEFA). */
 refreshLandingAircraft();restore();applyHeaderPreferences();{const wanted=new URLSearchParams(location.search).get("aircraft"),k=aKey(wanted||""),db=window.AIRCRAFT_DB||{},res=aKey(db.__aliases?.[k]||k),same=v=>{const x=aKey(v);return x&&(x===k||x===res||aKey(db.__aliases?.[x])===res)},found=k&&Object.values(state.profiles||{}).find(p=>[p.id,p.icao,p.type].some(same)),cand=k&&!found&&landingOnlyAircraft(Object.values(state.profiles||{}).filter(p=>p&&typeof p==="object").map(p=>normalize(p))).find(p=>[p.id,p.icao,p.type].some(same)),created=cand&&newProfileFromLanding(cand.id);if(found)setActive(found,"fiche appareil");else if(created)setActive(created,"fiche appareil (type DEFA)");else if(state.lastAircraft&&state.profiles[state.lastAircraft])setActive(state.profiles[state.lastAircraft],"état restauré");else syncAircraftPicker();}
 </script>
-<script src="./shared/repository_nav.js?v=20260926m"></script>
-<script src="./shared/app_framework.js?v=20260926m"></script>
-<script src="./shared/flight_ui.js?v=20260926m"></script>
-<script src="./SIA%20XML/aero_symbols.js?v=20260925j"></script><script src="./SIA%20XML/vertical_profile.js?v=20260925k"></script><script src="./shared/flight_vertical_profile.js?v=20260926m"></script>
+<script src="./shared/repository_nav.js?v=20260926o"></script>
+<script src="./shared/app_framework.js?v=20260926o"></script>
+<script src="./shared/flight_ui.js?v=20260926o"></script>
+<script src="./SIA%20XML/aero_symbols.js?v=20260925j"></script><script src="./SIA%20XML/vertical_profile.js?v=20260925k"></script><script src="./shared/flight_vertical_profile.js?v=20260926o"></script>
 <script src="./shared/content_i18n.js"></script><script src="./shared/flight_i18n.js"></script>
 <footer class="repo-footer no-print">CC RBR - DEFA Virtual - 2026-09-21 - 2.0.7 - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a></footer>
 <script>/* Colonnes redimensionnables (framework : shared/column_resize.js) ; poignées sur la hauteur des deux premières rangées */
