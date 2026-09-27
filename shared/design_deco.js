@@ -140,8 +140,11 @@
       el.src = img(name);
       el.alt = '';
       el.setAttribute('aria-hidden', 'true');
-      const x = (col.left - body.left - w) / 2;   // centré dans la marge
-      el.style.cssText = `width:${w}px;top:${y + (n % 3) * 40}px;${left ? `left:${x}px` : `right:${x}px`};transform:rotate(${[-8, 5, -3, 7][n % 4]}deg)`;
+      const x = (col.left - body.left - w) / 2, top = y + (n % 3) * 40;   // centré dans la marge
+      // jamais au-delà du bas de la page (sinon la page s'allonge, la barre de défilement apparaît, la marge rétrécit,
+      // le décor disparaît… et ainsi de suite : barres qui clignotent)
+      if (top + w * 1.4 > H - 30) break;
+      el.style.cssText = `width:${w}px;top:${top}px;${left ? `left:${x}px` : `right:${x}px`};transform:rotate(${[-8, 5, -3, 7][n % 4]}deg)`;
       document.body.append(el);
       nodes.push(el);
     }

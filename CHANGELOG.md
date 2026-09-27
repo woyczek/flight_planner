@@ -10,6 +10,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Barres de défilement qui clignotaient** (designs à matières, décor complet) : place de la barre verticale toujours
+  réservée (`scrollbar-gutter: stable`), décors des marges jamais au-delà du bas de la page ni à l'origine d'un
+  défilement horizontal. La boucle : barre qui apparaît → marge plus étroite → décors retirés → page plus courte →
+  barre qui disparaît → décors remis…
 - **Cabinet : série marine** pour le reporting (neuf fonds) : archipel et porte-avions (terrains de départ), barre à
   roue (par famille), ancre aux lauriers (résultats), flotte et phare (séries), frégate et hélicoptère (types
   d'appareil), radar, grue et dôme (capacités), soleil et lune (jour / nuit), satellites et proue (réseau), chenal
