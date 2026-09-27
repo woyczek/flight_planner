@@ -19,12 +19,12 @@
 // en écartant les rayons aberrants (bouton, chiffres).
 const SHEETS = {
   // planches sur fond transparent (alpha : la transparence d'origine sert de silhouette)
-  cabinet: { src: 't2.png', alpha: true, ax: 903, ay: 540, box: 1.1, fix: { cx: 903, cy: 536, r: 153 } },
-  flightlog: { src: 't1.png', alpha: true, ax: 902, ay: 537, box: 1.14 },
-  field: { src: 't3.png', alpha: true, ax: 903, ay: 522, box: 1.14 },
-  aqua: { src: 't4.png', alpha: true, ax: 900, ay: 511, box: 1.14, fix: { cx: 900, cy: 514, r: 154 } }
+  cabinet: { src: 't2.png', alpha: true, ax: 903, ay: 540, box: 1.4, fix: { cx: 903, cy: 536, r: 153 } },
+  flightlog: { src: 't1.png', alpha: true, ax: 902, ay: 537, box: 1.4 },
+  field: { src: 't3.png', alpha: true, ax: 903, ay: 522, box: 1.4 },
+  aqua: { src: 't4.png', alpha: true, ax: 900, ay: 511, box: 1.4, fix: { cx: 900, cy: 514, r: 154 } }
 };
-const HALF = 1.3;   // demi-côté de la découpe / rayon de l'ouverture (le boîtier entier doit y tenir)
+const HALF = 1.45;   // demi-côté de la découpe / rayon de l'ouverture (le boîtier entier doit y tenir)
 const load = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error(src)); i.src = src; });
 /** Ouverture du cadran : { cx, cy, r } mesurée sur la planche. */
 function measure(img, ax, ay) {
@@ -77,7 +77,16 @@ async function run() {
       // 2. silhouette : seule la pièce qui contient le centre (les morceaux d'instruments voisins disparaissent)
       const keep = new Uint8Array(N), st2 = [], c0 = (S >> 1) * S + (S >> 1) + Math.round(R * .98);   // départ sur la lunette
       // bornée à un carré de 1,12 × rayon (dimensions des boîtiers) : les voisins reliés par leur ombre en sortent
-      const lim = R * (sh.box || 1.12), inBox = i => Math.abs(i % S - S / 2) <= lim && Math.abs(((i / S) | 0) - S / 2) <= lim;
+      const lim = R * (sh.box || 1.12);
+      // séparation d'avec les instruments voisins (planches transparentes : plaques presque jointives) : de chaque côté,
+      // la colonne la moins opaque entre 1 et 1,4 × rayon ; on coupe là
+      let xl = S / 2 - lim, xr = S / 2 + lim;
+      if (sh.alpha) {
+        const col = x => { let t = 0; for (let y = Math.round(S / 2 - R * 1.1); y < S / 2 + R * 1.1; y++) t += d[(y * S + x) * 4 + 3]; return t; };
+        let best = Infinity; for (let x = Math.round(S / 2 + R); x < S / 2 + lim; x++) { const v = col(x); if (v < best) { best = v; xr = x; } }
+        best = Infinity; for (let x = Math.round(S / 2 - R); x > S / 2 - lim; x--) { const v = col(x); if (v < best) { best = v; xl = x; } }
+      }
+      const inBox = i => { const x = i % S; return x > xl && x < xr && Math.abs(((i / S) | 0) - S / 2) <= lim; };
       const add = i => { if (keep[i] || back[i] || !inBox(i)) return; keep[i] = 1; st2.push(i); };
       add(c0);
       while (st2.length) { const i = st2.pop(), x = i % S, y = (i / S) | 0; if (x > 0) add(i - 1); if (x < S - 1) add(i + 1); if (y > 0) add(i - S); if (y < S - 1) add(i + S); }

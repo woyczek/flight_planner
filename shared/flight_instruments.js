@@ -39,7 +39,7 @@
   const skeuo = () => RIMS[document.documentElement.dataset.design];
   // boîtiers découpés dans les planches de cadrans (tools/gauges_from_sheets.html → shared/deco/<design>/gauge-case.webp :
   // carré, ouverture du cadran transparente, centrée, de rayon OPEN × demi-côté) ; sans boîtier : lunette dessinée
-  const CASES = { cabinet: "cabinet", flightlog: "flightlog", field: "field", aqua: "aqua" }, OPEN = .774;
+  const CASES = { cabinet: "cabinet", flightlog: "flightlog", field: "field", aqua: "aqua" }, OPEN = .694;
   const SRC = document.currentScript?.src || location.href, VER = new URL(SRC).search, url = f => new URL(f + VER, SRC).href;
   const CREAM = "#efe6cf";
   /** Définitions (dégradés, ombre des aiguilles) d'un cadran réaliste. */

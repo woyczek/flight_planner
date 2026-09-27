@@ -22,8 +22,10 @@
     write = x => localStorage.setItem(key(), JSON.stringify(x));
 
   /** Transforme les sections de la page en blocs : en-tête avec poignée de déplacement ↕ et bouton Masquer / Afficher, glisser-déposer entre blocs frères, disposition mémorisée par page et réappliquée ; data-default-hidden="1" : bloc masqué tant que l'utilisateur ne l'a pas affiché. */
-  function init() {
-    const main = document.querySelector("main,.wrap");
+  /** Blocs du framework dans root (par défaut le contenu principal de la page : main, .wrap) ; root permet d'en
+   *  monter ailleurs (fenêtre modale Apparence…). */
+  function init(root) {
+    const main = root instanceof Element ? root : document.querySelector("main,.wrap");
     if (!main) return;
     const state = read();
     state.hidden ??= {};

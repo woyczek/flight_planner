@@ -89,7 +89,7 @@
       block('ap-design', 'layers', t(T.design), t(T.designSub), `<div class="ap-thumbs">${thumbs}</div><div class="ap-sidebar"><b>${esc(t(T.decor))}</b><span class="ap-segs">${decorBtns}</span><small class="ap-help">${esc(t(T.decorHelp))}</small></div>`) +
       block('ap-icons', 'box', t(T.icons), t(T.iconsSub), `<div class="ap-iconrows">${iconRows}</div><div class="ap-sidebar"><b>${esc(t(T.side))}</b><span class="ap-segs">${sideBtns}</span></div>`) +
       block('ap-colors', 'eye', t(T.colors), t(T.colorsSub), `<h3>${esc(t(T.groupPages))}</h3><div class="ap-cards">${APPS.filter(n => a.themes[n]).map(card).join('')}</div><h3>${esc(t(T.groupCr))}</h3><div class="ap-cards">${crs.map(card).join('')}</div>`) +
-      `<p class="ap-foot"><button type="button" id="apDemo" data-icon="eye" title="${esc(t(T.demo))}">${esc(t(T.demoBtn))}</button><button type="button" id="apReset" data-icon="refresh">${esc(t(T.reset))}</button></p>`;
+      `<p class="ap-foot"><button type="button" id="apDemo" class="repo-plain" data-icon="eye" title="${esc(t(T.demo))}">${esc(t(T.demoBtn))}</button><button type="button" id="apReset" class="repo-plain" data-icon="refresh">${esc(t(T.reset))}</button></p>`;
     host.querySelectorAll('.ap-card').forEach(paint);
     window.AppFramework?.refresh?.();
   }
@@ -191,7 +191,7 @@ main.ap-page h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;col
 .ap-show[aria-pressed="true"]{background:var(--repo-bar);color:var(--repo-bar-text);border-color:var(--repo-bar)}
 .ap-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 #apReset,#apDemo{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:8px;padding:8px 14px;background:var(--card);color:var(--ink);cursor:pointer;font:inherit;font-weight:600}
-#apDemo{background:var(--repo-accent);border-color:var(--repo-accent);color:#fff}`;
+#apDemo{background:var(--repo-accent);border-color:var(--repo-accent);color:#fff!important}#apReset{background:#fff!important;color:#17242b!important;border-color:#9aa6b2!important}`;
     document.head.append(css);
     render();
     listen();

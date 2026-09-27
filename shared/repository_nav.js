@@ -94,7 +94,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260927i", script.src).href;
+    css.href = new URL("designs.css?v=20260927j", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -268,15 +268,16 @@
       apDialog = document.createElement("dialog");
       apDialog.className = "repo-ap-dialog";
       apDialog.setAttribute("data-no-i18n", "");
-      apDialog.innerHTML = '<div class="repo-ap-head"><b data-label="Apparence"></b><button type="button" class="repo-ap-close repo-plain" aria-label="Fermer">✕</button></div><main class="ap-page"></main>';
+      // en-tête et blocs du framework (habillés par le design courant comme ceux de la page)
+      apDialog.innerHTML = '<div class="repo-ap-head repo-header"><div class="repo-header-line1"><h1></h1><span class="repo-header-spacer"></span><button type="button" class="repo-ap-close repo-plain" aria-label="Fermer">✕</button></div></div><main class="ap-page"></main>';
       document.body.append(apDialog);
       apDialog.querySelector(".repo-ap-close").onclick = () => apDialog.close();
       apDialog.addEventListener("click", e => { if (e.target === apDialog) apDialog.close(); });
       apDialog.addEventListener("close", () => window.RepositoryAppearance?.close());
     }
-    apDialog.querySelector(".repo-ap-head b").textContent = trLabel("Apparence");
+    apDialog.querySelector(".repo-ap-head h1").textContent = trLabel("Apparence");
     const host = apDialog.querySelector("main");
-    const show = () => { window.RepositoryAppearance.mount(host); if (!apDialog.open) apDialog.showModal(); };
+    const show = () => { window.RepositoryAppearance.mount(host); window.AppFramework?.refresh?.(host); if (!apDialog.open) apDialog.showModal(); };
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
@@ -472,20 +473,20 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260927i", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260927j", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260927i", script.src).href;
+    files.src = new URL("file_access.js?v=20260927j", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260927i", "block_icons.js?v=20260927i", "side_nav.js?v=20260927i"]) {
+    for (const f of ["icons/repository_icons.js?v=20260927j", "block_icons.js?v=20260927j", "side_nav.js?v=20260927j"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260927i", script.src).href;
+    store.src = new URL("browser_store.js?v=20260927j", script.src).href;
     document.head.append(store)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {
