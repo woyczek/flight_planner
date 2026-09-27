@@ -10,6 +10,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Durci : bandeau radar adaptatif** : le radar prend presque toute la largeur (plaque DEFA et voyant de sauvegarde
+  empilés à droite) ; sa hauteur suit la largeur de la page (140 à 230 px) et l'écran est recadré en conséquence
+  (rogné en haut et en bas, réticule toujours au tiers de la hauteur, jamais de vide).
 ## [2.4.0] — 2026-09-27
 
 - **Durci : bandeau radar recadré** comme la maquette (banner.cropped) : plus large que haut (1402 × 304), bas de
