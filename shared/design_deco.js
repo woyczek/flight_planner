@@ -48,6 +48,12 @@
     foot.className = 'repo-deco no-print';
     foot.dataset.for = d;
     foot.innerHTML = set.foot(img);
+    // radar : chaque plot s'allume au passage du front (rotation horaire de 5 s partant du haut, centre 37,9 % / 49,3 %
+    // d'un écran 3:1) → délai d'animation = angle du plot (depuis le haut, sens horaire) / 360 × période
+    foot.querySelectorAll('.repo-deco-radar i').forEach(b => {
+      const dx = (parseFloat(b.style.left) - 37.9) * 3, dy = parseFloat(b.style.top) - 49.3, a = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
+      b.style.animationDelay = `${(a / 360 * 5).toFixed(2)}s`;
+    });
     const footer = document.querySelector('body>footer.repo-footer');
     if (footer) footer.before(foot); else document.body.append(foot);
     nodes.push(foot);
