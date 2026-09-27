@@ -10,6 +10,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Cabinet : cadre de cuir plus réaliste** : bordure plus large, bord arrondi (lumière en haut et à gauche, ombre en bas
+  et à droite), parchemin serti sous le cuir ; couture de nouveau visible partout (reporting compris), dessinée dans le
+  cuir par le contour du bloc lui-même (jamais coupé par le défilement du bloc) ; pas de couture sur l'aluminium du
+  Carnet de vol.
 - **Blocs du reporting qui changeaient de taille en boucle** (Cabinet, Carnet de vol, décor complet, fenêtres très
   larges, barres de défilement classiques) : la couture et les vis des blocs étaient dessinées par un pseudo-élément
   qui dépassait de 4 px ; dans les blocs à défilement (`.section`, `overflow:auto`), ce dépassement faisait apparaître
