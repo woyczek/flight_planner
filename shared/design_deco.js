@@ -31,7 +31,7 @@
     },
     field: {
       foot: img => `<div class="repo-deco-plate-img"><img src="${img('plate-defa')}" alt=""></div>
-        <div class="repo-deco-radar" title="${tr('radar')}"><div class="repo-deco-radar-stage"><img src="${img('radar')}" alt=""><span class="repo-deco-sweep"></span><i style="left:30%;top:36%;--c:#7dff8a"></i><i style="left:44%;top:66%;--c:#7dff8a"></i></div></div>
+        <div class="repo-deco-radar" title="${tr('radar')}"><div class="repo-deco-radar-stage"><img src="${img('radar')}" alt=""><span class="repo-deco-sweep"></span><i style="left:30.7%;top:33.5%;--c:#7dff8a"></i><i style="left:65.6%;top:59.6%;--c:#7dff8a"></i><i style="left:77.4%;top:59.2%;--c:#7dff8a"></i><i style="left:85.6%;top:79.5%;--c:#7dff8a"></i><i style="left:82.95%;top:46.44%;--c:#ff4d3d"></i></div></div>
         <button type="button" class="repo-deco-status repo-plain"><img src="${img('plane-plate')}" alt="" onerror="this.remove()"><span class="repo-deco-leds"><i class="led-save"></i><i class="led-on"></i><i></i></span><span class="repo-deco-state"></span></button>`,
       between: [['plate-attention', 210], ['handle-h', 120], ['plate-wings', 170], ['plate-defa', 200]],
       sides: [['stencil-mission', 150], ['grille', 80], ['stencil-defa', 130], ['plate-small', 90], ['stencil-ops', 160], ['nut', 40]]
@@ -100,10 +100,10 @@
     foot.className = 'repo-deco no-print';
     foot.dataset.for = d;
     foot.innerHTML = set.foot(img);
-    // radar : chaque plot s'allume au passage du front (rotation horaire de 5 s partant du haut, centre 37,9 % / 49,3 %
-    // d'un écran 3:1) → délai d'animation = angle du plot (depuis le haut, sens horaire) / 360 × période
+    // radar : chaque plot s'allume au passage du front (rotation horaire de 5 s partant du haut, centre du réticule
+    // 49,86 % / 46,44 % d'un écran 1402 × 478) → délai d'animation = angle du plot (depuis le haut, sens horaire) / 360 × période
     foot.querySelectorAll('.repo-deco-radar i').forEach(b => {
-      const dx = (parseFloat(b.style.left) - 37.9) * 3, dy = parseFloat(b.style.top) - 49.3, a = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
+      const dx = (parseFloat(b.style.left) - 49.86) * 1402 / 478, dy = parseFloat(b.style.top) - 46.44, a = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
       b.style.animationDelay = `${(a / 360 * 5).toFixed(2)}s`;
     });
     const footer = document.querySelector('body>footer.repo-footer');

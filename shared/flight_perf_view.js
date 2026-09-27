@@ -488,17 +488,21 @@
     for (let h = 0; h <= topX; h += step) hs.push(h);
     const ok = r => r && r.ok, trips = (mode, w) => hs.map(h => h > m.ceiling ? m.unbounded(() => m.trip(h, c.D, w, mode)) : m.trip(h, c.D, w, mode));
     const ext = l => extendSeries(l, m.ceiling, TRIP_KEYS);   // prolongement dans la zone grisée
-    // trajet trop court pour monter plus haut : la courbe s'arrête sous le plafond (niveaux non tenables sur la distance) ;
-    // on ne la prolonge alors pas au-delà du plafond (elle y réapparaissait après un trou inexpliqué)
+    // niveaux non tenables sous le plafond (trajet trop court pour y monter, ou croisière impossible faute de puissance) :
+    // la courbe s'arrête au dernier niveau tenable et n'est pas prolongée au-delà du plafond (elle y réapparaissait
+    // après un trou inexpliqué)
     const lastOk = l => l.reduce((a, r) => r?.ok && r.h <= m.ceiling && r.h > a ? r.h : a, -1);
     const cut = l => { const top = lastOk(l); return top >= 0 && top < m.ceiling - step ? l.map(r => r && r.h > top ? null : r) : l; };
-    const eco = cut(ext(trips("eco", c.wc))), norm = cut(ext(trips("normal", c.wc))), bands = !c.windKnown && (c.low || c.high) ? [cut(ext(trips("normal", c.low))), cut(ext(trips("normal", c.high)))] : [];
+    const normRaw = ext(trips("normal", c.wc));
+    const eco = cut(ext(trips("eco", c.wc))), norm = cut(normRaw), bands = !c.windKnown && (c.low || c.high) ? [cut(ext(trips("normal", c.low))), cut(ext(trips("normal", c.high)))] : [];
     const reachTop = Math.max(lastOk(eco), lastOk(norm));   // plus haut niveau tenable sur le trajet
+    // cause (modèle : 'short' trajet trop court, 'thrust' puissance insuffisante pour la croisière, 'ceiling')
+    const stopReason = normRaw.find(r => r && !r.ok && r.h > reachTop && r.h <= m.ceiling)?.reason || "";
     const usable = r => ok(r) && r.h >= 1000 && r.h <= m.ceiling;               // plancher pratique : 1000 ft ; sous le plafond
     const minBy = (l, k) => l.filter(usable).reduce((a, b) => !a || b[k] < a[k] ? b : a, null);
     const bestProf = minBy(norm, "fuel"), bestEco = minBy(eco, "fuel"), fastest = minBy(norm, "minutes");
     const cr = mode => hs.filter(h => h <= m.ceiling).map(h => m.cruise(h, mode)).filter(ok).filter(r => r.h >= 1000);
-    return { step, top, topX, hs, ok, eco, norm, bands, reachTop, cut, bestProf, bestEco, fastest, bestFuel: bestProf || bestEco, crN: cr("normal"), crE: cr("eco"), plan: m.trip(c.FL * 100, c.D, c.wc, "normal") };
+    return { step, top, topX, hs, ok, eco, norm, bands, reachTop, stopReason, cut, bestProf, bestEco, fastest, bestFuel: bestProf || bestEco, crN: cr("normal"), crE: cr("eco"), plan: m.trip(c.FL * 100, c.D, c.wc, "normal") };
   }
 
   // ---------------------------------------------------------------------------------------------------
@@ -532,11 +536,19 @@
       tl(`Carburant minimal à la vitesse du profil : niveau où le trajet entier consomme le moins en volant à la vitesse de croisière du profil.${at(bestProf)}`, `Minimum fuel at the profile speed: level where the whole trip burns the least when flown at the profile cruise speed.${at(bestProf)}`, `Minimaler Kraftstoff bei Profilgeschwindigkeit: Flughöhe mit dem geringsten Verbrauch der ganzen Strecke bei Reisegeschwindigkeit des Profils.${at(bestProf)}`, `Combustible mínimo a la velocidad del perfil: nivel en que el trayecto completo consume menos a la velocidad de crucero del perfil.${at(bestProf)}`));
     dot(bestEco, COL.eco, flTxt(bestEco?.h), 16,
       tl(`Carburant minimal en croisière économique (vitesse réduite, régime éco) : le moins de carburant possible, au prix d'un vol plus long.${at(bestEco)}`, `Minimum fuel in economy cruise (reduced speed, eco setting): the least fuel possible, at the cost of a longer flight.${at(bestEco)}`, `Minimaler Kraftstoff im Sparreiseflug (reduzierte Geschwindigkeit): geringstmöglicher Verbrauch, dafür längerer Flug.${at(bestEco)}`, `Combustible mínimo en crucero económico (velocidad reducida): el menor consumo posible, a cambio de un vuelo más largo.${at(bestEco)}`));
-    // niveaux sous le plafond mais pas tenables sur ce trajet (trop court pour y monter puis redescendre) : zone hachurée
+    // niveaux sous le plafond mais pas tenables : zone teintée, libellé et explication selon la cause
     if (K.reachTop >= 0 && K.reachTop < m.ceiling - step) {
-      const x0 = X(K.reachTop), x1 = X(m.ceiling);
-      g += `<rect class="short-zone" x="${x0.toFixed(1)}" y="${T}" width="${(x1 - x0).toFixed(1)}" height="${H - B - T}"><title>${escXml(tl(`Niveaux au-dessus de ${flTxt(K.reachTop)} : le trajet (${fmt(c.D, 0)} NM) est trop court pour y monter puis redescendre.`, `Levels above ${flTxt(K.reachTop)}: the trip (${fmt(c.D, 0)} NM) is too short to climb there and descend again.`, `Flughöhen über ${flTxt(K.reachTop)}: die Strecke (${fmt(c.D, 0)} NM) ist zu kurz, um dorthin zu steigen und wieder zu sinken.`, `Niveles por encima de ${flTxt(K.reachTop)}: el trayecto (${fmt(c.D, 0)} NM) es demasiado corto para subir y volver a bajar.`))}</title></rect>`
-        + `<text class="beyond-label" x="${((x0 + x1) / 2).toFixed(1)}" y="${T + 11}" text-anchor="middle">${tl("trajet trop court", "trip too short", "Strecke zu kurz", "trayecto corto")}</text>`;
+      const x0 = X(K.reachTop), x1 = X(m.ceiling), above = flTxt(K.reachTop);
+      const why = K.stopReason === "short"
+        ? [tl("trajet trop court", "trip too short", "Strecke zu kurz", "trayecto corto"),
+          tl(`Niveaux au-dessus de ${above} : le trajet (${fmt(c.D, 0)} NM) est trop court pour y monter puis redescendre.`, `Levels above ${above}: the trip (${fmt(c.D, 0)} NM) is too short to climb there and descend again.`, `Flughöhen über ${above}: die Strecke (${fmt(c.D, 0)} NM) ist zu kurz, um dorthin zu steigen und wieder zu sinken.`, `Niveles por encima de ${above}: el trayecto (${fmt(c.D, 0)} NM) es demasiado corto para subir y volver a bajar.`)]
+        : K.stopReason === "thrust"
+        ? [tl("croisière non tenable", "cruise not sustainable", "Reiseflug nicht haltbar", "crucero no sostenible"),
+          tl(`Niveaux au-dessus de ${above} : la puissance disponible ne suffit plus pour tenir la vitesse de croisière du profil (moteurs, air moins dense).`, `Levels above ${above}: the available power no longer holds the profile cruise speed (engines, thinner air).`, `Flughöhen über ${above}: die verfügbare Leistung reicht nicht mehr für die Reisegeschwindigkeit des Profils (Triebwerke, dünnere Luft).`, `Niveles por encima de ${above}: la potencia disponible ya no mantiene la velocidad de crucero del perfil (motores, aire menos denso).`)]
+        : [tl("niveaux non tenables", "levels not usable", "Flughöhen nicht nutzbar", "niveles no utilizables"),
+          tl(`Niveaux au-dessus de ${above} : le modèle ne trouve pas de vol possible (voir Limites).`, `Levels above ${above}: the model finds no feasible flight (see Limits).`, `Flughöhen über ${above}: das Modell findet keinen möglichen Flug (siehe Grenzen).`, `Niveles por encima de ${above}: el modelo no encuentra vuelo posible (ver Límites).`)];
+      g += `<rect class="short-zone" x="${x0.toFixed(1)}" y="${T}" width="${(x1 - x0).toFixed(1)}" height="${H - B - T}"><title>${escXml(why[1])}</title></rect>`
+        + `<text class="beyond-label" x="${((x0 + x1) / 2).toFixed(1)}" y="${T + 11}" text-anchor="middle">${why[0]}</text>`;
     }
     g += beyondZone(X, T, H - B, m.ceiling, xmax);
     g += `<text x="${(Lm + W - R) / 2}" y="${H - 3}" text-anchor="middle">${tl("Niveau de croisière", "Cruise level", "Reiseflughöhe", "Nivel de crucero")}</text><text x="11" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(-90 11 ${(T + H - B) / 2})">NM / ${unit}</text>`

@@ -10,6 +10,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Planificateur : cause réelle des niveaux non tenables** : la zone sous le plafond indique « trajet trop court »
+  seulement quand c'est le cas ; sinon « croisière non tenable » (puissance insuffisante pour la vitesse de croisière du
+  profil, cas d'un DC-3 à FL250) ou « niveaux non tenables », avec l'explication au survol.
+- **Durci : nouveau bandeau radar** (écran tactique, carte, réticule, cible rouge) : balayage recentré sur le réticule
+  et étendu jusqu'à la cible, plots sur les îles et la cible ; radar sur toute la largeur restante, rogné en haut et
+  en bas (centré) ; plaque DEFA et voyant de sauvegarde à la taille de leur contenu, centrés.
 - **Planificateur, altitude optimale : plus de « trou » dans les courbes** : quand le trajet est trop court pour monter
   plus haut, les courbes s'arrêtent au dernier niveau tenable et ne réapparaissent plus au-delà du plafond ; zone
   « trajet trop court » entre ce niveau et le plafond (explication au survol).
