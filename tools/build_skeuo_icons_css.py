@@ -23,12 +23,20 @@ out = [BEGIN,
        f'{ANY} .repo-sidenav-item .repo-svg[data-i]{{--rs:50px!important;margin:0}}',   # après les boutons (« Menu » est un bouton)
        f'{ANY} .repo-dropzone-badge{{background:none!important}}{ANY} .repo-dropzone-badge .repo-svg[data-i]{{--rs:42px}}',
        f'{ANY} .repo-notice>.repo-icon .repo-svg[data-i]{{--rs:30px}}',
-       f'{ANY} .repo-sidenav-brand .repo-svg[data-i]{{--rs:40px!important}}']
+       f'{ANY} .repo-sidenav-brand .repo-svg[data-i]{{--rs:40px!important}}',
+       # boutons des blocs : « Masquer / Afficher » (chevron) et ↕ (déplacer) en images du jeu
+       f'{ANY} .repo-block-heading-rich .repo-toggle::before{{-webkit-mask:none!important;mask:none!important;background:center/contain no-repeat!important;width:20px!important;height:20px!important;vertical-align:-5px!important}}',
+       f'{ANY} .repo-block-hidden>.repo-block-heading-rich .repo-toggle::before{{transform:none!important}}',
+       f'{ANY} .repo-block-tools .repo-drag{{font-size:0!important;min-width:34px;background-position:center!important;background-size:22px!important;background-repeat:no-repeat!important}}']
 for key, d in SETS.items():
     folder = os.path.join(ROOT, 'shared', 'icons', 'skeuo', d)
     names = sorted(f[:-5] for f in os.listdir(folder) if f.endswith('.webp'))
     for n in names:
         out.append(f'html[data-icons="{key}"] .repo-svg[data-i="{n}"]{{background-image:url("icons/skeuo/{d}/{n}.webp")}}')
+    if {'chevron-up', 'chevron-down', 'move'} <= set(names):
+        out.append(f'html[data-icons="{key}"] .repo-block-heading-rich .repo-toggle::before{{background-image:url("icons/skeuo/{d}/chevron-up.webp")!important}}')
+        out.append(f'html[data-icons="{key}"] .repo-block-hidden>.repo-block-heading-rich .repo-toggle::before{{background-image:url("icons/skeuo/{d}/chevron-down.webp")!important}}')
+        out.append(f'html[data-icons="{key}"] .repo-block-tools .repo-drag{{background-image:url("icons/skeuo/{d}/move.webp")!important}}')
     for n, target in ALIASES[key].items():
         if n not in names and target in names:
             out.append(f'html[data-icons="{key}"] .repo-svg[data-i="{n}"]{{background-image:url("icons/skeuo/{d}/{target}.webp")}}')
