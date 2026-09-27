@@ -31,7 +31,7 @@
     },
     field: {
       foot: img => `<div class="repo-deco-plate-img"><img src="${img('plate-defa')}" alt=""></div>
-        <div class="repo-deco-radar" title="${tr('radar')}"><div class="repo-deco-radar-stage"><img src="${img('radar')}" alt=""><span class="repo-deco-sweep"></span><i style="left:30.7%;top:33.5%;--c:#7dff8a"></i><i style="left:65.6%;top:59.6%;--c:#7dff8a"></i><i style="left:77.4%;top:59.2%;--c:#7dff8a"></i><i style="left:7.5%;top:82.6%;--c:#7dff8a"></i><i style="left:82.95%;top:46.44%;--c:#ff4d3d"></i></div></div>
+        <div class="repo-deco-radar" title="${tr('radar')}"><div class="repo-deco-radar-stage"><img src="${img('radar')}" alt=""><span class="repo-deco-sweep"></span><i style="left:30.7%;top:33.5%;--c:#7dff8a"></i><i style="left:65.6%;top:59.6%;--c:#7dff8a"></i><i style="left:72%;top:79.5%;--c:#7dff8a"></i><i style="left:30.96%;top:82.6%;--c:#7dff8a"></i><i style="left:82.95%;top:46.44%;--c:#ff4d3d"></i></div></div>
         <button type="button" class="repo-deco-status repo-plain"><img src="${img('plane-plate')}" alt="" onerror="this.remove()"><span class="repo-deco-leds"><i class="led-save"></i><i class="led-on"></i><i></i></span><span class="repo-deco-state"></span></button>`,
       between: [['plate-attention', 210], ['handle-h', 120], ['plate-wings', 170], ['plate-defa', 200]],
       sides: [['stencil-mission', 150], ['grille', 80], ['stencil-defa', 130], ['plate-small', 90], ['stencil-ops', 160], ['nut', 40]]
