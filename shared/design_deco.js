@@ -56,6 +56,10 @@
     let k = 0;
     const parents = new Set([...document.querySelectorAll('.repo-block')].map(b => b.parentElement));
     parents.forEach(p => {
+      // conteneur en grille ou en rangée flex : un élément inséré y deviendrait une cellule (décor sur un titre,
+      // grille décalée) → pas de décor entre ces blocs
+      const pd = getComputedStyle(p);
+      if (/grid/.test(pd.display) || (/flex/.test(pd.display) && !/column/.test(pd.flexDirection))) return;
       const blocks = [...p.children].filter(x => x.classList.contains('repo-block') && !x.hidden && x.offsetHeight);
       // blocs empilés verticalement seulement (pas de grille à colonnes : l'élément tomberait au milieu d'une rangée)
       blocks.slice(1).forEach((b, i) => {

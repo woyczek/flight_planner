@@ -64,6 +64,9 @@
   /** En-tête d'un bloc (.repo-block posé par app_framework.js) : pastille, icône, titre + sous-titre. */
   function decorateBlock(el) {
     if (el.dataset.blockDecor) return;
+    // icône « en ligne » posée par erreur avant que l'élément ne devienne un bloc (passe précoce) : retirée
+    el.querySelectorAll(':scope>.repo-icon-start,:scope>.repo-icon-end').forEach(x => x.remove());
+    el.classList.remove('repo-has-icon');
     const head = el.querySelector(':scope>.repo-block-heading'),
       h = head?.querySelector(':scope>h2');
     if (!h) return;
@@ -114,7 +117,8 @@
 
   /** Icône d'un élément quelconque (bouton, libellé, titre, bandeau) : avant le texte, ou après (data-icon-end). */
   function decorateInline(el) {
-    if (el.dataset.iconDone || el.matches('section,.repo-block,.repo-card,input,select,textarea')) return;
+    // blocs (et futurs blocs : panneaux, éléments à data-block-id — app_framework.js peut passer après) : icône de bloc, pas en ligne
+    if (el.dataset.iconDone || el.matches('section,.repo-block,.repo-card,.panel,[data-block-id],.format-note,.analysis-dock,.trend-card,input,select,textarea')) return;
     el.dataset.iconDone = '1';
     // bouton sans texte (icône seule, libellé en title / aria-label) : l'icône reste affichée même en jeu « aucune icône »
     if (el.matches('button') && !el.textContent.trim()) el.classList.add('repo-icon-only');

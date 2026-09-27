@@ -10,6 +10,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Icônes des panneaux** (CR : calculs, compte rendu) : plus d'icône en double décrochée ni de panneau déformé (la passe
+  précoce de `block_icons.js` traitait un futur bloc comme un élément à icône en ligne).
+- **En-têtes de blocs étroits** (designs à matières) : la plaque de titre ne dépasse plus sa colonne, les boutons ↕ /
+  Masquer restent visibles et cliquables.
+- **Décors entre les blocs** : seulement dans les empilements verticaux (plus dans les grilles, où ils créaient une
+  cellule et tombaient sur un titre).
 - **Décors** : presse-papiers et boussole redétourés (croissance de région, trous — la pince — rendus transparents,
   seule la plus grande pièce gardée) ; décors placés entre les blocs au-dessus des blocs (z-index), notamment sur la
   page Atterrissages.
