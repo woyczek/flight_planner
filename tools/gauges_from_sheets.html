@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Boîtiers de cadrans</title>
+<style>body{font:13px system-ui;margin:20px;background:#666;color:#fff}figure{display:inline-block;margin:8px;text-align:center}canvas{width:220px;height:auto;display:block;background:repeating-conic-gradient(#777 0 25%,#888 0 50%) 0/16px 16px}</style></head>
+<body>
+<!-- (g1 : laiton → Cabinet ; g2 : métal sombre → Carnet de vol ; g3 : plaque sombre → Durci ; g4 : plaque chromée → Aqua)
+     Boîtiers des cadrans réalistes du planificateur (shared/flight_instruments.js), découpés dans les planches de
+     cadrans de l'utilisateur (1448 × 1086) : plaque carrée vissée (Durci), lunette à oreilles en métal sombre (Carnet de
+     vol), lunette de laiton (Cabinet). Pour chaque planche : boîtier de l'anémomètre (« case ») et de l'altimètre avec
+     son bouton de calage (« case-knob ») ; l'ouverture du cadran (cercle de centre cx, cy et de rayon r, mesuré ici) est
+     rendue TRANSPARENTE : le cadran vivant (graduations, aiguilles) est dessiné dessous par flight_instruments.js.
+     Fond de la planche retiré (couleur des coins). Sortie : shared/deco/<design>/gauge-case(-knob).webp, carrés de
+     400 px, ouverture centrée ; rayon de l'ouverture relatif (r / demi-côté) affiché ci-dessous, à reporter dans OPEN
+     de flight_instruments.js. Usage : python tools/save_textures.py --src <dossier des planches g1/g2/g3.png>. -->
+<h1>Boîtiers de cadrans</h1><p id="out">Découpe…</p><div id="list"></div>
+<script>
+// design → planche (altimètre de chaque planche : pas d'arc coloré, bouton de calage) ; centre approximatif de
+// l'ouverture (ax, ay) ; l'ouverture exacte (cercle) est MESURÉE : 72 rayons partant du centre repèrent le début de la
+// lunette (6 px consécutifs plus clairs que le cadran noir, au-delà des chiffres), cercle ajusté par moindres carrés
+// en écartant les rayons aberrants (bouton, chiffres).
+const SHEETS = {
+  cabinet: { src: 'g1.png', tol: [40, 85], ax: 897, ay: 528 },
+  flightlog: { src: 'g2.png', tol: [36, 72], ax: 897, ay: 510 },
+  aqua: { src: 'g4.png', tol: [16, 38], ax: 899, ay: 510, fix: { cx: 899, cy: 510, r: 156 } },   // graduations blanches épaisses au bord : mesure manuelle
+  field: { src: 'g3.png', tol: [20, 44], ax: 899, ay: 497, fix: { cx: 899, cy: 497, r: 158 } }   // lunette sombre sur fond sombre : mesure manuelle
+};
+const load = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error(src)); i.src = src; });
+/** Ouverture du cadran : { cx, cy, r } mesurée sur la planche. */
+function measure(img, ax, ay) {
+  const c = document.createElement('canvas'); c.width = 440; c.height = 440; const g = c.getContext('2d');
+  g.drawImage(img, ax - 220, ay - 220, 440, 440, 0, 0, 440, 440);
+  const d = g.getImageData(0, 0, 440, 440).data, lum = (x, y) => { x = Math.round(x); y = Math.round(y); const q = (y * 440 + x) * 4; return .2126 * d[q] + .7152 * d[q + 1] + .0722 * d[q + 2]; };
+  const dial = lum(220, 220 + 60) < 80 ? lum(220, 280) : 30, T = dial + 38, pts = [];
+  for (let k = 0; k < 72; k++) {
+    const a = k * 5 * Math.PI / 180, ux = Math.cos(a), uy = Math.sin(a);
+    for (let r = 128, run = 0; r < 205; r++) {
+      run = lum(220 + ux * r, 220 + uy * r) > T ? run + 1 : 0;
+      if (run >= 6) { pts.push([220 + ux * (r - 5), 220 + uy * (r - 5)]); break; }
+    }
+  }
+  const fit = P => {   // cercle algébrique (Kåsa)
+    let sx = 0, sy = 0, sxx = 0, syy = 0, sxy = 0, sxz = 0, syz = 0, sz = 0; const n = P.length;
+    for (const [x, y] of P) { const z = x * x + y * y; sx += x; sy += y; sxx += x * x; syy += y * y; sxy += x * y; sxz += x * z; syz += y * z; sz += z; }
+    const A = [[sxx, sxy, sx], [sxy, syy, sy], [sx, sy, n]], B = [sxz, syz, sz];
+    const det = m => m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+    const D = det(A), col = i => A.map((row, j) => row.map((v, k) => k === i ? B[j] : v)), a = det(col(0)) / D, b = det(col(1)) / D, cc = det(col(2)) / D;
+    const cx = a / 2, cy = b / 2; return { cx, cy, r: Math.sqrt(cc + cx * cx + cy * cy) };
+  };
+  let f = fit(pts);
+  for (let it = 0; it < 3; it++) { const res = pts.map(([x, y]) => Math.abs(Math.hypot(x - f.cx, y - f.cy) - f.r)), lim = Math.max(2, [...res].sort((a, b) => a - b)[Math.floor(res.length * .7)] * 1.5); f = fit(pts.filter((p, i) => res[i] <= lim)); }
+  return { cx: ax - 220 + f.cx, cy: ay - 220 + f.cy, r: f.r, n: pts.length };
+}
+async function run() {
+  const out = document.getElementById('out'), list = document.getElementById('list'), info = [];
+  for (const [design, sh] of Object.entries(SHEETS)) {
+    const img = await load(`/src/${sh.src}`);
+    const m = sh.fix ? { ...sh.fix, n: 0 } : measure(img, sh.ax, sh.ay), H = m.r * 1.12;
+    for (const [name, [cx, cy, r, h]] of Object.entries({ case: [m.cx, m.cy, m.r + 1, H] })) {
+      const S = 400, k = S / (2 * h), c = document.createElement('canvas'); c.width = c.height = S; const g = c.getContext('2d');
+      g.drawImage(img, cx - h, cy - h, 2 * h, 2 * h, 0, 0, S, S);
+      const im = g.getImageData(0, 0, S, S), d = im.data, px = (x, y) => { const q = (y * S + x) * 4; return [d[q], d[q + 1], d[q + 2]]; };
+      const cs = [px(2, 2), px(S - 3, 2), px(2, S - 3), px(S - 3, S - 3)], bg = [0, 1, 2].map(i => cs.reduce((a, v) => a + v[i], 0) / 4), R = r * k;
+      for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+        const q = (y * S + x) * 4, dc = Math.hypot(x + .5 - S / 2, y + .5 - S / 2);
+        let a = Math.max(0, Math.min(1, dc - R + .5));                                    // ouverture transparente
+        const dist = Math.hypot(d[q] - bg[0], d[q + 1] - bg[1], d[q + 2] - bg[2]);
+        if (dc > R + 30) a *= Math.max(0, Math.min(1, (dist - sh.tol[0]) / (sh.tol[1] - sh.tol[0])));   // fond de la planche retiré
+        d[q + 3] = Math.round(255 * a);
+      }
+      g.putImageData(im, 0, 0);
+      const blob = await new Promise(res => c.toBlob(res, 'image/webp', .9));
+      const res = await fetch(`/shared/deco/${design}/gauge-${name}.webp`, { method: 'PUT', body: blob }).catch(() => null);
+      // aperçu : cercle de contrôle de l'ouverture
+      g.strokeStyle = 'red'; g.lineWidth = 2; g.beginPath(); g.arc(S / 2, S / 2, R, 0, 7); g.stroke();
+      info.push(`${design} : centre ${cx.toFixed(1)}, ${cy.toFixed(1)} · r ${r.toFixed(1)} (${m.n} rayons) · r relatif ${(R / (S / 2)).toFixed(3)}`);
+      const f = document.createElement('figure'); f.append(c); f.insertAdjacentHTML('beforeend', `<figcaption>${design} · ${name} ${res?.ok ? '✓' : '✗'}</figcaption>`); list.append(f);
+    }
+  }
+  out.textContent = info.join(' · ');
+}
+run().catch(e => document.getElementById('out').textContent = 'Erreur : ' + e.message);
+</script></body></html>

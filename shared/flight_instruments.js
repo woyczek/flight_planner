@@ -37,26 +37,37 @@
     field: ["#f2f4f0", "#9aa095", "#3a3f36", "#c9cdc4"], aqua: ["#ffffff", "#c9d2dc", "#6c7a88", "#eef3f8"]
   };
   const skeuo = () => RIMS[document.documentElement.dataset.design];
+  // boîtiers découpés dans les planches de cadrans (tools/gauges_from_sheets.html → shared/deco/<design>/gauge-case.webp :
+  // carré, ouverture du cadran transparente, centrée, de rayon OPEN × demi-côté) ; sans boîtier : lunette dessinée
+  const CASES = { cabinet: "cabinet", flightlog: "flightlog", field: "field", aqua: "aqua" }, OPEN = .898;
+  const SRC = document.currentScript?.src || location.href, VER = new URL(SRC).search, url = f => new URL(f + VER, SRC).href;
+  const CREAM = "#efe6cf";
   /** Définitions (dégradés, ombre des aiguilles) d'un cadran réaliste. */
   const defs = rim => `<defs><linearGradient id="fpRim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${rim[0]}"/><stop offset=".35" stop-color="${rim[1]}"/><stop offset=".7" stop-color="${rim[2]}"/><stop offset="1" stop-color="${rim[3]}"/></linearGradient><linearGradient id="fpRim2" x1="1" y1="1" x2="0" y2="0"><stop offset="0" stop-color="${rim[0]}"/><stop offset=".4" stop-color="${rim[1]}"/><stop offset="1" stop-color="${rim[2]}"/></linearGradient>
     <radialGradient id="fpCase" cx=".5" cy=".4" r=".6"><stop offset="0" stop-color="#3c3b38"/><stop offset="1" stop-color="#0c0c0b"/></radialGradient>
-    <radialGradient id="fpFace" cx=".45" cy=".4" r=".62"><stop offset="0" stop-color="#26282b"/><stop offset=".75" stop-color="#101113"/><stop offset="1" stop-color="#050506"/></radialGradient>
+    <radialGradient id="fpFace" cx=".45" cy=".4" r=".62"><stop offset="0" stop-color="${rim === RIMS.aqua ? "#27374d" : "#26282b"}"/><stop offset=".75" stop-color="${rim === RIMS.aqua ? "#142032" : "#101113"}"/><stop offset="1" stop-color="${rim === RIMS.aqua ? "#0a111c" : "#050506"}"/></radialGradient>
     <radialGradient id="fpShade" cx=".5" cy=".5" r=".5"><stop offset=".78" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".75"/></radialGradient>
     <linearGradient id="fpGlass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".34"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
     <radialGradient id="fpHub" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#5a5a58"/><stop offset="1" stop-color="#0a0a0a"/></radialGradient>
+    <linearGradient id="fpBevel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></linearGradient>
     <filter id="fpSh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx=".7" dy="1.3" stdDeviation=".7" flood-opacity=".7"/></filter></defs>`;
-  /** Habille le contenu g (graduations, chiffres, aiguilles) : boîtier, lunette, cadran, ombre, verre. */
+  /** Habille le contenu g (graduations, chiffres, aiguilles) : cadran noir bombé, ombre intérieure, reflet du verre,
+   *  puis boîtier de la planche par-dessus (lunette, vis, bouton de calage) ; Aqua : lunette chromée dessinée. */
   const frame = g => {
     const rim = skeuo();
     if (!rim) return g;
-    // boîtier sombre, couronne moletée (métal + stries), biseau intérieur inversé, cadran
-    return defs(rim) + `<circle cx="50" cy="50" r="49.8" fill="url(#fpCase)"/>
+    const cs = CASES[document.documentElement.dataset.design];
+    if (!cs) return defs(rim) + `<circle cx="50" cy="50" r="49.8" fill="url(#fpCase)"/>
       <circle cx="50" cy="50" r="48.4" fill="none" stroke="url(#fpRim)" stroke-width="2.6"/><circle cx="50" cy="50" r="48.4" fill="none" stroke="#000" stroke-opacity=".5" stroke-width="2.6" stroke-dasharray=".45 .75"/>
-      <circle cx="50" cy="50" r="46.6" fill="none" stroke="url(#fpRim2)" stroke-width="1.5"/>
-      <circle cx="50" cy="50" r="45.9" fill="none" stroke="#000" stroke-width=".8" opacity=".85"/><circle cx="50" cy="50" r="45.5" fill="url(#fpFace)"/>
-      <g transform="translate(50 50) scale(.9) translate(-50 -50)">${g}</g>
-      <circle cx="50" cy="50" r="45.5" fill="url(#fpShade)" pointer-events="none"/>
-      <path d="M13 38A38 38 0 0 1 80 20C62 14 34 16 13 38z" fill="url(#fpGlass)" pointer-events="none"/><path d="M84 66A36 36 0 0 1 64 84" fill="none" stroke="#fff" stroke-opacity=".12" stroke-width="1.4" stroke-linecap="round" pointer-events="none"/>`;
+      <circle cx="50" cy="50" r="46.6" fill="none" stroke="url(#fpRim2)" stroke-width="1.5"/><circle cx="50" cy="50" r="45.9" fill="none" stroke="#000" stroke-width=".8" opacity=".85"/><circle cx="50" cy="50" r="45.5" fill="url(#fpFace)"/>
+      <g transform="translate(50 50) scale(.9) translate(-50 -50)">${g}</g><circle cx="50" cy="50" r="45.5" fill="url(#fpShade)" pointer-events="none"/>
+      <path d="M13 38A38 38 0 0 1 80 20C62 14 34 16 13 38z" fill="url(#fpGlass)" pointer-events="none"/>`;
+    const R = 50 * OPEN, k = R / 49;   // cadran : rayon de l'ouverture ; contenu (graduations jusqu'à 46) ramené dedans
+    return defs(rim) + `<circle cx="50" cy="50" r="${R + .6}" fill="url(#fpFace)"/>
+      <g transform="translate(50 50) scale(${k.toFixed(3)}) translate(-50 -50)">${g}</g>
+      <circle cx="50" cy="50" r="${R + .6}" fill="url(#fpShade)" pointer-events="none"/>
+      <path d="M${50 - R * .8} ${50 - R * .25}A${R * .85} ${R * .85} 0 0 1 ${50 + R * .66} ${50 - R * .66}C${50 + R * .25} ${50 - R * .8} ${50 - R * .35} ${50 - R * .75} ${50 - R * .8} ${50 - R * .25}z" fill="url(#fpGlass)" pointer-events="none"/>
+      <image href="${url(`deco/${cs}/gauge-case.webp`)}" x="0" y="0" width="100" height="100" pointer-events="none"/>`;
   };
 
   /** Point du cadran (centre 50, 50) à l'angle a (degrés, 0 = en haut, sens horaire) et au rayon r. */
@@ -64,9 +75,9 @@
   /** Arc SVG de a0 à a1 (degrés) au rayon r. */
   const arc = (a0, a1, r) => { const [x0, y0] = P(a0, r), [x1, y1] = P(a1, r); return `M${x0.toFixed(2)} ${y0.toFixed(2)}A${r} ${r} 0 ${Math.abs(a1 - a0) > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`; };
   /** Graduation : trait radial de r0 à r1 à l'angle a. */
-  const tick = (a, r0, r1, w = 1) => { const [x0, y0] = P(a, r0), [x1, y1] = P(a, r1); return `<line x1="${x0.toFixed(2)}" y1="${y0.toFixed(2)}" x2="${x1.toFixed(2)}" y2="${y1.toFixed(2)}" stroke="#e8edf2" stroke-width="${w}"/>`; };
+  const tick = (a, r0, r1, w = 1) => { const [x0, y0] = P(a, r0), [x1, y1] = P(a, r1); return `<line x1="${x0.toFixed(2)}" y1="${y0.toFixed(2)}" x2="${x1.toFixed(2)}" y2="${y1.toFixed(2)}" stroke="${skeuo() ? CREAM : "#e8edf2"}" stroke-width="${w}"/>`; };
   /** Chiffre de graduation à l'angle a. */
-  const num = (a, r, t, s = 8) => { const [x, y] = P(a, r); return `<text x="${x.toFixed(1)}" y="${(y + s * .35).toFixed(1)}" font-size="${s}" text-anchor="middle" fill="#f1f1ec"${skeuo() ? ' font-weight="700" font-family="B612,Bahnschrift,\'Arial Narrow\',sans-serif"' : ""}>${t}</text>`; };
+  const num = (a, r, t, s = 8) => { const [x, y] = P(a, r); return `<text x="${x.toFixed(1)}" y="${(y + s * .35).toFixed(1)}" font-size="${s}" text-anchor="middle" fill="${skeuo() ? CREAM : "#e8edf2"}"${skeuo() ? ' font-weight="700" font-family="B612,Bahnschrift,\'Arial Narrow\',sans-serif"' : ""}>${t}</text>`; };
   /** Pas « rond » (1, 2, 5 × 10ⁿ) pour environ n graduations sur la plage span. */
   const niceStep = (span, n) => { const raw = span / n, p = 10 ** Math.floor(Math.log10(raw)), k = raw / p; return (k <= 1 ? 1 : k <= 2 ? 2 : k <= 5 ? 5 : 10) * p; };
 
@@ -132,6 +143,7 @@
 
   /** Aiguille (polygone effilé) à l'angle a, longueur r, largeur w, couleur col. */
   const needle = (a, r, w, col) => {
+    if (skeuo() && (col === "#fff" || col === "#e8edf2")) col = "#f1e8d0";
     const [x, y] = P(a, r), [xl, yl] = P(a - 90, w), [xr, yr] = P(a + 90, w), [xb, yb] = P(a + 180, 8);
     return `<polygon points="${x.toFixed(2)},${y.toFixed(2)} ${xl.toFixed(2)},${yl.toFixed(2)} ${xb.toFixed(2)},${yb.toFixed(2)} ${xr.toFixed(2)},${yr.toFixed(2)}" fill="${col}"${skeuo() ? ' filter="url(#fpSh)" stroke="#000" stroke-opacity=".35" stroke-width=".3"' : ""}/>`;
   };
