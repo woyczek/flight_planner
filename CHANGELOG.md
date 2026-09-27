@@ -10,6 +10,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Planificateur, altitude optimale : plus de « trou » dans les courbes** : quand le trajet est trop court pour monter
+  plus haut, les courbes s'arrêtent au dernier niveau tenable et ne réapparaissent plus au-delà du plafond ; zone
+  « trajet trop court » entre ce niveau et le plafond (explication au survol).
+- **Planificateur : explication au survol des pastilles** (plus rapide, carburant minimal à la vitesse du profil,
+  carburant minimal en croisière économique, niveau du plan) avec niveau, carburant et durée.
+- **Barre d'état du planificateur et barre d'analyse de Landing** décalées de la largeur de la barre latérale (leur
+  texte passait dessous).
 - **Planificateur : graphiques et curseurs en matière** : graphiques du devis carburant en écran d'instrument (Cabinet et
   Carnet de vol : panneau bleu marine serti de laiton, quadrillage gravé or ; Durci : écran phosphore vert à balayage ;
   Aqua : verre clair ou sombre) ; couleurs des courbes selon la palette des graphiques (Apparence) ; curseurs verticaux

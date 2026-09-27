@@ -392,7 +392,7 @@
     $("optEmpty").hidden = altOk;
     window.altitudeOptimum = altOk ? { model: m, c, bestFuel: K.bestFuel, bestProf: K.bestProf, bestEco: K.bestEco, fastest: K.fastest, plan: K.plan, eco: K.eco, norm: K.norm } : null;
     if (altOk) guard("panelOpt", "optChart", tl("Altitude optimale", "Optimum altitude", "Optimale Flughöhe", "Altitud óptima"), () => {
-      K.manTrips = extendSeries(K.hs.map(h => h > m.ceiling ? m.unbounded(() => m.trip(h, c.D, c.wc, "normal", man)) : m.trip(h, c.D, c.wc, "normal", man)), m.ceiling, TRIP_KEYS);
+      K.manTrips = K.cut(extendSeries(K.hs.map(h => h > m.ceiling ? m.unbounded(() => m.trip(h, c.D, c.wc, "normal", man)) : m.trip(h, c.D, c.wc, "normal", man)), m.ceiling, TRIP_KEYS));   // même coupe que les autres courbes
       drawAltitude(m, c, K);
     });
     else {
@@ -488,12 +488,17 @@
     for (let h = 0; h <= topX; h += step) hs.push(h);
     const ok = r => r && r.ok, trips = (mode, w) => hs.map(h => h > m.ceiling ? m.unbounded(() => m.trip(h, c.D, w, mode)) : m.trip(h, c.D, w, mode));
     const ext = l => extendSeries(l, m.ceiling, TRIP_KEYS);   // prolongement dans la zone grisée
-    const eco = ext(trips("eco", c.wc)), norm = ext(trips("normal", c.wc)), bands = !c.windKnown && (c.low || c.high) ? [ext(trips("normal", c.low)), ext(trips("normal", c.high))] : [];
+    // trajet trop court pour monter plus haut : la courbe s'arrête sous le plafond (niveaux non tenables sur la distance) ;
+    // on ne la prolonge alors pas au-delà du plafond (elle y réapparaissait après un trou inexpliqué)
+    const lastOk = l => l.reduce((a, r) => r?.ok && r.h <= m.ceiling && r.h > a ? r.h : a, -1);
+    const cut = l => { const top = lastOk(l); return top >= 0 && top < m.ceiling - step ? l.map(r => r && r.h > top ? null : r) : l; };
+    const eco = cut(ext(trips("eco", c.wc))), norm = cut(ext(trips("normal", c.wc))), bands = !c.windKnown && (c.low || c.high) ? [cut(ext(trips("normal", c.low))), cut(ext(trips("normal", c.high)))] : [];
+    const reachTop = Math.max(lastOk(eco), lastOk(norm));   // plus haut niveau tenable sur le trajet
     const usable = r => ok(r) && r.h >= 1000 && r.h <= m.ceiling;               // plancher pratique : 1000 ft ; sous le plafond
     const minBy = (l, k) => l.filter(usable).reduce((a, b) => !a || b[k] < a[k] ? b : a, null);
     const bestProf = minBy(norm, "fuel"), bestEco = minBy(eco, "fuel"), fastest = minBy(norm, "minutes");
     const cr = mode => hs.filter(h => h <= m.ceiling).map(h => m.cruise(h, mode)).filter(ok).filter(r => r.h >= 1000);
-    return { step, top, topX, hs, ok, eco, norm, bands, bestProf, bestEco, fastest, bestFuel: bestProf || bestEco, crN: cr("normal"), crE: cr("eco"), plan: m.trip(c.FL * 100, c.D, c.wc, "normal") };
+    return { step, top, topX, hs, ok, eco, norm, bands, reachTop, cut, bestProf, bestEco, fastest, bestFuel: bestProf || bestEco, crN: cr("normal"), crE: cr("eco"), plan: m.trip(c.FL * 100, c.D, c.wc, "normal") };
   }
 
   // ---------------------------------------------------------------------------------------------------
@@ -516,9 +521,23 @@
     g += `<line class="axis" x1="${Lm}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/><line class="axis" x1="${Lm}" x2="${Lm}" y1="${T}" y2="${H - B}"/>`
       + `<path class="curve-eco" d="${path(eco)}"/><path class="curve" d="${path(norm)}"/><path class="curve-man" d="${path(man)}"/>`;
     // optimums : pastilles de la couleur de leur courbe, étiquette neutre
-    const dot = (r, col, label, dy) => { if (!ok(r)) return; const x = X(r.h), y = Y(eff(r)); g += `<circle cx="${x}" cy="${y}" r="4.5" style="fill:${col}"/><text x="${Math.min(Math.max(x, Lm + 30), W - R - 30)}" y="${y + dy}" text-anchor="middle">${label}</text>`; };
-    if (ok(plan)) dot(plan, COL.ref, `${flTxt(plan.h)} ${tl("plan", "plan", "Plan", "plan")}`, 16);
-    dot(fastest, COL.fast, flTxt(fastest?.h), -9); dot(bestProf, COL.prof, flTxt(bestProf?.h), -9); dot(bestEco, COL.eco, flTxt(bestEco?.h), 16);
+    // explication au survol de chaque pastille (<title> : infobulle native, lue aussi par les lecteurs d'écran)
+    const dot = (r, col, label, dy, tip) => { if (!ok(r)) return; const x = X(r.h), y = Y(eff(r)), t = `<title>${escXml(tip)}</title>`; g += `<g class="opt-dot" style="cursor:help"><circle cx="${x}" cy="${y}" r="9" fill="transparent"/><circle cx="${x}" cy="${y}" r="4.5" style="fill:${col}"/>${t}</g><text x="${Math.min(Math.max(x, Lm + 30), W - R - 30)}" y="${y + dy}" text-anchor="middle" style="cursor:help">${t}${label}</text>`; };
+    const at = r => ok(r) ? ` ${flTxt(r.h)} : ${fmt(cv(r.fuel), 0)} ${unit}, ${hmTxt(r.minutes)}.` : "";
+    if (ok(plan)) dot(plan, COL.ref, `${flTxt(plan.h)} ${tl("plan", "plan", "Plan", "plan")}`, 16,
+      tl(`Niveau du plan de vol, à la vitesse du profil.${at(plan)}`, `Flight plan level, at the profile speed.${at(plan)}`, `Flugplanhöhe, mit der Profilgeschwindigkeit.${at(plan)}`, `Nivel del plan de vuelo, a la velocidad del perfil.${at(plan)}`));
+    dot(fastest, COL.fast, flTxt(fastest?.h), -9,
+      tl(`Le plus rapide : niveau où le trajet entier (montée, croisière, descente) dure le moins, à la vitesse du profil.${at(fastest)}`, `Fastest: level where the whole trip (climb, cruise, descent) takes the least time, at the profile speed.${at(fastest)}`, `Am schnellsten: Flughöhe, auf der die ganze Strecke (Steig-, Reise-, Sinkflug) am kürzesten dauert, mit Profilgeschwindigkeit.${at(fastest)}`, `El más rápido: nivel en que el trayecto completo (ascenso, crucero, descenso) dura menos, a la velocidad del perfil.${at(fastest)}`));
+    dot(bestProf, COL.prof, flTxt(bestProf?.h), -9,
+      tl(`Carburant minimal à la vitesse du profil : niveau où le trajet entier consomme le moins en volant à la vitesse de croisière du profil.${at(bestProf)}`, `Minimum fuel at the profile speed: level where the whole trip burns the least when flown at the profile cruise speed.${at(bestProf)}`, `Minimaler Kraftstoff bei Profilgeschwindigkeit: Flughöhe mit dem geringsten Verbrauch der ganzen Strecke bei Reisegeschwindigkeit des Profils.${at(bestProf)}`, `Combustible mínimo a la velocidad del perfil: nivel en que el trayecto completo consume menos a la velocidad de crucero del perfil.${at(bestProf)}`));
+    dot(bestEco, COL.eco, flTxt(bestEco?.h), 16,
+      tl(`Carburant minimal en croisière économique (vitesse réduite, régime éco) : le moins de carburant possible, au prix d'un vol plus long.${at(bestEco)}`, `Minimum fuel in economy cruise (reduced speed, eco setting): the least fuel possible, at the cost of a longer flight.${at(bestEco)}`, `Minimaler Kraftstoff im Sparreiseflug (reduzierte Geschwindigkeit): geringstmöglicher Verbrauch, dafür längerer Flug.${at(bestEco)}`, `Combustible mínimo en crucero económico (velocidad reducida): el menor consumo posible, a cambio de un vuelo más largo.${at(bestEco)}`));
+    // niveaux sous le plafond mais pas tenables sur ce trajet (trop court pour y monter puis redescendre) : zone hachurée
+    if (K.reachTop >= 0 && K.reachTop < m.ceiling - step) {
+      const x0 = X(K.reachTop), x1 = X(m.ceiling);
+      g += `<rect class="short-zone" x="${x0.toFixed(1)}" y="${T}" width="${(x1 - x0).toFixed(1)}" height="${H - B - T}"><title>${escXml(tl(`Niveaux au-dessus de ${flTxt(K.reachTop)} : le trajet (${fmt(c.D, 0)} NM) est trop court pour y monter puis redescendre.`, `Levels above ${flTxt(K.reachTop)}: the trip (${fmt(c.D, 0)} NM) is too short to climb there and descend again.`, `Flughöhen über ${flTxt(K.reachTop)}: die Strecke (${fmt(c.D, 0)} NM) ist zu kurz, um dorthin zu steigen und wieder zu sinken.`, `Niveles por encima de ${flTxt(K.reachTop)}: el trayecto (${fmt(c.D, 0)} NM) es demasiado corto para subir y volver a bajar.`))}</title></rect>`
+        + `<text class="beyond-label" x="${((x0 + x1) / 2).toFixed(1)}" y="${T + 11}" text-anchor="middle">${tl("trajet trop court", "trip too short", "Strecke zu kurz", "trayecto corto")}</text>`;
+    }
     g += beyondZone(X, T, H - B, m.ceiling, xmax);
     g += `<text x="${(Lm + W - R) / 2}" y="${H - 3}" text-anchor="middle">${tl("Niveau de croisière", "Cruise level", "Reiseflughöhe", "Nivel de crucero")}</text><text x="11" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(-90 11 ${(T + H - B) / 2})">NM / ${unit}</text>`
       + `<line id="optCursor" class="cursor" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/><rect id="optHit" x="${Lm}" y="${T}" width="${W - Lm - R}" height="${H - T - B}" fill="transparent"/>`;

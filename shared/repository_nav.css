@@ -51,3 +51,6 @@ dialog.repo-ap-dialog main.ap-page{max-width:none;margin:0;padding:16px 18px 20p
 a.repo-sidenav-brand{text-decoration:none}.repo-sidenav-logo{width:46px;height:46px;object-fit:contain;display:block;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4));transition:transform .15s}
 a.repo-sidenav-brand:hover .repo-sidenav-logo,a.repo-sidenav-brand:focus-visible .repo-sidenav-logo{transform:scale(1.06)}
 html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) .repo-sidenav-logo{width:56px;height:56px}
+/* barres fixées en bas des pages (planificateur : .status-bar ; Landing : .analysis-dock) : décalées de la largeur de la
+   barre latérale quand elle est affichée (sinon leur texte passe dessous) */
+html[data-sidenav="on"] :is(.status-bar,.analysis-dock),html[data-design="console"]:not([data-sidenav="off"]) :is(.status-bar,.analysis-dock){left:var(--repo-sidenav-w)!important}
