@@ -69,13 +69,15 @@
       const blocks = [...p.children].filter(x => x.classList.contains('repo-block') && !x.hidden && x.offsetHeight);
       // blocs empilés verticalement seulement (pas de grille à colonnes : l'élément tomberait au milieu d'une rangée)
       blocks.slice(1).forEach((b, i) => {
-        if (i % 2 || Math.abs(b.getBoundingClientRect().left - blocks[i].getBoundingClientRect().left) > 4) return;
+        // voisin immédiat seulement (un autre élément entre les deux, grille de graphiques… : l'écart mesuré
+        // traverserait cet élément), blocs l'un sous l'autre, même colonne, écart raisonnable
+        const pr = blocks[i].getBoundingClientRect(), nr = b.getBoundingClientRect(), gap0 = nr.top - pr.bottom;
+        if (i % 2 || b.previousElementSibling !== blocks[i] || Math.abs(nr.left - pr.left) > 4 || gap0 < 0 || gap0 > 80) return;
         const [name, w, pair] = set.between[k++ % set.between.length], sep = document.createElement('div');
         sep.className = 'repo-deco-sep';
         sep.setAttribute('aria-hidden', 'true');
         sep.innerHTML = pair ? `<img src="${img(name)}" alt="" style="width:${w}px;margin-left:-60px"><img src="${img(name)}" alt="" style="width:${w}px;margin-left:60px">` : `<img src="${img(name)}" alt="" style="width:${w}px">`;
-        const gap = (b.getBoundingClientRect().top - blocks[i].getBoundingClientRect().bottom) / 2;
-        sep.style.top = `${-gap}px`;
+        sep.style.top = `${-gap0 / 2}px`;
         b.before(sep);
         nodes.push(sep);
       });
@@ -110,6 +112,10 @@
   window.addEventListener('repository-design-change', later);
   window.addEventListener('repository-language-change', later);
   window.addEventListener('resize', later);
+  // mise en page qui change après coup (contenu chargé, blocs passés en grille par la page…) : décors recalculés
+  // (les décors eux-mêmes ne changent pas la taille de la page : hauteur nulle, position absolue)
+  let lastH = 0;
+  new ResizeObserver(() => { const h = Math.round(document.body.scrollHeight / 40); if (h !== lastH) { lastH = h; later(); } }).observe(document.body);
   new MutationObserver(state).observe(document.documentElement, { attributes: true, attributeFilter: ['data-dirty'] });
   // blocs et pied de page posés au chargement complet (app_framework.js) ; les pages rendues plus tard (CR) se
   // stabilisent ensuite : nouvelle passe après une seconde

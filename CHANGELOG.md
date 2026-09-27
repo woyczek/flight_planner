@@ -10,6 +10,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Décors entre blocs** : posés seulement entre deux blocs voisins immédiats, l'un sous l'autre dans la même
+  colonne ; plus de décor au milieu d'une grille de graphiques (reporting, « Capacités employées ») quand un
+  autre élément s'intercale ; décors recalculés quand la mise en page change après le chargement.
+- **Durci** : texte des plaques de titre de bloc réduit (≈ 0,98 rem, interlettrage resserré).
 - **Radars** (Durci) : front du balayage net, traînée dégradée derrière (sens de rotation) ; plots éteints qui ne
   s'allument qu'au passage du front (délai calculé selon leur angle), puis s'estompent.
 - **Contrastes WCAG dans les designs à matières** (studio en Durci notamment) : pastilles de code (`code`, `kbd`,
