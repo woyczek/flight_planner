@@ -10,6 +10,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Durci : série de fonds en panneaux olive rivetés** : reporting (vue aérienne, pictogrammes des missions, ailes au
+  laurier validé, chevrons, plaque de plans d'aéronefs, pictogrammes des capacités, cadran soleil et lune, pupitre
+  radio, étoile) ; aussi hors reporting : studio cartographique (carte et écran radar sur « Cartes »), éditeur de
+  missions (insigne sur « Identification », étagère d'équipement sur « Importer »), planificateur (« Résultat »).
+  Anciens fonds Durci retirés.
+- **Fonds illustrés : mode « side »** pour les blocs larges : image à la hauteur du bloc, calée à droite, fondue vers
+  la gauche (le texte reste sur la matière unie).
 - **Cabinet : cadre de cuir plus réaliste** : bordure plus large, bord arrondi (lumière en haut et à gauche, ombre en bas
   et à droite), parchemin serti sous le cuir ; couture de nouveau visible partout (reporting compris), dessinée dans le
   cuir par le contour du bloc lui-même (jamais coupé par le défilement du bloc) ; pas de couture sur l'aluminium du

@@ -37,10 +37,12 @@
     }
   };
   // Fonds illustrés des blocs (designs à matières, décor complet ou sobre) : un bloc marqué data-deco-bg="<clé>"
-  // (reporting : aerodromes, capabilities, outcomes, aircraft) reçoit shared/deco/<design>/bg-<clé>.webp, sous son
+  // (reporting : aerodromes, capabilities, outcomes, aircraft, families, series, daynight, network, context ; studio
+  // cartographique : maps ; éditeur de missions : import, identification ; planificateur : result) reçoit shared/deco/<design>/bg-<clé>.webp, sous son
   // contenu, fondu vers le bas et la droite. Seules les images déclarées ici sont chargées (pas de requête inutile).
   // Mode « anchor » : taille d'origine, calée en haut à gauche, s'étend vers la droite et le bas (coupée au bord du
-  // bloc) ; « cover » : redimensionnée pour couvrir le bloc. Exemple : field: { aerodromes: 'anchor' }.
+  // bloc) ; « cover » : redimensionnée pour couvrir le bloc ; « side » (blocs larges) : à la hauteur du bloc, calée à
+  // droite, fondue vers la gauche (le texte, à gauche, reste sur la matière unie). Exemple : field: { aerodromes: 'anchor' }.
   // Entrée : mode, ou [mode, cadrage (background-position), image « <design>/<nom> » (défaut : <design>/bg-<clé>),
   // opacité (défaut : celle du design, designs_skeuo.css)].
   // Cabinet (bleu marine et or) : piste au pied des montagnes, relief et réticule, mappemonde et rose des vents, globe ;
@@ -57,7 +59,12 @@
     // biplan et globe, globes et routes, montage aviation, piste de nuit (jour / nuit), piste au pied des montagnes
     // (terrains de départ) ; cuir et mappemonde aux avions en réserve
     flightlog: { aerodromes: ['cover', 'center', null, .5], daynight: ['cover', 'center bottom'], capabilities: ['cover', 'center'], outcomes: ['cover', 'center'], aircraft: ['cover', 'center'], series: ['cover', 'center'], families: ['cover', 'center'] },
-    field: { aerodromes: ['cover', 'left center', 'field/bg-panels'], capabilities: ['cover', 'left top', 'field/bg-chart'], outcomes: ['cover', 'right center', 'field/bg-chart'], aircraft: ['cover', 'right center', 'field/bg-panels'] },
+    // Durci : panneaux olive rivetés : vue aérienne (terrains de départ), pictogrammes des missions (familles), ailes au
+    // laurier validé (résultats, et résultat du planificateur), chevrons (séries), plaque de plans d'aéronefs (types
+    // d'appareil), rangée de pictogrammes (capacités), cadran soleil et lune (jour / nuit), pupitre radio (réseau),
+    // étoile (contexte) ; carte et écran radar (studio : cartes), insigne à chevrons (éditeur : identification),
+    // étagère d'équipement (éditeur : import)
+    field: { aerodromes: 'cover', families: 'cover', outcomes: 'cover', series: 'cover', aircraft: 'cover', capabilities: 'cover', daynight: 'cover', network: 'cover', context: 'cover', maps: 'side', identification: 'side', import: 'side', result: ['cover', 'center', 'field/bg-outcomes'] },
     aqua: { aerodromes: ['cover', 'center bottom', 'aqua/bg-water'], capabilities: ['cover', 'left center', 'aqua/bg-water'], outcomes: ['cover', 'center top', 'aqua/bg-water'], aircraft: ['cover', 'right center', 'aqua/bg-water'] }
   };
   function backgrounds(d) {
