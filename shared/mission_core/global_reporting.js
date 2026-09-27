@@ -295,15 +295,15 @@
       <section class="section mcg-wide mcg-checks" data-icon="alert" hidden><h2>${t('checks')} <span class="mcg-sub" id="mcgChecksSub"></span></h2><div class="inside" id="mcgChecks"></div></section>
       <section class="section mcg-wide" data-icon="calendar"><h2>${t('activity')} <span class="mcg-sub" id="mcgActivitySub"></span></h2><div class="inside"><div id="mcgActivity"></div><div class="mcg-series-legend" id="mcgActivityLegend"></div></div></section>
       <div class="mcg-grid">
-        <section class="section" data-icon="layers"><h2>${t('byFamily')}</h2><div class="inside" id="mcgFamilies"></div></section>
+        <section class="section" data-icon="layers" data-deco-bg="families"><h2>${t('byFamily')}</h2><div class="inside" id="mcgFamilies"></div></section>
         <section class="section" data-icon="check" data-deco-bg="outcomes"><h2>${t('byOutcome')}</h2><div class="inside" id="mcgOutcomes"></div></section>
-        <section class="section" data-icon="hash"><h2>${t('bySeries')}</h2><div class="inside" id="mcgSeries"></div></section>
+        <section class="section" data-icon="hash" data-deco-bg="series"><h2>${t('bySeries')}</h2><div class="inside" id="mcgSeries"></div></section>
         <section class="section" data-icon="box" data-deco-bg="aircraft"><h2>${t('byType')}</h2><div class="inside" id="mcgTypes"></div></section>
         <section class="section" data-icon="wrench" data-deco-bg="capabilities"><h2>${t('byCapability')}</h2><div class="inside" id="mcgCapabilities"></div></section>
         <section class="section" data-icon="pin" data-deco-bg="aerodromes"><h2>${t('byAerodrome')}</h2><div class="inside" id="mcgAerodromes"></div></section>
-        <section class="section" data-icon="clock"><h2>${t('byDayNight')}</h2><div class="inside" id="mcgDayNight"></div></section>
-        <section class="section" data-icon="send"><h2>${t('byNetwork')}</h2><div class="inside" id="mcgNetwork"></div></section>
-        <section class="section" data-icon="globe"><h2>${t('byContext')}</h2><div class="inside" id="mcgContext"></div></section>
+        <section class="section" data-icon="clock" data-deco-bg="daynight"><h2>${t('byDayNight')}</h2><div class="inside" id="mcgDayNight"></div></section>
+        <section class="section" data-icon="send" data-deco-bg="network"><h2>${t('byNetwork')}</h2><div class="inside" id="mcgNetwork"></div></section>
+        <section class="section" data-icon="globe" data-deco-bg="context"><h2>${t('byContext')}</h2><div class="inside" id="mcgContext"></div></section>
       </div>
       <section class="section mcg-wide" data-icon="layers"><h2>${t('familyTable')}</h2><div class="inside" id="mcgFamilyTable"></div></section>
       <section class="section mcg-wide" data-icon="plane"><h2>${t('aircraftTable')}</h2><div class="inside" id="mcgAircraftTable"></div></section>

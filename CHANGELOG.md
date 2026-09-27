@@ -10,6 +10,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Carnet de vol : jeu de fonds propre** pour le reporting (cuir marine, tracés or) : capacités (hélicoptères et
+  montagnes), résultats (rose des vents sur mappemonde), types d'appareil (biplan et globe), séries (globes et routes),
+  par famille (montage aviation), jour / nuit (piste de nuit) ; terrains de départ inchangés (piste de Cabinet).
+  Nouveaux emplacements de fonds sur les blocs par famille, séries, jour / nuit, réseau et contexte.
 - **Outils de bloc** (designs à matières) : icônes « déplacer » et « masquer » à la même taille (24 px, boutons de
   30 px) ; « déplacer » était plus petit et plus large.
 - **Fonds illustrés du reporting : Durci, Aqua, Carnet de vol** : Durci en panneaux olive rivetés (courbes de niveau,

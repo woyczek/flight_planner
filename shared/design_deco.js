@@ -49,7 +49,10 @@
   // verre, cadrés différemment sur chaque bloc.
   const BG = {
     cabinet: { aerodromes: 'cover', capabilities: 'cover', outcomes: 'cover', aircraft: 'cover' },
-    flightlog: { aerodromes: ['cover', 'center', 'cabinet/bg-aerodromes'], capabilities: ['cover', 'center', 'cabinet/bg-capabilities'], outcomes: ['cover', 'center', 'flightlog/bg-leather-map', 1], aircraft: ['cover', 'center', 'cabinet/bg-aircraft'] },
+    // Carnet de vol : jeu propre (cuir marine, tracés or) : hélicoptères et montagnes, rose des vents sur mappemonde,
+    // biplan et globe, globes et routes, montage aviation, piste de nuit (jour / nuit) ; terrains de départ : piste de
+    // Cabinet ; cuir et mappemonde aux avions en réserve
+    flightlog: { aerodromes: ['cover', 'center', 'cabinet/bg-aerodromes', .5], daynight: ['cover', 'center bottom'], capabilities: ['cover', 'center'], outcomes: ['cover', 'center'], aircraft: ['cover', 'center'], series: ['cover', 'center'], families: ['cover', 'center'] },
     field: { aerodromes: ['cover', 'left center', 'field/bg-panels'], capabilities: ['cover', 'left top', 'field/bg-chart'], outcomes: ['cover', 'right center', 'field/bg-chart'], aircraft: ['cover', 'right center', 'field/bg-panels'] },
     aqua: { aerodromes: ['cover', 'center bottom', 'aqua/bg-water'], capabilities: ['cover', 'left center', 'aqua/bg-water'], outcomes: ['cover', 'center top', 'aqua/bg-water'], aircraft: ['cover', 'right center', 'aqua/bg-water'] }
   };
