@@ -18,10 +18,11 @@
 // lunette (6 px consécutifs plus clairs que le cadran noir, au-delà des chiffres), cercle ajusté par moindres carrés
 // en écartant les rayons aberrants (bouton, chiffres).
 const SHEETS = {
-  cabinet: { src: 'g1.png', grow: [9, 95], box: 1.05, ax: 897, ay: 528 },
-  flightlog: { src: 'g2.png', grow: [9, 110], box: 1.05, ax: 897, ay: 510 },
-  aqua: { src: 'g4.png', grow: [8, 110], ax: 899, ay: 510, fix: { cx: 899, cy: 510, r: 156 } },   // graduations blanches épaisses au bord : mesure manuelle
-  field: { src: 'g3.png', grow: [8, 50], box: 1.1, ax: 899, ay: 497, fix: { cx: 899, cy: 497, r: 158 } }   // lunette sombre sur fond sombre : mesure manuelle
+  // planches sur fond transparent (alpha : la transparence d'origine sert de silhouette)
+  cabinet: { src: 't2.png', alpha: true, ax: 903, ay: 540, box: 1.1, fix: { cx: 903, cy: 536, r: 153 } },
+  flightlog: { src: 't1.png', alpha: true, ax: 902, ay: 537, box: 1.14 },
+  field: { src: 't3.png', alpha: true, ax: 903, ay: 522, box: 1.14 },
+  aqua: { src: 't4.png', alpha: true, ax: 900, ay: 511, box: 1.14, fix: { cx: 900, cy: 514, r: 154 } }
 };
 const HALF = 1.3;   // demi-côté de la découpe / rayon de l'ouverture (le boîtier entier doit y tenir)
 const load = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error(src)); i.src = src; });
@@ -65,10 +66,12 @@ async function run() {
       // 1. fond et ombres de la planche : croissance de région depuis les bords de la découpe ; un pixel rejoint le fond
       //    s'il ressemble à son voisin déjà classé (écart ≤ step : fond et ombres varient doucement) et reste dans la
       //    famille du fond (écart ≤ far) ; le contour du boîtier (rupture nette) arrête la croissance
-      const [step, far] = sh.grow, back = new Uint8Array(N), stack = [];
+      const back = new Uint8Array(N), stack = [];
+      if (sh.alpha) for (let i = 0; i < N; i++) back[i] = d[i * 4 + 3] < 24 ? 1 : 0;   // fond transparent de la planche
+      const [step, far] = sh.grow || [0, -1];
       const cd = (a, b) => Math.hypot(d[a] - d[b], d[a + 1] - d[b + 1], d[a + 2] - d[b + 2]), fromBg = q => Math.hypot(d[q] - bg[0], d[q + 1] - bg[1], d[q + 2] - bg[2]);
       const seed = (x, y) => { const i = y * S + x; if (!back[i] && fromBg(i * 4) <= far) { back[i] = 1; stack.push(i); } };
-      for (let t = 0; t < S; t++) { seed(t, 0); seed(t, S - 1); seed(0, t); seed(S - 1, t); }
+      if (!sh.alpha) for (let t = 0; t < S; t++) { seed(t, 0); seed(t, S - 1); seed(0, t); seed(S - 1, t); }
       const grow = (i, n) => { if (back[n] || cd(i * 4, n * 4) > step || fromBg(n * 4) > far) return; back[n] = 1; stack.push(n); };
       while (stack.length) { const i = stack.pop(), x = i % S, y = (i / S) | 0; if (x > 0) grow(i, i - 1); if (x < S - 1) grow(i, i + 1); if (y > 0) grow(i, i - S); if (y < S - 1) grow(i, i + S); }
       // 2. silhouette : seule la pièce qui contient le centre (les morceaux d'instruments voisins disparaissent)
@@ -82,7 +85,7 @@ async function run() {
       for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
         let sum = 0, n = 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const xx = x + dx, yy = y + dy; if (xx >= 0 && yy >= 0 && xx < S && yy < S) { sum += keep[yy * S + xx] || (Math.hypot(xx + .5 - S / 2, yy + .5 - S / 2) <= R + 2 ? 1 : 0); n++; } }
         const q = (y * S + x) * 4, dc = Math.hypot(x + .5 - S / 2, y + .5 - S / 2);
-        d[q + 3] = Math.round(255 * (sum / n) * Math.max(0, Math.min(1, dc - R + .5)));
+        d[q + 3] = Math.round((sh.alpha ? d[q + 3] : 255) * (sum / n) * Math.max(0, Math.min(1, dc - R + .5)));
       }
       g.putImageData(im, 0, 0);
       const blob = await new Promise(res => c.toBlob(res, 'image/webp', .9));

@@ -27,7 +27,7 @@
       const b = host.querySelector('button');
       b.textContent = t(T.open);
       b.style.cssText = 'background:var(--accent);color:#fff;border-color:var(--accent)';
-      b.onclick = () => { location.href = 'apparence.html'; };
+      b.onclick = () => { if (!nav()?.openAppearance?.()) location.href = 'apparence.html'; };   // fenêtre modale
       window.AppFramework?.refresh?.();   // icône du bouton (block_icons.js)
     };
     render();

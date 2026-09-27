@@ -111,13 +111,19 @@
     if (previewTheme === name) nav().setTheme(name);
   }
 
-  function mount() {
-    host = document.getElementById('appearancePage');
+  let styled = false;
+  /** Construit l'interface dans el (page Apparence : #appearancePage ; modale : élément fourni par repository_nav.js). */
+  function mount(el) {
+    host = el || document.getElementById('appearancePage');
     if (!host || !AP()) return;
-    window.RepositoryContentI18n?.([T.sub, ['Apparence', 'Appearance', 'Darstellung', 'Apariencia']]);
+    previewTheme = null;
+    if (!el) window.RepositoryContentI18n?.([T.sub, ['Apparence', 'Appearance', 'Darstellung', 'Apariencia']]);
+    if (styled) { render(); listen(); return; }
+    styled = true;
     const TX = new URL('shared/textures/', nav().root).href, TV = new URL(document.querySelector('script[src*="appearance_page.js"]')?.src || location.href).search;   // textures des vignettes (même version que ce script)
     const css = document.createElement('style');
     css.textContent = `
+.ap-page>section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:0 0 16px}.ap-page h2{font-size:17px;margin:0 0 4px}
 main.ap-page{--ink:#17242b;--muted:#5b6673;--line:#cfd9e1;--card:#fff}
 main.ap-page :is(.ap-thumb,.ap-iconrow,.ap-seg,.ap-card,.ap-show,[id=apReset]){color:var(--ink)!important}main.ap-page :is(.repo-plain,.ap-card) :is(b,strong,small,label,span,header):not([style]):not(.ap-pill):not(.ap-pill *){color:inherit!important}main.ap-page .ap-seg[aria-pressed="true"]{color:#fff!important}main.ap-page .ap-help{color:inherit;opacity:.85}
 .ap-thumbs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:12px}
@@ -188,6 +194,13 @@ main.ap-page h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;col
 #apDemo{background:var(--repo-accent);border-color:var(--repo-accent);color:#fff}`;
     document.head.append(css);
     render();
+    listen();
+    window.addEventListener('repository-language-change', () => host?.isConnected && render());
+  }
+  /** Écoute des réglages sur l'hôte courant. */
+  function listen() {
+    if (host.dataset.apListen) return;
+    host.dataset.apListen = '1';
     host.addEventListener('click', e => {
       const a = AP(), b = e.target.closest('button');
       if (!b) return;
@@ -216,8 +229,12 @@ main.ap-page h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;col
     });
     host.addEventListener('input', e => { if (e.target.type === 'range') paint(e.target.closest('.ap-card')); });
     host.addEventListener('change', e => { if (e.target.type === 'range') saveCard(e.target.closest('.ap-card')); });
-    window.addEventListener('repository-language-change', render);
   }
-  // les icônes (repository_icons.js) arrivent après ce script : construction au chargement complet de la page
-  if (document.readyState === 'complete') mount(); else window.addEventListener('load', mount);
+  window.RepositoryAppearance = {
+    mount,
+    /** Fermeture de la modale : l'aperçu d'un thème (« Voir sur cette page ») est annulé. */
+    close() { if (previewTheme) { previewTheme = null; nav().setTheme(nav().settings.theme); } }
+  };
+  // page Apparence : construction au chargement complet (les icônes arrivent après ce script)
+  if (document.getElementById('appearancePage')) { if (document.readyState === 'complete') mount(); else window.addEventListener('load', () => mount()); }
 })();

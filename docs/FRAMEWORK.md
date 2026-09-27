@@ -61,7 +61,8 @@ Interface `window.RepositoryNav` : `root` (racine du site), `page`, `menu`, `set
 
 ## 2 bis. Apparence — designs, icônes, barre latérale, couleurs
 
-Réglée sur la page **Apparence** (`CR DEFA/apparence.html`, construite par `shared/appearance_page.js` : vignettes
+Réglée dans la **fenêtre modale Apparence** (ouverte au-dessus de la page courante par le menu ☰, la barre latérale et
+Paramétrage : `RepositoryNav.openAppearance()`, contenu monté par `RepositoryAppearance.mount`), aussi disponible en page (`CR DEFA/apparence.html`, construite par `shared/appearance_page.js` : vignettes
 des designs dessinées dans chaque design, rangées d'icônes par épaisseur de trait, barre latérale, une carte par thème
 avec famille, ton, aperçu, contrastes WCAG et « Voir sur cette page » ; le menu ☰ « Apparence… » et un bloc-lien de
 Paramétrage, `shared/appearance_admin.js`, y mènent), mémorisée dans le navigateur et appliquée

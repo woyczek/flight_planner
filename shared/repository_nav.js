@@ -94,7 +94,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260927h", script.src).href;
+    css.href = new URL("designs.css?v=20260927i", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -244,6 +244,7 @@
   // Réglages en tête du menu, en boutons : Apparence (design, icônes, couleurs) et Paramètres (bases de données).
   menu.insertAdjacentHTML("afterbegin", '<div class="repo-settings-row"><a class="repo-settings-button repo-appearance-link" data-label="Apparence"></a><a class="repo-settings-button repo-parametrage-link" data-label="Paramètres"></a></div>');
   menu.querySelector(".repo-appearance-link").href = new URL("CR DEFA/apparence.html", root).href;
+  menu.querySelector(".repo-appearance-link").addEventListener("click", e => { if (openAppearance()) { e.preventDefault(); close(); } });
   menu.querySelector(".repo-parametrage-link").href = new URL("CR DEFA/parametrage.html", root).href;
   menu.insertAdjacentHTML("beforeend", '<div class="repo-page-actions"></div>');
   /** Enregistre et applique le design id (événement « repository-design-change »). */
@@ -257,6 +258,34 @@
     try { localStorage.setItem("repositoryDesign", id); } catch {}
     window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { design: id } }));
   };
+  /** Apparence en fenêtre modale au-dessus de la page courante (réglages appliqués en direct ; fermeture : bouton,
+   *  Échap ou clic hors de la fenêtre, on reste sur la page) ; interface de shared/appearance_page.js, chargé à la
+   *  demande. Sur la page Apparence elle-même : rien (false, le lien s'ouvre normalement). */
+  let apDialog = null;
+  function openAppearance() {
+    if (document.getElementById("appearancePage")) return false;
+    if (!apDialog) {
+      apDialog = document.createElement("dialog");
+      apDialog.className = "repo-ap-dialog";
+      apDialog.setAttribute("data-no-i18n", "");
+      apDialog.innerHTML = '<div class="repo-ap-head"><b data-label="Apparence"></b><button type="button" class="repo-ap-close repo-plain" aria-label="Fermer">✕</button></div><main class="ap-page"></main>';
+      document.body.append(apDialog);
+      apDialog.querySelector(".repo-ap-close").onclick = () => apDialog.close();
+      apDialog.addEventListener("click", e => { if (e.target === apDialog) apDialog.close(); });
+      apDialog.addEventListener("close", () => window.RepositoryAppearance?.close());
+    }
+    apDialog.querySelector(".repo-ap-head b").textContent = trLabel("Apparence");
+    const host = apDialog.querySelector("main");
+    const show = () => { window.RepositoryAppearance.mount(host); if (!apDialog.open) apDialog.showModal(); };
+    if (window.RepositoryAppearance) show();
+    else {
+      const sc = document.createElement("script");
+      sc.src = new URL("appearance_page.js" + new URL(script.src).search, script.src).href;
+      sc.onload = show;
+      document.head.append(sc);
+    }
+    return true;
+  }
   /** Ferme le menu ☰ et le menu des langues. */
   const close = () => {
     menu.hidden = true;
@@ -351,6 +380,8 @@
       contrast,
       luminance
     },
+    /** Ouvre l'Apparence en fenêtre modale (false sur la page Apparence elle-même). */
+    openAppearance: () => openAppearance(),
     /** Ajoute une action de page au menu ☰ (groupe « Page ») : label = texte ou [fr, en, de, es] (retraduit au changement de langue), handler = fonction appelée au clic. Retourne le bouton. */
     addAction(label, handler) {
       const host = menu.querySelector(".repo-page-actions");
@@ -414,6 +445,7 @@
       a.className = "repo-sidenav-item";
       if (it.menu) { a.type = "button"; a.onclick = e => { e.stopPropagation(); document.querySelector(".repo-menu-button")?.click(); }; }
       else a.href = new URL(it.path, root).href;
+      if (it.path === "CR DEFA/apparence.html") a.addEventListener("click", e => { if (openAppearance()) e.preventDefault(); });
       if (i === active) a.setAttribute("aria-current", "page");
       a.innerHTML = `<span class="repo-sidenav-ic" data-sidenav-icon="${esc(it.icon)}">${skImg(it.icon)}</span><span class="repo-sidenav-label"></span>`;
       a._it = it;
@@ -440,20 +472,20 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260927h", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260927i", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260927h", script.src).href;
+    files.src = new URL("file_access.js?v=20260927i", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260927h", "block_icons.js?v=20260927h", "side_nav.js?v=20260927h"]) {
+    for (const f of ["icons/repository_icons.js?v=20260927i", "block_icons.js?v=20260927i", "side_nav.js?v=20260927i"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260927h", script.src).href;
+    store.src = new URL("browser_store.js?v=20260927i", script.src).href;
     document.head.append(store)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {
