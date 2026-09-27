@@ -169,6 +169,8 @@ header.mc-header:has(.mc-header-tools)>p:not(.mc-family-description){display:non
 .mc-toolbar>.mc-import>summary{border-radius:8px;padding:4px 12px;font-size:12px}
 .mc-net:has(.nt-toggle.danger)>summary::before{content:'●';color:#f87171;margin-right:2px}
 .mc-pop{position:absolute;z-index:1100;top:calc(100% + 6px);left:0;min-width:240px;box-sizing:border-box;padding:10px;border-radius:12px;background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 8px 24px #0003}
+/* derniers menus de la barre : fenêtre alignée à droite du bouton (elle ne sort pas de l'écran) */
+.mc-toolbar>details.mc-menu:nth-last-of-type(-n+2)>.mc-pop{left:auto;right:0}
 .mc-list{display:grid;gap:2px;min-width:270px}
 .mc-list hr{border:0;border-top:1px solid var(--line);margin:4px 0}
 .mc-list .mc-ledger-info{margin:0 4px 6px;color:var(--muted);font-size:11px}

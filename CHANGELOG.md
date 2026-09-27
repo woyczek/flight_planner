@@ -10,6 +10,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **CR DEFA dans les designs à matières** : boutons et menus de l'en-tête (Ajouter au registre, Analyse / import,
+  Suivi réseau, Mission, Registre des missions, changement de mission) habillés comme les boutons du design, action
+  principale à la couleur d'accent ; fenêtres surgissantes sur la surface du design (parchemin, acier sombre, verre)
+  avec des entrées lisibles (elles étaient en texte sombre sur boutons sombres) ; cartes des calculs automatiques,
+  fiches d'appareil, encadrés plan de vol et météo, tableaux habillés ; aperçu du rapport en feuille de papier.
+- **CR DEFA : menus de droite de la barre** (Mission, Registre) ouverts vers la gauche : ils ne sortent plus de l'écran.
 - **Éditeur de missions (Durci)** : fonds d'« Identification » et d'« Importer » étendus à tout le bloc (le mode
   « side » y montrait les bords du panneau de l'image au milieu du bloc).
 - **Durci : série de fonds en panneaux olive rivetés** : reporting (vue aérienne, pictogrammes des missions, ailes au
