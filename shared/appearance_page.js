@@ -178,7 +178,7 @@ main.ap-page :is(.ap-thumb,.ap-iconrow,.ap-seg,.ap-card,.ap-show,[id=apReset]){c
 main.ap-page h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:16px 0 8px}
 .ap-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
 .ap-card{display:grid;gap:9px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
-.ap-card header{display:flex;align-items:baseline;justify-content:space-between;gap:8px}.ap-card header small{color:var(--muted);font-family:ui-monospace,Consolas,monospace;font-size:11px}
+main.ap-page .ap-card>header{display:flex;align-items:baseline;justify-content:space-between;gap:8px;position:static;padding:0;margin:0;border:0;background:none;backdrop-filter:none;box-shadow:none;z-index:auto}.ap-card header small{color:var(--muted);font-family:ui-monospace,Consolas,monospace;font-size:11px}
 .ap-sample{border-radius:8px;overflow:hidden;border:1px solid var(--line)}
 .ap-s-bar{display:block;padding:7px 10px;font-weight:800;font-size:13px}
 .ap-s-page{display:flex;align-items:center;gap:12px;padding:9px 10px;font-size:12.5px;font-weight:650}
@@ -190,7 +190,7 @@ main.ap-page h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;col
 .ap-tone{display:grid;grid-template-columns:auto auto 1fr auto;align-items:center;gap:6px;font-size:12.5px}.ap-tone small{color:var(--muted)}.ap-tone input{width:100%}
 .ap-wcag{display:flex;flex-wrap:wrap;gap:5px}
 .ap-pill{display:inline-flex;align-items:baseline;gap:4px;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:800}.ap-pill small{font-weight:500}
-.ap-pill.ok{background:#e3f4e8;color:#14532d}.ap-pill.ko{background:#fde2e1;color:#8a1c14}
+main.ap-page .ap-pill.ok{background:#e3f4e8!important;color:#14532d!important;border:0!important}main.ap-page .ap-pill.ko{background:#fde2e1!important;color:#8a1c14!important;border:0!important}   /* pastilles : jamais repeintes par les encadrés .ok de la page hôte */
 .ap-show{justify-self:start;border:1px solid var(--line);border-radius:8px;padding:5px 10px;background:transparent;color:var(--ink);cursor:pointer;font:inherit;font-size:12.5px}
 .ap-show[aria-pressed="true"]{background:var(--repo-bar);color:var(--repo-bar-text);border-color:var(--repo-bar)}
 .ap-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}

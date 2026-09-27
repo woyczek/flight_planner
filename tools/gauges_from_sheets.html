@@ -24,7 +24,7 @@ const SHEETS = {
   cabinet: { src: 't2.png', alpha: true, ax: 903, ay: 540, box: 1.4, fix: { cx: 901.4, cy: 530, r: 162, aspect: 1.034 } },
   flightlog: { src: 't1.png', alpha: true, ax: 902, ay: 537, box: 1.4, fix: { cx: 900.9, cy: 524.3, r: 161.7, aspect: 1.035 } },
   field: { src: 't3.png', alpha: true, ax: 903, ay: 522, box: 1.4, fix: { cx: 899.5, cy: 513, r: 157.5, aspect: 1.034 } },
-  aqua: { src: 't4.png', alpha: true, ax: 900, ay: 511, box: 1.4, fix: { cx: 900, cy: 514, r: 154, aspect: 1.035 } }
+  aqua: { src: 't4.png', alpha: true, ax: 900, ay: 511, box: 1.4, fix: { cx: 900.7, cy: 504.6, r: 152, aspect: 1 } }   // Aqua : ouverture ronde (plaque plus haute que large), relevée sur le bas et les côtés (reflet bleu en haut)
 };
 const HALF = 1.45;   // demi-côté de la découpe / rayon de l'ouverture (le boîtier entier doit y tenir)
 const load = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error(src)); i.src = src; });
