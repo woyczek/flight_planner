@@ -380,6 +380,14 @@
       if (mode === 'eco') ve = jet ? Math.min(Math.pow(3, .25) * M.veMd, M.mRef * at.a * s, veCap) : M.veMd; // jamais plus rapide que la croisière du profil
       else if (jet) ve = Math.min(M.mRef * at.a * s, veCap);
       else ve = powerSpeed(h, Math.min(M.pRef, .98 * M.avail(h)));
+      // hélice : si la puissance de croisière du profil ne tient plus le palier (air moins dense), l'équipage remet juste
+      // la puissance nécessaire : vol à la vitesse de puissance minimale (croisière « limitée ») au lieu de refuser le
+      // niveau ; refus seulement si même la pleine puissance ne tient pas ce palier
+      let propLimited = false;
+      if (!ve && !jet && mode !== 'eco') {
+        const vmp = Math.pow(3, -.25) * M.veMd, pMin = M.dw(vmp) * vmp / s;
+        if (pMin <= .98 * M.avail(h)) { ve = vmp; propLimited = true; }
+      }
       if (!ve) return {
         h,
         ok: false,
@@ -393,7 +401,7 @@
       // Réacteur : si la vitesse demandée (Mach du profil, ou vitesse de distance max.) n'est pas tenable avec
       // 92 % de la poussée disponible, on vole à la plus grande vitesse tenable (poussée max. croisière), comme un
       // équipage ; le niveau n'est refusé que si même la vitesse de traînée minimale ne l'est pas (plafond de croisière).
-      let limited = false;
+      let limited = propLimited;
       if (jet && !(M.dw(ve) <= M.avail(h) * .92)) {
         const cap = M.avail(h) * .92;
         // coin de cercueil : la vitesse de traînée minimale dépasse la vitesse permise (Mach) — ralentir ne ferait

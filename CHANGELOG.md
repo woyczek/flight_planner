@@ -10,6 +10,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Planificateur : bloc Résultat épinglable** : bouton « Épingler » dans ses outils ; épinglé, le bloc reste déplié
+  quand il suit la page (il se repliait dès qu'il se collait sous l'en-tête). Choix mémorisé dans le navigateur.
+- **Planificateur, hélices : plus de niveaux refusés à tort sous le plafond** : quand la puissance de croisière du
+  profil ne tient plus le palier (air moins dense), le modèle ajoute la puissance nécessaire et vole à la vitesse de
+  puissance minimale (croisière « limitée ») au lieu de refuser le niveau ; refus seulement si même la pleine puissance
+  ne tient pas le palier. Supprime la zone « inaccessible — puissance insuffisante » artificielle (un avion qui monte au
+  FL123 tient le FL095).
 - **Planificateur : moteurs à pistons suralimentés** : champ de profil « Altitude de rétablissement (ft) » (Croisière) ;
   pleine puissance jusqu'à cette altitude, puis décroissance d'un moteur atmosphérique rapportée à ce niveau (DC-3,
   R-1830 : environ 7 500 ft). Sans valeur : moteur atmosphérique, comme avant (puissance en baisse dès le sol).

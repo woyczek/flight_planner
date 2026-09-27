@@ -350,6 +350,34 @@
   // Panneaux d'explications (colonne droite)
   // ---------------------------------------------------------------------------------------------------
 
+  /** Bouton « épingler déplié » du bloc Résultat : collé sous l'en-tête, le bloc se compacte (détail masqué) ; épinglé,
+   *  il reste déplié. Choix mémorisé dans ce navigateur (fpResultExpanded). */
+  function resultPin(res) {
+    const KEY = "fpResultExpanded", get = () => { try { return localStorage.getItem(KEY) === "1"; } catch { return false; } };
+    const apply = () => {
+      const on = get(), b = res.querySelector(".fp-result-pin");
+      res.classList.toggle("fp-expanded", on);
+      if (!b) return;
+      const t = on ? tl("Détacher : le bloc se replie quand il suit la page", "Unpin: the block folds up while it follows the page", "Lösen: der Block klappt beim Mitlaufen zusammen", "Soltar: el bloque se pliega al seguir la página")
+        : tl("Épingler déplié : le bloc reste entier quand il suit la page", "Pin expanded: the block stays whole while it follows the page", "Aufgeklappt anheften: der Block bleibt beim Mitlaufen vollständig", "Fijar desplegado: el bloque se mantiene entero al seguir la página");
+      b.title = t; b.setAttribute("aria-label", t); b.setAttribute("aria-pressed", String(on));
+      b.lastChild.textContent = on ? tl(" Épinglé", " Pinned", " Angeheftet", " Fijado") : tl(" Épingler", " Pin", " Anheften", " Fijar");
+      StickyFrame.refresh();
+    };
+    const place = () => {
+      if (res.querySelector(".fp-result-pin")) return apply();
+      const tools = res.querySelector(".repo-block-tools");
+      if (!tools) return setTimeout(place, 300);   // outils posés par le framework au chargement
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "fp-result-pin";
+      b.innerHTML = (window.RepositoryIcons?.svg("pin", { size: 13 }) || "📌") + "<span></span>";
+      b.onclick = () => { try { localStorage.setItem(KEY, get() ? "0" : "1"); } catch {} apply(); };
+      tools.prepend(b);
+      apply();
+    };
+    place();
+    window.addEventListener("repository-language-change", () => setTimeout(apply));
+  }
   let framesReady = false;
   /** Enregistre une fois les cadres semi-mobiles : bloc Résultat (ancre : carte des courbes, « stack »), puis un
    *  panneau par rangée de courbe (attribut data-row = id de la rangée). */
@@ -359,6 +387,7 @@
     if (!side || !res) return;
     framesReady = true;
     StickyFrame.follow(res, { anchor: document.querySelector('[data-block-id="fuel-plan"]') || side, stack: true });
+    resultPin(res);
     side.querySelectorAll(".side-panel").forEach(p => StickyFrame.follow(p, { anchor: $(p.dataset.row), grow: true }));
   }
   /** Contenu d'un panneau : titre, puis blocs HTML (les vides sont omis). */
