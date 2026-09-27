@@ -64,7 +64,7 @@
     // d'appareil), rangée de pictogrammes (capacités), cadran soleil et lune (jour / nuit), pupitre radio (réseau),
     // étoile (contexte) ; carte et écran radar (studio : cartes), insigne à chevrons (éditeur : identification),
     // étagère d'équipement (éditeur : import)
-    field: { aerodromes: 'cover', families: 'cover', outcomes: 'cover', series: 'cover', aircraft: 'cover', capabilities: 'cover', daynight: 'cover', network: 'cover', context: 'cover', maps: 'side', identification: 'side', import: 'side', result: ['cover', 'center', 'field/bg-outcomes'] },
+    field: { aerodromes: 'cover', families: 'cover', outcomes: 'cover', series: 'cover', aircraft: 'cover', capabilities: 'cover', daynight: 'cover', network: 'cover', context: 'cover', maps: 'side', identification: ['cover', 'center 78%'], import: ['cover', 'center 70%'], result: ['cover', 'center', 'field/bg-outcomes'] },
     aqua: { aerodromes: ['cover', 'center bottom', 'aqua/bg-water'], capabilities: ['cover', 'left center', 'aqua/bg-water'], outcomes: ['cover', 'center top', 'aqua/bg-water'], aircraft: ['cover', 'right center', 'aqua/bg-water'] }
   };
   function backgrounds(d) {
