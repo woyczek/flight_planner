@@ -39,8 +39,17 @@
   // Constantes et petits utilitaires d'affichage
   // ---------------------------------------------------------------------------------------------------
 
-  /** Couleur de chaque série (trait de courbe et libellé). */
-  const COL = { prof: "#75c8ff", eco: "#7ed69b", fast: "#f0b86e", man: "#c792ea", ref: "#9ba8b5" };
+  /** Couleur de chaque série (trait de courbe et libellé), accordée à la palette des graphiques (Apparence ›
+   *  Graphiques : laiton en Cabinet et Carnet de vol, kaki en Durci…) ; les courbes lisent les mêmes couleurs dans les
+   *  variables --fc-<série> (feuille de style de la page). */
+  const COL0 = { prof: "#75c8ff", eco: "#7ed69b", fast: "#f0b86e", man: "#c792ea", ref: "#9ba8b5" };
+  const tint = c => window.RepositoryNav?.chartColor?.(c) ?? c;
+  const COL = new Proxy(COL0, { get: (o, k) => tint(o[k]) });
+  const setChartVars = () => { for (const k of Object.keys(COL0)) document.documentElement.style.setProperty(`--fc-${k}`, COL[k]); };
+  setChartVars();
+  window.addEventListener("load", setChartVars);
+  // changement de design, de palette ou de style : couleurs et graphiques refaits
+  window.addEventListener("repository-design-change", () => { setChartVars(); window.FlightPerfView?.renderAll(); });
   const SVGNS = "http://www.w3.org/2000/svg";
 
   /** Libellé coloré d'une série : seul le titre porte la couleur, la valeur qui suit reste neutre. */
@@ -374,6 +383,7 @@
   /** Redessine tout avec le modèle m (sans le reconstruire) : appelé par renderAltitudeOptimum et par les curseurs.
    *  stop(msg) : affichage d'un message à la place des courbes (niveau introuvable). */
   function renderAll(m, c, stop = () => {}) {
+    setChartVars();   // palette du design (le cadre commun peut se charger après ce script)
     let K;
     try { K = S.cache ||= buildCache(m, c); }
     catch (e) { console.error("Vue des courbes — calcul :", e); return stop(`${failTxt()} : ${e.message}`); }

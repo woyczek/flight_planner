@@ -10,6 +10,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Planificateur : graphiques et curseurs en matière** : graphiques du devis carburant en écran d'instrument (Cabinet et
+  Carnet de vol : panneau bleu marine serti de laiton, quadrillage gravé or ; Durci : écran phosphore vert à balayage ;
+  Aqua : verre clair ou sombre) ; couleurs des courbes selon la palette des graphiques (Apparence) ; curseurs verticaux
+  en commandes (bouton de laiton moleté, levier d'acier, bulle de gel) ; redessinés au changement de design.
+- **Durci : voyant « modifications à sauvegarder » actif** : un clic sauvegarde comme le bouton de l'en-tête (dossier de
+  sauvegarde, sinon choix du dossier, sinon téléchargement).
+- **Durci : bandeau radar** : largeur de la colonne, hauteur plafonnée ; l'écran est rogné en haut et en bas, centré
+  (le balayage reste centré sur la cible).
 - **CR DEFA dans les designs à matières** : boutons et menus de l'en-tête (Ajouter au registre, Analyse / import,
   Suivi réseau, Mission, Registre des missions, changement de mission) habillés comme les boutons du design, action
   principale à la couleur d'accent ; fenêtres surgissantes sur la surface du design (parchemin, acier sombre, verre)
