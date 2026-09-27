@@ -10,6 +10,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Planificateur : cadrans réalistes** dans les designs à matières (Cabinet, Carnet de vol, Durci, Aqua) — boîtier,
+  couronne moletée et biseau dans la matière du design (laiton, acier, chrome), cadran noir bombé, ombre intérieure,
+  chiffres gras, aiguilles ombrées, moyeu, reflet du verre ; mêmes graduations et aiguilles (lecture inchangée).
 ## [2.3.0] — 2026-09-26
 
 - **Design « Carnet de vol »** (déclinaison aéronautique de Cabinet, planche dédiée) : blocs cerclés du cadre d'aluminium
