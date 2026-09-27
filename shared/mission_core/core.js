@@ -1279,6 +1279,7 @@
       window.print();
     };
     window.addEventListener('repository-language-change', () => setTimeout(renderReport));
+    window.addEventListener('repository-design-change', () => setTimeout(renderReport));   // palette, style des graphiques
     $a('delete').onclick = async () => {
       if (!edit || !confirm(t('confirmDelete'))) return;
       const current = ledger.missions[edit.index];

@@ -36,11 +36,34 @@
       sides: [['stencil-mission', 150], ['grille', 80], ['stencil-defa', 130], ['plate-small', 90], ['stencil-ops', 160], ['nut', 40]]
     }
   };
+  // Fonds illustrés des blocs (designs à matières, décor complet ou sobre) : un bloc marqué data-deco-bg="<clé>"
+  // (reporting : aerodromes, capabilities, outcomes, aircraft) reçoit shared/deco/<design>/bg-<clé>.webp, sous son
+  // contenu, fondu vers le bas et la droite. Seules les images déclarées ici sont chargées (pas de requête inutile).
+  // Mode « anchor » : taille d'origine, calée en haut à gauche, s'étend vers la droite et le bas (coupée au bord du
+  // bloc) ; « cover » : redimensionnée pour couvrir le bloc. Exemple : field: { aerodromes: 'anchor' }.
+  const BG = {};
+  function backgrounds(d) {
+    document.querySelectorAll('.repo-deco-bgimg').forEach(n => n.remove());
+    document.querySelectorAll('.repo-has-bg').forEach(b => b.classList.remove('repo-has-bg'));
+    const list = BG[d];
+    if (!list) return;
+    document.querySelectorAll('[data-deco-bg]').forEach(b => {
+      const mode = list[b.dataset.decoBg];
+      if (!mode) return;
+      const el = document.createElement('div');
+      el.className = `repo-deco-bgimg repo-deco-bg-${mode}`;
+      el.setAttribute('aria-hidden', 'true');
+      el.style.backgroundImage = `url("${DECO(d)(`bg-${b.dataset.decoBg}`)}")`;
+      b.classList.add('repo-has-bg');
+      b.prepend(el);
+    });
+  }
   let nodes = [];
   const clear = () => { nodes.forEach(n => n.remove()); nodes = []; };
   function render() {
     clear();
     const d = document.documentElement.dataset.design, set = SETS[d];
+    backgrounds(d);
     if (!set || document.documentElement.dataset.decor !== 'full') return;
     const img = n => d === 'field' && n === 'plane-plate' ? new URL(`icons/skeuo/field/plane-plate.webp${V}`, script.src).href : DECO(d)(n);
     // 1. pied de page

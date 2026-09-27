@@ -30,6 +30,11 @@ const ITEMS = {
   field: [
     ...[['file-text', 'book', 'x', 'settings'], ['map', 'plane', 'target', 'refresh'], ['info', 'alert', 'globe', 'sparkles']].flatMap((row, j) => row.map((n, i) => tile(n, [1159, 1238, 1315, 1388][i], [572, 632, 691][j]))),
     tile('plane-plate', 772, 789, 66, 62),
+    // icônes de la barre latérale (planche haute définition icones-durci.png, fond transparent, 3 × 3) ; remplacent
+    // celles de la petite planche (file-text : même image que clipboard)
+    ...[['target', 'map', 'clipboard'], ['chart', 'fuel', 'plane'], ['palette', 'settings', 'help']].flatMap((row, j) => row.map((n, i) => ({ name: n, kind: 'icon', src: 'icones-durci.png', mask: 'rect',
+      box: [[56, 409, 748][i] - 2, [164, 546, 921][j] - 2, [319, 305, 317][i] + 4, [317, 315, 316][j] + 4] }))),
+    { name: 'file-text', kind: 'icon', src: 'icones-durci.png', mask: 'rect', box: [746, 162, 321, 321] },
     deco('handle-v', 22, 872, 79, 1066, 'key', { tol: [16, 40] }),
     deco('handle-slim', 90, 872, 134, 1064, 'key', { tol: [16, 40] }),
     deco('handle-h', 146, 873, 294, 936, 'key', { tol: [16, 40] }),
@@ -120,7 +125,9 @@ function cut(img, it) {
 }
 async function run() {
   const out = document.getElementById('out'), list = document.getElementById('list'); let ok = 0, n = 0;
+  const only = new URLSearchParams(location.search).get('design');   // ?design=field : une seule planche
   for (const [design, file] of Object.entries(SHEETS)) {
+    if (only && design !== only) continue;
     const img = await load(`/src/${file}`);
     list.insertAdjacentHTML('beforeend', `<h2>${design}</h2>`);
     for (const it of ITEMS[design]) {

@@ -180,7 +180,7 @@
   /** Couleurs accordées au design (repository_nav.js : familles des designs à matières). */
   const tint = c => window.RepositoryNav?.chartColor?.(c) ?? c;
   /** Designs à matières : barres et anneaux en relief (reflet cylindrique, ombrage) plutôt qu'en aplats. */
-  const matter = () => /^(cabinet|flightlog|field|aqua)$/.test(document.documentElement.dataset.design || '');
+  const matter = () => document.documentElement.dataset.chartStyle === 'relief';   // style choisi ou selon le design
   const SHEEN = '<defs><linearGradient id="mcgSheen" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".22"/><stop offset=".18" stop-color="#fff" stop-opacity=".32"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient>'
     + '<linearGradient id="mcgRing" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".3"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></linearGradient></defs>';
   function stackedBars({

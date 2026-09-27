@@ -35,3 +35,11 @@ html[data-design="ops"] :where(body>:not(.repo-header):not(.repo-footer)) th,htm
 .repo-design-row button{flex:1 1 45%;padding:6px 8px;border:1px solid color-mix(in srgb,var(--repo-bar-text) 30%,transparent);border-radius:6px;background:transparent;color:inherit;font:12px/1.2 Inter,system-ui,Segoe UI,Arial,sans-serif;cursor:pointer;text-align:left}
 .repo-design-row button[aria-pressed="true"]{background:color-mix(in srgb,var(--repo-bar-text) 18%,transparent);font-weight:750}
 .repo-design-row button[aria-pressed="true"]::before{content:"✓ "}
+/* ---- graphiques en relief (Apparence › Graphiques, style « relief » ; automatique dans les designs à matières) :
+   rainures gravées, barres et anneaux ombrés (reflet SVG ajouté par charts.js) ; rainure claire sur les pages claires */
+html[data-chart-style="relief"] .mcg-htrack{height:12px!important;border-radius:3px!important;background:rgba(0,0,0,.38)!important;box-shadow:inset 0 1px 3px rgba(0,0,0,.75),0 1px 0 rgba(255,255,255,.1)}
+html[data-chart-style="relief"] .mcg-htrack i{border-radius:2px!important;background-image:linear-gradient(rgba(255,255,255,.42),rgba(255,255,255,.1) 45%,rgba(0,0,0,.2) 55%,rgba(0,0,0,.06))!important;box-shadow:inset 0 0 0 1px rgba(0,0,0,.35)}
+html[data-chart-style="relief"] :is(.mcg-legend,.mcg-series-legend) i{border-radius:50%!important;box-shadow:inset 0 1px 1px rgba(255,255,255,.55),inset 0 -1px 1px rgba(0,0,0,.4),0 0 0 1px rgba(0,0,0,.45)}
+html[data-chart-style="relief"] .mcg-donut svg{filter:drop-shadow(0 3px 3px rgba(0,0,0,.45))}
+html[data-chart-style="relief"] .mcg-donut :is(path,circle){stroke:rgba(0,0,0,.4)}
+html[data-chart-style="relief"][data-tone="light"]:not([data-design="field"]) .mcg-htrack{background:linear-gradient(#d3d9e0,#eceff3)!important;box-shadow:inset 0 1px 3px rgba(20,40,70,.35),0 1px 0 #fff}

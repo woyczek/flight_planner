@@ -10,6 +10,22 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Graphiques : palette et style au choix** (Apparence › Graphiques, comme les icônes) : palettes Automatique
+  (selon le design), Vives (couleurs des pages), Ardoise, Laiton et cuir, Kaki et olive ; styles Automatique, Aplats,
+  Relief (`html[data-chart-palette]`, `html[data-chart-style]`, règles du relief dans `designs.css` : utilisables dans
+  tous les designs).
+- **Changement de design, de palette ou de couleurs appliqué en direct** : les reportings (global, par famille) et le
+  rapport de mission se redessinent (événement `repository-design-change`), sans recharger la page.
+- **Fonds illustrés des blocs** (designs à matières) : emplacements prêts sur les blocs du reporting (terrains de
+  départ, capacités, résultats, types d'appareil : `data-deco-bg`), image `shared/deco/<design>/bg-<clé>.webp` sous le
+  contenu, fondue vers la droite et le bas ; modes « anchor » (taille d'origine, s'étend vers la droite et le bas) ou
+  « cover » (redimensionnée), déclarés dans `design_deco.js` (`BG`).
+- **Durci : icônes de la barre latérale** découpées dans la planche haute définition (cible, carte, compte rendu,
+  graphique, carburant, avion, palette, réglages, aide), réutilisées pour les mêmes icônes partout.
+- **Plaques de titre** : toujours sur la première ligne, à côté de l'icône (plus de passage sous l'icône) ; retour à la
+  ligne entre les mots seulement.
+- **Fenêtre Apparence** : blocs habillés par le design après chaque réglage (et non plus seulement à l'ouverture) ;
+  en-tête au-dessus des outils de bloc (bouton de fermeture toujours visible).
 - **Graphiques dans les designs à matières** : couleurs ramenées à la famille du design, peu saturées
   (`RepositoryNav.chartColor` : Cabinet et Carnet de vol en laiton, beige, bleu acier, cuivre, lie-de-vin, sauge, taupe ;
   Durci en kaki, olive, moutarde, rouille, gris-vert, ardoise ; plus de rose vif) : graphiques, indicateurs, pastilles

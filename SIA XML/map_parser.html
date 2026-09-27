@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Studio cartographique aéronautique SIA</title>
-<link rel="stylesheet" href="../shared/repository_nav.css?v=20260927zd">
-<script src="../repository_tree?v=20260927zd"></script>
+<link rel="stylesheet" href="../shared/repository_nav.css?v=20260927zh">
+<script src="../repository_tree?v=20260927zh"></script>
 <link rel="stylesheet" href="maplibre-gl.css">
 <script src="maplibre-gl.js"></script>
 <script src="../shared/mission_core/vendor/js-yaml.min.js"></script>
 <script src="mission_store.js?v=20260926d"></script>
-<script src="aero_symbols.js?v=20260925j"></script><script src="vertical_profile.js?v=20260925k"></script><script src="../AircraftDB/aircraft_db.js"></script><script src="../shared/flight_performance_model.js?v=20260927zd"></script>
-<script src="../shared/aar_tracks.js?v=20260927zd"></script><script src="../shared/sticky_frame.js?v=20260927zd"></script>
+<script src="aero_symbols.js?v=20260925j"></script><script src="vertical_profile.js?v=20260925k"></script><script src="../AircraftDB/aircraft_db.js"></script><script src="../shared/flight_performance_model.js?v=20260927zh"></script>
+<script src="../shared/aar_tracks.js?v=20260927zh"></script><script src="../shared/sticky_frame.js?v=20260927zh"></script>
 <style>
 :root{font:15px/1.45 system-ui,sans-serif;color:#18242b;background:#edf3f6}body{max-width:1500px;margin:0 auto;padding:0 18px 50px}header,section{background:#fff;border:1px solid #d3dfe5;border-radius:12px;padding:20px;margin:14px 0;box-shadow:0 2px 8px #18313e0d}h1{margin:0;font-size:1.65rem}h2{margin:0 0 13px;font-size:1.1rem}.sub{color:#586a74;margin:.35rem 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:14px}.box{border:1px solid #dce5e9;border-radius:9px;padding:12px}.check{display:flex;gap:8px;align-items:center;margin:7px 0;font-weight:600}.check input{width:18px;height:18px}label{display:block;font-weight:650;margin:7px 0}input[type=file],input[type=number],textarea{width:100%;box-sizing:border-box;margin-top:4px;padding:8px;border:1px solid #afc1ca;border-radius:7px;font:inherit}textarea{min-height:105px;font-family:ui-monospace,monospace}button,.buttonLink{border:0;border-radius:8px;background:#075ca8;color:#fff;padding:10px 16px;font:inherit;font-weight:750;cursor:pointer;text-decoration:none;display:inline-block}button:disabled{opacity:.45;cursor:not-allowed}.warn{background:#fff7d9;border-left:4px solid #dfa400;padding:9px 11px}.ok{color:#08723c}.err{color:#a12622}code{background:#eef2f4;padding:2px 5px;border-radius:4px}#maps{padding-left:20px}.actions{display:flex;gap:10px;flex-wrap:wrap}.small{font-size:.88rem;color:#5c6d76}progress{width:100%;height:18px}
 input[type=range]{width:100%;margin:5px 0}select{width:100%;box-sizing:border-box;margin-top:4px;padding:8px;border:1px solid #afc1ca;border-radius:7px;background:#fff;font:inherit}
@@ -784,7 +784,7 @@ window.addEventListener('repository-nav-ready',e=>addOutputActions(e.detail));if
  // Base absente ou d'une version précédente : relecture du dossier mémorisé si l'accès est déjà accordé.
  if(!cachedOk)for(let i=0;i<50&&!window.FileAccess;i++)await new Promise(r=>setTimeout(r,100));if(!cachedOk&&window.FileAccess){const st=await FileAccess.status('__sia');if(st.handle&&st.permission==='granted')readSiaFolder(false);else if(st.handle)$('inputStatus').innerHTML=`<span class="err">Base à reconstruire (nouvelle version : cercles et arcs des CTR, CTA / TRA, tours de contrôle) : clique sur « Relire le dossier ».</span>`}})();
 </script>
-<script src="../shared/repository_nav.js?v=20260927zd"></script>
-<script src="../shared/app_framework.js?v=20260927zd"></script>
-<script src="../shared/content_i18n.js?v=20260927zd"></script><script src="sia_i18n.js?v=20260926e"></script>
+<script src="../shared/repository_nav.js?v=20260927zh"></script>
+<script src="../shared/app_framework.js?v=20260927zh"></script>
+<script src="../shared/content_i18n.js?v=20260927zh"></script><script src="sia_i18n.js?v=20260926e"></script>
 </body></html>

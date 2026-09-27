@@ -58,19 +58,31 @@
     return fam ? { ...t, ...familyColors(fam, o.tone, t.page), family: o.family, tone: +o.tone } : { ...t };
   }
   let currentTheme = themeName;
-  // Couleurs des graphiques dans les designs à matières : toute couleur vive (familles, séries, statuts) est ramenée à
-  // la famille de couleurs du design, peu saturée : Cabinet et Carnet de vol (laiton, beige, bleu acier, cuivre,
-  // lie-de-vin, sauge), Durci (kaki, olive, moutarde, gris-vert, ardoise). La teinte d'origine choisit l'entrée
-  // (10 secteurs de teinte + gris) : deux couleurs d'origine distinctes le restent ; la clarté d'origine module un peu
-  // la clarté (deux nuances d'une même teinte restent distinctes). Designs sans matière, Aqua : couleurs inchangées.
+  // Graphiques : palette et style, au choix (Apparence › Graphiques : préférences repositoryChartPalette et
+  // repositoryChartStyle) ou automatiques selon le design. Palettes : « vivid » (couleurs d'origine des pages), « brass »
+  // (laiton, beige, bleu acier, cuivre, lie-de-vin, sauge, taupe : auto en Cabinet et Carnet de vol), « khaki » (kaki,
+  // olive, moutarde, rouille, gris-vert, ardoise : auto en Durci), « slate » (bleus et gris d'ardoise sourds). Toute
+  // couleur vive (familles, séries, statuts) est ramenée à la palette : la teinte d'origine choisit l'entrée (10 secteurs
+  // de teinte + gris), deux couleurs distinctes le restent ; la clarté d'origine module un peu la clarté.
+  // Styles : « flat » (aplats) ou « relief » (barres cylindriques, anneaux ombrés, rainures : auto dans les designs à
+  // matières) ; posés sur <html data-chart-style / data-chart-palette>.
   const CHART = {
-    cabinet: { grey: "#b8ad98", hues: [[20, "#b0645a"], [45, "#b87d4b"], [70, "#c9a24a"], [100, "#a39f6a"], [160, "#839c78"], [195, "#6f9a95"], [225, "#7f9cc0"], [255, "#8e9cc9"], [300, "#8e8a9e"], [345, "#9c8a78"], [360, "#b0645a"]] },   // violet → gris mauve, rose → taupe (jamais de rose vif)
+    slate: { grey: "#9aa4b0", hues: [[20, "#b07c7c"], [45, "#b8987a"], [70, "#c2b27e"], [100, "#9fb08a"], [160, "#7fa597"], [195, "#78a4b4"], [225, "#7d9cc4"], [255, "#8b93c4"], [300, "#9d93b8"], [345, "#b08fa2"], [360, "#b07c7c"]] },
+    brass: { grey: "#b8ad98", hues: [[20, "#b0645a"], [45, "#b87d4b"], [70, "#c9a24a"], [100, "#a39f6a"], [160, "#839c78"], [195, "#6f9a95"], [225, "#7f9cc0"], [255, "#8e9cc9"], [300, "#8e8a9e"], [345, "#9c8a78"], [360, "#b0645a"]] },   // violet → gris mauve, rose → taupe (jamais de rose vif)
     field: { grey: "#a3a38f", hues: [[20, "#a8674a"], [45, "#b8894a"], [70, "#c9b060"], [100, "#9aa35a"], [160, "#74995a"], [195, "#7f9a8a"], [225, "#8e9ea8"], [255, "#7c8796"], [300, "#9b9084"], [345, "#9c8a6a"], [360, "#a8674a"]] }
   };
-  CHART.flightlog = CHART.cabinet;
+  CHART.khaki = CHART.field;
+  delete CHART.field;
+  const CHART_AUTO = { cabinet: "brass", flightlog: "brass", field: "khaki" }, RELIEF_AUTO = ["cabinet", "flightlog", "field", "aqua"];
+  /** Palette et style effectifs des graphiques (préférences, sinon selon le design) → <html data-chart-*>. */
+  function applyChart() {
+    const d = doc.dataset.design, p = readPref("repositoryChartPalette", "auto"), st = readPref("repositoryChartStyle", "auto");
+    doc.dataset.chartPalette = p !== "auto" && (CHART[p] || p === "vivid") ? p : CHART_AUTO[d] || "vivid";
+    doc.dataset.chartStyle = st === "flat" || st === "relief" ? st : RELIEF_AUTO.includes(d) ? "relief" : "flat";
+  }
   /** Couleur de graphique (« #rgb », « #rrggbb » ou « rgb(…) ») accordée au design courant. */
   function chartColor(c) {
-    const set = CHART[doc.dataset.design];
+    const set = CHART[doc.dataset.chartPalette];
     if (!set || typeof c !== "string") return c;
     const m = c.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i) || c.match(/^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i);
     if (!m) return c;
@@ -127,6 +139,7 @@
     savedDesign = readPref("repositoryDesign", null);
   let design = designs[savedDesign] ? savedDesign : (designs[cfg.designs?.default] ? cfg.designs.default : "standard");
   doc.dataset.design = design;
+  applyChart();
   // jeu d'icônes (line : trait normal, fine, bold ; brass, steel, gel : jeux skeuomorphes Laiton, Acier, Gel ; off) :
   // choix mémorisé, sinon celui du design (designs.list[id].icons : brass pour Cabinet, steel pour Durci, gel pour
   // Aqua), sinon trait normal (ancien choix « matter » : remplacé par le jeu du design)
@@ -135,7 +148,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260927zd", script.src).href;
+    css.href = new URL("designs.css?v=20260927zh", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -297,6 +310,7 @@
     designCss(id);
     renderEmblem();
     try { localStorage.setItem("repositoryDesign", id); } catch {}
+    applyChart();
     window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { design: id } }));
   };
   /** Apparence en fenêtre modale au-dessus de la page courante (réglages appliqués en direct ; fermeture : bouton,
@@ -411,6 +425,13 @@
       current: () => ({ design, icons: doc.dataset.icons || "line", iconsSaved: readPref("repositoryIcons", null), sidenav: doc.dataset.sidenav || "", decor: doc.dataset.decor, decorSaved: readPref("repositoryDecor", null), colors: readJson("repositoryColors") || {}, theme: currentTheme }),
       /** Couleur du design Aqua : clé de AQUA ("blue" par défaut, "teal", "green", "graphite", "purple", "orange",
        *  "red", "pink") ou "app" (accent du thème de chaque page) ; null : défaut. */
+      /** Graphiques : palettes ("auto", "vivid", "brass", "khaki", "slate") et styles ("auto", "flat", "relief"). */
+      chartPalettes: ["auto", "vivid", ...Object.keys(CHART)],
+      chartStyles: ["auto", "flat", "relief"],
+      chart: () => ({ palette: readPref("repositoryChartPalette", "auto"), style: readPref("repositoryChartStyle", "auto"), effective: { palette: doc.dataset.chartPalette, style: doc.dataset.chartStyle } }),
+      /** Échantillon de palette : couleurs d'une série type (familles des CR) dans la palette p. */
+      chartSample(p) { const keep = doc.dataset.chartPalette; doc.dataset.chartPalette = p; const out = ["#ef4444", "#f97316", "#eab308", "#3b82f6", "#22c55e", "#a855f7", "#ec4899", "#94a3b8"].map(chartColor); doc.dataset.chartPalette = keep; return out; },
+      setChart(kind, v) { const k = kind === "style" ? "repositoryChartStyle" : "repositoryChartPalette"; try { v && v !== "auto" ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch {} applyChart(); window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { chart: kind } })); },
       aquaColors: Object.keys(AQUA),
       aquaColor: () => readPref("repositoryAquaColor", "blue"),
       aquaSample: k => { const [h, s] = AQUA[k] || AQUA.blue; return hslHex(h, s, 48); },
@@ -522,20 +543,20 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260927zd", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260927zh", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260927zd", script.src).href;
+    files.src = new URL("file_access.js?v=20260927zh", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260927zd", "block_icons.js?v=20260927zd", "side_nav.js?v=20260927zd"]) {
+    for (const f of ["icons/repository_icons.js?v=20260927zh", "block_icons.js?v=20260927zh", "side_nav.js?v=20260927zh"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260927zd", script.src).href;
+    store.src = new URL("browser_store.js?v=20260927zh", script.src).href;
     document.head.append(store)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

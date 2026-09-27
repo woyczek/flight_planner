@@ -14,6 +14,11 @@
     sub: ['DEFA Virtual — design, icônes, barre latérale et couleurs, pour toutes les pages de la suite', 'DEFA Virtual — design, icons, side bar and colours, for every page of the suite', 'DEFA Virtual — Design, Symbole, Seitenleiste und Farben für alle Seiten der Suite', 'DEFA Virtual — diseño, iconos, barra lateral y colores, para todas las páginas'],
     design: ['Design', 'Design', 'Design', 'Diseño'],
     designSub: ['La forme des pages : arrondis, densité, titres, barre latérale. Cabinet, Durci et Aqua ajoutent leurs matières (cuir, bois, laiton, acier, verre) ; les couleurs d’information restent celles du thème.', 'The shape of the pages: corners, density, titles, side bar. Cabinet, Rugged and Aqua add their materials (leather, wood, brass, steel, glass); information colours stay those of the theme.', 'Die Form der Seiten: Ecken, Dichte, Titel, Seitenleiste. Kabinett, Robust und Aqua bringen eigene Materialien (Leder, Holz, Messing, Stahl, Glas); Informationsfarben bleiben die des Themas.', 'La forma de las páginas: esquinas, densidad, títulos, barra lateral. Gabinete, Robusto y Aqua añaden sus materiales (cuero, madera, latón, acero, vidrio); los colores de información siguen siendo los del tema.'],
+    charts: ['Graphiques', 'Charts', 'Diagramme', 'Gráficos'],
+    chartsSub: ['Palette de couleurs et style des graphiques (reportings, indicateurs) ; « Automatique » suit le design.', 'Colour palette and style of the charts (reports, indicators); “Automatic” follows the design.', 'Farbpalette und Stil der Diagramme (Berichte, Kennzahlen); „Automatisch“ folgt dem Design.', 'Paleta de colores y estilo de los gráficos (informes, indicadores); «Automático» sigue el diseño.'],
+    chartStyle: ['Style', 'Style', 'Stil', 'Estilo'],
+    chartStyleSet: { auto: ['Automatique', 'Automatic', 'Automatisch', 'Automático'], flat: ['Aplats', 'Flat', 'Flach', 'Plano'], relief: ['Relief', 'Relief', 'Relief', 'Relieve'] },
+    chartPalette: { auto: ['Automatique', 'Automatic', 'Automatisch', 'Automático'], vivid: ['Vives (couleurs des pages)', 'Vivid (page colours)', 'Kräftig (Seitenfarben)', 'Vivos (colores de las páginas)'], slate: ['Ardoise', 'Slate', 'Schiefer', 'Pizarra'], brass: ['Laiton et cuir', 'Brass and leather', 'Messing und Leder', 'Latón y cuero'], khaki: ['Kaki et olive', 'Khaki and olive', 'Khaki und Oliv', 'Caqui y oliva'] },
     icons: ['Icônes', 'Icons', 'Symbole', 'Iconos'],
     iconsSub: ['Épaisseur du trait des icônes, ou pas d’icônes du tout.', 'Stroke width of the icons, or no icons at all.', 'Strichstärke der Symbole oder gar keine Symbole.', 'Grosor del trazo de los iconos, o ningún icono.'],
     iconSet: { auto: ['Selon le design', 'Depending on design', 'Je nach Design', 'Según el diseño'], fine: ['Trait fin', 'Thin stroke', 'Dünne Linie', 'Trazo fino'], line: ['Trait normal', 'Normal stroke', 'Normale Linie', 'Trazo normal'], bold: ['Trait épais', 'Bold stroke', 'Dicke Linie', 'Trazo grueso'], brass: ['Laiton (médaillons)', 'Brass (medallions)', 'Messing (Medaillons)', 'Latón (medallones)'], steel: ['Acier (plaques)', 'Steel (plates)', 'Stahl (Platten)', 'Acero (placas)'], gel: ['Gel (bulles)', 'Gel (bubbles)', 'Gel (Blasen)', 'Gel (burbujas)'], avio: ['Avionique (cadrans)', 'Avionics (dials)', 'Avionik (Instrumente)', 'Aviónica (instrumentos)'], off: ['Aucune icône', 'No icons', 'Keine Symbole', 'Sin iconos'] },
@@ -75,6 +80,9 @@
     const iconRows = Object.entries(T.iconSet).map(([id, row]) => `<button type="button" class="ap-iconrow repo-plain" data-icons="${id}" aria-pressed="${id === iconSel}"><b>${esc(t(row))}</b><span class="ap-iconset" data-set="${id}">${sampleOf(id)}</span></button>`).join('');
     const decor = cur.decorSaved || 'auto', decorBtns = Object.entries(T.decorSet).map(([id, row]) => `<button type="button" class="ap-seg repo-plain" data-decor="${id}" aria-pressed="${id === decor}">${esc(t(row))}</button>`).join('');
     const aq = a.aquaColor?.() || 'blue', aquaDots = (a.aquaColors || []).concat('app').map(id => `<button type="button" class="repo-plain ap-dot${id === 'app' ? ' ap-origin' : ''}" data-aqua="${id}" title="${esc(t(T.aquaSet[id]))}" aria-label="${esc(t(T.aquaSet[id]))}" aria-pressed="${id === aq}" style="background:${id === 'app' ? 'conic-gradient(#d33,#e90,#3a5,#2ab,#36d,#a4d,#d33)' : a.aquaSample(id)}"></button>`).join('');
+    // --- graphiques : style (segments) et palettes (rangées avec échantillon de couleurs)
+    const ch = a.chart?.(), chStyle = a.chartStyles ? a.chartStyles.map(id => `<button type="button" class="ap-seg repo-plain" data-chart-style="${id}" aria-pressed="${id === ch.style}">${esc(t(T.chartStyleSet[id]))}</button>`).join('') : '';
+    const chRows = a.chartPalettes ? a.chartPalettes.map(id => { const eff = id === 'auto' ? ch.effective.palette : id; return `<button type="button" class="ap-iconrow repo-plain" data-chart-palette="${id}" aria-pressed="${id === ch.palette}"><b>${esc(t(T.chartPalette[id]))}</b><span class="ap-swatches">${a.chartSample(eff).map(c => `<i style="background:${c}"></i>`).join('')}</span></button>`; }).join('') : '';
     const side = cur.sidenav || 'auto', sideBtns = Object.entries(T.sideSet).map(([id, row]) => `<button type="button" class="ap-seg repo-plain" data-side="${id}" aria-pressed="${id === side}">${esc(t(row))}</button>`).join('');
     // --- couleurs : une carte par thème, groupées (applications, familles de CR)
     const card = name => {
@@ -91,11 +99,12 @@
     const names = Object.keys(a.themes), crs = names.filter(n => !APPS.includes(n));
     host.innerHTML =
       block('ap-design', 'layers', t(T.design), t(T.designSub), `<div class="ap-thumbs">${thumbs}</div><div class="ap-sidebar"><b>${esc(t(T.decor))}</b><span class="ap-segs">${decorBtns}</span><small class="ap-help">${esc(t(T.decorHelp))}</small></div>${a.aquaColors ? `<div class="ap-sidebar"><b>${esc(t(T.aqua))}</b><span class="repo-plain ap-dots" role="group" aria-label="${esc(t(T.aqua))}">${aquaDots}</span><small class="ap-help">${esc(t(T.aquaHelp))}</small></div>` : ''}`) +
+      (ch ? block('ap-charts', 'chart', t(T.charts), t(T.chartsSub), `<div class="ap-iconrows">${chRows}</div><div class="ap-sidebar"><b>${esc(t(T.chartStyle))}</b><span class="ap-segs">${chStyle}</span></div>`) : '') +
       block('ap-icons', 'box', t(T.icons), t(T.iconsSub), `<div class="ap-iconrows">${iconRows}</div><div class="ap-sidebar"><b>${esc(t(T.side))}</b><span class="ap-segs">${sideBtns}</span></div>`) +
       block('ap-colors', 'eye', t(T.colors), t(T.colorsSub), `<h3>${esc(t(T.groupPages))}</h3><div class="ap-cards">${APPS.filter(n => a.themes[n]).map(card).join('')}</div><h3>${esc(t(T.groupCr))}</h3><div class="ap-cards">${crs.map(card).join('')}</div>`) +
       `<p class="ap-foot"><button type="button" id="apDemo" class="repo-plain" data-icon="eye" title="${esc(t(T.demo))}">${esc(t(T.demoBtn))}</button><button type="button" id="apReset" class="repo-plain" data-icon="refresh">${esc(t(T.reset))}</button></p>`;
     host.querySelectorAll('.ap-card').forEach(paint);
-    window.AppFramework?.refresh?.();
+    window.AppFramework?.refresh?.(host);   // blocs du framework dans l'hôte (page Apparence ou fenêtre modale)
   }
 
   /** Aperçu et contrastes d'une carte de thème (famille et ton affichés, ou couleurs d'origine). */
@@ -166,6 +175,7 @@ main.ap-page :is(.ap-thumb,.ap-iconrow,.ap-seg,.ap-card,.ap-show,[id=apReset]){c
 .ap-mini[data-d="aqua"] .ap-mini-block{border-radius:10px;border:1px solid #fff;box-shadow:0 6px 14px rgba(40,70,110,.15)}.ap-mini[data-d="aqua"] .ap-mini-btn{border-radius:6px;background:linear-gradient(color-mix(in srgb,var(--repo-accent) 55%,#fff),var(--repo-accent) 50%,color-mix(in srgb,var(--repo-accent) 85%,#000) 51%,color-mix(in srgb,var(--repo-accent) 70%,#fff))}
 .ap-mini[data-d="console"] .ap-mini-side{width:22px}.ap-mini[data-d="console"] .ap-mini-ic{display:inline-block}.ap-mini[data-d="console"] .ap-mini-title{grid-column:auto;text-transform:uppercase;font-weight:800}.ap-mini[data-d="console"] .ap-mini-block{border-radius:8px;padding:10px 12px}.ap-mini[data-d="console"] .ap-mini-btn{height:14px;border-radius:5px}
 .ap-iconrows{display:grid;gap:8px;margin-top:12px}
+.ap-swatches{display:flex;gap:5px;flex-wrap:wrap}.ap-swatches i{width:26px;height:14px;border-radius:4px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
 .ap-iconrow{display:grid;grid-template-columns:150px 1fr;align-items:center;gap:12px;padding:8px 12px;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer;font:inherit;text-align:left}
 .ap-iconrow[aria-pressed="true"]{border-color:var(--repo-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--repo-accent) 25%,transparent)}
 .ap-iconset{display:flex;gap:14px;color:var(--repo-accent);min-height:22px}
@@ -210,6 +220,8 @@ main.ap-page .ap-pill.ok{background:#e3f4e8!important;color:#14532d!important;bo
       if (!b) return;
       if (b.dataset.design) { a.setDesign(b.dataset.design); render(); }
       else if (b.dataset.icons) { a.setIcons(b.dataset.icons === 'auto' ? null : b.dataset.icons); render(); }
+      else if (b.dataset.chartStyle) { a.setChart('style', b.dataset.chartStyle); render(); }
+      else if (b.dataset.chartPalette) { a.setChart('palette', b.dataset.chartPalette); render(); }
       else if (b.dataset.aqua) { a.setAqua(b.dataset.aqua); render(); }
       else if (b.dataset.decor) { a.setDecor(b.dataset.decor === 'auto' ? null : b.dataset.decor); render(); }
       else if (b.dataset.side) { a.setSidenav(b.dataset.side === 'auto' ? null : b.dataset.side === 'on'); render(); }
@@ -228,7 +240,7 @@ main.ap-page .ap-pill.ok{background:#e3f4e8!important;color:#14532d!important;bo
         location.href = new URL('docs/demo_design_icones.html', nav().root).href;
       } else if (b.id === 'apReset') {
         Object.keys(a.current().colors).forEach(n => a.setColor(n, null));
-        a.setIcons(null); a.setSidenav(null); a.setDecor(null); a.setAqua?.(null); a.setDesign(window.REPOSITORY_TREE.designs?.default || 'standard');
+        a.setIcons(null); a.setSidenav(null); a.setDecor(null); a.setAqua?.(null); a.setChart?.('style', null); a.setChart?.('palette', null); a.setDesign(window.REPOSITORY_TREE.designs?.default || 'standard');
         previewTheme = null; nav().setTheme(nav().settings.theme); render();
       }
     });
