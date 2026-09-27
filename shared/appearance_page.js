@@ -166,7 +166,7 @@ main.ap-page :is(.ap-thumb,.ap-iconrow,.ap-seg,.ap-card,.ap-show,[id=apReset]){c
 .ap-iconrow[aria-pressed="true"]{border-color:var(--repo-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--repo-accent) 25%,transparent)}
 .ap-iconset{display:flex;gap:14px;color:var(--repo-accent);min-height:22px}
 .ap-iconset[data-set="fine"] svg{stroke-width:1.5}.ap-iconset[data-set="line"] svg{stroke-width:2}.ap-iconset[data-set="bold"] svg{stroke-width:2.6}.ap-iconset img.ap-ic{width:34px;height:34px;object-fit:contain}
-.ap-iconset .ap-ic{display:inline-flex}.ap-iconset .repo-svg{display:block!important}
+.ap-iconset .ap-ic{display:inline-flex}.ap-iconset .ap-ic svg{width:22px!important;height:22px!important;flex:none}   /* taille imposée : le CSS de la page hôte (modale) ne doit pas les agrandir */.ap-iconset .repo-svg{display:block!important}
 .ap-sidebar{display:flex;align-items:center;gap:14px;margin-top:14px;flex-wrap:wrap}
 .ap-segs{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
 .ap-seg{border:0;padding:7px 14px;background:var(--card);color:var(--ink);cursor:pointer;font:inherit}.ap-seg+.ap-seg{border-left:1px solid var(--line)}

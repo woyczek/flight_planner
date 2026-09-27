@@ -20,8 +20,8 @@ const ITEMS = {
   cabinet: [
     ...['book', 'plus', 'bookmark', 'refresh', 'sparkles', 'download', 'printer', 'x'].map((n, i) => circ(n, [923, 991, 1058, 1126, 1193, 1261, 1328, 1394][i], 326, 28.5)),
     circ('info', 1020, 668, 16.5),
-    deco('compass', 400, 843, 523, 980, 'key', { tol: [26, 60] }),
-    deco('clip', 166, 852, 384, 950, 'key', { tol: [26, 60] }),
+    deco('compass', 400, 843, 523, 980, 'grow', { grow: [10, 90] }),
+    deco('clip', 166, 852, 384, 950, 'grow', { grow: [10, 90] }),
     deco('map', 1150, 824, 1424, 962, 'soft'),
     deco('footer', 28, 990, 1422, 1064, 'rect'),
     deco('medal-1', 38, 402, 104, 468, 'circle'),
@@ -57,7 +57,7 @@ const ITEMS = {
     deco('plane-plaque', 438, 402, 522, 456, 'soft'),
     deco('frame', 26, 502, 450, 790, 'rect'),
     deco('blueprint', 290, 530, 425, 770, 'soft'),
-    deco('clip', 96, 822, 272, 938, 'key', { tol: [26, 60] }),
+    deco('clip', 96, 822, 272, 938, 'grow', { grow: [10, 90] }),
     deco('gauge-speed', 297, 828, 421, 952, 'circle'),
     deco('gauge-attitude', 426, 828, 550, 952, 'circle'),
     deco('gauge-alt', 554, 828, 678, 952, 'circle'),
@@ -78,8 +78,37 @@ function cut(img, it) {
   const im = g.getImageData(0, 0, W, Hh), d = im.data;
   // couleur de fond : moyenne des quatre coins (fond uni de la planche)
   const corner = (cx, cy) => { const k = (cy * W + cx) * 4; return [d[k], d[k + 1], d[k + 2]]; }, cs = [corner(1, 1), corner(W - 2, 1), corner(1, Hh - 2), corner(W - 2, Hh - 2)], bg = [0, 1, 2].map(i => cs.reduce((a, c) => a + c[i], 0) / 4);
+  // détourage « grow » : fond et ombres suivis par croissance de région depuis les bords (écart ≤ step d'un pixel à son
+  // voisin, ≤ far de la couleur du fond), puis TROUS : zones de fond enfermées dans l'objet (trou d'une pince…), assez
+  // grandes et proches du fond, rendues transparentes aussi ; bords adoucis (moyenne 3 × 3)
+  let grown = null;
+  if (it.mask === 'grow') {
+    const [step, far] = it.grow, N = W * Hh, back = new Uint8Array(N), st = [];
+    const cd = (a, b) => Math.hypot(d[a] - d[b], d[a + 1] - d[b + 1], d[a + 2] - d[b + 2]), fb = q => Math.hypot(d[q] - bg[0], d[q + 1] - bg[1], d[q + 2] - bg[2]);
+    const flood = (seeds, mark, lim) => { const out = []; for (const i0 of seeds) { if (mark[i0]) continue; mark[i0] = 1; st.push(i0); out.push(i0); }
+      while (st.length) { const i = st.pop(), x = i % W, y = (i / W) | 0;
+        for (const n of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, y > 0 ? i - W : -1, y < Hh - 1 ? i + W : -1]) if (n >= 0 && !mark[n] && cd(i * 4, n * 4) <= step && fb(n * 4) <= lim) { mark[n] = 1; st.push(n); out.push(n); } }
+      return out; };
+    const border = []; for (let x = 0; x < W; x++) border.push(x, (Hh - 1) * W + x); for (let y = 0; y < Hh; y++) border.push(y * W, y * W + W - 1);
+    flood(border.filter(i => fb(i * 4) <= far), back, far);
+    const seen = new Uint8Array(N);
+    for (let i = 0; i < N; i++) if (!back[i] && !seen[i] && fb(i * 4) <= far * .7) {
+      const tmp = new Uint8Array(N), reg = flood([i], tmp, far * .8);
+      reg.forEach(q => seen[q] = 1);
+      if (reg.length >= (it.minHole || 25)) reg.forEach(q => back[q] = 1);
+    }
+    // objet : seule la plus grande pièce (les points isolés restés dans le fond disparaissent)
+    const lab = new Int32Array(N).fill(-1); let best = -1, bestN = 0, id = 0;
+    for (let i = 0; i < N; i++) if (!back[i] && lab[i] < 0) { let n = 0; const q = [i]; lab[i] = id;
+      while (q.length) { const j = q.pop(), x = j % W, y = (j / W) | 0; n++; for (const m of [x > 0 ? j - 1 : -1, x < W - 1 ? j + 1 : -1, y > 0 ? j - W : -1, y < Hh - 1 ? j + W : -1]) if (m >= 0 && !back[m] && lab[m] < 0) { lab[m] = id; q.push(m); } }
+      if (n > bestN) { bestN = n; best = id; } id++; }
+    for (let i = 0; i < N; i++) if (!back[i] && lab[i] !== best) back[i] = 1;
+    grown = new Float32Array(N);
+    for (let y = 0; y < Hh; y++) for (let x = 0; x < W; x++) { let sum = 0, n = 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const xx = x + dx, yy = y + dy; if (xx >= 0 && yy >= 0 && xx < W && yy < Hh) { sum += back[yy * W + xx] ? 0 : 1; n++; } } grown[y * W + x] = sum / n; }
+  }
   for (let j = 0; j < Hh; j++) for (let i = 0; i < W; i++) {
     const k = (j * W + i) * 4; let a = 1;
+    if (grown) a = grown[j * W + i];
     if (it.mask === 'circle') { const r = Math.min(W, Hh) / 2, dd = Math.hypot(i + .5 - W / 2, j + .5 - Hh / 2); a = Math.max(0, Math.min(1, r - dd - .5)); }
     else if (it.mask === 'round') { const r = it.radius * W / it.box[2], dx = Math.max(0, Math.abs(i + .5 - W / 2) - (W / 2 - r)), dy = Math.max(0, Math.abs(j + .5 - Hh / 2) - (Hh / 2 - r)); a = Math.max(0, Math.min(1, r - Math.hypot(dx, dy) - .5)); }
     else if (it.mask === 'soft') { const e = Math.min(i, j, W - 1 - i, Hh - 1 - j); a = Math.min(1, e / 10); }
