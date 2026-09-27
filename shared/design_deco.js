@@ -48,11 +48,15 @@
   // (courbes de niveau à gauche, plans d'avions à droite) et métal bronze aux tracés de navigation ; Aqua : eau et
   // verre, cadrés différemment sur chaque bloc.
   const BG = {
-    cabinet: { aerodromes: 'cover', capabilities: 'cover', outcomes: 'cover', aircraft: 'cover' },
+    // Cabinet : série marine (cuir marine, tracés or) : archipel et porte-avions (terrains de départ), barre à roue
+    // (familles), ancre aux lauriers (résultats), flotte et phare (séries), frégate et hélicoptère (types d'appareil),
+    // radar, grue et dôme (capacités), soleil et lune (jour / nuit), satellites et proue (réseau), chenal balisé
+    // (contexte) ; pas de fond derrière le graphique d'activité (barres et légende)
+    cabinet: { aerodromes: 'cover', families: 'cover', outcomes: 'cover', series: 'cover', aircraft: 'cover', capabilities: 'cover', daynight: 'cover', network: 'cover', context: 'cover' },
     // Carnet de vol : jeu propre (cuir marine, tracés or) : hélicoptères et montagnes, rose des vents sur mappemonde,
-    // biplan et globe, globes et routes, montage aviation, piste de nuit (jour / nuit) ; terrains de départ : piste de
-    // Cabinet ; cuir et mappemonde aux avions en réserve
-    flightlog: { aerodromes: ['cover', 'center', 'cabinet/bg-aerodromes', .5], daynight: ['cover', 'center bottom'], capabilities: ['cover', 'center'], outcomes: ['cover', 'center'], aircraft: ['cover', 'center'], series: ['cover', 'center'], families: ['cover', 'center'] },
+    // biplan et globe, globes et routes, montage aviation, piste de nuit (jour / nuit), piste au pied des montagnes
+    // (terrains de départ) ; cuir et mappemonde aux avions en réserve
+    flightlog: { aerodromes: ['cover', 'center', null, .5], daynight: ['cover', 'center bottom'], capabilities: ['cover', 'center'], outcomes: ['cover', 'center'], aircraft: ['cover', 'center'], series: ['cover', 'center'], families: ['cover', 'center'] },
     field: { aerodromes: ['cover', 'left center', 'field/bg-panels'], capabilities: ['cover', 'left top', 'field/bg-chart'], outcomes: ['cover', 'right center', 'field/bg-chart'], aircraft: ['cover', 'right center', 'field/bg-panels'] },
     aqua: { aerodromes: ['cover', 'center bottom', 'aqua/bg-water'], capabilities: ['cover', 'left center', 'aqua/bg-water'], outcomes: ['cover', 'center top', 'aqua/bg-water'], aircraft: ['cover', 'right center', 'aqua/bg-water'] }
   };

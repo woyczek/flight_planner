@@ -10,6 +10,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Cabinet : série marine** pour le reporting (neuf fonds) : archipel et porte-avions (terrains de départ), barre à
+  roue (par famille), ancre aux lauriers (résultats), flotte et phare (séries), frégate et hélicoptère (types
+  d'appareil), radar, grue et dôme (capacités), soleil et lune (jour / nuit), satellites et proue (réseau), chenal
+  balisé (contexte). Cabinet et Carnet de vol ont chacun leur jeu (la piste des terrains de départ de Carnet de vol
+  est rangée dans son propre dossier).
 - **Carnet de vol : jeu de fonds propre** pour le reporting (cuir marine, tracés or) : capacités (hélicoptères et
   montagnes), résultats (rose des vents sur mappemonde), types d'appareil (biplan et globe), séries (globes et routes),
   par famille (montage aviation), jour / nuit (piste de nuit) ; terrains de départ inchangés (piste de Cabinet).

@@ -293,7 +293,7 @@
     root.innerHTML = `
       <section class="cards mcg-cards" id="mcgCards"></section>
       <section class="section mcg-wide mcg-checks" data-icon="alert" hidden><h2>${t('checks')} <span class="mcg-sub" id="mcgChecksSub"></span></h2><div class="inside" id="mcgChecks"></div></section>
-      <section class="section mcg-wide" data-icon="calendar"><h2>${t('activity')} <span class="mcg-sub" id="mcgActivitySub"></span></h2><div class="inside"><div id="mcgActivity"></div><div class="mcg-series-legend" id="mcgActivityLegend"></div></div></section>
+      <section class="section mcg-wide" data-icon="calendar" data-deco-bg="activity"><h2>${t('activity')} <span class="mcg-sub" id="mcgActivitySub"></span></h2><div class="inside"><div id="mcgActivity"></div><div class="mcg-series-legend" id="mcgActivityLegend"></div></div></section>
       <div class="mcg-grid">
         <section class="section" data-icon="layers" data-deco-bg="families"><h2>${t('byFamily')}</h2><div class="inside" id="mcgFamilies"></div></section>
         <section class="section" data-icon="check" data-deco-bg="outcomes"><h2>${t('byOutcome')}</h2><div class="inside" id="mcgOutcomes"></div></section>
