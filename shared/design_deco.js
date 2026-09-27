@@ -41,25 +41,33 @@
   // contenu, fondu vers le bas et la droite. Seules les images déclarées ici sont chargées (pas de requête inutile).
   // Mode « anchor » : taille d'origine, calée en haut à gauche, s'étend vers la droite et le bas (coupée au bord du
   // bloc) ; « cover » : redimensionnée pour couvrir le bloc. Exemple : field: { aerodromes: 'anchor' }.
-  // Fonds fournis (bleu marine et or, Cabinet et Carnet de vol) : terrains de départ = piste au pied des montagnes,
-  // capacités = relief et réticule, résultats = mappemonde et rose des vents, types d'appareil = globe ;
-  // un design peut reprendre ceux d'un autre (chaîne : nom du design source)
+  // Entrée : mode, ou [mode, cadrage (background-position), image « <design>/<nom> » (défaut : <design>/bg-<clé>),
+  // opacité (défaut : celle du design, designs_skeuo.css)].
+  // Cabinet (bleu marine et or) : piste au pied des montagnes, relief et réticule, mappemonde et rose des vents, globe ;
+  // Carnet de vol : ceux de Cabinet, résultats sur cuir et mappemonde aux avions ; Durci : panneaux olive rivetés
+  // (courbes de niveau à gauche, plans d'avions à droite) et métal bronze aux tracés de navigation ; Aqua : eau et
+  // verre, cadrés différemment sur chaque bloc.
   const BG = {
     cabinet: { aerodromes: 'cover', capabilities: 'cover', outcomes: 'cover', aircraft: 'cover' },
-    flightlog: 'cabinet'
+    flightlog: { aerodromes: ['cover', 'center', 'cabinet/bg-aerodromes'], capabilities: ['cover', 'center', 'cabinet/bg-capabilities'], outcomes: ['cover', 'center', 'flightlog/bg-leather-map', 1], aircraft: ['cover', 'center', 'cabinet/bg-aircraft'] },
+    field: { aerodromes: ['cover', 'left center', 'field/bg-panels'], capabilities: ['cover', 'left top', 'field/bg-chart'], outcomes: ['cover', 'right center', 'field/bg-chart'], aircraft: ['cover', 'right center', 'field/bg-panels'] },
+    aqua: { aerodromes: ['cover', 'center bottom', 'aqua/bg-water'], capabilities: ['cover', 'left center', 'aqua/bg-water'], outcomes: ['cover', 'center top', 'aqua/bg-water'], aircraft: ['cover', 'right center', 'aqua/bg-water'] }
   };
   function backgrounds(d) {
     document.querySelectorAll('.repo-deco-bgimg').forEach(n => n.remove());
     document.querySelectorAll('.repo-has-bg').forEach(b => b.classList.remove('repo-has-bg'));
-    const src = typeof BG[d] === 'string' ? BG[d] : d, list = BG[src];
+    const list = BG[d];
     if (!list) return;
     document.querySelectorAll('[data-deco-bg]').forEach(b => {
-      const mode = list[b.dataset.decoBg];
-      if (!mode) return;
+      const e = list[b.dataset.decoBg];
+      if (!e) return;
+      const [mode, pos, file, alpha] = Array.isArray(e) ? e : [e], [fd, fn] = (file || `${d}/bg-${b.dataset.decoBg}`).split('/');
       const el = document.createElement('div');
       el.className = `repo-deco-bgimg repo-deco-bg-${mode}`;
       el.setAttribute('aria-hidden', 'true');
-      el.style.backgroundImage = `url("${DECO(src)(`bg-${b.dataset.decoBg}`)}")`;
+      el.style.backgroundImage = `url("${DECO(fd)(fn)}")`;
+      if (pos) el.style.backgroundPosition = pos;
+      if (alpha != null) el.style.opacity = alpha;
       b.classList.add('repo-has-bg');
       b.prepend(el);
     });
