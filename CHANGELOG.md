@@ -10,6 +10,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Blocs du reporting qui changeaient de taille en boucle** (Cabinet, Carnet de vol, décor complet, fenêtres très
+  larges, barres de défilement classiques) : la couture et les vis des blocs étaient dessinées par un pseudo-élément
+  qui dépassait de 4 px ; dans les blocs à défilement (`.section`, `overflow:auto`), ce dépassement faisait apparaître
+  une barre de défilement, qui disparaissait au calcul suivant. Pseudo-élément ramené dans le bloc (le contour, qui ne
+  compte pas dans le défilement, reste au même endroit).
 - **Barres de défilement qui clignotaient** (designs à matières, décor complet) : place de la barre verticale toujours
   réservée (`scrollbar-gutter: stable`), décors des marges jamais au-delà du bas de la page ni à l'origine d'un
   défilement horizontal. La boucle : barre qui apparaît → marge plus étroite → décors retirés → page plus courte →
