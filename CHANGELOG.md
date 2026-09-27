@@ -10,6 +10,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Durci : bandeau radar recadré** comme la maquette (banner.cropped) : plus large que haut (1402 × 304), bas de
+  l'écran visible (réticule en haut, carte en médaillon et échelle en bas) ; plot de la Corse déplacé sur la carte en
+  médaillon.
 - **Planificateur : cause réelle des niveaux non tenables** : la zone sous le plafond indique « trajet trop court »
   seulement quand c'est le cas ; sinon « croisière non tenable » (puissance insuffisante pour la vitesse de croisière du
   profil, cas d'un DC-3 à FL250) ou « niveaux non tenables », avec l'explication au survol.
