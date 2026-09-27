@@ -796,5 +796,41 @@ window.DataAdminI18n = {
 "Registre unique : dossier autorisé, sinon copie du navigateur, sinon fichier du dépôt ; anciens registres par famille repris automatiquement.": [
 "Einzelnes Register: freigegebener Ordner, sonst Browserkopie, sonst Repository-Datei; alte Register je Familie werden automatisch zusammengeführt.",
 "Registro único: carpeta autorizada, si no copia del navegador, si no archivo del repositorio; los registros antiguos por familia se fusionan automáticamente."
+],
+"Planificateur carburant": [
+"Kraftstoffplaner",
+"Planificador de combustible"
+],
+"Altitude sans oxygène (avions non pressurisés)": [
+"Höhe ohne Sauerstoff (Flugzeuge ohne Druckkabine)",
+"Altitud sin oxígeno (aviones no presurizados)"
+],
+"Au-dessus de cette altitude, le graphique d’altitude optimale du planificateur signale « oxygène requis » pour les avions à cabine non pressurisée (champ « Cabine pressurisée » du profil ; non renseigné : piston non pressurisé). Information seulement : le calcul n’est pas limité. Réglage gardé dans ce navigateur.": [
+"Oberhalb dieser Höhe zeigt das Diagramm der optimalen Flughöhe des Planers „Sauerstoff erforderlich“ für Flugzeuge ohne Druckkabine (Profilfeld „Druckkabine“; nicht angegeben: Kolben ohne Druckkabine). Nur ein Hinweis: die Berechnung wird nicht begrenzt. Einstellung in diesem Browser gespeichert.",
+"Por encima de esta altitud, el gráfico de altitud óptima del planificador indica «oxígeno necesario» para los aviones de cabina no presurizada (campo «Cabina presurizada» del perfil; sin indicar: pistón no presurizado). Solo información: el cálculo no se limita. Ajuste guardado en este navegador."
+],
+"Altitude maximale sans oxygène (ft)": [
+"Maximale Höhe ohne Sauerstoff (ft)",
+"Altitud máxima sin oxígeno (ft)"
+],
+"Repères : 10 000 ft (usage courant, EASA NCO), 12 500 ft (FAA, équipage au-delà de 30 minutes), 14 000 ft (FAA, équipage en permanence).": [
+"Richtwerte: 10.000 ft (übliche Praxis, EASA NCO), 12.500 ft (FAA, Besatzung über 30 Minuten), 14.000 ft (FAA, Besatzung ständig).",
+"Referencias: 10.000 ft (práctica habitual, EASA NCO), 12.500 ft (FAA, tripulación más de 30 minutos), 14.000 ft (FAA, tripulación siempre)."
+],
+"Valeur actuelle": [
+"Aktueller Wert",
+"Valor actual"
+],
+"Valeur entre 1000 et 30 000 ft": [
+"Wert zwischen 1.000 und 30.000 ft",
+"Valor entre 1.000 y 30.000 ft"
+],
+"Valeur par défaut (10 000 ft)": [
+"Standardwert (10.000 ft)",
+"Valor por defecto (10.000 ft)"
+],
+"Valeur par défaut rétablie": [
+"Standardwert wiederhergestellt",
+"Valor por defecto restablecido"
 ]
 };

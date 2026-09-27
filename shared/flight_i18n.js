@@ -109,6 +109,8 @@
     ["Vario (ft/min)", "Vertical speed (ft/min)", "Steig-/Sinkrate (ft/min)", "Régimen vertical (ft/min)"],
     ["Plafond max (ft)", "Maximum ceiling (ft)", "Maximale Gipfelhöhe (ft)", "Techo máximo (ft)"],
     ["Altitude de référence (ft)", "Reference altitude (ft)", "Bezugshöhe (ft)", "Altitud de referencia (ft)"],
+    ["Altitude de rétablissement (ft)", "Critical altitude (ft)", "Volldruckhöhe (ft)", "Altitud crítica (ft)"],
+    ["Cabine pressurisée", "Pressurised cabin", "Druckkabine", "Cabina presurizada"],
     ["Référence RPM / puissance", "RPM / power reference", "Drehzahl-/Leistungsbezug", "Referencia RPM / potencia"],
     ["Données RPM / fuel flow", "RPM / fuel flow data", "Drehzahl-/Verbrauchsdaten", "Datos RPM / flujo"],
     ["Base / provenance", "Basis / source", "Grundlage / Quelle", "Base / origen"],

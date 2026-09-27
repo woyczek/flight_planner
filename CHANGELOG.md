@@ -10,6 +10,18 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Planificateur : moteurs à pistons suralimentés** : champ de profil « Altitude de rétablissement (ft) » (Croisière) ;
+  pleine puissance jusqu'à cette altitude, puis décroissance d'un moteur atmosphérique rapportée à ce niveau (DC-3,
+  R-1830 : environ 7 500 ft). Sans valeur : moteur atmosphérique, comme avant (puissance en baisse dès le sol).
+- **Planificateur : oxygène** : champ de profil « Cabine pressurisée » (non renseigné : piston non pressurisé,
+  réacteur et turbopropulseur pressurisés) ; au-dessus de l'altitude sans oxygène (Paramétrage › Planificateur
+  carburant, 10 000 ft par défaut), zone « oxygène requis » sur le graphique d'altitude optimale (information, le
+  calcul n'est pas limité).
+- **Planificateur : zones expliquées sous les graphiques** (altitude optimale, TAS selon le niveau) : « inaccessible —
+  trajet trop court », « inaccessible — puissance insuffisante », « oxygène requis », zone au-delà du plafond (plafond du
+  profil ou calculé par le modèle, vario résiduel) ; zone tracée seulement pour un vrai niveau refusé (plus de double
+  colonne « inaccessible » due à l'arrondi du dernier pas). TAS selon le niveau : plus de réapparition des courbes
+  au-delà du plafond après un trou.
 - **Durci : bandeau radar adaptatif** : le radar prend presque toute la largeur (plaque DEFA et voyant de sauvegarde
   empilés à droite) ; sa hauteur suit la largeur de la page (140 à 230 px) et l'écran est recadré en conséquence
   (rogné en haut et en bas, réticule toujours au tiers de la hauteur, jamais de vide).

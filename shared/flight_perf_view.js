@@ -159,6 +159,15 @@
     return out;
   }
   const TRIP_KEYS = ["fuel", "minutes", "tas", "ias", "mach", "gs", "ff"];
+  /** Explications des zones d'un graphique, sous le graphique (id de la liste ; items : [libellé, texte]). */
+  const zoneNotes = (id, items) => { const ul = $(id); if (!ul) return; ul.hidden = !items.length; ul.innerHTML = typo(items.map(([k, v]) => `<li><b>${escXml(k)}</b> : ${escXml(v)}</li>`).join("")); };
+  /** Zone au-delà du plafond : libellé et cause (plafond du profil, ou calculé : vario résiduel du modèle). */
+  const ceilingNote = m => [tl("Zone grisée « inaccessible »", "Grey “unreachable” zone", "Graue Zone „unerreichbar“", "Zona gris «inaccesible»"),
+    m.ceilingGiven && m.ceilingGiven < m.modelCeiling
+      ? tl(`au-dessus du plafond ${flTxt(m.ceiling)}, fixé par le profil (champ « Plafond max ») ou le type ; le modèle monterait jusqu’à ${flTxt(m.modelCeiling)}. Courbes prolongées à titre indicatif.`, `above the ${flTxt(m.ceiling)} ceiling, set by the profile (“Maximum ceiling” field) or the type; the model would climb to ${flTxt(m.modelCeiling)}. Curves extended for reference only.`, `über der Gipfelhöhe ${flTxt(m.ceiling)}, vom Profil („Maximale Gipfelhöhe“) oder vom Typ festgelegt; das Modell stiege bis ${flTxt(m.modelCeiling)}. Kurven nur zur Orientierung verlängert.`, `por encima del techo ${flTxt(m.ceiling)}, fijado por el perfil (campo «Techo máximo») o el tipo; el modelo subiría hasta ${flTxt(m.modelCeiling)}. Curvas prolongadas solo como referencia.`)
+      : tl(`au-dessus du plafond ${flTxt(m.ceiling)} calculé par le modèle : l’avion n’y monte plus qu’à ${m.kind === "piston" ? 100 : 300} ft/min (puissance disponible en baisse avec l’altitude). Courbes prolongées à titre indicatif.`, `above the ${flTxt(m.ceiling)} ceiling computed by the model: the aircraft only climbs at ${m.kind === "piston" ? 100 : 300} ft/min there (available power drops with altitude). Curves extended for reference only.`, `über der vom Modell berechneten Gipfelhöhe ${flTxt(m.ceiling)}: das Flugzeug steigt dort nur noch mit ${m.kind === "piston" ? 100 : 300} ft/min (verfügbare Leistung nimmt mit der Höhe ab). Kurven nur zur Orientierung verlängert.`, `por encima del techo ${flTxt(m.ceiling)} calculado por el modelo: el avión solo sube a ${m.kind === "piston" ? 100 : 300} ft/min (la potencia disponible baja con la altitud). Curvas prolongadas solo como referencia.`)];
+  /** Altitude maximale sans oxygène d'un avion non pressurisé (ft) : Paramétrage › Planificateur (fpOxygenAltFt:v1), 10 000 par défaut. */
+  const oxygenAltFt = () => { try { const v = +JSON.parse(localStorage.getItem("fpOxygenAltFt:v1") || "null"); return v > 0 ? v : 10000; } catch { return 10000; } };
   /** Zone grisée « inaccessible » d'une courbe, du plafond (ceil) au bout de l'axe (xmax) ; X : abscisse d'une altitude. */
   const beyondZone = (X, T, bottom, ceil, xmax) => ceil < xmax - 1
     ? `<rect class="beyond" x="${X(ceil).toFixed(1)}" y="${T}" width="${(X(xmax) - X(ceil)).toFixed(1)}" height="${bottom - T}"/><line class="beyond-edge" x1="${X(ceil).toFixed(1)}" x2="${X(ceil).toFixed(1)}" y1="${T}" y2="${bottom}"/>`
@@ -426,7 +435,13 @@
     for (const k of ["prof", "eco", "man", "isa"]) {
       const e = extendSeries(rows.map(r => r[k] ? { ...r[k], h: r.h, ok: true } : { h: r.h, ok: false }), k === "isa" && m0 ? m0.ceiling : m.ceiling, ["tas", "ias", "mach"]);
       e.forEach((x, i) => { rows[i][k] = x?.ok ? x : null; });
+      // série interrompue sous le plafond (croisière impossible plus haut) : pas de prolongement au-delà du plafond
+      const ceilK = k === "isa" && m0 ? m0.ceiling : m.ceiling, top = rows.reduce((a, r) => r[k] && !r[k].extrap && r.h <= ceilK && r.h > a ? r.h : a, -1);
+      if (top >= 0 && top < ceilK - step) rows.forEach(r => { if (r.h > top) r[k] = null; });
     }
+    // plus haut niveau où la croisière du profil est tenable : zone « inaccessible — puissance insuffisante » au-dessus
+    let profTop = rows.reduce((a, r) => r.prof && r.h <= m.ceiling && r.h > a ? r.h : a, -1);
+    if (!(profTop >= 0 && profTop < m.ceiling - 2 * step && m.cruise(profTop + step, "normal")?.reason === "thrust")) profTop = -1;   // vrai refus (puissance), pas l'arrondi du dernier pas
     const all = rows.flatMap(r => [r.prof, r.eco, r.man, r.isa].filter(Boolean).map(x => x.tas));
     if (!all.length) throw Error(tl("aucune vitesse calculable", "no computable speed", "keine berechenbare Geschwindigkeit", "ninguna velocidad calculable"));
     const vmin = Math.min(...all) * .94, vmax = Math.max(...all) * 1.04, X = h => Lm + h / xmax * (W - Lm - R), Y = v => T + (1 - (v - vmin) / (vmax - vmin || 1)) * (H - T - B);
@@ -436,10 +451,13 @@
     for (let h = 0; h <= xmax; h += tk) g += `<line class="grid-line" x1="${X(h)}" x2="${X(h)}" y1="${T}" y2="${H - B}"/><text x="${X(h)}" y="${H - B + 14}" text-anchor="middle">${flTxt(h)}</text>`;
     const pth = (k, cls) => { let d = "", pen = false; for (const r of rows) { if (!r[k]) { pen = false; continue; } d += `${pen ? "L" : "M"}${X(r.h).toFixed(1)},${Y(r[k].tas).toFixed(1)}`; pen = true; } return d ? `<path class="${cls}" d="${d}"/>` : ""; };
     g += `<line class="axis" x1="${Lm}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/><line class="axis" x1="${Lm}" x2="${Lm}" y1="${T}" y2="${H - B}"/>${pth("isa", "band")}${pth("eco", "curve-eco")}${pth("prof", "curve")}${pth("man", "curve-man")}`
+      + (profTop >= 0 ? `<rect class="short-zone" x="${X(profTop).toFixed(1)}" y="${T}" width="${(X(m.ceiling) - X(profTop)).toFixed(1)}" height="${H - B - T}"/>` : "")
       + beyondZone(X, T, H - B, m.ceiling, xmax)
       + `<text x="${(Lm + W - R) / 2}" y="${H - 3}" text-anchor="middle">${tl("Niveau", "Level", "Flughöhe", "Nivel")}</text><text x="11" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(-90 11 ${(T + H - B) / 2})">TAS (kt)</text>`
-      + `<line id="tasCursor" class="cursor" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/><rect id="tasHit" x="${Lm}" y="${T}" width="${W - Lm - R}" height="${H - T - B}" fill="transparent"/>`;
+      + `<line id="tasCursor" class="cursor" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/><rect id="tasHit" x="${Lm}" y="${T}" width="${W - Lm - R}" height="${H - T - B}" fill="transparent"/>`
+      + (profTop >= 0 ? `<text class="beyond-label zone-tip" x="${((X(profTop) + X(m.ceiling)) / 2).toFixed(1)}" y="${T + 11}" text-anchor="middle"><title>${escXml(tl(`Niveaux au-dessus de ${flTxt(profTop)} : la puissance disponible ne suffit plus pour tenir la vitesse de croisière du profil.`, `Levels above ${flTxt(profTop)}: the available power no longer holds the profile cruise speed.`, `Flughöhen über ${flTxt(profTop)}: die verfügbare Leistung reicht nicht mehr für die Reisegeschwindigkeit des Profils.`, `Niveles por encima de ${flTxt(profTop)}: la potencia disponible ya no mantiene la velocidad de crucero del perfil.`))}</title>${tl("inaccessible — puissance insuffisante", "unreachable — not enough power", "unerreichbar — zu wenig Leistung", "inaccesible — potencia insuficiente")}</text>` : "");
     svg.innerHTML = typo(g); svg.hidden = false; svg.dataset.t = T; svg.dataset.b = B;
+    zoneNotes("tasZones", [...(profTop >= 0 ? [[tl("inaccessible — puissance insuffisante", "unreachable — not enough power", "unerreichbar — zu wenig Leistung", "inaccesible — potencia insuficiente"), tl(`au-dessus de ${flTxt(profTop)}, la puissance disponible ne suffit plus pour tenir la vitesse de croisière du profil.`, `above ${flTxt(profTop)}, the available power no longer holds the profile cruise speed.`, `über ${flTxt(profTop)} reicht die verfügbare Leistung nicht mehr für die Reisegeschwindigkeit des Profils.`, `por encima de ${flTxt(profTop)}, la potencia disponible ya no mantiene la velocidad de crucero del perfil.`)]] : []), ...(m.ceiling < xmax - 1 ? [ceilingNote(m)] : [])]);
     const one = (x, col, name) => `<dt>${lab(name, col)}</dt><dd>${x ? `TAS ${fmt(x.tas, 0)} kt · ${tl("Badin", "IAS", "IAS", "IAS")} ${fmt(x.ias, 0)} kt${x.mach >= .3 ? ` · M${x.mach.toFixed(2)}` : ""}` : "—"}</dd>`;
     const isaName = tl("croisière en ISA", "cruise at ISA", "Reiseflug bei ISA", "crucero en ISA"), climbName = `${L.man()} (${tl("montée", "climb", "Steigflug", "ascenso")})`;
     sync.add({ svg, hit: $("tasHit"), W, L: Lm, R, T, bottom: H - B, xmax,
@@ -526,7 +544,11 @@
       + `<path class="curve-eco" d="${path(eco)}"/><path class="curve" d="${path(norm)}"/><path class="curve-man" d="${path(man)}"/>`;
     // optimums : pastilles de la couleur de leur courbe, étiquette neutre
     // explication au survol de chaque pastille (<title> : infobulle native, lue aussi par les lecteurs d'écran)
-    const dot = (r, col, label, dy, tip) => { if (!ok(r)) return; const x = X(r.h), y = Y(eff(r)), t = `<title>${escXml(tip)}</title>`; g += `<g class="opt-dot" style="cursor:help"><circle cx="${x}" cy="${y}" r="9" fill="transparent"/><circle cx="${x}" cy="${y}" r="4.5" style="fill:${col}"/>${t}</g><text x="${Math.min(Math.max(x, Lm + 30), W - R - 30)}" y="${y + dy}" text-anchor="middle" style="cursor:help">${t}${label}</text>`; };
+    // pastilles et libellés de zones : posés APRÈS la zone de survol du graphique (optHit), sinon leurs infobulles ne
+    // s'afficheraient jamais
+    let ov = "";
+    const zn = [];   // explications des zones, sous le graphique
+    const dot = (r, col, label, dy, tip) => { if (!ok(r)) return; const x = X(r.h), y = Y(eff(r)), t = `<title>${escXml(tip)}</title>`; ov += `<g class="opt-dot" style="cursor:help"><circle cx="${x}" cy="${y}" r="9" fill="transparent"/><circle cx="${x}" cy="${y}" r="4.5" style="fill:${col}"/>${t}</g><text x="${Math.min(Math.max(x, Lm + 30), W - R - 30)}" y="${y + dy}" text-anchor="middle" style="cursor:help">${t}${label}</text>`; };
     const at = r => ok(r) ? ` ${flTxt(r.h)} : ${fmt(cv(r.fuel), 0)} ${unit}, ${hmTxt(r.minutes)}.` : "";
     if (ok(plan)) dot(plan, COL.ref, `${flTxt(plan.h)} ${tl("plan", "plan", "Plan", "plan")}`, 16,
       tl(`Niveau du plan de vol, à la vitesse du profil.${at(plan)}`, `Flight plan level, at the profile speed.${at(plan)}`, `Flugplanhöhe, mit der Profilgeschwindigkeit.${at(plan)}`, `Nivel del plan de vuelo, a la velocidad del perfil.${at(plan)}`));
@@ -537,23 +559,37 @@
     dot(bestEco, COL.eco, flTxt(bestEco?.h), 16,
       tl(`Carburant minimal en croisière économique (vitesse réduite, régime éco) : le moins de carburant possible, au prix d'un vol plus long.${at(bestEco)}`, `Minimum fuel in economy cruise (reduced speed, eco setting): the least fuel possible, at the cost of a longer flight.${at(bestEco)}`, `Minimaler Kraftstoff im Sparreiseflug (reduzierte Geschwindigkeit): geringstmöglicher Verbrauch, dafür längerer Flug.${at(bestEco)}`, `Combustible mínimo en crucero económico (velocidad reducida): el menor consumo posible, a cambio de un vuelo más largo.${at(bestEco)}`));
     // niveaux sous le plafond mais pas tenables : zone teintée, libellé et explication selon la cause
-    if (K.reachTop >= 0 && K.reachTop < m.ceiling - step) {
+    // (seulement pour un vrai niveau refusé sous le plafond, sur au moins deux pas : pas pour l'arrondi du dernier pas)
+    if (K.stopReason && K.reachTop >= 0 && K.reachTop < m.ceiling - 2 * step) {
       const x0 = X(K.reachTop), x1 = X(m.ceiling), above = flTxt(K.reachTop);
       const why = K.stopReason === "short"
-        ? [tl("trajet trop court", "trip too short", "Strecke zu kurz", "trayecto corto"),
+        ? [tl("inaccessible — trajet trop court", "unreachable — trip too short", "unerreichbar — Strecke zu kurz", "inaccesible — trayecto corto"),
           tl(`Niveaux au-dessus de ${above} : le trajet (${fmt(c.D, 0)} NM) est trop court pour y monter puis redescendre.`, `Levels above ${above}: the trip (${fmt(c.D, 0)} NM) is too short to climb there and descend again.`, `Flughöhen über ${above}: die Strecke (${fmt(c.D, 0)} NM) ist zu kurz, um dorthin zu steigen und wieder zu sinken.`, `Niveles por encima de ${above}: el trayecto (${fmt(c.D, 0)} NM) es demasiado corto para subir y volver a bajar.`)]
         : K.stopReason === "thrust"
-        ? [tl("croisière non tenable", "cruise not sustainable", "Reiseflug nicht haltbar", "crucero no sostenible"),
+        ? [tl("inaccessible — puissance insuffisante", "unreachable — not enough power", "unerreichbar — zu wenig Leistung", "inaccesible — potencia insuficiente"),
           tl(`Niveaux au-dessus de ${above} : la puissance disponible ne suffit plus pour tenir la vitesse de croisière du profil (moteurs, air moins dense).`, `Levels above ${above}: the available power no longer holds the profile cruise speed (engines, thinner air).`, `Flughöhen über ${above}: die verfügbare Leistung reicht nicht mehr für die Reisegeschwindigkeit des Profils (Triebwerke, dünnere Luft).`, `Niveles por encima de ${above}: la potencia disponible ya no mantiene la velocidad de crucero del perfil (motores, aire menos denso).`)]
-        : [tl("niveaux non tenables", "levels not usable", "Flughöhen nicht nutzbar", "niveles no utilizables"),
+        : [tl("inaccessible", "unreachable", "unerreichbar", "inaccesible"),
           tl(`Niveaux au-dessus de ${above} : le modèle ne trouve pas de vol possible (voir Limites).`, `Levels above ${above}: the model finds no feasible flight (see Limits).`, `Flughöhen über ${above}: das Modell findet keinen möglichen Flug (siehe Grenzen).`, `Niveles por encima de ${above}: el modelo no encuentra vuelo posible (ver Límites).`)];
-      g += `<rect class="short-zone" x="${x0.toFixed(1)}" y="${T}" width="${(x1 - x0).toFixed(1)}" height="${H - B - T}"><title>${escXml(why[1])}</title></rect>`
-        + `<text class="beyond-label" x="${((x0 + x1) / 2).toFixed(1)}" y="${T + 11}" text-anchor="middle">${why[0]}</text>`;
+      zn.push(why);
+      g += `<rect class="short-zone" x="${x0.toFixed(1)}" y="${T}" width="${(x1 - x0).toFixed(1)}" height="${H - B - T}"/>`;
+      ov += `<text class="beyond-label zone-tip" x="${((x0 + x1) / 2).toFixed(1)}" y="${T + 11}" text-anchor="middle"><title>${escXml(why[1])}</title>${why[0]}</text>`;
+    }
+    // avion non pressurisé : au-dessus de l'altitude sans oxygène (Paramétrage › Planificateur, 10 000 ft par défaut),
+    // zone « oxygène requis » (information : le calcul n'est pas limité)
+    const oxy = oxygenAltFt();
+    if (!m.pressurized && oxy < xmax) {
+      const x0 = X(oxy), x1 = X(xmax);
+      const oxyTxt = (tl(`Cabine non pressurisée : au-dessus de ${flTxt(oxy)}, oxygène requis pour l'équipage et les passagers (seuil réglable dans Paramétrage › Planificateur). Information : le calcul n'est pas limité.`, `Unpressurised cabin: above ${flTxt(oxy)}, oxygen required for crew and passengers (threshold set in Settings › Planner). Information: the computation is not limited.`, `Keine Druckkabine: oberhalb ${flTxt(oxy)} Sauerstoff für Besatzung und Passagiere erforderlich (Schwelle in Einstellungen › Planer). Hinweis: die Berechnung wird nicht begrenzt.`, `Cabina sin presurizar: por encima de ${flTxt(oxy)}, oxígeno necesario para tripulación y pasajeros (umbral en Ajustes › Planificador). Información: el cálculo no se limita.`)), oxyTip = escXml(oxyTxt);
+      zn.push([tl("oxygène requis", "oxygen required", "Sauerstoff erforderlich", "oxígeno necesario"), oxyTxt]);
+      g += `<rect class="oxygen-zone" x="${x0.toFixed(1)}" y="${T}" width="${(x1 - x0).toFixed(1)}" height="${H - B - T}"/><line class="oxygen-edge" x1="${x0.toFixed(1)}" x2="${x0.toFixed(1)}" y1="${T}" y2="${H - B}"/>`;
+      ov += `<text class="oxygen-label zone-tip" x="${(x0 + 4).toFixed(1)}" y="${H - B - 5}"><title>${oxyTip}</title>${tl("oxygène requis", "oxygen required", "Sauerstoff erforderlich", "oxígeno necesario")}</text>`;
     }
     g += beyondZone(X, T, H - B, m.ceiling, xmax);
     g += `<text x="${(Lm + W - R) / 2}" y="${H - 3}" text-anchor="middle">${tl("Niveau de croisière", "Cruise level", "Reiseflughöhe", "Nivel de crucero")}</text><text x="11" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(-90 11 ${(T + H - B) / 2})">NM / ${unit}</text>`
-      + `<line id="optCursor" class="cursor" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/><rect id="optHit" x="${Lm}" y="${T}" width="${W - Lm - R}" height="${H - T - B}" fill="transparent"/>`;
+      + `<line id="optCursor" class="cursor" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/><rect id="optHit" x="${Lm}" y="${T}" width="${W - Lm - R}" height="${H - T - B}" fill="transparent"/>` + ov;
     svg.innerHTML = typo(g); svg.hidden = false; svg.dataset.t = T; svg.dataset.b = B;
+    if (m.ceiling < xmax - 1) zn.push(ceilingNote(m));
+    zoneNotes("optZones", zn);
 
     // relevé de la jauge (panneau) : trajet entier au niveau survolé, pour chaque série
     const line = (r, col, name) => `<dt>${lab(name, col)}</dt><dd>${ok(r) ? `${fmt(cv(r.fuel), 0)} ${unit} · ${hmTxt(r.minutes)} · TAS ${fmt(r.tas, 0)} kt` : "—"}</dd>`;

@@ -137,7 +137,7 @@
   } = {}) {
     const kind = kindOf(profile, db),
       C = CLASS[kind],
-      lapse = LAPSE[kind],
+      lapse0 = LAPSE[kind],
       jet = kind === 'jet',
       notes = [];
     /** Nombre d'un champ du profil ; NaN si vide. */
@@ -165,6 +165,13 @@
     // au-dessus du plafond et abaisse le vario minimal de montée (50 → 5 ft/min) pendant fn.
     let beyond = false;
     const atm = h => isa(h, dIsa);
+    // Piston suralimenté (profil : altitude de rétablissement, ft) : pleine puissance jusqu'à cette altitude, puis
+    // décroissance d'un moteur atmosphérique rapportée à ce niveau ; sans valeur : moteur atmosphérique (depuis le sol)
+    const hCrit = kind === 'piston' ? num(profile.engineCriticalAltFt) : NaN,
+      lapse = hCrit > 0 ? (sc => s => s >= sc ? 1 : lapse0(s) / lapse0(sc))(isa(hCrit, 0).sigma) : lapse0;
+    if (hCrit > 0) notes.push(tl(`Moteur suralimenté : pleine puissance jusqu'à ${Math.round(hCrit)} ft (altitude de rétablissement), décroissance au-dessus.`, `Supercharged engine: full power up to ${Math.round(hCrit)} ft (critical altitude), decreasing above.`, `Aufgeladener Motor: volle Leistung bis ${Math.round(hCrit)} ft (Volldruckhöhe), darüber abnehmend.`, `Motor sobrealimentado: plena potencia hasta ${Math.round(hCrit)} ft (altitud crítica), decreciente por encima.`));
+    // Cabine : pressurisée (oui), non (non) ; non renseigné : piston non pressurisé, réacteur / turbopropulseur pressurisé
+    const pressurized = profile.pressurized === true ? true : profile.pressurized === false ? false : kind !== 'piston';
 
     // Modèle pour une altitude de référence, une finesse et une poussée / puissance au sol données.
     function make(hRef, ld, p0, A = isa) {
@@ -626,6 +633,9 @@
     return {
       kind,
       dIsa,
+      /** Cabine pressurisée (sinon : oxygène au-dessus de l'altitude réglée dans Paramétrage). */
+      pressurized,
+      criticalAltFt: hCrit > 0 ? hCrit : null,
       /** Exécute fn sans le refus de croisière au-dessus du plafond (prolongement des courbes) ; retourne son résultat. */
       unbounded(fn) {
         beyond = true;

@@ -830,6 +830,12 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       custom: true,
       intro: T('Bouton « Envoyer le CR » des pages de saisie : POST JSON (mission, CR HTML et texte, calculs) vers l’adresse ci-dessous. La clef reste dans ce navigateur (missionSendKey:v1), hors sauvegarde locale. Le service doit accepter les appels de cette origine (CORS).', '“Send report” button of the entry pages: JSON POST (mission, report HTML and text, calculations) to the address below. The key stays in this browser (missionSendKey:v1), outside the local backup. The service must accept calls from this origin (CORS).')
     }, {
+      id: 'planner',
+      group: T('Planificateur carburant', 'Fuel planner'),
+      title: T('Altitude sans oxygène (avions non pressurisés)', 'Altitude without oxygen (unpressurised aircraft)'),
+      custom: true,
+      intro: T('Au-dessus de cette altitude, le graphique d’altitude optimale du planificateur signale « oxygène requis » pour les avions à cabine non pressurisée (champ « Cabine pressurisée » du profil ; non renseigné : piston non pressurisé). Information seulement : le calcul n’est pas limité. Réglage gardé dans ce navigateur.', 'Above this altitude, the planner’s optimum altitude chart shows “oxygen required” for aircraft with an unpressurised cabin (profile field “Pressurised cabin”; not set: piston unpressurised). Information only: the computation is not limited. Setting kept in this browser.')
+    }, {
       id: 'ledgers',
       group: T('Missions', 'Missions'),
       title: T('Registres des missions (base des opérations)', 'Mission ledgers (operations base)'),
@@ -917,7 +923,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       howto.querySelector('div').innerHTML = set.howto || '';
       const body = root.querySelector('.da-body');
       body.innerHTML = '';
-      if (set.custom) return set.id === 'send' ? sendSettings(body) : set.id === 'defaLog' ? defaLog(body) : set.id === 'merges' ? merges(body) : ledgers(body);
+      if (set.custom) return set.id === 'planner' ? plannerSettings(body) : set.id === 'send' ? sendSettings(body) : set.id === 'defaLog' ? defaLog(body) : set.id === 'merges' ? merges(body) : ledgers(body);
       if (set.file) {
         const w = work[set.id];
         status(w.local ? `${T('Modifications locales du', 'Local changes from')} ${new Date(w.local).toLocaleString()} (${T('prioritaires dans ce navigateur, pas encore dans le dépôt', 'active in this browser, not yet in the repository')})` : T('Contenu du fichier du dépôt', 'Repository file content'));
@@ -1135,6 +1141,26 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           status(T('Base DEFA effacée', 'DEFA base cleared'));
           defaLog(body);
         }]
+      ]);
+    }
+
+    // Planificateur carburant : altitude maximale sans oxygène d'un avion non pressurisé (fpOxygenAltFt:v1).
+    function plannerSettings(body) {
+      const KEY = 'fpOxygenAltFt:v1', cur = +read(KEY) > 0 ? +read(KEY) : 10000;
+      body.innerHTML = `<div class="da-form"><label>${esc(T('Altitude maximale sans oxygène (ft)', 'Maximum altitude without oxygen (ft)'))}<input type="number" min="1000" max="30000" step="500" data-oxy value="${cur}"></label></div>
+        <p class="small">${esc(T('Repères : 10 000 ft (usage courant, EASA NCO), 12 500 ft (FAA, équipage au-delà de 30 minutes), 14 000 ft (FAA, équipage en permanence).', 'Benchmarks: 10,000 ft (common practice, EASA NCO), 12,500 ft (FAA, crew beyond 30 minutes), 14,000 ft (FAA, crew at all times).'))}</p>`;
+      const input = body.querySelector('[data-oxy]');
+      input.oninput = changed;
+      status(`${T('Valeur actuelle', 'Current value')} : ${cur} ft`);
+      actions([
+        [T('Enregistrer', 'Save'), () => {
+          const v = Math.round(+input.value);
+          if (!(v >= 1000 && v <= 30000)) { status(T('Valeur entre 1000 et 30 000 ft', 'Value between 1,000 and 30,000 ft')); return; }
+          write(KEY, v);
+          dirty = false;
+          status(T('Enregistré dans ce navigateur', 'Saved in this browser'));
+        }, 'primary'],
+        [T('Valeur par défaut (10 000 ft)', 'Default value (10,000 ft)'), () => { localStorage.removeItem(KEY); input.value = 10000; dirty = false; status(T('Valeur par défaut rétablie', 'Default value restored')); }]
       ]);
     }
 
