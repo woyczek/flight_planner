@@ -55,7 +55,8 @@
     SPECIAL: '#ec4899'
   };
   /** Couleur d'une famille (graphiques, puces). */
-  const colorOf = id => COLORS[id] || '#67b6ff';
+  const tint = c => window.RepositoryNav?.chartColor?.(c) ?? c;   // couleurs accordées au design (matières)
+  const colorOf = id => tint(COLORS[id] || '#67b6ff');
   const OUTCOME_COLORS = {
     SUCCESS: '#22c55e',
     PARTIAL_SUCCESS: '#eab308',
@@ -511,7 +512,7 @@
         return count ? `${tr(UI.average)} ${duration(total / count)}` : '';
       };
       /** Carte de synthèse (libellé, valeur, sous-titre, couleur). */
-      const card = (key, value, sub = '', color = '') => `<div class="card"${color ? ` style="--c:${color}"` : ''}><div class="label">${esc(tr(UI[key]))}</div><div class="value">${esc(value)}</div><div class="sub">${esc(sub)}</div></div>`;
+      const card = (key, value, sub = '', color = '') => `<div class="card"${color ? ` style="--c:${tint(color)}"` : ''}><div class="label">${esc(tr(UI[key]))}</div><div class="value">${esc(value)}</div><div class="sub">${esc(sub)}</div></div>`;
       $('#mcgCards').innerHTML = [
         card('missions', c.missions, familyIds.map(familyShort).join(' · '), '#67b6ff'),
         card('success', c.missions ? `${Math.round(c.success * 100 / c.missions)} %` : '—', `${c.success} / ${c.missions}`, '#22c55e'),
@@ -915,7 +916,7 @@
       }, {
         key: 'outcome',
         label: t('colOutcome'),
-        html: (v, r) => editable('outcome', r, v ? `<span class="mcg-pill" style="--c:${OUTCOME_COLORS[v] || '#64748b'}">${esc(opt(V.outcomes, v))}</span>` : '—')
+        html: (v, r) => editable('outcome', r, v ? `<span class="mcg-pill" style="--c:${tint(OUTCOME_COLORS[v] || '#64748b')}">${esc(opt(V.outcomes, v))}</span>` : '—')
       }, {
         key: 'flight',
         label: t('colFlight'),

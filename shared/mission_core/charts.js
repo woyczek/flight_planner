@@ -177,15 +177,22 @@
   // ---- barres empilées par période
   // buckets: [{ key, label }] ; series: [{ id, label, color }] ;
   // value(bucketKey, seriesId) → nombre ; format(v) → texte (axes, info-bulles).
+  /** Couleurs accordées au design (repository_nav.js : familles des designs à matières). */
+  const tint = c => window.RepositoryNav?.chartColor?.(c) ?? c;
+  /** Designs à matières : barres et anneaux en relief (reflet cylindrique, ombrage) plutôt qu'en aplats. */
+  const matter = () => /^(cabinet|flightlog|field|aqua)$/.test(document.documentElement.dataset.design || '');
+  const SHEEN = '<defs><linearGradient id="mcgSheen" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".22"/><stop offset=".18" stop-color="#fff" stop-opacity=".32"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient>'
+    + '<linearGradient id="mcgRing" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".3"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></linearGradient></defs>';
   function stackedBars({
     buckets: list,
-    series,
+    series: series0,
     value,
     format = v => String(Math.round(v)),
     height = 260,
     empty = '—'
   }) {
     if (!list.length) return `<p class="mcg-empty">${esc(empty)}</p>`;
+    const series = series0.map(s => ({ ...s, color: tint(s.color) }));
     const W = 1000,
       H = height,
       m = {
@@ -202,7 +209,8 @@
       bw = Math.max(2, Math.min(56, step * 0.72));
     /** Ordonnée SVG d'une valeur. */
     const y = v => m.t + ih - (v / max) * ih;
-    let svg = `<svg class="mcg-chart mcg-zoomable" viewBox="0 0 ${W} ${H}" role="img" data-left="${m.l}" data-step="${step}" data-top="${m.t}" data-height="${ih}">`;
+    const relief = matter();
+    let svg = `<svg class="mcg-chart mcg-zoomable" viewBox="0 0 ${W} ${H}" role="img" data-left="${m.l}" data-step="${step}" data-top="${m.t}" data-height="${ih}">${relief ? SHEEN : ''}`;
     for (let i = 0; i <= 4; i++) {
       const v = max * i / 4,
         yy = y(v);
@@ -221,6 +229,7 @@
           h = y(acc) - top;
         acc += v;
         svg += `<rect x="${x}" y="${top}" width="${bw}" height="${Math.max(0.5, h)}" fill="${s.color}" rx="2"/>`;
+        if (relief) svg += `<rect x="${x}" y="${top}" width="${bw}" height="${Math.max(0.5, h)}" fill="url(#mcgSheen)" rx="2" stroke="#000" stroke-opacity=".35" stroke-width="1" pointer-events="none"/>`;
       });
       svg += '</g>';
       if (i % every === 0) svg += `<text x="${x + bw / 2}" y="${H - m.b + 16}" text-anchor="middle" class="mcg-axis">${esc(b.label)}</text>`;
@@ -235,7 +244,7 @@
     center = '',
     empty = '—'
   } = {}) {
-    items = items.filter(i => i.value > 0);
+    items = items.filter(i => i.value > 0).map(i => ({ ...i, color: tint(i.color) }));
     const total = items.reduce((a, i) => a + i.value, 0);
     if (!total) return `<p class="mcg-empty">${esc(empty)}</p>`;
     const R = 80,
@@ -256,7 +265,7 @@
       angle = a2;
     });
     const legend = items.map(i => `<li><i style="background:${i.color}"></i><span>${esc(i.label)}</span><b>${esc(format(i.value))}</b><em>${Math.round(i.value * 100 / total)} %</em></li>`).join('');
-    return `<div class="mcg-donut"><svg viewBox="0 0 200 200" role="img">${paths}<text x="100" y="98" text-anchor="middle" class="mcg-total">${esc(center || format(total))}</text></svg><ul class="mcg-legend">${legend}</ul></div>`;
+    return `<div class="mcg-donut"><svg viewBox="0 0 200 200" role="img">${matter() ? SHEEN : ''}${paths}${matter() ? `<circle cx="${C}" cy="${C}" r="${(R + r) / 2}" fill="none" stroke="url(#mcgRing)" stroke-width="${R - r}" pointer-events="none"/><circle cx="${C}" cy="${C}" r="${R}" fill="none" stroke="#000" stroke-opacity=".45" stroke-width="1.5"/><circle cx="${C}" cy="${C}" r="${r}" fill="none" stroke="#000" stroke-opacity=".45" stroke-width="1.5"/>` : ''}<text x="100" y="98" text-anchor="middle" class="mcg-total">${esc(center || format(total))}</text></svg><ul class="mcg-legend">${legend}</ul></div>`;
   }
 
   // ---- barres horizontales (classement)
@@ -265,7 +274,7 @@
     empty = '—',
     limit = 10
   } = {}) {
-    items = items.filter(i => i.value > 0).sort((a, b) => b.value - a.value);
+    items = items.filter(i => i.value > 0).map(i => ({ ...i, color: tint(i.color) })).sort((a, b) => b.value - a.value);
     if (!items.length) return `<p class="mcg-empty">${esc(empty)}</p>`;
     const shown = items.slice(0, limit),
       max = Math.max(...shown.map(i => i.value)),

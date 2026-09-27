@@ -58,6 +58,29 @@
     return fam ? { ...t, ...familyColors(fam, o.tone, t.page), family: o.family, tone: +o.tone } : { ...t };
   }
   let currentTheme = themeName;
+  // Couleurs des graphiques dans les designs à matières : toute couleur vive (familles, séries, statuts) est ramenée à
+  // la famille de couleurs du design, peu saturée : Cabinet et Carnet de vol (laiton, beige, bleu acier, cuivre,
+  // lie-de-vin, sauge), Durci (kaki, olive, moutarde, gris-vert, ardoise). La teinte d'origine choisit l'entrée
+  // (10 secteurs de teinte + gris) : deux couleurs d'origine distinctes le restent ; la clarté d'origine module un peu
+  // la clarté (deux nuances d'une même teinte restent distinctes). Designs sans matière, Aqua : couleurs inchangées.
+  const CHART = {
+    cabinet: { grey: "#b8ad98", hues: [[20, "#b0645a"], [45, "#b87d4b"], [70, "#c9a24a"], [100, "#a39f6a"], [160, "#839c78"], [195, "#6f9a95"], [225, "#7f9cc0"], [255, "#8e9cc9"], [300, "#8e8a9e"], [345, "#9c8a78"], [360, "#b0645a"]] },   // violet → gris mauve, rose → taupe (jamais de rose vif)
+    field: { grey: "#a3a38f", hues: [[20, "#a8674a"], [45, "#b8894a"], [70, "#c9b060"], [100, "#9aa35a"], [160, "#74995a"], [195, "#7f9a8a"], [225, "#8e9ea8"], [255, "#7c8796"], [300, "#9b9084"], [345, "#9c8a6a"], [360, "#a8674a"]] }
+  };
+  CHART.flightlog = CHART.cabinet;
+  /** Couleur de graphique (« #rgb », « #rrggbb » ou « rgb(…) ») accordée au design courant. */
+  function chartColor(c) {
+    const set = CHART[doc.dataset.design];
+    if (!set || typeof c !== "string") return c;
+    const m = c.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i) || c.match(/^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i);
+    if (!m) return c;
+    const [r, g, b] = (m.length === 2 ? hexRgb("#" + m[1]) : [m[1], m[2], m[3]].map(Number)).map(v => v / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn, l = (mx + mn) / 2;
+    const s = d ? d / (1 - Math.abs(2 * l - 1)) : 0, h = !d ? 0 : (mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4) * 60;
+    const base = s < .18 ? set.grey : set.hues.find(([lim]) => h < lim)[1];
+    // clarté : ±12 % autour de la couleur de la famille selon la clarté d'origine (repère 0,6)
+    const k = Math.max(-.12, Math.min(.12, (l - .6) * .5)), rgb = hexRgb(base).map(v => Math.round(k > 0 ? v + (255 - v) * k : v * (1 + k)));
+    return "#" + rgb.map(v => v.toString(16).padStart(2, "0")).join("");
+  }
   /** Pose les variables CSS du thème name (couleurs effectives). */
   function applyTheme(name) {
     const t = themeColors(name);
@@ -112,7 +135,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260927y", script.src).href;
+    css.href = new URL("designs.css?v=20260927zd", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -377,6 +400,8 @@
     getLanguageMode: () => mode,
     /** Design graphique courant (clé de REPOSITORY_TREE.designs.list). */
     getDesign: () => design,
+    /** Couleur de graphique accordée au design courant (familles de couleurs des designs à matières). */
+    chartColor,
     /** Apparence (Paramétrage › Apparence) : lecture et réglage du design, des icônes, de la barre latérale et des
      *  couleurs des thèmes ; outils de couleur (contraste WCAG, familles). Chaque réglage est mémorisé et appliqué. */
     appearance: {
@@ -497,20 +522,20 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260927y", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260927zd", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260927y", script.src).href;
+    files.src = new URL("file_access.js?v=20260927zd", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260927y", "block_icons.js?v=20260927y", "side_nav.js?v=20260927y"]) {
+    for (const f of ["icons/repository_icons.js?v=20260927zd", "block_icons.js?v=20260927zd", "side_nav.js?v=20260927zd"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260927y", script.src).href;
+    store.src = new URL("browser_store.js?v=20260927zd", script.src).href;
     document.head.append(store)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

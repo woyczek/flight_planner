@@ -397,7 +397,7 @@
           empty: t('empty')
         });
         C.enableZoom(root.querySelector('#mcActivity'));
-        root.querySelector('#mcActivityLegend').innerHTML = series.map(s => `<span><i style="background:${s.color}"></i>${esc(s.label)}</span>`).join('');
+        root.querySelector('#mcActivityLegend').innerHTML = series.map(s => `<span><i style="background:${window.RepositoryNav?.chartColor?.(s.color) ?? s.color}"></i>${esc(s.label)}</span>`).join('');
       }
       /** Répartition des missions par valeur (barres horizontales). */
       const groups = (titleKey, values) => {
