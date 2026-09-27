@@ -99,7 +99,7 @@ liste `DISPLAY` : design, icônes, couleurs, barre latérale, langue, onglets, s
   icônes posées (blocs, sous-cartes, barre latérale, boutons à icône seule, zones de dépôt, bandeaux) prennent l'image
   de la planche (règles générées par `tools/build_skeuo_icons_css.py`, attribut `data-i` des icônes), sinon un
   médaillon, une plaque ou une bulle dessinés ; `design_deco.js` dissémine les décors (frise de pied, entre les blocs,
-  dans les marges des grands écrans). Classe `repo-plain` : bouton qui garde son propre dessin (vignettes, sélecteurs). À l'impression,
+  dans les marges des grands écrans). Classe `repo-actionbar` : barre d'action collée en bas d'une page, habillée par le design. Classe `repo-plain` : bouton qui garde son propre dessin (vignettes, sélecteurs). À l'impression,
   tout s'efface.
 - **Réglages** : boutons « Apparence » et « Paramètres » en tête du menu ☰ ; dans la barre latérale, groupe du bas
   (Apparence, Paramètres, Menu).

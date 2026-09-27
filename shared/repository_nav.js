@@ -94,7 +94,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260927n", script.src).href;
+    css.href = new URL("designs.css?v=20260927p", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -473,20 +473,20 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260927n", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260927p", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260927n", script.src).href;
+    files.src = new URL("file_access.js?v=20260927p", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260927n", "block_icons.js?v=20260927n", "side_nav.js?v=20260927n"]) {
+    for (const f of ["icons/repository_icons.js?v=20260927p", "block_icons.js?v=20260927p", "side_nav.js?v=20260927p"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260927n", script.src).href;
+    store.src = new URL("browser_store.js?v=20260927p", script.src).href;
     document.head.append(store)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {
