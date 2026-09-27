@@ -41,11 +41,17 @@
   // contenu, fondu vers le bas et la droite. Seules les images déclarées ici sont chargées (pas de requête inutile).
   // Mode « anchor » : taille d'origine, calée en haut à gauche, s'étend vers la droite et le bas (coupée au bord du
   // bloc) ; « cover » : redimensionnée pour couvrir le bloc. Exemple : field: { aerodromes: 'anchor' }.
-  const BG = {};
+  // Fonds fournis (bleu marine et or, Cabinet et Carnet de vol) : terrains de départ = piste au pied des montagnes,
+  // capacités = relief et réticule, résultats = mappemonde et rose des vents, types d'appareil = globe ;
+  // un design peut reprendre ceux d'un autre (chaîne : nom du design source)
+  const BG = {
+    cabinet: { aerodromes: 'cover', capabilities: 'cover', outcomes: 'cover', aircraft: 'cover' },
+    flightlog: 'cabinet'
+  };
   function backgrounds(d) {
     document.querySelectorAll('.repo-deco-bgimg').forEach(n => n.remove());
     document.querySelectorAll('.repo-has-bg').forEach(b => b.classList.remove('repo-has-bg'));
-    const list = BG[d];
+    const src = typeof BG[d] === 'string' ? BG[d] : d, list = BG[src];
     if (!list) return;
     document.querySelectorAll('[data-deco-bg]').forEach(b => {
       const mode = list[b.dataset.decoBg];
@@ -53,7 +59,7 @@
       const el = document.createElement('div');
       el.className = `repo-deco-bgimg repo-deco-bg-${mode}`;
       el.setAttribute('aria-hidden', 'true');
-      el.style.backgroundImage = `url("${DECO(d)(`bg-${b.dataset.decoBg}`)}")`;
+      el.style.backgroundImage = `url("${DECO(src)(`bg-${b.dataset.decoBg}`)}")`;
       b.classList.add('repo-has-bg');
       b.prepend(el);
     });

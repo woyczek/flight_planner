@@ -148,7 +148,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260927zh", script.src).href;
+    css.href = new URL("designs.css?v=20260927zi", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -506,7 +506,11 @@
     // servent que dans les jeux au trait
     const SKEUO = { brass: "cabinet", steel: "field", gel: "aqua", avio: "flightlog" }, ver = new URL(script.src).search;
     const skImg = name => { const d = SKEUO[doc.dataset.icons]; return d ? `<img class="repo-sidenav-img" src="${new URL(`icons/skeuo/${d}/${name}.webp${ver}`, script.src).href}" alt="">` : ""; };
-    side.innerHTML = `<div class="repo-sidenav-brand" aria-hidden="true"><span class="repo-sidenav-ic" data-sidenav-icon="map" data-size="30">${skImg("map")}</span></div><ul></ul>`;
+    // haut de la barre : logo DEFA décliné selon le design (shared/icons/defa/<variante>.webp), lien vers le site de la
+    // flotte DEFA Virtual (nouvel onglet : la page en cours reste ouverte)
+    const LOGO = { cabinet: "cabinet", flightlog: "flightlog", field: "field", aqua: "aqua" };
+    const logoSrc = () => new URL(`icons/defa/${LOGO[doc.dataset.design] || "flat"}.webp${ver}`, script.src).href;
+    side.innerHTML = `<a class="repo-sidenav-brand" href="https://flotte.defa-virtual.fr/index.php" target="_blank" rel="noopener" title="DEFA Virtual — flotte.defa-virtual.fr"><img class="repo-sidenav-logo" src="${logoSrc()}" alt="DEFA Virtual"></a><ul></ul>`;
     const ul = side.querySelector("ul");
     items.forEach((it, i) => {
       const li = document.createElement("li");
@@ -534,29 +538,33 @@
     label();
     window.addEventListener("repository-language-change", label);
     // changement de jeu d'icônes ou de design : images de la barre refaites
-    window.addEventListener("repository-design-change", () => side.querySelectorAll("[data-sidenav-icon]").forEach(sp => {
-      sp.querySelector(".repo-sidenav-img")?.remove();
-      sp.insertAdjacentHTML("afterbegin", skImg(sp.dataset.sidenavIcon));
-    }));
+    window.addEventListener("repository-design-change", () => {
+      side.querySelectorAll("[data-sidenav-icon]").forEach(sp => {
+        sp.querySelector(".repo-sidenav-img")?.remove();
+        sp.insertAdjacentHTML("afterbegin", skImg(sp.dataset.sidenavIcon));
+      });
+      const logo = side.querySelector(".repo-sidenav-logo");
+      if (logo && logo.src !== logoSrc()) logo.src = logoSrc();
+    });
     window.RepositorySideNav = { element: side, set: on => window.RepositoryNav.appearance.setSidenav(on) };
   }
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260927zh", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260927zi", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260927zh", script.src).href;
+    files.src = new URL("file_access.js?v=20260927zi", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260927zh", "block_icons.js?v=20260927zh", "side_nav.js?v=20260927zh"]) {
+    for (const f of ["icons/repository_icons.js?v=20260927zi", "block_icons.js?v=20260927zi", "side_nav.js?v=20260927zi"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260927zh", script.src).href;
+    store.src = new URL("browser_store.js?v=20260927zi", script.src).href;
     document.head.append(store)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {
