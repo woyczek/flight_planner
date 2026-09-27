@@ -10,6 +10,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+## [2.5.0] — 2026-09-27
+
+- **Planificateur : fin de montée à Vy** : quand la vitesse de montée du profil ne monte plus (haut de la montée), le
+  modèle finit la montée à Vy (meilleur vario), comme pour le calcul du plafond, au lieu de refuser le niveau. Supprime
+  la zone « inaccessible » artificielle sous le plafond (DC-3 : montée à 135 kt épuisée vers le FL130, plafond FL155 à
+  Vy ; tous les niveaux jusqu'au plafond sont désormais utilisables).
 - **Planificateur : bloc Résultat épinglable** : bouton « Épingler » dans ses outils ; épinglé, le bloc reste déplié
   quand il suit la page (il se repliait dès qu'il se collait sous l'en-tête). Choix mémorisé dans le navigateur.
 - **Planificateur, hélices : plus de niveaux refusés à tort sous le plafond** : quand la puissance de croisière du

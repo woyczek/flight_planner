@@ -247,16 +247,21 @@
     } = {}) {
       let t = 0,
         d = 0,
-        f = 0;
-      const dh = Math.max(100, hTop / 150);
+        f = 0,
+        vyFrom = null;   // altitude où la montée passe à Vy (vitesse demandée qui ne monte plus)
+      const dh = Math.max(100, hTop / 150), min = beyond ? 5 : 50;
       for (let h = 0; h < hTop - 1e-6; h += dh) {
         const step = Math.min(dh, hTop - h),
           hm = h + step / 2,
           law = typeof speed === 'function' ? speed(hm) : null,
           fr = law ? law.frac : frac,
-          ve = law ? law.ve : speed === 'vy' ? m.vy(hm, fr).ve : climbVe(m, hm),
-          r = m.roc(hm, ve, fr);
-        if (!(r > (beyond ? 5 : 50))) return null; // au-delà du plafond (prolongement des courbes) : seuil abaissé
+          ve0 = law ? law.ve : speed === 'vy' ? m.vy(hm, fr).ve : climbVe(m, hm),
+          r0 = m.roc(hm, ve0, fr);
+        // la vitesse de montée demandée ne monte plus (haut de la montée) : l'équipage finit à Vy (meilleur vario),
+        // comme le plafond du modèle, calculé à Vy ; refus seulement si Vy non plus ne monte plus
+        let ve = ve0, r = r0;
+        if (!(r0 > min) && speed !== 'vy') { const v = m.vy(hm, fr).ve, rv = m.roc(hm, v, fr); if (rv > min) { ve = v; r = rv; if (vyFrom === null) vyFrom = h; } }
+        if (!(r > min)) return null; // au-delà du plafond (prolongement des courbes) : seuil abaissé
         const tas = m.tasOf(hm, ve),
           dt = step / r;
         t += dt;
@@ -267,7 +272,8 @@
         minutes: t,
         nm: d,
         fuel: f,
-        ffAvg: t ? f / (t / 60) : 0
+        ffAvg: t ? f / (t / 60) : 0,
+        vyFrom
       };
     }
     // Poussée / puissance au sol telle que le vario moyen jusqu'à hRef soit celui du profil.
