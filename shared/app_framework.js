@@ -61,6 +61,8 @@
             const hide = isHidden();
             el.classList.toggle("repo-block-hidden", hide);
             b.textContent = label(hide ? "show" : "hide");
+            b.title = b.textContent;   // libellé masqué dans les designs à matières (icône seule)
+            b.setAttribute("aria-label", b.textContent);
             head.querySelector(".repo-drag").title = label("move")
           };
         apply();

@@ -72,6 +72,24 @@
     if (document.body) document.body.style.backgroundColor = t.page || "";
     // ton de la page (fond clair ou sombre) : variantes des designs à matières (Cabinet « carte de nuit »)
     doc.dataset.tone = luminance(t.page || "#ffffff") < .3 ? "dark" : "light";
+    applyAqua(t.accent);
+  }
+  // Couleur du design Aqua (gel des boutons, bulles des icônes) : une teinte de base commune à toutes les pages
+  // (préférence repositoryAquaColor : bleu par défaut, ou une autre teinte, ou « app » : accent du thème de la page).
+  // Les icônes Gel (peintes en bleu, teinte 214°) suivent par rotation de teinte, sauf les icônes d'état.
+  const AQUA = { blue: [214, 72], teal: [186, 70], green: [145, 52], graphite: [212, 12], purple: [268, 52], orange: [24, 82], red: [356, 66], pink: [328, 60] };
+  /** « #rrggbb » → [teinte (degrés), saturation (%)]. */
+  const hueSat = hex => { const [r, g, b] = hexRgb(hex).map(v => v / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn, l = (mx + mn) / 2;
+    if (!d) return [214, 0]; const h = mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; return [Math.round(h * 60), Math.round(d / (1 - Math.abs(2 * l - 1)) * 100)]; };
+  function applyAqua(accent) {
+    const v = readPref("repositoryAquaColor", "blue");
+    const [h, s] = v === "app" ? hueSat(accent || "#2f7de1") : AQUA[v] || AQUA.blue;
+    // clarté abaissée jusqu'à un contraste WCAG de 4,5:1 avec le texte blanc des boutons
+    let l = 52, c = hslHex(h, s, l);
+    while (contrast("#ffffff", c) < 4.5 && l > 20) c = hslHex(h, s, l -= 2);
+    doc.style.setProperty("--aq-gel", c);
+    doc.style.setProperty("--aq-shift", `${h - 214}deg`);
+    doc.style.setProperty("--aq-sat", Math.min(1.3, s / 72).toFixed(2));
   }
   applyTheme(themeName);
   // barre latérale (on / off), posée dès le chargement ; jeu d'icônes : après le design (défaut propre au design)
@@ -94,7 +112,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260927t", script.src).href;
+    css.href = new URL("designs.css?v=20260927v", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -366,6 +384,12 @@
       families: cfg.colorFamilies || {},
       themes: cfg.themes,
       current: () => ({ design, icons: doc.dataset.icons || "line", iconsSaved: readPref("repositoryIcons", null), sidenav: doc.dataset.sidenav || "", decor: doc.dataset.decor, decorSaved: readPref("repositoryDecor", null), colors: readJson("repositoryColors") || {}, theme: currentTheme }),
+      /** Couleur du design Aqua : clé de AQUA ("blue" par défaut, "teal", "green", "graphite", "purple", "orange",
+       *  "red", "pink") ou "app" (accent du thème de chaque page) ; null : défaut. */
+      aquaColors: Object.keys(AQUA),
+      aquaColor: () => readPref("repositoryAquaColor", "blue"),
+      aquaSample: k => { const [h, s] = AQUA[k] || AQUA.blue; return hslHex(h, s, 48); },
+      setAqua(v) { try { v && v !== "blue" ? localStorage.setItem("repositoryAquaColor", v) : localStorage.removeItem("repositoryAquaColor"); } catch {} applyAqua(themeColors(currentTheme).accent); window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { aqua: v || "blue" } })); },
       /** Décor des designs à matières : "full", "sober", ou null (réglage de chaque page). */
       setDecor(v) { try { v ? localStorage.setItem("repositoryDecor", v) : localStorage.removeItem("repositoryDecor"); } catch {} doc.dataset.decor = v || decorDefault; window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { decor: doc.dataset.decor } })); },
       renderEmblem,
@@ -473,20 +497,20 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260927t", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260927v", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260927t", script.src).href;
+    files.src = new URL("file_access.js?v=20260927v", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260927t", "block_icons.js?v=20260927t", "side_nav.js?v=20260927t"]) {
+    for (const f of ["icons/repository_icons.js?v=20260927v", "block_icons.js?v=20260927v", "side_nav.js?v=20260927v"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260927t", script.src).href;
+    store.src = new URL("browser_store.js?v=20260927v", script.src).href;
     document.head.append(store)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

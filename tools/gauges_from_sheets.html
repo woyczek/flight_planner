@@ -19,10 +19,12 @@
 // en écartant les rayons aberrants (bouton, chiffres).
 const SHEETS = {
   // planches sur fond transparent (alpha : la transparence d'origine sert de silhouette)
-  cabinet: { src: 't2.png', alpha: true, ax: 903, ay: 540, box: 1.4, fix: { cx: 903, cy: 536, r: 153 } },
-  flightlog: { src: 't1.png', alpha: true, ax: 902, ay: 537, box: 1.4 },
-  field: { src: 't3.png', alpha: true, ax: 903, ay: 522, box: 1.4 },
-  aqua: { src: 't4.png', alpha: true, ax: 900, ay: 511, box: 1.4, fix: { cx: 900, cy: 514, r: 154 } }
+  // fix : ouverture relevée (bord intérieur de la lunette ; aspect = hauteur / largeur : planches étirées de ~3,5 %
+  // en hauteur, la découpe est ramenée au carré pour que lunette et cadran coïncident)
+  cabinet: { src: 't2.png', alpha: true, ax: 903, ay: 540, box: 1.4, fix: { cx: 901.4, cy: 530, r: 162, aspect: 1.034 } },
+  flightlog: { src: 't1.png', alpha: true, ax: 902, ay: 537, box: 1.4, fix: { cx: 900.9, cy: 524.3, r: 161.7, aspect: 1.035 } },
+  field: { src: 't3.png', alpha: true, ax: 903, ay: 522, box: 1.4, fix: { cx: 899.5, cy: 513, r: 157.5, aspect: 1.034 } },
+  aqua: { src: 't4.png', alpha: true, ax: 900, ay: 511, box: 1.4, fix: { cx: 900, cy: 514, r: 154, aspect: 1.035 } }
 };
 const HALF = 1.45;   // demi-côté de la découpe / rayon de l'ouverture (le boîtier entier doit y tenir)
 const load = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error(src)); i.src = src; });
@@ -49,16 +51,26 @@ function measure(img, ax, ay) {
   };
   let f = fit(pts);
   for (let it = 0; it < 3; it++) { const res = pts.map(([x, y]) => Math.abs(Math.hypot(x - f.cx, y - f.cy) - f.r)), lim = Math.max(2, [...res].sort((a, b) => a - b)[Math.floor(res.length * .7)] * 1.5); f = fit(pts.filter((p, i) => res[i] <= lim)); }
-  return { cx: ax - 220 + f.cx, cy: ay - 220 + f.cy, r: f.r, n: pts.length };
+  // ouverture légèrement ovale sur la planche (dessin ou prise de vue) : ellipse d'axes horizontaux et verticaux ajustée
+  // sur les rayons retenus (A x² + B y² + C x + D y = 1, moindres carrés) → aspect ry / rx ; la découpe est ensuite
+  // remise à l'échelle pour que l'ouverture devienne un cercle exact (lunette non étirée par rapport au cadran)
+  const good = pts.filter(([x, y]) => Math.abs(Math.hypot(x - f.cx, y - f.cy) - f.r) <= 3), Q = good.map(([x, y]) => [(x - f.cx) ** 2, (y - f.cy) ** 2, x - f.cx, y - f.cy]);
+  const M = [0, 1, 2, 3].map(i => [0, 1, 2, 3].map(j => Q.reduce((t, q) => t + q[i] * q[j], 0))), V = [0, 1, 2, 3].map(i => Q.reduce((t, q) => t + q[i], 0));
+  for (let i = 0; i < 4; i++) { const p = M[i][i]; for (let j = i + 1; j < 4; j++) { const r = M[j][i] / p; for (let k = i; k < 4; k++) M[j][k] -= r * M[i][k]; V[j] -= r * V[i]; } }
+  const X = [0, 0, 0, 0]; for (let i = 3; i >= 0; i--) X[i] = (V[i] - [0, 1, 2, 3].slice(i + 1).reduce((t, k) => t + M[i][k] * X[k], 0)) / M[i][i];
+  const [A, B, C, D] = X, G = 1 + C * C / (4 * A) + D * D / (4 * B), rx = Math.sqrt(G / A), ry = Math.sqrt(G / B);
+  return { cx: ax - 220 + f.cx - C / (2 * A), cy: ay - 220 + f.cy - D / (2 * B), r: rx, aspect: ry / rx, n: good.length, circle: { cx: ax - 220 + f.cx, cy: ay - 220 + f.cy, r: f.r } };
 }
+
 async function run() {
   const out = document.getElementById('out'), list = document.getElementById('list'), info = [];
   for (const [design, sh] of Object.entries(SHEETS)) {
     const img = await load(`/src/${sh.src}`);
-    const m = sh.fix ? { ...sh.fix, n: 0 } : measure(img, sh.ax, sh.ay), H = m.r * 1.12;
+    const mm = measure(img, sh.ax, sh.ay), m = sh.fix ? { ...sh.fix, aspect: sh.fix.aspect || 1, n: 0 } : mm;
+    const asp = m.aspect > .92 && m.aspect < 1.08 ? m.aspect : 1;   // hauteur / largeur de l'ouverture sur la planche
     for (const [name, [cx, cy, r, h]] of Object.entries({ case: [m.cx, m.cy, m.r + 1, m.r * HALF] })) {
       const S = 480, k = S / (2 * h), c = document.createElement('canvas'); c.width = c.height = S; const g = c.getContext('2d');
-      g.drawImage(img, cx - h, cy - h, 2 * h, 2 * h, 0, 0, S, S);
+      g.drawImage(img, cx - h, cy - h * asp, 2 * h, 2 * h * asp, 0, 0, S, S);   // ovale de la planche ramené au cercle
       const im = g.getImageData(0, 0, S, S), d = im.data, N = S * S, px = (x, y) => { const q = (y * S + x) * 4; return [d[q], d[q + 1], d[q + 2]]; };
       // couleur du fond : médiane des pixels du bord de la découpe
       const edge = []; for (let t = 0; t < S; t += 4) edge.push(px(t, 0), px(t, S - 1), px(0, t), px(S - 1, t));
@@ -101,7 +113,7 @@ async function run() {
       const res = await fetch(`/shared/deco/${design}/gauge-${name}.webp`, { method: 'PUT', body: blob }).catch(() => null);
       // aperçu : cercle de contrôle de l'ouverture
       g.strokeStyle = 'red'; g.lineWidth = 2; g.beginPath(); g.arc(S / 2, S / 2, R, 0, 7); g.stroke();
-      info.push(`${design} : centre ${cx.toFixed(1)}, ${cy.toFixed(1)} · r ${r.toFixed(1)} (${m.n} rayons) · r relatif ${(R / (S / 2)).toFixed(3)}`);
+      info.push(`${design} : centre ${cx.toFixed(1)}, ${cy.toFixed(1)} · r ${r.toFixed(1)} · ovale mesuré ${mm.aspect.toFixed(3)} (${mm.cx.toFixed(1)}, ${mm.cy.toFixed(1)}, rx ${mm.r.toFixed(1)}), appliqué ${asp.toFixed(3)} (${m.n} rayons) · r relatif ${(R / (S / 2)).toFixed(3)}`);
       const f = document.createElement('figure'); f.append(c); f.insertAdjacentHTML('beforeend', `<figcaption>${design} · ${name} ${res?.ok ? '✓' : '✗'}</figcaption>`); list.append(f);
     }
   }

@@ -18,6 +18,9 @@
     iconsSub: ['Épaisseur du trait des icônes, ou pas d’icônes du tout.', 'Stroke width of the icons, or no icons at all.', 'Strichstärke der Symbole oder gar keine Symbole.', 'Grosor del trazo de los iconos, o ningún icono.'],
     iconSet: { auto: ['Selon le design', 'Depending on design', 'Je nach Design', 'Según el diseño'], fine: ['Trait fin', 'Thin stroke', 'Dünne Linie', 'Trazo fino'], line: ['Trait normal', 'Normal stroke', 'Normale Linie', 'Trazo normal'], bold: ['Trait épais', 'Bold stroke', 'Dicke Linie', 'Trazo grueso'], brass: ['Laiton (médaillons)', 'Brass (medallions)', 'Messing (Medaillons)', 'Latón (medallones)'], steel: ['Acier (plaques)', 'Steel (plates)', 'Stahl (Platten)', 'Acero (placas)'], gel: ['Gel (bulles)', 'Gel (bubbles)', 'Gel (Blasen)', 'Gel (burbujas)'], avio: ['Avionique (cadrans)', 'Avionics (dials)', 'Avionik (Instrumente)', 'Aviónica (instrumentos)'], off: ['Aucune icône', 'No icons', 'Keine Symbole', 'Sin iconos'] },
     side: ['Barre latérale', 'Side bar', 'Seitenleiste', 'Barra lateral'],
+    aqua: ['Couleur Aqua', 'Aqua colour', 'Aqua-Farbe', 'Color Aqua'],
+    aquaSet: { blue: ['Bleu', 'Blue', 'Blau', 'Azul'], teal: ['Turquoise', 'Teal', 'Türkis', 'Turquesa'], green: ['Vert', 'Green', 'Grün', 'Verde'], graphite: ['Graphite', 'Graphite', 'Graphit', 'Grafito'], purple: ['Violet', 'Purple', 'Violett', 'Violeta'], orange: ['Orange', 'Orange', 'Orange', 'Naranja'], red: ['Rouge', 'Red', 'Rot', 'Rojo'], pink: ['Rose', 'Pink', 'Rosa', 'Rosa'], app: ['Couleur de chaque application', 'Colour of each application', 'Farbe jeder Anwendung', 'Color de cada aplicación'] },
+    aquaHelp: ['Boutons et icônes du design Aqua (icônes d’état : couleurs d’origine).', 'Buttons and icons of the Aqua design (status icons keep their colours).', 'Schaltflächen und Symbole des Aqua-Designs (Statussymbole behalten ihre Farben).', 'Botones e iconos del diseño Aqua (los iconos de estado conservan sus colores).'],
     decor: ['Décor (Cabinet, Durci)', 'Decoration (Cabinet, Rugged)', 'Dekor (Kabinett, Robust)', 'Decoración (Gabinete, Robusto)'],
     decorSet: { auto: ['Selon la page', 'Depending on page', 'Je nach Seite', 'Según la página'], full: ['Complet', 'Full', 'Vollständig', 'Completo'], sober: ['Sobre', 'Plain', 'Schlicht', 'Sobrio'] },
     decorHelp: ['Complet : vis, piqûres, poignées, radar. Sobre : matières et plaques seulement (par défaut sur les CR, le planificateur et Landing).', 'Full: screws, stitching, handles, radar. Plain: materials and plates only (default on reports, planner and Landing).', 'Vollständig: Schrauben, Nähte, Griffe, Radar. Schlicht: nur Materialien und Schilder (Standard bei Berichten, Planer und Landing).', 'Completo: tornillos, costuras, asas, radar. Sobrio: solo materiales y placas (por defecto en informes, planificador y Landing).'],
@@ -71,6 +74,7 @@
     const iconSel = cur.iconsSaved && cur.iconsSaved !== 'matter' ? cur.iconsSaved : 'auto';
     const iconRows = Object.entries(T.iconSet).map(([id, row]) => `<button type="button" class="ap-iconrow repo-plain" data-icons="${id}" aria-pressed="${id === iconSel}"><b>${esc(t(row))}</b><span class="ap-iconset" data-set="${id}">${sampleOf(id)}</span></button>`).join('');
     const decor = cur.decorSaved || 'auto', decorBtns = Object.entries(T.decorSet).map(([id, row]) => `<button type="button" class="ap-seg repo-plain" data-decor="${id}" aria-pressed="${id === decor}">${esc(t(row))}</button>`).join('');
+    const aq = a.aquaColor?.() || 'blue', aquaDots = (a.aquaColors || []).concat('app').map(id => `<button type="button" class="repo-plain ap-dot${id === 'app' ? ' ap-origin' : ''}" data-aqua="${id}" title="${esc(t(T.aquaSet[id]))}" aria-label="${esc(t(T.aquaSet[id]))}" aria-pressed="${id === aq}" style="background:${id === 'app' ? 'conic-gradient(#d33,#e90,#3a5,#2ab,#36d,#a4d,#d33)' : a.aquaSample(id)}"></button>`).join('');
     const side = cur.sidenav || 'auto', sideBtns = Object.entries(T.sideSet).map(([id, row]) => `<button type="button" class="ap-seg repo-plain" data-side="${id}" aria-pressed="${id === side}">${esc(t(row))}</button>`).join('');
     // --- couleurs : une carte par thème, groupées (applications, familles de CR)
     const card = name => {
@@ -86,7 +90,7 @@
     };
     const names = Object.keys(a.themes), crs = names.filter(n => !APPS.includes(n));
     host.innerHTML =
-      block('ap-design', 'layers', t(T.design), t(T.designSub), `<div class="ap-thumbs">${thumbs}</div><div class="ap-sidebar"><b>${esc(t(T.decor))}</b><span class="ap-segs">${decorBtns}</span><small class="ap-help">${esc(t(T.decorHelp))}</small></div>`) +
+      block('ap-design', 'layers', t(T.design), t(T.designSub), `<div class="ap-thumbs">${thumbs}</div><div class="ap-sidebar"><b>${esc(t(T.decor))}</b><span class="ap-segs">${decorBtns}</span><small class="ap-help">${esc(t(T.decorHelp))}</small></div>${a.aquaColors ? `<div class="ap-sidebar"><b>${esc(t(T.aqua))}</b><span class="repo-plain ap-dots" role="group" aria-label="${esc(t(T.aqua))}">${aquaDots}</span><small class="ap-help">${esc(t(T.aquaHelp))}</small></div>` : ''}`) +
       block('ap-icons', 'box', t(T.icons), t(T.iconsSub), `<div class="ap-iconrows">${iconRows}</div><div class="ap-sidebar"><b>${esc(t(T.side))}</b><span class="ap-segs">${sideBtns}</span></div>`) +
       block('ap-colors', 'eye', t(T.colors), t(T.colorsSub), `<h3>${esc(t(T.groupPages))}</h3><div class="ap-cards">${APPS.filter(n => a.themes[n]).map(card).join('')}</div><h3>${esc(t(T.groupCr))}</h3><div class="ap-cards">${crs.map(card).join('')}</div>`) +
       `<p class="ap-foot"><button type="button" id="apDemo" class="repo-plain" data-icon="eye" title="${esc(t(T.demo))}">${esc(t(T.demoBtn))}</button><button type="button" id="apReset" class="repo-plain" data-icon="refresh">${esc(t(T.reset))}</button></p>`;
@@ -206,6 +210,7 @@ main.ap-page h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;col
       if (!b) return;
       if (b.dataset.design) { a.setDesign(b.dataset.design); render(); }
       else if (b.dataset.icons) { a.setIcons(b.dataset.icons === 'auto' ? null : b.dataset.icons); render(); }
+      else if (b.dataset.aqua) { a.setAqua(b.dataset.aqua); render(); }
       else if (b.dataset.decor) { a.setDecor(b.dataset.decor === 'auto' ? null : b.dataset.decor); render(); }
       else if (b.dataset.side) { a.setSidenav(b.dataset.side === 'auto' ? null : b.dataset.side === 'on'); render(); }
       else if (b.classList.contains('ap-dot')) {
@@ -223,7 +228,7 @@ main.ap-page h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;col
         location.href = new URL('docs/demo_design_icones.html', nav().root).href;
       } else if (b.id === 'apReset') {
         Object.keys(a.current().colors).forEach(n => a.setColor(n, null));
-        a.setIcons(null); a.setSidenav(null); a.setDecor(null); a.setDesign(window.REPOSITORY_TREE.designs?.default || 'standard');
+        a.setIcons(null); a.setSidenav(null); a.setDecor(null); a.setAqua?.(null); a.setDesign(window.REPOSITORY_TREE.designs?.default || 'standard');
         previewTheme = null; nav().setTheme(nav().settings.theme); render();
       }
     });
