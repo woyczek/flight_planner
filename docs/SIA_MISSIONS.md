@@ -132,7 +132,7 @@ Page `apps/sia/mission_registry.html` (☰ › Registre des missions (SIA), barr
   **dans le studio**, **Créer le CR** ; statut, date de vol, notes.
 - **Statuts** : commandée, générée, planifiée (ouverte dans le générateur ou le studio), volée, CR fait (CR du
   registre dont `metadata.missionNumber` est l'identifiant de la mission), abandonnée.
-- **Commander une mission** : type, sous-type (liste du § 2 du prompt), théâtre(s), série (numéro, auto par défaut) et
+- **Commander une mission** (bloc commun avec le générateur, `shared/mission_order.js`) : type, sous-type (liste du § 2 du prompt), théâtre(s), série (numéro, auto par défaut) et
   **identifiant** calculé (`SiaMission.nextNumbering`), équipes DEFA en vol, types d'équipes (une ligne par équipe A, B,
   C… ; vide = automatique ; complétion par les types courants et la flotte DEFA, un même type possible pour plusieurs
   équipes), rendez-vous, équipes au sol, ravitaillement → prompt réglé (paramètres
@@ -150,11 +150,12 @@ Page `apps/sia/mission_registry.html` (☰ › Registre des missions (SIA), barr
 Page `apps/sia/mission_editor.html`.
 
 1. **Importer une mission** : YAML et / ou Markdown d'une mission, ou **collage** de son contenu ; sous-bloc
-   **Créer une mission avec ChatGPT** à côté du collage : type, théâtre (ou aléatoire), série, nombre d'**équipes
-   DEFA en vol** (1 à 5 ; les équipes sol s'ajoutent selon la mission), second théâtre facultatif (mission reliant
-   deux théâtres : acheminement Guyane – métropole, relève Corse – continent…) ; « ChatGPT → » copie le prompt réglé pour
-   une seule mission et ouvre ChatGPT dans un nouvel onglet (coller, envoyer, puis charger ou coller
-   `missionNN.yaml` et `summaryNN.md`). Le prompt vient de
+   **Créer une mission avec ChatGPT** à côté du collage : **même bloc que « Commander une mission » du registre**
+   (`shared/mission_order.js`, § 2 bis) — type, sous-type, théâtre(s) (second théâtre : acheminement Guyane – métropole,
+   relève Corse – continent…), série, identifiant calculé, équipes DEFA en vol et aéronef de chaque équipe, rendez-vous,
+   équipes au sol, ravitaillement ; réglages partagés (`missionRegistryOrder:v1`) ; « Commander » inscrit la mission au
+   registre (« commandée »), copie le prompt réglé pour une seule mission et ouvre ChatGPT dans un nouvel onglet (coller,
+   envoyer, puis charger ou coller `mission<ID>.yaml` et `summary<ID>.md`). Le prompt vient de
    [PROMPT_GENERATEUR_MISSIONS.md](PROMPT_GENERATEUR_MISSIONS.md), embarqué dans `apps/sia/mission_prompt.js` par
    `tools/build_mission_prompt.py` (relancé par `tools/bump_versions.py`) : pas de lecture réseau du dossier docs/.
    (« ou coller son contenu… », Markdown reconnu à ses titres `##`) (fusionnés, lecture commune avec le

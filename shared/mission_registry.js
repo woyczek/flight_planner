@@ -36,18 +36,8 @@
   const theatreOf = (lat, lon) => (Number.isFinite(+lat) && Number.isFinite(+lon) && THEATRES.find(([, s, n, w, e]) => lat >= s && lat <= n && lon >= w && lon <= e)?.[0]) || '';
 
   // ---- familles et sous-types : § 2 du prompt de génération (source unique : docs/PROMPT_GENERATEUR_MISSIONS.md)
-  function families() {
-    const text = String(window.MISSION_PROMPT || ''), out = [];
-    const sec = /2\. FAMILLES ET SOUS-TYPES[\s\S]*?\n─+\n([\s\S]*?)\n─+\n3\./.exec(text)?.[1] || '';
-    let cur = null;
-    for (const line of sec.split('\n')) {
-      const m = /^([A-Z]{2,})\s+\(([^)]*(?:\([^)]*\)[^)]*)*)\)\s+(.*)$/.exec(line);
-      if (m) { cur = { id: m[1], label: m[2].trim(), rest: m[3].trim() }; out.push(cur); continue; }
-      if (cur && /^\s{20,}\S/.test(line)) cur.rest += ' ' + line.trim();
-      else if (!line.trim()) cur = null;
-    }
-    return out.map(f => ({ id: f.id, label: f.label, subtypes: /libre/i.test(f.rest) && !/·/.test(f.rest) ? [] : f.rest.split('·').map(s => s.trim()).filter(Boolean) }));
-  }
+  /** Familles et sous-types (§ 2 du prompt) : MissionOrder.families (shared/mission_order.js). */
+  const families = () => window.MissionOrder?.families?.() || [];
 
   // ---- registre
   const empty = () => ({ schema: 'mission-registry', version: 1, updatedAt: '', missions: [] });
@@ -271,7 +261,7 @@
       </section>
       <section data-block-id="order" data-icon="send" data-subtitle="${esc(t(['Nouvelle mission à générer : paramètres choisis, prompt ChatGPT réglé, entrée « commandée » rapprochée ensuite du fichier généré', 'New mission to generate: chosen parameters, tuned ChatGPT prompt, “ordered” entry matched later with the generated file']))}">
         <h2>${esc(t(['Commander une mission', 'Order a mission', 'Mission bestellen', 'Encargar una misión']))}</h2>
-        ${orderForm(fam)}
+        <div id="rgOrderHost"></div>
       </section>`;
     // dossier
     const fb = host.querySelector('#rgFolder');
@@ -312,7 +302,7 @@
     host.querySelector('#rgReset').onclick = () => { filters = { ...DEFAULT_FILTERS }; writeJson(FILTERS, filters); render(); };
     host.querySelector('#rgDraw').onclick = () => { const r = reg.missions.filter(matches); if (r.length) { selected = keyOf(r[Math.floor(Math.random() * r.length)]); renderDetail(); document.getElementById('rgDetail')?.scrollIntoView({ block: 'nearest' }); } };
     host.querySelector('#rgCsv').onclick = exportCsv;
-    bindOrder(fam);
+    window.MissionOrder?.mount(host.querySelector('#rgOrderHost'), { onOrdered: () => render() });
     refreshTable();
     renderDetail();
     window.AppFramework?.refresh?.();
@@ -397,90 +387,11 @@
     } catch (e) { if (out) out.textContent = e.message; }
   }
 
-  // ---- commande d'une mission (prompt de génération réglé)
-  const TEAM_PRESETS = ['A400M', 'C-130J', 'CASA CN235', 'A330 MRTT', 'E-3F', 'Rafale', 'Falcon 50M', 'Atlantique 2', 'Dash 8 (Milan)', 'CL-415', 'H225 Caracal', 'NH90', 'EC145 (Dragon)', 'H160', 'AS365 Dauphin', 'Beech 200 / TBM', 'drone', 'équipe au sol'];
-  const THEATRE_LIST = ['aléatoire', 'métropole', 'Corse', 'Antilles', 'Guyane', 'Réunion', 'Mayotte', 'Nouvelle-Calédonie', 'Polynésie'];
-  let order = { type: 'aléatoire', subtype: 'libre', theatre: 'aléatoire', theatre2: '', serie: '', teams: 2, teamTypes: [], teamTypesFree: '', rdv: 'libre', ground: 'libre', aar: 'libre', note: '', ...readJson('missionRegistryOrder:v1', {}) };
-  if (!/^\d+$/.test(String(order.serie || ''))) order.serie = '';   // série : numéro dans la famille (vide = la suivante)
-  function orderForm(fam) {
-    const f = fam.find(x => x.id === order.type);
-    const nextSerie = order.serie || suggestedSerie();
-    const opt = (v, l, cur) => `<option value="${esc(v)}" ${String(cur) === String(v) ? 'selected' : ''}>${esc(l)}</option>`;
-    return `<div class="rg-filters">
-      <label>${esc(t(['Type', 'Type']))}<select data-o="type">${opt('aléatoire', t(['aléatoire', 'random']), order.type)}${fam.map(x => opt(x.id, `${x.id} — ${x.label}`, order.type)).join('')}</select></label>
-      <label>${esc(t(['Sous-type', 'Subtype']))}<select data-o="subtype" ${f ? '' : 'disabled'}>${opt('libre', t(['libre', 'free']), order.subtype)}${(f?.subtypes || []).map(x => opt(x, x, order.subtype)).join('')}</select></label>
-      <label>${esc(t(['Théâtre', 'Theatre']))}<select data-o="theatre">${THEATRE_LIST.map(x => opt(x, x, order.theatre)).join('')}</select></label>
-      <label>${esc(t(['Second théâtre', 'Second theatre']))}<select data-o="theatre2">${opt('', '—', order.theatre2)}${THEATRE_LIST.slice(1).map(x => opt(x, x, order.theatre2)).join('')}</select></label>
-      <label>${esc(t(['Série', 'Series']))}<input type="number" min="1" data-o="serie" placeholder="${esc(t(['auto', 'auto']))}" value="${esc(order.serie || '')}" title="${esc(t(['Série dans la famille ; vide = la suivante', 'Series within the family; empty = the next one']))}"></label>
-      <label>${esc(t(['Identifiant', 'Identifier']))}<input readonly value="${esc(nextId(order.type))}" title="${esc(t(['Lettre de la famille + numéro suivant de la famille (registre) ; type aléatoire : selon la famille choisie par le générateur', 'Family letter + next family number (registry)']))}"></label>
-      <label>${esc(t(['Équipes DEFA en vol', 'DEFA flying teams']))}<input type="number" min="1" max="5" data-o="teams" value="${esc(order.teams)}"></label>
-      <label>${esc(t(['Rendez-vous', 'Rendezvous']))}<select data-o="rdv">${opt('libre', t(['libre', 'free']), order.rdv)}${opt('avec', t(['avec', 'with']), order.rdv)}${opt('sans', t(['sans', 'without']), order.rdv)}</select></label>
-      <label>${esc(t(['Équipes au sol', 'Ground teams']))}<select data-o="ground">${opt('libre', t(['libre', 'free']), order.ground)}${[0, 1, 2, 3].map(n => opt(n, n, order.ground)).join('')}</select></label>
-      <label>${esc(t(['Ravitaillement en vol', 'Air refuelling']))}<select data-o="aar">${opt('libre', t(['libre', 'free']), order.aar)}${opt('oui', t(['oui', 'yes']), order.aar)}${opt('non', t(['non', 'no']), order.aar)}</select></label>
-    </div>
-    <p><b>${esc(t(['Aéronef de chaque équipe en vol', 'Aircraft of each flying team', 'Luftfahrzeug jeder Besatzung', 'Aeronave de cada equipo']))}</b></p>
-    <p class="rg-small">${esc(t(['Laisser vide = automatique (le générateur choisit un appareil adapté à la mission). Saisir ou choisir dans la liste : types courants et appareils de la flotte DEFA avec leur indicatif ; un même type peut servir à plusieurs équipes (indicatifs différents).', 'Empty = automatic (the generator picks a suitable aircraft). Type or pick from the list: common types and DEFA fleet aircraft with their callsign; the same type may serve several teams (different callsigns).']))}</p>
-    <div class="rg-teams">${teamSlots().map((v, i) => `<label class="rg-team"><span class="rg-team-letter">${esc(t(['Équipe', 'Team', 'Team', 'Equipo']))} ${String.fromCharCode(65 + i)}</span><input data-slot="${i}" list="rgTeamList" value="${esc(v)}" placeholder="${esc(t(['automatique', 'automatic', 'automatisch', 'automático']))}"></label>`).join('')}</div>
-    <datalist id="rgTeamList">${teamChoices().map(x => `<option value="${esc(x)}">`).join('')}</datalist>
-    <p class="row"><button type="button" class="primary" id="rgOrder" data-icon="send">${esc(t(['Commander : copier le prompt et ouvrir ChatGPT', 'Order: copy prompt and open ChatGPT', 'Bestellen: Prompt kopieren und ChatGPT öffnen', 'Encargar: copiar el prompt y abrir ChatGPT']))}</button><span class="rg-small" id="rgOrderMsg"></span></p>
-    <p class="rg-small">${esc(t(['La mission apparaît dans le registre avec le statut « commandée » ; enregistrer ensuite missionNN.yaml et summaryNN.md dans le dossier Missions (sous-dossier de la série) et « Relire le dossier » : la commande est rapprochée de la mission générée (même série).', 'The mission appears as “ordered”; then save missionNN.yaml and summaryNN.md into the Missions folder (series sub-folder) and “Re-read folder”: the order is matched with the generated mission (same series).']))}</p>`;
-  }
-  /** Numérotation par famille (lettre + 3 chiffres, série dans la famille) : SiaMission.nextNumbering. */
-  const numbering = type => window.SiaMission?.nextNumbering?.(type) || { letter: '', first: '001', id: '', serie: 1 };
-  const nextId = type => { const n = numbering(type); return n.id ? `${n.id} (${t(['série', 'series'])} ${order.serie || n.serie})` : t(['selon la famille tirée', 'per the drawn family']); };
-  const suggestedSerie = () => numbering(order.type).serie;
-  /** Aéronef choisi pour chaque équipe en vol (A, B, C…) ; '' = automatique. Anciens réglages (cases + « Autres ») repris une fois. */
-  function teamSlots() {
-    const n = Math.max(1, Math.min(5, +order.teams || 1));
-    if (!Array.isArray(order.teamSlots)) order.teamSlots = [...(order.teamTypes || []), ...String(order.teamTypesFree || '').split('+').map(x => x.trim()).filter(Boolean)];
-    while (order.teamSlots.length < n) order.teamSlots.push('');
-    return order.teamSlots.slice(0, n);
-  }
-  /** Propositions : types courants, puis chaque appareil de la flotte DEFA (« variante — indicatif »). */
-  function teamChoices() {
-    const fleet = (window.DEFA_FLEET || []).filter(r => r.type).map(r => `${r.variant || r.type} — ${r.callsign || r.registration || r.code || r.type}`);
-    return [...new Set([...TEAM_PRESETS, ...fleet.sort((a, b) => a.localeCompare(b))])];
-  }
-  /** Valeur TYPES_EQUIPES du prompt : « A : H160 — RESCUE41 + B : automatique + … » ; libre si tout est automatique. */
-  function teamTypesValue() {
-    const slots = teamSlots();
-    return slots.some(Boolean) ? slots.map((v, i) => `${String.fromCharCode(65 + i)} : ${v || 'automatique'}`).join(' + ') : '';
-  }
-  function bindOrder() {
-    host.querySelectorAll('[data-o]').forEach(el => el.addEventListener('change', () => {
-      order[el.dataset.o] = el.type === 'number' ? el.value : el.value;
-      if (el.dataset.o === 'type') order.subtype = 'libre';
-      writeJson('missionRegistryOrder:v1', order);
-      if (el.dataset.o === 'type' || el.dataset.o === 'teams') render();
-    }));
-    host.querySelectorAll('[data-slot]').forEach(el => el.addEventListener('change', () => {
-      teamSlots();
-      order.teamSlots[+el.dataset.slot] = el.value.trim();
-      writeJson('missionRegistryOrder:v1', order);
-    }));
-    host.querySelector('#rgOrder').onclick = async () => {
-      const request = { type: order.type, subtype: order.subtype, theatre: [order.theatre, order.theatre2].filter((v, i, a) => v && a.indexOf(v) === i).join(' + '), serie: +order.serie || suggestedSerie(), id: numbering(order.type).id, teams: Math.max(1, Math.min(5, +order.teams || 1)), teamTypes: teamTypesValue() || 'libre', rdv: order.rdv, ground: order.ground, aar: order.aar };
-      reg.missions.push({ id: request.id || '', series: request.serie, type: request.type === 'aléatoire' ? '' : request.type, family: '', subtype: request.subtype === 'libre' ? '' : request.subtype, title: '', teams: [], teamCount: 0, teamTypes: request.teamTypes === 'libre' ? [] : teamSlots().map(v => v || 'automatique'), aircraftTypes: [], callsigns: [], rdv: request.rdv === 'avec' ? 1 : 0, aar: request.aar === 'oui', theatre: order.theatre === 'aléatoire' ? '' : order.theatre, origin: '', destination: '', maps: 0, folder: '', files: [], source: 'commande', status: 'ordered', statusAt: new Date().toISOString(), addedAt: new Date().toISOString(), request, notes: '' });
-      persist();
-      await sendPrompt(request);
-      render();
-    };
-  }
-  /** Prompt de génération réglé (paramètres en tête du bloc de docs/PROMPT_GENERATEUR_MISSIONS.md) copié, puis ChatGPT ouvert. */
-  async function sendPrompt(r) {
-    const out = document.getElementById('rgOrderMsg') || document.getElementById('rgGoMsg');
-    const base = window.MISSION_PROMPT;
-    if (!base) { if (out) out.textContent = 'mission_prompt.js'; return; }
-    const set = (txt, key, val) => txt.replace(new RegExp(`^(\\s*${key}\\s*=\\s*)\\S+`, 'm'), (_, a) => a + String(val).replace(/\$/g, '$$$$'));
-    let p = base;
-    p = set(p, 'TYPE', r.type); { const n = numbering(r.type), table = n.id ? `${r.type} ${r.id || n.id} série ${r.serie || n.serie}` : (window.SiaMission?.numberingTable?.() || 'auto'); p = p.replace(/^(\s*PROCHAINS_NUMEROS\s*=\s*)auto\b/m, (_, a) => a + table.replace(/\$/g, '$$$$')); } p = set(p, 'NOMBRE_MISSIONS', 1); p = set(p, 'THÉÂTRE', r.theatre || 'aléatoire'); p = set(p, 'ÉQUIPES_DEFA', r.teams);
-    p = set(p, 'SOUS_TYPE', r.subtype || 'libre'); p = set(p, 'RENDEZ_VOUS', r.rdv || 'libre'); p = set(p, 'TYPES_EQUIPES', r.teamTypes || 'libre'); p = set(p, 'ÉQUIPES_SOL', r.ground ?? 'libre'); p = set(p, 'RAVITAILLEMENT', r.aar || 'libre');
-    let copied = false;
-    try { await navigator.clipboard.writeText(p); copied = true; } catch { /* refus */ }
-    window.open(p.length < 7000 ? `https://chatgpt.com/?q=${encodeURIComponent(p)}` : 'https://chatgpt.com/', '_blank', 'noopener');
-    if (out) out.textContent = copied ? t(['Prompt copié ({n} caractères) : dans ChatGPT, coller (Ctrl+V) puis envoyer.', 'Prompt copied ({n} characters): paste it in ChatGPT (Ctrl+V) and send.'], { n: p.length.toLocaleString() }) : t(['Copie refusée par le navigateur.', 'Copy refused by the browser.']);
-    window.__lastRegistryPrompt = p;   // contrôle (tests)
-  }
+  // ---- commande d'une mission : bloc commun MissionOrder (shared/mission_order.js), aussi dans le générateur de brief
+  /** Inscrit une commande (statut « commandée ») ; appelé par MissionOrder. */
+  function addOrder(entry) { reg.missions.push(entry); persist(); }
+  /** Prompt d'une commande existante renvoyé à ChatGPT (fiche de la mission). */
+  const sendPrompt = r => window.MissionOrder?.sendPrompt(r, document.getElementById('rgGoMsg'));
 
   function exportCsv() {
     const cols = ['id', 'series', 'type', 'subtype', 'title', 'teamCount', 'teamTypes', 'aircraftTypes', 'callsigns', 'rdv', 'aar', 'theatre', 'origin', 'destination', 'status', 'flownAt', 'folder', 'notes'];
@@ -506,7 +417,7 @@
   window.addEventListener('repository-language-change', render);
   window.addEventListener('local-store-restored', () => { reg = readJson(KEY, null) || empty(); render(); });
   window.addEventListener('storage', e => { if (e.key === KEY) { reg = readJson(KEY, null) || empty(); render(); } });
-  window.MissionRegistry = { scan, cleanup, addFiles, entryOf, families, theatreOf, get: () => reg, sendPrompt, matches: m => matches(m), setFilters: f => { filters = { ...DEFAULT_FILTERS, ...f }; render(); } };
+  window.MissionRegistry = { scan, cleanup, addOrder, addFiles, entryOf, families, theatreOf, get: () => reg, sendPrompt, matches: m => matches(m), setFilters: f => { filters = { ...DEFAULT_FILTERS, ...f }; render(); } };
   (async () => {
     await waitFor('jsyaml', 3000);
     linkReports();
