@@ -241,7 +241,10 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     };
   };
   /** Organismes connus (table des indicatifs + SAMU), pour les listes de choix. */
-  const operatorNames = () => Object.keys(work.callsigns.operators || {}).concat(['SAMU']).filter((v, i, a) => a.indexOf(v) === i);
+  // (les organismes sont dans work.callsigns.data.operators et dans le tableau « Organismes » en cours d'édition — l'ancienne
+  // lecture de work.callsigns.operators, inexistant, ne proposait que SAMU)
+  const operatorNames = () => [...(work.callsigns?.operatorRows || []).map(r => r.name), ...Object.keys(work.callsigns?.data?.operators || {}),
+    ...(work.callsigns?.data?.table || []).map(r => r.operator), 'SAMU'].filter((v, i, a) => v && a.indexOf(v) === i).sort((a, b) => a.localeCompare(b, 'fr'));
   const FLEET_COMMENT = ['Flotte DEFA Virtual : base commune des appareils connus (CR HEMS / FIRE, Mission Report Core).',
     'Source : page « Flotte virtuelle » de flotte.defa-virtual.fr (python AircraftDB/update_fleet.py Flotte.html),',
     'complétée à la main ou par la page Paramétrage. Colonnes : opérateur, type OACI, variante,',

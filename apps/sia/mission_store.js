@@ -180,7 +180,7 @@
       mission: {}
     };
     const id = y.title.match(/\bMission\s+([A-Z]?\d+[A-Z]?)\b/i);
-    if (id) { const p = parseId(id[1]); y.mission.id = p.id; y.mission.number = p.num; if (p.serie) y.mission.series = p.serie; }
+    if (id) { const p = parseId(id[1]); y.mission.id = p.id; y.mission.number = p.num; }
     for (const [key, aliases] of Object.entries({
         type: ['TYPE', 'Type'],
         subtype: ['SOUS-TYPE', 'Sous-type', 'Subtype'],
@@ -520,24 +520,30 @@
       if (e.key === KEY) fire();
     });
   }
-  // ---- numérotation : lettre de série + numéro d'opération sur 3 chiffres (+ lettre d'équipe) — « K049 », « K049A »
-  /** Découpe un identifiant : { id, serie, num, team } ; anciens identifiants numériques (« 41A ») : serie vide. */
+  // ---- numérotation : lettre de FAMILLE + numéro sur 3 chiffres par famille (+ lettre d'équipe) — « M016 », « S002A »
+  // Même table que tools/family_letters.py et que le prompt (docs/PROMPT_GENERATEUR_MISSIONS.md, § 3).
+  const FAMILY_LETTERS = { HEMS: 'M', MEDEVAC: 'M', HADR: 'H', FIRE: 'F', SAR: 'S', AIRLIFT: 'T', AAR: 'R', AIRBORNE: 'P', MARITIME: 'N', ISR: 'I', LE: 'L', COMMAND: 'C', SOF: 'O', FI: 'V', SURVEY: 'G', SPECIAL: 'X' };
+  /** Découpe un identifiant : { id, letter, num, team } ; anciens identifiants numériques (« 41A ») : letter vide. */
   function parseId(raw) {
     const s = String(raw ?? '').trim().toUpperCase(), m = /^([A-Z])?(\d+)([A-Z])?$/.exec(s);
-    if (!m) return { id: s, serie: '', num: null, team: '' };
-    const serie = m[1] || '', num = +m[2], team = m[3] || '';
-    return { id: serie ? `${serie}${String(num).padStart(3, '0')}${team}` : s, serie, num, team };
+    if (!m) return { id: s, letter: '', num: null, team: '' };
+    const letter = m[1] || '', num = +m[2], team = m[3] || '';
+    return { id: letter ? `${letter}${String(num).padStart(3, '0')}${team}` : s, letter, num, team };
   }
-  /** Série et premier numéro libres d'après le registre des missions (missionRegistry:v1) : { serie: 'K', first: '049' }. */
-  function nextNumbering() {
+  /** Prochain identifiant d'une famille d'après le registre (missionRegistry:v1) : { letter, first: '016', id: 'M016', serie: 4 }. */
+  function nextNumbering(family) {
     let reg = [];
     try { reg = JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions || []; } catch { /* registre illisible */ }
-    const letters = reg.map(m => String(m.series || parseId(m.id).serie || '').toUpperCase()).filter(x => /^[A-Z]$/.test(x)).sort();
-    const nums = reg.map(m => parseId(m.id)).filter(p => p.serie && Number.isFinite(p.num)).map(p => p.num);
-    const last = letters[letters.length - 1];
-    return { serie: last ? String.fromCharCode(Math.min(90, last.charCodeAt(0) + 1)) : 'A', first: String((nums.length ? Math.max(...nums) : 0) + 1).padStart(3, '0') };
+    const letter = FAMILY_LETTERS[String(family || '').toUpperCase()] || '';
+    const mine = reg.filter(m => letter && parseId(m.id).letter === letter);
+    const num = Math.max(0, ...mine.map(m => parseId(m.id).num || 0)) + 1, serie = Math.max(0, ...mine.map(m => +m.series || 0)) + 1;
+    return { letter, first: String(num).padStart(3, '0'), id: letter ? `${letter}${String(num).padStart(3, '0')}` : '', serie };
   }
-  window.SiaMission = { parseId, nextNumbering,
+  /** Prochains identifiants de toutes les familles (paramètre PROCHAINS_NUMEROS du prompt, utile si TYPE = aléatoire). */
+  function numberingTable() {
+    return [...new Set(Object.keys(FAMILY_LETTERS).filter(f => f !== 'MEDEVAC'))].map(f => { const n = nextNumbering(f); return `${f} ${n.id} série ${n.serie}`; }).join(' · ');
+  }
+  window.SiaMission = { FAMILY_LETTERS, parseId, nextNumbering, numberingTable,
     KEY,
     load,
     save,

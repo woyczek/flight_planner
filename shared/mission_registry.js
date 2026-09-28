@@ -357,7 +357,7 @@
   const TEAM_PRESETS = ['A400M', 'C-130J', 'CASA CN235', 'A330 MRTT', 'E-3F', 'Rafale', 'Falcon 50M', 'Atlantique 2', 'Dash 8 (Milan)', 'CL-415', 'H225 Caracal', 'NH90', 'EC145 (Dragon)', 'H160', 'AS365 Dauphin', 'Beech 200 / TBM', 'drone', 'équipe au sol'];
   const THEATRE_LIST = ['aléatoire', 'métropole', 'Corse', 'Antilles', 'Guyane', 'Réunion', 'Mayotte', 'Nouvelle-Calédonie', 'Polynésie'];
   let order = { type: 'aléatoire', subtype: 'libre', theatre: 'aléatoire', theatre2: '', serie: '', teams: 2, teamTypes: [], teamTypesFree: '', rdv: 'libre', ground: 'libre', aar: 'libre', note: '', ...readJson('missionRegistryOrder:v1', {}) };
-  if (!/^[A-Za-z]$/.test(String(order.serie || ''))) order.serie = '';   // ancienne série numérotée (1 à 9) : la lettre suivante est proposée
+  if (!/^\d+$/.test(String(order.serie || ''))) order.serie = '';   // série : numéro dans la famille (vide = la suivante)
   function orderForm(fam) {
     const f = fam.find(x => x.id === order.type);
     const nextSerie = order.serie || suggestedSerie();
@@ -367,7 +367,8 @@
       <label>${esc(t(['Sous-type', 'Subtype']))}<select data-o="subtype" ${f ? '' : 'disabled'}>${opt('libre', t(['libre', 'free']), order.subtype)}${(f?.subtypes || []).map(x => opt(x, x, order.subtype)).join('')}</select></label>
       <label>${esc(t(['Théâtre', 'Theatre']))}<select data-o="theatre">${THEATRE_LIST.map(x => opt(x, x, order.theatre)).join('')}</select></label>
       <label>${esc(t(['Second théâtre', 'Second theatre']))}<select data-o="theatre2">${opt('', '—', order.theatre2)}${THEATRE_LIST.slice(1).map(x => opt(x, x, order.theatre2)).join('')}</select></label>
-      <label>${esc(t(['Série', 'Series']))}<input maxlength="1" data-o="serie" style="text-transform:uppercase" value="${esc(order.serie || nextSerie)}" title="${esc(t(['Lettre de la série (A à Z) ; proposée : la suivante du registre', 'Series letter (A to Z); suggested: the next one in the registry']))}"></label>
+      <label>${esc(t(['Série', 'Series']))}<input type="number" min="1" data-o="serie" placeholder="${esc(t(['auto', 'auto']))}" value="${esc(order.serie || '')}" title="${esc(t(['Série dans la famille ; vide = la suivante', 'Series within the family; empty = the next one']))}"></label>
+      <label>${esc(t(['Identifiant', 'Identifier']))}<input readonly value="${esc(nextId(order.type))}" title="${esc(t(['Lettre de la famille + numéro suivant de la famille (registre) ; type aléatoire : selon la famille choisie par le générateur', 'Family letter + next family number (registry)']))}"></label>
       <label>${esc(t(['Équipes DEFA en vol', 'DEFA flying teams']))}<input type="number" min="1" max="5" data-o="teams" value="${esc(order.teams)}"></label>
       <label>${esc(t(['Rendez-vous', 'Rendezvous']))}<select data-o="rdv">${opt('libre', t(['libre', 'free']), order.rdv)}${opt('avec', t(['avec', 'with']), order.rdv)}${opt('sans', t(['sans', 'without']), order.rdv)}</select></label>
       <label>${esc(t(['Équipes au sol', 'Ground teams']))}<select data-o="ground">${opt('libre', t(['libre', 'free']), order.ground)}${[0, 1, 2, 3].map(n => opt(n, n, order.ground)).join('')}</select></label>
@@ -380,9 +381,10 @@
     <p class="row"><button type="button" class="primary" id="rgOrder" data-icon="send">${esc(t(['Commander : copier le prompt et ouvrir ChatGPT', 'Order: copy prompt and open ChatGPT', 'Bestellen: Prompt kopieren und ChatGPT öffnen', 'Encargar: copiar el prompt y abrir ChatGPT']))}</button><span class="rg-small" id="rgOrderMsg"></span></p>
     <p class="rg-small">${esc(t(['La mission apparaît dans le registre avec le statut « commandée » ; enregistrer ensuite missionNN.yaml et summaryNN.md dans le dossier Missions (sous-dossier de la série) et « Relire le dossier » : la commande est rapprochée de la mission générée (même série).', 'The mission appears as “ordered”; then save missionNN.yaml and summaryNN.md into the Missions folder (series sub-folder) and “Re-read folder”: the order is matched with the generated mission (same series).']))}</p>`;
   }
-  /** Série proposée : la lettre suivante des séries du registre ; premier numéro d'opération libre (3 chiffres). */
-  const numbering = () => window.SiaMission?.nextNumbering?.() || { serie: 'A', first: '001' };
-  const suggestedSerie = () => numbering().serie;
+  /** Numérotation par famille (lettre + 3 chiffres, série dans la famille) : SiaMission.nextNumbering. */
+  const numbering = type => window.SiaMission?.nextNumbering?.(type) || { letter: '', first: '001', id: '', serie: 1 };
+  const nextId = type => { const n = numbering(type); return n.id ? `${n.id} (${t(['série', 'series'])} ${order.serie || n.serie})` : t(['selon la famille tirée', 'per the drawn family']); };
+  const suggestedSerie = () => numbering(order.type).serie;
   /** Aéronef choisi pour chaque équipe en vol (A, B, C…) ; '' = automatique. Anciens réglages (cases + « Autres ») repris une fois. */
   function teamSlots() {
     const n = Math.max(1, Math.min(5, +order.teams || 1));
@@ -413,8 +415,8 @@
       writeJson('missionRegistryOrder:v1', order);
     }));
     host.querySelector('#rgOrder').onclick = async () => {
-      const request = { type: order.type, subtype: order.subtype, theatre: [order.theatre, order.theatre2].filter((v, i, a) => v && a.indexOf(v) === i).join(' + '), serie: String(order.serie || suggestedSerie()).toUpperCase(), first: numbering().first, teams: Math.max(1, Math.min(5, +order.teams || 1)), teamTypes: teamTypesValue() || 'libre', rdv: order.rdv, ground: order.ground, aar: order.aar };
-      reg.missions.push({ id: `${request.serie}${request.first}`, series: request.serie, type: request.type === 'aléatoire' ? '' : request.type, family: '', subtype: request.subtype === 'libre' ? '' : request.subtype, title: '', teams: [], teamCount: 0, teamTypes: request.teamTypes === 'libre' ? [] : teamSlots().map(v => v || 'automatique'), aircraftTypes: [], callsigns: [], rdv: request.rdv === 'avec' ? 1 : 0, aar: request.aar === 'oui', theatre: order.theatre === 'aléatoire' ? '' : order.theatre, origin: '', destination: '', maps: 0, folder: '', files: [], source: 'commande', status: 'ordered', statusAt: new Date().toISOString(), addedAt: new Date().toISOString(), request, notes: '' });
+      const request = { type: order.type, subtype: order.subtype, theatre: [order.theatre, order.theatre2].filter((v, i, a) => v && a.indexOf(v) === i).join(' + '), serie: +order.serie || suggestedSerie(), id: numbering(order.type).id, teams: Math.max(1, Math.min(5, +order.teams || 1)), teamTypes: teamTypesValue() || 'libre', rdv: order.rdv, ground: order.ground, aar: order.aar };
+      reg.missions.push({ id: request.id || '', series: request.serie, type: request.type === 'aléatoire' ? '' : request.type, family: '', subtype: request.subtype === 'libre' ? '' : request.subtype, title: '', teams: [], teamCount: 0, teamTypes: request.teamTypes === 'libre' ? [] : teamSlots().map(v => v || 'automatique'), aircraftTypes: [], callsigns: [], rdv: request.rdv === 'avec' ? 1 : 0, aar: request.aar === 'oui', theatre: order.theatre === 'aléatoire' ? '' : order.theatre, origin: '', destination: '', maps: 0, folder: '', files: [], source: 'commande', status: 'ordered', statusAt: new Date().toISOString(), addedAt: new Date().toISOString(), request, notes: '' });
       persist();
       await sendPrompt(request);
       render();
@@ -427,7 +429,7 @@
     if (!base) { if (out) out.textContent = 'mission_prompt.js'; return; }
     const set = (txt, key, val) => txt.replace(new RegExp(`^(\\s*${key}\\s*=\\s*)\\S+`, 'm'), (_, a) => a + String(val).replace(/\$/g, '$$$$'));
     let p = base;
-    p = set(p, 'TYPE', r.type); p = set(p, 'SERIE', r.serie); p = set(p, 'PREMIER_NUMERO', r.first || numbering().first); p = set(p, 'NOMBRE_MISSIONS', 1); p = set(p, 'THÉÂTRE', r.theatre || 'aléatoire'); p = set(p, 'ÉQUIPES_DEFA', r.teams);
+    p = set(p, 'TYPE', r.type); { const n = numbering(r.type), table = n.id ? `${r.type} ${r.id || n.id} série ${r.serie || n.serie}` : (window.SiaMission?.numberingTable?.() || 'auto'); p = p.replace(/^(\s*PROCHAINS_NUMEROS\s*=\s*)auto\b/m, (_, a) => a + table.replace(/\$/g, '$$$$')); } p = set(p, 'NOMBRE_MISSIONS', 1); p = set(p, 'THÉÂTRE', r.theatre || 'aléatoire'); p = set(p, 'ÉQUIPES_DEFA', r.teams);
     p = set(p, 'SOUS_TYPE', r.subtype || 'libre'); p = set(p, 'RENDEZ_VOUS', r.rdv || 'libre'); p = set(p, 'TYPES_EQUIPES', r.teamTypes || 'libre'); p = set(p, 'ÉQUIPES_SOL', r.ground ?? 'libre'); p = set(p, 'RAVITAILLEMENT', r.aar || 'libre');
     let copied = false;
     try { await navigator.clipboard.writeText(p); copied = true; } catch { /* refus */ }

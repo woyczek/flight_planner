@@ -1,8 +1,8 @@
-"""Renumérotation des missions : lettre de série + numéro d'opération sur 3 chiffres (+ lettre d'équipe).
+"""Renumérotation des missions : lettre de FAMILLE + numéro d'opération sur 3 chiffres par famille (+ lettre d'équipe).
 
-Format : « K049 » (une équipe) ou « K049A », « K049B »… (opération à plusieurs équipes). La lettre désigne la série,
-unique toutes familles confondues (A, B, C… dans l'ordre de création) ; le numéro d'opération ne se répète jamais d'une
-série à l'autre. Rangement : data/missions/<lettre>_<FAMILLE>/<identifiant>/ (un sous-dossier par mission : YAML,
+Format : « M016 » (une équipe) ou « M016A », « M016B »… (opération à plusieurs équipes). La lettre désigne la famille
+(tools/family_letters.py : M HEMS / MEDEVAC, S SAR, T AIRLIFT…) ; le numéro est compté par famille ; mission.series =
+numéro de la série dans la famille (1, 2, 3…). Rangement : data/missions/<lettre>_<FAMILLE>/<identifiant>/ (un sous-dossier par mission : YAML,
 résumé, cartes, PDF ; les noms génériques comme carte_assemblage.png n'entrent plus en collision).
 
 Usage (depuis la racine de l'application) :
@@ -17,6 +17,8 @@ gardé, l'autre va dans data/missions/_remplaces/<date>/. Trace : data/missions/
 Bibliothèque standard uniquement.
 """
 import datetime as dt, os, re, shutil, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from family_letters import FAMILY_LETTERS
 
 sys.stdout.reconfigure(encoding='utf-8')
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -39,18 +41,24 @@ def token(old):
 
 
 def scan():
-    """Séries : { dir, missions: [{ old, yaml, sub }], family, series, t0 } ; séries déjà renumérotées : lettres et numéros."""
-    series, used_letters, used_nums = [], set(), []
+    """Séries à renuméroter : { dir, missions: [{ old, yaml, sub }], family, series, t0 } ; missions déjà au nouveau format :
+    { lettre: { 'nums': [...], 'series': [...] } }."""
+    series, done = [], {}
     for d in sorted(os.listdir(MISSIONS)):
         path = os.path.join(MISSIONS, d)
         if not os.path.isdir(path) or d.startswith(('_', '.')):
             continue
         if NEW_DIR.match(d):
-            used_letters.add(d[0])
             for sub in os.listdir(path):
                 m = NEW_ID.match(sub)
-                if m:
-                    used_nums.append(int(m.group(2)))
+                if not m:
+                    continue
+                info = done.setdefault(m.group(1), {'nums': [], 'series': []})
+                info['nums'].append(int(m.group(2)))
+                y = next((os.path.join(path, sub, n) for n in os.listdir(os.path.join(path, sub)) if n.lower().endswith(('.yaml', '.yml'))), None)
+                sm = re.search(r'^\s+series:\s*[\'"]?(\d+)', read(y), re.M) if y else None
+                if sm:
+                    info['series'].append(int(sm.group(1)))
             continue
         found = []
         for name in os.listdir(path):
@@ -69,31 +77,32 @@ def scan():
         t0 = min(os.path.getmtime(f['yaml']) for f in found)
         series.append({'dir': d, 'path': path, 'missions': found, 'family': fam, 'series': ser, 't0': t0})
     key = (lambda s: (ORDER.index(s['dir']) if s['dir'] in ORDER else len(ORDER), s['t0'], s['series'], s['family']))
-    return sorted(series, key=key), used_letters, used_nums
+    return sorted(series, key=key), done
 
 
 def plan():
-    series, letters, nums = scan()
-    letter = max(letters) if letters else '@'
-    num = max(nums) if nums else 0
+    series, done = scan()
+    num = {L: max(v['nums'] or [0]) for L, v in done.items()}
+    rank = {L: max(v['series'] or [0]) for L, v in done.items()}
     out = []
     for s in series:
-        letter = chr(ord(letter) + 1)
-        if letter > 'Z':
-            raise SystemExit('Plus de 26 séries : format à étendre.')
+        letter = FAMILY_LETTERS.get(s['family'].upper())
+        if not letter:
+            raise SystemExit(f"Famille sans lettre : {s['family']} ({s['dir']}) — compléter tools/family_letters.py.")
+        rank[letter] = rank.get(letter, 0) + 1
         ops = {}
         for m in s['missions']:
             ops.setdefault(int(re.match(r'\d+', m['old']).group()), []).append(m)
         mapping, op_map = {}, {}
         for opn in sorted(ops):
-            num += 1
-            op_map[str(opn)] = f'{letter}{num:03d}'
+            num[letter] = num.get(letter, 0) + 1
+            op_map[str(opn)] = f'{letter}{num[letter]:03d}'
             for m in sorted(ops[opn], key=lambda x: x['old']):
                 team = re.sub(r'^\d+', '', m['old'])
-                m['new'] = f'{letter}{num:03d}{team}'
-                m['num'] = num
+                m['new'] = f'{letter}{num[letter]:03d}{team}'
+                m['num'] = num[letter]
                 mapping[m['old']] = m['new']
-        out.append({**s, 'letter': letter, 'newdir': f"{letter}_{s['family']}", 'mapping': mapping, 'op_map': op_map})
+        out.append({**s, 'letter': letter, 'rank': rank[letter], 'newdir': f"{letter}_{s['family']}", 'mapping': mapping, 'op_map': op_map})
     return out
 
 
@@ -101,7 +110,7 @@ def rewrite(text, s, m=None):
     """Identifiants de la série remplacés dans un texte (YAML ou Markdown)."""
     mp, ops = s['mapping'], s['op_map']
     if m:
-        text = re.sub(r'^(\s+series:\s*).*$', rf"\g<1>'{s['letter']}'", text, count=1, flags=re.M)
+        text = re.sub(r'^(\s+series:\s*).*$', rf"\g<1>{s.get('rank', 1)}", text, count=1, flags=re.M)
         text = re.sub(r'^(\s+number:\s*).*$', rf"\g<1>{m['num']}", text, count=1, flags=re.M)
         text = re.sub(r"^(\s+)id:\s*['\"]?" + re.escape(m['old']) + r"['\"]?\s*$", rf"\g<1>id: '{m['new']}'\n\g<1>former_id: '{m['old']}'", text, count=1, flags=re.M)
     # operation.id et operation.missions
@@ -142,7 +151,7 @@ def run():
         return
     log, table = [], []
     for s in series:
-        log.append(f"{s['dir']} → {s['newdir']}/ ({s['family']}, ancienne série {s['series']})")
+        log.append(f"{s['dir']} → {s['newdir']}/ ({s['family']}, ancienne série {s['series']} → série {s['rank']} de la famille)")
         newroot = os.path.join(MISSIONS, s['newdir'])
         # 1. sous-dossiers de mission existants (fichiers plus récents : prioritaires)
         for m in s['missions']:

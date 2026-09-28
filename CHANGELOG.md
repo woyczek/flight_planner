@@ -15,14 +15,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   plus de bande vide au-dessus) ; emblème du Carnet de vol détouré (médaillon ailé seul) ; avion des plaques de titre
   gravé sur fond transparent (plus de vignette encadrée).
 
-- **Numérotation des missions** : lettre de série + numéro d'opération sur 3 chiffres (+ lettre d'équipe) — « K049 »,
-  « K049A » ; la lettre est unique toutes familles confondues (A, B, C… dans l'ordre de création), le numéro ne se
-  répète jamais. Prompt du générateur : SERIE (lettre) et PREMIER_NUMERO (proposés d'après le registre des missions,
-  `SiaMission.nextNumbering()`), fichiers missionK049.yaml / summaryK049.md / generalK049.png… Lecteur de missions,
-  registre, éditeur : identifiants alphanumériques. Rangement : `data/missions/<lettre>_<FAMILLE>/<identifiant>/`.
-  Outils : `tools/renumber_missions.py` (renumérotation, ancien identifiant gardé dans `mission.former_id`, table
-  `data/missions/RENUMEROTATION.md`), `tools/import_pdf_missions.py` (import de dossiers PDF et ZIP de cartes ; YAML et
-  résumé reconstruits depuis le PDF quand ils manquent).
+- **Numérotation des missions** : lettre de famille + numéro sur 3 chiffres, compté par famille (+ lettre d'équipe) —
+  « M016 », « S002A ». Lettres : M HEMS/MEDEVAC, H HADR, F FIRE, S SAR, T AIRLIFT, R AAR, P AIRBORNE, N MARITIME,
+  I ISR, L LE, C COMMAND, O SOF, V FI, G SURVEY, X SPECIAL ; `mission.series` = rang de la série dans sa famille.
+  Prompt du générateur : `PROCHAINS_NUMEROS` (auto, rempli d'après le registre, `SiaMission.nextNumbering()` /
+  `numberingTable()`) ; registre : série numérique et identifiant calculé. Fichiers missionM016.yaml /
+  summaryM016.md… Rangement : `data/missions/<lettre>_<FAMILLE>/<identifiant>/`. Outils :
+  `tools/renumber_missions.py` (ancien identifiant gardé dans `mission.former_id`, table
+  `data/missions/RENUMEROTATION.md`), `tools/reletter_missions.py` (migration des identifiants à lettre de série),
+  `tools/import_pdf_missions.py` (import de dossiers PDF et ZIP de cartes ; YAML et résumé reconstruits au besoin).
+- **Correspondance des indicatifs** : une nouvelle ligne propose tous les organismes connus (et plus seulement SAMU).
 - **Registre des missions, commande** : une ligne par équipe en vol (A, B, C…) ; vide = automatique ; complétion par
   les types courants et les appareils de la flotte DEFA (indicatif) ; un même type peut servir à plusieurs équipes.
 
