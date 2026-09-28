@@ -53,6 +53,8 @@
     duplicate: L('Ce n° de mission figure déjà dans le registre. L’ajouter quand même (doublon) ? Annuler pour corriger le n° de mission.', 'This mission ID is already in the ledger. Add it anyway (duplicate)? Cancel to correct the mission ID.', 'Diese Einsatz-ID ist bereits im Register. Trotzdem hinzufügen (Duplikat)? Abbrechen, um die ID zu korrigieren.', 'Este ID de misión ya figura en el registro. ¿Añadirlo de todos modos (duplicado)? Cancelar para corregir el ID.'),
     confirmDelete: L('Supprimer définitivement cette mission du registre ?', 'Permanently delete this mission from the ledger?', 'Diesen Einsatz endgültig aus dem Register löschen?', '¿Eliminar definitivamente esta misión del registro?'),
     editBanner: L('Modification d’une mission du registre', 'Editing a ledger mission', 'Bearbeitung eines Registereinsatzes', 'Modificación de una misión del registro'),
+    inRegistry: L('voir la mission dans le registre', 'see the mission in the registry', 'Einsatz im Register ansehen', 'ver la misión en el registro'),
+    flightsOf: L('{n} CR de cette mission dans le registre des CR', '{n} report(s) of this mission in the report registry', '{n} Bericht(e) dieses Einsatzes', '{n} informe(s) de esta misión'),
     fromSia: L('Mission générée (SIA XML) reprise', 'Generated mission (SIA XML) imported', 'Generierte Mission (SIA XML) übernommen', 'Misión generada (SIA XML) importada'),
     fromSiaReplace: L('Remplacer le brouillon en cours par la mission générée (SIA XML) ?', 'Replace the current draft with the generated mission (SIA XML)?', 'Aktuellen Entwurf durch die generierte Mission (SIA XML) ersetzen?', '¿Reemplazar el borrador actual por la misión generada (SIA XML)?'),
     editGone: L('La mission demandée n’existe plus à cette position du registre (modifié entre-temps) : ouverture d’une nouvelle mission.', 'The requested mission is no longer at this ledger position (changed meanwhile): opening a new mission.', 'Der angeforderte Einsatz ist nicht mehr an dieser Registerposition (zwischenzeitlich geändert): neuer Einsatz wird geöffnet.', 'La misión solicitada ya no está en esta posición del registro (modificado mientras tanto): se abre una nueva misión.'),
@@ -341,6 +343,7 @@
           view.sync('metadata.');
           changed();
         }
+        if (path === 'metadata.missionNumber') missionLink();
         // Opérateur (organisme) modifié : indicatif de série de l'appareil principal réévalué.
         if (path === 'organisation.organisation' && (operatorAssist(0) + autoSeries(0))) {
           view.sync('aircraft.');
@@ -886,6 +889,18 @@
       switcher.sync();
       registerI18n();
       blockFramework();
+      missionLink();
+    }
+    /** Sous le champ « Mission » : lien vers la mission dans le registre des missions (?mission=M-016) et nombre de vols. */
+    function missionLink() {
+      const box = form.querySelector('[data-field="metadata.missionNumber"] .mc-hint');
+      const id = window.MissionVocab.missionIdOf(mission.metadata?.missionNumber);
+      if (!box) return;
+      box.hidden = !id;
+      if (!id) { box.textContent = ''; return; }
+      const flights = ledger.missions.filter(x => window.MissionVocab.parseCrId(x.metadata?.missionId)?.mission === id).length;
+      const url = new URL(`apps/sia/mission_registry.html?mission=${encodeURIComponent(id)}`, window.RepositoryNav?.root || location.href).href;
+      box.innerHTML = `<a href="${url}">${id} — ${esc(t('inRegistry'))} ↗</a>${flights ? ` · ${esc(t('flightsOf').replace('{n}', flights))}` : ''}`;
     }
     // Blocs recréés : afficher / masquer / déplacer du framework réappliqués (état mémorisé).
     const blockFramework = () => {

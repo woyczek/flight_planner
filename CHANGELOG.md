@@ -10,6 +10,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Registre ⇄ CR** : fiche d'une mission avec tous ses CR (liens vers chaque CR), colonne « CR » (nombre de vols),
+  « Nouveau CR (vol n) » pour les missions récurrentes ; dans le CR, lien « voir la mission dans le registre » sous le
+  champ Mission. Le registre retient la mission affichée et accepte `?mission=M-016` ; le générateur et le studio
+  ouverts depuis le registre ont un lien « ← Registre (M-016) ».
 - **Numérotation unifiée missions / CR, avec tiret** — mission : lettre de famille + tiret + 3 chiffres (+ équipe),
   `M-016`, `S-002A` (écritures sans tiret acceptées). CR : dans le CR, on saisit la mission volée et le n° de CR est
   calculé (lecture seule) — `CRM-016-1`, `CRM-016-2` si la mission est rejouée ; CR sans mission : `CRM-A01-0` …

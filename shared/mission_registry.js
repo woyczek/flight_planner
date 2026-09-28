@@ -202,16 +202,25 @@
     persist();
     return n;
   }
-  /** Statut « CR fait » : CR du registre dont metadata.missionNumber est l'identifiant de la mission (et même titre / opération). */
+  /** CR de chaque mission (registre des CR, missionCoreLedger:v2) : n° de CR CR<mission>-<vol> (ou metadata.missionNumber).
+   *  m.reports = [{ missionId, family, date, index }] du plus récent au plus ancien (index : rang dans la famille, lien
+   *  ?edit= de la page de CR) ; m.report = le dernier ; statut « CR fait » dès le premier. Une mission récurrente (ravitaillement
+   *  sur SIMONE, dix fois par mois) garde tous ses vols : CRR-001-1, CRR-001-2… */
   function linkReports() {
     let crs = [];
     try { const c = readJson('missionCoreLedger:v2', null); crs = window.jsyaml.load(c?.text || '')?.missions || []; } catch { /* registre illisible */ }
+    const rank = {}, all = crs.map(r => ({ r, index: (rank[r.family] = (rank[r.family] ?? -1) + 1) }));
+    const crMission = r => window.MissionVocab?.parseCrId?.(r?.metadata?.missionId)?.mission || normMissionId(r?.metadata?.missionNumber || '');
     for (const m of reg.missions) {
-      const crMission = r => window.MissionVocab?.parseCrId?.(r?.metadata?.missionId)?.mission || String(r?.metadata?.missionNumber || '');
-      const cr = crs.find(r => crMission(r) === String(m.id) && m.id && (!m.title || !r.metadata.operationName || r.metadata.operationName === m.title));
-      if (cr) { m.report = { family: cr.family, date: cr.metadata?.date || '', missionId: cr.metadata?.missionId || '' }; if (m.status !== 'cancelled') m.status = 'reported'; }
+      const mine = m.id ? all.filter(({ r }) => crMission(r) === String(m.id)) : [];
+      m.reports = mine.map(({ r, index }) => ({ missionId: r.metadata?.missionId || '', family: r.family, date: r.metadata?.date || '', index }))
+        .sort((a, b) => b.date.localeCompare(a.date) || b.missionId.localeCompare(a.missionId, 'fr', { numeric: true }));
+      m.report = m.reports[0] || null;
+      if (m.report && m.status !== 'cancelled') m.status = 'reported';
     }
   }
+  /** Page de CR d'un CR du registre (modification ?edit=rang&id=n°). */
+  const crUrl = rep => { const fam = window.MissionVocab?.families?.find(f => f.id === rep.family); return fam ? new URL(`apps/cr/${fam.cr}?edit=${rep.index}&id=${encodeURIComponent(rep.missionId)}`, window.RepositoryNav.root).href : ''; };
 
   // ---- filtres et choix
   const DEFAULT_FILTERS = { type: '', subtype: '', rdv: '', teamsMin: '', teamsMax: '', teamType: '', aar: '', theatre: '', status: '', q: '' };
@@ -229,7 +238,10 @@
   const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'fr', { numeric: true }));
 
   // ---- rendu
-  let table = null, selected = null, msg = '';
+  // mission affichée : mémorisée (retour depuis le générateur, le studio ou un CR) ; ?mission=M-016 la choisit
+  const SEL_KEY = 'missionRegistrySelected:v1';
+  let table = null, selected = readJson(SEL_KEY, null), msg = '';
+  const select = k => { selected = k; writeJson(SEL_KEY, k); };
   const pill = (level, text) => `<span class="rg-pill rg-${level}">${esc(text)}</span>`;
   function render() {
     const fam = families(), rows = reg.missions.filter(matches);
@@ -303,7 +315,7 @@
       if (el.tagName === 'SELECT') render(); else { refreshTable(); }
     }));
     host.querySelector('#rgReset').onclick = () => { filters = { ...DEFAULT_FILTERS }; writeJson(FILTERS, filters); render(); };
-    host.querySelector('#rgDraw').onclick = () => { const r = reg.missions.filter(matches); if (r.length) { selected = keyOf(r[Math.floor(Math.random() * r.length)]); renderDetail(); document.getElementById('rgDetail')?.scrollIntoView({ block: 'nearest' }); } };
+    host.querySelector('#rgDraw').onclick = () => { const r = reg.missions.filter(matches); if (r.length) { select(keyOf(r[Math.floor(Math.random() * r.length)])); renderDetail(); document.getElementById('rgDetail')?.scrollIntoView({ block: 'nearest' }); } };
     host.querySelector('#rgCsv').onclick = exportCsv;
     window.MissionOrder?.mount(host.querySelector('#rgOrderHost'), { onOrdered: () => render() });
     refreshTable();
@@ -321,6 +333,7 @@
     { key: 'aar', label: 'AAR', format: v => v ? '✓' : '' },
     { key: 'theatre', label: t(['Théâtre', 'Theatre', 'Schauplatz', 'Teatro']) },
     { key: 'status', label: t(['Statut', 'Status', 'Status', 'Estado']), html: v => pill(v, t(STATUS[v] || [v])) },
+    { key: 'reports', label: 'CR', title: t(['Nombre de vols (CR) de la mission', 'Number of flights (reports) of the mission']), format: v => (v?.length || '') + '', sortValue: m => m.reports?.length || 0 },
     { key: 'generatedAt', label: t(['Généré', 'Generated', 'Erzeugt', 'Generada']), format: v => fmtDate(v), sortValue: m => m.generatedAt || m.addedAt || '' }
   ];
   function refreshTable() {
@@ -331,8 +344,8 @@
     table = window.SortedTable.render(box, {
       rows, columns: COLUMNS(), defaultSortKey: 'id', defaultDir: 1,
       emptyText: reg.missions.length ? t(['Aucune mission ne correspond aux filtres.', 'No mission matches the filters.']) : t(['Registre vide : choisir le dossier « Missions » puis « Relire le dossier ».', 'Empty registry: choose the “Missions” folder then “Re-read folder”.']),
-      onRowClick: m => { selected = keyOf(m); renderDetail(); },
-      onDelete: m => { reg.missions = reg.missions.filter(x => keyOf(x) !== keyOf(m)); if (selected === keyOf(m)) selected = null; persist(); render(); return true; },
+      onRowClick: m => { select(keyOf(m)); renderDetail(); },
+      onDelete: m => { reg.missions = reg.missions.filter(x => keyOf(x) !== keyOf(m)); if (selected === keyOf(m)) select(null); persist(); render(); return true; },
       deleteMessage: m => t(['Retirer « {m} » du registre ? (les fichiers ne sont pas supprimés)', 'Remove “{m}” from the registry? (files are not deleted)'], { m: `${m.id} ${m.title}` })
     });
     const draw = host.querySelector('#rgDraw');
@@ -346,7 +359,8 @@
     const teams = m.teams.map(tm => `<li><b>${esc(tm.name)}</b> — ${esc(tm.type)}${tm.service ? `, ${esc(tm.service)}` : ''}${tm.role ? ` <span class="rg-small">(${esc(tm.role)})</span>` : ''}</li>`).join('');
     box.innerHTML = `<div class="repo-card rg-detail" data-icon="target" data-subtitle="${esc(`${m.type}${m.subtype ? ' / ' + m.subtype : ''} — ${m.folder || t(['commande', 'order'])}`)}">
       <h3>${esc(m.id)} — ${esc(m.title || t(['(à générer)', '(to generate)']))}</h3>
-      <p>${pill(m.status, t(STATUS[m.status] || [m.status]))} ${m.operation?.name ? `${esc(t(['Opération', 'Operation']))} : <b>${esc(m.operation.name)}</b>${m.operation.missions ? ` (${m.operation.missions} ${esc(t(['missions', 'missions']))})` : ''}` : ''} ${m.report ? pill('reported', `CR ${m.report.missionId} ${fmtDate(m.report.date)}`) : ''}</p>
+      <p>${pill(m.status, t(STATUS[m.status] || [m.status]))} ${m.operation?.name ? `${esc(t(['Opération', 'Operation']))} : <b>${esc(m.operation.name)}</b>${m.operation.missions ? ` (${m.operation.missions} ${esc(t(['missions', 'missions']))})` : ''}` : ''} ${m.report ? pill('reported', t(['{n} vol(s) — dernier CR {c} du {d}', '{n} flight(s) — last report {c} on {d}'], { n: m.reports.length, c: m.report.missionId, d: fmtDate(m.report.date) })) : ''}</p>
+      ${m.reports?.length ? `<details class="rg-reports" ${m.reports.length <= 5 ? 'open' : ''}><summary><b>${esc(t(['Comptes rendus de la mission ({n})', 'Mission reports ({n})', 'Berichte des Einsatzes ({n})', 'Informes de la misión ({n})'], { n: m.reports.length }))}</b></summary><ul>${m.reports.map(r => { const u = crUrl(r); return `<li>${u ? `<a href="${esc(u)}">${esc(r.missionId)}</a>` : esc(r.missionId)} — ${esc(fmtDate(r.date))}</li>`; }).join('')}</ul></details>` : ''}
       <p>${esc(m.origin)}${m.destination ? ' → ' + esc(m.destination) : ''} · ${esc(t(['{n} rendez-vous', '{n} rendezvous'], { n: m.rdv }))} · ${m.aar ? 'AAR · ' : ''}${esc(m.theatre || '')} · ${esc(t(['{n} carte(s)', '{n} map(s)'], { n: m.maps || 0 }))}</p>
       ${m.callsigns?.length ? `<p>${esc(t(['Indicatifs', 'Callsigns']))} : ${esc(m.callsigns.join(', '))} · ${esc(m.aircraftTypes.join(', '))}</p>` : ''}
       ${teams ? `<ul class="rg-teams">${teams}</ul>` : ''}
@@ -356,7 +370,7 @@
         <label>${esc(t(['Volée le', 'Flown on', 'Geflogen am', 'Volada el']))}<input type="date" id="rgFlown" value="${esc(m.flownAt || '')}"></label>
         <label class="rg-notes">${esc(t(['Notes', 'Notes', 'Notizen', 'Notas']))}<input id="rgNotes" value="${esc(m.notes || '')}"></label>
       </div>
-      <p class="row">${m.files?.length ? `<button type="button" class="primary" data-go="editor" data-icon="edit">${esc(t(['Ouvrir dans le générateur', 'Open in generator', 'Im Generator öffnen', 'Abrir en el generador']))}</button><button type="button" class="secondary" data-go="studio" data-icon="map">${esc(t(['Ouvrir dans le studio', 'Open in map studio', 'Im Kartenstudio öffnen', 'Abrir en el estudio']))}</button><button type="button" class="secondary" data-go="cr" data-icon="clipboard">${esc(t(['Créer le CR', 'Create report', 'Bericht erstellen', 'Crear informe']))}</button>` : ''}${m.status === 'ordered' ? `<button type="button" class="secondary" data-go="prompt" data-icon="send">${esc(t(['Recopier le prompt', 'Copy prompt again']))}</button>` : ''}<span class="rg-small">${esc((m.files || []).join(', '))}</span></p>
+      <p class="row">${m.files?.length ? `<button type="button" class="primary" data-go="editor" data-icon="edit">${esc(t(['Ouvrir dans le générateur', 'Open in generator', 'Im Generator öffnen', 'Abrir en el generador']))}</button><button type="button" class="secondary" data-go="studio" data-icon="map">${esc(t(['Ouvrir dans le studio', 'Open in map studio', 'Im Kartenstudio öffnen', 'Abrir en el estudio']))}</button><button type="button" class="secondary" data-go="cr" data-icon="clipboard" title="${esc(t(['Nouveau CR de cette mission : n° de vol suivant', 'New report for this mission: next flight number']))}">${esc(m.reports?.length ? t(['Nouveau CR (vol {n})', 'New report (flight {n})', 'Neuer Bericht (Flug {n})', 'Nuevo informe (vuelo {n})'], { n: m.reports.length + 1 }) : t(['Créer le CR', 'Create report', 'Bericht erstellen', 'Crear informe']))}</button>` : ''}${m.status === 'ordered' ? `<button type="button" class="secondary" data-go="prompt" data-icon="send">${esc(t(['Recopier le prompt', 'Copy prompt again']))}</button>` : ''}<span class="rg-small">${esc((m.files || []).join(', '))}</span></p>
       <p class="rg-small" id="rgGoMsg"></p></div>`;
     box.querySelector('#rgStatus').onchange = e => { m.status = e.target.value; m.statusAt = new Date().toISOString(); if (m.status === 'flown' && !m.flownAt) m.flownAt = new Date().toISOString().slice(0, 10); persist(); render(); };
     box.querySelector('#rgFlown').onchange = e => { m.flownAt = e.target.value; if (m.flownAt && ['generated', 'planned', 'ordered'].includes(m.status)) m.status = 'flown'; persist(); render(); };
@@ -369,6 +383,9 @@
     const out = document.getElementById('rgGoMsg');
     try {
       if (where === 'prompt') { await sendPrompt(m.request); return; }
+      select(keyOf(m));
+      // lien « ← Registre » du générateur et du studio (même onglet) : SiaMission.mountNav
+      try { sessionStorage.setItem('siaFromRegistry:v1', JSON.stringify({ id: m.id, title: m.title })); } catch { /* stockage indisponible */ }
       const dir = await missionsDir(true);
       if (!dir) throw new Error(t(['dossier des missions non autorisé', 'missions folder not authorised']));
       let h = dir;
@@ -424,7 +441,12 @@
   (async () => {
     await waitFor('jsyaml', 3000);
     linkReports();
+    // ?mission=M-016 (retour du générateur, du studio ou d'un CR) : mission choisie et affichée
+    const want = normMissionId(new URLSearchParams(location.search).get('mission') || '');
+    const hit = want && reg.missions.find(m => m.id === want);
+    if (hit) select(keyOf(hit));
     render();
+    if (selected) setTimeout(() => document.getElementById('rgDetail')?.scrollIntoView({ block: 'start' }), 300);
     // relecture silencieuse si le dossier est déjà autorisé
     if (await missionsDir(false)) doScan();
   })();

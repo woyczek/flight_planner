@@ -476,8 +476,19 @@
       nav.innerHTML = '<button type="button" data-step="-1" title="Mission précédente">◀</button><select title="Mission du lot"></select><button type="button" data-step="1" title="Mission suivante">▶</button>';
       const title = line.querySelector('h1');
       title ? title.after(nav) : line.prepend(nav);
+      // arrivée depuis le registre des missions (même onglet) : lien de retour vers la mission dans le registre
+      let from = null;
+      try { from = JSON.parse(sessionStorage.getItem('siaFromRegistry:v1') || 'null'); } catch { /* stockage indisponible */ }
+      if (from) {
+        const back = document.createElement('a');
+        back.id = 'siaBackRegistry'; back.className = 'sia-back';
+        back.href = new URL(`apps/sia/mission_registry.html${from.id ? `?mission=${encodeURIComponent(from.id)}` : ''}`, window.RepositoryNav?.root || new URL('../../', location.href).href).href;
+        back.textContent = `← Registre${from.id ? ` (${from.id})` : ''}`;
+        back.title = `Retour au registre des missions${from.title ? ` : ${from.id} — ${from.title}` : ''}`;
+        nav.before(back);
+      }
       const css = document.createElement('style');
-      css.textContent = '.sia-batch-nav{display:inline-flex;align-items:center;gap:4px;margin:0 10px}.sia-batch-nav[hidden]{display:none}.sia-batch-nav select{max-width:320px;padding:3px 6px;border-radius:6px;font:inherit;font-size:13px}.sia-batch-nav button{padding:3px 9px;border-radius:6px;font-size:13px;cursor:pointer}';
+      css.textContent = '.sia-back{display:inline-flex;align-items:center;margin:0 6px 0 10px;padding:3px 10px;border-radius:999px;border:1px solid currentColor;color:inherit;text-decoration:none;font-size:13px;font-weight:600;white-space:nowrap;opacity:.9}.sia-back:hover{opacity:1}.sia-batch-nav{display:inline-flex;align-items:center;gap:4px;margin:0 10px}.sia-batch-nav[hidden]{display:none}.sia-batch-nav select{max-width:320px;padding:3px 6px;border-radius:6px;font:inherit;font-size:13px}.sia-batch-nav button{padding:3px 9px;border-radius:6px;font-size:13px;cursor:pointer}';
       document.head.append(css);
       const sel = nav.querySelector('select');
       const render = () => {

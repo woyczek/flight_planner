@@ -139,6 +139,12 @@ Page `apps/sia/mission_registry.html` (☰ › Registre des missions (SIA), barr
   équipes), rendez-vous, équipes au sol, ravitaillement → prompt réglé (paramètres
   `PROCHAINS_NUMEROS`, `SOUS_TYPE`, `RENDEZ_VOUS`, `TYPES_EQUIPES`, `ÉQUIPES_SOL`, `RAVITAILLEMENT`) copié, ChatGPT ouvert ; la commande est
   rapprochée de la mission générée (même série) à la relecture du dossier.
+- **Comptes rendus de la mission** (fiche) : tous les CR de la mission (`CR<mission>-<vol>`, du plus récent au plus
+  ancien), chacun ouvrant sa page de CR ; colonne **CR** (nombre de vols) ; une mission récurrente (ravitaillement sur
+  SIMONE, dix fois par mois) reste disponible — « Nouveau CR (vol n) » prend le n° de vol suivant. Le CR renvoie à
+  la mission (sous le champ « Mission » : lien vers le registre, `?mission=M-016`).
+- **Mission mémorisée** : la mission affichée est gardée (`missionRegistrySelected:v1`) ; `?mission=M-016` la choisit.
+  Le générateur et le studio ouverts depuis le registre affichent **← Registre (M-016)** dans l'en-tête.
 - **Nettoyer le registre (n)** : relit le dossier puis retire les missions « fichier absent » (renumérotées, déplacées
   ou supprimées) ; statut, notes, date de vol, commande et CR passent à la mission qui les remplace (même `former_id`,
   sinon même titre, même type et même lettre d'équipe) quand elle est encore « générée ». Les commandes en attente
