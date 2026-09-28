@@ -2,7 +2,7 @@
   'use strict';
   // Composant de framework « FileAccess » : dossiers autorisés et ouverture des fichiers.
   //   · dossiers mémorisés (IndexedDB missionCore › handles, clés folder:<clé>) : dépôt, registre
-  //     CR DEFA, sauvegarde locale, performances (Flight Planner) — nom, état de l'autorisation,
+  //     CR DEFA, sauvegarde locale, performances (Flight Planner), SIA XML, missions générées — nom, état de l'autorisation,
   //     dossier attendu (infobulle) ;
   //   · tout <input type="file"> de la suite ouvre le sélecteur du système directement dans le
   //     dossier paramétré (data-picker-folder, ou dossier par défaut de la page), sinon dans le
@@ -32,6 +32,10 @@
       label: L('Dossier SIA XML', 'SIA XML folder', 'SIA-XML-Ordner', 'Carpeta SIA XML'),
       expect: L('dossier des données SIA (XML AIRAC, « Carte france vierge.png », villes_geonames.csv, mora.csv)', 'SIA data folder (AIRAC XML, “Carte france vierge.png”, villes_geonames.csv, mora.csv)', 'SIA-Datenordner (AIRAC-XML, „Carte france vierge.png“…)', 'carpeta de datos SIA (XML AIRAC, «Carte france vierge.png»…)'),
       check: 'Carte france vierge.png'
+    },
+    __missions: {
+      label: L('Dossier des missions', 'Missions folder', 'Missionsordner', 'Carpeta de misiones'),
+      expect: L('dossier « Missions » du dépôt (séries générées : missionNN.yaml, summaryNN.md ; mission_registry.yaml y est écrit)', '“Missions” folder of the repository (generated series: missionNN.yaml, summaryNN.md; mission_registry.yaml is written there)', 'Ordner „Missions“ des Repositorys (missionNN.yaml, summaryNN.md; mission_registry.yaml)', 'carpeta «Missions» del repositorio (missionNN.yaml, summaryNN.md; mission_registry.yaml)')
     },
     __perf: {
       label: L('Dossier performances', 'Performance folder', 'Leistungsordner', 'Carpeta de rendimiento'),
@@ -177,7 +181,7 @@
 
   // ---- ouverture de fichiers : sélecteur du système dans le dossier paramétré
   // Dossier par défaut selon la page (application CR DEFA : registre ; Paramétrage : dépôt).
-  const defaultFolder = () => /\/CR%20DEFA\/|\/CR DEFA\//.test(location.pathname) ? (/parametrage\.html$/.test(location.pathname) ? '__repo' : '__ledger') : /flight_performance_planner/.test(location.pathname) ? '__perf' : /\/SIA%20XML\/|\/SIA XML\//.test(location.pathname) ? '__sia' : '';
+  const defaultFolder = () => /\/CR%20DEFA\/|\/CR DEFA\//.test(location.pathname) ? (/parametrage\.html$/.test(location.pathname) ? '__repo' : '__ledger') : /flight_performance_planner/.test(location.pathname) ? '__perf' : /mission_registry\.html$/.test(location.pathname) ? '__missions' : /\/SIA%20XML\/|\/SIA XML\//.test(location.pathname) ? '__sia' : '';
   const hash = s => {
     let h = 0;
     for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0;

@@ -37,6 +37,11 @@ Bibliothèques livrées dans le dossier : MapLibre GL (`maplibre-gl.js/.css`), j
 Les données AIRAC se téléchargent sur le site du SIA (produits numériques, export XML) et se
 déposent dans le dossier `SIA XML/` ; `.gitignore` les tient hors du dépôt.
 
+**Un seul cycle** : quand le dossier contient plusieurs cycles, le studio ne lit que le plus récent (les autres sont
+signalés, à archiver) et mémorise le cycle dans la base (`airac`, résumé `siaBaseInfo:v1` pour la pastille « AIRAC » de
+l'en-tête). Procédure de mise à jour : ☰ › Maintenance › Mise à jour des données SIA — pas à pas ; `map_parser.html?relire=1`
+relit le dossier mémorisé.
+
 **Dossier mémorisé** : « Dossier SIA XML : … » (studio, bloc 1) choisit le dossier une fois ;
 il est retenu comme les autres dossiers de la suite (☰ › Paramétrage) et les sélecteurs de
 fichiers des deux pages s'y ouvrent. « Relire le dossier » après un nouveau cycle AIRAC. La base
@@ -103,6 +108,27 @@ d'une série (`maps_manifest.md`, `AAR_TRACKS_REFERENCE.md`, `VALIDATION.txt`, c
 signalés. Une mission dont le bloc `operation` annonce d'autres missions affiche déjà le sélecteur (missions non
 chargées grisées, « à charger ») ; une mission de la même opération collée ou ouverte ensuite **rejoint** le lot
 (réponse de ChatGPT livrée mission par mission). Un chargement d'une mission hors de l'opération efface le lot.
+
+## 2 bis. Registre des missions générées
+
+Page `SIA XML/mission_registry.html` (☰ › Registre des missions (SIA), barre latérale « Registre »), construite par
+`shared/mission_registry.js`.
+
+- **Missions du registre** : dossier `Missions/` du dépôt (dossier mémorisé `__missions`) lu récursivement — chaque
+  sous-dossier de série, YAML et Markdown groupés par mission (`SiaMission.fromTextsBatch`) ; « Ajouter des
+  fichiers… » pour tout navigateur. Relecture automatique à l'ouverture si le dossier est autorisé.
+- **Choisir une mission** : filtres type, sous-type, rendez-vous (avec / sans), équipes engagées (min – max), type
+  d'équipe ou d'aéronef, ravitaillement en vol, théâtre (déduit des coordonnées), statut, recherche ; **Tirer au
+  sort** parmi les missions filtrées ; fiche : équipes, indicatifs, rendez-vous ; **Ouvrir dans le générateur**,
+  **dans le studio**, **Créer le CR** ; statut, date de vol, notes.
+- **Statuts** : commandée, générée, planifiée (ouverte dans le générateur ou le studio), volée, CR fait (CR du
+  registre dont `metadata.missionNumber` est l'identifiant de la mission), abandonnée.
+- **Commander une mission** : type, sous-type (liste du § 2 du prompt), théâtre(s), série, équipes DEFA en vol, types
+  d'équipes (dans l'ordre A, B, C…), rendez-vous, équipes au sol, ravitaillement → prompt réglé (paramètres
+  `SOUS_TYPE`, `RENDEZ_VOUS`, `TYPES_EQUIPES`, `ÉQUIPES_SOL`, `RAVITAILLEMENT`) copié, ChatGPT ouvert ; la commande est
+  rapprochée de la mission générée (même série) à la relecture du dossier.
+- Données : `missionRegistry:v1` (navigateur, sauvegardé avec les données locales) et `Missions/mission_registry.yaml` ;
+  export CSV de la sélection.
 
 ## 3. Générateur de mission (brief)
 

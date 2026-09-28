@@ -112,8 +112,13 @@ Détails : [manuel d'exploitation](docs/MANUEL_EXPLOITATION.md).
 ## 6. Mise à jour
 
 ```bash
-git pull
+python tools/update_suite.py update
 ```
+
+(ou `git pull --ff-only`). Le **canal** se choisit dans ☰ › Maintenance : `master` (stable) ou `develop` (early bird,
+dernières évolutions) — `python tools/update_suite.py channel develop` l'applique au dépôt ; le contrôle des nouveautés
+est manuel, automatique (période au choix) ou désactivé. `python tools/update_suite.py doctor` vérifie l'installation
+(remote, branches, objets git, fins de ligne).
 
 Puis recharger les pages (Ctrl+F5 si une ancienne version reste affichée). Vos données
 (registres YAML, sauvegarde locale, navigateur) ne sont pas touchées par une mise à jour du

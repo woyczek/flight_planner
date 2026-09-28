@@ -6,7 +6,7 @@ Usage (à la racine du dépôt) :
     python tools/bump_versions.py 20261001a  → version imposée
 
 Concerne les références shared/…js|css?v=… des pages HTML, et les chargements internes de
-shared/repository_nav.js (profil pilote, données locales, accès aux dossiers, designs). Les fichiers sans ?v= (données
+shared/repository_nav.js (profil pilote, données locales, accès aux dossiers, contrôle des mises à jour, designs). Les fichiers sans ?v= (données
 régénérées par script, ex. AircraftDB/aircraft_db.js) ne sont pas concernés.
 """
 import datetime as dt, glob, io, os, re, sys
@@ -40,14 +40,15 @@ changed = 0
 for p in pages:
     s = io.open(p, encoding='utf-8', newline='').read()
     t = REF.sub(lambda m: f'{m.group(1)}?v={version}', s)
-    t = re.sub(r'(mission_prompt\.js)\?v=\w+', lambda m: f'{m.group(1)}?v={version}', t)
+    # scripts propres à l'application SIA XML (chargés sans « shared/ ») : versionnés aussi
+    t = re.sub(r'((?:mission_prompt|mission_store|sia_i18n|aero_symbols|vertical_profile)\.js)\?v=\w+', lambda m: f'{m.group(1)}?v={version}', t)
     # repository_tree (arborescence, thèmes, designs, familles de couleurs) : versionné aussi, sinon le navigateur
     # garde une ancienne copie après une mise à jour
     t = re.sub(r'((?:\.\./|\./)*repository_tree)(?:\?v=\w+)?"', lambda m: f'{m.group(1)}?v={version}"', t)
     if t != s:
         io.open(p, 'w', encoding='utf-8', newline='').write(t); changed += 1
 s = io.open(nav, encoding='utf-8', newline='').read()
-t = re.sub(r'((?:pilot_profile|browser_store|file_access|block_icons|side_nav|icons/repository_icons)\.js|designs\.css)\?v=\w+', lambda m: f'{m.group(1)}?v={version}', s)
+t = re.sub(r'((?:pilot_profile|browser_store|file_access|block_icons|side_nav|suite_update|icons/repository_icons)\.js|designs\.css)\?v=\w+', lambda m: f'{m.group(1)}?v={version}', s)
 if t != s:
     io.open(nav, 'w', encoding='utf-8', newline='').write(t)
 # textures, décors et icônes des designs à matières (shared/textures, shared/deco, shared/icons/skeuo) : adresses versionnées dans la feuille des designs, sinon
