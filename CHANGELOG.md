@@ -10,6 +10,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Mission reçue → registre et dossier** : une mission chargée ou collée dans le générateur est inscrite au registre
+  (commande rapprochée) et rangée dans `data/missions/<lettre>_<FAMILLE>/<identifiant>/` si le dossier est autorisé
+  (sinon bouton « Ranger dans le dossier des missions… »).
+- **Commande : aéronefs imposés respectés** — chaque aéronef choisi part avec son désignateur OACI en tête et la
+  mention (IMPOSÉ) ; le prompt en fait une contrainte stricte (prime sur les listes d'unités et d'aéronefs, la mission
+  s'adapte à l'appareil, jamais l'inverse) et la vérifie dans le bloc VALIDATION ; flotte DEFA proposée « type OACI
+  variante — indicatif ».
 - **Studio : tracé carte par carte** — sans tracé, cheminement (carte brief), route probable avec retours possibles
   et durée (carte organisation), ou les deux ; gardé dans le YAML (`maps[].trace`). Profil vertical : « ↺ Route
   probable » reprend la route probable comme cheminement.

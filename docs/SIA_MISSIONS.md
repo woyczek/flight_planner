@@ -145,6 +145,10 @@ Page `apps/sia/mission_registry.html` (☰ › Registre des missions (SIA), barr
   la mission (sous le champ « Mission » : lien vers le registre, `?mission=M-016`).
 - **Mission mémorisée** : la mission affichée est gardée (`missionRegistrySelected:v1`) ; `?mission=M-016` la choisit.
   Le générateur et le studio ouverts depuis le registre affichent **← Registre (M-016)** dans l'en-tête.
+- **Mission reçue dans le générateur** (fichiers ou collage de la réponse ChatGPT) : inscrite aussitôt au registre (la
+  commande « commandée » devient « générée ») et rangée dans `data/missions/<lettre>_<FAMILLE>/<identifiant>/`
+  (`mission<ID>.yaml`, `summary<ID>.md`) si le dossier des missions est autorisé ; sinon « Ranger dans le dossier des
+  missions… » (demande l'autorisation). Noyau partagé : `MissionRegistryCore.record`.
 - **Nettoyer le registre (n)** : relit le dossier puis retire les missions « fichier absent » (renumérotées, déplacées
   ou supprimées) ; statut, notes, date de vol, commande et CR passent à la mission qui les remplace (même `former_id`,
   sinon même titre, même type et même lettre d'équipe) quand elle est encore « générée ». Les commandes en attente

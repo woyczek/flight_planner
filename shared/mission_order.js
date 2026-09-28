@@ -63,11 +63,14 @@
   }
   /** Propositions : types courants, puis chaque appareil de la flotte DEFA (« variante — indicatif »). */
   function teamChoices() {
-    const fleet = (window.DEFA_FLEET || []).filter(r => r.type).map(r => `${r.variant || r.type} — ${r.callsign || r.registration || r.code || r.type}`);
+    // désignateur OACI en tête (le générateur l'emploie tel quel dans aircraft.type), puis la variante et l'indicatif
+    const fleet = (window.DEFA_FLEET || []).filter(r => r.type).map(r => `${r.type}${r.variant && r.variant !== r.type ? ' ' + r.variant : ''} — ${r.callsign || r.registration || r.code || r.type}`);
     return [...new Set([...TEAM_PRESETS, ...fleet.sort((a, b) => a.localeCompare(b))])];
   }
   /** Valeur TYPES_EQUIPES du prompt : « A : H160 — RESCUE41 + B : automatique + … » ; '' si tout est automatique. */
-  const teamTypesValue = o => { const s = teamSlots(o); return s.some(Boolean) ? s.map((v, i) => `${String.fromCharCode(65 + i)} : ${v || 'automatique'}`).join(' + ') : ''; };
+  /** Aéronef imposé : désignateur OACI en tête (« EC145 (Dragon) » → « EC45 EC145 (Dragon) ») pour que le générateur le reprenne. */
+  const imposed = v => { const code = window.MissionEstimate?.designator?.(v) || ''; return code && !String(v).toUpperCase().startsWith(code) ? `${code} ${v}` : v; };
+  const teamTypesValue = o => { const s = teamSlots(o); return s.some(Boolean) ? s.map((v, i) => `${String.fromCharCode(65 + i)} : ${v ? `${imposed(v)} (IMPOSÉ)` : 'automatique'}`).join(' + ') : ''; };
 
   /** Demande complète (paramètres du prompt) à partir des réglages. */
   const requestOf = o => ({

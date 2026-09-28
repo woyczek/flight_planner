@@ -7,8 +7,7 @@
   // Données : localStorage missionRegistry:v1 (sauvegardé avec les données locales) et fichier
   // Missions/mission_registry.yaml (dossier autorisé __missions). Statut « CR fait » repris du registre des CR
   // (missionCoreLedger:v2 : metadata.missionNumber = identifiant de la mission).
-  const host = document.getElementById('missionRegistry');
-  if (!host) return;
+  const host = document.getElementById('missionRegistry');   // page du registre ; ailleurs : noyau seul (MissionRegistryCore)
   const KEY = 'missionRegistry:v1', FILE = 'mission_registry.yaml', FILTERS = 'missionRegistryFilters:v1';
   const LANGS = ['fr', 'en', 'de', 'es'];
   const li = () => Math.max(0, LANGS.indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'));
@@ -111,7 +110,9 @@
   }
   /** Fusion d'une entrée lue avec l'entrée existante (champs de l'utilisateur conservés : statut, dates, notes, commande). */
   function upsert(e, source) {
-    const i = reg.missions.findIndex(m => keyOf(m) === keyOf(e));
+    let i = reg.missions.findIndex(m => keyOf(m) === keyOf(e));
+    // même mission reçue dans le générateur (sans dossier) puis relue dans le dossier, ou l'inverse
+    if (i < 0 && e.id) i = reg.missions.findIndex(m => m.id === e.id && m.status !== 'ordered' && (!m.folder || !e.folder));
     // mission commandée : même série et même identifiant (ou même numéro d'opération) → la commande devient la mission
     const j = i < 0 ? reg.missions.findIndex(m => m.status === 'ordered' && m.request && String(m.request.serie) === String(e.series) && (!m.id || String(e.id).startsWith(String(m.id)))) : -1;
     const prev = i >= 0 ? reg.missions[i] : j >= 0 ? reg.missions[j] : null;
@@ -119,6 +120,36 @@
     if (i >= 0) reg.missions[i] = merged; else if (j >= 0) reg.missions[j] = merged; else reg.missions.push(merged);
     return merged;
   }
+  // ---- noyau partagé (générateur de brief) : une mission reçue (collée ou chargée) entre au registre, et ses fichiers
+  // sont rangés dans le dossier des missions s'il est autorisé : data/missions/<lettre>_<FAMILLE>/<identifiant>/
+  /** Dossier de famille existant pour une lettre (M_MEDEVAC…), sinon « <lettre>_<TYPE> ». */
+  async function familyDir(dir, letter, type) {
+    for await (const [name, h] of dir.entries()) if (h.kind === 'directory' && name.startsWith(`${letter}_`)) return name;
+    return `${letter}_${String(type || 'MISSION').toUpperCase().replace(/[^A-Z0-9-]+/g, '')}`;
+  }
+  /** Écrit les fichiers d'une mission ({ name, text }) dans son sous-dossier ; renvoie le chemin relatif, '' si impossible. */
+  async function storeFiles(doc, files, request = false) {
+    const dir = await missionsDir(request), id = normMissionId(doc.yaml?.mission?.id || ''), p = window.SiaMission?.parseId?.(id);
+    if (!dir || !p?.letter) return '';
+    const fam = await familyDir(dir, p.letter, doc.yaml?.mission?.type);
+    const sub = await (await dir.getDirectoryHandle(fam, { create: true })).getDirectoryHandle(id, { create: true });
+    for (const f of files) { const w = await (await sub.getFileHandle(f.name, { create: true })).createWritable(); await w.write(f.text); await w.close(); }
+    return `${fam}/${id}`;
+  }
+  /** Mission reçue : entrée du registre (commande rapprochée) ; fichiers rangés dans le dossier des missions si autorisé
+   *  (request : demander l'autorisation). Sortie : { entry, folder } (folder vide : pas écrit). */
+  async function record(doc, { files = [], source = 'générateur', request = false } = {}) {
+    let folder = '';
+    try { if (files.length) folder = await storeFiles(doc, files, request); } catch { folder = ''; }
+    reg = readJson(KEY, null) || empty();
+    const e = entryOf(doc, { folder, files: folder ? files.map(f => f.name) : [], generatedAt: new Date().toISOString() });
+    const entry = upsert(e, folder ? 'dossier' : source);
+    persist();
+    return { entry, folder };
+  }
+  window.MissionRegistryCore = { record, entryOf, missionsDir };
+  if (!host) return;
+
   // ---- nettoyage : entrées dont le fichier n'existe plus (missions renumérotées, déplacées ou supprimées)
   const USER_FIELDS = ['status', 'statusAt', 'notes', 'flownAt', 'request', 'report', 'addedAt'];
   /** Mission lue qui remplace une entrée disparue : même ancien identifiant (former_id), sinon même titre et même type. */

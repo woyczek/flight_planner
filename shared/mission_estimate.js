@@ -298,5 +298,5 @@
     };
   }
 
-  window.MissionEstimate = { estimate, summary, panel, hm, compare, performance, routeOf, distNm };
+  window.MissionEstimate = { estimate, summary, panel, hm, compare, performance, routeOf, distNm, designator };
 })();

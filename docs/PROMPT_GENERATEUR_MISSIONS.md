@@ -39,8 +39,12 @@ bienvenu quand la famille s'y prête (unités réellement présentes). Plusieurs
 les relie réellement (§ 5).
 Paramètres « libre » : ton choix. Sinon ils s'imposent à chaque mission : SOUS_TYPE = mission.subtype ;
 RENDEZ_VOUS = avec → au moins un point dans rendezvous (et une carte detail_rdv par rendez-vous), sans → rendezvous: [] ;
-TYPES_EQUIPES = l'équipe A emploie le premier aéronef, B le deuxième, etc. (aircraft.type, aircraft.callsign si un
-indicatif est donné, teams[].type) ; « automatique » : choisir un appareil adapté à la mission ; ÉQUIPES_SOL = nombre exact d'équipes au sol dans teams (en plus des équipes en vol) ;
+TYPES_EQUIPES = CONTRAINTE STRICTE : l'équipe A emploie le premier aéronef, B le deuxième, etc. Un aéronef marqué
+(IMPOSÉ) est repris À L'IDENTIQUE : aircraft[0].type commence par son désignateur OACI (même s'il n'est pas dans la
+liste du § 6), aircraft[0].callsign = l'indicatif donné (sans le modifier), même type dans teams[].type. Il prime sur
+le § 5 (unités, bases, théâtres) et sur le § 6 : si l'appareil semble peu adapté, ADAPTER LA MISSION (départ = sa base
+réelle, distances, tâche) et jamais l'appareil ; ne jamais le remplacer par un appareil « plus adapté » ;
+« automatique » : choisir un appareil adapté à la mission ; ÉQUIPES_SOL = nombre exact d'équipes au sol dans teams (en plus des équipes en vol) ;
 RAVITAILLEMENT = oui → air_refueling.planned: true avec son axe (§ 7), non → pas de bloc air_refueling planifié.
 
 Les fichiers alimentent automatiquement un briefing, des cartes OpenStreetMap, un PDF de mission, une
@@ -509,7 +513,9 @@ liste des corrections faites :
   [ ] ÉQUIPES_DEFA ≥ 2 : une mission complète par équipe (41A, 41B…), chacune avec son aéronef, son départ, ses
       points tournants et ses cartes ; bloc operation identique partout ; rendez-vous communs identiques
       (id, nom, coordonnées) ; autres équipes DEFA dans teams ; section « Coordination de l'opération »
-  [ ] aéronefs : désignateur du § 6 en tête du type ; aéronef capable de la mission
+  [ ] TYPES_EQUIPES : chaque aéronef (IMPOSÉ) repris à l'identique (désignateur en tête de aircraft[0].type, indicatif
+      exact) dans la mission de son équipe — aucun remplacement
+  [ ] aéronefs : désignateur du § 6 en tête du type (sauf aéronef imposé : son désignateur) ; aéronef capable de la mission
   [ ] tous les id cités (centre_ref, route, route_order, participants) existent
   [ ] phases (s'il y en a) : trigger_point existant, délai réaliste, message, brief, route_order reprise à trigger_point ;
       route_order de la mission = partie A ; timing = mission complète prévue (parties comprises) ;
