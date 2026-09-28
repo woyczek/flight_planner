@@ -89,6 +89,7 @@
     const opMissions = Array.isArray(y.operation?.missions) ? y.operation.missions : [];
     return {
       id: String(meta.id ?? meta.number ?? '').trim() || (/([A-Z]?\d+[A-Z]?)(?=\.\w+$)/i.exec(files[0] || '')?.[1] || '').toUpperCase(),
+      formerId: String(meta.former_id ?? '').trim().toUpperCase(),   // identifiant d'avant renumérotation (tools/renumber_missions.py)
       series: meta.series ?? '',
       number: meta.number ?? '',
       type: String(meta.type || '').toUpperCase(),
@@ -124,6 +125,35 @@
     const merged = { ...prev, ...e, source, status: prev && prev.status !== 'ordered' ? prev.status : 'generated', statusAt: prev?.statusAt || new Date().toISOString(), notes: prev?.notes || '', flownAt: prev?.flownAt || '', request: prev?.request || null, addedAt: prev?.addedAt || new Date().toISOString() };
     if (i >= 0) reg.missions[i] = merged; else if (j >= 0) reg.missions[j] = merged; else reg.missions.push(merged);
     return merged;
+  }
+  // ---- nettoyage : entrées dont le fichier n'existe plus (missions renumérotées, déplacées ou supprimées)
+  const USER_FIELDS = ['status', 'statusAt', 'notes', 'flownAt', 'request', 'report', 'addedAt'];
+  /** Mission lue qui remplace une entrée disparue : même ancien identifiant (former_id), sinon même titre et même type. */
+  function successorOf(old, live) {
+    const id = String(old.id || '').toUpperCase(), title = String(old.title || '').trim().toLowerCase();
+    const team = v => /\d([A-Z])$/.exec(String(v || '').toUpperCase())?.[1] || '';   // lettre d'équipe (M016B → B)
+    return live.find(m => id && (m.formerId === id || m.id === id))
+      || (title && live.find(m => String(m.title || '').trim().toLowerCase() === title && (!old.type || !m.type || m.type === old.type) && team(m.id) === team(old.id)))
+      || null;
+  }
+  /** Retire les entrées « fichier absent » ; statut, notes, date de vol, commande et CR passent à la mission qui les remplace
+   *  quand elle n'en a pas (statut « générée »). Les commandes en attente (sans fichier) sont gardées. Sortie : { removed, moved }. */
+  function cleanup() {
+    const gone = reg.missions.filter(m => m.missingFile), live = reg.missions.filter(m => !m.missingFile);
+    let moved = 0;
+    for (const old of gone) {
+      const next = successorOf(old, live);
+      if (!next) continue;
+      const userSet = old.status && !['generated', 'ordered'].includes(old.status) || old.notes || old.flownAt;
+      if (userSet && (!next.status || next.status === 'generated') && !next.notes && !next.flownAt) {
+        for (const k of USER_FIELDS) if (old[k] != null && old[k] !== '') next[k] = old[k];
+        moved++;
+      }
+    }
+    reg.missions = live;
+    linkReports();
+    persist();
+    return { removed: gone.length, moved };
   }
   /** Parcourt le dossier des missions (sous-dossiers de séries) : YAML et Markdown groupés par mission. */
   async function scan(request = true) {
@@ -257,7 +287,21 @@
     fb.append(ab);
     const wb = document.createElement('button'); wb.type = 'button'; wb.className = 'secondary'; wb.dataset.icon = 'save'; wb.textContent = t(['Écrire mission_registry.yaml', 'Write mission_registry.yaml']);
     wb.onclick = async () => { try { msg = (await writeFile(true)) ? pill('generated', t(['mission_registry.yaml écrit', 'mission_registry.yaml written'])) : pill('ordered', t(['dossier non autorisé', 'folder not authorised'])); } catch (e) { msg = pill('cancelled', e.message); } render(); };
-    fb.append(b, sb, wb);
+    const missing = reg.missions.filter(m => m.missingFile).length;
+    const cb = document.createElement('button'); cb.type = 'button'; cb.className = 'secondary'; cb.dataset.icon = 'trash';
+    cb.textContent = t(['Nettoyer le registre ({n})', 'Clean up the registry ({n})', 'Register bereinigen ({n})', 'Limpiar el registro ({n})'], { n: missing });
+    cb.title = t(['Retirer les missions « fichier absent » (après renumérotation ou suppression) ; statut, notes et date de vol passent à la mission renumérotée. Relire le dossier avant.', 'Remove “missing file” missions (after renumbering or deletion); status, notes and flight date move to the renumbered mission. Re-read the folder first.']);
+    cb.disabled = !missing;
+    cb.onclick = async () => {
+      if (!await doScan()) return;   // état « fichier absent » à jour avant de retirer quoi que ce soit
+      const n = reg.missions.filter(m => m.missingFile).length;
+      if (!n) { msg = pill('generated', t(['Rien à nettoyer : toutes les missions ont leur fichier.', 'Nothing to clean up: every mission has its file.'])); render(); return; }
+      if (!confirm(t(['Retirer {n} mission(s) dont le fichier n’existe plus du registre ?', 'Remove {n} mission(s) whose file no longer exists from the registry?'], { n }))) return;
+      const r = cleanup();
+      msg = pill('generated', t(['{r} entrée(s) retirée(s) ; statut ou notes reportés sur {m} mission(s) renumérotée(s).', '{r} entry(ies) removed; status or notes carried over to {m} renumbered mission(s).'], { r: r.removed, m: r.moved }));
+      render();
+    };
+    fb.append(b, sb, wb, cb);
     // filtres
     host.querySelectorAll('[data-f]').forEach(el => el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', () => {
       filters[el.dataset.f] = el.value;
@@ -454,14 +498,15 @@
     try {
       const r = await scan(true);
       msg = pill('generated', t(['{n} mission(s) lue(s)', '{n} mission(s) read'], { n: r.found })) + (r.problems.length ? `<br><span class="rg-small">${esc(r.problems.join(' · '))}</span>` : '');
-    } catch (e) { msg = pill('cancelled', e.message); }
+    } catch (e) { msg = pill('cancelled', e.message); render(); return false; }
     render();
+    return true;
   }
 
   window.addEventListener('repository-language-change', render);
   window.addEventListener('local-store-restored', () => { reg = readJson(KEY, null) || empty(); render(); });
   window.addEventListener('storage', e => { if (e.key === KEY) { reg = readJson(KEY, null) || empty(); render(); } });
-  window.MissionRegistry = { scan, addFiles, entryOf, families, theatreOf, get: () => reg, sendPrompt, matches: m => matches(m), setFilters: f => { filters = { ...DEFAULT_FILTERS, ...f }; render(); } };
+  window.MissionRegistry = { scan, cleanup, addFiles, entryOf, families, theatreOf, get: () => reg, sendPrompt, matches: m => matches(m), setFilters: f => { filters = { ...DEFAULT_FILTERS, ...f }; render(); } };
   (async () => {
     await waitFor('jsyaml', 3000);
     linkReports();

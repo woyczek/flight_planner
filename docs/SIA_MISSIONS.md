@@ -138,6 +138,10 @@ Page `apps/sia/mission_registry.html` (☰ › Registre des missions (SIA), barr
   équipes), rendez-vous, équipes au sol, ravitaillement → prompt réglé (paramètres
   `PROCHAINS_NUMEROS`, `SOUS_TYPE`, `RENDEZ_VOUS`, `TYPES_EQUIPES`, `ÉQUIPES_SOL`, `RAVITAILLEMENT`) copié, ChatGPT ouvert ; la commande est
   rapprochée de la mission générée (même série) à la relecture du dossier.
+- **Nettoyer le registre (n)** : relit le dossier puis retire les missions « fichier absent » (renumérotées, déplacées
+  ou supprimées) ; statut, notes, date de vol, commande et CR passent à la mission qui les remplace (même `former_id`,
+  sinon même titre, même type et même lettre d'équipe) quand elle est encore « générée ». Les commandes en attente
+  restent.
 - Données : `missionRegistry:v1` (navigateur, sauvegardé avec les données locales) et `data/missions/mission_registry.yaml` ;
   export CSV de la sélection.
 
