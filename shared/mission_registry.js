@@ -104,6 +104,7 @@
       folder,
       files,
       generatedAt,
+      estimate: window.MissionEstimate?.summary?.(y) || null,   // durée estimée et route probable (shared/mission_estimate.js)
       hasYaml: files.some(f => /\.ya?ml$/i.test(f)),
       hasMd: files.some(f => /\.md$/i.test(f))
     };
@@ -213,7 +214,8 @@
     const crMission = r => window.MissionVocab?.parseCrId?.(r?.metadata?.missionId)?.mission || normMissionId(r?.metadata?.missionNumber || '');
     for (const m of reg.missions) {
       const mine = m.id ? all.filter(({ r }) => crMission(r) === String(m.id)) : [];
-      m.reports = mine.map(({ r, index }) => ({ missionId: r.metadata?.missionId || '', family: r.family, date: r.metadata?.date || '', index }))
+      const stats = r => { const s = window.MissionModel?.computeStatistics?.(r) || {}; return { flight: s.flightMinutes, block: s.blockMinutes, transitOut: s.transitOutMinutes, onStation: s.timeOnStationMinutes, transitIn: s.transitInMinutes }; };
+      m.reports = mine.map(({ r, index }) => ({ missionId: r.metadata?.missionId || '', family: r.family, date: r.metadata?.date || '', index, ...stats(r) }))
         .sort((a, b) => b.date.localeCompare(a.date) || b.missionId.localeCompare(a.missionId, 'fr', { numeric: true }));
       m.report = m.reports[0] || null;
       if (m.report && m.status !== 'cancelled') m.status = 'reported';
@@ -333,6 +335,7 @@
     { key: 'aar', label: 'AAR', format: v => v ? '✓' : '' },
     { key: 'theatre', label: t(['Théâtre', 'Theatre', 'Schauplatz', 'Teatro']) },
     { key: 'status', label: t(['Statut', 'Status', 'Status', 'Estado']), html: v => pill(v, t(STATUS[v] || [v])) },
+    { key: 'estimate', label: t(['Durée est.', 'Est. time', 'Gesch. Dauer', 'Duración est.']), format: v => v ? window.MissionEstimate.hm(v.flight) + (v.options?.length ? '+' : '') : '', sortValue: m => m.estimate?.flight || 0 },
     { key: 'reports', label: 'CR', title: t(['Nombre de vols (CR) de la mission', 'Number of flights (reports) of the mission']), format: v => (v?.length || '') + '', sortValue: m => m.reports?.length || 0 },
     { key: 'generatedAt', label: t(['Généré', 'Generated', 'Erzeugt', 'Generada']), format: v => fmtDate(v), sortValue: m => m.generatedAt || m.addedAt || '' }
   ];
@@ -364,6 +367,7 @@
       <p>${esc(m.origin)}${m.destination ? ' → ' + esc(m.destination) : ''} · ${esc(t(['{n} rendez-vous', '{n} rendezvous'], { n: m.rdv }))} · ${m.aar ? 'AAR · ' : ''}${esc(m.theatre || '')} · ${esc(t(['{n} carte(s)', '{n} map(s)'], { n: m.maps || 0 }))}</p>
       ${m.callsigns?.length ? `<p>${esc(t(['Indicatifs', 'Callsigns']))} : ${esc(m.callsigns.join(', '))} · ${esc(m.aircraftTypes.join(', '))}</p>` : ''}
       ${teams ? `<ul class="rg-teams">${teams}</ul>` : ''}
+      <details class="rg-estimate" open><summary><b>${esc(t(['Durée estimée', 'Estimated time', 'Geschätzte Dauer', 'Duración estimada']))}</b>${m.estimate ? ` — ${esc(window.MissionEstimate.hm(m.estimate.flight))}` : ''}</summary><div id="rgEstimate"></div></details>
       ${m.request ? `<p class="rg-small">${esc(t(['Commande', 'Order']))} : ${esc(Object.entries(m.request).filter(([, v]) => v !== '' && v != null).map(([k, v]) => `${k} = ${v}`).join(' · '))}</p>` : ''}
       <div class="rg-edit">
         <label>${esc(t(['Statut', 'Status']))}<select id="rgStatus">${Object.keys(STATUS).map(k => `<option value="${k}" ${m.status === k ? 'selected' : ''}>${esc(t(STATUS[k]))}</option>`).join('')}</select></label>
@@ -376,6 +380,7 @@
     box.querySelector('#rgFlown').onchange = e => { m.flownAt = e.target.value; if (m.flownAt && ['generated', 'planned', 'ordered'].includes(m.status)) m.status = 'flown'; persist(); render(); };
     box.querySelector('#rgNotes').onchange = e => { m.notes = e.target.value; persist(); };
     box.querySelectorAll('[data-go]').forEach(x => x.onclick = () => go(m, x.dataset.go));
+    window.MissionEstimate?.panel(box.querySelector('#rgEstimate'), m.estimate, { reports: m.reports || [] });
     window.AppFramework?.refresh?.();
   }
   /** Ouvre la mission : générateur / studio (mission partagée), CR (passerelle ?from=sia), prompt de commande. */

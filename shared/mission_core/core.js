@@ -53,6 +53,8 @@
     duplicate: L('Ce n° de mission figure déjà dans le registre. L’ajouter quand même (doublon) ? Annuler pour corriger le n° de mission.', 'This mission ID is already in the ledger. Add it anyway (duplicate)? Cancel to correct the mission ID.', 'Diese Einsatz-ID ist bereits im Register. Trotzdem hinzufügen (Duplikat)? Abbrechen, um die ID zu korrigieren.', 'Este ID de misión ya figura en el registro. ¿Añadirlo de todos modos (duplicado)? Cancelar para corregir el ID.'),
     confirmDelete: L('Supprimer définitivement cette mission du registre ?', 'Permanently delete this mission from the ledger?', 'Diesen Einsatz endgültig aus dem Register löschen?', '¿Eliminar definitivamente esta misión del registro?'),
     editBanner: L('Modification d’une mission du registre', 'Editing a ledger mission', 'Bearbeitung eines Registereinsatzes', 'Modificación de una misión del registro'),
+    estimated: L('vol estimé', 'estimated flight', 'geschätzter Flug', 'vuelo estimado'),
+    thisFlight: L('ce vol', 'this flight', 'dieser Flug', 'este vuelo'),
     inRegistry: L('voir la mission dans le registre', 'see the mission in the registry', 'Einsatz im Register ansehen', 'ver la misión en el registro'),
     flightsOf: L('{n} CR de cette mission dans le registre des CR', '{n} report(s) of this mission in the report registry', '{n} Bericht(e) dieses Einsatzes', '{n} informe(s) de esta misión'),
     fromSia: L('Mission générée (SIA XML) reprise', 'Generated mission (SIA XML) imported', 'Generierte Mission (SIA XML) übernommen', 'Misión generada (SIA XML) importada'),
@@ -811,6 +813,7 @@
 
     /** Calculs de la colonne de droite : bloc, vol, transit, sur zone, carburant… */
     function kpi() {
+      missionLink();   // durée réelle modifiée : écart avec l'estimation de la mission
       const s = M.computeStatistics(mission),
         unit = mission.fuel?.unit || '';
       /** Case d'un calcul (libellé, valeur). */
@@ -900,7 +903,12 @@
       if (!id) { box.textContent = ''; return; }
       const flights = ledger.missions.filter(x => window.MissionVocab.parseCrId(x.metadata?.missionId)?.mission === id).length;
       const url = new URL(`apps/sia/mission_registry.html?mission=${encodeURIComponent(id)}`, window.RepositoryNav?.root || location.href).href;
-      box.innerHTML = `<a href="${url}">${id} — ${esc(t('inRegistry'))} ↗</a>${flights ? ` · ${esc(t('flightsOf').replace('{n}', flights))}` : ''}`;
+      // durée estimée de la mission (registre des missions, shared/mission_estimate.js) et écart avec ce vol
+      let est = null;
+      try { est = (JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions || []).find(x => x.id === id)?.estimate || null; } catch { /* registre illisible */ }
+      const real = M.computeStatistics(mission).flightMinutes, diff = est && real > 0 ? Math.round(real - est.flight) : null;
+      const estText = est ? ` · ${esc(t('estimated'))} ${esc(duration(est.flight))}${real > 0 ? ` — ${esc(t('thisFlight'))} ${esc(duration(real))} (${diff >= 0 ? '+' : '−'}${Math.abs(diff)} min, ${diff >= 0 ? '+' : '−'}${Math.abs(Math.round(diff / est.flight * 100))} %)` : ''}` : '';
+      box.innerHTML = `<a href="${url}">${id} — ${esc(t('inRegistry'))} ↗</a>${flights ? ` · ${esc(t('flightsOf').replace('{n}', flights))}` : ''}${estText}`;
     }
     // Blocs recréés : afficher / masquer / déplacer du framework réappliqués (état mémorisé).
     const blockFramework = () => {

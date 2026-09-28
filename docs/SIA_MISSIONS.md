@@ -152,6 +152,29 @@ Page `apps/sia/mission_registry.html` (☰ › Registre des missions (SIA), barr
 - Données : `missionRegistry:v1` (navigateur, sauvegardé avec les données locales) et `data/missions/mission_registry.yaml` ;
   export CSV de la sélection.
 
+## 2 ter. Durée estimée et route probable
+
+`shared/mission_estimate.js` (`MissionEstimate`), affiché dans le générateur (bloc **Durée estimée**, recalculé à chaque
+modification) et dans le registre (colonne **Durée est.**, fiche de la mission) :
+
+- **Route probable** : origine → points dans l'ordre → **retour base** (destination, de préférence la base de départ).
+  Ordre : `route_order` de la mission, sinon cheminement du profil vertical, sinon points tournants dans l'ordre et
+  chaque point de travail (TARGET, rendez-vous, zones) après le point tournant le plus proche.
+- **Appareil** : `aircraft[].cruise_speed_kt`, sinon profil du planificateur (même type OACI), sinon fiche EUROCONTROL
+  APD (`AircraftDB/aircraft_perf.js`), sinon valeur type (hélicoptère, turbopropulseur, réacteur) ; niveau
+  `cruise_level` / `vertical_profile.cruise` ; montée et descente aux varios du type, tronçons courts volés plus bas.
+- **Temps sur place** : `time_on_task_min` des points (sinon valeur type selon la famille et le rôle : poser,
+  treuillage, recherche, hippodrome…) ; approche + 2 à 5 min ; bloc = vol + mise en route et roulage.
+- **Phases comme les CR** : aller, sur zone, retour, vol, bloc ; **options de retour** (`return_options` : hôpital
+  selon l'état du patient, dégagement…) avec leur durée (fourchette) ; **briefs successifs** (`phases` B, C…) : la
+  route suit la partie à partir de son point de déclenchement, heure de remise estimée (T + …) ; la durée annoncée
+  par la mission (`timing`) est rappelée.
+- **Comparaison avec les CR** de la mission (vol réel, écart, aller / sur zone / retour) ; dans le CR, sous le champ
+  Mission : « vol estimé 1h48 — ce vol 2h05 (+17 min, +16 %) ».
+- **Afficher la route probable** (case, mémorisée) : croquis de la route et des retours possibles (tireté),
+  tableau des tronçons.
+- Brief PDF : chaque partie B, C… sur sa propre page, « PLI À REMETTRE — à ouvrir : 10 min après RDV-1 ».
+
 ## 3. Générateur de mission (brief)
 
 Page `apps/sia/mission_editor.html`.

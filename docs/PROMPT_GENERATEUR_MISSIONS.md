@@ -177,11 +177,14 @@ aircraft:                      # l'aéronef DEFA de CETTE mission (une équipe =
     callsign: COTAM3510        # sans espace, 3 à 9 caractères, lettres et chiffres
     operator: "Armée de l'Air et de l'Espace"
     role: aéronef principal
+    cruise_speed_kt: 460         # vitesse vraie de croisière réaliste pour ce type et cette mission (kt)
+    cruise_level: FL280          # niveau ou hauteur de transit : FL + 3 chiffres, ou « 1500 ft » (hélicoptère)
 origin:                        # terrain de départ de CETTE équipe (§ 5)
   name: "BA 125 Istres-Le Tubé (LFMI)"
   lat: 43.522778
   lon: 4.923889
-destination:                   # terrain d'arrivée (peut être identique à origin : répéter les valeurs)
+destination:                   # RETOUR BASE (toujours) : de préférence la base de départ (répéter les valeurs
+                               # d'origin), sinon la base où l'appareil finit la mission (relève, escale, base avancée)
   name: "BA 125 Istres-Le Tubé (LFMI)"
   lat: 43.522778
   lon: 4.923889
@@ -190,12 +193,14 @@ target:                        # objectif / point central de la mission (id TOUJ
   name: "Nom précis du lieu"
   lat: 0.000000
   lon: 0.000000
+  time_on_task_min: 20         # temps passé sur l'objectif (poser, treuillage, largages, recherche, prise en charge…)
 turning_points:                # 2 à 6 points dans l'ordre du vol, id PT1, PT2…
   - id: PT1
     name: "Nom réel du point (ville, cap, sommet, balise…)"
     lat: 0.000000
     lon: 0.000000
     role: "transit / entrée zone / point de report / …"
+    time_on_task_min: 0          # 0 pour un point de passage ; durée d'un poser, d'une attente, d'un hippodrome…
 rendezvous:                    # 0 à 3 rendez-vous, id RDV-1, RDV-2… ; un rendez-vous commun à plusieurs missions
                                # de l'opération a le MÊME id, le même nom et les mêmes coordonnées dans chacune
   - id: RDV-1
@@ -204,12 +209,41 @@ rendezvous:                    # 0 à 3 rendez-vous, id RDV-1, RDV-2… ; un ren
     lon: 0.000000
     participants: [COTAM3510, CERBERES51]   # callsigns présents dans aircraft ou teams
     role: "ralliement / relève / largage / poser / …"
+    time_on_task_min: 5          # attente, jonction, poser au rendez-vous
 zones:                         # 0 à 2 zones de travail, id ZONE-1…
   - id: ZONE-1
     name: "Nom de la zone"
     centre: { lat: 0.000000, lon: 0.000000 }
     radius_km: 20
     role: "zone de recherche / zone AAR / zone de largage / …"
+    time_on_task_min: 45         # temps de travail dans la zone (recherche, hippodrome de ravitaillement…)
+route_order: [ORIGIN, PT1, RDV-1, TARGET, PT2, DESTINATION]   # route PROBABLE de CETTE équipe, dans l'ordre :
+                               # tous les points réellement survolés (points tournants, rendez-vous, TARGET, zones),
+                               # de ORIGIN au retour base DESTINATION ; ids du fichier uniquement
+return_options:                # 0 à 3 retours possibles AUTRES que destination, selon la situation (état du patient,
+                               # météo, carburant, objectif atteint ou non) ; l'appareil rentre ensuite à sa base
+  - name: "CHU de Toulouse – Purpan (hélistation)"
+    lat: 43.609000
+    lon: 1.400000
+    condition: "patient instable : centre de traumatologie"
+    time_on_task_min: 10       # poser, dépose du patient
+    then_base: true            # false si l'appareil y termine la mission
+phases:                        # FACULTATIF (0 à 3) : briefs successifs prévus par le scénariste — la situation évolue
+                               # en cours de route ; le brief initial est la partie A (le reste du fichier), les
+                               # parties B, C… sont remises à l'équipage au moment indiqué (« pli » à ouvrir)
+  - id: B
+    title: "Changement de destination"
+    trigger_point: RDV-1       # point de référence (id du fichier) ; ORIGIN pour un délai après le décollage
+    trigger_delay_min: 10      # minutes après le passage à trigger_point
+    trigger: "10 min après RDV-1"   # en clair
+    message: "« CODIS 66 : le patient a été redescendu à Vernet, nouvelle DZ au stade. »"   # message reçu
+    brief: |-
+      Ce qui change (2 à 4 phrases) : nouvelle situation, nouvelle tâche, contraintes.
+    route_order: [RDV-1, PT3, TARGET, DESTINATION]   # suite de la route à partir de trigger_point (ids du fichier :
+                               # déclarer les nouveaux points dans turning_points, rendezvous ou zones)
+timing:                        # durées estimées par TOI d'après route_order, vitesses, niveaux et time_on_task_min
+  estimated_flight_min: 95     # décollage → atterrissage, retour base compris (option principale)
+  estimated_block_min: 110     # cales → cales (mise en route et roulage compris)
 teams:                         # tous les acteurs : les ÉQUIPES_DEFA aéronefs, plus autant d'équipes sol ou
                                # d'autres acteurs que la mission le demande
   - name: CERBERES51/52        # callsign ou nom d'équipe
@@ -271,7 +305,10 @@ notes:
   - "Toute coordonnée approximative est signalée ici (point et raison)."
 
 Références internes : ORIGIN, DESTINATION et TARGET sont des identifiants réservés ; tout id cité
-(centre_ref, route du profil vertical, participants) DOIT exister dans le fichier. Pas d'autre clé que
+(centre_ref, route du profil vertical, route_order, participants) DOIT exister dans le fichier.
+Retour base : une mission se termine TOUJOURS par un retour base (destination), de préférence la base de départ ;
+quand plusieurs retours sont possibles (HEMS : hôpital selon l'état du patient ; déroutement météo ; terrain
+avancé), la destination est le cas le plus probable et les autres vont dans return_options. Pas d'autre clé que
 celles du schéma.
 
 ────────────────────────────────────────────────────────────────────────────
@@ -445,6 +482,15 @@ Contraintes :
 
 - `general41.png` — <description>
 
+## Partie B — <phases[].title>
+
+À ouvrir : <phases[].trigger>
+Message : <phases[].message>
+
+<phases[].brief>
+
+(une section « ## Partie X — … » par partie de phases, en FIN de fichier ; absente sans phases)
+
 > Scénario de simulation — ne pas utiliser pour une mission réelle.
 
 ────────────────────────────────────────────────────────────────────────────
@@ -464,7 +510,12 @@ liste des corrections faites :
       points tournants et ses cartes ; bloc operation identique partout ; rendez-vous communs identiques
       (id, nom, coordonnées) ; autres équipes DEFA dans teams ; section « Coordination de l'opération »
   [ ] aéronefs : désignateur du § 6 en tête du type ; aéronef capable de la mission
-  [ ] tous les id cités (centre_ref, route, participants) existent
+  [ ] tous les id cités (centre_ref, route, route_order, participants) existent
+  [ ] phases (s'il y en a) : trigger_point existant, délai réaliste, message, brief, route_order reprise à trigger_point ;
+      route_order de la mission = partie A ; timing = mission complète prévue (parties comprises) ;
+      une section « ## Partie X » par partie
+  [ ] route_order : de ORIGIN à DESTINATION (retour base), tous les points survolés ; return_options si plusieurs
+      retours sont possibles ; timing cohérent avec la route, cruise_speed_kt, cruise_level et time_on_task_min
   [ ] distances totales compatibles avec l'autonomie ; hauteurs et niveaux réalistes
   [ ] cartes obligatoires présentes, filenames avec le bon NN
   [ ] Markdown : titres exacts, mêmes valeurs que le YAML

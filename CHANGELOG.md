@@ -10,6 +10,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Durée estimée et route probable** (`shared/mission_estimate.js`) : dans le générateur (bloc « Durée estimée »)
+  et le registre (colonne, fiche) — route probable jusqu'au retour base, vitesses et varios du type (planificateur,
+  fiche APD, valeurs types), temps sur place, phases aller / sur zone / retour, options de retour (hôpital selon
+  l'état du patient…), briefs successifs ; comparaison avec les CR de la mission (écart par vol et par phase) et,
+  dans le CR, « vol estimé — ce vol (+x %) » ; route affichable ou non (croquis, tronçons).
+- **Prompt du générateur** : `cruise_speed_kt`, `cruise_level`, `time_on_task_min`, `route_order` (route probable),
+  `return_options`, `phases` (briefs successifs B, C… : déclenchement « 10 min après RDV-1 », message reçu, brief,
+  suite de la route ; section « ## Partie B » du Markdown), `timing` (durées annoncées) ; retour base obligatoire.
+  Brief PDF : une page par partie (« pli à remettre »).
 - **Registre ⇄ CR** : fiche d'une mission avec tous ses CR (liens vers chaque CR), colonne « CR » (nombre de vols),
   « Nouveau CR (vol n) » pour les missions récurrentes ; dans le CR, lien « voir la mission dans le registre » sous le
   champ Mission. Le registre retient la mission affichée et accepte `?mission=M-016` ; le générateur et le studio
