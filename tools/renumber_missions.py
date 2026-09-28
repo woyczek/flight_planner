@@ -8,10 +8,10 @@ résumé, cartes, PDF ; les noms génériques comme carte_assemblage.png n'entre
 Usage (depuis la racine de l'application) :
     python tools/renumber_missions.py [--order dossier1,dossier2,…] [--dry-run]
 Séries à renuméroter : dossiers de data/missions contenant des missionNN.yaml (au niveau de la série ou dans un
-sous-dossier NN/) ; les séries déjà au nouveau format (dossier « K_FAMILLE ») sont gardées et comptées. Ordre : --order
+sous-dossier NN/) ; les séries déjà au nouveau format (dossier « M_MEDEVAC », « S_SAR »…) sont gardées et comptées. Ordre : --order
 (noms de dossiers), sinon date du plus ancien YAML puis numéro de série. Réécrit : mission.series / number / id
 (+ former_id : ancien identifiant), operation.id / missions, noms de cartes (filename), titres « # Mission … », mentions
-« Mission NN » / « soutien NN » ; renomme les fichiers (mission11.yaml → missionK049.yaml, general11.png → generalK049.png).
+« Mission NN » / « soutien NN » ; renomme les fichiers (mission11.yaml → missionM016.yaml, general11.png → generalM016.png).
 Un fichier en double (même nom dans le sous-dossier de la mission et au niveau de la série) : celui du sous-dossier est
 gardé, l'autre va dans data/missions/_remplaces/<date>/. Trace : data/missions/RENUMEROTATION.md.
 Bibliothèque standard uniquement.
@@ -188,8 +188,8 @@ def run():
     print(('(simulation) ' if DRY else '') + '\n'.join(log))
     if not DRY:
         path = os.path.join(MISSIONS, 'RENUMEROTATION.md')
-        head = '' if os.path.exists(path) else ('# Renumérotation des missions\n\nFormat : lettre de série + numéro d’opération sur 3 chiffres '
-                                                 '(+ lettre d’équipe). Ancien identifiant gardé dans mission.former_id.\n')
+        head = '' if os.path.exists(path) else ('# Renumérotation des missions\n\nFormat : lettre de famille + numéro d’opération sur 3 chiffres, compté par '
+                                                 'famille (+ lettre d’équipe). Ancien identifiant gardé dans mission.former_id.\n')
         with open(path, 'a', encoding='utf-8') as f:
             f.write(head + f'\n## {TODAY}\n\n| Nouveau | Ancien | Ancien dossier | Famille | Titre |\n|---|---|---|---|---|\n'
                     + ''.join(f'| {a} | {b} | {c} | {d} | {e} |\n' for a, b, c, d, e in table))

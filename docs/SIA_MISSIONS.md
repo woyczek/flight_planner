@@ -54,8 +54,17 @@ version précédente est relue automatiquement si l'accès au dossier est déjà
 Pour faire produire une série par un assistant externe (ChatGPT…) : prompt complet, aligné sur ce que lit
 la suite, dans [PROMPT_GENERATEUR_MISSIONS.md](PROMPT_GENERATEUR_MISSIONS.md).
 
-Schéma YAML `helo-xp-mission` (exemples : `data/missions/AIRLIFT_serie_1_precomplete/mission11.yaml`,
-`data/missions/MEDEVAC_serie_*`) :
+**Identifiants** : lettre de la famille + numéro d'opération sur 3 chiffres, compté par famille, + lettre d'équipe
+quand l'opération engage plusieurs équipes — « M016 », « S002A », « S002B ». Lettres : M HEMS / MEDEVAC, H HADR,
+F FIRE, S SAR, T AIRLIFT, R AAR, P AIRBORNE, N MARITIME, I ISR, L LE, C COMMAND, O SOF, V FI, G SURVEY, X SPECIAL
+(`SiaMission.FAMILY_LETTERS`, `tools/family_letters.py`) ; `mission.series` = rang de la série dans la famille ;
+`mission.former_id` = identifiant d'avant renumérotation. Prochains numéros : `SiaMission.nextNumbering(famille)`
+(d'après le registre des missions). Rangement : `data/missions/<lettre>_<FAMILLE>/<identifiant>/` (YAML, résumé,
+cartes, PDF) ; outils `tools/renumber_missions.py` (séries importées), `tools/import_pdf_missions.py` (dossiers PDF
+et ZIP de cartes), trace dans `data/missions/RENUMEROTATION.md`.
+
+Schéma YAML `helo-xp-mission` (exemples : `data/missions/T_AIRLIFT/T001/missionT001.yaml`,
+`data/missions/M_MEDEVAC/`) :
 
 | Clé | Contenu |
 |---|---|
@@ -85,12 +94,12 @@ prime quand les deux sont chargés. La cible et les zones n'ont pas de coordonn�
 (elles viennent du YAML) ; les Markdown MEDEVAC n'ont que textes, équipes et risques.
 
 **Lot de missions** (opération à plusieurs équipes, série) : une sélection de plusieurs missions — fichiers
-(`mission41A.yaml`, `summary41A.md`, `mission41B.yaml`…) ou texte collé d'un seul tenant — réponse de ChatGPT
+(`missionM016A.yaml`, `summaryM016A.md`, `missionM016B.yaml`…) ou texte collé d'un seul tenant — réponse de ChatGPT
 copiée en Markdown (« Fichier : … » + blocs ```), copiée depuis la page (« Fichier : … », « yaml », « Copier le
 code »), ou YAML et Markdown des missions simplement à la suite (« schema: helo-xp-mission », « # Mission … ») ;
 le texte hors mission (introduction, VALIDATION, « Mission suivante ») est écarté — est découpée et regroupée par
-mission (identifiant `mission.id`, ou titre « # Mission 41A ») ; la première est affichée, les autres avec
-**◀ Mission 41A — titre (1/3) ▶** dans l'en-tête du générateur et du studio (même lot, partagé entre les deux
+mission (identifiant `mission.id`, ou titre « # Mission M016A ») ; la première est affichée, les autres avec
+**◀ Mission M016A — titre (1/3) ▶** dans l'en-tête du générateur et du studio (même lot, partagé entre les deux
 pages et mémorisé dans le navigateur : `siaMissionBatch:v1`). Les modifications de chaque mission sont gardées
 en passant de l'une à l'autre. Générateur : **Exporter les N PDF** — un brief par mission. Studio :
 **Afficher toutes les cartes (N missions)** — aperçus de toutes les missions, groupés par mission ;
@@ -123,9 +132,11 @@ Page `apps/sia/mission_registry.html` (☰ › Registre des missions (SIA), barr
   **dans le studio**, **Créer le CR** ; statut, date de vol, notes.
 - **Statuts** : commandée, générée, planifiée (ouverte dans le générateur ou le studio), volée, CR fait (CR du
   registre dont `metadata.missionNumber` est l'identifiant de la mission), abandonnée.
-- **Commander une mission** : type, sous-type (liste du § 2 du prompt), théâtre(s), série, équipes DEFA en vol, types
-  d'équipes (dans l'ordre A, B, C…), rendez-vous, équipes au sol, ravitaillement → prompt réglé (paramètres
-  `SOUS_TYPE`, `RENDEZ_VOUS`, `TYPES_EQUIPES`, `ÉQUIPES_SOL`, `RAVITAILLEMENT`) copié, ChatGPT ouvert ; la commande est
+- **Commander une mission** : type, sous-type (liste du § 2 du prompt), théâtre(s), série (numéro, auto par défaut) et
+  **identifiant** calculé (`SiaMission.nextNumbering`), équipes DEFA en vol, types d'équipes (une ligne par équipe A, B,
+  C… ; vide = automatique ; complétion par les types courants et la flotte DEFA, un même type possible pour plusieurs
+  équipes), rendez-vous, équipes au sol, ravitaillement → prompt réglé (paramètres
+  `PROCHAINS_NUMEROS`, `SOUS_TYPE`, `RENDEZ_VOUS`, `TYPES_EQUIPES`, `ÉQUIPES_SOL`, `RAVITAILLEMENT`) copié, ChatGPT ouvert ; la commande est
   rapprochée de la mission générée (même série) à la relecture du dossier.
 - Données : `missionRegistry:v1` (navigateur, sauvegardé avec les données locales) et `data/missions/mission_registry.yaml` ;
   export CSV de la sélection.
@@ -267,7 +278,8 @@ Graybeard / Shadow / Eclipse.
   nuit, éoliennes ; cote AMSL et (hauteur) en vue détaillée ; regroupés à l'écran, le plus haut
   représentant le groupe).
 - **Onglet Éléments** — un bloc par élément, réglages grisés quand il est décoché :
-  points tournants (libellés, taille) ; méridiens et parallèles (libellés en bordure en degrés
+  points tournants (libellés 11 pt et couleur des libellés / du contour, taille et couleur de remplissage ; rouge par
+  défaut) ; méridiens et parallèles (libellés en bordure en degrés
   et minutes) ; grille MORA (valeurs, opacité, espacement minimal) ; libellés des zones et des
   villes ; hippodrome de ravitaillement ; cercle de la zone de mission.
 
@@ -373,7 +385,7 @@ profils du Flight Performance & Fuel Planner (modèle de performances : vario et
 descend à son vario ; à défaut, aux taux saisis (montée / descente en ft/min et kt) ; appareil et taux
 enregistrés dans la mission ; **TOC** et **TOD** ; départ
 et arrivée au sol, sauf altitude donnée pour ces points.
-Le cheminement est **tracé sur les cartes** (tireté violet ; case à décocher).
+Le cheminement est **tracé sur les cartes** (tireté violet ; case cochée par défaut).
 
 Le profil vertical est une **carte comme les autres** : entrée `profil_vertical.png` dans la liste
 des cartes, avec son **profil d'affichage** (par défaut **Profil vertical**, créé automatiquement :
@@ -392,7 +404,7 @@ type de zone, sur les cartes comme sur la coupe. La même coupe est proposée da
 Performance & Fuel Planner** (route saisie ou importée de SimBrief, profil d'affichage du studio,
 base SIA mémorisée par le studio) : voir [FLIGHT_PLANNER.md](FLIGHT_PLANNER.md).
 
-Cheminement, niveau de croisière, plafond et case **« profil_vertical.png dans les sorties »** sont enregistrés dans le
+Cheminement, niveau de croisière, plafond et case **« profil_vertical.png dans les sorties »** (cochée par défaut) sont enregistrés dans le
 YAML de la mission (`vertical_profile: {route, cruise, ceiling_ft, output}`), donc partagés avec le
 générateur ; l'image est ajoutée au ZIP (largeur des PNG) et le brief PDF la place après les cartes.
 
