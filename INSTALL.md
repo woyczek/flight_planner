@@ -16,14 +16,29 @@ Il n'y a rien à compiler ni à installer côté serveur.
 
 ## 2. Récupérer le dépôt
 
+Depuis la version 3, **l'application et les données sont séparées** :
+
+| Dépôt | Contenu | Où |
+|---|---|---|
+| Application (public) — <https://framagit.org/asr/flight_planner> | pages (`apps/cr`, `apps/sia`, `apps/planner`, `apps/landing`, `apps/settings`), framework (`shared/`), bases OACI / APD générées (`AircraftDB/`), outils, docs, exemples | dossier de votre choix |
+| Données (privé) — <https://framagit.org/defa-virtual/missions-defa> | flotte et référence DEFA, indicatifs, corrections OACI, registres et CR, missions générées, MORA, axes ENR 5.7, base de performances | `data/` **dans** le dossier de l'application (ignoré par git) |
+
 ```bash
 git clone https://framagit.org/asr/flight_planner.git
+cd flight_planner
+git clone https://framagit.org/defa-virtual/missions-defa.git data
 ```
 
-ou « Code › Télécharger (zip) » sur <https://framagit.org/asr/flight_planner>, puis
-décompresser. Conseil : placer le dépôt dans un dossier synchronisé (Synology Drive,
-OneDrive…) — les registres de missions et la sauvegarde des données locales y seront
-écrits et donc synchronisés entre vos postes.
+Sans `data/`, les pages utilisent les petits exemples fictifs d'`examples/`. Conseil : placer le dossier dans un
+dossier synchronisé (Synology Drive, OneDrive…) **en excluant les dossiers `.git`** de la synchronisation — la
+synchronisation de `.git` corrompt les dépôts (voir docs/AUDIT_2026-09-28.md).
+
+**Depuis une version 2** : passer sur la version 3 (`python tools/update_suite.py update`), puis
+`python tools/migrate_v3.py --data-url https://framagit.org/defa-virtual/missions-defa.git` : `data/` est créé (clone,
+ou dépôt local à relier), les données y sont rangées (depuis l'ancienne arborescence et l'historique git), puis
+☰ › Maintenance › Sources et dossiers › **Dossier des données** : choisir `data/`. Anciennes adresses : `CR DEFA/…` →
+`apps/cr/…`, `SIA XML/…` → `apps/sia/…`, Paramétrage / Apparence / Maintenance → `apps/settings/…`, planificateur →
+`apps/planner/…`, Landing → `apps/landing/…` ; page d'accueil : `index.html`.
 
 ## 3. Ouvrir les pages
 
@@ -35,8 +50,8 @@ OneDrive…) — les registres de missions et la sauvegarde des données locales
 python -m http.server 8000 --bind 127.0.0.1
 ```
 
-puis ouvrir <http://127.0.0.1:8000/CR%20DEFA/mission_cr.html> (nouveau compte rendu) ou
-<http://127.0.0.1:8000/CR%20DEFA/mission_operations_reporting.html> (reporting). Toutes les pages sont
+puis ouvrir <http://127.0.0.1:8000/> (page d'accueil), <http://127.0.0.1:8000/apps/cr/mission_cr.html> (nouveau compte rendu) ou
+<http://127.0.0.1:8000/apps/cr/mission_operations_reporting.html> (reporting). Toutes les pages sont
 accessibles par le menu ☰.
 
 Pourquoi un serveur : ouvertes directement depuis le disque (`file://`), les pages
@@ -46,7 +61,7 @@ restent alors lisibles.
 
 ### Ouverture directe
 
-Double-cliquer sur `CR DEFA/mission_cr.html` (ou toute autre page) : les pages calculent leurs liens
+Double-cliquer sur `apps/cr/mission_cr.html` (ou toute autre page) : les pages calculent leurs liens
 depuis la racine du dépôt. Voir la limite ci-dessus.
 
 ### Hébergement web
@@ -103,7 +118,7 @@ Aucune dépendance externe (bibliothèque standard uniquement) :
 Le studio cartographique utilise les données AIRAC du SIA, **hors dépôt** (≈ 80 Mo par cycle) :
 télécharger l'export XML sur le site du SIA (produits numériques en libre disposition) et déposer
 `AIXM4.5_all_FR_OM_<date>.xml`, `XML_SIA_<date>.xml` et `sia-airspaces-<date>.xml` dans
-`SIA XML/`. Au premier lancement : studio › « Dossier SIA XML » (dossier mémorisé). Les autres
+`apps/sia/`. Au premier lancement : studio › « Dossier SIA XML » (dossier mémorisé). Les autres
 données (villes, MORA, axes de ravitaillement, fond local) sont dans le dépôt. Détail :
 [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md).
 

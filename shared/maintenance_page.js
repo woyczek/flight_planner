@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  // Paramètres › Maintenance (CR DEFA/maintenance.html) : mises à jour de la suite (canal, mode, contrôle), versions des
+  // Paramètres › Maintenance (apps/settings/maintenance.html) : mises à jour de la suite (canal, mode, contrôle), versions des
   // données et dates de synchronisation, références et dépendances, mise à jour pas à pas des données SIA (AIRAC) avec
   // recalculs simples, sauvegarde totale (navigateur + fichiers connus des dossiers autorisés) et journal des
   // sauvegardes / rechargements.
@@ -74,7 +74,7 @@
     for await (const [name, h] of dir.entries()) {
       const path = base + name;
       if (h.kind === 'directory') {
-        if (recursive && depth < 4 && !/^(\.git|node_modules|_archives|_avant_restauration|sauvegardes|__pycache__)$/i.test(name)) out.push(...await listFiles(h, { recursive, filter, depth: depth + 1, base: path + '/' }));
+        if (recursive && depth < 4 && !/^(\.git|node_modules|_archives|_avant_restauration|sauvegardes|local|__pycache__)$/i.test(name)) out.push(...await listFiles(h, { recursive, filter, depth: depth + 1, base: path + '/' }));
       } else if (filter(path, name)) {
         try { out.push({ path, file: await h.getFile() }); } catch { /* verrouillé */ }
       }
@@ -238,7 +238,7 @@
   }
 
   // ===== 1 bis. Sources et dossiers
-  const FOLDER_ORDER = ['__repo', '__ledger', '__missions', '__sia', '__xplane', '__perf', '__store'];
+  const FOLDER_ORDER = ['__data', '__repo', '__ledger', '__missions', '__sia', '__xplane', '__perf', '__store'];
   async function renderSources() {
     const host = hosts.sources, FA = await waitFor('FileAccess'), nav = window.RepositoryNav;
     if (!FA || !nav) { host.innerHTML = pill('err', 'file_access.js'); return; }
@@ -345,7 +345,7 @@
       const mora = siaFolderState.fixed.find(x => x.id === 'mora')?.file;
       if (mora) { const mc = A.moraCycle(await mora.file.text()); add(G.sia, 'mora.csv', mc ? t(['obstacles AIRAC {c}', 'obstacles AIRAC {c}'], { c: mc }) : t(['cycle des obstacles non tracé', 'obstacle cycle not traced']), fmtDate(mora.lastModified), mc && info?.airac && mc === info.airac ? pill('ok', '=') : pill('warn', t(['à recalculer / tracer (étape 6)', 'recalculate / trace (step 6)'])), ''); }
     }
-    const tracks = await repoText('SIA XML/miam-enr-5-7-tracks.xml');
+    const tracks = await repoText('data/sia/miam-enr-5-7-tracks.xml');
     if (tracks) add(G.sia, t(['Axes AAR (MILAIP ENR 5.7)', 'AAR tracks (MILAIP ENR 5.7)']), esc(/<miam:sourceEdition>([^<]+)</.exec(tracks.text)?.[1] || '?'), fmtDate(tracks.lastModified, false), '', 'DIRCAM');
     // bases de référence
     const db = window.AIRCRAFT_DB?.__meta || {};
@@ -391,14 +391,14 @@
     const lat = siaFolderState?.latest;
     // SIA XML
     let st = !siaFolderState ? pill('info', t(['dossier SIA non lu (étape 2)', 'SIA folder not read (step 2)'])) : !lat ? pill('err', t(['aucun cycle', 'no cycle'])) : !lat.complete ? pill('warn', t(['manque : {m}', 'missing: {m}'], { m: lat.missing.join(', ') })) : siaFolderState.old.length ? pill('warn', t(['anciens cycles à archiver', 'old cycles to archive'])) : pill('ok', lat.date);
-    add('SIA AIXM 4.5 · XML-SIA · sia-airspaces', 'SIA XML/*_<date>.xml', t(['cycle dans le nom ; hors git (.gitignore)', 'cycle in file name; outside git (.gitignore)']), t(['§ Mise à jour SIA pas à pas (ci-dessous)', '§ SIA step by step (below)']), t(['base du studio, mora.csv (obstacles), profil vertical, planificateur, terrains des missions', 'studio base, mora.csv (obstacles), vertical profile, planner, mission aerodromes']), st);
+    add('SIA AIXM 4.5 · XML-SIA · sia-airspaces', 'data/sia/*_<date>.xml', t(['cycle dans le nom ; hors git (.gitignore)', 'cycle in file name; outside git (.gitignore)']), t(['§ Mise à jour SIA pas à pas (ci-dessous)', '§ SIA step by step (below)']), t(['base du studio, mora.csv (obstacles), profil vertical, planificateur, terrains des missions', 'studio base, mora.csv (obstacles), vertical profile, planner, mission aerodromes']), st);
     st = !info ? pill('info', t(['non construite', 'not built'])) : info.mixed ? pill('err', t(['cycles mélangés dans la base : relire le dossier', 'mixed cycles: re-read the folder'])) : lat && info.airac !== lat.date ? pill('warn', t(['base {b} ≠ dossier {d} : relire', 'base {b} ≠ folder {d}: re-read'], { b: info.airac, d: lat.date })) : info.airac < eff.date ? pill('warn', t(['base {b} antérieure au cycle en vigueur {e}', 'base {b} older than current cycle {e}'], { b: info.airac, e: eff.date })) : pill('ok', info.airac);
     add(t(['Base analysée du studio', 'Studio analysed base']), 'IndexedDB sia-map-parser', t(['parserVersion 11 ; cycle mémorisé (airac)', 'parserVersion 11; stored cycle (airac)']), t(['Studio › « Relire le dossier »', 'Studio › “Re-read folder”']), t(['cartes, profil vertical, planificateur', 'maps, vertical profile, planner']), st);
     const moraFile = siaFolderState?.fixed.find(x => x.id === 'mora')?.file;
     const mc = moraFile ? A.moraCycle(await moraFile.file.text()) : '';
     st = !moraFile ? pill('info', t(['dossier SIA non lu', 'SIA folder not read'])) : !mc ? pill('warn', t(['cycle des obstacles non tracé : étape 6 (recalcul simple) le trace', 'obstacle cycle not traced: step 6 traces it'])) : info?.airac && mc !== info.airac ? pill('warn', t(['obstacles {m} ≠ base {b} : recalcul simple', 'obstacles {m} ≠ base {b}: simple recalculation'], { m: mc, b: info.airac })) : pill('ok', mc);
-    add('Grille MORA', 'SIA XML/mora.csv', t(['git ; colonne source (+ cycle des obstacles)', 'git; source column (+ obstacle cycle)']), t(['Studio › bloc 5 (complet, réseau) ; étape 6 (recalcul simple, obstacles)', 'Studio › block 5 (full, network); step 6 (simple, obstacles)']), t(['cartes, profil vertical', 'maps, vertical profile']), st);
-    const trk = await repoText('SIA XML/miam-enr-5-7-tracks.xml'), crd = await repoText('SIA XML/miam-enr-5-7-coordinates.xml');
+    add('Grille MORA', 'data/sia/mora.csv', t(['git ; colonne source (+ cycle des obstacles)', 'git; source column (+ obstacle cycle)']), t(['Studio › bloc 5 (complet, réseau) ; étape 6 (recalcul simple, obstacles)', 'Studio › block 5 (full, network); step 6 (simple, obstacles)']), t(['cartes, profil vertical', 'maps, vertical profile']), st);
+    const trk = await repoText('data/sia/miam-enr-5-7-tracks.xml'), crd = await repoText('data/sia/miam-enr-5-7-coordinates.xml');
     const ed = x => /<miam:sourceEdition>([^<]+)</.exec(x?.text || '')?.[1] || '';
     const e1 = ed(trk), e2 = ed(crd), amdt = s => /AMDT\s*(\d+\/\d+)/i.exec(s)?.[1] || s;
     st = !trk ? pill('info', t(['non lisible (dossier du dépôt ou serveur)', 'not readable (repository folder or server)'])) : amdt(e1) === amdt(e2) ? pill('ok', e1) : pill('warn', t(['éditions différentes : {a} / {b}', 'different editions: {a} / {b}'], { a: e1, b: e2 }));
@@ -410,7 +410,7 @@
     const fleetTypes = [...new Set((window.DEFA_FLEET || []).map(r => r.type).filter(Boolean))];
     const fleetUnknown = fleetTypes.filter(x => !knownType(types, x));
     const fleetNoPerf = fleetTypes.filter(x => !hasPerf(x));
-    add(t(['Flotte DEFA', 'DEFA fleet']), 'shared/aircraft_fleet.js ← Flotte.html', t(['git ; META.updatedAt', 'git; META.updatedAt']), 'update_fleet.py Flotte.html ; Paramétrage', t(['CR, catalogue, registre', 'reports, catalogue, registry']), fleetUnknown.length ? pill('warn', t(['types inconnus : {l}', 'unknown types: {l}'], { l: fleetUnknown.join(', ') })) : pill('ok', t(['{n} types connus ; {p} sans performances APD', '{n} known types; {p} without APD performance'], { n: fleetTypes.length, p: fleetNoPerf.length })));
+    add(t(['Flotte DEFA', 'DEFA fleet']), 'data/references/aircraft_fleet.js ← Flotte.html', t(['git ; META.updatedAt', 'git; META.updatedAt']), 'update_fleet.py Flotte.html ; Paramétrage', t(['CR, catalogue, registre', 'reports, catalogue, registry']), fleetUnknown.length ? pill('warn', t(['types inconnus : {l}', 'unknown types: {l}'], { l: fleetUnknown.join(', ') })) : pill('ok', t(['{n} types connus ; {p} sans performances APD', '{n} known types; {p} without APD performance'], { n: fleetTypes.length, p: fleetNoPerf.length })));
     const profUnknown = Object.values(readJson('flightPerfState', {})?.profiles || {}).map(p => p?.icao).filter(x => x && !knownType(types, x));
     add(t(['Profils du planificateur', 'Planner profiles']), 'flightPerfState (navigateur)', t(['données locales', 'local data']), t(['planificateur ; sauvegarde', 'planner; backup']), t(['devis carburant, profil vertical', 'fuel quote, vertical profile']), profUnknown.length ? pill('warn', t(['types hors base OACI : {l}', 'types outside ICAO base: {l}'], { l: [...new Set(profUnknown)].join(', ') })) : pill('ok', ''));
     // prompt des missions
@@ -420,7 +420,7 @@
       const block = /```text\n([\s\S]*?)\n```/.exec(md.text.replace(/\r\n/g, '\n'))?.[1];
       promptState = block == null ? pill('warn', '?') : block.trim() === window.MISSION_PROMPT.trim() ? pill('ok', t(['synchronisé', 'in sync'])) : pill('warn', t(['à régénérer : python tools/build_mission_prompt.py', 'rebuild: python tools/build_mission_prompt.py']));
     }
-    add(t(['Prompt des missions', 'Mission prompt']), 'SIA XML/mission_prompt.js ← docs/PROMPT_GENERATEUR_MISSIONS.md', t(['git ; en-tête « GÉNÉRÉ »', 'git; “GENERATED” header']), 'build_mission_prompt.py (bump_versions.py)', t(['générateur, registre des missions', 'generator, mission registry']), promptState);
+    add(t(['Prompt des missions', 'Mission prompt']), 'apps/sia/mission_prompt.js ← docs/PROMPT_GENERATEUR_MISSIONS.md', t(['git ; en-tête « GÉNÉRÉ »', 'git; “GENERATED” header']), 'build_mission_prompt.py (bump_versions.py)', t(['générateur, registre des missions', 'generator, mission registry']), promptState);
     const vj = await repoText('VERSION.json'), relv = window.REPOSITORY_TREE?.release?.version;
     let vv = ''; try { vv = vj ? JSON.parse(vj.text).release : ''; } catch { /* illisible */ }
     add('VERSION.json', 'VERSION.json ← repository_tree', t(['ignoré par git (*.json)', 'git-ignored (*.json)']), t(['aucun (à supprimer)', 'none (to delete)']), '—', !vj ? pill('ok', t(['absent', 'absent'])) : vv === relv ? pill('ok', vv) : pill('warn', t(['{a} ≠ {b}', '{a} ≠ {b}'], { a: vv, b: relv })));
@@ -464,7 +464,7 @@
         </div>
         <div class="mt-step">${stepHead(2, s2, t(['Dossier SIA XML et export du SIA', 'SIA XML folder and SIA export', 'SIA-XML-Ordner und SIA-Export', 'Carpeta SIA XML y exportación']))}
           <p class="row" id="mtSiaFolder"></p>
-          ${f ? folderTable(f) : `<p class="mt-small">${esc(t(['Choisir (une fois) le dossier « SIA XML » du dépôt, puis « Analyser ».', 'Choose the repository “SIA XML” folder once, then “Analyse”.']))}</p>`}
+          ${f ? folderTable(f) : `<p class="mt-small">${esc(t(['Choisir (une fois) le dossier des données (Sources et dossiers) — data/sia en est déduit —, puis « Analyser ».', 'Choose the data folder once (Sources and folders) — data/sia is derived from it —, then “Analyse”.']))}</p>`}
           <p class="row"><label class="secondary mt-file">${esc(t(['ZIP d’export du SIA…', 'SIA export ZIP…', 'SIA-Export-ZIP…', 'ZIP de exportación…']))}<input type="file" id="mtSiaZip" accept=".zip" hidden data-picker-folder="__sia"></label>${f?.zips?.length ? `<button type="button" class="secondary" id="mtSiaZipFolder" data-icon="box">${esc(t(['Extraire {z}', 'Extract {z}'], { z: f.zips[0].name }))}</button>` : ''} <span class="mt-small" id="mtExtract">${extractMsg}</span></p>
         </div>
         <div class="mt-step">${stepHead(3, s3, t(['Anciens cycles', 'Old cycles', 'Alte Zyklen', 'Ciclos antiguos']))}
@@ -499,7 +499,7 @@
     host.querySelector('#mtRelire').onclick = async () => {
       const cur = await window.Airac.baseSummary();
       if (cur) writeJson(PREV, { ...cur, storedAt: new Date().toISOString() });
-      window.open(new URL('SIA XML/map_parser.html?relire=1', root()).href, '_blank');
+      window.open(new URL('apps/sia/map_parser.html?relire=1', root()).href, '_blank');
       renderSia();
     };
     host.querySelector('#mtReloaded').onclick = async () => { baseSummary = await window.Airac.baseSummary(); renderSia(); renderVersions(); renderDeps(); };
@@ -657,12 +657,10 @@
   // ===== 5. Sauvegarde totale
   const EXTRA = 'suiteBackupSources:v1';
   const SOURCES = () => [
-    { id: 'ledger', key: '__ledger', label: ['Registres des CR (dossier CR DEFA)', 'Report ledgers (CR DEFA folder)'], recursive: true, include: /\.(ya?ml|csv|json|fms)$/i },
-    { id: 'missions', key: '__missions', label: ['Missions générées (dossier Missions)', 'Generated missions (Missions folder)'], recursive: true, include: /\.(ya?ml|md|txt)$/i, heavy: /\.(png|svg|zip|pdf)$/i },
+    // v3 : tout le dépôt de données (data/) — registres, missions, références, SIA hors XML AIRAC, performances
+    { id: 'data', key: '__data', label: ['Dépôt de données (data/ : registres, missions, références, SIA, performances)', 'Data repository (data/: ledgers, missions, references, SIA, performance)'], recursive: true, include: /\.(ya?ml|md|txt|csv|json|js|xml|fms|lnmperf)$/i, heavy: /\.(png|svg|zip|pdf)$|^(AIXM4\.5|XML_SIA_|sia-airspaces-).*\.xml$/i, skipHeavyXml: true },
     { id: 'landing', key: '__xplane', label: ['Journaux d’atterrissage (dossier X-Plane)', 'Landing logs (X-Plane folder)'], recursive: false, include: /\.(csv|log)$/i },
-    { id: 'perf', key: '__perf', label: ['Profils de performance (dossier performances)', 'Performance profiles (performance folder)'], recursive: false, include: /\.(lnmperf|json)$/i },
-    { id: 'repo', key: '__repo', label: ['Configuration du dépôt (fichiers connus)', 'Repository configuration (known files)'], paths: ['flight_performance_database_merged.fpdb.json', 'AircraftDB/aircraft_overrides.json', 'defa_local_store.yaml', 'SIA XML/mora.csv', 'SIA XML/miam-enr-5-7-tracks.xml', 'SIA XML/miam-enr-5-7-coordinates.xml', 'SIA XML/Mission 02.md'], dirs: [{ dir: 'LandingPerformanceDashboard', include: /\.(csv|cfg|txt)$/i }] },
-    { id: 'sia', key: '__sia', label: ['Données SIA (hors XML AIRAC)', 'SIA data (without AIRAC XML)'], recursive: false, include: /\.(csv|txt)$|^miam-.*\.xml$/i, heavy: /^(AIXM4\.5|XML_SIA_|sia-airspaces-).*\.xml$/i },
+    { id: 'perf', key: '__perf', label: ['Profils de performance (s’il est hors de data/)', 'Performance profiles (if outside data/)'], recursive: false, include: /\.(lnmperf|json)$/i },
     ...(readJson(EXTRA, []) || []).map(x => ({ ...x, include: new RegExp(x.pattern || '.', 'i'), extra: true }))
   ];
   let backupMsg = '', restorePlan = null, sinceHtml = '';
@@ -679,7 +677,7 @@
       }
       return { dir, files: out };
     }
-    const files = await listFiles(dir, { recursive: src.recursive, filter: (p, n) => src.include.test(n) || (heavy && src.heavy?.test(n)) });
+    const files = await listFiles(dir, { recursive: src.recursive, filter: (p, n) => (src.skipHeavyXml && src.heavy?.test(n)) ? heavy : (src.include.test(n) || (heavy && src.heavy?.test(n))) });
     return { dir, files };
   }
   async function renderBackup() {

@@ -16,13 +16,17 @@
   const FOLDERS = {
     __repo: {
       label: L('Dossier du dépôt', 'Repository folder', 'Repository-Ordner', 'Carpeta del repositorio'),
-      expect: L('racine du dépôt : le dossier « Documentation » (celui qui contient repository_tree, shared/, CR DEFA/…)', 'repository root: the “Documentation” folder (containing repository_tree, shared/, CR DEFA/…)', 'Repository-Wurzel: Ordner „Documentation“ (mit repository_tree, shared/, CR DEFA/…)', 'raíz del repositorio: la carpeta «Documentation» (con repository_tree, shared/, CR DEFA/…)'),
+      expect: L('racine de l’application : le dossier qui contient repository_tree, apps/, shared/ (et data/)', 'application root: the folder containing repository_tree, apps/, shared/ (and data/)', 'Repository-Wurzel: Ordner „Documentation“ (mit repository_tree, shared/, apps/cr/…)', 'raíz del repositorio: la carpeta «Documentation» (con repository_tree, shared/, apps/cr/…)'),
       check: 'repository_tree'
+    },
+    __data: {
+      label: L('Dossier des données', 'Data folder', 'Datenordner', 'Carpeta de datos'),
+      expect: L('dossier data/ de l’application : clone du dépôt de données (contient data_tree.js) ; registre, missions et SIA en sont déduits', 'the application data/ folder: clone of the data repository (contains data_tree.js); ledger, missions and SIA are derived from it', 'Ordner data/ der Anwendung: Klon des Daten-Repositorys (mit data_tree.js)', 'carpeta data/ de la aplicación: clon del repositorio de datos (contiene data_tree.js)'),
+      check: 'data_tree.js'
     },
     __ledger: {
       label: L('Dossier du registre', 'Ledger folder', 'Registerordner', 'Carpeta del registro'),
-      expect: L('dossier « CR DEFA » du dépôt (Documentation/CR DEFA : contient mission_cr.html ; missions.yaml y est écrit)', '“CR DEFA” folder of the repository (Documentation/CR DEFA: contains mission_cr.html; missions.yaml is written there)', 'Ordner „CR DEFA“ des Repositorys (enthält mission_cr.html; missions.yaml wird dort geschrieben)', 'carpeta «CR DEFA» del repositorio (contiene mission_cr.html; allí se escribe missions.yaml)'),
-      check: 'mission_cr.html'
+      expect: L('data/cr (registre unique missions.yaml, registres CSV historiques, CR) — déduit du dossier des données', 'data/cr (single ledger missions.yaml, historical CSV ledgers, reports) — derived from the data folder', 'data/cr (Register missions.yaml) — aus dem Datenordner abgeleitet', 'data/cr (registro missions.yaml) — deducida de la carpeta de datos')
     },
     __store: {
       label: L('Dossier de sauvegarde locale', 'Local backup folder', 'Ordner der lokalen Sicherung', 'Carpeta de copia local'),
@@ -30,12 +34,11 @@
     },
     __sia: {
       label: L('Dossier SIA XML', 'SIA XML folder', 'SIA-XML-Ordner', 'Carpeta SIA XML'),
-      expect: L('dossier des données SIA (XML AIRAC, « Carte france vierge.png », villes_geonames.csv, mora.csv)', 'SIA data folder (AIRAC XML, “Carte france vierge.png”, villes_geonames.csv, mora.csv)', 'SIA-Datenordner (AIRAC-XML, „Carte france vierge.png“…)', 'carpeta de datos SIA (XML AIRAC, «Carte france vierge.png»…)'),
-      check: 'Carte france vierge.png'
+      expect: L('data/sia (XML AIRAC du cycle, mora.csv, axes ENR 5.7 ; fond et villes livrés avec l’application) — déduit du dossier des données', 'data/sia (AIRAC XML, mora.csv, ENR 5.7 tracks; background and cities ship with the application) — derived from the data folder', 'data/sia (AIRAC-XML, mora.csv, ENR 5.7) — aus dem Datenordner abgeleitet', 'data/sia (XML AIRAC, mora.csv, ENR 5.7) — deducida de la carpeta de datos')
     },
     __missions: {
       label: L('Dossier des missions', 'Missions folder', 'Missionsordner', 'Carpeta de misiones'),
-      expect: L('dossier « Missions » du dépôt (séries générées : missionNN.yaml, summaryNN.md ; mission_registry.yaml y est écrit)', '“Missions” folder of the repository (generated series: missionNN.yaml, summaryNN.md; mission_registry.yaml is written there)', 'Ordner „Missions“ des Repositorys (missionNN.yaml, summaryNN.md; mission_registry.yaml)', 'carpeta «Missions» del repositorio (missionNN.yaml, summaryNN.md; mission_registry.yaml)')
+      expect: L('data/missions (séries générées : missionNN.yaml, summaryNN.md ; mission_registry.yaml) — déduit du dossier des données', 'data/missions (generated series; mission_registry.yaml) — derived from the data folder', 'data/missions (erzeugte Serien) — aus dem Datenordner abgeleitet', 'data/missions (series generadas) — deducida de la carpeta de datos')
     },
     __xplane: {
       label: L('Dossier X-Plane (atterrissages)', 'X-Plane folder (landings)', 'X-Plane-Ordner (Landungen)', 'Carpeta X-Plane (aterrizajes)'),
@@ -116,6 +119,34 @@
       handle
     };
   }
+  // ---- v3 : dossier des données (data/) et sous-dossiers déduits
+  // cr, missions, sia : toujours ceux de data/ (réglés au choix de data/) ; planner, local : seulement si l'utilisateur
+  // n'a pas choisi d'autre dossier pour les profils de performance ou la sauvegarde locale.
+  const DERIVED = { __ledger: 'cr', __missions: 'missions', __sia: 'sia', __perf: 'planner', __store: 'local' };
+  const ALWAYS = ['__ledger', '__missions', '__sia'];
+  /** Mémorise les sous-dossiers de data/ (créés au besoin) ; retourne la liste des clés réglées. */
+  async function deriveFromData(dataHandle) {
+    const done = [];
+    for (const [key, sub] of Object.entries(DERIVED)) {
+      if (!ALWAYS.includes(key) && await get(key)) continue;
+      try { await set(key, await dataHandle.getDirectoryHandle(sub, { create: true })); done.push(key); } catch { /* lecture seule */ }
+    }
+    return done;
+  }
+  // Passage à la v3 (une fois) : les dossiers mémorisés qui désignaient des dossiers de l'ancienne arborescence
+  // (« CR DEFA », « Missions », « SIA XML ») sont oubliés ; ils sont redéduits du dossier des données.
+  (async () => {
+    try {
+      if (localStorage.getItem('fileAccessLayout') === '3') return;
+      const db = await idb(), tx = db.transaction('handles', 'readwrite');
+      for (const key of ALWAYS) tx.objectStore('handles').delete(`folder:${key}`);
+      await new Promise(r => { tx.oncomplete = tx.onerror = r; });
+      localStorage.setItem('fileAccessLayout', '3');
+      const data = await get('__data');
+      if (data) await deriveFromData(data);
+    } catch { /* stockage indisponible */ }
+  })();
+
   // Choix d'un dossier : le sélecteur s'ouvre sur le dossier actuel ; contrôle du contenu attendu.
   async function pickFolder(key, {
     mode = 'readwrite'
@@ -140,6 +171,7 @@
       if (!ok && !confirm(`« ${handle.name} » ${tr(STATE.notExpected).replace('{f}', info.check)}\n${tr(STATE.expected)} : ${tr(info.expect)}`)) throw new Error('Dossier refusé');
     }
     await set(key, handle);
+    if (key === '__data') await deriveFromData(handle);
     return handle;
   }
   // Libellé et infobulle d'un dossier : « Dossier du registre : CR DEFA ✓ ».
@@ -185,7 +217,16 @@
 
   // ---- ouverture de fichiers : sélecteur du système dans le dossier paramétré
   // Dossier par défaut selon la page (application CR DEFA : registre ; Paramétrage : dépôt).
-  const defaultFolder = () => /\/CR%20DEFA\/|\/CR DEFA\//.test(location.pathname) ? (/parametrage\.html$/.test(location.pathname) ? '__repo' : '__ledger') : /flight_performance_planner/.test(location.pathname) ? '__perf' : /LandingPerformanceDashboard\//.test(location.pathname) ? '__xplane' : /mission_registry\.html$/.test(location.pathname) ? '__missions' : /\/SIA%20XML\/|\/SIA XML\//.test(location.pathname) ? '__sia' : '';
+  const defaultFolder = () => {
+    const p = decodeURI(location.pathname);
+    if (/\/apps\/settings\/parametrage\.html$/.test(p)) return '__data';
+    if (/\/apps\/cr\//.test(p)) return '__ledger';
+    if (/\/apps\/planner\//.test(p)) return '__perf';
+    if (/\/apps\/landing\//.test(p)) return '__xplane';
+    if (/mission_registry\.html$/.test(p)) return '__missions';
+    if (/\/apps\/sia\//.test(p)) return '__sia';
+    return '';
+  };
   const hash = s => {
     let h = 0;
     for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0;
@@ -345,6 +386,7 @@
     describe,
     decorate,
     fileHint,
-    defaultFolder
+    defaultFolder,
+    deriveFromData
   };
 })();

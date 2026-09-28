@@ -1,4 +1,4 @@
-"""Génère shared/aircraft_fleet.js depuis la page « Flotte virtuelle » de flotte.defa-virtual.fr
+"""Génère data/references/aircraft_fleet.js depuis la page « Flotte virtuelle » de flotte.defa-virtual.fr
 enregistrée (navigateur : Enregistrer sous…), fusionnée avec le fichier existant.
 
 Usage : python AircraftDB/update_fleet.py <Flotte.html>
@@ -15,7 +15,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import datafile
 
 SRC = sys.argv[1] if len(sys.argv) > 1 else 'Flotte.html'
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'shared', 'aircraft_fleet.js')
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'references', 'aircraft_fleet.js')  # dépôt de données (v3)
+os.makedirs(os.path.dirname(OUT), exist_ok=True)
 
 OPERATORS = {"Armee de l'Air et de l'Espace": "Armée de l'Air et de l'Espace", 'Sécurite Civile': 'Sécurité civile', 'Marine Nationale': 'Marine nationale',
              'ALAT': 'ALAT', 'SAMU': 'SAMU', 'Gendarmerie Nationale': 'Gendarmerie nationale'}

@@ -352,7 +352,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       __records: {}
     };
     try {
-      const r = await fetch(new URL('AircraftDB/aircraft_overrides.json', window.RepositoryNav?.root || new URL('../', location.href)), {
+      const r = await fetch(new URL('data/references/aircraft_overrides.json', window.RepositoryNav?.root || new URL('../', location.href)), {
         cache: 'no-store'
       });
       if (r.ok) overrides = await r.json();
@@ -380,7 +380,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       id: 'fleet',
       group: T('Fichiers du dépôt', 'Repository files'),
       title: T('Flotte DEFA (appareils connus)', 'DEFA fleet (known aircraft)'),
-      file: 'shared/aircraft_fleet.js',
+      file: 'data/references/aircraft_fleet.js',
       overrideKey: 'dataOverride:fleet:v1',
       intro: T('Appareils proposés dans les CR : immatriculation, type, indicatifs, base, opérateur. Plusieurs indicatifs : séparés par des virgules.', 'Aircraft offered in reports: registration, type, callsigns, base, operator. Several callsigns: comma-separated.'),
       tables: () => [{
@@ -423,7 +423,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         data: work.fleet.data.rows
       }],
       files: stamp => [
-        ['shared/aircraft_fleet.js', render(FLEET_COMMENT, fleetData(), 'dataOverride:fleet:v1', "window.DEFA_FLEET = data.rows.map(row => ({ ...row, callsign: (row.callsigns || [])[0] || '' })); window.DEFA_FLEET_META = META; window.DEFA_FLEET_FILE = fileData.rows;", stamp)]
+        ['data/references/aircraft_fleet.js', render(FLEET_COMMENT, fleetData(), 'dataOverride:fleet:v1', "window.DEFA_FLEET = data.rows.map(row => ({ ...row, callsign: (row.callsigns || [])[0] || '' })); window.DEFA_FLEET_META = META; window.DEFA_FLEET_FILE = fileData.rows;", stamp)]
       ],
       overlay: () => fleetData(),
       howto: `<p>${T('Mise à jour complète depuis le site de la flotte :', 'Full update from the fleet website:')}</p>
@@ -483,7 +483,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         const db = aircraftDbData(stamp);
         return [
           ['AircraftDB/aircraft_db.js', `window.AIRCRAFT_DB = ${dumps(db)};\n`],
-          ['AircraftDB/aircraft_overrides.json', await overridesText(db)]
+          ['data/references/aircraft_overrides.json', await overridesText(db)]
         ];
       },
       overlay: stamp => aircraftDbData(stamp),
@@ -491,14 +491,14 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       howto: `<p>${T('Rafraîchissement par le script (sources : OACI Doc 8643, EUROCONTROL, Wikidata ; modifications manuelles d’aircraft_overrides.json prioritaires) — depuis le dossier AircraftDB :', 'Refresh with the script (sources: ICAO Doc 8643, EUROCONTROL, Wikidata; manual changes from aircraft_overrides.json take priority) — from the AircraftDB folder:')}</p>
         <ul><li><code>python update_aircraft_db.py --no-network</code> — ${T('reconstruit la base avec les caches locaux', 'rebuilds the base from local caches')}</li>
         <li><code>python update_aircraft_db.py --add RFAL MIR2</code> — ${T('ajoute des types (recherche en ligne)', 'adds types (online lookup)')}</li>
-        <li><code>python update_aircraft_db.py "../CR DEFA/HEMS/hems_mission_ledger.csv"</code> — ${T('types de la colonne Aircraft d’un CSV', 'types from a CSV Aircraft column')}</li>
+        <li><code>python update_aircraft_db.py "../data/cr/HEMS/hems_mission_ledger.csv"</code> — ${T('types de la colonne Aircraft d’un CSV', 'types from a CSV Aircraft column')}</li>
         <li><code>--refresh-icao</code> ${T('(force le téléchargement des PDF OACI),', '(forces the ICAO PDF download),')} <code>--delay 2</code> ${T('(pause entre requêtes)', '(pause between requests)')}</li></ul>
         <p class="small">${T('Un type supprimé ici peut revenir au prochain rafraîchissement s’il fait partie de la liste de base du script.', 'A type deleted here may come back at the next refresh if it is in the script base list.')}</p>`
     }, {
       id: 'callsigns',
       group: T('Fichiers du dépôt', 'Repository files'),
       title: T('Correspondance des indicatifs', 'Callsign correspondence'),
-      file: 'shared/mission_core/data/callsigns.js',
+      file: 'data/references/callsigns.js',
       overrideKey: 'dataOverride:callsigns:v1',
       intro: T('Indicatif complet (conservé dans les CR) ↔ forme plan de vol (case 7, 7 caractères avec le numéro) ↔ exploitant OACI (OPR/, case 18). Types : types OACI de la série, séparés par des virgules.', 'Full callsign (kept in reports) ↔ flight plan form (item 7, 7 characters with the number) ↔ ICAO operator (OPR/, item 18). Types: ICAO types of the series, comma-separated.'),
       tables: () => [{
@@ -561,7 +561,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         data: work.callsigns.operatorRows
       }],
       files: stamp => [
-        ['shared/mission_core/data/callsigns.js', render(CALLSIGN_COMMENT, callsignData(), 'dataOverride:callsigns:v1', 'window.MISSION_CALLSIGNS = { META, table: data.table, operators: data.operators, file: fileData };', stamp)]
+        ['data/references/callsigns.js', render(CALLSIGN_COMMENT, callsignData(), 'dataOverride:callsigns:v1', 'window.MISSION_CALLSIGNS = { META, table: data.table, operators: data.operators, file: fileData };', stamp)]
       ],
       overlay: () => callsignData(),
       howto: `<p>${T('Pas de script : cette page (ou le fichier, à la main) est la source. Les formes corrigées dans les CR apparaissent dans « Indicatifs appris » ci-dessous, à intégrer ici.', 'No script: this page (or the file, by hand) is the source. Forms corrected in reports appear in “Learned callsigns” below, to integrate here.')}</p>`
@@ -715,7 +715,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       id: 'defaReference',
       group: T('Base DEFA', 'DEFA base'),
       title: T('Référence DEFA (anonymisée, dans le dépôt)', 'DEFA reference (anonymised, in the repository)'),
-      file: 'shared/defa_reference.js',
+      file: 'data/references/defa_reference.js',
       overrideKey: 'dataOverride:defaReference:v1',
       intro: T('Pilotes (trigrammes) et appareils de la DEFA — immatriculation, type, indicatifs utilisés, terrain de rattachement (modifiable), dernier terrain connu, statut — sans les vols ni les missions. Utilisée par les trois applications (CR, Landing Dashboard, Flight Planner). Base « lâche » : aide à la saisie, non exhaustive. Mise à jour : « Base DEFA » › « Mettre à jour la référence », ou tools/defa_reference.py.', 'DEFA pilots (trigrams) and aircraft — registration, type, callsigns used, home aerodrome (editable), last known aerodrome, status — without flights or missions. Used by the three applications. Loose base: input aid, not exhaustive.'),
       tables: () => [{
@@ -801,7 +801,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         data: work.defaReference.data.pilots
       }],
       files: stamp => [
-        ['shared/defa_reference.js', render(['Référence DEFA anonymisée : pilotes (trigrammes), appareils (immatriculation, type, indicatifs', 'utilisés, dernier terrain connu, terrain de rattachement), sans les vols ni les missions.', 'Générée par tools/defa_reference.py ou Paramétrage › Base DEFA ; complétée à la main.', 'Base « lâche » : aide à la saisie, non exhaustive.'], {
+        ['data/references/defa_reference.js', render(['Référence DEFA anonymisée : pilotes (trigrammes), appareils (immatriculation, type, indicatifs', 'utilisés, dernier terrain connu, terrain de rattachement), sans les vols ni les missions.', 'Générée par tools/defa_reference.py ou Paramétrage › Base DEFA ; complétée à la main.', 'Base « lâche » : aide à la saisie, non exhaustive.'], {
           pilots: work.defaReference.data.pilots.filter(p => p.trigram),
           aircraft: work.defaReference.data.aircraft.filter(a => a.registration)
         }, 'dataOverride:defaReference:v1', 'window.DEFA_REFERENCE = { META, pilots: data.pilots, aircraft: data.aircraft, file: fileData };', stamp)]
@@ -810,7 +810,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         pilots: work.defaReference.data.pilots.filter(p => p.trigram),
         aircraft: work.defaReference.data.aircraft.filter(a => a.registration)
       }),
-      howto: `<ol><li>${T('Charger le journal des vols (Base DEFA › Journal des vols DEFA).', 'Load the flight log (DEFA base › DEFA flight log).')}</li><li>${T('« Mettre à jour la référence DEFA » : pilotes et appareils ajoutés ou complétés (rien n’est supprimé ; terrain de rattachement, statut, mise en service et notes saisis ici sont conservés).', '“Update the DEFA reference”: pilots and aircraft added or completed (nothing removed; home AD, status, commissioning and notes kept).')}</li><li>${T('« Enregistrer dans le dépôt », puis committer shared/defa_reference.js.', '“Save to repository”, then commit shared/defa_reference.js.')}</li></ol><p>${T('Ou, à la racine du dépôt :', 'Or, at the repository root:')} <code>python tools/defa_reference.py "Log des vols.html"</code></p>`
+      howto: `<ol><li>${T('Charger le journal des vols (Base DEFA › Journal des vols DEFA).', 'Load the flight log (DEFA base › DEFA flight log).')}</li><li>${T('« Mettre à jour la référence DEFA » : pilotes et appareils ajoutés ou complétés (rien n’est supprimé ; terrain de rattachement, statut, mise en service et notes saisis ici sont conservés).', '“Update the DEFA reference”: pilots and aircraft added or completed (nothing removed; home AD, status, commissioning and notes kept).')}</li><li>${T('« Enregistrer dans le dépôt », puis committer data/references/defa_reference.js.', '“Save to repository”, then commit data/references/defa_reference.js.')}</li></ol><p>${T('Ou, à la racine du dépôt :', 'Or, at the repository root:')} <code>python tools/defa_reference.py "Log des vols.html"</code></p>`
     }, {
       id: 'defaLog',
       group: T('Base DEFA', 'DEFA base'),
@@ -840,7 +840,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       group: T('Missions', 'Missions'),
       title: T('Registres des missions (base des opérations)', 'Mission ledgers (operations base)'),
       custom: true,
-      intro: T('Registre unique CR DEFA/missions.yaml (toutes familles, source de vérité des reportings). Édition directe du YAML, complète ou par famille, avec contrôle avant enregistrement ; pour une mission, préférer le CR (clic sur la ligne du reporting).', 'Single ledger CR DEFA/missions.yaml (all families, source of truth of the reportings). Direct YAML editing, full or per family, checked before saving; for a single mission, prefer the report (click its reporting row).')
+      intro: T('Registre unique data/cr/missions.yaml (toutes familles, source de vérité des reportings). Édition directe du YAML, complète ou par famille, avec contrôle avant enregistrement ; pour une mission, préférer le CR (clic sur la ligne du reporting).', 'Single ledger data/cr/missions.yaml (all families, source of truth of the reportings). Direct YAML editing, full or per family, checked before saving; for a single mission, prefer the report (click its reporting row).')
     }
   ];
 
@@ -1115,7 +1115,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           history.replaceState(null, '', '?base=defaReference');
           show();
           changed();
-          status(T('Référence DEFA complétée depuis le journal : vérifier, puis « Enregistrer dans le dépôt » (shared/defa_reference.js).', 'DEFA reference completed from the log: check, then save to repository.'));
+          status(T('Référence DEFA complétée depuis le journal : vérifier, puis « Enregistrer dans le dépôt » (data/references/defa_reference.js).', 'DEFA reference completed from the log: check, then save to repository.'));
         }, 'primary'],
         [T('Exporter en CSV', 'Export CSV'), () => download('defa_log_des_vols.csv', D.toCsv(list), 'text/csv')],
         [T('Exporter en JSON (rechargeable)', 'Export JSON (reloadable)'), () => download('defa_log_des_vols.json', JSON.stringify({

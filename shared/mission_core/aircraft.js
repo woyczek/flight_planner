@@ -7,7 +7,7 @@
   // ajouté à la base locale lors de l'enregistrement au registre).
   //
   // Appareils connus (registre par immatriculation), sources par ordre d'ancienneté :
-  // flotte DEFA (shared/aircraft_fleet.js), associations des CR HEMS/FIRE
+  // flotte DEFA (data/references/aircraft_fleet.js), associations des CR HEMS/FIRE
   // (missionAircraftDirectory:v1), registres HEMS/FIRE en cache, missions enregistrées
   // avec le Core (missionAircraftRegistry:v1, équipements compris). En cas de conflit,
   // la donnée la plus récente l'emporte, champ par champ.

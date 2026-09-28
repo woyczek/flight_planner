@@ -17,10 +17,10 @@ browser.
 
 | Application | Pages | Purpose | Documentation (French) |
 |---|---|---|---|
-| **CR DEFA** (Mission Report Core) | `CR DEFA/` — ☰ › Reporting missions, new report, settings | Mission reports for 15 families, single ledger, reporting and charts, fleet and callsign databases, report sending | [Tutorial](docs/TUTORIAL.md) · [Operations manual](docs/MANUEL_EXPLOITATION.md) · [Design notes](docs/mission_report_core_audit.md) |
-| **Landing Performance Dashboard** | `LandingPerformanceDashboard/ LandingPerformance_Dashboard_MultiCSV_i18n.html` | Landing analysis (score, FPM, G) from CSV / LOG journals, trends, filters | [docs/LANDING_DASHBOARD.md](docs/LANDING_DASHBOARD.md) · [aircraft database updater](LandingPerformanceDashboard/README.md) |
-| **Flight Performance & Fuel Planner** | `flight_performance_planner.html` | Aircraft performance profiles, fuel quote, optimum altitude, SimBrief calibration, Little Navmap exchange | [docs/FLIGHT_PLANNER.md](docs/FLIGHT_PLANNER.md) |
-| **SIA missions** | `SIA XML/` — ☰ › Générateur de mission (SIA), Studio cartographique (SIA) | Mission brief (texts, points, final PDF) and PNG / SVG maps from SIA AIRAC data: airspaces, MORA, graticule, air-to-air refuelling tracks, OSM base maps; opens a pre-filled CR DEFA report | [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md) |
+| **CR DEFA** (Mission Report Core) | `apps/cr/` — ☰ › Reporting missions, new report, settings | Mission reports for 15 families, single ledger, reporting and charts, fleet and callsign databases, report sending | [Tutorial](docs/TUTORIAL.md) · [Operations manual](docs/MANUEL_EXPLOITATION.md) · [Design notes](docs/mission_report_core_audit.md) |
+| **Landing Performance Dashboard** | `apps/landing/ LandingPerformance_Dashboard_MultiCSV_i18n.html` | Landing analysis (score, FPM, G) from CSV / LOG journals, trends, filters | [docs/LANDING_DASHBOARD.md](docs/LANDING_DASHBOARD.md) · [aircraft database updater](apps/landing/README.md) |
+| **Flight Performance & Fuel Planner** | `apps/planner/flight_performance_planner.html` | Aircraft performance profiles, fuel quote, optimum altitude, SimBrief calibration, Little Navmap exchange | [docs/FLIGHT_PLANNER.md](docs/FLIGHT_PLANNER.md) |
+| **SIA missions** | `apps/sia/` — ☰ › Générateur de mission (SIA), Studio cartographique (SIA) | Mission brief (texts, points, final PDF) and PNG / SVG maps from SIA AIRAC data: airspaces, MORA, graticule, air-to-air refuelling tracks, OSM base maps; opens a pre-filled CR DEFA report | [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md) |
 | **Shared framework** | `repository_tree`, `shared/`, `AircraftDB/`, `tools/` | Header and ☰ menu, languages, blocks, period and zoom (TimePeriod), charts, tables, pilot profile, local data, aircraft databases | [docs/FRAMEWORK.md](docs/FRAMEWORK.md) |
 
 The applications talk through the framework: same pilot profile (IVAO, VATSIM,
@@ -30,14 +30,14 @@ file; an SIA mission opens a pre-filled CR DEFA report.
 
 ### Mission Report Core — the “CR DEFA” application
 
-All the pages and ledgers of the application live in the `CR DEFA/` folder;
+All the pages and ledgers of the application live in the `apps/cr/` folder;
 shared code stays in `shared/`, `AircraftDB/` and `assets/`.
 
 One engine (`shared/mission_core/`) drives the report and reporting pages of every
 family: HEMS / MEDEVAC, FIRE / GAAR (aerial firefighting), SAR, AIRLIFT, AAR (air-to-air refuelling), MARITIME, HADR,
 AIRBORNE, FLIGHT INSPECTION, SURVEY, LAW ENFORCEMENT, ISR, COMMAND / AEW, SOF, SPECIAL
-(test / training). Each family has a report page (`CR DEFA/<FOLDER>/<family>_cr.html`) and a
-reporting page (`CR DEFA/<FOLDER>/<family>_reporting.html`); the header popup switches family and
+(test / training). Each family has a report page (`apps/cr/<FOLDER>/<family>_cr.html`) and a
+reporting page (`apps/cr/<FOLDER>/<family>_reporting.html`); the header popup switches family and
 mission sub-type.
 
 Highlights:
@@ -65,7 +65,7 @@ Highlights:
   address and key are set in Settings (the key stays in the browser, outside backups).
 - **Live network tracking** (IVAO / VATSIM) filling engine start, take-off, landing and
   mission end; VATSIM history import.
-- **Single ledger**: all families in one YAML file (`CR DEFA/missions.yaml`), written in the
+- **Single ledger**: all families in one YAML file (`data/cr/missions.yaml`), written in the
   `CR DEFA` folder authorised once (Chrome / Edge), with a simplified CSV export; former
   per-family ledgers are merged automatically. Legacy HEMS / GAAR CSV ledgers can be imported.
 - **Plain text fields in capitals** (callsigns, aerodromes, waypoints, crew…), older entries
@@ -80,7 +80,7 @@ Highlights:
 
 ### SIA missions — mission generator and map studio
 
-Folder `SIA XML/`; details (French): [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md).
+Folder `apps/sia/`; details (French): [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md).
 
 - **Mission generator (brief)**: YAML (`helo-xp-mission`) or Markdown import, texts proposed
   from the data when missing (points, rendezvous, instructions, refuelling track), YAML /
@@ -147,7 +147,7 @@ Version 2.3.0. Workarounds at the end of each line.
 
 1. Get the repository (clone or download) — see [INSTALL.md](INSTALL.md).
 2. Serve it locally, e.g. `python -m http.server 8000` at the repository root, and open
-   <http://127.0.0.1:8000/CR%20DEFA/mission_cr.html> in Chrome or Edge.
+   <http://127.0.0.1:8000/apps/cr/mission_cr.html> in Chrome or Edge.
 3. ☰ › Profil pilote: enter your IVAO / VATSIM IDs (and SimBrief username).
 4. Follow [docs/TUTORIAL.md](docs/TUTORIAL.md).
 
@@ -164,6 +164,6 @@ Terrarium terrain (AWS) and Overpass API (peaks). Mission data stay in your brow
 
 CC RBR — DEFA Virtual. Bundled third-party code: js-yaml 4.1.0 (MIT,
 `shared/mission_core/vendor/`); MapLibre GL JS (BSD-3-Clause) and jsPDF (MIT) in
-`SIA XML/`. World aerodrome data: github.com/mwgg/Airports (MIT), loaded on demand.
+`apps/sia/`. World aerodrome data: github.com/mwgg/Airports (MIT), loaded on demand.
 Aeronautical data: SIA (AIP France, AIXM 4.5) and DIRCAM (MILAIP ENR 5.7); cities: GeoNames
 (CC BY 4.0); maps © OpenStreetMap contributors, OpenTopoMap (CC-BY-SA).

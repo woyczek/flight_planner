@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  // Fiches « appareil » et « membre d'équipage » (CR DEFA/appareil.html, equipage.html).
+  // Fiches « appareil » et « membre d'équipage » (apps/cr/appareil.html, equipage.html).
   // Base « lâche » : tout ce qui est connu est repris (catalogue commun — flotte, référence DEFA,
   // missions, journal DEFA —, missions du registre, journal alternatif, profil du Flight Planner),
   // rien n'est obligatoire ; ce qui est saisi ici (statut, rattachement, mise en service,
@@ -416,7 +416,7 @@
       t = key(known.type),
       resolved = key(typeInfo?.tdesig || t);
     const profile = Object.values(state.profiles || {}).find(p => [p.id, p.icao, p.type].map(key).some(k => k && (k === t || k === resolved)));
-    const planner = new URL(`../flight_performance_planner.html?aircraft=${encodeURIComponent(profile?.id || resolved || t)}`, location.href).href;
+    const planner = new URL(`apps/planner/flight_performance_planner.html?aircraft=${encodeURIComponent(profile?.id || resolved || t)}`, window.RepositoryNav?.root || new URL('../../', location.href)).href;
     if (!profile) perf.innerHTML = `<p class="small">${esc(tr(UI.noProfile))}</p><a class="mc-button" href="${esc(planner)}">${esc(tr(UI.openPlanner))} ↗</a>`;
     else {
       // Valeurs du profil : 1 chiffre après la virgule.

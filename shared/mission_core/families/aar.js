@@ -18,7 +18,7 @@
   const num = v => Number(v) || 0;
 
   const roles = [opt('TANKER', L('Ravitailleur', 'Tanker', 'Tanker', 'Cisterna')), opt('RECEIVER', L('Ravitaillé', 'Receiver', 'Empfänger', 'Receptor'))];
-  // Axes de ravitaillement du MIAM ENR 5.7 (SIA XML/miam-enr-5-7-tracks.xml), liste à mettre à jour avec le MIAM.
+  // Axes de ravitaillement du MIAM ENR 5.7 (data/sia/miam-enr-5-7-tracks.xml), liste à mettre à jour avec le MIAM.
   const tracks = ['AGATHE', 'ALOHA', 'AMELIE', 'BARBARA', 'CECILE', 'DIANA', 'EDWIGE', 'FABIOLA', 'FOX01B/02B', 'FOX03/04', 'FOX05/06', 'FOX07/08', 'FOX09/10', 'FOX66/67',
     'GISELE', 'IRENE', 'JUDITH', 'KATIA', 'LEA', 'LUCIE', 'MARIE', 'NADIA', 'NINA', 'OCEANE', 'OLIVIA', 'REGINA', 'SIMONE', 'STACY', 'STEPHANIE', 'TANIA',
     'TIPHAINE', 'URSULA', 'VALENTINA', 'VIVIANE', 'YVETTE', 'ZOE', 'ZORA'

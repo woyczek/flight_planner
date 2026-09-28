@@ -1,20 +1,18 @@
-*.json
-*.csv
+# v3 : l'application seule est versionnée ici. Les données (registres, missions, références DEFA, MORA, AIRAC…)
+# vivent dans data/, clone du dépôt de données (privé) — voir INSTALL.md.
+data/
+
+# Caches et fichiers de travail
 __pycache__/
-*.yaml
-Missions/
-
-Stub/IVAO Tracker_files/
-
-Stub/
-
-# SIA XML : données AIRAC chargées depuis le dossier (hors dépôt), sauvegardes intermédiaires
-SIA XML/AIXM*.xml
-SIA XML/XML_SIA_*.xml
-SIA XML/sia-airspaces-*.xml
+AircraftDB/aircraft_http_cache.json
+AircraftDB/icao_doc8643_cache/
 *.backup-*.html
-# SIA XML : catalogues de l’application versionnés malgré la règle *.csv
-!SIA XML/*.csv
+Stub/
 
 # Archives de release (publiées sur framagit, hors dépôt)
 dist/
+
+# Fichiers de l'ancienne arborescence (v2), à ranger dans data/ par tools/migrate_v3.py
+VERSION.json
+defa_local_store.yaml
+flight_performance_database_merged.fpdb.json

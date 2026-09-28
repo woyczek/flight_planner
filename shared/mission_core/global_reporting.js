@@ -1,7 +1,7 @@
 (() => {
   'use strict';
-  // Mission Report Core — reporting général (CR DEFA/mission_operations_reporting.html).
-  // Source : registre unique CR DEFA/missions.yaml (toutes familles, ledger.js).
+  // Mission Report Core — reporting général (apps/cr/mission_operations_reporting.html).
+  // Source : registre unique data/cr/missions.yaml (toutes familles, ledger.js).
   // Période partagée (TimePeriod), filtre par famille (couleurs), indicateurs, graphiques
   // par période (jour / semaine / mois / trimestre / année) et répartitions, synthèses par
   // famille / appareil / équipage, tableau des missions (clic = CR en modification).
@@ -74,7 +74,7 @@
 
   const UI = {
     title: L('Reporting missions — CR DEFA', 'Mission reporting — CR DEFA', 'Einsatzauswertung — CR DEFA', 'Informe de misiones — CR DEFA'),
-    subtitle: L('Toutes les familles de missions · registre unique CR DEFA/missions.yaml', 'All mission families · single ledger CR DEFA/missions.yaml', 'Alle Einsatzfamilien · zentrales Register CR DEFA/missions.yaml', 'Todas las familias de misiones · registro único CR DEFA/missions.yaml'),
+    subtitle: L('Toutes les familles de missions · registre unique data/cr/missions.yaml', 'All mission families · single ledger data/cr/missions.yaml', 'Alle Einsatzfamilien · zentrales Register data/cr/missions.yaml', 'Todas las familias de misiones · registro único data/cr/missions.yaml'),
     newReport: L('Nouveau compte rendu', 'New report', 'Neuer Bericht', 'Nuevo informe'),
     period: L('Période et filtres', 'Period and filters', 'Zeitraum und Filter', 'Periodo y filtros'),
     families: L('Familles', 'Families', 'Familien', 'Familias'),

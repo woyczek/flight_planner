@@ -188,7 +188,7 @@ données sensibles.
 
 1. La première fois : **Registre des missions ▾ › Dossier du registre…** et choisir le dossier
    `CR DEFA` du dépôt (autorisation du navigateur, une fois pour toutes les familles).
-2. « **Ajouter au registre** » : la mission est écrite dans le registre unique `CR DEFA/missions.yaml`. Si le
+2. « **Ajouter au registre** » : la mission est écrite dans le registre unique `data/cr/missions.yaml`. Si le
    n° existe déjà, une alerte le signale.
 3. La page passe en mode modification : le bouton devient « Enregistrer les modifications »,
    et « Supprimer cette mission » apparaît.
@@ -281,7 +281,7 @@ le [manuel d'exploitation](MANUEL_EXPLOITATION.md).
 
 ## 12. Fiches appareil et équipage
 
-**Fiche appareil** (`CR DEFA/appareil.html?reg=F-ZBPN`, depuis la synthèse par appareil, la fiche
+**Fiche appareil** (`apps/cr/appareil.html?reg=F-ZBPN`, depuis la synthèse par appareil, la fiche
 équipage ou le Flight Planner) :
 
 - en tête : **statut** (disponible, indisponible, en maintenance, retiré), **📍 actuellement à**
@@ -300,7 +300,7 @@ Les fiches ont la **période** des reportings dans leur en-tête (préréglages,
 zoom par glisser sur le graphique) : cartes, graphique et tableau suivent la période ;
 l'identité reste calculée sur tout l'historique.
 
-**Fiche équipage** (`CR DEFA/equipage.html?name=PLN`) : nom, rattachement, qualifications,
+**Fiche équipage** (`apps/cr/equipage.html?name=PLN`) : nom, rattachement, qualifications,
 notes (modifiables) ; fonctions tenues, heures par type, activité, missions et vols.
 
 **Fusionner avec… / renommer** (dans chaque fiche) : deux appareils ou deux pilotes n'en font
@@ -314,11 +314,11 @@ rien n'est obligatoire ; ce qui est saisi dans une fiche reste dans le navigateu
 
 ## 13. Préparer une mission SIA : brief, cartes, compte rendu
 
-Exemple : `SIA XML/Mission 02.md` (ravitaillement en vol sur l'axe SIMONE). Détail :
+Exemple : `examples/missions/Mission 02.md` (ravitaillement en vol sur l'axe SIMONE). Détail :
 [SIA_MISSIONS.md](SIA_MISSIONS.md).
 
 1. **Données** (une fois par cycle AIRAC) : ☰ › Studio cartographique (SIA) › bloc 1 ›
-   « Dossier SIA XML » → choisir `SIA XML/` (voir [INSTALL.md](../INSTALL.md)).
+   « Dossier SIA XML » → choisir `apps/sia/` (voir [INSTALL.md](../INSTALL.md)).
 2. **Brief** : ☰ › Générateur de mission (SIA) › « YAML et/ou Markdown » → `Mission 02.md`.
    Le fichier n'a ni résumé ni description : ils sont **proposés** (type, cible, zone,
    participants MISTRAL 41/42 et VAILLANT 31, axe SIMONE 010°, 48 NM, 14 NM, virages par la

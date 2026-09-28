@@ -21,14 +21,14 @@ Python et pdf.js retirés. Le tableau du § 1 décrit l'état **initial** du dos
 | `.git` propre | **Dépôt git imbriqué** (2 commits, PNG en Git LFS) — à décider avant intégration (§ 4). |
 | Sauvegardes `*.backup-20260924-*.html` | Versions intermédiaires (à ne pas intégrer). |
 
-Données de test : `SIA XML/Mission 02.md` (ravitaillement en vol, axe SIMONE, patrouille
-MISTRAL 41/42 + tanker VAILLANT 31), `Missions/AIRLIFT_serie_1_precomplete/` (missions 11 à 15 :
-YAML `helo-xp-mission`, résumés, `maps_manifest.md`), `Missions/MEDEVAC_serie_1..3_OSM/` (cartes
+Données de test : `examples/missions/Mission 02.md` (ravitaillement en vol, axe SIMONE, patrouille
+MISTRAL 41/42 + tanker VAILLANT 31), `data/missions/AIRLIFT_serie_1_precomplete/` (missions 11 à 15 :
+YAML `helo-xp-mission`, résumés, `maps_manifest.md`), `data/missions/MEDEVAC_serie_1..3_OSM/` (cartes
 produites : général, cible, détail cible, zone, assemblage).
 
 ## 2. Intégration dans la suite (plan — réalisé)
 
-1. **Emplacement** : garder `SIA XML/` comme dossier de l'application (menu ☰ : « Missions SIA ›
+1. **Emplacement** : garder `apps/sia/` comme dossier de l'application (menu ☰ : « Missions SIA ›
    Générateur de mission », « Missions SIA › Studio cartographique »), thème et favicon existants
    (favicon SVG en ligne des pages → fichier `assets/`).
 2. **En-tête du framework** : `<header>` avec `<h1>`, `repository_tree` en tête,
@@ -74,7 +74,7 @@ pour retrouver l'axe d'un point de mission.
 
 Le XML d'origine étant incomplet (pas de noms, points EPT mêlés), un second fichier est produit
 depuis le PDF officiel (`MIAM_OACI_ENR 5.7.pdf`, AMDT 10/24 du 05 SEP 24, pages 1 à 5) :
-`SIA XML/miam-enr-5-7-tracks.xml` (le fichier d'origine est conservé).
+`data/sia/miam-enr-5-7-tracks.xml` (le fichier d'origine est conservé).
 
 - `parseEnr57(textePages)` (texte extrait par pdf.js) : points DMS nommés et minutes décimales,
   **comparés** ; axes IP / CP / points particuliers ; noms complets (colonne du tableau : SIM →
@@ -95,7 +95,7 @@ depuis le PDF officiel (`MIAM_OACI_ENR 5.7.pdf`, AMDT 10/24 du 05 SEP 24, pages 
 
 ## 4. Réponses (2026-09-24)
 
-1. Dépôt imbriqué : historique rejoué linéairement sous `SIA XML/`, `.git` imbriqué supprimé.
+1. Dépôt imbriqué : historique rejoué linéairement sous `apps/sia/`, `.git` imbriqué supprimé.
 2. Données AIRAC hors dépôt (`.gitignore`).
 3. XML incomplet : corrigé par le XML nommé ci-dessus.
 4. Largeur : dans le PDF (14 NM) ; côté : seulement quand S2 existe.

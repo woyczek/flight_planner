@@ -1,5 +1,10 @@
 # Données de la suite — provenance, mise à jour, sauvegarde
 
+Depuis la v3, les données (tout ce qui est DEFA, saisi ou recalculé) sont **hors du dépôt de l'application**, dans le
+dépôt de données (privé) cloné dans `data/` : `references/`, `cr/`, `missions/`, `sia/`, `planner/` (voir INSTALL.md,
+`tools/data_template/README.md`). Le dépôt de l'application ne garde que le code, les bases OACI / APD générées et des
+exemples fictifs (`examples/`).
+
 Règle : **aucune donnée ne reste seulement dans le navigateur.** Chaque base est :
 
 - soit une **référence importée** d'une source fiable, par un outil (scrapper / import) qui la reconstruit ;
@@ -17,31 +22,31 @@ désignateurs OACI E2 et Q9 dans `aircraft_overrides.json` ; les 20 types milita
 |---|---|---|---|---|
 | Types d'aéronefs OACI | `AircraftDB/aircraft_db.js` | OACI Doc 8643 (liste officielle JSON, doc8643.icao.int), EUROCONTROL (aile), Wikidata (repli, filtré) | `python update_aircraft_db.py [--add CODE…] [--only CODE…]` (dans `AircraftDB/`) | `aircraft_overrides.json` (alias et fiches, appliqués par l'outil) ; page Paramétrage |
 | Performances par type | `AircraftDB/aircraft_perf.js` | EUROCONTROL Aircraft Performance Database | `python update_aircraft_db.py --apd [CODE…]` | aucune : on corrige le parseur |
-| Flotte DEFA | `shared/aircraft_fleet.js` | page « Flotte virtuelle » de flotte.defa-virtual.fr (enregistrée) | `python AircraftDB/update_fleet.py Flotte.html` | page Paramétrage (conservées par l'outil) |
-| Référence DEFA (pilotes, appareils, terrains) | `shared/defa_reference.js` | journal des vols DEFA (page enregistrée, non committée) | `python tools/defa_reference.py "Log des vols.html"` | page Paramétrage (conservées par l'outil) |
+| Flotte DEFA | `data/references/aircraft_fleet.js` | page « Flotte virtuelle » de flotte.defa-virtual.fr (enregistrée) | `python AircraftDB/update_fleet.py Flotte.html` | page Paramétrage (conservées par l'outil) |
+| Référence DEFA (pilotes, appareils, terrains) | `data/references/defa_reference.js` | journal des vols DEFA (page enregistrée, non committée) | `python tools/defa_reference.py "Log des vols.html"` | page Paramétrage (conservées par l'outil) |
 | Base SIA (espaces, aérodromes, obstacles…) | cache du Studio (IndexedDB `sia-map-parser`, cycle `airac`) | export officiel du SIA (dossier choisi dans le Studio ; seul le cycle le plus récent est lu) | Paramètres › Maintenance › Mise à jour SIA pas à pas | — (source officielle) |
-| Grille MORA | `SIA XML/mora.csv` (cycle des obstacles dans `source`) | relief Terrarium + sommets OSM + obstacles de l'AIXM | Studio › bloc 5 (complet) ; Maintenance › étape 6 (recalcul simple : obstacles d'un nouveau cycle) | — |
+| Grille MORA | `data/sia/mora.csv` (cycle des obstacles dans `source`) | relief Terrarium + sommets OSM + obstacles de l'AIXM | Studio › bloc 5 (complet) ; Maintenance › étape 6 (recalcul simple : obstacles d'un nouveau cycle) | — |
 | Axes de ravitaillement en vol | lus par `shared/aar_tracks.js` | MILAIP France ENR 5.7 (XML de coordonnées) | chargement du XML (Studio / CR AAR) | — |
 
 ## 2. Données utilisateur
 
 | Donnée | Où | Sauvegarde |
 |---|---|---|
-| Registres de missions (CR) | `CR DEFA/…/missions.yaml` (dossier choisi) + navigateur | fichier du dossier ; données locales |
-| Registres historiques FIRE / HEMS | CSV du dossier | fichiers (copie de secours `shared/mission_ledger_defaults.js` pour `file://`) |
-| Indicatifs, organismes → OPR/ | `shared/mission_core/data/callsigns.js` | dépôt (édité dans Paramétrage) |
+| Registres de missions (CR) | `data/cr/missions.yaml` (dossier choisi) + navigateur | fichier du dossier ; données locales |
+| Registres historiques FIRE / HEMS | CSV du dossier | fichiers (copie de secours `data/cr/mission_ledger_defaults.js` pour `file://`) |
+| Indicatifs, organismes → OPR/ | `data/references/callsigns.js` | dépôt (édité dans Paramétrage) |
 | Appareils des missions, types ajoutés, indicatifs appris, aérodromes | navigateur (`missionAircraft…`, `dataOverride:*`) | données locales ; intégration dans les fichiers du dépôt par Paramétrage |
 | Profils d'appareils du planificateur | navigateur (`flightPerfState`) | données locales ; « Exporter BDD locale » (fichier) |
 | OFP SimBrief, calibrations, airframes | navigateur (IndexedDB `FlightPerfCache`) | **données locales** (section `indexed`) |
 | Journal d'atterrissages chargé | navigateur (IndexedDB `LandingPerformanceDashboardCache`) | **données locales** (section `indexed`) ; fichier d'origine du plugin |
 | Profils d'affichage du Studio, alias de zones, sorties | navigateur (`sia*`) | données locales |
 | Profil pilote, préférences | navigateur | données locales |
-| Registre des missions générées (statuts, dates de vol, notes, commandes) | navigateur (`missionRegistry:v1`) + `Missions/mission_registry.yaml` | données locales ; fichier du dossier Missions |
+| Registre des missions générées (statuts, dates de vol, notes, commandes) | navigateur (`missionRegistry:v1`) + `data/missions/mission_registry.yaml` | données locales ; fichier du dossier Missions |
 | Canal et mode des mises à jour | navigateur (`suiteUpdate:v1`) ; canal appliqué par git : `git config suite.channel` | données locales |
 | Journal des sauvegardes et rechargements | navigateur (`suiteBackupLog:v1`) | données locales (non compté comme modification) |
 
 **Sauvegarde totale** (Paramètres › Maintenance) = les données locales ci-dessous **et** les fichiers connus des
-dossiers autorisés (registres des CR, `Missions/`, profils de performance, configuration du dépôt dont
+dossiers autorisés (registres des CR, `data/missions/`, profils de performance, configuration du dépôt dont
 `flight_performance_database_merged.fpdb.json`, `aircraft_overrides.json`, CSV du Landing Dashboard, `mora.csv`…, et
 tout dossier ajouté) dans une archive ZIP avec `manifest.json` (tailles, dates, SHA-256), écrite dans
 `<dossier de sauvegarde>/sauvegardes/` ; rechargement fichier par fichier, tracé dans le journal.

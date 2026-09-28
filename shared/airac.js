@@ -58,10 +58,8 @@
   ];
   const FIXED = [
     { id: 'mora', name: 'mora.csv', label: ['Grille MORA calculée', 'Computed MORA grid'] },
-    { id: 'cities', name: 'villes_geonames.csv', label: ['Villes (GeoNames)', 'Cities (GeoNames)'] },
     { id: 'tracks', name: 'miam-enr-5-7-tracks.xml', label: ['Axes AAR nommés (ENR 5.7)', 'Named AAR tracks (ENR 5.7)'] },
     { id: 'coords', name: 'miam-enr-5-7-coordinates.xml', label: ['Coordonnées ENR 5.7 d’origine', 'Original ENR 5.7 coordinates'] },
-    { id: 'background', name: 'Carte france vierge.png', label: ['Fond local', 'Local background'] },
     { id: 'readme', name: 'Lisez_moi.txt', label: ['Lisez-moi du SIA (nouveautés du BMJ)', 'SIA read-me (BMJ changes)'] }
   ];
   /** Inventaire d'un dossier SIA XML (fichiers [{ name, size, lastModified }]) : { files, cycles, latest, complete, old, fixed, zips }. */

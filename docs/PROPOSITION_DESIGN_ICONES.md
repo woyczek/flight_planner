@@ -174,14 +174,14 @@ Générée par `side_nav.js` à partir de `repository_tree` — une seule source
 ```js
 // repository_tree (proposition)
 sidebar:[
-  {icon:"target",   path:"SIA XML/mission_editor.html", label:["Missions","Missions","Missionen","Misiones"]},
-  {icon:"map",      path:"SIA XML/map_parser.html",     label:["Cartes","Maps","Karten","Mapas"]},
-  {icon:"clipboard",path:"CR DEFA/mission_cr.html", match:"CR DEFA/", label:["CR DEFA", …]},
-  {icon:"chart",    path:"CR DEFA/mission_operations_reporting.html", match:"_reporting.html", label:[…]},
-  {icon:"fuel",     path:"flight_performance_planner.html", label:[…]},
-  {icon:"plane",    path:"LandingPerformanceDashboard/…", label:[…]},
+  {icon:"target",   path:"apps/sia/mission_editor.html", label:["Missions","Missions","Missionen","Misiones"]},
+  {icon:"map",      path:"apps/sia/map_parser.html",     label:["Cartes","Maps","Karten","Mapas"]},
+  {icon:"clipboard",path:"apps/cr/mission_cr.html", match:"apps/cr/", label:["CR DEFA", …]},
+  {icon:"chart",    path:"apps/cr/mission_operations_reporting.html", match:"_reporting.html", label:[…]},
+  {icon:"fuel",     path:"apps/planner/flight_performance_planner.html", label:[…]},
+  {icon:"plane",    path:"apps/landing/…", label:[…]},
   {sep:true},
-  {icon:"settings", path:"CR DEFA/parametrage.html", label:[…]},
+  {icon:"settings", path:"apps/settings/parametrage.html", label:[…]},
   {icon:"help",     menu:true, label:["Menu", …]}      // ouvre le menu ☰
 ]
 ```
@@ -287,11 +287,11 @@ rapports pour chaque thème à chaque modification de `repository_tree`.
 
 | Page | Structure actuelle | Travail | Risque |
 |---|---|---|---|
-| Générateur (`SIA XML/mission_editor.html`) | 6 `section`, titres numérotés, `.pasteBox`, `<input type=file>` dans des `<label>` | `data-step/icon/subtitle`, `.repo-card` pour les sous-blocs, `data-dropzone`, icônes des boutons ; lignes `sia_i18n.js` | **session parallèle en cours sur ce fichier** : attendre sa fin |
+| Générateur (`apps/sia/mission_editor.html`) | 6 `section`, titres numérotés, `.pasteBox`, `<input type=file>` dans des `<label>` | `data-step/icon/subtitle`, `.repo-card` pour les sous-blocs, `data-dropzone`, icônes des boutons ; lignes `sia_i18n.js` | **session parallèle en cours sur ce fichier** : attendre sa fin |
 | Studio (`map_parser.html`) | 5 `section`, colonne d'aperçu collante (`StickyFrame.stick`) | idem ; `StickyFrame.refresh()` après décor (hauteur d'en-tête modifiée) | idem (session parallèle) |
 | CR DEFA (Mission Core, 16 familles + démo) | blocs générés par `form.js` depuis `blocks.js`, `core.css`, outils d'en-tête en `summary` | `icon`/`subtitle` dans `blocks.js`, 10 lignes dans `form.js` | faible ; vérifier l'impression (`core.css` masque déjà `.repo-block-heading` du rapport) |
 | Reportings (général, familles, HEMS/GAAR anciens) | `section.section` + `h2` avec `.mcg-sub` | icônes par section, `.mcg-sub` → sous-titre | faible |
-| Planificateur (`flight_performance_planner.html`) | 13 blocs, en-têtes `.row>h2` avec contrôles, thème sombre, `StickyFrame.follow`, `ColumnResize` | icônes seulement (pas de numéros : pas de parcours linéaire) | règle `.perf-side>[data-block-id=result].is-stuck>:not(.repo-block-heading)` : l'en-tête reste enfant direct, OK ; densité |
+| Planificateur (`apps/planner/flight_performance_planner.html`) | 13 blocs, en-têtes `.row>h2` avec contrôles, thème sombre, `StickyFrame.follow`, `ColumnResize` | icônes seulement (pas de numéros : pas de parcours linéaire) | règle `.perf-side>[data-block-id=result].is-stuck>:not(.repo-block-heading)` : l'en-tête reste enfant direct, OK ; densité |
 | Landing Dashboard | thème sombre, dictionnaire propre `TR` | icônes ; sous-titres via `landingI18nRows()` | faible |
 | Paramétrage, fiches appareil / équipage | blocs simples | icônes | faible |
 

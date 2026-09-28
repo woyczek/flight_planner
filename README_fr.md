@@ -17,10 +17,10 @@ et dans le navigateur.
 
 | Application | Pages | Rôle | Documentation |
 |---|---|---|---|
-| **CR DEFA** (Mission Report Core) | `CR DEFA/` — ☰ › Reporting missions, Nouveau compte rendu, Paramétrage | Comptes rendus de mission de 15 familles, registre unique, reporting et graphiques, bases de la flotte et des indicatifs, envoi des CR | [Tutoriel](docs/TUTORIAL.md) · [Manuel d'exploitation](docs/MANUEL_EXPLOITATION.md) · [Notes de conception](docs/mission_report_core_audit.md) |
-| **Landing Performance Dashboard** | `LandingPerformanceDashboard/LandingPerformance_Dashboard_MultiCSV_i18n.html` | Analyse des atterrissages (score, FPM, G) à partir des journaux CSV / LOG, tendances, filtres | [docs/LANDING_DASHBOARD.md](docs/LANDING_DASHBOARD.md) · [mise à jour de la base d'aéronefs](LandingPerformanceDashboard/README.md) |
-| **Flight Performance & Fuel Planner** | `flight_performance_planner.html` | Profils de performance par avion, devis carburant, altitude optimale, calibration SimBrief, échange Little Navmap | [docs/FLIGHT_PLANNER.md](docs/FLIGHT_PLANNER.md) |
-| **Missions SIA** | `SIA XML/` — ☰ › Générateur de mission (SIA), Studio cartographique (SIA) | Brief de mission (textes, points, PDF final) et cartes PNG / SVG depuis les données AIRAC du SIA : zones, MORA, quadrillage, hippodromes de ravitaillement, fonds OSM ; passerelle vers un CR DEFA pré-rempli | [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md) |
+| **CR DEFA** (Mission Report Core) | `apps/cr/` — ☰ › Reporting missions, Nouveau compte rendu, Paramétrage | Comptes rendus de mission de 15 familles, registre unique, reporting et graphiques, bases de la flotte et des indicatifs, envoi des CR | [Tutoriel](docs/TUTORIAL.md) · [Manuel d'exploitation](docs/MANUEL_EXPLOITATION.md) · [Notes de conception](docs/mission_report_core_audit.md) |
+| **Landing Performance Dashboard** | `apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html` | Analyse des atterrissages (score, FPM, G) à partir des journaux CSV / LOG, tendances, filtres | [docs/LANDING_DASHBOARD.md](docs/LANDING_DASHBOARD.md) · [mise à jour de la base d'aéronefs](apps/landing/README.md) |
+| **Flight Performance & Fuel Planner** | `apps/planner/flight_performance_planner.html` | Profils de performance par avion, devis carburant, altitude optimale, calibration SimBrief, échange Little Navmap | [docs/FLIGHT_PLANNER.md](docs/FLIGHT_PLANNER.md) |
+| **Missions SIA** | `apps/sia/` — ☰ › Générateur de mission (SIA), Studio cartographique (SIA) | Brief de mission (textes, points, PDF final) et cartes PNG / SVG depuis les données AIRAC du SIA : zones, MORA, quadrillage, hippodromes de ravitaillement, fonds OSM ; passerelle vers un CR DEFA pré-rempli | [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md) |
 | **Framework commun** | `repository_tree`, `shared/`, `AircraftDB/`, `tools/` | Bandeau et menu ☰, langues, blocs, période et zoom (TimePeriod), graphiques, tableaux, profil pilote, données locales, bases d'aéronefs | [docs/FRAMEWORK.md](docs/FRAMEWORK.md) |
 
 Les applications se parlent par le framework : même profil pilote (IVAO, VATSIM,
@@ -30,15 +30,15 @@ fichier du Landing Dashboard ; une mission SIA ouvre un CR DEFA pré-rempli.
 
 ### Mission Report Core — l’application « CR DEFA »
 
-Toutes les pages et tous les registres de l’application sont dans le dossier `CR DEFA/` ;
+Toutes les pages et tous les registres de l’application sont dans le dossier `apps/cr/` ;
 le code commun reste dans `shared/`, `AircraftDB/` et `assets/`.
 
 Un moteur unique (`shared/mission_core/`) anime les pages de CR et de reporting de toutes
 les familles : HEMS / MEDEVAC, FIRE / GAAR (lutte contre les feux de forêt), SAR,
 AIRLIFT, AAR (ravitaillement en vol), MARITIME, HADR, AIRBORNE, CONTRÔLE EN VOL, LEVÉS, POLICE / DOUANE, ISR,
 COMMANDEMENT / GUET AÉRIEN, OPÉRATIONS SPÉCIALES, SPÉCIAL (essais / formation). Chaque
-famille a une page de CR (`CR DEFA/<DOSSIER>/<famille>_cr.html`) et une page de reporting
-(`CR DEFA/<DOSSIER>/<famille>_reporting.html`) ; la popup de l'en-tête change de famille et de
+famille a une page de CR (`apps/cr/<DOSSIER>/<famille>_cr.html`) et une page de reporting
+(`apps/cr/<DOSSIER>/<famille>_reporting.html`) ; la popup de l'en-tête change de famille et de
 sous-type de mission.
 
 Points forts :
@@ -68,7 +68,7 @@ Points forts :
   la clef se règlent dans Paramétrage (la clef reste dans le navigateur, hors sauvegardes).
 - **Suivi réseau en direct** (IVAO / VATSIM) : mise en route, décollage, atterrissage, fin de
   mission ; import de l'historique VATSIM.
-- **Registre unique** : toutes les familles dans un seul fichier YAML (`CR DEFA/missions.yaml`),
+- **Registre unique** : toutes les familles dans un seul fichier YAML (`data/cr/missions.yaml`),
   écrit dans le dossier `CR DEFA` autorisé une fois (Chrome / Edge), export CSV simplifié ;
   anciens registres par famille repris automatiquement. Import des anciens registres CSV
   HEMS / GAAR.
@@ -84,7 +84,7 @@ Points forts :
 
 ### Missions SIA — générateur de mission et studio cartographique
 
-Dossier `SIA XML/` ; détail : [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md).
+Dossier `apps/sia/` ; détail : [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md).
 
 - **Générateur de mission (brief)** : import YAML (`helo-xp-mission`) ou Markdown, textes
   proposés à partir des données quand ils manquent (points, rendez-vous, consignes, axe de
@@ -154,7 +154,7 @@ Version 2.3.0. Contournements indiqués en fin de ligne.
 
 1. Récupérer le dépôt (clone ou archive) — voir [INSTALL.md](INSTALL.md).
 2. Le servir localement, par exemple `python -m http.server 8000` à la racine du dépôt, puis
-   ouvrir <http://127.0.0.1:8000/CR%20DEFA/mission_cr.html> dans Chrome ou Edge.
+   ouvrir <http://127.0.0.1:8000/apps/cr/mission_cr.html> dans Chrome ou Edge.
 3. ☰ › Profil pilote : saisir ses ID IVAO / VATSIM (et l'identifiant SimBrief).
 4. Suivre le [tutoriel](docs/TUTORIAL.md).
 
@@ -173,6 +173,6 @@ votre navigateur et dans les fichiers que vous choisissez.
 
 CC RBR — DEFA Virtual. Code tiers inclus : js-yaml 4.1.0 (MIT,
 `shared/mission_core/vendor/`) ; MapLibre GL JS (BSD-3-Clause) et jsPDF (MIT) dans
-`SIA XML/`. Données des aérodromes : github.com/mwgg/Airports (MIT), chargées à la demande.
+`apps/sia/`. Données des aérodromes : github.com/mwgg/Airports (MIT), chargées à la demande.
 Données aéronautiques : SIA (AIP France, AIXM 4.5) et DIRCAM (MILAIP ENR 5.7) ; villes :
 GeoNames (CC BY 4.0) ; cartographie © contributeurs OpenStreetMap, OpenTopoMap (CC-BY-SA).

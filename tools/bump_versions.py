@@ -14,7 +14,8 @@ sys.stdout.reconfigure(encoding='utf-8')
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 REF = re.compile(r'((?:\.\./)?shared/[\w/.-]+\.(?:js|css))\?v=(\w+)')
 
-pages = glob.glob(os.path.join(ROOT, '**', '*.html'), recursive=True)  # racine, CR DEFA/, CR DEFA/<famille>/…
+pages = [p for p in glob.glob(os.path.join(ROOT, '**', '*.html'), recursive=True)  # apps/…, docs/ (hors data/ : dépôt de données)
+         if not os.path.relpath(p, ROOT).replace(os.sep, '/').startswith(('data/', 'examples/'))]
 nav = os.path.join(ROOT, 'shared', 'repository_nav.js')
 if len(sys.argv) > 1:
     version = sys.argv[1]

@@ -1,6 +1,6 @@
 (() => {
     'use strict';
-    // Mission Report Core — registre UNIQUE des missions, toutes familles : CR DEFA/missions.yaml
+    // Mission Report Core — registre UNIQUE des missions, toutes familles : data/cr/missions.yaml
     // (chaque mission porte sa famille). Sources, la plus récente (updatedAt) l'emporte :
     // fichier du dossier « CR DEFA » autorisé (Chrome / Edge, une seule autorisation), copie du
     // navigateur (partagée entre pages), fichier servi avec le dépôt (lecture seule).
@@ -18,7 +18,7 @@
       CACHE = 'missionCoreLedger:v2',
       HANDLE = 'folder:__ledger';
     const HERE = document.currentScript?.src || location.href;
-    const APP = new URL('../../CR%20DEFA/', HERE); // dossier de l'application (à côté de shared/)
+    const APP = new URL('../../data/cr/', HERE); // dossier des registres : data/cr (dépôt de données, v3)
     const DB = 'missionCore',
       STORE = 'handles';
     /** Base IndexedDB « missionCore » (magasin handles) : dossier du registre. */
@@ -290,7 +290,7 @@
       ...doc(),
       missions
     }, title);
-    // Écrit la copie navigateur et, si autorisé, CR DEFA/missions.yaml.
+    // Écrit la copie navigateur et, si autorisé, data/cr/missions.yaml.
     async function save({
       request = true
     } = {}) {
@@ -334,7 +334,7 @@
         text
       };
     }
-    /** Choix du dossier du registre (CR DEFA), puis rechargement. */
+    /** Choix du dossier du registre (data/cr), puis rechargement. */
     async function chooseFolder() {
       if (window.FileAccess) {
         const picked = await window.FileAccess.pickFolder('__ledger');
@@ -352,14 +352,8 @@
           startIn: current
         } : {})
       });
-      // Dossier attendu : « CR DEFA » (celui qui contient mission_cr.html).
-      let isApp = false;
-      try {
-        await picked.getFileHandle('mission_cr.html');
-        isApp = true;
-      } catch {
-        /* autre dossier */ }
-      if (!isApp && !confirm(`Le dossier « ${picked.name} » ne contient pas mission_cr.html : est-ce bien le dossier « CR DEFA » ? Le registre ${FILE} y sera écrit.`)) throw new Error('Dossier refusé');
+      // Dossier attendu (v3) : data/cr du dépôt de données.
+      if (picked.name !== 'cr' && !confirm(`Le dossier « ${picked.name} » n'est pas data/cr (dépôt de données) : y écrire quand même le registre ${FILE} ?`)) throw new Error('Dossier refusé');
       handle = picked;
       await idbSet(HANDLE, picked);
       store.folder = picked.name;

@@ -7,7 +7,7 @@
     const defaultsReady = new Promise(resolve => {
       if (window.MissionLedgerDefaultsB64) return resolve();
       const script = document.createElement('script');
-      script.src = new URL('mission_ledger_defaults.js', moduleUrl).href;
+      script.src = new URL('../data/cr/mission_ledger_defaults.js', moduleUrl).href;   // dépôt de données (v3)
       script.onload = script.onerror = resolve;
       document.head.append(script);
     });
@@ -63,7 +63,9 @@
     const candidates = (name, configKey) => {
       const leaf = String(name || '').replace(/^.*[\\/]/, ''),
         configured = window.RepositoryNav?.settings?.files?.[configKey];
-      return [...new Set([configured, name, (configKey === 'gaarLedgerName' ? 'FIRE/' : 'HEMS/') + leaf].filter(Boolean))];
+      // v3 : registres dans data/cr/ (dépôt de données) ; puis à côté de la page (anciennes installations)
+      const data = new URL('../data/cr/', moduleUrl).href, sub = (configKey === 'gaarLedgerName' ? 'FIRE/' : 'HEMS/') + leaf;
+      return [...new Set([configured && new URL(configured, data).href, name && new URL(name, data).href, new URL(sub, data).href, configured, name, sub].filter(Boolean))];
     };
     /** Met en cache le registre lu, le transmet à la page (événement mission-ledger-autoload), propose le prochain n° de mission (hors mode modification) et relance le rendu du rapport. */
     const publish = (configKey, filename, text, source) => {
@@ -164,10 +166,10 @@
   // index = position de la ligne dans le registre (le n° de mission peut être dupliqué).
   const openEditor = ({ kind, configKey, filename, index, record }) => {
     localStorage.setItem('missionEditDraft:v1', JSON.stringify({ kind, configKey, filename, index, record, returnUrl: location.href }));
-    // Adresse de la page d'après repository_tree (application dans « CR DEFA/ »).
+    // Adresse de la page d'après repository_tree (application dans « apps/cr/ »).
     const file = kind === 'gaar' ? 'fire_cr.html' : 'hems_medevac_cr.html';
     const known = (window.REPOSITORY_TREE?.pages || []).find(p => p.path.endsWith('/' + file));
-    const page = known ? new URL(known.path, new URL('../', moduleUrl)).href : new URL(`../CR DEFA/${kind === 'gaar' ? 'FIRE' : 'HEMS'}/${file}`, moduleUrl).href;
+    const page = known ? new URL(known.path, new URL('../', moduleUrl)).href : new URL(`../apps/cr/${kind === 'gaar' ? 'FIRE' : 'HEMS'}/${file}`, moduleUrl).href;
     location.href = `${page}?edit=${encodeURIComponent(record?.missionId || '')}`;
   };
 

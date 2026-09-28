@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  // Registre des missions générées (SIA XML/mission_registry.html) : inventaire des séries du dossier « Missions »
+  // Registre des missions générées (apps/sia/mission_registry.html) : inventaire des séries du dossier « Missions »
   // (missionNN.yaml, summaryNN.md, schéma helo-xp-mission) et des missions commandées, avec choix par type, sous-type,
   // rendez-vous, nombre et types d'équipes, ravitaillement, théâtre, statut ; tirage au sort ; ouverture dans le
   // générateur, le studio ou un nouveau CR ; commande d'une nouvelle mission (prompt ChatGPT réglé).
@@ -62,7 +62,7 @@
   async function writeFile(request = false) {
     const dir = await missionsDir(request);
     if (!dir || !window.jsyaml) return false;
-    const text = `# Registre des missions générées — XPlane Web Suite (SIA XML/mission_registry.html)\n# ${reg.updatedAt}\n` + window.jsyaml.dump(reg, { lineWidth: -1, noRefs: true });
+    const text = `# Registre des missions générées — XPlane Web Suite (apps/sia/mission_registry.html)\n# ${reg.updatedAt}\n` + window.jsyaml.dump(reg, { lineWidth: -1, noRefs: true });
     const w = await (await dir.getFileHandle(FILE, { create: true })).createWritable();
     await w.write(text);
     await w.close();
@@ -344,12 +344,12 @@
         const family = window.MissionVocab.familyForType(doc.yaml?.mission?.type), target = window.MissionVocab.families.find(f => f.id === family);
         localStorage.setItem('siaMissionToCr:v1', JSON.stringify(doc.yaml));
         if (['generated', 'planned', 'flown'].includes(m.status)) { m.status = 'flown'; m.flownAt = m.flownAt || new Date().toISOString().slice(0, 10); persist(); }
-        location.href = new URL(`CR DEFA/${target.cr}?from=sia`, window.RepositoryNav.root).href;
+        location.href = new URL(`apps/cr/${target.cr}?from=sia`, window.RepositoryNav.root).href;
         return;
       }
       window.SiaMission.importTexts(files, 'registry');
       if (m.status === 'generated') { m.status = 'planned'; m.statusAt = new Date().toISOString(); persist(); }
-      location.href = new URL(where === 'studio' ? 'SIA XML/map_parser.html' : 'SIA XML/mission_editor.html', window.RepositoryNav.root).href;
+      location.href = new URL(where === 'studio' ? 'apps/sia/map_parser.html' : 'apps/sia/mission_editor.html', window.RepositoryNav.root).href;
     } catch (e) { if (out) out.textContent = e.message; }
   }
 

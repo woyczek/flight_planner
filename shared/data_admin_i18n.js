@@ -353,9 +353,9 @@ window.DataAdminI18n = {
 "„DEFA-Referenz aktualisieren“: Piloten und Flugzeuge hinzugefügt oder ergänzt (nichts entfernt; Heimat-AD, Status, Indienststellung und Notizen bleiben).",
 "«Actualizar la referencia DEFA»: pilotos y aeronaves añadidos o completados (nada se elimina; se conservan AD base, estado, puesta en servicio y notas)."
 ],
-"« Enregistrer dans le dépôt », puis committer shared/defa_reference.js.": [
-"„Im Repository speichern“, dann shared/defa_reference.js committen.",
-"«Guardar en el repositorio», luego hacer commit de shared/defa_reference.js."
+"« Enregistrer dans le dépôt », puis committer data/references/defa_reference.js.": [
+"„Im Repository speichern“, dann data/references/defa_reference.js committen.",
+"«Guardar en el repositorio», luego hacer commit de data/references/defa_reference.js."
 ],
 "Ou, à la racine du dépôt :": [
 "Oder im Stammverzeichnis des Repositorys:",
@@ -393,9 +393,9 @@ window.DataAdminI18n = {
 "Missionsregister (Einsatzdatenbank)",
 "Registros de misiones (base de operaciones)"
 ],
-"Registre unique CR DEFA/missions.yaml (toutes familles, source de vérité des reportings). Édition directe du YAML, complète ou par famille, avec contrôle avant enregistrement ; pour une mission, préférer le CR (clic sur la ligne du reporting).": [
-"Einzelnes Register CR DEFA/missions.yaml (alle Familien, maßgebliche Quelle der Auswertungen). Direkte YAML-Bearbeitung, vollständig oder je Familie, vor dem Speichern geprüft; für eine einzelne Mission besser den Bericht verwenden (seine Zeile in der Auswertung anklicken).",
-"Registro único CR DEFA/missions.yaml (todas las familias, fuente de verdad de los informes). Edición YAML directa, completa o por familia, verificada antes de guardar; para una sola misión, mejor el informe (clic en su fila del informe)."
+"Registre unique data/cr/missions.yaml (toutes familles, source de vérité des reportings). Édition directe du YAML, complète ou par famille, avec contrôle avant enregistrement ; pour une mission, préférer le CR (clic sur la ligne du reporting).": [
+"Einzelnes Register data/cr/missions.yaml (alle Familien, maßgebliche Quelle der Auswertungen). Direkte YAML-Bearbeitung, vollständig oder je Familie, vor dem Speichern geprüft; für eine einzelne Mission besser den Bericht verwenden (seine Zeile in der Auswertung anklicken).",
+"Registro único data/cr/missions.yaml (todas las familias, fuente de verdad de los informes). Edición YAML directa, completa o por familia, verificada antes de guardar; para una sola misión, mejor el informe (clic en su fila del informe)."
 ],
 "Dossiers paramétrés": [
 "Konfigurierte Ordner",
@@ -601,7 +601,7 @@ window.DataAdminI18n = {
 "DEFA-Referenz aktualisieren (anonymisiert)",
 "Actualizar la referencia DEFA (anonimizada)"
 ],
-"Référence DEFA complétée depuis le journal : vérifier, puis « Enregistrer dans le dépôt » (shared/defa_reference.js).": [
+"Référence DEFA complétée depuis le journal : vérifier, puis « Enregistrer dans le dépôt » (data/references/defa_reference.js).": [
 "DEFA-Referenz aus dem Flugbuch ergänzt: prüfen, dann im Repository speichern.",
 "Referencia DEFA completada a partir del registro: compruebe y guarde en el repositorio."
 ],

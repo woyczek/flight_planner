@@ -236,7 +236,7 @@
     airac: ['AIRAC', 'AIRAC', 'AIRAC', 'AIRAC'],
     airacTitle: ['Cycle AIRAC {e} en vigueur ; base SIA du studio : {b} — mettre à jour les données SIA (Paramètres › Maintenance)', 'AIRAC cycle {e} in force; map studio SIA base: {b} — update SIA data (Settings › Maintenance)', 'AIRAC-Zyklus {e} gültig; SIA-Basis des Studios: {b} — SIA-Daten aktualisieren', 'Ciclo AIRAC {e} vigente; base SIA del estudio: {b} — actualizar los datos SIA']
   };
-  const page = () => new URL('CR DEFA/maintenance.html', nav.root).href;
+  const page = () => new URL('apps/settings/maintenance.html', nav.root).href;
   let host = null;
   function badge() {
     const tools = document.querySelector('.repo-header-tools');
