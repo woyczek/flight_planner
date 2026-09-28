@@ -333,10 +333,10 @@
         aircraftAssist(path, value);
         assist.onCommit(path, value);
         timeAssist(path, value);
-        // Mission volée saisie ou changée : n° de CR recalculé (CRM016-1, essai suivant si rejouée ; vide : CRM-LIB…) ;
+        // Mission volée saisie ou changée : n° de CR recalculé (CRM-016-1, essai suivant si rejouée ; vide : CRM-A01-1…) ;
         // inchangé si le n° actuel correspond déjà à cette mission (modification d'un CR existant).
         const crNow = window.MissionVocab.parseCrId(mission.metadata.missionId);
-        if (path === 'metadata.missionNumber' && (crNow?.mission ?? '') !== String(value || '').trim().toUpperCase()) {
+        if (path === 'metadata.missionNumber' && (crNow?.mission ?? '') !== window.MissionVocab.missionIdOf(value)) {
           mission.metadata.missionId = ledger.nextId(prefix, value);
           view.sync('metadata.');
           changed();
@@ -1445,7 +1445,7 @@
         if (sia) {
           mission = fresh();
           fromSia(mission, sia);
-          mission.metadata.missionId = ledger.nextId(prefix, mission.metadata.missionNumber);   // CR<mission>-<essai> : CRM016-1, CRM016-2 si rejouée
+          mission.metadata.missionId = ledger.nextId(prefix, mission.metadata.missionNumber);   // CR<mission>-<essai> : CRM-016-1, CRM-016-2 si rejouée
           dirty = true;
           localStorage.removeItem(SIA_KEY);
         }

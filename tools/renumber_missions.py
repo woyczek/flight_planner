@@ -1,6 +1,6 @@
 """Renumérotation des missions : lettre de FAMILLE + numéro d'opération sur 3 chiffres par famille (+ lettre d'équipe).
 
-Format : « M016 » (une équipe) ou « M016A », « M016B »… (opération à plusieurs équipes). La lettre désigne la famille
+Format : « M-016 » (une équipe) ou « M-016A », « M-016B »… (opération à plusieurs équipes). La lettre désigne la famille
 (tools/family_letters.py : M HEMS / MEDEVAC, S SAR, T AIRLIFT…) ; le numéro est compté par famille ; mission.series =
 numéro de la série dans la famille (1, 2, 3…). Rangement : data/missions/<lettre>_<FAMILLE>/<identifiant>/ (un sous-dossier par mission : YAML,
 résumé, cartes, PDF ; les noms génériques comme carte_assemblage.png n'entrent plus en collision).
@@ -11,7 +11,7 @@ Séries à renuméroter : dossiers de data/missions contenant des missionNN.yaml
 sous-dossier NN/) ; les séries déjà au nouveau format (dossier « M_MEDEVAC », « S_SAR »…) sont gardées et comptées. Ordre : --order
 (noms de dossiers), sinon date du plus ancien YAML puis numéro de série. Réécrit : mission.series / number / id
 (+ former_id : ancien identifiant), operation.id / missions, noms de cartes (filename), titres « # Mission … », mentions
-« Mission NN » / « soutien NN » ; renomme les fichiers (mission11.yaml → missionM016.yaml, general11.png → generalM016.png).
+« Mission NN » / « soutien NN » ; renomme les fichiers (mission11.yaml → missionM-016.yaml, general11.png → generalM-016.png).
 Un fichier en double (même nom dans le sous-dossier de la mission et au niveau de la série) : celui du sous-dossier est
 gardé, l'autre va dans data/missions/_remplaces/<date>/. Trace : data/missions/RENUMEROTATION.md.
 Bibliothèque standard uniquement.
@@ -26,7 +26,7 @@ MISSIONS = os.path.join(ROOT, 'data', 'missions')
 DRY = '--dry-run' in sys.argv
 ORDER = sys.argv[sys.argv.index('--order') + 1].split(',') if '--order' in sys.argv else []
 NEW_DIR = re.compile(r'^[A-Z]_[A-Z0-9-]+$')
-NEW_ID = re.compile(r'^([A-Z])(\d{3})([A-Z]?)$')
+NEW_ID = re.compile(r'^([A-Z])-?(\d{3})([A-Z]?)$')
 OLD_YAML = re.compile(r'^mission(\d+[A-Z]?)\.ya?ml$', re.I)
 TODAY = dt.date.today().isoformat()
 
@@ -96,10 +96,10 @@ def plan():
         mapping, op_map = {}, {}
         for opn in sorted(ops):
             num[letter] = num.get(letter, 0) + 1
-            op_map[str(opn)] = f'{letter}{num[letter]:03d}'
+            op_map[str(opn)] = f'{letter}-{num[letter]:03d}'
             for m in sorted(ops[opn], key=lambda x: x['old']):
                 team = re.sub(r'^\d+', '', m['old'])
-                m['new'] = f'{letter}{num[letter]:03d}{team}'
+                m['new'] = f'{letter}-{num[letter]:03d}{team}'
                 m['num'] = num[letter]
                 mapping[m['old']] = m['new']
         out.append({**s, 'letter': letter, 'rank': rank[letter], 'newdir': f"{letter}_{s['family']}", 'mapping': mapping, 'op_map': op_map})
@@ -188,7 +188,7 @@ def run():
     print(('(simulation) ' if DRY else '') + '\n'.join(log))
     if not DRY:
         path = os.path.join(MISSIONS, 'RENUMEROTATION.md')
-        head = '' if os.path.exists(path) else ('# Renumérotation des missions\n\nFormat : lettre de famille + numéro d’opération sur 3 chiffres, compté par '
+        head = '' if os.path.exists(path) else ('# Renumérotation des missions\n\nFormat : lettre de famille + tiret + numéro d’opération sur 3 chiffres, compté par '
                                                  'famille (+ lettre d’équipe). Ancien identifiant gardé dans mission.former_id.\n')
         with open(path, 'a', encoding='utf-8') as f:
             f.write(head + f'\n## {TODAY}\n\n| Nouveau | Ancien | Ancien dossier | Famille | Titre |\n|---|---|---|---|---|\n'

@@ -415,7 +415,7 @@
       load: (force = false) => load(force), save, chooseFolder,
       get missions() { return list(); },
       count: missionId => list().filter(m => normId(m.metadata?.missionId) === normId(missionId)).length,
-      /** Identifiant du prochain CR (MissionVocab.crId) : CR + mission + n° d'essai (CRM016-2), ou CR sans mission (CRM-LIB004) ;
+      /** Identifiant du prochain CR (MissionVocab.crId) : CR + mission + n° d'essai (CRM-016-2), ou CR sans mission (CRM-A04-1) ;
        *  tous les CR du registre comptent (toutes familles). */
       nextId: (_prefix, missionNumber = '') => window.MissionVocab.crId({ family: id, missionNumber, crIds: store.missions.map(m => normId(m.metadata?.missionId)) }),
       add: mission => { store.missions.push(withFamily(mission)); return list().length - 1; },

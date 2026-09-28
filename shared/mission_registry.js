@@ -69,6 +69,8 @@
   }
 
   // ---- lecture d'une mission (document { yaml, narrative }) → entrée du registre
+  /** Identifiant normalisé (M-016 → M-016) : SiaMission.parseId. */
+  const normMissionId = v => (window.SiaMission?.parseId ? window.SiaMission.parseId(v).id : String(v || '').toUpperCase());
   function entryOf(doc, { folder = '', files = [], generatedAt = '' } = {}) {
     const y = doc.yaml || {}, meta = y.mission || {};
     const teams = (Array.isArray(y.teams) ? y.teams : []).filter(x => x && typeof x === 'object');
@@ -78,7 +80,7 @@
     const pt = y.origin || y.target || {};
     const opMissions = Array.isArray(y.operation?.missions) ? y.operation.missions : [];
     return {
-      id: String(meta.id ?? meta.number ?? '').trim() || (/([A-Z]?\d+[A-Z]?)(?=\.\w+$)/i.exec(files[0] || '')?.[1] || '').toUpperCase(),
+      id: normMissionId(String(meta.id ?? meta.number ?? '').trim() || (/([A-Z]?-?\d+[A-Z]?)(?=\.\w+$)/i.exec(files[0] || '')?.[1] || '')),
       formerId: String(meta.former_id ?? '').trim().toUpperCase(),   // identifiant d'avant renumérotation (tools/renumber_missions.py)
       series: meta.series ?? '',
       number: meta.number ?? '',
@@ -121,7 +123,7 @@
   /** Mission lue qui remplace une entrée disparue : même ancien identifiant (former_id), sinon même titre et même type. */
   function successorOf(old, live) {
     const id = String(old.id || '').toUpperCase(), title = String(old.title || '').trim().toLowerCase();
-    const team = v => /\d([A-Z])$/.exec(String(v || '').toUpperCase())?.[1] || '';   // lettre d'équipe (M016B → B)
+    const team = v => /\d([A-Z])$/.exec(String(v || '').toUpperCase())?.[1] || '';   // lettre d'équipe (M-016B → B)
     return live.find(m => id && (m.formerId === id || m.id === id))
       || (title && live.find(m => String(m.title || '').trim().toLowerCase() === title && (!old.type || !m.type || m.type === old.type) && team(m.id) === team(old.id)))
       || null;

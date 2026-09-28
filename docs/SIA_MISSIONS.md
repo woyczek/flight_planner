@@ -54,17 +54,17 @@ version précédente est relue automatiquement si l'accès au dossier est déjà
 Pour faire produire une série par un assistant externe (ChatGPT…) : prompt complet, aligné sur ce que lit
 la suite, dans [PROMPT_GENERATEUR_MISSIONS.md](PROMPT_GENERATEUR_MISSIONS.md).
 
-**Identifiants** : lettre de la famille + numéro d'opération sur 3 chiffres, compté par famille, + lettre d'équipe
-quand l'opération engage plusieurs équipes — « M016 », « S002A », « S002B ». Lettres : M HEMS / MEDEVAC, H HADR,
+**Identifiants** : lettre de la famille + tiret + numéro d'opération sur 3 chiffres, compté par famille, + lettre d'équipe
+quand l'opération engage plusieurs équipes — « M-016 », « S-002A », « S-002B ». Lettres : M HEMS / MEDEVAC, H HADR,
 F FIRE, S SAR, T AIRLIFT, R AAR, P AIRBORNE, N MARITIME, I ISR, L LE, C COMMAND, O SOF, V FI, G SURVEY, X SPECIAL
 (`SiaMission.FAMILY_LETTERS`, `tools/family_letters.py`) ; `mission.series` = rang de la série dans la famille ;
-`mission.former_id` = identifiant d'avant renumérotation. Les **CR** reprennent l'identifiant : `CRM016-1`
-(CR + mission + n° d'essai ; CR sans mission : `CRM-LIB001`, voir MANUEL_EXPLOITATION.md § 2.1). Prochains numéros : `SiaMission.nextNumbering(famille)`
+`mission.former_id` = identifiant d'avant renumérotation. Les **CR** reprennent l'identifiant : `CRM-016-1`
+(CR + mission + n° d'essai ; CR sans mission : `CRM-A01-1`, voir MANUEL_EXPLOITATION.md § 2.1). Prochains numéros : `SiaMission.nextNumbering(famille)`
 (d'après le registre des missions). Rangement : `data/missions/<lettre>_<FAMILLE>/<identifiant>/` (YAML, résumé,
 cartes, PDF) ; outils `tools/renumber_missions.py` (séries importées), `tools/import_pdf_missions.py` (dossiers PDF
-et ZIP de cartes), trace dans `data/missions/RENUMEROTATION.md`.
+et ZIP de cartes), `tools/dash_mission_ids.py` (passage au format avec tiret), trace dans `data/missions/RENUMEROTATION.md`.
 
-Schéma YAML `helo-xp-mission` (exemples : `data/missions/T_AIRLIFT/T001/missionT001.yaml`,
+Schéma YAML `helo-xp-mission` (exemples : `data/missions/T_AIRLIFT/T-001/missionT-001.yaml`,
 `data/missions/M_MEDEVAC/`) :
 
 | Clé | Contenu |
@@ -95,12 +95,12 @@ prime quand les deux sont chargés. La cible et les zones n'ont pas de coordonn�
 (elles viennent du YAML) ; les Markdown MEDEVAC n'ont que textes, équipes et risques.
 
 **Lot de missions** (opération à plusieurs équipes, série) : une sélection de plusieurs missions — fichiers
-(`missionM016A.yaml`, `summaryM016A.md`, `missionM016B.yaml`…) ou texte collé d'un seul tenant — réponse de ChatGPT
+(`missionM-016A.yaml`, `summaryM-016A.md`, `missionM-016B.yaml`…) ou texte collé d'un seul tenant — réponse de ChatGPT
 copiée en Markdown (« Fichier : … » + blocs ```), copiée depuis la page (« Fichier : … », « yaml », « Copier le
 code »), ou YAML et Markdown des missions simplement à la suite (« schema: helo-xp-mission », « # Mission … ») ;
 le texte hors mission (introduction, VALIDATION, « Mission suivante ») est écarté — est découpée et regroupée par
-mission (identifiant `mission.id`, ou titre « # Mission M016A ») ; la première est affichée, les autres avec
-**◀ Mission M016A — titre (1/3) ▶** dans l'en-tête du générateur et du studio (même lot, partagé entre les deux
+mission (identifiant `mission.id`, ou titre « # Mission M-016A ») ; la première est affichée, les autres avec
+**◀ Mission M-016A — titre (1/3) ▶** dans l'en-tête du générateur et du studio (même lot, partagé entre les deux
 pages et mémorisé dans le navigateur : `siaMissionBatch:v1`). Les modifications de chaque mission sont gardées
 en passant de l'une à l'autre. Générateur : **Exporter les N PDF** — un brief par mission. Studio :
 **Afficher toutes les cartes (N missions)** — aperçus de toutes les missions, groupés par mission ;

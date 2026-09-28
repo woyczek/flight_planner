@@ -18,8 +18,8 @@ GÉNÉRATEUR DE SÉRIE DE MISSIONS — HELO XP
 PARAMÈTRES DE CETTE EXÉCUTION
   TYPE            = aléatoire        (ou un code de famille du § 2, ex. AAR)
   PROCHAINS_NUMEROS = auto           (par famille : identifiant de la première opération et numéro de la série,
-                                     ex. « HEMS M016 série 4 · SAR S003 série 3 · … » ; réglé par le générateur ou
-                                     le registre ; auto : M001 / série 1 pour une famille sans mission)
+                                     ex. « HEMS M-016 série 4 · SAR S-003 série 3 · … » ; réglé par le générateur ou
+                                     le registre ; auto : M-001 / série 1 pour une famille sans mission)
   NOMBRE_MISSIONS = 5                (1 à 9 : nombre d'opérations)
   THÉÂTRE         = aléatoire       (métropole, Corse, Antilles, Guyane, Réunion, Mayotte,
                                      Nouvelle-Calédonie, Polynésie… ; plusieurs possibles, liés
@@ -115,18 +115,18 @@ de commandement (BE20 ou TBM9, coordination au-dessus du feu) = trois missions ;
 métropole et un hélicoptère au-dessus de la Corse avec un rendez-vous commun = deux missions ; AAR — ravitailleur
 et receveurs = une mission par équipe, points tournants différents, même axe et même rendez-vous.
 
-Numérotation : NN = lettre de la famille + numéro de l'opération sur 3 chiffres, compté PAR FAMILLE. Lettres :
+Numérotation : NN = lettre de la famille + tiret + numéro de l'opération sur 3 chiffres, compté PAR FAMILLE. Lettres :
 HEMS / MEDEVAC M · HADR H · FIRE F · SAR S · AIRLIFT T · AAR R · AIRBORNE P · MARITIME N · ISR I · LE L · COMMAND C ·
 SOF O · FI V · SURVEY G · SPECIAL X. Première opération = identifiant donné pour la famille dans PROCHAINS_NUMEROS
-(ex. « HEMS M016 série 4 » → opérations M016, M017… ; mission.series = 4). Une seule équipe : mission NN (« M016 »).
-Plusieurs équipes : missions NN + lettre de l'équipe, une par équipe dans l'ordre (« M016A », « M016B », « M016C »).
+(ex. « HEMS M-016 série 4 » → opérations M-016, M-017… ; mission.series = 4). Une seule équipe : mission NN (« M-016 »).
+Plusieurs équipes : missions NN + lettre de l'équipe, une par équipe dans l'ordre (« M-016A », « M-016B », « M-016C »).
 Deux fichiers par mission, chacun dans son propre bloc de code, précédé d'une ligne « Fichier : … » :
   missionNNX.yaml   (bloc ```yaml)
   summaryNNX.md     (bloc ```markdown)
-Ordre : missionM016A.yaml, summaryM016A.md, missionM016B.yaml, summaryM016B.md, … puis l'opération suivante.
+Ordre : missionM-016A.yaml, summaryM-016A.md, missionM-016B.yaml, summaryM-016B.md, … puis l'opération suivante.
 Aucun autre fichier (pas d'images, pas de manifeste). Puis le bloc VALIDATION (§ 10).
 Réponse trop longue pour tout livrer d'un coup : livrer les missions une par une, chacune COMPLÈTE (YAML +
-Markdown), puis écrire « Mission suivante : M016B — répondre « suite » » et attendre ; le bloc VALIDATION suit
+Markdown), puis écrire « Mission suivante : M-016B — répondre « suite » » et attendre ; le bloc VALIDATION suit
 la dernière mission. Ne jamais tronquer un fichier.
 
 ────────────────────────────────────────────────────────────────────────────
@@ -136,7 +136,7 @@ Textes longs (summary, detailed_description) : bloc littéral « |- », paragrap
 vide, une idée par paragraphe, 4 phrases au plus par paragraphe. Jamais un seul bloc compact.
 Règles de syntaxe : YAML 1.2 valide, indentation 2 espaces, PAS d'ancres ni d'alias (&id / *id) :
 répéter les valeurs. Textes contenant « : », « # » ou commençant par un caractère spécial entre
-guillemets doubles. id de mission entre guillemets ('M016'). Booléens true / false. Nombres sans unité.
+guillemets doubles. id de mission entre guillemets ('M-016'). Booléens true / false. Nombres sans unité.
 Coordonnées : degrés décimaux WGS84, 6 décimales, lat puis lon, ouest et sud négatifs.
 
 schema: helo-xp-mission
@@ -144,13 +144,13 @@ schema_version: '1.0'
 mission:
   series: 4                    # = série indiquée pour la famille dans PROCHAINS_NUMEROS
   number: 16                   # = numéro de l'opération (entier)
-  id: 'R016A'                  # = NN (R = AAR), + lettre de l'équipe s'il y en a plusieurs (en texte)
+  id: 'R-016A'                 # = NN (R = AAR), + lettre de l'équipe s'il y en a plusieurs (en texte)
   type: AAR                    # code de famille (§ 2)
   subtype: TRAINING            # code de sous-type (§ 2)
 operation:                     # opération commune aux missions de ses équipes (identique dans chacune)
-  id: 'R016'
+  id: 'R-016'
   name: "Nom de l'opération"
-  missions: ['R016A', 'R016B']   # toutes les missions de l'opération, dans l'ordre
+  missions: ['R-016A', 'R-016B']   # toutes les missions de l'opération, dans l'ordre
 title: "AXE CECILE — ravitaillement d'une patrouille Rafale"   # court, sans le numéro
 summary: |-                   # bloc LITTÉRAL « |- » (jamais « >- » ni « > », qui recollent les lignes)
   Paragraphe 1 (2 à 3 phrases) : la situation — qui, où, ce qui se passe.

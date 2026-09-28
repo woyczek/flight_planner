@@ -179,7 +179,7 @@
       title: parsed.title || 'Mission',
       mission: {}
     };
-    const id = y.title.match(/\bMission\s+([A-Z]?\d+[A-Z]?)\b/i);
+    const id = y.title.match(/\bMission\s+([A-Z]?-?\d+[A-Z]?)\b/i);
     if (id) { const p = parseId(id[1]); y.mission.id = p.id; y.mission.number = p.num; }
     for (const [key, aliases] of Object.entries({
         type: ['TYPE', 'Type'],
@@ -255,10 +255,12 @@
   /** Vrai pour le Markdown d'une mission (ancien format TYPE: / TURNING POINTS:, ou format actuel ## Introduction / ## Summary). */
   const isMissionMd = f => (/\.(md|markdown|txt)$/i.test(f.name) || /^\s*#/.test(f.text)) && (/^##\s+(introduction|summary|résumé|resume)\b/im.test(f.text) || /^\s*(TYPE|TURNING POINTS|POINTS TOURNANTS)\s*:/m.test(f.text));
   /** Missions distinctes d'une sélection : identifiant du YAML (mission.id) ou n° du titre Markdown (« Mission 51 »). */
+  /** Identifiant de mission normalisé (M-016, m-16 → M-016 ; 041A → 41A) : regroupement des fichiers d'une même mission. */
+  const normId = v => parseId(v).id;
   function missionIds(yamls, mds) {
     const ids = new Set();
-    yamls.forEach(({ parsed }) => { const id = parsed?.mission?.id ?? parsed?.mission?.number; if (id != null && id !== '') ids.add(String(id).trim().toUpperCase().replace(/^0+(?=\d)/, '')); });
-    mds.forEach(f => { const m = /^#\s+Mission\s+([A-Z]?\d+[A-Z]?)\b/im.exec(f.text); if (m) ids.add(m[1].toUpperCase().replace(/^0+(?=\d)/, '')); }); // 41A ≠ 41B (une mission par équipe)
+    yamls.forEach(({ parsed }) => { const id = parsed?.mission?.id ?? parsed?.mission?.number; if (id != null && id !== '') ids.add(normId(id)); });
+    mds.forEach(f => { const m = /^#\s+Mission\s+([A-Z]?-?\d+[A-Z]?)\b/im.exec(f.text); if (m) ids.add(normId(m[1])); }); // 41A ≠ 41B (une mission par équipe)
     return [...ids];
   }
 
@@ -408,7 +410,7 @@
     const blocks = [...src.matchAll(/```([\w-]*)\n([\s\S]*?)\n\s*```/g)];
     if (blocks.length > 1) return blocks.map((b, i) => ({ name: /ya?ml/i.test(b[1]) || /^\s*(schema|mission)\s*:/m.test(b[2]) ? `bloc${i + 1}.yaml` : `bloc${i + 1}.md`, text: b[2] }));
     // 4. débuts de fichiers à la suite : YAML (« schema: helo-xp-mission ») et Markdown (« # Mission 41A »)
-    const starts = [...src.matchAll(/^(?:schema\s*:\s*['"]?helo-xp-mission\b.*|#\s+Mission\s+[A-Z]?\d+[A-Z]?\b.*)$/gim)];
+    const starts = [...src.matchAll(/^(?:schema\s*:\s*['"]?helo-xp-mission\b.*|#\s+Mission\s+[A-Z]?-?\d+[A-Z]?\b.*)$/gim)];
     if (starts.length > 1) return starts.map((m, k) => {
       const yaml = /^schema/i.test(m[0]);
       return { name: `${yaml ? 'mission' : 'summary'}${k + 1}.${yaml ? 'yaml' : 'md'}`, text: cleanSegment(src.slice(m.index, starts[k + 1]?.index ?? src.length)) };
@@ -432,9 +434,9 @@
   function fromTextsBatch(files) {
     const expanded = files.flatMap(f => { const parts = splitBundle(f.text); return parts.length ? parts : [f]; });
     const idOfFile = f => {
-      if (isYaml(f)) { try { const y = window.jsyaml.load(f.text); return missionId({ yaml: y }); } catch { return ''; } }
-      const m = /^#\s+Mission\s+([A-Z]?\d+[A-Z]?)\b/im.exec(f.text);
-      return m ? m[1].toUpperCase().replace(/^0+(?=\d)/, '') : '';
+      if (isYaml(f)) { try { const y = window.jsyaml.load(f.text); return normId(missionId({ yaml: y })); } catch { return ''; } }
+      const m = /^#\s+Mission\s+([A-Z]?-?\d+[A-Z]?)\b/im.exec(f.text);
+      return m ? normId(m[1]) : '';
     };
     const groups = new Map(), loose = [];
     for (const f of expanded) { const id = idOfFile(f); id ? (groups.has(id) || groups.set(id, []), groups.get(id).push(f)) : loose.push(f); }
@@ -520,24 +522,25 @@
       if (e.key === KEY) fire();
     });
   }
-  // ---- numérotation : lettre de FAMILLE + numéro sur 3 chiffres par famille (+ lettre d'équipe) — « M016 », « S002A »
+  // ---- numérotation : lettre de FAMILLE + tiret + numéro sur 3 chiffres par famille (+ lettre d'équipe) — « M-016 », « S-002A »
+  // (écritures sans tiret « M016 » acceptées et ramenées à ce format).
   // Même table que tools/family_letters.py et que le prompt (docs/PROMPT_GENERATEUR_MISSIONS.md, § 3).
   const FAMILY_LETTERS = { HEMS: 'M', MEDEVAC: 'M', HADR: 'H', FIRE: 'F', SAR: 'S', AIRLIFT: 'T', AAR: 'R', AIRBORNE: 'P', MARITIME: 'N', ISR: 'I', LE: 'L', COMMAND: 'C', SOF: 'O', FI: 'V', SURVEY: 'G', SPECIAL: 'X' };
-  /** Découpe un identifiant : { id, letter, num, team } ; anciens identifiants numériques (« 41A ») : letter vide. */
+  /** Découpe un identifiant : { id: 'M-016A', letter, num, team } ; anciens identifiants numériques (« 41A ») : letter vide. */
   function parseId(raw) {
-    const s = String(raw ?? '').trim().toUpperCase(), m = /^([A-Z])?(\d+)([A-Z])?$/.exec(s);
+    const s = String(raw ?? '').trim().toUpperCase(), m = /^([A-Z])?-?(\d+)([A-Z])?$/.exec(s);
     if (!m) return { id: s, letter: '', num: null, team: '' };
     const letter = m[1] || '', num = +m[2], team = m[3] || '';
-    return { id: letter ? `${letter}${String(num).padStart(3, '0')}${team}` : s, letter, num, team };
+    return { id: letter ? `${letter}-${String(num).padStart(3, '0')}${team}` : `${num}${team}`, letter, num, team };
   }
-  /** Prochain identifiant d'une famille d'après le registre (missionRegistry:v1) : { letter, first: '016', id: 'M016', serie: 4 }. */
+  /** Prochain identifiant d'une famille d'après le registre (missionRegistry:v1) : { letter, first: '016', id: 'M-016', serie: 4 }. */
   function nextNumbering(family) {
     let reg = [];
     try { reg = JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions || []; } catch { /* registre illisible */ }
     const letter = FAMILY_LETTERS[String(family || '').toUpperCase()] || '';
     const mine = reg.filter(m => letter && parseId(m.id).letter === letter);
     const num = Math.max(0, ...mine.map(m => parseId(m.id).num || 0)) + 1, serie = Math.max(0, ...mine.map(m => +m.series || 0)) + 1;
-    return { letter, first: String(num).padStart(3, '0'), id: letter ? `${letter}${String(num).padStart(3, '0')}` : '', serie };
+    return { letter, first: String(num).padStart(3, '0'), id: letter ? `${letter}-${String(num).padStart(3, '0')}` : '', serie };
   }
   /** Prochains identifiants de toutes les familles (paramètre PROCHAINS_NUMEROS du prompt, utile si TYPE = aléatoire). */
   function numberingTable() {
