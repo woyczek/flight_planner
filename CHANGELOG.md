@@ -10,6 +10,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Bandeaux Carnet de vol, Cabinet, Durci** : le panneau de la page reste à l'intérieur du cadre cousu (marges
+  latérales) et l'en-tête devient une plaque vissée en retrait (plus de coins ni de vis contre le bord de la fenêtre,
+  plus de bande vide au-dessus) ; emblème du Carnet de vol détouré (médaillon ailé seul) ; avion des plaques de titre
+  gravé sur fond transparent (plus de vignette encadrée).
+
 - **Numérotation des missions** : lettre de série + numéro d'opération sur 3 chiffres (+ lettre d'équipe) — « K049 »,
   « K049A » ; la lettre est unique toutes familles confondues (A, B, C… dans l'ordre de création), le numéro ne se
   répète jamais. Prompt du générateur : SERIE (lettre) et PREMIER_NUMERO (proposés d'après le registre des missions,
