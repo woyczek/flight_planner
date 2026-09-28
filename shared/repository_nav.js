@@ -148,7 +148,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260927zzy", script.src).href;
+    css.href = new URL("designs.css?v=20260928f", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -294,12 +294,13 @@
       host.append(a)
     }
   }
-  // Apparence : page CR DEFA/apparence.html (design, icônes, barre latérale, couleurs) ; le menu ☰ et Paramétrage y mènent.
+  // Apparence : page apps/settings/apparence.html (design, icônes, barre latérale, couleurs) ; le menu ☰ et la barre latérale y mènent.
   // Réglages en tête du menu, en boutons : Apparence (design, icônes, couleurs) et Paramètres (bases de données).
   menu.insertAdjacentHTML("afterbegin", '<div class="repo-settings-row"><a class="repo-settings-button repo-appearance-link" data-label="Apparence"></a><a class="repo-settings-button repo-parametrage-link" data-label="Paramètres"></a></div>');
-  menu.querySelector(".repo-appearance-link").href = new URL("CR DEFA/apparence.html", root).href;
+  menu.querySelector(".repo-appearance-link").href = new URL("apps/settings/apparence.html", root).href;
   menu.querySelector(".repo-appearance-link").addEventListener("click", e => { if (openAppearance()) { e.preventDefault(); close(); } });
-  menu.querySelector(".repo-parametrage-link").href = new URL("CR DEFA/parametrage.html", root).href;
+  menu.querySelector(".repo-parametrage-link").href = new URL("apps/settings/parametrage.html", root).href;
+  // Maintenance (mises à jour, sources et dossiers, SIA, sauvegarde) : rubrique de Paramètres (parametrage.html?m=…)
   menu.insertAdjacentHTML("beforeend", '<div class="repo-page-actions"></div>');
   /** Enregistre et applique le design id (événement « repository-design-change »). */
   const setDesign = id => {
@@ -397,8 +398,13 @@
     close()
   };
   document.body.style.backgroundColor = theme.page || "";
+  /** Adresse d'une source externe : réglage local (suiteSources:v1, Paramètres › Maintenance) sinon repository_tree.sources. */
+  const source = key => { let o = {}; try { o = JSON.parse(localStorage.getItem("suiteSources:v1") || "{}") || {}; } catch {} return String(o[key] || cfg.sources?.[key]?.url || "").replace(/\/+$/, ""); };
   // API publique.
   window.RepositoryNav = {
+    source,
+    /** Enregistre (ou efface, valeur vide) la surcharge locale d'une source ; événement « suite-sources-change ». */
+    setSource(key, value) { let o = {}; try { o = JSON.parse(localStorage.getItem("suiteSources:v1") || "{}") || {}; } catch {} const v = String(value || "").trim(); v && v !== cfg.sources?.[key]?.url ? o[key] = v : delete o[key]; try { Object.keys(o).length ? localStorage.setItem("suiteSources:v1", JSON.stringify(o)) : localStorage.removeItem("suiteSources:v1"); } catch {} window.dispatchEvent(new CustomEvent("suite-sources-change", { detail: { key } })); },
     trLabel: l => trLabel(l),
     root,
     page,
@@ -482,15 +488,16 @@
   // Entrées : REPOSITORY_TREE.sidebar si présent, sinon la liste ci-dessous ; seules les pages déclarées sont retenues.
   {
     const items = cfg.sidebar || [
-      { icon: "target", path: "SIA XML/mission_editor.html", label: ["Missions", "Missions", "Missionen", "Misiones"] },
-      { icon: "map", path: "SIA XML/map_parser.html", label: ["Cartes", "Maps", "Karten", "Mapas"] },
-      { icon: "clipboard", path: "CR DEFA/mission_cr.html", match: "CR DEFA/", label: ["CR DEFA", "DEFA report", "DEFA-Bericht", "Informe DEFA"] },
-      { icon: "chart", path: "CR DEFA/mission_operations_reporting.html", match: "_reporting.html", label: ["Reporting", "Reporting", "Berichte", "Informes"] },
-      { icon: "fuel", path: "flight_performance_planner.html", label: ["Carburant", "Fuel", "Kraftstoff", "Combustible"] },
-      { icon: "plane", path: "LandingPerformanceDashboard/LandingPerformance_Dashboard_MultiCSV_i18n.html", label: ["Atterrissages", "Landings", "Landungen", "Aterrizajes"] },
+      { icon: "target", path: "apps/sia/mission_editor.html", label: ["Missions", "Missions", "Missionen", "Misiones"] },
+      { icon: "list", path: "apps/sia/mission_registry.html", label: ["Registre", "Registry", "Register", "Registro"], title: ["Registre des missions générées", "Generated mission registry", "Register der erzeugten Missionen", "Registro de misiones generadas"] },
+      { icon: "map", path: "apps/sia/map_parser.html", label: ["Cartes", "Maps", "Karten", "Mapas"] },
+      { icon: "clipboard", path: "apps/cr/mission_cr.html", match: "apps/cr/", label: ["CR DEFA", "DEFA report", "DEFA-Bericht", "Informe DEFA"] },
+      { icon: "chart", path: "apps/cr/mission_operations_reporting.html", match: "_reporting.html", label: ["Reporting", "Reporting", "Berichte", "Informes"] },
+      { icon: "fuel", path: "apps/planner/flight_performance_planner.html", label: ["Carburant", "Fuel", "Kraftstoff", "Combustible"] },
+      { icon: "plane", path: "apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html", label: ["Atterrissages", "Landings", "Landungen", "Aterrizajes"] },
       { sep: true, bottom: true },   // réglages : groupés en bas de la colonne
-      { icon: "palette", path: "CR DEFA/apparence.html", label: ["Apparence", "Appearance", "Darstellung", "Apariencia"] },
-      { icon: "settings", path: "CR DEFA/parametrage.html", label: ["Paramètres", "Settings", "Einstellungen", "Ajustes"] },
+      { icon: "palette", path: "apps/settings/apparence.html", label: ["Apparence", "Appearance", "Darstellung", "Apariencia"] },
+      { icon: "settings", path: "apps/settings/parametrage.html", label: ["Paramètres", "Settings", "Einstellungen", "Ajustes"] },
       { icon: "help", menu: true, label: ["Menu", "Menu", "Menü", "Menú"], title: ["Toutes les pages, profil, données locales, design", "All pages, profile, local data, design", "Alle Seiten, Profil, lokale Daten, Design", "Todas las páginas, perfil, datos locales, diseño"] }
     ];
     const known = new Set(cfg.pages.map(p => p.path)), current = page?.path || "";
@@ -510,7 +517,7 @@
     // flotte DEFA Virtual (nouvel onglet : la page en cours reste ouverte)
     const LOGO = { cabinet: "cabinet", flightlog: "flightlog", field: "field", aqua: "aqua" };
     const logoSrc = () => new URL(`icons/defa/${LOGO[doc.dataset.design] || "flat"}.webp${ver}`, script.src).href;
-    side.innerHTML = `<a class="repo-sidenav-brand" href="https://flotte.defa-virtual.fr/index.php" target="_blank" rel="noopener" title="DEFA Virtual — flotte.defa-virtual.fr"><img class="repo-sidenav-logo" src="${logoSrc()}" alt="DEFA Virtual"></a><ul></ul>`;
+    side.innerHTML = `<a class="repo-sidenav-brand" href="${source("defa") || "https://flotte.defa-virtual.fr"}/index.php" target="_blank" rel="noopener" title="DEFA Virtual — ${source("defa").replace(/^https?:\/\//, "")}"><img class="repo-sidenav-logo" src="${logoSrc()}" alt="DEFA Virtual"></a><ul></ul>`;
     const ul = side.querySelector("ul");
     items.forEach((it, i) => {
       const li = document.createElement("li");
@@ -520,7 +527,7 @@
       a.className = "repo-sidenav-item";
       if (it.menu) { a.type = "button"; a.onclick = e => { e.stopPropagation(); document.querySelector(".repo-menu-button")?.click(); }; }
       else a.href = new URL(it.path, root).href;
-      if (it.path === "CR DEFA/apparence.html") a.addEventListener("click", e => { if (openAppearance()) e.preventDefault(); });
+      if (it.path === "apps/settings/apparence.html") a.addEventListener("click", e => { if (openAppearance()) e.preventDefault(); });
       if (i === active) a.setAttribute("aria-current", "page");
       a.innerHTML = `<span class="repo-sidenav-ic" data-sidenav-icon="${esc(it.icon)}">${skImg(it.icon)}</span><span class="repo-sidenav-label"></span>`;
       a._it = it;
@@ -551,21 +558,24 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260927zzy", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260928f", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260927zzy", script.src).href;
+    files.src = new URL("file_access.js?v=20260928f", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260927zzy", "block_icons.js?v=20260927zzy", "side_nav.js?v=20260927zzy"]) {
+    for (const f of ["icons/repository_icons.js?v=20260928f", "block_icons.js?v=20260928f", "side_nav.js?v=20260928f"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260927zzy", script.src).href;
-    document.head.append(store)
+    store.src = new URL("browser_store.js?v=20260928f", script.src).href;
+    document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
+    const update = document.createElement("script");
+    update.src = new URL("suite_update.js?v=20260928f", script.src).href;
+    document.head.append(update)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {
     detail: window.RepositoryNav

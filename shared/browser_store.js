@@ -19,6 +19,10 @@
   const SKIP = [/^networkWatch:/, /^missionSendKey:/, /^defaFlightLog:/];
   const META = 'defaLocalStore:v1'; // { savedAt, hash } — non sauvegardé lui-même
   const PENDING = 'defaLocalStore:pending'; // modifications depuis la dernière sauvegarde
+  // Journal des sauvegardes et restaurations (trace de chaque rechargement : origine, date de la sauvegarde relue,
+  // clés ajoutées / mises à jour) ; affiché par Paramètres › Maintenance. 60 entrées au plus.
+  const JOURNAL = 'suiteBackupLog:v1',
+    JOURNAL_MAX = 60;
   const REMIND = 10; // bouton « Sauvegarder » au plus toutes les 10 modifications
   const here = document.currentScript?.src || new URL('shared/browser_store.js', location.href).href;
 
@@ -423,8 +427,33 @@
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
   }
-  /** Restaure une sauvegarde YAML par fusion (la valeur la plus récente l'emporte, collections fusionnées entrée par entrée) : localStorage puis bases IndexedDB ; émet « local-store-restored ». Retourne { added, updated, kept }. */
-  async function restoreText(text) {
+  /** Entrées du journal des sauvegardes et restaurations (plus récentes d'abord). */
+  function journal() {
+    try {
+      const list = JSON.parse(localStorage.getItem(JOURNAL) || '[]');
+      return Array.isArray(list) ? list : [];
+    } catch {
+      return [];
+    }
+  }
+  /** Ajoute une entrée au journal : { kind: 'restore' | 'backup' | 'full-backup' | 'full-restore' | …, source, … } (date ajoutée). */
+  function logEvent(entry) {
+    const list = [{
+      at: new Date().toISOString(),
+      page: location.pathname.split('/').slice(-2).join('/'),
+      ...entry
+    }, ...journal()].slice(0, JOURNAL_MAX);
+    try {
+      localStorage.setItem(JOURNAL, JSON.stringify(list));
+    } catch {
+      /* quota : journal réduit */
+      try { localStorage.setItem(JOURNAL, JSON.stringify(list.slice(0, 10))); } catch { /* quota */ }
+    }
+    window.dispatchEvent(new CustomEvent('local-store-journal', { detail: list[0] }));
+    return list[0];
+  }
+  /** Restaure une sauvegarde YAML par fusion (la valeur la plus récente l'emporte, collections fusionnées entrée par entrée) : localStorage puis bases IndexedDB ; émet « local-store-restored » et trace la restauration dans le journal (source : origine du texte). Retourne { added, updated, kept, keys }. */
+  async function restoreText(text, { source = 'fichier' } = {}) {
     const Y = await yaml(),
       data = Y.load(String(text).replace(/^﻿/, '')) || {};
     const counts = {
@@ -432,8 +461,9 @@
       updated: 0,
       kept: 0
     };
+    const keys = { added: [], updated: [] };
     Object.entries(data.entries || {}).forEach(([key, saved]) => {
-      if (key === META || SKIP.some(re => re.test(key))) return;
+      if (key === META || key === JOURNAL || SKIP.some(re => re.test(key))) return;
       const raw = localStorage.getItem(key),
         local = raw == null ? undefined : parse(raw);
       const {
@@ -444,6 +474,7 @@
         try {
           localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
           counts[action]++;
+          keys[action].push(key);
         } catch {
           /* quota */ }
       } else if (action === 'kept') counts.kept++;
@@ -456,7 +487,18 @@
       counts.added += c.added;
       counts.updated += c.updated;
       counts.kept += c.kept;
+      if (c.added || c.updated) keys.updated.push(`${idbLabel(spec)} (${c.added + c.updated})`);
     }
+    // trace du rechargement : quelle sauvegarde (date, origine), d'où, ce qui a changé
+    logEvent({
+      kind: 'restore',
+      source,
+      savedAt: data.savedAt || '',
+      origin: data.origin || '',
+      ...counts,
+      keys: { added: keys.added.slice(0, 80), updated: keys.updated.slice(0, 80) }
+    });
+    counts.keys = keys;
     status(t('restored', counts));
     // Les pages ouvertes relisent leurs données (registres, préférences…).
     window.dispatchEvent(new CustomEvent('local-store-restored', {
@@ -473,7 +515,7 @@
     }
     try {
       const file = await (await dir.getFileHandle(FILE)).getFile();
-      await restoreText(await file.text());
+      await restoreText(await file.text(), { source: `${dir.name}/${FILE}` });
     } catch {
       status(t('noFile'));
     }
@@ -542,7 +584,7 @@
   box.querySelector('[data-store="file"]').onclick = () => picker.click();
   picker.onchange = run(async () => {
     const file = picker.files[0];
-    if (file) await restoreText(await file.text());
+    if (file) await restoreText(await file.text(), { source: file.name });
     picker.value = '';
   });
   /** Retraduit les libellés du groupe « Données locales » (data-store-text). */
@@ -575,7 +617,7 @@
   // Préférences d'affichage (disposition, design, icônes, couleurs, langue, onglets, séparateurs, colonnes, cadrans,
   // formats de sortie, copie automatique de l'état du planificateur) : sauvegardées, mais sans compter comme des
   // modifications à sauvegarder.
-  const DISPLAY = /^(?:repositoryFramework:|missionReportingPeriod:|missionGlobalReporting:|missionReportingSource:|repositoryDesign$|repositoryIcons$|repositoryColors$|repositorySidenav$|repositoryDecor$|repositoryLanguageMode$|landingLanguageModeV\d+$|LandingPerformanceDashboardPrefsV\d+$|landingAnalysisSize$|flightPerfColumns$|flightPerfFuelGauge$|flightPerfState\.backup$|siaProfileTab$|siaProfileSplit$|siaOutput$|missionCoreLastFamily:)/;
+  const DISPLAY = /^(?:repositoryFramework:|missionReportingPeriod:|missionGlobalReporting:|missionReportingSource:|repositoryDesign$|repositoryIcons$|repositoryColors$|repositorySidenav$|repositoryDecor$|repositoryLanguageMode$|landingLanguageModeV\d+$|LandingPerformanceDashboardPrefsV\d+$|landingAnalysisSize$|flightPerfColumns$|flightPerfFuelGauge$|flightPerfState\.backup$|siaProfileTab$|siaProfileSplit$|siaOutput$|missionCoreLastFamily:|suiteBackupLog:|suiteUpdateCheck:|suiteGitInfo:|siaBaseInfo:)/;
   const tracked = key => key && key !== META && key !== PENDING && !SKIP.some(re => re.test(key)) && !DISPLAY.test(key);
   const lastHit = new Map(),
     pending = () => Number(localStorage.getItem(PENDING) || 0);
@@ -655,6 +697,9 @@
     save,
     restore,
     restoreText,
+    toText,
+    journal,
+    logEvent,
     download,
     chooseFolder,
     snapshot,

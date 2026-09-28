@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>XPlane Web Suite</title>
+<link rel="icon" href="assets/favicon-flight.svg">
+<style>
+  body{margin:0;font:15px/1.5 system-ui,Segoe UI,Arial,sans-serif;background:#101317;color:#eef3f7}
+  main{max-width:880px;margin:40px auto;padding:0 18px}
+  h1{font-size:24px;margin:0 0 4px}p{color:#aab4c0;margin:0 0 20px}
+  ul{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+  a{display:block;padding:14px 16px;border:1px solid #2b313d;border-radius:12px;background:#171b22;color:#eef3f7;text-decoration:none}
+  a:hover{border-color:#71b7ff}a b{display:block;color:#71b7ff}small{color:#8a94a3}
+  .warn{border:1px solid #b45309;border-radius:10px;padding:10px 14px;color:#fcd34d;display:none}
+</style>
+<script src="repository_tree?v=20260928f"></script><script src="data/data_tree.js" onerror="window.DATA_TREE=false"></script>
+</head><body><main>
+<!-- Page d'accueil (v3) : les applications sont dans apps/ ; les données dans data/ (dépôt de données). -->
+<h1>XPlane Web Suite</h1><p id="rel"></p>
+<p class="warn" id="noData">Dossier <code>data/</code> absent : les pages utilisent les exemples. Voir INSTALL.md (clone du dépôt de données).</p>
+<ul>
+  <li><a href="apps/cr/mission_operations_reporting.html"><b>Reporting missions</b><small>CR DEFA — toutes les familles</small></a></li>
+  <li><a href="apps/cr/mission_cr.html"><b>Nouveau compte rendu</b><small>CR DEFA</small></a></li>
+  <li><a href="apps/sia/mission_editor.html"><b>Générateur de mission</b><small>Missions SIA</small></a></li>
+  <li><a href="apps/sia/mission_registry.html"><b>Registre des missions</b><small>Missions SIA</small></a></li>
+  <li><a href="apps/sia/map_parser.html"><b>Studio cartographique</b><small>Missions SIA</small></a></li>
+  <li><a href="apps/planner/flight_performance_planner.html"><b>Flight Performance &amp; Fuel Planner</b><small>Planificateur</small></a></li>
+  <li><a href="apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html"><b>Landing Performance Dashboard</b><small>Atterrissages</small></a></li>
+  <li><a href="apps/settings/parametrage.html?m=updates"><b>Paramètres</b><small>Bases de données, maintenance : mises à jour, sources et dossiers, sauvegarde</small></a></li>
+</ul>
+<script>
+  const r = window.REPOSITORY_TREE?.release || {};
+  document.getElementById('rel').textContent = `Version ${r.version || ''} (${r.date || ''})`;
+  addEventListener('load', () => { if (!window.DATA_TREE) document.getElementById('noData').style.display = 'block'; });
+</script>
+</main></body></html>

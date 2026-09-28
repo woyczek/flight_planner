@@ -1,6 +1,6 @@
 # Missions SIA — générateur de mission et studio cartographique
 
-Dossier `SIA XML/` — ☰ › **Générateur de mission (SIA)** et ☰ › **Studio cartographique (SIA)**.
+Dossier `apps/sia/` — ☰ › **Générateur de mission (SIA)** et ☰ › **Studio cartographique (SIA)**.
 Application de la suite qui prépare le **dossier de mission** d'un vol de simulation : le
 brief (textes, points, participants, consignes, PDF final) et les **cartes** produites depuis
 les données aéronautiques officielles du SIA (cycle AIRAC), sur fond OpenStreetMap ou local.
@@ -13,7 +13,7 @@ Mission (YAML / Markdown) ──► Générateur de mission ──► Studio car
                                    └──► Créer le CR DEFA (compte rendu pré-rempli)
 ```
 
-Code : les deux pages, `SIA XML/aero_symbols.js` (lecture de l'AIXM : aérodromes, pistes,
+Code : les deux pages, `apps/sia/aero_symbols.js` (lecture de l'AIXM : aérodromes, pistes,
 radionavigation, obstacles ; symbologie de la carte), `shared/aar_tracks.js` (axes de
 ravitaillement ENR 5.7), composants du
 framework (bandeau et menu ☰, blocs, `FileAccess`, fenêtres de copier-coller, sauvegarde locale).
@@ -26,8 +26,8 @@ Bibliothèques livrées dans le dossier : MapLibre GL (`maplibre-gl.js/.css`), j
 | Fichier | Rôle | Dépôt |
 |---|---|---|
 | `AIXM4.5_all_FR_OM_<date>.xml` | AIXM 4.5 complet du SIA : contours R / D / P / CTR / TMA avec classes et limites verticales, zones AZBA (RTBA), aérodromes et pistes, VOR / DME / TACAN / NDB, **13 800 obstacles** | hors dépôt (≈ 44 Mo par cycle) |
-| `sia-airspaces-<date>.xml` | Contours d'espaces (SIV et compléments) | hors dépôt |
-| `XML_SIA_<date>.xml` | Export XML-SIA complet (inventaire) | hors dépôt |
+| `XML_SIA_<date>.xml` | Export XML-SIA complet : contours de tous les espaces (SIV, RMZ/TMZ, AP, FIR…), inventaire | hors dépôt |
+| `sia-airspaces-<date>.xml` | Ancien fichier dérivé de XML_SIA : facultatif, ignoré quand XML_SIA est présent | hors dépôt |
 | `miam-enr-5-7-tracks.xml` | **Axes de ravitaillement** MILAIP ENR 5.7 nommés et corrigés (31 axes + 6 circuits heavy) | versionné |
 | `miam-enr-5-7-coordinates.xml` | Coordonnées ENR 5.7 d'origine (sans noms) | versionné |
 | `mora.csv` | **Grille MORA** 1° × 1° calculée (§ 4.6) | versionné |
@@ -35,7 +35,12 @@ Bibliothèques livrées dans le dossier : MapLibre GL (`maplibre-gl.js/.css`), j
 | `Carte france vierge.png` | Fond local (Lambert, calibré ouest −6,5° / sud 40,5° / est 12,5° / nord 52°) | versionné |
 
 Les données AIRAC se téléchargent sur le site du SIA (produits numériques, export XML) et se
-déposent dans le dossier `SIA XML/` ; `.gitignore` les tient hors du dépôt.
+déposent dans le dossier `apps/sia/` ; `.gitignore` les tient hors du dépôt.
+
+**Un seul cycle** : quand le dossier contient plusieurs cycles, le studio ne lit que le plus récent (les autres sont
+signalés, à archiver) et mémorise le cycle dans la base (`airac`, résumé `siaBaseInfo:v1` pour la pastille « AIRAC » de
+l'en-tête). Procédure de mise à jour : ☰ › Paramètres › Maintenance › Mise à jour des données SIA — pas à pas ; `map_parser.html?relire=1`
+relit le dossier mémorisé.
 
 **Dossier mémorisé** : « Dossier SIA XML : … » (studio, bloc 1) choisit le dossier une fois ;
 il est retenu comme les autres dossiers de la suite (☰ › Paramétrage) et les sélecteurs de
@@ -49,8 +54,8 @@ version précédente est relue automatiquement si l'accès au dossier est déjà
 Pour faire produire une série par un assistant externe (ChatGPT…) : prompt complet, aligné sur ce que lit
 la suite, dans [PROMPT_GENERATEUR_MISSIONS.md](PROMPT_GENERATEUR_MISSIONS.md).
 
-Schéma YAML `helo-xp-mission` (exemples : `Missions/AIRLIFT_serie_1_precomplete/mission11.yaml`,
-`Missions/MEDEVAC_serie_*`) :
+Schéma YAML `helo-xp-mission` (exemples : `data/missions/AIRLIFT_serie_1_precomplete/mission11.yaml`,
+`data/missions/MEDEVAC_serie_*`) :
 
 | Clé | Contenu |
 |---|---|
@@ -69,7 +74,7 @@ Schéma YAML `helo-xp-mission` (exemples : `Missions/AIRLIFT_serie_1_precomplete
 Le **Markdown** est accepté aussi : titres `## Summary` / `## Description détaillée`, ou ancien
 format à blocs (`TYPE:`, `SOUS-TYPE:`, `TARGET:`, `TURNING POINTS:` avec lignes
 `- PT1 | SIMIP | 46.444167 | 1.486000 | rôle`, `RDV:`, `ZONE:`, `MAPS TO PRODUCE:`, `NOTES:`) —
-exemple : `SIA XML/Mission 02.md` (ravitaillement en vol sur l'axe SIMONE).
+exemple : `examples/missions/Mission 02.md` (ravitaillement en vol sur l'axe SIMONE).
 
 Le Markdown des missions générées (`summaryNN.md`) porte aussi ses données, lues même sans le YAML :
 lignes `Type :`, `Sous-type :`, `Aéronef :`, `Callsign :`, `Départ :`, `Destination :` (avec
@@ -104,9 +109,30 @@ signalés. Une mission dont le bloc `operation` annonce d'autres missions affich
 chargées grisées, « à charger ») ; une mission de la même opération collée ou ouverte ensuite **rejoint** le lot
 (réponse de ChatGPT livrée mission par mission). Un chargement d'une mission hors de l'opération efface le lot.
 
+## 2 bis. Registre des missions générées
+
+Page `apps/sia/mission_registry.html` (☰ › Registre des missions (SIA), barre latérale « Registre »), construite par
+`shared/mission_registry.js`.
+
+- **Missions du registre** : dossier `data/missions/` du dépôt (dossier mémorisé `__missions`) lu récursivement — chaque
+  sous-dossier de série, YAML et Markdown groupés par mission (`SiaMission.fromTextsBatch`) ; « Ajouter des
+  fichiers… » pour tout navigateur. Relecture automatique à l'ouverture si le dossier est autorisé.
+- **Choisir une mission** : filtres type, sous-type, rendez-vous (avec / sans), équipes engagées (min – max), type
+  d'équipe ou d'aéronef, ravitaillement en vol, théâtre (déduit des coordonnées), statut, recherche ; **Tirer au
+  sort** parmi les missions filtrées ; fiche : équipes, indicatifs, rendez-vous ; **Ouvrir dans le générateur**,
+  **dans le studio**, **Créer le CR** ; statut, date de vol, notes.
+- **Statuts** : commandée, générée, planifiée (ouverte dans le générateur ou le studio), volée, CR fait (CR du
+  registre dont `metadata.missionNumber` est l'identifiant de la mission), abandonnée.
+- **Commander une mission** : type, sous-type (liste du § 2 du prompt), théâtre(s), série, équipes DEFA en vol, types
+  d'équipes (dans l'ordre A, B, C…), rendez-vous, équipes au sol, ravitaillement → prompt réglé (paramètres
+  `SOUS_TYPE`, `RENDEZ_VOUS`, `TYPES_EQUIPES`, `ÉQUIPES_SOL`, `RAVITAILLEMENT`) copié, ChatGPT ouvert ; la commande est
+  rapprochée de la mission générée (même série) à la relecture du dossier.
+- Données : `missionRegistry:v1` (navigateur, sauvegardé avec les données locales) et `data/missions/mission_registry.yaml` ;
+  export CSV de la sélection.
+
 ## 3. Générateur de mission (brief)
 
-Page `SIA XML/mission_editor.html`.
+Page `apps/sia/mission_editor.html`.
 
 1. **Importer une mission** : YAML et / ou Markdown d'une mission, ou **collage** de son contenu ; sous-bloc
    **Créer une mission avec ChatGPT** à côté du collage : type, théâtre (ou aléatoire), série, nombre d'**équipes
@@ -114,7 +140,7 @@ Page `SIA XML/mission_editor.html`.
    deux théâtres : acheminement Guyane – métropole, relève Corse – continent…) ; « ChatGPT → » copie le prompt réglé pour
    une seule mission et ouvre ChatGPT dans un nouvel onglet (coller, envoyer, puis charger ou coller
    `missionNN.yaml` et `summaryNN.md`). Le prompt vient de
-   [PROMPT_GENERATEUR_MISSIONS.md](PROMPT_GENERATEUR_MISSIONS.md), embarqué dans `SIA XML/mission_prompt.js` par
+   [PROMPT_GENERATEUR_MISSIONS.md](PROMPT_GENERATEUR_MISSIONS.md), embarqué dans `apps/sia/mission_prompt.js` par
    `tools/build_mission_prompt.py` (relancé par `tools/bump_versions.py`) : pas de lecture réseau du dossier docs/.
    (« ou coller son contenu… », Markdown reconnu à ses titres `##`) (fusionnés, lecture commune avec le
    studio : `SiaMission.fromTexts`), et les cartes (PNG ou
@@ -135,7 +161,7 @@ coordination, résumé, description, risques, rubriques, cartes). Nom des fichie
 quand le titre n'est que « Mission 02 », la cible le remplace
 (`M02_TRAINING_VAILLANT_31_Axe_SIMONE`).
 
-**Mission partagée avec le studio** (`SIA XML/mission_store.js`) : un seul document (YAML, textes,
+**Mission partagée avec le studio** (`apps/sia/mission_store.js`) : un seul document (YAML, textes,
 fichiers d'origine) avec numéro de révision, enregistré à chaque modification et relu aussitôt par
 l'autre page ouverte — emprises appliquées, cartes ajoutées ou supprimées dans le studio
 apparaissent dans le générateur (et dans ses exports YAML / Markdown / PDF), et inversement.
@@ -151,7 +177,7 @@ Brouillon : la mission partagée est le brouillon ; « Mémoriser / Recharger »
 
 ## 4. Studio cartographique
 
-Page `SIA XML/map_parser.html`. Une mission décrit ses cartes ; chaque carte est dessinée avec
+Page `apps/sia/map_parser.html`. Une mission décrit ses cartes ; chaque carte est dessinée avec
 un **profil d'affichage**, puis le studio produit PNG / SVG et un ZIP.
 
 Blocs : 1. Mission (et boutons « Afficher toutes les cartes », « Générer les cartes et le ZIP ») ·

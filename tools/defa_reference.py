@@ -4,7 +4,7 @@ Usage : python tools/defa_reference.py "Stub/Log des vols.html"  [--dry-run]
 
 Entrée : page « Log des vols » de la DEFA enregistrée (tableau à 9 colonnes : date, durée,
 trigramme, indicatif, immatriculation, appareil, départ, arrivée, mission).
-Sortie : shared/defa_reference.js (format commun des fichiers de données, éditable dans
+Sortie : data/references/defa_reference.js (format commun des fichiers de données, éditable dans
 Paramétrage › Bases de données) — seulement des informations agrégées :
   pilots   : trigramme, première / dernière activité, nombre de vols, types pilotés ;
   aircraft : immatriculation, type, variante, fiche flotte, indicatifs utilisés,
@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'AircraftDB'))
 import datafile  # noqa: E402
 
-TARGET = ROOT / 'shared' / 'defa_reference.js'
+TARGET = ROOT / 'data' / 'references' / 'defa_reference.js'  # dépôt de données (v3)
 OVERRIDE = 'dataOverride:defaReference:v1'
 COMMENT = [
     "Référence DEFA anonymisée : pilotes (trigrammes), appareils (immatriculation, type, indicatifs",

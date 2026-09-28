@@ -1,6 +1,6 @@
 # Flight Performance & Fuel Planner
 
-Page : `flight_performance_planner.html` (racine du dépôt) — ☰ › Flight Performance & Fuel
+Page : `apps/planner/flight_performance_planner.html` (racine du dépôt) — ☰ › Flight Performance & Fuel
 Planner. Application autonome de la suite : profils de performance par avion et devis
 carburant, calibrés sur les OFP SimBrief, échangés avec Little Navmap.
 
@@ -9,7 +9,7 @@ Code : la page elle-même, `shared/flight_ui.js` (actions du menu ☰, préfére
 (bandeau, menu ☰, blocs déplaçables / masquables — voir [FRAMEWORK.md](FRAMEWORK.md)).
 Bases partagées : `AircraftDB/aircraft_db.js` (types OACI) et `AircraftDB/aircraft_icons.js`.
 Profil vertical : `shared/flight_vertical_profile.js` et le module du studio SIA
-(`SIA XML/vertical_profile.js`, `SIA XML/aero_symbols.js`).
+(`apps/sia/vertical_profile.js`, `apps/sia/aero_symbols.js`).
 
 ## 1. Profils avion
 

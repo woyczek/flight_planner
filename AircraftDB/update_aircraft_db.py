@@ -994,7 +994,7 @@ def main():
     ap.add_argument("csv", nargs="*", help="CSV files; Aircraft column values are added to the refresh set")
     ap.add_argument("--db", default="aircraft_db.js", help="input aircraft_db.js")
     ap.add_argument("--out", default="aircraft_db.js", help="output aircraft_db.js")
-    ap.add_argument("--overrides", default="aircraft_overrides.json", help="manual overrides JSON")
+    ap.add_argument("--overrides", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "references", "aircraft_overrides.json"), help="manual overrides JSON (v3 : dépôt de données, data/references/)")
     ap.add_argument("--cache", default="aircraft_http_cache.json", help="persistent HTTP cache")
     ap.add_argument("--icao-cache-dir", default="icao_doc8643_cache", help="directory for ICAO PDFs/index")
     ap.add_argument("--icao-max-age", type=int, default=30, help="days before refreshing cached ICAO PDFs/index")

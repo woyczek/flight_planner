@@ -9,7 +9,7 @@ seuls sur chaque page. Ce document décrit chaque composant, son rôle et son in
 |---|---|---|
 | Arborescence et thèmes | `repository_tree` | toutes les pages |
 | Bandeau, menu ☰, langue | `shared/repository_nav.js`, `.css` | toutes les pages |
-| Apparence (designs, icônes, barre latérale, couleurs) | `shared/designs.css`, `block_icons.js/.css`, `icons/repository_icons.js`, `side_nav.js`, `appearance_page.js`, `appearance_admin.js` | toutes les pages ; réglages sur la page Apparence |
+| Apparence (designs, icônes, barre latérale, couleurs) | `shared/designs.css`, `block_icons.js/.css`, `icons/repository_icons.js`, `side_nav.js`, `appearance_page.js` | toutes les pages ; réglages sur la page Apparence |
 | Colonnes redimensionnables | `shared/column_resize.js` | Planner |
 | Blocs (déplacer / masquer) | `shared/app_framework.js` | toutes les pages |
 | Traduction des textes | `shared/content_i18n.js` | CR DEFA, Planner, reportings |
@@ -22,7 +22,12 @@ seuls sur chaque page. Ce document décrit chaque composant, son rôle et son in
 | Bases de données éditables | `shared/data_admin.js` (page Paramétrage) | CR DEFA |
 | Base des types d'aéronefs | `AircraftDB/` | les trois applications |
 | Catalogue commun (types, appareils DEFA) | `shared/aircraft_catalog.js` | les trois applications |
-| Référence DEFA anonymisée | `shared/defa_reference.js` | les trois applications |
+| Référence DEFA anonymisée | `data/references/defa_reference.js` | les trois applications |
+| Mises à jour (canal, contrôle, pastilles) | `shared/suite_update.js`, `tools/update_suite.py` | toutes les pages ; réglages Paramètres › Maintenance |
+| Cycles AIRAC, dossier et base SIA, recalcul MORA | `shared/airac.js` | Maintenance |
+| Archives ZIP (écriture, lecture, SHA-256) | `shared/zip_store.js` | Maintenance (sauvegarde totale, export SIA) |
+| Maintenance (versions, dépendances, SIA pas à pas, sauvegarde totale, journal) | `shared/maintenance_page.js` | `apps/settings/maintenance.html` |
+| Registre des missions générées | `shared/mission_registry.js` | `apps/sia/mission_registry.html` |
 | Outils de maintenance | `tools/` | dépôt |
 
 ## 1. `repository_tree` — arborescence, thèmes, menu
@@ -36,7 +41,7 @@ définit `window.REPOSITORY_TREE` :
   `core`, un par famille de missions…) ;
 - `designs` : designs graphiques proposés dans le menu ☰ (`list` : clé → libellé et description
   [fr, en, de, es] ; `default`) — voir § 2 bis ;
-- `folders` : thème et favicon par dossier (clé = chemin complet, ex. `"CR DEFA/HEMS"`) ;
+- `folders` : thème et favicon par dossier (clé = chemin complet, ex. `"apps/cr/HEMS"`) ;
 - `pages` : `{ path, label, menu, theme, favicon, files, slot }` —
   `menu: "Groupe/Libellé"` place la page dans le menu ☰, `menu: false` la cache (pages de
   saisie ouvertes depuis d'autres pages), `slot: "settings"` la range en bas du menu, avant
@@ -61,11 +66,10 @@ Interface `window.RepositoryNav` : `root` (racine du site), `page`, `menu`, `set
 
 ## 2 bis. Apparence — designs, icônes, barre latérale, couleurs
 
-Réglée dans la **fenêtre modale Apparence** (ouverte au-dessus de la page courante par le menu ☰, la barre latérale et
-Paramétrage : `RepositoryNav.openAppearance()`, contenu monté par `RepositoryAppearance.mount`), aussi disponible en page (`CR DEFA/apparence.html`, construite par `shared/appearance_page.js` : vignettes
+Réglée dans la **fenêtre modale Apparence** (ouverte au-dessus de la page courante par le menu ☰ et la barre latérale :
+`RepositoryNav.openAppearance()`, contenu monté par `RepositoryAppearance.mount`), aussi disponible en page (`apps/settings/apparence.html`, construite par `shared/appearance_page.js` : vignettes
 des designs dessinées dans chaque design, rangées d'icônes par épaisseur de trait, barre latérale, une carte par thème
-avec famille, ton, aperçu, contrastes WCAG et « Voir sur cette page » ; le menu ☰ « Apparence… » et un bloc-lien de
-Paramétrage, `shared/appearance_admin.js`, y mènent), mémorisée dans le navigateur et appliquée
+avec famille, ton, aperçu, contrastes WCAG et « Voir sur cette page » ; le bouton « Apparence » du menu ☰ et la barre latérale y mènent), mémorisée dans le navigateur et appliquée
 sur toutes les pages par `repository_nav.js` dès le chargement (`RepositoryNav.appearance`). Ces réglages sont
 sauvegardés avec les données locales mais **ne comptent pas** comme modifications à sauvegarder (`browser_store.js`,
 liste `DISPLAY` : design, icônes, couleurs, barre latérale, langue, onglets, séparateurs, colonnes, cadrans…).
@@ -224,13 +228,62 @@ dans l'en-tête : il écrit la sauvegarde dans le dossier autorisé (sinon le fa
 télécharge le fichier) et remet le compteur à zéro. La sauvegarde automatique (dossier
 autorisé : toutes les 5 minutes et au départ de la page) remet aussi le compteur à zéro.
 
+### Journal des sauvegardes et rechargements
+
+`LocalStore.journal()` : entrées (60 au plus, localStorage `suiteBackupLog:v1`, plus récentes d'abord) ;
+`LocalStore.logEvent({ kind, source, … })` en ajoute une (événement `local-store-journal`). Chaque
+`restoreText(texte, { source })` y trace la restauration : origine, date de la sauvegarde relue, clés ajoutées et mises à
+jour, bases IndexedDB. La page Maintenance y ajoute sauvegardes totales, rechargements, extractions SIA, archivages et
+recalculs MORA. `LocalStore.toText()` : texte YAML de la sauvegarde (utilisé par la sauvegarde totale).
+
+## 6 ter. `suite_update.js` — mises à jour
+
+Réglages `suiteUpdate:v1` : `channel` (`master` stable, `develop` early bird), `mode` (`manual`, `auto`, `off`),
+`periodDays` (0 = à chaque ouverture, au plus toutes les heures ; 1, 7, 28, 30). `SuiteUpdate.check()` lit la branche du
+canal (commit, date, titre) et son `repository_tree` (version) par l'API GitLab de framagit (`release.repository` de
+`repository_tree`), les compare au commit local connu (lu dans `.git`, `SuiteUpdate.readGit(dossier)`) ou à la version
+locale ; résultat `suiteUpdateCheck:v1`. Pastilles de l'en-tête : « ⬆ Mise à jour » et « AIRAC nn/aa » (base SIA du
+studio antérieure au cycle en vigueur, d'après `siaBaseInfo:v1`), vers `apps/settings/maintenance.html`. Une page web ne
+réécrit pas le dépôt : l'application passe par `python tools/update_suite.py update` (canal : `git config
+suite.channel`).
+
+## 6 sexies. `data_files.js` — données hors de l'application (v3)
+
+Les données DEFA et recalculées vivent dans `data/` (clone du dépôt de données, ignoré par git ; marqueur
+`data/data_tree.js`). Une page charge un fichier de données par
+`<script src="…/shared/data_files.js?v=…" data-file="references/aircraft_fleet.js"></script>` : le premier appel lit le
+marqueur, puis chaque fichier est pris dans `data/`, sinon dans `examples/` (chargement synchrone, ordre conservé). API :
+`DataFiles.available()`, `DataFiles.url(chemin)`, `DataFiles.dataUrl(chemin)`. Registres : `data/cr/` (`ledger.js`,
+`mission_reporting_config.js`) ; SIA : `data/sia/` (fond et villes livrés dans `apps/sia/assets/`). `FileAccess` :
+dossier `__data` ; registre (`cr`), missions, SIA en sont déduits, performances (`planner`) et sauvegarde locale
+(`local`) aussi s'ils ne sont pas réglés ailleurs.
+
+## 6 quinquies. Sources externes
+
+`repository_tree.sources` : adresses par défaut (`defa`, `siaData`, `siaCycle` — gabarit `{nn}` / `{yy}` —, `siaEaip`,
+`suiteRepo`, `dataRepo`). `RepositoryNav.source(clé)` : surcharge locale (`suiteSources:v1`, réglée dans
+Paramètres › Maintenance › Sources et dossiers) sinon valeur par défaut ; `RepositoryNav.setSource(clé, valeur)`
+(événement `suite-sources-change`). Aucune adresse DEFA ou SIA n'est écrite en dur dans le code des pages.
+
+## 6 quater. `airac.js`, `zip_store.js`
+
+- `Airac.cycle(date)`, `next()`, `fromDate('2026-10-01')` → `{ date, ident: '2610', label: '10/26', until, url }`
+  (cycles de 28 jours depuis l'AIRAC 2401 du 25 janvier 2024 ; `url` : page du cycle sur le site du SIA) ;
+  `inspectFolder(fichiers)` : rôle et cycle des fichiers d'un dossier SIA XML, cycles complets ou non, anciens cycles,
+  ZIP d'export ; `base()` / `summarize()` / `baseSummary()` : base du studio (lecture seule) ; `patchBase(champs)` ;
+  `moraFromObstacles(csv, obstacleMax, cycle)` : recalcul simple de la grille MORA ; `moraCycle(csv)`.
+- `ZipStore.build([{ name, data, date }])` → Blob (deflate via `CompressionStream`, sinon stocké ; noms UTF-8) ;
+  `ZipStore.read(blob)` → entrées `{ name, size, date, bytes(), text() }` ; `ZipStore.sha256(data)`.
+
 ## 6 bis. `file_access.js` — dossiers et fichiers
 
 - Dossiers mémorisés (IndexedDB `missionCore` › `handles`) : **dépôt** (`__repo` : le dossier
   « Documentation », qui contient `repository_tree`), **registre** (`__ledger` :
   `Documentation/CR DEFA`, qui contient `mission_cr.html`), **sauvegarde locale** (`__store`),
   **performances** (`__perf`, Flight Planner), **SIA XML** (`__sia` : données AIRAC, témoin
-  `Carte france vierge.png`).
+  `Carte france vierge.png`), **missions** (`__missions` : `Documentation/Missions`, séries générées ; registre
+  `mission_registry.yaml`), **X-Plane** (`__xplane` : journaux CSV du plugin d'atterrissage, dossier par défaut du
+  Landing Dashboard). Tous se règlent dans Paramètres › Maintenance › Sources et dossiers.
 - `FileAccess.pickFolder(clé)` : le sélecteur s'ouvre sur le dossier actuel ; contrôle du
   contenu attendu (fichier témoin) avec confirmation.
 - `FileAccess.decorate(bouton, clé)` : le bouton affiche « Dossier du registre : CR DEFA ✓ »
@@ -315,7 +368,7 @@ En-têtes collants, tri numérique ou texte, ligne cliquable, bouton « Supprime
 
 ## 10. `data_admin.js` — Paramétrage › bases de données
 
-Page `CR DEFA/parametrage.html` : édition en tableau des bases en JavaScript du dépôt (flotte,
+Page `apps/settings/parametrage.html` : édition en tableau des bases en JavaScript du dépôt (flotte,
 types d'aéronefs, indicatifs…) et des données du navigateur. « Appliquer dans ce navigateur »
 écrit une surcouche datée (`dataOverride:<base>:v1`) prioritaire tant qu'elle est plus récente
 que le fichier ; « Enregistrer dans le dépôt » réécrit le fichier (format commun, voir
@@ -359,7 +412,7 @@ appareil). `link(item)` : lien en tête de carte (fiche appareil). Ajout par le 
 - `AarTracks.parseEnr57(textesDesPages)` : lecture du PDF ENR 5.7 (texte extrait par pdf.js) —
   points en minutes décimales et en DMS comparés, noms complets des axes, renvois (30 / 40 NM),
   largeur 14 NM, côté donné par S2, circuits heavy FOX / ROM ; anomalies listées.
-- `AarTracks.toXml(résultat)` → `SIA XML/miam-enr-5-7-tracks.xml` ; `parseTrackXml(xml)` le relit.
+- `AarTracks.toXml(résultat)` → `data/sia/miam-enr-5-7-tracks.xml` ; `parseTrackXml(xml)` le relit.
 - `AarTracks.trackRacetrack(axe, { defaultSide })` / `racetrack(…)` : contour exact de
   l'hippodrome (branche aller IP → CP, retour décalé, demi-cercles), cap, longueur, largeur, côté.
 - `toGeoJson`, `nearest` : tracés MapLibre / SVG, axe le plus proche d'un point.
@@ -379,11 +432,14 @@ appareil). `link(item)` : lien en tête de carte (fiche appareil). Ajout par le 
 - `tools/bump_versions.py` : nouveau numéro de version de cache (`?v=`) dans toutes les pages
   après une modification de code partagé (toujours supérieur au précédent) ; met aussi à jour
   les chargements internes de `repository_nav.js` (profil pilote, données locales, accès aux
-  dossiers).
+  dossiers, contrôle des mises à jour) et les scripts propres à `apps/sia/` (`mission_store.js`, `sia_i18n.js`…).
+- `tools/update_suite.py` : état git (`status`), canal (`channel master|develop`), mise à jour sûre (`update` :
+  fast-forward, refus si fichiers modifiés, journal `.git/suite-update.log`), diagnostic (`doctor` : remote, branches,
+  branches fusionnées, packs orphelins, `VERSION.json`, fichiers suivis mais ignorés, `core.autocrlf`).
 - `tools/defa_reference.py "Log des vols.html"` : référence DEFA anonymisée
-  (`shared/defa_reference.js`) depuis le journal des vols (complète sans rien supprimer).
+  (`data/references/defa_reference.js`) depuis le journal des vols (complète sans rien supprimer).
 - `tools/new_family_pages.py` : crée les pages d'une nouvelle famille de missions dans
-  `CR DEFA/`.
+  `apps/cr/`.
 
 ## Ajouter une page à la suite
 

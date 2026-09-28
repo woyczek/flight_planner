@@ -2,13 +2,13 @@
 
 Prompt à donner à un assistant externe (ChatGPT…) pour produire une série de missions directement
 lisible par la suite : générateur de mission, studio cartographique, profil vertical, CR DEFA et
-statistiques. Il décrit **exactement** ce que lisent `SIA XML/mission_store.js` (YAML + Markdown),
-`SIA XML/map_parser.html` (cartes, zones, profil vertical) et `shared/mission_core/core.js`
+statistiques. Il décrit **exactement** ce que lisent `apps/sia/mission_store.js` (YAML + Markdown),
+`apps/sia/map_parser.html` (cartes, zones, profil vertical) et `shared/mission_core/core.js`
 (passerelle mission → CR : famille, appareils, terrains). À mettre à jour avec eux.
 
 Copier tout le bloc ci-dessous, régler les paramètres en tête — ou utiliser « Créer une mission avec ChatGPT » du
 générateur de mission (bloc 1), qui les règle et copie le prompt. Après modification de ce document : lancer
-`python tools/build_mission_prompt.py` (ou `tools/bump_versions.py`), qui régénère `SIA XML/mission_prompt.js`.
+`python tools/build_mission_prompt.py` (ou `tools/bump_versions.py`), qui régénère `apps/sia/mission_prompt.js`.
 
 ---
 
@@ -24,12 +24,22 @@ PARAMÈTRES DE CETTE EXÉCUTION
                                      par « + », ex. « Guyane + métropole » — voir § 5)
   ÉQUIPES_DEFA    = 2                (1 à 5 : équipes DEFA en vol par opération ; UNE mission
                                      complète par équipe — voir § 3)
+  SOUS_TYPE       = libre            (ou un code de sous-type du § 2 pour la famille TYPE)
+  RENDEZ_VOUS     = libre            (avec : au moins un rendez-vous par mission ; sans : aucun)
+  TYPES_EQUIPES   = libre            (aéronefs / équipes à engager, liés par « + », ex. « A400M + H225 »)
+  ÉQUIPES_SOL     = libre            (0 à 3 : équipes au sol en plus des équipes en vol)
+  RAVITAILLEMENT  = libre            (oui : ravitaillement en vol planifié ; non : aucun)
 
 Tu produis une série cohérente de NOMBRE_MISSIONS missions de simulation aérienne de la famille TYPE.
 Si TYPE = aléatoire, choisis UNE famille du § 2 et garde-la pour toute la série.
 Si THÉÂTRE = aléatoire, choisis le ou les théâtres de chaque mission (§ 5) ; varier les théâtres dans la série est
 bienvenu quand la famille s'y prête (unités réellement présentes). Plusieurs théâtres (« A + B ») : la mission
 les relie réellement (§ 5).
+Paramètres « libre » : ton choix. Sinon ils s'imposent à chaque mission : SOUS_TYPE = mission.subtype ;
+RENDEZ_VOUS = avec → au moins un point dans rendezvous (et une carte detail_rdv par rendez-vous), sans → rendezvous: [] ;
+TYPES_EQUIPES = les équipes DEFA en vol emploient ces aéronefs (dans l'ordre des lettres A, B, C… ; aircraft.type et
+teams[].type) ; ÉQUIPES_SOL = nombre exact d'équipes au sol dans teams (en plus des équipes en vol) ;
+RAVITAILLEMENT = oui → air_refueling.planned: true avec son axe (§ 7), non → pas de bloc air_refueling planifié.
 
 Les fichiers alimentent automatiquement un briefing, des cartes OpenStreetMap, un PDF de mission, une
 coupe verticale, un compte rendu de mission (CR) et des statistiques. Le YAML est la SOURCE DE VÉRITÉ ;

@@ -1,4 +1,4 @@
-// Reporting FIRE / GAAR historique (CR DEFA/FIRE/fire_reporting.html) : lecture du registre CSV,
+// Reporting FIRE / GAAR historique (apps/cr/FIRE/fire_reporting.html) : lecture du registre CSV,
 // période, indicateurs, délais, répartitions et tableau éditable (enregistré dans le registre).
 (() => {
   'use strict';

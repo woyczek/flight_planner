@@ -16,14 +16,35 @@ Il n'y a rien à compiler ni à installer côté serveur.
 
 ## 2. Récupérer le dépôt
 
+Depuis la version 3, **l'application et les données sont séparées** :
+
+| Dépôt | Contenu | Où |
+|---|---|---|
+| Application (public) — <https://framagit.org/asr/flight_planner> | pages (`apps/cr`, `apps/sia`, `apps/planner`, `apps/landing`, `apps/settings`), framework (`shared/`), bases OACI / APD générées (`AircraftDB/`), outils, docs, exemples | dossier de votre choix |
+| Données (privé) — <https://framagit.org/defa-virtual/missions-defa> | flotte et référence DEFA, indicatifs, corrections OACI, registres et CR, missions générées, MORA, axes ENR 5.7, base de performances | `data/` **dans** le dossier de l'application (ignoré par git) |
+
 ```bash
 git clone https://framagit.org/asr/flight_planner.git
+cd flight_planner
+git clone https://framagit.org/defa-virtual/missions-defa.git data
 ```
 
-ou « Code › Télécharger (zip) » sur <https://framagit.org/asr/flight_planner>, puis
-décompresser. Conseil : placer le dépôt dans un dossier synchronisé (Synology Drive,
-OneDrive…) — les registres de missions et la sauvegarde des données locales y seront
-écrits et donc synchronisés entre vos postes.
+**Git LFS** : les binaires (images, PDF, archives, polices…) sont stockés par Git LFS dans les deux dépôts
+(`.gitattributes`). Installer [Git LFS](https://git-lfs.com) (inclus dans Git for Windows et GitKraken) et lancer une
+fois `git lfs install` ; puis, dans chaque dépôt, `python tools/check_binaries.py --install` (depuis `data/` :
+`python ../tools/check_binaries.py --install`) : un commit qui ajouterait un binaire hors LFS est refusé.
+`python tools/update_suite.py doctor` le vérifie.
+
+Sans `data/`, les pages utilisent les petits exemples fictifs d'`examples/`. Conseil : placer le dossier dans un
+dossier synchronisé (Synology Drive, OneDrive…) **en excluant les dossiers `.git`** de la synchronisation — la
+synchronisation de `.git` corrompt les dépôts (voir docs/AUDIT_2026-09-28.md).
+
+**Depuis une version 2** : passer sur la version 3 (`python tools/update_suite.py update`), puis
+`python tools/migrate_v3.py --data-url https://framagit.org/defa-virtual/missions-defa.git` : `data/` est créé (clone,
+ou dépôt local à relier), les données y sont rangées (depuis l'ancienne arborescence et l'historique git), puis
+☰ › Paramètres › Maintenance › Sources et dossiers › **Dossier des données** : choisir `data/`. Anciennes adresses : `CR DEFA/…` →
+`apps/cr/…`, `SIA XML/…` → `apps/sia/…`, Paramétrage / Apparence / Maintenance → `apps/settings/…`, planificateur →
+`apps/planner/…`, Landing → `apps/landing/…` ; page d'accueil : `index.html`.
 
 ## 3. Ouvrir les pages
 
@@ -35,8 +56,8 @@ OneDrive…) — les registres de missions et la sauvegarde des données locales
 python -m http.server 8000 --bind 127.0.0.1
 ```
 
-puis ouvrir <http://127.0.0.1:8000/CR%20DEFA/mission_cr.html> (nouveau compte rendu) ou
-<http://127.0.0.1:8000/CR%20DEFA/mission_operations_reporting.html> (reporting). Toutes les pages sont
+puis ouvrir <http://127.0.0.1:8000/> (page d'accueil), <http://127.0.0.1:8000/apps/cr/mission_cr.html> (nouveau compte rendu) ou
+<http://127.0.0.1:8000/apps/cr/mission_operations_reporting.html> (reporting). Toutes les pages sont
 accessibles par le menu ☰.
 
 Pourquoi un serveur : ouvertes directement depuis le disque (`file://`), les pages
@@ -46,7 +67,7 @@ restent alors lisibles.
 
 ### Ouverture directe
 
-Double-cliquer sur `CR DEFA/mission_cr.html` (ou toute autre page) : les pages calculent leurs liens
+Double-cliquer sur `apps/cr/mission_cr.html` (ou toute autre page) : les pages calculent leurs liens
 depuis la racine du dépôt. Voir la limite ci-dessus.
 
 ### Hébergement web
@@ -80,9 +101,9 @@ les registres présents dans le dépôt sont lus en lecture seule.
 4. **Sauvegarde des données locales** — menu ☰ › Données locales › « Dossier de
    sauvegarde… » : choisir un dossier synchronisé (hors dépôt si vous ne voulez pas le
    versionner). Sauvegarde automatique ensuite.
-5. **Dossier du dépôt** (seulement pour éditer les bases) — ☰ › Paramétrage › Bases de
-   données › « Dossier du dépôt… » : la racine du dépôt (celle qui contient
-   `repository_tree`).
+5. **Dossiers et sources** — ☰ › Paramètres › Maintenance › Sources et dossiers : dossier du dépôt (racine, qui contient
+   `repository_tree` ; pour éditer les bases), missions, SIA XML, **X-Plane** (journaux d'atterrissage), performances ;
+   adresses DEFA et SIA si elles changent.
 
 Chrome / Edge redemandent parfois l'autorisation d'un dossier après redémarrage : un clic
 sur « Autoriser » suffit.
@@ -102,8 +123,8 @@ Aucune dépendance externe (bibliothèque standard uniquement) :
 
 Le studio cartographique utilise les données AIRAC du SIA, **hors dépôt** (≈ 80 Mo par cycle) :
 télécharger l'export XML sur le site du SIA (produits numériques en libre disposition) et déposer
-`AIXM4.5_all_FR_OM_<date>.xml`, `XML_SIA_<date>.xml` et `sia-airspaces-<date>.xml` dans
-`SIA XML/`. Au premier lancement : studio › « Dossier SIA XML » (dossier mémorisé). Les autres
+`AIXM4.5_all_FR_OM_<date>.xml` et `XML_SIA_<date>.xml` (contours d'espaces compris) dans
+`data/sia/`. Au premier lancement : studio › « Dossier SIA XML » (dossier mémorisé). Les autres
 données (villes, MORA, axes de ravitaillement, fond local) sont dans le dépôt. Détail :
 [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md).
 
@@ -112,8 +133,13 @@ Détails : [manuel d'exploitation](docs/MANUEL_EXPLOITATION.md).
 ## 6. Mise à jour
 
 ```bash
-git pull
+python tools/update_suite.py update
 ```
+
+(ou `git pull --ff-only`). Le **canal** se choisit dans ☰ › Paramètres › Maintenance : `master` (stable) ou `develop` (early bird,
+dernières évolutions) — `python tools/update_suite.py channel develop` l'applique au dépôt ; le contrôle des nouveautés
+est manuel, automatique (période au choix) ou désactivé. `python tools/update_suite.py doctor` vérifie l'installation
+(remote, branches, objets git, fins de ligne).
 
 Puis recharger les pages (Ctrl+F5 si une ancienne version reste affichée). Vos données
 (registres YAML, sauvegarde locale, navigateur) ne sont pas touchées par une mise à jour du

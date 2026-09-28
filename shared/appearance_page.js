@@ -1,4 +1,4 @@
-// Page Apparence (CR DEFA/apparence.html) : design, jeu d'icônes, barre latérale et couleurs des thèmes de la suite.
+// Page Apparence (apps/settings/apparence.html) : design, jeu d'icônes, barre latérale et couleurs des thèmes de la suite.
 // Réglages mémorisés dans ce navigateur et appliqués à toutes les pages par repository_nav.js
 // (RepositoryNav.appearance) ; ils ne comptent pas comme modifications à sauvegarder (browser_store.js).
 // La page elle-même montre le résultat : design et icônes s'y appliquent aussitôt, et « Voir sur cette page »

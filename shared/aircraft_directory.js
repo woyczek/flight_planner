@@ -2,7 +2,7 @@
   'use strict';
   const moduleUrl = document.currentScript.src;
   const storageKey = 'missionAircraftDirectory:v1';
-  // Flotte DEFA Virtual (shared/aircraft_fleet.js) : les associations locales s'ajoutent à cette base commune.
+  // Flotte DEFA Virtual (data/references/aircraft_fleet.js) : les associations locales s'ajoutent à cette base commune.
   // Un appareil de la flotte peut avoir plusieurs indicatifs : une entrée par indicatif.
   const seed = (window.DEFA_FLEET || []).flatMap(e => (e.callsigns?.length ? e.callsigns : [e.callsign || '']).map(callsign => ({
     ...e,

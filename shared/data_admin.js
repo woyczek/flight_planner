@@ -352,7 +352,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       __records: {}
     };
     try {
-      const r = await fetch(new URL('AircraftDB/aircraft_overrides.json', window.RepositoryNav?.root || new URL('../', location.href)), {
+      const r = await fetch(new URL('data/references/aircraft_overrides.json', window.RepositoryNav?.root || new URL('../', location.href)), {
         cache: 'no-store'
       });
       if (r.ok) overrides = await r.json();
@@ -380,7 +380,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       id: 'fleet',
       group: T('Fichiers du dépôt', 'Repository files'),
       title: T('Flotte DEFA (appareils connus)', 'DEFA fleet (known aircraft)'),
-      file: 'shared/aircraft_fleet.js',
+      file: 'data/references/aircraft_fleet.js',
       overrideKey: 'dataOverride:fleet:v1',
       intro: T('Appareils proposés dans les CR : immatriculation, type, indicatifs, base, opérateur. Plusieurs indicatifs : séparés par des virgules.', 'Aircraft offered in reports: registration, type, callsigns, base, operator. Several callsigns: comma-separated.'),
       tables: () => [{
@@ -423,11 +423,11 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         data: work.fleet.data.rows
       }],
       files: stamp => [
-        ['shared/aircraft_fleet.js', render(FLEET_COMMENT, fleetData(), 'dataOverride:fleet:v1', "window.DEFA_FLEET = data.rows.map(row => ({ ...row, callsign: (row.callsigns || [])[0] || '' })); window.DEFA_FLEET_META = META; window.DEFA_FLEET_FILE = fileData.rows;", stamp)]
+        ['data/references/aircraft_fleet.js', render(FLEET_COMMENT, fleetData(), 'dataOverride:fleet:v1', "window.DEFA_FLEET = data.rows.map(row => ({ ...row, callsign: (row.callsigns || [])[0] || '' })); window.DEFA_FLEET_META = META; window.DEFA_FLEET_FILE = fileData.rows;", stamp)]
       ],
       overlay: () => fleetData(),
       howto: `<p>${T('Mise à jour complète depuis le site de la flotte :', 'Full update from the fleet website:')}</p>
-        <ol><li>${T('Ouvrir', 'Open')} <a href="https://flotte.defa-virtual.fr/flotte.php" target="_blank" rel="noopener">flotte.defa-virtual.fr › Flotte virtuelle</a>, ${T('puis Fichier › Enregistrer sous… (« Flotte.html »).', 'then File › Save as… (“Flotte.html”).')}</li>
+        <ol><li>${T('Ouvrir', 'Open')} <a href="${esc(window.RepositoryNav?.source?.('defa') || 'https://flotte.defa-virtual.fr')}/flotte.php" target="_blank" rel="noopener">flotte.defa-virtual.fr › Flotte virtuelle</a>, ${T('puis Fichier › Enregistrer sous… (« Flotte.html »).', 'then File › Save as… (“Flotte.html”).')}</li>
         <li>${T('À la racine du dépôt :', 'At the repository root:')} <code>python AircraftDB/update_fleet.py Flotte.html</code></li>
         <li>${T('Les appareils de la page remplacent ceux du fichier ; les indicatifs supplémentaires et les appareils ajoutés ici sont conservés.', 'Aircraft from the page replace those of the file; extra callsigns and aircraft added here are kept.')}</li>
         <li>${T('Recharger cette page ; supprimer les modifications locales si elles ont été intégrées.', 'Reload this page; delete local changes once integrated.')}</li></ol>`
@@ -483,7 +483,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         const db = aircraftDbData(stamp);
         return [
           ['AircraftDB/aircraft_db.js', `window.AIRCRAFT_DB = ${dumps(db)};\n`],
-          ['AircraftDB/aircraft_overrides.json', await overridesText(db)]
+          ['data/references/aircraft_overrides.json', await overridesText(db)]
         ];
       },
       overlay: stamp => aircraftDbData(stamp),
@@ -491,14 +491,14 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       howto: `<p>${T('Rafraîchissement par le script (sources : OACI Doc 8643, EUROCONTROL, Wikidata ; modifications manuelles d’aircraft_overrides.json prioritaires) — depuis le dossier AircraftDB :', 'Refresh with the script (sources: ICAO Doc 8643, EUROCONTROL, Wikidata; manual changes from aircraft_overrides.json take priority) — from the AircraftDB folder:')}</p>
         <ul><li><code>python update_aircraft_db.py --no-network</code> — ${T('reconstruit la base avec les caches locaux', 'rebuilds the base from local caches')}</li>
         <li><code>python update_aircraft_db.py --add RFAL MIR2</code> — ${T('ajoute des types (recherche en ligne)', 'adds types (online lookup)')}</li>
-        <li><code>python update_aircraft_db.py "../CR DEFA/HEMS/hems_mission_ledger.csv"</code> — ${T('types de la colonne Aircraft d’un CSV', 'types from a CSV Aircraft column')}</li>
+        <li><code>python update_aircraft_db.py "../data/cr/HEMS/hems_mission_ledger.csv"</code> — ${T('types de la colonne Aircraft d’un CSV', 'types from a CSV Aircraft column')}</li>
         <li><code>--refresh-icao</code> ${T('(force le téléchargement des PDF OACI),', '(forces the ICAO PDF download),')} <code>--delay 2</code> ${T('(pause entre requêtes)', '(pause between requests)')}</li></ul>
         <p class="small">${T('Un type supprimé ici peut revenir au prochain rafraîchissement s’il fait partie de la liste de base du script.', 'A type deleted here may come back at the next refresh if it is in the script base list.')}</p>`
     }, {
       id: 'callsigns',
       group: T('Fichiers du dépôt', 'Repository files'),
       title: T('Correspondance des indicatifs', 'Callsign correspondence'),
-      file: 'shared/mission_core/data/callsigns.js',
+      file: 'data/references/callsigns.js',
       overrideKey: 'dataOverride:callsigns:v1',
       intro: T('Indicatif complet (conservé dans les CR) ↔ forme plan de vol (case 7, 7 caractères avec le numéro) ↔ exploitant OACI (OPR/, case 18). Types : types OACI de la série, séparés par des virgules.', 'Full callsign (kept in reports) ↔ flight plan form (item 7, 7 characters with the number) ↔ ICAO operator (OPR/, item 18). Types: ICAO types of the series, comma-separated.'),
       tables: () => [{
@@ -561,7 +561,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         data: work.callsigns.operatorRows
       }],
       files: stamp => [
-        ['shared/mission_core/data/callsigns.js', render(CALLSIGN_COMMENT, callsignData(), 'dataOverride:callsigns:v1', 'window.MISSION_CALLSIGNS = { META, table: data.table, operators: data.operators, file: fileData };', stamp)]
+        ['data/references/callsigns.js', render(CALLSIGN_COMMENT, callsignData(), 'dataOverride:callsigns:v1', 'window.MISSION_CALLSIGNS = { META, table: data.table, operators: data.operators, file: fileData };', stamp)]
       ],
       overlay: () => callsignData(),
       howto: `<p>${T('Pas de script : cette page (ou le fichier, à la main) est la source. Les formes corrigées dans les CR apparaissent dans « Indicatifs appris » ci-dessous, à intégrer ici.', 'No script: this page (or the file, by hand) is the source. Forms corrected in reports appear in “Learned callsigns” below, to integrate here.')}</p>`
@@ -715,7 +715,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       id: 'defaReference',
       group: T('Base DEFA', 'DEFA base'),
       title: T('Référence DEFA (anonymisée, dans le dépôt)', 'DEFA reference (anonymised, in the repository)'),
-      file: 'shared/defa_reference.js',
+      file: 'data/references/defa_reference.js',
       overrideKey: 'dataOverride:defaReference:v1',
       intro: T('Pilotes (trigrammes) et appareils de la DEFA — immatriculation, type, indicatifs utilisés, terrain de rattachement (modifiable), dernier terrain connu, statut — sans les vols ni les missions. Utilisée par les trois applications (CR, Landing Dashboard, Flight Planner). Base « lâche » : aide à la saisie, non exhaustive. Mise à jour : « Base DEFA » › « Mettre à jour la référence », ou tools/defa_reference.py.', 'DEFA pilots (trigrams) and aircraft — registration, type, callsigns used, home aerodrome (editable), last known aerodrome, status — without flights or missions. Used by the three applications. Loose base: input aid, not exhaustive.'),
       tables: () => [{
@@ -801,7 +801,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         data: work.defaReference.data.pilots
       }],
       files: stamp => [
-        ['shared/defa_reference.js', render(['Référence DEFA anonymisée : pilotes (trigrammes), appareils (immatriculation, type, indicatifs', 'utilisés, dernier terrain connu, terrain de rattachement), sans les vols ni les missions.', 'Générée par tools/defa_reference.py ou Paramétrage › Base DEFA ; complétée à la main.', 'Base « lâche » : aide à la saisie, non exhaustive.'], {
+        ['data/references/defa_reference.js', render(['Référence DEFA anonymisée : pilotes (trigrammes), appareils (immatriculation, type, indicatifs', 'utilisés, dernier terrain connu, terrain de rattachement), sans les vols ni les missions.', 'Générée par tools/defa_reference.py ou Paramétrage › Base DEFA ; complétée à la main.', 'Base « lâche » : aide à la saisie, non exhaustive.'], {
           pilots: work.defaReference.data.pilots.filter(p => p.trigram),
           aircraft: work.defaReference.data.aircraft.filter(a => a.registration)
         }, 'dataOverride:defaReference:v1', 'window.DEFA_REFERENCE = { META, pilots: data.pilots, aircraft: data.aircraft, file: fileData };', stamp)]
@@ -810,7 +810,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         pilots: work.defaReference.data.pilots.filter(p => p.trigram),
         aircraft: work.defaReference.data.aircraft.filter(a => a.registration)
       }),
-      howto: `<ol><li>${T('Charger le journal des vols (Base DEFA › Journal des vols DEFA).', 'Load the flight log (DEFA base › DEFA flight log).')}</li><li>${T('« Mettre à jour la référence DEFA » : pilotes et appareils ajoutés ou complétés (rien n’est supprimé ; terrain de rattachement, statut, mise en service et notes saisis ici sont conservés).', '“Update the DEFA reference”: pilots and aircraft added or completed (nothing removed; home AD, status, commissioning and notes kept).')}</li><li>${T('« Enregistrer dans le dépôt », puis committer shared/defa_reference.js.', '“Save to repository”, then commit shared/defa_reference.js.')}</li></ol><p>${T('Ou, à la racine du dépôt :', 'Or, at the repository root:')} <code>python tools/defa_reference.py "Log des vols.html"</code></p>`
+      howto: `<ol><li>${T('Charger le journal des vols (Base DEFA › Journal des vols DEFA).', 'Load the flight log (DEFA base › DEFA flight log).')}</li><li>${T('« Mettre à jour la référence DEFA » : pilotes et appareils ajoutés ou complétés (rien n’est supprimé ; terrain de rattachement, statut, mise en service et notes saisis ici sont conservés).', '“Update the DEFA reference”: pilots and aircraft added or completed (nothing removed; home AD, status, commissioning and notes kept).')}</li><li>${T('« Enregistrer dans le dépôt », puis committer data/references/defa_reference.js.', '“Save to repository”, then commit data/references/defa_reference.js.')}</li></ol><p>${T('Ou, à la racine du dépôt :', 'Or, at the repository root:')} <code>python tools/defa_reference.py "Log des vols.html"</code></p>`
     }, {
       id: 'defaLog',
       group: T('Base DEFA', 'DEFA base'),
@@ -840,7 +840,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       group: T('Missions', 'Missions'),
       title: T('Registres des missions (base des opérations)', 'Mission ledgers (operations base)'),
       custom: true,
-      intro: T('Registre unique CR DEFA/missions.yaml (toutes familles, source de vérité des reportings). Édition directe du YAML, complète ou par famille, avec contrôle avant enregistrement ; pour une mission, préférer le CR (clic sur la ligne du reporting).', 'Single ledger CR DEFA/missions.yaml (all families, source of truth of the reportings). Direct YAML editing, full or per family, checked before saving; for a single mission, prefer the report (click its reporting row).')
+      intro: T('Registre unique data/cr/missions.yaml (toutes familles, source de vérité des reportings). Édition directe du YAML, complète ou par famille, avec contrôle avant enregistrement ; pour une mission, préférer le CR (clic sur la ligne du reporting).', 'Single ledger data/cr/missions.yaml (all families, source of truth of the reportings). Direct YAML editing, full or per family, checked before saving; for a single mission, prefer the report (click its reporting row).')
     }
   ];
 
@@ -856,22 +856,9 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       id: new URLSearchParams(location.search).get('base') || 'fleet'
     };
     const groups = [...new Set(DATASETS.map(d => d.group))];
-    root.innerHTML = `<aside class="da-nav">${groups.map(g => `<h3>${esc(g)}</h3>${DATASETS.filter(d => d.group === g).map(d => `<button type="button" data-set="${d.id}">${esc(d.title)}</button>`).join('')}`).join('')}
-      <h3>${esc(T('Dossiers paramétrés', 'Configured folders'))}</h3><p class="small">${esc(T('Survol : dossier attendu ; clic : changer (le sélecteur s’ouvre sur le dossier actuel).', 'Hover: expected folder; click: change (the picker opens on the current folder).'))}</p>
-      <div class="da-folders">${['__repo', '__ledger', '__store', '__perf'].map(k => `<button type="button" class="secondary da-folder" data-folder="${k}"></button>`).join('')}</div></aside>
+    root.innerHTML = `<aside class="da-nav">${groups.map(g => `<h3>${esc(g)}</h3>${DATASETS.filter(d => d.group === g).map(d => `<button type="button" data-set="${d.id}">${esc(d.title)}</button>`).join('')}`).join('')}</aside>
       <section class="da-main" data-icon="database"><h2></h2><p class="small da-intro"></p><div class="row da-actions"></div><p class="small da-status"></p><div class="da-body"></div><details class="da-howto"><summary>${esc(T('Mode opératoire', 'Procedure'))}</summary><div></div></details></section>`;
-    // Dossiers : nom actuel ✓ (autorisé) / ⚠ (à ré-autoriser), dossier attendu en infobulle.
-    const paintFolders = () => root.querySelectorAll('.da-folder').forEach(b => window.FileAccess?.decorate(b, b.dataset.folder));
-    root.querySelectorAll('.da-folder').forEach(b => b.onclick = async () => {
-      try {
-        const h = await window.FileAccess.pickFolder(b.dataset.folder);
-        status(`${b.textContent.split(' : ')[0]} : ${h.name}`);
-      } catch (e) {
-        if (e.name !== 'AbortError') status(e.message);
-      }
-    });
-    paintFolders();
-    window.addEventListener('load', paintFolders);
+    // Dossiers mémorisés et sources externes : réglés dans Paramètres › Maintenance (bloc « Sources et dossiers »).
     root.querySelectorAll('[data-set]').forEach(b => b.onclick = () => {
       if (dirty && !confirm(T('Modifications non enregistrées : changer de base quand même ?', 'Unsaved changes: switch anyway?'))) return;
       dirty = false;
@@ -915,6 +902,9 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     /** Affiche la base choisie : titre, présentation, mode d'emploi, éditeur (tableaux ou panneau dédié : envoi, journal DEFA, fusions, registres). */
     function show() {
       const set = DATASETS.find(d => d.id === current.id) || DATASETS[0];
+      // rubrique Maintenance (maintenance_page.js) : ses blocs se masquent quand une base est affichée
+      root.querySelector('.da-main').hidden = false;
+      window.dispatchEvent(new CustomEvent('data-admin-show', { detail: { id: set.id } }));
       root.querySelectorAll('[data-set]').forEach(b => b.classList.toggle('active', b.dataset.set === set.id));
       root.querySelector('.da-main h2').textContent = set.title + (set.file ? ` — ${set.file}` : set.key ? ` — ${set.key}` : '');
       root.querySelector('.da-intro').textContent = set.intro || '';
@@ -1116,7 +1106,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       const paint = () => {
         const q = up(filter.value),
           shown = (q ? list.filter(r => up(Object.values(r).join(' ')).includes(q)) : list);
-        flights.innerHTML = `<p class="small">${shown.length} ${T('vols', 'flights')}${shown.length > 300 ? ` — ${T('300 premiers affichés', 'first 300 shown')}` : ''}</p><table class="da-table"><thead><tr>${['Date', T('Durée', 'Duration'), T('Pilote', 'Pilot'), T('Indicatif', 'Callsign'), T('Immat.', 'Reg.'), 'Type', T('Départ', 'Dep.'), T('Arrivée', 'Arr.'), 'Mission'].map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${shown.slice(0, 300).map(r => `<tr><td>${esc(r.date)} ${esc(r.time)}</td><td>${r.durationMin == null ? '—' : hours(r.durationMin)}</td><td>${esc(r.trigram)}</td><td>${esc(r.callsign)}</td><td>${r.fleetId ? `<a href="https://flotte.defa-virtual.fr/appareil.php?id=${esc(r.fleetId)}" target="_blank" rel="noopener">${esc(r.registration)}</a>` : esc(r.registration)}</td><td>${esc([r.type, r.variant].filter(Boolean).join(' '))}</td><td>${esc(r.dep)}</td><td>${esc(r.arr)}</td><td>${esc(r.mission)}</td></tr>`).join('')}</tbody></table>`;
+        flights.innerHTML = `<p class="small">${shown.length} ${T('vols', 'flights')}${shown.length > 300 ? ` — ${T('300 premiers affichés', 'first 300 shown')}` : ''}</p><table class="da-table"><thead><tr>${['Date', T('Durée', 'Duration'), T('Pilote', 'Pilot'), T('Indicatif', 'Callsign'), T('Immat.', 'Reg.'), 'Type', T('Départ', 'Dep.'), T('Arrivée', 'Arr.'), 'Mission'].map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${shown.slice(0, 300).map(r => `<tr><td>${esc(r.date)} ${esc(r.time)}</td><td>${r.durationMin == null ? '—' : hours(r.durationMin)}</td><td>${esc(r.trigram)}</td><td>${esc(r.callsign)}</td><td>${r.fleetId ? `<a href="${esc(window.RepositoryNav?.source?.('defa') || 'https://flotte.defa-virtual.fr')}/appareil.php?id=${esc(r.fleetId)}" target="_blank" rel="noopener">${esc(r.registration)}</a>` : esc(r.registration)}</td><td>${esc([r.type, r.variant].filter(Boolean).join(' '))}</td><td>${esc(r.dep)}</td><td>${esc(r.arr)}</td><td>${esc(r.mission)}</td></tr>`).join('')}</tbody></table>`;
       };
       filter.oninput = paint;
       paint();
@@ -1127,7 +1117,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           history.replaceState(null, '', '?base=defaReference');
           show();
           changed();
-          status(T('Référence DEFA complétée depuis le journal : vérifier, puis « Enregistrer dans le dépôt » (shared/defa_reference.js).', 'DEFA reference completed from the log: check, then save to repository.'));
+          status(T('Référence DEFA complétée depuis le journal : vérifier, puis « Enregistrer dans le dépôt » (data/references/defa_reference.js).', 'DEFA reference completed from the log: check, then save to repository.'));
         }, 'primary'],
         [T('Exporter en CSV', 'Export CSV'), () => download('defa_log_des_vols.csv', D.toCsv(list), 'text/csv')],
         [T('Exporter en JSON (rechargeable)', 'Export JSON (reloadable)'), () => download('defa_log_des_vols.json', JSON.stringify({

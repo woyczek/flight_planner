@@ -10,6 +10,96 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Espaces aériens lus directement dans `XML_SIA_<date>.xml`** (SIV, RMZ/TMZ, AP, FIR… ; arcs densifiés par le SIA) :
+  le fichier dérivé `sia-airspaces-<date>.xml`, qu'aucune source officielle ne publie, n'est plus demandé (un nouveau
+  cycle n'est plus signalé « incomplet »). Lecture sans DOM (≈ 40 ms), résultat dans la base mémorisée (version 12 :
+  une relecture du dossier). Avertissement quand la base mémorisée est d'un cycle périmé ; **purge du cache** SIA
+  (studio › Base de données SIA, et Paramètres › Maintenance › Mise à jour SIA).
+
+## [3.0.0] — 2026-09-28
+
+Version majeure : **l'application et les données sont séparées**, arborescence de l'application réorganisée.
+Migration d'une installation v2 : INSTALL.md § 2 (`tools/migrate_v3.py`).
+
+- **Données dans un dépôt à part** (privé : <https://framagit.org/defa-virtual/missions-defa>), cloné dans `data/` à la
+  racine de l'application et ignoré par git : `references/` (flotte DEFA, référence DEFA, indicatifs, corrections OACI),
+  `cr/` (registre unique, registres historiques FIRE / HEMS, CR, packs FMS GAAR), `missions/`, `sia/` (MORA, axes
+  ENR 5.7 ; XML AIRAC hors git), `planner/`, `local/` (hors git). Chargement par `shared/data_files.js` (`data/`, sinon
+  les exemples fictifs d'`examples/`). Modèle du dépôt de données : `tools/data_template/`.
+- **Arborescence de l'application** sans espaces : `apps/cr/` (ex-`CR DEFA/`), `apps/settings/` (Paramétrage,
+  Apparence, Maintenance), `apps/sia/` (ex-`SIA XML/`, fond et villes dans `apps/sia/assets/`), `apps/planner/`,
+  `apps/landing/` (ex-`LandingPerformanceDashboard/`) ; page d'accueil `index.html`.
+- **Un seul dossier à autoriser** : ☰ › Paramètres › Maintenance › Sources et dossiers › **Dossier des données** (`data/`) — registre,
+  missions et SIA en sont déduits (les anciens dossiers mémorisés « CR DEFA », « Missions », « SIA XML » sont oubliés
+  une fois).
+- Outils : `update_fleet.py`, `defa_reference.py`, `update_aircraft_db.py` (corrections), Paramétrage (« Enregistrer
+  dans le dépôt ») écrivent dans `data/references/` ; `tools/migrate_v3.py` range les données d'une installation v2.
+- Studio : fond de carte et villes pris dans l'application quand le dossier SIA ne les contient pas.
+- **Maintenance intégrée à Paramètres** : rubrique « Maintenance » du menu latéral de Paramètres, une entrée par bloc
+  (mises à jour, sources et dossiers, versions, dépendances, mise à jour SIA, sauvegarde totale, journal) ; plus de
+  bouton « Maintenance » séparé (menu ☰, barre latérale) ; `apps/settings/maintenance.html` redirige vers
+  `parametrage.html?m=<bloc>` ; styles dans `shared/maintenance.css`.
+- **Git LFS** pour tous les binaires (`.gitattributes` : images, PDF, archives, polices, médias ; mêmes règles dans le
+  modèle du dépôt de données) ; les 289 images existantes converties en pointeurs LFS (sans réécrire l'historique) ;
+  fins de ligne normalisées (`* text=auto`). Garde-fou `tools/check_binaries.py` (crochet pre-commit : `--install`),
+  vérifié par `update_suite.py doctor`.
+- `.gitignore` recentré (plus de règles globales `*.json`, `*.csv`, `*.yaml`) ; `VERSION.json` abandonné.
+
+- **Paramètres › Maintenance** (nouvelle page, `CR DEFA/maintenance.html`, bouton « Maintenance » du menu ☰ et de la
+  barre latérale) :
+  - **Mises à jour** : canal `master` (stable) ou `develop` (early bird) ; contrôle manuel, automatique (à chaque
+    ouverture, chaque jour, chaque semaine, chaque cycle AIRAC, chaque mois) ou désactivé ; dernière version du canal
+    lue sur framagit (API publique) ; pastille « Mise à jour » dans l'en-tête de toutes les pages ; état git local
+    (branche, commit, suivi origin, dernier fetch, canal mémorisé, packs orphelins, journal des mises à jour).
+    Application par **`tools/update_suite.py`** (`status`, `channel`, `update`, `doctor`) : refus si des fichiers
+    suivis sont modifiés, fast-forward seulement, journal `.git/suite-update.log`.
+  - **Versions et synchronisations** : suite, cache des scripts, git, canal distant, AIRAC en vigueur / suivant, base du
+    studio, dossier SIA, `mora.csv`, axes ENR 5.7, types OACI, performances APD, flotte et référence DEFA, indicatifs,
+    OFP SimBrief, profils du planificateur, registres, journal d'atterrissages, données locales, sauvegarde totale.
+  - **Références et dépendances** : pour chaque référence, traçage, processus de mise à jour, dépendants et contrôle de
+    cohérence (cycles SIA, MORA, ENR 5.7, types de flotte avec alias, performances, prompt des missions, VERSION.json).
+  - **Mise à jour SIA pas à pas** avec mode d'emploi : cycle (liens vers la page du SIA), dossier (inventaire par
+    cycle, fichiers manquants, extraction du ZIP d'export du SIA), archivage des anciens cycles (`_archives/`),
+    relecture par le studio (`map_parser.html?relire=1`), différences entre les deux bases (espaces ajoutés / retirés,
+    aérodromes, obstacles), recalculs simples (grille MORA avec les obstacles du nouveau cycle, flotte, performances,
+    profils, terrains des missions).
+  - **Sauvegarde totale** : données du navigateur et fichiers connus des dossiers autorisés (registres des CR, missions,
+    profils de performance, configuration du dépôt, CSV d'atterrissage, données SIA, dossiers ajoutés) en une archive
+    ZIP avec manifeste (tailles, dates, SHA-256) ; « Changements depuis » ; **rechargement** d'une sauvegarde totale
+    avec comparaison fichier par fichier (identique, absent, plus ancien / plus récent sur le disque), copie des fichiers
+    remplacés dans `_avant_restauration/`.
+  - **Journal des sauvegardes et rechargements** : chaque restauration des données locales (☰ › Données locales),
+    sauvegarde totale, rechargement, extraction SIA, archivage, recalcul MORA — date, origine, clés ajoutées / mises à jour.
+- **Registre des missions générées** (`SIA XML/mission_registry.html`, menu ☰ « Registre des missions (SIA) », barre
+  latérale « Registre ») : inventaire des séries du dossier `Missions/` (YAML + Markdown) ; choix par type, sous-type,
+  avec ou sans rendez-vous, nombre et types d'équipes engagées, ravitaillement en vol, théâtre, statut ; tirage au
+  sort ; ouverture dans le générateur, le studio ou un nouveau CR ; statuts (commandée, générée, planifiée, volée,
+  CR fait — repris du registre des CR —, abandonnée), date de vol, notes ; export CSV ; `Missions/mission_registry.yaml`.
+  **Commander une mission** : type, sous-type, théâtre(s), série, équipes DEFA en vol, types d'équipes, rendez-vous,
+  équipes au sol, ravitaillement → prompt réglé copié et ChatGPT ouvert ; la commande est rapprochée de la mission
+  générée à la relecture du dossier.
+- **Prompt des missions** : paramètres `SOUS_TYPE`, `RENDEZ_VOUS`, `TYPES_EQUIPES`, `ÉQUIPES_SOL`, `RAVITAILLEMENT`.
+- **Studio cartographique** : un seul cycle AIRAC lu (le plus récent du dossier ; les autres sont signalés au lieu
+  d'être mélangés) ; cycle mémorisé dans la base (`airac`) et résumé `siaBaseInfo:v1` ; cycle des obstacles tracé
+  dans `mora.csv` ; `?relire=1` relit le dossier mémorisé.
+- **Framework** : `shared/suite_update.js` (canal, contrôle, pastilles), `shared/airac.js` (cycles AIRAC, dossier SIA,
+  base du studio, recalcul MORA), `shared/zip_store.js` (ZIP écrits / lus sans dépendance), dossier mémorisé
+  `__missions` (FileAccess), journal `LocalStore.journal()` / `logEvent()`, `LocalStore.toText()`.
+- **Sources et dossiers** (Paramètres › Maintenance) : tous les dossiers locaux (dépôt, registre des CR, missions, SIA
+  XML, **X-Plane** — journaux d'atterrissage, nouveau —, performances, sauvegarde locale) et les **adresses des sources**
+  (site DEFA, SIA : bases de données, page d'un cycle AIRAC, eAIP, contours d'espaces ; dépôts de l'application et des
+  données) réglés au même endroit. Adresses par défaut dans `repository_tree` (`sources`), surcharge locale
+  (`suiteSources:v1`), lues par `RepositoryNav.source(clé)` : liens DEFA (journal des vols, fiches appareils, flotte,
+  logo de la barre latérale), pages SIA des cycles, contrôle des mises à jour. La liste « Dossiers paramétrés » de
+  Paramétrage y est transférée. Le sélecteur de fichiers du Landing Dashboard s'ouvre dans le dossier X-Plane ; ses
+  journaux entrent dans la sauvegarde totale.
+- **Paramétrage** : bloc « Apparence » retiré (doublon du bouton du menu ☰ et de la barre latérale, qui ouvrent la
+  même fenêtre ; `shared/appearance_admin.js` supprimé).
+- **Corrigé** : `tools/bump_versions.py` re-versionne aussi les scripts de `SIA XML/` (`mission_store.js`,
+  `sia_i18n.js`…). Manuel : la version de la suite vient de `repository_tree` (`VERSION.json`, ignoré et périmé,
+  n'est lu par rien).
+- **Audit** du 28/09/2026 (entrées SIA, installation, git, dépendances) : [docs/AUDIT_2026-09-28.md](docs/AUDIT_2026-09-28.md).
+
 ## [2.5.0] — 2026-09-27
 
 - **Planificateur : fin de montée à Vy** : quand la vitesse de montée du profil ne monte plus (haut de la montée), le

@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  // Fiches « appareil » et « membre d'équipage » (CR DEFA/appareil.html, equipage.html).
+  // Fiches « appareil » et « membre d'équipage » (apps/cr/appareil.html, equipage.html).
   // Base « lâche » : tout ce qui est connu est repris (catalogue commun — flotte, référence DEFA,
   // missions, journal DEFA —, missions du registre, journal alternatif, profil du Flight Planner),
   // rien n'est obligatoire ; ce qui est saisi ici (statut, rattachement, mise en service,
@@ -354,7 +354,7 @@
         <div><span class="small">${esc(tr(UI.variant))}</span><b>${esc(known.variant || '—')}</b></div>
         <div><span class="small">${esc(tr(UI.category))}</span><b>${esc(catLabel ? tr(catLabel.label) : category || '—')}</b>${typeInfo?.wtc ? ` · ${esc(tr(UI.wtc))} ${esc(typeInfo.wtc)}` : ''}</div>
         <div><span class="small">${esc(tr(UI.operator))}</span><b>${esc(known.operator || '—')}</b></div>
-        <div><span class="small">${esc(tr(UI.fleet))}</span>${known.fleetId ? `<a href="https://flotte.defa-virtual.fr/appareil.php?id=${esc(known.fleetId)}" target="_blank" rel="noopener">#${esc(known.fleetId)} ↗</a>` : '—'}</div>
+        <div><span class="small">${esc(tr(UI.fleet))}</span>${known.fleetId ? `<a href="${esc(window.RepositoryNav?.source?.('defa') || 'https://flotte.defa-virtual.fr')}/appareil.php?id=${esc(known.fleetId)}" target="_blank" rel="noopener">#${esc(known.fleetId)} ↗</a>` : '—'}</div>
         <div class="sh-wide"><span class="small">${esc(tr(UI.callsigns))}</span><div class="sh-chips">${[...callsigns].sort((a, b) => b[1] - a[1]).map(([c, n]) => `<span class="sh-chip">${esc(c)}${n ? ` <em>${n}</em>` : ''}</span>`).join('') || '—'}</div></div>
         <div class="sh-wide"><span class="small">${esc(tr(UI.equipment))}</span><div class="sh-chips">${[...equipment].map(e => `<span class="sh-chip">${esc(e)}</span>`).join('') || '—'}</div></div>
         <label class="sh-wide">${esc(tr(UI.notes))}<textarea data-sheet="notes" rows="2">${esc(sheet.notes)}</textarea></label>
@@ -416,7 +416,7 @@
       t = key(known.type),
       resolved = key(typeInfo?.tdesig || t);
     const profile = Object.values(state.profiles || {}).find(p => [p.id, p.icao, p.type].map(key).some(k => k && (k === t || k === resolved)));
-    const planner = new URL(`../flight_performance_planner.html?aircraft=${encodeURIComponent(profile?.id || resolved || t)}`, location.href).href;
+    const planner = new URL(`apps/planner/flight_performance_planner.html?aircraft=${encodeURIComponent(profile?.id || resolved || t)}`, window.RepositoryNav?.root || new URL('../../', location.href)).href;
     if (!profile) perf.innerHTML = `<p class="small">${esc(tr(UI.noProfile))}</p><a class="mc-button" href="${esc(planner)}">${esc(tr(UI.openPlanner))} ↗</a>`;
     else {
       // Valeurs du profil : 1 chiffre après la virgule.

@@ -20,8 +20,8 @@
 | `GAAR/DEFA-Virtual.cr.gen.securite-civile.html` | Générateur CR GAAR | Script inline lisible (`ledgerHeader`, `flattenRow()`), CSV plat 46 colonnes. **Titre et nom de fichier à corriger** |
 | `GAAR/mission_stats.html` | Redirection vers `gaar_mission_reporting.html` | Seule entrée de menu GAAR « Statistiques » |
 | `mission_operations_reporting.html` | Reporting général GAAR + HEMS | Codé pour deux familles seulement |
-| `LandingPerformanceDashboard/…_i18n.html` | Tableau des atterrissages | Référence visuelle des tableaux |
-| `flight_performance_planner.html` | Planificateur carburant/performances | Hors périmètre missions |
+| `apps/landing/…_i18n.html` | Tableau des atterrissages | Référence visuelle des tableaux |
+| `apps/planner/flight_performance_planner.html` | Planificateur carburant/performances | Hors périmètre missions |
 
 Non déclarée : **`GAAR/gaar_mission_reporting.html`** (atteinte seulement via la redirection).
 
@@ -99,8 +99,8 @@ README.md
 docs/mission_report_core_audit.md
 assets/favicon-<famille>.svg          (×14)
 mission_operations_reporting.html     (reporting général multi-familles)
-flight_performance_planner.html
-LandingPerformanceDashboard/…         (inchangé)
+apps/planner/flight_performance_planner.html
+apps/landing/…         (inchangé)
 AircraftDB/…                          (inchangé)
 
 HEMS/   hems_medevac_cr.html  hems_medevac_reporting.html  hems_missions.yaml
@@ -331,7 +331,7 @@ Retenues par défaut (à contester si besoin) :
 
 ## H. Étape 4 — flotte DEFA et données locales (2026-09-24)
 
-- **Flotte** : `shared/aircraft_fleet.js` généré depuis la page « Flotte virtuelle »
+- **Flotte** : `data/references/aircraft_fleet.js` généré depuis la page « Flotte virtuelle »
   (flotte.defa-virtual.fr) par `python AircraftDB/update_fleet.py Flotte.html` :
   205 appareils, 6 opérateurs (AAE, Marine nationale, ALAT, Sécurité civile, SAMU,
   Gendarmerie), type OACI, variante (Rafale B/C/M, Mirage 2000-5/B/D, A330 MRTT…), code
@@ -400,10 +400,10 @@ Retenues par défaut (à contester si besoin) :
 ## L. Étape 8 — Paramétrage › Bases de données (2026-09-24)
 
 - Page `parametrage.html` (menu ☰ › Paramétrage › Bases de données, `shared/data_admin.js`) :
-  - **fichiers du dépôt** : flotte (`shared/aircraft_fleet.js`), types d'aéronefs + alias
+  - **fichiers du dépôt** : flotte (`data/references/aircraft_fleet.js`), types d'aéronefs + alias
     (`AircraftDB/aircraft_db.js`, modifications reportées dans `aircraft_overrides.json` pour
     le script), correspondance des indicatifs + organismes / OPR/
-    (`shared/mission_core/data/callsigns.js`, sorti de vocab.js) ; « Appliquer dans ce
+    (`data/references/callsigns.js`, sorti de vocab.js) ; « Appliquer dans ce
     navigateur » (modification locale prioritaire tant qu'elle est plus récente que le
     fichier), « Enregistrer dans le dépôt » (dossier du dépôt autorisé une fois), « Télécharger »,
     retour au fichier ; mode opératoire des scripts Python ;
@@ -420,18 +420,18 @@ Retenues par défaut (à contester si besoin) :
 
 - Toutes les pages de l'application (familles, anciens CR HEMS / GAAR, démonstration,
   « Nouveau compte rendu », reporting général, Paramétrage) et leurs registres sont dans
-  `CR DEFA/` ; le code commun reste dans `shared/`, `AircraftDB/`, `assets/`. Menu ☰ inchangé.
+  `apps/cr/` ; le code commun reste dans `shared/`, `AircraftDB/`, `assets/`. Menu ☰ inchangé.
 - Chemins : liens relatifs entre pages de l'application inchangés ; liens vers la racine
   (`shared/`, `AircraftDB/`, `assets/`, `repository_tree`) d'un niveau de plus ; adresses
   calculées depuis la racine du site dans `global.js` (d'après son propre emplacement),
   `mission_reporting_config.js` (d'après repository_tree), `data_admin.js` et les favicons
-  des anciens reportings. `repository_tree` : dossiers et pages préfixés par `CR DEFA/`.
+  des anciens reportings. `repository_tree` : dossiers et pages préfixés par `apps/cr/`.
 - Autorisations de dossiers des registres : à redonner une fois par famille (« Dossier du
   registre… ») si elles visaient les anciens dossiers.
 
 ## N. Étape 9 — registre unique, majuscules, disposition de la page de CR (2026-09-24)
 
-- **Registre unique** `CR DEFA/missions.yaml` (toutes familles ; `shared/mission_core/ledger.js`) :
+- **Registre unique** `data/cr/missions.yaml` (toutes familles ; `shared/mission_core/ledger.js`) :
   vues par famille (même interface), une seule autorisation de dossier (« CR DEFA »), migration
   automatique et idempotente des anciens registres par famille (`legacyImported`).
 - **Majuscules** : champs de texte simple déclarés par les blocs communs et des familles
@@ -476,7 +476,7 @@ Retenues par défaut (à contester si besoin) :
 
 ## Q. Étape 12 — reporting général, effacement de l'appareil, robustesse du registre (2026-09-24)
 
-- `CR DEFA/mission_operations_reporting.html` réécrite sur le registre unique
+- `apps/cr/mission_operations_reporting.html` réécrite sur le registre unique
   (`shared/mission_core/global_reporting.js`) : titre « Reporting missions — CR DEFA », puces de
   familles colorées (`COLORS`), indicateurs, graphiques SVG autonomes (`charts.js` : barres
   empilées par période avec unité automatique ou choisie, anneaux, classements), synthèses par
@@ -567,7 +567,7 @@ Retenues par défaut (à contester si besoin) :
 
 ## W. Étape 18 — référence DEFA, catalogue commun, journal alternatif (2026-09-24)
 
-- `shared/defa_reference.js` (committé) + `tools/defa_reference.py` + `DefaFlightLog.reference()` :
+- `data/references/defa_reference.js` (committé) + `tools/defa_reference.py` + `DefaFlightLog.reference()` :
   pilotes et appareils agrégés, sans vols ni missions ; jeu de données « Référence DEFA » dans
   Paramétrage (statut, rattachement, mise en service modifiables).
 - `shared/aircraft_catalog.js` (framework) : types communs (OACI + SUPPLEMENT déplacé depuis
@@ -580,7 +580,7 @@ Retenues par défaut (à contester si besoin) :
 
 ## X. Étape 19 — fiches appareil / équipage, navigation des reportings (2026-09-24)
 
-- `shared/mission_core/sheets.js`, `CR DEFA/appareil.html`, `CR DEFA/equipage.html` : fiches
+- `shared/mission_core/sheets.js`, `apps/cr/appareil.html`, `apps/cr/equipage.html` : fiches
   « lâches » (catalogue commun, registre, journal DEFA, profil du Flight Planner) ; saisie locale
   (statut, rattachement, mise en service, événements, qualifications).
 - Reporting général : clic famille → reporting de famille, appareil → fiche, équipage → fiche.

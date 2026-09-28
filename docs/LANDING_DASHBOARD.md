@@ -1,6 +1,6 @@
 # Landing Performance Dashboard
 
-Page : `LandingPerformanceDashboard/LandingPerformance_Dashboard_MultiCSV_i18n.html` — ☰ ›
+Page : `apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html` — ☰ ›
 Landing Performance Dashboard. Application autonome de la suite : analyse de la qualité des
 atterrissages (score, taux de chute, G…) à partir des journaux exportés du simulateur, par
 avion et dans le temps.
@@ -10,7 +10,7 @@ Code : la page elle-même (thème sombre « landing »), `shared/landing_ui.js` 
 **période TimePeriod** (voir [FRAMEWORK.md](FRAMEWORK.md)). Bases partagées :
 `AircraftDB/aircraft_db.js` et `aircraft_icons.js`. Le script de mise à jour de la base
 d'aéronefs utilisée par la page est documenté dans
-[LandingPerformanceDashboard/README.md](../LandingPerformanceDashboard/README.md).
+[apps/landing/README.md](../apps/landing/README.md).
 
 ## 1. Données
 

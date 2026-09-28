@@ -1,6 +1,6 @@
 """Crée les deux pages d'une nouvelle famille du Mission Report Core (saisie de CR + reporting)
 et les déclare dans repository_tree (thème, dossier, pages hors menu). Les pages de
-l'application sont dans le dossier « CR DEFA/ ».
+l'application sont dans le dossier « apps/cr/ ».
 
 Usage (à la racine du dépôt) :
     python tools/new_family_pages.py famille.json
@@ -11,7 +11,7 @@ famille.json :
      "color": "#0f766e", "favicon": "favicon-flight.svg"}
 
 - family : identifiant (celui de MissionCore.registerFamily dans shared/mission_core/families/<file>.js)
-- folder / prefix : pages CR DEFA/<folder>/<prefix>_cr.html et CR DEFA/<folder>/<prefix>_reporting.html
+- folder / prefix : pages apps/cr/<folder>/<prefix>_cr.html et apps/cr/<folder>/<prefix>_reporting.html
 - file : nom du module de la famille (shared/mission_core/families/<file>.js, à écrire avant)
 - color / favicon : thème du dossier (theme facultatif : réutiliser un thème existant)
 
@@ -22,7 +22,7 @@ en-tête famille / sous-type et page « Nouveau compte rendu »).
 import io, json, os, re, sys
 sys.stdout.reconfigure(encoding='utf-8')
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-APP = 'CR DEFA'  # dossier de l'application (pages, registres)
+APP = 'apps/cr'  # dossier de l'application CR (pages ; registres : data/cr)
 cfg = json.load(io.open(sys.argv[1], encoding='utf-8'))
 fam, folder, prefix, file = cfg['family'], cfg['folder'], cfg['prefix'], cfg.get('file', cfg['prefix'])
 
@@ -47,7 +47,7 @@ if 'theme' not in cfg and f'\n    {theme}:{{' not in s:
     anchor = '    flight:{bar:"#101317"'
     s = s.replace(anchor, f'    {theme}:{{bar:"{cfg["color"]}",barText:"#ffffff",page:"#f5f6f8",accent:"{cfg["color"]}",favicon:"assets/{cfg["favicon"]}"}},\n' + anchor, 1)
 if f'"{APP}/{folder}":{{' not in s:
-    anchor = '    "LandingPerformanceDashboard":{theme:"landing"'
+    anchor = '    "apps/landing":{theme:"landing"'
     s = s.replace(anchor, f'    "{APP}/{folder}":{{theme:"{theme}",favicon:"assets/{cfg["favicon"]}"}},\n' + anchor, 1)
 if f'{APP}/{folder}/{prefix}_cr.html' not in s:
     anchor = f'    {{path:"{APP}/MissionCore/demo_cr.html"'
