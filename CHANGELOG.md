@@ -10,6 +10,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Studio : tracé carte par carte** — sans tracé, cheminement (carte brief), route probable avec retours possibles
+  et durée (carte organisation), ou les deux ; gardé dans le YAML (`maps[].trace`). Profil vertical : « ↺ Route
+  probable » reprend la route probable comme cheminement.
 - **Durée estimée et route probable** (`shared/mission_estimate.js`) : dans le générateur (bloc « Durée estimée »)
   et le registre (colonne, fiche) — route probable jusqu'au retour base, vitesses et varios du type (planificateur,
   fiche APD, valeurs types), temps sur place, phases aller / sur zone / retour, options de retour (hôpital selon

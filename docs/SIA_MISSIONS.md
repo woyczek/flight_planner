@@ -420,7 +420,11 @@ profils du Flight Performance & Fuel Planner (modèle de performances : vario et
 descend à son vario ; à défaut, aux taux saisis (montée / descente en ft/min et kt) ; appareil et taux
 enregistrés dans la mission ; **TOC** et **TOD** ; départ
 et arrivée au sol, sauf altitude donnée pour ces points.
-Le cheminement est **tracé sur les cartes** (tireté violet ; case cochée par défaut).
+Le cheminement est **tracé sur les cartes** (tireté violet ; case cochée par défaut). **Tracé carte par carte**
+(liste des cartes, `maps[].trace`) : *Sans tracé*, *Brief : cheminement* (tireté violet), *Organisation : route
+probable* (trait orange, durée de vol, retours possibles en tireté avec leur durée — `shared/mission_estimate.js`),
+ou les deux : une carte brief et une carte organisation dans la même mission. **↺ Route probable** (au-dessus du
+cheminement) remplace le cheminement par la route probable : le profil vertical suit alors la route probable.
 
 Le profil vertical est une **carte comme les autres** : entrée `profil_vertical.png` dans la liste
 des cartes, avec son **profil d'affichage** (par défaut **Profil vertical**, créé automatiquement :
