@@ -50,6 +50,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Framework** : `shared/suite_update.js` (canal, contrôle, pastilles), `shared/airac.js` (cycles AIRAC, dossier SIA,
   base du studio, recalcul MORA), `shared/zip_store.js` (ZIP écrits / lus sans dépendance), dossier mémorisé
   `__missions` (FileAccess), journal `LocalStore.journal()` / `logEvent()`, `LocalStore.toText()`.
+- **Sources et dossiers** (Paramètres › Maintenance) : tous les dossiers locaux (dépôt, registre des CR, missions, SIA
+  XML, **X-Plane** — journaux d'atterrissage, nouveau —, performances, sauvegarde locale) et les **adresses des sources**
+  (site DEFA, SIA : bases de données, page d'un cycle AIRAC, eAIP, contours d'espaces ; dépôts de l'application et des
+  données) réglés au même endroit. Adresses par défaut dans `repository_tree` (`sources`), surcharge locale
+  (`suiteSources:v1`), lues par `RepositoryNav.source(clé)` : liens DEFA (journal des vols, fiches appareils, flotte,
+  logo de la barre latérale), pages SIA des cycles, contrôle des mises à jour. La liste « Dossiers paramétrés » de
+  Paramétrage y est transférée. Le sélecteur de fichiers du Landing Dashboard s'ouvre dans le dossier X-Plane ; ses
+  journaux entrent dans la sauvegarde totale.
 - **Paramétrage** : bloc « Apparence » retiré (doublon du bouton du menu ☰ et de la barre latérale, qui ouvrent la
   même fenêtre ; `shared/appearance_admin.js` supprimé).
 - **Corrigé** : `tools/bump_versions.py` re-versionne aussi les scripts de `SIA XML/` (`mission_store.js`,

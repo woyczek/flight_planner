@@ -33,7 +33,7 @@
       ident: yy + String(num).padStart(2, '0'),
       label: `${String(num).padStart(2, '0')}/${yy}`,
       // page du SIA de ce cycle (« Données aéronautiques XML AIRAC 10/26 »)
-      url: `https://www.sia.aviation-civile.gouv.fr/donnees-aeronautiques-xml-airac-${String(num).padStart(2, '0')}-${yy}.html`
+      url: (window.RepositoryNav?.source?.('siaCycle') || 'https://www.sia.aviation-civile.gouv.fr/donnees-aeronautiques-xml-airac-{nn}-{yy}.html').replace('{nn}', String(num).padStart(2, '0')).replace('{yy}', yy)
     };
   }
   /** Cycle en vigueur à la date d (défaut : aujourd'hui). */

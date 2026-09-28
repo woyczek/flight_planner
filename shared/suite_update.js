@@ -21,6 +21,12 @@
     api: 'https://framagit.org/api/v4/projects/asr%2Fflight_planner',
     channels: { master: 'stable', develop: 'early' }
   }, cfg.release?.repository || {});
+  // dépôt de l'application réglé dans Maintenance › Sources (suiteRepo) : adresse de l'API GitLab déduite
+  {
+    const web = nav.source?.('suiteRepo');
+    const m = /^(https?:\/\/[^/]+)\/(.+?)(?:\.git)?$/.exec(web || '');
+    if (m && web !== REPO.web) { REPO.web = web; REPO.api = `${m[1]}/api/v4/projects/${encodeURIComponent(m[2])}`; }
+  }
   const KEY = 'suiteUpdate:v1', RESULT = 'suiteUpdateCheck:v1', GIT = 'suiteGitInfo:v1';
   const DEFAULTS = { channel: 'master', mode: 'manual', periodDays: 7 };
   const L = ['fr', 'en', 'de', 'es'];

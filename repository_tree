@@ -9,6 +9,17 @@ window.REPOSITORY_TREE={
     language:true,
     config:{ledgerName:"hems_mission_ledger.csv",gaarLedgerName:"mission_ledger.csv"}
   },
+  // Sources externes (adresses par défaut ; réglables dans Paramètres › Maintenance › Sources et dossiers, surcharge
+  // locale suiteSources:v1) : RepositoryNav.source(clé). {nn} / {yy} : numéro du cycle AIRAC et année sur deux chiffres.
+  sources:{
+    defa:{url:"https://flotte.defa-virtual.fr",label:["Site de la flotte DEFA Virtual","DEFA Virtual fleet site","DEFA-Virtual-Flottenseite","Sitio de la flota DEFA Virtual"]},
+    siaData:{url:"https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/les-bases-de-donnees-sia.html",label:["SIA — bases de données (export XML)","SIA — databases (XML export)","SIA — Datenbanken (XML-Export)","SIA — bases de datos (XML)"]},
+    siaCycle:{url:"https://www.sia.aviation-civile.gouv.fr/donnees-aeronautiques-xml-airac-{nn}-{yy}.html",label:["SIA — page d’un cycle AIRAC","SIA — AIRAC cycle page","SIA — Seite eines AIRAC-Zyklus","SIA — página de un ciclo AIRAC"]},
+    siaEaip:{url:"https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/eaip.html",label:["SIA — eAIP","SIA — eAIP","SIA — eAIP","SIA — eAIP"]},
+    siaAirspaces:{url:"https://www.data.gouv.fr/datasets/donnees-despace-aerien-de-la-base-aeronautique-du-sia",label:["Contours d’espaces (sia-airspaces)","Airspace outlines (sia-airspaces)","Luftraumgrenzen (sia-airspaces)","Contornos de espacios (sia-airspaces)"]},
+    suiteRepo:{url:"https://framagit.org/asr/flight_planner",label:["Dépôt de l’application","Application repository","Anwendungs-Repository","Repositorio de la aplicación"]},
+    dataRepo:{url:"https://framagit.org/defa-virtual/missions-defa",label:["Dépôt des données (privé)","Data repository (private)","Daten-Repository (privat)","Repositorio de datos (privado)"]}
+  },
   themes:{
     gaar:{bar:"#773131",barText:"#ffffff",page:"#ffffff",accent:"#773131",favicon:"assets/favicon-gaar.svg"},
     hems:{bar:"#313177",barText:"#ffffff",page:"#ffffff",accent:"#313177",favicon:"assets/favicon-hems.svg"},

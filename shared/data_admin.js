@@ -427,7 +427,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       ],
       overlay: () => fleetData(),
       howto: `<p>${T('Mise à jour complète depuis le site de la flotte :', 'Full update from the fleet website:')}</p>
-        <ol><li>${T('Ouvrir', 'Open')} <a href="https://flotte.defa-virtual.fr/flotte.php" target="_blank" rel="noopener">flotte.defa-virtual.fr › Flotte virtuelle</a>, ${T('puis Fichier › Enregistrer sous… (« Flotte.html »).', 'then File › Save as… (“Flotte.html”).')}</li>
+        <ol><li>${T('Ouvrir', 'Open')} <a href="${esc(window.RepositoryNav?.source?.('defa') || 'https://flotte.defa-virtual.fr')}/flotte.php" target="_blank" rel="noopener">flotte.defa-virtual.fr › Flotte virtuelle</a>, ${T('puis Fichier › Enregistrer sous… (« Flotte.html »).', 'then File › Save as… (“Flotte.html”).')}</li>
         <li>${T('À la racine du dépôt :', 'At the repository root:')} <code>python AircraftDB/update_fleet.py Flotte.html</code></li>
         <li>${T('Les appareils de la page remplacent ceux du fichier ; les indicatifs supplémentaires et les appareils ajoutés ici sont conservés.', 'Aircraft from the page replace those of the file; extra callsigns and aircraft added here are kept.')}</li>
         <li>${T('Recharger cette page ; supprimer les modifications locales si elles ont été intégrées.', 'Reload this page; delete local changes once integrated.')}</li></ol>`
@@ -857,21 +857,9 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     };
     const groups = [...new Set(DATASETS.map(d => d.group))];
     root.innerHTML = `<aside class="da-nav">${groups.map(g => `<h3>${esc(g)}</h3>${DATASETS.filter(d => d.group === g).map(d => `<button type="button" data-set="${d.id}">${esc(d.title)}</button>`).join('')}`).join('')}
-      <h3>${esc(T('Dossiers paramétrés', 'Configured folders'))}</h3><p class="small">${esc(T('Survol : dossier attendu ; clic : changer (le sélecteur s’ouvre sur le dossier actuel).', 'Hover: expected folder; click: change (the picker opens on the current folder).'))}</p>
-      <div class="da-folders">${['__repo', '__ledger', '__store', '__perf', '__sia', '__missions'].map(k => `<button type="button" class="secondary da-folder" data-folder="${k}"></button>`).join('')}</div></aside>
+      <h3>${esc(T('Dossiers et sources', 'Folders and sources'))}</h3><p class="small">${esc(T('Dossiers locaux, dossier X-Plane, adresses DEFA et SIA : Paramètres › Maintenance.', 'Local folders, X-Plane folder, DEFA and SIA addresses: Settings › Maintenance.'))} <a href="maintenance.html#sources">${esc(T('Ouvrir', 'Open'))} ›</a></p></aside>
       <section class="da-main" data-icon="database"><h2></h2><p class="small da-intro"></p><div class="row da-actions"></div><p class="small da-status"></p><div class="da-body"></div><details class="da-howto"><summary>${esc(T('Mode opératoire', 'Procedure'))}</summary><div></div></details></section>`;
-    // Dossiers : nom actuel ✓ (autorisé) / ⚠ (à ré-autoriser), dossier attendu en infobulle.
-    const paintFolders = () => root.querySelectorAll('.da-folder').forEach(b => window.FileAccess?.decorate(b, b.dataset.folder));
-    root.querySelectorAll('.da-folder').forEach(b => b.onclick = async () => {
-      try {
-        const h = await window.FileAccess.pickFolder(b.dataset.folder);
-        status(`${b.textContent.split(' : ')[0]} : ${h.name}`);
-      } catch (e) {
-        if (e.name !== 'AbortError') status(e.message);
-      }
-    });
-    paintFolders();
-    window.addEventListener('load', paintFolders);
+    // Dossiers mémorisés et sources externes : réglés dans Paramètres › Maintenance (bloc « Sources et dossiers »).
     root.querySelectorAll('[data-set]').forEach(b => b.onclick = () => {
       if (dirty && !confirm(T('Modifications non enregistrées : changer de base quand même ?', 'Unsaved changes: switch anyway?'))) return;
       dirty = false;
@@ -1116,7 +1104,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       const paint = () => {
         const q = up(filter.value),
           shown = (q ? list.filter(r => up(Object.values(r).join(' ')).includes(q)) : list);
-        flights.innerHTML = `<p class="small">${shown.length} ${T('vols', 'flights')}${shown.length > 300 ? ` — ${T('300 premiers affichés', 'first 300 shown')}` : ''}</p><table class="da-table"><thead><tr>${['Date', T('Durée', 'Duration'), T('Pilote', 'Pilot'), T('Indicatif', 'Callsign'), T('Immat.', 'Reg.'), 'Type', T('Départ', 'Dep.'), T('Arrivée', 'Arr.'), 'Mission'].map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${shown.slice(0, 300).map(r => `<tr><td>${esc(r.date)} ${esc(r.time)}</td><td>${r.durationMin == null ? '—' : hours(r.durationMin)}</td><td>${esc(r.trigram)}</td><td>${esc(r.callsign)}</td><td>${r.fleetId ? `<a href="https://flotte.defa-virtual.fr/appareil.php?id=${esc(r.fleetId)}" target="_blank" rel="noopener">${esc(r.registration)}</a>` : esc(r.registration)}</td><td>${esc([r.type, r.variant].filter(Boolean).join(' '))}</td><td>${esc(r.dep)}</td><td>${esc(r.arr)}</td><td>${esc(r.mission)}</td></tr>`).join('')}</tbody></table>`;
+        flights.innerHTML = `<p class="small">${shown.length} ${T('vols', 'flights')}${shown.length > 300 ? ` — ${T('300 premiers affichés', 'first 300 shown')}` : ''}</p><table class="da-table"><thead><tr>${['Date', T('Durée', 'Duration'), T('Pilote', 'Pilot'), T('Indicatif', 'Callsign'), T('Immat.', 'Reg.'), 'Type', T('Départ', 'Dep.'), T('Arrivée', 'Arr.'), 'Mission'].map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${shown.slice(0, 300).map(r => `<tr><td>${esc(r.date)} ${esc(r.time)}</td><td>${r.durationMin == null ? '—' : hours(r.durationMin)}</td><td>${esc(r.trigram)}</td><td>${esc(r.callsign)}</td><td>${r.fleetId ? `<a href="${esc(window.RepositoryNav?.source?.('defa') || 'https://flotte.defa-virtual.fr')}/appareil.php?id=${esc(r.fleetId)}" target="_blank" rel="noopener">${esc(r.registration)}</a>` : esc(r.registration)}</td><td>${esc([r.type, r.variant].filter(Boolean).join(' '))}</td><td>${esc(r.dep)}</td><td>${esc(r.arr)}</td><td>${esc(r.mission)}</td></tr>`).join('')}</tbody></table>`;
       };
       filter.oninput = paint;
       paint();

@@ -247,6 +247,13 @@ studio antérieure au cycle en vigueur, d'après `siaBaseInfo:v1`), vers `CR DEF
 réécrit pas le dépôt : l'application passe par `python tools/update_suite.py update` (canal : `git config
 suite.channel`).
 
+## 6 quinquies. Sources externes
+
+`repository_tree.sources` : adresses par défaut (`defa`, `siaData`, `siaCycle` — gabarit `{nn}` / `{yy}` —, `siaEaip`,
+`siaAirspaces`, `suiteRepo`, `dataRepo`). `RepositoryNav.source(clé)` : surcharge locale (`suiteSources:v1`, réglée dans
+Paramètres › Maintenance › Sources et dossiers) sinon valeur par défaut ; `RepositoryNav.setSource(clé, valeur)`
+(événement `suite-sources-change`). Aucune adresse DEFA ou SIA n'est écrite en dur dans le code des pages.
+
 ## 6 quater. `airac.js`, `zip_store.js`
 
 - `Airac.cycle(date)`, `next()`, `fromDate('2026-10-01')` → `{ date, ident: '2610', label: '10/26', until, url }`
@@ -264,7 +271,8 @@ suite.channel`).
   `Documentation/CR DEFA`, qui contient `mission_cr.html`), **sauvegarde locale** (`__store`),
   **performances** (`__perf`, Flight Planner), **SIA XML** (`__sia` : données AIRAC, témoin
   `Carte france vierge.png`), **missions** (`__missions` : `Documentation/Missions`, séries générées ; registre
-  `mission_registry.yaml`).
+  `mission_registry.yaml`), **X-Plane** (`__xplane` : journaux CSV du plugin d'atterrissage, dossier par défaut du
+  Landing Dashboard). Tous se règlent dans Paramètres › Maintenance › Sources et dossiers.
 - `FileAccess.pickFolder(clé)` : le sélecteur s'ouvre sur le dossier actuel ; contrôle du
   contenu attendu (fichier témoin) avec confirmation.
 - `FileAccess.decorate(bouton, clé)` : le bouton affiche « Dossier du registre : CR DEFA ✓ »

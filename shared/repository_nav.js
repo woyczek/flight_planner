@@ -148,7 +148,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260928a", script.src).href;
+    css.href = new URL("designs.css?v=20260928b", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -399,8 +399,13 @@
     close()
   };
   document.body.style.backgroundColor = theme.page || "";
+  /** Adresse d'une source externe : réglage local (suiteSources:v1, Paramètres › Maintenance) sinon repository_tree.sources. */
+  const source = key => { let o = {}; try { o = JSON.parse(localStorage.getItem("suiteSources:v1") || "{}") || {}; } catch {} return String(o[key] || cfg.sources?.[key]?.url || "").replace(/\/+$/, ""); };
   // API publique.
   window.RepositoryNav = {
+    source,
+    /** Enregistre (ou efface, valeur vide) la surcharge locale d'une source ; événement « suite-sources-change ». */
+    setSource(key, value) { let o = {}; try { o = JSON.parse(localStorage.getItem("suiteSources:v1") || "{}") || {}; } catch {} const v = String(value || "").trim(); v && v !== cfg.sources?.[key]?.url ? o[key] = v : delete o[key]; try { Object.keys(o).length ? localStorage.setItem("suiteSources:v1", JSON.stringify(o)) : localStorage.removeItem("suiteSources:v1"); } catch {} window.dispatchEvent(new CustomEvent("suite-sources-change", { detail: { key } })); },
     trLabel: l => trLabel(l),
     root,
     page,
@@ -514,7 +519,7 @@
     // flotte DEFA Virtual (nouvel onglet : la page en cours reste ouverte)
     const LOGO = { cabinet: "cabinet", flightlog: "flightlog", field: "field", aqua: "aqua" };
     const logoSrc = () => new URL(`icons/defa/${LOGO[doc.dataset.design] || "flat"}.webp${ver}`, script.src).href;
-    side.innerHTML = `<a class="repo-sidenav-brand" href="https://flotte.defa-virtual.fr/index.php" target="_blank" rel="noopener" title="DEFA Virtual — flotte.defa-virtual.fr"><img class="repo-sidenav-logo" src="${logoSrc()}" alt="DEFA Virtual"></a><ul></ul>`;
+    side.innerHTML = `<a class="repo-sidenav-brand" href="${source("defa") || "https://flotte.defa-virtual.fr"}/index.php" target="_blank" rel="noopener" title="DEFA Virtual — ${source("defa").replace(/^https?:\/\//, "")}"><img class="repo-sidenav-logo" src="${logoSrc()}" alt="DEFA Virtual"></a><ul></ul>`;
     const ul = side.querySelector("ul");
     items.forEach((it, i) => {
       const li = document.createElement("li");
@@ -555,23 +560,23 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260928a", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260928b", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260928a", script.src).href;
+    files.src = new URL("file_access.js?v=20260928b", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260928a", "block_icons.js?v=20260928a", "side_nav.js?v=20260928a"]) {
+    for (const f of ["icons/repository_icons.js?v=20260928b", "block_icons.js?v=20260928b", "side_nav.js?v=20260928b"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260928a", script.src).href;
+    store.src = new URL("browser_store.js?v=20260928b", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=20260928a", script.src).href;
+    update.src = new URL("suite_update.js?v=20260928b", script.src).href;
     document.head.append(update)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

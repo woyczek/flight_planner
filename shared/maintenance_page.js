@@ -82,7 +82,7 @@
     return out;
   }
   /** Bouton de choix d'un dossier de la suite (libellé « Dossier … : nom ✓ », infobulle) ; after : rappel. */
-  function folderButton(key, after) {
+  function folderButton(key, after, { withLabel = true } = {}) {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'secondary mt-folder';
@@ -90,13 +90,14 @@
     b.onclick = async () => {
       try { await window.FileAccess.pickFolder(key); after?.(); } catch (e) { if (e?.name !== 'AbortError' && e?.message !== 'Dossier refusé') alert(e.message); }
     };
-    waitFor('FileAccess').then(FA => FA?.decorate(b, key));
+    waitFor('FileAccess').then(FA => FA?.decorate(b, key, { withLabel }));
     return b;
   }
 
   // ---- blocs
   const BLOCKS = [
     { id: 'updates', icon: 'refresh', title: ['Mises à jour de la suite', 'Suite updates', 'Aktualisierungen der Suite', 'Actualizaciones de la suite'], sub: ['Canal (stable / early bird), contrôle manuel, automatique ou désactivé, état du dépôt git', 'Channel (stable / early bird), manual, automatic or disabled check, git repository state', 'Kanal (stabil / Early Bird), manuelle, automatische oder deaktivierte Prüfung, Git-Status', 'Canal (estable / early bird), comprobación manual, automática o desactivada, estado git'] },
+    { id: 'sources', icon: 'folder', title: ['Sources et dossiers', 'Sources and folders', 'Quellen und Ordner', 'Fuentes y carpetas'], sub: ['Dossiers locaux (dépôt, registres, missions, SIA, X-Plane…) et adresses des sources externes (DEFA, SIA, dépôts) : un seul endroit pour les régler', 'Local folders (repository, ledgers, missions, SIA, X-Plane…) and external source addresses (DEFA, SIA, repositories): one place to set them', 'Lokale Ordner und Adressen externer Quellen (DEFA, SIA, Repositorys) an einem Ort', 'Carpetas locales y direcciones de fuentes externas (DEFA, SIA, repositorios) en un solo lugar'] },
     { id: 'versions', icon: 'layers', title: ['Versions et synchronisations', 'Versions and synchronisation', 'Versionen und Synchronisation', 'Versiones y sincronización'], sub: ['Version de chaque élément (code, git, AIRAC, bases, plans de vol…) et date de sa dernière mise à jour', 'Version of each asset (code, git, AIRAC, databases, flight plans…) and date of its last update', 'Version jedes Elements (Code, Git, AIRAC, Datenbanken, Flugpläne…) und Datum der letzten Aktualisierung', 'Versión de cada elemento (código, git, AIRAC, bases, planes de vuelo…) y fecha de su última actualización'] },
     { id: 'deps', icon: 'link', title: ['Références et dépendances', 'References and dependencies', 'Referenzen und Abhängigkeiten', 'Referencias y dependencias'], sub: ['Chaque référence : tracée, processus de mise à jour, données qui en dépendent, cohérence vérifiée', 'Each reference: traced, update process, dependent data, consistency checked', 'Jede Referenz: nachverfolgt, Aktualisierungsprozess, abhängige Daten, geprüfte Konsistenz', 'Cada referencia: trazada, proceso de actualización, datos dependientes, coherencia comprobada'] },
     { id: 'sia', icon: 'map', title: ['Mise à jour des données SIA (AIRAC) — pas à pas', 'SIA data update (AIRAC) — step by step', 'Aktualisierung der SIA-Daten (AIRAC) — Schritt für Schritt', 'Actualización de los datos SIA (AIRAC) — paso a paso'], sub: ['Nouveau cycle : téléchargement, dossier, anciens cycles, relecture par le studio, différences, recalculs (MORA, espaces, appareils, flotte, performances)', 'New cycle: download, folder, old cycles, studio re-read, differences, recalculations (MORA, airspace, aircraft, fleet, performance)', 'Neuer Zyklus: Download, Ordner, alte Zyklen, Neueinlesen, Unterschiede, Neuberechnungen', 'Nuevo ciclo: descarga, carpeta, ciclos antiguos, relectura, diferencias, recálculos'] },
@@ -234,6 +235,46 @@
       b.onclick = async () => { try { await navigator.clipboard.writeText(pre.textContent); b.textContent = '✓'; setTimeout(() => b.textContent = t(['Copier', 'Copy', 'Kopieren', 'Copiar']), 1500); } catch { /* refus */ } };
       pre.before(b);
     });
+  }
+
+  // ===== 1 bis. Sources et dossiers
+  const FOLDER_ORDER = ['__repo', '__ledger', '__missions', '__sia', '__xplane', '__perf', '__store'];
+  async function renderSources() {
+    const host = hosts.sources, FA = await waitFor('FileAccess'), nav = window.RepositoryNav;
+    if (!FA || !nav) { host.innerHTML = pill('err', 'file_access.js'); return; }
+    const keys = [...FOLDER_ORDER.filter(k => FA.FOLDERS[k]), ...Object.keys(FA.FOLDERS).filter(k => !FOLDER_ORDER.includes(k))];
+    const rows = [];
+    for (const key of keys) {
+      const st = await FA.status(key), info = FA.FOLDERS[key] || {};
+      let marker = '';
+      if (st.handle && st.permission === 'granted' && info.check) { try { await st.handle.getFileHandle(info.check); marker = pill('ok', info.check); } catch { marker = pill('warn', t(['« {f} » absent : dossier attendu ?', '“{f}” missing: expected folder?'], { f: info.check })); } }
+      const state = !st.handle ? pill('warn', t(['non choisi', 'not chosen', 'nicht gewählt', 'no elegida'])) : st.permission === 'granted' ? pill('ok', t(['autorisé', 'authorised', 'erlaubt', 'autorizada'])) : pill('info', t(['à ré-autoriser', 'to re-authorise', 'erneut erlauben', 'a reautorizar']));
+      rows.push(`<tr data-key="${esc(key)}"><td><b>${esc(t(info.label || [key]))}</b><br><span class="mt-small">${esc(t(info.expect || ['']))}</span></td><td class="mt-fcell"></td><td>${state} ${marker}</td></tr>`);
+    }
+    const src = window.REPOSITORY_TREE?.sources || {};
+    let local = {}; try { local = JSON.parse(localStorage.getItem('suiteSources:v1') || '{}') || {}; } catch { /* illisible */ }
+    const eff = window.Airac?.cycle?.();
+    const openUrl = (k, u) => k === 'siaCycle' && eff ? eff.url : u;
+    host.innerHTML = `
+      <h3>${esc(t(['Dossiers locaux', 'Local folders', 'Lokale Ordner', 'Carpetas locales']))}</h3>
+      <p class="mt-small">${esc(t(['Chaque dossier est choisi une fois (le navigateur mémorise l’autorisation, parfois à reconfirmer après un redémarrage). Les sélecteurs de fichiers des pages s’ouvrent directement dans le dossier correspondant.', 'Each folder is chosen once (the browser remembers the permission, sometimes to be confirmed again after a restart). File pickers open directly in the matching folder.']))}</p>
+      <div class="mt-scroll"><table class="mt-table mt-wide mt-folders"><tbody>${rows.join('')}</tbody></table></div>
+      <h3>${esc(t(['Sources externes', 'External sources', 'Externe Quellen', 'Fuentes externas']))}</h3>
+      <p class="mt-small">${esc(t(['Adresses par défaut livrées avec l’application (repository_tree) ; une valeur saisie ici ne vaut que pour ce navigateur (sauvegardée avec les données locales).', 'Default addresses ship with the application (repository_tree); a value entered here applies to this browser only (saved with local data).']))}</p>
+      <table class="mt-table mt-wide mt-sources"><tbody>${Object.entries(src).map(([k, v]) => `<tr data-src="${esc(k)}"><td><b>${esc(t(v.label || [k]))}</b></td><td><input type="url" class="mt-url" value="${esc(local[k] || '')}" placeholder="${esc(v.url)}" spellcheck="false"></td><td class="mt-nowrap">${local[k] ? pill('info', t(['modifiée', 'changed', 'geändert', 'cambiada'])) : ''} <button type="button" class="secondary" data-reset ${local[k] ? '' : 'hidden'}>↺</button> <a class="mt-link" href="${esc(openUrl(k, nav.source(k)))}" target="_blank" rel="noopener">${esc(t(['Ouvrir', 'Open', 'Öffnen', 'Abrir']))} ↗</a></td></tr>`).join('')}</tbody></table>`;
+    host.querySelectorAll('tr[data-key]').forEach(tr => tr.querySelector('.mt-fcell').append(folderButton(tr.dataset.key, () => { renderSources(); renderVersions(); renderDeps(); renderBackup(); }, { withLabel: false })));
+    host.querySelectorAll('tr[data-src]').forEach(tr => {
+      const k = tr.dataset.src, input = tr.querySelector('input');
+      input.onchange = () => {
+        const v = input.value.trim();
+        if (v && !/^https?:\/\/[^\s]+$/i.test(v)) { input.setCustomValidity(t(['adresse http(s) attendue', 'http(s) address expected'])); input.reportValidity(); return; }
+        input.setCustomValidity('');
+        nav.setSource(k, v);
+        renderSources();
+      };
+      tr.querySelector('[data-reset]').onclick = () => { nav.setSource(k, ''); renderSources(); };
+    });
+    window.AppFramework?.refresh?.();
   }
 
   // ---- types d'aéronefs : base OACI fusionnée (aircraft_catalog.js) et alias (AIRCRAFT_DB.__aliases : H145 → EC45…)
@@ -419,12 +460,12 @@
         <div class="mt-step">${stepHead(1, s1, t(['Cycle AIRAC', 'AIRAC cycle', 'AIRAC-Zyklus', 'Ciclo AIRAC']))}
           <p>${esc(t(['En vigueur', 'In force', 'Gültig', 'Vigente']))} : <b>${esc(eff.label)}</b> (${esc(fmtDate(eff.date, false))} → ${esc(fmtDate(eff.until, false))}) · ${esc(t(['suivant', 'next', 'nächster', 'siguiente']))} : <b>${esc(nxt.label)}</b> ${esc(t(['le', 'on', 'am', 'el']))} ${esc(fmtDate(nxt.date, false))}</p>
           <p>${esc(t(['Base du studio', 'Studio base', 'Studio-Basis', 'Base del estudio']))} : ${info ? `<b>${esc(info.airac || '?')}</b> (${esc(fmtDate(info.cachedAt))})` : '—'} ${s1 === 'ok' ? pill('ok', t(['à jour', 'up to date'])) : pill('warn', t(['à mettre à jour', 'to update']))}</p>
-          <p class="row"><a class="mt-link" href="${esc(eff.url)}" target="_blank" rel="noopener">SIA — AIRAC ${esc(eff.label)}</a> <a class="mt-link" href="${esc(nxt.url)}" target="_blank" rel="noopener">SIA — AIRAC ${esc(nxt.label)}</a> <a class="mt-link" href="https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/les-bases-de-donnees-sia.html" target="_blank" rel="noopener">${esc(t(['Bases de données SIA', 'SIA databases']))}</a></p>
+          <p class="row"><a class="mt-link" href="${esc(eff.url)}" target="_blank" rel="noopener">SIA — AIRAC ${esc(eff.label)}</a> <a class="mt-link" href="${esc(nxt.url)}" target="_blank" rel="noopener">SIA — AIRAC ${esc(nxt.label)}</a> <a class="mt-link" href="${esc(window.RepositoryNav?.source?.('siaData'))}" target="_blank" rel="noopener">${esc(t(['Bases de données SIA', 'SIA databases']))}</a> <a class="mt-link" href="${esc(window.RepositoryNav?.source?.('siaAirspaces'))}" target="_blank" rel="noopener">sia-airspaces</a></p>
         </div>
         <div class="mt-step">${stepHead(2, s2, t(['Dossier SIA XML et export du SIA', 'SIA XML folder and SIA export', 'SIA-XML-Ordner und SIA-Export', 'Carpeta SIA XML y exportación']))}
           <p class="row" id="mtSiaFolder"></p>
           ${f ? folderTable(f) : `<p class="mt-small">${esc(t(['Choisir (une fois) le dossier « SIA XML » du dépôt, puis « Analyser ».', 'Choose the repository “SIA XML” folder once, then “Analyse”.']))}</p>`}
-          <p class="row"><label class="secondary mt-file">${esc(t(['ZIP d’export du SIA…', 'SIA export ZIP…', 'SIA-Export-ZIP…', 'ZIP de exportación…']))}<input type="file" id="mtSiaZip" accept=".zip" hidden></label>${f?.zips?.length ? `<button type="button" class="secondary" id="mtSiaZipFolder" data-icon="box">${esc(t(['Extraire {z}', 'Extract {z}'], { z: f.zips[0].name }))}</button>` : ''} <span class="mt-small" id="mtExtract">${extractMsg}</span></p>
+          <p class="row"><label class="secondary mt-file">${esc(t(['ZIP d’export du SIA…', 'SIA export ZIP…', 'SIA-Export-ZIP…', 'ZIP de exportación…']))}<input type="file" id="mtSiaZip" accept=".zip" hidden data-picker-folder="__sia"></label>${f?.zips?.length ? `<button type="button" class="secondary" id="mtSiaZipFolder" data-icon="box">${esc(t(['Extraire {z}', 'Extract {z}'], { z: f.zips[0].name }))}</button>` : ''} <span class="mt-small" id="mtExtract">${extractMsg}</span></p>
         </div>
         <div class="mt-step">${stepHead(3, s3, t(['Anciens cycles', 'Old cycles', 'Alte Zyklen', 'Ciclos antiguos']))}
           ${!f ? `<p class="mt-small">${esc(t(['Analyser d’abord le dossier (étape 2).', 'Analyse the folder first (step 2).']))}</p>` : f.old.length ? `<p>${f.old.map(o => `<code>${esc(o.date)}</code> (${o.items.length} ${esc(t(['fichier(s)', 'file(s)']))}, ${fmtSize(o.items.reduce((n, i) => n + i.size, 0))})`).join(' · ')}</p><p class="row"><button type="button" class="secondary" id="mtArchive" data-icon="box">${esc(t(['Archiver dans _archives/', 'Archive into _archives/', 'In _archives/ archivieren', 'Archivar en _archives/']))}</button></p>` : `<p>${pill('ok', t(['un seul cycle dans le dossier', 'a single cycle in the folder']))}</p>`}
@@ -618,6 +659,7 @@
   const SOURCES = () => [
     { id: 'ledger', key: '__ledger', label: ['Registres des CR (dossier CR DEFA)', 'Report ledgers (CR DEFA folder)'], recursive: true, include: /\.(ya?ml|csv|json|fms)$/i },
     { id: 'missions', key: '__missions', label: ['Missions générées (dossier Missions)', 'Generated missions (Missions folder)'], recursive: true, include: /\.(ya?ml|md|txt)$/i, heavy: /\.(png|svg|zip|pdf)$/i },
+    { id: 'landing', key: '__xplane', label: ['Journaux d’atterrissage (dossier X-Plane)', 'Landing logs (X-Plane folder)'], recursive: false, include: /\.(csv|log)$/i },
     { id: 'perf', key: '__perf', label: ['Profils de performance (dossier performances)', 'Performance profiles (performance folder)'], recursive: false, include: /\.(lnmperf|json)$/i },
     { id: 'repo', key: '__repo', label: ['Configuration du dépôt (fichiers connus)', 'Repository configuration (known files)'], paths: ['flight_performance_database_merged.fpdb.json', 'AircraftDB/aircraft_overrides.json', 'defa_local_store.yaml', 'SIA XML/mora.csv', 'SIA XML/miam-enr-5-7-tracks.xml', 'SIA XML/miam-enr-5-7-coordinates.xml', 'SIA XML/Mission 02.md'], dirs: [{ dir: 'LandingPerformanceDashboard', include: /\.(csv|cfg|txt)$/i }] },
     { id: 'sia', key: '__sia', label: ['Données SIA (hors XML AIRAC)', 'SIA data (without AIRAC XML)'], recursive: false, include: /\.(csv|txt)$|^miam-.*\.xml$/i, heavy: /^(AIXM4\.5|XML_SIA_|sia-airspaces-).*\.xml$/i },
@@ -662,7 +704,7 @@
           <p class="mt-small">${esc(t(['Écrite dans le dossier de sauvegarde locale (sous-dossier sauvegardes/) s’il est autorisé, sinon téléchargée.', 'Written to the local backup folder (sauvegardes/ sub-folder) when authorised, otherwise downloaded.']))}</p>
           <div id="mtBackupMsg">${backupMsg}</div><div id="mtSinceBox">${sinceHtml}</div>
           <h3>${esc(t(['Recharger une sauvegarde totale', 'Reload a full backup', 'Vollständige Sicherung laden', 'Recargar una copia total']))}</h3>
-          <p class="row"><label class="secondary mt-file">${esc(t(['Choisir l’archive…', 'Choose the archive…', 'Archiv wählen…', 'Elegir el archivo…']))}<input type="file" id="mtRestoreZip" accept=".zip" hidden></label></p>
+          <p class="row"><label class="secondary mt-file">${esc(t(['Choisir l’archive…', 'Choose the archive…', 'Archiv wählen…', 'Elegir el archivo…']))}<input type="file" id="mtRestoreZip" accept=".zip" hidden data-picker-folder="__store"></label></p>
           <div id="mtRestore">${restorePlan ? restoreHtml(restorePlan) : ''}</div>
         </div>
       </div>`;
@@ -857,13 +899,15 @@
     await Promise.all([waitFor('FileAccess'), waitFor('LocalStore'), waitFor('SuiteUpdate')]);
     await Promise.all([readGitState(false), scanSiaFolder(false)]);
     baseSummary = await window.Airac.baseSummary();
-    renderUpdates(); renderSia(); renderBackup(); renderJournal();
+    renderUpdates(); renderSources(); renderSia(); renderBackup(); renderJournal();
     await renderVersions(); await renderDeps();
     const target = location.hash && document.querySelector(location.hash);
     if (target) setTimeout(() => target.scrollIntoView({ block: 'start' }), 200);
   }
   window.addEventListener('repository-language-change', renderAll);
   window.addEventListener('local-store-journal', renderJournal);
+  window.addEventListener('file-access-change', () => renderSources());
+  window.addEventListener('suite-sources-change', () => { renderSia(); renderVersions(); });
   window.addEventListener('local-store-restored', () => { renderVersions(); });
   window.addEventListener('storage', async e => {
     if (e.key === 'siaBaseInfo:v1') { baseSummary = await window.Airac.baseSummary(); renderSia(); renderVersions(); renderDeps(); }

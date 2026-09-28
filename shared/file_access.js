@@ -37,6 +37,10 @@
       label: L('Dossier des missions', 'Missions folder', 'Missionsordner', 'Carpeta de misiones'),
       expect: L('dossier « Missions » du dépôt (séries générées : missionNN.yaml, summaryNN.md ; mission_registry.yaml y est écrit)', '“Missions” folder of the repository (generated series: missionNN.yaml, summaryNN.md; mission_registry.yaml is written there)', 'Ordner „Missions“ des Repositorys (missionNN.yaml, summaryNN.md; mission_registry.yaml)', 'carpeta «Missions» del repositorio (missionNN.yaml, summaryNN.md; mission_registry.yaml)')
     },
+    __xplane: {
+      label: L('Dossier X-Plane (atterrissages)', 'X-Plane folder (landings)', 'X-Plane-Ordner (Landungen)', 'Carpeta X-Plane (aterrizajes)'),
+      expect: L('dossier où le plugin d’atterrissage d’X-Plane écrit ses journaux CSV (Landing Performance Dashboard)', 'folder where the X-Plane landing plugin writes its CSV logs (Landing Performance Dashboard)', 'Ordner, in den das X-Plane-Landungs-Plugin seine CSV-Protokolle schreibt', 'carpeta donde el plugin de aterrizaje de X-Plane escribe sus registros CSV')
+    },
     __perf: {
       label: L('Dossier performances', 'Performance folder', 'Leistungsordner', 'Carpeta de rendimiento'),
       expect: L('dossier des profils de performance (.lnmperf, .json ; la base flight_performance_database.fpdb.json y est écrite)', 'performance profiles folder (.lnmperf, .json; flight_performance_database.fpdb.json is written there)', 'Ordner der Leistungsprofile (.lnmperf, .json)', 'carpeta de perfiles de rendimiento (.lnmperf, .json)')
@@ -181,7 +185,7 @@
 
   // ---- ouverture de fichiers : sélecteur du système dans le dossier paramétré
   // Dossier par défaut selon la page (application CR DEFA : registre ; Paramétrage : dépôt).
-  const defaultFolder = () => /\/CR%20DEFA\/|\/CR DEFA\//.test(location.pathname) ? (/parametrage\.html$/.test(location.pathname) ? '__repo' : '__ledger') : /flight_performance_planner/.test(location.pathname) ? '__perf' : /mission_registry\.html$/.test(location.pathname) ? '__missions' : /\/SIA%20XML\/|\/SIA XML\//.test(location.pathname) ? '__sia' : '';
+  const defaultFolder = () => /\/CR%20DEFA\/|\/CR DEFA\//.test(location.pathname) ? (/parametrage\.html$/.test(location.pathname) ? '__repo' : '__ledger') : /flight_performance_planner/.test(location.pathname) ? '__perf' : /LandingPerformanceDashboard\//.test(location.pathname) ? '__xplane' : /mission_registry\.html$/.test(location.pathname) ? '__missions' : /\/SIA%20XML\/|\/SIA XML\//.test(location.pathname) ? '__sia' : '';
   const hash = s => {
     let h = 0;
     for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0;

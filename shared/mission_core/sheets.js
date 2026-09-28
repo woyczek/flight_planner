@@ -354,7 +354,7 @@
         <div><span class="small">${esc(tr(UI.variant))}</span><b>${esc(known.variant || '—')}</b></div>
         <div><span class="small">${esc(tr(UI.category))}</span><b>${esc(catLabel ? tr(catLabel.label) : category || '—')}</b>${typeInfo?.wtc ? ` · ${esc(tr(UI.wtc))} ${esc(typeInfo.wtc)}` : ''}</div>
         <div><span class="small">${esc(tr(UI.operator))}</span><b>${esc(known.operator || '—')}</b></div>
-        <div><span class="small">${esc(tr(UI.fleet))}</span>${known.fleetId ? `<a href="https://flotte.defa-virtual.fr/appareil.php?id=${esc(known.fleetId)}" target="_blank" rel="noopener">#${esc(known.fleetId)} ↗</a>` : '—'}</div>
+        <div><span class="small">${esc(tr(UI.fleet))}</span>${known.fleetId ? `<a href="${esc(window.RepositoryNav?.source?.('defa') || 'https://flotte.defa-virtual.fr')}/appareil.php?id=${esc(known.fleetId)}" target="_blank" rel="noopener">#${esc(known.fleetId)} ↗</a>` : '—'}</div>
         <div class="sh-wide"><span class="small">${esc(tr(UI.callsigns))}</span><div class="sh-chips">${[...callsigns].sort((a, b) => b[1] - a[1]).map(([c, n]) => `<span class="sh-chip">${esc(c)}${n ? ` <em>${n}</em>` : ''}</span>`).join('') || '—'}</div></div>
         <div class="sh-wide"><span class="small">${esc(tr(UI.equipment))}</span><div class="sh-chips">${[...equipment].map(e => `<span class="sh-chip">${esc(e)}</span>`).join('') || '—'}</div></div>
         <label class="sh-wide">${esc(tr(UI.notes))}<textarea data-sheet="notes" rows="2">${esc(sheet.notes)}</textarea></label>

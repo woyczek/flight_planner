@@ -374,7 +374,9 @@
     done: ['{n} vols lus, {a} nouveaux — journal : {t} vols ({d1} → {d2})', '{n} flights read, {a} new — log: {t} flights ({d1} → {d2})', '{n} Flüge gelesen, {a} neu — Journal: {t} Flüge ({d1} → {d2})', '{n} vuelos leídos, {a} nuevos — diario: {t} vuelos ({d1} → {d2})'],
     none: ['Aucun vol reconnu dans ce texte.', 'No flight recognised in this text.', 'Kein Flug erkannt.', 'Ningún vuelo reconocido.']
   };
-  const LOG_URL = 'https://flotte.defa-virtual.fr/log_vols.php';
+  // page « Log des vols » du site DEFA (adresse réglable : Paramètres › Maintenance › Sources et dossiers)
+  const defaUrl = () => window.RepositoryNav?.source?.('defa') || 'https://flotte.defa-virtual.fr';
+  const LOG_URL = defaUrl() + '/log_vols.php';
   /** Fenêtre de chargement du journal DEFA (fichier ou copier-coller de la page « Log des vols »), onLoaded appelé après chargement. */
   function loaderDialog({ onLoaded } = {}) {
     const lang = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr')), T = k => LOADER[k][lang] || LOADER[k][0];
@@ -386,7 +388,7 @@
       <p class="small dl-result"></p></form>`;
     dialog.querySelector('h3').textContent = T('title');
     const ps = dialog.querySelectorAll('p.small'); ps[0].textContent = T('step1'); ps[1].textContent = T('step2');
-    const link = dialog.querySelector('a'); link.href = LOG_URL; link.textContent = `${LOG_URL} ↗`;
+    const link = dialog.querySelector('a'); const logUrl = defaUrl() + '/log_vols.php'; link.href = logUrl; link.textContent = `${logUrl} ↗`;
     dialog.querySelectorAll('[data-t]').forEach(el => { el.textContent = T(el.dataset.t); });
     dialog.querySelector('[data-a="load"]').textContent = T('load');
     const area = dialog.querySelector('textarea'), result = dialog.querySelector('.dl-result');

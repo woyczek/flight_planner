@@ -80,9 +80,9 @@ les registres présents dans le dépôt sont lus en lecture seule.
 4. **Sauvegarde des données locales** — menu ☰ › Données locales › « Dossier de
    sauvegarde… » : choisir un dossier synchronisé (hors dépôt si vous ne voulez pas le
    versionner). Sauvegarde automatique ensuite.
-5. **Dossier du dépôt** (seulement pour éditer les bases) — ☰ › Paramétrage › Bases de
-   données › « Dossier du dépôt… » : la racine du dépôt (celle qui contient
-   `repository_tree`).
+5. **Dossiers et sources** — ☰ › Maintenance › Sources et dossiers : dossier du dépôt (racine, qui contient
+   `repository_tree` ; pour éditer les bases), missions, SIA XML, **X-Plane** (journaux d'atterrissage), performances ;
+   adresses DEFA et SIA si elles changent.
 
 Chrome / Edge redemandent parfois l'autorisation d'un dossier après redémarrage : un clic
 sur « Autoriser » suffit.
