@@ -88,7 +88,7 @@
     const pt = y.origin || y.target || {};
     const opMissions = Array.isArray(y.operation?.missions) ? y.operation.missions : [];
     return {
-      id: String(meta.id ?? meta.number ?? '').trim() || (/(\d+[A-Z]?)/.exec(files[0] || '')?.[1] || ''),
+      id: String(meta.id ?? meta.number ?? '').trim() || (/([A-Z]?\d+[A-Z]?)(?=\.\w+$)/i.exec(files[0] || '')?.[1] || '').toUpperCase(),
       series: meta.series ?? '',
       number: meta.number ?? '',
       type: String(meta.type || '').toUpperCase(),
@@ -357,6 +357,7 @@
   const TEAM_PRESETS = ['A400M', 'C-130J', 'CASA CN235', 'A330 MRTT', 'E-3F', 'Rafale', 'Falcon 50M', 'Atlantique 2', 'Dash 8 (Milan)', 'CL-415', 'H225 Caracal', 'NH90', 'EC145 (Dragon)', 'H160', 'AS365 Dauphin', 'Beech 200 / TBM', 'drone', 'équipe au sol'];
   const THEATRE_LIST = ['aléatoire', 'métropole', 'Corse', 'Antilles', 'Guyane', 'Réunion', 'Mayotte', 'Nouvelle-Calédonie', 'Polynésie'];
   let order = { type: 'aléatoire', subtype: 'libre', theatre: 'aléatoire', theatre2: '', serie: '', teams: 2, teamTypes: [], teamTypesFree: '', rdv: 'libre', ground: 'libre', aar: 'libre', note: '', ...readJson('missionRegistryOrder:v1', {}) };
+  if (!/^[A-Za-z]$/.test(String(order.serie || ''))) order.serie = '';   // ancienne série numérotée (1 à 9) : la lettre suivante est proposée
   function orderForm(fam) {
     const f = fam.find(x => x.id === order.type);
     const nextSerie = order.serie || suggestedSerie();
@@ -366,39 +367,54 @@
       <label>${esc(t(['Sous-type', 'Subtype']))}<select data-o="subtype" ${f ? '' : 'disabled'}>${opt('libre', t(['libre', 'free']), order.subtype)}${(f?.subtypes || []).map(x => opt(x, x, order.subtype)).join('')}</select></label>
       <label>${esc(t(['Théâtre', 'Theatre']))}<select data-o="theatre">${THEATRE_LIST.map(x => opt(x, x, order.theatre)).join('')}</select></label>
       <label>${esc(t(['Second théâtre', 'Second theatre']))}<select data-o="theatre2">${opt('', '—', order.theatre2)}${THEATRE_LIST.slice(1).map(x => opt(x, x, order.theatre2)).join('')}</select></label>
-      <label>${esc(t(['Série', 'Series']))}<input type="number" min="1" max="9" data-o="serie" value="${esc(order.serie || nextSerie)}"></label>
+      <label>${esc(t(['Série', 'Series']))}<input maxlength="1" data-o="serie" style="text-transform:uppercase" value="${esc(order.serie || nextSerie)}" title="${esc(t(['Lettre de la série (A à Z) ; proposée : la suivante du registre', 'Series letter (A to Z); suggested: the next one in the registry']))}"></label>
       <label>${esc(t(['Équipes DEFA en vol', 'DEFA flying teams']))}<input type="number" min="1" max="5" data-o="teams" value="${esc(order.teams)}"></label>
       <label>${esc(t(['Rendez-vous', 'Rendezvous']))}<select data-o="rdv">${opt('libre', t(['libre', 'free']), order.rdv)}${opt('avec', t(['avec', 'with']), order.rdv)}${opt('sans', t(['sans', 'without']), order.rdv)}</select></label>
       <label>${esc(t(['Équipes au sol', 'Ground teams']))}<select data-o="ground">${opt('libre', t(['libre', 'free']), order.ground)}${[0, 1, 2, 3].map(n => opt(n, n, order.ground)).join('')}</select></label>
       <label>${esc(t(['Ravitaillement en vol', 'Air refuelling']))}<select data-o="aar">${opt('libre', t(['libre', 'free']), order.aar)}${opt('oui', t(['oui', 'yes']), order.aar)}${opt('non', t(['non', 'no']), order.aar)}</select></label>
     </div>
-    <p><b>${esc(t(['Types d’équipes / d’aéronefs (dans l’ordre des équipes A, B, C…)', 'Team / aircraft types (in team order A, B, C…)']))}</b></p>
-    <div class="rg-chips">${TEAM_PRESETS.map(x => `<label class="rg-chip"><input type="checkbox" data-team="${esc(x)}" ${order.teamTypes.includes(x) ? 'checked' : ''}> ${esc(x)}</label>`).join('')}</div>
-    <p class="row"><label class="rg-grow">${esc(t(['Autres (séparés par « + »)', 'Others (separated by “+”)']))}<input data-o="teamTypesFree" value="${esc(order.teamTypesFree)}"></label></p>
+    <p><b>${esc(t(['Aéronef de chaque équipe en vol', 'Aircraft of each flying team', 'Luftfahrzeug jeder Besatzung', 'Aeronave de cada equipo']))}</b></p>
+    <p class="rg-small">${esc(t(['Laisser vide = automatique (le générateur choisit un appareil adapté à la mission). Saisir ou choisir dans la liste : types courants et appareils de la flotte DEFA avec leur indicatif ; un même type peut servir à plusieurs équipes (indicatifs différents).', 'Empty = automatic (the generator picks a suitable aircraft). Type or pick from the list: common types and DEFA fleet aircraft with their callsign; the same type may serve several teams (different callsigns).']))}</p>
+    <div class="rg-teams">${teamSlots().map((v, i) => `<label class="rg-team"><span class="rg-team-letter">${esc(t(['Équipe', 'Team', 'Team', 'Equipo']))} ${String.fromCharCode(65 + i)}</span><input data-slot="${i}" list="rgTeamList" value="${esc(v)}" placeholder="${esc(t(['automatique', 'automatic', 'automatisch', 'automático']))}"></label>`).join('')}</div>
+    <datalist id="rgTeamList">${teamChoices().map(x => `<option value="${esc(x)}">`).join('')}</datalist>
     <p class="row"><button type="button" class="primary" id="rgOrder" data-icon="send">${esc(t(['Commander : copier le prompt et ouvrir ChatGPT', 'Order: copy prompt and open ChatGPT', 'Bestellen: Prompt kopieren und ChatGPT öffnen', 'Encargar: copiar el prompt y abrir ChatGPT']))}</button><span class="rg-small" id="rgOrderMsg"></span></p>
     <p class="rg-small">${esc(t(['La mission apparaît dans le registre avec le statut « commandée » ; enregistrer ensuite missionNN.yaml et summaryNN.md dans le dossier Missions (sous-dossier de la série) et « Relire le dossier » : la commande est rapprochée de la mission générée (même série).', 'The mission appears as “ordered”; then save missionNN.yaml and summaryNN.md into the Missions folder (series sub-folder) and “Re-read folder”: the order is matched with the generated mission (same series).']))}</p>`;
   }
-  /** Série proposée : la suivante des séries du registre (1 à 9). */
-  const suggestedSerie = () => Math.min(9, Math.max(0, ...reg.missions.map(m => +m.series || 0)) + 1);
+  /** Série proposée : la lettre suivante des séries du registre ; premier numéro d'opération libre (3 chiffres). */
+  const numbering = () => window.SiaMission?.nextNumbering?.() || { serie: 'A', first: '001' };
+  const suggestedSerie = () => numbering().serie;
+  /** Aéronef choisi pour chaque équipe en vol (A, B, C…) ; '' = automatique. Anciens réglages (cases + « Autres ») repris une fois. */
+  function teamSlots() {
+    const n = Math.max(1, Math.min(5, +order.teams || 1));
+    if (!Array.isArray(order.teamSlots)) order.teamSlots = [...(order.teamTypes || []), ...String(order.teamTypesFree || '').split('+').map(x => x.trim()).filter(Boolean)];
+    while (order.teamSlots.length < n) order.teamSlots.push('');
+    return order.teamSlots.slice(0, n);
+  }
+  /** Propositions : types courants, puis chaque appareil de la flotte DEFA (« variante — indicatif »). */
+  function teamChoices() {
+    const fleet = (window.DEFA_FLEET || []).filter(r => r.type).map(r => `${r.variant || r.type} — ${r.callsign || r.registration || r.code || r.type}`);
+    return [...new Set([...TEAM_PRESETS, ...fleet.sort((a, b) => a.localeCompare(b))])];
+  }
+  /** Valeur TYPES_EQUIPES du prompt : « A : H160 — RESCUE41 + B : automatique + … » ; libre si tout est automatique. */
   function teamTypesValue() {
-    return [...order.teamTypes, ...String(order.teamTypesFree || '').split('+').map(s => s.trim()).filter(Boolean)].join(' + ');
+    const slots = teamSlots();
+    return slots.some(Boolean) ? slots.map((v, i) => `${String.fromCharCode(65 + i)} : ${v || 'automatique'}`).join(' + ') : '';
   }
   function bindOrder() {
     host.querySelectorAll('[data-o]').forEach(el => el.addEventListener('change', () => {
       order[el.dataset.o] = el.type === 'number' ? el.value : el.value;
       if (el.dataset.o === 'type') order.subtype = 'libre';
       writeJson('missionRegistryOrder:v1', order);
-      if (el.dataset.o === 'type') render();
+      if (el.dataset.o === 'type' || el.dataset.o === 'teams') render();
     }));
-    host.querySelectorAll('[data-team]').forEach(el => el.onchange = () => {
-      const s = new Set(order.teamTypes);
-      el.checked ? s.add(el.dataset.team) : s.delete(el.dataset.team);
-      order.teamTypes = TEAM_PRESETS.filter(x => s.has(x));
+    host.querySelectorAll('[data-slot]').forEach(el => el.addEventListener('change', () => {
+      teamSlots();
+      order.teamSlots[+el.dataset.slot] = el.value.trim();
       writeJson('missionRegistryOrder:v1', order);
-    });
+    }));
     host.querySelector('#rgOrder').onclick = async () => {
-      const request = { type: order.type, subtype: order.subtype, theatre: [order.theatre, order.theatre2].filter((v, i, a) => v && a.indexOf(v) === i).join(' + '), serie: +order.serie || suggestedSerie(), teams: Math.max(1, Math.min(5, +order.teams || 1)), teamTypes: teamTypesValue() || 'libre', rdv: order.rdv, ground: order.ground, aar: order.aar };
-      reg.missions.push({ id: String(request.serie * 10 + 1), series: request.serie, type: request.type === 'aléatoire' ? '' : request.type, family: '', subtype: request.subtype === 'libre' ? '' : request.subtype, title: '', teams: [], teamCount: 0, teamTypes: request.teamTypes === 'libre' ? [] : request.teamTypes.split(' + '), aircraftTypes: [], callsigns: [], rdv: request.rdv === 'avec' ? 1 : 0, aar: request.aar === 'oui', theatre: order.theatre === 'aléatoire' ? '' : order.theatre, origin: '', destination: '', maps: 0, folder: '', files: [], source: 'commande', status: 'ordered', statusAt: new Date().toISOString(), addedAt: new Date().toISOString(), request, notes: '' });
+      const request = { type: order.type, subtype: order.subtype, theatre: [order.theatre, order.theatre2].filter((v, i, a) => v && a.indexOf(v) === i).join(' + '), serie: String(order.serie || suggestedSerie()).toUpperCase(), first: numbering().first, teams: Math.max(1, Math.min(5, +order.teams || 1)), teamTypes: teamTypesValue() || 'libre', rdv: order.rdv, ground: order.ground, aar: order.aar };
+      reg.missions.push({ id: `${request.serie}${request.first}`, series: request.serie, type: request.type === 'aléatoire' ? '' : request.type, family: '', subtype: request.subtype === 'libre' ? '' : request.subtype, title: '', teams: [], teamCount: 0, teamTypes: request.teamTypes === 'libre' ? [] : teamSlots().map(v => v || 'automatique'), aircraftTypes: [], callsigns: [], rdv: request.rdv === 'avec' ? 1 : 0, aar: request.aar === 'oui', theatre: order.theatre === 'aléatoire' ? '' : order.theatre, origin: '', destination: '', maps: 0, folder: '', files: [], source: 'commande', status: 'ordered', statusAt: new Date().toISOString(), addedAt: new Date().toISOString(), request, notes: '' });
       persist();
       await sendPrompt(request);
       render();
@@ -411,7 +427,7 @@
     if (!base) { if (out) out.textContent = 'mission_prompt.js'; return; }
     const set = (txt, key, val) => txt.replace(new RegExp(`^(\\s*${key}\\s*=\\s*)\\S+`, 'm'), (_, a) => a + String(val).replace(/\$/g, '$$$$'));
     let p = base;
-    p = set(p, 'TYPE', r.type); p = set(p, 'SERIE', r.serie); p = set(p, 'NOMBRE_MISSIONS', 1); p = set(p, 'THÉÂTRE', r.theatre || 'aléatoire'); p = set(p, 'ÉQUIPES_DEFA', r.teams);
+    p = set(p, 'TYPE', r.type); p = set(p, 'SERIE', r.serie); p = set(p, 'PREMIER_NUMERO', r.first || numbering().first); p = set(p, 'NOMBRE_MISSIONS', 1); p = set(p, 'THÉÂTRE', r.theatre || 'aléatoire'); p = set(p, 'ÉQUIPES_DEFA', r.teams);
     p = set(p, 'SOUS_TYPE', r.subtype || 'libre'); p = set(p, 'RENDEZ_VOUS', r.rdv || 'libre'); p = set(p, 'TYPES_EQUIPES', r.teamTypes || 'libre'); p = set(p, 'ÉQUIPES_SOL', r.ground ?? 'libre'); p = set(p, 'RAVITAILLEMENT', r.aar || 'libre');
     let copied = false;
     try { await navigator.clipboard.writeText(p); copied = true; } catch { /* refus */ }

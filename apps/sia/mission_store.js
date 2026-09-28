@@ -179,8 +179,8 @@
       title: parsed.title || 'Mission',
       mission: {}
     };
-    const id = y.title.match(/\bMission\s+(\d+)/i);
-    if (id) y.mission.id = y.mission.number = +id[1];
+    const id = y.title.match(/\bMission\s+([A-Z]?\d+[A-Z]?)\b/i);
+    if (id) { const p = parseId(id[1]); y.mission.id = p.id; y.mission.number = p.num; if (p.serie) y.mission.series = p.serie; }
     for (const [key, aliases] of Object.entries({
         type: ['TYPE', 'Type'],
         subtype: ['SOUS-TYPE', 'Sous-type', 'Subtype'],
@@ -258,7 +258,7 @@
   function missionIds(yamls, mds) {
     const ids = new Set();
     yamls.forEach(({ parsed }) => { const id = parsed?.mission?.id ?? parsed?.mission?.number; if (id != null && id !== '') ids.add(String(id).trim().toUpperCase().replace(/^0+(?=\d)/, '')); });
-    mds.forEach(f => { const m = /^#\s+Mission\s+(\d+[A-Z]?)\b/im.exec(f.text); if (m) ids.add(m[1].toUpperCase().replace(/^0+(?=\d)/, '')); }); // 41A ≠ 41B (une mission par équipe)
+    mds.forEach(f => { const m = /^#\s+Mission\s+([A-Z]?\d+[A-Z]?)\b/im.exec(f.text); if (m) ids.add(m[1].toUpperCase().replace(/^0+(?=\d)/, '')); }); // 41A ≠ 41B (une mission par équipe)
     return [...ids];
   }
 
@@ -408,7 +408,7 @@
     const blocks = [...src.matchAll(/```([\w-]*)\n([\s\S]*?)\n\s*```/g)];
     if (blocks.length > 1) return blocks.map((b, i) => ({ name: /ya?ml/i.test(b[1]) || /^\s*(schema|mission)\s*:/m.test(b[2]) ? `bloc${i + 1}.yaml` : `bloc${i + 1}.md`, text: b[2] }));
     // 4. débuts de fichiers à la suite : YAML (« schema: helo-xp-mission ») et Markdown (« # Mission 41A »)
-    const starts = [...src.matchAll(/^(?:schema\s*:\s*['"]?helo-xp-mission\b.*|#\s+Mission\s+\d+[A-Z]?\b.*)$/gim)];
+    const starts = [...src.matchAll(/^(?:schema\s*:\s*['"]?helo-xp-mission\b.*|#\s+Mission\s+[A-Z]?\d+[A-Z]?\b.*)$/gim)];
     if (starts.length > 1) return starts.map((m, k) => {
       const yaml = /^schema/i.test(m[0]);
       return { name: `${yaml ? 'mission' : 'summary'}${k + 1}.${yaml ? 'yaml' : 'md'}`, text: cleanSegment(src.slice(m.index, starts[k + 1]?.index ?? src.length)) };
@@ -433,7 +433,7 @@
     const expanded = files.flatMap(f => { const parts = splitBundle(f.text); return parts.length ? parts : [f]; });
     const idOfFile = f => {
       if (isYaml(f)) { try { const y = window.jsyaml.load(f.text); return missionId({ yaml: y }); } catch { return ''; } }
-      const m = /^#\s+Mission\s+(\d+[A-Z]?)\b/im.exec(f.text);
+      const m = /^#\s+Mission\s+([A-Z]?\d+[A-Z]?)\b/im.exec(f.text);
       return m ? m[1].toUpperCase().replace(/^0+(?=\d)/, '') : '';
     };
     const groups = new Map(), loose = [];
@@ -520,7 +520,24 @@
       if (e.key === KEY) fire();
     });
   }
-  window.SiaMission = {
+  // ---- numérotation : lettre de série + numéro d'opération sur 3 chiffres (+ lettre d'équipe) — « K049 », « K049A »
+  /** Découpe un identifiant : { id, serie, num, team } ; anciens identifiants numériques (« 41A ») : serie vide. */
+  function parseId(raw) {
+    const s = String(raw ?? '').trim().toUpperCase(), m = /^([A-Z])?(\d+)([A-Z])?$/.exec(s);
+    if (!m) return { id: s, serie: '', num: null, team: '' };
+    const serie = m[1] || '', num = +m[2], team = m[3] || '';
+    return { id: serie ? `${serie}${String(num).padStart(3, '0')}${team}` : s, serie, num, team };
+  }
+  /** Série et premier numéro libres d'après le registre des missions (missionRegistry:v1) : { serie: 'K', first: '049' }. */
+  function nextNumbering() {
+    let reg = [];
+    try { reg = JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions || []; } catch { /* registre illisible */ }
+    const letters = reg.map(m => String(m.series || parseId(m.id).serie || '').toUpperCase()).filter(x => /^[A-Z]$/.test(x)).sort();
+    const nums = reg.map(m => parseId(m.id)).filter(p => p.serie && Number.isFinite(p.num)).map(p => p.num);
+    const last = letters[letters.length - 1];
+    return { serie: last ? String.fromCharCode(Math.min(90, last.charCodeAt(0) + 1)) : 'A', first: String((nums.length ? Math.max(...nums) : 0) + 1).padStart(3, '0') };
+  }
+  window.SiaMission = { parseId, nextNumbering,
     KEY,
     load,
     save,

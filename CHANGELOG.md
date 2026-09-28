@@ -10,6 +10,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Numérotation des missions** : lettre de série + numéro d'opération sur 3 chiffres (+ lettre d'équipe) — « K049 »,
+  « K049A » ; la lettre est unique toutes familles confondues (A, B, C… dans l'ordre de création), le numéro ne se
+  répète jamais. Prompt du générateur : SERIE (lettre) et PREMIER_NUMERO (proposés d'après le registre des missions,
+  `SiaMission.nextNumbering()`), fichiers missionK049.yaml / summaryK049.md / generalK049.png… Lecteur de missions,
+  registre, éditeur : identifiants alphanumériques. Rangement : `data/missions/<lettre>_<FAMILLE>/<identifiant>/`.
+  Outils : `tools/renumber_missions.py` (renumérotation, ancien identifiant gardé dans `mission.former_id`, table
+  `data/missions/RENUMEROTATION.md`), `tools/import_pdf_missions.py` (import de dossiers PDF et ZIP de cartes ; YAML et
+  résumé reconstruits depuis le PDF quand ils manquent).
+- **Registre des missions, commande** : une ligne par équipe en vol (A, B, C…) ; vide = automatique ; complétion par
+  les types courants et les appareils de la flotte DEFA (indicatif) ; un même type peut servir à plusieurs équipes.
+
 - **Designs à matières** : plus de fonds blancs dans le générateur complet de mission (rubriques, éléments de liste,
   cartes du dossier, badges), les CR FIRE / HEMS MEDEVAC (encadré, indicateurs, liens-boutons) et le registre des
   missions (bouton de fichier) — habillés comme les cartes et boutons du design (Durci, Carnet de vol, Cabinet, Aqua).

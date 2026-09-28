@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Registre des missions générées</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=20260928j"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=20260928j">
-<script src="../../repository_tree?v=20260928j"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=20260928k"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=20260928k">
+<script src="../../repository_tree?v=20260928k"></script>
 <style>
   main.rg-page{max-width:1500px;margin:18px auto;padding:0 16px 48px}
   main.rg-page>section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:0 0 16px}
@@ -19,7 +19,7 @@
   .rg-grow{flex:1;min-width:260px}
   .rg-chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
   .rg-chip{display:inline-flex;gap:5px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;cursor:pointer}
-  .rg-chip:has(input:checked){background:var(--soft);border-color:var(--accent)}
+  .rg-chip:has(input:checked){background:var(--soft);border-color:var(--accent)}.rg-teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px 12px;margin:4px 0 8px}.rg-team{display:flex;gap:8px;align-items:center}.rg-team-letter{flex:none;font-weight:700;min-width:5.5em}.rg-team input{flex:1;min-width:0}
   .rg-small{font-size:12px;color:var(--muted)}
   #rgTable{max-height:55vh;overflow:auto;border:1px solid var(--line);border-radius:10px;margin-bottom:12px}
   .rg-detail{margin-top:6px}
@@ -37,13 +37,14 @@
      générateur, le studio ou un CR ; commande d'une mission (prompt réglé). Page construite par shared/mission_registry.js. -->
 <header class="mc-header"><h1>Registre des missions générées</h1><p>Missions SIA — séries générées, choix par type, rendez-vous et équipes, commande de nouvelles missions</p></header>
 <main class="rg-page" id="missionRegistry"></main>
-<script src="../../shared/repository_nav.js?v=20260928j"></script>
-<script src="../../shared/content_i18n.js?v=20260928j"></script>
+<script src="../../shared/repository_nav.js?v=20260928k"></script>
+<script src="../../shared/content_i18n.js?v=20260928k"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script src="../../shared/mission_core/vocab.js?v=20260928j"></script>
-<script src="mission_store.js?v=20260928j"></script>
-<script src="mission_prompt.js?v=20260928j"></script>
-<script src="../../shared/mission_table.js?v=20260928j"></script>
-<script src="../../shared/mission_registry.js?v=20260928j"></script>
-<script src="../../shared/app_framework.js?v=20260928j"></script>
+<script src="../../shared/data_files.js?v=20260928k" data-file="references/aircraft_fleet.js"></script>
+<script src="../../shared/mission_core/vocab.js?v=20260928k"></script>
+<script src="mission_store.js?v=20260928k"></script>
+<script src="mission_prompt.js?v=20260928k"></script>
+<script src="../../shared/mission_table.js?v=20260928k"></script>
+<script src="../../shared/mission_registry.js?v=20260928k"></script>
+<script src="../../shared/app_framework.js?v=20260928k"></script>
 </body></html>

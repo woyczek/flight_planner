@@ -17,7 +17,8 @@ GÉNÉRATEUR DE SÉRIE DE MISSIONS — HELO XP
 
 PARAMÈTRES DE CETTE EXÉCUTION
   TYPE            = aléatoire        (ou un code de famille du § 2, ex. AAR)
-  SERIE           = 4                (entier 1 à 9)
+  SERIE           = K                (lettre A à Z : la série ; une lettre par série, toutes familles confondues)
+  PREMIER_NUMERO  = 049              (numéro à 3 chiffres de la première opération de la série ; +1 par opération)
   NOMBRE_MISSIONS = 5                (1 à 9 : nombre d'opérations)
   THÉÂTRE         = aléatoire       (métropole, Corse, Antilles, Guyane, Réunion, Mayotte,
                                      Nouvelle-Calédonie, Polynésie… ; plusieurs possibles, liés
@@ -26,7 +27,7 @@ PARAMÈTRES DE CETTE EXÉCUTION
                                      complète par équipe — voir § 3)
   SOUS_TYPE       = libre            (ou un code de sous-type du § 2 pour la famille TYPE)
   RENDEZ_VOUS     = libre            (avec : au moins un rendez-vous par mission ; sans : aucun)
-  TYPES_EQUIPES   = libre            (aéronefs / équipes à engager, liés par « + », ex. « A400M + H225 »)
+  TYPES_EQUIPES   = libre            (aéronef de chaque équipe en vol, dans l'ordre A, B, C…, ex. « A : A400M — COTAM71 + B : automatique + C : A400M — COTAM72 » ; « automatique » = au choix du générateur ; un même type peut revenir avec des indicatifs différents)
   ÉQUIPES_SOL     = libre            (0 à 3 : équipes au sol en plus des équipes en vol)
   RAVITAILLEMENT  = libre            (oui : ravitaillement en vol planifié ; non : aucun)
 
@@ -37,8 +38,8 @@ bienvenu quand la famille s'y prête (unités réellement présentes). Plusieurs
 les relie réellement (§ 5).
 Paramètres « libre » : ton choix. Sinon ils s'imposent à chaque mission : SOUS_TYPE = mission.subtype ;
 RENDEZ_VOUS = avec → au moins un point dans rendezvous (et une carte detail_rdv par rendez-vous), sans → rendezvous: [] ;
-TYPES_EQUIPES = les équipes DEFA en vol emploient ces aéronefs (dans l'ordre des lettres A, B, C… ; aircraft.type et
-teams[].type) ; ÉQUIPES_SOL = nombre exact d'équipes au sol dans teams (en plus des équipes en vol) ;
+TYPES_EQUIPES = l'équipe A emploie le premier aéronef, B le deuxième, etc. (aircraft.type, aircraft.callsign si un
+indicatif est donné, teams[].type) ; « automatique » : choisir un appareil adapté à la mission ; ÉQUIPES_SOL = nombre exact d'équipes au sol dans teams (en plus des équipes en vol) ;
 RAVITAILLEMENT = oui → air_refueling.planned: true avec son axe (§ 7), non → pas de bloc air_refueling planifié.
 
 Les fichiers alimentent automatiquement un briefing, des cartes OpenStreetMap, un PDF de mission, une
@@ -113,15 +114,16 @@ de commandement (BE20 ou TBM9, coordination au-dessus du feu) = trois missions ;
 métropole et un hélicoptère au-dessus de la Corse avec un rendez-vous commun = deux missions ; AAR — ravitailleur
 et receveurs = une mission par équipe, points tournants différents, même axe et même rendez-vous.
 
-Numérotation : NN = SERIE × 10 + n (série 4 → opérations 41, 42…). Une seule équipe : mission NN (« 41 »).
-Plusieurs équipes : missions NN + lettre, une par équipe dans l'ordre (« 41A », « 41B », « 41C »).
+Numérotation : NN = SERIE + numéro de l'opération sur 3 chiffres, à partir de PREMIER_NUMERO (série K, PREMIER_NUMERO
+049 → opérations K049, K050, K051…). Une seule équipe : mission NN (« K049 »). Plusieurs équipes : missions NN + lettre
+de l'équipe, une par équipe dans l'ordre (« K049A », « K049B », « K049C »).
 Deux fichiers par mission, chacun dans son propre bloc de code, précédé d'une ligne « Fichier : … » :
   missionNNX.yaml   (bloc ```yaml)
   summaryNNX.md     (bloc ```markdown)
-Ordre : mission41A.yaml, summary41A.md, mission41B.yaml, summary41B.md, … puis l'opération suivante.
+Ordre : missionK049A.yaml, summaryK049A.md, missionK049B.yaml, summaryK049B.md, … puis l'opération suivante.
 Aucun autre fichier (pas d'images, pas de manifeste). Puis le bloc VALIDATION (§ 10).
 Réponse trop longue pour tout livrer d'un coup : livrer les missions une par une, chacune COMPLÈTE (YAML +
-Markdown), puis écrire « Mission suivante : 11B — répondre « suite » » et attendre ; le bloc VALIDATION suit
+Markdown), puis écrire « Mission suivante : K049B — répondre « suite » » et attendre ; le bloc VALIDATION suit
 la dernière mission. Ne jamais tronquer un fichier.
 
 ────────────────────────────────────────────────────────────────────────────
@@ -131,21 +133,21 @@ Textes longs (summary, detailed_description) : bloc littéral « |- », paragrap
 vide, une idée par paragraphe, 4 phrases au plus par paragraphe. Jamais un seul bloc compact.
 Règles de syntaxe : YAML 1.2 valide, indentation 2 espaces, PAS d'ancres ni d'alias (&id / *id) :
 répéter les valeurs. Textes contenant « : », « # » ou commençant par un caractère spécial entre
-guillemets doubles. id de mission entre guillemets ('41'). Booléens true / false. Nombres sans unité.
+guillemets doubles. id de mission entre guillemets ('K049'). Booléens true / false. Nombres sans unité.
 Coordonnées : degrés décimaux WGS84, 6 décimales, lat puis lon, ouest et sud négatifs.
 
 schema: helo-xp-mission
 schema_version: '1.0'
 mission:
-  series: 4                    # = SERIE
-  number: 1                    # = n
-  id: '41A'                    # = NN, + lettre de l'équipe s'il y en a plusieurs (en texte)
+  series: 'K'                  # = SERIE (lettre)
+  number: 49                   # = numéro de l'opération (entier)
+  id: 'K049A'                  # = NN, + lettre de l'équipe s'il y en a plusieurs (en texte)
   type: AAR                    # code de famille (§ 2)
   subtype: TRAINING            # code de sous-type (§ 2)
 operation:                     # opération commune aux missions de ses équipes (identique dans chacune)
-  id: '41'
+  id: 'K049'
   name: "Nom de l'opération"
-  missions: ['41A', '41B']       # toutes les missions de l'opération, dans l'ordre
+  missions: ['K049A', 'K049B']   # toutes les missions de l'opération, dans l'ordre
 title: "AXE CECILE — ravitaillement d'une patrouille Rafale"   # court, sans le numéro
 summary: |-                   # bloc LITTÉRAL « |- » (jamais « >- » ni « > », qui recollent les lignes)
   Paragraphe 1 (2 à 3 phrases) : la situation — qui, où, ce qui se passe.
