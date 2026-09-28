@@ -29,6 +29,12 @@ cd flight_planner
 git clone https://framagit.org/defa-virtual/missions-defa.git data
 ```
 
+**Git LFS** : les binaires (images, PDF, archives, polices…) sont stockés par Git LFS dans les deux dépôts
+(`.gitattributes`). Installer [Git LFS](https://git-lfs.com) (inclus dans Git for Windows et GitKraken) et lancer une
+fois `git lfs install` ; puis, dans chaque dépôt, `python tools/check_binaries.py --install` (depuis `data/` :
+`python ../tools/check_binaries.py --install`) : un commit qui ajouterait un binaire hors LFS est refusé.
+`python tools/update_suite.py doctor` le vérifie.
+
 Sans `data/`, les pages utilisent les petits exemples fictifs d'`examples/`. Conseil : placer le dossier dans un
 dossier synchronisé (Synology Drive, OneDrive…) **en excluant les dossiers `.git`** de la synchronisation — la
 synchronisation de `.git` corrompt les dépôts (voir docs/AUDIT_2026-09-28.md).

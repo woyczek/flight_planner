@@ -193,6 +193,15 @@ def doctor():
     if os.environ.get('OS', '').startswith('Windows') or os.name == 'nt':
         if (git('config', '--get', 'core.autocrlf', check=False) or '') not in ('true', 'input'):
             issues.append('core.autocrlf non réglé sous Windows : risque de fins de ligne mélangées (git config core.autocrlf true)')
+    # Git LFS : outil présent, binaires suivis tous en LFS, crochet pre-commit installé
+    if subprocess.run(['git', 'lfs', 'version'], cwd=ROOT, capture_output=True).returncode:
+        issues.append('git-lfs absent : installer Git LFS (https://git-lfs.com) puis « git lfs install »')
+    chk = subprocess.run([sys.executable, os.path.join(HERE, 'check_binaries.py'), '--repo', ROOT], capture_output=True, text=True, encoding='utf-8', errors='replace')
+    if chk.returncode:
+        issues.append('binaires hors Git LFS : ' + ' '.join(chk.stdout.split('\n')[0:1]) + ' (python tools/check_binaries.py)')
+    hook = os.path.join(GITDIR, 'hooks', 'pre-commit')
+    if not (os.path.exists(hook) and 'check_binaries' in open(hook, encoding='utf-8', errors='replace').read()):
+        issues.append('crochet pre-commit anti-binaires absent : python tools/check_binaries.py --install')
     print('✓ Installation cohérente.' if not issues else '\n'.join('⚠ ' + i for i in issues))
     log({'action': 'doctor', 'issues': issues})
 
