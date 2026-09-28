@@ -154,7 +154,9 @@
   const ranked = map => [...(map || new Map()).entries()].sort((a, b) => b[1].date.localeCompare(a[1].date) || b[1].n - a[1].n).map(([value]) => value);
 
   // ------------------------------------------------------------------ aérodromes
-  const AIRPORTS_URL = 'https://cdn.jsdelivr.net/gh/mwgg/Airports@master/airports.json';
+  // Source réglable (repository_tree.sources.airports, surcharge locale : Paramètres › Maintenance › Sources) ;
+  // caches (terrains mémorisés, CDN jsDelivr, cache HTTP) purgeables dans Paramètres › Maintenance › Caches.
+  const AIRPORTS_URL = window.RepositoryNav?.source?.('airports') || 'https://cdn.jsdelivr.net/gh/mwgg/Airports@master/airports.json';
   const AP_KEY = 'missionAirports:v1';
   let airportDb = null,
     airportLoad = null;

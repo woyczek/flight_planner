@@ -104,6 +104,7 @@
     { id: 'versions', icon: 'layers', title: ['Versions et synchronisations', 'Versions and synchronisation', 'Versionen und Synchronisation', 'Versiones y sincronización'], sub: ['Version de chaque élément (code, git, AIRAC, bases, plans de vol…) et date de sa dernière mise à jour', 'Version of each asset (code, git, AIRAC, databases, flight plans…) and date of its last update', 'Version jedes Elements (Code, Git, AIRAC, Datenbanken, Flugpläne…) und Datum der letzten Aktualisierung', 'Versión de cada elemento (código, git, AIRAC, bases, planes de vuelo…) y fecha de su última actualización'] },
     { id: 'deps', icon: 'link', title: ['Références et dépendances', 'References and dependencies', 'Referenzen und Abhängigkeiten', 'Referencias y dependencias'], sub: ['Chaque référence : tracée, processus de mise à jour, données qui en dépendent, cohérence vérifiée', 'Each reference: traced, update process, dependent data, consistency checked', 'Jede Referenz: nachverfolgt, Aktualisierungsprozess, abhängige Daten, geprüfte Konsistenz', 'Cada referencia: trazada, proceso de actualización, datos dependientes, coherencia comprobada'] },
     { id: 'sia', icon: 'map', title: ['Mise à jour des données SIA (AIRAC) — pas à pas', 'SIA data update (AIRAC) — step by step', 'Aktualisierung der SIA-Daten (AIRAC) — Schritt für Schritt', 'Actualización de los datos SIA (AIRAC) — paso a paso'], sub: ['Nouveau cycle : téléchargement, dossier, anciens cycles, relecture par le studio, différences, recalculs (MORA, espaces, appareils, flotte, performances)', 'New cycle: download, folder, old cycles, studio re-read, differences, recalculations (MORA, airspace, aircraft, fleet, performance)', 'Neuer Zyklus: Download, Ordner, alte Zyklen, Neueinlesen, Unterschiede, Neuberechnungen', 'Nuevo ciclo: descarga, carpeta, ciclos antiguos, relectura, diferencias, recálculos'] },
+    { id: 'caches', icon: 'trash', title: ['Caches', 'Caches', 'Caches', 'Cachés'], sub: ['Données reconstructibles gardées par le navigateur (aérodromes, base mondiale via jsDelivr, base SIA, contrôle des mises à jour, fichiers de l’application) : état et purge', 'Rebuildable data kept by the browser (aerodromes, world base via jsDelivr, SIA base, update check, application files): state and purge', 'Wiederherstellbare Browserdaten (Flugplätze, Weltbasis über jsDelivr, SIA-Basis, Update-Prüfung, Anwendungsdateien): Stand und Leeren', 'Datos reconstruibles guardados por el navegador (aeródromos, base mundial vía jsDelivr, base SIA, control de actualizaciones, archivos de la aplicación): estado y purga'] },
     { id: 'backup', icon: 'save', title: ['Sauvegarde totale', 'Full backup', 'Vollständige Sicherung', 'Copia de seguridad total'], sub: ['Bases du navigateur et toute la configuration locale, fichiers connus des dossiers (registres, missions, profils, CSV d’atterrissage…), en une archive ZIP tracée', 'Browser databases and all local configuration, known files of the folders (ledgers, missions, profiles, landing CSV…), in one traced ZIP archive', 'Browser-Datenbanken und lokale Konfiguration, bekannte Dateien der Ordner, in einem ZIP-Archiv', 'Bases del navegador y toda la configuración local, archivos conocidos de las carpetas, en un ZIP trazado'] },
     { id: 'journal', icon: 'clock', title: ['Journal des sauvegardes et rechargements', 'Backup and reload journal', 'Protokoll der Sicherungen und Wiederherstellungen', 'Registro de copias y recargas'], sub: ['Chaque sauvegarde, restauration ou rechargement : date, origine, ce qui a changé', 'Every backup, restore or reload: date, origin, what changed', 'Jede Sicherung oder Wiederherstellung: Datum, Herkunft, Änderungen', 'Cada copia o recarga: fecha, origen, qué cambió'] }
   ];
@@ -129,7 +130,7 @@
     navLabels();
   }
   // ---- rubrique « Maintenance » du menu latéral de Paramètres : une entrée par bloc
-  const NAV = { updates: ['Mises à jour', 'Updates', 'Updates', 'Actualizaciones'], sources: ['Sources et dossiers', 'Sources and folders', 'Quellen und Ordner', 'Fuentes y carpetas'], versions: ['Versions et synchros', 'Versions and sync', 'Versionen', 'Versiones'], deps: ['Références et dépendances', 'References and dependencies', 'Referenzen', 'Referencias'], sia: ['Mise à jour SIA (AIRAC)', 'SIA update (AIRAC)', 'SIA-Update (AIRAC)', 'Actualización SIA (AIRAC)'], backup: ['Sauvegarde totale', 'Full backup', 'Vollsicherung', 'Copia total'], journal: ['Journal', 'Journal', 'Protokoll', 'Registro'] };
+  const NAV = { updates: ['Mises à jour', 'Updates', 'Updates', 'Actualizaciones'], sources: ['Sources et dossiers', 'Sources and folders', 'Quellen und Ordner', 'Fuentes y carpetas'], versions: ['Versions et synchros', 'Versions and sync', 'Versionen', 'Versiones'], deps: ['Références et dépendances', 'References and dependencies', 'Referenzen', 'Referencias'], sia: ['Mise à jour SIA (AIRAC)', 'SIA update (AIRAC)', 'SIA-Update (AIRAC)', 'Actualización SIA (AIRAC)'], caches: ['Caches', 'Caches', 'Caches', 'Cachés'], backup: ['Sauvegarde totale', 'Full backup', 'Vollsicherung', 'Copia total'], journal: ['Journal', 'Journal', 'Protokoll', 'Registro'] };
   let navHost = null;
   function navLabels() {
     if (!navHost) return;
@@ -970,13 +971,106 @@
       }).join('')}</tbody></table></div>`;
   }
 
+  // ===== 5 bis. Caches
+  // Données reconstructibles, jamais des données utilisateur : aérodromes utilisés (missionAirports:v1, complétés
+  // depuis la base mondiale servie par jsDelivr), base SIA analysée (IndexedDB sia-map-parser, SiaBase.purge),
+  // résultat du contrôle des mises à jour (suiteUpdateCheck:v1, suiteGitInfo:v1), cache HTTP des fichiers de
+  // l'application (scripts, styles, repository_tree). Restent hors purge : registres, brouillons, profils,
+  // FlightPerfCache (OFP, calibrations) et Landing (dernier journal), sauvegardés avec les données locales.
+  const AIRPORTS_DEFAULT = 'https://cdn.jsdelivr.net/gh/mwgg/Airports@master/airports.json';
+  const airportsUrl = () => window.RepositoryNav?.source?.('airports') || AIRPORTS_DEFAULT;
+  /** Adresse de purge jsDelivr (purge.jsdelivr.net) d'un fichier servi par cdn.jsdelivr.net ; '' pour une autre source. */
+  const jsdelivrPurgeUrl = url => /^https:\/\/cdn\.jsdelivr\.net\//.test(url) ? url.replace('https://cdn.jsdelivr.net/', 'https://purge.jsdelivr.net/') : '';
+  const lsBytes = key => { try { const v = localStorage.getItem(key); return v == null ? 0 : (key.length + v.length) * 2; } catch { return 0; } };
+  const lsCount = key => { try { const v = JSON.parse(localStorage.getItem(key) || 'null'); return Array.isArray(v) ? v.length : v && typeof v === 'object' ? Object.keys(v).length : 0; } catch { return 0; } };
+  const lsDrop = keys => keys.forEach(k => { try { localStorage.removeItem(k); } catch { /* stockage indisponible */ } });
+  /** Recharge depuis le serveur (cache: 'reload') les scripts, styles et repository_tree de la page : le cache HTTP du navigateur est remplacé. */
+  async function refreshAppFiles() {
+    const urls = [...new Set([...document.scripts].map(x => x.src).concat([...document.querySelectorAll('link[rel="stylesheet"]')].map(x => x.href)).filter(u => u && new URL(u, location.href).origin === location.origin))];
+    let ok = 0, missing = 0;   // absents (404) : fichiers de data/ facultatifs, remplacés par examples/
+    await Promise.all(urls.map(u => fetch(u, { cache: 'reload' }).then(r => { if (r.ok) ok++; else if (r.status === 404) missing++; }).catch(() => {})));
+    if ('caches' in window) { try { for (const k of await caches.keys()) await caches.delete(k); } catch { /* file:// */ } }
+    return { ok, total: urls.length - missing };
+  }
+  const CACHES = () => [
+    { id: 'airports', icon: 'map', label: ['Aérodromes utilisés', 'Aerodromes used', 'Verwendete Flugplätze', 'Aeródromos usados'],
+      where: 'localStorage missionAirports:v1',
+      state: () => t(['{n} terrains, {s}', '{n} aerodromes, {s}'], { n: lsCount('missionAirports:v1'), s: fmtSize(lsBytes('missionAirports:v1')) }),
+      after: ['Relus dans la base mondiale au prochain usage ; les terrains importés d’un OFP hors base sont à réimporter.', 'Read again from the world base when next used; aerodromes imported from an OFP outside the base must be re-imported.'],
+      purge: async () => { lsDrop(['missionAirports:v1']); return t(['Aérodromes oubliés.', 'Aerodromes cleared.']); } },
+    { id: 'world', icon: 'link', label: ['Base mondiale des aérodromes (jsDelivr)', 'World aerodrome base (jsDelivr)', 'Weltweite Flugplatzbasis (jsDelivr)', 'Base mundial de aeródromos (jsDelivr)'],
+      where: airportsUrl(),
+      state: () => jsdelivrPurgeUrl(airportsUrl()) ? t(['CDN : branche gardée ≈ 12 h ; navigateur : cache HTTP', 'CDN: branch kept ≈ 12 h; browser: HTTP cache']) : t(['source hors jsDelivr : cache HTTP du navigateur', 'non-jsDelivr source: browser HTTP cache']),
+      after: ['Purge du CDN demandée à purge.jsdelivr.net, puis fichier rechargé depuis le serveur (cache HTTP remplacé).', 'CDN purge requested from purge.jsdelivr.net, then the file is reloaded from the server (HTTP cache replaced).'],
+      purge: async () => {
+        const url = airportsUrl(), purgeUrl = jsdelivrPurgeUrl(url);
+        if (purgeUrl) await fetch(purgeUrl, { mode: 'no-cors', cache: 'no-store' }).catch(() => {});
+        const r = await fetch(url, { cache: 'reload' }).catch(() => null);
+        return r?.ok ? t(['Base mondiale rechargée{p}.', 'World base reloaded{p}.'], { p: purgeUrl ? t([' (purge CDN demandée)', ' (CDN purge requested)']) : '' }) : { warn: t(['Base mondiale injoignable (hors ligne ?).', 'World base unreachable (offline?).']) };
+      } },
+    { id: 'sia', icon: 'database', label: ['Base SIA analysée', 'Analysed SIA base', 'Analysierte SIA-Basis', 'Base SIA analizada'],
+      where: 'IndexedDB sia-map-parser + localStorage siaBaseInfo:v1',
+      state: () => baseSummary ? t(['AIRAC {c}, lue le {d}', 'AIRAC {c}, read {d}'], { c: baseSummary.airac || '?', d: fmtDate(baseSummary.cachedAt) }) : t(['vide', 'empty']),
+      after: ['À relire depuis le dossier SIA (studio, ou étape 4 de la mise à jour SIA) ; la base précédente (comparaison) est gardée.', 'To be read again from the SIA folder (studio, or step 4 of the SIA update); the previous base (comparison) is kept.'],
+      confirm: ['La base SIA devra être relue depuis le dossier SIA (quelques dizaines de secondes). Purger ?', 'The SIA base will have to be read again from the SIA folder (a few tens of seconds). Purge?'],
+      purge: async () => { await window.SiaBase?.purge?.(); return t(['Base SIA purgée.', 'SIA base purged.']); } },
+    { id: 'update', icon: 'refresh', label: ['Contrôle des mises à jour', 'Update check', 'Update-Prüfung', 'Control de actualizaciones'],
+      where: 'localStorage suiteUpdateCheck:v1, suiteGitInfo:v1',
+      state: () => { const c = window.SuiteUpdate?.last?.(); return c?.at ? t(['dernier contrôle {d}', 'last check {d}'], { d: fmtDate(c.at) }) : t(['aucun', 'none']); },
+      after: ['Canal distant et état git relus au prochain contrôle (réglages du canal conservés).', 'Remote channel and git state read again at the next check (channel settings kept).'],
+      purge: async () => { lsDrop(['suiteUpdateCheck:v1', 'suiteGitInfo:v1']); gitState = null; return t(['Contrôle oublié.', 'Check cleared.']); } },
+    { id: 'files', icon: 'layers', label: ['Fichiers de l’application (cache HTTP)', 'Application files (HTTP cache)', 'Anwendungsdateien (HTTP-Cache)', 'Archivos de la aplicación (caché HTTP)'],
+      where: t(['scripts et styles de la page (?v=…), repository_tree', 'page scripts and styles (?v=…), repository_tree']),
+      state: () => t(['version de cache {v}', 'cache version {v}'], { v: /[?&]v=(\w+)/.exec([...document.scripts].map(x => x.src).find(x => /repository_nav\.js/.test(x)) || '')?.[1] || '—' }),
+      after: ['Fichiers rechargés depuis le serveur, puis la page est rechargée ; les autres pages suivent la version de cache (?v=).', 'Files reloaded from the server, then the page reloads; other pages follow the cache version (?v=).'],
+      reload: true,
+      purge: async () => {
+        if (location.protocol === 'file:') return t(['Pages ouvertes depuis le disque (file://) : fichiers lus directement, sans cache HTTP ; page rechargée.', 'Pages opened from disk (file://): files read directly, no HTTP cache; page reloaded.']);
+        const r = await refreshAppFiles(), msg = t(['{ok} / {n} fichiers rechargés.', '{ok} / {n} files reloaded.'], { ok: r.ok, n: r.total });
+        return r.ok < r.total ? { warn: msg } : msg;
+      } }
+  ];
+  let cacheMsg = '';
+  async function renderCaches() {
+    const host = hosts.caches;
+    let est = '';
+    try { const e = await navigator.storage?.estimate?.(); if (e?.usage) est = t(['Stockage du site : {u} utilisés.', 'Site storage: {u} used.'], { u: fmtSize(e.usage) }); } catch { /* API absente */ }
+    const list = CACHES();
+    host.innerHTML = `
+      <p class="mt-small">${esc(t(['Purger ne supprime aucune donnée utilisateur (registres, brouillons, profils, OFP, sauvegardes) : seulement ce qui se reconstruit seul ou se relit.', 'Purging never removes user data (registries, drafts, profiles, OFPs, backups): only what rebuilds itself or is read again.']))} ${esc(est)}</p>
+      <div class="mt-scroll"><table class="mt-table mt-wide"><tbody>${list.map(c => `<tr data-cache="${esc(c.id)}"><td><b>${esc(t(c.label))}</b><br><code class="mt-small">${esc(c.where)}</code></td><td>${esc(c.state())}<br><span class="mt-small">${esc(t(c.after))}</span></td><td class="mt-nowrap"><button type="button" class="secondary" data-icon="trash">${esc(t(c.reload ? ['Recharger sans cache', 'Reload without cache', 'Ohne Cache neu laden', 'Recargar sin caché'] : ['Purger', 'Purge', 'Leeren', 'Purgar']))}</button></td></tr>`).join('')}</tbody></table></div>
+      <p class="row"><button type="button" class="primary" id="mtPurgeAll" data-icon="trash">${esc(t(['Tout purger et recharger', 'Purge all and reload', 'Alles leeren und neu laden', 'Purgar todo y recargar']))}</button></p>
+      <div id="mtCacheMsg">${cacheMsg}</div>`;
+    const done = async (msgs, reload) => {
+      cacheMsg = pill(msgs.some(m => m?.warn) ? 'warn' : 'ok', msgs.map(m => m?.warn || m).join(' '));
+      if (reload) { sessionStorage.setItem('mtCacheMsg', cacheMsg); location.reload(); return; }
+      baseSummary = await window.SiaBase?.summary?.();
+      renderCaches(); renderVersions(); renderSia();
+    };
+    host.querySelectorAll('tr[data-cache] button').forEach(btn => btn.onclick = async () => {
+      const c = list.find(x => x.id === btn.closest('tr').dataset.cache);
+      if (c.confirm && !window.confirm(t(c.confirm))) return;
+      btn.disabled = true;
+      await done([await c.purge()], c.reload);
+    });
+    host.querySelector('#mtPurgeAll').onclick = async e => {
+      if (!window.confirm(t(['Purger tous les caches (dont la base SIA, à relire ensuite) et recharger la page ?', 'Purge all caches (including the SIA base, to be read again afterwards) and reload the page?']))) return;
+      e.target.disabled = true;
+      const msgs = [];
+      for (const c of list) msgs.push(await c.purge());
+      await done(msgs, true);
+    };
+    window.AppFramework?.refresh?.();
+  }
+  try { cacheMsg = sessionStorage.getItem('mtCacheMsg') || ''; sessionStorage.removeItem('mtCacheMsg'); } catch { /* stockage indisponible */ }
+
   // ---- rendu, langue, événements
   async function renderAll() {
     titles();
     await Promise.all([waitFor('FileAccess'), waitFor('LocalStore'), waitFor('SuiteUpdate')]);
     await Promise.all([readGitState(false), scanSiaFolder(false)]);
     baseSummary = await window.SiaBase.summary();
-    renderUpdates(); renderSources(); renderSia(); renderBackup(); renderJournal();
+    renderUpdates(); renderSources(); renderSia(); renderBackup(); renderJournal(); renderCaches();
     await renderVersions(); await renderDeps();
     const want = new URLSearchParams(location.search).get('m') || location.hash.slice(1);
     if (embedded) { if (NAV[want]) showBlock(want); }
