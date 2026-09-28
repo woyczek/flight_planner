@@ -148,7 +148,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=--help", script.src).href;
+    css.href = new URL("designs.css?v=20260928c", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -558,23 +558,23 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=--help", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260928c", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=--help", script.src).href;
+    files.src = new URL("file_access.js?v=20260928c", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=--help", "block_icons.js?v=--help", "side_nav.js?v=--help"]) {
+    for (const f of ["icons/repository_icons.js?v=20260928c", "block_icons.js?v=20260928c", "side_nav.js?v=20260928c"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=--help", script.src).href;
+    store.src = new URL("browser_store.js?v=20260928c", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=--help", script.src).href;
+    update.src = new URL("suite_update.js?v=20260928c", script.src).href;
     document.head.append(update)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

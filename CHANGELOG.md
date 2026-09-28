@@ -10,6 +10,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Studio, points tournants** : rouge et libellés de 11 pt par défaut ; nouveau sélecteur de couleur de remplissage
+  des points (à côté de la taille), en plus de celui des libellés et du contour. Profils d'affichage enregistrés avec
+  les anciens réglages par défaut (7 pt, gris foncé) passés aux nouveaux ; réglages personnalisés conservés.
+
 - **Bandeaux Carnet de vol, Cabinet, Durci** : le panneau de la page reste à l'intérieur du cadre cousu (marges
   latérales) et l'en-tête devient une plaque vissée en retrait (plus de coins ni de vis contre le bord de la fenêtre,
   plus de bande vide au-dessus) ; emblème du Carnet de vol détouré (médaillon ailé seul) ; avion des plaques de titre
