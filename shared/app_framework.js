@@ -187,8 +187,28 @@
       });
     }
   }
+  /** Affiche le bloc id (même masqué par l'utilisateur : son choix est mis à jour), le fait défiler jusqu'à l'écran et
+   *  le signale brièvement. Utilisé par les liens « page.html#id-du-bloc » et par les pages (messages à montrer). */
+  function reveal(id, { flash = true } = {}) {
+    const el = id && document.querySelector(`[data-block-id="${CSS.escape(id)}"],#${CSS.escape(id)}`);
+    if (!el) return false;
+    const block = el.closest(".repo-block") || el;
+    if (block.classList.contains("repo-block-hidden")) block.querySelector(":scope>.repo-block-heading .repo-toggle")?.click();
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (flash) {
+      el.classList.add("repo-block-flash");
+      setTimeout(() => el.classList.remove("repo-block-flash"), 1600);
+    }
+    return true;
+  }
+  if (!document.getElementById("repoRevealStyle")) document.head.insertAdjacentHTML("beforeend", '<style id="repoRevealStyle">.repo-block-flash{outline:3px solid #f59e0b;outline-offset:3px;transition:outline-color 1.2s}</style>');
+  // Ancre « #id-du-bloc » : à l'ouverture de la page (une fois les blocs montés) et à chaque changement d'ancre.
+  const revealHash = () => { const id = decodeURIComponent(location.hash.slice(1)); if (id) reveal(id); };
+  window.addEventListener("hashchange", revealHash);
+  window.addEventListener("load", () => setTimeout(revealHash, 50));
   window.AppFramework = {
     refresh: init,
+    reveal,
     getConfig: startupConfig,
     sortableTable,
     guardUnsavedChanges

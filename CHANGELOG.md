@@ -10,6 +10,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Mise à jour SIA pas à pas clarifiée** (Paramètres › Maintenance) : étapes renommées, consigne « À faire » par étape
+  tant qu'elle n'est pas faite ; étape 4 « Ouvrir le studio et relire » ouvre le bloc « Base de données SIA » du studio,
+  qui relit une seule fois le dossier, affiche « ✓ Base chargée et mémorisée (AIRAC …) » et un bouton « Retour à la
+  mise à jour » (étape 5) ; au retour, les étapes 4 à 6 se recalculent seules (plus de bouton « Studio relu :
+  comparer ») ; étape 5 sans base précédente : « rien à comparer ». Purge du cache rangée sous « En cas de problème »,
+  avec son message effacé à la relecture suivante. Studio : plus d'invite d'autorisation en pleine relecture (fond de
+  carte), plus de double relecture à l'ouverture.
+- **Ancres de bloc** : `page.html#id-du-bloc` affiche le bloc (même masqué), le fait défiler et le signale
+  (`AppFramework.reveal(id)`).
+
 - **Espaces aériens lus directement dans `XML_SIA_<date>.xml`** (SIV, RMZ/TMZ, AP, FIR… ; arcs densifiés par le SIA) :
   le fichier dérivé `sia-airspaces-<date>.xml`, qu'aucune source officielle ne publie, n'est plus demandé (un nouveau
   cycle n'est plus signalé « incomplet »). Lecture sans DOM (≈ 40 ms), résultat dans la base mémorisée (version 12 :
