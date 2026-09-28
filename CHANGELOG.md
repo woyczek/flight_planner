@@ -10,6 +10,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Base SIA factorisée** (`shared/sia_base.js`, `SiaBase`) : lecture du dossier SIA, parseurs (AIXM 4.5, XML_SIA,
+  obstacles, villes, mora.csv), cache IndexedDB (lecture, écriture, mise à jour, purge), résumé `siaBaseInfo:v1` et base
+  précédente (`siaBaseInfo:prev`, gardée à chaque nouvelle lecture), grille MORA (calcul complet et recalcul simple) :
+  un seul code pour le studio et Maintenance (fin des copies dans `map_parser.html` et `airac.js`). **Bloc commun**
+  « Base de données SIA » (dossier, Relire, Purger, état, fichiers) monté dans le studio et à l'étape 4 de la mise à
+  jour SIA : la relecture se fait sur place, sans passer par le studio. Étape 6 : calcul MORA complet ajouté à côté du
+  recalcul simple.
+
 - **Mise à jour SIA pas à pas clarifiée** (Paramètres › Maintenance) : étapes renommées, consigne « À faire » par étape
   tant qu'elle n'est pas faite ; étape 4 « Ouvrir le studio et relire » ouvre le bloc « Base de données SIA » du studio,
   qui relit une seule fois le dossier, affiche « ✓ Base chargée et mémorisée (AIRAC …) » et un bouton « Retour à la

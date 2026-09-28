@@ -448,3 +448,14 @@ appareil). `link(item)` : lien en tête de carte (fiche appareil). Ajout par le 
    `shared/app_framework.js` (et `content_i18n.js` pour la traduction).
 3. La déclarer dans `repository_tree` (`pages`), avec son thème et sa place dans le menu.
 4. `python tools/bump_versions.py`.
+
+## Base SIA commune (`shared/sia_base.js`)
+
+`SiaBase` regroupe tout ce qui touche à la base SIA analysée, pour le studio cartographique et Paramètres › Maintenance :
+lecture du dossier (`build(files)`, `rebuild({ dir })` : cycle le plus récent, AIXM 4.5, XML_SIA, villes, fond, mora.csv,
+axes ENR 5.7), cache IndexedDB `sia-map-parser` (`get`, `put`, `patch`, `purge` ; format `VERSION`), résumés
+(`summarize`, `summary`, `info` = `siaBaseInfo:v1`, `previous` = base précédente gardée par `put`), grille MORA
+(`computeMoraGrid` complet, `moraFromObstacles` simple, `moraCsv`, `parseMora`, `moraLabel`), et le bloc d'interface
+`SiaBase.panel(host, { onLoaded, onCached, onPurged })` (dossier, Relire, Purger, état, compte rendu, fichiers), monté
+à l'identique dans le studio (`#sia-base`) et à l'étape 4 de la mise à jour SIA. `Airac` (`shared/airac.js`) ne garde
+que les cycles et l'inventaire du dossier. Dépendance facultative : `SiaAero.parseAixm` (`apps/sia/aero_symbols.js`).
