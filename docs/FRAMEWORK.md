@@ -261,7 +261,7 @@ dossier `__data` ; registre (`cr`), missions, SIA en sont déduits, performances
 ## 6 quinquies. Sources externes
 
 `repository_tree.sources` : adresses par défaut (`defa`, `siaData`, `siaCycle` — gabarit `{nn}` / `{yy}` —, `siaEaip`,
-`siaAirspaces`, `suiteRepo`, `dataRepo`). `RepositoryNav.source(clé)` : surcharge locale (`suiteSources:v1`, réglée dans
+`suiteRepo`, `dataRepo`). `RepositoryNav.source(clé)` : surcharge locale (`suiteSources:v1`, réglée dans
 Paramètres › Maintenance › Sources et dossiers) sinon valeur par défaut ; `RepositoryNav.setSource(clé, valeur)`
 (événement `suite-sources-change`). Aucune adresse DEFA ou SIA n'est écrite en dur dans le code des pages.
 

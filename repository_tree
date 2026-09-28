@@ -16,7 +16,6 @@ window.REPOSITORY_TREE={
     siaData:{url:"https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/les-bases-de-donnees-sia.html",label:["SIA — bases de données (export XML)","SIA — databases (XML export)","SIA — Datenbanken (XML-Export)","SIA — bases de datos (XML)"]},
     siaCycle:{url:"https://www.sia.aviation-civile.gouv.fr/donnees-aeronautiques-xml-airac-{nn}-{yy}.html",label:["SIA — page d’un cycle AIRAC","SIA — AIRAC cycle page","SIA — Seite eines AIRAC-Zyklus","SIA — página de un ciclo AIRAC"]},
     siaEaip:{url:"https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/eaip.html",label:["SIA — eAIP","SIA — eAIP","SIA — eAIP","SIA — eAIP"]},
-    siaAirspaces:{url:"https://www.data.gouv.fr/datasets/donnees-despace-aerien-de-la-base-aeronautique-du-sia",label:["Contours d’espaces (sia-airspaces)","Airspace outlines (sia-airspaces)","Luftraumgrenzen (sia-airspaces)","Contornos de espacios (sia-airspaces)"]},
     suiteRepo:{url:"https://framagit.org/asr/flight_planner",label:["Dépôt de l’application","Application repository","Anwendungs-Repository","Repositorio de la aplicación"]},
     dataRepo:{url:"https://framagit.org/defa-virtual/missions-defa",label:["Dépôt des données (privé)","Data repository (private)","Daten-Repository (privat)","Repositorio de datos (privado)"]}
   },

@@ -26,8 +26,8 @@ Bibliothèques livrées dans le dossier : MapLibre GL (`maplibre-gl.js/.css`), j
 | Fichier | Rôle | Dépôt |
 |---|---|---|
 | `AIXM4.5_all_FR_OM_<date>.xml` | AIXM 4.5 complet du SIA : contours R / D / P / CTR / TMA avec classes et limites verticales, zones AZBA (RTBA), aérodromes et pistes, VOR / DME / TACAN / NDB, **13 800 obstacles** | hors dépôt (≈ 44 Mo par cycle) |
-| `sia-airspaces-<date>.xml` | Contours d'espaces (SIV et compléments) | hors dépôt |
-| `XML_SIA_<date>.xml` | Export XML-SIA complet (inventaire) | hors dépôt |
+| `XML_SIA_<date>.xml` | Export XML-SIA complet : contours de tous les espaces (SIV, RMZ/TMZ, AP, FIR…), inventaire | hors dépôt |
+| `sia-airspaces-<date>.xml` | Ancien fichier dérivé de XML_SIA : facultatif, ignoré quand XML_SIA est présent | hors dépôt |
 | `miam-enr-5-7-tracks.xml` | **Axes de ravitaillement** MILAIP ENR 5.7 nommés et corrigés (31 axes + 6 circuits heavy) | versionné |
 | `miam-enr-5-7-coordinates.xml` | Coordonnées ENR 5.7 d'origine (sans noms) | versionné |
 | `mora.csv` | **Grille MORA** 1° × 1° calculée (§ 4.6) | versionné |

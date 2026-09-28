@@ -123,8 +123,8 @@ Aucune dépendance externe (bibliothèque standard uniquement) :
 
 Le studio cartographique utilise les données AIRAC du SIA, **hors dépôt** (≈ 80 Mo par cycle) :
 télécharger l'export XML sur le site du SIA (produits numériques en libre disposition) et déposer
-`AIXM4.5_all_FR_OM_<date>.xml`, `XML_SIA_<date>.xml` et `sia-airspaces-<date>.xml` dans
-`apps/sia/`. Au premier lancement : studio › « Dossier SIA XML » (dossier mémorisé). Les autres
+`AIXM4.5_all_FR_OM_<date>.xml` et `XML_SIA_<date>.xml` (contours d'espaces compris) dans
+`data/sia/`. Au premier lancement : studio › « Dossier SIA XML » (dossier mémorisé). Les autres
 données (villes, MORA, axes de ravitaillement, fond local) sont dans le dépôt. Détail :
 [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md).
 

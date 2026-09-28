@@ -5,7 +5,7 @@
   //   · Airac.cycle(date) / next(date) / fromDate('2026-10-01') → { date, ident: '2610', label: '10/26', start, end } :
   //     cycles de 28 jours (référence 25 janvier 2024 = AIRAC 2401) ;
   //   · Airac.inspectFolder(fichiers) : rôle et cycle des fichiers d'un dossier SIA XML (AIXM 4.5, XML-SIA,
-  //     sia-airspaces, ZIP d'export du SIA…), cycles présents, complets ou non, anciens cycles ;
+  //     ancien sia-airspaces, ZIP d'export du SIA…), cycles présents, complets ou non, anciens cycles ;
   //   · Airac.baseSummary() : résumé de la base analysée par le studio (IndexedDB « sia-map-parser », lecture
   //     seule) ; Airac.info() / remember() : résumé léger gardé dans localStorage (siaBaseInfo:v1) ;
   //   · Airac.moraFromObstacles(csv, obstacleMax, cycle) : recalcul simple de la grille MORA (relief du mora.csv
@@ -53,7 +53,7 @@
   const ROLES = [
     { id: 'aixm', re: /^AIXM4\.5_all_FR_OM_(\d{4}-\d{2}-\d{2})\.xml$/i, need: true, label: ['AIXM 4.5 complet (espaces, aérodromes, balises, obstacles)', 'Full AIXM 4.5 (airspace, aerodromes, navaids, obstacles)'] },
     { id: 'xmlsia', re: /^XML_SIA_(\d{4}-\d{2}-\d{2})\.xml$/i, need: true, label: ['Export XML-SIA (inventaire)', 'XML-SIA export (inventory)'] },
-    { id: 'airspaces', re: /^sia-airspaces-(\d{4}-\d{2}-\d{2})\.xml$/i, need: true, label: ['Contours d’espaces (SIV et compléments)', 'Airspace outlines (FIS sectors, extras)'] },
+    { id: 'airspaces', re: /^sia-airspaces-(\d{4}-\d{2}-\d{2})\.xml$/i, need: false, label: ['Contours dérivés (ancien format, facultatif : les contours sont lus dans XML-SIA)', 'Derived outlines (legacy, optional: outlines are read from XML-SIA)'] },
     { id: 'zip', re: /^export_xml_bd_SIA_(\d{4}-\d{2}-\d{2})(?:-v(\d+))?\.zip$/i, need: false, label: ['ZIP d’export du SIA (à extraire)', 'SIA export ZIP (to extract)'] }
   ];
   const FIXED = [
@@ -108,6 +108,25 @@
         q.onerror = () => { db.close(); resolve(null); };
       };
     });
+  }
+  /** Purge la base mémorisée du studio (magasin vidé, pas de suppression de la base : jamais bloquée par un onglet ouvert)
+   *  et le résumé siaBaseInfo:v1. Résout true si quelque chose a été purgé. */
+  async function purgeBase() {
+    const had = !!(await base());
+    await new Promise(resolve => {
+      const r = indexedDB.open('sia-map-parser');
+      r.onupgradeneeded = () => { r.transaction.abort(); resolve(); };
+      r.onerror = () => resolve();
+      r.onsuccess = () => {
+        const db = r.result;
+        if (!db.objectStoreNames.contains('cache')) { db.close(); return resolve(); }
+        const tx = db.transaction('cache', 'readwrite');
+        tx.objectStore('cache').clear();
+        tx.oncomplete = tx.onerror = () => { db.close(); resolve(); };
+      };
+    });
+    try { localStorage.removeItem('siaBaseInfo:v1'); } catch { /* stockage indisponible */ }
+    return had;
   }
   /** Met à jour des champs de la base du studio (ex. moraCells après un recalcul) ; faux si la base est absente. */
   async function patchBase(fields) {
@@ -233,5 +252,5 @@
   /** Cycle des obstacles d'un mora.csv (mention « obstacles AIRAC … » de la colonne source) ; '' si inconnu. */
   const moraCycle = text => /obstacles AIRAC (\d{4}-\d{2}-\d{2})/.exec(String(text || ''))?.[1] || '';
 
-  window.Airac = { cycle, next, fromDate, cycleOfName, describe, ROLES, FIXED, inspectFolder, filesOf, base, patchBase, baseCycle, summarize, baseSummary, info, remember, moraFromObstacles, moraCycle, moraLabel, moraOf, csvRows };
+  window.Airac = { cycle, next, fromDate, cycleOfName, describe, ROLES, FIXED, inspectFolder, filesOf, base, patchBase, purgeBase, baseCycle, summarize, baseSummary, info, remember, moraFromObstacles, moraCycle, moraLabel, moraOf, csvRows };
 })();
