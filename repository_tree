@@ -145,7 +145,7 @@ window.REPOSITORY_TREE={
     {path:"apps/cr/mission_operations_reporting.html",menu:"Reporting missions",label:"Reporting missions — CR DEFA",theme:"landing",favicon:"assets/favicon-landing.svg",files:{gaarLedgerName:"FIRE/mission_ledger.csv",ledgerName:"HEMS/hems_mission_ledger.csv"}},
     {path:"apps/cr/appareil.html",menu:false,label:"Fiche appareil",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/cr/equipage.html",menu:false,label:"Fiche équipage",theme:"core",favicon:"assets/favicon-flight.svg"},
-    {path:"apps/settings/parametrage.html",menu:false,slot:"settings",label:"Paramétrage — bases de données",theme:"core",favicon:"assets/favicon-flight.svg"},
+    {path:"apps/settings/parametrage.html",menu:false,slot:"settings",label:"Paramètres — bases de données et maintenance",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/settings/apparence.html",menu:false,slot:"settings",label:"Apparence",decor:"full",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/settings/maintenance.html",menu:false,slot:"settings",label:"Maintenance",decor:"sober",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html",menu:"Landing Performance Dashboard",label:"Landing Performance Dashboard"},
@@ -162,6 +162,7 @@ window.REPOSITORY_TREE={
     "Registre des missions (SIA)":["Registre des missions (SIA)","Mission registry (SIA)","Missionsregister (SIA)","Registro de misiones (SIA)"],
     "Maintenance":["Maintenance","Maintenance","Wartung","Mantenimiento"],
     "Paramétrage — bases de données":["Paramétrage — bases de données","Settings — databases","Einstellungen — Datenbanken","Configuración — bases de datos"],
+    "Paramètres — bases de données et maintenance":["Paramètres — bases de données et maintenance","Settings — databases and maintenance","Einstellungen — Datenbanken und Wartung","Ajustes — bases de datos y mantenimiento"],
     "Apparence":["Apparence","Appearance","Darstellung","Apariencia"],
     "Paramètres":["Paramètres","Settings","Einstellungen","Ajustes"],
     "Apparence…":["Apparence (design, icônes, couleurs)…","Appearance (design, icons, colours)…","Darstellung (Design, Symbole, Farben)…","Apariencia (diseño, iconos, colores)…"]

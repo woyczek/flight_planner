@@ -9,7 +9,7 @@ git clone https://framagit.org/defa-virtual/missions-defa.git data
 ```
 
 L'application lit `data/` si ce dossier contient `data_tree.js`, sinon ses exemples (`examples/`). Dans le navigateur :
-☰ › Maintenance › Sources et dossiers › **Dossier des données** : choisir `data/` une fois (registre, missions, SIA en
+☰ › Paramètres › Maintenance › Sources et dossiers › **Dossier des données** : choisir `data/` une fois (registre, missions, SIA en
 sont déduits).
 
 | Dossier | Contenu | Origine |

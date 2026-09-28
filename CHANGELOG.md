@@ -23,12 +23,16 @@ Migration d'une installation v2 : INSTALL.md § 2 (`tools/migrate_v3.py`).
 - **Arborescence de l'application** sans espaces : `apps/cr/` (ex-`CR DEFA/`), `apps/settings/` (Paramétrage,
   Apparence, Maintenance), `apps/sia/` (ex-`SIA XML/`, fond et villes dans `apps/sia/assets/`), `apps/planner/`,
   `apps/landing/` (ex-`LandingPerformanceDashboard/`) ; page d'accueil `index.html`.
-- **Un seul dossier à autoriser** : ☰ › Maintenance › Sources et dossiers › **Dossier des données** (`data/`) — registre,
+- **Un seul dossier à autoriser** : ☰ › Paramètres › Maintenance › Sources et dossiers › **Dossier des données** (`data/`) — registre,
   missions et SIA en sont déduits (les anciens dossiers mémorisés « CR DEFA », « Missions », « SIA XML » sont oubliés
   une fois).
 - Outils : `update_fleet.py`, `defa_reference.py`, `update_aircraft_db.py` (corrections), Paramétrage (« Enregistrer
   dans le dépôt ») écrivent dans `data/references/` ; `tools/migrate_v3.py` range les données d'une installation v2.
 - Studio : fond de carte et villes pris dans l'application quand le dossier SIA ne les contient pas.
+- **Maintenance intégrée à Paramètres** : rubrique « Maintenance » du menu latéral de Paramètres, une entrée par bloc
+  (mises à jour, sources et dossiers, versions, dépendances, mise à jour SIA, sauvegarde totale, journal) ; plus de
+  bouton « Maintenance » séparé (menu ☰, barre latérale) ; `apps/settings/maintenance.html` redirige vers
+  `parametrage.html?m=<bloc>` ; styles dans `shared/maintenance.css`.
 - `.gitignore` recentré (plus de règles globales `*.json`, `*.csv`, `*.yaml`) ; `VERSION.json` abandonné.
 
 - **Paramètres › Maintenance** (nouvelle page, `CR DEFA/maintenance.html`, bouton « Maintenance » du menu ☰ et de la

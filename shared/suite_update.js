@@ -236,7 +236,7 @@
     airac: ['AIRAC', 'AIRAC', 'AIRAC', 'AIRAC'],
     airacTitle: ['Cycle AIRAC {e} en vigueur ; base SIA du studio : {b} — mettre à jour les données SIA (Paramètres › Maintenance)', 'AIRAC cycle {e} in force; map studio SIA base: {b} — update SIA data (Settings › Maintenance)', 'AIRAC-Zyklus {e} gültig; SIA-Basis des Studios: {b} — SIA-Daten aktualisieren', 'Ciclo AIRAC {e} vigente; base SIA del estudio: {b} — actualizar los datos SIA']
   };
-  const page = () => new URL('apps/settings/maintenance.html', nav.root).href;
+  const page = block => new URL(`apps/settings/parametrage.html?m=${block}`, nav.root).href;   // Paramètres › Maintenance
   let host = null;
   function badge() {
     const tools = document.querySelector('.repo-header-tools');
@@ -248,12 +248,12 @@
       if (!document.getElementById('repoUpdateStyle')) document.head.insertAdjacentHTML('beforeend', '<style id="repoUpdateStyle">.repo-update-badges{display:inline-flex;gap:6px;align-items:center}.repo-update-badge{height:28px;display:inline-flex;align-items:center;gap:4px;border-radius:7px;padding:3px 9px;font:600 12px/1 Inter,system-ui,Segoe UI,Arial,sans-serif;text-decoration:none;white-space:nowrap;background:#1d4ed8;color:#fff!important}.repo-update-badge.airac{background:#b45309}.repo-update-badge:hover{filter:brightness(1.1)}@media print{.repo-update-badges{display:none!important}}</style>');
     }
     const s = settings(), r = last(), a = airacState(), parts = [];
-    const onPage = /\/maintenance\.html$/.test(location.pathname);
+    const onPage = /\/parametrage\.html$/.test(location.pathname) && new URLSearchParams(location.search).has('m');
     if (s.mode !== 'off' && r?.ok && r.available && r.channel === s.channel && !onPage) {
       const v = r.remote?.version && r.remote.version !== r.local?.version ? r.remote.version : (r.remote?.short || '');
-      parts.push(`<a class="repo-update-badge" href="${page()}#updates" title="${tr(T.updateTitle).replace('{c}', s.channel).replace('{v}', v)}">⬆ ${tr(T.update)}${v ? ' ' + v : ''}</a>`);
+      parts.push(`<a class="repo-update-badge" href="${page('updates')}" title="${tr(T.updateTitle).replace('{c}', s.channel).replace('{v}', v)}">⬆ ${tr(T.update)}${v ? ' ' + v : ''}</a>`);
     }
-    if (a.late && !onPage) parts.push(`<a class="repo-update-badge airac" href="${page()}#sia" title="${tr(T.airacTitle).replace('{e}', a.effective).replace('{b}', a.base)}">${tr(T.airac)} ${a.label}</a>`);
+    if (a.late && !onPage) parts.push(`<a class="repo-update-badge airac" href="${page('sia')}" title="${tr(T.airacTitle).replace('{e}', a.effective).replace('{b}', a.base)}">${tr(T.airac)} ${a.label}</a>`);
     host.innerHTML = parts.join('');
   }
 

@@ -5,8 +5,11 @@
   // recalculs simples, sauvegarde totale (navigateur + fichiers connus des dossiers autorisés) et journal des
   // sauvegardes / rechargements.
   // S'appuie sur SuiteUpdate (suite_update.js), Airac (airac.js), ZipStore (zip_store.js), FileAccess, LocalStore.
-  const main = document.getElementById('maintenance');
+  // Page autonome (#maintenance) ou rubrique « Maintenance » de Paramètres (#dataAdmin, construit par data_admin.js) :
+  // dans Paramètres, chaque bloc a son entrée dans le menu latéral et s'affiche à la place de l'éditeur de base.
+  const main = document.getElementById('maintenance') || document.getElementById('dataAdmin');
   if (!main) return;
+  const embedded = main.id === 'dataAdmin';
   const LANGS = ['fr', 'en', 'de', 'es'];
   const li = () => Math.max(0, LANGS.indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'));
   /** Texte d'une ligne [fr, en, de, es] (repli : anglais puis français), variables {x} remplacées. */
@@ -111,7 +114,9 @@
     s.dataset.blockId = b.id;
     s.dataset.icon = b.icon;
     s.dataset.noI18n = '';
+    s.className = 'mt-block';
     s.innerHTML = `<h2></h2><p class="repo-block-subtitle mt-sub"></p><div class="mt-body"></div>`;
+    if (embedded) s.hidden = true;
     main.append(s);
     hosts[b.id] = s.querySelector('.mt-body');
   }
@@ -121,6 +126,43 @@
       s.querySelector('h2').textContent = t(b.title);
       s.querySelector('.mt-sub').textContent = t(b.sub);
     }
+    navLabels();
+  }
+  // ---- rubrique « Maintenance » du menu latéral de Paramètres : une entrée par bloc
+  const NAV = { updates: ['Mises à jour', 'Updates', 'Updates', 'Actualizaciones'], sources: ['Sources et dossiers', 'Sources and folders', 'Quellen und Ordner', 'Fuentes y carpetas'], versions: ['Versions et synchros', 'Versions and sync', 'Versionen', 'Versiones'], deps: ['Références et dépendances', 'References and dependencies', 'Referenzen', 'Referencias'], sia: ['Mise à jour SIA (AIRAC)', 'SIA update (AIRAC)', 'SIA-Update (AIRAC)', 'Actualización SIA (AIRAC)'], backup: ['Sauvegarde totale', 'Full backup', 'Vollsicherung', 'Copia total'], journal: ['Journal', 'Journal', 'Protokoll', 'Registro'] };
+  let navHost = null;
+  function navLabels() {
+    if (!navHost) return;
+    navHost.querySelector('h3').textContent = t(['Maintenance', 'Maintenance', 'Wartung', 'Mantenimiento']);
+    navHost.querySelectorAll('[data-mt]').forEach(b => { b.textContent = t(NAV[b.dataset.mt]); });
+  }
+  /** Affiche le bloc id (Paramètres) : l'éditeur de base est masqué, l'entrée du menu est active. */
+  function showBlock(id) {
+    if (!embedded || !document.getElementById(id)) return;
+    main.querySelector('.da-main')?.setAttribute('hidden', '');
+    BLOCKS.forEach(b => { document.getElementById(b.id).hidden = b.id !== id; });
+    main.querySelectorAll('.da-nav [data-set]').forEach(x => x.classList.remove('active'));
+    main.querySelectorAll('.da-nav [data-mt]').forEach(x => x.classList.toggle('active', x.dataset.mt === id));
+    history.replaceState(null, '', `?m=${id}`);
+    window.scrollTo({ top: 0 });
+    window.AppFramework?.refresh?.();
+  }
+  if (embedded) {
+    const nav = main.querySelector('.da-nav');
+    if (nav) {
+      navHost = document.createElement('div');
+      navHost.className = 'da-mt-nav';
+      navHost.innerHTML = `<h3></h3>${BLOCKS.map(b => `<button type="button" data-mt="${b.id}"></button>`).join('')}`;
+      nav.append(navHost);
+      navHost.querySelectorAll('[data-mt]').forEach(b => b.onclick = () => showBlock(b.dataset.mt));
+    }
+    // une base affichée (data_admin.js) : les blocs de maintenance se masquent
+    window.addEventListener('data-admin-show', () => {
+      BLOCKS.forEach(b => { const el = document.getElementById(b.id); if (el) el.hidden = true; });
+      navHost?.querySelectorAll('[data-mt]').forEach(x => x.classList.remove('active'));
+    });
+    // liens internes (#sources…) vers un bloc
+    document.addEventListener('click', e => { const a = e.target.closest?.('a[href^="#"]'); if (a && NAV[a.getAttribute('href').slice(1)]) { e.preventDefault(); showBlock(a.getAttribute('href').slice(1)); } });
   }
 
   // ===== 1. Mises à jour
@@ -899,8 +941,9 @@
     baseSummary = await window.Airac.baseSummary();
     renderUpdates(); renderSources(); renderSia(); renderBackup(); renderJournal();
     await renderVersions(); await renderDeps();
-    const target = location.hash && document.querySelector(location.hash);
-    if (target) setTimeout(() => target.scrollIntoView({ block: 'start' }), 200);
+    const want = new URLSearchParams(location.search).get('m') || location.hash.slice(1);
+    if (embedded) { if (NAV[want]) showBlock(want); }
+    else { const target = want && document.getElementById(want); if (target) setTimeout(() => target.scrollIntoView({ block: 'start' }), 200); }
   }
   window.addEventListener('repository-language-change', renderAll);
   window.addEventListener('local-store-journal', renderJournal);

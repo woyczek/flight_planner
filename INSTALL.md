@@ -36,7 +36,7 @@ synchronisation de `.git` corrompt les dépôts (voir docs/AUDIT_2026-09-28.md).
 **Depuis une version 2** : passer sur la version 3 (`python tools/update_suite.py update`), puis
 `python tools/migrate_v3.py --data-url https://framagit.org/defa-virtual/missions-defa.git` : `data/` est créé (clone,
 ou dépôt local à relier), les données y sont rangées (depuis l'ancienne arborescence et l'historique git), puis
-☰ › Maintenance › Sources et dossiers › **Dossier des données** : choisir `data/`. Anciennes adresses : `CR DEFA/…` →
+☰ › Paramètres › Maintenance › Sources et dossiers › **Dossier des données** : choisir `data/`. Anciennes adresses : `CR DEFA/…` →
 `apps/cr/…`, `SIA XML/…` → `apps/sia/…`, Paramétrage / Apparence / Maintenance → `apps/settings/…`, planificateur →
 `apps/planner/…`, Landing → `apps/landing/…` ; page d'accueil : `index.html`.
 
@@ -95,7 +95,7 @@ les registres présents dans le dépôt sont lus en lecture seule.
 4. **Sauvegarde des données locales** — menu ☰ › Données locales › « Dossier de
    sauvegarde… » : choisir un dossier synchronisé (hors dépôt si vous ne voulez pas le
    versionner). Sauvegarde automatique ensuite.
-5. **Dossiers et sources** — ☰ › Maintenance › Sources et dossiers : dossier du dépôt (racine, qui contient
+5. **Dossiers et sources** — ☰ › Paramètres › Maintenance › Sources et dossiers : dossier du dépôt (racine, qui contient
    `repository_tree` ; pour éditer les bases), missions, SIA XML, **X-Plane** (journaux d'atterrissage), performances ;
    adresses DEFA et SIA si elles changent.
 
@@ -130,7 +130,7 @@ Détails : [manuel d'exploitation](docs/MANUEL_EXPLOITATION.md).
 python tools/update_suite.py update
 ```
 
-(ou `git pull --ff-only`). Le **canal** se choisit dans ☰ › Maintenance : `master` (stable) ou `develop` (early bird,
+(ou `git pull --ff-only`). Le **canal** se choisit dans ☰ › Paramètres › Maintenance : `master` (stable) ou `develop` (early bird,
 dernières évolutions) — `python tools/update_suite.py channel develop` l'applique au dépôt ; le contrôle des nouveautés
 est manuel, automatique (période au choix) ou désactivé. `python tools/update_suite.py doctor` vérifie l'installation
 (remote, branches, objets git, fins de ligne).

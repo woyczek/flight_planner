@@ -39,7 +39,7 @@ déposent dans le dossier `apps/sia/` ; `.gitignore` les tient hors du dépôt.
 
 **Un seul cycle** : quand le dossier contient plusieurs cycles, le studio ne lit que le plus récent (les autres sont
 signalés, à archiver) et mémorise le cycle dans la base (`airac`, résumé `siaBaseInfo:v1` pour la pastille « AIRAC » de
-l'en-tête). Procédure de mise à jour : ☰ › Maintenance › Mise à jour des données SIA — pas à pas ; `map_parser.html?relire=1`
+l'en-tête). Procédure de mise à jour : ☰ › Paramètres › Maintenance › Mise à jour des données SIA — pas à pas ; `map_parser.html?relire=1`
 relit le dossier mémorisé.
 
 **Dossier mémorisé** : « Dossier SIA XML : … » (studio, bloc 1) choisit le dossier une fois ;

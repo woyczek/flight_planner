@@ -148,7 +148,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260928d", script.src).href;
+    css.href = new URL("designs.css?v=20260928e", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -296,12 +296,11 @@
   }
   // Apparence : page apps/settings/apparence.html (design, icônes, barre latérale, couleurs) ; le menu ☰ et la barre latérale y mènent.
   // Réglages en tête du menu, en boutons : Apparence (design, icônes, couleurs) et Paramètres (bases de données).
-  menu.insertAdjacentHTML("afterbegin", '<div class="repo-settings-row"><a class="repo-settings-button repo-appearance-link" data-label="Apparence"></a><a class="repo-settings-button repo-parametrage-link" data-label="Paramètres"></a><a class="repo-settings-button repo-maintenance-link" data-label="Maintenance"></a></div>');
+  menu.insertAdjacentHTML("afterbegin", '<div class="repo-settings-row"><a class="repo-settings-button repo-appearance-link" data-label="Apparence"></a><a class="repo-settings-button repo-parametrage-link" data-label="Paramètres"></a></div>');
   menu.querySelector(".repo-appearance-link").href = new URL("apps/settings/apparence.html", root).href;
   menu.querySelector(".repo-appearance-link").addEventListener("click", e => { if (openAppearance()) { e.preventDefault(); close(); } });
   menu.querySelector(".repo-parametrage-link").href = new URL("apps/settings/parametrage.html", root).href;
-  // Maintenance : mises à jour (canal, contrôle), versions, données SIA, sauvegarde totale (apps/settings/maintenance.html)
-  menu.querySelector(".repo-maintenance-link").href = new URL("apps/settings/maintenance.html", root).href;
+  // Maintenance (mises à jour, sources et dossiers, SIA, sauvegarde) : rubrique de Paramètres (parametrage.html?m=…)
   menu.insertAdjacentHTML("beforeend", '<div class="repo-page-actions"></div>');
   /** Enregistre et applique le design id (événement « repository-design-change »). */
   const setDesign = id => {
@@ -499,7 +498,6 @@
       { sep: true, bottom: true },   // réglages : groupés en bas de la colonne
       { icon: "palette", path: "apps/settings/apparence.html", label: ["Apparence", "Appearance", "Darstellung", "Apariencia"] },
       { icon: "settings", path: "apps/settings/parametrage.html", label: ["Paramètres", "Settings", "Einstellungen", "Ajustes"] },
-      { icon: "wrench", path: "apps/settings/maintenance.html", label: ["Maintenance", "Maintenance", "Wartung", "Mantenimiento"], title: ["Mises à jour, versions, données SIA, sauvegarde totale", "Updates, versions, SIA data, full backup", "Updates, Versionen, SIA-Daten, Vollsicherung", "Actualizaciones, versiones, datos SIA, copia total"] },
       { icon: "help", menu: true, label: ["Menu", "Menu", "Menü", "Menú"], title: ["Toutes les pages, profil, données locales, design", "All pages, profile, local data, design", "Alle Seiten, Profil, lokale Daten, Design", "Todas las páginas, perfil, datos locales, diseño"] }
     ];
     const known = new Set(cfg.pages.map(p => p.path)), current = page?.path || "";
@@ -560,23 +558,23 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260928d", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260928e", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260928d", script.src).href;
+    files.src = new URL("file_access.js?v=20260928e", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260928d", "block_icons.js?v=20260928d", "side_nav.js?v=20260928d"]) {
+    for (const f of ["icons/repository_icons.js?v=20260928e", "block_icons.js?v=20260928e", "side_nav.js?v=20260928e"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260928d", script.src).href;
+    store.src = new URL("browser_store.js?v=20260928e", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=20260928d", script.src).href;
+    update.src = new URL("suite_update.js?v=20260928e", script.src).href;
     document.head.append(update)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

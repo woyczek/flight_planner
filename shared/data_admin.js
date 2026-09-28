@@ -856,8 +856,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       id: new URLSearchParams(location.search).get('base') || 'fleet'
     };
     const groups = [...new Set(DATASETS.map(d => d.group))];
-    root.innerHTML = `<aside class="da-nav">${groups.map(g => `<h3>${esc(g)}</h3>${DATASETS.filter(d => d.group === g).map(d => `<button type="button" data-set="${d.id}">${esc(d.title)}</button>`).join('')}`).join('')}
-      <h3>${esc(T('Dossiers et sources', 'Folders and sources'))}</h3><p class="small">${esc(T('Dossiers locaux, dossier X-Plane, adresses DEFA et SIA : Paramètres › Maintenance.', 'Local folders, X-Plane folder, DEFA and SIA addresses: Settings › Maintenance.'))} <a href="maintenance.html#sources">${esc(T('Ouvrir', 'Open'))} ›</a></p></aside>
+    root.innerHTML = `<aside class="da-nav">${groups.map(g => `<h3>${esc(g)}</h3>${DATASETS.filter(d => d.group === g).map(d => `<button type="button" data-set="${d.id}">${esc(d.title)}</button>`).join('')}`).join('')}</aside>
       <section class="da-main" data-icon="database"><h2></h2><p class="small da-intro"></p><div class="row da-actions"></div><p class="small da-status"></p><div class="da-body"></div><details class="da-howto"><summary>${esc(T('Mode opératoire', 'Procedure'))}</summary><div></div></details></section>`;
     // Dossiers mémorisés et sources externes : réglés dans Paramètres › Maintenance (bloc « Sources et dossiers »).
     root.querySelectorAll('[data-set]').forEach(b => b.onclick = () => {
@@ -903,6 +902,9 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     /** Affiche la base choisie : titre, présentation, mode d'emploi, éditeur (tableaux ou panneau dédié : envoi, journal DEFA, fusions, registres). */
     function show() {
       const set = DATASETS.find(d => d.id === current.id) || DATASETS[0];
+      // rubrique Maintenance (maintenance_page.js) : ses blocs se masquent quand une base est affichée
+      root.querySelector('.da-main').hidden = false;
+      window.dispatchEvent(new CustomEvent('data-admin-show', { detail: { id: set.id } }));
       root.querySelectorAll('[data-set]').forEach(b => b.classList.toggle('active', b.dataset.set === set.id));
       root.querySelector('.da-main h2').textContent = set.title + (set.file ? ` — ${set.file}` : set.key ? ` — ${set.key}` : '');
       root.querySelector('.da-intro').textContent = set.intro || '';

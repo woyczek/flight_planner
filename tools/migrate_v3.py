@@ -154,7 +154,7 @@ def main():
     if left:
         print('ℹ restent dans l\'ancienne arborescence (à vérifier) : ' + ', '.join(left))
     print(('(simulation) ' if DRY else '') + 'Ensuite : dans data/, « git add -A && git commit » puis relier et pousser le dépôt de données ; '
-          'dans le navigateur, ☰ › Maintenance › Sources et dossiers › Dossier des données : choisir data/.')
+          'dans le navigateur, ☰ › Paramètres › Maintenance › Sources et dossiers › Dossier des données : choisir data/.')
     if not DRY:
         gitdir = (git('rev-parse', '--git-dir', check=False) or '.git').strip()
         with open(os.path.join(ROOT, gitdir, 'suite-update.log'), 'a', encoding='utf-8') as f:
