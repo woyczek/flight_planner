@@ -8,7 +8,9 @@ sia/_archives/
 local/
 _avant_restauration/
 **/_avant_restauration/
-# Cartes produites (régénérables par le studio)
+# Cartes et briefs PDF produits (régénérables par le studio et le générateur)
 missions/**/*.png
 missions/**/*.svg
 missions/**/*.zip
+missions/**/*.pdf
+missions/*.pdf
