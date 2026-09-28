@@ -205,7 +205,8 @@
     let crs = [];
     try { const c = readJson('missionCoreLedger:v2', null); crs = window.jsyaml.load(c?.text || '')?.missions || []; } catch { /* registre illisible */ }
     for (const m of reg.missions) {
-      const cr = crs.find(r => String(r?.metadata?.missionNumber || '') === String(m.id) && m.id && (!m.title || !r.metadata.operationName || r.metadata.operationName === m.title));
+      const crMission = r => window.MissionVocab?.parseCrId?.(r?.metadata?.missionId)?.mission || String(r?.metadata?.missionNumber || '');
+      const cr = crs.find(r => crMission(r) === String(m.id) && m.id && (!m.title || !r.metadata.operationName || r.metadata.operationName === m.title));
       if (cr) { m.report = { family: cr.family, date: cr.metadata?.date || '', missionId: cr.metadata?.missionId || '' }; if (m.status !== 'cancelled') m.status = 'reported'; }
     }
   }

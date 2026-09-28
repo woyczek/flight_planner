@@ -58,7 +58,8 @@ la suite, dans [PROMPT_GENERATEUR_MISSIONS.md](PROMPT_GENERATEUR_MISSIONS.md).
 quand l'opération engage plusieurs équipes — « M016 », « S002A », « S002B ». Lettres : M HEMS / MEDEVAC, H HADR,
 F FIRE, S SAR, T AIRLIFT, R AAR, P AIRBORNE, N MARITIME, I ISR, L LE, C COMMAND, O SOF, V FI, G SURVEY, X SPECIAL
 (`SiaMission.FAMILY_LETTERS`, `tools/family_letters.py`) ; `mission.series` = rang de la série dans la famille ;
-`mission.former_id` = identifiant d'avant renumérotation. Prochains numéros : `SiaMission.nextNumbering(famille)`
+`mission.former_id` = identifiant d'avant renumérotation. Les **CR** reprennent l'identifiant : `CRM016-1`
+(CR + mission + n° d'essai ; CR sans mission : `CRM-LIB001`, voir MANUEL_EXPLOITATION.md § 2.1). Prochains numéros : `SiaMission.nextNumbering(famille)`
 (d'après le registre des missions). Rangement : `data/missions/<lettre>_<FAMILLE>/<identifiant>/` (YAML, résumé,
 cartes, PDF) ; outils `tools/renumber_missions.py` (séries importées), `tools/import_pdf_missions.py` (dossiers PDF
 et ZIP de cartes), trace dans `data/missions/RENUMEROTATION.md`.

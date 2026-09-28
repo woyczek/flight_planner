@@ -72,7 +72,7 @@
       return [];
     };
     // Texte simple : toujours en majuscules (règle commune MissionModel.isUpperField).
-    const attrs = (field, path, withAlias) => `data-path="${esc(path)}"${withAlias && field.alias ? ` name="${esc(field.alias)}"` : ''}${field.list ? ` list="${esc(field.list)}"` : ''}${M.isUpperField(field) ? ' data-upper="1" autocapitalize="characters"' : ''}`;
+    const attrs = (field, path, withAlias) => `data-path="${esc(path)}"${withAlias && field.alias ? ` name="${esc(field.alias)}"` : ''}${field.list ? ` list="${esc(field.list)}"` : ''}${field.readonly ? ` readonly title="${esc(txt(field.readonly))}"` : ''}${M.isUpperField(field) ? ' data-upper="1" autocapitalize="characters"' : ''}`;
     /** HTML d'une liste de choix liée au chemin path. */
     const selectHtml = (field, path, value, withAlias) => {
       const opts = optionsFor(field),

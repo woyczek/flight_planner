@@ -214,6 +214,28 @@
     return families.find(f => f.id === t)?.id || familyAliases.find(([re]) => re.test(t))?.[1] || 'SPECIAL';
   };
 
+  // ---- identifiants : une seule numérotation pour les missions et les CR
+  // Mission : lettre de famille + numéro d'opération sur 3 chiffres, compté par famille, + lettre d'équipe (M016, S002A).
+  // CR d'une mission : « CR » + identifiant de la mission + « - » + n° d'essai (une mission peut être rejouée) :
+  // CRM016-1, CRM016-2, CRS002A-1. CR sans mission (vol libre) : « CR » + lettre + « -LIB » + numéro libre de la
+  // famille : CRM-LIB001 (« CR HEMS libre n° 1 ») ; numérotation à part, sans prendre de numéro aux missions.
+  // Même table de lettres que SiaMission.FAMILY_LETTERS (apps/sia/mission_store.js) et tools/family_letters.py.
+  const familyLetters = { HEMS: 'M', MEDEVAC: 'M', HADR: 'H', FIRE: 'F', SAR: 'S', AIRLIFT: 'T', AAR: 'R', AIRBORNE: 'P', MARITIME: 'N', ISR: 'I', LE: 'L', COMMAND: 'C', SOF: 'O', FI: 'V', SURVEY: 'G', SPECIAL: 'X', DEMO: 'D' };
+  const MISSION_ID = /^([A-Z])(\d{3})([A-Z]?)$/, CR_ID = /^CR([A-Z])(\d{3})([A-Z]?)-(\d+)$/, CR_FREE = /^CR([A-Z])-LIB(\d+)$/;
+  /** Identifiant de CR découpé : { mission: 'M016A', letter, num, team, attempt } ; CR sans mission : { mission: '', letter, free: n } ; null hors format. */
+  const parseCrId = v => {
+    const s = String(v || '').trim().toUpperCase(), m = CR_ID.exec(s), f = !m && CR_FREE.exec(s);
+    return m ? { mission: m[1] + m[2] + m[3], letter: m[1], num: +m[2], team: m[3], attempt: +m[4] } : f ? { mission: '', letter: f[1], free: +f[2] } : null;
+  };
+  /** Identifiant d'un nouveau CR (crIds : identifiants des CR déjà enregistrés, toutes familles).
+   *  missionNumber = identifiant de la mission volée (M016A) → CRM016A-<essai suivant> ; vide → CR<lettre>-LIB<suivant>. */
+  function crId({ family, missionNumber = '', crIds = [] } = {}) {
+    const mission = String(missionNumber || '').trim().toUpperCase(), parsed = crIds.map(parseCrId).filter(Boolean);
+    if (MISSION_ID.test(mission)) return `CR${mission}-${Math.max(0, ...parsed.filter(c => c.mission === mission).map(c => c.attempt)) + 1}`;
+    const letter = familyLetters[String(family || '').toUpperCase()] || 'X';
+    return `CR${letter}-LIB${String(Math.max(0, ...parsed.filter(c => c.free && c.letter === letter).map(c => c.free)) + 1).padStart(3, '0')}`;
+  }
+
   const outcomes = [
     opt('SUCCESS', L('Succès', 'Success', 'Erfolgreich', 'Éxito')), opt('PARTIAL_SUCCESS', L('Succès partiel', 'Partial success', 'Teilweise erfolgreich', 'Éxito parcial')),
     opt('ABORTED', L('Interrompue', 'Aborted', 'Abgebrochen', 'Abortada')), opt('CANCELLED', L('Annulée', 'Cancelled', 'Storniert', 'Cancelada')),
@@ -427,6 +449,9 @@
     networks,
     families,
     familyForType,
+    familyLetters,
+    parseCrId,
+    crId,
     describeHeader,
     callsignTable,
     operatorDesignators

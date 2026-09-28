@@ -53,7 +53,8 @@ et revenir plus tard.
 
 ## 3. Identification
 
-Le **n° de mission** est proposé (`GAAR-001`, puis le suivant), la **date** est celle du jour.
+Champ **Mission** : l'identifiant de la mission volée (registre des missions, ex. `F004`) ; le **n° de CR** est
+calculé (`CRF004-1`, `CRF004-2` si la mission est rejouée ; sans mission : `CRF-LIB001`). La **date** est celle du jour.
 Renseigner si besoin le nom de l'exercice, l'organisme (**Sécurité civile**), l'unité : dans
 chaque champ, les valeurs déjà saisies dans vos missions sont proposées.
 

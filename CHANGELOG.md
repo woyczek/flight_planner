@@ -10,6 +10,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Numérotation des CR unifiée avec les missions** : dans le CR, on saisit la mission volée (identifiant du registre,
+  ex. M016) et le n° de CR est calculé (lecture seule) — `CRM016-1`, `CRM016-2` si la mission est rejouée ; CR sans
+  mission : `CRM-LIB001` (lettre de famille + « LIB » + numéro libre). « Créer le CR » depuis le registre reprend la
+  mission et le n° d'essai suivant ; statut « CR fait » du registre d'après le n° de CR. `tools/renumber_reports.py`
+  passe les anciens n° (HEMS-001 → CRM-LIB001) au nouveau format (ancien gardé dans `metadata.formerMissionId`).
 - **Commande ChatGPT unifiée** (`shared/mission_order.js`, `MissionOrder`) : le générateur de brief (« Créer une
   mission avec ChatGPT ») et le registre (« Commander une mission ») montent le même bloc — mêmes paramètres (sous-type,
   identifiant calculé, aéronef par équipe, rendez-vous, équipes au sol, ravitaillement désormais aussi dans le
