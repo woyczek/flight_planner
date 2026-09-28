@@ -22,9 +22,13 @@
   // ===================================================================== cache IndexedDB
   /** Base IndexedDB ; create = false : null si elle n'existe pas encore (rien n'est créé). */
   function openDb({ create = true } = {}) {
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
       let r;
       try { r = indexedDB.open(DB, 1); } catch { return resolve(null); }
+      const guard = setTimeout(() => reject(new Error('La base du navigateur (IndexedDB) ne répond pas : fermer les autres onglets du studio et de Paramètres, puis relancer.')), 15000);
+      const done = f => (...a) => { clearTimeout(guard); f(...a); };
+      resolve = done(resolve); reject = done(reject);
+      r.onblocked = () => reject(new Error('La base du navigateur est bloquée par un autre onglet : fermer les autres onglets du studio et de Paramètres, puis relancer.'));
       r.onupgradeneeded = () => {
         if (create) r.result.createObjectStore(STORE);
         else { r.transaction.abort(); resolve(null); }
@@ -396,6 +400,25 @@
   }
 
   // ===================================================================== lecture du dossier
+  /** Laisse le navigateur respirer (affichage de la jauge) sans minuterie : MessageChannel n'est pas ralenti dans un
+   *  onglet en arrière-plan, contrairement à setTimeout / requestAnimationFrame. */
+  const breathe = () => new Promise(r => { const c = new MessageChannel(); c.port1.onmessage = () => r(); c.port2.postMessage(0); });
+  /** Texte d'un fichier lu en flux (octets lus → onBytes) ; signal : annulation. */
+  async function readText(file, { encoding = 'utf-8', onBytes, signal } = {}) {
+    const dec = new TextDecoder(encoding), reader = file.stream().getReader(), parts = [];
+    let n = 0;
+    for (;;) {
+      if (signal?.aborted) { reader.cancel().catch(() => {}); throw new DOMException('Relecture annulée', 'AbortError'); }
+      const { done, value } = await reader.read();
+      if (done) break;
+      n += value.byteLength;
+      parts.push(dec.decode(value, { stream: true }));
+      onBytes?.(n);
+    }
+    parts.push(dec.decode());
+    return parts.join('');
+  }
+  const mb = n => (n / 1048576).toFixed(1).replace('.', ',') + ' Mo';
   /** Fichiers (File) d'un dossier autorisé, sans les sous-dossiers. */
   async function filesOf(dir) { const out = []; for await (const h of dir.values()) if (h.kind === 'file') try { out.push(await h.getFile()); } catch { /* verrouillé */ } return out; }
   /** Fichier livré avec l'application (apps/sia/assets/) : fetch (page servie en http), sinon dossier de l'application
@@ -412,50 +435,81 @@
   /** Analyse d'un dossier SIA (liste de File) → base (non mémorisée) + compte rendu.
    *  Un seul cycle : le plus récent des fichiers datés (les autres sont écartés, sinon contours mélangés).
    *  progress(texte) : étape en cours. Résultat : { base, report: { airac, skipped, xmlCount, aixmAirspaces, noCities, noBackground } }. */
-  async function build(files, { folderName = 'Dossier SIA', progress = () => {} } = {}) {
+  async function build(files, { folderName = 'Dossier SIA', progress = () => {}, signal } = {}) {
+    const t0 = performance.now(), timings = [];
     let xmlFiles = files.filter(f => /\.xml$/i.test(f.name));
     if (!xmlFiles.length) throw new Error('Aucun XML dans le dossier SIA.');
     const airacOf = f => AIRAC_NAME.exec(f.name)?.[1] || '', dates = [...new Set(xmlFiles.map(airacOf).filter(Boolean))].sort(), airac = dates[dates.length - 1] || '';
     const skipped = xmlFiles.filter(f => airacOf(f) && airacOf(f) !== airac);
     xmlFiles = xmlFiles.filter(f => !skipped.includes(f));
-    progress('Fond de carte et villes…');
+    const hasXmlSia = xmlFiles.some(f => /^XML_SIA_/i.test(f.name));
+    const isAixm = f => /AIXM4\.5_all/i.test(f.name), isSia = f => /^XML_SIA_/i.test(f.name);
+    // Jauge : chaque octet lu compte 1 ; analyse de l'AIXM (DOM) ≈ 0,8 × sa taille ; enregistrement ≈ 15 % du total lu.
+    const moraFile = files.find(f => /^mora\.csv$/i.test(f.name)), tracks = files.find(f => /^miam-enr-5-7-tracks\.xml$/i.test(f.name));
+    const readSize = xmlFiles.reduce((n, f) => n + f.size, 0) + (moraFile?.size || 0) + (tracks?.size || 0) + 2.5e6;
+    const total = readSize + 0.8 * xmlFiles.filter(isAixm).reduce((n, f) => n + f.size, 0) + 0.15 * readSize;
+    let doneUnits = 0, phase = '', phaseAt = t0;
+    const step = async (label, units = 0) => {
+      if (phase) timings.push([phase, performance.now() - phaseAt]);
+      phase = label; phaseAt = performance.now();
+      doneUnits += units;
+      progress(label, Math.min(1, doneUnits / total));
+      if (signal?.aborted) throw new DOMException('Relecture annulée', 'AbortError');
+      await breathe();
+    };
+    const reading = (label, file) => { const base = doneUnits; return n => progress(`${label} — ${mb(n)} / ${mb(file.size)}`, Math.min(1, (base + n) / total)); };
+    const text = async (label, file, encoding) => { await step(label); const t = await readText(file, { encoding, signal, onBytes: reading(label, file) }); doneUnits += file.size; return t; };
+
+    await step('Fond de carte et villes (livrés avec l’application)…');
     const bg = files.find(f => /^carte france vierge\.png$/i.test(f.name)) || files.find(f => /carte.*vierge(?!.*sample).*\.(png|jpe?g)$/i.test(f.name)) || await appAsset('Carte france vierge.png');
     const city = files.find(f => /^villes_geonames\.csv$/i.test(f.name)) || await appAsset('villes_geonames.csv');
-    const moraFile = files.find(f => /^mora\.csv$/i.test(f.name)), tracks = files.find(f => /^miam-enr-5-7-tracks\.xml$/i.test(f.name));
     let bgUrl = null, bgSize = null;
     if (bg) {
       bgUrl = await new Promise((ok, no) => { const r = new FileReader; r.onload = () => ok(r.result); r.onerror = no; r.readAsDataURL(bg); });
       bgSize = await new Promise(ok => { const i = new Image; i.onload = () => ok({ w: i.naturalWidth, h: i.naturalHeight }); i.onerror = () => ok(null); i.src = bgUrl; });
     }
     let airspaces = [], aixmAirspaces = [], obstacleMax = {}, aero = null;
-    const inventory = [], hasXmlSia = xmlFiles.some(f => /^XML_SIA_/i.test(f.name));
+    const inventory = [];
     for (const f of xmlFiles) {
       const x = await inspectXml(f);
       inventory.push(x);
-      if (/AirspaceDataset/i.test(x.root + x.role)) { if (!hasXmlSia) airspaces.push(...parseLegacyAirspaces(await f.text())); }
-      else if (/^XML_SIA_/i.test(f.name)) { progress(`Contours d’espaces : ${f.name}…`); airspaces.push(...parseXmlSiaAirspaces(new TextDecoder('iso-8859-1').decode(await f.arrayBuffer()))); }
-      else if (/AIXM4\.5_all/i.test(f.name) || /AIXM-Snapshot|AIXMBasicMessage/i.test(x.root)) {
-        progress(`AIXM complet : ${f.name} (espaces, aérodromes, obstacles)…`);
-        const text = await f.text(), doc = new DOMParser().parseFromString(text, 'application/xml');
+      if (/AirspaceDataset/i.test(x.root + x.role)) {
+        if (!hasXmlSia) airspaces.push(...parseLegacyAirspaces(await text(`Lecture de ${f.name}`, f)));
+        else doneUnits += f.size;
+      } else if (isSia(f)) {
+        const t = await text(`Lecture de ${f.name}`, f, 'iso-8859-1');
+        await step('Contours d’espaces (XML_SIA)…');
+        airspaces.push(...parseXmlSiaAirspaces(t));
+      } else if (isAixm(f) || /AIXM-Snapshot|AIXMBasicMessage/i.test(x.root)) {
+        const t = await text(`Lecture de ${f.name}`, f);
+        await step('Analyse de l’AIXM : espaces R / D / P / CTR / TMA…');
+        const doc = new DOMParser().parseFromString(t, 'application/xml');
         if (doc.querySelector('parsererror')) throw new Error(`AIXM 4.5 invalide : ${f.name}`);
         aixmAirspaces = parseAixmAirspaces(doc);
-        obstacleMax = parseAixmObstacles(text);
-        aero = window.SiaAero?.parseAixm ? window.SiaAero.parseAixm(text) : null;
-      }
+        await step('Analyse de l’AIXM : obstacles…', 0.3 * f.size);
+        obstacleMax = parseAixmObstacles(t);
+        await step('Analyse de l’AIXM : aérodromes et balises…', 0.2 * f.size);
+        aero = window.SiaAero?.parseAixm ? window.SiaAero.parseAixm(t) : null;
+        doneUnits += 0.3 * f.size;
+      } else doneUnits += f.size;
     }
     if (aixmAirspaces.length) airspaces = airspaces.filter(a => !AIXM_TYPES.has(a.type)).concat(aixmAirspaces);
     const seen = new Set;
     airspaces = airspaces.filter(a => { const k = a.type + '|' + a.name + '|' + a.key; if (seen.has(k)) return false; seen.add(k); return true; });
-    if (aero) markControlledAerodromes(aero, airspaces);
-    progress('Villes, MORA, axes ENR 5.7…');
-    const cities = city ? parseCities(await city.text()) : [], moraCells = moraFile ? parseMora(await moraFile.text()) : [], aarXml = tracks ? await tracks.text() : '';
+    if (aero) { await step('Aérodromes contrôlés (CTR)…'); markControlledAerodromes(aero, airspaces); }
+    const cities = city ? parseCities(await text('Villes (villes_geonames.csv)', city)) : [];
+    const moraCells = moraFile ? parseMora(await text('Grille MORA (mora.csv)', moraFile)) : [];
+    const aarXml = tracks ? await text('Axes de ravitaillement (ENR 5.7)', tracks) : '';
+    await step('Enregistrement dans le navigateur…');
     const base = { parserVersion: VERSION, airac, skippedXml: skipped.map(f => f.name), folderName, bgUrl, bgSize, airspaces, cities, moraCells, obstacleMax, aarXml, aero,
       xmlInventoryData: inventory.map(i => ({ name: i.file.name, role: i.role, mb: (i.file.size / 1048576).toFixed(1) })), cachedAt: Date.now() };
-    return { base, report: { airac, skipped: base.skippedXml, xmlCount: inventory.length, aixmAirspaces: aixmAirspaces.length, noCities: !city, noBackground: !bg, noMora: !moraFile } };
+    const report = { airac, skipped: base.skippedXml, xmlCount: inventory.length, aixmAirspaces: aixmAirspaces.length, noCities: !city, noBackground: !bg, noMora: !moraFile, timings };
+    report.finish = () => { timings.push([phase, performance.now() - phaseAt]); report.total = performance.now() - t0; progress('Terminé', 1); };
+    return { base, report };
   }
   /** Relit le dossier SIA mémorisé (__sia, ou dir) et mémorise la base. request : demander l'autorisation si besoin
    *  (à appeler depuis un clic). Résultat de build(). */
-  async function rebuild({ dir = null, request = true, progress } = {}) {
+  async function rebuild({ dir = null, request = true, progress, signal } = {}) {
     if (!dir) {
       const st = await window.FileAccess?.status?.('__sia');
       if (!st?.handle) throw new Error('Dossier SIA non choisi : Paramètres › Maintenance › Sources et dossiers (dossier des données).');
@@ -464,9 +518,10 @@
         if (!request || await dir.requestPermission({ mode: 'readwrite' }) !== 'granted') throw new Error('Accès au dossier SIA refusé.');
       }
     }
-    progress?.(`Lecture du dossier « ${dir.name} »…`);
-    const r = await build(await filesOf(dir), { folderName: dir.name, progress });
+    progress?.(`Liste des fichiers du dossier « ${dir.name} »…`, 0);
+    const r = await build(await filesOf(dir), { folderName: dir.name, progress, signal });
     await put(r.base);
+    r.report.finish();
     return r;
   }
 
@@ -484,7 +539,11 @@
     purged: ['Cache purgé : relire le dossier.', 'Cache purged: re-read the folder.'],
     empty: ['Cache déjà vide.', 'Cache already empty.'],
     old: ['Base mémorisée d’une version précédente : relire le dossier.', 'Stored base from an earlier version: re-read the folder.'],
-    files: ['Fichiers analysés', 'Analysed files', 'Analysierte Dateien', 'Archivos analizados']
+    files: ['Fichiers analysés', 'Analysed files', 'Analysierte Dateien', 'Archivos analizados'],
+    cancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
+    cancelled: ['Relecture annulée : la base mémorisée n’a pas changé.', 'Re-read cancelled: the stored base is unchanged.'],
+    stall: ['Aucun avancement depuis {s} s sur « {p} ». Causes possibles : onglet en arrière-plan (le laisser au premier plan), fichier en cours de téléchargement par Synology Drive (fichier « à la demande » : le rendre disponible hors ligne), autre onglet du studio ou de Paramètres ouvert. Annuler puis relancer si cela persiste.', 'No progress for {s} s on “{p}”. Possible causes: background tab, file being downloaded by the sync client (on-demand file), another studio / Settings tab open. Cancel and retry if it persists.'],
+    durations: ['Durées', 'Durations', 'Dauer', 'Duraciones']
   };
   /** Ligne d'état de la base mémorisée (cycle, date, périmé ?). */
   function stateLine(b) {
@@ -508,11 +567,11 @@
   function panel(host, opts = {}) {
     host.classList.add('sia-base-panel');
     host.innerHTML = `<div class="sia-base-actions"><span class="sia-base-folder"></span><button type="button" class="primary sia-base-reread" data-icon="refresh">${esc(L(T.reread))}</button><button type="button" class="secondary sia-base-purge" data-icon="trash">${esc(L(T.purge))}</button><label class="secondary sia-base-native" hidden>${esc(L(T.pick))}<input type="file" webkitdirectory directory multiple hidden></label></div>
-      <p class="sia-base-state small"></p><div class="sia-base-msg" aria-live="polite"></div><details class="sia-base-files small" hidden><summary>${esc(L(T.files))}</summary><ul></ul></details>`;
+      <p class="sia-base-state small"></p><div class="sia-base-progress" hidden><progress max="1" value="0"></progress><span class="sia-base-pct"></span><button type="button" class="secondary sia-base-cancel">${esc(L(T.cancel))}</button><div class="sia-base-step small"></div><div class="sia-base-stall small err" hidden></div></div><div class="sia-base-msg" aria-live="polite"></div><details class="sia-base-files small" hidden><summary>${esc(L(T.files))}</summary><ul></ul></details>`;
     const $ = s => host.querySelector(s), msg = $('.sia-base-msg'), state = $('.sia-base-state');
     const setMessage = html => { msg.innerHTML = html || ''; };
     const showFiles = b => { const list = b?.xmlInventoryData || []; $('.sia-base-files').hidden = !list.length; $('.sia-base-files ul').innerHTML = list.map(i => `<li><code>${esc(i.name)}</code> — ${esc(i.role)} (${esc(i.mb)} Mo)</li>`).join(''); };
-    let busy = false;
+    let busy = false, controller = null;
     async function refresh() {
       const any = await get({ any: true }), b = any?.parserVersion === VERSION ? any : null;
       state.innerHTML = any && !b ? `<span class="err">${esc(L(T.old))}</span>` : stateLine(b);
@@ -520,27 +579,46 @@
       if (b) opts.onCached?.(b);
       return b;
     }
+    const gauge = $('.sia-base-progress'), bar = gauge.querySelector('progress'), pct = gauge.querySelector('.sia-base-pct'), stepEl = gauge.querySelector('.sia-base-step'), stall = gauge.querySelector('.sia-base-stall');
+    const secs = ms => (ms / 1000).toFixed(1).replace('.', ',') + ' s';
     async function run(task) {
       if (busy) return;
       busy = true;
-      host.querySelectorAll('button').forEach(x => { x.disabled = true; });
+      controller = new AbortController();
+      host.querySelectorAll('button:not(.sia-base-cancel)').forEach(x => { x.disabled = true; });
       state.textContent = L(T.reading);
       setMessage('');
+      const t0 = Date.now();
+      let last = { label: L(T.reading), at: t0 };
+      const paint = () => { const el = Math.round((Date.now() - t0) / 1000), idle = Math.round((Date.now() - last.at) / 1000); stepEl.textContent = `${last.label} · ${el} s`; stall.hidden = idle < 15; if (!stall.hidden) stall.textContent = L(T.stall).replace('{s}', idle).replace('{p}', last.label); };
+      const onProgress = (label, fraction) => {
+        if (label !== last.label || fraction !== last.fraction) last = { label, fraction, at: Date.now() };
+        if (fraction != null) { bar.value = fraction; pct.textContent = Math.round(fraction * 100) + ' %'; }
+        paint();
+        console.info('[SiaBase]', secs(Date.now() - t0), label, fraction != null ? Math.round(fraction * 100) + ' %' : '');
+      };
+      bar.value = 0; pct.textContent = '0 %'; gauge.hidden = false; stall.hidden = true;
+      const ticker = setInterval(paint, 1000);
       try {
-        const r = await task(text => { setMessage(`<span class="small">${esc(text)}</span>`); });
-        setMessage(reportHtml(r.base, r.report));
+        const r = await task(onProgress, controller.signal);
+        const times = (r.report.timings || []).filter(([, ms]) => ms >= 50).map(([k, ms]) => `${esc(k.replace(/…$/, ''))} ${secs(ms)}`).join(' · ');
+        setMessage(reportHtml(r.base, r.report) + `<details class="small"><summary>${esc(L(T.durations))} : ${secs(r.report.total || (Date.now() - t0))}</summary>${times}</details>`);
         state.innerHTML = stateLine(r.base);
         showFiles(r.base);
         opts.onLoaded?.(r.base, r.report);
       } catch (e) {
-        if (e?.name !== 'AbortError') setMessage(`<span class="err">${esc(e.message)}</span>`);
+        setMessage(e?.name === 'AbortError' ? `<span class="small">${esc(L(T.cancelled))}</span>` : `<span class="err">${esc(e.message)}</span>`);
+        console.warn('[SiaBase]', e);
         await refresh();
       } finally {
-        busy = false;
+        clearInterval(ticker);
+        gauge.hidden = true;
+        busy = false; controller = null;
         host.querySelectorAll('button').forEach(x => { x.disabled = false; });
       }
     }
-    const reread = (request = true) => run(progress => rebuild({ request, progress }));
+    $('.sia-base-cancel').onclick = () => controller?.abort();
+    const reread = (request = true) => run((progress, signal) => rebuild({ request, progress, signal }));
     $('.sia-base-reread').onclick = () => reread(true);
     $('.sia-base-purge').onclick = async () => {
       if (!confirm(L(T.confirmPurge))) return;
@@ -550,7 +628,7 @@
       opts.onPurged?.();
     };
     const input = $('.sia-base-native input');
-    input.onchange = () => { const files = [...input.files]; input.value = ''; if (files.length) run(async progress => { const r = await build(files, { folderName: (files[0].webkitRelativePath || '').split('/')[0] || 'SIA', progress }); await put(r.base); return r; }); };
+    input.onchange = () => { const files = [...input.files]; input.value = ''; if (files.length) run(async (progress, signal) => { const r = await build(files, { folderName: (files[0].webkitRelativePath || '').split('/')[0] || 'SIA', progress, signal }); await put(r.base); r.report.finish(); return r; }); };
     // Bouton du dossier mémorisé (FileAccess) ; sinon sélecteur natif.
     (function folderButton(tries = 0) {
       if (!window.FileAccess) { if (tries < 50) setTimeout(() => folderButton(tries + 1), 100); else { $('.sia-base-native').hidden = false; $('.sia-base-reread').hidden = true; } return; }
@@ -564,7 +642,7 @@
     refresh();
     return { el: host, reread, refresh, setMessage };
   }
-  if (!document.getElementById('siaBaseStyle')) document.head.insertAdjacentHTML('beforeend', '<style id="siaBaseStyle">.sia-base-actions{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}.sia-base-msg{margin:.4rem 0}.sia-base-state{margin:.4rem 0}</style>');
+  if (!document.getElementById('siaBaseStyle')) document.head.insertAdjacentHTML('beforeend', '<style id="siaBaseStyle">.sia-base-actions{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}.sia-base-msg{margin:.4rem 0}.sia-base-state{margin:.4rem 0}.sia-base-progress{margin:.5rem 0;display:flex;flex-wrap:wrap;gap:.3rem .6rem;align-items:center}.sia-base-progress progress{flex:1 1 240px;height:14px}.sia-base-progress .sia-base-step,.sia-base-progress .sia-base-stall{flex-basis:100%}</style>');
 
   window.SiaBase = {
     VERSION, get, put, patch, purge, summarize, summary, info, previous, remember,

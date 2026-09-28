@@ -10,6 +10,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Relecture SIA observable** : jauge d'avancement (octets lus, étape, temps écoulé), bouton Annuler, alerte après
+  15 s sans avancement (onglet en arrière-plan, fichier en cours de téléchargement par le client de synchronisation,
+  autre onglet), durée de chaque étape à la fin, journal dans la console (`[SiaBase]`) ; lecture en flux, pauses
+  d'affichage non ralenties en arrière-plan ; garde-fou si la base du navigateur (IndexedDB) ne répond pas.
+- **Mise à jour SIA** : étapes 5 et 6 acquittables (« Vu, c'est fait », mémorisé pour la base en cours) ; contrôle de
+  cohérence clarifié (registre des missions vide dans ce navigateur → lien vers le Registre ; performances : APD et
+  profils du planificateur, seuls les types sans aucune performance sont signalés) ; plus de débordement à droite
+  (pastilles et longs textes coupés, colonnes rétrécissables).
+
 - **Base SIA factorisée** (`shared/sia_base.js`, `SiaBase`) : lecture du dossier SIA, parseurs (AIXM 4.5, XML_SIA,
   obstacles, villes, mora.csv), cache IndexedDB (lecture, écriture, mise à jour, purge), résumé `siaBaseInfo:v1` et base
   précédente (`siaBaseInfo:prev`, gardée à chaque nouvelle lecture), grille MORA (calcul complet et recalcul simple) :
