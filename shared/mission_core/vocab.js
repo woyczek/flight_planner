@@ -217,10 +217,11 @@
   // ---- identifiants : une seule numérotation pour les missions et les CR
   // Mission : lettre de famille + tiret + numéro d'opération sur 3 chiffres, compté par famille, + lettre d'équipe :
   // M-016, S-002A (écritures sans tiret « M016 » acceptées).
-  // CR d'une mission : « CR » + identifiant de la mission + « - » + n° d'essai (une mission peut être rejouée) :
+  // CR d'une mission : « CR » + identifiant de la mission + « - » + n° de vol (1, puis 2, 3… à chaque fois que la mission est
+  // volée ou rejouée) :
   // CRM-016-1, CRM-016-2, CRS-002A-1.
-  // CR sans mission (vol libre) : « CR » + lettre de la famille + « - » + lettre de série et 2 chiffres + « -1 » :
-  // CRM-A01-1 … CRM-A99-1, puis CRM-B01-1 ; numérotation à part (lettre avant les chiffres), sans prendre de numéro
+  // CR sans mission (vol libre) : « CR » + lettre de la famille + « - » + lettre de série et 2 chiffres + « -0 » :
+  // CRM-A01-0 … CRM-A99-0, puis CRM-B01-0 ; numérotation à part (lettre avant les chiffres), sans prendre de numéro
   // aux missions. Même table de lettres que SiaMission.FAMILY_LETTERS (apps/sia/mission_store.js) et
   // tools/family_letters.py ; même règle que tools/renumber_reports.py.
   const familyLetters = { HEMS: 'M', MEDEVAC: 'M', HADR: 'H', FIRE: 'F', SAR: 'S', AIRLIFT: 'T', AAR: 'R', AIRBORNE: 'P', MARITIME: 'N', ISR: 'I', LE: 'L', COMMAND: 'C', SOF: 'O', FI: 'V', SURVEY: 'G', SPECIAL: 'X', DEMO: 'D' };
@@ -243,7 +244,7 @@
     const mission = missionIdOf(missionNumber), parsed = crIds.map(parseCrId).filter(Boolean);
     if (mission) return `CR${mission}-${Math.max(0, ...parsed.filter(c => c.mission === mission).map(c => c.attempt)) + 1}`;
     const letter = familyLetters[String(family || '').toUpperCase()] || 'X';
-    return `CR${letter}-${freeCode(Math.max(0, ...parsed.filter(c => c.free && c.letter === letter).map(c => c.free)) + 1)}-1`;
+    return `CR${letter}-${freeCode(Math.max(0, ...parsed.filter(c => c.free && c.letter === letter).map(c => c.free)) + 1)}-0`;
   }
 
   const outcomes = [

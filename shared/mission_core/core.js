@@ -333,7 +333,7 @@
         aircraftAssist(path, value);
         assist.onCommit(path, value);
         timeAssist(path, value);
-        // Mission volée saisie ou changée : n° de CR recalculé (CRM-016-1, essai suivant si rejouée ; vide : CRM-A01-1…) ;
+        // Mission volée saisie ou changée : n° de CR recalculé (CRM-016-1, essai suivant si rejouée ; vide : CRM-A01-0…) ;
         // inchangé si le n° actuel correspond déjà à cette mission (modification d'un CR existant).
         const crNow = window.MissionVocab.parseCrId(mission.metadata.missionId);
         if (path === 'metadata.missionNumber' && (crNow?.mission ?? '') !== window.MissionVocab.missionIdOf(value)) {

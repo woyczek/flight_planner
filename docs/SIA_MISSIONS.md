@@ -59,7 +59,7 @@ quand l'opération engage plusieurs équipes — « M-016 », « S-002A », « S
 F FIRE, S SAR, T AIRLIFT, R AAR, P AIRBORNE, N MARITIME, I ISR, L LE, C COMMAND, O SOF, V FI, G SURVEY, X SPECIAL
 (`SiaMission.FAMILY_LETTERS`, `tools/family_letters.py`) ; `mission.series` = rang de la série dans la famille ;
 `mission.former_id` = identifiant d'avant renumérotation. Les **CR** reprennent l'identifiant : `CRM-016-1`
-(CR + mission + n° d'essai ; CR sans mission : `CRM-A01-1`, voir MANUEL_EXPLOITATION.md § 2.1). Prochains numéros : `SiaMission.nextNumbering(famille)`
+(CR + mission + n° d'essai ; CR sans mission : `CRM-A01-0`, voir MANUEL_EXPLOITATION.md § 2.1). Prochains numéros : `SiaMission.nextNumbering(famille)`
 (d'après le registre des missions). Rangement : `data/missions/<lettre>_<FAMILLE>/<identifiant>/` (YAML, résumé,
 cartes, PDF) ; outils `tools/renumber_missions.py` (séries importées), `tools/import_pdf_missions.py` (dossiers PDF
 et ZIP de cartes), `tools/dash_mission_ids.py` (passage au format avec tiret), trace dans `data/missions/RENUMEROTATION.md`.
