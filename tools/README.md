@@ -50,6 +50,12 @@ Après une découpe ou une retouche d'icônes : `python tools/build_skeuo_icons_
 Les retouches manuelles (ex. jeux du Centre `shared/icons/skeuo/*-cpco/`) se font directement dans les `.webp`,
 même nom de fichier ; relancer ensuite les deux mêmes commandes.
 
+## Bancs d'essai
+
+| Outil | Ce qu'il fait |
+|---|---|
+| `stub_marker_offset.html` | Marqueurs des points de route (bloc Route) comparés aux positions exactes dessinées par la carte ; boutons de décalage X / Y au pixel, ancre, étiquettes : mesure du décalage à corriger. Ouvrir tel quel. |
+
 ## 3. Migrations ponctuelles (déjà passées)
 
 À ne relancer que sur une installation ou des données **antérieures** à la migration ; toutes ont un `--dry-run`

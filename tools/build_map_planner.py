@@ -52,8 +52,10 @@ const say=(html,kind)=>{$v('volStatus').innerHTML=kind?`<span class="${kind}">${
 const levelFt=t=>{const m=/^(FL)?(\d{1,5})(FT)?$/.exec(String(t||'').toUpperCase().replace(/\s+/g,''));return m?(m[1]?+m[2]*100:+m[2]):null};
 const coord=t=>{const m=/^\s*(-?\d+(?:\.\d+)?)\s*[,;| ]\s*(-?\d+(?:\.\d+)?)\s*$/.exec(t||'');return m&&Math.abs(+m[1])<=90&&Math.abs(+m[2])<=180?{lat:+m[1],lon:+m[2]}:null};
 const baseReady=()=>(aero?.aerodromes?.length||0)>0;
-function saveForm(){try{localStorage.setItem(FORM_KEY,JSON.stringify({route:$v('vprofRoute').value,rdv:$v('volRdv').value,level:$v('volLevel').value,maps:[...document.querySelectorAll('[data-volmap]')].filter(i=>i.checked).map(i=>i.dataset.volmap)}))}catch{}}
-function loadForm(){try{const f=JSON.parse(localStorage.getItem(FORM_KEY)||'null');if(!f)return;if(!$v('vprofRoute').value.trim()&&f.route)$v('vprofRoute').value=f.route;$v('volRdv').value=f.rdv||'';$v('volLevel').value=f.level||'5500';if(Array.isArray(f.maps))document.querySelectorAll('[data-volmap]').forEach(i=>{i.checked=f.maps.includes(i.dataset.volmap)})}catch{}}
+// plan de vol partagé avec le planificateur carburant (flightPlanShared:v1) : un seul FPL, le plus récent l'emporte
+const FPL_KEY='flightPlanShared:v1',readFpl=()=>{try{return JSON.parse(localStorage.getItem(FPL_KEY)||'null')}catch{return null}};
+function saveForm(){const route=$v('vprofRoute').value.trim();try{localStorage.setItem(FORM_KEY,JSON.stringify({route,rdv:$v('volRdv').value,level:$v('volLevel').value,maps:[...document.querySelectorAll('[data-volmap]')].filter(i=>i.checked).map(i=>i.dataset.volmap),at:Date.now()}));if(route&&readFpl()?.route!==route)localStorage.setItem(FPL_KEY,JSON.stringify({route,at:Date.now(),by:'maps'}))}catch{}}
+function loadForm(){try{const f=JSON.parse(localStorage.getItem(FORM_KEY)||'null')||{},sh=readFpl(),route=sh?.route&&(sh.at||0)>(f.at||0)?sh.route:f.route;if(route&&(!$v('vprofRoute').value.trim()||sh?.route===route))$v('vprofRoute').value=route;$v('volRdv').value=f.rdv||'';$v('volLevel').value=f.level||'5500';if(Array.isArray(f.maps))document.querySelectorAll('[data-volmap]').forEach(i=>{i.checked=f.maps.includes(i.dataset.volmap)})}catch{}}
 /** Points de la route du champ (sans les points intermédiaires des voies aériennes) ; null et message si impossible. */
 function routePoints(){
  if(!baseReady()){say('Base SIA absente de ce navigateur : bloc « Base de données SIA » (menu ☰ › blocs) → « Relire le dossier ».','err');return null}
@@ -91,6 +93,8 @@ $v('vprofRoute').addEventListener('change',follow);
 window.addEventListener('vprof-route-edited',follow);
 ['volRdv','volLevel'].forEach(id=>$v(id).addEventListener('change',()=>{saveForm();if(sharedDoc?.yaml?.mission?.id==='VOL')build(true)}));document.querySelectorAll('[data-volmap]').forEach(i=>i.addEventListener('change',saveForm));
 loadForm();
+// arrivée depuis le planificateur carburant (?fpl=1) : cartes et profil du plan de vol partagé, dès la base SIA chargée
+if(new URLSearchParams(location.search).has('fpl')){history.replaceState(null,'',location.pathname+location.hash);(async()=>{for(let i=0;i<100&&!baseReady();i++)await new Promise(r=>setTimeout(r,200));if(baseReady()&&$v('vprofRoute').value.trim())build(false)})()}
 })();
 </script>
 '''

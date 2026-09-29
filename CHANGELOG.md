@@ -10,6 +10,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Un seul plan de vol** entre le planificateur carburant et les Cartes de vol (`flightPlanShared:v1`, le plus récent
+  l'emporte) : champ « Plan de vol (case 15) » en tête du devis carburant (distance, route vraie et niveau en sont
+  déduits), bouton « Cartes de vol » (cartes et profil créés à l'arrivée) ; import SimBrief du planificateur repris par
+  les Cartes de vol.
+- **Masse au décollage prévue** (devis carburant) : comparée à la MTOW de l'appareil (fiche APD), masse à l'atterrissage
+  estimée dans le résultat, alerte en cas de dépassement.
+- **Outil de développement** : `tools/stub_marker_offset.html` (banc d'essai du décalage des points de route sur la carte).
+
 - **Points de report VFR** : lus dans le XML_SIA (1 098 points « VFR », ex. MM-CV Cavaillon) — base SIA au format 15 :
   relire le dossier SIA une fois ; affichables sur les cartes (profil d'affichage : Symboles OACI › Points de report VFR,
   losange vert et identifiant), utilisables dans le champ de route (« MM-CV ») et comme aimant sur la carte.

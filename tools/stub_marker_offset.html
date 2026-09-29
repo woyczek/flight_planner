@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stub — décalage des points de route</title>
+<!-- Banc d'essai (outil de développement, hors suite) : marqueurs HTML des points de route tels que la première version
+     du bloc Route (pastille 12 px + étiquette, ancre « center »), comparés aux positions exactes dessinées par la carte
+     (cercles bleus, même source que le tracé). Les boutons décalent les marqueurs au pixel : noter le décalage qui pose
+     les pastilles rouges exactement sur les cercles bleus, à plusieurs niveaux de zoom. Ouvrir tel quel (file://) ou
+     servi par python tools/save_textures.py. -->
+<link rel="stylesheet" href="../shared/carto/maplibre-gl.css">
+<script src="../shared/carto/maplibre-gl.js"></script>
+<style>
+  html,body{margin:0;height:100%;font:13px system-ui,sans-serif;background:#f4f6f8;color:#17202a}
+  #bar{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;padding:8px 12px;background:#fff;border-bottom:1px solid #ccd}
+  #bar fieldset{display:flex;gap:4px;align-items:center;border:1px solid #ccd;border-radius:6px;padding:3px 8px;margin:0}
+  #bar button{min-width:30px;padding:3px 8px;font:inherit;cursor:pointer}
+  #bar output{display:inline-block;min-width:3.5em;text-align:center;font:700 13px ui-monospace,Consolas,monospace}
+  #val{font:12px ui-monospace,Consolas,monospace;background:#eef2f6;padding:3px 8px;border-radius:4px}
+  #map{position:absolute;top:52px;left:0;right:0;bottom:0}
+  /* marqueur de la première version du bloc Route (repris tel quel) */
+  .route-edit-pt{display:flex;align-items:center;gap:4px;cursor:grab}
+  .route-edit-pt i{width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid #d0021b;box-shadow:0 0 0 2px #fff8}
+  .route-edit-pt span{font:700 11px Arial,sans-serif;color:#17202a;text-shadow:0 0 2px #fff,0 0 2px #fff}
+  body.nolabel .route-edit-pt span{display:none}
+</style></head><body>
+<div id="bar">
+  <fieldset><legend>X (px)</legend><button data-d="x-5">−5</button><button data-d="x-1">−1</button><output id="ox">0</output><button data-d="x1">+1</button><button data-d="x5">+5</button></fieldset>
+  <fieldset><legend>Y (px)</legend><button data-d="y-5">−5</button><button data-d="y-1">−1</button><output id="oy">0</output><button data-d="y1">+1</button><button data-d="y5">+5</button></fieldset>
+  <label>Ancre <select id="anchor"><option>center</option><option>left</option><option>top-left</option></select></label>
+  <label><input type="checkbox" id="labels" checked> Étiquettes</label>
+  <button id="reset">Remise à zéro</button>
+  <span id="val"></span>
+</div>
+<div id="map"></div>
+<script>
+// Points d'essai : noms de longueurs variées (l'étiquette modifie la largeur du marqueur)
+const PTS = [
+  { name: 'LFBO', lat: 43.6293, lon: 1.3638 }, { name: 'GOSAD', lat: 43.95, lon: 1.72 }, { name: '4419N00316E', lat: 44.3167, lon: 3.2667 },
+  { name: 'LMG', lat: 45.8156, lon: 1.0250 }, { name: 'MM-CV', lat: 43.8108, lon: 5.0422 }, { name: 'LFSI', lat: 48.6361, lon: 4.8994 }
+];
+const st = { x: 0, y: 0, anchor: 'center' };
+const map = new maplibregl.Map({
+  container: 'map', center: [2.8, 45.8], zoom: 5.4, attributionControl: false,
+  style: { version: 8, sources: { osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenStreetMap' } }, layers: [{ id: 'osm', type: 'raster', source: 'osm' }] }
+});
+map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+let markers = [];
+function place() {
+  markers.forEach(m => m.remove());
+  markers = PTS.map(p => {
+    const e = document.createElement('div');
+    e.className = 'route-edit-pt';
+    e.innerHTML = `<i></i><span>${p.name}</span>`;
+    return new maplibregl.Marker({ element: e, anchor: st.anchor, offset: [st.x, st.y] }).setLngLat([p.lon, p.lat]).addTo(map);
+  });
+  document.getElementById('ox').value = st.x;
+  document.getElementById('oy').value = st.y;
+  document.getElementById('val').textContent = `anchor: '${st.anchor}', offset: [${st.x}, ${st.y}] · zoom ${map.getZoom().toFixed(1)}`;
+}
+map.on('load', () => {
+  const line = { type: 'Feature', geometry: { type: 'LineString', coordinates: PTS.map(p => [p.lon, p.lat]) } };
+  const dots = { type: 'FeatureCollection', features: PTS.map(p => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [p.lon, p.lat] } })) };
+  map.addSource('line', { type: 'geojson', data: line });
+  map.addSource('dots', { type: 'geojson', data: dots });
+  map.addLayer({ id: 'line', type: 'line', source: 'line', paint: { 'line-color': '#d0021b', 'line-width': 3, 'line-opacity': .85 } });
+  // positions exactes (dessinées par la carte) : cible des pastilles rouges
+  map.addLayer({ id: 'dots', type: 'circle', source: 'dots', paint: { 'circle-radius': 4, 'circle-color': '#1565c0', 'circle-stroke-color': '#fff', 'circle-stroke-width': 1 } });
+  place();
+});
+map.on('zoomend', () => { document.getElementById('val').textContent = `anchor: '${st.anchor}', offset: [${st.x}, ${st.y}] · zoom ${map.getZoom().toFixed(1)}`; });
+document.getElementById('bar').addEventListener('click', e => {
+  const d = e.target.dataset.d;
+  if (!d) return;
+  st[d[0]] += +d.slice(1);
+  place();
+});
+document.getElementById('anchor').onchange = e => { st.anchor = e.target.value; place(); };
+document.getElementById('labels').onchange = e => document.body.classList.toggle('nolabel', !e.target.checked);
+document.getElementById('reset').onclick = () => { st.x = st.y = 0; place(); };
+</script>
+</body></html>
