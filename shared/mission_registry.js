@@ -545,13 +545,28 @@
   const MAPSTATE = { complete: ['complète', 'complete', 'vollständig', 'completa'], partial: ['partielle : cartes à compléter', 'partial: maps missing', 'teilweise', 'parcial'], none: ['partielle : cartes non générées (régénérables)', 'partial: maps not generated (can be regenerated)', 'ohne Karten', 'sin mapas'] };
   // ---- fichiers de la mission : YAML, Markdown (lisible), cartes, versions, textes reçus ; PDF à la demande (générateur)
   let viewer = null;
+  /** Styles de la visionneuse et des vignettes de cartes, injectés une fois (dès l'affichage des fichiers). */
+  /** Vignette d'une image (320 px de large, JPEG) ; l'image elle-même si le navigateur ne sait pas la réduire. */
+  async function thumbnail(file) {
+    try {
+      const bmp = await createImageBitmap(file, { resizeWidth: 320, resizeQuality: 'medium' }), c = document.createElement('canvas');
+      c.width = bmp.width; c.height = bmp.height; c.getContext('2d').drawImage(bmp, 0, 0); bmp.close?.();
+      return c.toDataURL('image/jpeg', .82);
+    } catch { return URL.createObjectURL(file); }
+  }
+  function viewerCss() {
+    if (document.getElementById('rgViewerCss')) return;
+    const css = document.createElement('style');
+    css.id = 'rgViewerCss';
+    css.textContent = '.rg-viewer{width:min(96vw,1100px);max-height:90vh;padding:0;border:0;border-radius:10px}.rg-viewer::backdrop{background:rgba(0,0,0,.55)}.rg-viewer-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #ccd;position:sticky;top:0;background:inherit}.rg-viewer-body{padding:12px 16px;overflow:auto;max-height:80vh}.rg-viewer-body pre{white-space:pre-wrap;font:12px ui-monospace,monospace}.rg-viewer-body table{border-collapse:collapse}.rg-viewer-body td,.rg-viewer-body th{border:1px solid #ccd;padding:2px 6px}.rg-viewer-body img{max-width:100%}.rg-thumbs{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}.rg-thumbs figure{margin:0;width:160px}.rg-thumbs img{width:160px;height:100px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid #ccd}.rg-thumbs figcaption{font-size:11px;word-break:break-all}';
+    document.head.append(css);
+  }
   function view(title, html) {
+    viewerCss();
     if (!viewer) {
       viewer = document.createElement('dialog'); viewer.className = 'rg-viewer';
       viewer.innerHTML = '<form method="dialog" class="rg-viewer-head"><b></b><button type="submit">×</button></form><div class="rg-viewer-body"></div>';
-      const css = document.createElement('style');
-      css.textContent = '.rg-viewer{width:min(96vw,1100px);max-height:90vh;padding:0;border:0;border-radius:10px}.rg-viewer::backdrop{background:rgba(0,0,0,.55)}.rg-viewer-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #ccd;position:sticky;top:0;background:inherit}.rg-viewer-body{padding:12px 16px;overflow:auto;max-height:80vh}.rg-viewer-body pre{white-space:pre-wrap;font:12px ui-monospace,monospace}.rg-viewer-body table{border-collapse:collapse}.rg-viewer-body td,.rg-viewer-body th{border:1px solid #ccd;padding:2px 6px}.rg-viewer-body img{max-width:100%}.rg-thumbs{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}.rg-thumbs figure{margin:0;width:160px}.rg-thumbs img{width:160px;height:100px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid #ccd}.rg-thumbs figcaption{font-size:11px;word-break:break-all}';
-      document.head.append(css); document.body.append(viewer);
+      document.body.append(viewer);
     }
     viewer.querySelector('b').textContent = title;
     viewer.querySelector('.rg-viewer-body').innerHTML = html;
@@ -585,7 +600,14 @@
       ${vers.length ? `<p><b>${esc(t(['Versions précédentes', 'Previous versions']))}</b> : ${vers.map((f, i) => `<a href="#" data-v="${i}">${esc(f.name.replace(/^mission.*?_/, '').replace(/\.ya?ml$/, ''))}</a>`).join(' · ')}</p>` : ''}
       ${recu.length ? `<p><b>${esc(t(['Textes reçus', 'Received texts']))}</b> : ${recu.map((f, i) => `<a href="#" data-r="${i}">${esc(f.name)}</a>`).join(' · ')}</p>` : ''}`;
     const thumbs = host.querySelector('.rg-thumbs');
-    for (const f of maps) { const u = URL.createObjectURL(await f.h.getFile()), fig = document.createElement('figure'); fig.innerHTML = `<img src="${u}" alt=""><figcaption>${esc(f.name)}</figcaption>`; fig.querySelector('img').onclick = () => view(f.name, `<img src="${u}" alt="">`); thumbs.append(fig); }
+    viewerCss();
+    for (const f of maps) {
+      const file = await f.h.getFile(), fig = document.createElement('figure');
+      fig.innerHTML = `<img alt="" loading="lazy"><figcaption>${esc(f.name)}</figcaption>`;
+      fig.querySelector('img').src = await thumbnail(file);
+      fig.querySelector('img').onclick = () => { const u = URL.createObjectURL(file); view(f.name, `<img src="${u}" alt="">`); };
+      thumbs.append(fig);
+    }
     const text = async f => (await f.h.getFile()).text();
     /** Markdown produit à la demande depuis le YAML (SiaMission.markdownOf, même code que l'export du générateur) :
      *  affiché, pas écrit — le YAML reste la seule source. */
