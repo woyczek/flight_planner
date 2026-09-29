@@ -378,7 +378,7 @@
     const A = window.Airac, eff = A.cycle(), nxt = A.next();
     add(G.sia, t(['AIRAC en vigueur', 'AIRAC in force', 'Gültiger AIRAC', 'AIRAC vigente']), `<b>${esc(eff.label)}</b> (${esc(eff.ident)})`, `${esc(fmtDate(eff.date, false))} → ${esc(fmtDate(eff.until, false))}`, '', `<a href="${esc(eff.url)}" target="_blank" rel="noopener">SIA</a>`);
     add(G.sia, t(['AIRAC suivant', 'Next AIRAC', 'Nächster AIRAC', 'AIRAC siguiente']), esc(nxt.label), esc(fmtDate(nxt.date, false)), '', `<a href="${esc(nxt.url)}" target="_blank" rel="noopener">SIA</a>`);
-    const info = A.info();
+    const info = window.SiaBase.info();
     const baseState = !info ? pill('info', t(['base non construite', 'no base yet'])) : info.mixed ? pill('err', t(['cycles mélangés', 'mixed cycles'])) : info.airac >= eff.date ? pill('ok', info.airac > eff.date ? t(['cycle à venir chargé', 'upcoming cycle loaded']) : t(['à jour', 'up to date'])) : pill('warn', t(['en retard', 'out of date']));
     add(G.sia, t(['Base du studio cartographique', 'Map studio base', 'Basis des Kartenstudios', 'Base del estudio']), info ? `${esc(info.airac || '?')} · ${esc(info.counts?.airspaces ?? '?')} ${esc(t(['espaces', 'airspaces']))}` : '—', info?.cachedAt ? fmtDate(info.cachedAt) : '', baseState, 'IndexedDB sia-map-parser');
     if (siaFolderState) {
@@ -427,7 +427,7 @@
 
   // ===== 3. Références et dépendances
   async function renderDeps() {
-    const host = hosts.deps, A = window.Airac, info = A.info(), eff = A.cycle();
+    const host = hosts.deps, A = window.Airac, info = window.SiaBase.info(), eff = A.cycle();
     const rows = [];
     const add = (ref, file, traced, process, dependents, state) => rows.push({ ref, file, traced, process, dependents, state });
     const lat = siaFolderState?.latest;
@@ -475,8 +475,9 @@
   }
 
   // ===== 4. Mise à jour SIA pas à pas
-  const PREV = 'siaBaseInfo:prev';
-  let extractMsg = '', archiveMsg = '', moraPlan = null, moraMsg = '';
+  const PREV = 'siaBaseInfo:prev';   // écrit par SiaBase.put (base précédente)
+  const ACK = 'siaUpdateAck:v1';     // étapes 5 et 6 marquées « vu » pour une base (cachedAt)
+  let extractMsg = '', archiveMsg = '', moraPlan = null, moraMsg = '', basePanelEl = null;
   async function scanSiaFolder(request = false) {
     const dir = await folder('__sia', request);
     if (!dir) return (siaFolderState = null);
@@ -485,7 +486,7 @@
   }
   const stepHead = (n, level, title) => `<div class="mt-step-head"><span class="mt-step-num mt-${level}">${n}</span><h3>${esc(title)}</h3></div>`;
   async function renderSia() {
-    const host = hosts.sia, A = window.Airac, eff = A.cycle(), nxt = A.next(), info = A.info(), prev = readJson(PREV, null);
+    const host = hosts.sia, A = window.Airac, eff = A.cycle(), nxt = A.next(), info = window.SiaBase.info(), prev = readJson(PREV, null);
     const f = siaFolderState, lat = f?.latest;
     const s1 = info?.airac >= eff.date ? 'ok' : 'warn';
     const s2 = !f ? 'todo' : lat?.complete ? 'ok' : 'warn';
@@ -493,38 +494,45 @@
     const s4 = info && lat && info.airac === lat.date && !info.mixed ? 'ok' : 'todo';
     const cmp = baseSummary && prev ? diffSummaries(prev, baseSummary) : null;
     const help = t([
-      `<ol><li><b>Cycle</b> : les données AIRAC changent tous les 28 jours (le jeudi). Le SIA publie l’export environ trois semaines avant l’entrée en vigueur ; charger le cycle à venir est sans risque (cartes de préparation).</li><li><b>Télécharger</b> l’export XML du cycle sur le site du SIA (« Données aéronautiques XML AIRAC nn/aa ») : un ZIP <code>export_xml_bd_SIA_&lt;date&gt;-vNN.zip</code> contenant <code>AIXM4.5_all_FR_OM_&lt;date&gt;.xml</code>, <code>XML_SIA_&lt;date&gt;.xml</code> et <code>Lisez-moi.txt</code>. Rien d’autre à télécharger : les contours d’espaces (SIV, RMZ/TMZ, AP…) sont lus directement dans <code>XML_SIA</code> (l’ancien fichier dérivé <code>sia-airspaces-&lt;date&gt;.xml</code> n’est plus nécessaire).</li><li><b>Déposer</b> le ZIP dans le dossier SIA XML (ou le choisir ici) : « Extraire » y écrit les XML. Un ZIP en version supérieure (v02, v03…) remplace la précédente (corrections du SIA, voir Lisez-moi).</li><li><b>Archiver</b> les fichiers des cycles précédents (sous-dossier <code>_archives/</code>) : le studio ne garde de toute façon que le cycle le plus récent, mais un dossier propre évite les erreurs.</li><li><b>Relire</b> le dossier dans le studio : la base analysée (espaces, aérodromes, balises, obstacles) est reconstruite et mémorisée avec son cycle.</li><li><b>Contrôler</b> les différences (espaces ajoutés / retirés, aérodromes, obstacles) puis faire les <b>recalculs simples</b> : grille MORA (obstacles du nouveau cycle, relief inchangé), cohérence des appareils, de la flotte DEFA et des performances, terrains des missions du registre. Committer <code>mora.csv</code> s’il a changé.</li></ol><p>Les XML AIRAC restent hors dépôt (≈ 80 Mo par cycle, <code>.gitignore</code>). Valeurs MORA calculées, non certifiées.</p>`,
-      `<ol><li><b>Cycle</b>: AIRAC data changes every 28 days (Thursday). The SIA publishes the export about three weeks ahead; loading the upcoming cycle is safe (planning maps).</li><li><b>Download</b> the cycle XML export from the SIA website (“Données aéronautiques XML AIRAC nn/yy”): a ZIP <code>export_xml_bd_SIA_&lt;date&gt;-vNN.zip</code> with <code>AIXM4.5_all_FR_OM_&lt;date&gt;.xml</code>, <code>XML_SIA_&lt;date&gt;.xml</code> and <code>Lisez-moi.txt</code>. Nothing else to download: airspace outlines (FIS, RMZ/TMZ, AP…) are read from <code>XML_SIA</code> (the former derived <code>sia-airspaces-&lt;date&gt;.xml</code> file is no longer needed).</li><li><b>Drop</b> the ZIP into the SIA XML folder (or pick it here): “Extract” writes the XML files. A higher version (v02, v03…) supersedes the previous one.</li><li><b>Archive</b> previous cycles (<code>_archives/</code> sub-folder).</li><li><b>Re-read</b> the folder in the map studio: the analysed base is rebuilt and stored with its cycle.</li><li><b>Check</b> the differences, then run the <b>simple recalculations</b>: MORA grid (new obstacles, same terrain), aircraft / DEFA fleet / performance consistency, registry mission aerodromes. Commit <code>mora.csv</code> if it changed.</li></ol>`
+      `<p>Tous les 28 jours (le jeudi), un nouveau cycle AIRAC entre en vigueur. Le SIA publie ses données environ trois semaines avant : charger le cycle à venir est sans risque. Six étapes, dans l’ordre ; chaque pastille passe au vert quand l’étape est faite.</p><ol><li><b>Cycle AIRAC</b> — constater le cycle en vigueur et celui de la base.</li><li><b>Télécharger et extraire</b> — sur la page SIA du cycle, télécharger le ZIP <code>export_xml_bd_SIA_&lt;date&gt;-vNN.zip</code>, puis « ZIP d’export du SIA… » : les XML (<code>AIXM4.5_all_FR_OM_&lt;date&gt;.xml</code>, <code>XML_SIA_&lt;date&gt;.xml</code>, Lisez-moi) sont écrits dans <code>data/sia</code>. Rien d’autre à télécharger.</li><li><b>Archiver</b> les fichiers des cycles précédents (<code>_archives/</code>).</li><li><b>Reconstruire la base</b> — « Relire le dossier » : <code>data/sia</code> est relu ici même (quelques secondes) et la base analysée est mémorisée dans le navigateur ; c’est le même bloc que « Base de données SIA » du studio.</li><li><b>Contrôler les différences</b> avec la base précédente (automatique au retour).</li><li><b>Recalculer</b> la grille MORA (obstacles du nouveau cycle) et contrôler la cohérence ; committer <code>mora.csv</code> s’il a changé.</li></ol><p class="mt-small">Les XML AIRAC restent hors dépôt (≈ 80 Mo par cycle). Valeurs MORA calculées, non certifiées.</p>`,
+      `<p>Every 28 days (Thursday) a new AIRAC cycle comes into force; the SIA publishes it about three weeks ahead. Six steps, in order; each badge turns green when done.</p><ol><li><b>AIRAC cycle</b> — check the cycle in force and the base cycle.</li><li><b>Download and extract</b> the SIA ZIP <code>export_xml_bd_SIA_&lt;date&gt;-vNN.zip</code> into <code>data/sia</code>.</li><li><b>Archive</b> previous cycles (<code>_archives/</code>).</li><li><b>Rebuild the base</b> — “Re-read the folder”: <code>data/sia</code> is re-read right here and the analysed base is stored; same block as the studio’s “SIA database”.</li><li><b>Check the differences</b> (automatic on return).</li><li><b>Recalculate</b> the MORA grid and check consistency; commit <code>mora.csv</code> if it changed.</li></ol>`
     ]);
+    const todo = (txt, ack) => `<p class="mt-todo"><b>${esc(t(['À faire', 'To do', 'Zu tun', 'Por hacer']))}</b> : ${txt}${ack ? `<button type="button" class="secondary mt-ack" data-ack="${ack}" data-icon="check">${esc(t(['Vu, c’est fait', 'Done', 'Erledigt', 'Hecho']))}</button>` : ''}</p>`;
+    const acks = readJson(ACK, {}), baseKey = String(baseSummary?.cachedAt || info?.cachedAt || ''), acked = n => !!baseKey && acks[n] === baseKey;
+    if (moraPlan?.written && baseKey && acks[6] !== baseKey) { acks[6] = baseKey; writeJson(ACK, acks); }   // MORA à jour : étape 6 faite
+    const folderCycle = lat?.date || '', baseCycle = info?.airac || '';
     host.innerHTML = `
       <details class="mt-help"><summary>${esc(t(['Mode d’emploi', 'How to', 'Anleitung', 'Modo de empleo']))}</summary>${help}</details>
       <div class="mt-steps">
-        <div class="mt-step">${stepHead(1, s1, t(['Cycle AIRAC', 'AIRAC cycle', 'AIRAC-Zyklus', 'Ciclo AIRAC']))}
+        <div class="mt-step" id="mt-step-1">${stepHead(1, s1, t(['Cycle AIRAC', 'AIRAC cycle', 'AIRAC-Zyklus', 'Ciclo AIRAC']))}
           <p>${esc(t(['En vigueur', 'In force', 'Gültig', 'Vigente']))} : <b>${esc(eff.label)}</b> (${esc(fmtDate(eff.date, false))} → ${esc(fmtDate(eff.until, false))}) · ${esc(t(['suivant', 'next', 'nächster', 'siguiente']))} : <b>${esc(nxt.label)}</b> ${esc(t(['le', 'on', 'am', 'el']))} ${esc(fmtDate(nxt.date, false))}</p>
           <p>${esc(t(['Base du studio', 'Studio base', 'Studio-Basis', 'Base del estudio']))} : ${info ? `<b>${esc(info.airac || '?')}</b> (${esc(fmtDate(info.cachedAt))})` : '—'} ${s1 === 'ok' ? pill('ok', t(['à jour', 'up to date'])) : pill('warn', t(['à mettre à jour', 'to update']))}</p>
           <p class="row"><a class="mt-link" href="${esc(eff.url)}" target="_blank" rel="noopener">SIA — AIRAC ${esc(eff.label)}</a> <a class="mt-link" href="${esc(nxt.url)}" target="_blank" rel="noopener">SIA — AIRAC ${esc(nxt.label)}</a> <a class="mt-link" href="${esc(window.RepositoryNav?.source?.('siaData'))}" target="_blank" rel="noopener">${esc(t(['Bases de données SIA', 'SIA databases']))}</a></p>
         </div>
-        <div class="mt-step">${stepHead(2, s2, t(['Dossier SIA XML et export du SIA', 'SIA XML folder and SIA export', 'SIA-XML-Ordner und SIA-Export', 'Carpeta SIA XML y exportación']))}
+        <div class="mt-step" id="mt-step-2">${stepHead(2, s2, t(['Télécharger et extraire l’export du SIA', 'Download and extract the SIA export', 'SIA-Export herunterladen und entpacken', 'Descargar y extraer la exportación del SIA']))}
+          ${s2 === 'ok' ? '' : todo(esc(t(['télécharger le ZIP sur la page SIA du cycle (étape 1), puis « ZIP d’export du SIA… » ci-dessous (ou « Extraire » s’il est déjà dans le dossier).', 'download the ZIP from the SIA cycle page (step 1), then “SIA export ZIP…” below.'])))}
           <p class="row" id="mtSiaFolder"></p>
           ${f ? folderTable(f) : `<p class="mt-small">${esc(t(['Choisir (une fois) le dossier des données (Sources et dossiers) — data/sia en est déduit —, puis « Analyser ».', 'Choose the data folder once (Sources and folders) — data/sia is derived from it —, then “Analyse”.']))}</p>`}
           <p class="row"><label class="secondary mt-file">${esc(t(['ZIP d’export du SIA…', 'SIA export ZIP…', 'SIA-Export-ZIP…', 'ZIP de exportación…']))}<input type="file" id="mtSiaZip" accept=".zip" hidden data-picker-folder="__sia"></label>${f?.zips?.length ? `<button type="button" class="secondary" id="mtSiaZipFolder" data-icon="box">${esc(t(['Extraire {z}', 'Extract {z}'], { z: f.zips[0].name }))}</button>` : ''} <span class="mt-small" id="mtExtract">${extractMsg}</span></p>
         </div>
-        <div class="mt-step">${stepHead(3, s3, t(['Anciens cycles', 'Old cycles', 'Alte Zyklen', 'Ciclos antiguos']))}
+        <div class="mt-step" id="mt-step-3">${stepHead(3, s3, t(['Anciens cycles', 'Old cycles', 'Alte Zyklen', 'Ciclos antiguos']))}
           ${!f ? `<p class="mt-small">${esc(t(['Analyser d’abord le dossier (étape 2).', 'Analyse the folder first (step 2).']))}</p>` : f.old.length ? `<p>${f.old.map(o => `<code>${esc(o.date)}</code> (${o.items.length} ${esc(t(['fichier(s)', 'file(s)']))}, ${fmtSize(o.items.reduce((n, i) => n + i.size, 0))})`).join(' · ')}</p><p class="row"><button type="button" class="secondary" id="mtArchive" data-icon="box">${esc(t(['Archiver dans _archives/', 'Archive into _archives/', 'In _archives/ archivieren', 'Archivar en _archives/']))}</button></p>` : `<p>${pill('ok', t(['un seul cycle dans le dossier', 'a single cycle in the folder']))}</p>`}
           <p class="mt-small">${archiveMsg}</p>
         </div>
-        <div class="mt-step">${stepHead(4, s4, t(['Relire le dossier dans le studio', 'Re-read the folder in the studio', 'Ordner im Studio neu einlesen', 'Releer la carpeta en el estudio']))}
-          <p class="mt-small">${esc(t(['La base actuelle est d’abord mémorisée pour la comparaison (étape 5), puis le studio s’ouvre et relit le dossier (autorisation à confirmer si le navigateur la redemande).', 'The current base is stored for comparison (step 5), then the studio opens and re-reads the folder (confirm access if asked).']))}</p>
-          <p class="row"><button type="button" class="primary" id="mtRelire" data-icon="map">${esc(t(['Mémoriser et ouvrir le studio', 'Store and open the studio', 'Speichern und Studio öffnen', 'Guardar y abrir el estudio']))}</button> <button type="button" class="secondary" id="mtReloaded" data-icon="refresh">${esc(t(['Studio relu : comparer', 'Studio re-read: compare', 'Neu eingelesen: vergleichen', 'Releído: comparar']))}</button> <button type="button" class="secondary" id="mtPurgeBase" data-icon="trash">${esc(t(['Purger le cache SIA', 'Purge SIA cache', 'SIA-Cache leeren', 'Vaciar caché SIA']))}</button></p>
-          ${prev ? `<p class="mt-small">${esc(t(['Base mémorisée pour comparaison : {c} ({d})', 'Base stored for comparison: {c} ({d})'], { c: prev.airac || '?', d: fmtDate(prev.storedAt) }))}</p>` : ''}
+        <div class="mt-step" id="mt-step-4">${stepHead(4, s4, t(['Reconstruire la base SIA', 'Rebuild the SIA base', 'SIA-Basis neu aufbauen', 'Reconstruir la base SIA']))}
+          <p>${esc(t(['Base mémorisée', 'Stored base', 'Gespeicherte Basis', 'Base guardada']))} : <b>${esc(baseCycle || '—')}</b> · ${esc(t(['dossier data/sia', 'data/sia folder']))} : <b>${esc(folderCycle || '?')}</b> ${s4 === 'ok' ? pill('ok', t(['à jour', 'up to date'])) : baseCycle && folderCycle ? pill('warn', t(['à relire', 'to re-read'])) : ''}</p>
+          ${s4 === 'ok' ? '' : todo(esc(t(['cliquer « Relire le dossier » ci-dessous (quelques secondes ; le navigateur peut demander d’autoriser le dossier). Quand « ✓ Base chargée et mémorisée » s’affiche, les étapes 5 et 6 se mettent à jour.', 'click “Re-read the folder” below (a few seconds). When “✓ Base loaded and stored” shows, steps 5 and 6 update.'])))}
+          <div id="mtBasePanel"></div>
+          <p class="mt-small">${esc(t(['Même bloc que « Base de données SIA » du studio cartographique :', 'Same block as “SIA database” in the map studio:']))} <a class="mt-link" href="${esc(new URL('apps/sia/map_parser.html#sia-base', root()).href)}" target="_blank" rel="noopener">${esc(t(['ouvrir le studio', 'open the studio']))}</a></p>
         </div>
-        <div class="mt-step">${stepHead(5, cmp ? (cmp.changed ? 'warn' : 'ok') : 'todo', t(['Différences entre les deux bases', 'Differences between the two bases', 'Unterschiede zwischen den Basen', 'Diferencias entre las dos bases']))}
-          ${cmp ? diffHtml(cmp) : `<p class="mt-small">${esc(t(['Après la relecture : « Studio relu : comparer ».', 'After re-reading: “Studio re-read: compare”.']))}</p>`}
+        <div class="mt-step" id="mt-step-5">${stepHead(5, (cmp && acked(5)) || (baseSummary && !prev) ? 'ok' : cmp ? 'warn' : 'todo', t(['Contrôler les différences avec la base précédente', 'Check the differences with the previous base', 'Unterschiede zur vorherigen Basis prüfen', 'Controlar las diferencias con la base anterior']))}
+          ${cmp ? diffHtml(cmp) + (acked(5) ? `<p>${pill('ok', t(['différences vues', 'differences reviewed']))}</p>` : todo(esc(t(['parcourir les espaces ajoutés / retirés (cartes des missions concernées), puis passer à l’étape 6.', 'review added / removed airspaces, then go to step 6.'])), 5)) : baseSummary && !prev ? `<p>${pill('info', t(['aucune base précédente gardée (première lecture ou cache purgé) : rien à comparer — passer à l’étape 6', 'no previous base kept (first read or purged cache): nothing to compare — go to step 6']))}</p>` : `<p class="mt-small">${esc(t(['S’affiche automatiquement après la relecture (étape 4).', 'Shown automatically after the re-read (step 4).']))}</p>`}
         </div>
-        <div class="mt-step">${stepHead(6, moraPlan ? (moraPlan.written ? 'ok' : 'warn') : 'todo', t(['Recalculs simples', 'Simple recalculations', 'Einfache Neuberechnungen', 'Recálculos simples']))}
-          <div class="repo-card" data-icon="chart" data-subtitle="${esc(t(['Obstacles du nouveau cycle, relief du mora.csv existant (sans réseau)', 'New-cycle obstacles, terrain from the existing mora.csv (offline)']))}"><h3>MORA</h3>
-            <p class="row"><button type="button" class="secondary" id="mtMora" data-icon="refresh">${esc(t(['Recalculer', 'Recalculate', 'Neu berechnen', 'Recalcular']))}</button>${moraPlan && !moraPlan.written ? `<button type="button" class="primary" id="mtMoraWrite" data-icon="save">${esc(t(['Écrire mora.csv (ancien archivé)', 'Write mora.csv (old one archived)']))}</button><button type="button" class="secondary" id="mtMoraDl" data-icon="download">${esc(t(['Télécharger', 'Download', 'Herunterladen', 'Descargar']))}</button>` : ''}</p>
-            <div>${moraMsg}${moraPlan ? moraHtml(moraPlan) : ''}</div></div>
+        <div class="mt-step" id="mt-step-6">${stepHead(6, acked(6) || moraPlan?.written ? 'ok' : moraPlan ? 'warn' : 'todo', t(['Recalculer (MORA) et contrôler la cohérence', 'Recalculate (MORA) and check consistency', 'Neu berechnen (MORA) und prüfen', 'Recalcular (MORA) y controlar']))}
+          ${moraPlan?.written || acked(6) ? '' : todo(esc(t(['« Recalcul simple » de la grille MORA ; si des cellules changent, « Écrire mora.csv » puis committer le dépôt de données. Puis « Contrôler » la cohérence.', '“Simple recalculation” of the MORA grid; if cells change, “Write mora.csv” and commit the data repository. Then “Check” consistency.'])), 6)}
+          <div class="repo-card" data-icon="chart" data-subtitle="${esc(t(['Recalcul simple (obstacles du nouveau cycle, hors ligne) ou calcul complet (relief + sommets OSM, réseau) — même calcul que le studio', 'Simple recalculation (new obstacles, offline) or full calculation (terrain + OSM peaks, network) — same as the studio']))}"><h3>MORA</h3>
+            <p class="row"><button type="button" class="secondary" id="mtMora" data-icon="refresh" title="${esc(t(['Obstacles du nouveau cycle, relief du mora.csv actuel — sans réseau, immédiat', 'New-cycle obstacles, terrain from the current mora.csv — offline, instant']))}">${esc(t(['Recalcul simple', 'Simple recalculation', 'Einfache Neuberechnung', 'Recálculo simple']))}</button><button type="button" class="secondary" id="mtMoraFull" data-icon="globe" title="${esc(t(['Relief (tuiles Terrarium) + sommets OSM + obstacles — réseau, environ une minute', 'Terrain (Terrarium tiles) + OSM peaks + obstacles — network, about a minute']))}">${esc(t(['Calcul complet', 'Full calculation', 'Vollständige Berechnung', 'Cálculo completo']))}</button>${moraPlan && !moraPlan.written ? `<button type="button" class="primary" id="mtMoraWrite" data-icon="save">${esc(t(['Écrire mora.csv (ancien archivé)', 'Write mora.csv (old one archived)']))}</button><button type="button" class="secondary" id="mtMoraDl" data-icon="download">${esc(t(['Télécharger', 'Download', 'Herunterladen', 'Descargar']))}</button>` : ''}</p>
+            <div id="mtMoraMsg">${moraMsg}</div><div>${moraPlan ? moraHtml(moraPlan) : ''}</div></div>
           <div class="repo-card" data-icon="plane" data-subtitle="${esc(t(['Espaces, appareils, flotte DEFA, performances, terrains des missions', 'Airspace, aircraft, DEFA fleet, performance, mission aerodromes']))}"><h3>${esc(t(['Cohérence', 'Consistency', 'Konsistenz', 'Coherencia']))}</h3><div id="mtUsage"><p class="row"><button type="button" class="secondary" id="mtUsageRun" data-icon="search">${esc(t(['Contrôler', 'Check', 'Prüfen', 'Comprobar']))}</button></p></div></div>
         </div>
       </div>`;
@@ -538,23 +546,27 @@
     host.querySelector('#mtSiaZip').onchange = e => { const file = e.target.files[0]; e.target.value = ''; if (file) extractZip(file); };
     host.querySelector('#mtSiaZipFolder')?.addEventListener('click', () => extractZip(siaFolderState.zips[0].file));
     host.querySelector('#mtArchive')?.addEventListener('click', archiveOld);
-    host.querySelector('#mtRelire').onclick = async () => {
-      const cur = await window.Airac.baseSummary();
-      if (cur) writeJson(PREV, { ...cur, storedAt: new Date().toISOString() });
-      window.open(new URL('apps/sia/map_parser.html?relire=1', root()).href, '_blank');
-      renderSia();
-    };
-    host.querySelector('#mtReloaded').onclick = async () => { baseSummary = await window.Airac.baseSummary(); renderSia(); renderVersions(); renderDeps(); };
-    host.querySelector('#mtPurgeBase').onclick = async () => {
-      if (!confirm(t(['Purger la base SIA mémorisée dans ce navigateur ? Il faudra relire le dossier dans le studio.', 'Purge the SIA base stored in this browser? The folder will have to be re-read in the studio.']))) return;
-      await window.Airac.purgeBase(); baseSummary = await window.Airac.baseSummary(); renderSia(); renderVersions(); renderDeps();
-    };
+    // Bloc commun (SiaBase.panel) créé une fois, replacé à chaque rendu : ses messages restent affichés.
+    basePanelEl ??= (() => { const el = document.createElement('div'); window.SiaBase.panel(el, { onLoaded: () => baseChanged(true), onPurged: () => baseChanged(false) }); return el; })();
+    host.querySelector('#mtBasePanel').replaceWith(basePanelEl);
+    host.querySelectorAll('[data-ack]').forEach(b => { b.onclick = () => { const a = readJson(ACK, {}); a[b.dataset.ack] = baseKey; writeJson(ACK, a); renderSia(); }; });
     host.querySelector('#mtMora').onclick = planMora;
+    host.querySelector('#mtMoraFull').onclick = planMoraFull;
     host.querySelector('#mtMoraWrite')?.addEventListener('click', writeMora);
     host.querySelector('#mtMoraDl')?.addEventListener('click', () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([moraPlan.csv], { type: 'text/csv;charset=utf-8' })); a.download = 'mora.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); });
     host.querySelector('#mtUsageRun').onclick = usageCheck;
     window.AppFramework?.refresh?.();
+    // Ancre « #mt-step-N » (lien de retour du studio…) : une fois, au premier rendu.
+    if (!stepHashDone && /^#mt-step-\d$/.test(location.hash)) {
+      stepHashDone = true;
+      // le bloc peut être encore masqué (affichage du bloc demandé par ?m=) : attendre qu'il soit visible
+      const target = location.hash.slice(1);
+      let tries = 0;
+      const go = () => { const el = document.getElementById(target); if (el?.offsetParent) { el.scrollIntoView({ block: 'start' }); el.classList.add('repo-block-flash'); setTimeout(() => el.classList.remove('repo-block-flash'), 1600); } else if (tries++ < 40) setTimeout(go, 100); };
+      go();
+    }
   }
+  let stepHashDone = false;
   function folderTable(f) {
     const role = id => { const r = window.Airac.ROLES.find(x => x.id === id); return r ? t(r.label) : id; };
     const rows = [];
@@ -634,12 +646,29 @@
       if (!siaFolderState) await scanSiaFolder(true);
       const mf = siaFolderState?.fixed.find(x => x.id === 'mora')?.file;
       if (!mf) throw new Error(t(['mora.csv absent du dossier SIA XML (ou dossier non lu)', 'mora.csv missing from the SIA XML folder (or folder not read)']));
-      const b = await window.Airac.base();
+      const b = await window.SiaBase.get();
       if (!b?.obstacleMax) throw new Error(t(['base du studio absente : relire le dossier (étape 4)', 'no studio base: re-read the folder (step 4)']));
-      const cyc = window.Airac.baseCycle(b)?.date || '';
+      const cyc = b.airac || '';
       const text = await mf.file.text();
-      moraPlan = { ...window.Airac.moraFromObstacles(text, b.obstacleMax, cyc), cycle: cyc, previousCycle: window.Airac.moraCycle(text), written: false };
+      moraPlan = { ...window.SiaBase.moraFromObstacles(text, b.obstacleMax, cyc), cycle: cyc, previousCycle: window.SiaBase.moraCycle(text), written: false, mode: 'simple' };
       if (!moraPlan.changes.length && moraPlan.previousCycle === cyc) moraPlan.written = true;
+    } catch (e) { moraMsg = pill('err', e.message); }
+    renderSia();
+  }
+  // Calcul complet (même code que le studio : SiaBase.computeMoraGrid), comparé au mora.csv actuel.
+  async function planMoraFull() {
+    moraMsg = ''; moraPlan = null;
+    const btn = hosts.sia.querySelector('#mtMoraFull'), say = x => { const m = hosts.sia.querySelector('#mtMoraMsg'); if (m) m.innerHTML = x; };
+    if (btn) btn.disabled = true;
+    try {
+      const b = await window.SiaBase.get();
+      if (!b?.obstacleMax) throw new Error(t(['base absente : relire le dossier (étape 4)', 'no base: re-read the folder (step 4)']));
+      if (!siaFolderState) await scanSiaFolder(true);
+      const mf = siaFolderState?.fixed.find(x => x.id === 'mora')?.file, text = mf ? await mf.file.text() : '';
+      const cells = await window.SiaBase.computeMoraGrid(b.obstacleMax, {}, (d, n, step) => say(`<span class="mt-small">${esc(step)} : ${d}/${n}…</span>`));
+      const before = new Map((text ? window.SiaBase.parseMora(text) : []).map(c => [c.lat + '|' + c.lon, c]));
+      const changes = cells.map(c => { const o = before.get(c.lat + '|' + c.lon); return { lat: c.lat, lon: c.lon, before: o ? window.SiaBase.moraFtOf(o) : 0, after: c.moraFt, obstacleBefore: '', obstacleAfter: c.obstacleFt }; }).filter(c => c.before !== c.after);
+      moraPlan = { csv: window.SiaBase.moraCsv(cells, { airac: b.airac }), cells, changes, cycle: b.airac || '', previousCycle: window.SiaBase.moraCycle(text), written: false, mode: 'full', peaksOk: cells.peaksOk };
     } catch (e) { moraMsg = pill('err', e.message); }
     renderSia();
   }
@@ -647,7 +676,7 @@
     const up = p.changes.filter(c => c.after > c.before), down = p.changes.filter(c => c.after < c.before), obst = p.changes.filter(c => c.after === c.before);
     return `<p>${p.changes.length ? pill('warn', t(['{n} cellule(s) modifiée(s) : {u} en hausse, {d} en baisse, {o} obstacle seul', '{n} cell(s) changed: {u} up, {d} down, {o} obstacle only'], { n: p.changes.length, u: up.length, d: down.length, o: obst.length })) : pill('ok', t(['aucune valeur MORA ne change', 'no MORA value changes']))} ${p.written ? pill('ok', t(['mora.csv tracé AIRAC {c}', 'mora.csv traced AIRAC {c}'], { c: p.cycle })) : ''}</p>
       ${p.changes.length ? `<div class="mt-scroll mt-short"><table class="mt-table"><thead><tr><th>lat</th><th>lon</th><th>MORA</th><th>${esc(t(['obstacle (ft)', 'obstacle (ft)']))}</th></tr></thead><tbody>${p.changes.map(c => `<tr><td>${c.lat}</td><td>${c.lon}</td><td>${c.before} → <b class="${c.after > c.before ? 'mt-minus' : c.after < c.before ? 'mt-plus' : ''}">${c.after}</b></td><td>${c.obstacleBefore} → ${c.obstacleAfter}</td></tr>`).join('')}</tbody></table></div>` : ''}
-      <p class="mt-small">${esc(t(['Obstacles de l’AIRAC {c} (base du studio) ; relief conservé ; + 1000 ft (2000 ft au-delà de 5000 ft), centaine supérieure. Pour un relief à jour (sommets OSM), le calcul complet reste dans le studio (bloc 5).', 'Obstacles from AIRAC {c} (studio base); terrain kept; + 1000 ft (2000 ft above 5000 ft), next hundred. For fresh terrain (OSM peaks), use the full calculation in the studio (block 5).'], { c: p.cycle }))}</p>`;
+      <p class="mt-small">${esc(p.mode === 'full' ? t(['Calcul complet : relief Terrarium + sommets OSM{o} + obstacles de l’AIRAC {c} ; + 1000 ft (2000 ft au-delà de 5000 ft), centaine supérieure.', 'Full calculation: Terrarium terrain + OSM peaks{o} + AIRAC {c} obstacles.'], { c: p.cycle, o: p.peaksOk === false ? t([' (indisponibles : relief majoré de 100 m)', ' (unavailable: terrain +100 m)']) : '' }) : t(['Recalcul simple : obstacles de l’AIRAC {c}, relief du mora.csv conservé ; + 1000 ft (2000 ft au-delà de 5000 ft), centaine supérieure.', 'Simple recalculation: AIRAC {c} obstacles, terrain kept.'], { c: p.cycle }))}</p>`;
   }
   async function writeMora() {
     try {
@@ -656,30 +685,31 @@
       const old = await fileAt(dir, 'mora.csv');
       if (old) await writeAt(dir, `_archives/mora_${moraPlan.previousCycle || new Date(old.lastModified).toISOString().slice(0, 10)}.csv`, await old.arrayBuffer());
       await writeAt(dir, 'mora.csv', moraPlan.csv);
-      const patched = await window.Airac.patchBase({ moraCells: moraPlan.cells });
+      const patched = await window.SiaBase.patch({ moraCells: moraPlan.cells });
       moraPlan.written = true;
       moraMsg = pill('ok', t(['mora.csv écrit{b} — à committer', 'mora.csv written{b} — commit it'], { b: patched ? t([' et base du studio mise à jour', ' and studio base updated']) : '' }));
       window.LocalStore?.logEvent?.({ kind: 'mora', source: dir.name + '/mora.csv', airac: moraPlan.cycle, files: 1, keys: { added: [], updated: [`${moraPlan.changes.length} cellule(s)`] } });
       await scanSiaFolder(false);
-      await window.Airac.baseSummary();
+      baseSummary = await window.SiaBase.summary();
     } catch (e) { moraMsg = pill('err', e.message); }
     renderSia(); renderVersions(); renderDeps();
   }
   async function usageCheck() {
     const box = document.getElementById('mtUsage');
     box.innerHTML = `<p class="mt-small">${esc(t(['Contrôle…', 'Checking…']))}</p>`;
-    const b = await window.Airac.base();
+    const b = await window.SiaBase.get();
     const out = [];
     const types = typeSet();
     const perf = window.AIRCRAFT_PERF || {};
     // terrains des missions du registre présents dans l'AIXM
     const ads = new Set((b?.aero?.aerodromes || []).map(a => a.code || a.icao || a.id).filter(Boolean));
-    const reg = readJson('missionRegistry:v1', null)?.missions || [];
+    const reg = readJson('missionRegistry:v1', null)?.missions || [], regUrl = new URL('apps/sia/mission_registry.html', root()).href;
+    const regEmpty = pill('info', t(['registre des missions vide dans ce navigateur : ouvrir le Registre des missions (il relit data/missions), puis « Contrôler à nouveau »', 'mission registry empty in this browser: open the Mission registry (it re-reads data/missions), then “Check again”'])) + ` <a class="mt-link" href="${esc(regUrl)}" target="_blank" rel="noopener">${esc(t(['Registre des missions', 'Mission registry']))}</a>`;
     const used = [...new Set(reg.flatMap(m => [m.origin, m.destination]).map(s => /\(([A-Z]{4})\)|\b(LF[A-Z]{2})\b/.exec(s || '')).filter(Boolean).map(m => m[1] || m[2]))];
     const missingAd = ads.size ? used.filter(c => !ads.has(c)) : [];
-    out.push([t(['Terrains des missions du registre', 'Registry mission aerodromes']), !b ? pill('info', t(['base du studio absente', 'no studio base'])) : !used.length ? pill('info', t(['aucun code OACI dans le registre', 'no ICAO code in the registry'])) : missingAd.length ? pill('warn', t(['{n}/{m} absents de l’AIXM : {l}', '{n}/{m} not in AIXM: {l}'], { n: missingAd.length, m: used.length, l: missingAd.join(', ') })) : pill('ok', t(['{m} terrain(s) présents dans l’AIXM', '{m} aerodrome(s) found in AIXM'], { m: used.length }))]);
+    out.push([t(['Terrains des missions du registre', 'Registry mission aerodromes']), !b ? pill('info', t(['base SIA absente : étape 4', 'no SIA base: step 4'])) : !reg.length ? regEmpty : !used.length ? pill('info', t(['{n} mission(s), aucun code OACI « (LFxx) » dans leurs terrains', '{n} mission(s), no “(LFxx)” ICAO code in their aerodromes'], { n: reg.length })) : missingAd.length ? pill('warn', t(['{n}/{m} absents de l’AIXM : {l}', '{n}/{m} not in AIXM: {l}'], { n: missingAd.length, m: used.length, l: missingAd.join(', ') })) : pill('ok', t(['{m} terrain(s) présents dans l’AIXM', '{m} aerodrome(s) found in AIXM'], { m: used.length }))]);
     // espaces
-    const info = window.Airac.info();
+    const info = window.SiaBase.info();
     out.push([t(['Espaces (base du studio)', 'Airspace (studio base)']), info ? pill(info.mixed ? 'err' : 'ok', t(['{n} espaces, cycle {c}', '{n} airspaces, cycle {c}'], { n: info.counts?.airspaces ?? '?', c: info.airac })) : pill('info', '—')]);
     // appareils et flotte
     const fleet = window.DEFA_FLEET || [];
@@ -687,12 +717,15 @@
     const unknown = fleetTypes.filter(x => !knownType(types, x));
     const noPerf = fleetTypes.filter(x => !hasPerf(x));
     out.push([t(['Flotte DEFA → types OACI', 'DEFA fleet → ICAO types']), unknown.length ? pill('warn', t(['inconnus : {l}', 'unknown: {l}'], { l: unknown.join(', ') })) : pill('ok', t(['{n} types, {a} appareils', '{n} types, {a} aircraft'], { n: fleetTypes.length, a: fleet.length }))]);
-    out.push([t(['Flotte DEFA → performances APD', 'DEFA fleet → APD performance']), noPerf.length ? pill('info', t(['{n}/{m} types sans performances APD (types militaires : profils du planificateur) : {l}', '{n}/{m} types without APD performance (military types: planner profiles): {l}'], { n: noPerf.length, m: fleetTypes.length, l: noPerf.join(', ') })) : pill('ok', t(['couverte', 'covered']))]);
+    // Performances : APD (Eurocontrol, surtout civils) ou profil du planificateur ; seul « aucune des deux » est à traiter.
+    const profTypes = new Set(Object.values(readJson('flightPerfState', {})?.profiles || {}).map(p => String(p?.icao || '').toUpperCase()).filter(Boolean));
+    const noneAtAll = noPerf.filter(x => !profTypes.has(String(x).toUpperCase()));
+    out.push([t(['Flotte DEFA → performances', 'DEFA fleet → performance']), `${pill('info', t(['APD : {a}/{m} types (base Eurocontrol, surtout civile)', 'APD: {a}/{m} types (Eurocontrol, mostly civil)'], { a: fleetTypes.length - noPerf.length, m: fleetTypes.length }))} ${pill('info', t(['profils du planificateur : {p} type(s)', 'planner profiles: {p} type(s)'], { p: fleetTypes.filter(x => profTypes.has(String(x).toUpperCase())).length }))} ${noneAtAll.length ? pill('warn', t(['{n} type(s) sans aucune performance (ni APD ni profil) : {l} — à couvrir dans le planificateur si ces appareils volent', '{n} type(s) with no performance at all (no APD, no profile): {l}'], { n: noneAtAll.length, l: noneAtAll.join(', ') })) : pill('ok', t(['tous couverts', 'all covered']))}`]);
     const profs = Object.values(readJson('flightPerfState', {})?.profiles || {});
     const profUnknown = profs.filter(p => p?.icao && !knownType(types, p.icao));
     out.push([t(['Profils du planificateur', 'Planner profiles']), profUnknown.length ? pill('warn', t(['types hors base : {l}', 'types outside base: {l}'], { l: profUnknown.map(p => p.icao).join(', ') })) : pill('ok', t(['{n} profil(s)', '{n} profile(s)'], { n: profs.length }))]);
     const regTypes = [...new Set(reg.flatMap(m => m.aircraftTypes || []))];
-    out.push([t(['Missions du registre → types', 'Registry missions → types']), pill('info', regTypes.length ? regTypes.slice(0, 12).join(', ') : '—')]);
+    out.push([t(['Missions du registre → types', 'Registry missions → types']), !reg.length ? regEmpty : regTypes.length ? pill('info', t(['{n} type(s) : {l}', '{n} type(s): {l}'], { n: regTypes.length, l: regTypes.slice(0, 12).join(', ') + (regTypes.length > 12 ? '…' : '') })) : pill('info', t(['aucun type d’appareil renseigné dans les missions', 'no aircraft type in the missions']))]);
     box.innerHTML = `<table class="mt-table"><tbody>${out.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${v}</td></tr>`).join('')}</tbody></table>
       <p class="mt-small">${esc(t(['Mise à jour des bases (indépendantes de l’AIRAC) :', 'Updating the databases (AIRAC-independent):']))} <code>python AircraftDB/update_fleet.py Flotte.html</code> · <code>python AircraftDB/update_aircraft_db.py --apd</code></p>
       <p class="row"><button type="button" class="secondary" id="mtUsageRun" data-icon="refresh">${esc(t(['Contrôler à nouveau', 'Check again']))}</button></p>`;
@@ -824,7 +857,7 @@
       const manifest = {
         schema: 'xplane-web-suite-backup', version: 1, createdAt,
         suite: window.REPOSITORY_TREE?.release || {}, git: g ? { branch: g.branch, head: g.head } : null,
-        airac: { effective: A.cycle().date, base: A.info()?.airac || '' }, origin: location.origin,
+        airac: { effective: A.cycle().date, base: window.SiaBase.info()?.airac || '' }, origin: location.origin,
         browser: { file: 'navigateur/defa_local_store.yaml', entries: browser.count, savedAt: browser.savedAt },
         sources: sources.map(s => ({ id: s.source, label: s.label, folder: s.folder, files: s.files.length })), missing, files
       };
@@ -942,7 +975,7 @@
     titles();
     await Promise.all([waitFor('FileAccess'), waitFor('LocalStore'), waitFor('SuiteUpdate')]);
     await Promise.all([readGitState(false), scanSiaFolder(false)]);
-    baseSummary = await window.Airac.baseSummary();
+    baseSummary = await window.SiaBase.summary();
     renderUpdates(); renderSources(); renderSia(); renderBackup(); renderJournal();
     await renderVersions(); await renderDeps();
     const want = new URLSearchParams(location.search).get('m') || location.hash.slice(1);
@@ -954,8 +987,19 @@
   window.addEventListener('file-access-change', () => renderSources());
   window.addEventListener('suite-sources-change', () => { renderSia(); renderVersions(); });
   window.addEventListener('local-store-restored', () => { renderVersions(); });
+  // Base relue (ici par le bloc commun, ou dans le studio, autre onglet) : étapes 4 à 6 recalculées ; après une relecture, étape 5 à l'écran.
+  async function baseChanged(scroll = false) {
+    baseSummary = await window.SiaBase.summary();
+    moraPlan = null; moraMsg = '';
+    await scanSiaFolder(false);
+    renderSia(); renderVersions(); renderDeps();
+    if (scroll && baseSummary) document.getElementById('mt-step-5')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  // Filet : au retour sur l'onglet, relire le résumé s'il a changé (l'événement storage peut manquer, ex. file://).
+  let lastInfo = localStorage.getItem('siaBaseInfo:v1');
+  window.addEventListener('focus', () => { const cur = localStorage.getItem('siaBaseInfo:v1'); if (cur !== lastInfo) { lastInfo = cur; baseChanged(); } });
   window.addEventListener('storage', async e => {
-    if (e.key === 'siaBaseInfo:v1') { baseSummary = await window.Airac.baseSummary(); renderSia(); renderVersions(); renderDeps(); }
+    if (e.key === 'siaBaseInfo:v1') await baseChanged();
     if (e.key === 'suiteBackupLog:v1') renderJournal();
   });
   renderAll();

@@ -17,6 +17,8 @@ REF = re.compile(r'((?:\.\./)?shared/[\w/.-]+\.(?:js|css))\?v=(\w+)')
 pages = [p for p in glob.glob(os.path.join(ROOT, '**', '*.html'), recursive=True)  # apps/…, docs/ (hors data/ : dépôt de données)
          if not os.path.relpath(p, ROOT).replace(os.sep, '/').startswith(('data/', 'examples/'))]
 nav = os.path.join(ROOT, 'shared', 'repository_nav.js')
+if len(sys.argv) > 1 and not re.fullmatch(r'\d{8}[a-z]*', sys.argv[1]):
+    raise SystemExit(__doc__)
 if len(sys.argv) > 1:
     version = sys.argv[1]
 else:
