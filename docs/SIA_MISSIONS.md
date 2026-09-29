@@ -156,6 +156,45 @@ Page `apps/sia/mission_registry.html` (☰ › Registre des missions (SIA), barr
 - Données : `missionRegistry:v1` (navigateur, sauvegardé avec les données locales) et `data/missions/mission_registry.yaml` ;
   export CSV de la sélection.
 
+## 2 quater. Dossier d'une mission, versions, fichiers
+
+```
+data/missions/<lettre>_<FAMILLE>/<identifiant>/
+  mission<ID>.yaml   source de vérité : données reçues + réglages du studio (maps[].profile / view / trace /
+                     exercise, vertical_profile) + meta (received_at, modified_at, maps_generated_at, versions, history)
+  summary<ID>.md     Markdown pour les humains
+  cartes/            PNG générés par le studio (régénérables depuis les définitions maps du YAML)
+  recu/              chaque texte reçu (collage ChatGPT, fichiers), horodaté, tel quel
+  versions/          YAML remplacés par une nouvelle version
+```
+
+- **Réception** (générateur, collage ou fichiers) : texte gardé dans `recu/` ; comparé à la version en place (données
+  seulement, sans meta ni réglages du studio) : **identique** → rien n'est remplacé ; **différente** → l'ancienne va
+  dans `versions/`, la nouvelle garde les réglages du studio des cartes de même nom, différences listées (clés, nombre
+  d'éléments) et notées dans `meta.history`.
+- **Générateur** : « Enregistrer dans le dossier » (YAML modifié, `meta.modified_at`). **Studio** : « Enregistrer dans
+  le dossier » (réglages de chaque carte) ; à la génération, les PNG vont dans `cartes/` (`meta.maps_generated_at`).
+- **Registre** (fiche) : YAML, Markdown lisible, cartes (vignettes), versions précédentes (avec les différences),
+  textes reçus ; **PDF** produit à la demande par le générateur (cartes du dossier chargées) ; **Modifier** ouvre le
+  générateur. État : **complète** (toutes les cartes), **partielle** (cartes manquantes) ou **sans cartes**
+  (régénérables depuis le YAML).
+
+## 2 quinquies. Déroulé de l'exercice : pistes et injects
+
+`shared/mission_exercise.js` (`MissionExercise`), bloc **Déroulé de l'exercice** du générateur :
+
+- **Pistes** (`tracks`) : nom, nature, points (« Nom lat, lon ; … »), niveau, vitesse, ce qu'il faut établir ; import
+  d'un tableau Markdown (colonnes piste, nature, route / points, niveau / vitesse, à établir).
+- **Injects** (`injects`) : moment (`at` : point du fichier ou « H+10 », `delay_min`), forme (**information** donnée à
+  l'équipage par l'émetteur, ou **pli scellé** à ouvrir), émetteur, titre, texte, pistes révélées ; heure estimée
+  (T + …) d'après la route probable. Les parties successives (`phases`) sont comptées comme plis.
+- **PDF** : brief équipage = une page par inject (« INFORMATION — à donner : à RDV-2 + 8 min (vers T+1 h 00) —
+  émetteur : CYRANO01 » ou « PLI SCELLÉ — à ouvrir : … »), pistes révélées comprises ; **PDF organisation** = en plus,
+  la chronologie complète et toutes les pistes (directeur d'exercice).
+- **Studio** : couche « Exercice » par carte (`maps[].exercise` : sans pistes / toutes / connues après un inject) ;
+  pistes en bleu fléché avec niveau et vitesse ; « + Cartes d'exercice » ajoute une carte organisation (toutes les
+  pistes, route probable) et une carte par inject révélant des pistes.
+
 ## 2 ter. Durée estimée et route probable
 
 `shared/mission_estimate.js` (`MissionEstimate`), affiché dans le générateur (bloc **Durée estimée**, recalculé à chaque

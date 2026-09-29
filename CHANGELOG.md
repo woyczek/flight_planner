@@ -10,6 +10,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Dossier d'une mission** : `mission<ID>.yaml` (données + réglages du studio + dates et historique), `summary<ID>.md`,
+  `cartes/` (PNG du studio), `recu/` (textes reçus horodatés), `versions/` (YAML remplacés). Réimport : comparaison des
+  données — identique (rien remplacé) ou nouvelle version (ancienne gardée, différences listées, réglages du studio
+  repris). Générateur et studio : « Enregistrer dans le dossier » ; cartes générées rangées dans `cartes/`.
+- **Registre : fichiers de la mission** — YAML, Markdown lisible, vignettes des cartes, versions (différences), textes
+  reçus, PDF à la demande (générateur, cartes du dossier chargées), Modifier ; état complète / partielle / sans cartes.
+- **Déroulé de l'exercice** (`shared/mission_exercise.js`) : pistes (`tracks`, import d'un tableau Markdown) et injects
+  (`injects` : information à donner ou pli scellé, moment « à RDV-2 + 8 min » ou « H+10 », émetteur, pistes révélées,
+  heure estimée) ; PDF équipage (une page par inject) et PDF organisation (chronologie, pistes) ; studio : pistes sur
+  les cartes, couche par carte, « + Cartes d'exercice » ; prompt : `tracks`, `injects`, section « Déroulé ».
 - **Mission reçue → registre et dossier** : une mission chargée ou collée dans le générateur est inscrite au registre
   (commande rapprochée) et rangée dans `data/missions/<lettre>_<FAMILLE>/<identifiant>/` si le dossier est autorisé
   (sinon bouton « Ranger dans le dossier des missions… »).

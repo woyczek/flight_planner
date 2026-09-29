@@ -70,7 +70,7 @@
   // ---- lecture d'une mission (document { yaml, narrative }) → entrée du registre
   /** Identifiant normalisé (M-016 → M-016) : SiaMission.parseId. */
   const normMissionId = v => (window.SiaMission?.parseId ? window.SiaMission.parseId(v).id : String(v || '').toUpperCase());
-  function entryOf(doc, { folder = '', files = [], generatedAt = '' } = {}) {
+  function entryOf(doc, { folder = '', files = [], generatedAt = '', images = null } = {}) {
     const y = doc.yaml || {}, meta = y.mission || {};
     const teams = (Array.isArray(y.teams) ? y.teams : []).filter(x => x && typeof x === 'object');
     const aircraft = (Array.isArray(y.aircraft) ? y.aircraft : y.aircraft ? [y.aircraft] : []).filter(Boolean);
@@ -105,8 +105,19 @@
       generatedAt,
       estimate: window.MissionEstimate?.summary?.(y) || null,   // durée estimée et route probable (shared/mission_estimate.js)
       hasYaml: files.some(f => /\.ya?ml$/i.test(f)),
-      hasMd: files.some(f => /\.md$/i.test(f))
+      hasMd: files.some(f => /\.md$/i.test(f)),
+      ...mapsState(y, images),
+      receivedAt: String(y.meta?.received_at || ''), modifiedAt: String(y.meta?.modified_at || ''), versions: +y.meta?.versions || 0,
+      tracks: Array.isArray(y.tracks) ? y.tracks.length : 0, injects: Array.isArray(y.injects) ? y.injects.length : 0
     };
+  }
+  /** État des cartes : maps du YAML ↔ PNG présents (dossier de la mission et cartes/). complete : toutes là ;
+   *  partial : une partie ; none : aucune (régénérables depuis le YAML : définitions maps + coordonnées). */
+  function mapsState(y, images) {
+    const want = (Array.isArray(y.maps) ? y.maps : []).map(m => String(m?.filename || m?.file || '')).filter(Boolean);
+    if (!images) return { mapsWanted: want.length, mapsFound: null, mapsState: '' };
+    const have = new Set(images.map(n => n.toLowerCase())), found = want.filter(f => have.has(f.toLowerCase()));
+    return { mapsWanted: want.length, mapsFound: found.length, images, mapsState: !want.length ? 'complete' : found.length === want.length ? 'complete' : found.length ? 'partial' : 'none' };
   }
   /** Fusion d'une entrée lue avec l'entrée existante (champs de l'utilisateur conservés : statut, dates, notes, commande). */
   function upsert(e, source) {
@@ -120,34 +131,109 @@
     if (i >= 0) reg.missions[i] = merged; else if (j >= 0) reg.missions[j] = merged; else reg.missions.push(merged);
     return merged;
   }
-  // ---- noyau partagé (générateur de brief) : une mission reçue (collée ou chargée) entre au registre, et ses fichiers
-  // sont rangés dans le dossier des missions s'il est autorisé : data/missions/<lettre>_<FAMILLE>/<identifiant>/
+  // ---- noyau partagé (générateur de brief, studio) : dossier d'une mission
+  //   data/missions/<lettre>_<FAMILLE>/<identifiant>/
+  //     mission<ID>.yaml   source de vérité : données reçues, réglages du studio (maps[].profile / view / trace,
+  //                        vertical_profile), meta (received_at, modified_at, maps_generated_at, versions, history)
+  //     summary<ID>.md     Markdown pour les humains
+  //     cartes/            PNG générés par le studio (régénérables depuis le YAML)
+  //     recu/              chaque texte reçu (collage ChatGPT, fichiers), horodaté, tel quel
+  //     versions/          YAML remplacés par une nouvelle version
+  // Pas de PDF stocké : produit à la demande par le générateur.
+  const SUB = { maps: 'cartes', received: 'recu', versions: 'versions' };
+  const stamp = () => new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+  /** Données comparables d'un YAML (sans meta ni réglages du studio), clés triées. */
+  const canon = y => JSON.stringify(y, (k, v) => ['meta', 'profile', 'view', 'trace', 'generated_at'].includes(k) ? undefined : v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort().map(x => [x, v[x]])) : v);
+  /** Différences lisibles entre deux YAML : clés de premier niveau changées (nombre d'éléments pour les listes). */
+  function diffOf(a, b) {
+    const out = [], keys = [...new Set([...Object.keys(a || {}), ...Object.keys(b || {})])].filter(k => k !== 'meta');
+    for (const k of keys) {
+      if (canon(a?.[k]) === canon(b?.[k])) continue;
+      const n = v => Array.isArray(v) ? v.length : null;
+      out.push(a?.[k] === undefined ? `+ ${k}` : b?.[k] === undefined ? `− ${k}` : n(a[k]) != null && n(b[k]) != null && n(a[k]) !== n(b[k]) ? `${k} (${n(a[k])} → ${n(b[k])})` : k);
+    }
+    return out;
+  }
   /** Dossier de famille existant pour une lettre (M_MEDEVAC…), sinon « <lettre>_<TYPE> ». */
   async function familyDir(dir, letter, type) {
     for await (const [name, h] of dir.entries()) if (h.kind === 'directory' && name.startsWith(`${letter}_`)) return name;
     return `${letter}_${String(type || 'MISSION').toUpperCase().replace(/[^A-Z0-9-]+/g, '')}`;
   }
-  /** Écrit les fichiers d'une mission ({ name, text }) dans son sous-dossier ; renvoie le chemin relatif, '' si impossible. */
-  async function storeFiles(doc, files, request = false) {
-    const dir = await missionsDir(request), id = normMissionId(doc.yaml?.mission?.id || ''), p = window.SiaMission?.parseId?.(id);
-    if (!dir || !p?.letter) return '';
-    const fam = await familyDir(dir, p.letter, doc.yaml?.mission?.type);
-    const sub = await (await dir.getDirectoryHandle(fam, { create: true })).getDirectoryHandle(id, { create: true });
-    for (const f of files) { const w = await (await sub.getFileHandle(f.name, { create: true })).createWritable(); await w.write(f.text); await w.close(); }
-    return `${fam}/${id}`;
+  const readText = async (h, name) => { try { return await (await (await h.getFileHandle(name)).getFile()).text(); } catch { return null; } };
+  const writeText = async (h, name, text) => { const w = await (await h.getFileHandle(name, { create: true })).createWritable(); await w.write(text); await w.close(); };
+  /** Dossier d'une mission (handle) d'après son identifiant ; create : le crée. null si le dossier des missions n'est pas autorisé. */
+  async function missionHandle(id, type, { request = false, create = false, folder = '' } = {}) {
+    const dir = await missionsDir(request), p = window.SiaMission?.parseId?.(id);
+    if (!dir) return null;
+    try {
+      if (folder) { let h = dir; for (const part of folder.split('/').filter(Boolean)) h = await h.getDirectoryHandle(part, { create }); return { h, folder }; }
+      if (!p?.letter) return null;
+      const fam = await familyDir(dir, p.letter, type);
+      const h = await (await dir.getDirectoryHandle(fam, { create })).getDirectoryHandle(p.id, { create });
+      return { h, folder: `${fam}/${p.id}` };
+    } catch { return null; }
   }
-  /** Mission reçue : entrée du registre (commande rapprochée) ; fichiers rangés dans le dossier des missions si autorisé
-   *  (request : demander l'autorisation). Sortie : { entry, folder } (folder vide : pas écrit). */
-  async function record(doc, { files = [], source = 'générateur', request = false } = {}) {
-    let folder = '';
-    try { if (files.length) folder = await storeFiles(doc, files, request); } catch { folder = ''; }
+  const dumpYaml = (y, id, what) => `# Mission ${id} — ${what} — ${new Date().toLocaleString('fr-FR')}\n` + window.jsyaml.dump(y, { lineWidth: -1, noRefs: true });
+  /** Range une mission reçue : trace des textes reçus (recu/), comparaison avec la version en place (identique → rien
+   *  n'est remplacé ; différente → ancienne dans versions/, réglages du studio repris), meta mise à jour, Markdown.
+   *  Sortie : { folder, status: 'new' | 'same' | 'version', diff } ; folder vide si le dossier n'est pas autorisé. */
+  async function storeMission(doc, { md = '', raw = [], request = false, source = 'collage' } = {}) {
+    const id = normMissionId(doc.yaml?.mission?.id || ''), at = new Date().toISOString(), st = stamp();
+    const m = await missionHandle(id, doc.yaml?.mission?.type, { request, create: true });
+    if (!m) return { folder: '', status: '', diff: [] };
+    const name = `mission${id}.yaml`;
+    if (raw.length) { const rh = await m.h.getDirectoryHandle(SUB.received, { create: true }); for (const [i, r] of raw.entries()) await writeText(rh, `${st}_${i + 1}_${String(r.name || 'texte').replace(/[^\w.-]+/g, '_')}.txt`, r.text); }
+    const oldText = await readText(m.h, name);
+    let old = null;
+    try { old = oldText ? window.jsyaml.load(oldText.replace(/^#.*\n/, '')) : null; } catch { old = null; }
+    const y = structuredClone(doc.yaml);
+    let status = 'new', diff = [];
+    if (old && canon(old) === canon(y)) status = 'same';
+    else if (old) {
+      status = 'version'; diff = diffOf(old, y);
+      const vh = await m.h.getDirectoryHandle(SUB.versions, { create: true });
+      await writeText(vh, `mission${id}_${st}.yaml`, oldText);
+      // réglages du studio repris sur les cartes de même nom ; profil vertical gardé s'il n'est pas redonné
+      for (const mp of Array.isArray(y.maps) ? y.maps : []) { const o = (old.maps || []).find(x => x?.filename && x.filename === mp?.filename); if (o) for (const k of ['profile', 'view', 'trace', 'generated_at']) if (o[k] !== undefined && mp[k] === undefined) mp[k] = o[k]; }
+      if (!y.vertical_profile && old.vertical_profile) y.vertical_profile = old.vertical_profile;
+    }
+    const om = old?.meta || {};
+    y.meta = { ...om, ...(y.meta || {}), received_at: om.received_at || at, modified_at: status === 'same' ? (om.modified_at || at) : at, source: om.source || source, versions: (+om.versions || 0) + (status === 'version' ? 1 : 0), history: [...(Array.isArray(om.history) ? om.history : []), { at, action: { new: 'reçue', same: 'reçue à l’identique', version: 'nouvelle version' }[status], source, ...(diff.length ? { diff } : {}) }].slice(-30) };
+    await writeText(m.h, name, dumpYaml(y, id, status === 'new' ? 'reçue' : 'mise à jour'));
+    if (md && (status !== 'same' || !(await readText(m.h, `summary${id}.md`)))) await writeText(m.h, `summary${id}.md`, md);
+    doc.yaml = y;
+    return { folder: m.folder, status, diff };
+  }
+  /** Enregistre le YAML modifié d'une mission (générateur, studio) : meta.modified_at, trace dans l'historique. */
+  async function saveYaml(y, { action = 'modifiée', request = false } = {}) {
+    const id = normMissionId(y?.mission?.id || ''), m = await missionHandle(id, y?.mission?.type, { request, create: true });
+    if (!m) return '';
+    const at = new Date().toISOString();
+    y.meta = { ...(y.meta || {}), received_at: y.meta?.received_at || at, modified_at: at, history: [...(Array.isArray(y.meta?.history) ? y.meta.history : []), { at, action }].slice(-30) };
+    await writeText(m.h, `mission${id}.yaml`, dumpYaml(y, id, action));
+    return m.folder;
+  }
+  /** Écrit des cartes (PNG : { name, blob }) dans cartes/ ; meta.maps_generated_at. */
+  async function saveMaps(y, maps, { request = false } = {}) {
+    const id = normMissionId(y?.mission?.id || ''), m = await missionHandle(id, y?.mission?.type, { request, create: true });
+    if (!m) return '';
+    const ch = await m.h.getDirectoryHandle(SUB.maps, { create: true });
+    for (const f of maps) { const w = await (await ch.getFileHandle(f.name, { create: true })).createWritable(); await w.write(f.blob); await w.close(); }
+    y.meta = { ...(y.meta || {}), maps_generated_at: new Date().toISOString() };
+    await saveYaml(y, { action: `${maps.length} carte(s) générée(s)` });
+    return m.folder;
+  }
+  /** Mission reçue : rangée (storeMission) puis inscrite au registre (commande rapprochée). */
+  async function record(doc, { md = '', raw = [], source = 'collage', request = false } = {}) {
+    let res = { folder: '', status: '', diff: [] };
+    try { res = await storeMission(doc, { md, raw, request, source }); } catch (e) { res.error = e.message; }
     reg = readJson(KEY, null) || empty();
-    const e = entryOf(doc, { folder, files: folder ? files.map(f => f.name) : [], generatedAt: new Date().toISOString() });
-    const entry = upsert(e, folder ? 'dossier' : source);
+    const e = entryOf(doc, { folder: res.folder, files: res.folder ? [`mission${normMissionId(doc.yaml?.mission?.id)}.yaml`, ...(md ? [`summary${normMissionId(doc.yaml?.mission?.id)}.md`] : [])] : [], generatedAt: new Date().toISOString() });
+    const entry = upsert(e, res.folder ? 'dossier' : 'générateur');
     persist();
-    return { entry, folder };
+    return { entry, ...res };
   }
-  window.MissionRegistryCore = { record, entryOf, missionsDir };
+  window.MissionRegistryCore = { record, entryOf, missionsDir, missionHandle, saveYaml, saveMaps, readText, SUB, diffOf };
   if (!host) return;
 
   // ---- nettoyage : entrées dont le fichier n'existe plus (missions renumérotées, déplacées ou supprimées)
@@ -186,9 +272,10 @@
     await waitFor('SiaMission');
     const found = [], problems = [];
     async function walk(h, path, depth) {
-      const files = [], subs = [];
+      const files = [], subs = [], images = [];
       for await (const [name, x] of h.entries()) {
-        if (x.kind === 'directory') { if (depth < 3 && !/^(_|\.)/.test(name)) subs.push([name, x]); }
+        if (x.kind === 'directory') { if (SUB[name]) { if (name === SUB.maps) for await (const [n2, y2] of x.entries()) if (y2.kind === 'file' && /\.(png|jpe?g|webp)$/i.test(n2)) images.push(n2); } else if (depth < 3 && !/^(_|\.)/.test(name)) subs.push([name, x]); }
+        else if (/\.(png|jpe?g|webp)$/i.test(name)) images.push(name);
         else if (/\.(ya?ml|md)$/i.test(name) && name !== FILE && !/^(maps_manifest|AAR_TRACKS_REFERENCE|OSM_WORK_PROMPT|README|VALIDATION)/i.test(name)) files.push(x);
       }
       if (files.length) {
@@ -199,7 +286,7 @@
           const { docs } = window.SiaMission.fromTextsBatch(texts);
           for (const d of docs) {
             const names = d.sourceNames || [];
-            found.push(entryOf(d, { folder: path, files: names, generatedAt: new Date(newest).toISOString() }));
+            found.push(entryOf(d, { folder: path, files: names, generatedAt: new Date(newest).toISOString(), images }));
           }
         } catch (e) { problems.push(`${path || '.'} : ${e.message}`); }
       }
@@ -395,9 +482,10 @@
       <h3>${esc(m.id)} — ${esc(m.title || t(['(à générer)', '(to generate)']))}</h3>
       <p>${pill(m.status, t(STATUS[m.status] || [m.status]))} ${m.operation?.name ? `${esc(t(['Opération', 'Operation']))} : <b>${esc(m.operation.name)}</b>${m.operation.missions ? ` (${m.operation.missions} ${esc(t(['missions', 'missions']))})` : ''}` : ''} ${m.report ? pill('reported', t(['{n} vol(s) — dernier CR {c} du {d}', '{n} flight(s) — last report {c} on {d}'], { n: m.reports.length, c: m.report.missionId, d: fmtDate(m.report.date) })) : ''}</p>
       ${m.reports?.length ? `<details class="rg-reports" ${m.reports.length <= 5 ? 'open' : ''}><summary><b>${esc(t(['Comptes rendus de la mission ({n})', 'Mission reports ({n})', 'Berichte des Einsatzes ({n})', 'Informes de la misión ({n})'], { n: m.reports.length }))}</b></summary><ul>${m.reports.map(r => { const u = crUrl(r); return `<li>${u ? `<a href="${esc(u)}">${esc(r.missionId)}</a>` : esc(r.missionId)} — ${esc(fmtDate(r.date))}</li>`; }).join('')}</ul></details>` : ''}
-      <p>${esc(m.origin)}${m.destination ? ' → ' + esc(m.destination) : ''} · ${esc(t(['{n} rendez-vous', '{n} rendezvous'], { n: m.rdv }))} · ${m.aar ? 'AAR · ' : ''}${esc(m.theatre || '')} · ${esc(t(['{n} carte(s)', '{n} map(s)'], { n: m.maps || 0 }))}</p>
+      <p>${esc(m.origin)}${m.destination ? ' → ' + esc(m.destination) : ''} · ${esc(t(['{n} rendez-vous', '{n} rendezvous'], { n: m.rdv }))} · ${m.aar ? 'AAR · ' : ''}${esc(m.theatre || '')} · ${esc(t(['{n} carte(s)', '{n} map(s)'], { n: m.maps || 0 }))}${m.tracks || m.injects ? ` · ${esc(t(['exercice : {p} piste(s), {i} inject(s)', 'exercise: {p} track(s), {i} inject(s)'], { p: m.tracks || 0, i: m.injects || 0 }))}` : ''}</p>
       ${m.callsigns?.length ? `<p>${esc(t(['Indicatifs', 'Callsigns']))} : ${esc(m.callsigns.join(', '))} · ${esc(m.aircraftTypes.join(', '))}</p>` : ''}
       ${teams ? `<ul class="rg-teams">${teams}</ul>` : ''}
+      <details class="rg-files" open><summary><b>${esc(t(['Fichiers de la mission', 'Mission files', 'Einsatzdateien', 'Archivos de la misión']))}</b> ${m.mapsState ? pill(m.mapsState === 'complete' ? 'generated' : m.mapsState === 'partial' ? 'planned' : 'ordered', t(MAPSTATE[m.mapsState])) : ''}</summary><div id="rgFiles" class="rg-small">…</div></details>
       <details class="rg-estimate" open><summary><b>${esc(t(['Durée estimée', 'Estimated time', 'Geschätzte Dauer', 'Duración estimada']))}</b>${m.estimate ? ` — ${esc(window.MissionEstimate.hm(m.estimate.flight))}` : ''}</summary><div id="rgEstimate"></div></details>
       ${m.request ? `<p class="rg-small">${esc(t(['Commande', 'Order']))} : ${esc(Object.entries(m.request).filter(([, v]) => v !== '' && v != null).map(([k, v]) => `${k} = ${v}`).join(' · '))}</p>` : ''}
       <div class="rg-edit">
@@ -412,6 +500,67 @@
     box.querySelector('#rgNotes').onchange = e => { m.notes = e.target.value; persist(); };
     box.querySelectorAll('[data-go]').forEach(x => x.onclick = () => go(m, x.dataset.go));
     window.MissionEstimate?.panel(box.querySelector('#rgEstimate'), m.estimate, { reports: m.reports || [] });
+    renderFiles(m, box.querySelector('#rgFiles'));
+    window.AppFramework?.refresh?.();
+  }
+  const MAPSTATE = { complete: ['complète', 'complete', 'vollständig', 'completa'], partial: ['partielle : cartes à compléter', 'partial: maps missing', 'teilweise', 'parcial'], none: ['partielle : cartes non générées (régénérables)', 'partial: maps not generated (can be regenerated)', 'ohne Karten', 'sin mapas'] };
+  // ---- fichiers de la mission : YAML, Markdown (lisible), cartes, versions, textes reçus ; PDF à la demande (générateur)
+  let viewer = null;
+  function view(title, html) {
+    if (!viewer) {
+      viewer = document.createElement('dialog'); viewer.className = 'rg-viewer';
+      viewer.innerHTML = '<form method="dialog" class="rg-viewer-head"><b></b><button type="submit">×</button></form><div class="rg-viewer-body"></div>';
+      const css = document.createElement('style');
+      css.textContent = '.rg-viewer{width:min(96vw,1100px);max-height:90vh;padding:0;border:0;border-radius:10px}.rg-viewer::backdrop{background:rgba(0,0,0,.55)}.rg-viewer-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #ccd;position:sticky;top:0;background:inherit}.rg-viewer-body{padding:12px 16px;overflow:auto;max-height:80vh}.rg-viewer-body pre{white-space:pre-wrap;font:12px ui-monospace,monospace}.rg-viewer-body table{border-collapse:collapse}.rg-viewer-body td,.rg-viewer-body th{border:1px solid #ccd;padding:2px 6px}.rg-viewer-body img{max-width:100%}.rg-thumbs{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}.rg-thumbs figure{margin:0;width:160px}.rg-thumbs img{width:160px;height:100px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid #ccd}.rg-thumbs figcaption{font-size:11px;word-break:break-all}';
+      document.head.append(css); document.body.append(viewer);
+    }
+    viewer.querySelector('b').textContent = title;
+    viewer.querySelector('.rg-viewer-body').innerHTML = html;
+    viewer.showModal();
+  }
+  /** Markdown → HTML (titres, paragraphes, listes, tableaux, gras, italique, code). */
+  function mdHtml(md) {
+    const inline = x => esc(x).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/(^|\W)\*(.+?)\*(?=\W|$)/g, '$1<i>$2</i>').replace(/`(.+?)`/g, '<code>$1</code>');
+    const out = [], lines = String(md || '').replace(/\r/g, '').split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const l = lines[i];
+      if (/^#{1,6}\s/.test(l)) { const n = /^#+/.exec(l)[0].length; out.push(`<h${n + 1}>${inline(l.replace(/^#+\s*/, ''))}</h${n + 1}>`); continue; }
+      if (/^\|/.test(l)) { const rows = []; while (i < lines.length && /^\|/.test(lines[i])) rows.push(lines[i++]); i--; const cells = r => r.replace(/^\||\|$/g, '').split('|').map(c => c.trim()); out.push(`<table>${rows.filter(r => !/^\|[\s:|-]+\|$/.test(r)).map((r, k) => `<tr>${cells(r).map(c => k ? `<td>${inline(c)}</td>` : `<th>${inline(c)}</th>`).join('')}</tr>`).join('')}</table>`); continue; }
+      if (/^\s*[-*]\s/.test(l)) { const items = []; while (i < lines.length && /^\s*[-*]\s/.test(lines[i])) items.push(lines[i++].replace(/^\s*[-*]\s/, '')); i--; out.push(`<ul>${items.map(x => `<li>${inline(x)}</li>`).join('')}</ul>`); continue; }
+      if (/^```/.test(l)) { const code = []; i++; while (i < lines.length && !/^```/.test(lines[i])) code.push(lines[i++]); out.push(`<pre>${esc(code.join('\n'))}</pre>`); continue; }
+      if (l.trim()) out.push(`<p>${inline(l)}</p>`);
+    }
+    return out.join('');
+  }
+  async function renderFiles(m, host) {
+    if (!host) return;
+    const C = window.MissionRegistryCore, mh = m.folder ? await C.missionHandle(m.id, m.type, { folder: m.folder }) : null;
+    if (!mh) { host.textContent = m.folder ? t(['Dossier des missions non autorisé : choisir le dossier ci-dessus.', 'Missions folder not authorised: choose it above.']) : t(['Mission non rangée dans le dossier des missions (commande, ou reçue sans autorisation du dossier).', 'Mission not stored in the missions folder.']); return; }
+    const list = async (h, sub) => { const out = []; try { const d = sub ? await h.getDirectoryHandle(sub) : h; for await (const [n, x] of d.entries()) if (x.kind === 'file') out.push({ name: n, h: x }); } catch { /* absent */ } return out.sort((a, b) => b.name.localeCompare(a.name)); };
+    const root = await list(mh.h), maps = [...await list(mh.h, C.SUB.maps), ...root.filter(f => /\.(png|jpe?g|webp)$/i.test(f.name))], vers = await list(mh.h, C.SUB.versions), recu = await list(mh.h, C.SUB.received);
+    const yaml = root.find(f => /^mission.*\.ya?ml$/i.test(f.name)), md = root.find(f => /\.md$/i.test(f.name));
+    const btn = (k, label, icon) => `<button type="button" class="secondary" data-f="${k}" data-icon="${icon}">${esc(label)}</button>`;
+    host.innerHTML = `<p class="row">${yaml ? btn('yaml', `YAML — ${yaml.name}`, 'file-text') : ''}${md ? btn('md', t(['Markdown (lisible)', 'Markdown (readable)']), 'book') : ''}${btn('pdf', t(['PDF (générateur)', 'PDF (generator)']), 'file')}${btn('edit', t(['Modifier (générateur)', 'Edit (generator)']), 'edit')}${btn('studio', t(['Cartes (studio)', 'Maps (studio)']), 'map')}</p>
+      <p>${esc(t(['Dossier', 'Folder']))} : <code>data/missions/${esc(mh.folder)}/</code>${m.receivedAt ? ` · ${esc(t(['reçue le', 'received']))} ${esc(fmtDate(m.receivedAt))}` : ''}${m.modifiedAt ? ` · ${esc(t(['modifiée le', 'modified']))} ${esc(fmtDate(m.modifiedAt))}` : ''}</p>
+      <div class="rg-thumbs">${maps.length ? '' : `<span>${esc(m.mapsWanted ? t(['Aucune carte générée : ouvrir le studio (les définitions de cartes du YAML suffisent à les régénérer).', 'No map generated yet: open the studio.']) : t(['Pas de carte prévue.', 'No map planned.']))}</span>`}</div>
+      ${vers.length ? `<p><b>${esc(t(['Versions précédentes', 'Previous versions']))}</b> : ${vers.map((f, i) => `<a href="#" data-v="${i}">${esc(f.name.replace(/^mission.*?_/, '').replace(/\.ya?ml$/, ''))}</a>`).join(' · ')}</p>` : ''}
+      ${recu.length ? `<p><b>${esc(t(['Textes reçus', 'Received texts']))}</b> : ${recu.map((f, i) => `<a href="#" data-r="${i}">${esc(f.name)}</a>`).join(' · ')}</p>` : ''}`;
+    const thumbs = host.querySelector('.rg-thumbs');
+    for (const f of maps) { const u = URL.createObjectURL(await f.h.getFile()), fig = document.createElement('figure'); fig.innerHTML = `<img src="${u}" alt=""><figcaption>${esc(f.name)}</figcaption>`; fig.querySelector('img').onclick = () => view(f.name, `<img src="${u}" alt="">`); thumbs.append(fig); }
+    const text = async f => (await f.h.getFile()).text();
+    host.querySelectorAll('[data-f]').forEach(b => b.onclick = async () => {
+      const k = b.dataset.f;
+      if (k === 'yaml') return view(yaml.name, `<pre>${esc(await text(yaml))}</pre>`);
+      if (k === 'md') return view(md.name, mdHtml(await text(md)));
+      if (k === 'pdf') { try { sessionStorage.setItem('siaAutoPdf:v1', '1'); } catch { /* */ } return go(m, 'editor'); }
+      return go(m, k === 'studio' ? 'studio' : 'editor');
+    });
+    host.querySelectorAll('[data-v]').forEach(a => a.onclick = async e => {
+      e.preventDefault(); const f = vers[+a.dataset.v], old = window.jsyaml.load((await text(f)).replace(/^#.*\n/, '')) || {}, cur = yaml ? window.jsyaml.load((await text(yaml)).replace(/^#.*\n/, '')) || {} : {};
+      const d = C.diffOf(old, cur);
+      view(f.name, `<p><b>${esc(t(['Différences avec la version actuelle', 'Differences with the current version']))}</b> : ${esc(d.join(', ') || t(['aucune', 'none']))}</p><pre>${esc(await text(f))}</pre>`);
+    });
+    host.querySelectorAll('[data-r]').forEach(a => a.onclick = async e => { e.preventDefault(); const f = recu[+a.dataset.r]; view(f.name, `<pre>${esc(await text(f))}</pre>`); });
     window.AppFramework?.refresh?.();
   }
   /** Ouvre la mission : générateur / studio (mission partagée), CR (passerelle ?from=sia), prompt de commande. */
@@ -421,7 +570,7 @@
       if (where === 'prompt') { await sendPrompt(m.request); return; }
       select(keyOf(m));
       // lien « ← Registre » du générateur et du studio (même onglet) : SiaMission.mountNav
-      try { sessionStorage.setItem('siaFromRegistry:v1', JSON.stringify({ id: m.id, title: m.title })); } catch { /* stockage indisponible */ }
+      try { sessionStorage.setItem('siaFromRegistry:v1', JSON.stringify({ id: m.id, title: m.title, folder: m.folder, type: m.type })); } catch { /* stockage indisponible */ }
       const dir = await missionsDir(true);
       if (!dir) throw new Error(t(['dossier des missions non autorisé', 'missions folder not authorised']));
       let h = dir;

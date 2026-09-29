@@ -232,6 +232,28 @@ return_options:                # 0 à 3 retours possibles AUTRES que destination
     condition: "patient instable : centre de traumatologie"
     time_on_task_min: 10       # poser, dépose du patient
     then_base: true            # false si l'appareil y termine la mission
+tracks:                        # FACULTATIF : pistes d'exercice (plots, trafics simulés à reconnaître, intercepter,
+                               # escorter…) — ISR, COMMAND, SOF, LE, MARITIME… ; points réels, coordonnées vérifiables
+  - id: TRACK-401
+    name: "TRACK 401"
+    nature: "trafic léger non coopératif"
+    points:                    # route de la piste, dans l'ordre (2 points au moins)
+      - { name: "Rosnay", lat: 46.701667, lon: 1.215278 }
+      - { name: "Mézières-en-Brenne", lat: 46.821667, lon: 1.211389 }
+    level: "3 500–5 000 ft"
+    speed_kt: 120
+    task: "type général, cap, comportement, identification électronique"
+injects:                       # FACULTATIF : déroulé de l'exercice — ce qui est donné à l'équipage en cours de mission
+  - id: INJ-1
+    at: RDV-2                  # id d'un point du fichier (passage de l'équipage), ou « H+10 » (minutes après le décollage)
+    delay_min: 0               # minutes après le passage au point
+    kind: info                 # info : information transmise au moment indiqué (radio, liaison de données) ;
+                               # pli : pli scellé que l'équipage ouvre au moment indiqué
+    from: CYRANO01             # émetteur (contrôleur, AWACS, CODIS, directeur d'exercice…)
+    title: "Pistes à reconnaître"
+    text: |-
+      Ce qui est transmis ou ce que contient le pli (2 à 6 phrases), valeurs utiles comprises.
+    tracks: [TRACK-401]        # pistes révélées par cet inject (ids de tracks)
 phases:                        # FACULTATIF (0 à 3) : briefs successifs prévus par le scénariste — la situation évolue
                                # en cours de route ; le brief initial est la partie A (le reste du fichier), les
                                # parties B, C… sont remises à l'équipage au moment indiqué (« pli » à ouvrir)
@@ -486,6 +508,17 @@ Contraintes :
 
 - `general41.png` — <description>
 
+## Déroulé de l'exercice
+
+- **<injects[].id> — <at> (+<delay_min> min)** — <info | pli> — <from> : <title> — pistes <tracks>
+  <text>
+
+| Piste | Nature | Points | Niveau | Vitesse | À établir |
+|---|---|---|---|---:|---|
+| <name> | <nature> | <points : nom lat, lon → …> | <level> | <speed_kt> | <task> |
+
+(section présente seulement s'il y a des injects ou des pistes)
+
 ## Partie B — <phases[].title>
 
 À ouvrir : <phases[].trigger>
@@ -517,6 +550,8 @@ liste des corrections faites :
       exact) dans la mission de son équipe — aucun remplacement
   [ ] aéronefs : désignateur du § 6 en tête du type (sauf aéronef imposé : son désignateur) ; aéronef capable de la mission
   [ ] tous les id cités (centre_ref, route, route_order, participants) existent
+  [ ] tracks / injects (s'il y en a) : points réels, niveaux et vitesses cohérents avec la nature ; chaque inject a un
+      moment (id existant ou H+n), une forme (info / pli), un texte ; toute piste est révélée par un inject
   [ ] phases (s'il y en a) : trigger_point existant, délai réaliste, message, brief, route_order reprise à trigger_point ;
       route_order de la mission = partie A ; timing = mission complète prévue (parties comprises) ;
       une section « ## Partie X » par partie
