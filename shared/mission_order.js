@@ -1,13 +1,13 @@
 (() => {
   'use strict';
   // Composant « MissionOrder » : commande d'une mission à générer avec ChatGPT — bloc commun au registre des missions
-  // (shared/mission_registry.js, bloc « Commander une mission ») et au générateur de brief (apps/sia/mission_editor.html,
+  // (shared/mission_registry.js, bloc « Commander une mission ») et au générateur de brief (apps/cpco/mission_editor.html,
   // « Créer une mission avec ChatGPT ») : mêmes paramètres, même prompt, mêmes réglages mémorisés.
   //
   //   · paramètres : type, sous-type (§ 2 du prompt), théâtre(s), série (vide = la suivante), identifiant calculé
   //     (SiaMission.nextNumbering), équipes DEFA en vol et aéronef de chaque équipe (A, B, C… ; vide = automatique ;
   //     complétion par les types courants et la flotte DEFA), rendez-vous, équipes au sol, ravitaillement en vol ;
-  //   · prompt : window.MISSION_PROMPT (apps/sia/mission_prompt.js, construit depuis docs/PROMPT_GENERATEUR_MISSIONS.md
+  //   · prompt : window.MISSION_PROMPT (apps/cpco/mission_prompt.js, construit depuis docs/PROMPT_GENERATEUR_MISSIONS.md
   //     par tools/build_mission_prompt.py), paramètres réglés en tête, copié puis ChatGPT ouvert dans un nouvel onglet ;
   //   · la commande est inscrite au registre (statut « commandée », missionRegistry:v1) puis rapprochée de la mission
   //     générée à la relecture du dossier (même série) ;

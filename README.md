@@ -20,7 +20,7 @@ browser.
 | **CR DEFA** (Mission Report Core) | `apps/cr/` — ☰ › Reporting missions, new report, settings | Mission reports for 15 families, single ledger, reporting and charts, fleet and callsign databases, report sending | [Tutorial](docs/TUTORIAL.md) · [Operations manual](docs/MANUEL_EXPLOITATION.md) · [Design notes](docs/mission_report_core_audit.md) |
 | **Landing Performance Dashboard** | `apps/landing/ LandingPerformance_Dashboard_MultiCSV_i18n.html` | Landing analysis (score, FPM, G) from CSV / LOG journals, trends, filters | [docs/LANDING_DASHBOARD.md](docs/LANDING_DASHBOARD.md) · [aircraft database updater](apps/landing/README.md) |
 | **Flight Performance & Fuel Planner** | `apps/planner/flight_performance_planner.html` | Aircraft performance profiles, fuel quote, optimum altitude, SimBrief calibration, Little Navmap exchange | [docs/FLIGHT_PLANNER.md](docs/FLIGHT_PLANNER.md) |
-| **SIA missions** | `apps/sia/` — ☰ › Générateur de mission (SIA), Studio cartographique (SIA) | Mission brief (texts, points, final PDF) and PNG / SVG maps from SIA AIRAC data: airspaces, MORA, graticule, air-to-air refuelling tracks, OSM base maps; opens a pre-filled CR DEFA report | [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md) |
+| **SIA missions** | `apps/cpco/` — ☰ › Centre — Générateur de mission, Centre — Studio cartographique | Mission brief (texts, points, final PDF) and PNG / SVG maps from SIA AIRAC data: airspaces, MORA, graticule, air-to-air refuelling tracks, OSM base maps; opens a pre-filled CR DEFA report | [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md) |
 | **Shared framework** | `repository_tree`, `shared/`, `AircraftDB/`, `tools/` | Header and ☰ menu, languages, blocks, period and zoom (TimePeriod), charts, tables, pilot profile, local data, aircraft databases | [docs/FRAMEWORK.md](docs/FRAMEWORK.md) |
 
 The applications talk through the framework: same pilot profile (IVAO, VATSIM,
@@ -80,7 +80,7 @@ Highlights:
 
 ### SIA missions — mission generator and map studio
 
-Folder `apps/sia/`; details (French): [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md).
+Folder `apps/cpco/`; details (French): [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md).
 
 - **Mission generator (brief)**: YAML (`helo-xp-mission`) or Markdown import, texts proposed
   from the data when missing (points, rendezvous, instructions, refuelling track), YAML /
@@ -164,6 +164,6 @@ Terrarium terrain (AWS) and Overpass API (peaks). Mission data stay in your brow
 
 CC RBR — DEFA Virtual. Bundled third-party code: js-yaml 4.1.0 (MIT,
 `shared/mission_core/vendor/`); MapLibre GL JS (BSD-3-Clause) and jsPDF (MIT) in
-`apps/sia/`. World aerodrome data: github.com/mwgg/Airports (MIT), loaded on demand.
+`apps/cpco/`. World aerodrome data: github.com/mwgg/Airports (MIT), loaded on demand.
 Aeronautical data: SIA (AIP France, AIXM 4.5) and DIRCAM (MILAIP ENR 5.7); cities: GeoNames
 (CC BY 4.0); maps © OpenStreetMap contributors, OpenTopoMap (CC-BY-SA).

@@ -174,8 +174,8 @@ Générée par `side_nav.js` à partir de `repository_tree` — une seule source
 ```js
 // repository_tree (proposition)
 sidebar:[
-  {icon:"target",   path:"apps/sia/mission_editor.html", label:["Missions","Missions","Missionen","Misiones"]},
-  {icon:"map",      path:"apps/sia/map_parser.html",     label:["Cartes","Maps","Karten","Mapas"]},
+  {icon:"target",   path:"apps/cpco/mission_editor.html", label:["Missions","Missions","Missionen","Misiones"]},
+  {icon:"map",      path:"apps/cpco/map_parser.html",     label:["Cartes","Maps","Karten","Mapas"]},
   {icon:"clipboard",path:"apps/cr/mission_cr.html", match:"apps/cr/", label:["CR DEFA", …]},
   {icon:"chart",    path:"apps/cr/mission_operations_reporting.html", match:"_reporting.html", label:[…]},
   {icon:"fuel",     path:"apps/planner/flight_performance_planner.html", label:[…]},
@@ -287,7 +287,7 @@ rapports pour chaque thème à chaque modification de `repository_tree`.
 
 | Page | Structure actuelle | Travail | Risque |
 |---|---|---|---|
-| Générateur (`apps/sia/mission_editor.html`) | 6 `section`, titres numérotés, `.pasteBox`, `<input type=file>` dans des `<label>` | `data-step/icon/subtitle`, `.repo-card` pour les sous-blocs, `data-dropzone`, icônes des boutons ; lignes `sia_i18n.js` | **session parallèle en cours sur ce fichier** : attendre sa fin |
+| Générateur (`apps/cpco/mission_editor.html`) | 6 `section`, titres numérotés, `.pasteBox`, `<input type=file>` dans des `<label>` | `data-step/icon/subtitle`, `.repo-card` pour les sous-blocs, `data-dropzone`, icônes des boutons ; lignes `sia_i18n.js` | **session parallèle en cours sur ce fichier** : attendre sa fin |
 | Studio (`map_parser.html`) | 5 `section`, colonne d'aperçu collante (`StickyFrame.stick`) | idem ; `StickyFrame.refresh()` après décor (hauteur d'en-tête modifiée) | idem (session parallèle) |
 | CR DEFA (Mission Core, 16 familles + démo) | blocs générés par `form.js` depuis `blocks.js`, `core.css`, outils d'en-tête en `summary` | `icon`/`subtitle` dans `blocks.js`, 10 lignes dans `form.js` | faible ; vérifier l'impression (`core.css` masque déjà `.repo-block-heading` du rapport) |
 | Reportings (général, familles, HEMS/GAAR anciens) | `section.section` + `h2` avec `.mcg-sub` | icônes par section, `.mcg-sub` → sous-titre | faible |

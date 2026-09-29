@@ -51,7 +51,7 @@
     sia: ['Missions SIA (générateur, studio)', 'SIA missions (generator, studio)', 'SIA-Missionen (Generator, Studio)', 'Misiones SIA (generador, estudio)'],
     core: ['CR DEFA (pages communes)', 'DEFA reports (common pages)', 'DEFA-Berichte (gemeinsame Seiten)', 'Informes DEFA (páginas comunes)']
   };
-  const APPS = ['flight', 'landing', 'sia', 'core'];
+  const APPS = ['flight', 'landing', 'cpco', 'core'];
   const nav = () => window.RepositoryNav, AP = () => nav().appearance;
   const li = () => Math.max(0, LANGS.indexOf(nav()?.getLanguage?.() || 'fr'));
   const typo = s => window.RepositoryContentI18n?.typography?.(s, LANGS[li()]) ?? s;

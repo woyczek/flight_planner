@@ -507,7 +507,7 @@
       if (from) {
         const back = document.createElement('a');
         back.id = 'siaBackRegistry'; back.className = 'sia-back';
-        back.href = new URL(`apps/sia/mission_registry.html${from.id ? `?mission=${encodeURIComponent(from.id)}` : ''}`, window.RepositoryNav?.root || new URL('../../', location.href).href).href;
+        back.href = new URL(`apps/cpco/mission_registry.html${from.id ? `?mission=${encodeURIComponent(from.id)}` : ''}`, window.RepositoryNav?.root || new URL('../../', location.href).href).href;
         back.textContent = `← Registre${from.id ? ` (${from.id})` : ''}`;
         back.title = `Retour au registre des missions${from.title ? ` : ${from.id} — ${from.title}` : ''}`;
         nav.before(back);

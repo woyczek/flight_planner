@@ -1,4 +1,4 @@
-/* SiaBase — base SIA analysée, commune au studio cartographique (apps/sia/map_parser.html) et à
+/* SiaBase — base SIA analysée, commune au studio cartographique (apps/cpco/map_parser.html) et à
  * Paramètres › Maintenance › Mise à jour SIA. Un seul code pour :
  *   - la lecture du dossier SIA (data/sia) : cycle AIRAC le plus récent, AIXM 4.5 (espaces R/D/P/CTR/TMA…, aérodromes,
  *     balises, obstacles), XML_SIA (contours de tous les autres espaces), villes, fond de carte, mora.csv, axes ENR 5.7 ;
@@ -8,7 +8,7 @@
  *     nouveau cycle, relief du mora.csv existant), notation « 3⁵ », CSV ;
  *   - le bloc d'interface « Base de données SIA » (dossier, relire, purger, messages, inventaire), monté à l'identique
  *     dans les deux pages : SiaBase.panel(host, { onLoaded }).
- * Dépendances facultatives : window.SiaAero.parseAixm (apps/sia/aero_symbols.js : aérodromes, balises) ; window.FileAccess
+ * Dépendances facultatives : window.SiaAero.parseAixm (shared/carto/aero_symbols.js : aérodromes, balises) ; window.FileAccess
  * (dossiers mémorisés) ; window.Airac (cycles). Valeurs MORA calculées, non certifiées.
  */
 (() => {
@@ -16,7 +16,7 @@
   /** Version du format de la base mémorisée : une base d'une autre version est ignorée (à relire). */
   const VERSION = 14;   // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways)
   const SCRIPT_URL = document.currentScript?.src || location.href;
-  /** URL d'un fichier de l'application (chemin depuis la racine : « apps/sia/assets/… »). */
+  /** URL d'un fichier de l'application (chemin depuis la racine : « shared/carto/… »). */
   const appUrl = path => new URL('../' + path, SCRIPT_URL).href;
 
   // ===================================================================== cache IndexedDB
@@ -476,13 +476,13 @@
   const mb = n => (n / 1048576).toFixed(1).replace('.', ',') + ' Mo';
   /** Fichiers (File) d'un dossier autorisé, sans les sous-dossiers. */
   async function filesOf(dir) { const out = []; for await (const h of dir.values()) if (h.kind === 'file') try { out.push(await h.getFile()); } catch { /* verrouillé */ } return out; }
-  /** Fichier livré avec l'application (apps/sia/assets/) : fetch (page servie en http), sinon dossier de l'application
+  /** Fichier livré avec l'application (shared/carto/) : fetch (page servie en http), sinon dossier de l'application
    *  mémorisé (__repo) s'il est déjà autorisé — jamais d'invite en pleine lecture (en file://, fetch est refusé). */
   async function appAsset(name) {
-    try { const r = await fetch(appUrl('apps/sia/assets/' + encodeURIComponent(name))); if (r.ok) return new File([await r.blob()], name); } catch { /* file:// */ }
+    try { const r = await fetch(appUrl('shared/carto/' + encodeURIComponent(name))); if (r.ok) return new File([await r.blob()], name); } catch { /* file:// */ }
     try {
       const st = await window.FileAccess?.status?.('__repo');
-      if (st?.handle && st.permission === 'granted') { let d = st.handle; for (const part of ['apps', 'sia', 'assets']) d = await d.getDirectoryHandle(part); return await (await d.getFileHandle(name)).getFile(); }
+      if (st?.handle && st.permission === 'granted') { let d = st.handle; for (const part of ['shared', 'carto']) d = await d.getDirectoryHandle(part); return await (await d.getFileHandle(name)).getFile(); }
     } catch { /* absent */ }
     return null;
   }
@@ -605,7 +605,7 @@
   function reportHtml(base, r) {
     const warn = [];
     if (r.skipped.length) warn.push(L([`Autre(s) cycle(s) écarté(s) : ${r.skipped.join(', ')} — à archiver (Paramètres › Maintenance).`, `Other cycle(s) skipped: ${r.skipped.join(', ')} — archive them.`]));
-    if (r.noCities) warn.push(L(['villes_geonames.csv introuvable (apps/sia/assets/) : noms de villes indisponibles.', 'villes_geonames.csv not found: no city names.']));
+    if (r.noCities) warn.push(L(['villes_geonames.csv introuvable (shared/carto/) : noms de villes indisponibles.', 'villes_geonames.csv not found: no city names.']));
     return `<span class="ok">✓ ${esc(L(['Base chargée et mémorisée', 'Base loaded and stored', 'Basis geladen und gespeichert', 'Base cargada y guardada']))}${r.airac ? ` (AIRAC ${esc(r.airac)})` : ''} : ${r.xmlCount} XML, ${base.airspaces.length} ${esc(L(['espaces', 'airspaces']))}, ${(base.aero?.aerodromes || []).length} ${esc(L(['aérodromes', 'aerodromes']))}, ${Object.keys(base.obstacleMax || {}).length} ${esc(L(['cellules d’obstacles', 'obstacle cells']))}, ${base.cities.length} ${esc(L(['villes', 'cities']))}.</span>${warn.map(w => `<br><span class="err">${esc(w)}</span>`).join('')}`;
   }
   /** Bloc « Base de données SIA » : dossier (bouton FileAccess), Relire, Purger, état, compte rendu, fichiers analysés.

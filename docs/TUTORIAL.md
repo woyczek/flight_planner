@@ -318,9 +318,9 @@ rien n'est obligatoire ; ce qui est saisi dans une fiche reste dans le navigateu
 Exemple : `examples/missions/Mission 02.md` (ravitaillement en vol sur l'axe SIMONE). Détail :
 [SIA_MISSIONS.md](SIA_MISSIONS.md).
 
-1. **Données** (une fois par cycle AIRAC) : ☰ › Studio cartographique (SIA) › bloc 1 ›
-   « Dossier SIA XML » → choisir `apps/sia/` (voir [INSTALL.md](../INSTALL.md)).
-2. **Brief** : ☰ › Générateur de mission (SIA) › « YAML et/ou Markdown » → `Mission 02.md`.
+1. **Données** (une fois par cycle AIRAC) : ☰ › Centre — Studio cartographique › bloc 1 ›
+   « Dossier SIA XML » → choisir `apps/cpco/` (voir [INSTALL.md](../INSTALL.md)).
+2. **Brief** : ☰ › Centre — Générateur de mission › « YAML et/ou Markdown » → `Mission 02.md`.
    Le fichier n'a ni résumé ni description : ils sont **proposés** (type, cible, zone,
    participants MISTRAL 41/42 et VAILLANT 31, axe SIMONE 010°, 48 NM, 14 NM, virages par la
    gauche, points, rendez-vous, consignes) — relire et compléter.

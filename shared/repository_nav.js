@@ -148,7 +148,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260929z", script.src).href;
+    css.href = new URL("designs.css?v=20260929za", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -488,9 +488,9 @@
   // Entrées : REPOSITORY_TREE.sidebar si présent, sinon la liste ci-dessous ; seules les pages déclarées sont retenues.
   {
     const items = cfg.sidebar || [
-      { icon: "target", path: "apps/sia/mission_editor.html", label: ["Missions", "Missions", "Missionen", "Misiones"] },
-      { icon: "list", path: "apps/sia/mission_registry.html", label: ["Registre", "Registry", "Register", "Registro"], title: ["Registre des missions générées", "Generated mission registry", "Register der erzeugten Missionen", "Registro de misiones generadas"] },
-      { icon: "map", path: "apps/sia/map_parser.html", label: ["Cartes", "Maps", "Karten", "Mapas"] },
+      { icon: "target", path: "apps/cpco/mission_editor.html", label: ["Missions", "Missions", "Missionen", "Misiones"] },
+      { icon: "list", path: "apps/cpco/mission_registry.html", label: ["Registre", "Registry", "Register", "Registro"], title: ["Registre des missions générées", "Generated mission registry", "Register der erzeugten Missionen", "Registro de misiones generadas"] },
+      { icon: "map", path: "apps/cpco/map_parser.html", label: ["Cartes", "Maps", "Karten", "Mapas"] },
       { icon: "clipboard", path: "apps/cr/mission_cr.html", match: "apps/cr/", label: ["CR DEFA", "DEFA report", "DEFA-Bericht", "Informe DEFA"] },
       { icon: "chart", path: "apps/cr/mission_operations_reporting.html", match: "_reporting.html", label: ["Reporting", "Reporting", "Berichte", "Informes"] },
       { icon: "fuel", path: "apps/planner/flight_performance_planner.html", label: ["Carburant", "Fuel", "Kraftstoff", "Combustible"] },
@@ -558,23 +558,23 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260929z", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260929za", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260929z", script.src).href;
+    files.src = new URL("file_access.js?v=20260929za", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260929z", "block_icons.js?v=20260929z", "side_nav.js?v=20260929z"]) {
+    for (const f of ["icons/repository_icons.js?v=20260929za", "block_icons.js?v=20260929za", "side_nav.js?v=20260929za"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260929z", script.src).href;
+    store.src = new URL("browser_store.js?v=20260929za", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=20260929z", script.src).href;
+    update.src = new URL("suite_update.js?v=20260929za", script.src).href;
     document.head.append(update)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

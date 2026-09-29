@@ -902,7 +902,7 @@
       box.hidden = !id;
       if (!id) { box.textContent = ''; return; }
       const flights = ledger.missions.filter(x => window.MissionVocab.parseCrId(x.metadata?.missionId)?.mission === id).length;
-      const url = new URL(`apps/sia/mission_registry.html?mission=${encodeURIComponent(id)}`, window.RepositoryNav?.root || location.href).href;
+      const url = new URL(`apps/cpco/mission_registry.html?mission=${encodeURIComponent(id)}`, window.RepositoryNav?.root || location.href).href;
       // durée estimée de la mission (registre des missions, shared/mission_estimate.js) et écart avec ce vol
       let est = null;
       try { est = (JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions || []).find(x => x.id === id)?.estimate || null; } catch { /* registre illisible */ }

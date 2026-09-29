@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  // Registre des missions générées (apps/sia/mission_registry.html) : inventaire des séries du dossier « Missions »
+  // Registre des missions générées (apps/cpco/mission_registry.html) : inventaire des séries du dossier « Missions »
   // (missionNN.yaml, summaryNN.md, schéma helo-xp-mission) et des missions commandées, avec choix par type, sous-type,
   // rendez-vous, nombre et types d'équipes, ravitaillement, théâtre, statut ; tirage au sort ; ouverture dans le
   // générateur, le studio ou un nouveau CR ; commande d'une nouvelle mission (prompt ChatGPT réglé).
@@ -58,7 +58,7 @@
   async function writeFile(request = false) {
     const dir = await missionsDir(request);
     if (!dir || !window.jsyaml) return false;
-    const text = `# Registre des missions générées — XPlane Web Suite (apps/sia/mission_registry.html)\n# ${reg.updatedAt}\n` + window.jsyaml.dump(reg, { lineWidth: -1, noRefs: true });
+    const text = `# Registre des missions générées — XPlane Web Suite (apps/cpco/mission_registry.html)\n# ${reg.updatedAt}\n` + window.jsyaml.dump(reg, { lineWidth: -1, noRefs: true });
     const w = await (await dir.getFileHandle(FILE, { create: true })).createWritable();
     await w.write(text);
     await w.close();
@@ -728,7 +728,7 @@
       window.SiaMission.importTexts(files, 'registry');
       const b = window.SiaMission.loadBatch(), i = b ? b.docs.findIndex(d => String(d.yaml?.mission?.id || '').toUpperCase() === String(m.id).toUpperCase()) : -1;
       if (i >= 0) window.SiaMission.go(i, 'registry');
-      location.href = new URL(where === 'studio' ? 'apps/sia/map_parser.html' : 'apps/sia/mission_editor.html', window.RepositoryNav.root).href;
+      location.href = new URL(where === 'studio' ? 'apps/cpco/map_parser.html' : 'apps/cpco/mission_editor.html', window.RepositoryNav.root).href;
     } catch (e) { if (window.AppFramework?.notify) window.AppFramework.notify(e.message, 'err'); else if (out) out.textContent = e.message; }
   }
   /** Ouvre la mission : générateur / studio (mission partagée), CR (passerelle ?from=sia), prompt de commande. */
@@ -754,7 +754,7 @@
       }
       window.SiaMission.importTexts(files, 'registry');
       if (m.status === 'generated') { m.status = 'planned'; m.statusAt = new Date().toISOString(); persist(); }
-      location.href = new URL(where === 'studio' ? 'apps/sia/map_parser.html' : 'apps/sia/mission_editor.html', window.RepositoryNav.root).href;
+      location.href = new URL(where === 'studio' ? 'apps/cpco/map_parser.html' : 'apps/cpco/mission_editor.html', window.RepositoryNav.root).href;
     } catch (e) { if (window.AppFramework?.notify) window.AppFramework.notify(e.message, 'err'); else if (out) out.textContent = e.message; }
   }
 

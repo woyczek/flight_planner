@@ -222,7 +222,7 @@
   // CRM-016-1, CRM-016-2, CRS-002A-1.
   // CR sans mission (vol libre) : « CR » + lettre de la famille + « - » + lettre de série et 2 chiffres + « -0 » :
   // CRM-A01-0 … CRM-A99-0, puis CRM-B01-0 ; numérotation à part (lettre avant les chiffres), sans prendre de numéro
-  // aux missions. Même table de lettres que SiaMission.FAMILY_LETTERS (apps/sia/mission_store.js) et
+  // aux missions. Même table de lettres que SiaMission.FAMILY_LETTERS (apps/cpco/mission_store.js) et
   // tools/family_letters.py ; même règle que tools/renumber_reports.py.
   const familyLetters = { HEMS: 'M', MEDEVAC: 'M', HADR: 'H', FIRE: 'F', SAR: 'S', AIRLIFT: 'T', AAR: 'R', AIRBORNE: 'P', MARITIME: 'N', ISR: 'I', LE: 'L', COMMAND: 'C', SOF: 'O', FI: 'V', SURVEY: 'G', SPECIAL: 'X', DEMO: 'D' };
   const MISSION_ID = /^([A-Z])-?(\d{1,3})([A-Z]?)$/, CR_ID = /^CR([A-Z])-(\d{3})([A-Z]?)-(\d+)$/, CR_FREE = /^CR([A-Z])-([A-Z])(\d{2})-(\d+)$/;
