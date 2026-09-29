@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Planning ODV</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=20260929zu">
-<script src="../../repository_tree?v=20260929zu"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=20260929zv">
+<script src="../../repository_tree?v=20260929zv"></script>
 <style>
 /* Couleurs : sombres par défaut (thème du planificateur), claires si le ton de la page est clair (Apparence). */
 :root{font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;color-scheme:dark;--text:#eef3f7;--muted:#9ba8b5;--panel:#181d23;--field:#11161c;--line:#2b3440;--soft:#ffffff0d;--card:var(--panel);--ink:var(--text)}
@@ -54,6 +54,12 @@ main.odv-page h2{font-size:15px;margin:0 0 10px}main.odv-page h3{font-size:13px;
 .odv-pick-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}.odv-pick-table th,.odv-pick-table td{padding:4px 6px;border-top:1px solid var(--line,#dde5ea);text-align:left;vertical-align:top}
 .odv-pick-table tr.bad td{opacity:.55;background:#e5484d12}.odv-pick-table tr.warn td:nth-child(9){color:#9a6b00}.odv-pick-btn{font-size:12px;padding:3px 9px}
 .cpco-eyebrow{display:block;margin:0 0 2px;line-height:1.2;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:inherit;opacity:.78}
+/* Durci (panneau olive sombre) : cases de la carte des créneaux en « champ noir », textes secondaires éclaircis */
+html[data-design="field"]{--muted:#c3c8b2}
+html[data-design="field"] .odv-heat button{background:color-mix(in srgb,#8fa04a var(--pct,0%),#15180f);color:#e9ecdf;border:1px solid #0b0d08;box-shadow:inset 0 1px 3px #000}
+html[data-design="field"] .odv-heat button small{color:#e9ecdf;opacity:.85}
+html[data-design="field"] .odv-heat>.h,html[data-design="field"] .odv-heat>.d{color:#e9ecdf}
+html[data-design="field"] .odv-heat button.sel{outline-color:#e9ecdf}
 </style>
 </head>
 <body>
@@ -107,14 +113,14 @@ main.odv-page h2{font-size:15px;margin:0 0 10px}main.odv-page h3{font-size:13px;
   <textarea id="odvRecapText" readonly placeholder="Récapitulatif DISPO MATIN / APREM / SOIR par jour (texte à coller, par exemple dans Discord)."></textarea>
 </section>
 </main>
-<script src="../../shared/repository_nav.js?v=20260929zu"></script>
-<script src="../../shared/zip_store.js?v=20260929zu"></script>
-<script src="../../shared/data_files.js?v=20260929zu" data-file="references/defa_reference.js"></script>
-<script src="../../shared/mission_table.js?v=20260929zu"></script>
-<script src="../../shared/sia_base.js?v=20260929zu"></script><script src="odv_core.js?v=20260929zq"></script>
-<script src="odv_planning.js?v=20260929zq"></script>
-<script src="../../shared/app_framework.js?v=20260929zu"></script>
-<script src="../../shared/content_i18n.js?v=20260929zu"></script>
+<script src="../../shared/repository_nav.js?v=20260929zv"></script>
+<script src="../../shared/zip_store.js?v=20260929zv"></script>
+<script src="../../shared/data_files.js?v=20260929zv" data-file="references/defa_reference.js"></script>
+<script src="../../shared/mission_table.js?v=20260929zv"></script>
+<script src="../../shared/sia_base.js?v=20260929zv"></script><script src="odv_core.js?v=20260929zv"></script>
+<script src="odv_planning.js?v=20260929zv"></script>
+<script src="../../shared/app_framework.js?v=20260929zv"></script>
+<script src="../../shared/content_i18n.js?v=20260929zv"></script>
 <script>
 // Traductions des textes fixes de la page (les contenus calculés restent en français, zones data-no-i18n).
 RepositoryContentI18n([

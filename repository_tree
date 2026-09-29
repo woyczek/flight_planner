@@ -177,4 +177,4 @@ window.REPOSITORY_TREE={
 // Préférences d'affichage posées dès l'en-tête (ce fichier est chargé dans le <head> de chaque page) : barre latérale et
 // design sur <html>, pour que la marge du contenu et le design paraissent avant les scripts de calcul de la page ;
 // shared/repository_nav.js les revalide ensuite (design inconnu : défaut) et construit la barre.
-(function(){try{var d=document.documentElement,s=localStorage.getItem("repositorySidenav"),g=localStorage.getItem("repositoryDesign");if(s)d.dataset.sidenav=s;d.dataset.cpco=localStorage.getItem("cpcoAccess:v1")==="on"?"on":"off";if(g&&window.REPOSITORY_TREE.designs&&window.REPOSITORY_TREE.designs.list&&window.REPOSITORY_TREE.designs.list[g])d.dataset.design=g}catch(e){}})();
+(function(){try{var d=document.documentElement,s=localStorage.getItem("repositorySidenav"),g=localStorage.getItem("repositoryDesign");if(s!=="auto")d.dataset.sidenav=s||"on";d.dataset.cpco=localStorage.getItem("cpcoAccess:v1")==="on"?"on":"off";if(g&&window.REPOSITORY_TREE.designs&&window.REPOSITORY_TREE.designs.list&&window.REPOSITORY_TREE.designs.list[g])d.dataset.design=g}catch(e){}})();

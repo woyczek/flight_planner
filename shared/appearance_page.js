@@ -241,7 +241,7 @@ main.ap-page .ap-pill.ok{background:#e3f4e8!important;color:#14532d!important;bo
         location.href = new URL('docs/demo_design_icones.html', nav().root).href;
       } else if (b.id === 'apReset') {
         Object.keys(a.current().colors).forEach(n => a.setColor(n, null));
-        a.setIcons(null); a.setSidenav(null); a.setDecor(null); a.setAqua?.(null); a.setChart?.('style', null); a.setChart?.('palette', null); a.setDesign(window.REPOSITORY_TREE.designs?.default || 'standard');
+        a.setIcons(null); a.setSidenav('default'); a.setDecor(null); a.setAqua?.(null); a.setChart?.('style', null); a.setChart?.('palette', null); a.setDesign(window.REPOSITORY_TREE.designs?.default || 'standard');
         previewTheme = null; nav().setTheme(nav().settings.theme); render();
       }
     });

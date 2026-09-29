@@ -177,7 +177,7 @@
   }
   applyTheme(themeName);
   // barre latérale (on / off), posée dès le chargement ; jeu d'icônes : après le design (défaut propre au design)
-  { const sn = readPref("repositorySidenav", null); if (sn) doc.dataset.sidenav = sn; }
+  { const sn = readPref("repositorySidenav", null); if (sn === "auto") delete doc.dataset.sidenav; else doc.dataset.sidenav = sn || "on"; }   // barre latérale affichée par défaut ; « auto » : selon le design
   // Design graphique (REPOSITORY_TREE.designs, règles dans designs.css) : choix mémorisé (repositoryDesign),
   // posé dès le chargement sur <html data-design> pour éviter un changement visible.
   const designs = cfg.designs?.list || {
@@ -197,7 +197,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260929zu", script.src).href;
+    css.href = new URL("designs.css?v=20260929zv", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -314,7 +314,9 @@
     return r ? (r[["fr", "en", "de", "es"].indexOf(language)] || l) : l
   };
   const groups = new Map(); /* menu:false : page déclarée (thème, réglages) mais absente du menu */
-  cfg.pages.filter(p => p.menu !== false && (cpcoOn() || !isCpco(p.path))).forEach(p => {
+  // pages du Centre toujours construites, masquées tant que le Centre est verrouillé (html[data-cpco="off"] .cpco-only) :
+  // l'activation dans Paramètres les montre aussitôt, sans recharger
+  cfg.pages.filter(p => p.menu !== false).forEach(p => {
     const bits = (p.menu || p.label).split("/"),
       group = bits.length > 1 ? bits.shift() : "Pages",
       label = bits.join("/") || p.label;
@@ -331,13 +333,14 @@
       details.className = "repo-tree-group";
       details.open = pages.some(p => p.path === page?.path);
       details.innerHTML = `<summary>${esc(group)}</summary>`;
+      if (pages.every(p => isCpco(p.path))) details.classList.add("cpco-only");
       menu.append(details);
       host = details
     }
     for (const p of pages) {
       const a = document.createElement("a");
       a.href = new URL(p.path, root).href;
-      a.className = `repo-link ${p.path===page?.path?"active":""} ${group!=="Pages"?"repo-sub":""}`;
+      a.className = `repo-link ${p.path===page?.path?"active":""} ${group!=="Pages"?"repo-sub":""}${isCpco(p.path)?" cpco-only":""}`;
       a.dataset.label = p.navLabel;
       a.textContent = trLabel(p.navLabel);
       host.append(a)
@@ -499,7 +502,8 @@
       /** Jeu d'icônes : "line" (défaut), "fine", "bold", "brass" (laiton), "steel" (acier), "gel", "avio" (avionique), "off" ; null : jeu du design. */
       setIcons(v) { if (!v) { try { localStorage.removeItem("repositoryIcons"); } catch {} doc.dataset.icons = iconsFor(design); window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { icons: doc.dataset.icons } })); return; } doc.dataset.icons = v; try { localStorage.setItem("repositoryIcons", v); } catch {} window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { icons: v } })); },
       /** Barre latérale : true, false, ou null (selon le design). */
-      setSidenav(on) { if (on == null) { delete doc.dataset.sidenav; try { localStorage.removeItem("repositorySidenav"); } catch {} } else { doc.dataset.sidenav = on ? "on" : "off"; try { localStorage.setItem("repositorySidenav", on ? "on" : "off"); } catch {} } },
+      // barre latérale : true / false (toujours / jamais), null (selon le design, mémorisé « auto »), "default" (réglage par défaut : toujours)
+      setSidenav(on) { if (on === "default") { doc.dataset.sidenav = "on"; try { localStorage.removeItem("repositorySidenav"); } catch {} } else if (on == null) { delete doc.dataset.sidenav; try { localStorage.setItem("repositorySidenav", "auto"); } catch {} } else { doc.dataset.sidenav = on ? "on" : "off"; try { localStorage.setItem("repositorySidenav", on ? "on" : "off"); } catch {} } },
       /** Couleurs du thème name : { family, tone } (famille de REPOSITORY_TREE.colorFamilies), ou null pour revenir à repository_tree. */
       setColor(name, v) { const all = readJson("repositoryColors") || {}; v ? all[name] = { family: v.family, tone: +v.tone } : delete all[name]; try { Object.keys(all).length ? localStorage.setItem("repositoryColors", JSON.stringify(all)) : localStorage.removeItem("repositoryColors"); } catch {} if (name === currentTheme) applyTheme(name); window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { colors: name } })); },
       themeColors,
@@ -574,7 +578,8 @@
     items.forEach((it, i) => {
       const li = document.createElement("li");
       if (it.sep) { li.className = "repo-sidenav-sep" + (it.bottom ? " repo-sidenav-bottom" : ""); ul.append(li); return; }
-      if (it.path && (!known.has(it.path) || (isCpco(it.path) && !cpcoOn()))) return;
+      if (it.path && !known.has(it.path)) return;
+      if (isCpco(it.path)) li.classList.add("cpco-only");   // masquée tant que le Centre est verrouillé
       const a = document.createElement(it.menu ? "button" : "a");
       a.className = "repo-sidenav-item" + (isCpco(it.path) ? " repo-sidenav-cpco" : "");
       if (it.menu) { a.type = "button"; a.onclick = e => { e.stopPropagation(); document.querySelector(".repo-menu-button")?.click(); }; }
@@ -610,23 +615,23 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260929zu", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260929zv", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260929zu", script.src).href;
+    files.src = new URL("file_access.js?v=20260929zv", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260929zu", "block_icons.js?v=20260929zu", "side_nav.js?v=20260929zu"]) {
+    for (const f of ["icons/repository_icons.js?v=20260929zv", "block_icons.js?v=20260929zv", "side_nav.js?v=20260929zv"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260929zu", script.src).href;
+    store.src = new URL("browser_store.js?v=20260929zv", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=20260929zu", script.src).href;
+    update.src = new URL("suite_update.js?v=20260929zv", script.src).href;
     document.head.append(update)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {
