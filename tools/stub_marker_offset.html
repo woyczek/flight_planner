@@ -21,12 +21,18 @@
   .route-edit-pt i{width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid #d0021b;box-shadow:0 0 0 2px #fff8}
   .route-edit-pt span{font:700 11px Arial,sans-serif;color:#17202a;text-shadow:0 0 2px #fff,0 0 2px #fff}
   body.nolabel .route-edit-pt span{display:none}
+  /* correction proposée : le marqueur est la pastille seule (12 × 12, centrée) ; l'étiquette est posée à côté, hors de son
+     cadre ; AUCUN « position » sur le marqueur (MapLibre le place en absolu : .maplibregl-marker) */
+  body.fix .route-edit-pt{display:block;width:12px;height:12px}
+  body.fix .route-edit-pt i{display:block;box-sizing:border-box}
+  body.fix .route-edit-pt span{position:absolute;left:16px;top:50%;transform:translateY(-50%);white-space:nowrap}
 </style></head><body>
 <div id="bar">
   <fieldset><legend>X (px)</legend><button data-d="x-5">−5</button><button data-d="x-1">−1</button><output id="ox">0</output><button data-d="x1">+1</button><button data-d="x5">+5</button></fieldset>
   <fieldset><legend>Y (px)</legend><button data-d="y-5">−5</button><button data-d="y-1">−1</button><output id="oy">0</output><button data-d="y1">+1</button><button data-d="y5">+5</button></fieldset>
   <label>Ancre <select id="anchor"><option>center</option><option>left</option><option>top-left</option></select></label>
   <label><input type="checkbox" id="labels" checked> Étiquettes</label>
+  <label title="Marqueur = pastille seule, étiquette hors cadre : doit tomber juste avec l’ancre center et un décalage [0, 0]"><input type="checkbox" id="fix"> Correction (pastille seule)</label>
   <button id="reset">Remise à zéro</button>
   <span id="val"></span>
 </div>
@@ -77,6 +83,7 @@ document.getElementById('bar').addEventListener('click', e => {
 });
 document.getElementById('anchor').onchange = e => { st.anchor = e.target.value; place(); };
 document.getElementById('labels').onchange = e => document.body.classList.toggle('nolabel', !e.target.checked);
+document.getElementById('fix').onchange = e => { document.body.classList.toggle('fix', e.target.checked); if (e.target.checked) { st.x = st.y = 0; st.anchor = 'center'; document.getElementById('anchor').value = 'center'; } place(); };
 document.getElementById('reset').onclick = () => { st.x = st.y = 0; place(); };
 </script>
 </body></html>
