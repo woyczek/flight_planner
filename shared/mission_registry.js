@@ -573,11 +573,9 @@
     /** Markdown produit à la demande depuis le YAML (SiaMission.markdownOf, même code que l'export du générateur) :
      *  affiché, pas écrit — le YAML reste la seule source. */
     async function showGeneratedMd() {
-      const y = window.jsyaml.load((await text(yaml)).replace(/^#.*
-/, '')) || {}, docs = [];
+      const y = window.jsyaml.load((await text(yaml)).replace(/^#.*\n/, '')) || {}, docs = [];
       for (const x of operationMembers(m).filter(x => keyOf(x) !== keyOf(m))) {   // exercice : organisation de l'opération
-        try { const h = await C.missionHandle(x.id, x.type, { folder: x.folder }), f = h && await readText(h.h, `mission${normMissionId(x.id)}.yaml`); if (f) docs.push(window.jsyaml.load(f.replace(/^#.*
-/, ''))); } catch { /* illisible */ }
+        try { const h = await C.missionHandle(x.id, x.type, { folder: x.folder }), f = h && await readText(h.h, `mission${normMissionId(x.id)}.yaml`); if (f) docs.push(window.jsyaml.load(f.replace(/^#.*\n/, ''))); } catch { /* illisible */ }
       }
       view(`summary${normMissionId(m.id)}.md — ${t(['généré depuis le YAML', 'generated from the YAML', 'aus dem YAML erzeugt', 'generado desde el YAML'])}`, mdHtml(window.SiaMission.markdownOf(y, { docs })));
     }
