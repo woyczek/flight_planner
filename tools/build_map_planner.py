@@ -65,6 +65,10 @@ function routePoints(){
  if(pts.length<2){say('Route : au moins un départ et une destination (bloc « Route »).','err');return null}
  return pts;
 }
+// profils choisis à la main dans la liste des cartes (cette page) : gardés d'une création à l'autre ; les autres
+// reprennent le profil par défaut de leur carte (route et approche : IFR ; destination, rendez-vous : VFR détaillé)
+const userProfile=new Map();
+document.addEventListener('change',e=>{const i=e.target?.dataset?.mapProfile;if(i!=null&&mission?.maps?.[+i])userProfile.set(mission.maps[+i].file,e.target.value)},true);
 /** Crée (ou met à jour) la mission du vol et ses cartes ; quiet : sans message ni recentrage (route modifiée). */
 function build(quiet){
  const pts=routePoints();if(!pts)return false;const want=new Set([...document.querySelectorAll('[data-volmap]')].filter(i=>i.checked).map(i=>i.dataset.volmap));
@@ -79,7 +83,9 @@ function build(quiet){
  if(!maps.length){say('Aucune carte choisie.','err');return false}
  const vp={...(sharedDoc?.yaml?.mission?.id==='VOL'?sharedDoc.yaml.vertical_profile:{}),route:$v('vprofRoute').value.trim(),cruise:ft?(ft>=6000?`FL${Math.round(ft/100)}`:String(ft)):undefined};
  const yaml={schema_version:'2.0',mission:{id:'VOL',title:`Vol ${dep.id} → ${dest.id}`,type:'Vol'},origin:dep,destination:dest,turning_points:mid,...(rdv?{rendezvous:[P(rdv,0)]}:{}),vertical_profile:vp,maps};
- try{const doc=SiaMission.save({yaml,narrative:{summary:'',detailed:'',sections:[]},sourceNames:[]},'planner');routeCache={};useDoc(doc,true,false);saveForm()}catch(e){say(esc(e.message),'err');return false}
+ const views=new Map((mission?.maps||[]).filter(m=>m._view).map(m=>[m.file,m._view]));
+ for(const m of maps){const u=userProfile.get(m.filename);if(u)m.profile=u;const v=views.get(m.filename);if(v)m.view=v}
+ try{const doc=SiaMission.save({yaml,narrative:{summary:'',detailed:'',sections:[]},sourceNames:[]},'planner');routeCache={};useDoc(doc,true,true);saveForm()}catch(e){say(esc(e.message),'err');return false}
  setTimeout(()=>{drawVprofPreview();if(!quiet&&!$v('refreshPreview').disabled)$v('refreshPreview').click()},400);
  if(!quiet){say(`${maps.length} carte(s) prête(s) : ${esc(maps.map(m=>m.description).join(', '))}, et le profil vertical de la route. Réglages et aperçus dans « Cartes à produire », fichiers dans « Aperçus et génération ».`,'ok')}
  return true;
@@ -93,6 +99,8 @@ $v('vprofRoute').addEventListener('change',follow);
 window.addEventListener('vprof-route-edited',follow);
 ['volRdv','volLevel'].forEach(id=>$v(id).addEventListener('change',()=>{saveForm();if(sharedDoc?.yaml?.mission?.id==='VOL')build(true)}));document.querySelectorAll('[data-volmap]').forEach(i=>i.addEventListener('change',saveForm));
 loadForm();
+// mission enregistrée avant le passage de la carte de route en IFR (profil « VFR détaillé ») : recréée une fois
+if(!new URLSearchParams(location.search).has('fpl')&&sharedDoc?.yaml?.mission?.id==='VOL'&&(sharedDoc.yaml.maps||[]).some(m=>/^route_/.test(m.filename||'')&&m.profile==='vfr-detail'))(async()=>{for(let i=0;i<100&&!baseReady();i++)await new Promise(r=>setTimeout(r,200));if(baseReady()&&$v('vprofRoute').value.trim())build(true)})();
 // arrivée depuis le planificateur carburant (?fpl=1) : cartes et profil du plan de vol partagé, dès la base SIA chargée
 if(new URLSearchParams(location.search).has('fpl')){history.replaceState(null,'',location.pathname+location.hash);(async()=>{for(let i=0;i<100&&!baseReady();i++)await new Promise(r=>setTimeout(r,200));if(baseReady()&&$v('vprofRoute').value.trim())build(false)})()}
 })();
