@@ -22,8 +22,9 @@ PARAMÈTRES DE CETTE EXÉCUTION
                                      le registre ; auto : M-001 / série 1 pour une famille sans mission)
   NOMBRE_MISSIONS = 5                (1 à 9 : nombre d'opérations)
   THÉÂTRE         = aléatoire       (métropole, Corse, Antilles, Guyane, Réunion, Mayotte,
-                                     Nouvelle-Calédonie, Polynésie… ; plusieurs possibles, liés
-                                     par « + », ex. « Guyane + métropole » — voir § 5)
+                                     Nouvelle-Calédonie, Polynésie…, ou « étranger (pays) », ex.
+                                     « étranger (Japon) » ; plusieurs possibles, liés par « + »,
+                                     ex. « Guyane + métropole » — voir § 5)
   ÉQUIPES_DEFA    = 2                (1 à 5 : équipes DEFA en vol par opération ; UNE mission
                                      complète par équipe — voir § 3)
   SOUS_TYPE       = libre            (ou un code de sous-type du § 2 pour la famille TYPE)
@@ -170,6 +171,8 @@ mission:
   id: 'R-016A'                 # = NN (R = AAR), + lettre de l'équipe s'il y en a plusieurs (en texte)
   type: AAR                    # code de famille (§ 2)
   subtype: TRAINING            # code de sous-type (§ 2)
+  theatre: métropole           # théâtre (§ 5) : métropole, Corse, Antilles… ou « étranger »
+  country: FR                  # pays du théâtre, code ISO 3166 à 2 lettres (FR pour la France et l'outre-mer ; JP, ID…)
 operation:                     # opération commune aux missions de ses équipes (identique dans chacune)
   id: 'R-016'
   name: "Nom de l'opération"
@@ -465,6 +468,13 @@ des participants, des chiffons joués ou ALL.
   Dauphin / Panther de la Marine). Longitude négative à l'ouest de Greenwich (Antilles, Guyane,
   Polynésie, Saint-Pierre) ; latitude négative dans l'hémisphère sud (Réunion, Mayotte, Nouvelle-Calédonie,
   Polynésie, Wallis).
+- Théâtre étranger (« étranger (pays) », pays au choix du générateur s'il n'est pas donné) : mission DEFA hors de
+  France — détachement ou exercice multinational, coopération, évacuation de ressortissants, aide humanitaire, relais
+  vers une base prépositionnée (Djibouti, Abou Dhabi, Niamey, Dakar, Libreville…) ou chez un partenaire. Départ d'une
+  base française ou partenaire réellement utilisable, ou arrivée depuis la France avec escales réalistes ; terrains
+  et lieux réels du pays, noms locaux usuels, codes OACI certains uniquement. mission.theatre = « étranger »,
+  mission.country = code ISO du pays. Les données du programme (espaces aériens, voies aériennes, zones à activer)
+  ne couvrent que la France : ne pas en inventer pour l'étranger ; le brief cite l'autorité locale à contacter.
 - Tous les points sont dans le ou les théâtres choisis (et sur les escales du trajet qui les relie), sur le bon relief : un point « en mer » réellement en mer
   (à plus de 2 km de la côte, préciser dans role), un « sommet » sur le sommet, un « port » sur le port,
   un « lac » sur l'eau.

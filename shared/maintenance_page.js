@@ -666,10 +666,13 @@
       if (!b?.obstacleMax) throw new Error(t(['base absente : relire le dossier (étape 4)', 'no base: re-read the folder (step 4)']));
       if (!siaFolderState) await scanSiaFolder(true);
       const mf = siaFolderState?.fixed.find(x => x.id === 'mora')?.file, text = mf ? await mf.file.text() : '';
-      const cells = await window.SiaBase.computeMoraGrid(b.obstacleMax, {}, (d, n, step) => say(`<span class="mt-small">${esc(step)} : ${d}/${n}…</span>`));
+      // théâtres couverts, plus les emprises des missions du registre situées ailleurs (relief et sommets seulement : pas d'obstacles hors AIXM)
+      const extra = window.SiaBase.moraZonesOfMissions?.(readJson('missionRegistry:v1', null)?.missions || []) || [];
+      const cells = await window.SiaBase.computeMoraGrid(b.obstacleMax, {}, (d, n, step) => say(`<span class="mt-small">${esc(step)} : ${d}/${n}…</span>`), extra);
+      cells.extraZones = extra.map(z => `${z.name} (${z.s}…${z.n}° / ${z.w}…${z.e}°)`);
       const before = new Map((text ? window.SiaBase.parseMora(text) : []).map(c => [c.lat + '|' + c.lon, c]));
       const changes = cells.map(c => { const o = before.get(c.lat + '|' + c.lon); return { lat: c.lat, lon: c.lon, before: o ? window.SiaBase.moraFtOf(o) : 0, after: c.moraFt, obstacleBefore: '', obstacleAfter: c.obstacleFt }; }).filter(c => c.before !== c.after);
-      moraPlan = { csv: window.SiaBase.moraCsv(cells, { airac: b.airac }), cells, changes, cycle: b.airac || '', previousCycle: window.SiaBase.moraCycle(text), written: false, mode: 'full', peaksOk: cells.peaksOk };
+      moraPlan = { csv: window.SiaBase.moraCsv(cells, { airac: b.airac }), cells, changes, cycle: b.airac || '', previousCycle: window.SiaBase.moraCycle(text), written: false, mode: 'full', peaksOk: cells.peaksOk, extraZones: cells.extraZones };
     } catch (e) { moraMsg = pill('err', e.message); }
     renderSia();
   }
@@ -677,6 +680,7 @@
     const up = p.changes.filter(c => c.after > c.before), down = p.changes.filter(c => c.after < c.before), obst = p.changes.filter(c => c.after === c.before);
     return `<p>${p.changes.length ? pill('warn', t(['{n} cellule(s) modifiée(s) : {u} en hausse, {d} en baisse, {o} obstacle seul', '{n} cell(s) changed: {u} up, {d} down, {o} obstacle only'], { n: p.changes.length, u: up.length, d: down.length, o: obst.length })) : pill('ok', t(['aucune valeur MORA ne change', 'no MORA value changes']))} ${p.written ? pill('ok', t(['mora.csv tracé AIRAC {c}', 'mora.csv traced AIRAC {c}'], { c: p.cycle })) : ''}</p>
       ${p.changes.length ? `<div class="mt-scroll mt-short"><table class="mt-table"><thead><tr><th>lat</th><th>lon</th><th>MORA</th><th>${esc(t(['obstacle (ft)', 'obstacle (ft)']))}</th></tr></thead><tbody>${p.changes.map(c => `<tr><td>${c.lat}</td><td>${c.lon}</td><td>${c.before} → <b class="${c.after > c.before ? 'mt-minus' : c.after < c.before ? 'mt-plus' : ''}">${c.after}</b></td><td>${c.obstacleBefore} → ${c.obstacleAfter}</td></tr>`).join('')}</tbody></table></div>` : ''}
+      ${p.extraZones?.length ? `<p class="mt-small">${esc(t(['Hors des théâtres couverts, pour les missions du registre : {z} — relief et sommets seulement (pas d’obstacles hors de l’AIXM française).', 'Outside the covered theatres, for the registry missions: {z} — terrain and peaks only (no obstacles outside the French AIXM).'], { z: p.extraZones.join(' ; ') }))}</p>` : ''}
       <p class="mt-small">${esc(p.mode === 'full' ? t(['Calcul complet : relief Terrarium + sommets OSM{o} + obstacles de l’AIRAC {c} ; + 1000 ft (2000 ft au-delà de 5000 ft), centaine supérieure.', 'Full calculation: Terrarium terrain + OSM peaks{o} + AIRAC {c} obstacles.'], { c: p.cycle, o: p.peaksOk === false ? t([' (indisponibles : relief majoré de 100 m)', ' (unavailable: terrain +100 m)']) : '' }) : t(['Recalcul simple : obstacles de l’AIRAC {c}, relief du mora.csv conservé ; + 1000 ft (2000 ft au-delà de 5000 ft), centaine supérieure.', 'Simple recalculation: AIRAC {c} obstacles, terrain kept.'], { c: p.cycle }))}</p>`;
   }
   async function writeMora() {

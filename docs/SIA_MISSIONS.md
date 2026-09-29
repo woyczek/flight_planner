@@ -80,7 +80,7 @@ Champs (en 2.0, la plupart facultatifs) :
 | Clé | Contenu |
 |---|---|
 | `schema`, `schema_version` | `helo-xp-mission`, `2.0` |
-| `mission` | `id` (identifiant ci-dessus), `type` (famille), `subtype`, `series` (série de génération : une commande ChatGPT = une série dans la famille), `number` (numéro de l'opération, tiré de l'identifiant), `role` (`organisation` pour une mission Z), `former_id` |
+| `mission` | `id` (identifiant ci-dessus), `type` (famille), `subtype`, `series` (série de génération : une commande ChatGPT = une série dans la famille), `number` (numéro de l'opération, tiré de l'identifiant), `role` (`organisation` pour une mission Z), `theatre` (métropole, Corse, Antilles… ou « étranger »), `country` (code ISO 3166 : FR, JP, ID…), `former_id` |
 | `title`, `summary`, `detailed_description` | Titre et textes du brief (sans itinéraire, niveaux, durées ni zones à activer : calculés) |
 | `operation` | Opération à plusieurs équipes ou exercice : `id`, `name`, `missions` (une mission complète par équipe : M-016A, M-016B…), `organisation` (mission Z) |
 | `aircraft` | `type`, `callsign`, `operator`, `role`, `cruise_speed_kt`, `cruise_level` (l'aéronef DEFA de la mission) |
@@ -496,7 +496,9 @@ de l'AIXM SIA ; + 1000 ft (2000 ft au-delà de 5000 ft) ; arrondi à la centaine
 Sans les sommets OSM (Overpass indisponible), le relief est majoré de 100 m pour couvrir
 l'écrêtage des sommets par le modèle de terrain. Théâtres couverts (`SiaBase.MORA_ZONES`) : métropole et Corse,
 Antilles, Guyane, Saint-Pierre-et-Miquelon, Réunion, Mayotte, Nouvelle-Calédonie, Polynésie (îles de la Société),
-Wallis-et-Futuna ; calcul dans Paramètres › Maintenance › Mise à jour SIA.
+Wallis-et-Futuna, plus les emprises des missions du registre situées ailleurs (théâtre étranger : degrés entiers
+autour de leur route, marge d'un demi-degré, fusionnées ; relief et sommets seulement, pas d'obstacles hors de l'AIXM
+française) ; calcul dans Paramètres › Maintenance › Mise à jour SIA.
 
 Affichage : **valeurs seules**, centrées dans les carrés du quadrillage (notation 3⁵ = 3500 ft) ;
 en zoom arrière, cellules fusionnées par 2 × 2 puis 4 × 4 en gardant la valeur la plus haute,

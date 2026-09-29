@@ -32,6 +32,13 @@
     ['Polynésie', -28, -7, -155, -134], ['Saint-Pierre-et-Miquelon', 46.7, 47.2, -56.5, -56]
   ];
   /** Théâtre d'un point (lat, lon) ; '' hors des théâtres connus. */
+  /** Théâtre hors de France : « étranger — Japon » d'après mission.country (code ISO), sinon « étranger » pour une
+   *  mission qui a des coordonnées ; '' sinon. */
+  function foreignTheatre(meta, pt) {
+    const c = String(meta?.country || '').trim().toUpperCase();
+    if (/^[A-Z]{2}$/.test(c) && c !== 'FR') { let name = c; try { name = new Intl.DisplayNames(['fr'], { type: 'region' }).of(c) || c; } catch { /* navigateur ancien */ } return `étranger — ${name}`; }
+    return /étranger|foreign/i.test(String(meta?.theatre || '')) || (Number.isFinite(+pt?.lat) && Number.isFinite(+pt?.lon)) ? 'étranger' : '';
+  }
   const theatreOf = (lat, lon) => (Number.isFinite(+lat) && Number.isFinite(+lon) && THEATRES.find(([, s, n, w, e]) => lat >= s && lat <= n && lon >= w && lon <= e)?.[0]) || '';
 
   // ---- familles et sous-types : § 2 du prompt de génération (source unique : docs/PROMPT_GENERATEUR_MISSIONS.md)
@@ -99,7 +106,7 @@
       callsigns: [...new Set(aircraft.map(a => String(a.callsign || '').trim()).filter(Boolean))],
       rdv: rdv.length,
       aar: !!(y.air_refueling?.planned || /AAR/i.test(meta.type || '')),
-      theatre: theatreOf(+pt.lat, +pt.lon) || theatreOf(+y.destination?.lat, +y.destination?.lon),
+      theatre: theatreOf(+pt.lat, +pt.lon) || theatreOf(+y.destination?.lat, +y.destination?.lon) || foreignTheatre(meta, pt),
       origin: String(y.origin?.name || ''),
       destination: String(y.destination?.name || ''),
       maps: Array.isArray(y.maps) ? y.maps.length : 0,

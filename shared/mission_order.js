@@ -17,7 +17,9 @@
   const ORDER_KEY = 'missionRegistryOrder:v1', REG_KEY = 'missionRegistry:v1';
   const TEAM_PRESETS = ['A400M', 'C-130J', 'CASA CN235', 'A330 MRTT', 'E-3F', 'Rafale', 'Falcon 50M', 'Atlantique 2', 'Dash 8 (Milan)', 'CL-415', 'H225 Caracal', 'NH90', 'EC145 (Dragon)', 'H160', 'AS365 Dauphin', 'Beech 200 / TBM', 'drone', 'équipe au sol'];
   // mêmes noms que les théâtres reconnus par le registre (theatreOf) ; texte libre pour le prompt
-  const THEATRE_LIST = ['aléatoire', 'métropole', 'Corse', 'Antilles', 'Guyane', 'Réunion', 'Mayotte', 'Nouvelle-Calédonie', 'Polynésie', 'Saint-Pierre-et-Miquelon', 'Wallis-et-Futuna'];
+  const THEATRE_LIST = ['aléatoire', 'métropole', 'Corse', 'Antilles', 'Guyane', 'Réunion', 'Mayotte', 'Nouvelle-Calédonie', 'Polynésie', 'Saint-Pierre-et-Miquelon', 'Wallis-et-Futuna', 'étranger'];
+  // théâtre étranger : pays saisi (« étranger (Japon) ») ; vide = au choix du générateur
+  const theatreText = (v, country) => v === 'étranger' ? `étranger (${String(country || '').trim() || 'pays au choix'})` : v;
 
   const LANGS = ['fr', 'en', 'de', 'es'];
   /** Texte dans la langue de la page (tableau fr, en, de, es ; repli anglais puis français), variables {x} remplacées. */
@@ -75,7 +77,7 @@
   /** Demande complète (paramètres du prompt) à partir des réglages. */
   const requestOf = o => ({
     type: o.type, subtype: o.subtype,
-    theatre: [o.theatre, o.theatre2].filter((v, i, a) => v && a.indexOf(v) === i).join(' + '),
+    theatre: [o.theatre, o.theatre2].filter((v, i, a) => v && a.indexOf(v) === i).map(v => theatreText(v, o.country)).join(' + '),
     serie: +o.serie || numbering(o.type).serie, id: numbering(o.type).id,
     teams: Math.max(1, Math.min(5, +o.teams || 1)), teamTypes: teamTypesValue(o) || 'libre',
     rdv: o.rdv, ground: o.ground, aar: o.aar
@@ -147,6 +149,7 @@
         <label>${esc(t(['Sous-type', 'Subtype', 'Untertyp', 'Subtipo']))}<select data-o="subtype" ${f ? '' : 'disabled'}>${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.subtype)}${(f?.subtypes || []).map(x => opt(x, x, o.subtype)).join('')}</select></label>
         <label>${esc(t(['Théâtre', 'Theatre', 'Schauplatz', 'Teatro']))}<select data-o="theatre">${THEATRE_LIST.map(x => opt(x, x, o.theatre)).join('')}</select></label>
         <label title="${esc(t(['Facultatif : second théâtre relié par la mission (acheminement, relève, évacuation…)', 'Optional: second theatre linked by the mission (transit, relief, evacuation…)']))}">${esc(t(['Second théâtre', 'Second theatre', 'Zweiter Schauplatz', 'Segundo teatro']))}<select data-o="theatre2">${opt('', '—', o.theatre2)}${THEATRE_LIST.slice(1).map(x => opt(x, x, o.theatre2)).join('')}</select></label>
+        ${[o.theatre, o.theatre2].includes('étranger') ? `<label title="${esc(t(['Pays du théâtre étranger (ex. Japon, Indonésie, Djibouti) ; vide = au choix du générateur', 'Country of the foreign theatre (e.g. Japan, Indonesia, Djibouti); empty = generator’s choice']))}">${esc(t(['Pays', 'Country', 'Land', 'País']))}<input data-o="country" value="${esc(o.country || '')}" placeholder="${esc(t(['au choix', 'any', 'beliebig', 'cualquiera']))}"></label>` : ''}
         <label>${esc(t(['Série', 'Series', 'Serie', 'Serie']))}<input type="number" min="1" data-o="serie" placeholder="auto" value="${esc(o.serie || '')}" title="${esc(t(['Série dans la famille ; vide = la suivante d’après le registre des missions', 'Series within the family; empty = the next one from the mission registry']))}"></label>
         <label>${esc(t(['Identifiant', 'Identifier', 'Kennung', 'Identificador']))}<input readonly value="${esc(idText)}" title="${esc(t(['Lettre de la famille + numéro suivant de la famille (registre) ; type aléatoire : selon la famille choisie par le générateur', 'Family letter + next family number (registry); random type: per the family picked by the generator']))}"></label>
         <label title="${esc(t(['Aéronefs DEFA en vol ; les équipes au sol (VSAV, CROSS, commandement…) se règlent à part', 'DEFA aircraft in flight; ground teams (ambulance, CROSS, command…) are set separately']))}">${esc(t(['Équipes DEFA en vol', 'DEFA flying teams', 'DEFA-Besatzungen im Flug', 'Equipos DEFA en vuelo']))}<input type="number" min="1" max="5" data-o="teams" value="${esc(o.teams)}"></label>
@@ -166,7 +169,7 @@
         o[el.dataset.o] = el.value;
         if (el.dataset.o === 'type') o.subtype = 'libre';
         save(o);
-        if (['type', 'teams', 'serie'].includes(el.dataset.o)) draw();
+        if (['type', 'teams', 'serie', 'theatre', 'theatre2'].includes(el.dataset.o)) draw();
       }));
       host.querySelectorAll('[data-slot]').forEach(el => el.addEventListener('change', () => { teamSlots(o); o.teamSlots[+el.dataset.slot] = el.value.trim(); save(o); }));
       host.querySelector('[data-mo="send"]').onclick = async () => {

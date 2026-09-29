@@ -233,12 +233,34 @@
     { name: 'Polynésie (îles de la Société)', s: -18, n: -16, w: -152, e: -148 },
     { name: 'Wallis-et-Futuna', s: -15, n: -13, w: -179, e: -176 }
   ];
-  /** Grille MORA : une emprise (box : s, n, w, e) ou, sans emprise, tous les théâtres (MORA_ZONES), cellules réunies. */
-  async function computeMoraGrid(obstacleMax = {}, box = {}, progress) {
+  /** Emprises MORA des missions situées hors des théâtres couverts (missions du registre : points de leur route
+   *  probable) : degrés entiers, marge d'un demi-degré, emprises qui se recouvrent fusionnées ; une emprise de plus de
+   *  12° de côté est écartée (mission trop étendue : à calculer par morceaux). [{ name, s, n, w, e }]. */
+  function moraZonesOfMissions(missions) {
+    const inZone = p => MORA_ZONES.some(z => p.lat >= z.s && p.lat < z.n && p.lon >= z.w && p.lon < z.e);
+    let boxes = [];
+    for (const m of missions || []) {
+      const pts = (m.estimate?.points || []).filter(p => Number.isFinite(+p.lat) && Number.isFinite(+p.lon) && !inZone(p));
+      if (!pts.length) continue;
+      const la = pts.map(p => +p.lat), lo = pts.map(p => +p.lon);
+      boxes.push({ name: String(m.id || m.title || 'mission'), s: Math.floor(Math.min(...la) - .5), n: Math.ceil(Math.max(...la) + .5), w: Math.floor(Math.min(...lo) - .5), e: Math.ceil(Math.max(...lo) + .5) });
+    }
+    for (let merged = true; merged;) {
+      merged = false;
+      for (let i = 0; i < boxes.length && !merged; i++) for (let j = i + 1; j < boxes.length; j++) {
+        const a = boxes[i], b = boxes[j];
+        if (a.s <= b.n && b.s <= a.n && a.w <= b.e && b.w <= a.e) { boxes[i] = { name: `${a.name}, ${b.name}`, s: Math.min(a.s, b.s), n: Math.max(a.n, b.n), w: Math.min(a.w, b.w), e: Math.max(a.e, b.e) }; boxes.splice(j, 1); merged = true; break; }
+      }
+    }
+    return boxes.filter(b => b.n - b.s <= 12 && b.e - b.w <= 12).map(b => ({ ...b, name: `missions ${b.name}` }));
+  }
+  /** Grille MORA : une emprise (box : s, n, w, e) ou, sans emprise, tous les théâtres (MORA_ZONES) et les emprises
+   *  supplémentaires (extra : missions hors théâtres, moraZonesOfMissions), cellules réunies. */
+  async function computeMoraGrid(obstacleMax = {}, box = {}, progress, extra = []) {
     if (Number.isFinite(box?.s)) return computeMoraBox(obstacleMax, box, progress);
     const all = [];
     let peaksOk = true;
-    for (const zone of MORA_ZONES) {
+    for (const zone of [...MORA_ZONES, ...extra]) {
       const cells = await computeMoraBox(obstacleMax, zone, (d, n, step) => progress?.(d, n, `${zone.name} — ${step}`));
       peaksOk = peaksOk && cells.peaksOk;
       all.push(...cells);
@@ -674,7 +696,7 @@
     VERSION, get, put, patch, purge, summarize, summary, info, previous, remember,
     filesOf, build, rebuild, appAsset, inspectXml,
     parseXmlSiaAirspaces, parseAixmAirspaces, parseAixmObstacles, parseLegacyAirspaces, aixmDms, expandAixmArc, markControlledAerodromes, inRing,
-    csvRows, csvField, parseCities, parseMora, moraLabel, moraOf, moraFtOf, moraCycle, moraCsv, moraFromObstacles, computeMoraGrid, MORA_ZONES, MORA_SOURCE,
+    csvRows, csvField, parseCities, parseMora, moraLabel, moraOf, moraFtOf, moraCycle, moraCsv, moraFromObstacles, computeMoraGrid, moraZonesOfMissions, MORA_ZONES, MORA_SOURCE,
     panel
   };
 })();
