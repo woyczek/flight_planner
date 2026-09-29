@@ -5,6 +5,10 @@
   if (!window.RepositoryContentI18n) return;
   window.RepositoryContentI18n([
     // ---- générateur de mission
+    // zones à activer
+    ["Zones à activer", "Areas to activate", "Zu aktivierende Gebiete", "Zonas que activar"],
+    ["Zones R, D, TRA et du RTBA recoupées par la route probable et les zones de travail, par gestionnaire : demandes d’activation.", "R, D, TRA and RTBA areas crossed by the probable route and the work areas, by administrator: activation requests.", "Von der wahrscheinlichen Route und den Arbeitsgebieten berührte R-, D-, TRA- und RTBA-Gebiete, nach Verwalter: Aktivierungsanträge.", "Zonas R, D, TRA y RTBA cruzadas por la ruta probable y las zonas de trabajo, por gestor: solicitudes de activación."],
+    ["Gestionnaire", "Administrator", "Verwalter", "Gestor"], ["Zone", "Area", "Gebiet", "Zona"], ["Limites", "Limits", "Grenzen", "Límites"], ["Activation", "Activation", "Aktivierung", "Activación"], ["Recoupée par", "Crossed by", "Berührt von", "Cruzada por"],
     // studio : blocs réorganisés
     ["Mission partagée avec le générateur ; ouvrir ou coller une autre mission.", "Mission shared with the generator; open or paste another mission.", "Mit dem Generator geteilte Mission; eine andere Mission öffnen oder einfügen.", "Misión compartida con el generador; abrir o pegar otra misión."],
     ["Ouvrir une autre mission : fichier Markdown / YAML ou texte collé", "Open another mission: Markdown / YAML file or pasted text", "Andere Mission öffnen: Markdown-/YAML-Datei oder eingefügter Text", "Abrir otra misión: archivo Markdown / YAML o texto pegado"],

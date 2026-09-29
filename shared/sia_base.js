@@ -14,7 +14,7 @@
 (() => {
   const DB = 'sia-map-parser', STORE = 'cache', KEY = 'base', INFO = 'siaBaseInfo:v1', PREV = 'siaBaseInfo:prev', FOLDER_NAME = 'siaFolderName';
   /** Version du format de la base mémorisée : une base d'une autre version est ignorée (à relire). */
-  const VERSION = 12;
+  const VERSION = 13;   // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM
   const SCRIPT_URL = document.currentScript?.src || location.href;
   /** URL d'un fichier de l'application (chemin depuis la racine : « apps/sia/assets/… »). */
   const appUrl = path => new URL('../' + path, SCRIPT_URL).href;
@@ -318,6 +318,14 @@
   const AIXM_TYPES = new Set(['R', 'D', 'P', 'CTR', 'TMA', 'CTA', 'TRA', 'SUR', 'PRN']);
   /** AIXM 4.5 : espaces R, D, P, CTR, TMA, CTA, TRA, survol interdit (SUR) et parcs (PRN), avec classes, limites verticales,
    *  zones AZBA, arcs et cercles ; SUR et PRN réduits à un point gardés (symbole seul). Remplacent ceux de XML_SIA pour ces types. */
+  /** Gestionnaire et activation d'un espace d'après sa remarque AIXM (« Administrator : CDPGE Athis-Mons.# … AZBA charts »). */
+  function activationOf(rmk) {
+    // remarque sans séparateur (« Administrator : CCER Bordeaux Airspace defined… ») : nom arrêté au début de la phrase suivante
+    const r = String(rmk || ''), admin = (/(?:Administrator|Gestionnaire)\s*:\s*([^#\n\r.]+)/i.exec(r)?.[1] || '').split(/\s+(?=(?:Airspace|Area|Zone|Activ\w*|Avoidance|Espace|Except\w*|Excluding|When|Lorsque)\b)/)[0].trim(),
+      info = /(?:Activity known on|Actual activity provided by|Renseignements?\s*(?:sur l'activité)?)\s*:?\s*#?\s*-?\s*([^#\n\r]+)/i.exec(r)?.[1]?.trim().replace(/[.,;:]+$/, '') || '',
+      act = /AZBA/i.test(r) ? 'AZBA' : /NOTAM/i.test(r) ? 'NOTAM' : /without notice|sans préavis/i.test(r) ? 'sans préavis' : '';
+    return { admin, act, info };
+  }
   function parseAixmAirspaces(doc) {
     const meta = new Map;
     for (const ase of doc.getElementsByTagName('Ase')) {
@@ -333,7 +341,7 @@
         return `${val} ${uom === 'M' ? 'm' : 'ft'} ${code === 'HEI' ? 'ASFC' : 'AMSL'}`;
       };
       meta.set(mid, { type, cls: txt(ase, 'codeClass').toUpperCase(), name: txt(ase, 'txtName') || txt(uid, 'codeId'), key: txt(uid, 'codeId') || mid,
-        lower: lim('codeDistVerLower', 'valDistVerLower', 'uomDistVerLower'), upper: lim('codeDistVerUpper', 'valDistVerUpper', 'uomDistVerUpper'), azba: /AZBA/i.test(txt(ase, 'txtRmk')) });
+        lower: lim('codeDistVerLower', 'valDistVerLower', 'uomDistVerLower'), upper: lim('codeDistVerUpper', 'valDistVerUpper', 'uomDistVerUpper'), azba: /AZBA/i.test(txt(ase, 'txtRmk')), ...activationOf(txt(ase, 'txtRmk')) });
     }
     const grouped = new Map;
     for (const abd of doc.getElementsByTagName('Abd')) {

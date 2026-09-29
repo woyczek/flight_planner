@@ -183,8 +183,9 @@ summary: |-                   # bloc LITTÉRAL « |- » (jamais « >- » ni « >
 detailed_description: |-
   Contexte (2 à 4 phrases) : situation, acteurs, pourquoi maintenant.
 
-  Départ et transit (2 à 4 phrases) : terrain, route, points tournants, niveaux ou hauteurs, distance
-  et durée estimées.
+  Départ et mise en place (1 à 3 phrases) : terrain de départ, ce qui conditionne le départ (créneau,
+  météo, équipement). PAS d'itinéraire, de niveaux, de distances ni de durées : la route, le profil et les
+  temps sont calculés par le programme d'après les points du fichier.
 
   Action sur l'objectif (3 à 5 phrases) : ce qui se passe à TARGET, aux rendez-vous et dans les zones,
   coordination avec les autres acteurs.
@@ -192,6 +193,7 @@ detailed_description: |-
   Décisions et imprévus (2 à 3 phrases) : critères d'interruption, carburant, météo, plan B.
 
   Retour et fin de mission (1 à 3 phrases) : retour, déroutement éventuel, ce qui marque la fin.
+  Ne pas citer les zones réglementées à activer : le programme les calcule d'après la route et les zones.
 aircraft:                      # l'aéronef DEFA de CETTE mission (une équipe = un aéronef ; une patrouille de
                                # deux appareils sous un même indicatif reste une équipe). Les autres équipes DEFA
                                # de l'opération et les autres acteurs (VSAV, SMUR, CROSS, PGHM, commandement
@@ -347,6 +349,12 @@ véhicule signalé, épave localisée), la mission devient un exercice (§ 3) : 
 TARGET en est le centre, et la position réelle est un chiffon à UN point (played: false, nature de la cible)
 révélé par un message radio de la mission Z ; la carte détaillée de TARGET n'est pas produite (le studio fait la
 carte de la position révélée).
+
+Basse altitude : un avion de combat ou de transport tactique qui transite ou travaille à basse hauteur (sous
+environ 1500 ft ASFC) le fait dans le RTBA (réseau très basse altitude : zones R des cartes AZBA, ex. R 45, R 69,
+R 147, R 152, R 590) — points tournants et zones posés dans les tronçons du RTBA, entrée et sortie du réseau
+nommées ; cruise_level en ft (« 500 ft »). En dehors du RTBA, pas de basse hauteur pour ces avions. Les
+hélicoptères ne sont pas concernés (vol tactique selon la mission).
 
 Références internes : ORIGIN, DESTINATION et TARGET sont des identifiants réservés ; tout id cité
 (centre_ref, route du profil vertical, route_order, participants) DOIT exister dans le fichier.
@@ -656,6 +664,8 @@ liste des corrections faites :
       exact) dans la mission de son équipe — aucun remplacement
   [ ] aéronefs : désignateur du § 6 en tête du type (sauf aéronef imposé : son désignateur) ; aéronef capable de la mission
   [ ] tous les id cités (centre_ref, route, route_order, participants) existent
+  [ ] detailed_description sans itinéraire, niveaux, distances, durées ni zones à activer (calculés par le programme)
+  [ ] basse altitude (avion de combat, transport tactique) : dans le RTBA, entrée et sortie du réseau nommées
   [ ] zones : une zone (kind, cercle ou polygone réaliste) pour toute mission de surface (recherche, observation,
       feu, levé, largage) ; position connue seulement en vol → exercice, chiffon à un point, pas de carte détaillée de TARGET
   [ ] exercice (§ 3, § 4 bis) : mission NNZ livrée après les équipes, operation.organisation dans toutes les missions
