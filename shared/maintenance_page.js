@@ -105,6 +105,7 @@
     { id: 'deps', icon: 'link', title: ['Références et dépendances', 'References and dependencies', 'Referenzen und Abhängigkeiten', 'Referencias y dependencias'], sub: ['Chaque référence : tracée, processus de mise à jour, données qui en dépendent, cohérence vérifiée', 'Each reference: traced, update process, dependent data, consistency checked', 'Jede Referenz: nachverfolgt, Aktualisierungsprozess, abhängige Daten, geprüfte Konsistenz', 'Cada referencia: trazada, proceso de actualización, datos dependientes, coherencia comprobada'] },
     { id: 'sia', icon: 'map', title: ['Mise à jour des données SIA (AIRAC) — pas à pas', 'SIA data update (AIRAC) — step by step', 'Aktualisierung der SIA-Daten (AIRAC) — Schritt für Schritt', 'Actualización de los datos SIA (AIRAC) — paso a paso'], sub: ['Nouveau cycle : téléchargement, dossier, anciens cycles, relecture par le studio, différences, recalculs (MORA, espaces, appareils, flotte, performances)', 'New cycle: download, folder, old cycles, studio re-read, differences, recalculations (MORA, airspace, aircraft, fleet, performance)', 'Neuer Zyklus: Download, Ordner, alte Zyklen, Neueinlesen, Unterschiede, Neuberechnungen', 'Nuevo ciclo: descarga, carpeta, ciclos antiguos, relectura, diferencias, recálculos'] },
     { id: 'caches', icon: 'trash', title: ['Caches', 'Caches', 'Caches', 'Cachés'], sub: ['Données reconstructibles gardées par le navigateur (aérodromes, base mondiale via jsDelivr, base SIA, contrôle des mises à jour, fichiers de l’application) : état et purge', 'Rebuildable data kept by the browser (aerodromes, world base via jsDelivr, SIA base, update check, application files): state and purge', 'Wiederherstellbare Browserdaten (Flugplätze, Weltbasis über jsDelivr, SIA-Basis, Update-Prüfung, Anwendungsdateien): Stand und Leeren', 'Datos reconstruibles guardados por el navegador (aeródromos, base mundial vía jsDelivr, base SIA, control de actualizaciones, archivos de la aplicación): estado y purga'] },
+    { id: 'storage', icon: 'database', title: ['Espace disque', 'Disk space', 'Speicherplatz', 'Espacio en disco'], sub: ['Place occupée par les missions (par mission, par type, total) et par le navigateur ; purge des cartes surnuméraires et des cartes générées (régénérables)', 'Space used by missions (per mission, per type, total) and by the browser; purge of surplus and generated (regenerable) maps', 'Von Missionen (je Mission, je Typ, gesamt) und vom Browser belegter Platz; Löschen überzähliger und erzeugter Karten', 'Espacio usado por las misiones (por misión, por tipo, total) y por el navegador; purga de mapas sobrantes y generados'] },
     { id: 'backup', icon: 'save', title: ['Sauvegarde totale', 'Full backup', 'Vollständige Sicherung', 'Copia de seguridad total'], sub: ['Bases du navigateur et toute la configuration locale, fichiers connus des dossiers (registres, missions, profils, CSV d’atterrissage…), en une archive ZIP tracée', 'Browser databases and all local configuration, known files of the folders (ledgers, missions, profiles, landing CSV…), in one traced ZIP archive', 'Browser-Datenbanken und lokale Konfiguration, bekannte Dateien der Ordner, in einem ZIP-Archiv', 'Bases del navegador y toda la configuración local, archivos conocidos de las carpetas, en un ZIP trazado'] },
     { id: 'journal', icon: 'clock', title: ['Journal des sauvegardes et rechargements', 'Backup and reload journal', 'Protokoll der Sicherungen und Wiederherstellungen', 'Registro de copias y recargas'], sub: ['Chaque sauvegarde, restauration ou rechargement : date, origine, ce qui a changé', 'Every backup, restore or reload: date, origin, what changed', 'Jede Sicherung oder Wiederherstellung: Datum, Herkunft, Änderungen', 'Cada copia o recarga: fecha, origen, qué cambió'] }
   ];
@@ -130,7 +131,7 @@
     navLabels();
   }
   // ---- rubrique « Maintenance » du menu latéral de Paramètres : une entrée par bloc
-  const NAV = { updates: ['Mises à jour', 'Updates', 'Updates', 'Actualizaciones'], sources: ['Sources et dossiers', 'Sources and folders', 'Quellen und Ordner', 'Fuentes y carpetas'], versions: ['Versions et synchros', 'Versions and sync', 'Versionen', 'Versiones'], deps: ['Références et dépendances', 'References and dependencies', 'Referenzen', 'Referencias'], sia: ['Mise à jour SIA (AIRAC)', 'SIA update (AIRAC)', 'SIA-Update (AIRAC)', 'Actualización SIA (AIRAC)'], caches: ['Caches', 'Caches', 'Caches', 'Cachés'], backup: ['Sauvegarde totale', 'Full backup', 'Vollsicherung', 'Copia total'], journal: ['Journal', 'Journal', 'Protokoll', 'Registro'] };
+  const NAV = { updates: ['Mises à jour', 'Updates', 'Updates', 'Actualizaciones'], sources: ['Sources et dossiers', 'Sources and folders', 'Quellen und Ordner', 'Fuentes y carpetas'], versions: ['Versions et synchros', 'Versions and sync', 'Versionen', 'Versiones'], deps: ['Références et dépendances', 'References and dependencies', 'Referenzen', 'Referencias'], sia: ['Mise à jour SIA (AIRAC)', 'SIA update (AIRAC)', 'SIA-Update (AIRAC)', 'Actualización SIA (AIRAC)'], caches: ['Caches', 'Caches', 'Caches', 'Cachés'], storage: ['Espace disque', 'Disk space', 'Speicherplatz', 'Espacio en disco'], backup: ['Sauvegarde totale', 'Full backup', 'Vollsicherung', 'Copia total'], journal: ['Journal', 'Journal', 'Protokoll', 'Registro'] };
   let navHost = null;
   function navLabels() {
     if (!navHost) return;
@@ -1068,6 +1069,59 @@
   }
   try { cacheMsg = sessionStorage.getItem('mtCacheMsg') || ''; sessionStorage.removeItem('mtCacheMsg'); } catch { /* stockage indisponible */ }
 
+  // ===== Espace disque : place occupée par les missions (par mission, par type, total) et par le navigateur ; purge
+  //       des cartes surnuméraires (absentes du YAML) et des cartes générées (régénérables depuis le YAML par le studio).
+  let storageState = null;   // { rows, totals, browser } après calcul
+  async function scanStorage(request) {
+    const C = window.MissionRegistryCore;
+    if (!C) throw new Error('shared/mission_registry.js');
+    const dir = await C.missionsDir(request);
+    if (!dir) throw new Error(t(['dossier des missions non autorisé : le choisir dans « Sources et dossiers »', 'missions folder not authorised: choose it in “Sources and folders”']));
+    const rows = [];
+    for await (const [fam, fh] of dir.entries()) {
+      if (fh.kind !== 'directory' || /^[_.]/.test(fam)) continue;
+      for await (const [id, mh] of fh.entries()) {
+        if (mh.kind !== 'directory' || /^[_.]/.test(id)) continue;
+        const u = await C.missionUsage({ h: mh, folder: `${fam}/${id}` });
+        if (!u.files.some(f => /^mission.*\.ya?ml$/i.test(f.name) && !f.sub)) continue;   // pas un dossier de mission
+        rows.push({ id, folder: `${fam}/${id}`, ...u.sizes, surplus: u.surplusSize, surplusList: u.surplus, mapList: u.files.filter(f => f.kind === 'maps') });
+      }
+    }
+    rows.sort((a, b) => b.total - a.total);
+    const totals = rows.reduce((s, r) => { for (const k of ['data', 'maps', 'surplus', 'versions', 'recu', 'total']) s[k] += r[k]; return s; }, { data: 0, maps: 0, surplus: 0, versions: 0, recu: 0, total: 0 });
+    let browser = null;
+    try { browser = await navigator.storage?.estimate?.(); } catch { browser = null; }
+    storageState = { rows, totals, browser, at: new Date().toISOString() };
+  }
+  function renderStorage() {
+    const host = hosts.storage, C = window.MissionRegistryCore, B = C?.fmtBytes || (b => `${b} o`), st = storageState;
+    const intro = `<p class="mt-small">${esc(t(['Dossier des missions (data/missions) : données (YAML, Markdown, PDF), cartes générées, versions précédentes, textes reçus. Les cartes se régénèrent depuis le YAML (studio) ; une carte surnuméraire n’est plus dans la liste des cartes de sa mission. Versions et textes reçus sont l’historique : ils ne sont pas purgés ici.', 'Missions folder (data/missions): data (YAML, Markdown, PDF), generated maps, previous versions, received texts. Maps are regenerated from the YAML (studio); a surplus map is no longer in its mission’s map list. Versions and received texts are history: not purged here.']))}</p>`;
+    const actions = `<p class="row"><button type="button" class="primary" id="mtStorageScan" data-icon="refresh">${esc(t(['Calculer la place utilisée', 'Compute used space', 'Belegten Platz berechnen', 'Calcular el espacio usado']))}</button>${st ? `<button type="button" class="secondary" id="mtPurgeSurplus" data-icon="trash"${st.totals.surplus ? '' : ' disabled'}>${esc(t(['Supprimer les cartes surnuméraires ({n}, {s})', 'Delete surplus maps ({n}, {s})'], { n: st.rows.reduce((a, r) => a + r.surplusList.length, 0), s: B(st.totals.surplus) }))}</button><button type="button" class="secondary" id="mtPurgeMaps" data-icon="trash"${st.totals.maps ? '' : ' disabled'}>${esc(t(['Purger toutes les cartes générées ({n}, {s})', 'Purge all generated maps ({n}, {s})'], { n: st.rows.reduce((a, r) => a + r.mapList.length, 0), s: B(st.totals.maps) }))}</button>` : ''}<a class="mt-link" href="?m=caches">${esc(t(['Caches du navigateur →', 'Browser caches →']))}</a></p>`;
+    if (!st) { host.innerHTML = intro + actions; bindStorage(); return; }
+    const td = v => `<td class="mt-num">${v ? esc(B(v)) : '—'}</td>`;
+    const head = `<tr><th>${esc(t(['Mission', 'Mission']))}</th><th>${esc(t(['Données', 'Data']))}</th><th>${esc(t(['Cartes', 'Maps']))}</th><th>${esc(t(['dont surnuméraires', 'of which surplus']))}</th><th>${esc(t(['Versions', 'Versions']))}</th><th>${esc(t(['Textes reçus', 'Received texts']))}</th><th>${esc(t(['Total', 'Total']))}</th></tr>`;
+    const body = st.rows.map(r => `<tr><td><b>${esc(r.id)}</b> <span class="mt-small">${esc(r.folder.split('/')[0])}</span></td>${td(r.data)}${td(r.maps)}${td(r.surplus)}${td(r.versions)}${td(r.recu)}<td class="mt-num"><b>${esc(B(r.total))}</b></td></tr>`).join('');
+    const tot = st.totals, foot = `<tr class="mt-group"><td>${esc(t(['Total ({n} missions)', 'Total ({n} missions)'], { n: st.rows.length }))}</td>${td(tot.data)}${td(tot.maps)}${td(tot.surplus)}${td(tot.versions)}${td(tot.recu)}<td class="mt-num"><b>${esc(B(tot.total))}</b></td></tr>`;
+    const br = st.browser ? `<p>${esc(t(['Navigateur (bases locales, caches, base SIA…) : {u} utilisés sur {q} disponibles.', 'Browser (local databases, caches, SIA base…): {u} used of {q} available.'], { u: B(st.browser.usage || 0), q: B(st.browser.quota || 0) }))}</p>` : '';
+    host.innerHTML = `${intro}${actions}<p>${esc(t(['Dossier des missions : {t} — données {d}, cartes {m} (dont surnuméraires {s}), versions {v}, textes reçus {r}. Calculé le {at}.', 'Missions folder: {t} — data {d}, maps {m} (surplus {s}), versions {v}, received {r}. Computed {at}.'], { t: B(tot.total), d: B(tot.data), m: B(tot.maps), s: B(tot.surplus), v: B(tot.versions), r: B(tot.recu), at: fmtDate(st.at) }))}</p>${br}
+      <div class="mt-scroll mt-short"><table class="mt-table mt-wide"><thead>${head}</thead><tbody>${body}${foot}</tbody></table></div>`;
+    bindStorage();
+  }
+  function bindStorage() {
+    const host = hosts.storage, C = window.MissionRegistryCore, B = C?.fmtBytes;
+    const busy = async (btn, fn) => { btn.disabled = true; try { await fn(); } catch (e) { window.AppFramework?.notify?.(e.message, 'err'); } finally { btn.disabled = false; } };
+    host.querySelector('#mtStorageScan').onclick = e => busy(e.currentTarget, async () => { await scanStorage(true); renderStorage(); });
+    const purge = (sel, pick, what) => { const b = host.querySelector(sel); if (b) b.onclick = e => busy(e.currentTarget, async () => {
+      const list = storageState.rows.flatMap(pick), size = list.reduce((a, f) => a + f.size, 0);
+      if (!list.length || !confirm(t(['Supprimer {n} fichier(s) ({s}) : {w} ? Les cartes se régénèrent depuis le YAML (studio).', 'Delete {n} file(s) ({s}): {w}? Maps can be regenerated from the YAML (studio).'], { n: list.length, s: B(size), w: what }))) return;
+      const n = await C.removeFiles(list);
+      window.AppFramework?.notify?.(t(['{n} fichier(s) supprimé(s), {s} libérés.', '{n} file(s) deleted, {s} freed.'], { n, s: B(size) }), 'ok');
+      await scanStorage(false); renderStorage();
+    }); };
+    purge('#mtPurgeSurplus', r => r.surplusList, t(['cartes surnuméraires (absentes du YAML de leur mission)', 'surplus maps (not in their mission’s YAML)']));
+    purge('#mtPurgeMaps', r => r.mapList, t(['toutes les cartes générées de toutes les missions', 'all generated maps of all missions']));
+    window.AppFramework?.refresh?.();
+  }
   // ---- rendu, langue, événements
   // Chaque lecture et chaque bloc isolés : une erreur (dossier illisible, base d'un autre format…) s'affiche dans son
   // bloc et en notification, sans laisser les autres blocs vides.
@@ -1085,7 +1139,7 @@
     await guard('Chargement des modules', () => Promise.all([waitFor('FileAccess'), waitFor('LocalStore'), waitFor('SuiteUpdate')]));
     await Promise.all([guard('État git', () => readGitState(false)), guard('Dossier SIA', () => scanSiaFolder(false))]);
     baseSummary = await guard('Base SIA du navigateur', () => window.SiaBase.summary());
-    for (const [what, fn, host] of [['Mises à jour', renderUpdates, hosts.updates], ['Sources et dossiers', renderSources, hosts.sources], ['Mise à jour SIA', renderSia, hosts.sia], ['Sauvegarde', renderBackup, hosts.backup], ['Journal', renderJournal, hosts.journal], ['Caches', renderCaches, hosts.caches]]) guard(what, fn, host);
+    for (const [what, fn, host] of [['Mises à jour', renderUpdates, hosts.updates], ['Sources et dossiers', renderSources, hosts.sources], ['Mise à jour SIA', renderSia, hosts.sia], ['Sauvegarde', renderBackup, hosts.backup], ['Journal', renderJournal, hosts.journal], ['Caches', renderCaches, hosts.caches], ['Espace disque', renderStorage, hosts.storage]]) guard(what, fn, host);
     await guard('Versions et synchronisation', renderVersions, hosts.versions); await guard('Références et dépendances', renderDeps, hosts.deps);
     const want = new URLSearchParams(location.search).get('m') || location.hash.slice(1);
     if (embedded) { if (NAV[want]) showBlock(want); }

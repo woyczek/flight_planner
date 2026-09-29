@@ -10,6 +10,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Registre : cartes surnuméraires** — dans les fichiers d'une mission, cartes absentes de sa liste de cartes marquées
+  (croix de suppression), bouton « Supprimer les cartes surnuméraires », place occupée par la mission.
+- **Maintenance › Espace disque** : place occupée par les missions (par mission et par type : données, cartes, dont
+  surnuméraires, versions, textes reçus ; totaux) et par le navigateur ; purge des cartes surnuméraires ou de toutes les
+  cartes générées (régénérables depuis le YAML), avec confirmation.
 - **Studio, génération des cartes** : barre de progression et étape en cours dans le pied de page ; rangement dans le
   dossier de la mission toujours annoncé (notification, compte rendu) ; sans accès au dossier, bouton « Ranger les cartes
   dans le dossier » dans le pied de page. Registre : cartes en vignettes réduites.
