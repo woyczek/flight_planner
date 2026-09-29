@@ -48,6 +48,8 @@
   .mt-url{width:100%;min-width:260px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;font:12px ui-monospace,Consolas,monospace;background:var(--card);color:var(--ink)}
   .mt-nowrap{white-space:nowrap;width:1%}
   .mt-table .mt-num{text-align:right;white-space:nowrap}
+  /* tableaux du framework (SortedTable) dans un conteneur défilant : en-tête fixe sur le défilement du conteneur */
+  .mt-scroll .st-wrap{overflow:visible}.mt-scroll .st-table th{z-index:2}
   .mt-folders td:nth-child(2){width:1%;white-space:nowrap}
   /* bouton de dossier : libellé sur une ligne (sinon la colonne étroite le replie lettre par lettre) */
   .mt-folders .mt-folder{white-space:nowrap;min-width:max-content}.mt-folders td:nth-child(3){width:1%;white-space:nowrap}
