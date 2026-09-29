@@ -145,7 +145,8 @@ livrée APRÈS les missions des équipes (missionNNZ.yaml puis summaryNNZ.md). E
     DE QUI, À QUI (un ou plusieurs participants, un chiffon joué, ou ALL) et quelles pistes il révèle.
 L'information se découvre progressivement : chaque destinataire ne sait au décollage que ce que son brief lui dit ;
 le reste lui parvient par les événements. Sans rien de tel, pas de mission Z. Une seule équipe peut aussi avoir une
-mission Z (ex. HEMS dont la destination change en vol) : sa mission devient alors NNA.
+mission Z (ex. HEMS dont la destination change en vol, recherche dont la position est donnée en vol) : sa mission
+garde son identifiant NN (ex. L-001 et L-001Z).
 Aucun autre fichier (pas d'images, pas de manifeste). Puis le bloc VALIDATION (§ 10).
 Réponse trop longue pour tout livrer d'un coup : livrer les missions une par une, chacune COMPLÈTE (YAML +
 Markdown), puis écrire « Mission suivante : M-016B — répondre « suite » » et attendre ; le bloc VALIDATION suit
@@ -233,11 +234,15 @@ rendezvous:                    # 0 à 3 rendez-vous, id RDV-1, RDV-2… ; un ren
     participants: [COTAM3510, CERBERES51]   # callsigns présents dans aircraft ou teams
     role: "ralliement / relève / largage / poser / …"
     time_on_task_min: 5          # attente, jonction, poser au rendez-vous
-zones:                         # 0 à 2 zones de travail, id ZONE-1…
+zones:                         # 0 à 3 zones de travail, id ZONE-1… (règles : voir sous le schéma)
   - id: ZONE-1
     name: "Nom de la zone"
+    kind: search               # search : zone de recherche ; mission : zone de travail (observation, largage,
+                               # feu, levé, hippodrome…) ; exclusion : zone à éviter (population, faune, relief)
     centre: { lat: 0.000000, lon: 0.000000 }
-    radius_km: 20
+    radius_km: 20              # zone ronde : centre + rayon
+    points:                    # OU zone polygonale (3 à 8 sommets dans l'ordre, lieux réels) : secteur borné par
+      - { lat: 0.000000, lon: 0.000000 }   # des vallées, crêtes, routes, côtes… ; le centre reste donné
     role: "zone de recherche / zone AAR / zone de largage / …"
     time_on_task_min: 45         # temps de travail dans la zone (recherche, hippodrome de ravitaillement…)
 route_order: [ORIGIN, PT1, RDV-1, TARGET, PT2, DESTINATION]   # route PROBABLE de CETTE équipe, dans l'ordre :
@@ -331,6 +336,18 @@ notes:
   - "Exercice de simulation aérienne."
   - "Toute coordonnée approximative est signalée ici (point et raison)."
 
+Zones (dessinées sur toutes les cartes) : toute mission dont le travail porte sur une SURFACE et non sur un point
+en a une — recherche d'une personne, d'une épave ou d'un véhicule (SAR, LE, HEMS en recherche : kind search), secteur
+d'observation ou de surveillance (ISR, MARITIME, COMMAND : mission), feu et ses abords (FIRE : mission), levé (SURVEY :
+mission), zone de largage (AIRBORNE : mission), secteur à éviter (exclusion). Taille réaliste pour l'aéronef et le
+temps de travail (quelques km pour une recherche en hélicoptère, dizaines de km pour un avion de surveillance) ;
+forme ronde quand le secteur est centré sur un point connu, polygonale quand il suit le terrain. Une mission sur un
+point précis (évacuation, transport) n'a pas de zone. Quand la position exacte n'est connue qu'en vol (personne ou
+véhicule signalé, épave localisée), la mission devient un exercice (§ 3) : la zone de recherche est dans la mission,
+TARGET en est le centre, et la position réelle est un chiffon à UN point (played: false, nature de la cible)
+révélé par un message radio de la mission Z ; la carte détaillée de TARGET n'est pas produite (le studio fait la
+carte de la position révélée).
+
 Références internes : ORIGIN, DESTINATION et TARGET sont des identifiants réservés ; tout id cité
 (centre_ref, route du profil vertical, route_order, participants) DOIT exister dans le fichier.
 Retour base : une mission se termine TOUJOURS par un retour base (destination), de préférence la base de départ ;
@@ -377,7 +394,8 @@ exercise:
       played: true             # true : tenu par un aéronef du simulateur ; false : seulement dessiné
       callsign: CHIFFON401     # indicatif du chiffon joué (vide sinon)
       start: "H+50"            # départ du premier point (chiffon joué)
-      points:                  # route, dans l'ordre (2 points au moins)
+      points:                  # route, dans l'ordre (2 points au moins) ; UN point pour une position fixe (cible
+                               # révélée en vol : véhicule, personne, épave)
         - { name: "Rosnay", lat: 46.701667, lon: 1.215278 }
         - { name: "Mézières-en-Brenne", lat: 46.821667, lon: 1.211389 }
       level: "3 500–5 000 ft"
@@ -638,6 +656,8 @@ liste des corrections faites :
       exact) dans la mission de son équipe — aucun remplacement
   [ ] aéronefs : désignateur du § 6 en tête du type (sauf aéronef imposé : son désignateur) ; aéronef capable de la mission
   [ ] tous les id cités (centre_ref, route, route_order, participants) existent
+  [ ] zones : une zone (kind, cercle ou polygone réaliste) pour toute mission de surface (recherche, observation,
+      feu, levé, largage) ; position connue seulement en vol → exercice, chiffon à un point, pas de carte détaillée de TARGET
   [ ] exercice (§ 3, § 4 bis) : mission NNZ livrée après les équipes, operation.organisation dans toutes les missions
       de l'opération ; participants = équipes en vol avec leur décollage ; chiffons réels, niveaux et vitesses cohérents
       avec la nature, chiffons joués avec callsign, start et conduct ; chaque événement a un moment, une forme
