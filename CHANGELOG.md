@@ -10,6 +10,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Points de report VFR** : lus dans le XML_SIA (1 098 points « VFR », ex. MM-CV Cavaillon) — base SIA au format 15 :
+  relire le dossier SIA une fois ; affichables sur les cartes (profil d'affichage : Symboles OACI › Points de report VFR,
+  losange vert et identifiant), utilisables dans le champ de route (« MM-CV ») et comme aimant sur la carte.
+- **Voies aériennes sur les cartes** : basses (jusqu'au FL195, bleu) et hautes (violet pointillé), avec désignation
+  (Symboles OACI › Voies aériennes) ; nouveau profil d'affichage **AIRWAYS** (ajouté aussi aux profils déjà enregistrés).
+- **Bloc Route** : bouton « SimBrief » (route du dernier OFP : départ, groupe vitesse / niveau, route ATC, destination ;
+  identifiant du profil pilote). Coordonnées des points ajoutés en notation OACI de la case 15 (degrés et minutes,
+  « 4419N00316E ») ; les secondes restent acceptées à la lecture.
+- **Designs Cabinet et Carnet de vol** : texte des boutons secondaires (parchemin) plus foncé et en gras.
+
 - **Bloc Route** : clic droit sur un point (carte ou coupe) → suppression, point nommé compris (départ et arrivée
   exceptés) ; point d'entrée ou de sortie d'une voie aérienne supprimé → tronçon direct (« GOSAD DCT CTX »).
 - **Designs skeuomorphes** : boutons de zoom des cartes (+ / −) de nouveau avec leur icône (styles des boutons du design

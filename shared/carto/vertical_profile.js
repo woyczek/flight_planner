@@ -875,6 +875,9 @@
         lat: rn.lat,
         lon: rn.lon
       };
+      // point de report VFR (XML_SIA : « MM-CV »)
+      const vr = (aero.vrp || []).find(p => String(p.id).toUpperCase() === k);
+      if (vr) return { name: vr.id, lat: vr.lat, lon: vr.lon };
       const m = /^([A-Z]{2,3})(\d{3})(\d{3})$/.exec(k);
       if (m) {
         const b = navaid(m[1]);
@@ -970,8 +973,8 @@
     };
   }
 
-  /** Coordonnée au degré-minute-seconde (« 462012N0010534E ») : champ de route (précision ~30 m) ; le plan de vol OACI
-   *  strict (icaoLatLon) reste à la minute. */
+  /** Coordonnée au degré-minute-seconde (« 462012N0010534E ») : hors norme OACI (la case 15 s'arrête à la minute),
+   *  pour les usages qui demandent plus de précision. */
   function icaoLatLonSec(lat, lon) {
     const f = (v, w, h) => {
       let t = Math.round(Math.abs(v) * 3600);
@@ -1021,7 +1024,7 @@
         const q = plain(n);
         if (q && nmBetween(q, p) <= 2) return n;
       }
-      return strict ? icaoLatLon(p.lat, p.lon) : icaoLatLonSec(p.lat, p.lon);
+      return icaoLatLon(p.lat, p.lon);   // case 15 : degrés et minutes seulement (secondes acceptées à la lecture)
     };
     const levelOf = l => l && !l.vfr && Number.isFinite(l.ft) ? l : null;
     const first = levelOf(pts[0].lvl) || (Number.isFinite(cruiseFt) && cruiseFt > 0 ? { ft: cruiseFt, label: cruiseFt >= 6000 ? 'FL' : '' } : null);

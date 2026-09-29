@@ -26,8 +26,8 @@
   const ICAO_COORD = /^\d{2}(\d{2}(\d{2})?)?[NS]\d{3}(\d{2}(\d{2})?)?[EW]$/i, DEC_COORD = /^(?:\S*[A-Za-z]\S*\s+)?-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?$/;
   const movable = t => { const c = String(t || '').split('/')[0].trim(); return ICAO_COORD.test(c) || DEC_COORD.test(c); };
   const pad3 = n => String(Math.round(n)).padStart(3, '0');
-  // points ajoutés : degrés, minutes, secondes (le plan de vol OACI strict arrondit à la minute à la copie)
-  const icaoLatLon = (lat, lon) => window.SiaProfile?.icaoLatLonSec ? window.SiaProfile.icaoLatLonSec(lat, lon) : `${lat.toFixed(4)} ${lon.toFixed(4)}`;
+  // points ajoutés : notation OACI de la case 15, degrés et minutes (« 4419N00316E », précision ~1 NM)
+  const icaoLatLon = (lat, lon) => window.SiaProfile?.icaoLatLon ? window.SiaProfile.icaoLatLon(lat, lon) : `${lat.toFixed(4)} ${lon.toFixed(4)}`;
 
   function attach({ textarea, img, onChange = () => {}, aero = () => ({}) }) {
     let pts = [], data = null, geo = null, hover = -1, map = null, markers = [];
@@ -256,7 +256,7 @@
     // ================================================================ carte : route, points déplaçables
     /** Point de la base SIA (balise, point de report, terrain) à moins de 14 px de l'écran ; null sinon. */
     function snapOnMap(ll) {
-      const a = aero(), p0 = map.project(ll), cand = [...(a.navaids || []).map(n => ({ id: n.id, lat: n.lat, lon: n.lon })), ...(a.points || []).map(n => ({ id: n.id, lat: n.lat, lon: n.lon })), ...(a.aerodromes || []).map(n => ({ id: n.icao, lat: n.lat, lon: n.lon }))];
+      const a = aero(), p0 = map.project(ll), cand = [...(a.navaids || []).map(n => ({ id: n.id, lat: n.lat, lon: n.lon })), ...(a.points || []).map(n => ({ id: n.id, lat: n.lat, lon: n.lon })), ...(a.aerodromes || []).map(n => ({ id: n.icao, lat: n.lat, lon: n.lon })), ...(a.vrp || []).map(n => ({ id: n.id, lat: n.lat, lon: n.lon }))];
       let best = null, d = 14;
       for (const c of cand) {
         if (!c.id || Math.abs(c.lat - ll.lat) > .5 || Math.abs(c.lon - ll.lng) > .8) continue;
