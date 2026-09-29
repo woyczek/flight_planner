@@ -10,6 +10,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Icônes du Centre** : jeux `<jeu>-cpco/` retirés (le Centre se distingue par le fond `vierge.gris` des jeux composés et
+  son glyphe jaune) ; plus de lien brisé dans la barre latérale.
+
 - **Aqua : icônes composées** : bulle `vierge.gris.webp` teintée exactement à la couleur Aqua choisie (mélange de calques, plus
   de rotation de teinte) et découpée à sa forme, glyphe blanc ; Centre : même bulle, glyphe jaune. Même principe à venir pour Durci, Cabinet et Carnet de vol (fonds `vierge` / `vierge.gris`).
 

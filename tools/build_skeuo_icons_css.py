@@ -4,9 +4,7 @@ Chaque icône du registre a une image dans shared/icons/skeuo/<dossier>/<nom>.we
 maquette (tools/icons_from_sheets.html) ou fabriquée dans leur style (tools/icons_skeuo_generator.html). En jeu
 skeuomorphe (html[data-icons="brass" | "steel" | "gel"], quel que soit le design), l'image remplace le tracé
 (svg.repo-svg[data-i]) partout, un peu plus grande que le trait. ALIASES : nom sans image propre → image d'un autre.
-Jeux du Centre (CPCO) : shared/icons/skeuo/<dossier>-cpco/ (copies à retoucher aux couleurs du Centre) ; utilisés sur
-les pages du Centre (html[data-app-theme="cpco"]) et pour les entrées du Centre de la barre latérale (repository_nav.js).
-Une icône absente du jeu du Centre garde l'image du jeu ordinaire.
+Le Centre (CPCO) se distingue par le fond du Centre des jeux composés (vierge.gris.webp) et la couleur de son glyphe.
 Jeux COMPOSÉS (fond + glyphe SVG) : si le dossier du jeu contient vierge.webp (fond vide ; ou <dossier>-bg/normal.webp),
 les icônes de ce jeu ne sont plus des images peintes une à une : fond commun (vierge.webp ; vierge.gris.webp, ou
 <dossier>-bg/centre.webp, sur les pages et entrées du Centre)
@@ -95,20 +93,6 @@ for key, d in SETS.items():
     for n, target in ALIASES[key].items():
         if n not in names and target in names:
             out.append(f'html[data-icons="{key}"] .repo-svg[data-i="{n}"]{{background-image:url("icons/skeuo/{d}/{target}.webp")}}')
-    # jeu du Centre : pages du Centre, hors barre latérale (ses entrées choisissent leur image elles-mêmes)
-    cfolder = os.path.join(ROOT, 'shared', 'icons', 'skeuo', d + '-cpco')
-    if os.path.isdir(cfolder):
-        cnames = sorted(f[:-5] for f in os.listdir(cfolder) if f.endswith('.webp'))
-        C = f'html[data-app-theme="cpco"][data-icons="{key}"]'
-        for n in cnames:
-            out.append(f'{C} .repo-svg[data-i="{n}"]:not(.repo-sidenav .repo-svg){{background-image:url("icons/skeuo/{d}-cpco/{n}.webp")}}')
-        if {'chevron-up', 'chevron-down', 'move'} <= set(cnames):
-            out.append(f'{C} .repo-block-heading-rich .repo-toggle::before{{background-image:url("icons/skeuo/{d}-cpco/chevron-up.webp")!important}}')
-            out.append(f'{C} .repo-block-hidden>.repo-block-heading-rich .repo-toggle::before{{background-image:url("icons/skeuo/{d}-cpco/chevron-down.webp")!important}}')
-            out.append(f'{C} .repo-block-tools .repo-drag{{background-image:url("icons/skeuo/{d}-cpco/move.webp")!important}}')
-        for n, target in ALIASES[key].items():
-            if n not in cnames and target in cnames:
-                out.append(f'{C} .repo-svg[data-i="{n}"]:not(.repo-sidenav .repo-svg){{background-image:url("icons/skeuo/{d}-cpco/{target}.webp")}}')
 if composed:
     print('jeux composés (fond + glyphe) :', ', '.join(composed))
 out.append(END)
