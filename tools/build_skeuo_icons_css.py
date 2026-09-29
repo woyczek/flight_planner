@@ -22,15 +22,23 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SETS = {'brass': 'cabinet', 'steel': 'field', 'gel': 'aqua', 'avio': 'flightlog'}
 ALIASES = {'brass': {'save': 'bookmark', 'file': 'file'}, 'steel': {'file': 'file-text'}, 'gel': {'file': 'file-text'}, 'avio': {'save': 'bookmark', 'file': 'file'}}
 # jeux composés : couleur du glyphe (normal, Centre), ombre (vers le bas : éclairage par le haut), marge autour du glyphe
-# (fraction de la taille de l'icône) ; tint : couleur du fond gris (mode Aqua) et core : rayon teinté (% du rayon)
+# (fraction de la taille de l'icône) ; tint : couleur du fond gris (mode Aqua), core : rayon teinté (% du rayon),
+# up / shrink : centre du disque teinté remonté de « up » px et diamètre réduit de « shrink » px (ajustement au cerclage)
 GLYPH = {
-    'gel': {'color': '#ffffff', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.55))', 'pad': .24, 'tint': 'var(--aq-gel,#2473db)', 'core': 86},
+    'gel': {'color': '#ffffff', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.55))', 'pad': .24, 'tint': 'var(--aq-gel,#2473db)', 'core': 86, 'up': 1, 'shrink': 2},
     'brass': {'color': '#f1e4c0', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.7))', 'pad': .26},
     'steel': {'color': '#e9ecdf', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.75))', 'pad': .24},
     'avio': {'color': '#f4ecd8', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.7))', 'pad': .26},
 }
 BEGIN = '/* ==== JEUX D\'ICÔNES SKEUOMORPHES (généré par tools/build_skeuo_icons_css.py) ==== */'
 END = '/* ==== fin des jeux skeuomorphes ==== */'
+
+
+def disc(g):
+    """Disque teinté (mode tint) : couleur jusqu'à core % du rayon, centre remonté de up px, diamètre réduit de shrink px."""
+    # (calc() refusé dans la taille de l'ellipse : rayon en %, réduction en px portée par les arrêts de couleur)
+    r, d = f'{g["core"] / 2:g}%', g.get('shrink', 0) / 2
+    return f'radial-gradient({r} {r} at 50% calc(50% - {g.get("up", 0)}px),{g["tint"]} 0 calc(97% - {d:g}px),transparent calc(100% - {d:g}px))'
 
 
 def folder(d):
@@ -89,9 +97,9 @@ for key, d in composed.items():
     if g.get('tint'):
         # bulle grise teintée sur son disque intérieur (le cerclage reste gris), découpée à sa forme, glyphe non filtré
         shape = f'url("icons/skeuo/{centre}") center/contain no-repeat'
-        out.append(f'{H} .repo-svg[data-i]{{background:url("icons/skeuo/{centre}") center/contain no-repeat,radial-gradient(circle closest-side,{g["tint"]} 0 {g["core"]}%,transparent {g["core"] + 2}%) center/contain no-repeat!important;background-color:transparent!important;background-blend-mode:overlay,normal!important;-webkit-mask:{shape};mask:{shape};filter:none!important;{common}}}')
+        out.append(f'{H} .repo-svg[data-i]{{background:url("icons/skeuo/{centre}") center/contain no-repeat,{disc(g)} center/contain no-repeat!important;background-color:transparent!important;background-blend-mode:overlay,normal!important;-webkit-mask:{shape};mask:{shape};filter:none!important;{common}}}')
         out.append(f'{CENTRE}{{color:var(--ico-glyph-centre,{g["centre"]})!important}}')
-        tree[key] = {'normal': centre, 'centre': centre, 'tint': g['tint'], 'core': g['core'], 'glyph': g['color'], 'glyphCentre': g['centre']}
+        tree[key] = {'normal': centre, 'centre': centre, 'disc': disc(g), 'glyph': g['color'], 'glyphCentre': g['centre']}
     else:
         out.append(f'{H} .repo-svg[data-i]{{background-image:url("icons/skeuo/{normal}")!important;{common}}}')
         out.append(f'{CENTRE}{{background-image:url("icons/skeuo/{centre}")!important;color:var(--ico-glyph-centre,{g["centre"]})!important}}')
