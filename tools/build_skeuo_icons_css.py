@@ -105,8 +105,17 @@ for key, d in composed.items():
         out.append(f'{CENTRE}{{background-image:url("icons/skeuo/{centre}")!important;color:var(--ico-glyph-centre,{g["centre"]})!important}}')
         tree[key] = {'normal': normal, 'centre': centre, 'glyph': g['color'], 'glyphCentre': g['centre']}
     out.append(f'{H} .repo-svg[data-i]>*{{display:inline;filter:var(--ico-glyph-shadow,{g["shadow"]})}}')
-    # boutons des blocs : « ↕ » (déplacer) en texte, comme les jeux au trait (le design masque le texte : font-size 0)
-    out.append(f'{H} .repo-block-tools .repo-drag{{font-size:18px!important;line-height:1;background-image:none!important}}')
+    # boutons des blocs (masquer : chevron ; déplacer : ↕) sur le fond vierge du jeu, symbole par-dessus (couleur du glyphe)
+    T = f'{H} .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle)'
+    if g.get('tint'):
+        shape = f'url("icons/skeuo/{centre}") center/contain no-repeat'
+        out.append(f'{T}{{background:url("icons/skeuo/{centre}") center/contain no-repeat,{disc(g)} center/contain no-repeat!important;background-color:transparent!important;background-blend-mode:overlay,normal!important;-webkit-mask:{shape};mask:{shape};width:28px!important;height:28px!important;color:{g["color"]}!important;opacity:1}}')
+    else:
+        out.append(f'{T}{{background:url("icons/skeuo/{normal}") center/contain no-repeat!important;width:28px!important;height:28px!important;color:{g["color"]}!important;opacity:1}}')
+    out.append(f'{T}:is(:hover,:focus-visible){{filter:brightness(1.12)}}')
+    out.append(f'{H} .repo-block .repo-block-tools .repo-drag{{font-size:15px!important;line-height:1;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.55)}}')
+    out.append(f'{H} .repo-block .repo-block-tools .repo-toggle::before{{background-color:currentColor!important;width:13px!important;height:13px!important;filter:drop-shadow(0 1px .6px rgba(0,0,0,.55))}}')
+    out.append(f'html[data-app-theme="cpco"][data-icons="{key}"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){{color:{g["centre"]}!important}}')
     # ombre du bloc portée par le conteneur (la découpe de la bulle la couperait)
     out.append(f'{H} :is(.repo-block-icon,.repo-card-icon){{filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}}')
 out.append(END)

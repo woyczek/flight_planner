@@ -19,7 +19,7 @@ OUT = os.path.join(ROOT, 'apps', 'planner', 'map_planner.html')
 
 VOL_BLOCK = r'''<section data-block-id="vol" data-icon="plane" data-subtitle="Rendez-vous facultatif et cartes à produire d’après la route du bloc « Route ».">
 <h2>Cartes du vol</h2>
-<p id="volStatus" data-status class="small">La route se saisit dans le bloc « Route » ci-dessus (case 15 : codes OACI des terrains, balises, points de report, voies aériennes, coordonnées « 4330N00125E »).</p>
+<p id="volStatus" data-status class="small"></p>
 <div class="volForm">
 <label>Rendez-vous (facultatif)<input id="volRdv" spellcheck="false" placeholder="point ou « 44.2, 0.6 »"></label>
 </div>
@@ -35,6 +35,7 @@ VOL_BLOCK = r'''<section data-block-id="vol" data-icon="plane" data-subtitle="Re
 '''
 
 VOL_CSS = '''.volForm{display:grid;grid-template-columns:repeat(2,minmax(0,260px));gap:8px 12px;align-items:end}.volForm label{display:grid;gap:3px;font-size:13px}
+#volStatus:empty{display:none}
 .volMaps{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin:8px 0 2px}
 #vprofPtsBox{display:none!important}
 @media(max-width:800px){.volForm{grid-template-columns:1fr 1fr}}
