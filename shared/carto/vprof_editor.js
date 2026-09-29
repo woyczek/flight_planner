@@ -22,10 +22,11 @@
     const src = String(text || '').trim();
     return (isItem15(src) ? src.split(/\s+/) : src.split(/[,;\n]+/)).map(t => t.trim()).filter(Boolean);
   };
-  const ICAO_COORD = /^\d{2}(\d{2})?[NS]\d{3}(\d{2})?[EW]$/i, DEC_COORD = /^(?:\S*[A-Za-z]\S*\s+)?-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?$/;
+  const ICAO_COORD = /^\d{2}(\d{2}(\d{2})?)?[NS]\d{3}(\d{2}(\d{2})?)?[EW]$/i, DEC_COORD = /^(?:\S*[A-Za-z]\S*\s+)?-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?$/;
   const movable = t => { const c = String(t || '').split('/')[0].trim(); return ICAO_COORD.test(c) || DEC_COORD.test(c); };
   const pad3 = n => String(Math.round(n)).padStart(3, '0');
-  const icaoLatLon = (lat, lon) => window.SiaProfile?.icaoLatLon ? window.SiaProfile.icaoLatLon(lat, lon) : `${lat.toFixed(4)} ${lon.toFixed(4)}`;
+  // points ajoutés : degrés, minutes, secondes (le plan de vol OACI strict arrondit à la minute à la copie)
+  const icaoLatLon = (lat, lon) => window.SiaProfile?.icaoLatLonSec ? window.SiaProfile.icaoLatLonSec(lat, lon) : `${lat.toFixed(4)} ${lon.toFixed(4)}`;
 
   function attach({ textarea, img, onChange = () => {}, aero = () => ({}) }) {
     let pts = [], data = null, geo = null, hover = -1, map = null, markers = [];

@@ -42,10 +42,11 @@
   }
   /** Coordonnée de plan de vol OACI (4830N00210E, 48N002E…) → { lat, lon } ; null sinon. */
   const icaoCoord = t => {
-    const m = /^(\d{2})(\d{2})?([NS])(\d{3})(\d{2})?([EW])$/.exec(t);
+    // degrés, minutes, secondes facultatives (« 4830N00210E », « 483012N0021045E »)
+    const m = /^(\d{2})(?:(\d{2})(\d{2})?)?([NS])(\d{3})(?:(\d{2})(\d{2})?)?([EW])$/.exec(t);
     if (!m) return null;
-    const lat = (+m[1] + (+m[2] || 0) / 60) * (m[3] === 'S' ? -1 : 1),
-      lon = (+m[4] + (+m[5] || 0) / 60) * (m[6] === 'W' ? -1 : 1);
+    const lat = (+m[1] + (+m[2] || 0) / 60 + (+m[3] || 0) / 3600) * (m[4] === 'S' ? -1 : 1),
+      lon = (+m[5] + (+m[6] || 0) / 60 + (+m[7] || 0) / 3600) * (m[8] === 'W' ? -1 : 1);
     return {
       name: t,
       lat,
@@ -969,6 +970,16 @@
     };
   }
 
+  /** Coordonnée au degré-minute-seconde (« 462012N0010534E ») : champ de route (précision ~30 m) ; le plan de vol OACI
+   *  strict (icaoLatLon) reste à la minute. */
+  function icaoLatLonSec(lat, lon) {
+    const f = (v, w, h) => {
+      let t = Math.round(Math.abs(v) * 3600);
+      const d = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = t % 60;
+      return String(d).padStart(w, '0') + String(m).padStart(2, '0') + String(s).padStart(2, '0') + h;
+    };
+    return f(lat, 2, lat >= 0 ? 'N' : 'S') + f(lon, 3, lon >= 0 ? 'E' : 'W');
+  }
   /** Coordonnée de plan de vol OACI au degré-minute (« 4620N00105E »). */
   function icaoLatLon(lat, lon) {
     const f = (v, w, h) => {
@@ -1010,7 +1021,7 @@
         const q = plain(n);
         if (q && nmBetween(q, p) <= 2) return n;
       }
-      return icaoLatLon(p.lat, p.lon);
+      return strict ? icaoLatLon(p.lat, p.lon) : icaoLatLonSec(p.lat, p.lon);
     };
     const levelOf = l => l && !l.vfr && Number.isFinite(l.ft) ? l : null;
     const first = levelOf(pts[0].lvl) || (Number.isFinite(cruiseFt) && cruiseFt > 0 ? { ft: cruiseFt, label: cruiseFt >= 6000 ? 'FL' : '' } : null);
@@ -1045,6 +1056,7 @@
     parseRoute,
     toIcaoRoute,
     icaoLatLon,
+    icaoLatLonSec,
     speedLevel,
     build,
     draw,
