@@ -81,3 +81,16 @@ texte « MATIN / APREM / SOIR » par jour (à copier, par exemple dans Discord, 
 - Un classeur réenregistré par LibreOffice ou Google Sheets peut perdre ses formes : plus de trigrammes (signalé).
 - Rôles FLOTTE déduits par mots-clés : indicatifs, le planificateur valide.
 - Pas de correction manuelle du rattachement trigramme ↔ ligne (la première forme est gardée, le conflit signalé).
+
+## Sessions ATC et missions du registre
+
+- **Sessions ATC** : un « TRAINING » ou un « EXAMEN » portant une position (« EXAMEN LFMN_TWR », « TRAINING LFBO_APP »),
+  lu dans les couloirs DIVERS de la frise ou dans le commentaire d'un contrôleur, rend la zone indisponible pour le
+  créneau : **pas de mission dans la CTR du terrain**, et si possible hors des TMA qui le contiennent. Le détail du
+  créneau liste ces « Espaces à éviter ».
+- **Missions du registre…** (créneaux d'au moins deux pilotes : détail du créneau, tableaux des créneaux et des missions
+  probables) : missions du registre du Centre (registre du navigateur) avec rendez-vous ou à plusieurs équipes, de la
+  famille choisie, sans plus d'équipes en l'air que de pilotes disponibles. Leur route estimée est confrontée aux
+  espaces à éviter (base SIA du navigateur) : CTR traversée → mission grisée en fin de liste, TMA → signalée ; missions
+  déjà volées après les autres. « Ouvrir » affiche la mission dans le registre (nouvel onglet). Réservé au Centre :
+  bouton inactif tant que le Centre est verrouillé.

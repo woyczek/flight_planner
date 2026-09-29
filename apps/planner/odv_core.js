@@ -750,8 +750,21 @@
         cands.push({ famille: fam, affectation: a, participants: part, renforts: part.filter(t => !taken.has(t)), score, calcul: `score ${score} = ${why.join(' ')}`, regle: rule });
       }
       cands.sort((x, y) => y.score - x.score || pref.indexOf(x.famille) - pref.indexOf(y.famille));
+      // sessions ATC du créneau (couloirs DIVERS de la frise, commentaires des contrôleurs) : « EXAMEN LFMN_TWR »,
+      // « Training LFBO_APP » → pas de mission dans la CTR du terrain, et si possible hors de ses TMA
+      const eviter = [];
+      for (const src of [...autres.map(v => v.texte), ...atc.map(x => x.commentaire)]) {
+        const t = String(src || '');
+        const kind = /EXAM/i.test(t) ? 'examen' : /TRAIN|FORMATION|CHECK/i.test(t) ? 'training' : '';
+        if (!kind) continue;
+        for (const m of t.matchAll(/\b([A-Z]{4})_(DEL|GND|TWR|APP|DEP|FSS|CTR)\b/gi)) {
+          const icao = m[1].toUpperCase(), pos = `${icao}_${m[2].toUpperCase()}`;
+          if (!eviter.some(e => e.position === pos)) eviter.push({ icao, position: pos, type: kind, texte: t.replace(/\s+/g, ' ').trim() });
+        }
+      }
       // contexte (affichage seulement) : contrôleurs, événements, thème de la semaine
       const contexte = [];
+      for (const e of eviter) contexte.push(`${e.type} ${e.position} : pas de mission dans la CTR de ${e.icao}, et si possible hors de ses TMA`);
       if (atc.length) contexte.push(`contrôleur${atc.length > 1 ? 's' : ''} en ligne (${atc.map(x => `${x.trigramme} ${x.code}`).join(', ')}) : vol « avec contrôle » possible (approches, PAR, FI)`);
       for (const e of events) contexte.push(`événement ${e.groupe}${e.commentaire ? ` : ${e.commentaire}` : ''}`);
       if (/PARA|LARGAGE/.test(themeText) && cands.some(c => c.famille === 'AIRBORNE')) contexte.push('thème de la semaine : activité para → AIRBORNE');
@@ -763,7 +776,7 @@
         jourIndex: j, jour: DAYS[j], date: data.dates[j], creneauIndex: k, creneau: SLOTS[k], heures: `${pad(settings.hours[k][0])}-${pad(settings.hours[k][1])}z`,
         n: dispo.length, pilotes: dispo.map(p => ({ ...p, roles: [...p.roles].sort() })), atc, horsSim,
         indispo: recs.filter(r => r.categorie === 'indispo' || r.categorie === 'occupe').length, inconnus: recs.filter(r => r.categorie === 'inconnu').length,
-        roles: [...new Set(dispo.flatMap(p => [...p.roles]))].sort(), simsCommuns: common, evenements: events, vols, autres,
+        roles: [...new Set(dispo.flatMap(p => [...p.roles]))].sort(), simsCommuns: common, evenements: events, vols, autres, eviter,
         missions: cands.slice(0, settings.top), toutesMissions: cands, contexte
       });
     }

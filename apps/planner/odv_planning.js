@@ -239,6 +239,7 @@
         { key: 'roles', label: 'Rôles possibles', html: v => { const t = v.map(r => C.ROLES[r] || r).join(', '); return `<span class="odv-cut" title="${esc(t)}">${esc(t || '—')}</span>`; } },
         { key: 'simsCommuns', label: 'Simulateurs communs', html: v => `<span class="odv-wrap">${esc(v.join(', ') || '—')}</span>` },
         { key: 'mission', label: 'Mission probable', sortValue: s => s.missions[0]?.famille || '', html: (v, s) => s.missions[0] ? `<span class="odv-fam">${esc(s.missions[0].famille)}</span>` : '—' },
+        { key: 'registre', label: 'Registre', sortValue: s => s.n, html: (v, s) => pickButton(s) || '—' },
         { key: 'contexte', label: 'Contexte', html: (v, s) => `<span class="odv-wrap">${esc([s.evenements.length ? '★ ' + s.evenements.map(e => e.groupe).join(', ') : '', s.vols.length ? `✈ ${s.vols.length} vol(s) posé(s)` : '', s.pilotes.some(p => p.commentaire) ? '✎ horaires en commentaire' : ''].filter(Boolean).join(' · ') || '—')}</span>` }
       ],
       defaultSortKey: 'n', defaultDir: -1, onRowClick: s => select(`${s.jourIndex}${s.creneauIndex}`), rowTitle: 'Cliquer pour le détail du créneau',
@@ -264,9 +265,97 @@
       <b>Événements de groupe</b>${li(s.evenements.map(e => `<li>${esc(e.groupe)}${e.commentaire ? ` — ${esc(e.commentaire)}` : ''}${e.recurrent ? ' <span class="mut">(tous les jours : habillage probable)</span>' : ''}</li>`))}
       <b>Vols déjà posés sur la frise</b>${li(s.vols.map(v => `<li>${esc(v.debut)}–${esc(v.fin)}z ${esc(v.dep)}-${esc(v.arr)} · ${esc(v.appareil)} · ${esc(v.objet)} — ${v.equipage.map(t => tri(t, null, false)).join(' ') || '?'}</li>`).concat(s.autres.map(v => `<li class="mut">${esc(v.debut)}z ${esc(v.couloir)} : ${esc(v.texte)} ${v.equipage.map(t => tri(t, null, false)).join(' ')}</li>`)))}
       <b>Missions probables</b>${li(s.toutesMissions.map((m, i) => `<li>${i < settings.top ? '' : '<span class="mut">'}<span class="odv-fam">${esc(m.famille)}</span> ${m.affectation.map(a => `${tri(a.pilote, null, false)} <small class="mut">${esc(a.role === '*' ? 'autre pilote' : C.ROLES[a.role] || a.role)}</small>`).join(' + ')}${m.renforts.length ? ` (+ ${esc(m.renforts.join(', '))})` : ''} — ${esc(m.calcul)} ; règle : ${esc(m.regle)}${i < settings.top ? '' : '</span>'}</li>`))}
+      ${s.n >= 2 ? `<p>${pickButton(s)}</p>` : ''}
+      ${s.eviter.length ? `<b>Espaces à éviter</b>${li(s.eviter.map(e => `<li><b>${esc(e.type)} ${esc(e.position)}</b> : pas de mission dans la CTR de ${esc(e.icao)}, et si possible hors de ses TMA — <i>« ${esc(e.texte)} »</i></li>`))}` : ''}
       ${s.contexte.length ? `<b>Contexte</b>${li(s.contexte.map(c => `<li>${esc(c)}</li>`))}` : ''}
     </div>`;
   }
+
+  // --- choix d'une mission du registre (Centre) pour un créneau à plusieurs pilotes
+  // Missions du registre du navigateur (missionRegistry:v1, rempli par le registre du Centre) avec rendez-vous ou à
+  // plusieurs équipes, famille du créneau, pas plus d'équipes en l'air que de pilotes disponibles ; route estimée
+  // (points du registre, tronçons échantillonnés) confrontée aux sessions ATC du créneau : CTR du terrain en examen ou
+  // en training → écartée, TMA contenant le terrain → signalée. Ouverture dans le registre (?mission=…).
+  const centreOn = () => !!window.RepositoryNav?.cpco?.enabled?.();
+  const fold = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+  const regMissions = () => { try { return JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions || []; } catch { return []; } };
+  /** Espaces à éviter d'un créneau : CTR et TMA contenant chaque terrain en examen / training (base SIA du navigateur). */
+  async function zonesToAvoid(list) {
+    if (!list?.length) return [];
+    let base = null;
+    try { base = await window.SiaBase?.get?.({ any: true }); } catch { base = null; }
+    if (!base) return list.map(e => ({ ...e, ctr: [], tma: [], note: 'base SIA absente de ce navigateur : CTR non vérifiée' }));
+    const inR = window.SiaBase.inRing;
+    return list.map(e => {
+      const ad = (base.aero?.aerodromes || []).find(a => String(a.icao || '').toUpperCase() === e.icao);
+      if (!ad) return { ...e, ctr: [], tma: [], note: `terrain ${e.icao} inconnu de la base SIA` };
+      const hit = t => (base.airspaces || []).filter(a => a.type === t && (a.rings || []).some(r => inR(r, ad.lat, ad.lon)));
+      return { ...e, ctr: hit('CTR'), tma: hit('TMA') };
+    });
+  }
+  /** Points de la route estimée d'une mission du registre, tronçons échantillonnés (8 par tronçon). */
+  function samplesOf(m) {
+    const pts = (m.estimate?.points || []).filter(p => Number.isFinite(+p.lat) && Number.isFinite(+p.lon)).map(p => ({ lat: +p.lat, lon: +p.lon })), out = [...pts];
+    for (let i = 1; i < pts.length; i++) for (let k = 1; k < 8; k++) out.push({ lat: pts[i - 1].lat + (pts[i].lat - pts[i - 1].lat) * k / 8, lon: pts[i - 1].lon + (pts[i].lon - pts[i - 1].lon) * k / 8 });
+    return out;
+  }
+  /** Conflits d'une mission avec les espaces à éviter : [{ grave, texte }] (grave : CTR). */
+  function conflictsOf(m, zones) {
+    if (!zones.length) return [];
+    const S = samplesOf(m), inR = window.SiaBase?.inRing;
+    if (!inR || !S.length) return S.length ? [] : [{ grave: false, texte: 'route inconnue (registre à relire)' }];
+    const first = list => list.find(a => S.some(p => (a.rings || []).some(r => inR(r, p.lat, p.lon))));
+    const out = [];
+    for (const z of zones) {
+      const c = first(z.ctr);
+      if (c) { out.push({ grave: true, texte: `traverse la CTR ${c.name} (${z.type} ${z.position})` }); continue; }
+      const t = first(z.tma);
+      if (t) out.push({ grave: false, texte: `traverse la TMA ${t.name} (${z.type} ${z.position})` });
+    }
+    return out;
+  }
+  const hmOf = min => Number.isFinite(+min) && +min > 0 ? `${Math.floor(min / 60)} h ${String(Math.round(min % 60)).padStart(2, '0')}` : '—';
+  let pickDialog = null;
+  /** Fenêtre de choix : missions du registre pour le créneau s (famille fam, sinon familles probables du créneau). */
+  async function pickMission(s, fam = '') {
+    if (!centreOn()) { notify('Registre des missions : Centre verrouillé — l’activer dans Paramètres › Centre (CPCO).', 'warn'); return; }
+    const all = regMissions();
+    if (!all.length) { notify('Registre des missions vide dans ce navigateur : ouvrir le registre du Centre et relire le dossier des missions.', 'warn'); return; }
+    const zones = await zonesToAvoid(s.eviter);
+    if (!pickDialog) {
+      pickDialog = document.createElement('dialog');
+      pickDialog.className = 'odv-pick';
+      document.body.append(pickDialog);
+      pickDialog.addEventListener('click', e => { if (e.target === pickDialog || e.target.closest('[data-close]')) pickDialog.close(); });
+    }
+    const fams = [...new Set(s.toutesMissions.map(m => m.famille))];
+    const render = famSel => {
+      const rows = all.filter(m => m.id && m.status !== 'ordered' && !m.organisation && (m.rdv > 0 || (m.operation?.missions || 0) > 1))
+        .filter(m => !famSel || fold(m.family || m.type).startsWith(famSel))
+        .map(m => ({ m, teams: m.airTeams || m.teamCount || 1, conf: conflictsOf(m, zones) }))
+        .filter(r => r.teams <= Math.max(2, s.n))
+        .sort((a, b) => a.conf.some(c => c.grave) - b.conf.some(c => c.grave) || a.conf.length - b.conf.length || (a.m.status === 'flown') - (b.m.status === 'flown') || Math.abs(a.teams - s.n) - Math.abs(b.teams - s.n) || String(a.m.id).localeCompare(String(b.m.id), 'fr', { numeric: true }));
+      pickDialog.innerHTML = `<div class="odv-pick-head"><h3>Missions du registre — ${esc(slotTitle(s))} · ${s.n} pilote(s)</h3><button type="button" data-close title="Fermer">×</button></div>
+        <label>Famille <select data-fam><option value="">toutes</option>${fams.map(f => `<option value="${esc(f)}"${f === famSel ? ' selected' : ''}>${esc(f)}${s.missions[0]?.famille === f ? ' (proposée)' : ''}</option>`).join('')}</select></label>
+        ${zones.length ? `<p class="odv-pick-avoid">À éviter : ${zones.map(z => `<b>${esc(z.type)} ${esc(z.position)}</b> — CTR ${esc(z.ctr.map(a => a.name).join(', ') || '?')}${z.tma.length ? `, TMA ${esc(z.tma.map(a => a.name).join(', '))} (si possible)` : ''}${z.note ? ` <i>(${esc(z.note)})</i>` : ''}`).join(' · ')}</p>` : ''}
+        ${rows.length ? `<table class="odv-pick-table"><thead><tr><th>Mission</th><th>Titre</th><th>Type</th><th>Équipes</th><th>RDV</th><th>Théâtre</th><th>Durée</th><th>Statut</th><th>Espaces</th><th></th></tr></thead><tbody>${rows.map(({ m, teams, conf }) => `<tr class="${conf.some(c => c.grave) ? 'bad' : conf.length ? 'warn' : ''}"><td><b>${esc(m.id)}</b></td><td>${esc(m.title)}</td><td>${esc(m.type)}${m.subtype ? ` <small>${esc(m.subtype)}</small>` : ''}</td><td>${teams}</td><td>${m.rdv || '—'}</td><td>${esc(m.theatre || '')}</td><td>${hmOf(m.estimate?.block ?? m.estimate?.flight)}</td><td>${m.status === 'flown' ? 'volée' : 'générée'}</td><td>${conf.length ? conf.map(c => esc(c.texte)).join('<br>') : 'ok'}</td><td><button type="button" data-open="${esc(m.id)}">Ouvrir</button></td></tr>`).join('')}</tbody></table>`
+          : `<p class="mut">Aucune mission du registre avec rendez-vous ou à plusieurs équipes${famSel ? ` en ${esc(famSel)}` : ''} pour ${s.n} pilote(s).</p>`}
+        <p class="mut">Missions volées et celles qui traversent un espace à éviter en fin de liste ; ouverture dans le registre du Centre (nouvel onglet).</p>`;
+      pickDialog.querySelector('[data-fam]').onchange = e => render(e.target.value);
+      pickDialog.querySelectorAll('[data-open]').forEach(b => b.onclick = () => window.open(new URL(`../cpco/mission_registry.html?mission=${encodeURIComponent(b.dataset.open)}`, location.href).href, '_blank'));
+    };
+    render(fam || s.missions[0]?.famille || '');
+    if (!pickDialog.open) pickDialog.showModal();
+  }
+  /** Bouton « Missions du registre… » d'un créneau à plusieurs pilotes (famille facultative). */
+  const pickButton = (s, fam = '') => s.n >= 2 ? `<button type="button" class="odv-pick-btn" data-pick="${s.jourIndex}${s.creneauIndex}" data-fam="${esc(fam)}"${centreOn() ? '' : ' disabled title="Centre verrouillé : l’activer dans Paramètres › Centre (CPCO)"'}>Missions du registre…</button>` : '';
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-pick]');
+    if (!b) return;
+    e.stopPropagation();
+    const s = slots.find(x => `${x.jourIndex}${x.creneauIndex}` === b.dataset.pick);
+    if (s) pickMission(s, b.dataset.fam || '');
+  }, true);
 
   // --- missions probables
   function renderMissions() {
@@ -284,6 +373,7 @@
         { key: 'affectation', label: 'Affectation proposée', sortValue: r => r.affectation.map(a => a.pilote).join(' '), html: v => v.map(a => `${tri(a.pilote, null, false)} <small class="mut">${esc(a.role === '*' ? 'autre pilote' : C.ROLES[a.role] || a.role)}</small>`).join(' + ') },
         { key: 'renforts', label: 'Peuvent rejoindre', sortValue: r => r.renforts.length, html: v => v.length ? v.map(t => tri(t, null, false)).join(' ') : '—' },
         { key: 'score', label: 'Score', type: 'number' },
+        { key: 'registre', label: 'Registre', sortValue: r => r.slot.n, html: (v, r) => pickButton(r.slot, r.famille) || '—' },
         { key: 'calcul', label: 'Justification', html: (v, r) => `<span class="odv-why">${esc(v)}<br>Règle : ${esc(r.regle)}${r.rang === 1 && r.slot.contexte.length ? `<br>Contexte : ${esc(r.slot.contexte.join(' ; '))}` : ''}</span>` }
       ],
       defaultSortKey: 'ordre', onRowClick: r => select(`${r.slot.jourIndex}${r.slot.creneauIndex}`), rowTitle: 'Cliquer pour le détail du créneau',
