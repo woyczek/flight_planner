@@ -10,6 +10,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+## [4.2.0] — 2026-09-29
+
+Planning ODV (Centre), bloc Route (plan de vol case 15 lié à la carte et à la coupe verticale, voies aériennes, RTBA,
+SimBrief, points de report VFR), plan de vol unique entre planificateur carburant et Cartes de vol, masse au décollage
+prévue, journal des alertes, icônes composées (fond vierge + glyphe) et sélecteur segmenté des designs à matières,
+plans trois vues du Carnet de vol.
+
+À la mise à jour : relire le dossier SIA une fois (base au format 15 : points de report VFR).
+
+- **Bloc Route** : réglages du profil de la carte affichée (fond, zones, symboles, éléments) avec le choix de la carte et
+  de son profil, sous l'aperçu (plus seulement dans « Cartes à produire »).
 - **Carnet de vol** : plans trois vues plus grands (45 % de la largeur du bloc, 340 px au plus) ; en ton sombre, traits crème
   façon blueprint (versions `blueprint-*-clair.webp`), traits sépia en ton clair.
 
