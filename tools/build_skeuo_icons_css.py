@@ -7,8 +7,9 @@ skeuomorphe (html[data-icons="brass" | "steel" | "gel"], quel que soit le design
 Jeux du Centre (CPCO) : shared/icons/skeuo/<dossier>-cpco/ (copies à retoucher aux couleurs du Centre) ; utilisés sur
 les pages du Centre (html[data-app-theme="cpco"]) et pour les entrées du Centre de la barre latérale (repository_nav.js).
 Une icône absente du jeu du Centre garde l'image du jeu ordinaire.
-Jeux COMPOSÉS (fond + glyphe SVG) : si shared/icons/skeuo/<dossier>-bg/normal.webp existe, les icônes de ce jeu ne
-sont plus des images peintes une à une : fond commun (normal.webp ; centre.webp sur les pages et entrées du Centre)
+Jeux COMPOSÉS (fond + glyphe SVG) : si le dossier du jeu contient vierge.webp (fond vide ; ou <dossier>-bg/normal.webp),
+les icônes de ce jeu ne sont plus des images peintes une à une : fond commun (vierge.webp ; vierge.gris.webp, ou
+<dossier>-bg/centre.webp, sur les pages et entrées du Centre)
 et glyphe du registre (tracé SVG, repository_icons.js) par-dessus, couleur et ombre réglables (GLYPH ci-dessous ;
 ombre portée vers le bas, comme l'éclairage des fonds peints). Les chevrons et la poignée des blocs gardent les images
 du jeu. Déposer les deux fonds, relancer ce script : le jeu bascule ; retirer normal.webp : retour aux images.
@@ -49,19 +50,22 @@ out = [BEGIN,
 composed = []
 for key, d in SETS.items():
     folder = os.path.join(ROOT, 'shared', 'icons', 'skeuo', d)
-    names = sorted(f[:-5] for f in os.listdir(folder) if f.endswith('.webp'))
-    bg = os.path.join(ROOT, 'shared', 'icons', 'skeuo', d + '-bg')
-    if os.path.isfile(os.path.join(bg, 'normal.webp')):
+    names = sorted(f[:-5] for f in os.listdir(folder) if f.endswith('.webp') and not f.startswith('vierge'))
+    # fonds vides du jeu composé : vierge.webp / vierge.gris.webp (Centre) dans le dossier du jeu, sinon <dossier>-bg/
+    bgdir = os.path.join(ROOT, 'shared', 'icons', 'skeuo', d + '-bg')
+    normal = f'{d}/vierge.webp' if os.path.isfile(os.path.join(folder, 'vierge.webp')) else f'{d}-bg/normal.webp' if os.path.isfile(os.path.join(bgdir, 'normal.webp')) else ''
+    centre = f'{d}/vierge.gris.webp' if os.path.isfile(os.path.join(folder, 'vierge.gris.webp')) else f'{d}-bg/centre.webp' if os.path.isfile(os.path.join(bgdir, 'centre.webp')) else ''
+    if normal:
         # jeu composé : fond commun + glyphe SVG (couleur, ombre), fond du Centre s'il existe
         g, H = GLYPH[key], f'html[data-icons="{key}"]'
         composed.append(key)
-        out.append(f'{H} .repo-svg[data-i]{{background-image:url("icons/skeuo/{d}-bg/normal.webp")!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * {g["pad"]});color:var(--ico-glyph,{g["color"]})!important;overflow:visible}}')
+        out.append(f'{H} .repo-svg[data-i]{{background-image:url("icons/skeuo/{normal}")!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * {g["pad"]});color:var(--ico-glyph,{g["color"]})!important;overflow:visible}}')
         out.append(f'{H} .repo-svg[data-i]>*{{display:inline;filter:var(--ico-glyph-shadow,{g["shadow"]})}}')
         # barre latérale : le tracé SVG plutôt que l'image peinte
         out.append(f'{H} .repo-sidenav-img{{display:none!important}}{H} .repo-sidenav-ic .repo-svg{{display:block!important}}')
-        if os.path.isfile(os.path.join(bg, 'centre.webp')):
+        if centre:
             C = f'html[data-app-theme="cpco"][data-icons="{key}"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg),{H} .repo-sidenav-cpco .repo-svg[data-i]'
-            out.append(f'{C}{{background-image:url("icons/skeuo/{d}-bg/centre.webp")!important;color:var(--ico-glyph-centre,{g["centre"]})!important}}')
+            out.append(f'{C}{{background-image:url("icons/skeuo/{centre}")!important;color:var(--ico-glyph-centre,{g["centre"]})!important}}')
         if {'chevron-up', 'chevron-down', 'move'} <= set(names):
             out.append(f'html[data-icons="{key}"] .repo-block-heading-rich .repo-toggle::before{{background-image:url("icons/skeuo/{d}/chevron-up.webp")!important}}')
             out.append(f'html[data-icons="{key}"] .repo-block-hidden>.repo-block-heading-rich .repo-toggle::before{{background-image:url("icons/skeuo/{d}/chevron-down.webp")!important}}')

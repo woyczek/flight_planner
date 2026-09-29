@@ -184,7 +184,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260929zzv", script.src).href;
+    css.href = new URL("designs.css?v=20260929zzw", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -603,23 +603,23 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260929zzv", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260929zzw", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260929zzv", script.src).href;
+    files.src = new URL("file_access.js?v=20260929zzw", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260929zzv", "block_icons.js?v=20260929zzv", "side_nav.js?v=20260929zzv"]) {
+    for (const f of ["icons/repository_icons.js?v=20260929zzw", "block_icons.js?v=20260929zzw", "side_nav.js?v=20260929zzw"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260929zzv", script.src).href;
+    store.src = new URL("browser_store.js?v=20260929zzw", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=20260929zzv", script.src).href;
+    update.src = new URL("suite_update.js?v=20260929zzw", script.src).href;
     document.head.append(update)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

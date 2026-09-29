@@ -47,8 +47,9 @@ Pages HTML à ouvrir via le petit serveur d'écriture : `python tools/save_textu
 | `gauges_from_sheets.html` | Découpe des boîtiers de cadrans (laiton → Cabinet, métal sombre → Carnet de vol, plaque sombre → Durci, chrome → Aqua). |
 
 Après une découpe ou une retouche d'icônes : `python tools/build_skeuo_icons_css.py` puis `python tools/bump_versions.py`.
-**Jeux composés (fond + glyphe SVG)** : déposer `shared/icons/skeuo/<jeu>-bg/normal.webp` (et `centre.webp` pour le
-Centre) — `<jeu>` = `aqua`, `cabinet`, `field`, `flightlog` — puis relancer les deux commandes : le jeu passe au fond
+**Jeux composés (fond + glyphe SVG)** : déposer dans le dossier du jeu (`shared/icons/skeuo/<jeu>/`, `<jeu>` = `aqua`,
+`cabinet`, `field`, `flightlog`) le fond vide `vierge.webp` et celui du Centre `vierge.gris.webp` (ou, à part,
+`<jeu>-bg/normal.webp` et `centre.webp`), puis relancer les deux commandes : le jeu passe au fond
 commun avec le glyphe du registre par-dessus. Fond carré (256 × 256 conseillé), transparent autour, sans glyphe ; zone
 du glyphe ≈ le centre (marge de 24–26 % par côté) ; éclairage par le haut (l'ombre du glyphe tombe vers le bas) ; en
 Aqua, fond normal peint dans le bleu de référence (teinte 214°), ramené à la couleur Aqua choisie.

@@ -10,6 +10,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Aqua : icônes composées** (bulle vide `vierge.webp` à la couleur Aqua + glyphe blanc ; Centre : bulle grise
+  `vierge.gris.webp` + glyphe jaune). Même principe à venir pour Durci, Cabinet et Carnet de vol (fonds `vierge` / `vierge.gris`).
+
 - **Base SIA** : une base au format précédent (14) reste utilisable (studio, Cartes de vol, profil vertical) — seuls les
   points de report VFR manquent jusqu'à la relecture du dossier SIA (signalé dans la ligne d'état du studio).
 - **Syntaxe de la route** : explication associée au champ de route (planificateur : sous « Plan de vol » ; studio et
