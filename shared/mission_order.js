@@ -111,7 +111,7 @@
       if (copied) out.textContent = t(['Prompt copié ({n} caractères) : dans ChatGPT, coller (Ctrl+V) puis envoyer.', 'Prompt copied ({n} characters): paste it in ChatGPT (Ctrl+V) and send.', 'Prompt kopiert ({n} Zeichen): in ChatGPT einfügen (Strg+V) und senden.', 'Prompt copiado ({n} caracteres): pegarlo en ChatGPT (Ctrl+V) y enviar.'], { n: p.length.toLocaleString() });
       else {
         out.textContent = t(['Copie refusée par le navigateur : copier le texte ci-dessous puis le coller dans ChatGPT.', 'Copy refused by the browser: copy the text below and paste it in ChatGPT.']);
-        const ta = document.createElement('textarea'); ta.value = p; ta.rows = 6; ta.readOnly = true; ta.className = 'mo-copy';
+        const ta = document.createElement('textarea'); ta.value = p; ta.rows = 3; ta.readOnly = true; ta.className = 'mo-copy';
         out.append(ta); ta.select();
       }
     }
@@ -123,13 +123,13 @@
   if (!document.getElementById('missionOrderCss')) {
     const css = document.createElement('style');
     css.id = 'missionOrderCss';
-    css.textContent = `.mo-form .mo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin:6px 0 12px}
-.mo-form .mo-grid label{display:grid;gap:4px;font-size:12px;font-weight:600;opacity:.85}
-.mo-form .mo-grid :is(select,input),.mo-form .mo-team input{padding:6px 8px;border:1px solid #c8d6dd;border-radius:7px;font:inherit;font-size:13px;min-width:0;width:100%;box-sizing:border-box}
+    css.textContent = `.mo-form .mo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px 10px;margin:4px 0 8px}
+.mo-form .mo-grid label{display:grid;gap:2px;font-size:11.5px;font-weight:600;opacity:.85}
+.mo-form .mo-grid :is(select,input),.mo-form .mo-team input{padding:4px 6px;border:1px solid #c8d6dd;border-radius:6px;font:inherit;font-size:12.5px;min-width:0;width:100%;box-sizing:border-box}
 .mo-form .mo-teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px 12px;margin:4px 0 8px}
 .mo-form .mo-team{display:flex;gap:8px;align-items:center}.mo-form .mo-team span{flex:none;font-weight:700;min-width:5.5em}
 .mo-form .mo-small{font-size:12px;opacity:.8}.mo-form .mo-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.mo-form .mo-copy{width:100%;margin-top:6px;font:12px ui-monospace,monospace}`;
+.mo-form .mo-copy{width:100%;margin-top:6px;font:11px ui-monospace,monospace;max-height:7em}.mo-form p{margin:4px 0}`;
     document.head.append(css);
   }
 

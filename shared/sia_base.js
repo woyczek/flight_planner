@@ -459,7 +459,7 @@
   const AIRAC_NAME = /^(?:AIXM4\.5_all_FR_OM_|XML_SIA_|sia-airspaces-)(\d{4}-\d{2}-\d{2})\.xml$/i;
   /** Analyse d'un dossier SIA (liste de File) → base (non mémorisée) + compte rendu.
    *  Un seul cycle : le plus récent des fichiers datés (les autres sont écartés, sinon contours mélangés).
-   *  progress(texte) : étape en cours. Résultat : { base, report: { airac, skipped, xmlCount, aixmAirspaces, noCities, noBackground } }. */
+   *  progress(texte) : étape en cours. Résultat : { base, report: { airac, skipped, xmlCount, aixmAirspaces, noCities } }. */
   async function build(files, { folderName = 'Dossier SIA', progress = () => {}, signal } = {}) {
     const t0 = performance.now(), timings = [];
     let xmlFiles = files.filter(f => /\.xml$/i.test(f.name));
@@ -485,14 +485,8 @@
     const reading = (label, file) => { const base = doneUnits; return n => progress(`${label} — ${mb(n)} / ${mb(file.size)}`, Math.min(1, (base + n) / total)); };
     const text = async (label, file, encoding) => { await step(label); const t = await readText(file, { encoding, signal, onBytes: reading(label, file) }); doneUnits += file.size; return t; };
 
-    await step('Fond de carte et villes (livrés avec l’application)…');
-    const bg = files.find(f => /^carte france vierge\.png$/i.test(f.name)) || files.find(f => /carte.*vierge(?!.*sample).*\.(png|jpe?g)$/i.test(f.name)) || await appAsset('Carte france vierge.png');
+    await step('Villes (livrées avec l’application)…');
     const city = files.find(f => /^villes_geonames\.csv$/i.test(f.name)) || await appAsset('villes_geonames.csv');
-    let bgUrl = null, bgSize = null;
-    if (bg) {
-      bgUrl = await new Promise((ok, no) => { const r = new FileReader; r.onload = () => ok(r.result); r.onerror = no; r.readAsDataURL(bg); });
-      bgSize = await new Promise(ok => { const i = new Image; i.onload = () => ok({ w: i.naturalWidth, h: i.naturalHeight }); i.onerror = () => ok(null); i.src = bgUrl; });
-    }
     let airspaces = [], aixmAirspaces = [], obstacleMax = {}, aero = null;
     const inventory = [];
     for (const f of xmlFiles) {
@@ -526,9 +520,9 @@
     const moraCells = moraFile ? parseMora(await text('Grille MORA (mora.csv)', moraFile)) : [];
     const aarXml = tracks ? await text('Axes de ravitaillement (ENR 5.7)', tracks) : '';
     await step('Enregistrement dans le navigateur…');
-    const base = { parserVersion: VERSION, airac, skippedXml: skipped.map(f => f.name), folderName, bgUrl, bgSize, airspaces, cities, moraCells, obstacleMax, aarXml, aero,
+    const base = { parserVersion: VERSION, airac, skippedXml: skipped.map(f => f.name), folderName, airspaces, cities, moraCells, obstacleMax, aarXml, aero,
       xmlInventoryData: inventory.map(i => ({ name: i.file.name, role: i.role, mb: (i.file.size / 1048576).toFixed(1) })), cachedAt: Date.now() };
-    const report = { airac, skipped: base.skippedXml, xmlCount: inventory.length, aixmAirspaces: aixmAirspaces.length, noCities: !city, noBackground: !bg, noMora: !moraFile, timings };
+    const report = { airac, skipped: base.skippedXml, xmlCount: inventory.length, aixmAirspaces: aixmAirspaces.length, noCities: !city, noMora: !moraFile, timings };
     report.finish = () => { timings.push([phase, performance.now() - phaseAt]); report.total = performance.now() - t0; progress('Terminé', 1); };
     return { base, report };
   }
@@ -582,7 +576,6 @@
     const warn = [];
     if (r.skipped.length) warn.push(L([`Autre(s) cycle(s) écarté(s) : ${r.skipped.join(', ')} — à archiver (Paramètres › Maintenance).`, `Other cycle(s) skipped: ${r.skipped.join(', ')} — archive them.`]));
     if (r.noCities) warn.push(L(['villes_geonames.csv introuvable (apps/sia/assets/) : noms de villes indisponibles.', 'villes_geonames.csv not found: no city names.']));
-    if (r.noBackground) warn.push(L(['Fond « Carte france vierge.png » introuvable (apps/sia/assets/) : indiquer le dossier de l’application (Paramètres › Maintenance › Sources et dossiers, « Dossier du dépôt ») ; les cartes OSM / relief s’en passent.', 'Background “Carte france vierge.png” not found: set the application folder (Settings › Maintenance › Sources and folders); OSM / terrain maps do without it.']));
     return `<span class="ok">✓ ${esc(L(['Base chargée et mémorisée', 'Base loaded and stored', 'Basis geladen und gespeichert', 'Base cargada y guardada']))}${r.airac ? ` (AIRAC ${esc(r.airac)})` : ''} : ${r.xmlCount} XML, ${base.airspaces.length} ${esc(L(['espaces', 'airspaces']))}, ${(base.aero?.aerodromes || []).length} ${esc(L(['aérodromes', 'aerodromes']))}, ${Object.keys(base.obstacleMax || {}).length} ${esc(L(['cellules d’obstacles', 'obstacle cells']))}, ${base.cities.length} ${esc(L(['villes', 'cities']))}.</span>${warn.map(w => `<br><span class="err">${esc(w)}</span>`).join('')}`;
   }
   /** Bloc « Base de données SIA » : dossier (bouton FileAccess), Relire, Purger, état, compte rendu, fichiers analysés.

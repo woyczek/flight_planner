@@ -5,6 +5,27 @@
   if (!window.RepositoryContentI18n) return;
   window.RepositoryContentI18n([
     // ---- générateur de mission
+    // studio : blocs réorganisés
+    ["Mission partagée avec le générateur ; ouvrir ou coller une autre mission.", "Mission shared with the generator; open or paste another mission.", "Mit dem Generator geteilte Mission; eine andere Mission öffnen oder einfügen.", "Misión compartida con el generador; abrir o pegar otra misión."],
+    ["Ouvrir une autre mission : fichier Markdown / YAML ou texte collé", "Open another mission: Markdown / YAML file or pasted text", "Andere Mission öffnen: Markdown-/YAML-Datei oder eingefügter Text", "Abrir otra misión: archivo Markdown / YAML o texto pegado"],
+    ["Cartes et cadrage", "Maps and framing", "Karten und Ausschnitt", "Mapas y encuadre"],
+    ["Cartes de la mission, cadrage de chacune et profil d’affichage (fond, espaces, symboles, éléments).", "Mission maps, framing of each and display profile (base map, airspaces, symbols, elements).", "Karten der Mission, Ausschnitt jeder Karte und Anzeigeprofil (Hintergrund, Lufträume, Symbole, Elemente).", "Mapas de la misión, encuadre de cada uno y perfil de visualización (fondo, espacios, símbolos, elementos)."],
+    ["Cartes de la mission", "Mission maps", "Karten der Mission", "Mapas de la misión"],
+    ["clic : afficher · profil d’affichage · tracé · destinataire (exercice) · ZIP", "click: show · display profile · route · recipient (exercise) · ZIP", "Klick: anzeigen · Anzeigeprofil · Route · Empfänger (Übung) · ZIP", "clic: mostrar · perfil · trazado · destinatario (ejercicio) · ZIP"],
+    ["Réglages du profil ", "Settings of profile ", "Einstellungen des Profils ", "Ajustes del perfil "],
+    [" : fond de carte, zones, symboles OACI, éléments", ": base map, airspaces, ICAO symbols, elements", ": Hintergrund, Lufträume, ICAO-Symbole, Elemente", ": fondo, espacios, símbolos OACI, elementos"],
+    ["Actualiser", "Refresh", "Aktualisieren", "Actualizar"], ["Garder ce cadrage", "Keep this framing", "Diesen Ausschnitt behalten", "Mantener este encuadre"],
+    ["Recentrer", "Recentre", "Zentrieren", "Recentrar"], ["Cadrage automatique", "Automatic framing", "Automatischer Ausschnitt", "Encuadre automático"],
+    ["⧉ Fenêtre", "⧉ Window", "⧉ Fenster", "⧉ Ventana"], ["⤢ Agrandir", "⤢ Enlarge", "⤢ Vergrößern", "⤢ Ampliar"],
+    ["Coupe verticale le long du cheminement : relief, espaces traversés, obstacles.", "Vertical cross-section along the route: terrain, airspaces crossed, obstacles.", "Vertikalschnitt entlang der Route: Gelände, durchflogene Lufträume, Hindernisse.", "Corte vertical a lo largo de la ruta: relieve, espacios atravesados, obstáculos."],
+    ["Aperçus et génération", "Previews and generation", "Vorschauen und Erzeugung", "Vistas previas y generación"],
+    ["Aperçus de toutes les cartes, génération des cartes et du ZIP.", "Previews of all maps, generation of the maps and the ZIP.", "Vorschauen aller Karten, Erzeugung der Karten und des ZIP.", "Vistas previas de todos los mapas, generación de los mapas y del ZIP."],
+    ["Grille MORA (calcul), sources des villes et du relief.", "MORA grid (calculation), sources of cities and terrain.", "MORA-Raster (Berechnung), Quellen der Städte und des Geländes.", "Cuadrícula MORA (cálculo), fuentes de ciudades y relieve."],
+    // bloc Mission (import replié, commande ChatGPT)
+    ["Mission chargée, enregistrement et brouillon ; importer une autre mission ou en commander une à ChatGPT.", "Loaded mission, saving and draft; import another mission or order one from ChatGPT.", "Geladene Mission, Speichern und Entwurf; eine andere Mission importieren oder bei ChatGPT bestellen.", "Misión cargada, guardado y borrador; importar otra misión o encargar una a ChatGPT."],
+    ["Importer une autre mission : fichiers, texte collé, commande ChatGPT", "Import another mission: files, pasted text, ChatGPT order", "Andere Mission importieren: Dateien, eingefügter Text, ChatGPT-Bestellung", "Importar otra misión: archivos, texto pegado, encargo a ChatGPT"],
+    ["Commander une mission à ChatGPT", "Order a mission from ChatGPT", "Mission bei ChatGPT bestellen", "Encargar una misión a ChatGPT"],
+    ["type, théâtre, équipes, aéronefs : le prompt est copié et ChatGPT s’ouvre", "type, theatre, teams, aircraft: the prompt is copied and ChatGPT opens", "Typ, Schauplatz, Teams, Luftfahrzeuge: der Prompt wird kopiert und ChatGPT geöffnet", "tipo, teatro, equipos, aeronaves: se copia el prompt y se abre ChatGPT"],
     // opération, exercice, documents
     ["Opération", "Operation", "Operation", "Operación"],
     ["Missions de l’opération et organisation de l’exercice : cliquer une mission pour l’afficher.", "Missions of the operation and exercise organisation: click a mission to show it.", "Missionen der Operation und Übungsleitung: eine Mission anklicken, um sie anzuzeigen.", "Misiones de la operación y organización del ejercicio: pulse una misión para mostrarla."],
