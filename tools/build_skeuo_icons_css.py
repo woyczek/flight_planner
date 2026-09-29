@@ -105,6 +105,8 @@ for key, d in composed.items():
         out.append(f'{CENTRE}{{background-image:url("icons/skeuo/{centre}")!important;color:var(--ico-glyph-centre,{g["centre"]})!important}}')
         tree[key] = {'normal': normal, 'centre': centre, 'glyph': g['color'], 'glyphCentre': g['centre']}
     out.append(f'{H} .repo-svg[data-i]>*{{display:inline;filter:var(--ico-glyph-shadow,{g["shadow"]})}}')
+    # boutons des blocs : « ↕ » (déplacer) en texte, comme les jeux au trait (le design masque le texte : font-size 0)
+    out.append(f'{H} .repo-block-tools .repo-drag{{font-size:18px!important;line-height:1;background-image:none!important}}')
     # ombre du bloc portée par le conteneur (la découpe de la bulle la couperait)
     out.append(f'{H} :is(.repo-block-icon,.repo-card-icon){{filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}}')
 out.append(END)
