@@ -76,15 +76,19 @@
     const sample = ['target', 'map', 'upload', 'fuel', 'plane', 'clipboard', 'chart', 'settings'];
     const SK = { brass: 'cabinet', steel: 'field', gel: 'aqua', avio: 'flightlog' }, ICO = new URL('shared/icons/skeuo/', nav().root).href;
     const stroke = n => `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${window.RepositoryIcons?.paths(n) || ''}</svg>`;
-    const sampleOf = id => id === 'off' ? '' : id === 'auto' ? sampleOf(a.designs[cur.design]?.icons || 'line') : SK[id] ? sample.map(n => `<img class="ap-ic" src="${ICO}${SK[id]}/${n}.webp${VER}" alt="" width="34" height="34">`).join('') : sample.map(n => `<span class="ap-ic">${stroke(n)}</span>`).join('');
+    // jeu composé (fond vierge + glyphe, REPOSITORY_TREE.iconComposed écrit par tools/build_skeuo_icons_css.py) : même rendu que les pages
+    const COMP = window.REPOSITORY_TREE?.iconComposed || {};
+    const composedIc = (c, n) => { const img = `url('${ICO}${c.normal}${VER}') center/contain no-repeat`, bg = c.disc ? `${img},${c.disc} center/contain no-repeat` : img;
+      return `<span class="ap-ic" style="display:inline-grid;place-items:center;width:34px;height:34px;background:${bg};background-blend-mode:${c.disc ? 'overlay,normal' : 'normal'};-webkit-mask:${img};mask:${img};color:${c.glyph}"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(.5px 1px .6px rgba(0,0,0,.55))">${window.RepositoryIcons?.paths(n) || ''}</svg></span>`; };
+    const sampleOf = id => id === 'off' ? '' : id === 'auto' ? sampleOf(a.designs[cur.design]?.icons || 'line') : COMP[id] ? sample.map(n => composedIc(COMP[id], n)).join('') : SK[id] ? sample.map(n => `<img class="ap-ic" src="${ICO}${SK[id]}/${n}.webp${VER}" alt="" width="34" height="34">`).join('') : sample.map(n => `<span class="ap-ic">${stroke(n)}</span>`).join('');
     const iconSel = cur.iconsSaved && cur.iconsSaved !== 'matter' ? cur.iconsSaved : 'auto';
     const iconRows = Object.entries(T.iconSet).map(([id, row]) => `<button type="button" class="ap-iconrow repo-plain" data-icons="${id}" aria-pressed="${id === iconSel}"><b>${esc(t(row))}</b><span class="ap-iconset" data-set="${id}">${sampleOf(id)}</span></button>`).join('');
-    const decor = cur.decorSaved || 'auto', decorBtns = Object.entries(T.decorSet).map(([id, row]) => `<button type="button" class="ap-seg repo-plain" data-decor="${id}" aria-pressed="${id === decor}">${esc(t(row))}</button>`).join('');
+    const decor = cur.decorSaved || 'auto', decorBtns = Object.entries(T.decorSet).map(([id, row]) => `<button type="button" class="ap-seg repo-seg repo-plain" data-decor="${id}" aria-pressed="${id === decor}">${esc(t(row))}</button>`).join('');
     const aq = a.aquaColor?.() || 'blue', aquaDots = (a.aquaColors || []).concat('app').map(id => `<button type="button" class="repo-plain ap-dot${id === 'app' ? ' ap-origin' : ''}" data-aqua="${id}" title="${esc(t(T.aquaSet[id]))}" aria-label="${esc(t(T.aquaSet[id]))}" aria-pressed="${id === aq}" style="background:${id === 'app' ? 'conic-gradient(#d33,#e90,#3a5,#2ab,#36d,#a4d,#d33)' : a.aquaSample(id)}"></button>`).join('');
     // --- graphiques : style (segments) et palettes (rangées avec échantillon de couleurs)
-    const ch = a.chart?.(), chStyle = a.chartStyles ? a.chartStyles.map(id => `<button type="button" class="ap-seg repo-plain" data-chart-style="${id}" aria-pressed="${id === ch.style}">${esc(t(T.chartStyleSet[id]))}</button>`).join('') : '';
+    const ch = a.chart?.(), chStyle = a.chartStyles ? a.chartStyles.map(id => `<button type="button" class="ap-seg repo-seg repo-plain" data-chart-style="${id}" aria-pressed="${id === ch.style}">${esc(t(T.chartStyleSet[id]))}</button>`).join('') : '';
     const chRows = a.chartPalettes ? a.chartPalettes.map(id => { const eff = id === 'auto' ? ch.effective.palette : id; return `<button type="button" class="ap-iconrow repo-plain" data-chart-palette="${id}" aria-pressed="${id === ch.palette}"><b>${esc(t(T.chartPalette[id]))}</b><span class="ap-swatches">${a.chartSample(eff).map(c => `<i style="background:${c}"></i>`).join('')}</span></button>`; }).join('') : '';
-    const side = cur.sidenav || 'auto', sideBtns = Object.entries(T.sideSet).map(([id, row]) => `<button type="button" class="ap-seg repo-plain" data-side="${id}" aria-pressed="${id === side}">${esc(t(row))}</button>`).join('');
+    const side = cur.sidenav || 'auto', sideBtns = Object.entries(T.sideSet).map(([id, row]) => `<button type="button" class="ap-seg repo-seg repo-plain" data-side="${id}" aria-pressed="${id === side}">${esc(t(row))}</button>`).join('');
     // --- couleurs : une carte par thème, groupées (applications, familles de CR)
     const card = name => {
       const o = cur.colors[name] || null, base = a.themes[name], tone = o ? o.tone : toneOf(base.bar);
@@ -99,9 +103,9 @@
     };
     const names = Object.keys(a.themes), crs = names.filter(n => !APPS.includes(n));
     host.innerHTML =
-      block('ap-design', 'layers', t(T.design), t(T.designSub), `<div class="ap-thumbs">${thumbs}</div><div class="ap-sidebar"><b>${esc(t(T.decor))}</b><span class="ap-segs">${decorBtns}</span><small class="ap-help">${esc(t(T.decorHelp))}</small></div>${a.aquaColors ? `<div class="ap-sidebar"><b>${esc(t(T.aqua))}</b><span class="repo-plain ap-dots" role="group" aria-label="${esc(t(T.aqua))}">${aquaDots}</span><small class="ap-help">${esc(t(T.aquaHelp))}</small></div>` : ''}`) +
-      (ch ? block('ap-charts', 'chart', t(T.charts), t(T.chartsSub), `<div class="ap-iconrows">${chRows}</div><div class="ap-sidebar"><b>${esc(t(T.chartStyle))}</b><span class="ap-segs">${chStyle}</span></div>`) : '') +
-      block('ap-icons', 'box', t(T.icons), t(T.iconsSub), `<div class="ap-iconrows">${iconRows}</div><div class="ap-sidebar"><b>${esc(t(T.side))}</b><span class="ap-segs">${sideBtns}</span></div>`) +
+      block('ap-design', 'layers', t(T.design), t(T.designSub), `<div class="ap-thumbs">${thumbs}</div><div class="ap-sidebar"><b>${esc(t(T.decor))}</b><span class="ap-segs repo-segs" role="group">${decorBtns}</span><small class="ap-help">${esc(t(T.decorHelp))}</small></div>${a.aquaColors ? `<div class="ap-sidebar"><b>${esc(t(T.aqua))}</b><span class="repo-plain ap-dots" role="group" aria-label="${esc(t(T.aqua))}">${aquaDots}</span><small class="ap-help">${esc(t(T.aquaHelp))}</small></div>` : ''}`) +
+      (ch ? block('ap-charts', 'chart', t(T.charts), t(T.chartsSub), `<div class="ap-iconrows">${chRows}</div><div class="ap-sidebar"><b>${esc(t(T.chartStyle))}</b><span class="ap-segs repo-segs" role="group">${chStyle}</span></div>`) : '') +
+      block('ap-icons', 'box', t(T.icons), t(T.iconsSub), `<div class="ap-iconrows">${iconRows}</div><div class="ap-sidebar"><b>${esc(t(T.side))}</b><span class="ap-segs repo-segs" role="group">${sideBtns}</span></div>`) +
       block('ap-colors', 'eye', t(T.colors), t(T.colorsSub), `<h3>${esc(t(T.groupPages))}</h3><div class="ap-cards">${APPS.filter(n => a.themes[n]).map(card).join('')}</div><h3>${esc(t(T.groupCr))}</h3><div class="ap-cards">${crs.map(card).join('')}</div>`) +
       `<p class="ap-foot"><button type="button" id="apDemo" class="repo-plain" data-icon="eye" title="${esc(t(T.demo))}">${esc(t(T.demoBtn))}</button><button type="button" id="apReset" class="repo-plain" data-icon="refresh">${esc(t(T.reset))}</button></p>`;
     host.querySelectorAll('.ap-card').forEach(paint);
@@ -139,7 +143,7 @@
     css.textContent = `
 .ap-page>section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:0 0 16px}.ap-page h2{font-size:17px;margin:0 0 4px}
 main.ap-page{--ink:#17242b;--muted:#5b6673;--line:#cfd9e1;--card:#fff}
-main.ap-page :is(.ap-thumb,.ap-iconrow,.ap-seg,.ap-card,.ap-show,[id=apReset]){color:var(--ink)!important}main.ap-page :is(.repo-plain,.ap-card) :is(b,strong,small,label,span,header):not([style]):not(.ap-pill):not(.ap-pill *){color:inherit!important}main.ap-page .ap-seg[aria-pressed="true"]{color:#fff!important}main.ap-page .ap-help{color:inherit;opacity:.85}
+main.ap-page :is(.ap-thumb,.ap-iconrow,.ap-card,.ap-show,[id=apReset]){color:var(--ink)!important}main.ap-page :is(.repo-plain,.ap-card) :is(b,strong,small,label,span,header):not([style]):not(.ap-pill):not(.ap-pill *){color:inherit!important}main.ap-page .ap-seg[aria-pressed="true"]{color:#fff!important}main.ap-page .ap-help{color:inherit;opacity:.85}
 .ap-thumbs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:12px}
 .ap-thumb{display:grid;gap:6px;text-align:left;padding:10px;border:2px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);cursor:pointer;font:inherit}
 .ap-thumb[aria-pressed="true"]{border-color:var(--repo-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--repo-accent) 25%,transparent)}
@@ -183,9 +187,6 @@ main.ap-page :is(.ap-thumb,.ap-iconrow,.ap-seg,.ap-card,.ap-show,[id=apReset]){c
 .ap-iconset[data-set="fine"] svg{stroke-width:1.5}.ap-iconset[data-set="line"] svg{stroke-width:2}.ap-iconset[data-set="bold"] svg{stroke-width:2.6}.ap-iconset img.ap-ic{width:34px;height:34px;object-fit:contain}
 .ap-iconset .ap-ic{display:inline-flex}.ap-iconset .ap-ic svg{width:22px!important;height:22px!important;flex:none}   /* taille imposée : le CSS de la page hôte (modale) ne doit pas les agrandir */.ap-iconset .repo-svg{display:block!important}
 .ap-sidebar{display:flex;align-items:center;gap:14px;margin-top:14px;flex-wrap:wrap}
-.ap-segs{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
-.ap-seg{border:0;padding:7px 14px;background:var(--card);color:var(--ink);cursor:pointer;font:inherit}.ap-seg+.ap-seg{border-left:1px solid var(--line)}
-.ap-seg[aria-pressed="true"]{background:var(--repo-accent);color:#fff;font-weight:700}
 main.ap-page h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:16px 0 8px}
 .ap-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
 .ap-card{display:grid;gap:9px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
@@ -241,7 +242,7 @@ main.ap-page .ap-pill.ok{background:#e3f4e8!important;color:#14532d!important;bo
         location.href = new URL('docs/demo_design_icones.html', nav().root).href;
       } else if (b.id === 'apReset') {
         Object.keys(a.current().colors).forEach(n => a.setColor(n, null));
-        a.setIcons(null); a.setSidenav(null); a.setDecor(null); a.setAqua?.(null); a.setChart?.('style', null); a.setChart?.('palette', null); a.setDesign(window.REPOSITORY_TREE.designs?.default || 'standard');
+        a.setIcons(null); a.setSidenav('default'); a.setDecor(null); a.setAqua?.(null); a.setChart?.('style', null); a.setChart?.('palette', null); a.setDesign(window.REPOSITORY_TREE.designs?.default || 'standard');
         previewTheme = null; nav().setTheme(nav().settings.theme); render();
       }
     });

@@ -10,6 +10,163 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+## [4.2.0] — 2026-09-29
+
+Planning ODV (Centre), bloc Route (plan de vol case 15 lié à la carte et à la coupe verticale, voies aériennes, RTBA,
+SimBrief, points de report VFR), plan de vol unique entre planificateur carburant et Cartes de vol, masse au décollage
+prévue, journal des alertes, icônes composées (fond vierge + glyphe) et sélecteur segmenté des designs à matières,
+plans trois vues du Carnet de vol.
+
+À la mise à jour : relire le dossier SIA une fois (base au format 15 : points de report VFR).
+
+- **Bloc Route** : réglages du profil de la carte affichée (fond, zones, symboles, éléments) avec le choix de la carte et
+  de son profil, sous l'aperçu (plus seulement dans « Cartes à produire »).
+- **Carnet de vol** : plans trois vues plus grands (45 % de la largeur du bloc, 340 px au plus) ; en ton sombre, traits crème
+  façon blueprint (versions `blueprint-*-clair.webp`), traits sépia en ton clair.
+
+- **Carnet de vol** : plans trois vues (Islander, DC-3, B-17, P-51, Concorde ; `deco/flightlog/blueprint-*.webp`,
+  convertis en sépia sans franges, ~100 Ko) au coin des blocs en décor complet, en alternance dans l'ordre de la page
+  (rang `data-deco-n` posé par le framework) ; ancien `blueprint.webp` retiré.
+
+- **Framework — sélecteur segmenté** (`repo-segs` / `repo-seg`, `aria-pressed`) : composant commun (page Apparence :
+  décor, style des graphiques, barre latérale), habillé dans les designs à matières avec les textures existantes — Cabinet :
+  barrette de laiton, choix en cuir marine ; Carnet de vol : aluminium, choix en cuir marine ; Durci : acier sombre, choix
+  en champ noir à voyant vert ; Aqua : verre et gel.
+
+- **Bloc Route revu** : champ pleine largeur sans étiquette redondante, barre d'outils sur une ligne en deux groupes
+  (construire : niveau, recherche « Voies aériennes / RTBA » + Chercher, SimBrief, route probable ; exploiter : Tracer,
+  Carburant, Copier OACI), liste de recherche à sa largeur, syntaxe et mode d'emploi réunis dans « Syntaxe et
+  utilisation » ; Cartes de vol : texte d'accueil redondant du bloc « Cartes du vol » retiré.
+- **Aqua** : boutons des blocs (masquer, déplacer) en petites bulles vierges teintées, symbole par-dessus (jaune dans le
+  Centre).
+
+- **Aqua** : bouton « déplacer le bloc » (↕) de nouveau visible (jeux composés : symbole en texte, comme les jeux au trait).
+
+- **Aqua** : disque teinté ajusté au cerclage des bulles (centre remonté de 1 px, diamètre réduit de 2 px ; réglages up /
+  shrink du générateur).
+- **Bloc Route** : niveau de croisière avec les outils du champ de route (plus dans les réglages repliés) ; Cartes de vol :
+  champ « Niveau » du bloc « Cartes du vol » retiré (doublon).
+
+- **Aqua** : cerclage des bulles hors teinte (seul le disque intérieur prend la couleur Aqua) ; images d'icônes Aqua
+  retirées (seules les bulles vierges servent), rotation de teinte (--aq-shift) supprimée, boutons des blocs au trait ;
+  barre latérale et page Apparence sans images pour les jeux composés (`REPOSITORY_TREE.iconComposed`, écrit par le
+  générateur, réécrit pour séparer jeux composés et jeux peints).
+
+- **Icônes du Centre** : jeux `<jeu>-cpco/` retirés (le Centre se distingue par le fond `vierge.gris` des jeux composés et
+  son glyphe jaune) ; plus de lien brisé dans la barre latérale.
+
+- **Aqua : icônes composées** : bulle `vierge.gris.webp` teintée exactement à la couleur Aqua choisie (mélange de calques, plus
+  de rotation de teinte) et découpée à sa forme, glyphe blanc ; Centre : même bulle, glyphe jaune. Même principe à venir pour Durci, Cabinet et Carnet de vol (fonds `vierge` / `vierge.gris`).
+
+- **Base SIA** : une base au format précédent (14) reste utilisable (studio, Cartes de vol, profil vertical) — seuls les
+  points de report VFR manquent jusqu'à la relecture du dossier SIA (signalé dans la ligne d'état du studio).
+- **Syntaxe de la route** : explication associée au champ de route (planificateur : sous « Plan de vol » ; studio et
+  Cartes de vol : « Syntaxe de la route » sous le champ).
+
+- **Cartes de vol** : « Créer les cartes » applique les profils par défaut (route et approche en IFR) au lieu de reprendre
+  ceux de la mission précédente ; profils choisis à la main et cadrages gardés ; mission enregistrée avec l'ancienne
+  carte de route en VFR détaillé recréée en IFR à l'ouverture.
+
+- **Carte du bloc Route** : points exactement sur le tracé (marqueur = pastille seule centrée sur le point, étiquette posée à
+  côté hors du cadre ; écart mesuré < 0,5 px quelle que soit la longueur de l'étiquette) ; banc d'essai : option « Correction ».
+
+- **Icônes skeuomorphes composées** (fond + glyphe SVG) : dès que `shared/icons/skeuo/<jeu>-bg/normal.webp` existe
+  (Aqua, Cabinet, Durci, Carnet de vol), les icônes du jeu deviennent un fond commun et le glyphe du registre par-dessus
+  (blanc / crème ; jaune sur le fond `centre.webp` du Centre), ombre portée vers le bas, contours nets à toute taille ;
+  couleurs, ombre et marge réglables dans `tools/build_skeuo_icons_css.py` (GLYPH). Sans fond : images actuelles.
+
+- **Un seul plan de vol** entre le planificateur carburant et les Cartes de vol (`flightPlanShared:v1`, le plus récent
+  l'emporte) : champ « Plan de vol (case 15) » en tête du devis carburant (distance, route vraie et niveau en sont
+  déduits), bouton « Cartes de vol » (cartes et profil créés à l'arrivée) ; import SimBrief du planificateur repris par
+  les Cartes de vol.
+- **Masse au décollage prévue** (devis carburant) : comparée à la MTOW de l'appareil (fiche APD), masse à l'atterrissage
+  estimée dans le résultat, alerte en cas de dépassement.
+- **Outil de développement** : `tools/stub_marker_offset.html` (banc d'essai du décalage des points de route sur la carte).
+
+- **Points de report VFR** : lus dans le XML_SIA (1 098 points « VFR », ex. MM-CV Cavaillon) — base SIA au format 15 :
+  relire le dossier SIA une fois ; affichables sur les cartes (profil d'affichage : Symboles OACI › Points de report VFR,
+  losange vert et identifiant), utilisables dans le champ de route (« MM-CV ») et comme aimant sur la carte.
+- **Voies aériennes sur les cartes** : basses (jusqu'au FL195, bleu) et hautes (violet pointillé), avec désignation
+  (Symboles OACI › Voies aériennes) ; nouveau profil d'affichage **AIRWAYS** (ajouté aussi aux profils déjà enregistrés).
+- **Bloc Route** : bouton « SimBrief » (route du dernier OFP : départ, groupe vitesse / niveau, route ATC, destination ;
+  identifiant du profil pilote). Coordonnées des points ajoutés en notation OACI de la case 15 (degrés et minutes,
+  « 4419N00316E ») ; les secondes restent acceptées à la lecture.
+- **Designs Cabinet et Carnet de vol** : texte des boutons secondaires (parchemin) plus foncé et en gras.
+
+- **Bloc Route** : clic droit sur un point (carte ou coupe) → suppression, point nommé compris (départ et arrivée
+  exceptés) ; point d'entrée ou de sortie d'une voie aérienne supprimé → tronçon direct (« GOSAD DCT CTX »).
+- **Designs skeuomorphes** : boutons de zoom des cartes (+ / −) de nouveau avec leur icône (styles des boutons du design
+  non appliqués aux commandes MapLibre).
+
+- **Boutons (designs skeuomorphes)** : même hauteur (38 px) avec ou sans icône, dans les blocs, la barre d'action et la
+  barre d'état ; l'icône d'un bouton ne l'agrandit plus ; bouton icône seule carré de même hauteur.
+- **Carte du bloc Route** : points collés au tracé (le marqueur est la pastille seule, l'étiquette à côté) ; points
+  ajoutés écrits à la seconde dans le champ (« 441912N0031604E »), arrondis à la minute seulement dans le plan de vol OACI.
+
+- **Cartes de vol** : la carte de la route (`route_<départ>_<destination>.png`) est en IFR, comme les autres cartes par défaut.
+- **Icônes du Centre** : jeux d'icônes propres au Centre `shared/icons/skeuo/<jeu>-cpco/` (copies des jeux Laiton, Acier,
+  Gel, Aviation, à retoucher), utilisés sur les pages du Centre et pour ses entrées de la barre latérale ; les filtres
+  de couleur (rendu grossier) sont retirés. Règles générées par `tools/build_skeuo_icons_css.py`.
+- **Outils** : `tools/README.md` (outils courants, ateliers graphiques, migrations ponctuelles) ; `bump_versions.py`
+  met aussi à jour les scripts du Planning ODV et les images des jeux d'icônes du Centre.
+- **Décors** : retouches de l'utilisateur (Cabinet, Carnet de vol, Aqua).
+
+- **Barre latérale** : affichée par défaut (Apparence : « Toujours » ; « Selon le design » reste possible).
+- **Accès au Centre** : entrées du Centre (barre latérale, menu ☰) montrées ou masquées aussitôt à l'activation ou au
+  verrouillage, sans recharger.
+- **Planning ODV en Durci** : carte des créneaux en « champ noir » (texte crème, remplissage vert selon le nombre de
+  pilotes), jours et textes secondaires éclaircis.
+
+- **Bloc « Route »** (studio du Centre, Cartes de vol) : un seul champ de route au format case 15 OACI, modifiable, juste
+  au-dessus de la carte et de la coupe verticale ; recherche de route (voies aériennes ou RTBA) écrite avec les voies
+  (« GOSAD G36 LMG G28 CTX »), voies aériennes suivies point par point par le profil et la carte, altitudes au point
+  « /A035 » ; survol lié champ ↔ carte ↔ coupe (jeton surligné dans le champ) ; carte : points déplaçables
+  latéralement, aimantés sur balises, points de report et terrains, clic sur la route pour insérer un point ;
+  « Copier en OACI » (plan de vol strict) ; réglages du profil repliés. Bloc « Cartes à produire » sans aperçu (l'aperçu
+  est la carte du bloc Route). Cartes de vol : bloc « Cartes du vol » (rendez-vous, niveau, cartes) après la route.
+- **Profil vertical** : l'option « Afficher les altitudes (plafond / plancher) » du profil d'affichage s'applique aussi à
+  la coupe (studio, planificateur).
+- **Profils des cartes** : IFR par défaut (détail, cible, rendez-vous : VFR détaillé).
+- **Planning ODV** : page du Centre (`apps/cpco/odv_planning.html`, accès réservé, entrée « ODV » de la barre latérale).
+- **Icônes du Centre en Aqua** : bulle bleu nuit cerclée d'or (au lieu du glyphe jaune).
+
+- **Planning ODV — sessions ATC et registre** : un « TRAINING » ou « EXAMEN » de position (« EXAMEN LFMN_TWR ») rend
+  la CTR du terrain indisponible pour le créneau (et si possible ses TMA) ; bouton « Missions du registre… » sur les
+  créneaux d'au moins deux pilotes : missions avec rendez-vous ou à plusieurs équipes de la famille, route estimée
+  confrontée aux espaces à éviter (CTR → écartée, TMA → signalée), ouverture dans le registre (Centre activé).
+- **Framework — journal des alertes** : les erreurs et avertissements notifiés (effacés de l'écran au bout de quelques
+  secondes) restent consultables le temps de la page : témoin « ⚠ n » dans l'en-tête (rouge s'il y a une erreur, orange
+  sinon, neutre une fois tout acquitté), liste horodatée (répétitions comptées), ACK par alerte, « Tout acquitter »,
+  « Vider » ; 50 dernières alertes, rien n'est conservé au changement de page (`AppFramework.alerts`).
+
+- **Profil vertical éditable à la souris** (studio du Centre, Cartes de vol ; `shared/carto/vprof_editor.js`) : clic
+  dans la coupe → nouveau point à cette distance et cette altitude (« 44.3361 3.2544/2500 »), aimanté sur un point
+  existant proche (seule son altitude change : « R590A/1650 ») ; points déplaçables (altitude au pas de 50 ft ; les
+  points ajoutés glissent aussi le long de la route et fusionnent avec le point sur lequel on les lâche ; double-clic :
+  suppression) ; altitude, hauteur AGL et relief affichés pendant le déplacement. Étiquettes du cheminement sous le
+  champ : survol d'une étiquette, d'un point ou curseur dans le champ → tronçon illuminé des deux côtés. Aux Cartes de
+  vol, la route du bloc Vol suit les modifications.
+
+- **Profil vertical → planificateur carburant** : bouton « Planificateur carburant » (studio du Centre, Cartes de vol) :
+  cheminement converti en route de plan de vol OACI (`SiaProfile.toIcaoRoute` : points publiés par leur indicatif,
+  autres points — sommets des zones du RTBA — en coordonnées `4419N00316E`, changements de niveau « R589B, FL55 » →
+  `4419N00316E/N0160F055`), affichée et copiable ; le planificateur s'ouvre avec la route, la distance, le niveau, la
+  route vraie et l'appareil, relance le calcul et trace son profil.
+- **Cartes de vol** : un seul champ de route — la route du bloc Vol est le cheminement du profil vertical (virgules,
+  niveaux « FL55 », « R590A/FL65 », « N0180F055 » acceptés), profil tracé dès « Créer les cartes » et mis à jour quand
+  la route change.
+- **Designs skeuomorphes** : l'en-tête garde l'arrondi de son design (Cabinet, Carnet de vol, Durci) ; en Durci, carte
+  et radar du bandeau à angles droits (plaque et bloc de sauvegarde inchangés).
+- **Planning ODV** (`apps/planner/odv_planning.html`, ☰ › Planning ODV, accueil) : lecture du classeur hebdomadaire
+  ODV de l'escadrille (.xlsx) **dans le navigateur**, sans envoi ni conservation (lecteur ZIP de la suite +
+  `DOMParser` ; seuls les réglages sont mémorisés) ; trigrammes lus dans les zones de texte, codes normalisés
+  (casse, espaces), légende et couleurs lues dans le fichier, événements des lignes de groupe, profils FLOTTE (types,
+  niveaux, rôles, simulateurs) ; grille de disponibilité filtrable, carte des créneaux communs et détail (horaires en
+  commentaire, contrôleurs, événements, vols posés), missions probables par règles expliquées (familles de la suite +
+  TRAINING avec contrôleur), vols de la frise contrôlés contre les disponibilités, zones à activer ; décalage de date
+  de la frise et anomalies signalés par notifications ; exports CSV, JSON et récapitulatif texte. Voir
+  [docs/ODV_PLANNING.md](docs/ODV_PLANNING.md).
+
 ## [4.1.0] — 2026-09-29
 
 Centre de planification et de conduite des opérations (CPCO), à accès réservé ; outil public « Cartes de vol ».

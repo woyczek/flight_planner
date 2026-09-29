@@ -14,7 +14,8 @@
 (() => {
   const DB = 'sia-map-parser', STORE = 'cache', KEY = 'base', INFO = 'siaBaseInfo:v1', PREV = 'siaBaseInfo:prev', FOLDER_NAME = 'siaFolderName';
   /** Version du format de la base mémorisée : une base d'une autre version est ignorée (à relire). */
-  const VERSION = 14;   // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways)
+  const COMPAT = 14;   // plus ancien format encore utilisable tel quel (15 n'ajoute que aero.vrp)
+  const VERSION = 15;   // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp)
   const SCRIPT_URL = document.currentScript?.src || location.href;
   /** URL d'un fichier de l'application (chemin depuis la racine : « shared/carto/… »). */
   const appUrl = path => new URL('../' + path, SCRIPT_URL).href;
@@ -53,7 +54,9 @@
     const db = await openDb({ create: false });
     if (!db) return null;
     const b = await tx(db, 'readonly', s => s.get(KEY)).catch(() => null);
-    return b && (any || b.parserVersion === VERSION) ? b : null;
+    // format antérieur compatible (COMPAT…VERSION) : utilisable, seules manquent les données ajoutées depuis (b.outdated)
+    if (b && !any && b.parserVersion >= COMPAT && b.parserVersion < VERSION) b.outdated = true;
+    return b && (any || (b.parserVersion >= COMPAT && b.parserVersion <= VERSION)) ? b : null;
   }
   /** Mémorise la base (et son résumé siaBaseInfo:v1). Une base nouvellement lue (cachedAt différent) garde le résumé de la
    *  précédente (siaBaseInfo:prev) pour la comparaison des deux bases (Maintenance, étape 5), quelle que soit la page qui relit. */
@@ -449,6 +452,18 @@
   }
   const inRing = (ring, lat, lon) => { let inside = false; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const [yi, xi] = ring[i], [yj, xj] = ring[j]; if ((yi > lat) !== (yj > lat) && lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) inside = !inside; } return inside; };
   /** Aérodrome contrôlé : unité TWR dans l'AIXM, ou situé dans une CTR. */
+  /** Points de report VFR du XML_SIA (NavFix de type VFR) : [{ id (« MM-CV »), name (« VRP-Cavaillon (…) »), lat, lon }]. */
+  function parseXmlSiaVfrPoints(text) {
+    const out = [];
+    for (const m of String(text).matchAll(/<NavFix\b[^>]*>([\s\S]*?)<\/NavFix>/g)) {
+      const b = m[1];
+      if (!/<NavType>\s*VFR\s*<\/NavType>/.test(b)) continue;
+      const tag = n => (new RegExp(`<${n}>([^<]*)</${n}>`).exec(b) || [])[1] || '';
+      const lat = parseFloat(tag('Latitude')), lon = parseFloat(tag('Longitude'));
+      if (Number.isFinite(lat) && Number.isFinite(lon)) out.push({ id: tag('Ident').trim(), name: tag('Description').trim().replace(/^VRP-\s*/i, ''), lat, lon });
+    }
+    return out;
+  }
   function markControlledAerodromes(aero, airspaces) {
     const ctr = airspaces.filter(a => a.type === 'CTR');
     for (const ad of aero?.aerodromes || []) if (!ad.controlled) ad.controlled = ctr.some(c => c.rings.some(r => inRing(r, ad.lat, ad.lon)));
@@ -517,7 +532,7 @@
 
     await step('Villes (livrées avec l’application)…');
     const city = files.find(f => /^villes_geonames\.csv$/i.test(f.name)) || await appAsset('villes_geonames.csv');
-    let airspaces = [], aixmAirspaces = [], obstacleMax = {}, aero = null;
+    let airspaces = [], aixmAirspaces = [], obstacleMax = {}, aero = null, vfrPoints = [];
     const inventory = [];
     for (const f of xmlFiles) {
       const x = await inspectXml(f);
@@ -529,6 +544,7 @@
         const t = await text(`Lecture de ${f.name}`, f, 'iso-8859-1');
         await step('Contours d’espaces (XML_SIA)…');
         airspaces.push(...parseXmlSiaAirspaces(t));
+        vfrPoints = parseXmlSiaVfrPoints(t);
       } else if (isAixm(f) || /AIXM-Snapshot|AIXMBasicMessage/i.test(x.root)) {
         const t = await text(`Lecture de ${f.name}`, f);
         await step('Analyse de l’AIXM : espaces R / D / P / CTR / TMA…');
@@ -545,7 +561,7 @@
     if (aixmAirspaces.length) airspaces = airspaces.filter(a => !AIXM_TYPES.has(a.type)).concat(aixmAirspaces);
     const seen = new Set;
     airspaces = airspaces.filter(a => { const k = a.type + '|' + a.name + '|' + a.key; if (seen.has(k)) return false; seen.add(k); return true; });
-    if (aero) { await step('Aérodromes contrôlés (CTR)…'); markControlledAerodromes(aero, airspaces); }
+    if (aero) { await step('Aérodromes contrôlés (CTR)…'); markControlledAerodromes(aero, airspaces); aero.vrp = vfrPoints; }
     const cities = city ? parseCities(await text('Villes (villes_geonames.csv)', city)) : [];
     const moraCells = moraFile ? parseMora(await text('Grille MORA (mora.csv)', moraFile)) : [];
     const aarXml = tracks ? await text('Axes de ravitaillement (ENR 5.7)', tracks) : '';
