@@ -27,7 +27,7 @@ seuls sur chaque page. Ce document décrit chaque composant, son rôle et son in
 | Cycles AIRAC, dossier et base SIA, recalcul MORA | `shared/airac.js` | Maintenance |
 | Archives ZIP (écriture, lecture, SHA-256) | `shared/zip_store.js` | Maintenance (sauvegarde totale, export SIA) |
 | Maintenance (versions, dépendances, SIA pas à pas, sauvegarde totale, journal) | `shared/maintenance_page.js` | `apps/settings/maintenance.html` |
-| Registre des missions générées | `shared/mission_registry.js` | `apps/sia/mission_registry.html` |
+| Registre des missions générées | `shared/mission_registry.js` | `apps/cpco/mission_registry.html` |
 | Outils de maintenance | `tools/` | dépôt |
 
 ## 1. `repository_tree` — arborescence, thèmes, menu
@@ -254,7 +254,7 @@ Les données DEFA et recalculées vivent dans `data/` (clone du dépôt de donn�
 `<script src="…/shared/data_files.js?v=…" data-file="references/aircraft_fleet.js"></script>` : le premier appel lit le
 marqueur, puis chaque fichier est pris dans `data/`, sinon dans `examples/` (chargement synchrone, ordre conservé). API :
 `DataFiles.available()`, `DataFiles.url(chemin)`, `DataFiles.dataUrl(chemin)`. Registres : `data/cr/` (`ledger.js`,
-`mission_reporting_config.js`) ; SIA : `data/sia/` (fond et villes livrés dans `apps/sia/assets/`). `FileAccess` :
+`mission_reporting_config.js`) ; SIA : `data/sia/` (villes livrées dans `shared/carto/`). `FileAccess` :
 dossier `__data` ; registre (`cr`), missions, SIA en sont déduits, performances (`planner`) et sauvegarde locale
 (`local`) aussi s'ils ne sont pas réglés ailleurs.
 
@@ -432,7 +432,7 @@ appareil). `link(item)` : lien en tête de carte (fiche appareil). Ajout par le 
 - `tools/bump_versions.py` : nouveau numéro de version de cache (`?v=`) dans toutes les pages
   après une modification de code partagé (toujours supérieur au précédent) ; met aussi à jour
   les chargements internes de `repository_nav.js` (profil pilote, données locales, accès aux
-  dossiers, contrôle des mises à jour) et les scripts propres à `apps/sia/` (`mission_store.js`, `sia_i18n.js`…).
+  dossiers, contrôle des mises à jour) et les scripts propres à `apps/cpco/` (`mission_store.js`, `sia_i18n.js`…).
 - `tools/update_suite.py` : état git (`status`), canal (`channel master|develop`), mise à jour sûre (`update` :
   fast-forward, refus si fichiers modifiés, journal `.git/suite-update.log`), diagnostic (`doctor` : remote, branches,
   branches fusionnées, packs orphelins, `VERSION.json`, fichiers suivis mais ignorés, `core.autocrlf`).
@@ -458,4 +458,4 @@ axes ENR 5.7), cache IndexedDB `sia-map-parser` (`get`, `put`, `patch`, `purge` 
 (`computeMoraGrid` complet, `moraFromObstacles` simple, `moraCsv`, `parseMora`, `moraLabel`), et le bloc d'interface
 `SiaBase.panel(host, { onLoaded, onCached, onPurged })` (dossier, Relire, Purger, état, compte rendu, fichiers), monté
 à l'identique dans le studio (`#sia-base`) et à l'étape 4 de la mise à jour SIA. `Airac` (`shared/airac.js`) ne garde
-que les cycles et l'inventaire du dossier. Dépendance facultative : `SiaAero.parseAixm` (`apps/sia/aero_symbols.js`).
+que les cycles et l'inventaire du dossier. Dépendance facultative : `SiaAero.parseAixm` (`shared/carto/aero_symbols.js`).

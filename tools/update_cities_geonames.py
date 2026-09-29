@@ -1,4 +1,4 @@
-"""Met à jour apps/sia/assets/villes_geonames.csv (villes du studio cartographique) depuis GeoNames (CC BY 4.0).
+"""Met à jour shared/carto/villes_geonames.csv (villes du studio cartographique) depuis GeoNames (CC BY 4.0).
 
 La base d'origine (GeoNames cities500, Europe de l'Ouest) ne couvrait ni l'outre-mer ni le reste du monde. L'outil :
   · remplace les lignes des pays demandés par leurs lieux habités (classe P) d'au moins --min habitants, lus dans les
@@ -18,7 +18,7 @@ import csv, io, os, sys, urllib.request, zipfile
 
 sys.stdout.reconfigure(encoding='utf-8')
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-CSV = os.path.join(ROOT, 'apps', 'sia', 'assets', 'villes_geonames.csv')
+CSV = os.path.join(ROOT, 'shared', 'carto', 'villes_geonames.csv')
 # Outre-mer français : Guadeloupe, Martinique, Guyane, Réunion, Mayotte, Nouvelle-Calédonie, Polynésie,
 # Saint-Pierre-et-Miquelon, Wallis-et-Futuna, Saint-Barthélemy, Saint-Martin.
 OUTRE_MER = ['GP', 'MQ', 'GF', 'RE', 'YT', 'NC', 'PF', 'PM', 'WF', 'BL', 'MF']

@@ -9,7 +9,7 @@ Code : la page elle-même, `shared/flight_ui.js` (actions du menu ☰, préfére
 (bandeau, menu ☰, blocs déplaçables / masquables — voir [FRAMEWORK.md](FRAMEWORK.md)).
 Bases partagées : `AircraftDB/aircraft_db.js` (types OACI) et `AircraftDB/aircraft_icons.js`.
 Profil vertical : `shared/flight_vertical_profile.js` et le module du studio SIA
-(`apps/sia/vertical_profile.js`, `apps/sia/aero_symbols.js`).
+(`shared/carto/vertical_profile.js`, `shared/carto/aero_symbols.js`).
 
 ## 1. Profils avion
 

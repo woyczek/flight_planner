@@ -54,3 +54,10 @@ html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons
 /* barres fixées en bas des pages (planificateur : .status-bar ; Landing : .analysis-dock) : décalées de la largeur de la
    barre latérale quand elle est affichée (sinon leur texte passe dessous) */
 html[data-sidenav="on"] :is(.status-bar,.analysis-dock),html[data-design="console"]:not([data-sidenav="off"]) :is(.status-bar,.analysis-dock){left:var(--repo-sidenav-w)!important}
+
+/* Centre (CPCO) verrouillé : entrées masquées, page du Centre recouverte d'un avis (shared/repository_nav.js) */
+html[data-cpco="off"] .cpco-only{display:none!important}
+.cpco-lock{position:fixed;inset:0;z-index:1050;display:grid;place-items:center;padding:16px;background:#1b2440;color:#f2f0ea;font:15px/1.5 system-ui,Segoe UI,Arial,sans-serif;text-align:center}
+.cpco-lock>div{max-width:520px;padding:24px 28px;border:1px solid #e2c16b66;border-radius:14px;background:#141b31}
+.cpco-lock b{display:block;color:#e2c16b;letter-spacing:.08em;text-transform:uppercase;font-size:13px}
+.cpco-lock a{color:#e2c16b;font-weight:650}

@@ -1,6 +1,6 @@
 // Planificateur de performances : bloc « Profil vertical ». Coupe le long d'une route (saisie, ou reprise
 // de l'OFP SimBrief importé par le bouton d'en-tête) avec le module du studio SIA
-// (apps/sia/vertical_profile.js) : relief, espaces et obstacles selon un profil d'affichage du studio (par
+// (shared/carto/vertical_profile.js) : relief, espaces et obstacles selon un profil d'affichage du studio (par
 // défaut celui choisi dans le studio pour le profil vertical), base SIA mémorisée par le studio (même
 // navigateur), trajectoire prévue selon le modèle de performances de l'avion actif (TOC, TOD).
 (() => {

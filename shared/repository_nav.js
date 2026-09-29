@@ -57,6 +57,53 @@
     const t = cfg.themes[name] || {}, o = (readJson("repositoryColors") || {})[name], fam = o && cfg.colorFamilies?.[o.family];
     return fam ? { ...t, ...familyColors(fam, o.tone, t.page), family: o.family, tone: +o.tone } : { ...t };
   }
+  // ---- Accès au Centre (CPCO : apps/cpco) : activé dans Paramètres › Centre (CPCO) par un mot de passe, gardé dans ce
+  // navigateur (cpcoAccess:v1). Verrou d'usage, pas une sécurité : les pages restent des fichiers lisibles. Centre
+  // verrouillé : pages du Centre absentes du menu, de la barre latérale et de l'accueil (html[data-cpco="off"]),
+  // page du Centre ouverte directement recouverte d'un avis ; réglages du Centre verrouillés dans Paramètres.
+  const CPCO_KEY = "cpcoAccess:v1", CPCO_HASH = "1310afbbafc4f1eb714648fb094b876f453356b9c84958057a783fb478474993";
+  const cpcoOn = () => readPref(CPCO_KEY, "") === "on", isCpco = p => String(p || "").startsWith("apps/cpco/");
+  doc.dataset.cpco = cpcoOn() ? "on" : "off";
+  const cpco = {
+    enabled: cpcoOn,
+    /** Active le Centre si le mot de passe est bon ; true si activé. */
+    async unlock(password) {
+      const bytes = new TextEncoder().encode(String(password || "").trim().toUpperCase());
+      const hex = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map(b => b.toString(16).padStart(2, "0")).join("");
+      if (hex !== CPCO_HASH) return false;
+      try { localStorage.setItem(CPCO_KEY, "on"); } catch { return false; }
+      doc.dataset.cpco = "on";
+      window.dispatchEvent(new CustomEvent("cpco-access-change", { detail: { enabled: true } }));
+      return true;
+    },
+    lock() {
+      try { localStorage.removeItem(CPCO_KEY); } catch { /* stockage indisponible */ }
+      doc.dataset.cpco = "off";
+      window.dispatchEvent(new CustomEvent("cpco-access-change", { detail: { enabled: false } }));
+    }
+  };
+  if (isCpco(page?.path || rel) && !cpcoOn()) {
+    const lockNotice = () => {
+      const box = document.createElement("div");
+      box.className = "cpco-lock";
+      box.setAttribute("role", "alert");
+      box.innerHTML = `<div><b>Centre de planification et de conduite des opérations</b><p>Accès réservé. Le Centre s'active dans Paramètres › Centre (CPCO).</p><a href="${new URL("apps/settings/parametrage.html?base=cpco", root).href}">Activer le Centre…</a> · <a href="${new URL("index.html", root).href}">Accueil</a></div>`;
+      document.body.append(box);
+    };
+    if (document.body) lockNotice(); else document.addEventListener("DOMContentLoaded", lockNotice);
+  }
+  /** Filtres SVG des icônes skeuomorphes du Centre (designs_skeuo.css) : fond sombre teinté (bois → merisier, peinture →
+   *  rouge) ou glyphe clair doré (aviation, gel), selon la luminance : le laiton et le glyphe restent intacts. */
+  function cpcoIconFilters() {
+    if (!document.body) { document.addEventListener("DOMContentLoaded", cpcoIconFilters, { once: true }); return; }
+    if (document.getElementById("cpcoIconFilters")) return;
+    const tint = (id, matrix, slope, intercept, glyph) => `<filter id="${id}" color-interpolation-filters="sRGB"><feColorMatrix in="SourceGraphic" type="matrix" values="${matrix} 0 0 0 1 0" result="t"/><feColorMatrix in="SourceGraphic" type="luminanceToAlpha" result="l"/><feComponentTransfer in="l" result="m"><feFuncA type="linear" slope="${slope}" intercept="${intercept}"/></feComponentTransfer>${glyph ? '<feComposite in="t" in2="m" operator="in" result="g"/><feComposite in="g" in2="SourceGraphic" operator="over"/>' : '<feComposite in="SourceGraphic" in2="m" operator="in" result="k"/><feComposite in="k" in2="t" operator="over"/>'}</filter>`;
+    document.body.insertAdjacentHTML("beforeend", `<svg id="cpcoIconFilters" width="0" height="0" style="position:absolute" aria-hidden="true">${
+      tint("cpco-ico-cherry", "1.25 .2 0 0 0  0 .42 0 0 0  0 0 .5 0 0 ", 4, -1.2) +
+      tint("cpco-ico-red", ".62 .62 .62 0 0  0 .36 0 0 0  0 0 .32 0 0 ", 4, -1.6) +
+      tint("cpco-ico-gold", "1 0 0 0 0  0 .84 0 0 0  0 0 .36 0 0 ", 5, -3.5, true) +
+      tint("cpco-ico-gold-gel", "1 0 0 0 0  0 .84 0 0 0  0 0 .36 0 0 ", 12, -10.9, true)}</svg>`);
+  }
   let currentTheme = themeName;
   // Graphiques : palette et style, au choix (Apparence › Graphiques : préférences repositoryChartPalette et
   // repositoryChartStyle) ou automatiques selon le design. Palettes : « vivid » (couleurs d'origine des pages), « brass »
@@ -97,6 +144,8 @@
   function applyTheme(name) {
     const t = themeColors(name);
     currentTheme = name;
+    doc.dataset.appTheme = name;   // thème sur <html> : réglages propres à un thème (icônes skeuomorphes du Centre)
+    cpcoIconFilters();
     for (const [k, v] of Object.entries({
         "--repo-bar": t.bar || "#101319",
         "--repo-bar-text": t.barText || "#fff",
@@ -148,7 +197,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260929z", script.src).href;
+    css.href = new URL("designs.css?v=20260929zk", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -265,7 +314,7 @@
     return r ? (r[["fr", "en", "de", "es"].indexOf(language)] || l) : l
   };
   const groups = new Map(); /* menu:false : page déclarée (thème, réglages) mais absente du menu */
-  cfg.pages.filter(p => p.menu !== false).forEach(p => {
+  cfg.pages.filter(p => p.menu !== false && (cpcoOn() || !isCpco(p.path))).forEach(p => {
     const bits = (p.menu || p.label).split("/"),
       group = bits.length > 1 ? bits.shift() : "Pages",
       label = bits.join("/") || p.label;
@@ -402,6 +451,7 @@
   const source = key => { let o = {}; try { o = JSON.parse(localStorage.getItem("suiteSources:v1") || "{}") || {}; } catch {} return String(o[key] || cfg.sources?.[key]?.url || "").replace(/\/+$/, ""); };
   // API publique.
   window.RepositoryNav = {
+    cpco,
     source,
     /** Enregistre (ou efface, valeur vide) la surcharge locale d'une source ; événement « suite-sources-change ». */
     setSource(key, value) { let o = {}; try { o = JSON.parse(localStorage.getItem("suiteSources:v1") || "{}") || {}; } catch {} const v = String(value || "").trim(); v && v !== cfg.sources?.[key]?.url ? o[key] = v : delete o[key]; try { Object.keys(o).length ? localStorage.setItem("suiteSources:v1", JSON.stringify(o)) : localStorage.removeItem("suiteSources:v1"); } catch {} window.dispatchEvent(new CustomEvent("suite-sources-change", { detail: { key } })); },
@@ -488,12 +538,13 @@
   // Entrées : REPOSITORY_TREE.sidebar si présent, sinon la liste ci-dessous ; seules les pages déclarées sont retenues.
   {
     const items = cfg.sidebar || [
-      { icon: "target", path: "apps/sia/mission_editor.html", label: ["Missions", "Missions", "Missionen", "Misiones"] },
-      { icon: "list", path: "apps/sia/mission_registry.html", label: ["Registre", "Registry", "Register", "Registro"], title: ["Registre des missions générées", "Generated mission registry", "Register der erzeugten Missionen", "Registro de misiones generadas"] },
-      { icon: "map", path: "apps/sia/map_parser.html", label: ["Cartes", "Maps", "Karten", "Mapas"] },
+      { icon: "target", path: "apps/cpco/mission_editor.html", label: ["Missions", "Missions", "Missionen", "Misiones"] },
+      { icon: "list", path: "apps/cpco/mission_registry.html", label: ["Registre", "Registry", "Register", "Registro"], title: ["Registre des missions générées", "Generated mission registry", "Register der erzeugten Missionen", "Registro de misiones generadas"] },
+      { icon: "map", path: "apps/cpco/map_parser.html", label: ["Studio", "Studio", "Studio", "Estudio"], title: ["Studio cartographique du Centre", "Centre map studio", "Kartenstudio des Zentrums", "Estudio cartográfico del Centro"] },
       { icon: "clipboard", path: "apps/cr/mission_cr.html", match: "apps/cr/", label: ["CR DEFA", "DEFA report", "DEFA-Bericht", "Informe DEFA"] },
       { icon: "chart", path: "apps/cr/mission_operations_reporting.html", match: "_reporting.html", label: ["Reporting", "Reporting", "Berichte", "Informes"] },
       { icon: "fuel", path: "apps/planner/flight_performance_planner.html", label: ["Carburant", "Fuel", "Kraftstoff", "Combustible"] },
+      { icon: "map", path: "apps/planner/map_planner.html", label: ["Cartes", "Maps", "Karten", "Mapas"], title: ["Cartes de vol : route, topo, approche, rendez-vous, destination", "Flight maps: route, topo, approach, rendezvous, destination", "Flugkarten", "Mapas de vuelo"] },
       { icon: "plane", path: "apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html", label: ["Atterrissages", "Landings", "Landungen", "Aterrizajes"] },
       { sep: true, bottom: true },   // réglages : groupés en bas de la colonne
       { icon: "palette", path: "apps/settings/apparence.html", label: ["Apparence", "Appearance", "Darstellung", "Apariencia"] },
@@ -522,9 +573,9 @@
     items.forEach((it, i) => {
       const li = document.createElement("li");
       if (it.sep) { li.className = "repo-sidenav-sep" + (it.bottom ? " repo-sidenav-bottom" : ""); ul.append(li); return; }
-      if (it.path && !known.has(it.path)) return;
+      if (it.path && (!known.has(it.path) || (isCpco(it.path) && !cpcoOn()))) return;
       const a = document.createElement(it.menu ? "button" : "a");
-      a.className = "repo-sidenav-item";
+      a.className = "repo-sidenav-item" + (isCpco(it.path) ? " repo-sidenav-cpco" : "");
       if (it.menu) { a.type = "button"; a.onclick = e => { e.stopPropagation(); document.querySelector(".repo-menu-button")?.click(); }; }
       else a.href = new URL(it.path, root).href;
       if (it.path === "apps/settings/apparence.html") a.addEventListener("click", e => { if (openAppearance()) e.preventDefault(); });
@@ -558,23 +609,23 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260929z", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260929zk", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260929z", script.src).href;
+    files.src = new URL("file_access.js?v=20260929zk", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260929z", "block_icons.js?v=20260929z", "side_nav.js?v=20260929z"]) {
+    for (const f of ["icons/repository_icons.js?v=20260929zk", "block_icons.js?v=20260929zk", "side_nav.js?v=20260929zk"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260929z", script.src).href;
+    store.src = new URL("browser_store.js?v=20260929zk", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=20260929z", script.src).href;
+    update.src = new URL("suite_update.js?v=20260929zk", script.src).href;
     document.head.append(update)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

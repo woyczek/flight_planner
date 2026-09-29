@@ -118,7 +118,7 @@
     s.dataset.noI18n = '';
     s.className = 'mt-block';
     s.innerHTML = `<h2></h2><p class="repo-block-subtitle mt-sub"></p><div class="mt-body"></div>`;
-    if (embedded) s.hidden = true;
+    if (embedded || (b.id === 'storage' && !window.RepositoryNav?.cpco?.enabled?.())) s.hidden = true;
     main.append(s);
     hosts[b.id] = s.querySelector('.mt-body');
   }
@@ -139,8 +139,13 @@
     navHost.querySelectorAll('[data-mt]').forEach(b => { b.textContent = t(NAV[b.dataset.mt]); });
   }
   /** Affiche le bloc id (Paramètres) : l'éditeur de base est masqué, l'entrée du menu est active. */
+  // blocs du Centre (CPCO) : absents tant que le Centre n'est pas activé (Paramètres › Centre)
+  const CPCO_BLOCKS = new Set(['storage']);
+  const cpcoLocked = id => CPCO_BLOCKS.has(id) && !window.RepositoryNav?.cpco?.enabled?.();
+  function cpcoNav() { navHost?.querySelectorAll('[data-mt]').forEach(b => { b.hidden = cpcoLocked(b.dataset.mt); }); }
+  window.addEventListener('cpco-access-change', () => { cpcoNav(); if (!embedded) CPCO_BLOCKS.forEach(id => { const el = document.getElementById(id); if (el) el.hidden = cpcoLocked(id); }); });
   function showBlock(id) {
-    if (!embedded || !document.getElementById(id)) return;
+    if (!embedded || !document.getElementById(id) || cpcoLocked(id)) return;
     main.querySelector('.da-main')?.setAttribute('hidden', '');
     BLOCKS.forEach(b => { document.getElementById(b.id).hidden = b.id !== id; });
     main.querySelectorAll('.da-nav [data-set]').forEach(x => x.classList.remove('active'));
@@ -157,6 +162,7 @@
       navHost.innerHTML = `<h3></h3>${BLOCKS.map(b => `<button type="button" data-mt="${b.id}"></button>`).join('')}`;
       nav.append(navHost);
       navHost.querySelectorAll('[data-mt]').forEach(b => b.onclick = () => showBlock(b.dataset.mt));
+      cpcoNav();
     }
     // une base affichée (data_admin.js) : les blocs de maintenance se masquent
     window.addEventListener('data-admin-show', () => {
@@ -464,7 +470,7 @@
       const block = /```text\n([\s\S]*?)\n```/.exec(md.text.replace(/\r\n/g, '\n'))?.[1];
       promptState = block == null ? pill('warn', '?') : block.trim() === window.MISSION_PROMPT.trim() ? pill('ok', t(['synchronisé', 'in sync'])) : pill('warn', t(['à régénérer : python tools/build_mission_prompt.py', 'rebuild: python tools/build_mission_prompt.py']));
     }
-    add(t(['Prompt des missions', 'Mission prompt']), 'apps/sia/mission_prompt.js ← docs/PROMPT_GENERATEUR_MISSIONS.md', t(['git ; en-tête « GÉNÉRÉ »', 'git; “GENERATED” header']), 'build_mission_prompt.py (bump_versions.py)', t(['générateur, registre des missions', 'generator, mission registry']), promptState);
+    add(t(['Prompt des missions', 'Mission prompt']), 'apps/cpco/mission_prompt.js ← docs/PROMPT_GENERATEUR_MISSIONS.md', t(['git ; en-tête « GÉNÉRÉ »', 'git; “GENERATED” header']), 'build_mission_prompt.py (bump_versions.py)', t(['générateur, registre des missions', 'generator, mission registry']), promptState);
     const vj = await repoText('VERSION.json'), relv = window.REPOSITORY_TREE?.release?.version;
     let vv = ''; try { vv = vj ? JSON.parse(vj.text).release : ''; } catch { /* illisible */ }
     add('VERSION.json', 'VERSION.json ← repository_tree', t(['ignoré par git (*.json)', 'git-ignored (*.json)']), t(['aucun (à supprimer)', 'none (to delete)']), '—', !vj ? pill('ok', t(['absent', 'absent'])) : vv === relv ? pill('ok', vv) : pill('warn', t(['{a} ≠ {b}', '{a} ≠ {b}'], { a: vv, b: relv })));
@@ -525,7 +531,7 @@
           <p>${esc(t(['Base mémorisée', 'Stored base', 'Gespeicherte Basis', 'Base guardada']))} : <b>${esc(baseCycle || '—')}</b> · ${esc(t(['dossier data/sia', 'data/sia folder']))} : <b>${esc(folderCycle || '?')}</b> ${s4 === 'ok' ? pill('ok', t(['à jour', 'up to date'])) : baseCycle && folderCycle ? pill('warn', t(['à relire', 'to re-read'])) : ''}</p>
           ${s4 === 'ok' ? '' : todo(esc(t(['cliquer « Relire le dossier » ci-dessous (quelques secondes ; le navigateur peut demander d’autoriser le dossier). Quand « ✓ Base chargée et mémorisée » s’affiche, les étapes 5 et 6 se mettent à jour.', 'click “Re-read the folder” below (a few seconds). When “✓ Base loaded and stored” shows, steps 5 and 6 update.'])))}
           <div id="mtBasePanel"></div>
-          <p class="mt-small">${esc(t(['Même bloc que « Base de données SIA » du studio cartographique :', 'Same block as “SIA database” in the map studio:']))} <a class="mt-link" href="${esc(new URL('apps/sia/map_parser.html#sia-base', root()).href)}" target="_blank" rel="noopener">${esc(t(['ouvrir le studio', 'open the studio']))}</a></p>
+          <p class="mt-small">${esc(t(['Même bloc que « Base de données SIA » du studio cartographique :', 'Same block as “SIA database” in the map studio:']))} <a class="mt-link" href="${esc(new URL('apps/cpco/map_parser.html#sia-base', root()).href)}" target="_blank" rel="noopener">${esc(t(['ouvrir le studio', 'open the studio']))}</a></p>
         </div>
         <div class="mt-step" id="mt-step-5">${stepHead(5, (cmp && acked(5)) || (baseSummary && !prev) ? 'ok' : cmp ? 'warn' : 'todo', t(['Contrôler les différences avec la base précédente', 'Check the differences with the previous base', 'Unterschiede zur vorherigen Basis prüfen', 'Controlar las diferencias con la base anterior']))}
           ${cmp ? diffHtml(cmp) + (acked(5) ? `<p>${pill('ok', t(['différences vues', 'differences reviewed']))}</p>` : todo(esc(t(['parcourir les espaces ajoutés / retirés (cartes des missions concernées), puis passer à l’étape 6.', 'review added / removed airspaces, then go to step 6.'])), 5)) : baseSummary && !prev ? `<p>${pill('info', t(['aucune base précédente gardée (première lecture ou cache purgé) : rien à comparer — passer à l’étape 6', 'no previous base kept (first read or purged cache): nothing to compare — go to step 6']))}</p>` : `<p class="mt-small">${esc(t(['S’affiche automatiquement après la relecture (étape 4).', 'Shown automatically after the re-read (step 4).']))}</p>`}
@@ -709,7 +715,7 @@
     const perf = window.AIRCRAFT_PERF || {};
     // terrains des missions du registre présents dans l'AIXM
     const ads = new Set((b?.aero?.aerodromes || []).map(a => a.code || a.icao || a.id).filter(Boolean));
-    const reg = readJson('missionRegistry:v1', null)?.missions || [], regUrl = new URL('apps/sia/mission_registry.html', root()).href;
+    const reg = readJson('missionRegistry:v1', null)?.missions || [], regUrl = new URL('apps/cpco/mission_registry.html', root()).href;
     const regEmpty = pill('info', t(['registre des missions vide dans ce navigateur : ouvrir le Registre des missions (il relit data/missions), puis « Contrôler à nouveau »', 'mission registry empty in this browser: open the Mission registry (it re-reads data/missions), then “Check again”'])) + ` <a class="mt-link" href="${esc(regUrl)}" target="_blank" rel="noopener">${esc(t(['Registre des missions', 'Mission registry']))}</a>`;
     const used = [...new Set(reg.flatMap(m => [m.origin, m.destination]).map(s => /\(([A-Z]{4})\)|\b(LF[A-Z]{2})\b/.exec(s || '')).filter(Boolean).map(m => m[1] || m[2]))];
     const missingAd = ads.size ? used.filter(c => !ads.has(c)) : [];

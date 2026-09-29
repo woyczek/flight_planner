@@ -1,4 +1,4 @@
-"""Construit « apps/sia/mission_prompt.js » à partir de docs/PROMPT_GENERATEUR_MISSIONS.md (bloc ```text).
+"""Construit « apps/cpco/mission_prompt.js » à partir de docs/PROMPT_GENERATEUR_MISSIONS.md (bloc ```text).
 
 Le bouton « ChatGPT → » du générateur de mission lit le prompt dans ce fichier JavaScript, chargé par
 <script> comme les autres (fonctionne aussi hors serveur web, sans lecture réseau du dossier docs/).
@@ -11,7 +11,7 @@ import io, json, os, re, sys
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 SRC = os.path.join(ROOT, 'docs', 'PROMPT_GENERATEUR_MISSIONS.md')
-OUT = os.path.join(ROOT, 'apps', 'sia', 'mission_prompt.js')
+OUT = os.path.join(ROOT, 'apps', 'cpco', 'mission_prompt.js')
 
 
 def build(verbose=True):

@@ -20,7 +20,7 @@ Depuis la version 3, **l'application et les données sont séparées** :
 
 | Dépôt | Contenu | Où |
 |---|---|---|
-| Application (public) — <https://framagit.org/asr/flight_planner> | pages (`apps/cr`, `apps/sia`, `apps/planner`, `apps/landing`, `apps/settings`), framework (`shared/`), bases OACI / APD générées (`AircraftDB/`), outils, docs, exemples | dossier de votre choix |
+| Application (public) — <https://framagit.org/asr/flight_planner> | pages (`apps/cr`, `apps/cpco`, `apps/planner`, `apps/landing`, `apps/settings`), framework (`shared/`), bases OACI / APD générées (`AircraftDB/`), outils, docs, exemples | dossier de votre choix |
 | Données (privé) — <https://framagit.org/defa-virtual/missions-defa> | flotte et référence DEFA, indicatifs, corrections OACI, registres et CR, missions générées, MORA, axes ENR 5.7, base de performances | `data/` **dans** le dossier de l'application (ignoré par git) |
 
 ```bash
@@ -43,7 +43,7 @@ synchronisation de `.git` corrompt les dépôts (voir docs/AUDIT_2026-09-28.md).
 `python tools/migrate_v3.py --data-url https://framagit.org/defa-virtual/missions-defa.git` : `data/` est créé (clone,
 ou dépôt local à relier), les données y sont rangées (depuis l'ancienne arborescence et l'historique git), puis
 ☰ › Paramètres › Maintenance › Sources et dossiers › **Dossier des données** : choisir `data/`. Anciennes adresses : `CR DEFA/…` →
-`apps/cr/…`, `SIA XML/…` → `apps/sia/…`, Paramétrage / Apparence / Maintenance → `apps/settings/…`, planificateur →
+`apps/cr/…`, `SIA XML/…` → `apps/sia/…` (v4.1 : `apps/cpco/…`), Paramétrage / Apparence / Maintenance → `apps/settings/…`, planificateur →
 `apps/planner/…`, Landing → `apps/landing/…` ; page d'accueil : `index.html`.
 
 ## 3. Ouvrir les pages

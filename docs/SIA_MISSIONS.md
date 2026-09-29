@@ -1,6 +1,6 @@
 # Missions SIA — générateur de mission et studio cartographique
 
-Dossier `apps/sia/` — ☰ › **Générateur de mission (SIA)** et ☰ › **Studio cartographique (SIA)**.
+Dossier `apps/cpco/` — ☰ › **Centre — Générateur de mission** et ☰ › **Centre — Studio cartographique**.
 Application de la suite qui prépare le **dossier de mission** d'un vol de simulation : le
 brief (textes, points, participants, consignes, PDF final) et les **cartes** produites depuis
 les données aéronautiques officielles du SIA (cycle AIRAC), sur fond OpenStreetMap ou local.
@@ -13,7 +13,7 @@ Mission (YAML / Markdown) ──► Générateur de mission ──► Studio car
                                    └──► Créer le CR DEFA (compte rendu pré-rempli)
 ```
 
-Code : les deux pages, `apps/sia/aero_symbols.js` (lecture de l'AIXM : aérodromes, pistes,
+Code : les deux pages, `shared/carto/aero_symbols.js` (lecture de l'AIXM : aérodromes, pistes,
 radionavigation, obstacles ; symbologie de la carte), `shared/aar_tracks.js` (axes de
 ravitaillement ENR 5.7), composants du
 framework (bandeau et menu ☰, blocs, `FileAccess`, fenêtres de copier-coller, sauvegarde locale).
@@ -34,7 +34,7 @@ Bibliothèques livrées dans le dossier : MapLibre GL (`maplibre-gl.js/.css`), j
 | `villes_geonames.csv` | Villes (GeoNames, CC BY 4.0) : Europe de l'Ouest et outre-mer français ≥ 500 hab., reste du monde ≥ 15 000 hab. (71 000 villes) ; `tools/update_cities_geonames.py` | versionné |
 
 Les données AIRAC se téléchargent sur le site du SIA (produits numériques, export XML) et se
-déposent dans le dossier `apps/sia/` ; `.gitignore` les tient hors du dépôt.
+déposent dans le dossier `apps/cpco/` ; `.gitignore` les tient hors du dépôt.
 
 **Un seul cycle** : quand le dossier contient plusieurs cycles, le studio ne lit que le plus récent (les autres sont
 signalés, à archiver) et mémorise le cycle dans la base (`airac`, résumé `siaBaseInfo:v1` pour la pastille « AIRAC » de
@@ -135,7 +135,7 @@ chargées grisées, « à charger ») ; une mission de la même opération coll�
 
 ## 2 bis. Registre des missions générées
 
-Page `apps/sia/mission_registry.html` (☰ › Registre des missions (SIA), barre latérale « Registre »), construite par
+Page `apps/cpco/mission_registry.html` (☰ › Centre — Registre des missions, barre latérale « Registre »), construite par
 `shared/mission_registry.js`.
 
 - **Missions du registre** : dossier `data/missions/` du dépôt (dossier mémorisé `__missions`) lu récursivement — chaque
@@ -296,7 +296,7 @@ remplacent le calcul ; le panneau indique leur origine (nombre de vols).
 
 ## 3. Générateur de mission (brief)
 
-Page `apps/sia/mission_editor.html`.
+Page `apps/cpco/mission_editor.html`.
 
 1. **Importer une mission** : YAML et / ou Markdown d'une mission, ou **collage** de son contenu ; sous-bloc
    **Créer une mission avec ChatGPT** à côté du collage : **même bloc que « Commander une mission » du registre**
@@ -305,7 +305,7 @@ Page `apps/sia/mission_editor.html`.
    équipes au sol, ravitaillement ; réglages partagés (`missionRegistryOrder:v1`) ; « Commander » inscrit la mission au
    registre (« commandée »), copie le prompt réglé pour une seule mission et ouvre ChatGPT dans un nouvel onglet (coller,
    envoyer, puis charger ou coller `mission<ID>.yaml` et `summary<ID>.md`). Le prompt vient de
-   [PROMPT_GENERATEUR_MISSIONS.md](PROMPT_GENERATEUR_MISSIONS.md), embarqué dans `apps/sia/mission_prompt.js` par
+   [PROMPT_GENERATEUR_MISSIONS.md](PROMPT_GENERATEUR_MISSIONS.md), embarqué dans `apps/cpco/mission_prompt.js` par
    `tools/build_mission_prompt.py` (relancé par `tools/bump_versions.py`) : pas de lecture réseau du dossier docs/.
    (« ou coller son contenu… », Markdown reconnu à ses titres `##`) (fusionnés, lecture commune avec le
    studio : `SiaMission.fromTexts`), et les cartes (PNG ou
@@ -326,7 +326,7 @@ coordination, résumé, description, risques, rubriques, cartes). Nom des fichie
 quand le titre n'est que « Mission 02 », la cible le remplace
 (`M02_TRAINING_VAILLANT_31_Axe_SIMONE`).
 
-**Mission partagée avec le studio** (`apps/sia/mission_store.js`) : un seul document (YAML, textes,
+**Mission partagée avec le studio** (`apps/cpco/mission_store.js`) : un seul document (YAML, textes,
 fichiers d'origine) avec numéro de révision, enregistré à chaque modification et relu aussitôt par
 l'autre page ouverte — emprises appliquées, cartes ajoutées ou supprimées dans le studio
 apparaissent dans le générateur (et dans ses exports YAML / Markdown / PDF), et inversement.
@@ -342,7 +342,7 @@ Brouillon : la mission partagée est le brouillon ; « Mémoriser / Recharger »
 
 ## 4. Studio cartographique
 
-Page `apps/sia/map_parser.html`. Une mission décrit ses cartes ; chaque carte est dessinée avec
+Page `apps/cpco/map_parser.html`. Une mission décrit ses cartes ; chaque carte est dessinée avec
 un **profil d'affichage**, puis le studio produit PNG / SVG et un ZIP.
 
 Blocs : 1. Mission · 2. Cartes et cadrage · 3. Profil vertical · 4. Aperçus et génération ·
@@ -599,3 +599,17 @@ générateur ; l'image est ajoutée au ZIP (largeur des PNG) et le brief PDF la 
 Appelés seulement quand la fonction est utilisée : tuiles OpenStreetMap, OpenTopoMap,
 OpenFreeMap, VersaTiles, relief Terrarium (AWS), Overpass API (sommets). Les données de mission
 et SIA restent dans le navigateur et les fichiers choisis.
+
+## Cartes de vol (outil public)
+
+`apps/planner/map_planner.html` (☰ › Cartes de vol) met le moteur du studio à la disposition de tous, hors du Centre,
+pour sa propre préparation : bloc **Vol** (route en codes OACI, balises, points de report ou coordonnées « lat, lon » ;
+« Chercher la route » par les voies aériennes ou à basse hauteur par le RTBA ; rendez-vous facultatif ; niveau), puis
+« Créer les cartes » : topographique de la route (profil VFR détaillé, fond OpenTopoMap), approche (30 km autour de la
+destination), rendez-vous, terrain de destination, et profil vertical. Les blocs « Cartes et cadrage », « Profil
+vertical » et « Aperçus et génération » sont ceux du studio (mêmes profils d'affichage).
+
+La page est **générée** depuis le studio (`python tools/build_map_planner.py`, à relancer après toute modification de
+`apps/cpco/map_parser.html`) : ne pas l'éditer à la main. Sa mission est gardée dans un espace distinct du navigateur
+(`SIA_MISSION_NS = 'planner'`) : la mission partagée du générateur et du studio du Centre n'est jamais touchée. La base
+SIA du navigateur est commune (bloc « Base de données SIA »).

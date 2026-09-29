@@ -833,6 +833,12 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       custom: true,
       intro: T('Bouton « Envoyer le CR » des pages de saisie : POST JSON (mission, CR HTML et texte, calculs) vers l’adresse ci-dessous. La clef reste dans ce navigateur (missionSendKey:v1), hors sauvegarde locale. Le service doit accepter les appels de cette origine (CORS).', '“Send report” button of the entry pages: JSON POST (mission, report HTML and text, calculations) to the address below. The key stays in this browser (missionSendKey:v1), outside the local backup. The service must accept calls from this origin (CORS).')
     }, {
+      id: 'cpco',
+      group: T('Centre (CPCO)', 'Centre (CPCO)'),
+      title: T('Accès au Centre et réglages', 'Centre access and settings'),
+      custom: true,
+      intro: T('Le Centre de planification et de conduite des opérations (générateur de mission, studio cartographique, registre des missions) est réservé : il s’active ici par un mot de passe, gardé dans ce navigateur. Centre verrouillé : ses pages sont absentes des menus et ses réglages (calcul des routes, espace disque des missions) sont verrouillés.', 'The planning and operations command centre (mission generator, map studio, mission registry) is restricted: it is enabled here with a password, kept in this browser. Locked centre: its pages are hidden from menus and its settings (route calculation, missions disk space) are locked.')
+    }, {
       id: 'planner',
       group: T('Planificateur carburant', 'Fuel planner'),
       title: T('Altitude sans oxygène (avions non pressurisés)', 'Altitude without oxygen (unpressurised aircraft)'),
@@ -916,7 +922,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       howto.querySelector('div').innerHTML = set.howto || '';
       const body = root.querySelector('.da-body');
       body.innerHTML = '';
-      if (set.custom) return set.id === 'planner' ? plannerSettings(body) : set.id === 'send' ? sendSettings(body) : set.id === 'defaLog' ? defaLog(body) : set.id === 'merges' ? merges(body) : ledgers(body);
+      if (set.custom) return set.id === 'cpco' ? cpcoSettings(body) : set.id === 'planner' ? plannerSettings(body) : set.id === 'send' ? sendSettings(body) : set.id === 'defaLog' ? defaLog(body) : set.id === 'merges' ? merges(body) : ledgers(body);
       if (set.file) {
         const w = work[set.id];
         status(w.local ? `${T('Modifications locales du', 'Local changes from')} ${new Date(w.local).toLocaleString()} (${T('prioritaires dans ce navigateur, pas encore dans le dépôt', 'active in this browser, not yet in the repository')})` : T('Contenu du fichier du dépôt', 'Repository file content'));
@@ -1154,6 +1160,34 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           status(T('Enregistré dans ce navigateur', 'Saved in this browser'));
         }, 'primary'],
         [T('Valeur par défaut (10 000 ft)', 'Default value (10,000 ft)'), () => { localStorage.removeItem(KEY); input.value = 10000; dirty = false; status(T('Valeur par défaut rétablie', 'Default value restored')); }]
+      ]);
+    }
+
+    // Centre (CPCO) : activation par mot de passe (RepositoryNav.cpco), puis réglages du Centre (calcul des routes).
+    function cpcoSettings(body) {
+      const access = window.RepositoryNav?.cpco;
+      if (!access) { body.textContent = T('Accès au Centre indisponible (menu commun non chargé).', 'Centre access unavailable (common menu not loaded).'); return; }
+      if (!access.enabled()) {
+        body.innerHTML = `<div class="da-form"><label>${esc(T('Mot de passe du Centre', 'Centre password'))}<input type="password" autocomplete="off" data-cpco-pwd></label></div>`;
+        const input = body.querySelector('[data-cpco-pwd]');
+        const go = async () => {
+          if (await access.unlock(input.value)) { status(T('Centre activé dans ce navigateur', 'Centre enabled in this browser')); show(); }
+          else { input.value = ''; status(T('Mot de passe incorrect', 'Wrong password')); input.focus(); }
+        };
+        input.onkeydown = e => { if (e.key === 'Enter') go(); };
+        status(T('Centre verrouillé', 'Centre locked'));
+        actions([[T('Activer le Centre', 'Enable the Centre'), go, 'primary']]);
+        return;
+      }
+      const R = window.MissionRouting, S = R?.settings?.() || {};
+      const FIELDS = [['minNm', T('Tronçon routé à partir de (NM)', 'Routed leg from (NM)')], ['ifrMinFt', T('Voies aériennes à partir de (ft)', 'Airways from (ft)')], ['lowMaxFt', T('Basse hauteur jusqu’à (ft)', 'Low level up to (ft)')], ['reachNm', T('Entrée / sortie des voies (NM)', 'Airway entry / exit (NM)')], ['reachRtbaNm', T('Entrée / sortie du RTBA (NM)', 'RTBA entry / exit (NM)')], ['detourPct', T('Détour admis, voies (%)', 'Allowed detour, airways (%)')], ['detourRtbaPct', T('Détour admis, RTBA (%)', 'Allowed detour, RTBA (%)')]];
+      body.innerHTML = R ? `<h3>${esc(T('Calcul des routes de transit', 'Transit route calculation'))}</h3><div class="da-form">${FIELDS.map(([k, l]) => `<label>${esc(l)}<input type="number" min="0" step="any" data-rs="${k}" value="${esc(S[k] ?? '')}" placeholder="${esc(R.DEFAULTS[k])}"></label>`).join('')}</div>` : `<p class="small">${esc(T('Calcul des routes non chargé.', 'Route calculation not loaded.'))}</p>`;
+      body.querySelectorAll('[data-rs]').forEach(i => i.oninput = changed);
+      status(T('Centre activé dans ce navigateur', 'Centre enabled in this browser'));
+      actions([
+        ...(R ? [[T('Enregistrer', 'Save'), () => { R.setSettings(Object.fromEntries([...body.querySelectorAll('[data-rs]')].map(i => [i.dataset.rs, i.value]))); dirty = false; status(T('Réglages enregistrés dans ce navigateur', 'Settings saved in this browser')); }, 'primary'],
+          [T('Valeurs par défaut', 'Default values'), () => { R.setSettings(Object.fromEntries(FIELDS.map(([k]) => [k, '']))); dirty = false; show(); }]] : []),
+        [T('Verrouiller le Centre', 'Lock the Centre'), () => { access.lock(); dirty = false; show(); }]
       ]);
     }
 

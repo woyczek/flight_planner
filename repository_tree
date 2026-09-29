@@ -1,6 +1,6 @@
 window.REPOSITORY_TREE={
   version:3,
-  release:{date:"2026-09-29",version:"4.0.0",id:"XPS-4.0.0",changelog:"https://framagit.org/asr/flight_planner/-/blob/master/CHANGELOG.md",
+  release:{date:"2026-09-29",version:"4.1.0",id:"XPS-4.1.0",changelog:"https://framagit.org/asr/flight_planner/-/blob/master/CHANGELOG.md",
     // dépôt de publication : contrôle des mises à jour (Paramètres › Maintenance, shared/suite_update.js) ; canaux = branches
     repository:{web:"https://framagit.org/asr/flight_planner",api:"https://framagit.org/api/v4/projects/asr%2Fflight_planner",channels:{master:"stable",develop:"early"}}},
   defaults:{
@@ -38,6 +38,8 @@ window.REPOSITORY_TREE={
     sof:{bar:"#3f3f46",barText:"#ffffff",page:"#f5f6f8",accent:"#3f3f46",favicon:"assets/favicon-sof.svg"},
     special:{bar:"#9d174d",barText:"#ffffff",page:"#f5f6f8",accent:"#9d174d",favicon:"assets/favicon-special.svg"},
     sia:{bar:"#075ca8",barText:"#ffffff",page:"#edf3f6",accent:"#075ca8",favicon:"assets/favicon-sia.svg"},
+    // Centre de planification et de conduite des opérations (apps/cpco) : bleu nuit, texte et accent dorés (état-major)
+    cpco:{bar:"#1b2440",barText:"#e2c16b",page:"#f2f0ea",accent:"#7a5c12",favicon:"assets/favicon-cpco.svg"},
     aar:{bar:"#115e59",barText:"#ffffff",page:"#f5f6f8",accent:"#115e59",favicon:"assets/favicon-aar.svg"},
     flight:{bar:"#101317",barText:"#eef3f7",page:"#101317",accent:"#71b7ff",favicon:"assets/favicon-flight.svg"}
   },
@@ -100,7 +102,7 @@ window.REPOSITORY_TREE={
     "apps/cr/COMMAND":{theme:"command",favicon:"assets/favicon-command.svg"},
     "apps/cr/SOF":{theme:"sof",favicon:"assets/favicon-sof.svg"},
     "apps/cr/SPECIAL":{theme:"special",favicon:"assets/favicon-special.svg"},
-    "apps/sia":{theme:"sia",favicon:"assets/favicon-sia.svg"},
+    "apps/cpco":{theme:"cpco",favicon:"assets/favicon-cpco.svg"},
     "apps/cr/AAR":{theme:"aar",favicon:"assets/favicon-aar.svg"},
     "apps/landing":{theme:"landing",favicon:"assets/favicon-landing.svg",decor:"sober"}
   },
@@ -149,20 +151,22 @@ window.REPOSITORY_TREE={
     {path:"apps/settings/apparence.html",menu:false,slot:"settings",label:"Apparence",decor:"full",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/settings/maintenance.html",menu:false,slot:"settings",label:"Maintenance",decor:"sober",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html",menu:"Landing Performance Dashboard",label:"Landing Performance Dashboard"},
-    {path:"apps/sia/mission_editor.html",menu:"Générateur de mission (SIA)",label:"Générateur complet de mission"},
-    {path:"apps/sia/map_parser.html",menu:"Studio cartographique (SIA)",label:"Studio cartographique aéronautique SIA"},
-    {path:"apps/sia/mission_registry.html",menu:"Registre des missions (SIA)",label:"Registre des missions générées"},
-    {path:"apps/planner/flight_performance_planner.html",menu:"Flight Performance & Fuel Planner",label:"Flight Performance & Fuel Planner",decor:"sober"}
+    {path:"apps/cpco/mission_editor.html",menu:"Centre — Générateur de mission",label:"Générateur de mission — Centre de planification et de conduite des opérations"},
+    {path:"apps/cpco/map_parser.html",menu:"Centre — Studio cartographique",label:"Studio cartographique — Centre de planification et de conduite des opérations"},
+    {path:"apps/cpco/mission_registry.html",menu:"Centre — Registre des missions",label:"Registre des missions — Centre de planification et de conduite des opérations"},
+    {path:"apps/planner/flight_performance_planner.html",menu:"Flight Performance & Fuel Planner",label:"Flight Performance & Fuel Planner",decor:"sober"},
+    {path:"apps/planner/map_planner.html",menu:"Cartes de vol",label:"Cartes de vol — route, cartes topographiques, approche, rendez-vous, destination"}
   ],
   // Libellés du menu ☰ dans les 4 langues (fr, en, de, es) : clé = libellé français de menu / label.
   labels:{
     "Reporting missions":["Reporting missions","Mission reporting","Einsatzberichte","Informes de misiones"],
-    "Générateur de mission (SIA)":["Générateur de mission (SIA)","Mission generator (SIA)","Missionsgenerator (SIA)","Generador de misiones (SIA)"],
-    "Studio cartographique (SIA)":["Studio cartographique (SIA)","Map studio (SIA)","Kartenstudio (SIA)","Estudio cartográfico (SIA)"],
-    "Registre des missions (SIA)":["Registre des missions (SIA)","Mission registry (SIA)","Missionsregister (SIA)","Registro de misiones (SIA)"],
+    "Centre — Générateur de mission":["Centre — Générateur de mission","Mission generator (SIA)","Missionsgenerator (SIA)","Generador de misiones (SIA)"],
+    "Centre — Studio cartographique":["Centre — Studio cartographique","Map studio (SIA)","Kartenstudio (SIA)","Estudio cartográfico (SIA)"],
+    "Centre — Registre des missions":["Centre — Registre des missions","Mission registry (SIA)","Missionsregister (SIA)","Registro de misiones (SIA)"],
     "Maintenance":["Maintenance","Maintenance","Wartung","Mantenimiento"],
     "Paramétrage — bases de données":["Paramétrage — bases de données","Settings — databases","Einstellungen — Datenbanken","Configuración — bases de datos"],
     "Paramètres — bases de données et maintenance":["Paramètres — bases de données et maintenance","Settings — databases and maintenance","Einstellungen — Datenbanken und Wartung","Ajustes — bases de datos y mantenimiento"],
+    "Cartes de vol":["Cartes de vol","Flight maps","Flugkarten","Mapas de vuelo"],
     "Apparence":["Apparence","Appearance","Darstellung","Apariencia"],
     "Paramètres":["Paramètres","Settings","Einstellungen","Ajustes"],
     "Apparence…":["Apparence (design, icônes, couleurs)…","Appearance (design, icons, colours)…","Darstellung (Design, Symbole, Farben)…","Apariencia (diseño, iconos, colores)…"]
@@ -171,4 +175,4 @@ window.REPOSITORY_TREE={
 // Préférences d'affichage posées dès l'en-tête (ce fichier est chargé dans le <head> de chaque page) : barre latérale et
 // design sur <html>, pour que la marge du contenu et le design paraissent avant les scripts de calcul de la page ;
 // shared/repository_nav.js les revalide ensuite (design inconnu : défaut) et construit la barre.
-(function(){try{var d=document.documentElement,s=localStorage.getItem("repositorySidenav"),g=localStorage.getItem("repositoryDesign");if(s)d.dataset.sidenav=s;if(g&&window.REPOSITORY_TREE.designs&&window.REPOSITORY_TREE.designs.list&&window.REPOSITORY_TREE.designs.list[g])d.dataset.design=g}catch(e){}})();
+(function(){try{var d=document.documentElement,s=localStorage.getItem("repositorySidenav"),g=localStorage.getItem("repositoryDesign");if(s)d.dataset.sidenav=s;d.dataset.cpco=localStorage.getItem("cpcoAccess:v1")==="on"?"on":"off";if(g&&window.REPOSITORY_TREE.designs&&window.REPOSITORY_TREE.designs.list&&window.REPOSITORY_TREE.designs.list[g])d.dataset.design=g}catch(e){}})();

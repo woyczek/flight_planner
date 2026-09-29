@@ -4,9 +4,12 @@
   // { yaml, narrative, sourceNames, rev, at, by } dans le navigateur, avec numéro de révision et
   // notification des autres pages ouvertes (BroadcastChannel + événement storage). Lecture des
   // missions Markdown / YAML (schéma helo-xp-mission) commune aux deux pages.
-  const KEY = 'siaMissionShared:v1',
-    LEGACY = 'missionGeneratorDraft',
-    BATCH = 'siaMissionBatch:v1';   // lot de missions (opération à plusieurs équipes) : { docs, index }
+  // Espace de noms (window.SIA_MISSION_NS, posé avant ce script) : une page hors du Centre (Cartes de vol) garde sa
+  // propre mission, sans toucher à celle du générateur et du studio.
+  const NS = window.SIA_MISSION_NS ? ':' + window.SIA_MISSION_NS : '';
+  const KEY = NS ? 'siaMissionShared' + NS : 'siaMissionShared:v1',
+    LEGACY = 'missionGeneratorDraft' + NS,
+    BATCH = NS ? 'siaMissionBatch' + NS : 'siaMissionBatch:v1';   // lot de missions (opération à plusieurs équipes) : { docs, index }
   /** Clé de texte : minuscules sans accents, mots séparés par « _ ». */
   const norm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
   /** Copie profonde (JSON). */
@@ -321,7 +324,7 @@
       /* illisible */ }
     return null;
   }
-  const channel = 'BroadcastChannel' in window ? new BroadcastChannel('sia-mission') : null;
+  const channel = 'BroadcastChannel' in window ? new BroadcastChannel('sia-mission' + NS) : null;
 
   /** Enregistre le document de mission partagé (YAML, textes, fichiers sources, révision) et sa copie à l'ancien format, puis prévient les autres pages et onglets (BroadcastChannel) ; by : page auteure (pas d'auto-notification). Lève une erreur si le stockage est plein. */
   function save(doc, by) {
@@ -503,11 +506,11 @@
       title ? title.after(nav) : line.prepend(nav);
       // arrivée depuis le registre des missions (même onglet) : lien de retour vers la mission dans le registre
       let from = null;
-      try { from = JSON.parse(sessionStorage.getItem('siaFromRegistry:v1') || 'null'); } catch { /* stockage indisponible */ }
+      try { from = NS ? null : JSON.parse(sessionStorage.getItem('siaFromRegistry:v1') || 'null'); } catch { /* stockage indisponible */ }
       if (from) {
         const back = document.createElement('a');
         back.id = 'siaBackRegistry'; back.className = 'sia-back';
-        back.href = new URL(`apps/sia/mission_registry.html${from.id ? `?mission=${encodeURIComponent(from.id)}` : ''}`, window.RepositoryNav?.root || new URL('../../', location.href).href).href;
+        back.href = new URL(`apps/cpco/mission_registry.html${from.id ? `?mission=${encodeURIComponent(from.id)}` : ''}`, window.RepositoryNav?.root || new URL('../../', location.href).href).href;
         back.textContent = `← Registre${from.id ? ` (${from.id})` : ''}`;
         back.title = `Retour au registre des missions${from.title ? ` : ${from.id} — ${from.title}` : ''}`;
         nav.before(back);

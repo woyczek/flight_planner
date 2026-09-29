@@ -10,6 +10,31 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+## [4.1.0] — 2026-09-29
+
+Centre de planification et de conduite des opérations (CPCO), à accès réservé ; outil public « Cartes de vol ».
+
+- **Centre de planification et de conduite des opérations (CPCO)** : générateur de mission, studio cartographique et
+  registre des missions déplacés de `apps/sia/` vers `apps/cpco/` (anciennes adresses redirigées), menu « Centre — … »,
+  titres « Centre de planification et de conduite des opérations », thème propre (bleu nuit et or, favicon), compatible
+  avec les quatre designs skeuomorphes et proposé dans Apparence.
+- **Accès au Centre** : activé dans Paramètres › Centre (CPCO) par un mot de passe (gardé dans ce navigateur) ; Centre
+  verrouillé : pages absentes du menu, de la barre latérale et de l'accueil, page ouverte directement recouverte d'un
+  avis, réglages du Centre (calcul des routes, espace disque des missions) verrouillés. Verrou d'usage, pas une sécurité.
+- **Cartographie partagée** : `aero_symbols.js`, `vertical_profile.js`, MapLibre et `villes_geonames.csv` déplacés dans
+  `shared/carto/` (utilisés hors du CPCO : planificateur, Paramètres, Cartes de vol).
+- **Cartes de vol** (`apps/planner/map_planner.html`, accessible à tous, ☰ › Cartes de vol, barre latérale « Cartes ») :
+  route (codes OACI, balises, points, coordonnées), recherche de la route par les voies aériennes ou à basse hauteur
+  par le RTBA, rendez-vous facultatif, niveau ; cartes topographique de la route, approche, rendez-vous et destination,
+  profil vertical, réglages et génération du studio. Page construite depuis le studio du Centre par
+  `tools/build_map_planner.py` (à relancer après toute modification du studio) ; mission gardée à part dans le
+  navigateur (celle du Centre n'est jamais touchée).
+- **Icônes du Centre** (designs skeuomorphes) : sur les pages du Centre et pour ses entrées de la barre latérale, fond
+  en merisier (laiton) ou peint en rouge (acier), glyphe doré comme un galon (aviation, gel) ; les autres icônes restent
+  classiques.
+- **Designs skeuomorphes** : en-tête, bandeau décoratif, pied de page (barre d'état) et barre d'action à angles droits.
+- **Profil vertical** : les points de transit de la route probable (sommets des zones du RTBA, « R 46 N2 ») sont
+  reconnus — la route RTBA (ex. LFBO → LFSI) se trace ; sans niveau saisi, niveau de croisière de l'appareil.
 ## [4.0.0] — 2026-09-29
 
 Exercices (organisation, chiffons, chronologie radio et plis), routes de transit calculées (voies aériennes, RTBA),
