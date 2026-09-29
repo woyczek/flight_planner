@@ -10,6 +10,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Profil vertical éditable à la souris** (studio du Centre, Cartes de vol ; `shared/carto/vprof_editor.js`) : clic
+  dans la coupe → nouveau point à cette distance et cette altitude (« 44.3361 3.2544/2500 »), aimanté sur un point
+  existant proche (seule son altitude change : « R590A/1650 ») ; points déplaçables (altitude au pas de 50 ft ; les
+  points ajoutés glissent aussi le long de la route et fusionnent avec le point sur lequel on les lâche ; double-clic :
+  suppression) ; altitude, hauteur AGL et relief affichés pendant le déplacement. Étiquettes du cheminement sous le
+  champ : survol d'une étiquette, d'un point ou curseur dans le champ → tronçon illuminé des deux côtés. Aux Cartes de
+  vol, la route du bloc Vol suit les modifications.
+
 - **Profil vertical → planificateur carburant** : bouton « Planificateur carburant » (studio du Centre, Cartes de vol) :
   cheminement converti en route de plan de vol OACI (`SiaProfile.toIcaoRoute` : points publiés par leur indicatif,
   autres points — sommets des zones du RTBA — en coordonnées `4419N00316E`, changements de niveau « R589B, FL55 » →

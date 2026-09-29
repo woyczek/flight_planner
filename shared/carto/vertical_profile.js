@@ -701,6 +701,9 @@
     ctx.lineWidth = 1;
     ctx.strokeRect(padL, padT, W - padL - padR, H - padT - padB);
     ctx.restore();
+    // géométrie de la coupe (édition à la souris : shared/carto/vprof_editor.js)
+    data.geo = { W, H, padL, padR, padT, padB, top, bottom, total: data.total };
+    return data.geo;
   }
 
   // ===== Espaces d'un profil d'affichage (mêmes règles que les cartes du studio) =====

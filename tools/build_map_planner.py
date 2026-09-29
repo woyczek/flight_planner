@@ -70,7 +70,7 @@ function resolve(text){
   const v=vias[K];if(v)p={id:K,name:v.name||K,lat:v.lat,lon:v.lon};
   else{const c=coord(core);if(c)p={id:`P${pts.length+1}`,name:core.replace('|',', '),...c};else{const r=SiaProfile.parseRoute(core,res);if(r.points?.length){const q=r.points[0];p={id:String(q.name||K).toUpperCase(),name:q.name||K,lat:q.lat,lon:q.lon}}}}
   if(!p){unknown.push(core);continue}
-  pts.push(p);route.push(p.id+suffix);
+  pts.push(p);route.push((/^P\d+$/.test(p.id)?`${p.lat} ${p.lon}`:p.id)+suffix);
  }
  return{pts,unknown,route};
 }
@@ -116,6 +116,8 @@ $v('volBuild').onclick=()=>build(false);
 $v('volPlanner').onclick=()=>{if(build(true))setTimeout(()=>$v('vprofToPlanner').click(),600)};
 // route modifiée après création : mission, cartes et profil mis à jour
 $v('volRoute').addEventListener('change',()=>{if(sharedDoc?.yaml?.mission?.id==='VOL')build(true)});
+// coupe modifiée à la souris (points ajoutés, déplacés, altitudes) : la route du bloc suit (« lat lon » → « lat,lon »)
+window.addEventListener('vprof-route-edited',e=>{$v('volRoute').value=SiaProfileEditor.tokensOf(e.detail.text).map(t=>t.replace(/^(-?\d+\.\d+)\s+(-?\d+\.\d+)/,'$1,$2')).join(' ');saveForm()});
 ['volRoute','volRdv','volLevel','volMode'].forEach(id=>$v(id).addEventListener('change',saveForm));document.querySelectorAll('[data-volmap]').forEach(i=>i.addEventListener('change',saveForm));
 loadForm();
 })();
