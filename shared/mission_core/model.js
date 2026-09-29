@@ -34,6 +34,7 @@
     metadata: {
       missionId: '',
       missionNumber: '',
+      formerMissionId: '',   // ancien n° de CR (HEMS-001…) après tools/renumber_reports.py
       serial: '',
       date: '',
       timeLocal: '',

@@ -1,6 +1,6 @@
 window.REPOSITORY_TREE={
   version:3,
-  release:{date:"2026-09-28",version:"3.1.0",id:"XPS-3.1.0",changelog:"https://framagit.org/asr/flight_planner/-/blob/master/CHANGELOG.md",
+  release:{date:"2026-09-29",version:"4.0.0",id:"XPS-4.0.0",changelog:"https://framagit.org/asr/flight_planner/-/blob/master/CHANGELOG.md",
     // dépôt de publication : contrôle des mises à jour (Paramètres › Maintenance, shared/suite_update.js) ; canaux = branches
     repository:{web:"https://framagit.org/asr/flight_planner",api:"https://framagit.org/api/v4/projects/asr%2Fflight_planner",channels:{master:"stable",develop:"early"}}},
   defaults:{
@@ -17,6 +17,7 @@ window.REPOSITORY_TREE={
     siaCycle:{url:"https://www.sia.aviation-civile.gouv.fr/donnees-aeronautiques-xml-airac-{nn}-{yy}.html",label:["SIA — page d’un cycle AIRAC","SIA — AIRAC cycle page","SIA — Seite eines AIRAC-Zyklus","SIA — página de un ciclo AIRAC"]},
     siaEaip:{url:"https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/eaip.html",label:["SIA — eAIP","SIA — eAIP","SIA — eAIP","SIA — eAIP"]},
     suiteRepo:{url:"https://framagit.org/asr/flight_planner",label:["Dépôt de l’application","Application repository","Anwendungs-Repository","Repositorio de la aplicación"]},
+    airports:{url:"https://cdn.jsdelivr.net/gh/mwgg/Airports@master/airports.json",label:["Base mondiale des aérodromes (mwgg/Airports via jsDelivr)","World aerodrome base (mwgg/Airports via jsDelivr)","Weltweite Flugplatzbasis (mwgg/Airports über jsDelivr)","Base mundial de aeródromos (mwgg/Airports vía jsDelivr)"]},
     dataRepo:{url:"https://framagit.org/defa-virtual/missions-defa",label:["Dépôt des données (privé)","Data repository (private)","Daten-Repository (privat)","Repositorio de datos (privado)"]}
   },
   themes:{
@@ -167,3 +168,7 @@ window.REPOSITORY_TREE={
     "Apparence…":["Apparence (design, icônes, couleurs)…","Appearance (design, icons, colours)…","Darstellung (Design, Symbole, Farben)…","Apariencia (diseño, iconos, colores)…"]
   }
 };
+// Préférences d'affichage posées dès l'en-tête (ce fichier est chargé dans le <head> de chaque page) : barre latérale et
+// design sur <html>, pour que la marge du contenu et le design paraissent avant les scripts de calcul de la page ;
+// shared/repository_nav.js les revalide ensuite (design inconnu : défaut) et construit la barre.
+(function(){try{var d=document.documentElement,s=localStorage.getItem("repositorySidenav"),g=localStorage.getItem("repositoryDesign");if(s)d.dataset.sidenav=s;if(g&&window.REPOSITORY_TREE.designs&&window.REPOSITORY_TREE.designs.list&&window.REPOSITORY_TREE.designs.list[g])d.dataset.design=g}catch(e){}})();

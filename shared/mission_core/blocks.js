@@ -25,11 +25,17 @@
     icon: 'hash',
     subtitle: L('Numéros, date, série, exercice ou opération réelle, organisation.', 'Numbers, date, series, exercise or real operation, organisation.', 'Nummern, Datum, Serie, Übung oder Einsatz, Organisation.', 'Números, fecha, serie, ejercicio u operación real, organización.'),
     fields: [
-      f('metadata.missionId', L('N° mission', 'Mission ID', 'Einsatz-ID', 'ID de misión'), 'text', {
+      // Mission volée (identifiant du registre des missions : M-016, S-002A) → n° de CR calculé (MissionVocab.crId) :
+      // CRM-016-1 (essai 1, CRM-016-2 si rejouée) ; sans mission : CR libre de la famille, CRM-A01-0.
+      f('metadata.missionNumber', L('Mission (identifiant)', 'Mission (identifier)', 'Einsatz (Kennung)', 'Misión (identificador)'), 'text', {
         upper: true,
-        alias: 'missionId'
+        placeholder: L('M-016, S-002A… — vide : CR sans mission', 'M-016, S-002A… — empty: report without mission', 'M-016, S-002A… — leer: Bericht ohne Einsatz', 'M-016, S-002A… — vacío: informe sin misión')
       }),
-      f('metadata.missionNumber', L('Numéro d’ordre', 'Mission number', 'Einsatznummer', 'Número de misión')),
+      f('metadata.missionId', L('N° de CR', 'Report no.', 'Bericht-Nr.', 'N.º de informe'), 'text', {
+        upper: true,
+        alias: 'missionId',
+        readonly: L('Calculé : CR + mission + n° d’essai (CRM-016-1, CRM-016-2 si rejouée) ; sans mission : CRM-A01-0 (A01 à A99, puis B01)', 'Computed: CR + mission + attempt (CRM-016-1, CRM-016-2 if replayed); without mission: CRM-A01-0 (A01 to A99, then B01)', 'Berechnet: CR + Einsatz + Versuch (CRM-016-1); ohne Einsatz: CRM-A01-0', 'Calculado: CR + misión + intento (CRM-016-1); sin misión: CRM-A01-0')
+      }),
       f('metadata.serial', L('N° de série', 'Serial number', 'Seriennummer', 'Número de serie'), 'text', {
         hideFor: ['HEMS', 'FIRE', 'SAR', 'HADR', 'MARITIME', 'LE']
       }),

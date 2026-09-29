@@ -18,12 +18,13 @@ GÉNÉRATEUR DE SÉRIE DE MISSIONS — HELO XP
 PARAMÈTRES DE CETTE EXÉCUTION
   TYPE            = aléatoire        (ou un code de famille du § 2, ex. AAR)
   PROCHAINS_NUMEROS = auto           (par famille : identifiant de la première opération et numéro de la série,
-                                     ex. « HEMS M016 série 4 · SAR S003 série 3 · … » ; réglé par le générateur ou
-                                     le registre ; auto : M001 / série 1 pour une famille sans mission)
+                                     ex. « HEMS M-016 série 4 · SAR S-003 série 3 · … » ; réglé par le générateur ou
+                                     le registre ; auto : M-001 / série 1 pour une famille sans mission)
   NOMBRE_MISSIONS = 5                (1 à 9 : nombre d'opérations)
   THÉÂTRE         = aléatoire       (métropole, Corse, Antilles, Guyane, Réunion, Mayotte,
-                                     Nouvelle-Calédonie, Polynésie… ; plusieurs possibles, liés
-                                     par « + », ex. « Guyane + métropole » — voir § 5)
+                                     Nouvelle-Calédonie, Polynésie…, ou « étranger (pays) », ex.
+                                     « étranger (Japon) » ; plusieurs possibles, liés par « + »,
+                                     ex. « Guyane + métropole » — voir § 5)
   ÉQUIPES_DEFA    = 2                (1 à 5 : équipes DEFA en vol par opération ; UNE mission
                                      complète par équipe — voir § 3)
   SOUS_TYPE       = libre            (ou un code de sous-type du § 2 pour la famille TYPE)
@@ -39,8 +40,12 @@ bienvenu quand la famille s'y prête (unités réellement présentes). Plusieurs
 les relie réellement (§ 5).
 Paramètres « libre » : ton choix. Sinon ils s'imposent à chaque mission : SOUS_TYPE = mission.subtype ;
 RENDEZ_VOUS = avec → au moins un point dans rendezvous (et une carte detail_rdv par rendez-vous), sans → rendezvous: [] ;
-TYPES_EQUIPES = l'équipe A emploie le premier aéronef, B le deuxième, etc. (aircraft.type, aircraft.callsign si un
-indicatif est donné, teams[].type) ; « automatique » : choisir un appareil adapté à la mission ; ÉQUIPES_SOL = nombre exact d'équipes au sol dans teams (en plus des équipes en vol) ;
+TYPES_EQUIPES = CONTRAINTE STRICTE : l'équipe A emploie le premier aéronef, B le deuxième, etc. Un aéronef marqué
+(IMPOSÉ) est repris À L'IDENTIQUE : aircraft[0].type commence par son désignateur OACI (même s'il n'est pas dans la
+liste du § 6), aircraft[0].callsign = l'indicatif donné (sans le modifier), même type dans teams[].type. Il prime sur
+le § 5 (unités, bases, théâtres) et sur le § 6 : si l'appareil semble peu adapté, ADAPTER LA MISSION (départ = sa base
+réelle, distances, tâche) et jamais l'appareil ; ne jamais le remplacer par un appareil « plus adapté » ;
+« automatique » : choisir un appareil adapté à la mission ; ÉQUIPES_SOL = nombre exact d'équipes au sol dans teams (en plus des équipes en vol) ;
 RAVITAILLEMENT = oui → air_refueling.planned: true avec son axe (§ 7), non → pas de bloc air_refueling planifié.
 
 Les fichiers alimentent automatiquement un briefing, des cartes OpenStreetMap, un PDF de mission, une
@@ -115,42 +120,64 @@ de commandement (BE20 ou TBM9, coordination au-dessus du feu) = trois missions ;
 métropole et un hélicoptère au-dessus de la Corse avec un rendez-vous commun = deux missions ; AAR — ravitailleur
 et receveurs = une mission par équipe, points tournants différents, même axe et même rendez-vous.
 
-Numérotation : NN = lettre de la famille + numéro de l'opération sur 3 chiffres, compté PAR FAMILLE. Lettres :
+Numérotation : NN = lettre de la famille + tiret + numéro de l'opération sur 3 chiffres, compté PAR FAMILLE. Lettres :
 HEMS / MEDEVAC M · HADR H · FIRE F · SAR S · AIRLIFT T · AAR R · AIRBORNE P · MARITIME N · ISR I · LE L · COMMAND C ·
 SOF O · FI V · SURVEY G · SPECIAL X. Première opération = identifiant donné pour la famille dans PROCHAINS_NUMEROS
-(ex. « HEMS M016 série 4 » → opérations M016, M017… ; mission.series = 4). Une seule équipe : mission NN (« M016 »).
-Plusieurs équipes : missions NN + lettre de l'équipe, une par équipe dans l'ordre (« M016A », « M016B », « M016C »).
+(ex. « HEMS M-016 série 4 » → opérations M-016, M-017… ; mission.series = 4). Une seule équipe : mission NN (« M-016 »).
+Plusieurs équipes : missions NN + lettre de l'équipe, une par équipe dans l'ordre (« M-016A », « M-016B », « M-016C »).
 Deux fichiers par mission, chacun dans son propre bloc de code, précédé d'une ligne « Fichier : … » :
   missionNNX.yaml   (bloc ```yaml)
   summaryNNX.md     (bloc ```markdown)
-Ordre : missionM016A.yaml, summaryM016A.md, missionM016B.yaml, summaryM016B.md, … puis l'opération suivante.
+Ordre : missionM-016A.yaml, summaryM-016A.md, missionM-016B.yaml, summaryM-016B.md, … puis l'opération suivante.
+
+EXERCICE ET ORGANISATION (toutes familles). Une opération devient un EXERCICE dès que des informations ne sont pas
+connues de tous au décollage : pistes ou trafics à découvrir, messages passés en vol, plis scellés à ouvrir à un
+moment donné, situation qui change en cours de route. Elle reçoit alors, EN PLUS des missions des équipes, la mission
+d'organisation NN + « Z » (« I-001Z » pour l'ISR, « M-016Z » pour un HEMS : même lettre de famille que l'opération),
+livrée APRÈS les missions des équipes (missionNNZ.yaml puis summaryNNZ.md). Elle porte :
+  - le brief général remis à tous (summary, detailed_description : situation, objectifs communs, créneaux, fin) ;
+  - l'heure H commune : chaque équipe décolle à H plus ou moins un délai tiré de son timing et des rendez-vous ;
+  - les chiffons : pistes que les équipages doivent reconnaître, intercepter, escorter ou retrouver. Un chiffon est
+    « joué » (played: true) quand un aéronef du simulateur peut tenir le rôle (trafic léger, hélicoptère, avion
+    d'affaires, bateau suivi par un hélico…) : il reçoit sa route, son heure de départ et ses consignes ; sinon il
+    n'est que dessiné (played: false). Choisir selon ce que l'exercice demande, les deux peuvent coexister ;
+  - la chronologie : chaque événement dit QUAND (H+n, ou passage d'un point par un participant, plus un délai),
+    SOUS QUELLE FORME (radio : passé par l'émetteur en vol ; pli : remis avant le vol, ouvert au moment indiqué),
+    DE QUI, À QUI (un ou plusieurs participants, un chiffon joué, ou ALL) et quelles pistes il révèle.
+L'information se découvre progressivement : chaque destinataire ne sait au décollage que ce que son brief lui dit ;
+le reste lui parvient par les événements. Sans rien de tel, pas de mission Z. Une seule équipe peut aussi avoir une
+mission Z (ex. HEMS dont la destination change en vol, recherche dont la position est donnée en vol) : sa mission
+garde son identifiant NN (ex. L-001 et L-001Z).
 Aucun autre fichier (pas d'images, pas de manifeste). Puis le bloc VALIDATION (§ 10).
 Réponse trop longue pour tout livrer d'un coup : livrer les missions une par une, chacune COMPLÈTE (YAML +
-Markdown), puis écrire « Mission suivante : M016B — répondre « suite » » et attendre ; le bloc VALIDATION suit
+Markdown), puis écrire « Mission suivante : M-016B — répondre « suite » » et attendre ; le bloc VALIDATION suit
 la dernière mission. Ne jamais tronquer un fichier.
 
 ────────────────────────────────────────────────────────────────────────────
-4. YAML — SCHÉMA EXACT (helo-xp-mission 1.0)
+4. YAML — SCHÉMA EXACT (helo-xp-mission 2.0)
 ────────────────────────────────────────────────────────────────────────────
 Textes longs (summary, detailed_description) : bloc littéral « |- », paragraphes séparés par UNE ligne
 vide, une idée par paragraphe, 4 phrases au plus par paragraphe. Jamais un seul bloc compact.
 Règles de syntaxe : YAML 1.2 valide, indentation 2 espaces, PAS d'ancres ni d'alias (&id / *id) :
 répéter les valeurs. Textes contenant « : », « # » ou commençant par un caractère spécial entre
-guillemets doubles. id de mission entre guillemets ('M016'). Booléens true / false. Nombres sans unité.
+guillemets doubles. id de mission entre guillemets ('M-016'). Booléens true / false. Nombres sans unité.
 Coordonnées : degrés décimaux WGS84, 6 décimales, lat puis lon, ouest et sud négatifs.
 
 schema: helo-xp-mission
-schema_version: '1.0'
+schema_version: '2.0'
 mission:
   series: 4                    # = série indiquée pour la famille dans PROCHAINS_NUMEROS
   number: 16                   # = numéro de l'opération (entier)
-  id: 'R016A'                  # = NN (R = AAR), + lettre de l'équipe s'il y en a plusieurs (en texte)
+  id: 'R-016A'                 # = NN (R = AAR), + lettre de l'équipe s'il y en a plusieurs (en texte)
   type: AAR                    # code de famille (§ 2)
   subtype: TRAINING            # code de sous-type (§ 2)
+  theatre: métropole           # théâtre (§ 5) : métropole, Corse, Antilles… ou « étranger »
+  country: FR                  # pays du théâtre, code ISO 3166 à 2 lettres (FR pour la France et l'outre-mer ; JP, ID…)
 operation:                     # opération commune aux missions de ses équipes (identique dans chacune)
-  id: 'R016'
+  id: 'R-016'
   name: "Nom de l'opération"
-  missions: ['R016A', 'R016B']   # toutes les missions de l'opération, dans l'ordre
+  missions: ['R-016A', 'R-016B']   # toutes les missions des équipes de l'opération, dans l'ordre (sans la Z)
+  organisation: 'R-016Z'       # SEULEMENT pour un exercice (§ 3) : id de la mission d'organisation
 title: "AXE CECILE — ravitaillement d'une patrouille Rafale"   # court, sans le numéro
 summary: |-                   # bloc LITTÉRAL « |- » (jamais « >- » ni « > », qui recollent les lignes)
   Paragraphe 1 (2 à 3 phrases) : la situation — qui, où, ce qui se passe.
@@ -159,8 +186,9 @@ summary: |-                   # bloc LITTÉRAL « |- » (jamais « >- » ni « >
 detailed_description: |-
   Contexte (2 à 4 phrases) : situation, acteurs, pourquoi maintenant.
 
-  Départ et transit (2 à 4 phrases) : terrain, route, points tournants, niveaux ou hauteurs, distance
-  et durée estimées.
+  Départ et mise en place (1 à 3 phrases) : terrain de départ, ce qui conditionne le départ (créneau,
+  météo, équipement). PAS d'itinéraire, de niveaux, de distances ni de durées : la route, le profil et les
+  temps sont calculés par le programme d'après les points du fichier.
 
   Action sur l'objectif (3 à 5 phrases) : ce qui se passe à TARGET, aux rendez-vous et dans les zones,
   coordination avec les autres acteurs.
@@ -168,6 +196,7 @@ detailed_description: |-
   Décisions et imprévus (2 à 3 phrases) : critères d'interruption, carburant, météo, plan B.
 
   Retour et fin de mission (1 à 3 phrases) : retour, déroutement éventuel, ce qui marque la fin.
+  Ne pas citer les zones réglementées à activer : le programme les calcule d'après la route et les zones.
 aircraft:                      # l'aéronef DEFA de CETTE mission (une équipe = un aéronef ; une patrouille de
                                # deux appareils sous un même indicatif reste une équipe). Les autres équipes DEFA
                                # de l'opération et les autres acteurs (VSAV, SMUR, CROSS, PGHM, commandement
@@ -177,11 +206,14 @@ aircraft:                      # l'aéronef DEFA de CETTE mission (une équipe =
     callsign: COTAM3510        # sans espace, 3 à 9 caractères, lettres et chiffres
     operator: "Armée de l'Air et de l'Espace"
     role: aéronef principal
+    cruise_speed_kt: 460         # vitesse vraie de croisière réaliste pour ce type et cette mission (kt)
+    cruise_level: FL280          # niveau ou hauteur de transit : FL + 3 chiffres, ou « 1500 ft » (hélicoptère)
 origin:                        # terrain de départ de CETTE équipe (§ 5)
   name: "BA 125 Istres-Le Tubé (LFMI)"
   lat: 43.522778
   lon: 4.923889
-destination:                   # terrain d'arrivée (peut être identique à origin : répéter les valeurs)
+destination:                   # RETOUR BASE (toujours) : de préférence la base de départ (répéter les valeurs
+                               # d'origin), sinon la base où l'appareil finit la mission (relève, escale, base avancée)
   name: "BA 125 Istres-Le Tubé (LFMI)"
   lat: 43.522778
   lon: 4.923889
@@ -190,12 +222,14 @@ target:                        # objectif / point central de la mission (id TOUJ
   name: "Nom précis du lieu"
   lat: 0.000000
   lon: 0.000000
+  time_on_task_min: 20         # temps passé sur l'objectif (poser, treuillage, largages, recherche, prise en charge…)
 turning_points:                # 2 à 6 points dans l'ordre du vol, id PT1, PT2…
   - id: PT1
     name: "Nom réel du point (ville, cap, sommet, balise…)"
     lat: 0.000000
     lon: 0.000000
     role: "transit / entrée zone / point de report / …"
+    time_on_task_min: 0          # 0 pour un point de passage ; durée d'un poser, d'une attente, d'un hippodrome…
 rendezvous:                    # 0 à 3 rendez-vous, id RDV-1, RDV-2… ; un rendez-vous commun à plusieurs missions
                                # de l'opération a le MÊME id, le même nom et les mêmes coordonnées dans chacune
   - id: RDV-1
@@ -204,12 +238,49 @@ rendezvous:                    # 0 à 3 rendez-vous, id RDV-1, RDV-2… ; un ren
     lon: 0.000000
     participants: [COTAM3510, CERBERES51]   # callsigns présents dans aircraft ou teams
     role: "ralliement / relève / largage / poser / …"
-zones:                         # 0 à 2 zones de travail, id ZONE-1…
+    time_on_task_min: 5          # attente, jonction, poser au rendez-vous
+zones:                         # 0 à 3 zones de travail, id ZONE-1… (règles : voir sous le schéma)
   - id: ZONE-1
     name: "Nom de la zone"
+    kind: search               # search : zone de recherche ; mission : zone de travail (observation, largage,
+                               # feu, levé, hippodrome…) ; exclusion : zone à éviter (population, faune, relief)
     centre: { lat: 0.000000, lon: 0.000000 }
-    radius_km: 20
+    radius_km: 20              # zone ronde : centre + rayon
+    points:                    # OU zone polygonale (3 à 8 sommets dans l'ordre, lieux réels) : secteur borné par
+      - { lat: 0.000000, lon: 0.000000 }   # des vallées, crêtes, routes, côtes… ; le centre reste donné
     role: "zone de recherche / zone AAR / zone de largage / …"
+    time_on_task_min: 45         # temps de travail dans la zone (recherche, hippodrome de ravitaillement…)
+route_order: [ORIGIN, PT1, RDV-1, TARGET, PT2, DESTINATION]   # route PROBABLE de CETTE équipe, dans l'ordre :
+                               # tous les points réellement survolés (points tournants, rendez-vous, TARGET, zones),
+                               # de ORIGIN au retour base DESTINATION ; ids du fichier uniquement
+return_options:                # 0 à 3 retours possibles AUTRES que destination, selon la situation (état du patient,
+                               # météo, carburant, objectif atteint ou non) ; l'appareil rentre ensuite à sa base
+  - name: "CHU de Toulouse – Purpan (hélistation)"
+    lat: 43.609000
+    lon: 1.400000
+    condition: "patient instable : centre de traumatologie"
+    time_on_task_min: 10       # poser, dépose du patient
+    then_base: true            # false si l'appareil y termine la mission
+# Pistes (chiffons) et messages en vol : JAMAIS dans la mission d'une équipe, mais dans le bloc exercise de la
+# mission d'organisation (§ 4 bis). Les anciens champs tracks / injects ne sont plus produits.
+phases:                        # FACULTATIF (0 à 3) : briefs successifs prévus par le scénariste — la situation évolue
+                               # en cours de route ; le brief initial est la partie A (le reste du fichier), les
+                               # parties B, C… sont remises à l'équipage au moment indiqué (« pli » à ouvrir)
+  - id: B
+    title: "Changement de destination"
+    trigger_point: RDV-1       # point de référence (id du fichier) ; ORIGIN pour un délai après le décollage
+    trigger_delay_min: 10      # minutes après le passage à trigger_point
+    trigger: "10 min après RDV-1"   # en clair
+    message: "« CODIS 66 : le patient a été redescendu à Vernet, nouvelle DZ au stade. »"   # message reçu
+    brief: |-
+      Ce qui change (2 à 4 phrases) : nouvelle situation, nouvelle tâche, contraintes.
+    route_order: [RDV-1, PT3, TARGET, DESTINATION]   # suite de la route à partir de trigger_point (ids du fichier :
+                               # déclarer les nouveaux points dans turning_points, rendezvous ou zones)
+                               # exercice (§ 3) : chaque partie figure AUSSI dans la chronologie de la Z (kind: pli,
+                               # to: l'équipe, at: trigger_point, by: son indicatif, phase: B)
+timing:                        # durées estimées par TOI d'après route_order, vitesses, niveaux et time_on_task_min
+  estimated_flight_min: 95     # décollage → atterrissage, retour base compris (option principale)
+  estimated_block_min: 110     # cales → cales (mise en route et roulage compris)
 teams:                         # tous les acteurs : les ÉQUIPES_DEFA aéronefs, plus autant d'équipes sol ou
                                # d'autres acteurs que la mission le demande
   - name: CERBERES51/52        # callsign ou nom d'équipe
@@ -270,9 +341,96 @@ notes:
   - "Exercice de simulation aérienne."
   - "Toute coordonnée approximative est signalée ici (point et raison)."
 
+Zones (dessinées sur toutes les cartes) : toute mission dont le travail porte sur une SURFACE et non sur un point
+en a une — recherche d'une personne, d'une épave ou d'un véhicule (SAR, LE, HEMS en recherche : kind search), secteur
+d'observation ou de surveillance (ISR, MARITIME, COMMAND : mission), feu et ses abords (FIRE : mission), levé (SURVEY :
+mission), zone de largage (AIRBORNE : mission), secteur à éviter (exclusion). Taille réaliste pour l'aéronef et le
+temps de travail (quelques km pour une recherche en hélicoptère, dizaines de km pour un avion de surveillance) ;
+forme ronde quand le secteur est centré sur un point connu, polygonale quand il suit le terrain. Une mission sur un
+point précis (évacuation, transport) n'a pas de zone. Quand la position exacte n'est connue qu'en vol (personne ou
+véhicule signalé, épave localisée), la mission devient un exercice (§ 3) : la zone de recherche est dans la mission,
+TARGET en est le centre, et la position réelle est un chiffon à UN point (played: false, nature de la cible)
+révélé par un message radio de la mission Z ; la carte détaillée de TARGET n'est pas produite (le studio fait la
+carte de la position révélée).
+
+Basse altitude : un avion de combat ou de transport tactique qui transite ou travaille à basse hauteur (sous
+environ 1500 ft ASFC) le fait dans le RTBA (réseau très basse altitude : zones R des cartes AZBA, ex. R 45, R 69,
+R 147, R 152, R 590) — points tournants et zones posés dans les tronçons du RTBA, entrée et sortie du réseau
+nommées ; cruise_level en ft (« 500 ft »). En dehors du RTBA, pas de basse hauteur pour ces avions. Les
+hélicoptères ne sont pas concernés (vol tactique selon la mission).
+
 Références internes : ORIGIN, DESTINATION et TARGET sont des identifiants réservés ; tout id cité
-(centre_ref, route du profil vertical, participants) DOIT exister dans le fichier. Pas d'autre clé que
+(centre_ref, route du profil vertical, route_order, participants) DOIT exister dans le fichier.
+Retour base : une mission se termine TOUJOURS par un retour base (destination), de préférence la base de départ ;
+quand plusieurs retours sont possibles (HEMS : hôpital selon l'état du patient ; déroutement météo ; terrain
+avancé), la destination est le cas le plus probable et les autres vont dans return_options. Pas d'autre clé que
 celles du schéma.
+
+────────────────────────────────────────────────────────────────────────────
+4 bis. MISSION D'ORGANISATION D'UN EXERCICE (missionNNZ.yaml)
+────────────────────────────────────────────────────────────────────────────
+Même schéma que § 4 pour les champs communs (schema, mission, operation, title, author, date, summary,
+detailed_description, teams, notes) ; PAS d'aircraft, origin, destination, turning_points, route_order, timing,
+vertical_profile ni maps (les cartes de l'organisation et des chiffons sont faites par le studio). Les rendez-vous et
+zones de l'exercice restent dans les missions des équipes. Structure :
+
+schema: helo-xp-mission
+schema_version: '2.0'
+mission:
+  series: 1
+  number: 1
+  id: 'I-001Z'
+  type: ISR                    # famille de l'opération
+  subtype: EXERCICE
+  role: organisation
+operation:                     # identique aux missions des équipes
+  id: 'I-001'
+  name: "ŒIL DE SOLOGNE"
+  missions: ['I-001A', 'I-001B', 'I-001C']
+  organisation: 'I-001Z'
+title: "ŒIL DE SOLOGNE — organisation de l'exercice"
+summary: |-                    # brief général remis à tous
+  …
+detailed_description: |-
+  …
+exercise:
+  h_hour: "H"                  # « H », ou une heure réelle (« 14:00Z ») si le scénario l'impose
+  participants:                # une ligne par équipe DEFA en vol (callsign = aircraft[0].callsign de sa mission)
+    - { callsign: CYRANO01, mission: 'I-001A', takeoff: "H-15", role: "surveillance et fourniture des pistes" }
+    - { callsign: RAFALE31, mission: 'I-001C', takeoff: "H", role: "reconnaissance des pistes" }
+  tracks:                      # chiffons ; points réels, coordonnées vérifiables (§ 5)
+    - id: TRACK-401
+      name: "TRACK 401"
+      nature: "trafic léger non coopératif"
+      played: true             # true : tenu par un aéronef du simulateur ; false : seulement dessiné
+      callsign: CHIFFON401     # indicatif du chiffon joué (vide sinon)
+      start: "H+50"            # départ du premier point (chiffon joué)
+      points:                  # route, dans l'ordre (2 points au moins) ; UN point pour une position fixe (cible
+                               # révélée en vol : véhicule, personne, épave)
+        - { name: "Rosnay", lat: 46.701667, lon: 1.215278 }
+        - { name: "Mézières-en-Brenne", lat: 46.821667, lon: 1.211389 }
+      level: "3 500–5 000 ft"
+      speed_kt: 120
+      task: "ce que les équipages doivent établir : type, cap, comportement, identification"
+      conduct: |-              # consignes du chiffon joué (comportement, réponses à la radio, fin)
+        …
+  events:                      # chronologie ; ids EV-1, EV-2… dans l'ordre
+    - id: EV-1
+      at: RDV-2                # « H+60 », ou id d'un point de la mission du participant « by »
+      by: RAFALE31             # participant dont le passage à « at » déclenche l'événement (si at est un point)
+      delay_min: 0             # minutes après ce passage
+      kind: radio              # radio : passé en vol par l'émetteur ; pli : remis avant le vol, ouvert au moment dit
+      from: CYRANO01           # émetteur (participant, contrôleur, CODIS, directeur d'exercice…)
+      to: [RAFALE31]           # destinataires : indicatifs de participants ou de chiffons joués, ou [ALL]
+      title: "Contact tactique — TRACK 401"
+      text: |-
+        Ce qui est transmis ou ce que contient le pli (2 à 6 phrases), valeurs utiles comprises.
+      reveals: [TRACK-401]     # pistes révélées aux destinataires (ids de tracks)
+
+Règles : toute piste est révélée par au moins un événement ; un événement lié à un point cite un point qui existe
+dans la mission de son participant « by » ; les décollages (takeoff) et départs (start) sont cohérents avec les
+timings des missions et les rendez-vous ; chaque chiffon joué a callsign, start et conduct ; les destinataires sont
+des participants, des chiffons joués ou ALL.
 
 ────────────────────────────────────────────────────────────────────────────
 5. GÉOGRAPHIE — CONTRE LES ERREURS
@@ -310,6 +468,13 @@ celles du schéma.
   Dauphin / Panther de la Marine). Longitude négative à l'ouest de Greenwich (Antilles, Guyane,
   Polynésie, Saint-Pierre) ; latitude négative dans l'hémisphère sud (Réunion, Mayotte, Nouvelle-Calédonie,
   Polynésie, Wallis).
+- Théâtre étranger (« étranger (pays) », pays au choix du générateur s'il n'est pas donné) : mission DEFA hors de
+  France — détachement ou exercice multinational, coopération, évacuation de ressortissants, aide humanitaire, relais
+  vers une base prépositionnée (Djibouti, Abou Dhabi, Niamey, Dakar, Libreville…) ou chez un partenaire. Départ d'une
+  base française ou partenaire réellement utilisable, ou arrivée depuis la France avec escales réalistes ; terrains
+  et lieux réels du pays, noms locaux usuels, codes OACI certains uniquement. mission.theatre = « étranger »,
+  mission.country = code ISO du pays. Les données du programme (espaces aériens, voies aériennes, zones à activer)
+  ne couvrent que la France : ne pas en inventer pour l'étranger ; le brief cite l'autorité locale à contacter.
 - Tous les points sont dans le ou les théâtres choisis (et sur les escales du trajet qui les relie), sur le bon relief : un point « en mer » réellement en mer
   (à plus de 2 km de la côte, préciser dans role), un « sommet » sur le sommet, un « port » sur le port,
   un « lac » sur l'eau.
@@ -445,6 +610,48 @@ Contraintes :
 
 - `general41.png` — <description>
 
+## Exercice
+
+Organisation : <operation.organisation>
+Heure H : <exercise.h_hour>
+Décollage : <takeoff de ce participant>
+Plis scellés remis : <nombre de plis adressés à cet équipage, et le moment d'ouverture de chacun — pas leur contenu>
+Messages radio attendus en vol : <oui / non>
+
+(section présente seulement pour une mission d'équipe d'un exercice)
+
+## Partie B — <phases[].title>
+
+À ouvrir : <phases[].trigger>
+Message : <phases[].message>
+
+<phases[].brief>
+
+(une section « ## Partie X — … » par partie de phases, en FIN de fichier ; absente sans phases)
+
+Mission d'organisation (summaryNNZ.md) : mêmes règles, titres dans cet ordre — # Organisation NNZ — « <title> »,
+## Introduction (Type, Sous-type, Opération : <operation.name> — missions <operation.missions>), ## Summary,
+## Description détaillée, ## Équipes engagées, puis :
+
+## Heure H et participants
+
+Heure H : <exercise.h_hour>
+
+| Indicatif | Mission | Décollage | Rôle |
+|---|---|---|---|
+| <callsign> | <mission> | <takeoff> | <role> |
+
+## Chiffons
+
+| Piste | Joué | Indicatif | Départ | Nature | Points | Niveau | Vitesse | À établir | Consignes |
+|---|---|---|---|---|---|---|---:|---|---|
+| <name> | <oui / non> | <callsign> | <start> | <nature> | <points : nom lat, lon → …> | <level> | <speed_kt> | <task> | <conduct> |
+
+## Chronologie
+
+- **<id> — <at> (<by>) +<delay_min> min** — <radio | pli> — <from> → <to> : <title> — pistes <reveals>
+  <text>
+
 > Scénario de simulation — ne pas utiliser pour une mission réelle.
 
 ────────────────────────────────────────────────────────────────────────────
@@ -463,8 +670,24 @@ liste des corrections faites :
   [ ] ÉQUIPES_DEFA ≥ 2 : une mission complète par équipe (41A, 41B…), chacune avec son aéronef, son départ, ses
       points tournants et ses cartes ; bloc operation identique partout ; rendez-vous communs identiques
       (id, nom, coordonnées) ; autres équipes DEFA dans teams ; section « Coordination de l'opération »
-  [ ] aéronefs : désignateur du § 6 en tête du type ; aéronef capable de la mission
-  [ ] tous les id cités (centre_ref, route, participants) existent
+  [ ] TYPES_EQUIPES : chaque aéronef (IMPOSÉ) repris à l'identique (désignateur en tête de aircraft[0].type, indicatif
+      exact) dans la mission de son équipe — aucun remplacement
+  [ ] aéronefs : désignateur du § 6 en tête du type (sauf aéronef imposé : son désignateur) ; aéronef capable de la mission
+  [ ] tous les id cités (centre_ref, route, route_order, participants) existent
+  [ ] detailed_description sans itinéraire, niveaux, distances, durées ni zones à activer (calculés par le programme)
+  [ ] basse altitude (avion de combat, transport tactique) : dans le RTBA, entrée et sortie du réseau nommées
+  [ ] zones : une zone (kind, cercle ou polygone réaliste) pour toute mission de surface (recherche, observation,
+      feu, levé, largage) ; position connue seulement en vol → exercice, chiffon à un point, pas de carte détaillée de TARGET
+  [ ] exercice (§ 3, § 4 bis) : mission NNZ livrée après les équipes, operation.organisation dans toutes les missions
+      de l'opération ; participants = équipes en vol avec leur décollage ; chiffons réels, niveaux et vitesses cohérents
+      avec la nature, chiffons joués avec callsign, start et conduct ; chaque événement a un moment, une forme
+      (radio / pli), un émetteur, des destinataires, un texte ; toute piste est révélée ; aucun tracks / injects dans
+      les missions des équipes
+  [ ] phases (s'il y en a) : trigger_point existant, délai réaliste, message, brief, route_order reprise à trigger_point ;
+      route_order de la mission = partie A ; timing = mission complète prévue (parties comprises) ;
+      une section « ## Partie X » par partie
+  [ ] route_order : de ORIGIN à DESTINATION (retour base), tous les points survolés ; return_options si plusieurs
+      retours sont possibles ; timing cohérent avec la route, cruise_speed_kt, cruise_level et time_on_task_min
   [ ] distances totales compatibles avec l'autonomie ; hauteurs et niveaux réalistes
   [ ] cartes obligatoires présentes, filenames avec le bon NN
   [ ] Markdown : titres exacts, mêmes valeurs que le YAML

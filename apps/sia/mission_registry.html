@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Registre des missions générées</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=20260928e"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=20260928e">
-<script src="../../repository_tree?v=20260928e"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=20260929z"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=20260929z">
+<script src="../../repository_tree?v=20260929z"></script>
 <style>
   main.rg-page{max-width:1500px;margin:18px auto;padding:0 16px 48px}
   main.rg-page>section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:0 0 16px}
@@ -21,7 +21,11 @@
   .rg-chip{display:inline-flex;gap:5px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;cursor:pointer}
   .rg-chip:has(input:checked){background:var(--soft);border-color:var(--accent)}.rg-teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px 12px;margin:4px 0 8px}.rg-team{display:flex;gap:8px;align-items:center}.rg-team-letter{flex:none;font-weight:700;min-width:5.5em}.rg-team input{flex:1;min-width:0}
   .rg-small{font-size:12px;color:var(--muted)}
-  #rgTable{max-height:55vh;overflow:auto;border:1px solid var(--line);border-radius:10px;margin-bottom:12px}
+  #rgTable{height:min(55vh,560px);min-height:120px;overflow:auto;border:1px solid var(--line);border-radius:10px 10px 0 0}
+  @media (max-height:820px){#rgTable{height:35vh}}
+  .rg-resize{height:12px;margin:0 0 12px;cursor:row-resize;touch-action:none;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-top:0;border-radius:0 0 10px 10px;background:var(--soft,rgba(127,127,127,.08))}.rg-resize span{width:48px;height:4px;border-radius:2px;background:currentColor;opacity:.3}.rg-resize:hover span{opacity:.6}
+  /* en-tête fixe : le défilement est celui de #rgTable (pas du .st-wrap intérieur) ; lignes compactes */
+  #rgTable .st-wrap{overflow:visible}#rgTable .st-table th,#rgTable .st-table td{padding:3px 8px;line-height:1.25}#rgTable .st-table th{z-index:2}#rgTable .rg-pill{padding:0 7px;font-size:11px}.rg-op{border:1px solid var(--line);border-radius:10px;padding:6px 12px;margin:8px 0}.rg-op p{margin:4px 0}.rg-chip-on{background:var(--soft);border-color:var(--accent);font-weight:600}.rg-cut{display:inline-block;vertical-align:bottom;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rg-cut-s{max-width:8em}.rg-cut-l{max-width:20em}#rgTable .st-delete{padding:1px 6px}#rgTable .st-arrow{margin-left:2px;min-width:8px}
   .rg-detail{margin-top:6px}
   .rg-edit{display:grid;grid-template-columns:180px 180px 1fr;gap:10px;margin:10px 0}
   .rg-teams{margin:6px 0;padding-left:18px;font-size:13px}
@@ -37,14 +41,16 @@
      générateur, le studio ou un CR ; commande d'une mission (prompt réglé). Page construite par shared/mission_registry.js. -->
 <header class="mc-header"><h1>Registre des missions générées</h1><p>Missions SIA — séries générées, choix par type, rendez-vous et équipes, commande de nouvelles missions</p></header>
 <main class="rg-page" id="missionRegistry"></main>
-<script src="../../shared/repository_nav.js?v=20260928e"></script>
-<script src="../../shared/content_i18n.js?v=20260928e"></script>
+<script src="../../shared/repository_nav.js?v=20260929z"></script>
+<script src="../../shared/content_i18n.js?v=20260929z"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script src="../../shared/data_files.js?v=20260928e" data-file="references/aircraft_fleet.js"></script>
-<script src="../../shared/mission_core/vocab.js?v=20260928e"></script>
-<script src="mission_store.js?v=20260928e"></script>
-<script src="mission_prompt.js?v=20260928e"></script>
-<script src="../../shared/mission_table.js?v=20260928e"></script>
-<script src="../../shared/mission_registry.js?v=20260928e"></script>
-<script src="../../shared/app_framework.js?v=20260928e"></script>
+<script src="../../shared/data_files.js?v=20260929z" data-file="references/aircraft_fleet.js"></script>
+<script src="../../shared/mission_core/vocab.js?v=20260929z"></script>
+<script src="mission_store.js?v=20260929z"></script>
+<script src="mission_prompt.js?v=20260929z"></script>
+<script src="../../shared/mission_table.js?v=20260929z"></script>
+<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=20260929z"></script><script src="../../shared/sia_base.js?v=20260929z"></script><script src="../../shared/mission_routing.js?v=20260929z"></script><script src="../../shared/mission_estimate.js?v=20260929z"></script>
+<script src="../../shared/mission_order.js?v=20260929z"></script>
+<script src="../../shared/mission_registry.js?v=20260929z"></script>
+<script src="../../shared/app_framework.js?v=20260929z"></script>
 </body></html>

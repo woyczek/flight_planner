@@ -10,6 +10,164 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+## [4.0.0] — 2026-09-29
+
+Exercices (organisation, chiffons, chronologie radio et plis), routes de transit calculées (voies aériennes, RTBA),
+zones à activer, zones de recherche, théâtres étrangers, format de mission 2.0 ; générateur, studio, registre et
+Maintenance réorganisés ; framework : notifications flottantes, tableaux à colonnes réglables.
+
+À la mise à jour : relire le dossier SIA une fois (base au format 14 : gestionnaires des zones, voies aériennes) ;
+relancer le calcul de la MORA (outre-mer et missions à l'étranger) ; relire le dossier des missions dans le registre.
+
+- **Registre : suppression individuelle des cartes** — croix sur chaque vignette (confirmation), emplacement affiché
+  (cartes/ ou racine), cartes en double à la racine repérées et supprimables d'un coup ; PDF compté dans la place.
+- **Maintenance › Espace disque** : colonne PDF et « Purger les PDF » (régénérés par le générateur).
+- **Registre : cartes surnuméraires** — dans les fichiers d'une mission, cartes absentes de sa liste de cartes marquées
+  (croix de suppression), bouton « Supprimer les cartes surnuméraires », place occupée par la mission.
+- **Maintenance › Espace disque** : place occupée par les missions (par mission et par type : données, cartes, dont
+  surnuméraires, versions, textes reçus ; totaux) et par le navigateur ; purge des cartes surnuméraires ou de toutes les
+  cartes générées (régénérables depuis le YAML), avec confirmation.
+- **Studio, génération des cartes** : barre de progression et étape en cours dans le pied de page ; rangement dans le
+  dossier de la mission toujours annoncé (notification, compte rendu) ; sans accès au dossier, bouton « Ranger les cartes
+  dans le dossier » dans le pied de page. Registre : cartes en vignettes réduites.
+- **Avertissements** : les zones d'état (`data-status`) passent leurs erreurs et avertissements en notification flottante
+  (effacement automatique, croix) et ne les répètent plus en ligne ; état de la base SIA du studio en ligne neutre +
+  notification.
+- **Routes : mode et réglages visibles** — bloc Durée estimée : transit calculé ou raison du direct (hélicoptère, VFR,
+  base SIA à relire, hors de la couverture des données SIA pour une mission à l'étranger, tronçons courts, détour) ;
+  mode imposé par mission (`route_mode` : automatique, voies aériennes, RTBA, direct) ; paramètres du calcul réglables
+  (longueur minimale, niveaux, portée d'entrée, détour admis), communs et mémorisés dans le navigateur.
+- **Organisation d'exercice** : mission seule sans exercice (ex. H-001) → une ligne discrète au lieu du bloc Opération ;
+  organisation créée avec un brief général proposé d'après les missions ; dossier organisation sans brief écrit →
+  celui des missions.
+- **Cartes générées par le studio** : rangement dans le dossier de la mission signalé ; sans accès au dossier, bouton
+  « Ranger les cartes dans le dossier de la mission » (les cartes générées sont gardées en mémoire).
+- **Markdown depuis le YAML** (`SiaMission.markdownOf`, format du § 9 du prompt, organisation d'exercice comprise) :
+  affiché à la demande dans le registre quand le dossier n'a pas de `summary<ID>.md` ; même code pour « Exporter
+  Markdown » du générateur (qui ne reprenait que les textes).
+- **Cartes d'exercice** ajoutées d'office par le studio à l'ouverture d'une mission d'exercice (message ou pli qui
+  révèle une position ou une piste, organisation, chiffons) ; générateur : liste des cartes d'exercice et leur état ;
+  PDF de l'équipage : carte de chaque pli après sa page, carte d'un message radio sur une page « à remettre à réception
+  du message ». L-001 : `exercice_EV-1_L-001.png` ; L-001Z : `organisation_L-001Z.png`.
+- **Théâtre étranger** : commande « étranger (pays) » (champ Pays), règles du prompt (bases prépositionnées,
+  partenaires, lieux réels, pas de données aéronautiques inventées), `mission.theatre` et `mission.country` (ISO) ;
+  registre : « étranger — Japon ».
+- **MORA hors des théâtres français** : le calcul complet (Maintenance) ajoute les emprises des missions du registre
+  situées ailleurs (relief et sommets).
+- **Villes** : outre-mer français (≥ 500 hab.) et reste du monde (≥ 15 000 hab., 187 pays) ajoutés à
+  `villes_geonames.csv` (41 665 → 70 962 villes) par `tools/update_cities_geonames.py` (option `--world`).
+- **Maintenance** : Versions et synchronisation, Références et dépendances — `moraCycle` lu dans `SiaBase`.
+- **Maintenance** : chaque bloc rendu séparément ; une lecture en échec (dossier, base SIA, git) s'affiche dans son
+  bloc et en notification au lieu de laisser Sources et dossiers, Versions et synchronisation… vides.
+- **Barre latérale** : préférence et design posés dès l'en-tête de chaque page (repository_tree) ; planificateur :
+  navigation chargée avant les calculs — la barre ne paraît plus en fin de calcul.
+- **Registre → générateur** : plus de PDF produit à l'ouverture (demande de PDF consommée à l'arrivée, liée à la mission).
+- **Notifications** : une seule par zone d'état, effacement automatique (erreur 12 s, avertissement 8 s, autres 5 s),
+  plus de doublon message en ligne + notification.
+- **Zones de recherche** lisibles sur les fonds topographiques : magenta, liseré blanc, hachures.
+- **Format 2.0** : missions mémorisées dans le navigateur (partagée, lot) mises à niveau à la lecture.
+- **Routes de transit calculées** (`shared/mission_routing.js`) : voies aériennes de l'AIXM pour un avion en IFR,
+  chaînage du RTBA à basse hauteur, direct pour les hélicoptères et le VFR ; dans la route probable, les durées, le
+  croquis, le profil vertical (« ↺ Route probable ») et les zones à activer. Temps d'aller et de retour éprouvés par les
+  CR repris à la place du calcul. Base SIA au format 14 (voies aériennes) : relire le dossier une fois.
+- **Studio réorganisé** — Mission (état, enregistrer, état de la base SIA, ouvrir une autre mission replié) ;
+  Cartes et cadrage (liste des cartes, réglages du profil repliés, aperçu ; boutons Actualiser, Garder ce cadrage,
+  Recentrer, Cadrage automatique) ; Profil vertical ; Aperçus et génération ; base SIA masquée par défaut. Cadrage
+  automatique d'après la mission (points, zones, format 16/10). Fond local PNG « Carte France vierge » et ses champs
+  de calage supprimés ; calcul de la MORA retiré du studio (Paramètres › Maintenance).
+- **Zones de mission et de recherche** (`zones[]` : cercle ou polygone, `kind`) lues et dessinées par défaut ;
+  cheminement affiché sans passer par le profil vertical. L-001 : secteur de recherche et exercice L-001Z (position
+  transmise par radio, carte détaillée de la position révélée).
+- **Zones à activer** (`shared/mission_airspaces.js`) : zones R, D, TRA, RTBA recoupées par la route et les zones, par
+  gestionnaire (AIXM), dans le générateur et les PDF ; base SIA au format 13 (à relire une fois).
+- **Générateur** : import et commande ChatGPT repliés quand une mission est chargée, bouton « Commander à
+  ChatGPT… » ; Identification refaite (famille, sous-types proposés, identifiant et série suivants en indication
+  grise, contrôle de la lettre de famille) ; format **helo-xp-mission 2.0** (`tools/migrate_missions_schema.py`).
+- **Registre** : « Ouvrir » charge toute l'opération d'une mission d'opération (boutons en double retirés) ; fichiers
+  d'une mission retrouvés même si le registre a gardé un mauvais nom ; croquis de la route et tronçons côte à côte.
+- **Correctif** : un YAML commençant par un commentaire « # Mission … » n'est plus découpé en deux fichiers
+  (`mission2.yaml` dans le registre).
+- **Notifications communes** (`AppFramework.notify`) : les erreurs des zones d'état (`data-status`) et des ouvertures
+  s'affichent en bas de page sur toutes les pages qui les déclarent.
+- **Prompt** : description sans itinéraire, niveaux, durées ni zones à activer ; basse altitude dans le RTBA ; zones
+  selon le type de mission ; position connue en vol = exercice ; schéma 2.0.
+- **Studio : carte plate** — certains styles publiés (VersaTiles) imposaient la projection « globe » : vue mappemonde
+  et, depuis l'outre-mer (Nouméa…), grille MORA et libellés de métropole projetés sur la carte. Le studio reste en
+  Mercator.
+- **MORA outre-mer** — le calcul complet (Maintenance, studio) couvre aussi Antilles, Guyane, Saint-Pierre-et-Miquelon,
+  Réunion, Mayotte, Nouvelle-Calédonie, Polynésie (îles de la Société) et Wallis-et-Futuna (obstacles de l'AIXM
+  FR_OM) ; à relancer pour produire le nouveau `mora.csv`.
+- **Villes outre-mer** — `tools/update_cities_geonames.py` ajoute à `villes_geonames.csv` les lieux habités de GeoNames
+  (≥ 500 hab., comme cities500) des pays choisis, outre-mer français par défaut.
+- **Tableaux : largeur des colonnes réglable** (SortedTable) — poignée à droite de chaque en-tête, double-clic pour la
+  largeur automatique, mémorisée par tableau. Registre : hauteur du tableau réglable (poignée en bas), mémorisée.
+- **Maintenance › Sources et dossiers** : boutons de dossier sur une ligne (ils se repliaient lettre par lettre).
+- **Dossier d'une mission** : `mission<ID>.yaml` (données + réglages du studio + dates et historique), `summary<ID>.md`,
+  `cartes/` (PNG du studio), `recu/` (textes reçus horodatés), `versions/` (YAML remplacés). Réimport : comparaison des
+  données — identique (rien remplacé) ou nouvelle version (ancienne gardée, différences listées, réglages du studio
+  repris). Générateur et studio : « Enregistrer dans le dossier » ; cartes générées rangées dans `cartes/`.
+- **Registre : fichiers de la mission** — YAML, Markdown lisible, vignettes des cartes, versions (différences), textes
+  reçus, PDF à la demande (générateur, cartes du dossier chargées), Modifier ; état complète / partielle / sans cartes.
+- **Exercices : organisation, chiffons, chronologie** (`shared/mission_exercise.js`, toutes familles) — mission
+  d'organisation `…Z` de l'opération (`I-001Z`, `M-016Z`…) : brief général, heure H commune, participants et leur
+  décollage (H±n), chiffons joués ou seulement dessinés (route, départ, consignes), chronologie de messages radio et
+  de plis scellés (à H+n ou au passage d'un point par un participant, émetteur, destinataires, pistes révélées) ;
+  chaque destinataire ne reçoit que ce qui lui est adressé. Ancien format (`tracks`, `injects`, `phases`) toujours lu
+  et repris à la création de l'organisation. Exercice d'essai : opération I-001 « ŒIL DE SOLOGNE » (I-001Z).
+- **Générateur réorganisé** — bloc **Opération** en tête (missions, décollages, organisation, passage de l'une à
+  l'autre), mode organisation sur la Z (brief général, exercice, « Ce que reçoit chacun »), bloc **Documents** : brief
+  de l'équipage avec ses plis (une page chacun), dossier organisation, fiches des chiffons joués, tous les documents
+  de l'exercice (un PDF par destinataire), exports de données.
+- **Studio : cartes par destinataire** — organisation (toutes les pistes et les routes des participants), chiffon (sa
+  route, son départ), équipage (pistes connues après chaque message ou pli) ; « + Cartes d'exercice » selon la mission.
+- **Registre** — missions d'organisation repérées, fiche : membres de l'opération, résumé de l'exercice, « Ouvrir
+  l'opération » (générateur ou studio, en un lot) ; en-tête du tableau fixe au défilement, tableau compact (type et
+  sous-type, équipes et types réunis, textes longs coupés, complets au survol).
+- **Prompt** : mission d'organisation `missionNNZ.yaml` / `summaryNNZ.md` (§ 3, § 4 bis), `operation.organisation`,
+  règles de choix (exercice, chiffon joué ou non) ; plus de `tracks` / `injects` dans les missions des équipes.
+- **Studio : sommets OSM sans coordonnées** (chemins renvoyés par Overpass) ignorés — ils interrompaient le rendu.
+- **Mission reçue → registre et dossier** : une mission chargée ou collée dans le générateur est inscrite au registre
+  (commande rapprochée) et rangée dans `data/missions/<lettre>_<FAMILLE>/<identifiant>/` si le dossier est autorisé
+  (sinon bouton « Ranger dans le dossier des missions… »).
+- **Commande : aéronefs imposés respectés** — chaque aéronef choisi part avec son désignateur OACI en tête et la
+  mention (IMPOSÉ) ; le prompt en fait une contrainte stricte (prime sur les listes d'unités et d'aéronefs, la mission
+  s'adapte à l'appareil, jamais l'inverse) et la vérifie dans le bloc VALIDATION ; flotte DEFA proposée « type OACI
+  variante — indicatif ».
+- **Studio : tracé carte par carte** — sans tracé, cheminement (carte brief), route probable avec retours possibles
+  et durée (carte organisation), ou les deux ; gardé dans le YAML (`maps[].trace`). Profil vertical : « ↺ Route
+  probable » reprend la route probable comme cheminement.
+- **Durée estimée et route probable** (`shared/mission_estimate.js`) : dans le générateur (bloc « Durée estimée »)
+  et le registre (colonne, fiche) — route probable jusqu'au retour base, vitesses et varios du type (planificateur,
+  fiche APD, valeurs types), temps sur place, phases aller / sur zone / retour, options de retour (hôpital selon
+  l'état du patient…), briefs successifs ; comparaison avec les CR de la mission (écart par vol et par phase) et,
+  dans le CR, « vol estimé — ce vol (+x %) » ; route affichable ou non (croquis, tronçons).
+- **Prompt du générateur** : `cruise_speed_kt`, `cruise_level`, `time_on_task_min`, `route_order` (route probable),
+  `return_options`, `phases` (briefs successifs B, C… : déclenchement « 10 min après RDV-1 », message reçu, brief,
+  suite de la route ; section « ## Partie B » du Markdown), `timing` (durées annoncées) ; retour base obligatoire.
+  Brief PDF : une page par partie (« pli à remettre »).
+- **Registre ⇄ CR** : fiche d'une mission avec tous ses CR (liens vers chaque CR), colonne « CR » (nombre de vols),
+  « Nouveau CR (vol n) » pour les missions récurrentes ; dans le CR, lien « voir la mission dans le registre » sous le
+  champ Mission. Le registre retient la mission affichée et accepte `?mission=M-016` ; le générateur et le studio
+  ouverts depuis le registre ont un lien « ← Registre (M-016) ».
+- **Numérotation unifiée missions / CR, avec tiret** — mission : lettre de famille + tiret + 3 chiffres (+ équipe),
+  `M-016`, `S-002A` (écritures sans tiret acceptées). CR : dans le CR, on saisit la mission volée et le n° de CR est
+  calculé (lecture seule) — `CRM-016-1`, `CRM-016-2` si la mission est rejouée ; CR sans mission : `CRM-A01-0` …
+  `CRM-A99-0`, puis `CRM-B01-0`. « Créer le CR » depuis le registre reprend la mission et l'essai suivant ; statut
+  « CR fait » d'après le n° de CR. Migrations : `tools/dash_mission_ids.py` (missions, dossiers et fichiers :
+  `M001/missionM001.yaml` → `M-001/missionM-001.yaml`), `tools/renumber_reports.py` (CR : HEMS-014 → `CRM-A14-0`,
+  ancien n° dans `metadata.formerMissionId`).
+- **Commande ChatGPT unifiée** (`shared/mission_order.js`, `MissionOrder`) : le générateur de brief (« Créer une
+  mission avec ChatGPT ») et le registre (« Commander une mission ») montent le même bloc — mêmes paramètres (sous-type,
+  identifiant calculé, aéronef par équipe, rendez-vous, équipes au sol, ravitaillement désormais aussi dans le
+  générateur), même prompt, réglages partagés ; une commande passée depuis le générateur est inscrite au registre.
+- **Registre des missions : « Nettoyer le registre »** — retire les missions « fichier absent » restées après la
+  renumérotation (relecture du dossier d'abord, confirmation) ; statut, notes, date de vol, commande et CR reportés sur
+  la mission renumérotée (`former_id`, sinon titre + type + lettre d'équipe). `mission.former_id` lu dans le registre.
+- **Paramètres › Maintenance › Caches** (nouveau bloc) : état et purge des caches reconstructibles — aérodromes
+  utilisés (`missionAirports:v1`), base mondiale des aérodromes (purge du CDN jsDelivr puis rechargement), base SIA
+  analysée, contrôle des mises à jour, cache HTTP des fichiers de l'application (« Recharger sans cache ») ; « Tout
+  purger et recharger ». Aucune donnée utilisateur touchée. Adresse de la base mondiale réglable (source `airports`).
+
 ## [3.1.0] — 2026-09-28
 
 Missions renumérotées par famille, base SIA factorisée et mise à jour SIA guidée, studio et designs retouchés.

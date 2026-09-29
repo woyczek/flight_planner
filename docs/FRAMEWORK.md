@@ -281,7 +281,7 @@ Paramètres › Maintenance › Sources et dossiers) sinon valeur par défaut ; 
   « Documentation », qui contient `repository_tree`), **registre** (`__ledger` :
   `Documentation/CR DEFA`, qui contient `mission_cr.html`), **sauvegarde locale** (`__store`),
   **performances** (`__perf`, Flight Planner), **SIA XML** (`__sia` : données AIRAC, témoin
-  `Carte france vierge.png`), **missions** (`__missions` : `Documentation/Missions`, séries générées ; registre
+  `mora.csv`), **missions** (`__missions` : `Documentation/Missions`, séries générées ; registre
   `mission_registry.yaml`), **X-Plane** (`__xplane` : journaux CSV du plugin d'atterrissage, dossier par défaut du
   Landing Dashboard). Tous se règlent dans Paramètres › Maintenance › Sources et dossiers.
 - `FileAccess.pickFolder(clé)` : le sélecteur s'ouvre sur le dossier actuel ; contrôle du

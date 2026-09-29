@@ -31,8 +31,7 @@ Bibliothèques livrées dans le dossier : MapLibre GL (`maplibre-gl.js/.css`), j
 | `miam-enr-5-7-tracks.xml` | **Axes de ravitaillement** MILAIP ENR 5.7 nommés et corrigés (31 axes + 6 circuits heavy) | versionné |
 | `miam-enr-5-7-coordinates.xml` | Coordonnées ENR 5.7 d'origine (sans noms) | versionné |
 | `mora.csv` | **Grille MORA** 1° × 1° calculée (§ 4.6) | versionné |
-| `villes_geonames.csv` | Villes (GeoNames cities500, CC BY 4.0) | versionné |
-| `Carte france vierge.png` | Fond local (Lambert, calibré ouest −6,5° / sud 40,5° / est 12,5° / nord 52°) | versionné |
+| `villes_geonames.csv` | Villes (GeoNames, CC BY 4.0) : Europe de l'Ouest et outre-mer français ≥ 500 hab., reste du monde ≥ 15 000 hab. (71 000 villes) ; `tools/update_cities_geonames.py` | versionné |
 
 Les données AIRAC se téléchargent sur le site du SIA (produits numériques, export XML) et se
 déposent dans le dossier `apps/sia/` ; `.gitignore` les tient hors du dépôt.
@@ -54,30 +53,46 @@ version précédente est relue automatiquement si l'accès au dossier est déjà
 Pour faire produire une série par un assistant externe (ChatGPT…) : prompt complet, aligné sur ce que lit
 la suite, dans [PROMPT_GENERATEUR_MISSIONS.md](PROMPT_GENERATEUR_MISSIONS.md).
 
-**Identifiants** : lettre de la famille + numéro d'opération sur 3 chiffres, compté par famille, + lettre d'équipe
-quand l'opération engage plusieurs équipes — « M016 », « S002A », « S002B ». Lettres : M HEMS / MEDEVAC, H HADR,
+**Identifiants** : lettre de la famille + tiret + numéro d'opération sur 3 chiffres, compté par famille, + lettre d'équipe
+quand l'opération engage plusieurs équipes — « M-016 », « S-002A », « S-002B ». Lettres : M HEMS / MEDEVAC, H HADR,
 F FIRE, S SAR, T AIRLIFT, R AAR, P AIRBORNE, N MARITIME, I ISR, L LE, C COMMAND, O SOF, V FI, G SURVEY, X SPECIAL
 (`SiaMission.FAMILY_LETTERS`, `tools/family_letters.py`) ; `mission.series` = rang de la série dans la famille ;
-`mission.former_id` = identifiant d'avant renumérotation. Prochains numéros : `SiaMission.nextNumbering(famille)`
+`mission.former_id` = identifiant d'avant renumérotation. Les **CR** reprennent l'identifiant : `CRM-016-1`
+(CR + mission + n° d'essai ; CR sans mission : `CRM-A01-0`, voir MANUEL_EXPLOITATION.md § 2.1). Prochains numéros : `SiaMission.nextNumbering(famille)`
 (d'après le registre des missions). Rangement : `data/missions/<lettre>_<FAMILLE>/<identifiant>/` (YAML, résumé,
 cartes, PDF) ; outils `tools/renumber_missions.py` (séries importées), `tools/import_pdf_missions.py` (dossiers PDF
-et ZIP de cartes), trace dans `data/missions/RENUMEROTATION.md`.
+et ZIP de cartes), `tools/dash_mission_ids.py` (passage au format avec tiret), trace dans `data/missions/RENUMEROTATION.md`.
 
-Schéma YAML `helo-xp-mission` (exemples : `data/missions/T_AIRLIFT/T001/missionT001.yaml`,
-`data/missions/M_MEDEVAC/`) :
+**Format des fichiers de mission** : schéma YAML `helo-xp-mission` (« mission d'hélicoptère X-Plane », nom hérité
+du premier générateur HEMS, gardé pour ne pas rompre les fichiers existants ; il couvre toutes les familles).
+Exemples : `data/missions/T_AIRLIFT/T-001/missionT-001.yaml`, `data/missions/L_LE/L-001/` (recherche, exercice).
+
+Versions (`schema_version`) — les lecteurs (générateur, studio, registre, CR) acceptent toutes les versions ;
+le numéro sert de repère aux conversions futures :
+
+| Version | Contenu |
+|---|---|
+| `1.0` | Format d'origine : `mission` (`series`, `number`, `id` numérique « 41A »), textes, points, équipes, cartes. |
+| `2.0` | Identifiant `<lettre de la famille>-<nnn>[équipe A, B… ou Z]` ; `operation` (`organisation`), mission d'organisation (`mission.role: organisation`, bloc `exercise` : § 2 quinquies) ; `zones` avec `kind` et polygone `points` ; `route_order`, `return_options`, `phases`, `timing` ; `aircraft.cruise_speed_kt`, `cruise_level` ; réglages du studio dans `maps[]` (`profile`, `view`, `bbox`, `trace`, `exercise`) ; `meta` (réception, modifications, versions). Fichiers 1.0 déjà renumérotés passés en 2.0 par `tools/migrate_missions_schema.py` (seul le repère change). |
+
+Champs (en 2.0, la plupart facultatifs) :
 
 | Clé | Contenu |
 |---|---|
-| `schema`, `schema_version` | `helo-xp-mission`, `1.0` |
-| `mission` | `series`, `number`, `id`, `type` (AIRLIFT, MEDEVAC, TRAINING…), `subtype` |
-| `title`, `summary`, `detailed_description` | Titre et textes du brief |
-| `operation` | Opération à plusieurs équipes : `id`, `name`, `missions` (une mission complète par équipe : 41A, 41B…) |
-| `aircraft` | `type`, `callsign`, `operator`, `role` (l'aéronef DEFA de la mission) |
+| `schema`, `schema_version` | `helo-xp-mission`, `2.0` |
+| `mission` | `id` (identifiant ci-dessus), `type` (famille), `subtype`, `series` (série de génération : une commande ChatGPT = une série dans la famille), `number` (numéro de l'opération, tiré de l'identifiant), `role` (`organisation` pour une mission Z), `theatre` (métropole, Corse, Antilles… ou « étranger »), `country` (code ISO 3166 : FR, JP, ID…), `former_id` |
+| `title`, `summary`, `detailed_description` | Titre et textes du brief (sans itinéraire, niveaux, durées ni zones à activer : calculés) |
+| `operation` | Opération à plusieurs équipes ou exercice : `id`, `name`, `missions` (une mission complète par équipe : M-016A, M-016B…), `organisation` (mission Z) |
+| `aircraft` | `type`, `callsign`, `operator`, `role`, `cruise_speed_kt`, `cruise_level` (l'aéronef DEFA de la mission) |
 | `origin`, `destination`, `target` | `name` (code OACI entre parenthèses : « BA 123 Orléans-Bricy (LFOJ) »), `lat`, `lon` |
 | `turning_points`, `rendezvous` | `id`, `name`, `lat`, `lon`, `role`, `participants` |
 | `teams` | Équipes (nom, service, département, type — un aéronef connu devient appareil du CR) |
-| `payload`, `objectives`, `risks`, `notes`, `zones` | Charge, objectifs, risques (conséquence / parade), consignes |
-| `maps` | Cartes à produire : `filename`, `type` (general, target, detail, zone…), `description`, emprise (`bbox`, ou `centre_ref` + `range_km` / `width_km` × `height_km`) |
+| `payload`, `objectives`, `risks`, `notes` | Charge, objectifs, risques (conséquence / parade), consignes |
+| `zones` | Zones de travail : `id`, `name`, `kind` (`search` recherche, `mission`, `exclusion`), `role`, cercle (`centre` + `radius_km`) ou polygone (`points`), `time_on_task_min` — dessinées sur toutes les cartes |
+| `route_order`, `return_options`, `phases`, `timing` | Route probable, retours possibles, briefs successifs, durées annoncées (§ 2 ter) |
+| `exercise` | Mission d'organisation seulement : heure H, participants, chiffons, chronologie (§ 2 quinquies) |
+| `maps` | Cartes à produire : `filename`, `type` (general, target, detail, zone…), `description`, emprise (`bbox`, ou `centre_ref` + `range_km` / `width_km` × `height_km`), réglages du studio (`profile`, `view`, `trace`, `exercise`) |
+| `meta` | Réception, modifications, nombre de versions, historique (registre, dossier de la mission) |
 | `rendering` | `north_up`, `draw_routes`, `add_markers`, `attribution_required` |
 
 Le **Markdown** est accepté aussi : titres `## Summary` / `## Description détaillée`, ou ancien
@@ -94,12 +109,12 @@ prime quand les deux sont chargés. La cible et les zones n'ont pas de coordonn�
 (elles viennent du YAML) ; les Markdown MEDEVAC n'ont que textes, équipes et risques.
 
 **Lot de missions** (opération à plusieurs équipes, série) : une sélection de plusieurs missions — fichiers
-(`missionM016A.yaml`, `summaryM016A.md`, `missionM016B.yaml`…) ou texte collé d'un seul tenant — réponse de ChatGPT
+(`missionM-016A.yaml`, `summaryM-016A.md`, `missionM-016B.yaml`…) ou texte collé d'un seul tenant — réponse de ChatGPT
 copiée en Markdown (« Fichier : … » + blocs ```), copiée depuis la page (« Fichier : … », « yaml », « Copier le
 code »), ou YAML et Markdown des missions simplement à la suite (« schema: helo-xp-mission », « # Mission … ») ;
 le texte hors mission (introduction, VALIDATION, « Mission suivante ») est écarté — est découpée et regroupée par
-mission (identifiant `mission.id`, ou titre « # Mission M016A ») ; la première est affichée, les autres avec
-**◀ Mission M016A — titre (1/3) ▶** dans l'en-tête du générateur et du studio (même lot, partagé entre les deux
+mission (identifiant `mission.id`, ou titre « # Mission M-016A ») ; la première est affichée, les autres avec
+**◀ Mission M-016A — titre (1/3) ▶** dans l'en-tête du générateur et du studio (même lot, partagé entre les deux
 pages et mémorisé dans le navigateur : `siaMissionBatch:v1`). Les modifications de chaque mission sont gardées
 en passant de l'une à l'autre. Générateur : **Exporter les N PDF** — un brief par mission. Studio :
 **Afficher toutes les cartes (N missions)** — aperçus de toutes les missions, groupés par mission ;
@@ -132,25 +147,164 @@ Page `apps/sia/mission_registry.html` (☰ › Registre des missions (SIA), barr
   **dans le studio**, **Créer le CR** ; statut, date de vol, notes.
 - **Statuts** : commandée, générée, planifiée (ouverte dans le générateur ou le studio), volée, CR fait (CR du
   registre dont `metadata.missionNumber` est l'identifiant de la mission), abandonnée.
-- **Commander une mission** : type, sous-type (liste du § 2 du prompt), théâtre(s), série (numéro, auto par défaut) et
+- **Commander une mission** (bloc commun avec le générateur, `shared/mission_order.js`) : type, sous-type (liste du § 2 du prompt), théâtre(s), série (numéro, auto par défaut) et
   **identifiant** calculé (`SiaMission.nextNumbering`), équipes DEFA en vol, types d'équipes (une ligne par équipe A, B,
   C… ; vide = automatique ; complétion par les types courants et la flotte DEFA, un même type possible pour plusieurs
   équipes), rendez-vous, équipes au sol, ravitaillement → prompt réglé (paramètres
   `PROCHAINS_NUMEROS`, `SOUS_TYPE`, `RENDEZ_VOUS`, `TYPES_EQUIPES`, `ÉQUIPES_SOL`, `RAVITAILLEMENT`) copié, ChatGPT ouvert ; la commande est
   rapprochée de la mission générée (même série) à la relecture du dossier.
+- **Comptes rendus de la mission** (fiche) : tous les CR de la mission (`CR<mission>-<vol>`, du plus récent au plus
+  ancien), chacun ouvrant sa page de CR ; colonne **CR** (nombre de vols) ; une mission récurrente (ravitaillement sur
+  SIMONE, dix fois par mois) reste disponible — « Nouveau CR (vol n) » prend le n° de vol suivant. Le CR renvoie à
+  la mission (sous le champ « Mission » : lien vers le registre, `?mission=M-016`).
+- **Mission mémorisée** : la mission affichée est gardée (`missionRegistrySelected:v1`) ; `?mission=M-016` la choisit.
+  Le générateur et le studio ouverts depuis le registre affichent **← Registre (M-016)** dans l'en-tête.
+- **Mission reçue dans le générateur** (fichiers ou collage de la réponse ChatGPT) : inscrite aussitôt au registre (la
+  commande « commandée » devient « générée ») et rangée dans `data/missions/<lettre>_<FAMILLE>/<identifiant>/`
+  (`mission<ID>.yaml`, `summary<ID>.md`) si le dossier des missions est autorisé ; sinon « Ranger dans le dossier des
+  missions… » (demande l'autorisation). Noyau partagé : `MissionRegistryCore.record`.
+- **Nettoyer le registre (n)** : relit le dossier puis retire les missions « fichier absent » (renumérotées, déplacées
+  ou supprimées) ; statut, notes, date de vol, commande et CR passent à la mission qui les remplace (même `former_id`,
+  sinon même titre, même type et même lettre d'équipe) quand elle est encore « générée ». Les commandes en attente
+  restent.
 - Données : `missionRegistry:v1` (navigateur, sauvegardé avec les données locales) et `data/missions/mission_registry.yaml` ;
   export CSV de la sélection.
+
+## 2 quater. Dossier d'une mission, versions, fichiers
+
+```
+data/missions/<lettre>_<FAMILLE>/<identifiant>/
+  mission<ID>.yaml   source de vérité : données reçues + réglages du studio (maps[].profile / view / trace /
+                     exercise, vertical_profile) + meta (received_at, modified_at, maps_generated_at, versions, history)
+  summary<ID>.md     Markdown pour les humains
+  cartes/            PNG générés par le studio (régénérables depuis les définitions maps du YAML)
+  recu/              chaque texte reçu (collage ChatGPT, fichiers), horodaté, tel quel
+  versions/          YAML remplacés par une nouvelle version
+```
+
+- **Réception** (générateur, collage ou fichiers) : texte gardé dans `recu/` ; comparé à la version en place (données
+  seulement, sans meta ni réglages du studio) : **identique** → rien n'est remplacé ; **différente** → l'ancienne va
+  dans `versions/`, la nouvelle garde les réglages du studio des cartes de même nom, différences listées (clés, nombre
+  d'éléments) et notées dans `meta.history`.
+- **Générateur** : « Enregistrer dans le dossier » (YAML modifié, `meta.modified_at`). **Studio** : « Enregistrer dans
+  le dossier » (réglages de chaque carte) ; à la génération, les PNG vont dans `cartes/` (`meta.maps_generated_at`).
+- **Registre** (fiche) : YAML, Markdown lisible, cartes (vignettes), versions précédentes (avec les différences),
+  textes reçus ; **PDF** produit à la demande par le générateur (cartes du dossier chargées) ; **Modifier** ouvre le
+  générateur. État : **complète** (toutes les cartes), **partielle** (cartes manquantes) ou **sans cartes**
+  (régénérables depuis le YAML).
+
+## 2 quinquies. Exercice : organisation, chiffons, chronologie
+
+`shared/mission_exercise.js` (`MissionExercise`). Une opération devient un **exercice** quand des informations ne sont
+pas connues de tous au décollage (pistes à découvrir, messages en vol, plis scellés, situation qui change) ; toutes
+les familles sont concernées (ISR, HEMS, FIRE, COMMAND…).
+
+- **Stockage** : la **mission d'organisation** `<lettre>-<nnn>Z` (`I-001Z` pour l'ISR, `M-016Z` pour un HEMS), à côté
+  des missions des équipes (`I-001A`, `I-001B`…) dans `data/missions/<lettre>_<FAMILLE>/I-001Z/missionI-001Z.yaml`.
+  Elle porte le **brief général** (summary, detailed_description) et le bloc `exercise` ; les missions des équipes
+  citent `operation.organisation: I-001Z`. Voir le prompt, § 3 et § 4 bis.
+- **Bloc `exercise`** : `h_hour` (heure H commune) ; `participants` (indicatif, mission, décollage `H±n`, rôle) ;
+  `tracks` = **chiffons** (nom, nature, points, niveau, vitesse, à établir ; `played` : tenu par un aéronef du
+  simulateur, avec `callsign`, départ `start` et consignes `conduct`, sinon seulement dessiné) ; `events` =
+  **chronologie** (`at` : `H+n` ou point de la mission du participant `by`, `delay_min` ; `kind` : **radio** passé
+  en vol ou **pli** scellé remis avant le vol ; `from`, `to` : participants, chiffons joués ou `ALL` ; `title`,
+  `text` ; `reveals` : pistes révélées).
+- **Heure des événements** : par rapport à H ; un passage de point = décollage du participant + temps estimé jusqu'au
+  point (route probable, § 2 ter) + délai.
+- **Destinataires** : l'organisation voit tout ; chaque équipage ne reçoit que les événements qui lui sont adressés
+  (ou à tous) et ne connaît que les pistes qu'ils révèlent ; chaque chiffon joué reçoit sa route, son heure de
+  départ, ses consignes et sa carte.
+- **Ancien format** (`tracks`, `injects`, `phases` dans une mission) : toujours lu, converti en événements adressés à
+  l'équipage de la mission ; « Créer l'organisation de l'exercice » les reprend dans la nouvelle mission Z.
+
+**Générateur** : bloc **Opération** en tête (missions de l'opération, décollage de chacune, organisation ; un clic
+change de mission ; création de la Z si elle manque). Sur la Z, la page passe en mode organisation : **Brief général**,
+bloc **Exercice** (heure H et participants, chiffons, chronologie en cartes — déclencheur, forme, émetteur,
+destinataires, pistes révélées —, puis « Ce que reçoit chacun »), pas de durée estimée. Sur une mission d'équipe, le
+bloc Exercice liste en lecture ce que reçoit l'équipage. Bloc **Documents** : *cette mission* (brief de l'équipage
+avec ses plis scellés, une page chacun après les cartes ; ou dossier organisation ; fiches des chiffons joués),
+*toute l'opération* (tous les documents de l'exercice, un PDF par destinataire ; tous les PDF ; dossier d'opération),
+*données* (YAML, Markdown).
+
+**Studio** : destinataire de chaque carte (`maps[].exercise`) — sans pistes (brief) ; organisation (`all` : toutes les
+pistes et les routes des participants) ; chiffon (`chiffon:TRACK-401` : sa route, ses points, son départ) ; équipage
+(`EV-n` : pistes connues après cet événement, ou `all` : toutes les siennes). « + Cartes d'exercice » ajoute, sur la
+Z, la carte organisation et une carte par chiffon joué (`chiffon_<piste>_<Z>.png`, reprise dans sa fiche PDF) ; sur
+une mission d'équipe, une carte par événement qui lui révèle des pistes.
+
+**Cartes d'exercice** : ajoutées d'office par le studio à l'ouverture d'une mission d'exercice (celles qui manquent), à
+enregistrer dans le dossier ; générées avec les autres cartes ; listées dans le bloc Exercice du générateur ; jointes au
+PDF de l'équipage (carte d'un pli après sa page ; carte d'un message radio sur une page « à remettre à réception du
+message »).
+
+**Registre** : missions d'organisation marquées « organisation » ; fiche d'une mission d'opération : membres de
+l'opération (clic pour les afficher), résumé de l'exercice, **Ouvrir l'opération** dans le générateur ou le studio
+(toutes les missions en un lot).
+
+## 2 sexies. Zones à activer
+
+`shared/mission_airspaces.js` (`MissionAirspaces`), bloc **Zones à activer** du générateur et section des PDF :
+zones R, D, TRA et du RTBA (zones AZBA) recoupées par la route probable (niveau de chaque tronçon, montée au départ,
+descente à l'arrivée) et par les zones de travail ; zones P recoupées signalées « à éviter ». Regroupées par
+**gestionnaire** (remarque AIXM « Administrator : … », ex. CDPGE Athis-Mons pour le RTBA), avec le mode
+d'activation (calendrier AZBA, NOTAM) et l'organisme renseigné. Mission d'organisation : zones de toutes les missions
+des équipages (demandes faites par l'organisation) ; mission d'un exercice coordonné : liste pour information ;
+autre mission : demandes à faire par l'équipage (section du brief). Calcul indicatif, qui ne remplace ni les cartes
+AZBA ni les NOTAM ; base SIA du navigateur (format 13 : relire le dossier une fois).
+
+## 2 ter. Durée estimée et route probable
+
+`shared/mission_estimate.js` (`MissionEstimate`), affiché dans le générateur (bloc **Durée estimée**, recalculé à chaque
+modification) et dans le registre (colonne **Durée est.**, fiche de la mission) :
+
+- **Route probable** : origine → points dans l'ordre → **retour base** (destination, de préférence la base de départ).
+  Ordre : `route_order` de la mission, sinon cheminement du profil vertical, sinon points tournants dans l'ordre et
+  chaque point de travail (TARGET, rendez-vous, zones) après le point tournant le plus proche.
+- **Appareil** : `aircraft[].cruise_speed_kt`, sinon profil du planificateur (même type OACI), sinon fiche EUROCONTROL
+  APD (`AircraftDB/aircraft_perf.js`), sinon valeur type (hélicoptère, turbopropulseur, réacteur) ; niveau
+  `cruise_level` / `vertical_profile.cruise` ; montée et descente aux varios du type, tronçons courts volés plus bas.
+- **Temps sur place** : `time_on_task_min` des points (sinon valeur type selon la famille et le rôle : poser,
+  treuillage, recherche, hippodrome…) ; approche + 2 à 5 min ; bloc = vol + mise en route et roulage.
+- **Phases comme les CR** : aller, sur zone, retour, vol, bloc ; **options de retour** (`return_options` : hôpital
+  selon l'état du patient, dégagement…) avec leur durée (fourchette) ; **briefs successifs** (`phases` B, C…) : la
+  route suit la partie à partir de son point de déclenchement, heure de remise estimée (T + …) ; la durée annoncée
+  par la mission (`timing`) est rappelée.
+- **Comparaison avec les CR** de la mission (vol réel, écart, aller / sur zone / retour) ; dans le CR, sous le champ
+  Mission : « vol estimé 1h48 — ce vol 2h05 (+17 min, +16 %) ».
+- **Afficher la route probable** (case, mémorisée) : croquis de la route et des retours possibles (tireté),
+  tableau des tronçons.
+- Brief PDF : chaque partie B, C… sur sa propre page, « PLI À REMETTRE — à ouvrir : 10 min après RDV-1 ».
+
+**Routes de transit** (`shared/mission_routing.js`, `MissionRouting`), calculées localement d'après la base SIA du
+navigateur (voies aériennes de l'AIXM, zones du RTBA) : avion en IFR (croisière ≥ 6500 ft) → plus court chemin sur
+les voies aériennes ouvertes à son niveau, entrée et sortie directes (≤ 60 NM), direct si le détour dépasse 40 % ou
+au-dessus des voies (routage libre de l'espace supérieur) ; avion de combat ou de transport tactique à basse
+hauteur (≤ 1500 ft) → chaînage des zones du RTBA raccordées ; hélicoptère, VFR → direct. Seuls les transits de plus
+de 40 NM sont routés ; points de transit en croisière (pas de descente intermédiaire). Exemple : Rennes → Marseille
+au FL120 par V20, H34, H20, A3, R31, A6 (459 NM pour 402 en direct) ; à 500 ft par R 149 A … R 591.
+
+**Mode et réglages** : le bloc Durée estimée du générateur affiche le transit calculé, ou pourquoi il reste direct
+(hélicoptère, VFR, base SIA à relire, hors de la couverture des données SIA — mission à l'étranger —, tronçons
+courts, détour excessif) ; le mode peut être imposé par mission (`route_mode` : `airways`, `rtba`, `direct`) ; les
+paramètres du calcul (tronçon routé à partir de 40 NM, voies aériennes à partir de 6500 ft, basse hauteur jusqu'à
+1500 ft, entrée / sortie à 60 NM des voies et 150 NM du RTBA, détour admis 40 % / 80 %) sont réglables et mémorisés
+dans le navigateur.
+
+**Temps éprouvés** : l'aller (départ → premier point de travail) et le retour (dernier point de travail → arrivée)
+réellement volés, relevés dans les CR des missions de même départ et mêmes points (± 2 NM, registre du navigateur),
+remplacent le calcul ; le panneau indique leur origine (nombre de vols).
 
 ## 3. Générateur de mission (brief)
 
 Page `apps/sia/mission_editor.html`.
 
 1. **Importer une mission** : YAML et / ou Markdown d'une mission, ou **collage** de son contenu ; sous-bloc
-   **Créer une mission avec ChatGPT** à côté du collage : type, théâtre (ou aléatoire), série, nombre d'**équipes
-   DEFA en vol** (1 à 5 ; les équipes sol s'ajoutent selon la mission), second théâtre facultatif (mission reliant
-   deux théâtres : acheminement Guyane – métropole, relève Corse – continent…) ; « ChatGPT → » copie le prompt réglé pour
-   une seule mission et ouvre ChatGPT dans un nouvel onglet (coller, envoyer, puis charger ou coller
-   `missionNN.yaml` et `summaryNN.md`). Le prompt vient de
+   **Créer une mission avec ChatGPT** à côté du collage : **même bloc que « Commander une mission » du registre**
+   (`shared/mission_order.js`, § 2 bis) — type, sous-type, théâtre(s) (second théâtre : acheminement Guyane – métropole,
+   relève Corse – continent…), série, identifiant calculé, équipes DEFA en vol et aéronef de chaque équipe, rendez-vous,
+   équipes au sol, ravitaillement ; réglages partagés (`missionRegistryOrder:v1`) ; « Commander » inscrit la mission au
+   registre (« commandée »), copie le prompt réglé pour une seule mission et ouvre ChatGPT dans un nouvel onglet (coller,
+   envoyer, puis charger ou coller `mission<ID>.yaml` et `summary<ID>.md`). Le prompt vient de
    [PROMPT_GENERATEUR_MISSIONS.md](PROMPT_GENERATEUR_MISSIONS.md), embarqué dans `apps/sia/mission_prompt.js` par
    `tools/build_mission_prompt.py` (relancé par `tools/bump_versions.py`) : pas de lecture réseau du dossier docs/.
    (« ou coller son contenu… », Markdown reconnu à ses titres `##`) (fusionnés, lecture commune avec le
@@ -191,32 +345,46 @@ Brouillon : la mission partagée est le brouillon ; « Mémoriser / Recharger »
 Page `apps/sia/map_parser.html`. Une mission décrit ses cartes ; chaque carte est dessinée avec
 un **profil d'affichage**, puis le studio produit PNG / SVG et un ZIP.
 
-Blocs : 1. Mission (et boutons « Afficher toutes les cartes », « Générer les cartes et le ZIP ») ·
-2. Profils d'affichage · 3. Cartes (aperçus, carte d'assemblage) · 4. Base de données SIA ·
-5. Données complémentaires.
+Blocs : 1. Mission · 2. Cartes et cadrage · 3. Profil vertical · 4. Aperçus et génération ·
+5. Base de données SIA (masqué par défaut). La mise à jour AIRAC et le calcul de la grille MORA se font dans
+Paramètres › Maintenance › Mise à jour SIA ; le bloc Mission en rappelle l'état (cycle, espaces, cellules MORA).
 
 ### 4.1 Mission (bloc 1)
 
-Fichier Markdown / YAML ou **collage** dans la fenêtre commune (× / Fermer / Lire la mission →
-Valider) : la mission devient la **mission partagée** avec le générateur ; à l'ouverture, le studio
-reprend la mission partagée.
+État de la mission partagée avec le générateur, « Enregistrer dans le dossier », état de la base SIA ; « Ouvrir une
+autre mission » (replié quand une mission est chargée) : fichier Markdown / YAML ou **collage** dans la fenêtre
+commune (× / Fermer / Lire la mission → Valider) ; la mission devient la **mission partagée** avec le générateur.
 
-### 4.2 Cartes (bloc 3)
+### 4.2 Cartes et cadrage (bloc 2)
 
-Aperçus de toutes les cartes et **carte d'assemblage** ; « Afficher toutes les cartes » et
-« Générer les cartes et le ZIP » sont dans le bloc Mission (voir § 4.5). Type de sortie (PNG,
-SVG éditable) et largeur des PNG : **menu ☰ › Sorties des cartes**.
+À gauche, la **liste des cartes** (clic : afficher ; profil d'affichage ; tracé : cheminement par défaut, route
+probable, les deux ou aucun ; destinataire d'exercice ; ZIP ; suppression), l'ajout d'une carte et des cartes
+d'exercice, puis les **réglages du profil** de la carte choisie, repliés : nom, fond de carte, Sauvegarder / Nouveau
+/ Dupliquer / Supprimer, et quatre onglets (Fond de carte, Zones, Symboles OACI, Éléments). Profils communs à toutes
+les missions, gardés dans le navigateur et dans la sauvegarde locale de la suite. À droite, la **carte de contrôle**
+et ses commandes : Actualiser · **Garder ce cadrage** (la carte générée reprend le cadre affiché, écrit dans la
+mission) · Recentrer (cadrage enregistré) · **Cadrage automatique** (oublie le cadrage enregistré) · ⧉ Fenêtre ·
+⤢ Agrandir. Colonnes 60 / 40 réglables (double-clic : 60 / 40).
 
-### 4.3 Profils d'affichage (bloc 2)
+**Cadrage automatique** : d'après la mission et le type de carte, au format des sorties (16/10) — vue générale :
+tous les points et zones, marge 12 % ; carte de zone : la zone (polygone ou cercle), marge 20 % ; vue détaillée
+8 × 5 km ; vue cible ≈ 100 km ; carte d'une position révélée (exercice) : 4 km autour.
 
-À gauche, quatre onglets de réglages (Fond de carte, Zones, Symboles OACI, Éléments) ; à droite, la **carte de contrôle**, ses commandes, la liste
-des cartes et le **profil de la carte choisie** (nom, **fond de carte**, Sauvegarder / Nouveau /
-Dupliquer / Supprimer — « Nouveau » et « Dupliquer » affectent le profil à la carte choisie). Le
-profil modifié est toujours celui de la carte sélectionnée dans la liste. Colonnes 60 / 40 réglables par la barre
-de redimensionnement (double-clic : 60 / 40). Profils communs à toutes les missions, gardés dans
-le navigateur et dans la sauvegarde locale de la suite.
+**Zones de la mission** (`zones[]`) dessinées sur toutes les cartes (option « Zones de mission et de recherche »,
+cochée par défaut) : recherche en orange, mission en violet, exclusion en rouge ; cercle ou polygone, nom au nord.
 
-**Fonds de carte** : fond local PNG ; raster OSM standard, OpenTopoMap (relief et courbes) ;
+### 4.2 bis Profil vertical (bloc 3) · Aperçus et génération (bloc 4)
+
+Profil vertical : § 4.8. Aperçus de toutes les cartes et **carte d'assemblage**, « Générer les cartes et le ZIP »
+(aussi dans le pied de page). Type de sortie (PNG, SVG éditable) et largeur des PNG : **menu ☰ › Sorties des cartes**.
+
+### 4.3 Profils d'affichage (réglages repliés du bloc 2)
+
+Nom, **fond de carte**, Sauvegarder / Nouveau / Dupliquer / Supprimer (« Nouveau » et « Dupliquer » affectent le
+profil à la carte choisie), puis quatre onglets (Fond de carte, Zones, Symboles OACI, Éléments). Le profil modifié
+est toujours celui de la carte sélectionnée dans la liste.
+
+**Fonds de carte** : raster OSM standard, OpenTopoMap (relief et courbes) ;
 vectoriels OSM Shortbread, OpenFreeMap Liberty / Bright / Positron, VersaTiles Colorful /
 Graybeard / Shadow / Eclipse.
 
@@ -312,19 +480,18 @@ Sous la carte :
 - **+ Carte** : nouvelle carte (nom, type générale / cible / détail / zone) avec la vue affichée
   pour emprise, ajoutée à la mission partagée.
 
-### 4.4 Base de données SIA (bloc 4) et données complémentaires (bloc 5)
+### 4.4 Base de données SIA (bloc 5)
 
-Dossier SIA XML (mémorisé), inventaire des XML analysés, rechargement de la base mémorisée.
-Bloc 5 : calcul de la grille MORA (§ 4.6), sources (GeoNames, SIA, IGN) et calibration du fond
-local (utile au seul fond « PNG local »).
+Dossier SIA XML (mémorisé), inventaire des XML analysés, rechargement de la base mémorisée. Bloc masqué par
+défaut ; la mise à jour guidée (Paramètres › Maintenance) y renvoie pour relire le dossier.
 
 ### 4.5 Production des cartes
 
 - **Profil par carte** : proposé d'après la carte (détail, cible, rendez-vous → VFR détaillé ;
   mission dont le titre contient « IFR » → IFR ; sinon VFR simplifié), modifiable sous la carte de
   contrôle.
-- **Emprise** : `bbox` de la mission, sinon centre + rayon / largeur × hauteur, sinon d'après le
-  nom du fichier (général : tous les points ; cible ≈ 50 km ; détail ≈ 8 × 5 km ; zone).
+- **Emprise** : `bbox` de la mission (« Garder ce cadrage »), sinon centre + rayon / largeur × hauteur (polygone
+  de la zone pour une carte de zone), sinon cadrage automatique (§ 4.2).
 - Aperçu de toutes les cartes, **carte d'assemblage** (emprises de toutes les cartes).
 - **Générer les cartes et le ZIP** : PNG (largeur réglable) et / ou SVG ; chaque carte est
   indépendante — une carte en échec (fond indisponible, délai) n'arrête pas les autres : le ZIP
@@ -339,8 +506,11 @@ haut entre le relief (tuiles Terrarium, AWS Terrain Tiles : passe à ~200 m puis
 ~25 m autour des maxima), les sommets OpenStreetMap (`natural=peak`, Overpass) et les obstacles
 de l'AIXM SIA ; + 1000 ft (2000 ft au-delà de 5000 ft) ; arrondi à la centaine supérieure.
 Sans les sommets OSM (Overpass indisponible), le relief est majoré de 100 m pour couvrir
-l'écrêtage des sommets par le modèle de terrain. Le `mora.csv` versionné (150 cellules,
-1000 à 18 100 ft) a été calculé ainsi.
+l'écrêtage des sommets par le modèle de terrain. Théâtres couverts (`SiaBase.MORA_ZONES`) : métropole et Corse,
+Antilles, Guyane, Saint-Pierre-et-Miquelon, Réunion, Mayotte, Nouvelle-Calédonie, Polynésie (îles de la Société),
+Wallis-et-Futuna, plus les emprises des missions du registre situées ailleurs (théâtre étranger : degrés entiers
+autour de leur route, marge d'un demi-degré, fusionnées ; relief et sommets seulement, pas d'obstacles hors de l'AIXM
+française) ; calcul dans Paramètres › Maintenance › Mise à jour SIA.
 
 Affichage : **valeurs seules**, centrées dans les carrés du quadrillage (notation 3⁵ = 3500 ft) ;
 en zoom arrière, cellules fusionnées par 2 × 2 puis 4 × 4 en gardant la valeur la plus haute,
@@ -385,7 +555,11 @@ profils du Flight Performance & Fuel Planner (modèle de performances : vario et
 descend à son vario ; à défaut, aux taux saisis (montée / descente en ft/min et kt) ; appareil et taux
 enregistrés dans la mission ; **TOC** et **TOD** ; départ
 et arrivée au sol, sauf altitude donnée pour ces points.
-Le cheminement est **tracé sur les cartes** (tireté violet ; case cochée par défaut).
+Le cheminement est **tracé sur les cartes** (tireté violet ; case cochée par défaut). **Tracé carte par carte**
+(liste des cartes, `maps[].trace`) : *Sans tracé*, *Brief : cheminement* (tireté violet), *Organisation : route
+probable* (trait orange, durée de vol, retours possibles en tireté avec leur durée — `shared/mission_estimate.js`),
+ou les deux : une carte brief et une carte organisation dans la même mission. **↺ Route probable** (au-dessus du
+cheminement) remplace le cheminement par la route probable : le profil vertical suit alors la route probable.
 
 Le profil vertical est une **carte comme les autres** : entrée `profil_vertical.png` dans la liste
 des cartes, avec son **profil d'affichage** (par défaut **Profil vertical**, créé automatiquement :

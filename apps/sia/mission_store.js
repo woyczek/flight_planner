@@ -179,7 +179,7 @@
       title: parsed.title || 'Mission',
       mission: {}
     };
-    const id = y.title.match(/\bMission\s+([A-Z]?\d+[A-Z]?)\b/i);
+    const id = y.title.match(/\bMission\s+([A-Z]?-?\d+[A-Z]?)\b/i);
     if (id) { const p = parseId(id[1]); y.mission.id = p.id; y.mission.number = p.num; }
     for (const [key, aliases] of Object.entries({
         type: ['TYPE', 'Type'],
@@ -255,10 +255,12 @@
   /** Vrai pour le Markdown d'une mission (ancien format TYPE: / TURNING POINTS:, ou format actuel ## Introduction / ## Summary). */
   const isMissionMd = f => (/\.(md|markdown|txt)$/i.test(f.name) || /^\s*#/.test(f.text)) && (/^##\s+(introduction|summary|résumé|resume)\b/im.test(f.text) || /^\s*(TYPE|TURNING POINTS|POINTS TOURNANTS)\s*:/m.test(f.text));
   /** Missions distinctes d'une sélection : identifiant du YAML (mission.id) ou n° du titre Markdown (« Mission 51 »). */
+  /** Identifiant de mission normalisé (M-016, m-16 → M-016 ; 041A → 41A) : regroupement des fichiers d'une même mission. */
+  const normId = v => parseId(v).id;
   function missionIds(yamls, mds) {
     const ids = new Set();
-    yamls.forEach(({ parsed }) => { const id = parsed?.mission?.id ?? parsed?.mission?.number; if (id != null && id !== '') ids.add(String(id).trim().toUpperCase().replace(/^0+(?=\d)/, '')); });
-    mds.forEach(f => { const m = /^#\s+Mission\s+([A-Z]?\d+[A-Z]?)\b/im.exec(f.text); if (m) ids.add(m[1].toUpperCase().replace(/^0+(?=\d)/, '')); }); // 41A ≠ 41B (une mission par équipe)
+    yamls.forEach(({ parsed }) => { const id = parsed?.mission?.id ?? parsed?.mission?.number; if (id != null && id !== '') ids.add(normId(id)); });
+    mds.forEach(f => { const m = /^#\s+Mission\s+([A-Z]?-?\d+[A-Z]?)\b/im.exec(f.text); if (m) ids.add(normId(m[1])); }); // 41A ≠ 41B (une mission par équipe)
     return [...ids];
   }
 
@@ -291,7 +293,14 @@
     }
     // ligne de séparation d'un tableau Markdown recopiée comme équipe par certains générateurs (« --- », « ---: »)
     if (Array.isArray(yaml.teams)) yaml.teams = yaml.teams.filter(t => !t || typeof t !== 'object' || !Object.values(t).every(v => /^\s*:?-{2,}:?\s*$/.test(String(v ?? ''))));
-    return { yaml, narrative, sourceNames: files.map(f => f.name).filter(n => !ignored.includes(n)), ignored };
+    return { yaml: upgradeSchema(yaml), narrative, sourceNames: files.map(f => f.name).filter(n => !ignored.includes(n)), ignored };
+  }
+  /** Format helo-xp-mission : un document 1.0 dont l'identifiant est déjà « lettre-nnn[équipe] » est conforme au 2.0,
+   *  seul son repère change (même règle que tools/migrate_missions_schema.py) ; appliqué à la lecture (fichiers,
+   *  mission partagée et lot mémorisés dans le navigateur). */
+  function upgradeSchema(y) {
+    if (y && typeof y === 'object' && (y.schema || 'helo-xp-mission') === 'helo-xp-mission' && String(y.schema_version ?? '1.0') === '1.0' && /^[A-Z]-\d{3}[A-Z]?$/.test(String(y.mission?.id || '').trim().toUpperCase())) y.schema_version = '2.0';
+    return y;
   }
 
   // ---- stockage partagé
@@ -299,7 +308,7 @@
   function load() {
     try {
       const d = JSON.parse(localStorage.getItem(KEY) || 'null');
-      if (d && d.yaml) return d;
+      if (d && d.yaml) { upgradeSchema(d.yaml); return d; }
     } catch {
       /* illisible */ }
     try {
@@ -368,6 +377,7 @@
   function loadBatch() {
     try {
       const b = JSON.parse(localStorage.getItem(BATCH) || 'null');
+      if (b && Array.isArray(b.docs)) b.docs.forEach(d => upgradeSchema(d?.yaml));
       return b && Array.isArray(b.docs) && b.docs.length ? { docs: b.docs, index: Math.min(Math.max(0, b.index | 0), b.docs.length - 1) } : null;
     } catch { return null; }
   }
@@ -385,6 +395,22 @@
     const cur = load();
     if (cur && missionId(cur) === missionId(b.docs[b.index])) b.docs[b.index] = { yaml: cur.yaml, narrative: cur.narrative, sourceNames: cur.sourceNames };
     b.index = (i + b.docs.length) % b.docs.length;
+    storeBatch(b);
+    return save(b.docs[b.index], by);
+  }
+
+  /** Ajoute (ou remplace, même identifiant) une mission au lot de son opération et la rend courante ; sans lot, le lot
+   *  est créé avec la mission courante. Utilisé pour la mission d'organisation (<lettre>-<nnn>Z) créée par le générateur. */
+  function addToBatch(doc, by) {
+    const slim = d => ({ yaml: d.yaml, narrative: d.narrative || { summary: '', detailed: '', sections: [] }, sourceNames: d.sourceNames || [] });
+    let b = loadBatch();
+    const cur = load();
+    if (!b) b = { docs: cur?.yaml ? [slim(cur)] : [], index: 0 };
+    else if (cur && missionId(cur) === missionId(b.docs[b.index])) b.docs[b.index] = slim(cur);
+    const i = b.docs.findIndex(x => missionId(x) === missionId(doc));
+    i >= 0 ? b.docs[i] = slim(doc) : b.docs.push(slim(doc));
+    b.docs.sort((x, y) => missionId(x).localeCompare(missionId(y), 'fr', { numeric: true }));
+    b.index = b.docs.findIndex(x => missionId(x) === missionId(doc));
     storeBatch(b);
     return save(b.docs[b.index], by);
   }
@@ -408,7 +434,7 @@
     const blocks = [...src.matchAll(/```([\w-]*)\n([\s\S]*?)\n\s*```/g)];
     if (blocks.length > 1) return blocks.map((b, i) => ({ name: /ya?ml/i.test(b[1]) || /^\s*(schema|mission)\s*:/m.test(b[2]) ? `bloc${i + 1}.yaml` : `bloc${i + 1}.md`, text: b[2] }));
     // 4. débuts de fichiers à la suite : YAML (« schema: helo-xp-mission ») et Markdown (« # Mission 41A »)
-    const starts = [...src.matchAll(/^(?:schema\s*:\s*['"]?helo-xp-mission\b.*|#\s+Mission\s+[A-Z]?\d+[A-Z]?\b.*)$/gim)];
+    const starts = [...src.matchAll(/^(?:schema\s*:\s*['"]?helo-xp-mission\b.*|#\s+Mission\s+[A-Z]?-?\d+[A-Z]?\b.*)$/gim)];
     if (starts.length > 1) return starts.map((m, k) => {
       const yaml = /^schema/i.test(m[0]);
       return { name: `${yaml ? 'mission' : 'summary'}${k + 1}.${yaml ? 'yaml' : 'md'}`, text: cleanSegment(src.slice(m.index, starts[k + 1]?.index ?? src.length)) };
@@ -430,11 +456,12 @@
   /** Comme fromTexts, pour une sélection qui peut contenir PLUSIEURS missions (fichiers d'une opération, ou un
    *  texte collé à découper) : { docs (une par mission, ordre des identifiants : 41A, 41B…), ignored }. */
   function fromTextsBatch(files) {
-    const expanded = files.flatMap(f => { const parts = splitBundle(f.text); return parts.length ? parts : [f]; });
+    // un fichier .yaml n'est pas découpé : son commentaire d'en-tête « # Mission I-001C — … » n'est pas un Markdown
+    const expanded = files.flatMap(f => { const parts = /\.ya?ml$/i.test(f.name || '') ? [] : splitBundle(f.text); return parts.length ? parts : [f]; });
     const idOfFile = f => {
-      if (isYaml(f)) { try { const y = window.jsyaml.load(f.text); return missionId({ yaml: y }); } catch { return ''; } }
-      const m = /^#\s+Mission\s+([A-Z]?\d+[A-Z]?)\b/im.exec(f.text);
-      return m ? m[1].toUpperCase().replace(/^0+(?=\d)/, '') : '';
+      if (isYaml(f)) { try { const y = window.jsyaml.load(f.text); return normId(missionId({ yaml: y })); } catch { return ''; } }
+      const m = /^#\s+Mission\s+([A-Z]?-?\d+[A-Z]?)\b/im.exec(f.text);
+      return m ? normId(m[1]) : '';
     };
     const groups = new Map(), loose = [];
     for (const f of expanded) { const id = idOfFile(f); id ? (groups.has(id) || groups.set(id, []), groups.get(id).push(f)) : loose.push(f); }
@@ -474,8 +501,19 @@
       nav.innerHTML = '<button type="button" data-step="-1" title="Mission précédente">◀</button><select title="Mission du lot"></select><button type="button" data-step="1" title="Mission suivante">▶</button>';
       const title = line.querySelector('h1');
       title ? title.after(nav) : line.prepend(nav);
+      // arrivée depuis le registre des missions (même onglet) : lien de retour vers la mission dans le registre
+      let from = null;
+      try { from = JSON.parse(sessionStorage.getItem('siaFromRegistry:v1') || 'null'); } catch { /* stockage indisponible */ }
+      if (from) {
+        const back = document.createElement('a');
+        back.id = 'siaBackRegistry'; back.className = 'sia-back';
+        back.href = new URL(`apps/sia/mission_registry.html${from.id ? `?mission=${encodeURIComponent(from.id)}` : ''}`, window.RepositoryNav?.root || new URL('../../', location.href).href).href;
+        back.textContent = `← Registre${from.id ? ` (${from.id})` : ''}`;
+        back.title = `Retour au registre des missions${from.title ? ` : ${from.id} — ${from.title}` : ''}`;
+        nav.before(back);
+      }
       const css = document.createElement('style');
-      css.textContent = '.sia-batch-nav{display:inline-flex;align-items:center;gap:4px;margin:0 10px}.sia-batch-nav[hidden]{display:none}.sia-batch-nav select{max-width:320px;padding:3px 6px;border-radius:6px;font:inherit;font-size:13px}.sia-batch-nav button{padding:3px 9px;border-radius:6px;font-size:13px;cursor:pointer}';
+      css.textContent = '.sia-back{display:inline-flex;align-items:center;margin:0 6px 0 10px;padding:3px 10px;border-radius:999px;border:1px solid currentColor;color:inherit;text-decoration:none;font-size:13px;font-weight:600;white-space:nowrap;opacity:.9}.sia-back:hover{opacity:1}.sia-batch-nav{display:inline-flex;align-items:center;gap:4px;margin:0 10px}.sia-batch-nav[hidden]{display:none}.sia-batch-nav select{max-width:320px;padding:3px 6px;border-radius:6px;font:inherit;font-size:13px}.sia-batch-nav button{padding:3px 9px;border-radius:6px;font-size:13px;cursor:pointer}';
       document.head.append(css);
       const sel = nav.querySelector('select');
       const render = () => {
@@ -520,30 +558,76 @@
       if (e.key === KEY) fire();
     });
   }
-  // ---- numérotation : lettre de FAMILLE + numéro sur 3 chiffres par famille (+ lettre d'équipe) — « M016 », « S002A »
+  // ---- numérotation : lettre de FAMILLE + tiret + numéro sur 3 chiffres par famille (+ lettre d'équipe) — « M-016 », « S-002A »
+  // (écritures sans tiret « M016 » acceptées et ramenées à ce format).
   // Même table que tools/family_letters.py et que le prompt (docs/PROMPT_GENERATEUR_MISSIONS.md, § 3).
   const FAMILY_LETTERS = { HEMS: 'M', MEDEVAC: 'M', HADR: 'H', FIRE: 'F', SAR: 'S', AIRLIFT: 'T', AAR: 'R', AIRBORNE: 'P', MARITIME: 'N', ISR: 'I', LE: 'L', COMMAND: 'C', SOF: 'O', FI: 'V', SURVEY: 'G', SPECIAL: 'X' };
-  /** Découpe un identifiant : { id, letter, num, team } ; anciens identifiants numériques (« 41A ») : letter vide. */
+  /** Découpe un identifiant : { id: 'M-016A', letter, num, team } ; anciens identifiants numériques (« 41A ») : letter vide. */
   function parseId(raw) {
-    const s = String(raw ?? '').trim().toUpperCase(), m = /^([A-Z])?(\d+)([A-Z])?$/.exec(s);
+    const s = String(raw ?? '').trim().toUpperCase(), m = /^([A-Z])?-?(\d+)([A-Z])?$/.exec(s);
     if (!m) return { id: s, letter: '', num: null, team: '' };
     const letter = m[1] || '', num = +m[2], team = m[3] || '';
-    return { id: letter ? `${letter}${String(num).padStart(3, '0')}${team}` : s, letter, num, team };
+    return { id: letter ? `${letter}-${String(num).padStart(3, '0')}${team}` : `${num}${team}`, letter, num, team };
   }
-  /** Prochain identifiant d'une famille d'après le registre (missionRegistry:v1) : { letter, first: '016', id: 'M016', serie: 4 }. */
+  /** Prochain identifiant d'une famille d'après le registre (missionRegistry:v1) : { letter, first: '016', id: 'M-016', serie: 4 }. */
   function nextNumbering(family) {
     let reg = [];
     try { reg = JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions || []; } catch { /* registre illisible */ }
     const letter = FAMILY_LETTERS[String(family || '').toUpperCase()] || '';
     const mine = reg.filter(m => letter && parseId(m.id).letter === letter);
     const num = Math.max(0, ...mine.map(m => parseId(m.id).num || 0)) + 1, serie = Math.max(0, ...mine.map(m => +m.series || 0)) + 1;
-    return { letter, first: String(num).padStart(3, '0'), id: letter ? `${letter}${String(num).padStart(3, '0')}` : '', serie };
+    return { letter, first: String(num).padStart(3, '0'), id: letter ? `${letter}-${String(num).padStart(3, '0')}` : '', serie };
   }
   /** Prochains identifiants de toutes les familles (paramètre PROCHAINS_NUMEROS du prompt, utile si TYPE = aléatoire). */
   function numberingTable() {
     return [...new Set(Object.keys(FAMILY_LETTERS).filter(f => f !== 'MEDEVAC'))].map(f => { const n = nextNumbering(f); return `${f} ${n.id} série ${n.serie}`; }).join(' · ');
   }
-  window.SiaMission = { FAMILY_LETTERS, parseId, nextNumbering, numberingTable,
+  // ---- Markdown d'une mission (summary<ID>.md) produit depuis son YAML : format du § 9 du prompt de génération
+  //      (docs/PROMPT_GENERATEUR_MISSIONS.md), relu par fromTexts ; mission d'organisation (…Z) : son format propre.
+  //      docs : autres missions de l'opération (YAML), pour la section « Exercice » d'une mission d'équipage.
+  function markdownOf(y, { docs = [] } = {}) {
+    y = y?.yaml || y || {};
+    const arr = v => Array.isArray(v) ? v : v ? [v] : [], txt = v => String(v ?? '').trim(), cell = v => txt(v).replace(/\|/g, '/').replace(/\n+/g, ' ');
+    const num = v => Number.isFinite(+v) ? (+v).toFixed(6) : '', at = p => p && Number.isFinite(+p.lat) ? ` — ${num(p.lat)}, ${num(p.lon)}` : '';
+    const m = y.mission || {}, id = txt(m.id), ac = arr(y.aircraft)[0] || {}, op = y.operation || {}, ex = y.exercise, out = [];
+    const para = v => txt(v).split(/\n\s*\n/).map(s => s.replace(/\s*\n\s*/g, ' ').trim()).filter(Boolean).join('\n\n');
+    const sec = (title, body) => { if (txt(body)) out.push(`## ${title}\n\n${txt(body)}`); };
+    const teams = arr(y.teams).filter(t => t && typeof t === 'object');
+    const teamTable = teams.length ? ['| Nom / callsign | Arme / service | Département | Type | Rôle |', '|---|---|---|---|---|', ...teams.map(t => `| ${cell(t.name)} | ${cell(t.service)} | ${cell(t.department)} | ${cell(t.type)} | ${cell(t.role)} |`)].join('\n') : '';
+    if (ex && typeof ex === 'object') {
+      // mission d'organisation
+      out.push(`# Organisation ${id} — « ${txt(y.title)} »`);
+      sec('Introduction', [`Type : ${txt(m.type)}`, `Sous-type : ${txt(m.subtype)}`, op.name ? `Opération : ${txt(op.name)} — missions ${arr(op.missions).join(', ')}` : ''].filter(Boolean).join('\n'));
+      sec('Summary', para(y.summary)); sec('Description détaillée', para(y.detailed_description)); sec('Équipes engagées', teamTable);
+      sec('Heure H et participants', [`Heure H : ${txt(ex.h_hour) || 'H'}`, '', '| Indicatif | Mission | Décollage | Rôle |', '|---|---|---|---|', ...arr(ex.participants).map(p => `| ${cell(p.callsign)} | ${cell(p.mission)} | ${cell(p.takeoff)} | ${cell(p.role)} |`)].join('\n'));
+      if (arr(ex.tracks).length) sec('Chiffons', ['| Piste | Joué | Indicatif | Départ | Nature | Points | Niveau | Vitesse | À établir | Consignes |', '|---|---|---|---|---|---|---|---:|---|---|',
+        ...arr(ex.tracks).map(k => `| ${cell(k.name || k.id)} | ${k.played ? 'oui' : 'non'} | ${cell(k.callsign)} | ${cell(k.start)} | ${cell(k.nature)} | ${cell(arr(k.points).map(p => `${txt(p.name)} ${num(p.lat)}, ${num(p.lon)}`).join(' → '))} | ${cell(k.level)} | ${cell(k.speed_kt)} | ${cell(k.task)} | ${cell(k.conduct)} |`)].join('\n'));
+      if (arr(ex.events).length) sec('Chronologie', arr(ex.events).map(e => `- **${txt(e.id)} — ${txt(e.at)}${e.by ? ` (${txt(e.by)})` : ''}${+e.delay_min ? ` +${+e.delay_min} min` : ''}** — ${/pli/i.test(e.kind || '') ? 'pli' : 'radio'} — ${txt(e.from)} → ${arr(e.to).join(', ')} : ${txt(e.title)}${arr(e.reveals).length ? ` — pistes ${arr(e.reveals).join(', ')}` : ''}${txt(e.text) ? '\n  ' + para(e.text).replace(/\n\n/g, '\n  ') : ''}`).join('\n'));
+    } else {
+      out.push(`# Mission ${id} — ${txt(ac.callsign) || '—'} — « ${txt(y.title)} »`);
+      sec('Introduction', [`Type : ${txt(m.type)}`, `Sous-type : ${txt(m.subtype)}`, `Aéronef : ${txt(ac.type)}`, `Callsign : ${txt(ac.callsign)}`, `Départ : ${txt(y.origin?.name)}${at(y.origin)}`, `Destination : ${txt(y.destination?.name)}${at(y.destination)}`].join('\n'));
+      sec('Summary', para(y.summary)); sec('Description détaillée', para(y.detailed_description)); sec('Équipes engagées', teamTable);
+      if (arr(op.missions).length > 1) sec('Coordination de l\'opération', `Opération : ${txt(op.name)} — missions ${arr(op.missions).join(', ')}`);
+      const pl = y.payload;
+      if (pl && typeof pl === 'object') sec('Charge / personnel', [`Catégorie : ${txt(pl.category)}`, `Description : ${txt(pl.description)}`, pl.mass_kg != null ? `Masse : ${pl.mass_kg} kg` : '', pl.passengers != null ? `Passagers : ${pl.passengers}` : '', arr(pl.constraints).length ? `\nContraintes :\n${arr(pl.constraints).map(c => `- ${txt(c)}`).join('\n')}` : ''].filter(Boolean).join('\n'));
+      sec('Objectif principal', txt(y.objectives?.primary)); sec('Objectifs secondaires', arr(y.objectives?.secondary).map(o => `- ${txt(o)}`).join('\n'));
+      if (arr(y.turning_points).length) sec('Points tournants', ['| ID | Nom | Latitude | Longitude | Rôle |', '|---|---|---:|---:|---|', ...arr(y.turning_points).map(p => `| ${cell(p.id)} | ${cell(p.name)} | ${num(p.lat)} | ${num(p.lon)} | ${cell(p.role)} |`)].join('\n'));
+      if (arr(y.rendezvous).length) sec('Rendez-vous', arr(y.rendezvous).map(r => `- **${txt(r.id)} — ${txt(r.name)}** — ${num(r.lat)}, ${num(r.lon)}${arr(r.participants).length ? ` — participants : ${arr(r.participants).join(', ')}` : ''}${r.role ? ` — ${txt(r.role)}` : ''}`).join('\n'));
+      if (y.air_refueling && typeof y.air_refueling === 'object') sec('Ravitaillement en vol', Object.entries(y.air_refueling).map(([k, v]) => `- ${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join('\n'));
+      sec('Risques à prendre en compte', arr(y.risks).map(r => typeof r === 'object' ? `- **${txt(r.hazard)}** — conséquence : ${txt(r.consequence)} — mesure : ${txt(r.mitigation)}` : `- ${txt(r)}`).join('\n'));
+      sec('Cartographie prévue', arr(y.maps).map(mp => typeof mp === 'object' ? `- \`${txt(mp.filename || mp.file)}\` — ${txt(mp.description)}` : `- \`${txt(mp)}\``).join('\n'));
+      // exercice : organisation de l'opération (docs) ; plis comptés, pas leur contenu
+      const X = window.MissionExercise, org = X ? X.of(y, docs) : null, me = org && X.participantOf(org, id);
+      if (op.organisation || me) {
+        const tl = org ? X.timeline(org, [y, ...docs]) : [], mine = me ? X.eventsFor(tl, me.callsign) : [], plis = mine.filter(e => e.kind === 'pli');
+        sec('Exercice', [`Organisation : ${txt(op.organisation)}`, `Heure H : ${txt(org?.h_hour) || 'H'}`, `Décollage : ${txt(me?.takeoff) || 'H'}`, `Plis scellés remis : ${plis.length ? plis.map(e => `${txt(e.title) || e.id} (à ouvrir : ${e.when})`).join(' ; ') : 'aucun'}`, `Messages radio attendus en vol : ${mine.length > plis.length ? 'oui' : 'non'}`].join('\n'));
+      }
+      for (const ph of arr(y.phases)) sec(`Partie ${txt(ph.id)} — ${txt(ph.title)}`, [`À ouvrir : ${txt(ph.trigger)}`, `Message : ${txt(ph.message)}`, '', para(ph.brief)].join('\n'));
+    }
+    out.push('> Scénario de simulation — ne pas utiliser pour une mission réelle.');
+    return out.join('\n\n') + '\n';
+  }
+  window.SiaMission = { FAMILY_LETTERS, parseId, nextNumbering, numberingTable, markdownOf,
     KEY,
     load,
     save,
@@ -553,7 +637,7 @@
     splitBundle,
     importTexts,
     loadBatch,
-    go,
+    go, addToBatch,
     mountNav,
     parseMarkdown,
     extractMdMetadata,

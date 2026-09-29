@@ -14,7 +14,7 @@
 (() => {
   const DB = 'sia-map-parser', STORE = 'cache', KEY = 'base', INFO = 'siaBaseInfo:v1', PREV = 'siaBaseInfo:prev', FOLDER_NAME = 'siaFolderName';
   /** Version du format de la base mémorisée : une base d'une autre version est ignorée (à relire). */
-  const VERSION = 12;
+  const VERSION = 14;   // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways)
   const SCRIPT_URL = document.currentScript?.src || location.href;
   /** URL d'un fichier de l'application (chemin depuis la racine : « apps/sia/assets/… »). */
   const appUrl = path => new URL('../' + path, SCRIPT_URL).href;
@@ -221,7 +221,54 @@
     }
   }
   /** Grille MORA complète sur l'emprise { s, n, w, e } ; obstacleMax : obstacles par cellule (base SIA). progress(done, total, étape). */
-  async function computeMoraGrid(obstacleMax = {}, { s = 41, n = 51, w = -5, e = 10, z = 9, fine = 12 } = {}, progress) {
+  /** Théâtres couverts par la grille MORA (cellules de 1° × 1°) : métropole et Corse, puis outre-mer. */
+  const MORA_ZONES = [
+    { name: 'métropole', s: 41, n: 51, w: -5, e: 10 },
+    { name: 'Antilles', s: 14, n: 17, w: -62, e: -60 },
+    { name: 'Guyane', s: 2, n: 6, w: -55, e: -51 },
+    { name: 'Saint-Pierre-et-Miquelon', s: 46, n: 48, w: -57, e: -56 },
+    { name: 'Réunion', s: -22, n: -20, w: 55, e: 56 },
+    { name: 'Mayotte', s: -14, n: -12, w: 44, e: 46 },
+    { name: 'Nouvelle-Calédonie', s: -23, n: -19, w: 163, e: 169 },
+    { name: 'Polynésie (îles de la Société)', s: -18, n: -16, w: -152, e: -148 },
+    { name: 'Wallis-et-Futuna', s: -15, n: -13, w: -179, e: -176 }
+  ];
+  /** Emprises MORA des missions situées hors des théâtres couverts (missions du registre : points de leur route
+   *  probable) : degrés entiers, marge d'un demi-degré, emprises qui se recouvrent fusionnées ; une emprise de plus de
+   *  12° de côté est écartée (mission trop étendue : à calculer par morceaux). [{ name, s, n, w, e }]. */
+  function moraZonesOfMissions(missions) {
+    const inZone = p => MORA_ZONES.some(z => p.lat >= z.s && p.lat < z.n && p.lon >= z.w && p.lon < z.e);
+    let boxes = [];
+    for (const m of missions || []) {
+      const pts = (m.estimate?.points || []).filter(p => Number.isFinite(+p.lat) && Number.isFinite(+p.lon) && !inZone(p));
+      if (!pts.length) continue;
+      const la = pts.map(p => +p.lat), lo = pts.map(p => +p.lon);
+      boxes.push({ name: String(m.id || m.title || 'mission'), s: Math.floor(Math.min(...la) - .5), n: Math.ceil(Math.max(...la) + .5), w: Math.floor(Math.min(...lo) - .5), e: Math.ceil(Math.max(...lo) + .5) });
+    }
+    for (let merged = true; merged;) {
+      merged = false;
+      for (let i = 0; i < boxes.length && !merged; i++) for (let j = i + 1; j < boxes.length; j++) {
+        const a = boxes[i], b = boxes[j];
+        if (a.s <= b.n && b.s <= a.n && a.w <= b.e && b.w <= a.e) { boxes[i] = { name: `${a.name}, ${b.name}`, s: Math.min(a.s, b.s), n: Math.max(a.n, b.n), w: Math.min(a.w, b.w), e: Math.max(a.e, b.e) }; boxes.splice(j, 1); merged = true; break; }
+      }
+    }
+    return boxes.filter(b => b.n - b.s <= 12 && b.e - b.w <= 12).map(b => ({ ...b, name: `missions ${b.name}` }));
+  }
+  /** Grille MORA : une emprise (box : s, n, w, e) ou, sans emprise, tous les théâtres (MORA_ZONES) et les emprises
+   *  supplémentaires (extra : missions hors théâtres, moraZonesOfMissions), cellules réunies. */
+  async function computeMoraGrid(obstacleMax = {}, box = {}, progress, extra = []) {
+    if (Number.isFinite(box?.s)) return computeMoraBox(obstacleMax, box, progress);
+    const all = [];
+    let peaksOk = true;
+    for (const zone of [...MORA_ZONES, ...extra]) {
+      const cells = await computeMoraBox(obstacleMax, zone, (d, n, step) => progress?.(d, n, `${zone.name} — ${step}`));
+      peaksOk = peaksOk && cells.peaksOk;
+      all.push(...cells);
+    }
+    all.peaksOk = peaksOk;
+    return all;
+  }
+  async function computeMoraBox(obstacleMax = {}, { s = 41, n = 51, w = -5, e = 10, z = 9, fine = 12 } = {}, progress) {
     const cell = {}, spots = {}, tiles = [];
     const tileX = (lon, zz) => Math.floor((lon + 180) / 360 * 2 ** zz), tileY = (lat, zz) => { const r = lat * Math.PI / 180; return Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** zz); };
     for (let x = tileX(w, z); x <= tileX(e - 1e-9, z); x++) for (let y = tileY(n - 1e-9, z); y <= tileY(s, z); y++) tiles.push([x, y]);
@@ -293,6 +340,14 @@
   const AIXM_TYPES = new Set(['R', 'D', 'P', 'CTR', 'TMA', 'CTA', 'TRA', 'SUR', 'PRN']);
   /** AIXM 4.5 : espaces R, D, P, CTR, TMA, CTA, TRA, survol interdit (SUR) et parcs (PRN), avec classes, limites verticales,
    *  zones AZBA, arcs et cercles ; SUR et PRN réduits à un point gardés (symbole seul). Remplacent ceux de XML_SIA pour ces types. */
+  /** Gestionnaire et activation d'un espace d'après sa remarque AIXM (« Administrator : CDPGE Athis-Mons.# … AZBA charts »). */
+  function activationOf(rmk) {
+    // remarque sans séparateur (« Administrator : CCER Bordeaux Airspace defined… ») : nom arrêté au début de la phrase suivante
+    const r = String(rmk || ''), admin = (/(?:Administrator|Gestionnaire)\s*:\s*([^#\n\r.]+)/i.exec(r)?.[1] || '').split(/\s+(?=(?:Airspace|Area|Zone|Activ\w*|Avoidance|Espace|Except\w*|Excluding|When|Lorsque)\b)/)[0].trim(),
+      info = /(?:Activity known on|Actual activity provided by|Renseignements?\s*(?:sur l'activité)?)\s*:?\s*#?\s*-?\s*([^#\n\r]+)/i.exec(r)?.[1]?.trim().replace(/[.,;:]+$/, '') || '',
+      act = /AZBA/i.test(r) ? 'AZBA' : /NOTAM/i.test(r) ? 'NOTAM' : /without notice|sans préavis/i.test(r) ? 'sans préavis' : '';
+    return { admin, act, info };
+  }
   function parseAixmAirspaces(doc) {
     const meta = new Map;
     for (const ase of doc.getElementsByTagName('Ase')) {
@@ -308,7 +363,7 @@
         return `${val} ${uom === 'M' ? 'm' : 'ft'} ${code === 'HEI' ? 'ASFC' : 'AMSL'}`;
       };
       meta.set(mid, { type, cls: txt(ase, 'codeClass').toUpperCase(), name: txt(ase, 'txtName') || txt(uid, 'codeId'), key: txt(uid, 'codeId') || mid,
-        lower: lim('codeDistVerLower', 'valDistVerLower', 'uomDistVerLower'), upper: lim('codeDistVerUpper', 'valDistVerUpper', 'uomDistVerUpper'), azba: /AZBA/i.test(txt(ase, 'txtRmk')) });
+        lower: lim('codeDistVerLower', 'valDistVerLower', 'uomDistVerLower'), upper: lim('codeDistVerUpper', 'valDistVerUpper', 'uomDistVerUpper'), azba: /AZBA/i.test(txt(ase, 'txtRmk')), ...activationOf(txt(ase, 'txtRmk')) });
     }
     const grouped = new Map;
     for (const abd of doc.getElementsByTagName('Abd')) {
@@ -434,7 +489,7 @@
   const AIRAC_NAME = /^(?:AIXM4\.5_all_FR_OM_|XML_SIA_|sia-airspaces-)(\d{4}-\d{2}-\d{2})\.xml$/i;
   /** Analyse d'un dossier SIA (liste de File) → base (non mémorisée) + compte rendu.
    *  Un seul cycle : le plus récent des fichiers datés (les autres sont écartés, sinon contours mélangés).
-   *  progress(texte) : étape en cours. Résultat : { base, report: { airac, skipped, xmlCount, aixmAirspaces, noCities, noBackground } }. */
+   *  progress(texte) : étape en cours. Résultat : { base, report: { airac, skipped, xmlCount, aixmAirspaces, noCities } }. */
   async function build(files, { folderName = 'Dossier SIA', progress = () => {}, signal } = {}) {
     const t0 = performance.now(), timings = [];
     let xmlFiles = files.filter(f => /\.xml$/i.test(f.name));
@@ -460,14 +515,8 @@
     const reading = (label, file) => { const base = doneUnits; return n => progress(`${label} — ${mb(n)} / ${mb(file.size)}`, Math.min(1, (base + n) / total)); };
     const text = async (label, file, encoding) => { await step(label); const t = await readText(file, { encoding, signal, onBytes: reading(label, file) }); doneUnits += file.size; return t; };
 
-    await step('Fond de carte et villes (livrés avec l’application)…');
-    const bg = files.find(f => /^carte france vierge\.png$/i.test(f.name)) || files.find(f => /carte.*vierge(?!.*sample).*\.(png|jpe?g)$/i.test(f.name)) || await appAsset('Carte france vierge.png');
+    await step('Villes (livrées avec l’application)…');
     const city = files.find(f => /^villes_geonames\.csv$/i.test(f.name)) || await appAsset('villes_geonames.csv');
-    let bgUrl = null, bgSize = null;
-    if (bg) {
-      bgUrl = await new Promise((ok, no) => { const r = new FileReader; r.onload = () => ok(r.result); r.onerror = no; r.readAsDataURL(bg); });
-      bgSize = await new Promise(ok => { const i = new Image; i.onload = () => ok({ w: i.naturalWidth, h: i.naturalHeight }); i.onerror = () => ok(null); i.src = bgUrl; });
-    }
     let airspaces = [], aixmAirspaces = [], obstacleMax = {}, aero = null;
     const inventory = [];
     for (const f of xmlFiles) {
@@ -501,9 +550,9 @@
     const moraCells = moraFile ? parseMora(await text('Grille MORA (mora.csv)', moraFile)) : [];
     const aarXml = tracks ? await text('Axes de ravitaillement (ENR 5.7)', tracks) : '';
     await step('Enregistrement dans le navigateur…');
-    const base = { parserVersion: VERSION, airac, skippedXml: skipped.map(f => f.name), folderName, bgUrl, bgSize, airspaces, cities, moraCells, obstacleMax, aarXml, aero,
+    const base = { parserVersion: VERSION, airac, skippedXml: skipped.map(f => f.name), folderName, airspaces, cities, moraCells, obstacleMax, aarXml, aero,
       xmlInventoryData: inventory.map(i => ({ name: i.file.name, role: i.role, mb: (i.file.size / 1048576).toFixed(1) })), cachedAt: Date.now() };
-    const report = { airac, skipped: base.skippedXml, xmlCount: inventory.length, aixmAirspaces: aixmAirspaces.length, noCities: !city, noBackground: !bg, noMora: !moraFile, timings };
+    const report = { airac, skipped: base.skippedXml, xmlCount: inventory.length, aixmAirspaces: aixmAirspaces.length, noCities: !city, noMora: !moraFile, timings };
     report.finish = () => { timings.push([phase, performance.now() - phaseAt]); report.total = performance.now() - t0; progress('Terminé', 1); };
     return { base, report };
   }
@@ -557,7 +606,6 @@
     const warn = [];
     if (r.skipped.length) warn.push(L([`Autre(s) cycle(s) écarté(s) : ${r.skipped.join(', ')} — à archiver (Paramètres › Maintenance).`, `Other cycle(s) skipped: ${r.skipped.join(', ')} — archive them.`]));
     if (r.noCities) warn.push(L(['villes_geonames.csv introuvable (apps/sia/assets/) : noms de villes indisponibles.', 'villes_geonames.csv not found: no city names.']));
-    if (r.noBackground) warn.push(L(['Fond « Carte france vierge.png » introuvable (apps/sia/assets/) : indiquer le dossier de l’application (Paramètres › Maintenance › Sources et dossiers, « Dossier du dépôt ») ; les cartes OSM / relief s’en passent.', 'Background “Carte france vierge.png” not found: set the application folder (Settings › Maintenance › Sources and folders); OSM / terrain maps do without it.']));
     return `<span class="ok">✓ ${esc(L(['Base chargée et mémorisée', 'Base loaded and stored', 'Basis geladen und gespeichert', 'Base cargada y guardada']))}${r.airac ? ` (AIRAC ${esc(r.airac)})` : ''} : ${r.xmlCount} XML, ${base.airspaces.length} ${esc(L(['espaces', 'airspaces']))}, ${(base.aero?.aerodromes || []).length} ${esc(L(['aérodromes', 'aerodromes']))}, ${Object.keys(base.obstacleMax || {}).length} ${esc(L(['cellules d’obstacles', 'obstacle cells']))}, ${base.cities.length} ${esc(L(['villes', 'cities']))}.</span>${warn.map(w => `<br><span class="err">${esc(w)}</span>`).join('')}`;
   }
   /** Bloc « Base de données SIA » : dossier (bouton FileAccess), Relire, Purger, état, compte rendu, fichiers analysés.
@@ -648,7 +696,7 @@
     VERSION, get, put, patch, purge, summarize, summary, info, previous, remember,
     filesOf, build, rebuild, appAsset, inspectXml,
     parseXmlSiaAirspaces, parseAixmAirspaces, parseAixmObstacles, parseLegacyAirspaces, aixmDms, expandAixmArc, markControlledAerodromes, inRing,
-    csvRows, csvField, parseCities, parseMora, moraLabel, moraOf, moraFtOf, moraCycle, moraCsv, moraFromObstacles, computeMoraGrid, MORA_SOURCE,
+    csvRows, csvField, parseCities, parseMora, moraLabel, moraOf, moraFtOf, moraCycle, moraCsv, moraFromObstacles, computeMoraGrid, moraZonesOfMissions, MORA_ZONES, MORA_SOURCE,
     panel
   };
 })();

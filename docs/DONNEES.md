@@ -42,6 +42,7 @@ désignateurs OACI E2 et Q9 dans `aircraft_overrides.json` ; les 20 types milita
 | Profils d'affichage du Studio, alias de zones, sorties | navigateur (`sia*`) | données locales |
 | Profil pilote, préférences | navigateur | données locales |
 | Registre des missions générées (statuts, dates de vol, notes, commandes) | navigateur (`missionRegistry:v1`) + `data/missions/mission_registry.yaml` | données locales ; fichier du dossier Missions |
+| Missions générées (YAML, Markdown, cartes, PDF) | `data/missions/<lettre>_<FAMILLE>/<identifiant>/` ; une mission reçue dans le générateur y est rangée si le dossier est autorisé, sinon elle reste dans le navigateur (`siaMissionShared:v1`, `siaMissionBatch:v1`) | dépôt de données (git) |
 | Canal et mode des mises à jour | navigateur (`suiteUpdate:v1`) ; canal appliqué par git : `git config suite.channel` | données locales |
 | Journal des sauvegardes et rechargements | navigateur (`suiteBackupLog:v1`) | données locales (non compté comme modification) |
 

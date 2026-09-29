@@ -206,8 +206,72 @@
   const revealHash = () => { const id = decodeURIComponent(location.hash.slice(1)); if (id) reveal(id); };
   window.addEventListener("hashchange", revealHash);
   window.addEventListener("load", () => setTimeout(revealHash, 50));
+  // Notifications communes : pile en bas de page, au-dessus des barres fixées. kind : info | ok | warn | err ; toutes
+  // s'effacent seules (erreur 12 s, avertissement 8 s, autres 5 s ; en pause tant que la souris est dessus). Les zones d'état
+  // marquées data-status (ex. <p id="status" data-status>) y sont relayées quand elles affichent une erreur
+  // (.err, .error) ou un avertissement (.warn) : un message d'échec ne reste plus caché en bas d'un bloc.
+  const notifyCss = () => {
+    if (document.getElementById("repoNotifyCss")) return;
+    const s = document.createElement("style");
+    s.id = "repoNotifyCss";
+    s.textContent = `.repo-notify{position:fixed;z-index:3000;left:50%;bottom:72px;transform:translateX(-50%);display:grid;gap:6px;width:min(640px,calc(100vw - 32px));pointer-events:none}
+.repo-notify>div{pointer-events:auto;display:flex;gap:10px;align-items:flex-start;padding:9px 12px;border-radius:10px;font:13px/1.4 system-ui,sans-serif;box-shadow:0 6px 24px #0004;background:#1d2733;color:#f2f5f8;border-left:5px solid #6fa8ff}
+.repo-notify>div.ok{border-left-color:#2e9d5b}.repo-notify>div.warn{border-left-color:#e0a400}.repo-notify>div.err{border-left-color:#e5484d;background:#2a1618}
+.repo-notify>div>span{flex:1;white-space:pre-line}.repo-notify button{all:unset;cursor:pointer;opacity:.75;font-size:16px;line-height:1;padding:0 2px}.repo-notify button:hover{opacity:1}`;
+    document.head.append(s);
+  };
+  function notify(message, kind = "info", { timeout } = {}) {
+    const text = String(message ?? "").trim();
+    if (!text) return null;
+    notifyCss();
+    let box = document.querySelector(".repo-notify");
+    if (!box) { box = document.createElement("div"); box.className = "repo-notify"; box.setAttribute("role", "status"); box.setAttribute("aria-live", "polite"); document.body.append(box); }
+    const same = [...box.children].find(n => n.dataset.text === text);
+    if (same) same.remove();
+    const item = document.createElement("div"), span = document.createElement("span"), close = document.createElement("button");
+    item.className = kind;
+    item.dataset.text = text;
+    span.textContent = text;
+    close.type = "button";
+    close.textContent = "×";
+    close.title = label("hide");
+    close.onclick = () => item.remove();
+    item.append(span, close);
+    box.append(item);
+    while (box.children.length > 4) box.firstElementChild.remove();
+    const ms = timeout ?? (kind === "err" ? 12000 : kind === "warn" ? 8000 : 5000);
+    if (ms) {
+      let left = ms, start = Date.now(), timer = setTimeout(() => item.remove(), left);
+      item.onmouseenter = () => { clearTimeout(timer); left -= Date.now() - start; };
+      item.onmouseleave = () => { start = Date.now(); timer = setTimeout(() => item.remove(), Math.max(1500, left)); };
+    }
+    return item;
+  }
+  // Relais des zones d'état data-status : erreur / avertissement affiché → notification (une fois par texte).
+  const watched = new WeakSet();
+  function watchStatus(root = document) {
+    for (const el of root.querySelectorAll("[data-status]")) {
+      if (watched.has(el)) continue;
+      watched.add(el);
+      let last = "";
+      new MutationObserver(() => {
+        const bad = el.querySelector(".err,.error,.warn") || (/(^|\s)(err|error|warn)(\s|$)/.test(el.className) ? el : null);
+        const text = bad ? bad.textContent.trim() : "";
+        // une notification par zone : un nouveau message remplace le précédent (message puis message de secours…)
+        if (text && text !== last) { el._repoToast?.remove(); el._repoToast = notify(text, bad.classList.contains("warn") ? "warn" : "err"); }
+        // le message passe en notification : pas de doublon en ligne (sauf s'il porte un bouton ou un lien : « Réessayer »…)
+        if (bad && bad !== el && !bad.hidden && !bad.querySelector("button,a,input,select")) bad.hidden = true;
+        last = text;
+      }).observe(el, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["class"] });
+    }
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => watchStatus());
+  else watchStatus();
+  window.addEventListener("load", () => watchStatus());
   window.AppFramework = {
-    refresh: init,
+    refresh: (...a) => { const r = init(...a); watchStatus(); return r; },
+    notify,
+    watchStatus,
     reveal,
     getConfig: startupConfig,
     sortableTable,
