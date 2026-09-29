@@ -153,7 +153,7 @@ Markdown), puis écrire « Mission suivante : M-016B — répondre « suite » �
 la dernière mission. Ne jamais tronquer un fichier.
 
 ────────────────────────────────────────────────────────────────────────────
-4. YAML — SCHÉMA EXACT (helo-xp-mission 1.0)
+4. YAML — SCHÉMA EXACT (helo-xp-mission 2.0)
 ────────────────────────────────────────────────────────────────────────────
 Textes longs (summary, detailed_description) : bloc littéral « |- », paragraphes séparés par UNE ligne
 vide, une idée par paragraphe, 4 phrases au plus par paragraphe. Jamais un seul bloc compact.
@@ -163,7 +163,7 @@ guillemets doubles. id de mission entre guillemets ('M-016'). Booléens true / f
 Coordonnées : degrés décimaux WGS84, 6 décimales, lat puis lon, ouest et sud négatifs.
 
 schema: helo-xp-mission
-schema_version: '1.0'
+schema_version: '2.0'
 mission:
   series: 4                    # = série indiquée pour la famille dans PROCHAINS_NUMEROS
   number: 16                   # = numéro de l'opération (entier)
@@ -372,7 +372,7 @@ vertical_profile ni maps (les cartes de l'organisation et des chiffons sont fait
 zones de l'exercice restent dans les missions des équipes. Structure :
 
 schema: helo-xp-mission
-schema_version: '1.0'
+schema_version: '2.0'
 mission:
   series: 1
   number: 1

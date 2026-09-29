@@ -448,7 +448,8 @@
   /** Comme fromTexts, pour une sélection qui peut contenir PLUSIEURS missions (fichiers d'une opération, ou un
    *  texte collé à découper) : { docs (une par mission, ordre des identifiants : 41A, 41B…), ignored }. */
   function fromTextsBatch(files) {
-    const expanded = files.flatMap(f => { const parts = splitBundle(f.text); return parts.length ? parts : [f]; });
+    // un fichier .yaml n'est pas découpé : son commentaire d'en-tête « # Mission I-001C — … » n'est pas un Markdown
+    const expanded = files.flatMap(f => { const parts = /\.ya?ml$/i.test(f.name || '') ? [] : splitBundle(f.text); return parts.length ? parts : [f]; });
     const idOfFile = f => {
       if (isYaml(f)) { try { const y = window.jsyaml.load(f.text); return normId(missionId({ yaml: y })); } catch { return ''; } }
       const m = /^#\s+Mission\s+([A-Z]?-?\d+[A-Z]?)\b/im.exec(f.text);

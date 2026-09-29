@@ -5,6 +5,9 @@
   if (!window.RepositoryContentI18n) return;
   window.RepositoryContentI18n([
     // ---- générateur de mission
+    // identification
+    ["Titre, famille et sous-type, identifiant (famille, numéro de l’opération, équipe), série de génération, auteur et date.", "Title, family and subtype, identifier (family, operation number, team), generation series, author and date.", "Titel, Familie und Untertyp, Kennung (Familie, Operationsnummer, Team), Erzeugungsserie, Autor und Datum.", "Título, familia y subtipo, identificador (familia, número de operación, equipo), serie de generación, autor y fecha."],
+    ["Famille", "Family", "Familie", "Familia"], ["Identifiant", "Identifier", "Kennung", "Identificador"], ["Série de génération", "Generation series", "Erzeugungsserie", "Serie de generación"], ["Format des fichiers : ", "File format: ", "Dateiformat: ", "Formato de archivo: "],
     // zones à activer
     ["Zones à activer", "Areas to activate", "Zu aktivierende Gebiete", "Zonas que activar"],
     ["Zones R, D, TRA et du RTBA recoupées par la route probable et les zones de travail, par gestionnaire : demandes d’activation.", "R, D, TRA and RTBA areas crossed by the probable route and the work areas, by administrator: activation requests.", "Von der wahrscheinlichen Route und den Arbeitsgebieten berührte R-, D-, TRA- und RTBA-Gebiete, nach Verwalter: Aktivierungsanträge.", "Zonas R, D, TRA y RTBA cruzadas por la ruta probable y las zonas de trabajo, por gestor: solicitudes de activación."],
@@ -26,6 +29,7 @@
     ["Aperçus de toutes les cartes, génération des cartes et du ZIP.", "Previews of all maps, generation of the maps and the ZIP.", "Vorschauen aller Karten, Erzeugung der Karten und des ZIP.", "Vistas previas de todos los mapas, generación de los mapas y del ZIP."],
     ["Grille MORA (calcul), sources des villes et du relief.", "MORA grid (calculation), sources of cities and terrain.", "MORA-Raster (Berechnung), Quellen der Städte und des Geländes.", "Cuadrícula MORA (cálculo), fuentes de ciudades y relieve."],
     // bloc Mission (import replié, commande ChatGPT)
+    ["Commander à ChatGPT…", "Order from ChatGPT…", "Bei ChatGPT bestellen…", "Encargar a ChatGPT…"],
     ["Mission chargée, enregistrement et brouillon ; importer une autre mission ou en commander une à ChatGPT.", "Loaded mission, saving and draft; import another mission or order one from ChatGPT.", "Geladene Mission, Speichern und Entwurf; eine andere Mission importieren oder bei ChatGPT bestellen.", "Misión cargada, guardado y borrador; importar otra misión o encargar una a ChatGPT."],
     ["Importer une autre mission : fichiers, texte collé, commande ChatGPT", "Import another mission: files, pasted text, ChatGPT order", "Andere Mission importieren: Dateien, eingefügter Text, ChatGPT-Bestellung", "Importar otra misión: archivos, texto pegado, encargo a ChatGPT"],
     ["Commander une mission à ChatGPT", "Order a mission from ChatGPT", "Mission bei ChatGPT bestellen", "Encargar una misión a ChatGPT"],

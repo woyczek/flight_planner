@@ -513,7 +513,6 @@
     box.querySelector('#rgFlown').onchange = e => { m.flownAt = e.target.value; if (m.flownAt && ['generated', 'planned', 'ordered'].includes(m.status)) m.status = 'flown'; persist(); render(); };
     box.querySelector('#rgNotes').onchange = e => { m.notes = e.target.value; persist(); };
     box.querySelectorAll('[data-go]').forEach(x => x.onclick = () => go(m, x.dataset.go));
-    box.querySelectorAll('[data-op-go]').forEach(x => x.onclick = () => goOperation(m, x.dataset.opGo));
     box.querySelectorAll('[data-op-select]').forEach(x => x.onclick = () => { select(x.dataset.opSelect); refreshTable(); renderDetail(); });
     window.MissionEstimate?.panel(box.querySelector('#rgEstimate'), m.estimate, { reports: m.reports || [] });
     renderFiles(m, box.querySelector('#rgFiles'));
@@ -590,14 +589,15 @@
     const chips = members.map(x => `<button type="button" class="rg-chip${keyOf(x) === keyOf(m) ? ' rg-chip-on' : ''}" data-op-select="${esc(keyOf(x))}" title="${esc(x.title)}"><b>${esc(x.id)}</b> ${esc(x.organisation ? t(['organisation', 'organisation', 'Leitung', 'organización']) : x.callsigns?.[0] || x.aircraftTypes?.[0] || '')}</button>`).join('');
     return `<div class="rg-op"><p><b>${esc(t(['Opération', 'Operation', 'Operation', 'Operación']))} ${esc(m.operation.name || m.operation.id)}</b> <span class="rg-small">(${esc(m.operation.id)}) — ${esc(t(['{c} mission(s) d’équipage sur {p} prévue(s)', '{c} crew mission(s) of {p} planned', '{c} Besatzungseinsätze von {p} geplant', '{c} misión(es) de tripulación de {p} previstas'], { c: crews, p: planned || crews }))}${ex ? ` · ${esc(t(['exercice : {n} participant(s), {k} chiffon(s) dont {j} joué(s), {e} événement(s) dont {s} pli(s) scellé(s)', 'exercise: {n} participant(s), {k} track(s) of which {j} played, {e} event(s) of which {s} sealed envelope(s)'], { n: ex?.participants || 0, k: ex?.tracks || 0, j: ex?.played || 0, e: ex?.events || 0, s: ex?.plis || 0 }))}` : ''}</span></p>
       <div class="rg-chips">${chips}</div>
-      ${members.length > 1 ? `<p class="row"><button type="button" class="secondary" data-op-go="editor" data-icon="layers">${esc(t(['Ouvrir l’opération dans le générateur', 'Open the operation in the generator', 'Operation im Generator öffnen', 'Abrir la operación en el generador']))}</button><button type="button" class="secondary" data-op-go="studio" data-icon="map">${esc(t(['Ouvrir l’opération dans le studio', 'Open the operation in the map studio', 'Operation im Kartenstudio öffnen', 'Abrir la operación en el estudio']))}</button></p>` : ''}</div>`;
+      ${members.length > 1 ? `<p class="rg-small">${esc(t(['« Ouvrir » charge toute l’opération (missions des équipages et organisation), sur cette mission.', '“Open” loads the whole operation (crew missions and organisation), on this mission.', '„Öffnen“ lädt die ganze Operation (Besatzungsmissionen und Leitung), auf dieser Mission.', '«Abrir» carga toda la operación (misiones de tripulación y organización), en esta misión.']))}</p>` : ''}</div>`;
   }
   /** Lit les fichiers d'une mission du registre dans son dossier. */
   async function missionFiles(dir, m) {
     let h = dir;
     for (const part of (m.folder || '').split('/').filter(Boolean)) h = await h.getDirectoryHandle(part);
     const files = [];
-    for (const name of m.files) { try { const f = await (await h.getFileHandle(name)).getFile(); files.push({ name, text: await f.text() }); } catch { /* absent */ } }
+    const id = normMissionId(m.id), names = [...new Set([...(m.files || []), `mission${id}.yaml`, `summary${id}.md`])];   // noms du registre, sinon noms d'usage
+    for (const name of names) { if (files.some(f => /\.ya?ml$/i.test(f.name)) && /\.ya?ml$/i.test(name) && !(m.files || []).includes(name)) continue; try { const f = await (await h.getFileHandle(name)).getFile(); files.push({ name, text: await f.text() }); } catch { /* absent */ } }
     return files;
   }
   /** Ouvre toute l'opération de m (missions des équipages et organisation) comme un lot, sur la mission m. */
@@ -614,13 +614,14 @@
       const b = window.SiaMission.loadBatch(), i = b ? b.docs.findIndex(d => String(d.yaml?.mission?.id || '').toUpperCase() === String(m.id).toUpperCase()) : -1;
       if (i >= 0) window.SiaMission.go(i, 'registry');
       location.href = new URL(where === 'studio' ? 'apps/sia/map_parser.html' : 'apps/sia/mission_editor.html', window.RepositoryNav.root).href;
-    } catch (e) { if (out) out.textContent = e.message; }
+    } catch (e) { if (out) out.textContent = e.message; window.AppFramework?.notify(e.message, 'err'); }
   }
   /** Ouvre la mission : générateur / studio (mission partagée), CR (passerelle ?from=sia), prompt de commande. */
   async function go(m, where) {
     const out = document.getElementById('rgGoMsg');
     try {
       if (where === 'prompt') { await sendPrompt(m.request); return; }
+      if ((where === 'editor' || where === 'studio') && operationMembers(m).length > 1) return goOperation(m, where);   // mission d'opération : tout le lot
       select(keyOf(m));
       // lien « ← Registre » du générateur et du studio (même onglet) : SiaMission.mountNav
       try { sessionStorage.setItem('siaFromRegistry:v1', JSON.stringify({ id: m.id, title: m.title, folder: m.folder, type: m.type })); } catch { /* stockage indisponible */ }
@@ -639,7 +640,7 @@
       window.SiaMission.importTexts(files, 'registry');
       if (m.status === 'generated') { m.status = 'planned'; m.statusAt = new Date().toISOString(); persist(); }
       location.href = new URL(where === 'studio' ? 'apps/sia/map_parser.html' : 'apps/sia/mission_editor.html', window.RepositoryNav.root).href;
-    } catch (e) { if (out) out.textContent = e.message; }
+    } catch (e) { if (out) out.textContent = e.message; window.AppFramework?.notify(e.message, 'err'); }
   }
 
   // ---- commande d'une mission : bloc commun MissionOrder (shared/mission_order.js), aussi dans le générateur de brief

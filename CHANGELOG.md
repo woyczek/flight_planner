@@ -10,6 +10,27 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Studio réorganisé** — Mission (état, enregistrer, état de la base SIA, ouvrir une autre mission replié) ;
+  Cartes et cadrage (liste des cartes, réglages du profil repliés, aperçu ; boutons Actualiser, Garder ce cadrage,
+  Recentrer, Cadrage automatique) ; Profil vertical ; Aperçus et génération ; base SIA masquée par défaut. Cadrage
+  automatique d'après la mission (points, zones, format 16/10). Fond local PNG « Carte France vierge » et ses champs
+  de calage supprimés ; calcul de la MORA retiré du studio (Paramètres › Maintenance).
+- **Zones de mission et de recherche** (`zones[]` : cercle ou polygone, `kind`) lues et dessinées par défaut ;
+  cheminement affiché sans passer par le profil vertical. L-001 : secteur de recherche et exercice L-001Z (position
+  transmise par radio, carte détaillée de la position révélée).
+- **Zones à activer** (`shared/mission_airspaces.js`) : zones R, D, TRA, RTBA recoupées par la route et les zones, par
+  gestionnaire (AIXM), dans le générateur et les PDF ; base SIA au format 13 (à relire une fois).
+- **Générateur** : import et commande ChatGPT repliés quand une mission est chargée, bouton « Commander à
+  ChatGPT… » ; Identification refaite (famille, sous-types proposés, identifiant et série suivants en indication
+  grise, contrôle de la lettre de famille) ; format **helo-xp-mission 2.0** (`tools/migrate_missions_schema.py`).
+- **Registre** : « Ouvrir » charge toute l'opération d'une mission d'opération (boutons en double retirés) ; fichiers
+  d'une mission retrouvés même si le registre a gardé un mauvais nom ; croquis de la route et tronçons côte à côte.
+- **Correctif** : un YAML commençant par un commentaire « # Mission … » n'est plus découpé en deux fichiers
+  (`mission2.yaml` dans le registre).
+- **Notifications communes** (`AppFramework.notify`) : les erreurs des zones d'état (`data-status`) et des ouvertures
+  s'affichent en bas de page sur toutes les pages qui les déclarent.
+- **Prompt** : description sans itinéraire, niveaux, durées ni zones à activer ; basse altitude dans le RTBA ; zones
+  selon le type de mission ; position connue en vol = exercice ; schéma 2.0.
 - **Studio : carte plate** — certains styles publiés (VersaTiles) imposaient la projection « globe » : vue mappemonde
   et, depuis l'outre-mer (Nouméa…), grille MORA et libellés de métropole projetés sur la carte. Le studio reste en
   Mercator.
