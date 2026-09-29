@@ -599,3 +599,17 @@ générateur ; l'image est ajoutée au ZIP (largeur des PNG) et le brief PDF la 
 Appelés seulement quand la fonction est utilisée : tuiles OpenStreetMap, OpenTopoMap,
 OpenFreeMap, VersaTiles, relief Terrarium (AWS), Overpass API (sommets). Les données de mission
 et SIA restent dans le navigateur et les fichiers choisis.
+
+## Cartes de vol (outil public)
+
+`apps/planner/map_planner.html` (☰ › Cartes de vol) met le moteur du studio à la disposition de tous, hors du Centre,
+pour sa propre préparation : bloc **Vol** (route en codes OACI, balises, points de report ou coordonnées « lat, lon » ;
+« Chercher la route » par les voies aériennes ou à basse hauteur par le RTBA ; rendez-vous facultatif ; niveau), puis
+« Créer les cartes » : topographique de la route (profil VFR détaillé, fond OpenTopoMap), approche (30 km autour de la
+destination), rendez-vous, terrain de destination, et profil vertical. Les blocs « Cartes et cadrage », « Profil
+vertical » et « Aperçus et génération » sont ceux du studio (mêmes profils d'affichage).
+
+La page est **générée** depuis le studio (`python tools/build_map_planner.py`, à relancer après toute modification de
+`apps/cpco/map_parser.html`) : ne pas l'éditer à la main. Sa mission est gardée dans un espace distinct du navigateur
+(`SIA_MISSION_NS = 'planner'`) : la mission partagée du générateur et du studio du Centre n'est jamais touchée. La base
+SIA du navigateur est commune (bloc « Base de données SIA »).

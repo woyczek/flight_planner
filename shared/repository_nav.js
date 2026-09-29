@@ -92,6 +92,18 @@
     };
     if (document.body) lockNotice(); else document.addEventListener("DOMContentLoaded", lockNotice);
   }
+  /** Filtres SVG des icônes skeuomorphes du Centre (designs_skeuo.css) : fond sombre teinté (bois → merisier, peinture →
+   *  rouge) ou glyphe clair doré (aviation, gel), selon la luminance : le laiton et le glyphe restent intacts. */
+  function cpcoIconFilters() {
+    if (!document.body) { document.addEventListener("DOMContentLoaded", cpcoIconFilters, { once: true }); return; }
+    if (document.getElementById("cpcoIconFilters")) return;
+    const tint = (id, matrix, slope, intercept, glyph) => `<filter id="${id}" color-interpolation-filters="sRGB"><feColorMatrix in="SourceGraphic" type="matrix" values="${matrix} 0 0 0 1 0" result="t"/><feColorMatrix in="SourceGraphic" type="luminanceToAlpha" result="l"/><feComponentTransfer in="l" result="m"><feFuncA type="linear" slope="${slope}" intercept="${intercept}"/></feComponentTransfer>${glyph ? '<feComposite in="t" in2="m" operator="in" result="g"/><feComposite in="g" in2="SourceGraphic" operator="over"/>' : '<feComposite in="SourceGraphic" in2="m" operator="in" result="k"/><feComposite in="k" in2="t" operator="over"/>'}</filter>`;
+    document.body.insertAdjacentHTML("beforeend", `<svg id="cpcoIconFilters" width="0" height="0" style="position:absolute" aria-hidden="true">${
+      tint("cpco-ico-cherry", "1.25 .2 0 0 0  0 .42 0 0 0  0 0 .5 0 0 ", 4, -1.2) +
+      tint("cpco-ico-red", ".62 .62 .62 0 0  0 .36 0 0 0  0 0 .32 0 0 ", 4, -1.6) +
+      tint("cpco-ico-gold", "1 0 0 0 0  0 .84 0 0 0  0 0 .36 0 0 ", 5, -3.5, true) +
+      tint("cpco-ico-gold-gel", "1 0 0 0 0  0 .84 0 0 0  0 0 .36 0 0 ", 12, -10.9, true)}</svg>`);
+  }
   let currentTheme = themeName;
   // Graphiques : palette et style, au choix (Apparence › Graphiques : préférences repositoryChartPalette et
   // repositoryChartStyle) ou automatiques selon le design. Palettes : « vivid » (couleurs d'origine des pages), « brass »
@@ -132,6 +144,8 @@
   function applyTheme(name) {
     const t = themeColors(name);
     currentTheme = name;
+    doc.dataset.appTheme = name;   // thème sur <html> : réglages propres à un thème (icônes skeuomorphes du Centre)
+    cpcoIconFilters();
     for (const [k, v] of Object.entries({
         "--repo-bar": t.bar || "#101319",
         "--repo-bar-text": t.barText || "#fff",
@@ -183,7 +197,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260929zd", script.src).href;
+    css.href = new URL("designs.css?v=20260929zk", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -526,10 +540,11 @@
     const items = cfg.sidebar || [
       { icon: "target", path: "apps/cpco/mission_editor.html", label: ["Missions", "Missions", "Missionen", "Misiones"] },
       { icon: "list", path: "apps/cpco/mission_registry.html", label: ["Registre", "Registry", "Register", "Registro"], title: ["Registre des missions générées", "Generated mission registry", "Register der erzeugten Missionen", "Registro de misiones generadas"] },
-      { icon: "map", path: "apps/cpco/map_parser.html", label: ["Cartes", "Maps", "Karten", "Mapas"] },
+      { icon: "map", path: "apps/cpco/map_parser.html", label: ["Studio", "Studio", "Studio", "Estudio"], title: ["Studio cartographique du Centre", "Centre map studio", "Kartenstudio des Zentrums", "Estudio cartográfico del Centro"] },
       { icon: "clipboard", path: "apps/cr/mission_cr.html", match: "apps/cr/", label: ["CR DEFA", "DEFA report", "DEFA-Bericht", "Informe DEFA"] },
       { icon: "chart", path: "apps/cr/mission_operations_reporting.html", match: "_reporting.html", label: ["Reporting", "Reporting", "Berichte", "Informes"] },
       { icon: "fuel", path: "apps/planner/flight_performance_planner.html", label: ["Carburant", "Fuel", "Kraftstoff", "Combustible"] },
+      { icon: "map", path: "apps/planner/map_planner.html", label: ["Cartes", "Maps", "Karten", "Mapas"], title: ["Cartes de vol : route, topo, approche, rendez-vous, destination", "Flight maps: route, topo, approach, rendezvous, destination", "Flugkarten", "Mapas de vuelo"] },
       { icon: "plane", path: "apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html", label: ["Atterrissages", "Landings", "Landungen", "Aterrizajes"] },
       { sep: true, bottom: true },   // réglages : groupés en bas de la colonne
       { icon: "palette", path: "apps/settings/apparence.html", label: ["Apparence", "Appearance", "Darstellung", "Apariencia"] },
@@ -560,7 +575,7 @@
       if (it.sep) { li.className = "repo-sidenav-sep" + (it.bottom ? " repo-sidenav-bottom" : ""); ul.append(li); return; }
       if (it.path && (!known.has(it.path) || (isCpco(it.path) && !cpcoOn()))) return;
       const a = document.createElement(it.menu ? "button" : "a");
-      a.className = "repo-sidenav-item";
+      a.className = "repo-sidenav-item" + (isCpco(it.path) ? " repo-sidenav-cpco" : "");
       if (it.menu) { a.type = "button"; a.onclick = e => { e.stopPropagation(); document.querySelector(".repo-menu-button")?.click(); }; }
       else a.href = new URL(it.path, root).href;
       if (it.path === "apps/settings/apparence.html") a.addEventListener("click", e => { if (openAppearance()) e.preventDefault(); });
@@ -594,23 +609,23 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260929zd", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260929zk", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260929zd", script.src).href;
+    files.src = new URL("file_access.js?v=20260929zk", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260929zd", "block_icons.js?v=20260929zd", "side_nav.js?v=20260929zd"]) {
+    for (const f of ["icons/repository_icons.js?v=20260929zk", "block_icons.js?v=20260929zk", "side_nav.js?v=20260929zk"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260929zd", script.src).href;
+    store.src = new URL("browser_store.js?v=20260929zk", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=20260929zd", script.src).href;
+    update.src = new URL("suite_update.js?v=20260929zk", script.src).href;
     document.head.append(update)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {
