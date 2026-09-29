@@ -14,6 +14,7 @@
 (() => {
   const DB = 'sia-map-parser', STORE = 'cache', KEY = 'base', INFO = 'siaBaseInfo:v1', PREV = 'siaBaseInfo:prev', FOLDER_NAME = 'siaFolderName';
   /** Version du format de la base mémorisée : une base d'une autre version est ignorée (à relire). */
+  const COMPAT = 14;   // plus ancien format encore utilisable tel quel (15 n'ajoute que aero.vrp)
   const VERSION = 15;   // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp)
   const SCRIPT_URL = document.currentScript?.src || location.href;
   /** URL d'un fichier de l'application (chemin depuis la racine : « shared/carto/… »). */
@@ -53,7 +54,9 @@
     const db = await openDb({ create: false });
     if (!db) return null;
     const b = await tx(db, 'readonly', s => s.get(KEY)).catch(() => null);
-    return b && (any || b.parserVersion === VERSION) ? b : null;
+    // format antérieur compatible (COMPAT…VERSION) : utilisable, seules manquent les données ajoutées depuis (b.outdated)
+    if (b && !any && b.parserVersion >= COMPAT && b.parserVersion < VERSION) b.outdated = true;
+    return b && (any || (b.parserVersion >= COMPAT && b.parserVersion <= VERSION)) ? b : null;
   }
   /** Mémorise la base (et son résumé siaBaseInfo:v1). Une base nouvellement lue (cachedAt différent) garde le résumé de la
    *  précédente (siaBaseInfo:prev) pour la comparaison des deux bases (Maintenance, étape 5), quelle que soit la page qui relit. */
