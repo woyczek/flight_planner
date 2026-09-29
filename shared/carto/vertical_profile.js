@@ -932,8 +932,69 @@
     };
   }
 
+  /** Coordonnée de plan de vol OACI au degré-minute (« 4620N00105E »). */
+  function icaoLatLon(lat, lon) {
+    const f = (v, w, h) => {
+      const a = Math.abs(v);
+      let d = Math.floor(a),
+        m = Math.round((a - d) * 60);
+      if (m === 60) { d++; m = 0; }
+      return String(d).padStart(w, '0') + String(m).padStart(2, '0') + h;
+    };
+    return f(lat, 2, lat >= 0 ? 'N' : 'S') + f(lon, 3, lon >= 0 ? 'E' : 'W');
+  }
+  /** Groupe vitesse / niveau de la case 15 (« N0180F055 », « N0120A035 ») ; niveau de vol si le libellé est un FL ou
+   *  à partir de 6000 ft, sinon altitude en centaines de pieds. */
+  function icaoGroup(kt, ft, label) {
+    const fl = /^FL/i.test(String(label || '')) || (!label && ft >= 6000);
+    return `N${String(Math.round(kt)).padStart(4, '0')}${fl ? 'F' : 'A'}${String(Math.round(ft / 100)).padStart(3, '0')}`;
+  }
+  /** Cheminement du profil (points de parseRoute : { name, lat, lon, lvl, alt }) → route de plan de vol OACI.
+   *  Points publiés (aérodromes, balises, points RNAV de la base SIA, même position à 2 NM près) gardés par leur
+   *  indicatif ; les autres (points du brief, sommets des zones du RTBA « R 589 B »…) en coordonnées « 4620N00105E ».
+   *  Changement de niveau après un point (« R589B, FL55 ») → « 4452N00012E/N0180F055 ». Niveau de départ : celui du
+   *  premier point, sinon cruiseFt. Résultat : { item15, full (départ + case 15 + destination), dep, dest, distNm,
+   *  trackDeg (route vraie départ → destination), cruiseFt, kt } ; null s'il y a moins de deux points. */
+  function toIcaoRoute(points, { aero = {}, kt = 120, cruiseFt = null } = {}) {
+    const pts = (points || []).filter(p => Number.isFinite(p?.lat) && Number.isFinite(p?.lon));
+    if (pts.length < 2) return null;
+    const plain = resolver({ aero });
+    const nmBetween = (a, b) => {
+      const r = Math.PI / 180,
+        x = Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2;
+      return 2 * 3440.065 * Math.asin(Math.sqrt(x));
+    };
+    const desig = p => {
+      const n = String(p.name || '').trim().toUpperCase();
+      if (/^[A-Z0-9]{2,5}$/.test(n)) {
+        const q = plain(n);
+        if (q && nmBetween(q, p) <= 2) return n;
+      }
+      return icaoLatLon(p.lat, p.lon);
+    };
+    const levelOf = l => l && !l.vfr && Number.isFinite(l.ft) ? l : null;
+    const first = levelOf(pts[0].lvl) || (Number.isFinite(cruiseFt) && cruiseFt > 0 ? { ft: cruiseFt, label: cruiseFt >= 6000 ? 'FL' : '' } : null);
+    const speed = l => l?.kt || kt;
+    const out = [];
+    out.push(first ? icaoGroup(speed(first), first.ft, first.label) : 'VFR');
+    for (let i = 1; i < pts.length - 1; i++) {
+      const p = pts[i], l = levelOf(p.lvl);
+      out.push('DCT', desig(p) + (l ? '/' + icaoGroup(speed(l), l.ft, l.label) : p.lvl?.vfr ? ' VFR' : ''));
+    }
+    out.push('DCT');
+    const dep = desig(pts[0]), dest = desig(pts[pts.length - 1]);
+    let dist = 0;
+    for (let i = 1; i < pts.length; i++) dist += nmBetween(pts[i - 1], pts[i]);
+    const a = pts[0], b = pts[pts.length - 1], r = Math.PI / 180,
+      trk = (Math.atan2(Math.sin((b.lon - a.lon) * r) * Math.cos(b.lat * r), Math.cos(a.lat * r) * Math.sin(b.lat * r) - Math.sin(a.lat * r) * Math.cos(b.lat * r) * Math.cos((b.lon - a.lon) * r)) / r + 360) % 360;
+    const item15 = out.join(' ');
+    return { item15, full: `${dep} ${item15} ${dest}`, dep, dest, distNm: dist, trackDeg: trk, cruiseFt: first?.ft ?? null, kt };
+  }
+
   window.SiaProfile = {
     parseRoute,
+    toIcaoRoute,
+    icaoLatLon,
     speedLevel,
     build,
     draw,

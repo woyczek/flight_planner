@@ -4,14 +4,14 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cartes de vol</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=20260929zk">
-<script src="../../repository_tree?v=20260929zk"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=20260929zl">
+<script src="../../repository_tree?v=20260929zl"></script>
 <link rel="stylesheet" href="../../shared/carto/maplibre-gl.css">
 <script src="../../shared/carto/maplibre-gl.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script>window.SIA_MISSION_NS='planner'</script><script src="../cpco/mission_store.js?v=20260929zk"></script>
-<script src="../../shared/carto/aero_symbols.js?v=20260929zk"></script><script src="../../shared/carto/vertical_profile.js?v=20260929zk"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/flight_performance_model.js?v=20260929zk"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=20260929zk"></script><script src="../../shared/mission_estimate.js?v=20260929zk"></script><script src="../../shared/mission_exercise.js?v=20260929zk"></script>
-<script src="../../shared/sia_base.js?v=20260929zk"></script><script src="../../shared/aar_tracks.js?v=20260929zk"></script><script src="../../shared/airac.js?v=20260929zk"></script><script src="../../shared/sticky_frame.js?v=20260929zk"></script>
+<script>window.SIA_MISSION_NS='planner'</script><script src="../cpco/mission_store.js?v=20260929zl"></script>
+<script src="../../shared/carto/aero_symbols.js?v=20260929zl"></script><script src="../../shared/carto/vertical_profile.js?v=20260929zl"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/flight_performance_model.js?v=20260929zl"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=20260929zl"></script><script src="../../shared/mission_estimate.js?v=20260929zl"></script><script src="../../shared/mission_exercise.js?v=20260929zl"></script>
+<script src="../../shared/sia_base.js?v=20260929zl"></script><script src="../../shared/aar_tracks.js?v=20260929zl"></script><script src="../../shared/airac.js?v=20260929zl"></script><script src="../../shared/sticky_frame.js?v=20260929zl"></script>
 <style>
 :root{font:15px/1.45 system-ui,sans-serif;color:#18242b;background:#edf3f6}body{max-width:1500px;margin:0 auto;padding:0 18px 50px}header,section{background:#fff;border:1px solid #d3dfe5;border-radius:12px;padding:20px;margin:14px 0;box-shadow:0 2px 8px #18313e0d}h1{margin:0;font-size:1.65rem}h2{margin:0 0 13px;font-size:1.1rem}.sub{color:#586a74;margin:.35rem 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:14px}.box{border:1px solid #dce5e9;border-radius:9px;padding:12px}.check{display:flex;gap:8px;align-items:center;margin:7px 0;font-weight:600}.check input{width:18px;height:18px}label{display:block;font-weight:650;margin:7px 0}input[type=file],input[type=number],textarea{width:100%;box-sizing:border-box;margin-top:4px;padding:8px;border:1px solid #afc1ca;border-radius:7px;font:inherit}textarea{min-height:105px;font-family:ui-monospace,monospace}button,.buttonLink{border:0;border-radius:8px;background:#075ca8;color:#fff;padding:10px 16px;font:inherit;font-weight:750;cursor:pointer;text-decoration:none;display:inline-block}button:disabled{opacity:.45;cursor:not-allowed}.warn{background:#fff7d9;border-left:4px solid #dfa400;padding:9px 11px}.ok{color:#08723c}.err{color:#a12622}code{background:#eef2f4;padding:2px 5px;border-radius:4px}#maps{padding-left:20px}.actions{display:flex;gap:10px;flex-wrap:wrap}.small{font-size:.88rem;color:#5c6d76}progress{width:100%;height:18px}
 input[type=range]{width:100%;margin:5px 0}select{width:100%;box-sizing:border-box;margin-top:4px;padding:8px;border:1px solid #afc1ca;border-radius:7px;background:#fff;font:inherit}
@@ -28,6 +28,7 @@ header{margin:0!important;border:0!important;border-radius:0!important;box-shado
 .volForm{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px 12px;align-items:end}.volForm label{display:grid;gap:3px;font-size:13px}
 .volForm textarea{min-height:2.6em;font:13px/1.35 ui-monospace,Consolas,monospace;resize:vertical}
 .volMaps{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin:8px 0 2px}
+#vprofPtsBox{display:none!important}
 @media(max-width:800px){.volForm{grid-template-columns:1fr 1fr}.volForm .volRoute{grid-column:1/-1}}
 </style>
 </head>
@@ -37,9 +38,9 @@ header{margin:0!important;border:0!important;border-radius:0!important;box-shado
 <main>
 <section data-block-id="vol" data-icon="plane" data-subtitle="Route du vol, rendez-vous facultatif et niveau : les cartes de la route se créent d’après eux.">
 <h2>Vol</h2>
-<p id="volStatus" data-status class="small">Route : codes OACI des terrains, balises, points de report ou coordonnées (« 43.6, 1.4 »), séparés par des espaces ; « DCT » est ignoré.</p>
+<p id="volStatus" data-status class="small">Route (aussi cheminement du profil vertical) : codes OACI des terrains, balises, points de report ou coordonnées (« 43.6, 1.4 »), séparés par des espaces ou des virgules ; niveaux acceptés (« FL55 » seul : montée ou descente après le point précédent, « R590A/FL65 », « N0180F055 ») ; « DCT » est ignoré.</p>
 <div class="volForm">
-<label class="volRoute">Route<textarea id="volRoute" rows="2" spellcheck="false" placeholder="LFBO DCT TOU DCT AGN LFBD"></textarea></label>
+<label class="volRoute">Route<textarea id="volRoute" rows="2" spellcheck="false" placeholder="LFBO TOU FL55 AGN LFBD"></textarea></label>
 <label>Rendez-vous (facultatif)<input id="volRdv" spellcheck="false" placeholder="point ou « 44.2, 0.6 »"></label>
 <label>Niveau de croisière<input id="volLevel" spellcheck="false" placeholder="5500 ou FL65" value="5500"></label>
 <label>Recherche de route<select id="volMode"><option value="airways">par les voies aériennes</option><option value="rtba">basse hauteur (RTBA)</option></select></label>
@@ -50,7 +51,7 @@ header{margin:0!important;border:0!important;border-radius:0!important;box-shado
 <label class="check"><input type="checkbox" data-volmap="rdv" checked> rendez-vous</label>
 <label class="check"><input type="checkbox" data-volmap="destination" checked> destination</label>
 </div>
-<div class="actions"><button id="volSearch" type="button" class="secondary" data-icon="search">Chercher la route</button><button id="volBuild" type="button" data-icon="map">Créer les cartes</button></div>
+<div class="actions"><button id="volSearch" type="button" class="secondary" data-icon="search">Chercher la route</button><button id="volBuild" type="button" data-icon="map">Créer les cartes</button><button id="volPlanner" type="button" class="secondary" data-icon="fuel" title="Ouvrir le planificateur carburant avec cette route (plan de vol OACI), sa distance et son niveau">Planificateur carburant</button></div>
 <p id="volInfo" class="small"></p>
 </section>
 <section id="siaMissionHidden" hidden><h2>Mission</h2><p id="missionStatus" data-status class="small">Formats acceptés : Markdown, YAML <code>helo-xp-mission</code>.</p><div class="actions"><button type="button" id="saveStudio" data-icon="save" class="secondary" title="Enregistrer la mission et les réglages du studio (profil et emprise de chaque carte, tracés, pistes) dans son dossier : data/missions/…/mission&lt;ID&gt;.yaml">Enregistrer dans le dossier</button></div><p id="siaBaseLine" class="small">Base SIA : lecture de la base du navigateur…</p><details id="missionOpen" class="missionOpen"><summary>Ouvrir une autre mission : fichier Markdown / YAML ou texte collé</summary><div class="grid">
@@ -117,7 +118,7 @@ header{margin:0!important;border:0!important;border-radius:0!important;box-shado
 <p id="previewStatus" data-status class="small">Carte choisie, dessinée avec le profil en cours de modification ; actualisée à chaque réglage.</p></aside></div>
 </section>
 
-<section data-block-id="sia-vprof" data-icon="trending-up" data-subtitle="Coupe verticale le long du cheminement : relief, espaces traversés, obstacles."><h2>Profil vertical</h2><div id="vprofBox" class="osmLayers"><label>Cheminement<button type="button" id="vprofFromProbable" class="secondary" title="Remplacer le cheminement par la route probable de la mission (ordre donné par la mission, sinon calculé), retour base compris" style="float:right;padding:2px 10px">↺ Route probable</button><textarea id="vprofRoute" rows="2" placeholder="Vide : origine, points tournants et destination de la mission. Ex. : LFOT, SIMIP/3000, TARGET/FL65, 46.5 1.4, LFOT"></textarea></label><span class="small">Points du brief (id ou nom), aérodromes (OACI), balises, points RNAV, « REN300010 » (radiale / distance) ou « lat lon » ; « /3000 » ou « /FL65 » : altitude à atteindre au point ; « N0450F350 » : niveau de croisière (groupe vitesse / niveau) ; « FL105 » ou « 5500 ft » seul sur une ligne : montée ou descente vers ce niveau après le point précédent ; « VFR » : pas de niveau. La case 15 d’un plan de vol (séparée par des espaces) est acceptée.</span><div id="vprofPtsBox" class="small" hidden><span>Points de la mission (clic : ajouter au cheminement) :</span> <span id="vprofPts"></span></div><div class="profileBar"><label>Niveau de croisière (FL65 ou 6500)<input id="vprofCruise" type="text" placeholder="FL65" size="7"></label><label>Plancher de la coupe (ft)<input id="vprofFloor" type="number" min="0" step="500" value="0"></label><label>Plafond de la coupe (ft, 0 = auto)<input id="vprofCeil" type="number" min="0" step="500" value="0"></label><label>Appareil (profils du planificateur)<select id="vprofAircraft"><option value="">— taux ci-dessous —</option></select></label><label>Montée (ft/min · kt)<span style="display:flex;gap:4px"><input id="vprofClimb" type="number" min="100" step="100" value="1000"><input id="vprofClimbKt" type="number" min="40" step="10" value="140"></span></label><label>Descente (ft/min · kt)<span style="display:flex;gap:4px"><input id="vprofDesc" type="number" min="100" step="100" value="800"><input id="vprofDescKt" type="number" min="40" step="10" value="160"></span></label><label class="check"><input id="vprofOut" type="checkbox" checked> Image <code>profil_vertical.png</code> dans les sorties</label><label class="check"><input id="vprofMap" type="checkbox" checked> Par défaut, tracer le cheminement sur les cartes (réglable carte par carte)</label><button type="button" id="vprofDraw">Tracer le profil</button></div><p id="vprofStatus" data-status class="small">Relief (tuiles d’altitude, ± 1 km) ; espaces et obstacles (à moins de 1 NM) selon le profil d’affichage de <code>profil_vertical.png</code> (liste des cartes).</p><img id="vprofImg" alt="Profil vertical" hidden style="width:100%;cursor:zoom-in;border:1px solid #c8d6dd;border-radius:8px;margin-top:6px"></div></section>
+<section data-block-id="sia-vprof" data-icon="trending-up" data-subtitle="Coupe verticale le long du cheminement : relief, espaces traversés, obstacles."><h2>Profil vertical</h2><div id="vprofBox" class="osmLayers"><p class="small">Cheminement : la route du bloc « Vol » (niveaux compris).</p><label hidden>Cheminement<button type="button" id="vprofFromProbable" class="secondary" title="Remplacer le cheminement par la route probable de la mission (ordre donné par la mission, sinon calculé), retour base compris" style="float:right;padding:2px 10px">↺ Route probable</button><textarea id="vprofRoute" rows="2" placeholder="Vide : origine, points tournants et destination de la mission. Ex. : LFOT, SIMIP/3000, TARGET/FL65, 46.5 1.4, LFOT"></textarea></label><span class="small" hidden>Points du brief (id ou nom), aérodromes (OACI), balises, points RNAV, « REN300010 » (radiale / distance) ou « lat lon » ; « /3000 » ou « /FL65 » : altitude à atteindre au point ; « N0450F350 » : niveau de croisière (groupe vitesse / niveau) ; « FL105 » ou « 5500 ft » seul sur une ligne : montée ou descente vers ce niveau après le point précédent ; « VFR » : pas de niveau. La case 15 d’un plan de vol (séparée par des espaces) est acceptée.</span><div id="vprofPtsBox" class="small" hidden><span>Points de la mission (clic : ajouter au cheminement) :</span> <span id="vprofPts"></span></div><div class="profileBar"><label>Niveau de croisière (FL65 ou 6500)<input id="vprofCruise" type="text" placeholder="FL65" size="7"></label><label>Plancher de la coupe (ft)<input id="vprofFloor" type="number" min="0" step="500" value="0"></label><label>Plafond de la coupe (ft, 0 = auto)<input id="vprofCeil" type="number" min="0" step="500" value="0"></label><label>Appareil (profils du planificateur)<select id="vprofAircraft"><option value="">— taux ci-dessous —</option></select></label><label>Montée (ft/min · kt)<span style="display:flex;gap:4px"><input id="vprofClimb" type="number" min="100" step="100" value="1000"><input id="vprofClimbKt" type="number" min="40" step="10" value="140"></span></label><label>Descente (ft/min · kt)<span style="display:flex;gap:4px"><input id="vprofDesc" type="number" min="100" step="100" value="800"><input id="vprofDescKt" type="number" min="40" step="10" value="160"></span></label><label class="check"><input id="vprofOut" type="checkbox" checked> Image <code>profil_vertical.png</code> dans les sorties</label><label class="check"><input id="vprofMap" type="checkbox" checked> Par défaut, tracer le cheminement sur les cartes (réglable carte par carte)</label><button type="button" id="vprofDraw">Tracer le profil</button><button type="button" id="vprofToPlanner" class="secondary" data-icon="fuel" title="Ouvrir le planificateur carburant avec ce cheminement (route de plan de vol OACI, distance, niveau, route vraie, appareil)">Planificateur carburant</button></div><p id="vprofStatus" data-status class="small">Relief (tuiles d’altitude, ± 1 km) ; espaces et obstacles (à moins de 1 NM) selon le profil d’affichage de <code>profil_vertical.png</code> (liste des cartes).</p><div id="vprofIcaoBox" class="small" hidden><label>Route de plan de vol OACI (case 15)<textarea id="vprofIcao" rows="2" readonly spellcheck="false"></textarea></label><button type="button" id="vprofIcaoCopy" class="buttonLink">Copier</button></div><img id="vprofImg" alt="Profil vertical" hidden style="width:100%;cursor:zoom-in;border:1px solid #c8d6dd;border-radius:8px;margin-top:6px"></div></section>
 
 <section data-block-id="sia-outputs" data-deco-bg="maps" data-icon="layers" data-subtitle="Aperçus de toutes les cartes, génération des cartes et du ZIP."><h2>Aperçus et génération</h2><div class="box"><div class="actions"><button id="previewAll" data-icon="eye" type="button" disabled>Afficher toutes les cartes</button><button id="generate" data-icon="download" disabled>Générer les cartes et le ZIP</button><button id="generateAll" data-icon="layers" type="button" hidden>Générer toutes les missions</button></div><p id="outputSummary" class="small"></p><div id="result" data-status></div></div>
 <div hidden><input id="svg" type="checkbox"><input id="png" type="checkbox" checked><input id="pngWidth" type="number" value="1600"></div><p id="galleryStatus" data-status class="small">Les aperçus ne créent aucun fichier.</p>
@@ -573,6 +574,13 @@ function scheduleExerciseMaps(){clearTimeout(exerciseMapTimer);exerciseMapTimer=
 /* Réglages du studio gardés dans le YAML (profil et emprise de chaque carte) puis mission enregistrée dans son dossier. */
 function studioToYaml(){try{editDoc(y=>{for(const m of mission?.maps||[]){const x=y.maps.find(z=>z&&String(z.filename??z.file??'')===m.file);if(!x)continue;if(m._profileId)x.profile=m._profileId;if(m._view)x.view=m._view;else delete x.view}})}catch{}return sharedDoc?.yaml}
 $('saveStudio').onclick=async()=>{const C=window.MissionRegistryCore,y=studioToYaml();if(!C||!y)return;try{const f=await C.saveYaml(y,{action:'réglages du studio',request:true});$('viewStatus').textContent=f?`Mission et réglages enregistrés : data/missions/${f}/`:'Dossier des missions non autorisé.';if(f)SiaMission.save({...sharedDoc,yaml:y},'studio')}catch(e){$('viewStatus').textContent=e.message}};
+/* Cheminement → route de plan de vol OACI (points non publiés en coordonnées, changements de niveau « /N0180F055 ») et
+   ouverture du planificateur carburant avec route, distance, niveau, route vraie et appareil (plannerHandoff:v1). */
+function vprofIcao(){const pts=vprofRoutePts();if(pts.length<2)return null;const p=planeProfiles().find(x=>x.id===$('vprofAircraft').value),kt=+p?.cruise?.tasKt||+$('vprofDescKt').value||120;return SiaProfile.toIcaoRoute(pts,{aero:aero||{},kt,cruiseFt:vprofCruiseFt()})}
+function showVprofIcao(){const r=vprofIcao();$('vprofIcaoBox').hidden=!r;if(r)$('vprofIcao').value=r.full;return r}
+$('vprofToPlanner').onclick=()=>{const r=showVprofIcao();if(!r){window.AppFramework?.notify?.('Cheminement : au moins deux points connus de la base SIA.','warn');return}const ac=$('vprofAircraft').value;try{localStorage.setItem('plannerHandoff:v1',JSON.stringify({route:r.full,distNm:r.distNm,trackDeg:r.trackDeg,cruiseFt:r.cruiseFt,aircraft:ac,from:mission?.title||'',at:Date.now()}))}catch(e){window.AppFramework?.notify?.('Route non transmise : '+e.message,'err');return}window.open(new URL('../planner/flight_performance_planner.html?handoff=1'+(ac?'&aircraft='+encodeURIComponent(ac):''),location.href).href,'_blank')};
+$('vprofIcaoCopy').onclick=()=>{navigator.clipboard?.writeText($('vprofIcao').value).then(()=>window.AppFramework?.notify?.('Route OACI copiée.','ok'),()=>{$('vprofIcao').select();document.execCommand('copy')})};
+$('vprofDraw').addEventListener('click',()=>setTimeout(showVprofIcao,0));
 $('vprofFromProbable').onclick=()=>{const e=probableRoute();if(!e){$('vprofStatus').textContent='Route probable indisponible (départ ou points sans coordonnées).';return}$('vprofRoute').value=e.points.map(p=>p.id||p.name).filter(Boolean).join(', ');saveVprof();drawVprofPreview()};$('vprofPts').addEventListener('click',e=>{const b=e.target.closest('[data-vprof-pt]');if(!b)return;const t=$('vprofRoute'),id=b.dataset.vprofPt,cur=t.value.trim().replace(/[,\s]+$/,''),m=/,\s*DESTINATION(\/\S+)?$/i.exec(cur);/* avant la destination si le cheminement s'y termine */t.value=!cur?id:m?cur.slice(0,m.index)+', '+id+cur.slice(m.index):cur+', '+id;saveVprof();drawVprofPreview()});$('vprofRoute').addEventListener('change',saveVprof);$('vprofCeil').addEventListener('change',saveVprof);$('vprofFloor').addEventListener('change',saveVprof);$('vprofCruise').addEventListener('change',()=>{saveVprof();drawVprofPreview()});for(const id of ['vprofAircraft','vprofClimb','vprofClimbKt','vprofDesc','vprofDescKt'])$(id).addEventListener('change',saveVprof);$('vprofOut').addEventListener('change',saveVprof);$('vprofMap').addEventListener('change',()=>{saveVprof();osmMap?.triggerRepaint?.();schedulePreview?.()});$('vprofImg').addEventListener('click',e=>enlargePreview(e.target.src,'Profil vertical'));
 // Le profil vertical est une carte comme les autres : entrée profil_vertical.png dans la liste des
 // cartes, avec son profil d'affichage (par défaut « Profil vertical » : toutes les familles d'espaces,
@@ -784,22 +792,34 @@ window.addEventListener('repository-nav-ready',e=>addOutputActions(e.detail));if
 </script>
 <script>
 // ===== Cartes de vol (page publique) : bloc « Vol » =====
-// Route résolue par le profil vertical (SiaProfile.parseRoute, base SIA du navigateur : aérodromes, balises, points),
-// recherche par les voies aériennes ou le RTBA (MissionRouting.expand), mission locale (espace « planner ») envoyée au
-// moteur du studio (useDoc) : cartes topographique, approche, rendez-vous, destination.
+// La route du bloc est aussi le cheminement du profil vertical (un seul champ) : points résolus par le module du
+// profil (SiaProfile, base SIA du navigateur : aérodromes, balises, points RNAV), niveaux gardés tels quels
+// (« FL55 », « R590A/FL65 », « N0180F055 », « 5500 ft »), virgules ou espaces ; recherche par les voies aériennes ou
+// le RTBA (MissionRouting.expand) ; mission locale (espace « planner ») envoyée au moteur du studio (useDoc) : cartes
+// topographique, approche, rendez-vous, destination, profil vertical tracé aussitôt ; « Planificateur carburant ».
 (()=>{
 const FORM_KEY='mapPlannerForm:v1',$v=id=>document.getElementById(id);
 // points de transit trouvés par la recherche (sommets des zones du RTBA : « R 46 N2 » → R46N2) : coordonnées gardées
 let vias={};
 const say=(html,kind)=>{$v('volStatus').innerHTML=kind?`<span class="${kind}">${html}</span>`:html};
 const levelFt=t=>{const m=/^(FL)?(\d{1,5})(FT)?$/.exec(String(t||'').toUpperCase().replace(/\s+/g,''));return m?(m[1]?+m[2]*100:+m[2]):null};
-const coord=t=>{const m=/^\s*(-?\d+(?:\.\d+)?)\s*[,; ]\s*(-?\d+(?:\.\d+)?)\s*$/.exec(t||'');return m&&Math.abs(+m[1])<=90&&Math.abs(+m[2])<=180?{lat:+m[1],lon:+m[2]}:null};
-/** Points de la route : jetons séparés par des espaces (coordonnées « lat, lon » groupées d'abord). */
+const coord=t=>{const m=/^\s*(-?\d+(?:\.\d+)?)\s*[,;| ]\s*(-?\d+(?:\.\d+)?)\s*$/.exec(t||'');return m&&Math.abs(+m[1])<=90&&Math.abs(+m[2])<=180?{lat:+m[1],lon:+m[2]}:null};
+const LEVEL=/^(FL\d{1,3}|\d{3,5}FT|[NKM]\d{3,4}[FASM]\d{3,4}|VFR|IFR)$/i;
+/** Route → { pts (points résolus), unknown, route (cheminement du profil : identifiants et niveaux) }.
+ *  Coordonnées décimales « 43.6, 1.4 » regroupées avant le découpage (virgules, points-virgules, espaces). */
 function resolve(text){
- const toks=[],unknown=[],pts=[];String(text||'').replace(/(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/g,(m,a,b)=>` ${a},${b} `).split(/\s+/).filter(Boolean).forEach(t=>toks.push(t));
- const res=SiaProfile.resolver({aero:aero||{},ref:{lat:46.5,lon:2.5}});
- for(const t of toks){if(/^DCT$/i.test(t))continue;const v=vias[t.toUpperCase()];if(v){pts.push({id:t.toUpperCase(),name:v.name||t,lat:v.lat,lon:v.lon});continue}const c=coord(t);if(c){pts.push({id:`P${pts.length+1}`,name:t,...c});continue}const r=SiaProfile.parseRoute(t,res);if(r.points?.length){const p=r.points[0];pts.push({id:String(p.id||t).toUpperCase(),name:p.name||p.id||t,lat:p.lat,lon:p.lon})}else unknown.push(t)}
- return{pts,unknown};
+ const toks=String(text||'').replace(/(\d)\s+ft\b/gi,'$1FT').replace(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/g,'$1|$2').split(/[\s,;]+/).filter(Boolean);
+ const unknown=[],pts=[],route=[],res=SiaProfile.resolver({aero:aero||{},ref:{lat:46.5,lon:2.5}});
+ for(const t of toks){
+  if(/^DCT$/i.test(t))continue;
+  if(LEVEL.test(t)){route.push(t.toUpperCase());continue}
+  const [core,...rest]=t.split('/'),suffix=rest.length?'/'+rest.join('/').toUpperCase():'',K=core.toUpperCase();let p=null;
+  const v=vias[K];if(v)p={id:K,name:v.name||K,lat:v.lat,lon:v.lon};
+  else{const c=coord(core);if(c)p={id:`P${pts.length+1}`,name:core.replace('|',', '),...c};else{const r=SiaProfile.parseRoute(core,res);if(r.points?.length){const q=r.points[0];p={id:String(q.name||K).toUpperCase(),name:q.name||K,lat:q.lat,lon:q.lon}}}}
+  if(!p){unknown.push(core);continue}
+  pts.push(p);route.push(p.id+suffix);
+ }
+ return{pts,unknown,route};
 }
 function baseReady(){return(aero?.aerodromes?.length||0)>0}
 function saveForm(){try{localStorage.setItem(FORM_KEY,JSON.stringify({route:$v('volRoute').value,rdv:$v('volRdv').value,level:$v('volLevel').value,mode:$v('volMode').value,maps:[...document.querySelectorAll('[data-volmap]')].filter(i=>i.checked).map(i=>i.dataset.volmap),vias}))}catch{}}
@@ -809,36 +829,45 @@ function checkRoute(){
  const r=resolve($v('volRoute').value);
  if(r.unknown.length){say(`Inconnu(s) dans la base SIA : ${esc(r.unknown.join(', '))}.`,'err');return null}
  if(r.pts.length<2){say('Route : au moins un départ et une destination.','err');return null}
- return r.pts;
+ return r;
 }
 $v('volSearch').onclick=async()=>{
- const pts=checkRoute();if(!pts)return;const ft=levelFt($v('volLevel').value)||5500,mode=$v('volMode').value;
+ const r=checkRoute();if(!r)return;const ft=levelFt($v('volLevel').value)||5500,mode=$v('volMode').value;
  if(!window.MissionRouting?.ready?.())await window.MissionRouting?.loadFromBase?.();
- const ex=window.MissionRouting?.expand?.(pts,{cls:mode==='rtba'?'jet':'turboprop',alt:ft},{route_mode:mode});
+ const ex=window.MissionRouting?.expand?.(r.pts,{cls:mode==='rtba'?'jet':'turboprop',alt:ft},{route_mode:mode});
  if(!ex){say('Calcul des routes non chargé.','err');return}
  if(ex.mode==='direct'){$v('volInfo').textContent=`Route inchangée : ${ex.reason}.`;return}
- $v('volRoute').value=ex.chain.map(p=>{if(p.kind!=='via')return p.name&&coord(p.name)?p.name.replace(/\s+/g,''):p.id;const k=String(p.id).toUpperCase().replace(/\s+/g,'');vias[k]={name:p.id,lat:p.lat,lon:p.lon};return k}).join(' ');
- $v('volInfo').textContent=`Route calculée : ${ex.how}. Vérifie-la, puis « Créer les cartes ».`;saveForm();
+ $v('volRoute').value=ex.chain.map(p=>{if(p.kind!=='via')return p.id;const k=String(p.id).toUpperCase().replace(/\s+/g,'');vias[k]={name:p.id,lat:p.lat,lon:p.lon};return k}).join(' ');
+ $v('volInfo').textContent=`Route calculée : ${ex.how}. Ajoute au besoin les niveaux (« R589B FL55 R590A FL65 »), puis « Créer les cartes ».`;saveForm();
 };
-$v('volBuild').onclick=()=>{
- const pts=checkRoute();if(!pts)return;const want=new Set([...document.querySelectorAll('[data-volmap]')].filter(i=>i.checked).map(i=>i.dataset.volmap));
- let rdv=null;const rt=$v('volRdv').value.trim();if(rt){const c=coord(rt);if(c)rdv={id:'RDV',name:'RDV',...c};else{const r=resolve(rt);if(!r.pts.length){say(`Rendez-vous inconnu : ${esc(rt)}.`,'err');return}rdv={...r.pts[0],id:'RDV',name:`RDV ${r.pts[0].name||r.pts[0].id}`}}}
+/** Crée (ou met à jour) la mission du vol et ses cartes ; quiet : sans message ni recentrage (route modifiée). */
+function build(quiet){
+ const r=checkRoute();if(!r)return false;const pts=r.pts,want=new Set([...document.querySelectorAll('[data-volmap]')].filter(i=>i.checked).map(i=>i.dataset.volmap));
+ let rdv=null;const rt=$v('volRdv').value.trim();if(rt){const c=coord(rt);if(c)rdv={id:'RDV',name:'RDV',...c};else{const q=resolve(rt);if(!q.pts.length){say(`Rendez-vous inconnu : ${esc(rt)}.`,'err');return false}rdv={...q.pts[0],id:'RDV',name:`RDV ${q.pts[0].name||q.pts[0].id}`}}}
  const dep=pts[0],dest=pts[pts.length-1],mid=pts.slice(1,-1),ft=levelFt($v('volLevel').value),P=p=>({id:p.id,name:p.name||p.id,lat:+p.lat.toFixed(6),lon:+p.lon.toFixed(6)});
  const maps=[];
  if(want.has('topo'))maps.push({filename:`route_${dep.id}_${dest.id}.png`,type:'general',description:'Carte topographique de la route',profile:'vfr-detail'});
  if(want.has('approche'))maps.push({filename:`approche_${dest.id}.png`,type:'approche',description:`Approche de ${dest.id}`,centre_ref:'DESTINATION',range_km:30});
  if(want.has('rdv')&&rdv)maps.push({filename:'rendez_vous.png',type:'rdv',description:'Rendez-vous',centre_ref:'RDV',range_km:15});
  if(want.has('destination'))maps.push({filename:`destination_${dest.id}.png`,type:'detail',description:`Terrain de destination ${dest.id}`,centre_ref:'DESTINATION'});
- if(!maps.length){say('Aucune carte choisie.','err');return}
- const yaml={schema_version:'2.0',mission:{id:'VOL',title:`Vol ${dep.id} → ${dest.id}`,type:'Vol'},origin:P(dep),destination:P(dest),turning_points:mid.map(P),...(rdv?{rendezvous:[P(rdv)]}:{}),vertical_profile:{route:[dep,...mid,dest].map(p=>p.id).join(', '),cruise:ft?(ft>=6000?`FL${Math.round(ft/100)}`:String(ft)):undefined},maps};
- try{const doc=SiaMission.save({yaml,narrative:{summary:'',detailed:'',sections:[]},sourceNames:[]},'planner');routeCache={};useDoc(doc,false,true);saveForm();
-  say(`${maps.length} carte(s) prête(s) : ${esc(maps.map(m=>m.description).join(', '))}. Réglages et aperçus dans « Cartes et cadrage », fichiers dans « Aperçus et génération ».`,'ok');window.AppFramework?.reveal?.('sia-profiles');setTimeout(()=>{if(!$v('refreshPreview').disabled)$v('refreshPreview').click()},400)}catch(e){say(esc(e.message),'err')}
-};
+ if(!maps.length){say('Aucune carte choisie.','err');return false}
+ const vp={...(sharedDoc?.yaml?.mission?.id==='VOL'?sharedDoc.yaml.vertical_profile:{}),route:r.route.join(', '),cruise:ft?(ft>=6000?`FL${Math.round(ft/100)}`:String(ft)):undefined};
+ const yaml={schema_version:'2.0',mission:{id:'VOL',title:`Vol ${dep.id} → ${dest.id}`,type:'Vol'},origin:P(dep),destination:P(dest),turning_points:mid.map(P),...(rdv?{rendezvous:[P(rdv)]}:{}),vertical_profile:vp,maps};
+ try{const doc=SiaMission.save({yaml,narrative:{summary:'',detailed:'',sections:[]},sourceNames:[]},'planner');routeCache={};useDoc(doc,true,false);saveForm()}catch(e){say(esc(e.message),'err');return false}
+ setTimeout(()=>{if(!$v('vprofDraw').disabled)$v('vprofDraw').click();if(!quiet&&!$v('refreshPreview').disabled)$v('refreshPreview').click()},400);
+ if(!quiet){say(`${maps.length} carte(s) prête(s) : ${esc(maps.map(m=>m.description).join(', '))}, et le profil vertical de la route. Réglages et aperçus dans « Cartes et cadrage », fichiers dans « Aperçus et génération ».`,'ok');window.AppFramework?.reveal?.('sia-profiles')}
+ return true;
+}
+$v('volBuild').onclick=()=>build(false);
+// planificateur carburant : même route (case 15 OACI), distance, niveau et route vraie
+$v('volPlanner').onclick=()=>{if(build(true))setTimeout(()=>$v('vprofToPlanner').click(),600)};
+// route modifiée après création : mission, cartes et profil mis à jour
+$v('volRoute').addEventListener('change',()=>{if(sharedDoc?.yaml?.mission?.id==='VOL')build(true)});
 ['volRoute','volRdv','volLevel','volMode'].forEach(id=>$v(id).addEventListener('change',saveForm));document.querySelectorAll('[data-volmap]').forEach(i=>i.addEventListener('change',saveForm));
 loadForm();
 })();
 </script>
-<script src="../../shared/repository_nav.js?v=20260929zk"></script>
-<script src="../../shared/app_framework.js?v=20260929zk"></script>
-<script src="../../shared/content_i18n.js?v=20260929zk"></script><script src="../cpco/sia_i18n.js?v=20260929zk"></script>
+<script src="../../shared/repository_nav.js?v=20260929zl"></script>
+<script src="../../shared/app_framework.js?v=20260929zl"></script>
+<script src="../../shared/content_i18n.js?v=20260929zl"></script><script src="../cpco/sia_i18n.js?v=20260929zl"></script>
 </body></html>

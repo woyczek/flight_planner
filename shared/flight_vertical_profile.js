@@ -220,7 +220,25 @@
     if (!$('vpImg').hidden) draw().catch(e => status(e.message, true));
     else if (studio) loadData();
   }));
+  /** Route transmise par le studio cartographique ou les Cartes de vol (« Planificateur carburant » :
+   *  plannerHandoff:v1, ?handoff=1) : route OACI, distance, niveau, route vraie ; calcul et profil relancés. */
+  function takeHandoff() {
+    if (!new URLSearchParams(location.search).has('handoff')) return false;
+    history.replaceState(null, '', location.pathname + location.search.replace(/([?&])handoff=1&?/, '$1').replace(/[?&]$/, '') + location.hash);
+    let h = null;
+    try { h = JSON.parse(localStorage.getItem('plannerHandoff:v1') || 'null'); } catch { /* illisible */ }
+    if (!h?.route || Date.now() - (h.at || 0) > 36e5) return false;
+    $('vpRoute').value = h.route;
+    if (h.distNm > 0 && $('dist')) $('dist').value = Math.round(h.distNm);
+    if (h.cruiseFt > 0 && $('fl')) { $('fl').value = Math.round(h.cruiseFt / 100); $('fl').dispatchEvent(new Event('input')); }
+    if (Number.isFinite(h.trackDeg) && $('trk')) $('trk').value = Math.round(h.trackDeg);
+    store();
+    try { window.calculate?.(); } catch { /* calcul relancé à la prochaine saisie */ }
+    window.AppFramework?.notify?.(tl(`Route reprise${h.from ? ` de « ${h.from} »` : ''} : ${Math.round(h.distNm || 0)} NM${h.cruiseFt ? `, niveau ${Math.round(h.cruiseFt / 100)}` : ''}.`, `Route taken${h.from ? ` from “${h.from}”` : ''}: ${Math.round(h.distNm || 0)} NM.`), 'ok');
+    return true;
+  }
   loadData().then(async () => {
+    if (takeHandoff()) { await draw(); return; }
     if ($('vpRoute').value.trim()) return;
     const o = await loadOFP();
     if (o) {
