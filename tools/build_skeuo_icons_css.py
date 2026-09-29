@@ -22,7 +22,9 @@ ALIASES = {'brass': {'save': 'bookmark', 'file': 'file'}, 'steel': {'file': 'fil
 # jeux composés : couleur du glyphe (normal, Centre), ombre (vers le bas : éclairage par le haut), marge autour du glyphe
 # (fraction de la taille de l'icône)
 GLYPH = {
-    'gel': {'color': '#ffffff', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.55))', 'pad': .24},
+    # tint : fond gris (vierge.gris.webp) coloré par la couleur du design (--aq-gel, mélange « overlay ») et découpé à sa
+    # forme ; le glyphe n'est pas filtré (normal et Centre sur la même bulle, seul le glyphe change de couleur)
+    'gel': {'color': '#ffffff', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.55))', 'pad': .24, 'tint': 'var(--aq-gel,#2473db)'},
     'brass': {'color': '#f1e4c0', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.7))', 'pad': .26},
     'steel': {'color': '#e9ecdf', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.75))', 'pad': .24},
     'avio': {'color': '#f4ecd8', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.7))', 'pad': .26},
@@ -59,6 +61,19 @@ for key, d in SETS.items():
         # jeu composé : fond commun + glyphe SVG (couleur, ombre), fond du Centre s'il existe
         g, H = GLYPH[key], f'html[data-icons="{key}"]'
         composed.append(key)
+        if g.get('tint') and centre:
+            # bulle grise teintée à la couleur du design, découpée à sa forme ; ombre portée par le conteneur du bloc
+            shape = f'url("icons/skeuo/{centre}") center/contain no-repeat'
+            out.append(f'{H} .repo-svg[data-i]{{background:{g["tint"]} url("icons/skeuo/{centre}") center/contain no-repeat!important;background-blend-mode:overlay!important;-webkit-mask:{shape};mask:{shape};filter:none!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * {g["pad"]});color:var(--ico-glyph,{g["color"]})!important;overflow:visible}}')
+            out.append(f'{H} .repo-svg[data-i]>*{{display:inline;filter:var(--ico-glyph-shadow,{g["shadow"]})}}')
+            out.append(f'{H} :is(.repo-block-icon,.repo-card-icon){{filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}}')
+            out.append(f'{H} .repo-sidenav-img{{display:none!important}}{H} .repo-sidenav-ic .repo-svg{{display:block!important}}')
+            out.append(f'html[data-app-theme="cpco"][data-icons="{key}"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg),{H} .repo-sidenav-cpco .repo-svg[data-i]{{color:var(--ico-glyph-centre,{g["centre"]})!important}}')
+            if {'chevron-up', 'chevron-down', 'move'} <= set(names):
+                out.append(f'{H} .repo-block-heading-rich .repo-toggle::before{{background-image:url("icons/skeuo/{d}/chevron-up.webp")!important}}')
+                out.append(f'{H} .repo-block-hidden>.repo-block-heading-rich .repo-toggle::before{{background-image:url("icons/skeuo/{d}/chevron-down.webp")!important}}')
+                out.append(f'{H} .repo-block-tools .repo-drag{{background-image:url("icons/skeuo/{d}/move.webp")!important}}')
+            continue
         out.append(f'{H} .repo-svg[data-i]{{background-image:url("icons/skeuo/{normal}")!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * {g["pad"]});color:var(--ico-glyph,{g["color"]})!important;overflow:visible}}')
         out.append(f'{H} .repo-svg[data-i]>*{{display:inline;filter:var(--ico-glyph-shadow,{g["shadow"]})}}')
         # barre latérale : le tracé SVG plutôt que l'image peinte
