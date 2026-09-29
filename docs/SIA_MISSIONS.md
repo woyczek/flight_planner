@@ -232,6 +232,11 @@ pistes et les routes des participants) ; chiffon (`chiffon:TRACK-401` : sa route
 Z, la carte organisation et une carte par chiffon joué (`chiffon_<piste>_<Z>.png`, reprise dans sa fiche PDF) ; sur
 une mission d'équipe, une carte par événement qui lui révèle des pistes.
 
+**Cartes d'exercice** : ajoutées d'office par le studio à l'ouverture d'une mission d'exercice (celles qui manquent), à
+enregistrer dans le dossier ; générées avec les autres cartes ; listées dans le bloc Exercice du générateur ; jointes au
+PDF de l'équipage (carte d'un pli après sa page ; carte d'un message radio sur une page « à remettre à réception du
+message »).
+
 **Registre** : missions d'organisation marquées « organisation » ; fiche d'une mission d'opération : membres de
 l'opération (clic pour les afficher), résumé de l'exercice, **Ouvrir l'opération** dans le générateur ou le studio
 (toutes les missions en un lot).

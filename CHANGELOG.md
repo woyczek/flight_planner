@@ -10,6 +10,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Markdown depuis le YAML** (`SiaMission.markdownOf`, format du § 9 du prompt, organisation d'exercice comprise) :
+  affiché à la demande dans le registre quand le dossier n'a pas de `summary<ID>.md` ; même code pour « Exporter
+  Markdown » du générateur (qui ne reprenait que les textes).
+- **Cartes d'exercice** ajoutées d'office par le studio à l'ouverture d'une mission d'exercice (message ou pli qui
+  révèle une position ou une piste, organisation, chiffons) ; générateur : liste des cartes d'exercice et leur état ;
+  PDF de l'équipage : carte de chaque pli après sa page, carte d'un message radio sur une page « à remettre à réception
+  du message ». L-001 : `exercice_EV-1_L-001.png` ; L-001Z : `organisation_L-001Z.png`.
 - **Théâtre étranger** : commande « étranger (pays) » (champ Pays), règles du prompt (bases prépositionnées,
   partenaires, lieux réels, pas de données aéronautiques inventées), `mission.theatre` et `mission.country` (ISO) ;
   registre : « étranger — Japon ».

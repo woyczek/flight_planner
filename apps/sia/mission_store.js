@@ -582,7 +582,52 @@
   function numberingTable() {
     return [...new Set(Object.keys(FAMILY_LETTERS).filter(f => f !== 'MEDEVAC'))].map(f => { const n = nextNumbering(f); return `${f} ${n.id} série ${n.serie}`; }).join(' · ');
   }
-  window.SiaMission = { FAMILY_LETTERS, parseId, nextNumbering, numberingTable,
+  // ---- Markdown d'une mission (summary<ID>.md) produit depuis son YAML : format du § 9 du prompt de génération
+  //      (docs/PROMPT_GENERATEUR_MISSIONS.md), relu par fromTexts ; mission d'organisation (…Z) : son format propre.
+  //      docs : autres missions de l'opération (YAML), pour la section « Exercice » d'une mission d'équipage.
+  function markdownOf(y, { docs = [] } = {}) {
+    y = y?.yaml || y || {};
+    const arr = v => Array.isArray(v) ? v : v ? [v] : [], txt = v => String(v ?? '').trim(), cell = v => txt(v).replace(/\|/g, '/').replace(/\n+/g, ' ');
+    const num = v => Number.isFinite(+v) ? (+v).toFixed(6) : '', at = p => p && Number.isFinite(+p.lat) ? ` — ${num(p.lat)}, ${num(p.lon)}` : '';
+    const m = y.mission || {}, id = txt(m.id), ac = arr(y.aircraft)[0] || {}, op = y.operation || {}, ex = y.exercise, out = [];
+    const para = v => txt(v).split(/\n\s*\n/).map(s => s.replace(/\s*\n\s*/g, ' ').trim()).filter(Boolean).join('\n\n');
+    const sec = (title, body) => { if (txt(body)) out.push(`## ${title}\n\n${txt(body)}`); };
+    const teams = arr(y.teams).filter(t => t && typeof t === 'object');
+    const teamTable = teams.length ? ['| Nom / callsign | Arme / service | Département | Type | Rôle |', '|---|---|---|---|---|', ...teams.map(t => `| ${cell(t.name)} | ${cell(t.service)} | ${cell(t.department)} | ${cell(t.type)} | ${cell(t.role)} |`)].join('\n') : '';
+    if (ex && typeof ex === 'object') {
+      // mission d'organisation
+      out.push(`# Organisation ${id} — « ${txt(y.title)} »`);
+      sec('Introduction', [`Type : ${txt(m.type)}`, `Sous-type : ${txt(m.subtype)}`, op.name ? `Opération : ${txt(op.name)} — missions ${arr(op.missions).join(', ')}` : ''].filter(Boolean).join('\n'));
+      sec('Summary', para(y.summary)); sec('Description détaillée', para(y.detailed_description)); sec('Équipes engagées', teamTable);
+      sec('Heure H et participants', [`Heure H : ${txt(ex.h_hour) || 'H'}`, '', '| Indicatif | Mission | Décollage | Rôle |', '|---|---|---|---|', ...arr(ex.participants).map(p => `| ${cell(p.callsign)} | ${cell(p.mission)} | ${cell(p.takeoff)} | ${cell(p.role)} |`)].join('\n'));
+      if (arr(ex.tracks).length) sec('Chiffons', ['| Piste | Joué | Indicatif | Départ | Nature | Points | Niveau | Vitesse | À établir | Consignes |', '|---|---|---|---|---|---|---|---:|---|---|',
+        ...arr(ex.tracks).map(k => `| ${cell(k.name || k.id)} | ${k.played ? 'oui' : 'non'} | ${cell(k.callsign)} | ${cell(k.start)} | ${cell(k.nature)} | ${cell(arr(k.points).map(p => `${txt(p.name)} ${num(p.lat)}, ${num(p.lon)}`).join(' → '))} | ${cell(k.level)} | ${cell(k.speed_kt)} | ${cell(k.task)} | ${cell(k.conduct)} |`)].join('\n'));
+      if (arr(ex.events).length) sec('Chronologie', arr(ex.events).map(e => `- **${txt(e.id)} — ${txt(e.at)}${e.by ? ` (${txt(e.by)})` : ''}${+e.delay_min ? ` +${+e.delay_min} min` : ''}** — ${/pli/i.test(e.kind || '') ? 'pli' : 'radio'} — ${txt(e.from)} → ${arr(e.to).join(', ')} : ${txt(e.title)}${arr(e.reveals).length ? ` — pistes ${arr(e.reveals).join(', ')}` : ''}${txt(e.text) ? '\n  ' + para(e.text).replace(/\n\n/g, '\n  ') : ''}`).join('\n'));
+    } else {
+      out.push(`# Mission ${id} — ${txt(ac.callsign) || '—'} — « ${txt(y.title)} »`);
+      sec('Introduction', [`Type : ${txt(m.type)}`, `Sous-type : ${txt(m.subtype)}`, `Aéronef : ${txt(ac.type)}`, `Callsign : ${txt(ac.callsign)}`, `Départ : ${txt(y.origin?.name)}${at(y.origin)}`, `Destination : ${txt(y.destination?.name)}${at(y.destination)}`].join('\n'));
+      sec('Summary', para(y.summary)); sec('Description détaillée', para(y.detailed_description)); sec('Équipes engagées', teamTable);
+      if (arr(op.missions).length > 1) sec('Coordination de l\'opération', `Opération : ${txt(op.name)} — missions ${arr(op.missions).join(', ')}`);
+      const pl = y.payload;
+      if (pl && typeof pl === 'object') sec('Charge / personnel', [`Catégorie : ${txt(pl.category)}`, `Description : ${txt(pl.description)}`, pl.mass_kg != null ? `Masse : ${pl.mass_kg} kg` : '', pl.passengers != null ? `Passagers : ${pl.passengers}` : '', arr(pl.constraints).length ? `\nContraintes :\n${arr(pl.constraints).map(c => `- ${txt(c)}`).join('\n')}` : ''].filter(Boolean).join('\n'));
+      sec('Objectif principal', txt(y.objectives?.primary)); sec('Objectifs secondaires', arr(y.objectives?.secondary).map(o => `- ${txt(o)}`).join('\n'));
+      if (arr(y.turning_points).length) sec('Points tournants', ['| ID | Nom | Latitude | Longitude | Rôle |', '|---|---|---:|---:|---|', ...arr(y.turning_points).map(p => `| ${cell(p.id)} | ${cell(p.name)} | ${num(p.lat)} | ${num(p.lon)} | ${cell(p.role)} |`)].join('\n'));
+      if (arr(y.rendezvous).length) sec('Rendez-vous', arr(y.rendezvous).map(r => `- **${txt(r.id)} — ${txt(r.name)}** — ${num(r.lat)}, ${num(r.lon)}${arr(r.participants).length ? ` — participants : ${arr(r.participants).join(', ')}` : ''}${r.role ? ` — ${txt(r.role)}` : ''}`).join('\n'));
+      if (y.air_refueling && typeof y.air_refueling === 'object') sec('Ravitaillement en vol', Object.entries(y.air_refueling).map(([k, v]) => `- ${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join('\n'));
+      sec('Risques à prendre en compte', arr(y.risks).map(r => typeof r === 'object' ? `- **${txt(r.hazard)}** — conséquence : ${txt(r.consequence)} — mesure : ${txt(r.mitigation)}` : `- ${txt(r)}`).join('\n'));
+      sec('Cartographie prévue', arr(y.maps).map(mp => typeof mp === 'object' ? `- \`${txt(mp.filename || mp.file)}\` — ${txt(mp.description)}` : `- \`${txt(mp)}\``).join('\n'));
+      // exercice : organisation de l'opération (docs) ; plis comptés, pas leur contenu
+      const X = window.MissionExercise, org = X ? X.of(y, docs) : null, me = org && X.participantOf(org, id);
+      if (op.organisation || me) {
+        const tl = org ? X.timeline(org, [y, ...docs]) : [], mine = me ? X.eventsFor(tl, me.callsign) : [], plis = mine.filter(e => e.kind === 'pli');
+        sec('Exercice', [`Organisation : ${txt(op.organisation)}`, `Heure H : ${txt(org?.h_hour) || 'H'}`, `Décollage : ${txt(me?.takeoff) || 'H'}`, `Plis scellés remis : ${plis.length ? plis.map(e => `${txt(e.title) || e.id} (à ouvrir : ${e.when})`).join(' ; ') : 'aucun'}`, `Messages radio attendus en vol : ${mine.length > plis.length ? 'oui' : 'non'}`].join('\n'));
+      }
+      for (const ph of arr(y.phases)) sec(`Partie ${txt(ph.id)} — ${txt(ph.title)}`, [`À ouvrir : ${txt(ph.trigger)}`, `Message : ${txt(ph.message)}`, '', para(ph.brief)].join('\n'));
+    }
+    out.push('> Scénario de simulation — ne pas utiliser pour une mission réelle.');
+    return out.join('\n\n') + '\n';
+  }
+  window.SiaMission = { FAMILY_LETTERS, parseId, nextNumbering, numberingTable, markdownOf,
     KEY,
     load,
     save,

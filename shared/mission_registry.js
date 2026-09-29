@@ -562,7 +562,7 @@
     const root = await list(mh.h), maps = [...await list(mh.h, C.SUB.maps), ...root.filter(f => /\.(png|jpe?g|webp)$/i.test(f.name))], vers = await list(mh.h, C.SUB.versions), recu = await list(mh.h, C.SUB.received);
     const yaml = root.find(f => /^mission.*\.ya?ml$/i.test(f.name)), md = root.find(f => /\.md$/i.test(f.name));
     const btn = (k, label, icon) => `<button type="button" class="secondary" data-f="${k}" data-icon="${icon}">${esc(label)}</button>`;
-    host.innerHTML = `<p class="row">${yaml ? btn('yaml', `YAML — ${yaml.name}`, 'file-text') : ''}${md ? btn('md', t(['Markdown (lisible)', 'Markdown (readable)']), 'book') : ''}${btn('pdf', t(['PDF (générateur)', 'PDF (generator)']), 'file')}${btn('edit', t(['Modifier (générateur)', 'Edit (generator)']), 'edit')}${btn('studio', t(['Cartes (studio)', 'Maps (studio)']), 'map')}</p>
+    host.innerHTML = `<p class="row">${yaml ? btn('yaml', `YAML — ${yaml.name}`, 'file-text') : ''}${md ? btn('md', t(['Markdown (lisible)', 'Markdown (readable)']), 'book') : yaml ? btn('mdgen', t(['Markdown (généré depuis le YAML)', 'Markdown (generated from the YAML)', 'Markdown (aus dem YAML erzeugt)', 'Markdown (generado desde el YAML)']), 'book') : ''}${btn('pdf', t(['PDF (générateur)', 'PDF (generator)']), 'file')}${btn('edit', t(['Modifier (générateur)', 'Edit (generator)']), 'edit')}${btn('studio', t(['Cartes (studio)', 'Maps (studio)']), 'map')}</p>
       <p>${esc(t(['Dossier', 'Folder']))} : <code>data/missions/${esc(mh.folder)}/</code>${m.receivedAt ? ` · ${esc(t(['reçue le', 'received']))} ${esc(fmtDate(m.receivedAt))}` : ''}${m.modifiedAt ? ` · ${esc(t(['modifiée le', 'modified']))} ${esc(fmtDate(m.modifiedAt))}` : ''}</p>
       <div class="rg-thumbs">${maps.length ? '' : `<span>${esc(m.mapsWanted ? t(['Aucune carte générée : ouvrir le studio (les définitions de cartes du YAML suffisent à les régénérer).', 'No map generated yet: open the studio.']) : t(['Pas de carte prévue.', 'No map planned.']))}</span>`}</div>
       ${vers.length ? `<p><b>${esc(t(['Versions précédentes', 'Previous versions']))}</b> : ${vers.map((f, i) => `<a href="#" data-v="${i}">${esc(f.name.replace(/^mission.*?_/, '').replace(/\.ya?ml$/, ''))}</a>`).join(' · ')}</p>` : ''}
@@ -570,10 +570,22 @@
     const thumbs = host.querySelector('.rg-thumbs');
     for (const f of maps) { const u = URL.createObjectURL(await f.h.getFile()), fig = document.createElement('figure'); fig.innerHTML = `<img src="${u}" alt=""><figcaption>${esc(f.name)}</figcaption>`; fig.querySelector('img').onclick = () => view(f.name, `<img src="${u}" alt="">`); thumbs.append(fig); }
     const text = async f => (await f.h.getFile()).text();
+    /** Markdown produit à la demande depuis le YAML (SiaMission.markdownOf, même code que l'export du générateur) :
+     *  affiché, pas écrit — le YAML reste la seule source. */
+    async function showGeneratedMd() {
+      const y = window.jsyaml.load((await text(yaml)).replace(/^#.*
+/, '')) || {}, docs = [];
+      for (const x of operationMembers(m).filter(x => keyOf(x) !== keyOf(m))) {   // exercice : organisation de l'opération
+        try { const h = await C.missionHandle(x.id, x.type, { folder: x.folder }), f = h && await readText(h.h, `mission${normMissionId(x.id)}.yaml`); if (f) docs.push(window.jsyaml.load(f.replace(/^#.*
+/, ''))); } catch { /* illisible */ }
+      }
+      view(`summary${normMissionId(m.id)}.md — ${t(['généré depuis le YAML', 'generated from the YAML', 'aus dem YAML erzeugt', 'generado desde el YAML'])}`, mdHtml(window.SiaMission.markdownOf(y, { docs })));
+    }
     host.querySelectorAll('[data-f]').forEach(b => b.onclick = async () => {
       const k = b.dataset.f;
       if (k === 'yaml') return view(yaml.name, `<pre>${esc(await text(yaml))}</pre>`);
       if (k === 'md') return view(md.name, mdHtml(await text(md)));
+      if (k === 'mdgen') return showGeneratedMd();
       if (k === 'pdf') { try { sessionStorage.setItem('siaAutoPdf:v1', m.id); } catch { /* */ } return go(m, 'editor'); }
       return go(m, k === 'studio' ? 'studio' : 'editor');
     });
