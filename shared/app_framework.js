@@ -36,6 +36,7 @@
       const id = el.dataset.blockId || el.id || `block-${i+1}`;
       el.dataset.blockId = id;
       el.classList.add("repo-block");
+      el.dataset.decoN = String(i % 5 + 1);   // rang décoratif (1…5) dans l'ordre de la page : décors en alternance (designs_skeuo.css)
       const parent = el.parentElement;
       if (!parents.has(parent)) parents.set(parent, []);
       parents.get(parent).push(el);
