@@ -10,6 +10,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Villes** : outre-mer français (≥ 500 hab.) et reste du monde (≥ 15 000 hab., 187 pays) ajoutés à
+  `villes_geonames.csv` (41 665 → 70 962 villes) par `tools/update_cities_geonames.py` (option `--world`).
+- **Maintenance** : Versions et synchronisation, Références et dépendances — `moraCycle` lu dans `SiaBase`.
 - **Maintenance** : chaque bloc rendu séparément ; une lecture en échec (dossier, base SIA, git) s'affiche dans son
   bloc et en notification au lieu de laisser Sources et dossiers, Versions et synchronisation… vides.
 - **Barre latérale** : préférence et design posés dès l'en-tête de chaque page (repository_tree) ; planificateur :

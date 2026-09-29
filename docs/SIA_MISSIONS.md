@@ -31,7 +31,7 @@ Bibliothèques livrées dans le dossier : MapLibre GL (`maplibre-gl.js/.css`), j
 | `miam-enr-5-7-tracks.xml` | **Axes de ravitaillement** MILAIP ENR 5.7 nommés et corrigés (31 axes + 6 circuits heavy) | versionné |
 | `miam-enr-5-7-coordinates.xml` | Coordonnées ENR 5.7 d'origine (sans noms) | versionné |
 | `mora.csv` | **Grille MORA** 1° × 1° calculée (§ 4.6) | versionné |
-| `villes_geonames.csv` | Villes (GeoNames cities500, CC BY 4.0) | versionné |
+| `villes_geonames.csv` | Villes (GeoNames, CC BY 4.0) : Europe de l'Ouest et outre-mer français ≥ 500 hab., reste du monde ≥ 15 000 hab. (71 000 villes) ; `tools/update_cities_geonames.py` | versionné |
 
 Les données AIRAC se téléchargent sur le site du SIA (produits numériques, export XML) et se
 déposent dans le dossier `apps/sia/` ; `.gitignore` les tient hors du dépôt.
