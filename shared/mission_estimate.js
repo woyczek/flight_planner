@@ -179,7 +179,7 @@
     let flight = 0, transitOut = 0, onStation = 0, transitIn = 0;
     for (let i = 0; i < chain.length - 1; i++) {
       const a = chain[i], b = chain[i + 1], nm = distNm(a, b);
-      const L = legMinutes(nm, i === 0 ? 0 : mid, i === chain.length - 2 ? 0 : mid, P);
+      const L = legMinutes(nm, i === 0 ? 0 : a.kind === 'via' ? P.alt : mid, i === chain.length - 2 ? 0 : b.kind === 'via' ? P.alt : mid, P);
       const task = i + 1 < chain.length - 1 ? (b.task ?? defaultTask(b, y)) : 0;
       const phase = i < first ? 'aller' : i < last ? 'sur zone' : 'retour';
       legs.push({ from: a, to: b, nm, min: L.min, alt: L.alt, task, phase });
@@ -191,6 +191,34 @@
     flight += approach; transitIn += approach;
     return { legs, nm: legs.reduce((s, l) => s + l.nm, 0), flight: Math.round(flight), block: Math.round(flight + P.taxi * 2), transitOut: Math.round(transitOut), onStation: Math.round(onStation), transitIn: Math.round(transitIn) };
   }
+
+  // ---- temps éprouvés (CR) : aller et retour réellement volés, gardés dans le registre du navigateur
+  const WORK = new Set(['target', 'rdv', 'zone']);
+  /** Aller (départ → premier point de travail) et retour (dernier point de travail → arrivée) réellement volés par
+   *  des missions de même départ et mêmes points (± 2 NM), d'après les CR du registre : { out, in } ({ min, n }). */
+  function provenTimes(r) {
+    let reg = [];
+    try { reg = JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions || []; } catch { return {}; }
+    const work = r.order.filter(p => WORK.has(p.kind)), w0 = work[0], w1 = work[work.length - 1], near = (a, b) => a && b && distNm(a, b) <= 2;
+    const outs = [], ins = [];
+    for (const m of reg) {
+      const pts = m.estimate?.points || [], mw = pts.filter(p => WORK.has(p.kind));
+      if (!pts.length || !mw.length) continue;
+      for (const c of m.reports || []) {
+        if (+c.transitOut > 0 && near(pts[0], r.origin) && near(mw[0], w0)) outs.push(+c.transitOut);
+        if (+c.transitIn > 0 && near(pts[pts.length - 1], r.dest) && near(mw[mw.length - 1], w1)) ins.push(+c.transitIn);
+      }
+    }
+    const avg = v => v.length ? { min: Math.round(v.reduce((a, b) => a + b, 0) / v.length), n: v.length } : null;
+    return { out: avg(outs), in: avg(ins) };
+  }
+  /** Remplace l'aller et le retour calculés par les temps éprouvés quand il y en a. */
+  function applyProven(t, pv) {
+    for (const [k, v] of [['transitOut', pv.out], ['transitIn', pv.in]]) if (v) { const d = v.min - t[k]; t.flight += d; t.block += d; t[k] = v.min; }
+    return t;
+  }
+  /** Chaîne avec points de transit (shared/mission_routing.js), sinon inchangée. */
+  const routed = (chain, P) => window.MissionRouting?.expand ? window.MissionRouting.expand(chain, P) : { chain, how: '' };
 
   /** Options de retour (return_options) : autre terrain ou hôpital selon l'état du patient, la météo, le carburant…
    *  Chaque option : route jusqu'au dernier point de travail, puis l'option, puis la base (sauf then_base: false). */
@@ -209,18 +237,20 @@
     if (!r.origin) return { ok: false, notes: ['départ sans coordonnées : pas d’estimation'], aircraft: P };
     notes.push(`Appareil : ${P.code || P.text || 'inconnu'} (${P.label}), ${Math.round(P.tas)} kt — ${P.source}.`);
     notes.push(`Route : ${r.how} ; retour ${y.destination && ok(y.destination) && distNm(y.destination, y.origin) > 1 ? `à ${y.destination.name || 'la destination'}` : 'à la base de départ'}.`);
-    const main = fly([r.origin, ...r.order, r.dest], P, y);
+    const way = routed([r.origin, ...r.order, r.dest], P), pv = provenTimes(r), main = applyProven(fly(way.chain, P, y), pv);
+    if (way.how) notes.push(`Transit : ${way.how}.`);
+    if (pv.out || pv.in) notes.push(`Temps éprouvés (CR) : ${[pv.out ? `aller ${pv.out.min} min (${pv.out.n} vol${pv.out.n > 1 ? 's' : ''})` : '', pv.in ? `retour ${pv.in.min} min (${pv.in.n} vol${pv.in.n > 1 ? 's' : ''})` : ''].filter(Boolean).join(', ')}.`);
     // heure de remise de chaque partie : temps écoulé depuis le décollage au point de déclenchement + délai
     const at = id => { let tAcc = 0; if (id === 'ORIGIN') return 0; for (const l of main.legs) { tAcc += l.min; if (l.to.id === id) return tAcc; tAcc += l.task; } return null; };
     const phases = r.reveal.map(ph => { const t0 = at(ph.point); return { ...ph, at: t0 == null ? null : Math.round(t0 + ph.delay) }; });
     // variantes de retour : même route jusqu'au dernier point de travail, puis l'option (et la base)
     const keep = [r.origin, ...r.order];
-    const options = returnOptions(y, r).map(o => ({ label: o.label, condition: o.condition, toBase: o.toBase, ...fly([...keep, ...o.chain], P, y) }));
+    const options = returnOptions(y, r).map(o => ({ label: o.label, condition: o.condition, toBase: o.toBase, ...applyProven(fly(routed([...keep, ...o.chain], P).chain, P, y), { out: pv.out }) }));
     if (options.length) notes.push(`${options.length} option(s) de retour : ${options.map(o => o.label).join(', ')}.`);
     const flights = [main.flight, ...options.map(o => o.flight)];
     const st = y.timing || {};
     return {
-      ok: true, aircraft: P, how: r.how, notes, points: [r.origin, ...r.order, r.dest],
+      ok: true, aircraft: P, how: way.how ? `${r.how} ; ${way.how}` : r.how, notes, points: way.chain, proven: pv,
       ...main, options, phases, min: Math.min(...flights), max: Math.max(...flights),
       stated: { flight: +st.estimated_flight_min || null, block: +st.estimated_block_min || null }
     };
@@ -245,7 +275,7 @@
       points: e.points.map(P), legs: legs(e.legs),
       options: e.options.map(o => ({ label: o.label, condition: o.condition, flight: o.flight, block: o.block, transitIn: o.transitIn, legs: legs(o.legs), points: o.legs.map(l => P(l.to)) })),
       phases: e.phases,
-      statedFlight: e.stated.flight, statedBlock: e.stated.block
+      statedFlight: e.stated.flight, statedBlock: e.stated.block, provenOut: e.proven?.out || null, provenIn: e.proven?.in || null
     };
   };
 
@@ -287,6 +317,7 @@
     host.classList.add('me-box');
     host.innerHTML = `<div class="me-kpi"><span>Vol estimé <b>${hm(sum.flight)}</b>${range}</span><span>Bloc <b>${hm(sum.block)}</b></span><span>${esc(phase)}</span><span>${sum.nm} NM</span></div>
       <p class="me-small">${esc(sum.code || '?')} (${esc(sum.label || '')}) à ${sum.tas} kt — ${esc(sum.source || '')} ; ${esc(sum.how || '')}.${sum.statedFlight ? ` Durée annoncée par la mission : ${hm(sum.statedFlight)} (ce calcul : ${esc(compare(sum.statedFlight, sum.flight)?.text || '=')}).` : ''}</p>
+      ${sum.provenOut || sum.provenIn ? `<p class="me-small"><b>Temps éprouvés</b> (CR des missions de même départ et mêmes points) : ${[sum.provenOut ? `aller ${hm(sum.provenOut.min)} (${sum.provenOut.n} vol${sum.provenOut.n > 1 ? 's' : ''})` : '', sum.provenIn ? `retour ${hm(sum.provenIn.min)} (${sum.provenIn.n} vol${sum.provenIn.n > 1 ? 's' : ''})` : ''].filter(Boolean).join(', ')} — repris à la place du calcul.</p>` : ''}
       ${(sum.phases || []).length ? `<p class="me-small"><b>Briefs successifs</b> : ${sum.phases.map(p => `partie ${esc(p.id)}${p.title ? ` « ${esc(p.title)} »` : ''} remise vers T + ${p.at == null ? '?' : hm(p.at)}${p.trigger ? ` (${esc(p.trigger)})` : ''}`).join(' ; ')}.</p>` : ''}
       ${sum.options.length ? `<table><thead><tr><th>Retour</th><th>Condition</th><th>Vol</th><th>Retour</th></tr></thead><tbody><tr><td>${esc(String(sum.points[sum.points.length - 1]?.name || 'Base'))}</td><td class="me-small">principal</td><td>${hm(sum.flight)}</td><td>${hm(sum.transitIn)}</td></tr>${sum.options.map(o => `<tr><td>${esc(o.label)}</td><td class="me-small">${esc(o.condition)}</td><td>${hm(o.flight)}</td><td>${hm(o.transitIn)}</td></tr>`).join('')}</tbody></table>` : ''}
       ${reports.length ? `<table><thead><tr><th>CR</th><th>Date</th><th>Vol réel</th><th>Écart</th><th>Aller</th><th>Sur zone</th><th>Retour</th></tr></thead><tbody>${reports.map(r => `<tr><td>${esc(r.missionId)}</td><td>${esc(r.date || '')}</td><td>${hm(r.flight)}</td><td>${cmp(r, 'flight')}</td><td>${r.transitOut ? hm(r.transitOut) + ' ' + cmp(r, 'transitOut') : ''}</td><td>${r.onStation ? hm(r.onStation) + ' ' + cmp(r, 'onStation') : ''}</td><td>${r.transitIn ? hm(r.transitIn) + ' ' + cmp(r, 'transitIn') : ''}</td></tr>`).join('')}</tbody></table>` : '<p class="me-small">Aucun CR de cette mission pour comparer.</p>'}

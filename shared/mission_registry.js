@@ -671,6 +671,8 @@
   }
 
   window.addEventListener('repository-language-change', render);
+  // routes de transit (voies aériennes, RTBA) : base SIA du navigateur, puis fiche recalculée (relecture du dossier : estimations routées)
+  window.MissionRouting?.loadFromBase().then(ok => { if (ok) renderDetail(); });
   window.addEventListener('local-store-restored', () => { reg = readJson(KEY, null) || empty(); render(); });
   window.addEventListener('storage', e => { if (e.key === KEY) { reg = readJson(KEY, null) || empty(); render(); } });
   window.MissionRegistry = { scan, cleanup, addOrder, addFiles, entryOf, families, theatreOf, get: () => reg, sendPrompt, matches: m => matches(m), setFilters: f => { filters = { ...DEFAULT_FILTERS, ...f }; render(); } };

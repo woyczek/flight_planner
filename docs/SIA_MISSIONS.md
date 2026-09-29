@@ -270,6 +270,18 @@ modification) et dans le registre (colonne **Durée est.**, fiche de la mission)
   tableau des tronçons.
 - Brief PDF : chaque partie B, C… sur sa propre page, « PLI À REMETTRE — à ouvrir : 10 min après RDV-1 ».
 
+**Routes de transit** (`shared/mission_routing.js`, `MissionRouting`), calculées localement d'après la base SIA du
+navigateur (voies aériennes de l'AIXM, zones du RTBA) : avion en IFR (croisière ≥ 6500 ft) → plus court chemin sur
+les voies aériennes ouvertes à son niveau, entrée et sortie directes (≤ 60 NM), direct si le détour dépasse 40 % ou
+au-dessus des voies (routage libre de l'espace supérieur) ; avion de combat ou de transport tactique à basse
+hauteur (≤ 1500 ft) → chaînage des zones du RTBA raccordées ; hélicoptère, VFR → direct. Seuls les transits de plus
+de 40 NM sont routés ; points de transit en croisière (pas de descente intermédiaire). Exemple : Rennes → Marseille
+au FL120 par V20, H34, H20, A3, R31, A6 (459 NM pour 402 en direct) ; à 500 ft par R 149 A … R 591.
+
+**Temps éprouvés** : l'aller (départ → premier point de travail) et le retour (dernier point de travail → arrivée)
+réellement volés, relevés dans les CR des missions de même départ et mêmes points (± 2 NM, registre du navigateur),
+remplacent le calcul ; le panneau indique leur origine (nombre de vols).
+
 ## 3. Générateur de mission (brief)
 
 Page `apps/sia/mission_editor.html`.

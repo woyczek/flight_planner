@@ -14,7 +14,7 @@
 (() => {
   const DB = 'sia-map-parser', STORE = 'cache', KEY = 'base', INFO = 'siaBaseInfo:v1', PREV = 'siaBaseInfo:prev', FOLDER_NAME = 'siaFolderName';
   /** Version du format de la base mémorisée : une base d'une autre version est ignorée (à relire). */
-  const VERSION = 13;   // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM
+  const VERSION = 14;   // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways)
   const SCRIPT_URL = document.currentScript?.src || location.href;
   /** URL d'un fichier de l'application (chemin depuis la racine : « apps/sia/assets/… »). */
   const appUrl = path => new URL('../' + path, SCRIPT_URL).href;

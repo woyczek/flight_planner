@@ -209,11 +209,23 @@
         ...p
       });
     }
+    // Voies aériennes (Rsg : segments de route ATS) : extrémités (point RNAV ou balise), niveaux ; pour le calcul
+    // des routes (shared/mission_routing.js). Niveau en ft : FL × 100, sinon valeur (ft ou m).
+    const airways = [];
+    const lvl = (b, w) => { const v = +tag(b, `valDistVer${w}`), u = tag(b, `uomDistVer${w}`).toUpperCase(); return !Number.isFinite(v) || !tag(b, `valDistVer${w}`) ? null : u === 'FL' ? v * 100 : u === 'M' ? Math.round(v * 3.28084) : v; };
+    for (const b of blocks(text, 'Rsg')) {
+      const route = /<RteUid[^>]*>\s*<txtDesig>([^<]+)/.exec(b)?.[1] || '',
+        end = w => { const m = new RegExp(`<(\\w+)Uid${w}[^>]*>([\\s\\S]*?)</\\1Uid${w}>`).exec(b); return m ? { id: tag(m[2], 'codeId'), ...geo(m[2]) } : null; },
+        a = end('Sta'), z = end('End');
+      if (!a || !z || !Number.isFinite(a.lat) || !Number.isFinite(z.lat)) continue;
+      airways.push({ route, a, b: z, lower: lvl(b, 'Lower'), upper: lvl(b, 'Upper'), nm: +tag(b, 'valLen') || null });
+    }
     return {
       aerodromes,
       navaids,
       obstacles,
-      points
+      points,
+      airways
     };
   }
 
