@@ -7,12 +7,25 @@ skeuomorphe (html[data-icons="brass" | "steel" | "gel"], quel que soit le design
 Jeux du Centre (CPCO) : shared/icons/skeuo/<dossier>-cpco/ (copies à retoucher aux couleurs du Centre) ; utilisés sur
 les pages du Centre (html[data-app-theme="cpco"]) et pour les entrées du Centre de la barre latérale (repository_nav.js).
 Une icône absente du jeu du Centre garde l'image du jeu ordinaire.
+Jeux COMPOSÉS (fond + glyphe SVG) : si shared/icons/skeuo/<dossier>-bg/normal.webp existe, les icônes de ce jeu ne
+sont plus des images peintes une à une : fond commun (normal.webp ; centre.webp sur les pages et entrées du Centre)
+et glyphe du registre (tracé SVG, repository_icons.js) par-dessus, couleur et ombre réglables (GLYPH ci-dessous ;
+ombre portée vers le bas, comme l'éclairage des fonds peints). Les chevrons et la poignée des blocs gardent les images
+du jeu. Déposer les deux fonds, relancer ce script : le jeu bascule ; retirer normal.webp : retour aux images.
 Relancer après une nouvelle découpe ou génération : python tools/build_skeuo_icons_css.py, puis bump_versions.py.
 """
 import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SETS = {'brass': 'cabinet', 'steel': 'field', 'gel': 'aqua', 'avio': 'flightlog'}
 ALIASES = {'brass': {'save': 'bookmark', 'file': 'file'}, 'steel': {'file': 'file-text'}, 'gel': {'file': 'file-text'}, 'avio': {'save': 'bookmark', 'file': 'file'}}
+# jeux composés : couleur du glyphe (normal, Centre), ombre (vers le bas : éclairage par le haut), marge autour du glyphe
+# (fraction de la taille de l'icône)
+GLYPH = {
+    'gel': {'color': '#ffffff', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.55))', 'pad': .24},
+    'brass': {'color': '#f1e4c0', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.7))', 'pad': .26},
+    'steel': {'color': '#e9ecdf', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.75))', 'pad': .24},
+    'avio': {'color': '#f4ecd8', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.7))', 'pad': .26},
+}
 BEGIN = '/* ==== JEUX D\'ICÔNES SKEUOMORPHES (généré par tools/build_skeuo_icons_css.py) ==== */'
 END = '/* ==== fin des jeux skeuomorphes ==== */'
 ANY = 'html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"])'
@@ -33,9 +46,27 @@ out = [BEGIN,
        f'{ANY} .repo-block-heading-rich .repo-toggle::before{{-webkit-mask:none!important;mask:none!important;background:center/contain no-repeat!important;width:20px!important;height:20px!important;vertical-align:-5px!important}}',
        f'{ANY} .repo-block-hidden>.repo-block-heading-rich .repo-toggle::before{{transform:none!important}}',
        f'{ANY} .repo-block-tools .repo-drag{{font-size:0!important;min-width:34px;background-position:center!important;background-size:22px!important;background-repeat:no-repeat!important}}']
+composed = []
 for key, d in SETS.items():
     folder = os.path.join(ROOT, 'shared', 'icons', 'skeuo', d)
     names = sorted(f[:-5] for f in os.listdir(folder) if f.endswith('.webp'))
+    bg = os.path.join(ROOT, 'shared', 'icons', 'skeuo', d + '-bg')
+    if os.path.isfile(os.path.join(bg, 'normal.webp')):
+        # jeu composé : fond commun + glyphe SVG (couleur, ombre), fond du Centre s'il existe
+        g, H = GLYPH[key], f'html[data-icons="{key}"]'
+        composed.append(key)
+        out.append(f'{H} .repo-svg[data-i]{{background-image:url("icons/skeuo/{d}-bg/normal.webp")!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * {g["pad"]});color:var(--ico-glyph,{g["color"]})!important;overflow:visible}}')
+        out.append(f'{H} .repo-svg[data-i]>*{{display:inline;filter:var(--ico-glyph-shadow,{g["shadow"]})}}')
+        # barre latérale : le tracé SVG plutôt que l'image peinte
+        out.append(f'{H} .repo-sidenav-img{{display:none!important}}{H} .repo-sidenav-ic .repo-svg{{display:block!important}}')
+        if os.path.isfile(os.path.join(bg, 'centre.webp')):
+            C = f'html[data-app-theme="cpco"][data-icons="{key}"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg),{H} .repo-sidenav-cpco .repo-svg[data-i]'
+            out.append(f'{C}{{background-image:url("icons/skeuo/{d}-bg/centre.webp")!important;color:var(--ico-glyph-centre,{g["centre"]})!important}}')
+        if {'chevron-up', 'chevron-down', 'move'} <= set(names):
+            out.append(f'html[data-icons="{key}"] .repo-block-heading-rich .repo-toggle::before{{background-image:url("icons/skeuo/{d}/chevron-up.webp")!important}}')
+            out.append(f'html[data-icons="{key}"] .repo-block-hidden>.repo-block-heading-rich .repo-toggle::before{{background-image:url("icons/skeuo/{d}/chevron-down.webp")!important}}')
+            out.append(f'html[data-icons="{key}"] .repo-block-tools .repo-drag{{background-image:url("icons/skeuo/{d}/move.webp")!important}}')
+        continue
     for n in names:
         out.append(f'html[data-icons="{key}"] .repo-svg[data-i="{n}"]{{background-image:url("icons/skeuo/{d}/{n}.webp")}}')
     if {'chevron-up', 'chevron-down', 'move'} <= set(names):
@@ -59,6 +90,8 @@ for key, d in SETS.items():
         for n, target in ALIASES[key].items():
             if n not in cnames and target in cnames:
                 out.append(f'{C} .repo-svg[data-i="{n}"]:not(.repo-sidenav .repo-svg){{background-image:url("icons/skeuo/{d}-cpco/{target}.webp")}}')
+if composed:
+    print('jeux composés (fond + glyphe) :', ', '.join(composed))
 out.append(END)
 p = os.path.join(ROOT, 'shared', 'block_icons.css')
 raw = open(p, 'rb').read().decode('utf-8'); crlf = '\r\n' in raw; s = raw.replace('\r\n', '\n')

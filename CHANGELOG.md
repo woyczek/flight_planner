@@ -10,6 +10,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Icônes skeuomorphes composées** (fond + glyphe SVG) : dès que `shared/icons/skeuo/<jeu>-bg/normal.webp` existe
+  (Aqua, Cabinet, Durci, Carnet de vol), les icônes du jeu deviennent un fond commun et le glyphe du registre par-dessus
+  (blanc / crème ; jaune sur le fond `centre.webp` du Centre), ombre portée vers le bas, contours nets à toute taille ;
+  couleurs, ombre et marge réglables dans `tools/build_skeuo_icons_css.py` (GLYPH). Sans fond : images actuelles.
+
 - **Un seul plan de vol** entre le planificateur carburant et les Cartes de vol (`flightPlanShared:v1`, le plus récent
   l'emporte) : champ « Plan de vol (case 15) » en tête du devis carburant (distance, route vraie et niveau en sont
   déduits), bouton « Cartes de vol » (cartes et profil créés à l'arrivée) ; import SimBrief du planificateur repris par
