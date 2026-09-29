@@ -10,6 +10,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+## [4.0.0] — 2026-09-29
+
+Exercices (organisation, chiffons, chronologie radio et plis), routes de transit calculées (voies aériennes, RTBA),
+zones à activer, zones de recherche, théâtres étrangers, format de mission 2.0 ; générateur, studio, registre et
+Maintenance réorganisés ; framework : notifications flottantes, tableaux à colonnes réglables.
+
+À la mise à jour : relire le dossier SIA une fois (base au format 14 : gestionnaires des zones, voies aériennes) ;
+relancer le calcul de la MORA (outre-mer et missions à l'étranger) ; relire le dossier des missions dans le registre.
+
 - **Registre : suppression individuelle des cartes** — croix sur chaque vignette (confirmation), emplacement affiché
   (cartes/ ou racine), cartes en double à la racine repérées et supprimables d'un coup ; PDF compté dans la place.
 - **Maintenance › Espace disque** : colonne PDF et « Purger les PDF » (régénérés par le générateur).
