@@ -605,7 +605,7 @@ et SIA restent dans le navigateur et les fichiers choisis.
 `apps/planner/map_planner.html` (☰ › Cartes de vol) met le moteur du studio à la disposition de tous, hors du Centre,
 pour sa propre préparation : bloc **Vol** (route en codes OACI, balises, points de report ou coordonnées « lat, lon » ;
 « Chercher la route » par les voies aériennes ou à basse hauteur par le RTBA ; rendez-vous facultatif ; niveau), puis
-« Créer les cartes » : topographique de la route (profil VFR détaillé, fond OpenTopoMap), approche (30 km autour de la
+« Créer les cartes » : route (vue d'ensemble, profil IFR), approche (30 km autour de la
 destination), rendez-vous, terrain de destination, et profil vertical. Les blocs « Cartes et cadrage », « Profil
 vertical » et « Aperçus et génération » sont ceux du studio (mêmes profils d'affichage).
 

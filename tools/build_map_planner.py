@@ -3,7 +3,7 @@ Centre (apps/cpco/map_parser.html) : même moteur de rendu, mêmes profils d'aff
 route en case 15, carte et coupe verticale liées), sans le bloc Mission du Centre.
 
 La page publique ajoute, après le bloc Route, un bloc « Cartes du vol » : rendez-vous facultatif, niveau, choix des cartes
-(topographique de la route, approche, rendez-vous, destination). Elle crée une mission locale dans son propre espace
+(route, approche, rendez-vous, destination). Elle crée une mission locale dans son propre espace
 du navigateur (SIA_MISSION_NS = 'planner') d'après la route du champ : la mission du générateur et du studio du Centre
 n'est jamais touchée.
 
@@ -25,7 +25,7 @@ VOL_BLOCK = r'''<section data-block-id="vol" data-icon="plane" data-subtitle="Re
 <label>Niveau de croisière<input id="volLevel" spellcheck="false" placeholder="5500 ou FL65" value="5500"></label>
 </div>
 <div class="volMaps"><span class="small">Cartes :</span>
-<label class="check"><input type="checkbox" data-volmap="topo" checked> topographique de la route</label>
+<label class="check"><input type="checkbox" data-volmap="topo" checked> route (vue d’ensemble, IFR)</label>
 <label class="check"><input type="checkbox" data-volmap="approche" checked> approche</label>
 <label class="check"><input type="checkbox" data-volmap="rdv" checked> rendez-vous</label>
 <label class="check"><input type="checkbox" data-volmap="destination" checked> destination</label>
@@ -70,7 +70,7 @@ function build(quiet){
  let rdv=null;const rt=$v('volRdv').value.trim();if(rt){const c=coord(rt);if(c)rdv={id:'RDV',name:'RDV',...c};else{const q=SiaProfile.resolver({aero:aero||{}})(rt);if(!q){say(`Rendez-vous inconnu : ${esc(rt)}.`,'err');return false}rdv={id:'RDV',name:`RDV ${q.name||rt}`,lat:q.lat,lon:q.lon}}}
  const P=(p,i)=>({id:idOf(p,i),name:p.name||idOf(p,i),lat:+p.lat.toFixed(6),lon:+p.lon.toFixed(6)}),dep=P(pts[0],0),dest=P(pts[pts.length-1],pts.length-1),mid=pts.slice(1,-1).map((p,i)=>P(p,i+1)),ft=levelFt($v('volLevel').value);
  const maps=[];
- if(want.has('topo'))maps.push({filename:`route_${dep.id}_${dest.id}.png`,type:'general',description:'Carte topographique de la route',profile:'vfr-detail'});
+ if(want.has('topo'))maps.push({filename:`route_${dep.id}_${dest.id}.png`,type:'general',description:'Carte de la route',profile:'ifr'});
  if(want.has('approche'))maps.push({filename:`approche_${dest.id}.png`,type:'approche',description:`Approche de ${dest.id}`,centre_ref:'DESTINATION',range_km:30});
  if(want.has('rdv')&&rdv)maps.push({filename:'rendez_vous.png',type:'rdv',description:'Rendez-vous',centre_ref:'RDV',range_km:15});
  if(want.has('destination'))maps.push({filename:`destination_${dest.id}.png`,type:'detail',description:`Terrain de destination ${dest.id}`,centre_ref:'DESTINATION'});
