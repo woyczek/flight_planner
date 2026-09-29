@@ -567,7 +567,7 @@
       const k = b.dataset.f;
       if (k === 'yaml') return view(yaml.name, `<pre>${esc(await text(yaml))}</pre>`);
       if (k === 'md') return view(md.name, mdHtml(await text(md)));
-      if (k === 'pdf') { try { sessionStorage.setItem('siaAutoPdf:v1', '1'); } catch { /* */ } return go(m, 'editor'); }
+      if (k === 'pdf') { try { sessionStorage.setItem('siaAutoPdf:v1', m.id); } catch { /* */ } return go(m, 'editor'); }
       return go(m, k === 'studio' ? 'studio' : 'editor');
     });
     host.querySelectorAll('[data-v]').forEach(a => a.onclick = async e => {
@@ -614,7 +614,7 @@
       const b = window.SiaMission.loadBatch(), i = b ? b.docs.findIndex(d => String(d.yaml?.mission?.id || '').toUpperCase() === String(m.id).toUpperCase()) : -1;
       if (i >= 0) window.SiaMission.go(i, 'registry');
       location.href = new URL(where === 'studio' ? 'apps/sia/map_parser.html' : 'apps/sia/mission_editor.html', window.RepositoryNav.root).href;
-    } catch (e) { if (out) out.textContent = e.message; window.AppFramework?.notify(e.message, 'err'); }
+    } catch (e) { if (window.AppFramework?.notify) window.AppFramework.notify(e.message, 'err'); else if (out) out.textContent = e.message; }
   }
   /** Ouvre la mission : générateur / studio (mission partagée), CR (passerelle ?from=sia), prompt de commande. */
   async function go(m, where) {
@@ -640,7 +640,7 @@
       window.SiaMission.importTexts(files, 'registry');
       if (m.status === 'generated') { m.status = 'planned'; m.statusAt = new Date().toISOString(); persist(); }
       location.href = new URL(where === 'studio' ? 'apps/sia/map_parser.html' : 'apps/sia/mission_editor.html', window.RepositoryNav.root).href;
-    } catch (e) { if (out) out.textContent = e.message; window.AppFramework?.notify(e.message, 'err'); }
+    } catch (e) { if (window.AppFramework?.notify) window.AppFramework.notify(e.message, 'err'); else if (out) out.textContent = e.message; }
   }
 
   // ---- commande d'une mission : bloc commun MissionOrder (shared/mission_order.js), aussi dans le générateur de brief

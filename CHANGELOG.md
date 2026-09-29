@@ -10,6 +10,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Maintenance** : chaque bloc rendu séparément ; une lecture en échec (dossier, base SIA, git) s'affiche dans son
+  bloc et en notification au lieu de laisser Sources et dossiers, Versions et synchronisation… vides.
+- **Barre latérale** : préférence et design posés dès l'en-tête de chaque page (repository_tree) ; planificateur :
+  navigation chargée avant les calculs — la barre ne paraît plus en fin de calcul.
+- **Registre → générateur** : plus de PDF produit à l'ouverture (demande de PDF consommée à l'arrivée, liée à la mission).
+- **Notifications** : une seule par zone d'état, effacement automatique (erreur 12 s, avertissement 8 s, autres 5 s),
+  plus de doublon message en ligne + notification.
+- **Zones de recherche** lisibles sur les fonds topographiques : magenta, liseré blanc, hachures.
+- **Format 2.0** : missions mémorisées dans le navigateur (partagée, lot) mises à niveau à la lecture.
 - **Routes de transit calculées** (`shared/mission_routing.js`) : voies aériennes de l'AIXM pour un avion en IFR,
   chaînage du RTBA à basse hauteur, direct pour les hélicoptères et le VFR ; dans la route probable, les durées, le
   croquis, le profil vertical (« ↺ Route probable ») et les zones à activer. Temps d'aller et de retour éprouvés par les

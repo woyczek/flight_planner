@@ -1065,13 +1065,24 @@
   try { cacheMsg = sessionStorage.getItem('mtCacheMsg') || ''; sessionStorage.removeItem('mtCacheMsg'); } catch { /* stockage indisponible */ }
 
   // ---- rendu, langue, événements
+  // Chaque lecture et chaque bloc isolés : une erreur (dossier illisible, base d'un autre format…) s'affiche dans son
+  // bloc et en notification, sans laisser les autres blocs vides.
+  const guard = async (what, fn, host) => {
+    try { return await fn(); } catch (e) {
+      const msg = `${what} : ${e?.message || e}`;
+      console.error(msg, e);
+      if (host) host.innerHTML = pill('err', msg);
+      window.AppFramework?.notify?.(msg, 'err');
+      return null;
+    }
+  };
   async function renderAll() {
     titles();
-    await Promise.all([waitFor('FileAccess'), waitFor('LocalStore'), waitFor('SuiteUpdate')]);
-    await Promise.all([readGitState(false), scanSiaFolder(false)]);
-    baseSummary = await window.SiaBase.summary();
-    renderUpdates(); renderSources(); renderSia(); renderBackup(); renderJournal(); renderCaches();
-    await renderVersions(); await renderDeps();
+    await guard('Chargement des modules', () => Promise.all([waitFor('FileAccess'), waitFor('LocalStore'), waitFor('SuiteUpdate')]));
+    await Promise.all([guard('État git', () => readGitState(false)), guard('Dossier SIA', () => scanSiaFolder(false))]);
+    baseSummary = await guard('Base SIA du navigateur', () => window.SiaBase.summary());
+    for (const [what, fn, host] of [['Mises à jour', renderUpdates, hosts.updates], ['Sources et dossiers', renderSources, hosts.sources], ['Mise à jour SIA', renderSia, hosts.sia], ['Sauvegarde', renderBackup, hosts.backup], ['Journal', renderJournal, hosts.journal], ['Caches', renderCaches, hosts.caches]]) guard(what, fn, host);
+    await guard('Versions et synchronisation', renderVersions, hosts.versions); await guard('Références et dépendances', renderDeps, hosts.deps);
     const want = new URLSearchParams(location.search).get('m') || location.hash.slice(1);
     if (embedded) { if (NAV[want]) showBlock(want); }
     else { const target = want && document.getElementById(want); if (target) setTimeout(() => target.scrollIntoView({ block: 'start' }), 200); }

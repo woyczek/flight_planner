@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Studio cartographique aéronautique SIA</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=20260929k">
-<script src="../../repository_tree?v=20260929k"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=20260929l">
+<script src="../../repository_tree?v=20260929l"></script>
 <link rel="stylesheet" href="maplibre-gl.css">
 <script src="maplibre-gl.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script src="mission_store.js?v=20260929k"></script>
-<script src="aero_symbols.js?v=20260929k"></script><script src="vertical_profile.js?v=20260929k"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/flight_performance_model.js?v=20260929k"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=20260929k"></script><script src="../../shared/mission_estimate.js?v=20260929k"></script><script src="../../shared/mission_exercise.js?v=20260929k"></script><script src="../../shared/mission_registry.js?v=20260929k"></script>
-<script src="../../shared/sia_base.js?v=20260929k"></script><script src="../../shared/aar_tracks.js?v=20260929k"></script><script src="../../shared/airac.js?v=20260929k"></script><script src="../../shared/sticky_frame.js?v=20260929k"></script>
+<script src="mission_store.js?v=20260929l"></script>
+<script src="aero_symbols.js?v=20260929l"></script><script src="vertical_profile.js?v=20260929l"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/flight_performance_model.js?v=20260929l"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=20260929l"></script><script src="../../shared/mission_estimate.js?v=20260929l"></script><script src="../../shared/mission_exercise.js?v=20260929l"></script><script src="../../shared/mission_registry.js?v=20260929l"></script>
+<script src="../../shared/sia_base.js?v=20260929l"></script><script src="../../shared/aar_tracks.js?v=20260929l"></script><script src="../../shared/airac.js?v=20260929l"></script><script src="../../shared/sticky_frame.js?v=20260929l"></script>
 <style>
 :root{font:15px/1.45 system-ui,sans-serif;color:#18242b;background:#edf3f6}body{max-width:1500px;margin:0 auto;padding:0 18px 50px}header,section{background:#fff;border:1px solid #d3dfe5;border-radius:12px;padding:20px;margin:14px 0;box-shadow:0 2px 8px #18313e0d}h1{margin:0;font-size:1.65rem}h2{margin:0 0 13px;font-size:1.1rem}.sub{color:#586a74;margin:.35rem 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:14px}.box{border:1px solid #dce5e9;border-radius:9px;padding:12px}.check{display:flex;gap:8px;align-items:center;margin:7px 0;font-weight:600}.check input{width:18px;height:18px}label{display:block;font-weight:650;margin:7px 0}input[type=file],input[type=number],textarea{width:100%;box-sizing:border-box;margin-top:4px;padding:8px;border:1px solid #afc1ca;border-radius:7px;font:inherit}textarea{min-height:105px;font-family:ui-monospace,monospace}button,.buttonLink{border:0;border-radius:8px;background:#075ca8;color:#fff;padding:10px 16px;font:inherit;font-weight:750;cursor:pointer;text-decoration:none;display:inline-block}button:disabled{opacity:.45;cursor:not-allowed}.warn{background:#fff7d9;border-left:4px solid #dfa400;padding:9px 11px}.ok{color:#08723c}.err{color:#a12622}code{background:#eef2f4;padding:2px 5px;border-radius:4px}#maps{padding-left:20px}.actions{display:flex;gap:10px;flex-wrap:wrap}.small{font-size:.88rem;color:#5c6d76}progress{width:100%;height:18px}
 input[type=range]{width:100%;margin:5px 0}select{width:100%;box-sizing:border-box;margin-top:4px;padding:8px;border:1px solid #afc1ca;border-radius:7px;background:#fff;font:inherit}
@@ -491,14 +491,19 @@ function exerciseOf(m){const v=yamlMapOf(m)?.exercise;return exerciseChoices().s
 function exerciseLayer(layer){const c=studioExercise();if(!c||layer==='none')return{c,ids:new Set()};if(layer.startsWith('chiffon:'))return{c,ids:new Set([layer.slice(8)]),chiffon:true};return{c,ids:new Set(c.X.revealedFor(c.ex,c.tl,c.me?c.me.callsign:'ORG',layer))}}
 /** Route d'une mission (départ, points tournants, arrivée) en lat/lon. */
 const missionSeq=y=>[y?.origin,...(y?.turning_points||[]),y?.destination].filter(p=>p&&Number.isFinite(+p.lat)&&Number.isFinite(+p.lon)).map(p=>({lat:+p.lat,lon:+p.lon}));
-// Zones de la mission : recherche (orange), mission (violet), exclusion (rouge) ; cercle ou polygone tireté, fond léger,
-// nom au nord de la zone. Option « Zones de mission et de recherche » (missionZones, cochée par défaut).
-const ZONE_STYLE={search:['#e67e00','rgba(255,160,0,.10)'],exclusion:['#c62828','rgba(198,40,40,.08)'],mission:['#7b1fa2','rgba(123,31,162,.07)']};
+// Zones de la mission : recherche (magenta), mission (violet), exclusion (rouge) ; cercle ou polygone tireté sur un liseré
+// blanc, fond hachuré léger (lisibles sur les fonds topographiques bruns et jaunes), nom au nord de la zone.
+// Option « Zones de mission et de recherche » (missionZones, cochée par défaut).
+const ZONE_STYLE={search:['#d0106a','rgba(208,16,106,.10)'],exclusion:['#c62828','rgba(198,40,40,.09)'],mission:['#6a1b9a','rgba(106,27,154,.08)']};
 function drawMissionZonesCanvas(ctx,mapDef,toC,scale,pl){if(!mission?.zones?.length||!el(mapDef,'missionZones'))return;const f=10*scale;ctx.save();
- for(const z of mission.zones){const [stroke,fill]=ZONE_STYLE[z.kind]||ZONE_STYLE.mission;ctx.strokeStyle=stroke;ctx.fillStyle=fill;ctx.lineWidth=Math.max(1.2,2.2*scale);ctx.setLineDash([9*scale,5*scale]);ctx.beginPath();let top;
-  if(z.points.length){const q=z.points.map(p=>toC(p.lat,p.lon));q.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();top=q.reduce((a,p)=>p.y<a.y?p:a,q[0]);top={x:q.reduce((a,p)=>a+p.x,0)/q.length,y:top.y}}
-  else{const c=toC(z.lat,z.lon),e=toC(z.lat,z.lon+z.radiusKm/(111.32*Math.cos(z.lat*Math.PI/180))),n=toC(z.lat+z.radiusKm/111.32,z.lon);ctx.ellipse(c.x,c.y,Math.abs(e.x-c.x),Math.abs(n.y-c.y),0,0,Math.PI*2);top={x:c.x,y:n.y}}
-  ctx.fill();ctx.stroke();ctx.setLineDash([]);
+ for(const z of mission.zones){const [stroke,fill]=ZONE_STYLE[z.kind]||ZONE_STYLE.mission,path=new Path2D;let top;
+  if(z.points.length){const q=z.points.map(p=>toC(p.lat,p.lon));q.forEach((p,i)=>i?path.lineTo(p.x,p.y):path.moveTo(p.x,p.y));path.closePath();top={x:q.reduce((a,p)=>a+p.x,0)/q.length,y:Math.min(...q.map(p=>p.y))}}
+  else{const c=toC(z.lat,z.lon),e=toC(z.lat,z.lon+z.radiusKm/(111.32*Math.cos(z.lat*Math.PI/180))),n=toC(z.lat+z.radiusKm/111.32,z.lon);path.ellipse(c.x,c.y,Math.abs(e.x-c.x),Math.abs(n.y-c.y),0,0,Math.PI*2);top={x:c.x,y:n.y}}
+  ctx.fillStyle=fill;ctx.fill(path);
+  // hachures à 45° dans la zone, puis liseré blanc et trait tireté de la couleur de la zone
+  ctx.save();ctx.clip(path);ctx.strokeStyle=stroke;ctx.globalAlpha=.3;ctx.lineWidth=Math.max(.8,1.2*scale);const cv=ctx.canvas,step=9*scale,hatch=new Path2D;for(let x=-cv.height;x<cv.width;x+=step){hatch.moveTo(x,0);hatch.lineTo(x+cv.height,cv.height)}ctx.stroke(hatch);ctx.restore();
+  ctx.setLineDash([]);ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=Math.max(3,5*scale);ctx.stroke(path);
+  ctx.strokeStyle=stroke;ctx.lineWidth=Math.max(1.6,2.6*scale);ctx.setLineDash([9*scale,5*scale]);ctx.stroke(path);ctx.setLineDash([]);
   const text=z.name||z.id,w=String(text).length*f*.6,r={x0:top.x-w/2,y0:top.y-f*1.6,x1:top.x+w/2,y1:top.y-f*.2};if(!pl||pl.take(r))drawHaloText(ctx,text,top.x,top.y-f*.8,f,stroke,'center')}
  ctx.restore()}
 function drawTracksCanvas(ctx,toC,scale,pl,mapDef){const layer=exerciseOf(mapDef);if(layer==='none')return;const{c,ids,chiffon}=exerciseLayer(layer);if(!c)return;const col='#1565c0',f=10*scale;ctx.save();ctx.lineJoin='round';
@@ -740,7 +745,7 @@ window.addEventListener('repository-nav-ready',e=>addOutputActions(e.detail));if
  // Ouverture depuis la mise à jour SIA (?relire=1) ; sinon base absente : relecture du dossier mémorisé si l'accès est déjà accordé.
  if(RELIRE_ON_OPEN){relireOnOpen();return}if(!cached)renderSiaBaseLine(null);if(!cached&&!isPreviewWindow){for(let i=0;i<50&&!window.FileAccess;i++)await new Promise(r=>setTimeout(r,100));const st=await window.FileAccess?.status?.('__sia');if(st?.handle&&st.permission==='granted')basePanel.reread(false);else if(st?.handle)basePanel.setMessage('<span class="err">Base à construire : cliquer « Relire le dossier ».</span>')}})();
 </script>
-<script src="../../shared/repository_nav.js?v=20260929k"></script>
-<script src="../../shared/app_framework.js?v=20260929k"></script>
-<script src="../../shared/content_i18n.js?v=20260929k"></script><script src="sia_i18n.js?v=20260929k"></script>
+<script src="../../shared/repository_nav.js?v=20260929l"></script>
+<script src="../../shared/app_framework.js?v=20260929l"></script>
+<script src="../../shared/content_i18n.js?v=20260929l"></script><script src="sia_i18n.js?v=20260929l"></script>
 </body></html>

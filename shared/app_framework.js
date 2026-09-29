@@ -206,8 +206,8 @@
   const revealHash = () => { const id = decodeURIComponent(location.hash.slice(1)); if (id) reveal(id); };
   window.addEventListener("hashchange", revealHash);
   window.addEventListener("load", () => setTimeout(revealHash, 50));
-  // Notifications communes : pile en bas de page, au-dessus des barres fixées. kind : info | ok | warn | err ; les
-  // erreurs restent jusqu'à fermeture, les autres s'effacent (6 s, 10 s pour un avertissement). Les zones d'état
+  // Notifications communes : pile en bas de page, au-dessus des barres fixées. kind : info | ok | warn | err ; toutes
+  // s'effacent seules (erreur 12 s, avertissement 8 s, autres 5 s ; en pause tant que la souris est dessus). Les zones d'état
   // marquées data-status (ex. <p id="status" data-status>) y sont relayées quand elles affichent une erreur
   // (.err, .error) ou un avertissement (.warn) : un message d'échec ne reste plus caché en bas d'un bloc.
   const notifyCss = () => {
@@ -239,8 +239,12 @@
     item.append(span, close);
     box.append(item);
     while (box.children.length > 4) box.firstElementChild.remove();
-    const ms = timeout ?? (kind === "err" ? 0 : kind === "warn" ? 10000 : 6000);
-    if (ms) setTimeout(() => item.remove(), ms);
+    const ms = timeout ?? (kind === "err" ? 12000 : kind === "warn" ? 8000 : 5000);
+    if (ms) {
+      let left = ms, start = Date.now(), timer = setTimeout(() => item.remove(), left);
+      item.onmouseenter = () => { clearTimeout(timer); left -= Date.now() - start; };
+      item.onmouseleave = () => { start = Date.now(); timer = setTimeout(() => item.remove(), Math.max(1500, left)); };
+    }
     return item;
   }
   // Relais des zones d'état data-status : erreur / avertissement affiché → notification (une fois par texte).
@@ -253,7 +257,8 @@
       new MutationObserver(() => {
         const bad = el.querySelector(".err,.error,.warn") || (/(^|\s)(err|error|warn)(\s|$)/.test(el.className) ? el : null);
         const text = bad ? bad.textContent.trim() : "";
-        if (text && text !== last) notify(text, bad.classList.contains("warn") ? "warn" : "err");
+        // une notification par zone : un nouveau message remplace le précédent (message puis message de secours…)
+        if (text && text !== last) { el._repoToast?.remove(); el._repoToast = notify(text, bad.classList.contains("warn") ? "warn" : "err"); }
         last = text;
       }).observe(el, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["class"] });
     }

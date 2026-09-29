@@ -293,7 +293,14 @@
     }
     // ligne de séparation d'un tableau Markdown recopiée comme équipe par certains générateurs (« --- », « ---: »)
     if (Array.isArray(yaml.teams)) yaml.teams = yaml.teams.filter(t => !t || typeof t !== 'object' || !Object.values(t).every(v => /^\s*:?-{2,}:?\s*$/.test(String(v ?? ''))));
-    return { yaml, narrative, sourceNames: files.map(f => f.name).filter(n => !ignored.includes(n)), ignored };
+    return { yaml: upgradeSchema(yaml), narrative, sourceNames: files.map(f => f.name).filter(n => !ignored.includes(n)), ignored };
+  }
+  /** Format helo-xp-mission : un document 1.0 dont l'identifiant est déjà « lettre-nnn[équipe] » est conforme au 2.0,
+   *  seul son repère change (même règle que tools/migrate_missions_schema.py) ; appliqué à la lecture (fichiers,
+   *  mission partagée et lot mémorisés dans le navigateur). */
+  function upgradeSchema(y) {
+    if (y && typeof y === 'object' && (y.schema || 'helo-xp-mission') === 'helo-xp-mission' && String(y.schema_version ?? '1.0') === '1.0' && /^[A-Z]-\d{3}[A-Z]?$/.test(String(y.mission?.id || '').trim().toUpperCase())) y.schema_version = '2.0';
+    return y;
   }
 
   // ---- stockage partagé
@@ -301,7 +308,7 @@
   function load() {
     try {
       const d = JSON.parse(localStorage.getItem(KEY) || 'null');
-      if (d && d.yaml) return d;
+      if (d && d.yaml) { upgradeSchema(d.yaml); return d; }
     } catch {
       /* illisible */ }
     try {
@@ -370,6 +377,7 @@
   function loadBatch() {
     try {
       const b = JSON.parse(localStorage.getItem(BATCH) || 'null');
+      if (b && Array.isArray(b.docs)) b.docs.forEach(d => upgradeSchema(d?.yaml));
       return b && Array.isArray(b.docs) && b.docs.length ? { docs: b.docs, index: Math.min(Math.max(0, b.index | 0), b.docs.length - 1) } : null;
     } catch { return null; }
   }
