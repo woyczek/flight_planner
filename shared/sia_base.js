@@ -221,7 +221,32 @@
     }
   }
   /** Grille MORA complète sur l'emprise { s, n, w, e } ; obstacleMax : obstacles par cellule (base SIA). progress(done, total, étape). */
-  async function computeMoraGrid(obstacleMax = {}, { s = 41, n = 51, w = -5, e = 10, z = 9, fine = 12 } = {}, progress) {
+  /** Théâtres couverts par la grille MORA (cellules de 1° × 1°) : métropole et Corse, puis outre-mer. */
+  const MORA_ZONES = [
+    { name: 'métropole', s: 41, n: 51, w: -5, e: 10 },
+    { name: 'Antilles', s: 14, n: 17, w: -62, e: -60 },
+    { name: 'Guyane', s: 2, n: 6, w: -55, e: -51 },
+    { name: 'Saint-Pierre-et-Miquelon', s: 46, n: 48, w: -57, e: -56 },
+    { name: 'Réunion', s: -22, n: -20, w: 55, e: 56 },
+    { name: 'Mayotte', s: -14, n: -12, w: 44, e: 46 },
+    { name: 'Nouvelle-Calédonie', s: -23, n: -19, w: 163, e: 169 },
+    { name: 'Polynésie (îles de la Société)', s: -18, n: -16, w: -152, e: -148 },
+    { name: 'Wallis-et-Futuna', s: -15, n: -13, w: -179, e: -176 }
+  ];
+  /** Grille MORA : une emprise (box : s, n, w, e) ou, sans emprise, tous les théâtres (MORA_ZONES), cellules réunies. */
+  async function computeMoraGrid(obstacleMax = {}, box = {}, progress) {
+    if (Number.isFinite(box?.s)) return computeMoraBox(obstacleMax, box, progress);
+    const all = [];
+    let peaksOk = true;
+    for (const zone of MORA_ZONES) {
+      const cells = await computeMoraBox(obstacleMax, zone, (d, n, step) => progress?.(d, n, `${zone.name} — ${step}`));
+      peaksOk = peaksOk && cells.peaksOk;
+      all.push(...cells);
+    }
+    all.peaksOk = peaksOk;
+    return all;
+  }
+  async function computeMoraBox(obstacleMax = {}, { s = 41, n = 51, w = -5, e = 10, z = 9, fine = 12 } = {}, progress) {
     const cell = {}, spots = {}, tiles = [];
     const tileX = (lon, zz) => Math.floor((lon + 180) / 360 * 2 ** zz), tileY = (lat, zz) => { const r = lat * Math.PI / 180; return Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** zz); };
     for (let x = tileX(w, z); x <= tileX(e - 1e-9, z); x++) for (let y = tileY(n - 1e-9, z); y <= tileY(s, z); y++) tiles.push([x, y]);
@@ -648,7 +673,7 @@
     VERSION, get, put, patch, purge, summarize, summary, info, previous, remember,
     filesOf, build, rebuild, appAsset, inspectXml,
     parseXmlSiaAirspaces, parseAixmAirspaces, parseAixmObstacles, parseLegacyAirspaces, aixmDms, expandAixmArc, markControlledAerodromes, inRing,
-    csvRows, csvField, parseCities, parseMora, moraLabel, moraOf, moraFtOf, moraCycle, moraCsv, moraFromObstacles, computeMoraGrid, MORA_SOURCE,
+    csvRows, csvField, parseCities, parseMora, moraLabel, moraOf, moraFtOf, moraCycle, moraCsv, moraFromObstacles, computeMoraGrid, MORA_ZONES, MORA_SOURCE,
     panel
   };
 })();

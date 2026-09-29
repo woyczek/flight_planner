@@ -48,6 +48,8 @@
   .mt-url{width:100%;min-width:260px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;font:12px ui-monospace,Consolas,monospace;background:var(--card);color:var(--ink)}
   .mt-nowrap{white-space:nowrap;width:1%}
   .mt-folders td:nth-child(2){width:1%;white-space:nowrap}
+  /* bouton de dossier : libellé sur une ligne (sinon la colonne étroite le replie lettre par lettre) */
+  .mt-folders .mt-folder{white-space:nowrap;min-width:max-content}.mt-folders td:nth-child(3){width:1%;white-space:nowrap}
   html[data-design="field"] .mt-block :is(button.secondary,.mt-file){background:linear-gradient(#26364e,#0f1a2a)!important;color:#eef0e6!important;border-color:#0b0d08!important}
   @media(max-width:760px){.mt-grid2{grid-template-columns:1fr}.mt-table tbody th{width:auto}}
 

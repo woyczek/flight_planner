@@ -362,7 +362,7 @@
 
   // ---- rendu
   // mission affichée : mémorisée (retour depuis le générateur, le studio ou un CR) ; ?mission=M-016 la choisit
-  const SEL_KEY = 'missionRegistrySelected:v1';
+  const SEL_KEY = 'missionRegistrySelected:v1'; const TABLE_H = 'missionRegistryTableHeight:v1';
   let table = null, selected = readJson(SEL_KEY, null), msg = '';
   const select = k => { selected = k; writeJson(SEL_KEY, k); };
   const pill = (level, text) => `<span class="rg-pill rg-${level}">${esc(text)}</span>`;
@@ -465,6 +465,14 @@
     const rows = reg.missions.filter(matches);
     const box = host.querySelector('#rgTable');
     if (!box) return;
+    // hauteur du tableau réglable (poignée en bas à droite), mémorisée
+    if (!box.dataset.sized) {
+      box.dataset.sized = '1';
+      const h = +readJson(TABLE_H, 0);
+      if (h >= 120) box.style.height = `${h}px`;
+      let timer = 0;
+      new ResizeObserver(() => { clearTimeout(timer); timer = setTimeout(() => { if (box.isConnected && box.offsetHeight) writeJson(TABLE_H, box.offsetHeight); }, 300); }).observe(box);
+    }
     if (!window.SortedTable) { box.textContent = 'mission_table.js'; return; }
     table = window.SortedTable.render(box, {
       rows, columns: COLUMNS(), defaultSortKey: 'id', defaultDir: 1,
