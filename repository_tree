@@ -174,6 +174,8 @@ window.REPOSITORY_TREE={
     "Apparence…":["Apparence (design, icônes, couleurs)…","Appearance (design, icons, colours)…","Darstellung (Design, Symbole, Farben)…","Apariencia (diseño, iconos, colores)…"]
   }
 };
+// jeux d'icônes composés (fond vierge + glyphe), écrit par tools/build_skeuo_icons_css.py
+window.REPOSITORY_TREE.iconComposed={"gel":{"normal":"aqua/vierge.gris.webp","centre":"aqua/vierge.gris.webp","tint":"var(--aq-gel,#2473db)","core":86,"glyph":"#ffffff","glyphCentre":"#ffd23f"}};
 // Préférences d'affichage posées dès l'en-tête (ce fichier est chargé dans le <head> de chaque page) : barre latérale et
 // design sur <html>, pour que la marge du contenu et le design paraissent avant les scripts de calcul de la page ;
 // shared/repository_nav.js les revalide ensuite (design inconnu : défaut) et construit la barre.

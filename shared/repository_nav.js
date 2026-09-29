@@ -147,7 +147,7 @@
   }
   // Couleur du design Aqua (gel des boutons, bulles des icônes) : une teinte de base commune à toutes les pages
   // (préférence repositoryAquaColor : bleu par défaut, ou une autre teinte, ou « app » : accent du thème de la page).
-  // Les icônes Gel (peintes en bleu, teinte 214°) suivent par rotation de teinte, sauf les icônes d'état.
+  // Les icônes Gel (jeu composé) prennent --aq-gel sur leur bulle (tools/build_skeuo_icons_css.py).
   const AQUA = { blue: [214, 72], teal: [186, 70], green: [145, 52], graphite: [212, 12], purple: [268, 52], orange: [24, 82], red: [356, 66], pink: [328, 60] };
   /** « #rrggbb » → [teinte (degrés), saturation (%)]. */
   const hueSat = hex => { const [r, g, b] = hexRgb(hex).map(v => v / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn, l = (mx + mn) / 2;
@@ -159,8 +159,6 @@
     let l = 52, c = hslHex(h, s, l);
     while (contrast("#ffffff", c) < 4.5 && l > 20) c = hslHex(h, s, l -= 2);
     doc.style.setProperty("--aq-gel", c);
-    doc.style.setProperty("--aq-shift", `${h - 214}deg`);
-    doc.style.setProperty("--aq-sat", Math.min(1.3, s / 72).toFixed(2));
   }
   applyTheme(themeName);
   // barre latérale (on / off), posée dès le chargement ; jeu d'icônes : après le design (défaut propre au design)
@@ -184,7 +182,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260929zzy", script.src).href;
+    css.href = new URL("designs.css?v=20260929zzzb", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -556,7 +554,7 @@
     // servent que dans les jeux au trait
     const SKEUO = { brass: "cabinet", steel: "field", gel: "aqua", avio: "flightlog" }, ver = new URL(script.src).search;
     // (entrées du Centre : fond du Centre des jeux composés, posé par block_icons.css sur le tracé SVG)
-    const skImg = name => { const d = SKEUO[doc.dataset.icons]; return d ? `<img class="repo-sidenav-img" src="${new URL(`icons/skeuo/${d}/${name}.webp${ver}`, script.src).href}" alt="">` : ""; };
+    const skImg = name => { const d = SKEUO[doc.dataset.icons]; return d && !cfg.iconComposed?.[doc.dataset.icons] ? `<img class="repo-sidenav-img" src="${new URL(`icons/skeuo/${d}/${name}.webp${ver}`, script.src).href}" alt="">` : ""; };
     // haut de la barre : logo DEFA décliné selon le design (shared/icons/defa/<variante>.webp), lien vers le site de la
     // flotte DEFA Virtual (nouvel onglet : la page en cours reste ouverte)
     const LOGO = { cabinet: "cabinet", flightlog: "flightlog", field: "field", aqua: "aqua" };
@@ -603,23 +601,23 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260929zzy", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260929zzzb", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260929zzy", script.src).href;
+    files.src = new URL("file_access.js?v=20260929zzzb", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260929zzy", "block_icons.js?v=20260929zzy", "side_nav.js?v=20260929zzy"]) {
+    for (const f of ["icons/repository_icons.js?v=20260929zzzb", "block_icons.js?v=20260929zzzb", "side_nav.js?v=20260929zzzb"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260929zzy", script.src).href;
+    store.src = new URL("browser_store.js?v=20260929zzzb", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=20260929zzy", script.src).href;
+    update.src = new URL("suite_update.js?v=20260929zzzb", script.src).href;
     document.head.append(update)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {
