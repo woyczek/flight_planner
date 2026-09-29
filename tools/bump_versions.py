@@ -44,7 +44,7 @@ for p in pages:
     s = io.open(p, encoding='utf-8', newline='').read()
     t = REF.sub(lambda m: f'{m.group(1)}?v={version}', s)
     # scripts propres à l'application SIA XML (chargés sans « shared/ ») : versionnés aussi
-    t = re.sub(r'((?:mission_prompt|mission_store|sia_i18n|aero_symbols|vertical_profile)\.js)\?v=\w+', lambda m: f'{m.group(1)}?v={version}', t)
+    t = re.sub(r'((?:mission_prompt|mission_store|sia_i18n|aero_symbols|vertical_profile|odv_core|odv_planning)\.js)\?v=\w+', lambda m: f'{m.group(1)}?v={version}', t)
     # repository_tree (arborescence, thèmes, designs, familles de couleurs) : versionné aussi, sinon le navigateur
     # garde une ancienne copie après une mise à jour
     t = re.sub(r'((?:\.\./|\./)*repository_tree)(?:\?v=\w+)?"', lambda m: f'{m.group(1)}?v={version}"', t)
@@ -58,7 +58,7 @@ if t != s:
 # un navigateur garde les anciennes images après une mise à jour (les scripts reprennent la version de leur ?v=)
 for css in [os.path.join(ROOT, 'shared', 'designs_skeuo.css'), os.path.join(ROOT, 'shared', 'block_icons.css')]:
     s = io.open(css, encoding='utf-8', newline='').read()
-    t = re.sub(r'((?:textures|deco/\w+|icons/skeuo/\w+)/[\w-]+\.webp)(?:\?v=\w+)?', lambda m: f'{m.group(1)}?v={version}', s)
+    t = re.sub(r'((?:textures|deco/\w+|icons/skeuo/[\w-]+)/[\w-]+\.webp)(?:\?v=\w+)?', lambda m: f'{m.group(1)}?v={version}', s)
     if t != s:
         io.open(css, 'w', encoding='utf-8', newline='').write(t)
 print(f'Version {version} : {changed} page(s) mise(s) à jour.')

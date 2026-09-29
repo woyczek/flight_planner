@@ -92,18 +92,6 @@
     };
     if (document.body) lockNotice(); else document.addEventListener("DOMContentLoaded", lockNotice);
   }
-  /** Filtres SVG des icônes skeuomorphes du Centre (designs_skeuo.css) : fond sombre teinté (bois → merisier, peinture →
-   *  rouge) ou glyphe clair doré (aviation) ou bulle bleu nuit (gel), selon la luminance : le laiton et le glyphe restent intacts. */
-  function cpcoIconFilters() {
-    if (!document.body) { document.addEventListener("DOMContentLoaded", cpcoIconFilters, { once: true }); return; }
-    if (document.getElementById("cpcoIconFilters")) return;
-    const tint = (id, matrix, slope, intercept, glyph) => `<filter id="${id}" color-interpolation-filters="sRGB"><feColorMatrix in="SourceGraphic" type="matrix" values="${matrix} 0 0 0 1 0" result="t"/><feColorMatrix in="SourceGraphic" type="luminanceToAlpha" result="l"/><feComponentTransfer in="l" result="m"><feFuncA type="linear" slope="${slope}" intercept="${intercept}"/></feComponentTransfer>${glyph ? '<feComposite in="t" in2="m" operator="in" result="g"/><feComposite in="g" in2="SourceGraphic" operator="over"/>' : '<feComposite in="SourceGraphic" in2="m" operator="in" result="k"/><feComposite in="k" in2="t" operator="over"/>'}</filter>`;
-    document.body.insertAdjacentHTML("beforeend", `<svg id="cpcoIconFilters" width="0" height="0" style="position:absolute" aria-hidden="true">${
-      tint("cpco-ico-cherry", "1.25 .2 0 0 0  0 .42 0 0 0  0 0 .5 0 0 ", 4, -1.2) +
-      tint("cpco-ico-red", ".62 .62 .62 0 0  0 .36 0 0 0  0 0 .32 0 0 ", 4, -1.6) +
-      tint("cpco-ico-gold", "1 0 0 0 0  0 .84 0 0 0  0 0 .36 0 0 ", 5, -3.5, true) +
-      tint("cpco-ico-navy", ".32 0 0 0 0  0 .36 0 0 0  0 0 .62 0 0 ", 12, -10.6)}</svg>`);
-  }
   let currentTheme = themeName;
   // Graphiques : palette et style, au choix (Apparence › Graphiques : préférences repositoryChartPalette et
   // repositoryChartStyle) ou automatiques selon le design. Palettes : « vivid » (couleurs d'origine des pages), « brass »
@@ -145,7 +133,6 @@
     const t = themeColors(name);
     currentTheme = name;
     doc.dataset.appTheme = name;   // thème sur <html> : réglages propres à un thème (icônes skeuomorphes du Centre)
-    cpcoIconFilters();
     for (const [k, v] of Object.entries({
         "--repo-bar": t.bar || "#101319",
         "--repo-bar-text": t.barText || "#fff",
@@ -197,7 +184,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260929zv", script.src).href;
+    css.href = new URL("designs.css?v=20260929zy", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -568,7 +555,8 @@
     // page), sans attendre le registre d'icônes ni block_icons.css ; les tracés arrivent ensuite (side_nav.js) et ne
     // servent que dans les jeux au trait
     const SKEUO = { brass: "cabinet", steel: "field", gel: "aqua", avio: "flightlog" }, ver = new URL(script.src).search;
-    const skImg = name => { const d = SKEUO[doc.dataset.icons]; return d ? `<img class="repo-sidenav-img" src="${new URL(`icons/skeuo/${d}/${name}.webp${ver}`, script.src).href}" alt="">` : ""; };
+    // entrées du Centre : jeu du Centre (icons/skeuo/<dossier>-cpco, copies aux couleurs du Centre)
+    const skImg = (name, cpco) => { const d = SKEUO[doc.dataset.icons]; return d ? `<img class="repo-sidenav-img" src="${new URL(`icons/skeuo/${d}${cpco ? "-cpco" : ""}/${name}.webp${ver}`, script.src).href}" alt="">` : ""; };
     // haut de la barre : logo DEFA décliné selon le design (shared/icons/defa/<variante>.webp), lien vers le site de la
     // flotte DEFA Virtual (nouvel onglet : la page en cours reste ouverte)
     const LOGO = { cabinet: "cabinet", flightlog: "flightlog", field: "field", aqua: "aqua" };
@@ -586,7 +574,7 @@
       else a.href = new URL(it.path, root).href;
       if (it.path === "apps/settings/apparence.html") a.addEventListener("click", e => { if (openAppearance()) e.preventDefault(); });
       if (i === active) a.setAttribute("aria-current", "page");
-      a.innerHTML = `<span class="repo-sidenav-ic" data-sidenav-icon="${esc(it.icon)}">${skImg(it.icon)}</span><span class="repo-sidenav-label"></span>`;
+      a.innerHTML = `<span class="repo-sidenav-ic" data-sidenav-icon="${esc(it.icon)}">${skImg(it.icon, isCpco(it.path))}</span><span class="repo-sidenav-label"></span>`;
       a._it = it;
       li.append(a);
       ul.append(li);
@@ -605,7 +593,7 @@
     window.addEventListener("repository-design-change", () => {
       side.querySelectorAll("[data-sidenav-icon]").forEach(sp => {
         sp.querySelector(".repo-sidenav-img")?.remove();
-        sp.insertAdjacentHTML("afterbegin", skImg(sp.dataset.sidenavIcon));
+        sp.insertAdjacentHTML("afterbegin", skImg(sp.dataset.sidenavIcon, !!sp.closest(".repo-sidenav-cpco")));
       });
       const logo = side.querySelector(".repo-sidenav-logo");
       if (logo && logo.src !== logoSrc()) logo.src = logoSrc();
@@ -615,23 +603,23 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260929zv", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260929zy", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260929zv", script.src).href;
+    files.src = new URL("file_access.js?v=20260929zy", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260929zv", "block_icons.js?v=20260929zv", "side_nav.js?v=20260929zv"]) {
+    for (const f of ["icons/repository_icons.js?v=20260929zy", "block_icons.js?v=20260929zy", "side_nav.js?v=20260929zy"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260929zv", script.src).href;
+    store.src = new URL("browser_store.js?v=20260929zy", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=20260929zv", script.src).href;
+    update.src = new URL("suite_update.js?v=20260929zy", script.src).href;
     document.head.append(update)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

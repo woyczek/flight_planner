@@ -10,6 +10,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Icônes du Centre** : jeux d'icônes propres au Centre `shared/icons/skeuo/<jeu>-cpco/` (copies des jeux Laiton, Acier,
+  Gel, Aviation, à retoucher), utilisés sur les pages du Centre et pour ses entrées de la barre latérale ; les filtres
+  de couleur (rendu grossier) sont retirés. Règles générées par `tools/build_skeuo_icons_css.py`.
+- **Outils** : `tools/README.md` (outils courants, ateliers graphiques, migrations ponctuelles) ; `bump_versions.py`
+  met aussi à jour les scripts du Planning ODV et les images des jeux d'icônes du Centre.
+- **Décors** : retouches de l'utilisateur (Cabinet, Carnet de vol, Aqua).
+
 - **Barre latérale** : affichée par défaut (Apparence : « Toujours » ; « Selon le design » reste possible).
 - **Accès au Centre** : entrées du Centre (barre latérale, menu ☰) montrées ou masquées aussitôt à l'activation ou au
   verrouillage, sans recharger.
