@@ -61,7 +61,10 @@
   //   un niveau seul entre deux points (« FL105 », « 5500 ft ») = montée ou descente vers ce niveau à
   //   partir du point précédent (au départ s'il est en tête) ;
   // - case 15 du plan de vol (séparée par des espaces) : « LFBO N0450F350 DCT TOU UN460 NTS/N0440F370
-  //   LFRN » — DCT, voies aériennes et SID / STAR sautés (tracé direct), coordonnées « 4630N00130E ».
+  //   LFRN » — DCT et SID / STAR sautés, coordonnées « 4630N00130E » ; voie aérienne entre deux points (« TOU UN460
+  //   NTS ») suivie point par point si la base SIA la connaît (resolve.airways), sinon tracé direct ;
+  // - « /A035 » ou « /F065 » après un point : altitude (ft / 100) ou niveau à atteindre au point.
+  // Chaque point porte ti : rang de son jeton dans le texte (points d'une voie aérienne : via = voie, awy = true).
   // resolve(nom) → {name, lat, lon} ou null.
   function parseRoute(text, resolve) {
     const src = String(text || '').trim(),
@@ -69,15 +72,33 @@
     const tokens = item15 ? src.split(/\s+/) : src.split(/[,;\n]+/).map(x => x.trim()).filter(Boolean);
     const out = [],
       unknown = [];
-    let pending = null;
+    let pending = null,
+      airway = null;   // voie aérienne en attente de son point de sortie : { route, ti }
+    const awySegs = resolve?.airways || [];
+    /** Points d'une voie aérienne entre a et b (exclus) : chemin le long de ses segments ; [] si inconnu. */
+    const alongAirway = (route, a, b) => {
+      const segs = awySegs.filter(g => g.route === route);
+      if (!segs.length) return null;
+      const key = p => `${(+p.lat).toFixed(4)},${(+p.lon).toFixed(4)}`, nodes = new Map(), adj = new Map();
+      for (const g of segs) for (const [x, y] of [[g.a, g.b], [g.b, g.a]]) { nodes.set(key(x), x); if (!adj.has(key(x))) adj.set(key(x), []); adj.get(key(x)).push(key(y)); }
+      const nearest = p => { let best = null, d = Infinity; for (const [k, n] of nodes) { const e = dist(p, n); if (e < d) { d = e; best = k; } } return d <= 2 * NM ? best : null; };
+      const s = nearest(a), t = nearest(b);
+      if (!s || !t) return null;
+      const prev = new Map([[s, null]]), queue = [s];
+      while (queue.length) { const k = queue.shift(); if (k === t) break; for (const n of adj.get(k) || []) if (!prev.has(n)) { prev.set(n, k); queue.push(n); } }
+      if (!prev.has(t)) return null;
+      const path = [];
+      for (let k = prev.get(t); k && k !== s; k = prev.get(k)) path.unshift(nodes.get(k));
+      return path;
+    };
     /** Groupe vitesse / niveau de la route (N0450F350…) appliqué aux points suivants. */
     const setLevel = lvl => {
       if (out.length) out[out.length - 1].lvl = lvl;
       else pending = lvl;
     };
-    for (const raw of tokens) {
+    for (const [ti, raw] of tokens.entries()) {
       const up = raw.toUpperCase();
-      if (up === 'DCT') continue;
+      if (up === 'DCT') { airway = null; continue; }
       if (up === 'VFR' || up === 'IFR') {
         if (up === 'VFR') setLevel({
           vfr: true
@@ -111,8 +132,9 @@
           vfr: true
         };
         else {
-          const m = /^(FL)?\s*(\d+)/i.exec(altRaw);
-          if (m) alt = m[1] ? +m[2] * 100 : +m[2];
+          const m = /^(FL)?\s*(\d+)/i.exec(altRaw), h = /^([AF])(\d{3})$/i.exec(altRaw);
+          if (h) alt = +h[2] * 100;
+          else if (m) alt = m[1] ? +m[2] * 100 : +m[2];
         }
       }
       const c = /^(?:(\S*[A-Za-z]\S*)\s+)?(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)$/.exec(spec);
@@ -122,13 +144,18 @@
         lon: +c[3]
       } : icaoCoord(spec.toUpperCase()) || resolve(spec);
       if (p && Number.isFinite(p.lat) && Number.isFinite(p.lon)) {
+        // voie aérienne en attente : ses points entre le point précédent et celui-ci
+        if (airway && out.length) for (const q of alongAirway(airway.route, out[out.length - 1], p) || []) out.push({ name: q.id || '', lat: q.lat, lon: q.lon, alt: null, lvl: null, ti: airway.ti, via: airway.route, awy: true });
         out.push({
           ...p,
           alt,
-          lvl: lvl || pending
+          lvl: lvl || pending,
+          ti,
+          ...(airway ? { via: airway.route } : {})
         });
         pending = null;
-      } else if (item15 && (/^[A-Z]{1,2}\d{1,4}[A-Z]?$/.test(up) || /^[A-Z]{2,5}\d[A-Z]$/.test(up))) continue; // voie aérienne, SID / STAR
+        airway = null;
+      } else if (item15 && (/^[A-Z]{1,2}\d{1,4}[A-Z]?$/.test(up) || /^[A-Z]{2,5}\d[A-Z]$/.test(up))) { airway = awySegs.some(g => g.route === up) ? { route: up, ti } : null; continue; } // voie aérienne, SID / STAR
       else unknown.push(spec);
     }
     return {
@@ -351,7 +378,11 @@
       s,
       name: points[i].name,
       alt: points[i].alt,
-      lvl: points[i].lvl
+      lvl: points[i].lvl,
+      ti: points[i].ti,
+      awy: !!points[i].awy,
+      lat: points[i].lat,
+      lon: points[i].lon
     }));
     const ok = r => r?.at ? r : r && +r.fpm > 0 && +r.kt > 0 ? {
       fpm: Math.abs(+r.fpm),
@@ -399,7 +430,8 @@
     scale = 1,
     limitFt,
     title = '',
-    abbrev = false
+    abbrev = false,
+    limits = true   // altitudes (plancher – plafond) sous le nom des espaces (profil d'affichage : zoneLimitsShow)
   } = {}) {
     const f = 11 * scale,
       padL = 58 * scale,
@@ -488,7 +520,7 @@
         y0: Y(hi(mid)),
         y1: Y(lo(mid)),
         text: abbrev ? a.name : `${a.type} ${a.name}`,
-        sub: `${a.lower || 'SFC'} – ${a.upper || 'UNL'}`,
+        sub: limits ? `${a.lower || 'SFC'} – ${a.upper || 'UNL'}` : '',
         xa: X(data.samples[c.i0].s),
         xb: X(data.samples[c.i1].s),
         w: X(data.samples[c.i1].s) - X(data.samples[c.i0].s)
@@ -552,7 +584,7 @@
       iB = H - padB;
     for (const l of labels.sort((a, b) => b.w - a.w)) {
       const w = Math.max(ctx.measureText(l.text).width, ctx.measureText(l.sub).width) + 8 * scale,
-        hgt = f * 2.3;
+        hgt = f * (l.sub ? 2.3 : 1.4);
       /** Abscisse d'étiquette ramenée dans le cadre. */
       const cx = x => Math.min(iR - w / 2, Math.max(iL + w / 2, x)),
         rect = (x, y) => ({
@@ -587,7 +619,7 @@
       ctx.strokeRect(r.x0, r.y0, w, hgt);
       ctx.fillStyle = l.col;
       ctx.font = `bold ${f}px Arial, sans-serif`;
-      ctx.fillText(l.text, r.x, r.y - f * .55);
+      ctx.fillText(l.text, r.x, l.sub ? r.y - f * .55 : r.y);
       ctx.font = `${f * .9}px Arial, sans-serif`;
       ctx.fillText(l.sub, r.x, r.y + f * .6);
       ctx.font = `${f}px Arial, sans-serif`;
@@ -852,11 +884,13 @@
       }
       return null;
     };
-    return name => {
+    const fn = name => {
       const p = find(String(name).trim().toUpperCase());
       if (p) last = p;
       return p;
     };
+    fn.airways = aero.airways || [];   // voies aériennes (parseRoute : « TOU UN460 NTS » suivie point par point)
+    return fn;
   }
 
   // ===== Relief : tuiles d'altitude Terrarium (AWS), z10 ≈ 150 m, gardées en mémoire =====
@@ -958,10 +992,13 @@
    *  Changement de niveau après un point (« R589B, FL55 ») → « 4452N00012E/N0180F055 ». Niveau de départ : celui du
    *  premier point, sinon cruiseFt. Résultat : { item15, full (départ + case 15 + destination), dep, dest, distNm,
    *  trackDeg (route vraie départ → destination), cruiseFt, kt } ; null s'il y a moins de deux points. */
-  function toIcaoRoute(points, { aero = {}, kt = 120, cruiseFt = null } = {}) {
+  function toIcaoRoute(points, { aero = {}, kt = 120, cruiseFt = null, resolve = null } = {}) {
     const pts = (points || []).filter(p => Number.isFinite(p?.lat) && Number.isFinite(p?.lon));
     if (pts.length < 2) return null;
-    const plain = resolver({ aero });
+    // resolve donné : texte du champ de route (noms connus de ce résolveur gardés : points du brief, TARGET… ;
+    // « /A035 » gardé) ; sinon plan de vol OACI strict (indicatifs publiés, altitudes en groupes vitesse / niveau)
+    const strict = !resolve, plain = resolve || resolver({ aero });
+    const airways = new Set((aero.airways || []).map(g => g.route));
     const nmBetween = (a, b) => {
       const r = Math.PI / 180,
         x = Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2;
@@ -969,7 +1006,7 @@
     };
     const desig = p => {
       const n = String(p.name || '').trim().toUpperCase();
-      if (/^[A-Z0-9]{2,5}$/.test(n)) {
+      if (strict ? /^[A-Z0-9]{2,5}$/.test(n) : /^[A-Z0-9_-]{2,12}$/.test(n)) {
         const q = plain(n);
         if (q && nmBetween(q, p) <= 2) return n;
       }
@@ -978,11 +1015,21 @@
     const levelOf = l => l && !l.vfr && Number.isFinite(l.ft) ? l : null;
     const first = levelOf(pts[0].lvl) || (Number.isFinite(cruiseFt) && cruiseFt > 0 ? { ft: cruiseFt, label: cruiseFt >= 6000 ? 'FL' : '' } : null);
     const speed = l => l?.kt || kt;
+    /** Suffixe d'un point : groupe vitesse / niveau (changement de niveau) ou altitude à atteindre au point. */
+    const suffix = p => {
+      const l = levelOf(p.lvl);
+      if (l) return '/' + icaoGroup(speed(l), l.ft, l.label);
+      if (Number.isFinite(p.alt) && p.alt > 0) return strict ? '/' + icaoGroup(kt, p.alt, p.alt >= 6000 ? 'FL' : '') : `/${p.alt >= 6000 ? 'F' : 'A'}${String(Math.round(p.alt / 100)).padStart(3, '0')}`;
+      return p.lvl?.vfr ? ' VFR' : '';
+    };
     const out = [];
-    out.push(first ? icaoGroup(speed(first), first.ft, first.label) : 'VFR');
+    if (first) out.push(icaoGroup(speed(first), first.ft, first.label));
+    else if (strict) out.push('VFR');
     for (let i = 1; i < pts.length - 1; i++) {
-      const p = pts[i], l = levelOf(p.lvl);
-      out.push('DCT', desig(p) + (l ? '/' + icaoGroup(speed(l), l.ft, l.label) : p.lvl?.vfr ? ' VFR' : ''));
+      const p = pts[i], sfx = suffix(p), awy = p.via && airways.has(p.via) ? p.via : '';
+      // portion de voie aérienne : points intermédiaires omis (« TOU UN460 NTS »), sauf changement de niveau
+      if (awy && !sfx && pts[i + 1]?.via === awy && i + 1 < pts.length - 1) continue;
+      out.push(awy || 'DCT', desig(p) + sfx);
     }
     out.push('DCT');
     const dep = desig(pts[0]), dest = desig(pts[pts.length - 1]);

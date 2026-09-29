@@ -1,9 +1,9 @@
 # Planning ODV
 
-Page `apps/planner/odv_planning.html` (☰ › Planning ODV) : lit le classeur hebdomadaire ODV de l'escadrille
+Page du Centre `apps/cpco/odv_planning.html` (☰ › Centre — Planning ODV ; accès réservé comme le reste du Centre) : lit le classeur hebdomadaire ODV de l'escadrille
 (`ODV_Snn_XXX.xlsx`) et en tire la grille de disponibilité, les créneaux communs, les missions probables et les vols
-déjà posés sur la frise horaire. Lecture et règles : `apps/planner/odv_core.js` (`window.OdvCore`) ; interface :
-`apps/planner/odv_planning.js`.
+déjà posés sur la frise horaire. Lecture et règles : `apps/cpco/odv_core.js` (`window.OdvCore`) ; interface :
+`apps/cpco/odv_planning.js`.
 
 ## Données personnelles
 

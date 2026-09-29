@@ -10,6 +10,19 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Bloc « Route »** (studio du Centre, Cartes de vol) : un seul champ de route au format case 15 OACI, modifiable, juste
+  au-dessus de la carte et de la coupe verticale ; recherche de route (voies aériennes ou RTBA) écrite avec les voies
+  (« GOSAD G36 LMG G28 CTX »), voies aériennes suivies point par point par le profil et la carte, altitudes au point
+  « /A035 » ; survol lié champ ↔ carte ↔ coupe (jeton surligné dans le champ) ; carte : points déplaçables
+  latéralement, aimantés sur balises, points de report et terrains, clic sur la route pour insérer un point ;
+  « Copier en OACI » (plan de vol strict) ; réglages du profil repliés. Bloc « Cartes à produire » sans aperçu (l'aperçu
+  est la carte du bloc Route). Cartes de vol : bloc « Cartes du vol » (rendez-vous, niveau, cartes) après la route.
+- **Profil vertical** : l'option « Afficher les altitudes (plafond / plancher) » du profil d'affichage s'applique aussi à
+  la coupe (studio, planificateur).
+- **Profils des cartes** : IFR par défaut (détail, cible, rendez-vous : VFR détaillé).
+- **Planning ODV** : page du Centre (`apps/cpco/odv_planning.html`, accès réservé, entrée « ODV » de la barre latérale).
+- **Icônes du Centre en Aqua** : bulle bleu nuit cerclée d'or (au lieu du glyphe jaune).
+
 - **Planning ODV — sessions ATC et registre** : un « TRAINING » ou « EXAMEN » de position (« EXAMEN LFMN_TWR ») rend
   la CTR du terrain indisponible pour le créneau (et si possible ses TMA) ; bouton « Missions du registre… » sur les
   créneaux d'au moins deux pilotes : missions avec rendez-vous ou à plusieurs équipes de la famille, route estimée

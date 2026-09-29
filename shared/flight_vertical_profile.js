@@ -179,6 +179,7 @@
       floor: +$('vpFloor').value || 0,
       limitFt: SiaAero.limitFt,
       abbrev: !!SiaProfile.opt(profile, 'zoneAbbrev', false),
+      limits: SiaProfile.opt(profile, 'zoneLimitsShow', true) !== false,
       title: `${tl('Profil vertical', 'Vertical profile', 'Vertikalprofil', 'Perfil vertical')} — ${points[0].name} → ${points[points.length - 1].name} (${(data.total / 1852).toFixed(0)} NM)`
     });
     $('vpImg').src = c.toDataURL('image/png');

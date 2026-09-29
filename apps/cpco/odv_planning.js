@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  // Planning ODV — interface de apps/planner/odv_planning.html (lecture et règles : odv_core.js).
+  // Planning ODV — interface de apps/cpco/odv_planning.html (lecture et règles : odv_core.js).
   // Le classeur n'est gardé qu'en mémoire (variable book) : rien dans le stockage du navigateur hormis les réglages
   // (odvPlanning:v1) ; « Effacer les données » le libère. Avertissements de lecture : notifications flottantes
   // (AppFramework.notify) et liste du rapport de lecture. Tableaux : SortedTable (shared/mission_table.js).
@@ -342,7 +342,7 @@
           : `<p class="mut">Aucune mission du registre avec rendez-vous ou à plusieurs équipes${famSel ? ` en ${esc(famSel)}` : ''} pour ${s.n} pilote(s).</p>`}
         <p class="mut">Missions volées et celles qui traversent un espace à éviter en fin de liste ; ouverture dans le registre du Centre (nouvel onglet).</p>`;
       pickDialog.querySelector('[data-fam]').onchange = e => render(e.target.value);
-      pickDialog.querySelectorAll('[data-open]').forEach(b => b.onclick = () => window.open(new URL(`../cpco/mission_registry.html?mission=${encodeURIComponent(b.dataset.open)}`, location.href).href, '_blank'));
+      pickDialog.querySelectorAll('[data-open]').forEach(b => b.onclick = () => window.open(new URL(`mission_registry.html?mission=${encodeURIComponent(b.dataset.open)}`, location.href).href, '_blank'));
     };
     render(fam || s.missions[0]?.famille || '');
     if (!pickDialog.open) pickDialog.showModal();

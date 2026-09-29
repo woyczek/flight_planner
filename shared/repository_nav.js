@@ -93,7 +93,7 @@
     if (document.body) lockNotice(); else document.addEventListener("DOMContentLoaded", lockNotice);
   }
   /** Filtres SVG des icônes skeuomorphes du Centre (designs_skeuo.css) : fond sombre teinté (bois → merisier, peinture →
-   *  rouge) ou glyphe clair doré (aviation, gel), selon la luminance : le laiton et le glyphe restent intacts. */
+   *  rouge) ou glyphe clair doré (aviation) ou bulle bleu nuit (gel), selon la luminance : le laiton et le glyphe restent intacts. */
   function cpcoIconFilters() {
     if (!document.body) { document.addEventListener("DOMContentLoaded", cpcoIconFilters, { once: true }); return; }
     if (document.getElementById("cpcoIconFilters")) return;
@@ -102,7 +102,7 @@
       tint("cpco-ico-cherry", "1.25 .2 0 0 0  0 .42 0 0 0  0 0 .5 0 0 ", 4, -1.2) +
       tint("cpco-ico-red", ".62 .62 .62 0 0  0 .36 0 0 0  0 0 .32 0 0 ", 4, -1.6) +
       tint("cpco-ico-gold", "1 0 0 0 0  0 .84 0 0 0  0 0 .36 0 0 ", 5, -3.5, true) +
-      tint("cpco-ico-gold-gel", "1 0 0 0 0  0 .84 0 0 0  0 0 .36 0 0 ", 12, -10.9, true)}</svg>`);
+      tint("cpco-ico-navy", ".32 0 0 0 0  0 .36 0 0 0  0 0 .62 0 0 ", 12, -10.6)}</svg>`);
   }
   let currentTheme = themeName;
   // Graphiques : palette et style, au choix (Apparence › Graphiques : préférences repositoryChartPalette et
@@ -197,7 +197,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260929zr", script.src).href;
+    css.href = new URL("designs.css?v=20260929zu", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -540,6 +540,7 @@
     const items = cfg.sidebar || [
       { icon: "target", path: "apps/cpco/mission_editor.html", label: ["Missions", "Missions", "Missionen", "Misiones"] },
       { icon: "list", path: "apps/cpco/mission_registry.html", label: ["Registre", "Registry", "Register", "Registro"], title: ["Registre des missions générées", "Generated mission registry", "Register der erzeugten Missionen", "Registro de misiones generadas"] },
+      { icon: "calendar", path: "apps/cpco/odv_planning.html", label: ["ODV", "ODV", "ODV", "ODV"], title: ["Planning ODV (Centre) : créneaux communs, missions probables", "ODV planning (Centre)", "ODV-Planung (Zentrum)", "Planificación ODV (Centro)"] },
       { icon: "map", path: "apps/cpco/map_parser.html", label: ["Studio", "Studio", "Studio", "Estudio"], title: ["Studio cartographique du Centre", "Centre map studio", "Kartenstudio des Zentrums", "Estudio cartográfico del Centro"] },
       { icon: "clipboard", path: "apps/cr/mission_cr.html", match: "apps/cr/", label: ["CR DEFA", "DEFA report", "DEFA-Bericht", "Informe DEFA"] },
       { icon: "chart", path: "apps/cr/mission_operations_reporting.html", match: "_reporting.html", label: ["Reporting", "Reporting", "Berichte", "Informes"] },
@@ -609,23 +610,23 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260929zr", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260929zu", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260929zr", script.src).href;
+    files.src = new URL("file_access.js?v=20260929zu", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260929zr", "block_icons.js?v=20260929zr", "side_nav.js?v=20260929zr"]) {
+    for (const f of ["icons/repository_icons.js?v=20260929zu", "block_icons.js?v=20260929zu", "side_nav.js?v=20260929zu"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260929zr", script.src).href;
+    store.src = new URL("browser_store.js?v=20260929zu", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=20260929zr", script.src).href;
+    update.src = new URL("suite_update.js?v=20260929zu", script.src).href;
     document.head.append(update)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

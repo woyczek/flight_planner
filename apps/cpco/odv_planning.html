@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Planning ODV</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=20260929zr">
-<script src="../../repository_tree?v=20260929zr"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=20260929zu">
+<script src="../../repository_tree?v=20260929zu"></script>
 <style>
 /* Couleurs : sombres par défaut (thème du planificateur), claires si le ton de la page est clair (Apparence). */
 :root{font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;color-scheme:dark;--text:#eef3f7;--muted:#9ba8b5;--panel:#181d23;--field:#11161c;--line:#2b3440;--soft:#ffffff0d;--card:var(--panel);--ink:var(--text)}
@@ -53,13 +53,14 @@ main.odv-page h2{font-size:15px;margin:0 0 10px}main.odv-page h3{font-size:13px;
 .odv-pick-head button{font-size:18px;padding:0 8px}.odv-pick-avoid{padding:6px 10px;border-left:4px solid #e0a400;background:#e0a40014}
 .odv-pick-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}.odv-pick-table th,.odv-pick-table td{padding:4px 6px;border-top:1px solid var(--line,#dde5ea);text-align:left;vertical-align:top}
 .odv-pick-table tr.bad td{opacity:.55;background:#e5484d12}.odv-pick-table tr.warn td:nth-child(9){color:#9a6b00}.odv-pick-btn{font-size:12px;padding:3px 9px}
+.cpco-eyebrow{display:block;margin:0 0 2px;line-height:1.2;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:inherit;opacity:.78}
 </style>
 </head>
 <body>
 <!-- Planning ODV : lit le classeur hebdomadaire ODV de l'escadrille (.xlsx) dans le navigateur (rien n'est envoyé), puis
      montre la grille de disponibilité, les créneaux communs, les missions probables (règles expliquées) et les vols de la
      frise horaire ; exports locaux. Lecture et règles : odv_core.js ; interface : odv_planning.js ; doc : docs/ODV_PLANNING.md. -->
-<header><h1>Planning ODV</h1></header>
+<header><h1><span class="cpco-eyebrow">Centre de planification et de conduite des opérations</span>Planning ODV</h1></header>
 <main class="odv-page">
 <section data-block-id="import" data-icon="upload" data-subtitle="Classeur hebdomadaire de l'escadrille (.xlsx), lu dans ce navigateur."><h2>Classeur ODV</h2>
   <p class="odv-privacy repo-notice" data-icon="info">Données personnelles : le fichier est lu dans ce navigateur, rien n'est envoyé ni conservé (seuls les réglages sont mémorisés). Ne publiez pas les exports.</p>
@@ -106,14 +107,14 @@ main.odv-page h2{font-size:15px;margin:0 0 10px}main.odv-page h3{font-size:13px;
   <textarea id="odvRecapText" readonly placeholder="Récapitulatif DISPO MATIN / APREM / SOIR par jour (texte à coller, par exemple dans Discord)."></textarea>
 </section>
 </main>
-<script src="../../shared/repository_nav.js?v=20260929zr"></script>
-<script src="../../shared/zip_store.js?v=20260929zr"></script>
-<script src="../../shared/data_files.js?v=20260929zr" data-file="references/defa_reference.js"></script>
-<script src="../../shared/mission_table.js?v=20260929zr"></script>
-<script src="../../shared/sia_base.js?v=20260929zr"></script><script src="odv_core.js?v=20260929zq"></script>
+<script src="../../shared/repository_nav.js?v=20260929zu"></script>
+<script src="../../shared/zip_store.js?v=20260929zu"></script>
+<script src="../../shared/data_files.js?v=20260929zu" data-file="references/defa_reference.js"></script>
+<script src="../../shared/mission_table.js?v=20260929zu"></script>
+<script src="../../shared/sia_base.js?v=20260929zu"></script><script src="odv_core.js?v=20260929zq"></script>
 <script src="odv_planning.js?v=20260929zq"></script>
-<script src="../../shared/app_framework.js?v=20260929zr"></script>
-<script src="../../shared/content_i18n.js?v=20260929zr"></script>
+<script src="../../shared/app_framework.js?v=20260929zu"></script>
+<script src="../../shared/content_i18n.js?v=20260929zu"></script>
 <script>
 // Traductions des textes fixes de la page (les contenus calculés restent en français, zones data-no-i18n).
 RepositoryContentI18n([
