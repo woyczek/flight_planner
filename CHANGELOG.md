@@ -12,8 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 - **Centre de planification et de conduite des opérations (CPCO)** : générateur de mission, studio cartographique et
   registre des missions déplacés de `apps/sia/` vers `apps/cpco/` (anciennes adresses redirigées), menu « Centre — … »,
-  titres « Centre de planification et de conduite des opérations », thème propre (bleu nuit et or, favicon). Accès
-  restreint à venir (outil fourni par l'utilisateur).
+  titres « Centre de planification et de conduite des opérations », thème propre (bleu nuit et or, favicon), compatible
+  avec les quatre designs skeuomorphes et proposé dans Apparence.
+- **Accès au Centre** : activé dans Paramètres › Centre (CPCO) par un mot de passe (gardé dans ce navigateur) ; Centre
+  verrouillé : pages absentes du menu, de la barre latérale et de l'accueil, page ouverte directement recouverte d'un
+  avis, réglages du Centre (calcul des routes, espace disque des missions) verrouillés. Verrou d'usage, pas une sécurité.
 - **Cartographie partagée** : `aero_symbols.js`, `vertical_profile.js`, MapLibre et `villes_geonames.csv` déplacés dans
   `shared/carto/` (utilisés hors du CPCO : planificateur, Paramètres, futur outil de cartes public).
 ## [4.0.0] — 2026-09-29

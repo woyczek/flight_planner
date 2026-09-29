@@ -49,6 +49,7 @@
     flight: ['Carburant (planificateur)', 'Fuel (planner)', 'Kraftstoff (Planer)', 'Combustible (planificador)'],
     landing: ['Atterrissages', 'Landings', 'Landungen', 'Aterrizajes'],
     sia: ['Missions SIA (générateur, studio)', 'SIA missions (generator, studio)', 'SIA-Missionen (Generator, Studio)', 'Misiones SIA (generador, estudio)'],
+    cpco: ['Centre (CPCO : générateur, studio, registre)', 'Centre (CPCO: generator, studio, registry)', 'Zentrum (CPCO: Generator, Studio, Register)', 'Centro (CPCO: generador, estudio, registro)'],
     core: ['CR DEFA (pages communes)', 'DEFA reports (common pages)', 'DEFA-Berichte (gemeinsame Seiten)', 'Informes DEFA (páginas comunes)']
   };
   const APPS = ['flight', 'landing', 'cpco', 'core'];

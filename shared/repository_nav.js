@@ -57,6 +57,41 @@
     const t = cfg.themes[name] || {}, o = (readJson("repositoryColors") || {})[name], fam = o && cfg.colorFamilies?.[o.family];
     return fam ? { ...t, ...familyColors(fam, o.tone, t.page), family: o.family, tone: +o.tone } : { ...t };
   }
+  // ---- Accès au Centre (CPCO : apps/cpco) : activé dans Paramètres › Centre (CPCO) par un mot de passe, gardé dans ce
+  // navigateur (cpcoAccess:v1). Verrou d'usage, pas une sécurité : les pages restent des fichiers lisibles. Centre
+  // verrouillé : pages du Centre absentes du menu, de la barre latérale et de l'accueil (html[data-cpco="off"]),
+  // page du Centre ouverte directement recouverte d'un avis ; réglages du Centre verrouillés dans Paramètres.
+  const CPCO_KEY = "cpcoAccess:v1", CPCO_HASH = "1310afbbafc4f1eb714648fb094b876f453356b9c84958057a783fb478474993";
+  const cpcoOn = () => readPref(CPCO_KEY, "") === "on", isCpco = p => String(p || "").startsWith("apps/cpco/");
+  doc.dataset.cpco = cpcoOn() ? "on" : "off";
+  const cpco = {
+    enabled: cpcoOn,
+    /** Active le Centre si le mot de passe est bon ; true si activé. */
+    async unlock(password) {
+      const bytes = new TextEncoder().encode(String(password || "").trim().toUpperCase());
+      const hex = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map(b => b.toString(16).padStart(2, "0")).join("");
+      if (hex !== CPCO_HASH) return false;
+      try { localStorage.setItem(CPCO_KEY, "on"); } catch { return false; }
+      doc.dataset.cpco = "on";
+      window.dispatchEvent(new CustomEvent("cpco-access-change", { detail: { enabled: true } }));
+      return true;
+    },
+    lock() {
+      try { localStorage.removeItem(CPCO_KEY); } catch { /* stockage indisponible */ }
+      doc.dataset.cpco = "off";
+      window.dispatchEvent(new CustomEvent("cpco-access-change", { detail: { enabled: false } }));
+    }
+  };
+  if (isCpco(page?.path || rel) && !cpcoOn()) {
+    const lockNotice = () => {
+      const box = document.createElement("div");
+      box.className = "cpco-lock";
+      box.setAttribute("role", "alert");
+      box.innerHTML = `<div><b>Centre de planification et de conduite des opérations</b><p>Accès réservé. Le Centre s'active dans Paramètres › Centre (CPCO).</p><a href="${new URL("apps/settings/parametrage.html?base=cpco", root).href}">Activer le Centre…</a> · <a href="${new URL("index.html", root).href}">Accueil</a></div>`;
+      document.body.append(box);
+    };
+    if (document.body) lockNotice(); else document.addEventListener("DOMContentLoaded", lockNotice);
+  }
   let currentTheme = themeName;
   // Graphiques : palette et style, au choix (Apparence › Graphiques : préférences repositoryChartPalette et
   // repositoryChartStyle) ou automatiques selon le design. Palettes : « vivid » (couleurs d'origine des pages), « brass »
@@ -148,7 +183,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260929za", script.src).href;
+    css.href = new URL("designs.css?v=20260929zd", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -265,7 +300,7 @@
     return r ? (r[["fr", "en", "de", "es"].indexOf(language)] || l) : l
   };
   const groups = new Map(); /* menu:false : page déclarée (thème, réglages) mais absente du menu */
-  cfg.pages.filter(p => p.menu !== false).forEach(p => {
+  cfg.pages.filter(p => p.menu !== false && (cpcoOn() || !isCpco(p.path))).forEach(p => {
     const bits = (p.menu || p.label).split("/"),
       group = bits.length > 1 ? bits.shift() : "Pages",
       label = bits.join("/") || p.label;
@@ -402,6 +437,7 @@
   const source = key => { let o = {}; try { o = JSON.parse(localStorage.getItem("suiteSources:v1") || "{}") || {}; } catch {} return String(o[key] || cfg.sources?.[key]?.url || "").replace(/\/+$/, ""); };
   // API publique.
   window.RepositoryNav = {
+    cpco,
     source,
     /** Enregistre (ou efface, valeur vide) la surcharge locale d'une source ; événement « suite-sources-change ». */
     setSource(key, value) { let o = {}; try { o = JSON.parse(localStorage.getItem("suiteSources:v1") || "{}") || {}; } catch {} const v = String(value || "").trim(); v && v !== cfg.sources?.[key]?.url ? o[key] = v : delete o[key]; try { Object.keys(o).length ? localStorage.setItem("suiteSources:v1", JSON.stringify(o)) : localStorage.removeItem("suiteSources:v1"); } catch {} window.dispatchEvent(new CustomEvent("suite-sources-change", { detail: { key } })); },
@@ -522,7 +558,7 @@
     items.forEach((it, i) => {
       const li = document.createElement("li");
       if (it.sep) { li.className = "repo-sidenav-sep" + (it.bottom ? " repo-sidenav-bottom" : ""); ul.append(li); return; }
-      if (it.path && !known.has(it.path)) return;
+      if (it.path && (!known.has(it.path) || (isCpco(it.path) && !cpcoOn()))) return;
       const a = document.createElement(it.menu ? "button" : "a");
       a.className = "repo-sidenav-item";
       if (it.menu) { a.type = "button"; a.onclick = e => { e.stopPropagation(); document.querySelector(".repo-menu-button")?.click(); }; }
@@ -558,23 +594,23 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260929za", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260929zd", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260929za", script.src).href;
+    files.src = new URL("file_access.js?v=20260929zd", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260929za", "block_icons.js?v=20260929za", "side_nav.js?v=20260929za"]) {
+    for (const f of ["icons/repository_icons.js?v=20260929zd", "block_icons.js?v=20260929zd", "side_nav.js?v=20260929zd"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260929za", script.src).href;
+    store.src = new URL("browser_store.js?v=20260929zd", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=20260929za", script.src).href;
+    update.src = new URL("suite_update.js?v=20260929zd", script.src).href;
     document.head.append(update)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

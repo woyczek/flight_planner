@@ -118,7 +118,7 @@
     s.dataset.noI18n = '';
     s.className = 'mt-block';
     s.innerHTML = `<h2></h2><p class="repo-block-subtitle mt-sub"></p><div class="mt-body"></div>`;
-    if (embedded) s.hidden = true;
+    if (embedded || (b.id === 'storage' && !window.RepositoryNav?.cpco?.enabled?.())) s.hidden = true;
     main.append(s);
     hosts[b.id] = s.querySelector('.mt-body');
   }
@@ -139,8 +139,13 @@
     navHost.querySelectorAll('[data-mt]').forEach(b => { b.textContent = t(NAV[b.dataset.mt]); });
   }
   /** Affiche le bloc id (Paramètres) : l'éditeur de base est masqué, l'entrée du menu est active. */
+  // blocs du Centre (CPCO) : absents tant que le Centre n'est pas activé (Paramètres › Centre)
+  const CPCO_BLOCKS = new Set(['storage']);
+  const cpcoLocked = id => CPCO_BLOCKS.has(id) && !window.RepositoryNav?.cpco?.enabled?.();
+  function cpcoNav() { navHost?.querySelectorAll('[data-mt]').forEach(b => { b.hidden = cpcoLocked(b.dataset.mt); }); }
+  window.addEventListener('cpco-access-change', () => { cpcoNav(); if (!embedded) CPCO_BLOCKS.forEach(id => { const el = document.getElementById(id); if (el) el.hidden = cpcoLocked(id); }); });
   function showBlock(id) {
-    if (!embedded || !document.getElementById(id)) return;
+    if (!embedded || !document.getElementById(id) || cpcoLocked(id)) return;
     main.querySelector('.da-main')?.setAttribute('hidden', '');
     BLOCKS.forEach(b => { document.getElementById(b.id).hidden = b.id !== id; });
     main.querySelectorAll('.da-nav [data-set]').forEach(x => x.classList.remove('active'));
@@ -157,6 +162,7 @@
       navHost.innerHTML = `<h3></h3>${BLOCKS.map(b => `<button type="button" data-mt="${b.id}"></button>`).join('')}`;
       nav.append(navHost);
       navHost.querySelectorAll('[data-mt]').forEach(b => b.onclick = () => showBlock(b.dataset.mt));
+      cpcoNav();
     }
     // une base affichée (data_admin.js) : les blocs de maintenance se masquent
     window.addEventListener('data-admin-show', () => {
