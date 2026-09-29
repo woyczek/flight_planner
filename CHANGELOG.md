@@ -14,6 +14,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   la CTR du terrain indisponible pour le créneau (et si possible ses TMA) ; bouton « Missions du registre… » sur les
   créneaux d'au moins deux pilotes : missions avec rendez-vous ou à plusieurs équipes de la famille, route estimée
   confrontée aux espaces à éviter (CTR → écartée, TMA → signalée), ouverture dans le registre (Centre activé).
+- **Framework — journal des alertes** : les erreurs et avertissements notifiés (effacés de l'écran au bout de quelques
+  secondes) restent consultables le temps de la page : témoin « ⚠ n » dans l'en-tête (rouge s'il y a une erreur, orange
+  sinon, neutre une fois tout acquitté), liste horodatée (répétitions comptées), ACK par alerte, « Tout acquitter »,
+  « Vider » ; 50 dernières alertes, rien n'est conservé au changement de page (`AppFramework.alerts`).
 
 - **Profil vertical éditable à la souris** (studio du Centre, Cartes de vol ; `shared/carto/vprof_editor.js`) : clic
   dans la coupe → nouveau point à cette distance et cette altitude (« 44.3361 3.2544/2500 »), aimanté sur un point

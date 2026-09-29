@@ -226,6 +226,7 @@
     notifyCss();
     let box = document.querySelector(".repo-notify");
     if (!box) { box = document.createElement("div"); box.className = "repo-notify"; box.setAttribute("role", "status"); box.setAttribute("aria-live", "polite"); document.body.append(box); }
+    if (kind === "err" || kind === "warn") record(text, kind);
     const same = [...box.children].find(n => n.dataset.text === text);
     if (same) same.remove();
     const item = document.createElement("div"), span = document.createElement("span"), close = document.createElement("button");
@@ -247,6 +248,87 @@
     }
     return item;
   }
+  // ---- Journal des alertes de la page : erreurs et avertissements notifiés (effacés au bout de quelques secondes)
+  // gardés en mémoire le temps de la page (rien n'est conservé au changement de page) ; témoin « ⚠ n » dans l'en-tête
+  // (outils de l'en-tête, sinon coin de l'écran) tant qu'il reste des alertes non acquittées ; clic : liste, ACK.
+  const journal = [];
+  let journalSeq = 0, alertsBtn = null, alertsPanel = null;
+  const AL = {
+    fr: { title: "Alertes de la page", none: "Aucune alerte.", ack: "ACK", acked: "acquittée", ackAll: "Tout acquitter", clear: "Vider", tip: "Alertes de la page (effacées de l’écran) : relire et acquitter" },
+    en: { title: "Page alerts", none: "No alerts.", ack: "ACK", acked: "acknowledged", ackAll: "Acknowledge all", clear: "Clear", tip: "Page alerts (cleared from the screen): read again and acknowledge" },
+    de: { title: "Warnungen der Seite", none: "Keine Warnungen.", ack: "OK", acked: "bestätigt", ackAll: "Alle bestätigen", clear: "Leeren", tip: "Warnungen der Seite: erneut lesen und bestätigen" },
+    es: { title: "Alertas de la página", none: "Sin alertas.", ack: "ACK", acked: "confirmada", ackAll: "Confirmar todas", clear: "Vaciar", tip: "Alertas de la página: releer y confirmar" }
+  };
+  const al = k => (AL[window.RepositoryNav?.getLanguage?.()] || AL.fr)[k];
+  function record(text, kind) {
+    const old = journal.find(e => e.text === text && !e.ack);
+    if (old) { old.count++; old.t = new Date(); old.kind = kind === "err" ? "err" : old.kind; }
+    else journal.push({ id: ++journalSeq, t: new Date(), kind, text, count: 1, ack: false });
+    while (journal.length > 50) journal.shift();   // rétention faible : 50 dernières alertes
+    paintAlerts();
+  }
+  function alertsCss() {
+    if (document.getElementById("repoAlertsCss")) return;
+    const s = document.createElement("style");
+    s.id = "repoAlertsCss";
+    s.textContent = `.repo-alerts{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;margin-right:6px;border:1px solid color-mix(in srgb,var(--repo-bar-text,#fff) 45%,transparent);border-radius:6px;background:transparent;color:var(--repo-bar-text,#fff);font:600 12px/1.4 system-ui,sans-serif;cursor:pointer}
+.repo-alerts.unread{background:#e0a400;border-color:#e0a400;color:#1d1400}.repo-alerts.unread.err{background:#e5484d;border-color:#e5484d;color:#fff}
+.repo-alerts.floating{position:fixed;z-index:3001;right:12px;top:12px;background:#1d2733;color:#f2f5f8}
+.repo-alerts-panel{position:fixed;z-index:3002;width:min(520px,calc(100vw - 32px));max-height:60vh;overflow:auto;padding:10px 12px;border-radius:10px;background:#1d2733;color:#f2f5f8;box-shadow:0 8px 28px #0006;font:13px/1.4 system-ui,sans-serif}
+.repo-alerts-panel h3{margin:0 0 8px;font-size:14px}.repo-alerts-panel ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.repo-alerts-panel li{display:flex;gap:8px;align-items:flex-start;padding:6px 8px;border-left:4px solid #e0a400;border-radius:6px;background:#ffffff0f}.repo-alerts-panel li.err{border-left-color:#e5484d}.repo-alerts-panel li.ack{opacity:.55}
+.repo-alerts-panel time{opacity:.7;font-variant-numeric:tabular-nums;white-space:nowrap}.repo-alerts-panel li span{flex:1;white-space:pre-line}
+.repo-alerts-panel button{all:unset;cursor:pointer;padding:1px 8px;border:1px solid #ffffff55;border-radius:5px;font-size:12px}.repo-alerts-panel button:hover{background:#ffffff22}
+.repo-alerts-panel .bar{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}`;
+    document.head.append(s);
+  }
+  /** Témoin de l'en-tête : nombre d'alertes non acquittées (rouge s'il y a une erreur), neutre une fois tout acquitté. */
+  function paintAlerts() {
+    alertsCss();
+    if (!alertsBtn) {
+      alertsBtn = document.createElement("button");
+      alertsBtn.type = "button";
+      alertsBtn.className = "repo-alerts no-print";
+      alertsBtn.onclick = e => { e.stopPropagation(); alertsPanel ? closeAlerts() : openAlerts(); };
+    }
+    const host = document.querySelector(".repo-header-tools");
+    if (host && alertsBtn.parentNode !== host) { alertsBtn.classList.remove("floating"); host.prepend(alertsBtn); }
+    else if (!host && !alertsBtn.parentNode) { alertsBtn.classList.add("floating"); document.body.append(alertsBtn); }
+    const open = journal.filter(e => !e.ack);
+    alertsBtn.hidden = !journal.length;
+    alertsBtn.textContent = `⚠ ${open.length || journal.length}`;
+    alertsBtn.title = al("tip");
+    alertsBtn.classList.toggle("unread", open.length > 0);
+    alertsBtn.classList.toggle("err", open.some(e => e.kind === "err"));
+    if (alertsPanel) fillAlerts();
+  }
+  function fillAlerts() {
+    const hh = d => d.toTimeString().slice(0, 8), esc = v => String(v).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+    alertsPanel.innerHTML = `<h3>${al("title")}</h3>${journal.length ? `<ul>${[...journal].reverse().map(e => `<li class="${e.kind}${e.ack ? " ack" : ""}"><time>${hh(e.t)}</time><span>${esc(e.text)}${e.count > 1 ? ` (×${e.count})` : ""}</span>${e.ack ? `<em>${al("acked")}</em>` : `<button type="button" data-ack="${e.id}">${al("ack")}</button>`}</li>`).join("")}</ul><div class="bar"><button type="button" data-ackall>${al("ackAll")}</button><button type="button" data-clear>${al("clear")}</button></div>` : `<p>${al("none")}</p>`}`;
+  }
+  function openAlerts() {
+    alertsPanel = document.createElement("div");
+    alertsPanel.className = "repo-alerts-panel no-print";
+    alertsPanel.setAttribute("role", "dialog");
+    fillAlerts();
+    document.body.append(alertsPanel);
+    const r = alertsBtn.getBoundingClientRect();
+    alertsPanel.style.top = `${Math.round(r.bottom + 6)}px`;
+    alertsPanel.style.left = `${Math.round(Math.max(16, Math.min(r.right - alertsPanel.offsetWidth, innerWidth - alertsPanel.offsetWidth - 16)))}px`;
+    alertsPanel.addEventListener("click", e => {
+      e.stopPropagation();
+      const id = +e.target.dataset?.ack;
+      if (id) { const x = journal.find(q => q.id === id); if (x) x.ack = true; }
+      else if (e.target.hasAttribute?.("data-ackall")) journal.forEach(q => { q.ack = true; });
+      else if (e.target.hasAttribute?.("data-clear")) { journal.length = 0; closeAlerts(); }
+      paintAlerts();
+    });
+    setTimeout(() => document.addEventListener("click", closeAlerts, { once: true }));
+  }
+  function closeAlerts() { alertsPanel?.remove(); alertsPanel = null; }
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeAlerts(); });
+  window.addEventListener("repository-language-change", () => { if (journal.length) paintAlerts(); });
+
   // Relais des zones d'état data-status : erreur / avertissement affiché → notification (une fois par texte).
   const watched = new WeakSet();
   function watchStatus(root = document) {
@@ -271,6 +353,8 @@
   window.AppFramework = {
     refresh: (...a) => { const r = init(...a); watchStatus(); return r; },
     notify,
+    /** Journal des alertes de la page (erreurs, avertissements) : liste, tout acquitter. */
+    alerts: { list: () => journal.map(e => ({ ...e })), ackAll() { journal.forEach(e => { e.ack = true; }); if (journal.length) paintAlerts(); } },
     watchStatus,
     reveal,
     getConfig: startupConfig,
