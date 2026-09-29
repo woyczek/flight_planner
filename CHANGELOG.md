@@ -16,10 +16,24 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   repris). Générateur et studio : « Enregistrer dans le dossier » ; cartes générées rangées dans `cartes/`.
 - **Registre : fichiers de la mission** — YAML, Markdown lisible, vignettes des cartes, versions (différences), textes
   reçus, PDF à la demande (générateur, cartes du dossier chargées), Modifier ; état complète / partielle / sans cartes.
-- **Déroulé de l'exercice** (`shared/mission_exercise.js`) : pistes (`tracks`, import d'un tableau Markdown) et injects
-  (`injects` : information à donner ou pli scellé, moment « à RDV-2 + 8 min » ou « H+10 », émetteur, pistes révélées,
-  heure estimée) ; PDF équipage (une page par inject) et PDF organisation (chronologie, pistes) ; studio : pistes sur
-  les cartes, couche par carte, « + Cartes d'exercice » ; prompt : `tracks`, `injects`, section « Déroulé ».
+- **Exercices : organisation, chiffons, chronologie** (`shared/mission_exercise.js`, toutes familles) — mission
+  d'organisation `…Z` de l'opération (`I-001Z`, `M-016Z`…) : brief général, heure H commune, participants et leur
+  décollage (H±n), chiffons joués ou seulement dessinés (route, départ, consignes), chronologie de messages radio et
+  de plis scellés (à H+n ou au passage d'un point par un participant, émetteur, destinataires, pistes révélées) ;
+  chaque destinataire ne reçoit que ce qui lui est adressé. Ancien format (`tracks`, `injects`, `phases`) toujours lu
+  et repris à la création de l'organisation. Exercice d'essai : opération I-001 « ŒIL DE SOLOGNE » (I-001Z).
+- **Générateur réorganisé** — bloc **Opération** en tête (missions, décollages, organisation, passage de l'une à
+  l'autre), mode organisation sur la Z (brief général, exercice, « Ce que reçoit chacun »), bloc **Documents** : brief
+  de l'équipage avec ses plis (une page chacun), dossier organisation, fiches des chiffons joués, tous les documents
+  de l'exercice (un PDF par destinataire), exports de données.
+- **Studio : cartes par destinataire** — organisation (toutes les pistes et les routes des participants), chiffon (sa
+  route, son départ), équipage (pistes connues après chaque message ou pli) ; « + Cartes d'exercice » selon la mission.
+- **Registre** — missions d'organisation repérées, fiche : membres de l'opération, résumé de l'exercice, « Ouvrir
+  l'opération » (générateur ou studio, en un lot) ; en-tête du tableau fixe au défilement, tableau compact (type et
+  sous-type, équipes et types réunis, textes longs coupés, complets au survol).
+- **Prompt** : mission d'organisation `missionNNZ.yaml` / `summaryNNZ.md` (§ 3, § 4 bis), `operation.organisation`,
+  règles de choix (exercice, chiffon joué ou non) ; plus de `tracks` / `injects` dans les missions des équipes.
+- **Studio : sommets OSM sans coordonnées** (chemins renvoyés par Overpass) ignorés — ils interrompaient le rendu.
 - **Mission reçue → registre et dossier** : une mission chargée ou collée dans le générateur est inscrite au registre
   (commande rapprochée) et rangée dans `data/missions/<lettre>_<FAMILLE>/<identifiant>/` si le dossier est autorisé
   (sinon bouton « Ranger dans le dossier des missions… »).

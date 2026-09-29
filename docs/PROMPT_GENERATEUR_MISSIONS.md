@@ -128,6 +128,24 @@ Deux fichiers par mission, chacun dans son propre bloc de code, précédé d'une
   missionNNX.yaml   (bloc ```yaml)
   summaryNNX.md     (bloc ```markdown)
 Ordre : missionM-016A.yaml, summaryM-016A.md, missionM-016B.yaml, summaryM-016B.md, … puis l'opération suivante.
+
+EXERCICE ET ORGANISATION (toutes familles). Une opération devient un EXERCICE dès que des informations ne sont pas
+connues de tous au décollage : pistes ou trafics à découvrir, messages passés en vol, plis scellés à ouvrir à un
+moment donné, situation qui change en cours de route. Elle reçoit alors, EN PLUS des missions des équipes, la mission
+d'organisation NN + « Z » (« I-001Z » pour l'ISR, « M-016Z » pour un HEMS : même lettre de famille que l'opération),
+livrée APRÈS les missions des équipes (missionNNZ.yaml puis summaryNNZ.md). Elle porte :
+  - le brief général remis à tous (summary, detailed_description : situation, objectifs communs, créneaux, fin) ;
+  - l'heure H commune : chaque équipe décolle à H plus ou moins un délai tiré de son timing et des rendez-vous ;
+  - les chiffons : pistes que les équipages doivent reconnaître, intercepter, escorter ou retrouver. Un chiffon est
+    « joué » (played: true) quand un aéronef du simulateur peut tenir le rôle (trafic léger, hélicoptère, avion
+    d'affaires, bateau suivi par un hélico…) : il reçoit sa route, son heure de départ et ses consignes ; sinon il
+    n'est que dessiné (played: false). Choisir selon ce que l'exercice demande, les deux peuvent coexister ;
+  - la chronologie : chaque événement dit QUAND (H+n, ou passage d'un point par un participant, plus un délai),
+    SOUS QUELLE FORME (radio : passé par l'émetteur en vol ; pli : remis avant le vol, ouvert au moment indiqué),
+    DE QUI, À QUI (un ou plusieurs participants, un chiffon joué, ou ALL) et quelles pistes il révèle.
+L'information se découvre progressivement : chaque destinataire ne sait au décollage que ce que son brief lui dit ;
+le reste lui parvient par les événements. Sans rien de tel, pas de mission Z. Une seule équipe peut aussi avoir une
+mission Z (ex. HEMS dont la destination change en vol) : sa mission devient alors NNA.
 Aucun autre fichier (pas d'images, pas de manifeste). Puis le bloc VALIDATION (§ 10).
 Réponse trop longue pour tout livrer d'un coup : livrer les missions une par une, chacune COMPLÈTE (YAML +
 Markdown), puis écrire « Mission suivante : M-016B — répondre « suite » » et attendre ; le bloc VALIDATION suit
@@ -154,7 +172,8 @@ mission:
 operation:                     # opération commune aux missions de ses équipes (identique dans chacune)
   id: 'R-016'
   name: "Nom de l'opération"
-  missions: ['R-016A', 'R-016B']   # toutes les missions de l'opération, dans l'ordre
+  missions: ['R-016A', 'R-016B']   # toutes les missions des équipes de l'opération, dans l'ordre (sans la Z)
+  organisation: 'R-016Z'       # SEULEMENT pour un exercice (§ 3) : id de la mission d'organisation
 title: "AXE CECILE — ravitaillement d'une patrouille Rafale"   # court, sans le numéro
 summary: |-                   # bloc LITTÉRAL « |- » (jamais « >- » ni « > », qui recollent les lignes)
   Paragraphe 1 (2 à 3 phrases) : la situation — qui, où, ce qui se passe.
@@ -232,28 +251,8 @@ return_options:                # 0 à 3 retours possibles AUTRES que destination
     condition: "patient instable : centre de traumatologie"
     time_on_task_min: 10       # poser, dépose du patient
     then_base: true            # false si l'appareil y termine la mission
-tracks:                        # FACULTATIF : pistes d'exercice (plots, trafics simulés à reconnaître, intercepter,
-                               # escorter…) — ISR, COMMAND, SOF, LE, MARITIME… ; points réels, coordonnées vérifiables
-  - id: TRACK-401
-    name: "TRACK 401"
-    nature: "trafic léger non coopératif"
-    points:                    # route de la piste, dans l'ordre (2 points au moins)
-      - { name: "Rosnay", lat: 46.701667, lon: 1.215278 }
-      - { name: "Mézières-en-Brenne", lat: 46.821667, lon: 1.211389 }
-    level: "3 500–5 000 ft"
-    speed_kt: 120
-    task: "type général, cap, comportement, identification électronique"
-injects:                       # FACULTATIF : déroulé de l'exercice — ce qui est donné à l'équipage en cours de mission
-  - id: INJ-1
-    at: RDV-2                  # id d'un point du fichier (passage de l'équipage), ou « H+10 » (minutes après le décollage)
-    delay_min: 0               # minutes après le passage au point
-    kind: info                 # info : information transmise au moment indiqué (radio, liaison de données) ;
-                               # pli : pli scellé que l'équipage ouvre au moment indiqué
-    from: CYRANO01             # émetteur (contrôleur, AWACS, CODIS, directeur d'exercice…)
-    title: "Pistes à reconnaître"
-    text: |-
-      Ce qui est transmis ou ce que contient le pli (2 à 6 phrases), valeurs utiles comprises.
-    tracks: [TRACK-401]        # pistes révélées par cet inject (ids de tracks)
+# Pistes (chiffons) et messages en vol : JAMAIS dans la mission d'une équipe, mais dans le bloc exercise de la
+# mission d'organisation (§ 4 bis). Les anciens champs tracks / injects ne sont plus produits.
 phases:                        # FACULTATIF (0 à 3) : briefs successifs prévus par le scénariste — la situation évolue
                                # en cours de route ; le brief initial est la partie A (le reste du fichier), les
                                # parties B, C… sont remises à l'équipage au moment indiqué (« pli » à ouvrir)
@@ -267,6 +266,8 @@ phases:                        # FACULTATIF (0 à 3) : briefs successifs prévus
       Ce qui change (2 à 4 phrases) : nouvelle situation, nouvelle tâche, contraintes.
     route_order: [RDV-1, PT3, TARGET, DESTINATION]   # suite de la route à partir de trigger_point (ids du fichier :
                                # déclarer les nouveaux points dans turning_points, rendezvous ou zones)
+                               # exercice (§ 3) : chaque partie figure AUSSI dans la chronologie de la Z (kind: pli,
+                               # to: l'équipe, at: trigger_point, by: son indicatif, phase: B)
 timing:                        # durées estimées par TOI d'après route_order, vitesses, niveaux et time_on_task_min
   estimated_flight_min: 95     # décollage → atterrissage, retour base compris (option principale)
   estimated_block_min: 110     # cales → cales (mise en route et roulage compris)
@@ -336,6 +337,71 @@ Retour base : une mission se termine TOUJOURS par un retour base (destination), 
 quand plusieurs retours sont possibles (HEMS : hôpital selon l'état du patient ; déroutement météo ; terrain
 avancé), la destination est le cas le plus probable et les autres vont dans return_options. Pas d'autre clé que
 celles du schéma.
+
+────────────────────────────────────────────────────────────────────────────
+4 bis. MISSION D'ORGANISATION D'UN EXERCICE (missionNNZ.yaml)
+────────────────────────────────────────────────────────────────────────────
+Même schéma que § 4 pour les champs communs (schema, mission, operation, title, author, date, summary,
+detailed_description, teams, notes) ; PAS d'aircraft, origin, destination, turning_points, route_order, timing,
+vertical_profile ni maps (les cartes de l'organisation et des chiffons sont faites par le studio). Les rendez-vous et
+zones de l'exercice restent dans les missions des équipes. Structure :
+
+schema: helo-xp-mission
+schema_version: '1.0'
+mission:
+  series: 1
+  number: 1
+  id: 'I-001Z'
+  type: ISR                    # famille de l'opération
+  subtype: EXERCICE
+  role: organisation
+operation:                     # identique aux missions des équipes
+  id: 'I-001'
+  name: "ŒIL DE SOLOGNE"
+  missions: ['I-001A', 'I-001B', 'I-001C']
+  organisation: 'I-001Z'
+title: "ŒIL DE SOLOGNE — organisation de l'exercice"
+summary: |-                    # brief général remis à tous
+  …
+detailed_description: |-
+  …
+exercise:
+  h_hour: "H"                  # « H », ou une heure réelle (« 14:00Z ») si le scénario l'impose
+  participants:                # une ligne par équipe DEFA en vol (callsign = aircraft[0].callsign de sa mission)
+    - { callsign: CYRANO01, mission: 'I-001A', takeoff: "H-15", role: "surveillance et fourniture des pistes" }
+    - { callsign: RAFALE31, mission: 'I-001C', takeoff: "H", role: "reconnaissance des pistes" }
+  tracks:                      # chiffons ; points réels, coordonnées vérifiables (§ 5)
+    - id: TRACK-401
+      name: "TRACK 401"
+      nature: "trafic léger non coopératif"
+      played: true             # true : tenu par un aéronef du simulateur ; false : seulement dessiné
+      callsign: CHIFFON401     # indicatif du chiffon joué (vide sinon)
+      start: "H+50"            # départ du premier point (chiffon joué)
+      points:                  # route, dans l'ordre (2 points au moins)
+        - { name: "Rosnay", lat: 46.701667, lon: 1.215278 }
+        - { name: "Mézières-en-Brenne", lat: 46.821667, lon: 1.211389 }
+      level: "3 500–5 000 ft"
+      speed_kt: 120
+      task: "ce que les équipages doivent établir : type, cap, comportement, identification"
+      conduct: |-              # consignes du chiffon joué (comportement, réponses à la radio, fin)
+        …
+  events:                      # chronologie ; ids EV-1, EV-2… dans l'ordre
+    - id: EV-1
+      at: RDV-2                # « H+60 », ou id d'un point de la mission du participant « by »
+      by: RAFALE31             # participant dont le passage à « at » déclenche l'événement (si at est un point)
+      delay_min: 0             # minutes après ce passage
+      kind: radio              # radio : passé en vol par l'émetteur ; pli : remis avant le vol, ouvert au moment dit
+      from: CYRANO01           # émetteur (participant, contrôleur, CODIS, directeur d'exercice…)
+      to: [RAFALE31]           # destinataires : indicatifs de participants ou de chiffons joués, ou [ALL]
+      title: "Contact tactique — TRACK 401"
+      text: |-
+        Ce qui est transmis ou ce que contient le pli (2 à 6 phrases), valeurs utiles comprises.
+      reveals: [TRACK-401]     # pistes révélées aux destinataires (ids de tracks)
+
+Règles : toute piste est révélée par au moins un événement ; un événement lié à un point cite un point qui existe
+dans la mission de son participant « by » ; les décollages (takeoff) et départs (start) sont cohérents avec les
+timings des missions et les rendez-vous ; chaque chiffon joué a callsign, start et conduct ; les destinataires sont
+des participants, des chiffons joués ou ALL.
 
 ────────────────────────────────────────────────────────────────────────────
 5. GÉOGRAPHIE — CONTRE LES ERREURS
@@ -508,16 +574,15 @@ Contraintes :
 
 - `general41.png` — <description>
 
-## Déroulé de l'exercice
+## Exercice
 
-- **<injects[].id> — <at> (+<delay_min> min)** — <info | pli> — <from> : <title> — pistes <tracks>
-  <text>
+Organisation : <operation.organisation>
+Heure H : <exercise.h_hour>
+Décollage : <takeoff de ce participant>
+Plis scellés remis : <nombre de plis adressés à cet équipage, et le moment d'ouverture de chacun — pas leur contenu>
+Messages radio attendus en vol : <oui / non>
 
-| Piste | Nature | Points | Niveau | Vitesse | À établir |
-|---|---|---|---|---:|---|
-| <name> | <nature> | <points : nom lat, lon → …> | <level> | <speed_kt> | <task> |
-
-(section présente seulement s'il y a des injects ou des pistes)
+(section présente seulement pour une mission d'équipe d'un exercice)
 
 ## Partie B — <phases[].title>
 
@@ -527,6 +592,29 @@ Message : <phases[].message>
 <phases[].brief>
 
 (une section « ## Partie X — … » par partie de phases, en FIN de fichier ; absente sans phases)
+
+Mission d'organisation (summaryNNZ.md) : mêmes règles, titres dans cet ordre — # Organisation NNZ — « <title> »,
+## Introduction (Type, Sous-type, Opération : <operation.name> — missions <operation.missions>), ## Summary,
+## Description détaillée, ## Équipes engagées, puis :
+
+## Heure H et participants
+
+Heure H : <exercise.h_hour>
+
+| Indicatif | Mission | Décollage | Rôle |
+|---|---|---|---|
+| <callsign> | <mission> | <takeoff> | <role> |
+
+## Chiffons
+
+| Piste | Joué | Indicatif | Départ | Nature | Points | Niveau | Vitesse | À établir | Consignes |
+|---|---|---|---|---|---|---|---:|---|---|
+| <name> | <oui / non> | <callsign> | <start> | <nature> | <points : nom lat, lon → …> | <level> | <speed_kt> | <task> | <conduct> |
+
+## Chronologie
+
+- **<id> — <at> (<by>) +<delay_min> min** — <radio | pli> — <from> → <to> : <title> — pistes <reveals>
+  <text>
 
 > Scénario de simulation — ne pas utiliser pour une mission réelle.
 
@@ -550,8 +638,11 @@ liste des corrections faites :
       exact) dans la mission de son équipe — aucun remplacement
   [ ] aéronefs : désignateur du § 6 en tête du type (sauf aéronef imposé : son désignateur) ; aéronef capable de la mission
   [ ] tous les id cités (centre_ref, route, route_order, participants) existent
-  [ ] tracks / injects (s'il y en a) : points réels, niveaux et vitesses cohérents avec la nature ; chaque inject a un
-      moment (id existant ou H+n), une forme (info / pli), un texte ; toute piste est révélée par un inject
+  [ ] exercice (§ 3, § 4 bis) : mission NNZ livrée après les équipes, operation.organisation dans toutes les missions
+      de l'opération ; participants = équipes en vol avec leur décollage ; chiffons réels, niveaux et vitesses cohérents
+      avec la nature, chiffons joués avec callsign, start et conduct ; chaque événement a un moment, une forme
+      (radio / pli), un émetteur, des destinataires, un texte ; toute piste est révélée ; aucun tracks / injects dans
+      les missions des équipes
   [ ] phases (s'il y en a) : trigger_point existant, délai réaliste, message, brief, route_order reprise à trigger_point ;
       route_order de la mission = partie A ; timing = mission complète prévue (parties comprises) ;
       une section « ## Partie X » par partie

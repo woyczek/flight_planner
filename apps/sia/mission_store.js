@@ -391,6 +391,22 @@
     return save(b.docs[b.index], by);
   }
 
+  /** Ajoute (ou remplace, même identifiant) une mission au lot de son opération et la rend courante ; sans lot, le lot
+   *  est créé avec la mission courante. Utilisé pour la mission d'organisation (<lettre>-<nnn>Z) créée par le générateur. */
+  function addToBatch(doc, by) {
+    const slim = d => ({ yaml: d.yaml, narrative: d.narrative || { summary: '', detailed: '', sections: [] }, sourceNames: d.sourceNames || [] });
+    let b = loadBatch();
+    const cur = load();
+    if (!b) b = { docs: cur?.yaml ? [slim(cur)] : [], index: 0 };
+    else if (cur && missionId(cur) === missionId(b.docs[b.index])) b.docs[b.index] = slim(cur);
+    const i = b.docs.findIndex(x => missionId(x) === missionId(doc));
+    i >= 0 ? b.docs[i] = slim(doc) : b.docs.push(slim(doc));
+    b.docs.sort((x, y) => missionId(x).localeCompare(missionId(y), 'fr', { numeric: true }));
+    b.index = b.docs.findIndex(x => missionId(x) === missionId(doc));
+    storeBatch(b);
+    return save(b.docs[b.index], by);
+  }
+
   /** Découpe un texte collé contenant plusieurs fichiers ou plusieurs missions en fichiers { name, text } ; texte
    *  d'un seul fichier : tableau vide. Formes reconnues, dans l'ordre :
    *   1. « Fichier : mission41A.yaml » puis bloc de code ``` (réponse de ChatGPT copiée en Markdown) ;
@@ -567,7 +583,7 @@
     splitBundle,
     importTexts,
     loadBatch,
-    go,
+    go, addToBatch,
     mountNav,
     parseMarkdown,
     extractMdMetadata,

@@ -179,21 +179,48 @@ data/missions/<lettre>_<FAMILLE>/<identifiant>/
   générateur. État : **complète** (toutes les cartes), **partielle** (cartes manquantes) ou **sans cartes**
   (régénérables depuis le YAML).
 
-## 2 quinquies. Déroulé de l'exercice : pistes et injects
+## 2 quinquies. Exercice : organisation, chiffons, chronologie
 
-`shared/mission_exercise.js` (`MissionExercise`), bloc **Déroulé de l'exercice** du générateur :
+`shared/mission_exercise.js` (`MissionExercise`). Une opération devient un **exercice** quand des informations ne sont
+pas connues de tous au décollage (pistes à découvrir, messages en vol, plis scellés, situation qui change) ; toutes
+les familles sont concernées (ISR, HEMS, FIRE, COMMAND…).
 
-- **Pistes** (`tracks`) : nom, nature, points (« Nom lat, lon ; … »), niveau, vitesse, ce qu'il faut établir ; import
-  d'un tableau Markdown (colonnes piste, nature, route / points, niveau / vitesse, à établir).
-- **Injects** (`injects`) : moment (`at` : point du fichier ou « H+10 », `delay_min`), forme (**information** donnée à
-  l'équipage par l'émetteur, ou **pli scellé** à ouvrir), émetteur, titre, texte, pistes révélées ; heure estimée
-  (T + …) d'après la route probable. Les parties successives (`phases`) sont comptées comme plis.
-- **PDF** : brief équipage = une page par inject (« INFORMATION — à donner : à RDV-2 + 8 min (vers T+1 h 00) —
-  émetteur : CYRANO01 » ou « PLI SCELLÉ — à ouvrir : … »), pistes révélées comprises ; **PDF organisation** = en plus,
-  la chronologie complète et toutes les pistes (directeur d'exercice).
-- **Studio** : couche « Exercice » par carte (`maps[].exercise` : sans pistes / toutes / connues après un inject) ;
-  pistes en bleu fléché avec niveau et vitesse ; « + Cartes d'exercice » ajoute une carte organisation (toutes les
-  pistes, route probable) et une carte par inject révélant des pistes.
+- **Stockage** : la **mission d'organisation** `<lettre>-<nnn>Z` (`I-001Z` pour l'ISR, `M-016Z` pour un HEMS), à côté
+  des missions des équipes (`I-001A`, `I-001B`…) dans `data/missions/<lettre>_<FAMILLE>/I-001Z/missionI-001Z.yaml`.
+  Elle porte le **brief général** (summary, detailed_description) et le bloc `exercise` ; les missions des équipes
+  citent `operation.organisation: I-001Z`. Voir le prompt, § 3 et § 4 bis.
+- **Bloc `exercise`** : `h_hour` (heure H commune) ; `participants` (indicatif, mission, décollage `H±n`, rôle) ;
+  `tracks` = **chiffons** (nom, nature, points, niveau, vitesse, à établir ; `played` : tenu par un aéronef du
+  simulateur, avec `callsign`, départ `start` et consignes `conduct`, sinon seulement dessiné) ; `events` =
+  **chronologie** (`at` : `H+n` ou point de la mission du participant `by`, `delay_min` ; `kind` : **radio** passé
+  en vol ou **pli** scellé remis avant le vol ; `from`, `to` : participants, chiffons joués ou `ALL` ; `title`,
+  `text` ; `reveals` : pistes révélées).
+- **Heure des événements** : par rapport à H ; un passage de point = décollage du participant + temps estimé jusqu'au
+  point (route probable, § 2 ter) + délai.
+- **Destinataires** : l'organisation voit tout ; chaque équipage ne reçoit que les événements qui lui sont adressés
+  (ou à tous) et ne connaît que les pistes qu'ils révèlent ; chaque chiffon joué reçoit sa route, son heure de
+  départ, ses consignes et sa carte.
+- **Ancien format** (`tracks`, `injects`, `phases` dans une mission) : toujours lu, converti en événements adressés à
+  l'équipage de la mission ; « Créer l'organisation de l'exercice » les reprend dans la nouvelle mission Z.
+
+**Générateur** : bloc **Opération** en tête (missions de l'opération, décollage de chacune, organisation ; un clic
+change de mission ; création de la Z si elle manque). Sur la Z, la page passe en mode organisation : **Brief général**,
+bloc **Exercice** (heure H et participants, chiffons, chronologie en cartes — déclencheur, forme, émetteur,
+destinataires, pistes révélées —, puis « Ce que reçoit chacun »), pas de durée estimée. Sur une mission d'équipe, le
+bloc Exercice liste en lecture ce que reçoit l'équipage. Bloc **Documents** : *cette mission* (brief de l'équipage
+avec ses plis scellés, une page chacun après les cartes ; ou dossier organisation ; fiches des chiffons joués),
+*toute l'opération* (tous les documents de l'exercice, un PDF par destinataire ; tous les PDF ; dossier d'opération),
+*données* (YAML, Markdown).
+
+**Studio** : destinataire de chaque carte (`maps[].exercise`) — sans pistes (brief) ; organisation (`all` : toutes les
+pistes et les routes des participants) ; chiffon (`chiffon:TRACK-401` : sa route, ses points, son départ) ; équipage
+(`EV-n` : pistes connues après cet événement, ou `all` : toutes les siennes). « + Cartes d'exercice » ajoute, sur la
+Z, la carte organisation et une carte par chiffon joué (`chiffon_<piste>_<Z>.png`, reprise dans sa fiche PDF) ; sur
+une mission d'équipe, une carte par événement qui lui révèle des pistes.
+
+**Registre** : missions d'organisation marquées « organisation » ; fiche d'une mission d'opération : membres de
+l'opération (clic pour les afficher), résumé de l'exercice, **Ouvrir l'opération** dans le générateur ou le studio
+(toutes les missions en un lot).
 
 ## 2 ter. Durée estimée et route probable
 

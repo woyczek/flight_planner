@@ -5,6 +5,30 @@
   if (!window.RepositoryContentI18n) return;
   window.RepositoryContentI18n([
     // ---- générateur de mission
+    // opération, exercice, documents
+    ["Opération", "Operation", "Operation", "Operación"],
+    ["Missions de l’opération et organisation de l’exercice : cliquer une mission pour l’afficher.", "Missions of the operation and exercise organisation: click a mission to show it.", "Missionen der Operation und Übungsleitung: eine Mission anklicken, um sie anzuzeigen.", "Misiones de la operación y organización del ejercicio: pulse una misión para mostrarla."],
+    ["Exercice", "Exercise", "Übung", "Ejercicio"],
+    ["Exercice : ce que reçoit cet équipage", "Exercise: what this crew receives", "Übung: was diese Besatzung erhält", "Ejercicio: lo que recibe esta tripulación"],
+    ["Plis scellés à ouvrir et messages radio attendus, d’après la chronologie de l’organisation de l’exercice.", "Sealed envelopes to open and radio messages to expect, from the exercise organisation’s timeline.", "Zu öffnende versiegelte Umschläge und erwartete Funksprüche, nach dem Ablauf der Übungsleitung.", "Sobres sellados que abrir y mensajes de radio esperados, según la cronología de la organización del ejercicio."],
+    ["Heure H et participants, chiffons, chronologie des messages radio et des plis scellés, et ce que reçoit chacun.", "H hour and participants, exercise targets, timeline of radio messages and sealed envelopes, and what each one receives.", "Stunde H und Teilnehmer, Übungsziele, Ablauf der Funksprüche und versiegelten Umschläge, und was jeder erhält.", "Hora H y participantes, blancos, cronología de los mensajes de radio y sobres sellados, y lo que recibe cada uno."],
+    ["Brief général", "General brief", "Allgemeines Briefing", "Briefing general"],
+    ["Brief de la coordination, remis à tous : situation, objectifs communs, créneaux, critères de fin.", "Coordination brief, given to all: situation, common objectives, slots, end criteria.", "Briefing der Koordination, an alle: Lage, gemeinsame Ziele, Zeitfenster, Endkriterien.", "Briefing de la coordinación, entregado a todos: situación, objetivos comunes, franjas, criterios de fin."],
+    ["Créer l’organisation de l’exercice", "Create the exercise organisation", "Übungsleitung anlegen", "Crear la organización del ejercicio"],
+    ["Organisation", "Organisation", "Übungsleitung", "Organización"],
+    ["brief général, chiffons, chronologie", "general brief, exercise targets, timeline", "allgemeines Briefing, Übungsziele, Ablauf", "briefing general, blancos, cronología"],
+    ["à créer", "to create", "anzulegen", "por crear"], ["non chargée", "not loaded", "nicht geladen", "no cargada"],
+    ["Documents", "Documents", "Dokumente", "Documentos"],
+    ["Documents à remettre à chacun : brief de l’équipage (avec ses plis scellés), dossier de l’organisation, fiches des chiffons joués ; exports des données.", "Documents for each recipient: crew brief (with its sealed envelopes), organisation file, sheets of the played exercise targets; data exports.", "Dokumente für jeden Empfänger: Briefing der Besatzung (mit ihren versiegelten Umschlägen), Mappe der Übungsleitung, Blätter der gespielten Übungsziele; Datenexporte.", "Documentos para cada destinatario: briefing de la tripulación (con sus sobres sellados), dossier de la organización, fichas de los blancos jugados; exportación de datos."],
+    ["Cette mission", "This mission", "Diese Mission", "Esta misión"], ["Organisation de l’exercice", "Exercise organisation", "Übungsleitung", "Organización del ejercicio"],
+    ["Toute l’opération", "Whole operation", "Gesamte Operation", "Toda la operación"], ["Données", "Data", "Daten", "Datos"],
+    ["Brief de l’équipage (PDF)", "Crew brief (PDF)", "Briefing der Besatzung (PDF)", "Briefing de la tripulación (PDF)"],
+    ["Dossier organisation (PDF)", "Organisation file (PDF)", "Mappe der Übungsleitung (PDF)", "Dossier de la organización (PDF)"],
+    ["Fiches des chiffons joués (un PDF chacun)", "Sheets of the played exercise targets (one PDF each)", "Blätter der gespielten Übungsziele (je ein PDF)", "Fichas de los blancos jugados (un PDF cada una)"],
+    ["Tous les documents de l’exercice (un PDF par destinataire)", "All exercise documents (one PDF per recipient)", "Alle Übungsdokumente (ein PDF pro Empfänger)", "Todos los documentos del ejercicio (un PDF por destinatario)"],
+    // studio : cartes par destinataire
+    ["Sans pistes (brief)", "No tracks (brief)", "Ohne Übungsziele (Briefing)", "Sin blancos (briefing)"], ["Sans pistes", "No tracks", "Ohne Übungsziele", "Sin blancos"],
+    ["Organisation : toutes les pistes et les routes", "Organisation: all tracks and routes", "Übungsleitung: alle Übungsziele und Routen", "Organización: todos los blancos y rutas"],
     ["Importer une mission", "Import a mission", "Mission importieren", "Importar una misión"],
     ["Choisissez vos fichiers, collez une réponse ou générez une mission avec ChatGPT.", "Choose your files, paste a reply or generate a mission with ChatGPT.", "Dateien wählen, eine Antwort einfügen oder eine Mission mit ChatGPT erzeugen.", "Elija sus archivos, pegue una respuesta o genere una misión con ChatGPT."],
     ["Identification", "Identification", "Identifikation", "Identificación"],

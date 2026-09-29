@@ -78,6 +78,7 @@
     const flying = teams.filter(tm => /\b(A\d{3}|H\d{3}|EC|AS|NH|E-?3|Rafale|Mirage|Falcon|Atlantique|DH8|CL-?415|Dash|TBM|BE20|King|C-?130|C-?160|A400|Caracal|Puma|Dauphin|Panther|Tigre|Cougar|avion|hélico|drone|patrouille|aéronef|MRTT|Phénix|Hawkeye|Reaper)/i.test(`${tm.type || ''} ${tm.role || ''}`));
     const pt = y.origin || y.target || {};
     const opMissions = Array.isArray(y.operation?.missions) ? y.operation.missions : [];
+    const ex = y.exercise && typeof y.exercise === 'object' ? y.exercise : null, arr = v => Array.isArray(v) ? v : [];
     return {
       id: normMissionId(String(meta.id ?? meta.number ?? '').trim() || (/([A-Z]?-?\d+[A-Z]?)(?=\.\w+$)/i.exec(files[0] || '')?.[1] || '')),
       formerId: String(meta.former_id ?? '').trim().toUpperCase(),   // identifiant d'avant renumérotation (tools/renumber_missions.py)
@@ -87,7 +88,9 @@
       family: window.MissionVocab?.familyForType?.(meta.type) || '',
       subtype: String(meta.subtype || ''),
       title: String(y.title || '').trim(),
-      operation: y.operation ? { id: String(y.operation.id || ''), name: String(y.operation.name || ''), missions: opMissions.length } : null,
+      operation: y.operation ? { id: String(y.operation.id || ''), name: String(y.operation.name || ''), missions: opMissions.length, organisation: String(y.operation.organisation || '') } : null,
+      organisation: !!ex || /organi/i.test(String(meta.role || '')) || /\d[A-Z]?Z$/i.test(String(meta.id || '').trim()),   // mission d'organisation d'un exercice (…Z)
+      exercise: ex ? { participants: arr(ex.participants).length, tracks: arr(ex.tracks).length, played: arr(ex.tracks).filter(k => k && k.played).length, events: arr(ex.events).length, plis: arr(ex.events).filter(e => /pli/i.test(e?.kind || '')).length } : null,
       teams: teams.map(tm => ({ name: String(tm.name || ''), type: String(tm.type || ''), service: String(tm.service || ''), role: String(tm.role || '') })),
       teamCount: teams.length,
       airTeams: Math.max(aircraft.length, flying.length ? 1 : 0, opMissions.length || 0) || aircraft.length,
@@ -108,7 +111,7 @@
       hasMd: files.some(f => /\.md$/i.test(f)),
       ...mapsState(y, images),
       receivedAt: String(y.meta?.received_at || ''), modifiedAt: String(y.meta?.modified_at || ''), versions: +y.meta?.versions || 0,
-      tracks: Array.isArray(y.tracks) ? y.tracks.length : 0, injects: Array.isArray(y.injects) ? y.injects.length : 0
+      tracks: ex ? arr(ex.tracks).length : arr(y.tracks).length, injects: ex ? arr(ex.events).length : arr(y.injects).length
     };
   }
   /** État des cartes : maps du YAML ↔ PNG présents (dossier de la mission et cartes/). complete : toutes là ;
@@ -442,13 +445,13 @@
     renderDetail();
     window.AppFramework?.refresh?.();
   }
+  const cut = (v, cls) => `<span class="rg-cut ${cls}" title="${esc(v || '')}">${esc(v || '')}</span>`;
   const COLUMNS = () => [
     { key: 'id', label: t(['Mission', 'Mission', 'Mission', 'Misión']), sortValue: m => `${String(m.series).padStart(3, '0')}${String(m.id).padStart(6, '0')}` },
-    { key: 'type', label: t(['Type', 'Type', 'Typ', 'Tipo']) },
-    { key: 'subtype', label: t(['Sous-type', 'Subtype', 'Untertyp', 'Subtipo']) },
-    { key: 'title', label: t(['Titre', 'Title', 'Titel', 'Título']), html: (v, m) => `${esc(String(v || '').slice(0, 70))}${m.missingFile ? ' <span class="rg-pill rg-cancelled">fichier absent</span>' : ''}` },
-    { key: 'teamCount', label: t(['Équipes', 'Teams', 'Teams', 'Equipos']), type: 'number' },
-    { key: 'teamTypes', label: t(['Types', 'Types', 'Typen', 'Tipos']), format: (v, m) => [...m.aircraftTypes, ...v].filter((x, i, a) => a.indexOf(x) === i).slice(0, 3).join(', '), sortValue: m => m.teamTypes.join(',') },
+    // tableau compact : type et sous-type dans une colonne, équipes et types dans une autre, textes longs coupés (complets au survol)
+    { key: 'type', label: t(['Type', 'Type', 'Typ', 'Tipo']), html: (v, m) => `<b>${esc(v || '')}</b>${m.subtype ? ` ${cut(m.subtype, 'rg-cut-s')}` : ''}`, sortValue: m => `${m.type || ''} ${m.subtype || ''}` },
+    { key: 'title', label: t(['Titre', 'Title', 'Titel', 'Título']), html: (v, m) => `${m.organisation ? `<span class="rg-pill rg-planned">${esc(t(['organisation', 'organisation', 'Leitung', 'organización']))}</span> ` : ''}${cut(v, 'rg-cut-l')}${m.missingFile ? ' <span class="rg-pill rg-cancelled">fichier absent</span>' : ''}` },
+    { key: 'teamCount', label: t(['Équipes', 'Teams', 'Teams', 'Equipos']), html: (v, m) => { const k = [...(m.aircraftTypes || []), ...(m.teamTypes || [])].filter((x, i, a) => a.indexOf(x) === i).join(', '); return `${v || 0}${k ? ` · ${cut(k, 'rg-cut-s')}` : ''}`; }, sortValue: m => m.teamCount || 0 },
     { key: 'rdv', label: 'RDV', type: 'number' },
     { key: 'aar', label: 'AAR', format: v => v ? '✓' : '' },
     { key: 'theatre', label: t(['Théâtre', 'Theatre', 'Schauplatz', 'Teatro']) },
@@ -458,6 +461,7 @@
     { key: 'generatedAt', label: t(['Généré', 'Generated', 'Erzeugt', 'Generada']), format: v => fmtDate(v), sortValue: m => m.generatedAt || m.addedAt || '' }
   ];
   function refreshTable() {
+    for (const x of reg.missions) if (x.organisation == null) x.organisation = /\d[A-Z]?Z$/i.test(String(x.id || ''));   // entrées d'avant le champ
     const rows = reg.missions.filter(matches);
     const box = host.querySelector('#rgTable');
     if (!box) return;
@@ -467,6 +471,7 @@
       emptyText: reg.missions.length ? t(['Aucune mission ne correspond aux filtres.', 'No mission matches the filters.']) : t(['Registre vide : choisir le dossier « Missions » puis « Relire le dossier ».', 'Empty registry: choose the “Missions” folder then “Re-read folder”.']),
       onRowClick: m => { select(keyOf(m)); renderDetail(); },
       onDelete: m => { reg.missions = reg.missions.filter(x => keyOf(x) !== keyOf(m)); if (selected === keyOf(m)) select(null); persist(); render(); return true; },
+      deleteLabel: '✕',
       deleteMessage: m => t(['Retirer « {m} » du registre ? (les fichiers ne sont pas supprimés)', 'Remove “{m}” from the registry? (files are not deleted)'], { m: `${m.id} ${m.title}` })
     });
     const draw = host.querySelector('#rgDraw');
@@ -480,9 +485,10 @@
     const teams = m.teams.map(tm => `<li><b>${esc(tm.name)}</b> — ${esc(tm.type)}${tm.service ? `, ${esc(tm.service)}` : ''}${tm.role ? ` <span class="rg-small">(${esc(tm.role)})</span>` : ''}</li>`).join('');
     box.innerHTML = `<div class="repo-card rg-detail" data-icon="target" data-subtitle="${esc(`${m.type}${m.subtype ? ' / ' + m.subtype : ''} — ${m.folder || t(['commande', 'order'])}`)}">
       <h3>${esc(m.id)} — ${esc(m.title || t(['(à générer)', '(to generate)']))}</h3>
-      <p>${pill(m.status, t(STATUS[m.status] || [m.status]))} ${m.operation?.name ? `${esc(t(['Opération', 'Operation']))} : <b>${esc(m.operation.name)}</b>${m.operation.missions ? ` (${m.operation.missions} ${esc(t(['missions', 'missions']))})` : ''}` : ''} ${m.report ? pill('reported', t(['{n} vol(s) — dernier CR {c} du {d}', '{n} flight(s) — last report {c} on {d}'], { n: m.reports.length, c: m.report.missionId, d: fmtDate(m.report.date) })) : ''}</p>
+      <p>${pill(m.status, t(STATUS[m.status] || [m.status]))} ${m.report ? pill('reported', t(['{n} vol(s) — dernier CR {c} du {d}', '{n} flight(s) — last report {c} on {d}'], { n: m.reports.length, c: m.report.missionId, d: fmtDate(m.report.date) })) : ''}</p>
       ${m.reports?.length ? `<details class="rg-reports" ${m.reports.length <= 5 ? 'open' : ''}><summary><b>${esc(t(['Comptes rendus de la mission ({n})', 'Mission reports ({n})', 'Berichte des Einsatzes ({n})', 'Informes de la misión ({n})'], { n: m.reports.length }))}</b></summary><ul>${m.reports.map(r => { const u = crUrl(r); return `<li>${u ? `<a href="${esc(u)}">${esc(r.missionId)}</a>` : esc(r.missionId)} — ${esc(fmtDate(r.date))}</li>`; }).join('')}</ul></details>` : ''}
-      <p>${esc(m.origin)}${m.destination ? ' → ' + esc(m.destination) : ''} · ${esc(t(['{n} rendez-vous', '{n} rendezvous'], { n: m.rdv }))} · ${m.aar ? 'AAR · ' : ''}${esc(m.theatre || '')} · ${esc(t(['{n} carte(s)', '{n} map(s)'], { n: m.maps || 0 }))}${m.tracks || m.injects ? ` · ${esc(t(['exercice : {p} piste(s), {i} inject(s)', 'exercise: {p} track(s), {i} inject(s)'], { p: m.tracks || 0, i: m.injects || 0 }))}` : ''}</p>
+      ${operationHtml(m)}
+      ${m.organisation ? '' : `<p>${esc(m.origin)}${m.destination ? ' → ' + esc(m.destination) : ''} · ${esc(t(['{n} rendez-vous', '{n} rendezvous'], { n: m.rdv }))} · ${m.aar ? 'AAR · ' : ''}${esc(m.theatre || '')} · ${esc(t(['{n} carte(s)', '{n} map(s)'], { n: m.maps || 0 }))}${m.tracks || m.injects ? ` · ${esc(t(['exercice : {p} piste(s), {i} événement(s)', 'exercise: {p} track(s), {i} event(s)'], { p: m.tracks || 0, i: m.injects || 0 }))}` : ''}</p>`}
       ${m.callsigns?.length ? `<p>${esc(t(['Indicatifs', 'Callsigns']))} : ${esc(m.callsigns.join(', '))} · ${esc(m.aircraftTypes.join(', '))}</p>` : ''}
       ${teams ? `<ul class="rg-teams">${teams}</ul>` : ''}
       <details class="rg-files" open><summary><b>${esc(t(['Fichiers de la mission', 'Mission files', 'Einsatzdateien', 'Archivos de la misión']))}</b> ${m.mapsState ? pill(m.mapsState === 'complete' ? 'generated' : m.mapsState === 'partial' ? 'planned' : 'ordered', t(MAPSTATE[m.mapsState])) : ''}</summary><div id="rgFiles" class="rg-small">…</div></details>
@@ -499,6 +505,8 @@
     box.querySelector('#rgFlown').onchange = e => { m.flownAt = e.target.value; if (m.flownAt && ['generated', 'planned', 'ordered'].includes(m.status)) m.status = 'flown'; persist(); render(); };
     box.querySelector('#rgNotes').onchange = e => { m.notes = e.target.value; persist(); };
     box.querySelectorAll('[data-go]').forEach(x => x.onclick = () => go(m, x.dataset.go));
+    box.querySelectorAll('[data-op-go]').forEach(x => x.onclick = () => goOperation(m, x.dataset.opGo));
+    box.querySelectorAll('[data-op-select]').forEach(x => x.onclick = () => { select(x.dataset.opSelect); refreshTable(); renderDetail(); });
     window.MissionEstimate?.panel(box.querySelector('#rgEstimate'), m.estimate, { reports: m.reports || [] });
     renderFiles(m, box.querySelector('#rgFiles'));
     window.AppFramework?.refresh?.();
@@ -563,6 +571,43 @@
     host.querySelectorAll('[data-r]').forEach(a => a.onclick = async e => { e.preventDefault(); const f = recu[+a.dataset.r]; view(f.name, `<pre>${esc(await text(f))}</pre>`); });
     window.AppFramework?.refresh?.();
   }
+  // ---- opération : missions des équipages (A, B, C…) et mission d'organisation de l'exercice (Z)
+  /** Missions du registre de la même opération que m (triées, organisation en dernier). */
+  const operationMembers = m => { const op = m.operation?.id; return op ? reg.missions.filter(x => x.operation?.id === op && x.files?.length).sort((a, b) => (a.organisation - b.organisation) || String(a.id).localeCompare(String(b.id), 'fr', { numeric: true })) : []; };
+  /** Bloc « Opération » de la fiche : membres (cliquables), résumé de l'exercice, ouverture de toute l'opération. */
+  function operationHtml(m) {
+    if (!m.operation?.id) return '';
+    const members = operationMembers(m), z = members.find(x => x.organisation), ex = z?.exercise;
+    const planned = m.operation.missions || 0, crews = members.filter(x => !x.organisation).length;
+    const chips = members.map(x => `<button type="button" class="rg-chip${keyOf(x) === keyOf(m) ? ' rg-chip-on' : ''}" data-op-select="${esc(keyOf(x))}" title="${esc(x.title)}"><b>${esc(x.id)}</b> ${esc(x.organisation ? t(['organisation', 'organisation', 'Leitung', 'organización']) : x.callsigns?.[0] || x.aircraftTypes?.[0] || '')}</button>`).join('');
+    return `<div class="rg-op"><p><b>${esc(t(['Opération', 'Operation', 'Operation', 'Operación']))} ${esc(m.operation.name || m.operation.id)}</b> <span class="rg-small">(${esc(m.operation.id)}) — ${esc(t(['{c} mission(s) d’équipage sur {p} prévue(s)', '{c} crew mission(s) of {p} planned', '{c} Besatzungseinsätze von {p} geplant', '{c} misión(es) de tripulación de {p} previstas'], { c: crews, p: planned || crews }))}${ex ? ` · ${esc(t(['exercice : {n} participant(s), {k} chiffon(s) dont {j} joué(s), {e} événement(s) dont {s} pli(s) scellé(s)', 'exercise: {n} participant(s), {k} track(s) of which {j} played, {e} event(s) of which {s} sealed envelope(s)'], { n: ex?.participants || 0, k: ex?.tracks || 0, j: ex?.played || 0, e: ex?.events || 0, s: ex?.plis || 0 }))}` : ''}</span></p>
+      <div class="rg-chips">${chips}</div>
+      ${members.length > 1 ? `<p class="row"><button type="button" class="secondary" data-op-go="editor" data-icon="layers">${esc(t(['Ouvrir l’opération dans le générateur', 'Open the operation in the generator', 'Operation im Generator öffnen', 'Abrir la operación en el generador']))}</button><button type="button" class="secondary" data-op-go="studio" data-icon="map">${esc(t(['Ouvrir l’opération dans le studio', 'Open the operation in the map studio', 'Operation im Kartenstudio öffnen', 'Abrir la operación en el estudio']))}</button></p>` : ''}</div>`;
+  }
+  /** Lit les fichiers d'une mission du registre dans son dossier. */
+  async function missionFiles(dir, m) {
+    let h = dir;
+    for (const part of (m.folder || '').split('/').filter(Boolean)) h = await h.getDirectoryHandle(part);
+    const files = [];
+    for (const name of m.files) { try { const f = await (await h.getFileHandle(name)).getFile(); files.push({ name, text: await f.text() }); } catch { /* absent */ } }
+    return files;
+  }
+  /** Ouvre toute l'opération de m (missions des équipages et organisation) comme un lot, sur la mission m. */
+  async function goOperation(m, where) {
+    const out = document.getElementById('rgGoMsg');
+    try {
+      const dir = await missionsDir(true);
+      if (!dir) throw new Error(t(['dossier des missions non autorisé', 'missions folder not authorised']));
+      const files = [];
+      for (const x of operationMembers(m)) files.push(...await missionFiles(dir, x));
+      if (!files.length) throw new Error(t(['fichiers de l’opération introuvables', 'operation files not found']));
+      try { sessionStorage.setItem('siaFromRegistry:v1', JSON.stringify({ id: m.id, title: m.title, folder: m.folder, type: m.type })); } catch { /* stockage indisponible */ }
+      window.SiaMission.importTexts(files, 'registry');
+      const b = window.SiaMission.loadBatch(), i = b ? b.docs.findIndex(d => String(d.yaml?.mission?.id || '').toUpperCase() === String(m.id).toUpperCase()) : -1;
+      if (i >= 0) window.SiaMission.go(i, 'registry');
+      location.href = new URL(where === 'studio' ? 'apps/sia/map_parser.html' : 'apps/sia/mission_editor.html', window.RepositoryNav.root).href;
+    } catch (e) { if (out) out.textContent = e.message; }
+  }
   /** Ouvre la mission : générateur / studio (mission partagée), CR (passerelle ?from=sia), prompt de commande. */
   async function go(m, where) {
     const out = document.getElementById('rgGoMsg');
@@ -573,10 +618,7 @@
       try { sessionStorage.setItem('siaFromRegistry:v1', JSON.stringify({ id: m.id, title: m.title, folder: m.folder, type: m.type })); } catch { /* stockage indisponible */ }
       const dir = await missionsDir(true);
       if (!dir) throw new Error(t(['dossier des missions non autorisé', 'missions folder not authorised']));
-      let h = dir;
-      for (const part of (m.folder || '').split('/').filter(Boolean)) h = await h.getDirectoryHandle(part);
-      const files = [];
-      for (const name of m.files) { try { const f = await (await h.getFileHandle(name)).getFile(); files.push({ name, text: await f.text() }); } catch { /* absent */ } }
+      const files = await missionFiles(dir, m);
       if (!files.length) throw new Error(t(['fichiers de la mission introuvables', 'mission files not found']));
       if (where === 'cr') {
         const doc = window.SiaMission.fromTexts(files);
