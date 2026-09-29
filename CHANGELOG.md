@@ -28,6 +28,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   la route change.
 - **Designs skeuomorphes** : l'en-tête garde l'arrondi de son design (Cabinet, Carnet de vol, Durci) ; en Durci, carte
   et radar du bandeau à angles droits (plaque et bloc de sauvegarde inchangés).
+- **Planning ODV** (`apps/planner/odv_planning.html`, ☰ › Planning ODV, accueil) : lecture du classeur hebdomadaire
+  ODV de l'escadrille (.xlsx) **dans le navigateur**, sans envoi ni conservation (lecteur ZIP de la suite +
+  `DOMParser` ; seuls les réglages sont mémorisés) ; trigrammes lus dans les zones de texte, codes normalisés
+  (casse, espaces), légende et couleurs lues dans le fichier, événements des lignes de groupe, profils FLOTTE (types,
+  niveaux, rôles, simulateurs) ; grille de disponibilité filtrable, carte des créneaux communs et détail (horaires en
+  commentaire, contrôleurs, événements, vols posés), missions probables par règles expliquées (familles de la suite +
+  TRAINING avec contrôleur), vols de la frise contrôlés contre les disponibilités, zones à activer ; décalage de date
+  de la frise et anomalies signalés par notifications ; exports CSV, JSON et récapitulatif texte. Voir
+  [docs/ODV_PLANNING.md](docs/ODV_PLANNING.md).
 
 ## [4.1.0] — 2026-09-29
 

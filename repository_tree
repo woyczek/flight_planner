@@ -155,7 +155,8 @@ window.REPOSITORY_TREE={
     {path:"apps/cpco/map_parser.html",menu:"Centre — Studio cartographique",label:"Studio cartographique — Centre de planification et de conduite des opérations"},
     {path:"apps/cpco/mission_registry.html",menu:"Centre — Registre des missions",label:"Registre des missions — Centre de planification et de conduite des opérations"},
     {path:"apps/planner/flight_performance_planner.html",menu:"Flight Performance & Fuel Planner",label:"Flight Performance & Fuel Planner",decor:"sober"},
-    {path:"apps/planner/map_planner.html",menu:"Cartes de vol",label:"Cartes de vol — route, cartes topographiques, approche, rendez-vous, destination"}
+    {path:"apps/planner/map_planner.html",menu:"Cartes de vol",label:"Cartes de vol — route, cartes topographiques, approche, rendez-vous, destination"},
+    {path:"apps/planner/odv_planning.html",menu:"Planning ODV",label:"Planning ODV — disponibilités de la semaine, créneaux communs, missions probables",decor:"sober"}
   ],
   // Libellés du menu ☰ dans les 4 langues (fr, en, de, es) : clé = libellé français de menu / label.
   labels:{
@@ -167,6 +168,7 @@ window.REPOSITORY_TREE={
     "Paramétrage — bases de données":["Paramétrage — bases de données","Settings — databases","Einstellungen — Datenbanken","Configuración — bases de datos"],
     "Paramètres — bases de données et maintenance":["Paramètres — bases de données et maintenance","Settings — databases and maintenance","Einstellungen — Datenbanken und Wartung","Ajustes — bases de datos y mantenimiento"],
     "Cartes de vol":["Cartes de vol","Flight maps","Flugkarten","Mapas de vuelo"],
+    "Planning ODV":["Planning ODV","ODV planning","ODV-Planung","Planificación ODV"],
     "Apparence":["Apparence","Appearance","Darstellung","Apariencia"],
     "Paramètres":["Paramètres","Settings","Einstellungen","Ajustes"],
     "Apparence…":["Apparence (design, icônes, couleurs)…","Appearance (design, icons, colours)…","Darstellung (Design, Symbole, Farben)…","Apariencia (diseño, iconos, colores)…"]
