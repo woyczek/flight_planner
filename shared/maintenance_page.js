@@ -1084,26 +1084,26 @@
         if (mh.kind !== 'directory' || /^[_.]/.test(id)) continue;
         const u = await C.missionUsage({ h: mh, folder: `${fam}/${id}` });
         if (!u.files.some(f => /^mission.*\.ya?ml$/i.test(f.name) && !f.sub)) continue;   // pas un dossier de mission
-        rows.push({ id, folder: `${fam}/${id}`, ...u.sizes, surplus: u.surplusSize, surplusList: u.surplus, mapList: u.files.filter(f => f.kind === 'maps') });
+        rows.push({ id, folder: `${fam}/${id}`, ...u.sizes, surplus: u.surplusSize, surplusList: u.surplus, mapList: u.files.filter(f => f.kind === 'maps'), pdfList: u.files.filter(f => f.kind === 'pdf') });
       }
     }
     rows.sort((a, b) => b.total - a.total);
-    const totals = rows.reduce((s, r) => { for (const k of ['data', 'maps', 'surplus', 'versions', 'recu', 'total']) s[k] += r[k]; return s; }, { data: 0, maps: 0, surplus: 0, versions: 0, recu: 0, total: 0 });
+    const totals = rows.reduce((s, r) => { for (const k of ['data', 'maps', 'surplus', 'pdf', 'versions', 'recu', 'total']) s[k] += r[k]; return s; }, { data: 0, maps: 0, surplus: 0, pdf: 0, versions: 0, recu: 0, total: 0 });
     let browser = null;
     try { browser = await navigator.storage?.estimate?.(); } catch { browser = null; }
     storageState = { rows, totals, browser, at: new Date().toISOString() };
   }
   function renderStorage() {
     const host = hosts.storage, C = window.MissionRegistryCore, B = C?.fmtBytes || (b => `${b} o`), st = storageState;
-    const intro = `<p class="mt-small">${esc(t(['Dossier des missions (data/missions) : données (YAML, Markdown, PDF), cartes générées, versions précédentes, textes reçus. Les cartes se régénèrent depuis le YAML (studio) ; une carte surnuméraire n’est plus dans la liste des cartes de sa mission. Versions et textes reçus sont l’historique : ils ne sont pas purgés ici.', 'Missions folder (data/missions): data (YAML, Markdown, PDF), generated maps, previous versions, received texts. Maps are regenerated from the YAML (studio); a surplus map is no longer in its mission’s map list. Versions and received texts are history: not purged here.']))}</p>`;
-    const actions = `<p class="row"><button type="button" class="primary" id="mtStorageScan" data-icon="refresh">${esc(t(['Calculer la place utilisée', 'Compute used space', 'Belegten Platz berechnen', 'Calcular el espacio usado']))}</button>${st ? `<button type="button" class="secondary" id="mtPurgeSurplus" data-icon="trash"${st.totals.surplus ? '' : ' disabled'}>${esc(t(['Supprimer les cartes surnuméraires ({n}, {s})', 'Delete surplus maps ({n}, {s})'], { n: st.rows.reduce((a, r) => a + r.surplusList.length, 0), s: B(st.totals.surplus) }))}</button><button type="button" class="secondary" id="mtPurgeMaps" data-icon="trash"${st.totals.maps ? '' : ' disabled'}>${esc(t(['Purger toutes les cartes générées ({n}, {s})', 'Purge all generated maps ({n}, {s})'], { n: st.rows.reduce((a, r) => a + r.mapList.length, 0), s: B(st.totals.maps) }))}</button>` : ''}<a class="mt-link" href="?m=caches">${esc(t(['Caches du navigateur →', 'Browser caches →']))}</a></p>`;
+    const intro = `<p class="mt-small">${esc(t(['Dossier des missions (data/missions) : données (YAML, Markdown), cartes générées, PDF, versions précédentes, textes reçus. Les cartes se régénèrent depuis le YAML (studio) ; une carte surnuméraire n’est plus dans la liste des cartes de sa mission. Versions et textes reçus sont l’historique : ils ne sont pas purgés ici.', 'Missions folder (data/missions): data (YAML, Markdown, PDF), generated maps, previous versions, received texts. Maps are regenerated from the YAML (studio); a surplus map is no longer in its mission’s map list. Versions and received texts are history: not purged here.']))}</p>`;
+    const actions = `<p class="row"><button type="button" class="primary" id="mtStorageScan" data-icon="refresh">${esc(t(['Calculer la place utilisée', 'Compute used space', 'Belegten Platz berechnen', 'Calcular el espacio usado']))}</button>${st ? `<button type="button" class="secondary" id="mtPurgeSurplus" data-icon="trash"${st.totals.surplus ? '' : ' disabled'}>${esc(t(['Supprimer les cartes surnuméraires ({n}, {s})', 'Delete surplus maps ({n}, {s})'], { n: st.rows.reduce((a, r) => a + r.surplusList.length, 0), s: B(st.totals.surplus) }))}</button><button type="button" class="secondary" id="mtPurgeMaps" data-icon="trash"${st.totals.maps ? '' : ' disabled'}>${esc(t(['Purger toutes les cartes générées ({n}, {s})', 'Purge all generated maps ({n}, {s})'], { n: st.rows.reduce((a, r) => a + r.mapList.length, 0), s: B(st.totals.maps) }))}</button><button type="button" class="secondary" id="mtPurgePdf" data-icon="trash"${st.totals.pdf ? '' : ' disabled'}>${esc(t(['Purger les PDF ({n}, {s})', 'Purge PDFs ({n}, {s})', 'PDFs löschen ({n}, {s})', 'Purgar los PDF ({n}, {s})'], { n: st.rows.reduce((a, r) => a + r.pdfList.length, 0), s: B(st.totals.pdf) }))}</button>` : ''}<a class="mt-link" href="?m=caches">${esc(t(['Caches du navigateur →', 'Browser caches →']))}</a></p>`;
     if (!st) { host.innerHTML = intro + actions; bindStorage(); return; }
     const td = v => `<td class="mt-num">${v ? esc(B(v)) : '—'}</td>`;
-    const head = `<tr><th>${esc(t(['Mission', 'Mission']))}</th><th>${esc(t(['Données', 'Data']))}</th><th>${esc(t(['Cartes', 'Maps']))}</th><th>${esc(t(['dont surnuméraires', 'of which surplus']))}</th><th>${esc(t(['Versions', 'Versions']))}</th><th>${esc(t(['Textes reçus', 'Received texts']))}</th><th>${esc(t(['Total', 'Total']))}</th></tr>`;
-    const body = st.rows.map(r => `<tr><td><b>${esc(r.id)}</b> <span class="mt-small">${esc(r.folder.split('/')[0])}</span></td>${td(r.data)}${td(r.maps)}${td(r.surplus)}${td(r.versions)}${td(r.recu)}<td class="mt-num"><b>${esc(B(r.total))}</b></td></tr>`).join('');
-    const tot = st.totals, foot = `<tr class="mt-group"><td>${esc(t(['Total ({n} missions)', 'Total ({n} missions)'], { n: st.rows.length }))}</td>${td(tot.data)}${td(tot.maps)}${td(tot.surplus)}${td(tot.versions)}${td(tot.recu)}<td class="mt-num"><b>${esc(B(tot.total))}</b></td></tr>`;
+    const head = `<tr><th>${esc(t(['Mission', 'Mission']))}</th><th>${esc(t(['Données', 'Data']))}</th><th>${esc(t(['Cartes', 'Maps']))}</th><th>${esc(t(['dont surnuméraires', 'of which surplus']))}</th><th>PDF</th><th>${esc(t(['Versions', 'Versions']))}</th><th>${esc(t(['Textes reçus', 'Received texts']))}</th><th>${esc(t(['Total', 'Total']))}</th></tr>`;
+    const body = st.rows.map(r => `<tr><td><b>${esc(r.id)}</b> <span class="mt-small">${esc(r.folder.split('/')[0])}</span></td>${td(r.data)}${td(r.maps)}${td(r.surplus)}${td(r.pdf)}${td(r.versions)}${td(r.recu)}<td class="mt-num"><b>${esc(B(r.total))}</b></td></tr>`).join('');
+    const tot = st.totals, foot = `<tr class="mt-group"><td>${esc(t(['Total ({n} missions)', 'Total ({n} missions)'], { n: st.rows.length }))}</td>${td(tot.data)}${td(tot.maps)}${td(tot.surplus)}${td(tot.pdf)}${td(tot.versions)}${td(tot.recu)}<td class="mt-num"><b>${esc(B(tot.total))}</b></td></tr>`;
     const br = st.browser ? `<p>${esc(t(['Navigateur (bases locales, caches, base SIA…) : {u} utilisés sur {q} disponibles.', 'Browser (local databases, caches, SIA base…): {u} used of {q} available.'], { u: B(st.browser.usage || 0), q: B(st.browser.quota || 0) }))}</p>` : '';
-    host.innerHTML = `${intro}${actions}<p>${esc(t(['Dossier des missions : {t} — données {d}, cartes {m} (dont surnuméraires {s}), versions {v}, textes reçus {r}. Calculé le {at}.', 'Missions folder: {t} — data {d}, maps {m} (surplus {s}), versions {v}, received {r}. Computed {at}.'], { t: B(tot.total), d: B(tot.data), m: B(tot.maps), s: B(tot.surplus), v: B(tot.versions), r: B(tot.recu), at: fmtDate(st.at) }))}</p>${br}
+    host.innerHTML = `${intro}${actions}<p>${esc(t(['Dossier des missions : {t} — données {d}, cartes {m} (dont surnuméraires {s}), PDF {p}, versions {v}, textes reçus {r}. Calculé le {at}.', 'Missions folder: {t} — data {d}, maps {m} (surplus {s}), PDF {p}, versions {v}, received {r}. Computed {at}.'], { t: B(tot.total), d: B(tot.data), m: B(tot.maps), s: B(tot.surplus), p: B(tot.pdf), v: B(tot.versions), r: B(tot.recu), at: fmtDate(st.at) }))}</p>${br}
       <div class="mt-scroll mt-short"><table class="mt-table mt-wide"><thead>${head}</thead><tbody>${body}${foot}</tbody></table></div>`;
     bindStorage();
   }
@@ -1113,13 +1113,14 @@
     host.querySelector('#mtStorageScan').onclick = e => busy(e.currentTarget, async () => { await scanStorage(true); renderStorage(); });
     const purge = (sel, pick, what) => { const b = host.querySelector(sel); if (b) b.onclick = e => busy(e.currentTarget, async () => {
       const list = storageState.rows.flatMap(pick), size = list.reduce((a, f) => a + f.size, 0);
-      if (!list.length || !confirm(t(['Supprimer {n} fichier(s) ({s}) : {w} ? Les cartes se régénèrent depuis le YAML (studio).', 'Delete {n} file(s) ({s}): {w}? Maps can be regenerated from the YAML (studio).'], { n: list.length, s: B(size), w: what }))) return;
+      if (!list.length || !confirm(t(['Supprimer {n} fichier(s) ({s}) : {w} ? Ils se régénèrent depuis le YAML (cartes : studio ; PDF : générateur).', 'Delete {n} file(s) ({s}): {w}? They can be regenerated from the YAML (maps: studio; PDFs: generator).'], { n: list.length, s: B(size), w: what }))) return;
       const n = await C.removeFiles(list);
       window.AppFramework?.notify?.(t(['{n} fichier(s) supprimé(s), {s} libérés.', '{n} file(s) deleted, {s} freed.'], { n, s: B(size) }), 'ok');
       await scanStorage(false); renderStorage();
     }); };
     purge('#mtPurgeSurplus', r => r.surplusList, t(['cartes surnuméraires (absentes du YAML de leur mission)', 'surplus maps (not in their mission’s YAML)']));
     purge('#mtPurgeMaps', r => r.mapList, t(['toutes les cartes générées de toutes les missions', 'all generated maps of all missions']));
+    purge('#mtPurgePdf', r => r.pdfList, t(['les PDF des missions (régénérés par le générateur)', 'mission PDFs (regenerated by the generator)']));
     window.AppFramework?.refresh?.();
   }
   // ---- rendu, langue, événements

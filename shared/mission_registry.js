@@ -248,7 +248,7 @@
   const fmtBytes = b => b >= 1e6 ? `${(b / 1e6).toFixed(1).replace('.', ',')} Mo` : `${Math.max(1, Math.round(b / 1e3))} ko`;
   /** Cartes attendues d'une mission : maps[] du YAML, carte d'assemblage et profil vertical (produits par le studio). */
   const wantedMaps = y => new Set([...(Array.isArray(y?.maps) ? y.maps : []).map(mp => String(typeof mp === 'object' ? mp?.filename || mp?.file || '' : mp).toLowerCase()), 'carte_assemblage.png', 'profil_vertical.png'].filter(Boolean));
-  /** Fichiers d'un dossier de mission avec leur taille et leur catégorie : data (YAML, Markdown, PDF…), maps (cartes),
+  /** Fichiers d'un dossier de mission avec leur taille et leur catégorie : data (YAML, Markdown…), maps (cartes), pdf,
    *  versions, recu ; cartes surnuméraires (absentes du YAML). { files, sizes: { data, maps, versions, recu, total },
    *  surplus: [fichiers] }. y : YAML de la mission (lu dans le dossier si absent). */
   async function missionUsage(mh, y) {
@@ -257,9 +257,9 @@
     const walk = async (dir, sub) => { try { const d = sub ? await dir.getDirectoryHandle(sub) : dir; for await (const [n, x] of d.entries()) if (x.kind === 'file') { const f = await x.getFile(); files.push({ name: n, sub, size: f.size, dir: d }); } } catch { /* absent */ } };
     await walk(mh.h, ''); for (const s of [SUB.maps, SUB.versions, SUB.received]) await walk(mh.h, s);
     const img = n => /\.(png|jpe?g|webp)$/i.test(n);
-    for (const f of files) f.kind = f.sub === SUB.maps || (!f.sub && img(f.name)) ? 'maps' : f.sub === SUB.versions ? 'versions' : f.sub === SUB.received ? 'recu' : 'data';
+    for (const f of files) f.kind = f.sub === SUB.maps || (!f.sub && img(f.name)) ? 'maps' : f.sub === SUB.versions ? 'versions' : f.sub === SUB.received ? 'recu' : /\.pdf$/i.test(f.name) ? 'pdf' : 'data';
     const surplus = y ? files.filter(f => f.kind === 'maps' && !want.has(f.name.toLowerCase())) : [];
-    const sizes = { data: 0, maps: 0, versions: 0, recu: 0, total: 0 };
+    const sizes = { data: 0, maps: 0, pdf: 0, versions: 0, recu: 0, total: 0 };
     for (const f of files) { sizes[f.kind] += f.size; sizes.total += f.size; }
     return { files, sizes, surplus, surplusSize: surplus.reduce((a, f) => a + f.size, 0) };
   }
@@ -584,7 +584,7 @@
     if (document.getElementById('rgViewerCss')) return;
     const css = document.createElement('style');
     css.id = 'rgViewerCss';
-    css.textContent = '.rg-viewer{width:min(96vw,1100px);max-height:90vh;padding:0;border:0;border-radius:10px}.rg-viewer::backdrop{background:rgba(0,0,0,.55)}.rg-viewer-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #ccd;position:sticky;top:0;background:inherit}.rg-viewer-body{padding:12px 16px;overflow:auto;max-height:80vh}.rg-viewer-body pre{white-space:pre-wrap;font:12px ui-monospace,monospace}.rg-viewer-body table{border-collapse:collapse}.rg-viewer-body td,.rg-viewer-body th{border:1px solid #ccd;padding:2px 6px}.rg-viewer-body img{max-width:100%}.rg-thumbs{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}.rg-thumbs figure{margin:0;width:160px}.rg-thumbs img{width:160px;height:100px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid #ccd}.rg-thumbs figcaption{font-size:11px;word-break:break-all}.rg-thumbs .rg-surplus img{opacity:.55;outline:2px dashed #c0392b;outline-offset:-2px}.rg-thumbs .rg-del{border:0;background:#c0392b;color:#fff;border-radius:50%;width:18px;height:18px;line-height:16px;padding:0;cursor:pointer;font-size:13px}';
+    css.textContent = '.rg-viewer{width:min(96vw,1100px);max-height:90vh;padding:0;border:0;border-radius:10px}.rg-viewer::backdrop{background:rgba(0,0,0,.55)}.rg-viewer-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #ccd;position:sticky;top:0;background:inherit}.rg-viewer-body{padding:12px 16px;overflow:auto;max-height:80vh}.rg-viewer-body pre{white-space:pre-wrap;font:12px ui-monospace,monospace}.rg-viewer-body table{border-collapse:collapse}.rg-viewer-body td,.rg-viewer-body th{border:1px solid #ccd;padding:2px 6px}.rg-viewer-body img{max-width:100%}.rg-thumbs{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}.rg-thumbs figure{margin:0;width:160px}.rg-thumbs img{width:160px;height:100px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid #ccd}.rg-thumbs figcaption{font-size:11px;word-break:break-all}.rg-thumbs .rg-surplus img{opacity:.55;outline:2px dashed #c0392b;outline-offset:-2px}.rg-thumbs figure{position:relative}.rg-thumbs .rg-del{position:absolute;top:4px;right:4px;border:0;background:#c0392b;color:#fff;border-radius:50%;width:22px;height:22px;line-height:20px;padding:0;cursor:pointer;font-size:15px;box-shadow:0 1px 4px #0006;opacity:.85}.rg-thumbs .rg-del:hover{opacity:1}';
     document.head.append(css);
   }
   function view(title, html) {
@@ -631,22 +631,36 @@
     let yObj = null;
     try { yObj = yaml ? window.jsyaml.load((await (await yaml.h.getFile()).text()).replace(/^#.*\n/, '')) : null; } catch { yObj = null; }
     const usage = await C.missionUsage(mh, yObj), surplus = new Set(usage.surplus.map(f => f.name.toLowerCase())), B = C.fmtBytes;
-    for (const f of maps) {
-      const file = await f.h.getFile(), fig = document.createElement('figure'), extra = surplus.has(f.name.toLowerCase());
-      fig.className = extra ? 'rg-surplus' : '';
-      fig.innerHTML = `<img alt="" loading="lazy"><figcaption>${esc(f.name)}${extra ? ` <span class="rg-pill rg-cancelled">${esc(t(['surnuméraire', 'surplus', 'überzählig', 'sobrante']))}</span> <button type="button" class="rg-del" title="${esc(t(['Supprimer cette carte du dossier (absente de la liste des cartes de la mission)', 'Delete this map from the folder (not in the mission’s map list)']))}">×</button>` : ''}</figcaption>`;
+    // chaque carte supprimable (croix) ; emplacement affiché (cartes/ ou racine) ; doublon : même nom à la racine et dans cartes/
+    const mapFiles = usage.files.filter(f => f.kind === 'maps'), inMaps = new Set(mapFiles.filter(f => f.sub).map(f => f.name.toLowerCase()));
+    const dupRoot = mapFiles.filter(f => !f.sub && inMaps.has(f.name.toLowerCase()));
+    const pill2 = (cls, txt) => ` <span class="rg-pill ${cls}">${esc(txt)}</span>`;
+    for (const f of mapFiles) {
+      const file = await f.dir.getFileHandle(f.name).then(h => h.getFile()), fig = document.createElement('figure'), extra = f.sub && surplus.has(f.name.toLowerCase()) || !f.sub && !inMaps.has(f.name.toLowerCase()) && surplus.has(f.name.toLowerCase()), dup = !f.sub && inMaps.has(f.name.toLowerCase());
+      fig.className = extra || dup ? 'rg-surplus' : '';
+      fig.innerHTML = `<img alt="" loading="lazy"><figcaption>${esc(f.sub ? `${f.sub}/${f.name}` : f.name)}${f.sub ? '' : pill2('rg-planned', t(['racine', 'root', 'Wurzel', 'raíz']))}${dup ? pill2('rg-cancelled', t(['doublon', 'duplicate', 'Duplikat', 'duplicado'])) : extra ? pill2('rg-cancelled', t(['surnuméraire', 'surplus', 'überzählig', 'sobrante'])) : ''} · ${esc(B(f.size))} <button type="button" class="rg-del" title="${esc(t(['Supprimer cette carte du dossier de la mission', 'Delete this map from the mission folder', 'Diese Karte aus dem Missionsordner löschen', 'Borrar este mapa de la carpeta de la misión']))}">×</button></figcaption>`;
       fig.querySelector('img').src = await thumbnail(file);
-      fig.querySelector('img').onclick = () => { const u = URL.createObjectURL(file); view(f.name, `<img src="${u}" alt="">`); };
-      fig.querySelector('.rg-del')?.addEventListener('click', async () => {
-        if (!confirm(t(['Supprimer « {f} » du dossier de la mission ?', 'Delete “{f}” from the mission folder?'], { f: f.name }))) return;
-        const n = await C.removeFiles(usage.surplus.filter(x => x.name === f.name));
-        window.AppFramework?.notify?.(n ? t(['{f} supprimée.', '{f} deleted.'], { f: f.name }) : t(['{f} : suppression refusée.', '{f}: deletion refused.'], { f: f.name }), n ? 'ok' : 'err');
+      fig.querySelector('img').onclick = () => { const u = URL.createObjectURL(file); view(f.sub ? `${f.sub}/${f.name}` : f.name, `<img src="${u}" alt="">`); };
+      fig.querySelector('.rg-del').addEventListener('click', async () => {
+        const label = f.sub ? `${f.sub}/${f.name}` : f.name, why = dup ? t(['doublon : la même carte reste dans cartes/', 'duplicate: the same map stays in cartes/']) : extra ? t(['absente de la liste des cartes de la mission', 'not in the mission’s map list']) : t(['carte de la mission : le studio pourra la régénérer', 'mission map: the studio can regenerate it']);
+        if (!confirm(t(['Supprimer « {f} » ({s}) du dossier de la mission ?\n{w}', 'Delete “{f}” ({s}) from the mission folder?\n{w}'], { f: label, s: B(f.size), w: why }))) return;
+        const n = await C.removeFiles([f]);
+        window.AppFramework?.notify?.(n ? t(['{f} supprimée.', '{f} deleted.'], { f: label }) : t(['{f} : suppression refusée.', '{f}: deletion refused.'], { f: label }), n ? 'ok' : 'err');
         renderFiles(m, host);
       });
       thumbs.append(fig);
     }
+    if (dupRoot.length) {
+      thumbs.insertAdjacentHTML('afterend', `<p class="rg-small">${esc(t(['{n} carte(s) en double à la racine du dossier (la même carte est dans cartes/).', '{n} duplicate map(s) at the folder root (same map in cartes/).'], { n: dupRoot.length }))} <button type="button" class="secondary" id="rgDelDup" data-icon="trash">${esc(t(['Supprimer les doublons à la racine ({n}, {s})', 'Delete root duplicates ({n}, {s})'], { n: dupRoot.length, s: B(dupRoot.reduce((a, f) => a + f.size, 0)) }))}</button></p>`);
+      host.querySelector('#rgDelDup').addEventListener('click', async () => {
+        if (!confirm(t(['Supprimer {n} carte(s) en double à la racine du dossier ? Les exemplaires de cartes/ sont gardés.', 'Delete {n} duplicate map(s) at the folder root? The copies in cartes/ are kept.'], { n: dupRoot.length }))) return;
+        const n = await C.removeFiles(dupRoot);
+        window.AppFramework?.notify?.(t(['{n} doublon(s) supprimé(s).', '{n} duplicate(s) deleted.'], { n }), 'ok');
+        renderFiles(m, host);
+      });
+    }
     const sz = usage.sizes;
-    thumbs.insertAdjacentHTML('afterend', `<p class="rg-small">${esc(t(['Place : {t} — données {d}, cartes {c}, versions {v}, textes reçus {r}.', 'Space: {t} — data {d}, maps {c}, versions {v}, received texts {r}.'], { t: B(sz.total), d: B(sz.data), c: B(sz.maps), v: B(sz.versions), r: B(sz.recu) }))}${usage.surplus.length ? ` <button type="button" class="secondary" id="rgDelSurplus" data-icon="trash">${esc(t(['Supprimer les cartes surnuméraires ({n}, {s})', 'Delete surplus maps ({n}, {s})'], { n: usage.surplus.length, s: B(usage.surplusSize) }))}</button>` : ''}</p>`);
+    thumbs.insertAdjacentHTML('afterend', `<p class="rg-small">${esc(t(['Place : {t} — données {d}, cartes {c}, versions {v}, textes reçus {r}.', 'Space: {t} — data {d}, maps {c}, versions {v}, received texts {r}.'], { t: B(sz.total), d: B(sz.data), c: B(sz.maps), v: B(sz.versions), r: B(sz.recu) }))}${sz.pdf ? esc(t([' PDF : {p}.', ' PDF: {p}.'], { p: B(sz.pdf) })) : ''}${usage.surplus.length ? ` <button type="button" class="secondary" id="rgDelSurplus" data-icon="trash">${esc(t(['Supprimer les cartes surnuméraires ({n}, {s})', 'Delete surplus maps ({n}, {s})'], { n: usage.surplus.length, s: B(usage.surplusSize) }))}</button>` : ''}</p>`);
     host.querySelector('#rgDelSurplus')?.addEventListener('click', async () => {
       if (!confirm(t(['Supprimer {n} carte(s) surnuméraire(s) ({s}) du dossier de la mission ? Elles ne figurent plus dans sa liste de cartes.', 'Delete {n} surplus map(s) ({s}) from the mission folder?'], { n: usage.surplus.length, s: B(usage.surplusSize) }))) return;
       const n = await C.removeFiles(usage.surplus);

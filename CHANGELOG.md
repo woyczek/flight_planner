@@ -10,6 +10,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Registre : suppression individuelle des cartes** — croix sur chaque vignette (confirmation), emplacement affiché
+  (cartes/ ou racine), cartes en double à la racine repérées et supprimables d'un coup ; PDF compté dans la place.
+- **Maintenance › Espace disque** : colonne PDF et « Purger les PDF » (régénérés par le générateur).
 - **Registre : cartes surnuméraires** — dans les fichiers d'une mission, cartes absentes de sa liste de cartes marquées
   (croix de suppression), bouton « Supprimer les cartes surnuméraires », place occupée par la mission.
 - **Maintenance › Espace disque** : place occupée par les missions (par mission et par type : données, cartes, dont
