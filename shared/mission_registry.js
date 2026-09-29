@@ -402,6 +402,7 @@
         </div>
         <p class="row"><button type="button" class="primary" id="rgDraw" data-icon="sparkles" ${rows.length ? '' : 'disabled'}>${esc(t(['Tirer au sort ({n})', 'Draw at random ({n})', 'Zufällig wählen ({n})', 'Sortear ({n})'], { n: rows.length }))}</button><button type="button" class="secondary" id="rgReset">${esc(t(['Effacer les filtres', 'Clear filters', 'Filter löschen', 'Borrar filtros']))}</button><button type="button" class="secondary" id="rgCsv" data-icon="download">CSV</button></p>
         <div id="rgTable"></div>
+        <div class="rg-resize" role="separator" aria-orientation="horizontal" title="${esc(t(['Glisser pour agrandir ou réduire le tableau (double-clic : hauteur par défaut)', 'Drag to enlarge or shrink the table (double-click: default height)', 'Ziehen, um die Tabelle zu vergrößern oder zu verkleinern (Doppelklick: Standardhöhe)', 'Arrastrar para ampliar o reducir la tabla (doble clic: altura por defecto)']))}"><span></span></div>
         <div id="rgDetail"></div>
       </section>
       <section data-block-id="order" data-icon="send" data-subtitle="${esc(t(['Nouvelle mission à générer : paramètres choisis, prompt ChatGPT réglé, entrée « commandée » rapprochée ensuite du fichier généré', 'New mission to generate: chosen parameters, tuned ChatGPT prompt, “ordered” entry matched later with the generated file']))}">
@@ -472,25 +473,41 @@
     const rows = reg.missions.filter(matches);
     const box = host.querySelector('#rgTable');
     if (!box) return;
-    // hauteur du tableau réglable (poignée en bas à droite), mémorisée
+    // hauteur du tableau : barre sous le tableau à glisser (double-clic : hauteur par défaut) ; seule une hauteur
+    // choisie à la main est mémorisée (sinon défaut selon l'écran, plus bas sur un petit écran)
     if (!box.dataset.sized) {
       box.dataset.sized = '1';
-      const h = +readJson(TABLE_H, 0);
-      if (h >= 120) box.style.height = `${h}px`;
-      let timer = 0;
-      new ResizeObserver(() => { clearTimeout(timer); timer = setTimeout(() => { if (box.isConnected && box.offsetHeight) writeJson(TABLE_H, box.offsetHeight); }, 300); }).observe(box);
+      const h = +readJson(TABLE_H, 0), bar = box.nextElementSibling?.classList.contains('rg-resize') ? box.nextElementSibling : null;
+      if (h >= 120) box.style.height = `${Math.min(h, innerHeight - 120)}px`;
+      if (bar) {
+        bar.onpointerdown = e => {
+          e.preventDefault(); const y0 = e.clientY, h0 = box.offsetHeight;
+          try { bar.setPointerCapture(e.pointerId); } catch { /* pointeur relâché */ }
+          const move = ev => { box.style.height = `${Math.max(120, h0 + ev.clientY - y0)}px`; };
+          const up = () => { bar.removeEventListener('pointermove', move); bar.removeEventListener('pointerup', up); writeJson(TABLE_H, box.offsetHeight); };
+          bar.addEventListener('pointermove', move); bar.addEventListener('pointerup', up);
+        };
+        bar.ondblclick = () => { box.style.height = ''; try { localStorage.removeItem(TABLE_H); } catch { /* stockage indisponible */ } };
+      }
     }
     if (!window.SortedTable) { box.textContent = 'mission_table.js'; return; }
     table = window.SortedTable.render(box, {
       rows, columns: COLUMNS(), defaultSortKey: 'id', defaultDir: 1,
       emptyText: reg.missions.length ? t(['Aucune mission ne correspond aux filtres.', 'No mission matches the filters.']) : t(['Registre vide : choisir le dossier « Missions » puis « Relire le dossier ».', 'Empty registry: choose the “Missions” folder then “Re-read folder”.']),
-      onRowClick: m => { select(keyOf(m)); renderDetail(); },
+      onRowClick: m => { select(keyOf(m)); renderDetail(); revealDetail(); },
       onDelete: m => { reg.missions = reg.missions.filter(x => keyOf(x) !== keyOf(m)); if (selected === keyOf(m)) select(null); persist(); render(); return true; },
       deleteLabel: '✕',
       deleteMessage: m => t(['Retirer « {m} » du registre ? (les fichiers ne sont pas supprimés)', 'Remove “{m}” from the registry? (files are not deleted)'], { m: `${m.id} ${m.title}` })
     });
     const draw = host.querySelector('#rgDraw');
     if (draw) { draw.disabled = !rows.length; draw.textContent = t(['Tirer au sort ({n})', 'Draw at random ({n})', 'Zufällig wählen ({n})', 'Sortear ({n})'], { n: rows.length }); }
+  }
+  /** Fiche de la mission choisie hors de vue (petit écran, tableau haut) : la page défile jusqu'à elle. */
+  function revealDetail() {
+    const d = host.querySelector('#rgDetail');
+    if (!d?.firstElementChild) return;
+    const r = d.getBoundingClientRect();
+    if (r.top > innerHeight - 80 || r.top < 0) d.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   function renderDetail() {
     const box = host.querySelector('#rgDetail');
