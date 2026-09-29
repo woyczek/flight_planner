@@ -10,6 +10,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Carnet de vol** : plans trois vues plus grands (45 % de la largeur du bloc, 340 px au plus) ; en ton sombre, traits crème
+  façon blueprint (versions `blueprint-*-clair.webp`), traits sépia en ton clair.
+
 - **Carnet de vol** : plans trois vues (Islander, DC-3, B-17, P-51, Concorde ; `deco/flightlog/blueprint-*.webp`,
   convertis en sépia sans franges, ~100 Ko) au coin des blocs en décor complet, en alternance dans l'ordre de la page
   (rang `data-deco-n` posé par le framework) ; ancien `blueprint.webp` retiré.
