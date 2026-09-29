@@ -259,6 +259,8 @@
         const text = bad ? bad.textContent.trim() : "";
         // une notification par zone : un nouveau message remplace le précédent (message puis message de secours…)
         if (text && text !== last) { el._repoToast?.remove(); el._repoToast = notify(text, bad.classList.contains("warn") ? "warn" : "err"); }
+        // le message passe en notification : pas de doublon en ligne (sauf s'il porte un bouton ou un lien : « Réessayer »…)
+        if (bad && bad !== el && !bad.hidden && !bad.querySelector("button,a,input,select")) bad.hidden = true;
         last = text;
       }).observe(el, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["class"] });
     }

@@ -10,6 +10,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Studio, génération des cartes** : barre de progression et étape en cours dans le pied de page ; rangement dans le
+  dossier de la mission toujours annoncé (notification, compte rendu) ; sans accès au dossier, bouton « Ranger les cartes
+  dans le dossier » dans le pied de page. Registre : cartes en vignettes réduites.
+- **Avertissements** : les zones d'état (`data-status`) passent leurs erreurs et avertissements en notification flottante
+  (effacement automatique, croix) et ne les répètent plus en ligne ; état de la base SIA du studio en ligne neutre +
+  notification.
 - **Routes : mode et réglages visibles** — bloc Durée estimée : transit calculé ou raison du direct (hélicoptère, VFR,
   base SIA à relire, hors de la couverture des données SIA pour une mission à l'étranger, tronçons courts, détour) ;
   mode imposé par mission (`route_mode` : automatique, voies aériennes, RTBA, direct) ; paramètres du calcul réglables
