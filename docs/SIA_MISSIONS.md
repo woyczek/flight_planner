@@ -283,6 +283,13 @@ hauteur (≤ 1500 ft) → chaînage des zones du RTBA raccordées ; hélicoptèr
 de 40 NM sont routés ; points de transit en croisière (pas de descente intermédiaire). Exemple : Rennes → Marseille
 au FL120 par V20, H34, H20, A3, R31, A6 (459 NM pour 402 en direct) ; à 500 ft par R 149 A … R 591.
 
+**Mode et réglages** : le bloc Durée estimée du générateur affiche le transit calculé, ou pourquoi il reste direct
+(hélicoptère, VFR, base SIA à relire, hors de la couverture des données SIA — mission à l'étranger —, tronçons
+courts, détour excessif) ; le mode peut être imposé par mission (`route_mode` : `airways`, `rtba`, `direct`) ; les
+paramètres du calcul (tronçon routé à partir de 40 NM, voies aériennes à partir de 6500 ft, basse hauteur jusqu'à
+1500 ft, entrée / sortie à 60 NM des voies et 150 NM du RTBA, détour admis 40 % / 80 %) sont réglables et mémorisés
+dans le navigateur.
+
 **Temps éprouvés** : l'aller (départ → premier point de travail) et le retour (dernier point de travail → arrivée)
 réellement volés, relevés dans les CR des missions de même départ et mêmes points (± 2 NM, registre du navigateur),
 remplacent le calcul ; le panneau indique leur origine (nombre de vols).

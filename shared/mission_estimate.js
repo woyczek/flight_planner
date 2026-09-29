@@ -218,7 +218,7 @@
     return t;
   }
   /** Chaîne avec points de transit (shared/mission_routing.js), sinon inchangée. */
-  const routed = (chain, P) => window.MissionRouting?.expand ? window.MissionRouting.expand(chain, P) : { chain, how: '' };
+  const routed = (chain, P, y) => window.MissionRouting?.expand ? window.MissionRouting.expand(chain, P, y) : { chain, how: '', mode: 'direct', reason: 'calcul des routes non chargé' };
 
   /** Options de retour (return_options) : autre terrain ou hôpital selon l'état du patient, la météo, le carburant…
    *  Chaque option : route jusqu'au dernier point de travail, puis l'option, puis la base (sauf then_base: false). */
@@ -237,7 +237,7 @@
     if (!r.origin) return { ok: false, notes: ['départ sans coordonnées : pas d’estimation'], aircraft: P };
     notes.push(`Appareil : ${P.code || P.text || 'inconnu'} (${P.label}), ${Math.round(P.tas)} kt — ${P.source}.`);
     notes.push(`Route : ${r.how} ; retour ${y.destination && ok(y.destination) && distNm(y.destination, y.origin) > 1 ? `à ${y.destination.name || 'la destination'}` : 'à la base de départ'}.`);
-    const way = routed([r.origin, ...r.order, r.dest], P), pv = provenTimes(r), main = applyProven(fly(way.chain, P, y), pv);
+    const way = routed([r.origin, ...r.order, r.dest], P, y), pv = provenTimes(r), main = applyProven(fly(way.chain, P, y), pv);
     if (way.how) notes.push(`Transit : ${way.how}.`);
     if (pv.out || pv.in) notes.push(`Temps éprouvés (CR) : ${[pv.out ? `aller ${pv.out.min} min (${pv.out.n} vol${pv.out.n > 1 ? 's' : ''})` : '', pv.in ? `retour ${pv.in.min} min (${pv.in.n} vol${pv.in.n > 1 ? 's' : ''})` : ''].filter(Boolean).join(', ')}.`);
     // heure de remise de chaque partie : temps écoulé depuis le décollage au point de déclenchement + délai
@@ -245,12 +245,12 @@
     const phases = r.reveal.map(ph => { const t0 = at(ph.point); return { ...ph, at: t0 == null ? null : Math.round(t0 + ph.delay) }; });
     // variantes de retour : même route jusqu'au dernier point de travail, puis l'option (et la base)
     const keep = [r.origin, ...r.order];
-    const options = returnOptions(y, r).map(o => ({ label: o.label, condition: o.condition, toBase: o.toBase, ...applyProven(fly(routed([...keep, ...o.chain], P).chain, P, y), { out: pv.out }) }));
+    const options = returnOptions(y, r).map(o => ({ label: o.label, condition: o.condition, toBase: o.toBase, ...applyProven(fly(routed([...keep, ...o.chain], P, y).chain, P, y), { out: pv.out }) }));
     if (options.length) notes.push(`${options.length} option(s) de retour : ${options.map(o => o.label).join(', ')}.`);
     const flights = [main.flight, ...options.map(o => o.flight)];
     const st = y.timing || {};
     return {
-      ok: true, aircraft: P, how: way.how ? `${r.how} ; ${way.how}` : r.how, notes, points: way.chain, proven: pv,
+      ok: true, aircraft: P, how: way.how ? `${r.how} ; ${way.how}` : r.how, notes, points: way.chain, proven: pv, routing: { mode: way.mode, reason: way.reason, how: way.how },
       ...main, options, phases, min: Math.min(...flights), max: Math.max(...flights),
       stated: { flight: +st.estimated_flight_min || null, block: +st.estimated_block_min || null }
     };
@@ -275,7 +275,7 @@
       points: e.points.map(P), legs: legs(e.legs),
       options: e.options.map(o => ({ label: o.label, condition: o.condition, flight: o.flight, block: o.block, transitIn: o.transitIn, legs: legs(o.legs), points: o.legs.map(l => P(l.to)) })),
       phases: e.phases,
-      statedFlight: e.stated.flight, statedBlock: e.stated.block, provenOut: e.proven?.out || null, provenIn: e.proven?.in || null
+      statedFlight: e.stated.flight, statedBlock: e.stated.block, provenOut: e.proven?.out || null, provenIn: e.proven?.in || null, routing: e.routing || null
     };
   };
 
@@ -317,6 +317,7 @@
     host.classList.add('me-box');
     host.innerHTML = `<div class="me-kpi"><span>Vol estimé <b>${hm(sum.flight)}</b>${range}</span><span>Bloc <b>${hm(sum.block)}</b></span><span>${esc(phase)}</span><span>${sum.nm} NM</span></div>
       <p class="me-small">${esc(sum.code || '?')} (${esc(sum.label || '')}) à ${sum.tas} kt — ${esc(sum.source || '')} ; ${esc(sum.how || '')}.${sum.statedFlight ? ` Durée annoncée par la mission : ${hm(sum.statedFlight)} (ce calcul : ${esc(compare(sum.statedFlight, sum.flight)?.text || '=')}).` : ''}</p>
+      ${sum.routing ? `<p class="me-small"><b>Transit</b> : ${esc(sum.routing.how || window.MissionRouting?.LABEL?.[sum.routing.mode] || sum.routing.mode)} — ${esc(sum.routing.reason || '')}.</p>` : ''}
       ${sum.provenOut || sum.provenIn ? `<p class="me-small"><b>Temps éprouvés</b> (CR des missions de même départ et mêmes points) : ${[sum.provenOut ? `aller ${hm(sum.provenOut.min)} (${sum.provenOut.n} vol${sum.provenOut.n > 1 ? 's' : ''})` : '', sum.provenIn ? `retour ${hm(sum.provenIn.min)} (${sum.provenIn.n} vol${sum.provenIn.n > 1 ? 's' : ''})` : ''].filter(Boolean).join(', ')} — repris à la place du calcul.</p>` : ''}
       ${(sum.phases || []).length ? `<p class="me-small"><b>Briefs successifs</b> : ${sum.phases.map(p => `partie ${esc(p.id)}${p.title ? ` « ${esc(p.title)} »` : ''} remise vers T + ${p.at == null ? '?' : hm(p.at)}${p.trigger ? ` (${esc(p.trigger)})` : ''}`).join(' ; ')}.</p>` : ''}
       ${sum.options.length ? `<table><thead><tr><th>Retour</th><th>Condition</th><th>Vol</th><th>Retour</th></tr></thead><tbody><tr><td>${esc(String(sum.points[sum.points.length - 1]?.name || 'Base'))}</td><td class="me-small">principal</td><td>${hm(sum.flight)}</td><td>${hm(sum.transitIn)}</td></tr>${sum.options.map(o => `<tr><td>${esc(o.label)}</td><td class="me-small">${esc(o.condition)}</td><td>${hm(o.flight)}</td><td>${hm(o.transitIn)}</td></tr>`).join('')}</tbody></table>` : ''}

@@ -92,40 +92,65 @@
     return { pts: path, nm: bestCost };
   }
 
-  /** Mode de transit d'un appareil (P : performances de mission_estimate) : airways | rtba | direct. */
-  function modeOf(P) {
-    if (!P || P.cls === 'heli') return 'direct';
-    if (P.alt <= 1500 && (P.cls === 'jet' || P.cls === 'turboprop')) return 'rtba';
-    if (P.alt >= 6500) return 'airways';
-    return 'direct';
+  // ---- réglages du calcul (mémorisés dans le navigateur) et mode choisi par mission (route_mode du YAML)
+  const SETTINGS_KEY = 'missionRoutingSettings:v1';
+  const DEFAULTS = { minNm: 40, ifrMinFt: 6500, lowMaxFt: 1500, reachNm: 60, reachRtbaNm: 150, detourPct: 40, detourRtbaPct: 80 };
+  /** Réglages courants (défauts complétés). */
+  function settings() { let s = {}; try { s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') || {}; } catch { s = {}; } return { ...DEFAULTS, ...s }; }
+  /** Enregistre des réglages (valeurs numériques ; null ou vide : défaut). */
+  function setSettings(o) { const s = settings(); for (const [k, v] of Object.entries(o || {})) if (k in DEFAULTS) { if (v === '' || v == null || !Number.isFinite(+v)) delete s[k]; else s[k] = +v; } try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch { /* stockage indisponible */ } return settings(); }
+  const MODES = ['auto', 'airways', 'rtba', 'direct'];
+  const LABEL = { airways: 'voies aériennes', rtba: 'RTBA (basse hauteur)', direct: 'direct' };
+  /** Mode de transit : { mode (airways | rtba | direct), reason (texte) } ; y.route_mode impose le mode (sauf « auto »). */
+  function explain(P, y) {
+    const S = settings(), forced = MODES.includes(String(y?.route_mode || '')) ? y.route_mode : 'auto';
+    if (!ready()) return { mode: 'direct', reason: 'base SIA du navigateur sans voies aériennes ni zones du RTBA : relire le dossier SIA (format 14)' };
+    if (forced !== 'auto') return { mode: forced, reason: `mode imposé par la mission (route_mode : ${forced})` };
+    if (!P) return { mode: 'direct', reason: 'appareil inconnu' };
+    if (P.cls === 'heli') return { mode: 'direct', reason: 'hélicoptère : transit direct' };
+    if (P.alt <= S.lowMaxFt && (P.cls === 'jet' || P.cls === 'turboprop')) return { mode: 'rtba', reason: `basse hauteur (≤ ${S.lowMaxFt} ft) : RTBA` };
+    if (P.alt >= S.ifrMinFt) return { mode: 'airways', reason: `croisière ${Math.round(P.alt)} ft (≥ ${S.ifrMinFt}) : voies aériennes` };
+    return { mode: 'direct', reason: `croisière ${Math.round(P.alt)} ft : VFR, transit direct` };
   }
-  /** Points intermédiaires d'un tronçon a → b : { pts: [{ id, lat, lon, via }], mode, routes } ; pts vide = direct. */
-  function leg(a, b, P) {
-    const direct = nm(a, b), mode = modeOf(P);
-    if (direct <= 40 || mode === 'direct' || !ready()) return { pts: [], mode: 'direct', routes: [] };
-    const r = mode === 'airways' ? shortest(airwayGraph(), a, b, P.alt, 60) : shortest(rtbaNetwork(), a, b, 0, 150);
+  const modeOf = (P, y) => explain(P, y).mode;
+  /** Points intermédiaires d'un tronçon a → b : { pts: [{ id, lat, lon, via }], mode, routes, why } ; pts vide = direct. */
+  function leg(a, b, P, y) {
+    const S = settings(), direct = nm(a, b), mode = modeOf(P, y);
+    if (mode === 'direct') return { pts: [], mode: 'direct', routes: [] };
+    if (direct <= S.minNm) return { pts: [], mode: 'direct', routes: [], why: 'court' };
+    const graph = mode === 'airways' ? airwayGraph() : rtbaNetwork(), reach = mode === 'airways' ? S.reachNm : S.reachRtbaNm;
+    // départ ou arrivée loin de tout point du réseau (mission à l'étranger : données SIA de la France et de l'outre-mer)
+    const far = p => !graph.nodes.some(n => nm(p, n) <= Math.max(reach, 150));
+    if (far(a) || far(b)) return { pts: [], mode: 'direct', routes: [], why: 'hors' };
+    const r = mode === 'airways' ? shortest(graph, a, b, P.alt, reach) : shortest(graph, a, b, 0, reach);
     const routes = r ? [...new Set(r.pts.map(p => p.via).filter(v => v && v !== 'DCT'))] : [];
-    // détour excessif, ou chemin sans aucun segment du réseau (entrée et sortie directes par un même point) : direct
-    if (!r || !routes.length || r.nm > direct * (mode === 'airways' ? 1.4 : 1.8)) return { pts: [], mode: 'direct', routes: [] };
+    // pas de chemin, chemin sans aucun segment du réseau (entrée et sortie directes par un même point), détour excessif : direct
+    if (!r || !routes.length) return { pts: [], mode: 'direct', routes: [], why: 'aucun' };
+    if (r.nm > direct * (1 + (mode === 'airways' ? S.detourPct : S.detourRtbaPct) / 100)) return { pts: [], mode: 'direct', routes: [], why: 'detour' };
     return { pts: r.pts, mode, routes };
   }
-  /** Chaîne de points (départ, points, arrivée) avec les points de transit insérés (kind : 'via'). { chain, how }. */
-  function expand(chain, P) {
-    if (!ready() || modeOf(P) === 'direct') return { chain, how: '' };
-    const out = [chain[0]], used = new Set();
-    let mode = '';
+  /** Chaîne de points (départ, points, arrivée) avec les points de transit insérés (kind : 'via').
+   *  { chain, how, mode, reason } : how décrit le transit calculé ; reason, le choix du mode (ou pourquoi il reste direct). */
+  function expand(chain, P, y) {
+    const ex = explain(P, y);
+    if (ex.mode === 'direct') return { chain, how: '', mode: 'direct', reason: ex.reason };
+    const out = [chain[0]], used = new Set(), why = new Set();
+    let routed = false;
     for (let i = 0; i < chain.length - 1; i++) {
-      const r = leg(chain[i], chain[i + 1], P);
-      if (r.pts.length) { mode = r.mode; r.routes.forEach(x => used.add(x)); for (const p of r.pts) out.push({ id: p.id, name: p.id, lat: p.lat, lon: p.lon, kind: 'via', task: 0, via: p.via }); }
+      const r = leg(chain[i], chain[i + 1], P, y);
+      if (r.why) why.add(r.why);
+      if (r.pts.length) { routed = true; r.routes.forEach(x => used.add(x)); for (const p of r.pts) out.push({ id: p.id, name: p.id, lat: p.lat, lon: p.lon, kind: 'via', task: 0, via: p.via }); }
       out.push(chain[i + 1]);
     }
-    const how = !mode ? '' : mode === 'airways' ? `transit par les voies aériennes (${[...used].slice(0, 6).join(', ')}${used.size > 6 ? '…' : ''})` : `transit à basse hauteur par le RTBA (${out.filter(p => p.kind === 'via').map(p => p.id).slice(0, 6).join(' → ')}${out.filter(p => p.kind === 'via').length > 6 ? '…' : ''})`;
-    return { chain: out, how };
+    const vias = out.filter(p => p.kind === 'via').map(p => p.id);
+    const how = !routed ? '' : ex.mode === 'airways' ? `transit par les voies aériennes (${[...used].slice(0, 6).join(', ')}${used.size > 6 ? '…' : ''})` : `transit à basse hauteur par le RTBA (${vias.slice(0, 6).join(' → ')}${vias.length > 6 ? '…' : ''})`;
+    const S = settings(), none = [why.has('hors') ? 'hors de la couverture des données SIA (France et outre-mer)' : '', why.has('court') ? `tronçons ≤ ${S.minNm} NM` : '', why.has('aucun') ? `pas de chemin par les ${LABEL[ex.mode]} à ce niveau` : '', why.has('detour') ? 'détour excessif' : ''].filter(Boolean).join(', ');
+    return { chain: routed ? out : chain, how, mode: routed ? ex.mode : 'direct', reason: routed ? ex.reason : `${ex.reason} — resté direct : ${none || 'aucun tronçon à router'}` };
   }
   /** Charge les voies aériennes et les espaces de la base SIA du navigateur (toute version) ; vrai si chargés. */
   async function loadFromBase() {
     try { const b = await window.SiaBase?.get?.({ any: true }); if (b) setData({ airways: b.aero?.airways, airspaces: b.airspaces }); return !!b; } catch { return false; }
   }
 
-  window.MissionRouting = { setData, ready, modeOf, leg, expand, loadFromBase, nm };
+  window.MissionRouting = { setData, ready, modeOf, explain, leg, expand, loadFromBase, nm, settings, setSettings, DEFAULTS, MODES, LABEL };
 })();
