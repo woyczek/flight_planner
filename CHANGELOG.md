@@ -10,6 +10,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+## [4.2.1] — 2026-09-29
+
+- **Carte du bloc Route** : les points tournants de la mission déjà portés par la route éditable ne sont plus dessinés une
+  seconde fois (plus de double pastille ni de double étiquette) ; les points hors route (rendez-vous, cible…) restent.
+
 ## [4.2.0] — 2026-09-29
 
 Planning ODV (Centre), bloc Route (plan de vol case 15 lié à la carte et à la coupe verticale, voies aériennes, RTBA,
