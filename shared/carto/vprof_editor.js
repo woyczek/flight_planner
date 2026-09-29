@@ -8,7 +8,8 @@
 //     fusionnent avec le point sur lequel on les lâche ; double-clic → suppression d'un point ajouté ;
 //   · carte : points déplaçables latéralement (départ et arrivée fixes), aimantés sur les balises, points de report et
 //     terrains de la base SIA à moins de 14 px ; clic sur la route → point inséré ; double-clic sur un point ajouté →
-//     suppression. Un point inséré dans une portion de voie aérienne la remplace par des tronçons directs.
+//     suppression. Clic droit sur un point (carte ou coupe) : suppression, point nommé compris (départ et arrivée exceptés).
+//     Un point inséré dans une portion de voie aérienne la remplace par des tronçons directs.
 // Altitudes écrites « /A035 » (ft / 100) ou « /F065 » (case 15), « /3500 » (liste à virgules).
 // Expose window.SiaRouteEdit = { attach({ textarea, img, onChange, aero }) → { update(data), setMapRoute(map, points),
 // light(k), destroy() }, tokensOf } (window.SiaProfileEditor : même objet, ancien nom).
@@ -54,11 +55,20 @@
       toks.splice(a + 1, b - a - 1, ...mid);
       write(toks);
     }
-    function removePoint(k) {
-      if (!editable(k) || k === 0 || k === pts.length - 1 || !movable(tokens()[pts[k].ti])) return;
-      const toks = tokens(), i = pts[k].ti;
+    const isAirway = t => /^[A-Z]{1,2}\d{1,4}[A-Z]?$/i.test(t || '') && (aero().airways || []).some(g => g.route === String(t).toUpperCase());
+    /** Supprime le point k (départ et arrivée exceptés) ; any : aussi un point nommé (clic droit), sinon seulement un point
+     *  ajouté (coordonnées). Voie aérienne dont il était l'entrée ou la sortie → tronçon direct. */
+    function removePoint(k, any = false) {
+      if (!editable(k) || k === 0 || k === pts.length - 1 || (!any && !movable(tokens()[pts[k].ti]))) return;
+      const toks = tokens();
+      let i = pts[k].ti;
       toks.splice(i, 1);
+      if (isAirway(toks[i])) toks.splice(i, 1);                        // voie dont il était l'entrée
+      if (isAirway(toks[i - 1])) { toks.splice(i - 1, 1); i--; }         // voie dont il était la sortie
       if (item15() && toks[i - 1]?.toUpperCase() === 'DCT' && toks[i]?.toUpperCase() === 'DCT') toks.splice(i, 1);
+      // case 15 : deux points devenus voisins → « DCT » entre eux
+      const plainPt = t => t && !/^(DCT|VFR|IFR)$/i.test(t) && !isAirway(t) && !window.SiaProfile?.speedLevel?.(t.split('/')[0]);
+      if (item15() && i > 0 && plainPt(toks[i - 1]) && plainPt(toks[i])) toks.splice(i, 0, 'DCT');
       write(toks);
     }
     const prevEditable = k => { for (let j = k; j >= 0; j--) if (editable(j)) return j; return -1; };
@@ -226,6 +236,8 @@
         insertBetween(prev, next, pointAt(d.s), d.ft);
       });
       svg.addEventListener('dblclick', e => { const c = e.target.closest('circle[data-k]'); if (c) removePoint(+c.dataset.k); });
+      // clic droit sur un point : suppression (tout point intermédiaire)
+      svg.addEventListener('contextmenu', e => { const c = e.target.closest('circle[data-k]'); if (!c) return; e.preventDefault(); if (!c.dataset.awy) removePoint(+c.dataset.k, true); });
       svg.addEventListener('pointerleave', () => { if (!drag) { light(-1); tip.setAttribute('visibility', 'hidden'); } });
     }
     function drawHandles() {
@@ -287,6 +299,7 @@
           e.addEventListener('mouseenter', () => light(k));
           e.addEventListener('mouseleave', () => light(-1));
           e.addEventListener('dblclick', ev => { ev.stopPropagation(); removePoint(k); });
+          e.addEventListener('contextmenu', ev => { ev.preventDefault(); ev.stopPropagation(); removePoint(k, true); });   // clic droit : suppression
           mk.on('dragend', () => {
             const ll = mk.getLngLat(), snap = snapOnMap(ll), toks = tokens(), i = p.ti;
             toks[i] = (snap ? snap.id : coordTok({ lat: ll.lat, lon: ll.lng })) + suffixOf(toks[i]);
