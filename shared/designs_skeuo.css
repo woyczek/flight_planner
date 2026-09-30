@@ -2395,6 +2395,117 @@ html[data-skeuo] body {
   -webkit-mask-image: linear-gradient(to left, #000 0, #000 30%, transparent 70%);
   mask-image: linear-gradient(to left, #000 0, #000 30%, transparent 70%)
 }
+/* ================================================================================================ BARRES DE PROGRESSION
+   <progress> (tâches longues : AppFramework.task ; jauges des pages : base SIA…) : piste creusée et remplissage dans la
+   matière du design, angles vifs. Jetons : --sk-prog-track (piste, dernier fond : couleur permise), --sk-prog-fill
+   (remplissage : dégradé seulement, il est aussi dimensionné), --sk-prog-border, --sk-prog-glow (halo, facultatif),
+   --sk-prog-stripes (rayures qui défilent, facultatives : Aqua). Avancement inconnu (:indeterminate) : une bande du
+   remplissage balaie la piste. Mouvement réduit (préférence système) : ni défilement ni balayage. */
+html[data-skeuo] progress {
+  -webkit-appearance: none;
+  appearance: none;
+  border: var(--sk-prog-border, 1px solid rgba(0, 0, 0, .45));
+  border-radius: 0;
+  background: var(--sk-prog-track);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .55), 0 1px 0 rgba(255, 255, 255, .15);
+  overflow: hidden
+}
+html[data-skeuo] progress::-webkit-progress-bar {
+  background: transparent
+}
+html[data-skeuo] progress::-webkit-progress-value {
+  background: var(--sk-prog-stripes, none) 0 0/22px 100%, var(--sk-prog-fill);
+  box-shadow: var(--sk-prog-glow, none);
+  animation: sk-prog-stripes .9s linear infinite
+}
+html[data-skeuo] progress::-moz-progress-bar {
+  background: var(--sk-prog-stripes, none) 0 0/22px 100%, var(--sk-prog-fill);
+  box-shadow: var(--sk-prog-glow, none)
+}
+html[data-skeuo] progress:indeterminate {
+  background: var(--sk-prog-fill) -40% 0/35% 100% no-repeat, var(--sk-prog-track);
+  animation: sk-prog-sweep 1.4s ease-in-out infinite
+}
+html[data-skeuo] progress:indeterminate::-moz-progress-bar {
+  background: transparent
+}
+@keyframes sk-prog-stripes {
+  to {
+    background-position: 22px 0, 0 0
+  }
+}
+@keyframes sk-prog-sweep {
+  to {
+    background-position: 140% 0, 0 0
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-skeuo] progress,
+  html[data-skeuo] progress::-webkit-progress-value {
+    animation: none
+  }
+  html[data-skeuo] progress:indeterminate {
+    background-position: 50% 0, 0 0
+  }
+}
+/* notifications flottantes et tâches (AppFramework.notify / task) : matière des menus du design (--sk-menu-*), angles
+   vifs ; le liseré gauche garde la couleur du genre (succès, avertissement, erreur, tâche) */
+html[data-skeuo] .repo-notify>div {
+  background: var(--sk-menu-bg);
+  color: var(--sk-menu-ink);
+  border: var(--sk-menu-border);
+  border-left: 5px solid #6fa8ff;
+  border-radius: 0;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .45)
+}
+html[data-skeuo] .repo-notify>div.ok {
+  border-left-color: #2e9d5b
+}
+html[data-skeuo] .repo-notify>div.warn {
+  border-left-color: #e0a400
+}
+html[data-skeuo] .repo-notify>div.err {
+  border-left-color: #e5484d
+}
+html[data-skeuo] .repo-notify>div.task {
+  border-left-color: var(--sk-prog-edge, #6fa8ff)
+}
+/* Cabinet (et Carnet de vol) : piste de cuir sombre, remplissage de laiton */
+html[data-design-base="cabinet"] {
+  --sk-prog-track: #1f140b linear-gradient(#150d06, #2b1c0f);
+  --sk-prog-fill: linear-gradient(#f6e3a1, #d4ad55 45%, #a47a2c 55%, #c99d45);
+  --sk-prog-border: 1px solid #5b3a1a;
+  --sk-prog-edge: #c99d45;
+  --sk-prog-glow: inset 0 1px 0 rgba(255, 250, 220, .6)
+}
+/* Carnet de vol : piste de papier creusée, remplissage à l'encre bleu marine */
+html[data-design="flightlog"] {
+  --sk-prog-track: #e6dcc0 linear-gradient(#d9ceb0, #efe6cf);
+  --sk-prog-fill: linear-gradient(#6f8fbf, #34558a 50%, #1d3557);
+  --sk-prog-border: 1px solid #8a7a58;
+  --sk-prog-edge: #34558a;
+  --sk-prog-glow: inset 0 1px 0 rgba(255, 255, 255, .35)
+}
+/* Durci : fente d'acier sombre, barre de voyants verts allumés */
+html[data-design="field"] {
+  --sk-prog-track: #10130c linear-gradient(#0a0c07, #1a1e14);
+  --sk-prog-fill: linear-gradient(#d4ffc2, var(--fd-led) 40%, #3f9f35 60%, #2b7a25);
+  --sk-prog-border: 1px solid #2a2e22;
+  --sk-prog-edge: var(--fd-led);
+  --sk-prog-glow: 0 0 6px rgba(140, 255, 110, .55), inset 0 1px 0 rgba(255, 255, 255, .4)
+}
+/* Aqua : piste de verre dépoli, gel de la couleur d'accent parcouru de rayures (barre « Aqua ») */
+html[data-design="aqua"] {
+  --sk-prog-track: #dfe5eb linear-gradient(#c7d0d9, #eef2f6);
+  --sk-prog-fill: linear-gradient(180deg, color-mix(in srgb, var(--aq-gel) 45%, #fff) 0%, var(--aq-gel) 50%, color-mix(in srgb, var(--aq-gel) 82%, #000) 51%, color-mix(in srgb, var(--aq-gel) 65%, #fff) 100%);
+  --sk-prog-stripes: repeating-linear-gradient(-45deg, rgba(255, 255, 255, .3) 0 5px, transparent 5px 11px);
+  --sk-prog-border: 1px solid #8e9aa6;
+  --sk-prog-edge: var(--aq-gel)
+}
+html[data-design="aqua"][data-tone="dark"] {
+  --sk-prog-track: #1b222b linear-gradient(#141a21, #28313c);
+  --sk-prog-border: 1px solid #0d1116
+}
 /* ================================================================================================ JETONS DES PAGES (cartes, menus, fenêtres)
    Couleurs par design pour les éléments propres aux pages, qui les appliquent dans leur propre feuille (Mission Core :
    shared/mission_core/core.css, section « Designs à matières ») : --sk-hb* (boutons d'en-tête), --sk-acc* (action
