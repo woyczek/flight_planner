@@ -433,7 +433,21 @@
     // lot : la mission enregistrée remplace sa copie dans le lot (même identifiant) et devient la courante
     const b = loadBatch();
     if (b) {
-      const i = b.docs.findIndex(d => missionId(d) === missionId(out));
+      let i = b.docs.findIndex(d => missionId(d) === missionId(out));
+      // identifiant changé dans une page (« BFM-001A » → « A-001A ») : même mission que la courante du lot, renommée ;
+      // les missions annoncées par l'opération (operation.missions) suivent le nouvel identifiant
+      const was = current ? missionId(current) : '',
+        now = missionId(out);
+      if (i < 0 && was && was !== now && missionId(b.docs[b.index]) === was) {
+        i = b.index;
+        const rename = y => {
+          const list = y?.operation?.missions;
+          if (Array.isArray(list)) y.operation.missions = list.map(x => String(x).trim().toUpperCase().replace(/^0+(?=\d)/, '') === was ? now : x);
+        };
+        b.docs.forEach(d => rename(d.yaml));
+        rename(out.yaml);
+        localStorage.setItem(KEY, JSON.stringify(out));
+      }
       if (i >= 0) {
         b.docs[i] = {
           yaml: out.yaml,
