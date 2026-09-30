@@ -416,9 +416,10 @@ html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-ic
 .repo-sidenav-item:hover {
   background: color-mix(in srgb, var(--repo-bar-text) 10%, transparent)
 }
+/* entrée de la page courante : fond et liseré réglables par les designs (--sk-nav-on-bg, --sk-nav-on-edge) */
 .repo-sidenav-item[aria-current="page"] {
-  background: color-mix(in srgb, var(--repo-bar-text) 17%, transparent);
-  border-left-color: var(--repo-bar-text)
+  background: var(--sk-nav-on-bg, color-mix(in srgb, var(--repo-bar-text) 17%, transparent));
+  border-left-color: var(--sk-nav-on-edge, var(--repo-bar-text))
 }
 .repo-sidenav-item:focus-visible {
   outline: 2px solid var(--repo-bar-text);

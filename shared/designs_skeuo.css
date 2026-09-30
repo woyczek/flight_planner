@@ -439,6 +439,7 @@ html[data-design-base="cabinet"] .repo-header button.headerButton {
 
 /* ================================================================================================ DURCI */
 html[data-design="field"] {
+  --sk-nav-on-edge: var(--fd-led);
   --sk-code-bg: #121410;
   --sk-code-ink: #e6ecd6;
   --sk-code-border: 1px solid #000;
@@ -703,9 +704,6 @@ html[data-design="field"] button.danger {
 html[data-design="field"] .repo-sidenav {
   box-shadow: inset -1px 0 0 rgba(220, 230, 190, .18), inset 0 0 18px rgba(0, 0, 0, .55) !important
 }
-html[data-design="field"] .repo-sidenav-item[aria-current="page"] {
-  border-left-color: var(--fd-led) !important
-}
 html[data-design="field"] .repo-footer {
   position: relative
 }
@@ -730,6 +728,19 @@ html[data-design="field"][data-decor="full"] .repo-footer::after {
 
 /* ================================================================================================ AQUA */
 html[data-design="aqua"] {
+  --sk-segs-border: 1px solid #9aa6b2;
+  --sk-segs-radius: 8px;
+  --sk-seg-ink: var(--aq-ink, #1b2733);
+  --sk-seg-bg: linear-gradient(#ffffff, #f1f4f8 50%, #e6ebf1 51%, #f6f8fb);
+  --sk-seg-shadow: 0 1px 0 #fff;
+  --sk-seg-sep: 1px solid #b7c1cc;
+  --sk-seg-sep-shadow: none;
+  --sk-seg-on-bg: linear-gradient(180deg, color-mix(in srgb, var(--aq-gel) 55%, #fff) 0%, var(--aq-gel) 50%, color-mix(in srgb, var(--aq-gel) 85%, #000) 51%, color-mix(in srgb, var(--aq-gel) 70%, #fff) 100%);
+  --sk-seg-on-ink: #fff;
+  --sk-seg-on-text-shadow: 0 -1px 0 rgba(0, 0, 0, .25);
+  --sk-seg-on-shadow: none;
+  --sk-nav-on-bg: rgba(255, 255, 255, .55);
+  --sk-nav-on-edge: var(--aq-gel);
   --sk-code-bg: #fff;
   --sk-code-ink: var(--aq-ink);
   --sk-code-border: 1px solid #c3ced9;
@@ -877,10 +888,6 @@ html[data-design="aqua"] button.danger {
   --aq-gel: #d33a2c
 }
 /* icônes « matière » : bulles de gel */
-html[data-design="aqua"] .repo-sidenav-item[aria-current="page"] {
-  background: rgba(255, 255, 255, .55) !important;
-  border-left-color: var(--aq-gel) !important
-}
 html[data-design="aqua"] .repo-footer {
   border: 1px solid #d5dde6
 }
@@ -889,6 +896,9 @@ html[data-design="aqua"] .repo-footer {
    Pages à thème sombre (planificateur, Landing : graphiques conçus pour un fond sombre) : graphite, verre fumé,
    métal brossé assombri ; les graphiques gardent leurs couleurs. Texte clair #e6edf5 / verre #26303b : 11,9:1. */
 html[data-design="aqua"][data-tone="dark"] {
+  --sk-seg-bg: linear-gradient(#4a5663, #323c47 50%, #2a333d 51%, #3b4652);
+  --sk-seg-ink: #e6edf5;
+  --sk-seg-shadow: 0 -1px 0 rgba(0, 0, 0, .4);
   --sk-code-bg: #141a21;
   --sk-code-ink: #e6edf5;
   --sk-code-border: 1px solid #46525f;
@@ -1776,11 +1786,6 @@ html[data-design="aqua"][data-tone="dark"] select:not([multiple]):not([size]) {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 1px 2px rgba(0, 0, 0, .4) !important;
   color: #e6edf5 !important
 }
-html[data-design="aqua"] .repo-seg[aria-pressed="true"] {
-  background-image: linear-gradient(180deg, color-mix(in srgb, var(--aq-gel) 55%, #fff) 0%, var(--aq-gel) 50%, color-mix(in srgb, var(--aq-gel) 85%, #000) 51%, color-mix(in srgb, var(--aq-gel) 70%, #fff) 100%) !important;
-  color: #fff !important;
-  text-shadow: 0 -1px 0 rgba(0, 0, 0, .25)
-}
 /* ================================================================================================ GRAPHIQUES EN RELIEF (style « relief » : choisi ou automatique dans les designs à matières)
    Plus d'aplats « métro » : barres horizontales dans une rainure gravée avec reflet, anneaux et barres ombrés
    (charts.js : reflet SVG), repères gravés, pastilles de légende bombées, chiffres dans la police du design. */
@@ -1974,7 +1979,7 @@ html[data-design="flightlog"] {
   --sheet-bot: url("deco/flightlog/sheet-bot.webp?v=d4a1a5e2");
   --sheet-left: url("deco/flightlog/sheet-left.webp?v=6946d80b");
   --sheet-right: url("deco/flightlog/sheet-right.webp?v=240ecab7");
-  --sheet-head: url("deco/flightlog/sheet-head.webp?v=7904ce83");
+  --sheet-head: url("deco/flightlog/sheet-head.webp?v=13b1121e");
   --sheet-stamp: url("deco/flightlog/sheet-stamp.webp?v=68cc8e34");
   --sheet-string: url("deco/flightlog/sheet-string.webp?v=97b963ab");
   --sheet-tl: url("deco/flightlog/sheet-tl.webp?v=dc458d78");
@@ -2016,9 +2021,9 @@ html[data-design="flightlog"] {
   --sh-pad-r: 110px;
   --sh-pad-b: 90px;
   --sh-pad-l: 150px;
-  --sh-head-x: 121px;
-  --sh-head-y: 61px;
-  --sh-head-w: 745px;
+  --sh-head-x: 111px;
+  --sh-head-y: 56px;
+  --sh-head-w: 765px;
   --sh-stamp-r: 80px;
   --sh-stamp-y: 40px;
   --sh-stamp-w: 250px;
@@ -2498,7 +2503,7 @@ html[data-skeuo] :is(.repo-deco, .repo-deco-radar, .repo-footer, .repo-actionbar
    Carnet de vol : aluminium brossé, position choisie en cuir marine. Durci : acier sombre, position choisie en champ noir
    avec voyant vert. Aqua : verre (dégradé clair), position choisie en gel. */
 html[data-skeuo] .repo-segs {
-  border-radius: 6px;
+  border-radius: var(--sk-segs-radius, 6px);
   overflow: hidden;
   box-shadow: 0 1px 0 rgba(255, 255, 255, .3), 0 2px 5px rgba(0, 0, 0, .35)
 }
@@ -2506,7 +2511,7 @@ html[data-skeuo] .repo-seg {
   min-height: 34px;
   padding: 6px 14px !important;
   background-color: transparent !important;
-  background-image: none !important;
+  background-image: var(--sk-seg-bg, none) !important;
   border-radius: 0 !important;
   box-shadow: none !important;
   font-weight: 700;
@@ -2515,19 +2520,21 @@ html[data-skeuo] .repo-seg {
 }
 /* designs à cadre : cadre, texte, séparateurs et segment choisi par jetons (--sk-segs-*, --sk-seg-*) ; Durci ajoute
    son voyant au segment choisi ; Aqua : boutons gel (ci-dessous) */
+html[data-skeuo] .repo-segs {
+  border: var(--sk-segs-border)
+}
 html[data-skeuo="frame"] .repo-segs {
-  border: var(--sk-segs-border);
   background: var(--sk-segs-bg)
 }
-html[data-skeuo="frame"] .repo-seg {
+html[data-skeuo] .repo-seg {
   color: var(--sk-seg-ink) !important;
   text-shadow: var(--sk-seg-shadow)
 }
-html[data-skeuo="frame"] .repo-seg+.repo-seg {
+html[data-skeuo] .repo-seg+.repo-seg {
   border-left: var(--sk-seg-sep) !important;
   box-shadow: var(--sk-seg-sep-shadow) !important
 }
-html[data-skeuo="frame"] .repo-seg[aria-pressed="true"] {
+html[data-skeuo] .repo-seg[aria-pressed="true"] {
   background: var(--sk-seg-on-bg) !important;
   color: var(--sk-seg-on-ink) !important;
   text-shadow: var(--sk-seg-on-text-shadow, var(--sk-seg-shadow));
@@ -2543,23 +2550,6 @@ html[data-design="field"] .repo-seg[aria-pressed="true"]::before {
   vertical-align: 1px;
   background: #8cf07a;
   box-shadow: 0 0 6px #6fe35a
-}
-html[data-design="aqua"] .repo-segs {
-  border: 1px solid #9aa6b2;
-  border-radius: 8px
-}
-html[data-design="aqua"] .repo-seg {
-  color: var(--aq-ink, #1b2733) !important;
-  background-image: linear-gradient(#ffffff, #f1f4f8 50%, #e6ebf1 51%, #f6f8fb) !important;
-  text-shadow: 0 1px 0 #fff
-}
-html[data-design="aqua"] .repo-seg+.repo-seg {
-  border-left: 1px solid #b7c1cc !important
-}
-html[data-design="aqua"][data-tone="dark"] .repo-seg:not([aria-pressed="true"]) {
-  background-image: linear-gradient(#4a5663, #323c47 50%, #2a333d 51%, #3b4652) !important;
-  color: #e6edf5 !important;
-  text-shadow: 0 -1px 0 rgba(0, 0, 0, .4)
 }
 html[data-skeuo] .repo-seg:not([aria-pressed="true"]):is(:hover, :focus-visible) {
   filter: brightness(1.1)

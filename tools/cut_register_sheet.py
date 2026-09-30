@@ -55,7 +55,7 @@ CONFIGS = {
         'left': ((39, 500, 110, 300, 40, 'y'), dict(right=20)),
         'right': ((918, 500, 106, 300, 40, 'y'), dict(left=20)),
         'pieces': {
-            'head': ((160, 145, 745, 185), [], dict(left=40, right=40, top=30, bottom=30)),
+            'head': ((150, 140, 765, 194), [], dict(left=12, right=12, top=12, bottom=8)),   # fondu court : texte jusqu'au bord (Carnet de vol)
         },
         # papier : intérieur du tableau (filets pointillés effacés) ; couleur : papier de l'en-tête (droite de « République
         # française ») : pas de rectangle visible autour de l'en-tête
