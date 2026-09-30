@@ -63,8 +63,13 @@
   font-size: 9px;
   opacity: .95
 }
+/* bouton ☰ : glyphe centré dans sa case (sans marge intérieure héritée des boutons de la page ou du design) */
 .repo-menu-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 36px;
+  padding: 0;
   font-size: 19px
 }
 .repo-language-menu,
