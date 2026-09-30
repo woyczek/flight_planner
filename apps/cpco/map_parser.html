@@ -4590,22 +4590,36 @@ function studioToYaml() {
   } catch {}
   return sharedDoc?.yaml
 }
+/* Enregistrement dans le dossier : résultat toujours affiché, à côté du bouton (bloc Mission) et en notification
+   flottante — succès (dossier), échec (cause), ou rien à enregistrer. */
 $('saveStudio').onclick = async () => {
   const C = window.MissionRegistryCore,
-    y = studioToYaml();
-  if (!C || !y) return;
+    y = studioToYaml(),
+    report = (text, kind) => {
+      $('missionStatus').textContent = text;
+      $('missionStatus').className = `small ${kind === 'ok' ? 'ok' : 'err'}`;
+      if (kind === 'ok') window.AppFramework?.notify?.(text, 'ok') // échec : relayé en notification par la zone d'état
+    };
+  if (!y) return report('Aucune mission chargée dans le studio : rien à enregistrer (ouvrir ou coller une mission).', 'err');
+  if (!C) return report('Enregistrement impossible : registre des missions non chargé dans cette page (shared/mission_registry.js).', 'err');
+  const btn = $('saveStudio');
+  btn.disabled = true;
   try {
     const f = await C.saveYaml(y, {
       action: 'réglages du studio',
       request: true
     });
-    $('viewStatus').textContent = f ? `Mission et réglages enregistrés : data/missions/${f}/` : 'Dossier des missions non autorisé.';
-    if (f) SiaMission.save({
-      ...sharedDoc,
-      yaml: y
-    }, 'studio')
+    if (f) {
+      SiaMission.save({
+        ...sharedDoc,
+        yaml: y
+      }, 'studio');
+      report(`Mission et réglages enregistrés : data/missions/${f}/`, 'ok')
+    } else report('Mission non enregistrée : dossier des missions introuvable pour cet identifiant.', 'err')
   } catch (e) {
-    $('viewStatus').textContent = e.message
+    report(`Mission non enregistrée : ${e.message}`, 'err')
+  } finally {
+    btn.disabled = false
   }
 };
 /* Cheminement → route de plan de vol OACI (points non publiés en coordonnées, changements de niveau « /N0180F055 ») et
