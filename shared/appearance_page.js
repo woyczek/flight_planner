@@ -224,7 +224,7 @@
     }
     styled = true;
     const TX = new URL('shared/textures/', nav().root).href,
-      TV = new URL(document.querySelector('script[src*="appearance_page.js"]')?.src || location.href).search; // textures des vignettes (même version que ce script)
+      TV = new URL(document.querySelector('script[src*="appearance_page.js"]')?.src || location.href).search; // textures des vignettes : version de ce script (son empreinte couvre les textures, tools/bump_versions.py)
     const css = document.createElement('style');
     css.textContent = `
 .ap-page>section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:0 0 16px}.ap-page h2{font-size:17px;margin:0 0 4px}

@@ -292,23 +292,25 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260930zzzv", script.src).href;
+    css.href = new URL("designs.css?v=c6a31c8a", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
   // Designs à matières (Cabinet, Durci, Aqua : textures, plaques, vis) : feuille propre (designs.list[id].css),
-  // chargée seulement quand l'un d'eux est choisi, avec la même version que ce script.
+  // chargée seulement quand l'un d'eux est choisi, avec sa propre version (empreinte de son contenu, table FILE_V
+  // écrite par tools/bump_versions.py).
+  const FILE_V = {"designs_skeuo.css": "c2a73ad7"};
   const designCss = id => {
     const f = designs[id]?.css;
     if (!f || document.querySelector(`link[data-design-css="${f}"]`)) return;
     const l = document.createElement("link");
     l.rel = "stylesheet";
     l.dataset.designCss = f;
-    l.href = new URL(f + new URL(script.src).search, script.src).href;
+    l.href = new URL(`${f}?v=${FILE_V[f] || ""}`, script.src).href;
     document.head.append(l);
     // illustrations du décor complet (frise de Cabinet, radar de Durci), même version
     const d = document.createElement("script");
-    d.src = new URL("design_deco.js" + new URL(script.src).search, script.src).href;
+    d.src = new URL("design_deco.js?v=0b541ecd", script.src).href;
     document.head.append(d);
   };
   designCss(design);
@@ -500,7 +502,7 @@
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
-      sc.src = new URL("appearance_page.js" + new URL(script.src).search, script.src).href;
+      sc.src = new URL("appearance_page.js?v=55cebb0e", script.src).href;
       sc.onload = show;
       document.head.append(sc);
     }
@@ -816,7 +818,7 @@
     // jeux d'icônes skeuomorphes (Laiton, Acier, Gel) : images posées tout de suite (<img>, téléchargées avec la
     // page), sans attendre le registre d'icônes ni block_icons.css ; les tracés arrivent ensuite (side_nav.js) et ne
     // servent que dans les jeux au trait
-    const ver = new URL(script.src).search;
+    const ver = new URL(script.src).search; // version de ce script : son empreinte couvre ces icônes (tools/bump_versions.py)
     // jeux peints seulement ; jeux composés (fond + glyphe) : fond posé par block_icons.css sur le tracé SVG
     const skImg = name => {
       const d = iconFolder(doc.dataset.icons);
@@ -881,23 +883,23 @@
   } {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260930zzzv", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=7b0ee603", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260930zzzv", script.src).href;
+    files.src = new URL("file_access.js?v=72155359", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260930zzzv", "block_icons.js?v=20260930zzzv", "side_nav.js?v=20260930zzzv"]) {
+    for (const f of ["icons/repository_icons.js?v=1bfdb961", "block_icons.js?v=ccf64e90", "side_nav.js?v=355697e6"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260930zzzv", script.src).href;
+    store.src = new URL("browser_store.js?v=3a8264a9", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=20260930zzzv", script.src).href;
+    update.src = new URL("suite_update.js?v=d84028ad", script.src).href;
     document.head.append(update)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

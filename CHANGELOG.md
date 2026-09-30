@@ -18,6 +18,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   « découpe » réécrit par `tools/cut_register_sheet.py <design> --write` ; carnet des aperçus devenu composant commun
   (`.repo-notebooks` / `.repo-notebook`, `designs_skeuo.css`) ; contrôle des images `tools/check_assets.py` (format,
   poids, absentes, orphelines), lancé par `bump_versions.py`.
+- **Versions de cache par empreinte** (`tools/bump_versions.py`) : `?v=` = empreinte du contenu du fichier visé (au lieu
+  d'une date à lettres) ; une page ne change que si l'un de ses fichiers change ; feuilles de design chargées avec
+  leur propre version (table `FILE_V`) ; versions écrites à la main dans trois scripts (extensions, traductions GAAR
+  et HEMS), figées depuis le 23 septembre, désormais tenues à jour.
 - **Code lisible** : JavaScript, CSS et scripts / styles des pages remis en forme (118 fichiers : une instruction et une
   déclaration par ligne), sans changer le code — contrôle avant / après des arbres syntaxiques et des règles CSS
   (`tools/format_sources.py`, `tools/verify_format.html`) ; éditeur de mission : chaque fonction commentée.

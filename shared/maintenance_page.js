@@ -651,7 +651,7 @@
       add(G.code, 'VERSION.json', esc(v || '?'), fmtDate(vj.lastModified, false), v === rel.version ? pill('ok', '=') : pill('warn', t(['périmé (≠ repository_tree), ignoré par git', 'stale (≠ repository_tree), git-ignored'])), '');
     }
     const cacheV = /[?&]v=(\w+)/.exec([...document.scripts].map(s => s.src).find(s => /repository_nav\.js/.test(s)) || '')?.[1] || '';
-    add(G.code, t(['Version de cache des scripts (?v=)', 'Script cache version (?v=)']), `<code>${esc(cacheV)}</code>`, cacheV ? esc(`${cacheV.slice(6, 8)}/${cacheV.slice(4, 6)}/${cacheV.slice(0, 4)}`) : '', '', 'tools/bump_versions.py');
+    add(G.code, t(['Version de cache de repository_nav.js (?v=)', 'repository_nav.js cache version (?v=)']), `<code>${esc(cacheV)}</code>`, t(['empreinte du contenu du fichier', 'fingerprint of the file content']), '', 'tools/bump_versions.py');
     const g = gitState || window.SuiteUpdate?.gitInfo?.();
     add(G.code, 'git', g?.branch ? `${esc(g.branch)} <code>${esc((g.head || '').slice(0, 9))}</code>` : '—', g?.lastFetch ? `fetch ${fmtDate(g.lastFetch)}` : g?.readAt ? t(['lu le {d}', 'read {d}'], {
       d: fmtDate(g.readAt)
