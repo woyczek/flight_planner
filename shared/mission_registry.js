@@ -124,13 +124,21 @@
     const FA = await waitFor('FileAccess');
     if (!FA) return null;
     const st = await FA.status('__missions');
-    if (!st.handle) return null;
-    if (st.permission === 'granted') return st.handle;
+    if (st.handle && st.permission === 'granted') return st.handle;
     if (!request) return null;
+    // geste de l'utilisateur : réautoriser le dossier mémorisé ; à défaut (aucun dossier, autorisation refusée,
+    // dossier devenu inaccessible), le choisir : sélecteur de dossier (data/missions)
+    if (st.handle) {
+      try {
+        if ((await st.handle.requestPermission({
+            mode: 'readwrite'
+          })) === 'granted') return st.handle;
+      } catch {
+        /* dossier déplacé ou supprimé */
+      }
+    }
     try {
-      return (await st.handle.requestPermission({
-        mode: 'readwrite'
-      })) === 'granted' ? st.handle : null;
+      return await FA.pickFolder('__missions');
     } catch {
       return null;
     }
