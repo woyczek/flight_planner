@@ -25,7 +25,7 @@
     css.href = new URL('block_icons.css' + new URL(script.src).search, script.src).href; // même version (?v=) que ce script
     document.head.append(css);
   }
-  const LANGS = ['fr', 'en', 'de', 'es'];
+  const K = window.RepositoryKit;   // utilitaires communs (shared/kit.js)
   const T = {
     pick: ['Choisir des fichiers', 'Choose files', 'Dateien auswählen', 'Elegir archivos'],
     pickOne: ['Choisir un fichier', 'Choose a file', 'Datei auswählen', 'Elegir un archivo'],
@@ -33,11 +33,7 @@
     none: ['Aucun fichier choisi', 'No file chosen', 'Keine Datei ausgewählt', 'Ningún archivo elegido'],
     refused: ['Type de fichier non accepté : ', 'File type not accepted: ', 'Dateityp nicht zulässig: ', 'Tipo de archivo no aceptado: ']
   };
-  const lang = () => window.RepositoryNav?.getLanguage?.() || document.documentElement.lang || 'fr';
-  const tr = row => {
-    const l = lang(), s = row[LANGS.indexOf(l)] || row[1];
-    return window.RepositoryContentI18n?.typography ? window.RepositoryContentI18n.typography(s, l) : s;
-  };
+  const tr = row => K.t(row);
 
   /** <span class="repo-icon"> contenant l'icône (décorative), ou null si l'icône est inconnue. */
   function icon(name, cls = '') {
@@ -212,30 +208,8 @@
   }
 
   // ---- couleur des icônes : contraste contrôlé sur la surface réelle du bloc
-  const parse = c => {
-    c = String(c || '').trim();
-    let m = c.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
-    if (m) {
-      let h = m[1];
-      if (h.length === 3) h = [...h].map(x => x + x).join('');
-      return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
-    }
-    m = c.match(/rgba?\(([^)]+)\)/);
-    if (!m) return null;
-    const v = m[1].split(/[\s,/]+/).filter(Boolean).map(Number);
-    return v.length > 3 && v[3] === 0 ? null : v.slice(0, 3);
-  };
-  const lum = rgb => {
-    const [r, g, b] = rgb.map(x => { x /= 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; });
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  };
-  /** Rapport de contraste WCAG entre deux couleurs (#hex ou rgb()). */
-  function contrast(a, b) {
-    const x = parse(a), y = parse(b);
-    if (!x || !y) return 0;
-    const l1 = lum(x), l2 = lum(y);
-    return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
-  }
+  // lecture d'une couleur et contraste WCAG : shared/kit.js (0 si l'une des couleurs est illisible ou transparente)
+  const parse = K.color.rgb, contrast = K.color.contrast;
   /** Couleur de fond effective d'un élément (premier ancêtre non transparent). */
   function surface(el) {
     for (let e = el; e; e = e.parentElement) {

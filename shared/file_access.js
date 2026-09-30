@@ -10,9 +10,8 @@
   // Chargé par repository_nav.js sur toutes les pages. Sans API (Firefox…) : comportement natif.
   const L = (fr, en, de = en, es = en) => [fr, en, de, es];
   /** Rang (0–3) de la langue de la page dans [fr, en, de, es]. */
-  const lang = () => Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'));
   /** Texte d'une ligne [fr, en, de, es] dans la langue de la page. */
-  const tr = row => row[lang()] || row[0];
+  const tr = row => window.RepositoryKit.t(row, { typo: false });   // shared/kit.js
   const FOLDERS = {
     __repo: {
       label: L('Dossier du dépôt', 'Repository folder', 'Repository-Ordner', 'Carpeta del repositorio'),

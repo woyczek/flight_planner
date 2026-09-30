@@ -34,16 +34,12 @@
   // Couleurs : un thème peut être rattaché à une famille de couleurs (REPOSITORY_TREE.colorFamilies : teinte,
   // saturation) et à un ton (clarté) ; bandeau, texte du bandeau et accent en sont calculés avec un contraste WCAG
   // d'au moins 4,5:1 (texte du bandeau / bandeau, accent / fond de page). Sans réglage : couleurs de repository_tree.
-  const readPref = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
-  const readJson = k => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } };
-  /** « #rrggbb » → [r, g, b] (0–255). */
-  const hexRgb = h => { const x = String(h || "").replace("#", ""), v = x.length === 3 ? x.split("").map(ch => ch + ch).join("") : x; return [0, 2, 4].map(i => parseInt(v.slice(i, i + 2), 16) || 0); };
-  /** Luminance relative WCAG d'une couleur « #rrggbb ». */
-  const luminance = h => { const [r, g, b] = hexRgb(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }); return .2126 * r + .7152 * g + .0722 * b; };
-  /** Rapport de contraste WCAG entre deux couleurs (1 à 21). */
-  const contrast = (a, b) => { const x = luminance(a), y = luminance(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
-  /** Couleur HSL (degrés, %, %) → « #rrggbb ». */
-  const hslHex = (h, s, l) => { s /= 100; l /= 100; const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = n => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1)); return "#" + [f(0), f(8), f(4)].map(v => Math.round(v * 255).toString(16).padStart(2, "0")).join(""); };
+  // utilitaires communs : shared/kit.js (chargé juste avant ce fichier)
+  const K = window.RepositoryKit, esc = K.esc;
+  const readPref = (k, d) => K.store.get(k, d), readJson = k => K.store.json(k);
+  /** Écrit une préférence, ou l'efface si la valeur est vide. */
+  const writePref = (k, v) => (v == null || v === "" ? K.store.remove(k) : K.store.set(k, v));
+  const { luminance, contrast, hsl: hslHex } = K.color;
   /** Couleurs calculées d'une famille (fam : { h, s }) au ton tone (0 = sombre, 100 = clair) pour un fond de page page. */
   function familyColors(fam, tone, page) {
     const L = 12 + Math.max(0, Math.min(100, +tone || 0)) * .42, bar = hslHex(fam.h, fam.s, L),
@@ -71,13 +67,13 @@
       const bytes = new TextEncoder().encode(String(password || "").trim().toUpperCase());
       const hex = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map(b => b.toString(16).padStart(2, "0")).join("");
       if (hex !== CPCO_HASH) return false;
-      try { localStorage.setItem(CPCO_KEY, "on"); } catch { return false; }
+      if (!K.store.set(CPCO_KEY, "on")) return false;
       doc.dataset.cpco = "on";
       window.dispatchEvent(new CustomEvent("cpco-access-change", { detail: { enabled: true } }));
       return true;
     },
     lock() {
-      try { localStorage.removeItem(CPCO_KEY); } catch { /* stockage indisponible */ }
+      K.store.remove(CPCO_KEY);
       doc.dataset.cpco = "off";
       window.dispatchEvent(new CustomEvent("cpco-access-change", { detail: { enabled: false } }));
     }
@@ -108,12 +104,12 @@
   };
   CHART.khaki = CHART.field;
   delete CHART.field;
-  const CHART_AUTO = { cabinet: "brass", flightlog: "brass", field: "khaki" }, RELIEF_AUTO = ["cabinet", "flightlog", "field", "aqua"];
-  /** Palette et style effectifs des graphiques (préférences, sinon selon le design) → <html data-chart-*>. */
+  /** Palette et style effectifs des graphiques (préférences, sinon selon le design : chart et skeuo du registre des
+   *  designs, REPOSITORY_TREE.designs.list) → <html data-chart-*>. */
   function applyChart() {
-    const d = doc.dataset.design, p = readPref("repositoryChartPalette", "auto"), st = readPref("repositoryChartStyle", "auto");
-    doc.dataset.chartPalette = p !== "auto" && (CHART[p] || p === "vivid") ? p : CHART_AUTO[d] || "vivid";
-    doc.dataset.chartStyle = st === "flat" || st === "relief" ? st : RELIEF_AUTO.includes(d) ? "relief" : "flat";
+    const d = designs[doc.dataset.design] || {}, p = readPref("repositoryChartPalette", "auto"), st = readPref("repositoryChartStyle", "auto");
+    doc.dataset.chartPalette = p !== "auto" && (CHART[p] || p === "vivid") ? p : d.chart || "vivid";
+    doc.dataset.chartStyle = st === "flat" || st === "relief" ? st : d.skeuo ? "relief" : "flat";
   }
   /** Couleur de graphique (« #rgb », « #rrggbb » ou « rgb(…) ») accordée au design courant. */
   function chartColor(c) {
@@ -121,12 +117,13 @@
     if (!set || typeof c !== "string") return c;
     const m = c.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i) || c.match(/^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i);
     if (!m) return c;
-    const [r, g, b] = (m.length === 2 ? hexRgb("#" + m[1]) : [m[1], m[2], m[3]].map(Number)).map(v => v / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn, l = (mx + mn) / 2;
-    const s = d ? d / (1 - Math.abs(2 * l - 1)) : 0, h = !d ? 0 : (mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4) * 60;
+    const x = K.color.toHsl(c);
+    if (!x) return c;   // transparent
+    const { h, s, l } = x;
     const base = s < .18 ? set.grey : set.hues.find(([lim]) => h < lim)[1];
     // clarté : ±12 % autour de la couleur de la famille selon la clarté d'origine (repère 0,6)
-    const k = Math.max(-.12, Math.min(.12, (l - .6) * .5)), rgb = hexRgb(base).map(v => Math.round(k > 0 ? v + (255 - v) * k : v * (1 + k)));
-    return "#" + rgb.map(v => v.toString(16).padStart(2, "0")).join("");
+    const k = Math.max(-.12, Math.min(.12, (l - .6) * .5));
+    return K.color.hex(K.color.rgb(base).map(v => k > 0 ? v + (255 - v) * k : v * (1 + k)));
   }
   /** Pose les variables CSS du thème name (couleurs effectives). */
   function applyTheme(name) {
@@ -149,12 +146,9 @@
   // (préférence repositoryAquaColor : bleu par défaut, ou une autre teinte, ou « app » : accent du thème de la page).
   // Les icônes Gel (jeu composé) prennent --aq-gel sur leur bulle (tools/build_skeuo_icons_css.py).
   const AQUA = { blue: [214, 72], teal: [186, 70], green: [145, 52], graphite: [212, 12], purple: [268, 52], orange: [24, 82], red: [356, 66], pink: [328, 60] };
-  /** « #rrggbb » → [teinte (degrés), saturation (%)]. */
-  const hueSat = hex => { const [r, g, b] = hexRgb(hex).map(v => v / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn, l = (mx + mn) / 2;
-    if (!d) return [214, 0]; const h = mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; return [Math.round(h * 60), Math.round(d / (1 - Math.abs(2 * l - 1)) * 100)]; };
   function applyAqua(accent) {
     const v = readPref("repositoryAquaColor", "blue");
-    const [h, s] = v === "app" ? hueSat(accent || "#2f7de1") : AQUA[v] || AQUA.blue;
+    const [h, s] = v === "app" ? K.color.hueSat(accent || "#2f7de1") : AQUA[v] || AQUA.blue;
     // clarté abaissée jusqu'à un contraste WCAG de 4,5:1 avec le texte blanc des boutons
     let l = 52, c = hslHex(h, s, l);
     while (contrast("#ffffff", c) < 4.5 && l > 20) c = hslHex(h, s, l -= 2);
@@ -172,17 +166,28 @@
     },
     savedDesign = readPref("repositoryDesign", null);
   let design = designs[savedDesign] ? savedDesign : (designs[cfg.designs?.default] ? cfg.designs.default : "standard");
-  doc.dataset.design = design;
+  /** Pose le design sur <html> : data-design, et data-skeuo pour les designs à matières (règles communes de designs_skeuo.css). */
+  const markDesign = id => {
+    doc.dataset.design = id;
+    if (designs[id]?.skeuo) doc.dataset.skeuo = "";
+    else delete doc.dataset.skeuo;
+  };
+  markDesign(design);
   applyChart();
   // jeu d'icônes (line : trait normal, fine, bold ; brass, steel, gel : jeux skeuomorphes Laiton, Acier, Gel ; off) :
   // choix mémorisé, sinon celui du design (designs.list[id].icons : brass pour Cabinet, steel pour Durci, gel pour
   // Aqua), sinon trait normal (ancien choix « matter » : remplacé par le jeu du design)
-  const iconsFor = id => { const v = readPref("repositoryIcons", null); return (v && v !== "matter" ? v : null) || designs[id]?.icons || "line"; };
+  const iconsFor = id => {
+    const v = readPref("repositoryIcons", null);
+    return (v && v !== "matter" ? v : null) || designs[id]?.icons || "line";
+  };
+  /** Dossier des images d'un jeu d'icônes à matières : id du design à matières dont c'est le jeu (brass → cabinet…). */
+  const iconFolder = set => Object.keys(designs).find(id => designs[id].skeuo && designs[id].icons === set) || null;
   doc.dataset.icons = iconsFor(design);
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260930zr", script.src).href;
+    css.href = new URL("designs.css?v=20260930zt", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -217,7 +222,7 @@
   }
   // Langue : choix mémorisé (repositoryLanguageMode) ou langue du navigateur.
   const supported = ["fr", "en", "de", "es"],
-    saved = localStorage.getItem("repositoryLanguageMode"),
+    saved = K.store.get("repositoryLanguageMode"),
     /** Langue du navigateur ramenée aux langues de la suite (fr / en / de / es) ; en par défaut. */
     detected = () => {
       const x = (navigator.languages?.[0] || navigator.language || "en").slice(0, 2).toLowerCase();
@@ -343,11 +348,11 @@
   const setDesign = id => {
     if (!designs[id]) return;
     design = id;
-    doc.dataset.design = id;
+    markDesign(id);
     doc.dataset.icons = iconsFor(id);
     designCss(id);
     renderEmblem();
-    try { localStorage.setItem("repositoryDesign", id); } catch {}
+    K.store.set("repositoryDesign", id);
     applyChart();
     window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { design: id } }));
   };
@@ -430,19 +435,28 @@
     const value = e.target.closest("button")?.dataset.lang;
     if (!value) return;
     mode = value;
-    localStorage.setItem("repositoryLanguageMode", mode);
+    K.store.set("repositoryLanguageMode", mode);
     applyLanguage();
     close()
   };
   document.body.style.backgroundColor = theme.page || "";
   /** Adresse d'une source externe : réglage local (suiteSources:v1, Paramètres › Maintenance) sinon repository_tree.sources. */
-  const source = key => { let o = {}; try { o = JSON.parse(localStorage.getItem("suiteSources:v1") || "{}") || {}; } catch {} return String(o[key] || cfg.sources?.[key]?.url || "").replace(/\/+$/, ""); };
+  const source = key => String(K.store.json("suiteSources:v1", {})[key] || cfg.sources?.[key]?.url || "").replace(/\/+$/, "");
+  /** Émet « repository-design-change » (detail : ce qui a changé) : décors, icônes, graphiques des pages se refont. */
+  const designChanged = detail => window.dispatchEvent(new CustomEvent("repository-design-change", { detail }));
   // API publique.
   window.RepositoryNav = {
     cpco,
     source,
     /** Enregistre (ou efface, valeur vide) la surcharge locale d'une source ; événement « suite-sources-change ». */
-    setSource(key, value) { let o = {}; try { o = JSON.parse(localStorage.getItem("suiteSources:v1") || "{}") || {}; } catch {} const v = String(value || "").trim(); v && v !== cfg.sources?.[key]?.url ? o[key] = v : delete o[key]; try { Object.keys(o).length ? localStorage.setItem("suiteSources:v1", JSON.stringify(o)) : localStorage.removeItem("suiteSources:v1"); } catch {} window.dispatchEvent(new CustomEvent("suite-sources-change", { detail: { key } })); },
+    setSource(key, value) {
+      const o = K.store.json("suiteSources:v1", {}), v = String(value || "").trim();
+      if (v && v !== cfg.sources?.[key]?.url) o[key] = v;
+      else delete o[key];
+      if (Object.keys(o).length) K.store.setJson("suiteSources:v1", o);
+      else K.store.remove("suiteSources:v1");
+      window.dispatchEvent(new CustomEvent("suite-sources-change", { detail: { key } }));
+    },
     trLabel: l => trLabel(l),
     root,
     page,
@@ -466,31 +480,90 @@
       designs,
       families: cfg.colorFamilies || {},
       themes: cfg.themes,
-      current: () => ({ design, icons: doc.dataset.icons || "line", iconsSaved: readPref("repositoryIcons", null), sidenav: doc.dataset.sidenav || "", decor: doc.dataset.decor, decorSaved: readPref("repositoryDecor", null), colors: readJson("repositoryColors") || {}, theme: currentTheme }),
+      current: () => ({
+        design,
+        icons: doc.dataset.icons || "line",
+        iconsSaved: readPref("repositoryIcons", null),
+        sidenav: doc.dataset.sidenav || "",
+        decor: doc.dataset.decor,
+        decorSaved: readPref("repositoryDecor", null),
+        colors: readJson("repositoryColors") || {},
+        theme: currentTheme
+      }),
+      /** Dossier des images d'un jeu d'icônes à matières (shared/icons/skeuo/<id du design dont c'est le jeu>) ; null sinon. */
+      iconFolder,
       /** Couleur du design Aqua : clé de AQUA ("blue" par défaut, "teal", "green", "graphite", "purple", "orange",
        *  "red", "pink") ou "app" (accent du thème de chaque page) ; null : défaut. */
       /** Graphiques : palettes ("auto", "vivid", "brass", "khaki", "slate") et styles ("auto", "flat", "relief"). */
       chartPalettes: ["auto", "vivid", ...Object.keys(CHART)],
       chartStyles: ["auto", "flat", "relief"],
-      chart: () => ({ palette: readPref("repositoryChartPalette", "auto"), style: readPref("repositoryChartStyle", "auto"), effective: { palette: doc.dataset.chartPalette, style: doc.dataset.chartStyle } }),
+      chart: () => ({
+        palette: readPref("repositoryChartPalette", "auto"),
+        style: readPref("repositoryChartStyle", "auto"),
+        effective: { palette: doc.dataset.chartPalette, style: doc.dataset.chartStyle }
+      }),
       /** Échantillon de palette : couleurs d'une série type (familles des CR) dans la palette p. */
-      chartSample(p) { const keep = doc.dataset.chartPalette; doc.dataset.chartPalette = p; const out = ["#ef4444", "#f97316", "#eab308", "#3b82f6", "#22c55e", "#a855f7", "#ec4899", "#94a3b8"].map(chartColor); doc.dataset.chartPalette = keep; return out; },
-      setChart(kind, v) { const k = kind === "style" ? "repositoryChartStyle" : "repositoryChartPalette"; try { v && v !== "auto" ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch {} applyChart(); window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { chart: kind } })); },
+      chartSample(p) {
+        const keep = doc.dataset.chartPalette;
+        doc.dataset.chartPalette = p;
+        const out = ["#ef4444", "#f97316", "#eab308", "#3b82f6", "#22c55e", "#a855f7", "#ec4899", "#94a3b8"].map(chartColor);
+        doc.dataset.chartPalette = keep;
+        return out;
+      },
+      setChart(kind, v) {
+        writePref(kind === "style" ? "repositoryChartStyle" : "repositoryChartPalette", v && v !== "auto" ? v : null);
+        applyChart();
+        designChanged({ chart: kind });
+      },
       aquaColors: Object.keys(AQUA),
       aquaColor: () => readPref("repositoryAquaColor", "blue"),
-      aquaSample: k => { const [h, s] = AQUA[k] || AQUA.blue; return hslHex(h, s, 48); },
-      setAqua(v) { try { v && v !== "blue" ? localStorage.setItem("repositoryAquaColor", v) : localStorage.removeItem("repositoryAquaColor"); } catch {} applyAqua(themeColors(currentTheme).accent); window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { aqua: v || "blue" } })); },
+      aquaSample: k => {
+        const [h, s] = AQUA[k] || AQUA.blue;
+        return hslHex(h, s, 48);
+      },
+      setAqua(v) {
+        writePref("repositoryAquaColor", v && v !== "blue" ? v : null);
+        applyAqua(themeColors(currentTheme).accent);
+        designChanged({ aqua: v || "blue" });
+      },
       /** Décor des designs à matières : "full", "sober", ou null (réglage de chaque page). */
-      setDecor(v) { try { v ? localStorage.setItem("repositoryDecor", v) : localStorage.removeItem("repositoryDecor"); } catch {} doc.dataset.decor = v || decorDefault; window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { decor: doc.dataset.decor } })); },
+      setDecor(v) {
+        writePref("repositoryDecor", v || null);
+        doc.dataset.decor = v || decorDefault;
+        designChanged({ decor: doc.dataset.decor });
+      },
       renderEmblem,
       setDesign,
       /** Jeu d'icônes : "line" (défaut), "fine", "bold", "brass" (laiton), "steel" (acier), "gel", "avio" (avionique), "off" ; null : jeu du design. */
-      setIcons(v) { if (!v) { try { localStorage.removeItem("repositoryIcons"); } catch {} doc.dataset.icons = iconsFor(design); window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { icons: doc.dataset.icons } })); return; } doc.dataset.icons = v; try { localStorage.setItem("repositoryIcons", v); } catch {} window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { icons: v } })); },
-      /** Barre latérale : true, false, ou null (selon le design). */
-      // barre latérale : true / false (toujours / jamais), null (selon le design, mémorisé « auto »), "default" (réglage par défaut : toujours)
-      setSidenav(on) { if (on === "default") { doc.dataset.sidenav = "on"; try { localStorage.removeItem("repositorySidenav"); } catch {} } else if (on == null) { delete doc.dataset.sidenav; try { localStorage.setItem("repositorySidenav", "auto"); } catch {} } else { doc.dataset.sidenav = on ? "on" : "off"; try { localStorage.setItem("repositorySidenav", on ? "on" : "off"); } catch {} } },
+      setIcons(v) {
+        writePref("repositoryIcons", v || null);
+        doc.dataset.icons = v || iconsFor(design);
+        designChanged({ icons: doc.dataset.icons });
+      },
+      /** Barre latérale : true / false (toujours / jamais), null (selon le design, mémorisé « auto »), "default"
+       *  (réglage par défaut : toujours). */
+      setSidenav(on) {
+        if (on === "default") {
+          doc.dataset.sidenav = "on";
+          writePref("repositorySidenav", null);
+        } else if (on == null) {
+          delete doc.dataset.sidenav;
+          writePref("repositorySidenav", "auto");
+        } else {
+          doc.dataset.sidenav = on ? "on" : "off";
+          writePref("repositorySidenav", doc.dataset.sidenav);
+        }
+      },
       /** Couleurs du thème name : { family, tone } (famille de REPOSITORY_TREE.colorFamilies), ou null pour revenir à repository_tree. */
-      setColor(name, v) { const all = readJson("repositoryColors") || {}; v ? all[name] = { family: v.family, tone: +v.tone } : delete all[name]; try { Object.keys(all).length ? localStorage.setItem("repositoryColors", JSON.stringify(all)) : localStorage.removeItem("repositoryColors"); } catch {} if (name === currentTheme) applyTheme(name); window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { colors: name } })); },
+      setColor(name, v) {
+        const all = readJson("repositoryColors") || {};
+        if (v) all[name] = { family: v.family, tone: +v.tone };
+        else delete all[name];
+        if (Object.keys(all).length) K.store.setJson("repositoryColors", all);
+        else K.store.remove("repositoryColors");
+        if (name === currentTheme) applyTheme(name);
+        designChanged({ colors: name });
+      },
       themeColors,
       familyColors,
       contrast,
@@ -552,13 +625,16 @@
     // jeux d'icônes skeuomorphes (Laiton, Acier, Gel) : images posées tout de suite (<img>, téléchargées avec la
     // page), sans attendre le registre d'icônes ni block_icons.css ; les tracés arrivent ensuite (side_nav.js) et ne
     // servent que dans les jeux au trait
-    const SKEUO = { brass: "cabinet", steel: "field", gel: "aqua", avio: "flightlog" }, ver = new URL(script.src).search;
-    // (entrées du Centre : fond du Centre des jeux composés, posé par block_icons.css sur le tracé SVG)
-    const skImg = name => { const d = SKEUO[doc.dataset.icons]; return d && !cfg.iconComposed?.[doc.dataset.icons] ? `<img class="repo-sidenav-img" src="${new URL(`icons/skeuo/${d}/${name}.webp${ver}`, script.src).href}" alt="">` : ""; };
-    // haut de la barre : logo DEFA décliné selon le design (shared/icons/defa/<variante>.webp), lien vers le site de la
-    // flotte DEFA Virtual (nouvel onglet : la page en cours reste ouverte)
-    const LOGO = { cabinet: "cabinet", flightlog: "flightlog", field: "field", aqua: "aqua" };
-    const logoSrc = () => new URL(`icons/defa/${LOGO[doc.dataset.design] || "flat"}.webp${ver}`, script.src).href;
+    const ver = new URL(script.src).search;
+    // jeux peints seulement ; jeux composés (fond + glyphe) : fond posé par block_icons.css sur le tracé SVG
+    const skImg = name => {
+      const d = iconFolder(doc.dataset.icons);
+      if (!d || cfg.iconComposed?.[doc.dataset.icons]) return "";
+      return `<img class="repo-sidenav-img" src="${new URL(`icons/skeuo/${d}/${name}.webp${ver}`, script.src).href}" alt="">`;
+    };
+    // haut de la barre : logo DEFA décliné selon le design (shared/icons/defa/<id du design à matières>.webp, sinon
+    // flat), lien vers le site de la flotte DEFA Virtual (nouvel onglet : la page en cours reste ouverte)
+    const logoSrc = () => new URL(`icons/defa/${designs[doc.dataset.design]?.skeuo ? doc.dataset.design : "flat"}.webp${ver}`, script.src).href;
     side.innerHTML = `<a class="repo-sidenav-brand" href="${source("defa") || "https://flotte.defa-virtual.fr"}/index.php" target="_blank" rel="noopener" title="DEFA Virtual — ${source("defa").replace(/^https?:\/\//, "")}"><img class="repo-sidenav-logo" src="${logoSrc()}" alt="DEFA Virtual"></a><ul></ul>`;
     const ul = side.querySelector("ul");
     items.forEach((it, i) => {
@@ -601,37 +677,27 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260930zr", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260930zt", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260930zr", script.src).href;
+    files.src = new URL("file_access.js?v=20260930zt", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260930zr", "block_icons.js?v=20260930zr", "side_nav.js?v=20260930zr"]) {
+    for (const f of ["icons/repository_icons.js?v=20260930zt", "block_icons.js?v=20260930zt", "side_nav.js?v=20260930zt"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260930zr", script.src).href;
+    store.src = new URL("browser_store.js?v=20260930zt", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=20260930zr", script.src).href;
+    update.src = new URL("suite_update.js?v=20260930zt", script.src).href;
     document.head.append(update)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {
     detail: window.RepositoryNav
   }));
 
-  /** Échappe un texte pour HTML (& < > " '). */
-  function esc(v) {
-    return String(v ?? "").replace(/[&<>"']/g, c => ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;"
-    } [c]))
-  }
 })();

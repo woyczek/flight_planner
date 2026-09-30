@@ -304,7 +304,7 @@
     if (alertsPanel) fillAlerts();
   }
   function fillAlerts() {
-    const hh = d => d.toTimeString().slice(0, 8), esc = v => String(v).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+    const hh = d => d.toTimeString().slice(0, 8), esc = window.RepositoryKit.esc;
     alertsPanel.innerHTML = `<h3>${al("title")}</h3>${journal.length ? `<ul>${[...journal].reverse().map(e => `<li class="${e.kind}${e.ack ? " ack" : ""}"><time>${hh(e.t)}</time><span>${esc(e.text)}${e.count > 1 ? ` (×${e.count})` : ""}</span>${e.ack ? `<em>${al("acked")}</em>` : `<button type="button" data-ack="${e.id}">${al("ack")}</button>`}</li>`).join("")}</ul><div class="bar"><button type="button" data-ackall>${al("ackAll")}</button><button type="button" data-clear>${al("clear")}</button></div>` : `<p>${al("none")}</p>`}`;
   }
   function openAlerts() {

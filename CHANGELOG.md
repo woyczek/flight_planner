@@ -10,6 +10,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+> **Annonce : gros changement du toolkit à venir.** Le socle commun (`shared/` : en-tête, barre latérale, blocs,
+> designs, décors, icônes) est en cours de refactoring ; la version qui le livrera pourra modifier légèrement
+> l'apparence des designs à matières. Plan et avancement : [docs/REFACTORING_TOOLKIT.md](docs/REFACTORING_TOOLKIT.md).
+
+- **Toolkit — boîte à outils commune** (`shared/kit.js`, `window.RepositoryKit`) : échappement HTML, langue et
+  traductions, stockage local protégé, couleurs et contraste WCAG ; chargée par toutes les pages avant
+  `repository_nav.js` ; le socle (`repository_nav`, `block_icons`, `appearance_page`, `app_framework`, `file_access`,
+  `suite_update`, `design_deco`) l'utilise à la place de ses copies ; API de `RepositoryNav.appearance` reformatée.
+- **Toolkit — registre unique des designs** : `REPOSITORY_TREE.designs.list` porte `skeuo` et `chart` ; palette et
+  relief des graphiques, logo, dossier des icônes (`appearance.iconFolder`) et jeux du générateur d'icônes en sont
+  déduits ; attribut `html[data-skeuo]` pour la CSS commune aux designs à matières (63 listes de designs remplacées).
 - **Appareil de page** (Cabinet) : entre les blocs 3 et 4 (réglage `deviceAt`), plus entre les deux premiers.
 - **Décors** : `design_deco.js` réorganisé et documenté (familles de décors, formats des tableaux de réglage) ; plus
   d'objet posé sur une feuille de registre.

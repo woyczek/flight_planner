@@ -107,29 +107,38 @@ html[data-icons="bold"] .repo-svg{stroke-width:2.6}
 html[data-icons="off"] .repo-icon,html[data-icons="off"] .repo-block-icon,html[data-icons="off"] .repo-card-icon,html[data-icons="off"] .repo-dropzone-badge{display:none!important}
 html[data-icons="off"] .repo-icon-only>.repo-icon{display:inline-flex!important}
 /* ==== JEUX D'ICÔNES SKEUOMORPHES (généré par tools/build_skeuo_icons_css.py) ==== */
-html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) .repo-svg[data-i]{background-position:center;background-size:contain;background-repeat:no-repeat;--rs:1.6em}
-html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) :is(.repo-block-icon,.repo-card-icon){background:none!important;box-shadow:none!important;border-radius:0!important;width:auto!important;height:auto!important}
-html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) :is(.repo-block-icon,.repo-card-icon) .repo-svg[data-i]{--rs:46px}
-html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) .repo-card-icon .repo-svg[data-i]{--rs:38px}
-html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) :is(button,.buttonLink,a.mc-button,a.headerButton,summary) .repo-svg[data-i]{--rs:1.9em;margin:-.35em 0}
-html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) :is(button,.buttonLink,a.mc-button,a.headerButton) .repo-icon{height:1.25em;overflow:visible;align-items:center}
-html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) .repo-sidenav-item .repo-svg[data-i]{--rs:50px!important;margin:0}
-html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) .repo-dropzone-badge{background:none!important}html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) .repo-dropzone-badge .repo-svg[data-i]{--rs:42px}
-html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) .repo-notice>.repo-icon .repo-svg[data-i]{--rs:30px}
-html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) .repo-sidenav-brand .repo-svg[data-i]{--rs:40px!important}
-html[data-icons="brass"] .repo-svg[data-i]{background-image:url("icons/skeuo/cabinet/vierge.webp?v=20260930zr")!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * 0.26);color:var(--ico-glyph,#f1e4c0)!important;overflow:visible}
-html[data-app-theme="cpco"][data-icons="brass"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg),html[data-icons="brass"] .repo-sidenav-cpco .repo-svg[data-i]{background-image:url("icons/skeuo/cabinet/vierge.webp?v=20260930zr")!important;color:var(--ico-glyph-centre,#ffd23f)!important}
+html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-svg[data-i]{background-position:center;background-size:contain;background-repeat:no-repeat;--rs:1.6em}
+html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(.repo-block-icon,.repo-card-icon){background:none!important;box-shadow:none!important;border-radius:0!important;width:auto!important;height:auto!important}
+html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(.repo-block-icon,.repo-card-icon) .repo-svg[data-i]{--rs:46px}
+html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-card-icon .repo-svg[data-i]{--rs:38px}
+html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(button,.buttonLink,a.mc-button,a.headerButton,summary) .repo-svg[data-i]{--rs:1.9em;margin:-.35em 0}
+html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(button,.buttonLink,a.mc-button,a.headerButton) .repo-icon{height:1.25em;overflow:visible;align-items:center}
+html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-sidenav-item .repo-svg[data-i]{--rs:50px!important;margin:0}
+html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-dropzone-badge{background:none!important}html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-dropzone-badge .repo-svg[data-i]{--rs:42px}
+html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-notice>.repo-icon .repo-svg[data-i]{--rs:30px}
+html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-sidenav-brand .repo-svg[data-i]{--rs:40px!important}
+html[data-icons="brass"] .repo-svg[data-i]{background-image:url("icons/skeuo/cabinet/vierge.webp?v=20260930zt")!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * 0.26);color:var(--ico-glyph,#f1e4c0)!important;overflow:visible}
+html[data-app-theme="cpco"][data-icons="brass"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg),html[data-icons="brass"] .repo-sidenav-cpco .repo-svg[data-i]{background-image:url("icons/skeuo/cabinet/vierge.webp?v=20260930zt")!important;color:var(--ico-glyph-centre,#ffd23f)!important}
 html[data-icons="brass"] .repo-svg[data-i]>*{display:inline;filter:var(--ico-glyph-shadow,drop-shadow(.5px 1px .6px rgba(0,0,0,.7)))}
-html[data-icons="brass"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){background:url("icons/skeuo/cabinet/vierge.webp?v=20260930zr") center/contain no-repeat!important;width:28px!important;height:28px!important;color:#f1e4c0!important;opacity:1}
+html[data-icons="brass"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){background:url("icons/skeuo/cabinet/vierge.webp?v=20260930zt") center/contain no-repeat!important;width:28px!important;height:28px!important;color:#f1e4c0!important;opacity:1}
 html[data-icons="brass"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):is(:hover,:focus-visible){filter:brightness(1.12)}
 html[data-icons="brass"] .repo-block .repo-block-tools .repo-drag{font-size:15px!important;line-height:1;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.55)}
 html[data-icons="brass"] .repo-block .repo-block-tools .repo-toggle::before{background-color:currentColor!important;width:13px!important;height:13px!important;filter:drop-shadow(0 1px .6px rgba(0,0,0,.55))}
 html[data-app-theme="cpco"][data-icons="brass"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){color:#ffd23f!important}
 html[data-icons="brass"] :is(.repo-block-icon,.repo-card-icon){filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
-html[data-icons="steel"] .repo-svg[data-i]{background-image:url("icons/skeuo/field/vierge.webp?v=20260930zr")!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * 0.24);color:var(--ico-glyph,#e9ecdf)!important;overflow:visible}
+html[data-icons="avio"] .repo-svg[data-i]{background-image:url("icons/skeuo/flightlog/vierge.webp?v=20260930zt")!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * 0.26);color:var(--ico-glyph,#f4ecd8)!important;overflow:visible}
+html[data-app-theme="cpco"][data-icons="avio"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg),html[data-icons="avio"] .repo-sidenav-cpco .repo-svg[data-i]{background-image:url("icons/skeuo/flightlog/vierge.webp?v=20260930zt")!important;color:var(--ico-glyph-centre,#ffd23f)!important}
+html[data-icons="avio"] .repo-svg[data-i]>*{display:inline;filter:var(--ico-glyph-shadow,drop-shadow(.5px 1px .6px rgba(0,0,0,.7)))}
+html[data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){background:url("icons/skeuo/flightlog/vierge.webp?v=20260930zt") center/contain no-repeat!important;width:28px!important;height:28px!important;color:#f4ecd8!important;opacity:1}
+html[data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):is(:hover,:focus-visible){filter:brightness(1.12)}
+html[data-icons="avio"] .repo-block .repo-block-tools .repo-drag{font-size:15px!important;line-height:1;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.55)}
+html[data-icons="avio"] .repo-block .repo-block-tools .repo-toggle::before{background-color:currentColor!important;width:13px!important;height:13px!important;filter:drop-shadow(0 1px .6px rgba(0,0,0,.55))}
+html[data-app-theme="cpco"][data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){color:#ffd23f!important}
+html[data-icons="avio"] :is(.repo-block-icon,.repo-card-icon){filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+html[data-icons="steel"] .repo-svg[data-i]{background-image:url("icons/skeuo/field/vierge.webp?v=20260930zt")!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * 0.24);color:var(--ico-glyph,#e9ecdf)!important;overflow:visible}
 html[data-app-theme="cpco"][data-icons="steel"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg),html[data-icons="steel"] .repo-sidenav-cpco .repo-svg[data-i]{background-image:url("icons/skeuo/field/vierge.rouge.webp")!important;color:var(--ico-glyph-centre,#ffd23f)!important}
 html[data-icons="steel"] .repo-svg[data-i]>*{display:inline;filter:var(--ico-glyph-shadow,drop-shadow(.5px 1px .6px rgba(0,0,0,.75)))}
-html[data-icons="steel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){background:url("icons/skeuo/field/vierge.webp?v=20260930zr") center/contain no-repeat!important;width:28px!important;height:28px!important;color:#e9ecdf!important;opacity:1}
+html[data-icons="steel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){background:url("icons/skeuo/field/vierge.webp?v=20260930zt") center/contain no-repeat!important;width:28px!important;height:28px!important;color:#e9ecdf!important;opacity:1}
 html[data-icons="steel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):is(:hover,:focus-visible){filter:brightness(1.12)}
 html[data-icons="steel"] .repo-block .repo-block-tools .repo-drag{font-size:15px!important;line-height:1;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.55)}
 html[data-icons="steel"] .repo-block .repo-block-tools .repo-toggle::before{background-color:currentColor!important;width:13px!important;height:13px!important;filter:drop-shadow(0 1px .6px rgba(0,0,0,.55))}
@@ -144,13 +153,4 @@ html[data-icons="gel"] .repo-block .repo-block-tools .repo-drag{font-size:15px!i
 html[data-icons="gel"] .repo-block .repo-block-tools .repo-toggle::before{background-color:currentColor!important;width:13px!important;height:13px!important;filter:drop-shadow(0 1px .6px rgba(0,0,0,.55))}
 html[data-app-theme="cpco"][data-icons="gel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){color:#ffd23f!important}
 html[data-icons="gel"] :is(.repo-block-icon,.repo-card-icon){filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
-html[data-icons="avio"] .repo-svg[data-i]{background-image:url("icons/skeuo/flightlog/vierge.webp?v=20260930zr")!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * 0.26);color:var(--ico-glyph,#f4ecd8)!important;overflow:visible}
-html[data-app-theme="cpco"][data-icons="avio"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg),html[data-icons="avio"] .repo-sidenav-cpco .repo-svg[data-i]{background-image:url("icons/skeuo/flightlog/vierge.webp?v=20260930zr")!important;color:var(--ico-glyph-centre,#ffd23f)!important}
-html[data-icons="avio"] .repo-svg[data-i]>*{display:inline;filter:var(--ico-glyph-shadow,drop-shadow(.5px 1px .6px rgba(0,0,0,.7)))}
-html[data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){background:url("icons/skeuo/flightlog/vierge.webp?v=20260930zr") center/contain no-repeat!important;width:28px!important;height:28px!important;color:#f4ecd8!important;opacity:1}
-html[data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):is(:hover,:focus-visible){filter:brightness(1.12)}
-html[data-icons="avio"] .repo-block .repo-block-tools .repo-drag{font-size:15px!important;line-height:1;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.55)}
-html[data-icons="avio"] .repo-block .repo-block-tools .repo-toggle::before{background-color:currentColor!important;width:13px!important;height:13px!important;filter:drop-shadow(0 1px .6px rgba(0,0,0,.55))}
-html[data-app-theme="cpco"][data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){color:#ffd23f!important}
-html[data-icons="avio"] :is(.repo-block-icon,.repo-card-icon){filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
 /* ==== fin des jeux skeuomorphes ==== */

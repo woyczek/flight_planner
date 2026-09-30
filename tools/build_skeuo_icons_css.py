@@ -19,7 +19,23 @@ Relancer après tout ajout ou retrait d'images : python tools/build_skeuo_icons_
 import json, os, re
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SETS = {'brass': 'cabinet', 'steel': 'field', 'gel': 'aqua', 'avio': 'flightlog'}
+
+
+def skeuo_sets():
+    """Jeux d'icônes à matières → dossier d'images, lus dans le registre des designs (repository_tree, designs.list) :
+    chaque design marqué skeuo:true fournit son jeu icons:"…", dont les images sont dans shared/icons/skeuo/<id du design>."""
+    with open(os.path.join(ROOT, 'repository_tree'), encoding='utf-8') as f:
+        tree = f.read()
+    sets = {}
+    for design, body in re.findall(r'^\s*(\w+):\{([^\n]*)\},?\s*$', tree, re.M):
+        icons = re.search(r'icons:"(\w+)"', body)
+        if 'skeuo:true' in body and icons:
+            sets[icons.group(1)] = design
+    assert sets, 'aucun design à matières dans repository_tree (designs.list, skeuo:true)'
+    return sets
+
+
+SETS = skeuo_sets()   # {'brass': 'cabinet', 'steel': 'field', 'gel': 'aqua', 'avio': 'flightlog'}
 ALIASES = {'brass': {'save': 'bookmark', 'file': 'file'}, 'steel': {'file': 'file-text'}, 'gel': {'file': 'file-text'}, 'avio': {'save': 'bookmark', 'file': 'file'}}
 # jeux composés : couleur du glyphe (normal, Centre), ombre (vers le bas : éclairage par le haut), marge autour du glyphe
 # (fraction de la taille de l'icône) ; tint : couleur du fond gris (mode Aqua), core : rayon teinté (% du rayon),

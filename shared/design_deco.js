@@ -26,8 +26,6 @@
   const fullDecor = () => html.dataset.decor === 'full';
 
   // ------------------------------------------------------------------ libellés (voyant et radar de Durci)
-  const L = ['fr', 'en', 'de', 'es'];
-  const li = () => Math.max(0, L.indexOf(nav.getLanguage?.() || 'fr'));
   const T = {
     saved: ['Données sauvegardées', 'Data saved', 'Daten gesichert', 'Datos guardados'],
     dirty: ['Modifications à sauvegarder', 'Changes to save', 'Änderungen zu sichern', 'Cambios por guardar'],
@@ -35,7 +33,7 @@
     saveNow: ['Sauvegarder maintenant dans le dossier de sauvegarde', 'Save now to the backup folder',
       'Jetzt im Sicherungsordner sichern', 'Guardar ahora en la carpeta de copia']
   };
-  const tr = k => T[k][li()] || T[k][0];
+  const tr = k => window.RepositoryKit.t(T[k]);   // shared/kit.js
 
   // ------------------------------------------------------------------ décor de page, par design
   // foot     : frise du pied de page (HTML) ;
