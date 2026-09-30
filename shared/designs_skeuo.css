@@ -29,6 +29,7 @@
 
 /* ================================================================================================ CABINET */
 html[data-design-base="cabinet"] {
+  --sk-label-family: "Palatino Linotype", Georgia, serif;
   --sk-notice-outline: 1px solid color-mix(in srgb, var(--cab-rule) 55%, transparent);
   --sk-notice-outline-offset: -5px;
   --sk-title-family: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
@@ -354,6 +355,13 @@ html[data-skeuo="frame"] .repo-block {
 html[data-design="field"] .repo-has-sheet {
   --muted: #4a4634
 }
+/* textes courants des blocs : encre du design ; libellés et intertitres : police du design (facultative) */
+html[data-skeuo="frame"] .repo-block :is(p, li, td, summary) {
+  color: var(--sk-ink)
+}
+html[data-skeuo="frame"] .repo-block :is(label, legend, th, h3, h4) {
+  font-family: var(--sk-label-family, inherit)
+}
 html[data-skeuo="frame"] .repo-block :is(.small, .note, .muted, .hint) {
   color: var(--sk-ink-2) !important
 }
@@ -405,12 +413,6 @@ html[data-skeuo="frame"] .repo-footer {
 }
 html[data-skeuo="frame"] .repo-footer a {
   color: var(--sk-footer-link) !important
-}
-html[data-design-base="cabinet"] .repo-block :is(label, legend, th, h3, h4) {
-  font-family: "Palatino Linotype", Georgia, serif
-}
-html[data-design-base="cabinet"] .repo-block :is(p, li, td, .small, .note, .muted, .hint, summary) {
-  color: var(--cab-ink)
 }
 html[data-design-base="cabinet"] .repo-block textarea {
   background: repeating-linear-gradient(transparent 0 23px, rgba(29, 53, 87, .1) 23px 24px), var(--cab-field) !important
@@ -645,7 +647,8 @@ html[data-design="field"] .repo-dropzone:hover {
   border-color: var(--fd-led) !important;
   border-style: solid !important
 }
-html[data-design="field"] .repo-block :is(p, li, td, summary, strong, b, em, dt, dd) {
+/* Durci éclaire aussi gras, italique et définitions (blocs sombres) */
+html[data-design="field"] .repo-block :is(strong, b, em, dt, dd) {
   color: var(--fd-text)
 }
 html[data-design="field"] .repo-block :is(table, thead, tbody, tr, th, td) {

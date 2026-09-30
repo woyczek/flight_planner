@@ -22,6 +22,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   (`--sk-btn-family`, `--sk-lbtn-family`) par jetons ; tonalité des surfaces `html[data-surface]` (« dark » pour Durci,
   dont les blocs sont sombres, et pour tout ton sombre ; déclarée dans le registre des designs : `surface:"dark"`) :
   encadrés d'état écrits pour elle au lieu d'une liste de designs. Rendu identique (banc).
+- **Toolkit — phase 2** : textes courants des blocs (encre du design) et police des libellés par jetons, règles jumelles
+  de Cabinet et Durci retirées (dont couleurs mortes des petits textes de Cabinet). Rendu identique (banc).
 - **Toolkit — phase 2** : ombre de la barre latérale, ombre et liseré intérieur des bandeaux, encre des sous-cartes par
   jetons (valeurs relevées sur le rendu actuel : aucun écart) ; banc de non-régression étendu (Planning ODV, registre
   des missions, Paramètres ; bandeaux, feuille de registre, commandes des tableaux).
