@@ -44,12 +44,12 @@ Pages HTML à ouvrir via le petit serveur d'écriture : `python tools/save_textu
 | `textures_from_photos.html` | Textures photographiques d'après des matières CC0 d'ambientCG (JPG `*_color` / `*_normal` du dossier `--src`). |
 | `icons_from_sheets.html` | Découpe des icônes et décors dans les planches de maquette (Cabinet, Durci, Aqua, Carnet de vol). |
 | `icons_skeuo_generator.html` | Fabrique, dans le style des planches, les icônes du registre qui n'y figurent pas. |
-| `cut_register_sheet.py` | Découpe la feuille de registre de Cabinet (dossier « Aéronautique navale ») en morceaux `shared/deco/cabinet/sheet-*.webp` : coins aux bords intérieurs fondus, tranches raccordables, en-tête en deux parties, papier de fond. Planche source non versionnée (voir l'en-tête du script) ; ImageMagick 7. |
+| `cut_register_sheet.py` | Découpe une feuille de registre (`python tools/cut_register_sheet.py cabinet\|flightlog\|field`\|field`) en morceaux `shared/deco/<design>/sheet-*.webp` : coins aux bords intérieurs fondus, tranches raccordables, pièces d'en-tête facultatives, papier de fond ; affiche les jetons de géométrie `--sh-*` à reporter dans `designs_skeuo.css`. Planches sources non versionnées (configurations en tête du script) ; accessoire du bord gauche (ficelle, crayon) livré à part ; ImageMagick 7. |
 | `gauges_from_sheets.html` | Découpe des boîtiers de cadrans (laiton → Cabinet, métal sombre → Carnet de vol, plaque sombre → Durci, chrome → Aqua). |
 
 Après une découpe ou une retouche d'icônes : `python tools/build_skeuo_icons_css.py` puis `python tools/bump_versions.py`.
 **Jeux composés (fond + glyphe SVG)** : déposer dans le dossier du jeu (`shared/icons/skeuo/<jeu>/`, `<jeu>` = `aqua`,
-`cabinet`, `field`, `flightlog`) le fond vide `vierge.webp` et celui du Centre `vierge.rouge.webp` (cuivre, rouge ; à défaut
+`cabinet`, `cut_register_sheet.py cabinet\|flightlog\|field`, `flightlog`) le fond vide `vierge.webp` et celui du Centre `vierge.rouge.webp` (cuivre, rouge ; à défaut
 `vierge.gris.webp`), puis relancer les deux
 commandes : le jeu passe au fond commun avec le glyphe du registre par-dessus (les images d'icônes du jeu ne servent
 plus et peuvent être retirées ; relancer après). Fond carré (256 × 256 conseillé), transparent autour, sans glyphe ;

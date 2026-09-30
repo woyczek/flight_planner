@@ -36,6 +36,22 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Appareil de page** (Cabinet) : entre les blocs 3 et 4 (réglage `deviceAt`), plus entre les deux premiers.
 - **Décors** : `design_deco.js` réorganisé et documenté (familles de décors, formats des tableaux de réglage) ; plus
   d'objet posé sur une feuille de registre.
+- **Feuille de registre** : géométrie par design (jetons `--sh-*` : coins, bandes, papier, marges, en-tête, accessoire du
+  bord gauche) ; `tools/cut_register_sheet.py` générique (une configuration par design, jetons affichés). **Durci** :
+  carnet de terrain dans sa pochette olive (coins entiers, bord droit redressé, intérieur réglé effacé), crayon dans son
+  étui élastique hors de la fermeture éclair (marge `--sh-gut`), encre foncée sur le papier ; tableau resserré ;
+  Carnet de vol reprend le dossier de Cabinet (en attendant son en-tête).
+- **Durci** : appareil de page = câble et poste radio de face (entre les blocs 3 et 4) ; crayon parmi les objets (le câble n'y
+  est plus) ; génération de cartes : carnet fermé tant qu'aucune carte n'est affichée, carnet ouvert sous chaque carte.
+  Plus de défilement horizontal de 10 px (poignées latérales débordant de la marge).
+- **Carnet de vol** : sa propre feuille de registre (carnet de vol toilé, en-tête imprimé « République française —
+  Carnet de vol », cachet « Autorisation de transit » à droite, ficelle sur le dos) ; carte de navigation (objet)
+  reconvertie (PNG de 2,9 Mo → WebP de 90 Ko).
+- **Studio cartographique** (Cabinet, Carnet de vol, Durci) : carnet des aperçus commun aux designs à cadre (jetons
+  `--nb-*`) ; carnet de cuir bleu pour Cabinet et Carnet de vol ; carnet fermé à la hauteur du carnet ouvert, à la
+  place du premier aperçu, calé à droite (il s'ouvre vers la gauche) ; un clic sur le carnet actualise les aperçus. Aperçu agrandi : un clic le ferme.
+- **Barres d'action** (designs à matières) : au-dessus des objets posés entre les blocs.
+- Proposition de phase 2 du refactoring (supprimer les exceptions ; assets à fournir) : `docs/REFACTORING_TOOLKIT.md`.
 
 ## [4.3.0] — 2026-09-30
 

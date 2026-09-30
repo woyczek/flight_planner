@@ -64,6 +64,50 @@ pages témoins, quatre designs, deux tons) — **aucun écart** après chaque é
 - **Reste** (volontairement design par design, peu de recouvrement) : sélecteurs segmentés, pastilles de code ;
   palettes `:root` des 6 pages qui en ont une (chantier C).
 
+## Phase 2 — supprimer les exceptions (pistes, 30 septembre 2026)
+
+Principe : un design à matières = des jetons et des images aux noms convenus ; plus de règle ni de réglage JS qui
+nomme un design, sauf les matières elles-mêmes. État : règles visant un design précis dans `designs_skeuo.css` :
+Durci 77, Aqua 43, Carnet de vol 30, Cabinet 9 (+ 54 par la base Cabinet) ; `!important` 320.
+
+### Code
+
+1. **Jetons manquants** (Durci surtout, puis Aqua, Carnet de vol) : couleurs de texte des blocs et des cartes, liens,
+   anneau de focus, fonds de tableau, pastilles de code, sélecteurs segmentés, états warn / ok / err, axe des graphiques ;
+   police condensée de Durci répétée dans 8 règles → `--sk-font-display`. Objectif : Durci ≤ 15 règles propres.
+2. **Tonalité de surface** : Durci est « clair » par sa page mais ses blocs sont sombres ; d'où des exceptions (voile des
+   panneaux, encre de la feuille, panneaux assombris). Déclarer la tonalité des surfaces de bloc par design et par ton
+   (`surface:"dark"` dans le registre → `html[data-surface]`) et écrire ces règles une fois contre elle.
+3. **Couches CSS** (`@layer base, page, skin`) : le socle, les styles des pages et les designs à matières dans trois
+   couches ordonnées ; les designs l'emportent sans `!important` (320 → quelques-uns). Chantier le plus rentable, mais
+   il touche toutes les pages (styles de page à placer dans `@layer page`) : à faire avec le banc de non-régression.
+4. **Feuille de registre** : valeurs par défaut des jetons `--sh-*` (en-tête, cachet, accessoire, marge : absents) sur la
+   règle commune ; un design ne déclare que ce qu'il a. `cut_register_sheet.py` écrit lui-même le bloc de jetons
+   (fichier `shared/deco/<design>/sheet.css` importé, ou section balisée réécrite) au lieu de l'afficher.
+5. **Carnet des aperçus de cartes** : la règle est dans la page Studio ; en faire un composant commun
+   (`.repo-notebook`, jetons `--nb-*`) réutilisable par d'autres galeries (Reporting, Planning ODV).
+6. **Décor de page déclaratif** (`design_deco.js`) : la frise de Durci (radar, plaque, voyant) est du HTML propre au
+   design ; le voyant de sauvegarde est une vraie fonction → composant commun stylé par chaque design ; frises décrites
+   par une liste d'éléments (`strip`, `radar`, `plate`, `status`). Poignées latérales de Durci (`body::before/after`,
+   `overflow-x:clip`) → objets de marge ordinaires (`SETS.sides`) ou supprimées.
+7. **Panneaux** : `PANELS.field.dir:''`, `only`, `clair.alias` (7 thèmes de Cabinet clair renvoyés vers 3 panneaux)
+   disparaissent si chaque design a les 9 thèmes × 2 orientations dans `shared/deco/<design>/panels/` (voir assets).
+8. **Contrôle des images** (`tools/check_assets.py`, appelé par `bump_versions.py`) : format réel = extension
+   (`chart.webp` était un PNG de 2,9 Mo), poids et dimensions maximales par famille, transparence attendue.
+9. **Carnet de vol hérite de Cabinet** (`base:"cabinet"`) : il a maintenant sa feuille, ses carnets et ses fonds ;
+   revoir ce qui passe encore par la base (54 règles) et ne garder que le commun réel (cadre, plaques, vis).
+
+### Assets à fournir ou à refaire
+
+| Design | Manque | Effet |
+| --- | --- | --- |
+| Aqua | feuille de registre, carnet ouvert / fermé, appareil de page, panneaux par thème, objets | Aqua rejoint les familles communes (plus de BG spécifique) |
+| Carnet de vol | panneaux par thème (9 thèmes, paysage + portrait) ; appareil de page (2 objets) | fin des fonds `BG` et des plans (blueprint) propres au design |
+| Cabinet (ton clair) | panneaux ivoire : aérodrome, opérations, familles, récompenses, équipement, radio, heure ; « instruments » en portrait | fin des alias |
+| Durci | panneaux « awards » et « families » en paysage | fin de `only` |
+| Tous | planche de feuille **sans tableau imprimé** (papier vierge), en-tête et cachet en pièces transparentes, bords droits (sans perspective) | découpe sans effacement ni redressement (`erase`, `shear` supprimés) |
+| Durci | frise de pied de page en une image (comme Cabinet et Carnet de vol) | fin du HTML de frise propre à Durci |
+
 ## Utiliser la boîte à outils (D)
 
 ```js

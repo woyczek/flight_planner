@@ -6,7 +6,7 @@
 // Deux familles :
 //  · fonds des blocs (décor complet ou sobre selon le cas) :
 //      - BG      : fond illustré d'un bloc marqué data-deco-bg (Carnet de vol, Aqua) ;
-//      - SHEETS  : feuille de registre en fond des blocs de tableau des registres (Cabinet, ton clair) ;
+//      - SHEETS  : feuille de registre en fond des blocs de tableau des registres (Cabinet, Carnet de vol, Durci ; ton clair) ;
 //      - PANELS  : panneau choisi par thème pour tous les autres blocs (Cabinet, Durci ; décor complet) ;
 //      - PROPS   : objet posé dans un bloc, coin bas droit (Cabinet ; décor complet) ;
 //  · décor de page (SETS, décor complet seulement) : frise de pied de page, objets entre les blocs (hauteur nulle : la
@@ -69,7 +69,8 @@
       sides: [['gauge-speed', 120], ['chart', 230], ['gauge-attitude', 120], ['clip', 150], ['gauge-alt', 120]]
     },
     // Durci : plaque DEFA, écran radar et voyant de sauvegarde en pied de page ; plaques, pochoirs et objets du pupitre
-    // (grille d'aération, lampe grillagée, plaque vierge, blindage riveté, interrupteur à capot, câble, cadran)
+    // (grille d'aération, lampe grillagée, plaque vierge, blindage riveté, interrupteur à capot, crayon, cadran) ; appareil
+    // de page : câble et poste radio
     field: {
       foot: img => `
         <div class="repo-deco-plate-img"><img src="${img('plate-defa')}" alt=""></div>
@@ -86,13 +87,15 @@
           <span class="repo-deco-leds"><i class="led-save"></i><i class="led-on"></i><i></i></span>
           <span class="repo-deco-state"></span>
         </button>`,
+      device: [['cable', 110], ['radio', 215]],                // câble posé à côté du poste radio (de face)
+      deviceAt: 3,
       between: [
-        ['plate-attention', 210], ['louvre', 150], ['handle-h', 120], ['cable', 170],
+        ['plate-attention', 210], ['louvre', 150], ['handle-h', 120], ['pencil', 200, { x: -150, y: -26, rot: -12 }],
         ['plate-wings', 170], ['plate-blank', 180], ['plate-defa', 200], ['armor', 140]
       ],
       sides: [
         ['stencil-mission', 150], ['lamp', 100], ['dial', 110], ['stencil-defa', 130], ['toggle', 80],
-        ['cable', 170], ['stencil-ops', 160], ['armor', 140], ['louvre', 130]
+        ['pencil', 150], ['stencil-ops', 160], ['armor', 140], ['louvre', 130]
       ]
     }
   };
@@ -164,7 +167,9 @@
   // Blocs de tableau des registres et journaux (motif sur le titre, l'icône ou l'identifiant) ; dessin et mise en page :
   // designs_skeuo.css (.repo-deco-sheet ; morceaux découpés par tools/cut_register_sheet.py). Ton clair seulement
   // (papier clair sous un texte foncé).
-  const SHEETS = { cabinet: /registre|registry|ledger|journal|missions?\s*\(|choisir une mission|choose a mission/ };
+  // (même logique pour tous les designs à feuille ; morceaux par design : jetons --sheet-* de designs_skeuo.css)
+  const SHEET_BLOCKS = /registre|registry|ledger|journal|missions?\s*\(|choisir une mission|choose a mission/;
+  const SHEETS = { cabinet: SHEET_BLOCKS, flightlog: SHEET_BLOCKS, field: SHEET_BLOCKS };
 
   /** Texte d'identification d'un bloc : titre, icône, identifiant (en minuscules). */
   const blockText = b => [b.querySelector('h2,h3')?.textContent, b.dataset.icon, b.dataset.blockId].join(' ').toLowerCase();
@@ -180,8 +185,8 @@
       const el = document.createElement('div');
       el.className = 'repo-deco-sheet';
       el.setAttribute('aria-hidden', 'true');
-      // papier (dans le cadre), tranches répétées (arrêtées aux coins), puis coins, ficelle et en-tête
-      el.innerHTML = '<i class="sh-paper"></i><i class="sh-top"></i><i class="sh-bot"></i><i class="sh-left"></i><i class="sh-right"></i><i class="sh-frame"></i>';
+      // papier (dans le cadre), tranches répétées (arrêtées aux coins), coins et en-tête, puis accessoire du bord gauche
+      el.innerHTML = '<i class="sh-paper"></i><i class="sh-top"></i><i class="sh-bot"></i><i class="sh-left"></i><i class="sh-right"></i><i class="sh-frame"></i><i class="sh-acc"></i>';
       b.classList.add('repo-has-sheet', 'repo-has-bg');
       b.prepend(el);
     });
