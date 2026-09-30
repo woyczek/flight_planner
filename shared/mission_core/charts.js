@@ -180,9 +180,10 @@
   /** Couleurs accordées au design (repository_nav.js : familles des designs à matières). */
   const tint = c => window.RepositoryNav?.chartColor?.(c) ?? c;
   /** Designs à matières : barres et anneaux en relief (reflet cylindrique, ombrage) plutôt qu'en aplats. */
-  const matter = () => document.documentElement.dataset.chartStyle === 'relief';   // style choisi ou selon le design
-  const SHEEN = '<defs><linearGradient id="mcgSheen" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".22"/><stop offset=".18" stop-color="#fff" stop-opacity=".32"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient>'
-    + '<linearGradient id="mcgRing" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".3"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></linearGradient></defs>';
+  const matter = () => document.documentElement.dataset.chartStyle === 'relief'; // style choisi ou selon le design
+  const SHEEN = '<defs><linearGradient id="mcgSheen" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".22"/><stop offset=".18" stop-color="#fff" stop-opacity=".32"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient>' +
+    '<linearGradient id="mcgRing" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".3"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></linearGradient></defs>';
+
   function stackedBars({
     buckets: list,
     series: series0,
@@ -192,7 +193,10 @@
     empty = '—'
   }) {
     if (!list.length) return `<p class="mcg-empty">${esc(empty)}</p>`;
-    const series = series0.map(s => ({ ...s, color: tint(s.color) }));
+    const series = series0.map(s => ({
+      ...s,
+      color: tint(s.color)
+    }));
     const W = 1000,
       H = height,
       m = {
@@ -244,7 +248,10 @@
     center = '',
     empty = '—'
   } = {}) {
-    items = items.filter(i => i.value > 0).map(i => ({ ...i, color: tint(i.color) }));
+    items = items.filter(i => i.value > 0).map(i => ({
+      ...i,
+      color: tint(i.color)
+    }));
     const total = items.reduce((a, i) => a + i.value, 0);
     if (!total) return `<p class="mcg-empty">${esc(empty)}</p>`;
     const R = 80,
@@ -274,7 +281,10 @@
     empty = '—',
     limit = 10
   } = {}) {
-    items = items.filter(i => i.value > 0).map(i => ({ ...i, color: tint(i.color) })).sort((a, b) => b.value - a.value);
+    items = items.filter(i => i.value > 0).map(i => ({
+      ...i,
+      color: tint(i.color)
+    })).sort((a, b) => b.value - a.value);
     if (!items.length) return `<p class="mcg-empty">${esc(empty)}</p>`;
     const shown = items.slice(0, limit),
       max = Math.max(...shown.map(i => i.value)),
@@ -321,7 +331,8 @@
       try {
         svg.setPointerCapture(e.pointerId);
       } catch {
-        /* capture indisponible */ }
+        /* capture indisponible */
+      }
       e.preventDefault();
     });
     svg.addEventListener('pointermove', e => {

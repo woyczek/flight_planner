@@ -281,7 +281,7 @@ La suppression s'applique Ã  la copie locale du registre (navigateur) ; pensez Ã
   window.addEventListener('load', () => {
     if (!window.RepositoryContentI18n) return;
     const script = document.createElement('script');
-    script.src = new URL('hems_i18n.js?v=20260923d', moduleUrl).href;
+    script.src = new URL('hems_i18n.js?v=ed77151f', moduleUrl).href;
     document.head.append(script);
   });
 })();

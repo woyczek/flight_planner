@@ -51,11 +51,12 @@
     LE: '#6366f1',
     ISR: '#94a3b8',
     COMMAND: '#0ea5e9',
+    COMBAT: '#b45309',
     SOF: '#a8a29e',
     SPECIAL: '#ec4899'
   };
   /** Couleur d'une famille (graphiques, puces). */
-  const tint = c => window.RepositoryNav?.chartColor?.(c) ?? c;   // couleurs accordées au design (matières)
+  const tint = c => window.RepositoryNav?.chartColor?.(c) ?? c; // couleurs accordées au design (matières)
   const colorOf = id => tint(COLORS[id] || '#67b6ff');
   const OUTCOME_COLORS = {
     SUCCESS: '#22c55e',
@@ -230,7 +231,8 @@
     try {
       localStorage.setItem(PREFS, JSON.stringify(p));
     } catch {
-      /* stockage indisponible */ }
+      /* stockage indisponible */
+    }
   };
 
   /** Reporting général (toutes familles) : période, puces de familles, cartes, graphiques d'activité, répartitions, tableau des missions (modifiable dans le tableau), source (registre ou journal DEFA), reprise des anciens registres. */
@@ -1084,7 +1086,7 @@
       onChange: () => render()
     });
     window.addEventListener('repository-language-change', () => setTimeout(render));
-    window.addEventListener('repository-design-change', () => setTimeout(render));   // palette, style des graphiques
+    window.addEventListener('repository-design-change', () => setTimeout(render)); // palette, style des graphiques
     window.addEventListener('local-store-restored', () => L2.load(true).then(render));
     const ready = L2.load().then(render).catch(error => {
       status.textContent = error.message;

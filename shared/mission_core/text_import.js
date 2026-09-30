@@ -249,7 +249,8 @@
           text: raw
         };
       } catch {
-        /* pas du JSON */ }
+        /* pas du JSON */
+      }
     }
     // Adresse exacte de la trace (session) du tracker IVAO : copiée par le favori, ou collée seule.
     const session = /https?:\/\/tracker\.ivao\.aero\/sessions\/\d+/.exec(raw)?.[0] || '';

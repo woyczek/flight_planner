@@ -8,8 +8,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>FIRE / GAAR — Compte rendu de mission - DEFA Virtual</title>
   <link rel="icon" href="../../../assets/favicon-gaar.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="../../../shared/repository_nav.css?v=20260930zzzn">
-  <script src="../../../repository_tree?v=20260930zzzn"></script>
+  <link rel="stylesheet" href="../../../shared/repository_nav.css?v=5569f9d7">
+  <script src="../../../repository_tree?v=e86e8e5c"></script>
   <style>
     :root {
       --bg: #f5f6f8;
@@ -23,7 +23,9 @@
       --warn: #92400e;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
@@ -38,8 +40,14 @@
       padding: 18px 24px;
     }
 
-    header h1 { margin: 0; font-size: 22px; }
-    header p { margin: 4px 0 0; color: #f2e8e8; }
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+    header p {
+      margin: 4px 0 0;
+      color: #f2e8e8;
+    }
 
     main {
       max-width: 1220px;
@@ -50,12 +58,13 @@
       gap: 18px;
     }
 
-    section, .panel {
+    section,
+    .panel {
       background: var(--card);
       border: 1px solid var(--line);
       border-radius: 12px;
       padding: 16px;
-      box-shadow: 0 1px 2px rgba(0,0,0,.04);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, .04);
       margin-bottom: 14px;
     }
 
@@ -79,7 +88,9 @@
       margin-bottom: 4px;
     }
 
-    input, select, textarea {
+    input,
+    select,
+    textarea {
       width: 100%;
       padding: 9px;
       border: 1px solid var(--line);
@@ -88,8 +99,13 @@
       background: white;
     }
 
-    textarea { min-height: 80px; resize: vertical; }
-    .full { grid-column: 1 / -1; }
+    textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+    .full {
+      grid-column: 1 / -1;
+    }
 
     button {
       border: 0;
@@ -99,13 +115,32 @@
       cursor: pointer;
     }
 
-    .primary { background: var(--accent); color: white; }
-    .secondary { background: #e5e7eb; color: var(--ink); }
-    .danger { background: #7f1d1d; color: white; }
-    .ok { background: var(--ok); color: white; }
-    .warn { background: var(--warn); color: white; }
+    .primary {
+      background: var(--accent);
+      color: white;
+    }
+    .secondary {
+      background: #e5e7eb;
+      color: var(--ink);
+    }
+    .danger {
+      background: #7f1d1d;
+      color: white;
+    }
+    .ok {
+      background: var(--ok);
+      color: white;
+    }
+    .warn {
+      background: var(--warn);
+      color: white;
+    }
 
-    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
 
     .kpi {
       display: grid;
@@ -119,8 +154,14 @@
       border-radius: 10px;
     }
 
-    .kpi b { display: block; font-size: 18px; }
-    .small { font-size: 12px; color: var(--muted); }
+    .kpi b {
+      display: block;
+      font-size: 18px;
+    }
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+    }
 
     .note {
       background: #fffbeb;
@@ -137,15 +178,21 @@
       font-size: 13px;
     }
 
-    th, td {
+    th,
+    td {
       border: 1px solid var(--line);
       padding: 7px;
       text-align: left;
       vertical-align: top;
     }
 
-    th { background: #f9fafb; }
-    .events td:last-child { width: 54px; text-align: center; }
+    th {
+      background: #f9fafb;
+    }
+    .events td:last-child {
+      width: 54px;
+      text-align: center;
+    }
 
     .report {
       background: white;
@@ -155,8 +202,15 @@
       border: 1px solid var(--line);
     }
 
-    .report h2 { font-size: 20px; border: 0; margin: 0 0 8px; }
-    .report h3 { font-size: 15px; margin: 16px 0 6px; }
+    .report h2 {
+      font-size: 20px;
+      border: 0;
+      margin: 0 0 8px;
+    }
+    .report h3 {
+      font-size: 15px;
+      margin: 16px 0 6px;
+    }
 
     .report .meta {
       display: grid;
@@ -184,7 +238,9 @@
       letter-spacing: .05em;
     }
 
-    .hidden { display: none; }
+    .hidden {
+      display: none;
+    }
 
     footer {
       max-width: 1220px;
@@ -195,20 +251,47 @@
     }
 
     @media (max-width: 900px) {
-      main { grid-template-columns: 1fr; }
-      .grid { grid-template-columns: 1fr 1fr; }
+      main {
+        grid-template-columns: 1fr;
+      }
+      .grid {
+        grid-template-columns: 1fr 1fr;
+      }
     }
 
     @media print {
-      body { background: white; }
-      header, form, .controls, .panel:not(.printme), footer { display: none !important; }
-      main { display: block; max-width: none; margin: 0; padding: 0; }
-      .printme { border: 0; box-shadow: none; }
-      .report { border: 0; }
-      .no-print { display: none !important; }
-      @page { size: A4; margin: 12mm; }
+      body {
+        background: white;
+      }
+      header,
+      form,
+      .controls,
+      .panel:not(.printme),
+      footer {
+        display: none !important;
+      }
+      main {
+        display: block;
+        max-width: none;
+        margin: 0;
+        padding: 0;
+      }
+      .printme {
+        border: 0;
+        box-shadow: none;
+      }
+      .report {
+        border: 0;
+      }
+      .no-print {
+        display: none !important;
+      }
+      @page {
+        size: A4;
+        margin: 12mm;
+      }
     }
-  </style>
+</style>
 </head>
 <body>
   <header>
@@ -489,7 +572,7 @@
         '&': '&amp;',
         '<': '&lt;',
         '>': '&gt;'
-      }[char]));
+      } [char]));
     }
 
     function escapeAttr(value) {
@@ -725,7 +808,9 @@
     }
 
     function downloadFile(name, content, type) {
-      const blob = new Blob([content], { type });
+      const blob = new Blob([content], {
+        type
+      });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -826,7 +911,9 @@
       }
 
       try {
-        dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+        dirHandle = await window.showDirectoryPicker({
+          mode: 'readwrite'
+        });
         byId('storageMode').value = 'localfs';
         byId('storagePath').value = `Dossier local : ${dirHandle.name || '(sélectionné)'}`;
         byId('storageStatus').value = `Dossier local autorisé : ${dirHandle.name || 'sélectionné'}`;
@@ -850,13 +937,17 @@
       }
 
       const content = (existing || csvLine(ledgerHeader)) + csvLine(flattenRow());
-      const fileHandle = await dirHandle.getFileHandle(name, { create: true });
+      const fileHandle = await dirHandle.getFileHandle(name, {
+        create: true
+      });
       const writer = await fileHandle.createWritable();
       await writer.write(content);
       await writer.close();
 
       const safeName = `${getValue('date')}_${getValue('missionId') || 'mission'}_CR.json`.replace(/[\\/:*?"<>| ]+/g, '_');
-      const jsonHandle = await dirHandle.getFileHandle(safeName, { create: true });
+      const jsonHandle = await dirHandle.getFileHandle(safeName, {
+        create: true
+      });
       const jsonWriter = await jsonHandle.createWritable();
       await jsonWriter.write(JSON.stringify(collectData(), null, 2));
       await jsonWriter.close();
@@ -870,14 +961,21 @@
       const auth = 'Basic ' + btoa(byId('webdavUser').value + ':' + byId('webdavPass').value);
       let existing = '';
 
-      let response = await fetch(url, { headers: { Authorization: auth } });
+      let response = await fetch(url, {
+        headers: {
+          Authorization: auth
+        }
+      });
       if (response.ok) existing = await response.text();
       else if (response.status !== 404) throw new Error('Lecture WebDAV impossible: HTTP ' + response.status);
 
       const content = (existing || csvLine(ledgerHeader)) + csvLine(flattenRow());
       response = await fetch(url, {
         method: 'PUT',
-        headers: { Authorization: auth, 'Content-Type': 'text/csv;charset=utf-8' },
+        headers: {
+          Authorization: auth,
+          'Content-Type': 'text/csv;charset=utf-8'
+        },
         body: content
       });
 
@@ -907,7 +1005,10 @@
       byId('chooseDirBtn').addEventListener('click', chooseLocalDir);
       byId('saveConfigBtn').addEventListener('click', saveConfig);
       byId('loadConfigBtn').addEventListener('click', loadConfig);
-      byId('addEventBtn').addEventListener('click', () => { addEvent(); recalculateAndRender(); });
+      byId('addEventBtn').addEventListener('click', () => {
+        addEvent();
+        recalculateAndRender();
+      });
       byId('renderBtn').addEventListener('click', renderReport);
       byId('downloadCsvBtn').addEventListener('click', downloadCSV);
       byId('saveJsonBtn').addEventListener('click', saveJSONDownload);
@@ -934,18 +1035,20 @@
     }
 
     init();
-  </script>
-<script src="../../../shared/kit.js?v=20260930zzzn"></script>
-<script src="../../../shared/repository_nav.js?v=20260930zzzn"></script>
-<script src="../../../shared/mission_values.js?v=20260930zzzn"></script>
-<script src="../../../shared/mission_reporting_config.js?v=20260930zzzn"></script>
-<script src="../../../shared/data_files.js?v=20260930zzzn" data-file="references/aircraft_fleet.js"></script><script src="../../../shared/aircraft_directory.js?v=20260930zzzn"></script>
-<script src="../../../shared/mission_record_loader.js?v=20260930zzzn"></script>
-<script src="../../../shared/content_i18n.js?v=20260930zzzn"></script><script src="../../../shared/gaar_i18n.js?v=20260930zzzn"></script>
-<script src="../../../shared/app_framework.js?v=20260930zzzn"></script>
-<script src="../../../shared/mission_edit.js?v=20260930zzzn"></script><script src="../../../shared/network_tracker.js?v=20260930zzzn"></script>
-<script src="../../../shared/cr_extras.js?v=20260930zzzn"></script>
+</script>
+<script src="../../../shared/kit.js?v=9839b88b"></script>
+<script src="../../../shared/repository_nav.js?v=18fd986e"></script>
+<script src="../../../shared/mission_values.js?v=5589c008"></script>
+<script src="../../../shared/mission_reporting_config.js?v=6ee58795"></script>
+<script src="../../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../../shared/aircraft_directory.js?v=acd27fd6"></script>
+<script src="../../../shared/mission_record_loader.js?v=ba8a6166"></script>
+<script src="../../../shared/content_i18n.js?v=cf6396e2"></script><script src="../../../shared/gaar_i18n.js?v=db590155"></script>
+<script src="../../../shared/app_framework.js?v=f2fdd96f"></script>
+<script src="../../../shared/mission_edit.js?v=a5df72b4"></script><script src="../../../shared/network_tracker.js?v=1d498732"></script>
+<script src="../../../shared/cr_extras.js?v=e1283c08"></script>
 <!-- description de la famille en sous-titre de l’en-tête (shared/mission_core/vocab.js) -->
-<script src="../../../shared/mission_core/vocab.js?v=20260930zzzn"></script><script>MissionVocab.describeHeader("FIRE")</script>
+<script src="../../../shared/mission_core/vocab.js?v=90cadad7"></script><script>
+MissionVocab.describeHeader("FIRE")
+</script>
 </body>
 </html>

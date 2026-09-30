@@ -108,6 +108,69 @@ Durci 77, Aqua 43, Carnet de vol 30, Cabinet 9 (+ 54 par la base Cabinet) ; `!im
 | Tous | planche de feuille **sans tableau imprimé** (papier vierge), en-tête et cachet en pièces transparentes, bords droits (sans perspective) | découpe sans effacement ni redressement (`erase`, `shear` supprimés) |
 | Durci | frise de pied de page en une image (comme Cabinet et Carnet de vol) | fin du HTML de frise propre à Durci |
 
+Suivi des assets (cahier des charges, consignes de génération, intégration) : `docs/ASSETS_A_FOURNIR.md` (en cours).
+
+### Avancement de la phase 2
+
+- **Fait (30 septembre 2026)** :
+  - **4. Feuille de registre** — en-tête, cachet, accessoire, marge gauche et ordre de l'accessoire facultatifs
+    (absents par défaut dans les règles communes : Durci ne déclare plus de zéros) ; chaque design a un bloc « découpe »
+    balisé dans `designs_skeuo.css`, réécrit par `tools/cut_register_sheet.py <design> --write` (identique après
+    réécriture des trois designs), et un bloc « réglages » à la main.
+  - **5. Carnet des aperçus** — composant `.repo-notebooks` (galerie) / `.repo-notebook` (carte) de
+    `designs_skeuo.css`, jetons `--nb-*` ; le Studio ne garde que les classes et son action (clic = actualiser).
+  - **8. Contrôle des images** — `tools/check_assets.py` (format réel, poids > 400 ko, images absentes, orphelines),
+    lancé à la fin de `bump_versions.py` (rapport seul) ; état : 181 images, aucune erreur.
+  - Hors plan : appareil de page unifié (entre les blocs 3 et 4 pour tous, `DEVICE_AT`, déplaçable), tâches longues
+    communes (`AppFramework.task`), panneaux atténués uniformément.
+- **Fait (30 septembre 2026, suite)** :
+  - **1. Jetons manquants (première passe)** — règles jumelles Cabinet / Durci fusionnées en une règle des designs à
+    cadre (`html[data-skeuo="frame"]`) et des jetons : pastille d'étape (`--sk-step-*`), titres et sous-titres des
+    sous-cartes (`--sk-card-title-*`, `--sk-card-sub-ink`), zones de dépôt (`--sk-drop-ink`, `--sk-drop-state-ink`,
+    `--sk-pick-case` / `-spacing`), icône des bandeaux (`--sk-notice-icon`), anneau de focus (`--sk-focus`), pied de
+    page (`--sk-footer-link`, `--sk-footer-shadow`), chiffres alignés des champs, sélecteur segmenté (`--sk-segs-*`,
+    `--sk-seg-*` ; le Carnet de vol ne surcharge que ce qui diffère de sa base). Code mort retiré : couleurs du lien
+    « choisir » des zones de dépôt (recouvertes par la règle commune), première règle des poignées de Durci.
+    Règles visant un design : Durci 74 → 57, base Cabinet 52 → 37, Carnet de vol 29 → 27, Cabinet 9 → 8 ;
+    `!important` 327 → 308. Banc de non-régression : aucun écart (48 combinaisons).
+  - **1 (suite) et 2. Tonalité de surface** — pastilles de code, polices des boutons et des liens-boutons par jetons ;
+    `html[data-surface]` posé par `repository_nav.js` (`designs.list[id].surface`, sinon ton de la page ; suit tout
+    changement de ton ou de design) : encadrés d'état écrits pour « surface sombre ». Banc : aucun écart.
+  - **1 (suite) et 9** — segments d'Aqua (`--sk-seg-bg`, `--sk-segs-radius`) et entrée courante de la barre latérale
+    (`--sk-nav-on-*`, règle de base) ; titre de l'en-tête (`--sk-title-*`) ; plaque de titre du Carnet de vol par les
+    jetons `--sk-plate-*` au lieu de deux surcharges `!important` (la seconde recouvrait la première) ; règle morte de
+    Durci retirée (capitales des boutons d'outils, sans texte). Banc (référence fraîche) : seul écart attendu.
+  - **1 (suite), 6** — barre latérale, bandeaux, sous-cartes, textes courants et police des libellés, emblème, lien
+    « choisir », pied de page, graphiques du reporting, cadre de la page, vis des coins : règles jumelles remplacées
+    par une règle commune et des jetons, valeurs relevées sur le rendu actuel quand un seul design en avait (défaut
+    = rendu des autres). Frise du pied de page déclarative (`foot: ['strip']`, `['plate', 'radar', 'status']`).
+    Banc étendu à 9 pages (72 combinaisons) : aucun écart à chaque étape.
+    Règles visant un design : Durci 74 → 39, base Cabinet 52 → 19, Carnet de vol 29 → 20, Aqua 41 → 28, Cabinet 9 → 5 ;
+    `!important` 327 → 271.
+- **Boutons** (décidé le 30 septembre 2026) : convention commune — 1ᵉʳ bouton de l'en-tête principal, les suivants
+  secondaires, liens secondaires et « Ajouter des fichiers » secondaires ; ce qui reste propre à chaque design est sa
+  matière (bois, cuir, acier, verre, vis, plans, radar).
+- **Feuille de registre, suite** : règles communes aux trois designs à feuille par jetons `--sheet-ink`, `--sheet-ink-2`,
+  `--sheet-text`, `--sheet-label-ink`, `--sheet-card-bg`, `--sheet-pin` (carte posée = papier punaisé). Barres de
+  progression et notifications habillées par jetons (`--sk-prog-*`, `--sk-menu-*`), sans `!important`.
+
+### Phase 3 — couches CSS (en cours)
+
+- **Constat (essai sur 9 pages, banc « toutes »)** : dans une couche, un `!important` l'emporte sur celui d'une règle
+  hors couche (ordre inversé). Mettre les styles de page en couche sans retirer leurs `!important` les fait passer
+  devant les designs (660 écarts : cadre des pages, fonds des blocs des CR…). `repository_nav.css` en couche perd face
+  aux styles posés par les scripts (hors couche) : icônes d'outils et bouton Menu cassés. Essai retiré (remise de côté
+  `git stash` « couches CSS »).
+- **Ordre retenu** : (1) retirer les `!important` des styles de page, hors couche, page par page au banc ; (2) mettre
+  le socle en couche avec les styles posés par les scripts, et retirer les `!important` du socle ; (3) styles de page
+  en couche ; (4) retirer les `!important` des designs.
+- **Fait (1, première passe)** : banc par page (`?pages=…`, sélecteurs propres des pages relevés) et design
+  « standard » ; `tools/strip_page_important.py` (épargne `@media`, `display: none`, règles des designs, `garder`) ;
+  52 `!important` retirés (studio, générateur, planificateur de performances, planning ODV, Landing) : aucun écart.
+  Restent côté pages : `mission_core/core.css` (24), `maintenance.css` (2), Paramètres (3) — ils l'emportent sur le
+  socle (fonds et boutons des CR, boutons des tableaux en design standard) : ils partiront à l'étape (2).
+- **Suivant** : (2) socle en couche ; 7 au fil des assets livrés.
+
 ## Utiliser la boîte à outils (D)
 
 ```js

@@ -244,7 +244,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
   // (les organismes sont dans work.callsigns.data.operators et dans le tableau « Organismes » en cours d'édition — l'ancienne
   // lecture de work.callsigns.operators, inexistant, ne proposait que SAMU)
   const operatorNames = () => [...(work.callsigns?.operatorRows || []).map(r => r.name), ...Object.keys(work.callsigns?.data?.operators || {}),
-    ...(work.callsigns?.data?.table || []).map(r => r.operator), 'SAMU'].filter((v, i, a) => v && a.indexOf(v) === i).sort((a, b) => a.localeCompare(b, 'fr'));
+    ...(work.callsigns?.data?.table || []).map(r => r.operator), 'SAMU'
+  ].filter((v, i, a) => v && a.indexOf(v) === i).sort((a, b) => a.localeCompare(b, 'fr'));
   const FLEET_COMMENT = ['Flotte DEFA Virtual : base commune des appareils connus (CR HEMS / FIRE, Mission Report Core).',
     'Source : page « Flotte virtuelle » de flotte.defa-virtual.fr (python AircraftDB/update_fleet.py Flotte.html),',
     'complétée à la main ou par la page Paramétrage. Colonnes : opérateur, type OACI, variante,',
@@ -360,7 +361,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       });
       if (r.ok) overrides = await r.json();
     } catch {
-      /* fichier absent */ }
+      /* fichier absent */
+    }
     const original = work.aircraftDb.original;
     Object.entries(db).filter(([k]) => !k.startsWith('__')).forEach(([k, v]) => {
       if (JSON.stringify(original[k]) === JSON.stringify(v)) return;
@@ -913,7 +915,11 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       const set = DATASETS.find(d => d.id === current.id) || DATASETS[0];
       // rubrique Maintenance (maintenance_page.js) : ses blocs se masquent quand une base est affichée
       root.querySelector('.da-main').hidden = false;
-      window.dispatchEvent(new CustomEvent('data-admin-show', { detail: { id: set.id } }));
+      window.dispatchEvent(new CustomEvent('data-admin-show', {
+        detail: {
+          id: set.id
+        }
+      }));
       root.querySelectorAll('[data-set]').forEach(b => b.classList.toggle('active', b.dataset.set === set.id));
       root.querySelector('.da-main h2').textContent = set.title + (set.file ? ` — ${set.file}` : set.key ? ` — ${set.key}` : '');
       root.querySelector('.da-intro').textContent = set.intro || '';
@@ -1145,7 +1151,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
 
     // Planificateur carburant : altitude maximale sans oxygène d'un avion non pressurisé (fpOxygenAltFt:v1).
     function plannerSettings(body) {
-      const KEY = 'fpOxygenAltFt:v1', cur = +read(KEY) > 0 ? +read(KEY) : 10000;
+      const KEY = 'fpOxygenAltFt:v1',
+        cur = +read(KEY) > 0 ? +read(KEY) : 10000;
       body.innerHTML = `<div class="da-form"><label>${esc(T('Altitude maximale sans oxygène (ft)', 'Maximum altitude without oxygen (ft)'))}<input type="number" min="1000" max="30000" step="500" data-oxy value="${cur}"></label></div>
         <p class="small">${esc(T('Repères : 10 000 ft (usage courant, EASA NCO), 12 500 ft (FAA, équipage au-delà de 30 minutes), 14 000 ft (FAA, équipage en permanence).', 'Benchmarks: 10,000 ft (common practice, EASA NCO), 12,500 ft (FAA, crew beyond 30 minutes), 14,000 ft (FAA, crew at all times).'))}</p>`;
       const input = body.querySelector('[data-oxy]');
@@ -1154,40 +1161,84 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       actions([
         [T('Enregistrer', 'Save'), () => {
           const v = Math.round(+input.value);
-          if (!(v >= 1000 && v <= 30000)) { status(T('Valeur entre 1000 et 30 000 ft', 'Value between 1,000 and 30,000 ft')); return; }
+          if (!(v >= 1000 && v <= 30000)) {
+            status(T('Valeur entre 1000 et 30 000 ft', 'Value between 1,000 and 30,000 ft'));
+            return;
+          }
           write(KEY, v);
           dirty = false;
           status(T('Enregistré dans ce navigateur', 'Saved in this browser'));
         }, 'primary'],
-        [T('Valeur par défaut (10 000 ft)', 'Default value (10,000 ft)'), () => { localStorage.removeItem(KEY); input.value = 10000; dirty = false; status(T('Valeur par défaut rétablie', 'Default value restored')); }]
+        [T('Valeur par défaut (10 000 ft)', 'Default value (10,000 ft)'), () => {
+          localStorage.removeItem(KEY);
+          input.value = 10000;
+          dirty = false;
+          status(T('Valeur par défaut rétablie', 'Default value restored'));
+        }]
       ]);
     }
 
     // Centre (CPCO) : activation par mot de passe (RepositoryNav.cpco), puis réglages du Centre (calcul des routes).
     function cpcoSettings(body) {
       const access = window.RepositoryNav?.cpco;
-      if (!access) { body.textContent = T('Accès au Centre indisponible (menu commun non chargé).', 'Centre access unavailable (common menu not loaded).'); return; }
+      if (!access) {
+        body.textContent = T('Accès au Centre indisponible (menu commun non chargé).', 'Centre access unavailable (common menu not loaded).');
+        return;
+      }
       if (!access.enabled()) {
         body.innerHTML = `<div class="da-form"><label>${esc(T('Mot de passe du Centre', 'Centre password'))}<input type="password" autocomplete="off" data-cpco-pwd></label></div>`;
         const input = body.querySelector('[data-cpco-pwd]');
         const go = async () => {
-          if (await access.unlock(input.value)) { status(T('Centre activé dans ce navigateur', 'Centre enabled in this browser')); show(); }
-          else { input.value = ''; status(T('Mot de passe incorrect', 'Wrong password')); input.focus(); }
+          if (await access.unlock(input.value)) {
+            status(T('Centre activé dans ce navigateur', 'Centre enabled in this browser'));
+            show();
+          } else {
+            input.value = '';
+            status(T('Mot de passe incorrect', 'Wrong password'));
+            input.focus();
+          }
         };
-        input.onkeydown = e => { if (e.key === 'Enter') go(); };
+        input.onkeydown = e => {
+          if (e.key === 'Enter') go();
+        };
         status(T('Centre verrouillé', 'Centre locked'));
-        actions([[T('Activer le Centre', 'Enable the Centre'), go, 'primary']]);
+        actions([
+          [T('Activer le Centre', 'Enable the Centre'), go, 'primary']
+        ]);
         return;
       }
-      const R = window.MissionRouting, S = R?.settings?.() || {};
-      const FIELDS = [['minNm', T('Tronçon routé à partir de (NM)', 'Routed leg from (NM)')], ['ifrMinFt', T('Voies aériennes à partir de (ft)', 'Airways from (ft)')], ['lowMaxFt', T('Basse hauteur jusqu’à (ft)', 'Low level up to (ft)')], ['reachNm', T('Entrée / sortie des voies (NM)', 'Airway entry / exit (NM)')], ['reachRtbaNm', T('Entrée / sortie du RTBA (NM)', 'RTBA entry / exit (NM)')], ['detourPct', T('Détour admis, voies (%)', 'Allowed detour, airways (%)')], ['detourRtbaPct', T('Détour admis, RTBA (%)', 'Allowed detour, RTBA (%)')]];
+      const R = window.MissionRouting,
+        S = R?.settings?.() || {};
+      const FIELDS = [
+        ['minNm', T('Tronçon routé à partir de (NM)', 'Routed leg from (NM)')],
+        ['ifrMinFt', T('Voies aériennes à partir de (ft)', 'Airways from (ft)')],
+        ['lowMaxFt', T('Basse hauteur jusqu’à (ft)', 'Low level up to (ft)')],
+        ['reachNm', T('Entrée / sortie des voies (NM)', 'Airway entry / exit (NM)')],
+        ['reachRtbaNm', T('Entrée / sortie du RTBA (NM)', 'RTBA entry / exit (NM)')],
+        ['detourPct', T('Détour admis, voies (%)', 'Allowed detour, airways (%)')],
+        ['detourRtbaPct', T('Détour admis, RTBA (%)', 'Allowed detour, RTBA (%)')]
+      ];
       body.innerHTML = R ? `<h3>${esc(T('Calcul des routes de transit', 'Transit route calculation'))}</h3><div class="da-form">${FIELDS.map(([k, l]) => `<label>${esc(l)}<input type="number" min="0" step="any" data-rs="${k}" value="${esc(S[k] ?? '')}" placeholder="${esc(R.DEFAULTS[k])}"></label>`).join('')}</div>` : `<p class="small">${esc(T('Calcul des routes non chargé.', 'Route calculation not loaded.'))}</p>`;
       body.querySelectorAll('[data-rs]').forEach(i => i.oninput = changed);
       status(T('Centre activé dans ce navigateur', 'Centre enabled in this browser'));
       actions([
-        ...(R ? [[T('Enregistrer', 'Save'), () => { R.setSettings(Object.fromEntries([...body.querySelectorAll('[data-rs]')].map(i => [i.dataset.rs, i.value]))); dirty = false; status(T('Réglages enregistrés dans ce navigateur', 'Settings saved in this browser')); }, 'primary'],
-          [T('Valeurs par défaut', 'Default values'), () => { R.setSettings(Object.fromEntries(FIELDS.map(([k]) => [k, '']))); dirty = false; show(); }]] : []),
-        [T('Verrouiller le Centre', 'Lock the Centre'), () => { access.lock(); dirty = false; show(); }]
+        ...(R ? [
+          [T('Enregistrer', 'Save'), () => {
+            R.setSettings(Object.fromEntries([...body.querySelectorAll('[data-rs]')].map(i => [i.dataset.rs, i.value])));
+            dirty = false;
+            status(T('Réglages enregistrés dans ce navigateur', 'Settings saved in this browser'));
+          }, 'primary'],
+          [T('Valeurs par défaut', 'Default values'), () => {
+            R.setSettings(Object.fromEntries(FIELDS.map(([k]) => [k, ''])));
+            dirty = false;
+            show();
+          }]
+        ] : []),
+        [T('Verrouiller le Centre', 'Lock the Centre'), () => {
+          access.lock();
+          dirty = false;
+          show();
+        }]
       ]);
     }
 

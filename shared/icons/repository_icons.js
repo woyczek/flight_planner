@@ -70,18 +70,24 @@
   };
   // Emblèmes d'en-tête des designs à matières (designs.list[id].emblem, repository_nav.js) : dessins en couleurs
   // propres (laiton, acier), avec dégradés ; identifiants de dégradés préfixés pour coexister dans la page.
-  const SRC = document.currentScript?.src || location.href, VER = new URL(SRC).search;   // images : même version que ce script
+  const SRC = document.currentScript?.src || location.href,
+    VER = new URL(SRC).search; // images : même version que ce script
   const EMBLEMS = {
     // Carnet de vol : hélice ailée découpée dans la planche (shared/deco/flightlog/emblem.webp)
     propeller: () => `<img src="${new URL('../deco/flightlog/emblem.webp' + VER, SRC).href}" alt="">`,
     compass() {
       let ticks = '';
       for (let i = 0; i < 72; i++) {
-        const a = i * 5 * Math.PI / 180, r1 = i % 18 ? 25.5 : 23.5, f = n => n.toFixed(2);
+        const a = i * 5 * Math.PI / 180,
+          r1 = i % 18 ? 25.5 : 23.5,
+          f = n => n.toFixed(2);
         ticks += `<path d="M${f(32 + 27 * Math.sin(a))} ${f(32 - 27 * Math.cos(a))}L${f(32 + r1 * Math.sin(a))} ${f(32 - r1 * Math.cos(a))}" stroke-width="${i % 18 ? .6 : 1.3}"/>`;
       }
-      const pt = (a, l, w) => { const r = x => x * Math.PI / 180, P2 = (d, k) => `${(32 + k * Math.sin(r(d))).toFixed(2)} ${(32 - k * Math.cos(r(d))).toFixed(2)}`;
-        return `<path d="M32 32L${P2(a - 90, w)}L${P2(a, l)}z" fill="#1d3557"/><path d="M32 32L${P2(a + 90, w)}L${P2(a, l)}z" fill="url(#emB)" stroke="#6b4d15" stroke-width=".4"/>`; };
+      const pt = (a, l, w) => {
+        const r = x => x * Math.PI / 180,
+          P2 = (d, k) => `${(32 + k * Math.sin(r(d))).toFixed(2)} ${(32 - k * Math.cos(r(d))).toFixed(2)}`;
+        return `<path d="M32 32L${P2(a - 90, w)}L${P2(a, l)}z" fill="#1d3557"/><path d="M32 32L${P2(a + 90, w)}L${P2(a, l)}z" fill="url(#emB)" stroke="#6b4d15" stroke-width=".4"/>`;
+      };
       return `<svg viewBox="0 0 64 64"><defs><radialGradient id="emR" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#fff3c4"/><stop offset=".55" stop-color="#c9a24a"/><stop offset="1" stop-color="#6b4d15"/></radialGradient>
         <linearGradient id="emB" x2="0" y2="1"><stop offset="0" stop-color="#fff3c4"/><stop offset=".5" stop-color="#c9a24a"/><stop offset="1" stop-color="#6b4d15"/></linearGradient>
         <radialGradient id="emP" cx=".45" cy=".4" r=".7"><stop offset="0" stop-color="#fffaf0"/><stop offset="1" stop-color="#e3cf9f"/></radialGradient></defs>
@@ -98,22 +104,33 @@
         ${wing(1)}${wing(-1)}<circle cx="60" cy="22" r="11" fill="url(#emG)" stroke="#20241a" stroke-width="1.2"/><path d="M49 22h22M60 11v22M51.5 16h17M51.5 28h17" stroke="#20241a" fill="none"/><ellipse cx="60" cy="22" rx="5" ry="11" fill="none" stroke="#20241a"/></svg>`;
     }
   };
-  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;'
+  } [c]));
   window.RepositoryIcons = {
     /** SVG d'une icône (chaîne) ; décorative (aria-hidden) sauf si title est donné. Nom inconnu : chaîne vide. */
-    svg(name, { size, title = '' } = {}) {
+    svg(name, {
+      size,
+      title = ''
+    } = {}) {
       const body = P[name];
       if (!body) return '';
       const a11y = title ? `role="img" aria-label="${esc(title)}"` : 'aria-hidden="true" focusable="false"';
       // taille explicite : variable --rs (block_icons.css l'impose, même face à une règle « svg{…} » de la page) ;
       // sinon, taille du contexte (bloc, sous-carte, bouton…)
-      const px = size || 20, rs = size ? ` style="--rs:${size}px"` : '';
+      const px = size || 20,
+        rs = size ? ` style="--rs:${size}px"` : '';
       return `<svg class="repo-svg" data-i="${esc(name)}" viewBox="0 0 24 24" width="${px}" height="${px}"${rs} fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${a11y}>${title ? `<title>${esc(title)}</title>` : ''}${body}</svg>`;
     },
     has: name => name in P,
     names: () => Object.keys(P),
     /** Ajoute (ou remplace) une icône : tracés SVG sur la grille 24 × 24, sans couleur ni épaisseur propres. */
-    add(name, paths) { P[name] = paths; },
+    add(name, paths) {
+      P[name] = paths;
+    },
     /** Emblème en couleurs (compass, wings-globe) : chaîne SVG, vide si inconnu. */
     emblem: name => EMBLEMS[name]?.() || '',
     /** Tracés bruts (pour composer une image CSS, ex. masque). */

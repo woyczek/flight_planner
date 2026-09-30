@@ -147,7 +147,9 @@
       de = profile.descent || {};
     const tasRef = num(cr.tasKt),
       ffRef = num(cr.fuelFlowPerHour);
-    if (!(tasRef > 0) || !(ffRef > 0)) throw Object.assign(Error(tl('Profil incomplet : TAS et fuel flow de croisière nécessaires.', 'Incomplete profile: cruise TAS and fuel flow required.', 'Profil unvollständig: Reiseflug-TAS und -Verbrauch erforderlich.', 'Perfil incompleto: se requieren TAS y flujo de crucero.')), { fields: [!(tasRef > 0) && 'cruise.tasKt', !(ffRef > 0) && 'cruise.fuelFlowPerHour'].filter(Boolean) }); // champs manquants (liens de la page)
+    if (!(tasRef > 0) || !(ffRef > 0)) throw Object.assign(Error(tl('Profil incomplet : TAS et fuel flow de croisière nécessaires.', 'Incomplete profile: cruise TAS and fuel flow required.', 'Profil unvollständig: Reiseflug-TAS und -Verbrauch erforderlich.', 'Perfil incompleto: se requieren TAS y flujo de crucero.')), {
+      fields: [!(tasRef > 0) && 'cruise.tasKt', !(ffRef > 0) && 'cruise.fuelFlowPerHour'].filter(Boolean)
+    }); // champs manquants (liens de la page)
     // Fiche EUROCONTROL APD du type (AircraftDB/aircraft_perf.js), si fournie : plafond pratique (FL) et Mach de
     // croisière — références quand le profil ne donne ni plafond ni altitude de référence.
     const apdCr = apd?.cruise || {},
@@ -248,8 +250,9 @@
       let t = 0,
         d = 0,
         f = 0,
-        vyFrom = null;   // altitude où la montée passe à Vy (vitesse demandée qui ne monte plus)
-      const dh = Math.max(100, hTop / 150), min = beyond ? 5 : 50;
+        vyFrom = null; // altitude où la montée passe à Vy (vitesse demandée qui ne monte plus)
+      const dh = Math.max(100, hTop / 150),
+        min = beyond ? 5 : 50;
       for (let h = 0; h < hTop - 1e-6; h += dh) {
         const step = Math.min(dh, hTop - h),
           hm = h + step / 2,
@@ -259,8 +262,17 @@
           r0 = m.roc(hm, ve0, fr);
         // la vitesse de montée demandée ne monte plus (haut de la montée) : l'équipage finit à Vy (meilleur vario),
         // comme le plafond du modèle, calculé à Vy ; refus seulement si Vy non plus ne monte plus
-        let ve = ve0, r = r0;
-        if (!(r0 > min) && speed !== 'vy') { const v = m.vy(hm, fr).ve, rv = m.roc(hm, v, fr); if (rv > min) { ve = v; r = rv; if (vyFrom === null) vyFrom = h; } }
+        let ve = ve0,
+          r = r0;
+        if (!(r0 > min) && speed !== 'vy') {
+          const v = m.vy(hm, fr).ve,
+            rv = m.roc(hm, v, fr);
+          if (rv > min) {
+            ve = v;
+            r = rv;
+            if (vyFrom === null) vyFrom = h;
+          }
+        }
         if (!(r > min)) return null; // au-delà du plafond (prolongement des courbes) : seuil abaissé
         const tas = m.tasOf(hm, ve),
           dt = step / r;
@@ -391,8 +403,12 @@
       // niveau ; refus seulement si même la pleine puissance ne tient pas ce palier
       let propLimited = false;
       if (!ve && !jet && mode !== 'eco') {
-        const vmp = Math.pow(3, -.25) * M.veMd, pMin = M.dw(vmp) * vmp / s;
-        if (pMin <= .98 * M.avail(h)) { ve = vmp; propLimited = true; }
+        const vmp = Math.pow(3, -.25) * M.veMd,
+          pMin = M.dw(vmp) * vmp / s;
+        if (pMin <= .98 * M.avail(h)) {
+          ve = vmp;
+          propLimited = true;
+        }
       }
       if (!ve) return {
         h,
@@ -653,7 +669,11 @@
       /** Exécute fn sans le refus de croisière au-dessus du plafond (prolongement des courbes) ; retourne son résultat. */
       unbounded(fn) {
         beyond = true;
-        try { return fn(); } finally { beyond = false; }
+        try {
+          return fn();
+        } finally {
+          beyond = false;
+        }
       },
       /** Atmosphère du jour (écart ISA du modèle) à l'altitude pression h. */
       atm,

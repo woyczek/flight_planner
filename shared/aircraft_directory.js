@@ -91,6 +91,6 @@
     refresh();
   });
   const extensions = document.createElement('script');
-  extensions.src = new URL('mission_extensions.js?v=20260923g', moduleUrl).href;
+  extensions.src = new URL('mission_extensions.js?v=415d166f', moduleUrl).href;
   document.head.append(extensions);
 })();

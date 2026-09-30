@@ -180,7 +180,8 @@
       if (watch) localStorage.setItem(STORE, JSON.stringify(watch));
       else localStorage.removeItem(STORE);
     } catch {
-      /* quota */ }
+      /* quota */
+    }
   };
   let watch = load(),
     timer = null;

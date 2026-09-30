@@ -276,7 +276,7 @@ La suppression s'applique Ã  la copie locale du registre (navigateur) ; pensez Ã
   window.addEventListener('load', () => {
     if (!window.RepositoryContentI18n) return;
     const script = document.createElement('script');
-    script.src = new URL('gaar_i18n.js?v=20260923f', moduleUrl).href;
+    script.src = new URL('gaar_i18n.js?v=db590155', moduleUrl).href;
     document.head.append(script);
   });
 })();

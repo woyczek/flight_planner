@@ -17,7 +17,7 @@
   // Spécialisation par famille (only : familles où le champ a du sens ; hideFor : familles
   // où il n'en a pas). Les familles peuvent en plus masquer des champs / blocs (hide).
   const CIVIL = ['HEMS', 'FIRE', 'HADR', 'AIRLIFT', 'SURVEY', 'FI'];
-  const ON_STATION = ['SAR', 'MARITIME', 'ISR', 'COMMAND', 'LE', 'FIRE', 'SURVEY', 'FI', 'HADR', 'SOF', 'AIRBORNE', 'AAR', 'DEMO'];
+  const ON_STATION = ['SAR', 'MARITIME', 'ISR', 'COMMAND', 'LE', 'FIRE', 'SURVEY', 'FI', 'HADR', 'SOF', 'AIRBORNE', 'AAR', 'COMBAT', 'DEMO'];
 
   const identification = {
     id: 'identification',

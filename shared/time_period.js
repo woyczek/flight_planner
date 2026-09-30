@@ -94,7 +94,8 @@
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
       if (stored && stored.preset) return stored;
     } catch {
-      /* valeur par défaut ci-dessous */ }
+      /* valeur par défaut ci-dessous */
+    }
     return {
       preset: 'all',
       start: '',
@@ -107,7 +108,8 @@
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
-      /* stockage indisponible */ }
+      /* stockage indisponible */
+    }
     window.dispatchEvent(new CustomEvent(EVENT, {
       detail: state
     }));

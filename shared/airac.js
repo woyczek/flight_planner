@@ -7,7 +7,9 @@
   //   · Airac.inspectFolder(fichiers) : rôle et cycle des fichiers d'un dossier SIA XML (AIXM 4.5, XML-SIA,
   //     ancien sia-airspaces, ZIP d'export du SIA…), cycles présents, complets ou non, anciens cycles ;
   //   La base analysée (lecture du dossier, cache, résumé siaBaseInfo:v1, grille MORA) est dans shared/sia_base.js (SiaBase).
-  const DAY = 864e5, CYCLE = 28 * DAY, REF = Date.UTC(2024, 0, 25);   // AIRAC 2401
+  const DAY = 864e5,
+    CYCLE = 28 * DAY,
+    REF = Date.UTC(2024, 0, 25); // AIRAC 2401
   const iso = t => new Date(t).toISOString().slice(0, 10);
   /** Instant UTC (minuit) d'une date « AAAA-MM-JJ », d'un Date ou d'un nombre ; aujourd'hui par défaut. */
   function dayOf(d) {
@@ -46,45 +48,117 @@
   const cycleOfName = name => fromDate(/(\d{4}-\d{2}-\d{2})/.exec(String(name || ''))?.[1]);
 
   // ---- fichiers du dossier SIA XML
-  const ROLES = [
-    { id: 'aixm', re: /^AIXM4\.5_all_FR_OM_(\d{4}-\d{2}-\d{2})\.xml$/i, need: true, label: ['AIXM 4.5 complet (espaces, aérodromes, balises, obstacles)', 'Full AIXM 4.5 (airspace, aerodromes, navaids, obstacles)'] },
-    { id: 'xmlsia', re: /^XML_SIA_(\d{4}-\d{2}-\d{2})\.xml$/i, need: true, label: ['Export XML-SIA (inventaire)', 'XML-SIA export (inventory)'] },
-    { id: 'airspaces', re: /^sia-airspaces-(\d{4}-\d{2}-\d{2})\.xml$/i, need: false, label: ['Contours dérivés (ancien format, facultatif : les contours sont lus dans XML-SIA)', 'Derived outlines (legacy, optional: outlines are read from XML-SIA)'] },
-    { id: 'zip', re: /^export_xml_bd_SIA_(\d{4}-\d{2}-\d{2})(?:-v(\d+))?\.zip$/i, need: false, label: ['ZIP d’export du SIA (à extraire)', 'SIA export ZIP (to extract)'] }
-  ];
-  const FIXED = [
-    { id: 'mora', name: 'mora.csv', label: ['Grille MORA calculée', 'Computed MORA grid'] },
-    { id: 'tracks', name: 'miam-enr-5-7-tracks.xml', label: ['Axes AAR nommés (ENR 5.7)', 'Named AAR tracks (ENR 5.7)'] },
-    { id: 'coords', name: 'miam-enr-5-7-coordinates.xml', label: ['Coordonnées ENR 5.7 d’origine', 'Original ENR 5.7 coordinates'] },
-    { id: 'readme', name: 'Lisez_moi.txt', label: ['Lisez-moi du SIA (nouveautés du BMJ)', 'SIA read-me (BMJ changes)'] }
-  ];
+  const ROLES = [{
+    id: 'aixm',
+    re: /^AIXM4\.5_all_FR_OM_(\d{4}-\d{2}-\d{2})\.xml$/i,
+    need: true,
+    label: ['AIXM 4.5 complet (espaces, aérodromes, balises, obstacles)', 'Full AIXM 4.5 (airspace, aerodromes, navaids, obstacles)']
+  }, {
+    id: 'xmlsia',
+    re: /^XML_SIA_(\d{4}-\d{2}-\d{2})\.xml$/i,
+    need: true,
+    label: ['Export XML-SIA (inventaire)', 'XML-SIA export (inventory)']
+  }, {
+    id: 'airspaces',
+    re: /^sia-airspaces-(\d{4}-\d{2}-\d{2})\.xml$/i,
+    need: false,
+    label: ['Contours dérivés (ancien format, facultatif : les contours sont lus dans XML-SIA)', 'Derived outlines (legacy, optional: outlines are read from XML-SIA)']
+  }, {
+    id: 'zip',
+    re: /^export_xml_bd_SIA_(\d{4}-\d{2}-\d{2})(?:-v(\d+))?\.zip$/i,
+    need: false,
+    label: ['ZIP d’export du SIA (à extraire)', 'SIA export ZIP (to extract)']
+  }];
+  const FIXED = [{
+    id: 'mora',
+    name: 'mora.csv',
+    label: ['Grille MORA calculée', 'Computed MORA grid']
+  }, {
+    id: 'tracks',
+    name: 'miam-enr-5-7-tracks.xml',
+    label: ['Axes AAR nommés (ENR 5.7)', 'Named AAR tracks (ENR 5.7)']
+  }, {
+    id: 'coords',
+    name: 'miam-enr-5-7-coordinates.xml',
+    label: ['Coordonnées ENR 5.7 d’origine', 'Original ENR 5.7 coordinates']
+  }, {
+    id: 'readme',
+    name: 'Lisez_moi.txt',
+    label: ['Lisez-moi du SIA (nouveautés du BMJ)', 'SIA read-me (BMJ changes)']
+  }];
   /** Inventaire d'un dossier SIA XML (fichiers [{ name, size, lastModified }]) : { files, cycles, latest, complete, old, fixed, zips }. */
   function inspectFolder(files) {
-    const list = [...(files || [])].map(f => ({ name: f.name, size: f.size || 0, lastModified: f.lastModified || 0, file: f }));
-    const byCycle = new Map(), zips = [];
+    const list = [...(files || [])].map(f => ({
+      name: f.name,
+      size: f.size || 0,
+      lastModified: f.lastModified || 0,
+      file: f
+    }));
+    const byCycle = new Map(),
+      zips = [];
     for (const f of list) {
       const role = ROLES.find(r => r.re.test(f.name));
       if (!role) continue;
-      const m = role.re.exec(f.name), c = fromDate(m[1]);
-      const entry = { ...f, role: role.id, cycle: c?.date || m[1], version: m[2] ? +m[2] : null, valid: !!c };
-      if (role.id === 'zip') { zips.push(entry); continue; }
+      const m = role.re.exec(f.name),
+        c = fromDate(m[1]);
+      const entry = {
+        ...f,
+        role: role.id,
+        cycle: c?.date || m[1],
+        version: m[2] ? +m[2] : null,
+        valid: !!c
+      };
+      if (role.id === 'zip') {
+        zips.push(entry);
+        continue;
+      }
       if (!byCycle.has(entry.cycle)) byCycle.set(entry.cycle, []);
       byCycle.get(entry.cycle).push(entry);
     }
     const cycles = [...byCycle.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([date, items]) => {
       const roles = new Set(items.map(i => i.role));
-      return { date, cycle: fromDate(date), items, missing: ROLES.filter(r => r.need && !roles.has(r.id)).map(r => r.id), complete: ROLES.filter(r => r.need).every(r => roles.has(r.id)) };
+      return {
+        date,
+        cycle: fromDate(date),
+        items,
+        missing: ROLES.filter(r => r.need && !roles.has(r.id)).map(r => r.id),
+        complete: ROLES.filter(r => r.need).every(r => roles.has(r.id))
+      };
     });
-    const fixed = FIXED.map(x => ({ ...x, file: list.find(f => f.name.toLowerCase() === x.name.toLowerCase()) || null }));
-    return { files: list, cycles, latest: cycles[0] || null, old: cycles.slice(1), complete: !!cycles[0]?.complete, fixed, zips: zips.sort((a, b) => b.cycle.localeCompare(a.cycle) || (b.version || 0) - (a.version || 0)) };
+    const fixed = FIXED.map(x => ({
+      ...x,
+      file: list.find(f => f.name.toLowerCase() === x.name.toLowerCase()) || null
+    }));
+    return {
+      files: list,
+      cycles,
+      latest: cycles[0] || null,
+      old: cycles.slice(1),
+      complete: !!cycles[0]?.complete,
+      fixed,
+      zips: zips.sort((a, b) => b.cycle.localeCompare(a.cycle) || (b.version || 0) - (a.version || 0))
+    };
   }
   /** Fichiers (File) d'un dossier autorisé, sans descendre dans les sous-dossiers ; [] sans accès. */
   async function filesOf(handle) {
     const out = [];
     if (!handle) return out;
-    for await (const [name, h] of handle.entries()) if (h.kind === 'file') try { out.push(await h.getFile()); } catch { /* verrouillé */ }
+    for await (const [name, h] of handle.entries()) if (h.kind === 'file') try {
+      out.push(await h.getFile());
+    } catch {
+      /* verrouillé */ }
     return out;
   }
 
-  window.Airac = { cycle, next, fromDate, cycleOfName, describe, ROLES, FIXED, inspectFolder, filesOf };
+  window.Airac = {
+    cycle,
+    next,
+    fromDate,
+    cycleOfName,
+    describe,
+    ROLES,
+    FIXED,
+    inspectFolder,
+    filesOf
+  };
 })();

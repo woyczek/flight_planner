@@ -10,9 +10,91 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
-> **Annonce : suite du refactoring du toolkit.** La phase 1 (boîte à outils, registre des designs, CSS par jetons)
-> est livrée en 4.3.1 ; la phase 2 (supprimer les exceptions par design, assets à fournir) pourra encore modifier
+> **Annonce : suite du refactoring du toolkit.** La phase 2 (exceptions par design remplacées par des jetons) est
+> livrée en 4.4.0 ; la phase 3 (couches CSS, retrait des `!important`) est en cours et pourra encore modifier
 > légèrement l'apparence des designs à matières. Plan : [docs/REFACTORING_TOOLKIT.md](docs/REFACTORING_TOOLKIT.md).
+
+## [4.4.0] — 2026-09-30
+
+Nouvelle famille COMBAT (combat aérien : BFM, ACM, DACT, interception) ; identifiants de mission liés migrés d'un bloc
+au lieu de casser l'opération ; enregistrement dans le dossier des missions qui dit toujours pourquoi il échoue ;
+toolkit phase 2 terminée (jetons, boutons communs, feuille de registre commune), barres de progression et
+notifications dans la matière des designs ; début de la phase 3 (couches CSS).
+
+- **Designs à matières — barres de progression et notifications** : `<progress>` (tâches longues, jauges des pages)
+  dans la matière du design (piste creusée ; laiton de Cabinet, encre du Carnet de vol, voyants verts de Durci, gel rayé
+  d'Aqua), angles vifs, balayage quand l'avancement est inconnu, sans mouvement si le système le demande ;
+  notifications flottantes dans la matière des menus (jetons `--sk-prog-*`, `--sk-menu-*`).
+- **Registre — feuille de registre** : carte posée sur la feuille (détail d'une mission) en papier punaisé à encre
+  foncée dans les trois designs à feuille (Durci : plus de plaque d'acier illisible) ; règles communes par jetons
+  `--sheet-*`. Bouton ☰ centré dans tous les designs. Studio cartographique : « Enregistrer dans le dossier » affiche
+  toujours son résultat (succès, échec et cause). Fenêtres du Mission Core : texture du design rétablie.
+- **Toolkit — phase 3 (couches CSS), début** : banc de non-régression par page et en design « standard » ; 52
+  `!important` retirés des styles de 5 pages (banc : aucun écart) ; `tools/strip_page_important.py`. Les pages COMBAT,
+  copiées pendant l'essai de couches, sont de nouveau habillées par les designs.
+- **Missions — identifiants liés** : changer l'identifiant d'une mission d'opération (générateur : champ quitté, ou
+  identifiant hors format corrigé à l'enregistrement) propose une migration globale — toute l'opération si la base
+  change (`BFM-001C` → `A-001C` migre `BFM-001` → `A-001` : missions, organisation, participants de l'exercice, noms
+  des cartes, textes, famille ; ancien identifiant dans `mission.former_id`) — sinon l'identifiant est rétabli.
+  Pendant la saisie, la mission garde sa place dans le lot (plus d'écrasement d'une autre mission par un identifiant
+  partiel ou en double). Missions déjà rangées : `tools/migrate_operation_ids.py`. Dossier des missions : cause
+  précise de chaque échec (sélecteur, autorisation, écriture, identifiant hors format) au lieu de « non autorisé ».
+- **Nouvelle famille COMBAT — combat aérien / entraînement chasse** (lettre A : missions `A-001`, CR `CRA-001-1`,
+  `CRA-A01-0`) : sous-types BFM (combat rapproché), ACM (combat aérien manœuvrant), DACT (adversaire dissemblable),
+  INTERCEPT (interception d'entraînement, identification visuelle). CR et reporting (`apps/cr/COMBAT/`) : dispositif et
+  zone (TSA / CBA / zone D, bloc d'altitude, plancher de sécurité, format 2v2…, adversaire, contrôle, joker / bingo),
+  engagements (situation de départ, armement simulé, tirs valides, issue — victoire, défaite, nul, knock-it-off),
+  bilan de la séance ; statistiques (engagements, victoires, tirs valides, KIO) et résumé automatique. Générateur de
+  missions : famille, règles des zones d'entraînement, Mirage 2000 (MIR2) parmi les appareils. La police du ciel réelle
+  reste en COMMAND / AIR_POLICING, le ravitaillement en AAR.
+- **Toolkit — phase 2, premiers chantiers** : feuille de registre à éléments facultatifs (valeurs par défaut) et bloc
+  « découpe » réécrit par `tools/cut_register_sheet.py <design> --write` ; carnet des aperçus devenu composant commun
+  (`.repo-notebooks` / `.repo-notebook`, `designs_skeuo.css`) ; contrôle des images `tools/check_assets.py` (format,
+  poids, absentes, orphelines), lancé par `bump_versions.py`.
+- **Toolkit — phase 2, suite** : pastilles de code (`--sk-code-*`) et polices des boutons et liens-boutons
+  (`--sk-btn-family`, `--sk-lbtn-family`) par jetons ; tonalité des surfaces `html[data-surface]` (« dark » pour Durci,
+  dont les blocs sont sombres, et pour tout ton sombre ; déclarée dans le registre des designs : `surface:"dark"`) :
+  encadrés d'état écrits pour elle au lieu d'une liste de designs. Rendu identique (banc).
+- **Boutons — convention commune** (tous les designs à matières) : 1ᵉʳ bouton de l'en-tête principal, les suivants
+  secondaires ; liens secondaires et « Ajouter des fichiers » secondaires. Changements visibles : Cabinet et Carnet de
+  vol (2ᵉ bouton de l'en-tête de l'éditeur de mission en parchemin), Aqua (« Ajouter des fichiers » en verre).
+- **Toolkit — phase 2** : frise du pied de page déclarative (liste de composants : bande, plaque, radar, voyant de
+  sauvegarde) au lieu d'un gabarit HTML propre à Durci.
+- **Toolkit — phase 2** : cadre de la page (`--sk-page-*`) et vis des coins de l'en-tête, des blocs et des sous-cartes
+  (`--sk-corner-screw`, `--sk-*-screw-*`) par jetons : une règle par emplacement au lieu d'une par design. Rendu
+  identique (banc).
+- **Toolkit — phase 2** : emblème de l'en-tête (`--sk-emblem-*`, mobile compris), lien « choisir » des zones de dépôt
+  (`--sk-pick-shadow`, `--sk-pick-family`), pied de page, ligne de base et police des graphiques du reporting
+  (`--sk-chart-base`, `--sk-chart-font`) par jetons. Rendu identique (banc).
+- **Toolkit — phase 2** : textes courants des blocs (encre du design) et police des libellés par jetons, règles jumelles
+  de Cabinet et Durci retirées (dont couleurs mortes des petits textes de Cabinet). Rendu identique (banc).
+- **Toolkit — phase 2** : ombre de la barre latérale, ombre et liseré intérieur des bandeaux, encre des sous-cartes par
+  jetons (valeurs relevées sur le rendu actuel : aucun écart) ; banc de non-régression étendu (Planning ODV, registre
+  des missions, Paramètres ; bandeaux, feuille de registre, commandes des tableaux).
+- **Toolkit — phase 2** : titre de l'en-tête par jetons (`--sk-title-*`) ; plaque de titre du Carnet de vol par les jetons
+  communs des plaques ; code mort retiré. Rendu identique (banc).
+- **Tableaux des designs à matières** : lignes resserrées (boutons et champs compacts dans les cellules : 45 → 33 px
+  dans le registre des missions) ; Durci : type de mission (gras) à l'encre foncée sur la feuille de registre.
+- **Textes secondaires des pages** (`var(--muted)`) : encre secondaire du design dans les blocs des designs à cadre
+  (sous-lignes des dossiers de Paramètres illisibles en Carnet de vol).
+- **Toolkit — phase 2** : sélecteurs segmentés d'Aqua dans les règles communes (jetons de fond de segment et de
+  rayon) ; entrée courante de la barre latérale par jetons (`--sk-nav-on-bg`, `--sk-nav-on-edge`, règle de base).
+- **Carnet de vol** (feuille de registre) : en-tête entier, fondus courts (le fondu mangeait le texte).
+- **Planificateur de vol** : courbe RPM / consommation au même habillage que les autres graphiques (grille, courbe
+  nominale, bornes en pointillés, curseur ; écran d'instrument dans les designs à matières).
+- **Appareil de page** : entre les blocs 2 et 3 (une page à trois blocs, comme le registre des missions, l'accueille).
+- **Versions de cache par empreinte** (`tools/bump_versions.py`) : `?v=` = empreinte du contenu du fichier visé (au lieu
+  d'une date à lettres) ; une page ne change que si l'un de ses fichiers change ; feuilles de design chargées avec
+  leur propre version (table `FILE_V`) ; versions écrites à la main dans trois scripts (extensions, traductions GAAR
+  et HEMS), figées depuis le 23 septembre, désormais tenues à jour.
+- **Code lisible** : JavaScript, CSS et scripts / styles des pages remis en forme (118 fichiers : une instruction et une
+  déclaration par ligne), sans changer le code — contrôle avant / après des arbres syntaxiques et des règles CSS
+  (`tools/format_sources.py`, `tools/verify_format.html`) ; éditeur de mission : chaque fonction commentée.
+- **Toolkit — phase 2, jetons des designs à cadre** : règles jumelles de Cabinet et Durci (pastille d'étape, titres
+  de sous-cartes, zones de dépôt, icône des bandeaux, focus, pied de page, sélecteur segmenté) fusionnées en règles
+  communes à jetons ; code mort retiré. Rendu identique (banc de non-régression).
+- **Panneaux de fond** (Cabinet, Durci) : atténués de façon uniforme, plus de dégradé en transparence vers la gauche.
+- **Durci** : poignées latérales regénérées (poignée à grip, nette) ; poignée horizontale et barre fine remplacées.
 
 ## [4.3.1] — 2026-09-30
 

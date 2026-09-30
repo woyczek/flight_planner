@@ -28,7 +28,8 @@
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch {
-      /* quota */ }
+      /* quota */
+    }
   };
 
   // ---- types
@@ -45,7 +46,8 @@
     try {
       raw = localStorage.getItem('dataOverride:aircraftDb:v1');
     } catch {
-      /* stockage indisponible */ }
+      /* stockage indisponible */
+    }
     if (raw !== overrideCache.raw) {
       let value = null;
       try {

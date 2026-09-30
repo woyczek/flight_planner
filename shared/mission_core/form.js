@@ -367,7 +367,8 @@
         try {
           target.setSelectionRange(start, end);
         } catch {
-          /* champ sans sélection */ }
+          /* champ sans sélection */
+        }
       }
       M.set(getMission(), path, coerce(target, target.value));
       if (event.type === 'change') {

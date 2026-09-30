@@ -35,8 +35,24 @@
   /** Mémorise les réglages du bloc Profil vertical. */
   // Plan de vol partagé avec les Cartes de vol (apps/planner/map_planner.html) : un seul FPL, le plus récent l'emporte.
   const FPL_KEY = 'flightPlanShared:v1';
-  const readFpl = () => { try { return JSON.parse(localStorage.getItem(FPL_KEY) || 'null'); } catch { return null; } };
-  const writeFpl = route => { try { const cur = readFpl(); if (cur?.route !== route) localStorage.setItem(FPL_KEY, JSON.stringify({ route, at: Date.now(), by: 'planner' })); } catch { /* stockage indisponible */ } };
+  const readFpl = () => {
+    try {
+      return JSON.parse(localStorage.getItem(FPL_KEY) || 'null');
+    } catch {
+      return null;
+    }
+  };
+  const writeFpl = route => {
+    try {
+      const cur = readFpl();
+      if (cur?.route !== route) localStorage.setItem(FPL_KEY, JSON.stringify({
+        route,
+        at: Date.now(),
+        by: 'planner'
+      }));
+    } catch {
+      /* stockage indisponible */ }
+  };
   const store = () => {
     try {
       localStorage.setItem(KEY, JSON.stringify({
@@ -46,10 +62,14 @@
         at: Date.now()
       }));
     } catch {
-      /* préférence seulement */ }
+      /* préférence seulement */
+    }
     if ($('vpRoute').value.trim()) writeFpl($('vpRoute').value.trim());
   };
-  { const shared = readFpl(); $('vpRoute').value = shared?.route && (shared.at || 0) > (saved.at || 0) ? shared.route : saved.route || ''; }
+  {
+    const shared = readFpl();
+    $('vpRoute').value = shared?.route && (shared.at || 0) > (saved.at || 0) ? shared.route : saved.route || '';
+  }
   $('vpFloor').value = saved.floor || 0;
   $('vpCeil').value = saved.ceiling || 0;
   /** Message d'état du bloc (err : en erreur), typographie de la langue appliquée. */
@@ -135,7 +155,8 @@
         };
       }
     } catch {
-      /* profil incomplet : taux constants */ }
+      /* profil incomplet : taux constants */
+    }
     return {
       climb: {
         fpm: +a?.climb?.rateFpm,
@@ -227,22 +248,47 @@
   /** Plan de vol → devis : distance (somme des tronçons), route vraie (départ → arrivée), niveau du premier groupe
    *  vitesse / niveau ; devis recalculé. Sans base SIA, seuls les points en coordonnées sont reconnus. */
   async function applyRoute() {
-    const text = $('vpRoute').value.trim(), info = $('fplInfo');
-    if (!text) { if (info) info.textContent = ''; return; }
-    if (!studio) { try { await loadData(); } catch { /* base absente */ } }
-    const { points, unknown } = SiaProfile.parseRoute(text, SiaProfile.resolver({ aero: studio?.base?.aero || {} }));
-    if (points.length < 2) { if (info) info.textContent = unknown.length ? tl(`Point(s) inconnu(s) : ${unknown.join(', ')}`, `Unknown point(s): ${unknown.join(', ')}`) : ''; return; }
-    const r = Math.PI / 180, nm = (a, b) => 2 * 3440.065 * Math.asin(Math.sqrt(Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2));
+    const text = $('vpRoute').value.trim(),
+      info = $('fplInfo');
+    if (!text) {
+      if (info) info.textContent = '';
+      return;
+    }
+    if (!studio) {
+      try {
+        await loadData();
+      } catch {
+        /* base absente */ }
+    }
+    const {
+      points,
+      unknown
+    } = SiaProfile.parseRoute(text, SiaProfile.resolver({
+      aero: studio?.base?.aero || {}
+    }));
+    if (points.length < 2) {
+      if (info) info.textContent = unknown.length ? tl(`Point(s) inconnu(s) : ${unknown.join(', ')}`, `Unknown point(s): ${unknown.join(', ')}`) : '';
+      return;
+    }
+    const r = Math.PI / 180,
+      nm = (a, b) => 2 * 3440.065 * Math.asin(Math.sqrt(Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2));
     let d = 0;
     for (let i = 1; i < points.length; i++) d += nm(points[i - 1], points[i]);
-    const a = points[0], b = points[points.length - 1],
+    const a = points[0],
+      b = points[points.length - 1],
       trk = (Math.atan2(Math.sin((b.lon - a.lon) * r) * Math.cos(b.lat * r), Math.cos(a.lat * r) * Math.sin(b.lat * r) - Math.sin(a.lat * r) * Math.cos(b.lat * r) * Math.cos((b.lon - a.lon) * r)) / r + 360) % 360;
     const lvl = points.find(p => p.lvl?.ft)?.lvl?.ft;
     $('dist').value = Math.round(d);
     $('trk').value = Math.round(trk);
-    if (lvl > 0) { $('fl').value = Math.round(lvl / 100); $('fl').dispatchEvent(new Event('input')); }
+    if (lvl > 0) {
+      $('fl').value = Math.round(lvl / 100);
+      $('fl').dispatchEvent(new Event('input'));
+    }
     if (info) info.textContent = tl(`${Math.round(d)} NM, route vraie ${Math.round(trk)}°${lvl ? `, niveau ${Math.round(lvl / 100)}` : ''}${unknown.length ? ` — inconnu(s) : ${unknown.join(', ')}` : ''}`, `${Math.round(d)} NM, true track ${Math.round(trk)}°${lvl ? `, level ${Math.round(lvl / 100)}` : ''}`);
-    try { if (window.active !== null) window.planQuote?.(); } catch { /* devis au prochain calcul */ }
+    try {
+      if (window.active !== null) window.planQuote?.();
+    } catch {
+      /* devis au prochain calcul */ }
   }
   $('vpRoute').addEventListener('change', () => applyRoute());
   // vers les Cartes de vol : même plan de vol (partagé), carte, profil vertical et cartes
@@ -260,20 +306,35 @@
     if (!new URLSearchParams(location.search).has('handoff')) return false;
     history.replaceState(null, '', location.pathname + location.search.replace(/([?&])handoff=1&?/, '$1').replace(/[?&]$/, '') + location.hash);
     let h = null;
-    try { h = JSON.parse(localStorage.getItem('plannerHandoff:v1') || 'null'); } catch { /* illisible */ }
+    try {
+      h = JSON.parse(localStorage.getItem('plannerHandoff:v1') || 'null');
+    } catch {
+      /* illisible */ }
     if (!h?.route || Date.now() - (h.at || 0) > 36e5) return false;
     $('vpRoute').value = h.route;
     if (h.distNm > 0 && $('dist')) $('dist').value = Math.round(h.distNm);
-    if (h.cruiseFt > 0 && $('fl')) { $('fl').value = Math.round(h.cruiseFt / 100); $('fl').dispatchEvent(new Event('input')); }
+    if (h.cruiseFt > 0 && $('fl')) {
+      $('fl').value = Math.round(h.cruiseFt / 100);
+      $('fl').dispatchEvent(new Event('input'));
+    }
     if (Number.isFinite(h.trackDeg) && $('trk')) $('trk').value = Math.round(h.trackDeg);
     store();
-    try { window.calculate?.(); } catch { /* calcul relancé à la prochaine saisie */ }
+    try {
+      window.calculate?.();
+    } catch {
+      /* calcul relancé à la prochaine saisie */ }
     window.AppFramework?.notify?.(tl(`Route reprise${h.from ? ` de « ${h.from} »` : ''} : ${Math.round(h.distNm || 0)} NM${h.cruiseFt ? `, niveau ${Math.round(h.cruiseFt / 100)}` : ''}.`, `Route taken${h.from ? ` from “${h.from}”` : ''}: ${Math.round(h.distNm || 0)} NM.`), 'ok');
     return true;
   }
   loadData().then(async () => {
-    if (takeHandoff()) { await draw(); return; }
-    if ($('vpRoute').value.trim()) { await applyRoute(); return; }   // plan de vol (partagé) : distance, route vraie, niveau
+    if (takeHandoff()) {
+      await draw();
+      return;
+    }
+    if ($('vpRoute').value.trim()) {
+      await applyRoute();
+      return;
+    } // plan de vol (partagé) : distance, route vraie, niveau
     const o = await loadOFP();
     if (o) {
       $('vpRoute').value = routeFromOfp(o.raw || o);

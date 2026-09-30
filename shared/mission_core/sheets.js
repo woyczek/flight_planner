@@ -54,6 +54,7 @@
     LE: '#6366f1',
     ISR: '#94a3b8',
     COMMAND: '#0ea5e9',
+    COMBAT: '#b45309',
     SOF: '#a8a29e',
     SPECIAL: '#ec4899'
   };
@@ -133,7 +134,8 @@
     try {
       await window.MissionLedger?.load();
     } catch {
-      /* registre illisible */ }
+      /* registre illisible */
+    }
     const ledger = (window.MissionLedger?.store?.missions || []).map((m, i, all) => ({
       m,
       src: 'ledger',
@@ -363,7 +365,7 @@
       <section data-icon="pin"><h2>${esc(tr(UI.events))} <button type="button" class="mc-head-add" data-add-event title="${esc(tr(UI.addEvent))}">+</button></h2><div class="sh-events"></div></section>
       <section data-icon="chart"><h2>${esc(tr(UI.perf))}</h2><div class="sh-perf"></div></section>
       <section data-icon="list"><h2>${esc(tr(UI.missions))}</h2><div class="sh-missions"></div><div class="sh-edges" hidden></div></section>`;
-    window.AppFramework?.refresh?.();   // blocs du framework (masquer, déplacer) et icônes de blocs (block_icons.js)
+    window.AppFramework?.refresh?.(); // blocs du framework (masquer, déplacer) et icônes de blocs (block_icons.js)
     // Enregistrement de la fiche (navigateur).
     const saveSheet = () => {
       root.querySelectorAll('[data-sheet]').forEach(el => {
@@ -515,7 +517,7 @@
       </div><div class="row"><button type="button" class="primary" data-save>${esc(tr(UI.save))}</button><span class="small sh-saved"></span></div>${merger.html}</section>
       <section data-icon="calendar"><h2>${esc(tr(UI.activity))}</h2><div class="sh-activity"></div><div class="sh-chart"></div></section>
       <section data-icon="list"><h2>${esc(tr(UI.missions))}</h2><div class="sh-missions"></div><div class="sh-edges" hidden></div></section>`;
-    window.AppFramework?.refresh?.();   // blocs du framework (masquer, déplacer) et icônes de blocs (block_icons.js)
+    window.AppFramework?.refresh?.(); // blocs du framework (masquer, déplacer) et icônes de blocs (block_icons.js)
     root.querySelector('[data-save]').onclick = () => {
       root.querySelectorAll('[data-sheet]').forEach(el => {
         sheet[el.dataset.sheet] = el.value;

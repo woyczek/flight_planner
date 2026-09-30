@@ -141,7 +141,8 @@
         tx.onerror = r;
       });
     } catch {
-      /* indisponible */ }
+      /* indisponible */
+    }
   };
   /** Dossier de sauvegarde autorisé (handle) ; request : redemande l'autorisation au besoin (geste utilisateur requis). null si aucun dossier ou autorisation refusée. */
   async function folder(request = false) {
@@ -409,7 +410,8 @@
       }));
       localStorage.setItem(PENDING, '0');
     } catch {
-      /* quota */ }
+      /* quota */
+    }
     reminder();
     if (!quiet) status(`${t('saved')} : ${dir.name}/${FILE} — ${count} ${t('keys')}`);
     return true;
@@ -447,13 +449,20 @@
       localStorage.setItem(JOURNAL, JSON.stringify(list));
     } catch {
       /* quota : journal réduit */
-      try { localStorage.setItem(JOURNAL, JSON.stringify(list.slice(0, 10))); } catch { /* quota */ }
+      try {
+        localStorage.setItem(JOURNAL, JSON.stringify(list.slice(0, 10)));
+      } catch {
+        /* quota */ }
     }
-    window.dispatchEvent(new CustomEvent('local-store-journal', { detail: list[0] }));
+    window.dispatchEvent(new CustomEvent('local-store-journal', {
+      detail: list[0]
+    }));
     return list[0];
   }
   /** Restaure une sauvegarde YAML par fusion (la valeur la plus récente l'emporte, collections fusionnées entrée par entrée) : localStorage puis bases IndexedDB ; émet « local-store-restored » et trace la restauration dans le journal (source : origine du texte). Retourne { added, updated, kept, keys }. */
-  async function restoreText(text, { source = 'fichier' } = {}) {
+  async function restoreText(text, {
+    source = 'fichier'
+  } = {}) {
     const Y = await yaml(),
       data = Y.load(String(text).replace(/^﻿/, '')) || {};
     const counts = {
@@ -461,7 +470,10 @@
       updated: 0,
       kept: 0
     };
-    const keys = { added: [], updated: [] };
+    const keys = {
+      added: [],
+      updated: []
+    };
     Object.entries(data.entries || {}).forEach(([key, saved]) => {
       if (key === META || key === JOURNAL || SKIP.some(re => re.test(key))) return;
       const raw = localStorage.getItem(key),
@@ -476,7 +488,8 @@
           counts[action]++;
           keys[action].push(key);
         } catch {
-          /* quota */ }
+          /* quota */
+        }
       } else if (action === 'kept') counts.kept++;
     });
     // bases IndexedDB sauvegardées (section « indexed », absente des sauvegardes anciennes)
@@ -496,7 +509,10 @@
       savedAt: data.savedAt || '',
       origin: data.origin || '',
       ...counts,
-      keys: { added: keys.added.slice(0, 80), updated: keys.updated.slice(0, 80) }
+      keys: {
+        added: keys.added.slice(0, 80),
+        updated: keys.updated.slice(0, 80)
+      }
     });
     counts.keys = keys;
     status(t('restored', counts));
@@ -515,7 +531,9 @@
     }
     try {
       const file = await (await dir.getFileHandle(FILE)).getFile();
-      await restoreText(await file.text(), { source: `${dir.name}/${FILE}` });
+      await restoreText(await file.text(), {
+        source: `${dir.name}/${FILE}`
+      });
     } catch {
       status(t('noFile'));
     }
@@ -524,8 +542,7 @@
   // ---- menu ☰ › Données locales
   const box = document.createElement('div');
   box.id = 'repoLocalStore';
-  box.innerHTML = '<div class="repo-sep"></div><div class="repo-group" data-store-text="title"></div>' +
-    ['save', 'restore', 'folder', 'download', 'file'].map(k => `<button type="button" class="repo-action" data-store="${k}" data-store-text="${k}"></button>`).join('') +
+  box.innerHTML = '<div class="repo-sep"></div><div class="repo-group" data-store-text="title"></div>' + ['save', 'restore', 'folder', 'download', 'file'].map(k => `<button type="button" class="repo-action" data-store="${k}" data-store-text="${k}"></button>`).join('') +
     '<div class="repo-store-status" style="padding:4px 8px;font-size:11px;opacity:.8"></div><input type="file" accept=".yaml,.yml,text/yaml" hidden>';
   const actions = nav.menu.querySelector('.repo-page-actions');
   nav.menu.insertBefore(box, actions || null);
@@ -584,7 +601,9 @@
   box.querySelector('[data-store="file"]').onclick = () => picker.click();
   picker.onchange = run(async () => {
     const file = picker.files[0];
-    if (file) await restoreText(await file.text(), { source: file.name });
+    if (file) await restoreText(await file.text(), {
+      source: file.name
+    });
     picker.value = '';
   });
   /** Retraduit les libellés du groupe « Données locales » (data-store-text). */
@@ -666,7 +685,9 @@
     // voyant de la barre d'état des designs à matières (designs_skeuo.css) : vert si tout est sauvegardé, ambre sinon
     document.documentElement.dataset.dirty = n > 0 ? '1' : '0';
     const label = `${row[0]} (${n}) · ${row[2]} ${m.savedAt ? new Date(m.savedAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }) : t('never')}`,
-      icon = window.RepositoryIcons?.svg('save', { size: 14 });
+      icon = window.RepositoryIcons?.svg('save', {
+        size: 14
+      });
     button.textContent = icon ? ' ' + label : '💾 ' + label;
     if (icon) button.insertAdjacentHTML('afterbegin', icon);
     button.title = row[1].replace('{n}', n).replace('{last}', last);

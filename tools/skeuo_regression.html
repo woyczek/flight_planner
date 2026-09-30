@@ -2,13 +2,17 @@
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Banc de non-régression des designs</title>
 <!-- Banc d'essai (outil de développement) : relève les styles calculés des composants du framework (en-tête, blocs,
-     boutons, champs, barres, cartes…, pseudo-éléments compris) sur des pages témoins, dans chaque design et chaque ton,
-     puis compare un état ultérieur à cette référence (propriété par propriété). Sert à refactorer designs_skeuo.css
-     sans changement visuel involontaire (docs/REFACTORING_TOOLKIT.md).
+     boutons, champs, barres, cartes…, pseudo-éléments compris) sur des pages, dans chaque design et chaque ton, puis
+     compare un état ultérieur à cette référence (propriété par propriété). Sert à refactorer designs_skeuo.css sans
+     changement visuel involontaire (docs/REFACTORING_TOOLKIT.md).
+     Pages : « témoins » (9 pages représentatives, ~6 min) ou « toutes » (les pages de l'arborescence, repository_tree,
+     ~35 min), ou « liste » (?pages=a.html,b.html dans l'adresse : quelques secondes par page) ; designs à cocher,
+     dont « standard » (sans design à matières : styles des pages seuls). Une référence par jeu de pages, gardée dans ce navigateur (IndexedDB).
      Usage : servir le dépôt (python -m http.server 8767 --bind 127.0.0.1, à la racine), ouvrir
      http://127.0.0.1:8767/tools/skeuo_regression.html ; « Référence » avant la modification, « Comparer » après
-     (versions de cache à jour : python tools/bump_versions.py). La référence est gardée dans ce navigateur
-     (localStorage, ~4 Mo) ; le design choisi dans la suite est modifié pendant les relevés (repositoryDesign). -->
+     (versions de cache à jour : python tools/bump_versions.py). Le design choisi dans la suite est modifié pendant les
+     relevés (repositoryDesign), puis rétabli. -->
+<script src="../repository_tree"></script>
 <style>
   body{margin:0;font:14px system-ui,sans-serif;background:#f4f6f8;color:#17202a}
   header{padding:12px 16px;background:#fff;border-bottom:1px solid #ccd;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
@@ -18,15 +22,31 @@
 </style></head><body>
 <header>
   <b>Designs à matières — non-régression</b>
+  <label>Pages <select id="set"><option value="temoins">témoins (9)</option><option value="toutes">toutes</option></select></label>
+  <span id="designs"></span>
   <label><input type="checkbox" id="light" checked> ton clair</label><label><input type="checkbox" id="dark" checked> ton sombre</label>
   <button id="ref">Référence</button><button id="cmp">Comparer</button><span id="state"></span>
 </header>
 <div id="log"></div>
 <script>
-// Pages témoins et designs relevés
-const PAGES = ['apps/cr/HEMS/hems_core_cr.html', 'apps/cr/HEMS/hems_core_reporting.html', 'apps/planner/flight_performance_planner.html',
-  'apps/cpco/map_parser.html', 'apps/settings/apparence.html', 'apps/cpco/mission_editor.html'];
-const DESIGNS = ['cabinet', 'flightlog', 'field', 'aqua'];
+// Pages témoins : une de chaque famille de mise en page (CR, reporting, planificateur, studio, Apparence, éditeur, ODV,
+// registre, Paramètres) ; « toutes » : chaque page de l'arborescence de la suite
+const TEMOINS = ['apps/cr/HEMS/hems_core_cr.html', 'apps/cr/HEMS/hems_core_reporting.html', 'apps/planner/flight_performance_planner.html',
+  'apps/cpco/map_parser.html', 'apps/settings/apparence.html', 'apps/cpco/mission_editor.html',
+  'apps/cpco/odv_planning.html', 'apps/cpco/mission_registry.html', 'apps/settings/parametrage.html'];
+const TOUTES = (() => {
+  const out = new Set();
+  const walk = x => {
+    if (Array.isArray(x)) x.forEach(walk);
+    else if (x && typeof x === 'object') for (const [k, v] of Object.entries(x)) { if (k === 'path' && /\.html$/.test(v)) out.add(v); else walk(v); }
+  };
+  walk(window.REPOSITORY_TREE || {});
+  return [...out].sort();
+})();
+// designs relevés ; « standard » : sans design à matières (les styles des pages seuls, sans habillage)
+const DESIGNS = ['cabinet', 'flightlog', 'field', 'aqua', 'standard'];
+// pages choisies par l'adresse (?pages=apps/a.html,apps/b.html) : jeu « liste », référence propre à cette liste
+const LISTE = (new URLSearchParams(location.search).get('pages') || '').split(',').map(s => s.trim()).filter(Boolean);
 // Composants relevés (deux premiers éléments de chaque sélecteur, et leurs ::before / ::after)
 const SEL = ['html', 'body', '.repo-header', '.repo-header h1', '.repo-header-subtitle', '.repo-header-emblem', '.repo-menu-button',
   '.repo-language-button', '.repo-menu', '.repo-block', '.repo-block .repo-block-heading>h2,.repo-block .repo-block-titles>h2',
@@ -40,7 +60,9 @@ const SEL = ['html', 'body', '.repo-header', '.repo-header h1', '.repo-header-su
   '.repo-footer a', '.repo-actionbar', '.repo-block #status,.repo-block .status', '.repo-block code', '.repo-segs', '.repo-seg',
   '.repo-seg[aria-pressed=true]', 'svg.opt-chart', '.vslider input.vr', '.mc-header-tools button', '.mc-kpi>div', '.mc-item', '.report',
   '.sectionCard', '.repo-block .warn', 'dialog.repo-ap-dialog', '.mc-menu>summary', '.mc-switch>summary', '.mc-toolbar>.mc-import>summary',
-  '.mc-tools', '.mc-summary', '.mapCard', '.arrayItem', '.fp-gauge svg', '.fp-fuel-mode', 'main.ap-page .ap-thumb', 'main.ap-page .ap-iconrow'];
+  '.mc-tools', '.mc-summary', '.mapCard', '.arrayItem', '.fp-gauge svg', '.fp-fuel-mode', 'main.ap-page .ap-thumb', 'main.ap-page .ap-iconrow',
+  '.repo-notice>.repo-icon', '.repo-card-subtitle', '.repo-has-sheet', '.repo-deco-sheet>.sh-frame', '.mt-small', '.repo-block td button',
+  'a.secondary', 'label.rg-file', 'button[data-icon="sparkles"]', '.mc-chip,.mcg-chip', '.repo-block li', '.repo-block summary'];
 // (largeur et hauteur non relevées : elles suivent le contenu — dates, heures, libellés)
 const PROPS = ['background-image', 'background-color', 'background-size', 'background-position', 'color', 'border-top-width',
   'border-top-style', 'border-top-color', 'border-left-width', 'border-left-color', 'border-image-source', 'border-radius', 'box-shadow',
@@ -48,13 +70,64 @@ const PROPS = ['background-image', 'background-color', 'background-size', 'backg
   'margin-left', 'font-family', 'font-size', 'font-weight', 'font-style', 'font-stretch', 'text-transform', 'letter-spacing',
   'text-shadow', 'min-height', 'opacity', 'filter', 'display', 'position', 'text-decoration-line', 'mix-blend-mode',
   'backdrop-filter', 'content', 'inset'];
-const KEY = 'skeuoRegression:v1', $ = id => document.getElementById(id), log = s => { $('log').textContent += s + '\n'; };
+const $ = id => document.getElementById(id), log = s => { $('log').textContent += s + '\n'; };
+$('designs').innerHTML = DESIGNS.map(d => `<label><input type="checkbox" data-d="${d}" checked> ${d}</label>`).join(' ');
+if (LISTE.length) {
+  $('set').insertAdjacentHTML('beforeend', `<option value="liste:${LISTE.join(',')}">liste (${LISTE.length})</option>`);
+  $('set').value = `liste:${LISTE.join(',')}`;
+}
+$('set').options[1].textContent = `toutes (${TOUTES.length})`;
+
+// ---- références : IndexedDB (une par jeu de pages) ; ancienne référence localStorage reprise pour les témoins
+const db = new Promise((ok, ko) => {
+  const r = indexedDB.open('skeuoRegression', 1);
+  r.onupgradeneeded = () => r.result.createObjectStore('refs');
+  r.onsuccess = () => ok(r.result);
+  r.onerror = () => ko(r.error);
+});
+const idb = async (mode, fn) => { const s = (await db).transaction('refs', mode).objectStore('refs'); return new Promise((ok, ko) => { const q = fn(s); q.onsuccess = () => ok(q.result); q.onerror = () => ko(q.error); }); };
+const loadRef = async set => {
+  let r = await idb('readonly', s => s.get(set));
+  if (!r && set === 'temoins' && localStorage.getItem('skeuoRegression:v1')) {
+    r = JSON.parse(localStorage.getItem('skeuoRegression:v1'));
+    await idb('readwrite', s => s.put(r, set));
+    localStorage.removeItem('skeuoRegression:v1');
+  }
+  return r;
+};
+const saveRef = (set, r) => idb('readwrite', s => s.put(r, set));
 
 /** Styles calculés des composants d'un document (valeurs sans version de cache). */
+/** Sélecteurs des styles propres de la page (blocs <style> de la page, mission_core/core.css, maintenance.css) : relevés
+ *  en plus des composants communs en mode « liste » (retrait des !important des pages). */
+function pageSelectors(d) {
+  const out = new Set();
+  const walk = rules => {
+    for (const r of rules) {
+      if (r.selectorText) r.selectorText.split(/,(?![^(]*\))/).map(s => s.trim()).filter(s => s && !/^html\[data-/.test(s) && !/::?-webkit-|::?-moz-/.test(s)).forEach(s => out.add(s));
+      else if (r.cssRules) walk(r.cssRules);
+    }
+  };
+  for (const sh of d.styleSheets) {
+    const own = sh.ownerNode?.tagName === 'STYLE' && !sh.ownerNode.dataset.layer && sh.ownerNode.id !== 'repoLayers';
+    if (!own && !/mission_core\/core\.css|maintenance\.css/.test(sh.href || '')) continue;
+    try {
+      walk(sh.cssRules);
+    } catch {
+      /* feuille illisible */ }
+  }
+  return [...out];
+}
 function snap(d) {
   const w = d.defaultView, out = {};
-  for (const s of SEL) {
-    [...d.querySelectorAll(s)].slice(0, 2).forEach((el, i) => {
+  const sels = $('set').value.startsWith('liste:') ? [...new Set([...SEL, ...pageSelectors(d)])] : SEL;
+  for (const s of sels) {
+    let els = [];
+    try {
+      els = [...d.querySelectorAll(s)].slice(0, 2);
+    } catch {
+      /* sélecteur non interrogeable (pseudo-classe d'état…) */ }
+    els.forEach((el, i) => {
       for (const pe of ['', '::before', '::after']) {
         const cs = w.getComputedStyle(el, pe || null);
         if (pe && (cs.content === 'none' || cs.content === 'normal')) continue;
@@ -66,19 +139,22 @@ function snap(d) {
   }
   return out;
 }
-/** Charge chaque page dans chaque design et ton ; visit(clé, relevé) pour chaque combinaison. */
+/** Charge chaque page dans chaque design et ton cochés ; visit(clé, relevé) pour chaque combinaison. */
 async function sweep(visit) {
+  const pages = $('set').value === 'toutes' ? TOUTES : $('set').value.startsWith('liste:') ? LISTE : TEMOINS;
   const tones = ['light', 'dark'].filter(t => $(t).checked);
+  const designs = DESIGNS.filter(d => document.querySelector(`[data-d="${d}"]`).checked);
   const keep = localStorage.getItem('repositoryDesign');
-  for (const des of DESIGNS) {
+  let n = 0;
+  for (const des of designs) {
     localStorage.setItem('repositoryDesign', des);
-    for (const p of PAGES) {
-      $('state').textContent = `${des} · ${p}`;
+    for (const p of pages) {
+      $('state').textContent = `${des} · ${p} (${++n}/${designs.length * pages.length})`;
       const f = document.createElement('iframe');
       document.body.append(f);
-      f.src = '/' + p;
+      f.src = `/${p}${p.includes('?') ? '&' : '?'}_=${Date.now()}`; // adresse unique : jamais la page en cache
       await new Promise(r => { f.onload = r; setTimeout(r, 8000); });
-      await new Promise(r => setTimeout(r, 1500));   // décors et blocs posés après le chargement
+      await new Promise(r => setTimeout(r, 1500)); // décors et blocs posés après le chargement
       // transitions et animations coupées : relevé de l'état final, pas d'une étape de transition
       f.contentDocument.head.insertAdjacentHTML('beforeend', '<style>*,*::before,*::after{transition:none!important;animation:none!important}</style>');
       for (const tone of tones) {
@@ -89,23 +165,26 @@ async function sweep(visit) {
       f.remove();
     }
   }
-  if (keep) localStorage.setItem('repositoryDesign', keep); else localStorage.removeItem('repositoryDesign');
+  if (keep) localStorage.setItem('repositoryDesign', keep);
+  else localStorage.removeItem('repositoryDesign');
   $('state').textContent = '';
 }
 $('ref').onclick = async () => {
   $('log').textContent = '';
-  const base = {};
-  await sweep((k, v) => { base[k] = v; });
-  try { localStorage.setItem(KEY, JSON.stringify(base)); log(`Référence : ${Object.keys(base).length} combinaisons.`); }
-  catch (e) { log('Référence trop grosse pour le stockage local : décocher un ton. ' + e.message); }
+  const set = $('set').value, base = (await loadRef(set)) || {};
+  let n = 0;
+  await sweep((k, v) => { base[k] = v; n++; });   // les combinaisons non relevées gardent leur référence
+  await saveRef(set, base);
+  log(`Référence « ${set} » : ${n} combinaison(s) relevée(s), ${Object.keys(base).length} en tout.`);
 };
 $('cmp').onclick = async () => {
   $('log').textContent = '';
-  const base = JSON.parse(localStorage.getItem(KEY) || 'null');
-  if (!base) return log('Pas de référence : cliquer d\'abord « Référence ».');
+  const set = $('set').value, base = await loadRef(set);
+  if (!base) return log(`Pas de référence « ${set} » : cliquer d'abord « Référence ».`);
   let n = 0;
   await sweep((k, now) => {
-    const old = base[k] || {};
+    const old = base[k];
+    if (!old) { log(`${k}  (pas de référence)`); return; }
     for (const s of new Set([...Object.keys(old), ...Object.keys(now)])) {
       if (old[s] === now[s]) continue;
       if (!old[s] || !now[s]) { n++; log(`${k}  ${s}  ${old[s] ? 'disparu' : 'nouveau'}`); continue; }

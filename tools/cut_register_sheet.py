@@ -4,13 +4,15 @@ raccordables (fondu enchaîné), pièces d'en-tête facultatives, papier de fond
 
 Une configuration par design (CONFIGS) : planche source (non versionnée, dans shared/deco/<design>/), coordonnées des
 morceaux dans la planche. Le script écrit shared/deco/<design>/sheet-*.webp et affiche les jetons de géométrie
-(--sh-*, en px de planche) à reporter dans designs_skeuo.css pour ce design. Les accessoires posés sur le bord gauche
+(--sh-*, en px de planche), et les écrit dans designs_skeuo.css avec --write. Les accessoires posés sur le bord gauche
 (ficelle de Cabinet, crayon de Durci : sheet-string.webp) sont des images transparentes livrées à part, non produites
 ici.
 
 Usage (ImageMagick 7, à la racine du dépôt) :
-  python tools/cut_register_sheet.py cabinet|flightlog|field
-Puis python tools/bump_versions.py et vérification dans une page à registre (ton clair).
+  python tools/cut_register_sheet.py cabinet|flightlog|field [--write]
+--write : réécrit aussi le bloc « découpe » du design dans shared/designs_skeuo.css (tailles et arrêts ; les « réglages »
+— papier, marges, en-tête, accessoire — restent à la main). Puis python tools/bump_versions.py et vérification dans une
+page à registre (ton clair).
 """
 import os, subprocess, sys, tempfile
 
@@ -53,7 +55,7 @@ CONFIGS = {
         'left': ((39, 500, 110, 300, 40, 'y'), dict(right=20)),
         'right': ((918, 500, 106, 300, 40, 'y'), dict(left=20)),
         'pieces': {
-            'head': ((160, 145, 745, 185), [], dict(left=40, right=40, top=30, bottom=30)),
+            'head': ((150, 140, 765, 194), [], dict(left=12, right=12, top=12, bottom=8)),   # fondu court : texte jusqu'au bord (Carnet de vol)
         },
         # papier : intérieur du tableau (filets pointillés effacés) ; couleur : papier de l'en-tête (droite de « République
         # française ») : pas de rectangle visible autour de l'en-tête
@@ -150,7 +152,7 @@ def seamless(src, box, out):
     run(f'{T}/a.png', f'{T}/bf.png', '-geometry', '+0+0', '-compose', 'over', '-composite', out)
 
 
-def main(design):
+def main(design, write=False):
     c = CONFIGS[design]
     folder = os.path.join('shared', 'deco', design)
     src = os.path.join(folder, c['src'])
@@ -192,9 +194,28 @@ def main(design):
     }
     print(f'papier {mean}')
     print(';'.join(f'--sh-{k}:{v}' for k, v in tok.items()))
+    if write:
+        write_tokens(design, tok)
+
+
+def write_tokens(design, tok):
+    """Réécrit le bloc « découpe » du design dans shared/designs_skeuo.css (entre son repère et « réglages »)."""
+    css = os.path.join('shared', 'designs_skeuo.css')
+    text = open(css, encoding='utf-8', newline='').read()
+    nl = '\r\n' if '\r\n' in text else '\n'
+    mark = f'/* découpe : tools/cut_register_sheet.py {design} --write */'
+    start = text.index(mark) + len(mark)
+    end = text.index('  /* réglages */', start)
+    # un jeton par ligne (mise en forme de tools/format_sources.py)
+    keys = [f'{n}-{d}' for n in ('tl', 'tr', 'bl', 'br', 'top', 'bot', 'left', 'right') for d in 'wh']
+    keys += ['top-l', 'top-r', 'bot-l', 'bot-r', 'left-t', 'left-b', 'right-t', 'right-b']
+    text = text[:start] + nl + nl.join(f'  --sh-{k}: {tok[k]}px;' for k in keys) + nl + text[end:]
+    open(css, 'w', encoding='utf-8', newline='').write(text)
+    print(f'{css} : bloc « découpe » de {design} réécrit')
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2 or sys.argv[1] not in CONFIGS:
-        sys.exit(f'usage : python tools/cut_register_sheet.py {"|".join(CONFIGS)}')
-    main(sys.argv[1])
+    args = [a for a in sys.argv[1:] if a != '--write']
+    if len(args) != 1 or args[0] not in CONFIGS:
+        sys.exit(f'usage : python tools/cut_register_sheet.py {"|".join(CONFIGS)} [--write]')
+    main(args[0], write='--write' in sys.argv)

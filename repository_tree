@@ -1,6 +1,6 @@
 window.REPOSITORY_TREE={
   version:3,
-  release:{date:"2026-09-30",version:"4.3.1",id:"XPS-4.3.1",changelog:"https://framagit.org/asr/flight_planner/-/blob/master/CHANGELOG.md",
+  release:{date:"2026-09-30",version:"4.4.0",id:"XPS-4.4.0",changelog:"https://framagit.org/asr/flight_planner/-/blob/master/CHANGELOG.md",
     // dépôt de publication : contrôle des mises à jour (Paramètres › Maintenance, shared/suite_update.js) ; canaux = branches
     repository:{web:"https://framagit.org/asr/flight_planner",api:"https://framagit.org/api/v4/projects/asr%2Fflight_planner",channels:{master:"stable",develop:"early"}}},
   defaults:{
@@ -41,6 +41,7 @@ window.REPOSITORY_TREE={
     // Centre de planification et de conduite des opérations (apps/cpco) : bleu nuit, texte et accent dorés (état-major)
     cpco:{bar:"#1b2440",barText:"#e2c16b",page:"#f2f0ea",accent:"#7a5c12",favicon:"assets/favicon-cpco.svg"},
     aar:{bar:"#115e59",barText:"#ffffff",page:"#f5f6f8",accent:"#115e59",favicon:"assets/favicon-aar.svg"},
+    combat:{bar:"#b45309",barText:"#ffffff",page:"#f5f6f8",accent:"#b45309",favicon:"assets/favicon-combat.svg"},
     flight:{bar:"#101317",barText:"#eef3f7",page:"#101317",accent:"#71b7ff",favicon:"assets/favicon-flight.svg"}
   },
   // Designs graphiques (menu ☰ › Design ; règles dans shared/designs.css, couleurs = thème ci-dessus) :
@@ -60,7 +61,7 @@ window.REPOSITORY_TREE={
       // shared/icons/skeuo/<id du design> ; emblem : emblème d'en-tête (RepositoryIcons.emblem)
       cabinet:{css:"designs_skeuo.css",skeuo:true,frame:true,chart:"brass",icons:"brass",emblem:"compass",label:["Cabinet","Cabinet","Kabinett","Gabinete"],title:["Cabinet de navigation : cuir, bois, parchemin, laiton","Navigation cabinet: leather, wood, parchment, brass","Navigationskabinett: Leder, Holz, Pergament, Messing","Gabinete de navegación: cuero, madera, pergamino, latón"]},
       flightlog:{css:"designs_skeuo.css",skeuo:true,frame:true,base:"cabinet",chart:"brass",icons:"avio",emblem:"propeller",label:["Carnet de vol","Flight log","Flugbuch","Cuaderno de vuelo"],title:["Cabinet aéronautique : aluminium riveté, cadrans, plan de vol, cuir marine","Aviation cabinet: riveted aluminium, gauges, flight plan, navy leather","Luftfahrt-Kabinett: genietetes Aluminium, Instrumente, Flugplan, marineblaues Leder","Gabinete aeronáutico: aluminio remachado, instrumentos, plan de vuelo, cuero azul"]},
-      field:{css:"designs_skeuo.css",skeuo:true,frame:true,chart:"khaki",icons:"steel",emblem:"wings-globe",label:["Durci","Rugged","Robust","Robusto"],title:["Console de terrain : peinture olive, acier, champs noirs, voyants","Field console: olive paint, steel, black fields, lights","Feldkonsole: olivgrüner Lack, Stahl, schwarze Felder, Leuchten","Consola de campaña: pintura oliva, acero, campos negros, pilotos"]},
+      field:{css:"designs_skeuo.css",skeuo:true,frame:true,surface:"dark",chart:"khaki",icons:"steel",emblem:"wings-globe",label:["Durci","Rugged","Robust","Robusto"],title:["Console de terrain : peinture olive, acier, champs noirs, voyants","Field console: olive paint, steel, black fields, lights","Feldkonsole: olivgrüner Lack, Stahl, schwarze Felder, Leuchten","Consola de campaña: pintura oliva, acero, campos negros, pilotos"]},
       aqua:{css:"designs_skeuo.css",skeuo:true,icons:"gel",label:["Aqua","Aqua","Aqua","Aqua"],title:["Métal brossé, verre dépoli, boutons gel","Brushed metal, frosted glass, gel buttons","Gebürstetes Metall, Milchglas, Gel-Schaltflächen","Metal cepillado, vidrio esmerilado, botones de gel"]}
     }
   },
@@ -108,6 +109,7 @@ window.REPOSITORY_TREE={
     "apps/cr/SPECIAL":{theme:"special",favicon:"assets/favicon-special.svg"},
     "apps/cpco":{theme:"cpco",favicon:"assets/favicon-cpco.svg"},
     "apps/cr/AAR":{theme:"aar",favicon:"assets/favicon-aar.svg"},
+    "apps/cr/COMBAT":{theme:"combat",favicon:"assets/favicon-combat.svg"},
     "apps/landing":{theme:"landing",favicon:"assets/favicon-landing.svg",decor:"sober"}
   },
   pages:[
@@ -145,6 +147,8 @@ window.REPOSITORY_TREE={
     {path:"apps/cr/FIRE/fire_core_reporting.html",menu:false,label:"FIRE / GAAR — Reporting missions (Core, validation)"},
     {path:"apps/cr/AAR/aar_cr.html",menu:false,label:"AAR / RAVITAILLEMENT EN VOL — Compte rendu de mission"},
     {path:"apps/cr/AAR/aar_reporting.html",menu:false,label:"AAR / RAVITAILLEMENT EN VOL — Reporting missions"},
+    {path:"apps/cr/COMBAT/combat_cr.html",menu:false,label:"COMBAT / ACM — Compte rendu de mission"},
+    {path:"apps/cr/COMBAT/combat_reporting.html",menu:false,label:"COMBAT / ACM — Reporting missions"},
     {path:"apps/cr/MissionCore/demo_cr.html",menu:false,label:"Démonstration — compte rendu de mission"},
     {path:"apps/cr/MissionCore/demo_reporting.html",menu:false,label:"Démonstration — reporting missions"},
     {path:"apps/cr/mission_cr.html",menu:false,label:"Nouveau compte rendu de mission",theme:"core",favicon:"assets/favicon-flight.svg"},

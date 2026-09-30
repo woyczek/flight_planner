@@ -10,7 +10,10 @@
      sous [data-tone="dark"]) ; les COMPOSANTS (en-tête, menus, blocs, plaques de titre, cartes, zones de dépôt, champs,
      boutons, barre latérale, pied de page, barre d'action…) sont écrits une seule fois avec ces jetons (section
      « Composants communs » et suivantes) ; la section d'un design ne garde que ce qui lui est propre (vis, coutures,
-     bande d'unité, cadre d'aluminium…) ;
+     bande d'unité, cadre d'aluminium…) ; composants propres aux designs à cadre (pastille d'étape, titres de
+     sous-cartes, zones de dépôt, icône des bandeaux, anneau de focus, pied de page, sélecteur segmenté) : une règle
+     html[data-skeuo="frame"] et des jetons (--sk-step-*, --sk-card-title-*, --sk-drop-*, --sk-focus, --sk-footer-*,
+     --sk-segs-*, --sk-seg-*…), définis par la base Cabinet (et surchargés par le Carnet de vol) et par Durci ;
    - les règles propres à une page vivent dans la feuille de cette page (Mission Core : shared/mission_core/core.css ;
      planificateur, éditeur de mission, Apparence), avec les jetons d'ici ;
    - vérification de toute retouche : tools/skeuo_regression.html (styles calculés, avant / après).
@@ -25,597 +28,1872 @@
      couleur de texte ; à l'impression, tout s'efface (encre noire, fond blanc). */
 
 /* ================================================================================================ CABINET */
-html[data-design-base="cabinet"]{
-  --cab-bar:color-mix(in srgb,var(--repo-bar) 50%,#0b0d14);
-  --cab-cream:#f4ecd8;            /* crème / cuir marine ou bandeau assombri : ≥ 10:1 */
-  --cab-ink:#2b2418;              /* encre / parchemin #efe3c4 : 12,6:1 */
-  --cab-ink-2:#5b4a2e;            /* encre secondaire / parchemin : 7:1 */
-  --cab-navy:#1d3557;             /* titres / parchemin : 10,4:1 */
-  --cab-rule:#9c7a44;
-  --cab-brass-hi:#f3de98;--cab-brass:#c9a24a;--cab-brass-lo:#8a6526;--cab-engrave:#2a1d08;
-  --cab-paper:#efe3c4;--cab-field:#fbf5e6;
-  --cab-screw:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cdefs%3E%3CradialGradient id='g' cx='.35' cy='.3' r='.8'%3E%3Cstop offset='0' stop-color='%23fff4c8'/%3E%3Cstop offset='.45' stop-color='%23c9a24a'/%3E%3Cstop offset='1' stop-color='%235a4012'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='10' cy='10.6' r='8.6' fill='%233a2a0c' opacity='.5'/%3E%3Ccircle cx='10' cy='10' r='8' fill='url(%23g)'/%3E%3Cpath d='M5 13 15 7' stroke='%234a3510' stroke-width='1.8' stroke-linecap='round'/%3E%3Cpath d='M5.3 13.8 15.3 7.8' stroke='%23fff0bd' stroke-width='.6' stroke-linecap='round' opacity='.7'/%3E%3C/svg%3E");
-  --repo-surface:#efe3c4;
-  background:#3a2112 url("textures/leather-brown.webp?v=20260930zzzn") center/256px!important;
+html[data-design-base="cabinet"] {
+  --sk-page-margin: 14px;
+  --sk-page-bg: #4a2712 url("textures/wood.webp?v=73340c58") center/512px;
+  --sk-page-shadow: 0 18px 40px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 220, 170, .35), inset 0 0 0 1px #1c0d05, inset 0 0 24px rgba(0, 0, 0, .5);
+  --sk-corner-screw: var(--cab-screw);
+  --sk-header-screw-at: 9px;
+  --sk-header-screw-size: 11px;
+  --sk-block-screw-radius: 4px;
+  --sk-block-screw-at: 2px;
+  --sk-block-screw-size: 12px;
+  --sk-card-screw-size: 10px;
+  --sk-emblem-w: 56px;
+  --sk-emblem-h: 56px;
+  --sk-emblem-margin: 0 6px 0 -2px;
+  --sk-emblem-filter: drop-shadow(0 5px 6px rgba(0, 0, 0, .55));
+  --sk-pick-shadow: 0 0 0 1.5px var(--cab-brass), 0 2px 3px rgba(0, 0, 0, .35);
+  --sk-pick-family: "Palatino Linotype", Georgia, serif;
+  --sk-chart-base: #b8963e;
+  --sk-chart-font: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  --sk-label-family: "Palatino Linotype", Georgia, serif;
+  --sk-notice-outline: 1px solid color-mix(in srgb, var(--cab-rule) 55%, transparent);
+  --sk-notice-outline-offset: -5px;
+  --sk-title-family: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  --sk-title-ink: var(--cab-cream);
+  --sk-title-shadow: 0 2px 0 #06101f;
+  --sk-code-bg: rgba(255, 250, 236, .75);
+  --sk-code-ink: var(--cab-ink);
+  --sk-code-border: 1px solid var(--cab-rule);
+  --sk-code-radius: 3px;
+  --sk-btn-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  --sk-lbtn-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  --cab-bar: color-mix(in srgb, var(--repo-bar) 50%, #0b0d14);
+  --cab-cream: #f4ecd8;
+  /* crème / cuir marine ou bandeau assombri : ≥ 10:1 */
+  --cab-ink: #2b2418;
+  /* encre / parchemin #efe3c4 : 12,6:1 */
+  --cab-ink-2: #5b4a2e;
+  /* encre secondaire / parchemin : 7:1 */
+  --cab-navy: #1d3557;
+  /* titres / parchemin : 10,4:1 */
+  --cab-rule: #9c7a44;
+  --cab-brass-hi: #f3de98;
+  --cab-brass: #c9a24a;
+  --cab-brass-lo: #8a6526;
+  --cab-engrave: #2a1d08;
+  --cab-paper: #efe3c4;
+  --cab-field: #fbf5e6;
+  --cab-screw: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cdefs%3E%3CradialGradient id='g' cx='.35' cy='.3' r='.8'%3E%3Cstop offset='0' stop-color='%23fff4c8'/%3E%3Cstop offset='.45' stop-color='%23c9a24a'/%3E%3Cstop offset='1' stop-color='%235a4012'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='10' cy='10.6' r='8.6' fill='%233a2a0c' opacity='.5'/%3E%3Ccircle cx='10' cy='10' r='8' fill='url(%23g)'/%3E%3Cpath d='M5 13 15 7' stroke='%234a3510' stroke-width='1.8' stroke-linecap='round'/%3E%3Cpath d='M5.3 13.8 15.3 7.8' stroke='%23fff0bd' stroke-width='.6' stroke-linecap='round' opacity='.7'/%3E%3C/svg%3E");
+  --repo-surface: #efe3c4;
+  background: #3a2112 url("textures/leather-brown.webp?v=45953b4a") center/256px !important;
   /* jetons des composants communs (section COMPOSANTS COMMUNS) */
-  --sk-ink:var(--cab-ink);--sk-ink-2:var(--cab-ink-2);
-  --sk-header-radius:10px;--sk-header-border:0;--sk-header-margin:0 0 6px;--sk-header-ink:var(--cab-cream);
-  --sk-header-bg:linear-gradient(color-mix(in srgb,var(--cab-bar) 55%,transparent),color-mix(in srgb,var(--cab-bar) 55%,transparent)),#0f2140 url("textures/leather-navy.webp?v=20260930zzzn") center/256px;
-  --sk-header-shadow:inset 0 0 0 1px #0b1628,inset 0 2px 0 rgba(160,190,240,.18),inset 0 -8px 20px rgba(0,0,0,.45),0 3px 0 #1c0d05;
-  --sk-mbtn-bg:linear-gradient(#27446f,#122746);--sk-mbtn-ink:var(--cab-brass-hi);--sk-mbtn-border:1px solid var(--cab-brass);--sk-mbtn-radius:5px;
-  --sk-menu-bg:#f6ecd2 url("textures/parchment.webp?v=20260930zzzn") center/400px;--sk-menu-ink:var(--cab-ink);--sk-menu-border:2px solid var(--cab-brass-lo);
-  --sk-block-radius:12px;--sk-block-border:10px solid transparent;
-  --sk-block-bg:url("textures/parchment.webp?v=20260930zzzn") center/512px padding-box,
-    linear-gradient(180deg,rgba(255,228,190,.22),rgba(255,228,190,0) 4px,rgba(0,0,0,0) calc(100% - 5px),rgba(0,0,0,.55)) border-box,
-    linear-gradient(90deg,rgba(255,228,190,.14),rgba(255,228,190,0) 4px,rgba(0,0,0,0) calc(100% - 5px),rgba(0,0,0,.4)) border-box,
-    url("textures/leather-brown.webp?v=20260930zzzn") center/256px border-box #4a2712;
-  --sk-block-shadow:inset 0 0 0 1px rgba(40,18,4,.75),inset 0 3px 5px rgba(40,18,4,.45),inset 0 0 36px rgba(120,80,30,.35),0 0 0 1px rgba(20,8,2,.8),0 5px 10px rgba(40,20,5,.5);
-  --sk-card-bg:color-mix(in srgb,var(--cab-field) 55%,transparent);--sk-card-border:1px solid var(--cab-rule);--sk-card-radius:6px;
-  --sk-card-shadow:inset 0 0 18px rgba(130,90,35,.25),0 2px 4px rgba(60,35,10,.3);
-  --sk-drop-bg:color-mix(in srgb,var(--cab-field) 70%,transparent);--sk-drop-border:1.5px solid var(--cab-rule);--sk-drop-radius:6px;--sk-drop-shadow:inset 0 1px 4px rgba(80,50,15,.4);
-  --sk-notice-bg:color-mix(in srgb,var(--cab-field) 55%,transparent);--sk-notice-border:1px solid var(--cab-rule);--sk-notice-radius:6px;--sk-notice-ink:var(--cab-ink);
-  --sk-plate-padding:6px 26px;--sk-plate-font:700 .95rem/1.2 "Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;--sk-plate-spacing:.06em;
-  --sk-plate-ink:var(--cab-engrave);--sk-plate-text-shadow:0 1px 0 rgba(255,244,200,.75),0 -1px 0 rgba(60,40,10,.3);
-  --sk-plate-bg:#c9a24a url("textures/brass.webp?v=20260930zzzn") center/256px;--sk-plate-shadow:0 0 0 1px #5a4012,inset 0 1px 0 #fff7d1,inset 0 -2px 0 rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.35);
-  --sk-screw:var(--cab-screw);--sk-plate-screw:10px;--sk-plate-screw-x:9px;
-  --sk-label-ink:var(--cab-navy);
-  --sk-status-bg:color-mix(in srgb,var(--cab-field) 70%,transparent);--sk-status-border:1px solid var(--cab-rule);--sk-status-ink:var(--cab-ink);--sk-status-shadow:inset 0 1px 3px rgba(80,50,15,.35);
-  --sk-input-bg:var(--cab-field);--sk-input-ink:var(--cab-ink);--sk-input-border:1px solid var(--cab-rule);--sk-input-radius:4px;--sk-input-shadow:inset 0 1px 3px rgba(80,50,15,.4);
-  --sk-btn-weight:700;--sk-btn-border:0;--sk-btn-radius:6px;--sk-btn-ink:var(--cab-cream);--sk-btn-text-shadow:0 1px 0 #000;
-  --sk-btn-bg:linear-gradient(color-mix(in srgb,var(--cab-bar) 45%,transparent),color-mix(in srgb,var(--cab-bar) 45%,transparent)),#0f2140 url("textures/leather-navy.webp?v=20260930zzzn") center/200px;
-  --sk-btn-shadow:0 0 0 2px var(--cab-brass),0 0 0 3px #5a4012,inset 0 1px 0 rgba(255,255,255,.22),inset 0 -6px 12px rgba(0,0,0,.4),0 4px 6px rgba(0,0,0,.4);
-  --sk-btn-hover:brightness(1.12);--sk-btn-disabled:grayscale(.6) opacity(.6);
-  --sk-lbtn-weight:700;--sk-lbtn-border:0;--sk-lbtn-radius:6px;--sk-lbtn-ink:var(--cab-cream);
-  --sk-lbtn-bg:linear-gradient(color-mix(in srgb,var(--cab-bar) 45%,transparent),color-mix(in srgb,var(--cab-bar) 45%,transparent)),#0f2140 url("textures/leather-navy.webp?v=20260930zzzn") center/200px;
-  --sk-lbtn-shadow:0 0 0 2px var(--cab-brass),0 0 0 3px #5a4012,inset 0 1px 0 rgba(255,255,255,.22),0 4px 6px rgba(0,0,0,.4);
-  --sk-pick-ink:var(--cab-cream);--sk-pick-bg:#0f2140 url("textures/leather-navy.webp?v=20260930zzzn") center/200px;
-  --sk-sidenav-bg:#3a1e0e url("textures/wood.webp?v=20260930zzzn") center/512px;--sk-sidenav-border:3px solid var(--cab-brass-lo);--sk-sidenav-ink:var(--cab-cream);
-  --sk-footer-margin:14px 0 0;--sk-footer-padding:8px 14px;--sk-footer-bg:#efe3c4 url("textures/parchment.webp?v=20260930zzzn") center/300px;--sk-footer-ink:var(--cab-ink);
-  --sk-abar-bg:linear-gradient(color-mix(in srgb,var(--cab-bar) 45%,transparent),color-mix(in srgb,var(--cab-bar) 45%,transparent)),#0f2140 url("textures/leather-navy.webp?v=20260930zzzn") center/256px;
-  --sk-abar-border:2px solid var(--cab-brass);--sk-abar-shadow:0 -6px 16px rgba(0,0,0,.45);--sk-abar-ink:var(--cab-cream);
-  --sk-tool-bg:linear-gradient(#27446f,#122746);--sk-tool-ink:var(--cab-cream);
-  --sk-dialog-bg:#4a2712 url("textures/wood.webp?v=20260930zzzn") center/512px;
-  --sk-chart-bg:radial-gradient(ellipse at 50% 35%,#1d2e4a,#0c1424 85%);--sk-chart-border:2px solid #8a6526;--sk-chart-radius:6px;
-  --sk-chart-shadow:inset 0 0 0 1px #000,inset 0 3px 14px rgba(0,0,0,.75),0 1px 0 rgba(255,235,190,.18),0 3px 6px rgba(0,0,0,.4);
-  --sk-chart-grid:rgba(214,178,108,.22);--sk-chart-axis:#c9a24a;--sk-chart-text:#ead9ae;
-  --sk-slider-track:linear-gradient(90deg,#0b0705,#2b1c10 55%,#0b0705);--sk-slider-track-shadow:inset 0 1px 3px #000,0 0 0 1px #8a6526;
-  --sk-thumb-w:22px;--sk-thumb-h:22px;--sk-thumb-x:-7px;--sk-thumb-radius:50%;--sk-thumb-border:1px solid #3a2808;
-  --sk-thumb-bg:repeating-conic-gradient(rgba(0,0,0,.18) 0 6deg,transparent 6deg 12deg),radial-gradient(circle at 35% 30%,#fff3c4,#d6ae55 45%,#7a5520);
-  --sk-thumb-shadow:0 2px 3px rgba(0,0,0,.6),inset 0 1px 1px rgba(255,255,255,.6);
+  --sk-ink: var(--cab-ink);
+  --sk-ink-2: var(--cab-ink-2);
+  --sk-card-title-ink: var(--cab-navy);
+  --sk-card-title-family: "Palatino Linotype", Georgia, serif;
+  --sk-card-sub-ink: var(--cab-ink-2);
+  --sk-drop-ink: var(--cab-ink);
+  --sk-drop-state-ink: var(--cab-ink-2);
+  --sk-notice-icon: var(--cab-navy);
+  --sk-focus: var(--cab-navy);
+  --sk-footer-link: var(--cab-navy);
+  --sk-footer-shadow: inset 0 2px 5px rgba(0, 0, 0, .4), 0 0 0 2px #7a5a2c;
+  --sk-step-radius: 50%;
+  --sk-step-bg: radial-gradient(circle at 35% 30%, #fff3c4, #c9a24a 55%, #6b4d15);
+  --sk-step-ink: var(--cab-engrave);
+  --sk-step-shadow: inset 0 0 0 2px rgba(0, 0, 0, .25), 0 2px 3px rgba(0, 0, 0, .4);
+  --sk-step-family: Georgia, serif;
+  --sk-segs-border: 1px solid #2a1606;
+  --sk-segs-bg: #b08a3a url("textures/brass.webp?v=f418b500") center/256px;
+  --sk-seg-ink: #231507;
+  --sk-seg-shadow: 0 1px 0 rgba(255, 240, 200, .55);
+  --sk-seg-sep: 1px solid rgba(30, 16, 4, .55);
+  --sk-seg-sep-shadow: inset 1px 0 0 rgba(255, 240, 200, .35);
+  --sk-seg-on-bg: #1f2c47 url("textures/leather-navy.webp?v=1bacc4e6") center/256px;
+  --sk-seg-on-ink: #f1e4c0;
+  --sk-seg-on-text-shadow: 0 1px 0 #000;
+  --sk-seg-on-shadow: inset 0 2px 6px rgba(0, 0, 0, .65);
+  --sk-header-radius: 10px;
+  --sk-header-border: 0;
+  --sk-header-margin: 0 0 6px;
+  --sk-header-ink: var(--cab-cream);
+  --sk-header-bg: linear-gradient(color-mix(in srgb, var(--cab-bar) 55%, transparent), color-mix(in srgb, var(--cab-bar) 55%, transparent)), #0f2140 url("textures/leather-navy.webp?v=1bacc4e6") center/256px;
+  --sk-header-shadow: inset 0 0 0 1px #0b1628, inset 0 2px 0 rgba(160, 190, 240, .18), inset 0 -8px 20px rgba(0, 0, 0, .45), 0 3px 0 #1c0d05;
+  --sk-mbtn-bg: linear-gradient(#27446f, #122746);
+  --sk-mbtn-ink: var(--cab-brass-hi);
+  --sk-mbtn-border: 1px solid var(--cab-brass);
+  --sk-mbtn-radius: 5px;
+  --sk-menu-bg: #f6ecd2 url("textures/parchment.webp?v=c0677c03") center/400px;
+  --sk-menu-ink: var(--cab-ink);
+  --sk-menu-border: 2px solid var(--cab-brass-lo);
+  --sk-block-radius: 12px;
+  --sk-block-border: 10px solid transparent;
+  --sk-block-bg: url("textures/parchment.webp?v=c0677c03") center/512px padding-box,
+    linear-gradient(180deg, rgba(255, 228, 190, .22), rgba(255, 228, 190, 0) 4px, rgba(0, 0, 0, 0) calc(100% - 5px), rgba(0, 0, 0, .55)) border-box,
+    linear-gradient(90deg, rgba(255, 228, 190, .14), rgba(255, 228, 190, 0) 4px, rgba(0, 0, 0, 0) calc(100% - 5px), rgba(0, 0, 0, .4)) border-box,
+    url("textures/leather-brown.webp?v=45953b4a") center/256px border-box #4a2712;
+  --sk-block-shadow: inset 0 0 0 1px rgba(40, 18, 4, .75), inset 0 3px 5px rgba(40, 18, 4, .45), inset 0 0 36px rgba(120, 80, 30, .35), 0 0 0 1px rgba(20, 8, 2, .8), 0 5px 10px rgba(40, 20, 5, .5);
+  --sk-card-bg: color-mix(in srgb, var(--cab-field) 55%, transparent);
+  --sk-card-border: 1px solid var(--cab-rule);
+  --sk-card-radius: 6px;
+  --sk-card-shadow: inset 0 0 18px rgba(130, 90, 35, .25), 0 2px 4px rgba(60, 35, 10, .3);
+  --sk-drop-bg: color-mix(in srgb, var(--cab-field) 70%, transparent);
+  --sk-drop-border: 1.5px solid var(--cab-rule);
+  --sk-drop-radius: 6px;
+  --sk-drop-shadow: inset 0 1px 4px rgba(80, 50, 15, .4);
+  --sk-notice-bg: color-mix(in srgb, var(--cab-field) 55%, transparent);
+  --sk-notice-border: 1px solid var(--cab-rule);
+  --sk-notice-radius: 6px;
+  --sk-notice-ink: var(--cab-ink);
+  --sk-plate-padding: 6px 26px;
+  --sk-plate-font: 700 .95rem/1.2 "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  --sk-plate-spacing: .06em;
+  --sk-plate-ink: var(--cab-engrave);
+  --sk-plate-text-shadow: 0 1px 0 rgba(255, 244, 200, .75), 0 -1px 0 rgba(60, 40, 10, .3);
+  --sk-plate-bg: #c9a24a url("textures/brass.webp?v=f418b500") center/256px;
+  --sk-plate-shadow: 0 0 0 1px #5a4012, inset 0 1px 0 #fff7d1, inset 0 -2px 0 rgba(0, 0, 0, .25), 0 3px 6px rgba(0, 0, 0, .35);
+  --sk-screw: var(--cab-screw);
+  --sk-plate-screw: 10px;
+  --sk-plate-screw-x: 9px;
+  --sk-label-ink: var(--cab-navy);
+  --sk-status-bg: color-mix(in srgb, var(--cab-field) 70%, transparent);
+  --sk-status-border: 1px solid var(--cab-rule);
+  --sk-status-ink: var(--cab-ink);
+  --sk-status-shadow: inset 0 1px 3px rgba(80, 50, 15, .35);
+  --sk-input-bg: var(--cab-field);
+  --sk-input-ink: var(--cab-ink);
+  --sk-input-border: 1px solid var(--cab-rule);
+  --sk-input-radius: 4px;
+  --sk-input-shadow: inset 0 1px 3px rgba(80, 50, 15, .4);
+  --sk-btn-weight: 700;
+  --sk-btn-border: 0;
+  --sk-btn-radius: 6px;
+  --sk-btn-ink: var(--cab-cream);
+  --sk-btn-text-shadow: 0 1px 0 #000;
+  --sk-btn-bg: linear-gradient(color-mix(in srgb, var(--cab-bar) 45%, transparent), color-mix(in srgb, var(--cab-bar) 45%, transparent)), #0f2140 url("textures/leather-navy.webp?v=1bacc4e6") center/200px;
+  --sk-btn-shadow: 0 0 0 2px var(--cab-brass), 0 0 0 3px #5a4012, inset 0 1px 0 rgba(255, 255, 255, .22), inset 0 -6px 12px rgba(0, 0, 0, .4), 0 4px 6px rgba(0, 0, 0, .4);
+  --sk-btn-hover: brightness(1.12);
+  --sk-btn-disabled: grayscale(.6) opacity(.6);
+  --sk-lbtn-weight: 700;
+  --sk-lbtn-border: 0;
+  --sk-lbtn-radius: 6px;
+  --sk-lbtn-ink: var(--cab-cream);
+  --sk-lbtn-bg: linear-gradient(color-mix(in srgb, var(--cab-bar) 45%, transparent), color-mix(in srgb, var(--cab-bar) 45%, transparent)), #0f2140 url("textures/leather-navy.webp?v=1bacc4e6") center/200px;
+  --sk-lbtn-shadow: 0 0 0 2px var(--cab-brass), 0 0 0 3px #5a4012, inset 0 1px 0 rgba(255, 255, 255, .22), 0 4px 6px rgba(0, 0, 0, .4);
+  --sk-pick-ink: var(--cab-cream);
+  --sk-pick-bg: #0f2140 url("textures/leather-navy.webp?v=1bacc4e6") center/200px;
+  --sk-sidenav-bg: #3a1e0e url("textures/wood.webp?v=73340c58") center/512px;
+  --sk-sidenav-border: 3px solid var(--cab-brass-lo);
+  --sk-sidenav-ink: var(--cab-cream);
+  --sk-footer-margin: 14px 0 0;
+  --sk-footer-padding: 8px 14px 8px 34px;
+  --sk-footer-bg: #efe3c4 url("textures/parchment.webp?v=c0677c03") center/300px;
+  --sk-footer-ink: var(--cab-ink);
+  --sk-abar-bg: linear-gradient(color-mix(in srgb, var(--cab-bar) 45%, transparent), color-mix(in srgb, var(--cab-bar) 45%, transparent)), #0f2140 url("textures/leather-navy.webp?v=1bacc4e6") center/256px;
+  --sk-abar-border: 2px solid var(--cab-brass);
+  --sk-abar-shadow: 0 -6px 16px rgba(0, 0, 0, .45);
+  --sk-abar-ink: var(--cab-cream);
+  --sk-tool-bg: linear-gradient(#27446f, #122746);
+  --sk-tool-ink: var(--cab-cream);
+  --sk-dialog-bg: #4a2712 url("textures/wood.webp?v=73340c58") center/512px;
+  --sk-chart-bg: radial-gradient(ellipse at 50% 35%, #1d2e4a, #0c1424 85%);
+  --sk-chart-border: 2px solid #8a6526;
+  --sk-chart-radius: 6px;
+  --sk-chart-shadow: inset 0 0 0 1px #000, inset 0 3px 14px rgba(0, 0, 0, .75), 0 1px 0 rgba(255, 235, 190, .18), 0 3px 6px rgba(0, 0, 0, .4);
+  --sk-chart-grid: rgba(214, 178, 108, .22);
+  --sk-chart-axis: #c9a24a;
+  --sk-chart-text: #ead9ae;
+  --sk-slider-track: linear-gradient(90deg, #0b0705, #2b1c10 55%, #0b0705);
+  --sk-slider-track-shadow: inset 0 1px 3px #000, 0 0 0 1px #8a6526;
+  --sk-thumb-w: 22px;
+  --sk-thumb-h: 22px;
+  --sk-thumb-x: -7px;
+  --sk-thumb-radius: 50%;
+  --sk-thumb-border: 1px solid #3a2808;
+  --sk-thumb-bg: repeating-conic-gradient(rgba(0, 0, 0, .18) 0 6deg, transparent 6deg 12deg), radial-gradient(circle at 35% 30%, #fff3c4, #d6ae55 45%, #7a5520);
+  --sk-thumb-shadow: 0 2px 3px rgba(0, 0, 0, .6), inset 0 1px 1px rgba(255, 255, 255, .6);
 }
-html[data-design-base="cabinet"][data-tone="dark"]{
-  --cab-ink:#efe6cf;--cab-ink-2:#cdbf9c;--cab-navy:#f3de98;--cab-rule:#7a6440;--cab-paper:#1c2230;--cab-field:#121722;--repo-surface:#1c2230;
-  --sk-block-bg:url("textures/parchment-dark.webp?v=20260930zzzn") center/512px padding-box,
-    linear-gradient(180deg,rgba(255,228,190,.2),rgba(255,228,190,0) 4px,rgba(0,0,0,0) calc(100% - 5px),rgba(0,0,0,.6)) border-box,
-    linear-gradient(90deg,rgba(255,228,190,.12),rgba(255,228,190,0) 4px,rgba(0,0,0,0) calc(100% - 5px),rgba(0,0,0,.45)) border-box,
-    url("textures/leather-brown.webp?v=20260930zzzn") center/256px border-box #4a2712;
-  --sk-block-shadow:inset 0 0 0 1px rgba(0,0,0,.8),inset 0 3px 6px rgba(0,0,0,.5),inset 0 0 36px rgba(0,0,0,.45),0 0 0 1px rgba(0,0,0,.85),0 5px 10px rgba(0,0,0,.55);
+html[data-design-base="cabinet"][data-tone="dark"] {
+  --sk-code-bg: #141a21;
+  --sk-code-ink: #e6edf5;
+  --sk-code-border: 1px solid #46525f;
+  --cab-ink: #efe6cf;
+  --cab-ink-2: #cdbf9c;
+  --cab-navy: #f3de98;
+  --cab-rule: #7a6440;
+  --cab-paper: #1c2230;
+  --cab-field: #121722;
+  --repo-surface: #1c2230;
+  --sk-block-bg: url("textures/parchment-dark.webp?v=d9b8cd4f") center/512px padding-box,
+    linear-gradient(180deg, rgba(255, 228, 190, .2), rgba(255, 228, 190, 0) 4px, rgba(0, 0, 0, 0) calc(100% - 5px), rgba(0, 0, 0, .6)) border-box,
+    linear-gradient(90deg, rgba(255, 228, 190, .12), rgba(255, 228, 190, 0) 4px, rgba(0, 0, 0, 0) calc(100% - 5px), rgba(0, 0, 0, .45)) border-box,
+    url("textures/leather-brown.webp?v=45953b4a") center/256px border-box #4a2712;
+  --sk-block-shadow: inset 0 0 0 1px rgba(0, 0, 0, .8), inset 0 3px 6px rgba(0, 0, 0, .5), inset 0 0 36px rgba(0, 0, 0, .45), 0 0 0 1px rgba(0, 0, 0, .85), 0 5px 10px rgba(0, 0, 0, .55);
 }
 /* cadre : la page est un meuble en bois verni posé sur un sous-main en cuir (piqûre en décor complet) */
-html[data-design-base="cabinet"] body{position:relative;margin-top:14px!important;margin-bottom:14px!important;margin-left:14px!important;margin-right:14px!important;padding-top:12px!important;border-radius:14px;
-  background:#4a2712 url("textures/wood.webp?v=20260930zzzn") center/512px!important;color:var(--cab-ink);
-  box-shadow:0 18px 40px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,220,170,.35),inset 0 0 0 1px #1c0d05,inset 0 0 24px rgba(0,0,0,.5)}
-html[data-design-base="cabinet"][data-decor="full"]::before{content:"";position:fixed;inset:8px;border:2px dashed rgba(233,200,140,.4);border-radius:10px;pointer-events:none;z-index:0}
+/* cadre de la page (designs à cadre) : marge, fond et ombre par jetons (--sk-page-*) ; encre du design */
+html[data-skeuo="frame"] body {
+  position: relative;
+  margin-top: var(--sk-page-margin) !important;
+  margin-bottom: var(--sk-page-margin) !important;
+  margin-left: var(--sk-page-margin) !important;
+  margin-right: var(--sk-page-margin) !important;
+  padding-top: 12px !important;
+  border-radius: 14px;
+  background: var(--sk-page-bg) !important;
+  color: var(--sk-ink);
+  box-shadow: var(--sk-page-shadow)
+}
+html[data-design-base="cabinet"][data-decor="full"]::before {
+  content: "";
+  position: fixed;
+  inset: 8px;
+  border: 2px dashed rgba(233, 200, 140, .4);
+  border-radius: 10px;
+  pointer-events: none;
+  z-index: 0
+}
 /* en-tête : cuir marine (bandeau du thème assombri par-dessus), piqûre, rivets laiton, médaillon rose des vents */
-html[data-design-base="cabinet"][data-decor="full"] .repo-header::after{content:"";position:absolute;inset:5px;border:1.5px dashed rgba(214,186,120,.55);border-radius:7px;pointer-events:none}
-html[data-design-base="cabinet"][data-decor="full"] .repo-header::before{content:"";position:absolute;inset:0;pointer-events:none;background:var(--cab-screw) 9px 9px/11px no-repeat,var(--cab-screw) right 9px top 9px/11px no-repeat,var(--cab-screw) 9px calc(100% - 9px)/11px no-repeat,var(--cab-screw) right 9px bottom 9px/11px no-repeat}
-html[data-design-base="cabinet"] .repo-header h1{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif!important;font-weight:700;color:var(--cab-cream)!important;text-shadow:0 2px 0 #06101f}
-html[data-design-base="cabinet"] .repo-header-subtitle{font-style:italic;color:color-mix(in srgb,var(--cab-cream) 85%,transparent)!important}
-html[data-design-base="cabinet"] .repo-header-emblem{width:56px;height:56px;margin:0 6px 0 -2px;flex:none;filter:drop-shadow(0 5px 6px rgba(0,0,0,.55))}
-html[data-design-base="cabinet"] .repo-header-emblem svg{width:100%;height:100%;display:block}
-html[data-design-base="cabinet"] .repo-header :is(button,select,.headerButton):not(.repo-menu-button):not(.repo-language-button){font-family:"Palatino Linotype",Georgia,serif}
-html[data-design-base="cabinet"] :is(.repo-menu,.repo-language-menu){box-shadow:0 10px 24px rgba(0,0,0,.45)!important}
+html[data-design-base="cabinet"][data-decor="full"] .repo-header::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border: 1.5px dashed rgba(214, 186, 120, .55);
+  border-radius: 7px;
+  pointer-events: none
+}
+/* vis des coins (designs à cadre, décor complet) : image --sk-corner-screw ; retrait, position et taille par emplacement */
+html[data-skeuo="frame"][data-decor="full"] .repo-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--sk-corner-screw) var(--sk-header-screw-at) var(--sk-header-screw-at)/var(--sk-header-screw-size) no-repeat, var(--sk-corner-screw) right var(--sk-header-screw-at) top var(--sk-header-screw-at)/var(--sk-header-screw-size) no-repeat, var(--sk-corner-screw) var(--sk-header-screw-at) calc(100% - var(--sk-header-screw-at))/var(--sk-header-screw-size) no-repeat, var(--sk-corner-screw) right var(--sk-header-screw-at) bottom var(--sk-header-screw-at)/var(--sk-header-screw-size) no-repeat
+}
+html[data-design-base="cabinet"] .repo-header-subtitle {
+  font-style: italic;
+  color: color-mix(in srgb, var(--cab-cream) 85%, transparent) !important
+}
+/* emblème de l'en-tête (designs à cadre) : taille, marges et ombre par jetons (--sk-emblem-*) */
+html[data-skeuo="frame"] .repo-header-emblem {
+  width: var(--sk-emblem-w);
+  height: var(--sk-emblem-h);
+  margin: var(--sk-emblem-margin, 0);
+  flex: none;
+  filter: var(--sk-emblem-filter, none)
+}
+html[data-skeuo="frame"] .repo-header-emblem svg {
+  width: 100%;
+  height: 100%;
+  display: block
+}
+html[data-design-base="cabinet"] .repo-header :is(button, select, .headerButton):not(.repo-menu-button):not(.repo-language-button) {
+  font-family: "Palatino Linotype", Georgia, serif
+}
+html[data-design-base="cabinet"] :is(.repo-menu, .repo-language-menu) {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .45) !important
+}
 /* blocs : parchemin serti dans un cadre de cuir brun piqué, vis laiton aux coins (fond : panneaux par thème, design_deco.js).
    Cuir : bord arrondi (lumière en haut et à gauche, ombre en bas et à droite, dégradés sur la bordure), parchemin posé
    sous le cuir (ombre intérieure le long du bord) ; couture : contour pointillé du bloc lui-même, dans la bordure de
    cuir (un contour n'est jamais coupé par le défilement du bloc, contrairement à un pseudo-élément). */
-html[data-design-base="cabinet"] .repo-block{isolation:isolate}
+html[data-design-base="cabinet"] .repo-block {
+  isolation: isolate
+}
 /* blocs positionnés (vis et décors en absolu) ; spécificité nulle : une page qui positionne elle-même un bloc (barre fixée
    en bas : .analysis-dock de Landing) garde son positionnement */
-:where(html[data-skeuo="frame"] .repo-block){position:relative}
-html[data-design="cabinet"][data-decor="full"] .repo-block{outline:1.6px dashed rgba(238,210,156,.78)!important;outline-offset:-6px!important}
-html[data-design-base="cabinet"][data-decor="full"] .repo-block::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:4px;
-  background:var(--cab-screw) 2px 2px/12px no-repeat,var(--cab-screw) right 2px top 2px/12px no-repeat,var(--cab-screw) 2px calc(100% - 2px)/12px no-repeat,var(--cab-screw) right 2px bottom 2px/12px no-repeat}
+:where(html[data-skeuo="frame"] .repo-block) {
+  position: relative
+}
+html[data-design="cabinet"][data-decor="full"] .repo-block {
+  outline: 1.6px dashed rgba(238, 210, 156, .78) !important;
+  outline-offset: -6px !important
+}
+html[data-skeuo="frame"][data-decor="full"] .repo-block::after {
+  content: "";
+  position: absolute;
+  inset: var(--sk-block-screw-inset, 0);
+  pointer-events: none;
+  border-radius: var(--sk-block-screw-radius, 0);
+  background: var(--sk-corner-screw) var(--sk-block-screw-at) var(--sk-block-screw-at)/var(--sk-block-screw-size) no-repeat, var(--sk-corner-screw) right var(--sk-block-screw-at) top var(--sk-block-screw-at)/var(--sk-block-screw-size) no-repeat, var(--sk-corner-screw) var(--sk-block-screw-at) calc(100% - var(--sk-block-screw-at))/var(--sk-block-screw-size) no-repeat, var(--sk-corner-screw) right var(--sk-block-screw-at) bottom var(--sk-block-screw-at)/var(--sk-block-screw-size) no-repeat
+}
 /* ↑ vis dans la boîte du bloc : un pseudo-élément qui dépassait faisait apparaître une barre de défilement dans les
    blocs à défilement (reporting : .section, overflow:auto), qui disparaissait au calcul suivant (blocs qui changeaient
    de taille en boucle) */
-html[data-design="flightlog"][data-decor="full"] .repo-block::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none}   /* plans trois vues (Carnet de vol, plus bas) ; Cabinet : plus de filigrane (les panneaux habillent les blocs) */
+html[data-design="flightlog"][data-decor="full"] .repo-block::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none
+}
+/* plans trois vues (Carnet de vol, plus bas) ; Cabinet : plus de filigrane (les panneaux habillent les blocs) */
 /* titre de bloc : plaque de laiton gravée, vis aux deux bouts */
 /* plaques de titre des blocs (designs à cadre) : laiton gravé (Cabinet), aluminium brossé (Carnet de vol), kaki (Durci) ;
    vis aux deux bouts ; jetons --sk-plate-* et --sk-screw */
-html[data-skeuo="frame"] :is(.repo-block-titles,.repo-block-heading)>h2{position:relative;display:inline-block;padding:var(--sk-plate-padding)!important;border-radius:4px;
-  font:var(--sk-plate-font)!important;letter-spacing:var(--sk-plate-spacing);text-transform:uppercase;color:var(--sk-plate-ink)!important;text-shadow:var(--sk-plate-text-shadow);
-  background:var(--sk-plate-bg)!important;box-shadow:var(--sk-plate-shadow)}
-html[data-skeuo="frame"] :is(.repo-block-titles,.repo-block-heading)>h2::before,html[data-skeuo="frame"] :is(.repo-block-titles,.repo-block-heading)>h2::after{content:"";position:absolute;top:50%;width:var(--sk-plate-screw);height:var(--sk-plate-screw);
-  margin-top:calc(var(--sk-plate-screw) / -2);background:var(--sk-screw) center/var(--sk-plate-screw) no-repeat}
-html[data-skeuo="frame"] :is(.repo-block-titles,.repo-block-heading)>h2::before{left:var(--sk-plate-screw-x)}
-html[data-skeuo="frame"] :is(.repo-block-titles,.repo-block-heading)>h2::after{right:var(--sk-plate-screw-x)}
-html[data-design-base="cabinet"] .repo-block-subtitle{font-family:"Palatino Linotype",Georgia,serif;font-style:italic}
-html[data-design-base="cabinet"] .repo-block-step{border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3c4,#c9a24a 55%,#6b4d15)!important;color:var(--cab-engrave)!important;box-shadow:inset 0 0 0 2px rgba(0,0,0,.25),0 2px 3px rgba(0,0,0,.4)!important;font-family:Georgia,serif}
+html[data-skeuo="frame"] :is(.repo-block-titles, .repo-block-heading)>h2 {
+  position: relative;
+  display: inline-block;
+  padding: var(--sk-plate-padding) !important;
+  border-radius: 4px;
+  font: var(--sk-plate-font) !important;
+  letter-spacing: var(--sk-plate-spacing);
+  text-transform: uppercase;
+  color: var(--sk-plate-ink) !important;
+  text-shadow: var(--sk-plate-text-shadow);
+  background: var(--sk-plate-bg) !important;
+  box-shadow: var(--sk-plate-shadow)
+}
+html[data-skeuo="frame"] :is(.repo-block-titles, .repo-block-heading)>h2::before,
+html[data-skeuo="frame"] :is(.repo-block-titles, .repo-block-heading)>h2::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: var(--sk-plate-screw);
+  height: var(--sk-plate-screw);
+  margin-top: calc(var(--sk-plate-screw) / -2);
+  background: var(--sk-screw) center/var(--sk-plate-screw) no-repeat
+}
+html[data-skeuo="frame"] :is(.repo-block-titles, .repo-block-heading)>h2::before {
+  left: var(--sk-plate-screw-x)
+}
+html[data-skeuo="frame"] :is(.repo-block-titles, .repo-block-heading)>h2::after {
+  right: var(--sk-plate-screw-x)
+}
+html[data-design-base="cabinet"] .repo-block-subtitle {
+  font-family: "Palatino Linotype", Georgia, serif;
+  font-style: italic
+}
 /* sous-cartes, zones de dépôt, bandeaux */
-html[data-design-base="cabinet"] .repo-card{position:relative}
-html[data-design-base="cabinet"][data-decor="full"] .repo-card::after{content:"";position:absolute;inset:4px;pointer-events:none;background:var(--cab-screw) 0 0/10px no-repeat,var(--cab-screw) right 0 top 0/10px no-repeat,var(--cab-screw) 0 100%/10px no-repeat,var(--cab-screw) right 0 bottom 0/10px no-repeat}
-html[data-design-base="cabinet"] .repo-card-titles>:is(strong,h3){font-family:"Palatino Linotype",Georgia,serif;color:var(--cab-navy)!important}
-html[data-design-base="cabinet"] .repo-card-subtitle{color:var(--cab-ink-2)!important}
-html[data-design-base="cabinet"] .repo-dropzone{color:var(--cab-ink)!important}
-html[data-design-base="cabinet"] .repo-dropzone-pick{color:var(--cab-navy)!important;font-weight:700}
-html[data-design-base="cabinet"] .repo-dropzone-state{color:var(--cab-ink-2)!important}
-html[data-design-base="cabinet"] .repo-notice{outline:1px solid color-mix(in srgb,var(--cab-rule) 55%,transparent);outline-offset:-5px}
+html[data-skeuo="frame"][data-decor="full"] .repo-card::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  pointer-events: none;
+  background: var(--sk-corner-screw) 0px 0px/var(--sk-card-screw-size) no-repeat, var(--sk-corner-screw) right 0px top 0px/var(--sk-card-screw-size) no-repeat, var(--sk-corner-screw) 0px calc(100% - 0px)/var(--sk-card-screw-size) no-repeat, var(--sk-corner-screw) right 0px bottom 0px/var(--sk-card-screw-size) no-repeat
+}
 /* textes, champs */
 /* textes des blocs (designs à cadre) : libellés et intertitres, petits textes (jetons --sk-label-ink, --sk-ink-2) */
-html[data-skeuo="frame"] .repo-block :is(label,legend,th,h3,h4){color:var(--sk-label-ink)!important}
-html[data-skeuo="frame"] .repo-block :is(.small,.note,.muted,.hint){color:var(--sk-ink-2)!important}
-html[data-design-base="cabinet"] .repo-block :is(label,legend,th,h3,h4){font-family:"Palatino Linotype",Georgia,serif}
-html[data-design-base="cabinet"] .repo-block :is(p,li,td,.small,.note,.muted,.hint,summary){color:var(--cab-ink)}
-html[data-design-base="cabinet"] .repo-block :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),select,textarea){font-variant-numeric:tabular-nums}
-html[data-design-base="cabinet"] .repo-block textarea{background:repeating-linear-gradient(transparent 0 23px,rgba(29,53,87,.1) 23px 24px),var(--cab-field)!important}
-html[data-design-base="cabinet"] .repo-block :is(table){background:color-mix(in srgb,var(--cab-field) 60%,transparent)}
-html[data-design-base="cabinet"] :is(input,select,textarea,button):focus-visible{outline:2px solid var(--cab-navy)!important;outline-offset:2px}
+html[data-skeuo="frame"] .repo-block :is(label, legend, th, h3, h4) {
+  color: var(--sk-label-ink) !important
+}
+/* gris secondaire des pages (var(--muted), pensé pour le design standard) : encre secondaire du design dans les blocs */
+html[data-skeuo="frame"] .repo-block {
+  --muted: var(--sk-ink-2)
+}
+html[data-design="field"] .repo-has-sheet {
+  --muted: #4a4634
+}
+/* textes courants des blocs : encre du design ; libellés et intertitres : police du design (facultative) */
+html[data-skeuo="frame"] .repo-block :is(p, li, td, summary) {
+  color: var(--sk-ink)
+}
+html[data-skeuo="frame"] .repo-block :is(label, legend, th, h3, h4) {
+  font-family: var(--sk-label-family, inherit)
+}
+html[data-skeuo="frame"] .repo-block :is(.small, .note, .muted, .hint) {
+  color: var(--sk-ink-2) !important
+}
+/* composants des designs à cadre (Cabinet, Carnet de vol, Durci) : une règle, valeurs par jetons ; facultatifs (repli :
+   hérité) : --sk-card-title-family / -case / -spacing, --sk-pick-case / -spacing, --sk-step-family */
+html[data-skeuo="frame"] .repo-block-step {
+  border-radius: var(--sk-step-radius) !important;
+  background: var(--sk-step-bg) !important;
+  color: var(--sk-step-ink) !important;
+  box-shadow: var(--sk-step-shadow) !important;
+  font-family: var(--sk-step-family, inherit)
+}
+html[data-skeuo="frame"] .repo-card {
+  position: relative
+}
+html[data-skeuo="frame"] .repo-card-titles>:is(strong, h3) {
+  font-family: var(--sk-card-title-family, inherit);
+  text-transform: var(--sk-card-title-case, inherit);
+  letter-spacing: var(--sk-card-title-spacing, inherit);
+  color: var(--sk-card-title-ink) !important
+}
+html[data-skeuo="frame"] .repo-card-subtitle {
+  color: var(--sk-card-sub-ink) !important
+}
+html[data-skeuo="frame"] .repo-dropzone {
+  color: var(--sk-drop-ink) !important
+}
+html[data-skeuo="frame"] .repo-dropzone-pick {
+  font-weight: 700;
+  text-transform: var(--sk-pick-case, inherit);
+  letter-spacing: var(--sk-pick-spacing, inherit)
+}
+/* couleur : --sk-pick-ink (règle commune) */
+html[data-skeuo="frame"] .repo-dropzone-state {
+  color: var(--sk-drop-state-ink) !important
+}
+html[data-skeuo="frame"] .repo-notice>.repo-icon {
+  color: var(--sk-notice-icon)
+}
+html[data-skeuo="frame"] .repo-block :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select, textarea) {
+  font-variant-numeric: tabular-nums
+}
+html[data-skeuo="frame"] :is(input, select, textarea, button):focus-visible {
+  outline: 2px solid var(--sk-focus) !important;
+  outline-offset: 2px
+}
+html[data-skeuo="frame"] .repo-footer {
+  box-shadow: var(--sk-footer-shadow) !important
+}
+html[data-skeuo="frame"] .repo-footer a {
+  color: var(--sk-footer-link) !important
+}
+html[data-design-base="cabinet"] .repo-block textarea {
+  background: repeating-linear-gradient(transparent 0 23px, rgba(29, 53, 87, .1) 23px 24px), var(--cab-field) !important
+}
+html[data-design-base="cabinet"] .repo-block :is(table) {
+  background: color-mix(in srgb, var(--cab-field) 60%, transparent)
+}
 /* boutons : cuir marine à bord laiton (principal : bandeau du thème assombri), parchemin (secondaire), cuir brun (discret) */
-html[data-design-base="cabinet"] button:where(:not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-sidenav-item):not(.col-split):not(.repo-block-tools button):not([role=menuitem]):not(.repo-icon-only):not(.repo-plain)),
-html[data-design-base="cabinet"] .buttonLink,html[data-design-base="cabinet"] a.mc-button{font-family:"Palatino Linotype","Book Antiqua",Georgia,serif!important}
-html[data-design-base="cabinet"] :is(button.secondary,a.secondary,label.rg-file):not(.repo-block-tools button){color:#0b1830!important;font-weight:700!important;text-shadow:0 1px 0 rgba(255,255,255,.75);background:#efe3c4 url("textures/parchment.webp?v=20260930zzzn") center/300px!important}
-html[data-design-base="cabinet"] button:is(.ghost,.danger):not(.repo-block-tools button){background:#4a2712 url("textures/leather-brown.webp?v=20260930zzzn") center/200px!important}
-html[data-design-base="cabinet"] .repo-header button.headerButton{font-size:13px}
+html[data-skeuo="frame"] button:where(:not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-sidenav-item):not(.col-split):not(.repo-block-tools button):not([role=menuitem]):not(.repo-icon-only):not(.repo-plain)),
+html[data-skeuo="frame"] .buttonLink,
+html[data-skeuo="frame"] a.mc-button {
+  font-family: var(--sk-btn-family) !important
+}
+/* convention commune des boutons : 1er bouton de l'en-tête principal, les suivants secondaires ; liens secondaires et
+   « Ajouter des fichiers » secondaires (mêmes éléments dans tous les designs) */
+html[data-design-base="cabinet"] :is(button.secondary, a.secondary, label.rg-file, .repo-header button.headerButton:not(:first-of-type)):not(.repo-block-tools button):not(.repo-menu-button):not(.repo-language-button) {
+  color: #0b1830 !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .75);
+  background: #efe3c4 url("textures/parchment.webp?v=c0677c03") center/300px !important
+}
+html[data-design-base="cabinet"] button:is(.ghost, .danger):not(.repo-block-tools button) {
+  background: #4a2712 url("textures/leather-brown.webp?v=45953b4a") center/200px !important
+}
+html[data-design-base="cabinet"] .repo-header button.headerButton {
+  font-size: 13px
+}
 /* icônes « matière » : médaillons de bronze à bord laiton (blocs, sous-cartes, bandeaux) */
-html[data-design-base="cabinet"] .repo-notice>.repo-icon{color:var(--cab-navy)}
 /* barre latérale : bois ; pied : bois, voyant de sauvegarde */
-html[data-design-base="cabinet"] .repo-footer{box-shadow:inset 0 2px 5px rgba(0,0,0,.4),0 0 0 2px #7a5a2c!important}
-html[data-design-base="cabinet"] .repo-footer a{color:var(--cab-navy)!important}
 
 /* ================================================================================================ DURCI */
-html[data-design="field"]{
-  --fd-text:#e8ecd9;          /* / panneau acier assombri #3f4632 : 8,2:1 */
-  --fd-text-2:#c9d1b0;        /* 6,2:1 */
-  --fd-plate-ink:#1b1d14;     /* / plaque kaki #cfc7a4 : 10,9:1 */
-  --fd-field:#121410;--fd-field-ink:#e6ecd6;   /* 15,3:1 */
-  --fd-go:#3fa83f;--fd-led:#9fe870;
-  --fd-unit:var(--repo-accent);
-  --fd-screw:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cdefs%3E%3CradialGradient id='g' cx='.35' cy='.3' r='.85'%3E%3Cstop offset='0' stop-color='%23f2f4f0'/%3E%3Cstop offset='.5' stop-color='%23959a90'/%3E%3Cstop offset='1' stop-color='%23353a30'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='10' cy='10.6' r='8.6' fill='%23000' opacity='.55'/%3E%3Ccircle cx='10' cy='10' r='8' fill='url(%23g)'/%3E%3Cpath d='M10 5v10M5 10h10' stroke='%232a2e25' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
-  --repo-surface:#4a5040;
-  background:#cfc4a4 url("textures/topo.webp?v=20260930zzzn") center/512px!important;
+html[data-design="field"] {
+  --sk-page-margin: 16px;
+  --sk-page-bg: #465034 url("textures/olive.webp?v=1599d9f0") center/512px;
+  --sk-page-shadow: 0 20px 40px rgba(0, 0, 0, .6), inset 0 2px 0 rgba(220, 230, 190, .25), inset 0 0 0 2px #1d2116, inset 0 0 30px rgba(0, 0, 0, .45);
+  --sk-corner-screw: var(--fd-screw);
+  --sk-header-screw-at: 8px;
+  --sk-header-screw-size: 12px;
+  --sk-block-screw-inset: 4px;
+  --sk-block-screw-at: 0px;
+  --sk-block-screw-size: 12px;
+  --sk-card-screw-size: 12px;
+  --sk-emblem-w: 84px;
+  --sk-emblem-h: 32px;
+  --sk-emblem-margin: 0 4px 0 0;
+  --sk-emblem-filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .6));
+  --sk-pick-shadow: inset 0 1px 0 #fff, 0 0 0 1px #000;
+  --sk-chart-base: #8d9478;
+  --sk-chart-font: Bahnschrift, "Arial Narrow", sans-serif;
+  --sk-chart-stretch: condensed;
+  --sk-notice-shadow: inset 0 2px 6px #000, 0 0 0 2px #3b4032;
+  --sk-sidenav-shadow: inset -1px 0 0 rgba(220, 230, 190, .18), inset 0 0 18px rgba(0, 0, 0, .55);
+  --sk-title-family: Bahnschrift, "Arial Narrow", Impact, sans-serif;
+  --sk-title-stretch: condensed;
+  --sk-title-case: uppercase;
+  --sk-title-spacing: .04em;
+  --sk-title-ink: #e7e6d6;
+  --sk-title-shadow: 0 2px 0 #1a1d14;
+  --sk-nav-on-edge: var(--fd-led);
+  --sk-code-bg: #121410;
+  --sk-code-ink: #e6ecd6;
+  --sk-code-border: 1px solid #000;
+  --sk-code-radius: 3px;
+  --sk-btn-family: Bahnschrift, "Roboto Condensed", "Arial Narrow", sans-serif;
+  --sk-lbtn-family: Bahnschrift, "Arial Narrow", sans-serif;
+  --fd-text: #e8ecd9;
+  /* / panneau acier assombri #3f4632 : 8,2:1 */
+  --fd-text-2: #c9d1b0;
+  /* 6,2:1 */
+  --fd-plate-ink: #1b1d14;
+  /* / plaque kaki #cfc7a4 : 10,9:1 */
+  --fd-field: #121410;
+  --fd-field-ink: #e6ecd6;
+  /* 15,3:1 */
+  --fd-go: #3fa83f;
+  --fd-led: #9fe870;
+  --fd-unit: var(--repo-accent);
+  --fd-screw: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cdefs%3E%3CradialGradient id='g' cx='.35' cy='.3' r='.85'%3E%3Cstop offset='0' stop-color='%23f2f4f0'/%3E%3Cstop offset='.5' stop-color='%23959a90'/%3E%3Cstop offset='1' stop-color='%23353a30'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='10' cy='10.6' r='8.6' fill='%23000' opacity='.55'/%3E%3Ccircle cx='10' cy='10' r='8' fill='url(%23g)'/%3E%3Cpath d='M10 5v10M5 10h10' stroke='%232a2e25' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  --repo-surface: #4a5040;
+  background: #cfc4a4 url("textures/topo.webp?v=7b703ce4") center/512px !important;
   /* jetons des composants communs */
-  --sk-ink:var(--fd-text);--sk-ink-2:var(--fd-text-2);
-  --sk-header-radius:10px;--sk-header-border:0;--sk-header-margin:0 0 8px;--sk-header-ink:var(--fd-text);
-  --sk-header-bg:#23261e url("textures/steel-dark.webp?v=20260930zzzn") center/512px;
-  --sk-header-shadow:inset 0 0 0 2px #0d0f08,inset 0 2px 0 rgba(255,255,255,.12),0 3px 0 #14170d,inset 0 -3px 0 var(--fd-unit);
-  --sk-mbtn-bg:linear-gradient(#3a3f37,#15180f);--sk-mbtn-ink:#e7e6d6;--sk-mbtn-border:1px solid #0b0d08;--sk-mbtn-radius:5px;
-  --sk-menu-bg:#1d201b url("textures/steel-dark.webp?v=20260930zzzn") center/400px;--sk-menu-ink:var(--fd-text);--sk-menu-border:2px solid #0b0d08;
-  --sk-block-radius:10px;--sk-block-border:2px solid #2a2e22;--sk-block-border-left:6px solid var(--fd-unit);
-  --sk-block-bg:linear-gradient(rgba(40,46,32,.55),rgba(40,46,32,.55)),#7c8270 url("textures/steel.webp?v=20260930zzzn") center/512px;
-  --sk-block-shadow:inset 0 2px 0 rgba(255,255,255,.18),inset 0 0 26px rgba(0,0,0,.35),0 4px 10px rgba(0,0,0,.5);
-  --sk-card-bg:linear-gradient(rgba(40,46,32,.35),rgba(40,46,32,.35)),#7c8270 url("textures/steel.webp?v=20260930zzzn") 30% 60%/400px;--sk-card-border:1px solid #3b4032;--sk-card-radius:8px;
-  --sk-card-shadow:inset 0 2px 0 rgba(255,255,255,.25),inset 0 0 18px rgba(0,0,0,.3),0 3px 6px rgba(0,0,0,.4);
-  --sk-drop-bg:var(--fd-field);--sk-drop-border:1.5px dashed #7f8a66;--sk-drop-radius:4px;--sk-drop-shadow:inset 0 2px 8px rgba(0,0,0,.7);
-  --sk-notice-bg:#121410;--sk-notice-border:0;--sk-notice-border-left:4px solid #d9a441;--sk-notice-radius:6px;--sk-notice-ink:var(--fd-field-ink);
-  --sk-plate-padding:6px 26px 5px;--sk-plate-font:700 .92rem/1.2 Bahnschrift,"Arial Narrow",Impact,sans-serif;--sk-plate-spacing:.04em;--sk-plate-ink:var(--fd-plate-ink);
-  --sk-plate-bg:#cfc7a4 url("textures/khaki.webp?v=20260930zzzn") center/256px;--sk-plate-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,0,0,.2),0 0 0 2px #2a2e22,0 3px 5px rgba(0,0,0,.45);
-  --sk-screw:var(--fd-screw);--sk-plate-screw:11px;--sk-plate-screw-x:8px;
-  --sk-label-ink:#eef0e6;
-  --sk-status-bg:#121410;--sk-status-border:1px solid #000;--sk-status-ink:#cfd2c4;--sk-status-shadow:inset 0 2px 5px rgba(0,0,0,.7);
-  --sk-input-bg:var(--fd-field);--sk-input-ink:var(--fd-field-ink);--sk-input-border:1px solid #000;--sk-input-radius:4px;--sk-input-shadow:inset 0 2px 4px rgba(0,0,0,.7),0 1px 0 rgba(255,255,255,.1);
-  --sk-btn-weight:600;--sk-btn-border:0;--sk-btn-radius:5px;--sk-btn-ink:#eef0e6;--sk-btn-text-shadow:0 1px 0 #000;
-  --sk-btn-bg:linear-gradient(#30352b,#12150e);--sk-btn-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 0 1px #0b0d08,0 0 0 3px #4a4f40,0 3px 5px rgba(0,0,0,.6);
-  --sk-btn-hover:brightness(1.15);--sk-btn-disabled:grayscale(.7) opacity(.55);
-  --sk-lbtn-weight:600;--sk-lbtn-border:0;--sk-lbtn-radius:5px;--sk-lbtn-ink:#eef0e6;--sk-lbtn-bg:linear-gradient(#26364e,#0f1a2a);
-  --sk-lbtn-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 0 1px #0b0d08,0 0 0 3px #4a4f40;
-  --sk-pick-ink:#15180f;--sk-pick-bg:linear-gradient(#e8e6d8,#b7b39e);
-  --sk-sidenav-bg:linear-gradient(90deg,rgba(8,10,6,.62),rgba(8,10,6,.45) 80%,rgba(8,10,6,.7)),#2e3522 url("textures/olive.webp?v=20260930zzzn") center/512px;--sk-sidenav-border:3px solid #0b0d08;--sk-sidenav-ink:#e7e6d6;
-  --sk-footer-margin:14px 0 0;--sk-footer-padding:8px 14px 8px 34px;--sk-footer-bg:#15180f;--sk-footer-ink:#cfd2c4;
-  --sk-abar-bg:#23261e url("textures/steel-dark.webp?v=20260930zzzn") center/512px;--sk-abar-border:2px solid #0b0d08;--sk-abar-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 -6px 16px rgba(0,0,0,.5);
-  --sk-abar-ink:#e6ecd6;--sk-abar-ink-2:#cfd2c4;
-  --sk-tool-bg:linear-gradient(#30352b,#12150e);--sk-tool-ink:#eef0e6;
-  --sk-dialog-bg:#465034 url("textures/olive.webp?v=20260930zzzn") center/512px;
-  --sk-chart-bg:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px),radial-gradient(ellipse at 50% 45%,#0f2414,#050c07 90%);--sk-chart-border:3px solid #0b0d08;--sk-chart-radius:10px;
-  --sk-chart-shadow:inset 0 0 22px rgba(0,0,0,.9),inset 0 0 0 1px rgba(120,255,150,.15),0 0 0 2px #4a4f40,0 3px 6px rgba(0,0,0,.5);
-  --sk-chart-grid:rgba(120,255,150,.14);--sk-chart-axis:rgba(140,255,160,.55);--sk-chart-text:#8fe89a;
-  --sk-slider-track:#0b0d08;--sk-slider-track-shadow:inset 0 2px 4px #000,0 0 0 2px #3b4032;
-  --sk-thumb-w:24px;--sk-thumb-h:14px;--sk-thumb-x:-8px;--sk-thumb-radius:3px;--sk-thumb-border:1px solid #0b0d08;
-  --sk-thumb-bg:linear-gradient(transparent 45%,rgba(0,0,0,.55) 45% 55%,transparent 55%),linear-gradient(#77805f,#3a4030 50%,#262a1e);
-  --sk-thumb-shadow:0 2px 3px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.3);
+  --sk-ink: var(--fd-text);
+  --sk-ink-2: var(--fd-text-2);
+  --sk-card-title-ink: #f2f4ea;
+  --sk-card-title-case: uppercase;
+  --sk-card-title-spacing: .05em;
+  --sk-card-sub-ink: var(--fd-text-2);
+  --sk-drop-ink: var(--fd-field-ink);
+  --sk-drop-state-ink: #b9c1a2;
+  --sk-pick-case: uppercase;
+  --sk-pick-spacing: .04em;
+  --sk-notice-icon: #e8b85a;
+  --sk-focus: var(--fd-led);
+  --sk-footer-link: var(--fd-led);
+  --sk-footer-shadow: inset 0 2px 6px #000, 0 0 0 3px #4a4f40;
+  --sk-step-radius: 4px;
+  --sk-step-bg: linear-gradient(#26291f, #0c0e08);
+  --sk-step-ink: #eef0e6;
+  --sk-step-shadow: inset 0 1px 0 rgba(255, 255, 255, .15), 0 0 0 2px #4a4f40;
+  --sk-segs-border: 1px solid #0b0d08;
+  --sk-segs-bg: #23261e url("textures/steel-dark.webp?v=8533e93c") center/512px;
+  --sk-seg-ink: #cfd2c4;
+  --sk-seg-shadow: 0 1px 0 #000;
+  --sk-seg-sep: 1px solid #0b0d08;
+  --sk-seg-sep-shadow: inset 1px 0 0 rgba(255, 255, 255, .08);
+  --sk-seg-on-bg: #15180f;
+  --sk-seg-on-ink: #e9ecdf;
+  --sk-seg-on-shadow: inset 0 2px 6px #000;
+  --sk-header-radius: 10px;
+  --sk-header-border: 0;
+  --sk-header-margin: 0 0 8px;
+  --sk-header-ink: var(--fd-text);
+  --sk-header-bg: #23261e url("textures/steel-dark.webp?v=8533e93c") center/512px;
+  --sk-header-shadow: inset 0 0 0 2px #0d0f08, inset 0 2px 0 rgba(255, 255, 255, .12), 0 3px 0 #14170d, inset 0 -3px 0 var(--fd-unit);
+  --sk-mbtn-bg: linear-gradient(#3a3f37, #15180f);
+  --sk-mbtn-ink: #e7e6d6;
+  --sk-mbtn-border: 1px solid #0b0d08;
+  --sk-mbtn-radius: 5px;
+  --sk-menu-bg: #1d201b url("textures/steel-dark.webp?v=8533e93c") center/400px;
+  --sk-menu-ink: var(--fd-text);
+  --sk-menu-border: 2px solid #0b0d08;
+  --sk-block-radius: 10px;
+  --sk-block-border: 2px solid #2a2e22;
+  --sk-block-border-left: 6px solid var(--fd-unit);
+  --sk-block-bg: linear-gradient(rgba(40, 46, 32, .55), rgba(40, 46, 32, .55)), #7c8270 url("textures/steel.webp?v=1726e89a") center/512px;
+  --sk-block-shadow: inset 0 2px 0 rgba(255, 255, 255, .18), inset 0 0 26px rgba(0, 0, 0, .35), 0 4px 10px rgba(0, 0, 0, .5);
+  --sk-card-bg: linear-gradient(rgba(40, 46, 32, .35), rgba(40, 46, 32, .35)), #7c8270 url("textures/steel.webp?v=1726e89a") 30% 60%/400px;
+  --sk-card-border: 1px solid #3b4032;
+  --sk-card-radius: 8px;
+  --sk-card-shadow: inset 0 2px 0 rgba(255, 255, 255, .25), inset 0 0 18px rgba(0, 0, 0, .3), 0 3px 6px rgba(0, 0, 0, .4);
+  --sk-drop-bg: var(--fd-field);
+  --sk-drop-border: 1.5px dashed #7f8a66;
+  --sk-drop-radius: 4px;
+  --sk-drop-shadow: inset 0 2px 8px rgba(0, 0, 0, .7);
+  --sk-notice-bg: #121410;
+  --sk-notice-border: 0;
+  --sk-notice-border-left: 4px solid #d9a441;
+  --sk-notice-radius: 6px;
+  --sk-notice-ink: var(--fd-field-ink);
+  --sk-plate-padding: 6px 26px 5px;
+  --sk-plate-font: 700 .92rem/1.2 Bahnschrift, "Arial Narrow", Impact, sans-serif;
+  --sk-plate-spacing: .04em;
+  --sk-plate-ink: var(--fd-plate-ink);
+  --sk-plate-bg: #cfc7a4 url("textures/khaki.webp?v=0ceabf72") center/256px;
+  --sk-plate-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), inset 0 -2px 0 rgba(0, 0, 0, .2), 0 0 0 2px #2a2e22, 0 3px 5px rgba(0, 0, 0, .45);
+  --sk-screw: var(--fd-screw);
+  --sk-plate-screw: 11px;
+  --sk-plate-screw-x: 8px;
+  --sk-label-ink: #eef0e6;
+  --sk-status-bg: #121410;
+  --sk-status-border: 1px solid #000;
+  --sk-status-ink: #cfd2c4;
+  --sk-status-shadow: inset 0 2px 5px rgba(0, 0, 0, .7);
+  --sk-input-bg: var(--fd-field);
+  --sk-input-ink: var(--fd-field-ink);
+  --sk-input-border: 1px solid #000;
+  --sk-input-radius: 4px;
+  --sk-input-shadow: inset 0 2px 4px rgba(0, 0, 0, .7), 0 1px 0 rgba(255, 255, 255, .1);
+  --sk-btn-weight: 600;
+  --sk-btn-border: 0;
+  --sk-btn-radius: 5px;
+  --sk-btn-ink: #eef0e6;
+  --sk-btn-text-shadow: 0 1px 0 #000;
+  --sk-btn-bg: linear-gradient(#30352b, #12150e);
+  --sk-btn-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), 0 0 0 1px #0b0d08, 0 0 0 3px #4a4f40, 0 3px 5px rgba(0, 0, 0, .6);
+  --sk-btn-hover: brightness(1.15);
+  --sk-btn-disabled: grayscale(.7) opacity(.55);
+  --sk-lbtn-weight: 600;
+  --sk-lbtn-border: 0;
+  --sk-lbtn-radius: 5px;
+  --sk-lbtn-ink: #eef0e6;
+  --sk-lbtn-bg: linear-gradient(#26364e, #0f1a2a);
+  --sk-lbtn-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), 0 0 0 1px #0b0d08, 0 0 0 3px #4a4f40;
+  --sk-pick-ink: #15180f;
+  --sk-pick-bg: linear-gradient(#e8e6d8, #b7b39e);
+  --sk-sidenav-bg: linear-gradient(90deg, rgba(8, 10, 6, .62), rgba(8, 10, 6, .45) 80%, rgba(8, 10, 6, .7)), #2e3522 url("textures/olive.webp?v=1599d9f0") center/512px;
+  --sk-sidenav-border: 3px solid #0b0d08;
+  --sk-sidenav-ink: #e7e6d6;
+  --sk-footer-margin: 14px 0 0;
+  --sk-footer-padding: 8px 14px 8px 34px;
+  --sk-footer-bg: #15180f;
+  --sk-footer-ink: #cfd2c4;
+  --sk-abar-bg: #23261e url("textures/steel-dark.webp?v=8533e93c") center/512px;
+  --sk-abar-border: 2px solid #0b0d08;
+  --sk-abar-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 -6px 16px rgba(0, 0, 0, .5);
+  --sk-abar-ink: #e6ecd6;
+  --sk-abar-ink-2: #cfd2c4;
+  --sk-tool-bg: linear-gradient(#30352b, #12150e);
+  --sk-tool-ink: #eef0e6;
+  --sk-dialog-bg: #465034 url("textures/olive.webp?v=1599d9f0") center/512px;
+  --sk-chart-bg: repeating-linear-gradient(0deg, rgba(0, 0, 0, .28) 0 1px, transparent 1px 3px), radial-gradient(ellipse at 50% 45%, #0f2414, #050c07 90%);
+  --sk-chart-border: 3px solid #0b0d08;
+  --sk-chart-radius: 10px;
+  --sk-chart-shadow: inset 0 0 22px rgba(0, 0, 0, .9), inset 0 0 0 1px rgba(120, 255, 150, .15), 0 0 0 2px #4a4f40, 0 3px 6px rgba(0, 0, 0, .5);
+  --sk-chart-grid: rgba(120, 255, 150, .14);
+  --sk-chart-axis: rgba(140, 255, 160, .55);
+  --sk-chart-text: #8fe89a;
+  --sk-slider-track: #0b0d08;
+  --sk-slider-track-shadow: inset 0 2px 4px #000, 0 0 0 2px #3b4032;
+  --sk-thumb-w: 24px;
+  --sk-thumb-h: 14px;
+  --sk-thumb-x: -8px;
+  --sk-thumb-radius: 3px;
+  --sk-thumb-border: 1px solid #0b0d08;
+  --sk-thumb-bg: linear-gradient(transparent 45%, rgba(0, 0, 0, .55) 45% 55%, transparent 55%), linear-gradient(#77805f, #3a4030 50%, #262a1e);
+  --sk-thumb-shadow: 0 2px 3px rgba(0, 0, 0, .7), inset 0 1px 0 rgba(255, 255, 255, .3);
 }
-html[data-design="field"] body{position:relative;margin-top:16px!important;margin-bottom:16px!important;margin-left:16px!important;margin-right:16px!important;padding-top:12px!important;border-radius:14px;color:var(--fd-text);
-  background:#465034 url("textures/olive.webp?v=20260930zzzn") center/512px!important;font-family:Bahnschrift,"DIN Alternate","Roboto Condensed","Arial Narrow",system-ui,sans-serif;
-  box-shadow:0 20px 40px rgba(0,0,0,.6),inset 0 2px 0 rgba(220,230,190,.25),inset 0 0 0 2px #1d2116,inset 0 0 30px rgba(0,0,0,.45)}
-@media (min-width:1100px){
-  html[data-design="field"][data-decor="full"] body::before,html[data-design="field"][data-decor="full"] body::after{content:"";position:absolute;top:140px;width:24px;height:160px;border-radius:10px;
-    background:#1a1a1a url("textures/rubber.webp?v=20260930zzzn") center/48px;box-shadow:inset 0 0 0 5px #9aa095,inset 0 0 0 6px #2a2e25,0 4px 8px rgba(0,0,0,.6)}
-  html[data-design="field"][data-decor="full"] body::before{left:-13px}
-  html[data-design="field"][data-decor="full"] body::after{right:-13px}
+html[data-design="field"] body {
+  font-family: Bahnschrift, "DIN Alternate", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif
 }
-html[data-design="field"][data-decor="full"] .repo-header::before{content:"";position:absolute;inset:0;pointer-events:none;background:var(--fd-screw) 8px 8px/12px no-repeat,var(--fd-screw) right 8px top 8px/12px no-repeat,var(--fd-screw) 8px calc(100% - 8px)/12px no-repeat,var(--fd-screw) right 8px bottom 8px/12px no-repeat}
-html[data-design="field"] .repo-header h1{font-family:Bahnschrift,"Arial Narrow",Impact,sans-serif!important;font-stretch:condensed;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#e7e6d6!important;text-shadow:0 2px 0 #1a1d14}
-html[data-design="field"] .repo-header-emblem{width:84px;height:32px;flex:none;margin-right:4px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.6))}
-html[data-design="field"] .repo-header-emblem svg{width:100%;height:100%;display:block}
-html[data-design="field"] :is(.repo-menu-button,.repo-language-button){box-shadow:inset 0 1px 0 rgba(255,255,255,.18)!important}
+html[data-design="field"] :is(.repo-menu-button, .repo-language-button) {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18) !important
+}
 /* blocs : panneaux d'acier gris-vert usé, vis cruciformes, bande d'unité (couleur du thème) à gauche */
-html[data-design="field"][data-decor="full"] :is(.repo-block,.repo-card)::after{content:"";position:absolute;inset:4px;pointer-events:none;background:var(--fd-screw) 0 0/12px no-repeat,var(--fd-screw) right 0 top 0/12px no-repeat,var(--fd-screw) 0 100%/12px no-repeat,var(--fd-screw) right 0 bottom 0/12px no-repeat}
-html[data-design="field"] .repo-block-step{border-radius:4px!important;background:linear-gradient(#26291f,#0c0e08)!important;color:#eef0e6!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 0 0 2px #4a4f40!important}
-html[data-design="field"] .repo-block-tools button{text-transform:uppercase;letter-spacing:.04em}
-html[data-design="field"] .repo-card{position:relative;color:var(--fd-text)!important}
-html[data-design="field"] .repo-card-titles>:is(strong,h3){text-transform:uppercase;letter-spacing:.05em;color:#f2f4ea!important}
-html[data-design="field"] .repo-card-subtitle{color:var(--fd-text-2)!important}
-html[data-design="field"] .repo-dropzone{color:var(--fd-field-ink)!important}
-html[data-design="field"] .repo-dropzone:hover{border-color:var(--fd-led)!important;border-style:solid!important}
-html[data-design="field"] .repo-dropzone-pick{color:var(--fd-led)!important;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
-html[data-design="field"] .repo-dropzone-state{color:#b9c1a2!important}
-html[data-design="field"] .repo-notice{box-shadow:inset 0 2px 6px #000,0 0 0 2px #3b4032!important}
-html[data-design="field"] .repo-notice>.repo-icon{color:#e8b85a}
-html[data-design="field"] .repo-block :is(p,li,td,summary,strong,b,em,dt,dd){color:var(--fd-text)}
-html[data-design="field"] .repo-block :is(table,thead,tbody,tr,th,td){background-color:transparent!important;border-color:#2a2e22!important}
-html[data-design="field"] .repo-block thead th{background-color:rgba(10,12,8,.45)!important}
-html[data-design="field"] .repo-block a{color:var(--fd-led)}
-html[data-design="field"] .repo-block :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),select,textarea){font-variant-numeric:tabular-nums}
-html[data-design="field"] .repo-block :is(input,textarea)::placeholder{color:#8b907f}
-html[data-design="field"] select option{background:#121410;color:#e6ecd6}
-html[data-design="field"] :is(input,select,textarea,button):focus-visible{outline:2px solid var(--fd-led)!important;outline-offset:2px}
+html[data-design="field"] .repo-dropzone:hover {
+  border-color: var(--fd-led) !important;
+  border-style: solid !important
+}
+/* Durci éclaire aussi gras, italique et définitions (blocs sombres) */
+html[data-design="field"] .repo-block :is(strong, b, em, dt, dd) {
+  color: var(--fd-text)
+}
+html[data-design="field"] .repo-block :is(table, thead, tbody, tr, th, td) {
+  background-color: transparent !important;
+  border-color: #2a2e22 !important
+}
+html[data-design="field"] .repo-block thead th {
+  background-color: rgba(10, 12, 8, .45) !important
+}
+html[data-design="field"] .repo-block a {
+  color: var(--fd-led)
+}
+html[data-design="field"] .repo-block :is(input, textarea)::placeholder {
+  color: #8b907f
+}
+html[data-design="field"] select option {
+  background: #121410;
+  color: #e6ecd6
+}
 /* boutons : noir canon de fusil ; principal et en-tête : vert lumineux à voyant ; secondaire : bleu nuit */
-html[data-design="field"] button:where(:not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-sidenav-item):not(.col-split):not(.repo-block-tools button):not([role=menuitem]):not(.repo-icon-only):not(.repo-plain)),
-html[data-design="field"] .buttonLink,html[data-design="field"] a.mc-button{font-family:Bahnschrift,"Roboto Condensed","Arial Narrow",sans-serif!important}
-html[data-design="field"] :is(button.primary,.repo-header button.headerButton:first-of-type,button[data-icon="sparkles"]){background:linear-gradient(#3fa83f,#146b1c)!important;color:#fff!important;border-color:transparent!important;box-shadow:inset 0 1px 0 rgba(220,255,200,.45),0 0 0 1px #0b2a0b,0 0 0 3px #4a4f40,0 0 14px rgba(80,255,90,.4),0 3px 5px rgba(0,0,0,.6)!important}
-html[data-design="field"] :is(button.primary,.repo-header button.headerButton:first-of-type,button[data-icon="sparkles"])::after{content:"";display:inline-block;width:7px;height:7px;margin-left:8px;border-radius:50%;background:#aaffa0;box-shadow:0 0 6px #6dff5e;vertical-align:1px}
-html[data-design="field"] :is(button.secondary,a.secondary,label.rg-file):not(.repo-block-tools button),html[data-design="field"] .repo-header button.headerButton{background:linear-gradient(#26364e,#0f1a2a)!important}
-html[data-design="field"] button.danger{background:linear-gradient(#7a2a20,#3c120c)!important}
+html[data-design="field"] :is(button.primary, .repo-header button.headerButton:first-of-type, button[data-icon="sparkles"]) {
+  background: linear-gradient(#3fa83f, #146b1c) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+  box-shadow: inset 0 1px 0 rgba(220, 255, 200, .45), 0 0 0 1px #0b2a0b, 0 0 0 3px #4a4f40, 0 0 14px rgba(80, 255, 90, .4), 0 3px 5px rgba(0, 0, 0, .6) !important
+}
+html[data-design="field"] :is(button.primary, .repo-header button.headerButton:first-of-type, button[data-icon="sparkles"])::after {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 8px;
+  border-radius: 50%;
+  background: #aaffa0;
+  box-shadow: 0 0 6px #6dff5e;
+  vertical-align: 1px
+}
+html[data-design="field"] :is(button.secondary, a.secondary, label.rg-file):not(.repo-block-tools button),
+html[data-design="field"] .repo-header button.headerButton {
+  background: linear-gradient(#26364e, #0f1a2a) !important
+}
+html[data-design="field"] button.danger {
+  background: linear-gradient(#7a2a20, #3c120c) !important
+}
 /* icônes « matière » : plaques d'acier vissées */
 /* barre latérale : noir mat, entrée active à voyant ; pied : barre d'état, voyant de sauvegarde, radar */
-html[data-design="field"] .repo-sidenav{box-shadow:inset -1px 0 0 rgba(220,230,190,.18),inset 0 0 18px rgba(0,0,0,.55)!important}
-html[data-design="field"] .repo-sidenav-item[aria-current="page"]{border-left-color:var(--fd-led)!important}
-html[data-design="field"] .repo-footer{position:relative;box-shadow:inset 0 2px 6px #000,0 0 0 3px #4a4f40!important}
-html[data-design="field"] .repo-footer a{color:var(--fd-led)!important}
-html[data-design="field"][data-decor="full"] .repo-footer::after{content:"";position:absolute;right:10px;top:50%;width:30px;height:30px;margin-top:-15px;border-radius:50%;
-  background:conic-gradient(from 0deg,transparent 0deg 280deg,rgba(159,232,112,.12) 300deg,rgba(159,232,112,.75) 359.5deg,transparent 360deg),repeating-radial-gradient(circle,transparent 0 5px,rgba(159,232,112,.35) 5px 6px),#07100a url("textures/radar.webp?v=20260930zzzn") center/60px;
-  box-shadow:0 0 0 2px #2f7a1c;animation:repo-sweep 4s linear infinite}
-@keyframes repo-sweep{to{transform:rotate(1turn)}}
+html[data-design="field"][data-decor="full"] .repo-footer::after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  width: 30px;
+  height: 30px;
+  margin-top: -15px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0deg 280deg, rgba(159, 232, 112, .12) 300deg, rgba(159, 232, 112, .75) 359.5deg, transparent 360deg), repeating-radial-gradient(circle, transparent 0 5px, rgba(159, 232, 112, .35) 5px 6px), #07100a url("textures/radar.webp?v=99553719") center/60px;
+  box-shadow: 0 0 0 2px #2f7a1c;
+  animation: repo-sweep 4s linear infinite
+}
+@keyframes repo-sweep {
+  to {
+    transform: rotate(1turn)
+  }
+}
 
 /* ================================================================================================ AQUA */
-html[data-design="aqua"]{
-  --aq-ink:#1c2733;--aq-ink-2:#4f5d6b;   /* / verre blanc : 14,5:1 et 6,6:1 */
-  --aq-gel:var(--repo-accent);
-  --repo-surface:#f6f9fc;
-  background:linear-gradient(180deg,#e9eff5,#d9e3ec)!important;
+html[data-design="aqua"] {
+  --sk-title-ink: var(--aq-ink);
+  --sk-title-shadow: 0 1px 0 rgba(255, 255, 255, .8);
+  --sk-segs-border: 1px solid #9aa6b2;
+  --sk-segs-radius: 8px;
+  --sk-seg-ink: var(--aq-ink, #1b2733);
+  --sk-seg-bg: linear-gradient(#ffffff, #f1f4f8 50%, #e6ebf1 51%, #f6f8fb);
+  --sk-seg-shadow: 0 1px 0 #fff;
+  --sk-seg-sep: 1px solid #b7c1cc;
+  --sk-seg-sep-shadow: none;
+  --sk-seg-on-bg: linear-gradient(180deg, color-mix(in srgb, var(--aq-gel) 55%, #fff) 0%, var(--aq-gel) 50%, color-mix(in srgb, var(--aq-gel) 85%, #000) 51%, color-mix(in srgb, var(--aq-gel) 70%, #fff) 100%);
+  --sk-seg-on-ink: #fff;
+  --sk-seg-on-text-shadow: 0 -1px 0 rgba(0, 0, 0, .25);
+  --sk-seg-on-shadow: none;
+  --sk-nav-on-bg: rgba(255, 255, 255, .55);
+  --sk-nav-on-edge: var(--aq-gel);
+  --sk-code-bg: #fff;
+  --sk-code-ink: var(--aq-ink);
+  --sk-code-border: 1px solid #c3ced9;
+  --sk-code-radius: 4px;
+  --aq-ink: #1c2733;
+  --aq-ink-2: #4f5d6b;
+  /* / verre blanc : 14,5:1 et 6,6:1 */
+  --aq-gel: var(--repo-accent);
+  --repo-surface: #f6f9fc;
+  background: linear-gradient(180deg, #e9eff5, #d9e3ec) !important;
   /* jetons des composants communs */
-  --sk-ink:var(--aq-ink);--sk-ink-2:var(--aq-ink-2);
-  --sk-header-radius:0;--sk-header-border:0 solid #9aa6b2;--sk-header-bbw:1px;--sk-header-margin:0 0 10px;--sk-header-ink:var(--aq-ink);   /* pleine largeur : angles droits, filet bas */
-  --sk-header-bg:linear-gradient(rgba(255,255,255,.45),rgba(255,255,255,0) 50%,rgba(0,0,0,.05)),#d8dde2 url("textures/brushed-light.webp?v=20260930zzzn") center/256px;
-  --sk-header-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 rgba(0,0,0,.12),0 6px 16px rgba(40,60,90,.18);
-  --sk-mbtn-bg:linear-gradient(#ffffff,#dfe6ee);--sk-mbtn-ink:var(--aq-ink);--sk-mbtn-border:1px solid #9aa6b2;--sk-mbtn-radius:8px;
-  --sk-menu-bg:rgba(248,251,254,.92);--sk-menu-ink:var(--aq-ink);--sk-menu-border:1px solid #b8c3ce;
-  --sk-block-radius:14px;--sk-block-border:1px solid rgba(255,255,255,.9);
-  --sk-block-bg:linear-gradient(180deg,rgba(255,255,255,.92),rgba(244,248,252,.86));
-  --sk-block-shadow:0 1px 0 rgba(0,0,0,.04),0 10px 28px rgba(40,70,110,.14),inset 0 1px 0 #fff;
-  --sk-card-bg:linear-gradient(#fbfdff,#eef3f8);--sk-card-border:1px solid #d5dde6;--sk-card-radius:12px;--sk-card-shadow:inset 0 1px 0 #fff,0 2px 6px rgba(40,70,110,.08);
-  --sk-drop-bg:linear-gradient(#f7fafd,#e9eff5);--sk-drop-border:1px solid #c3ced9;--sk-drop-radius:10px;--sk-drop-shadow:inset 0 1px 3px rgba(40,70,110,.12);
-  --sk-notice-bg:linear-gradient(color-mix(in srgb,var(--aq-gel) 8%,#fff),color-mix(in srgb,var(--aq-gel) 14%,#fff));--sk-notice-border:1px solid color-mix(in srgb,var(--aq-gel) 35%,#fff);--sk-notice-radius:12px;--sk-notice-ink:var(--aq-ink);
-  --sk-input-bg:#fff;--sk-input-ink:var(--aq-ink);--sk-input-border:1px solid #b3bfcb;--sk-input-radius:8px;--sk-input-shadow:inset 0 1px 2px rgba(20,40,70,.12);
-  --sk-btn-weight:600;--sk-btn-radius:9px;--sk-btn-ink:#fff;--sk-btn-text-shadow:0 -1px 0 rgba(0,0,0,.25);   /* fond, bord, ombre : sur les boutons (gel) */
-  --sk-btn-hover:brightness(1.06) saturate(1.1);--sk-btn-disabled:grayscale(1) opacity(.5);
-  --sk-lbtn-weight:600;--sk-lbtn-border:1px solid #9aa6b2;--sk-lbtn-radius:9px;--sk-lbtn-ink:var(--aq-ink);--sk-lbtn-bg:linear-gradient(#ffffff,#e9eef3 50%,#dde4eb 51%,#f1f4f7);
-  --sk-lbtn-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.15);
-  --sk-pick-ink:var(--aq-ink);--sk-pick-bg:linear-gradient(#ffffff,#e9eef3 50%,#dde4eb 51%,#f1f4f7);
-  --sk-sidenav-bg:#d8dde2 url("textures/brushed-light.webp?v=20260930zzzn") center/256px;--sk-sidenav-border:1px solid #9aa6b2;--sk-sidenav-ink:var(--aq-ink);
-  --sk-footer-margin:12px 0 0;--sk-footer-padding:8px 14px;--sk-footer-bg:rgba(255,255,255,.7);--sk-footer-ink:var(--aq-ink-2);
-  --sk-abar-bg:linear-gradient(rgba(255,255,255,.45),rgba(255,255,255,0) 50%,rgba(0,0,0,.05)),#d8dde2 url("textures/brushed-light.webp?v=20260930zzzn") center/256px;--sk-abar-border:1px solid #9aa6b2;--sk-abar-ink:var(--aq-ink);
-  --sk-tool-bg:linear-gradient(#fff,#e3e9f0);--sk-tool-ink:var(--aq-ink);
-  --sk-dialog-bg:linear-gradient(180deg,#e9eff5,#d9e3ec);
-  --sk-chart-bg:linear-gradient(#fbfdff,#e6edf4);--sk-chart-border:1px solid #b8c3ce;--sk-chart-radius:10px;--sk-chart-shadow:inset 0 1px 0 #fff,inset 0 2px 8px rgba(20,40,70,.12),0 2px 5px rgba(20,40,70,.12);
-  --sk-chart-grid:rgba(40,70,110,.13);--sk-chart-axis:#8a98a8;--sk-chart-text:#4f5d6b;
-  --sk-slider-track:linear-gradient(90deg,#c9d3dd,#eef2f6 60%,#c9d3dd);--sk-slider-track-shadow:inset 0 1px 2px rgba(20,40,70,.35);
-  --sk-thumb-w:20px;--sk-thumb-h:20px;--sk-thumb-x:-6px;--sk-thumb-radius:50%;--sk-thumb-border:1px solid color-mix(in srgb,var(--aq-gel) 70%,#000);
-  --sk-thumb-bg:radial-gradient(ellipse 60% 35% at 50% 28%,rgba(255,255,255,.95),rgba(255,255,255,0) 70%),radial-gradient(circle at 50% 75%,color-mix(in srgb,var(--aq-gel) 45%,#fff),var(--aq-gel) 60%,color-mix(in srgb,var(--aq-gel) 70%,#000));
-  --sk-thumb-shadow:0 2px 4px rgba(20,40,70,.45);
+  --sk-ink: var(--aq-ink);
+  --sk-ink-2: var(--aq-ink-2);
+  --sk-header-radius: 0;
+  --sk-header-border: 0 solid #9aa6b2;
+  --sk-header-bbw: 1px;
+  --sk-header-margin: 0 0 10px;
+  --sk-header-ink: var(--aq-ink);
+  /* pleine largeur : angles droits, filet bas */
+  --sk-header-bg: linear-gradient(rgba(255, 255, 255, .45), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, .05)), #d8dde2 url("textures/brushed-light.webp?v=6bef2cba") center/256px;
+  --sk-header-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(0, 0, 0, .12), 0 6px 16px rgba(40, 60, 90, .18);
+  --sk-mbtn-bg: linear-gradient(#ffffff, #dfe6ee);
+  --sk-mbtn-ink: var(--aq-ink);
+  --sk-mbtn-border: 1px solid #9aa6b2;
+  --sk-mbtn-radius: 8px;
+  --sk-menu-bg: rgba(248, 251, 254, .92);
+  --sk-menu-ink: var(--aq-ink);
+  --sk-menu-border: 1px solid #b8c3ce;
+  --sk-block-radius: 14px;
+  --sk-block-border: 1px solid rgba(255, 255, 255, .9);
+  --sk-block-bg: linear-gradient(180deg, rgba(255, 255, 255, .92), rgba(244, 248, 252, .86));
+  --sk-block-shadow: 0 1px 0 rgba(0, 0, 0, .04), 0 10px 28px rgba(40, 70, 110, .14), inset 0 1px 0 #fff;
+  --sk-card-bg: linear-gradient(#fbfdff, #eef3f8);
+  --sk-card-border: 1px solid #d5dde6;
+  --sk-card-radius: 12px;
+  --sk-card-shadow: inset 0 1px 0 #fff, 0 2px 6px rgba(40, 70, 110, .08);
+  --sk-drop-bg: linear-gradient(#f7fafd, #e9eff5);
+  --sk-drop-border: 1px solid #c3ced9;
+  --sk-drop-radius: 10px;
+  --sk-drop-shadow: inset 0 1px 3px rgba(40, 70, 110, .12);
+  --sk-notice-bg: linear-gradient(color-mix(in srgb, var(--aq-gel) 8%, #fff), color-mix(in srgb, var(--aq-gel) 14%, #fff));
+  --sk-notice-border: 1px solid color-mix(in srgb, var(--aq-gel) 35%, #fff);
+  --sk-notice-radius: 12px;
+  --sk-notice-ink: var(--aq-ink);
+  --sk-input-bg: #fff;
+  --sk-input-ink: var(--aq-ink);
+  --sk-input-border: 1px solid #b3bfcb;
+  --sk-input-radius: 8px;
+  --sk-input-shadow: inset 0 1px 2px rgba(20, 40, 70, .12);
+  --sk-btn-weight: 600;
+  --sk-btn-radius: 9px;
+  --sk-btn-ink: #fff;
+  --sk-btn-text-shadow: 0 -1px 0 rgba(0, 0, 0, .25);
+  /* fond, bord, ombre : sur les boutons (gel) */
+  --sk-btn-hover: brightness(1.06) saturate(1.1);
+  --sk-btn-disabled: grayscale(1) opacity(.5);
+  --sk-lbtn-weight: 600;
+  --sk-lbtn-border: 1px solid #9aa6b2;
+  --sk-lbtn-radius: 9px;
+  --sk-lbtn-ink: var(--aq-ink);
+  --sk-lbtn-bg: linear-gradient(#ffffff, #e9eef3 50%, #dde4eb 51%, #f1f4f7);
+  --sk-lbtn-shadow: inset 0 1px 0 #fff, 0 1px 3px rgba(0, 0, 0, .15);
+  --sk-pick-ink: var(--aq-ink);
+  --sk-pick-bg: linear-gradient(#ffffff, #e9eef3 50%, #dde4eb 51%, #f1f4f7);
+  --sk-sidenav-bg: #d8dde2 url("textures/brushed-light.webp?v=6bef2cba") center/256px;
+  --sk-sidenav-border: 1px solid #9aa6b2;
+  --sk-sidenav-ink: var(--aq-ink);
+  --sk-footer-margin: 12px 0 0;
+  --sk-footer-padding: 8px 14px;
+  --sk-footer-bg: rgba(255, 255, 255, .7);
+  --sk-footer-ink: var(--aq-ink-2);
+  --sk-abar-bg: linear-gradient(rgba(255, 255, 255, .45), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, .05)), #d8dde2 url("textures/brushed-light.webp?v=6bef2cba") center/256px;
+  --sk-abar-border: 1px solid #9aa6b2;
+  --sk-abar-ink: var(--aq-ink);
+  --sk-tool-bg: linear-gradient(#fff, #e3e9f0);
+  --sk-tool-ink: var(--aq-ink);
+  --sk-dialog-bg: linear-gradient(180deg, #e9eff5, #d9e3ec);
+  --sk-chart-bg: linear-gradient(#fbfdff, #e6edf4);
+  --sk-chart-border: 1px solid #b8c3ce;
+  --sk-chart-radius: 10px;
+  --sk-chart-shadow: inset 0 1px 0 #fff, inset 0 2px 8px rgba(20, 40, 70, .12), 0 2px 5px rgba(20, 40, 70, .12);
+  --sk-chart-grid: rgba(40, 70, 110, .13);
+  --sk-chart-axis: #8a98a8;
+  --sk-chart-text: #4f5d6b;
+  --sk-slider-track: linear-gradient(90deg, #c9d3dd, #eef2f6 60%, #c9d3dd);
+  --sk-slider-track-shadow: inset 0 1px 2px rgba(20, 40, 70, .35);
+  --sk-thumb-w: 20px;
+  --sk-thumb-h: 20px;
+  --sk-thumb-x: -6px;
+  --sk-thumb-radius: 50%;
+  --sk-thumb-border: 1px solid color-mix(in srgb, var(--aq-gel) 70%, #000);
+  --sk-thumb-bg: radial-gradient(ellipse 60% 35% at 50% 28%, rgba(255, 255, 255, .95), rgba(255, 255, 255, 0) 70%), radial-gradient(circle at 50% 75%, color-mix(in srgb, var(--aq-gel) 45%, #fff), var(--aq-gel) 60%, color-mix(in srgb, var(--aq-gel) 70%, #000));
+  --sk-thumb-shadow: 0 2px 4px rgba(20, 40, 70, .45);
 }
-html[data-design="aqua"] body{background:transparent!important;color:var(--aq-ink);font-family:"Segoe UI Variable","Segoe UI",-apple-system,"Helvetica Neue",Inter,system-ui,sans-serif}
-html[data-design="aqua"] .repo-header h1{color:var(--aq-ink)!important;text-shadow:0 1px 0 rgba(255,255,255,.8)}
-html[data-design="aqua"] .repo-header-subtitle,html[data-design="aqua"] .repo-language-label{color:var(--aq-ink-2)!important}
-html[data-design="aqua"] :is(.repo-menu-button,.repo-language-button){box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(0,0,0,.15)!important}
-html[data-design="aqua"] :is(.repo-menu,.repo-language-menu){border-radius:12px!important;box-shadow:0 14px 34px rgba(30,50,80,.25)!important;backdrop-filter:blur(10px)}
-html[data-design="aqua"] :is(.repo-block-titles,.repo-block-heading)>h2{color:var(--aq-ink)!important;font-weight:650!important;letter-spacing:0}
-html[data-design="aqua"] .repo-block :is(input,select,textarea):focus{border-color:var(--aq-gel)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--aq-gel) 30%,transparent),inset 0 1px 2px rgba(20,40,70,.12)!important;outline:0}
+html[data-design="aqua"] body {
+  background: transparent !important;
+  color: var(--aq-ink);
+  font-family: "Segoe UI Variable", "Segoe UI", -apple-system, "Helvetica Neue", Inter, system-ui, sans-serif
+}
+html[data-design="aqua"] .repo-header-subtitle,
+html[data-design="aqua"] .repo-language-label {
+  color: var(--aq-ink-2) !important
+}
+html[data-design="aqua"] :is(.repo-menu-button, .repo-language-button) {
+  box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 0, 0, .15) !important
+}
+html[data-design="aqua"] :is(.repo-menu, .repo-language-menu) {
+  border-radius: 12px !important;
+  box-shadow: 0 14px 34px rgba(30, 50, 80, .25) !important;
+  backdrop-filter: blur(10px)
+}
+html[data-design="aqua"] :is(.repo-block-titles, .repo-block-heading)>h2 {
+  color: var(--aq-ink) !important;
+  font-weight: 650 !important;
+  letter-spacing: 0
+}
+html[data-design="aqua"] .repo-block :is(input, select, textarea):focus {
+  border-color: var(--aq-gel) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--aq-gel) 30%, transparent), inset 0 1px 2px rgba(20, 40, 70, .12) !important;
+  outline: 0
+}
 /* boutons : gel (couleur du thème) par défaut, verre clair (secondaire), ardoise (discret) */
 /* boutons en gel : jetons posés sur les boutons eux-mêmes (ils suivent --aq-gel du bouton : rouge des boutons « danger ») */
-html[data-design="aqua"] :is(button,.buttonLink,a.mc-button){--sk-btn-border:1px solid color-mix(in srgb,var(--aq-gel) 70%,#000);
-  --sk-btn-bg:linear-gradient(180deg,color-mix(in srgb,var(--aq-gel) 55%,#fff) 0%,var(--aq-gel) 50%,color-mix(in srgb,var(--aq-gel) 85%,#000) 51%,color-mix(in srgb,var(--aq-gel) 70%,#fff) 100%);
-  --sk-btn-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 2px 5px color-mix(in srgb,var(--aq-gel) 40%,transparent)}
-html[data-design="aqua"] :is(button.secondary,.repo-header button.headerButton:not(:first-of-type)):not(.repo-block-tools button){border-color:#9aa6b2!important;color:var(--aq-ink)!important;text-shadow:0 1px 0 #fff;background:linear-gradient(#ffffff,#e9eef3 50%,#dde4eb 51%,#f1f4f7)!important;box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.15)!important}
-html[data-design="aqua"] button.ghost:not(.repo-block-tools button){border-color:#3c4a58!important;background:linear-gradient(#7d8b99,#56646f 50%,#4a5763 51%,#6b7885)!important}
-html[data-design="aqua"] button.danger{--aq-gel:#d33a2c}
+html[data-design="aqua"] :is(button, .buttonLink, a.mc-button) {
+  --sk-btn-border: 1px solid color-mix(in srgb, var(--aq-gel) 70%, #000);
+  --sk-btn-bg: linear-gradient(180deg, color-mix(in srgb, var(--aq-gel) 55%, #fff) 0%, var(--aq-gel) 50%, color-mix(in srgb, var(--aq-gel) 85%, #000) 51%, color-mix(in srgb, var(--aq-gel) 70%, #fff) 100%);
+  --sk-btn-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 2px 5px color-mix(in srgb, var(--aq-gel) 40%, transparent)
+}
+html[data-design="aqua"] :is(button.secondary, a.secondary, label.rg-file, .repo-header button.headerButton:not(:first-of-type)):not(.repo-block-tools button) {
+  border-color: #9aa6b2 !important;
+  color: var(--aq-ink) !important;
+  text-shadow: 0 1px 0 #fff;
+  background: linear-gradient(#ffffff, #e9eef3 50%, #dde4eb 51%, #f1f4f7) !important;
+  box-shadow: inset 0 1px 0 #fff, 0 1px 3px rgba(0, 0, 0, .15) !important
+}
+html[data-design="aqua"] button.ghost:not(.repo-block-tools button) {
+  border-color: #3c4a58 !important;
+  background: linear-gradient(#7d8b99, #56646f 50%, #4a5763 51%, #6b7885) !important
+}
+html[data-design="aqua"] button.danger {
+  --aq-gel: #d33a2c
+}
 /* icônes « matière » : bulles de gel */
-html[data-design="aqua"] .repo-sidenav-item[aria-current="page"]{background:rgba(255,255,255,.55)!important;border-left-color:var(--aq-gel)!important}
-html[data-design="aqua"] .repo-footer{border:1px solid #d5dde6}
+html[data-design="aqua"] .repo-footer {
+  border: 1px solid #d5dde6
+}
 
 /* ================================================================================================ AQUA SOMBRE
    Pages à thème sombre (planificateur, Landing : graphiques conçus pour un fond sombre) : graphite, verre fumé,
    métal brossé assombri ; les graphiques gardent leurs couleurs. Texte clair #e6edf5 / verre #26303b : 11,9:1. */
-html[data-design="aqua"][data-tone="dark"]{--aq-ink:#e6edf5;--aq-ink-2:#aebccb;--repo-surface:#26303b;background:linear-gradient(180deg,#1b2129,#10151b)!important;
-  --sk-header-border:0 solid #0b0f14;
-  --sk-header-bg:linear-gradient(rgba(255,255,255,.12),rgba(255,255,255,0) 50%,rgba(0,0,0,.2)),linear-gradient(rgba(20,26,34,.72),rgba(20,26,34,.72)),#d8dde2 url("textures/brushed-light.webp?v=20260930zzzn") center/256px;
-  --sk-header-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 6px 16px rgba(0,0,0,.45);
-  --sk-menu-bg:rgba(30,37,46,.95);--sk-menu-border:1px solid #46525f;
-  --sk-block-border:1px solid rgba(255,255,255,.08);--sk-block-bg:linear-gradient(180deg,rgba(46,56,68,.92),rgba(30,37,46,.92));
-  --sk-block-shadow:0 12px 28px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.1);
-  --sk-card-border:1px solid rgba(255,255,255,.1);--sk-card-bg:linear-gradient(#2c3642,#232b35);--sk-card-shadow:inset 0 1px 0 rgba(255,255,255,.07);
-  --sk-drop-border:1px solid rgba(255,255,255,.1);--sk-drop-bg:linear-gradient(#2c3642,#232b35);--sk-drop-shadow:inset 0 1px 0 rgba(255,255,255,.07);
-  --sk-notice-bg:linear-gradient(color-mix(in srgb,var(--aq-gel) 22%,#1e252e),color-mix(in srgb,var(--aq-gel) 14%,#1e252e));
-  --sk-input-bg:#141a21;--sk-input-ink:#e6edf5;--sk-input-border:1px solid #46525f;--sk-input-shadow:inset 0 1px 3px rgba(0,0,0,.6);
-  --sk-sidenav-bg:linear-gradient(rgba(20,26,34,.72),rgba(20,26,34,.72)),#d8dde2 url("textures/brushed-light.webp?v=20260930zzzn") center/256px;--sk-sidenav-border:1px solid #0b0f14;
-  --sk-footer-bg:rgba(30,37,46,.8);
-  --sk-abar-bg:linear-gradient(rgba(20,26,34,.75),rgba(20,26,34,.75)),#d8dde2 url("textures/brushed-light.webp?v=20260930zzzn") center/256px;--sk-abar-border:1px solid #0b0f14;
-  --sk-dialog-bg:linear-gradient(180deg,#1b2129,#10151b);
-  --sk-chart-bg:linear-gradient(#232c36,#161c23);--sk-chart-border:1px solid #0b0f14;--sk-chart-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 2px 10px rgba(0,0,0,.6),0 2px 5px rgba(0,0,0,.4);
-  --sk-chart-grid:rgba(255,255,255,.08);--sk-chart-text:#aebccb;
-  --sk-slider-track:linear-gradient(90deg,#10151b,#2a333d 60%,#10151b)}
-html[data-design="aqua"][data-tone="dark"] .repo-header h1{text-shadow:0 -1px 0 rgba(0,0,0,.6)}
-html[data-design="aqua"][data-tone="dark"] :is(.repo-menu-button,.repo-language-button),
-html[data-design="aqua"][data-tone="dark"] :is(button.secondary,.repo-header button.headerButton:not(:first-of-type),a.headerButton):not(.repo-block-tools button){background:linear-gradient(#4a5663,#323c47 50%,#2a333d 51%,#3b4652)!important;color:#e6edf5!important;border-color:#11161c!important;text-shadow:0 -1px 0 rgba(0,0,0,.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 1px 3px rgba(0,0,0,.4)!important}
-html[data-design="aqua"][data-tone="dark"] .repo-footer{border-color:#2c3642}
+html[data-design="aqua"][data-tone="dark"] {
+  --sk-title-shadow: 0 -1px 0 rgba(0, 0, 0, .6);
+  --sk-seg-bg: linear-gradient(#4a5663, #323c47 50%, #2a333d 51%, #3b4652);
+  --sk-seg-ink: #e6edf5;
+  --sk-seg-shadow: 0 -1px 0 rgba(0, 0, 0, .4);
+  --sk-code-bg: #141a21;
+  --sk-code-ink: #e6edf5;
+  --sk-code-border: 1px solid #46525f;
+  --sk-code-radius: 3px;
+  --aq-ink: #e6edf5;
+  --aq-ink-2: #aebccb;
+  --repo-surface: #26303b;
+  background: linear-gradient(180deg, #1b2129, #10151b) !important;
+  --sk-header-border: 0 solid #0b0f14;
+  --sk-header-bg: linear-gradient(rgba(255, 255, 255, .12), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, .2)), linear-gradient(rgba(20, 26, 34, .72), rgba(20, 26, 34, .72)), #d8dde2 url("textures/brushed-light.webp?v=6bef2cba") center/256px;
+  --sk-header-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 6px 16px rgba(0, 0, 0, .45);
+  --sk-menu-bg: rgba(30, 37, 46, .95);
+  --sk-menu-border: 1px solid #46525f;
+  --sk-block-border: 1px solid rgba(255, 255, 255, .08);
+  --sk-block-bg: linear-gradient(180deg, rgba(46, 56, 68, .92), rgba(30, 37, 46, .92));
+  --sk-block-shadow: 0 12px 28px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .1);
+  --sk-card-border: 1px solid rgba(255, 255, 255, .1);
+  --sk-card-bg: linear-gradient(#2c3642, #232b35);
+  --sk-card-shadow: inset 0 1px 0 rgba(255, 255, 255, .07);
+  --sk-drop-border: 1px solid rgba(255, 255, 255, .1);
+  --sk-drop-bg: linear-gradient(#2c3642, #232b35);
+  --sk-drop-shadow: inset 0 1px 0 rgba(255, 255, 255, .07);
+  --sk-notice-bg: linear-gradient(color-mix(in srgb, var(--aq-gel) 22%, #1e252e), color-mix(in srgb, var(--aq-gel) 14%, #1e252e));
+  --sk-input-bg: #141a21;
+  --sk-input-ink: #e6edf5;
+  --sk-input-border: 1px solid #46525f;
+  --sk-input-shadow: inset 0 1px 3px rgba(0, 0, 0, .6);
+  --sk-sidenav-bg: linear-gradient(rgba(20, 26, 34, .72), rgba(20, 26, 34, .72)), #d8dde2 url("textures/brushed-light.webp?v=6bef2cba") center/256px;
+  --sk-sidenav-border: 1px solid #0b0f14;
+  --sk-footer-bg: rgba(30, 37, 46, .8);
+  --sk-abar-bg: linear-gradient(rgba(20, 26, 34, .75), rgba(20, 26, 34, .75)), #d8dde2 url("textures/brushed-light.webp?v=6bef2cba") center/256px;
+  --sk-abar-border: 1px solid #0b0f14;
+  --sk-dialog-bg: linear-gradient(180deg, #1b2129, #10151b);
+  --sk-chart-bg: linear-gradient(#232c36, #161c23);
+  --sk-chart-border: 1px solid #0b0f14;
+  --sk-chart-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), inset 0 2px 10px rgba(0, 0, 0, .6), 0 2px 5px rgba(0, 0, 0, .4);
+  --sk-chart-grid: rgba(255, 255, 255, .08);
+  --sk-chart-text: #aebccb;
+  --sk-slider-track: linear-gradient(90deg, #10151b, #2a333d 60%, #10151b)
+}
+html[data-design="aqua"][data-tone="dark"] :is(.repo-menu-button, .repo-language-button),
+html[data-design="aqua"][data-tone="dark"] :is(button.secondary, a.secondary, label.rg-file, .repo-header button.headerButton:not(:first-of-type), a.headerButton):not(.repo-block-tools button) {
+  background: linear-gradient(#4a5663, #323c47 50%, #2a333d 51%, #3b4652) !important;
+  color: #e6edf5 !important;
+  border-color: #11161c !important;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, .5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .15), 0 1px 3px rgba(0, 0, 0, .4) !important
+}
+html[data-design="aqua"][data-tone="dark"] .repo-footer {
+  border-color: #2c3642
+}
 
 /* ================================================================================================ COMPOSANTS COMMUNS
    Écrits une fois pour tous les designs à matières, d'après les jetons --sk-* de chaque design (et de chaque ton) :
    ce qui est propre à un design (plaques, vis, coutures, bande d'unité…) reste dans sa section. */
-html[data-skeuo] .repo-header{border-radius:var(--sk-header-radius)!important;border:var(--sk-header-border)!important;border-bottom-width:var(--sk-header-bbw,0px)!important;margin:var(--sk-header-margin)!important;
-  color:var(--sk-header-ink)!important;background:var(--sk-header-bg)!important;box-shadow:var(--sk-header-shadow)!important}
-html[data-skeuo] :is(.repo-menu-button,.repo-language-button){background:var(--sk-mbtn-bg)!important;color:var(--sk-mbtn-ink)!important;border:var(--sk-mbtn-border)!important;border-radius:var(--sk-mbtn-radius)!important}
-html[data-skeuo] :is(.repo-menu,.repo-language-menu){background:var(--sk-menu-bg)!important;color:var(--sk-menu-ink)!important;border:var(--sk-menu-border)!important}
-html[data-skeuo] .repo-menu :is(a,button,summary){color:var(--sk-menu-ink)!important}
-html[data-skeuo] .repo-block{border:var(--sk-block-border)!important;border-left:var(--sk-block-border-left,var(--sk-block-border))!important;border-radius:var(--sk-block-radius)!important;
-  background:var(--sk-block-bg)!important;color:var(--sk-ink)!important;box-shadow:var(--sk-block-shadow)!important}
-html[data-skeuo] .repo-block-subtitle{color:var(--sk-ink-2)!important}
-html[data-skeuo] .repo-card{background:var(--sk-card-bg)!important;border:var(--sk-card-border)!important;border-radius:var(--sk-card-radius)!important;box-shadow:var(--sk-card-shadow)!important}
-html[data-skeuo] .repo-dropzone{background:var(--sk-drop-bg)!important;border:var(--sk-drop-border)!important;border-radius:var(--sk-drop-radius)!important;box-shadow:var(--sk-drop-shadow)!important}
-html[data-skeuo] .repo-notice{background:var(--sk-notice-bg)!important;border:var(--sk-notice-border)!important;border-left:var(--sk-notice-border-left,var(--sk-notice-border))!important;
-  border-radius:var(--sk-notice-radius)!important;color:var(--sk-notice-ink)!important}
-html[data-skeuo] .repo-block :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),select,textarea){background:var(--sk-input-bg)!important;color:var(--sk-input-ink)!important;border:var(--sk-input-border)!important;
-  border-radius:var(--sk-input-radius)!important;box-shadow:var(--sk-input-shadow)!important}
+/* titre de l'en-tête : encre et ombre (tous les designs à matières), police, largeur, capitales et interlettrage
+   (designs à cadre ; défauts : ceux du navigateur) */
+html[data-skeuo] .repo-header h1 {
+  color: var(--sk-title-ink) !important;
+  text-shadow: var(--sk-title-shadow)
+}
+html[data-skeuo="frame"] .repo-header h1 {
+  font-family: var(--sk-title-family) !important;
+  font-weight: 700;
+  font-stretch: var(--sk-title-stretch, normal);
+  text-transform: var(--sk-title-case, none);
+  letter-spacing: var(--sk-title-spacing, normal)
+}
+html[data-skeuo] .repo-header {
+  border-radius: var(--sk-header-radius) !important;
+  border: var(--sk-header-border) !important;
+  border-bottom-width: var(--sk-header-bbw, 0px) !important;
+  margin: var(--sk-header-margin) !important;
+  color: var(--sk-header-ink) !important;
+  background: var(--sk-header-bg) !important;
+  box-shadow: var(--sk-header-shadow) !important
+}
+html[data-skeuo] :is(.repo-menu-button, .repo-language-button) {
+  background: var(--sk-mbtn-bg) !important;
+  color: var(--sk-mbtn-ink) !important;
+  border: var(--sk-mbtn-border) !important;
+  border-radius: var(--sk-mbtn-radius) !important
+}
+html[data-skeuo] :is(.repo-menu, .repo-language-menu) {
+  background: var(--sk-menu-bg) !important;
+  color: var(--sk-menu-ink) !important;
+  border: var(--sk-menu-border) !important
+}
+html[data-skeuo] .repo-menu :is(a, button, summary) {
+  color: var(--sk-menu-ink) !important
+}
+html[data-skeuo] .repo-block {
+  border: var(--sk-block-border) !important;
+  border-left: var(--sk-block-border-left, var(--sk-block-border)) !important;
+  border-radius: var(--sk-block-radius) !important;
+  background: var(--sk-block-bg) !important;
+  color: var(--sk-ink) !important;
+  box-shadow: var(--sk-block-shadow) !important
+}
+html[data-skeuo] .repo-block-subtitle {
+  color: var(--sk-ink-2) !important
+}
+html[data-skeuo] .repo-card {
+  background: var(--sk-card-bg) !important;
+  border: var(--sk-card-border) !important;
+  border-radius: var(--sk-card-radius) !important;
+  box-shadow: var(--sk-card-shadow) !important;
+  color: var(--sk-ink) !important
+}
+html[data-skeuo] .repo-dropzone {
+  background: var(--sk-drop-bg) !important;
+  border: var(--sk-drop-border) !important;
+  border-radius: var(--sk-drop-radius) !important;
+  box-shadow: var(--sk-drop-shadow) !important
+}
+html[data-skeuo] .repo-notice {
+  background: var(--sk-notice-bg) !important;
+  border: var(--sk-notice-border) !important;
+  border-left: var(--sk-notice-border-left, var(--sk-notice-border)) !important;
+  border-radius: var(--sk-notice-radius) !important;
+  color: var(--sk-notice-ink) !important;
+  box-shadow: var(--sk-notice-shadow, none) !important;
+  outline: var(--sk-notice-outline, none);
+  outline-offset: var(--sk-notice-outline-offset, 0)
+}
+html[data-skeuo] .repo-block :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select, textarea) {
+  background: var(--sk-input-bg) !important;
+  color: var(--sk-input-ink) !important;
+  border: var(--sk-input-border) !important;
+  border-radius: var(--sk-input-radius) !important;
+  box-shadow: var(--sk-input-shadow) !important
+}
 /* boutons : habillage du design (police : dans la section du design) */
-html[data-skeuo] button:where(:not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-sidenav-item):not(.col-split):not(.repo-block-tools button):not([role=menuitem]):not(.repo-icon-only):not(.repo-plain)),html[data-skeuo] .buttonLink,html[data-skeuo] a.mc-button{
-  font-weight:var(--sk-btn-weight);border:var(--sk-btn-border)!important;border-radius:var(--sk-btn-radius)!important;color:var(--sk-btn-ink)!important;text-shadow:var(--sk-btn-text-shadow);
-  background:var(--sk-btn-bg)!important;box-shadow:var(--sk-btn-shadow)!important}
-html[data-skeuo] button:not(:disabled):hover{filter:var(--sk-btn-hover)}
-html[data-skeuo] button:disabled{filter:var(--sk-btn-disabled)}
-html[data-skeuo] .repo-block-tools button{background:var(--sk-tool-bg)!important}
-html[data-skeuo] .repo-sidenav{background:var(--sk-sidenav-bg)!important;border-right:var(--sk-sidenav-border)!important;color:var(--sk-sidenav-ink)!important}
-html[data-skeuo] .repo-footer{margin:var(--sk-footer-margin)!important;padding:var(--sk-footer-padding)!important;background:var(--sk-footer-bg)!important;color:var(--sk-footer-ink)!important}
+html[data-skeuo] button:where(:not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-sidenav-item):not(.col-split):not(.repo-block-tools button):not([role=menuitem]):not(.repo-icon-only):not(.repo-plain)),
+html[data-skeuo] .buttonLink,
+html[data-skeuo] a.mc-button {
+  font-weight: var(--sk-btn-weight);
+  border: var(--sk-btn-border) !important;
+  border-radius: var(--sk-btn-radius) !important;
+  color: var(--sk-btn-ink) !important;
+  text-shadow: var(--sk-btn-text-shadow);
+  background: var(--sk-btn-bg) !important;
+  box-shadow: var(--sk-btn-shadow) !important
+}
+html[data-skeuo] button:not(:disabled):hover {
+  filter: var(--sk-btn-hover)
+}
+html[data-skeuo] button:disabled {
+  filter: var(--sk-btn-disabled)
+}
+html[data-skeuo] .repo-block-tools button {
+  background: var(--sk-tool-bg) !important
+}
+html[data-skeuo] .repo-sidenav {
+  background: var(--sk-sidenav-bg) !important;
+  border-right: var(--sk-sidenav-border) !important;
+  color: var(--sk-sidenav-ink) !important;
+  box-shadow: var(--sk-sidenav-shadow, none) !important
+}
+html[data-skeuo="frame"] .repo-footer {
+  position: relative
+}
+html[data-skeuo] .repo-footer {
+  margin: var(--sk-footer-margin) !important;
+  padding: var(--sk-footer-padding) !important;
+  background: var(--sk-footer-bg) !important;
+  color: var(--sk-footer-ink) !important
+}
 
 /* ================================================================================================ ESPACEMENTS
    Blocs plus aérés que les pages d'origine (bordures et plaques épaisses) ; en-tête de bloc : icône, titre et outils
    alignés, marge sous la plaque ; médaillons et plaques d'icônes sans déborder sur le titre. */
-html[data-skeuo] .repo-block{padding:20px 22px 22px!important;margin-bottom:18px!important}
-html[data-skeuo] .repo-block-heading-rich{gap:14px!important;margin-bottom:18px!important;align-items:flex-start!important}
-html[data-skeuo] .repo-block-subtitle{margin-top:8px!important}
-html[data-skeuo] .repo-card{padding:18px 20px!important}
-html[data-skeuo] .repo-card-head{gap:12px;margin-bottom:14px}
-html[data-skeuo] .repo-block-tools{align-self:flex-start}
+html[data-skeuo] .repo-block {
+  padding: 20px 22px 22px !important;
+  margin-bottom: 18px !important
+}
+html[data-skeuo] .repo-block-heading-rich {
+  gap: 14px !important;
+  margin-bottom: 18px !important;
+  align-items: flex-start !important
+}
+html[data-skeuo] .repo-block-subtitle {
+  margin-top: 8px !important
+}
+html[data-skeuo] .repo-card {
+  padding: 18px 20px !important
+}
+html[data-skeuo] .repo-card-head {
+  gap: 12px;
+  margin-bottom: 14px
+}
+html[data-skeuo] .repo-block-tools {
+  align-self: flex-start
+}
 /* en-tête de bloc : icône, titre (plaque) et outils alignés en haut */
-html[data-skeuo] :is(.repo-block-titles,.repo-block-lead){align-self:flex-start!important}
-html[data-skeuo] .repo-block-lead{align-items:flex-start!important}
-html[data-skeuo] :is(.repo-block,.repo-header,.repo-actionbar,.status-bar) :is(button,a.headerButton,.buttonLink):not(.repo-block-tools button):not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-icon-only):not([role=menuitem]):not(.repo-plain){padding:8px 16px!important;min-height:38px}
-html[data-skeuo] .repo-block-tools button{padding:5px 11px!important;min-height:30px}
+html[data-skeuo] :is(.repo-block-titles, .repo-block-lead) {
+  align-self: flex-start !important
+}
+html[data-skeuo] .repo-block-lead {
+  align-items: flex-start !important
+}
+html[data-skeuo] :is(.repo-block, .repo-header, .repo-actionbar, .status-bar) :is(button, a.headerButton, .buttonLink):not(.repo-block-tools button):not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-icon-only):not([role=menuitem]):not(.repo-plain):not(td *) {
+  padding: 8px 16px !important;
+  min-height: 38px
+}
+html[data-skeuo] .repo-block-tools button {
+  padding: 5px 11px !important;
+  min-height: 30px
+}
 /* bouton icône seule : même hauteur que les autres, carré */
-html[data-skeuo] :is(.repo-block,.repo-header,.repo-actionbar,.status-bar) :is(button,.buttonLink).repo-icon-only:not(.repo-block-tools button){min-height:38px;min-width:38px;padding:0 8px!important}
-html[data-skeuo] .repo-block :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),select){min-height:38px;padding:7px 10px!important}
+html[data-skeuo] :is(.repo-block, .repo-header, .repo-actionbar, .status-bar) :is(button, .buttonLink).repo-icon-only:not(.repo-block-tools button):not(td *) {
+  min-height: 38px;
+  min-width: 38px;
+  padding: 0 8px !important
+}
+html[data-skeuo] .repo-block :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select):not(td *) {
+  min-height: 38px;
+  padding: 7px 10px !important
+}
+/* dans les cellules des tableaux : commandes compactes (lignes serrées) */
+html[data-skeuo] .repo-block td :is(button, a.headerButton, .buttonLink):not(.repo-plain) {
+  padding: 2px 9px !important;
+  min-height: 26px
+}
+html[data-skeuo] .repo-block td :is(button, .buttonLink).repo-icon-only {
+  min-width: 26px;
+  padding: 0 5px !important
+}
+html[data-skeuo] .repo-block td :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select) {
+  min-height: 28px;
+  padding: 3px 8px !important
+}
 
 /* ================================================================================================ LIENS EN BOUTONS
    Liens d'action (retour au générateur, « Choisir des fichiers » des zones de dépôt) : même habillage que les boutons. */
-html[data-design-base="cabinet"] a.headerButton{font-family:"Palatino Linotype","Book Antiqua",Georgia,serif!important}
-html[data-design="field"] a.headerButton{font-family:Bahnschrift,"Arial Narrow",sans-serif!important}
-html[data-skeuo] a.headerButton{font-weight:var(--sk-lbtn-weight);border:var(--sk-lbtn-border)!important;border-radius:var(--sk-lbtn-radius)!important;color:var(--sk-lbtn-ink)!important;
-  text-decoration:none;display:inline-flex;align-items:center;gap:8px;background:var(--sk-lbtn-bg)!important;box-shadow:var(--sk-lbtn-shadow)!important}
-html[data-skeuo] .repo-dropzone-pick{display:inline-block;margin:0 4px 2px 0;padding:5px 12px;border-radius:5px;text-decoration:none!important}
-html[data-design-base="cabinet"] .repo-dropzone-pick{box-shadow:0 0 0 1.5px var(--cab-brass),0 2px 3px rgba(0,0,0,.35);font-family:"Palatino Linotype",Georgia,serif}
-html[data-design="field"] .repo-dropzone-pick{box-shadow:inset 0 1px 0 #fff,0 0 0 1px #000}
-html[data-design="aqua"] .repo-dropzone-pick{border:1px solid #9aa6b2;border-radius:8px}
-html[data-skeuo] .repo-dropzone-pick{color:var(--sk-pick-ink)!important;background:var(--sk-pick-bg)}
-
+html[data-skeuo="frame"] a.headerButton {
+  font-family: var(--sk-lbtn-family) !important
+}
+html[data-skeuo] a.headerButton {
+  font-weight: var(--sk-lbtn-weight);
+  border: var(--sk-lbtn-border) !important;
+  border-radius: var(--sk-lbtn-radius) !important;
+  color: var(--sk-lbtn-ink) !important;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--sk-lbtn-bg) !important;
+  box-shadow: var(--sk-lbtn-shadow) !important
+}
+html[data-skeuo] .repo-dropzone-pick {
+  display: inline-block;
+  margin: 0 4px 2px 0;
+  padding: 5px 12px;
+  border-radius: 5px;
+  text-decoration: none !important
+}
+html[data-design="aqua"] .repo-dropzone-pick {
+  border: 1px solid #9aa6b2;
+  border-radius: 8px
+}
+html[data-skeuo] .repo-dropzone-pick {
+  color: var(--sk-pick-ink) !important;
+  background: var(--sk-pick-bg);
+  box-shadow: var(--sk-pick-shadow, none);
+  font-family: var(--sk-pick-family, inherit)
+}
 
 /* ================================================================================================ COMMUN */
 /* voyant de sauvegarde dans la barre d'état (html[data-dirty], browser_store.js) : vert si tout est sauvegardé */
-html[data-skeuo="frame"] .repo-footer::before{content:"";position:absolute;left:12px;top:50%;width:11px;height:11px;margin-top:-5.5px;border-radius:50%;
-  background:radial-gradient(circle at 35% 30%,#d9ffd0,#35c24a 45%,#0f5a1b);box-shadow:0 0 7px #3dff6a,0 0 0 2px #1a1208}
-html[data-skeuo="frame"][data-dirty="1"] .repo-footer::before{background:radial-gradient(circle at 35% 30%,#fff1c9,#e8b85a 55%,#8a5d12);box-shadow:0 0 7px #e8b85a,0 0 0 2px #1a1208}
-html[data-design-base="cabinet"] .repo-footer{position:relative;padding-left:34px!important}
-@media (prefers-reduced-motion:reduce){html[data-design="field"] .repo-footer::after{animation:none}}
+html[data-skeuo="frame"] .repo-footer::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  width: 11px;
+  height: 11px;
+  margin-top: -5.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #d9ffd0, #35c24a 45%, #0f5a1b);
+  box-shadow: 0 0 7px #3dff6a, 0 0 0 2px #1a1208
+}
+html[data-skeuo="frame"][data-dirty="1"] .repo-footer::before {
+  background: radial-gradient(circle at 35% 30%, #fff1c9, #e8b85a 55%, #8a5d12);
+  box-shadow: 0 0 7px #e8b85a, 0 0 0 2px #1a1208
+}
+@media (prefers-reduced-motion:reduce) {
+  html[data-design="field"] .repo-footer::after {
+    animation: none
+  }
+}
 /* petits écrans : cadre réduit, décor allégé */
-@media (max-width:760px){
-  html[data-skeuo="frame"] body{margin:6px!important;border-radius:8px}
-  html[data-skeuo="frame"] .repo-header-emblem{width:44px;height:44px;margin:0}
-  html[data-design="field"] .repo-header-emblem{width:60px;height:24px}
-  html[data-skeuo="frame"] :is(.repo-block-titles,.repo-block-heading)>h2{font-size:.95rem!important;padding-left:22px!important;padding-right:22px!important}
+@media (max-width:760px) {
+  html[data-skeuo="frame"] body {
+    margin: 6px !important;
+    border-radius: 8px
+  }
+  html[data-skeuo="frame"] {
+    --sk-emblem-w: 44px;
+    --sk-emblem-h: 44px;
+    --sk-emblem-margin: 0
+  }
+  html[data-design="field"] {
+    --sk-emblem-w: 60px;
+    --sk-emblem-h: 24px
+  }
+  html[data-skeuo="frame"] :is(.repo-block-titles, .repo-block-heading)>h2 {
+    font-size: .95rem !important;
+    padding-left: 22px !important;
+    padding-right: 22px !important
+  }
 }
 /* impression : les matières s'effacent */
-@media print{
-  html[data-design],html[data-design] body{background:#fff!important;box-shadow:none!important;margin:0!important;padding:0!important}
-  html[data-skeuo] :is(.repo-block,.repo-card,.repo-notice,.repo-dropzone,.repo-block-titles>h2,.repo-block-heading>h2,button,input,select,textarea){background:#fff!important;color:#000!important;box-shadow:none!important;text-shadow:none!important;border-color:#999!important}
-  html[data-skeuo] :is(.repo-block,.repo-card,.repo-block-titles>h2,.repo-block-heading>h2,body,.repo-footer)::before,
-  html[data-skeuo] :is(.repo-block,.repo-card,.repo-block-titles>h2,.repo-block-heading>h2,body,.repo-footer)::after,html[data-design]::before{display:none!important}
-  html[data-design] .repo-block :is(p,li,td,th,label,.small,.note,h3,h4){color:#000!important}
+@media print {
+  html[data-design],
+  html[data-design] body {
+    background: #fff !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important
+  }
+  html[data-skeuo] :is(.repo-block, .repo-card, .repo-notice, .repo-dropzone, .repo-block-titles>h2, .repo-block-heading>h2, button, input, select, textarea) {
+    background: #fff !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    border-color: #999 !important
+  }
+  html[data-skeuo] :is(.repo-block, .repo-card, .repo-block-titles>h2, .repo-block-heading>h2, body, .repo-footer)::before,
+  html[data-skeuo] :is(.repo-block, .repo-card, .repo-block-titles>h2, .repo-block-heading>h2, body, .repo-footer)::after,
+  html[data-design]::before {
+    display: none !important
+  }
+  html[data-design] .repo-block :is(p, li, td, th, label, .small, .note, h3, h4) {
+    color: #000 !important
+  }
 }
 
 /* ================================================================================================ ILLUSTRATIONS (design_deco.js)
    Décor complet seulement ; masquées en décor sobre, sous 760 px et à l'impression. */
-.repo-deco{display:none}
-html[data-skeuo="frame"][data-decor="full"] .repo-deco{display:block;margin:18px 0 0}
-html[data-design-base="cabinet"] .repo-deco{border-radius:8px;overflow:hidden;box-shadow:0 0 0 1px #1c0d05,0 4px 10px rgba(0,0,0,.45)}
-.repo-deco-strip{display:block;width:100%;height:auto;min-height:70px;object-fit:cover}
-.repo-deco-plate-img{display:flex;align-items:center;justify-content:center}.repo-deco-plate-img img{width:100%;max-width:300px;height:auto;filter:drop-shadow(0 4px 5px rgba(0,0,0,.5))}
-.repo-deco-radar>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.repo-deco-status>img{width:52px;height:auto;flex:none}
-html[data-design="field"][data-decor="full"] .repo-deco{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;gap:12px 14px;align-items:center}
+.repo-deco {
+  display: none
+}
+html[data-skeuo="frame"][data-decor="full"] .repo-deco {
+  display: block;
+  margin: 18px 0 0
+}
+html[data-design-base="cabinet"] .repo-deco {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px #1c0d05, 0 4px 10px rgba(0, 0, 0, .45)
+}
+.repo-deco-strip {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 70px;
+  object-fit: cover
+}
+.repo-deco-plate-img {
+  display: flex;
+  align-items: center;
+  justify-content: center
+}
+.repo-deco-plate-img img {
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  filter: drop-shadow(0 4px 5px rgba(0, 0, 0, .5))
+}
+.repo-deco-radar>img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover
+}
+.repo-deco-status>img {
+  width: 52px;
+  height: auto;
+  flex: none
+}
+html[data-design="field"][data-decor="full"] .repo-deco {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  gap: 12px 14px;
+  align-items: center
+}
 /* radar : presque toute la largeur (plaque DEFA et voyant empilés dans la colonne de droite) */
-html[data-design="field"][data-decor="full"] .repo-deco>.repo-deco-radar{grid-column:1;grid-row:1/3}
-html[data-design="field"][data-decor="full"] .repo-deco>.repo-deco-plate-img{grid-column:2;grid-row:1}
-html[data-design="field"][data-decor="full"] .repo-deco>.repo-deco-status{grid-column:2;grid-row:2}
-.repo-deco-plate{display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:6px;background:#cfc7a4 url("textures/khaki.webp?v=20260930zzzn") center/256px;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 0 0 2px #2a2e22,0 3px 6px rgba(0,0,0,.45);color:#2f3327;position:relative}
-.repo-deco-plate::before,.repo-deco-plate::after{content:"";position:absolute;top:50%;width:11px;height:11px;margin-top:-5.5px;background:var(--fd-screw) center/11px no-repeat}
-.repo-deco-plate::before{left:6px}.repo-deco-plate::after{right:6px}
-.repo-deco-emblem{width:72px;height:28px;flex:none}.repo-deco-emblem svg{width:100%;height:100%;display:block}
-.repo-deco-plate b{display:block;font:700 26px/1 Stencil,"Stardos Stencil","Allerta Stencil",Bahnschrift,Impact,sans-serif;letter-spacing:.08em}
-.repo-deco-plate small{display:block;margin-top:3px;font:600 10.5px/1.2 Bahnschrift,"Arial Narrow",sans-serif;text-transform:uppercase;letter-spacing:.08em}
-.repo-deco-radar{position:relative;aspect-ratio:3/1;height:auto;border-radius:8px;overflow:hidden;background:#04140a url("textures/radar.webp?v=20260930zzzn") center/320px;box-shadow:inset 0 0 0 2px #0b0d08,inset 0 0 26px rgba(0,0,0,.9),0 0 0 3px #4a4f40}
-.repo-deco-radar svg{position:absolute;inset:0;width:100%;height:100%}
-.repo-deco-sweep{position:absolute;left:49.86%;top:46.44%;height:201%;aspect-ratio:1;border-radius:50%;background:conic-gradient(from 0deg,transparent 0deg 285deg,rgba(120,255,150,.08) 305deg,rgba(120,255,150,.55) 359.5deg,transparent 360deg);   /* front net à 0°, traînée derrière (rotation horaire) */ transform:translate(-50%,-50%);animation:repo-sweep-c 5s linear infinite;pointer-events:none;mix-blend-mode:screen}
-@keyframes repo-sweep-c{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(1turn)}}   /* balayage centré sur le réticule de l'image (49,86 % ; 46,44 %), rayon jusqu'à la cible rouge (rogné au bord) */
-.repo-deco-radar i{position:absolute;width:6px;height:6px;margin:-3px;border-radius:50%;background:var(--c,#ff6a4d);box-shadow:0 0 8px var(--c,#ff6a4d);opacity:.18;animation:repo-blip 5s linear infinite}   /* éteint (.18) pendant son délai : pas d'état de début anticipé */
+html[data-design="field"][data-decor="full"] .repo-deco>.repo-deco-radar {
+  grid-column: 1;
+  grid-row: 1/3
+}
+html[data-design="field"][data-decor="full"] .repo-deco>.repo-deco-plate-img {
+  grid-column: 2;
+  grid-row: 1
+}
+html[data-design="field"][data-decor="full"] .repo-deco>.repo-deco-status {
+  grid-column: 2;
+  grid-row: 2
+}
+.repo-deco-plate {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  background: #cfc7a4 url("textures/khaki.webp?v=0ceabf72") center/256px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 0 0 2px #2a2e22, 0 3px 6px rgba(0, 0, 0, .45);
+  color: #2f3327;
+  position: relative
+}
+.repo-deco-plate::before,
+.repo-deco-plate::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 11px;
+  height: 11px;
+  margin-top: -5.5px;
+  background: var(--fd-screw) center/11px no-repeat
+}
+.repo-deco-plate::before {
+  left: 6px
+}
+.repo-deco-plate::after {
+  right: 6px
+}
+.repo-deco-emblem {
+  width: 72px;
+  height: 28px;
+  flex: none
+}
+.repo-deco-emblem svg {
+  width: 100%;
+  height: 100%;
+  display: block
+}
+.repo-deco-plate b {
+  display: block;
+  font: 700 26px/1 Stencil, "Stardos Stencil", "Allerta Stencil", Bahnschrift, Impact, sans-serif;
+  letter-spacing: .08em
+}
+.repo-deco-plate small {
+  display: block;
+  margin-top: 3px;
+  font: 600 10.5px/1.2 Bahnschrift, "Arial Narrow", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .08em
+}
+.repo-deco-radar {
+  position: relative;
+  aspect-ratio: 3/1;
+  height: auto;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #04140a url("textures/radar.webp?v=99553719") center/320px;
+  box-shadow: inset 0 0 0 2px #0b0d08, inset 0 0 26px rgba(0, 0, 0, .9), 0 0 0 3px #4a4f40
+}
+.repo-deco-radar svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%
+}
+.repo-deco-sweep {
+  position: absolute;
+  left: 49.86%;
+  top: 46.44%;
+  height: 201%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0deg 285deg, rgba(120, 255, 150, .08) 305deg, rgba(120, 255, 150, .55) 359.5deg, transparent 360deg);
+  /* front net à 0°, traînée derrière (rotation horaire) */
+  transform: translate(-50%, -50%);
+  animation: repo-sweep-c 5s linear infinite;
+  pointer-events: none;
+  mix-blend-mode: screen
+}
+@keyframes repo-sweep-c {
+  from {
+    transform: translate(-50%, -50%) rotate(0)
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(1turn)
+  }
+}
+/* balayage centré sur le réticule de l'image (49,86 % ; 46,44 %), rayon jusqu'à la cible rouge (rogné au bord) */
+.repo-deco-radar i {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  margin: -3px;
+  border-radius: 50%;
+  background: var(--c, #ff6a4d);
+  box-shadow: 0 0 8px var(--c, #ff6a4d);
+  opacity: .18;
+  animation: repo-blip 5s linear infinite
+}
+/* éteint (.18) pendant son délai : pas d'état de début anticipé */
 /* plot : flash quand le front passe (début du cycle, décalé par animation-delay selon l'angle), rémanence qui s'éteint */
-@keyframes repo-blip{0%{opacity:1;transform:scale(1.5)}8%{opacity:.95;transform:scale(1)}70%{opacity:.25}100%{opacity:.18}}
-.repo-deco-status{display:flex;align-items:center;gap:14px;padding:10px 16px;border-radius:6px;background:#15180f;color:#cfd2c4;font:600 13px Bahnschrift,"Arial Narrow",sans-serif;box-shadow:inset 0 2px 6px #000,0 0 0 3px #4a4f40}
-.repo-deco-leds{display:grid;gap:7px}.repo-deco-leds i{width:11px;height:11px;border-radius:50%;background:#2a2e24;box-shadow:0 0 0 2px #000}
-.repo-deco-leds i.led-on,html:not([data-dirty="1"]) .repo-deco-leds i.led-save{background:radial-gradient(circle at 35% 30%,#eaffd9,#9fe870 55%,#2f7a1c);box-shadow:0 0 7px #9fe870,0 0 0 2px #000}
-html[data-dirty="1"] .repo-deco-leds i.led-save{background:radial-gradient(circle at 35% 30%,#fff1c9,#e8b85a 55%,#8a5d12);box-shadow:0 0 7px #e8b85a,0 0 0 2px #000}
-@media (prefers-reduced-motion:reduce){.repo-deco-sweep,.repo-deco-radar i{animation:none}}
-@media (max-width:760px){.repo-deco{display:none!important}}
-@media print{.repo-deco{display:none!important}}
+@keyframes repo-blip {
+  0% {
+    opacity: 1;
+    transform: scale(1.5)
+  }
+  8% {
+    opacity: .95;
+    transform: scale(1)
+  }
+  70% {
+    opacity: .25
+  }
+  100% {
+    opacity: .18
+  }
+}
+.repo-deco-status {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  background: #15180f;
+  color: #cfd2c4;
+  font: 600 13px Bahnschrift, "Arial Narrow", sans-serif;
+  box-shadow: inset 0 2px 6px #000, 0 0 0 3px #4a4f40
+}
+.repo-deco-leds {
+  display: grid;
+  gap: 7px
+}
+.repo-deco-leds i {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #2a2e24;
+  box-shadow: 0 0 0 2px #000
+}
+.repo-deco-leds i.led-on,
+html:not([data-dirty="1"]) .repo-deco-leds i.led-save {
+  background: radial-gradient(circle at 35% 30%, #eaffd9, #9fe870 55%, #2f7a1c);
+  box-shadow: 0 0 7px #9fe870, 0 0 0 2px #000
+}
+html[data-dirty="1"] .repo-deco-leds i.led-save {
+  background: radial-gradient(circle at 35% 30%, #fff1c9, #e8b85a 55%, #8a5d12);
+  box-shadow: 0 0 7px #e8b85a, 0 0 0 2px #000
+}
+@media (prefers-reduced-motion:reduce) {
+  .repo-deco-sweep,
+  .repo-deco-radar i {
+    animation: none
+  }
+}
+@media (max-width:760px) {
+  .repo-deco {
+    display: none !important
+  }
+}
+@media print {
+  .repo-deco {
+    display: none !important
+  }
+}
 /* vis découpées dans les planches (vis cruciforme de Durci, punaise de laiton de Cabinet) à la place des vis dessinées */
-html[data-design="field"]{--fd-screw:url("deco/field/screw-x.webp?v=20260930zzzn")}
-html[data-design-base="cabinet"]{--cab-screw:url("deco/cabinet/tack.webp?v=20260930zzzn")}
+html[data-design="field"] {
+  --fd-screw: url("deco/field/screw-x.webp?v=d2486b42")
+}
+html[data-design-base="cabinet"] {
+  --cab-screw: url("deco/cabinet/tack.webp?v=d13b9116")
+}
 /* poignées de Durci : celles de la planche, au premier plan (devant blocs et en-tête collant, 1000 ; sous les menus
    et la barre latérale, 1100), aux deux tiers sur la page */
-@media (min-width:1100px){
-  html[data-design="field"][data-decor="full"] body::before,html[data-design="field"][data-decor="full"] body::after{width:40px;height:136px;border-radius:0;box-shadow:none;background:url("deco/field/handle-v.webp?v=20260930zzzn") center/contain no-repeat;z-index:1050}
-  html[data-design="field"][data-decor="full"] body::before{left:-12px}
-  html[data-design="field"][data-decor="full"] body::after{right:-12px}
+@media (min-width:1100px) {
+  html[data-design="field"][data-decor="full"] body::before,
+  html[data-design="field"][data-decor="full"] body::after {
+    content: "";
+    position: absolute;
+    top: 140px;
+    width: 42px;
+    height: 180px;
+    background: url("deco/field/handle-v.webp?v=6f1ff9fd") center/contain no-repeat;
+    z-index: 1050
+  }
+  html[data-design="field"][data-decor="full"] body::before {
+    left: -12px
+  }
+  html[data-design="field"][data-decor="full"] body::after {
+    right: -12px
+  }
 }
 /* (poignées débordant de la marge droite : pas de défilement horizontal de la page) */
-html[data-design="field"][data-decor="full"]{overflow-x:clip}
+html[data-design="field"][data-decor="full"] {
+  overflow-x: clip
+}
 /* ================================================================================================ DÉCORS DISSÉMINÉS (design_deco.js)
    Entre les blocs (sans décaler la mise en page : hauteur nulle, image centrée sur l'intervalle) et dans les marges
    de la page (grands écrans). Invisibles hors Cabinet / Durci en décor complet. */
-.repo-deco-sep,.repo-deco-side{display:none}
-html[data-skeuo="frame"][data-decor="full"] .repo-deco-sep{display:block;position:relative;height:0;z-index:40;pointer-events:none}   /* au-dessus des blocs (qui peuvent former leur propre empilement) */
-.repo-deco-sep img{position:absolute;left:50%;transform:translate(-50%,-50%);filter:drop-shadow(0 4px 5px rgba(0,0,0,.5))}
-html[data-skeuo="frame"][data-decor="full"] .repo-deco-side{display:block;position:absolute;z-index:0;pointer-events:none;filter:drop-shadow(0 8px 10px rgba(0,0,0,.55))}
-@media (max-width:760px){.repo-deco-sep,.repo-deco-side{display:none!important}}
-@media print{.repo-deco-sep,.repo-deco-side{display:none!important}}
+.repo-deco-sep,
+.repo-deco-side {
+  display: none
+}
+html[data-skeuo="frame"][data-decor="full"] .repo-deco-sep {
+  display: block;
+  position: relative;
+  height: 0;
+  z-index: 40;
+  pointer-events: none
+}
+/* au-dessus des blocs (qui peuvent former leur propre empilement) */
+.repo-deco-sep img {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 4px 5px rgba(0, 0, 0, .5))
+}
+html[data-skeuo="frame"][data-decor="full"] .repo-deco-side {
+  display: block;
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .55))
+}
+@media (max-width:760px) {
+  .repo-deco-sep,
+  .repo-deco-side {
+    display: none !important
+  }
+}
+@media print {
+  .repo-deco-sep,
+  .repo-deco-side {
+    display: none !important
+  }
+}
 /* barres d'état des pages (#status, .status : « Aucune mission chargée »…) : habillées comme les champs */
-html[data-skeuo="frame"] .repo-block :is(#status,.status){background:var(--sk-status-bg)!important;border:var(--sk-status-border)!important;color:var(--sk-status-ink)!important;box-shadow:var(--sk-status-shadow)}
-html[data-design="aqua"][data-tone="dark"] .repo-block :is(#status,.status){background:#141a21!important;border-color:#46525f!important;color:#e6edf5!important}
+html[data-skeuo="frame"] .repo-block :is(#status, .status) {
+  background: var(--sk-status-bg) !important;
+  border: var(--sk-status-border) !important;
+  color: var(--sk-status-ink) !important;
+  box-shadow: var(--sk-status-shadow)
+}
+html[data-design="aqua"][data-tone="dark"] .repo-block :is(#status, .status) {
+  background: #141a21 !important;
+  border-color: #46525f !important;
+  color: #e6edf5 !important
+}
 
 /* ================================================================================================ CARNET DE VOL
    Déclinaison aéronautique de Cabinet (toutes ses règles s'appliquent) : planche « Carnet de vol » — blocs cerclés du
    cadre d'aluminium riveté de la planche (border-image), plan d'avion en filigrane, plaques de titre en aluminium
    brossé avec silhouette d'avion, emblème à hélice ailée, barre latérale en cuir marine, icônes « Avionique ». */
-html[data-design="flightlog"]{--repo-surface:#efe3c4;
-  --sk-block-border:22px solid transparent;--sk-block-radius:0;--sk-block-shadow:0 5px 10px rgba(30,15,5,.45);
-  --sk-block-bg:url("textures/parchment.webp?v=20260930zzzn") center/512px padding-box #efe3c4;
-  --sk-card-border:1px solid #8a8d8a;--sk-card-shadow:inset 0 0 0 3px rgba(255,255,255,.35),0 2px 4px rgba(40,30,10,.3);
-  --sk-sidenav-bg:#0f2140 url("textures/leather-navy.webp?v=20260930zzzn") center/256px;--sk-sidenav-border:3px solid #c9a24a}
-html[data-design="flightlog"][data-tone="dark"]{--sk-block-bg:url("textures/parchment-dark.webp?v=20260930zzzn") center/512px padding-box #1c2230}
-html[data-design="flightlog"] .repo-block{border-image:url("deco/flightlog/frame.webp?v=20260930zzzn") 36 / 22px round!important;padding:14px 18px 18px!important}
-html[data-design="flightlog"][data-decor="full"] .repo-block::after{display:none}
+html[data-design="flightlog"] {
+  --sk-emblem-w: 78px;
+  --sk-emblem-h: 56px;
+  /* plaque de titre : aluminium brossé, avion à droite, vis rondes */
+  --sk-plate-ink: #1d2733;
+  --sk-plate-text-shadow: 0 1px 0 rgba(255, 255, 255, .7);
+  --sk-plate-padding: 6px 64px 6px 26px;
+  --sk-plate-bg: url("deco/flightlog/plane-plaque.webp?v=a312fb26") right 16px center/44px auto no-repeat, linear-gradient(rgba(255, 255, 255, .35), rgba(0, 0, 0, .12)) 0 0/auto, #c9ccc9 url("textures/brushed-light.webp?v=6bef2cba") center/256px;
+  --sk-plate-shadow: 0 0 0 1px #4a4d4a, inset 0 1px 0 #fff, inset 0 -2px 0 rgba(0, 0, 0, .25), 0 3px 6px rgba(0, 0, 0, .35);
+  --sk-screw: url("deco/field/screw.webp?v=d2011d1d");
+  --sk-plate-screw: 10px;
+  --repo-surface: #efe3c4;
+  --sk-segs-border: 1px solid #394350;
+  --sk-segs-bg: #b9bec5 url("textures/steel.webp?v=1726e89a") center/256px;
+  --sk-seg-ink: #18212e;
+  --sk-seg-shadow: 0 1px 0 rgba(255, 255, 255, .55);
+  --sk-block-border: 22px solid transparent;
+  --sk-block-radius: 0;
+  --sk-block-shadow: 0 5px 10px rgba(30, 15, 5, .45);
+  --sk-block-bg: url("textures/parchment.webp?v=c0677c03") center/512px padding-box #efe3c4;
+  --sk-card-border: 1px solid #8a8d8a;
+  --sk-card-shadow: inset 0 0 0 3px rgba(255, 255, 255, .35), 0 2px 4px rgba(40, 30, 10, .3);
+  --sk-sidenav-bg: #0f2140 url("textures/leather-navy.webp?v=1bacc4e6") center/256px;
+  --sk-sidenav-border: 3px solid #c9a24a
+}
+html[data-design="flightlog"][data-tone="dark"] {
+  --sk-block-bg: url("textures/parchment-dark.webp?v=d9b8cd4f") center/512px padding-box #1c2230
+}
+html[data-design="flightlog"] .repo-block {
+  border-image: url("deco/flightlog/frame.webp?v=50dc8083") 36 / 22px round !important;
+  padding: 14px 18px 18px !important
+}
+html[data-design="flightlog"][data-decor="full"] .repo-block::after {
+  display: none
+}
 /* Carnet de vol : plans trois vues (Islander, DC-3, B-17, P-51, Concorde) au coin des blocs, en alternance d'un bloc à l'autre
    (rang data-deco-n posé par app_framework.js dans l'ordre de la page) ; ton clair : traits sépia foncés sur le parchemin,
    ton sombre : traits crème (versions -clair) sur le parchemin sombre. Taille : 45 % de la largeur du bloc, 340 px au plus. */
-html[data-design="flightlog"][data-decor="full"] .repo-block::before{opacity:.5;mix-blend-mode:multiply;background:url("deco/flightlog/blueprint-islander.webp?v=20260930zzzn") right 10px bottom 10px/min(45%,340px) auto no-repeat}
-html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="2"]::before{background-image:url("deco/flightlog/blueprint-dc3.webp?v=20260930zzzn")}
-html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="3"]::before{background-image:url("deco/flightlog/blueprint-b17.webp?v=20260930zzzn")}
-html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="4"]::before{background-image:url("deco/flightlog/blueprint-mustang.webp?v=20260930zzzn")}
-html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="5"]::before{background-image:url("deco/flightlog/blueprint-concorde.webp?v=20260930zzzn")}
-html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block::before{opacity:.3;mix-blend-mode:normal;background-image:url("deco/flightlog/blueprint-islander-clair.webp?v=20260930zzzn")}
-html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="2"]::before{background-image:url("deco/flightlog/blueprint-dc3-clair.webp?v=20260930zzzn")}
-html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="3"]::before{background-image:url("deco/flightlog/blueprint-b17-clair.webp?v=20260930zzzn")}
-html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="4"]::before{background-image:url("deco/flightlog/blueprint-mustang-clair.webp?v=20260930zzzn")}
-html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="5"]::before{background-image:url("deco/flightlog/blueprint-concorde-clair.webp?v=20260930zzzn")}
-html[data-design="flightlog"] :is(.repo-block-titles,.repo-block-heading)>h2{color:#1d2733!important;text-shadow:0 1px 0 rgba(255,255,255,.7)!important;padding-right:84px!important;
-  background:url("deco/flightlog/plane-plaque.webp?v=20260930zzzn") right 22px center/58px auto no-repeat,linear-gradient(rgba(255,255,255,.35),rgba(0,0,0,.12)),#c9ccc9 url("textures/brushed-light.webp?v=20260930zzzn") center/256px!important;
-  box-shadow:0 0 0 1px #4a4d4a,inset 0 1px 0 #fff,inset 0 -2px 0 rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.35)!important}
-html[data-design="flightlog"] :is(.repo-block-titles,.repo-block-heading)>h2::before,html[data-design="flightlog"] :is(.repo-block-titles,.repo-block-heading)>h2::after{background:url("deco/field/screw.webp?v=20260930zzzn") center/10px no-repeat!important}
-html[data-design="flightlog"] .repo-header-emblem{width:78px;height:56px;margin:0 6px 0 -2px}   /* marge haute et basse dans le bandeau */
-html[data-design="flightlog"] .repo-header-emblem img{width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 4px 5px rgba(0,0,0,.5));
+html[data-design="flightlog"][data-decor="full"] .repo-block::before {
+  opacity: .5;
+  mix-blend-mode: multiply;
+  background: url("deco/flightlog/blueprint-islander.webp?v=72eff2fb") right 10px bottom 10px/min(45%, 340px) auto no-repeat
+}
+html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="2"]::before {
+  background-image: url("deco/flightlog/blueprint-dc3.webp?v=2d4cac70")
+}
+html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="3"]::before {
+  background-image: url("deco/flightlog/blueprint-b17.webp?v=ace6cbb2")
+}
+html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="4"]::before {
+  background-image: url("deco/flightlog/blueprint-mustang.webp?v=8672487c")
+}
+html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="5"]::before {
+  background-image: url("deco/flightlog/blueprint-concorde.webp?v=2b358373")
+}
+html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block::before {
+  opacity: .3;
+  mix-blend-mode: normal;
+  background-image: url("deco/flightlog/blueprint-islander-clair.webp?v=efeaed88")
+}
+html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="2"]::before {
+  background-image: url("deco/flightlog/blueprint-dc3-clair.webp?v=a852ea81")
+}
+html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="3"]::before {
+  background-image: url("deco/flightlog/blueprint-b17-clair.webp?v=a0ad1544")
+}
+html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="4"]::before {
+  background-image: url("deco/flightlog/blueprint-mustang-clair.webp?v=33150b72")
+}
+html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="5"]::before {
+  background-image: url("deco/flightlog/blueprint-concorde-clair.webp?v=40d83d5e")
+}
+/* marge haute et basse dans le bandeau */
+html[data-design="flightlog"] .repo-header-emblem img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 4px 5px rgba(0, 0, 0, .5));
   /* la vignette est une photo carrée (cuir + vis aux coins) : seul le médaillon ailé reste visible */
-  -webkit-mask-image:radial-gradient(ellipse 52% 50% at 50% 50%,#000 78%,transparent 100%);mask-image:radial-gradient(ellipse 52% 50% at 50% 50%,#000 78%,transparent 100%)}
-@media (max-width:760px){html[data-design="flightlog"] .repo-block{border-width:12px!important;border-image-width:12px!important}}
-@media print{html[data-design="flightlog"] .repo-block{border:1px solid #999!important;border-image:none!important}}
+  -webkit-mask-image: radial-gradient(ellipse 52% 50% at 50% 50%, #000 78%, transparent 100%);
+  mask-image: radial-gradient(ellipse 52% 50% at 50% 50%, #000 78%, transparent 100%)
+}
+@media (max-width:760px) {
+  html[data-design="flightlog"] .repo-block {
+    border-width: 12px !important;
+    border-image-width: 12px !important
+  }
+}
+@media print {
+  html[data-design="flightlog"] .repo-block {
+    border: 1px solid #999 !important;
+    border-image: none !important
+  }
+}
 /* ================================================================================================ FENÊTRE MODALE APPARENCE
    Fond de la page du design (bois, peinture olive, verre) ; en-tête et blocs : ceux du framework, déjà habillés. */
-html[data-skeuo] dialog.repo-ap-dialog{background:var(--sk-dialog-bg)}
-html[data-skeuo] dialog.repo-ap-dialog .repo-ap-head{margin:10px!important}
+html[data-skeuo] dialog.repo-ap-dialog {
+  background: var(--sk-dialog-bg)
+}
+html[data-skeuo] dialog.repo-ap-dialog .repo-ap-head {
+  margin: 10px !important
+}
 /* ================================================================================================ EN-TÊTE DE BLOC ÉTROIT
    La plaque de titre ne dépasse jamais sa colonne (elle passe à la ligne) et les outils (↕, Masquer) restent au
    premier plan, visibles et cliquables, même dans les blocs étroits (reportings). */
-html[data-skeuo] .repo-block-titles{min-width:0!important;flex:1 1 0}
-html[data-skeuo] :is(.repo-block-titles,.repo-block-heading)>h2{max-width:100%;box-sizing:border-box;overflow-wrap:normal;word-break:normal;hyphens:manual}
+html[data-skeuo] .repo-block-titles {
+  min-width: 0 !important;
+  flex: 1 1 0
+}
+html[data-skeuo] :is(.repo-block-titles, .repo-block-heading)>h2 {
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: manual
+}
 /* blocs étroits (grilles du reporting…) : la plaque reste sur la première ligne, à côté de l'icône (outils au coin du
    bloc, hors du flux) ; elle passe à la ligne entre les mots, jamais au milieu d'un mot */
-html[data-skeuo] .repo-block-heading-rich{flex-wrap:nowrap!important}
-html[data-skeuo] .repo-block-tools{position:relative;z-index:2;flex:0 0 auto}
-html[data-design="flightlog"] :is(.repo-block-titles,.repo-block-heading)>h2{padding-right:64px!important;background-size:44px auto,auto,256px!important;background-position:right 16px center,0 0,center!important}
+html[data-skeuo] .repo-block-heading-rich {
+  flex-wrap: nowrap !important
+}
+html[data-skeuo] .repo-block-tools {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto
+}
 /* ================================================================================================ CODE, KBD, SAMP DANS LES BLOCS
    Pastilles de code des pages (fond clair par défaut) : accordées à la matière, contraste WCAG ≥ 4,5:1
    (Durci : #e6ecd6 / #121410 = 15,3:1 ; sombres : #e6edf5 / #141a21 = 15:1 ; clairs : encre sur blanc translucide). */
-html[data-design="field"] .repo-block :is(code,kbd,samp){background:#121410!important;color:#e6ecd6!important;border:1px solid #000!important;border-radius:3px;padding:0 .35em}
-html[data-design="aqua"][data-tone="dark"] .repo-block :is(code,kbd,samp),html[data-design-base="cabinet"][data-tone="dark"] .repo-block :is(code,kbd,samp){background:#141a21!important;color:#e6edf5!important;border:1px solid #46525f!important;border-radius:3px;padding:0 .35em}
-html[data-design-base="cabinet"]:not([data-tone="dark"]) .repo-block :is(code,kbd,samp){background:rgba(255,250,236,.75)!important;color:var(--cab-ink)!important;border:1px solid var(--cab-rule)!important;border-radius:3px;padding:0 .35em}
-html[data-design="aqua"]:not([data-tone="dark"]) .repo-block :is(code,kbd,samp){background:#fff!important;color:var(--aq-ink)!important;border:1px solid #c3ced9!important;border-radius:4px;padding:0 .35em}
+/* fond, encre, bord et rayon par design et par ton (--sk-code-*) */
+html[data-skeuo] .repo-block :is(code, kbd, samp) {
+  background: var(--sk-code-bg) !important;
+  color: var(--sk-code-ink) !important;
+  border: var(--sk-code-border) !important;
+  border-radius: var(--sk-code-radius);
+  padding: 0 .35em
+}
 /* ================================================================================================ BARRE D'ACTION (repo-actionbar)
    Barre d'action collée en bas d'une page (studio : « Générer les cartes et le ZIP ») : classe du framework, habillée
    par le design (la page garde sa disposition). Texte : ≥ 4,5:1 sur la matière. */
-html[data-skeuo] .repo-actionbar{background:var(--sk-abar-bg)!important;border-top:var(--sk-abar-border)!important;color:var(--sk-abar-ink)}
-html[data-skeuo="frame"] .repo-actionbar{box-shadow:var(--sk-abar-shadow)!important}   /* Aqua : ombre de la page */
-html[data-skeuo] .repo-actionbar{z-index:50}   /* barre collante au-dessus des objets entre les blocs (.repo-deco-sep, 40) */
-html[data-skeuo] .repo-actionbar :is(.small,span){color:var(--sk-abar-ink-2,var(--sk-abar-ink))!important}
+html[data-skeuo] .repo-actionbar {
+  background: var(--sk-abar-bg) !important;
+  border-top: var(--sk-abar-border) !important;
+  color: var(--sk-abar-ink)
+}
+html[data-skeuo="frame"] .repo-actionbar {
+  box-shadow: var(--sk-abar-shadow) !important
+}
+/* Aqua : ombre de la page */
+html[data-skeuo] .repo-actionbar {
+  z-index: 50
+}
+/* barre collante au-dessus des objets entre les blocs (.repo-deco-sep, 40) */
+html[data-skeuo] .repo-actionbar :is(.small, span) {
+  color: var(--sk-abar-ink-2, var(--sk-abar-ink)) !important
+}
 
 /* ================================================================================================ ENCADRÉS D'ÉTAT DES PAGES (.warn, .ok, .err)
    Couleurs codées en dur par les pages (fond jaune pâle, vert et rouge foncés) : accordées aux matières sombres.
    Pas dans l'Apparence (pastilles WCAG sur fond clair propre). Durci : texte #f3e6c4 / encadré #3a3322 = 10,6:1 ; ok #9fe870 et err #ff9a8a sur panneau ≥ 5:1. */
-html[data-design="field"] .repo-block .warn:not(.ap-page *),html[data-tone="dark"]:is([data-design="aqua"],[data-design="cabinet"],[data-design="flightlog"]) .repo-block .warn:not(.ap-page *){background:rgba(58,51,34,.92)!important;border-left-color:#e8b85a!important;color:#f3e6c4!important}
-html[data-design="field"] .repo-block .ok:not(.ap-page *),html[data-tone="dark"]:is([data-design="aqua"],[data-design="cabinet"],[data-design="flightlog"]) .repo-block .ok:not(.ap-page *){color:#9fe870!important}
-html[data-design="field"] .repo-block .err:not(.ap-page *),html[data-tone="dark"]:is([data-design="aqua"],[data-design="cabinet"],[data-design="flightlog"]) .repo-block .err:not(.ap-page *){color:#ff9a8a!important}
+html[data-skeuo][data-surface="dark"] .repo-block .warn:not(.ap-page *) {
+  background: rgba(58, 51, 34, .92) !important;
+  border-left-color: #e8b85a !important;
+  color: #f3e6c4 !important
+}
+html[data-skeuo][data-surface="dark"] .repo-block .ok:not(.ap-page *) {
+  color: #9fe870 !important
+}
+html[data-skeuo][data-surface="dark"] .repo-block .err:not(.ap-page *) {
+  color: #ff9a8a !important
+}
 /* ================================================================================================ OUTILS DE BLOC (DÉPLACER, MASQUER)
    Icônes seules, sans bouton ni libellé (libellé en infobulle), toujours dans le coin haut droit du bloc, quelle que
    soit la hauteur de la plaque de titre (qui garde la place à sa droite). */
-html[data-skeuo] .repo-block-tools{position:absolute!important;top:10px;right:10px;margin:0!important;display:flex;gap:2px;z-index:3}
-html[data-skeuo] .repo-block-heading-rich{padding-right:70px!important}
-html[data-skeuo] .repo-block-tools button{font-size:0!important;width:30px;height:30px;min-height:0!important;padding:0!important;border:0!important;border-radius:50%!important;box-shadow:none!important;background-color:transparent!important;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;opacity:.85}
-html[data-skeuo] .repo-block-tools button:not(.repo-drag){background-image:none!important}
-html[data-skeuo] .repo-block-tools button:is(:hover,:focus-visible){opacity:1;background-color:rgba(255,255,255,.14)!important}
-html[data-skeuo] .repo-block-tools .repo-drag{background-size:24px!important;cursor:grab}
-html[data-skeuo]:not(:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"])) .repo-block-tools .repo-drag{font-size:18px!important;line-height:1}
-html[data-skeuo] .repo-block-tools .repo-toggle::before{margin:0!important;width:14px;height:14px}
-html[data-skeuo]:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) .repo-block-tools .repo-toggle::before{width:24px!important;height:24px!important}
-html[data-skeuo] .repo-block-tools button{color:var(--sk-tool-ink)!important}
-html[data-design="aqua"] .repo-block-tools button:is(:hover,:focus-visible){background-color:rgba(0,40,90,.08)!important}
+html[data-skeuo] .repo-block-tools {
+  position: absolute !important;
+  top: 10px;
+  right: 10px;
+  margin: 0 !important;
+  display: flex;
+  gap: 2px;
+  z-index: 3
+}
+html[data-skeuo] .repo-block-heading-rich {
+  padding-right: 70px !important
+}
+html[data-skeuo] .repo-block-tools button {
+  font-size: 0 !important;
+  width: 30px;
+  height: 30px;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: .85
+}
+html[data-skeuo] .repo-block-tools button:not(.repo-drag) {
+  background-image: none !important
+}
+html[data-skeuo] .repo-block-tools button:is(:hover, :focus-visible) {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, .14) !important
+}
+html[data-skeuo] .repo-block-tools .repo-drag {
+  background-size: 24px !important;
+  cursor: grab
+}
+html[data-skeuo]:not(:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"])) .repo-block-tools .repo-drag {
+  font-size: 18px !important;
+  line-height: 1
+}
+html[data-skeuo] .repo-block-tools .repo-toggle::before {
+  margin: 0 !important;
+  width: 14px;
+  height: 14px
+}
+html[data-skeuo]:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-block-tools .repo-toggle::before {
+  width: 24px !important;
+  height: 24px !important
+}
+html[data-skeuo] .repo-block-tools button {
+  color: var(--sk-tool-ink) !important
+}
+html[data-design="aqua"] .repo-block-tools button:is(:hover, :focus-visible) {
+  background-color: rgba(0, 40, 90, .08) !important
+}
 /* ================================================================================================ AQUA : PLUS DE BOUTONS PLATS
    Listes déroulantes et segments (vignettes et rangées de l'Apparence : appearance_page.js) : verre bombé (clair ou sombre selon le ton),
    état choisi en gel de la couleur Aqua. */
-html[data-design="aqua"] select:not([multiple]):not([size]){background-image:linear-gradient(#ffffff,#eef2f6 50%,#e2e8ee 51%,#f4f7fa)!important;box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(20,40,70,.12)!important}
-html[data-design="aqua"][data-tone="dark"] select:not([multiple]):not([size]){background-image:linear-gradient(#4a5663,#323c47 50%,#2a333d 51%,#3a4652)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 1px 2px rgba(0,0,0,.4)!important;color:#e6edf5!important}
-html[data-design="aqua"] .repo-seg[aria-pressed="true"]{background-image:linear-gradient(180deg,color-mix(in srgb,var(--aq-gel) 55%,#fff) 0%,var(--aq-gel) 50%,color-mix(in srgb,var(--aq-gel) 85%,#000) 51%,color-mix(in srgb,var(--aq-gel) 70%,#fff) 100%)!important;color:#fff!important;text-shadow:0 -1px 0 rgba(0,0,0,.25)}
+html[data-design="aqua"] select:not([multiple]):not([size]) {
+  background-image: linear-gradient(#ffffff, #eef2f6 50%, #e2e8ee 51%, #f4f7fa) !important;
+  box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(20, 40, 70, .12) !important
+}
+html[data-design="aqua"][data-tone="dark"] select:not([multiple]):not([size]) {
+  background-image: linear-gradient(#4a5663, #323c47 50%, #2a333d 51%, #3a4652) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 1px 2px rgba(0, 0, 0, .4) !important;
+  color: #e6edf5 !important
+}
 /* ================================================================================================ GRAPHIQUES EN RELIEF (style « relief » : choisi ou automatique dans les designs à matières)
    Plus d'aplats « métro » : barres horizontales dans une rainure gravée avec reflet, anneaux et barres ombrés
    (charts.js : reflet SVG), repères gravés, pastilles de légende bombées, chiffres dans la police du design. */
-html[data-chart-style="relief"][data-design="aqua"]:not([data-tone="dark"]) .mcg-htrack{background:linear-gradient(#cfd8e2,#e6ecf2)!important;box-shadow:inset 0 1px 3px rgba(20,40,70,.35),0 1px 0 #fff}
-html[data-chart-style="relief"][data-design="aqua"] .mcg-htrack{height:13px!important;border-radius:7px!important}html[data-design="aqua"] .mcg-htrack i{border-radius:7px!important}
-html[data-skeuo="frame"] .mcg-chart .mcg-gridline{stroke:rgba(255,255,255,.1)!important;stroke-dasharray:2 5}
-html[data-design-base="cabinet"] .mcg-chart .mcg-base{stroke:#b8963e!important;stroke-width:2!important}
-html[data-design="field"] .mcg-chart .mcg-base{stroke:#8d9478!important;stroke-width:2!important}
-html[data-design-base="cabinet"] :is(.mcg-chart .mcg-axis,.mcg-donut .mcg-total){font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif}
-html[data-design="field"] :is(.mcg-chart .mcg-axis,.mcg-donut .mcg-total){font-family:Bahnschrift,"Arial Narrow",sans-serif;font-stretch:condensed}
-html[data-skeuo="frame"] .mcg-chart g:hover .mcg-hover{fill:rgba(232,210,150,.1)}
+html[data-chart-style="relief"][data-design="aqua"]:not([data-tone="dark"]) .mcg-htrack {
+  background: linear-gradient(#cfd8e2, #e6ecf2) !important;
+  box-shadow: inset 0 1px 3px rgba(20, 40, 70, .35), 0 1px 0 #fff
+}
+html[data-chart-style="relief"][data-design="aqua"] .mcg-htrack {
+  height: 13px !important;
+  border-radius: 7px !important
+}
+html[data-design="aqua"] .mcg-htrack i {
+  border-radius: 7px !important
+}
+html[data-skeuo="frame"] .mcg-chart .mcg-gridline {
+  stroke: rgba(255, 255, 255, .1) !important;
+  stroke-dasharray: 2 5
+}
+/* ligne de base et police des axes (designs à cadre) : --sk-chart-base, --sk-chart-font, --sk-chart-stretch */
+html[data-skeuo="frame"] .mcg-chart .mcg-base {
+  stroke: var(--sk-chart-base) !important;
+  stroke-width: 2 !important
+}
+html[data-skeuo="frame"] :is(.mcg-chart .mcg-axis, .mcg-donut .mcg-total) {
+  font-family: var(--sk-chart-font);
+  font-stretch: var(--sk-chart-stretch, normal)
+}
+html[data-skeuo="frame"] .mcg-chart g:hover .mcg-hover {
+  fill: rgba(232, 210, 150, .1)
+}
 /* ================================================================================================ FONDS ILLUSTRÉS DES BLOCS
    design_deco.js (BG) : image sous le contenu du bloc (empilement propre au bloc : fond du bloc, puis l'image, puis le
    contenu), fondue vers la droite et le bas pour garder le texte lisible. */
-.repo-has-bg{isolation:isolate}
-.repo-deco-bgimg{position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;background-repeat:no-repeat;opacity:.55;
-  -webkit-mask-image:linear-gradient(135deg,#000 0%,#000 35%,transparent 95%);mask-image:linear-gradient(135deg,#000 0%,#000 35%,transparent 95%)}
-.repo-deco-bg-anchor{background-position:left top;background-size:auto}
-.repo-deco-bg-cover{background-position:center;background-size:cover}
-@media print{.repo-deco-bgimg{display:none}}
+.repo-has-bg {
+  isolation: isolate
+}
+.repo-deco-bgimg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  opacity: .55;
+  -webkit-mask-image: linear-gradient(135deg, #000 0%, #000 35%, transparent 95%);
+  mask-image: linear-gradient(135deg, #000 0%, #000 35%, transparent 95%)
+}
+.repo-deco-bg-anchor {
+  background-position: left top;
+  background-size: auto
+}
+.repo-deco-bg-cover {
+  background-position: center;
+  background-size: cover
+}
+@media print {
+  .repo-deco-bgimg {
+    display: none
+  }
+}
 /* fonds « cover » (images de scène : piste, globe…) : image entière visible, atténuée de façon uniforme (texte lisible) */
-.repo-deco-bgimg.repo-deco-bg-cover{-webkit-mask-image:none;mask-image:none;opacity:.5}
-html[data-design="field"] .repo-deco-bgimg.repo-deco-bg-cover{opacity:.6}   /* Durci : même peinture que le bloc, pochoirs clairs (texte lisible) */
-html[data-design="aqua"] .repo-deco-bgimg.repo-deco-bg-cover{opacity:.35}
-html[data-design="aqua"][data-tone="dark"] .repo-deco-bgimg.repo-deco-bg-cover{opacity:.5}
+.repo-deco-bgimg.repo-deco-bg-cover {
+  -webkit-mask-image: none;
+  mask-image: none;
+  opacity: .5
+}
+html[data-design="field"] .repo-deco-bgimg.repo-deco-bg-cover {
+  opacity: .6
+}
+/* Durci : même peinture que le bloc, pochoirs clairs (texte lisible) */
+html[data-design="aqua"] .repo-deco-bgimg.repo-deco-bg-cover {
+  opacity: .35
+}
+html[data-design="aqua"][data-tone="dark"] .repo-deco-bgimg.repo-deco-bg-cover {
+  opacity: .5
+}
 /* Cabinet : panneaux « 1930 » très contrastés (marine, laiton, cartes claires) : atténués pour le texte ; ton clair :
    fonds ivoire (1930/clair), proches du parchemin, moins atténués */
-html[data-design="cabinet"] .repo-deco-bgimg.repo-deco-panel{opacity:.55}
+html[data-design="cabinet"] .repo-deco-bgimg.repo-deco-panel {
+  opacity: .42
+}
 /* blocs habillés d'un panneau : voile --repo-veil sous les tableaux (ci-dessous) et sous les surfaces de données des pages
    (grilles, détails, légendes : background-color:var(--repo-veil)) ; sa couleur est celle de la surface du bloc de chaque
    design, pas Canvas (Durci est « clair » par sa page mais ses blocs sont sombres à texte clair) ; Canvas par défaut */
-.repo-has-bg:has(>.repo-deco-panel){--repo-veil:color-mix(in srgb,Canvas 60%,transparent)}
-html[data-design="field"] .repo-has-bg:has(>.repo-deco-panel){--repo-veil:rgba(30,34,24,.62)}
-html[data-design="field"] .repo-deco-bgimg.repo-deco-panel{filter:brightness(.72) saturate(.9)}   /* Durci : panneaux assombris (blocs foncés à texte clair) */
-html[data-design="cabinet"] .repo-has-bg:has(>.repo-deco-panel){--repo-veil:rgba(247,240,222,.82)}
-html[data-design="cabinet"][data-tone="dark"] .repo-has-bg:has(>.repo-deco-panel){--repo-veil:rgba(14,22,40,.62)}
-html .repo-block.repo-has-bg:has(>.repo-deco-panel) table:not(.report table){background-color:var(--repo-veil)!important}   /* passe devant « table transparente » des designs */
+.repo-has-bg:has(>.repo-deco-panel) {
+  --repo-veil: color-mix(in srgb, Canvas 60%, transparent)
+}
+html[data-design="field"] .repo-has-bg:has(>.repo-deco-panel) {
+  --repo-veil: rgba(30, 34, 24, .62)
+}
+html[data-design="field"] .repo-deco-bgimg.repo-deco-panel {
+  filter: brightness(.72) saturate(.9);
+  opacity: .5
+}
+/* Durci : panneaux assombris (blocs foncés à texte clair) */
+html[data-design="cabinet"] .repo-has-bg:has(>.repo-deco-panel) {
+  --repo-veil: rgba(247, 240, 222, .82)
+}
+html[data-design="cabinet"][data-tone="dark"] .repo-has-bg:has(>.repo-deco-panel) {
+  --repo-veil: rgba(14, 22, 40, .62)
+}
+html .repo-block.repo-has-bg:has(>.repo-deco-panel) table:not(.report table) {
+  background-color: var(--repo-veil) !important
+}
+/* passe devant « table transparente » des designs */
 /* feuille de registre (ton clair, design_deco.js, SHEETS) : carnet ou dossier en fond des blocs de tableau des registres,
    découpé dans une planche par tools/cut_register_sheet.py : papier uni en mosaïque (.sh-paper, dans le cadre) ; bandes
    répétées en haut, en bas, à gauche et à droite (raccordables, arrêtées aux coins) ; coins fixes aux bords intérieurs
@@ -624,115 +1902,610 @@ html .repo-block.repo-has-bg:has(>.repo-deco-panel) table:not(.report table){bac
    l'en-tête et à l'intérieur du cadre.
    Par design : images (--sheet-*) et géométrie (--sh-*, en px de la planche, affichés à l'échelle --k) : tailles des
    coins et des motifs de bande ; arrêts des bandes (--sh-top-l : fin du coin haut gauche…, donnés par l'outil) ; retrait
-   du papier et taille de sa mosaïque ; marges du contenu ; position et taille de l'en-tête et de l'accessoire. */
+   du papier et taille de sa mosaïque ; marges du contenu ; position et taille de l'en-tête et de l'accessoire.
+   Bloc « découpe » : écrit par tools/cut_register_sheet.py <design> --write (ne pas retoucher à la main) ; bloc
+   « réglages » : à la main. Facultatifs (absents par défaut) : en-tête et cachet (--sheet-head, --sheet-stamp,
+   --sh-head-*, --sh-stamp-*), accessoire (--sheet-string, --sh-acc-*), marge gauche --sh-gut, --sh-acc-z. */
 /* Cabinet : dossier « Aéronautique navale » (logos et « Marine nationale » à
    gauche, N° et tampon « Diffusion restreinte » à droite, ficelle et œillets sur le dos) */
-html[data-design-base="cabinet"]{--sheet-paper:url("deco/cabinet/sheet-paper.webp?v=20260930zzzn");--sheet-top:url("deco/cabinet/sheet-top.webp?v=20260930zzzn");--sheet-bot:url("deco/cabinet/sheet-bot.webp?v=20260930zzzn");--sheet-left:url("deco/cabinet/sheet-left.webp?v=20260930zzzn");--sheet-right:url("deco/cabinet/sheet-right.webp?v=20260930zzzn");--sheet-head:url("deco/cabinet/sheet-head.webp?v=20260930zzzn");--sheet-stamp:url("deco/cabinet/sheet-stamp.webp?v=20260930zzzn");--sheet-string:url("deco/cabinet/sheet-string.webp?v=20260930zzzn");--sheet-tl:url("deco/cabinet/sheet-tl.webp?v=20260930zzzn");--sheet-tr:url("deco/cabinet/sheet-tr.webp?v=20260930zzzn");--sheet-bl:url("deco/cabinet/sheet-bl.webp?v=20260930zzzn");--sheet-br:url("deco/cabinet/sheet-br.webp?v=20260930zzzn");
-  --sh-tl-w:720px;--sh-tl-h:115px;
-  --sh-tr-w:225px;--sh-tr-h:155px;
-  --sh-bl-w:260px;--sh-bl-h:98px;
-  --sh-br-w:225px;--sh-br-h:98px;
-  --sh-top-w:120px;--sh-top-h:115px;
-  --sh-bot-w:160px;--sh-bot-h:98px;
-  --sh-left-w:210px;--sh-left-h:280px;
-  --sh-right-w:105px;--sh-right-h:360px;
-  --sh-top-l:660px;--sh-top-r:175px;--sh-bot-l:210px;--sh-bot-r:175px;--sh-left-t:75px;--sh-left-b:78px;--sh-right-t:115px;--sh-right-b:74px;
-  --sh-paper-t:55px;--sh-paper-r:40px;--sh-paper-b:30px;--sh-paper-l:60px;--sh-paper-w:540px;
-  --sh-pad-t:380px;--sh-pad-r:85px;--sh-pad-b:105px;--sh-pad-l:175px;
-  --sh-head-x:190px;--sh-head-y:105px;--sh-head-w:300px;--sh-stamp-r:95px;--sh-stamp-y:145px;--sh-stamp-w:530px;
-  --sh-gut:0px;--sh-acc-x:4px;--sh-acc-y:42%;--sh-acc-w:215px;--sh-acc-r:430/645;--sh-k:.7}
+html[data-design-base="cabinet"] {
+  --sheet-ink: var(--cab-ink);
+  --sheet-ink-2: var(--cab-ink-2);
+  --sheet-text: var(--cab-ink);
+  --sheet-label-ink: var(--cab-navy);
+  --sheet-card-bg: #f6ecd2 url("deco/cabinet/sheet-paper.webp?v=03c9356f") left top/480px;
+  --sheet-pin: var(--cab-screw);
+  --sheet-paper: url("deco/cabinet/sheet-paper.webp?v=03c9356f");
+  --sheet-top: url("deco/cabinet/sheet-top.webp?v=f536decb");
+  --sheet-bot: url("deco/cabinet/sheet-bot.webp?v=59eb8c03");
+  --sheet-left: url("deco/cabinet/sheet-left.webp?v=d8fbd593");
+  --sheet-right: url("deco/cabinet/sheet-right.webp?v=e3556261");
+  --sheet-head: url("deco/cabinet/sheet-head.webp?v=2bdfe375");
+  --sheet-stamp: url("deco/cabinet/sheet-stamp.webp?v=e1364b44");
+  --sheet-string: url("deco/cabinet/sheet-string.webp?v=0347c438");
+  --sheet-tl: url("deco/cabinet/sheet-tl.webp?v=629cb6e2");
+  --sheet-tr: url("deco/cabinet/sheet-tr.webp?v=7ec88b9b");
+  --sheet-bl: url("deco/cabinet/sheet-bl.webp?v=f46d54ae");
+  --sheet-br: url("deco/cabinet/sheet-br.webp?v=b7ce776b");
+  /* découpe : tools/cut_register_sheet.py cabinet --write */
+  --sh-tl-w: 720px;
+  --sh-tl-h: 115px;
+  --sh-tr-w: 225px;
+  --sh-tr-h: 155px;
+  --sh-bl-w: 260px;
+  --sh-bl-h: 98px;
+  --sh-br-w: 225px;
+  --sh-br-h: 98px;
+  --sh-top-w: 120px;
+  --sh-top-h: 115px;
+  --sh-bot-w: 160px;
+  --sh-bot-h: 98px;
+  --sh-left-w: 210px;
+  --sh-left-h: 280px;
+  --sh-right-w: 105px;
+  --sh-right-h: 360px;
+  --sh-top-l: 660px;
+  --sh-top-r: 175px;
+  --sh-bot-l: 210px;
+  --sh-bot-r: 175px;
+  --sh-left-t: 75px;
+  --sh-left-b: 78px;
+  --sh-right-t: 115px;
+  --sh-right-b: 74px;
+  /* réglages */
+  --sh-paper-t: 55px;
+  --sh-paper-r: 40px;
+  --sh-paper-b: 30px;
+  --sh-paper-l: 60px;
+  --sh-paper-w: 540px;
+  --sh-pad-t: 380px;
+  --sh-pad-r: 85px;
+  --sh-pad-b: 105px;
+  --sh-pad-l: 175px;
+  --sh-head-x: 190px;
+  --sh-head-y: 105px;
+  --sh-head-w: 300px;
+  --sh-stamp-r: 95px;
+  --sh-stamp-y: 145px;
+  --sh-stamp-w: 530px;
+  --sh-acc-x: 4px;
+  --sh-acc-y: 42%;
+  --sh-acc-w: 215px;
+  --sh-acc-r: 430/645;
+  --sh-k: .7
+}
 /* Carnet de vol : carnet de vol toilé (dos à gauche, coin corné, pages empilées à droite), en-tête imprimé (Marianne,
    ministère, « Carnet de vol »), cachet « Autorisation de transit » à droite, ficelle sur le dos */
-html[data-design="flightlog"]{--sheet-paper:url("deco/flightlog/sheet-paper.webp?v=20260930zzzn");--sheet-top:url("deco/flightlog/sheet-top.webp?v=20260930zzzn");--sheet-bot:url("deco/flightlog/sheet-bot.webp?v=20260930zzzn");--sheet-left:url("deco/flightlog/sheet-left.webp?v=20260930zzzn");--sheet-right:url("deco/flightlog/sheet-right.webp?v=20260930zzzn");--sheet-head:url("deco/flightlog/sheet-head.webp?v=20260930zzzn");--sheet-stamp:url("deco/flightlog/sheet-stamp.webp?v=20260930zzzn");--sheet-string:url("deco/flightlog/sheet-string.webp?v=20260930zzzn");--sheet-tl:url("deco/flightlog/sheet-tl.webp?v=20260930zzzn");--sheet-tr:url("deco/flightlog/sheet-tr.webp?v=20260930zzzn");--sheet-bl:url("deco/flightlog/sheet-bl.webp?v=20260930zzzn");--sheet-br:url("deco/flightlog/sheet-br.webp?v=20260930zzzn");
-  --sh-tl-w:240px;--sh-tl-h:130px;
-  --sh-tr-w:184px;--sh-tr-h:200px;
-  --sh-bl-w:240px;--sh-bl-h:167px;
-  --sh-br-w:184px;--sh-br-h:167px;
-  --sh-top-w:120px;--sh-top-h:70px;
-  --sh-bot-w:140px;--sh-bot-h:72px;
-  --sh-left-w:110px;--sh-left-h:300px;
-  --sh-right-w:106px;--sh-right-h:300px;
-  --sh-top-l:210px;--sh-top-r:154px;--sh-bot-l:210px;--sh-bot-r:154px;--sh-left-t:100px;--sh-left-b:137px;--sh-right-t:170px;--sh-right-b:137px;
-  --sh-paper-t:40px;--sh-paper-r:60px;--sh-paper-b:40px;--sh-paper-l:95px;--sh-paper-w:600px;
-  --sh-pad-t:280px;--sh-pad-r:110px;--sh-pad-b:90px;--sh-pad-l:150px;
-  --sh-head-x:121px;--sh-head-y:61px;--sh-head-w:745px;--sh-stamp-r:80px;--sh-stamp-y:40px;--sh-stamp-w:250px;
-  --sh-gut:0px;--sh-acc-x:0px;--sh-acc-y:45%;--sh-acc-w:120px;--sh-acc-r:178/600;--sh-k:.7}
+html[data-design="flightlog"] {
+  --sheet-card-bg: #f4ecd6 url("deco/flightlog/sheet-paper.webp?v=afe3e6f1") left top/480px;
+  --sheet-paper: url("deco/flightlog/sheet-paper.webp?v=afe3e6f1");
+  --sheet-top: url("deco/flightlog/sheet-top.webp?v=a7c6bbf9");
+  --sheet-bot: url("deco/flightlog/sheet-bot.webp?v=d4a1a5e2");
+  --sheet-left: url("deco/flightlog/sheet-left.webp?v=6946d80b");
+  --sheet-right: url("deco/flightlog/sheet-right.webp?v=240ecab7");
+  --sheet-head: url("deco/flightlog/sheet-head.webp?v=13b1121e");
+  --sheet-stamp: url("deco/flightlog/sheet-stamp.webp?v=68cc8e34");
+  --sheet-string: url("deco/flightlog/sheet-string.webp?v=97b963ab");
+  --sheet-tl: url("deco/flightlog/sheet-tl.webp?v=dc458d78");
+  --sheet-tr: url("deco/flightlog/sheet-tr.webp?v=601273c0");
+  --sheet-bl: url("deco/flightlog/sheet-bl.webp?v=e16443a6");
+  --sheet-br: url("deco/flightlog/sheet-br.webp?v=c78856b8");
+  /* découpe : tools/cut_register_sheet.py flightlog --write */
+  --sh-tl-w: 240px;
+  --sh-tl-h: 130px;
+  --sh-tr-w: 184px;
+  --sh-tr-h: 200px;
+  --sh-bl-w: 240px;
+  --sh-bl-h: 167px;
+  --sh-br-w: 184px;
+  --sh-br-h: 167px;
+  --sh-top-w: 120px;
+  --sh-top-h: 70px;
+  --sh-bot-w: 140px;
+  --sh-bot-h: 72px;
+  --sh-left-w: 110px;
+  --sh-left-h: 300px;
+  --sh-right-w: 106px;
+  --sh-right-h: 300px;
+  --sh-top-l: 210px;
+  --sh-top-r: 154px;
+  --sh-bot-l: 210px;
+  --sh-bot-r: 154px;
+  --sh-left-t: 100px;
+  --sh-left-b: 137px;
+  --sh-right-t: 170px;
+  --sh-right-b: 137px;
+  /* réglages */
+  --sh-paper-t: 40px;
+  --sh-paper-r: 60px;
+  --sh-paper-b: 40px;
+  --sh-paper-l: 95px;
+  --sh-paper-w: 600px;
+  --sh-pad-t: 280px;
+  --sh-pad-r: 110px;
+  --sh-pad-b: 90px;
+  --sh-pad-l: 150px;
+  --sh-head-x: 111px;
+  --sh-head-y: 56px;
+  --sh-head-w: 765px;
+  --sh-stamp-r: 80px;
+  --sh-stamp-y: 40px;
+  --sh-stamp-w: 250px;
+  --sh-acc-y: 45%;
+  --sh-acc-w: 120px;
+  --sh-acc-r: 178/600;
+  --sh-k: .7
+}
 /* Durci : carnet de terrain dans sa pochette olive à fermeture éclair, crayon dans son étui élastique sur le bord
    gauche ; pas d'en-tête */
-html[data-design="field"]{--sheet-paper:url("deco/field/sheet-paper.webp?v=20260930zzzn");--sheet-top:url("deco/field/sheet-top.webp?v=20260930zzzn");--sheet-bot:url("deco/field/sheet-bot.webp?v=20260930zzzn");--sheet-left:url("deco/field/sheet-left.webp?v=20260930zzzn");--sheet-right:url("deco/field/sheet-right.webp?v=20260930zzzn");--sheet-string:url("deco/field/sheet-string.webp?v=20260930zzzn");--sheet-tl:url("deco/field/sheet-tl.webp?v=20260930zzzn");--sheet-tr:url("deco/field/sheet-tr.webp?v=20260930zzzn");--sheet-bl:url("deco/field/sheet-bl.webp?v=20260930zzzn");--sheet-br:url("deco/field/sheet-br.webp?v=20260930zzzn");--sheet-head:none;--sheet-stamp:none;
-  --sh-tl-w:500px;--sh-tl-h:260px;
-  --sh-tr-w:324px;--sh-tr-h:350px;
-  --sh-bl-w:360px;--sh-bl-h:280px;
-  --sh-br-w:324px;--sh-br-h:280px;
-  --sh-top-w:120px;--sh-top-h:168px;
-  --sh-bot-w:140px;--sh-bot-h:165px;
-  --sh-left-w:116px;--sh-left-h:360px;
-  --sh-right-w:224px;--sh-right-h:330px;
-  --sh-top-l:470px;--sh-top-r:294px;--sh-bot-l:330px;--sh-bot-r:294px;--sh-left-t:230px;--sh-left-b:250px;--sh-right-t:320px;--sh-right-b:250px;
-  --sh-paper-t:110px;--sh-paper-r:190px;--sh-paper-b:150px;--sh-paper-l:90px;--sh-paper-w:480px;
-  --sh-pad-t:170px;--sh-pad-r:240px;--sh-pad-b:200px;--sh-pad-l:170px;
-  --sh-head-x:0px;--sh-head-y:0px;--sh-head-w:0px;--sh-stamp-r:0px;--sh-stamp-y:0px;--sh-stamp-w:0px;
-  --sh-gut:100px;--sh-acc-x:22px;--sh-acc-y:40%;--sh-acc-w:110px;--sh-acc-r:169/700;--sh-acc-z:-1;--sh-k:.6}
-.repo-has-sheet{isolation:isolate;--k:var(--sh-k)}
-html body .repo-block.repo-has-sheet{padding:calc(var(--sh-pad-t) * var(--k)) calc(var(--sh-pad-r) * var(--k)) calc(var(--sh-pad-b) * var(--k)) calc((var(--sh-pad-l) + var(--sh-gut)) * var(--k))!important}
-.repo-deco-sheet{position:absolute;inset:0 0 0 calc(var(--sh-gut) * var(--k));z-index:-1;border-radius:inherit;pointer-events:none}
-.repo-deco-sheet>.sh-paper{position:absolute;inset:calc(var(--sh-paper-t) * var(--k)) calc(var(--sh-paper-r) * var(--k)) calc(var(--sh-paper-b) * var(--k)) calc(var(--sh-paper-l) * var(--k));background:var(--sheet-paper) left top/calc(var(--sh-paper-w) * var(--k)) auto repeat}
+html[data-design="field"] {
+  --sheet-ink: #2b2a20;
+  --sheet-ink-2: #4a4634;
+  --sheet-card-bg: #efe7d0 url("deco/field/sheet-paper.webp?v=ee3f07db") left top/480px;
+  --sheet-pin: url("deco/cabinet/tack.webp?v=d13b9116");
+  --sheet-paper: url("deco/field/sheet-paper.webp?v=ee3f07db");
+  --sheet-top: url("deco/field/sheet-top.webp?v=28a0dd88");
+  --sheet-bot: url("deco/field/sheet-bot.webp?v=5aabc68d");
+  --sheet-left: url("deco/field/sheet-left.webp?v=a336814a");
+  --sheet-right: url("deco/field/sheet-right.webp?v=5e1ae061");
+  --sheet-string: url("deco/field/sheet-string.webp?v=7e8c7224");
+  --sheet-tl: url("deco/field/sheet-tl.webp?v=23ee7ca1");
+  --sheet-tr: url("deco/field/sheet-tr.webp?v=e88937ee");
+  --sheet-bl: url("deco/field/sheet-bl.webp?v=662c7719");
+  --sheet-br: url("deco/field/sheet-br.webp?v=e9e624d2");
+  /* découpe : tools/cut_register_sheet.py field --write */
+  --sh-tl-w: 500px;
+  --sh-tl-h: 260px;
+  --sh-tr-w: 324px;
+  --sh-tr-h: 350px;
+  --sh-bl-w: 360px;
+  --sh-bl-h: 280px;
+  --sh-br-w: 324px;
+  --sh-br-h: 280px;
+  --sh-top-w: 120px;
+  --sh-top-h: 168px;
+  --sh-bot-w: 140px;
+  --sh-bot-h: 165px;
+  --sh-left-w: 116px;
+  --sh-left-h: 360px;
+  --sh-right-w: 224px;
+  --sh-right-h: 330px;
+  --sh-top-l: 470px;
+  --sh-top-r: 294px;
+  --sh-bot-l: 330px;
+  --sh-bot-r: 294px;
+  --sh-left-t: 230px;
+  --sh-left-b: 250px;
+  --sh-right-t: 320px;
+  --sh-right-b: 250px;
+  /* réglages */
+  --sh-paper-t: 110px;
+  --sh-paper-r: 190px;
+  --sh-paper-b: 150px;
+  --sh-paper-l: 90px;
+  --sh-paper-w: 480px;
+  --sh-pad-t: 170px;
+  --sh-pad-r: 240px;
+  --sh-pad-b: 200px;
+  --sh-pad-l: 170px;
+  --sh-gut: 100px;
+  --sh-acc-x: 22px;
+  --sh-acc-y: 40%;
+  --sh-acc-w: 110px;
+  --sh-acc-r: 169/700;
+  --sh-acc-z: -1;
+  --sh-k: .6
+}
+.repo-has-sheet {
+  isolation: isolate;
+  --k: var(--sh-k)
+}
+html body .repo-block.repo-has-sheet {
+  padding: calc(var(--sh-pad-t) * var(--k)) calc(var(--sh-pad-r) * var(--k)) calc(var(--sh-pad-b) * var(--k)) calc((var(--sh-pad-l) + var(--sh-gut, 0px)) * var(--k)) !important
+}
+.repo-deco-sheet {
+  position: absolute;
+  inset: 0 0 0 calc(var(--sh-gut, 0px) * var(--k));
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none
+}
+.repo-deco-sheet>.sh-paper {
+  position: absolute;
+  inset: calc(var(--sh-paper-t) * var(--k)) calc(var(--sh-paper-r) * var(--k)) calc(var(--sh-paper-b) * var(--k)) calc(var(--sh-paper-l) * var(--k));
+  background: var(--sheet-paper) left top/calc(var(--sh-paper-w) * var(--k)) auto repeat
+}
 /* bandes répétées : chacune dans son élément, arrêtée aux coins (elle ne glisse sous un coin que sur la largeur de son
    fondu) : rien ne dépasse de la silhouette du carnet */
-.repo-deco-sheet>i{position:absolute}
-.repo-deco-sheet>.sh-top{top:0;left:calc(var(--sh-top-l) * var(--k));right:calc(var(--sh-top-r) * var(--k));height:calc(var(--sh-top-h) * var(--k));background:var(--sheet-top) left top/calc(var(--sh-top-w) * var(--k)) calc(var(--sh-top-h) * var(--k)) repeat-x}
-.repo-deco-sheet>.sh-bot{bottom:0;left:calc(var(--sh-bot-l) * var(--k));right:calc(var(--sh-bot-r) * var(--k));height:calc(var(--sh-bot-h) * var(--k));background:var(--sheet-bot) left bottom/calc(var(--sh-bot-w) * var(--k)) calc(var(--sh-bot-h) * var(--k)) repeat-x}
-.repo-deco-sheet>.sh-left{left:0;top:calc(var(--sh-left-t) * var(--k));bottom:calc(var(--sh-left-b) * var(--k));width:calc(var(--sh-left-w) * var(--k));background:var(--sheet-left) left top/calc(var(--sh-left-w) * var(--k)) calc(var(--sh-left-h) * var(--k)) repeat-y}
-.repo-deco-sheet>.sh-right{right:0;top:calc(var(--sh-right-t) * var(--k));bottom:calc(var(--sh-right-b) * var(--k));width:calc(var(--sh-right-w) * var(--k));background:var(--sheet-right) right top/calc(var(--sh-right-w) * var(--k)) calc(var(--sh-right-h) * var(--k)) repeat-y}
+.repo-deco-sheet>i {
+  position: absolute
+}
+.repo-deco-sheet>.sh-top {
+  top: 0;
+  left: calc(var(--sh-top-l) * var(--k));
+  right: calc(var(--sh-top-r) * var(--k));
+  height: calc(var(--sh-top-h) * var(--k));
+  background: var(--sheet-top) left top/calc(var(--sh-top-w) * var(--k)) calc(var(--sh-top-h) * var(--k)) repeat-x
+}
+.repo-deco-sheet>.sh-bot {
+  bottom: 0;
+  left: calc(var(--sh-bot-l) * var(--k));
+  right: calc(var(--sh-bot-r) * var(--k));
+  height: calc(var(--sh-bot-h) * var(--k));
+  background: var(--sheet-bot) left bottom/calc(var(--sh-bot-w) * var(--k)) calc(var(--sh-bot-h) * var(--k)) repeat-x
+}
+.repo-deco-sheet>.sh-left {
+  left: 0;
+  top: calc(var(--sh-left-t) * var(--k));
+  bottom: calc(var(--sh-left-b) * var(--k));
+  width: calc(var(--sh-left-w) * var(--k));
+  background: var(--sheet-left) left top/calc(var(--sh-left-w) * var(--k)) calc(var(--sh-left-h) * var(--k)) repeat-y
+}
+.repo-deco-sheet>.sh-right {
+  right: 0;
+  top: calc(var(--sh-right-t) * var(--k));
+  bottom: calc(var(--sh-right-b) * var(--k));
+  width: calc(var(--sh-right-w) * var(--k));
+  background: var(--sheet-right) right top/calc(var(--sh-right-w) * var(--k)) calc(var(--sh-right-h) * var(--k)) repeat-y
+}
 /* coins et en-tête, au-dessus des bandes */
-.repo-deco-sheet>.sh-frame{inset:0;background:
-    var(--sheet-head) calc(var(--sh-head-x) * var(--k)) calc(var(--sh-head-y) * var(--k))/calc(var(--sh-head-w) * var(--k)) auto no-repeat,
-    var(--sheet-stamp) right calc(var(--sh-stamp-r) * var(--k)) top calc(var(--sh-stamp-y) * var(--k))/calc(var(--sh-stamp-w) * var(--k)) auto no-repeat,
+.repo-deco-sheet>.sh-frame {
+  inset: 0;
+  background:
+    var(--sheet-head, none) calc(var(--sh-head-x, 0px) * var(--k)) calc(var(--sh-head-y, 0px) * var(--k))/calc(var(--sh-head-w, 0px) * var(--k)) auto no-repeat,
+    var(--sheet-stamp, none) right calc(var(--sh-stamp-r, 0px) * var(--k)) top calc(var(--sh-stamp-y, 0px) * var(--k))/calc(var(--sh-stamp-w, 0px) * var(--k)) auto no-repeat,
     var(--sheet-tl) left top/calc(var(--sh-tl-w) * var(--k)) calc(var(--sh-tl-h) * var(--k)) no-repeat,
     var(--sheet-tr) right top/calc(var(--sh-tr-w) * var(--k)) calc(var(--sh-tr-h) * var(--k)) no-repeat,
     var(--sheet-bl) left bottom/calc(var(--sh-bl-w) * var(--k)) calc(var(--sh-bl-h) * var(--k)) no-repeat,
-    var(--sheet-br) right bottom/calc(var(--sh-br-w) * var(--k)) calc(var(--sh-br-h) * var(--k)) no-repeat}
+    var(--sheet-br) right bottom/calc(var(--sh-br-w) * var(--k)) calc(var(--sh-br-h) * var(--k)) no-repeat
+}
 /* accessoire du bord gauche (ficelle, crayon dans son étui) : élément propre, au ratio de son image (--sh-acc-r) ; posé
    dans la marge --sh-gut ; --sh-acc-z:-1 le glisse sous le cadre (Durci : crayon contre la pochette, un peu caché par
    la fermeture éclair) */
-.repo-deco-sheet>.sh-acc{left:calc((var(--sh-acc-x) - var(--sh-gut)) * var(--k));top:var(--sh-acc-y);width:calc(var(--sh-acc-w) * var(--k));aspect-ratio:var(--sh-acc-r);transform:translateY(calc(0% - var(--sh-acc-y)));z-index:var(--sh-acc-z,auto);background:var(--sheet-string) center/100% 100% no-repeat}
+.repo-deco-sheet>.sh-acc {
+  left: calc((var(--sh-acc-x, 0px) - var(--sh-gut, 0px)) * var(--k));
+  top: var(--sh-acc-y);
+  width: calc(var(--sh-acc-w) * var(--k));
+  aspect-ratio: var(--sh-acc-r);
+  transform: translateY(calc(0% - var(--sh-acc-y)));
+  z-index: var(--sh-acc-z, auto);
+  background: var(--sheet-string, none) center/100% 100% no-repeat
+}
 /* tableau resserré sur la feuille (registre) */
-.repo-has-sheet table :is(th,td){padding-top:3px;padding-bottom:3px;line-height:1.25}
-/* Durci : blocs sombres à texte clair ; sur le papier du carnet, encre foncée */
-html[data-design="field"] .repo-block.repo-has-sheet{--sk-label-ink:#2b2a20;color:#2b2a20}
-html[data-design="field"] .repo-has-sheet :is(.repo-block-subtitle,p,.muted,.small,.hint,td){color:#4a4634!important;text-shadow:none!important}
-@media print{.repo-deco-sheet{display:none}html body .repo-block.repo-has-sheet{padding:revert!important}}
-/* appareil de page (design_deco.js, SETS.device, DEVICE_AT) : emplacement réel entre les blocs 3 et 4,
+.repo-has-sheet table :is(th, td) {
+  padding-top: 3px;
+  padding-bottom: 3px;
+  line-height: 1.25
+}
+/* sur la feuille de registre (papier clair), dans tous les designs à feuille : encre foncée de la feuille (--sheet-ink,
+   --sheet-ink-2 ; texte courant --sheet-text, libellés --sheet-label-ink, facultatifs) — Durci, dont les blocs sont sombres à texte clair, y écrit comme sur du papier */
+html[data-skeuo] .repo-block.repo-has-sheet {
+  --sk-label-ink: var(--sheet-label-ink, var(--sheet-ink));
+  color: var(--sheet-ink)
+}
+html[data-skeuo] .repo-has-sheet :is(p, td) {
+  color: var(--sheet-text, var(--sheet-ink-2)) !important;
+  text-shadow: none !important
+}
+html[data-skeuo] .repo-has-sheet :is(.repo-block-subtitle, .repo-card-subtitle, .muted, .small, .hint) {
+  color: var(--sheet-ink-2) !important;
+  text-shadow: none !important
+}
+/* textes que les designs sombres éclaircissent (gras, italique, listes…) : encre foncée sur le papier */
+html[data-skeuo] .repo-has-sheet .repo-block-body :is(strong, b, em, li, summary, dt, dd),
+html[data-skeuo] .repo-has-sheet td :is(strong, b, em) {
+  color: var(--sheet-ink) !important;
+  text-shadow: none !important
+}
+/* carte posée sur la feuille (détail d'une mission du registre…) : papier punaisé à encre foncée, le bloc restant un
+   carnet ou un dossier (et non une plaque ou un panneau) ; papier et punaise : jetons --sheet-card-bg, --sheet-pin */
+html[data-skeuo] .repo-has-sheet .repo-card {
+  --sk-card-bg: var(--sheet-card-bg);
+  --sk-card-border: 1px solid color-mix(in srgb, var(--sheet-ink-2) 40%, transparent);
+  --sk-card-radius: 2px;
+  --sk-card-shadow: 0 2px 5px rgba(0, 0, 0, .35), 0 0 0 1px rgba(255, 255, 255, .25) inset;
+  --sk-corner-screw: var(--sheet-pin);
+  --sk-card-screw-size: 18px;
+  --sk-card-title-ink: var(--sheet-label-ink, var(--sheet-ink));
+  --sk-card-sub-ink: var(--sheet-ink-2);
+  --sk-ink: var(--sheet-ink);
+  --sk-ink-2: var(--sheet-ink-2);
+  --sk-label-ink: var(--sheet-label-ink, var(--sheet-ink));
+  --muted: var(--sheet-ink-2);
+  color: var(--sheet-ink) !important;
+  text-shadow: none !important
+}
+html[data-skeuo] .repo-has-sheet .repo-card :is(p, span, div, li, small, .small, .muted, .hint, h3, h4, summary, strong, b):not(button, button *) {
+  text-shadow: none !important
+}
+/* en-têtes de tableau et boutons gardent leur fond sombre et leur encre claire */
+html[data-skeuo] .repo-has-sheet .repo-card :is(strong, b, em, dt, dd, summary):not(th, th *, button, button *, .badge, .badge *) {
+  color: var(--sheet-ink) !important
+}
+html[data-skeuo] .repo-has-sheet .repo-card :is(h3, h4, legend, label):not(th, th *, button, button *, .badge, .badge *) {
+  color: var(--sheet-label-ink, var(--sheet-ink)) !important
+}
+@media print {
+  .repo-deco-sheet {
+    display: none
+  }
+  html body .repo-block.repo-has-sheet {
+    padding: revert !important
+  }
+}
+/* carnet des aperçus (composant des designs à cadre) : galerie .repo-notebooks, cartes .repo-notebook — carnet fermé
+   tant que la galerie est vide (à la place de la première carte, à sa hauteur, calé sur la page de droite : il s'ouvre
+   vers la gauche), puis chaque carte posée sur un carnet ouvert (image sur feuille blanche légèrement de travers).
+   Utilisé par le Studio cartographique (aperçus des cartes). Par design : images --nb-closed / --nb-open, ratio du
+   carnet ouvert --nb-ratio, marges de la carte sur ses pages --nb-pad. */
+html[data-design="field"] {
+  --nb-closed: url("deco/field/notebook-closed.webp?v=1c5d389e");
+  --nb-open: url("deco/field/notebook-open.webp?v=cd86a81d");
+  --nb-ratio: 1000/595;
+  --nb-pad: 5% 14% 6% 8%
+}
+html[data-design-base="cabinet"] {
+  --nb-closed: url("deco/flightlog/notebook-closed.webp?v=35ba10c8");
+  --nb-open: url("deco/flightlog/notebook-open.webp?v=07ac79a7");
+  --nb-ratio: 900/677;
+  --nb-pad: 5% 12% 5% 6%
+}
+html[data-skeuo="frame"] .repo-notebooks:empty::before {
+  content: "";
+  justify-self: start;
+  width: max(280px, calc((100% - 24px) / 3));
+  aspect-ratio: var(--nb-ratio);
+  background: var(--nb-closed) right 6% center/auto 100% no-repeat;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .5));
+  cursor: pointer
+}
+html[data-skeuo="frame"] .repo-notebook {
+  aspect-ratio: var(--nb-ratio);
+  padding: var(--nb-pad) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: var(--nb-open) center/100% 100% no-repeat !important;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .5));
+  cursor: pointer
+}
+html[data-skeuo="frame"] .repo-notebook strong {
+  color: #2b2a22 !important;
+  margin-bottom: 4px
+}
+html[data-design="field"] .repo-notebook strong {
+  font: 700 12px/1.2 Bahnschrift, "Arial Narrow", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .04em
+}
+html[data-skeuo="frame"] .repo-notebook img {
+  background: #fff !important;
+  padding: 4px;
+  box-sizing: border-box;
+  transform: rotate(-1.5deg);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .45);
+  cursor: zoom-in
+}
+/* appareil de page (design_deco.js, SETS.device, DEVICE_AT) : emplacement réel entre les blocs 2 et 3,
    objets réglés par leur hauteur (ratio conservé) et calés à droite ; décor complet des designs à matières seulement */
-.repo-deco-device{display:none}
-html[data-skeuo][data-decor="full"] .repo-deco-device{display:flex;justify-content:flex-end;align-items:flex-end;height:240px;margin:-6px 24px 12px;pointer-events:none;position:relative;z-index:3}
+.repo-deco-device {
+  display: none
+}
+html[data-skeuo][data-decor="full"] .repo-deco-device {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  height: 240px;
+  margin: -6px 24px 12px;
+  pointer-events: none;
+  position: relative;
+  z-index: 3
+}
 /* les objets se déplacent ensemble (glisser) ; un objet plus haut que l'emplacement dépasse sur le contenu au-dessus (antenne) */
-.repo-deco-device-set{display:flex;flex:none;align-items:flex-end;gap:22px;transform-origin:right bottom;pointer-events:auto;cursor:grab;touch-action:none;user-select:none}
-.repo-deco-device-set.dragging{cursor:grabbing}
-.repo-deco-device img{width:auto;max-width:none;filter:drop-shadow(0 8px 10px rgba(0,0,0,.5))}
-@media (max-width:760px){.repo-deco-device{display:none!important}}
-@media print{.repo-deco-device{display:none!important}}
+.repo-deco-device-set {
+  display: flex;
+  flex: none;
+  align-items: flex-end;
+  gap: 22px;
+  transform-origin: right bottom;
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+  user-select: none
+}
+.repo-deco-device-set.dragging {
+  cursor: grabbing
+}
+.repo-deco-device img {
+  width: auto;
+  max-width: none;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .5))
+}
+@media (max-width:760px) {
+  .repo-deco-device {
+    display: none !important
+  }
+}
+@media print {
+  .repo-deco-device {
+    display: none !important
+  }
+}
 /* objets posés dans un bloc (design_deco.js, PROPS) : coin bas droit, un peu débordant et incliné, sous le contenu */
-.repo-has-prop{isolation:isolate}
-.repo-deco-prop{position:absolute;right:14px;bottom:10px;z-index:-1;pointer-events:none;transform:rotate(-5deg);filter:drop-shadow(0 6px 8px rgba(0,0,0,.45));opacity:.92}
-html[data-tone="dark"] .repo-deco-prop{opacity:.7}
-@media (max-width:760px){.repo-deco-prop{display:none}}
-@media print{.repo-deco-prop{display:none}}
-/* panneaux d'habillage (Durci, Cabinet) : le texte des blocs est à gauche et en haut → panneau calé à droite, estompé
-   vers la gauche (motifs des coins gauches presque effacés sous le titre, le sous-titre et les champs) */
-.repo-deco-bgimg.repo-deco-panel{background-position:right center;-webkit-mask-image:linear-gradient(90deg,rgba(0,0,0,.12) 0,rgba(0,0,0,.25) 40%,#000 85%);mask-image:linear-gradient(90deg,rgba(0,0,0,.12) 0,rgba(0,0,0,.25) 40%,#000 85%)}
-html[data-design="cabinet"][data-tone="dark"] .repo-deco-bgimg.repo-deco-panel{opacity:.38}
+.repo-has-prop {
+  isolation: isolate
+}
+.repo-deco-prop {
+  position: absolute;
+  right: 14px;
+  bottom: 10px;
+  z-index: -1;
+  pointer-events: none;
+  transform: rotate(-5deg);
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .45));
+  opacity: .92
+}
+html[data-tone="dark"] .repo-deco-prop {
+  opacity: .7
+}
+@media (max-width:760px) {
+  .repo-deco-prop {
+    display: none
+  }
+}
+@media print {
+  .repo-deco-prop {
+    display: none
+  }
+}
+/* panneaux d'habillage (Durci, Cabinet) : couvrent le bloc, atténués de façon uniforme (pas de dégradé en
+   transparence) ; lisibilité : opacité par design et voile --repo-veil sous les données */
+.repo-deco-bgimg.repo-deco-panel {
+  background-position: right center;
+  -webkit-mask-image: none;
+  mask-image: none
+}
+html[data-design="cabinet"][data-tone="dark"] .repo-deco-bgimg.repo-deco-panel {
+  opacity: .3
+}
 /* déplacer et masquer : même taille d'icône (24 px) et même bouton (30 px), quel que soit le jeu d'icônes */
-html[data-skeuo] .repo-block-heading .repo-block-tools .repo-drag{background-size:24px 24px!important;min-width:0!important;width:30px!important}
-html[data-design="flightlog"] .repo-deco-bgimg.repo-deco-bg-cover{opacity:.9}   /* Carnet de vol : fonds sombres, tracés fins */
+html[data-skeuo] .repo-block-heading .repo-block-tools .repo-drag {
+  background-size: 24px 24px !important;
+  min-width: 0 !important;
+  width: 30px !important
+}
+html[data-design="flightlog"] .repo-deco-bgimg.repo-deco-bg-cover {
+  opacity: .9
+}
+/* Carnet de vol : fonds sombres, tracés fins */
 /* ================================================================================================ BARRES DE DÉFILEMENT STABLES
    Place de la barre verticale toujours réservée (la largeur de la page ne change pas quand elle apparaît : pas de
    recalcul des décors en boucle, pas de barres qui clignotent) ; décors des marges jamais à l'origine d'un défilement
    horizontal. */
-html[data-skeuo]{scrollbar-gutter:stable}
-html[data-skeuo] body{overflow-x:clip}
-.repo-deco-bgimg.repo-deco-bg-side{background-size:auto 100%;background-position:right center;opacity:.75;
-  -webkit-mask-image:linear-gradient(to left,#000 0,#000 30%,transparent 70%);mask-image:linear-gradient(to left,#000 0,#000 30%,transparent 70%)}
+html[data-skeuo] {
+  scrollbar-gutter: stable
+}
+html[data-skeuo] body {
+  overflow-x: clip
+}
+.repo-deco-bgimg.repo-deco-bg-side {
+  background-size: auto 100%;
+  background-position: right center;
+  opacity: .75;
+  -webkit-mask-image: linear-gradient(to left, #000 0, #000 30%, transparent 70%);
+  mask-image: linear-gradient(to left, #000 0, #000 30%, transparent 70%)
+}
+/* ================================================================================================ BARRES DE PROGRESSION
+   <progress> (tâches longues : AppFramework.task ; jauges des pages : base SIA…) : piste creusée et remplissage dans la
+   matière du design, angles vifs. Jetons : --sk-prog-track (piste, dernier fond : couleur permise), --sk-prog-fill
+   (remplissage : dégradé seulement, il est aussi dimensionné), --sk-prog-border, --sk-prog-glow (halo, facultatif),
+   --sk-prog-stripes (rayures qui défilent, facultatives : Aqua). Avancement inconnu (:indeterminate) : une bande du
+   remplissage balaie la piste. Mouvement réduit (préférence système) : ni défilement ni balayage. */
+html[data-skeuo] progress {
+  -webkit-appearance: none;
+  appearance: none;
+  border: var(--sk-prog-border, 1px solid rgba(0, 0, 0, .45));
+  border-radius: 0;
+  background: var(--sk-prog-track);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .55), 0 1px 0 rgba(255, 255, 255, .15);
+  overflow: hidden
+}
+html[data-skeuo] progress::-webkit-progress-bar {
+  background: transparent
+}
+html[data-skeuo] progress::-webkit-progress-value {
+  background: var(--sk-prog-stripes, none) 0 0/22px 100%, var(--sk-prog-fill);
+  box-shadow: var(--sk-prog-glow, none);
+  animation: sk-prog-stripes .9s linear infinite
+}
+html[data-skeuo] progress::-moz-progress-bar {
+  background: var(--sk-prog-stripes, none) 0 0/22px 100%, var(--sk-prog-fill);
+  box-shadow: var(--sk-prog-glow, none)
+}
+html[data-skeuo] progress:indeterminate {
+  background: var(--sk-prog-fill) -40% 0/35% 100% no-repeat, var(--sk-prog-track);
+  animation: sk-prog-sweep 1.4s ease-in-out infinite
+}
+html[data-skeuo] progress:indeterminate::-moz-progress-bar {
+  background: transparent
+}
+@keyframes sk-prog-stripes {
+  to {
+    background-position: 22px 0, 0 0
+  }
+}
+@keyframes sk-prog-sweep {
+  to {
+    background-position: 140% 0, 0 0
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-skeuo] progress,
+  html[data-skeuo] progress::-webkit-progress-value {
+    animation: none
+  }
+  html[data-skeuo] progress:indeterminate {
+    background-position: 50% 0, 0 0
+  }
+}
+/* notifications flottantes et tâches (AppFramework.notify / task) : matière des menus du design (--sk-menu-*), angles
+   vifs ; le liseré gauche garde la couleur du genre (succès, avertissement, erreur, tâche) */
+html[data-skeuo] .repo-notify>div {
+  background: var(--sk-menu-bg);
+  color: var(--sk-menu-ink);
+  border: var(--sk-menu-border);
+  border-left: 5px solid #6fa8ff;
+  border-radius: 0;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .45)
+}
+html[data-skeuo] .repo-notify>div.ok {
+  border-left-color: #2e9d5b
+}
+html[data-skeuo] .repo-notify>div.warn {
+  border-left-color: #e0a400
+}
+html[data-skeuo] .repo-notify>div.err {
+  border-left-color: #e5484d
+}
+html[data-skeuo] .repo-notify>div.task {
+  border-left-color: var(--sk-prog-edge, #6fa8ff)
+}
+/* Cabinet (et Carnet de vol) : piste de cuir sombre, remplissage de laiton */
+html[data-design-base="cabinet"] {
+  --sk-prog-track: #1f140b linear-gradient(#150d06, #2b1c0f);
+  --sk-prog-fill: linear-gradient(#f6e3a1, #d4ad55 45%, #a47a2c 55%, #c99d45);
+  --sk-prog-border: 1px solid #5b3a1a;
+  --sk-prog-edge: #c99d45;
+  --sk-prog-glow: inset 0 1px 0 rgba(255, 250, 220, .6)
+}
+/* Carnet de vol : piste de papier creusée, remplissage à l'encre bleu marine */
+html[data-design="flightlog"] {
+  --sk-prog-track: #e6dcc0 linear-gradient(#d9ceb0, #efe6cf);
+  --sk-prog-fill: linear-gradient(#6f8fbf, #34558a 50%, #1d3557);
+  --sk-prog-border: 1px solid #8a7a58;
+  --sk-prog-edge: #34558a;
+  --sk-prog-glow: inset 0 1px 0 rgba(255, 255, 255, .35)
+}
+/* Durci : fente d'acier sombre, barre de voyants verts allumés */
+html[data-design="field"] {
+  --sk-prog-track: #10130c linear-gradient(#0a0c07, #1a1e14);
+  --sk-prog-fill: linear-gradient(#d4ffc2, var(--fd-led) 40%, #3f9f35 60%, #2b7a25);
+  --sk-prog-border: 1px solid #2a2e22;
+  --sk-prog-edge: var(--fd-led);
+  --sk-prog-glow: 0 0 6px rgba(140, 255, 110, .55), inset 0 1px 0 rgba(255, 255, 255, .4)
+}
+/* Aqua : piste de verre dépoli, gel de la couleur d'accent parcouru de rayures (barre « Aqua ») */
+html[data-design="aqua"] {
+  --sk-prog-track: #dfe5eb linear-gradient(#c7d0d9, #eef2f6);
+  --sk-prog-fill: linear-gradient(180deg, color-mix(in srgb, var(--aq-gel) 45%, #fff) 0%, var(--aq-gel) 50%, color-mix(in srgb, var(--aq-gel) 82%, #000) 51%, color-mix(in srgb, var(--aq-gel) 65%, #fff) 100%);
+  --sk-prog-stripes: repeating-linear-gradient(-45deg, rgba(255, 255, 255, .3) 0 5px, transparent 5px 11px);
+  --sk-prog-border: 1px solid #8e9aa6;
+  --sk-prog-edge: var(--aq-gel)
+}
+html[data-design="aqua"][data-tone="dark"] {
+  --sk-prog-track: #1b222b linear-gradient(#141a21, #28313c);
+  --sk-prog-border: 1px solid #0d1116
+}
 /* ================================================================================================ JETONS DES PAGES (cartes, menus, fenêtres)
    Couleurs par design pour les éléments propres aux pages, qui les appliquent dans leur propre feuille (Mission Core :
    shared/mission_core/core.css, section « Designs à matières ») : --sk-hb* (boutons d'en-tête), --sk-acc* (action
@@ -740,71 +2513,207 @@ html[data-skeuo] body{overflow-x:clip}
    Contrastes WCAG ≥ 4,5:1 :
    Cabinet / Carnet de vol : crème #f3e3b5 / bleu marine #1b3052 = 10,6:1 ; encre #2b2418 / parchemin #f6ecd2 = 13,4:1
    Durci : #eef0e6 / acier #2b3024 = 11,8:1 ; Aqua : encre #1c2733 / verre #f4f7fa = 14,1:1 (sombre : #e6edf5 / #26303b). */
-html[data-design-base="cabinet"]{--sk-hb:linear-gradient(#27446f,#122746);--sk-hb-fg:#f3e3b5;--sk-hb-bd:#b8963e;--sk-acc:linear-gradient(#f0d489,#c29a45 55%,#a57d2f);--sk-acc-fg:#1d2733;
-  --sk-pop:#f6ecd2 url("textures/parchment.webp?v=20260930zzzn") center/400px;--sk-pop-ink:#2b2418;--sk-pop-bd:#8a6526;--sk-pop-hover:rgba(138,101,38,.16);
-  --sk-card:color-mix(in srgb,var(--cab-field) 72%,transparent);--sk-card-ink:var(--cab-ink);--sk-card-bd:var(--cab-rule);--sk-paper:#fbf6e8;--sk-pop-danger:#a3170f}
-html[data-design="field"]{--sk-hb:linear-gradient(#3a4030,#1c2016);--sk-hb-fg:#eef0e6;--sk-hb-bd:#0b0d08;--sk-acc:linear-gradient(#e2c066,#b08a33);--sk-acc-fg:#1b1d14;
-  --sk-pop:#2b3024 url("textures/steel-dark.webp?v=20260930zzzn") center/300px;--sk-pop-ink:#eef0e6;--sk-pop-bd:#0b0d08;--sk-pop-hover:rgba(255,255,255,.1);
-  --sk-card:#15180f;--sk-card-ink:var(--fd-field-ink);--sk-card-bd:#3b4032;--sk-paper:#ecead9;--sk-pop-danger:#ff9a8a}
-html[data-design="aqua"]{--sk-hb:linear-gradient(#ffffff,#e9eef3 50%,#dde4eb 51%,#f1f4f7);--sk-hb-fg:#1c2733;--sk-hb-bd:#9aa6b2;
-  --sk-acc:linear-gradient(180deg,color-mix(in srgb,var(--aq-gel) 55%,#fff) 0%,var(--aq-gel) 50%,color-mix(in srgb,var(--aq-gel) 85%,#000) 51%,color-mix(in srgb,var(--aq-gel) 70%,#fff) 100%);--sk-acc-fg:#fff;
-  --sk-pop:rgba(248,251,254,.97);--sk-pop-ink:#1c2733;--sk-pop-bd:#b8c3ce;--sk-pop-hover:color-mix(in srgb,var(--aq-gel) 14%,transparent);
-  --sk-card:linear-gradient(#fbfdff,#eef3f8);--sk-card-ink:var(--aq-ink);--sk-card-bd:#d5dde6;--sk-paper:#fff;--sk-pop-danger:#a3170f}
-html[data-design="aqua"][data-tone="dark"]{--sk-hb:linear-gradient(#4a5663,#323c47 50%,#2a333d 51%,#3a4652);--sk-hb-fg:#e6edf5;--sk-hb-bd:#1a2029;
-  --sk-pop:rgba(30,37,46,.97);--sk-pop-ink:#e6edf5;--sk-pop-bd:#46525f;--sk-card:linear-gradient(#2c3642,#232b35);--sk-card-bd:rgba(255,255,255,.1);--sk-pop-danger:#ff9a8a}
+html[data-design-base="cabinet"] {
+  --sk-hb: linear-gradient(#27446f, #122746);
+  --sk-hb-fg: #f3e3b5;
+  --sk-hb-bd: #b8963e;
+  --sk-acc: linear-gradient(#f0d489, #c29a45 55%, #a57d2f);
+  --sk-acc-fg: #1d2733;
+  --sk-pop: #f6ecd2 url("textures/parchment.webp?v=c0677c03") center/400px;
+  --sk-pop-ink: #2b2418;
+  --sk-pop-bd: #8a6526;
+  --sk-pop-hover: rgba(138, 101, 38, .16);
+  --sk-card: color-mix(in srgb, var(--cab-field) 72%, transparent);
+  --sk-card-ink: var(--cab-ink);
+  --sk-card-bd: var(--cab-rule);
+  --sk-paper: #fbf6e8;
+  --sk-pop-danger: #a3170f
+}
+html[data-design="field"] {
+  --sk-hb: linear-gradient(#3a4030, #1c2016);
+  --sk-hb-fg: #eef0e6;
+  --sk-hb-bd: #0b0d08;
+  --sk-acc: linear-gradient(#e2c066, #b08a33);
+  --sk-acc-fg: #1b1d14;
+  --sk-pop: #2b3024 url("textures/steel-dark.webp?v=8533e93c") center/300px;
+  --sk-pop-ink: #eef0e6;
+  --sk-pop-bd: #0b0d08;
+  --sk-pop-hover: rgba(255, 255, 255, .1);
+  --sk-card: #15180f;
+  --sk-card-ink: var(--fd-field-ink);
+  --sk-card-bd: #3b4032;
+  --sk-paper: #ecead9;
+  --sk-pop-danger: #ff9a8a
+}
+html[data-design="aqua"] {
+  --sk-hb: linear-gradient(#ffffff, #e9eef3 50%, #dde4eb 51%, #f1f4f7);
+  --sk-hb-fg: #1c2733;
+  --sk-hb-bd: #9aa6b2;
+  --sk-acc: linear-gradient(180deg, color-mix(in srgb, var(--aq-gel) 55%, #fff) 0%, var(--aq-gel) 50%, color-mix(in srgb, var(--aq-gel) 85%, #000) 51%, color-mix(in srgb, var(--aq-gel) 70%, #fff) 100%);
+  --sk-acc-fg: #fff;
+  --sk-pop: rgba(248, 251, 254, .97);
+  --sk-pop-ink: #1c2733;
+  --sk-pop-bd: #b8c3ce;
+  --sk-pop-hover: color-mix(in srgb, var(--aq-gel) 14%, transparent);
+  --sk-card: linear-gradient(#fbfdff, #eef3f8);
+  --sk-card-ink: var(--aq-ink);
+  --sk-card-bd: #d5dde6;
+  --sk-paper: #fff;
+  --sk-pop-danger: #a3170f
+}
+html[data-design="aqua"][data-tone="dark"] {
+  --sk-hb: linear-gradient(#4a5663, #323c47 50%, #2a333d 51%, #3a4652);
+  --sk-hb-fg: #e6edf5;
+  --sk-hb-bd: #1a2029;
+  --sk-pop: rgba(30, 37, 46, .97);
+  --sk-pop-ink: #e6edf5;
+  --sk-pop-bd: #46525f;
+  --sk-card: linear-gradient(#2c3642, #232b35);
+  --sk-card-bd: rgba(255, 255, 255, .1);
+  --sk-pop-danger: #ff9a8a
+}
+/* fond des fenêtres surgissantes des pages (Mission Core : .mc-pop…) posé ici et non dans la feuille de la page :
+   l'url() d'un jeton se résout par rapport à la feuille qui l'emploie (textures/ est à côté de celle-ci) */
+html[data-skeuo] :is(.mc-pop, .mc-switch-pop, .mc-import-pop) {
+  background: var(--sk-pop) !important
+}
 /* cartes et encadrés partagés par plusieurs pages (.note, .kpi) : habillés comme les cartes du design */
-html[data-skeuo] .repo-block :is(.note,.kpi>div){background:var(--sk-card)!important;color:var(--sk-card-ink)!important;border-color:var(--sk-card-bd)!important}
-html[data-skeuo] .repo-block .badge{background:color-mix(in srgb,currentColor 14%,transparent)!important;color:inherit!important}
-html[data-skeuo] .repo-block table:not(.report table){background:transparent!important;color:var(--sk-card-ink)!important}
-html[data-skeuo] .repo-block table:not(.report table) th{background:var(--sk-card)!important;color:var(--sk-card-ink)!important}
+html[data-skeuo] .repo-block :is(.note, .kpi>div) {
+  background: var(--sk-card) !important;
+  color: var(--sk-card-ink) !important;
+  border-color: var(--sk-card-bd) !important
+}
+html[data-skeuo] .repo-block .badge {
+  background: color-mix(in srgb, currentColor 14%, transparent) !important;
+  color: inherit !important
+}
+html[data-skeuo] .repo-block table:not(.report table) {
+  background: transparent !important;
+  color: var(--sk-card-ink) !important
+}
+html[data-skeuo] .repo-block table:not(.report table) th {
+  background: var(--sk-card) !important;
+  color: var(--sk-card-ink) !important
+}
 /* voyant de sauvegarde (Durci) : bouton actif (sauvegarde immédiate) */
-button.repo-deco-status{border:0;cursor:pointer;text-align:left;font:600 13px Bahnschrift,"Arial Narrow",sans-serif}
-button.repo-deco-status:hover{filter:brightness(1.18)}
-button.repo-deco-status:focus-visible{outline:2px solid #9fe870;outline-offset:2px}
+button.repo-deco-status {
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  font: 600 13px Bahnschrift, "Arial Narrow", sans-serif
+}
+button.repo-deco-status:hover {
+  filter: brightness(1.18)
+}
+button.repo-deco-status:focus-visible {
+  outline: 2px solid #9fe870;
+  outline-offset: 2px
+}
 /* bandeau radar : largeur de la colonne, proportions 1402 × 304 ; la scène (image, balayage, plots) garde les
    proportions de l'image et se cale en bas (haut de l'écran rogné) */
-.repo-deco-radar{aspect-ratio:auto;height:clamp(140px,12vw,230px);container-type:inline-size}
+.repo-deco-radar {
+  aspect-ratio: auto;
+  height: clamp(140px, 12vw, 230px);
+  container-type: inline-size
+}
 /* scène à la largeur du bandeau (hauteur 34,09cqw = largeur × 478 / 1402), rognée en haut et en bas : réticule (46,44 %
    de l'image = 15,83cqw) placé au tiers de la hauteur du bandeau, sans jamais laisser de vide en haut (≤ 0) ni en bas
    (≥ 100 % − hauteur de la scène) */
-.repo-deco-radar-stage{position:absolute;left:0;right:0;top:clamp(calc(100% - 34.09cqw),calc(33% - 15.83cqw),0px);aspect-ratio:1402/478}
+.repo-deco-radar-stage {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: clamp(calc(100% - 34.09cqw), calc(33% - 15.83cqw), 0px);
+  aspect-ratio: 1402/478
+}
 /* plaque et voyant de part et d'autre : à la taille de leur contenu, centrés sur la hauteur du bandeau */
-html[data-design="field"][data-decor="full"] .repo-deco>:is(.repo-deco-plate-img,.repo-deco-status){align-self:center;justify-self:center}
-.repo-deco-radar-stage>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+html[data-design="field"][data-decor="full"] .repo-deco>:is(.repo-deco-plate-img, .repo-deco-status) {
+  align-self: center;
+  justify-self: center
+}
+.repo-deco-radar-stage>img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover
+}
 
 /* Aqua : pied de page pleine largeur → angles droits (barre d'outils) ; en-tête : jetons --sk-header-* */
-html[data-design="aqua"] .repo-footer{border-radius:0!important;border-width:1px 0 0!important}
+html[data-design="aqua"] .repo-footer {
+  border-radius: 0 !important;
+  border-width: 1px 0 0 !important
+}
 
 /* Bandeaux (Carnet de vol, Cabinet, Durci) : le panneau (body) reste dans le cadre cousu ; l'en-tête est une plaque
    vissée sur le panneau, en retrait des bords (plus de coins arrondis ni de vis contre le bord de la fenêtre) */
-@media (min-width:761px){
-  html[data-skeuo="frame"] .repo-header{margin-left:12px!important;margin-right:12px!important}
+@media (min-width:761px) {
+  html[data-skeuo="frame"] .repo-header {
+    margin-left: 12px !important;
+    margin-right: 12px !important
+  }
 }
 
 /* Pas d'arrondis sur les bandeaux et barres des designs skeuomorphes (bandeau décoratif — carte et radar du Durci ; plaque et bloc de sauvegarde gardent leur arrondi —, pied de page / barre d'état,
    barre d'action) : angles droits, sauf demande explicite */
-html[data-skeuo] :is(.repo-deco,.repo-deco-radar,.repo-footer,.repo-actionbar){border-radius:0!important}
+html[data-skeuo] :is(.repo-deco, .repo-deco-radar, .repo-footer, .repo-actionbar) {
+  border-radius: 0 !important
+}
 
 /* Centre (CPCO) : icônes du Centre = fond du Centre des jeux composés (règles générées dans block_icons.css) */
 /* ================================================================================================ SÉLECTEUR SEGMENTÉ (repo-segs)
    Cabinet : barrette de laiton, texte gravé ; position choisie = cuir marine enfoncé, texte crème.
    Carnet de vol : aluminium brossé, position choisie en cuir marine. Durci : acier sombre, position choisie en champ noir
    avec voyant vert. Aqua : verre (dégradé clair), position choisie en gel. */
-html[data-skeuo] .repo-segs{border-radius:6px;overflow:hidden;box-shadow:0 1px 0 rgba(255,255,255,.3),0 2px 5px rgba(0,0,0,.35)}
-html[data-skeuo] .repo-seg{min-height:34px;padding:6px 14px!important;background-color:transparent!important;background-image:none!important;border-radius:0!important;box-shadow:none!important;font-weight:700;letter-spacing:.02em;cursor:pointer}
-html[data-design="cabinet"] .repo-segs{border:1px solid #2a1606;background:#b08a3a url("textures/brass.webp?v=20260930zzzn") center/256px}
-html[data-design="flightlog"] .repo-segs{border:1px solid #394350;background:#b9bec5 url("textures/steel.webp?v=20260930zzzn") center/256px}
-html[data-design-base="cabinet"] .repo-seg{color:#231507!important;text-shadow:0 1px 0 rgba(255,240,200,.55)}
-html[data-design="flightlog"] .repo-seg{color:#18212e!important;text-shadow:0 1px 0 rgba(255,255,255,.55)}
-html[data-design-base="cabinet"] .repo-seg+.repo-seg{border-left:1px solid rgba(30,16,4,.55)!important;box-shadow:inset 1px 0 0 rgba(255,240,200,.35)!important}
-html[data-design-base="cabinet"] .repo-seg[aria-pressed="true"]{background:#1f2c47 url("textures/leather-navy.webp?v=20260930zzzn") center/256px!important;color:#f1e4c0!important;text-shadow:0 1px 0 #000;box-shadow:inset 0 2px 6px rgba(0,0,0,.65)!important}
-html[data-design="field"] .repo-segs{border:1px solid #0b0d08;background:#23261e url("textures/steel-dark.webp?v=20260930zzzn") center/512px}
-html[data-design="field"] .repo-seg{color:#cfd2c4!important;text-shadow:0 1px 0 #000}
-html[data-design="field"] .repo-seg+.repo-seg{border-left:1px solid #0b0d08!important;box-shadow:inset 1px 0 0 rgba(255,255,255,.08)!important}
-html[data-design="field"] .repo-seg[aria-pressed="true"]{background:#15180f!important;color:#e9ecdf!important;box-shadow:inset 0 2px 6px #000!important}
-html[data-design="field"] .repo-seg[aria-pressed="true"]::before{content:"";display:inline-block;width:7px;height:7px;margin-right:7px;border-radius:50%;vertical-align:1px;background:#8cf07a;box-shadow:0 0 6px #6fe35a}
-html[data-design="aqua"] .repo-segs{border:1px solid #9aa6b2;border-radius:8px}
-html[data-design="aqua"] .repo-seg{color:var(--aq-ink,#1b2733)!important;background-image:linear-gradient(#ffffff,#f1f4f8 50%,#e6ebf1 51%,#f6f8fb)!important;text-shadow:0 1px 0 #fff}
-html[data-design="aqua"] .repo-seg+.repo-seg{border-left:1px solid #b7c1cc!important}
-html[data-design="aqua"][data-tone="dark"] .repo-seg:not([aria-pressed="true"]){background-image:linear-gradient(#4a5663,#323c47 50%,#2a333d 51%,#3b4652)!important;color:#e6edf5!important;text-shadow:0 -1px 0 rgba(0,0,0,.4)}
-html[data-skeuo] .repo-seg:not([aria-pressed="true"]):is(:hover,:focus-visible){filter:brightness(1.1)}
+html[data-skeuo] .repo-segs {
+  border-radius: var(--sk-segs-radius, 6px);
+  overflow: hidden;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .3), 0 2px 5px rgba(0, 0, 0, .35)
+}
+html[data-skeuo] .repo-seg {
+  min-height: 34px;
+  padding: 6px 14px !important;
+  background-color: transparent !important;
+  background-image: var(--sk-seg-bg, none) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font-weight: 700;
+  letter-spacing: .02em;
+  cursor: pointer
+}
+/* designs à cadre : cadre, texte, séparateurs et segment choisi par jetons (--sk-segs-*, --sk-seg-*) ; Durci ajoute
+   son voyant au segment choisi ; Aqua : boutons gel (ci-dessous) */
+html[data-skeuo] .repo-segs {
+  border: var(--sk-segs-border)
+}
+html[data-skeuo="frame"] .repo-segs {
+  background: var(--sk-segs-bg)
+}
+html[data-skeuo] .repo-seg {
+  color: var(--sk-seg-ink) !important;
+  text-shadow: var(--sk-seg-shadow)
+}
+html[data-skeuo] .repo-seg+.repo-seg {
+  border-left: var(--sk-seg-sep) !important;
+  box-shadow: var(--sk-seg-sep-shadow) !important
+}
+html[data-skeuo] .repo-seg[aria-pressed="true"] {
+  background: var(--sk-seg-on-bg) !important;
+  color: var(--sk-seg-on-ink) !important;
+  text-shadow: var(--sk-seg-on-text-shadow, var(--sk-seg-shadow));
+  box-shadow: var(--sk-seg-on-shadow) !important
+}
+html[data-design="field"] .repo-seg[aria-pressed="true"]::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  border-radius: 50%;
+  vertical-align: 1px;
+  background: #8cf07a;
+  box-shadow: 0 0 6px #6fe35a
+}
+html[data-skeuo] .repo-seg:not([aria-pressed="true"]):is(:hover, :focus-visible) {
+  filter: brightness(1.1)
+}
