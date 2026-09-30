@@ -61,7 +61,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Appareil de page** (designs à matières) : déplaçable latéralement (glisser), position gardée par design ; réduit à
   la largeur de sa colonne s'il la dépasse ; dessiné devant le bloc au-dessus. Durci : câble lové et grand poste radio
   dont l'antenne dépasse sur le contenu au-dessus.
-- **Durci** : poignées latérales au premier plan, davantage sur la page.
+- **Durci** : poignées latérales au premier plan (devant l'en-tête collant), davantage sur la page.
+- **Décors** : images inutilisées retirées (fond « carte de cuir » du Carnet de vol) ; vérification croisée images ↔ code.
 - **Barre latérale** : contenu un peu descendu (logo DEFA centré dans sa case).
 - Proposition de phase 2 du refactoring (supprimer les exceptions ; assets à fournir) : `docs/REFACTORING_TOOLKIT.md`.
 

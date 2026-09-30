@@ -117,11 +117,13 @@ liste `DISPLAY` : design, icônes, couleurs, barre latérale, langue, onglets, s
     banc de non-régression : `tools/skeuo_regression.html` ;
   - **fonds des blocs** (`design_deco.js`) : fonds illustrés déclarés (`BG`, blocs `data-deco-bg` : Carnet de vol,
     Aqua) ; **panneaux par thème** (`PANELS` : Cabinet « 1930 » marine / ivoire selon le ton, Durci) choisis d'après
-    le titre, l'icône puis le sous-titre du bloc ; **feuille de registre** (`SHEETS`, Cabinet clair : blocs de tableau
+    le titre, l'icône puis le sous-titre du bloc ; **feuille de registre** (`SHEETS`, Cabinet, Carnet de vol et Durci, ton
+    clair : blocs de tableau
     des registres, une planche par design découpée par `tools/cut_register_sheet.py`, géométrie en jetons `--sh-*`) ;
     **objets posés dans un bloc** (`PROPS` : ordre de mission, étiquette « Top secret ») ; **appareil de page**
     (`device` : un objet à côté d'un poste — Cabinet : livre de bord et radio ; Carnet de vol : carnet de cuir et DME ;
-    Durci : câble et radio — dans un vrai emplacement entre les blocs 3 et 4, déplaçable latéralement) ;
+    Durci : câble et radio — dans un vrai emplacement entre les blocs 3 et 4, déplaçable latéralement) ; **carnets du
+    Studio** (aperçus des cartes : carnet fermé puis ouvert, jetons `--nb-*`, `apps/cpco/map_parser.html`) ;
   - **boîte à outils** `shared/kit.js` (`window.RepositoryKit`, chargée avant `repository_nav.js`) : échappement,
     langue et traductions, stockage protégé, couleurs et contraste WCAG.
 - **Réglages** : boutons « Apparence » et « Paramètres » en tête du menu ☰ ; dans la barre latérale, groupe du bas

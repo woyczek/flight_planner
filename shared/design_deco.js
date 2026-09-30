@@ -10,8 +10,9 @@
 //      - PANELS  : panneau choisi par thème pour tous les autres blocs (Cabinet, Durci ; décor complet) ;
 //      - PROPS   : objet posé dans un bloc, coin bas droit (Cabinet ; décor complet) ;
 //  · décor de page (SETS, décor complet seulement) : frise de pied de page, objets entre les blocs (hauteur nulle : la
-//    mise en page ne bouge pas), appareil de page (vrai emplacement du flux entre deux blocs), objets dans les marges
-//    (grands écrans).
+//    mise en page ne bouge pas), appareil de page (vrai emplacement du flux entre les blocs 3 et 4, déplaçable
+//    latéralement : Cabinet, Carnet de vol, Durci), objets dans les marges (grands écrans).
+// Toute image nommée ici doit exister dans shared/deco/<design>/ ; une image que plus rien ne nomme est retirée.
 // Rien n'est affiché dans les autres designs, sous 760 px ni à l'impression (designs_skeuo.css).
 (() => {
   'use strict';
