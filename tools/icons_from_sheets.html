@@ -29,7 +29,7 @@ const ITEMS = {
   ],
   field: [
     ...[['file-text', 'book', 'x', 'settings'], ['map', 'plane', 'target', 'refresh'], ['info', 'alert', 'globe', 'sparkles']].flatMap((row, j) => row.map((n, i) => tile(n, [1159, 1238, 1315, 1388][i], [572, 632, 691][j]))),
-    tile('plane-plate', 772, 789, 66, 62),
+    { ...tile('plane-plate', 772, 789, 66, 62), kind: 'deco', out: [96, 90] },   // plaque du bloc d'état → shared/deco/field/
     // icônes de la barre latérale (planche haute définition icones-durci.png, fond transparent, 3 × 3) ; remplacent
     // celles de la petite planche (file-text : même image que clipboard)
     ...[['target', 'map', 'clipboard'], ['chart', 'fuel', 'plane'], ['palette', 'settings', 'help']].flatMap((row, j) => row.map((n, i) => ({ name: n, kind: 'icon', src: 'icones-durci.png', mask: 'rect',

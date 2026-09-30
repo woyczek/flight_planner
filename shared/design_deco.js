@@ -21,8 +21,11 @@
   const SETS = {
     cabinet: {
       foot: img => `<img class="repo-deco-strip" src="${img('footer')}" alt="">`,
-      between: [['clip', 150], ['tack', 22, 'pair']],
-      sides: [['compass', 118], ['map', 230], ['clip', 190], ['medal-1', 60]]
+      // objets de navigation des années 1930 (planche « objets 1930 ») intercalés : règle parallèle, crayon, porte-mine,
+      // sifflet, étui de toile, compas de relèvement ; en marge : cartes, rapporteur, pointes sèches, compas marin,
+      // portefeuille, rapporteur-rotateur, sextant, pavillon, carnet
+      between: [['clip', 150], ['parallel-rule', 170], ['tack', 22, 'pair'], ['pencil', 150], ['whistle', 120], ['case', 130], ['pen', 140], ['wrist-compass', 130]],
+      sides: [['compass', 118], ['chart-coast', 170], ['dividers', 60], ['map', 230], ['ship-compass', 110], ['protractor', 140], ['clip', 190], ['wallet', 110], ['chart-route', 170], ['plotter', 110], ['medal-1', 60], ['sextant', 140], ['flag', 120], ['notebook', 90]]
     },
     flightlog: {
       foot: img => `<img class="repo-deco-strip" src="${img('footer')}" alt="">`,
@@ -33,8 +36,10 @@
       foot: img => `<div class="repo-deco-plate-img"><img src="${img('plate-defa')}" alt=""></div>
         <div class="repo-deco-radar" title="${tr('radar')}"><div class="repo-deco-radar-stage"><img src="${img('radar')}" alt=""><span class="repo-deco-sweep"></span><i style="left:30.7%;top:33.5%;--c:#7dff8a"></i><i style="left:65.6%;top:59.6%;--c:#7dff8a"></i><i style="left:72%;top:79.5%;--c:#7dff8a"></i><i style="left:30.96%;top:82.6%;--c:#7dff8a"></i><i style="left:82.95%;top:46.44%;--c:#ff4d3d"></i></div></div>
         <button type="button" class="repo-deco-status repo-plain"><img src="${img('plane-plate')}" alt="" onerror="this.remove()"><span class="repo-deco-leds"><i class="led-save"></i><i class="led-on"></i><i></i></span><span class="repo-deco-state"></span></button>`,
-      between: [['plate-attention', 210], ['handle-h', 120], ['plate-wings', 170], ['plate-defa', 200]],
-      sides: [['stencil-mission', 150], ['grille', 80], ['stencil-defa', 130], ['plate-small', 90], ['stencil-ops', 160], ['nut', 40]]
+      // objets du pupitre (grille d'aération, lampe grillagée, plaque vierge, blindage riveté, interrupteur à capot,
+      // câble et connecteurs, cadran) intercalés entre les plaques et pochoirs d'origine
+      between: [['plate-attention', 210], ['louvre', 150], ['handle-h', 120], ['cable', 170], ['plate-wings', 170], ['plate-blank', 180], ['plate-defa', 200], ['armor', 140]],
+      sides: [['stencil-mission', 150], ['lamp', 100], ['grille', 80], ['dial', 110], ['stencil-defa', 130], ['toggle', 80], ['plate-small', 90], ['cable', 170], ['stencil-ops', 160], ['armor', 140], ['nut', 40], ['louvre', 130]]
     }
   };
   // Fonds illustrés des blocs (designs à matières, décor complet ou sobre) : un bloc marqué data-deco-bg="<clé>"
@@ -68,6 +73,38 @@
     field: { aerodromes: 'cover', families: 'cover', outcomes: 'cover', series: 'cover', aircraft: 'cover', capabilities: 'cover', daynight: 'cover', network: 'cover', context: 'cover', maps: 'side', identification: ['cover', 'center 78%'], import: ['cover', 'center 70%'], result: ['cover', 'center', 'field/bg-outcomes'] },
     aqua: { aerodromes: ['cover', 'center bottom', 'aqua/bg-water'], capabilities: ['cover', 'left center', 'aqua/bg-water'], outcomes: ['cover', 'center top', 'aqua/bg-water'], aircraft: ['cover', 'right center', 'aqua/bg-water'] }
   };
+  // panneaux d'habillage : thème choisi d'après le bloc (titre, puis icône et identifiant, puis sous-titre), dans l'ordre
+  // du tableau ; fichiers shared/deco/<design>/<dossier>/panel-<thème>-<w|t> (w paysage, t portrait)
+  const THEMES = [
+    ['aircraft', /aircraft|appareil|avion|a[ée]ronef|plane|helico|h[ée]lico|flotte|fleet|perf|masse|\bmass|mtow|centrage/],
+    ['airfield', /a[ée]rodrome|airfield|airport|terrain|piste|runway|landing|atterriss|d[ée]collage|takeoff|\bsia\b|oaci|icao/],
+    ['time', /day|night|jour|nuit|clock|heure|horaire|horodat|time|calendar|date|dur[ée]e|p[ée]riode|period|activit|planning|odv|m[ée]t[ée]o|weather/],
+    ['radio', /network|r[ée]seau|radio|comm|fr[ée]quen|link|send|sync|source|mise à jour|update|maintenance|database|base|sauvegarde|backup|import|export/],
+    ['nav', /map|carte|route|navig|profil|trajet|flight|\bvol\b|fuel|carbur|vent|wind|target|cible|layers/],
+    ['gear', /[ée]quipement|mat[ée]riel|gear|\bbox\b|cargo|m[ée]dic|patient|hems|medevac|capabilit|capacit|charge|load|emport/],
+    ['awards', /outcome|r[ée]sultat|result|succ[eè]s|valid|award|m[ée]daille|summary|synth[eè]se|bilan|chart|statist|breakdown|r[ée]partition|calcul/],
+    ['families', /famil|s[ée]rie|series|type|mission|cat[ée]gor/],
+    ['ops', /./]
+  ];
+  // par design : dossier des panneaux (Cabinet : jeu « années 1930 » ; un jeu « 1800 » attend dans cabinet/1800 : changer
+  // ici dir: '1930' en dir: '1800' une fois ses panneaux convertis) et orientations disponibles quand il en manque une
+  // clair : jeu propre au ton clair (dir, et alias : thème → panneau du jeu quand il a moins de thèmes)
+  const PANELS = {
+    field: { dir: '', only: { awards: 't', families: 't' } },
+    cabinet: {
+      dir: '1930', only: {},
+      // ton clair : fonds ivoire (cartes côtières, paquebot, hydravions, instruments) ; même remplacement 1930 → 1800
+      clair: { dir: '1930/clair', only: { instruments: 'w' /* portrait à venir */ }, alias: { airfield: 'nav', ops: 'ships', families: 'ships', awards: 'ships', gear: 'instruments', radio: 'instruments', time: 'instruments' } }
+    }
+  };
+  /** Panneau du bloc : thème reconnu ; même panneau que le bloc précédent → l'autre orientation, puis le thème suivant. */
+  function panelOf(b, set, prev) {
+    const o = b.offsetWidth >= b.offsetHeight ? 'w' : 't', hit = s => THEMES.filter(([, re]) => re.test(String(s || '').toLowerCase())),
+      themes = [b.querySelector('h2,h3')?.textContent, `${b.dataset.icon || ''} ${b.dataset.blockId || ''}`, b.dataset.subtitle]
+        .map(hit).find(h => h.length > 1) || hit('-'),
+      files = [...new Set(themes.map(([n]) => set.alias?.[n] || n))].flatMap(n => { const or = set.only[n] || 'wt'; return [or.includes(o) ? o : or, ...or.replace(o, '')].map(x => `${set.dir ? set.dir + '/' : ''}panel-${n}-${x}`); });
+    return files.find(f => f !== prev) || files[0];
+  }
   function backgrounds(d) {
     document.querySelectorAll('.repo-deco-bgimg').forEach(n => n.remove());
     document.querySelectorAll('.repo-has-bg').forEach(b => b.classList.remove('repo-has-bg'));
@@ -86,6 +123,20 @@
       b.classList.add('repo-has-bg');
       b.prepend(el);
     });
+    // panneaux d'habillage (Durci, Cabinet) : les blocs sans fond illustré reçoivent un panneau riveté en rapport avec leur
+    // contenu (panelOf) ; blocs imbriqués : un seul fond, sur le grand (les blocs intérieurs restent nus)
+    const pool = PANELS[d] && (document.documentElement.dataset.tone !== 'dark' && PANELS[d].clair || PANELS[d]);
+    if (!pool || document.documentElement.dataset.decor !== 'full') return;   // décor complet seulement
+    let prev = '';
+    document.querySelectorAll('.repo-block').forEach(b => {
+      if (b.hidden || !b.offsetHeight || b.parentElement.closest('.repo-block.repo-has-bg') || b.classList.contains('repo-has-bg')) return;
+      const f = prev = panelOf(b, pool, prev), el = document.createElement('div');
+      el.className = 'repo-deco-bgimg repo-deco-bg-cover repo-deco-panel';
+      el.setAttribute('aria-hidden', 'true');
+      el.style.backgroundImage = `url("${DECO(d)(f)}")`;
+      b.classList.add('repo-has-bg');
+      b.prepend(el);
+    });
   }
   let nodes = [];
   const clear = () => { nodes.forEach(n => n.remove()); nodes = []; };
@@ -94,7 +145,7 @@
     const d = document.documentElement.dataset.design, set = SETS[d];
     backgrounds(d);
     if (!set || document.documentElement.dataset.decor !== 'full') return;
-    const img = n => d === 'field' && n === 'plane-plate' ? new URL(`icons/skeuo/field/plane-plate.webp${V}`, script.src).href : DECO(d)(n);
+    const img = DECO(d);
     // 1. pied de page
     const foot = document.createElement('div');
     foot.className = 'repo-deco no-print';

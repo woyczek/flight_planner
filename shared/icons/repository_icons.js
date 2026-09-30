@@ -17,6 +17,7 @@
     wrench: '<path d="M14.5 3.2a5 5 0 0 0-4.4 6.7L3.4 16.6a2 2 0 0 0 2.8 2.8l6.7-6.7a5 5 0 0 0 6.7-4.4l-3 3-2.9-.6-.6-2.9z"/>',
     clipboard: '<rect x="5" y="4" width="14" height="17" rx="1.5"/><path d="M9 4V2.5h6V4M9 10h6M9 14h6M9 18h3"/>',
     chart: '<path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 6-7"/>',
+    'trending-up': '<path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
     fuel: '<path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M4 10h10"/><path d="M14 8h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V8l-3-3"/>',
     plane: '<path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/>',
     settings: '<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>',
@@ -64,6 +65,7 @@
     // états
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/>',
     alert: '<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/>',
+    shield: '<path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6z"/>',
     check: '<path d="m5 12 5 5L20 7"/>'
   };
   // Emblèmes d'en-tête des designs à matières (designs.list[id].emblem, repository_nav.js) : dessins en couleurs
