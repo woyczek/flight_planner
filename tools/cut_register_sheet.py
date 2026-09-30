@@ -64,14 +64,15 @@ CONFIGS = {
         # coins larges : les pattes de cuir entières, fondu étroit posé sur la toile unie ; intérieur du papier (filets du
         # tableau) effacé en douceur, le papier uni de fond le remplace
         'tl': ((60, 30, 500, 260), dict(right=30, bottom=30), dict(erase=[(90, 165, 410, 95)])),
-        'tr': ((700, 30, 324, 350), dict(left=30, bottom=30), dict(erase=[(0, 165, 100, 185)])),
+        'tr': ((700, 30, 324, 350), dict(left=30, bottom=30), dict(erase=[(0, 165, 100, 185)], shear=0.02, y0=685)),
         'bl': ((60, 1220, 360, 280), dict(right=30, top=30), dict(erase=[(90, 0, 270, 116)])),
-        'br': ((700, 1220, 324, 280), dict(left=30, top=30), dict(erase=[(0, 0, 100, 116)])),
+        'br': ((700, 1220, 324, 280), dict(left=30, top=30), dict(erase=[(0, 0, 100, 116)], shear=0.02, y0=685)),
         'top': ((560, 30, 120, 168, 40, 'x'), dict(bottom=30)),
         'bot': ((420, 1335, 140, 165, 40, 'x'), dict(top=24)),
         'left': ((60, 420, 116, 360, 40, 'y'), dict(right=30)),
-        # bord droit évasé dans la planche (+18 px sur 900) : redressé avant le raccord
-        'right': ((800, 520, 224, 330, 40, 'y'), dict(left=30), dict(shear=0.02)),
+        # bord droit évasé dans la planche (+18 px sur 900) : redressé avant le raccord, et les coins droits avec lui
+        # (même hauteur de référence y0) : coins et bande sur une même verticale
+        'right': ((800, 520, 224, 330, 40, 'y'), dict(left=30), dict(shear=0.02, y0=685)),
         'pieces': {},
         'paper': ((300, 320, 480, 480), (300, 320, 480, 480)),
     },
@@ -117,6 +118,18 @@ def erase(path, rects):
         '-alpha', 'off', '-compose', 'copy_opacity', '-composite', path)
 
 
+def sheared(src, x, y0=0):
+    """Planche redressée horizontalement (x' = x - pente × (y - y0)) si le morceau le demande (shear, y0), sinon telle
+    quelle."""
+    if not x.get('shear'):
+        return src
+    s, y0 = x['shear'], x.get('y0', y0)
+    out = f'{T}/shear-{s}-{y0}.png'
+    if not os.path.exists(out):
+        run(src, '-virtual-pixel', 'transparent', '-distort', 'AffineProjection', f'1,0,{-s},1,{s * y0},0', out)
+    return out
+
+
 def seamless(src, box, out):
     """Bande raccordable : les o premiers px (colonnes ou lignes) fondus avec les o px qui suivent la bande dans la
     planche, pour que la dernière colonne (ligne) enchaîne sur la première."""
@@ -144,19 +157,13 @@ def main(design):
     out = lambda n: os.path.join(folder, f'sheet-{n}.webp')
     for n in ('tl', 'tr', 'bl', 'br'):
         box, f, x = (*c[n], {})[:3]
-        crop(src, box, f'{T}/{n}.png')
+        crop(sheared(src, x), box, f'{T}/{n}.png')
         if x.get('erase'):
             erase(f'{T}/{n}.png', x['erase'])
         feather(f'{T}/{n}.png', out(n), **f)
     for n in ('top', 'bot', 'left', 'right'):
         box, f, x = (*c[n], {})[:3]
-        s = src
-        if x.get('shear'):
-            # redressement horizontal autour du milieu de la bande : x' = x - pente × (y - y0)
-            y0 = box[1] + box[3] / 2
-            s = f'{T}/shear.png'
-            run(src, '-virtual-pixel', 'transparent', '-distort', 'AffineProjection', f'1,0,{-x["shear"]},1,{x["shear"] * y0},0', s)
-        seamless(s, box, f'{T}/{n}.png')
+        seamless(sheared(src, x, box[1] + box[3] / 2), box, f'{T}/{n}.png')
         feather(f'{T}/{n}.png', out(n), **f)
     for n, (box, holes, f) in c['pieces'].items():
         crop(src, box, f'{T}/{n}.png')

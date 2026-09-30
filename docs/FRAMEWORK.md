@@ -118,9 +118,10 @@ liste `DISPLAY` : design, icônes, couleurs, barre latérale, langue, onglets, s
   - **fonds des blocs** (`design_deco.js`) : fonds illustrés déclarés (`BG`, blocs `data-deco-bg` : Carnet de vol,
     Aqua) ; **panneaux par thème** (`PANELS` : Cabinet « 1930 » marine / ivoire selon le ton, Durci) choisis d'après
     le titre, l'icône puis le sous-titre du bloc ; **feuille de registre** (`SHEETS`, Cabinet clair : blocs de tableau
-    des registres, dossier « Aéronautique navale » découpé par `tools/cut_register_sheet.py`) ; **objets posés dans
-    un bloc** (`PROPS` : ordre de mission, étiquette « Top secret ») ; **appareil de page** (`device`, `deviceAt` :
-    livre de bord et poste radio de Cabinet dans un vrai emplacement entre deux blocs) ;
+    des registres, une planche par design découpée par `tools/cut_register_sheet.py`, géométrie en jetons `--sh-*`) ;
+    **objets posés dans un bloc** (`PROPS` : ordre de mission, étiquette « Top secret ») ; **appareil de page**
+    (`device` : un objet à côté d'un poste — Cabinet : livre de bord et radio ; Carnet de vol : carnet de cuir et DME ;
+    Durci : câble et radio — dans un vrai emplacement entre les blocs 3 et 4, déplaçable latéralement) ;
   - **boîte à outils** `shared/kit.js` (`window.RepositoryKit`, chargée avant `repository_nav.js`) : échappement,
     langue et traductions, stockage protégé, couleurs et contraste WCAG.
 - **Réglages** : boutons « Apparence » et « Paramètres » en tête du menu ☰ ; dans la barre latérale, groupe du bas
@@ -168,6 +169,15 @@ Chaque `section` / `.panel` du `<main>` devient un bloc avec les boutons ↕ (d�
 `data-default-hidden="1"` : bloc masqué tant que l'utilisateur ne l'a pas affiché.
 `data-block-id` : identifiant stable (sinon `id`, sinon rang). Après un nouveau rendu de
 blocs : `window.AppFramework.refresh()`.
+
+**Tâches longues** (`AppFramework.task`) : toute opération qui dure (aperçus et génération des cartes, lecture
+d'un dossier, calcul MORA, import SIA) se déclare au socle : barre de progression flottante dans la pile des
+notifications (titre, `fait/total`, étape ; total 0 = indéterminée) et avertissement avant de quitter la page tant
+qu'elle tourne (fermeture ou rechargement : fenêtre du navigateur ; lien interne : confirmation qui nomme la tâche).
+`const job = AppFramework.task(titre, { total })` ; `job.set(fait, total, étape)` ; `job.end(message?, kind?)` en
+`finally` ; `job.fail(erreur)` notifie l'erreur (annulation : simple information). `{ quiet: true }` : la page garde
+sa propre jauge (import SIA), la tâche ne sert qu'à la garde de sortie. Les erreurs des pages passent par les zones
+`data-status` (relayées en notifications) ou par `job.fail`. Tâches en cours : `AppFramework.busyTasks()`.
 
 Option `grow: true` de `StickyFrame.follow` : l'ancre prend au moins la hauteur du cadre (+ gap), pour
 qu'un cadre plus haut que sa rangée ne déborde pas sur le cadre suivant (panneaux du planificateur). L'ancre ne

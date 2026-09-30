@@ -39,9 +39,11 @@
   // foot     : frise du pied de page (HTML) ;
   // between  : objets entre les blocs, tour à tour : [image, largeur px, option] ; option : 'pair' (deux exemplaires)
   //            ou { x, y, rot } (décalage en px depuis le centre, inclinaison en degrés) ;
-  // device   : appareil de page, objets côte à côte calés à droite : [image, hauteur px, inclinaison °] ; deviceAt : il
-  //            prend l'intervalle après ce bloc (défaut 1 ; sinon le premier intervalle possible qui suit) ;
+  // device   : appareil de page, un objet posé à côté d'un poste (radio, DME), côte à côte calés à droite et
+  //            déplaçables latéralement par l'utilisateur : [image, hauteur px, inclinaison °] ; il prend l'intervalle
+  //            entre les blocs 3 et 4 (DEVICE_AT ; sinon le premier intervalle possible qui suit) ;
   // sides    : objets des marges, alternativement à gauche et à droite : [image, largeur px maximale].
+  const DEVICE_AT = 3;   // appareil de page : entre les blocs 3 et 4 (tous les designs)
   const SETS = {
     // Cabinet : objets de navigation des années 1930 (planches « objets 1930 » et objets de face)
     cabinet: {
@@ -56,15 +58,15 @@
         ['tag-secret', 140]                                      // étiquette « Top secret »
       ],
       device: [['notebook', 170, -7], ['radio', 225]],           // livre de bord posé à côté du poste radio
-      deviceAt: 3,                                               // entre les blocs 3 et 4
       sides: [
         ['ship-compass', 110], ['chart-coast', 170], ['sextant', 140], ['map', 200], ['suitcase', 150],
         ['envelope-confidential', 150], ['protractor', 140], ['dividers', 60], ['flag', 120]
       ]
     },
-    // Carnet de vol : trombone et cadrans de bord
+    // Carnet de vol : trombone et cadrans de bord ; appareil de page : carnet de cuir fermé et DME
     flightlog: {
       foot: img => `<img class="repo-deco-strip" src="${img('footer')}" alt="">`,
+      device: [['notebook-closed', 170, -7], ['dme', 190]],     // carnet de cuir posé à côté du DME
       between: [['clip', 130], ['gauge-attitude', 84], ['gauge-speed', 84], ['gauge-alt', 84]],
       sides: [['gauge-speed', 120], ['chart', 230], ['gauge-attitude', 120], ['clip', 150], ['gauge-alt', 120]]
     },
@@ -87,8 +89,8 @@
           <span class="repo-deco-leds"><i class="led-save"></i><i class="led-on"></i><i></i></span>
           <span class="repo-deco-state"></span>
         </button>`,
-      device: [['cable', 110], ['radio', 215]],                // câble posé à côté du poste radio (de face)
-      deviceAt: 3,
+      device: [['cable', 170], ['radio', 360]],                // câble lové à côté du poste radio (de face), antenne
+                                                               // dépassant sur le contenu au-dessus
       between: [
         ['plate-attention', 210], ['louvre', 150], ['handle-h', 120], ['pencil', 200, { x: -150, y: -26, rot: -12 }],
         ['plate-wings', 170], ['plate-blank', 180], ['plate-defa', 200], ['armor', 140]
@@ -285,6 +287,32 @@
     return `<img src="${src}" alt="" style="width:${w}px${move}">`;
   };
 
+  // Appareil de page déplaçable latéralement (glisser à la souris ou au doigt) : position gardée par design, en fraction
+  // de la place libre (0 : calé à droite, 1 : à gauche), valable quelle que soit la largeur de la page.
+  const deviceKey = d => `repositoryDeviceX:${d}`;
+  function slideDevice(dv, d) {
+    const set = dv.firstElementChild, K = window.RepositoryKit;
+    // plus large que sa colonne : réduit à sa largeur (depuis le coin bas droit)
+    const scale = () => Math.min(1, dv.clientWidth / (set.offsetWidth || 1));
+    const room = () => Math.max(0, dv.clientWidth - set.offsetWidth * scale());
+    let frac = Math.min(1, Math.max(0, +K.store.get(deviceKey(d), 0) || 0));
+    const place = () => { set.style.transform = `translateX(${-Math.round(frac * room())}px) scale(${scale().toFixed(3)})`; };
+    requestAnimationFrame(place);
+    set.querySelectorAll('img').forEach(i => i.addEventListener('load', place, { once: true }));
+    set.addEventListener('pointerdown', e => {
+      if (e.button) return;
+      e.preventDefault();
+      set.setPointerCapture(e.pointerId);
+      set.classList.add('dragging');
+      const x0 = e.clientX, f0 = frac, r = room() || 1;
+      const move = ev => { frac = Math.min(1, Math.max(0, f0 - (ev.clientX - x0) / r)); place(); };
+      const up = () => { set.classList.remove('dragging'); set.removeEventListener('pointermove', move); K.store.set(deviceKey(d), frac.toFixed(3)); };
+      set.addEventListener('pointermove', move);
+      set.addEventListener('pointerup', up, { once: true });
+      set.addEventListener('pointercancel', up, { once: true });
+    });
+  }
+
   function render() {
     clear();
     const d = html.dataset.design, set = SETS[d];
@@ -311,7 +339,7 @@
     state();
 
     // 2. entre les blocs : un intervalle sur deux, dans chaque conteneur de blocs empilés ; l'appareil de page prend
-    //    l'intervalle après le bloc n° deviceAt
+    //    l'intervalle après le bloc n° DEVICE_AT
     let k = 0, device = !!set.device;
     const parents = new Set([...document.querySelectorAll('.repo-block')].map(b => b.parentElement));
     parents.forEach(p => {
@@ -324,15 +352,16 @@
         const pr = blocks[i].getBoundingClientRect(), nr = b.getBoundingClientRect(), gap = nr.top - pr.bottom;
         const ok = b.previousElementSibling === blocks[i] && Math.abs(nr.left - pr.left) <= 4 && gap >= 0 && gap <= 80;
         // appareil de page : vrai emplacement du flux (hauteur fixe, designs_skeuo.css .repo-deco-device)
-        if (device && ok && i + 1 >= (set.deviceAt || 1)) {
+        if (device && ok && i + 1 >= DEVICE_AT) {
           device = false;
           const dv = document.createElement('div');
           dv.className = 'repo-deco-device';
           dv.setAttribute('aria-hidden', 'true');
-          dv.innerHTML = set.device
-            .map(([n, h, rot]) => `<img src="${img(n)}" alt="" style="height:${h}px${rot ? `;transform:rotate(${rot}deg)` : ''}">`)
-            .join('');
+          dv.innerHTML = `<span class="repo-deco-device-set">${set.device
+            .map(([n, h, rot]) => `<img src="${img(n)}" alt="" draggable="false" style="height:${h}px${rot ? `;transform:rotate(${rot}deg)` : ''}">`)
+            .join('')}</span>`;
           b.before(dv);
+          slideDevice(dv, d);
           nodes.push(dv);
           return;
         }

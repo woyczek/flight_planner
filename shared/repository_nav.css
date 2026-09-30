@@ -14,7 +14,7 @@
 .repo-sidenav{display:none;position:fixed;z-index:1100;left:0;top:0;bottom:0;width:var(--repo-sidenav-w);flex-direction:column;overflow-y:auto;background:color-mix(in srgb,var(--repo-bar) 86%,#000);color:var(--repo-bar-text);border-right:1px solid color-mix(in srgb,var(--repo-bar-text) 14%,transparent)}
 html[data-sidenav="on"] .repo-sidenav,html[data-design="console"]:not([data-sidenav="off"]) .repo-sidenav{display:flex}
 html[data-sidenav="on"],html[data-design="console"]:not([data-sidenav="off"]){padding-left:var(--repo-sidenav-w)}
-.repo-sidenav-brand{display:flex;align-items:center;justify-content:center;min-height:64px}
+.repo-sidenav-brand{display:flex;align-items:center;justify-content:center;min-height:64px;margin-top:16px}   /* contenu de la barre un peu descendu : logo DEFA centré dans sa case */
 /* modèle de boîte imposé : la barre ne dépend pas du CSS de la page (le studio n'a pas de box-sizing global :
    liens de 84 px + retrait + liseré = 95 px, icônes décalées) */
 .repo-sidenav,.repo-sidenav *,.repo-sidenav *::before,.repo-sidenav *::after{box-sizing:border-box}
@@ -22,7 +22,7 @@ html[data-sidenav="on"],html[data-design="console"]:not([data-sidenav="off"]){pa
 .repo-sidenav{scrollbar-width:none}.repo-sidenav::-webkit-scrollbar{display:none}
 /* jeux skeuomorphes (icônes de 50 px) : entrées resserrées, pour tenir dans une fenêtre de 800 px */
 html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) .repo-sidenav-item{padding:5px 2px!important;gap:2px!important}
-html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) .repo-sidenav-brand{min-height:52px!important}
+html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) .repo-sidenav-brand{min-height:68px!important}
 html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) .repo-sidenav-sep:not(.repo-sidenav-bottom){margin:6px 14px!important}
 .repo-sidenav ul{list-style:none;margin:0;padding:0 0 8px;flex:1;display:flex;flex-direction:column}.repo-sidenav-bottom{margin-top:auto!important}
 .repo-sidenav-item{display:flex;flex-direction:column;align-items:center;gap:5px;width:100%;padding:11px 4px;border:0;border-left:3px solid transparent;border-radius:0;background:transparent;color:inherit;font:600 11.5px/1.2 Inter,system-ui,"Segoe UI",Arial,sans-serif;text-align:center;text-decoration:none;cursor:pointer}

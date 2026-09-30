@@ -307,7 +307,10 @@
     if (!dir) throw new Error(t(['Choisir le dossier « Missions » du dépôt (bouton ci-dessus).', 'Choose the repository “Missions” folder (button above).']));
     await waitFor('SiaMission');
     const found = [], problems = [];
+    // barre indéterminée (nombre de dossiers inconnu d'avance) : dossier en cours et missions trouvées
+    const job = window.AppFramework?.task?.(t(['Lecture du dossier des missions', 'Reading the missions folder', 'Missionsordner wird gelesen', 'Leyendo la carpeta de misiones']));
     async function walk(h, path, depth) {
+      job?.set(0, 0, `${path || dir.name} — ${found.length}`);
       const files = [], subs = [], images = [];
       for await (const [name, x] of h.entries()) {
         if (x.kind === 'directory') { if (SUB[name]) { if (name === SUB.maps) for await (const [n2, y2] of x.entries()) if (y2.kind === 'file' && /\.(png|jpe?g|webp)$/i.test(n2)) images.push(n2); } else if (depth < 3 && !/^(_|\.)/.test(name)) subs.push([name, x]); }
@@ -328,7 +331,7 @@
       }
       for (const [name, x] of subs) await walk(x, path ? `${path}/${name}` : name, depth + 1);
     }
-    await walk(dir, '', 0);
+    try { await walk(dir, '', 0); } finally { job?.end(); }
     for (const e of found) upsert(e, 'dossier');
     const seen = new Set(found.map(keyOf));
     reg.missions.forEach(m => { m.missingFile = m.source === 'dossier' && !seen.has(keyOf(m)); });

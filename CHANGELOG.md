@@ -33,7 +33,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Durci** : vis cruciformes découpées dans la planche enfin appliquées (règle neutralisée par un commentaire mal fermé).
 - **Centre** : fond des icônes par convention de nom (`vierge.rouge.webp`, cuivre, pour Cabinet, Carnet de vol et Durci ;
   à défaut `vierge.gris.webp`) ; option `centreBg` du générateur retirée.
-- **Appareil de page** (Cabinet) : entre les blocs 3 et 4 (réglage `deviceAt`), plus entre les deux premiers.
+- **Appareil de page** : entre les blocs 3 et 4 pour tous les designs (constante `DEVICE_AT`), plus entre les deux
+  premiers ; Carnet de vol : carnet de cuir fermé et DME.
 - **Décors** : `design_deco.js` réorganisé et documenté (familles de décors, formats des tableaux de réglage) ; plus
   d'objet posé sur une feuille de registre.
 - **Feuille de registre** : géométrie par design (jetons `--sh-*` : coins, bandes, papier, marges, en-tête, accessoire du
@@ -51,6 +52,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   `--nb-*`) ; carnet de cuir bleu pour Cabinet et Carnet de vol ; carnet fermé à la hauteur du carnet ouvert, à la
   place du premier aperçu, calé à droite (il s'ouvre vers la gauche) ; un clic sur le carnet actualise les aperçus. Aperçu agrandi : un clic le ferme.
 - **Barres d'action** (designs à matières) : au-dessus des objets posés entre les blocs.
+- **Tâches longues** (socle, `AppFramework.task`) : barre de progression flottante et avertissement avant de quitter
+  la page (fermeture, rechargement, lien interne) tant qu'une tâche tourne ; Studio : aperçus des cartes (une mission
+  ou toutes), génération (une mission ou toutes ; remplace la barre du pied de page) ; registre : lecture du dossier des
+  missions ; Paramètres : calcul complet MORA ; import SIA (garde de sortie, erreurs relayées en notifications).
+- **Durci** (feuille de registre) : crayon contre la pochette, un peu caché par la fermeture éclair ; coins droits
+  redressés comme la bande de droite (tous sur la même verticale).
+- **Appareil de page** (designs à matières) : déplaçable latéralement (glisser), position gardée par design ; réduit à
+  la largeur de sa colonne s'il la dépasse ; dessiné devant le bloc au-dessus. Durci : câble lové et grand poste radio
+  dont l'antenne dépasse sur le contenu au-dessus.
+- **Durci** : poignées latérales au premier plan, davantage sur la page.
+- **Barre latérale** : contenu un peu descendu (logo DEFA centré dans sa case).
 - Proposition de phase 2 du refactoring (supprimer les exceptions ; assets à fournir) : `docs/REFACTORING_TOOLKIT.md`.
 
 ## [4.3.0] — 2026-09-30
