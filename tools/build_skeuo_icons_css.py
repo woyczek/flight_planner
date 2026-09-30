@@ -23,11 +23,12 @@ SETS = {'brass': 'cabinet', 'steel': 'field', 'gel': 'aqua', 'avio': 'flightlog'
 ALIASES = {'brass': {'save': 'bookmark', 'file': 'file'}, 'steel': {'file': 'file-text'}, 'gel': {'file': 'file-text'}, 'avio': {'save': 'bookmark', 'file': 'file'}}
 # jeux composés : couleur du glyphe (normal, Centre), ombre (vers le bas : éclairage par le haut), marge autour du glyphe
 # (fraction de la taille de l'icône) ; tint : couleur du fond gris (mode Aqua), core : rayon teinté (% du rayon),
-# up / shrink : centre du disque teinté remonté de « up » px et diamètre réduit de « shrink » px (ajustement au cerclage)
+# up / shrink : centre du disque teinté remonté de « up » px et diamètre réduit de « shrink » px (ajustement au cerclage) ;
+# centreBg : fond propre au Centre (Durci : vierge.rouge.webp), à la place de vierge.gris.webp
 GLYPH = {
     'gel': {'color': '#ffffff', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.55))', 'pad': .24, 'tint': 'var(--aq-gel,#2473db)', 'core': 86, 'up': 1, 'shrink': 2},
     'brass': {'color': '#f1e4c0', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.7))', 'pad': .26},
-    'steel': {'color': '#e9ecdf', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.75))', 'pad': .24},
+    'steel': {'color': '#e9ecdf', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.75))', 'pad': .24, 'centreBg': 'vierge.rouge.webp'},
     'avio': {'color': '#f4ecd8', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.7))', 'pad': .26},
 }
 BEGIN = '/* ==== JEUX D\'ICÔNES SKEUOMORPHES (généré par tools/build_skeuo_icons_css.py) ==== */'
@@ -91,7 +92,8 @@ tree = {}
 for key, d in composed.items():
     g, H = GLYPH[key], f'html[data-icons="{key}"]'
     normal = f'{d}/vierge.webp' if has(d, 'vierge.webp') else f'{d}/vierge.gris.webp'
-    centre = f'{d}/vierge.gris.webp' if has(d, 'vierge.gris.webp') else normal
+    # fond du Centre : centreBg (GLYPH) s'il existe, sinon vierge.gris.webp, sinon le fond normal
+    centre = f'{d}/{g["centreBg"]}' if g.get('centreBg') and has(d, g['centreBg']) else f'{d}/vierge.gris.webp' if has(d, 'vierge.gris.webp') else normal
     CENTRE = f'html[data-app-theme="cpco"][data-icons="{key}"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg),{H} .repo-sidenav-cpco .repo-svg[data-i]'
     common = f'box-sizing:border-box;padding:calc(var(--rs,1.15em) * {g["pad"]});color:var(--ico-glyph,{g["color"]})!important;overflow:visible'
     if g.get('tint'):

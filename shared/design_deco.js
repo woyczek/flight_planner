@@ -25,8 +25,9 @@
       // punaises, crayon, enveloppe cachetée, porte-mine (décentré, incliné), étiquette « Top secret » ; appareil de page :
       // livre de bord et poste radio ; en marge, compas marin, cartes,
       // sextant, valise, enveloppe « Confidentiel », rapporteur, livre de bord, pointes sèches, pavillon
-      device: [['notebook', 190], ['radio', 520]],   // livre de bord posé à côté du poste, calés à droite
-      between: [['clip', 150], ['parallel-rule', 170, { x: -200, y: -38, rot: 18 }], ['tack', 22, 'pair'], ['pencil', 150], ['envelope-seal', 130], ['pen', 150, { x: 190, rot: 30 }], ['tag-secret', 140]],
+      // appareil de page : [image, hauteur px, inclinaison °] ; livre de bord posé à côté du poste, calés à droite
+      device: [['notebook', 170, -7], ['radio', 225]],
+      between: [['clip', 150], ['pen', 150, { x: -190, rot: 30 }], ['parallel-rule', 170, { x: 220, y: -38, rot: 18 }], ['tack', 22, 'pair'], ['pencil', 150], ['envelope-seal', 130], ['tag-secret', 140]],
       sides: [['ship-compass', 110], ['chart-coast', 170], ['sextant', 140], ['map', 200], ['suitcase', 150], ['envelope-confidential', 150], ['protractor', 140], ['dividers', 60], ['flag', 120]]
     },
     flightlog: {
@@ -218,7 +219,7 @@
           const dv = document.createElement('div');
           dv.className = 'repo-deco-device';
           dv.setAttribute('aria-hidden', 'true');
-          dv.innerHTML = set.device.map(([n, w]) => `<img src="${img(n)}" alt="" style="width:${w}px">`).join('');
+          dv.innerHTML = set.device.map(([n, h, rot]) => `<img src="${img(n)}" alt="" style="height:${h}px${rot ? `;transform:rotate(${rot}deg)` : ''}">`).join('');
           b.before(dv);
           nodes.push(dv);
           return;
