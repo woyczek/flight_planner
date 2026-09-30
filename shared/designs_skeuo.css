@@ -29,6 +29,8 @@
 
 /* ================================================================================================ CABINET */
 html[data-design-base="cabinet"] {
+  --sk-notice-outline: 1px solid color-mix(in srgb, var(--cab-rule) 55%, transparent);
+  --sk-notice-outline-offset: -5px;
   --sk-title-family: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
   --sk-title-ink: var(--cab-cream);
   --sk-title-shadow: 0 2px 0 #06101f;
@@ -340,10 +342,6 @@ html[data-design-base="cabinet"][data-decor="full"] .repo-card::after {
   pointer-events: none;
   background: var(--cab-screw) 0 0/10px no-repeat, var(--cab-screw) right 0 top 0/10px no-repeat, var(--cab-screw) 0 100%/10px no-repeat, var(--cab-screw) right 0 bottom 0/10px no-repeat
 }
-html[data-design-base="cabinet"] .repo-notice {
-  outline: 1px solid color-mix(in srgb, var(--cab-rule) 55%, transparent);
-  outline-offset: -5px
-}
 /* textes, champs */
 /* textes des blocs (designs à cadre) : libellés et intertitres, petits textes (jetons --sk-label-ink, --sk-ink-2) */
 html[data-skeuo="frame"] .repo-block :is(label, legend, th, h3, h4) {
@@ -443,6 +441,8 @@ html[data-design-base="cabinet"] .repo-header button.headerButton {
 
 /* ================================================================================================ DURCI */
 html[data-design="field"] {
+  --sk-notice-shadow: inset 0 2px 6px #000, 0 0 0 2px #3b4032;
+  --sk-sidenav-shadow: inset -1px 0 0 rgba(220, 230, 190, .18), inset 0 0 18px rgba(0, 0, 0, .55);
   --sk-title-family: Bahnschrift, "Arial Narrow", Impact, sans-serif;
   --sk-title-stretch: condensed;
   --sk-title-case: uppercase;
@@ -641,15 +641,9 @@ html[data-design="field"][data-decor="full"] :is(.repo-block, .repo-card)::after
   pointer-events: none;
   background: var(--fd-screw) 0 0/12px no-repeat, var(--fd-screw) right 0 top 0/12px no-repeat, var(--fd-screw) 0 100%/12px no-repeat, var(--fd-screw) right 0 bottom 0/12px no-repeat
 }
-html[data-design="field"] .repo-card {
-  color: var(--fd-text) !important
-}
 html[data-design="field"] .repo-dropzone:hover {
   border-color: var(--fd-led) !important;
   border-style: solid !important
-}
-html[data-design="field"] .repo-notice {
-  box-shadow: inset 0 2px 6px #000, 0 0 0 2px #3b4032 !important
 }
 html[data-design="field"] .repo-block :is(p, li, td, summary, strong, b, em, dt, dd) {
   color: var(--fd-text)
@@ -698,9 +692,6 @@ html[data-design="field"] button.danger {
 }
 /* icônes « matière » : plaques d'acier vissées */
 /* barre latérale : noir mat, entrée active à voyant ; pied : barre d'état, voyant de sauvegarde, radar */
-html[data-design="field"] .repo-sidenav {
-  box-shadow: inset -1px 0 0 rgba(220, 230, 190, .18), inset 0 0 18px rgba(0, 0, 0, .55) !important
-}
 html[data-design="field"] .repo-footer {
   position: relative
 }
@@ -1001,7 +992,8 @@ html[data-skeuo] .repo-card {
   background: var(--sk-card-bg) !important;
   border: var(--sk-card-border) !important;
   border-radius: var(--sk-card-radius) !important;
-  box-shadow: var(--sk-card-shadow) !important
+  box-shadow: var(--sk-card-shadow) !important;
+  color: var(--sk-ink) !important
 }
 html[data-skeuo] .repo-dropzone {
   background: var(--sk-drop-bg) !important;
@@ -1014,7 +1006,10 @@ html[data-skeuo] .repo-notice {
   border: var(--sk-notice-border) !important;
   border-left: var(--sk-notice-border-left, var(--sk-notice-border)) !important;
   border-radius: var(--sk-notice-radius) !important;
-  color: var(--sk-notice-ink) !important
+  color: var(--sk-notice-ink) !important;
+  box-shadow: var(--sk-notice-shadow, none) !important;
+  outline: var(--sk-notice-outline, none);
+  outline-offset: var(--sk-notice-outline-offset, 0)
 }
 html[data-skeuo] .repo-block :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select, textarea) {
   background: var(--sk-input-bg) !important;
@@ -1047,7 +1042,8 @@ html[data-skeuo] .repo-block-tools button {
 html[data-skeuo] .repo-sidenav {
   background: var(--sk-sidenav-bg) !important;
   border-right: var(--sk-sidenav-border) !important;
-  color: var(--sk-sidenav-ink) !important
+  color: var(--sk-sidenav-ink) !important;
+  box-shadow: var(--sk-sidenav-shadow, none) !important
 }
 html[data-skeuo] .repo-footer {
   margin: var(--sk-footer-margin) !important;

@@ -25,7 +25,8 @@
 <script>
 // Pages témoins et designs relevés
 const PAGES = ['apps/cr/HEMS/hems_core_cr.html', 'apps/cr/HEMS/hems_core_reporting.html', 'apps/planner/flight_performance_planner.html',
-  'apps/cpco/map_parser.html', 'apps/settings/apparence.html', 'apps/cpco/mission_editor.html'];
+  'apps/cpco/map_parser.html', 'apps/settings/apparence.html', 'apps/cpco/mission_editor.html',
+  'apps/cpco/odv_planning.html', 'apps/cpco/mission_registry.html', 'apps/settings/parametrage.html'];
 const DESIGNS = ['cabinet', 'flightlog', 'field', 'aqua'];
 // Composants relevés (deux premiers éléments de chaque sélecteur, et leurs ::before / ::after)
 const SEL = ['html', 'body', '.repo-header', '.repo-header h1', '.repo-header-subtitle', '.repo-header-emblem', '.repo-menu-button',
@@ -40,7 +41,8 @@ const SEL = ['html', 'body', '.repo-header', '.repo-header h1', '.repo-header-su
   '.repo-footer a', '.repo-actionbar', '.repo-block #status,.repo-block .status', '.repo-block code', '.repo-segs', '.repo-seg',
   '.repo-seg[aria-pressed=true]', 'svg.opt-chart', '.vslider input.vr', '.mc-header-tools button', '.mc-kpi>div', '.mc-item', '.report',
   '.sectionCard', '.repo-block .warn', 'dialog.repo-ap-dialog', '.mc-menu>summary', '.mc-switch>summary', '.mc-toolbar>.mc-import>summary',
-  '.mc-tools', '.mc-summary', '.mapCard', '.arrayItem', '.fp-gauge svg', '.fp-fuel-mode', 'main.ap-page .ap-thumb', 'main.ap-page .ap-iconrow'];
+  '.mc-tools', '.mc-summary', '.mapCard', '.arrayItem', '.fp-gauge svg', '.fp-fuel-mode', 'main.ap-page .ap-thumb', 'main.ap-page .ap-iconrow',
+  '.repo-notice>.repo-icon', '.repo-card-subtitle', '.repo-has-sheet', '.repo-deco-sheet>.sh-frame', '.mt-small', '.repo-block td button'];
 // (largeur et hauteur non relevées : elles suivent le contenu — dates, heures, libellés)
 const PROPS = ['background-image', 'background-color', 'background-size', 'background-position', 'color', 'border-top-width',
   'border-top-style', 'border-top-color', 'border-left-width', 'border-left-color', 'border-image-source', 'border-radius', 'box-shadow',
