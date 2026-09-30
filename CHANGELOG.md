@@ -18,6 +18,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   « découpe » réécrit par `tools/cut_register_sheet.py <design> --write` ; carnet des aperçus devenu composant commun
   (`.repo-notebooks` / `.repo-notebook`, `designs_skeuo.css`) ; contrôle des images `tools/check_assets.py` (format,
   poids, absentes, orphelines), lancé par `bump_versions.py`.
+- **Code lisible** : JavaScript, CSS et scripts / styles des pages remis en forme (118 fichiers : une instruction et une
+  déclaration par ligne), sans changer le code — contrôle avant / après des arbres syntaxiques et des règles CSS
+  (`tools/format_sources.py`, `tools/verify_format.html`) ; éditeur de mission : chaque fonction commentée.
 - **Toolkit — phase 2, jetons des designs à cadre** : règles jumelles de Cabinet et Durci (pastille d'étape, titres
   de sous-cartes, zones de dépôt, icône des bandeaux, focus, pied de page, sélecteur segmenté) fusionnées en règles
   communes à jetons ; code mort retiré. Rendu identique (banc de non-régression).

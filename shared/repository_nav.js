@@ -35,30 +35,57 @@
   // saturation) et à un ton (clarté) ; bandeau, texte du bandeau et accent en sont calculés avec un contraste WCAG
   // d'au moins 4,5:1 (texte du bandeau / bandeau, accent / fond de page). Sans réglage : couleurs de repository_tree.
   // utilitaires communs : shared/kit.js (chargé juste avant ce fichier)
-  const K = window.RepositoryKit, esc = K.esc;
-  const readPref = (k, d) => K.store.get(k, d), readJson = k => K.store.json(k);
+  const K = window.RepositoryKit,
+    esc = K.esc;
+  const readPref = (k, d) => K.store.get(k, d),
+    readJson = k => K.store.json(k);
   /** Écrit une préférence, ou l'efface si la valeur est vide. */
   const writePref = (k, v) => (v == null || v === "" ? K.store.remove(k) : K.store.set(k, v));
-  const { luminance, contrast, hsl: hslHex } = K.color;
+  const {
+    luminance,
+    contrast,
+    hsl: hslHex
+  } = K.color;
   /** Couleurs calculées d'une famille (fam : { h, s }) au ton tone (0 = sombre, 100 = clair) pour un fond de page page. */
   function familyColors(fam, tone, page) {
-    const L = 12 + Math.max(0, Math.min(100, +tone || 0)) * .42, bar = hslHex(fam.h, fam.s, L),
-      barText = contrast("#ffffff", bar) >= contrast("#0b0f14", bar) ? "#ffffff" : "#0b0f14", dark = luminance(page || "#ffffff") < .3;
-    let a = dark ? Math.max(60, L + 20) : L, accent = hslHex(fam.h, Math.max(fam.s, dark ? 50 : 0), a);
-    for (let i = 0; i < 40 && contrast(accent, page || "#ffffff") < 4.5; i++) { a += dark ? 2 : -2; accent = hslHex(fam.h, Math.max(fam.s, dark ? 50 : 0), Math.max(3, Math.min(97, a))); }
-    return { bar, barText, accent };
+    const L = 12 + Math.max(0, Math.min(100, +tone || 0)) * .42,
+      bar = hslHex(fam.h, fam.s, L),
+      barText = contrast("#ffffff", bar) >= contrast("#0b0f14", bar) ? "#ffffff" : "#0b0f14",
+      dark = luminance(page || "#ffffff") < .3;
+    let a = dark ? Math.max(60, L + 20) : L,
+      accent = hslHex(fam.h, Math.max(fam.s, dark ? 50 : 0), a);
+    for (let i = 0; i < 40 && contrast(accent, page || "#ffffff") < 4.5; i++) {
+      a += dark ? 2 : -2;
+      accent = hslHex(fam.h, Math.max(fam.s, dark ? 50 : 0), Math.max(3, Math.min(97, a)));
+    }
+    return {
+      bar,
+      barText,
+      accent
+    };
   }
   /** Couleurs effectives d'un thème : réglage de Paramétrage › Apparence (famille + ton) s'il existe, sinon repository_tree. */
   function themeColors(name) {
-    const t = cfg.themes[name] || {}, o = (readJson("repositoryColors") || {})[name], fam = o && cfg.colorFamilies?.[o.family];
-    return fam ? { ...t, ...familyColors(fam, o.tone, t.page), family: o.family, tone: +o.tone } : { ...t };
+    const t = cfg.themes[name] || {},
+      o = (readJson("repositoryColors") || {})[name],
+      fam = o && cfg.colorFamilies?.[o.family];
+    return fam ? {
+      ...t,
+      ...familyColors(fam, o.tone, t.page),
+      family: o.family,
+      tone: +o.tone
+    } : {
+      ...t
+    };
   }
   // ---- Accès au Centre (CPCO : apps/cpco) : activé dans Paramètres › Centre (CPCO) par un mot de passe, gardé dans ce
   // navigateur (cpcoAccess:v1). Verrou d'usage, pas une sécurité : les pages restent des fichiers lisibles. Centre
   // verrouillé : pages du Centre absentes du menu, de la barre latérale et de l'accueil (html[data-cpco="off"]),
   // page du Centre ouverte directement recouverte d'un avis ; réglages du Centre verrouillés dans Paramètres.
-  const CPCO_KEY = "cpcoAccess:v1", CPCO_HASH = "1310afbbafc4f1eb714648fb094b876f453356b9c84958057a783fb478474993";
-  const cpcoOn = () => readPref(CPCO_KEY, "") === "on", isCpco = p => String(p || "").startsWith("apps/cpco/");
+  const CPCO_KEY = "cpcoAccess:v1",
+    CPCO_HASH = "1310afbbafc4f1eb714648fb094b876f453356b9c84958057a783fb478474993";
+  const cpcoOn = () => readPref(CPCO_KEY, "") === "on",
+    isCpco = p => String(p || "").startsWith("apps/cpco/");
   doc.dataset.cpco = cpcoOn() ? "on" : "off";
   const cpco = {
     enabled: cpcoOn,
@@ -69,13 +96,21 @@
       if (hex !== CPCO_HASH) return false;
       if (!K.store.set(CPCO_KEY, "on")) return false;
       doc.dataset.cpco = "on";
-      window.dispatchEvent(new CustomEvent("cpco-access-change", { detail: { enabled: true } }));
+      window.dispatchEvent(new CustomEvent("cpco-access-change", {
+        detail: {
+          enabled: true
+        }
+      }));
       return true;
     },
     lock() {
       K.store.remove(CPCO_KEY);
       doc.dataset.cpco = "off";
-      window.dispatchEvent(new CustomEvent("cpco-access-change", { detail: { enabled: false } }));
+      window.dispatchEvent(new CustomEvent("cpco-access-change", {
+        detail: {
+          enabled: false
+        }
+      }));
     }
   };
   if (isCpco(page?.path || rel) && !cpcoOn()) {
@@ -86,7 +121,8 @@
       box.innerHTML = `<div><b>Centre de planification et de conduite des opérations</b><p>Accès réservé. Le Centre s'active dans Paramètres › Centre (CPCO).</p><a href="${new URL("apps/settings/parametrage.html?base=cpco", root).href}">Activer le Centre…</a> · <a href="${new URL("index.html", root).href}">Accueil</a></div>`;
       document.body.append(box);
     };
-    if (document.body) lockNotice(); else document.addEventListener("DOMContentLoaded", lockNotice);
+    if (document.body) lockNotice();
+    else document.addEventListener("DOMContentLoaded", lockNotice);
   }
   let currentTheme = themeName;
   // Graphiques : palette et style, au choix (Apparence › Graphiques : préférences repositoryChartPalette et
@@ -98,16 +134,63 @@
   // Styles : « flat » (aplats) ou « relief » (barres cylindriques, anneaux ombrés, rainures : auto dans les designs à
   // matières) ; posés sur <html data-chart-style / data-chart-palette>.
   const CHART = {
-    slate: { grey: "#9aa4b0", hues: [[20, "#b07c7c"], [45, "#b8987a"], [70, "#c2b27e"], [100, "#9fb08a"], [160, "#7fa597"], [195, "#78a4b4"], [225, "#7d9cc4"], [255, "#8b93c4"], [300, "#9d93b8"], [345, "#b08fa2"], [360, "#b07c7c"]] },
-    brass: { grey: "#b8ad98", hues: [[20, "#b0645a"], [45, "#b87d4b"], [70, "#c9a24a"], [100, "#a39f6a"], [160, "#839c78"], [195, "#6f9a95"], [225, "#7f9cc0"], [255, "#8e9cc9"], [300, "#8e8a9e"], [345, "#9c8a78"], [360, "#b0645a"]] },   // violet → gris mauve, rose → taupe (jamais de rose vif)
-    field: { grey: "#a3a38f", hues: [[20, "#a8674a"], [45, "#b8894a"], [70, "#c9b060"], [100, "#9aa35a"], [160, "#74995a"], [195, "#7f9a8a"], [225, "#8e9ea8"], [255, "#7c8796"], [300, "#9b9084"], [345, "#9c8a6a"], [360, "#a8674a"]] }
+    slate: {
+      grey: "#9aa4b0",
+      hues: [
+        [20, "#b07c7c"],
+        [45, "#b8987a"],
+        [70, "#c2b27e"],
+        [100, "#9fb08a"],
+        [160, "#7fa597"],
+        [195, "#78a4b4"],
+        [225, "#7d9cc4"],
+        [255, "#8b93c4"],
+        [300, "#9d93b8"],
+        [345, "#b08fa2"],
+        [360, "#b07c7c"]
+      ]
+    },
+    brass: {
+      grey: "#b8ad98",
+      hues: [
+        [20, "#b0645a"],
+        [45, "#b87d4b"],
+        [70, "#c9a24a"],
+        [100, "#a39f6a"],
+        [160, "#839c78"],
+        [195, "#6f9a95"],
+        [225, "#7f9cc0"],
+        [255, "#8e9cc9"],
+        [300, "#8e8a9e"],
+        [345, "#9c8a78"],
+        [360, "#b0645a"]
+      ]
+    }, // violet → gris mauve, rose → taupe (jamais de rose vif)
+    field: {
+      grey: "#a3a38f",
+      hues: [
+        [20, "#a8674a"],
+        [45, "#b8894a"],
+        [70, "#c9b060"],
+        [100, "#9aa35a"],
+        [160, "#74995a"],
+        [195, "#7f9a8a"],
+        [225, "#8e9ea8"],
+        [255, "#7c8796"],
+        [300, "#9b9084"],
+        [345, "#9c8a6a"],
+        [360, "#a8674a"]
+      ]
+    }
   };
   CHART.khaki = CHART.field;
   delete CHART.field;
   /** Palette et style effectifs des graphiques (préférences, sinon selon le design : chart et skeuo du registre des
    *  designs, REPOSITORY_TREE.designs.list) → <html data-chart-*>. */
   function applyChart() {
-    const d = designs[doc.dataset.design] || {}, p = readPref("repositoryChartPalette", "auto"), st = readPref("repositoryChartStyle", "auto");
+    const d = designs[doc.dataset.design] || {},
+      p = readPref("repositoryChartPalette", "auto"),
+      st = readPref("repositoryChartStyle", "auto");
     doc.dataset.chartPalette = p !== "auto" && (CHART[p] || p === "vivid") ? p : d.chart || "vivid";
     doc.dataset.chartStyle = st === "flat" || st === "relief" ? st : d.skeuo ? "relief" : "flat";
   }
@@ -118,8 +201,12 @@
     const m = c.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i) || c.match(/^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i);
     if (!m) return c;
     const x = K.color.toHsl(c);
-    if (!x) return c;   // transparent
-    const { h, s, l } = x;
+    if (!x) return c; // transparent
+    const {
+      h,
+      s,
+      l
+    } = x;
     const base = s < .18 ? set.grey : set.hues.find(([lim]) => h < lim)[1];
     // clarté : ±12 % autour de la couleur de la famille selon la clarté d'origine (repère 0,6)
     const k = Math.max(-.12, Math.min(.12, (l - .6) * .5));
@@ -129,7 +216,7 @@
   function applyTheme(name) {
     const t = themeColors(name);
     currentTheme = name;
-    doc.dataset.appTheme = name;   // thème sur <html> : réglages propres à un thème (icônes skeuomorphes du Centre)
+    doc.dataset.appTheme = name; // thème sur <html> : réglages propres à un thème (icônes skeuomorphes du Centre)
     for (const [k, v] of Object.entries({
         "--repo-bar": t.bar || "#101319",
         "--repo-bar-text": t.barText || "#fff",
@@ -145,18 +232,33 @@
   // Couleur du design Aqua (gel des boutons, bulles des icônes) : une teinte de base commune à toutes les pages
   // (préférence repositoryAquaColor : bleu par défaut, ou une autre teinte, ou « app » : accent du thème de la page).
   // Les icônes Gel (jeu composé) prennent --aq-gel sur leur bulle (tools/build_skeuo_icons_css.py).
-  const AQUA = { blue: [214, 72], teal: [186, 70], green: [145, 52], graphite: [212, 12], purple: [268, 52], orange: [24, 82], red: [356, 66], pink: [328, 60] };
+  const AQUA = {
+    blue: [214, 72],
+    teal: [186, 70],
+    green: [145, 52],
+    graphite: [212, 12],
+    purple: [268, 52],
+    orange: [24, 82],
+    red: [356, 66],
+    pink: [328, 60]
+  };
+
   function applyAqua(accent) {
     const v = readPref("repositoryAquaColor", "blue");
     const [h, s] = v === "app" ? K.color.hueSat(accent || "#2f7de1") : AQUA[v] || AQUA.blue;
     // clarté abaissée jusqu'à un contraste WCAG de 4,5:1 avec le texte blanc des boutons
-    let l = 52, c = hslHex(h, s, l);
+    let l = 52,
+      c = hslHex(h, s, l);
     while (contrast("#ffffff", c) < 4.5 && l > 20) c = hslHex(h, s, l -= 2);
     doc.style.setProperty("--aq-gel", c);
   }
   applyTheme(themeName);
   // barre latérale (on / off), posée dès le chargement ; jeu d'icônes : après le design (défaut propre au design)
-  { const sn = readPref("repositorySidenav", null); if (sn === "auto") delete doc.dataset.sidenav; else doc.dataset.sidenav = sn || "on"; }   // barre latérale affichée par défaut ; « auto » : selon le design
+  {
+    const sn = readPref("repositorySidenav", null);
+    if (sn === "auto") delete doc.dataset.sidenav;
+    else doc.dataset.sidenav = sn || "on";
+  } // barre latérale affichée par défaut ; « auto » : selon le design
   // Design graphique (REPOSITORY_TREE.designs, règles dans designs.css) : choix mémorisé (repositoryDesign),
   // posé dès le chargement sur <html data-design> pour éviter un changement visible.
   const designs = cfg.designs?.list || {
@@ -190,7 +292,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260930zzzt", script.src).href;
+    css.href = new URL("designs.css?v=20260930zzzv", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -343,7 +445,12 @@
   // Réglages en tête du menu, en boutons : Apparence (design, icônes, couleurs) et Paramètres (bases de données).
   menu.insertAdjacentHTML("afterbegin", '<div class="repo-settings-row"><a class="repo-settings-button repo-appearance-link" data-label="Apparence"></a><a class="repo-settings-button repo-parametrage-link" data-label="Paramètres"></a></div>');
   menu.querySelector(".repo-appearance-link").href = new URL("apps/settings/apparence.html", root).href;
-  menu.querySelector(".repo-appearance-link").addEventListener("click", e => { if (openAppearance()) { e.preventDefault(); close(); } });
+  menu.querySelector(".repo-appearance-link").addEventListener("click", e => {
+    if (openAppearance()) {
+      e.preventDefault();
+      close();
+    }
+  });
   menu.querySelector(".repo-parametrage-link").href = new URL("apps/settings/parametrage.html", root).href;
   // Maintenance (mises à jour, sources et dossiers, SIA, sauvegarde) : rubrique de Paramètres (parametrage.html?m=…)
   menu.insertAdjacentHTML("beforeend", '<div class="repo-page-actions"></div>');
@@ -357,12 +464,17 @@
     renderEmblem();
     K.store.set("repositoryDesign", id);
     applyChart();
-    window.dispatchEvent(new CustomEvent("repository-design-change", { detail: { design: id } }));
+    window.dispatchEvent(new CustomEvent("repository-design-change", {
+      detail: {
+        design: id
+      }
+    }));
   };
   /** Apparence en fenêtre modale au-dessus de la page courante (réglages appliqués en direct ; fermeture : bouton,
    *  Échap ou clic hors de la fenêtre, on reste sur la page) ; interface de shared/appearance_page.js, chargé à la
    *  demande. Sur la page Apparence elle-même : rien (false, le lien s'ouvre normalement). */
   let apDialog = null;
+
   function openAppearance() {
     if (document.getElementById("appearancePage")) return false;
     if (!apDialog) {
@@ -373,12 +485,18 @@
       apDialog.innerHTML = '<div class="repo-ap-head repo-header"><div class="repo-header-line1"><h1></h1><span class="repo-header-spacer"></span><button type="button" class="repo-ap-close repo-plain" aria-label="Fermer">✕</button></div></div><main class="ap-page"></main>';
       document.body.append(apDialog);
       apDialog.querySelector(".repo-ap-close").onclick = () => apDialog.close();
-      apDialog.addEventListener("click", e => { if (e.target === apDialog) apDialog.close(); });
+      apDialog.addEventListener("click", e => {
+        if (e.target === apDialog) apDialog.close();
+      });
       apDialog.addEventListener("close", () => window.RepositoryAppearance?.close());
     }
     apDialog.querySelector(".repo-ap-head h1").textContent = trLabel("Apparence");
     const host = apDialog.querySelector("main");
-    const show = () => { window.RepositoryAppearance.mount(host); window.AppFramework?.refresh?.(host); if (!apDialog.open) apDialog.showModal(); };
+    const show = () => {
+      window.RepositoryAppearance.mount(host);
+      window.AppFramework?.refresh?.(host);
+      if (!apDialog.open) apDialog.showModal();
+    };
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
@@ -446,19 +564,26 @@
   /** Adresse d'une source externe : réglage local (suiteSources:v1, Paramètres › Maintenance) sinon repository_tree.sources. */
   const source = key => String(K.store.json("suiteSources:v1", {})[key] || cfg.sources?.[key]?.url || "").replace(/\/+$/, "");
   /** Émet « repository-design-change » (detail : ce qui a changé) : décors, icônes, graphiques des pages se refont. */
-  const designChanged = detail => window.dispatchEvent(new CustomEvent("repository-design-change", { detail }));
+  const designChanged = detail => window.dispatchEvent(new CustomEvent("repository-design-change", {
+    detail
+  }));
   // API publique.
   window.RepositoryNav = {
     cpco,
     source,
     /** Enregistre (ou efface, valeur vide) la surcharge locale d'une source ; événement « suite-sources-change ». */
     setSource(key, value) {
-      const o = K.store.json("suiteSources:v1", {}), v = String(value || "").trim();
+      const o = K.store.json("suiteSources:v1", {}),
+        v = String(value || "").trim();
       if (v && v !== cfg.sources?.[key]?.url) o[key] = v;
       else delete o[key];
       if (Object.keys(o).length) K.store.setJson("suiteSources:v1", o);
       else K.store.remove("suiteSources:v1");
-      window.dispatchEvent(new CustomEvent("suite-sources-change", { detail: { key } }));
+      window.dispatchEvent(new CustomEvent("suite-sources-change", {
+        detail: {
+          key
+        }
+      }));
     },
     trLabel: l => trLabel(l),
     root,
@@ -503,7 +628,10 @@
       chart: () => ({
         palette: readPref("repositoryChartPalette", "auto"),
         style: readPref("repositoryChartStyle", "auto"),
-        effective: { palette: doc.dataset.chartPalette, style: doc.dataset.chartStyle }
+        effective: {
+          palette: doc.dataset.chartPalette,
+          style: doc.dataset.chartStyle
+        }
       }),
       /** Échantillon de palette : couleurs d'une série type (familles des CR) dans la palette p. */
       chartSample(p) {
@@ -516,7 +644,9 @@
       setChart(kind, v) {
         writePref(kind === "style" ? "repositoryChartStyle" : "repositoryChartPalette", v && v !== "auto" ? v : null);
         applyChart();
-        designChanged({ chart: kind });
+        designChanged({
+          chart: kind
+        });
       },
       aquaColors: Object.keys(AQUA),
       aquaColor: () => readPref("repositoryAquaColor", "blue"),
@@ -527,13 +657,17 @@
       setAqua(v) {
         writePref("repositoryAquaColor", v && v !== "blue" ? v : null);
         applyAqua(themeColors(currentTheme).accent);
-        designChanged({ aqua: v || "blue" });
+        designChanged({
+          aqua: v || "blue"
+        });
       },
       /** Décor des designs à matières : "full", "sober", ou null (réglage de chaque page). */
       setDecor(v) {
         writePref("repositoryDecor", v || null);
         doc.dataset.decor = v || decorDefault;
-        designChanged({ decor: doc.dataset.decor });
+        designChanged({
+          decor: doc.dataset.decor
+        });
       },
       renderEmblem,
       setDesign,
@@ -541,7 +675,9 @@
       setIcons(v) {
         writePref("repositoryIcons", v || null);
         doc.dataset.icons = v || iconsFor(design);
-        designChanged({ icons: doc.dataset.icons });
+        designChanged({
+          icons: doc.dataset.icons
+        });
       },
       /** Barre latérale : true / false (toujours / jamais), null (selon le design, mémorisé « auto »), "default"
        *  (réglage par défaut : toujours). */
@@ -560,12 +696,17 @@
       /** Couleurs du thème name : { family, tone } (famille de REPOSITORY_TREE.colorFamilies), ou null pour revenir à repository_tree. */
       setColor(name, v) {
         const all = readJson("repositoryColors") || {};
-        if (v) all[name] = { family: v.family, tone: +v.tone };
+        if (v) all[name] = {
+          family: v.family,
+          tone: +v.tone
+        };
         else delete all[name];
         if (Object.keys(all).length) K.store.setJson("repositoryColors", all);
         else K.store.remove("repositoryColors");
         if (name === currentTheme) applyTheme(name);
-        designChanged({ colors: name });
+        designChanged({
+          colors: name
+        });
       },
       themeColors,
       familyColors,
@@ -602,22 +743,69 @@
   // side_nav.js dans les emplacements réservés (span[data-sidenav-icon], taille fixe : pas de décalage).
   // Entrées : REPOSITORY_TREE.sidebar si présent, sinon la liste ci-dessous ; seules les pages déclarées sont retenues.
   {
-    const items = cfg.sidebar || [
-      { icon: "target", path: "apps/cpco/mission_editor.html", label: ["Missions", "Missions", "Missionen", "Misiones"] },
-      { icon: "list", path: "apps/cpco/mission_registry.html", label: ["Registre", "Registry", "Register", "Registro"], title: ["Registre des missions générées", "Generated mission registry", "Register der erzeugten Missionen", "Registro de misiones generadas"] },
-      { icon: "calendar", path: "apps/cpco/odv_planning.html", label: ["ODV", "ODV", "ODV", "ODV"], title: ["Planning ODV (Centre) : créneaux communs, missions probables", "ODV planning (Centre)", "ODV-Planung (Zentrum)", "Planificación ODV (Centro)"] },
-      { icon: "map", path: "apps/cpco/map_parser.html", label: ["Studio", "Studio", "Studio", "Estudio"], title: ["Studio cartographique du Centre", "Centre map studio", "Kartenstudio des Zentrums", "Estudio cartográfico del Centro"] },
-      { icon: "clipboard", path: "apps/cr/mission_cr.html", match: "apps/cr/", label: ["CR DEFA", "DEFA report", "DEFA-Bericht", "Informe DEFA"] },
-      { icon: "chart", path: "apps/cr/mission_operations_reporting.html", match: "_reporting.html", label: ["Reporting", "Reporting", "Berichte", "Informes"] },
-      { icon: "fuel", path: "apps/planner/flight_performance_planner.html", label: ["Carburant", "Fuel", "Kraftstoff", "Combustible"] },
-      { icon: "map", path: "apps/planner/map_planner.html", label: ["Cartes", "Maps", "Karten", "Mapas"], title: ["Cartes de vol : route, topo, approche, rendez-vous, destination", "Flight maps: route, topo, approach, rendezvous, destination", "Flugkarten", "Mapas de vuelo"] },
-      { icon: "plane", path: "apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html", label: ["Atterrissages", "Landings", "Landungen", "Aterrizajes"] },
-      { sep: true, bottom: true },   // réglages : groupés en bas de la colonne
-      { icon: "palette", path: "apps/settings/apparence.html", label: ["Apparence", "Appearance", "Darstellung", "Apariencia"] },
-      { icon: "settings", path: "apps/settings/parametrage.html", label: ["Paramètres", "Settings", "Einstellungen", "Ajustes"] },
-      { icon: "help", menu: true, label: ["Menu", "Menu", "Menü", "Menú"], title: ["Toutes les pages, profil, données locales, design", "All pages, profile, local data, design", "Alle Seiten, Profil, lokale Daten, Design", "Todas las páginas, perfil, datos locales, diseño"] }
+    const items = cfg.sidebar || [{
+        icon: "target",
+        path: "apps/cpco/mission_editor.html",
+        label: ["Missions", "Missions", "Missionen", "Misiones"]
+      }, {
+        icon: "list",
+        path: "apps/cpco/mission_registry.html",
+        label: ["Registre", "Registry", "Register", "Registro"],
+        title: ["Registre des missions générées", "Generated mission registry", "Register der erzeugten Missionen", "Registro de misiones generadas"]
+      }, {
+        icon: "calendar",
+        path: "apps/cpco/odv_planning.html",
+        label: ["ODV", "ODV", "ODV", "ODV"],
+        title: ["Planning ODV (Centre) : créneaux communs, missions probables", "ODV planning (Centre)", "ODV-Planung (Zentrum)", "Planificación ODV (Centro)"]
+      }, {
+        icon: "map",
+        path: "apps/cpco/map_parser.html",
+        label: ["Studio", "Studio", "Studio", "Estudio"],
+        title: ["Studio cartographique du Centre", "Centre map studio", "Kartenstudio des Zentrums", "Estudio cartográfico del Centro"]
+      }, {
+        icon: "clipboard",
+        path: "apps/cr/mission_cr.html",
+        match: "apps/cr/",
+        label: ["CR DEFA", "DEFA report", "DEFA-Bericht", "Informe DEFA"]
+      }, {
+        icon: "chart",
+        path: "apps/cr/mission_operations_reporting.html",
+        match: "_reporting.html",
+        label: ["Reporting", "Reporting", "Berichte", "Informes"]
+      }, {
+        icon: "fuel",
+        path: "apps/planner/flight_performance_planner.html",
+        label: ["Carburant", "Fuel", "Kraftstoff", "Combustible"]
+      }, {
+        icon: "map",
+        path: "apps/planner/map_planner.html",
+        label: ["Cartes", "Maps", "Karten", "Mapas"],
+        title: ["Cartes de vol : route, topo, approche, rendez-vous, destination", "Flight maps: route, topo, approach, rendezvous, destination", "Flugkarten", "Mapas de vuelo"]
+      }, {
+        icon: "plane",
+        path: "apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html",
+        label: ["Atterrissages", "Landings", "Landungen", "Aterrizajes"]
+      }, {
+        sep: true,
+        bottom: true
+      }, // réglages : groupés en bas de la colonne
+      {
+        icon: "palette",
+        path: "apps/settings/apparence.html",
+        label: ["Apparence", "Appearance", "Darstellung", "Apariencia"]
+      }, {
+        icon: "settings",
+        path: "apps/settings/parametrage.html",
+        label: ["Paramètres", "Settings", "Einstellungen", "Ajustes"]
+      }, {
+        icon: "help",
+        menu: true,
+        label: ["Menu", "Menu", "Menü", "Menú"],
+        title: ["Toutes les pages, profil, données locales, design", "All pages, profile, local data, design", "Alle Seiten, Profil, lokale Daten, Design", "Todas las páginas, perfil, datos locales, diseño"]
+      }
     ];
-    const known = new Set(cfg.pages.map(p => p.path)), current = page?.path || "";
+    const known = new Set(cfg.pages.map(p => p.path)),
+      current = page?.path || "";
     // entrée active : la page elle-même, sinon la première entrée dont « match » est contenu dans le chemin courant
     let active = items.findIndex(x => x.path === current);
     if (active < 0) active = items.findIndex(x => x.match && current.includes(x.match));
@@ -642,14 +830,25 @@
     const ul = side.querySelector("ul");
     items.forEach((it, i) => {
       const li = document.createElement("li");
-      if (it.sep) { li.className = "repo-sidenav-sep" + (it.bottom ? " repo-sidenav-bottom" : ""); ul.append(li); return; }
+      if (it.sep) {
+        li.className = "repo-sidenav-sep" + (it.bottom ? " repo-sidenav-bottom" : "");
+        ul.append(li);
+        return;
+      }
       if (it.path && !known.has(it.path)) return;
-      if (isCpco(it.path)) li.classList.add("cpco-only");   // masquée tant que le Centre est verrouillé
+      if (isCpco(it.path)) li.classList.add("cpco-only"); // masquée tant que le Centre est verrouillé
       const a = document.createElement(it.menu ? "button" : "a");
       a.className = "repo-sidenav-item" + (isCpco(it.path) ? " repo-sidenav-cpco" : "");
-      if (it.menu) { a.type = "button"; a.onclick = e => { e.stopPropagation(); document.querySelector(".repo-menu-button")?.click(); }; }
-      else a.href = new URL(it.path, root).href;
-      if (it.path === "apps/settings/apparence.html") a.addEventListener("click", e => { if (openAppearance()) e.preventDefault(); });
+      if (it.menu) {
+        a.type = "button";
+        a.onclick = e => {
+          e.stopPropagation();
+          document.querySelector(".repo-menu-button")?.click();
+        };
+      } else a.href = new URL(it.path, root).href;
+      if (it.path === "apps/settings/apparence.html") a.addEventListener("click", e => {
+        if (openAppearance()) e.preventDefault();
+      });
       if (i === active) a.setAttribute("aria-current", "page");
       a.innerHTML = `<span class="repo-sidenav-ic" data-sidenav-icon="${esc(it.icon)}">${skImg(it.icon)}</span><span class="repo-sidenav-label"></span>`;
       a._it = it;
@@ -675,28 +874,30 @@
       const logo = side.querySelector(".repo-sidenav-logo");
       if (logo && logo.src !== logoSrc()) logo.src = logoSrc();
     });
-    window.RepositorySideNav = { element: side, set: on => window.RepositoryNav.appearance.setSidenav(on) };
-  }
-  {
+    window.RepositorySideNav = {
+      element: side,
+      set: on => window.RepositoryNav.appearance.setSidenav(on)
+    };
+  } {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260930zzzt", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260930zzzv", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260930zzzt", script.src).href;
+    files.src = new URL("file_access.js?v=20260930zzzv", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260930zzzt", "block_icons.js?v=20260930zzzt", "side_nav.js?v=20260930zzzt"]) {
+    for (const f of ["icons/repository_icons.js?v=20260930zzzv", "block_icons.js?v=20260930zzzv", "side_nav.js?v=20260930zzzv"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260930zzzt", script.src).href;
+    store.src = new URL("browser_store.js?v=20260930zzzv", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=20260930zzzt", script.src).href;
+    update.src = new URL("suite_update.js?v=20260930zzzv", script.src).href;
     document.head.append(update)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

@@ -51,39 +51,68 @@
     };
   }
   /** Archive ZIP (Blob) des fichiers [{ name, data, date }] ; compress : true (défaut) → deflate si possible. */
-  async function build(files, { compress = true } = {}) {
-    const parts = [], central = [];
+  async function build(files, {
+    compress = true
+  } = {}) {
+    const parts = [],
+      central = [];
     let offset = 0;
     for (const f of files) {
       const name = enc.encode(String(f.name).replace(/\\/g, '/').replace(/^\/+/, '')),
         raw = await toBytes(f.data),
         crc = crc32(raw);
-      let method = 0, body = raw;
+      let method = 0,
+        body = raw;
       if (compress && raw.length > 64) {
         const z = await pipe(raw, window.CompressionStream, 'deflate-raw');
-        if (z && z.length < raw.length) { method = 8; body = z; }
+        if (z && z.length < raw.length) {
+          method = 8;
+          body = z;
+        }
       }
-      const { time, date } = dosTime(f.date ? new Date(f.date) : new Date());
+      const {
+        time,
+        date
+      } = dosTime(f.date ? new Date(f.date) : new Date());
       const head = new DataView(new ArrayBuffer(30));
-      head.setUint32(0, 0x04034b50, true); head.setUint16(4, 20, true); head.setUint16(6, 0x0800, true);
-      head.setUint16(8, method, true); head.setUint16(10, time, true); head.setUint16(12, date, true);
-      head.setUint32(14, crc, true); head.setUint32(18, body.length, true); head.setUint32(22, raw.length, true);
-      head.setUint16(26, name.length, true); head.setUint16(28, 0, true);
+      head.setUint32(0, 0x04034b50, true);
+      head.setUint16(4, 20, true);
+      head.setUint16(6, 0x0800, true);
+      head.setUint16(8, method, true);
+      head.setUint16(10, time, true);
+      head.setUint16(12, date, true);
+      head.setUint32(14, crc, true);
+      head.setUint32(18, body.length, true);
+      head.setUint32(22, raw.length, true);
+      head.setUint16(26, name.length, true);
+      head.setUint16(28, 0, true);
       parts.push(new Uint8Array(head.buffer), name, body);
       const dir = new DataView(new ArrayBuffer(46));
-      dir.setUint32(0, 0x02014b50, true); dir.setUint16(4, 20, true); dir.setUint16(6, 20, true);
-      dir.setUint16(8, 0x0800, true); dir.setUint16(10, method, true); dir.setUint16(12, time, true);
-      dir.setUint16(14, date, true); dir.setUint32(16, crc, true); dir.setUint32(20, body.length, true);
-      dir.setUint32(24, raw.length, true); dir.setUint16(28, name.length, true);
+      dir.setUint32(0, 0x02014b50, true);
+      dir.setUint16(4, 20, true);
+      dir.setUint16(6, 20, true);
+      dir.setUint16(8, 0x0800, true);
+      dir.setUint16(10, method, true);
+      dir.setUint16(12, time, true);
+      dir.setUint16(14, date, true);
+      dir.setUint32(16, crc, true);
+      dir.setUint32(20, body.length, true);
+      dir.setUint32(24, raw.length, true);
+      dir.setUint16(28, name.length, true);
       dir.setUint32(42, offset, true);
       central.push(new Uint8Array(dir.buffer), name);
       offset += 30 + name.length + body.length;
     }
     const size = central.reduce((n, a) => n + a.length, 0),
       end = new DataView(new ArrayBuffer(22));
-    end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
-    end.setUint32(12, size, true); end.setUint32(16, offset, true);
-    return new Blob([...parts, ...central, new Uint8Array(end.buffer)], { type: 'application/zip' });
+    end.setUint32(0, 0x06054b50, true);
+    end.setUint16(8, files.length, true);
+    end.setUint16(10, files.length, true);
+    end.setUint32(12, size, true);
+    end.setUint32(16, offset, true);
+    return new Blob([...parts, ...central, new Uint8Array(end.buffer)], {
+      type: 'application/zip'
+    });
   }
   /** Entrées d'une archive ZIP : [{ name, size, compressedSize, date, method, bytes(), text() }]. */
   async function read(input) {
@@ -91,16 +120,25 @@
       view = new DataView(data.buffer, data.byteOffset, data.byteLength);
     let eocd = -1;
     for (let i = data.length - 22; i >= Math.max(0, data.length - 65557); i--)
-      if (view.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+      if (view.getUint32(i, true) === 0x06054b50) {
+        eocd = i;
+        break;
+      }
     if (eocd < 0) throw new Error('ZIP illisible (fin d’archive introuvable)');
     const count = view.getUint16(eocd + 10, true);
     let p = view.getUint32(eocd + 16, true);
-    const dec = new TextDecoder('utf-8'), out = [];
+    const dec = new TextDecoder('utf-8'),
+      out = [];
     for (let n = 0; n < count; n++) {
       if (view.getUint32(p, true) !== 0x02014b50) throw new Error('ZIP illisible (répertoire central)');
-      const method = view.getUint16(p + 10, true), time = view.getUint16(p + 12, true), day = view.getUint16(p + 14, true),
-        csize = view.getUint32(p + 20, true), usize = view.getUint32(p + 24, true),
-        nlen = view.getUint16(p + 28, true), xlen = view.getUint16(p + 30, true), clen = view.getUint16(p + 32, true),
+      const method = view.getUint16(p + 10, true),
+        time = view.getUint16(p + 12, true),
+        day = view.getUint16(p + 14, true),
+        csize = view.getUint32(p + 20, true),
+        usize = view.getUint32(p + 24, true),
+        nlen = view.getUint16(p + 28, true),
+        xlen = view.getUint16(p + 30, true),
+        clen = view.getUint16(p + 32, true),
         local = view.getUint32(p + 42, true),
         name = dec.decode(data.subarray(p + 46, p + 46 + nlen));
       p += 46 + nlen + xlen + clen;
@@ -135,5 +173,11 @@
       return '';
     }
   }
-  window.ZipStore = { build, read, sha256, crc32, toBytes };
+  window.ZipStore = {
+    build,
+    read,
+    sha256,
+    crc32,
+    toBytes
+  };
 })();

@@ -26,7 +26,8 @@
         ...patch
       }));
     } catch {
-      /* stockage indisponible */ }
+      /* stockage indisponible */
+    }
   };
   const TEXT = {
     fr: {

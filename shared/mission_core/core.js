@@ -150,7 +150,8 @@
     try {
       if (family.id !== 'DEMO') localStorage.setItem('missionCoreLastFamily:v1', family.id);
     } catch {
-      /* stockage indisponible */ }
+      /* stockage indisponible */
+    }
     const prefix = family.idPrefix || family.id;
     const ledger = window.MissionLedger.open(family);
     const params = new URLSearchParams(location.search);
@@ -808,12 +809,13 @@
         localStorage.setItem(draftSlot(), JSON.stringify(mission));
         if (!silent) status.textContent = `${t('draftSaved')} · ${new Date().toLocaleTimeString()}`;
       } catch {
-        /* quota */ }
+        /* quota */
+      }
     }
 
     /** Calculs de la colonne de droite : bloc, vol, transit, sur zone, carburant… */
     function kpi() {
-      missionLink();   // durée réelle modifiée : écart avec l'estimation de la mission
+      missionLink(); // durée réelle modifiée : écart avec l'estimation de la mission
       const s = M.computeStatistics(mission),
         unit = mission.fuel?.unit || '';
       /** Case d'un calcul (libellé, valeur). */
@@ -900,13 +902,20 @@
       const id = window.MissionVocab.missionIdOf(mission.metadata?.missionNumber);
       if (!box) return;
       box.hidden = !id;
-      if (!id) { box.textContent = ''; return; }
+      if (!id) {
+        box.textContent = '';
+        return;
+      }
       const flights = ledger.missions.filter(x => window.MissionVocab.parseCrId(x.metadata?.missionId)?.mission === id).length;
       const url = new URL(`apps/cpco/mission_registry.html?mission=${encodeURIComponent(id)}`, window.RepositoryNav?.root || location.href).href;
       // durée estimée de la mission (registre des missions, shared/mission_estimate.js) et écart avec ce vol
       let est = null;
-      try { est = (JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions || []).find(x => x.id === id)?.estimate || null; } catch { /* registre illisible */ }
-      const real = M.computeStatistics(mission).flightMinutes, diff = est && real > 0 ? Math.round(real - est.flight) : null;
+      try {
+        est = (JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions || []).find(x => x.id === id)?.estimate || null;
+      } catch {
+        /* registre illisible */ }
+      const real = M.computeStatistics(mission).flightMinutes,
+        diff = est && real > 0 ? Math.round(real - est.flight) : null;
       const estText = est ? ` · ${esc(t('estimated'))} ${esc(duration(est.flight))}${real > 0 ? ` — ${esc(t('thisFlight'))} ${esc(duration(real))} (${diff >= 0 ? '+' : '−'}${Math.abs(diff)} min, ${diff >= 0 ? '+' : '−'}${Math.abs(Math.round(diff / est.flight * 100))} %)` : ''}` : '';
       box.innerHTML = `<a href="${url}">${id} — ${esc(t('inRegistry'))} ↗</a>${flights ? ` · ${esc(t('flightsOf').replace('{n}', flights))}` : ''}${estText}`;
     }
@@ -1310,7 +1319,7 @@
       window.print();
     };
     window.addEventListener('repository-language-change', () => setTimeout(renderReport));
-    window.addEventListener('repository-design-change', () => setTimeout(renderReport));   // palette, style des graphiques
+    window.addEventListener('repository-design-change', () => setTimeout(renderReport)); // palette, style des graphiques
     $a('delete').onclick = async () => {
       if (!edit || !confirm(t('confirmDelete'))) return;
       const current = ledger.missions[edit.index];
@@ -1468,7 +1477,7 @@
         if (sia) {
           mission = fresh();
           fromSia(mission, sia);
-          mission.metadata.missionId = ledger.nextId(prefix, mission.metadata.missionNumber);   // CR<mission>-<essai> : CRM-016-1, CRM-016-2 si rejouée
+          mission.metadata.missionId = ledger.nextId(prefix, mission.metadata.missionNumber); // CR<mission>-<essai> : CRM-016-1, CRM-016-2 si rejouée
           dirty = true;
           localStorage.removeItem(SIA_KEY);
         }

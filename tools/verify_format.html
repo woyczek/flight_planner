@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Contrôle de mise en forme</title>
+<!-- Contrôle de tools/format_sources.py (outil de développement) : pour chaque bloc mis en forme (tools/_verify/pairs.json),
+     JavaScript : arbres syntaxiques avant / après identiques (acorn ; positions ignorées, littéraux comparés tels quels) ;
+     CSS : règles lues par le navigateur avant / après identiques (CSSStyleSheet). Servir le dépôt
+     (python -m http.server 8767 --bind 127.0.0.1) et ouvrir http://127.0.0.1:8767/tools/verify_format.html. -->
+<style>body{margin:0;padding:12px 16px;font:13px ui-monospace,Consolas,monospace;background:#f4f6f8;color:#17202a}.ko{color:#b3261e}.ok{color:#1e7d32}</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/acorn/8.11.3/acorn.min.js"></script>
+</head><body><pre id="log">Contrôle en cours…</pre>
+<script>
+(async () => {
+  const log = document.getElementById('log'), out = [];
+  const pairs = await fetch('_verify/pairs.json', { cache: 'no-store' }).then(r => r.json());
+  // arbre sans positions (start, end, loc, range) : seuls la structure et les littéraux comptent
+  const tree = (src, type) => {
+    const opts = { ecmaVersion: 'latest', sourceType: type === 'module' ? 'module' : 'script', allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true, allowHashBang: true };
+    return JSON.stringify(acorn.parse(src, opts), (k, v) => (k === 'start' || k === 'end' || k === 'loc' || k === 'range') ? undefined : v);
+  };
+  // règles lues par le navigateur ; espaces autour des virgules ignorés (sans effet en CSS ; le navigateur garde tel
+  // quel le texte des valeurs à var() et des propriétés personnalisées)
+  const rules = src => { const s = new CSSStyleSheet(); s.replaceSync(src.replace(/@import[^;]+;/g, '')); return [...s.cssRules].map(r => r.cssText.replace(/\s*,\s*/g, ',')).join('\n'); };
+  let ko = 0;
+  const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
+  for (const p of pairs) {
+    if (p.type === 'css') {
+      const a = rules(p.avant).split('\n'), b = rules(p.apres).split('\n');
+      const i = a.findIndex((r, n) => r !== b[n]);
+      if (i >= 0 || a.length !== b.length) {
+        ko++;
+        const n = i >= 0 ? i : Math.min(a.length, b.length);
+        out.push(`<span class="ko">ÉCART  ${esc(p.nom)} (règle ${n + 1} ; ${a.length} → ${b.length} règles)\n  avant : ${esc((a[n] || '').slice(0, 300))}\n  après : ${esc((b[n] || '').slice(0, 300))}</span>`);
+      }
+      continue;
+    }
+    let ta, tb;
+    try { ta = tree(p.avant, p.type); } catch (e) { ko++; out.push(`<span class="ko">ERREUR (avant) ${esc(p.nom)} : ${esc(e.message)}</span>`); continue; }
+    try { tb = tree(p.apres, p.type); } catch (e) {
+      ko++;
+      const m = /\((\d+):(\d+)\)/.exec(e.message), line = m ? p.apres.split('\n')[m[1] - 1] : '';
+      out.push(`<span class="ko">ERREUR (après) ${esc(p.nom)} : ${esc(e.message)}\n  ${esc(line.slice(0, 300))}</span>`);
+      continue;
+    }
+    if (ta !== tb) { ko++; out.push(`<span class="ko">ÉCART  ${esc(p.nom)}</span>`); }
+  }
+  out.unshift(ko ? `<span class="ko">${ko} bloc(s) sur ${pairs.length} en écart</span>` : `<span class="ok">${pairs.length} bloc(s) : aucun écart</span>`);
+  log.innerHTML = out.join('\n');
+  document.title = ko ? `ÉCARTS ${ko}` : `OK ${pairs.length}`;
+})();
+</script>
+</body></html>

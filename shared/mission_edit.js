@@ -76,7 +76,8 @@
       try {
         return await (await (await handle.getFileHandle($('ledgerName')?.value || '')).getFile()).text();
       } catch {
-        /* fichier absent : repli sur la copie locale */ }
+        /* fichier absent : repli sur la copie locale */
+      }
     }
     const stored = window.MissionReportingConfig?.cached?.(configKey);
     if (stored?.text) return stored.text;
@@ -254,7 +255,8 @@
       const column = head.indexOf('missionId');
       if (column >= 0) count = rows.filter(values => normId(values[column]) === id).length;
     } catch {
-      /* registre illisible : pas de contrôle possible */ }
+      /* registre illisible : pas de contrôle possible */
+    }
     if (count) {
       const label = field('missionId').value.trim();
       const message = draft && normId(draft.record?.missionId) === id ?

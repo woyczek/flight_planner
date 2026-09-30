@@ -31,7 +31,7 @@
    ===================================================================================================== */
 (() => {
   "use strict";
-  const followed = [];            // { el, anchor, stack, gap, media }, dans l'ordre d'enregistrement
+  const followed = []; // { el, anchor, stack, gap, media }, dans l'ordre d'enregistrement
   let queued = false;
 
   /** Bas (px, repère fenêtre) de l'en-tête collant de la page : <header> ou barre de navigation du dépôt. */
@@ -45,34 +45,64 @@
   }
 
   /** Collant CSS sous l'en-tête ; décalage négatif si le bloc dépasse la fenêtre. top : décalage voulu (px). */
-  function stick(el, { top = 60 } = {}) {
+  function stick(el, {
+    top = 60
+  } = {}) {
     const fit = () => {
       el.style.top = "";
-      if (getComputedStyle(el).position !== "sticky") return;      // colonnes empilées (media query de la page)
+      if (getComputedStyle(el).position !== "sticky") return; // colonnes empilées (media query de la page)
       el.style.top = Math.min(top, innerHeight - el.offsetHeight - 12) + "px";
     };
-    new ResizeObserver(fit).observe(el); addEventListener("resize", fit); fit();
-    return { refresh: fit };
+    new ResizeObserver(fit).observe(el);
+    addEventListener("resize", fit);
+    fit();
+    return {
+      refresh: fit
+    };
   }
 
   /** Enregistre un cadre qui suit son ancre (voir l'en-tête). Retourne { refresh }. */
-  function follow(el, { anchor, stack = false, gap = 10, grow = false, media = "(min-width: 801px)" } = {}) {
+  function follow(el, {
+    anchor,
+    stack = false,
+    gap = 10,
+    grow = false,
+    media = "(min-width: 801px)"
+  } = {}) {
     if (!el || !anchor) throw Error("StickyFrame.follow : el et anchor requis");
-    const item = { el, anchor, stack, gap, grow, mq: matchMedia(media) };
+    const item = {
+      el,
+      anchor,
+      stack,
+      gap,
+      grow,
+      mq: matchMedia(media)
+    };
     followed.push(item);
-    const box = el.parentElement; if (box && getComputedStyle(box).position === "static") box.style.position = "relative";
-    const ro = new ResizeObserver(schedule); ro.observe(el); ro.observe(anchor);
+    const box = el.parentElement;
+    if (box && getComputedStyle(box).position === "static") box.style.position = "relative";
+    const ro = new ResizeObserver(schedule);
+    ro.observe(el);
+    ro.observe(anchor);
     item.mq.addEventListener?.("change", schedule);
     schedule();
-    return { refresh: layout };
+    return {
+      refresh: layout
+    };
   }
 
   /** Regroupe les recalculs d'une même frame d'affichage (défilement, redimensionnement, contenu). */
   function schedule() {
-    if (queued) return; queued = true;
+    if (queued) return;
+    queued = true;
     // requestAnimationFrame ne tourne pas dans un onglet masqué : délai court en secours
-    const run = () => { if (!queued) return; queued = false; layout(); };
-    requestAnimationFrame(run); setTimeout(run, 50);
+    const run = () => {
+      if (!queued) return;
+      queued = false;
+      layout();
+    };
+    requestAnimationFrame(run);
+    setTimeout(run, 50);
   }
 
   /** Place chaque cadre suivi : y = max(haut de l'ancre, min(ligne de collage, bas de l'ancre − hauteur)),
@@ -81,23 +111,50 @@
     const byBox = new Map();
     for (const it of followed) {
       if (!it.el.isConnected) continue;
-      const k = it.el.parentElement; if (!byBox.has(k)) byBox.set(k, []); byBox.get(k).push(it);
+      const k = it.el.parentElement;
+      if (!byBox.has(k)) byBox.set(k, []);
+      byBox.get(k).push(it);
     }
     const hb = headerBottom();
     for (const [box, items] of byBox) {
       const boxTop = box.getBoundingClientRect().top;
-      let line = hb, prevBottom = -Infinity;
+      let line = hb,
+        prevBottom = -Infinity;
       for (const it of items) {
-        const { el, anchor, gap } = it;
-        if (!it.mq.matches) { Object.assign(el.style, { position: "", top: "", left: "", right: "", maxHeight: "", visibility: "" }); if (it.grow) anchor.style.minHeight = ""; continue; }
+        const {
+          el,
+          anchor,
+          gap
+        } = it;
+        if (!it.mq.matches) {
+          Object.assign(el.style, {
+            position: "",
+            top: "",
+            left: "",
+            right: "",
+            maxHeight: "",
+            visibility: ""
+          });
+          if (it.grow) anchor.style.minHeight = "";
+          continue;
+        }
         const hidden = anchor.offsetParent === null || !el.textContent.trim() && !el.querySelector("svg,canvas,img,table");
         el.style.visibility = hidden ? "hidden" : "";
-        Object.assign(el.style, { position: "absolute", left: "0", right: "0" });
+        Object.assign(el.style, {
+          position: "absolute",
+          left: "0",
+          right: "0"
+        });
         if (hidden) continue;
         // ancre agrandie à la hauteur du cadre : les rangées suivantes (et leurs cadres) descendent d'autant
         // l'ancre ne fait que grandir (pas de va-et-vient pendant un réglage) ; resetGrow() la remet à la mesure
-        if (it.grow) { const need = el.offsetHeight + gap; if (need > (parseFloat(anchor.style.minHeight) || 0) + 1) anchor.style.minHeight = need + "px"; }
-        const a = anchor.getBoundingClientRect(), h = el.offsetHeight, room = innerHeight - line - gap - gap;
+        if (it.grow) {
+          const need = el.offsetHeight + gap;
+          if (need > (parseFloat(anchor.style.minHeight) || 0) + 1) anchor.style.minHeight = need + "px";
+        }
+        const a = anchor.getBoundingClientRect(),
+          h = el.offsetHeight,
+          room = innerHeight - line - gap - gap;
         // cadre plus haut que la place restante : son bas se colle au bas de la fenêtre (tout reste lisible)
         const stuck = h > room ? innerHeight - gap - h : line + gap;
         // sous le cadre précédent (pas de chevauchement), sauf quand l'ancre s'en va : le cadre repart avec elle
@@ -111,9 +168,21 @@
     }
   }
 
-  addEventListener("scroll", schedule, { passive: true });
+  addEventListener("scroll", schedule, {
+    passive: true
+  });
   addEventListener("resize", schedule);
   /** Remet les ancres « grow » à la hauteur de leur cadre actuel (après un nouveau contenu complet, pas pendant un réglage). */
-  function resetGrow() { for (const it of followed) if (it.grow) it.anchor.style.minHeight = ""; layout(); }
-  window.StickyFrame = { stick, follow, refresh: layout, headerBottom, resetGrow };
+  function resetGrow() {
+    for (const it of followed)
+      if (it.grow) it.anchor.style.minHeight = "";
+    layout();
+  }
+  window.StickyFrame = {
+    stick,
+    follow,
+    refresh: layout,
+    headerBottom,
+    resetGrow
+  };
 })();

@@ -17,7 +17,11 @@
   // }) → { setRows(rows), getRows() }
 
   let styleInjected = false;
-  const GRIP_TITLE = ({ en: 'Drag to widen or narrow the column (double-click: automatic width)', de: 'Ziehen, um die Spalte zu verbreitern oder zu verschmälern (Doppelklick: automatische Breite)', es: 'Arrastrar para ensanchar o estrechar la columna (doble clic: ancho automático)' })[document.documentElement.lang?.slice(0, 2)] || 'Glisser pour élargir ou réduire la colonne (double-clic : largeur automatique)';
+  const GRIP_TITLE = ({
+    en: 'Drag to widen or narrow the column (double-click: automatic width)',
+    de: 'Ziehen, um die Spalte zu verbreitern oder zu verschmälern (Doppelklick: automatische Breite)',
+    es: 'Arrastrar para ensanchar o estrechar la columna (doble clic: ancho automático)'
+  })[document.documentElement.lang?.slice(0, 2)] || 'Glisser pour élargir ou réduire la colonne (double-clic : largeur automatique)';
 
   /** Ajoute une fois la feuille de style des tableaux de missions. */
   function injectStyle() {
@@ -142,18 +146,37 @@
     // choisie, le tableau passe en disposition fixe (les autres colonnes gardent leur largeur naturelle).
     const storageKey = opts.storageKey ?? (container.id ? `sortedTableWidths:${location.pathname}#${container.id}` : null);
     let widths = {};
-    try { widths = (storageKey && JSON.parse(localStorage.getItem(storageKey) || '{}')) || {}; } catch { widths = {}; }
-    const saveWidths = () => { try { if (storageKey) localStorage.setItem(storageKey, JSON.stringify(widths)); } catch { /* stockage indisponible */ } };
+    try {
+      widths = (storageKey && JSON.parse(localStorage.getItem(storageKey) || '{}')) || {};
+    } catch {
+      widths = {};
+    }
+    const saveWidths = () => {
+      try {
+        if (storageKey) localStorage.setItem(storageKey, JSON.stringify(widths));
+      } catch {
+        /* stockage indisponible */ }
+    };
     /** Fixe les largeurs : mesure naturelle (disposition automatique), puis largeurs choisies par-dessus. */
     function applyWidths(live) {
       const table = container.querySelector('table');
       if (!table) return;
       const ths = [...table.querySelectorAll('thead th')];
-      if (!live) { table.classList.remove('st-fixed'); table.style.width = ''; ths.forEach(th => { th.style.width = ''; }); }
+      if (!live) {
+        table.classList.remove('st-fixed');
+        table.style.width = '';
+        ths.forEach(th => {
+          th.style.width = '';
+        });
+      }
       if (!Object.keys(widths).length) return;
       const natural = live ? null : ths.map(th => th.getBoundingClientRect().width);
       let total = 0;
-      ths.forEach((th, i) => { const w = widths[th.dataset.key] ?? (live ? parseFloat(th.style.width) : natural[i]); th.style.width = `${Math.round(w)}px`; total += w; });
+      ths.forEach((th, i) => {
+        const w = widths[th.dataset.key] ?? (live ? parseFloat(th.style.width) : natural[i]);
+        th.style.width = `${Math.round(w)}px`;
+        total += w;
+      });
       table.style.width = `${Math.round(total)}px`;
       table.classList.add('st-fixed');
     }
@@ -163,12 +186,31 @@
       if (!grip) return;
       event.preventDefault();
       event.stopPropagation();
-      const th = grip.closest('th'), key = th.dataset.key, x0 = event.clientX, w0 = th.getBoundingClientRect().width;
-      if (!Object.keys(widths).length) { widths[key] = w0; applyWidths(); }
+      const th = grip.closest('th'),
+        key = th.dataset.key,
+        x0 = event.clientX,
+        w0 = th.getBoundingClientRect().width;
+      if (!Object.keys(widths).length) {
+        widths[key] = w0;
+        applyWidths();
+      }
       grip.classList.add('st-on');
-      try { grip.setPointerCapture(event.pointerId); } catch { /* pointeur déjà relâché */ }
-      const move = e => { widths[key] = Math.max(32, w0 + e.clientX - x0); applyWidths(true); };
-      const up = () => { grip.classList.remove('st-on'); grip.removeEventListener('pointermove', move); grip.removeEventListener('pointerup', up); grip.removeEventListener('pointercancel', up); resizedAt = Date.now(); saveWidths(); };
+      try {
+        grip.setPointerCapture(event.pointerId);
+      } catch {
+        /* pointeur déjà relâché */ }
+      const move = e => {
+        widths[key] = Math.max(32, w0 + e.clientX - x0);
+        applyWidths(true);
+      };
+      const up = () => {
+        grip.classList.remove('st-on');
+        grip.removeEventListener('pointermove', move);
+        grip.removeEventListener('pointerup', up);
+        grip.removeEventListener('pointercancel', up);
+        resizedAt = Date.now();
+        saveWidths();
+      };
       grip.addEventListener('pointermove', move);
       grip.addEventListener('pointerup', up);
       grip.addEventListener('pointercancel', up);
@@ -185,7 +227,7 @@
     const find = id => rows.find(r => keyOf(r) === id);
     container.onclick = event => {
       const th = event.target.closest('th[data-key]');
-      if (th && (event.target.closest('.st-grip') || Date.now() - resizedAt < 300)) return;   // fin d'un redimensionnement : pas de tri
+      if (th && (event.target.closest('.st-grip') || Date.now() - resizedAt < 300)) return; // fin d'un redimensionnement : pas de tri
       if (th) {
         const key = th.dataset.key;
         if (sortKey === key) sortDir *= -1;

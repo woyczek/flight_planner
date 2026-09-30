@@ -206,9 +206,10 @@ def write_tokens(design, tok):
     mark = f'/* découpe : tools/cut_register_sheet.py {design} --write */'
     start = text.index(mark) + len(mark)
     end = text.index('  /* réglages */', start)
-    sizes = [f'  --sh-{n}-w:{tok[n + "-w"]}px;--sh-{n}-h:{tok[n + "-h"]}px;' for n in ('tl', 'tr', 'bl', 'br', 'top', 'bot', 'left', 'right')]
-    stops = '  ' + ''.join(f'--sh-{k}:{tok[k]}px;' for k in ('top-l', 'top-r', 'bot-l', 'bot-r', 'left-t', 'left-b', 'right-t', 'right-b'))
-    text = text[:start] + nl + nl.join(sizes + [stops]) + nl + text[end:]
+    # un jeton par ligne (mise en forme de tools/format_sources.py)
+    keys = [f'{n}-{d}' for n in ('tl', 'tr', 'bl', 'br', 'top', 'bot', 'left', 'right') for d in 'wh']
+    keys += ['top-l', 'top-r', 'bot-l', 'bot-r', 'left-t', 'left-b', 'right-t', 'right-b']
+    text = text[:start] + nl + nl.join(f'  --sh-{k}: {tok[k]}px;' for k in keys) + nl + text[end:]
     open(css, 'w', encoding='utf-8', newline='').write(text)
     print(f'{css} : bloc « découpe » de {design} réécrit')
 

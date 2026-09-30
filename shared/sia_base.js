@@ -12,46 +12,79 @@
  * (dossiers mémorisés) ; window.Airac (cycles). Valeurs MORA calculées, non certifiées.
  */
 (() => {
-  const DB = 'sia-map-parser', STORE = 'cache', KEY = 'base', INFO = 'siaBaseInfo:v1', PREV = 'siaBaseInfo:prev', FOLDER_NAME = 'siaFolderName';
+  const DB = 'sia-map-parser',
+    STORE = 'cache',
+    KEY = 'base',
+    INFO = 'siaBaseInfo:v1',
+    PREV = 'siaBaseInfo:prev',
+    FOLDER_NAME = 'siaFolderName';
   /** Version du format de la base mémorisée : une base d'une autre version est ignorée (à relire). */
-  const COMPAT = 14;   // plus ancien format encore utilisable tel quel (15 n'ajoute que aero.vrp)
-  const VERSION = 15;   // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp)
+  const COMPAT = 14; // plus ancien format encore utilisable tel quel (15 n'ajoute que aero.vrp)
+  const VERSION = 15; // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp)
   const SCRIPT_URL = document.currentScript?.src || location.href;
   /** URL d'un fichier de l'application (chemin depuis la racine : « shared/carto/… »). */
   const appUrl = path => new URL('../' + path, SCRIPT_URL).href;
 
   // ===================================================================== cache IndexedDB
   /** Base IndexedDB ; create = false : null si elle n'existe pas encore (rien n'est créé). */
-  function openDb({ create = true } = {}) {
+  function openDb({
+    create = true
+  } = {}) {
     return new Promise((resolve, reject) => {
       let r;
-      try { r = indexedDB.open(DB, 1); } catch { return resolve(null); }
+      try {
+        r = indexedDB.open(DB, 1);
+      } catch {
+        return resolve(null);
+      }
       const guard = setTimeout(() => reject(new Error('La base du navigateur (IndexedDB) ne répond pas : fermer les autres onglets du studio et de Paramètres, puis relancer.')), 15000);
-      const done = f => (...a) => { clearTimeout(guard); f(...a); };
-      resolve = done(resolve); reject = done(reject);
+      const done = f => (...a) => {
+        clearTimeout(guard);
+        f(...a);
+      };
+      resolve = done(resolve);
+      reject = done(reject);
       r.onblocked = () => reject(new Error('La base du navigateur est bloquée par un autre onglet : fermer les autres onglets du studio et de Paramètres, puis relancer.'));
       r.onupgradeneeded = () => {
         if (create) r.result.createObjectStore(STORE);
-        else { r.transaction.abort(); resolve(null); }
+        else {
+          r.transaction.abort();
+          resolve(null);
+        }
       };
       r.onsuccess = () => {
         const db = r.result;
-        if (!db.objectStoreNames.contains(STORE)) { db.close(); return resolve(null); }
+        if (!db.objectStoreNames.contains(STORE)) {
+          db.close();
+          return resolve(null);
+        }
         resolve(db);
       };
       r.onerror = () => resolve(null);
     });
   }
+
   function tx(db, mode, run) {
     return new Promise((resolve, reject) => {
-      const t = db.transaction(STORE, mode), q = run(t.objectStore(STORE));
-      t.oncomplete = () => { db.close(); resolve(q?.result); };
-      t.onerror = () => { db.close(); reject(t.error); };
+      const t = db.transaction(STORE, mode),
+        q = run(t.objectStore(STORE));
+      t.oncomplete = () => {
+        db.close();
+        resolve(q?.result);
+      };
+      t.onerror = () => {
+        db.close();
+        reject(t.error);
+      };
     });
   }
   /** Base mémorisée (objet complet) ; null si absente. any = true : même d'une autre version du format. */
-  async function get({ any = false } = {}) {
-    const db = await openDb({ create: false });
+  async function get({
+    any = false
+  } = {}) {
+    const db = await openDb({
+      create: false
+    });
     if (!db) return null;
     const b = await tx(db, 'readonly', s => s.get(KEY)).catch(() => null);
     // format antérieur compatible (COMPAT…VERSION) : utilisable, seules manquent les données ajoutées depuis (b.outdated)
@@ -61,28 +94,60 @@
   /** Mémorise la base (et son résumé siaBaseInfo:v1). Une base nouvellement lue (cachedAt différent) garde le résumé de la
    *  précédente (siaBaseInfo:prev) pour la comparaison des deux bases (Maintenance, étape 5), quelle que soit la page qui relit. */
   async function put(base) {
-    const old = await get({ any: true });
-    if (old && old.cachedAt !== base.cachedAt) { try { localStorage.setItem(PREV, JSON.stringify({ ...summarize(old), storedAt: new Date().toISOString() })); } catch { /* quota */ } }
+    const old = await get({
+      any: true
+    });
+    if (old && old.cachedAt !== base.cachedAt) {
+      try {
+        localStorage.setItem(PREV, JSON.stringify({
+          ...summarize(old),
+          storedAt: new Date().toISOString()
+        }));
+      } catch {
+        /* quota */ }
+    }
     const db = await openDb();
     if (!db) throw new Error('IndexedDB indisponible');
-    await tx(db, 'readwrite', s => s.put({ ...base, parserVersion: VERSION }, KEY));
+    await tx(db, 'readwrite', s => s.put({
+      ...base,
+      parserVersion: VERSION
+    }, KEY));
     remember(summarize(base));
-    try { if (base.folderName) localStorage.setItem(FOLDER_NAME, base.folderName); } catch { /* quota */ }
+    try {
+      if (base.folderName) localStorage.setItem(FOLDER_NAME, base.folderName);
+    } catch {
+      /* quota */ }
   }
   /** Met à jour des champs de la base mémorisée (ex. moraCells après un recalcul) ; faux si elle est absente. */
   async function patch(fields) {
-    const b = await get({ any: true });
+    const b = await get({
+      any: true
+    });
     if (!b) return false;
-    await put({ ...b, ...fields });
+    await put({
+      ...b,
+      ...fields
+    });
     return true;
   }
   /** Purge : vide le magasin (jamais bloqué par un onglet ouvert, contrairement à deleteDatabase) et oublie le résumé. */
   async function purge() {
-    const had = !!(await get({ any: true }));
-    const db = await openDb({ create: false });
+    const had = !!(await get({
+      any: true
+    }));
+    const db = await openDb({
+      create: false
+    });
     if (db) await tx(db, 'readwrite', s => s.clear()).catch(() => {});
-    try { localStorage.removeItem(INFO); } catch { /* stockage indisponible */ }
-    window.dispatchEvent(new CustomEvent('sia-base-change', { detail: { purged: true } }));
+    try {
+      localStorage.removeItem(INFO);
+    } catch {
+      /* stockage indisponible */ }
+    window.dispatchEvent(new CustomEvent('sia-base-change', {
+      detail: {
+        purged: true
+      }
+    }));
     return had;
   }
 
@@ -93,7 +158,8 @@
     if (!b) return null;
     const types = {};
     for (const a of b.airspaces || []) types[a.type || '?'] = (types[a.type || '?'] || 0) + 1;
-    const aero = b.aero || {}, count = v => Array.isArray(v) ? v.length : v && typeof v === 'object' ? Object.keys(v).length : 0;
+    const aero = b.aero || {},
+      count = v => Array.isArray(v) ? v.length : v && typeof v === 'object' ? Object.keys(v).length : 0;
     return {
       parserVersion: b.parserVersion ?? VERSION,
       folderName: b.folderName || '',
@@ -101,69 +167,151 @@
       airac: cycleDate(b),
       mixed: false,
       cycles: cycleDate(b) ? [cycleDate(b)] : [],
-      files: (b.xmlInventoryData || []).map(x => ({ name: x.name, role: x.role, mb: x.mb })),
+      files: (b.xmlInventoryData || []).map(x => ({
+        name: x.name,
+        role: x.role,
+        mb: x.mb
+      })),
       counts: {
-        airspaces: (b.airspaces || []).length, byType: types,
-        aerodromes: count(aero.aerodromes), navaids: count(aero.navaids || aero.navaid),
-        cities: (b.cities || []).length, mora: (b.moraCells || []).length, obstacleCells: Object.keys(b.obstacleMax || {}).length
+        airspaces: (b.airspaces || []).length,
+        byType: types,
+        aerodromes: count(aero.aerodromes),
+        navaids: count(aero.navaids || aero.navaid),
+        cities: (b.cities || []).length,
+        mora: (b.moraCells || []).length,
+        obstacleCells: Object.keys(b.obstacleMax || {}).length
       },
       names: (b.airspaces || []).map(a => `${a.type || '?'}|${a.name || a.key || ''}`)
     };
   }
   /** Résumé léger mémorisé (siaBaseInfo:v1) : { airac, cachedAt, folderName, counts, checkedAt } ; lu par toutes les pages. */
-  const info = () => { try { return JSON.parse(localStorage.getItem(INFO) || 'null'); } catch { return null; } };
+  const info = () => {
+    try {
+      return JSON.parse(localStorage.getItem(INFO) || 'null');
+    } catch {
+      return null;
+    }
+  };
   /** Résumé de la base précédente (gardé à chaque nouvelle lecture) ; null si aucune. */
-  const previous = () => { try { return JSON.parse(localStorage.getItem(PREV) || 'null'); } catch { return null; } };
+  const previous = () => {
+    try {
+      return JSON.parse(localStorage.getItem(PREV) || 'null');
+    } catch {
+      return null;
+    }
+  };
+
   function remember(s) {
     if (!s) return;
-    try { localStorage.setItem(INFO, JSON.stringify({ airac: s.airac, mixed: s.mixed, cachedAt: s.cachedAt, folderName: s.folderName, counts: { ...s.counts, byType: undefined }, checkedAt: new Date().toISOString() })); } catch { /* quota */ }
-    window.dispatchEvent(new CustomEvent('sia-base-change', { detail: { summary: s } }));
+    try {
+      localStorage.setItem(INFO, JSON.stringify({
+        airac: s.airac,
+        mixed: s.mixed,
+        cachedAt: s.cachedAt,
+        folderName: s.folderName,
+        counts: {
+          ...s.counts,
+          byType: undefined
+        },
+        checkedAt: new Date().toISOString()
+      }));
+    } catch {
+      /* quota */ }
+    window.dispatchEvent(new CustomEvent('sia-base-change', {
+      detail: {
+        summary: s
+      }
+    }));
   }
   /** Résumé de la base mémorisée (et mise à jour de siaBaseInfo:v1). */
-  async function summary() { const s = summarize(await get()); if (s) remember(s); return s; }
+  async function summary() {
+    const s = summarize(await get());
+    if (s) remember(s);
+    return s;
+  }
 
   // ===================================================================== CSV
   /** Lignes d'un CSV (virgule, guillemets doubles, BOM ignoré) ; lignes vides écartées. */
   function csvRows(text) {
     const rows = [];
-    let row = [], field = '', q = false;
+    let row = [],
+      field = '',
+      q = false;
     const s = String(text).replace(/^﻿/, '');
     for (let i = 0; i < s.length; i++) {
       const ch = s[i];
-      if (q) { if (ch === '"') { if (s[i + 1] === '"') { field += '"'; i++; } else q = false; } else field += ch; continue; }
+      if (q) {
+        if (ch === '"') {
+          if (s[i + 1] === '"') {
+            field += '"';
+            i++;
+          } else q = false;
+        } else field += ch;
+        continue;
+      }
       if (ch === '"') q = true;
-      else if (ch === ',') { row.push(field); field = ''; }
-      else if (ch === '\n') { row.push(field.replace(/\r$/, '')); rows.push(row); row = []; field = ''; }
-      else field += ch;
+      else if (ch === ',') {
+        row.push(field);
+        field = '';
+      } else if (ch === '\n') {
+        row.push(field.replace(/\r$/, ''));
+        rows.push(row);
+        row = [];
+        field = '';
+      } else field += ch;
     }
-    if (field !== '' || row.length) { row.push(field.replace(/\r$/, '')); rows.push(row); }
+    if (field !== '' || row.length) {
+      row.push(field.replace(/\r$/, ''));
+      rows.push(row);
+    }
     return rows.filter(r => r.some(c => c !== ''));
   }
-  const csvField = v => { const s = String(v ?? ''); return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const csvField = v => {
+    const s = String(v ?? '');
+    return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
   /** Villes (name, lat, lon, population). */
   function parseCities(text) {
-    const rows = csvRows(text), h = (rows.shift() || []).map(x => x.trim().toLowerCase()), ix = n => h.indexOf(n);
+    const rows = csvRows(text),
+      h = (rows.shift() || []).map(x => x.trim().toLowerCase()),
+      ix = n => h.indexOf(n);
     if (['name', 'lat', 'lon', 'population'].some(n => ix(n) < 0)) throw new Error('CSV villes : colonnes name,lat,lon,population requises.');
-    return rows.filter(c => c.length >= h.length).map(c => ({ name: c[ix('name')], lat: +c[ix('lat')], lon: +c[ix('lon')], population: +c[ix('population')] }))
+    return rows.filter(c => c.length >= h.length).map(c => ({
+        name: c[ix('name')],
+        lat: +c[ix('lat')],
+        lon: +c[ix('lon')],
+        population: +c[ix('population')]
+      }))
       .filter(c => c.name && Number.isFinite(c.lat) && Number.isFinite(c.lon) && Number.isFinite(c.population));
   }
 
   // ===================================================================== MORA
-  const sup = s => String(s).replace(/[0-9]/g, d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[+d]);
+  const sup = s => String(s).replace(/[0-9]/g, d => '⁰¹²³⁴⁵⁶⁷⁸⁹' [+d]);
   /** Notation OACI « 3⁵ » (3500 ft). */
-  const moraLabel = ft => { const h = Math.round(ft / 100); return Math.floor(h / 10) + sup(h % 10); };
+  const moraLabel = ft => {
+    const h = Math.round(ft / 100);
+    return Math.floor(h / 10) + sup(h % 10);
+  };
   /** MORA (ft) d'une cellule : point le plus haut + 1000 ft (2000 ft au-delà de 5000 ft), à la centaine supérieure. */
   const moraOf = top => Math.ceil((top + (top > 5000 ? 2000 : 1000)) / 100) * 100;
   /** MORA (ft) d'une cellule lue (moraFt, sinon notation « 3⁵ »). */
   const moraFtOf = c => c.moraFt ?? +String(c.mora).replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g, d => '⁰¹²³⁴⁵⁶⁷⁸⁹'.indexOf(d)) * 100;
   /** Cellules d'un mora.csv (lat, lon, mora, mora_ft, lat_step, lon_step) ; une par position. */
   function parseMora(text) {
-    const rows = csvRows(text), h = (rows.shift() || []).map(x => x.trim().toLowerCase()), ix = n => h.indexOf(n);
+    const rows = csvRows(text),
+      h = (rows.shift() || []).map(x => x.trim().toLowerCase()),
+      ix = n => h.indexOf(n);
     if (['lat', 'lon', 'mora'].some(n => ix(n) < 0)) throw new Error('MORA CSV : colonnes lat,lon,mora requises.');
     const unique = new Map;
     for (const c of rows) {
-      const cell = { lat: +c[ix('lat')], lon: +c[ix('lon')], mora: c[ix('mora')], moraFt: ix('mora_ft') >= 0 ? +c[ix('mora_ft')] : null,
-        latStep: ix('lat_step') >= 0 ? (+c[ix('lat_step')] || 1) : 1, lonStep: ix('lon_step') >= 0 ? (+c[ix('lon_step')] || 1) : 1 };
+      const cell = {
+        lat: +c[ix('lat')],
+        lon: +c[ix('lon')],
+        mora: c[ix('mora')],
+        moraFt: ix('mora_ft') >= 0 ? +c[ix('mora_ft')] : null,
+        latStep: ix('lat_step') >= 0 ? (+c[ix('lat_step')] || 1) : 1,
+        lonStep: ix('lon_step') >= 0 ? (+c[ix('lon_step')] || 1) : 1
+      };
       if (Number.isFinite(cell.lat) && Number.isFinite(cell.lon) && cell.mora && !unique.has(cell.lat + '|' + cell.lon)) unique.set(cell.lat + '|' + cell.lon, cell);
     }
     return [...unique.values()];
@@ -172,48 +320,86 @@
   const moraCycle = text => /obstacles AIRAC (\d{4}-\d{2}-\d{2})/.exec(String(text || ''))?.[1] || '';
   const MORA_SOURCE = 'Calculée : relief Terrarium (AWS Terrain Tiles) + sommets OSM + obstacles AIXM SIA — non certifiée';
   /** mora.csv d'une grille calculée (computeMoraGrid). */
-  function moraCsv(cells, { airac = '' } = {}) {
+  function moraCsv(cells, {
+    airac = ''
+  } = {}) {
     const source = MORA_SOURCE + (cells.peaksOk === false ? ' (sommets OSM indisponibles : relief majoré de 100 m)' : '') + (airac ? ` — obstacles AIRAC ${airac}` : '');
     return '﻿' + ['lat,lon,mora,mora_ft,lat_step,lon_step,terrain_ft,obstacle_ft,source',
-      ...cells.map(m => [m.lat.toFixed(1), m.lon.toFixed(1), m.mora, m.moraFt, 1, 1, m.terrainFt ?? '', m.obstacleFt ?? '', source].map(csvField).join(','))].join('\r\n') + '\r\n';
+      ...cells.map(m => [m.lat.toFixed(1), m.lon.toFixed(1), m.mora, m.moraFt, 1, 1, m.terrainFt ?? '', m.obstacleFt ?? '', source].map(csvField).join(','))
+    ].join('\r\n') + '\r\n';
   }
   /** Recalcul simple : obstacles obstacleMax ({ 'lat|lon' : ft }) d'un nouveau cycle, relief (terrain_ft) du mora.csv existant.
    *  { csv, cells, changes: [{ lat, lon, before, after, obstacleBefore, obstacleAfter }], skipped }. */
   function moraFromObstacles(text, obstacleMax, cycle) {
-    const rows = csvRows(text), head = (rows.shift() || []).map(h => h.trim().toLowerCase()), ix = n => head.indexOf(n);
+    const rows = csvRows(text),
+      head = (rows.shift() || []).map(h => h.trim().toLowerCase()),
+      ix = n => head.indexOf(n);
     if (['lat', 'lon', 'mora_ft', 'terrain_ft'].some(n => ix(n) < 0)) throw new Error('mora.csv : colonnes lat, lon, mora_ft, terrain_ft requises (fichier produit par le calcul complet).');
     if (ix('obstacle_ft') < 0) head.push('obstacle_ft');
     if (ix('source') < 0) head.push('source');
-    const changes = [], cells = [], tag = cycle ? ` — obstacles AIRAC ${cycle} (recalcul simple)` : '';
+    const changes = [],
+      cells = [],
+      tag = cycle ? ` — obstacles AIRAC ${cycle} (recalcul simple)` : '';
     let skipped = 0;
     const out = rows.map(r => {
-      const lat = +r[ix('lat')], lon = +r[ix('lon')], terrain = +r[ix('terrain_ft')];
-      if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(terrain)) { skipped++; return r; }
-      const key = Math.floor(lat) + '|' + Math.floor(lon), obstBefore = Math.round(+(r[ix('obstacle_ft')] || 0) || 0),
-        obst = Math.round(obstacleMax?.[key] || 0), before = +r[ix('mora_ft')], after = moraOf(Math.max(terrain, obst));
-      if (after !== before || obst !== obstBefore) changes.push({ lat, lon, before, after, obstacleBefore: obstBefore, obstacleAfter: obst });
+      const lat = +r[ix('lat')],
+        lon = +r[ix('lon')],
+        terrain = +r[ix('terrain_ft')];
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(terrain)) {
+        skipped++;
+        return r;
+      }
+      const key = Math.floor(lat) + '|' + Math.floor(lon),
+        obstBefore = Math.round(+(r[ix('obstacle_ft')] || 0) || 0),
+        obst = Math.round(obstacleMax?.[key] || 0),
+        before = +r[ix('mora_ft')],
+        after = moraOf(Math.max(terrain, obst));
+      if (after !== before || obst !== obstBefore) changes.push({
+        lat,
+        lon,
+        before,
+        after,
+        obstacleBefore: obstBefore,
+        obstacleAfter: obst
+      });
       const line = head.map((h, i) => r[i] ?? '');
       line[head.indexOf('mora')] = moraLabel(after);
       line[head.indexOf('mora_ft')] = after;
       line[head.indexOf('obstacle_ft')] = obst;
       line[head.indexOf('source')] = String(line[head.indexOf('source')] || '').replace(/ — obstacles AIRAC [\d-]+( \(recalcul simple\))?$/, '') + tag;
-      cells.push({ lat, lon, mora: moraLabel(after), moraFt: after, latStep: +r[ix('lat_step')] || 1, lonStep: +r[ix('lon_step')] || 1 });
+      cells.push({
+        lat,
+        lon,
+        mora: moraLabel(after),
+        moraFt: after,
+        latStep: +r[ix('lat_step')] || 1,
+        lonStep: +r[ix('lon_step')] || 1
+      });
       return line;
     });
-    return { csv: '﻿' + [head.join(','), ...out.map(r => r.map(csvField).join(','))].join('\r\n') + '\r\n', cells, changes, skipped };
+    return {
+      csv: '﻿' + [head.join(','), ...out.map(r => r.map(csvField).join(','))].join('\r\n') + '\r\n',
+      cells,
+      changes,
+      skipped
+    };
   }
   // Calcul complet : cellule de 1° × 1°, point le plus haut — relief (tuiles Terrarium z9 puis z12, SRTM / GMTED…),
   // sommet OSM ou obstacle de l'AIXM SIA — + 1000 ft (2000 ft au-delà de 5000 ft), centaine supérieure. Réseau requis.
   async function terrariumTile(z, x, y) {
     const r = await fetch(`https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`);
     if (!r.ok) throw new Error(`Tuile de relief ${z}/${x}/${y} : ${r.status}`);
-    const img = await createImageBitmap(await r.blob()), c = new OffscreenCanvas(256, 256), g = c.getContext('2d');
+    const img = await createImageBitmap(await r.blob()),
+      c = new OffscreenCanvas(256, 256),
+      g = c.getContext('2d');
     g.drawImage(img, 0, 0);
     return g.getImageData(0, 0, 256, 256).data;
   }
+
   function scanTile(d, z, x, y, box, visit) {
     for (let py = 0; py < 256; py++) {
-      const k = Math.PI - 2 * Math.PI * (y + (py + .5) / 256) / 2 ** z, lat = 180 / Math.PI * Math.atan(Math.sinh(k));
+      const k = Math.PI - 2 * Math.PI * (y + (py + .5) / 256) / 2 ** z,
+        lat = 180 / Math.PI * Math.atan(Math.sinh(k));
       if (lat < box.s || lat >= box.n) continue;
       for (let px = 0; px < 256; px++) {
         const lon = (x + (px + .5) / 256) / 2 ** z * 360 - 180;
@@ -225,17 +411,61 @@
   }
   /** Grille MORA complète sur l'emprise { s, n, w, e } ; obstacleMax : obstacles par cellule (base SIA). progress(done, total, étape). */
   /** Théâtres couverts par la grille MORA (cellules de 1° × 1°) : métropole et Corse, puis outre-mer. */
-  const MORA_ZONES = [
-    { name: 'métropole', s: 41, n: 51, w: -5, e: 10 },
-    { name: 'Antilles', s: 14, n: 17, w: -62, e: -60 },
-    { name: 'Guyane', s: 2, n: 6, w: -55, e: -51 },
-    { name: 'Saint-Pierre-et-Miquelon', s: 46, n: 48, w: -57, e: -56 },
-    { name: 'Réunion', s: -22, n: -20, w: 55, e: 56 },
-    { name: 'Mayotte', s: -14, n: -12, w: 44, e: 46 },
-    { name: 'Nouvelle-Calédonie', s: -23, n: -19, w: 163, e: 169 },
-    { name: 'Polynésie (îles de la Société)', s: -18, n: -16, w: -152, e: -148 },
-    { name: 'Wallis-et-Futuna', s: -15, n: -13, w: -179, e: -176 }
-  ];
+  const MORA_ZONES = [{
+    name: 'métropole',
+    s: 41,
+    n: 51,
+    w: -5,
+    e: 10
+  }, {
+    name: 'Antilles',
+    s: 14,
+    n: 17,
+    w: -62,
+    e: -60
+  }, {
+    name: 'Guyane',
+    s: 2,
+    n: 6,
+    w: -55,
+    e: -51
+  }, {
+    name: 'Saint-Pierre-et-Miquelon',
+    s: 46,
+    n: 48,
+    w: -57,
+    e: -56
+  }, {
+    name: 'Réunion',
+    s: -22,
+    n: -20,
+    w: 55,
+    e: 56
+  }, {
+    name: 'Mayotte',
+    s: -14,
+    n: -12,
+    w: 44,
+    e: 46
+  }, {
+    name: 'Nouvelle-Calédonie',
+    s: -23,
+    n: -19,
+    w: 163,
+    e: 169
+  }, {
+    name: 'Polynésie (îles de la Société)',
+    s: -18,
+    n: -16,
+    w: -152,
+    e: -148
+  }, {
+    name: 'Wallis-et-Futuna',
+    s: -15,
+    n: -13,
+    w: -179,
+    e: -176
+  }];
   /** Emprises MORA des missions situées hors des théâtres couverts (missions du registre : points de leur route
    *  probable) : degrés entiers, marge d'un demi-degré, emprises qui se recouvrent fusionnées ; une emprise de plus de
    *  12° de côté est écartée (mission trop étendue : à calculer par morceaux). [{ name, s, n, w, e }]. */
@@ -245,17 +475,40 @@
     for (const m of missions || []) {
       const pts = (m.estimate?.points || []).filter(p => Number.isFinite(+p.lat) && Number.isFinite(+p.lon) && !inZone(p));
       if (!pts.length) continue;
-      const la = pts.map(p => +p.lat), lo = pts.map(p => +p.lon);
-      boxes.push({ name: String(m.id || m.title || 'mission'), s: Math.floor(Math.min(...la) - .5), n: Math.ceil(Math.max(...la) + .5), w: Math.floor(Math.min(...lo) - .5), e: Math.ceil(Math.max(...lo) + .5) });
+      const la = pts.map(p => +p.lat),
+        lo = pts.map(p => +p.lon);
+      boxes.push({
+        name: String(m.id || m.title || 'mission'),
+        s: Math.floor(Math.min(...la) - .5),
+        n: Math.ceil(Math.max(...la) + .5),
+        w: Math.floor(Math.min(...lo) - .5),
+        e: Math.ceil(Math.max(...lo) + .5)
+      });
     }
     for (let merged = true; merged;) {
       merged = false;
-      for (let i = 0; i < boxes.length && !merged; i++) for (let j = i + 1; j < boxes.length; j++) {
-        const a = boxes[i], b = boxes[j];
-        if (a.s <= b.n && b.s <= a.n && a.w <= b.e && b.w <= a.e) { boxes[i] = { name: `${a.name}, ${b.name}`, s: Math.min(a.s, b.s), n: Math.max(a.n, b.n), w: Math.min(a.w, b.w), e: Math.max(a.e, b.e) }; boxes.splice(j, 1); merged = true; break; }
-      }
+      for (let i = 0; i < boxes.length && !merged; i++)
+        for (let j = i + 1; j < boxes.length; j++) {
+          const a = boxes[i],
+            b = boxes[j];
+          if (a.s <= b.n && b.s <= a.n && a.w <= b.e && b.w <= a.e) {
+            boxes[i] = {
+              name: `${a.name}, ${b.name}`,
+              s: Math.min(a.s, b.s),
+              n: Math.max(a.n, b.n),
+              w: Math.min(a.w, b.w),
+              e: Math.max(a.e, b.e)
+            };
+            boxes.splice(j, 1);
+            merged = true;
+            break;
+          }
+        }
     }
-    return boxes.filter(b => b.n - b.s <= 12 && b.e - b.w <= 12).map(b => ({ ...b, name: `missions ${b.name}` }));
+    return boxes.filter(b => b.n - b.s <= 12 && b.e - b.w <= 12).map(b => ({
+      ...b,
+      name: `missions ${b.name}`
+    }));
   }
   /** Grille MORA : une emprise (box : s, n, w, e) ou, sans emprise, tous les théâtres (MORA_ZONES) et les emprises
    *  supplémentaires (extra : missions hors théâtres, moraZonesOfMissions), cellules réunies. */
@@ -271,15 +524,43 @@
     all.peaksOk = peaksOk;
     return all;
   }
-  async function computeMoraBox(obstacleMax = {}, { s = 41, n = 51, w = -5, e = 10, z = 9, fine = 12 } = {}, progress) {
-    const cell = {}, spots = {}, tiles = [];
-    const tileX = (lon, zz) => Math.floor((lon + 180) / 360 * 2 ** zz), tileY = (lat, zz) => { const r = lat * Math.PI / 180; return Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** zz); };
-    for (let x = tileX(w, z); x <= tileX(e - 1e-9, z); x++) for (let y = tileY(n - 1e-9, z); y <= tileY(s, z); y++) tiles.push([x, y]);
-    const pool = async (jobs, run) => { const queue = [...jobs]; await Promise.all(Array.from({ length: 8 }, async () => { while (queue.length) await run(queue.shift()); })); };
+  async function computeMoraBox(obstacleMax = {}, {
+    s = 41,
+    n = 51,
+    w = -5,
+    e = 10,
+    z = 9,
+    fine = 12
+  } = {}, progress) {
+    const cell = {},
+      spots = {},
+      tiles = [];
+    const tileX = (lon, zz) => Math.floor((lon + 180) / 360 * 2 ** zz),
+      tileY = (lat, zz) => {
+        const r = lat * Math.PI / 180;
+        return Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** zz);
+      };
+    for (let x = tileX(w, z); x <= tileX(e - 1e-9, z); x++)
+      for (let y = tileY(n - 1e-9, z); y <= tileY(s, z); y++) tiles.push([x, y]);
+    const pool = async (jobs, run) => {
+      const queue = [...jobs];
+      await Promise.all(Array.from({
+        length: 8
+      }, async () => {
+        while (queue.length) await run(queue.shift());
+      }));
+    };
     let done = 0;
     await pool(tiles, async ([x, y]) => {
-      scanTile(await terrariumTile(z, x, y), z, x, y, { s, n, w, e }, (lat, lon, h) => {
-        const key = Math.floor(lat) + '|' + Math.floor(lon), t = tileX(lon, fine) + '/' + tileY(lat, fine), sp = spots[key] ??= {};
+      scanTile(await terrariumTile(z, x, y), z, x, y, {
+        s,
+        n,
+        w,
+        e
+      }, (lat, lon, h) => {
+        const key = Math.floor(lat) + '|' + Math.floor(lon),
+          t = tileX(lon, fine) + '/' + tileY(lat, fine),
+          sp = spots[key] ??= {};
         if (!(h <= cell[key])) cell[key] = h;
         if (!(h <= sp[t])) sp[t] = h;
       });
@@ -291,7 +572,14 @@
     let fineDone = 0;
     await pool(jobs, async ([key, t]) => {
       const [x, y] = t.split('/').map(Number), [cl, co] = key.split('|').map(Number), d = await (cache[t] ??= terrariumTile(fine, x, y));
-      scanTile(d, fine, x, y, { s: cl, n: cl + 1, w: co, e: co + 1 }, (a, b, h) => { if (h > cell[key]) cell[key] = h; });
+      scanTile(d, fine, x, y, {
+        s: cl,
+        n: cl + 1,
+        w: co,
+        e: co + 1
+      }, (a, b, h) => {
+        if (h > cell[key]) cell[key] = h;
+      });
       progress?.(++fineDone, jobs.length, 'sommets');
     });
     // Le relief Terrarium (~90 m à la source) écrête les sommets de 20 à 90 m : altitudes des sommets OSM (natural=peak).
@@ -300,43 +588,79 @@
     try {
       progress?.(0, 1, 'sommets OSM');
       const q = `[out:json][timeout:90];node["natural"="peak"]["ele"~"^[1-4][0-9]{3}([.,][0-9]+)?$"](${s},${w},${n},${e});out;`;
-      const r = await fetch('https://overpass-api.de/api/interpreter', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + encodeURIComponent(q), signal: AbortSignal.timeout(25000) });
+      const r = await fetch('https://overpass-api.de/api/interpreter', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: 'data=' + encodeURIComponent(q),
+        signal: AbortSignal.timeout(25000)
+      });
       if (!r.ok) throw new Error(r.status);
       for (const node of (await r.json()).elements || []) {
         const m = /^\s*(-?\d+(?:[.,]\d+)?)\s*(m|ft)?/i.exec(node.tags?.ele || '');
         if (!m) continue;
-        const h = +m[1].replace(',', '.') * (/ft/i.test(m[2] || '') ? .3048 : 1), key = Math.floor(node.lat) + '|' + Math.floor(node.lon);
+        const h = +m[1].replace(',', '.') * (/ft/i.test(m[2] || '') ? .3048 : 1),
+          key = Math.floor(node.lat) + '|' + Math.floor(node.lon);
         if (h < 9000 && !(h <= peak[key])) peak[key] = h;
       }
-    } catch { peaksOk = false; }
+    } catch {
+      peaksOk = false;
+    }
     const cells = Object.entries(cell).map(([key, m]) => {
       const [lat, lon] = key.split('|').map(Number), terrainFt = Math.max(0, m > 0 && !peaksOk ? m + 100 : m, peak[key] || 0) * 3.28084,
         obstacleFt = obstacleMax[key] || 0, moraFt = moraOf(Math.max(terrainFt, obstacleFt));
-      return { lat, lon, mora: moraLabel(moraFt), moraFt, terrainFt: Math.round(terrainFt), obstacleFt: Math.round(obstacleFt), latStep: 1, lonStep: 1 };
+      return {
+        lat,
+        lon,
+        mora: moraLabel(moraFt),
+        moraFt,
+        terrainFt: Math.round(terrainFt),
+        obstacleFt: Math.round(obstacleFt),
+        latStep: 1,
+        lonStep: 1
+      };
     }).sort((a, b) => b.lat - a.lat || a.lon - b.lon);
     cells.peaksOk = peaksOk;
     return cells;
   }
 
   // ===================================================================== parseurs SIA
-  const txt = (node, local) => { const e = node.getElementsByTagNameNS('*', local)[0]; return e ? e.textContent.trim() : ''; };
+  const txt = (node, local) => {
+    const e = node.getElementsByTagNameNS('*', local)[0];
+    return e ? e.textContent.trim() : '';
+  };
   /** Coordonnée AIXM « 471530N » / « 0023015E » / décimale → degrés décimaux. */
   function aixmDms(value, isLat) {
     value = (value || '').trim();
     if (!value) return NaN;
-    const hemi = value.slice(-1).toUpperCase(), parts = value.slice(0, -1).split('.'), digits = parts[0], degLen = isLat ? 2 : 3;
+    const hemi = value.slice(-1).toUpperCase(),
+      parts = value.slice(0, -1).split('.'),
+      digits = parts[0],
+      degLen = isLat ? 2 : 3;
     if (digits.length < degLen + 4) return NaN;
-    const deg = +digits.slice(0, degLen), min = +digits.slice(degLen, degLen + 2), sec = +digits.slice(degLen + 2, degLen + 4) + (parts[1] ? +('0.' + parts[1]) : 0);
+    const deg = +digits.slice(0, degLen),
+      min = +digits.slice(degLen, degLen + 2),
+      sec = +digits.slice(degLen + 2, degLen + 4) + (parts[1] ? +('0.' + parts[1]) : 0);
     return (hemi === 'S' || hemi === 'W' ? -1 : 1) * (deg + min / 60 + sec / 3600);
   }
   /** Arc AIXM (CWA / CCA) entre deux sommets autour d'un centre → suite de points. */
   function expandAixmArc(start, end, center, clockwise) {
-    const cos = Math.cos(center[0] * Math.PI / 180), angle = p => Math.atan2(p[0] - center[0], (p[1] - center[1]) * cos);
+    const cos = Math.cos(center[0] * Math.PI / 180),
+      angle = p => Math.atan2(p[0] - center[0], (p[1] - center[1]) * cos);
     const a = angle(start);
     let delta = angle(end) - a;
-    if (clockwise) { while (delta >= 0) delta -= Math.PI * 2; } else while (delta <= 0) delta += Math.PI * 2;
-    const steps = Math.max(3, Math.ceil(Math.abs(delta) * 12)), r = Math.hypot((start[1] - center[1]) * cos, start[0] - center[0]), out = [];
-    for (let i = 1; i < steps; i++) { const q = a + delta * i / steps; out.push([center[0] + Math.sin(q) * r, center[1] + Math.cos(q) * r / cos]); }
+    if (clockwise) {
+      while (delta >= 0) delta -= Math.PI * 2;
+    } else
+      while (delta <= 0) delta += Math.PI * 2;
+    const steps = Math.max(3, Math.ceil(Math.abs(delta) * 12)),
+      r = Math.hypot((start[1] - center[1]) * cos, start[0] - center[0]),
+      out = [];
+    for (let i = 1; i < steps; i++) {
+      const q = a + delta * i / steps;
+      out.push([center[0] + Math.sin(q) * r, center[1] + Math.cos(q) * r / cos]);
+    }
     out.push(end);
     return out;
   }
@@ -346,38 +670,66 @@
   /** Gestionnaire et activation d'un espace d'après sa remarque AIXM (« Administrator : CDPGE Athis-Mons.# … AZBA charts »). */
   function activationOf(rmk) {
     // remarque sans séparateur (« Administrator : CCER Bordeaux Airspace defined… ») : nom arrêté au début de la phrase suivante
-    const r = String(rmk || ''), admin = (/(?:Administrator|Gestionnaire)\s*:\s*([^#\n\r.]+)/i.exec(r)?.[1] || '').split(/\s+(?=(?:Airspace|Area|Zone|Activ\w*|Avoidance|Espace|Except\w*|Excluding|When|Lorsque)\b)/)[0].trim(),
+    const r = String(rmk || ''),
+      admin = (/(?:Administrator|Gestionnaire)\s*:\s*([^#\n\r.]+)/i.exec(r)?.[1] || '').split(/\s+(?=(?:Airspace|Area|Zone|Activ\w*|Avoidance|Espace|Except\w*|Excluding|When|Lorsque)\b)/)[0].trim(),
       info = /(?:Activity known on|Actual activity provided by|Renseignements?\s*(?:sur l'activité)?)\s*:?\s*#?\s*-?\s*([^#\n\r]+)/i.exec(r)?.[1]?.trim().replace(/[.,;:]+$/, '') || '',
       act = /AZBA/i.test(r) ? 'AZBA' : /NOTAM/i.test(r) ? 'NOTAM' : /without notice|sans préavis/i.test(r) ? 'sans préavis' : '';
-    return { admin, act, info };
+    return {
+      admin,
+      act,
+      info
+    };
   }
+
   function parseAixmAirspaces(doc) {
     const meta = new Map;
     for (const ase of doc.getElementsByTagName('Ase')) {
       const uid = ase.getElementsByTagName('AseUid')[0];
       if (!uid) continue;
-      const mid = uid.getAttribute('mid'), raw = txt(uid, 'codeType').toUpperCase(), local = txt(ase, 'txtLocalType').toUpperCase(),
+      const mid = uid.getAttribute('mid'),
+        raw = txt(uid, 'codeType').toUpperCase(),
+        local = txt(ase, 'txtLocalType').toUpperCase(),
         type = raw === 'D-OTHER' && /SIV|FIS/.test(local) ? 'SIV' : raw === 'D-OTHER' && /^(SUR|PRN)$/.test(local) ? local : raw;
       const lim = (c, v, u) => {
-        const code = txt(ase, c).toUpperCase(), val = txt(ase, v), uom = txt(ase, u).toUpperCase();
+        const code = txt(ase, c).toUpperCase(),
+          val = txt(ase, v),
+          uom = txt(ase, u).toUpperCase();
         if (!val && !code) return '';
         if (uom === 'FL' || code === 'STD') return 'FL ' + val;
         if (code === 'HEI' && +val === 0) return 'SFC';
         return `${val} ${uom === 'M' ? 'm' : 'ft'} ${code === 'HEI' ? 'ASFC' : 'AMSL'}`;
       };
-      meta.set(mid, { type, cls: txt(ase, 'codeClass').toUpperCase(), name: txt(ase, 'txtName') || txt(uid, 'codeId'), key: txt(uid, 'codeId') || mid,
-        lower: lim('codeDistVerLower', 'valDistVerLower', 'uomDistVerLower'), upper: lim('codeDistVerUpper', 'valDistVerUpper', 'uomDistVerUpper'), azba: /AZBA/i.test(txt(ase, 'txtRmk')), ...activationOf(txt(ase, 'txtRmk')) });
+      meta.set(mid, {
+        type,
+        cls: txt(ase, 'codeClass').toUpperCase(),
+        name: txt(ase, 'txtName') || txt(uid, 'codeId'),
+        key: txt(uid, 'codeId') || mid,
+        lower: lim('codeDistVerLower', 'valDistVerLower', 'uomDistVerLower'),
+        upper: lim('codeDistVerUpper', 'valDistVerUpper', 'uomDistVerUpper'),
+        azba: /AZBA/i.test(txt(ase, 'txtRmk')),
+        ...activationOf(txt(ase, 'txtRmk'))
+      });
     }
     const grouped = new Map;
     for (const abd of doc.getElementsByTagName('Abd')) {
       const uid = abd.getElementsByTagName('AseUid')[0];
       if (!uid) continue;
-      const mid = uid.getAttribute('mid'), meta1 = meta.get(mid) || { type: txt(uid, 'codeType').toUpperCase(), name: txt(uid, 'codeId'), key: txt(uid, 'codeId') || mid };
+      const mid = uid.getAttribute('mid'),
+        meta1 = meta.get(mid) || {
+          type: txt(uid, 'codeType').toUpperCase(),
+          name: txt(uid, 'codeId'),
+          key: txt(uid, 'codeId') || mid
+        };
       if (!AIXM_TYPES.has(meta1.type)) continue;
-      const ring = [], vx = [];
+      const ring = [],
+        vx = [];
       for (const avx of abd.getElementsByTagName('Avx')) {
         const pt = [aixmDms(txt(avx, 'geoLat'), true), aixmDms(txt(avx, 'geoLong'), false)];
-        if (Number.isFinite(pt[0]) && Number.isFinite(pt[1])) vx.push({ pt, kind: txt(avx, 'codeType').toUpperCase(), center: [aixmDms(txt(avx, 'geoLatArc'), true), aixmDms(txt(avx, 'geoLongArc'), false)] });
+        if (Number.isFinite(pt[0]) && Number.isFinite(pt[1])) vx.push({
+          pt,
+          kind: txt(avx, 'codeType').toUpperCase(),
+          center: [aixmDms(txt(avx, 'geoLatArc'), true), aixmDms(txt(avx, 'geoLongArc'), false)]
+        });
       }
       vx.forEach((v, i) => {
         ring.push(v.pt);
@@ -387,12 +739,24 @@
       const circle = abd.getElementsByTagName('Circle')[0];
       if (circle && !vx.length) {
         const c = [aixmDms(txt(circle, 'geoLatCen'), true), aixmDms(txt(circle, 'geoLongCen'), false)],
-          km = +txt(circle, 'valRadius') * ({ NM: 1.852, KM: 1, M: .001, FT: .0003048 }[txt(circle, 'uomRadius').toUpperCase()] || 1.852);
-        if (Number.isFinite(c[0]) && Number.isFinite(c[1]) && km > 0) for (let k = 0; k < 72; k++) { const t = k / 72 * 2 * Math.PI; ring.push([c[0] + km / 111.32 * Math.cos(t), c[1] + km / (111.32 * Math.cos(c[0] * Math.PI / 180)) * Math.sin(t)]); }
+          km = +txt(circle, 'valRadius') * ({
+            NM: 1.852,
+            KM: 1,
+            M: .001,
+            FT: .0003048
+          } [txt(circle, 'uomRadius').toUpperCase()] || 1.852);
+        if (Number.isFinite(c[0]) && Number.isFinite(c[1]) && km > 0)
+          for (let k = 0; k < 72; k++) {
+            const t = k / 72 * 2 * Math.PI;
+            ring.push([c[0] + km / 111.32 * Math.cos(t), c[1] + km / (111.32 * Math.cos(c[0] * Math.PI / 180)) * Math.sin(t)]);
+          }
       }
       if (ring.length < 3 && !(/^(SUR|PRN)$/.test(meta1.type) && ring.length)) continue;
       const key = meta1.type + '|' + mid;
-      if (!grouped.has(key)) grouped.set(key, { ...meta1, rings: [] });
+      if (!grouped.has(key)) grouped.set(key, {
+        ...meta1,
+        rings: []
+      });
       grouped.get(key).rings.push(ring);
     }
     return [...grouped.values()];
@@ -401,10 +765,15 @@
   function parseAixmObstacles(text) {
     const out = {};
     for (const chunk of text.split('<Obs>').slice(1)) {
-      const b = chunk.slice(0, chunk.indexOf('</Obs>')), la = /<geoLat>([^<]+)<\/geoLat>/.exec(b), lo = /<geoLong>([^<]+)<\/geoLong>/.exec(b),
-        el = /<valElev>([\d.]+)<\/valElev>/.exec(b), uom = /<uomDistVer>(\w+)<\/uomDistVer>/.exec(b);
+      const b = chunk.slice(0, chunk.indexOf('</Obs>')),
+        la = /<geoLat>([^<]+)<\/geoLat>/.exec(b),
+        lo = /<geoLong>([^<]+)<\/geoLong>/.exec(b),
+        el = /<valElev>([\d.]+)<\/valElev>/.exec(b),
+        uom = /<uomDistVer>(\w+)<\/uomDistVer>/.exec(b);
       if (!la || !lo || !el) continue;
-      const lat = aixmDms(la[1], true), lon = aixmDms(lo[1], false), ft = +el[1] * (uom && /^M$/i.test(uom[1]) ? 3.28084 : 1);
+      const lat = aixmDms(la[1], true),
+        lon = aixmDms(lo[1], false),
+        ft = +el[1] * (uom && /^M$/i.test(uom[1]) ? 3.28084 : 1);
       if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
       const k = Math.floor(lat) + '|' + Math.floor(lon);
       if (!(ft <= out[k])) out[k] = ft;
@@ -414,22 +783,45 @@
   /** XML_SIA_<date>.xml (ISO-8859-1) : contours de tous les espaces (SIV, RMZ/TMZ, AP, FIR…) — <EspaceS> (type, nom) et
    *  <PartieS> (<Geometrie> « lat,lon » par ligne, arcs déjà densifiés). Découpage de chaînes, sans DOM : ≈ 40 ms pour 27 Mo. */
   function parseXmlSiaAirspaces(text) {
-    const section = tag => { const a = text.indexOf(`<${tag}>`), b = a < 0 ? -1 : text.indexOf(`</${tag}>`, a); return a < 0 || b < 0 ? '' : text.slice(a, b); };
-    const val = (b, t) => { const i = b.indexOf(`<${t}>`); if (i < 0) return ''; return b.slice(i + t.length + 2, b.indexOf('<', i + t.length + 2)).trim(); };
-    const esp = new Map, out = new Map;
+    const section = tag => {
+      const a = text.indexOf(`<${tag}>`),
+        b = a < 0 ? -1 : text.indexOf(`</${tag}>`, a);
+      return a < 0 || b < 0 ? '' : text.slice(a, b);
+    };
+    const val = (b, t) => {
+      const i = b.indexOf(`<${t}>`);
+      if (i < 0) return '';
+      return b.slice(i + t.length + 2, b.indexOf('<', i + t.length + 2)).trim();
+    };
+    const esp = new Map,
+      out = new Map;
     for (const chunk of section('EspaceS').split('</Espace>')) {
       const m = /<Espace pk="(\d+)" lk="([^"]*)">/.exec(chunk);
-      if (m) esp.set(m[1], { type: val(chunk, 'TypeEspace').toUpperCase(), name: val(chunk, 'Nom'), key: m[2] });
+      if (m) esp.set(m[1], {
+        type: val(chunk, 'TypeEspace').toUpperCase(),
+        name: val(chunk, 'Nom'),
+        key: m[2]
+      });
     }
     for (const chunk of section('PartieS').split('</Partie>')) {
       const i = chunk.indexOf('<Espace pk="');
       if (i < 0) continue;
-      const pk = chunk.slice(i + 12, chunk.indexOf('"', i + 12)), e = esp.get(pk), g = val(chunk, 'Geometrie');
+      const pk = chunk.slice(i + 12, chunk.indexOf('"', i + 12)),
+        e = esp.get(pk),
+        g = val(chunk, 'Geometrie');
       if (!e || !g) continue;
       const ring = [];
-      for (const p of g.split(/\s+/)) { const k = p.indexOf(','), lat = +p.slice(0, k), lon = +p.slice(k + 1); if (k > 0 && Number.isFinite(lat) && Number.isFinite(lon)) ring.push([lat, lon]); }
+      for (const p of g.split(/\s+/)) {
+        const k = p.indexOf(','),
+          lat = +p.slice(0, k),
+          lon = +p.slice(k + 1);
+        if (k > 0 && Number.isFinite(lat) && Number.isFinite(lon)) ring.push([lat, lon]);
+      }
       if (ring.length < 2) continue;
-      (out.get(pk) || out.set(pk, { ...e, rings: [] }).get(pk)).rings.push(ring);
+      (out.get(pk) || out.set(pk, {
+        ...e,
+        rings: []
+      }).get(pk)).rings.push(ring);
     }
     return [...out.values()];
   }
@@ -437,20 +829,41 @@
   function parseLegacyAirspaces(text) {
     const doc = new DOMParser().parseFromString(text, 'application/xml');
     if (doc.querySelector('parsererror')) throw new Error('XML sia-airspaces invalide.');
-    return [...doc.getElementsByTagNameNS('*', 'Airspace')].map(a => ({ type: txt(a, 'type').toUpperCase(), name: txt(a, 'name'), key: txt(a, 'sourceKey'),
-      rings: [...a.getElementsByTagNameNS('*', 'posList')].map(p => { const v = p.textContent.trim().split(/\s+/).map(Number), r = []; for (let i = 0; i + 1 < v.length; i += 2) r.push([v[i], v[i + 1]]); return r; }).filter(r => r.length > 1) }));
+    return [...doc.getElementsByTagNameNS('*', 'Airspace')].map(a => ({
+      type: txt(a, 'type').toUpperCase(),
+      name: txt(a, 'name'),
+      key: txt(a, 'sourceKey'),
+      rings: [...a.getElementsByTagNameNS('*', 'posList')].map(p => {
+        const v = p.textContent.trim().split(/\s+/).map(Number),
+          r = [];
+        for (let i = 0; i + 1 < v.length; i += 2) r.push([v[i], v[i + 1]]);
+        return r;
+      }).filter(r => r.length > 1)
+    }));
   }
   /** Rôle d'un XML du dossier, d'après son nom et son début (sans le charger entièrement). */
   async function inspectXml(file) {
-    const head = await file.slice(0, 131072).text(), root = (head.match(/<([\w.-]+:)?([\w.-]+)(?:\s|>)/) || [])[2] || 'XML';
+    const head = await file.slice(0, 131072).text(),
+      root = (head.match(/<([\w.-]+:)?([\w.-]+)(?:\s|>)/) || [])[2] || 'XML';
     let role = 'XML SIA annexe';
     if (/AirspaceDataset/i.test(root + head)) role = 'Contours dérivés (ancien format) — ignorés quand XML_SIA est présent';
     else if (/AIXM-Snapshot|AIXMBasicMessage/i.test(root + head) || /AIXM4\.5/i.test(file.name)) role = 'AIXM complet — espaces, aérodromes, balises, obstacles';
     else if (/CoordinateDataset|miam/i.test(root + head)) role = 'Coordonnées ENR / MIAM';
     else if (/XML_SIA/i.test(file.name)) role = 'Export XML-SIA complet — contours d’espaces (SIV, RMZ/TMZ, AP…)';
-    return { file, root, role };
+    return {
+      file,
+      root,
+      role
+    };
   }
-  const inRing = (ring, lat, lon) => { let inside = false; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const [yi, xi] = ring[i], [yj, xj] = ring[j]; if ((yi > lat) !== (yj > lat) && lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) inside = !inside; } return inside; };
+  const inRing = (ring, lat, lon) => {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [yi, xi] = ring[i], [yj, xj] = ring[j];
+      if ((yi > lat) !== (yj > lat) && lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  };
   /** Aérodrome contrôlé : unité TWR dans l'AIXM, ou situé dans une CTR. */
   /** Points de report VFR du XML_SIA (NavFix de type VFR) : [{ id (« MM-CV »), name (« VRP-Cavaillon (…) »), lat, lon }]. */
   function parseXmlSiaVfrPoints(text) {
@@ -459,30 +872,56 @@
       const b = m[1];
       if (!/<NavType>\s*VFR\s*<\/NavType>/.test(b)) continue;
       const tag = n => (new RegExp(`<${n}>([^<]*)</${n}>`).exec(b) || [])[1] || '';
-      const lat = parseFloat(tag('Latitude')), lon = parseFloat(tag('Longitude'));
-      if (Number.isFinite(lat) && Number.isFinite(lon)) out.push({ id: tag('Ident').trim(), name: tag('Description').trim().replace(/^VRP-\s*/i, ''), lat, lon });
+      const lat = parseFloat(tag('Latitude')),
+        lon = parseFloat(tag('Longitude'));
+      if (Number.isFinite(lat) && Number.isFinite(lon)) out.push({
+        id: tag('Ident').trim(),
+        name: tag('Description').trim().replace(/^VRP-\s*/i, ''),
+        lat,
+        lon
+      });
     }
     return out;
   }
+
   function markControlledAerodromes(aero, airspaces) {
     const ctr = airspaces.filter(a => a.type === 'CTR');
-    for (const ad of aero?.aerodromes || []) if (!ad.controlled) ad.controlled = ctr.some(c => c.rings.some(r => inRing(r, ad.lat, ad.lon)));
+    for (const ad of aero?.aerodromes || [])
+      if (!ad.controlled) ad.controlled = ctr.some(c => c.rings.some(r => inRing(r, ad.lat, ad.lon)));
   }
 
   // ===================================================================== lecture du dossier
   /** Laisse le navigateur respirer (affichage de la jauge) sans minuterie : MessageChannel n'est pas ralenti dans un
    *  onglet en arrière-plan, contrairement à setTimeout / requestAnimationFrame. */
-  const breathe = () => new Promise(r => { const c = new MessageChannel(); c.port1.onmessage = () => r(); c.port2.postMessage(0); });
+  const breathe = () => new Promise(r => {
+    const c = new MessageChannel();
+    c.port1.onmessage = () => r();
+    c.port2.postMessage(0);
+  });
   /** Texte d'un fichier lu en flux (octets lus → onBytes) ; signal : annulation. */
-  async function readText(file, { encoding = 'utf-8', onBytes, signal } = {}) {
-    const dec = new TextDecoder(encoding), reader = file.stream().getReader(), parts = [];
+  async function readText(file, {
+    encoding = 'utf-8',
+    onBytes,
+    signal
+  } = {}) {
+    const dec = new TextDecoder(encoding),
+      reader = file.stream().getReader(),
+      parts = [];
     let n = 0;
     for (;;) {
-      if (signal?.aborted) { reader.cancel().catch(() => {}); throw new DOMException('Relecture annulée', 'AbortError'); }
-      const { done, value } = await reader.read();
+      if (signal?.aborted) {
+        reader.cancel().catch(() => {});
+        throw new DOMException('Relecture annulée', 'AbortError');
+      }
+      const {
+        done,
+        value
+      } = await reader.read();
       if (done) break;
       n += value.byteLength;
-      parts.push(dec.decode(value, { stream: true }));
+      parts.push(dec.decode(value, {
+        stream: true
+      }));
       onBytes?.(n);
     }
     parts.push(dec.decode());
@@ -490,49 +929,93 @@
   }
   const mb = n => (n / 1048576).toFixed(1).replace('.', ',') + ' Mo';
   /** Fichiers (File) d'un dossier autorisé, sans les sous-dossiers. */
-  async function filesOf(dir) { const out = []; for await (const h of dir.values()) if (h.kind === 'file') try { out.push(await h.getFile()); } catch { /* verrouillé */ } return out; }
+  async function filesOf(dir) {
+    const out = [];
+    for await (const h of dir.values()) if (h.kind === 'file') try {
+      out.push(await h.getFile());
+    } catch {
+      /* verrouillé */ }
+    return out;
+  }
   /** Fichier livré avec l'application (shared/carto/) : fetch (page servie en http), sinon dossier de l'application
    *  mémorisé (__repo) s'il est déjà autorisé — jamais d'invite en pleine lecture (en file://, fetch est refusé). */
   async function appAsset(name) {
-    try { const r = await fetch(appUrl('shared/carto/' + encodeURIComponent(name))); if (r.ok) return new File([await r.blob()], name); } catch { /* file:// */ }
+    try {
+      const r = await fetch(appUrl('shared/carto/' + encodeURIComponent(name)));
+      if (r.ok) return new File([await r.blob()], name);
+    } catch {
+      /* file:// */ }
     try {
       const st = await window.FileAccess?.status?.('__repo');
-      if (st?.handle && st.permission === 'granted') { let d = st.handle; for (const part of ['shared', 'carto']) d = await d.getDirectoryHandle(part); return await (await d.getFileHandle(name)).getFile(); }
-    } catch { /* absent */ }
+      if (st?.handle && st.permission === 'granted') {
+        let d = st.handle;
+        for (const part of ['shared', 'carto']) d = await d.getDirectoryHandle(part);
+        return await (await d.getFileHandle(name)).getFile();
+      }
+    } catch {
+      /* absent */ }
     return null;
   }
   const AIRAC_NAME = /^(?:AIXM4\.5_all_FR_OM_|XML_SIA_|sia-airspaces-)(\d{4}-\d{2}-\d{2})\.xml$/i;
   /** Analyse d'un dossier SIA (liste de File) → base (non mémorisée) + compte rendu.
    *  Un seul cycle : le plus récent des fichiers datés (les autres sont écartés, sinon contours mélangés).
    *  progress(texte) : étape en cours. Résultat : { base, report: { airac, skipped, xmlCount, aixmAirspaces, noCities } }. */
-  async function build(files, { folderName = 'Dossier SIA', progress = () => {}, signal } = {}) {
-    const t0 = performance.now(), timings = [];
+  async function build(files, {
+    folderName = 'Dossier SIA',
+    progress = () => {},
+    signal
+  } = {}) {
+    const t0 = performance.now(),
+      timings = [];
     let xmlFiles = files.filter(f => /\.xml$/i.test(f.name));
     if (!xmlFiles.length) throw new Error('Aucun XML dans le dossier SIA.');
-    const airacOf = f => AIRAC_NAME.exec(f.name)?.[1] || '', dates = [...new Set(xmlFiles.map(airacOf).filter(Boolean))].sort(), airac = dates[dates.length - 1] || '';
+    const airacOf = f => AIRAC_NAME.exec(f.name)?.[1] || '',
+      dates = [...new Set(xmlFiles.map(airacOf).filter(Boolean))].sort(),
+      airac = dates[dates.length - 1] || '';
     const skipped = xmlFiles.filter(f => airacOf(f) && airacOf(f) !== airac);
     xmlFiles = xmlFiles.filter(f => !skipped.includes(f));
     const hasXmlSia = xmlFiles.some(f => /^XML_SIA_/i.test(f.name));
-    const isAixm = f => /AIXM4\.5_all/i.test(f.name), isSia = f => /^XML_SIA_/i.test(f.name);
+    const isAixm = f => /AIXM4\.5_all/i.test(f.name),
+      isSia = f => /^XML_SIA_/i.test(f.name);
     // Jauge : chaque octet lu compte 1 ; analyse de l'AIXM (DOM) ≈ 0,8 × sa taille ; enregistrement ≈ 15 % du total lu.
-    const moraFile = files.find(f => /^mora\.csv$/i.test(f.name)), tracks = files.find(f => /^miam-enr-5-7-tracks\.xml$/i.test(f.name));
+    const moraFile = files.find(f => /^mora\.csv$/i.test(f.name)),
+      tracks = files.find(f => /^miam-enr-5-7-tracks\.xml$/i.test(f.name));
     const readSize = xmlFiles.reduce((n, f) => n + f.size, 0) + (moraFile?.size || 0) + (tracks?.size || 0) + 2.5e6;
     const total = readSize + 0.8 * xmlFiles.filter(isAixm).reduce((n, f) => n + f.size, 0) + 0.15 * readSize;
-    let doneUnits = 0, phase = '', phaseAt = t0;
+    let doneUnits = 0,
+      phase = '',
+      phaseAt = t0;
     const step = async (label, units = 0) => {
       if (phase) timings.push([phase, performance.now() - phaseAt]);
-      phase = label; phaseAt = performance.now();
+      phase = label;
+      phaseAt = performance.now();
       doneUnits += units;
       progress(label, Math.min(1, doneUnits / total));
       if (signal?.aborted) throw new DOMException('Relecture annulée', 'AbortError');
       await breathe();
     };
-    const reading = (label, file) => { const base = doneUnits; return n => progress(`${label} — ${mb(n)} / ${mb(file.size)}`, Math.min(1, (base + n) / total)); };
-    const text = async (label, file, encoding) => { await step(label); const t = await readText(file, { encoding, signal, onBytes: reading(label, file) }); doneUnits += file.size; return t; };
+    const reading = (label, file) => {
+      const base = doneUnits;
+      return n => progress(`${label} — ${mb(n)} / ${mb(file.size)}`, Math.min(1, (base + n) / total));
+    };
+    const text = async (label, file, encoding) => {
+      await step(label);
+      const t = await readText(file, {
+        encoding,
+        signal,
+        onBytes: reading(label, file)
+      });
+      doneUnits += file.size;
+      return t;
+    };
 
     await step('Villes (livrées avec l’application)…');
     const city = files.find(f => /^villes_geonames\.csv$/i.test(f.name)) || await appAsset('villes_geonames.csv');
-    let airspaces = [], aixmAirspaces = [], obstacleMax = {}, aero = null, vfrPoints = [];
+    let airspaces = [],
+      aixmAirspaces = [],
+      obstacleMax = {},
+      aero = null,
+      vfrPoints = [];
     const inventory = [];
     for (const f of xmlFiles) {
       const x = await inspectXml(f);
@@ -560,31 +1043,82 @@
     }
     if (aixmAirspaces.length) airspaces = airspaces.filter(a => !AIXM_TYPES.has(a.type)).concat(aixmAirspaces);
     const seen = new Set;
-    airspaces = airspaces.filter(a => { const k = a.type + '|' + a.name + '|' + a.key; if (seen.has(k)) return false; seen.add(k); return true; });
-    if (aero) { await step('Aérodromes contrôlés (CTR)…'); markControlledAerodromes(aero, airspaces); aero.vrp = vfrPoints; }
+    airspaces = airspaces.filter(a => {
+      const k = a.type + '|' + a.name + '|' + a.key;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+    if (aero) {
+      await step('Aérodromes contrôlés (CTR)…');
+      markControlledAerodromes(aero, airspaces);
+      aero.vrp = vfrPoints;
+    }
     const cities = city ? parseCities(await text('Villes (villes_geonames.csv)', city)) : [];
     const moraCells = moraFile ? parseMora(await text('Grille MORA (mora.csv)', moraFile)) : [];
     const aarXml = tracks ? await text('Axes de ravitaillement (ENR 5.7)', tracks) : '';
     await step('Enregistrement dans le navigateur…');
-    const base = { parserVersion: VERSION, airac, skippedXml: skipped.map(f => f.name), folderName, airspaces, cities, moraCells, obstacleMax, aarXml, aero,
-      xmlInventoryData: inventory.map(i => ({ name: i.file.name, role: i.role, mb: (i.file.size / 1048576).toFixed(1) })), cachedAt: Date.now() };
-    const report = { airac, skipped: base.skippedXml, xmlCount: inventory.length, aixmAirspaces: aixmAirspaces.length, noCities: !city, noMora: !moraFile, timings };
-    report.finish = () => { timings.push([phase, performance.now() - phaseAt]); report.total = performance.now() - t0; progress('Terminé', 1); };
-    return { base, report };
+    const base = {
+      parserVersion: VERSION,
+      airac,
+      skippedXml: skipped.map(f => f.name),
+      folderName,
+      airspaces,
+      cities,
+      moraCells,
+      obstacleMax,
+      aarXml,
+      aero,
+      xmlInventoryData: inventory.map(i => ({
+        name: i.file.name,
+        role: i.role,
+        mb: (i.file.size / 1048576).toFixed(1)
+      })),
+      cachedAt: Date.now()
+    };
+    const report = {
+      airac,
+      skipped: base.skippedXml,
+      xmlCount: inventory.length,
+      aixmAirspaces: aixmAirspaces.length,
+      noCities: !city,
+      noMora: !moraFile,
+      timings
+    };
+    report.finish = () => {
+      timings.push([phase, performance.now() - phaseAt]);
+      report.total = performance.now() - t0;
+      progress('Terminé', 1);
+    };
+    return {
+      base,
+      report
+    };
   }
   /** Relit le dossier SIA mémorisé (__sia, ou dir) et mémorise la base. request : demander l'autorisation si besoin
    *  (à appeler depuis un clic). Résultat de build(). */
-  async function rebuild({ dir = null, request = true, progress, signal } = {}) {
+  async function rebuild({
+    dir = null,
+    request = true,
+    progress,
+    signal
+  } = {}) {
     if (!dir) {
       const st = await window.FileAccess?.status?.('__sia');
       if (!st?.handle) throw new Error('Dossier SIA non choisi : Paramètres › Maintenance › Sources et dossiers (dossier des données).');
       dir = st.handle;
       if (st.permission !== 'granted') {
-        if (!request || await dir.requestPermission({ mode: 'readwrite' }) !== 'granted') throw new Error('Accès au dossier SIA refusé.');
+        if (!request || await dir.requestPermission({
+            mode: 'readwrite'
+          }) !== 'granted') throw new Error('Accès au dossier SIA refusé.');
       }
     }
     progress?.(`Liste des fichiers du dossier « ${dir.name} »…`, 0);
-    const r = await build(await filesOf(dir), { folderName: dir.name, progress, signal });
+    const r = await build(await filesOf(dir), {
+      folderName: dir.name,
+      progress,
+      signal
+    });
     await put(r.base);
     r.report.finish();
     return r;
@@ -592,7 +1126,13 @@
 
   // ===================================================================== bloc d'interface commun
   const L = row => row[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'))] || row[0];
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[c]);
   const T = {
     folder: ['Dossier SIA', 'SIA folder', 'SIA-Ordner', 'Carpeta SIA'],
     reread: ['Relire le dossier', 'Re-read the folder', 'Ordner neu einlesen', 'Releer la carpeta'],
@@ -613,7 +1153,8 @@
   /** Ligne d'état de la base mémorisée (cycle, date, périmé ?). */
   function stateLine(b) {
     if (!b) return esc(L(T.none));
-    const cur = window.Airac?.cycle?.(), date = b.cachedAt ? new Date(b.cachedAt).toLocaleString() : '';
+    const cur = window.Airac?.cycle?.(),
+      date = b.cachedAt ? new Date(b.cachedAt).toLocaleString() : '';
     const late = cur && b.airac && b.airac < cur.date;
     return `${esc(L(['Base mémorisée', 'Stored base', 'Gespeicherte Basis', 'Base guardada']))} : <b>${esc(b.folderName || '?')}</b>${b.airac ? ` — AIRAC <b>${esc(b.airac)}</b>` : ''}${date ? ` — ${esc(date)}` : ''}${late ? ` <span class="err">${esc(L([`cycle périmé (en vigueur : ${cur.label} du ${cur.date})`, `outdated cycle (in force: ${cur.label} since ${cur.date})`]))}</span>` : ''}`;
   }
@@ -632,39 +1173,78 @@
     host.classList.add('sia-base-panel');
     host.innerHTML = `<div class="sia-base-actions"><span class="sia-base-folder"></span><button type="button" class="primary sia-base-reread" data-icon="refresh">${esc(L(T.reread))}</button><button type="button" class="secondary sia-base-purge" data-icon="trash">${esc(L(T.purge))}</button><label class="secondary sia-base-native" hidden>${esc(L(T.pick))}<input type="file" webkitdirectory directory multiple hidden></label></div>
       <p class="sia-base-state small"></p><div class="sia-base-progress" hidden><progress max="1" value="0"></progress><span class="sia-base-pct"></span><button type="button" class="secondary sia-base-cancel">${esc(L(T.cancel))}</button><div class="sia-base-step small"></div><div class="sia-base-stall small err" hidden></div></div><div class="sia-base-msg" aria-live="polite" data-status></div><details class="sia-base-files small" hidden><summary>${esc(L(T.files))}</summary><ul></ul></details>`;
-    const $ = s => host.querySelector(s), msg = $('.sia-base-msg'), state = $('.sia-base-state');
-    const setMessage = html => { msg.innerHTML = html || ''; };
-    window.AppFramework?.watchStatus?.(host);   // erreurs de lecture → notification
-    const showFiles = b => { const list = b?.xmlInventoryData || []; $('.sia-base-files').hidden = !list.length; $('.sia-base-files ul').innerHTML = list.map(i => `<li><code>${esc(i.name)}</code> — ${esc(i.role)} (${esc(i.mb)} Mo)</li>`).join(''); };
-    let busy = false, controller = null;
+    const $ = s => host.querySelector(s),
+      msg = $('.sia-base-msg'),
+      state = $('.sia-base-state');
+    const setMessage = html => {
+      msg.innerHTML = html || '';
+    };
+    window.AppFramework?.watchStatus?.(host); // erreurs de lecture → notification
+    const showFiles = b => {
+      const list = b?.xmlInventoryData || [];
+      $('.sia-base-files').hidden = !list.length;
+      $('.sia-base-files ul').innerHTML = list.map(i => `<li><code>${esc(i.name)}</code> — ${esc(i.role)} (${esc(i.mb)} Mo)</li>`).join('');
+    };
+    let busy = false,
+      controller = null;
     async function refresh() {
-      const any = await get({ any: true }), b = any?.parserVersion === VERSION ? any : null;
+      const any = await get({
+          any: true
+        }),
+        b = any?.parserVersion === VERSION ? any : null;
       state.innerHTML = any && !b ? `<span class="err">${esc(L(T.old))}</span>` : stateLine(b);
       showFiles(b);
       if (b) opts.onCached?.(b);
       return b;
     }
-    const gauge = $('.sia-base-progress'), bar = gauge.querySelector('progress'), pct = gauge.querySelector('.sia-base-pct'), stepEl = gauge.querySelector('.sia-base-step'), stall = gauge.querySelector('.sia-base-stall');
+    const gauge = $('.sia-base-progress'),
+      bar = gauge.querySelector('progress'),
+      pct = gauge.querySelector('.sia-base-pct'),
+      stepEl = gauge.querySelector('.sia-base-step'),
+      stall = gauge.querySelector('.sia-base-stall');
     const secs = ms => (ms / 1000).toFixed(1).replace('.', ',') + ' s';
     async function run(task) {
       if (busy) return;
       busy = true;
       controller = new AbortController();
-      host.querySelectorAll('button:not(.sia-base-cancel)').forEach(x => { x.disabled = true; });
+      host.querySelectorAll('button:not(.sia-base-cancel)').forEach(x => {
+        x.disabled = true;
+      });
       state.textContent = L(T.reading);
       setMessage('');
       // tâche déclarée au socle (sa jauge reste celle du panneau) : avertissement avant de quitter la page
-      const job = window.AppFramework?.task?.(L(T.reading), { quiet: true });
+      const job = window.AppFramework?.task?.(L(T.reading), {
+        quiet: true
+      });
       const t0 = Date.now();
-      let last = { label: L(T.reading), at: t0 };
-      const paint = () => { const el = Math.round((Date.now() - t0) / 1000), idle = Math.round((Date.now() - last.at) / 1000); stepEl.textContent = `${last.label} · ${el} s`; stall.hidden = idle < 15; if (!stall.hidden) stall.textContent = L(T.stall).replace('{s}', idle).replace('{p}', last.label); };
+      let last = {
+        label: L(T.reading),
+        at: t0
+      };
+      const paint = () => {
+        const el = Math.round((Date.now() - t0) / 1000),
+          idle = Math.round((Date.now() - last.at) / 1000);
+        stepEl.textContent = `${last.label} · ${el} s`;
+        stall.hidden = idle < 15;
+        if (!stall.hidden) stall.textContent = L(T.stall).replace('{s}', idle).replace('{p}', last.label);
+      };
       const onProgress = (label, fraction) => {
-        if (label !== last.label || fraction !== last.fraction) last = { label, fraction, at: Date.now() };
-        if (fraction != null) { bar.value = fraction; pct.textContent = Math.round(fraction * 100) + ' %'; }
+        if (label !== last.label || fraction !== last.fraction) last = {
+          label,
+          fraction,
+          at: Date.now()
+        };
+        if (fraction != null) {
+          bar.value = fraction;
+          pct.textContent = Math.round(fraction * 100) + ' %';
+        }
         paint();
         console.info('[SiaBase]', secs(Date.now() - t0), label, fraction != null ? Math.round(fraction * 100) + ' %' : '');
       };
-      bar.value = 0; pct.textContent = '0 %'; gauge.hidden = false; stall.hidden = true;
+      bar.value = 0;
+      pct.textContent = '0 %';
+      gauge.hidden = false;
+      stall.hidden = true;
       const ticker = setInterval(paint, 1000);
       try {
         const r = await task(onProgress, controller.signal);
@@ -681,12 +1261,19 @@
         job?.end();
         clearInterval(ticker);
         gauge.hidden = true;
-        busy = false; controller = null;
-        host.querySelectorAll('button').forEach(x => { x.disabled = false; });
+        busy = false;
+        controller = null;
+        host.querySelectorAll('button').forEach(x => {
+          x.disabled = false;
+        });
       }
     }
     $('.sia-base-cancel').onclick = () => controller?.abort();
-    const reread = (request = true) => run((progress, signal) => rebuild({ request, progress, signal }));
+    const reread = (request = true) => run((progress, signal) => rebuild({
+      request,
+      progress,
+      signal
+    }));
     $('.sia-base-reread').onclick = () => reread(true);
     $('.sia-base-purge').onclick = async () => {
       if (!confirm(L(T.confirmPurge))) return;
@@ -696,27 +1283,98 @@
       opts.onPurged?.();
     };
     const input = $('.sia-base-native input');
-    input.onchange = () => { const files = [...input.files]; input.value = ''; if (files.length) run(async (progress, signal) => { const r = await build(files, { folderName: (files[0].webkitRelativePath || '').split('/')[0] || 'SIA', progress, signal }); await put(r.base); r.report.finish(); return r; }); };
+    input.onchange = () => {
+      const files = [...input.files];
+      input.value = '';
+      if (files.length) run(async (progress, signal) => {
+        const r = await build(files, {
+          folderName: (files[0].webkitRelativePath || '').split('/')[0] || 'SIA',
+          progress,
+          signal
+        });
+        await put(r.base);
+        r.report.finish();
+        return r;
+      });
+    };
     // Bouton du dossier mémorisé (FileAccess) ; sinon sélecteur natif.
     (function folderButton(tries = 0) {
-      if (!window.FileAccess) { if (tries < 50) setTimeout(() => folderButton(tries + 1), 100); else { $('.sia-base-native').hidden = false; $('.sia-base-reread').hidden = true; } return; }
-      if (!window.showDirectoryPicker) { $('.sia-base-native').hidden = false; $('.sia-base-reread').hidden = true; return; }
+      if (!window.FileAccess) {
+        if (tries < 50) setTimeout(() => folderButton(tries + 1), 100);
+        else {
+          $('.sia-base-native').hidden = false;
+          $('.sia-base-reread').hidden = true;
+        }
+        return;
+      }
+      if (!window.showDirectoryPicker) {
+        $('.sia-base-native').hidden = false;
+        $('.sia-base-reread').hidden = true;
+        return;
+      }
       const b = document.createElement('button');
-      b.type = 'button'; b.className = 'secondary'; b.textContent = L(T.folder) + ' : …';
-      b.onclick = async () => { try { await window.FileAccess.pickFolder('__sia'); await reread(false); } catch (e) { if (e?.name !== 'AbortError') setMessage(`<span class="err">${esc(e.message)}</span>`); } };
+      b.type = 'button';
+      b.className = 'secondary';
+      b.textContent = L(T.folder) + ' : …';
+      b.onclick = async () => {
+        try {
+          await window.FileAccess.pickFolder('__sia');
+          await reread(false);
+        } catch (e) {
+          if (e?.name !== 'AbortError') setMessage(`<span class="err">${esc(e.message)}</span>`);
+        }
+      };
       window.FileAccess.decorate?.(b, '__sia');
       $('.sia-base-folder').replaceChildren(b);
     })();
     refresh();
-    return { el: host, reread, refresh, setMessage };
+    return {
+      el: host,
+      reread,
+      refresh,
+      setMessage
+    };
   }
   if (!document.getElementById('siaBaseStyle')) document.head.insertAdjacentHTML('beforeend', '<style id="siaBaseStyle">.sia-base-actions{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}.sia-base-msg{margin:.4rem 0}.sia-base-state{margin:.4rem 0}.sia-base-progress{margin:.5rem 0;display:flex;flex-wrap:wrap;gap:.3rem .6rem;align-items:center}.sia-base-progress progress{flex:1 1 240px;height:14px}.sia-base-progress .sia-base-step,.sia-base-progress .sia-base-stall{flex-basis:100%}</style>');
 
   window.SiaBase = {
-    VERSION, get, put, patch, purge, summarize, summary, info, previous, remember,
-    filesOf, build, rebuild, appAsset, inspectXml,
-    parseXmlSiaAirspaces, parseAixmAirspaces, parseAixmObstacles, parseLegacyAirspaces, aixmDms, expandAixmArc, markControlledAerodromes, inRing,
-    csvRows, csvField, parseCities, parseMora, moraLabel, moraOf, moraFtOf, moraCycle, moraCsv, moraFromObstacles, computeMoraGrid, moraZonesOfMissions, MORA_ZONES, MORA_SOURCE,
+    VERSION,
+    get,
+    put,
+    patch,
+    purge,
+    summarize,
+    summary,
+    info,
+    previous,
+    remember,
+    filesOf,
+    build,
+    rebuild,
+    appAsset,
+    inspectXml,
+    parseXmlSiaAirspaces,
+    parseAixmAirspaces,
+    parseAixmObstacles,
+    parseLegacyAirspaces,
+    aixmDms,
+    expandAixmArc,
+    markControlledAerodromes,
+    inRing,
+    csvRows,
+    csvField,
+    parseCities,
+    parseMora,
+    moraLabel,
+    moraOf,
+    moraFtOf,
+    moraCycle,
+    moraCsv,
+    moraFromObstacles,
+    computeMoraGrid,
+    moraZonesOfMissions,
+    MORA_ZONES,
+    MORA_SOURCE,
     panel
   };
 })();

@@ -23,7 +23,9 @@
       url: path => new URL(base() + String(path).replace(/^\/+/, ''), root).href,
       /** Adresse dans data/ quel que soit l'état (écriture, liens vers le dépôt de données). */
       dataUrl: path => new URL('data/' + String(path).replace(/^\/+/, ''), root).href,
-      missing() { missing = true; },
+      missing() {
+        missing = true;
+      },
       /** Écrit les balises <script> des fichiers demandés (appelé pendant l'analyse de la page). */
       load(list) {
         for (const f of list) document.write(`<script src="${window.DataFiles.url(f)}"><\/script>`);

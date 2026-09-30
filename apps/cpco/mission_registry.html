@@ -1,40 +1,294 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CPCO — Registre des missions</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=20260930zzzt"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=20260930zzzt">
-<script src="../../repository_tree?v=20260930zzzt"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=20260930zzzv"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=20260930zzzv">
+<script src="../../repository_tree?v=20260930zzzv"></script>
 <style>
-  main.rg-page{max-width:1500px;margin:18px auto;padding:0 16px 48px}
-  main.rg-page>section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:0 0 16px}
-  main.rg-page h2{font-size:17px;margin:0 0 8px}
-  main.rg-page h3{font-size:15px;margin:0 0 6px}
-  .rg-page button,.rg-page .rg-file{border:1px solid var(--line);border-radius:9px;padding:7px 12px;font:inherit;font-size:13px;font-weight:650;cursor:pointer;background:#e5e7eb;color:var(--ink)}
-  .rg-page button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
-  .rg-page button:disabled{opacity:.55;cursor:default}
-  .rg-page .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  .rg-filters{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin:6px 0 12px}
-  .rg-filters label,.rg-edit label,.rg-grow{display:grid;gap:4px;font-size:12px;font-weight:600;color:var(--muted)}
-  .rg-filters select,.rg-filters input,.rg-edit select,.rg-edit input,.rg-grow input{padding:6px 8px;border:1px solid var(--line);border-radius:7px;font:inherit;font-size:13px;color:var(--ink);background:var(--card);min-width:0}
-  .rg-range{display:flex;gap:4px;align-items:center}.rg-range input{width:5em}
-  .rg-grow{flex:1;min-width:260px}
-  .rg-chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
-  .rg-chip{display:inline-flex;gap:5px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;cursor:pointer}
-  .rg-chip:has(input:checked){background:var(--soft);border-color:var(--accent)}.rg-teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px 12px;margin:4px 0 8px}.rg-team{display:flex;gap:8px;align-items:center}.rg-team-letter{flex:none;font-weight:700;min-width:5.5em}.rg-team input{flex:1;min-width:0}
-  .rg-small{font-size:12px;color:var(--muted)}
-  #rgTable{height:min(55vh,560px);min-height:120px;overflow:auto;border:1px solid var(--line);border-radius:10px 10px 0 0}
-  @media (max-height:820px){#rgTable{height:35vh}}
-  .rg-resize{height:12px;margin:0 0 12px;cursor:row-resize;touch-action:none;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-top:0;border-radius:0 0 10px 10px;background:var(--soft,rgba(127,127,127,.08))}.rg-resize span{width:48px;height:4px;border-radius:2px;background:currentColor;opacity:.3}.rg-resize:hover span{opacity:.6}
+  main.rg-page {
+    max-width: 1500px;
+    margin: 18px auto;
+    padding: 0 16px 48px
+  }
+  main.rg-page>section {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin: 0 0 16px
+  }
+  main.rg-page h2 {
+    font-size: 17px;
+    margin: 0 0 8px
+  }
+  main.rg-page h3 {
+    font-size: 15px;
+    margin: 0 0 6px
+  }
+  .rg-page button,
+  .rg-page .rg-file {
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 7px 12px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 650;
+    cursor: pointer;
+    background: #e5e7eb;
+    color: var(--ink)
+  }
+  .rg-page button.primary {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent)
+  }
+  .rg-page button:disabled {
+    opacity: .55;
+    cursor: default
+  }
+  .rg-page .row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center
+  }
+  .rg-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 10px;
+    margin: 6px 0 12px
+  }
+  .rg-filters label,
+  .rg-edit label,
+  .rg-grow {
+    display: grid;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted)
+  }
+  .rg-filters select,
+  .rg-filters input,
+  .rg-edit select,
+  .rg-edit input,
+  .rg-grow input {
+    padding: 6px 8px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    font: inherit;
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--card);
+    min-width: 0
+  }
+  .rg-range {
+    display: flex;
+    gap: 4px;
+    align-items: center
+  }
+  .rg-range input {
+    width: 5em
+  }
+  .rg-grow {
+    flex: 1;
+    min-width: 260px
+  }
+  .rg-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 4px 0 8px
+  }
+  .rg-chip {
+    display: inline-flex;
+    gap: 5px;
+    align-items: center;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 12px;
+    cursor: pointer
+  }
+  .rg-chip:has(input:checked) {
+    background: var(--soft);
+    border-color: var(--accent)
+  }
+  .rg-teams {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 6px 12px;
+    margin: 4px 0 8px
+  }
+  .rg-team {
+    display: flex;
+    gap: 8px;
+    align-items: center
+  }
+  .rg-team-letter {
+    flex: none;
+    font-weight: 700;
+    min-width: 5.5em
+  }
+  .rg-team input {
+    flex: 1;
+    min-width: 0
+  }
+  .rg-small {
+    font-size: 12px;
+    color: var(--muted)
+  }
+  #rgTable {
+    height: min(55vh, 560px);
+    min-height: 120px;
+    overflow: auto;
+    border: 1px solid var(--line);
+    border-radius: 10px 10px 0 0
+  }
+  @media (max-height:820px) {
+    #rgTable {
+      height: 35vh
+    }
+  }
+  .rg-resize {
+    height: 12px;
+    margin: 0 0 12px;
+    cursor: row-resize;
+    touch-action: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line);
+    border-top: 0;
+    border-radius: 0 0 10px 10px;
+    background: var(--soft, rgba(127, 127, 127, .08))
+  }
+  .rg-resize span {
+    width: 48px;
+    height: 4px;
+    border-radius: 2px;
+    background: currentColor;
+    opacity: .3
+  }
+  .rg-resize:hover span {
+    opacity: .6
+  }
   /* en-tête fixe : le défilement est celui de #rgTable (pas du .st-wrap intérieur) ; lignes compactes */
-  #rgTable .st-wrap{overflow:visible}#rgTable .st-table th,#rgTable .st-table td{padding:3px 8px;line-height:1.25}#rgTable .st-table th{z-index:2}#rgTable .rg-pill{padding:0 7px;font-size:11px}.rg-op{border:1px solid var(--line);border-radius:10px;padding:6px 12px;margin:8px 0}.rg-op p{margin:4px 0}.rg-chip-on{background:var(--soft);border-color:var(--accent);font-weight:600}.rg-cut{display:inline-block;vertical-align:bottom;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rg-cut-s{max-width:8em}.rg-cut-l{max-width:20em}#rgTable .st-delete{padding:1px 6px}#rgTable .st-arrow{margin-left:2px;min-width:8px}
-  .rg-detail{margin-top:6px}
-  .rg-edit{display:grid;grid-template-columns:180px 180px 1fr;gap:10px;margin:10px 0}
-  .rg-teams{margin:6px 0;padding-left:18px;font-size:13px}
-  .rg-pill{display:inline-block;border-radius:999px;padding:1px 8px;font-size:12px;font-weight:600;white-space:nowrap}
-  .rg-ordered{background:#e0e7ff;color:#3730a3}.rg-generated{background:#dcfce7;color:#166534}.rg-planned{background:#cffafe;color:#155e75}.rg-flown{background:#fef3c7;color:#92400e}.rg-reported{background:#ede9fe;color:#5b21b6}.rg-cancelled{background:#fee2e2;color:#991b1b}
+  #rgTable .st-wrap {
+    overflow: visible
+  }
+  #rgTable .st-table th,
+  #rgTable .st-table td {
+    padding: 3px 8px;
+    line-height: 1.25
+  }
+  #rgTable .st-table th {
+    z-index: 2
+  }
+  #rgTable .rg-pill {
+    padding: 0 7px;
+    font-size: 11px
+  }
+  .rg-op {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 6px 12px;
+    margin: 8px 0
+  }
+  .rg-op p {
+    margin: 4px 0
+  }
+  .rg-chip-on {
+    background: var(--soft);
+    border-color: var(--accent);
+    font-weight: 600
+  }
+  .rg-cut {
+    display: inline-block;
+    vertical-align: bottom;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap
+  }
+  .rg-cut-s {
+    max-width: 8em
+  }
+  .rg-cut-l {
+    max-width: 20em
+  }
+  #rgTable .st-delete {
+    padding: 1px 6px
+  }
+  #rgTable .st-arrow {
+    margin-left: 2px;
+    min-width: 8px
+  }
+  .rg-detail {
+    margin-top: 6px
+  }
+  .rg-edit {
+    display: grid;
+    grid-template-columns: 180px 180px 1fr;
+    gap: 10px;
+    margin: 10px 0
+  }
+  .rg-teams {
+    margin: 6px 0;
+    padding-left: 18px;
+    font-size: 13px
+  }
+  .rg-pill {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 1px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap
+  }
+  .rg-ordered {
+    background: #e0e7ff;
+    color: #3730a3
+  }
+  .rg-generated {
+    background: #dcfce7;
+    color: #166534
+  }
+  .rg-planned {
+    background: #cffafe;
+    color: #155e75
+  }
+  .rg-flown {
+    background: #fef3c7;
+    color: #92400e
+  }
+  .rg-reported {
+    background: #ede9fe;
+    color: #5b21b6
+  }
+  .rg-cancelled {
+    background: #fee2e2;
+    color: #991b1b
+  }
   /* design Durci : boutons secondaires et sélecteurs de fichiers lisibles (fond acier, texte clair) */
-  html[data-design="field"] .rg-page :is(button.secondary,.rg-file){background:linear-gradient(#26364e,#0f1a2a)!important;color:#eef0e6!important;border-color:#0b0d08!important}
-  @media(max-width:760px){.rg-edit{grid-template-columns:1fr}}
-.cpco-eyebrow{display:block;margin:0 0 2px;line-height:1.2;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:inherit;opacity:.78}
+  html[data-design="field"] .rg-page :is(button.secondary, .rg-file) {
+    background: linear-gradient(#26364e, #0f1a2a) !important;
+    color: #eef0e6 !important;
+    border-color: #0b0d08 !important
+  }
+  @media(max-width:760px) {
+    .rg-edit {
+      grid-template-columns: 1fr
+    }
+  }
+  .cpco-eyebrow {
+    display: block;
+    margin: 0 0 2px;
+    line-height: 1.2;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: inherit;
+    opacity: .78
+  }
 </style>
 </head><body>
 <!-- Registre des missions générées : séries du dossier « Missions » (missionNN.yaml / summaryNN.md, schéma helo-xp-mission) et
@@ -42,17 +296,17 @@
      générateur, le studio ou un CR ; commande d'une mission (prompt réglé). Page construite par shared/mission_registry.js. -->
 <header class="mc-header"><h1><span class="cpco-eyebrow">Centre de planification et de conduite des opérations</span>Registre des missions</h1><p>Séries générées, choix par type, rendez-vous et équipes, commande de nouvelles missions</p></header>
 <main class="rg-page" id="missionRegistry"></main>
-<script src="../../shared/kit.js?v=20260930zzzt"></script>
-<script src="../../shared/repository_nav.js?v=20260930zzzt"></script>
-<script src="../../shared/content_i18n.js?v=20260930zzzt"></script><script src="sia_i18n.js?v=20260930zzzt"></script>
+<script src="../../shared/kit.js?v=20260930zzzv"></script>
+<script src="../../shared/repository_nav.js?v=20260930zzzv"></script>
+<script src="../../shared/content_i18n.js?v=20260930zzzv"></script><script src="sia_i18n.js?v=20260930zzzv"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script src="../../shared/data_files.js?v=20260930zzzt" data-file="references/aircraft_fleet.js"></script>
-<script src="../../shared/mission_core/vocab.js?v=20260930zzzt"></script>
-<script src="mission_store.js?v=20260930zzzt"></script>
-<script src="mission_prompt.js?v=20260930zzzt"></script>
-<script src="../../shared/mission_table.js?v=20260930zzzt"></script>
-<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=20260930zzzt"></script><script src="../../shared/sia_base.js?v=20260930zzzt"></script><script src="../../shared/mission_routing.js?v=20260930zzzt"></script><script src="../../shared/mission_estimate.js?v=20260930zzzt"></script>
-<script src="../../shared/mission_order.js?v=20260930zzzt"></script>
-<script src="../../shared/mission_registry.js?v=20260930zzzt"></script>
-<script src="../../shared/app_framework.js?v=20260930zzzt"></script>
+<script src="../../shared/data_files.js?v=20260930zzzv" data-file="references/aircraft_fleet.js"></script>
+<script src="../../shared/mission_core/vocab.js?v=20260930zzzv"></script>
+<script src="mission_store.js?v=20260930zzzv"></script>
+<script src="mission_prompt.js?v=20260930zzzv"></script>
+<script src="../../shared/mission_table.js?v=20260930zzzv"></script>
+<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=20260930zzzv"></script><script src="../../shared/sia_base.js?v=20260930zzzv"></script><script src="../../shared/mission_routing.js?v=20260930zzzv"></script><script src="../../shared/mission_estimate.js?v=20260930zzzv"></script>
+<script src="../../shared/mission_order.js?v=20260930zzzv"></script>
+<script src="../../shared/mission_registry.js?v=20260930zzzv"></script>
+<script src="../../shared/app_framework.js?v=20260930zzzv"></script>
 </body></html>

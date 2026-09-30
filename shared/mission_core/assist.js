@@ -32,7 +32,8 @@
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch {
-      /* quota */ }
+      /* quota */
+    }
   };
   /** Texte en majuscules sans blancs de bord. */
   const up = v => String(v ?? '').trim().toUpperCase();
@@ -128,7 +129,8 @@
         add('aerodrome', r.arr, r.date);
       });
     } catch {
-      /* base illisible : ignorée */ }
+      /* base illisible : ignorée */
+    }
     return pools;
   }
   // Missions des autres familles du Core (copies navigateur des registres).
@@ -146,7 +148,8 @@
         });
         (data?.missions || []).forEach(m => out.push(m));
       } catch {
-        /* registre illisible */ }
+        /* registre illisible */
+      }
     }
     return out;
   }
@@ -353,7 +356,8 @@
           }
         } /* valeurs nulles : source suivante */
       } catch {
-        /* source suivante */ }
+        /* source suivante */
+      }
     }
     const h = data?.hourly;
     if (!h?.time?.length) return null;
@@ -846,7 +850,8 @@
         try {
           metar = (await currentMetar(icao)) || metar;
         } catch {
-          /* METAR calculé */ }
+          /* METAR calculé */
+        }
       }
       setIfEmpty('environment.metar', metar, done);
       if (metar !== w.metar) applyMetar(metar, done);

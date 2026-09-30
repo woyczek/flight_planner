@@ -88,7 +88,8 @@
     try {
       if (family.id !== 'DEMO') localStorage.setItem('missionCoreLastFamily:v1', family.id);
     } catch {
-      /* stockage indisponible */ }
+      /* stockage indisponible */
+    }
     const ledger = window.MissionLedger.open(family);
     const rows = new Map();
     /** Texte source (français) d'un libellé de l'interface, ligne enregistrée pour le traducteur commun. */
@@ -154,7 +155,8 @@
         try {
           localStorage.setItem(PREFS, JSON.stringify(prefs));
         } catch {
-          /* stockage indisponible */ }
+          /* stockage indisponible */
+        }
         render();
       };
     });
@@ -562,7 +564,7 @@
       onChange: () => render()
     }) || null;
     window.addEventListener('repository-language-change', () => setTimeout(render));
-    window.addEventListener('repository-design-change', () => setTimeout(render));   // palette, style des graphiques
+    window.addEventListener('repository-design-change', () => setTimeout(render)); // palette, style des graphiques
     window.addEventListener('load', () => window.RepositoryNav?.addAction?.(`${t('newReport')} ${family.id}`, () => {
       location.href = family.pages.cr;
     }));

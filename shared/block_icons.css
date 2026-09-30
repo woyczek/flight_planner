@@ -5,107 +5,413 @@
    parmi les couleurs du thème d'après la surface réelle de chaque bloc. */
 
 /* ---- icônes */
-.repo-icon{display:inline-flex;flex:0 0 auto;align-items:center;justify-content:center;line-height:0}
+.repo-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  line-height: 0
+}
 /* taille des icônes : variable --rs (posée par le contexte ou par RepositoryIcons.svg), imposée : les règles « svg{…} »
    des pages (graphiques en pleine largeur…) ne déforment plus les icônes */
-.repo-svg{display:block;width:var(--rs,1.15em)!important;height:var(--rs,1.15em)!important;max-width:none!important;max-height:none!important;flex:none!important;margin:0!important}
-.repo-has-icon:not(label):not(p):not(h1){display:inline-flex;align-items:center;justify-content:center;gap:.5em}
-.repo-has-icon .repo-icon-start svg,.repo-has-icon .repo-icon-end svg{--rs:1.15em}
-.repo-label-line{display:inline-flex;align-items:center;gap:.45em}
-.repo-label-line .repo-icon svg{--rs:1.05em}
+.repo-svg {
+  display: block;
+  width: var(--rs, 1.15em) !important;
+  height: var(--rs, 1.15em) !important;
+  max-width: none !important;
+  max-height: none !important;
+  flex: none !important;
+  margin: 0 !important
+}
+.repo-has-icon:not(label):not(p):not(h1) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5em
+}
+.repo-has-icon .repo-icon-start svg,
+.repo-has-icon .repo-icon-end svg {
+  --rs: 1.15em
+}
+.repo-label-line {
+  display: inline-flex;
+  align-items: center;
+  gap: .45em
+}
+.repo-label-line .repo-icon svg {
+  --rs: 1.05em
+}
 
 /* ---- en-tête de bloc : pastille, icône, titre et sous-titre */
 /* icône, titre + sous-titre et outils centrés verticalement sur le bloc de texte (designs au trait) ; les designs à
    matières (designs_skeuo.css) alignent en haut, outils au coin du bloc */
-.repo-block-heading-rich{align-items:center!important;gap:12px!important;margin-bottom:14px}
-.repo-block-heading-rich>:is(.repo-block-lead,.repo-block-tools){align-self:center}
-.repo-block-lead{display:flex;align-items:center;gap:8px;flex:0 0 auto}
-.repo-block-titles{flex:1;min-width:0;align-self:center}
-.repo-block-titles>h2{margin:0!important}
-.repo-block-subtitle{margin:2px 0 0;font-size:.88rem;font-weight:400;line-height:1.35;text-transform:none;letter-spacing:0;color:color-mix(in srgb,currentColor 75%,transparent)}
-.repo-block-step{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 7px;border-radius:999px;background:var(--repo-bar);color:var(--repo-bar-text);font:750 14px/1 Inter,system-ui,"Segoe UI",Arial,sans-serif;font-variant-numeric:tabular-nums;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--repo-bar-text) 28%,transparent)} /* liseré : pastille visible même quand le bandeau a la teinte de la surface (thèmes sombres) */
-.repo-block-icon{color:var(--repo-icon,currentColor)}
-.repo-block-icon svg{--rs:24px}
+.repo-block-heading-rich {
+  align-items: center !important;
+  gap: 12px !important;
+  margin-bottom: 14px
+}
+.repo-block-heading-rich>:is(.repo-block-lead, .repo-block-tools) {
+  align-self: center
+}
+.repo-block-lead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto
+}
+.repo-block-titles {
+  flex: 1;
+  min-width: 0;
+  align-self: center
+}
+.repo-block-titles>h2 {
+  margin: 0 !important
+}
+.repo-block-subtitle {
+  margin: 2px 0 0;
+  font-size: .88rem;
+  font-weight: 400;
+  line-height: 1.35;
+  text-transform: none;
+  letter-spacing: 0;
+  color: color-mix(in srgb, currentColor 75%, transparent)
+}
+.repo-block-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--repo-bar);
+  color: var(--repo-bar-text);
+  font: 750 14px/1 Inter, system-ui, "Segoe UI", Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--repo-bar-text) 28%, transparent)
+}
+/* liseré : pastille visible même quand le bandeau a la teinte de la surface (thèmes sombres) */
+.repo-block-icon {
+  color: var(--repo-icon, currentColor)
+}
+.repo-block-icon svg {
+  --rs: 24px
+}
 /* bouton Masquer / Afficher : chevron en masque CSS (le texte du bouton est réécrit par app_framework.js) */
-.repo-block-heading-rich .repo-toggle::before{content:"";display:inline-block;width:11px;height:11px;margin-right:5px;vertical-align:-1px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat}
-.repo-block-hidden>.repo-block-heading-rich .repo-toggle::before{transform:rotate(180deg)}
-.repo-block-hidden>.repo-block-heading-rich{margin-bottom:0}
+.repo-block-heading-rich .repo-toggle::before {
+  content: "";
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  margin-right: 5px;
+  vertical-align: -1px;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat
+}
+.repo-block-hidden>.repo-block-heading-rich .repo-toggle::before {
+  transform: rotate(180deg)
+}
+.repo-block-hidden>.repo-block-heading-rich {
+  margin-bottom: 0
+}
 
 /* ---- sous-cartes */
-.repo-card{border:1px solid color-mix(in srgb,currentColor 16%,transparent);border-radius:10px;padding:16px;min-width:0}
-.repo-card-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
-.repo-card-icon{color:var(--repo-icon,currentColor)}
-.repo-card-icon svg{--rs:28px}
-.repo-card-titles{flex:1;min-width:0}
-.repo-card-titles>h3,.repo-card-titles>h4,.repo-card-titles>strong{display:block;margin:0;font-size:1rem;line-height:1.3}
-.repo-card-subtitle{margin:2px 0 0;font-size:.86rem;line-height:1.35;color:color-mix(in srgb,currentColor 75%,transparent)}
-.repo-card-tools{display:flex;gap:6px;margin-left:auto}
+.repo-card {
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  border-radius: 10px;
+  padding: 16px;
+  min-width: 0
+}
+.repo-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px
+}
+.repo-card-icon {
+  color: var(--repo-icon, currentColor)
+}
+.repo-card-icon svg {
+  --rs: 28px
+}
+.repo-card-titles {
+  flex: 1;
+  min-width: 0
+}
+.repo-card-titles>h3,
+.repo-card-titles>h4,
+.repo-card-titles>strong {
+  display: block;
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.3
+}
+.repo-card-subtitle {
+  margin: 2px 0 0;
+  font-size: .86rem;
+  line-height: 1.35;
+  color: color-mix(in srgb, currentColor 75%, transparent)
+}
+.repo-card-tools {
+  display: flex;
+  gap: 6px;
+  margin-left: auto
+}
 
 /* ---- zone de dépôt de fichiers (enveloppe un <input type=file data-dropzone>) */
-.repo-dropzone{position:relative;display:flex;align-items:center;justify-content:center;gap:14px;min-height:96px;padding:16px;border:1.5px dashed color-mix(in srgb,currentColor 40%,transparent);border-radius:8px;cursor:pointer;text-align:left;font-weight:400;transition:background .15s,border-color .15s}
-.repo-dropzone:hover,.repo-dropzone.is-over{border-color:var(--repo-icon,currentColor);background:color-mix(in srgb,var(--repo-icon,currentColor) 7%,transparent)}
-.repo-dropzone.is-over{border-style:solid}
-.repo-dropzone:focus-within{outline:2px solid var(--repo-icon,currentColor);outline-offset:2px}
-.repo-dropzone-input{position:absolute!important;width:1px!important;height:1px!important;margin:0!important;padding:0!important;border:0!important;opacity:0!important;overflow:hidden!important;clip-path:inset(50%)}
-.repo-dropzone-badge{display:inline-flex;flex:0 0 auto;width:46px;height:46px;border-radius:50%;align-items:center;justify-content:center;background:color-mix(in srgb,currentColor 8%,transparent);color:var(--repo-icon,currentColor)}
-.repo-dropzone-badge svg{--rs:24px}
-.repo-dropzone-text{display:flex;flex-direction:column;gap:3px;min-width:0}
-.repo-dropzone-pick{font-weight:700;color:var(--repo-ink,currentColor);text-decoration:underline;text-underline-offset:3px}
-.repo-dropzone-state{font-size:.86rem;color:color-mix(in srgb,currentColor 75%,transparent);overflow-wrap:anywhere}
-.repo-dropzone.has-files .repo-dropzone-state{color:inherit;font-weight:600}
-.repo-dropzone.is-refused .repo-dropzone-state{color:inherit;font-weight:700}
-.repo-dropzone.is-refused .repo-dropzone-state::before{content:"⚠ "}
+.repo-dropzone {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 96px;
+  padding: 16px;
+  border: 1.5px dashed color-mix(in srgb, currentColor 40%, transparent);
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  font-weight: 400;
+  transition: background .15s, border-color .15s
+}
+.repo-dropzone:hover,
+.repo-dropzone.is-over {
+  border-color: var(--repo-icon, currentColor);
+  background: color-mix(in srgb, var(--repo-icon, currentColor) 7%, transparent)
+}
+.repo-dropzone.is-over {
+  border-style: solid
+}
+.repo-dropzone:focus-within {
+  outline: 2px solid var(--repo-icon, currentColor);
+  outline-offset: 2px
+}
+.repo-dropzone-input {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  overflow: hidden !important;
+  clip-path: inset(50%)
+}
+.repo-dropzone-badge {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  color: var(--repo-icon, currentColor)
+}
+.repo-dropzone-badge svg {
+  --rs: 24px
+}
+.repo-dropzone-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0
+}
+.repo-dropzone-pick {
+  font-weight: 700;
+  color: var(--repo-ink, currentColor);
+  text-decoration: underline;
+  text-underline-offset: 3px
+}
+.repo-dropzone-state {
+  font-size: .86rem;
+  color: color-mix(in srgb, currentColor 75%, transparent);
+  overflow-wrap: anywhere
+}
+.repo-dropzone.has-files .repo-dropzone-state {
+  color: inherit;
+  font-weight: 600
+}
+.repo-dropzone.is-refused .repo-dropzone-state {
+  color: inherit;
+  font-weight: 700
+}
+.repo-dropzone.is-refused .repo-dropzone-state::before {
+  content: "⚠ "
+}
 
 /* ---- bandeau d'information */
-.repo-notice{display:flex!important;align-items:flex-start;gap:10px;margin:12px 0 0;padding:10px 14px;border-radius:8px;border:1px solid color-mix(in srgb,currentColor 14%,transparent);background:color-mix(in srgb,currentColor 4%,transparent)}
-.repo-notice>.repo-icon{color:var(--repo-icon,currentColor);margin-top:1px}
-.repo-notice>.repo-icon svg{--rs:18px}
+.repo-notice {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  background: color-mix(in srgb, currentColor 4%, transparent)
+}
+.repo-notice>.repo-icon {
+  color: var(--repo-icon, currentColor);
+  margin-top: 1px
+}
+.repo-notice>.repo-icon svg {
+  --rs: 18px
+}
 
 /* ---- titre de page : icône et sous-titre dans le bandeau */
-.repo-header h1.repo-has-icon{display:inline-flex;align-items:center;gap:10px}
-.repo-header h1 .repo-icon svg{--rs:1.05em}
-.repo-header-titles{display:flex;flex-direction:column;min-width:0}
-.repo-header-titles>h1{margin:0}
-.repo-header-subtitle{font:12.5px/1.3 Inter,system-ui,"Segoe UI",Arial,sans-serif;color:color-mix(in srgb,var(--repo-bar-text) 84%,transparent)}
+.repo-header h1.repo-has-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px
+}
+.repo-header h1 .repo-icon svg {
+  --rs: 1.05em
+}
+.repo-header-titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0
+}
+.repo-header-titles>h1 {
+  margin: 0
+}
+.repo-header-subtitle {
+  font: 12.5px/1.3 Inter, system-ui, "Segoe UI", Arial, sans-serif;
+  color: color-mix(in srgb, var(--repo-bar-text) 84%, transparent)
+}
 
-@media print{.repo-dropzone-badge{display:none!important}}
+@media print {
+  .repo-dropzone-badge {
+    display: none !important
+  }
+}
 
 /* ---- adaptation aux designs existants (forme seulement) */
-html[data-design="aero"] .repo-block-step{box-shadow:0 3px 10px color-mix(in srgb,var(--repo-bar) 35%,transparent)}
-html[data-design="aero"] .repo-card{border-radius:10px}
-html[data-design="aero"] .repo-dropzone,html[data-design="aero"] .repo-notice{border-radius:10px}
-html[data-design="ops"] .repo-block-step{min-width:22px;height:22px;border-radius:3px;font-size:12px}
-html[data-design="ops"] .repo-block-icon svg{--rs:18px}
-html[data-design="ops"] .repo-block-subtitle,html[data-design="ops"] .repo-card-subtitle{font-size:12px}
-html[data-design="ops"] .repo-card{border-radius:3px;padding:10px}
-html[data-design="ops"] .repo-card-icon svg{--rs:20px}
-html[data-design="ops"] .repo-dropzone{min-height:60px;padding:10px;border-radius:2px}
-html[data-design="ops"] .repo-dropzone-badge{--rs:32px}
-html[data-design="ops"] .repo-notice{border-radius:2px;padding:6px 10px}
+html[data-design="aero"] .repo-block-step {
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--repo-bar) 35%, transparent)
+}
+html[data-design="aero"] .repo-card {
+  border-radius: 10px
+}
+html[data-design="aero"] .repo-dropzone,
+html[data-design="aero"] .repo-notice {
+  border-radius: 10px
+}
+html[data-design="ops"] .repo-block-step {
+  min-width: 22px;
+  height: 22px;
+  border-radius: 3px;
+  font-size: 12px
+}
+html[data-design="ops"] .repo-block-icon svg {
+  --rs: 18px
+}
+html[data-design="ops"] .repo-block-subtitle,
+html[data-design="ops"] .repo-card-subtitle {
+  font-size: 12px
+}
+html[data-design="ops"] .repo-card {
+  border-radius: 3px;
+  padding: 10px
+}
+html[data-design="ops"] .repo-card-icon svg {
+  --rs: 20px
+}
+html[data-design="ops"] .repo-dropzone {
+  min-height: 60px;
+  padding: 10px;
+  border-radius: 2px
+}
+html[data-design="ops"] .repo-dropzone-badge {
+  --rs: 32px
+}
+html[data-design="ops"] .repo-notice {
+  border-radius: 2px;
+  padding: 6px 10px
+}
 
 /* ---- design « Console » (proposition, d'après la maquette du générateur) : barre latérale, en-tête haut,
    blocs en cartes aérées, pastille de numéro large, titres de bloc en capitales, boutons hauts avec icônes. */
-html[data-design="console"] .repo-header-line1{min-height:62px}
-html[data-design="console"] .repo-header h1{font-size:21px!important}
-html[data-design="console"] body{background:color-mix(in srgb,var(--repo-page) 94%,var(--repo-bar))!important}
-html[data-design="console"] .repo-block,html[data-design="console"] .card{border-radius:10px!important;padding:22px 24px!important;box-shadow:0 1px 3px color-mix(in srgb,var(--repo-bar) 12%,transparent)!important}
-html[data-design="console"] .repo-block-heading-rich{margin-bottom:18px}
-html[data-design="console"] .repo-block-heading-rich h2{font-size:1.3rem!important;font-weight:800!important;text-transform:uppercase;letter-spacing:.02em}
-html[data-design="console"] .repo-block-step{min-width:44px;height:44px;font-size:18px}
-html[data-design="console"] .repo-block-icon svg{--rs:28px}
-html[data-design="console"] .repo-card{border-radius:8px;padding:18px 20px}
-html[data-design="console"] .repo-card-head{margin-bottom:16px}
-html[data-design="console"] .repo-card-titles>h3,html[data-design="console"] .repo-card-titles>strong{font-size:1.05rem}
-html[data-design="console"] button:not(.col-split):not(.repo-sidenav-item):not(.repo-menu-button):not(.repo-language-button),html[data-design="console"] .buttonLink{border-radius:6px!important;min-height:40px}
-html[data-design="console"] .repo-block-tools button{min-height:0!important;padding:6px 12px!important;font-size:13px!important}
-html[data-design="console"] input:not([type=checkbox]):not([type=radio]):not([type=range]),html[data-design="console"] select{border-radius:6px!important;min-height:40px}
-html[data-design="console"] textarea{border-radius:6px!important}
+html[data-design="console"] .repo-header-line1 {
+  min-height: 62px
+}
+html[data-design="console"] .repo-header h1 {
+  font-size: 21px !important
+}
+html[data-design="console"] body {
+  background: color-mix(in srgb, var(--repo-page) 94%, var(--repo-bar)) !important
+}
+html[data-design="console"] .repo-block,
+html[data-design="console"] .card {
+  border-radius: 10px !important;
+  padding: 22px 24px !important;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--repo-bar) 12%, transparent) !important
+}
+html[data-design="console"] .repo-block-heading-rich {
+  margin-bottom: 18px
+}
+html[data-design="console"] .repo-block-heading-rich h2 {
+  font-size: 1.3rem !important;
+  font-weight: 800 !important;
+  text-transform: uppercase;
+  letter-spacing: .02em
+}
+html[data-design="console"] .repo-block-step {
+  min-width: 44px;
+  height: 44px;
+  font-size: 18px
+}
+html[data-design="console"] .repo-block-icon svg {
+  --rs: 28px
+}
+html[data-design="console"] .repo-card {
+  border-radius: 8px;
+  padding: 18px 20px
+}
+html[data-design="console"] .repo-card-head {
+  margin-bottom: 16px
+}
+html[data-design="console"] .repo-card-titles>h3,
+html[data-design="console"] .repo-card-titles>strong {
+  font-size: 1.05rem
+}
+html[data-design="console"] button:not(.col-split):not(.repo-sidenav-item):not(.repo-menu-button):not(.repo-language-button),
+html[data-design="console"] .buttonLink {
+  border-radius: 6px !important;
+  min-height: 40px
+}
+html[data-design="console"] .repo-block-tools button {
+  min-height: 0 !important;
+  padding: 6px 12px !important;
+  font-size: 13px !important
+}
+html[data-design="console"] input:not([type=checkbox]):not([type=radio]):not([type=range]),
+html[data-design="console"] select {
+  border-radius: 6px !important;
+  min-height: 40px
+}
+html[data-design="console"] textarea {
+  border-radius: 6px !important
+}
 
 /* ---- jeu d'icônes (Paramétrage › Apparence : html[data-icons]) : trait normal (défaut), fin, épais, ou aucune icône */
-html[data-icons="fine"] .repo-svg{stroke-width:1.5}
-html[data-icons="bold"] .repo-svg{stroke-width:2.6}
-html[data-icons="off"] .repo-icon,html[data-icons="off"] .repo-block-icon,html[data-icons="off"] .repo-card-icon,html[data-icons="off"] .repo-dropzone-badge{display:none!important}
-html[data-icons="off"] .repo-icon-only>.repo-icon{display:inline-flex!important}
+html[data-icons="fine"] .repo-svg {
+  stroke-width: 1.5
+}
+html[data-icons="bold"] .repo-svg {
+  stroke-width: 2.6
+}
+html[data-icons="off"] .repo-icon,
+html[data-icons="off"] .repo-block-icon,
+html[data-icons="off"] .repo-card-icon,
+html[data-icons="off"] .repo-dropzone-badge {
+  display: none !important
+}
+html[data-icons="off"] .repo-icon-only>.repo-icon {
+  display: inline-flex !important
+}
 /* ==== JEUX D'ICÔNES SKEUOMORPHES (généré par tools/build_skeuo_icons_css.py) ==== */
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-svg[data-i]{background-position:center;background-size:contain;background-repeat:no-repeat;--rs:1.6em}
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(.repo-block-icon,.repo-card-icon){background:none!important;box-shadow:none!important;border-radius:0!important;width:auto!important;height:auto!important}
@@ -117,28 +423,28 @@ html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icon
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-dropzone-badge{background:none!important}html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-dropzone-badge .repo-svg[data-i]{--rs:42px}
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-notice>.repo-icon .repo-svg[data-i]{--rs:30px}
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-sidenav-brand .repo-svg[data-i]{--rs:40px!important}
-html[data-icons="brass"] .repo-svg[data-i]{background-image:url("icons/skeuo/cabinet/vierge.webp?v=20260930zzzt")!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * 0.26);color:var(--ico-glyph,#f1e4c0)!important;overflow:visible}
+html[data-icons="brass"] .repo-svg[data-i]{background-image:url("icons/skeuo/cabinet/vierge.webp?v=20260930zzzv")!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * 0.26);color:var(--ico-glyph,#f1e4c0)!important;overflow:visible}
 html[data-app-theme="cpco"][data-icons="brass"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg),html[data-icons="brass"] .repo-sidenav-cpco .repo-svg[data-i]{background-image:url("icons/skeuo/cabinet/vierge.rouge.webp")!important;color:var(--ico-glyph-centre,#ffd23f)!important}
 html[data-icons="brass"] .repo-svg[data-i]>*{display:inline;filter:var(--ico-glyph-shadow,drop-shadow(.5px 1px .6px rgba(0,0,0,.7)))}
-html[data-icons="brass"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){background:url("icons/skeuo/cabinet/vierge.webp?v=20260930zzzt") center/contain no-repeat!important;width:28px!important;height:28px!important;color:#f1e4c0!important;opacity:1}
+html[data-icons="brass"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){background:url("icons/skeuo/cabinet/vierge.webp?v=20260930zzzv") center/contain no-repeat!important;width:28px!important;height:28px!important;color:#f1e4c0!important;opacity:1}
 html[data-icons="brass"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):is(:hover,:focus-visible){filter:brightness(1.12)}
 html[data-icons="brass"] .repo-block .repo-block-tools .repo-drag{font-size:15px!important;line-height:1;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.55)}
 html[data-icons="brass"] .repo-block .repo-block-tools .repo-toggle::before{background-color:currentColor!important;width:13px!important;height:13px!important;filter:drop-shadow(0 1px .6px rgba(0,0,0,.55))}
 html[data-app-theme="cpco"][data-icons="brass"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){color:#ffd23f!important}
 html[data-icons="brass"] :is(.repo-block-icon,.repo-card-icon){filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
-html[data-icons="avio"] .repo-svg[data-i]{background-image:url("icons/skeuo/flightlog/vierge.webp?v=20260930zzzt")!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * 0.26);color:var(--ico-glyph,#f4ecd8)!important;overflow:visible}
+html[data-icons="avio"] .repo-svg[data-i]{background-image:url("icons/skeuo/flightlog/vierge.webp?v=20260930zzzv")!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * 0.26);color:var(--ico-glyph,#f4ecd8)!important;overflow:visible}
 html[data-app-theme="cpco"][data-icons="avio"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg),html[data-icons="avio"] .repo-sidenav-cpco .repo-svg[data-i]{background-image:url("icons/skeuo/flightlog/vierge.rouge.webp")!important;color:var(--ico-glyph-centre,#ffd23f)!important}
 html[data-icons="avio"] .repo-svg[data-i]>*{display:inline;filter:var(--ico-glyph-shadow,drop-shadow(.5px 1px .6px rgba(0,0,0,.7)))}
-html[data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){background:url("icons/skeuo/flightlog/vierge.webp?v=20260930zzzt") center/contain no-repeat!important;width:28px!important;height:28px!important;color:#f4ecd8!important;opacity:1}
+html[data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){background:url("icons/skeuo/flightlog/vierge.webp?v=20260930zzzv") center/contain no-repeat!important;width:28px!important;height:28px!important;color:#f4ecd8!important;opacity:1}
 html[data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):is(:hover,:focus-visible){filter:brightness(1.12)}
 html[data-icons="avio"] .repo-block .repo-block-tools .repo-drag{font-size:15px!important;line-height:1;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.55)}
 html[data-icons="avio"] .repo-block .repo-block-tools .repo-toggle::before{background-color:currentColor!important;width:13px!important;height:13px!important;filter:drop-shadow(0 1px .6px rgba(0,0,0,.55))}
 html[data-app-theme="cpco"][data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){color:#ffd23f!important}
 html[data-icons="avio"] :is(.repo-block-icon,.repo-card-icon){filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
-html[data-icons="steel"] .repo-svg[data-i]{background-image:url("icons/skeuo/field/vierge.webp?v=20260930zzzt")!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * 0.24);color:var(--ico-glyph,#e9ecdf)!important;overflow:visible}
+html[data-icons="steel"] .repo-svg[data-i]{background-image:url("icons/skeuo/field/vierge.webp?v=20260930zzzv")!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * 0.24);color:var(--ico-glyph,#e9ecdf)!important;overflow:visible}
 html[data-app-theme="cpco"][data-icons="steel"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg),html[data-icons="steel"] .repo-sidenav-cpco .repo-svg[data-i]{background-image:url("icons/skeuo/field/vierge.rouge.webp")!important;color:var(--ico-glyph-centre,#ffd23f)!important}
 html[data-icons="steel"] .repo-svg[data-i]>*{display:inline;filter:var(--ico-glyph-shadow,drop-shadow(.5px 1px .6px rgba(0,0,0,.75)))}
-html[data-icons="steel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){background:url("icons/skeuo/field/vierge.webp?v=20260930zzzt") center/contain no-repeat!important;width:28px!important;height:28px!important;color:#e9ecdf!important;opacity:1}
+html[data-icons="steel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){background:url("icons/skeuo/field/vierge.webp?v=20260930zzzv") center/contain no-repeat!important;width:28px!important;height:28px!important;color:#e9ecdf!important;opacity:1}
 html[data-icons="steel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):is(:hover,:focus-visible){filter:brightness(1.12)}
 html[data-icons="steel"] .repo-block .repo-block-tools .repo-drag{font-size:15px!important;line-height:1;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.55)}
 html[data-icons="steel"] .repo-block .repo-block-tools .repo-toggle::before{background-color:currentColor!important;width:13px!important;height:13px!important;filter:drop-shadow(0 1px .6px rgba(0,0,0,.55))}

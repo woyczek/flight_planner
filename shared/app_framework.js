@@ -36,7 +36,7 @@
       const id = el.dataset.blockId || el.id || `block-${i+1}`;
       el.dataset.blockId = id;
       el.classList.add("repo-block");
-      el.dataset.decoN = String(i % 5 + 1);   // rang décoratif (1…5) dans l'ordre de la page : décors en alternance (designs_skeuo.css)
+      el.dataset.decoN = String(i % 5 + 1); // rang décoratif (1…5) dans l'ordre de la page : décors en alternance (designs_skeuo.css)
       const parent = el.parentElement;
       if (!parents.has(parent)) parents.set(parent, []);
       parents.get(parent).push(el);
@@ -62,7 +62,7 @@
             const hide = isHidden();
             el.classList.toggle("repo-block-hidden", hide);
             b.textContent = label(hide ? "show" : "hide");
-            b.title = b.textContent;   // libellé masqué dans les designs à matières (icône seule)
+            b.title = b.textContent; // libellé masqué dans les designs à matières (icône seule)
             b.setAttribute("aria-label", b.textContent);
             head.querySelector(".repo-drag").title = label("move")
           };
@@ -190,12 +190,17 @@
   }
   /** Affiche le bloc id (même masqué par l'utilisateur : son choix est mis à jour), le fait défiler jusqu'à l'écran et
    *  le signale brièvement. Utilisé par les liens « page.html#id-du-bloc » et par les pages (messages à montrer). */
-  function reveal(id, { flash = true } = {}) {
+  function reveal(id, {
+    flash = true
+  } = {}) {
     const el = id && document.querySelector(`[data-block-id="${CSS.escape(id)}"],#${CSS.escape(id)}`);
     if (!el) return false;
     const block = el.closest(".repo-block") || el;
     if (block.classList.contains("repo-block-hidden")) block.querySelector(":scope>.repo-block-heading .repo-toggle")?.click();
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    el.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
     if (flash) {
       el.classList.add("repo-block-flash");
       setTimeout(() => el.classList.remove("repo-block-flash"), 1600);
@@ -204,7 +209,10 @@
   }
   if (!document.getElementById("repoRevealStyle")) document.head.insertAdjacentHTML("beforeend", '<style id="repoRevealStyle">.repo-block-flash{outline:3px solid #f59e0b;outline-offset:3px;transition:outline-color 1.2s}</style>');
   // Ancre « #id-du-bloc » : à l'ouverture de la page (une fois les blocs montés) et à chaque changement d'ancre.
-  const revealHash = () => { const id = decodeURIComponent(location.hash.slice(1)); if (id) reveal(id); };
+  const revealHash = () => {
+    const id = decodeURIComponent(location.hash.slice(1));
+    if (id) reveal(id);
+  };
   window.addEventListener("hashchange", revealHash);
   window.addEventListener("load", () => setTimeout(revealHash, 50));
   // Notifications communes : pile en bas de page, au-dessus des barres fixées. kind : info | ok | warn | err ; toutes
@@ -221,16 +229,27 @@
 .repo-notify>div>span{flex:1;white-space:pre-line}.repo-notify button{all:unset;cursor:pointer;opacity:.75;font-size:16px;line-height:1;padding:0 2px}.repo-notify button:hover{opacity:1}`;
     document.head.append(s);
   };
-  function notify(message, kind = "info", { timeout } = {}) {
+
+  function notify(message, kind = "info", {
+    timeout
+  } = {}) {
     const text = String(message ?? "").trim();
     if (!text) return null;
     notifyCss();
     let box = document.querySelector(".repo-notify");
-    if (!box) { box = document.createElement("div"); box.className = "repo-notify"; box.setAttribute("role", "status"); box.setAttribute("aria-live", "polite"); document.body.append(box); }
+    if (!box) {
+      box = document.createElement("div");
+      box.className = "repo-notify";
+      box.setAttribute("role", "status");
+      box.setAttribute("aria-live", "polite");
+      document.body.append(box);
+    }
     if (kind === "err" || kind === "warn") record(text, kind);
     const same = [...box.children].find(n => n.dataset.text === text);
     if (same) same.remove();
-    const item = document.createElement("div"), span = document.createElement("span"), close = document.createElement("button");
+    const item = document.createElement("div"),
+      span = document.createElement("span"),
+      close = document.createElement("button");
     item.className = kind;
     item.dataset.text = text;
     span.textContent = text;
@@ -244,9 +263,17 @@
     for (let old = [...box.children].filter(n => !n.classList.contains("task")); old.length > 4;) old.shift().remove();
     const ms = timeout ?? (kind === "err" ? 12000 : kind === "warn" ? 8000 : 5000);
     if (ms) {
-      let left = ms, start = Date.now(), timer = setTimeout(() => item.remove(), left);
-      item.onmouseenter = () => { clearTimeout(timer); left -= Date.now() - start; };
-      item.onmouseleave = () => { start = Date.now(); timer = setTimeout(() => item.remove(), Math.max(1500, left)); };
+      let left = ms,
+        start = Date.now(),
+        timer = setTimeout(() => item.remove(), left);
+      item.onmouseenter = () => {
+        clearTimeout(timer);
+        left -= Date.now() - start;
+      };
+      item.onmouseleave = () => {
+        start = Date.now();
+        timer = setTimeout(() => item.remove(), Math.max(1500, left));
+      };
     }
     return item;
   }
@@ -261,7 +288,8 @@
   const tasks = new Set();
   const TK = {
     leave: ["Tâche en cours : {t}.\nQuitter la page l'interrompra. Quitter quand même ?", "Task in progress: {t}.\nLeaving the page will stop it. Leave anyway?",
-      "Aufgabe läuft: {t}.\nDas Verlassen der Seite bricht sie ab. Trotzdem verlassen?", "Tarea en curso: {t}.\nSalir de la página la interrumpirá. ¿Salir de todos modos?"],
+      "Aufgabe läuft: {t}.\nDas Verlassen der Seite bricht sie ab. Trotzdem verlassen?", "Tarea en curso: {t}.\nSalir de la página la interrumpirá. ¿Salir de todos modos?"
+    ],
     cancelled: ["Annulé.", "Cancelled.", "Abgebrochen.", "Cancelado."]
   };
   const tk = k => window.RepositoryKit.t(TK[k]);
@@ -275,23 +303,42 @@
 .repo-notify>div.task small{grid-column:1/-1;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}`;
     document.head.append(s);
   };
-  function task(title, { total = 0, quiet = false } = {}) {
+
+  function task(title, {
+    total = 0,
+    quiet = false
+  } = {}) {
     notifyCss();
     taskCss();
     let box = document.querySelector(".repo-notify");
-    if (!box) { box = document.createElement("div"); box.className = "repo-notify"; box.setAttribute("role", "status"); box.setAttribute("aria-live", "polite"); document.body.append(box); }
-    const item = document.createElement("div"), esc = window.RepositoryKit.esc;
+    if (!box) {
+      box = document.createElement("div");
+      box.className = "repo-notify";
+      box.setAttribute("role", "status");
+      box.setAttribute("aria-live", "polite");
+      document.body.append(box);
+    }
+    const item = document.createElement("div"),
+      esc = window.RepositoryKit.esc;
     item.className = "task";
     item.innerHTML = `<b>${esc(title)}</b><em></em><progress></progress><small></small>`;
-    if (!quiet) box.append(item);   // quiet : la page garde sa propre jauge ; la tâche garde seulement la sortie de page
-    const bar = item.querySelector("progress"), count = item.querySelector("em"), step = item.querySelector("small");
+    if (!quiet) box.append(item); // quiet : la page garde sa propre jauge ; la tâche garde seulement la sortie de page
+    const bar = item.querySelector("progress"),
+      count = item.querySelector("em"),
+      step = item.querySelector("small");
     const job = {
       title,
       /** Avancement : fait / total (total 0 : indéterminé) ; texte de l'étape en cours. */
       set(done = 0, n = total, text) {
         total = n;
-        if (n > 0) { bar.max = n; bar.value = Math.min(done, n); count.textContent = `${Math.min(done, n)}/${n}`; }
-        else { bar.removeAttribute("value"); count.textContent = ""; }
+        if (n > 0) {
+          bar.max = n;
+          bar.value = Math.min(done, n);
+          count.textContent = `${Math.min(done, n)}/${n}`;
+        } else {
+          bar.removeAttribute("value");
+          count.textContent = "";
+        }
         if (text !== undefined) step.textContent = text;
         return job;
       },
@@ -322,28 +369,77 @@
     const a = e.target.closest?.("a[href]");
     if (!a || a.target === "_blank" || a.hasAttribute("download")) return;
     const url = new URL(a.href, location.href);
-    if (url.origin === location.origin && url.pathname === location.pathname && url.search === location.search) return;   // ancre de la page
-    if (!window.confirm(tk("leave").replace("{t}", busy()))) { e.preventDefault(); e.stopImmediatePropagation(); }
+    if (url.origin === location.origin && url.pathname === location.pathname && url.search === location.search) return; // ancre de la page
+    if (!window.confirm(tk("leave").replace("{t}", busy()))) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }
   }, true);
   // ---- Journal des alertes de la page : erreurs et avertissements notifiés (effacés au bout de quelques secondes)
   // gardés en mémoire le temps de la page (rien n'est conservé au changement de page) ; témoin « ⚠ n » dans l'en-tête
   // (outils de l'en-tête, sinon coin de l'écran) tant qu'il reste des alertes non acquittées ; clic : liste, ACK.
   const journal = [];
-  let journalSeq = 0, alertsBtn = null, alertsPanel = null;
+  let journalSeq = 0,
+    alertsBtn = null,
+    alertsPanel = null;
   const AL = {
-    fr: { title: "Alertes de la page", none: "Aucune alerte.", ack: "ACK", acked: "acquittée", ackAll: "Tout acquitter", clear: "Vider", tip: "Alertes de la page (effacées de l’écran) : relire et acquitter" },
-    en: { title: "Page alerts", none: "No alerts.", ack: "ACK", acked: "acknowledged", ackAll: "Acknowledge all", clear: "Clear", tip: "Page alerts (cleared from the screen): read again and acknowledge" },
-    de: { title: "Warnungen der Seite", none: "Keine Warnungen.", ack: "OK", acked: "bestätigt", ackAll: "Alle bestätigen", clear: "Leeren", tip: "Warnungen der Seite: erneut lesen und bestätigen" },
-    es: { title: "Alertas de la página", none: "Sin alertas.", ack: "ACK", acked: "confirmada", ackAll: "Confirmar todas", clear: "Vaciar", tip: "Alertas de la página: releer y confirmar" }
+    fr: {
+      title: "Alertes de la page",
+      none: "Aucune alerte.",
+      ack: "ACK",
+      acked: "acquittée",
+      ackAll: "Tout acquitter",
+      clear: "Vider",
+      tip: "Alertes de la page (effacées de l’écran) : relire et acquitter"
+    },
+    en: {
+      title: "Page alerts",
+      none: "No alerts.",
+      ack: "ACK",
+      acked: "acknowledged",
+      ackAll: "Acknowledge all",
+      clear: "Clear",
+      tip: "Page alerts (cleared from the screen): read again and acknowledge"
+    },
+    de: {
+      title: "Warnungen der Seite",
+      none: "Keine Warnungen.",
+      ack: "OK",
+      acked: "bestätigt",
+      ackAll: "Alle bestätigen",
+      clear: "Leeren",
+      tip: "Warnungen der Seite: erneut lesen und bestätigen"
+    },
+    es: {
+      title: "Alertas de la página",
+      none: "Sin alertas.",
+      ack: "ACK",
+      acked: "confirmada",
+      ackAll: "Confirmar todas",
+      clear: "Vaciar",
+      tip: "Alertas de la página: releer y confirmar"
+    }
   };
   const al = k => (AL[window.RepositoryNav?.getLanguage?.()] || AL.fr)[k];
+
   function record(text, kind) {
     const old = journal.find(e => e.text === text && !e.ack);
-    if (old) { old.count++; old.t = new Date(); old.kind = kind === "err" ? "err" : old.kind; }
-    else journal.push({ id: ++journalSeq, t: new Date(), kind, text, count: 1, ack: false });
-    while (journal.length > 50) journal.shift();   // rétention faible : 50 dernières alertes
+    if (old) {
+      old.count++;
+      old.t = new Date();
+      old.kind = kind === "err" ? "err" : old.kind;
+    } else journal.push({
+      id: ++journalSeq,
+      t: new Date(),
+      kind,
+      text,
+      count: 1,
+      ack: false
+    });
+    while (journal.length > 50) journal.shift(); // rétention faible : 50 dernières alertes
     paintAlerts();
   }
+
   function alertsCss() {
     if (document.getElementById("repoAlertsCss")) return;
     const s = document.createElement("style");
@@ -366,11 +462,19 @@
       alertsBtn = document.createElement("button");
       alertsBtn.type = "button";
       alertsBtn.className = "repo-alerts no-print";
-      alertsBtn.onclick = e => { e.stopPropagation(); alertsPanel ? closeAlerts() : openAlerts(); };
+      alertsBtn.onclick = e => {
+        e.stopPropagation();
+        alertsPanel ? closeAlerts() : openAlerts();
+      };
     }
     const host = document.querySelector(".repo-header-tools");
-    if (host && alertsBtn.parentNode !== host) { alertsBtn.classList.remove("floating"); host.prepend(alertsBtn); }
-    else if (!host && !alertsBtn.parentNode) { alertsBtn.classList.add("floating"); document.body.append(alertsBtn); }
+    if (host && alertsBtn.parentNode !== host) {
+      alertsBtn.classList.remove("floating");
+      host.prepend(alertsBtn);
+    } else if (!host && !alertsBtn.parentNode) {
+      alertsBtn.classList.add("floating");
+      document.body.append(alertsBtn);
+    }
     const open = journal.filter(e => !e.ack);
     alertsBtn.hidden = !journal.length;
     alertsBtn.textContent = `⚠ ${open.length || journal.length}`;
@@ -379,10 +483,13 @@
     alertsBtn.classList.toggle("err", open.some(e => e.kind === "err"));
     if (alertsPanel) fillAlerts();
   }
+
   function fillAlerts() {
-    const hh = d => d.toTimeString().slice(0, 8), esc = window.RepositoryKit.esc;
+    const hh = d => d.toTimeString().slice(0, 8),
+      esc = window.RepositoryKit.esc;
     alertsPanel.innerHTML = `<h3>${al("title")}</h3>${journal.length ? `<ul>${[...journal].reverse().map(e => `<li class="${e.kind}${e.ack ? " ack" : ""}"><time>${hh(e.t)}</time><span>${esc(e.text)}${e.count > 1 ? ` (×${e.count})` : ""}</span>${e.ack ? `<em>${al("acked")}</em>` : `<button type="button" data-ack="${e.id}">${al("ack")}</button>`}</li>`).join("")}</ul><div class="bar"><button type="button" data-ackall>${al("ackAll")}</button><button type="button" data-clear>${al("clear")}</button></div>` : `<p>${al("none")}</p>`}`;
   }
+
   function openAlerts() {
     alertsPanel = document.createElement("div");
     alertsPanel.className = "repo-alerts-panel no-print";
@@ -395,19 +502,37 @@
     alertsPanel.addEventListener("click", e => {
       e.stopPropagation();
       const id = +e.target.dataset?.ack;
-      if (id) { const x = journal.find(q => q.id === id); if (x) x.ack = true; }
-      else if (e.target.hasAttribute?.("data-ackall")) journal.forEach(q => { q.ack = true; });
-      else if (e.target.hasAttribute?.("data-clear")) { journal.length = 0; closeAlerts(); }
+      if (id) {
+        const x = journal.find(q => q.id === id);
+        if (x) x.ack = true;
+      } else if (e.target.hasAttribute?.("data-ackall")) journal.forEach(q => {
+        q.ack = true;
+      });
+      else if (e.target.hasAttribute?.("data-clear")) {
+        journal.length = 0;
+        closeAlerts();
+      }
       paintAlerts();
     });
-    setTimeout(() => document.addEventListener("click", closeAlerts, { once: true }));
+    setTimeout(() => document.addEventListener("click", closeAlerts, {
+      once: true
+    }));
   }
-  function closeAlerts() { alertsPanel?.remove(); alertsPanel = null; }
-  document.addEventListener("keydown", e => { if (e.key === "Escape") closeAlerts(); });
-  window.addEventListener("repository-language-change", () => { if (journal.length) paintAlerts(); });
+
+  function closeAlerts() {
+    alertsPanel?.remove();
+    alertsPanel = null;
+  }
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") closeAlerts();
+  });
+  window.addEventListener("repository-language-change", () => {
+    if (journal.length) paintAlerts();
+  });
 
   // Relais des zones d'état data-status : erreur / avertissement affiché → notification (une fois par texte).
   const watched = new WeakSet();
+
   function watchStatus(root = document) {
     for (const el of root.querySelectorAll("[data-status]")) {
       if (watched.has(el)) continue;
@@ -417,21 +542,44 @@
         const bad = el.querySelector(".err,.error,.warn") || (/(^|\s)(err|error|warn)(\s|$)/.test(el.className) ? el : null);
         const text = bad ? bad.textContent.trim() : "";
         // une notification par zone : un nouveau message remplace le précédent (message puis message de secours…)
-        if (text && text !== last) { el._repoToast?.remove(); el._repoToast = notify(text, bad.classList.contains("warn") ? "warn" : "err"); }
+        if (text && text !== last) {
+          el._repoToast?.remove();
+          el._repoToast = notify(text, bad.classList.contains("warn") ? "warn" : "err");
+        }
         // le message passe en notification : pas de doublon en ligne (sauf s'il porte un bouton ou un lien : « Réessayer »…)
         if (bad && bad !== el && !bad.hidden && !bad.querySelector("button,a,input,select")) bad.hidden = true;
         last = text;
-      }).observe(el, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["class"] });
+      }).observe(el, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+        attributes: true,
+        attributeFilter: ["class"]
+      });
     }
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => watchStatus());
   else watchStatus();
   window.addEventListener("load", () => watchStatus());
   window.AppFramework = {
-    refresh: (...a) => { const r = init(...a); watchStatus(); return r; },
+    refresh: (...a) => {
+      const r = init(...a);
+      watchStatus();
+      return r;
+    },
     notify,
     /** Journal des alertes de la page (erreurs, avertissements) : liste, tout acquitter. */
-    alerts: { list: () => journal.map(e => ({ ...e })), ackAll() { journal.forEach(e => { e.ack = true; }); if (journal.length) paintAlerts(); } },
+    alerts: {
+      list: () => journal.map(e => ({
+        ...e
+      })),
+      ackAll() {
+        journal.forEach(e => {
+          e.ack = true;
+        });
+        if (journal.length) paintAlerts();
+      }
+    },
     watchStatus,
     reveal,
     getConfig: startupConfig,

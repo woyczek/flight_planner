@@ -25,7 +25,7 @@
     css.href = new URL('block_icons.css' + new URL(script.src).search, script.src).href; // même version (?v=) que ce script
     document.head.append(css);
   }
-  const K = window.RepositoryKit;   // utilitaires communs (shared/kit.js)
+  const K = window.RepositoryKit; // utilitaires communs (shared/kit.js)
   const T = {
     pick: ['Choisir des fichiers', 'Choose files', 'Dateien auswählen', 'Elegir archivos'],
     pickOne: ['Choisir un fichier', 'Choose a file', 'Datei auswählen', 'Elegir un archivo'],
@@ -66,7 +66,9 @@
     const head = el.querySelector(':scope>.repo-block-heading'),
       h = head?.querySelector(':scope>h2');
     if (!h) return;
-    const step = el.dataset.step, name = el.dataset.icon, sub = subtitle(el, 'repo-block-subtitle');
+    const step = el.dataset.step,
+      name = el.dataset.icon,
+      sub = subtitle(el, 'repo-block-subtitle');
     if (!step && !name && !sub) return;
     el.dataset.blockDecor = '1';
     head.classList.add('repo-block-heading-rich');
@@ -127,7 +129,10 @@
       const line = document.createElement('span');
       line.className = 'repo-label-line';
       line.append(start);
-      if (text) { text.before(line); line.append(text); } else el.prepend(line);
+      if (text) {
+        text.before(line);
+        line.append(text);
+      } else el.prepend(line);
     } else if (start) el.prepend(start);
     if (end) el.append(end);
     if (start || end) el.classList.add('repo-has-icon');
@@ -148,7 +153,8 @@
   /** Le fichier correspond-il à l'attribut accept (extensions, types MIME, type/*) ? */
   function accepted(file, accept) {
     if (!accept) return true;
-    const name = file.name.toLowerCase(), type = (file.type || '').toLowerCase();
+    const name = file.name.toLowerCase(),
+      type = (file.type || '').toLowerCase();
     return accept.split(',').map(s => s.trim().toLowerCase()).filter(Boolean).some(a =>
       a.startsWith('.') ? name.endsWith(a) : a.endsWith('/*') ? type.startsWith(a.slice(0, -1)) : type === a);
   }
@@ -184,11 +190,23 @@
       e.preventDefault();
       input.click();
     });
-    input.addEventListener('change', () => { message = ''; render(); });
+    input.addEventListener('change', () => {
+      message = '';
+      render();
+    });
     const over = on => zone.classList.toggle('is-over', on);
-    zone.addEventListener('dragenter', e => { e.preventDefault(); over(true); });
-    zone.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; over(true); });
-    zone.addEventListener('dragleave', e => { if (!zone.contains(e.relatedTarget)) over(false); });
+    zone.addEventListener('dragenter', e => {
+      e.preventDefault();
+      over(true);
+    });
+    zone.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      over(true);
+    });
+    zone.addEventListener('dragleave', e => {
+      if (!zone.contains(e.relatedTarget)) over(false);
+    });
     zone.addEventListener('drop', e => {
       e.preventDefault();
       over(false);
@@ -201,7 +219,9 @@
         const dt = new DataTransfer();
         files.forEach(f => dt.items.add(f));
         input.files = dt.files;
-        input.dispatchEvent(new Event('change', { bubbles: true })); // même événement que file_access.js
+        input.dispatchEvent(new Event('change', {
+          bubbles: true
+        })); // même événement que file_access.js
       } else render();
     });
     return zone;
@@ -209,7 +229,8 @@
 
   // ---- couleur des icônes : contraste contrôlé sur la surface réelle du bloc
   // lecture d'une couleur et contraste WCAG : shared/kit.js (0 si l'une des couleurs est illisible ou transparente)
-  const parse = K.color.rgb, contrast = K.color.contrast;
+  const parse = K.color.rgb,
+    contrast = K.color.contrast;
   /** Couleur de fond effective d'un élément (premier ancêtre non transparent). */
   function surface(el) {
     for (let e = el; e; e = e.parentElement) {
@@ -245,26 +266,47 @@
     const f = window.AppFramework;
     if (!f || f.__blockIcons) return;
     const r = f.refresh;
-    f.refresh = (...a) => { const x = r(...a); decorate(); return x; };
+    f.refresh = (...a) => {
+      const x = r(...a);
+      decorate();
+      return x;
+    };
     f.__blockIcons = true;
   }
   let pending = false;
   const observer = new MutationObserver(() => {
     if (pending) return;
     pending = true;
-    requestAnimationFrame(() => { pending = false; decorate(); });
+    requestAnimationFrame(() => {
+      pending = false;
+      decorate();
+    });
   });
   // Dès que le DOM est prêt (ce script, chargé à la volée, arrive souvent après) : les icônes paraissent sans attendre
   // images, polices et cartes ; nouvelle passe au chargement complet (decorate est ré-exécutable).
   const start = () => {
     hookRefresh();
     decorate();
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
   };
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
-  window.addEventListener('load', () => { hookRefresh(); decorate(); });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+  window.addEventListener('load', () => {
+    hookRefresh();
+    decorate();
+  });
   window.addEventListener('repository-language-change', () => document.querySelectorAll('.repo-dropzone').forEach(z => z._render?.()));
   window.addEventListener('repository-design-change', () => requestAnimationFrame(decorate));
 
-  window.BlockIcons = { refresh: decorate, icon, dropzone, contrast, surface, retune: () => document.querySelectorAll('.repo-block,.repo-card,.repo-header').forEach(tuneIcons) };
+  window.BlockIcons = {
+    refresh: decorate,
+    icon,
+    dropzone,
+    contrast,
+    surface,
+    retune: () => document.querySelectorAll('.repo-block,.repo-card,.repo-header').forEach(tuneIcons)
+  };
 })();

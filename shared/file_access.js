@@ -11,7 +11,9 @@
   const L = (fr, en, de = en, es = en) => [fr, en, de, es];
   /** Rang (0–3) de la langue de la page dans [fr, en, de, es]. */
   /** Texte d'une ligne [fr, en, de, es] dans la langue de la page. */
-  const tr = row => window.RepositoryKit.t(row, { typo: false });   // shared/kit.js
+  const tr = row => window.RepositoryKit.t(row, {
+    typo: false
+  }); // shared/kit.js
   const FOLDERS = {
     __repo: {
       label: L('Dossier du dépôt', 'Repository folder', 'Repository-Ordner', 'Carpeta del repositorio'),
@@ -110,7 +112,8 @@
         mode: 'readwrite'
       });
     } catch {
-      /* API partielle */ }
+      /* API partielle */
+    }
     return {
       key,
       name: handle.name,
@@ -121,14 +124,26 @@
   // ---- v3 : dossier des données (data/) et sous-dossiers déduits
   // cr, missions, sia : toujours ceux de data/ (réglés au choix de data/) ; planner, local : seulement si l'utilisateur
   // n'a pas choisi d'autre dossier pour les profils de performance ou la sauvegarde locale.
-  const DERIVED = { __ledger: 'cr', __missions: 'missions', __sia: 'sia', __perf: 'planner', __store: 'local' };
+  const DERIVED = {
+    __ledger: 'cr',
+    __missions: 'missions',
+    __sia: 'sia',
+    __perf: 'planner',
+    __store: 'local'
+  };
   const ALWAYS = ['__ledger', '__missions', '__sia'];
   /** Mémorise les sous-dossiers de data/ (créés au besoin) ; retourne la liste des clés réglées. */
   async function deriveFromData(dataHandle) {
     const done = [];
     for (const [key, sub] of Object.entries(DERIVED)) {
       if (!ALWAYS.includes(key) && await get(key)) continue;
-      try { await set(key, await dataHandle.getDirectoryHandle(sub, { create: true })); done.push(key); } catch { /* lecture seule */ }
+      try {
+        await set(key, await dataHandle.getDirectoryHandle(sub, {
+          create: true
+        }));
+        done.push(key);
+      } catch {
+        /* lecture seule */ }
     }
     return done;
   }
@@ -137,13 +152,17 @@
   (async () => {
     try {
       if (localStorage.getItem('fileAccessLayout') === '3') return;
-      const db = await idb(), tx = db.transaction('handles', 'readwrite');
+      const db = await idb(),
+        tx = db.transaction('handles', 'readwrite');
       for (const key of ALWAYS) tx.objectStore('handles').delete(`folder:${key}`);
-      await new Promise(r => { tx.oncomplete = tx.onerror = r; });
+      await new Promise(r => {
+        tx.oncomplete = tx.onerror = r;
+      });
       localStorage.setItem('fileAccessLayout', '3');
       const data = await get('__data');
       if (data) await deriveFromData(data);
-    } catch { /* stockage indisponible */ }
+    } catch {
+      /* stockage indisponible */ }
   })();
 
   // Choix d'un dossier : le sélecteur s'ouvre sur le dossier actuel ; contrôle du contenu attendu.
@@ -166,7 +185,8 @@
         await handle.getFileHandle(info.check);
         ok = true;
       } catch {
-        /* absent */ }
+        /* absent */
+      }
       if (!ok && !confirm(`« ${handle.name} » ${tr(STATE.notExpected).replace('{f}', info.check)}\n${tr(STATE.expected)} : ${tr(info.expect)}`)) throw new Error('Dossier refusé');
     }
     await set(key, handle);

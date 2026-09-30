@@ -1,63 +1,253 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Paramètres — bases de données et maintenance</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=20260930zzzt"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=20260930zzzt"><link rel="stylesheet" href="../../shared/maintenance.css?v=20260930zzzt">
-<script src="../../repository_tree?v=20260930zzzt"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=20260930zzzv"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=20260930zzzv"><link rel="stylesheet" href="../../shared/maintenance.css?v=20260930zzzv">
+<script src="../../repository_tree?v=20260930zzzv"></script>
 <style>
-  main.da-page{max-width:1500px;margin:20px auto;padding:0 16px 40px;display:grid;grid-template-columns:260px 1fr;gap:18px;align-items:start}
-  .da-nav,.da-main{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
-  .da-nav{position:sticky;top:60px}
-  .da-nav h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:12px 0 6px}
-  .da-nav button[data-set]{display:block;width:100%;text-align:left;border:0;background:transparent;padding:7px 9px;border-radius:8px;font:inherit;font-size:13px;cursor:pointer;color:var(--ink)}
-  .da-nav button[data-set]:hover{background:var(--soft)}
-  .da-nav button[data-set].active{background:var(--accent);color:#fff}
-  .da-main h2{font-size:17px;margin:0 0 6px}
-  .da-main h3{font-size:14px;margin:16px 0 6px}
-  .da-main button,.da-nav .da-repo{border:0;border-radius:10px;padding:8px 12px;font:inherit;font-weight:650;cursor:pointer}
-  .da-main .primary{background:var(--accent);color:#fff}
-  .da-main .secondary,.da-nav .da-repo{background:#e5e7eb;color:var(--ink)}
-  .da-main .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  .da-actions{margin:8px 0}
-  .da-grid-tools{display:flex;gap:10px;align-items:center;margin:6px 0}
-  .da-grid-tools input{padding:7px 9px;border:1px solid var(--line);border-radius:8px;font:inherit;min-width:220px}
-  .da-scroll{max-height:62vh;overflow:auto;border:1px solid var(--line);border-radius:10px}
-  .da-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;max-width:900px}
-  .da-form label{display:grid;gap:4px;font-size:13px}.da-form input{padding:6px 8px;border:1px solid var(--line);border-radius:6px;font:inherit}
-  table.da-table{border-collapse:collapse;width:100%;font-size:13px}
-  .da-folders{display:grid;gap:6px}.da-folder{text-align:left;white-space:normal;font-size:12px}.da-folder[data-folder-state="prompt"]{border-color:#f59e0b}
-  .da-file{display:inline-flex;align-items:center;cursor:pointer;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--soft)}.da-table td.num{text-align:right}.da-defa-filter{min-width:360px;padding:6px 8px}
-  .da-table th{position:sticky;top:0;background:var(--soft);text-align:left;padding:6px;cursor:pointer;white-space:nowrap;z-index:1}
-  .da-table td{padding:2px 4px;border-top:1px solid var(--line);vertical-align:middle}
-  .da-table input:not([type=checkbox]),.da-table select{width:100%;min-width:5em;padding:4px 6px;border:1px solid transparent;border-radius:6px;font:inherit;background:transparent;color:inherit}
-  .da-table input:focus,.da-table select:focus{border-color:var(--accent);background:#fff;outline:none}
-  .da-del{background:transparent!important;color:#b91c1c!important;font-size:16px;padding:2px 8px!important}
-  .da-yaml textarea{width:100%;min-height:55vh;font:12px/1.4 ui-monospace,Consolas,monospace;padding:10px;border:1px solid var(--line);border-radius:10px;box-sizing:border-box}
-  .da-howto{margin-top:14px;border-top:1px dashed var(--line);padding-top:10px}
-  .da-howto summary{cursor:pointer;font-weight:650}
-  .da-howto code{background:var(--soft);padding:1px 5px;border-radius:5px}
-  @media(max-width:900px){main.da-page{grid-template-columns:1fr}.da-nav{position:static}}
+  main.da-page {
+    max-width: 1500px;
+    margin: 20px auto;
+    padding: 0 16px 40px;
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 18px;
+    align-items: start
+  }
+  .da-nav,
+  .da-main {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px
+  }
+  .da-nav {
+    position: sticky;
+    top: 60px
+  }
+  .da-nav h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--muted);
+    margin: 12px 0 6px
+  }
+  .da-nav button[data-set] {
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: 0;
+    background: transparent;
+    padding: 7px 9px;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--ink)
+  }
+  .da-nav button[data-set]:hover {
+    background: var(--soft)
+  }
+  .da-nav button[data-set].active {
+    background: var(--accent);
+    color: #fff
+  }
+  .da-main h2 {
+    font-size: 17px;
+    margin: 0 0 6px
+  }
+  .da-main h3 {
+    font-size: 14px;
+    margin: 16px 0 6px
+  }
+  .da-main button,
+  .da-nav .da-repo {
+    border: 0;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer
+  }
+  .da-main .primary {
+    background: var(--accent);
+    color: #fff
+  }
+  .da-main .secondary,
+  .da-nav .da-repo {
+    background: #e5e7eb;
+    color: var(--ink)
+  }
+  .da-main .row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center
+  }
+  .da-actions {
+    margin: 8px 0
+  }
+  .da-grid-tools {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin: 6px 0
+  }
+  .da-grid-tools input {
+    padding: 7px 9px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font: inherit;
+    min-width: 220px
+  }
+  .da-scroll {
+    max-height: 62vh;
+    overflow: auto;
+    border: 1px solid var(--line);
+    border-radius: 10px
+  }
+  .da-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 10px;
+    max-width: 900px
+  }
+  .da-form label {
+    display: grid;
+    gap: 4px;
+    font-size: 13px
+  }
+  .da-form input {
+    padding: 6px 8px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font: inherit
+  }
+  table.da-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13px
+  }
+  .da-folders {
+    display: grid;
+    gap: 6px
+  }
+  .da-folder {
+    text-align: left;
+    white-space: normal;
+    font-size: 12px
+  }
+  .da-folder[data-folder-state="prompt"] {
+    border-color: #f59e0b
+  }
+  .da-file {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--soft)
+  }
+  .da-table td.num {
+    text-align: right
+  }
+  .da-defa-filter {
+    min-width: 360px;
+    padding: 6px 8px
+  }
+  .da-table th {
+    position: sticky;
+    top: 0;
+    background: var(--soft);
+    text-align: left;
+    padding: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    z-index: 1
+  }
+  .da-table td {
+    padding: 2px 4px;
+    border-top: 1px solid var(--line);
+    vertical-align: middle
+  }
+  .da-table input:not([type=checkbox]),
+  .da-table select {
+    width: 100%;
+    min-width: 5em;
+    padding: 4px 6px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    font: inherit;
+    background: transparent;
+    color: inherit
+  }
+  .da-table input:focus,
+  .da-table select:focus {
+    border-color: var(--accent);
+    background: #fff;
+    outline: none
+  }
+  .da-del {
+    background: transparent !important;
+    color: #b91c1c !important;
+    font-size: 16px;
+    padding: 2px 8px !important
+  }
+  .da-yaml textarea {
+    width: 100%;
+    min-height: 55vh;
+    font: 12px/1.4 ui-monospace, Consolas, monospace;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-sizing: border-box
+  }
+  .da-howto {
+    margin-top: 14px;
+    border-top: 1px dashed var(--line);
+    padding-top: 10px
+  }
+  .da-howto summary {
+    cursor: pointer;
+    font-weight: 650
+  }
+  .da-howto code {
+    background: var(--soft);
+    padding: 1px 5px;
+    border-radius: 5px
+  }
+  @media(max-width:900px) {
+    main.da-page {
+      grid-template-columns: 1fr
+    }
+    .da-nav {
+      position: static
+    }
+  }
 </style>
 </head><body>
 <!-- Paramétrage des bases de données (appareils, flotte, équipages, fusions…) : page construite par
      shared/data_admin.js (navigation à gauche, tableau éditable à droite). -->
 <header class="mc-header"><h1>Paramètres</h1><p>DEFA Virtual — bases de données (flotte, types, indicatifs, registres…) et maintenance (mises à jour, sources et dossiers, données SIA, sauvegarde)</p></header>
 <main class="da-page" id="dataAdmin"></main>
-<script src="../../shared/kit.js?v=20260930zzzt"></script>
-<script src="../../shared/repository_nav.js?v=20260930zzzt"></script>
-<script src="../../shared/content_i18n.js?v=20260930zzzt"></script>
-<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=20260930zzzt" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=20260930zzzt"></script>
-<script src="../../shared/data_files.js?v=20260930zzzt" data-file="references/aircraft_fleet.js"></script>
+<script src="../../shared/kit.js?v=20260930zzzv"></script>
+<script src="../../shared/repository_nav.js?v=20260930zzzv"></script>
+<script src="../../shared/content_i18n.js?v=20260930zzzv"></script>
+<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=20260930zzzv" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=20260930zzzv"></script>
+<script src="../../shared/data_files.js?v=20260930zzzv" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script src="../../shared/data_files.js?v=20260930zzzt" data-file="references/callsigns.js"></script>
-<script src="../../shared/mission_core/vocab.js?v=20260930zzzt"></script>
-<script src="../../shared/mission_core/model.js?v=20260930zzzt"></script>
-<script src="../../shared/mission_core/blocks.js?v=20260930zzzt"></script>
-<script src="../../shared/mission_core/ledger.js?v=20260930zzzt"></script>
-<script src="../../shared/mission_core/grid_edit.js?v=20260930zzzt"></script>
-<script src="../../shared/mission_core/defa_log.js?v=20260930zzzt"></script><script src="../../shared/data_admin_i18n.js?v=20260930zzzt"></script><script src="../../shared/data_admin.js?v=20260930zzzt"></script>
-<script>window.DataAdmin.mount(document.getElementById('dataAdmin'));</script>
+<script src="../../shared/data_files.js?v=20260930zzzv" data-file="references/callsigns.js"></script>
+<script src="../../shared/mission_core/vocab.js?v=20260930zzzv"></script>
+<script src="../../shared/mission_core/model.js?v=20260930zzzv"></script>
+<script src="../../shared/mission_core/blocks.js?v=20260930zzzv"></script>
+<script src="../../shared/mission_core/ledger.js?v=20260930zzzv"></script>
+<script src="../../shared/mission_core/grid_edit.js?v=20260930zzzv"></script>
+<script src="../../shared/mission_core/defa_log.js?v=20260930zzzv"></script><script src="../../shared/data_admin_i18n.js?v=20260930zzzv"></script><script src="../../shared/data_admin.js?v=20260930zzzv"></script>
+<script>
+window.DataAdmin.mount(document.getElementById('dataAdmin'));
+</script>
 <!-- rubrique « Maintenance » (mises à jour, sources et dossiers, versions, dépendances, SIA, sauvegarde totale, journal) -->
-<script src="../../AircraftDB/aircraft_perf.js"></script><script src="../cpco/mission_prompt.js?v=20260930zzzt"></script>
-<script src="../../shared/zip_store.js?v=20260930zzzt"></script><script src="../../shared/airac.js?v=20260930zzzt"></script><script src="../../shared/carto/aero_symbols.js?v=20260930zzzt"></script><script src="../../shared/sia_base.js?v=20260930zzzt"></script><script src="../../shared/mission_table.js?v=20260930zzzt"></script><script src="../cpco/mission_store.js?v=20260930zzzt"></script><script src="../../shared/mission_routing.js?v=20260930zzzt"></script><script src="../../shared/mission_registry.js?v=20260930zzzt"></script><script src="../../shared/maintenance_page.js?v=20260930zzzt"></script>
-<script src="../../shared/app_framework.js?v=20260930zzzt"></script>
+<script src="../../AircraftDB/aircraft_perf.js"></script><script src="../cpco/mission_prompt.js?v=20260930zzzv"></script>
+<script src="../../shared/zip_store.js?v=20260930zzzv"></script><script src="../../shared/airac.js?v=20260930zzzv"></script><script src="../../shared/carto/aero_symbols.js?v=20260930zzzv"></script><script src="../../shared/sia_base.js?v=20260930zzzv"></script><script src="../../shared/mission_table.js?v=20260930zzzv"></script><script src="../cpco/mission_store.js?v=20260930zzzv"></script><script src="../../shared/mission_routing.js?v=20260930zzzv"></script><script src="../../shared/mission_registry.js?v=20260930zzzv"></script><script src="../../shared/maintenance_page.js?v=20260930zzzv"></script>
+<script src="../../shared/app_framework.js?v=20260930zzzv"></script>
 </body></html>
