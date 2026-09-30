@@ -338,8 +338,13 @@
         h,
         folder: `${fam}/${p.id}`
       };
-    } catch {
-      return null;
+    } catch (e) {
+      // lecture : dossier absent → null ; écriture : dossier autorisé mais inaccessible (fichiers en ligne seulement,
+      // client de synchronisation arrêté, droits du système…) → erreur explicite, et non « non autorisé »
+      if (!create) return null;
+      throw new Error(t(['Dossier des missions autorisé mais inaccessible en écriture ({m}) : vérifier que le client de synchronisation tourne et que data/ est gardé sur cet appareil.', 'Missions folder authorised but not writable ({m}): check the sync client is running and data/ is kept on this device.'], {
+        m: e?.message || e?.name || '?'
+      }));
     }
   }
   const dumpYaml = (y, id, what) => `# Mission ${id} — ${what} — ${new Date().toLocaleString('fr-FR')}\n` + window.jsyaml.dump(y, {
