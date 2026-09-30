@@ -21,6 +21,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Toolkit — registre unique des designs** : `REPOSITORY_TREE.designs.list` porte `skeuo` et `chart` ; palette et
   relief des graphiques, logo, dossier des icônes (`appearance.iconFolder`) et jeux du générateur d'icônes en sont
   déduits ; attribut `html[data-skeuo]` pour la CSS commune aux designs à matières (63 listes de designs remplacées).
+- **Toolkit — CSS par jetons (en cours)** : 103 jetons `--sk-*` par design et par ton ; en-tête, menus, blocs, cartes,
+  zones de dépôt, bandeaux, champs, boutons, liens-boutons, barre latérale, pied de page, barre d'action, outils de bloc
+  écrits une seule fois ; règles propres aux CR, à l'éditeur de mission, au planificateur et à l'Apparence rangées dans
+  leurs feuilles. Rendu identique (banc `tools/skeuo_regression.html`), `!important` 551 → 328.
+- **Durci** : vis cruciformes découpées dans la planche enfin appliquées (règle neutralisée par un commentaire mal fermé).
+- **Centre** : fond des icônes par convention de nom (`vierge.rouge.webp`, cuivre, pour Cabinet, Carnet de vol et Durci ;
+  à défaut `vierge.gris.webp`) ; option `centreBg` du générateur retirée.
 - **Appareil de page** (Cabinet) : entre les blocs 3 et 4 (réglage `deviceAt`), plus entre les deux premiers.
 - **Décors** : `design_deco.js` réorganisé et documenté (familles de décors, formats des tableaux de réglage) ; plus
   d'objet posé sur une feuille de registre.

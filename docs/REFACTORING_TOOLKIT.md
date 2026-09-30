@@ -31,12 +31,33 @@ applications (reporting, CR, planificateur, studio…) n'est touché que là où
 |---|---|---|---|
 | **D. Boîte à outils commune** | `shared/kit.js` (`window.RepositoryKit`) : `esc`, langue (`lang`, `langIndex`, `t`), stockage protégé (`store`), couleurs (`color` : lecture, hex, luminance, contraste WCAG, HSL, teinte / saturation, clarté). Chargé par chaque page juste avant `repository_nav.js` ; les modules du socle s'en servent à la place de leurs copies. Code compacté reformaté au passage, fichier par fichier. | faible, sans effet visuel | **fait** (socle) ; modules applicatifs au fil de l'eau |
 | **A. Registre unique des designs** | `REPOSITORY_TREE.designs.list` devient la seule source : `skeuo` (design à matières), `chart` (palette automatique), `icons` (jeu par défaut, images dans `shared/icons/skeuo/<id du design>`), `emblem`, `css`. Lu par `repository_nav.js` (graphiques, logo, dossier des icônes, attribut `html[data-skeuo]`), `appearance_page.js` (`appearance.iconFolder`), `build_skeuo_icons_css.py` (jeux d'icônes). La CSS commune aux designs à matières s'écrit `html[data-skeuo]` au lieu de la liste des quatre designs. | faible | **fait** |
-| **B. CSS par jetons** | Jeu de variables de composant par design (`--sk-*` : surfaces, encre, bords, boutons, barres, bloc) ; composants écrits une fois pour tous les designs à matières ; par design, seulement ce qui est unique (textures, rivets, cadres). Objectif : `designs_skeuo.css` < 400 lignes, < 60 `!important`. | élevé (visuel) | à faire |
-| **C. Sortir les exceptions de page** | Règles `.mc-*`, `.fp-*`, CR, planificateur dans la CSS de leur application, sur les jetons du socle ; les pages abandonnent leur `:root` de couleurs pour les jetons communs. | moyen | à faire |
+| **B. CSS par jetons** | Jeu de variables de composant par design (`--sk-*` : surfaces, encre, bords, boutons, barres, bloc) ; composants écrits une fois pour tous les designs à matières ; par design, seulement ce qui est unique (textures, rivets, cadres). Objectif : `designs_skeuo.css` < 400 lignes, < 60 `!important`. | élevé (visuel) | **en cours** — étapes 1 et 2 faites (voir ci-dessous) |
+| **C. Sortir les exceptions de page** | Règles `.mc-*`, `.fp-*`, CR, planificateur dans la CSS de leur application, sur les jetons du socle ; les pages abandonnent leur `:root` de couleurs pour les jetons communs. | moyen | **en cours** — règles déplacées (voir ci-dessous) ; palettes `:root` des pages à faire |
 
 Ordre : D, A (faits), puis B design par design avec C page par page. Chaque étape : un commit sur `develop`, vérifié sur
 les pages témoins (reporting, CR, studio, planificateur, Planning ODV, Apparence ; tons clair et sombre ; console sans
 erreur, captures avant / après). Pas de version publiée avant la fin de B.
+
+## Avancement de B et C (30 septembre 2026)
+
+Vérification : banc `tools/skeuo_regression.html` (styles calculés de ~60 composants, pseudo-éléments compris, sur six
+pages témoins, quatre designs, deux tons) — **aucun écart** après chaque étape, sauf le correctif voulu ci-dessous.
+
+- **Jetons `--sk-*`** (103) définis dans chaque design et ton ; **composants communs** écrits une fois
+  (`html[data-skeuo]`) : en-tête, boutons du menu et de la langue, menus, blocs, sous-titres, sous-cartes, zones de
+  dépôt et leur bouton « Choisir », bandeaux, champs, boutons (survol, désactivé), liens-boutons, barre latérale, pied
+  de page, barre d'action, outils de bloc, fenêtre Apparence. Les boutons Aqua portent leurs jetons sur eux-mêmes (gel
+  local : rouge des boutons « danger »).
+- **Sorties du socle** : règles Mission Core → `shared/mission_core/core.css` ; cartes de l'éditeur de mission →
+  `mission_editor.html` ; graphiques, cadrans et curseurs → `flight_performance_planner.html` ; vignettes Aqua de
+  l'Apparence → `appearance_page.js`. Le socle garde les jetons (`--sk-hb*`, `--sk-pop*`, `--sk-card*`, `--sk-chart-*`…).
+- **Correctif** : un commentaire sans ouverture neutralisait la règle des vis de Durci (vis cruciformes découpées dans
+  la planche : désormais appliquées).
+- **Chiffres** (`designs_skeuo.css`) : `!important` 551 → 328 ; 98,8 → 92,5 Ko ; lignes propres à Aqua 84 → 41, aux
+  autres designs −17 à −21 ; les jetons en tête de chaque design font passer le fichier de 695 à 717 lignes.
+- **Reste** : plaques de titre, couleurs de texte des blocs, sélecteurs segmentés, pastilles de code, barres d'état
+  (écarts entre designs encore écrits design par design) ; listes « Cabinet + Carnet de vol + Durci » (cadre cousu,
+  voyant de sauvegarde, décors) ; palettes `:root` des 6 pages qui en ont une.
 
 ## Utiliser la boîte à outils (D)
 

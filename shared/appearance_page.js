@@ -157,6 +157,9 @@ main.ap-page :is(.ap-thumb,.ap-iconrow,.ap-card,.ap-show,[id=apReset]){color:var
 .ap-mini-title{grid-column:1/-1;font-size:11px;font-weight:700;color:#17242b}
 .ap-mini-line{grid-column:1/-1;height:5px;border-radius:3px;background:#dfe7ec}.ap-mini-line.s{width:60%}
 .ap-mini-btn{grid-column:1/-1;width:52px;height:12px;border-radius:5px;background:var(--repo-accent)}
+/* Aqua : vignettes et rangées en verre bombé, état choisi teinté de la couleur Aqua */
+html[data-design="aqua"] main.ap-page :is(.ap-thumb,.ap-iconrow,.ap-show,[id=apReset]){background-image:linear-gradient(#ffffff,#f1f4f8 50%,#e6ebf1 51%,#f6f8fb)!important}
+html[data-design="aqua"] main.ap-page :is(.ap-thumb,.ap-iconrow,.ap-show)[aria-pressed="true"]{background-image:linear-gradient(color-mix(in srgb,var(--aq-gel) 10%,#fff),color-mix(in srgb,var(--aq-gel) 20%,#fff))!important;border-color:var(--aq-gel)!important}
 .ap-mini[data-d="aero"] .ap-mini-bar{background:linear-gradient(115deg,var(--repo-bar),color-mix(in srgb,var(--repo-bar) 70%,#000))}
 .ap-mini[data-d="aero"] .ap-mini-block{border-radius:10px;box-shadow:0 6px 16px color-mix(in srgb,var(--repo-accent) 22%,transparent)}.ap-mini[data-d="aero"] .ap-mini-btn{border-radius:6px}
 .ap-mini[data-d="ops"] .ap-mini-block{border-radius:2px;border-left:4px solid var(--repo-accent);padding:5px 8px;margin:6px}.ap-mini[data-d="ops"] .ap-mini-title{text-transform:uppercase;font-size:9.5px;letter-spacing:.06em}.ap-mini[data-d="ops"] .ap-mini-btn{border-radius:2px}

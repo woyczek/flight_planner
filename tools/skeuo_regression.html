@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Banc de non-régression des designs</title>
+<!-- Banc d'essai (outil de développement) : relève les styles calculés des composants du framework (en-tête, blocs,
+     boutons, champs, barres, cartes…, pseudo-éléments compris) sur des pages témoins, dans chaque design et chaque ton,
+     puis compare un état ultérieur à cette référence (propriété par propriété). Sert à refactorer designs_skeuo.css
+     sans changement visuel involontaire (docs/REFACTORING_TOOLKIT.md).
+     Usage : servir le dépôt (python -m http.server 8767 --bind 127.0.0.1, à la racine), ouvrir
+     http://127.0.0.1:8767/tools/skeuo_regression.html ; « Référence » avant la modification, « Comparer » après
+     (versions de cache à jour : python tools/bump_versions.py). La référence est gardée dans ce navigateur
+     (localStorage, ~4 Mo) ; le design choisi dans la suite est modifié pendant les relevés (repositoryDesign). -->
+<style>
+  body{margin:0;font:14px system-ui,sans-serif;background:#f4f6f8;color:#17202a}
+  header{padding:12px 16px;background:#fff;border-bottom:1px solid #ccd;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  button{padding:6px 12px;font:inherit;cursor:pointer}
+  #log{padding:12px 16px;white-space:pre-wrap;font:12px ui-monospace,Consolas,monospace}
+  iframe{position:fixed;left:0;top:0;width:1500px;height:1000px;visibility:hidden}
+</style></head><body>
+<header>
+  <b>Designs à matières — non-régression</b>
+  <label><input type="checkbox" id="light" checked> ton clair</label><label><input type="checkbox" id="dark" checked> ton sombre</label>
+  <button id="ref">Référence</button><button id="cmp">Comparer</button><span id="state"></span>
+</header>
+<div id="log"></div>
+<script>
+// Pages témoins et designs relevés
+const PAGES = ['apps/cr/HEMS/hems_core_cr.html', 'apps/cr/HEMS/hems_core_reporting.html', 'apps/planner/flight_performance_planner.html',
+  'apps/cpco/map_parser.html', 'apps/settings/apparence.html', 'apps/cpco/mission_editor.html'];
+const DESIGNS = ['cabinet', 'flightlog', 'field', 'aqua'];
+// Composants relevés (deux premiers éléments de chaque sélecteur, et leurs ::before / ::after)
+const SEL = ['html', 'body', '.repo-header', '.repo-header h1', '.repo-header-subtitle', '.repo-header-emblem', '.repo-menu-button',
+  '.repo-language-button', '.repo-menu', '.repo-block', '.repo-block .repo-block-heading>h2,.repo-block .repo-block-titles>h2',
+  '.repo-block-subtitle', '.repo-block-step', '.repo-block-tools', '.repo-block-tools button', '.repo-card',
+  '.repo-card-titles>strong,.repo-card-titles>h3', '.repo-dropzone', '.repo-dropzone-pick', '.repo-notice', '.repo-block label',
+  '.repo-block th', '.repo-block td', '.repo-block table', '.repo-block p', '.repo-block .small,.repo-block .muted,.repo-block .hint',
+  '.repo-block h3', '.repo-block input[type=text],.repo-block input[type=number],.repo-block input:not([type])', '.repo-block select',
+  '.repo-block textarea', 'button.primary', 'button.secondary', 'button.ghost', 'button.danger',
+  '.repo-block button:not(.primary):not(.secondary):not(.ghost):not(.danger):not(.repo-plain):not(.repo-icon-only)', 'a.headerButton',
+  '.repo-header button.headerButton', '.repo-sidenav', '.repo-sidenav-item', '.repo-sidenav-item[aria-current]', '.repo-footer',
+  '.repo-footer a', '.repo-actionbar', '.repo-block #status,.repo-block .status', '.repo-block code', '.repo-segs', '.repo-seg',
+  '.repo-seg[aria-pressed=true]', 'svg.opt-chart', '.vslider input.vr', '.mc-header-tools button', '.mc-kpi>div', '.mc-item', '.report',
+  '.sectionCard', '.repo-block .warn', 'dialog.repo-ap-dialog', '.mc-menu>summary', '.mc-switch>summary', '.mc-toolbar>.mc-import>summary',
+  '.mc-tools', '.mc-summary', '.mapCard', '.arrayItem', '.fp-gauge svg', '.fp-fuel-mode', 'main.ap-page .ap-thumb', 'main.ap-page .ap-iconrow'];
+const PROPS = ['background-image', 'background-color', 'background-size', 'background-position', 'color', 'border-top-width',
+  'border-top-style', 'border-top-color', 'border-left-width', 'border-left-color', 'border-image-source', 'border-radius', 'box-shadow',
+  'outline-style', 'outline-color', 'outline-offset', 'padding-top', 'padding-left', 'padding-right', 'margin-top', 'margin-bottom',
+  'margin-left', 'font-family', 'font-size', 'font-weight', 'font-style', 'font-stretch', 'text-transform', 'letter-spacing',
+  'text-shadow', 'min-height', 'height', 'width', 'opacity', 'filter', 'display', 'position', 'text-decoration-line', 'mix-blend-mode',
+  'backdrop-filter', 'content', 'inset'];
+const KEY = 'skeuoRegression:v1', $ = id => document.getElementById(id), log = s => { $('log').textContent += s + '\n'; };
+
+/** Styles calculés des composants d'un document (valeurs sans version de cache). */
+function snap(d) {
+  const w = d.defaultView, out = {};
+  for (const s of SEL) {
+    [...d.querySelectorAll(s)].slice(0, 2).forEach((el, i) => {
+      for (const pe of ['', '::before', '::after']) {
+        const cs = w.getComputedStyle(el, pe || null);
+        if (pe && (cs.content === 'none' || cs.content === 'normal')) continue;
+        const o = {};
+        for (const p of PROPS) o[p] = cs.getPropertyValue(p);
+        out[`${s}#${i}${pe}`] = JSON.stringify(o).replace(/\?v=[0-9a-z]+/g, '');
+      }
+    });
+  }
+  return out;
+}
+/** Charge chaque page dans chaque design et ton ; visit(clé, relevé) pour chaque combinaison. */
+async function sweep(visit) {
+  const tones = ['light', 'dark'].filter(t => $(t).checked);
+  const keep = localStorage.getItem('repositoryDesign');
+  for (const des of DESIGNS) {
+    localStorage.setItem('repositoryDesign', des);
+    for (const p of PAGES) {
+      $('state').textContent = `${des} · ${p}`;
+      const f = document.createElement('iframe');
+      document.body.append(f);
+      f.src = '/' + p;
+      await new Promise(r => { f.onload = r; setTimeout(r, 8000); });
+      await new Promise(r => setTimeout(r, 1500));   // décors et blocs posés après le chargement
+      for (const tone of tones) {
+        f.contentDocument.documentElement.dataset.tone = tone;
+        await new Promise(r => setTimeout(r, 120));
+        visit(`${des}|${tone}|${p}`, snap(f.contentDocument));
+      }
+      f.remove();
+    }
+  }
+  if (keep) localStorage.setItem('repositoryDesign', keep); else localStorage.removeItem('repositoryDesign');
+  $('state').textContent = '';
+}
+$('ref').onclick = async () => {
+  $('log').textContent = '';
+  const base = {};
+  await sweep((k, v) => { base[k] = v; });
+  try { localStorage.setItem(KEY, JSON.stringify(base)); log(`Référence : ${Object.keys(base).length} combinaisons.`); }
+  catch (e) { log('Référence trop grosse pour le stockage local : décocher un ton. ' + e.message); }
+};
+$('cmp').onclick = async () => {
+  $('log').textContent = '';
+  const base = JSON.parse(localStorage.getItem(KEY) || 'null');
+  if (!base) return log('Pas de référence : cliquer d\'abord « Référence ».');
+  let n = 0;
+  await sweep((k, now) => {
+    const old = base[k] || {};
+    for (const s of new Set([...Object.keys(old), ...Object.keys(now)])) {
+      if (old[s] === now[s]) continue;
+      if (!old[s] || !now[s]) { n++; log(`${k}  ${s}  ${old[s] ? 'disparu' : 'nouveau'}`); continue; }
+      const a = JSON.parse(old[s]), b = JSON.parse(now[s]);
+      for (const p in a) if (a[p] !== b[p]) { n++; log(`${k}  ${s}  ${p}\n    avant : ${a[p]}\n    après : ${b[p]}`); }
+    }
+  });
+  log(n ? `${n} écart(s).` : 'Aucun écart.');
+};
+</script>
+</body></html>

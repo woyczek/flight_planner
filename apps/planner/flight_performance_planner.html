@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Flight Performance & Fuel Planner</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=20260930zt">
-<script src="../../repository_tree?v=20260930zt"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=20260930zzb">
+<script src="../../repository_tree?v=20260930zzb"></script>
 <style>
 :root{font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;color-scheme:dark;--bg:#101317;--p:#181d23;--b:#2b3440;--a:#71b7ff;--mut:#9ba8b5}
 *{box-sizing:border-box} body{margin:0;background:var(--bg);color:#eef3f7} header{padding:10px 18px;border-bottom:1px solid var(--b);position:sticky;top:0;background:#101317ee;backdrop-filter:blur(8px);z-index:20}.header-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.header-row+.header-row{margin-top:8px}.header-spacer{flex:1}.control{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--mut)}
@@ -53,6 +53,38 @@ abbr[title]{text-decoration:underline dotted;cursor:help}
 .instr-col .fp-gauge svg{width:100%!important;height:auto!important;max-width:min(210px,calc((100vh - 150px) / 5 - 34px));aspect-ratio:1;margin:0 auto}
 .instr-col .fp-gauge figcaption{white-space:normal;font-size:11px}
 @media(max-width:800px){.instr-col{grid-area:auto}.fp-instr-sticky{position:static}.instr-col .fp-instruments{flex-direction:row;justify-content:center}.instr-col .fp-gauge svg{width:90px!important}}</style>
+<style id="skeuoPlanner">
+/* Designs à matières (html[data-skeuo], jetons --sk-chart-*, --sk-slider-*, --sk-thumb-* de shared/designs_skeuo.css) */
+/* ================================================================================================ CADRANS DU PLANIFICATEUR
+   Cadrans réalistes (shared/flight_instruments.js) : le boîtier est dessiné dans le SVG ; ombre portée du boîtier. */
+html[data-skeuo] .fp-gauge svg{background:none!important;box-shadow:none!important;border-radius:0!important;overflow:visible;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.7)) drop-shadow(0 6px 8px rgba(0,0,0,.45))}   /* ombre recréée sur la silhouette du boîtier (contact + portée) */
+html[data-skeuo] .fp-fuel-mode{background:#0d0e10!important;border:1px solid currentColor!important;box-shadow:inset 0 1px 3px #000}
+/* ================================================================================================ PLANIFICATEUR : GRAPHIQUES ET CURSEURS
+   Graphiques du devis carburant (svg.opt-chart) en écran d'instrument, curseurs verticaux (input.vr) en commandes :
+   Cabinet / Carnet de vol : panneau bleu marine serti de laiton, quadrillage gravé or, bouton de laiton moleté ;
+   Durci : écran phosphore vert à balayage, quadrillage vert, levier d'acier ; Aqua : verre (clair ou sombre), bulle de
+   gel. Couleurs des courbes : palette des graphiques (--fc-*, flight_perf_view.js). */
+html[data-skeuo] svg.opt-chart{background:var(--sk-chart-bg);border:var(--sk-chart-border);border-radius:var(--sk-chart-radius);box-shadow:var(--sk-chart-shadow)}
+html[data-skeuo] svg.opt-chart .grid-line{stroke:var(--sk-chart-grid)!important}
+html[data-skeuo] svg.opt-chart .axis{stroke:var(--sk-chart-axis)!important}
+html[data-skeuo] svg.opt-chart text{fill:var(--sk-chart-text)!important}
+html:is([data-design="cabinet"],[data-design="flightlog"]) svg.opt-chart .grid-line{stroke-dasharray:2 4}
+html:is([data-design="cabinet"],[data-design="flightlog"]) svg.opt-chart .axis{stroke-width:1.6!important}
+html:is([data-design="cabinet"],[data-design="flightlog"]) svg.opt-chart text{font-family:"Palatino Linotype","Book Antiqua",Georgia,serif!important}
+html[data-design="field"] svg.opt-chart text{font-family:Bahnschrift,"Arial Narrow",ui-monospace,monospace!important}
+html[data-design="field"] svg.opt-chart :is(path,polyline,circle){filter:drop-shadow(0 0 2px rgba(140,255,160,.45))}
+html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"]) svg.opt-chart :is(.curve,.curve-eco,.curve-fuel,.curve-man,.tas-line){stroke-linecap:round;filter:drop-shadow(0 1px 1px rgba(0,0,0,.55))}
+/* curseurs verticaux */
+html[data-skeuo] .vslider input.vr{appearance:none;-webkit-appearance:none;width:24px;cursor:ns-resize}
+html[data-skeuo] .vslider input.vr::-webkit-slider-runnable-track{width:8px;border-radius:4px}
+html[data-skeuo] .vslider input.vr::-webkit-slider-thumb{-webkit-appearance:none;appearance:none}
+html[data-skeuo] .vslider input.vr::-webkit-slider-runnable-track{background:var(--sk-slider-track);box-shadow:var(--sk-slider-track-shadow)}
+html[data-skeuo] .vslider input.vr::-webkit-slider-thumb{width:var(--sk-thumb-w);height:var(--sk-thumb-h);margin-left:var(--sk-thumb-x);border-radius:var(--sk-thumb-radius);border:var(--sk-thumb-border);
+  background:var(--sk-thumb-bg);box-shadow:var(--sk-thumb-shadow)}
+/* planificateur : bouton « épingler déplié » du bloc Résultat, icône à la taille des autres outils */
+html[data-skeuo] .repo-block-tools .fp-result-pin svg{width:18px!important;height:18px!important}
+html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]{background-color:rgba(255,255,255,.18)!important;opacity:1}
+</style>
 </head>
 <body>
 <header><div class="header-row"><h1>Flight Performance &amp; Fuel Planner</h1><span id="source" class="mut"></span><span class="header-spacer"></span><span class="control">Langue <span class="lang-popup"><button id="languageCurrent" class="lang-current" type="button" aria-haspopup="menu" aria-expanded="false"><span id="languageCurrentIcon"></span><span class="caret">▼</span></button><span id="languageMenu" class="lang-menu" role="menu" hidden><button class="lang-item" data-lang="fr">🇫🇷 Français</button><button class="lang-item" data-lang="en">🇬🇧 English</button></span></span></span><span class="prefs-popup"><button id="prefsCurrent" class="prefs-current" type="button" aria-haspopup="menu" aria-expanded="false" title="Préférences">⚙ <span class="caret">▼</span></button><span id="prefsMenu" class="prefs-menu" role="menu" hidden><button id="fuelUnitBtn" class="prefs-item">Affichage : kg</button><button id="prefsEditorBtn" class="prefs-item">Masquer les champs du profil</button></span></span></div><div class="header-row"><span class="control">Avion <button id="airBtn" hidden></button><span class="aircraft-popup"><button id="aircraftCurrent" class="aircraft-current primary" type="button" aria-haspopup="menu" aria-expanded="false"><span id="aircraftCurrentIcon" class="ac-icon"></span><span id="aircraftCurrentText" class="aircraft-current-text">Aucun avion</span><span class="caret">▾</span></button><span id="aircraftMenu" class="aircraft-menu" role="menu" hidden></span></span></span><button id="dirBtn">Dossier performances</button><button id="simBtn" class="primary">Récupérer dernier FPL SimBrief</button></div></header>
@@ -130,13 +162,13 @@ abbr[title]{text-decoration:underline dotted;cursor:help}
 <dialog id="dlg"><div class="row"><h2 style="flex:1">Choisir l’avion</h2><button onclick="dlg.close()">Fermer</button></div><input id="search" placeholder="Rechercher ICAO / nom…" style="width:100%;margin-bottom:8px"><div id="airlist" class="airlist"></div></dialog>
 
 <!-- navigation (en-tête, barre latérale) avant les scripts de calcul : la barre et la marge du contenu paraissent tout de suite -->
-<script src="../../shared/kit.js?v=20260930zt"></script>
-<script src="../../shared/repository_nav.js?v=20260930zt"></script>
-<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=20260930zt" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=20260930zt" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=20260930zt"></script>
+<script src="../../shared/kit.js?v=20260930zzb"></script>
+<script src="../../shared/repository_nav.js?v=20260930zzb"></script>
+<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=20260930zzb" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=20260930zzb" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=20260930zzb"></script>
 <script src="../../AircraftDB/aircraft_icons.js"></script>
 <script src="../../AircraftDB/aircraft_perf.js"></script>
-<script src="../../shared/sticky_frame.js?v=20260930zt"></script><script src="../../shared/flight_profile_help.js?v=20260930zt"></script><script src="../../shared/column_resize.js?v=20260930zt"></script><script src="../../shared/flight_instruments.js?v=20260930zt"></script><script src="../../shared/flight_perf_view.js?v=20260930zt"></script>
-<script src="../../shared/flight_performance_model.js?v=20260930zt"></script>
+<script src="../../shared/sticky_frame.js?v=20260930zzb"></script><script src="../../shared/flight_profile_help.js?v=20260930zzb"></script><script src="../../shared/column_resize.js?v=20260930zzb"></script><script src="../../shared/flight_instruments.js?v=20260930zzb"></script><script src="../../shared/flight_perf_view.js?v=20260930zzb"></script>
+<script src="../../shared/flight_performance_model.js?v=20260930zzb"></script>
 <script>
 // Planificateur de performances : profils d'appareils (SimBrief, Little Navmap, CSV, calibration par
 // OFP), devis carburant par phase, niveau optimal. Habillage (blocs, barre d'état) : shared/flight_ui.js.
@@ -781,9 +813,9 @@ function renderDefaSheets(){const box=$("defaSheets");if(!box)return;const t=aKe
 /* ?aircraft=<type ou profil> : ouverture depuis une fiche appareil (profil existant, sinon créé depuis le type DEFA). */
 refreshLandingAircraft();restore();applyHeaderPreferences();{const wanted=new URLSearchParams(location.search).get("aircraft"),k=aKey(wanted||""),db=window.AIRCRAFT_DB||{},res=aKey(db.__aliases?.[k]||k),same=v=>{const x=aKey(v);return x&&(x===k||x===res||aKey(db.__aliases?.[x])===res)},found=k&&Object.values(state.profiles||{}).find(p=>[p.id,p.icao,p.type].some(same)),cand=k&&!found&&landingOnlyAircraft(Object.values(state.profiles||{}).filter(p=>p&&typeof p==="object").map(p=>normalize(p))).find(p=>[p.id,p.icao,p.type].some(same)),created=cand&&newProfileFromLanding(cand.id);if(found)setActive(found,"fiche appareil");else if(created)setActive(created,"fiche appareil (type DEFA)");else if(state.lastAircraft&&state.profiles[state.lastAircraft])setActive(state.profiles[state.lastAircraft],"état restauré");else syncAircraftPicker();}
 </script>
-<script src="../../shared/app_framework.js?v=20260930zt"></script>
-<script src="../../shared/flight_ui.js?v=20260930zt"></script>
-<script src="../../shared/carto/aero_symbols.js?v=20260930zt"></script><script src="../../shared/carto/vertical_profile.js?v=20260930zt"></script><script src="../../shared/flight_vertical_profile.js?v=20260930zt"></script>
+<script src="../../shared/app_framework.js?v=20260930zzb"></script>
+<script src="../../shared/flight_ui.js?v=20260930zzb"></script>
+<script src="../../shared/carto/aero_symbols.js?v=20260930zzb"></script><script src="../../shared/carto/vertical_profile.js?v=20260930zzb"></script><script src="../../shared/flight_vertical_profile.js?v=20260930zzb"></script>
 <script src="../../shared/content_i18n.js"></script><script src="../../shared/flight_i18n.js"></script>
 <footer class="repo-footer no-print">CC RBR - DEFA Virtual - 2026-09-21 - 2.0.7 - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a></footer>
 <script>/* Colonnes redimensionnables (framework : shared/column_resize.js) ; poignées sur la hauteur des deux premières rangées */

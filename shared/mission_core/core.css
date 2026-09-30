@@ -277,3 +277,26 @@ header.mc-header:has(.mc-report-tools)>p:not(.mc-family-description){display:non
 .mc-form .mc-table .mc-remove{padding:0 6px;font-size:16px}
 .mc-item-link{margin-left:10px;font-size:12px;font-weight:600;color:var(--accent);text-decoration:none}.mc-item-link:hover{text-decoration:underline}
 .sh-merge{margin-top:12px;border-top:1px dashed var(--line);padding-top:8px}.sh-merge summary{cursor:pointer;font-weight:600;font-size:13px}.sh-merge input{padding:6px 8px;border:1px solid var(--line);border-radius:7px}
+
+/* ================================================================================================ DESIGNS À MATIÈRES
+   Barre d'outils des CR (boutons et menus de l'en-tête), fenêtres surgissantes, cartes et encadrés des blocs (calculs
+   automatiques, appareils, outils plan de vol / météo) et aperçu du rapport, habillés avec les jetons --sk-* du design
+   (shared/designs_skeuo.css, « Jetons des pages ») ; html[data-skeuo] : posé par repository_nav.js. */
+/* boutons et menus de l'en-tête */
+html[data-skeuo] :is(.mc-header-tools :is(button,a.mc-button,a.nt-link):not(.mc-pop *):not(.mc-switch-pop *),.mc-menu>summary,.mc-switch>summary,.mc-toolbar>.mc-import>summary){
+  background:var(--sk-hb)!important;color:var(--sk-hb-fg)!important;border:1px solid var(--sk-hb-bd)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 1px 2px rgba(0,0,0,.35)!important;text-shadow:none!important}
+html[data-skeuo] :is(.mc-header-tools button.primary:not(.mc-pop *),.mc-toolbar>.mc-import>summary){background:var(--sk-acc)!important;color:var(--sk-acc-fg)!important;font-weight:700}
+html[data-skeuo] :is(.mc-menu>summary,.mc-switch>summary,.mc-header-tools button):hover{filter:brightness(1.12)}
+/* fenêtres surgissantes : surface du design, entrées en texte lisible (et non en boutons sombres) */
+html[data-skeuo] :is(.mc-pop,.mc-switch-pop,.mc-import-pop){background:var(--sk-pop)!important;color:var(--sk-pop-ink)!important;border:1px solid var(--sk-pop-bd)!important;box-shadow:0 12px 28px rgba(0,0,0,.45)!important}
+html[data-skeuo] :is(.mc-pop,.mc-switch-pop,.mc-import-pop) :is(button,a.mc-button,a.nt-link,a){background:transparent!important;color:var(--sk-pop-ink)!important;border:0!important;box-shadow:none!important;text-shadow:none!important}
+html[data-skeuo] :is(.mc-pop,.mc-switch-pop,.mc-import-pop) :is(button,a):hover{background:var(--sk-pop-hover)!important}
+html[data-skeuo] :is(.mc-pop,.mc-switch-pop,.mc-import-pop) :is(label,small,.small,.mc-status,.mc-ledger-info,.nt-status,p,span:not([class*="repo-icon"])){color:var(--sk-pop-ink)!important;opacity:1!important}
+html[data-skeuo] :is(.mc-pop,.mc-switch-pop,.mc-import-pop) button.primary{background:var(--sk-acc)!important;color:var(--sk-acc-fg)!important;justify-content:center}
+/* cartes et encadrés des blocs */
+html[data-skeuo] .repo-block :is(.mc-kpi>div,.mc-item,.mc-tools,.mc-summary){background:var(--sk-card)!important;color:var(--sk-card-ink)!important;border:1px solid var(--sk-card-bd)!important;box-shadow:inset 0 1px 3px rgba(0,0,0,.25)!important}
+html[data-skeuo] .repo-block :is(.mc-kpi>div,.mc-item,.mc-tools,.mc-summary) :is(span,small,.small,b,strong,p,div,label){color:inherit!important}
+html[data-skeuo] .repo-block :is(.mc-kpi>div,.mc-item,.mc-tools,.mc-summary) :is(.small,small){opacity:.85}
+/* aperçu du rapport : feuille de papier (le rapport garde ses couleurs d'impression, lisibles sur papier) */
+html[data-skeuo] .repo-block .report{background:var(--sk-paper)!important;color:#1d1a14!important;border:1px solid rgba(0,0,0,.25)!important;box-shadow:0 3px 10px rgba(0,0,0,.4)!important}
+html[data-skeuo] :is(.mc-pop,.mc-switch-pop,.mc-import-pop) button.danger{color:var(--sk-pop-danger)!important}

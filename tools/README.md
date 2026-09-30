@@ -48,13 +48,13 @@ Pages HTML à ouvrir via le petit serveur d'écriture : `python tools/save_textu
 
 Après une découpe ou une retouche d'icônes : `python tools/build_skeuo_icons_css.py` puis `python tools/bump_versions.py`.
 **Jeux composés (fond + glyphe SVG)** : déposer dans le dossier du jeu (`shared/icons/skeuo/<jeu>/`, `<jeu>` = `aqua`,
-`cabinet`, `field`, `flightlog`) le fond vide `vierge.webp` et celui du Centre `vierge.gris.webp`, puis relancer les deux
+`cabinet`, `field`, `flightlog`) le fond vide `vierge.webp` et celui du Centre `vierge.rouge.webp` (cuivre, rouge ; à défaut
+`vierge.gris.webp`), puis relancer les deux
 commandes : le jeu passe au fond commun avec le glyphe du registre par-dessus (les images d'icônes du jeu ne servent
 plus et peuvent être retirées ; relancer après). Fond carré (256 × 256 conseillé), transparent autour, sans glyphe ;
 zone du glyphe ≈ le centre (marge de 24–26 % par côté) ; éclairage par le haut (l'ombre du glyphe tombe vers le bas).
 Aqua : fond gris `vierge.gris.webp` teinté à la couleur Aqua choisie sur son disque intérieur (cerclage gris), même bulle
-pour le Centre (glyphe jaune). Fond propre au Centre : option `centreBg` du tableau `GLYPH` (Durci : `vierge.rouge.webp`),
-prioritaire sur `vierge.gris.webp`. Réglages (couleurs, ombre, marge, rayon teinté) : tableau `GLYPH` du générateur ; la
+pour le Centre (glyphe jaune). Réglages (couleurs, ombre, marge, rayon teinté) : tableau `GLYPH` du générateur ; la
 liste des jeux composés est écrite dans `repository_tree` (barre latérale, page Apparence).
 Les retouches manuelles se font directement dans les `.webp`,
 même nom de fichier ; relancer ensuite les deux mêmes commandes.
@@ -63,6 +63,7 @@ même nom de fichier ; relancer ensuite les deux mêmes commandes.
 
 | Outil | Ce qu'il fait |
 |---|---|
+| `skeuo_regression.html` | Non-régression des designs à matières : relève les styles calculés des composants du framework sur six pages témoins (4 designs × 2 tons), puis compare un état ultérieur à cette référence, propriété par propriété. À lancer avant et après toute retouche de `designs_skeuo.css` (dépôt servi par `python -m http.server 8767 --bind 127.0.0.1`, puis `http://127.0.0.1:8767/tools/skeuo_regression.html`). |
 | `stub_marker_offset.html` | Marqueurs des points de route (bloc Route) comparés aux positions exactes dessinées par la carte ; boutons de décalage X / Y au pixel, ancre, étiquettes : mesure du décalage à corriger. Ouvrir tel quel. |
 
 ## 3. Migrations ponctuelles (déjà passées)
