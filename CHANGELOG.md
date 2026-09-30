@@ -10,6 +10,29 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+## [4.3.0] — 2026-09-30
+
+Décors des designs à matières : objets, panneaux de fond par thème, feuille de registre et appareil de page ; icônes
+composées pour tous les jeux skeuomorphes ; contrastes (Planning ODV).
+
+- **Icônes** : Cabinet, Durci et Carnet de vol passent aux icônes composées (fond vierge + glyphe du registre) ; nouveaux
+  glyphes `trending-up` et `shield` ; les commandes à ChatGPT prennent l'icône `sparkles`.
+- **Panneaux de fond par thème** (Durci, Cabinet) : chaque bloc reçoit un panneau en rapport avec son contenu (appareils,
+  terrains, horaires, radio, navigation, équipement, résultats, familles, opérations), choisi d'après son titre, puis son
+  icône, puis son sous-titre ; en paysage ou en portrait selon la forme du bloc ; blocs imbriqués : un seul fond, sur le
+  grand. Cabinet : jeu « 1930 » marine en ton sombre, ivoire en ton clair (dossier réglable pour un futur jeu « 1800 »).
+  Les fonds illustrés propres à Cabinet et Durci sont retirés (les panneaux les remplacent).
+- **Feuille de registre** (Cabinet, ton clair) : les blocs de tableau des registres et journaux prennent le dossier
+  « Aéronautique navale » en fond (en-tête imprimé et tampon, dos et ficelle, pages empilées), contenu décalé à l'intérieur.
+- **Appareil de page** (Cabinet) : livre de bord et poste radio dans un emplacement réel entre les deux premiers blocs.
+- **Objets** : Durci (grille d'aération, lampe, plaque vierge, blindage, interrupteur, câble, cadran) ; Cabinet (objets
+  « 1930 » : cartes, règle parallèle, porte-mine, sextant, valise, enveloppes, étiquette « Top secret »…) ; objets posés
+  dans un bloc (ordre de mission, étiquette) ; objets entre les blocs décalés et inclinés au besoin. Ménage : objets en
+  double ou de moindre qualité retirés, panneaux allégés (décors Cabinet et Durci : 9,7 → 4,7 Mo).
+- **Contrastes** : panneaux calés à droite et estompés côté texte ; voile à la couleur du design sous les tableaux et les
+  données (`--repo-veil`) ; Durci : panneaux assombris ; Planning ODV : détail d'un créneau en sous-bloc habillé,
+  avertissements lisibles en ton clair.
+
 ## [4.2.1] — 2026-09-29
 
 - **Carte du bloc Route** : les points tournants de la mission déjà portés par la route éditable ne sont plus dessinés une

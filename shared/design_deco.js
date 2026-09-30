@@ -21,11 +21,13 @@
   const SETS = {
     cabinet: {
       foot: img => `<img class="repo-deco-strip" src="${img('footer')}" alt="">`,
-      // objets de navigation des années 1930 (planche « objets 1930 ») intercalés : règle parallèle, crayon, porte-mine,
-      // sifflet, étui de toile, compas de relèvement ; en marge : cartes, rapporteur, pointes sèches, compas marin,
-      // portefeuille, rapporteur-rotateur, sextant, pavillon, carnet
-      between: [['clip', 150], ['parallel-rule', 170], ['tack', 22, 'pair'], ['pencil', 150], ['whistle', 120], ['case', 130], ['pen', 140], ['wrist-compass', 130]],
-      sides: [['compass', 118], ['chart-coast', 170], ['dividers', 60], ['map', 230], ['ship-compass', 110], ['protractor', 140], ['clip', 190], ['wallet', 110], ['chart-route', 170], ['plotter', 110], ['medal-1', 60], ['sextant', 140], ['flag', 120], ['notebook', 90]]
+      // objets des années 1930 (planches « objets 1930 » et objets de face) : entre les blocs, trombone, règle parallèle,
+      // punaises, crayon, enveloppe cachetée, porte-mine (décentré, incliné), étiquette « Top secret » ; appareil de page :
+      // livre de bord et poste radio ; en marge, compas marin, cartes,
+      // sextant, valise, enveloppe « Confidentiel », rapporteur, livre de bord, pointes sèches, pavillon
+      device: [['notebook', 190], ['radio', 520]],   // livre de bord posé à côté du poste, calés à droite
+      between: [['clip', 150], ['parallel-rule', 170, { x: -200, y: -38, rot: 18 }], ['tack', 22, 'pair'], ['pencil', 150], ['envelope-seal', 130], ['pen', 150, { x: 190, rot: 30 }], ['tag-secret', 140]],
+      sides: [['ship-compass', 110], ['chart-coast', 170], ['sextant', 140], ['map', 200], ['suitcase', 150], ['envelope-confidential', 150], ['protractor', 140], ['dividers', 60], ['flag', 120]]
     },
     flightlog: {
       foot: img => `<img class="repo-deco-strip" src="${img('footer')}" alt="">`,
@@ -39,7 +41,7 @@
       // objets du pupitre (grille d'aération, lampe grillagée, plaque vierge, blindage riveté, interrupteur à capot,
       // câble et connecteurs, cadran) intercalés entre les plaques et pochoirs d'origine
       between: [['plate-attention', 210], ['louvre', 150], ['handle-h', 120], ['cable', 170], ['plate-wings', 170], ['plate-blank', 180], ['plate-defa', 200], ['armor', 140]],
-      sides: [['stencil-mission', 150], ['lamp', 100], ['grille', 80], ['dial', 110], ['stencil-defa', 130], ['toggle', 80], ['plate-small', 90], ['cable', 170], ['stencil-ops', 160], ['armor', 140], ['nut', 40], ['louvre', 130]]
+      sides: [['stencil-mission', 150], ['lamp', 100], ['dial', 110], ['stencil-defa', 130], ['toggle', 80], ['cable', 170], ['stencil-ops', 160], ['armor', 140], ['louvre', 130]]
     }
   };
   // Fonds illustrés des blocs (designs à matières, décor complet ou sobre) : un bloc marqué data-deco-bg="<clé>"
@@ -48,29 +50,16 @@
   // contenu, fondu vers le bas et la droite. Seules les images déclarées ici sont chargées (pas de requête inutile).
   // Mode « anchor » : taille d'origine, calée en haut à gauche, s'étend vers la droite et le bas (coupée au bord du
   // bloc) ; « cover » : redimensionnée pour couvrir le bloc ; « side » (blocs larges) : à la hauteur du bloc, calée à
-  // droite, fondue vers la gauche (le texte, à gauche, reste sur la matière unie). Exemple : field: { aerodromes: 'anchor' }.
+  // droite, fondue vers la gauche (le texte, à gauche, reste sur la matière unie). Exemple : aqua: { aerodromes: 'anchor' }.
   // Entrée : mode, ou [mode, cadrage (background-position), image « <design>/<nom> » (défaut : <design>/bg-<clé>),
   // opacité (défaut : celle du design, designs_skeuo.css)].
-  // Cabinet (bleu marine et or) : piste au pied des montagnes, relief et réticule, mappemonde et rose des vents, globe ;
-  // Carnet de vol : ceux de Cabinet, résultats sur cuir et mappemonde aux avions ; Durci : panneaux olive rivetés
-  // (courbes de niveau à gauche, plans d'avions à droite) et métal bronze aux tracés de navigation ; Aqua : eau et
-  // verre, cadrés différemment sur chaque bloc.
+  // Carnet de vol : fonds propres (cuir, tracés or) ; Aqua : eau et verre, cadrés différemment sur chaque bloc.
   const BG = {
-    // Cabinet : série marine (cuir marine, tracés or) : archipel et porte-avions (terrains de départ), barre à roue
-    // (familles), ancre aux lauriers (résultats), flotte et phare (séries), frégate et hélicoptère (types d'appareil),
-    // radar, grue et dôme (capacités), soleil et lune (jour / nuit), satellites et proue (réseau), chenal balisé
-    // (contexte) ; pas de fond derrière le graphique d'activité (barres et légende)
-    cabinet: { aerodromes: 'cover', families: 'cover', outcomes: 'cover', series: 'cover', aircraft: 'cover', capabilities: 'cover', daynight: 'cover', network: 'cover', context: 'cover' },
+    // Cabinet et Durci : plus de fonds illustrés propres, les panneaux par thème (PANELS) habillent tous les blocs
     // Carnet de vol : jeu propre (cuir marine, tracés or) : hélicoptères et montagnes, rose des vents sur mappemonde,
     // biplan et globe, globes et routes, montage aviation, piste de nuit (jour / nuit), piste au pied des montagnes
     // (terrains de départ) ; cuir et mappemonde aux avions en réserve
     flightlog: { aerodromes: ['cover', 'center', null, .5], daynight: ['cover', 'center bottom'], capabilities: ['cover', 'center'], outcomes: ['cover', 'center'], aircraft: ['cover', 'center'], series: ['cover', 'center'], families: ['cover', 'center'] },
-    // Durci : panneaux olive rivetés : vue aérienne (terrains de départ), pictogrammes des missions (familles), ailes au
-    // laurier validé (résultats, et résultat du planificateur), chevrons (séries), plaque de plans d'aéronefs (types
-    // d'appareil), rangée de pictogrammes (capacités), cadran soleil et lune (jour / nuit), pupitre radio (réseau),
-    // étoile (contexte) ; carte et écran radar (studio : cartes), insigne à chevrons (éditeur : identification),
-    // étagère d'équipement (éditeur : import)
-    field: { aerodromes: 'cover', families: 'cover', outcomes: 'cover', series: 'cover', aircraft: 'cover', capabilities: 'cover', daynight: 'cover', network: 'cover', context: 'cover', maps: 'side', identification: ['cover', 'center 78%'], import: ['cover', 'center 70%'], result: ['cover', 'center', 'field/bg-outcomes'] },
     aqua: { aerodromes: ['cover', 'center bottom', 'aqua/bg-water'], capabilities: ['cover', 'left center', 'aqua/bg-water'], outcomes: ['cover', 'center top', 'aqua/bg-water'], aircraft: ['cover', 'right center', 'aqua/bg-water'] }
   };
   // panneaux d'habillage : thème choisi d'après le bloc (titre, puis icône et identifiant, puis sous-titre), dans l'ordre
@@ -97,6 +86,50 @@
       clair: { dir: '1930/clair', only: { instruments: 'w' /* portrait à venir */ }, alias: { airfield: 'nav', ops: 'ships', families: 'ships', awards: 'ships', gear: 'instruments', radio: 'instruments', time: 'instruments' } }
     }
   };
+  // objets posés dans un bloc (coin bas droit, sous le contenu) : premier motif reconnu dans le titre, l'icône ou
+  // l'identifiant ; [motif, image du design, largeur px]
+  const PROPS = {
+    cabinet: [
+      [/ordre|order|t[âa]che|task|briefing/, 'order', 130],
+      [/secret|confiden|classif|diffusion|privacy|personnel/, 'tag-secret', 170],
+      [/ledger|registre|registry|journal|rapport|report|remarque|compte rendu|documents?\b/, 'dossier', 150]
+    ]
+  };
+  // feuille de registre (Cabinet, ton clair) : blocs de tableau des registres et journaux ; dessin : designs_skeuo.css
+  const SHEETS = { cabinet: /registre|registry|ledger|journal|missions?\s*\(|choisir une mission|choose a mission/ };
+  function sheets(d) {
+    const re = SHEETS[d], doc = document.documentElement;
+    if (!re || doc.dataset.decor !== 'full' || doc.dataset.tone === 'dark') return;
+    document.querySelectorAll('.repo-block').forEach(b => {
+      // largeur mini : en-tête entier (780 px à l'échelle 1, --k = .7) et un peu de papier
+      if (b.hidden || b.offsetWidth < 640 || b.parentElement.closest('.repo-block') || !b.querySelector('table')) return;
+      if (!re.test([b.querySelector('h2,h3')?.textContent, b.dataset.icon, b.dataset.blockId].join(' ').toLowerCase())) return;
+      const el = document.createElement('div');
+      el.className = 'repo-deco-sheet';
+      el.setAttribute('aria-hidden', 'true');
+      el.innerHTML = '<i class="sh-paper"></i><i class="sh-frame"></i>';
+      b.classList.add('repo-has-sheet', 'repo-has-bg');
+      b.prepend(el);
+    });
+  }
+  function props(d) {
+    const list = PROPS[d];
+    if (!list || document.documentElement.dataset.decor !== 'full') return;
+    document.querySelectorAll('.repo-block').forEach(b => {
+      if (b.hidden || b.offsetHeight < 200 || b.offsetWidth < 480 || b.parentElement.closest('.repo-block')) return;
+      const txt = [b.querySelector('h2,h3')?.textContent, b.dataset.icon, b.dataset.blockId].join(' ').toLowerCase(),
+        hit = list.find(([re]) => re.test(txt));
+      if (!hit) return;
+      const el = document.createElement('img');
+      el.className = 'repo-deco-prop';
+      el.alt = '';
+      el.setAttribute('aria-hidden', 'true');
+      el.src = DECO(d)(hit[1]);
+      el.style.width = `${hit[2]}px`;
+      b.classList.add('repo-has-prop');
+      b.append(el);
+    });
+  }
   /** Panneau du bloc : thème reconnu ; même panneau que le bloc précédent → l'autre orientation, puis le thème suivant. */
   function panelOf(b, set, prev) {
     const o = b.offsetWidth >= b.offsetHeight ? 'w' : 't', hit = s => THEMES.filter(([, re]) => re.test(String(s || '').toLowerCase())),
@@ -106,10 +139,10 @@
     return files.find(f => f !== prev) || files[0];
   }
   function backgrounds(d) {
-    document.querySelectorAll('.repo-deco-bgimg').forEach(n => n.remove());
+    document.querySelectorAll('.repo-deco-bgimg,.repo-deco-prop,.repo-deco-sheet').forEach(n => n.remove());
+    document.querySelectorAll('.repo-has-prop,.repo-has-sheet').forEach(b => b.classList.remove('repo-has-prop', 'repo-has-sheet'));
     document.querySelectorAll('.repo-has-bg').forEach(b => b.classList.remove('repo-has-bg'));
-    const list = BG[d];
-    if (!list) return;
+    const list = BG[d] || {};   // pas de return : les panneaux (plus bas) habillent aussi les designs sans fonds illustrés
     document.querySelectorAll('[data-deco-bg]').forEach(b => {
       const e = list[b.dataset.decoBg];
       if (!e) return;
@@ -123,6 +156,7 @@
       b.classList.add('repo-has-bg');
       b.prepend(el);
     });
+    sheets(d);
     // panneaux d'habillage (Durci, Cabinet) : les blocs sans fond illustré reçoivent un panneau riveté en rapport avec leur
     // contenu (panelOf) ; blocs imbriqués : un seul fond, sur le grand (les blocs intérieurs restent nus)
     const pool = PANELS[d] && (document.documentElement.dataset.tone !== 'dark' && PANELS[d].clair || PANELS[d]);
@@ -144,6 +178,7 @@
     clear();
     const d = document.documentElement.dataset.design, set = SETS[d];
     backgrounds(d);
+    props(d);
     if (!set || document.documentElement.dataset.decor !== 'full') return;
     const img = DECO(d);
     // 1. pied de page
@@ -161,8 +196,10 @@
     if (footer) footer.before(foot); else document.body.append(foot);
     nodes.push(foot);
     state();
-    // 2. entre les blocs : un intervalle sur deux, dans chaque conteneur de blocs
-    let k = 0;
+    // 2. entre les blocs : un intervalle sur deux, dans chaque conteneur de blocs ; le premier intervalle de la page reçoit
+    // l'appareil du design (device : objet large dans un vrai emplacement du flux, hauteur fixe ; Cabinet : poste radio ;
+    // aucun dans les autres designs pour l'instant)
+    let k = 0, device = !!set.device;
     const parents = new Set([...document.querySelectorAll('.repo-block')].map(b => b.parentElement));
     parents.forEach(p => {
       // conteneur en grille ou en rangée flex : un élément inséré y deviendrait une cellule (décor sur un titre,
@@ -176,10 +213,22 @@
         // traverserait cet élément), blocs l'un sous l'autre, même colonne, écart raisonnable
         const pr = blocks[i].getBoundingClientRect(), nr = b.getBoundingClientRect(), gap0 = nr.top - pr.bottom;
         if (i % 2 || b.previousElementSibling !== blocks[i] || Math.abs(nr.left - pr.left) > 4 || gap0 < 0 || gap0 > 80) return;
+        if (device) {
+          device = false;
+          const dv = document.createElement('div');
+          dv.className = 'repo-deco-device';
+          dv.setAttribute('aria-hidden', 'true');
+          dv.innerHTML = set.device.map(([n, w]) => `<img src="${img(n)}" alt="" style="width:${w}px">`).join('');
+          b.before(dv);
+          nodes.push(dv);
+          return;
+        }
         const [name, w, pair] = set.between[k++ % set.between.length], sep = document.createElement('div');
         sep.className = 'repo-deco-sep';
         sep.setAttribute('aria-hidden', 'true');
-        sep.innerHTML = pair ? `<img src="${img(name)}" alt="" style="width:${w}px;margin-left:-60px"><img src="${img(name)}" alt="" style="width:${w}px;margin-left:60px">` : `<img src="${img(name)}" alt="" style="width:${w}px">`;
+        // troisième élément : 'pair' (deux exemplaires) ou { x, y, rot } (décalage en px, inclinaison en degrés)
+        sep.innerHTML = pair === 'pair' ? `<img src="${img(name)}" alt="" style="width:${w}px;margin-left:-60px"><img src="${img(name)}" alt="" style="width:${w}px;margin-left:60px">`
+          : `<img src="${img(name)}" alt="" style="width:${w}px${pair ? `;transform:translate(${pair.x || 0}px,${pair.y || 0}px) rotate(${pair.rot || 0}deg)` : ''}">`;
         sep.style.top = `${-gap0 / 2}px`;
         b.before(sep);
         nodes.push(sep);
