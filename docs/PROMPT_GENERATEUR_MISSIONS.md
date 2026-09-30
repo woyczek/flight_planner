@@ -124,7 +124,9 @@ et receveurs = une mission par équipe, points tournants différents, même axe 
 
 Numérotation : NN = lettre de la famille + tiret + numéro de l'opération sur 3 chiffres, compté PAR FAMILLE. Lettres :
 HEMS / MEDEVAC M · HADR H · FIRE F · SAR S · AIRLIFT T · AAR R · AIRBORNE P · MARITIME N · ISR I · LE L · COMMAND C ·
-COMBAT A · SOF O · FI V · SURVEY G · SPECIAL X. Première opération = identifiant donné pour la famille dans PROCHAINS_NUMEROS
+COMBAT A · SOF O · FI V · SURVEY G · SPECIAL X. Le préfixe est TOUJOURS cette lettre unique, jamais le code
+de famille, le sous-type ni l'indicatif (COMBAT / BFM → « A-001A », pas « BFM-001A » ; AAR → « R-016 », pas
+« AAR-016 ») : le programme range la mission d'après cette lettre et refuse tout autre préfixe. Première opération = identifiant donné pour la famille dans PROCHAINS_NUMEROS
 (ex. « HEMS M-016 série 4 » → opérations M-016, M-017… ; mission.series = 4). Une seule équipe : mission NN (« M-016 »).
 Plusieurs équipes : missions NN + lettre de l'équipe, une par équipe dans l'ordre (« M-016A », « M-016B », « M-016C »).
 Deux fichiers par mission, chacun dans son propre bloc de code, précédé d'une ligne « Fichier : … » :
