@@ -117,170 +117,24 @@ html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons
 html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) .repo-dropzone-badge{background:none!important}html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) .repo-dropzone-badge .repo-svg[data-i]{--rs:42px}
 html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) .repo-notice>.repo-icon .repo-svg[data-i]{--rs:30px}
 html:is([data-icons="brass"],[data-icons="steel"],[data-icons="gel"],[data-icons="avio"]) .repo-sidenav-brand .repo-svg[data-i]{--rs:40px!important}
-html:is([data-icons="brass"],[data-icons="steel"],[data-icons="avio"]) .repo-svg[data-i]>*{display:none}
-html:is([data-icons="brass"],[data-icons="steel"],[data-icons="avio"]) :is(.repo-block-icon,.repo-card-icon) .repo-svg[data-i]{filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
-html:is([data-icons="brass"],[data-icons="steel"],[data-icons="avio"]) .repo-block-heading-rich .repo-toggle::before{-webkit-mask:none!important;mask:none!important;background:center/contain no-repeat!important;width:20px!important;height:20px!important;vertical-align:-5px!important}
-html:is([data-icons="brass"],[data-icons="steel"],[data-icons="avio"]) .repo-block-hidden>.repo-block-heading-rich .repo-toggle::before{transform:none!important}
-html:is([data-icons="brass"],[data-icons="steel"],[data-icons="avio"]) .repo-block-tools .repo-drag{font-size:0!important;min-width:34px;background-position:center!important;background-size:22px!important;background-repeat:no-repeat!important}
-html[data-icons="brass"] .repo-svg[data-i="alert"]{background-image:url("icons/skeuo/cabinet/alert.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="arrow-right"]{background-image:url("icons/skeuo/cabinet/arrow-right.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="book"]{background-image:url("icons/skeuo/cabinet/book.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="bookmark"]{background-image:url("icons/skeuo/cabinet/bookmark.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="box"]{background-image:url("icons/skeuo/cabinet/box.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="calendar"]{background-image:url("icons/skeuo/cabinet/calendar.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="chart"]{background-image:url("icons/skeuo/cabinet/chart.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="check"]{background-image:url("icons/skeuo/cabinet/check.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="chevron-down"]{background-image:url("icons/skeuo/cabinet/chevron-down.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="chevron-left"]{background-image:url("icons/skeuo/cabinet/chevron-left.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="chevron-right"]{background-image:url("icons/skeuo/cabinet/chevron-right.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="chevron-up"]{background-image:url("icons/skeuo/cabinet/chevron-up.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="clipboard"]{background-image:url("icons/skeuo/cabinet/clipboard.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="clock"]{background-image:url("icons/skeuo/cabinet/clock.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="database"]{background-image:url("icons/skeuo/cabinet/database.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="download"]{background-image:url("icons/skeuo/cabinet/download.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="edit"]{background-image:url("icons/skeuo/cabinet/edit.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="eye"]{background-image:url("icons/skeuo/cabinet/eye.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="file"]{background-image:url("icons/skeuo/cabinet/file.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="file-text"]{background-image:url("icons/skeuo/cabinet/file-text.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="folder"]{background-image:url("icons/skeuo/cabinet/folder.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="fuel"]{background-image:url("icons/skeuo/cabinet/fuel.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="globe"]{background-image:url("icons/skeuo/cabinet/globe.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="hash"]{background-image:url("icons/skeuo/cabinet/hash.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="help"]{background-image:url("icons/skeuo/cabinet/help.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="info"]{background-image:url("icons/skeuo/cabinet/info.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="layers"]{background-image:url("icons/skeuo/cabinet/layers.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="link"]{background-image:url("icons/skeuo/cabinet/link.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="list"]{background-image:url("icons/skeuo/cabinet/list.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="map"]{background-image:url("icons/skeuo/cabinet/map.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="maximize"]{background-image:url("icons/skeuo/cabinet/maximize.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="move"]{background-image:url("icons/skeuo/cabinet/move.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="palette"]{background-image:url("icons/skeuo/cabinet/palette.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="pin"]{background-image:url("icons/skeuo/cabinet/pin.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="plane"]{background-image:url("icons/skeuo/cabinet/plane.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="plus"]{background-image:url("icons/skeuo/cabinet/plus.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="printer"]{background-image:url("icons/skeuo/cabinet/printer.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="refresh"]{background-image:url("icons/skeuo/cabinet/refresh.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="search"]{background-image:url("icons/skeuo/cabinet/search.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="send"]{background-image:url("icons/skeuo/cabinet/send.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="settings"]{background-image:url("icons/skeuo/cabinet/settings.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="sparkles"]{background-image:url("icons/skeuo/cabinet/sparkles.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="target"]{background-image:url("icons/skeuo/cabinet/target.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="trash"]{background-image:url("icons/skeuo/cabinet/trash.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="upload"]{background-image:url("icons/skeuo/cabinet/upload.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="users"]{background-image:url("icons/skeuo/cabinet/users.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="wand"]{background-image:url("icons/skeuo/cabinet/wand.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="wrench"]{background-image:url("icons/skeuo/cabinet/wrench.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-svg[data-i="x"]{background-image:url("icons/skeuo/cabinet/x.webp?v=20260929zzzr")}
-html[data-icons="brass"] .repo-block-heading-rich .repo-toggle::before{background-image:url("icons/skeuo/cabinet/chevron-up.webp?v=20260929zzzr")!important}
-html[data-icons="brass"] .repo-block-hidden>.repo-block-heading-rich .repo-toggle::before{background-image:url("icons/skeuo/cabinet/chevron-down.webp?v=20260929zzzr")!important}
-html[data-icons="brass"] .repo-block-tools .repo-drag{background-image:url("icons/skeuo/cabinet/move.webp?v=20260929zzzr")!important}
-html[data-icons="brass"] .repo-svg[data-i="save"]{background-image:url("icons/skeuo/cabinet/bookmark.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="alert"]{background-image:url("icons/skeuo/field/alert.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="arrow-right"]{background-image:url("icons/skeuo/field/arrow-right.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="book"]{background-image:url("icons/skeuo/field/book.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="bookmark"]{background-image:url("icons/skeuo/field/bookmark.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="box"]{background-image:url("icons/skeuo/field/box.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="calendar"]{background-image:url("icons/skeuo/field/calendar.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="chart"]{background-image:url("icons/skeuo/field/chart.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="check"]{background-image:url("icons/skeuo/field/check.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="chevron-down"]{background-image:url("icons/skeuo/field/chevron-down.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="chevron-left"]{background-image:url("icons/skeuo/field/chevron-left.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="chevron-right"]{background-image:url("icons/skeuo/field/chevron-right.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="chevron-up"]{background-image:url("icons/skeuo/field/chevron-up.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="clipboard"]{background-image:url("icons/skeuo/field/clipboard.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="clock"]{background-image:url("icons/skeuo/field/clock.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="database"]{background-image:url("icons/skeuo/field/database.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="download"]{background-image:url("icons/skeuo/field/download.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="edit"]{background-image:url("icons/skeuo/field/edit.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="eye"]{background-image:url("icons/skeuo/field/eye.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="file-text"]{background-image:url("icons/skeuo/field/file-text.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="folder"]{background-image:url("icons/skeuo/field/folder.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="fuel"]{background-image:url("icons/skeuo/field/fuel.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="globe"]{background-image:url("icons/skeuo/field/globe.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="hash"]{background-image:url("icons/skeuo/field/hash.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="help"]{background-image:url("icons/skeuo/field/help.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="info"]{background-image:url("icons/skeuo/field/info.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="layers"]{background-image:url("icons/skeuo/field/layers.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="link"]{background-image:url("icons/skeuo/field/link.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="list"]{background-image:url("icons/skeuo/field/list.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="map"]{background-image:url("icons/skeuo/field/map.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="maximize"]{background-image:url("icons/skeuo/field/maximize.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="move"]{background-image:url("icons/skeuo/field/move.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="palette"]{background-image:url("icons/skeuo/field/palette.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="pin"]{background-image:url("icons/skeuo/field/pin.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="plane"]{background-image:url("icons/skeuo/field/plane.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="plane-plate"]{background-image:url("icons/skeuo/field/plane-plate.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="plus"]{background-image:url("icons/skeuo/field/plus.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="printer"]{background-image:url("icons/skeuo/field/printer.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="refresh"]{background-image:url("icons/skeuo/field/refresh.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="save"]{background-image:url("icons/skeuo/field/save.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="search"]{background-image:url("icons/skeuo/field/search.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="send"]{background-image:url("icons/skeuo/field/send.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="settings"]{background-image:url("icons/skeuo/field/settings.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="sparkles"]{background-image:url("icons/skeuo/field/sparkles.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="target"]{background-image:url("icons/skeuo/field/target.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="trash"]{background-image:url("icons/skeuo/field/trash.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="upload"]{background-image:url("icons/skeuo/field/upload.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="users"]{background-image:url("icons/skeuo/field/users.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="wand"]{background-image:url("icons/skeuo/field/wand.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="wrench"]{background-image:url("icons/skeuo/field/wrench.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-svg[data-i="x"]{background-image:url("icons/skeuo/field/x.webp?v=20260929zzzr")}
-html[data-icons="steel"] .repo-block-heading-rich .repo-toggle::before{background-image:url("icons/skeuo/field/chevron-up.webp?v=20260929zzzr")!important}
-html[data-icons="steel"] .repo-block-hidden>.repo-block-heading-rich .repo-toggle::before{background-image:url("icons/skeuo/field/chevron-down.webp?v=20260929zzzr")!important}
-html[data-icons="steel"] .repo-block-tools .repo-drag{background-image:url("icons/skeuo/field/move.webp?v=20260929zzzr")!important}
-html[data-icons="steel"] .repo-svg[data-i="file"]{background-image:url("icons/skeuo/field/file-text.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="alert"]{background-image:url("icons/skeuo/flightlog/alert.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="arrow-right"]{background-image:url("icons/skeuo/flightlog/arrow-right.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="book"]{background-image:url("icons/skeuo/flightlog/book.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="bookmark"]{background-image:url("icons/skeuo/flightlog/bookmark.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="box"]{background-image:url("icons/skeuo/flightlog/box.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="calendar"]{background-image:url("icons/skeuo/flightlog/calendar.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="chart"]{background-image:url("icons/skeuo/flightlog/chart.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="check"]{background-image:url("icons/skeuo/flightlog/check.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="chevron-down"]{background-image:url("icons/skeuo/flightlog/chevron-down.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="chevron-left"]{background-image:url("icons/skeuo/flightlog/chevron-left.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="chevron-right"]{background-image:url("icons/skeuo/flightlog/chevron-right.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="chevron-up"]{background-image:url("icons/skeuo/flightlog/chevron-up.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="clipboard"]{background-image:url("icons/skeuo/flightlog/clipboard.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="clock"]{background-image:url("icons/skeuo/flightlog/clock.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="database"]{background-image:url("icons/skeuo/flightlog/database.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="download"]{background-image:url("icons/skeuo/flightlog/download.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="edit"]{background-image:url("icons/skeuo/flightlog/edit.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="eye"]{background-image:url("icons/skeuo/flightlog/eye.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="file-text"]{background-image:url("icons/skeuo/flightlog/file-text.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="folder"]{background-image:url("icons/skeuo/flightlog/folder.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="fuel"]{background-image:url("icons/skeuo/flightlog/fuel.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="globe"]{background-image:url("icons/skeuo/flightlog/globe.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="hash"]{background-image:url("icons/skeuo/flightlog/hash.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="help"]{background-image:url("icons/skeuo/flightlog/help.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="info"]{background-image:url("icons/skeuo/flightlog/info.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="layers"]{background-image:url("icons/skeuo/flightlog/layers.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="link"]{background-image:url("icons/skeuo/flightlog/link.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="list"]{background-image:url("icons/skeuo/flightlog/list.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="map"]{background-image:url("icons/skeuo/flightlog/map.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="maximize"]{background-image:url("icons/skeuo/flightlog/maximize.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="move"]{background-image:url("icons/skeuo/flightlog/move.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="palette"]{background-image:url("icons/skeuo/flightlog/palette.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="pin"]{background-image:url("icons/skeuo/flightlog/pin.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="plane"]{background-image:url("icons/skeuo/flightlog/plane.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="plus"]{background-image:url("icons/skeuo/flightlog/plus.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="printer"]{background-image:url("icons/skeuo/flightlog/printer.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="refresh"]{background-image:url("icons/skeuo/flightlog/refresh.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="search"]{background-image:url("icons/skeuo/flightlog/search.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="send"]{background-image:url("icons/skeuo/flightlog/send.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="settings"]{background-image:url("icons/skeuo/flightlog/settings.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="sparkles"]{background-image:url("icons/skeuo/flightlog/sparkles.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="target"]{background-image:url("icons/skeuo/flightlog/target.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="trash"]{background-image:url("icons/skeuo/flightlog/trash.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="upload"]{background-image:url("icons/skeuo/flightlog/upload.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="users"]{background-image:url("icons/skeuo/flightlog/users.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="wand"]{background-image:url("icons/skeuo/flightlog/wand.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="wrench"]{background-image:url("icons/skeuo/flightlog/wrench.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-svg[data-i="x"]{background-image:url("icons/skeuo/flightlog/x.webp?v=20260929zzzr")}
-html[data-icons="avio"] .repo-block-heading-rich .repo-toggle::before{background-image:url("icons/skeuo/flightlog/chevron-up.webp?v=20260929zzzr")!important}
-html[data-icons="avio"] .repo-block-hidden>.repo-block-heading-rich .repo-toggle::before{background-image:url("icons/skeuo/flightlog/chevron-down.webp?v=20260929zzzr")!important}
-html[data-icons="avio"] .repo-block-tools .repo-drag{background-image:url("icons/skeuo/flightlog/move.webp?v=20260929zzzr")!important}
-html[data-icons="avio"] .repo-svg[data-i="save"]{background-image:url("icons/skeuo/flightlog/bookmark.webp?v=20260929zzzr")}
+html[data-icons="brass"] .repo-svg[data-i]{background-image:url("icons/skeuo/cabinet/vierge.webp?v=20260930a")!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * 0.26);color:var(--ico-glyph,#f1e4c0)!important;overflow:visible}
+html[data-app-theme="cpco"][data-icons="brass"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg),html[data-icons="brass"] .repo-sidenav-cpco .repo-svg[data-i]{background-image:url("icons/skeuo/cabinet/vierge.webp?v=20260930a")!important;color:var(--ico-glyph-centre,#ffd23f)!important}
+html[data-icons="brass"] .repo-svg[data-i]>*{display:inline;filter:var(--ico-glyph-shadow,drop-shadow(.5px 1px .6px rgba(0,0,0,.7)))}
+html[data-icons="brass"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){background:url("icons/skeuo/cabinet/vierge.webp?v=20260930a") center/contain no-repeat!important;width:28px!important;height:28px!important;color:#f1e4c0!important;opacity:1}
+html[data-icons="brass"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):is(:hover,:focus-visible){filter:brightness(1.12)}
+html[data-icons="brass"] .repo-block .repo-block-tools .repo-drag{font-size:15px!important;line-height:1;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.55)}
+html[data-icons="brass"] .repo-block .repo-block-tools .repo-toggle::before{background-color:currentColor!important;width:13px!important;height:13px!important;filter:drop-shadow(0 1px .6px rgba(0,0,0,.55))}
+html[data-app-theme="cpco"][data-icons="brass"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){color:#ffd23f!important}
+html[data-icons="brass"] :is(.repo-block-icon,.repo-card-icon){filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+html[data-icons="steel"] .repo-svg[data-i]{background-image:url("icons/skeuo/field/vierge.webp?v=20260930a")!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * 0.24);color:var(--ico-glyph,#e9ecdf)!important;overflow:visible}
+html[data-app-theme="cpco"][data-icons="steel"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg),html[data-icons="steel"] .repo-sidenav-cpco .repo-svg[data-i]{background-image:url("icons/skeuo/field/vierge.webp?v=20260930a")!important;color:var(--ico-glyph-centre,#ffd23f)!important}
+html[data-icons="steel"] .repo-svg[data-i]>*{display:inline;filter:var(--ico-glyph-shadow,drop-shadow(.5px 1px .6px rgba(0,0,0,.75)))}
+html[data-icons="steel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){background:url("icons/skeuo/field/vierge.webp?v=20260930a") center/contain no-repeat!important;width:28px!important;height:28px!important;color:#e9ecdf!important;opacity:1}
+html[data-icons="steel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):is(:hover,:focus-visible){filter:brightness(1.12)}
+html[data-icons="steel"] .repo-block .repo-block-tools .repo-drag{font-size:15px!important;line-height:1;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.55)}
+html[data-icons="steel"] .repo-block .repo-block-tools .repo-toggle::before{background-color:currentColor!important;width:13px!important;height:13px!important;filter:drop-shadow(0 1px .6px rgba(0,0,0,.55))}
+html[data-app-theme="cpco"][data-icons="steel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){color:#ffd23f!important}
+html[data-icons="steel"] :is(.repo-block-icon,.repo-card-icon){filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
 html[data-icons="gel"] .repo-svg[data-i]{background:url("icons/skeuo/aqua/vierge.gris.webp") center/contain no-repeat,radial-gradient(43% 43% at 50% calc(50% - 1px),var(--aq-gel,#2473db) 0 calc(97% - 1px),transparent calc(100% - 1px)) center/contain no-repeat!important;background-color:transparent!important;background-blend-mode:overlay,normal!important;-webkit-mask:url("icons/skeuo/aqua/vierge.gris.webp") center/contain no-repeat;mask:url("icons/skeuo/aqua/vierge.gris.webp") center/contain no-repeat;filter:none!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * 0.24);color:var(--ico-glyph,#ffffff)!important;overflow:visible}
 html[data-app-theme="cpco"][data-icons="gel"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg),html[data-icons="gel"] .repo-sidenav-cpco .repo-svg[data-i]{color:var(--ico-glyph-centre,#ffd23f)!important}
 html[data-icons="gel"] .repo-svg[data-i]>*{display:inline;filter:var(--ico-glyph-shadow,drop-shadow(.5px 1px .6px rgba(0,0,0,.55)))}
@@ -290,4 +144,13 @@ html[data-icons="gel"] .repo-block .repo-block-tools .repo-drag{font-size:15px!i
 html[data-icons="gel"] .repo-block .repo-block-tools .repo-toggle::before{background-color:currentColor!important;width:13px!important;height:13px!important;filter:drop-shadow(0 1px .6px rgba(0,0,0,.55))}
 html[data-app-theme="cpco"][data-icons="gel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){color:#ffd23f!important}
 html[data-icons="gel"] :is(.repo-block-icon,.repo-card-icon){filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+html[data-icons="avio"] .repo-svg[data-i]{background-image:url("icons/skeuo/flightlog/vierge.webp?v=20260930a")!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * 0.26);color:var(--ico-glyph,#f4ecd8)!important;overflow:visible}
+html[data-app-theme="cpco"][data-icons="avio"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg),html[data-icons="avio"] .repo-sidenav-cpco .repo-svg[data-i]{background-image:url("icons/skeuo/flightlog/vierge.webp?v=20260930a")!important;color:var(--ico-glyph-centre,#ffd23f)!important}
+html[data-icons="avio"] .repo-svg[data-i]>*{display:inline;filter:var(--ico-glyph-shadow,drop-shadow(.5px 1px .6px rgba(0,0,0,.7)))}
+html[data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){background:url("icons/skeuo/flightlog/vierge.webp?v=20260930a") center/contain no-repeat!important;width:28px!important;height:28px!important;color:#f4ecd8!important;opacity:1}
+html[data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):is(:hover,:focus-visible){filter:brightness(1.12)}
+html[data-icons="avio"] .repo-block .repo-block-tools .repo-drag{font-size:15px!important;line-height:1;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.55)}
+html[data-icons="avio"] .repo-block .repo-block-tools .repo-toggle::before{background-color:currentColor!important;width:13px!important;height:13px!important;filter:drop-shadow(0 1px .6px rgba(0,0,0,.55))}
+html[data-app-theme="cpco"][data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){color:#ffd23f!important}
+html[data-icons="avio"] :is(.repo-block-icon,.repo-card-icon){filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
 /* ==== fin des jeux skeuomorphes ==== */
