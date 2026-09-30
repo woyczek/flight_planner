@@ -14,6 +14,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 > est livrée en 4.3.1 ; la phase 2 (supprimer les exceptions par design, assets à fournir) pourra encore modifier
 > légèrement l'apparence des designs à matières. Plan : [docs/REFACTORING_TOOLKIT.md](docs/REFACTORING_TOOLKIT.md).
 
+- **Panneaux de fond** (Cabinet, Durci) : atténués de façon uniforme, plus de dégradé en transparence vers la gauche.
+- **Durci** : poignées latérales regénérées (poignée à grip, nette) ; poignée horizontale et barre fine remplacées.
+
 ## [4.3.1] — 2026-09-30
 
 Toolkit refactoré (phase 1) ; feuilles de registre, carnets du Studio et appareils de page pour Cabinet, Carnet de vol

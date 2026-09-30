@@ -36,19 +36,19 @@ html[data-design-base="cabinet"]{
   --cab-paper:#efe3c4;--cab-field:#fbf5e6;
   --cab-screw:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cdefs%3E%3CradialGradient id='g' cx='.35' cy='.3' r='.8'%3E%3Cstop offset='0' stop-color='%23fff4c8'/%3E%3Cstop offset='.45' stop-color='%23c9a24a'/%3E%3Cstop offset='1' stop-color='%235a4012'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='10' cy='10.6' r='8.6' fill='%233a2a0c' opacity='.5'/%3E%3Ccircle cx='10' cy='10' r='8' fill='url(%23g)'/%3E%3Cpath d='M5 13 15 7' stroke='%234a3510' stroke-width='1.8' stroke-linecap='round'/%3E%3Cpath d='M5.3 13.8 15.3 7.8' stroke='%23fff0bd' stroke-width='.6' stroke-linecap='round' opacity='.7'/%3E%3C/svg%3E");
   --repo-surface:#efe3c4;
-  background:#3a2112 url("textures/leather-brown.webp?v=20260930zzzn") center/256px!important;
+  background:#3a2112 url("textures/leather-brown.webp?v=20260930zzzp") center/256px!important;
   /* jetons des composants communs (section COMPOSANTS COMMUNS) */
   --sk-ink:var(--cab-ink);--sk-ink-2:var(--cab-ink-2);
   --sk-header-radius:10px;--sk-header-border:0;--sk-header-margin:0 0 6px;--sk-header-ink:var(--cab-cream);
-  --sk-header-bg:linear-gradient(color-mix(in srgb,var(--cab-bar) 55%,transparent),color-mix(in srgb,var(--cab-bar) 55%,transparent)),#0f2140 url("textures/leather-navy.webp?v=20260930zzzn") center/256px;
+  --sk-header-bg:linear-gradient(color-mix(in srgb,var(--cab-bar) 55%,transparent),color-mix(in srgb,var(--cab-bar) 55%,transparent)),#0f2140 url("textures/leather-navy.webp?v=20260930zzzp") center/256px;
   --sk-header-shadow:inset 0 0 0 1px #0b1628,inset 0 2px 0 rgba(160,190,240,.18),inset 0 -8px 20px rgba(0,0,0,.45),0 3px 0 #1c0d05;
   --sk-mbtn-bg:linear-gradient(#27446f,#122746);--sk-mbtn-ink:var(--cab-brass-hi);--sk-mbtn-border:1px solid var(--cab-brass);--sk-mbtn-radius:5px;
-  --sk-menu-bg:#f6ecd2 url("textures/parchment.webp?v=20260930zzzn") center/400px;--sk-menu-ink:var(--cab-ink);--sk-menu-border:2px solid var(--cab-brass-lo);
+  --sk-menu-bg:#f6ecd2 url("textures/parchment.webp?v=20260930zzzp") center/400px;--sk-menu-ink:var(--cab-ink);--sk-menu-border:2px solid var(--cab-brass-lo);
   --sk-block-radius:12px;--sk-block-border:10px solid transparent;
-  --sk-block-bg:url("textures/parchment.webp?v=20260930zzzn") center/512px padding-box,
+  --sk-block-bg:url("textures/parchment.webp?v=20260930zzzp") center/512px padding-box,
     linear-gradient(180deg,rgba(255,228,190,.22),rgba(255,228,190,0) 4px,rgba(0,0,0,0) calc(100% - 5px),rgba(0,0,0,.55)) border-box,
     linear-gradient(90deg,rgba(255,228,190,.14),rgba(255,228,190,0) 4px,rgba(0,0,0,0) calc(100% - 5px),rgba(0,0,0,.4)) border-box,
-    url("textures/leather-brown.webp?v=20260930zzzn") center/256px border-box #4a2712;
+    url("textures/leather-brown.webp?v=20260930zzzp") center/256px border-box #4a2712;
   --sk-block-shadow:inset 0 0 0 1px rgba(40,18,4,.75),inset 0 3px 5px rgba(40,18,4,.45),inset 0 0 36px rgba(120,80,30,.35),0 0 0 1px rgba(20,8,2,.8),0 5px 10px rgba(40,20,5,.5);
   --sk-card-bg:color-mix(in srgb,var(--cab-field) 55%,transparent);--sk-card-border:1px solid var(--cab-rule);--sk-card-radius:6px;
   --sk-card-shadow:inset 0 0 18px rgba(130,90,35,.25),0 2px 4px rgba(60,35,10,.3);
@@ -56,25 +56,25 @@ html[data-design-base="cabinet"]{
   --sk-notice-bg:color-mix(in srgb,var(--cab-field) 55%,transparent);--sk-notice-border:1px solid var(--cab-rule);--sk-notice-radius:6px;--sk-notice-ink:var(--cab-ink);
   --sk-plate-padding:6px 26px;--sk-plate-font:700 .95rem/1.2 "Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;--sk-plate-spacing:.06em;
   --sk-plate-ink:var(--cab-engrave);--sk-plate-text-shadow:0 1px 0 rgba(255,244,200,.75),0 -1px 0 rgba(60,40,10,.3);
-  --sk-plate-bg:#c9a24a url("textures/brass.webp?v=20260930zzzn") center/256px;--sk-plate-shadow:0 0 0 1px #5a4012,inset 0 1px 0 #fff7d1,inset 0 -2px 0 rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.35);
+  --sk-plate-bg:#c9a24a url("textures/brass.webp?v=20260930zzzp") center/256px;--sk-plate-shadow:0 0 0 1px #5a4012,inset 0 1px 0 #fff7d1,inset 0 -2px 0 rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.35);
   --sk-screw:var(--cab-screw);--sk-plate-screw:10px;--sk-plate-screw-x:9px;
   --sk-label-ink:var(--cab-navy);
   --sk-status-bg:color-mix(in srgb,var(--cab-field) 70%,transparent);--sk-status-border:1px solid var(--cab-rule);--sk-status-ink:var(--cab-ink);--sk-status-shadow:inset 0 1px 3px rgba(80,50,15,.35);
   --sk-input-bg:var(--cab-field);--sk-input-ink:var(--cab-ink);--sk-input-border:1px solid var(--cab-rule);--sk-input-radius:4px;--sk-input-shadow:inset 0 1px 3px rgba(80,50,15,.4);
   --sk-btn-weight:700;--sk-btn-border:0;--sk-btn-radius:6px;--sk-btn-ink:var(--cab-cream);--sk-btn-text-shadow:0 1px 0 #000;
-  --sk-btn-bg:linear-gradient(color-mix(in srgb,var(--cab-bar) 45%,transparent),color-mix(in srgb,var(--cab-bar) 45%,transparent)),#0f2140 url("textures/leather-navy.webp?v=20260930zzzn") center/200px;
+  --sk-btn-bg:linear-gradient(color-mix(in srgb,var(--cab-bar) 45%,transparent),color-mix(in srgb,var(--cab-bar) 45%,transparent)),#0f2140 url("textures/leather-navy.webp?v=20260930zzzp") center/200px;
   --sk-btn-shadow:0 0 0 2px var(--cab-brass),0 0 0 3px #5a4012,inset 0 1px 0 rgba(255,255,255,.22),inset 0 -6px 12px rgba(0,0,0,.4),0 4px 6px rgba(0,0,0,.4);
   --sk-btn-hover:brightness(1.12);--sk-btn-disabled:grayscale(.6) opacity(.6);
   --sk-lbtn-weight:700;--sk-lbtn-border:0;--sk-lbtn-radius:6px;--sk-lbtn-ink:var(--cab-cream);
-  --sk-lbtn-bg:linear-gradient(color-mix(in srgb,var(--cab-bar) 45%,transparent),color-mix(in srgb,var(--cab-bar) 45%,transparent)),#0f2140 url("textures/leather-navy.webp?v=20260930zzzn") center/200px;
+  --sk-lbtn-bg:linear-gradient(color-mix(in srgb,var(--cab-bar) 45%,transparent),color-mix(in srgb,var(--cab-bar) 45%,transparent)),#0f2140 url("textures/leather-navy.webp?v=20260930zzzp") center/200px;
   --sk-lbtn-shadow:0 0 0 2px var(--cab-brass),0 0 0 3px #5a4012,inset 0 1px 0 rgba(255,255,255,.22),0 4px 6px rgba(0,0,0,.4);
-  --sk-pick-ink:var(--cab-cream);--sk-pick-bg:#0f2140 url("textures/leather-navy.webp?v=20260930zzzn") center/200px;
-  --sk-sidenav-bg:#3a1e0e url("textures/wood.webp?v=20260930zzzn") center/512px;--sk-sidenav-border:3px solid var(--cab-brass-lo);--sk-sidenav-ink:var(--cab-cream);
-  --sk-footer-margin:14px 0 0;--sk-footer-padding:8px 14px;--sk-footer-bg:#efe3c4 url("textures/parchment.webp?v=20260930zzzn") center/300px;--sk-footer-ink:var(--cab-ink);
-  --sk-abar-bg:linear-gradient(color-mix(in srgb,var(--cab-bar) 45%,transparent),color-mix(in srgb,var(--cab-bar) 45%,transparent)),#0f2140 url("textures/leather-navy.webp?v=20260930zzzn") center/256px;
+  --sk-pick-ink:var(--cab-cream);--sk-pick-bg:#0f2140 url("textures/leather-navy.webp?v=20260930zzzp") center/200px;
+  --sk-sidenav-bg:#3a1e0e url("textures/wood.webp?v=20260930zzzp") center/512px;--sk-sidenav-border:3px solid var(--cab-brass-lo);--sk-sidenav-ink:var(--cab-cream);
+  --sk-footer-margin:14px 0 0;--sk-footer-padding:8px 14px;--sk-footer-bg:#efe3c4 url("textures/parchment.webp?v=20260930zzzp") center/300px;--sk-footer-ink:var(--cab-ink);
+  --sk-abar-bg:linear-gradient(color-mix(in srgb,var(--cab-bar) 45%,transparent),color-mix(in srgb,var(--cab-bar) 45%,transparent)),#0f2140 url("textures/leather-navy.webp?v=20260930zzzp") center/256px;
   --sk-abar-border:2px solid var(--cab-brass);--sk-abar-shadow:0 -6px 16px rgba(0,0,0,.45);--sk-abar-ink:var(--cab-cream);
   --sk-tool-bg:linear-gradient(#27446f,#122746);--sk-tool-ink:var(--cab-cream);
-  --sk-dialog-bg:#4a2712 url("textures/wood.webp?v=20260930zzzn") center/512px;
+  --sk-dialog-bg:#4a2712 url("textures/wood.webp?v=20260930zzzp") center/512px;
   --sk-chart-bg:radial-gradient(ellipse at 50% 35%,#1d2e4a,#0c1424 85%);--sk-chart-border:2px solid #8a6526;--sk-chart-radius:6px;
   --sk-chart-shadow:inset 0 0 0 1px #000,inset 0 3px 14px rgba(0,0,0,.75),0 1px 0 rgba(255,235,190,.18),0 3px 6px rgba(0,0,0,.4);
   --sk-chart-grid:rgba(214,178,108,.22);--sk-chart-axis:#c9a24a;--sk-chart-text:#ead9ae;
@@ -85,15 +85,15 @@ html[data-design-base="cabinet"]{
 }
 html[data-design-base="cabinet"][data-tone="dark"]{
   --cab-ink:#efe6cf;--cab-ink-2:#cdbf9c;--cab-navy:#f3de98;--cab-rule:#7a6440;--cab-paper:#1c2230;--cab-field:#121722;--repo-surface:#1c2230;
-  --sk-block-bg:url("textures/parchment-dark.webp?v=20260930zzzn") center/512px padding-box,
+  --sk-block-bg:url("textures/parchment-dark.webp?v=20260930zzzp") center/512px padding-box,
     linear-gradient(180deg,rgba(255,228,190,.2),rgba(255,228,190,0) 4px,rgba(0,0,0,0) calc(100% - 5px),rgba(0,0,0,.6)) border-box,
     linear-gradient(90deg,rgba(255,228,190,.12),rgba(255,228,190,0) 4px,rgba(0,0,0,0) calc(100% - 5px),rgba(0,0,0,.45)) border-box,
-    url("textures/leather-brown.webp?v=20260930zzzn") center/256px border-box #4a2712;
+    url("textures/leather-brown.webp?v=20260930zzzp") center/256px border-box #4a2712;
   --sk-block-shadow:inset 0 0 0 1px rgba(0,0,0,.8),inset 0 3px 6px rgba(0,0,0,.5),inset 0 0 36px rgba(0,0,0,.45),0 0 0 1px rgba(0,0,0,.85),0 5px 10px rgba(0,0,0,.55);
 }
 /* cadre : la page est un meuble en bois verni posé sur un sous-main en cuir (piqûre en décor complet) */
 html[data-design-base="cabinet"] body{position:relative;margin-top:14px!important;margin-bottom:14px!important;margin-left:14px!important;margin-right:14px!important;padding-top:12px!important;border-radius:14px;
-  background:#4a2712 url("textures/wood.webp?v=20260930zzzn") center/512px!important;color:var(--cab-ink);
+  background:#4a2712 url("textures/wood.webp?v=20260930zzzp") center/512px!important;color:var(--cab-ink);
   box-shadow:0 18px 40px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,220,170,.35),inset 0 0 0 1px #1c0d05,inset 0 0 24px rgba(0,0,0,.5)}
 html[data-design-base="cabinet"][data-decor="full"]::before{content:"";position:fixed;inset:8px;border:2px dashed rgba(233,200,140,.4);border-radius:10px;pointer-events:none;z-index:0}
 /* en-tête : cuir marine (bandeau du thème assombri par-dessus), piqûre, rivets laiton, médaillon rose des vents */
@@ -154,8 +154,8 @@ html[data-design-base="cabinet"] :is(input,select,textarea,button):focus-visible
 /* boutons : cuir marine à bord laiton (principal : bandeau du thème assombri), parchemin (secondaire), cuir brun (discret) */
 html[data-design-base="cabinet"] button:where(:not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-sidenav-item):not(.col-split):not(.repo-block-tools button):not([role=menuitem]):not(.repo-icon-only):not(.repo-plain)),
 html[data-design-base="cabinet"] .buttonLink,html[data-design-base="cabinet"] a.mc-button{font-family:"Palatino Linotype","Book Antiqua",Georgia,serif!important}
-html[data-design-base="cabinet"] :is(button.secondary,a.secondary,label.rg-file):not(.repo-block-tools button){color:#0b1830!important;font-weight:700!important;text-shadow:0 1px 0 rgba(255,255,255,.75);background:#efe3c4 url("textures/parchment.webp?v=20260930zzzn") center/300px!important}
-html[data-design-base="cabinet"] button:is(.ghost,.danger):not(.repo-block-tools button){background:#4a2712 url("textures/leather-brown.webp?v=20260930zzzn") center/200px!important}
+html[data-design-base="cabinet"] :is(button.secondary,a.secondary,label.rg-file):not(.repo-block-tools button){color:#0b1830!important;font-weight:700!important;text-shadow:0 1px 0 rgba(255,255,255,.75);background:#efe3c4 url("textures/parchment.webp?v=20260930zzzp") center/300px!important}
+html[data-design-base="cabinet"] button:is(.ghost,.danger):not(.repo-block-tools button){background:#4a2712 url("textures/leather-brown.webp?v=20260930zzzp") center/200px!important}
 html[data-design-base="cabinet"] .repo-header button.headerButton{font-size:13px}
 /* icônes « matière » : médaillons de bronze à bord laiton (blocs, sous-cartes, bandeaux) */
 html[data-design-base="cabinet"] .repo-notice>.repo-icon{color:var(--cab-navy)}
@@ -173,23 +173,23 @@ html[data-design="field"]{
   --fd-unit:var(--repo-accent);
   --fd-screw:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cdefs%3E%3CradialGradient id='g' cx='.35' cy='.3' r='.85'%3E%3Cstop offset='0' stop-color='%23f2f4f0'/%3E%3Cstop offset='.5' stop-color='%23959a90'/%3E%3Cstop offset='1' stop-color='%23353a30'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='10' cy='10.6' r='8.6' fill='%23000' opacity='.55'/%3E%3Ccircle cx='10' cy='10' r='8' fill='url(%23g)'/%3E%3Cpath d='M10 5v10M5 10h10' stroke='%232a2e25' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
   --repo-surface:#4a5040;
-  background:#cfc4a4 url("textures/topo.webp?v=20260930zzzn") center/512px!important;
+  background:#cfc4a4 url("textures/topo.webp?v=20260930zzzp") center/512px!important;
   /* jetons des composants communs */
   --sk-ink:var(--fd-text);--sk-ink-2:var(--fd-text-2);
   --sk-header-radius:10px;--sk-header-border:0;--sk-header-margin:0 0 8px;--sk-header-ink:var(--fd-text);
-  --sk-header-bg:#23261e url("textures/steel-dark.webp?v=20260930zzzn") center/512px;
+  --sk-header-bg:#23261e url("textures/steel-dark.webp?v=20260930zzzp") center/512px;
   --sk-header-shadow:inset 0 0 0 2px #0d0f08,inset 0 2px 0 rgba(255,255,255,.12),0 3px 0 #14170d,inset 0 -3px 0 var(--fd-unit);
   --sk-mbtn-bg:linear-gradient(#3a3f37,#15180f);--sk-mbtn-ink:#e7e6d6;--sk-mbtn-border:1px solid #0b0d08;--sk-mbtn-radius:5px;
-  --sk-menu-bg:#1d201b url("textures/steel-dark.webp?v=20260930zzzn") center/400px;--sk-menu-ink:var(--fd-text);--sk-menu-border:2px solid #0b0d08;
+  --sk-menu-bg:#1d201b url("textures/steel-dark.webp?v=20260930zzzp") center/400px;--sk-menu-ink:var(--fd-text);--sk-menu-border:2px solid #0b0d08;
   --sk-block-radius:10px;--sk-block-border:2px solid #2a2e22;--sk-block-border-left:6px solid var(--fd-unit);
-  --sk-block-bg:linear-gradient(rgba(40,46,32,.55),rgba(40,46,32,.55)),#7c8270 url("textures/steel.webp?v=20260930zzzn") center/512px;
+  --sk-block-bg:linear-gradient(rgba(40,46,32,.55),rgba(40,46,32,.55)),#7c8270 url("textures/steel.webp?v=20260930zzzp") center/512px;
   --sk-block-shadow:inset 0 2px 0 rgba(255,255,255,.18),inset 0 0 26px rgba(0,0,0,.35),0 4px 10px rgba(0,0,0,.5);
-  --sk-card-bg:linear-gradient(rgba(40,46,32,.35),rgba(40,46,32,.35)),#7c8270 url("textures/steel.webp?v=20260930zzzn") 30% 60%/400px;--sk-card-border:1px solid #3b4032;--sk-card-radius:8px;
+  --sk-card-bg:linear-gradient(rgba(40,46,32,.35),rgba(40,46,32,.35)),#7c8270 url("textures/steel.webp?v=20260930zzzp") 30% 60%/400px;--sk-card-border:1px solid #3b4032;--sk-card-radius:8px;
   --sk-card-shadow:inset 0 2px 0 rgba(255,255,255,.25),inset 0 0 18px rgba(0,0,0,.3),0 3px 6px rgba(0,0,0,.4);
   --sk-drop-bg:var(--fd-field);--sk-drop-border:1.5px dashed #7f8a66;--sk-drop-radius:4px;--sk-drop-shadow:inset 0 2px 8px rgba(0,0,0,.7);
   --sk-notice-bg:#121410;--sk-notice-border:0;--sk-notice-border-left:4px solid #d9a441;--sk-notice-radius:6px;--sk-notice-ink:var(--fd-field-ink);
   --sk-plate-padding:6px 26px 5px;--sk-plate-font:700 .92rem/1.2 Bahnschrift,"Arial Narrow",Impact,sans-serif;--sk-plate-spacing:.04em;--sk-plate-ink:var(--fd-plate-ink);
-  --sk-plate-bg:#cfc7a4 url("textures/khaki.webp?v=20260930zzzn") center/256px;--sk-plate-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,0,0,.2),0 0 0 2px #2a2e22,0 3px 5px rgba(0,0,0,.45);
+  --sk-plate-bg:#cfc7a4 url("textures/khaki.webp?v=20260930zzzp") center/256px;--sk-plate-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,0,0,.2),0 0 0 2px #2a2e22,0 3px 5px rgba(0,0,0,.45);
   --sk-screw:var(--fd-screw);--sk-plate-screw:11px;--sk-plate-screw-x:8px;
   --sk-label-ink:#eef0e6;
   --sk-status-bg:#121410;--sk-status-border:1px solid #000;--sk-status-ink:#cfd2c4;--sk-status-shadow:inset 0 2px 5px rgba(0,0,0,.7);
@@ -200,12 +200,12 @@ html[data-design="field"]{
   --sk-lbtn-weight:600;--sk-lbtn-border:0;--sk-lbtn-radius:5px;--sk-lbtn-ink:#eef0e6;--sk-lbtn-bg:linear-gradient(#26364e,#0f1a2a);
   --sk-lbtn-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 0 1px #0b0d08,0 0 0 3px #4a4f40;
   --sk-pick-ink:#15180f;--sk-pick-bg:linear-gradient(#e8e6d8,#b7b39e);
-  --sk-sidenav-bg:linear-gradient(90deg,rgba(8,10,6,.62),rgba(8,10,6,.45) 80%,rgba(8,10,6,.7)),#2e3522 url("textures/olive.webp?v=20260930zzzn") center/512px;--sk-sidenav-border:3px solid #0b0d08;--sk-sidenav-ink:#e7e6d6;
+  --sk-sidenav-bg:linear-gradient(90deg,rgba(8,10,6,.62),rgba(8,10,6,.45) 80%,rgba(8,10,6,.7)),#2e3522 url("textures/olive.webp?v=20260930zzzp") center/512px;--sk-sidenav-border:3px solid #0b0d08;--sk-sidenav-ink:#e7e6d6;
   --sk-footer-margin:14px 0 0;--sk-footer-padding:8px 14px 8px 34px;--sk-footer-bg:#15180f;--sk-footer-ink:#cfd2c4;
-  --sk-abar-bg:#23261e url("textures/steel-dark.webp?v=20260930zzzn") center/512px;--sk-abar-border:2px solid #0b0d08;--sk-abar-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 -6px 16px rgba(0,0,0,.5);
+  --sk-abar-bg:#23261e url("textures/steel-dark.webp?v=20260930zzzp") center/512px;--sk-abar-border:2px solid #0b0d08;--sk-abar-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 -6px 16px rgba(0,0,0,.5);
   --sk-abar-ink:#e6ecd6;--sk-abar-ink-2:#cfd2c4;
   --sk-tool-bg:linear-gradient(#30352b,#12150e);--sk-tool-ink:#eef0e6;
-  --sk-dialog-bg:#465034 url("textures/olive.webp?v=20260930zzzn") center/512px;
+  --sk-dialog-bg:#465034 url("textures/olive.webp?v=20260930zzzp") center/512px;
   --sk-chart-bg:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px),radial-gradient(ellipse at 50% 45%,#0f2414,#050c07 90%);--sk-chart-border:3px solid #0b0d08;--sk-chart-radius:10px;
   --sk-chart-shadow:inset 0 0 22px rgba(0,0,0,.9),inset 0 0 0 1px rgba(120,255,150,.15),0 0 0 2px #4a4f40,0 3px 6px rgba(0,0,0,.5);
   --sk-chart-grid:rgba(120,255,150,.14);--sk-chart-axis:rgba(140,255,160,.55);--sk-chart-text:#8fe89a;
@@ -215,11 +215,11 @@ html[data-design="field"]{
   --sk-thumb-shadow:0 2px 3px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.3);
 }
 html[data-design="field"] body{position:relative;margin-top:16px!important;margin-bottom:16px!important;margin-left:16px!important;margin-right:16px!important;padding-top:12px!important;border-radius:14px;color:var(--fd-text);
-  background:#465034 url("textures/olive.webp?v=20260930zzzn") center/512px!important;font-family:Bahnschrift,"DIN Alternate","Roboto Condensed","Arial Narrow",system-ui,sans-serif;
+  background:#465034 url("textures/olive.webp?v=20260930zzzp") center/512px!important;font-family:Bahnschrift,"DIN Alternate","Roboto Condensed","Arial Narrow",system-ui,sans-serif;
   box-shadow:0 20px 40px rgba(0,0,0,.6),inset 0 2px 0 rgba(220,230,190,.25),inset 0 0 0 2px #1d2116,inset 0 0 30px rgba(0,0,0,.45)}
 @media (min-width:1100px){
   html[data-design="field"][data-decor="full"] body::before,html[data-design="field"][data-decor="full"] body::after{content:"";position:absolute;top:140px;width:24px;height:160px;border-radius:10px;
-    background:#1a1a1a url("textures/rubber.webp?v=20260930zzzn") center/48px;box-shadow:inset 0 0 0 5px #9aa095,inset 0 0 0 6px #2a2e25,0 4px 8px rgba(0,0,0,.6)}
+    background:#1a1a1a url("textures/rubber.webp?v=20260930zzzp") center/48px;box-shadow:inset 0 0 0 5px #9aa095,inset 0 0 0 6px #2a2e25,0 4px 8px rgba(0,0,0,.6)}
   html[data-design="field"][data-decor="full"] body::before{left:-13px}
   html[data-design="field"][data-decor="full"] body::after{right:-13px}
 }
@@ -263,7 +263,7 @@ html[data-design="field"] .repo-sidenav-item[aria-current="page"]{border-left-co
 html[data-design="field"] .repo-footer{position:relative;box-shadow:inset 0 2px 6px #000,0 0 0 3px #4a4f40!important}
 html[data-design="field"] .repo-footer a{color:var(--fd-led)!important}
 html[data-design="field"][data-decor="full"] .repo-footer::after{content:"";position:absolute;right:10px;top:50%;width:30px;height:30px;margin-top:-15px;border-radius:50%;
-  background:conic-gradient(from 0deg,transparent 0deg 280deg,rgba(159,232,112,.12) 300deg,rgba(159,232,112,.75) 359.5deg,transparent 360deg),repeating-radial-gradient(circle,transparent 0 5px,rgba(159,232,112,.35) 5px 6px),#07100a url("textures/radar.webp?v=20260930zzzn") center/60px;
+  background:conic-gradient(from 0deg,transparent 0deg 280deg,rgba(159,232,112,.12) 300deg,rgba(159,232,112,.75) 359.5deg,transparent 360deg),repeating-radial-gradient(circle,transparent 0 5px,rgba(159,232,112,.35) 5px 6px),#07100a url("textures/radar.webp?v=20260930zzzp") center/60px;
   box-shadow:0 0 0 2px #2f7a1c;animation:repo-sweep 4s linear infinite}
 @keyframes repo-sweep{to{transform:rotate(1turn)}}
 
@@ -276,7 +276,7 @@ html[data-design="aqua"]{
   /* jetons des composants communs */
   --sk-ink:var(--aq-ink);--sk-ink-2:var(--aq-ink-2);
   --sk-header-radius:0;--sk-header-border:0 solid #9aa6b2;--sk-header-bbw:1px;--sk-header-margin:0 0 10px;--sk-header-ink:var(--aq-ink);   /* pleine largeur : angles droits, filet bas */
-  --sk-header-bg:linear-gradient(rgba(255,255,255,.45),rgba(255,255,255,0) 50%,rgba(0,0,0,.05)),#d8dde2 url("textures/brushed-light.webp?v=20260930zzzn") center/256px;
+  --sk-header-bg:linear-gradient(rgba(255,255,255,.45),rgba(255,255,255,0) 50%,rgba(0,0,0,.05)),#d8dde2 url("textures/brushed-light.webp?v=20260930zzzp") center/256px;
   --sk-header-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 rgba(0,0,0,.12),0 6px 16px rgba(40,60,90,.18);
   --sk-mbtn-bg:linear-gradient(#ffffff,#dfe6ee);--sk-mbtn-ink:var(--aq-ink);--sk-mbtn-border:1px solid #9aa6b2;--sk-mbtn-radius:8px;
   --sk-menu-bg:rgba(248,251,254,.92);--sk-menu-ink:var(--aq-ink);--sk-menu-border:1px solid #b8c3ce;
@@ -292,9 +292,9 @@ html[data-design="aqua"]{
   --sk-lbtn-weight:600;--sk-lbtn-border:1px solid #9aa6b2;--sk-lbtn-radius:9px;--sk-lbtn-ink:var(--aq-ink);--sk-lbtn-bg:linear-gradient(#ffffff,#e9eef3 50%,#dde4eb 51%,#f1f4f7);
   --sk-lbtn-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.15);
   --sk-pick-ink:var(--aq-ink);--sk-pick-bg:linear-gradient(#ffffff,#e9eef3 50%,#dde4eb 51%,#f1f4f7);
-  --sk-sidenav-bg:#d8dde2 url("textures/brushed-light.webp?v=20260930zzzn") center/256px;--sk-sidenav-border:1px solid #9aa6b2;--sk-sidenav-ink:var(--aq-ink);
+  --sk-sidenav-bg:#d8dde2 url("textures/brushed-light.webp?v=20260930zzzp") center/256px;--sk-sidenav-border:1px solid #9aa6b2;--sk-sidenav-ink:var(--aq-ink);
   --sk-footer-margin:12px 0 0;--sk-footer-padding:8px 14px;--sk-footer-bg:rgba(255,255,255,.7);--sk-footer-ink:var(--aq-ink-2);
-  --sk-abar-bg:linear-gradient(rgba(255,255,255,.45),rgba(255,255,255,0) 50%,rgba(0,0,0,.05)),#d8dde2 url("textures/brushed-light.webp?v=20260930zzzn") center/256px;--sk-abar-border:1px solid #9aa6b2;--sk-abar-ink:var(--aq-ink);
+  --sk-abar-bg:linear-gradient(rgba(255,255,255,.45),rgba(255,255,255,0) 50%,rgba(0,0,0,.05)),#d8dde2 url("textures/brushed-light.webp?v=20260930zzzp") center/256px;--sk-abar-border:1px solid #9aa6b2;--sk-abar-ink:var(--aq-ink);
   --sk-tool-bg:linear-gradient(#fff,#e3e9f0);--sk-tool-ink:var(--aq-ink);
   --sk-dialog-bg:linear-gradient(180deg,#e9eff5,#d9e3ec);
   --sk-chart-bg:linear-gradient(#fbfdff,#e6edf4);--sk-chart-border:1px solid #b8c3ce;--sk-chart-radius:10px;--sk-chart-shadow:inset 0 1px 0 #fff,inset 0 2px 8px rgba(20,40,70,.12),0 2px 5px rgba(20,40,70,.12);
@@ -328,7 +328,7 @@ html[data-design="aqua"] .repo-footer{border:1px solid #d5dde6}
    métal brossé assombri ; les graphiques gardent leurs couleurs. Texte clair #e6edf5 / verre #26303b : 11,9:1. */
 html[data-design="aqua"][data-tone="dark"]{--aq-ink:#e6edf5;--aq-ink-2:#aebccb;--repo-surface:#26303b;background:linear-gradient(180deg,#1b2129,#10151b)!important;
   --sk-header-border:0 solid #0b0f14;
-  --sk-header-bg:linear-gradient(rgba(255,255,255,.12),rgba(255,255,255,0) 50%,rgba(0,0,0,.2)),linear-gradient(rgba(20,26,34,.72),rgba(20,26,34,.72)),#d8dde2 url("textures/brushed-light.webp?v=20260930zzzn") center/256px;
+  --sk-header-bg:linear-gradient(rgba(255,255,255,.12),rgba(255,255,255,0) 50%,rgba(0,0,0,.2)),linear-gradient(rgba(20,26,34,.72),rgba(20,26,34,.72)),#d8dde2 url("textures/brushed-light.webp?v=20260930zzzp") center/256px;
   --sk-header-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 6px 16px rgba(0,0,0,.45);
   --sk-menu-bg:rgba(30,37,46,.95);--sk-menu-border:1px solid #46525f;
   --sk-block-border:1px solid rgba(255,255,255,.08);--sk-block-bg:linear-gradient(180deg,rgba(46,56,68,.92),rgba(30,37,46,.92));
@@ -337,9 +337,9 @@ html[data-design="aqua"][data-tone="dark"]{--aq-ink:#e6edf5;--aq-ink-2:#aebccb;-
   --sk-drop-border:1px solid rgba(255,255,255,.1);--sk-drop-bg:linear-gradient(#2c3642,#232b35);--sk-drop-shadow:inset 0 1px 0 rgba(255,255,255,.07);
   --sk-notice-bg:linear-gradient(color-mix(in srgb,var(--aq-gel) 22%,#1e252e),color-mix(in srgb,var(--aq-gel) 14%,#1e252e));
   --sk-input-bg:#141a21;--sk-input-ink:#e6edf5;--sk-input-border:1px solid #46525f;--sk-input-shadow:inset 0 1px 3px rgba(0,0,0,.6);
-  --sk-sidenav-bg:linear-gradient(rgba(20,26,34,.72),rgba(20,26,34,.72)),#d8dde2 url("textures/brushed-light.webp?v=20260930zzzn") center/256px;--sk-sidenav-border:1px solid #0b0f14;
+  --sk-sidenav-bg:linear-gradient(rgba(20,26,34,.72),rgba(20,26,34,.72)),#d8dde2 url("textures/brushed-light.webp?v=20260930zzzp") center/256px;--sk-sidenav-border:1px solid #0b0f14;
   --sk-footer-bg:rgba(30,37,46,.8);
-  --sk-abar-bg:linear-gradient(rgba(20,26,34,.75),rgba(20,26,34,.75)),#d8dde2 url("textures/brushed-light.webp?v=20260930zzzn") center/256px;--sk-abar-border:1px solid #0b0f14;
+  --sk-abar-bg:linear-gradient(rgba(20,26,34,.75),rgba(20,26,34,.75)),#d8dde2 url("textures/brushed-light.webp?v=20260930zzzp") center/256px;--sk-abar-border:1px solid #0b0f14;
   --sk-dialog-bg:linear-gradient(180deg,#1b2129,#10151b);
   --sk-chart-bg:linear-gradient(#232c36,#161c23);--sk-chart-border:1px solid #0b0f14;--sk-chart-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 2px 10px rgba(0,0,0,.6),0 2px 5px rgba(0,0,0,.4);
   --sk-chart-grid:rgba(255,255,255,.08);--sk-chart-text:#aebccb;
@@ -444,13 +444,13 @@ html[data-design="field"][data-decor="full"] .repo-deco{display:grid;grid-templa
 html[data-design="field"][data-decor="full"] .repo-deco>.repo-deco-radar{grid-column:1;grid-row:1/3}
 html[data-design="field"][data-decor="full"] .repo-deco>.repo-deco-plate-img{grid-column:2;grid-row:1}
 html[data-design="field"][data-decor="full"] .repo-deco>.repo-deco-status{grid-column:2;grid-row:2}
-.repo-deco-plate{display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:6px;background:#cfc7a4 url("textures/khaki.webp?v=20260930zzzn") center/256px;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 0 0 2px #2a2e22,0 3px 6px rgba(0,0,0,.45);color:#2f3327;position:relative}
+.repo-deco-plate{display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:6px;background:#cfc7a4 url("textures/khaki.webp?v=20260930zzzp") center/256px;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 0 0 2px #2a2e22,0 3px 6px rgba(0,0,0,.45);color:#2f3327;position:relative}
 .repo-deco-plate::before,.repo-deco-plate::after{content:"";position:absolute;top:50%;width:11px;height:11px;margin-top:-5.5px;background:var(--fd-screw) center/11px no-repeat}
 .repo-deco-plate::before{left:6px}.repo-deco-plate::after{right:6px}
 .repo-deco-emblem{width:72px;height:28px;flex:none}.repo-deco-emblem svg{width:100%;height:100%;display:block}
 .repo-deco-plate b{display:block;font:700 26px/1 Stencil,"Stardos Stencil","Allerta Stencil",Bahnschrift,Impact,sans-serif;letter-spacing:.08em}
 .repo-deco-plate small{display:block;margin-top:3px;font:600 10.5px/1.2 Bahnschrift,"Arial Narrow",sans-serif;text-transform:uppercase;letter-spacing:.08em}
-.repo-deco-radar{position:relative;aspect-ratio:3/1;height:auto;border-radius:8px;overflow:hidden;background:#04140a url("textures/radar.webp?v=20260930zzzn") center/320px;box-shadow:inset 0 0 0 2px #0b0d08,inset 0 0 26px rgba(0,0,0,.9),0 0 0 3px #4a4f40}
+.repo-deco-radar{position:relative;aspect-ratio:3/1;height:auto;border-radius:8px;overflow:hidden;background:#04140a url("textures/radar.webp?v=20260930zzzp") center/320px;box-shadow:inset 0 0 0 2px #0b0d08,inset 0 0 26px rgba(0,0,0,.9),0 0 0 3px #4a4f40}
 .repo-deco-radar svg{position:absolute;inset:0;width:100%;height:100%}
 .repo-deco-sweep{position:absolute;left:49.86%;top:46.44%;height:201%;aspect-ratio:1;border-radius:50%;background:conic-gradient(from 0deg,transparent 0deg 285deg,rgba(120,255,150,.08) 305deg,rgba(120,255,150,.55) 359.5deg,transparent 360deg);   /* front net à 0°, traînée derrière (rotation horaire) */ transform:translate(-50%,-50%);animation:repo-sweep-c 5s linear infinite;pointer-events:none;mix-blend-mode:screen}
 @keyframes repo-sweep-c{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(1turn)}}   /* balayage centré sur le réticule de l'image (49,86 % ; 46,44 %), rayon jusqu'à la cible rouge (rogné au bord) */
@@ -465,12 +465,12 @@ html[data-dirty="1"] .repo-deco-leds i.led-save{background:radial-gradient(circl
 @media (max-width:760px){.repo-deco{display:none!important}}
 @media print{.repo-deco{display:none!important}}
 /* vis découpées dans les planches (vis cruciforme de Durci, punaise de laiton de Cabinet) à la place des vis dessinées */
-html[data-design="field"]{--fd-screw:url("deco/field/screw-x.webp?v=20260930zzzn")}
-html[data-design-base="cabinet"]{--cab-screw:url("deco/cabinet/tack.webp?v=20260930zzzn")}
+html[data-design="field"]{--fd-screw:url("deco/field/screw-x.webp?v=20260930zzzp")}
+html[data-design-base="cabinet"]{--cab-screw:url("deco/cabinet/tack.webp?v=20260930zzzp")}
 /* poignées de Durci : celles de la planche, au premier plan (devant blocs et en-tête collant, 1000 ; sous les menus
    et la barre latérale, 1100), aux deux tiers sur la page */
 @media (min-width:1100px){
-  html[data-design="field"][data-decor="full"] body::before,html[data-design="field"][data-decor="full"] body::after{width:40px;height:136px;border-radius:0;box-shadow:none;background:url("deco/field/handle-v.webp?v=20260930zzzn") center/contain no-repeat;z-index:1050}
+  html[data-design="field"][data-decor="full"] body::before,html[data-design="field"][data-decor="full"] body::after{width:42px;height:180px;border-radius:0;box-shadow:none;background:url("deco/field/handle-v.webp?v=20260930zzzp") center/contain no-repeat;z-index:1050}
   html[data-design="field"][data-decor="full"] body::before{left:-12px}
   html[data-design="field"][data-decor="full"] body::after{right:-12px}
 }
@@ -495,29 +495,29 @@ html[data-design="aqua"][data-tone="dark"] .repo-block :is(#status,.status){back
    brossé avec silhouette d'avion, emblème à hélice ailée, barre latérale en cuir marine, icônes « Avionique ». */
 html[data-design="flightlog"]{--repo-surface:#efe3c4;
   --sk-block-border:22px solid transparent;--sk-block-radius:0;--sk-block-shadow:0 5px 10px rgba(30,15,5,.45);
-  --sk-block-bg:url("textures/parchment.webp?v=20260930zzzn") center/512px padding-box #efe3c4;
+  --sk-block-bg:url("textures/parchment.webp?v=20260930zzzp") center/512px padding-box #efe3c4;
   --sk-card-border:1px solid #8a8d8a;--sk-card-shadow:inset 0 0 0 3px rgba(255,255,255,.35),0 2px 4px rgba(40,30,10,.3);
-  --sk-sidenav-bg:#0f2140 url("textures/leather-navy.webp?v=20260930zzzn") center/256px;--sk-sidenav-border:3px solid #c9a24a}
-html[data-design="flightlog"][data-tone="dark"]{--sk-block-bg:url("textures/parchment-dark.webp?v=20260930zzzn") center/512px padding-box #1c2230}
-html[data-design="flightlog"] .repo-block{border-image:url("deco/flightlog/frame.webp?v=20260930zzzn") 36 / 22px round!important;padding:14px 18px 18px!important}
+  --sk-sidenav-bg:#0f2140 url("textures/leather-navy.webp?v=20260930zzzp") center/256px;--sk-sidenav-border:3px solid #c9a24a}
+html[data-design="flightlog"][data-tone="dark"]{--sk-block-bg:url("textures/parchment-dark.webp?v=20260930zzzp") center/512px padding-box #1c2230}
+html[data-design="flightlog"] .repo-block{border-image:url("deco/flightlog/frame.webp?v=20260930zzzp") 36 / 22px round!important;padding:14px 18px 18px!important}
 html[data-design="flightlog"][data-decor="full"] .repo-block::after{display:none}
 /* Carnet de vol : plans trois vues (Islander, DC-3, B-17, P-51, Concorde) au coin des blocs, en alternance d'un bloc à l'autre
    (rang data-deco-n posé par app_framework.js dans l'ordre de la page) ; ton clair : traits sépia foncés sur le parchemin,
    ton sombre : traits crème (versions -clair) sur le parchemin sombre. Taille : 45 % de la largeur du bloc, 340 px au plus. */
-html[data-design="flightlog"][data-decor="full"] .repo-block::before{opacity:.5;mix-blend-mode:multiply;background:url("deco/flightlog/blueprint-islander.webp?v=20260930zzzn") right 10px bottom 10px/min(45%,340px) auto no-repeat}
-html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="2"]::before{background-image:url("deco/flightlog/blueprint-dc3.webp?v=20260930zzzn")}
-html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="3"]::before{background-image:url("deco/flightlog/blueprint-b17.webp?v=20260930zzzn")}
-html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="4"]::before{background-image:url("deco/flightlog/blueprint-mustang.webp?v=20260930zzzn")}
-html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="5"]::before{background-image:url("deco/flightlog/blueprint-concorde.webp?v=20260930zzzn")}
-html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block::before{opacity:.3;mix-blend-mode:normal;background-image:url("deco/flightlog/blueprint-islander-clair.webp?v=20260930zzzn")}
-html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="2"]::before{background-image:url("deco/flightlog/blueprint-dc3-clair.webp?v=20260930zzzn")}
-html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="3"]::before{background-image:url("deco/flightlog/blueprint-b17-clair.webp?v=20260930zzzn")}
-html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="4"]::before{background-image:url("deco/flightlog/blueprint-mustang-clair.webp?v=20260930zzzn")}
-html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="5"]::before{background-image:url("deco/flightlog/blueprint-concorde-clair.webp?v=20260930zzzn")}
+html[data-design="flightlog"][data-decor="full"] .repo-block::before{opacity:.5;mix-blend-mode:multiply;background:url("deco/flightlog/blueprint-islander.webp?v=20260930zzzp") right 10px bottom 10px/min(45%,340px) auto no-repeat}
+html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="2"]::before{background-image:url("deco/flightlog/blueprint-dc3.webp?v=20260930zzzp")}
+html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="3"]::before{background-image:url("deco/flightlog/blueprint-b17.webp?v=20260930zzzp")}
+html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="4"]::before{background-image:url("deco/flightlog/blueprint-mustang.webp?v=20260930zzzp")}
+html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="5"]::before{background-image:url("deco/flightlog/blueprint-concorde.webp?v=20260930zzzp")}
+html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block::before{opacity:.3;mix-blend-mode:normal;background-image:url("deco/flightlog/blueprint-islander-clair.webp?v=20260930zzzp")}
+html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="2"]::before{background-image:url("deco/flightlog/blueprint-dc3-clair.webp?v=20260930zzzp")}
+html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="3"]::before{background-image:url("deco/flightlog/blueprint-b17-clair.webp?v=20260930zzzp")}
+html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="4"]::before{background-image:url("deco/flightlog/blueprint-mustang-clair.webp?v=20260930zzzp")}
+html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="5"]::before{background-image:url("deco/flightlog/blueprint-concorde-clair.webp?v=20260930zzzp")}
 html[data-design="flightlog"] :is(.repo-block-titles,.repo-block-heading)>h2{color:#1d2733!important;text-shadow:0 1px 0 rgba(255,255,255,.7)!important;padding-right:84px!important;
-  background:url("deco/flightlog/plane-plaque.webp?v=20260930zzzn") right 22px center/58px auto no-repeat,linear-gradient(rgba(255,255,255,.35),rgba(0,0,0,.12)),#c9ccc9 url("textures/brushed-light.webp?v=20260930zzzn") center/256px!important;
+  background:url("deco/flightlog/plane-plaque.webp?v=20260930zzzp") right 22px center/58px auto no-repeat,linear-gradient(rgba(255,255,255,.35),rgba(0,0,0,.12)),#c9ccc9 url("textures/brushed-light.webp?v=20260930zzzp") center/256px!important;
   box-shadow:0 0 0 1px #4a4d4a,inset 0 1px 0 #fff,inset 0 -2px 0 rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.35)!important}
-html[data-design="flightlog"] :is(.repo-block-titles,.repo-block-heading)>h2::before,html[data-design="flightlog"] :is(.repo-block-titles,.repo-block-heading)>h2::after{background:url("deco/field/screw.webp?v=20260930zzzn") center/10px no-repeat!important}
+html[data-design="flightlog"] :is(.repo-block-titles,.repo-block-heading)>h2::before,html[data-design="flightlog"] :is(.repo-block-titles,.repo-block-heading)>h2::after{background:url("deco/field/screw.webp?v=20260930zzzp") center/10px no-repeat!important}
 html[data-design="flightlog"] .repo-header-emblem{width:78px;height:56px;margin:0 6px 0 -2px}   /* marge haute et basse dans le bandeau */
 html[data-design="flightlog"] .repo-header-emblem img{width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 4px 5px rgba(0,0,0,.5));
   /* la vignette est une photo carrée (cuir + vis aux coins) : seul le médaillon ailé reste visible */
@@ -606,13 +606,13 @@ html[data-design="aqua"] .repo-deco-bgimg.repo-deco-bg-cover{opacity:.35}
 html[data-design="aqua"][data-tone="dark"] .repo-deco-bgimg.repo-deco-bg-cover{opacity:.5}
 /* Cabinet : panneaux « 1930 » très contrastés (marine, laiton, cartes claires) : atténués pour le texte ; ton clair :
    fonds ivoire (1930/clair), proches du parchemin, moins atténués */
-html[data-design="cabinet"] .repo-deco-bgimg.repo-deco-panel{opacity:.55}
+html[data-design="cabinet"] .repo-deco-bgimg.repo-deco-panel{opacity:.42}
 /* blocs habillés d'un panneau : voile --repo-veil sous les tableaux (ci-dessous) et sous les surfaces de données des pages
    (grilles, détails, légendes : background-color:var(--repo-veil)) ; sa couleur est celle de la surface du bloc de chaque
    design, pas Canvas (Durci est « clair » par sa page mais ses blocs sont sombres à texte clair) ; Canvas par défaut */
 .repo-has-bg:has(>.repo-deco-panel){--repo-veil:color-mix(in srgb,Canvas 60%,transparent)}
 html[data-design="field"] .repo-has-bg:has(>.repo-deco-panel){--repo-veil:rgba(30,34,24,.62)}
-html[data-design="field"] .repo-deco-bgimg.repo-deco-panel{filter:brightness(.72) saturate(.9)}   /* Durci : panneaux assombris (blocs foncés à texte clair) */
+html[data-design="field"] .repo-deco-bgimg.repo-deco-panel{filter:brightness(.72) saturate(.9);opacity:.5}   /* Durci : panneaux assombris (blocs foncés à texte clair) */
 html[data-design="cabinet"] .repo-has-bg:has(>.repo-deco-panel){--repo-veil:rgba(247,240,222,.82)}
 html[data-design="cabinet"][data-tone="dark"] .repo-has-bg:has(>.repo-deco-panel){--repo-veil:rgba(14,22,40,.62)}
 html .repo-block.repo-has-bg:has(>.repo-deco-panel) table:not(.report table){background-color:var(--repo-veil)!important}   /* passe devant « table transparente » des designs */
@@ -627,7 +627,7 @@ html .repo-block.repo-has-bg:has(>.repo-deco-panel) table:not(.report table){bac
    du papier et taille de sa mosaïque ; marges du contenu ; position et taille de l'en-tête et de l'accessoire. */
 /* Cabinet : dossier « Aéronautique navale » (logos et « Marine nationale » à
    gauche, N° et tampon « Diffusion restreinte » à droite, ficelle et œillets sur le dos) */
-html[data-design-base="cabinet"]{--sheet-paper:url("deco/cabinet/sheet-paper.webp?v=20260930zzzn");--sheet-top:url("deco/cabinet/sheet-top.webp?v=20260930zzzn");--sheet-bot:url("deco/cabinet/sheet-bot.webp?v=20260930zzzn");--sheet-left:url("deco/cabinet/sheet-left.webp?v=20260930zzzn");--sheet-right:url("deco/cabinet/sheet-right.webp?v=20260930zzzn");--sheet-head:url("deco/cabinet/sheet-head.webp?v=20260930zzzn");--sheet-stamp:url("deco/cabinet/sheet-stamp.webp?v=20260930zzzn");--sheet-string:url("deco/cabinet/sheet-string.webp?v=20260930zzzn");--sheet-tl:url("deco/cabinet/sheet-tl.webp?v=20260930zzzn");--sheet-tr:url("deco/cabinet/sheet-tr.webp?v=20260930zzzn");--sheet-bl:url("deco/cabinet/sheet-bl.webp?v=20260930zzzn");--sheet-br:url("deco/cabinet/sheet-br.webp?v=20260930zzzn");
+html[data-design-base="cabinet"]{--sheet-paper:url("deco/cabinet/sheet-paper.webp?v=20260930zzzp");--sheet-top:url("deco/cabinet/sheet-top.webp?v=20260930zzzp");--sheet-bot:url("deco/cabinet/sheet-bot.webp?v=20260930zzzp");--sheet-left:url("deco/cabinet/sheet-left.webp?v=20260930zzzp");--sheet-right:url("deco/cabinet/sheet-right.webp?v=20260930zzzp");--sheet-head:url("deco/cabinet/sheet-head.webp?v=20260930zzzp");--sheet-stamp:url("deco/cabinet/sheet-stamp.webp?v=20260930zzzp");--sheet-string:url("deco/cabinet/sheet-string.webp?v=20260930zzzp");--sheet-tl:url("deco/cabinet/sheet-tl.webp?v=20260930zzzp");--sheet-tr:url("deco/cabinet/sheet-tr.webp?v=20260930zzzp");--sheet-bl:url("deco/cabinet/sheet-bl.webp?v=20260930zzzp");--sheet-br:url("deco/cabinet/sheet-br.webp?v=20260930zzzp");
   --sh-tl-w:720px;--sh-tl-h:115px;
   --sh-tr-w:225px;--sh-tr-h:155px;
   --sh-bl-w:260px;--sh-bl-h:98px;
@@ -643,7 +643,7 @@ html[data-design-base="cabinet"]{--sheet-paper:url("deco/cabinet/sheet-paper.web
   --sh-gut:0px;--sh-acc-x:4px;--sh-acc-y:42%;--sh-acc-w:215px;--sh-acc-r:430/645;--sh-k:.7}
 /* Carnet de vol : carnet de vol toilé (dos à gauche, coin corné, pages empilées à droite), en-tête imprimé (Marianne,
    ministère, « Carnet de vol »), cachet « Autorisation de transit » à droite, ficelle sur le dos */
-html[data-design="flightlog"]{--sheet-paper:url("deco/flightlog/sheet-paper.webp?v=20260930zzzn");--sheet-top:url("deco/flightlog/sheet-top.webp?v=20260930zzzn");--sheet-bot:url("deco/flightlog/sheet-bot.webp?v=20260930zzzn");--sheet-left:url("deco/flightlog/sheet-left.webp?v=20260930zzzn");--sheet-right:url("deco/flightlog/sheet-right.webp?v=20260930zzzn");--sheet-head:url("deco/flightlog/sheet-head.webp?v=20260930zzzn");--sheet-stamp:url("deco/flightlog/sheet-stamp.webp?v=20260930zzzn");--sheet-string:url("deco/flightlog/sheet-string.webp?v=20260930zzzn");--sheet-tl:url("deco/flightlog/sheet-tl.webp?v=20260930zzzn");--sheet-tr:url("deco/flightlog/sheet-tr.webp?v=20260930zzzn");--sheet-bl:url("deco/flightlog/sheet-bl.webp?v=20260930zzzn");--sheet-br:url("deco/flightlog/sheet-br.webp?v=20260930zzzn");
+html[data-design="flightlog"]{--sheet-paper:url("deco/flightlog/sheet-paper.webp?v=20260930zzzp");--sheet-top:url("deco/flightlog/sheet-top.webp?v=20260930zzzp");--sheet-bot:url("deco/flightlog/sheet-bot.webp?v=20260930zzzp");--sheet-left:url("deco/flightlog/sheet-left.webp?v=20260930zzzp");--sheet-right:url("deco/flightlog/sheet-right.webp?v=20260930zzzp");--sheet-head:url("deco/flightlog/sheet-head.webp?v=20260930zzzp");--sheet-stamp:url("deco/flightlog/sheet-stamp.webp?v=20260930zzzp");--sheet-string:url("deco/flightlog/sheet-string.webp?v=20260930zzzp");--sheet-tl:url("deco/flightlog/sheet-tl.webp?v=20260930zzzp");--sheet-tr:url("deco/flightlog/sheet-tr.webp?v=20260930zzzp");--sheet-bl:url("deco/flightlog/sheet-bl.webp?v=20260930zzzp");--sheet-br:url("deco/flightlog/sheet-br.webp?v=20260930zzzp");
   --sh-tl-w:240px;--sh-tl-h:130px;
   --sh-tr-w:184px;--sh-tr-h:200px;
   --sh-bl-w:240px;--sh-bl-h:167px;
@@ -659,7 +659,7 @@ html[data-design="flightlog"]{--sheet-paper:url("deco/flightlog/sheet-paper.webp
   --sh-gut:0px;--sh-acc-x:0px;--sh-acc-y:45%;--sh-acc-w:120px;--sh-acc-r:178/600;--sh-k:.7}
 /* Durci : carnet de terrain dans sa pochette olive à fermeture éclair, crayon dans son étui élastique sur le bord
    gauche ; pas d'en-tête */
-html[data-design="field"]{--sheet-paper:url("deco/field/sheet-paper.webp?v=20260930zzzn");--sheet-top:url("deco/field/sheet-top.webp?v=20260930zzzn");--sheet-bot:url("deco/field/sheet-bot.webp?v=20260930zzzn");--sheet-left:url("deco/field/sheet-left.webp?v=20260930zzzn");--sheet-right:url("deco/field/sheet-right.webp?v=20260930zzzn");--sheet-string:url("deco/field/sheet-string.webp?v=20260930zzzn");--sheet-tl:url("deco/field/sheet-tl.webp?v=20260930zzzn");--sheet-tr:url("deco/field/sheet-tr.webp?v=20260930zzzn");--sheet-bl:url("deco/field/sheet-bl.webp?v=20260930zzzn");--sheet-br:url("deco/field/sheet-br.webp?v=20260930zzzn");--sheet-head:none;--sheet-stamp:none;
+html[data-design="field"]{--sheet-paper:url("deco/field/sheet-paper.webp?v=20260930zzzp");--sheet-top:url("deco/field/sheet-top.webp?v=20260930zzzp");--sheet-bot:url("deco/field/sheet-bot.webp?v=20260930zzzp");--sheet-left:url("deco/field/sheet-left.webp?v=20260930zzzp");--sheet-right:url("deco/field/sheet-right.webp?v=20260930zzzp");--sheet-string:url("deco/field/sheet-string.webp?v=20260930zzzp");--sheet-tl:url("deco/field/sheet-tl.webp?v=20260930zzzp");--sheet-tr:url("deco/field/sheet-tr.webp?v=20260930zzzp");--sheet-bl:url("deco/field/sheet-bl.webp?v=20260930zzzp");--sheet-br:url("deco/field/sheet-br.webp?v=20260930zzzp");--sheet-head:none;--sheet-stamp:none;
   --sh-tl-w:500px;--sh-tl-h:260px;
   --sh-tr-w:324px;--sh-tr-h:350px;
   --sh-bl-w:360px;--sh-bl-h:280px;
@@ -718,10 +718,10 @@ html[data-skeuo][data-decor="full"] .repo-deco-device{display:flex;justify-conte
 html[data-tone="dark"] .repo-deco-prop{opacity:.7}
 @media (max-width:760px){.repo-deco-prop{display:none}}
 @media print{.repo-deco-prop{display:none}}
-/* panneaux d'habillage (Durci, Cabinet) : le texte des blocs est à gauche et en haut → panneau calé à droite, estompé
-   vers la gauche (motifs des coins gauches presque effacés sous le titre, le sous-titre et les champs) */
-.repo-deco-bgimg.repo-deco-panel{background-position:right center;-webkit-mask-image:linear-gradient(90deg,rgba(0,0,0,.12) 0,rgba(0,0,0,.25) 40%,#000 85%);mask-image:linear-gradient(90deg,rgba(0,0,0,.12) 0,rgba(0,0,0,.25) 40%,#000 85%)}
-html[data-design="cabinet"][data-tone="dark"] .repo-deco-bgimg.repo-deco-panel{opacity:.38}
+/* panneaux d'habillage (Durci, Cabinet) : couvrent le bloc, atténués de façon uniforme (pas de dégradé en
+   transparence) ; lisibilité : opacité par design et voile --repo-veil sous les données */
+.repo-deco-bgimg.repo-deco-panel{background-position:right center;-webkit-mask-image:none;mask-image:none}
+html[data-design="cabinet"][data-tone="dark"] .repo-deco-bgimg.repo-deco-panel{opacity:.3}
 /* déplacer et masquer : même taille d'icône (24 px) et même bouton (30 px), quel que soit le jeu d'icônes */
 html[data-skeuo] .repo-block-heading .repo-block-tools .repo-drag{background-size:24px 24px!important;min-width:0!important;width:30px!important}
 html[data-design="flightlog"] .repo-deco-bgimg.repo-deco-bg-cover{opacity:.9}   /* Carnet de vol : fonds sombres, tracés fins */
@@ -741,10 +741,10 @@ html[data-skeuo] body{overflow-x:clip}
    Cabinet / Carnet de vol : crème #f3e3b5 / bleu marine #1b3052 = 10,6:1 ; encre #2b2418 / parchemin #f6ecd2 = 13,4:1
    Durci : #eef0e6 / acier #2b3024 = 11,8:1 ; Aqua : encre #1c2733 / verre #f4f7fa = 14,1:1 (sombre : #e6edf5 / #26303b). */
 html[data-design-base="cabinet"]{--sk-hb:linear-gradient(#27446f,#122746);--sk-hb-fg:#f3e3b5;--sk-hb-bd:#b8963e;--sk-acc:linear-gradient(#f0d489,#c29a45 55%,#a57d2f);--sk-acc-fg:#1d2733;
-  --sk-pop:#f6ecd2 url("textures/parchment.webp?v=20260930zzzn") center/400px;--sk-pop-ink:#2b2418;--sk-pop-bd:#8a6526;--sk-pop-hover:rgba(138,101,38,.16);
+  --sk-pop:#f6ecd2 url("textures/parchment.webp?v=20260930zzzp") center/400px;--sk-pop-ink:#2b2418;--sk-pop-bd:#8a6526;--sk-pop-hover:rgba(138,101,38,.16);
   --sk-card:color-mix(in srgb,var(--cab-field) 72%,transparent);--sk-card-ink:var(--cab-ink);--sk-card-bd:var(--cab-rule);--sk-paper:#fbf6e8;--sk-pop-danger:#a3170f}
 html[data-design="field"]{--sk-hb:linear-gradient(#3a4030,#1c2016);--sk-hb-fg:#eef0e6;--sk-hb-bd:#0b0d08;--sk-acc:linear-gradient(#e2c066,#b08a33);--sk-acc-fg:#1b1d14;
-  --sk-pop:#2b3024 url("textures/steel-dark.webp?v=20260930zzzn") center/300px;--sk-pop-ink:#eef0e6;--sk-pop-bd:#0b0d08;--sk-pop-hover:rgba(255,255,255,.1);
+  --sk-pop:#2b3024 url("textures/steel-dark.webp?v=20260930zzzp") center/300px;--sk-pop-ink:#eef0e6;--sk-pop-bd:#0b0d08;--sk-pop-hover:rgba(255,255,255,.1);
   --sk-card:#15180f;--sk-card-ink:var(--fd-field-ink);--sk-card-bd:#3b4032;--sk-paper:#ecead9;--sk-pop-danger:#ff9a8a}
 html[data-design="aqua"]{--sk-hb:linear-gradient(#ffffff,#e9eef3 50%,#dde4eb 51%,#f1f4f7);--sk-hb-fg:#1c2733;--sk-hb-bd:#9aa6b2;
   --sk-acc:linear-gradient(180deg,color-mix(in srgb,var(--aq-gel) 55%,#fff) 0%,var(--aq-gel) 50%,color-mix(in srgb,var(--aq-gel) 85%,#000) 51%,color-mix(in srgb,var(--aq-gel) 70%,#fff) 100%);--sk-acc-fg:#fff;
@@ -792,13 +792,13 @@ html[data-skeuo] :is(.repo-deco,.repo-deco-radar,.repo-footer,.repo-actionbar){b
    avec voyant vert. Aqua : verre (dégradé clair), position choisie en gel. */
 html[data-skeuo] .repo-segs{border-radius:6px;overflow:hidden;box-shadow:0 1px 0 rgba(255,255,255,.3),0 2px 5px rgba(0,0,0,.35)}
 html[data-skeuo] .repo-seg{min-height:34px;padding:6px 14px!important;background-color:transparent!important;background-image:none!important;border-radius:0!important;box-shadow:none!important;font-weight:700;letter-spacing:.02em;cursor:pointer}
-html[data-design="cabinet"] .repo-segs{border:1px solid #2a1606;background:#b08a3a url("textures/brass.webp?v=20260930zzzn") center/256px}
-html[data-design="flightlog"] .repo-segs{border:1px solid #394350;background:#b9bec5 url("textures/steel.webp?v=20260930zzzn") center/256px}
+html[data-design="cabinet"] .repo-segs{border:1px solid #2a1606;background:#b08a3a url("textures/brass.webp?v=20260930zzzp") center/256px}
+html[data-design="flightlog"] .repo-segs{border:1px solid #394350;background:#b9bec5 url("textures/steel.webp?v=20260930zzzp") center/256px}
 html[data-design-base="cabinet"] .repo-seg{color:#231507!important;text-shadow:0 1px 0 rgba(255,240,200,.55)}
 html[data-design="flightlog"] .repo-seg{color:#18212e!important;text-shadow:0 1px 0 rgba(255,255,255,.55)}
 html[data-design-base="cabinet"] .repo-seg+.repo-seg{border-left:1px solid rgba(30,16,4,.55)!important;box-shadow:inset 1px 0 0 rgba(255,240,200,.35)!important}
-html[data-design-base="cabinet"] .repo-seg[aria-pressed="true"]{background:#1f2c47 url("textures/leather-navy.webp?v=20260930zzzn") center/256px!important;color:#f1e4c0!important;text-shadow:0 1px 0 #000;box-shadow:inset 0 2px 6px rgba(0,0,0,.65)!important}
-html[data-design="field"] .repo-segs{border:1px solid #0b0d08;background:#23261e url("textures/steel-dark.webp?v=20260930zzzn") center/512px}
+html[data-design-base="cabinet"] .repo-seg[aria-pressed="true"]{background:#1f2c47 url("textures/leather-navy.webp?v=20260930zzzp") center/256px!important;color:#f1e4c0!important;text-shadow:0 1px 0 #000;box-shadow:inset 0 2px 6px rgba(0,0,0,.65)!important}
+html[data-design="field"] .repo-segs{border:1px solid #0b0d08;background:#23261e url("textures/steel-dark.webp?v=20260930zzzp") center/512px}
 html[data-design="field"] .repo-seg{color:#cfd2c4!important;text-shadow:0 1px 0 #000}
 html[data-design="field"] .repo-seg+.repo-seg{border-left:1px solid #0b0d08!important;box-shadow:inset 1px 0 0 rgba(255,255,255,.08)!important}
 html[data-design="field"] .repo-seg[aria-pressed="true"]{background:#15180f!important;color:#e9ecdf!important;box-shadow:inset 0 2px 6px #000!important}
