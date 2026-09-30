@@ -123,7 +123,17 @@ Suivi des assets (cahier des charges, consignes de génération, intégration) :
     lancé à la fin de `bump_versions.py` (rapport seul) ; état : 181 images, aucune erreur.
   - Hors plan : appareil de page unifié (entre les blocs 3 et 4 pour tous, `DEVICE_AT`, déplaçable), tâches longues
     communes (`AppFramework.task`), panneaux atténués uniformément.
-- **Suivant** : 1 (jetons manquants de Durci, puis Aqua et Carnet de vol), 2 (tonalité de surface), 6 (frise et voyant
+- **Fait (30 septembre 2026, suite)** :
+  - **1. Jetons manquants (première passe)** — règles jumelles Cabinet / Durci fusionnées en une règle des designs à
+    cadre (`html[data-skeuo="frame"]`) et des jetons : pastille d'étape (`--sk-step-*`), titres et sous-titres des
+    sous-cartes (`--sk-card-title-*`, `--sk-card-sub-ink`), zones de dépôt (`--sk-drop-ink`, `--sk-drop-state-ink`,
+    `--sk-pick-case` / `-spacing`), icône des bandeaux (`--sk-notice-icon`), anneau de focus (`--sk-focus`), pied de
+    page (`--sk-footer-link`, `--sk-footer-shadow`), chiffres alignés des champs, sélecteur segmenté (`--sk-segs-*`,
+    `--sk-seg-*` ; le Carnet de vol ne surcharge que ce qui diffère de sa base). Code mort retiré : couleurs du lien
+    « choisir » des zones de dépôt (recouvertes par la règle commune), première règle des poignées de Durci.
+    Règles visant un design : Durci 74 → 57, base Cabinet 52 → 37, Carnet de vol 29 → 27, Cabinet 9 → 8 ;
+    `!important` 327 → 308. Banc de non-régression : aucun écart (48 combinaisons).
+- **Suivant** : 1 (suite : textes et tableaux de Durci, boutons, pastilles de code, puis Aqua), 2 (tonalité de surface), 6 (frise et voyant
   communs), 9 (base Cabinet du Carnet de vol) ; 3 (couches CSS) en dernier, avec le banc de non-régression ; 7 au fil
   des assets livrés.
 
