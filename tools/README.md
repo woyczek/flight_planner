@@ -79,6 +79,7 @@ même nom de fichier ; relancer ensuite les deux mêmes commandes.
 | `migrate_v3.py` | v2 → v3 : les données sortent de l'application et vont dans le dépôt privé `data/` (clone ou dépôt neuf, rangement, bilan). |
 | `reletter_missions.py` | Identifiants « lettre de série » (A001…J046C) → « lettre de famille » (M001, S002A…). |
 | `renumber_missions.py` | Renumérotation : lettre de famille + numéro d'opération sur 3 chiffres + lettre d'équipe ; un sous-dossier par mission. |
+| `migrate_operation_ids.py` | Migration des identifiants d'une opération ou d'une mission rangée (`BFM-001` → `A-001`) : toutes les références suivent (opération, organisation, participants, cartes, textes), `former_id`, fichiers renommés, rien de supprimé. |
 | `dash_mission_ids.py` | Tiret dans les identifiants : M001 → M-001 (dossiers, fichiers, YAML, Markdown). |
 | `renumber_reports.py` | Numéros des CR du registre `data/cr/missions.yaml` alignés sur les missions (CRM-016A-1…). |
 | `import_pdf_missions.py` | Import de missions livrées en vrac (PDF du générateur, ZIP de cartes) : YAML et résumé reconstruits depuis le texte du PDF, points à compléter. Nécessite `pypdf`. |
