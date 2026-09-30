@@ -8,6 +8,7 @@ AircraftDB/aircraft_http_cache.json
 AircraftDB/icao_doc8643_cache/
 *.backup-*.html
 Stub/
+.claude/worktrees/
 
 # Archives de release (publiées sur framagit, hors dépôt)
 dist/
