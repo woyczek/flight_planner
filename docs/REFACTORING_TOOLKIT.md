@@ -136,6 +136,10 @@ Suivi des assets (cahier des charges, consignes de génération, intégration) :
   - **1 (suite) et 2. Tonalité de surface** — pastilles de code, polices des boutons et des liens-boutons par jetons ;
     `html[data-surface]` posé par `repository_nav.js` (`designs.list[id].surface`, sinon ton de la page ; suit tout
     changement de ton ou de design) : encadrés d'état écrits pour « surface sombre ». Banc : aucun écart.
+  - **1 (suite) et 9** — segments d'Aqua (`--sk-seg-bg`, `--sk-segs-radius`) et entrée courante de la barre latérale
+    (`--sk-nav-on-*`, règle de base) ; titre de l'en-tête (`--sk-title-*`) ; plaque de titre du Carnet de vol par les
+    jetons `--sk-plate-*` au lieu de deux surcharges `!important` (la seconde recouvrait la première) ; règle morte de
+    Durci retirée (capitales des boutons d'outils, sans texte). Banc (référence fraîche) : seul écart attendu.
 - **Suivant** : 1 (suite : textes, tableaux et liens de Durci par `data-surface`, puis Aqua), 2 (tonalité de surface), 6 (frise et voyant
   communs), 9 (base Cabinet du Carnet de vol) ; 3 (couches CSS) en dernier, avec le banc de non-régression ; 7 au fil
   des assets livrés.

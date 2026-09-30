@@ -29,6 +29,9 @@
 
 /* ================================================================================================ CABINET */
 html[data-design-base="cabinet"] {
+  --sk-title-family: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  --sk-title-ink: var(--cab-cream);
+  --sk-title-shadow: 0 2px 0 #06101f;
   --sk-code-bg: rgba(255, 250, 236, .75);
   --sk-code-ink: var(--cab-ink);
   --sk-code-border: 1px solid var(--cab-rule);
@@ -236,12 +239,6 @@ html[data-design-base="cabinet"][data-decor="full"] .repo-header::before {
   pointer-events: none;
   background: var(--cab-screw) 9px 9px/11px no-repeat, var(--cab-screw) right 9px top 9px/11px no-repeat, var(--cab-screw) 9px calc(100% - 9px)/11px no-repeat, var(--cab-screw) right 9px bottom 9px/11px no-repeat
 }
-html[data-design-base="cabinet"] .repo-header h1 {
-  font-family: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif !important;
-  font-weight: 700;
-  color: var(--cab-cream) !important;
-  text-shadow: 0 2px 0 #06101f
-}
 html[data-design-base="cabinet"] .repo-header-subtitle {
   font-style: italic;
   color: color-mix(in srgb, var(--cab-cream) 85%, transparent) !important
@@ -446,6 +443,12 @@ html[data-design-base="cabinet"] .repo-header button.headerButton {
 
 /* ================================================================================================ DURCI */
 html[data-design="field"] {
+  --sk-title-family: Bahnschrift, "Arial Narrow", Impact, sans-serif;
+  --sk-title-stretch: condensed;
+  --sk-title-case: uppercase;
+  --sk-title-spacing: .04em;
+  --sk-title-ink: #e7e6d6;
+  --sk-title-shadow: 0 2px 0 #1a1d14;
   --sk-nav-on-edge: var(--fd-led);
   --sk-code-bg: #121410;
   --sk-code-ink: #e6ecd6;
@@ -615,15 +618,6 @@ html[data-design="field"][data-decor="full"] .repo-header::before {
   pointer-events: none;
   background: var(--fd-screw) 8px 8px/12px no-repeat, var(--fd-screw) right 8px top 8px/12px no-repeat, var(--fd-screw) 8px calc(100% - 8px)/12px no-repeat, var(--fd-screw) right 8px bottom 8px/12px no-repeat
 }
-html[data-design="field"] .repo-header h1 {
-  font-family: Bahnschrift, "Arial Narrow", Impact, sans-serif !important;
-  font-stretch: condensed;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-  color: #e7e6d6 !important;
-  text-shadow: 0 2px 0 #1a1d14
-}
 html[data-design="field"] .repo-header-emblem {
   width: 84px;
   height: 32px;
@@ -646,10 +640,6 @@ html[data-design="field"][data-decor="full"] :is(.repo-block, .repo-card)::after
   inset: 4px;
   pointer-events: none;
   background: var(--fd-screw) 0 0/12px no-repeat, var(--fd-screw) right 0 top 0/12px no-repeat, var(--fd-screw) 0 100%/12px no-repeat, var(--fd-screw) right 0 bottom 0/12px no-repeat
-}
-html[data-design="field"] .repo-block-tools button {
-  text-transform: uppercase;
-  letter-spacing: .04em
 }
 html[data-design="field"] .repo-card {
   color: var(--fd-text) !important
@@ -735,6 +725,8 @@ html[data-design="field"][data-decor="full"] .repo-footer::after {
 
 /* ================================================================================================ AQUA */
 html[data-design="aqua"] {
+  --sk-title-ink: var(--aq-ink);
+  --sk-title-shadow: 0 1px 0 rgba(255, 255, 255, .8);
   --sk-segs-border: 1px solid #9aa6b2;
   --sk-segs-radius: 8px;
   --sk-seg-ink: var(--aq-ink, #1b2733);
@@ -847,10 +839,6 @@ html[data-design="aqua"] body {
   color: var(--aq-ink);
   font-family: "Segoe UI Variable", "Segoe UI", -apple-system, "Helvetica Neue", Inter, system-ui, sans-serif
 }
-html[data-design="aqua"] .repo-header h1 {
-  color: var(--aq-ink) !important;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, .8)
-}
 html[data-design="aqua"] .repo-header-subtitle,
 html[data-design="aqua"] .repo-language-label {
   color: var(--aq-ink-2) !important
@@ -903,6 +891,7 @@ html[data-design="aqua"] .repo-footer {
    Pages à thème sombre (planificateur, Landing : graphiques conçus pour un fond sombre) : graphite, verre fumé,
    métal brossé assombri ; les graphiques gardent leurs couleurs. Texte clair #e6edf5 / verre #26303b : 11,9:1. */
 html[data-design="aqua"][data-tone="dark"] {
+  --sk-title-shadow: 0 -1px 0 rgba(0, 0, 0, .6);
   --sk-seg-bg: linear-gradient(#4a5663, #323c47 50%, #2a333d 51%, #3b4652);
   --sk-seg-ink: #e6edf5;
   --sk-seg-shadow: 0 -1px 0 rgba(0, 0, 0, .4);
@@ -946,9 +935,6 @@ html[data-design="aqua"][data-tone="dark"] {
   --sk-chart-text: #aebccb;
   --sk-slider-track: linear-gradient(90deg, #10151b, #2a333d 60%, #10151b)
 }
-html[data-design="aqua"][data-tone="dark"] .repo-header h1 {
-  text-shadow: 0 -1px 0 rgba(0, 0, 0, .6)
-}
 html[data-design="aqua"][data-tone="dark"] :is(.repo-menu-button, .repo-language-button),
 html[data-design="aqua"][data-tone="dark"] :is(button.secondary, .repo-header button.headerButton:not(:first-of-type), a.headerButton):not(.repo-block-tools button) {
   background: linear-gradient(#4a5663, #323c47 50%, #2a333d 51%, #3b4652) !important;
@@ -964,6 +950,19 @@ html[data-design="aqua"][data-tone="dark"] .repo-footer {
 /* ================================================================================================ COMPOSANTS COMMUNS
    Écrits une fois pour tous les designs à matières, d'après les jetons --sk-* de chaque design (et de chaque ton) :
    ce qui est propre à un design (plaques, vis, coutures, bande d'unité…) reste dans sa section. */
+/* titre de l'en-tête : encre et ombre (tous les designs à matières), police, largeur, capitales et interlettrage
+   (designs à cadre ; défauts : ceux du navigateur) */
+html[data-skeuo] .repo-header h1 {
+  color: var(--sk-title-ink) !important;
+  text-shadow: var(--sk-title-shadow)
+}
+html[data-skeuo="frame"] .repo-header h1 {
+  font-family: var(--sk-title-family) !important;
+  font-weight: 700;
+  font-stretch: var(--sk-title-stretch, normal);
+  text-transform: var(--sk-title-case, none);
+  letter-spacing: var(--sk-title-spacing, normal)
+}
 html[data-skeuo] .repo-header {
   border-radius: var(--sk-header-radius) !important;
   border: var(--sk-header-border) !important;
@@ -1551,6 +1550,14 @@ html[data-design="aqua"][data-tone="dark"] .repo-block :is(#status, .status) {
    cadre d'aluminium riveté de la planche (border-image), plan d'avion en filigrane, plaques de titre en aluminium
    brossé avec silhouette d'avion, emblème à hélice ailée, barre latérale en cuir marine, icônes « Avionique ». */
 html[data-design="flightlog"] {
+  /* plaque de titre : aluminium brossé, avion à droite, vis rondes */
+  --sk-plate-ink: #1d2733;
+  --sk-plate-text-shadow: 0 1px 0 rgba(255, 255, 255, .7);
+  --sk-plate-padding: 6px 64px 6px 26px;
+  --sk-plate-bg: url("deco/flightlog/plane-plaque.webp?v=a312fb26") right 16px center/44px auto no-repeat, linear-gradient(rgba(255, 255, 255, .35), rgba(0, 0, 0, .12)) 0 0/auto, #c9ccc9 url("textures/brushed-light.webp?v=6bef2cba") center/256px;
+  --sk-plate-shadow: 0 0 0 1px #4a4d4a, inset 0 1px 0 #fff, inset 0 -2px 0 rgba(0, 0, 0, .25), 0 3px 6px rgba(0, 0, 0, .35);
+  --sk-screw: url("deco/field/screw.webp?v=d2011d1d");
+  --sk-plate-screw: 10px;
   --repo-surface: #efe3c4;
   --sk-segs-border: 1px solid #394350;
   --sk-segs-bg: #b9bec5 url("textures/steel.webp?v=1726e89a") center/256px;
@@ -1612,17 +1619,6 @@ html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[d
 html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="5"]::before {
   background-image: url("deco/flightlog/blueprint-concorde-clair.webp?v=40d83d5e")
 }
-html[data-design="flightlog"] :is(.repo-block-titles, .repo-block-heading)>h2 {
-  color: #1d2733 !important;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, .7) !important;
-  padding-right: 84px !important;
-  background: url("deco/flightlog/plane-plaque.webp?v=a312fb26") right 22px center/58px auto no-repeat, linear-gradient(rgba(255, 255, 255, .35), rgba(0, 0, 0, .12)), #c9ccc9 url("textures/brushed-light.webp?v=6bef2cba") center/256px !important;
-  box-shadow: 0 0 0 1px #4a4d4a, inset 0 1px 0 #fff, inset 0 -2px 0 rgba(0, 0, 0, .25), 0 3px 6px rgba(0, 0, 0, .35) !important
-}
-html[data-design="flightlog"] :is(.repo-block-titles, .repo-block-heading)>h2::before,
-html[data-design="flightlog"] :is(.repo-block-titles, .repo-block-heading)>h2::after {
-  background: url("deco/field/screw.webp?v=d2011d1d") center/10px no-repeat !important
-}
 html[data-design="flightlog"] .repo-header-emblem {
   width: 78px;
   height: 56px;
@@ -1682,11 +1678,6 @@ html[data-skeuo] .repo-block-tools {
   position: relative;
   z-index: 2;
   flex: 0 0 auto
-}
-html[data-design="flightlog"] :is(.repo-block-titles, .repo-block-heading)>h2 {
-  padding-right: 64px !important;
-  background-size: 44px auto, auto, 256px !important;
-  background-position: right 16px center, 0 0, center !important
 }
 /* ================================================================================================ CODE, KBD, SAMP DANS LES BLOCS
    Pastilles de code des pages (fond clair par défaut) : accordées à la matière, contraste WCAG ≥ 4,5:1
