@@ -10,6 +10,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+- **Appareil de page** (Cabinet) : entre les blocs 3 et 4 (réglage `deviceAt`), plus entre les deux premiers.
+- **Décors** : `design_deco.js` réorganisé et documenté (familles de décors, formats des tableaux de réglage) ; plus
+  d'objet posé sur une feuille de registre.
+
 ## [4.3.0] — 2026-09-30
 
 Décors des designs à matières : objets, panneaux de fond par thème, feuille de registre et appareil de page ; icônes

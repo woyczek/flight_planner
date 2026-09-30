@@ -53,7 +53,8 @@ commandes : le jeu passe au fond commun avec le glyphe du registre par-dessus (l
 plus et peuvent être retirées ; relancer après). Fond carré (256 × 256 conseillé), transparent autour, sans glyphe ;
 zone du glyphe ≈ le centre (marge de 24–26 % par côté) ; éclairage par le haut (l'ombre du glyphe tombe vers le bas).
 Aqua : fond gris `vierge.gris.webp` teinté à la couleur Aqua choisie sur son disque intérieur (cerclage gris), même bulle
-pour le Centre (glyphe jaune). Réglages (couleurs, ombre, marge, rayon teinté) : tableau `GLYPH` du générateur ; la
+pour le Centre (glyphe jaune). Fond propre au Centre : option `centreBg` du tableau `GLYPH` (Durci : `vierge.rouge.webp`),
+prioritaire sur `vierge.gris.webp`. Réglages (couleurs, ombre, marge, rayon teinté) : tableau `GLYPH` du générateur ; la
 liste des jeux composés est écrite dans `repository_tree` (barre latérale, page Apparence).
 Les retouches manuelles se font directement dans les `.webp`,
 même nom de fichier ; relancer ensuite les deux mêmes commandes.
