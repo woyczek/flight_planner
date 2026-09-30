@@ -147,12 +147,29 @@ Suivi des assets (cahier des charges, consignes de génération, intégration) :
     Banc étendu à 9 pages (72 combinaisons) : aucun écart à chaque étape.
     Règles visant un design : Durci 74 → 39, base Cabinet 52 → 19, Carnet de vol 29 → 20, Aqua 41 → 28, Cabinet 9 → 5 ;
     `!important` 327 → 271.
-- **Reste, à décider** : variantes de boutons (principal, secondaire, discret, danger) — les designs ne les appliquent
-  pas aux mêmes éléments (liens secondaires, boutons de l'en-tête) : les unifier change le rendu ; ce qui reste propre
-  à chaque design est sa matière (bois, cuir, acier, verre, vis, plans, radar). **Suivant** : 3 (couches CSS, pour
-  retirer les `!important`), avec le banc ; 7 au fil des assets livrés.
-  communs), 9 (base Cabinet du Carnet de vol) ; 3 (couches CSS) en dernier, avec le banc de non-régression ; 7 au fil
-  des assets livrés.
+- **Boutons** (décidé le 30 septembre 2026) : convention commune — 1ᵉʳ bouton de l'en-tête principal, les suivants
+  secondaires, liens secondaires et « Ajouter des fichiers » secondaires ; ce qui reste propre à chaque design est sa
+  matière (bois, cuir, acier, verre, vis, plans, radar).
+- **Feuille de registre, suite** : règles communes aux trois designs à feuille par jetons `--sheet-ink`, `--sheet-ink-2`,
+  `--sheet-text`, `--sheet-label-ink`, `--sheet-card-bg`, `--sheet-pin` (carte posée = papier punaisé). Barres de
+  progression et notifications habillées par jetons (`--sk-prog-*`, `--sk-menu-*`), sans `!important`.
+
+### Phase 3 — couches CSS (en cours)
+
+- **Constat (essai sur 9 pages, banc « toutes »)** : dans une couche, un `!important` l'emporte sur celui d'une règle
+  hors couche (ordre inversé). Mettre les styles de page en couche sans retirer leurs `!important` les fait passer
+  devant les designs (660 écarts : cadre des pages, fonds des blocs des CR…). `repository_nav.css` en couche perd face
+  aux styles posés par les scripts (hors couche) : icônes d'outils et bouton Menu cassés. Essai retiré (remise de côté
+  `git stash` « couches CSS »).
+- **Ordre retenu** : (1) retirer les `!important` des styles de page, hors couche, page par page au banc ; (2) mettre
+  le socle en couche avec les styles posés par les scripts, et retirer les `!important` du socle ; (3) styles de page
+  en couche ; (4) retirer les `!important` des designs.
+- **Fait (1, première passe)** : banc par page (`?pages=…`, sélecteurs propres des pages relevés) et design
+  « standard » ; `tools/strip_page_important.py` (épargne `@media`, `display: none`, règles des designs, `garder`) ;
+  52 `!important` retirés (studio, générateur, planificateur de performances, planning ODV, Landing) : aucun écart.
+  Restent côté pages : `mission_core/core.css` (24), `maintenance.css` (2), Paramètres (3) — ils l'emportent sur le
+  socle (fonds et boutons des CR, boutons des tableaux en design standard) : ils partiront à l'étape (2).
+- **Suivant** : (2) socle en couche ; 7 au fil des assets livrés.
 
 ## Utiliser la boîte à outils (D)
 

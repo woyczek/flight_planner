@@ -14,6 +14,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 > est livrée en 4.3.1 ; la phase 2 (supprimer les exceptions par design, assets à fournir) pourra encore modifier
 > légèrement l'apparence des designs à matières. Plan : [docs/REFACTORING_TOOLKIT.md](docs/REFACTORING_TOOLKIT.md).
 
+- **Designs à matières — barres de progression et notifications** : `<progress>` (tâches longues, jauges des pages)
+  dans la matière du design (piste creusée ; laiton de Cabinet, encre du Carnet de vol, voyants verts de Durci, gel rayé
+  d'Aqua), angles vifs, balayage quand l'avancement est inconnu, sans mouvement si le système le demande ;
+  notifications flottantes dans la matière des menus (jetons `--sk-prog-*`, `--sk-menu-*`).
+- **Registre — feuille de registre** : carte posée sur la feuille (détail d'une mission) en papier punaisé à encre
+  foncée dans les trois designs à feuille (Durci : plus de plaque d'acier illisible) ; règles communes par jetons
+  `--sheet-*`. Bouton ☰ centré dans tous les designs. Studio cartographique : « Enregistrer dans le dossier » affiche
+  toujours son résultat (succès, échec et cause). Fenêtres du Mission Core : texture du design rétablie.
+- **Toolkit — phase 3 (couches CSS), début** : banc de non-régression par page et en design « standard » ; 52
+  `!important` retirés des styles de 5 pages (banc : aucun écart) ; `tools/strip_page_important.py`. Les pages COMBAT,
+  copiées pendant l'essai de couches, sont de nouveau habillées par les designs.
 - **Missions — identifiants liés** : changer l'identifiant d'une mission d'opération (générateur : champ quitté, ou
   identifiant hors format corrigé à l'enregistrement) propose une migration globale — toute l'opération si la base
   change (`BFM-001C` → `A-001C` migre `BFM-001` → `A-001` : missions, organisation, participants de l'exercice, noms
