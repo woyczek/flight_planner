@@ -6,7 +6,8 @@
      compare un état ultérieur à cette référence (propriété par propriété). Sert à refactorer designs_skeuo.css sans
      changement visuel involontaire (docs/REFACTORING_TOOLKIT.md).
      Pages : « témoins » (9 pages représentatives, ~6 min) ou « toutes » (les pages de l'arborescence, repository_tree,
-     ~35 min) ; designs à cocher. Une référence par jeu de pages, gardée dans ce navigateur (IndexedDB).
+     ~35 min), ou « liste » (?pages=a.html,b.html dans l'adresse : quelques secondes par page) ; designs à cocher,
+     dont « standard » (sans design à matières : styles des pages seuls). Une référence par jeu de pages, gardée dans ce navigateur (IndexedDB).
      Usage : servir le dépôt (python -m http.server 8767 --bind 127.0.0.1, à la racine), ouvrir
      http://127.0.0.1:8767/tools/skeuo_regression.html ; « Référence » avant la modification, « Comparer » après
      (versions de cache à jour : python tools/bump_versions.py). Le design choisi dans la suite est modifié pendant les
@@ -42,7 +43,10 @@ const TOUTES = (() => {
   walk(window.REPOSITORY_TREE || {});
   return [...out].sort();
 })();
-const DESIGNS = ['cabinet', 'flightlog', 'field', 'aqua'];
+// designs relevés ; « standard » : sans design à matières (les styles des pages seuls, sans habillage)
+const DESIGNS = ['cabinet', 'flightlog', 'field', 'aqua', 'standard'];
+// pages choisies par l'adresse (?pages=apps/a.html,apps/b.html) : jeu « liste », référence propre à cette liste
+const LISTE = (new URLSearchParams(location.search).get('pages') || '').split(',').map(s => s.trim()).filter(Boolean);
 // Composants relevés (deux premiers éléments de chaque sélecteur, et leurs ::before / ::after)
 const SEL = ['html', 'body', '.repo-header', '.repo-header h1', '.repo-header-subtitle', '.repo-header-emblem', '.repo-menu-button',
   '.repo-language-button', '.repo-menu', '.repo-block', '.repo-block .repo-block-heading>h2,.repo-block .repo-block-titles>h2',
@@ -68,6 +72,10 @@ const PROPS = ['background-image', 'background-color', 'background-size', 'backg
   'backdrop-filter', 'content', 'inset'];
 const $ = id => document.getElementById(id), log = s => { $('log').textContent += s + '\n'; };
 $('designs').innerHTML = DESIGNS.map(d => `<label><input type="checkbox" data-d="${d}" checked> ${d}</label>`).join(' ');
+if (LISTE.length) {
+  $('set').insertAdjacentHTML('beforeend', `<option value="liste:${LISTE.join(',')}">liste (${LISTE.length})</option>`);
+  $('set').value = `liste:${LISTE.join(',')}`;
+}
 $('set').options[1].textContent = `toutes (${TOUTES.length})`;
 
 // ---- références : IndexedDB (une par jeu de pages) ; ancienne référence localStorage reprise pour les témoins
@@ -90,10 +98,36 @@ const loadRef = async set => {
 const saveRef = (set, r) => idb('readwrite', s => s.put(r, set));
 
 /** Styles calculés des composants d'un document (valeurs sans version de cache). */
+/** Sélecteurs des styles propres de la page (blocs <style> de la page, mission_core/core.css, maintenance.css) : relevés
+ *  en plus des composants communs en mode « liste » (retrait des !important des pages). */
+function pageSelectors(d) {
+  const out = new Set();
+  const walk = rules => {
+    for (const r of rules) {
+      if (r.selectorText) r.selectorText.split(/,(?![^(]*\))/).map(s => s.trim()).filter(s => s && !/^html\[data-/.test(s) && !/::?-webkit-|::?-moz-/.test(s)).forEach(s => out.add(s));
+      else if (r.cssRules) walk(r.cssRules);
+    }
+  };
+  for (const sh of d.styleSheets) {
+    const own = sh.ownerNode?.tagName === 'STYLE' && !sh.ownerNode.dataset.layer && sh.ownerNode.id !== 'repoLayers';
+    if (!own && !/mission_core\/core\.css|maintenance\.css/.test(sh.href || '')) continue;
+    try {
+      walk(sh.cssRules);
+    } catch {
+      /* feuille illisible */ }
+  }
+  return [...out];
+}
 function snap(d) {
   const w = d.defaultView, out = {};
-  for (const s of SEL) {
-    [...d.querySelectorAll(s)].slice(0, 2).forEach((el, i) => {
+  const sels = $('set').value.startsWith('liste:') ? [...new Set([...SEL, ...pageSelectors(d)])] : SEL;
+  for (const s of sels) {
+    let els = [];
+    try {
+      els = [...d.querySelectorAll(s)].slice(0, 2);
+    } catch {
+      /* sélecteur non interrogeable (pseudo-classe d'état…) */ }
+    els.forEach((el, i) => {
       for (const pe of ['', '::before', '::after']) {
         const cs = w.getComputedStyle(el, pe || null);
         if (pe && (cs.content === 'none' || cs.content === 'normal')) continue;
@@ -107,7 +141,7 @@ function snap(d) {
 }
 /** Charge chaque page dans chaque design et ton cochés ; visit(clé, relevé) pour chaque combinaison. */
 async function sweep(visit) {
-  const pages = $('set').value === 'toutes' ? TOUTES : TEMOINS;
+  const pages = $('set').value === 'toutes' ? TOUTES : $('set').value.startsWith('liste:') ? LISTE : TEMOINS;
   const tones = ['light', 'dark'].filter(t => $(t).checked);
   const designs = DESIGNS.filter(d => document.querySelector(`[data-d="${d}"]`).checked);
   const keep = localStorage.getItem('repositoryDesign');

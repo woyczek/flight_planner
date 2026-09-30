@@ -1,14 +1,15 @@
-"""Couches CSS d'une page (docs/REFACTORING_TOOLKIT.md, chantier 3) : ordre base < page < designs, pour que les designs
-à matières l'emportent sans !important.
+"""Couches CSS d'une page (docs/REFACTORING_TOOLKIT.md, chantier 3) : ordre lib < page < hors couche (framework,
+designs, styles posés par les scripts), pour que les designs à matières l'emportent sans !important.
 
 Usage (à la racine du dépôt) :
     python tools/layer_pages.py apps/…/page.html [autres pages…]
     python tools/layer_pages.py --check apps/…/page.html   → montre ce qui serait fait, sans écrire
 
 Pour chaque page :
-- en tête du <head> : <style id="repoLayers">@layer base, page; et les feuilles partagées importées dans leur couche
-  (@import url(…) layer(base|page)) à la place de leurs <link> : repository_nav.css et bibliothèques → base ;
-  mission_core/core.css, maintenance.css → page ;
+- en tête du <head> : <style id="repoLayers">@layer lib, page; et les feuilles de page importées dans leur couche
+  (@import url(…) layer(lib|page)) à la place de leurs <link> : bibliothèques (MapLibre) → lib ; mission_core/core.css,
+  maintenance.css → page ; repository_nav.css reste hors couche (composants du framework : en couche, ils perdraient
+  face aux styles posés par les scripts, qui sont hors couche) ;
 - chaque <style> de la page : ses règles dans @layer page { … }, sauf les règles propres aux designs (sélecteur
   html[data-skeuo…], html[data-design…], html[data-tone…], html[data-decor…]) qui restent hors couche (comme les
   feuilles des designs et les styles posés par les scripts) : elles gardent la main sur la page.
@@ -18,9 +19,9 @@ hors couche. Vérification : tools/skeuo_regression.html (référence avant, com
 import io, os, re, sys
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-COUCHE = {  # feuille partagée (fin du chemin) → couche
-    'shared/repository_nav.css': 'base',
-    'shared/carto/maplibre-gl.css': 'base',
+COUCHE = {  # feuille partagée (fin du chemin) → couche ; les autres (repository_nav.css : composants du framework,
+    # barre latérale, outils des blocs…) restent hors couche, comme les designs et les styles posés par les scripts
+    'shared/carto/maplibre-gl.css': 'lib',
     'shared/mission_core/core.css': 'page',
     'shared/maintenance.css': 'page',
 }
@@ -133,7 +134,7 @@ def migrer(path, check=False):
             out += f'<style{attrs if not page.strip() else ""} data-layer="designs">\n{design}\n</style>'
         return out
     t = re.sub(r'<style([^>]*)>(.*?)</style>', st, t, flags=re.S)
-    tete = '<style id="repoLayers">\n@layer base, page;\n' + '\n'.join(imports) + '\n</style>\n'
+    tete = '<style id="repoLayers">\n@layer lib, page;\n' + '\n'.join(imports) + '\n</style>\n'
     i = t.index('<head>') + len('<head>')
     j = t.find('<meta name="viewport"', i)
     j = t.index('>', j) + 1 if j >= 0 else i
