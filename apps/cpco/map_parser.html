@@ -302,11 +302,11 @@ dialog#previewDialog::backdrop {
   }
 }
 header {
-  margin: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  padding: 10px 20px !important
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 10px 20px
 }
 header .header-row {
   display: flex;
@@ -330,9 +330,9 @@ header .headerButton {
   white-space: nowrap
 }
 body {
-  max-width: none !important;
-  margin: 0 !important;
-  padding: 0 !important
+  max-width: none;
+  margin: 0;
+  padding: 0
 }
 main {
   max-width: 1500px;
@@ -472,7 +472,7 @@ body.previewWindow .profileLayout {
   display: block
 }
 body.previewWindow .profilePreview {
-  position: fixed !important;
+  position: fixed;
   inset: 0;
   margin: 0;
   border-radius: 0;
@@ -481,11 +481,11 @@ body.previewWindow .profilePreview {
 }
 body.previewWindow #osmLivePreview {
   flex: 1;
-  height: auto !important
+  height: auto
 }
 body.previewWindow #generalPreview {
   flex: 1;
-  max-height: none !important
+  max-height: none
 }
 .profileLeft,
 .profileLeft * {
@@ -530,7 +530,7 @@ body.previewWindow .profilePreview>:not(#osmLivePreview):not(#generalPreview):no
   display: none !important
 }
 .profilePreview.popped {
-  position: fixed !important;
+  position: fixed;
   inset: 56px 2vw 2vh 2vw;
   z-index: 1500;
   background: #fff;
@@ -543,11 +543,11 @@ body.previewWindow .profilePreview>:not(#osmLivePreview):not(#generalPreview):no
 }
 .profilePreview.popped #osmLivePreview {
   flex: 1;
-  height: auto !important
+  height: auto
 }
 .profilePreview.popped #generalPreview {
   flex: 1;
-  max-height: none !important
+  max-height: none
 }
 .profilePreview {
   position: sticky;
@@ -995,13 +995,13 @@ body.previewWindow .profilePreview>:not(#osmLivePreview):not(#generalPreview):no
   font-weight: 600
 }
 .routeBar select {
-  width: auto !important;
-  min-width: 0 !important;
+  width: auto;
+  min-width: 0;
   max-width: 14em
 }
 .routeBar #vprofCruise {
-  width: 6.5em !important;
-  min-width: 0 !important
+  width: 6.5em;
+  min-width: 0
 }
 #routeInfo:empty {
   display: none
@@ -1039,8 +1039,8 @@ body.previewWindow .profilePreview>:not(#osmLivePreview):not(#generalPreview):no
   margin: 0 0 8px
 }
 .routeMapBar select {
-  width: auto !important;
-  min-width: 0 !important;
+  width: auto;
+  min-width: 0;
   max-width: 22em
 }
 .routeMap #osmLivePreview {
@@ -1090,7 +1090,7 @@ body.previewWindow .profilePreview>:not(#osmLivePreview):not(#generalPreview):no
   font-weight: 650
 }
 .profileLayout {
-  grid-template-columns: minmax(0, 1fr) !important
+  grid-template-columns: minmax(0, 1fr)
 }
 </style>
 </head>

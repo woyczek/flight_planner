@@ -152,7 +152,7 @@ async function sweep(visit) {
       $('state').textContent = `${des} · ${p} (${++n}/${designs.length * pages.length})`;
       const f = document.createElement('iframe');
       document.body.append(f);
-      f.src = '/' + p;
+      f.src = `/${p}${p.includes('?') ? '&' : '?'}_=${Date.now()}`; // adresse unique : jamais la page en cache
       await new Promise(r => { f.onload = r; setTimeout(r, 8000); });
       await new Promise(r => setTimeout(r, 1500)); // décors et blocs posés après le chargement
       // transitions et animations coupées : relevé de l'état final, pas d'une étape de transition

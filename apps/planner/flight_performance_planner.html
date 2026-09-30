@@ -374,7 +374,7 @@ td:first-child {
   width: 100%
 }
 .editorGroup {
-  grid-column: auto !important;
+  grid-column: auto;
   border: 1px solid var(--b);
   border-radius: 8px;
   padding: 10px;
@@ -385,7 +385,7 @@ td:first-child {
   margin: 0 0 8px
 }
 .editorGroup .fields {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)) !important
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr))
 }
 .editorGroup .wide {
   grid-column: 1 / -1
@@ -398,7 +398,7 @@ td:first-child {
   max-width: 100%
 }
 .editorGroupSingle .fields {
-  grid-template-columns: 1fr !important
+  grid-template-columns: 1fr
 }
 .editorGroupSingle textarea {
   white-space: pre-wrap;
@@ -406,7 +406,7 @@ td:first-child {
 }
 #profileEditor {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: start
 }
 .card {
@@ -443,11 +443,11 @@ td:first-child {
 }
 [data-block-id="fuel-plan"] {
   grid-area: fuel;
-  grid-column: auto !important
+  grid-column: auto
 }
 .perf-side {
   grid-area: result;
-  grid-column: auto !important;
+  grid-column: auto;
   position: relative;
   min-width: 0
 }
@@ -481,7 +481,7 @@ td:first-child {
 }
 [data-block-id="flight-regimes"] {
   grid-area: regimes;
-  grid-column: auto !important
+  grid-column: auto
 }
 [data-block-id="engine-performance"] {
   grid-area: engine
@@ -872,8 +872,8 @@ abbr[title] {
 }
 /* cinq cadrans : taille bornée par la largeur de la colonne et par la hauteur de la fenêtre (tout reste visible) */
 .instr-col .fp-gauge svg {
-  width: 100% !important;
-  height: auto !important;
+  width: 100%;
+  height: auto;
   max-width: min(210px, calc((100vh - 150px) / 5 - 34px));
   aspect-ratio: 1;
   margin: 0 auto

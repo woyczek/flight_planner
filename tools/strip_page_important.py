@@ -11,7 +11,8 @@ Usage (à la racine du dépôt) :
 
 Concerné : les blocs <style> de la page (ou la feuille .css donnée), sauf les règles propres aux designs (sélecteur
 html[data-skeuo…], html[data-design…], html[data-tone…], html[data-decor…] : côté habillage, traitées avec les designs)
-et les !important précédés d'un commentaire « garder » (/* garder : … */ sur la déclaration).
+les blocs @media / @supports (non vérifiés par le banc), les display: none (masquage) et les !important suivis d'un
+commentaire « garder » (/* garder : … */).
 """
 import io, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -19,6 +20,7 @@ from layer_pages import blocs, est_design
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 IMP = re.compile(r'\s*!important(?!\s*;?\s*/\*\s*garder)')
+NONE = re.compile(r'display\s*:\s*none\s*$')
 
 
 def strip_css(css):
@@ -26,12 +28,15 @@ def strip_css(css):
     out, n = [], 0
     for b in blocs(css):
         d = est_design(b)
-        if d:   # règle des designs (ou @media de règles des designs) : inchangée
+        # inchangés : règles des designs ; blocs @media / @supports (largeurs et impression que le banc, relevé à
+        # 1500 px à l'écran, ne vérifie pas)
+        if d or b.lstrip().startswith('@'):
             out.append(b)
             continue
-        c = len(IMP.findall(b))
+        # display: none reste !important (utilitaire de masquage : doit l'emporter sur tout display)
+        c = len([m for m in IMP.finditer(b) if not NONE.search(b[:m.start()].rsplit(';', 1)[-1].rsplit('{', 1)[-1])])
         n += c
-        out.append(IMP.sub('', b) if c else b)
+        out.append(IMP.sub(lambda m: m.group(0) if NONE.search(m.string[:m.start()].rsplit(';', 1)[-1].rsplit('{', 1)[-1]) else '', b) if c else b)
     return ''.join(out), n
 
 
