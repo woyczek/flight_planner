@@ -2181,6 +2181,32 @@ html[data-design="field"] .repo-has-sheet td :is(strong, b, em) {
   color: #2b2a20 !important;
   text-shadow: none !important
 }
+/* Durci : carte posée sur la feuille du carnet (détail d'une mission du registre…) : papier punaisé à encre foncée
+   (comme les cartes de Cabinet), et non plaque d'acier — le bloc est un carnet */
+html[data-design="field"] .repo-has-sheet .repo-card {
+  --sk-card-bg: #efe7d0 url("deco/field/sheet-paper.webp?v=ee3f07db") left top/480px;
+  --sk-card-border: 1px solid rgba(74, 70, 52, .35);
+  --sk-card-radius: 2px;
+  --sk-card-shadow: 0 2px 5px rgba(0, 0, 0, .35), 0 0 0 1px rgba(255, 255, 255, .25) inset;
+  --sk-corner-screw: url("deco/cabinet/tack.webp?v=d13b9116");
+  --sk-card-screw-size: 18px;
+  --sk-card-title-ink: #2b2a20;
+  --sk-card-sub-ink: #4a4634;
+  --sk-ink: #2b2a20;
+  --sk-ink-2: #4a4634;
+  --sk-label-ink: #2b2a20;
+  --muted: #4a4634;
+  color: #2b2a20 !important;
+  text-shadow: none !important
+}
+html[data-design="field"] .repo-has-sheet .repo-card :is(p, span, div, li, small, .small, .muted, .hint, h3, h4, summary, strong, b) {
+  text-shadow: none !important
+}
+/* textes que Durci éclaircit dans ses blocs sombres (gras, définitions, résumés…) : encre foncée sur le papier ;
+   en-têtes de tableau et boutons gardent leur fond sombre et leur encre claire */
+html[data-design="field"] .repo-has-sheet .repo-card :is(strong, b, em, dt, dd, summary, h3, h4, legend, label):not(th, th *, button, button *, .badge, .badge *) {
+  color: #2b2a20 !important
+}
 @media print {
   .repo-deco-sheet {
     display: none
