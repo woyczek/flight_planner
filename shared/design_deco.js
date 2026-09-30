@@ -162,7 +162,8 @@
 
   // ------------------------------------------------------------------ feuille de registre (SHEETS)
   // Blocs de tableau des registres et journaux (motif sur le titre, l'icône ou l'identifiant) ; dessin et mise en page :
-  // designs_skeuo.css (.repo-deco-sheet). Ton clair seulement (papier clair sous un texte foncé).
+  // designs_skeuo.css (.repo-deco-sheet ; morceaux découpés par tools/cut_register_sheet.py). Ton clair seulement
+  // (papier clair sous un texte foncé).
   const SHEETS = { cabinet: /registre|registry|ledger|journal|missions?\s*\(|choisir une mission|choose a mission/ };
 
   /** Texte d'identification d'un bloc : titre, icône, identifiant (en minuscules). */
@@ -179,7 +180,8 @@
       const el = document.createElement('div');
       el.className = 'repo-deco-sheet';
       el.setAttribute('aria-hidden', 'true');
-      el.innerHTML = '<i class="sh-paper"></i><i class="sh-frame"></i>';   // papier (dans le cadre), cadre et en-tête
+      // papier (dans le cadre), tranches répétées (arrêtées aux coins), puis coins, ficelle et en-tête
+      el.innerHTML = '<i class="sh-paper"></i><i class="sh-top"></i><i class="sh-bot"></i><i class="sh-left"></i><i class="sh-right"></i><i class="sh-frame"></i>';
       b.classList.add('repo-has-sheet', 'repo-has-bg');
       b.prepend(el);
     });

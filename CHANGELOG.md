@@ -25,6 +25,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   zones de dépôt, bandeaux, champs, boutons, liens-boutons, barre latérale, pied de page, barre d'action, outils de bloc
   écrits une seule fois ; règles propres aux CR, à l'éditeur de mission, au planificateur et à l'Apparence rangées dans
   leurs feuilles. Rendu identique (banc `tools/skeuo_regression.html`), `!important` 551 → 328.
+- **Cabinet** : plus de rose des vents en filigrane des blocs (les panneaux les habillent) ; feuille de registre redécoupée
+  (pages qui dépassent du livre en haut à gauche, tranches raccordables arrêtées aux coins, coins fondus, N° et tampon
+  « Diffusion restreinte » à droite, ficelle et œillets posés sur le dos).
+- **Landing Performance** (designs à cadre) : barre d'analyse de nouveau fixée en bas de page (les designs forçaient la
+  position des blocs : barre décalée à droite dans la page).
 - **Durci** : vis cruciformes découpées dans la planche enfin appliquées (règle neutralisée par un commentaire mal fermé).
 - **Centre** : fond des icônes par convention de nom (`vierge.rouge.webp`, cuivre, pour Cabinet, Carnet de vol et Durci ;
   à défaut `vierge.gris.webp`) ; option `centreBg` du générateur retirée.

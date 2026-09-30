@@ -44,6 +44,7 @@ Pages HTML à ouvrir via le petit serveur d'écriture : `python tools/save_textu
 | `textures_from_photos.html` | Textures photographiques d'après des matières CC0 d'ambientCG (JPG `*_color` / `*_normal` du dossier `--src`). |
 | `icons_from_sheets.html` | Découpe des icônes et décors dans les planches de maquette (Cabinet, Durci, Aqua, Carnet de vol). |
 | `icons_skeuo_generator.html` | Fabrique, dans le style des planches, les icônes du registre qui n'y figurent pas. |
+| `cut_register_sheet.py` | Découpe la feuille de registre de Cabinet (dossier « Aéronautique navale ») en morceaux `shared/deco/cabinet/sheet-*.webp` : coins aux bords intérieurs fondus, tranches raccordables, en-tête en deux parties, papier de fond. Planche source non versionnée (voir l'en-tête du script) ; ImageMagick 7. |
 | `gauges_from_sheets.html` | Découpe des boîtiers de cadrans (laiton → Cabinet, métal sombre → Carnet de vol, plaque sombre → Durci, chrome → Aqua). |
 
 Après une découpe ou une retouche d'icônes : `python tools/build_skeuo_icons_css.py` puis `python tools/bump_versions.py`.
