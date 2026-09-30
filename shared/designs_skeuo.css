@@ -1909,6 +1909,12 @@ html .repo-block.repo-has-bg:has(>.repo-deco-panel) table:not(.report table) {
 /* Cabinet : dossier « Aéronautique navale » (logos et « Marine nationale » à
    gauche, N° et tampon « Diffusion restreinte » à droite, ficelle et œillets sur le dos) */
 html[data-design-base="cabinet"] {
+  --sheet-ink: var(--cab-ink);
+  --sheet-ink-2: var(--cab-ink-2);
+  --sheet-text: var(--cab-ink);
+  --sheet-label-ink: var(--cab-navy);
+  --sheet-card-bg: #f6ecd2 url("deco/cabinet/sheet-paper.webp?v=03c9356f") left top/480px;
+  --sheet-pin: var(--cab-screw);
   --sheet-paper: url("deco/cabinet/sheet-paper.webp?v=03c9356f");
   --sheet-top: url("deco/cabinet/sheet-top.webp?v=f536decb");
   --sheet-bot: url("deco/cabinet/sheet-bot.webp?v=59eb8c03");
@@ -1971,6 +1977,7 @@ html[data-design-base="cabinet"] {
 /* Carnet de vol : carnet de vol toilé (dos à gauche, coin corné, pages empilées à droite), en-tête imprimé (Marianne,
    ministère, « Carnet de vol »), cachet « Autorisation de transit » à droite, ficelle sur le dos */
 html[data-design="flightlog"] {
+  --sheet-card-bg: #f4ecd6 url("deco/flightlog/sheet-paper.webp?v=afe3e6f1") left top/480px;
   --sheet-paper: url("deco/flightlog/sheet-paper.webp?v=afe3e6f1");
   --sheet-top: url("deco/flightlog/sheet-top.webp?v=a7c6bbf9");
   --sheet-bot: url("deco/flightlog/sheet-bot.webp?v=d4a1a5e2");
@@ -2032,6 +2039,10 @@ html[data-design="flightlog"] {
 /* Durci : carnet de terrain dans sa pochette olive à fermeture éclair, crayon dans son étui élastique sur le bord
    gauche ; pas d'en-tête */
 html[data-design="field"] {
+  --sheet-ink: #2b2a20;
+  --sheet-ink-2: #4a4634;
+  --sheet-card-bg: #efe7d0 url("deco/field/sheet-paper.webp?v=ee3f07db") left top/480px;
+  --sheet-pin: url("deco/cabinet/tack.webp?v=d13b9116");
   --sheet-paper: url("deco/field/sheet-paper.webp?v=ee3f07db");
   --sheet-top: url("deco/field/sheet-top.webp?v=28a0dd88");
   --sheet-bot: url("deco/field/sheet-bot.webp?v=5aabc68d");
@@ -2166,46 +2177,53 @@ html body .repo-block.repo-has-sheet {
   padding-bottom: 3px;
   line-height: 1.25
 }
-/* Durci : blocs sombres à texte clair ; sur le papier du carnet, encre foncée */
-html[data-design="field"] .repo-block.repo-has-sheet {
-  --sk-label-ink: #2b2a20;
-  color: #2b2a20
+/* sur la feuille de registre (papier clair), dans tous les designs à feuille : encre foncée de la feuille (--sheet-ink,
+   --sheet-ink-2 ; texte courant --sheet-text, libellés --sheet-label-ink, facultatifs) — Durci, dont les blocs sont sombres à texte clair, y écrit comme sur du papier */
+html[data-skeuo] .repo-block.repo-has-sheet {
+  --sk-label-ink: var(--sheet-label-ink, var(--sheet-ink));
+  color: var(--sheet-ink)
 }
-html[data-design="field"] .repo-has-sheet :is(.repo-block-subtitle, p, .muted, .small, .hint, td) {
-  color: #4a4634 !important;
+html[data-skeuo] .repo-has-sheet :is(p, td) {
+  color: var(--sheet-text, var(--sheet-ink-2)) !important;
   text-shadow: none !important
 }
-/* textes que Durci éclaircit dans ses blocs sombres (gras, italique, listes…) : encre foncée sur le papier */
-html[data-design="field"] .repo-has-sheet .repo-block-body :is(strong, b, em, li, summary, dt, dd),
-html[data-design="field"] .repo-has-sheet td :is(strong, b, em) {
-  color: #2b2a20 !important;
+html[data-skeuo] .repo-has-sheet :is(.repo-block-subtitle, .repo-card-subtitle, .muted, .small, .hint) {
+  color: var(--sheet-ink-2) !important;
   text-shadow: none !important
 }
-/* Durci : carte posée sur la feuille du carnet (détail d'une mission du registre…) : papier punaisé à encre foncée
-   (comme les cartes de Cabinet), et non plaque d'acier — le bloc est un carnet */
-html[data-design="field"] .repo-has-sheet .repo-card {
-  --sk-card-bg: #efe7d0 url("deco/field/sheet-paper.webp?v=ee3f07db") left top/480px;
-  --sk-card-border: 1px solid rgba(74, 70, 52, .35);
+/* textes que les designs sombres éclaircissent (gras, italique, listes…) : encre foncée sur le papier */
+html[data-skeuo] .repo-has-sheet .repo-block-body :is(strong, b, em, li, summary, dt, dd),
+html[data-skeuo] .repo-has-sheet td :is(strong, b, em) {
+  color: var(--sheet-ink) !important;
+  text-shadow: none !important
+}
+/* carte posée sur la feuille (détail d'une mission du registre…) : papier punaisé à encre foncée, le bloc restant un
+   carnet ou un dossier (et non une plaque ou un panneau) ; papier et punaise : jetons --sheet-card-bg, --sheet-pin */
+html[data-skeuo] .repo-has-sheet .repo-card {
+  --sk-card-bg: var(--sheet-card-bg);
+  --sk-card-border: 1px solid color-mix(in srgb, var(--sheet-ink-2) 40%, transparent);
   --sk-card-radius: 2px;
   --sk-card-shadow: 0 2px 5px rgba(0, 0, 0, .35), 0 0 0 1px rgba(255, 255, 255, .25) inset;
-  --sk-corner-screw: url("deco/cabinet/tack.webp?v=d13b9116");
+  --sk-corner-screw: var(--sheet-pin);
   --sk-card-screw-size: 18px;
-  --sk-card-title-ink: #2b2a20;
-  --sk-card-sub-ink: #4a4634;
-  --sk-ink: #2b2a20;
-  --sk-ink-2: #4a4634;
-  --sk-label-ink: #2b2a20;
-  --muted: #4a4634;
-  color: #2b2a20 !important;
+  --sk-card-title-ink: var(--sheet-label-ink, var(--sheet-ink));
+  --sk-card-sub-ink: var(--sheet-ink-2);
+  --sk-ink: var(--sheet-ink);
+  --sk-ink-2: var(--sheet-ink-2);
+  --sk-label-ink: var(--sheet-label-ink, var(--sheet-ink));
+  --muted: var(--sheet-ink-2);
+  color: var(--sheet-ink) !important;
   text-shadow: none !important
 }
-html[data-design="field"] .repo-has-sheet .repo-card :is(p, span, div, li, small, .small, .muted, .hint, h3, h4, summary, strong, b) {
+html[data-skeuo] .repo-has-sheet .repo-card :is(p, span, div, li, small, .small, .muted, .hint, h3, h4, summary, strong, b):not(button, button *) {
   text-shadow: none !important
 }
-/* textes que Durci éclaircit dans ses blocs sombres (gras, définitions, résumés…) : encre foncée sur le papier ;
-   en-têtes de tableau et boutons gardent leur fond sombre et leur encre claire */
-html[data-design="field"] .repo-has-sheet .repo-card :is(strong, b, em, dt, dd, summary, h3, h4, legend, label):not(th, th *, button, button *, .badge, .badge *) {
-  color: #2b2a20 !important
+/* en-têtes de tableau et boutons gardent leur fond sombre et leur encre claire */
+html[data-skeuo] .repo-has-sheet .repo-card :is(strong, b, em, dt, dd, summary):not(th, th *, button, button *, .badge, .badge *) {
+  color: var(--sheet-ink) !important
+}
+html[data-skeuo] .repo-has-sheet .repo-card :is(h3, h4, legend, label):not(th, th *, button, button *, .badge, .badge *) {
+  color: var(--sheet-label-ink, var(--sheet-ink)) !important
 }
 @media print {
   .repo-deco-sheet {
