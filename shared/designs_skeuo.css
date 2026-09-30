@@ -29,6 +29,14 @@
 
 /* ================================================================================================ CABINET */
 html[data-design-base="cabinet"] {
+  --sk-emblem-w: 56px;
+  --sk-emblem-h: 56px;
+  --sk-emblem-margin: 0 6px 0 -2px;
+  --sk-emblem-filter: drop-shadow(0 5px 6px rgba(0, 0, 0, .55));
+  --sk-pick-shadow: 0 0 0 1.5px var(--cab-brass), 0 2px 3px rgba(0, 0, 0, .35);
+  --sk-pick-family: "Palatino Linotype", Georgia, serif;
+  --sk-chart-base: #b8963e;
+  --sk-chart-font: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
   --sk-label-family: "Palatino Linotype", Georgia, serif;
   --sk-notice-outline: 1px solid color-mix(in srgb, var(--cab-rule) 55%, transparent);
   --sk-notice-outline-offset: -5px;
@@ -160,7 +168,7 @@ html[data-design-base="cabinet"] {
   --sk-sidenav-border: 3px solid var(--cab-brass-lo);
   --sk-sidenav-ink: var(--cab-cream);
   --sk-footer-margin: 14px 0 0;
-  --sk-footer-padding: 8px 14px;
+  --sk-footer-padding: 8px 14px 8px 34px;
   --sk-footer-bg: #efe3c4 url("textures/parchment.webp?v=c0677c03") center/300px;
   --sk-footer-ink: var(--cab-ink);
   --sk-abar-bg: linear-gradient(color-mix(in srgb, var(--cab-bar) 45%, transparent), color-mix(in srgb, var(--cab-bar) 45%, transparent)), #0f2140 url("textures/leather-navy.webp?v=1bacc4e6") center/256px;
@@ -246,14 +254,15 @@ html[data-design-base="cabinet"] .repo-header-subtitle {
   font-style: italic;
   color: color-mix(in srgb, var(--cab-cream) 85%, transparent) !important
 }
-html[data-design-base="cabinet"] .repo-header-emblem {
-  width: 56px;
-  height: 56px;
-  margin: 0 6px 0 -2px;
+/* emblème de l'en-tête (designs à cadre) : taille, marges et ombre par jetons (--sk-emblem-*) */
+html[data-skeuo="frame"] .repo-header-emblem {
+  width: var(--sk-emblem-w);
+  height: var(--sk-emblem-h);
+  margin: var(--sk-emblem-margin, 0);
   flex: none;
-  filter: drop-shadow(0 5px 6px rgba(0, 0, 0, .55))
+  filter: var(--sk-emblem-filter, none)
 }
-html[data-design-base="cabinet"] .repo-header-emblem svg {
+html[data-skeuo="frame"] .repo-header-emblem svg {
   width: 100%;
   height: 100%;
   display: block
@@ -443,6 +452,14 @@ html[data-design-base="cabinet"] .repo-header button.headerButton {
 
 /* ================================================================================================ DURCI */
 html[data-design="field"] {
+  --sk-emblem-w: 84px;
+  --sk-emblem-h: 32px;
+  --sk-emblem-margin: 0 4px 0 0;
+  --sk-emblem-filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .6));
+  --sk-pick-shadow: inset 0 1px 0 #fff, 0 0 0 1px #000;
+  --sk-chart-base: #8d9478;
+  --sk-chart-font: Bahnschrift, "Arial Narrow", sans-serif;
+  --sk-chart-stretch: condensed;
   --sk-notice-shadow: inset 0 2px 6px #000, 0 0 0 2px #3b4032;
   --sk-sidenav-shadow: inset -1px 0 0 rgba(220, 230, 190, .18), inset 0 0 18px rgba(0, 0, 0, .55);
   --sk-title-family: Bahnschrift, "Arial Narrow", Impact, sans-serif;
@@ -620,18 +637,6 @@ html[data-design="field"][data-decor="full"] .repo-header::before {
   pointer-events: none;
   background: var(--fd-screw) 8px 8px/12px no-repeat, var(--fd-screw) right 8px top 8px/12px no-repeat, var(--fd-screw) 8px calc(100% - 8px)/12px no-repeat, var(--fd-screw) right 8px bottom 8px/12px no-repeat
 }
-html[data-design="field"] .repo-header-emblem {
-  width: 84px;
-  height: 32px;
-  flex: none;
-  margin-right: 4px;
-  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .6))
-}
-html[data-design="field"] .repo-header-emblem svg {
-  width: 100%;
-  height: 100%;
-  display: block
-}
 html[data-design="field"] :is(.repo-menu-button, .repo-language-button) {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18) !important
 }
@@ -695,9 +700,6 @@ html[data-design="field"] button.danger {
 }
 /* icônes « matière » : plaques d'acier vissées */
 /* barre latérale : noir mat, entrée active à voyant ; pied : barre d'état, voyant de sauvegarde, radar */
-html[data-design="field"] .repo-footer {
-  position: relative
-}
 html[data-design="field"][data-decor="full"] .repo-footer::after {
   content: "";
   position: absolute;
@@ -1048,6 +1050,9 @@ html[data-skeuo] .repo-sidenav {
   color: var(--sk-sidenav-ink) !important;
   box-shadow: var(--sk-sidenav-shadow, none) !important
 }
+html[data-skeuo="frame"] .repo-footer {
+  position: relative
+}
 html[data-skeuo] .repo-footer {
   margin: var(--sk-footer-margin) !important;
   padding: var(--sk-footer-padding) !important;
@@ -1143,20 +1148,15 @@ html[data-skeuo] .repo-dropzone-pick {
   border-radius: 5px;
   text-decoration: none !important
 }
-html[data-design-base="cabinet"] .repo-dropzone-pick {
-  box-shadow: 0 0 0 1.5px var(--cab-brass), 0 2px 3px rgba(0, 0, 0, .35);
-  font-family: "Palatino Linotype", Georgia, serif
-}
-html[data-design="field"] .repo-dropzone-pick {
-  box-shadow: inset 0 1px 0 #fff, 0 0 0 1px #000
-}
 html[data-design="aqua"] .repo-dropzone-pick {
   border: 1px solid #9aa6b2;
   border-radius: 8px
 }
 html[data-skeuo] .repo-dropzone-pick {
   color: var(--sk-pick-ink) !important;
-  background: var(--sk-pick-bg)
+  background: var(--sk-pick-bg);
+  box-shadow: var(--sk-pick-shadow, none);
+  font-family: var(--sk-pick-family, inherit)
 }
 
 /* ================================================================================================ COMMUN */
@@ -1177,10 +1177,6 @@ html[data-skeuo="frame"][data-dirty="1"] .repo-footer::before {
   background: radial-gradient(circle at 35% 30%, #fff1c9, #e8b85a 55%, #8a5d12);
   box-shadow: 0 0 7px #e8b85a, 0 0 0 2px #1a1208
 }
-html[data-design-base="cabinet"] .repo-footer {
-  position: relative;
-  padding-left: 34px !important
-}
 @media (prefers-reduced-motion:reduce) {
   html[data-design="field"] .repo-footer::after {
     animation: none
@@ -1192,14 +1188,14 @@ html[data-design-base="cabinet"] .repo-footer {
     margin: 6px !important;
     border-radius: 8px
   }
-  html[data-skeuo="frame"] .repo-header-emblem {
-    width: 44px;
-    height: 44px;
-    margin: 0
+  html[data-skeuo="frame"] {
+    --sk-emblem-w: 44px;
+    --sk-emblem-h: 44px;
+    --sk-emblem-margin: 0
   }
-  html[data-design="field"] .repo-header-emblem {
-    width: 60px;
-    height: 24px
+  html[data-design="field"] {
+    --sk-emblem-w: 60px;
+    --sk-emblem-h: 24px
   }
   html[data-skeuo="frame"] :is(.repo-block-titles, .repo-block-heading)>h2 {
     font-size: .95rem !important;
@@ -1549,6 +1545,8 @@ html[data-design="aqua"][data-tone="dark"] .repo-block :is(#status, .status) {
    cadre d'aluminium riveté de la planche (border-image), plan d'avion en filigrane, plaques de titre en aluminium
    brossé avec silhouette d'avion, emblème à hélice ailée, barre latérale en cuir marine, icônes « Avionique ». */
 html[data-design="flightlog"] {
+  --sk-emblem-w: 78px;
+  --sk-emblem-h: 56px;
   /* plaque de titre : aluminium brossé, avion à droite, vis rondes */
   --sk-plate-ink: #1d2733;
   --sk-plate-text-shadow: 0 1px 0 rgba(255, 255, 255, .7);
@@ -1617,11 +1615,6 @@ html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[d
 }
 html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="5"]::before {
   background-image: url("deco/flightlog/blueprint-concorde-clair.webp?v=40d83d5e")
-}
-html[data-design="flightlog"] .repo-header-emblem {
-  width: 78px;
-  height: 56px;
-  margin: 0 6px 0 -2px
 }
 /* marge haute et basse dans le bandeau */
 html[data-design="flightlog"] .repo-header-emblem img {
@@ -1814,20 +1807,14 @@ html[data-skeuo="frame"] .mcg-chart .mcg-gridline {
   stroke: rgba(255, 255, 255, .1) !important;
   stroke-dasharray: 2 5
 }
-html[data-design-base="cabinet"] .mcg-chart .mcg-base {
-  stroke: #b8963e !important;
+/* ligne de base et police des axes (designs à cadre) : --sk-chart-base, --sk-chart-font, --sk-chart-stretch */
+html[data-skeuo="frame"] .mcg-chart .mcg-base {
+  stroke: var(--sk-chart-base) !important;
   stroke-width: 2 !important
 }
-html[data-design="field"] .mcg-chart .mcg-base {
-  stroke: #8d9478 !important;
-  stroke-width: 2 !important
-}
-html[data-design-base="cabinet"] :is(.mcg-chart .mcg-axis, .mcg-donut .mcg-total) {
-  font-family: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif
-}
-html[data-design="field"] :is(.mcg-chart .mcg-axis, .mcg-donut .mcg-total) {
-  font-family: Bahnschrift, "Arial Narrow", sans-serif;
-  font-stretch: condensed
+html[data-skeuo="frame"] :is(.mcg-chart .mcg-axis, .mcg-donut .mcg-total) {
+  font-family: var(--sk-chart-font);
+  font-stretch: var(--sk-chart-stretch, normal)
 }
 html[data-skeuo="frame"] .mcg-chart g:hover .mcg-hover {
   fill: rgba(232, 210, 150, .1)
