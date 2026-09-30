@@ -38,18 +38,34 @@
   const tr = k => window.RepositoryKit.t(T[k]); // shared/kit.js
 
   // ------------------------------------------------------------------ décor de page, par design
-  // foot     : frise du pied de page (HTML) ;
+  // foot     : frise du pied de page, liste de composants (FOOT) : 'strip' (image « footer » du design), 'plate'
+  //            (plaque DEFA), 'radar' (écran de veille animé), 'status' (voyant de sauvegarde, fonction réelle) ;
   // between  : objets entre les blocs, tour à tour : [image, largeur px, option] ; option : 'pair' (deux exemplaires)
   //            ou { x, y, rot } (décalage en px depuis le centre, inclinaison en degrés) ;
   // device   : appareil de page, un objet posé à côté d'un poste (radio, DME), côte à côte calés à droite et
   //            déplaçables latéralement par l'utilisateur : [image, hauteur px, inclinaison °] ; il prend l'intervalle
   //            entre les blocs 2 et 3 (DEVICE_AT ; sinon le premier intervalle possible qui suit) ;
   // sides    : objets des marges, alternativement à gauche et à droite : [image, largeur px maximale].
+  // composants de la frise : img(nom) → adresse de l'image du design
+  const FOOT = {
+    strip: img => `<img class="repo-deco-strip" src="${img('footer')}" alt="">`,
+    plate: img => `<div class="repo-deco-plate-img"><img src="${img('plate-defa')}" alt=""></div>`,
+    // plots du radar : position dans l'écran (%) et couleur ; délai d'allumage calculé au rendu (passage du balayage)
+    radar: img => `<div class="repo-deco-radar" title="${tr('radar')}"><div class="repo-deco-radar-stage">`
+      + `<img src="${img('radar')}" alt=""><span class="repo-deco-sweep"></span>`
+      + [[30.7, 33.5, '#7dff8a'], [65.6, 59.6, '#7dff8a'], [72, 79.5, '#7dff8a'], [30.96, 82.6, '#7dff8a'], [82.95, 46.44, '#ff4d3d']]
+        .map(([x, y, c]) => `<i style="left:${x}%;top:${y}%;--c:${c}"></i>`).join('')
+      + '</div></div>',
+    // voyant de sauvegarde : état réel (html[data-dirty], browser_store.js) ; clic = sauvegarder maintenant
+    status: img => `<button type="button" class="repo-deco-status repo-plain">`
+      + `<img src="${img('plane-plate')}" alt="" onerror="this.remove()">`
+      + '<span class="repo-deco-leds"><i class="led-save"></i><i class="led-on"></i><i></i></span><span class="repo-deco-state"></span></button>'
+  };
   const DEVICE_AT = 2; // appareil de page : entre les blocs 2 et 3 (tous les designs ; une page à 3 blocs l'accueille)
   const SETS = {
     // Cabinet : objets de navigation des années 1930 (planches « objets 1930 » et objets de face)
     cabinet: {
-      foot: img => `<img class="repo-deco-strip" src="${img('footer')}" alt="">`,
+      foot: ['strip'],
       between: [
         ['clip', 150], // trombone de liaison
         ['pen', 150, {
@@ -84,7 +100,7 @@
     },
     // Carnet de vol : trombone et cadrans de bord ; appareil de page : carnet de cuir fermé et DME
     flightlog: {
-      foot: img => `<img class="repo-deco-strip" src="${img('footer')}" alt="">`,
+      foot: ['strip'],
       device: [
         ['notebook-closed', 170, -7],
         ['dme', 190]
@@ -107,21 +123,7 @@
     // (grille d'aération, lampe grillagée, plaque vierge, blindage riveté, interrupteur à capot, crayon, cadran) ; appareil
     // de page : câble et poste radio
     field: {
-      foot: img => `
-        <div class="repo-deco-plate-img"><img src="${img('plate-defa')}" alt=""></div>
-        <div class="repo-deco-radar" title="${tr('radar')}">
-          <div class="repo-deco-radar-stage">
-            <img src="${img('radar')}" alt=""><span class="repo-deco-sweep"></span>
-            <i style="left:30.7%;top:33.5%;--c:#7dff8a"></i><i style="left:65.6%;top:59.6%;--c:#7dff8a"></i>
-            <i style="left:72%;top:79.5%;--c:#7dff8a"></i><i style="left:30.96%;top:82.6%;--c:#7dff8a"></i>
-            <i style="left:82.95%;top:46.44%;--c:#ff4d3d"></i>
-          </div>
-        </div>
-        <button type="button" class="repo-deco-status repo-plain">
-          <img src="${img('plane-plate')}" alt="" onerror="this.remove()">
-          <span class="repo-deco-leds"><i class="led-save"></i><i class="led-on"></i><i></i></span>
-          <span class="repo-deco-state"></span>
-        </button>`,
+      foot: ['plate', 'radar', 'status'],
       device: [
         ['cable', 170],
         ['radio', 360]
@@ -428,7 +430,7 @@
     const foot = document.createElement('div');
     foot.className = 'repo-deco no-print';
     foot.dataset.for = d;
-    foot.innerHTML = set.foot(img);
+    foot.innerHTML = set.foot.map(k => FOOT[k](img)).join('');
     // radar (Durci) : chaque plot s'allume au passage du front (rotation horaire de 5 s partant du haut, centre du
     // réticule 49,86 % / 46,44 % d'un écran 1402 × 478) → délai d'animation = angle du plot depuis le haut / 360 × période
     foot.querySelectorAll('.repo-deco-radar i').forEach(b => {

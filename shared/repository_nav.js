@@ -322,7 +322,7 @@
     document.head.append(l);
     // illustrations du décor complet (frise de Cabinet, radar de Durci), même version
     const d = document.createElement("script");
-    d.src = new URL("design_deco.js?v=05e11878", script.src).href;
+    d.src = new URL("design_deco.js?v=95df47de", script.src).href;
     document.head.append(d);
   };
   designCss(design);

@@ -140,7 +140,17 @@ Suivi des assets (cahier des charges, consignes de génération, intégration) :
     (`--sk-nav-on-*`, règle de base) ; titre de l'en-tête (`--sk-title-*`) ; plaque de titre du Carnet de vol par les
     jetons `--sk-plate-*` au lieu de deux surcharges `!important` (la seconde recouvrait la première) ; règle morte de
     Durci retirée (capitales des boutons d'outils, sans texte). Banc (référence fraîche) : seul écart attendu.
-- **Suivant** : 1 (suite : textes, tableaux et liens de Durci par `data-surface`, puis Aqua), 2 (tonalité de surface), 6 (frise et voyant
+  - **1 (suite), 6** — barre latérale, bandeaux, sous-cartes, textes courants et police des libellés, emblème, lien
+    « choisir », pied de page, graphiques du reporting, cadre de la page, vis des coins : règles jumelles remplacées
+    par une règle commune et des jetons, valeurs relevées sur le rendu actuel quand un seul design en avait (défaut
+    = rendu des autres). Frise du pied de page déclarative (`foot: ['strip']`, `['plate', 'radar', 'status']`).
+    Banc étendu à 9 pages (72 combinaisons) : aucun écart à chaque étape.
+    Règles visant un design : Durci 74 → 39, base Cabinet 52 → 19, Carnet de vol 29 → 20, Aqua 41 → 28, Cabinet 9 → 5 ;
+    `!important` 327 → 271.
+- **Reste, à décider** : variantes de boutons (principal, secondaire, discret, danger) — les designs ne les appliquent
+  pas aux mêmes éléments (liens secondaires, boutons de l'en-tête) : les unifier change le rendu ; ce qui reste propre
+  à chaque design est sa matière (bois, cuir, acier, verre, vis, plans, radar). **Suivant** : 3 (couches CSS, pour
+  retirer les `!important`), avec le banc ; 7 au fil des assets livrés.
   communs), 9 (base Cabinet du Carnet de vol) ; 3 (couches CSS) en dernier, avec le banc de non-régression ; 7 au fil
   des assets livrés.
 

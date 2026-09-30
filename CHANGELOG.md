@@ -22,6 +22,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   (`--sk-btn-family`, `--sk-lbtn-family`) par jetons ; tonalité des surfaces `html[data-surface]` (« dark » pour Durci,
   dont les blocs sont sombres, et pour tout ton sombre ; déclarée dans le registre des designs : `surface:"dark"`) :
   encadrés d'état écrits pour elle au lieu d'une liste de designs. Rendu identique (banc).
+- **Toolkit — phase 2** : frise du pied de page déclarative (liste de composants : bande, plaque, radar, voyant de
+  sauvegarde) au lieu d'un gabarit HTML propre à Durci.
 - **Toolkit — phase 2** : cadre de la page (`--sk-page-*`) et vis des coins de l'en-tête, des blocs et des sous-cartes
   (`--sk-corner-screw`, `--sk-*-screw-*`) par jetons : une règle par emplacement au lieu d'une par design. Rendu
   identique (banc).
