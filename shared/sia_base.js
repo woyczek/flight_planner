@@ -631,9 +631,10 @@
   function panel(host, opts = {}) {
     host.classList.add('sia-base-panel');
     host.innerHTML = `<div class="sia-base-actions"><span class="sia-base-folder"></span><button type="button" class="primary sia-base-reread" data-icon="refresh">${esc(L(T.reread))}</button><button type="button" class="secondary sia-base-purge" data-icon="trash">${esc(L(T.purge))}</button><label class="secondary sia-base-native" hidden>${esc(L(T.pick))}<input type="file" webkitdirectory directory multiple hidden></label></div>
-      <p class="sia-base-state small"></p><div class="sia-base-progress" hidden><progress max="1" value="0"></progress><span class="sia-base-pct"></span><button type="button" class="secondary sia-base-cancel">${esc(L(T.cancel))}</button><div class="sia-base-step small"></div><div class="sia-base-stall small err" hidden></div></div><div class="sia-base-msg" aria-live="polite"></div><details class="sia-base-files small" hidden><summary>${esc(L(T.files))}</summary><ul></ul></details>`;
+      <p class="sia-base-state small"></p><div class="sia-base-progress" hidden><progress max="1" value="0"></progress><span class="sia-base-pct"></span><button type="button" class="secondary sia-base-cancel">${esc(L(T.cancel))}</button><div class="sia-base-step small"></div><div class="sia-base-stall small err" hidden></div></div><div class="sia-base-msg" aria-live="polite" data-status></div><details class="sia-base-files small" hidden><summary>${esc(L(T.files))}</summary><ul></ul></details>`;
     const $ = s => host.querySelector(s), msg = $('.sia-base-msg'), state = $('.sia-base-state');
     const setMessage = html => { msg.innerHTML = html || ''; };
+    window.AppFramework?.watchStatus?.(host);   // erreurs de lecture → notification
     const showFiles = b => { const list = b?.xmlInventoryData || []; $('.sia-base-files').hidden = !list.length; $('.sia-base-files ul').innerHTML = list.map(i => `<li><code>${esc(i.name)}</code> — ${esc(i.role)} (${esc(i.mb)} Mo)</li>`).join(''); };
     let busy = false, controller = null;
     async function refresh() {
@@ -652,6 +653,8 @@
       host.querySelectorAll('button:not(.sia-base-cancel)').forEach(x => { x.disabled = true; });
       state.textContent = L(T.reading);
       setMessage('');
+      // tâche déclarée au socle (sa jauge reste celle du panneau) : avertissement avant de quitter la page
+      const job = window.AppFramework?.task?.(L(T.reading), { quiet: true });
       const t0 = Date.now();
       let last = { label: L(T.reading), at: t0 };
       const paint = () => { const el = Math.round((Date.now() - t0) / 1000), idle = Math.round((Date.now() - last.at) / 1000); stepEl.textContent = `${last.label} · ${el} s`; stall.hidden = idle < 15; if (!stall.hidden) stall.textContent = L(T.stall).replace('{s}', idle).replace('{p}', last.label); };
@@ -675,6 +678,7 @@
         console.warn('[SiaBase]', e);
         await refresh();
       } finally {
+        job?.end();
         clearInterval(ticker);
         gauge.hidden = true;
         busy = false; controller = null;

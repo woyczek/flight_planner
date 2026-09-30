@@ -4,7 +4,8 @@ Deux sortes de jeux, selon le contenu du dossier shared/icons/skeuo/<dossier>/ :
 
 · jeu COMPOSÉ (le dossier contient vierge.webp ou vierge.gris.webp) : chaque icône = fond vide commun + glyphe du
   registre (tracé SVG, shared/icons/repository_icons.js) par-dessus, couleur et ombre réglables (GLYPH) ; le Centre
-  (CPCO : pages du Centre, ses entrées de la barre latérale) a son fond (vierge.gris.webp) et la couleur de glyphe
+  (CPCO : pages du Centre, ses entrées de la barre latérale) a son fond (vierge.rouge.webp, cuivre ; à défaut
+  vierge.gris.webp) et la couleur de glyphe
   « centre ». Mode « tint » (Aqua) : le fond gris est teinté exactement à la couleur du design (--aq-gel, mélange
   overlay) sur son disque intérieur (le cerclage reste gris), découpé à sa forme ; normal et Centre sur la même bulle.
   Les boutons des blocs (masquer, déplacer) gardent leurs icônes au trait. Seuls les fonds vierges sont utiles.
@@ -19,16 +20,31 @@ Relancer après tout ajout ou retrait d'images : python tools/build_skeuo_icons_
 import json, os, re
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SETS = {'brass': 'cabinet', 'steel': 'field', 'gel': 'aqua', 'avio': 'flightlog'}
+
+
+def skeuo_sets():
+    """Jeux d'icônes à matières → dossier d'images, lus dans le registre des designs (repository_tree, designs.list) :
+    chaque design marqué skeuo:true fournit son jeu icons:"…", dont les images sont dans shared/icons/skeuo/<id du design>."""
+    with open(os.path.join(ROOT, 'repository_tree'), encoding='utf-8') as f:
+        tree = f.read()
+    sets = {}
+    for design, body in re.findall(r'^\s*(\w+):\{([^\n]*)\},?\s*$', tree, re.M):
+        icons = re.search(r'icons:"(\w+)"', body)
+        if 'skeuo:true' in body and icons:
+            sets[icons.group(1)] = design
+    assert sets, 'aucun design à matières dans repository_tree (designs.list, skeuo:true)'
+    return sets
+
+
+SETS = skeuo_sets()   # {'brass': 'cabinet', 'steel': 'field', 'gel': 'aqua', 'avio': 'flightlog'}
 ALIASES = {'brass': {'save': 'bookmark', 'file': 'file'}, 'steel': {'file': 'file-text'}, 'gel': {'file': 'file-text'}, 'avio': {'save': 'bookmark', 'file': 'file'}}
 # jeux composés : couleur du glyphe (normal, Centre), ombre (vers le bas : éclairage par le haut), marge autour du glyphe
 # (fraction de la taille de l'icône) ; tint : couleur du fond gris (mode Aqua), core : rayon teinté (% du rayon),
 # up / shrink : centre du disque teinté remonté de « up » px et diamètre réduit de « shrink » px (ajustement au cerclage) ;
-# centreBg : fond propre au Centre (Durci : vierge.rouge.webp), à la place de vierge.gris.webp
 GLYPH = {
     'gel': {'color': '#ffffff', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.55))', 'pad': .24, 'tint': 'var(--aq-gel,#2473db)', 'core': 86, 'up': 1, 'shrink': 2},
     'brass': {'color': '#f1e4c0', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.7))', 'pad': .26},
-    'steel': {'color': '#e9ecdf', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.75))', 'pad': .24, 'centreBg': 'vierge.rouge.webp'},
+    'steel': {'color': '#e9ecdf', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.75))', 'pad': .24},
     'avio': {'color': '#f4ecd8', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.7))', 'pad': .26},
 }
 BEGIN = '/* ==== JEUX D\'ICÔNES SKEUOMORPHES (généré par tools/build_skeuo_icons_css.py) ==== */'
@@ -92,8 +108,8 @@ tree = {}
 for key, d in composed.items():
     g, H = GLYPH[key], f'html[data-icons="{key}"]'
     normal = f'{d}/vierge.webp' if has(d, 'vierge.webp') else f'{d}/vierge.gris.webp'
-    # fond du Centre : centreBg (GLYPH) s'il existe, sinon vierge.gris.webp, sinon le fond normal
-    centre = f'{d}/{g["centreBg"]}' if g.get('centreBg') and has(d, g['centreBg']) else f'{d}/vierge.gris.webp' if has(d, 'vierge.gris.webp') else normal
+    # fond du Centre, par convention de nom : vierge.rouge.webp (cuivre / rouge), sinon vierge.gris.webp, sinon le fond normal
+    centre = next((f'{d}/{f}' for f in ('vierge.rouge.webp', 'vierge.gris.webp') if has(d, f)), normal)
     CENTRE = f'html[data-app-theme="cpco"][data-icons="{key}"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg),{H} .repo-sidenav-cpco .repo-svg[data-i]'
     common = f'box-sizing:border-box;padding:calc(var(--rs,1.15em) * {g["pad"]});color:var(--ico-glyph,{g["color"]})!important;overflow:visible'
     if g.get('tint'):

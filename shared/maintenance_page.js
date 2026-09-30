@@ -668,6 +668,7 @@
     moraMsg = ''; moraPlan = null;
     const btn = hosts.sia.querySelector('#mtMoraFull'), say = x => { const m = hosts.sia.querySelector('#mtMoraMsg'); if (m) m.innerHTML = x; };
     if (btn) btn.disabled = true;
+    const job = window.AppFramework?.task?.(t(['Calcul complet de la grille MORA', 'Full MORA grid calculation']));
     try {
       const b = await window.SiaBase.get();
       if (!b?.obstacleMax) throw new Error(t(['base absente : relire le dossier (étape 4)', 'no base: re-read the folder (step 4)']));
@@ -675,12 +676,12 @@
       const mf = siaFolderState?.fixed.find(x => x.id === 'mora')?.file, text = mf ? await mf.file.text() : '';
       // théâtres couverts, plus les emprises des missions du registre situées ailleurs (relief et sommets seulement : pas d'obstacles hors AIXM)
       const extra = window.SiaBase.moraZonesOfMissions?.(readJson('missionRegistry:v1', null)?.missions || []) || [];
-      const cells = await window.SiaBase.computeMoraGrid(b.obstacleMax, {}, (d, n, step) => say(`<span class="mt-small">${esc(step)} : ${d}/${n}…</span>`), extra);
+      const cells = await window.SiaBase.computeMoraGrid(b.obstacleMax, {}, (d, n, step) => { say(`<span class="mt-small">${esc(step)} : ${d}/${n}…</span>`); job?.set(d, n, step); }, extra);
       cells.extraZones = extra.map(z => `${z.name} (${z.s}…${z.n}° / ${z.w}…${z.e}°)`);
       const before = new Map((text ? window.SiaBase.parseMora(text) : []).map(c => [c.lat + '|' + c.lon, c]));
       const changes = cells.map(c => { const o = before.get(c.lat + '|' + c.lon); return { lat: c.lat, lon: c.lon, before: o ? window.SiaBase.moraFtOf(o) : 0, after: c.moraFt, obstacleBefore: '', obstacleAfter: c.obstacleFt }; }).filter(c => c.before !== c.after);
       moraPlan = { csv: window.SiaBase.moraCsv(cells, { airac: b.airac }), cells, changes, cycle: b.airac || '', previousCycle: window.SiaBase.moraCycle(text), written: false, mode: 'full', peaksOk: cells.peaksOk, extraZones: cells.extraZones };
-    } catch (e) { moraMsg = pill('err', e.message); }
+    } catch (e) { moraMsg = pill('err', e.message); job?.fail(e); } finally { job?.end(); }
     renderSia();
   }
   function moraHtml(p) {

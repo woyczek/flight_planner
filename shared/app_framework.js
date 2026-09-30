@@ -240,7 +240,8 @@
     close.onclick = () => item.remove();
     item.append(span, close);
     box.append(item);
-    while (box.children.length > 4) box.firstElementChild.remove();
+    // 4 messages au plus (les barres des tâches en cours ne comptent pas et restent)
+    for (let old = [...box.children].filter(n => !n.classList.contains("task")); old.length > 4;) old.shift().remove();
     const ms = timeout ?? (kind === "err" ? 12000 : kind === "warn" ? 8000 : 5000);
     if (ms) {
       let left = ms, start = Date.now(), timer = setTimeout(() => item.remove(), left);
@@ -249,6 +250,81 @@
     }
     return item;
   }
+  // ---- Tâches longues (aperçus, génération, lecture de dossiers, calculs) : barre de progression flottante dans la pile
+  // des notifications, et avertissement avant de quitter la page tant qu'une tâche tourne (fermeture, rechargement :
+  // fenêtre du navigateur ; lien interne : confirmation qui nomme la tâche). Les erreurs restent signalées par la page
+  // (zones data-status → notification) ou par task.fail(erreur).
+  //   const job = AppFramework.task("Aperçus des cartes", { total: n });
+  //   job.set(fait, total, "carte_1.png");   // total 0 : barre indéterminée
+  //   job.end();  ou  job.end("12 cartes générées.", "ok");  ou  job.fail(erreur);
+  //   AppFramework.task(titre, { quiet: true }) : sans barre (la page a la sienne), garde de sortie seulement.
+  const tasks = new Set();
+  const TK = {
+    leave: ["Tâche en cours : {t}.\nQuitter la page l'interrompra. Quitter quand même ?", "Task in progress: {t}.\nLeaving the page will stop it. Leave anyway?",
+      "Aufgabe läuft: {t}.\nDas Verlassen der Seite bricht sie ab. Trotzdem verlassen?", "Tarea en curso: {t}.\nSalir de la página la interrumpirá. ¿Salir de todos modos?"],
+    cancelled: ["Annulé.", "Cancelled.", "Abgebrochen.", "Cancelado."]
+  };
+  const tk = k => window.RepositoryKit.t(TK[k]);
+  const taskCss = () => {
+    if (document.getElementById("repoTaskCss")) return;
+    const s = document.createElement("style");
+    s.id = "repoTaskCss";
+    s.textContent = `.repo-notify>div.task{display:grid;grid-template-columns:1fr auto;gap:4px 10px;border-left-color:#6fa8ff}
+.repo-notify>div.task b{font-weight:600}.repo-notify>div.task em{font-style:normal;opacity:.8;font-variant-numeric:tabular-nums}
+.repo-notify>div.task progress{grid-column:1/-1;width:100%;height:8px;accent-color:#6fa8ff}
+.repo-notify>div.task small{grid-column:1/-1;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}`;
+    document.head.append(s);
+  };
+  function task(title, { total = 0, quiet = false } = {}) {
+    notifyCss();
+    taskCss();
+    let box = document.querySelector(".repo-notify");
+    if (!box) { box = document.createElement("div"); box.className = "repo-notify"; box.setAttribute("role", "status"); box.setAttribute("aria-live", "polite"); document.body.append(box); }
+    const item = document.createElement("div"), esc = window.RepositoryKit.esc;
+    item.className = "task";
+    item.innerHTML = `<b>${esc(title)}</b><em></em><progress></progress><small></small>`;
+    if (!quiet) box.append(item);   // quiet : la page garde sa propre jauge ; la tâche garde seulement la sortie de page
+    const bar = item.querySelector("progress"), count = item.querySelector("em"), step = item.querySelector("small");
+    const job = {
+      title,
+      /** Avancement : fait / total (total 0 : indéterminé) ; texte de l'étape en cours. */
+      set(done = 0, n = total, text) {
+        total = n;
+        if (n > 0) { bar.max = n; bar.value = Math.min(done, n); count.textContent = `${Math.min(done, n)}/${n}`; }
+        else { bar.removeAttribute("value"); count.textContent = ""; }
+        if (text !== undefined) step.textContent = text;
+        return job;
+      },
+      /** Fin de tâche ; message facultatif (notification, kind ok | info | warn | err). */
+      end(message, kind = "ok") {
+        if (!tasks.delete(job)) return;
+        item.remove();
+        if (message) notify(message, kind);
+      },
+      /** Échec : notification d'erreur (annulation : simple information). */
+      fail(error) {
+        const aborted = error?.name === "AbortError";
+        job.end(aborted ? tk("cancelled") : error?.message || String(error || ""), aborted ? "info" : "err");
+      }
+    };
+    tasks.add(job);
+    return job.set(0, total);
+  }
+  const busy = () => [...tasks].map(j => `« ${j.title} »`).join(", ");
+  window.addEventListener("beforeunload", e => {
+    if (!tasks.size) return;
+    e.preventDefault();
+    e.returnValue = "";
+  });
+  // liens internes (menu latéral, en-tête…) : confirmation qui nomme la tâche, avant que la page ne soit quittée
+  document.addEventListener("click", e => {
+    if (!tasks.size || e.defaultPrevented || e.button || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+    const a = e.target.closest?.("a[href]");
+    if (!a || a.target === "_blank" || a.hasAttribute("download")) return;
+    const url = new URL(a.href, location.href);
+    if (url.origin === location.origin && url.pathname === location.pathname && url.search === location.search) return;   // ancre de la page
+    if (!window.confirm(tk("leave").replace("{t}", busy()))) { e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
   // ---- Journal des alertes de la page : erreurs et avertissements notifiés (effacés au bout de quelques secondes)
   // gardés en mémoire le temps de la page (rien n'est conservé au changement de page) ; témoin « ⚠ n » dans l'en-tête
   // (outils de l'en-tête, sinon coin de l'écran) tant qu'il reste des alertes non acquittées ; clic : liste, ACK.
@@ -304,7 +380,7 @@
     if (alertsPanel) fillAlerts();
   }
   function fillAlerts() {
-    const hh = d => d.toTimeString().slice(0, 8), esc = v => String(v).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+    const hh = d => d.toTimeString().slice(0, 8), esc = window.RepositoryKit.esc;
     alertsPanel.innerHTML = `<h3>${al("title")}</h3>${journal.length ? `<ul>${[...journal].reverse().map(e => `<li class="${e.kind}${e.ack ? " ack" : ""}"><time>${hh(e.t)}</time><span>${esc(e.text)}${e.count > 1 ? ` (×${e.count})` : ""}</span>${e.ack ? `<em>${al("acked")}</em>` : `<button type="button" data-ack="${e.id}">${al("ack")}</button>`}</li>`).join("")}</ul><div class="bar"><button type="button" data-ackall>${al("ackAll")}</button><button type="button" data-clear>${al("clear")}</button></div>` : `<p>${al("none")}</p>`}`;
   }
   function openAlerts() {
@@ -360,7 +436,11 @@
     reveal,
     getConfig: startupConfig,
     sortableTable,
-    guardUnsavedChanges
+    guardUnsavedChanges,
+    /** Tâche longue : barre de progression flottante et garde de sortie de page (voir task()). */
+    task,
+    /** Tâches en cours (titres). */
+    busyTasks: () => [...tasks].map(j => j.title)
   };
   window.RepositoryConfig = startupConfig();
   window.addEventListener("repository-language-change", () => document.querySelectorAll(".repo-block").forEach(el => {

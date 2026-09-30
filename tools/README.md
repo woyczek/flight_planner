@@ -21,7 +21,7 @@ Trois familles :
 | `bump_versions.py` | après toute modification d'un fichier `shared/…js|css` | Change la version de cache `?v=AAAAMMJJx` dans toutes les pages HTML (et les chargements internes de `repository_nav.js`) : les navigateurs rechargent les fichiers modifiés. `python tools/bump_versions.py` (lettre suivante du jour) ou `… 20261001a` (version imposée). Relance aussi `build_mission_prompt.py`. Les scripts propres à une page (`mission_store.js`, `odv_core.js`…) sont listés dans le script : en ajouter un nouveau à cette liste. |
 | `build_map_planner.py` | après toute modification de `apps/cpco/map_parser.html` (studio du Centre) | Génère la page publique **Cartes de vol** (`apps/planner/map_planner.html`) depuis le studio : même moteur, même bloc Route, sans le bloc Mission ; ajoute le bloc « Cartes du vol ». La page générée ne s'édite pas à la main. |
 | `build_mission_prompt.py` | après modification de `docs/PROMPT_GENERATEUR_MISSIONS.md` | Recopie le prompt du générateur de missions (bloc ```text du document) dans `apps/cpco/mission_prompt.js`, lu par le bouton « Commander à ChatGPT ». |
-| `build_skeuo_icons_css.py` | après ajout ou retouche d'icônes dans `shared/icons/skeuo/` | Régénère la section « jeux d'icônes skeuomorphes » de `shared/block_icons.css` : une règle par icône et par jeu (Laiton → `cabinet/`, Acier → `field/`, Gel → `aqua/`, Aviation → `flightlog/`), alias, chevrons et poignée des blocs. Puis `bump_versions.py`. |
+| `build_skeuo_icons_css.py` | après ajout ou retouche d'icônes dans `shared/icons/skeuo/` | Régénère la section « jeux d'icônes skeuomorphes » de `shared/block_icons.css` : une règle par icône et par jeu (Laiton → `cabinet/`, Acier → `field/`, Gel → `aqua/`, Aviation → `flightlog/` : jeux lus dans le registre des designs, `repository_tree` › `designs.list`, designs `skeuo:true`), alias, chevrons et poignée des blocs. Puis `bump_versions.py`. |
 | `check_binaries.py` | crochet pre-commit (une fois : `--install`) | Refuse tout binaire (image, archive, PDF…) qui entrerait dans git sans Git LFS. `--staged` : fichiers du commit en cours ; `--repo data --install` : même crochet pour le dépôt de données. |
 | `update_suite.py` | mise à jour d'une installation | Mise à jour par git selon le canal (`master` stable, `develop` early bird) : `python tools/update_suite.py` (état), `channel develop`, `update`, `doctor` (contrôle de l'installation). Même logique que Paramètres › Maintenance › Mises à jour. |
 | `update_cities_geonames.py` | rarement (villes du studio) | Met à jour `shared/carto/villes_geonames.csv` depuis GeoNames (CC BY 4.0) : outre-mer français (≥ 500 hab.) et monde (≥ 15 000 hab. par défaut) ; `--world N`, `--min N`, `--no-world`, liste de pays. Télécharge depuis download.geonames.org. |
@@ -44,11 +44,13 @@ Pages HTML à ouvrir via le petit serveur d'écriture : `python tools/save_textu
 | `textures_from_photos.html` | Textures photographiques d'après des matières CC0 d'ambientCG (JPG `*_color` / `*_normal` du dossier `--src`). |
 | `icons_from_sheets.html` | Découpe des icônes et décors dans les planches de maquette (Cabinet, Durci, Aqua, Carnet de vol). |
 | `icons_skeuo_generator.html` | Fabrique, dans le style des planches, les icônes du registre qui n'y figurent pas. |
+| `cut_register_sheet.py` | Découpe une feuille de registre (`python tools/cut_register_sheet.py cabinet\|flightlog\|field`\|field`) en morceaux `shared/deco/<design>/sheet-*.webp` : coins aux bords intérieurs fondus, tranches raccordables, pièces d'en-tête facultatives, papier de fond ; affiche les jetons de géométrie `--sh-*` à reporter dans `designs_skeuo.css`. Planches sources non versionnées (configurations en tête du script) ; accessoire du bord gauche (ficelle, crayon) livré à part ; ImageMagick 7. |
 | `gauges_from_sheets.html` | Découpe des boîtiers de cadrans (laiton → Cabinet, métal sombre → Carnet de vol, plaque sombre → Durci, chrome → Aqua). |
 
 Après une découpe ou une retouche d'icônes : `python tools/build_skeuo_icons_css.py` puis `python tools/bump_versions.py`.
 **Jeux composés (fond + glyphe SVG)** : déposer dans le dossier du jeu (`shared/icons/skeuo/<jeu>/`, `<jeu>` = `aqua`,
-`cabinet`, `field`, `flightlog`) le fond vide `vierge.webp` et celui du Centre `vierge.gris.webp`, puis relancer les deux
+`cabinet`, `cut_register_sheet.py cabinet\|flightlog\|field`, `flightlog`) le fond vide `vierge.webp` et celui du Centre `vierge.rouge.webp` (cuivre, rouge ; à défaut
+`vierge.gris.webp`), puis relancer les deux
 commandes : le jeu passe au fond commun avec le glyphe du registre par-dessus (les images d'icônes du jeu ne servent
 plus et peuvent être retirées ; relancer après). Fond carré (256 × 256 conseillé), transparent autour, sans glyphe ;
 zone du glyphe ≈ le centre (marge de 24–26 % par côté) ; éclairage par le haut (l'ombre du glyphe tombe vers le bas).
@@ -62,6 +64,7 @@ même nom de fichier ; relancer ensuite les deux mêmes commandes.
 
 | Outil | Ce qu'il fait |
 |---|---|
+| `skeuo_regression.html` | Non-régression des designs à matières : relève les styles calculés des composants du framework sur six pages témoins (4 designs × 2 tons), puis compare un état ultérieur à cette référence, propriété par propriété. À lancer avant et après toute retouche de `designs_skeuo.css` (dépôt servi par `python -m http.server 8767 --bind 127.0.0.1`, puis `http://127.0.0.1:8767/tools/skeuo_regression.html`). |
 | `stub_marker_offset.html` | Marqueurs des points de route (bloc Route) comparés aux positions exactes dessinées par la carte ; boutons de décalage X / Y au pixel, ancre, étiquettes : mesure du décalage à corriger. Ouvrir tel quel. |
 
 ## 3. Migrations ponctuelles (déjà passées)

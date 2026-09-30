@@ -10,6 +10,67 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+> **Annonce : suite du refactoring du toolkit.** La phase 1 (boîte à outils, registre des designs, CSS par jetons)
+> est livrée en 4.3.1 ; la phase 2 (supprimer les exceptions par design, assets à fournir) pourra encore modifier
+> légèrement l'apparence des designs à matières. Plan : [docs/REFACTORING_TOOLKIT.md](docs/REFACTORING_TOOLKIT.md).
+
+## [4.3.1] — 2026-09-30
+
+Toolkit refactoré (phase 1) ; feuilles de registre, carnets du Studio et appareils de page pour Cabinet, Carnet de vol
+et Durci ; tâches longues avec barre de progression et garde de sortie de page.
+
+- **Toolkit — boîte à outils commune** (`shared/kit.js`, `window.RepositoryKit`) : échappement HTML, langue et
+  traductions, stockage local protégé, couleurs et contraste WCAG ; chargée par toutes les pages avant
+  `repository_nav.js` ; le socle (`repository_nav`, `block_icons`, `appearance_page`, `app_framework`, `file_access`,
+  `suite_update`, `design_deco`) l'utilise à la place de ses copies ; API de `RepositoryNav.appearance` reformatée.
+- **Toolkit — registre unique des designs** : `REPOSITORY_TREE.designs.list` porte `skeuo` et `chart` ; palette et
+  relief des graphiques, logo, dossier des icônes (`appearance.iconFolder`) et jeux du générateur d'icônes en sont
+  déduits ; attribut `html[data-skeuo]` pour la CSS commune aux designs à matières (63 listes de designs remplacées).
+- **Toolkit — CSS par jetons (en cours)** : 103 jetons `--sk-*` par design et par ton ; en-tête, menus, blocs, cartes,
+  zones de dépôt, bandeaux, champs, boutons, liens-boutons, barre latérale, pied de page, barre d'action, outils de bloc
+  écrits une seule fois ; règles propres aux CR, à l'éditeur de mission, au planificateur et à l'Apparence rangées dans
+  leurs feuilles. Rendu identique (banc `tools/skeuo_regression.html`), `!important` 551 → 328.
+- **Cabinet** : plus de rose des vents en filigrane des blocs (les panneaux les habillent) ; feuille de registre redécoupée
+  (pages qui dépassent du livre en haut à gauche, tranches raccordables arrêtées aux coins, coins fondus, N° et tampon
+  « Diffusion restreinte » à droite, ficelle et œillets posés sur le dos).
+- **Landing Performance** (designs à cadre) : barre d'analyse de nouveau fixée en bas de page (les designs forçaient la
+  position des blocs : barre décalée à droite dans la page).
+- **Durci** : vis cruciformes découpées dans la planche enfin appliquées (règle neutralisée par un commentaire mal fermé).
+- **Centre** : fond des icônes par convention de nom (`vierge.rouge.webp`, cuivre, pour Cabinet, Carnet de vol et Durci ;
+  à défaut `vierge.gris.webp`) ; option `centreBg` du générateur retirée.
+- **Appareil de page** : entre les blocs 3 et 4 pour tous les designs (constante `DEVICE_AT`), plus entre les deux
+  premiers ; Carnet de vol : carnet de cuir fermé et DME.
+- **Décors** : `design_deco.js` réorganisé et documenté (familles de décors, formats des tableaux de réglage) ; plus
+  d'objet posé sur une feuille de registre.
+- **Feuille de registre** : géométrie par design (jetons `--sh-*` : coins, bandes, papier, marges, en-tête, accessoire du
+  bord gauche) ; `tools/cut_register_sheet.py` générique (une configuration par design, jetons affichés). **Durci** :
+  carnet de terrain dans sa pochette olive (coins entiers, bord droit redressé, intérieur réglé effacé), crayon dans son
+  étui élastique hors de la fermeture éclair (marge `--sh-gut`), encre foncée sur le papier ; tableau resserré ;
+  Carnet de vol reprend le dossier de Cabinet (en attendant son en-tête).
+- **Durci** : appareil de page = câble et poste radio de face (entre les blocs 3 et 4) ; crayon parmi les objets (le câble n'y
+  est plus) ; génération de cartes : carnet fermé tant qu'aucune carte n'est affichée, carnet ouvert sous chaque carte.
+  Plus de défilement horizontal de 10 px (poignées latérales débordant de la marge).
+- **Carnet de vol** : sa propre feuille de registre (carnet de vol toilé, en-tête imprimé « République française —
+  Carnet de vol », cachet « Autorisation de transit » à droite, ficelle sur le dos) ; carte de navigation (objet)
+  reconvertie (PNG de 2,9 Mo → WebP de 90 Ko).
+- **Studio cartographique** (Cabinet, Carnet de vol, Durci) : carnet des aperçus commun aux designs à cadre (jetons
+  `--nb-*`) ; carnet de cuir bleu pour Cabinet et Carnet de vol ; carnet fermé à la hauteur du carnet ouvert, à la
+  place du premier aperçu, calé à droite (il s'ouvre vers la gauche) ; un clic sur le carnet actualise les aperçus. Aperçu agrandi : un clic le ferme.
+- **Barres d'action** (designs à matières) : au-dessus des objets posés entre les blocs.
+- **Tâches longues** (socle, `AppFramework.task`) : barre de progression flottante et avertissement avant de quitter
+  la page (fermeture, rechargement, lien interne) tant qu'une tâche tourne ; Studio : aperçus des cartes (une mission
+  ou toutes), génération (une mission ou toutes ; remplace la barre du pied de page) ; registre : lecture du dossier des
+  missions ; Paramètres : calcul complet MORA ; import SIA (garde de sortie, erreurs relayées en notifications).
+- **Durci** (feuille de registre) : crayon contre la pochette, un peu caché par la fermeture éclair ; coins droits
+  redressés comme la bande de droite (tous sur la même verticale).
+- **Appareil de page** (designs à matières) : déplaçable latéralement (glisser), position gardée par design ; réduit à
+  la largeur de sa colonne s'il la dépasse ; dessiné devant le bloc au-dessus. Durci : câble lové et grand poste radio
+  dont l'antenne dépasse sur le contenu au-dessus.
+- **Durci** : poignées latérales au premier plan (devant l'en-tête collant), davantage sur la page.
+- **Décors** : images inutilisées retirées (fond « carte de cuir » du Carnet de vol) ; vérification croisée images ↔ code.
+- **Barre latérale** : contenu un peu descendu (logo DEFA centré dans sa case).
+- Proposition de phase 2 du refactoring (supprimer les exceptions ; assets à fournir) : `docs/REFACTORING_TOOLKIT.md`.
+
 ## [4.3.0] — 2026-09-30
 
 Décors des designs à matières : objets, panneaux de fond par thème, feuille de registre et appareil de page ; icônes

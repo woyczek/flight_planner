@@ -29,8 +29,7 @@
   }
   const KEY = 'suiteUpdate:v1', RESULT = 'suiteUpdateCheck:v1', GIT = 'suiteGitInfo:v1';
   const DEFAULTS = { channel: 'master', mode: 'manual', periodDays: 7 };
-  const L = ['fr', 'en', 'de', 'es'];
-  const tr = row => row[Math.max(0, L.indexOf(nav.getLanguage?.() || 'fr'))] || row[0];
+  const tr = row => window.RepositoryKit.t(row, { typo: false });   // shared/kit.js
   const read = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || 'null') ?? d; } catch { return d; } };
   const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* quota */ } };
 

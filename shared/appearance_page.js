@@ -9,7 +9,7 @@
 (() => {
   'use strict';
   const VER = new URL(document.currentScript?.src || location.href).search;   // version des images (celle de ce script)
-  const LANGS = ['fr', 'en', 'de', 'es'];
+  const K = window.RepositoryKit;   // utilitaires communs (shared/kit.js)
   const T = {
     sub: ['DEFA Virtual — design, icônes, barre latérale et couleurs, pour toutes les pages de la suite', 'DEFA Virtual — design, icons, side bar and colours, for every page of the suite', 'DEFA Virtual — Design, Symbole, Seitenleiste und Farben für alle Seiten der Suite', 'DEFA Virtual — diseño, iconos, barra lateral y colores, para todas las páginas'],
     design: ['Design', 'Design', 'Design', 'Diseño'],
@@ -54,12 +54,12 @@
   };
   const APPS = ['flight', 'landing', 'cpco', 'core'];
   const nav = () => window.RepositoryNav, AP = () => nav().appearance;
-  const li = () => Math.max(0, LANGS.indexOf(nav()?.getLanguage?.() || 'fr'));
-  const typo = s => window.RepositoryContentI18n?.typography?.(s, LANGS[li()]) ?? s;
-  const t = row => typo(row[li()] || row[0]);
-  const esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+  const li = K.langIndex;
+  const typo = s => window.RepositoryContentI18n?.typography?.(s, K.lang()) ?? s;
+  const t = row => K.t(row);
+  const esc = K.esc;
   const icon = (n, size) => window.RepositoryIcons?.svg(n, size ? { size } : undefined) || '';
-  const lightness = h => { const x = String(h || '').replace('#', ''), v = [0, 2, 4].map(i => parseInt(x.slice(i, i + 2), 16) / 255); return (Math.max(...v) + Math.min(...v)) / 2 * 100; };
+  const lightness = K.color.lightness;
   const toneOf = hex => Math.round(Math.max(0, Math.min(100, (lightness(hex) - 12) / .42)));
   let host = null, previewTheme = null;
 
@@ -74,13 +74,13 @@
       <b>${esc(d.label?.[i] || d.label?.[0] || id)}</b><small>${esc(typo(d.title?.[i] || d.title?.[0] || ''))}</small></button>`).join('');
     // --- icônes : une rangée d'aperçu par variante
     const sample = ['target', 'map', 'upload', 'fuel', 'plane', 'clipboard', 'chart', 'settings'];
-    const SK = { brass: 'cabinet', steel: 'field', gel: 'aqua', avio: 'flightlog' }, ICO = new URL('shared/icons/skeuo/', nav().root).href;
+    const ICO = new URL('shared/icons/skeuo/', nav().root).href;
     const stroke = n => `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${window.RepositoryIcons?.paths(n) || ''}</svg>`;
     // jeu composé (fond vierge + glyphe, REPOSITORY_TREE.iconComposed écrit par tools/build_skeuo_icons_css.py) : même rendu que les pages
     const COMP = window.REPOSITORY_TREE?.iconComposed || {};
     const composedIc = (c, n) => { const img = `url('${ICO}${c.normal}${VER}') center/contain no-repeat`, bg = c.disc ? `${img},${c.disc} center/contain no-repeat` : img;
       return `<span class="ap-ic" style="display:inline-grid;place-items:center;width:34px;height:34px;background:${bg};background-blend-mode:${c.disc ? 'overlay,normal' : 'normal'};-webkit-mask:${img};mask:${img};color:${c.glyph}"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(.5px 1px .6px rgba(0,0,0,.55))">${window.RepositoryIcons?.paths(n) || ''}</svg></span>`; };
-    const sampleOf = id => id === 'off' ? '' : id === 'auto' ? sampleOf(a.designs[cur.design]?.icons || 'line') : COMP[id] ? sample.map(n => composedIc(COMP[id], n)).join('') : SK[id] ? sample.map(n => `<img class="ap-ic" src="${ICO}${SK[id]}/${n}.webp${VER}" alt="" width="34" height="34">`).join('') : sample.map(n => `<span class="ap-ic">${stroke(n)}</span>`).join('');
+    const sampleOf = id => id === 'off' ? '' : id === 'auto' ? sampleOf(a.designs[cur.design]?.icons || 'line') : COMP[id] ? sample.map(n => composedIc(COMP[id], n)).join('') : a.iconFolder(id) ? sample.map(n => `<img class="ap-ic" src="${ICO}${a.iconFolder(id)}/${n}.webp${VER}" alt="" width="34" height="34">`).join('') : sample.map(n => `<span class="ap-ic">${stroke(n)}</span>`).join('');
     const iconSel = cur.iconsSaved && cur.iconsSaved !== 'matter' ? cur.iconsSaved : 'auto';
     const iconRows = Object.entries(T.iconSet).map(([id, row]) => `<button type="button" class="ap-iconrow repo-plain" data-icons="${id}" aria-pressed="${id === iconSel}"><b>${esc(t(row))}</b><span class="ap-iconset" data-set="${id}">${sampleOf(id)}</span></button>`).join('');
     const decor = cur.decorSaved || 'auto', decorBtns = Object.entries(T.decorSet).map(([id, row]) => `<button type="button" class="ap-seg repo-seg repo-plain" data-decor="${id}" aria-pressed="${id === decor}">${esc(t(row))}</button>`).join('');
@@ -157,6 +157,9 @@ main.ap-page :is(.ap-thumb,.ap-iconrow,.ap-card,.ap-show,[id=apReset]){color:var
 .ap-mini-title{grid-column:1/-1;font-size:11px;font-weight:700;color:#17242b}
 .ap-mini-line{grid-column:1/-1;height:5px;border-radius:3px;background:#dfe7ec}.ap-mini-line.s{width:60%}
 .ap-mini-btn{grid-column:1/-1;width:52px;height:12px;border-radius:5px;background:var(--repo-accent)}
+/* Aqua : vignettes et rangées en verre bombé, état choisi teinté de la couleur Aqua */
+html[data-design="aqua"] main.ap-page :is(.ap-thumb,.ap-iconrow,.ap-show,[id=apReset]){background-image:linear-gradient(#ffffff,#f1f4f8 50%,#e6ebf1 51%,#f6f8fb)!important}
+html[data-design="aqua"] main.ap-page :is(.ap-thumb,.ap-iconrow,.ap-show)[aria-pressed="true"]{background-image:linear-gradient(color-mix(in srgb,var(--aq-gel) 10%,#fff),color-mix(in srgb,var(--aq-gel) 20%,#fff))!important;border-color:var(--aq-gel)!important}
 .ap-mini[data-d="aero"] .ap-mini-bar{background:linear-gradient(115deg,var(--repo-bar),color-mix(in srgb,var(--repo-bar) 70%,#000))}
 .ap-mini[data-d="aero"] .ap-mini-block{border-radius:10px;box-shadow:0 6px 16px color-mix(in srgb,var(--repo-accent) 22%,transparent)}.ap-mini[data-d="aero"] .ap-mini-btn{border-radius:6px}
 .ap-mini[data-d="ops"] .ap-mini-block{border-radius:2px;border-left:4px solid var(--repo-accent);padding:5px 8px;margin:6px}.ap-mini[data-d="ops"] .ap-mini-title{text-transform:uppercase;font-size:9.5px;letter-spacing:.06em}.ap-mini[data-d="ops"] .ap-mini-btn{border-radius:2px}
