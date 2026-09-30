@@ -1,6 +1,6 @@
 window.REPOSITORY_TREE={
   version:3,
-  release:{date:"2026-09-30",version:"4.3.1",id:"XPS-4.3.1",changelog:"https://framagit.org/asr/flight_planner/-/blob/master/CHANGELOG.md",
+  release:{date:"2026-09-30",version:"4.4.0",id:"XPS-4.4.0",changelog:"https://framagit.org/asr/flight_planner/-/blob/master/CHANGELOG.md",
     // dépôt de publication : contrôle des mises à jour (Paramètres › Maintenance, shared/suite_update.js) ; canaux = branches
     repository:{web:"https://framagit.org/asr/flight_planner",api:"https://framagit.org/api/v4/projects/asr%2Fflight_planner",channels:{master:"stable",develop:"early"}}},
   defaults:{

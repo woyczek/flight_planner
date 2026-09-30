@@ -10,9 +10,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
-> **Annonce : suite du refactoring du toolkit.** La phase 1 (boîte à outils, registre des designs, CSS par jetons)
-> est livrée en 4.3.1 ; la phase 2 (supprimer les exceptions par design, assets à fournir) pourra encore modifier
+> **Annonce : suite du refactoring du toolkit.** La phase 2 (exceptions par design remplacées par des jetons) est
+> livrée en 4.4.0 ; la phase 3 (couches CSS, retrait des `!important`) est en cours et pourra encore modifier
 > légèrement l'apparence des designs à matières. Plan : [docs/REFACTORING_TOOLKIT.md](docs/REFACTORING_TOOLKIT.md).
+
+## [4.4.0] — 2026-09-30
+
+Nouvelle famille COMBAT (combat aérien : BFM, ACM, DACT, interception) ; identifiants de mission liés migrés d'un bloc
+au lieu de casser l'opération ; enregistrement dans le dossier des missions qui dit toujours pourquoi il échoue ;
+toolkit phase 2 terminée (jetons, boutons communs, feuille de registre commune), barres de progression et
+notifications dans la matière des designs ; début de la phase 3 (couches CSS).
 
 - **Designs à matières — barres de progression et notifications** : `<progress>` (tâches longues, jauges des pages)
   dans la matière du design (piste creusée ; laiton de Cabinet, encre du Carnet de vol, voyants verts de Durci, gel rayé
