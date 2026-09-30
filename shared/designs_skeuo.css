@@ -447,7 +447,9 @@ html[data-skeuo="frame"] .buttonLink,
 html[data-skeuo="frame"] a.mc-button {
   font-family: var(--sk-btn-family) !important
 }
-html[data-design-base="cabinet"] :is(button.secondary, a.secondary, label.rg-file):not(.repo-block-tools button) {
+/* convention commune des boutons : 1er bouton de l'en-tête principal, les suivants secondaires ; liens secondaires et
+   « Ajouter des fichiers » secondaires (mêmes éléments dans tous les designs) */
+html[data-design-base="cabinet"] :is(button.secondary, a.secondary, label.rg-file, .repo-header button.headerButton:not(:first-of-type)):not(.repo-block-tools button):not(.repo-menu-button):not(.repo-language-button) {
   color: #0b1830 !important;
   font-weight: 700 !important;
   text-shadow: 0 1px 0 rgba(255, 255, 255, .75);
@@ -862,7 +864,7 @@ html[data-design="aqua"] :is(button, .buttonLink, a.mc-button) {
   --sk-btn-bg: linear-gradient(180deg, color-mix(in srgb, var(--aq-gel) 55%, #fff) 0%, var(--aq-gel) 50%, color-mix(in srgb, var(--aq-gel) 85%, #000) 51%, color-mix(in srgb, var(--aq-gel) 70%, #fff) 100%);
   --sk-btn-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 2px 5px color-mix(in srgb, var(--aq-gel) 40%, transparent)
 }
-html[data-design="aqua"] :is(button.secondary, .repo-header button.headerButton:not(:first-of-type)):not(.repo-block-tools button) {
+html[data-design="aqua"] :is(button.secondary, a.secondary, label.rg-file, .repo-header button.headerButton:not(:first-of-type)):not(.repo-block-tools button) {
   border-color: #9aa6b2 !important;
   color: var(--aq-ink) !important;
   text-shadow: 0 1px 0 #fff;
@@ -930,7 +932,7 @@ html[data-design="aqua"][data-tone="dark"] {
   --sk-slider-track: linear-gradient(90deg, #10151b, #2a333d 60%, #10151b)
 }
 html[data-design="aqua"][data-tone="dark"] :is(.repo-menu-button, .repo-language-button),
-html[data-design="aqua"][data-tone="dark"] :is(button.secondary, .repo-header button.headerButton:not(:first-of-type), a.headerButton):not(.repo-block-tools button) {
+html[data-design="aqua"][data-tone="dark"] :is(button.secondary, a.secondary, label.rg-file, .repo-header button.headerButton:not(:first-of-type), a.headerButton):not(.repo-block-tools button) {
   background: linear-gradient(#4a5663, #323c47 50%, #2a333d 51%, #3b4652) !important;
   color: #e6edf5 !important;
   border-color: #11161c !important;

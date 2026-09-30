@@ -22,6 +22,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   (`--sk-btn-family`, `--sk-lbtn-family`) par jetons ; tonalité des surfaces `html[data-surface]` (« dark » pour Durci,
   dont les blocs sont sombres, et pour tout ton sombre ; déclarée dans le registre des designs : `surface:"dark"`) :
   encadrés d'état écrits pour elle au lieu d'une liste de designs. Rendu identique (banc).
+- **Boutons — convention commune** (tous les designs à matières) : 1ᵉʳ bouton de l'en-tête principal, les suivants
+  secondaires ; liens secondaires et « Ajouter des fichiers » secondaires. Changements visibles : Cabinet et Carnet de
+  vol (2ᵉ bouton de l'en-tête de l'éditeur de mission en parchemin), Aqua (« Ajouter des fichiers » en verre).
 - **Toolkit — phase 2** : frise du pied de page déclarative (liste de composants : bande, plaque, radar, voyant de
   sauvegarde) au lieu d'un gabarit HTML propre à Durci.
 - **Toolkit — phase 2** : cadre de la page (`--sk-page-*`) et vis des coins de l'en-tête, des blocs et des sous-cartes
