@@ -10,9 +10,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
-> **Annonce : gros changement du toolkit à venir.** Le socle commun (`shared/` : en-tête, barre latérale, blocs,
-> designs, décors, icônes) est en cours de refactoring ; la version qui le livrera pourra modifier légèrement
-> l'apparence des designs à matières. Plan et avancement : [docs/REFACTORING_TOOLKIT.md](docs/REFACTORING_TOOLKIT.md).
+> **Annonce : suite du refactoring du toolkit.** La phase 1 (boîte à outils, registre des designs, CSS par jetons)
+> est livrée en 4.3.1 ; la phase 2 (supprimer les exceptions par design, assets à fournir) pourra encore modifier
+> légèrement l'apparence des designs à matières. Plan : [docs/REFACTORING_TOOLKIT.md](docs/REFACTORING_TOOLKIT.md).
+
+## [4.3.1] — 2026-09-30
+
+Toolkit refactoré (phase 1) ; feuilles de registre, carnets du Studio et appareils de page pour Cabinet, Carnet de vol
+et Durci ; tâches longues avec barre de progression et garde de sortie de page.
 
 - **Toolkit — boîte à outils commune** (`shared/kit.js`, `window.RepositoryKit`) : échappement HTML, langue et
   traductions, stockage local protégé, couleurs et contraste WCAG ; chargée par toutes les pages avant
