@@ -377,12 +377,38 @@
   /** Range une mission reçue : trace des textes reçus (recu/), comparaison avec la version en place (identique → rien
    *  n'est remplacé ; différente → ancienne dans versions/, réglages du studio repris), meta mise à jour, Markdown.
    *  Sortie : { folder, status: 'new' | 'same' | 'version', diff } ; folder vide si le dossier n'est pas autorisé. */
+  /** Identifiant rangeable (lettre de la famille + numéro : « A-001A ») ; sinon identifiant proposé d'après la famille
+   *  (« BFM-001A » en COMBAT → « A-001A ») : request (clic) → confirmation, l'ancien gardé dans mission.former_id ;
+   *  sans confirmation → erreur explicite (et non « dossier non autorisé »). */
+  function checkMissionId(y, request) {
+    const raw = String(y?.mission?.id ?? '').trim().toUpperCase(),
+      SM = window.SiaMission;
+    if (SM?.parseId?.(raw)?.letter) return;
+    const type = String(y?.mission?.type || '').toUpperCase(),
+      L = SM?.FAMILY_LETTERS || {},
+      letter = L[type] || L[window.MissionVocab?.familyForType?.(type)] || '',
+      m = /(\d{1,3})([A-Z]?)$/.exec(raw),
+      guess = letter && m ? `${letter}-${m[1].padStart(3, '0')}${m[2]}` : '';
+    if (guess && request && confirm(t(['Identifiant « {r} » hors format (lettre de la famille + numéro). Enregistrer la mission sous « {g} » ? (l’ancien identifiant est gardé dans mission.former_id)', 'ID “{r}” is not in the expected format (family letter + number). Save the mission as “{g}”? (the old ID is kept in mission.former_id)'], {
+        r: raw || '—',
+        g: guess
+      }))) {
+      y.mission.former_id = y.mission.former_id || raw;
+      y.mission.id = guess;
+      return;
+    }
+    throw new Error(t(['Identifiant de mission « {r} » hors format : lettre de la famille + numéro sur 3 chiffres (+ lettre d’équipe), ex. « {g} ». Corriger mission.id.', 'Mission ID “{r}” not in the expected format: family letter + 3-digit number (+ team letter), e.g. “{g}”. Fix mission.id.'], {
+      r: raw || '—',
+      g: guess || 'M-016A'
+    }));
+  }
   async function storeMission(doc, {
     md = '',
     raw = [],
     request = false,
     source = 'collage'
   } = {}) {
+    checkMissionId(doc.yaml, request);
     const id = normMissionId(doc.yaml?.mission?.id || ''),
       at = new Date().toISOString(),
       st = stamp();
@@ -464,6 +490,7 @@
     action = 'modifiée',
     request = false
   } = {}) {
+    checkMissionId(y, request);
     const id = normMissionId(y?.mission?.id || ''),
       m = await missionHandle(id, y?.mission?.type, {
         request,
@@ -487,6 +514,7 @@
   async function saveMaps(y, maps, {
     request = false
   } = {}) {
+    checkMissionId(y, request);
     const id = normMissionId(y?.mission?.id || ''),
       m = await missionHandle(id, y?.mission?.type, {
         request,
