@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Planning ODV</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=20260930r">
-<script src="../../repository_tree?v=20260930r"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=20260930v">
+<script src="../../repository_tree?v=20260930v"></script>
 <style>
 /* Couleurs : sombres par défaut (thème du planificateur), claires si le ton de la page est clair (Apparence). */
 :root{font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;color-scheme:dark;--text:#eef3f7;--muted:#9ba8b5;--panel:#181d23;--field:#11161c;--line:#2b3440;--soft:#ffffff0d;--card:var(--panel);--ink:var(--text)}
@@ -41,7 +41,9 @@ main.odv-page h2{font-size:15px;margin:0 0 10px}main.odv-page h3{font-size:13px;
 .odv-heat button{position:relative;padding:6px 4px;border-radius:8px;text-align:center;background:color-mix(in srgb,var(--repo-accent,#71b7ff) var(--pct,0%),var(--field));min-height:44px}
 .odv-heat button b{font-size:17px}.odv-heat button small{display:block;font-size:10.5px;color:var(--text);opacity:.8}
 .odv-heat button.sel{outline:2px solid var(--repo-accent,#71b7ff);outline-offset:1px}.odv-heat button.low{opacity:.55}
-.odv-detail{border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin:12px 0 0;font-size:13px}.odv-detail ul{margin:4px 0;padding-left:18px}.odv-detail li{margin:2px 0}
+.odv-detail{border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin:12px 0 0;font-size:13px}
+/* détail d'un créneau : sous-bloc habillé comme les cartes intérieures des designs à matières (--sk-card, designs_skeuo.css) */
+.odv-page .odv-detail{background:var(--sk-card,var(--repo-veil,transparent))!important;color:var(--sk-card-ink,inherit);border-color:var(--sk-card-bd,var(--line));box-shadow:0 1px 3px #0003}.odv-detail ul{margin:4px 0;padding-left:18px}.odv-detail li{margin:2px 0}
 .odv-fam{display:inline-block;padding:0 7px;border-radius:999px;font-size:11px;font-weight:700;background:var(--soft);border:1px solid var(--line)}
 .odv-cut{display:inline-block;max-width:16em;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
 .odv-why{white-space:normal!important;min-width:280px;font-size:11.5px;color:var(--muted)}.odv-wrap{white-space:normal!important;min-width:160px}
@@ -115,14 +117,14 @@ html[data-design="field"] .odv-heat button.sel{outline-color:#e9ecdf}
   <textarea id="odvRecapText" readonly placeholder="Récapitulatif DISPO MATIN / APREM / SOIR par jour (texte à coller, par exemple dans Discord)."></textarea>
 </section>
 </main>
-<script src="../../shared/repository_nav.js?v=20260930r"></script>
-<script src="../../shared/zip_store.js?v=20260930r"></script>
-<script src="../../shared/data_files.js?v=20260930r" data-file="references/defa_reference.js"></script>
-<script src="../../shared/mission_table.js?v=20260930r"></script>
-<script src="../../shared/sia_base.js?v=20260930r"></script><script src="odv_core.js?v=20260930r"></script>
-<script src="odv_planning.js?v=20260930r"></script>
-<script src="../../shared/app_framework.js?v=20260930r"></script>
-<script src="../../shared/content_i18n.js?v=20260930r"></script>
+<script src="../../shared/repository_nav.js?v=20260930v"></script>
+<script src="../../shared/zip_store.js?v=20260930v"></script>
+<script src="../../shared/data_files.js?v=20260930v" data-file="references/defa_reference.js"></script>
+<script src="../../shared/mission_table.js?v=20260930v"></script>
+<script src="../../shared/sia_base.js?v=20260930v"></script><script src="odv_core.js?v=20260930v"></script>
+<script src="odv_planning.js?v=20260930v"></script>
+<script src="../../shared/app_framework.js?v=20260930v"></script>
+<script src="../../shared/content_i18n.js?v=20260930v"></script>
 <script>
 // Traductions des textes fixes de la page (les contenus calculés restent en français, zones data-no-i18n).
 RepositoryContentI18n([
