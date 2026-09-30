@@ -58,13 +58,14 @@ def main():
     for dp, dn, fn in os.walk(MISSIONS):
         dn[:] = [d for d in dn if d not in ('recu', '_remplaces')]
         for f in fn:
-            if not f.lower().endswith(TEXT):
+            if not f.lower().endswith(TEXT) or f in ('RENUMEROTATION.md',):
                 continue
             p = os.path.join(dp, f)
             s = open(p, encoding='utf-8', newline='').read()
             if not rx.search(s) and not (type_ and f.startswith('mission') and new in s):
                 continue
-            t = sub(s)
+            # ancien identifiant gardé tel quel : former_id (trace de migration)
+            t = ''.join(ligne if re.match(r'\s*former_id:', ligne) else sub(ligne) for ligne in s.splitlines(True))
             mid = re.search(r'(?m)^  id: *(\S+)', t)
             if f.startswith('mission') and f.endswith(('.yaml', '.yml')) and mid:
                 ancien = None
