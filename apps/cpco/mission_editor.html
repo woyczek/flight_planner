@@ -4,12 +4,12 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CPCO — Générateur de mission</title>
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=9c7818e0">
-<script src="../../repository_tree?v=baf93980"></script>
+<script src="../../repository_tree?v=4ae198a3"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script src="mission_prompt.js?v=86632620"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../shared/mission_order.js?v=3008b790"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=0e2b9529"></script><script src="../../shared/mission_estimate.js?v=f367705f"></script><script src="../../shared/sia_base.js?v=2f8158b3"></script><script src="../../shared/mission_routing.js?v=ec32b1f9"></script><script src="../../shared/mission_airspaces.js?v=f9dae1f0"></script><script src="../../shared/mission_exercise.js?v=59bfcd6b"></script><script src="../../shared/mission_registry.js?v=79f2104c"></script>
-<script src="mission_store.js?v=d2999c33"></script>
+<script src="mission_prompt.js?v=13d74038"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../shared/mission_order.js?v=3008b790"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=0e2b9529"></script><script src="../../shared/mission_estimate.js?v=1ce8f779"></script><script src="../../shared/sia_base.js?v=2f8158b3"></script><script src="../../shared/mission_routing.js?v=ec32b1f9"></script><script src="../../shared/mission_airspaces.js?v=f9dae1f0"></script><script src="../../shared/mission_exercise.js?v=59bfcd6b"></script><script src="../../shared/mission_registry.js?v=884ed8dc"></script>
+<script src="mission_store.js?v=c9f77592"></script>
 <script src="../../shared/aar_tracks.js?v=f4061047"></script>
-<script src="../../shared/mission_core/vocab.js?v=d7f4fb57"></script>
+<script src="../../shared/mission_core/vocab.js?v=90cadad7"></script>
 <script src="jspdf.umd.min.js"></script>
 <style>
 :root {
@@ -951,7 +951,7 @@ async function registerDocs(inputs, request = false) {
       if (id === cur && r.folder) state.yaml.meta = d.yaml.meta; // dates et historique de la version rangée
       if (!r.folder) {
         missing = true;
-        out.push(`${id} → registre seulement`)
+        out.push(`${id} → registre seulement${r.error ? ` (${r.error})` : ""}`)
       } else out.push(`${id} → data/missions/${r.folder}/ — ${r.status==='same'?'identique à la version rangée (rien remplacé)':r.status==='version'?`nouvelle version (différences : ${r.diff.join(', ')||'mineures'} ; l’ancienne est dans versions/)`:'nouvelle mission'}`)
     } catch (e) {
       out.push(`${id} : ${e.message}`)

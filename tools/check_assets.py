@@ -71,6 +71,8 @@ def controle(verbose=True):
             m = re.match(r'\s{4}(\w+): [\[{]', ligne)
             if m:
                 design = m.group(1)
+            if re.match(r'\s*foot:', ligne):
+                continue   # frise : noms de composants (FOOT), pas des images
             for nom in re.findall(r"\['([\w-]+)',", ligne) + re.findall(r"img\('([\w-]+)'\)", ligne) + re.findall(r"/, '([\w-]+)'", ligne):
                 if design and not os.path.exists(os.path.join(ROOT, 'shared', 'deco', design, nom + '.webp')):
                     erreurs.append(f'absente : shared/deco/{design}/{nom}.webp (design_deco.js, {bloc})')

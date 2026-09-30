@@ -122,25 +122,48 @@
   }
   async function missionsDir(request = false) {
     const FA = await waitFor('FileAccess');
-    if (!FA) return null;
+    if (!FA) {
+      if (request) throw new Error(t(['Dossier des missions : module d’accès aux dossiers (shared/file_access.js) non chargé dans cette page.', 'Missions folder: folder access module (shared/file_access.js) not loaded in this page.']));
+      return null;
+    }
     const st = await FA.status('__missions');
     if (st.handle && st.permission === 'granted') return st.handle;
     if (!request) return null;
     // geste de l'utilisateur : réautoriser le dossier mémorisé ; à défaut (aucun dossier, autorisation refusée,
-    // dossier devenu inaccessible), le choisir : sélecteur de dossier (data/missions)
+    // dossier devenu inaccessible), le choisir : sélecteur de dossier (data/missions). Échec : erreur explicite (cause,
+    // dossier, nom de l'erreur), aussi écrite dans la console
+    const fail = (fr, en, e) => {
+      const err = new Error(t([fr, en], {
+        d: st.name || t(['aucun', 'none']),
+        e: e ? `${e.name || 'Error'} : ${e.message || ''}` : ''
+      }));
+      console.error('[registre des missions] dossier des missions', {
+        dossier: st.name,
+        autorisation: st.permission,
+        origine: location.origin,
+        contexteSecurise: window.isSecureContext,
+        selecteur: !!window.showDirectoryPicker
+      }, e || err);
+      return err;
+    };
+    let why = null;
     if (st.handle) {
       try {
-        if ((await st.handle.requestPermission({
-            mode: 'readwrite'
-          })) === 'granted') return st.handle;
-      } catch {
-        /* dossier déplacé ou supprimé */
+        const p = await st.handle.requestPermission({
+          mode: 'readwrite'
+        });
+        if (p === 'granted') return st.handle;
+        why = new Error(`autorisation ${p}`);
+      } catch (e) {
+        why = e; // dossier déplacé ou supprimé
       }
     }
+    if (!window.showDirectoryPicker) throw fail(`Dossier des missions « {d} » non autorisé, et ce navigateur ne permet pas d’en choisir un (Chrome ou Edge, page servie en https ou depuis localhost ; ici ${location.origin}).`, `Missions folder “{d}” not authorised, and this browser cannot choose one (Chrome or Edge, page served over https or from localhost; here ${location.origin}).`, why);
     try {
       return await FA.pickFolder('__missions');
-    } catch {
-      return null;
+    } catch (e) {
+      if (e?.name === 'AbortError') throw fail('Dossier des missions « {d} » non autorisé : choix du dossier annulé.', 'Missions folder “{d}” not authorised: folder choice cancelled.', why || e);
+      throw fail('Dossier des missions « {d} » non autorisé ({e}).', 'Missions folder “{d}” not authorised ({e}).', e);
     }
   }
 
