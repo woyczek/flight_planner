@@ -62,3 +62,7 @@ for css in [os.path.join(ROOT, 'shared', 'designs_skeuo.css'), os.path.join(ROOT
     if t != s:
         io.open(css, 'w', encoding='utf-8', newline='').write(t)
 print(f'Version {version} : {changed} page(s) mise(s) à jour.')
+# contrôle des images des designs (format réel, poids, images absentes ou orphelines) : rapport seul, sans bloquer
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import check_assets
+check_assets.controle()

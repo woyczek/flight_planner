@@ -108,6 +108,25 @@ Durci 77, Aqua 43, Carnet de vol 30, Cabinet 9 (+ 54 par la base Cabinet) ; `!im
 | Tous | planche de feuille **sans tableau imprimé** (papier vierge), en-tête et cachet en pièces transparentes, bords droits (sans perspective) | découpe sans effacement ni redressement (`erase`, `shear` supprimés) |
 | Durci | frise de pied de page en une image (comme Cabinet et Carnet de vol) | fin du HTML de frise propre à Durci |
 
+Suivi des assets (cahier des charges, consignes de génération, intégration) : `docs/ASSETS_A_FOURNIR.md` (en cours).
+
+### Avancement de la phase 2
+
+- **Fait (30 septembre 2026)** :
+  - **4. Feuille de registre** — en-tête, cachet, accessoire, marge gauche et ordre de l'accessoire facultatifs
+    (absents par défaut dans les règles communes : Durci ne déclare plus de zéros) ; chaque design a un bloc « découpe »
+    balisé dans `designs_skeuo.css`, réécrit par `tools/cut_register_sheet.py <design> --write` (identique après
+    réécriture des trois designs), et un bloc « réglages » à la main.
+  - **5. Carnet des aperçus** — composant `.repo-notebooks` (galerie) / `.repo-notebook` (carte) de
+    `designs_skeuo.css`, jetons `--nb-*` ; le Studio ne garde que les classes et son action (clic = actualiser).
+  - **8. Contrôle des images** — `tools/check_assets.py` (format réel, poids > 400 ko, images absentes, orphelines),
+    lancé à la fin de `bump_versions.py` (rapport seul) ; état : 181 images, aucune erreur.
+  - Hors plan : appareil de page unifié (entre les blocs 3 et 4 pour tous, `DEVICE_AT`, déplaçable), tâches longues
+    communes (`AppFramework.task`), panneaux atténués uniformément.
+- **Suivant** : 1 (jetons manquants de Durci, puis Aqua et Carnet de vol), 2 (tonalité de surface), 6 (frise et voyant
+  communs), 9 (base Cabinet du Carnet de vol) ; 3 (couches CSS) en dernier, avec le banc de non-régression ; 7 au fil
+  des assets livrés.
+
 ## Utiliser la boîte à outils (D)
 
 ```js
