@@ -166,10 +166,13 @@
     },
     savedDesign = readPref("repositoryDesign", null);
   let design = designs[savedDesign] ? savedDesign : (designs[cfg.designs?.default] ? cfg.designs.default : "standard");
-  /** Pose le design sur <html> : data-design, et data-skeuo pour les designs à matières (règles communes de designs_skeuo.css). */
+  /** Pose le design sur <html> : data-design ; data-design-base (design dont c'est une déclinaison, sinon lui-même) ;
+   *  data-skeuo pour les designs à matières (« frame » : cadre cousu autour de la page) — règles de designs_skeuo.css. */
   const markDesign = id => {
+    const d = designs[id] || {};
     doc.dataset.design = id;
-    if (designs[id]?.skeuo) doc.dataset.skeuo = "";
+    doc.dataset.designBase = d.base || id;
+    if (d.skeuo) doc.dataset.skeuo = d.frame ? "frame" : "";
     else delete doc.dataset.skeuo;
   };
   markDesign(design);
@@ -187,7 +190,7 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=20260930zzb", script.src).href;
+    css.href = new URL("designs.css?v=20260930zzj", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
@@ -677,23 +680,23 @@
   {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=20260930zzb", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=20260930zzj", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=20260930zzb", script.src).href;
+    files.src = new URL("file_access.js?v=20260930zzj", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=20260930zzb", "block_icons.js?v=20260930zzb", "side_nav.js?v=20260930zzb"]) {
+    for (const f of ["icons/repository_icons.js?v=20260930zzj", "block_icons.js?v=20260930zzj", "side_nav.js?v=20260930zzj"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=20260930zzb", script.src).href;
+    store.src = new URL("browser_store.js?v=20260930zzj", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=20260930zzb", script.src).href;
+    update.src = new URL("suite_update.js?v=20260930zzj", script.src).href;
     document.head.append(update)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

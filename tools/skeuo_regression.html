@@ -41,11 +41,12 @@ const SEL = ['html', 'body', '.repo-header', '.repo-header h1', '.repo-header-su
   '.repo-seg[aria-pressed=true]', 'svg.opt-chart', '.vslider input.vr', '.mc-header-tools button', '.mc-kpi>div', '.mc-item', '.report',
   '.sectionCard', '.repo-block .warn', 'dialog.repo-ap-dialog', '.mc-menu>summary', '.mc-switch>summary', '.mc-toolbar>.mc-import>summary',
   '.mc-tools', '.mc-summary', '.mapCard', '.arrayItem', '.fp-gauge svg', '.fp-fuel-mode', 'main.ap-page .ap-thumb', 'main.ap-page .ap-iconrow'];
+// (largeur et hauteur non relevées : elles suivent le contenu — dates, heures, libellés)
 const PROPS = ['background-image', 'background-color', 'background-size', 'background-position', 'color', 'border-top-width',
   'border-top-style', 'border-top-color', 'border-left-width', 'border-left-color', 'border-image-source', 'border-radius', 'box-shadow',
   'outline-style', 'outline-color', 'outline-offset', 'padding-top', 'padding-left', 'padding-right', 'margin-top', 'margin-bottom',
   'margin-left', 'font-family', 'font-size', 'font-weight', 'font-style', 'font-stretch', 'text-transform', 'letter-spacing',
-  'text-shadow', 'min-height', 'height', 'width', 'opacity', 'filter', 'display', 'position', 'text-decoration-line', 'mix-blend-mode',
+  'text-shadow', 'min-height', 'opacity', 'filter', 'display', 'position', 'text-decoration-line', 'mix-blend-mode',
   'backdrop-filter', 'content', 'inset'];
 const KEY = 'skeuoRegression:v1', $ = id => document.getElementById(id), log = s => { $('log').textContent += s + '\n'; };
 
@@ -78,6 +79,8 @@ async function sweep(visit) {
       f.src = '/' + p;
       await new Promise(r => { f.onload = r; setTimeout(r, 8000); });
       await new Promise(r => setTimeout(r, 1500));   // décors et blocs posés après le chargement
+      // transitions et animations coupées : relevé de l'état final, pas d'une étape de transition
+      f.contentDocument.head.insertAdjacentHTML('beforeend', '<style>*,*::before,*::after{transition:none!important;animation:none!important}</style>');
       for (const tone of tones) {
         f.contentDocument.documentElement.dataset.tone = tone;
         await new Promise(r => setTimeout(r, 120));
