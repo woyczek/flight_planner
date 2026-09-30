@@ -7,7 +7,7 @@
 <script src="../../repository_tree?v=4ae198a3"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
 <script src="mission_prompt.js?v=2d2e41d9"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../shared/mission_order.js?v=3008b790"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=0e2b9529"></script><script src="../../shared/mission_estimate.js?v=1ce8f779"></script><script src="../../shared/sia_base.js?v=2f8158b3"></script><script src="../../shared/mission_routing.js?v=ec32b1f9"></script><script src="../../shared/mission_airspaces.js?v=f9dae1f0"></script><script src="../../shared/mission_exercise.js?v=59bfcd6b"></script><script src="../../shared/mission_registry.js?v=860dd311"></script>
-<script src="mission_store.js?v=5ee9f600"></script>
+<script src="mission_store.js?v=30cd6232"></script>
 <script src="../../shared/aar_tracks.js?v=f4061047"></script>
 <script src="../../shared/mission_core/vocab.js?v=90cadad7"></script>
 <script src="jspdf.umd.min.js"></script>
@@ -2329,6 +2329,23 @@ $('missionId').addEventListener('input', () => {
   }
   updateIdentHints()
 });
+/* Identifiant changé (saisie terminée : champ quitté) : les missions annoncées par l'opération suivent, dans tout le lot
+   et dans la mission courante ; pendant la saisie, la mission garde sa place dans le lot (SiaMission.save). */
+let idBefore = '';
+$('missionId').addEventListener('focus', () => idBefore = $('missionId').value.trim());
+$('missionId').addEventListener('change', () => {
+  const now = $('missionId').value.trim();
+  if (!idBefore || now === idBefore) return;
+  shareMission(true);
+  if (SiaMission.renameInBatch?.(idBefore, now)) {
+    const op = SiaMission.load()?.yaml?.operation;
+    if (op) state.yaml.operation = op;
+    renderYaml();
+    syncBatchUi();
+    setStatus(`Identifiant ${idBefore} → ${now} : missions de l’opération mises à jour.`, 'ok')
+  }
+  idBefore = now
+});
 $('missionType').addEventListener('input', updateIdentHints);
 $('addNarrative').onclick = () => {
   state.narrative.sections.push({
@@ -2383,11 +2400,24 @@ $('saveToFolder').onclick = async () => {
   const C = window.MissionRegistryCore;
   if (!C) return;
   syncNarrative();
+  const idBefore = String(state.yaml?.mission?.id || '');
   try {
     const f = await C.saveYaml(state.yaml, {
       action: 'modifiée dans le générateur',
       request: true
     });
+    // identifiant corrigé à l'enregistrement (hors format → proposé d'après la famille) : lot et opération suivent
+    const idAfter = String(state.yaml?.mission?.id || '');
+    if (idAfter !== idBefore) {
+      shareMission(true);
+      if (SiaMission.renameInBatch?.(idBefore, idAfter)) {
+        const op = SiaMission.load()?.yaml?.operation;
+        if (op) state.yaml.operation = op;
+      }
+      renderCommon();
+      renderYaml();
+      syncBatchUi()
+    }
     setStatus(f ? `Mission enregistrée : data/missions/${f}/ (ancienne version remplacée ; historique dans meta.history).` : 'Dossier des missions non autorisé.', f ? 'ok' : 'err');
     if (f) {
       const d = SiaMission.load();

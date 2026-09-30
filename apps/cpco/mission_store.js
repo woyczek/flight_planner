@@ -430,24 +430,14 @@
     } catch (e) {
       throw Error('Mission non enregistrée dans le navigateur : ' + e.message);
     }
-    // lot : la mission enregistrée remplace sa copie dans le lot (même identifiant) et devient la courante
+    // lot : la mission enregistrée remplace sa copie dans le lot et devient la courante. Mission en cours de saisie (la
+    // courante du lot, même titre, même opération) : sa propre place, quel que soit l'identifiant tapé (vide, partiel,
+    // égal à celui d'une autre mission) — jamais une autre mission du lot ; sinon (mission chargée, go) : même identifiant
     const b = loadBatch();
     if (b) {
-      let i = b.docs.findIndex(d => missionId(d) === missionId(out));
-      // identifiant changé dans une page (« BFM-001A » → « A-001A ») : même mission que la courante du lot, renommée ;
-      // les missions annoncées par l'opération (operation.missions) suivent le nouvel identifiant
-      const was = current ? missionId(current) : '',
-        now = missionId(out);
-      if (i < 0 && was && was !== now && missionId(b.docs[b.index]) === was) {
-        i = b.index;
-        const rename = y => {
-          const list = y?.operation?.missions;
-          if (Array.isArray(list)) y.operation.missions = list.map(x => String(x).trim().toUpperCase().replace(/^0+(?=\d)/, '') === was ? now : x);
-        };
-        b.docs.forEach(d => rename(d.yaml));
-        rename(out.yaml);
-        localStorage.setItem(KEY, JSON.stringify(out));
-      }
+      const here = b.docs[b.index],
+        editing = current && missionId(current) === missionId(here) && sameMission(out, here);
+      const i = editing ? b.index : b.docs.findIndex(d => missionId(d) === missionId(out));
       if (i >= 0) {
         b.docs[i] = {
           yaml: out.yaml,
@@ -470,6 +460,30 @@
   const missionId = d => String(d?.yaml?.mission?.id ?? d?.yaml?.mission?.number ?? '').trim().toUpperCase().replace(/^0+(?=\d)/, '');
   /** Identifiant d'opération d'une mission (bloc operation) ; « » sans opération. */
   const operationId = d => String(d?.yaml?.operation?.id ?? '').trim().toUpperCase();
+  /** Même mission à identifiant près : même titre, même opération (sert à suivre une mission dont on change l'identifiant). */
+  const sameMission = (a, b) => String(a?.yaml?.title ?? '') === String(b?.yaml?.title ?? '') && operationId(a) === operationId(b);
+  /** Identifiant d'une mission du lot changé (saisie terminée) : les missions annoncées par l'opération (operation.missions)
+   *  de toutes les missions du lot, et de la mission courante, suivent le nouvel identifiant. Identifiant incomplet ou déjà
+   *  pris par une autre mission du lot : rien n'est renommé (retour false). */
+  function renameInBatch(from, to) {
+    const was = String(from || '').trim().toUpperCase().replace(/^0+(?=\d)/, ''),
+      now = String(to || '').trim().toUpperCase().replace(/^0+(?=\d)/, ''),
+      b = loadBatch();
+    if (!b || !was || !now || was === now || !parseId(now).letter) return false;
+    if (b.docs.some((d, k) => k !== b.index && missionId(d) === now)) return false;
+    const fix = y => {
+      const list = y?.operation?.missions;
+      if (Array.isArray(list)) y.operation.missions = list.map(x => String(x).trim().toUpperCase().replace(/^0+(?=\d)/, '') === was ? now : x);
+    };
+    b.docs.forEach(d => fix(d.yaml));
+    storeBatch(b);
+    const cur = load();
+    if (cur) {
+      fix(cur.yaml);
+      localStorage.setItem(KEY, JSON.stringify(cur));
+    }
+    return true;
+  }
   /** Missions annoncées par l'opération d'un lot (operation.missions de ses documents), normalisées. */
   const plannedIds = docs => [...new Set(docs.flatMap(d => (Array.isArray(d?.yaml?.operation?.missions) ? d.yaml.operation.missions : []).map(x => String(x).trim().toUpperCase().replace(/^0+(?=\d)/, ''))))];
   /** Lot mémorisé { docs: [{ yaml, narrative, sourceNames }], index } (plusieurs missions, ou une mission d'une
@@ -940,6 +954,7 @@
     splitBundle,
     importTexts,
     loadBatch,
+    renameInBatch,
     go,
     addToBatch,
     mountNav,
