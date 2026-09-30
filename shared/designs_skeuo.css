@@ -29,6 +29,16 @@
 
 /* ================================================================================================ CABINET */
 html[data-design-base="cabinet"] {
+  --sk-page-margin: 14px;
+  --sk-page-bg: #4a2712 url("textures/wood.webp?v=73340c58") center/512px;
+  --sk-page-shadow: 0 18px 40px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 220, 170, .35), inset 0 0 0 1px #1c0d05, inset 0 0 24px rgba(0, 0, 0, .5);
+  --sk-corner-screw: var(--cab-screw);
+  --sk-header-screw-at: 9px;
+  --sk-header-screw-size: 11px;
+  --sk-block-screw-radius: 4px;
+  --sk-block-screw-at: 2px;
+  --sk-block-screw-size: 12px;
+  --sk-card-screw-size: 10px;
   --sk-emblem-w: 56px;
   --sk-emblem-h: 56px;
   --sk-emblem-margin: 0 6px 0 -2px;
@@ -213,17 +223,18 @@ html[data-design-base="cabinet"][data-tone="dark"] {
   --sk-block-shadow: inset 0 0 0 1px rgba(0, 0, 0, .8), inset 0 3px 6px rgba(0, 0, 0, .5), inset 0 0 36px rgba(0, 0, 0, .45), 0 0 0 1px rgba(0, 0, 0, .85), 0 5px 10px rgba(0, 0, 0, .55);
 }
 /* cadre : la page est un meuble en bois verni posé sur un sous-main en cuir (piqûre en décor complet) */
-html[data-design-base="cabinet"] body {
+/* cadre de la page (designs à cadre) : marge, fond et ombre par jetons (--sk-page-*) ; encre du design */
+html[data-skeuo="frame"] body {
   position: relative;
-  margin-top: 14px !important;
-  margin-bottom: 14px !important;
-  margin-left: 14px !important;
-  margin-right: 14px !important;
+  margin-top: var(--sk-page-margin) !important;
+  margin-bottom: var(--sk-page-margin) !important;
+  margin-left: var(--sk-page-margin) !important;
+  margin-right: var(--sk-page-margin) !important;
   padding-top: 12px !important;
   border-radius: 14px;
-  background: #4a2712 url("textures/wood.webp?v=73340c58") center/512px !important;
-  color: var(--cab-ink);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 220, 170, .35), inset 0 0 0 1px #1c0d05, inset 0 0 24px rgba(0, 0, 0, .5)
+  background: var(--sk-page-bg) !important;
+  color: var(--sk-ink);
+  box-shadow: var(--sk-page-shadow)
 }
 html[data-design-base="cabinet"][data-decor="full"]::before {
   content: "";
@@ -243,12 +254,13 @@ html[data-design-base="cabinet"][data-decor="full"] .repo-header::after {
   border-radius: 7px;
   pointer-events: none
 }
-html[data-design-base="cabinet"][data-decor="full"] .repo-header::before {
+/* vis des coins (designs à cadre, décor complet) : image --sk-corner-screw ; retrait, position et taille par emplacement */
+html[data-skeuo="frame"][data-decor="full"] .repo-header::before {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: var(--cab-screw) 9px 9px/11px no-repeat, var(--cab-screw) right 9px top 9px/11px no-repeat, var(--cab-screw) 9px calc(100% - 9px)/11px no-repeat, var(--cab-screw) right 9px bottom 9px/11px no-repeat
+  background: var(--sk-corner-screw) var(--sk-header-screw-at) var(--sk-header-screw-at)/var(--sk-header-screw-size) no-repeat, var(--sk-corner-screw) right var(--sk-header-screw-at) top var(--sk-header-screw-at)/var(--sk-header-screw-size) no-repeat, var(--sk-corner-screw) var(--sk-header-screw-at) calc(100% - var(--sk-header-screw-at))/var(--sk-header-screw-size) no-repeat, var(--sk-corner-screw) right var(--sk-header-screw-at) bottom var(--sk-header-screw-at)/var(--sk-header-screw-size) no-repeat
 }
 html[data-design-base="cabinet"] .repo-header-subtitle {
   font-style: italic;
@@ -289,13 +301,13 @@ html[data-design="cabinet"][data-decor="full"] .repo-block {
   outline: 1.6px dashed rgba(238, 210, 156, .78) !important;
   outline-offset: -6px !important
 }
-html[data-design-base="cabinet"][data-decor="full"] .repo-block::after {
+html[data-skeuo="frame"][data-decor="full"] .repo-block::after {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: var(--sk-block-screw-inset, 0);
   pointer-events: none;
-  border-radius: 4px;
-  background: var(--cab-screw) 2px 2px/12px no-repeat, var(--cab-screw) right 2px top 2px/12px no-repeat, var(--cab-screw) 2px calc(100% - 2px)/12px no-repeat, var(--cab-screw) right 2px bottom 2px/12px no-repeat
+  border-radius: var(--sk-block-screw-radius, 0);
+  background: var(--sk-corner-screw) var(--sk-block-screw-at) var(--sk-block-screw-at)/var(--sk-block-screw-size) no-repeat, var(--sk-corner-screw) right var(--sk-block-screw-at) top var(--sk-block-screw-at)/var(--sk-block-screw-size) no-repeat, var(--sk-corner-screw) var(--sk-block-screw-at) calc(100% - var(--sk-block-screw-at))/var(--sk-block-screw-size) no-repeat, var(--sk-corner-screw) right var(--sk-block-screw-at) bottom var(--sk-block-screw-at)/var(--sk-block-screw-size) no-repeat
 }
 /* ↑ vis dans la boîte du bloc : un pseudo-élément qui dépassait faisait apparaître une barre de défilement dans les
    blocs à défilement (reporting : .section, overflow:auto), qui disparaissait au calcul suivant (blocs qui changeaient
@@ -345,12 +357,12 @@ html[data-design-base="cabinet"] .repo-block-subtitle {
   font-style: italic
 }
 /* sous-cartes, zones de dépôt, bandeaux */
-html[data-design-base="cabinet"][data-decor="full"] .repo-card::after {
+html[data-skeuo="frame"][data-decor="full"] .repo-card::after {
   content: "";
   position: absolute;
   inset: 4px;
   pointer-events: none;
-  background: var(--cab-screw) 0 0/10px no-repeat, var(--cab-screw) right 0 top 0/10px no-repeat, var(--cab-screw) 0 100%/10px no-repeat, var(--cab-screw) right 0 bottom 0/10px no-repeat
+  background: var(--sk-corner-screw) 0px 0px/var(--sk-card-screw-size) no-repeat, var(--sk-corner-screw) right 0px top 0px/var(--sk-card-screw-size) no-repeat, var(--sk-corner-screw) 0px calc(100% - 0px)/var(--sk-card-screw-size) no-repeat, var(--sk-corner-screw) right 0px bottom 0px/var(--sk-card-screw-size) no-repeat
 }
 /* textes, champs */
 /* textes des blocs (designs à cadre) : libellés et intertitres, petits textes (jetons --sk-label-ink, --sk-ink-2) */
@@ -452,6 +464,16 @@ html[data-design-base="cabinet"] .repo-header button.headerButton {
 
 /* ================================================================================================ DURCI */
 html[data-design="field"] {
+  --sk-page-margin: 16px;
+  --sk-page-bg: #465034 url("textures/olive.webp?v=1599d9f0") center/512px;
+  --sk-page-shadow: 0 20px 40px rgba(0, 0, 0, .6), inset 0 2px 0 rgba(220, 230, 190, .25), inset 0 0 0 2px #1d2116, inset 0 0 30px rgba(0, 0, 0, .45);
+  --sk-corner-screw: var(--fd-screw);
+  --sk-header-screw-at: 8px;
+  --sk-header-screw-size: 12px;
+  --sk-block-screw-inset: 4px;
+  --sk-block-screw-at: 0px;
+  --sk-block-screw-size: 12px;
+  --sk-card-screw-size: 12px;
   --sk-emblem-w: 84px;
   --sk-emblem-h: 32px;
   --sk-emblem-margin: 0 4px 0 0;
@@ -618,36 +640,12 @@ html[data-design="field"] {
   --sk-thumb-shadow: 0 2px 3px rgba(0, 0, 0, .7), inset 0 1px 0 rgba(255, 255, 255, .3);
 }
 html[data-design="field"] body {
-  position: relative;
-  margin-top: 16px !important;
-  margin-bottom: 16px !important;
-  margin-left: 16px !important;
-  margin-right: 16px !important;
-  padding-top: 12px !important;
-  border-radius: 14px;
-  color: var(--fd-text);
-  background: #465034 url("textures/olive.webp?v=1599d9f0") center/512px !important;
-  font-family: Bahnschrift, "DIN Alternate", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, .6), inset 0 2px 0 rgba(220, 230, 190, .25), inset 0 0 0 2px #1d2116, inset 0 0 30px rgba(0, 0, 0, .45)
-}
-html[data-design="field"][data-decor="full"] .repo-header::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: var(--fd-screw) 8px 8px/12px no-repeat, var(--fd-screw) right 8px top 8px/12px no-repeat, var(--fd-screw) 8px calc(100% - 8px)/12px no-repeat, var(--fd-screw) right 8px bottom 8px/12px no-repeat
+  font-family: Bahnschrift, "DIN Alternate", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif
 }
 html[data-design="field"] :is(.repo-menu-button, .repo-language-button) {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18) !important
 }
 /* blocs : panneaux d'acier gris-vert usé, vis cruciformes, bande d'unité (couleur du thème) à gauche */
-html[data-design="field"][data-decor="full"] :is(.repo-block, .repo-card)::after {
-  content: "";
-  position: absolute;
-  inset: 4px;
-  pointer-events: none;
-  background: var(--fd-screw) 0 0/12px no-repeat, var(--fd-screw) right 0 top 0/12px no-repeat, var(--fd-screw) 0 100%/12px no-repeat, var(--fd-screw) right 0 bottom 0/12px no-repeat
-}
 html[data-design="field"] .repo-dropzone:hover {
   border-color: var(--fd-led) !important;
   border-style: solid !important
