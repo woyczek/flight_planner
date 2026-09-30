@@ -22,6 +22,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   (`--sk-btn-family`, `--sk-lbtn-family`) par jetons ; tonalité des surfaces `html[data-surface]` (« dark » pour Durci,
   dont les blocs sont sombres, et pour tout ton sombre ; déclarée dans le registre des designs : `surface:"dark"`) :
   encadrés d'état écrits pour elle au lieu d'une liste de designs. Rendu identique (banc).
+- **Tableaux des designs à matières** : lignes resserrées (boutons et champs compacts dans les cellules : 45 → 33 px
+  dans le registre des missions) ; Durci : type de mission (gras) à l'encre foncée sur la feuille de registre.
+- **Textes secondaires des pages** (`var(--muted)`) : encre secondaire du design dans les blocs des designs à cadre
+  (sous-lignes des dossiers de Paramètres illisibles en Carnet de vol).
 - **Toolkit — phase 2** : sélecteurs segmentés d'Aqua dans les règles communes (jetons de fond de segment et de
   rayon) ; entrée courante de la barre latérale par jetons (`--sk-nav-on-bg`, `--sk-nav-on-edge`, règle de base).
 - **Carnet de vol** (feuille de registre) : en-tête entier, fondus courts (le fondu mangeait le texte).

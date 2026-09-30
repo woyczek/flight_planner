@@ -352,6 +352,13 @@ html[data-design-base="cabinet"] .repo-notice {
 html[data-skeuo="frame"] .repo-block :is(label, legend, th, h3, h4) {
   color: var(--sk-label-ink) !important
 }
+/* gris secondaire des pages (var(--muted), pensé pour le design standard) : encre secondaire du design dans les blocs */
+html[data-skeuo="frame"] .repo-block {
+  --muted: var(--sk-ink-2)
+}
+html[data-design="field"] .repo-has-sheet {
+  --muted: #4a4634
+}
 html[data-skeuo="frame"] .repo-block :is(.small, .note, .muted, .hint) {
   color: var(--sk-ink-2) !important
 }
@@ -1082,7 +1089,7 @@ html[data-skeuo] :is(.repo-block-titles, .repo-block-lead) {
 html[data-skeuo] .repo-block-lead {
   align-items: flex-start !important
 }
-html[data-skeuo] :is(.repo-block, .repo-header, .repo-actionbar, .status-bar) :is(button, a.headerButton, .buttonLink):not(.repo-block-tools button):not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-icon-only):not([role=menuitem]):not(.repo-plain) {
+html[data-skeuo] :is(.repo-block, .repo-header, .repo-actionbar, .status-bar) :is(button, a.headerButton, .buttonLink):not(.repo-block-tools button):not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-icon-only):not([role=menuitem]):not(.repo-plain):not(td *) {
   padding: 8px 16px !important;
   min-height: 38px
 }
@@ -1091,14 +1098,27 @@ html[data-skeuo] .repo-block-tools button {
   min-height: 30px
 }
 /* bouton icône seule : même hauteur que les autres, carré */
-html[data-skeuo] :is(.repo-block, .repo-header, .repo-actionbar, .status-bar) :is(button, .buttonLink).repo-icon-only:not(.repo-block-tools button) {
+html[data-skeuo] :is(.repo-block, .repo-header, .repo-actionbar, .status-bar) :is(button, .buttonLink).repo-icon-only:not(.repo-block-tools button):not(td *) {
   min-height: 38px;
   min-width: 38px;
   padding: 0 8px !important
 }
-html[data-skeuo] .repo-block :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select) {
+html[data-skeuo] .repo-block :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select):not(td *) {
   min-height: 38px;
   padding: 7px 10px !important
+}
+/* dans les cellules des tableaux : commandes compactes (lignes serrées) */
+html[data-skeuo] .repo-block td :is(button, a.headerButton, .buttonLink):not(.repo-plain) {
+  padding: 2px 9px !important;
+  min-height: 26px
+}
+html[data-skeuo] .repo-block td :is(button, .buttonLink).repo-icon-only {
+  min-width: 26px;
+  padding: 0 5px !important
+}
+html[data-skeuo] .repo-block td :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select) {
+  min-height: 28px;
+  padding: 3px 8px !important
 }
 
 /* ================================================================================================ LIENS EN BOUTONS
@@ -2176,6 +2196,12 @@ html[data-design="field"] .repo-block.repo-has-sheet {
 }
 html[data-design="field"] .repo-has-sheet :is(.repo-block-subtitle, p, .muted, .small, .hint, td) {
   color: #4a4634 !important;
+  text-shadow: none !important
+}
+/* textes que Durci éclaircit dans ses blocs sombres (gras, italique, listes…) : encre foncée sur le papier */
+html[data-design="field"] .repo-has-sheet .repo-block-body :is(strong, b, em, li, summary, dt, dd),
+html[data-design="field"] .repo-has-sheet td :is(strong, b, em) {
+  color: #2b2a20 !important;
   text-shadow: none !important
 }
 @media print {
