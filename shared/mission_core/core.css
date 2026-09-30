@@ -1527,7 +1527,6 @@ html[data-skeuo] :is(.mc-menu>summary, .mc-switch>summary, .mc-header-tools butt
 }
 /* fenêtres surgissantes : surface du design, entrées en texte lisible (et non en boutons sombres) */
 html[data-skeuo] :is(.mc-pop, .mc-switch-pop, .mc-import-pop) {
-  background: var(--sk-pop) !important;
   color: var(--sk-pop-ink) !important;
   border: 1px solid var(--sk-pop-bd) !important;
   box-shadow: 0 12px 28px rgba(0, 0, 0, .45) !important

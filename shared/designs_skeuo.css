@@ -2417,6 +2417,11 @@ html[data-design="aqua"][data-tone="dark"] {
   --sk-card-bd: rgba(255, 255, 255, .1);
   --sk-pop-danger: #ff9a8a
 }
+/* fond des fenêtres surgissantes des pages (Mission Core : .mc-pop…) posé ici et non dans la feuille de la page :
+   l'url() d'un jeton se résout par rapport à la feuille qui l'emploie (textures/ est à côté de celle-ci) */
+html[data-skeuo] :is(.mc-pop, .mc-switch-pop, .mc-import-pop) {
+  background: var(--sk-pop) !important
+}
 /* cartes et encadrés partagés par plusieurs pages (.note, .kpi) : habillés comme les cartes du design */
 html[data-skeuo] .repo-block :is(.note, .kpi>div) {
   background: var(--sk-card) !important;
