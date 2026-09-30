@@ -14,7 +14,7 @@ la lettre d'équipe suit) ; identifiant complet : cette mission seulement. Dans 
 - textes des .yaml / .md / .txt (hors recu/ : trace des textes reçus, gardée telle quelle) : l'ancien identifiant comme
   jeton (« BFM-001A », « generalBFM-001A.png » ; pas « BFM-0012 ») → le nouveau ;
 - mission.former_id = ancien identifiant (s'il n'y en a pas déjà un) ; --type : mission.type des missions de l'opération
-  (hors mission d'organisation, rôle organisation) ;
+  (mission d'organisation comprise) ;
 - fichiers et dossiers dont le nom contient l'ancien identifiant : renommés, rangés dans <lettre>_<FAMILLE>/<id>/ ;
   destination déjà occupée → l'ancien va dans _remplaces/<date>/ (rien n'est supprimé).
 Trace : data/missions/RENUMEROTATION.md. Bibliothèque standard uniquement ; même règle que SiaMission.migrateIds (générateur).
@@ -76,7 +76,7 @@ def main():
                         break
                 if ancien and not re.search(r'(?m)^  former_id:', t):
                     t = re.sub(r'(?m)^(  id: *\S+)$', rf'\1\n  former_id: {ancien}', t, count=1)
-                if type_ and not re.search(r'(?m)^  role: *organisation', t):
+                if type_:   # mission d'organisation comprise (même famille que ses missions)
                     t = re.sub(r'(?m)^(  type: *)\S+$', rf'\g<1>{type_}', t, count=1)
             if t != s:
                 changes += 1

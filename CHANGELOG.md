@@ -14,6 +14,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 > est livrée en 4.3.1 ; la phase 2 (supprimer les exceptions par design, assets à fournir) pourra encore modifier
 > légèrement l'apparence des designs à matières. Plan : [docs/REFACTORING_TOOLKIT.md](docs/REFACTORING_TOOLKIT.md).
 
+- **Missions — identifiants liés** : changer l'identifiant d'une mission d'opération (générateur : champ quitté, ou
+  identifiant hors format corrigé à l'enregistrement) propose une migration globale — toute l'opération si la base
+  change (`BFM-001C` → `A-001C` migre `BFM-001` → `A-001` : missions, organisation, participants de l'exercice, noms
+  des cartes, textes, famille ; ancien identifiant dans `mission.former_id`) — sinon l'identifiant est rétabli.
+  Pendant la saisie, la mission garde sa place dans le lot (plus d'écrasement d'une autre mission par un identifiant
+  partiel ou en double). Missions déjà rangées : `tools/migrate_operation_ids.py`. Dossier des missions : cause
+  précise de chaque échec (sélecteur, autorisation, écriture, identifiant hors format) au lieu de « non autorisé ».
 - **Nouvelle famille COMBAT — combat aérien / entraînement chasse** (lettre A : missions `A-001`, CR `CRA-001-1`,
   `CRA-A01-0`) : sous-types BFM (combat rapproché), ACM (combat aérien manœuvrant), DACT (adversaire dissemblable),
   INTERCEPT (interception d'entraînement, identification visuelle). CR et reporting (`apps/cr/COMBAT/`) : dispositif et

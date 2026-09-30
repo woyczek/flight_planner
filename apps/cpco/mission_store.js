@@ -462,27 +462,93 @@
   const operationId = d => String(d?.yaml?.operation?.id ?? '').trim().toUpperCase();
   /** Même mission à identifiant près : même titre, même opération (sert à suivre une mission dont on change l'identifiant). */
   const sameMission = (a, b) => String(a?.yaml?.title ?? '') === String(b?.yaml?.title ?? '') && operationId(a) === operationId(b);
-  /** Identifiant d'une mission du lot changé (saisie terminée) : les missions annoncées par l'opération (operation.missions)
-   *  de toutes les missions du lot, et de la mission courante, suivent le nouvel identifiant. Identifiant incomplet ou déjà
-   *  pris par une autre mission du lot : rien n'est renommé (retour false). */
-  function renameInBatch(from, to) {
-    const was = String(from || '').trim().toUpperCase().replace(/^0+(?=\d)/, ''),
-      now = String(to || '').trim().toUpperCase().replace(/^0+(?=\d)/, ''),
-      b = loadBatch();
-    if (!b || !was || !now || was === now || !parseId(now).letter) return false;
-    if (b.docs.some((d, k) => k !== b.index && missionId(d) === now)) return false;
-    const fix = y => {
-      const list = y?.operation?.missions;
-      if (Array.isArray(list)) y.operation.missions = list.map(x => String(x).trim().toUpperCase().replace(/^0+(?=\d)/, '') === was ? now : x);
+  // ---- identifiants liés : une mission d'opération est référencée par les autres (operation.missions / organisation,
+  // exercise.participants[].mission, noms des cartes « generalBFM-001A.png », récits « selon BFM-001Z »). Changer un seul
+  // mission.id casse ces liens : migration de l'opération entière, même règle que tools/migrate_operation_ids.py.
+  const idNorm = v => String(v ?? '').trim().toUpperCase();
+  /** Base d'opération d'un identifiant : « BFM-001C » → « BFM-001 » ; « M-016 » → « M-016 ». */
+  const idBase = id => idNorm(id).replace(/(\d)[A-Z]$/, '$1');
+  /** Ancien identifiant comme jeton (lettre d'équipe capturée pour une base d'opération) : pas « BFM-0012 ». */
+  const idToken = (old, base) => new RegExp(`(?<![A-Z0-9-])${old.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}${base ? '([A-Z]?)' : '()'}(?![A-Z0-9])`, 'g');
+  /** Valeurs texte d'un document (clés comprises), parcours profond ; fn(texte) → texte. */
+  const mapStrings = (v, fn) => Array.isArray(v) ? v.map(x => mapStrings(x, fn)) : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, k === 'former_id' ? x : mapStrings(x, fn)])) : typeof v === 'string' ? fn(v) : v; // former_id : trace, gardé tel quel
+  /** Missions du lot (et courante) qui citent un identifiant ailleurs que dans leur propre mission.id : [{ id, count }]. */
+  function idRelations(id) {
+    const old = idNorm(id);
+    if (!old) return [];
+    const rx = idToken(old, false),
+      b = loadBatch(),
+      cur = load(),
+      docs = [...(b?.docs || [])];
+    if (cur && !docs.some(d => missionId(d) === missionId(cur))) docs.push(cur);
+    return docs.map(d => {
+      const y = {
+        ...(d.yaml || {}),
+        mission: {
+          ...(d.yaml?.mission || {}),
+          id: '',
+          former_id: ''
+        }
+      };
+      return {
+        id: missionId(d) || '?',
+        count: (JSON.stringify(y).match(rx) || []).length + (JSON.stringify(d.narrative || {}).match(rx) || []).length
+      };
+    }).filter(x => x.count);
+  }
+  /** Migration d'identifiants dans le lot et la mission courante : from → to partout (textes, listes, noms de cartes).
+   *  Base d'opération (« BFM-001 » → « A-001 ») : l'opération et chacune de ses missions, la lettre d'équipe suit ;
+   *  identifiant complet : cette mission seulement. mission.former_id = ancien identifiant ; type : famille donnée aux
+   *  missions, mission d'organisation comprise. Retour : nombre de missions du lot modifiées. */
+  function migrateIds(from, to, {
+    type = ''
+  } = {}) {
+    const old = idNorm(from),
+      now = idNorm(to);
+    if (!old || !now || old === now) return 0;
+    const base = !/\d[A-Z]$/.test(old),
+      rx = idToken(old, base),
+      sub = s => s.replace(rx, (_, team) => now + team);
+    let n = 0;
+    const fix = d => {
+      if (!d?.yaml) return d;
+      const before = JSON.stringify([d.yaml, d.narrative]),
+        was = idNorm(d.yaml.mission?.id),
+        y = mapStrings(d.yaml, sub),
+        narrative = mapStrings(d.narrative, sub);
+      const m = y.mission || (y.mission = {});
+      // identifiant propre déjà changé dans la page (saisie) : l'ancien est retrouvé d'après la règle
+      const own = [...JSON.stringify(d.yaml).matchAll(rx)].map(x => old + x[1]).find(o => sub(o) === idNorm(m.id)) || (was !== idNorm(m.id) ? was : '');
+      if (own && own !== idNorm(m.id) && !m.former_id) m.former_id = own;
+      if (type) m.type = type; // mission d'organisation comprise (même famille que ses missions)
+      if (JSON.stringify([y, narrative]) !== before) n++;
+      return {
+        ...d,
+        yaml: y,
+        narrative
+      };
     };
-    b.docs.forEach(d => fix(d.yaml));
-    storeBatch(b);
-    const cur = load();
-    if (cur) {
-      fix(cur.yaml);
-      localStorage.setItem(KEY, JSON.stringify(cur));
+    const b = loadBatch();
+    if (b) {
+      b.docs = b.docs.map(fix);
+      storeBatch(b);
     }
-    return true;
+    const cur = load(),
+      counted = n;
+    if (cur) {
+      const c = fix(cur);
+      n = b ? counted : n;
+      localStorage.setItem(KEY, JSON.stringify({
+        ...c,
+        rev: (cur.rev || 0) + 1,
+        at: Date.now()
+      }));
+      channel?.postMessage({
+        rev: (cur.rev || 0) + 1,
+        by: 'migration'
+      });
+    }
+    return n;
   }
   /** Missions annoncées par l'opération d'un lot (operation.missions de ses documents), normalisées. */
   const plannedIds = docs => [...new Set(docs.flatMap(d => (Array.isArray(d?.yaml?.operation?.missions) ? d.yaml.operation.missions : []).map(x => String(x).trim().toUpperCase().replace(/^0+(?=\d)/, ''))))];
@@ -954,7 +1020,9 @@
     splitBundle,
     importTexts,
     loadBatch,
-    renameInBatch,
+    idBase,
+    idRelations,
+    migrateIds,
     go,
     addToBatch,
     mountNav,

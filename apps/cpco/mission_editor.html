@@ -7,7 +7,7 @@
 <script src="../../repository_tree?v=4ae198a3"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
 <script src="mission_prompt.js?v=2d2e41d9"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../shared/mission_order.js?v=3008b790"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=0e2b9529"></script><script src="../../shared/mission_estimate.js?v=1ce8f779"></script><script src="../../shared/sia_base.js?v=2f8158b3"></script><script src="../../shared/mission_routing.js?v=ec32b1f9"></script><script src="../../shared/mission_airspaces.js?v=f9dae1f0"></script><script src="../../shared/mission_exercise.js?v=59bfcd6b"></script><script src="../../shared/mission_registry.js?v=860dd311"></script>
-<script src="mission_store.js?v=30cd6232"></script>
+<script src="mission_store.js?v=00ff5c1b"></script>
 <script src="../../shared/aar_tracks.js?v=f4061047"></script>
 <script src="../../shared/mission_core/vocab.js?v=90cadad7"></script>
 <script src="jspdf.umd.min.js"></script>
@@ -2329,22 +2329,57 @@ $('missionId').addEventListener('input', () => {
   }
   updateIdentHints()
 });
-/* Identifiant changé (saisie terminée : champ quitté) : les missions annoncées par l'opération suivent, dans tout le lot
-   et dans la mission courante ; pendant la saisie, la mission garde sa place dans le lot (SiaMission.save). */
+/* Identifiant changé : une mission d'opération est citée par les autres (operation.missions / organisation, participants
+   de l'exercice, noms des cartes, récits). Changer son seul identifiant casserait ces liens : migration globale proposée
+   (toute l'opération si la base change : BFM-001C → A-001C migre BFM-001 → A-001), sinon l'identifiant est rétabli.
+   Pendant la saisie, la mission garde sa place dans le lot (SiaMission.save). Retour : identifiant retenu. */
+function changeMissionId(from, to) {
+  from = String(from || '').trim().toUpperCase();
+  to = String(to || '').trim().toUpperCase();
+  if (!from || !to || from === to) return to;
+  const rel = SiaMission.idRelations?.(from) || [];
+  if (!rel.length) return to;
+  const a = SiaMission.idBase(from),
+    b = SiaMission.idBase(to),
+    global = a !== b && from.slice(a.length) === to.slice(b.length),
+    [old, now] = global ? [a, b] : [from, to],
+    L = SiaMission.FAMILY_LETTERS || {},
+    letter = SiaMission.parseId(now).letter,
+    fam = Object.keys(L).find(k => L[k] === letter && k !== 'MEDEVAC') || '',
+    type = String(state.yaml?.mission?.type || '').toUpperCase(),
+    // famille : celle de la nouvelle lettre, pour toute l'opération, si la lettre change (ou si la famille saisie ne va pas)
+    newType = fam && (SiaMission.parseId(from).letter !== letter || L[type] !== letter) ? fam : '';
+  const others = rel.filter(r => r.id !== to && r.id !== from);
+  const ok = confirm(`« ${from} » est cité ${others.length ? `par ${others.map(r => `${r.id} (${r.count} fois)`).join(', ')}` : 'dans cette mission (opération, cartes, textes)'}.\n\n` +
+    (global ? `Migrer toute l’opération ${a} → ${b} : chaque mission (${a}A → ${b}A…), l’organisation, les participants, les noms des cartes et les textes` : `Migrer ${from} → ${to} dans toutes les missions du lot (listes, participants, cartes, textes)`) +
+    (newType ? ` ; famille ${newType}` : '') + ` ?\n(ancien identifiant gardé dans mission.former_id)\n\nAnnuler : l’identifiant reste ${from} (le changer seul casserait ces liens).`);
+  if (!ok) {
+    setPath(state.yaml, ['mission', 'id'], from);
+    renderCommon();
+    shareMission(true);
+    setStatus(`Identifiant gardé : ${from} (lié à d’autres missions ; migration refusée).`, 'err');
+    return from
+  }
+  shareMission(true);
+  const n = SiaMission.migrateIds(old, now, {
+    type: newType
+  });
+  const d = SiaMission.load();
+  if (d) state = {
+    ...state,
+    yaml: d.yaml,
+    narrative: d.narrative || state.narrative
+  };
+  renderAll();
+  syncBatchUi();
+  setStatus(`Migration ${old} → ${now} : ${n} mission(s) du lot mise(s) à jour. Missions déjà rangées sous l’ancien identifiant : tools/migrate_operation_ids.py ${old} ${now}.`, 'ok');
+  return to
+}
 let idBefore = '';
 $('missionId').addEventListener('focus', () => idBefore = $('missionId').value.trim());
 $('missionId').addEventListener('change', () => {
   const now = $('missionId').value.trim();
-  if (!idBefore || now === idBefore) return;
-  shareMission(true);
-  if (SiaMission.renameInBatch?.(idBefore, now)) {
-    const op = SiaMission.load()?.yaml?.operation;
-    if (op) state.yaml.operation = op;
-    renderYaml();
-    syncBatchUi();
-    setStatus(`Identifiant ${idBefore} → ${now} : missions de l’opération mises à jour.`, 'ok')
-  }
-  idBefore = now
+  if (idBefore && now !== idBefore) idBefore = changeMissionId(idBefore, now)
 });
 $('missionType').addEventListener('input', updateIdentHints);
 $('addNarrative').onclick = () => {
@@ -2400,24 +2435,23 @@ $('saveToFolder').onclick = async () => {
   const C = window.MissionRegistryCore;
   if (!C) return;
   syncNarrative();
-  const idBefore = String(state.yaml?.mission?.id || '');
+  // identifiant hors format (« BFM-001A ») : identifiant proposé d'après la famille, migré avec ses liens (opération…)
+  const id = String(state.yaml?.mission?.id || '').trim().toUpperCase(),
+    p = SiaMission.parseId(id),
+    letter = (SiaMission.FAMILY_LETTERS || {})[String(state.yaml?.mission?.type || '').toUpperCase()],
+    m = /(\d{1,3})([A-Z]?)$/.exec(id);
+  if (id && !p.letter && letter && m) {
+    const guess = `${letter}-${m[1].padStart(3, '0')}${m[2]}`;
+    setPath(state.yaml, ['mission', 'id'], guess);
+    renderCommon();
+    shareMission(true);
+    if (changeMissionId(id, guess) !== guess) return
+  }
   try {
     const f = await C.saveYaml(state.yaml, {
       action: 'modifiée dans le générateur',
       request: true
     });
-    // identifiant corrigé à l'enregistrement (hors format → proposé d'après la famille) : lot et opération suivent
-    const idAfter = String(state.yaml?.mission?.id || '');
-    if (idAfter !== idBefore) {
-      shareMission(true);
-      if (SiaMission.renameInBatch?.(idBefore, idAfter)) {
-        const op = SiaMission.load()?.yaml?.operation;
-        if (op) state.yaml.operation = op;
-      }
-      renderCommon();
-      renderYaml();
-      syncBatchUi()
-    }
     setStatus(f ? `Mission enregistrée : data/missions/${f}/ (ancienne version remplacée ; historique dans meta.history).` : 'Dossier des missions non autorisé.', f ? 'ok' : 'err');
     if (f) {
       const d = SiaMission.load();
