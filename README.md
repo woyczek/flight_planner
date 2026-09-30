@@ -36,7 +36,7 @@ shared code stays in `shared/`, `AircraftDB/` and `assets/`.
 
 One engine (`shared/mission_core/`) drives the report and reporting pages of every
 family: HEMS / MEDEVAC, FIRE / GAAR (aerial firefighting), SAR, AIRLIFT, AAR (air-to-air refuelling), MARITIME, HADR,
-AIRBORNE, FLIGHT INSPECTION, SURVEY, LAW ENFORCEMENT, ISR, COMMAND / AEW, SOF, SPECIAL
+AIRBORNE, FLIGHT INSPECTION, SURVEY, LAW ENFORCEMENT, ISR, COMMAND / AEW, COMBAT (air combat training), SOF, SPECIAL
 (test / training). Each family has a report page (`apps/cr/<FOLDER>/<family>_cr.html`) and a
 reporting page (`apps/cr/<FOLDER>/<family>_reporting.html`); the header popup switches family and
 mission sub-type.

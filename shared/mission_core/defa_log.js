@@ -354,6 +354,7 @@
   // Famille déduite du libellé de mission, sinon de l'indicatif et du type ; à défaut SPECIAL.
   const FAMILY_RULES = [
     ['FIRE', /FEU|INCENDI|GAAR|FIRE|ECOPAGE|WATER ?BOMB|LARGAGE D.?EAU|FFS/],
+    ['COMBAT', /\bBFM\b|\bACM\b|\bDACT\b|COMBAT|DOGFIGHT|\b[1-4] ?V ?[1-4]\b|PLASTRON|RED ?AIR/],
     ['SAR', /\bSAR\b|RECHERCHE|SAUVETAGE|RESCUE|TREUIL|HOIST/],
     ['HEMS', /MEDEVAC|EVASAN|SMUR|HEMS|SANITAIRE|SAMU|SECOURS/],
     ['AIRBORNE', /PARA|\bDROP\b|AEROLARG|LARGAGE|\bOAP\b/],

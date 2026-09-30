@@ -113,6 +113,7 @@
     LE: ['Police / douane / sécurité', 'Police / customs / security', 'Polizei / Zoll / Sicherheit', 'Policía / aduana / seguridad'],
     ISR: ['Renseignement / reconnaissance', 'Intelligence / reconnaissance', 'Aufklärung / Nachrichtengewinnung', 'Inteligencia / reconocimiento'],
     COMMAND: ['Commandement / police du ciel / guet aérien', 'Command / air policing / early warning', 'Führung / Luftpolizeidienst / Frühwarnung', 'Mando / policía aérea / alerta temprana'],
+    COMBAT: ['Combat aérien / entraînement chasse', 'Air combat / fighter training', 'Luftkampf / Jagdflugausbildung', 'Combate aéreo / entrenamiento de caza'],
     SOF: ['Opérations spéciales / tactiques', 'Special / tactical operations', 'Spezial- / taktische Operationen', 'Operaciones especiales / tácticas'],
     SPECIAL: ['Transport spécial / essais / formation', 'Special transport / trials / training', 'Sondertransport / Erprobung / Ausbildung', 'Transporte especial / ensayos / formación']
   };
@@ -131,6 +132,7 @@
     LE: ['Missions de police, de douane et de gendarmerie : surveillance, poursuite, frontières.', 'Police, customs and gendarmerie missions: surveillance, pursuit, borders.', 'Polizei-, Zoll- und Gendarmerieeinsätze: Überwachung, Verfolgung, Grenzen.', 'Misiones de policía, aduana y guardia civil: vigilancia, persecución, fronteras.'],
     ISR: ['Renseignement, surveillance et reconnaissance (y compris drones).', 'Intelligence, surveillance and reconnaissance (including drones).', 'Aufklärung, Überwachung und Nachrichtengewinnung (einschließlich Drohnen).', 'Inteligencia, vigilancia y reconocimiento (incluidos drones).'],
     COMMAND: ['Commandement aéroporté, guet aérien (AEW), relais, et police du ciel : interception, identification, QRA.', 'Airborne command, early warning (AEW), relay, and air policing: interception, identification, QRA.', 'Luftgestützte Führung, Frühwarnung (AEW), Relais und Luftpolizeidienst: Abfangen, Identifizierung, QRA.', 'Mando aerotransportado, alerta temprana (AEW), relé y policía aérea: interceptación, identificación, QRA.'],
+    COMBAT: ['Entraînement au combat aérien : combat rapproché (BFM), combat manœuvrant (ACM), adversaire dissemblable (DACT), interceptions d’entraînement.', 'Air combat training: basic fighter manoeuvres (BFM), air combat manoeuvring (ACM), dissimilar adversary (DACT), training intercepts.', 'Luftkampfausbildung: Grundmanöver (BFM), Luftkampfmanöver (ACM), ungleicher Gegner (DACT), Übungsabfangen.', 'Entrenamiento de combate aéreo: maniobras básicas (BFM), combate maniobrado (ACM), adversario disimilar (DACT), interceptaciones de entrenamiento.'],
     SOF: ['Opérations spéciales et tactiques : infiltration, exfiltration, appui des forces spéciales.', 'Special and tactical operations: infiltration, exfiltration, special forces support.', 'Spezial- und taktische Operationen: Infiltration, Exfiltration, Unterstützung von Spezialkräften.', 'Operaciones especiales y tácticas: infiltración, exfiltración, apoyo a fuerzas especiales.'],
     SPECIAL: ['Transports spéciaux, vols d’essais, formation et toutes les missions hors des autres familles.', 'Special transport, test flights, training and any mission outside the other families.', 'Sondertransporte, Testflüge, Ausbildung und alle Einsätze außerhalb der anderen Familien.', 'Transportes especiales, vuelos de prueba, formación y cualquier misión fuera de las demás familias.']
   };
@@ -148,6 +150,7 @@
     LE: 'police douane gendarmerie frontiere poursuite surveillance ordre public trafic contrebande police customs border pursuit law enforcement smuggling polizei zoll grenze verfolgung schmuggel policia aduana guardia civil frontera persecucion contrabando',
     ISR: 'renseignement reconnaissance isr roem roim drone reaper patroller reco photo tactique surveillance intelligence reconnaissance surveillance drone uav aufklarung nachrichtengewinnung uberwachung drohne inteligencia reconocimiento vigilancia dron',
     COMMAND: 'commandement awacs e3 guet aerien relais radio c2 poste de commandement qra police du ciel surete aerienne alerte interception interception en vol identification intercepter chasse command control airborne early warning air policing quick reaction alert intercept interception relay fuhrung luftraumuberwachung alarmrotte abfangen abfangjager relais mando control alerta temprana policia aerea interceptacion interceptar alerta de reaccion rapida',
+    COMBAT: 'combat aerien chasse avion de chasse rafale mirage alphajet pc21 bfm acm dact combat rapproche combat tournoyant dogfight 1v1 2v2 adversaire dissemblable red air plastron interception entrainement vid identification visuelle tir fox canon missile tsa cba air combat fighter training basic fighter manoeuvres air combat manoeuvring dissimilar aggressor intercept training gun shot knock it off luftkampf jagdflugzeug kampfflugzeug luftkampfubung abfangubung gegner combate aereo caza avion de combate entrenamiento de combate adversario disimilar interceptacion',
     SOF: 'forces speciales cos commando infiltration exfiltration insertion extraction tactique operations speciales special forces special operations infiltration exfiltration insertion extraction spezialkrafte kommando spezialoperation fuerzas especiales operaciones especiales infiltracion extraccion',
     SPECIAL: 'vip essais essai formation instruction entrainement convoyage special test vol technique autre training test flight ferry flight trials instruction other ausbildung testflug uberfuhrung erprobung sonstiges formacion entrenamiento vuelo de prueba traslado ensayos otro'
   };
@@ -167,6 +170,7 @@
     ['LE', 'Police / douane / sécurité', 'LE/le'],
     ['ISR', 'Renseignement / reconnaissance', 'ISR/isr'],
     ['COMMAND', 'Commandement / guet aérien / relais', 'COMMAND/command'],
+    ['COMBAT', 'Combat aérien / entraînement chasse', 'COMBAT/combat'],
     ['SOF', 'Opérations spéciales / tactiques', 'SOF/sof'],
     ['SPECIAL', 'Transport spécial / essais / formation', 'SPECIAL/special']
   ].map(([id, label, base]) => ({
@@ -206,6 +210,7 @@
     [/^LE\b|POLICE|DOUANE|LAW/, 'LE'],
     [/ISR|RECON|RENSEIGN/, 'ISR'],
     [/COMMAND|AEW|AWACS|RELAY|RELAIS/, 'COMMAND'],
+    [/COMBAT|\bBFM\b|\bACM\b|\bDACT\b|DOGFIGHT|CHASSE/, 'COMBAT'],
     [/^SOF\b|TACTI|OPS? SP[EÉ]CIALES?/, 'SOF']
   ];
   /** Famille d'une mission d'après un code de famille ou un texte libre (alias : AAR, COMMAND…) ; SPECIAL à défaut. */
@@ -237,6 +242,7 @@
     ISR: 'I',
     LE: 'L',
     COMMAND: 'C',
+    COMBAT: 'A',
     SOF: 'O',
     FI: 'V',
     SURVEY: 'G',
@@ -337,6 +343,7 @@
     LE: ['CONTACT', 'SIGHTING', 'INSERTION', 'EXTRACTION'],
     ISR: ['CONTACT', 'SIGHTING'],
     COMMAND: ['CONTACT'],
+    COMBAT: ['CONTACT', 'SIGHTING'],
     SOF: ['CONTACT', 'PICKUP', 'DROP', 'HOIST', 'INSERTION', 'EXTRACTION'],
     SPECIAL: [],
     DEMO: eventTypes.map(o => o.value)

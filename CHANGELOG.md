@@ -14,6 +14,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 > est livrée en 4.3.1 ; la phase 2 (supprimer les exceptions par design, assets à fournir) pourra encore modifier
 > légèrement l'apparence des designs à matières. Plan : [docs/REFACTORING_TOOLKIT.md](docs/REFACTORING_TOOLKIT.md).
 
+- **Nouvelle famille COMBAT — combat aérien / entraînement chasse** (lettre A : missions `A-001`, CR `CRA-001-1`,
+  `CRA-A01-0`) : sous-types BFM (combat rapproché), ACM (combat aérien manœuvrant), DACT (adversaire dissemblable),
+  INTERCEPT (interception d'entraînement, identification visuelle). CR et reporting (`apps/cr/COMBAT/`) : dispositif et
+  zone (TSA / CBA / zone D, bloc d'altitude, plancher de sécurité, format 2v2…, adversaire, contrôle, joker / bingo),
+  engagements (situation de départ, armement simulé, tirs valides, issue — victoire, défaite, nul, knock-it-off),
+  bilan de la séance ; statistiques (engagements, victoires, tirs valides, KIO) et résumé automatique. Générateur de
+  missions : famille, règles des zones d'entraînement, Mirage 2000 (MIR2) parmi les appareils. La police du ciel réelle
+  reste en COMMAND / AIR_POLICING, le ravitaillement en AAR.
 - **Toolkit — phase 2, premiers chantiers** : feuille de registre à éléments facultatifs (valeurs par défaut) et bloc
   « découpe » réécrit par `tools/cut_register_sheet.py <design> --write` ; carnet des aperçus devenu composant commun
   (`.repo-notebooks` / `.repo-notebook`, `designs_skeuo.css`) ; contrôle des images `tools/check_assets.py` (format,

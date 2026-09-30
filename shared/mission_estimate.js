@@ -174,6 +174,7 @@
     ISR: 45,
     LE: 30,
     COMMAND: 60,
+    COMBAT: 40,
     SOF: 20,
     FI: 30,
     SURVEY: 45,

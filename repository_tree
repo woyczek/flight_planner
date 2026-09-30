@@ -41,6 +41,7 @@ window.REPOSITORY_TREE={
     // Centre de planification et de conduite des opérations (apps/cpco) : bleu nuit, texte et accent dorés (état-major)
     cpco:{bar:"#1b2440",barText:"#e2c16b",page:"#f2f0ea",accent:"#7a5c12",favicon:"assets/favicon-cpco.svg"},
     aar:{bar:"#115e59",barText:"#ffffff",page:"#f5f6f8",accent:"#115e59",favicon:"assets/favicon-aar.svg"},
+    combat:{bar:"#b45309",barText:"#ffffff",page:"#f5f6f8",accent:"#b45309",favicon:"assets/favicon-combat.svg"},
     flight:{bar:"#101317",barText:"#eef3f7",page:"#101317",accent:"#71b7ff",favicon:"assets/favicon-flight.svg"}
   },
   // Designs graphiques (menu ☰ › Design ; règles dans shared/designs.css, couleurs = thème ci-dessus) :
@@ -108,6 +109,7 @@ window.REPOSITORY_TREE={
     "apps/cr/SPECIAL":{theme:"special",favicon:"assets/favicon-special.svg"},
     "apps/cpco":{theme:"cpco",favicon:"assets/favicon-cpco.svg"},
     "apps/cr/AAR":{theme:"aar",favicon:"assets/favicon-aar.svg"},
+    "apps/cr/COMBAT":{theme:"combat",favicon:"assets/favicon-combat.svg"},
     "apps/landing":{theme:"landing",favicon:"assets/favicon-landing.svg",decor:"sober"}
   },
   pages:[
@@ -145,6 +147,8 @@ window.REPOSITORY_TREE={
     {path:"apps/cr/FIRE/fire_core_reporting.html",menu:false,label:"FIRE / GAAR — Reporting missions (Core, validation)"},
     {path:"apps/cr/AAR/aar_cr.html",menu:false,label:"AAR / RAVITAILLEMENT EN VOL — Compte rendu de mission"},
     {path:"apps/cr/AAR/aar_reporting.html",menu:false,label:"AAR / RAVITAILLEMENT EN VOL — Reporting missions"},
+    {path:"apps/cr/COMBAT/combat_cr.html",menu:false,label:"COMBAT / ACM — Compte rendu de mission"},
+    {path:"apps/cr/COMBAT/combat_reporting.html",menu:false,label:"COMBAT / ACM — Reporting missions"},
     {path:"apps/cr/MissionCore/demo_cr.html",menu:false,label:"Démonstration — compte rendu de mission"},
     {path:"apps/cr/MissionCore/demo_reporting.html",menu:false,label:"Démonstration — reporting missions"},
     {path:"apps/cr/mission_cr.html",menu:false,label:"Nouveau compte rendu de mission",theme:"core",favicon:"assets/favicon-flight.svg"},

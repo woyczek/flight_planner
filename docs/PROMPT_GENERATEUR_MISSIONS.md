@@ -103,6 +103,8 @@ ISR       (renseignement)              ISR · RECON · EO_IR · IMINT · SIGINT 
                                        MARITIME_ISR · INFRASTRUCTURE_ISR
 COMMAND   (commandement / guet / relais) AIR_POLICING · AIRBORNE_COMMAND · AEW · AIR_COORDINATION ·
                                        COMM_RELAY · DISASTER_RELAY · FIRE_COORDINATION · SAR_COORDINATION
+COMBAT    (combat aérien / chasse)     BFM · ACM · DACT · INTERCEPT (entraînement ; police du ciel réelle : COMMAND
+                                       AIR_POLICING ; ravitaillement : AAR)
 SOF       (opérations spéciales)       INSERTION · EXTRACTION · INFILTRATION · EXFILTRATION ·
                                        TACTICAL_TRANSPORT · SR_SUPPORT · FAST_ROPE · RAPPEL ·
                                        PARACHUTE_INSERTION · LZ_INSERTION · SHIP_INSERTION
@@ -122,7 +124,7 @@ et receveurs = une mission par équipe, points tournants différents, même axe 
 
 Numérotation : NN = lettre de la famille + tiret + numéro de l'opération sur 3 chiffres, compté PAR FAMILLE. Lettres :
 HEMS / MEDEVAC M · HADR H · FIRE F · SAR S · AIRLIFT T · AAR R · AIRBORNE P · MARITIME N · ISR I · LE L · COMMAND C ·
-SOF O · FI V · SURVEY G · SPECIAL X. Première opération = identifiant donné pour la famille dans PROCHAINS_NUMEROS
+COMBAT A · SOF O · FI V · SURVEY G · SPECIAL X. Première opération = identifiant donné pour la famille dans PROCHAINS_NUMEROS
 (ex. « HEMS M-016 série 4 » → opérations M-016, M-017… ; mission.series = 4). Une seule équipe : mission NN (« M-016 »).
 Plusieurs équipes : missions NN + lettre de l'équipe, une par équipe dans l'ordre (« M-016A », « M-016B », « M-016C »).
 Deux fichiers par mission, chacun dans son propre bloc de code, précédé d'une ligne « Fichier : … » :
@@ -359,6 +361,15 @@ R 147, R 152, R 590) — points tournants et zones posés dans les tronçons du 
 nommées ; cruise_level en ft (« 500 ft »). En dehors du RTBA, pas de basse hauteur pour ces avions. Les
 hélicoptères ne sont pas concernés (vol tactique selon la mission).
 
+Combat aérien (COMBAT) : chasseurs (RFAL, MIR2 ; PC21 en instruction), en patrouille contre un adversaire
+(plastron DEFA ou partenaire ; DACT : type différent — ex. Rafale contre Mirage 2000, ou chasseur étranger en
+exercice). Le travail se fait dans une zone d'entraînement réelle au-dessus de la mer ou d'une région peu peuplée
+(TSA, CBA ou zone D des cartes, nommée dans role) : zone de kind mission, TARGET en son centre, bloc d'altitude
+annoncé (ex. FL150–FL350 ; BFM / ACM au-dessus d'un plancher de sécurité de 10 000 ft sauf zone prévue pour plus
+bas), format (1v1, 2v1, 2v2…), contrôleur (CDC au sol ou AWACS), joker et bingo carburant, règles d'entraînement
+(knock-it-off, plancher). INTERCEPT : interceptions guidées d'une cible d'entraînement jusqu'à l'identification
+visuelle. Tirs simulés seulement ; la mission reste un entraînement (pas de combat réel ni de cible réelle).
+
 Références internes : ORIGIN, DESTINATION et TARGET sont des identifiants réservés ; tout id cité
 (centre_ref, route du profil vertical, route_order, participants) DOIT exister dans le fichier.
 Retour base : une mission se termine TOUJOURS par un retour base (destination), de préférence la base de départ ;
@@ -495,7 +506,7 @@ Le champ type (aircraft et teams) COMMENCE par l'un de ces désignateurs, suivi 
   Transport : A400 (A400M Atlas) · C30J (C-130J Super Hercules) · C130 (C-130H Hercules) · C295 (C295) ·
               CN35 (CN-235) · A332 (A330 MRTT Phénix) · A320 · DHC6 (Twin Otter) · PC6T (Pilatus Porter) ·
               TBM9 (TBM 900) · B350 (King Air 350) · BE20 (King Air 200)
-  Chasse / surveillance : RFAL (Rafale) · E3CF (E-3F AWACS) · E2 (E-2C / E-2D Hawkeye) · FA50 (Falcon 50) ·
+  Chasse / surveillance : RFAL (Rafale) · MIR2 (Mirage 2000) · E3CF (E-3F AWACS) · E2 (E-2C / E-2D Hawkeye) · FA50 (Falcon 50) ·
               Q9 (MQ-9 Reaper) · PC21 (PC-21)
   Sécurité civile (avions) : CL2T (Canadair CL-415) · DH8D (Dash 8 Q400 MR) · BE9L (King Air 90)
   Hélicoptères : EC35 (H135) · EC45 (H145) · H160 (H160) · AS65 (Dauphin / Panther) · AS50 (Écureuil H125) ·

@@ -54,6 +54,7 @@
     LE: '#6366f1',
     ISR: '#94a3b8',
     COMMAND: '#0ea5e9',
+    COMBAT: '#b45309',
     SOF: '#a8a29e',
     SPECIAL: '#ec4899'
   };

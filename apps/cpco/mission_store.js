@@ -793,6 +793,7 @@
     ISR: 'I',
     LE: 'L',
     COMMAND: 'C',
+    COMBAT: 'A',
     SOF: 'O',
     FI: 'V',
     SURVEY: 'G',
