@@ -18,6 +18,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   « découpe » réécrit par `tools/cut_register_sheet.py <design> --write` ; carnet des aperçus devenu composant commun
   (`.repo-notebooks` / `.repo-notebook`, `designs_skeuo.css`) ; contrôle des images `tools/check_assets.py` (format,
   poids, absentes, orphelines), lancé par `bump_versions.py`.
+- **Toolkit — phase 2, suite** : pastilles de code (`--sk-code-*`) et polices des boutons et liens-boutons
+  (`--sk-btn-family`, `--sk-lbtn-family`) par jetons ; tonalité des surfaces `html[data-surface]` (« dark » pour Durci,
+  dont les blocs sont sombres, et pour tout ton sombre ; déclarée dans le registre des designs : `surface:"dark"`) :
+  encadrés d'état écrits pour elle au lieu d'une liste de designs. Rendu identique (banc).
+- **Appareil de page** : entre les blocs 2 et 3 (une page à trois blocs, comme le registre des missions, l'accueille).
 - **Versions de cache par empreinte** (`tools/bump_versions.py`) : `?v=` = empreinte du contenu du fichier visé (au lieu
   d'une date à lettres) ; une page ne change que si l'un de ses fichiers change ; feuilles de design chargées avec
   leur propre version (table `FILE_V`) ; versions écrites à la main dans trois scripts (extensions, traductions GAAR

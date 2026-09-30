@@ -10,7 +10,7 @@
 //      - PANELS  : panneau choisi par thème pour tous les autres blocs (Cabinet, Durci ; décor complet) ;
 //      - PROPS   : objet posé dans un bloc, coin bas droit (Cabinet ; décor complet) ;
 //  · décor de page (SETS, décor complet seulement) : frise de pied de page, objets entre les blocs (hauteur nulle : la
-//    mise en page ne bouge pas), appareil de page (vrai emplacement du flux entre les blocs 3 et 4, déplaçable
+//    mise en page ne bouge pas), appareil de page (vrai emplacement du flux entre les blocs 2 et 3, déplaçable
 //    latéralement : Cabinet, Carnet de vol, Durci), objets dans les marges (grands écrans).
 // Toute image nommée ici doit exister dans shared/deco/<design>/ ; une image que plus rien ne nomme est retirée.
 // Rien n'est affiché dans les autres designs, sous 760 px ni à l'impression (designs_skeuo.css).
@@ -43,9 +43,9 @@
   //            ou { x, y, rot } (décalage en px depuis le centre, inclinaison en degrés) ;
   // device   : appareil de page, un objet posé à côté d'un poste (radio, DME), côte à côte calés à droite et
   //            déplaçables latéralement par l'utilisateur : [image, hauteur px, inclinaison °] ; il prend l'intervalle
-  //            entre les blocs 3 et 4 (DEVICE_AT ; sinon le premier intervalle possible qui suit) ;
+  //            entre les blocs 2 et 3 (DEVICE_AT ; sinon le premier intervalle possible qui suit) ;
   // sides    : objets des marges, alternativement à gauche et à droite : [image, largeur px maximale].
-  const DEVICE_AT = 3; // appareil de page : entre les blocs 3 et 4 (tous les designs)
+  const DEVICE_AT = 2; // appareil de page : entre les blocs 2 et 3 (tous les designs ; une page à 3 blocs l'accueille)
   const SETS = {
     // Cabinet : objets de navigation des années 1930 (planches « objets 1930 » et objets de face)
     cabinet: {

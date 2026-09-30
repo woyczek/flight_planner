@@ -213,6 +213,16 @@
     return K.color.hex(K.color.rgb(base).map(v => k > 0 ? v + (255 - v) * k : v * (1 + k)));
   }
   /** Pose les variables CSS du thème name (couleurs effectives). */
+  /** Tonalité des surfaces des blocs (html[data-surface]) : « dark » si le design a des blocs sombres (designs.list[id]
+   *  .surface, Durci) ou si le ton de la page est sombre, sinon « light » — encres, voiles et encadrés de designs_skeuo.css. */
+  function markSurface() {
+    const d = window.REPOSITORY_TREE?.designs?.list?.[doc.dataset.design];
+    const s = d?.surface || (doc.dataset.tone === "dark" ? "dark" : "light");
+    if (doc.dataset.surface !== s) doc.dataset.surface = s;
+  }
+  // suit tout changement de ton ou de design, même posé hors de ce script (banc de non-régression, autres outils)
+  new MutationObserver(markSurface).observe(doc, { attributes: true, attributeFilter: ["data-tone", "data-design"] });
+
   function applyTheme(name) {
     const t = themeColors(name);
     currentTheme = name;
@@ -227,6 +237,7 @@
     if (document.body) document.body.style.backgroundColor = t.page || "";
     // ton de la page (fond clair ou sombre) : variantes des designs à matières (Cabinet « carte de nuit »)
     doc.dataset.tone = luminance(t.page || "#ffffff") < .3 ? "dark" : "light";
+    markSurface();
     applyAqua(t.accent);
   }
   // Couleur du design Aqua (gel des boutons, bulles des icônes) : une teinte de base commune à toutes les pages
@@ -276,6 +287,7 @@
     doc.dataset.designBase = d.base || id;
     if (d.skeuo) doc.dataset.skeuo = d.frame ? "frame" : "";
     else delete doc.dataset.skeuo;
+    markSurface();
   };
   markDesign(design);
   applyChart();
@@ -299,7 +311,7 @@
   // Designs à matières (Cabinet, Durci, Aqua : textures, plaques, vis) : feuille propre (designs.list[id].css),
   // chargée seulement quand l'un d'eux est choisi, avec sa propre version (empreinte de son contenu, table FILE_V
   // écrite par tools/bump_versions.py).
-  const FILE_V = {"designs_skeuo.css": "c2a73ad7"};
+  const FILE_V = {"designs_skeuo.css": "ff0e46b3"};
   const designCss = id => {
     const f = designs[id]?.css;
     if (!f || document.querySelector(`link[data-design-css="${f}"]`)) return;
@@ -310,7 +322,7 @@
     document.head.append(l);
     // illustrations du décor complet (frise de Cabinet, radar de Durci), même version
     const d = document.createElement("script");
-    d.src = new URL("design_deco.js?v=0b541ecd", script.src).href;
+    d.src = new URL("design_deco.js?v=e8dccaa2", script.src).href;
     document.head.append(d);
   };
   designCss(design);

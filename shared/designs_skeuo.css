@@ -29,6 +29,12 @@
 
 /* ================================================================================================ CABINET */
 html[data-design-base="cabinet"] {
+  --sk-code-bg: rgba(255, 250, 236, .75);
+  --sk-code-ink: var(--cab-ink);
+  --sk-code-border: 1px solid var(--cab-rule);
+  --sk-code-radius: 3px;
+  --sk-btn-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  --sk-lbtn-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
   --cab-bar: color-mix(in srgb, var(--repo-bar) 50%, #0b0d14);
   --cab-cream: #f4ecd8;
   /* crème / cuir marine ou bandeau assombri : ≥ 10:1 */
@@ -176,6 +182,9 @@ html[data-design-base="cabinet"] {
   --sk-thumb-shadow: 0 2px 3px rgba(0, 0, 0, .6), inset 0 1px 1px rgba(255, 255, 255, .6);
 }
 html[data-design-base="cabinet"][data-tone="dark"] {
+  --sk-code-bg: #141a21;
+  --sk-code-ink: #e6edf5;
+  --sk-code-border: 1px solid #46525f;
   --cab-ink: #efe6cf;
   --cab-ink-2: #cdbf9c;
   --cab-navy: #f3de98;
@@ -408,10 +417,10 @@ html[data-design-base="cabinet"] .repo-block :is(table) {
   background: color-mix(in srgb, var(--cab-field) 60%, transparent)
 }
 /* boutons : cuir marine à bord laiton (principal : bandeau du thème assombri), parchemin (secondaire), cuir brun (discret) */
-html[data-design-base="cabinet"] button:where(:not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-sidenav-item):not(.col-split):not(.repo-block-tools button):not([role=menuitem]):not(.repo-icon-only):not(.repo-plain)),
-html[data-design-base="cabinet"] .buttonLink,
-html[data-design-base="cabinet"] a.mc-button {
-  font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif !important
+html[data-skeuo="frame"] button:where(:not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-sidenav-item):not(.col-split):not(.repo-block-tools button):not([role=menuitem]):not(.repo-icon-only):not(.repo-plain)),
+html[data-skeuo="frame"] .buttonLink,
+html[data-skeuo="frame"] a.mc-button {
+  font-family: var(--sk-btn-family) !important
 }
 html[data-design-base="cabinet"] :is(button.secondary, a.secondary, label.rg-file):not(.repo-block-tools button) {
   color: #0b1830 !important;
@@ -430,6 +439,12 @@ html[data-design-base="cabinet"] .repo-header button.headerButton {
 
 /* ================================================================================================ DURCI */
 html[data-design="field"] {
+  --sk-code-bg: #121410;
+  --sk-code-ink: #e6ecd6;
+  --sk-code-border: 1px solid #000;
+  --sk-code-radius: 3px;
+  --sk-btn-family: Bahnschrift, "Roboto Condensed", "Arial Narrow", sans-serif;
+  --sk-lbtn-family: Bahnschrift, "Arial Narrow", sans-serif;
   --fd-text: #e8ecd9;
   /* / panneau acier assombri #3f4632 : 8,2:1 */
   --fd-text-2: #c9d1b0;
@@ -659,11 +674,6 @@ html[data-design="field"] select option {
   color: #e6ecd6
 }
 /* boutons : noir canon de fusil ; principal et en-tête : vert lumineux à voyant ; secondaire : bleu nuit */
-html[data-design="field"] button:where(:not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-sidenav-item):not(.col-split):not(.repo-block-tools button):not([role=menuitem]):not(.repo-icon-only):not(.repo-plain)),
-html[data-design="field"] .buttonLink,
-html[data-design="field"] a.mc-button {
-  font-family: Bahnschrift, "Roboto Condensed", "Arial Narrow", sans-serif !important
-}
 html[data-design="field"] :is(button.primary, .repo-header button.headerButton:first-of-type, button[data-icon="sparkles"]) {
   background: linear-gradient(#3fa83f, #146b1c) !important;
   color: #fff !important;
@@ -720,6 +730,10 @@ html[data-design="field"][data-decor="full"] .repo-footer::after {
 
 /* ================================================================================================ AQUA */
 html[data-design="aqua"] {
+  --sk-code-bg: #fff;
+  --sk-code-ink: var(--aq-ink);
+  --sk-code-border: 1px solid #c3ced9;
+  --sk-code-radius: 4px;
   --aq-ink: #1c2733;
   --aq-ink-2: #4f5d6b;
   /* / verre blanc : 14,5:1 et 6,6:1 */
@@ -875,6 +889,10 @@ html[data-design="aqua"] .repo-footer {
    Pages à thème sombre (planificateur, Landing : graphiques conçus pour un fond sombre) : graphite, verre fumé,
    métal brossé assombri ; les graphiques gardent leurs couleurs. Texte clair #e6edf5 / verre #26303b : 11,9:1. */
 html[data-design="aqua"][data-tone="dark"] {
+  --sk-code-bg: #141a21;
+  --sk-code-ink: #e6edf5;
+  --sk-code-border: 1px solid #46525f;
+  --sk-code-radius: 3px;
   --aq-ink: #e6edf5;
   --aq-ink-2: #aebccb;
   --repo-surface: #26303b;
@@ -1075,11 +1093,8 @@ html[data-skeuo] .repo-block :is(input:not([type=checkbox]):not([type=radio]):no
 
 /* ================================================================================================ LIENS EN BOUTONS
    Liens d'action (retour au générateur, « Choisir des fichiers » des zones de dépôt) : même habillage que les boutons. */
-html[data-design-base="cabinet"] a.headerButton {
-  font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif !important
-}
-html[data-design="field"] a.headerButton {
-  font-family: Bahnschrift, "Arial Narrow", sans-serif !important
+html[data-skeuo="frame"] a.headerButton {
+  font-family: var(--sk-lbtn-family) !important
 }
 html[data-skeuo] a.headerButton {
   font-weight: var(--sk-lbtn-weight);
@@ -1646,33 +1661,12 @@ html[data-design="flightlog"] :is(.repo-block-titles, .repo-block-heading)>h2 {
 /* ================================================================================================ CODE, KBD, SAMP DANS LES BLOCS
    Pastilles de code des pages (fond clair par défaut) : accordées à la matière, contraste WCAG ≥ 4,5:1
    (Durci : #e6ecd6 / #121410 = 15,3:1 ; sombres : #e6edf5 / #141a21 = 15:1 ; clairs : encre sur blanc translucide). */
-html[data-design="field"] .repo-block :is(code, kbd, samp) {
-  background: #121410 !important;
-  color: #e6ecd6 !important;
-  border: 1px solid #000 !important;
-  border-radius: 3px;
-  padding: 0 .35em
-}
-html[data-design="aqua"][data-tone="dark"] .repo-block :is(code, kbd, samp),
-html[data-design-base="cabinet"][data-tone="dark"] .repo-block :is(code, kbd, samp) {
-  background: #141a21 !important;
-  color: #e6edf5 !important;
-  border: 1px solid #46525f !important;
-  border-radius: 3px;
-  padding: 0 .35em
-}
-html[data-design-base="cabinet"]:not([data-tone="dark"]) .repo-block :is(code, kbd, samp) {
-  background: rgba(255, 250, 236, .75) !important;
-  color: var(--cab-ink) !important;
-  border: 1px solid var(--cab-rule) !important;
-  border-radius: 3px;
-  padding: 0 .35em
-}
-html[data-design="aqua"]:not([data-tone="dark"]) .repo-block :is(code, kbd, samp) {
-  background: #fff !important;
-  color: var(--aq-ink) !important;
-  border: 1px solid #c3ced9 !important;
-  border-radius: 4px;
+/* fond, encre, bord et rayon par design et par ton (--sk-code-*) */
+html[data-skeuo] .repo-block :is(code, kbd, samp) {
+  background: var(--sk-code-bg) !important;
+  color: var(--sk-code-ink) !important;
+  border: var(--sk-code-border) !important;
+  border-radius: var(--sk-code-radius);
   padding: 0 .35em
 }
 /* ================================================================================================ BARRE D'ACTION (repo-actionbar)
@@ -1698,18 +1692,15 @@ html[data-skeuo] .repo-actionbar :is(.small, span) {
 /* ================================================================================================ ENCADRÉS D'ÉTAT DES PAGES (.warn, .ok, .err)
    Couleurs codées en dur par les pages (fond jaune pâle, vert et rouge foncés) : accordées aux matières sombres.
    Pas dans l'Apparence (pastilles WCAG sur fond clair propre). Durci : texte #f3e6c4 / encadré #3a3322 = 10,6:1 ; ok #9fe870 et err #ff9a8a sur panneau ≥ 5:1. */
-html[data-design="field"] .repo-block .warn:not(.ap-page *),
-html[data-tone="dark"]:is([data-design="aqua"], [data-design="cabinet"], [data-design="flightlog"]) .repo-block .warn:not(.ap-page *) {
+html[data-skeuo][data-surface="dark"] .repo-block .warn:not(.ap-page *) {
   background: rgba(58, 51, 34, .92) !important;
   border-left-color: #e8b85a !important;
   color: #f3e6c4 !important
 }
-html[data-design="field"] .repo-block .ok:not(.ap-page *),
-html[data-tone="dark"]:is([data-design="aqua"], [data-design="cabinet"], [data-design="flightlog"]) .repo-block .ok:not(.ap-page *) {
+html[data-skeuo][data-surface="dark"] .repo-block .ok:not(.ap-page *) {
   color: #9fe870 !important
 }
-html[data-design="field"] .repo-block .err:not(.ap-page *),
-html[data-tone="dark"]:is([data-design="aqua"], [data-design="cabinet"], [data-design="flightlog"]) .repo-block .err:not(.ap-page *) {
+html[data-skeuo][data-surface="dark"] .repo-block .err:not(.ap-page *) {
   color: #ff9a8a !important
 }
 /* ================================================================================================ OUTILS DE BLOC (DÉPLACER, MASQUER)
@@ -2243,7 +2234,7 @@ html[data-skeuo="frame"] .repo-notebook img {
   box-shadow: 0 3px 8px rgba(0, 0, 0, .45);
   cursor: zoom-in
 }
-/* appareil de page (design_deco.js, SETS.device, DEVICE_AT) : emplacement réel entre les blocs 3 et 4,
+/* appareil de page (design_deco.js, SETS.device, DEVICE_AT) : emplacement réel entre les blocs 2 et 3,
    objets réglés par leur hauteur (ratio conservé) et calés à droite ; décor complet des designs à matières seulement */
 .repo-deco-device {
   display: none

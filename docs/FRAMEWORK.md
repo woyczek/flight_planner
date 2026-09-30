@@ -122,7 +122,7 @@ liste `DISPLAY` : design, icônes, couleurs, barre latérale, langue, onglets, s
     des registres, une planche par design découpée par `tools/cut_register_sheet.py`, géométrie en jetons `--sh-*`) ;
     **objets posés dans un bloc** (`PROPS` : ordre de mission, étiquette « Top secret ») ; **appareil de page**
     (`device` : un objet à côté d'un poste — Cabinet : livre de bord et radio ; Carnet de vol : carnet de cuir et DME ;
-    Durci : câble et radio — dans un vrai emplacement entre les blocs 3 et 4, déplaçable latéralement) ; **carnet des
+    Durci : câble et radio — dans un vrai emplacement entre les blocs 2 et 3, déplaçable latéralement) ; **carnet des
     aperçus** (composant `.repo-notebooks` / `.repo-notebook` de `designs_skeuo.css`, jetons `--nb-*` : carnet fermé
     tant que la galerie est vide, puis carnet ouvert sous chaque carte ; Studio cartographique) ;
   - **boîte à outils** `shared/kit.js` (`window.RepositoryKit`, chargée avant `repository_nav.js`) : échappement,

@@ -133,7 +133,10 @@ Suivi des assets (cahier des charges, consignes de génération, intégration) :
     « choisir » des zones de dépôt (recouvertes par la règle commune), première règle des poignées de Durci.
     Règles visant un design : Durci 74 → 57, base Cabinet 52 → 37, Carnet de vol 29 → 27, Cabinet 9 → 8 ;
     `!important` 327 → 308. Banc de non-régression : aucun écart (48 combinaisons).
-- **Suivant** : 1 (suite : textes et tableaux de Durci, boutons, pastilles de code, puis Aqua), 2 (tonalité de surface), 6 (frise et voyant
+  - **1 (suite) et 2. Tonalité de surface** — pastilles de code, polices des boutons et des liens-boutons par jetons ;
+    `html[data-surface]` posé par `repository_nav.js` (`designs.list[id].surface`, sinon ton de la page ; suit tout
+    changement de ton ou de design) : encadrés d'état écrits pour « surface sombre ». Banc : aucun écart.
+- **Suivant** : 1 (suite : textes, tableaux et liens de Durci par `data-surface`, puis Aqua), 2 (tonalité de surface), 6 (frise et voyant
   communs), 9 (base Cabinet du Carnet de vol) ; 3 (couches CSS) en dernier, avec le banc de non-régression ; 7 au fil
   des assets livrés.
 
