@@ -118,11 +118,11 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=9839b88b"></script>
-<script src="../../shared/repository_nav.js?v=425e51bd"></script>
+<script src="../../shared/repository_nav.js?v=17124019"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=90cadad7"></script>
-<script src="../../shared/assignments.js?v=66793878"></script>
+<script src="../../shared/assignments.js?v=16cd6eac"></script>
 <script>
 (() => {
   'use strict';
@@ -503,7 +503,7 @@
     const tri = A.trigram(), host = $('pmSims');
     const mine = new Set((tri ? (await A.availability(tri))?.sims : null) || []);
     const list = [...new Set([...A.simulators(), ...mine])];
-    host.innerHTML = list.map(s => `<label><input type="checkbox" data-sim="${esc(s)}" ${mine.has(s) ? 'checked' : ''}> ${esc(s)}</label>`).join('');
+    host.innerHTML = list.map(s => `<label><input type="checkbox" data-sim="${esc(s)}" ${mine.has(s) ? 'checked' : ''}> ${A.simChips([s])}${esc(s)}</label>`).join('');
     host.onchange = () => {
       if (!tri) { $('pmSimsMsg').textContent = 'Trigramme non réglé.'; return; }
       A.saveSims(tri, [...host.querySelectorAll('[data-sim]:checked')].map(x => x.dataset.sim));
