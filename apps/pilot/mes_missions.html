@@ -36,7 +36,6 @@
      (calque à la toile du dossier, découpé au corps du dossier : mission-seal-fitted.webp) */
   html[data-design="field"]{--pm-cover:url("../../shared/deco/field/mission-closed.webp");--pm-seal:url("../../shared/deco/field/mission-seal-fitted.webp");--pm-ratio:961/1441;--pm-cwk:.529}
   html[data-design="field"] .pm-cover .pm-open{bottom:20%}
-  html[data-design="field"] .pm-book .pm-emblem{content:url("../../shared/deco/field/emblem.webp")} /* emblème à l'encre olive (provisoire) */
   /* Carnet de vol : enveloppe cachetée (en-tête du ministère), le carnet dedans ; la mission sur une étiquette scotchée
      de travers, tampon à travers ; ouverte, l'enveloppe s'efface ; mission lue : le carnet fermé */
   html[data-design="flightlog"]{--pm-cover:url("../../shared/deco/flightlog/mission-closed.webp");--pm-seal:none;--pm-ratio:600/852;--pm-cwk:.509}
@@ -72,6 +71,8 @@
   /* titres des feuilles : caractères des pages (machine à écrire, ou ceux du design de la page : Aqua), pas la police
      d'affichage du design (Palatino…) qui vise les titres des blocs */
   #pmDetail .pm-book :is(h3,h4){font-family:inherit}
+  /* texte des feuilles : encre de la page (les designs à surface sombre, Durci, éclaircissent le texte des blocs) */
+  html[data-skeuo] #pmDetail :is(.pm-book .pm-page, .pm-label) :is(h3,h4,h5,p,li,dl,dt,dd,td,th,b,strong,span,div,label){color:inherit} /* hors couche, comme les designs */
   #pmDetail .pm-book h3{font-size:14.5px;line-height:1.35}
   .pm-page [data-part]{position:relative}
   .pm-page [data-part="title"]{display:grid;place-items:center;min-height:100%}.pm-page [data-part="title"] .pm-label{transform:rotate(-1deg)}
@@ -146,6 +147,11 @@
   html[data-design="field"] .pm-leaf .pm-face{inset:0;background-image:url("../../shared/deco/field/mission-page.webp");padding:4.37cqw 4.4cqw 8.37cqw 4.4cqw;color:#1f2a1c}
   html[data-design="field"] .pm-leaf.fwd .pm-back{padding:4.37cqw 4.4cqw 8.37cqw 4.4cqw}
   html[data-design="field"] .pm-leaf.back :is(.pm-front,.pm-back){padding:4.45cqw 4.4cqw 8.45cqw 4.4cqw}
+  /* en-tête de l'ordre : logo du CPCO en tenue de terrain (« Ordre de mission ») ; numéro dessous, à droite */
+  html[data-design="field"] .pm-book .pm-head{display:block;position:relative;aspect-ratio:1100/554;margin:0 auto 20px;width:56%;padding:0;border:0;background:url("../../shared/deco/field/order-header.webp") center/100% 100% no-repeat}
+  html[data-design="field"] .pm-book .pm-head>:not(.pm-no){position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+  html[data-design="field"] .pm-book .pm-head .pm-no{position:absolute;top:calc(100% + 4px);right:0;font-size:11px;letter-spacing:.06em}
+  html[data-design="field"] .pm-book [data-part="order"] .pm-dr{top:auto;bottom:-10px}
   html[data-design="field"] .pm-corner{background-image:url("../../shared/deco/field/page-corner.webp")}
   html[data-design="field"] .pm-next{right:6.55%;bottom:22.57%}html[data-design="field"] .pm-prev{left:6.55%;bottom:22.47%}
   /* Carnet de vol : carnet ouvert (pages : x 75–677 et 736–1323, y 47–977, dos à 699 sur 1428 × 1032) ; marges des
@@ -227,7 +233,7 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=1466c9a9"></script>
-<script src="../../shared/repository_nav.js?v=e3578080"></script>
+<script src="../../shared/repository_nav.js?v=b81111bf"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=db00c09c"></script>
