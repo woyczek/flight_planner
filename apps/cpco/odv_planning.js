@@ -133,6 +133,7 @@
     try {
       data = await C.extract(book, settings, fileName);
       compute();
+      await window.OdvAssign?.load(data, settings).catch(e => console.warn(e)); // déclarations des pilotes, affectations
     } catch (e) {
       console.error(e);
       notify(`Analyse impossible : ${e.message}`, 'err');
@@ -297,7 +298,7 @@
       type: 'number'
     }, {
       key: 'pilote',
-      label: 'Pilote',
+      label: 'Pilote (classeur / déclaration)',
       html: (v, r) => tri(v, r.couleur)
     }, {
       key: 'dispo',
@@ -309,7 +310,9 @@
       for (let k = 0; k < 3; k++) cols.push({
         key: `s${j}${k}`,
         label: `${C.DAYS[j].slice(0, 2)} ${SHORT[k]}`,
-        html: v => codeCell(v),
+        // deux lignes par pilote : code du classeur (ODV), puis déclaration du pilote (Mes missions) — encadré rouge :
+        // disponible et non affecté ; n° de mission : affecté ; clic sur la déclaration : affecter sur ce créneau
+        html: (v, r) => `<span class="odv-pair">${codeCell(v)}${window.OdvAssign ? window.OdvAssign.line(r.pilote, j, k, v, codeCell) : ''}</span>`,
         sortValue: r => CAT_RANK[r[`s${j}${k}`].categorie]
       });
     // colonnes longues coupées sur une ligne (texte complet au survol) : la grille reste compacte
@@ -564,7 +567,15 @@
   const hmOf = min => Number.isFinite(+min) && +min > 0 ? `${Math.floor(min / 60)} h ${String(Math.round(min % 60)).padStart(2, '0')}` : '—';
   let pickDialog = null;
   /** Fenêtre de choix : missions du registre pour le créneau s (famille fam, sinon familles probables du créneau). */
-  async function pickMission(s, fam = '') {
+  async function pickMission(s, fam = '', {
+    pilots = null
+  } = {}) {
+    const O = window.OdvAssign,
+      range = O?.range(s.jourIndex, s.creneauIndex);
+    // pilotes à affecter : ceux de la case cliquée, sinon les pilotes du créneau disponibles et non affectés
+    const crew = pilots || (O ? s.pilotes.map(p => p.trigramme).filter(tr => O.free(tr, s.jourIndex, s.creneauIndex, {
+      categorie: 'dispo'
+    })) : s.pilotes.map(p => p.trigramme));
     if (!centreOn()) {
       notify('Registre des missions : Centre verrouillé — l’activer dans Paramètres › Centre (CPCO).', 'warn');
       return;
@@ -585,31 +596,47 @@
     }
     const fams = [...new Set(s.toutesMissions.map(m => m.famille))];
     const render = famSel => {
-      const rows = all.filter(m => m.id && m.status !== 'ordered' && !m.organisation && (m.rdv > 0 || (m.operation?.missions || 0) > 1))
+      const rows = all.filter(m => m.id && m.status !== 'ordered' && !m.organisation && !/Z$/.test(m.id) && (pilots || m.rdv > 0 || (m.operation?.missions || 0) > 1))
         .filter(m => !famSel || fold(m.family || m.type).startsWith(famSel))
         .map(m => ({
           m,
           teams: m.airTeams || m.teamCount || 1,
           conf: conflictsOf(m, zones)
         }))
-        .filter(r => r.teams <= Math.max(2, s.n))
+        .filter(r => pilots || r.teams <= Math.max(2, s.n))
         .sort((a, b) => a.conf.some(c => c.grave) - b.conf.some(c => c.grave) || a.conf.length - b.conf.length || (a.m.status === 'flown') - (b.m.status === 'flown') || Math.abs(a.teams - s.n) - Math.abs(b.teams - s.n) || String(a.m.id).localeCompare(String(b.m.id), 'fr', {
           numeric: true
         }));
-      pickDialog.innerHTML = `<div class="odv-pick-head"><h3>Missions du registre — ${esc(slotTitle(s))} · ${s.n} pilote(s)</h3><button type="button" data-close title="Fermer">×</button></div>
+      pickDialog.innerHTML = `<div class="odv-pick-head"><h3>Missions du registre — ${esc(slotTitle(s))} · ${pilots ? esc(pilots.join(', ')) : `${s.n} pilote(s)`}</h3><button type="button" data-close title="Fermer">×</button></div>
+        ${O ? `<p class="mut">À affecter : <b>${crew.length ? esc(crew.join(', ')) : 'aucun pilote libre'}</b>${pilots ? '' : ' (disponibles et non affectés sur ce créneau)'} — « Affecter » ouvre le dialogue, pilotes et heure préremplis.</p>` : ''}
         <label>Famille <select data-fam><option value="">toutes</option>${fams.map(f => `<option value="${esc(f)}"${f === famSel ? ' selected' : ''}>${esc(f)}${s.missions[0]?.famille === f ? ' (proposée)' : ''}</option>`).join('')}</select></label>
         ${zones.length ? `<p class="odv-pick-avoid">À éviter : ${zones.map(z => `<b>${esc(z.type)} ${esc(z.position)}</b> — CTR ${esc(z.ctr.map(a => a.name).join(', ') || '?')}${z.tma.length ? `, TMA ${esc(z.tma.map(a => a.name).join(', '))} (si possible)` : ''}${z.note ? ` <i>(${esc(z.note)})</i>` : ''}`).join(' · ')}</p>` : ''}
-        ${rows.length ? `<table class="odv-pick-table"><thead><tr><th>Mission</th><th>Titre</th><th>Type</th><th>Équipes</th><th>RDV</th><th>Théâtre</th><th>Durée</th><th>Statut</th><th>Espaces</th><th></th></tr></thead><tbody>${rows.map(({ m, teams, conf }) => `<tr class="${conf.some(c => c.grave) ? 'bad' : conf.length ? 'warn' : ''}"><td><b>${esc(m.id)}</b></td><td>${esc(m.title)}</td><td>${esc(m.type)}${m.subtype ? ` <small>${esc(m.subtype)}</small>` : ''}</td><td>${teams}</td><td>${m.rdv || '—'}</td><td>${esc(m.theatre || '')}</td><td>${hmOf(m.estimate?.block ?? m.estimate?.flight)}</td><td>${m.status === 'flown' ? 'volée' : 'générée'}</td><td>${conf.length ? conf.map(c => esc(c.texte)).join('<br>') : 'ok'}</td><td><button type="button" data-open="${esc(m.id)}">Ouvrir</button></td></tr>`).join('')}</tbody></table>`
+        ${rows.length ? `<table class="odv-pick-table"><thead><tr><th>Mission</th><th>Titre</th><th>Type</th><th>Équipes</th><th>RDV</th><th>Théâtre</th><th>Durée</th><th>Statut</th><th>Espaces</th><th></th></tr></thead><tbody>${rows.map(({ m, teams, conf }) => `<tr class="${conf.some(c => c.grave) ? 'bad' : conf.length ? 'warn' : ''}"><td><b>${esc(m.id)}</b></td><td>${esc(m.title)}</td><td>${esc(m.type)}${m.subtype ? ` <small>${esc(m.subtype)}</small>` : ''}</td><td>${teams}</td><td>${m.rdv || '—'}</td><td>${esc(m.theatre || '')}</td><td>${hmOf(m.estimate?.block ?? m.estimate?.flight)}</td><td>${m.status === 'flown' ? 'volée' : 'générée'}</td><td>${conf.length ? conf.map(c => esc(c.texte)).join('<br>') : 'ok'}</td><td>${O ? `<button type="button" class="primary" data-assign="${esc(m.id)}">Affecter</button> ` : ''}<button type="button" data-open="${esc(m.id)}">Ouvrir</button></td></tr>`).join('')}</tbody></table>`
           : `<p class="mut">Aucune mission du registre avec rendez-vous ou à plusieurs équipes${famSel ? ` en ${esc(famSel)}` : ''} pour ${s.n} pilote(s).</p>`}
         <p class="mut">Missions volées et celles qui traversent un espace à éviter en fin de liste ; ouverture dans le registre du Centre (nouvel onglet).</p>`;
       pickDialog.querySelector('[data-fam]').onchange = e => render(e.target.value);
       pickDialog.querySelectorAll('[data-open]').forEach(b => b.onclick = () => window.open(new URL(`mission_registry.html?mission=${encodeURIComponent(b.dataset.open)}`, location.href).href, '_blank'));
+      pickDialog.querySelectorAll('[data-assign]').forEach(b => b.onclick = () => {
+        const m = all.find(x => x.id === b.dataset.assign);
+        pickDialog.close();
+        const n = Math.min(crew.length, Math.max(1, m.airTeams || m.teamCount || 1));
+        O.assign(m, pilots || crew.slice(0, n), range?.[0], `Créneau ${slotTitle(s)}${!pilots && crew.length > n ? ` — autres pilotes libres : ${crew.slice(n).join(', ')}` : ''}`).catch(e => notify(e.message, 'err'));
+      });
     };
     render(fam || s.missions[0]?.famille || '');
     if (!pickDialog.open) pickDialog.showModal();
   }
   /** Bouton « Missions du registre… » d'un créneau à plusieurs pilotes (famille facultative). */
   const pickButton = (s, fam = '') => s.n >= 2 ? `<button type="button" class="odv-pick-btn" data-pick="${s.jourIndex}${s.creneauIndex}" data-fam="${esc(fam)}"${centreOn() ? '' : ' disabled title="Centre verrouillé : l’activer dans Paramètres › Centre (CPCO)"'}>Missions du registre…</button>` : '';
+  document.addEventListener('click', e => {
+    const c = e.target.closest('[data-odv-slot]');
+    if (!c) return;
+    const s = slots.find(x => `${x.jourIndex}${x.creneauIndex}` === c.dataset.odvSlot);
+    if (s) pickMission(s, '', {
+      pilots: [c.dataset.tri]
+    });
+  });
+  window.OdvAssign?.onChange(() => renderGrid());
   document.addEventListener('click', e => {
     const b = e.target.closest('[data-pick]');
     if (!b) return;
