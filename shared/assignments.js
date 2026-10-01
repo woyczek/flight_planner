@@ -1045,6 +1045,53 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     await w.write(JSON.stringify(log, null, 1));
     await w.close();
   }
+  /** Dossier des missions autorisé, en lecture : permission déjà accordée, sinon demandée (clic récent) ; null sinon. */
+  async function missionsRead() {
+    try {
+      const st = await window.FileAccess?.status?.('__missions');
+      if (!st?.handle) return null;
+      if (st.permission === 'granted') return st.handle;
+      return (await st.handle.requestPermission({
+        mode: 'read'
+      })) === 'granted' ? st.handle : null;
+    } catch {
+      return null;
+    }
+  }
+  /** Fichier d'une mission (dossier relatif au dossier des missions, nom éventuellement « cartes/x.png ») : lu dans le
+   *  dossier autorisé (celui où le Centre écrit, même s'il n'est pas servi par la page), sinon dans la copie servie.
+   *  as : 'text' (contenu) ou 'url' (adresse affichable : URL d'objet ou adresse servie). null si introuvable. */
+  async function missionFile(folder, name, {
+    as = 'text'
+  } = {}) {
+    const dir = await missionsRead();
+    if (dir) try {
+      let d = dir;
+      const parts = `${folder}/${name}`.split('/').filter(Boolean);
+      for (const part of parts.slice(0, -1)) d = await d.getDirectoryHandle(part);
+      const f = await (await d.getFileHandle(parts[parts.length - 1])).getFile();
+      return as === 'url' ? URL.createObjectURL(f) : await f.text();
+    } catch {
+      /* absent du dossier autorisé : copie servie */ }
+    const url = new URL(`data/missions/${folder}/${name}`, root()).href;
+    try {
+      const r = await fetch(url, {
+        cache: 'no-store',
+        method: as === 'url' ? 'HEAD' : 'GET'
+      });
+      return r.ok ? (as === 'url' ? url : await r.text()) : null;
+    } catch {
+      return null;
+    }
+  }
+  /** Premier fichier trouvé parmi des noms candidats (ex. missionM-002.yaml, missionM002.yaml). */
+  async function missionFirst(folder, names, opts) {
+    for (const n of [...new Set(names.filter(Boolean))]) {
+      const v = await missionFile(folder, n, opts);
+      if (v != null) return { name: n, value: v };
+    }
+    return null;
+  }
   /** Journal des affectations (dossier autorisé, sinon copie servie) ; entrées les plus récentes d'abord. */
   async function readLog() {
     let log = null;
@@ -1208,6 +1255,8 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     planSlot,
     writeAssignment,
     readLog,
+    missionFile,
+    missionFirst,
     logText,
     buildParticipants,
     missionsDir

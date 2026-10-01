@@ -124,11 +124,11 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=9839b88b"></script>
-<script src="../../shared/repository_nav.js?v=9659c62f"></script>
+<script src="../../shared/repository_nav.js?v=8335ba10"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=90cadad7"></script>
-<script src="../../shared/assignments.js?v=1bec37b6"></script>
+<script src="../../shared/assignments.js?v=854c1200"></script>
 <script>
 (() => {
   'use strict';
@@ -211,6 +211,7 @@
 
   // ---- mission (lecture seule)
   const fileUrl = (a, name) => new URL(`data/missions/${a.folder}/${name}`, root()).href;
+  let mapUrls = {}; // nom de carte → adresse affichable (dossier autorisé : URL d'objet ; sinon copie servie)
   /** Étiquette d'une mission (couverture scellée, page 1 du dossier) : numéro, nom, appareil, indicatif, décollage ;
    *  tampon « CONFIDENTIEL » posé par-dessus, à place fixe. */
   const labelHtml = a => `<div class="pm-label"><small aria-label="Confidentiel">CONFIDENTIEL</small><b>${esc(a.mission)}</b><span>${esc(a.title || '')}</span>
@@ -262,16 +263,17 @@
     $('pmMission').hidden = false;
     $('pmDetail').innerHTML = '<p class="pm-empty">Chargement de la mission…</p>';
     $('pmMission').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // fichiers de la mission : dossier des missions autorisé d'abord (même hors de la copie servie), sinon copie servie
+    const bare = String(a.mission).replace('-', '');
     mission = null;
-    try {
-      const r = await fetch(fileUrl(a, a.files?.yaml || `mission${a.mission}.yaml`), { cache: 'no-store' });
-      if (r.ok) mission = window.jsyaml.load((await r.text()).replace(/^#.*\n/, ''));
-    } catch { /* mission illisible : affectation seule */ }
-    let md = '';
-    try {
-      const r = await fetch(fileUrl(a, a.files?.md || `summary${a.mission}.md`), { cache: 'no-store' });
-      if (r.ok) md = await r.text();
-    } catch { /* pas de résumé : yaml seul */ }
+    const yf = await A.missionFirst(a.folder, [a.files?.yaml, `mission${a.mission}.yaml`, `mission${bare}.yaml`]);
+    try { if (yf) mission = window.jsyaml.load(yf.value.replace(/^#.*\n/, '')); } catch { /* mission illisible : affectation seule */ }
+    const md = (await A.missionFirst(a.folder, [a.files?.md, `summary${a.mission}.md`, `summary${bare}.md`]))?.value || '';
+    if (!yf) window.AppFramework?.notify?.(`Mission ${a.mission} : fichier introuvable (dossier « ${a.folder} »), ni dans le dossier des missions autorisé ni dans la copie servie — seule l’affectation est affichée.`, 'warn');
+    // cartes : index de l'affectation, sinon yaml ; adresse résolue (cartes/x.png, sinon x.png)
+    const mapNames = a.files?.maps?.length ? a.files.maps : (mission?.maps || []).map(m => m?.filename).filter(Boolean);
+    mapUrls = {};
+    for (const m of mapNames) mapUrls[m] = (await A.missionFirst(a.folder, [`cartes/${m}`, m], { as: 'url' }))?.value || '';
     let log = [];
     try { log = (await A.readLog()).filter(e => e.mission === a.mission); } catch { /* pas de journal */ }
     render(a, mission || {}, md, log);
@@ -359,7 +361,7 @@
     const alertText = alert ? `<p class="pm-alert">Soyez prêt à ${esc(hhmm(Date.parse(alert.ready_at_utc)))} sur ${esc(alert.aerodrome || a.departure || '')} et attendez les ordres ; décollage prévisible en ${esc(alert.notice_min ?? '?')} minutes.${alert.window_end_utc ? ` Fin d'astreinte ${esc(hhmm(Date.parse(alert.window_end_utc)))}.` : ''}</p>` : '';
     const team = (A._all || []).filter(x => x.mission === a.mission && x.pilot !== a.pilot);
     const teams = (y.teams || []).filter(t => t?.name && !/^[-\s]*$/.test(t.name));
-    const maps = (a.files?.maps?.length ? a.files.maps : (y.maps || []).map(m => m?.filename).filter(Boolean));
+    const maps = (a.files?.maps?.length ? a.files.maps : (y.maps || []).map(m => m?.filename).filter(Boolean)).filter(m => mapUrls[m]);
     const mapCaption = m => (y.maps || []).find(x => x?.filename === m)?.description || m;
     const summary = y.summary ? para(y.summary) : mdSummary?.html || '';
     const objectives = [y.objectives?.primary && `<p><b>Objectif principal</b> : ${esc(y.objectives.primary)}</p>`, ...(Array.isArray(y.objectives?.secondary) ? y.objectives.secondary : y.objectives?.secondary ? [y.objectives.secondary] : []).map(o => `<p><b>Objectif secondaire</b> : ${esc(o)}</p>`)].filter(Boolean).join('');
@@ -389,7 +391,7 @@
         ${pts.length ? `<h4>Route fournie — ${Math.round(dist)} NM${y.vertical_profile?.cruise ? `, ${esc(y.vertical_profile.cruise)}` : ''}</h4>
         <div class="pm-route"><table><thead><tr><th>Point</th><th>Nom</th><th>Rôle</th><th>Position</th></tr></thead><tbody>${pts.map(p => `<tr><td>${esc(p.id)}</td><td>${esc(p.name)}</td><td>${esc(p.role)}</td><td>${esc(coord(p))}</td></tr>`).join('')}</tbody></table>${plan(pts)}</div>` : ''}
       </div>
-      <div data-part="maps"><h4>Cartes fournies</h4>${maps.length ? `<div class="pm-maps">${maps.map(m => `<figure><a href="${esc(fileUrl(a, 'cartes/' + m))}" target="_blank" rel="noopener"><img loading="lazy" src="${esc(fileUrl(a, 'cartes/' + m))}" alt="${esc(m)}" onerror="this.onerror=null;this.src='${esc(fileUrl(a, m))}'"></a><figcaption>${esc(mapCaption(m))}</figcaption></figure>`).join('')}</div>` : '<p class="small">Aucune carte fournie avec la mission (les Cartes de vol les génèrent depuis la route).</p>'}</div>
+      <div data-part="maps"><h4>Cartes fournies</h4>${maps.length ? `<div class="pm-maps">${maps.map(m => `<figure><a href="${esc(mapUrls[m])}" target="_blank" rel="noopener"><img loading="lazy" src="${esc(mapUrls[m])}" alt="${esc(m)}"></a><figcaption>${esc(mapCaption(m))}</figcaption></figure>`).join('')}</div>` : '<p class="small">Aucune carte fournie avec la mission (les Cartes de vol les génèrent depuis la route).</p>'}</div>
       <div data-part="final">
         ${sec('Objectifs', objectives)}
         ${sec('Remarques', notes.length ? `<ul>${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : '')}

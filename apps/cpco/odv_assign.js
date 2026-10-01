@@ -79,16 +79,14 @@
   }
   /** Yaml d'une mission du registre (fetch) ; {} si illisible. */
   async function yamlOf(m) {
-    const root = window.RepositoryNav?.root || new URL('../../', location.href).href,
-      file = (m.files || []).find(f => /\.ya?ml$/i.test(f)) || `mission${m.id}.yaml`;
+    // dossier des missions autorisé d'abord (même hors de la copie servie), sinon copie servie
+    const file = (m.files || []).find(f => /\.ya?ml$/i.test(f)),
+      found = await M().missionFirst(m.folder, [file, `mission${m.id}.yaml`, `mission${String(m.id).replace('-', '')}.yaml`]);
     try {
-      const r = await fetch(new URL(`data/missions/${m.folder}/${file}`, root).href, {
-        cache: 'no-store'
-      });
-      if (r.ok) return window.jsyaml.load((await r.text()).replace(/^#.*\n/, '')) || {};
+      return found ? window.jsyaml.load(found.value.replace(/^#.*\n/, '')) || {} : {};
     } catch {
-      /* mission illisible : entrée du registre seule */ }
-    return {};
+      return {}; // mission illisible : entrée du registre seule
+    }
   }
   /** Ouvre le dialogue d'affectation pour une mission du registre, pilotes et heure préremplis. */
   async function assign(m, pilots, takeoff, note = '') {
