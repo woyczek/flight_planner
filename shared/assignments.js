@@ -48,22 +48,36 @@
 
   let cache = null;
   /** Index des affectations (data/missions/affectations.json) : { updatedAt, assignments: [...] } ; vide si absent. */
+  let warned = false; // dossier autorisé ≠ fichiers servis : signalé une fois
   async function index({
     fresh = false
   } = {}) {
     if (cache && !fresh) return cache;
+    // source : le dossier des missions autorisé (celui où l'on écrit), sinon la copie servie (fetch) ; si les deux
+    // diffèrent, le dossier autorisé l'emporte et un avertissement dit que la page ne sert pas ce dossier
+    let served = null,
+      local = null;
     try {
       const r = await fetch(new URL('data/missions/affectations.json', root()).href, {
         cache: 'no-store'
       });
-      cache = r.ok ? await r.json() : {
-        assignments: []
-      };
+      served = r.ok ? await r.json() : null;
     } catch {
-      cache = {
-        assignments: []
-      };
+      served = null;
     }
+    try {
+      const st = await window.FileAccess?.status?.('__missions');
+      if (st?.handle && st.permission === 'granted') local = JSON.parse(await (await (await st.handle.getFileHandle('affectations.json')).getFile()).text());
+    } catch {
+      local = null; // pas d'index dans le dossier autorisé, ou dossier déplacé
+    }
+    if (local && served && (local.updatedAt || '') !== (served.updatedAt || '') && !warned) {
+      warned = true;
+      window.AppFramework?.notify?.(t(['Affectations : le dossier des missions autorisé et les fichiers servis par la page diffèrent (autre copie ?) — le dossier autorisé fait foi.', 'Assignments: the authorised missions folder and the files served by the page differ (another copy?) — the authorised folder prevails.']), 'warn');
+    }
+    cache = local || served || {
+      assignments: []
+    };
     cache.assignments = Array.isArray(cache.assignments) ? cache.assignments : [];
     return cache;
   }
@@ -979,6 +993,7 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     })).createWritable();
     await wi.write(JSON.stringify(idx, null, 2));
     await wi.close();
+    cache = idx; // l'index écrit fait foi pour les relectures (même si la page sert une autre copie)
     cache = idx;
     envelope();
     return `${mh.folder}/affectations.yaml`;
