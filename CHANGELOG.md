@@ -14,6 +14,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 > livrée en 4.4.0 ; la phase 3 (couches CSS, retrait des `!important`) est en cours et pourra encore modifier
 > légèrement l'apparence des designs à matières. Plan : [docs/REFACTORING_TOOLKIT.md](docs/REFACTORING_TOOLKIT.md).
 
+### Modifié
+
+- Framework : socle, styles des pages et styles posés par les scripts rangés dans une couche CSS `app` (MapLibre en
+  `lib`, en dessous) ; les designs, hors couche, l'emportent sans `!important`. Les `!important` du socle et des pages
+  sont convertis en sélecteurs renforcés (`:not(#imp)`) ; rendu inchangé au banc de non-régression.
+- Banc de non-régression : un panel réduit se compare au *snap* du panel complet.
+
 ## [4.4.0] — 2026-09-30
 
 Nouvelle famille COMBAT (combat aérien : BFM, ACM, DACT, interception) ; identifiants de mission liés migrés d'un bloc

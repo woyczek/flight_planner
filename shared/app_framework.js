@@ -281,27 +281,39 @@
     if (document.getElementById("repoNotifyCss")) return;
     const s = document.createElement("style");
     s.id = "repoNotifyCss";
-    s.textContent = `.repo-notify{position:fixed;z-index:3000;left:50%;bottom:72px;transform:translateX(-50%);display:grid;gap:6px;width:min(640px,calc(100vw - 32px));pointer-events:none}
+    s.textContent = `.repo-notify{inset:auto;margin:0;border:0;padding:0;background:none;overflow:visible;color:inherit;position:fixed;z-index:3000;left:50%;bottom:72px;transform:translateX(-50%);display:grid;gap:6px;width:min(640px,calc(100vw - 32px));pointer-events:none}
 .repo-notify>div{pointer-events:auto;display:flex;gap:10px;align-items:flex-start;padding:9px 12px;border-radius:10px;font:13px/1.4 system-ui,sans-serif;box-shadow:0 6px 24px #0004;background:#1d2733;color:#f2f5f8;border-left:5px solid #6fa8ff}
 .repo-notify>div.ok{border-left-color:#2e9d5b}.repo-notify>div.warn{border-left-color:#e0a400}.repo-notify>div.err{border-left-color:#e5484d;background:#2a1618}
 .repo-notify>div>span{flex:1;white-space:pre-line}.repo-notify button{all:unset;cursor:pointer;opacity:.75;font-size:16px;line-height:1;padding:0 2px}.repo-notify button:hover{opacity:1}`;
     document.head.append(s);
   };
 
-  function notify(message, kind = "info", {
-    timeout
-  } = {}) {
-    const text = String(message ?? "").trim();
-    if (!text) return null;
-    notifyCss();
+  /** Conteneur des notifications : popover (couche supérieure), reposé en dernier à chaque message pour passer
+   *  au-dessus d'une fenêtre modale ouverte (dialog.showModal) — sinon il resterait sous son fond flouté. */
+  function notifyBox() {
     let box = document.querySelector(".repo-notify");
     if (!box) {
       box = document.createElement("div");
       box.className = "repo-notify";
       box.setAttribute("role", "status");
       box.setAttribute("aria-live", "polite");
+      box.popover = "manual";
       document.body.append(box);
     }
+    try {
+      if (box.matches(":popover-open")) box.hidePopover();
+      box.showPopover();
+    } catch {
+      /* navigateur sans popover : position fixe ordinaire */ }
+    return box;
+  }
+  function notify(message, kind = "info", {
+    timeout
+  } = {}) {
+    const text = String(message ?? "").trim();
+    if (!text) return null;
+    notifyCss();
+    const box = notifyBox();
     if (kind === "err" || kind === "warn") record(text, kind);
     const same = [...box.children].find(n => n.dataset.text === text);
     if (same) same.remove();
@@ -368,14 +380,7 @@
   } = {}) {
     notifyCss();
     taskCss();
-    let box = document.querySelector(".repo-notify");
-    if (!box) {
-      box = document.createElement("div");
-      box.className = "repo-notify";
-      box.setAttribute("role", "status");
-      box.setAttribute("aria-live", "polite");
-      document.body.append(box);
-    }
+    const box = notifyBox();
     const item = document.createElement("div"),
       esc = window.RepositoryKit.esc;
     item.className = "task";

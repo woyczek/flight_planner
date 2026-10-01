@@ -22,7 +22,7 @@
   {
     const css = document.createElement('link');
     css.rel = 'stylesheet';
-    css.href = new URL('block_icons.css?v=0e7d68ca', script.src).href; // version : empreinte de la feuille (tools/bump_versions.py)
+    css.href = new URL('block_icons.css?v=d1d54c10', script.src).href; // version : empreinte de la feuille (tools/bump_versions.py)
     document.head.append(css);
   }
   const K = window.RepositoryKit; // utilitaires communs (shared/kit.js)

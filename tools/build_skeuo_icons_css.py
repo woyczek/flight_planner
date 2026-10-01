@@ -78,10 +78,10 @@ out = [BEGIN,
        f'{ANY} :is(.repo-block-icon,.repo-card-icon){{background:none!important;box-shadow:none!important;border-radius:0!important;width:auto!important;height:auto!important}}',
        f'{ANY} :is(.repo-block-icon,.repo-card-icon) .repo-svg[data-i]{{--rs:46px}}',
        f'{ANY} .repo-card-icon .repo-svg[data-i]{{--rs:38px}}',
-       f'{ANY} :is(button,.buttonLink,a.mc-button,a.headerButton,summary) .repo-svg[data-i]{{--rs:1.9em;margin:-.35em 0}}',
+       f'{ANY} :is(button,.buttonLink,a.mc-button,a.headerButton,summary) .repo-svg[data-i]{{--rs:1.9em}}',
        # l'icône d'un bouton ne l'agrandit pas : son enveloppe garde la hauteur d'une ligne, l'image déborde (centrée)
        f'{ANY} :is(button,.buttonLink,a.mc-button,a.headerButton) .repo-icon{{height:1.25em;overflow:visible;align-items:center}}',
-       f'{ANY} .repo-sidenav-item .repo-svg[data-i]{{--rs:50px!important;margin:0}}',   # après les boutons (« Menu » est un bouton)
+       f'{ANY} .repo-sidenav-item .repo-svg[data-i]{{--rs:50px!important}}',   # après les boutons (« Menu » est un bouton)
        f'{ANY} .repo-dropzone-badge{{background:none!important}}{ANY} .repo-dropzone-badge .repo-svg[data-i]{{--rs:42px}}',
        f'{ANY} .repo-notice>.repo-icon .repo-svg[data-i]{{--rs:30px}}',
        f'{ANY} .repo-sidenav-brand .repo-svg[data-i]{{--rs:40px!important}}']

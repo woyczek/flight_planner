@@ -154,7 +154,7 @@ Suivi des assets (cahier des charges, consignes de génération, intégration) :
   `--sheet-text`, `--sheet-label-ink`, `--sheet-card-bg`, `--sheet-pin` (carte posée = papier punaisé). Barres de
   progression et notifications habillées par jetons (`--sk-prog-*`, `--sk-menu-*`), sans `!important`.
 
-### Phase 3 — couches CSS (en cours)
+### Phase 3 — couches CSS
 
 - **Constat (essai sur 9 pages, banc « toutes »)** : dans une couche, un `!important` l'emporte sur celui d'une règle
   hors couche (ordre inversé). Mettre les styles de page en couche sans retirer leurs `!important` les fait passer
@@ -180,9 +180,27 @@ Suivi des assets (cahier des charges, consignes de génération, intégration) :
 - **Enseignement** : la mise en couche et le retrait des `!important` d'un fichier vont ensemble ; un `!important` du
   socle ne sert qu'à battre une autre règle de l'application (même couche après mise en couche : la spécificité
   suffit, ou un sélecteur plus précis) ou un design (inutile : les designs seront au-dessus).
-- **Suivant** : (2) `repository_nav.css` et styles des scripts en couche `app` **avec** retrait de leurs `!important`
-  (`strip_page_important.py` sur la feuille ; garde de `kit.js` retirant ceux des styles posés), banc ; puis pages et
-  `core.css` ; 7 au fil des assets livrés.
+- **Fait (2 et 3, 1ᵉʳ octobre 2026)** : socle (`repository_nav.css`, `core.css`, `maintenance.css`, `block_icons.css`),
+  styles des pages et styles posés par les scripts en couche `app` ; `@layer lib, app;` en tête de `repository_nav.css`.
+  - **`!important` de l'application convertis, pas retirés** : les retirer cassait toutes les règles qu'ils faisaient
+    gagner sur une autre règle de l'application (boutons d'outils des blocs, en-tête collant, « × » du collage…).
+    `strip_page_important.py --bump` (feuilles, avant `layer_app.py`) et la garde de `kit.js` (styles posés par les
+    scripts) en font une règle à la suite, au sélecteur renforcé `:not(#imp)` (spécificité + 1-0-0) : devant les règles
+    ordinaires de l'application comme avant, ordre inchangé entre règles converties, derrière les designs hors couche.
+    Restent `!important` : `display: none`, blocs `@media`, et `/* garder */` ;
+  - `/* garder */` : un `!important` qui doit battre **l'habillage des designs** (aperçus et pastilles de la page
+    Apparence) — dans la couche, il l'emporte sur les designs, comme avant ;
+  - règles des designs **à spécificité voulue faible** (`:where(…)` positionnement des blocs, graisse par défaut des
+    boutons `--sk-btn-weight`) : rangées dans `@layer app` de `designs_skeuo.css` (elles cèdent aux pages, comme avant) ;
+  - réglages d'apparence `html[data-icons…]` : traités comme les designs (hors couche) par `layer_pages.est_design` et
+    par la garde de `kit.js`, qui découpe un `<style>` posé par un script (règles des designs hors couche, intactes).
+- **Méthode du banc** : un *snap* initial sur le panel complet (bouton Référence, liste de plus de 20 pages : mémorisé
+  comme snap, `benchSnap`) ; itérations sur un panel réduit mais représentatif (`?pages=` : CR, tableau, Paramètres,
+  Apparence, Maintenance, Landing, studio, planning ODV, registre), comparé au snap (empreintes comparées par
+  empreinte) ; panel complet en fin, contre le même snap. Détail d'un écart en empreinte : relevé ciblé, ou
+  comparaison des styles calculés contre un arbre de travail de référence servi à côté (`/_ref/`, jonction locale).
+- **Suivant** : (4) retirer les `!important` des designs (ils n'ont plus à battre l'application, sauf `garder`) ; 7 au fil
+  des assets livrés.
 
 ## Utiliser la boîte à outils (D)
 

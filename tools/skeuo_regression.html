@@ -103,7 +103,12 @@ const hashOf = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) h =
 const setKey = () => { const v = $('set').value; return v.startsWith('liste:') ? `liste:${hashOf(v)}` : v; };
 const comboKey = k => `${setKey()}::${k}`;
 const saveCombo = (k, v) => idb('readwrite', s => s.put(v, comboKey(k)));
-const loadCombo = async k => (await idb('readonly', s => s.get(comboKey(k)))) ?? (await loadRef($('set').value))?.[k];
+// snap initial : dernière référence d'un grand panel (plus de 20 pages) ; un panel réduit sans référence propre se
+// compare à lui (itérations rapides, puis panel complet en confiance contre le même snap)
+const SNAP = 'benchSnap';
+const snapKey = () => { try { return localStorage.getItem(SNAP) || ''; } catch { return ''; } };
+const loadCombo = async k => (await idb('readonly', s => s.get(comboKey(k)))) ?? (await loadRef($('set').value))?.[k] ??
+  (snapKey() && snapKey() !== setKey() ? await idb('readonly', s => s.get(`${snapKey()}::${k}`)) : undefined);
 // grand relevé (liste de plus de 20 pages) : sélecteurs propres des pages gardés en empreinte (un écart se signale ;
 // un relevé ciblé sur la page en donne le détail)
 const compact = () => $('set').value.startsWith('liste:') && LISTE.length > 20;
@@ -115,12 +120,13 @@ function pageSelectors(d) {
   const out = new Set();
   const walk = rules => {
     for (const r of rules) {
-      if (r.selectorText) r.selectorText.split(/,(?![^(]*\))/).map(s => s.trim()).filter(s => s && !/^html\[data-/.test(s) && !/::?-webkit-|::?-moz-/.test(s)).forEach(s => out.add(s));
+      if (r.selectorText) r.selectorText.split(/,(?![^(]*\))/).map(s => s.trim().replace(/:not\(#imp\)/g, '')).filter(s => s && !/^html\[data-/.test(s) && !/::?-webkit-|::?-moz-/.test(s)).forEach(s => out.add(s));
       else if (r.cssRules) walk(r.cssRules);
     }
   };
   for (const sh of d.styleSheets) {
-    const own = sh.ownerNode?.tagName === 'STYLE' && !sh.ownerNode.dataset.layer && sh.ownerNode.id !== 'repoLayers';
+    // styles de la page (en couche « app » ou non ; règles des designs comprises), pas ceux du banc
+    const own = sh.ownerNode?.tagName === 'STYLE' && sh.ownerNode.dataset.layer !== 'bench' && sh.ownerNode.id !== 'repoLayers';
     if (!own && !/mission_core\/core\.css|maintenance\.css/.test(sh.href || '')) continue;
     try {
       walk(sh.cssRules);
@@ -171,7 +177,7 @@ async function sweep(visit, skip) {
       await new Promise(r => { f.onload = r; setTimeout(r, 8000); });
       await new Promise(r => setTimeout(r, 1500)); // décors et blocs posés après le chargement
       // transitions et animations coupées : relevé de l'état final, pas d'une étape de transition
-      f.contentDocument.head.insertAdjacentHTML('beforeend', '<style>*,*::before,*::after{transition:none!important;animation:none!important}</style>');
+      f.contentDocument.head.insertAdjacentHTML('beforeend', '<style data-layer="bench">*,*::before,*::after{transition:none!important;animation:none!important}</style>'); // data-layer : hors couche (kit.js n'y touche pas)
       for (const tone of tones) {
         f.contentDocument.documentElement.dataset.tone = tone;
         await new Promise(r => setTimeout(r, 120));
@@ -189,6 +195,7 @@ $('ref').onclick = async () => {
   let n = 0;
   const resume = $('resume').checked;
   await sweep(async (k, v) => { await saveCombo(k, v); n++; }, resume ? async k => !!(await idb('readonly', s => s.get(comboKey(k)))) : null);
+  if (compact()) try { localStorage.setItem(SNAP, setKey()); } catch { /* stockage refusé */ }
   log(`Référence « ${$('set').value.slice(0, 60)}${$('set').value.length > 60 ? '…' : ''} » : ${n} combinaison(s) relevée(s)${resume ? ' (reprise : les autres l’étaient déjà)' : ''}.`);
 };
 $('cmp').onclick = async () => {
@@ -198,7 +205,9 @@ $('cmp').onclick = async () => {
     const old = await loadCombo(k);
     if (!old) { log(`${k}  (pas de référence)`); return; }
     for (const s of new Set([...Object.keys(old), ...Object.keys(now)])) {
-      if (old[s] === now[s]) continue;
+      if (old[s] === now[s] || /^\*/.test(s)) continue; // « * » : style du banc relevé par d'anciennes références
+      // snap en empreinte (grand panel), relevé en clair (panel réduit) : comparés par empreinte
+      if (old[s]?.[0] === '#' && now[s] && now[s][0] !== '#' && old[s] === '#' + hashOf(now[s])) continue;
       if (!old[s] || !now[s]) { n++; log(`${k}  ${s}  ${old[s] ? 'disparu' : 'nouveau'}`); continue; }
       if (old[s][0] === '#' || now[s][0] === '#') { n++; log(`${k}  ${s}  modifié (relevé ciblé sur la page pour le détail)`); continue; }
       const a = JSON.parse(old[s]), b = JSON.parse(now[s]);

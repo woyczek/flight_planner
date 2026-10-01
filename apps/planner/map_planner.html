@@ -4,15 +4,21 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cartes de vol</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=5569f9d7">
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=33766a66">
 <script src="../../repository_tree?v=e86e8e5c"></script>
-<link rel="stylesheet" href="../../shared/carto/maplibre-gl.css">
+<style data-layer="lib">@import url("../../shared/carto/maplibre-gl.css") layer(lib);.volForm{display:grid;grid-template-columns:repeat(2,minmax(0,260px));gap:8px 12px;align-items:end}.volForm label{display:grid;gap:3px;font-size:13px}
+#volStatus:empty{display:none}
+.volMaps{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin:8px 0 2px}
+#vprofPtsBox{display:none!important}
+@media(max-width:800px){.volForm{grid-template-columns:1fr 1fr}}
+</style>
 <script src="../../shared/carto/maplibre-gl.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
 <script>window.SIA_MISSION_NS='planner'</script><script src="../cpco/mission_store.js?v=00ff5c1b"></script>
 <script src="../../shared/carto/aero_symbols.js?v=8393fb57"></script><script src="../../shared/carto/vertical_profile.js?v=75163ccf"></script><script src="../../shared/carto/vprof_editor.js?v=e34b66fc"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/flight_performance_model.js?v=9f9c9116"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=ec32b1f9"></script><script src="../../shared/mission_estimate.js?v=1ce8f779"></script><script src="../../shared/mission_exercise.js?v=59bfcd6b"></script>
 <script src="../../shared/sia_base.js?v=2f8158b3"></script><script src="../../shared/aar_tracks.js?v=f4061047"></script><script src="../../shared/airac.js?v=62723a04"></script><script src="../../shared/sticky_frame.js?v=90db4df1"></script>
-<style>
+<style data-layer="app">
+@layer app {
 :root {
   font: 15px/1.45 system-ui, sans-serif;
   color: #18242b;
@@ -1093,11 +1099,7 @@ body.previewWindow .profilePreview>:not(#osmLivePreview):not(#generalPreview):no
 .profileLayout {
   grid-template-columns: minmax(0, 1fr)
 }
-.volForm{display:grid;grid-template-columns:repeat(2,minmax(0,260px));gap:8px 12px;align-items:end}.volForm label{display:grid;gap:3px;font-size:13px}
-#volStatus:empty{display:none}
-.volMaps{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin:8px 0 2px}
-#vprofPtsBox{display:none!important}
-@media(max-width:800px){.volForm{grid-template-columns:1fr 1fr}}
+}
 </style>
 </head>
 <body>
@@ -6726,7 +6728,7 @@ applyOutputPrefs();;
   }
 })();
 </script>
-<script src="../../shared/kit.js?v=9839b88b"></script>
+<script src="../../shared/kit.js?v=79889dfe"></script>
 <script>
 // ===== Cartes de vol (page publique) : bloc « Cartes du vol » =====
 // La route est celle du bloc Route (champ vprofRoute, case 15) : points lus par SiaProfile.parseRoute (base SIA du
@@ -6791,7 +6793,7 @@ if(!new URLSearchParams(location.search).has('fpl')&&sharedDoc?.yaml?.mission?.i
 if(new URLSearchParams(location.search).has('fpl')){history.replaceState(null,'',location.pathname+location.hash);(async()=>{for(let i=0;i<100&&!baseReady();i++)await new Promise(r=>setTimeout(r,200));if(baseReady()&&$v('vprofRoute').value.trim())build(false)})()}
 })();
 </script>
-<script src="../../shared/repository_nav.js?v=18fd986e"></script>
-<script src="../../shared/app_framework.js?v=a63ce655"></script>
+<script src="../../shared/repository_nav.js?v=dd41dd3c"></script>
+<script src="../../shared/app_framework.js?v=817d675e"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script><script src="../cpco/sia_i18n.js?v=47629ef1"></script>
 </body></html>

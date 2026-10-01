@@ -1,5 +1,7 @@
 /* En-tête commun de toutes les pages (repository_nav.js) : barre collée, titre, menu ☰, langue,
    pied de page ; couleurs par thème via --repo-bar, --repo-bar-text, --repo-page, --repo-accent. */
+@layer lib, app;
+@layer app {
 :root {
   --repo-bar: #101319;
   --repo-bar-text: #eef3f7;
@@ -7,12 +9,14 @@
   --repo-accent: #69a7ff
 }
 .repo-header {
-  position: sticky !important;
   top: 0;
   z-index: 1000;
-  background: var(--repo-bar) !important;
-  color: var(--repo-bar-text) !important;
   border-bottom: 1px solid color-mix(in srgb, var(--repo-bar-text) 18%, transparent)
+}
+.repo-header:not(#imp) {
+  position: sticky;
+  background: var(--repo-bar);
+  color: var(--repo-bar-text)
 }
 .repo-header-line1 {
   display: flex;
@@ -40,12 +44,15 @@
 .repo-language-button,
 .repo-menu-button {
   height: 32px;
-  border: 1px solid color-mix(in srgb, var(--repo-bar-text) 25%, transparent) !important;
-  border-radius: 7px !important;
-  background: transparent !important;
-  color: inherit !important;
   cursor: pointer;
   font: 13px/1 Inter, system-ui, Segoe UI, Arial, sans-serif
+}
+.repo-language-button:not(#imp),
+.repo-menu-button:not(#imp) {
+  border: 1px solid color-mix(in srgb, var(--repo-bar-text) 25%, transparent);
+  border-radius: 7px;
+  background: transparent;
+  color: inherit
 }
 .repo-language-button {
   display: flex;
@@ -208,9 +215,11 @@
   position: relative
 }
 .repo-block-heading {
-  display: flex !important;
   align-items: center;
   gap: 8px
+}
+.repo-block-heading:not(#imp) {
+  display: flex
 }
 .repo-block-heading h2 {
   flex: 1
@@ -221,10 +230,12 @@
   margin-left: auto
 }
 .repo-block-tools button {
-  padding: 4px 7px !important;
-  font-size: 11px !important;
   line-height: 1.1;
   cursor: pointer
+}
+.repo-block-tools button:not(#imp) {
+  padding: 4px 7px;
+  font-size: 11px
 }
 .repo-block.repo-block-hidden>:not(.repo-block-heading) {
   display: none !important
@@ -265,8 +276,8 @@
 .repo-block {
   margin-bottom: 14px
 }
-.repo-block:not(.card) {
-  margin-bottom: 18px !important
+.repo-block:not(.card):not(#imp) {
+  margin-bottom: 18px
 }
 .repo-tree-group summary {
   font-size: 13px;
@@ -301,24 +312,26 @@
   white-space: nowrap
 }
 .repo-language-flag {
-  display: inline-flex !important;
   align-items: center;
   justify-content: center;
-  width: 27px !important;
-  height: 18px !important;
   overflow: hidden;
   flex: 0 0 27px
 }
-.repo-language-flag svg,
-.repo-language-menu svg {
-  display: block !important;
-  width: 27px !important;
-  height: 18px !important;
-  min-width: 27px !important;
-  min-height: 18px !important;
-  max-width: 27px !important;
-  max-height: 18px !important;
-  border-radius: 2px !important
+.repo-language-flag:not(#imp) {
+  display: inline-flex;
+  width: 27px;
+  height: 18px
+}
+.repo-language-flag svg:not(#imp),
+.repo-language-menu svg:not(#imp) {
+  display: block;
+  width: 27px;
+  height: 18px;
+  min-width: 27px;
+  min-height: 18px;
+  max-width: 27px;
+  max-height: 18px;
+  border-radius: 2px
 }
 .repo-language-button {
   min-width: 48px;
@@ -379,17 +392,6 @@ html[data-design="console"]:not([data-sidenav="off"]) {
 .repo-sidenav::-webkit-scrollbar {
   display: none
 }
-/* jeux skeuomorphes (icônes de 50 px) : entrées resserrées, pour tenir dans une fenêtre de 800 px */
-html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-item {
-  padding: 5px 2px !important;
-  gap: 2px !important
-}
-html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-brand {
-  min-height: 68px !important
-}
-html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-sep:not(.repo-sidenav-bottom) {
-  margin: 6px 14px !important
-}
 .repo-sidenav ul {
   list-style: none;
   margin: 0;
@@ -398,8 +400,8 @@ html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-ic
   display: flex;
   flex-direction: column
 }
-.repo-sidenav-bottom {
-  margin-top: auto !important
+.repo-sidenav-bottom:not(#imp) {
+  margin-top: auto
 }
 .repo-sidenav-item {
   display: flex;
@@ -457,15 +459,6 @@ html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-ic
   width: 30px;
   height: 30px
 }
-/* jeux skeuomorphes : images posées dès la construction de la barre (taille réservée : pas de décalage) ; tracé masqué */
-html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-ic {
-  width: 50px;
-  height: 50px
-}
-html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-brand .repo-sidenav-ic {
-  width: 40px;
-  height: 40px
-}
 .repo-sidenav-img {
   width: 100%;
   height: 100%;
@@ -504,9 +497,11 @@ html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-ic
   border: 1px solid color-mix(in srgb, var(--repo-bar-text) 30%, transparent);
   border-radius: 7px;
   background: color-mix(in srgb, var(--repo-bar-text) 10%, transparent);
-  color: inherit !important;
-  text-decoration: none !important;
   font: 600 12.5px/1.2 Inter, system-ui, Segoe UI, Arial, sans-serif
+}
+.repo-settings-button:not(#imp) {
+  color: inherit;
+  text-decoration: none
 }
 .repo-settings-button:hover {
   background: color-mix(in srgb, var(--repo-bar-text) 20%, transparent)
@@ -528,10 +523,12 @@ dialog.repo-ap-dialog::backdrop {
   backdrop-filter: blur(2px)
 }
 .repo-ap-head {
-  position: sticky !important;
   top: 0;
-  z-index: 50;
-  padding: 10px 18px !important
+  z-index: 50
+}
+.repo-ap-head:not(#imp) {
+  position: sticky;
+  padding: 10px 18px
 }
 .repo-ap-head h1 {
   margin: 0;
@@ -571,15 +568,11 @@ a.repo-sidenav-brand:hover .repo-sidenav-logo,
 a.repo-sidenav-brand:focus-visible .repo-sidenav-logo {
   transform: scale(1.06)
 }
-html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-logo {
-  width: 56px;
-  height: 56px
-}
 /* barres fixées en bas des pages (planificateur : .status-bar ; Landing : .analysis-dock) : décalées de la largeur de la
    barre latérale quand elle est affichée (sinon leur texte passe dessous) */
-html[data-sidenav="on"] :is(.status-bar, .analysis-dock),
-html[data-design="console"]:not([data-sidenav="off"]) :is(.status-bar, .analysis-dock) {
-  left: var(--repo-sidenav-w) !important
+html[data-sidenav="on"] :is(.status-bar, .analysis-dock):not(#imp),
+html[data-design="console"]:not([data-sidenav="off"]) :is(.status-bar, .analysis-dock):not(#imp) {
+  left: var(--repo-sidenav-w)
 }
 
 /* Centre (CPCO) verrouillé : entrées masquées, page du Centre recouverte d'un avis (shared/repository_nav.js) */
@@ -642,4 +635,30 @@ html[data-cpco="off"] .cpco-only {
   background: var(--repo-accent, #075ca8);
   color: #fff;
   font-weight: 700
+}
+}
+/* règles propres aux designs : hors couche (au-dessus de l'application) */
+/* jeux skeuomorphes (icônes de 50 px) : entrées resserrées, pour tenir dans une fenêtre de 800 px */
+html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-item {
+  padding: 5px 2px !important;
+  gap: 2px !important
+}
+html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-brand {
+  min-height: 68px !important
+}
+html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-sep:not(.repo-sidenav-bottom) {
+  margin: 6px 14px !important
+}
+/* jeux skeuomorphes : images posées dès la construction de la barre (taille réservée : pas de décalage) ; tracé masqué */
+html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-ic {
+  width: 50px;
+  height: 50px
+}
+html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-brand .repo-sidenav-ic {
+  width: 40px;
+  height: 40px
+}
+html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-logo {
+  width: 56px;
+  height: 56px
 }

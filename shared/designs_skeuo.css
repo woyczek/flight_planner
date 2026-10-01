@@ -293,9 +293,11 @@ html[data-design-base="cabinet"] .repo-block {
   isolation: isolate
 }
 /* blocs positionnés (vis et décors en absolu) ; spécificité nulle : une page qui positionne elle-même un bloc (barre fixée
-   en bas : .analysis-dock de Landing) garde son positionnement */
-:where(html[data-skeuo="frame"] .repo-block) {
-  position: relative
+   en bas : .analysis-dock de Landing) garde son positionnement ; dans la couche app, comme les styles des pages */
+@layer app {
+  :where(html[data-skeuo="frame"] .repo-block) {
+    position: relative
+  }
 }
 html[data-design="cabinet"][data-decor="full"] .repo-block {
   outline: 1.6px dashed rgba(238, 210, 156, .78) !important;
@@ -1024,10 +1026,17 @@ html[data-skeuo] .repo-block :is(input:not([type=checkbox]):not([type=radio]):no
   box-shadow: var(--sk-input-shadow) !important
 }
 /* boutons : habillage du design (police : dans la section du design) */
+/* graisse : valeur par défaut du design, dans la couche app (les règles plus précises des pages la règlent) */
+@layer app {
+html[data-skeuo] button:where(:not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-sidenav-item):not(.col-split):not(.repo-block-tools button):not([role=menuitem]):not(.repo-icon-only):not(.repo-plain)),
+  html[data-skeuo] .buttonLink,
+  html[data-skeuo] a.mc-button {
+    font-weight: var(--sk-btn-weight)
+  }
+}
 html[data-skeuo] button:where(:not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-sidenav-item):not(.col-split):not(.repo-block-tools button):not([role=menuitem]):not(.repo-icon-only):not(.repo-plain)),
 html[data-skeuo] .buttonLink,
 html[data-skeuo] a.mc-button {
-  font-weight: var(--sk-btn-weight);
   border: var(--sk-btn-border) !important;
   border-radius: var(--sk-btn-radius) !important;
   color: var(--sk-btn-ink) !important;

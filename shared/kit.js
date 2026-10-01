@@ -13,6 +13,95 @@
   'use strict';
   if (window.RepositoryKit) return;
 
+  // ------------------------------------------------------------------ couches CSS (docs/REFACTORING_TOOLKIT.md, phase 3)
+  // Socle, styles des pages et styles posés par les scripts partagent la couche « app » (ordre et spécificité entre eux
+  // inchangés) ; les designs restent hors couche, au-dessus, et l'emportent sans !important. Les feuilles du socle et les
+  // <style> des pages sont rangés par tools/layer_app.py (data-layer) ; ici, tout autre <style> — posé par un script,
+  // avant ce fichier ou après — est placé dans « app ». Ses !important (dans une couche, un !important passerait devant
+  // ceux des designs) deviennent des règles renforcées « :not(#imp) » (spécificité + 1-0-0 : devant les autres règles de
+  // l'application comme avant, derrière les designs ; tools/strip_page_important.py --bump fait de même pour les
+  // feuilles) ; gardent le leur : display: none (masquage), un !important suivi de /* garder */ (règle qui doit
+  // l'emporter sur l'habillage des designs) et les blocs @media. Règles des designs (html[data-skeuo|design|tone|decor|
+  // icons|app-theme…]) : hors couche, intactes (comme tools/layer_app.py). Déjà en couche ou marqué data-layer : inchangé.
+  const cssBlocks = css => {
+    const out = [];
+    let depth = 0,
+      start = 0;
+    for (let i = 0; i < css.length; i++)
+      if (css[i] === '{') depth++;
+      else if (css[i] === '}' && !--depth) {
+        out.push(css.slice(start, i + 1));
+        start = i + 1;
+      }
+    if (css.slice(start).trim()) out.push(css.slice(start));
+    return out;
+  };
+  const isDesign = b => /^\s*(\/\*[\s\S]*?\*\/\s*)*html(:is\()?\[data-(skeuo|design|tone|decor|icons|app-theme)/.test(b);
+  /** Découpe sur sep hors parenthèses et guillemets. */
+  const splitTop = (s, sep) => {
+    const out = [];
+    let depth = 0,
+      q = '',
+      cur = '';
+    for (const c of s) {
+      if (q) q = c === q ? '' : q;
+      else if (c === '"' || c === "'") q = c;
+      else if (c === '(') depth++;
+      else if (c === ')') depth--;
+      else if (c === sep && !depth) {
+        out.push(cur);
+        cur = '';
+        continue;
+      }
+      cur += c;
+    }
+    out.push(cur);
+    return out;
+  };
+  /** « a .b::before » → « a .b:not(#imp)::before » ; sinon ajouté à la fin de chaque sélecteur. */
+  const bumpSel = sel => splitTop(sel, ',').map(x => {
+    x = x.trim();
+    for (let i = 0, d = 0; i < x.length; i++) {
+      if (x[i] === '(') d++;
+      else if (x[i] === ')') d--;
+      else if (!d && x[i] === ':' && /^(::[\w-]+|:(before|after|first-line|first-letter)\b)/.test(x.slice(i))) return `${x.slice(0, i)}:not(#imp)${x.slice(i)}`;
+    }
+    return `${x}:not(#imp)`;
+  }).join(',');
+  /** Règle de l'application : ses !important (hors display: none et « garder ») en règle renforcée à la suite. */
+  const bumpBlock = b => {
+    if (/^\s*@/.test(b.replace(/\/\*[\s\S]*?\*\//g, '')) || !b.includes('{')) return b;
+    const i = b.indexOf('{'),
+      head = b.slice(0, i),
+      body = b.slice(i + 1, b.lastIndexOf('}'));
+    const keep = [],
+      imp = [];
+    for (const d of splitTop(body, ';').filter(x => x.trim())) {
+      const m = /\s*!important\s*$/.exec(d);
+      if (m && !/display\s*:\s*none\s*$/i.test(d.slice(0, m.index).trim()) && !/\/\*\s*garder/.test(d)) imp.push(d.slice(0, m.index).trim());
+      else keep.push(d.trim());
+    }
+    if (!imp.length) return b;
+    return `${keep.length ? `${head}{${keep.join(';')}}` : ''}${bumpSel(head.replace(/\/\*[\s\S]*?\*\//g, ''))}{${imp.join(';')}}`;
+  };
+  const toApp = s => {
+    if (!s || s.dataset.layer || !s.textContent.trim() || /^\s*@layer\b/.test(s.textContent)) return;
+    s.dataset.layer = 'app';
+    const all = cssBlocks(s.textContent);
+    s.textContent = `@layer app {\n${all.filter(b => !isDesign(b)).map(bumpBlock).join('')}\n}\n${all.filter(isDesign).join('')}`;
+  };
+  document.querySelectorAll('style').forEach(toApp);
+  new MutationObserver(list => {
+    for (const m of list) {
+      if (m.target.nodeName === 'STYLE') toApp(m.target); // contenu posé après l'insertion
+      for (const n of m.addedNodes)
+        if (n.nodeName === 'STYLE') toApp(n);
+    }
+  }).observe(document.documentElement, {
+    childList: true,
+    subtree: true
+  });
+
   const LANGS = ['fr', 'en', 'de', 'es'];
 
   /** Échappe un texte pour HTML (& < > " '). */

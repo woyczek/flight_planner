@@ -1,5 +1,6 @@
 /* Paramètres › Maintenance (shared/maintenance_page.js) : blocs mises à jour, sources et dossiers, versions, dépendances,
    mise à jour SIA, sauvegarde totale, journal ; entrées de la rubrique « Maintenance » du menu latéral de Paramètres. */
+@layer app {
 .da-nav button[data-mt] {
   display: block;
   width: 100%;
@@ -205,9 +206,11 @@ code.mt-chg {
 }
 .mt-copy {
   float: right;
-  margin: 4px 0 0 8px;
-  padding: 3px 9px !important;
-  font-size: 12px !important
+  margin: 4px 0 0 8px
+}
+.mt-copy:not(#imp) {
+  padding: 3px 9px;
+  font-size: 12px
 }
 .mt-list {
   margin: 4px 0;
@@ -305,11 +308,6 @@ code.mt-chg {
   width: 1%;
   white-space: nowrap
 }
-html[data-design="field"] .mt-block :is(button.secondary, .mt-file) {
-  background: linear-gradient(#26364e, #0f1a2a) !important;
-  color: #eef0e6 !important;
-  border-color: #0b0d08 !important
-}
 @media(max-width:760px) {
   .mt-grid2 {
     grid-template-columns: 1fr
@@ -346,4 +344,11 @@ html[data-design="field"] .mt-block :is(button.secondary, .mt-file) {
 }
 .mt-ack {
   margin-left: .4rem
+}
+}
+/* règles propres aux designs : hors couche (au-dessus de l'application) */
+html[data-design="field"] .mt-block :is(button.secondary, .mt-file) {
+  background: linear-gradient(#26364e, #0f1a2a) !important;
+  color: #eef0e6 !important;
+  border-color: #0b0d08 !important
 }

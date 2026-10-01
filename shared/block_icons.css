@@ -4,6 +4,7 @@
    ou de la surface (currentColor) ; --repo-icon (≥ 3:1) et --repo-ink (≥ 4,5:1) sont choisis par block_icons.js
    parmi les couleurs du thème d'après la surface réelle de chaque bloc. */
 
+@layer app {
 /* ---- icônes */
 .repo-icon {
   display: inline-flex;
@@ -15,13 +16,15 @@
 /* taille des icônes : variable --rs (posée par le contexte ou par RepositoryIcons.svg), imposée : les règles « svg{…} »
    des pages (graphiques en pleine largeur…) ne déforment plus les icônes */
 .repo-svg {
-  display: block;
-  width: var(--rs, 1.15em) !important;
-  height: var(--rs, 1.15em) !important;
-  max-width: none !important;
-  max-height: none !important;
-  flex: none !important;
-  margin: 0 !important
+  display: block
+}
+.repo-svg:not(#imp) {
+  width: var(--rs, 1.15em);
+  height: var(--rs, 1.15em);
+  max-width: none;
+  max-height: none;
+  flex: none;
+  margin: 0
 }
 .repo-has-icon:not(label):not(p):not(h1) {
   display: inline-flex;
@@ -46,9 +49,11 @@
 /* icône, titre + sous-titre et outils centrés verticalement sur le bloc de texte (designs au trait) ; les designs à
    matières (designs_skeuo.css) alignent en haut, outils au coin du bloc */
 .repo-block-heading-rich {
-  align-items: center !important;
-  gap: 12px !important;
   margin-bottom: 14px
+}
+.repo-block-heading-rich:not(#imp) {
+  align-items: center;
+  gap: 12px
 }
 .repo-block-heading-rich>:is(.repo-block-lead, .repo-block-tools) {
   align-self: center
@@ -64,8 +69,8 @@
   min-width: 0;
   align-self: center
 }
-.repo-block-titles>h2 {
-  margin: 0 !important
+.repo-block-titles>h2:not(#imp) {
+  margin: 0
 }
 .repo-block-subtitle {
   margin: 2px 0 0;
@@ -188,15 +193,17 @@
   outline-offset: 2px
 }
 .repo-dropzone-input {
-  position: absolute !important;
-  width: 1px !important;
-  height: 1px !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-  opacity: 0 !important;
-  overflow: hidden !important;
   clip-path: inset(50%)
+}
+.repo-dropzone-input:not(#imp) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  overflow: hidden
 }
 .repo-dropzone-badge {
   display: inline-flex;
@@ -243,7 +250,6 @@
 
 /* ---- bandeau d'information */
 .repo-notice {
-  display: flex !important;
   align-items: flex-start;
   gap: 10px;
   margin: 12px 0 0;
@@ -251,6 +257,9 @@
   border-radius: 8px;
   border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
   background: color-mix(in srgb, currentColor 4%, transparent)
+}
+.repo-notice:not(#imp) {
+  display: flex
 }
 .repo-notice>.repo-icon {
   color: var(--repo-icon, currentColor);
@@ -287,7 +296,8 @@
     display: none !important
   }
 }
-
+}
+/* règles propres aux designs : hors couche (au-dessus de l'application) */
 /* ---- adaptation aux designs existants (forme seulement) */
 html[data-design="aero"] .repo-block-step {
   box-shadow: 0 3px 10px color-mix(in srgb, var(--repo-bar) 35%, transparent)
@@ -417,9 +427,9 @@ html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icon
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(.repo-block-icon,.repo-card-icon){background:none!important;box-shadow:none!important;border-radius:0!important;width:auto!important;height:auto!important}
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(.repo-block-icon,.repo-card-icon) .repo-svg[data-i]{--rs:46px}
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-card-icon .repo-svg[data-i]{--rs:38px}
-html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(button,.buttonLink,a.mc-button,a.headerButton,summary) .repo-svg[data-i]{--rs:1.9em;margin:-.35em 0}
+html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(button,.buttonLink,a.mc-button,a.headerButton,summary) .repo-svg[data-i]{--rs:1.9em}
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(button,.buttonLink,a.mc-button,a.headerButton) .repo-icon{height:1.25em;overflow:visible;align-items:center}
-html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-sidenav-item .repo-svg[data-i]{--rs:50px!important;margin:0}
+html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-sidenav-item .repo-svg[data-i]{--rs:50px!important}
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-dropzone-badge{background:none!important}html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-dropzone-badge .repo-svg[data-i]{--rs:42px}
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-notice>.repo-icon .repo-svg[data-i]{--rs:30px}
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-sidenav-brand .repo-svg[data-i]{--rs:40px!important}

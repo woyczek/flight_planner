@@ -25,7 +25,7 @@ COUCHE = {  # feuille partagée (fin du chemin) → couche ; les autres (reposit
     'shared/mission_core/core.css': 'page',
     'shared/maintenance.css': 'page',
 }
-DESIGN = re.compile(r'^\s*html\[data-(skeuo|design|tone|decor)')
+DESIGN = re.compile(r'^\s*html(?::is\()?\[data-(skeuo|design|tone|decor|icons|app-theme)')
 
 
 def blocs(css):

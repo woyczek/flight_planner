@@ -1,4 +1,5 @@
 /* Mission Report Core — pages de saisie de CR (même langage visuel que les CR HEMS / FIRE). */
+@layer app {
 :root {
   --bg: #f5f6f8;
   --card: #fff;
@@ -271,9 +272,9 @@ a.mc-button.primary {
   font-size: 12px;
   margin: 2px 8px 2px 0
 }
-.mc-edit-banner {
-  border-color: var(--accent) !important;
-  background: var(--soft) !important
+.mc-edit-banner:not(#imp) {
+  border-color: var(--accent);
+  background: var(--soft)
 }
 /* reporting */
 main.mc-reporting {
@@ -682,7 +683,6 @@ header.mc-header h1 {
 .mc-header-tools a.nt-link {
   border: 1px solid #ffffff59;
   background: #ffffff1f;
-  color: #fff !important;
   border-radius: 8px;
   padding: 5px 10px;
   font: inherit;
@@ -693,14 +693,21 @@ header.mc-header h1 {
   display: inline-flex;
   align-items: center
 }
+.mc-header-tools button:not(#imp),
+.mc-header-tools a.mc-button:not(#imp),
+.mc-header-tools a.nt-link:not(#imp) {
+  color: #fff
+}
 .mc-header-tools button:hover,
 .mc-header-tools a:hover {
   background: #ffffff38
 }
 .mc-header-tools button.primary {
   background: #fff;
-  color: var(--accent) !important;
   border-color: #fff
+}
+.mc-header-tools button.primary:not(#imp) {
+  color: var(--accent)
 }
 .mc-header-tools button.danger {
   background: #7f1d1d;
@@ -892,7 +899,6 @@ header.mc-header:has(.mc-header-tools)>p:not(.mc-family-description) {
 .mc-header-tools .mc-pop a.nt-link {
   background: transparent;
   border: 0;
-  color: var(--ink) !important;
   justify-content: flex-start;
   text-align: left;
   border-radius: 7px;
@@ -900,18 +906,25 @@ header.mc-header:has(.mc-header-tools)>p:not(.mc-family-description) {
   font-size: 13px;
   font-weight: 500
 }
+.mc-header-tools .mc-pop button:not(#imp),
+.mc-header-tools .mc-pop a.mc-button:not(#imp),
+.mc-header-tools .mc-pop a.nt-link:not(#imp) {
+  color: var(--ink)
+}
 .mc-header-tools .mc-pop button:hover,
 .mc-header-tools .mc-pop a:hover {
   background: #eef2f7
 }
-.mc-header-tools .mc-pop button.danger {
-  color: #b91c1c !important
+.mc-header-tools .mc-pop button.danger:not(#imp) {
+  color: #b91c1c
 }
 .mc-header-tools .mc-pop button.primary {
   background: var(--accent);
-  color: #fff !important;
   font-weight: 600;
   justify-content: center
+}
+.mc-header-tools .mc-pop button.primary:not(#imp) {
+  color: #fff
 }
 .mc-net-pop {
   width: min(560px, calc(100vw - 32px))
@@ -928,21 +941,23 @@ header.mc-header:has(.mc-header-tools)>p:not(.mc-family-description) {
   opacity: 1
 }
 .mc-net-pop .nt-help {
-  border-color: var(--line) !important;
   color: var(--muted)
+}
+.mc-net-pop .nt-help:not(#imp) {
+  border-color: var(--line)
 }
 .mc-net-pop .nt-status {
   flex-basis: 100%;
   color: var(--muted);
   opacity: 1
 }
-.mc-header-tools .mc-net-pop button.nt-toggle {
-  background: var(--accent) !important;
-  color: #fff !important;
-  font-weight: 600 !important
+.mc-header-tools .mc-net-pop button.nt-toggle:not(#imp) {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600
 }
-.mc-header-tools .mc-net-pop button.nt-toggle.danger {
-  background: #b91c1c !important
+.mc-header-tools .mc-net-pop button.nt-toggle.danger:not(#imp) {
+  background: #b91c1c
 }
 .mc-import-file {
   border-top: 1px solid var(--line);
@@ -1146,9 +1161,11 @@ header.mc-header a.mc-header-new {
   background: #fef3c7
 }
 .mc-form .mc-invalid {
-  border-color: #f59e0b !important;
   box-shadow: 0 0 0 2px #f59e0b40;
   background: #fffbeb
+}
+.mc-form .mc-invalid:not(#imp) {
+  border-color: #f59e0b
 }
 @media print {
   .mc-issues {
@@ -1245,8 +1262,10 @@ header.mc-header:has(.mc-report-tools)>p:not(.mc-family-description) {
   line-height: 1;
   font-weight: 700;
   cursor: pointer;
-  vertical-align: 3px;
-  padding: 0 0 2px !important
+  vertical-align: 3px
+}
+.mc-form h2 .mc-head-add:not(#imp) {
+  padding: 0 0 2px
 }
 .mc-form h2 .mc-head-add:hover {
   filter: brightness(1.15)
@@ -1504,7 +1523,8 @@ header.mc-header:has(.mc-report-tools)>p:not(.mc-family-description) {
   border: 1px solid var(--line);
   border-radius: 7px
 }
-
+}
+/* règles propres aux designs : hors couche (au-dessus de l'application) */
 /* ================================================================================================ DESIGNS À MATIÈRES
    Barre d'outils des CR (boutons et menus de l'en-tête), fenêtres surgissantes, cartes et encadrés des blocs (calculs
    automatiques, appareils, outils plan de vol / météo) et aperçu du rapport, habillés avec les jetons --sk-* du design

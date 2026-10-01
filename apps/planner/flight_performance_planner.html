@@ -4,9 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Flight Performance & Fuel Planner</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=5569f9d7">
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=33766a66">
 <script src="../../repository_tree?v=e86e8e5c"></script>
-<style>
+<style data-layer="app">
+@layer app {
 :root {
   font-family: Inter, system-ui, Segoe UI, Arial, sans-serif;
   color-scheme: dark;
@@ -367,8 +368,10 @@ td:first-child {
     gap: 7px
   }
 }
+}
 </style>
-<style>
+<style data-layer="app">
+@layer app {
 .wrap {
   max-width: none;
   width: 100%
@@ -514,8 +517,10 @@ td:first-child {
     grid-template-columns: 1fr
   }
 }
+}
 </style>
-<style>
+<style data-layer="app">
+@layer app {
 /* ===== Vue des courbes de performances (shared/flight_perf_view.js) ===== */
 .opt-chart {
   width: 100%;
@@ -768,8 +773,10 @@ abbr[title] {
     max-height: none
   }
 }
+}
 </style>
-<style id="fpColumns">
+<style id="fpColumns" data-layer="app">
+@layer app {
 .opt-chart .beyond {
   fill: #8a96a3;
   fill-opacity: .2;
@@ -897,8 +904,9 @@ abbr[title] {
     width: 90px !important
   }
 }
+}
 </style>
-<style id="skeuoPlanner">
+<style id="skeuoPlanner" data-layer="designs">
 /* Designs à matières (html[data-skeuo], jetons --sk-chart-*, --sk-slider-*, --sk-thumb-* de shared/designs_skeuo.css) */
 /* ================================================================================================ CADRANS DU PLANIFICATEUR
    Cadrans réalistes (shared/flight_instruments.js) : le boîtier est dessiné dans le SVG ; ombre portée du boîtier. */
@@ -1069,8 +1077,8 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"] {
 <dialog id="dlg"><div class="row"><h2 style="flex:1">Choisir l’avion</h2><button onclick="dlg.close()">Fermer</button></div><input id="search" placeholder="Rechercher ICAO / nom…" style="width:100%;margin-bottom:8px"><div id="airlist" class="airlist"></div></dialog>
 
 <!-- navigation (en-tête, barre latérale) avant les scripts de calcul : la barre et la marge du contenu paraissent tout de suite -->
-<script src="../../shared/kit.js?v=9839b88b"></script>
-<script src="../../shared/repository_nav.js?v=18fd986e"></script>
+<script src="../../shared/kit.js?v=79889dfe"></script>
+<script src="../../shared/repository_nav.js?v=dd41dd3c"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=4737efea"></script>
 <script src="../../AircraftDB/aircraft_icons.js"></script>
 <script src="../../AircraftDB/aircraft_perf.js"></script>
@@ -3357,7 +3365,7 @@ applyHeaderPreferences();
   else syncAircraftPicker();
 }
 </script>
-<script src="../../shared/app_framework.js?v=a63ce655"></script>
+<script src="../../shared/app_framework.js?v=817d675e"></script>
 <script src="../../shared/flight_ui.js?v=4064c2b6"></script>
 <script src="../../shared/carto/aero_symbols.js?v=8393fb57"></script><script src="../../shared/carto/vertical_profile.js?v=75163ccf"></script><script src="../../shared/flight_vertical_profile.js?v=ee7dded4"></script>
 <script src="../../shared/content_i18n.js"></script><script src="../../shared/flight_i18n.js"></script>
