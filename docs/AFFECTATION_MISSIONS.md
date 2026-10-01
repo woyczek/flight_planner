@@ -191,3 +191,7 @@ ailleurs. Clic → « Mes missions » ; ouvrir la mission marque l'affectation l
   cochées, « Annuler les modifications » revient à la proposition ; fermeture quand tous les pilotes libres sont affectés,
   ou sur demande (confirmation si modifications en attente). « ✎ détail » : dialogue complet, dont le résultat revient
   dans la matrice (« Reporter dans le créneau »), rien n'est écrit avant « Enregistrer ».
+- **Semaines** (1ᵉʳ octobre 2026) : disponibilités par semaine (`weeks`, clé : lundi ISO UTC, douze semaines passées
+  gardées) ; l'ancienne grille « semaine type » (`grid`) vaut tant qu'aucune semaine n'est saisie. « Mes missions » :
+  barre de semaine (‹, date, ›, ⟲ semaine en cours) commune à la liste et à la grille ; « ⧉ S-1 » recopie la semaine
+  précédente ; tracé en rectangle (jours × heures). Le Centre et l'ODV lisent la grille de la semaine concernée.

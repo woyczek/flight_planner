@@ -21,6 +21,7 @@
   .pm-maps figcaption{font-size:11.5px;opacity:.8;margin-top:3px}
   .pm-text p{white-space:pre-line;margin:.4em 0}
   .pm-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0}
+  .pm-week{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}.pm-week input{width:auto}.pm-week button{min-width:2.2em}
   .pm-types-sum{margin:0 0 8px;font-weight:600}
   .pm-sims{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 14px}
   .pm-sims label{display:inline-flex;align-items:center;gap:6px;margin:0}
@@ -44,7 +45,8 @@
 <section data-block-id="who" data-icon="users" data-subtitle="Trigramme DEFA du profil pilote (menu ☰) : les missions affectées à ce trigramme s'affichent ici."><h2>Pilote</h2>
   <div class="pm-who"><label>Trigramme <input id="pmTri" maxlength="4" autocomplete="off"></label><span id="pmWhoNote" class="small"></span></div>
 </section>
-<section data-block-id="list" data-icon="calendar" data-subtitle="Missions à venir, par heure de décollage (UTC) ; ● : nouvelle, pas encore ouverte."><h2>Missions à venir</h2>
+<section data-block-id="list" data-icon="calendar" data-subtitle="Missions de la semaine affichée, par heure de décollage (UTC) ; ● : nouvelle, pas encore ouverte."><h2>Mes missions de la semaine</h2>
+  <div class="pm-week" data-weekbar></div>
   <div id="pmList" class="pm-list"><p class="pm-empty">Chargement…</p></div>
   <p class="small"><label><input type="checkbox" id="pmAll"> afficher aussi les missions passées</label></p>
 </section>
@@ -59,18 +61,19 @@
   <div id="pmSims" class="pm-sims"></div>
   <p id="pmSimsMsg" class="small">Enregistré dans ce navigateur, et avec vos disponibilités (« Enregistrer dans le dossier des données »).</p>
 </section>
-<section data-block-id="availability" data-icon="clock" data-subtitle="Semaine type, heures UTC, codes de l’ODV : choisir un code, puis cliquer ou glisser sur les cases ; un second clic sur une case de ce code l’efface. Le Centre s’en sert pour affecter les missions."><h2>Mes disponibilités</h2>
+<section data-block-id="availability" data-icon="clock" data-subtitle="Semaine affichée, heures UTC, codes de l’ODV : choisir un code, puis cliquer ou tracer un rectangle sur les cases ; un second clic sur une case de ce code l’efface. Le Centre s’en sert pour affecter les missions."><h2>Mes disponibilités</h2>
+  <div class="pm-week" data-weekbar></div>
   <div id="pmGrid"></div>
-  <div class="pm-actions"><button type="button" id="pmGridSave" class="secondary" data-icon="save">Enregistrer dans le dossier des données</button><button type="button" id="pmGridClear" class="ghost">Tout effacer</button></div>
+  <div class="pm-actions"><button type="button" id="pmGridSave" class="secondary" data-icon="save">Enregistrer dans le dossier des données</button><button type="button" id="pmGridCopy" class="secondary" title="Recopier les disponibilités de la semaine précédente">⧉ S-1</button><button type="button" id="pmGridClear" class="ghost">Tout effacer</button></div>
   <p id="pmGridMsg" class="small" data-status></p>
 </section>
 </main>
 <script src="../../shared/kit.js?v=9839b88b"></script>
-<script src="../../shared/repository_nav.js?v=571fdcbf"></script>
+<script src="../../shared/repository_nav.js?v=c78fcb35"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=90cadad7"></script>
-<script src="../../shared/assignments.js?v=301728a9"></script>
+<script src="../../shared/assignments.js?v=8be1e773"></script>
 <script>
 (() => {
   'use strict';
@@ -78,6 +81,32 @@
   const root = () => window.RepositoryNav?.root || new URL('../../', location.href).href;
   const PROFILE = 'missionReportingConfig:v1';
   let list = [], current = null, mission = null;
+  // semaine affichée (lundi ISO UTC), commune à la liste et aux disponibilités
+  let week = A.weekKey(Date.now());
+  const dayFr = (w, i) => new Date(Date.parse(`${w}T00:00:00Z`) + i * 864e5).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit', timeZone: 'UTC' }).replace('.', '');
+  function weekBars() {
+    const end = A.addWeeks(week, 1), last = new Date(Date.parse(`${end}T00:00:00Z`) - 864e5).toISOString().slice(0, 10);
+    const label = `du ${dayFr(week, 0)} au ${dayFr(week, 6)}${week === A.weekKey(Date.now()) ? ' (cette semaine)' : ''}`;
+    document.querySelectorAll('[data-weekbar]').forEach(b => {
+      b.innerHTML = `<button type="button" class="secondary" data-wk="-1" title="Semaine précédente">‹</button><input type="date" data-wk-date value="${week}" title="Aller à la semaine d’une date"><button type="button" class="secondary" data-wk="1" title="Semaine suivante">›</button>${week === A.weekKey(Date.now()) ? '' : '<button type="button" class="secondary" data-wk="0" title="Revenir à la semaine en cours" aria-label="Semaine en cours">⟲</button>'}<span class="small">${esc(label)}</span>`;
+      b.dataset.end = last;
+    });
+  }
+  function goWeek(w) {
+    if (!w || w === week) return;
+    week = w;
+    weekBars();
+    load();
+    gridLoad();
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-weekbar] [data-wk]');
+    if (b) goWeek(+b.dataset.wk ? A.addWeeks(week, +b.dataset.wk) : A.weekKey(Date.now()));
+  });
+  document.addEventListener('change', e => {
+    if (e.target.matches('[data-weekbar] [data-wk-date]') && e.target.value) goWeek(A.weekKey(Date.parse(`${e.target.value}T12:00:00Z`)));
+  });
+  weekBars();
 
   /** Date et heure UTC lisibles : « sam. 04/10 12:40Z ». */
   const fmt = ms => ms ? new Date(ms).toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }).replace(',', '') + 'Z' : '—';
@@ -103,10 +132,11 @@
   async function load() {
     who();
     const idx = await A.index({ fresh: true });
-    list = A.mine(idx.assignments, { all: $('pmAll').checked });
+    const from = Date.parse(`${week}T00:00:00Z`), to = Date.parse(`${A.addWeeks(week, 1)}T00:00:00Z`);
+    list = A.mine(idx.assignments, { all: $('pmAll').checked }).filter(a => !A.when(a) || (A.when(a) >= from && A.when(a) < to));
     const tri = A.trigram();
     if (!tri) { $('pmList').innerHTML = '<p class="pm-empty">Aucun trigramme réglé.</p>'; return; }
-    if (!list.length) { $('pmList').innerHTML = `<p class="pm-empty">Aucune mission à venir affectée à ${esc(tri)}.</p>`; return; }
+    if (!list.length) { $('pmList').innerHTML = `<p class="pm-empty">Aucune mission${$('pmAll').checked ? '' : ' à venir'} affectée à ${esc(tri)} cette semaine-là.</p>`; return; }
     $('pmList').innerHTML = `<table><thead><tr><th>Décollage (UTC)</th><th>Mission</th><th>Titre</th><th>Appareil</th><th>Terrain</th><th>Indicatif</th></tr></thead><tbody>${list.map((a, i) => `<tr data-i="${i}" class="${A.isRead(a) ? '' : 'pm-unread'}${current && A.key(current) === A.key(a) ? ' pm-current' : ''}"><td>${a.alert ? 'astreinte ' + esc(hhmm(Date.parse(a.alert.ready_at_utc))) : esc(fmt(A.when(a)))}</td><td><b>${esc(a.mission)}</b>${a.role === 'convoyage' ? ' <small>convoyage</small>' : ''}</td><td>${esc(a.title || '')}</td><td>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' '))}</td><td>${esc(a.departure || '')}</td><td>${esc(a.callsign || '')}</td></tr>`).join('')}</tbody></table>`;
     const want = new URLSearchParams(location.search).get('mission');
     const pick = current ? list.find(a => A.key(a) === A.key(current)) : want ? list.find(a => a.mission === want) : null;
@@ -269,27 +299,40 @@
 
   // ---- disponibilités
   let grid = null;
+  let doc = null; // déclaration lue (ce poste, sinon le fichier) : ses semaines
   async function gridLoad() {
     const tri = A.trigram();
-    const av = tri ? await A.availability(tri) : null;
-    grid = editor(av?.grid || A.emptyGrid());
+    doc = tri ? await A.availability(tri) : null;
+    grid = editor(A.weekGrid(doc, week));
   }
   /** Éditeur de la grille : chaque retouche gardée dans ce navigateur ; code de la palette gardé (view.brush). */
   function editor(g) {
     const tri = A.trigram();
-    return A.gridEditor($('pmGrid'), g, x => { if (tri) A.saveAvailability(tri, x); $('pmGridMsg').textContent = 'Gardé dans ce navigateur ; « Enregistrer dans le dossier des données » pour le Centre.'; },
-      { code: view.brush, onBrush: b => { view.brush = b; saveView(); } });
+    return A.gridEditor($('pmGrid'), g, x => { if (tri) A.saveAvailability(tri, x, { week, base: doc }); $('pmGridMsg').textContent = 'Gardé dans ce navigateur ; « Enregistrer dans le dossier des données » pour le Centre.'; },
+      { code: view.brush, onBrush: b => { view.brush = b; saveView(); }, days: Array.from({ length: 7 }, (_, i) => dayFr(week, i)) });
   }
   $('pmGridSave').onclick = async () => {
     const tri = A.trigram();
     if (!tri) { $('pmGridMsg').innerHTML = '<span class="err">Trigramme non réglé.</span>'; return; }
     try {
-      const f = await A.saveAvailability(tri, grid, { toFolder: true });
+      const f = await A.saveAvailability(tri, grid, { toFolder: true, week, base: doc });
       $('pmGridMsg').innerHTML = `<span class="ok">Disponibilités enregistrées : ${esc(f)}</span>`;
       window.AppFramework?.notify?.(`Disponibilités enregistrées : ${f}`, 'ok');
     } catch (e) { $('pmGridMsg').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
   };
-  $('pmGridClear').onclick = () => { grid = editor(A.emptyGrid()); A.saveAvailability(A.trigram(), grid); };
+  $('pmGridClear').onclick = () => { grid = editor(A.emptyGrid()); A.saveAvailability(A.trigram(), grid, { week, base: doc }); };
+  // recopie de la semaine précédente (remplace la semaine affichée)
+  $('pmGridCopy').onclick = async () => {
+    const tri = A.trigram();
+    if (!tri) { $('pmGridMsg').innerHTML = '<span class="err">Trigramme non réglé.</span>'; return; }
+    doc = await A.availability(tri);
+    const prev = A.weekGrid(doc, A.addWeeks(week, -1));
+    if (!prev.some(r => r.some(Boolean))) { $('pmGridMsg').innerHTML = '<span class="err">Semaine précédente vide : rien à recopier.</span>'; return; }
+    grid = editor(prev);
+    await A.saveAvailability(tri, grid, { week, base: doc });
+    doc = await A.availability(tri);
+    $('pmGridMsg').textContent = `Disponibilités de la semaine du ${dayFr(A.addWeeks(week, -1), 0)} recopiées (gardées dans ce navigateur).`;
+  };
 
   // index complet gardé pour les coéquipiers
   const keepAll = async () => { A._all = (await A.index()).assignments; };
