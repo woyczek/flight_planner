@@ -838,6 +838,7 @@
           <td>${checks(x, r)}</td></tr>`).join('')}</tbody>`;
       }).join('');
       const keep = dlg?.querySelector('.ad-body')?.scrollTop || 0;
+      const status = dlg?.querySelector('[data-status]')?.innerHTML || '';
       dlg = AD.frame('odvPick', {
         wide: true,
         title,
@@ -849,10 +850,11 @@
         ${d.size ? `<table class="ad-table ad-matrix"><thead><tr><th></th><th>Mission</th><th>Poste</th><th>Pilote</th><th>Appareil</th><th>Indicatif</th><th>État</th></tr></thead>${body}</table>` : '<p class="ad-help">Aucune mission du registre pour ces pilotes et cette famille.</p>'}
         <section class="ad-card"><h4>En attente (${pend.length})</h4>${pend.length ? `<ul class="ad-list">${pend.map(p => `<li>${tri(p.r.pilot, null, false)} sur <b>${esc(p.m.id)}</b> — ${esc(planeOf(p.r.registration)?.type || '')} ${esc(p.r.registration)}${p.r.callsign ? ` — ${esc(p.r.callsign)}` : ''}</li>`).join('')}</ul>` : '<p class="ad-help">Aucune : cocher une mission et choisir ses pilotes et appareils.</p>'}</section>
         <section class="ad-card"><h4>Enregistrées sur ce créneau</h4>${assigned.length ? `<ul class="ad-list">${assigned.map(a => `<li><b>${esc(a.mission)}</b>${a.role === 'convoyage' ? ' (convoyage)' : ''} — ${tri(a.pilot, null, false)} ${esc(a.aircraft?.registration || '')}${a.callsign ? ` · ${esc(a.callsign)}` : ''} · décollage ${esc(String(a.takeoff || '').slice(11, 16))}Z</li>`).join('')}</ul>` : '<p class="ad-help">Aucune.</p>'}</section>`,
-        foot: `<p class="ad-msg" data-status></p><button type="button" class="ghost" data-undo${dirty() ? '' : ' disabled'}>Annuler les modifications</button><button type="button" class="primary" data-save data-icon="save"${pend.length ? '' : ' disabled'}>Enregistrer (${pend.length})</button><button type="button" class="ghost" data-close>Fermer</button>`
+        foot: `<p class="ad-msg" data-status></p><button type="button" class="ghost" data-undo${dirty() ? '' : ' disabled'}>Annuler les modifications</button><button type="button" class="primary" data-save data-icon="save">Enregistrer (${pend.length})</button><button type="button" class="ghost" data-close>Fermer</button>`
       });
       const bodyEl = dlg.querySelector('.ad-body');
       bodyEl.scrollTop = keep;
+      dlg.querySelector('[data-status]').innerHTML = status; // compte rendu du dernier enregistrement, gardé au redessin
       dlg.querySelector('[data-fam]').onchange = async e => {
         if (dirty() && !confirm('Changer de famille abandonne les affectations en attente. Continuer ?')) return render();
         famSel = e.target.value;
@@ -899,13 +901,25 @@
       dlg.querySelector('[data-save]').onclick = async () => {
         const msg = dlg.querySelector('[data-status]');
         const todo = [...ctx.d.values()].filter(x => x.on && x.rows.some(r => r.pilot && r.registration));
+        if (!todo.length) {
+          msg.innerHTML = '<span class="err">Rien à enregistrer : cocher une mission et choisir, pour au moins un poste, un pilote et un appareil.</span>';
+          return;
+        }
         const bad = todo.filter(x => x.rows.some(r => errs(r).length));
         if (bad.length) {
           msg.innerHTML = `<span class="err">À corriger avant d’enregistrer : ${bad.map(x => esc(x.m.id)).join(', ')} (doublons ou appareil engagé).</span>`;
           return;
         }
+        // accès au dossier des missions demandé d'abord, dans le clic (après d'autres attentes, le navigateur refuse)
+        try {
+          await M.missionsDir();
+        } catch (err) {
+          msg.innerHTML = `<span class="err">${esc(err.message)} — l’autoriser dans Paramètres › Maintenance › Sources et dossiers.</span>`;
+          return;
+        }
         const ok = [],
           ko = [];
+        msg.textContent = `Enregistrement de ${todo.length} mission(s)…`;
         for (const x of todo) try {
           await O.write(x.m, x.rows.filter(r => r.pilot && r.registration), takeoff);
           ok.push(`${x.m.id} (${x.rows.filter(r => r.pilot && r.registration).map(r => r.pilot).join(', ')})`);
@@ -914,6 +928,7 @@
         }
         if (ok.length) notify(`Affectations enregistrées : ${ok.join(' ; ')}.`, 'ok');
         for (const e of ko) notify(`Non enregistrée — ${e}`, 'err');
+        msg.innerHTML = [ok.length ? `<span class="ok">Enregistrées : ${esc(ok.join(' ; '))}.</span>` : '', ...ko.map(e => `<span class="err">Non enregistrée — ${esc(e)}</span>`)].filter(Boolean).join('<br>');
         await build();
         if (!ctx.free.length && !ko.length) {
           dlg.close();

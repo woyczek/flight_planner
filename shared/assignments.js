@@ -1028,7 +1028,8 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     poolLabel,
     planSlot,
     writeAssignment,
-    buildParticipants
+    buildParticipants,
+    missionsDir
   };
   // en-tête prêt après repository_nav.js : pli cacheté posé dès que possible, puis rafraîchi au retour sur l'onglet
   const start = () => envelope().catch(() => {});
