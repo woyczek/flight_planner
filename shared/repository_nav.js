@@ -322,7 +322,7 @@
     document.head.append(l);
     // illustrations du décor complet (frise de Cabinet, radar de Durci), même version
     const d = document.createElement("script");
-    d.src = new URL("design_deco.js?v=9a6a04e9", script.src).href;
+    d.src = new URL("design_deco.js?v=4b85a2eb", script.src).href;
     document.head.append(d);
   };
   designCss(design);
@@ -514,7 +514,7 @@
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
-      sc.src = new URL("appearance_page.js?v=fed09be6", script.src).href;
+      sc.src = new URL("appearance_page.js?v=1359e1b8", script.src).href;
       sc.onload = show;
       document.head.append(sc);
     }
