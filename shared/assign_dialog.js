@@ -28,7 +28,10 @@
     if (!document.getElementById('adCss')) document.head.insertAdjacentHTML('beforeend', `<style id="adCss">
 .ad-dialog{width:min(920px,96vw);max-height:92vh;padding:0;border:1px solid color-mix(in srgb,currentColor 25%,transparent);border-radius:10px;box-shadow:0 18px 50px rgba(0,0,0,.45);overflow:hidden}
 .ad-dialog::backdrop{background:rgba(10,14,20,.55)}
-.ad-form{display:flex;flex-direction:column;max-height:92vh}
+/* fenêtre en colonne : en-tête et pied fixes, seul le corps défile (dialog.repo-ap-dialog, plus précis, imposait
+   overflow:auto à la fenêtre : double défilement, en-tête et barre d'état à moitié visibles, coins droits coupés) */
+dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:flex;flex-direction:column}
+.ad-form{display:flex;flex-direction:column;flex:1;min-height:0;max-height:92vh}.ad-head,.ad-foot{flex:none}.ad-body{flex:1;min-height:0}
 .ad-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:12px 16px;border-bottom:1px solid color-mix(in srgb,currentColor 18%,transparent)}
 .ad-head h3{margin:0;font-size:17px}.ad-head p{margin:2px 0 0;font-size:12.5px;opacity:.8}.ad-x{font-size:22px;line-height:1;cursor:pointer;background:none;border:0;color:inherit;opacity:.7}.ad-x:hover{opacity:1}
 .ad-body{padding:12px 16px;overflow:auto}
