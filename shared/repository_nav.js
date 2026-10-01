@@ -898,7 +898,7 @@
     profile.src = new URL("pilot_profile.js?v=7b0ee603", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=72155359", script.src).href;
+    files.src = new URL("file_access.js?v=e274fbbc", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
     for (const f of ["icons/repository_icons.js?v=1bfdb961", "block_icons.js?v=ff923add", "side_nav.js?v=355697e6"]) {
@@ -908,7 +908,7 @@
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=3a8264a9", script.src).href;
+    store.src = new URL("browser_store.js?v=938ce9e7", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const update = document.createElement("script");
     update.src = new URL("suite_update.js?v=d84028ad", script.src).href;

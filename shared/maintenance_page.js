@@ -151,7 +151,7 @@
         await window.FileAccess.pickFolder(key);
         after?.();
       } catch (e) {
-        if (e?.name !== 'AbortError' && e?.message !== 'Dossier refusé') alert(e.message);
+        if (e?.name !== 'AbortError' && e?.message !== 'Dossier refusé') (window.AppFramework?.notify || alert)(e.message, 'warn');
       }
     };
     waitFor('FileAccess').then(FA => FA?.decorate(b, key, {
@@ -1473,7 +1473,7 @@
         recursive: true
       }]);
     } catch (e) {
-      if (e?.name !== 'AbortError') alert(e.message);
+      if (e?.name !== 'AbortError') (window.AppFramework?.notify || alert)(e.message, 'warn');
     }
     renderBackup();
   }

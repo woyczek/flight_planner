@@ -159,7 +159,7 @@
   // Choix du dossier : sélecteur ouvert sur le dossier actuel (composant FileAccess).
   async function chooseFolder() {
     if (window.FileAccess) return window.FileAccess.pickFolder('__store');
-    if (!window.showDirectoryPicker) throw new Error('File System Access API');
+    if (!window.showDirectoryPicker) throw new Error(window.RepositoryKit?.noFolderAccess?.() || 'File System Access API (Chrome / Edge)');
     const current = await idbGet('folder:__store');
     const handle = await window.showDirectoryPicker({
       id: 'defa-local-store',

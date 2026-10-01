@@ -29,6 +29,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - Designs : leurs `!important` convertis eux aussi (`designs.css` 29 → 0, `designs_skeuo.css` 279 → 32 : impression,
   masquage et quatre cas contre un style en ligne) ; rendu inchangé au banc.
 
+### Corrigé
+
+- Choix d'un dossier (Paramètres › Sources et dossiers, registres, sauvegarde) dans un navigateur qui ne le permet
+  pas : au lieu de « File System Access API (Chrome / Edge) », un message qui dit quoi faire — Brave : activer
+  `brave://flags/#file-system-access-api` puis relancer ; page en http hors localhost : ouvrir par 127.0.0.1 ;
+  Firefox, Safari : Chrome ou Edge. Affiché en notification.
+- Paramètres › Maintenance sans dossier `data/` : plus de requêtes vers `data/` ni vers `VERSION.json` (404 en
+  console) ; seul reste le 404 de `data/data_tree.js`, qui détecte l'absence des données.
+
 ## [4.4.0] — 2026-09-30
 
 Nouvelle famille COMBAT (combat aérien : BFM, ACM, DACT, interception) ; identifiants de mission liés migrés d'un bloc
