@@ -32,13 +32,11 @@
   /* Cabinet, Aqua, Durci : dossier fermé (ficelé et scellé, noué d'un ruban ou sanglé, tant que la mission n'est pas ouverte) ;
      ouvrir brise le sceau (dénoue le ruban). Images par design : --pm-cover, --pm-seal, proportions --pm-ratio, largeur --pm-cwk (part du dossier ouvert) */
   html[data-design="cabinet"]{--pm-cover:url("../../shared/deco/cabinet/mission-cover.webp");--pm-seal:url("../../shared/deco/cabinet/mission-seal-fitted.webp");--pm-ratio:720/1015;--pm-cwk:.4266}
-  /* Durci : dossier zippé fermé (étiquette « CONFIDENTIEL » à la tirette) ; scellé : couverture ficelée et cachetée
-     (géométrie propre, en attendant la ficelle seule : pas de calque) qui s'efface à l'ouverture */
-  html[data-design="field"]{--pm-cover:url("../../shared/deco/field/mission-closed.webp");--pm-seal:none;--pm-ratio:961/1441;--pm-cwk:.529}
-  html[data-design="field"] .pm-cover.sealed{--pm-cover:url("../../shared/deco/field/mission-sealed.webp");--pm-ratio:1027/1345;--pm-cwk:.511;transition:opacity .38s ease-in}
-  html[data-design="field"] .pm-cover.sealed.open{opacity:0}
+  /* Durci : dossier zippé fermé (étiquette « CONFIDENTIEL » à la tirette) ; scellé : ficelle en croix et cachet de cire
+     (calque à la toile du dossier, découpé au corps du dossier : mission-seal-fitted.webp) */
+  html[data-design="field"]{--pm-cover:url("../../shared/deco/field/mission-closed.webp");--pm-seal:url("../../shared/deco/field/mission-seal-fitted.webp");--pm-ratio:961/1441;--pm-cwk:.529}
   html[data-design="field"] .pm-cover .pm-open{bottom:20%}
-  html[data-design="field"] .pm-label small{background-image:none} /* l'étiquette de la tirette dit déjà « CONFIDENTIEL » */
+  html[data-design="field"] .pm-label small{background-image:none} /* les étiquettes de la tirette et du cachet disent déjà « CONFIDENTIEL » */
   html[data-design="aqua"]{--pm-cover:url("../../shared/deco/aqua/mission-cover.webp");--pm-seal:url("../../shared/deco/aqua/mission-seal-fitted.webp");--pm-ratio:720/954;--pm-cwk:.445}
   html:is([data-design="cabinet"],[data-design="aqua"],[data-design="field"]) #pmDetail{--pm-bw:min(1064px,100%)}
   html:is([data-design="cabinet"],[data-design="aqua"],[data-design="field"]) .pm-cover{position:relative;box-sizing:border-box;width:calc(var(--pm-bw) * var(--pm-cwk));aspect-ratio:var(--pm-ratio);margin:0 0 0 auto;padding:7% 0 0;border:0;align-content:start;background:var(--pm-cover) center/100% 100% no-repeat;filter:drop-shadow(0 10px 16px rgba(0,0,0,.45))}
