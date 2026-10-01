@@ -1,6 +1,7 @@
 (() => {
   'use strict';
-  // Profil pilote partagé : ID IVAO (VID), ID VATSIM (CID) et identifiant SimBrief (import
+  // Profil pilote partagé : trigramme DEFA (missions affectées : shared/assignments.js), ID IVAO (VID), ID VATSIM (CID)
+  // et identifiant SimBrief (import
   // du plan de vol dans les CR du Mission Report Core) saisis une seule fois dans
   // le menu du framework, disponibles sur toutes les pages (chargé par repository_nav.js).
   // Même stockage que les préférences des reportings (mission_reporting_config.js) :
@@ -9,7 +10,7 @@
   const nav = window.RepositoryNav;
   if (!nav?.menu || document.getElementById('repoPilotProfile')) return;
   const KEY = 'missionReportingConfig:v1',
-    FIELDS = ['ivaoId', 'vatsimId', 'simbriefUser'];
+    FIELDS = ['trigram', 'ivaoId', 'vatsimId', 'simbriefUser'];
   /** Profil pilote mémorisé (missionReportingConfig:v1 : nom, ID IVAO / VATSIM, identifiant SimBrief…). */
   const read = () => {
     try {
@@ -32,24 +33,28 @@
   const TEXT = {
     fr: {
       title: 'Profil pilote',
+      trigram: 'Trigramme DEFA (missions affectées)',
       ivaoId: 'ID IVAO (VID)',
       vatsimId: 'ID VATSIM (CID)',
       simbriefUser: 'SimBrief (utilisateur ou ID)'
     },
     en: {
       title: 'Pilot profile',
+      trigram: 'DEFA trigram (assigned missions)',
       ivaoId: 'IVAO ID (VID)',
       vatsimId: 'VATSIM ID (CID)',
       simbriefUser: 'SimBrief (username or ID)'
     },
     de: {
       title: 'Pilotenprofil',
+      trigram: 'DEFA-Kürzel (zugewiesene Missionen)',
       ivaoId: 'IVAO-ID (VID)',
       vatsimId: 'VATSIM-ID (CID)',
       simbriefUser: 'SimBrief (Benutzer oder ID)'
     },
     es: {
       title: 'Perfil de piloto',
+      trigram: 'Trigrama DEFA (misiones asignadas)',
       ivaoId: 'ID IVAO (VID)',
       vatsimId: 'ID VATSIM (CID)',
       simbriefUser: 'SimBrief (usuario o ID)'
@@ -64,7 +69,7 @@
   const box = document.createElement('div');
   box.id = 'repoPilotProfile';
   box.innerHTML = '<div class="repo-sep"></div><div class="repo-group" data-profile-text="title"></div>' +
-    FIELDS.map(name => `<label class="repo-profile-field"><span data-profile-text="${name}"></span><input data-profile="${name}"${name === 'simbriefUser' ? '' : ' inputmode="numeric"'} autocomplete="off"></label>`).join('');
+    FIELDS.map(name => `<label class="repo-profile-field"><span data-profile-text="${name}"></span><input data-profile="${name}"${name === 'simbriefUser' ? '' : name === 'trigram' ? ' maxlength="4" style="text-transform:uppercase"' : ' inputmode="numeric"'} autocomplete="off"></label>`).join('');
   const actions = nav.menu.querySelector('.repo-page-actions');
   nav.menu.insertBefore(box, actions || null);
   const inputs = Object.fromEntries(FIELDS.map(name => [name, box.querySelector(`[data-profile="${name}"]`)]));
@@ -106,12 +111,13 @@
   FIELDS.forEach(name => {
     let previous = read()[name] || '';
     inputs[name].addEventListener('input', () => {
-      const value = inputs[name].value.trim();
+      const value = name === 'trigram' ? inputs[name].value.trim().toUpperCase() : inputs[name].value.trim();
       write({
         [name]: value
       });
       propagate(name, value, previous);
       previous = value;
+      if (name === 'trigram') window.MissionAssignments?.envelope(); // pli cacheté du nouveau trigramme
     });
   });
   // Saisie dans un champ de la page (préférences d'un reporting, CR) → menu à jour.

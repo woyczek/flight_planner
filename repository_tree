@@ -92,6 +92,7 @@ window.REPOSITORY_TREE={
     "apps/cr":{theme:"core",favicon:"assets/favicon-flight.svg",decor:"sober"},
     "apps/settings":{theme:"core",favicon:"assets/favicon-flight.svg",decor:"sober"},
     "apps/planner":{theme:"flight",favicon:"assets/favicon-flight.svg"},
+    "apps/pilot":{theme:"core",favicon:"assets/favicon-flight.svg"},
     "apps/cr/FIRE":{theme:"gaar",favicon:"assets/favicon-gaar.svg",config:{gaarLedgerName:"mission_ledger.csv"},files:{gaarLedgerName:"mission_ledger.csv"}},
     "apps/cr/HEMS":{theme:"hems",favicon:"assets/favicon-hems.svg",config:{ledgerName:"hems_mission_ledger.csv"},files:{ledgerName:"hems_mission_ledger.csv"}},
     "apps/cr/MissionCore":{theme:"core",favicon:"assets/favicon-flight.svg"},
@@ -163,6 +164,7 @@ window.REPOSITORY_TREE={
     {path:"apps/cpco/map_parser.html",menu:"Centre — Studio cartographique",label:"Studio cartographique — Centre de planification et de conduite des opérations"},
     {path:"apps/cpco/mission_registry.html",menu:"Centre — Registre des missions",label:"Registre des missions — Centre de planification et de conduite des opérations"},
     {path:"apps/planner/flight_performance_planner.html",menu:"Flight Performance & Fuel Planner",label:"Flight Performance & Fuel Planner",decor:"sober"},
+    {path:"apps/pilot/mes_missions.html",menu:"Mes missions",label:"Mes missions — missions affectées par le Centre, disponibilités"},
     {path:"apps/planner/map_planner.html",menu:"Cartes de vol",label:"Cartes de vol — route, cartes topographiques, approche, rendez-vous, destination"},
     {path:"apps/cpco/odv_planning.html",menu:"Centre — Planning ODV",label:"Planning ODV — Centre de planification et de conduite des opérations",decor:"sober"}
   ],

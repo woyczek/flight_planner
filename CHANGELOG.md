@@ -14,6 +14,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 > livrée en 4.4.0 ; la phase 3 (couches CSS, retrait des `!important`) est en cours et pourra encore modifier
 > légèrement l'apparence des designs à matières. Plan : [docs/REFACTORING_TOOLKIT.md](docs/REFACTORING_TOOLKIT.md).
 
+- **Affectation des missions aux pilotes** (branche `feature/affectations`, à tester) : bouton « Affecter… » du
+  registre (pilotes, appareils, heure, astreinte, convoyage, conflits), page pilote « Mes missions » (lecture seule,
+  transferts Cartes de vol / Carburant / CR, disponibilités à l'heure), pli cacheté dans l'en-tête, trigramme dans le
+  profil pilote ; bloc `alert` (astreinte) dans le prompt du générateur. Conception : docs/AFFECTATION_MISSIONS.md.
+
 ## [4.4.0] — 2026-09-30
 
 Nouvelle famille COMBAT (combat aérien : BFM, ACM, DACT, interception) ; identifiants de mission liés migrés d'un bloc

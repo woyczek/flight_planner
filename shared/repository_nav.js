@@ -895,7 +895,7 @@
   } {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=7b0ee603", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=f1357c65", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
     files.src = new URL("file_access.js?v=72155359", script.src).href;
@@ -910,6 +910,9 @@
     const store = document.createElement("script");
     store.src = new URL("browser_store.js?v=3a8264a9", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
+    const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
+    assign.src = new URL("assignments.js?v=d36fe719", script.src).href;
+    document.head.append(assign);
     const update = document.createElement("script");
     update.src = new URL("suite_update.js?v=d84028ad", script.src).href;
     document.head.append(update)
