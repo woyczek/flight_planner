@@ -326,9 +326,9 @@ main.odv-page h3 {
   justify-items: center
 }
 .odv-decl {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
+  display: inline-grid;
+  justify-items: center;
+  gap: 1px;
   padding: 1px;
   border: 2px solid transparent;
   border-radius: 4px;
@@ -341,8 +341,13 @@ main.odv-page h3 {
 .odv-decl.odv-free {
   border-color: #e5484d
 }
+.odv-noxl {
+  flex-basis: 100%;
+  font-weight: 600
+}
 .odv-asg {
-  font-size: 9.5px;
+  font-size: 9px;
+  line-height: 1.2;
   padding: 0 3px;
   border-radius: 3px;
   background: color-mix(in srgb, #2e9d5b 30%, transparent)
