@@ -480,8 +480,10 @@
     }).join('');
     delete tables.odvGrid;
     const week = window.OdvAssign?.week() || [];
+    const journal = window.OdvAssign?.journal?.() || [];
+    const journalHtml = journal.length ? `<details class="odv-journal"><summary>Journal des affectations (${journal.length})</summary><ul>${journal.slice(0, 30).map(e => `<li>${esc(window.MissionAssignments.logText(e))}</li>`).join('')}</ul></details>` : '';
     const weekHtml = week.length ? `<h4 class="odv-week-h">Missions affectées cette semaine (${new Set(week.map(a => a.mission)).size})</h4><table class="odv-week"><thead><tr><th>Décollage</th><th>Mission</th><th>Pilote</th><th>Appareil</th><th>Terrain</th><th>Rôle</th></tr></thead><tbody>${week.map(a => `<tr><td>${esc(dateFr(String(a.takeoff).slice(0, 10)))} ${esc(String(a.takeoff).slice(11, 16))}Z</td><td><b>${esc(a.mission)}</b> ${esc(a.title || '')}</td><td>${tri(a.pilot, null, false)}</td><td>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' '))}</td><td>${esc(a.departure || '')}</td><td>${a.role === 'convoyage' ? `convoyage pour ${esc(a.for_pilot || '')}` : 'mission'}</td></tr>`).join('')}</tbody></table>` : '<p class="mut odv-d-note">Aucune mission affectée cette semaine.</p>';
-    $('odvGrid').innerHTML = rows.length ? `<div class="odv-dense-wrap"><table class="odv-dense">${head}<tbody>${body}</tbody></table></div><p class="mut odv-d-note">${withDecl ? 'Par pilote : code du classeur, puis sa déclaration (encadré rouge : disponible et non affecté ; clic : affecter). ' : ''}Rôles et simulateurs au survol du trigramme.</p>${weekHtml}` : '<p class="odv-empty">Aucun pilote ne correspond aux filtres.</p>';
+    $('odvGrid').innerHTML = rows.length ? `<div class="odv-dense-wrap"><table class="odv-dense">${head}<tbody>${body}</tbody></table></div><p class="mut odv-d-note">${withDecl ? 'Par pilote : code du classeur, puis sa déclaration (encadré rouge : disponible et non affecté ; clic : affecter). ' : ''}Rôles et simulateurs au survol du trigramme.</p>${weekHtml}${journalHtml}` : '<p class="odv-empty">Aucun pilote ne correspond aux filtres.</p>';
   }
 
   // --- créneaux communs
