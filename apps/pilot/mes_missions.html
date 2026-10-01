@@ -32,8 +32,8 @@
   /* Cabinet, Aqua : dossier fermé (ficelé et scellé, ou noué d'un ruban, tant que la mission n'est pas ouverte) ;
      ouvrir brise le sceau (dénoue le ruban). Images par design : --pm-cover, --pm-seal, proportions --pm-ratio */
   html[data-design="cabinet"]{--pm-cover:url("../../shared/deco/cabinet/mission-cover.webp");--pm-seal:url("../../shared/deco/cabinet/mission-seal-fitted.webp");--pm-ratio:720/1015;--pm-cw:calc(var(--pm-bw) * .4266)}
-  html[data-design="aqua"]{--pm-cover:url("../../shared/deco/aqua/mission-cover.webp");--pm-seal:url("../../shared/deco/aqua/mission-seal-fitted.webp");--pm-ratio:720/954;--pm-cw:min(440px,100%)}
-  html[data-design="cabinet"] #pmDetail{--pm-bw:min(1064px,100%)}
+  html[data-design="aqua"]{--pm-cover:url("../../shared/deco/aqua/mission-cover.webp");--pm-seal:url("../../shared/deco/aqua/mission-seal-fitted.webp");--pm-ratio:720/954;--pm-cw:calc(var(--pm-bw) * .46)}
+  html:is([data-design="cabinet"],[data-design="aqua"]) #pmDetail{--pm-bw:min(1064px,100%)}
   html:is([data-design="cabinet"],[data-design="aqua"]) .pm-cover{position:relative;box-sizing:border-box;width:var(--pm-cw);aspect-ratio:var(--pm-ratio);margin:0 0 0 auto;padding:7% 0 0;border:0;align-content:start;background:var(--pm-cover) center/100% 100% no-repeat;filter:drop-shadow(0 10px 16px rgba(0,0,0,.45))}
   /* scellé : ficelle passée dans les œillets et sceau (Cabinet) ou ruban noué (Aqua), calque à la toile exacte du
      dossier (ombre et découpe comprises : mission-seal-fitted.webp) ; dossier rouvert après lecture : sans scellé */
@@ -46,7 +46,7 @@
   html[data-design="aqua"] .pm-label small{aspect-ratio:700/194;background-image:url("../../shared/deco/stamp-urgent.webp")}
   html:is([data-design="cabinet"],[data-design="aqua"]) .pm-open{position:absolute;z-index:3;left:0;right:0;bottom:7%;text-align:center}
   @media (prefers-reduced-motion:reduce){html:is([data-design="cabinet"],[data-design="aqua"]) .pm-cover::after{transition:none}}
-  /* Cabinet : dossier ouvert (pages : zones claires de mission-open.webp) */
+  /* Cabinet (Aqua : surcharges plus bas) : dossier ouvert (pages : zones claires de mission-open.webp) */
   .pm-book{container-type:inline-size;position:relative;width:var(--pm-bw,min(1064px,100%));aspect-ratio:1400/842;margin:0 0 12px auto;background:url("../../shared/deco/cabinet/mission-open.webp") center/contain no-repeat;filter:drop-shadow(0 10px 18px rgba(0,0,0,.45))}
   .pm-page{position:absolute;top:8.5%;bottom:8%;overflow:auto;padding:1.6cqw 2.4cqw 5.2cqw;font:12.5px/1.5 "Courier Prime","Courier New",Courier,monospace;color:#2b2112;scrollbar-width:thin}
   .pm-left{left:5.6%;right:54.4%}.pm-right{left:53.6%;right:5.3%}.pm-page{cursor:pointer}
@@ -93,6 +93,30 @@
   .pm-leaf.fwd{animation:pmTurn .7s cubic-bezier(.45,.05,.35,1) forwards}.pm-leaf.back{animation:pmTurnBack .7s cubic-bezier(.45,.05,.35,1) forwards}
   @keyframes pmTurn{from{transform:perspective(2200px) rotateY(0)}to{transform:perspective(2200px) rotateY(-180deg)}}
   @keyframes pmTurnBack{from{transform:perspective(2200px) rotateY(0)}to{transform:perspective(2200px) rotateY(180deg)}}
+  /* Aqua : porte-documents toilé ouvert (feuilles : x 61–633 et 790–1341, dos à 701 sur 1409 × 831 ; marges des faces
+     calculées comme pour le Cabinet : le texte de la feuille qui tourne tombe sur celui des pages fixes) ; ordre au
+     modèle de l'administration (bandeau d'en-tête, rubriques en capitales soulignées, caractères sans empattement) */
+  html[data-design="aqua"] .pm-book{aspect-ratio:1409/831;background-image:url("../../shared/deco/aqua/mission-open.webp")}
+  html[data-design="aqua"] .pm-page{top:11.7%;bottom:10.4%;font:12.5px/1.5 Marianne,"Helvetica Neue",Arial,sans-serif;color:#1e2733}
+  html[data-design="aqua"] .pm-left{left:6.33%;right:57.07%}html[data-design="aqua"] .pm-right{left:58.07%;right:6.83%}
+  html[data-design="aqua"] .pm-leaf{top:8.18%;bottom:6.38%;left:56.07%;right:4.83%;transform-origin:-16.15% 50%}
+  html[data-design="aqua"] .pm-leaf.back{top:7.94%;bottom:5.54%;left:4.33%;right:55.07%;transform-origin:111.89% 50%}
+  html[data-design="aqua"] .pm-leaf .pm-face{inset:0;background-image:url("../../shared/deco/aqua/mission-page.webp");padding:3.67cqw 4.4cqw 7.57cqw 4.4cqw;font:12.5px/1.5 Marianne,"Helvetica Neue",Arial,sans-serif;color:#1e2733}
+  html[data-design="aqua"] .pm-leaf.fwd .pm-back{padding:3.67cqw 2.91cqw 7.57cqw 4.4cqw}
+  html[data-design="aqua"] .pm-leaf.back .pm-front{padding:3.82cqw 4.4cqw 8.07cqw 4.4cqw}
+  html[data-design="aqua"] .pm-leaf.back .pm-back{padding:3.82cqw 4.41cqw 8.07cqw 5.89cqw}
+  html[data-design="aqua"] .pm-corner{background-image:url("../../shared/deco/aqua/page-corner.webp")}
+  html[data-design="aqua"] .pm-next{right:4.83%;bottom:6.38%}html[data-design="aqua"] .pm-prev{left:4.33%;bottom:5.54%}
+  html[data-design="aqua"] .pm-book :is(h3,h4){color:#14285a}
+  html[data-design="aqua"] .pm-book h3{border-bottom-color:rgba(20,40,90,.35)}
+  html[data-design="aqua"] .pm-book h4{text-decoration:underline;text-underline-offset:2px;letter-spacing:.04em}
+  html[data-design="aqua"] .pm-book :is(.pm-mdtable th,.pm-mdtable td,.pm-order>div){border-bottom-color:rgba(20,40,90,.25)}
+  html[data-design="aqua"] .pm-book .pm-signature{color:#14285a}
+  /* en-tête : bandeau du centre opérationnel (image) ; numéro de l'ordre dessous, à droite */
+  html[data-design="aqua"] .pm-book .pm-head{display:block;position:relative;aspect-ratio:908/276;margin:0 0 26px;padding:0;border:0;background:url("../../shared/deco/aqua/order-header.webp") center/100% 100% no-repeat;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+  html[data-design="aqua"] .pm-book .pm-head>:not(.pm-no){position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+  html[data-design="aqua"] .pm-book .pm-head .pm-no{position:absolute;top:calc(100% + 6px);right:0;font-size:11px;letter-spacing:.06em;color:#14285a}
+  html[data-design="aqua"] .pm-book [data-part="order"] .pm-dr{top:auto;bottom:-10px}
   .pm-week{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}.pm-week input{width:auto}.pm-week button{min-width:2.2em}
   .pm-types-sum{margin:0 0 8px;font-weight:600}
   .pm-sims{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 14px}
@@ -444,14 +468,14 @@
     window.AppFramework?.refresh?.();
   }
 
-  // ---- dossier ouvert (Cabinet), pages dans l'ordre d'un livre : 1 l'étiquette (titre), 2 l'en-tête, l'ordre et le
+  // ---- dossier ouvert (Cabinet, Aqua), pages dans l'ordre d'un livre : 1 l'étiquette (titre), 2 l'en-tête, l'ordre et le
   // résumé (diffusion restreinte), 3 et suivantes le détail, puis les cartes (deux par page, posées de travers), enfin
   // objectifs, remarques et signature. Double page : intérieur de la couverture + page 1 à l'ouverture, puis 2-3, 4-5…
   // Le coin corné tourne la page (suivante en bas à droite, précédente en bas à gauche) ; le contenu trop long passe
   // sur la page suivante. Écran étroit (< 760 px) ou autre design : présentation ordinaire.
   let bookStart = 0; // double page à rouvrir quand le livre est redessiné (changement de design)
   function bookify() {
-    if (document.documentElement.dataset.design !== 'cabinet' || !matchMedia('(min-width: 760px)').matches) return;
+    if (!['cabinet', 'aqua'].includes(document.documentElement.dataset.design) || !matchMedia('(min-width: 760px)').matches) return;
     const host = $('pmDetail'),
       part = n => host.querySelector(`[data-part="${n}"]`),
       actions = part('actions');
