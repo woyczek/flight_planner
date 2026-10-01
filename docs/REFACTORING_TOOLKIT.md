@@ -225,10 +225,12 @@ Suivi des assets (cahier des charges, consignes de génération, intégration) :
     (« Importer l'ancien registre … (CSV) »). Liens CR ⇄ reporting (`families/*.js`), préfixes de `vocab.js`, modèle
     de `new_family_pages.py`, arbre et pages témoins du banc mis à jour ; scripts des seules pages historiques retirés
     (`gaar_reporting.js`, `hems_reporting.js`, `hems_mission_sync.js`). Toutes les familles de CR passent par le Core.
-- **Suivant** : 7 au fil des assets livrés ([PROMPTS_ASSETS_PHASE2.md](PROMPTS_ASSETS_PHASE2.md)) ; traductions des
-  pages historiques (`gaar_i18n.js`, `hems_i18n.js`, encore chargées par `reporting_i18n.js`) et
-  `aircraft_directory.js` (orphelin) à trier ; fusion des règles scindées par la conversion quand le banc montre que le
-  renfort est inutile (lisibilité).
+  - **Orphelins** (balayage de `shared/` : aucun `.js` / `.css` sans page ni script qui le charge) : traductions des
+    pages historiques (`gaar_i18n.js`, `hems_i18n.js` — chargées par aucune page, seulement citées en commentaire),
+    `aircraft_directory.js`, et trois phrases mortes de `reporting_i18n.js` (période « partagée avec HEMS / GAAR »)
+    retirées.
+- **Suivant** : 7 au fil des assets livrés ([PROMPTS_ASSETS_PHASE2.md](PROMPTS_ASSETS_PHASE2.md)) ; fusion des règles
+  scindées par la conversion quand le banc montre que le renfort est inutile (lisibilité).
 
 ## Utiliser la boîte à outils (D)
 
