@@ -210,8 +210,8 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     const v = g?.[d]?.[h];
     return v === true ? 'O' : typeof v === 'string' && LEGEND[v] ? v : '';
   }));
-  // ---- semaines : une grille par semaine (weeks, clé : lundi ISO UTC) ; tant qu'aucune semaine n'est saisie, l'ancienne
-  // grille « semaine type » (grid) vaut pour toutes les semaines (déclarations antérieures)
+  // ---- semaines : une grille par semaine (weeks, clé : lundi ISO UTC) ; une déclaration de l'ancien format (grid seule)
+  // vaut pour la semaine où elle a été saisie (updated_at), et rejoint weeks à la première retouche
   /** Lundi (date ISO, UTC) de la semaine d'un instant. */
   const weekKey = ms => {
     const d = new Date(ms);
@@ -220,10 +220,16 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
   /** Semaine décalée de n semaines (clé lundi ISO). */
   const addWeeks = (week, n) => new Date(Date.parse(`${week}T00:00:00Z`) + n * 7 * 864e5).toISOString().slice(0, 10);
   const hasWeeks = av => !!av?.weeks && Object.keys(av.weeks).length > 0;
-  /** Grille d'une semaine (normalisée) : saisie de la semaine, sinon semaine type (déclaration sans semaines), sinon vide. */
-  const weekGrid = (av, week) => normGrid(hasWeeks(av) ? av.weeks[week] : av?.grid);
+  /** Semaine d'une déclaration de l'ancien format : celle de sa saisie. */
+  const legacyWeek = av => weekKey(Date.parse(av?.updated_at || '') || Date.now());
+  /** Semaines d'une déclaration : weeks, ou l'ancienne grille rattachée à sa semaine. */
+  const weeksOf = av => hasWeeks(av) ? av.weeks : av?.grid && normGrid(av.grid).some(r => r.some(Boolean)) ? {
+    [legacyWeek(av)]: av.grid
+  } : {};
+  /** Grille d'une semaine (normalisée ; vide si la semaine n'est pas renseignée). */
+  const weekGrid = (av, week) => normGrid(weeksOf(av)[week]);
   /** Grille qui vaut à un instant ; null si rien n'est déclaré pour cette semaine. */
-  const gridAt = (av, ms) => hasWeeks(av) ? av.weeks[weekKey(ms)] || null : av?.grid || null;
+  const gridAt = (av, ms) => weeksOf(av)[weekKey(ms)] || null;
   /** Disponibilités d'un pilote : locales (son poste), sinon data/disponibilites/<TRI>.json (fetch) ; null si aucune. */
   async function availability(tri) {
     tri = String(tri || '').toUpperCase();
@@ -253,7 +259,7 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     // semaines gardées : douze semaines passées au plus
     const keepFrom = addWeeks(weekKey(Date.now()), -12),
       weeks = Object.fromEntries(Object.entries({
-        ...(prev.weeks || {}),
+        ...weeksOf(prev), // ancienne grille : rejoint sa semaine
         ...(week ? {
           [week]: normGrid(grid)
         } : {})
@@ -1033,7 +1039,6 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     await wi.write(JSON.stringify(idx, null, 2));
     await wi.close();
     cache = idx; // l'index écrit fait foi pour les relectures (même si la page sert une autre copie)
-    cache = idx;
     envelope();
     return `${mh.folder}/affectations.yaml`;
   }
