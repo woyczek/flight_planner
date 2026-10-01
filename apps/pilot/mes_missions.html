@@ -21,6 +21,11 @@
   .pm-maps figcaption{font-size:11.5px;opacity:.8;margin-top:3px}
   .pm-text p{white-space:pre-line;margin:.4em 0}
   .pm-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0}
+  .pm-cover{display:grid;justify-items:center;gap:12px;padding:28px 16px;cursor:pointer;border:1px solid color-mix(in srgb,currentColor 22%,transparent);background:color-mix(in srgb,currentColor 5%,transparent)}
+  .pm-label{display:grid;gap:4px;justify-items:center;text-align:center;min-width:min(420px,100%);padding:14px 22px;border:2px solid color-mix(in srgb,currentColor 45%,transparent);background:var(--card,#fff)}
+  .pm-label small{letter-spacing:.3em;font-weight:800;color:#b3261e}.pm-label b{font-size:22px;letter-spacing:.06em}.pm-label span{font-size:13px}
+  .pm-label dl{display:grid;grid-template-columns:auto auto;gap:2px 12px;margin:8px 0 0;font-size:12.5px;text-align:left}.pm-label dt{opacity:.7}.pm-label dd{margin:0;font-weight:600}
+  .pm-open{margin:0}
   .pm-week{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}.pm-week input{width:auto}.pm-week button{min-width:2.2em}
   .pm-types-sum{margin:0 0 8px;font-weight:600}
   .pm-sims{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 14px}
@@ -50,6 +55,12 @@
   <div id="pmList" class="pm-list"><p class="pm-empty">Chargement…</p></div>
   <p class="small"><label><input type="checkbox" id="pmAll"> afficher aussi les missions passées</label></p>
 </section>
+<section data-block-id="availability" data-icon="clock" data-subtitle="Semaine affichée, heures UTC, codes de l’ODV : choisir un code, puis cliquer ou tracer un rectangle sur les cases ; un second clic sur une case de ce code l’efface. Le Centre s’en sert pour affecter les missions."><h2>Mes disponibilités</h2>
+  <div class="pm-week" data-weekbar></div>
+  <div id="pmGrid"></div>
+  <div class="pm-actions"><button type="button" id="pmGridSave" class="secondary" data-icon="save">Enregistrer dans le dossier des données</button><button type="button" id="pmGridCopy" class="secondary" title="Recopier les disponibilités de la semaine précédente">⧉ S-1</button><button type="button" id="pmGridClear" class="ghost">Tout effacer</button></div>
+  <p id="pmGridMsg" class="small" data-status></p>
+</section>
 <section data-block-id="mission" data-icon="target" data-subtitle="Mission affectée, en lecture seule : ce qui vous est demandé, la route, les cartes fournies." id="pmMission" hidden><h2>Mission</h2>
   <div id="pmDetail"></div>
 </section>
@@ -61,19 +72,13 @@
   <div id="pmSims" class="pm-sims"></div>
   <p id="pmSimsMsg" class="small">Enregistré dans ce navigateur, et avec vos disponibilités (« Enregistrer dans le dossier des données »).</p>
 </section>
-<section data-block-id="availability" data-icon="clock" data-subtitle="Semaine affichée, heures UTC, codes de l’ODV : choisir un code, puis cliquer ou tracer un rectangle sur les cases ; un second clic sur une case de ce code l’efface. Le Centre s’en sert pour affecter les missions."><h2>Mes disponibilités</h2>
-  <div class="pm-week" data-weekbar></div>
-  <div id="pmGrid"></div>
-  <div class="pm-actions"><button type="button" id="pmGridSave" class="secondary" data-icon="save">Enregistrer dans le dossier des données</button><button type="button" id="pmGridCopy" class="secondary" title="Recopier les disponibilités de la semaine précédente">⧉ S-1</button><button type="button" id="pmGridClear" class="ghost">Tout effacer</button></div>
-  <p id="pmGridMsg" class="small" data-status></p>
-</section>
 </main>
 <script src="../../shared/kit.js?v=9839b88b"></script>
-<script src="../../shared/repository_nav.js?v=c78fcb35"></script>
+<script src="../../shared/repository_nav.js?v=ffff026c"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=90cadad7"></script>
-<script src="../../shared/assignments.js?v=8be1e773"></script>
+<script src="../../shared/assignments.js?v=d74e7849"></script>
 <script>
 (() => {
   'use strict';
@@ -156,8 +161,22 @@
 
   // ---- mission (lecture seule)
   const fileUrl = (a, name) => new URL(`data/missions/${a.folder}/${name}`, root()).href;
-  async function show(a) {
+  /** Couverture d'une mission pas encore ouverte : étiquette (numéro, nom, confidentiel, appareil, indicatif, décollage) ;
+   *  l'ouvrir la marque lue (la pastille du menu et le pli cacheté en tiennent compte). */
+  function cover(a) {
+    $('pmMission').hidden = false;
+    $('pmDetail').innerHTML = `<div class="pm-cover" role="button" tabindex="0" title="Ouvrir la mission">
+      <div class="pm-label"><small>CONFIDENTIEL</small><b>${esc(a.mission)}</b><span>${esc(a.title || '')}</span>
+      <dl><dt>Appareil</dt><dd>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' ') || '—')}</dd><dt>Indicatif</dt><dd>${esc(a.callsign || '—')}</dd><dt>Décollage</dt><dd>${esc(a.alert ? 'astreinte ' + hhmm(Date.parse(a.alert.ready_at_utc)) : fmt(A.when(a)))}</dd></dl></div>
+      <p class="pm-open"><button type="button" class="primary" data-open>Ouvrir la mission</button></p></div>`;
+    const open = () => show(a, { open: true });
+    $('pmDetail').querySelector('.pm-cover').onclick = open;
+    $('pmDetail').querySelector('.pm-cover').onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } };
+  }
+  async function show(a, { open = false } = {}) {
     current = a;
+    document.querySelectorAll('#pmList tr').forEach(tr => tr.classList.toggle('pm-current', list[+tr.dataset.i] === a));
+    if (!open && !A.isRead(a)) return cover(a);
     A.markRead(a);
     $('pmMission').hidden = false;
     $('pmDetail').innerHTML = '<p class="pm-empty">Chargement de la mission…</p>';
