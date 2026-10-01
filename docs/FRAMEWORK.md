@@ -125,7 +125,7 @@ liste `DISPLAY` : design, icônes, couleurs, barre latérale, langue, onglets, s
     Durci : câble et radio — dans un vrai emplacement entre les blocs 2 et 3, déplaçable latéralement) ; **carnet des
     aperçus** (composant `.repo-notebooks` / `.repo-notebook` de `designs_skeuo.css`, jetons `--nb-*` : carnet fermé
     tant que la galerie est vide, puis carnet ouvert sous chaque carte ; Studio cartographique) ;
-  - **boîte à outils** `shared/kit.js` (`window.RepositoryKit`, chargée avant `repository_nav.js`) : échappement,
+  - **boîte à outils** `shared/kit.js` (`window.RepositoryKit`, chargée avant `repository_nav.js` et avant tout module qui s'en sert) : échappement,
     langue et traductions, stockage protégé, couleurs et contraste WCAG.
 - **Réglages** : boutons « Apparence » et « Paramètres » en tête du menu ☰ ; dans la barre latérale, groupe du bas
   (Apparence, Paramètres, Menu).

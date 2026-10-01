@@ -69,13 +69,7 @@
   const css = document.createElement("style");
   css.textContent = ".field-link{color:inherit;text-decoration:underline dotted;text-underline-offset:2px;cursor:pointer}.field-link:hover{text-decoration-style:solid}.field-flash{outline:2px solid #f0b86e!important;outline-offset:2px;transition:outline-color .3s}";
   document.head.append(css);
-  const esc = v => String(v ?? "").replace(/[&<>"']/g, ch => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  })[ch]);
+  const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   /** Élément d'une cible (chemin du profil ou #id) ; null s'il n'existe pas. */
   const find = t => t.startsWith("#") ? document.querySelector(t) : document.querySelector(`[data-profile-path="${CSS.escape(t)}"]`);
   /** Libellé affiché d'un champ (texte de son <label>), sinon le chemin. */

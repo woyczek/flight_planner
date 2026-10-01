@@ -12,12 +12,7 @@
     L = V.L;
   const families = new Map();
   /** Échappe un texte pour HTML. */
-  const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;'
-  } [c]));
+  const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   /** Minutes → « 1h05 » (« — » si absent). */
   const duration = n => n == null ? '—' : n >= 60 ? `${Math.floor(n / 60)}h${String(n % 60).padStart(2, '0')}` : `${n} min`;
   /** N° de mission normalisé (majuscules, sans blancs). */

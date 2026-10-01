@@ -25,13 +25,7 @@
   //       eventsFor(tl, audience) · revealedFor(ex, tl, audience, upTo) · editor(host, yaml, { docs, onChange }) ·
   //       crewPanel(host, yaml, docs) · fromLegacy(yaml) · compatibilité : schedule(y) · revealed(y, id) · injectsOf(y)
   //       · whenText(x) · pointsText(pts) · parseTracksTable(md).
-  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
-  } [c]));
+  const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   const arr = v => Array.isArray(v) ? v : v == null || v === '' ? [] : [v];
   const up = v => String(v ?? '').trim().toUpperCase();
   const yamlOf = d => d?.yaml || d || {};

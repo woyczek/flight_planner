@@ -6,12 +6,7 @@
   // (AppFramework.notify) et liste du rapport de lecture. Tableaux : SortedTable (shared/mission_table.js).
   const C = window.OdvCore;
   const $ = id => document.getElementById(id);
-  const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;'
-  } [c]));
+  const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   const notify = (msg, kind) => window.AppFramework?.notify ? window.AppFramework.notify(msg, kind) : console.warn(msg);
   const KEY = 'odvPlanning:v1';
   const SHORT = ['M', 'A', 'S'];

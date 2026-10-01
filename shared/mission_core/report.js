@@ -11,12 +11,7 @@
     B = window.MissionBlocks,
     L = V.L;
   /** Échappe un texte pour HTML. */
-  const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;'
-  } [c]));
+  const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   const LANGS = ['fr', 'en', 'de', 'es'];
   /** Langue de la page (fr / en / de / es). */
   const lang = () => {

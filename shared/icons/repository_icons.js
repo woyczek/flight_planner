@@ -104,12 +104,7 @@
         ${wing(1)}${wing(-1)}<circle cx="60" cy="22" r="11" fill="url(#emG)" stroke="#20241a" stroke-width="1.2"/><path d="M49 22h22M60 11v22M51.5 16h17M51.5 28h17" stroke="#20241a" fill="none"/><ellipse cx="60" cy="22" rx="5" ry="11" fill="none" stroke="#20241a"/></svg>`;
     }
   };
-  const esc = s => String(s).replace(/[&<>"]/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;'
-  } [c]));
+  const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   window.RepositoryIcons = {
     /** SVG d'une icône (chaîne) ; décorative (aria-hidden) sauf si title est donné. Nom inconnu : chaîne vide. */
     svg(name, {

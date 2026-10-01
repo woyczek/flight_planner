@@ -567,13 +567,7 @@
   };
 
   // ---- affichage commun (générateur de brief, registre des missions)
-  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
-  } [c]));
+  const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   const ROUTE_KEY = 'missionEstimateRoute:v1';
   const routeOn = () => {
     try {

@@ -52,12 +52,7 @@
   }
 
   /** Échappe un texte pour HTML. */
-  const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;'
-  } [c]));
+  const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   // Même règle de tri que le tableau des atterrissages : nombres comparés numériquement,
   // texte avec localeCompare numérique insensible à la casse.
   const sortable = v => {

@@ -17,13 +17,7 @@
     const s = Array.isArray(row) ? (row[li()] || row[1] || row[0]) : String(row ?? '');
     return s.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
   };
-  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
-  } [c]));
+  const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   const locale = () => ['fr-FR', 'en-GB', 'de-DE', 'es-ES'][li()];
   const fmtDate = (v, time = true) => {
     if (!v) return '—';

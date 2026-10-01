@@ -17,12 +17,7 @@
   const M = window.MissionModel,
     V = window.MissionVocab;
   /** Échappe un texte pour HTML. */
-  const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;'
-  } [c]));
+  const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
 
   // now(path, type) : valeur « maintenant » d'un champ date / heure (heure locale du terrain ou
   // UTC selon le champ), fournie par la page (fuseau du terrain de départ).

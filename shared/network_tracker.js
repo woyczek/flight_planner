@@ -158,12 +158,7 @@
   /** Heure locale « HH:MM » d'une date. */
   const hhmm = date => `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
   /** Échappe un texte pour HTML. */
-  const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;'
-  } [c]));
+  const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
 
   // ------------------------------------------------------------------ état du suivi
   /** Suivi en cours mémorisé pour cet onglet et cette famille (abandonné au-delà de 14 h). */
