@@ -66,11 +66,11 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=9839b88b"></script>
-<script src="../../shared/repository_nav.js?v=b2ce1c0d"></script>
+<script src="../../shared/repository_nav.js?v=3a08f5e7"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=90cadad7"></script>
-<script src="../../shared/assignments.js?v=8ede7558"></script>
+<script src="../../shared/assignments.js?v=ed6aca5e"></script>
 <script>
 (() => {
   'use strict';
@@ -116,7 +116,13 @@
     const tr = e.target.closest('tr[data-i]');
     if (tr) show(list[+tr.dataset.i]);
   });
-  $('pmAll').addEventListener('change', load);
+  // paramètres d'affichage gardés dans ce navigateur (pilotMissionsView:v1) : missions passées, code de la palette
+  const VIEW_KEY = 'pilotMissionsView:v1';
+  const view = { all: false, brush: 'O' };
+  try { Object.assign(view, JSON.parse(localStorage.getItem(VIEW_KEY) || '{}') || {}); } catch { /* valeurs par défaut */ }
+  const saveView = () => { try { localStorage.setItem(VIEW_KEY, JSON.stringify(view)); } catch { /* stockage refusé */ } };
+  $('pmAll').checked = !!view.all;
+  $('pmAll').addEventListener('change', () => { view.all = $('pmAll').checked; saveView(); load(); });
 
   // ---- mission (lecture seule)
   const fileUrl = (a, name) => new URL(`data/missions/${a.folder}/${name}`, root()).href;
@@ -266,7 +272,13 @@
   async function gridLoad() {
     const tri = A.trigram();
     const av = tri ? await A.availability(tri) : null;
-    grid = A.gridEditor($('pmGrid'), av?.grid || A.emptyGrid(), g => { if (tri) A.saveAvailability(tri, g); $('pmGridMsg').textContent = 'Gardé dans ce navigateur ; « Enregistrer dans le dossier des données » pour le Centre.'; });
+    grid = editor(av?.grid || A.emptyGrid());
+  }
+  /** Éditeur de la grille : chaque retouche gardée dans ce navigateur ; code de la palette gardé (view.brush). */
+  function editor(g) {
+    const tri = A.trigram();
+    return A.gridEditor($('pmGrid'), g, x => { if (tri) A.saveAvailability(tri, x); $('pmGridMsg').textContent = 'Gardé dans ce navigateur ; « Enregistrer dans le dossier des données » pour le Centre.'; },
+      { code: view.brush, onBrush: b => { view.brush = b; saveView(); } });
   }
   $('pmGridSave').onclick = async () => {
     const tri = A.trigram();
@@ -277,7 +289,7 @@
       window.AppFramework?.notify?.(`Disponibilités enregistrées : ${f}`, 'ok');
     } catch (e) { $('pmGridMsg').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
   };
-  $('pmGridClear').onclick = () => { grid = A.gridEditor($('pmGrid'), A.emptyGrid()); A.saveAvailability(A.trigram(), grid); };
+  $('pmGridClear').onclick = () => { grid = editor(A.emptyGrid()); A.saveAvailability(A.trigram(), grid); };
 
   // index complet gardé pour les coéquipiers
   const keepAll = async () => { A._all = (await A.index()).assignments; };
