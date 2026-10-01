@@ -65,7 +65,7 @@
   .pm-page{position:absolute;top:8.5%;bottom:8%;overflow:auto;padding:1.6cqw 2.4cqw 5.2cqw;font:12.5px/1.5 "Courier Prime","Courier New",Courier,monospace;color:#2b2112;scrollbar-width:thin}
   .pm-left{left:5.6%;right:54.4%}.pm-right{left:53.6%;right:5.3%}.pm-page{cursor:pointer}
   .pm-page:has(> [data-part="title"]){overflow:hidden} /* page 1 : le tampon déborde de l'étiquette, sans barre de défilement */
-  .pm-page::after{content:attr(data-folio);position:sticky;display:block;bottom:0;text-align:center;font-size:11px;opacity:.55;margin-top:8px}
+  .pm-page::after{content:attr(data-folio);position:absolute;left:0;right:0;bottom:1.9cqw;text-align:center;font-size:11px;opacity:.55;pointer-events:none}
   .pm-page h3{margin:0 0 10px;font-size:17px;letter-spacing:.02em;border-bottom:1px solid rgba(43,33,18,.35);padding-bottom:6px}
   .pm-page h4{margin:12px 0 6px;font-size:13.5px;text-transform:uppercase;letter-spacing:.08em}
   /* titres des feuilles : caractères des pages (machine à écrire, ou ceux du design de la page : Aqua), pas la police
@@ -81,6 +81,12 @@
   .pm-content>[data-part="title"],.pm-emblem{display:none}.pm-book .pm-emblem{display:block}
   .pm-dr{display:none}.pm-book .pm-dr{display:block;position:absolute;z-index:2;width:190px;aspect-ratio:505/200;background:url("../../shared/deco/cabinet/stamp-diffusion-restreinte.webp") center/contain no-repeat;opacity:.8;pointer-events:none}
   .pm-book [data-part="order"] .pm-dr{top:58px;right:-6px;transform:rotate(-6deg)}
+  /* logo en page 1 (Cabinet, Carnet de vol, Durci) : l'en-tête de l'ordre, en haut à gauche, au-dessus de l'étiquette */
+  .pm-logo{display:none}
+  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="field"]) .pm-book [data-part="title"] .pm-logo{position:absolute;top:0;left:0;margin:0}
+  html[data-design="cabinet"] .pm-book [data-part="title"] .pm-logo{display:grid;grid-template-columns:auto 1fr;right:0;border-bottom:0}
+  html[data-design="flightlog"] .pm-book [data-part="title"] .pm-logo{right:0}
+  html:not([data-design="cabinet"],[data-design="flightlog"],[data-design="field"]) .pm-book .pm-logo{display:none}
   .pm-mdtable{width:100%;border-collapse:collapse;font-size:12px}.pm-mdtable th,.pm-mdtable td{text-align:left;padding:3px 6px;border-bottom:1px dotted rgba(43,33,18,.4)}
   .pm-dl{display:grid;grid-template-columns:auto 1fr;gap:1px 10px;margin:2px 0 6px;font-size:11.5px}.pm-dl dt{opacity:.75}.pm-dl dd{margin:0}.pm-dl dl{font-size:11px}
   #pmDetail h5{margin:8px 0 2px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;opacity:.85}
@@ -137,23 +143,23 @@
   html[data-design="aqua"] .pm-book .pm-head>:not(.pm-no){position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
   html[data-design="aqua"] .pm-book .pm-head .pm-no{position:absolute;top:calc(100% + 6px);right:0;font-size:11px;letter-spacing:.06em;color:#14285a}
   html[data-design="aqua"] .pm-book [data-part="order"] .pm-dr{top:auto;bottom:-10px}
-  /* Durci : dossier zippé ouvert (feuilles : x 81–561 et 675–1155, y 59–759, dos à 618 sur 1236 × 979 ; tirette
+  /* Durci : dossier zippé ouvert (feuilles : x 81–561 et 675–1155, y 59–759, dos à 618 sur 1236 × 898 ; tirette
      sous le dossier) ; marges des faces calculées comme pour le Cabinet */
-  html[data-design="field"] .pm-book{aspect-ratio:1236/979;background-image:url("../../shared/deco/field/mission-open.webp")}
-  html[data-design="field"] .pm-page{top:9.63%;bottom:26.57%;color:#1f2a1c}
+  html[data-design="field"] .pm-book{aspect-ratio:1236/898;background-image:url("../../shared/deco/field/mission-open.webp")}
+  html[data-design="field"] .pm-page{top:10.18%;bottom:19.59%;color:#1f2a1c}
   html[data-design="field"] .pm-left{left:8.55%;right:56.61%}html[data-design="field"] .pm-right{left:56.61%;right:8.55%}
-  html[data-design="field"] .pm-leaf{top:6.13%;bottom:22.57%;left:54.61%;right:6.55%;transform-origin:-11.88% 50%}
-  html[data-design="field"] .pm-leaf.back{top:6.03%;bottom:22.47%;left:6.55%;right:54.61%;transform-origin:111.88% 50%}
-  html[data-design="field"] .pm-leaf .pm-face{inset:0;background-image:url("../../shared/deco/field/mission-page.webp");padding:4.37cqw 4.4cqw 8.37cqw 4.4cqw;color:#1f2a1c}
-  html[data-design="field"] .pm-leaf.fwd .pm-back{padding:4.37cqw 4.4cqw 8.37cqw 4.4cqw}
-  html[data-design="field"] .pm-leaf.back :is(.pm-front,.pm-back){padding:4.45cqw 4.4cqw 8.45cqw 4.4cqw}
+  html[data-design="field"] .pm-leaf{top:6.68%;bottom:15.59%;left:54.61%;right:6.55%;transform-origin:-11.88% 50%}
+  html[data-design="field"] .pm-leaf.back{top:6.57%;bottom:15.48%;left:6.55%;right:54.61%;transform-origin:111.88% 50%}
+  html[data-design="field"] .pm-leaf .pm-face{inset:0;background-image:url("../../shared/deco/field/mission-page.webp");padding:4.14cqw 4.4cqw 8.11cqw 4.4cqw;color:#1f2a1c}
+  html[data-design="field"] .pm-leaf.fwd .pm-back{padding:4.14cqw 4.4cqw 8.11cqw 4.4cqw}
+  html[data-design="field"] .pm-leaf.back :is(.pm-front,.pm-back){padding:4.22cqw 4.4cqw 8.19cqw 4.4cqw}
   /* en-tête de l'ordre : logo du CPCO en tenue de terrain (« Ordre de mission ») ; numéro dessous, à droite */
-  html[data-design="field"] .pm-book .pm-head{display:block;position:relative;aspect-ratio:1100/554;margin:0 auto 20px;width:56%;padding:0;border:0;background:url("../../shared/deco/field/order-header.webp") center/100% 100% no-repeat}
+  html[data-design="field"] .pm-book .pm-head{display:block;position:relative;aspect-ratio:1100/554;margin:0 0 20px;width:56%;padding:0;border:0;background:url("../../shared/deco/field/order-header.webp") center/100% 100% no-repeat}
   html[data-design="field"] .pm-book .pm-head>:not(.pm-no){position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
   html[data-design="field"] .pm-book .pm-head .pm-no{position:absolute;top:calc(100% + 4px);right:0;font-size:11px;letter-spacing:.06em}
   html[data-design="field"] .pm-book [data-part="order"] .pm-dr{top:auto;bottom:-10px}
   html[data-design="field"] .pm-corner{background-image:url("../../shared/deco/field/page-corner.webp")}
-  html[data-design="field"] .pm-next{right:6.55%;bottom:22.57%}html[data-design="field"] .pm-prev{left:6.55%;bottom:22.47%}
+  html[data-design="field"] .pm-next{right:6.55%;bottom:15.59%}html[data-design="field"] .pm-prev{left:6.55%;bottom:15.48%}
   /* Carnet de vol : carnet ouvert (pages : x 75–677 et 736–1323, y 47–977, dos à 699 sur 1428 × 1032) ; marges des
      faces calculées comme pour le Cabinet ; en-tête de l'ordre : bandeau du ministère ; cartes scotchées */
   html[data-design="flightlog"] .pm-book{aspect-ratio:1428/1032;background-image:url("../../shared/deco/flightlog/mission-open.webp")}
@@ -233,7 +239,7 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=1466c9a9"></script>
-<script src="../../shared/repository_nav.js?v=b81111bf"></script>
+<script src="../../shared/repository_nav.js?v=4fdd9e28"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=db00c09c"></script>
@@ -489,8 +495,8 @@
     const objectives = [y.objectives?.primary && `<p><b>Objectif principal</b> : ${esc(y.objectives.primary)}</p>`, ...(Array.isArray(y.objectives?.secondary) ? y.objectives.secondary : y.objectives?.secondary ? [y.objectives.secondary] : []).map(o => `<p><b>Objectif secondaire</b> : ${esc(o)}</p>`)].filter(Boolean).join('');
     const notes = (Array.isArray(y.notes) ? y.notes : y.notes ? [y.notes] : []).filter(n => !String(n).startsWith(`Mission ${a.mission}`));
     const signed = new Date(Date.parse(a.updated_at || '') || Date.now()).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-    $('pmDetail').innerHTML = `<div data-part="title">${labelHtml({ ...a, title: y.title || a.title })}</div>
-      <div data-part="order"><header class="pm-head"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp" alt=""><div><b>DEFA Virtual</b><span>Centre de planification et de conduite des opérations</span></div><span class="pm-no">N° ${esc(a.mission)}</span></header>
+    $('pmDetail').innerHTML = `<div data-part="title"><header class="pm-head pm-logo" aria-hidden="true"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp" alt=""><div><b>DEFA Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div></header>${labelHtml({ ...a, title: y.title || a.title })}</div>
+      <div data-part="order"><header class="pm-head"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp" alt=""><div><b>DEFA Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div><span class="pm-no">N° ${esc(a.mission)}</span></header>
         <i class="pm-dr" aria-label="Diffusion restreinte"></i>
         <h3>Ordre de mission — ${esc(y.title || a.title || '')}</h3>
         ${order}${ferryText}${alertText}
@@ -612,20 +618,23 @@
     };
     // tourner : la feuille pivote autour du dos, d'un côté à l'autre ; recto = page qui part, verso = page qui arrive ;
     // la page découverte dessous est déjà la suivante, la page d'en face ne change qu'à l'arrivée de la feuille
-    const face = (el, page) => el.replaceChildren(...(page ? [page.cloneNode(true)] : []));
+    const face = (el, page, n) => {
+      el.replaceChildren(...(page ? [page.cloneNode(true)] : []));
+      el.dataset.folio = page ? n : ''; // numéro de la page portée par la face
+    };
     const turn = (dir, to = at + 2 * dir) => {
       if (busy || to === at) return;
       if (matchMedia('(prefers-reduced-motion: reduce)').matches) { at = to; return draw(); }
       busy = true;
       const [front, back] = [leaf.querySelector('.pm-front'), leaf.querySelector('.pm-back')];
       if (dir > 0) { // la page de droite part vers la gauche ; dessous : la nouvelle page de droite
-        face(front, pages[at + 1]);
-        face(back, pages[to]);
+        face(front, pages[at + 1], at + 1);
+        face(back, pages[to], to);
         right.replaceChildren(...(pages[to + 1] ? [pages[to + 1]] : []));
         right.dataset.folio = pages[to + 1] ? to + 1 : '';
       } else { // la page de gauche part vers la droite ; dessous : la nouvelle page de gauche
-        face(front, pages[at]);
-        face(back, pages[to + 1]);
+        face(front, pages[at], at);
+        face(back, pages[to + 1], to + 1);
         left.replaceChildren(...(pages[to] ? [pages[to]] : []));
         left.dataset.folio = pages[to] ? to : '';
         left.classList.toggle('pm-inside', !pages[to]);
