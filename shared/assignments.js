@@ -309,7 +309,8 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
   /** Grille éditable (jours × heures UTC), peinte avec les codes de l'ODV : un code choisi dans la palette, clic ou
    *  glisser sur les cases ; second clic sur une case de ce code : elle est effacée (glisser efface alors aussi). */
   function gridEditor(host, grid, onChange, {
-    code = 'O'
+    code = 'O',
+    onBrush = null // code choisi dans la palette (pour le garder)
   } = {}) {
     grid = normGrid(grid);
     let brush = LEGEND[code] ? code : 'O';
@@ -324,6 +325,7 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
       if (!b) return;
       brush = b.dataset.code;
       host.querySelectorAll('.pa-code').forEach(x => x.setAttribute('aria-checked', String(x === b)));
+      onBrush?.(brush);
     };
     let paint = null; // code posé pendant le geste ('' : effacement)
     const set = td => {
