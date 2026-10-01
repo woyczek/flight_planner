@@ -49,9 +49,7 @@
 /* icône, titre + sous-titre et outils centrés verticalement sur le bloc de texte (designs au trait) ; les designs à
    matières (designs_skeuo.css) alignent en haut, outils au coin du bloc */
 .repo-block-heading-rich {
-  margin-bottom: 14px
-}
-.repo-block-heading-rich:not(#imp) {
+  margin-bottom: 14px;
   align-items: center;
   gap: 12px
 }
@@ -256,9 +254,7 @@
   padding: 10px 14px;
   border-radius: 8px;
   border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
-  background: color-mix(in srgb, currentColor 4%, transparent)
-}
-.repo-notice:not(#imp) {
+  background: color-mix(in srgb, currentColor 4%, transparent);
   display: flex
 }
 .repo-notice>.repo-icon {
@@ -432,7 +428,7 @@ html[data-icons="off"] .repo-icon-only>.repo-icon:not(#imp) {
 }
 /* ==== JEUX D'ICÔNES SKEUOMORPHES (généré par tools/build_skeuo_icons_css.py) ==== */
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-svg[data-i]{background-position:center;background-size:contain;background-repeat:no-repeat;--rs:1.6em}
-html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(.repo-block-icon,.repo-card-icon):not(#imp) {
+html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(.repo-block-icon,.repo-card-icon) {
   background:none;
   box-shadow:none;
   border-radius:0;
@@ -443,10 +439,10 @@ html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icon
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-card-icon .repo-svg[data-i]{--rs:38px}
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(button,.buttonLink,a.mc-button,a.headerButton,summary) .repo-svg[data-i]{--rs:1.9em}
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(button,.buttonLink,a.mc-button,a.headerButton) .repo-icon{height:1.25em;overflow:visible;align-items:center}
-html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-sidenav-item .repo-svg[data-i]:not(#imp) {
+html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-sidenav-item .repo-svg[data-i] {
   --rs:50px !important /* garder : taille en ligne (style="--rs:…") des icônes de la barre */
 }
-html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-dropzone-badge:not(#imp) {
+html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-dropzone-badge {
   background:none
 }html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-dropzone-badge .repo-svg[data-i]{--rs:42px}
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-notice>.repo-icon .repo-svg[data-i]{--rs:30px}
@@ -456,9 +452,7 @@ html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icon
 html[data-icons="brass"] .repo-svg[data-i] {
   box-sizing:border-box;
   padding:calc(var(--rs,1.15em) * 0.26);
-  overflow:visible
-}
-html[data-icons="brass"] .repo-svg[data-i]:not(#imp) {
+  overflow:visible;
   background-image:url("icons/skeuo/cabinet/vierge.webp?v=b436eb35");
   color:var(--ico-glyph,#f1e4c0)
 }
@@ -501,9 +495,7 @@ html[data-icons="brass"] :is(.repo-block-icon,.repo-card-icon){filter:drop-shado
 html[data-icons="avio"] .repo-svg[data-i] {
   box-sizing:border-box;
   padding:calc(var(--rs,1.15em) * 0.26);
-  overflow:visible
-}
-html[data-icons="avio"] .repo-svg[data-i]:not(#imp) {
+  overflow:visible;
   background-image:url("icons/skeuo/flightlog/vierge.webp?v=5be875bf");
   color:var(--ico-glyph,#f4ecd8)
 }
@@ -546,9 +538,7 @@ html[data-icons="avio"] :is(.repo-block-icon,.repo-card-icon){filter:drop-shadow
 html[data-icons="steel"] .repo-svg[data-i] {
   box-sizing:border-box;
   padding:calc(var(--rs,1.15em) * 0.24);
-  overflow:visible
-}
-html[data-icons="steel"] .repo-svg[data-i]:not(#imp) {
+  overflow:visible;
   background-image:url("icons/skeuo/field/vierge.webp?v=c2adc3a9");
   color:var(--ico-glyph,#e9ecdf)
 }
@@ -593,9 +583,7 @@ html[data-icons="gel"] .repo-svg[data-i] {
   mask:url("icons/skeuo/aqua/vierge.gris.webp") center/contain no-repeat;
   box-sizing:border-box;
   padding:calc(var(--rs,1.15em) * 0.24);
-  overflow:visible
-}
-html[data-icons="gel"] .repo-svg[data-i]:not(#imp) {
+  overflow:visible;
   background:url("icons/skeuo/aqua/vierge.gris.webp") center/contain no-repeat,radial-gradient(43% 43% at 50% calc(50% - 1px),var(--aq-gel,#2473db) 0 calc(97% - 1px),transparent calc(100% - 1px)) center/contain no-repeat;
   background-color:transparent;
   background-blend-mode:overlay,normal;

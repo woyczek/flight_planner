@@ -941,9 +941,7 @@ header.mc-header:has(.mc-header-tools)>p:not(.mc-family-description) {
   opacity: 1
 }
 .mc-net-pop .nt-help {
-  color: var(--muted)
-}
-.mc-net-pop .nt-help:not(#imp) {
+  color: var(--muted);
   border-color: var(--line)
 }
 .mc-net-pop .nt-status {
@@ -1262,9 +1260,7 @@ header.mc-header:has(.mc-report-tools)>p:not(.mc-family-description) {
   line-height: 1;
   font-weight: 700;
   cursor: pointer;
-  vertical-align: 3px
-}
-.mc-form h2 .mc-head-add:not(#imp) {
+  vertical-align: 3px;
   padding: 0 0 2px
 }
 .mc-form h2 .mc-head-add:hover {
@@ -1548,7 +1544,7 @@ html[data-skeuo] :is(.mc-menu>summary, .mc-switch>summary, .mc-header-tools butt
   filter: brightness(1.12)
 }
 /* fenêtres surgissantes : surface du design, entrées en texte lisible (et non en boutons sombres) */
-html[data-skeuo] :is(.mc-pop, .mc-switch-pop, .mc-import-pop):not(#imp) {
+html[data-skeuo] :is(.mc-pop, .mc-switch-pop, .mc-import-pop) {
   color: var(--sk-pop-ink);
   border: 1px solid var(--sk-pop-bd);
   box-shadow: 0 12px 28px rgba(0, 0, 0, .45)
@@ -1563,7 +1559,7 @@ html[data-skeuo] :is(.mc-pop, .mc-switch-pop, .mc-import-pop) :is(button, a.mc-b
 html[data-skeuo] :is(.mc-pop, .mc-switch-pop, .mc-import-pop) :is(button, a):hover:not(#imp) {
   background: var(--sk-pop-hover)
 }
-html[data-skeuo] :is(.mc-pop, .mc-switch-pop, .mc-import-pop) :is(label, small, .small, .mc-status, .mc-ledger-info, .nt-status, p, span:not([class*="repo-icon"])):not(#imp) {
+html[data-skeuo] :is(.mc-pop, .mc-switch-pop, .mc-import-pop) :is(label, small, .small, .mc-status, .mc-ledger-info, .nt-status, p, span:not([class*="repo-icon"])) {
   color: var(--sk-pop-ink);
   opacity: 1
 }
@@ -1575,7 +1571,7 @@ html[data-skeuo] :is(.mc-pop, .mc-switch-pop, .mc-import-pop) button.primary:not
   color: var(--sk-acc-fg)
 }
 /* cartes et encadrés des blocs */
-html[data-skeuo] .repo-block :is(.mc-kpi>div, .mc-item, .mc-tools, .mc-summary):not(#imp) {
+html[data-skeuo] .repo-block :is(.mc-kpi>div, .mc-item, .mc-tools, .mc-summary) {
   background: var(--sk-card);
   color: var(--sk-card-ink);
   border: 1px solid var(--sk-card-bd);
@@ -1588,7 +1584,7 @@ html[data-skeuo] .repo-block :is(.mc-kpi>div, .mc-item, .mc-tools, .mc-summary) 
   opacity: .85
 }
 /* aperçu du rapport : feuille de papier (le rapport garde ses couleurs d'impression, lisibles sur papier) */
-html[data-skeuo] .repo-block .report:not(#imp) {
+html[data-skeuo] .repo-block .report {
   background: var(--sk-paper);
   color: #1d1a14;
   border: 1px solid rgba(0, 0, 0, .25);

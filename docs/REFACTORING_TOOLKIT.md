@@ -229,8 +229,18 @@ Suivi des assets (cahier des charges, consignes de génération, intégration) :
     pages historiques (`gaar_i18n.js`, `hems_i18n.js` — chargées par aucune page, seulement citées en commentaire),
     `aircraft_directory.js`, et trois phrases mortes de `reporting_i18n.js` (période « partagée avec HEMS / GAAR »)
     retirées.
-- **Suivant** : 7 au fil des assets livrés ([PROMPTS_ASSETS_PHASE2.md](PROMPTS_ASSETS_PHASE2.md)) ; fusion des règles
-  scindées par la conversion quand le banc montre que le renfort est inutile (lisibilité).
+- **Renforts inutiles fusionnés** (`:not(#imp)`, 2 octobre 2026) : `tools/imp_audit.html` retire, dans le CSSOM, le
+  renfort de chaque règle renforcée (même place dans la feuille), sur les 48 pages de l'arborescence × 5 designs × 2
+  tons, et relève avant / après les propriétés qu'elle déclare sur les éléments qu'elle vise (pseudo-éléments compris).
+  Inutile = vue quelque part, jamais d'écart, et aucune règle à état (`:hover`, `:focus`, `[open]`…) ne se dispute ses
+  propriétés sur ses éléments (état non relevé : renfort gardé). `tools/merge_imp_rules.py` (JSON de l'audit) rend sa
+  déclaration à la règle d'origine quand elle la suit (règle reconstituée), sinon retire le renfort du sélecteur :
+  113 règles (43 fusionnées, 70 renforts retirés) dans `designs_skeuo.css`, `block_icons.css`, `repository_nav.css`,
+  `core.css`, `designs.css` ; 187 renforts restent (écart relevé, règle à état, ou règle jamais vue). Banc (témoins,
+  référence prise juste avant) : aucun écart. Les règles posées par les scripts (garde de `kit.js`) ne sont pas
+  concernées (sources en `!important`).
+- **Suivant** : 7 au fil des assets livrés ([PROMPTS_ASSETS_PHASE2.md](PROMPTS_ASSETS_PHASE2.md)) ; renforts restants
+  au cas par cas (spécificité d'un sélecteur plus précis plutôt qu'un id fictif), si la lisibilité le demande.
 
 ## Utiliser la boîte à outils (D)
 

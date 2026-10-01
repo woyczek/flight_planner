@@ -45,10 +45,7 @@
 .repo-menu-button {
   height: 32px;
   cursor: pointer;
-  font: 13px/1 Inter, system-ui, Segoe UI, Arial, sans-serif
-}
-.repo-language-button:not(#imp),
-.repo-menu-button:not(#imp) {
+  font: 13px/1 Inter, system-ui, Segoe UI, Arial, sans-serif;
   border: 1px solid color-mix(in srgb, var(--repo-bar-text) 25%, transparent);
   border-radius: 7px;
   background: transparent;
@@ -216,9 +213,7 @@
 }
 .repo-block-heading {
   align-items: center;
-  gap: 8px
-}
-.repo-block-heading:not(#imp) {
+  gap: 8px;
   display: flex
 }
 .repo-block-heading h2 {
@@ -315,15 +310,13 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  flex: 0 0 27px
-}
-.repo-language-flag:not(#imp) {
+  flex: 0 0 27px;
   display: inline-flex;
   width: 27px;
   height: 18px
 }
-.repo-language-flag svg:not(#imp),
-.repo-language-menu svg:not(#imp) {
+.repo-language-flag svg,
+.repo-language-menu svg {
   display: block;
   width: 27px;
   height: 18px;
@@ -497,9 +490,7 @@ html[data-design="console"]:not([data-sidenav="off"]) {
   border: 1px solid color-mix(in srgb, var(--repo-bar-text) 30%, transparent);
   border-radius: 7px;
   background: color-mix(in srgb, var(--repo-bar-text) 10%, transparent);
-  font: 600 12.5px/1.2 Inter, system-ui, Segoe UI, Arial, sans-serif
-}
-.repo-settings-button:not(#imp) {
+  font: 600 12.5px/1.2 Inter, system-ui, Segoe UI, Arial, sans-serif;
   color: inherit;
   text-decoration: none
 }
@@ -570,8 +561,8 @@ a.repo-sidenav-brand:focus-visible .repo-sidenav-logo {
 }
 /* barres fixées en bas des pages (planificateur : .status-bar ; Landing : .analysis-dock) : décalées de la largeur de la
    barre latérale quand elle est affichée (sinon leur texte passe dessous) */
-html[data-sidenav="on"] :is(.status-bar, .analysis-dock):not(#imp),
-html[data-design="console"]:not([data-sidenav="off"]) :is(.status-bar, .analysis-dock):not(#imp) {
+html[data-sidenav="on"] :is(.status-bar, .analysis-dock),
+html[data-design="console"]:not([data-sidenav="off"]) :is(.status-bar, .analysis-dock) {
   left: var(--repo-sidenav-w)
 }
 
@@ -639,11 +630,11 @@ html[data-cpco="off"] .cpco-only {
 }
 /* règles propres aux designs : hors couche (au-dessus de l'application) */
 /* jeux skeuomorphes (icônes de 50 px) : entrées resserrées, pour tenir dans une fenêtre de 800 px */
-html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-item:not(#imp) {
+html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-item {
   padding: 5px 2px;
   gap: 2px
 }
-html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-brand:not(#imp) {
+html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-brand {
   min-height: 68px
 }
 html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-sep:not(.repo-sidenav-bottom):not(#imp) {
