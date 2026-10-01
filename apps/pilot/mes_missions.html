@@ -43,7 +43,8 @@
   /* Cabinet : dossier ouvert (pages : zones claires de mission-open.webp) */
   .pm-book{position:relative;width:var(--pm-bw,min(1064px,100%));aspect-ratio:1400/842;margin:0 0 12px auto;background:url("../../shared/deco/cabinet/mission-open.webp") center/contain no-repeat;filter:drop-shadow(0 10px 18px rgba(0,0,0,.45))}
   .pm-page{position:absolute;top:8.5%;bottom:8%;overflow:auto;padding:1.6% 2.4% 3%;font:12.5px/1.5 "Courier Prime","Courier New",Courier,monospace;color:#2b2112;scrollbar-width:thin}
-  .pm-left{left:5.6%;right:54.4%}.pm-right{left:53.6%;right:5.3%}
+  .pm-left{left:5.6%;right:54.4%}.pm-right{left:53.6%;right:5.3%}.pm-page{cursor:pointer}
+  .pm-page:has(> [data-part="title"]){overflow:hidden} /* page 1 : le tampon déborde de l'étiquette, sans barre de défilement */
   .pm-page::after{content:attr(data-folio);position:sticky;display:block;bottom:0;text-align:center;font-size:11px;opacity:.55;margin-top:8px}
   .pm-page h3{margin:0 0 10px;font-size:17px;letter-spacing:.02em;border-bottom:1px solid rgba(43,33,18,.35);padding-bottom:6px}
   .pm-page h4{margin:12px 0 6px;font-size:13.5px;text-transform:uppercase;letter-spacing:.08em}
@@ -69,7 +70,8 @@
   .pm-page .pm-maps{grid-template-columns:repeat(2,1fr);gap:16px 14px;padding:6px}
   .pm-page .pm-maps figure{transform:rotate(var(--tilt,0deg));background:#fbf7ec;padding:6px 6px 4px;box-shadow:0 3px 8px rgba(0,0,0,.35)}
   .pm-corner{position:absolute;bottom:4%;width:6.5%;aspect-ratio:1;border:0;padding:0;background:url("../../shared/deco/cabinet/page-corner.webp") right bottom/contain no-repeat;cursor:pointer;z-index:2}
-  .pm-corner:hover{filter:brightness(1.06) drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+  .pm-corner{filter:brightness(.86) contrast(1.06) saturate(1.1)} /* accordé au papier patiné des feuilles */
+  .pm-corner:hover{filter:brightness(.94) contrast(1.06) saturate(1.1) drop-shadow(0 2px 3px rgba(0,0,0,.35))}
   .pm-next{right:3.43%}.pm-prev{left:3.57%;transform:scaleX(-1)}
   .pm-leaf{position:absolute;top:4.75%;bottom:4%;left:51.8%;right:3.43%;z-index:3;background:url("../../shared/deco/cabinet/mission-page.webp") center/100% 100%;transform-origin:left center;pointer-events:none;box-shadow:0 0 18px rgba(0,0,0,.25)}
   .pm-leaf.back{left:3.57%;right:52.5%;transform-origin:right center}
@@ -443,8 +445,12 @@
         page.append(child);
         if (right.scrollHeight > right.clientHeight + 2 && page.children.length > 1) {
           child.remove();
-          const carry = /^H[34]$/.test(page.lastElementChild?.tagName || '') ? [page.lastElementChild] : [];
-          carry.forEach(c => c.remove());
+          const carry = [];
+          while (/^H[3-6]$/.test(page.lastElementChild?.tagName || '') && page.children.length > 1) {
+            const h = page.lastElementChild;
+            h.remove();
+            carry.unshift(h);
+          }
           out.push(page);
           page = el.cloneNode(false);
           right.replaceChildren(page);
@@ -492,6 +498,13 @@
     next.onclick = () => turn(1);
     // refermer : bouton sous le dossier, ou coin de la 2de de couverture (première double page)
     prev.onclick = () => at === 0 ? host.querySelector('[data-close-book]')?.click() : turn(-1);
+    // un clic sur une page fait comme son coin (liens, boutons et sélections de texte gardent leur effet)
+    const pageClick = corner => e => {
+      if (e.target.closest('a, button, input, select, textarea, summary') || String(getSelection?.() || '')) return;
+      if (!corner.hidden) corner.click();
+    };
+    right.onclick = pageClick(next);
+    left.onclick = pageClick(prev);
     draw();
   }
 
