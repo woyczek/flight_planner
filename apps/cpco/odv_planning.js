@@ -51,11 +51,23 @@
     basis = null, // données du calcul : classeur, sinon déclarations (declWeek)
     flights = [],
     selected = null;
+  // affichage de la grille (masquer les vides, couleur, rôle, simulateur) : gardé dans ce navigateur (odvPlanningView:v1)
+  const VIEW_KEY = 'odvPlanningView:v1';
   const view = {
     hideEmpty: false,
     color: '',
     role: '',
     sim: ''
+  };
+  try {
+    Object.assign(view, JSON.parse(localStorage.getItem(VIEW_KEY) || '{}') || {});
+  } catch {
+    /* stockage refusé ou illisible : valeurs par défaut */ }
+  const saveView = () => {
+    try {
+      localStorage.setItem(VIEW_KEY, JSON.stringify(view));
+    } catch {
+      /* stockage refusé */ }
   };
   const tables = {};
 
@@ -391,6 +403,10 @@
     const colors = [...new Set(data.pilotes.map(p => p.couleur).filter(Boolean))];
     const roles = [...new Set(Object.values(data.flotte).flatMap(p => p.roles))].sort();
     const sims = [...new Set(Object.values(data.flotte).flatMap(p => p.sims))].sort();
+    // filtre gardé dont la valeur n'existe plus (autre classeur, autres déclarations) : levé
+    if (view.color && !colors.includes(view.color)) view.color = '';
+    if (view.role && !roles.includes(view.role)) view.role = '';
+    if (view.sim && !sims.includes(view.sim)) view.sim = '';
     const opt = (v, l, cur) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(l)}</option>`;
     host.innerHTML = `<label><input type="checkbox" id="odvHideEmpty"${view.hideEmpty ? ' checked' : ''}> Masquer les grilles vides</label>
       ${colors.length ? `<label>Couleur du trigramme <select id="odvColor">${opt('', 'toutes', view.color)}${colors.map(c => opt(c, `#${c} (${data.pilotes.filter(p => p.couleur === c).length})`, view.color)).join('')}</select></label>` : ''}
@@ -398,18 +414,22 @@
       <label>Simulateur <select id="odvSimF">${opt('', 'tous', view.sim)}${sims.map(s => opt(s, s, view.sim)).join('')}</select></label>`;
     $('odvHideEmpty').onchange = e => {
       view.hideEmpty = e.target.checked;
+      saveView();
       renderGrid();
     };
     if ($('odvColor')) $('odvColor').onchange = e => {
       view.color = e.target.value;
+      saveView();
       renderGrid();
     };
     $('odvRole').onchange = e => {
       view.role = e.target.value;
+      saveView();
       renderGrid();
     };
     $('odvSimF').onchange = e => {
       view.sim = e.target.value;
+      saveView();
       renderGrid();
     };
   }
