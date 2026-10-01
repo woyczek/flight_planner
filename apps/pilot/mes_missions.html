@@ -26,6 +26,14 @@
   .pm-label small{letter-spacing:.3em;font-weight:800;color:#b3261e}.pm-label b{font-size:22px;letter-spacing:.06em}.pm-label span{font-size:13px}
   .pm-label dl{display:grid;grid-template-columns:auto auto;gap:2px 12px;margin:8px 0 0;font-size:12.5px;text-align:left}.pm-label dt{opacity:.7}.pm-label dd{margin:0;font-weight:600}
   .pm-open{margin:0}
+  /* Cabinet : dossier ficelé et scellé (mission non ouverte) ; ouvrir brise le sceau */
+  html[data-design="cabinet"] .pm-cover{position:relative;width:min(380px,92%);aspect-ratio:720/1015;margin:0 auto;padding:17% 0 0;border:0;align-content:start;background:url("../../shared/deco/cabinet/mission-cover.webp") center/contain no-repeat;filter:drop-shadow(0 10px 16px rgba(0,0,0,.45))}
+  html[data-design="cabinet"] .pm-cover::after{content:"";position:absolute;inset:0;background:url("../../shared/deco/cabinet/mission-seal.webp") center/100% 100% no-repeat;pointer-events:none;transition:opacity .38s ease-in,transform .38s ease-in}
+  html[data-design="cabinet"] .pm-cover.open::after{opacity:0;transform:scale(1.18) rotate(4deg)}
+  html[data-design="cabinet"] .pm-label{position:relative;z-index:1;min-width:0;width:72%;padding:12px 16px;background:#f4ead0;color:#2b2112;border:1px solid rgba(60,40,20,.35);box-shadow:0 1px 3px rgba(0,0,0,.3);transform:rotate(-1.2deg);font-family:Georgia,"Times New Roman",serif}
+  html[data-design="cabinet"] .pm-label small{color:#9c1c14}
+  html[data-design="cabinet"] .pm-open{position:absolute;z-index:1;left:0;right:0;bottom:7%;text-align:center}
+  @media (prefers-reduced-motion:reduce){html[data-design="cabinet"] .pm-cover::after{transition:none}}
   .pm-week{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}.pm-week input{width:auto}.pm-week button{min-width:2.2em}
   .pm-types-sum{margin:0 0 8px;font-weight:600}
   .pm-sims{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 14px}
@@ -74,7 +82,7 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=9839b88b"></script>
-<script src="../../shared/repository_nav.js?v=ffff026c"></script>
+<script src="../../shared/repository_nav.js?v=5b778347"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=90cadad7"></script>
@@ -169,7 +177,13 @@
       <div class="pm-label"><small>CONFIDENTIEL</small><b>${esc(a.mission)}</b><span>${esc(a.title || '')}</span>
       <dl><dt>Appareil</dt><dd>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' ') || '—')}</dd><dt>Indicatif</dt><dd>${esc(a.callsign || '—')}</dd><dt>Décollage</dt><dd>${esc(a.alert ? 'astreinte ' + hhmm(Date.parse(a.alert.ready_at_utc)) : fmt(A.when(a)))}</dd></dl></div>
       <p class="pm-open"><button type="button" class="primary" data-open>Ouvrir la mission</button></p></div>`;
-    const open = () => show(a, { open: true });
+    // ouverture : le sceau se brise (Cabinet), puis la mission s'affiche
+    const open = () => {
+      const cv = $('pmDetail').querySelector('.pm-cover');
+      cv.classList.add('open');
+      const anim = getComputedStyle(cv, '::after').transitionDuration !== '0s' && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+      setTimeout(() => show(a, { open: true }), anim ? 380 : 0);
+    };
     $('pmDetail').querySelector('.pm-cover').onclick = open;
     $('pmDetail').querySelector('.pm-cover').onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } };
   }
