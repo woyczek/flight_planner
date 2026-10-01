@@ -42,8 +42,8 @@
   @media (prefers-reduced-motion:reduce){html[data-design="cabinet"] .pm-cover::after{transition:none}}
   /* Cabinet : dossier ouvert (pages : zones claires de mission-open.webp) */
   .pm-book{position:relative;width:var(--pm-bw,min(1064px,100%));aspect-ratio:1400/842;margin:0 0 12px auto;background:url("../../shared/deco/cabinet/mission-open.webp") center/contain no-repeat;filter:drop-shadow(0 10px 18px rgba(0,0,0,.45))}
-  .pm-page{position:absolute;top:10.5%;bottom:10%;overflow:auto;padding:1.6% 2.4% 3%;font:12.5px/1.5 "Courier Prime","Courier New",Courier,monospace;color:#2b2112;scrollbar-width:thin}
-  .pm-left{left:6.5%;right:54.5%}.pm-left.pm-inside{cursor:pointer}.pm-right{left:54.6%;right:6.6%}
+  .pm-page{position:absolute;top:8.5%;bottom:8%;overflow:auto;padding:1.6% 2.4% 3%;font:12.5px/1.5 "Courier Prime","Courier New",Courier,monospace;color:#2b2112;scrollbar-width:thin}
+  .pm-left{left:5.6%;right:54.4%}.pm-right{left:53.6%;right:5.3%}
   .pm-page::after{content:attr(data-folio);position:sticky;display:block;bottom:0;text-align:center;font-size:11px;opacity:.55;margin-top:8px}
   .pm-page h3{margin:0 0 10px;font-size:17px;letter-spacing:.02em;border-bottom:1px solid rgba(43,33,18,.35);padding-bottom:6px}
   .pm-page h4{margin:12px 0 6px;font-size:13.5px;text-transform:uppercase;letter-spacing:.08em}
@@ -68,11 +68,11 @@
   .pm-page .pm-route{grid-template-columns:1fr}
   .pm-page .pm-maps{grid-template-columns:repeat(2,1fr);gap:16px 14px;padding:6px}
   .pm-page .pm-maps figure{transform:rotate(var(--tilt,0deg));background:#fbf7ec;padding:6px 6px 4px;box-shadow:0 3px 8px rgba(0,0,0,.35)}
-  .pm-corner{position:absolute;bottom:10%;width:7.5%;aspect-ratio:1;border:0;padding:0;background:url("../../shared/deco/cabinet/page-corner.webp") right bottom/contain no-repeat;cursor:pointer;z-index:2}
+  .pm-corner{position:absolute;bottom:4%;width:6.5%;aspect-ratio:1;border:0;padding:0;background:url("../../shared/deco/cabinet/page-corner.webp") right bottom/contain no-repeat;cursor:pointer;z-index:2}
   .pm-corner:hover{filter:brightness(1.06) drop-shadow(0 2px 3px rgba(0,0,0,.35))}
-  .pm-next{right:6.6%}.pm-prev{left:6.5%;transform:scaleX(-1)}
-  .pm-leaf{position:absolute;top:10.5%;bottom:10%;left:54.6%;right:6.6%;z-index:3;background:url("../../shared/deco/cabinet/mission-page.webp") center/100% 100%;transform-origin:left center;pointer-events:none;box-shadow:0 0 18px rgba(0,0,0,.25)}
-  .pm-leaf.back{left:6.5%;right:54.5%;transform-origin:right center}
+  .pm-next{right:3.43%}.pm-prev{left:3.57%;transform:scaleX(-1)}
+  .pm-leaf{position:absolute;top:4.75%;bottom:4%;left:51.8%;right:3.43%;z-index:3;background:url("../../shared/deco/cabinet/mission-page.webp") center/100% 100%;transform-origin:left center;pointer-events:none;box-shadow:0 0 18px rgba(0,0,0,.25)}
+  .pm-leaf.back{left:3.57%;right:52.5%;transform-origin:right center}
   .pm-leaf.fwd{animation:pmTurn .52s ease-in-out forwards}.pm-leaf.back{animation:pmTurnBack .52s ease-in-out forwards}
   @keyframes pmTurn{from{transform:perspective(1800px) rotateY(0)}to{transform:perspective(1800px) rotateY(-180deg)}}
   @keyframes pmTurnBack{from{transform:perspective(1800px) rotateY(0)}to{transform:perspective(1800px) rotateY(180deg)}}
@@ -215,36 +215,53 @@
    *  tampon « CONFIDENTIEL » posé par-dessus, à place fixe. */
   const labelHtml = a => `<div class="pm-label"><small aria-label="Confidentiel">CONFIDENTIEL</small><b>${esc(a.mission)}</b><span>${esc(a.title || '')}</span>
       <dl><dt>Appareil</dt><dd>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' ') || '—')}</dd><dt>Indicatif</dt><dd>${esc(a.callsign || '—')}</dd><dt>Décollage</dt><dd>${esc(a.alert ? 'astreinte ' + hhmm(Date.parse(a.alert.ready_at_utc)) : fmt(A.when(a)))}</dd></dl></div>`;
-  /** Couverture d'une mission pas encore ouverte (scellée) ; l'ouvrir la marque lue (pastille du menu, pli cacheté). */
-  function cover(a, { scroll = true } = {}) {
-    const sealed = !A.isRead(a);
-    $('pmMission').hidden = false;
-    $('pmDetail').innerHTML = `<div class="pm-cover${sealed ? ' sealed' : ''}" role="button" tabindex="0" title="${sealed ? 'Ouvrir la mission (briser le sceau)' : 'Ouvrir le dossier'}">${labelHtml(a)}
-      <p class="pm-open"><button type="button" class="primary" data-open>${sealed ? 'Ouvrir la mission' : 'Ouvrir le dossier'}</button></p></div>`;
-    // ouverture : le sceau se brise (Cabinet, mission scellée), puis la mission s'affiche
+  /** Dossier fermé ou ouvert, sans rien redessiner : la couverture (scellée si la mission n'est pas lue, sinon simple)
+   *  prend la place du contenu ; la barre d'actions reste (grisée tant que la mission est scellée) : pas de saut de mise
+   *  en page. Ouvrir une mission scellée brise le sceau (Cabinet) et la marque lue (pastille du menu, pli cacheté). */
+  function setClosed(a, closed) {
+    const host = $('pmDetail'),
+      content = host.querySelector('.pm-content'),
+      actions = host.querySelector('[data-part="actions"]');
+    host.querySelector('.pm-cover')?.remove();
+    const sealed = closed && !A.isRead(a);
+    actions?.querySelectorAll('button').forEach(b => {
+      b.disabled = sealed || b.dataset.off === '1' || (closed && b.matches('[data-close-book]'));
+    });
+    if (content) content.hidden = closed;
+    if (!closed) return;
+    const cv = document.createElement('div');
+    cv.className = `pm-cover${sealed ? ' sealed' : ''}`;
+    cv.tabIndex = 0;
+    cv.setAttribute('role', 'button');
+    cv.title = sealed ? 'Ouvrir la mission (briser le sceau)' : 'Ouvrir le dossier';
+    cv.innerHTML = `${labelHtml(a)}<p class="pm-open"><button type="button" class="primary" data-open>${sealed ? 'Ouvrir la mission' : 'Ouvrir le dossier'}</button></p>`;
+    host.insertBefore(cv, actions || null);
     const open = () => {
-      const cv = $('pmDetail').querySelector('.pm-cover');
       cv.classList.add('open');
       const anim = sealed && document.documentElement.dataset.design === 'cabinet' && !matchMedia('(prefers-reduced-motion: reduce)').matches;
-      setTimeout(() => show(a, { open: true }), anim ? 380 : 0);
+      setTimeout(() => {
+        if (sealed) {
+          A.markRead(a);
+          document.querySelectorAll('#pmList tr.pm-unread').forEach(tr => { if (list[+tr.dataset.i] === a) tr.classList.remove('pm-unread'); });
+        }
+        setClosed(a, false);
+      }, anim ? 380 : 0);
     };
-    $('pmDetail').querySelector('.pm-cover').onclick = open;
-    $('pmDetail').querySelector('.pm-cover').onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } };
-    if (scroll) $('pmMission').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    cv.onclick = open;
+    cv.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } };
   }
   /** Canal « develop » (réglage de mise à jour de la suite) : outils de test (resceller une mission). */
   const isDevelop = () => {
     try { return (window.SuiteUpdate?.settings?.() || JSON.parse(localStorage.getItem('suiteUpdate:v1') || '{}')).channel === 'develop'; } catch { return false; }
   };
+  /** Affiche une mission : chargée (yaml, résumé .md, journal) puis dossier fermé et scellé si elle n'est pas lue,
+   *  ouvert sinon (ou si open) ; défilement jusqu'au bloc. */
   async function show(a, { open = false } = {}) {
     current = a;
     document.querySelectorAll('#pmList tr').forEach(tr => tr.classList.toggle('pm-current', list[+tr.dataset.i] === a));
-    if (!open && !A.isRead(a)) return cover(a);
-    A.markRead(a);
     $('pmMission').hidden = false;
     $('pmDetail').innerHTML = '<p class="pm-empty">Chargement de la mission…</p>';
-    document.querySelectorAll('#pmList tr').forEach(tr => tr.classList.toggle('pm-current', list[+tr.dataset.i] === a));
-    document.querySelectorAll('#pmList tr.pm-unread').forEach(tr => { if (list[+tr.dataset.i] === a) tr.classList.remove('pm-unread'); });
+    $('pmMission').scrollIntoView({ behavior: 'smooth', block: 'start' });
     mission = null;
     try {
       const r = await fetch(fileUrl(a, a.files?.yaml || `mission${a.mission}.yaml`), { cache: 'no-store' });
@@ -258,7 +275,8 @@
     let log = [];
     try { log = (await A.readLog()).filter(e => e.mission === a.mission); } catch { /* pas de journal */ }
     render(a, mission || {}, md, log);
-    $('pmMission').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (open && !A.isRead(a)) A.markRead(a);
+    setClosed(a, !open && !A.isRead(a));
   }
 
   /** Points de la route dans l'ordre (origine, points tournants, rendez-vous, cible, destination) ; route_order si présent. */
@@ -357,10 +375,10 @@
         ${sec('Résumé', summary)}
       </div>
       <div class="pm-actions" data-part="actions">
-        <button type="button" class="primary" data-go="maps" data-icon="map" ${y.mission ? '' : 'disabled'}>Ouvrir dans les Cartes de vol</button>
-        <button type="button" class="secondary" data-go="fuel" data-icon="fuel" ${pts.length > 1 ? '' : 'disabled'}>Carburant (planificateur)</button>
-        <button type="button" class="secondary" data-go="cr" data-icon="clipboard" ${y.mission ? '' : 'disabled'}>Créer le CR</button>
-        <button type="button" class="ghost" data-close-book hidden>Refermer le dossier</button>
+        <button type="button" class="primary" data-go="maps" data-icon="map" ${y.mission ? '' : 'disabled data-off="1"'}>Ouvrir dans les Cartes de vol</button>
+        <button type="button" class="secondary" data-go="fuel" data-icon="fuel" ${pts.length > 1 ? '' : 'disabled data-off="1"'}>Carburant (planificateur)</button>
+        <button type="button" class="secondary" data-go="cr" data-icon="clipboard" ${y.mission ? '' : 'disabled data-off="1"'}>Créer le CR</button>
+        <button type="button" class="ghost" data-close-book>Refermer le dossier</button>
         ${isDevelop() ? '<button type="button" class="ghost" data-reseal title="Canal develop : remettre la mission sous scellés (non lue)">Resceller</button>' : ''}
       </div>
       <div data-part="details">
@@ -382,10 +400,15 @@
       </div>`;
     $('pmDetail').querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go, a, y, pts, dist));
     const reseal = $('pmDetail').querySelector('[data-reseal]');
-    if (reseal) reseal.onclick = () => { A.markUnread(a); load(); cover(a); };
+    if (reseal) reseal.onclick = () => { A.markUnread(a); load(); setClosed(a, true); };
     const close = $('pmDetail').querySelector('[data-close-book]');
-    if (close) close.onclick = () => cover(a, { scroll: false }); // dossier refermé, non rescellé (mission lue)
+    if (close) close.onclick = () => setClosed(a, true); // dossier refermé, non rescellé (mission lue)
     bookify();
+    // contenu (dossier ou présentation ordinaire) dans un conteneur : masqué quand le dossier est fermé
+    const host = $('pmDetail'), wrap = document.createElement('div');
+    wrap.className = 'pm-content';
+    wrap.append(...[...host.children].filter(c => !c.matches('[data-part="actions"]')));
+    host.prepend(wrap);
     window.AppFramework?.refresh?.();
   }
 
@@ -446,11 +469,11 @@
     const draw = () => {
       left.replaceChildren(...(pages[at] ? [pages[at]] : []));
       right.replaceChildren(...(pages[at + 1] ? [pages[at + 1]] : []));
-      left.classList.toggle('pm-inside', !pages[at]); // intérieur de la couverture (clic : refermer)
-      left.title = pages[at] ? '' : 'Refermer le dossier';
+      left.classList.toggle('pm-inside', !pages[at]); // intérieur de la couverture
       left.dataset.folio = pages[at] ? at : '';
       right.dataset.folio = pages[at + 1] ? at + 1 : '';
-      prev.hidden = at === 0;
+      prev.hidden = false; // à la première double page : refermer le dossier
+      prev.title = prev.ariaLabel = at === 0 ? 'Refermer le dossier' : 'Page précédente';
       next.hidden = at + 2 >= pages.length;
       left.scrollTop = right.scrollTop = 0;
     };
@@ -465,11 +488,8 @@
     };
     prev.onclick = () => turn(-1);
     next.onclick = () => turn(1);
-    // refermer : bouton sous le dossier, ou clic sur l'intérieur de la couverture
-    const closeBtn = host.querySelector('[data-close-book]');
-    if (closeBtn) closeBtn.hidden = false;
-    left.onclick = () => { if (!pages[at]) closeBtn?.click(); };
-    left.title = '';
+    // refermer : bouton sous le dossier, ou coin de la 2de de couverture (première double page)
+    prev.onclick = () => at === 0 ? host.querySelector('[data-close-book]')?.click() : turn(-1);
     draw();
   }
 
