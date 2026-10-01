@@ -287,15 +287,6 @@
   }
 
   // --- grille
-  const CAT_RANK = {
-    dispo: 0,
-    atc: 1,
-    suivi: 2,
-    occupe: 3,
-    hors_legende: 4,
-    inconnu: 5,
-    indispo: 6
-  };
 
   function renderGridFilters() {
     const host = $('odvGridFilters');
@@ -359,47 +350,22 @@
         });
         return row;
       });
-    const cols = [{
-      key: 'ligne',
-      label: 'Ligne',
-      type: 'number'
-    }, {
-      key: 'pilote',
-      label: 'Pilote',
-      title: 'Par pilote : ligne du classeur ODV, puis sa déclaration (Mes missions)',
-      html: (v, r) => tri(v, r.couleur)
-    }, {
-      key: 'dispo',
-      label: 'Dispo',
-      type: 'number',
-      format: (v, r) => `${v}${r.atc ? ` + ${r.atc} ctrl` : ''}`
-    }];
-    for (let j = 0; j < 7; j++)
-      for (let k = 0; k < 3; k++) cols.push({
-        key: `s${j}${k}`,
-        label: `${C.DAYS[j].slice(0, 2)} ${SHORT[k]}`,
-        // deux lignes par pilote : code du classeur (ODV), puis déclaration du pilote (Mes missions) — encadré rouge :
-        // disponible et non affecté ; n° de mission : affecté ; clic sur la déclaration : affecter sur ce créneau
-        html: (v, r) => `<span class="odv-pair">${codeCell(v)}${window.OdvAssign ? window.OdvAssign.line(r.pilote, j, k, v, codeCell) : ''}</span>`,
-        sortValue: r => CAT_RANK[r[`s${j}${k}`].categorie]
-      });
-    // colonnes longues coupées sur une ligne (texte complet au survol) : la grille reste compacte
-    const cut = v => `<span class="odv-cut" title="${esc(v)}">${esc(v || '—')}</span>`;
-    if (!data.virtuel) cols.push({ // rôles et simulateurs : feuille FLOTTE du classeur (sans classeur : colonnes vides)
-      key: 'roles',
-      label: 'Rôles (FLOTTE)',
-      html: cut
-    }, {
-      key: 'sims',
-      label: 'Simulateurs',
-      html: cut
-    });
-    table('odvGrid', {
-      columns: cols,
-      defaultSortKey: 'ligne',
-      emptyText: 'Aucun pilote ne correspond aux filtres.',
-      storageKey: 'sortedTableWidths:odvPlanning#grid'
-    }, rows);
+    // grille dense (pas de tableau du framework : ni tri, ni largeurs variables) : en-tête sur deux lignes (jours, puis
+    // M / A / S), colonnes étroites et fixes ; par pilote, deux lignes dans chaque case : code du classeur (ODV), puis
+    // déclaration du pilote (Mes missions) — encadré rouge : disponible et non affecté ; n° de mission : affecté ; clic
+    // sur la déclaration : affecter sur ce créneau. Rôles et simulateurs (feuille FLOTTE) : infobulle du pilote.
+    const withDecl = !!window.OdvAssign;
+    const head = `<thead><tr><th rowspan="2" class="odv-d-pil">Pilote</th><th rowspan="2" class="odv-d-n" title="Créneaux disponibles (+ contrôle)">Dispo</th>${C.DAYS.map((d, j) => `<th colspan="3" class="odv-d-day">${esc(d.slice(0, 3))} ${esc(dateFr(data.dates[j]))}</th>`).join('')}</tr>
+      <tr>${C.DAYS.map(() => SHORT.map((s, k) => `<th class="odv-d-slot" title="${esc((C.SLOTS || [])[k] || s)} (${esc(`${String(settings.hours[k][0]).padStart(2, '0')}-${String(settings.hours[k][1]).padStart(2, '0')}z`)})">${s}</th>`).join('')).join('')}</tr></thead>`;
+    const body = rows.map(r => {
+      const tip = [r.roles && `Rôles : ${r.roles}`, r.sims && `Simulateurs : ${r.sims}`, `Ligne ${r.ligne} du classeur`].filter(Boolean).join('\n');
+      return `<tr><th class="odv-d-pil" title="${esc(tip)}">${tri(r.pilote, r.couleur, false)}</th><td class="odv-d-n">${r.dispo}${r.atc ? `<small>+${r.atc}</small>` : ''}</td>${C.DAYS.map((_, j) => [0, 1, 2].map(k => {
+        const v = r[`s${j}${k}`];
+        return `<td class="odv-d-cell${k === 2 ? ' odv-d-end' : ''}">${codeCell(v)}${withDecl ? window.OdvAssign.line(r.pilote, j, k, v, codeCell) : ''}</td>`;
+      }).join('')).join('')}</tr>`;
+    }).join('');
+    delete tables.odvGrid;
+    $('odvGrid').innerHTML = rows.length ? `<div class="odv-dense-wrap"><table class="odv-dense">${head}<tbody>${body}</tbody></table></div><p class="mut odv-d-note">${withDecl ? 'Par pilote : code du classeur, puis sa déclaration (encadré rouge : disponible et non affecté ; clic : affecter). ' : ''}Rôles et simulateurs au survol du trigramme.</p>` : '<p class="odv-empty">Aucun pilote ne correspond aux filtres.</p>';
   }
 
   // --- créneaux communs
