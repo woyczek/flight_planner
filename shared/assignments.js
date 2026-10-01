@@ -620,6 +620,111 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     return [...new Set(out)];
   }
 
+  // ---- vivier : pilotes disponibles et qualifiés (déclarations), proposition de missions pour un créneau
+  const declCache = {};
+  /** Déclarations de plusieurs pilotes (TRI → déclaration ou null), gardées pour la page. */
+  async function declarations(tris) {
+    await Promise.all([...new Set(tris)].filter(Boolean).filter(tr => !(tr in declCache)).map(async tr => {
+      declCache[tr] = await availability(tr);
+    }));
+    return Object.fromEntries([...new Set(tris)].map(tr => [tr, declCache[tr] ?? null]));
+  }
+  /** Possède l'appareil (déclaré possédé ou maîtrisé) ; null si le pilote n'a rien déclaré. */
+  const ownsType = (decl, type) => decl?.aircraft ? [...(decl.aircraft.owned || []), ...(decl.aircraft.mastered || [])].includes(typeOf(type)) : null;
+  /** Vivier pour un type et une heure : pilotes qui possèdent l'appareil et sont disponibles (code dispo) d'abord —
+   *  maîtrisé avant possédé —, puis les autres (non déclarés, indisponibles), pour choisir quand même en connaissance de
+   *  cause. [{ tri, qual, avail, owns, ok }] ; ok : possède le type et disponible. */
+  function pool(tris, decls, {
+    type,
+    at,
+    family = '',
+    exclude = []
+  }) {
+    const rank = c => (c.ok ? 0 : 10) + (c.qual.level === 'mastered' ? 0 : c.qual.level === 'owned' ? 1 : c.qual.level === 'flown' ? 2 : 3) + (c.avail ? (c.avail.ok ? 0 : 4) : 2);
+    return [...new Set(tris)].filter(tr => tr && !exclude.includes(tr)).map(tr => {
+      const d = decls[tr],
+        qual = qualification(d, tr, type),
+        avail = at ? availabilityAt(d, at, family) : null,
+        owns = ownsType(d, type);
+      return {
+        tri: tr,
+        qual,
+        avail,
+        owns,
+        ok: !!owns && !!avail?.ok
+      };
+    }).sort((a, b) => rank(a) - rank(b) || a.tri.localeCompare(b.tri));
+  }
+  /** Libellé court d'un pilote du vivier : « RBR — maîtrisé · C dispo ». */
+  const poolLabel = c => `${c.tri} — ${c.qual.level === 'mastered' ? t(['maîtrisé', 'mastered']) : c.qual.level === 'owned' ? t(['possédé', 'owned']) : c.qual.level === 'flown' ? t(['vols connus', 'known flights']) : t(['type non déclaré', 'type not declared'])} · ${c.avail ? `${c.avail.code}${c.avail.ok ? '' : ' (' + c.avail.label + ')'}` : t(['dispo. non renseignée', 'availability unknown'])}`;
+  /** Proposition pour un créneau : missions du registre (entrées) × pilotes libres. Chaque mission demande autant de
+   *  pilotes que d'appareils (indicatifs), du type de ses appareils ; une opération (missions A, B, C…) est une
+   *  proposition complémentaire d'un seul tenant. Retour : { options: [{ missions, pairs: [{ mission, tri }], covered,
+   *  need, mastered }], proposal: [option…], left: [TRI non couverts] } ; focus : pilote mis en avant (case cliquée). */
+  function planSlot(free, entries, decls, {
+    focus = ''
+  } = {}) {
+    const usable = entries.filter(m => m.id && m.status !== 'ordered' && !/Z$/.test(m.id) && !m.organisation);
+    // unités : opérations (missions de même opération) ou missions seules
+    const units = new Map();
+    for (const m of usable) {
+      const k = m.operation?.id ? `op:${m.operation.id}` : `m:${m.id}`;
+      if (!units.has(k)) units.set(k, []);
+      units.get(k).push(m);
+    }
+    const options = [];
+    for (const missions of units.values()) {
+      const slots = missions.flatMap(m => Array.from({
+        length: Math.max(1, (m.callsigns || []).length || 1)
+      }, () => ({
+        mission: m,
+        types: (m.aircraftTypes || []).map(typeOf).filter(Boolean)
+      })));
+      // affectation gloutonne : postes les plus rares d'abord (moins de pilotes éligibles), maîtrisé avant possédé
+      const elig = s => free.filter(tr => !s.types.length || s.types.some(ty => ownsType(decls[tr], ty)));
+      const order = [...slots].sort((a, b) => elig(a).length - elig(b).length);
+      const used = new Set(),
+        pairs = [];
+      let mastered = 0;
+      for (const s of order) {
+        const cands = elig(s).filter(tr => !used.has(tr)).sort((x, y) => (y === focus) - (x === focus) || (s.types.some(ty => decls[y]?.aircraft?.mastered?.includes(ty))) - (s.types.some(ty => decls[x]?.aircraft?.mastered?.includes(ty))));
+        if (!cands.length) continue;
+        used.add(cands[0]);
+        if (s.types.some(ty => decls[cands[0]]?.aircraft?.mastered?.includes(ty))) mastered++;
+        pairs.push({
+          mission: s.mission.id,
+          tri: cands[0]
+        });
+      }
+      if (!pairs.length) continue;
+      options.push({
+        missions,
+        pairs,
+        covered: pairs.length,
+        need: slots.length,
+        full: pairs.length === slots.length,
+        mastered,
+        focus: !!focus && pairs.some(p => p.tri === focus)
+      });
+    }
+    // tri : mission complète d'abord, puis la plus grande couverture, maîtrise, pilote de la case cliquée
+    options.sort((a, b) => b.full - a.full || b.covered - a.covered || b.focus - a.focus || b.mastered - a.mastered);
+    // proposition « pour tout le monde » : options complètes, sans pilote commun, jusqu'à couvrir les pilotes libres
+    const proposal = [],
+      taken = new Set();
+    for (const o of options.filter(o => o.full).sort((a, b) => b.focus - a.focus || b.covered - a.covered || b.mastered - a.mastered)) {
+      if (o.pairs.some(p => taken.has(p.tri))) continue;
+      proposal.push(o);
+      o.pairs.forEach(p => taken.add(p.tri));
+      if (taken.size >= free.length) break;
+    }
+    return {
+      options,
+      proposal,
+      left: free.filter(tr => !taken.has(tr))
+    };
+  }
+
   // ---- Centre : écriture d'une affectation (dossier de la mission + index), sans dépendre du registre : dossier des
   // missions autorisé (FileAccess, « __missions »), dossier de la mission d'après son entrée de registre (folder) ou
   // la règle <lettre>_<FAMILLE>/<ID>
@@ -773,6 +878,11 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     busyRange,
     assignedOver,
     conflicts,
+    declarations,
+    ownsType,
+    pool,
+    poolLabel,
+    planSlot,
     writeAssignment
   };
   // en-tête prêt après repository_nav.js : pli cacheté posé dès que possible, puis rafraîchi au retour sur l'onglet
