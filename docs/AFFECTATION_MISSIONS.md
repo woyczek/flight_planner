@@ -1,6 +1,7 @@
 # Affectation des missions aux pilotes — conception (à valider)
 
-État : **étude** (1ᵉʳ octobre 2026), rien n'est encore codé. Objet : le Centre (CPCO) affecte une mission existante à un ou
+État : **première version sur la branche `feature/affectations`** (1ᵉʳ octobre 2026), à tester avant fusion. Lots 1 à 4
+faits (§ 8), astreinte : bloc `alert` dans le prompt et affichage côté pilote ; décisions par défaut ci-dessous (§ 9). Objet : le Centre (CPCO) affecte une mission existante à un ou
 plusieurs pilotes, sur un horaire, avec un appareil nominatif chacun ; chaque pilote voit, hors du Centre, les missions à
 venir qui lui sont affectées, signalées par un pli cacheté dans l'en-tête.
 
@@ -141,3 +142,28 @@ ailleurs. Clic → « Mes missions » ; ouvrir la mission marque l'affectation l
 4. **Granularité** : 1 h par défaut, 30 min en option — d'accord ?
 5. **Page pilote** : dans le menu ☰ de tous (« Mes missions ») ou seulement si un trigramme est réglé ?
 6. **Pli cacheté** : une image par design à matières (à fournir), ou une seule partagée ?
+
+## 10. Réalisation (branche feature/affectations)
+
+- **Socle** `shared/assignments.js` (toutes les pages, chargé par `repository_nav.js`) : trigramme du profil pilote
+  (☰ › Profil pilote, champ « Trigramme DEFA »), index `data/missions/affectations.json` lu par fetch, lu / non lu local
+  (`assignmentsRead:v1`), **pli cacheté** dans l'en-tête (enveloppe à cachet de cire, compteur ; habillage des designs à
+  matières), grille de disponibilités, écriture d'une affectation (Centre).
+- **Page pilote** `apps/pilot/mes_missions.html` (menu ☰ « Mes missions ») : missions à venir, mission en lecture seule
+  (appareil, indicatif, terrain, heure de décollage ou consigne d'astreinte, convoyage, coéquipiers, résumé, route et
+  plan, cartes fournies), **Ouvrir dans les Cartes de vol** (mission partagée de l'espace « planner »), **Carburant**
+  (route OACI, distance, niveau, route vraie : `plannerHandoff:v1`), **Créer le CR** (immatriculation attribuée) ;
+  **Mes disponibilités** : semaine type, cases d'une heure (clic ou glisser), enregistrées dans le navigateur et, au
+  bouton, dans `data/disponibilites/<TRI>.json`.
+- **Centre** : bouton **« Affecter… »** du détail d'une mission (registre ; pas pour les missions d'organisation Z),
+  `shared/assign_dialog.js` : heure de décollage ou heure H (exercice : décalage du participant), astreinte (prêt à,
+  préavis, fin), participants (+ équipier, indicatif suivi), pilote (référence DEFA : qualification sur le type,
+  disponibilité à l'heure), appareil du type demandé (flotte ; basé au terrain de départ ou **convoyage** : distance
+  depuis la base SIA, le registre ou la base mondiale des aérodromes, vitesse de croisière + 20 min, décollage du
+  convoyage = décollage − durée − 30 min), conflits (pilote ou appareil déjà pris, doublons), enregistrement
+  (`affectations.yaml` de la mission + index).
+- **Décisions par défaut** (§ 9, à confirmer) : partage par le dépôt `data/` ; pas d'acceptation (l'affectation vaut
+  ordre, le pilote en accuse lecture) ; heures UTC ; cases d'une heure ; « Mes missions » dans le menu de tous ; une
+  enveloppe dessinée (SVG) habillée par design.
+- **Tester** : régler son trigramme (☰ › Profil pilote, ex. RBR) ; dans le registre, détail d'une mission →
+  « Affecter… » (dossier des missions autorisé) ; recharger une page : pli cacheté ; « Mes missions ».

@@ -53,6 +53,11 @@ sombres ; messages clairs quand le navigateur ne permet pas de choisir un dossie
 - Paramètres › Maintenance sans dossier `data/` : plus de requêtes vers `data/` ni vers `VERSION.json` (404 en
   console) ; seul reste le 404 de `data/data_tree.js`, qui détecte l'absence des données.
 
+- **Affectation des missions aux pilotes** (branche `feature/affectations`, à tester) : bouton « Affecter… » du
+  registre (pilotes, appareils, heure, astreinte, convoyage, conflits), page pilote « Mes missions » (lecture seule,
+  transferts Cartes de vol / Carburant / CR, disponibilités à l'heure), pli cacheté dans l'en-tête, trigramme dans le
+  profil pilote ; bloc `alert` (astreinte) dans le prompt du générateur. Conception : docs/AFFECTATION_MISSIONS.md.
+
 ## [4.4.0] — 2026-09-30
 
 Nouvelle famille COMBAT (combat aérien : BFM, ACM, DACT, interception) ; identifiants de mission liés migrés d'un bloc

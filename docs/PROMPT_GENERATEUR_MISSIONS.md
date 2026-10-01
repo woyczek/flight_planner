@@ -321,6 +321,15 @@ air_refueling:                 # AAR, ou toute mission comportant un ravitaillem
   planned: true
   role: tanker                 # tanker | receiver
   track: CECILE                # nom d'axe de la liste du § 7
+alert:                         # mission d'ASTREINTE (QRA, alerte, réserve) seulement ; sinon OMETTRE le bloc
+  ready_at: "H-30"             # prêt à partir de (relatif à H, ou heure réelle « 12:30Z »)
+  aerodrome: LFBM              # terrain d'attente (OACI)
+  notice_min: 15               # décollage prévisible XX minutes après l'ordre
+  window_end: "H+120"          # fin d'astreinte
+  trigger: "ordre du CDC (mission d'organisation Z, événement EV-1)"
+  phases:                      # suites possibles selon l'ordre reçu (1 à 3)
+    - { id: P1, if: "piste nord", route: [PT1, PT2], task: "interception" }
+    - { id: P2, if: "piste sud", route: [PT3], task: "identification" }
 vertical_profile:              # coupe verticale du studio
   route: "ORIGIN, FL100, PT1, PT2, TARGET, FL060, DESTINATION"
   cruise: FL100                # niveau par défaut : FL + 3 chiffres, ou altitude « 1500 ft »
@@ -369,6 +378,12 @@ environ 1500 ft ASFC) le fait dans le RTBA (réseau très basse altitude : zones
 R 147, R 152, R 590) — points tournants et zones posés dans les tronçons du RTBA, entrée et sortie du réseau
 nommées ; cruise_level en ft (« 500 ft »). En dehors du RTBA, pas de basse hauteur pour ces avions. Les
 hélicoptères ne sont pas concernés (vol tactique selon la mission).
+
+Astreinte (bloc alert) : mission dont l'heure de décollage n'est pas fixée — l'équipage est « prêt à » une heure sur un
+terrain et décolle sur ordre, dans le préavis donné (QRA, alerte SAR, réserve d'un exercice). Le récit le dit (« soyez
+prêt à … et attendez les ordres ») ; l'ordre et la phase retenue viennent d'un événement de la mission d'organisation
+(exercise.events : message radio) ; chaque phase a sa route (points du § 4) et sa tâche ; les cartes couvrent toutes
+les phases. Pas de bloc alert pour une mission à heure fixe.
 
 Combat aérien (COMBAT) : chasseurs (RFAL, MIR2 ; PC21 en instruction), en patrouille contre un adversaire
 (plastron DEFA ou partenaire ; DACT : type différent — ex. Rafale contre Mirage 2000, ou chasseur étranger en

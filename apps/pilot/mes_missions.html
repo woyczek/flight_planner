@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mes missions</title>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=5569f9d7"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=ca4d76cc">
+<script src="../../repository_tree?v=65628903"></script>
+<style>
+  .pm-empty{opacity:.8}
+  .pm-list table{width:100%;border-collapse:collapse}.pm-list th,.pm-list td{padding:5px 8px;text-align:left;border-bottom:1px solid color-mix(in srgb,currentColor 15%,transparent)}
+  .pm-list tbody tr{cursor:pointer}.pm-list tbody tr:hover{background:color-mix(in srgb,currentColor 7%,transparent)}
+  .pm-list tr.pm-unread td:first-child::before{content:"●";color:#c62828;margin-right:6px}
+  .pm-list tr.pm-current{outline:2px solid color-mix(in srgb,currentColor 35%,transparent);outline-offset:-2px}
+  .pm-order{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px 16px;margin:6px 0 10px}
+  .pm-order div{display:grid;gap:2px}.pm-order span{font-size:11.5px;opacity:.75}.pm-order b{font-size:15px}
+  .pm-alert{padding:10px 12px;border-left:4px solid #e0a400;background:color-mix(in srgb,#e0a400 10%,transparent);margin:6px 0 10px;font-weight:600}
+  .pm-route{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;align-items:start}
+  @media (max-width:900px){.pm-route{grid-template-columns:1fr}}
+  .pm-route table{width:100%;border-collapse:collapse;font-size:12.5px}.pm-route th,.pm-route td{padding:4px 6px;text-align:left;border-bottom:1px solid color-mix(in srgb,currentColor 12%,transparent)}
+  .pm-plan{width:100%;aspect-ratio:1;border:1px solid color-mix(in srgb,currentColor 20%,transparent);background:color-mix(in srgb,currentColor 4%,transparent)}
+  .pm-plan .leg{fill:none;stroke:#2f6fd6;stroke-width:2}.pm-plan .pt{fill:#2f6fd6}.pm-plan .ad{fill:#c62828}.pm-plan text{font:10px system-ui,sans-serif;fill:currentColor}
+  .pm-maps{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}.pm-maps figure{margin:0}.pm-maps img{width:100%;border:1px solid color-mix(in srgb,currentColor 20%,transparent)}
+  .pm-maps figcaption{font-size:11.5px;opacity:.8;margin-top:3px}
+  .pm-text p{white-space:pre-line;margin:.4em 0}
+  .pm-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0}
+  .pm-who{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.pm-who input{width:6em;text-transform:uppercase}
+</style>
+</head><body>
+<!-- Missions affectées au pilote (trigramme du profil pilote) par le Centre : liste des missions à venir, mission en lecture
+     seule (appareil, terrain, heure de décollage ou consigne d'astreinte, route, cartes fournies), transfert vers les Cartes
+     de vol et le planificateur carburant, création du CR ; disponibilités de la semaine type (grille d'une heure).
+     Données : data/missions/affectations.json (index écrit par le Centre) et fichiers des missions, lus par fetch ;
+     socle : shared/assignments.js. Conception : docs/AFFECTATION_MISSIONS.md. -->
+<header><h1>Mes missions</h1><p>Missions affectées par le Centre, disponibilités</p></header>
+<main id="pilotMissions">
+<section data-block-id="who" data-icon="user" data-subtitle="Trigramme DEFA du profil pilote (menu ☰) : les missions affectées à ce trigramme s'affichent ici."><h2>Pilote</h2>
+  <div class="pm-who"><label>Trigramme <input id="pmTri" maxlength="4" autocomplete="off"></label><span id="pmWhoNote" class="small"></span></div>
+</section>
+<section data-block-id="list" data-icon="calendar" data-subtitle="Missions à venir, par heure de décollage (UTC) ; ● : nouvelle, pas encore ouverte."><h2>Missions à venir</h2>
+  <div id="pmList" class="pm-list"><p class="pm-empty">Chargement…</p></div>
+  <p class="small"><label><input type="checkbox" id="pmAll"> afficher aussi les missions passées</label></p>
+</section>
+<section data-block-id="mission" data-icon="target" data-subtitle="Mission affectée, en lecture seule : ce qui vous est demandé, la route, les cartes fournies." id="pmMission" hidden><h2>Mission</h2>
+  <div id="pmDetail"></div>
+</section>
+<section data-block-id="availability" data-icon="clock" data-subtitle="Semaine type, heures UTC : cliquer ou glisser sur les cases (vert : disponible). Le Centre s'en sert pour affecter les missions."><h2>Mes disponibilités</h2>
+  <div id="pmGrid"></div>
+  <div class="pm-actions"><button type="button" id="pmGridSave" class="secondary" data-icon="save">Enregistrer dans le dossier des données</button><button type="button" id="pmGridClear" class="ghost">Tout effacer</button></div>
+  <p id="pmGridMsg" class="small" data-status></p>
+</section>
+</main>
+<script src="../../shared/kit.js?v=9839b88b"></script>
+<script src="../../shared/repository_nav.js?v=eb2c1151"></script>
+<script src="../../shared/content_i18n.js?v=cf6396e2"></script>
+<script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
+<script src="../../shared/mission_core/vocab.js?v=90cadad7"></script>
+<script src="../../shared/assignments.js?v=d36fe719"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id), A = window.MissionAssignments, K = window.RepositoryKit, esc = K.esc;
+  const root = () => window.RepositoryNav?.root || new URL('../../', location.href).href;
+  const PROFILE = 'missionReportingConfig:v1';
+  let list = [], current = null, mission = null;
+
+  /** Date et heure UTC lisibles : « sam. 04/10 12:40Z ». */
+  const fmt = ms => ms ? new Date(ms).toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }).replace(',', '') + 'Z' : '—';
+  const hhmm = ms => ms ? new Date(ms).toISOString().slice(11, 16) + 'Z' : '—';
+
+  // ---- identité (profil pilote partagé avec le menu ☰)
+  function who() {
+    const tri = A.trigram();
+    if (document.activeElement !== $('pmTri')) $('pmTri').value = tri;
+    $('pmWhoNote').textContent = tri ? '' : 'Saisir votre trigramme (ex. RBR) pour voir les missions qui vous sont affectées.';
+  }
+  $('pmTri').addEventListener('change', () => {
+    let cfg = {};
+    try { cfg = JSON.parse(localStorage.getItem(PROFILE) || '{}') || {}; } catch {}
+    cfg.trigram = $('pmTri').value.trim().toUpperCase();
+    localStorage.setItem(PROFILE, JSON.stringify(cfg));
+    window.dispatchEvent(new StorageEvent('storage', { key: PROFILE }));
+    A.envelope();
+    load();
+  });
+
+  // ---- liste
+  async function load() {
+    who();
+    const idx = await A.index({ fresh: true });
+    list = A.mine(idx.assignments, { all: $('pmAll').checked });
+    const tri = A.trigram();
+    if (!tri) { $('pmList').innerHTML = '<p class="pm-empty">Aucun trigramme réglé.</p>'; return; }
+    if (!list.length) { $('pmList').innerHTML = `<p class="pm-empty">Aucune mission à venir affectée à ${esc(tri)}.</p>`; return; }
+    $('pmList').innerHTML = `<table><thead><tr><th>Décollage (UTC)</th><th>Mission</th><th>Titre</th><th>Appareil</th><th>Terrain</th><th>Indicatif</th></tr></thead><tbody>${list.map((a, i) => `<tr data-i="${i}" class="${A.isRead(a) ? '' : 'pm-unread'}${current && A.key(current) === A.key(a) ? ' pm-current' : ''}"><td>${a.alert ? 'astreinte ' + esc(hhmm(Date.parse(a.alert.ready_at_utc))) : esc(fmt(A.when(a)))}</td><td><b>${esc(a.mission)}</b></td><td>${esc(a.title || '')}</td><td>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' '))}</td><td>${esc(a.departure || '')}</td><td>${esc(a.callsign || '')}</td></tr>`).join('')}</tbody></table>`;
+    const want = new URLSearchParams(location.search).get('mission');
+    const pick = current ? list.find(a => A.key(a) === A.key(current)) : want ? list.find(a => a.mission === want) : null;
+    if (pick) show(pick);
+  }
+  $('pmList').addEventListener('click', e => {
+    const tr = e.target.closest('tr[data-i]');
+    if (tr) show(list[+tr.dataset.i]);
+  });
+  $('pmAll').addEventListener('change', load);
+
+  // ---- mission (lecture seule)
+  const fileUrl = (a, name) => new URL(`data/missions/${a.folder}/${name}`, root()).href;
+  async function show(a) {
+    current = a;
+    A.markRead(a);
+    $('pmMission').hidden = false;
+    $('pmDetail').innerHTML = '<p class="pm-empty">Chargement de la mission…</p>';
+    document.querySelectorAll('#pmList tr').forEach(tr => tr.classList.toggle('pm-current', list[+tr.dataset.i] === a));
+    document.querySelectorAll('#pmList tr.pm-unread').forEach(tr => { if (list[+tr.dataset.i] === a) tr.classList.remove('pm-unread'); });
+    mission = null;
+    try {
+      const r = await fetch(fileUrl(a, a.files?.yaml || `mission${a.mission}.yaml`), { cache: 'no-store' });
+      if (r.ok) mission = window.jsyaml.load((await r.text()).replace(/^#.*\n/, ''));
+    } catch { /* mission illisible : affectation seule */ }
+    render(a, mission || {});
+    $('pmMission').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /** Points de la route dans l'ordre (origine, points tournants, rendez-vous, cible, destination) ; route_order si présent. */
+  function routeOf(y) {
+    const by = {};
+    const add = (id, p, kind) => { if (p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon)) by[id] = { id, name: p.name || id, lat: +p.lat, lon: +p.lon, kind, role: p.role || '' }; };
+    add('ORIGIN', y.origin, 'ad');
+    (y.turning_points || []).forEach(p => add(p.id, p, 'pt'));
+    (y.rendezvous || []).forEach(p => add(p.id, p, 'rdv'));
+    (y.zones || []).forEach(z => add(z.id, { ...z, lat: z.centre?.lat, lon: z.centre?.lon }, 'zone'));
+    add('TARGET', y.target, 'target');
+    add('DESTINATION', y.destination, 'ad');
+    const order = Array.isArray(y.route_order) && y.route_order.length ? y.route_order : ['ORIGIN', ...(y.turning_points || []).map(p => p.id), 'TARGET', 'DESTINATION'];
+    return order.map(id => by[id]).filter(Boolean);
+  }
+  const nm = (a, b) => { const R = 3440.065, r = x => x * Math.PI / 180, dl = r(b.lat - a.lat), dg = r(b.lon - a.lon); const h = Math.sin(dl / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dg / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
+  const brg = (a, b) => { const r = x => x * Math.PI / 180, y = Math.sin(r(b.lon - a.lon)) * Math.cos(r(b.lat)), x = Math.cos(r(a.lat)) * Math.sin(r(b.lat)) - Math.sin(r(a.lat)) * Math.cos(r(b.lat)) * Math.cos(r(b.lon - a.lon)); return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360; };
+  const icaoOf = p => /\(([A-Z]{4})\)/.exec(p?.name || '')?.[1] || '';
+  const coord = p => { const f = (v, w, pos, neg) => { const a = Math.abs(v), d = Math.floor(a), m = Math.round((a - d) * 60); return String(d).padStart(w, '0') + String(m === 60 ? 0 : m).padStart(2, '0') + (v >= 0 ? pos : neg); }; return f(p.lat, 2, 'N', 'S') + f(p.lon, 3, 'E', 'W'); };
+
+  /** Plan de la route (projection équirectangulaire locale), points et terrains nommés. */
+  function plan(pts) {
+    if (pts.length < 2) return '';
+    const lat0 = pts.reduce((s, p) => s + p.lat, 0) / pts.length, k = Math.cos(lat0 * Math.PI / 180);
+    const xs = pts.map(p => p.lon * k), ys = pts.map(p => p.lat), minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+    const span = Math.max(maxX - minX, maxY - minY) || 1, P = q => [10 + (q.lon * k - minX) / span * 280, 290 - (q.lat - minY) / span * 280];
+    const path = pts.map((p, i) => (i ? 'L' : 'M') + P(p).map(v => v.toFixed(1)).join(' ')).join(' ');
+    return `<svg class="pm-plan" viewBox="0 0 300 300" role="img" aria-label="Plan de la route"><path class="leg" d="${path}"/>${pts.map(p => { const [x, y] = P(p); return `<circle class="${p.kind === 'ad' ? 'ad' : 'pt'}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${p.kind === 'ad' ? 4.5 : 3}"/><text x="${(x + 6).toFixed(1)}" y="${(y - 5).toFixed(1)}">${esc(icaoOf(p) || p.id)}</text>`; }).join('')}</svg>`;
+  }
+
+  function render(a, y) {
+    const pts = routeOf(y), dist = pts.slice(1).reduce((s, p, i) => s + nm(pts[i], p), 0);
+    const alert = a.alert || y.alert;
+    const order = `<div class="pm-order">
+      <div><span>Appareil attribué</span><b>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' · ') || '—')}</b></div>
+      <div><span>Indicatif</span><b>${esc(a.callsign || y.aircraft?.[0]?.callsign || '—')}</b></div>
+      <div><span>Terrain de départ</span><b>${esc(a.departure || icaoOf(y.origin) || y.origin?.name || '—')}</b></div>
+      <div><span>${alert ? 'Prêt à' : 'Décollage demandé'}</span><b>${esc(alert ? hhmm(Date.parse(alert.ready_at_utc)) : fmt(A.when(a)))}</b></div>
+      ${a.ferry ? `<div><span>Convoyage depuis ${esc(a.ferry.from)}</span><b>${esc(a.ferry.minutes)} min · décollage ${esc(hhmm(Date.parse(a.ferry.takeoff)))}</b></div>` : ''}
+      <div><span>Statut</span><b>${esc(a.status || 'affectée')}</b></div></div>`;
+    const alertText = alert ? `<p class="pm-alert">Soyez prêt à ${esc(hhmm(Date.parse(alert.ready_at_utc)))} sur ${esc(alert.aerodrome || a.departure || '')} et attendez les ordres ; décollage prévisible en ${esc(alert.notice_min ?? '?')} minutes.${alert.window_end_utc ? ` Fin d'astreinte ${esc(hhmm(Date.parse(alert.window_end_utc)))}.` : ''}</p>` : '';
+    const team = (A._all || []).filter(x => x.mission === a.mission && x.pilot !== a.pilot);
+    const maps = (a.files?.maps || []);
+    $('pmDetail').innerHTML = `<h3>${esc(a.mission)} — ${esc(y.title || a.title || '')}</h3>
+      ${order}${alertText}
+      ${team.length ? `<p><b>Avec</b> : ${team.map(x => `${esc(x.callsign || '')} (${esc(x.pilot)}, ${esc([x.aircraft?.type, x.aircraft?.registration].filter(Boolean).join(' '))}, décollage ${esc(hhmm(A.when(x)))})`).join(' · ')}</p>` : ''}
+      <div class="pm-actions">
+        <button type="button" class="primary" data-go="maps" data-icon="map" ${y.mission ? '' : 'disabled'}>Ouvrir dans les Cartes de vol</button>
+        <button type="button" class="secondary" data-go="fuel" data-icon="fuel" ${pts.length > 1 ? '' : 'disabled'}>Carburant (planificateur)</button>
+        <button type="button" class="secondary" data-go="cr" data-icon="clipboard" ${y.mission ? '' : 'disabled'}>Créer le CR</button>
+      </div>
+      ${y.summary ? `<div class="pm-text"><h4>Résumé</h4><p>${esc(y.summary)}</p></div>` : ''}
+      ${y.detailed_description ? `<details class="pm-text"><summary>Description détaillée</summary><p>${esc(y.detailed_description)}</p></details>` : ''}
+      ${y.objectives?.primary ? `<p><b>Objectif</b> : ${esc(y.objectives.primary)}</p>` : ''}
+      ${pts.length ? `<h4>Route fournie — ${Math.round(dist)} NM${y.vertical_profile?.cruise ? `, ${esc(y.vertical_profile.cruise)}` : ''}</h4>
+      <div class="pm-route"><table><thead><tr><th>Point</th><th>Nom</th><th>Rôle</th><th>Position</th></tr></thead><tbody>${pts.map(p => `<tr><td>${esc(p.id)}</td><td>${esc(p.name)}</td><td>${esc(p.role)}</td><td>${esc(coord(p))}</td></tr>`).join('')}</tbody></table>${plan(pts)}</div>` : ''}
+      ${maps.length ? `<h4>Cartes fournies</h4><div class="pm-maps">${maps.map(m => `<figure><a href="${esc(fileUrl(a, 'cartes/' + m))}" target="_blank" rel="noopener"><img loading="lazy" src="${esc(fileUrl(a, 'cartes/' + m))}" alt="${esc(m)}" onerror="this.onerror=null;this.src='${esc(fileUrl(a, m))}'"></a><figcaption>${esc(m)}</figcaption></figure>`).join('')}</div>` : '<p class="small">Aucune carte fournie avec la mission (les Cartes de vol les génèrent depuis la route).</p>'}`;
+    $('pmDetail').querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go, a, y, pts, dist));
+    window.AppFramework?.refresh?.();
+  }
+
+  // ---- transferts
+  function go(where, a, y, pts, dist) {
+    if (where === 'maps') {
+      // Cartes de vol : mission partagée de l'espace « planner » (SIA_MISSION_NS), appareil attribué en tête
+      const yaml = structuredClone(y);
+      if (yaml.aircraft?.[0] && a.aircraft?.registration) yaml.aircraft[0].registration = a.aircraft.registration;
+      localStorage.setItem('siaMissionShared:planner', JSON.stringify({ yaml, narrative: { summary: '', detailed: '', sections: [] }, sourceNames: [`mission${a.mission}.yaml`], rev: Date.now(), at: Date.now(), by: 'pilot' }));
+      location.href = new URL('apps/planner/map_planner.html', root()).href;
+    } else if (where === 'fuel') {
+      const route = pts.map((p, i) => (i === 0 || i === pts.length - 1) && icaoOf(p) ? icaoOf(p) : coord(p)).join(' ');
+      const lvl = /FL(\d{2,3})/.exec(y.vertical_profile?.cruise || y.aircraft?.[0]?.cruise_level || '')?.[1];
+      localStorage.setItem('plannerHandoff:v1', JSON.stringify({ route, distNm: dist, trackDeg: brg(pts[0], pts[1]), cruiseFt: lvl ? +lvl * 100 : 0, aircraft: (a.aircraft?.type || '').split(' ')[0], from: `${a.mission} — ${y.title || ''}`, at: Date.now() }));
+      window.open(new URL('apps/planner/flight_performance_planner.html?handoff=1', root()).href, '_blank');
+    } else if (where === 'cr') {
+      const yaml = structuredClone(y);
+      if (yaml.aircraft?.[0] && a.aircraft?.registration) yaml.aircraft[0].registration = a.aircraft.registration;
+      const family = window.MissionVocab.familyForType(yaml.mission?.type),
+        target = window.MissionVocab.families.find(f => f.id === family);
+      localStorage.setItem('siaMissionToCr:v1', JSON.stringify(yaml));
+      location.href = new URL(`apps/cr/${target.cr}?from=sia`, root()).href;
+    }
+  }
+
+  // ---- disponibilités
+  let grid = null;
+  async function gridLoad() {
+    const tri = A.trigram();
+    const av = tri ? await A.availability(tri) : null;
+    grid = A.gridEditor($('pmGrid'), av?.grid || A.emptyGrid(), g => { if (tri) A.saveAvailability(tri, g); $('pmGridMsg').textContent = 'Gardé dans ce navigateur ; « Enregistrer dans le dossier des données » pour le Centre.'; });
+  }
+  $('pmGridSave').onclick = async () => {
+    const tri = A.trigram();
+    if (!tri) { $('pmGridMsg').innerHTML = '<span class="err">Trigramme non réglé.</span>'; return; }
+    try {
+      const f = await A.saveAvailability(tri, grid, { toFolder: true });
+      $('pmGridMsg').innerHTML = `<span class="ok">Disponibilités enregistrées : ${esc(f)}</span>`;
+      window.AppFramework?.notify?.(`Disponibilités enregistrées : ${f}`, 'ok');
+    } catch (e) { $('pmGridMsg').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+  };
+  $('pmGridClear').onclick = () => { grid = A.gridEditor($('pmGrid'), A.emptyGrid()); A.saveAvailability(A.trigram(), grid); };
+
+  // index complet gardé pour les coéquipiers
+  const keepAll = async () => { A._all = (await A.index()).assignments; };
+  window.addEventListener('storage', e => { if (e.key === PROFILE) { load(); gridLoad(); } });
+  keepAll().then(load).then(gridLoad);
+})();
+</script>
+<script src="../../shared/app_framework.js?v=a63ce655"></script>
+</body></html>
