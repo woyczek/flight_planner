@@ -118,7 +118,25 @@
   /** Pilotes de la référence DEFA (trigrammes, activité). */
   const pilots = () => window.DEFA_REFERENCE?.pilots || [];
 
+  /** Nom d'affichage d'un modèle de la base OACI (« CONSTRUCTEUR RÉF Surnom ») : référence et surnom d'abord,
+   *  constructeur ensuite (« AS-350 Ecureuil — Airbus Helicopters ») : un nom tronqué garde l'essentiel. Référence
+   *  purement numérique : constructeur devant (« Fokker 100 », « Boeing 787-8 BBJ ») ; sans constructeur : inchangé. */
+  function displayName(model) {
+    const s = String(model || '').trim().replace(/\s+/g, ' ');
+    if (!s) return '';
+    const words = s.split(' ');
+    // constructeur : mots de tête en capitales sans chiffre (sinon un premier mot suivi d'une référence chiffrée)
+    let n = 0;
+    while (n < words.length - 1 && /^[A-Z][A-Z&.'-]*$/.test(words[n]) && !/\d/.test(words[n])) n++;
+    if (!n && words.length > 1 && /^[A-Z][a-z]+$/.test(words[0]) && /\d/.test(words[1])) n = 1;
+    if (!n) return s;
+    const pretty = w => /^(?:[A-Z]{2,3}|[A-Z]+&[A-Z]+)$/.test(w) && !/^(?:DE|LA|DU|DI|EL)$/.test(w) ? w : w.charAt(0) + w.slice(1).toLowerCase();
+    const maker = words.slice(0, n).map(pretty).join(' '),
+      rest = words.slice(n).join(' ');
+    return /^\d/.test(rest) ? `${maker} ${rest}` : `${rest} — ${maker}`;
+  }
   window.AircraftCatalog = {
+    displayName,
     SUPPLEMENT,
     defaAircraft,
     defaTypes,
