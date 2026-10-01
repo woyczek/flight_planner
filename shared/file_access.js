@@ -165,6 +165,37 @@
       /* stockage indisponible */ }
   })();
 
+  /** Vrai si le dossier contient le fichier (chemin relatif, sous-dossiers compris : « config/repository_tree »). */
+  async function has(handle, path) {
+    try {
+      const parts = String(path).split('/');
+      let dir = handle;
+      for (const d of parts.slice(0, -1)) dir = await dir.getDirectoryHandle(d);
+      await dir.getFileHandle(parts[parts.length - 1]);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  /** Dossier du dépôt choisi : tout ce qui s'en déduit est réglé d'un coup — data/ (s'il contient data_tree.js) et ses
+   *  sous-dossiers (registre, missions, SIA, performances), sauvegarde locale (racine du dépôt, si elle n'est pas
+   *  déjà choisie : defa_local_store.yaml y est ignoré par git). Retourne les clés réglées. */
+  async function deriveFromRepo(repo) {
+    const done = [];
+    try {
+      const data = await repo.getDirectoryHandle('data');
+      if (await has(data, 'data_tree.js')) {
+        await set('__data', data);
+        done.push('__data', ...await deriveFromData(data));
+      }
+    } catch {
+      /* pas de data/ : données par exemples ou par archive, à choisir à part */ }
+    if (!await get('__store')) {
+      await set('__store', repo);
+      done.push('__store');
+    }
+    return done;
+  }
   // Choix d'un dossier : le sélecteur s'ouvre sur le dossier actuel ; contrôle du contenu attendu.
   async function pickFolder(key, {
     mode = 'readwrite'
@@ -180,17 +211,12 @@
       } : {})
     });
     if (info.check) {
-      let ok = false;
-      try {
-        await handle.getFileHandle(info.check);
-        ok = true;
-      } catch {
-        /* absent */
-      }
+      const ok = await has(handle, info.check);
       if (!ok && !confirm(`« ${handle.name} » ${tr(STATE.notExpected).replace('{f}', info.check)}\n${tr(STATE.expected)} : ${tr(info.expect)}`)) throw new Error('Dossier refusé');
     }
     await set(key, handle);
     if (key === '__data') await deriveFromData(handle);
+    if (key === '__repo') handle.derived = await deriveFromRepo(handle);
     return handle;
   }
   // Libellé et infobulle d'un dossier : « Dossier du registre : CR DEFA ✓ ».
@@ -406,6 +432,8 @@
     decorate,
     fileHint,
     defaultFolder,
-    deriveFromData
+    deriveFromData,
+    deriveFromRepo,
+    has
   };
 })();

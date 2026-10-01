@@ -308,6 +308,14 @@ code.mt-chg {
   width: 1%;
   white-space: nowrap
 }
+/* premier lancement (?setup=1) : encadré d'accueil et ligne du dossier du dépôt mise en avant */
+.mt-setup {
+  margin: 0 0 12px
+}
+.mt-folders tr.mt-setup-row td {
+  background: color-mix(in srgb, var(--accent, #2f6fd6) 14%, transparent);
+  box-shadow: inset 0 2px 0 var(--accent, #2f6fd6), inset 0 -2px 0 var(--accent, #2f6fd6)
+}
 @media(max-width:760px) {
   .mt-grid2 {
     grid-template-columns: 1fr
