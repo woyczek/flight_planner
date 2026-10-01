@@ -319,6 +319,81 @@ main.odv-page h3 {
   background: var(--soft);
   border: 1px solid var(--line)
 }
+/* grille dense des disponibilités : colonnes fixes et étroites, cases à deux lignes (classeur, déclaration) */
+.odv-dense-wrap {
+  overflow-x: auto
+}
+.odv-dense {
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 10px;
+  line-height: 1.1
+}
+.odv-dense th,
+.odv-dense td {
+  padding: 1px;
+  text-align: center;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  white-space: nowrap
+}
+.odv-dense thead th {
+  font-weight: 700;
+  font-size: 9.5px;
+  padding: 2px 1px
+}
+.odv-dense .odv-d-pil {
+  width: 44px;
+  text-align: left;
+  padding-left: 3px
+}
+.odv-dense .odv-d-n {
+  width: 30px
+}
+.odv-dense .odv-d-n small {
+  opacity: .7
+}
+.odv-dense .odv-d-cell,
+.odv-dense .odv-d-slot {
+  width: 26px
+}
+.odv-dense .odv-d-end,
+.odv-dense thead .odv-d-day {
+  border-right: 2px solid color-mix(in srgb, currentColor 30%, transparent)
+}
+.odv-dense .odv-code {
+  display: block;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 0 1px;
+  font-size: 9px;
+  line-height: 12px
+}
+.odv-dense .odv-decl {
+  display: block;
+  margin: 1px 0 0;
+  padding: 0;
+  border-width: 1.5px;
+  border-radius: 2px
+}
+.odv-dense .odv-decl .odv-code {
+  font-size: 8.5px;
+  line-height: 11px
+}
+.odv-dense .odv-asg {
+  display: block;
+  font-size: 7.5px;
+  line-height: 9px;
+  overflow: hidden;
+  text-overflow: ellipsis
+}
+.odv-dense .odv-tri {
+  font-size: 9.5px;
+  padding: 0 3px
+}
+.odv-d-note {
+  margin: 4px 0 0;
+  font-size: 11px
+}
 /* deux lignes par pilote : classeur, puis déclaration du pilote (encadré rouge : disponible et non affecté) */
 .odv-pair {
   display: grid;
