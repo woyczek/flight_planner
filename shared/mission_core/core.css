@@ -1,4 +1,5 @@
 /* Mission Report Core — pages de saisie de CR (même langage visuel que les CR HEMS / FIRE). */
+@layer app {
 :root {
   --bg: #f5f6f8;
   --card: #fff;
@@ -271,9 +272,9 @@ a.mc-button.primary {
   font-size: 12px;
   margin: 2px 8px 2px 0
 }
-.mc-edit-banner {
-  border-color: var(--accent) !important;
-  background: var(--soft) !important
+.mc-edit-banner:not(#imp) {
+  border-color: var(--accent);
+  background: var(--soft)
 }
 /* reporting */
 main.mc-reporting {
@@ -682,7 +683,6 @@ header.mc-header h1 {
 .mc-header-tools a.nt-link {
   border: 1px solid #ffffff59;
   background: #ffffff1f;
-  color: #fff !important;
   border-radius: 8px;
   padding: 5px 10px;
   font: inherit;
@@ -693,14 +693,21 @@ header.mc-header h1 {
   display: inline-flex;
   align-items: center
 }
+.mc-header-tools button:not(#imp),
+.mc-header-tools a.mc-button:not(#imp),
+.mc-header-tools a.nt-link:not(#imp) {
+  color: #fff
+}
 .mc-header-tools button:hover,
 .mc-header-tools a:hover {
   background: #ffffff38
 }
 .mc-header-tools button.primary {
   background: #fff;
-  color: var(--accent) !important;
   border-color: #fff
+}
+.mc-header-tools button.primary:not(#imp) {
+  color: var(--accent)
 }
 .mc-header-tools button.danger {
   background: #7f1d1d;
@@ -892,7 +899,6 @@ header.mc-header:has(.mc-header-tools)>p:not(.mc-family-description) {
 .mc-header-tools .mc-pop a.nt-link {
   background: transparent;
   border: 0;
-  color: var(--ink) !important;
   justify-content: flex-start;
   text-align: left;
   border-radius: 7px;
@@ -900,18 +906,25 @@ header.mc-header:has(.mc-header-tools)>p:not(.mc-family-description) {
   font-size: 13px;
   font-weight: 500
 }
+.mc-header-tools .mc-pop button:not(#imp),
+.mc-header-tools .mc-pop a.mc-button:not(#imp),
+.mc-header-tools .mc-pop a.nt-link:not(#imp) {
+  color: var(--ink)
+}
 .mc-header-tools .mc-pop button:hover,
 .mc-header-tools .mc-pop a:hover {
   background: #eef2f7
 }
-.mc-header-tools .mc-pop button.danger {
-  color: #b91c1c !important
+.mc-header-tools .mc-pop button.danger:not(#imp) {
+  color: #b91c1c
 }
 .mc-header-tools .mc-pop button.primary {
   background: var(--accent);
-  color: #fff !important;
   font-weight: 600;
   justify-content: center
+}
+.mc-header-tools .mc-pop button.primary:not(#imp) {
+  color: #fff
 }
 .mc-net-pop {
   width: min(560px, calc(100vw - 32px))
@@ -928,21 +941,21 @@ header.mc-header:has(.mc-header-tools)>p:not(.mc-family-description) {
   opacity: 1
 }
 .mc-net-pop .nt-help {
-  border-color: var(--line) !important;
-  color: var(--muted)
+  color: var(--muted);
+  border-color: var(--line)
 }
 .mc-net-pop .nt-status {
   flex-basis: 100%;
   color: var(--muted);
   opacity: 1
 }
-.mc-header-tools .mc-net-pop button.nt-toggle {
-  background: var(--accent) !important;
-  color: #fff !important;
-  font-weight: 600 !important
+.mc-header-tools .mc-net-pop button.nt-toggle:not(#imp) {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600
 }
-.mc-header-tools .mc-net-pop button.nt-toggle.danger {
-  background: #b91c1c !important
+.mc-header-tools .mc-net-pop button.nt-toggle.danger:not(#imp) {
+  background: #b91c1c
 }
 .mc-import-file {
   border-top: 1px solid var(--line);
@@ -1146,9 +1159,11 @@ header.mc-header a.mc-header-new {
   background: #fef3c7
 }
 .mc-form .mc-invalid {
-  border-color: #f59e0b !important;
   box-shadow: 0 0 0 2px #f59e0b40;
   background: #fffbeb
+}
+.mc-form .mc-invalid:not(#imp) {
+  border-color: #f59e0b
 }
 @media print {
   .mc-issues {
@@ -1246,7 +1261,7 @@ header.mc-header:has(.mc-report-tools)>p:not(.mc-family-description) {
   font-weight: 700;
   cursor: pointer;
   vertical-align: 3px;
-  padding: 0 0 2px !important
+  padding: 0 0 2px
 }
 .mc-form h2 .mc-head-add:hover {
   filter: brightness(1.15)
@@ -1504,72 +1519,77 @@ header.mc-header:has(.mc-report-tools)>p:not(.mc-family-description) {
   border: 1px solid var(--line);
   border-radius: 7px
 }
-
+}
+/* règles propres aux designs : hors couche (au-dessus de l'application) */
 /* ================================================================================================ DESIGNS À MATIÈRES
    Barre d'outils des CR (boutons et menus de l'en-tête), fenêtres surgissantes, cartes et encadrés des blocs (calculs
    automatiques, appareils, outils plan de vol / météo) et aperçu du rapport, habillés avec les jetons --sk-* du design
    (shared/designs_skeuo.css, « Jetons des pages ») ; html[data-skeuo] : posé par repository_nav.js. */
 /* boutons et menus de l'en-tête */
-html[data-skeuo] :is(.mc-header-tools :is(button, a.mc-button, a.nt-link):not(.mc-pop *):not(.mc-switch-pop *), .mc-menu>summary, .mc-switch>summary, .mc-toolbar>.mc-import>summary) {
-  background: var(--sk-hb) !important;
-  color: var(--sk-hb-fg) !important;
-  border: 1px solid var(--sk-hb-bd) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 1px 2px rgba(0, 0, 0, .35) !important;
-  text-shadow: none !important
+html[data-skeuo] :is(.mc-header-tools :is(button, a.mc-button, a.nt-link):not(.mc-pop *):not(.mc-switch-pop *), .mc-menu>summary, .mc-switch>summary, .mc-toolbar>.mc-import>summary):not(#imp) {
+  background: var(--sk-hb);
+  color: var(--sk-hb-fg);
+  border: 1px solid var(--sk-hb-bd);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 1px 2px rgba(0, 0, 0, .35);
+  text-shadow: none
 }
 html[data-skeuo] :is(.mc-header-tools button.primary:not(.mc-pop *), .mc-toolbar>.mc-import>summary) {
-  background: var(--sk-acc) !important;
-  color: var(--sk-acc-fg) !important;
   font-weight: 700
+}
+html[data-skeuo] :is(.mc-header-tools button.primary:not(.mc-pop *), .mc-toolbar>.mc-import>summary):not(#imp) {
+  background: var(--sk-acc);
+  color: var(--sk-acc-fg)
 }
 html[data-skeuo] :is(.mc-menu>summary, .mc-switch>summary, .mc-header-tools button):hover {
   filter: brightness(1.12)
 }
 /* fenêtres surgissantes : surface du design, entrées en texte lisible (et non en boutons sombres) */
 html[data-skeuo] :is(.mc-pop, .mc-switch-pop, .mc-import-pop) {
-  color: var(--sk-pop-ink) !important;
-  border: 1px solid var(--sk-pop-bd) !important;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, .45) !important
+  color: var(--sk-pop-ink);
+  border: 1px solid var(--sk-pop-bd);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .45)
 }
-html[data-skeuo] :is(.mc-pop, .mc-switch-pop, .mc-import-pop) :is(button, a.mc-button, a.nt-link, a) {
-  background: transparent !important;
-  color: var(--sk-pop-ink) !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  text-shadow: none !important
+html[data-skeuo] :is(.mc-pop, .mc-switch-pop, .mc-import-pop) :is(button, a.mc-button, a.nt-link, a):not(#imp) {
+  background: transparent;
+  color: var(--sk-pop-ink);
+  border: 0;
+  box-shadow: none;
+  text-shadow: none
 }
-html[data-skeuo] :is(.mc-pop, .mc-switch-pop, .mc-import-pop) :is(button, a):hover {
-  background: var(--sk-pop-hover) !important
+html[data-skeuo] :is(.mc-pop, .mc-switch-pop, .mc-import-pop) :is(button, a):hover:not(#imp) {
+  background: var(--sk-pop-hover)
 }
 html[data-skeuo] :is(.mc-pop, .mc-switch-pop, .mc-import-pop) :is(label, small, .small, .mc-status, .mc-ledger-info, .nt-status, p, span:not([class*="repo-icon"])) {
-  color: var(--sk-pop-ink) !important;
-  opacity: 1 !important
+  color: var(--sk-pop-ink);
+  opacity: 1
 }
 html[data-skeuo] :is(.mc-pop, .mc-switch-pop, .mc-import-pop) button.primary {
-  background: var(--sk-acc) !important;
-  color: var(--sk-acc-fg) !important;
   justify-content: center
+}
+html[data-skeuo] :is(.mc-pop, .mc-switch-pop, .mc-import-pop) button.primary:not(#imp) {
+  background: var(--sk-acc);
+  color: var(--sk-acc-fg)
 }
 /* cartes et encadrés des blocs */
 html[data-skeuo] .repo-block :is(.mc-kpi>div, .mc-item, .mc-tools, .mc-summary) {
-  background: var(--sk-card) !important;
-  color: var(--sk-card-ink) !important;
-  border: 1px solid var(--sk-card-bd) !important;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .25) !important
+  background: var(--sk-card);
+  color: var(--sk-card-ink);
+  border: 1px solid var(--sk-card-bd);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .25)
 }
-html[data-skeuo] .repo-block :is(.mc-kpi>div, .mc-item, .mc-tools, .mc-summary) :is(span, small, .small, b, strong, p, div, label) {
-  color: inherit !important
+html[data-skeuo] .repo-block :is(.mc-kpi>div, .mc-item, .mc-tools, .mc-summary) :is(span, small, .small, b, strong, p, div, label):not(#imp) {
+  color: inherit
 }
 html[data-skeuo] .repo-block :is(.mc-kpi>div, .mc-item, .mc-tools, .mc-summary) :is(.small, small) {
   opacity: .85
 }
 /* aperçu du rapport : feuille de papier (le rapport garde ses couleurs d'impression, lisibles sur papier) */
 html[data-skeuo] .repo-block .report {
-  background: var(--sk-paper) !important;
-  color: #1d1a14 !important;
-  border: 1px solid rgba(0, 0, 0, .25) !important;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, .4) !important
+  background: var(--sk-paper);
+  color: #1d1a14;
+  border: 1px solid rgba(0, 0, 0, .25);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .4)
 }
-html[data-skeuo] :is(.mc-pop, .mc-switch-pop, .mc-import-pop) button.danger {
-  color: var(--sk-pop-danger) !important
+html[data-skeuo] :is(.mc-pop, .mc-switch-pop, .mc-import-pop) button.danger:not(#imp) {
+  color: var(--sk-pop-danger)
 }

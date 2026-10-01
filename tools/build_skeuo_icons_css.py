@@ -17,7 +17,7 @@ Le script inscrit aussi la liste des jeux composés et de leurs fonds dans repos
 lue par la barre latérale (pas d'image peinte à charger) et par la page Apparence (aperçu des jeux).
 Relancer après tout ajout ou retrait d'images : python tools/build_skeuo_icons_css.py, puis tools/bump_versions.py.
 """
-import json, os, re
+import json, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -78,10 +78,10 @@ out = [BEGIN,
        f'{ANY} :is(.repo-block-icon,.repo-card-icon){{background:none!important;box-shadow:none!important;border-radius:0!important;width:auto!important;height:auto!important}}',
        f'{ANY} :is(.repo-block-icon,.repo-card-icon) .repo-svg[data-i]{{--rs:46px}}',
        f'{ANY} .repo-card-icon .repo-svg[data-i]{{--rs:38px}}',
-       f'{ANY} :is(button,.buttonLink,a.mc-button,a.headerButton,summary) .repo-svg[data-i]{{--rs:1.9em;margin:-.35em 0}}',
+       f'{ANY} :is(button,.buttonLink,a.mc-button,a.headerButton,summary) .repo-svg[data-i]{{--rs:1.9em}}',
        # l'icône d'un bouton ne l'agrandit pas : son enveloppe garde la hauteur d'une ligne, l'image déborde (centrée)
        f'{ANY} :is(button,.buttonLink,a.mc-button,a.headerButton) .repo-icon{{height:1.25em;overflow:visible;align-items:center}}',
-       f'{ANY} .repo-sidenav-item .repo-svg[data-i]{{--rs:50px!important;margin:0}}',   # après les boutons (« Menu » est un bouton)
+       f'{ANY} .repo-sidenav-item .repo-svg[data-i]{{--rs:50px!important/*garder*/}}',   # après les boutons (« Menu » est un bouton)
        f'{ANY} .repo-dropzone-badge{{background:none!important}}{ANY} .repo-dropzone-badge .repo-svg[data-i]{{--rs:42px}}',
        f'{ANY} .repo-notice>.repo-icon .repo-svg[data-i]{{--rs:30px}}',
        f'{ANY} .repo-sidenav-brand .repo-svg[data-i]{{--rs:40px!important}}']
@@ -142,7 +142,11 @@ p = os.path.join(ROOT, 'shared', 'block_icons.css')
 raw = open(p, 'rb').read().decode('utf-8'); crlf = '\r\n' in raw; s = raw.replace('\r\n', '\n')
 if BEGIN in s:
     s = s[:s.index(BEGIN)] + s[s.index(END) + len(END):].lstrip('\n')
-s = s.rstrip('\n') + '\n' + '\n'.join(out) + '\n'
+# !important convertis en règles renforcées « :not(#imp) » (designs hors couche ; étape 4 des couches CSS,
+# docs/REFACTORING_TOOLKIT.md) ; restent ceux suivis de /*garder*/ (taille en ligne des icônes de la barre)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from strip_page_important import bump_css
+s = s.rstrip('\n') + '\n' + bump_css('\n'.join(out), designs=True)[0] + '\n'
 open(p, 'wb').write((s.replace('\n', '\r\n') if crlf else s).encode('utf-8'))
 
 # jeux composés → repository_tree (barre latérale, page Apparence)

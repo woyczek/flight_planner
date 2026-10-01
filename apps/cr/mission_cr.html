@@ -1,9 +1,10 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Nouveau compte rendu de mission</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=5569f9d7"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=ca4d76cc">
-<script src="../../repository_tree?v=e86e8e5c"></script>
-<style>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=2bab0c08"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=f33b51fd">
+<script src="../../repository_tree?v=2359ba14"></script>
+<style data-layer="app">
+@layer app {
   .mc-choose {
     max-width: 1100px;
     margin: 20px auto;
@@ -55,6 +56,7 @@
   .mc-choose a.hit {
     border: 2px solid var(--accent)
   }
+}
 </style>
 </head><body>
 <header class="mc-header"><h1>Nouveau compte rendu de mission</h1><p>DEFA Virtual — Mission Report Core</p></header>
@@ -64,10 +66,10 @@
   <p class="small" id="familyHint"></p>
   <div class="mc-choose-grid"></div>
 </main>
-<script src="../../shared/kit.js?v=9839b88b"></script>
-<script src="../../shared/repository_nav.js?v=18fd986e"></script>
+<script src="../../shared/kit.js?v=9221c6fa"></script>
+<script src="../../shared/repository_nav.js?v=5a3ba911"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
-<script src="../../shared/mission_core/vocab.js?v=90cadad7"></script>
+<script src="../../shared/mission_core/vocab.js?v=db00c09c"></script>
 <script>
   // Menu ☰ › Missions › Nouveau compte rendu : choix de la famille, affiché à chaque fois ;
   // la dernière famille utilisée est proposée en premier (« Continuer avec … »).
@@ -141,5 +143,5 @@
     document.getElementById('choose').hidden = false;
   })();
 </script>
-<script src="../../shared/app_framework.js?v=f2fdd96f"></script>
+<script src="../../shared/app_framework.js?v=817d675e"></script>
 </body></html>

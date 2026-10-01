@@ -10,9 +10,48 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
-> **Annonce : suite du refactoring du toolkit.** La phase 2 (exceptions par design remplacées par des jetons) est
-> livrée en 4.4.0 ; la phase 3 (couches CSS, retrait des `!important`) est en cours et pourra encore modifier
-> légèrement l'apparence des designs à matières. Plan : [docs/REFACTORING_TOOLKIT.md](docs/REFACTORING_TOOLKIT.md).
+## [4.5.0] — 2026-10-01
+
+CR FIRE / GAAR et HEMS / MEDEVAC sur le Mission Core (toutes les familles de CR partagent le même socle) ; toolkit
+phase 3 (couches CSS : les designs l'emportent sans `!important`, rendu inchangé au banc) ; palette commune des outils
+sombres ; messages clairs quand le navigateur ne permet pas de choisir un dossier (Brave, http, Firefox).
+
+> **Annonce : suite du refactoring du toolkit.** La phase 3 (couches CSS, retrait des `!important`) se poursuit et
+> pourra encore modifier légèrement l'apparence des designs à matières. Plan :
+> [docs/REFACTORING_TOOLKIT.md](docs/REFACTORING_TOOLKIT.md).
+
+### Ajouté
+
+- Générateur : durée de l'opération en tailles (XS · S · M · L · XL, de 30 min à 8 h).
+- Pied de page : numéro de commit entre deux versions (`v4.5.0+abc1234`).
+
+### Modifié
+
+- Planificateur carburant : nom d'appareil « référence surnom — constructeur » (plus de nom tronqué sur l'essentiel).
+- Renforts `:not(#imp)` sans effet (audit sur toutes les pages × designs × tons, `tools/imp_audit.html`) rendus à
+  leur règle d'origine : 113 règles ; rendu inchangé au banc.
+
+- Framework : socle, styles des pages et styles posés par les scripts rangés dans une couche CSS `app` (MapLibre en
+  `lib`, en dessous) ; les designs, hors couche, l'emportent sans `!important`. Les `!important` du socle et des pages
+  sont convertis en sélecteurs renforcés (`:not(#imp)`) ; rendu inchangé au banc de non-régression.
+- Banc de non-régression : un panel réduit se compare au *snap* du panel complet.
+- CR FIRE / GAAR et HEMS / MEDEVAC : les pages du Mission Core remplacent les pages historiques, à la même adresse
+  (mêmes champs ; anciens registres CSV importables depuis la page : « Importer l'ancien registre … »). Toutes les
+  familles de CR partagent désormais le même socle.
+- Outils à fond sombre (Landing, planificateur, planning ODV, reporting des opérations) : une palette commune aux noms
+  de la palette claire, atteinte par les designs ; la Landing et le reporting des opérations changent de quelques
+  nuances.
+- Designs : leurs `!important` convertis eux aussi (`designs.css` 29 → 0, `designs_skeuo.css` 279 → 32 : impression,
+  masquage et quatre cas contre un style en ligne) ; rendu inchangé au banc.
+
+### Corrigé
+
+- Choix d'un dossier (Paramètres › Sources et dossiers, registres, sauvegarde) dans un navigateur qui ne le permet
+  pas : au lieu de « File System Access API (Chrome / Edge) », un message qui dit quoi faire — Brave : activer
+  `brave://flags/#file-system-access-api` puis relancer ; page en http hors localhost : ouvrir par 127.0.0.1 ;
+  Firefox, Safari : Chrome ou Edge. Affiché en notification.
+- Paramètres › Maintenance sans dossier `data/` : plus de requêtes vers `data/` ni vers `VERSION.json` (404 en
+  console) ; seul reste le 404 de `data/data_tree.js`, qui détecte l'absence des données.
 
 ## [4.4.0] — 2026-09-30
 

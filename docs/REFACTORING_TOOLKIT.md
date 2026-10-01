@@ -154,7 +154,7 @@ Suivi des assets (cahier des charges, consignes de génération, intégration) :
   `--sheet-text`, `--sheet-label-ink`, `--sheet-card-bg`, `--sheet-pin` (carte posée = papier punaisé). Barres de
   progression et notifications habillées par jetons (`--sk-prog-*`, `--sk-menu-*`), sans `!important`.
 
-### Phase 3 — couches CSS (en cours)
+### Phase 3 — couches CSS
 
 - **Constat (essai sur 9 pages, banc « toutes »)** : dans une couche, un `!important` l'emporte sur celui d'une règle
   hors couche (ordre inversé). Mettre les styles de page en couche sans retirer leurs `!important` les fait passer
@@ -169,7 +169,78 @@ Suivi des assets (cahier des charges, consignes de génération, intégration) :
   52 `!important` retirés (studio, générateur, planificateur de performances, planning ODV, Landing) : aucun écart.
   Restent côté pages : `mission_core/core.css` (24), `maintenance.css` (2), Paramètres (3) — ils l'emportent sur le
   socle (fonds et boutons des CR, boutons des tableaux en design standard) : ils partiront à l'étape (2).
-- **Suivant** : (2) socle en couche ; 7 au fil des assets livrés.
+- **Modèle « app » (1ᵉʳ octobre 2026)** : une seule couche `app` pour le socle, les styles des pages et ceux posés par les
+  scripts (ordre et spécificité entre eux inchangés : avec `base < page`, une règle générique de page — `button {…}` —
+  passerait devant les composants du socle), `lib` en dessous (MapLibre), designs hors couche. Outils :
+  `tools/layer_app.py` (feuilles du socle et pages ; règles des designs gardées hors couche) et garde de `kit.js` (tout
+  `<style>` posé par un script rejoint `app`). Banc complet (52 pages × 5 designs × 2 tons, sélecteurs propres en
+  empreinte) : **30 914 écarts** à mi-parcours — les `!important` du socle, une fois en couche, l'emportent sur ceux des
+  designs (fond du bouton ☰ transparent devant le cuir de Cabinet, en-têtes, boutons d'outils des blocs). Essai remis de
+  côté (`git stash` « couches CSS modèle app »).
+- **Enseignement** : la mise en couche et le retrait des `!important` d'un fichier vont ensemble ; un `!important` du
+  socle ne sert qu'à battre une autre règle de l'application (même couche après mise en couche : la spécificité
+  suffit, ou un sélecteur plus précis) ou un design (inutile : les designs seront au-dessus).
+- **Fait (2 et 3, 1ᵉʳ octobre 2026)** : socle (`repository_nav.css`, `core.css`, `maintenance.css`, `block_icons.css`),
+  styles des pages et styles posés par les scripts en couche `app` ; `@layer lib, app;` en tête de `repository_nav.css`.
+  - **`!important` de l'application convertis, pas retirés** : les retirer cassait toutes les règles qu'ils faisaient
+    gagner sur une autre règle de l'application (boutons d'outils des blocs, en-tête collant, « × » du collage…).
+    `strip_page_important.py --bump` (feuilles, avant `layer_app.py`) et la garde de `kit.js` (styles posés par les
+    scripts) en font une règle à la suite, au sélecteur renforcé `:not(#imp)` (spécificité + 1-0-0) : devant les règles
+    ordinaires de l'application comme avant, ordre inchangé entre règles converties, derrière les designs hors couche.
+    Restent `!important` : `display: none`, blocs `@media`, et `/* garder */` ;
+  - `/* garder */` : un `!important` qui doit battre **l'habillage des designs** (aperçus et pastilles de la page
+    Apparence) — dans la couche, il l'emporte sur les designs, comme avant ;
+  - règles des designs **à spécificité voulue faible** (`:where(…)` positionnement des blocs, graisse par défaut des
+    boutons `--sk-btn-weight`) : rangées dans `@layer app` de `designs_skeuo.css` (elles cèdent aux pages, comme avant) ;
+  - réglages d'apparence `html[data-icons…]` : traités comme les designs (hors couche) par `layer_pages.est_design` et
+    par la garde de `kit.js`, qui découpe un `<style>` posé par un script (règles des designs hors couche, intactes).
+- **Méthode du banc** : un *snap* initial sur le panel complet (bouton Référence, liste de plus de 20 pages : mémorisé
+  comme snap, `benchSnap`) ; itérations sur un panel réduit mais représentatif (`?pages=` : CR, tableau, Paramètres,
+  Apparence, Maintenance, Landing, studio, planning ODV, registre), comparé au snap (empreintes comparées par
+  empreinte) ; panel complet en fin, contre le même snap. Détail d'un écart en empreinte : relevé ciblé, ou
+  comparaison des styles calculés contre un arbre de travail de référence servi à côté (`/_ref/`, jonction locale).
+- **Fait (4, 1ᵉʳ octobre 2026)** : `!important` des designs convertis de la même façon (`strip_page_important.py --bump
+  --designs` : règles des designs comprises), partout où il y a des règles de design — `designs.css` 29 → 0,
+  `designs_skeuo.css` 279 → 32, et les règles de design du socle et des pages (`core.css` 30, `block_icons.css` 78,
+  `repository_nav.css` 4, `maintenance.css` 3, studio, registre, planificateur 22) : l'ordre entre règles des designs est
+  inchangé. `build_skeuo_icons_css.py` écrit sa section déjà convertie.
+  Restent `!important` : blocs `@media` (impression), `display: none`, et `/* garder */` contre un **style en ligne**
+  (seul un `!important` bat un attribut `style`) — fond de `body` posé par les pages (designs à cadre, Aqua), liens
+  secondaires des CR (`color: inherit` en ligne), champs de route du studio (`background: transparent` en ligne),
+  taille des icônes de la barre latérale (`--rs` en ligne). Banc (panel réduit puis complet, contre le snap) : écarts
+  restants identiques à HEAD.
+- **C, palettes des pages (2 octobre 2026)** :
+  - **Outils à fond sombre** (Landing, planificateur, planning ODV, reporting des opérations) : une palette commune
+    `:root[data-tool="dark"]` (`repository_nav.css`, couche app) aux noms de la palette claire de `core.css` (`--bg`,
+    `--card`, `--card-2`, `--field`, `--ink`, `--muted`, `--line`, `--soft`, `--accent`, `--accent-2`, `--ok`,
+    `--warn`, `--bad`) ; chaque page la demande par `<html data-tool="dark">` et ses variables sont renommées
+    (`--panel`→`--card`, `--text`→`--ink`, `--p`→`--card`, `--b`→`--line`, `--mut`→`--muted`, `--good`→`--ok`…) :
+    les designs les atteignent. `color-scheme: dark` reste à la page (ODV, planificateur : la Landing et le reporting
+    des opérations ne l'avaient pas). Valeurs : celles d'ODV et du planificateur (identiques) ; la Landing et le
+    reporting des opérations changent de quelques unités (`#0f1115`→`#101317`…), écarts attendus au banc.
+  - **CR Fire / HEMS unifiés** : les pages historiques autonomes (`fire_cr.html`, `fire_reporting.html`,
+    `hems_medevac_cr.html`, `hems_medevac_reporting.html`, palette et script propres) sont remplacées, **à la même
+    adresse**, par les pages du Mission Core (ex-`*_core_*`, « validation ») — étapes 2a / 2b du plan
+    (`mission_report_core_audit.md`, §F–G) : mêmes champs, anciens registres importables depuis la page
+    (« Importer l'ancien registre … (CSV) »). Liens CR ⇄ reporting (`families/*.js`), préfixes de `vocab.js`, modèle
+    de `new_family_pages.py`, arbre et pages témoins du banc mis à jour ; scripts des seules pages historiques retirés
+    (`gaar_reporting.js`, `hems_reporting.js`, `hems_mission_sync.js`). Toutes les familles de CR passent par le Core.
+  - **Orphelins** (balayage de `shared/` : aucun `.js` / `.css` sans page ni script qui le charge) : traductions des
+    pages historiques (`gaar_i18n.js`, `hems_i18n.js` — chargées par aucune page, seulement citées en commentaire),
+    `aircraft_directory.js`, et trois phrases mortes de `reporting_i18n.js` (période « partagée avec HEMS / GAAR »)
+    retirées.
+- **Renforts inutiles fusionnés** (`:not(#imp)`, 2 octobre 2026) : `tools/imp_audit.html` retire, dans le CSSOM, le
+  renfort de chaque règle renforcée (même place dans la feuille), sur les 48 pages de l'arborescence × 5 designs × 2
+  tons, et relève avant / après les propriétés qu'elle déclare sur les éléments qu'elle vise (pseudo-éléments compris).
+  Inutile = vue quelque part, jamais d'écart, et aucune règle à état (`:hover`, `:focus`, `[open]`…) ne se dispute ses
+  propriétés sur ses éléments (état non relevé : renfort gardé). `tools/merge_imp_rules.py` (JSON de l'audit) rend sa
+  déclaration à la règle d'origine quand elle la suit (règle reconstituée), sinon retire le renfort du sélecteur :
+  113 règles (43 fusionnées, 70 renforts retirés) dans `designs_skeuo.css`, `block_icons.css`, `repository_nav.css`,
+  `core.css`, `designs.css` ; 187 renforts restent (écart relevé, règle à état, ou règle jamais vue). Banc (témoins,
+  référence prise juste avant) : aucun écart. Les règles posées par les scripts (garde de `kit.js`) ne sont pas
+  concernées (sources en `!important`).
+- **Suivant** : 7 au fil des assets livrés ([PROMPTS_ASSETS_PHASE2.md](PROMPTS_ASSETS_PHASE2.md)) ; renforts restants
+  au cas par cas (spécificité d'un sélecteur plus précis plutôt qu'un id fictif), si la lisibilité le demande.
 
 ## Utiliser la boîte à outils (D)
 

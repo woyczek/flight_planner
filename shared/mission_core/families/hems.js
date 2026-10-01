@@ -88,8 +88,8 @@
     // Étapes génériques inutiles (destinations HEMS dédiées).
     hide: ['legs'],
     pages: {
-      cr: 'hems_core_cr.html',
-      reporting: 'hems_core_reporting.html'
+      cr: 'hems_medevac_cr.html',
+      reporting: 'hems_medevac_reporting.html'
     },
     title: L('HEMS / MEDEVAC', 'HEMS / MEDEVAC'),
     series: [{

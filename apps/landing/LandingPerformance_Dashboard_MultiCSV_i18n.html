@@ -1,26 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html data-tool="dark" lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Landing Performance — Synthèse multi-CSV</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2712%27 fill=%27%230f1115%27/%3E%3Cpath d=%27M10 47h44%27 stroke=%27%236fa8ff%27 stroke-width=%275%27 stroke-linecap=%27round%27/%3E%3Cpath d=%27M17 16l14 23 16-9%27 fill=%27none%27 stroke=%27%23e8eaf0%27 stroke-width=%275%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3Ccircle cx=%2731%27 cy=%2747%27 r=%275%27 fill=%27%2344c06a%27/%3E%3C/svg%3E">
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=5569f9d7">
-<script src="../../repository_tree?v=e86e8e5c"></script>
-<style>
-:root {
-  --bg: #0f1115;
-  --panel: #171a21;
-  --panel2: #1d212a;
-  --text: #e8eaf0;
-  --muted: #9aa3b2;
-  --line: #2b313d;
-  --good: #44c06a;
-  --warn: #e2b84b;
-  --bad: #e05a63;
-  --accent: #6fa8ff;
-  --accent2: #b18cff;
-}
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=2bab0c08">
+<script src="../../repository_tree?v=2359ba14"></script>
+<style data-layer="app">
+@layer app {
 * {
   box-sizing: border-box
 }
@@ -28,7 +16,7 @@ body {
   margin: 0;
   font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
   background: var(--bg);
-  color: var(--text)
+  color: var(--ink)
 }
 header {
   padding: 10px 18px 9px;
@@ -97,7 +85,7 @@ input[type=file],
 select,
 input[type=number],
 button {
-  color: var(--text);
+  color: var(--ink);
   background: #11141a;
   border: 1px solid var(--line);
   border-radius: 7px;
@@ -133,7 +121,7 @@ main {
   margin-bottom: 16px
 }
 .card {
-  background: var(--panel);
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 14px 15px
@@ -157,7 +145,7 @@ main {
   padding: 16px 18px;
   border-radius: 10px;
   border: 1px solid var(--line);
-  background: var(--panel2)
+  background: var(--card-2)
 }
 .trend-title {
   font-size: 18px;
@@ -169,7 +157,7 @@ main {
   line-height: 1.5
 }
 .good {
-  color: var(--good)
+  color: var(--ok)
 }
 .warn {
   color: var(--warn)
@@ -179,7 +167,7 @@ main {
 }
 .section {
   margin-top: 18px;
-  background: var(--panel);
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: 10px;
   overflow: hidden
@@ -230,7 +218,7 @@ svg {
 }
 .trendline {
   fill: none;
-  stroke: var(--accent2);
+  stroke: var(--accent-2);
   stroke-width: 2;
   stroke-dasharray: 7 5
 }
@@ -354,7 +342,7 @@ table {
 }
 #aircraftTable th.sortable:hover,
 #landingTable th.sortable:hover {
-  color: var(--text)
+  color: var(--ink)
 }
 #aircraftTable .sort-arrow,
 #landingTable .sort-arrow {
@@ -573,7 +561,7 @@ tr:hover td {
   background: transparent;
   text-align: left;
   border-radius: 5px;
-  color: var(--text)
+  color: var(--ink)
 }
 .aircraft-item:hover,
 .aircraft-item:focus {
@@ -640,7 +628,7 @@ tr:hover td {
   justify-content: center
 }
 .landing-period input[type=date] {
-  color: var(--text);
+  color: var(--ink);
   background: #11141a;
   border: 1px solid var(--line);
   border-radius: 7px;
@@ -734,12 +722,12 @@ svg.timeline-chart {
   pointer-events: none
 }
 .quartile-band {
-  fill: var(--accent2);
+  fill: var(--accent-2);
   opacity: .08;
   pointer-events: none
 }
 .quartile-line {
-  stroke: var(--accent2);
+  stroke: var(--accent-2);
   stroke-width: 2.2;
   stroke-dasharray: 6 4;
   fill: none
@@ -807,7 +795,7 @@ svg.timeline-chart {
 }
 .analysis-dock .card .value {
   font-weight: 700;
-  color: var(--text)
+  color: var(--ink)
 }
 .analysis-dock .card .sub {
   color: var(--muted)
@@ -918,7 +906,7 @@ svg.timeline-chart {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--text);
+  color: var(--ink);
   font-size: 12px;
   white-space: normal
 }
@@ -999,7 +987,7 @@ svg.timeline-chart {
   font-size: 18px;
 }
 .trend-state.good {
-  color: var(--good)
+  color: var(--ok)
 }
 .trend-state.warn {
   color: var(--warn)
@@ -1053,7 +1041,7 @@ svg.timeline-chart {
   vertical-align: -2px;
 }
 .trend-inline.good {
-  color: var(--good)
+  color: var(--ok)
 }
 .trend-inline.warn {
   color: var(--warn)
@@ -1103,8 +1091,8 @@ svg.timeline-chart {
   padding: 3px 5px;
   border: 1px solid var(--border);
   border-radius: 5px;
-  background: var(--panel2);
-  color: var(--text);
+  background: var(--card-2);
+  color: var(--ink);
   font: inherit
 }
 .crash-grid select {
@@ -1186,6 +1174,7 @@ svg.timeline-chart {
   .analysis-size-controls {
     display: none
   }
+}
 }
 </style>
 </head>
@@ -1357,7 +1346,7 @@ svg.timeline-chart {
 <div id="tooltip" data-no-i18n class="tooltip"></div>
 
 <script src="../../shared/time_period.js?v=167c7f94"></script>
-<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=4737efea"></script>
+<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=69e8ef45"></script>
 <script src="../../AircraftDB/aircraft_icons.js"></script>
 <script>
 "use strict";
@@ -6495,10 +6484,10 @@ if (prefs.lastFileName && !$("fileName").textContent.trim()) {
 restoreCachedDataset();
 </script>
 <footer class="repo-footer no-print">CC RBR - DEFA Virtual - 2026-09-21 - 2.0.4 - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a></footer>
-<script src="../../shared/kit.js?v=9839b88b"></script>
-<script src="../../shared/repository_nav.js?v=18fd986e"></script>
+<script src="../../shared/kit.js?v=9221c6fa"></script>
+<script src="../../shared/repository_nav.js?v=5a3ba911"></script>
 <script src="../../shared/landing_ui.js?v=fa91623d"></script>
-<script src="../../shared/app_framework.js?v=f2fdd96f"></script>
+<script src="../../shared/app_framework.js?v=817d675e"></script>
 <!-- Traducteur commun de la suite (libellés statiques + typographie) : mêmes règles que les autres pages -->
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script><script>
 RepositoryContentI18n(landingI18nRows())

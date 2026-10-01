@@ -4,6 +4,7 @@
    ou de la surface (currentColor) ; --repo-icon (≥ 3:1) et --repo-ink (≥ 4,5:1) sont choisis par block_icons.js
    parmi les couleurs du thème d'après la surface réelle de chaque bloc. */
 
+@layer app {
 /* ---- icônes */
 .repo-icon {
   display: inline-flex;
@@ -15,13 +16,15 @@
 /* taille des icônes : variable --rs (posée par le contexte ou par RepositoryIcons.svg), imposée : les règles « svg{…} »
    des pages (graphiques en pleine largeur…) ne déforment plus les icônes */
 .repo-svg {
-  display: block;
-  width: var(--rs, 1.15em) !important;
-  height: var(--rs, 1.15em) !important;
-  max-width: none !important;
-  max-height: none !important;
-  flex: none !important;
-  margin: 0 !important
+  display: block
+}
+.repo-svg:not(#imp) {
+  width: var(--rs, 1.15em);
+  height: var(--rs, 1.15em);
+  max-width: none;
+  max-height: none;
+  flex: none;
+  margin: 0
 }
 .repo-has-icon:not(label):not(p):not(h1) {
   display: inline-flex;
@@ -46,9 +49,9 @@
 /* icône, titre + sous-titre et outils centrés verticalement sur le bloc de texte (designs au trait) ; les designs à
    matières (designs_skeuo.css) alignent en haut, outils au coin du bloc */
 .repo-block-heading-rich {
-  align-items: center !important;
-  gap: 12px !important;
-  margin-bottom: 14px
+  margin-bottom: 14px;
+  align-items: center;
+  gap: 12px
 }
 .repo-block-heading-rich>:is(.repo-block-lead, .repo-block-tools) {
   align-self: center
@@ -64,8 +67,8 @@
   min-width: 0;
   align-self: center
 }
-.repo-block-titles>h2 {
-  margin: 0 !important
+.repo-block-titles>h2:not(#imp) {
+  margin: 0
 }
 .repo-block-subtitle {
   margin: 2px 0 0;
@@ -188,15 +191,17 @@
   outline-offset: 2px
 }
 .repo-dropzone-input {
-  position: absolute !important;
-  width: 1px !important;
-  height: 1px !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-  opacity: 0 !important;
-  overflow: hidden !important;
   clip-path: inset(50%)
+}
+.repo-dropzone-input:not(#imp) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  overflow: hidden
 }
 .repo-dropzone-badge {
   display: inline-flex;
@@ -243,14 +248,14 @@
 
 /* ---- bandeau d'information */
 .repo-notice {
-  display: flex !important;
   align-items: flex-start;
   gap: 10px;
   margin: 12px 0 0;
   padding: 10px 14px;
   border-radius: 8px;
   border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
-  background: color-mix(in srgb, currentColor 4%, transparent)
+  background: color-mix(in srgb, currentColor 4%, transparent);
+  display: flex
 }
 .repo-notice>.repo-icon {
   color: var(--repo-icon, currentColor);
@@ -287,7 +292,8 @@
     display: none !important
   }
 }
-
+}
+/* règles propres aux designs : hors couche (au-dessus de l'application) */
 /* ---- adaptation aux designs existants (forme seulement) */
 html[data-design="aero"] .repo-block-step {
   box-shadow: 0 3px 10px color-mix(in srgb, var(--repo-bar) 35%, transparent)
@@ -337,26 +343,28 @@ html[data-design="ops"] .repo-notice {
 html[data-design="console"] .repo-header-line1 {
   min-height: 62px
 }
-html[data-design="console"] .repo-header h1 {
-  font-size: 21px !important
+html[data-design="console"] .repo-header h1:not(#imp) {
+  font-size: 21px
 }
-html[data-design="console"] body {
-  background: color-mix(in srgb, var(--repo-page) 94%, var(--repo-bar)) !important
+html[data-design="console"] body:not(#imp) {
+  background: color-mix(in srgb, var(--repo-page) 94%, var(--repo-bar))
 }
-html[data-design="console"] .repo-block,
-html[data-design="console"] .card {
-  border-radius: 10px !important;
-  padding: 22px 24px !important;
-  box-shadow: 0 1px 3px color-mix(in srgb, var(--repo-bar) 12%, transparent) !important
+html[data-design="console"] .repo-block:not(#imp),
+html[data-design="console"] .card:not(#imp) {
+  border-radius: 10px;
+  padding: 22px 24px;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--repo-bar) 12%, transparent)
 }
 html[data-design="console"] .repo-block-heading-rich {
   margin-bottom: 18px
 }
 html[data-design="console"] .repo-block-heading-rich h2 {
-  font-size: 1.3rem !important;
-  font-weight: 800 !important;
   text-transform: uppercase;
   letter-spacing: .02em
+}
+html[data-design="console"] .repo-block-heading-rich h2:not(#imp) {
+  font-size: 1.3rem;
+  font-weight: 800
 }
 html[data-design="console"] .repo-block-step {
   min-width: 44px;
@@ -379,21 +387,27 @@ html[data-design="console"] .repo-card-titles>strong {
 }
 html[data-design="console"] button:not(.col-split):not(.repo-sidenav-item):not(.repo-menu-button):not(.repo-language-button),
 html[data-design="console"] .buttonLink {
-  border-radius: 6px !important;
   min-height: 40px
 }
-html[data-design="console"] .repo-block-tools button {
-  min-height: 0 !important;
-  padding: 6px 12px !important;
-  font-size: 13px !important
+html[data-design="console"] button:not(.col-split):not(.repo-sidenav-item):not(.repo-menu-button):not(.repo-language-button):not(#imp),
+html[data-design="console"] .buttonLink:not(#imp) {
+  border-radius: 6px
+}
+html[data-design="console"] .repo-block-tools button:not(#imp) {
+  min-height: 0;
+  padding: 6px 12px;
+  font-size: 13px
 }
 html[data-design="console"] input:not([type=checkbox]):not([type=radio]):not([type=range]),
 html[data-design="console"] select {
-  border-radius: 6px !important;
   min-height: 40px
 }
-html[data-design="console"] textarea {
-  border-radius: 6px !important
+html[data-design="console"] input:not([type=checkbox]):not([type=radio]):not([type=range]):not(#imp),
+html[data-design="console"] select:not(#imp) {
+  border-radius: 6px
+}
+html[data-design="console"] textarea:not(#imp) {
+  border-radius: 6px
 }
 
 /* ---- jeu d'icônes (Paramétrage › Apparence : html[data-icons]) : trait normal (défaut), fin, épais, ou aucune icône */
@@ -409,54 +423,210 @@ html[data-icons="off"] .repo-card-icon,
 html[data-icons="off"] .repo-dropzone-badge {
   display: none !important
 }
-html[data-icons="off"] .repo-icon-only>.repo-icon {
-  display: inline-flex !important
+html[data-icons="off"] .repo-icon-only>.repo-icon:not(#imp) {
+  display: inline-flex
 }
 /* ==== JEUX D'ICÔNES SKEUOMORPHES (généré par tools/build_skeuo_icons_css.py) ==== */
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-svg[data-i]{background-position:center;background-size:contain;background-repeat:no-repeat;--rs:1.6em}
-html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(.repo-block-icon,.repo-card-icon){background:none!important;box-shadow:none!important;border-radius:0!important;width:auto!important;height:auto!important}
+html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(.repo-block-icon,.repo-card-icon) {
+  background:none;
+  box-shadow:none;
+  border-radius:0;
+  width:auto;
+  height:auto
+}
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(.repo-block-icon,.repo-card-icon) .repo-svg[data-i]{--rs:46px}
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-card-icon .repo-svg[data-i]{--rs:38px}
-html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(button,.buttonLink,a.mc-button,a.headerButton,summary) .repo-svg[data-i]{--rs:1.9em;margin:-.35em 0}
+html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(button,.buttonLink,a.mc-button,a.headerButton,summary) .repo-svg[data-i]{--rs:1.9em}
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) :is(button,.buttonLink,a.mc-button,a.headerButton) .repo-icon{height:1.25em;overflow:visible;align-items:center}
-html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-sidenav-item .repo-svg[data-i]{--rs:50px!important;margin:0}
-html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-dropzone-badge{background:none!important}html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-dropzone-badge .repo-svg[data-i]{--rs:42px}
+html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-sidenav-item .repo-svg[data-i] {
+  --rs:50px !important /* garder : taille en ligne (style="--rs:…") des icônes de la barre */
+}
+html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-dropzone-badge {
+  background:none
+}html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-dropzone-badge .repo-svg[data-i]{--rs:42px}
 html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-notice>.repo-icon .repo-svg[data-i]{--rs:30px}
-html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-sidenav-brand .repo-svg[data-i]{--rs:40px!important}
-html[data-icons="brass"] .repo-svg[data-i]{background-image:url("icons/skeuo/cabinet/vierge.webp?v=b436eb35")!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * 0.26);color:var(--ico-glyph,#f1e4c0)!important;overflow:visible}
-html[data-app-theme="cpco"][data-icons="brass"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg),html[data-icons="brass"] .repo-sidenav-cpco .repo-svg[data-i]{background-image:url("icons/skeuo/cabinet/vierge.rouge.webp")!important;color:var(--ico-glyph-centre,#ffd23f)!important}
+html:is([data-icons="brass"],[data-icons="avio"],[data-icons="steel"],[data-icons="gel"]) .repo-sidenav-brand .repo-svg[data-i]:not(#imp) {
+  --rs:40px
+}
+html[data-icons="brass"] .repo-svg[data-i] {
+  box-sizing:border-box;
+  padding:calc(var(--rs,1.15em) * 0.26);
+  overflow:visible;
+  background-image:url("icons/skeuo/cabinet/vierge.webp?v=b436eb35");
+  color:var(--ico-glyph,#f1e4c0)
+}
+html[data-app-theme="cpco"][data-icons="brass"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg):not(#imp),
+html[data-icons="brass"] .repo-sidenav-cpco .repo-svg[data-i]:not(#imp) {
+  background-image:url("icons/skeuo/cabinet/vierge.rouge.webp");
+  color:var(--ico-glyph-centre,#ffd23f)
+}
 html[data-icons="brass"] .repo-svg[data-i]>*{display:inline;filter:var(--ico-glyph-shadow,drop-shadow(.5px 1px .6px rgba(0,0,0,.7)))}
-html[data-icons="brass"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){background:url("icons/skeuo/cabinet/vierge.webp?v=b436eb35") center/contain no-repeat!important;width:28px!important;height:28px!important;color:#f1e4c0!important;opacity:1}
+html[data-icons="brass"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle) {
+  opacity:1
+}
+html[data-icons="brass"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):not(#imp) {
+  background:url("icons/skeuo/cabinet/vierge.webp?v=b436eb35") center/contain no-repeat;
+  width:28px;
+  height:28px;
+  color:#f1e4c0
+}
 html[data-icons="brass"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):is(:hover,:focus-visible){filter:brightness(1.12)}
-html[data-icons="brass"] .repo-block .repo-block-tools .repo-drag{font-size:15px!important;line-height:1;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.55)}
-html[data-icons="brass"] .repo-block .repo-block-tools .repo-toggle::before{background-color:currentColor!important;width:13px!important;height:13px!important;filter:drop-shadow(0 1px .6px rgba(0,0,0,.55))}
-html[data-app-theme="cpco"][data-icons="brass"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){color:#ffd23f!important}
+html[data-icons="brass"] .repo-block .repo-block-tools .repo-drag {
+  line-height:1;
+  font-weight:700;
+  text-shadow:0 1px 1px rgba(0,0,0,.55)
+}
+html[data-icons="brass"] .repo-block .repo-block-tools .repo-drag:not(#imp) {
+  font-size:15px
+}
+html[data-icons="brass"] .repo-block .repo-block-tools .repo-toggle::before {
+  filter:drop-shadow(0 1px .6px rgba(0,0,0,.55))
+}
+html[data-icons="brass"] .repo-block .repo-block-tools .repo-toggle:not(#imp)::before {
+  background-color:currentColor;
+  width:13px;
+  height:13px
+}
+html[data-app-theme="cpco"][data-icons="brass"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):not(#imp) {
+  color:#ffd23f
+}
 html[data-icons="brass"] :is(.repo-block-icon,.repo-card-icon){filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
-html[data-icons="avio"] .repo-svg[data-i]{background-image:url("icons/skeuo/flightlog/vierge.webp?v=5be875bf")!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * 0.26);color:var(--ico-glyph,#f4ecd8)!important;overflow:visible}
-html[data-app-theme="cpco"][data-icons="avio"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg),html[data-icons="avio"] .repo-sidenav-cpco .repo-svg[data-i]{background-image:url("icons/skeuo/flightlog/vierge.rouge.webp")!important;color:var(--ico-glyph-centre,#ffd23f)!important}
+html[data-icons="avio"] .repo-svg[data-i] {
+  box-sizing:border-box;
+  padding:calc(var(--rs,1.15em) * 0.26);
+  overflow:visible;
+  background-image:url("icons/skeuo/flightlog/vierge.webp?v=5be875bf");
+  color:var(--ico-glyph,#f4ecd8)
+}
+html[data-app-theme="cpco"][data-icons="avio"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg):not(#imp),
+html[data-icons="avio"] .repo-sidenav-cpco .repo-svg[data-i]:not(#imp) {
+  background-image:url("icons/skeuo/flightlog/vierge.rouge.webp");
+  color:var(--ico-glyph-centre,#ffd23f)
+}
 html[data-icons="avio"] .repo-svg[data-i]>*{display:inline;filter:var(--ico-glyph-shadow,drop-shadow(.5px 1px .6px rgba(0,0,0,.7)))}
-html[data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){background:url("icons/skeuo/flightlog/vierge.webp?v=5be875bf") center/contain no-repeat!important;width:28px!important;height:28px!important;color:#f4ecd8!important;opacity:1}
+html[data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle) {
+  opacity:1
+}
+html[data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):not(#imp) {
+  background:url("icons/skeuo/flightlog/vierge.webp?v=5be875bf") center/contain no-repeat;
+  width:28px;
+  height:28px;
+  color:#f4ecd8
+}
 html[data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):is(:hover,:focus-visible){filter:brightness(1.12)}
-html[data-icons="avio"] .repo-block .repo-block-tools .repo-drag{font-size:15px!important;line-height:1;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.55)}
-html[data-icons="avio"] .repo-block .repo-block-tools .repo-toggle::before{background-color:currentColor!important;width:13px!important;height:13px!important;filter:drop-shadow(0 1px .6px rgba(0,0,0,.55))}
-html[data-app-theme="cpco"][data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){color:#ffd23f!important}
+html[data-icons="avio"] .repo-block .repo-block-tools .repo-drag {
+  line-height:1;
+  font-weight:700;
+  text-shadow:0 1px 1px rgba(0,0,0,.55)
+}
+html[data-icons="avio"] .repo-block .repo-block-tools .repo-drag:not(#imp) {
+  font-size:15px
+}
+html[data-icons="avio"] .repo-block .repo-block-tools .repo-toggle::before {
+  filter:drop-shadow(0 1px .6px rgba(0,0,0,.55))
+}
+html[data-icons="avio"] .repo-block .repo-block-tools .repo-toggle:not(#imp)::before {
+  background-color:currentColor;
+  width:13px;
+  height:13px
+}
+html[data-app-theme="cpco"][data-icons="avio"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):not(#imp) {
+  color:#ffd23f
+}
 html[data-icons="avio"] :is(.repo-block-icon,.repo-card-icon){filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
-html[data-icons="steel"] .repo-svg[data-i]{background-image:url("icons/skeuo/field/vierge.webp?v=c2adc3a9")!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * 0.24);color:var(--ico-glyph,#e9ecdf)!important;overflow:visible}
-html[data-app-theme="cpco"][data-icons="steel"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg),html[data-icons="steel"] .repo-sidenav-cpco .repo-svg[data-i]{background-image:url("icons/skeuo/field/vierge.rouge.webp")!important;color:var(--ico-glyph-centre,#ffd23f)!important}
+html[data-icons="steel"] .repo-svg[data-i] {
+  box-sizing:border-box;
+  padding:calc(var(--rs,1.15em) * 0.24);
+  overflow:visible;
+  background-image:url("icons/skeuo/field/vierge.webp?v=c2adc3a9");
+  color:var(--ico-glyph,#e9ecdf)
+}
+html[data-app-theme="cpco"][data-icons="steel"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg):not(#imp),
+html[data-icons="steel"] .repo-sidenav-cpco .repo-svg[data-i]:not(#imp) {
+  background-image:url("icons/skeuo/field/vierge.rouge.webp");
+  color:var(--ico-glyph-centre,#ffd23f)
+}
 html[data-icons="steel"] .repo-svg[data-i]>*{display:inline;filter:var(--ico-glyph-shadow,drop-shadow(.5px 1px .6px rgba(0,0,0,.75)))}
-html[data-icons="steel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){background:url("icons/skeuo/field/vierge.webp?v=c2adc3a9") center/contain no-repeat!important;width:28px!important;height:28px!important;color:#e9ecdf!important;opacity:1}
+html[data-icons="steel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle) {
+  opacity:1
+}
+html[data-icons="steel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):not(#imp) {
+  background:url("icons/skeuo/field/vierge.webp?v=c2adc3a9") center/contain no-repeat;
+  width:28px;
+  height:28px;
+  color:#e9ecdf
+}
 html[data-icons="steel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):is(:hover,:focus-visible){filter:brightness(1.12)}
-html[data-icons="steel"] .repo-block .repo-block-tools .repo-drag{font-size:15px!important;line-height:1;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.55)}
-html[data-icons="steel"] .repo-block .repo-block-tools .repo-toggle::before{background-color:currentColor!important;width:13px!important;height:13px!important;filter:drop-shadow(0 1px .6px rgba(0,0,0,.55))}
-html[data-app-theme="cpco"][data-icons="steel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){color:#ffd23f!important}
+html[data-icons="steel"] .repo-block .repo-block-tools .repo-drag {
+  line-height:1;
+  font-weight:700;
+  text-shadow:0 1px 1px rgba(0,0,0,.55)
+}
+html[data-icons="steel"] .repo-block .repo-block-tools .repo-drag:not(#imp) {
+  font-size:15px
+}
+html[data-icons="steel"] .repo-block .repo-block-tools .repo-toggle::before {
+  filter:drop-shadow(0 1px .6px rgba(0,0,0,.55))
+}
+html[data-icons="steel"] .repo-block .repo-block-tools .repo-toggle:not(#imp)::before {
+  background-color:currentColor;
+  width:13px;
+  height:13px
+}
+html[data-app-theme="cpco"][data-icons="steel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):not(#imp) {
+  color:#ffd23f
+}
 html[data-icons="steel"] :is(.repo-block-icon,.repo-card-icon){filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
-html[data-icons="gel"] .repo-svg[data-i]{background:url("icons/skeuo/aqua/vierge.gris.webp") center/contain no-repeat,radial-gradient(43% 43% at 50% calc(50% - 1px),var(--aq-gel,#2473db) 0 calc(97% - 1px),transparent calc(100% - 1px)) center/contain no-repeat!important;background-color:transparent!important;background-blend-mode:overlay,normal!important;-webkit-mask:url("icons/skeuo/aqua/vierge.gris.webp") center/contain no-repeat;mask:url("icons/skeuo/aqua/vierge.gris.webp") center/contain no-repeat;filter:none!important;box-sizing:border-box;padding:calc(var(--rs,1.15em) * 0.24);color:var(--ico-glyph,#ffffff)!important;overflow:visible}
-html[data-app-theme="cpco"][data-icons="gel"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg),html[data-icons="gel"] .repo-sidenav-cpco .repo-svg[data-i]{color:var(--ico-glyph-centre,#ffd23f)!important}
+html[data-icons="gel"] .repo-svg[data-i] {
+  -webkit-mask:url("icons/skeuo/aqua/vierge.gris.webp") center/contain no-repeat;
+  mask:url("icons/skeuo/aqua/vierge.gris.webp") center/contain no-repeat;
+  box-sizing:border-box;
+  padding:calc(var(--rs,1.15em) * 0.24);
+  overflow:visible;
+  background:url("icons/skeuo/aqua/vierge.gris.webp") center/contain no-repeat,radial-gradient(43% 43% at 50% calc(50% - 1px),var(--aq-gel,#2473db) 0 calc(97% - 1px),transparent calc(100% - 1px)) center/contain no-repeat;
+  background-color:transparent;
+  background-blend-mode:overlay,normal;
+  filter:none;
+  color:var(--ico-glyph,#ffffff)
+}
+html[data-app-theme="cpco"][data-icons="gel"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg):not(#imp),
+html[data-icons="gel"] .repo-sidenav-cpco .repo-svg[data-i]:not(#imp) {
+  color:var(--ico-glyph-centre,#ffd23f)
+}
 html[data-icons="gel"] .repo-svg[data-i]>*{display:inline;filter:var(--ico-glyph-shadow,drop-shadow(.5px 1px .6px rgba(0,0,0,.55)))}
-html[data-icons="gel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){background:url("icons/skeuo/aqua/vierge.gris.webp") center/contain no-repeat,radial-gradient(43% 43% at 50% calc(50% - 1px),var(--aq-gel,#2473db) 0 calc(97% - 1px),transparent calc(100% - 1px)) center/contain no-repeat!important;background-color:transparent!important;background-blend-mode:overlay,normal!important;-webkit-mask:url("icons/skeuo/aqua/vierge.gris.webp") center/contain no-repeat;mask:url("icons/skeuo/aqua/vierge.gris.webp") center/contain no-repeat;width:28px!important;height:28px!important;color:#ffffff!important;opacity:1}
+html[data-icons="gel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle) {
+  -webkit-mask:url("icons/skeuo/aqua/vierge.gris.webp") center/contain no-repeat;
+  mask:url("icons/skeuo/aqua/vierge.gris.webp") center/contain no-repeat;
+  opacity:1
+}
+html[data-icons="gel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):not(#imp) {
+  background:url("icons/skeuo/aqua/vierge.gris.webp") center/contain no-repeat,radial-gradient(43% 43% at 50% calc(50% - 1px),var(--aq-gel,#2473db) 0 calc(97% - 1px),transparent calc(100% - 1px)) center/contain no-repeat;
+  background-color:transparent;
+  background-blend-mode:overlay,normal;
+  width:28px;
+  height:28px;
+  color:#ffffff
+}
 html[data-icons="gel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):is(:hover,:focus-visible){filter:brightness(1.12)}
-html[data-icons="gel"] .repo-block .repo-block-tools .repo-drag{font-size:15px!important;line-height:1;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.55)}
-html[data-icons="gel"] .repo-block .repo-block-tools .repo-toggle::before{background-color:currentColor!important;width:13px!important;height:13px!important;filter:drop-shadow(0 1px .6px rgba(0,0,0,.55))}
-html[data-app-theme="cpco"][data-icons="gel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle){color:#ffd23f!important}
+html[data-icons="gel"] .repo-block .repo-block-tools .repo-drag {
+  line-height:1;
+  font-weight:700;
+  text-shadow:0 1px 1px rgba(0,0,0,.55)
+}
+html[data-icons="gel"] .repo-block .repo-block-tools .repo-drag:not(#imp) {
+  font-size:15px
+}
+html[data-icons="gel"] .repo-block .repo-block-tools .repo-toggle::before {
+  filter:drop-shadow(0 1px .6px rgba(0,0,0,.55))
+}
+html[data-icons="gel"] .repo-block .repo-block-tools .repo-toggle:not(#imp)::before {
+  background-color:currentColor;
+  width:13px;
+  height:13px
+}
+html[data-app-theme="cpco"][data-icons="gel"] .repo-block .repo-block-tools button:is(.repo-drag,.repo-toggle):not(#imp) {
+  color:#ffd23f
+}
 html[data-icons="gel"] :is(.repo-block-icon,.repo-card-icon){filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
 /* ==== fin des jeux skeuomorphes ==== */

@@ -9,9 +9,99 @@
 //   K.t([fr, en, de, es])                ligne de traduction dans la langue courante (typographie française appliquée)
 //   K.store.get(clé, défaut) / .set / .remove / .json(clé, défaut) / .setJson
 //   K.color.rgb(c) / .hex(rgb) / .luminance(c) / .contrast(a, b) / .hsl(h, s, l) / .hueSat(c) / .lightness(c)
+//   K.noFolderAccess()                   message : choix d'un dossier impossible ici (Brave, Firefox, http hors localhost)
 (() => {
   'use strict';
   if (window.RepositoryKit) return;
+
+  // ------------------------------------------------------------------ couches CSS (docs/REFACTORING_TOOLKIT.md, phase 3)
+  // Socle, styles des pages et styles posés par les scripts partagent la couche « app » (ordre et spécificité entre eux
+  // inchangés) ; les designs restent hors couche, au-dessus, et l'emportent sans !important. Les feuilles du socle et les
+  // <style> des pages sont rangés par tools/layer_app.py (data-layer) ; ici, tout autre <style> — posé par un script,
+  // avant ce fichier ou après — est placé dans « app ». Ses !important (dans une couche, un !important passerait devant
+  // ceux des designs) deviennent des règles renforcées « :not(#imp) » (spécificité + 1-0-0 : devant les autres règles de
+  // l'application comme avant, derrière les designs ; tools/strip_page_important.py --bump fait de même pour les
+  // feuilles) ; gardent le leur : display: none (masquage), un !important suivi de /* garder */ (règle qui doit
+  // l'emporter sur l'habillage des designs) et les blocs @media. Règles des designs (html[data-skeuo|design|tone|decor|
+  // icons|app-theme…]) : hors couche, intactes (comme tools/layer_app.py). Déjà en couche ou marqué data-layer : inchangé.
+  const cssBlocks = css => {
+    const out = [];
+    let depth = 0,
+      start = 0;
+    for (let i = 0; i < css.length; i++)
+      if (css[i] === '{') depth++;
+      else if (css[i] === '}' && !--depth) {
+        out.push(css.slice(start, i + 1));
+        start = i + 1;
+      }
+    if (css.slice(start).trim()) out.push(css.slice(start));
+    return out;
+  };
+  const isDesign = b => /^\s*(\/\*[\s\S]*?\*\/\s*)*html(:is\()?\[data-(skeuo|design|tone|decor|icons|app-theme)/.test(b);
+  /** Découpe sur sep hors parenthèses et guillemets. */
+  const splitTop = (s, sep) => {
+    const out = [];
+    let depth = 0,
+      q = '',
+      cur = '';
+    for (const c of s) {
+      if (q) q = c === q ? '' : q;
+      else if (c === '"' || c === "'") q = c;
+      else if (c === '(') depth++;
+      else if (c === ')') depth--;
+      else if (c === sep && !depth) {
+        out.push(cur);
+        cur = '';
+        continue;
+      }
+      cur += c;
+    }
+    out.push(cur);
+    return out;
+  };
+  /** « a .b::before » → « a .b:not(#imp)::before » ; sinon ajouté à la fin de chaque sélecteur. */
+  const bumpSel = sel => splitTop(sel, ',').map(x => {
+    x = x.trim();
+    for (let i = 0, d = 0; i < x.length; i++) {
+      if (x[i] === '(') d++;
+      else if (x[i] === ')') d--;
+      else if (!d && x[i] === ':' && /^(::[\w-]+|:(before|after|first-line|first-letter)\b)/.test(x.slice(i))) return `${x.slice(0, i)}:not(#imp)${x.slice(i)}`;
+    }
+    return `${x}:not(#imp)`;
+  }).join(',');
+  /** Règle de l'application : ses !important (hors display: none et « garder ») en règle renforcée à la suite. */
+  const bumpBlock = b => {
+    if (/^\s*@/.test(b.replace(/\/\*[\s\S]*?\*\//g, '')) || !b.includes('{')) return b;
+    const i = b.indexOf('{'),
+      head = b.slice(0, i),
+      body = b.slice(i + 1, b.lastIndexOf('}'));
+    const keep = [],
+      imp = [];
+    for (const d of splitTop(body, ';').filter(x => x.trim())) {
+      const m = /\s*!important\s*$/.exec(d);
+      if (m && !/display\s*:\s*none\s*$/i.test(d.slice(0, m.index).trim()) && !/\/\*\s*garder/.test(d)) imp.push(d.slice(0, m.index).trim());
+      else keep.push(d.trim());
+    }
+    if (!imp.length) return b;
+    return `${keep.length ? `${head}{${keep.join(';')}}` : ''}${bumpSel(head.replace(/\/\*[\s\S]*?\*\//g, ''))}{${imp.join(';')}}`;
+  };
+  const toApp = s => {
+    if (!s || s.dataset.layer || !s.textContent.trim() || /^\s*@layer\b/.test(s.textContent)) return;
+    s.dataset.layer = 'app';
+    const all = cssBlocks(s.textContent);
+    s.textContent = `@layer app {\n${all.filter(b => !isDesign(b)).map(bumpBlock).join('')}\n}\n${all.filter(isDesign).join('')}`;
+  };
+  document.querySelectorAll('style').forEach(toApp);
+  new MutationObserver(list => {
+    for (const m of list) {
+      if (m.target.nodeName === 'STYLE') toApp(m.target); // contenu posé après l'insertion
+      for (const n of m.addedNodes)
+        if (n.nodeName === 'STYLE') toApp(n);
+    }
+  }).observe(document.documentElement, {
+    childList: true,
+    subtree: true
+  });
 
   const LANGS = ['fr', 'en', 'de', 'es'];
 
@@ -144,6 +234,13 @@
   /** Clarté HSL d'une couleur, en % (0 si illisible). */
   const lightness = c => (toHsl(c)?.l || 0) * 100;
 
+  /** Pourquoi ce navigateur ne peut pas choisir de dossier (File System Access API absente) et quoi faire : Brave la
+   *  désactive par défaut (réglage à activer) ; page en http hors localhost (contexte non sécurisé) ; Firefox, Safari. */
+  const noFolderAccess = () =>
+    !window.isSecureContext ? t([`Choix d’un dossier impossible : page servie en http depuis ${location.host}. Ouvrir la suite par http://127.0.0.1 ou http://localhost (ou en https).`, `Cannot choose a folder: page served over http from ${location.host}. Open the suite via http://127.0.0.1 or http://localhost (or https).`, `Ordnerwahl nicht möglich: Seite per http von ${location.host}. Die Suite über http://127.0.0.1 oder http://localhost (oder https) öffnen.`, `No se puede elegir una carpeta: página servida por http desde ${location.host}. Abrir la suite con http://127.0.0.1 o http://localhost (o https).`])
+    : navigator.brave ? t(['Brave désactive l’accès aux dossiers locaux. Pour l’activer : ouvrir brave://flags/#file-system-access-api, passer « File System Access API » à Enabled, puis relancer Brave. Ou utiliser Chrome / Edge.', 'Brave disables local folder access. To enable it: open brave://flags/#file-system-access-api, set “File System Access API” to Enabled, then restart Brave. Or use Chrome / Edge.', 'Brave deaktiviert den Zugriff auf lokale Ordner. Aktivieren: brave://flags/#file-system-access-api öffnen, „File System Access API“ auf Enabled setzen, Brave neu starten. Oder Chrome / Edge verwenden.', 'Brave desactiva el acceso a carpetas locales. Para activarlo: abrir brave://flags/#file-system-access-api, poner «File System Access API» en Enabled y reiniciar Brave. O usar Chrome / Edge.'])
+    : t(['Ce navigateur ne permet pas de choisir un dossier local (File System Access API) : utiliser Chrome ou Edge.', 'This browser cannot choose a local folder (File System Access API): use Chrome or Edge.', 'Dieser Browser kann keinen lokalen Ordner wählen (File System Access API): Chrome oder Edge verwenden.', 'Este navegador no permite elegir una carpeta local (File System Access API): usar Chrome o Edge.']);
+
   window.RepositoryKit = {
     LANGS,
     esc,
@@ -151,6 +248,7 @@
     langIndex,
     t,
     store,
+    noFolderAccess,
     color: {
       rgb,
       hex,

@@ -18,6 +18,15 @@
     REG_KEY = 'missionRegistry:v1';
   const TEAM_PRESETS = ['A400M', 'C-130J', 'CASA CN235', 'A330 MRTT', 'E-3F', 'Rafale', 'Falcon 50M', 'Atlantique 2', 'Dash 8 (Milan)', 'CL-415', 'H225 Caracal', 'NH90', 'EC145 (Dragon)', 'H160', 'AS365 Dauphin', 'Beech 200 / TBM', 'drone', 'équipe au sol'];
   // mêmes noms que les théâtres reconnus par le registre (theatreOf) ; texte libre pour le prompt
+  // durée de l'opération en tailles de vêtement (premier décollage → dernier atterrissage des équipes DEFA) : repères
+  // pour le générateur (§ 3 du prompt), pas des bornes strictes ; de 30 min à 8 h
+  const DURATIONS = [
+    ['XS', '30–45 min'],
+    ['S', '45 min – 1 h 30'],
+    ['M', '1 h 30 – 3 h'],
+    ['L', '3 – 5 h'],
+    ['XL', '5 – 8 h']
+  ];
   const THEATRE_LIST = ['aléatoire', 'métropole', 'Corse', 'Antilles', 'Guyane', 'Réunion', 'Mayotte', 'Nouvelle-Calédonie', 'Polynésie', 'Saint-Pierre-et-Miquelon', 'Wallis-et-Futuna', 'étranger'];
   // théâtre étranger : pays saisi (« étranger (Japon) ») ; vide = au choix du générateur
   const theatreText = (v, country) => v === 'étranger' ? `étranger (${String(country || '').trim() || 'pays au choix'})` : v;
@@ -89,6 +98,7 @@
       rdv: 'libre',
       ground: 'libre',
       aar: 'libre',
+      duration: 'libre',
       ...readJson(ORDER_KEY, {})
     };
     if (!/^\d+$/.test(String(o.serie || ''))) o.serie = ''; // série : numéro dans la famille (vide = la suivante)
@@ -139,7 +149,8 @@
     teamTypes: teamTypesValue(o) || 'libre',
     rdv: o.rdv,
     ground: o.ground,
-    aar: o.aar
+    aar: o.aar,
+    duration: o.duration || 'libre'
   });
 
   /** Inscrit la commande au registre (statut « commandée ») : via le registre s'il est chargé, sinon dans missionRegistry:v1. */
@@ -206,6 +217,7 @@
     p = set(p, 'TYPES_EQUIPES', r.teamTypes || 'libre');
     p = set(p, 'ÉQUIPES_SOL', r.ground ?? 'libre');
     p = set(p, 'RAVITAILLEMENT', r.aar || 'libre');
+    p = set(p, 'DURÉE', r.duration || 'libre');
     let copied = false;
     try {
       await navigator.clipboard.writeText(p);
@@ -271,6 +283,7 @@
         <label title="${esc(t(['Aéronefs DEFA en vol ; les équipes au sol (VSAV, CROSS, commandement…) se règlent à part', 'DEFA aircraft in flight; ground teams (ambulance, CROSS, command…) are set separately']))}">${esc(t(['Équipes DEFA en vol', 'DEFA flying teams', 'DEFA-Besatzungen im Flug', 'Equipos DEFA en vuelo']))}<input type="number" min="1" max="5" data-o="teams" value="${esc(o.teams)}"></label>
         <label>${esc(t(['Rendez-vous', 'Rendezvous', 'Treffpunkt', 'Encuentro']))}<select data-o="rdv">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.rdv)}${opt('avec', t(['avec', 'with', 'mit', 'con']), o.rdv)}${opt('sans', t(['sans', 'without', 'ohne', 'sin']), o.rdv)}</select></label>
         <label>${esc(t(['Équipes au sol', 'Ground teams', 'Bodenteams', 'Equipos en tierra']))}<select data-o="ground">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.ground)}${[0, 1, 2, 3].map(n => opt(n, n, o.ground)).join('')}</select></label>
+        <label title="${esc(t(['Durée de l’opération, du premier décollage au dernier atterrissage des équipes DEFA : repère pour le générateur, pas une borne stricte', 'Operation duration, first take-off to last landing of the DEFA teams: a guide for the generator, not a strict limit']))}">${esc(t(['Durée', 'Duration', 'Dauer', 'Duración']))}<select data-o="duration">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.duration)}${DURATIONS.map(([k, l]) => opt(k, `${k} — ${l}`, o.duration)).join('')}</select></label>
         <label>${esc(t(['Ravitaillement en vol', 'Air refuelling', 'Luftbetankung', 'Reabastecimiento en vuelo']))}<select data-o="aar">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.aar)}${opt('oui', t(['oui', 'yes', 'ja', 'sí']), o.aar)}${opt('non', t(['non', 'no', 'nein', 'no']), o.aar)}</select></label>
       </div>
       <p><b>${esc(t(['Aéronef de chaque équipe en vol', 'Aircraft of each flying team', 'Luftfahrzeug jeder Besatzung', 'Aeronave de cada equipo']))}</b></p>

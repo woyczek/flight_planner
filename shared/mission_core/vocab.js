@@ -157,8 +157,8 @@
   // Index statique des familles du Core (sélecteur d'en-tête : famille / série), chemins
   // relatifs à la racine du site.
   const families = [
-    ['HEMS', 'HEMS / MEDEVAC', 'HEMS/hems_core'],
-    ['FIRE', 'FIRE / GAAR — sécurité civile', 'FIRE/fire_core'],
+    ['HEMS', 'HEMS / MEDEVAC', 'HEMS/hems_medevac'],
+    ['FIRE', 'FIRE / GAAR — sécurité civile', 'FIRE/fire'],
     ['SAR', 'SAR / récupération de personnel', 'SAR/sar'],
     ['AIRLIFT', 'Transport aérien / logistique', 'AIRLIFT/airlift'],
     ['AAR', 'Ravitaillement en vol', 'AAR/aar'],

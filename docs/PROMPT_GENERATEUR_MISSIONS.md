@@ -32,6 +32,7 @@ PARAMÈTRES DE CETTE EXÉCUTION
   TYPES_EQUIPES   = libre            (aéronef de chaque équipe en vol, dans l'ordre A, B, C…, ex. « A : A400M — COTAM71 + B : automatique + C : A400M — COTAM72 » ; « automatique » = au choix du générateur ; un même type peut revenir avec des indicatifs différents)
   ÉQUIPES_SOL     = libre            (0 à 3 : équipes au sol en plus des équipes en vol)
   RAVITAILLEMENT  = libre            (oui : ravitaillement en vol planifié ; non : aucun)
+  DURÉE           = libre            (XS · S · M · L · XL : durée de l'opération, voir ci-dessous)
 
 Tu produis une série cohérente de NOMBRE_MISSIONS missions de simulation aérienne de la famille TYPE.
 Si TYPE = aléatoire, choisis UNE famille du § 2 et garde-la pour toute la série.
@@ -47,6 +48,12 @@ le § 5 (unités, bases, théâtres) et sur le § 6 : si l'appareil semble peu a
 réelle, distances, tâche) et jamais l'appareil ; ne jamais le remplacer par un appareil « plus adapté » ;
 « automatique » : choisir un appareil adapté à la mission ; ÉQUIPES_SOL = nombre exact d'équipes au sol dans teams (en plus des équipes en vol) ;
 RAVITAILLEMENT = oui → air_refueling.planned: true avec son axe (§ 7), non → pas de bloc air_refueling planifié.
+DURÉE = durée de l'opération, du premier décollage au dernier atterrissage des équipes DEFA (organisation et attente
+au sol comprises pour un exercice), en tailles : XS ≈ 30 à 45 min · S ≈ 45 min à 1 h 30 · M ≈ 1 h 30 à 3 h ·
+L ≈ 3 à 5 h · XL ≈ 5 à 8 h. Repères et non bornes strictes : dimensionner distances, nombre de points, temps sur
+objectif (time_on_task_min), phases de l'exercice et ravitaillements pour que timing.estimated_block_min de chaque
+mission tombe dans la tranche (XS : travail près de la base ; XL : longs transits, plusieurs phases, relèves ou
+ravitaillement). Libre : durée au choix, réaliste pour la famille et l'aéronef.
 
 Les fichiers alimentent automatiquement un briefing, des cartes OpenStreetMap, un PDF de mission, une
 coupe verticale, un compte rendu de mission (CR) et des statistiques. Le YAML est la SOURCE DE VÉRITÉ ;

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Audit des renforts</title>
+<!-- Audit des règles renforcées « :not(#imp) » (outil de développement, docs/REFACTORING_TOOLKIT.md) : la conversion des
+     !important (strip_page_important.py --bump, garde de kit.js) a scindé des règles en une règle ordinaire et une
+     règle renforcée. Pour chaque page de l'arborescence, chaque design et chaque ton, chaque règle renforcée est retirée
+     de son renfort (sélecteur sans « :not(#imp) », même place dans la feuille) puis rétablie ; les propriétés qu'elle
+     déclare sont relevées sur les éléments qu'elle vise (pseudo-éléments compris) avant et après.
+     Verdict par règle : « inutile » si elle vise au moins un élément quelque part et ne change jamais rien, et si aucune
+     règle à état (:hover, :focus, :active, :checked, :disabled, [open]…) ne déclare une de ses propriétés sur un de ses
+     éléments (état non relevé : renfort gardé, par prudence) ; « utile » si un écart est relevé ; « non vue » si elle
+     ne vise rien. Résultat : JSON (bouton Copier, window.impAudit), lu par tools/merge_imp_rules.py.
+     Usage : servir le dépôt (python -m http.server 8767 --bind 127.0.0.1), ouvrir
+     http://127.0.0.1:8767/tools/imp_audit.html (?pages=a.html,b.html : liste réduite), « Auditer ». -->
+<script src="../repository_tree"></script>
+<style>
+  body{margin:0;font:14px system-ui,sans-serif;background:#f4f6f8;color:#17202a}
+  header{padding:12px 16px;background:#fff;border-bottom:1px solid #ccd;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  button{padding:6px 12px;font:inherit;cursor:pointer}
+  #log{padding:12px 16px;white-space:pre-wrap;font:12px ui-monospace,Consolas,monospace}
+  iframe{position:fixed;left:0;top:0;width:1500px;height:1000px;visibility:hidden}
+</style></head><body>
+<header>
+  <b>Renforts :not(#imp) — audit</b>
+  <button id="run">Auditer</button><button id="copy">Copier le JSON</button><span id="state"></span>
+</header>
+<div id="log"></div>
+<script>
+const PAGES = (() => {
+  const q = (new URLSearchParams(location.search).get('pages') || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (q.length) return q;
+  const out = new Set();
+  const walk = x => {
+    if (Array.isArray(x)) x.forEach(walk);
+    else if (x && typeof x === 'object') for (const [k, v] of Object.entries(x)) { if (k === 'path' && /\.html$/.test(v)) out.add(v); else walk(v); }
+  };
+  walk(window.REPOSITORY_TREE || {});
+  return [...out].sort();
+})();
+const DESIGNS = ['cabinet', 'flightlog', 'field', 'aqua', 'standard'];
+const BUMP = ':not(#imp)';
+const STATE = /:(hover|focus|focus-visible|focus-within|active|checked|disabled|enabled|invalid|valid|target|visited|placeholder-shown|indeterminate|open|popover-open|modal)\b|\[open\]|\[aria-(expanded|pressed|selected|current)[^\]]*\]/g;
+const STATE_T = new RegExp(STATE.source);
+const PE = /::?(before|after|placeholder|marker|selection|backdrop|first-line|first-letter|-webkit-[\w-]+|-moz-[\w-]+)\b.*$/;
+const $ = id => document.getElementById(id), log = s => { $('log').textContent += s + '\n'; };
+const result = window.impAudit = {};
+
+/** Liste des règles de style (récursif : couches, @supports…) d'un document, avec leur feuille d'origine. */
+function styleRules(d) {
+  const out = [];
+  const walk = (rules, src) => { for (const r of rules) { if (r.selectorText != null) out.push({ r, src }); if (r.cssRules) walk(r.cssRules, src); } };
+  for (const sh of d.styleSheets) {
+    let src;
+    if (sh.href) src = new URL(sh.href).pathname.replace(/^\//, '');
+    else if (sh.ownerNode?.tagName === 'STYLE') src = 'page';
+    else continue;
+    try { walk(sh.cssRules, src); } catch { /* illisible */ }
+  }
+  return out;
+}
+const splitSel = s => { const out = []; let depth = 0, cur = ''; for (const c of s) { if (c === '(') depth++; if (c === ')') depth--; if (c === ',' && !depth) { out.push(cur.trim()); cur = ''; } else cur += c; } out.push(cur.trim()); return out; };
+/** [{el, pe}] visés par un sélecteur (sans renfort). */
+function targets(d, sel) {
+  const out = [];
+  for (const part of splitSel(sel)) {
+    const m = part.match(PE);
+    const base = (m ? part.slice(0, m.index) : part) || '*';
+    const pe = m ? '::' + m[1] : null;
+    if (pe && !/^::(before|after|marker|placeholder)$/.test(pe)) continue;
+    try { for (const el of d.querySelectorAll(base)) out.push({ el, pe }); } catch { /* sélecteur non interrogeable */ }
+  }
+  return out.slice(0, 60);
+}
+const props = r => [...r.style].filter(p => p !== '');
+function read(w, tg, ps) { return tg.map(({ el, pe }) => { const cs = w.getComputedStyle(el, pe); return ps.map(p => cs.getPropertyValue(p)).join('\u0001'); }); }
+
+function auditDoc(d, ctx) {
+  const w = d.defaultView;
+  const all = styleRules(d);
+  const bumped = all.filter(x => x.r.selectorText.includes(BUMP));
+  // règles à état : propriétés déclarées, éléments visés à état retiré
+  const stateful = all.filter(x => !x.r.selectorText.includes(BUMP) && STATE_T.test(x.r.selectorText));
+  for (const { r, src } of bumped) {
+    const bumpedSel = r.selectorText, plain = bumpedSel.split(BUMP).join('');
+    const key = `${src === 'page' ? 'page:' + ctx.page : src}\u0000${plain}\u0000${r.style.cssText}`;
+    const e = result[key] ??= { src: src === 'page' ? ctx.page : src, page: src === 'page', sel: plain, css: r.style.cssText, seen: 0, diff: 0, stateConflict: 0, samples: [] };
+    const tg = targets(d, plain);
+    if (!tg.length) continue;
+    e.seen++;
+    const ps = props(r);
+    const before = read(w, tg, ps);
+    r.selectorText = plain;
+    const after = read(w, tg, ps);
+    r.selectorText = bumpedSel;
+    if (r.selectorText !== bumpedSel) log('!! rétablissement impossible : ' + bumpedSel);
+    const k = before.findIndex((v, i) => v !== after[i]);
+    if (k >= 0) {
+      e.diff++;
+      if (e.samples.length < 3) {
+        const b = before[k].split('\u0001'), a = after[k].split('\u0001');
+        const p = ps.findIndex((_, i) => b[i] !== a[i]);
+        e.samples.push(`${ctx.key} · ${tg[k].el.tagName.toLowerCase()}${tg[k].el.className && typeof tg[k].el.className === 'string' ? '.' + tg[k].el.className.trim().split(/\s+/).join('.') : ''}${tg[k].pe || ''} · ${ps[p]} : ${b[p]} → ${a[p]}`);
+      }
+    }
+    if (!e.stateConflict) {
+      const els = new Set(tg.filter(t => !t.pe).map(t => t.el));
+      for (const { r: q } of stateful) {
+        if (!ps.some(p => q.style.getPropertyValue(p) !== '')) continue;
+        const qs = splitSel(q.selectorText).map(s => s.replace(STATE, '').replace(PE, '') || '*');
+        let hit = false;
+        for (const s of qs) { try { if ([...d.querySelectorAll(s)].some(el => els.has(el))) { hit = true; break; } } catch { /* */ } }
+        if (hit) { e.stateConflict++; e.stateRule = q.selectorText; break; }
+      }
+    }
+  }
+}
+
+$('run').onclick = async () => {
+  $('log').textContent = '';
+  const keep = localStorage.getItem('repositoryDesign');
+  let n = 0;
+  for (const des of DESIGNS) {
+    localStorage.setItem('repositoryDesign', des);
+    for (const p of PAGES) {
+      $('state').textContent = `${des} · ${p} (${++n}/${DESIGNS.length * PAGES.length})`;
+      const f = document.createElement('iframe');
+      document.body.append(f);
+      f.src = `/${p}${p.includes('?') ? '&' : '?'}_=${Date.now()}`;
+      await new Promise(r => { f.onload = r; setTimeout(r, 8000); });
+      await new Promise(r => setTimeout(r, 1500));
+      try {
+        f.contentDocument.head.insertAdjacentHTML('beforeend', '<style data-layer="bench">*,*::before,*::after{transition:none!important;animation:none!important}</style>');
+        for (const tone of ['light', 'dark']) {
+          f.contentDocument.documentElement.dataset.tone = tone;
+          await new Promise(r => setTimeout(r, 80));
+          auditDoc(f.contentDocument, { page: p, key: `${des}|${tone}|${p}` });
+        }
+      } catch (err) { log(`${des} · ${p} : ${err.message}`); }
+      f.remove();
+    }
+  }
+  if (keep) localStorage.setItem('repositoryDesign', keep); else localStorage.removeItem('repositoryDesign');
+  const v = Object.values(result);
+  const useless = v.filter(e => e.seen && !e.diff && !e.stateConflict), useful = v.filter(e => e.diff), state = v.filter(e => e.seen && !e.diff && e.stateConflict), unseen = v.filter(e => !e.seen);
+  $('state').textContent = 'terminé';
+  log(`${v.length} règles renforcées : ${useless.length} inutiles, ${useful.length} utiles, ${state.length} gardées (règle à état), ${unseen.length} non vues.`);
+  for (const e of useful) log(`UTILE  ${e.src}  ${e.sel}\n    ${e.samples.join('\n    ')}`);
+  window.impAuditDone = true;
+};
+$('copy').onclick = () => navigator.clipboard.writeText(JSON.stringify(Object.values(result), null, 1));
+</script>
+</body></html>

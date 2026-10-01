@@ -1,39 +1,23 @@
 <!doctype html>
-<html lang="fr">
+<html data-tool="dark" lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Planning ODV</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=5569f9d7">
-<script src="../../repository_tree?v=e86e8e5c"></script>
-<style>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=2bab0c08">
+<script src="../../repository_tree?v=2359ba14"></script>
+<style data-layer="app">
+@layer app {
 /* Couleurs : sombres par défaut (thème du planificateur), claires si le ton de la page est clair (Apparence). */
 :root {
   font-family: Inter, system-ui, Segoe UI, Arial, sans-serif;
-  color-scheme: dark;
-  --text: #eef3f7;
-  --muted: #9ba8b5;
-  --panel: #181d23;
-  --field: #11161c;
-  --line: #2b3440;
-  --soft: #ffffff0d;
-  --card: var(--panel);
-  --ink: var(--text)
-}
-html[data-tone="light"] {
-  color-scheme: light;
-  --text: #18242b;
-  --muted: #5b6b76;
-  --panel: #ffffff;
-  --field: #ffffff;
-  --line: #d3dfe5;
-  --soft: #0000000a
+  color-scheme: dark
 }
 * {
   box-sizing: border-box
 }
 body {
   margin: 0;
-  color: var(--text)
+  color: var(--ink)
 }
 header {
   padding: 10px 18px
@@ -48,7 +32,7 @@ main.odv-page {
   padding: 16px 16px 48px
 }
 main.odv-page>section {
-  background: var(--panel);
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 14px 16px;
@@ -68,7 +52,7 @@ main.odv-page h3 {
 .odv-page input:not([type=checkbox]):not([type=file]),
 .odv-page textarea {
   background: var(--field);
-  color: var(--text);
+  color: var(--ink);
   border: 1px solid var(--line);
   border-radius: 7px;
   padding: 6px 9px;
@@ -128,9 +112,6 @@ main.odv-page h3 {
 .odv-bad {
   color: #f2c879;
   font-weight: 600
-}
-html[data-tone="light"] :is(.odv-bad, .odv-notes .warn) {
-  color: #8a5300
 }
 /* surfaces de données sur le voile des blocs habillés (designs à panneaux : --repo-veil, designs_skeuo.css) */
 :is(.odv-kv, .odv-heat, .odv-legend, .odv-notes, .odv-filters, .odv-detail, .odv-empty) {
@@ -298,7 +279,7 @@ html[data-tone="light"] :is(.odv-bad, .odv-notes .warn) {
 .odv-heat button small {
   display: block;
   font-size: 10.5px;
-  color: var(--text);
+  color: var(--ink);
   opacity: .8
 }
 .odv-heat button.sel {
@@ -459,6 +440,20 @@ html[data-tone="light"] :is(.odv-bad, .odv-notes .warn) {
   color: inherit;
   opacity: .78
 }
+}
+</style><style data-layer="designs">
+html[data-tone="light"] {
+  color-scheme: light;
+  --ink: #18242b;
+  --muted: #5b6b76;
+  --card: #ffffff;
+  --field: #ffffff;
+  --line: #d3dfe5;
+  --soft: #0000000a
+}
+html[data-tone="light"] :is(.odv-bad, .odv-notes .warn) {
+  color: #8a5300
+}
 /* Durci (panneau olive sombre) : cases de la carte des créneaux en « champ noir », textes secondaires éclaircis */
 html[data-design="field"] {
   --muted: #c3c8b2
@@ -533,14 +528,14 @@ html[data-design="field"] .odv-heat button.sel {
   <textarea id="odvRecapText" readonly placeholder="Récapitulatif DISPO MATIN / APREM / SOIR par jour (texte à coller, par exemple dans Discord)."></textarea>
 </section>
 </main>
-<script src="../../shared/kit.js?v=9839b88b"></script>
-<script src="../../shared/repository_nav.js?v=18fd986e"></script>
+<script src="../../shared/kit.js?v=9221c6fa"></script>
+<script src="../../shared/repository_nav.js?v=5a3ba911"></script>
 <script src="../../shared/zip_store.js?v=1b42107f"></script>
 <script src="../../shared/data_files.js?v=50601f47" data-file="references/defa_reference.js"></script>
 <script src="../../shared/mission_table.js?v=9375486d"></script>
 <script src="../../shared/sia_base.js?v=2f8158b3"></script><script src="odv_core.js?v=68eb8dbc"></script>
 <script src="odv_planning.js?v=8c16ad85"></script>
-<script src="../../shared/app_framework.js?v=f2fdd96f"></script>
+<script src="../../shared/app_framework.js?v=817d675e"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script>
 // Traductions des textes fixes de la page (les contenus calculés restent en français, zones data-no-i18n).

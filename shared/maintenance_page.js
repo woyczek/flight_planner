@@ -151,7 +151,7 @@
         await window.FileAccess.pickFolder(key);
         after?.();
       } catch (e) {
-        if (e?.name !== 'AbortError' && e?.message !== 'Dossier refusé') alert(e.message);
+        if (e?.name !== 'AbortError' && e?.message !== 'Dossier refusé') (window.AppFramework?.notify || alert)(e.message, 'warn');
       }
     };
     waitFor('FileAccess').then(FA => FA?.decorate(b, key, {
@@ -607,6 +607,9 @@
         size: f.size
       };
     }
+    // dépôt de données absent (installation publique, data/data_tree.js introuvable) : pas de requête vers data/,
+    // qui ne ferait qu'ajouter des 404 à la console
+    if (/^data\//.test(path) && window.DataFiles && !window.DataFiles.available()) return null;
     try {
       const r = await fetch(new URL(path.split('/').map(encodeURIComponent).join('/'), root()).href, {
         cache: 'no-store'
@@ -641,15 +644,6 @@
     // code
     const rel = window.REPOSITORY_TREE?.release || {};
     add(G.code, t(['Suite (repository_tree)', 'Suite (repository_tree)']), `<b>${esc(rel.version)}</b> <code>${esc(rel.id || '')}</code>`, esc(rel.date), '', `<a href="${esc(rel.changelog)}" target="_blank" rel="noopener">CHANGELOG</a>`);
-    const vj = await repoText('VERSION.json');
-    if (vj) {
-      let v = '';
-      try {
-        v = JSON.parse(vj.text).release;
-      } catch {
-        /* illisible */ }
-      add(G.code, 'VERSION.json', esc(v || '?'), fmtDate(vj.lastModified, false), v === rel.version ? pill('ok', '=') : pill('warn', t(['périmé (≠ repository_tree), ignoré par git', 'stale (≠ repository_tree), git-ignored'])), '');
-    }
     const cacheV = /[?&]v=(\w+)/.exec([...document.scripts].map(s => s.src).find(s => /repository_nav\.js/.test(s)) || '')?.[1] || '';
     add(G.code, t(['Version de cache de repository_nav.js (?v=)', 'repository_nav.js cache version (?v=)']), `<code>${esc(cacheV)}</code>`, t(['empreinte du contenu du fichier', 'fingerprint of the file content']), '', 'tools/bump_versions.py');
     const g = gitState || window.SuiteUpdate?.gitInfo?.();
@@ -801,17 +795,6 @@
       promptState = block == null ? pill('warn', '?') : block.trim() === window.MISSION_PROMPT.trim() ? pill('ok', t(['synchronisé', 'in sync'])) : pill('warn', t(['à régénérer : python tools/build_mission_prompt.py', 'rebuild: python tools/build_mission_prompt.py']));
     }
     add(t(['Prompt des missions', 'Mission prompt']), 'apps/cpco/mission_prompt.js ← docs/PROMPT_GENERATEUR_MISSIONS.md', t(['git ; en-tête « GÉNÉRÉ »', 'git; “GENERATED” header']), 'build_mission_prompt.py (bump_versions.py)', t(['générateur, registre des missions', 'generator, mission registry']), promptState);
-    const vj = await repoText('VERSION.json'),
-      relv = window.REPOSITORY_TREE?.release?.version;
-    let vv = '';
-    try {
-      vv = vj ? JSON.parse(vj.text).release : '';
-    } catch {
-      /* illisible */ }
-    add('VERSION.json', 'VERSION.json ← repository_tree', t(['ignoré par git (*.json)', 'git-ignored (*.json)']), t(['aucun (à supprimer)', 'none (to delete)']), '—', !vj ? pill('ok', t(['absent', 'absent'])) : vv === relv ? pill('ok', vv) : pill('warn', t(['{a} ≠ {b}', '{a} ≠ {b}'], {
-      a: vv,
-      b: relv
-    })));
     host.innerHTML = `<p class="row"><button type="button" class="secondary" id="mtDepRefresh" data-icon="refresh">${esc(t(['Vérifier', 'Check', 'Prüfen', 'Comprobar']))}</button></p>
       <div class="mt-scroll"><table class="mt-table mt-wide"><thead><tr><th>${esc(t(['Référence', 'Reference', 'Referenz', 'Referencia']))}</th><th>${esc(t(['Fichier', 'File', 'Datei', 'Archivo']))}</th><th>${esc(t(['Traçage', 'Tracing', 'Nachverfolgung', 'Trazado']))}</th><th>${esc(t(['Mise à jour', 'Update', 'Aktualisierung', 'Actualización']))}</th><th>${esc(t(['Dépendants', 'Dependents', 'Abhängige', 'Dependientes']))}</th><th>${esc(t(['Contrôle', 'Check', 'Prüfung', 'Control']))}</th></tr></thead><tbody>
       ${rows.map(r => `<tr><td><b>${esc(r.ref)}</b></td><td class="mt-small"><code>${esc(r.file)}</code></td><td class="mt-small">${esc(r.traced)}</td><td class="mt-small">${esc(r.process)}</td><td class="mt-small">${esc(r.dependents)}</td><td>${r.state}</td></tr>`).join('')}
@@ -1490,7 +1473,7 @@
         recursive: true
       }]);
     } catch (e) {
-      if (e?.name !== 'AbortError') alert(e.message);
+      if (e?.name !== 'AbortError') (window.AppFramework?.notify || alert)(e.message, 'warn');
     }
     renderBackup();
   }

@@ -1,20 +1,16 @@
 <!doctype html>
-<html lang="fr">
+<html data-tool="dark" lang="fr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Flight Performance & Fuel Planner</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=5569f9d7">
-<script src="../../repository_tree?v=e86e8e5c"></script>
-<style>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=2bab0c08">
+<script src="../../repository_tree?v=2359ba14"></script>
+<style data-layer="app">
+@layer app {
 :root {
   font-family: Inter, system-ui, Segoe UI, Arial, sans-serif;
-  color-scheme: dark;
-  --bg: #101317;
-  --p: #181d23;
-  --b: #2b3440;
-  --a: #71b7ff;
-  --mut: #9ba8b5
+  color-scheme: dark
 }
 * {
   box-sizing: border-box
@@ -26,7 +22,7 @@ body {
 }
 header {
   padding: 10px 18px;
-  border-bottom: 1px solid var(--b);
+  border-bottom: 1px solid var(--line);
   position: sticky;
   top: 0;
   background: #101317ee;
@@ -50,7 +46,7 @@ header {
   align-items: center;
   gap: 7px;
   font-size: 12px;
-  color: var(--mut)
+  color: var(--muted)
 }
 h1 {
   font-size: 18px;
@@ -62,7 +58,7 @@ select,
 textarea {
   background: #11161c;
   color: #eef3f7;
-  border: 1px solid var(--b);
+  border: 1px solid var(--line);
   border-radius: 7px;
   padding: 8px
 }
@@ -84,8 +80,8 @@ button {
   gap: 12px
 }
 .card {
-  background: var(--p);
-  border: 1px solid var(--b);
+  background: var(--card);
+  border: 1px solid var(--line);
   border-radius: 10px;
   padding: 14px
 }
@@ -109,7 +105,7 @@ h2 {
 }
 .field label {
   display: block;
-  color: var(--mut);
+  color: var(--muted);
   font-size: 12px;
   margin-bottom: 4px
 }
@@ -127,7 +123,7 @@ h2 {
   font-weight: 700
 }
 .mut {
-  color: var(--mut);
+  color: var(--muted);
   font-size: 12px
 }
 .row {
@@ -165,9 +161,9 @@ h2 {
   color: #ff8d8d
 }
 dialog {
-  background: var(--p);
+  background: var(--card);
   color: #eef3f7;
-  border: 1px solid var(--b);
+  border: 1px solid var(--line);
   border-radius: 12px;
   width: min(760px, 92vw)
 }
@@ -182,7 +178,7 @@ dialog::backdrop {
   display: flex;
   justify-content: space-between;
   padding: 9px;
-  border-bottom: 1px solid var(--b);
+  border-bottom: 1px solid var(--line);
   cursor: pointer
 }
 .air:hover {
@@ -196,7 +192,7 @@ table {
 th,
 td {
   padding: 7px;
-  border-bottom: 1px solid var(--b);
+  border-bottom: 1px solid var(--line);
   text-align: right
 }
 th:first-child,
@@ -242,7 +238,7 @@ td:first-child {
   z-index: 50;
   padding: 5px;
   background: #101319;
-  border: 1px solid var(--b);
+  border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: 0 10px 30px #0008
 }
@@ -306,7 +302,7 @@ td:first-child {
 }
 .caret {
   font-size: 10px;
-  color: var(--mut)
+  color: var(--muted)
 }
 .ac-icon {
   display: inline-flex;
@@ -340,7 +336,7 @@ td:first-child {
   opacity: .58
 }
 .aircraft-item .ac-meta {
-  color: var(--mut);
+  color: var(--muted);
   font-size: 11px;
   margin-left: auto;
   white-space: nowrap
@@ -348,8 +344,8 @@ td:first-child {
 .aircraft-group {
   margin: 7px 7px 3px;
   padding: 5px 2px 3px;
-  border-bottom: 1px solid var(--b);
-  color: var(--mut);
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
   font-size: 11px;
   font-weight: 650;
   text-transform: uppercase;
@@ -367,15 +363,17 @@ td:first-child {
     gap: 7px
   }
 }
+}
 </style>
-<style>
+<style data-layer="app">
+@layer app {
 .wrap {
   max-width: none;
   width: 100%
 }
 .editorGroup {
   grid-column: auto;
-  border: 1px solid var(--b);
+  border: 1px solid var(--line);
   border-radius: 8px;
   padding: 10px;
   min-width: 0
@@ -474,7 +472,7 @@ td:first-child {
 .result-group {
   margin-top: 14px;
   padding-top: 10px;
-  border-top: 1px solid var(--b)
+  border-top: 1px solid var(--line)
 }
 .result-group>h3 {
   margin: 0 0 8px
@@ -514,15 +512,17 @@ td:first-child {
     grid-template-columns: 1fr
   }
 }
+}
 </style>
-<style>
+<style data-layer="app">
+@layer app {
 /* ===== Vue des courbes de performances (shared/flight_perf_view.js) ===== */
 .opt-chart {
   width: 100%;
   height: auto;
   display: block;
   background: #10151b;
-  border: 1px solid var(--b);
+  border: 1px solid var(--line);
   border-radius: 8px;
   touch-action: none
 }
@@ -582,7 +582,7 @@ td:first-child {
 #optBlock {
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 1px solid var(--b)
+  border-top: 1px solid var(--line)
 }
 .perf-row {
   margin: 0 0 12px
@@ -600,7 +600,7 @@ td:first-child {
 }
 #optBlock td.unreach {
   text-align: left;
-  color: var(--mut)
+  color: var(--muted)
 }
 .chart-wrap {
   display: flex;
@@ -621,7 +621,7 @@ td:first-child {
   align-items: center;
   gap: 2px;
   font-size: 11px;
-  color: var(--mut)
+  color: var(--muted)
 }
 .vslider output {
   color: #eef3f7;
@@ -639,8 +639,8 @@ td:first-child {
   border: 0
 }
 .side-panel {
-  background: var(--p);
-  border: 1px solid var(--b);
+  background: var(--card);
+  border: 1px solid var(--line);
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 13px;
@@ -661,7 +661,7 @@ td:first-child {
 }
 .side-panel summary {
   cursor: pointer;
-  color: var(--mut)
+  color: var(--muted)
 }
 .kvp {
   display: grid;
@@ -670,7 +670,7 @@ td:first-child {
   margin: 4px 0
 }
 .kvp dt {
-  color: var(--mut)
+  color: var(--muted)
 }
 .kvp dd {
   margin: 0;
@@ -686,7 +686,7 @@ td:first-child {
   background: #ffffff08
 }
 .reading {
-  color: var(--mut)
+  color: var(--muted)
 }
 .perf-warn {
   color: #f0b86e
@@ -768,8 +768,10 @@ abbr[title] {
     max-height: none
   }
 }
+}
 </style>
-<style id="fpColumns">
+<style id="fpColumns" data-layer="app">
+@layer app {
 .opt-chart .beyond {
   fill: #8a96a3;
   fill-opacity: .2;
@@ -791,7 +793,7 @@ abbr[title] {
   padding: 0;
   list-style: none;
   font-size: 12px;
-  color: var(--mut)
+  color: var(--muted)
 }
 .chart-zones li {
   margin: 2px 0
@@ -897,23 +899,28 @@ abbr[title] {
     width: 90px !important
   }
 }
+}
 </style>
-<style id="skeuoPlanner">
+<style id="skeuoPlanner" data-layer="designs">
 /* Designs à matières (html[data-skeuo], jetons --sk-chart-*, --sk-slider-*, --sk-thumb-* de shared/designs_skeuo.css) */
 /* ================================================================================================ CADRANS DU PLANIFICATEUR
    Cadrans réalistes (shared/flight_instruments.js) : le boîtier est dessiné dans le SVG ; ombre portée du boîtier. */
 html[data-skeuo] .fp-gauge svg {
-  background: none !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
   overflow: visible;
   filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, .7)) drop-shadow(0 6px 8px rgba(0, 0, 0, .45))
 }
+html[data-skeuo] .fp-gauge svg:not(#imp) {
+  background: none;
+  box-shadow: none;
+  border-radius: 0
+}
 /* ombre recréée sur la silhouette du boîtier (contact + portée) */
 html[data-skeuo] .fp-fuel-mode {
-  background: #0d0e10 !important;
-  border: 1px solid currentColor !important;
   box-shadow: inset 0 1px 3px #000
+}
+html[data-skeuo] .fp-fuel-mode:not(#imp) {
+  background: #0d0e10;
+  border: 1px solid currentColor
 }
 /* ================================================================================================ PLANIFICATEUR : GRAPHIQUES ET CURSEURS
    Graphiques du devis carburant (svg.opt-chart) en écran d'instrument, curseurs verticaux (input.vr) en commandes :
@@ -926,26 +933,26 @@ html[data-skeuo] svg.opt-chart {
   border-radius: var(--sk-chart-radius);
   box-shadow: var(--sk-chart-shadow)
 }
-html[data-skeuo] svg.opt-chart .grid-line {
-  stroke: var(--sk-chart-grid) !important
+html[data-skeuo] svg.opt-chart .grid-line:not(#imp) {
+  stroke: var(--sk-chart-grid)
 }
-html[data-skeuo] svg.opt-chart .axis {
-  stroke: var(--sk-chart-axis) !important
+html[data-skeuo] svg.opt-chart .axis:not(#imp) {
+  stroke: var(--sk-chart-axis)
 }
-html[data-skeuo] svg.opt-chart text {
-  fill: var(--sk-chart-text) !important
+html[data-skeuo] svg.opt-chart text:not(#imp) {
+  fill: var(--sk-chart-text)
 }
 html[data-design-base="cabinet"] svg.opt-chart .grid-line {
   stroke-dasharray: 2 4
 }
-html[data-design-base="cabinet"] svg.opt-chart .axis {
-  stroke-width: 1.6 !important
+html[data-design-base="cabinet"] svg.opt-chart .axis:not(#imp) {
+  stroke-width: 1.6
 }
-html[data-design-base="cabinet"] svg.opt-chart text {
-  font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif !important
+html[data-design-base="cabinet"] svg.opt-chart text:not(#imp) {
+  font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif
 }
-html[data-design="field"] svg.opt-chart text {
-  font-family: Bahnschrift, "Arial Narrow", ui-monospace, monospace !important
+html[data-design="field"] svg.opt-chart text:not(#imp) {
+  font-family: Bahnschrift, "Arial Narrow", ui-monospace, monospace
 }
 html[data-design="field"] svg.opt-chart :is(path, polyline, circle) {
   filter: drop-shadow(0 0 2px rgba(140, 255, 160, .45))
@@ -983,13 +990,15 @@ html[data-skeuo] .vslider input.vr::-webkit-slider-thumb {
   box-shadow: var(--sk-thumb-shadow)
 }
 /* planificateur : bouton « épingler déplié » du bloc Résultat, icône à la taille des autres outils */
-html[data-skeuo] .repo-block-tools .fp-result-pin svg {
-  width: 18px !important;
-  height: 18px !important
+html[data-skeuo] .repo-block-tools .fp-result-pin svg:not(#imp) {
+  width: 18px;
+  height: 18px
 }
 html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"] {
-  background-color: rgba(255, 255, 255, .18) !important;
   opacity: 1
+}
+html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp) {
+  background-color: rgba(255, 255, 255, .18)
 }
 </style>
 </head>
@@ -1057,21 +1066,21 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"] {
 
 <section class="card span6" data-icon="clipboard" data-subtitle="Historique des calibrations appliquées au profil."><h2>Traçabilité de calibration</h2><div id="calibrationMeta" class="kv"><div>État</div><div>Pas de calibration OFP</div></div></section>
 
-<section class="card span12" data-block-id="vertical-profile" data-icon="layers" data-subtitle="Coupe le long de la route : relief, espaces aériens, trajectoire."><h2>Profil vertical</h2><div class="mut">Coupe le long de la route : relief, espaces aériens et obstacles selon un profil d’affichage du studio cartographique (Missions SIA), qui fournit aussi la base SIA (aérodromes, balises, points RNAV) — même navigateur ; route : le plan de vol du devis carburant. Montée selon le modèle de performances de l’avion actif, descente à son vario (TOC, TOD).</div><div style="height:8px"></div><div class="fields" style="margin-top:8px"><div class="field"><label>Profil d’affichage (studio)</label><select id="vpProfile"></select></div><div class="field"><label>Plancher (ft)</label><input id="vpFloor" type="number" min="0" step="500" value="0"></div><div class="field"><label>Plafond (ft, 0 = auto)</label><input id="vpCeil" type="number" min="0" step="500" value="0"></div></div><div class="row" style="margin-top:8px"><button id="vpDraw" data-icon="layers" class="primary">Tracer le profil</button></div><div id="vpStatus" class="mut" style="margin-top:8px"></div><img id="vpImg" alt="Profil vertical" hidden style="width:100%;margin-top:10px;border:1px solid var(--b);border-radius:8px;background:#fff"></section>
+<section class="card span12" data-block-id="vertical-profile" data-icon="layers" data-subtitle="Coupe le long de la route : relief, espaces aériens, trajectoire."><h2>Profil vertical</h2><div class="mut">Coupe le long de la route : relief, espaces aériens et obstacles selon un profil d’affichage du studio cartographique (Missions SIA), qui fournit aussi la base SIA (aérodromes, balises, points RNAV) — même navigateur ; route : le plan de vol du devis carburant. Montée selon le modèle de performances de l’avion actif, descente à son vario (TOC, TOD).</div><div style="height:8px"></div><div class="fields" style="margin-top:8px"><div class="field"><label>Profil d’affichage (studio)</label><select id="vpProfile"></select></div><div class="field"><label>Plancher (ft)</label><input id="vpFloor" type="number" min="0" step="500" value="0"></div><div class="field"><label>Plafond (ft, 0 = auto)</label><input id="vpCeil" type="number" min="0" step="500" value="0"></div></div><div class="row" style="margin-top:8px"><button id="vpDraw" data-icon="layers" class="primary">Tracer le profil</button></div><div id="vpStatus" class="mut" style="margin-top:8px"></div><img id="vpImg" alt="Profil vertical" hidden style="width:100%;margin-top:10px;border:1px solid var(--line);border-radius:8px;background:#fff"></section>
 
 <section class="card span12" data-icon="search" data-subtitle="Valeurs lues dans l’OFP et valeurs recalculées."><h2>Audit OFP — valeurs brutes et calculées</h2><table><thead><tr><th>Phase</th><th>Source</th><th>Temps</th><th>Distance</th><th>Carburant</th><th>FF calculé</th><th>TAS / GS</th><th>Vario</th></tr></thead><tbody id="ofpAudit"><tr><td colspan="8">Aucune donnée OFP.</td></tr></tbody></table></section>
 
 <section class="card span12"><div class="row"><h2 style="flex:1">JSON importé / SimBrief</h2><button id="copyJsonBtn">Copier JSON</button><button id="clearJsonBtn">Effacer</button></div>
 <div id="jsonMeta" class="mut">Aucun JSON chargé.</div>
-<pre id="jsonViewer" style="margin:10px 0 0;max-height:480px;overflow:auto;white-space:pre-wrap;word-break:break-word;background:#0c1014;border:1px solid var(--b);border-radius:8px;padding:12px;font-size:12px;line-height:1.4">—</pre></section>
+<pre id="jsonViewer" style="margin:10px 0 0;max-height:480px;overflow:auto;white-space:pre-wrap;word-break:break-word;background:#0c1014;border:1px solid var(--line);border-radius:8px;padding:12px;font-size:12px;line-height:1.4">—</pre></section>
 </div></div>
 
 <dialog id="dlg"><div class="row"><h2 style="flex:1">Choisir l’avion</h2><button onclick="dlg.close()">Fermer</button></div><input id="search" placeholder="Rechercher ICAO / nom…" style="width:100%;margin-bottom:8px"><div id="airlist" class="airlist"></div></dialog>
 
 <!-- navigation (en-tête, barre latérale) avant les scripts de calcul : la barre et la marge du contenu paraissent tout de suite -->
-<script src="../../shared/kit.js?v=9839b88b"></script>
-<script src="../../shared/repository_nav.js?v=18fd986e"></script>
-<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=4737efea"></script>
+<script src="../../shared/kit.js?v=9221c6fa"></script>
+<script src="../../shared/repository_nav.js?v=5a3ba911"></script>
+<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=69e8ef45"></script>
 <script src="../../AircraftDB/aircraft_icons.js"></script>
 <script src="../../AircraftDB/aircraft_perf.js"></script>
 <script src="../../shared/sticky_frame.js?v=90db4df1"></script><script src="../../shared/flight_profile_help.js?v=d55e0cd9"></script><script src="../../shared/column_resize.js?v=953e38b1"></script><script src="../../shared/flight_instruments.js?v=7776d24e"></script><script src="../../shared/flight_perf_view.js?v=16cd3bb7"></script>
@@ -3197,10 +3206,11 @@ async function refreshLandingAircraft() {
   landingAircraft = rec && typeof rec.text === "string" ? landingAircraftFromCsv(rec.text) : [];
   return true
 }
-/** Nom affiché d'un appareil connu seulement du Landing / de la DEFA : modèle de la base des types (hors libellés de navigation mal lus) et code. */
+/** Nom affiché d'un appareil connu seulement du Landing / de la DEFA : modèle de la base des types (référence et surnom
+ *  d'abord, constructeur ensuite : AircraftCatalog.displayName ; hors libellés de navigation mal lus) et code. */
 function landingName(code, rec) {
   const m = String(rec?.model || "").trim();
-  return m && !/^(Aircraft Performance Database|Skip to aircraft details)$/i.test(m) ? `${m} (${code})` : code
+  return m && !/^(Aircraft Performance Database|Skip to aircraft details)$/i.test(m) ? `${window.AircraftCatalog?.displayName(m) || m} (${code})` : code
 }
 /** Appareils du Landing Performance et types DEFA qui n'ont pas encore de profil (proposés dans la liste, profil vide créé au choix). */
 function landingOnlyAircraft(profiles) {
@@ -3357,7 +3367,7 @@ applyHeaderPreferences();
   else syncAircraftPicker();
 }
 </script>
-<script src="../../shared/app_framework.js?v=f2fdd96f"></script>
+<script src="../../shared/app_framework.js?v=817d675e"></script>
 <script src="../../shared/flight_ui.js?v=4064c2b6"></script>
 <script src="../../shared/carto/aero_symbols.js?v=8393fb57"></script><script src="../../shared/carto/vertical_profile.js?v=75163ccf"></script><script src="../../shared/flight_vertical_profile.js?v=ee7dded4"></script>
 <script src="../../shared/content_i18n.js"></script><script src="../../shared/flight_i18n.js"></script>

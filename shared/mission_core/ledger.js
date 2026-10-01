@@ -349,7 +349,7 @@
       loading = null;
       return picked.name;
     }
-    if (!window.showDirectoryPicker) throw new Error('API dossier local indisponible (Chrome / Edge requis)');
+    if (!window.showDirectoryPicker) throw new Error(window.RepositoryKit?.noFolderAccess?.() || 'API dossier local indisponible (Chrome / Edge requis)');
     const current = handle || await idbGet(HANDLE);
     const picked = await window.showDirectoryPicker({
       mode: 'readwrite',

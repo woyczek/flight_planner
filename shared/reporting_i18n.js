@@ -1,9 +1,7 @@
 (() => {
   'use strict';
-  // Traductions des nouveaux éléments d'UI introduits par le framework de reporting
-  // partagé (shared/time_period.js, shared/mission_table.js) et par les sections
-  // ajoutées aux pages HEMS/GAAR/général. S'enregistre auprès du même mécanisme de
-  // traduction live que gaar_i18n.js/hems_i18n.js (shared/content_i18n.js).
+  // Traductions des éléments d'UI du framework de reporting partagé (shared/time_period.js,
+  // shared/mission_table.js) et des pages de reporting ; traduction live de shared/content_i18n.js.
   if (!window.RepositoryContentI18n) return;
   const rows = [
     ['Période', 'Period', 'Zeitraum', 'Periodo'],
@@ -15,9 +13,6 @@
     ['Année en cours', 'Current year', 'Aktuelles Jahr', 'Año en curso'],
     ['Période personnalisée', 'Custom period', 'Benutzerdefinierter Zeitraum', 'Periodo personalizado'],
     ['Période analysée', 'Period analysed', 'Analysierter Zeitraum', 'Periodo analizado'],
-    ['Cette période est partagée avec les reportings HEMS et GAAR.', 'This period is shared with the HEMS and GAAR reports.', 'Dieser Zeitraum wird mit den HEMS- und GAAR-Berichten geteilt.', 'Este periodo se comparte con los informes HEMS y GAAR.'],
-    ['La période sélectionnée ci-dessus est partagée avec le reporting général et GAAR.', 'The period selected above is shared with the general and GAAR reporting.', 'Der oben gewählte Zeitraum wird mit dem allgemeinen und dem GAAR-Reporting geteilt.', 'El periodo seleccionado arriba se comparte con el reporte general y GAAR.'],
-    ['La période sélectionnée ci-dessus est partagée avec le reporting général et HEMS.', 'The period selected above is shared with the general and HEMS reporting.', 'Der oben gewählte Zeitraum wird mit dem allgemeinen und dem HEMS-Reporting geteilt.', 'El periodo seleccionado arriba se comparte con el reporte general y HEMS.'],
     ['Missions (tri, édition, suppression)', 'Missions (sort, edit, delete)', 'Einsätze (Sortieren, Bearbeiten, Löschen)', 'Misiones (ordenar, editar, eliminar)'],
     ['Missions par immatriculation', 'Missions by registration', 'Einsätze nach Kennzeichen', 'Misiones por matrícula'],
     ['Actions', 'Actions', 'Aktionen', 'Acciones'],

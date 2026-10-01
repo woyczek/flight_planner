@@ -304,14 +304,14 @@
   {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = new URL("designs.css?v=c6a31c8a", script.src).href;
+    css.href = new URL("designs.css?v=51c18d91", script.src).href;
     css.id = "repoDesignsCss";
     document.head.append(css)
   }
   // Designs à matières (Cabinet, Durci, Aqua : textures, plaques, vis) : feuille propre (designs.list[id].css),
   // chargée seulement quand l'un d'eux est choisi, avec sa propre version (empreinte de son contenu, table FILE_V
   // écrite par tools/bump_versions.py).
-  const FILE_V = {"designs_skeuo.css": "3907791c"};
+  const FILE_V = {"designs_skeuo.css": "1e125447"};
   const designCss = id => {
     const f = designs[id]?.css;
     if (!f || document.querySelector(`link[data-design-css="${f}"]`)) return;
@@ -514,7 +514,7 @@
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
-      sc.src = new URL("appearance_page.js?v=916a726f", script.src).href;
+      sc.src = new URL("appearance_page.js?v=9ccc994e", script.src).href;
       sc.onload = show;
       document.head.append(sc);
     }
@@ -898,17 +898,17 @@
     profile.src = new URL("pilot_profile.js?v=7b0ee603", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=72155359", script.src).href;
+    files.src = new URL("file_access.js?v=e274fbbc", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=1bfdb961", "block_icons.js?v=ccf64e90", "side_nav.js?v=355697e6"]) {
+    for (const f of ["icons/repository_icons.js?v=1bfdb961", "block_icons.js?v=ff923add", "side_nav.js?v=355697e6"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=3a8264a9", script.src).href;
+    store.src = new URL("browser_store.js?v=938ce9e7", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const update = document.createElement("script");
     update.src = new URL("suite_update.js?v=d84028ad", script.src).href;

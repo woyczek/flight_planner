@@ -169,7 +169,7 @@
   async function pickFolder(key, {
     mode = 'readwrite'
   } = {}) {
-    if (!window.showDirectoryPicker) throw new Error('File System Access API (Chrome / Edge)');
+    if (!window.showDirectoryPicker) throw new Error(window.RepositoryKit?.noFolderAccess?.() || 'File System Access API (Chrome / Edge)');
     const info = FOLDERS[key] || {},
       current = await get(key);
     const handle = await window.showDirectoryPicker({

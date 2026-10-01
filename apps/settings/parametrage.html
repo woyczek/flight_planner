@@ -1,9 +1,10 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Paramètres — bases de données et maintenance</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=5569f9d7"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=ca4d76cc"><link rel="stylesheet" href="../../shared/maintenance.css?v=f274b621">
-<script src="../../repository_tree?v=e86e8e5c"></script>
-<style>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=2bab0c08"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=f33b51fd"><link rel="stylesheet" href="../../shared/maintenance.css?v=941ff048">
+<script src="../../repository_tree?v=2359ba14"></script>
+<style data-layer="app">
+@layer app {
   main.da-page {
     max-width: 1500px;
     margin: 20px auto;
@@ -188,11 +189,13 @@
     outline: none
   }
   .da-del {
-    background: transparent !important;
-    color: #b91c1c !important;
-    font-size: 16px;
-    padding: 2px 8px !important
-  }
+  font-size: 16px
+}
+.da-del:not(#imp) {
+  background: transparent;
+  color: #b91c1c;
+  padding: 2px 8px
+}
   .da-yaml textarea {
     width: 100%;
     min-height: 55vh;
@@ -224,30 +227,31 @@
       position: static
     }
   }
+}
 </style>
 </head><body>
 <!-- Paramétrage des bases de données (appareils, flotte, équipages, fusions…) : page construite par
      shared/data_admin.js (navigation à gauche, tableau éditable à droite). -->
 <header class="mc-header"><h1>Paramètres</h1><p>DEFA Virtual — bases de données (flotte, types, indicatifs, registres…) et maintenance (mises à jour, sources et dossiers, données SIA, sauvegarde)</p></header>
 <main class="da-page" id="dataAdmin"></main>
-<script src="../../shared/kit.js?v=9839b88b"></script>
-<script src="../../shared/repository_nav.js?v=18fd986e"></script>
+<script src="../../shared/kit.js?v=9221c6fa"></script>
+<script src="../../shared/repository_nav.js?v=5a3ba911"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
-<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=4737efea"></script>
+<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=69e8ef45"></script>
 <script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
 <script src="../../shared/data_files.js?v=50601f47" data-file="references/callsigns.js"></script>
-<script src="../../shared/mission_core/vocab.js?v=90cadad7"></script>
+<script src="../../shared/mission_core/vocab.js?v=db00c09c"></script>
 <script src="../../shared/mission_core/model.js?v=0e2b9529"></script>
 <script src="../../shared/mission_core/blocks.js?v=6ea3d5f2"></script>
-<script src="../../shared/mission_core/ledger.js?v=38d9d8df"></script>
+<script src="../../shared/mission_core/ledger.js?v=a5471631"></script>
 <script src="../../shared/mission_core/grid_edit.js?v=5da781ad"></script>
 <script src="../../shared/mission_core/defa_log.js?v=ccfda126"></script><script src="../../shared/data_admin_i18n.js?v=7bf365f8"></script><script src="../../shared/data_admin.js?v=b06968fc"></script>
 <script>
 window.DataAdmin.mount(document.getElementById('dataAdmin'));
 </script>
 <!-- rubrique « Maintenance » (mises à jour, sources et dossiers, versions, dépendances, SIA, sauvegarde totale, journal) -->
-<script src="../../AircraftDB/aircraft_perf.js"></script><script src="../cpco/mission_prompt.js?v=2d2e41d9"></script>
-<script src="../../shared/zip_store.js?v=1b42107f"></script><script src="../../shared/airac.js?v=62723a04"></script><script src="../../shared/carto/aero_symbols.js?v=8393fb57"></script><script src="../../shared/sia_base.js?v=2f8158b3"></script><script src="../../shared/mission_table.js?v=9375486d"></script><script src="../cpco/mission_store.js?v=00ff5c1b"></script><script src="../../shared/mission_routing.js?v=ec32b1f9"></script><script src="../../shared/mission_registry.js?v=860dd311"></script><script src="../../shared/maintenance_page.js?v=6208087a"></script>
-<script src="../../shared/app_framework.js?v=f2fdd96f"></script>
+<script src="../../AircraftDB/aircraft_perf.js"></script><script src="../cpco/mission_prompt.js?v=e21e318b"></script>
+<script src="../../shared/zip_store.js?v=1b42107f"></script><script src="../../shared/airac.js?v=62723a04"></script><script src="../../shared/carto/aero_symbols.js?v=8393fb57"></script><script src="../../shared/sia_base.js?v=2f8158b3"></script><script src="../../shared/mission_table.js?v=9375486d"></script><script src="../cpco/mission_store.js?v=00ff5c1b"></script><script src="../../shared/mission_routing.js?v=ec32b1f9"></script><script src="../../shared/mission_registry.js?v=860dd311"></script><script src="../../shared/maintenance_page.js?v=9acf76c7"></script>
+<script src="../../shared/app_framework.js?v=817d675e"></script>
 </body></html>

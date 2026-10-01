@@ -57,8 +57,8 @@
     idPrefix: 'GAAR',
     defaultCategory: 'fixed',
     pages: {
-      cr: 'fire_core_cr.html',
-      reporting: 'fire_core_reporting.html'
+      cr: 'fire_cr.html',
+      reporting: 'fire_reporting.html'
     },
     title: L('FIRE / GAAR — feux de forêt', 'FIRE / GAAR — wildfires', 'FIRE / GAAR — Waldbrände', 'FIRE / GAAR — incendios forestales'),
     series: [{

@@ -8,47 +8,49 @@
 
 /* ---- Aéro : arrondi, ombres douces teintées du thème, en-tête en dégradé, boutons en pilule */
 html[data-design="aero"] .repo-header {
-  background: linear-gradient(115deg, var(--repo-bar), color-mix(in srgb, var(--repo-bar) 72%, #000)) !important;
   box-shadow: 0 6px 22px color-mix(in srgb, var(--repo-bar) 35%, transparent)
 }
-html[data-design="aero"] body {
-  background: color-mix(in srgb, var(--repo-page) 90%, var(--repo-accent)) !important
+html[data-design="aero"] .repo-header:not(#imp) {
+  background: linear-gradient(115deg, var(--repo-bar), color-mix(in srgb, var(--repo-bar) 72%, #000))
 }
-html[data-design="aero"] .repo-block,
-html[data-design="aero"] .card {
-  border-radius: 12px !important;
-  border-color: color-mix(in srgb, var(--repo-accent) 20%, transparent) !important;
-  box-shadow: 0 10px 30px color-mix(in srgb, var(--repo-accent) 13%, transparent) !important
+html[data-design="aero"] body:not(#imp) {
+  background: color-mix(in srgb, var(--repo-page) 90%, var(--repo-accent))
+}
+html[data-design="aero"] .repo-block:not(#imp),
+html[data-design="aero"] .card:not(#imp) {
+  border-radius: 12px;
+  border-color: color-mix(in srgb, var(--repo-accent) 20%, transparent);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--repo-accent) 13%, transparent)
 }
 html[data-design="aero"] .repo-block h2 {
   color: var(--repo-accent)
 }
-html[data-design="aero"] button:not(.col-split),
-html[data-design="aero"] .buttonLink,
-html[data-design="aero"] .mc-header-tools summary,
-html[data-design="aero"] .mc-header-tools a,
-html[data-design="aero"] .mc-report-tools summary,
-html[data-design="aero"] .mc-report-tools a,
-html[data-design="aero"] .mc-bookmarklet,
-html[data-design="aero"] .repo-block-tools button {
-  border-radius: 8px !important
+html[data-design="aero"] button:not(.col-split):not(#imp),
+html[data-design="aero"] .buttonLink:not(#imp),
+html[data-design="aero"] .mc-header-tools summary:not(#imp),
+html[data-design="aero"] .mc-header-tools a:not(#imp),
+html[data-design="aero"] .mc-report-tools summary:not(#imp),
+html[data-design="aero"] .mc-report-tools a:not(#imp),
+html[data-design="aero"] .mc-bookmarklet:not(#imp),
+html[data-design="aero"] .repo-block-tools button:not(#imp) {
+  border-radius: 8px
 }
-html[data-design="aero"] .repo-menu,
-html[data-design="aero"] .repo-language-menu,
-html[data-design="aero"] .mc-pop,
-html[data-design="aero"] .mc-switch-pop,
-html[data-design="aero"] .mc-import-pop,
-html[data-design="aero"] .lang-menu,
-html[data-design="aero"] .aircraft-menu,
-html[data-design="aero"] .dropdown-menu,
-html[data-design="aero"] .popover,
-html[data-design="aero"] [role="menu"] {
-  border-radius: 12px !important
+html[data-design="aero"] .repo-menu:not(#imp),
+html[data-design="aero"] .repo-language-menu:not(#imp),
+html[data-design="aero"] .mc-pop:not(#imp),
+html[data-design="aero"] .mc-switch-pop:not(#imp),
+html[data-design="aero"] .mc-import-pop:not(#imp),
+html[data-design="aero"] .lang-menu:not(#imp),
+html[data-design="aero"] .aircraft-menu:not(#imp),
+html[data-design="aero"] .dropdown-menu:not(#imp),
+html[data-design="aero"] .popover:not(#imp),
+html[data-design="aero"] [role="menu"]:not(#imp) {
+  border-radius: 12px
 }
-html[data-design="aero"] input:not([type=checkbox]):not([type=radio]):not([type=range]),
-html[data-design="aero"] select,
-html[data-design="aero"] textarea {
-  border-radius: 7px !important
+html[data-design="aero"] input:not([type=checkbox]):not([type=radio]):not([type=range]):not(#imp),
+html[data-design="aero"] select:not(#imp),
+html[data-design="aero"] textarea:not(#imp) {
+  border-radius: 7px
 }
 
 /* ---- Opérationnel : dense, angles vifs, liseré de thème à gauche des blocs, titres en capitales, chiffres tabulaires */
@@ -62,59 +64,64 @@ html[data-design="ops"] .repo-header-line1 {
   min-height: 36px
 }
 html[data-design="ops"] .repo-header h1 {
-  font-size: 16px !important;
   letter-spacing: .02em
 }
-html[data-design="ops"] .repo-block,
-html[data-design="ops"] .card {
-  border-radius: 3px !important;
-  box-shadow: none !important;
-  border-left: 4px solid var(--repo-accent) !important;
-  padding: 10px 12px !important;
-  margin-bottom: 8px !important
+html[data-design="ops"] .repo-header h1:not(#imp) {
+  font-size: 16px
+}
+html[data-design="ops"] .repo-block:not(#imp),
+html[data-design="ops"] .card:not(#imp) {
+  border-radius: 3px;
+  box-shadow: none;
+  border-left: 4px solid var(--repo-accent);
+  padding: 10px 12px;
+  margin-bottom: 8px
 }
 html[data-design="ops"] .repo-block h2,
 html[data-design="ops"] .card h2 {
-  font-size: 12.5px !important;
   text-transform: uppercase;
   letter-spacing: .07em
 }
-html[data-design="ops"] button:not(.col-split),
-html[data-design="ops"] .buttonLink,
-html[data-design="ops"] .mc-header-tools summary,
-html[data-design="ops"] .mc-header-tools a,
-html[data-design="ops"] .mc-report-tools summary,
-html[data-design="ops"] .mc-report-tools a,
-html[data-design="ops"] .mc-bookmarklet,
-html[data-design="ops"] .repo-block-tools button {
-  border-radius: 3px !important
+html[data-design="ops"] .repo-block h2:not(#imp),
+html[data-design="ops"] .card h2:not(#imp) {
+  font-size: 12.5px
 }
-html[data-design="ops"] .repo-menu,
-html[data-design="ops"] .repo-language-menu,
-html[data-design="ops"] .mc-pop,
-html[data-design="ops"] .mc-switch-pop,
-html[data-design="ops"] .mc-import-pop,
-html[data-design="ops"] .lang-menu,
-html[data-design="ops"] .aircraft-menu,
-html[data-design="ops"] .dropdown-menu,
-html[data-design="ops"] .popover,
-html[data-design="ops"] [role="menu"] {
-  border-radius: 3px !important
+html[data-design="ops"] button:not(.col-split):not(#imp),
+html[data-design="ops"] .buttonLink:not(#imp),
+html[data-design="ops"] .mc-header-tools summary:not(#imp),
+html[data-design="ops"] .mc-header-tools a:not(#imp),
+html[data-design="ops"] .mc-report-tools summary:not(#imp),
+html[data-design="ops"] .mc-report-tools a:not(#imp),
+html[data-design="ops"] .mc-bookmarklet:not(#imp),
+html[data-design="ops"] .repo-block-tools button:not(#imp) {
+  border-radius: 3px
 }
-html[data-design="ops"] input:not([type=checkbox]):not([type=radio]):not([type=range]),
-html[data-design="ops"] select,
-html[data-design="ops"] textarea {
-  border-radius: 2px !important
+html[data-design="ops"] .repo-menu:not(#imp),
+html[data-design="ops"] .repo-language-menu:not(#imp),
+html[data-design="ops"] .mc-pop:not(#imp),
+html[data-design="ops"] .mc-switch-pop:not(#imp),
+html[data-design="ops"] .mc-import-pop:not(#imp),
+html[data-design="ops"] .lang-menu:not(#imp),
+html[data-design="ops"] .aircraft-menu:not(#imp),
+html[data-design="ops"] .dropdown-menu:not(#imp),
+html[data-design="ops"] .popover:not(#imp),
+html[data-design="ops"] [role="menu"]:not(#imp) {
+  border-radius: 3px
 }
-html[data-design="ops"] :where(body>:not(.repo-header):not(.repo-footer)) input:not([type=checkbox]):not([type=radio]):not([type=range]),
-html[data-design="ops"] :where(body>:not(.repo-header):not(.repo-footer)) select {
-  padding-top: 5px !important;
-  padding-bottom: 5px !important
+html[data-design="ops"] input:not([type=checkbox]):not([type=radio]):not([type=range]):not(#imp),
+html[data-design="ops"] select:not(#imp),
+html[data-design="ops"] textarea:not(#imp) {
+  border-radius: 2px
 }
-html[data-design="ops"] :where(body>:not(.repo-header):not(.repo-footer)) th,
-html[data-design="ops"] :where(body>:not(.repo-header):not(.repo-footer)) td {
-  padding-top: 4px !important;
-  padding-bottom: 4px !important
+html[data-design="ops"] :where(body>:not(.repo-header):not(.repo-footer)) input:not([type=checkbox]):not([type=radio]):not([type=range]):not(#imp),
+html[data-design="ops"] :where(body>:not(.repo-header):not(.repo-footer)) select:not(#imp) {
+  padding-top: 5px;
+  padding-bottom: 5px
+}
+html[data-design="ops"] :where(body>:not(.repo-header):not(.repo-footer)) th:not(#imp),
+html[data-design="ops"] :where(body>:not(.repo-header):not(.repo-footer)) td:not(#imp) {
+  padding-top: 4px;
+  padding-bottom: 4px
 }
 
 /* ---- Console : règles dans block_icons.css (barre latérale, blocs aérés numérotés, titres en capitales) */
@@ -147,19 +154,19 @@ html[data-design="ops"] :where(body>:not(.repo-header):not(.repo-footer)) td {
 /* ---- graphiques en relief (Apparence › Graphiques, style « relief » ; automatique dans les designs à matières) :
    rainures gravées, barres et anneaux ombrés (reflet SVG ajouté par charts.js) ; rainure claire sur les pages claires */
 html[data-chart-style="relief"] .mcg-htrack {
-  height: 12px !important;
-  border-radius: 3px !important;
-  background: rgba(0, 0, 0, .38) !important;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .75), 0 1px 0 rgba(255, 255, 255, .1)
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .75), 0 1px 0 rgba(255, 255, 255, .1);
+  height: 12px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, .38)
 }
 html[data-chart-style="relief"] .mcg-htrack i {
-  border-radius: 2px !important;
-  background-image: linear-gradient(rgba(255, 255, 255, .42), rgba(255, 255, 255, .1) 45%, rgba(0, 0, 0, .2) 55%, rgba(0, 0, 0, .06)) !important;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .35)
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .35);
+  border-radius: 2px;
+  background-image: linear-gradient(rgba(255, 255, 255, .42), rgba(255, 255, 255, .1) 45%, rgba(0, 0, 0, .2) 55%, rgba(0, 0, 0, .06))
 }
 html[data-chart-style="relief"] :is(.mcg-legend, .mcg-series-legend) i {
-  border-radius: 50% !important;
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .55), inset 0 -1px 1px rgba(0, 0, 0, .4), 0 0 0 1px rgba(0, 0, 0, .45)
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .55), inset 0 -1px 1px rgba(0, 0, 0, .4), 0 0 0 1px rgba(0, 0, 0, .45);
+  border-radius: 50%
 }
 html[data-chart-style="relief"] .mcg-donut svg {
   filter: drop-shadow(0 3px 3px rgba(0, 0, 0, .45))
@@ -168,6 +175,8 @@ html[data-chart-style="relief"] .mcg-donut :is(path, circle) {
   stroke: rgba(0, 0, 0, .4)
 }
 html[data-chart-style="relief"][data-tone="light"]:not([data-design="field"]) .mcg-htrack {
-  background: linear-gradient(#d3d9e0, #eceff3) !important;
   box-shadow: inset 0 1px 3px rgba(20, 40, 70, .35), 0 1px 0 #fff
+}
+html[data-chart-style="relief"][data-tone="light"]:not([data-design="field"]) .mcg-htrack:not(#imp) {
+  background: linear-gradient(#d3d9e0, #eceff3)
 }
