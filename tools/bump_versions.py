@@ -6,8 +6,8 @@ Usage (à la racine du dépôt) :
     python tools/bump_versions.py
 
 Ce qui est versionné :
-- pages HTML : attributs src / href « …?v=… » et @import url("…?v=…") vers un fichier du dépôt (chemin relatif à
-  la page) ;
+- pages HTML : attributs src / href « …?v=… », @import url("…?v=…") et images des styles de la page
+  url("…image?v=…") vers un fichier du dépôt (chemin relatif à la page) ;
 - scripts : chargements « 'fichier.js?v=…' » / « "feuille.css?v=…" » écrits dans le code (chemin relatif au script) ;
 - repository_nav.js : table FILE_V des feuilles de design chargées à la demande (designs.list[id].css) ;
 - feuilles des designs (designs_skeuo.css, block_icons.css) : images textures / deco / icons/skeuo.
@@ -79,6 +79,7 @@ IMG = re.compile(r'(\(\s*["\']?)((?:textures|deco/[\w/]+|icons/skeuo/[\w/-]+)/[\
 LIT = re.compile(r'(["\'`])((?:\.{1,2}/)?[\w./-]+\.(?:js|css))\?v=\w+')
 ATTR = re.compile(r'((?:src|href)=["\'])([^"\'?#:]+)\?v=\w+')
 IMPORT = re.compile(r'(@import url\(["\'])([^"\'?#:]+)\?v=\w+')   # feuilles importées dans une couche (tools/layer_pages.py)
+PAGEIMG = re.compile(r'(url\(["\']?)([^"\'()?#:]+\.(?:webp|png|jpe?g|svg))\?v=\w+')   # images des styles d'une page
 
 # prompt de génération de missions : régénéré depuis docs/ (tools/build_mission_prompt.py)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -116,7 +117,8 @@ pages = [p for p in glob.glob(os.path.join(ROOT, '**', '*.html'), recursive=True
 changees = 0
 for p in pages:
     s = io.open(p, encoding='utf-8', newline='').read()
-    changees += ecrire_si_change(p, s, versionner(versionner(s, os.path.dirname(p), ATTR), os.path.dirname(p), IMPORT))
+    d = os.path.dirname(p)
+    changees += ecrire_si_change(p, s, versionner(versionner(versionner(s, d, ATTR), d, IMPORT), d, PAGEIMG))
 print(f'Versions par empreinte : {changees} page(s) modifiée(s).')
 for a in sorted(absents):
     print('  référence vers un fichier absent : ' + a)

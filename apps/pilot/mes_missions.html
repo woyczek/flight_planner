@@ -28,25 +28,25 @@
   .pm-open{margin:0}
   /* « CONFIDENTIEL » : tampon encreur (image commune aux designs) ; le mot reste lu par les lecteurs d'écran */
   .pm-label{position:relative;background:var(--sheet-card-bg,#f4ead0);color:var(--sheet-ink,#2b2112)} /* papier : lisible sur tout fond */
-  .pm-label small{position:absolute;z-index:2;top:-14px;right:-18px;width:180px;aspect-ratio:700/245;background:url("../../shared/deco/stamp-confidential.webp") center/contain no-repeat;color:transparent;font-size:0;transform:rotate(-9deg);opacity:.8;pointer-events:none}
+  .pm-label small{position:absolute;z-index:2;top:-14px;right:-18px;width:180px;aspect-ratio:700/245;background:url("../../shared/deco/stamp-confidential.webp?v=85ab3564") center/contain no-repeat;color:transparent;font-size:0;transform:rotate(-9deg);opacity:.8;pointer-events:none}
   /* Cabinet, Aqua, Durci : dossier fermé (ficelé et scellé, noué d'un ruban ou sanglé, tant que la mission n'est pas ouverte) ;
      ouvrir brise le sceau (dénoue le ruban). Images par design : --pm-cover, --pm-seal, proportions --pm-ratio, largeur --pm-cwk (part du dossier ouvert) */
-  html[data-design="cabinet"]{--pm-cover:url("../../shared/deco/cabinet/mission-cover.webp");--pm-seal:url("../../shared/deco/cabinet/mission-seal-fitted.webp");--pm-ratio:720/1015;--pm-cwk:.4266}
+  html[data-design="cabinet"]{--pm-cover:url("../../shared/deco/cabinet/mission-cover.webp?v=2bf76d77");--pm-seal:url("../../shared/deco/cabinet/mission-seal-fitted.webp?v=9c2ac112");--pm-ratio:720/1015;--pm-cwk:.4266}
   /* Durci : dossier zippé fermé (étiquette « CONFIDENTIEL » à la tirette) ; scellé : ficelle en croix et cachet de cire
      (calque à la toile du dossier, découpé au corps du dossier : mission-seal-fitted.webp) */
-  html[data-design="field"]{--pm-cover:url("../../shared/deco/field/mission-closed.webp");--pm-seal:url("../../shared/deco/field/mission-seal-fitted.webp");--pm-ratio:961/1441;--pm-cwk:.529}
+  html[data-design="field"]{--pm-cover:url("../../shared/deco/field/mission-closed.webp?v=45e80a15");--pm-seal:url("../../shared/deco/field/mission-seal-fitted.webp?v=db24e3b1");--pm-ratio:961/1441;--pm-cwk:.529}
   html[data-design="field"] .pm-cover .pm-open{bottom:20%}
   /* Carnet de vol : enveloppe cachetée (en-tête du ministère), le carnet dedans ; la mission sur une étiquette scotchée
      de travers, tampon à travers ; ouverte, l'enveloppe s'efface ; mission lue : le carnet fermé */
-  html[data-design="flightlog"]{--pm-cover:url("../../shared/deco/flightlog/mission-closed.webp");--pm-seal:none;--pm-ratio:600/852;--pm-cwk:.509}
-  html[data-design="flightlog"] .pm-cover.sealed{--pm-cover:url("../../shared/deco/flightlog/mission-sealed.webp");--pm-ratio:640/900;--pm-cwk:.54;transition:opacity .38s ease-in}
+  html[data-design="flightlog"]{--pm-cover:url("../../shared/deco/flightlog/mission-closed.webp?v=3ad105ce");--pm-seal:none;--pm-ratio:600/852;--pm-cwk:.509}
+  html[data-design="flightlog"] .pm-cover.sealed{--pm-cover:url("../../shared/deco/flightlog/mission-sealed.webp?v=d2ff2cc7");--pm-ratio:640/900;--pm-cwk:.54;transition:opacity .38s ease-in}
   html[data-design="flightlog"] .pm-cover.sealed.open{opacity:0}
   html[data-design="flightlog"] .pm-cover .pm-label{margin-top:30%} /* sous la plaque du carnet */
   html[data-design="flightlog"] .pm-cover.sealed .pm-label{margin-top:56%;transform:rotate(1.8deg)} /* sous le cachet */
-  html[data-design="flightlog"] .pm-cover.sealed .pm-label::before,html[data-design="flightlog"] .pm-cover.sealed .pm-label::after{content:"";position:absolute;z-index:3;width:34%;aspect-ratio:420/73;background:url("../../shared/deco/flightlog/tape-1.webp") center/100% 100% no-repeat;opacity:.9;pointer-events:none}
+  html[data-design="flightlog"] .pm-cover.sealed .pm-label::before,html[data-design="flightlog"] .pm-cover.sealed .pm-label::after{content:"";position:absolute;z-index:3;width:34%;aspect-ratio:420/73;background:url("../../shared/deco/flightlog/tape-1.webp?v=463c91c8") center/100% 100% no-repeat;opacity:.9;pointer-events:none}
   html[data-design="flightlog"] .pm-cover.sealed .pm-label::before{top:-10px;left:-9%;transform:rotate(-14deg)}
-  html[data-design="flightlog"] .pm-cover.sealed .pm-label::after{bottom:-8px;right:-8%;transform:rotate(-9deg);background-image:url("../../shared/deco/flightlog/tape-2.webp")}
-  html[data-design="aqua"]{--pm-cover:url("../../shared/deco/aqua/mission-cover.webp");--pm-seal:url("../../shared/deco/aqua/mission-seal-fitted.webp");--pm-ratio:720/954;--pm-cwk:.445}
+  html[data-design="flightlog"] .pm-cover.sealed .pm-label::after{bottom:-8px;right:-8%;transform:rotate(-9deg);background-image:url("../../shared/deco/flightlog/tape-2.webp?v=9cba6e50")}
+  html[data-design="aqua"]{--pm-cover:url("../../shared/deco/aqua/mission-cover.webp?v=999d136a");--pm-seal:url("../../shared/deco/aqua/mission-seal-fitted.webp?v=101a308a");--pm-ratio:720/954;--pm-cwk:.445}
   html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) #pmDetail{--pm-bw:min(1064px,100%)}
   html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover{position:relative;box-sizing:border-box;width:calc(var(--pm-bw) * var(--pm-cwk));aspect-ratio:var(--pm-ratio);margin:0 0 0 auto;padding:7% 0 0;border:0;align-content:start;background:var(--pm-cover) center/100% 100% no-repeat;filter:drop-shadow(0 10px 16px rgba(0,0,0,.45))}
   /* scellé : ficelle passée dans les œillets et sceau (Cabinet) ou ruban noué (Aqua), calque à la toile exacte du
@@ -57,11 +57,11 @@
   html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-label{position:relative;z-index:1;margin-top:4%;min-width:0;width:72%;padding:12px 16px;background:#f4ead0;color:#2b2112;border:1px solid rgba(60,40,20,.35);box-shadow:0 1px 3px rgba(0,0,0,.3);transform:rotate(-1.2deg);font-family:Georgia,"Times New Roman",serif}
   /* Aqua : étiquette blanche collée, tampon « URGENT » */
   html[data-design="aqua"] .pm-label{background:#fbfaf6;color:#1d2530;border-color:rgba(40,50,60,.25);transform:rotate(-.8deg);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif}
-  html[data-design="aqua"] .pm-label small{aspect-ratio:700/194;background-image:url("../../shared/deco/stamp-urgent.webp")}
+  html[data-design="aqua"] .pm-label small{aspect-ratio:700/194;background-image:url("../../shared/deco/stamp-urgent.webp?v=f32486f9")}
   html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-open{position:absolute;z-index:3;left:0;right:0;bottom:7%;text-align:center}
   @media (prefers-reduced-motion:reduce){html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover::after{transition:none}}
   /* Cabinet (Carnet de vol, Aqua, Durci : surcharges plus bas) : dossier ouvert (pages : zones claires de mission-open.webp) */
-  .pm-book{container-type:inline-size;position:relative;width:var(--pm-bw,min(1064px,100%));aspect-ratio:1400/842;margin:0 0 12px auto;background:url("../../shared/deco/cabinet/mission-open.webp") center/contain no-repeat;filter:drop-shadow(0 10px 18px rgba(0,0,0,.45))}
+  .pm-book{container-type:inline-size;position:relative;width:var(--pm-bw,min(1064px,100%));aspect-ratio:1400/842;margin:0 0 12px auto;background:url("../../shared/deco/cabinet/mission-open.webp?v=141b7dc8") center/contain no-repeat;filter:drop-shadow(0 10px 18px rgba(0,0,0,.45))}
   .pm-page{position:absolute;top:8.5%;bottom:8%;overflow:auto;padding:1.6cqw 2.4cqw 5.2cqw;font:12.5px/1.5 "Courier Prime","Courier New",Courier,monospace;color:#2b2112;scrollbar-width:thin}
   .pm-left{left:5.6%;right:54.4%}.pm-right{left:53.6%;right:5.3%}.pm-page{cursor:pointer}
   .pm-page:has(> [data-part="title"]){overflow:hidden} /* page 1 : le tampon déborde de l'étiquette, sans barre de défilement */
@@ -79,7 +79,7 @@
   .pm-head{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;margin:0 0 10px;padding-bottom:8px;border-bottom:1px solid rgba(43,33,18,.4);text-transform:uppercase;font-size:10.5px;letter-spacing:.12em}
   .pm-head div{display:grid}.pm-head b{font-size:12px}.pm-emblem{width:72px;height:auto}.pm-no{white-space:nowrap}
   .pm-content>[data-part="title"],.pm-emblem{display:none}.pm-book .pm-emblem{display:block}
-  .pm-dr{display:none}.pm-book .pm-dr{display:block;position:absolute;z-index:2;width:190px;aspect-ratio:505/200;background:url("../../shared/deco/cabinet/stamp-diffusion-restreinte.webp") center/contain no-repeat;opacity:.8;pointer-events:none}
+  .pm-dr{display:none}.pm-book .pm-dr{display:block;position:absolute;z-index:2;width:190px;aspect-ratio:505/200;background:url("../../shared/deco/cabinet/stamp-diffusion-restreinte.webp?v=73254f39") center/contain no-repeat;opacity:.8;pointer-events:none}
   .pm-book [data-part="order"] .pm-dr{top:58px;right:-6px;transform:rotate(-6deg)}
   /* logo en page 1 (Cabinet, Carnet de vol, Durci) : l'en-tête de l'ordre, en haut à gauche, au-dessus de l'étiquette */
   .pm-logo{display:none}
@@ -101,7 +101,7 @@
   .pm-page .pm-route{grid-template-columns:1fr}
   .pm-page .pm-maps{grid-template-columns:repeat(2,1fr);gap:16px 14px;padding:6px}
   .pm-page .pm-maps figure{transform:rotate(var(--tilt,0deg));background:#fbf7ec;padding:6px 6px 4px;box-shadow:0 3px 8px rgba(0,0,0,.35)}
-  .pm-corner{position:absolute;bottom:4%;width:6.5%;aspect-ratio:1;border:0;padding:0;background:url("../../shared/deco/cabinet/page-corner.webp") right bottom/contain no-repeat;cursor:pointer;z-index:2}
+  .pm-corner{position:absolute;bottom:4%;width:6.5%;aspect-ratio:1;border:0;padding:0;background:url("../../shared/deco/cabinet/page-corner.webp?v=ffa933b3") right bottom/contain no-repeat;cursor:pointer;z-index:2}
   /* coin corné : couleur accordée dans l'image (moyenne du papier sans ombre = celle des feuilles), pas de filtre */
   .pm-corner:hover{filter:brightness(1.04) drop-shadow(0 2px 3px rgba(0,0,0,.35))}
   .pm-next{right:3.43%}.pm-prev{left:3.57%;transform:scaleX(-1)}
@@ -109,7 +109,7 @@
      droite → gauche : feuille droite (725–1352), origine à −30 px ; gauche → droite : feuille gauche (50–665), +30 px */
   .pm-leaf{position:absolute;z-index:3;top:4.75%;bottom:4%;left:51.8%;right:3.43%;transform-style:preserve-3d;transform-origin:-4.79% 50%;pointer-events:none}
   .pm-leaf.back{left:3.57%;right:52.5%;transform-origin:104.88% 50%}
-  .pm-leaf .pm-face{position:absolute;inset:0;overflow:hidden;cursor:default;backface-visibility:hidden;background:url("../../shared/deco/cabinet/mission-page.webp") center/100% 100%;box-shadow:0 0 22px rgba(0,0,0,.25);padding:3.86cqw 4.27cqw 7.61cqw 4.2cqw;font:12.5px/1.5 "Courier Prime","Courier New",Courier,monospace;color:#2b2112}
+  .pm-leaf .pm-face{position:absolute;inset:0;overflow:hidden;cursor:default;backface-visibility:hidden;background:url("../../shared/deco/cabinet/mission-page.webp?v=6cfcdf40") center/100% 100%;box-shadow:0 0 22px rgba(0,0,0,.25);padding:3.86cqw 4.27cqw 7.61cqw 4.2cqw;font:12.5px/1.5 "Courier Prime","Courier New",Courier,monospace;color:#2b2112}
   .pm-leaf .pm-back{transform:rotateY(180deg)}
   /* marges des faces : le texte tombe exactement sur celui des pages fixes, au départ comme à l'arrivée (géométrie
      mesurée : feuilles, zones de texte, rotation autour du dos ; en centièmes de la largeur du dossier) */
@@ -122,16 +122,16 @@
   /* Aqua : porte-documents toilé ouvert (feuilles : x 61–633 et 790–1341, dos à 701 sur 1409 × 831 ; marges des faces
      calculées comme pour le Cabinet : le texte de la feuille qui tourne tombe sur celui des pages fixes) ; ordre au
      modèle de l'administration (bandeau d'en-tête, rubriques en capitales soulignées, caractères sans empattement) */
-  html[data-design="aqua"] .pm-book{aspect-ratio:1409/831;background-image:url("../../shared/deco/aqua/mission-open.webp")}
+  html[data-design="aqua"] .pm-book{aspect-ratio:1409/831;background-image:url("../../shared/deco/aqua/mission-open.webp?v=25da795c")}
   html[data-design="aqua"] .pm-page{top:11.7%;bottom:10.4%;font:12.5px/1.5 Marianne,"Helvetica Neue",Arial,sans-serif;color:#1e2733}
   html[data-design="aqua"] .pm-left{left:6.33%;right:57.07%}html[data-design="aqua"] .pm-right{left:58.07%;right:6.83%}
   html[data-design="aqua"] .pm-leaf{top:8.18%;bottom:6.38%;left:56.07%;right:4.83%;transform-origin:-16.15% 50%}
   html[data-design="aqua"] .pm-leaf.back{top:7.94%;bottom:5.54%;left:4.33%;right:55.07%;transform-origin:111.89% 50%}
-  html[data-design="aqua"] .pm-leaf .pm-face{inset:0;background-image:url("../../shared/deco/aqua/mission-page.webp");padding:3.67cqw 4.4cqw 7.57cqw 4.4cqw;font:12.5px/1.5 Marianne,"Helvetica Neue",Arial,sans-serif;color:#1e2733}
+  html[data-design="aqua"] .pm-leaf .pm-face{inset:0;background-image:url("../../shared/deco/aqua/mission-page.webp?v=25c8e227");padding:3.67cqw 4.4cqw 7.57cqw 4.4cqw;font:12.5px/1.5 Marianne,"Helvetica Neue",Arial,sans-serif;color:#1e2733}
   html[data-design="aqua"] .pm-leaf.fwd .pm-back{padding:3.67cqw 2.91cqw 7.57cqw 4.4cqw}
   html[data-design="aqua"] .pm-leaf.back .pm-front{padding:3.82cqw 4.4cqw 8.07cqw 4.4cqw}
   html[data-design="aqua"] .pm-leaf.back .pm-back{padding:3.82cqw 4.41cqw 8.07cqw 5.89cqw}
-  html[data-design="aqua"] .pm-corner{background-image:url("../../shared/deco/aqua/page-corner.webp")}
+  html[data-design="aqua"] .pm-corner{background-image:url("../../shared/deco/aqua/page-corner.webp?v=12b36be8")}
   html[data-design="aqua"] .pm-next{right:4.83%;bottom:6.38%}html[data-design="aqua"] .pm-prev{left:4.33%;bottom:5.54%}
   html[data-design="aqua"] .pm-book :is(h3,h4){color:#14285a}
   html[data-design="aqua"] .pm-book h3{border-bottom-color:rgba(20,40,90,.35)}
@@ -139,47 +139,47 @@
   html[data-design="aqua"] .pm-book :is(.pm-mdtable th,.pm-mdtable td,.pm-order>div){border-bottom-color:rgba(20,40,90,.25)}
   html[data-design="aqua"] .pm-book .pm-signature{color:#14285a}
   /* en-tête : bandeau du centre opérationnel (image) ; numéro de l'ordre dessous, à droite */
-  html[data-design="aqua"] .pm-book .pm-head{display:block;position:relative;aspect-ratio:908/276;margin:0 0 26px;padding:0;border:0;background:url("../../shared/deco/aqua/order-header.webp") center/100% 100% no-repeat;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+  html[data-design="aqua"] .pm-book .pm-head{display:block;position:relative;aspect-ratio:908/276;margin:0 0 26px;padding:0;border:0;background:url("../../shared/deco/aqua/order-header.webp?v=2015f881") center/100% 100% no-repeat;box-shadow:0 1px 2px rgba(0,0,0,.15)}
   html[data-design="aqua"] .pm-book .pm-head>:not(.pm-no){position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
   html[data-design="aqua"] .pm-book .pm-head .pm-no{position:absolute;top:calc(100% + 6px);right:0;font-size:11px;letter-spacing:.06em;color:#14285a}
   html[data-design="aqua"] .pm-book [data-part="order"] .pm-dr{top:auto;bottom:-10px}
   /* Durci : dossier zippé ouvert (feuilles : x 81–561 et 675–1155, y 59–759, dos à 618 sur 1236 × 898 ; tirette
      sous le dossier) ; marges des faces calculées comme pour le Cabinet */
-  html[data-design="field"] .pm-book{aspect-ratio:1236/898;background-image:url("../../shared/deco/field/mission-open.webp")}
+  html[data-design="field"] .pm-book{aspect-ratio:1236/898;background-image:url("../../shared/deco/field/mission-open.webp?v=243c9b80")}
   html[data-design="field"] .pm-page{top:10.18%;bottom:19.59%;color:#1f2a1c}
   html[data-design="field"] .pm-left{left:8.55%;right:56.61%}html[data-design="field"] .pm-right{left:56.61%;right:8.55%}
   html[data-design="field"] .pm-leaf{top:6.68%;bottom:15.59%;left:54.61%;right:6.55%;transform-origin:-11.88% 50%}
   html[data-design="field"] .pm-leaf.back{top:6.57%;bottom:15.48%;left:6.55%;right:54.61%;transform-origin:111.88% 50%}
-  html[data-design="field"] .pm-leaf .pm-face{inset:0;background-image:url("../../shared/deco/field/mission-page.webp");padding:4.14cqw 4.4cqw 8.11cqw 4.4cqw;color:#1f2a1c}
+  html[data-design="field"] .pm-leaf .pm-face{inset:0;background-image:url("../../shared/deco/field/mission-page.webp?v=bcbd3569");padding:4.14cqw 4.4cqw 8.11cqw 4.4cqw;color:#1f2a1c}
   html[data-design="field"] .pm-leaf.fwd .pm-back{padding:4.14cqw 4.4cqw 8.11cqw 4.4cqw}
   html[data-design="field"] .pm-leaf.back :is(.pm-front,.pm-back){padding:4.22cqw 4.4cqw 8.19cqw 4.4cqw}
   /* en-tête de l'ordre : logo du CPCO en tenue de terrain (« Ordre de mission ») ; numéro dessous, à droite */
-  html[data-design="field"] .pm-book .pm-head{display:block;position:relative;aspect-ratio:1100/554;margin:0 0 20px;width:56%;padding:0;border:0;background:url("../../shared/deco/field/order-header.webp") center/100% 100% no-repeat}
+  html[data-design="field"] .pm-book .pm-head{display:block;position:relative;aspect-ratio:1100/554;margin:0 0 20px;width:56%;padding:0;border:0;background:url("../../shared/deco/field/order-header.webp?v=b361e25b") center/100% 100% no-repeat}
   html[data-design="field"] .pm-book .pm-head>:not(.pm-no){position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
   html[data-design="field"] .pm-book .pm-head .pm-no{position:absolute;top:calc(100% + 4px);right:0;font-size:11px;letter-spacing:.06em}
   html[data-design="field"] .pm-book [data-part="order"] .pm-dr{top:auto;bottom:-10px}
-  html[data-design="field"] .pm-corner{background-image:url("../../shared/deco/field/page-corner.webp")}
+  html[data-design="field"] .pm-corner{background-image:url("../../shared/deco/field/page-corner.webp?v=55121820")}
   html[data-design="field"] .pm-next{right:6.55%;bottom:15.59%}html[data-design="field"] .pm-prev{left:6.55%;bottom:15.48%}
   /* Carnet de vol : carnet ouvert (pages : x 75–677 et 736–1323, y 47–977, dos à 699 sur 1428 × 1032) ; marges des
      faces calculées comme pour le Cabinet ; en-tête de l'ordre : bandeau du ministère ; cartes scotchées */
-  html[data-design="flightlog"] .pm-book{aspect-ratio:1428/1032;background-image:url("../../shared/deco/flightlog/mission-open.webp")}
+  html[data-design="flightlog"] .pm-book{aspect-ratio:1428/1032;background-image:url("../../shared/deco/flightlog/mission-open.webp?v=17d1364d")}
   html[data-design="flightlog"] .pm-page{top:8.05%;bottom:9.33%}
   html[data-design="flightlog"] .pm-left{left:7.25%;right:54.59%}html[data-design="flightlog"] .pm-right{left:53.54%;right:9.35%}
   html[data-design="flightlog"] .pm-leaf{top:4.55%;bottom:5.33%;left:51.54%;right:7.35%;transform-origin:-6.3% 50%}
   html[data-design="flightlog"] .pm-leaf.back{left:5.25%;right:52.59%;transform-origin:103.66% 50%}
-  html[data-design="flightlog"] .pm-leaf .pm-face{inset:0;background-image:url("../../shared/deco/flightlog/mission-page.webp");padding:4.13cqw 4.4cqw 8.09cqw 4.4cqw}
+  html[data-design="flightlog"] .pm-leaf .pm-face{inset:0;background-image:url("../../shared/deco/flightlog/mission-page.webp?v=18c232e3");padding:4.13cqw 4.4cqw 8.09cqw 4.4cqw}
   html[data-design="flightlog"] .pm-leaf.fwd .pm-back{padding:4.13cqw 3.35cqw 8.09cqw 4.4cqw}
   html[data-design="flightlog"] .pm-leaf.back .pm-front{padding:4.13cqw 4.4cqw 8.09cqw 4.4cqw}
   html[data-design="flightlog"] .pm-leaf.back .pm-back{padding:4.13cqw 4.4cqw 8.09cqw 5.45cqw}
-  html[data-design="flightlog"] .pm-corner{background-image:url("../../shared/deco/flightlog/page-corner.webp")}
+  html[data-design="flightlog"] .pm-corner{background-image:url("../../shared/deco/flightlog/page-corner.webp?v=fe1aedb9")}
   html[data-design="flightlog"] .pm-next{right:7.35%;bottom:5.33%}html[data-design="flightlog"] .pm-prev{left:5.25%;bottom:5.33%}
-  html[data-design="flightlog"] .pm-book .pm-head{display:block;position:relative;aspect-ratio:1300/305;margin:0 0 24px;padding:0;border:0;background:url("../../shared/deco/flightlog/order-header.webp") center/100% 100% no-repeat}
+  html[data-design="flightlog"] .pm-book .pm-head{display:block;position:relative;aspect-ratio:1300/305;margin:0 0 24px;padding:0;border:0;background:url("../../shared/deco/flightlog/order-header.webp?v=183a04de") center/100% 100% no-repeat}
   html[data-design="flightlog"] .pm-book .pm-head>:not(.pm-no){position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
   html[data-design="flightlog"] .pm-book .pm-head .pm-no{position:absolute;top:calc(100% + 4px);right:0;font-size:11px;letter-spacing:.06em}
   html[data-design="flightlog"] .pm-book [data-part="order"] .pm-dr{top:auto;bottom:-10px}
   html[data-design="flightlog"] .pm-page .pm-maps figure{position:relative;box-shadow:0 2px 5px rgba(0,0,0,.28)}
-  html[data-design="flightlog"] .pm-page .pm-maps figure::before{content:"";position:absolute;z-index:1;top:-9px;left:50%;width:44%;aspect-ratio:420/73;transform:translateX(-50%) rotate(-3deg);background:url("../../shared/deco/flightlog/tape-1.webp") center/100% 100% no-repeat;opacity:.92;pointer-events:none}
-  html[data-design="flightlog"] .pm-page .pm-maps figure:nth-child(even)::before{background-image:url("../../shared/deco/flightlog/tape-2.webp");transform:translateX(-50%) rotate(2.5deg)}
+  html[data-design="flightlog"] .pm-page .pm-maps figure::before{content:"";position:absolute;z-index:1;top:-9px;left:50%;width:44%;aspect-ratio:420/73;transform:translateX(-50%) rotate(-3deg);background:url("../../shared/deco/flightlog/tape-1.webp?v=463c91c8") center/100% 100% no-repeat;opacity:.92;pointer-events:none}
+  html[data-design="flightlog"] .pm-page .pm-maps figure:nth-child(even)::before{background-image:url("../../shared/deco/flightlog/tape-2.webp?v=9cba6e50");transform:translateX(-50%) rotate(2.5deg)}
   /* signet (Cabinet, Carnet de vol) : rangé sous la dernière page, son bout dépasse sous les feuilles ; à la dernière
      double page, posé sur la page de droite le long du dos. Clic : dernière page (de là : retour au début).
      Par design : --pm-sig-x (bord gauche de la feuille de droite), --pm-sig-t / --pm-sig-b (haut / bas des feuilles) */
@@ -189,8 +189,8 @@
   .pm-sig::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3.34cqw;background:var(--pm-sig-tail) bottom/100% 100% no-repeat}
   html:is([data-design="cabinet"],[data-design="flightlog"]) .pm-book.pm-at-end .pm-sig{top:var(--pm-sig-t)}
   html:is([data-design="cabinet"],[data-design="flightlog"]) .pm-book{margin-bottom:calc(12px + min(48px, 4.5vw))} /* place de la pointe du signet */
-  html[data-design="cabinet"] .pm-book{--pm-sig-x:51.8%;--pm-sig-t:4.75%;--pm-sig-b:4%;--pm-sig-body:url("../../shared/deco/cabinet/bookmark-body.webp");--pm-sig-tail:url("../../shared/deco/cabinet/bookmark-tail.webp")}
-  html[data-design="flightlog"] .pm-book{--pm-sig-x:51.54%;--pm-sig-t:4.55%;--pm-sig-b:5.33%;--pm-sig-body:url("../../shared/deco/flightlog/bookmark-body.webp");--pm-sig-tail:url("../../shared/deco/flightlog/bookmark-tail.webp")}
+  html[data-design="cabinet"] .pm-book{--pm-sig-x:51.8%;--pm-sig-t:4.75%;--pm-sig-b:4%;--pm-sig-body:url("../../shared/deco/cabinet/bookmark-body.webp?v=448f0fbb");--pm-sig-tail:url("../../shared/deco/cabinet/bookmark-tail.webp?v=6c5d9661")}
+  html[data-design="flightlog"] .pm-book{--pm-sig-x:51.54%;--pm-sig-t:4.55%;--pm-sig-b:5.33%;--pm-sig-body:url("../../shared/deco/flightlog/bookmark-body.webp?v=5ff34cd3");--pm-sig-tail:url("../../shared/deco/flightlog/bookmark-tail.webp?v=4dfe039d")}
   .pm-week{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}.pm-week input{width:auto}.pm-week button{min-width:2.2em}
   .pm-types-sum{margin:0 0 8px;font-weight:600}
   .pm-sims{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 14px}
@@ -495,8 +495,8 @@
     const objectives = [y.objectives?.primary && `<p><b>Objectif principal</b> : ${esc(y.objectives.primary)}</p>`, ...(Array.isArray(y.objectives?.secondary) ? y.objectives.secondary : y.objectives?.secondary ? [y.objectives.secondary] : []).map(o => `<p><b>Objectif secondaire</b> : ${esc(o)}</p>`)].filter(Boolean).join('');
     const notes = (Array.isArray(y.notes) ? y.notes : y.notes ? [y.notes] : []).filter(n => !String(n).startsWith(`Mission ${a.mission}`));
     const signed = new Date(Date.parse(a.updated_at || '') || Date.now()).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-    $('pmDetail').innerHTML = `<div data-part="title"><header class="pm-head pm-logo" aria-hidden="true"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp" alt=""><div><b>DEFA Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div></header>${labelHtml({ ...a, title: y.title || a.title })}</div>
-      <div data-part="order"><header class="pm-head"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp" alt=""><div><b>DEFA Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div><span class="pm-no">N° ${esc(a.mission)}</span></header>
+    $('pmDetail').innerHTML = `<div data-part="title"><header class="pm-head pm-logo" aria-hidden="true"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>DEFA Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div></header>${labelHtml({ ...a, title: y.title || a.title })}</div>
+      <div data-part="order"><header class="pm-head"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>DEFA Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div><span class="pm-no">N° ${esc(a.mission)}</span></header>
         <i class="pm-dr" aria-label="Diffusion restreinte"></i>
         <h3>Ordre de mission — ${esc(y.title || a.title || '')}</h3>
         ${order}${ferryText}${alertText}
