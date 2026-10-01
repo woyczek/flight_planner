@@ -58,6 +58,71 @@
   };
   const tables = {};
 
+  // ------------------------------------------------------------------ semaine sans classeur
+  // Sans classeur, la grille reste affichée : pilotes de la référence DEFA, semaine en cours, ligne du classeur vide
+  // (« non renseigné »), déclarations des pilotes et affectations ; légende par défaut (OdvCore.LEGEND).
+  let virtual = null;
+  function emptyWeek() {
+    if (virtual) return virtual;
+    const now = new Date(),
+      mon = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (now.getUTCDay() + 6) % 7);
+    const dates = Array.from({
+      length: 7
+    }, (_, j) => new Date(mon + j * 864e5).toISOString().slice(0, 10));
+    const tris = [...new Set((window.DEFA_REFERENCE?.pilots || []).map(x => String(x.trigram || '').toUpperCase()).filter(Boolean))].sort();
+    const pilotes = tris.map((tr, i) => ({
+      trigramme: tr,
+      ligne: i + 1,
+      couleur: null,
+      rempli: false,
+      profil: null
+    }));
+    const records = pilotes.flatMap(x => Array.from({
+      length: 21
+    }, (_, n) => ({
+      pilote: x.trigramme,
+      jourIndex: Math.floor(n / 3),
+      creneauIndex: n % 3,
+      categorie: 'inconnu',
+      code: null,
+      source: 'pas de classeur'
+    })));
+    const legende = Object.fromEntries(Object.entries(C.LEGEND).map(([k, v]) => [k, {
+      code: k,
+      sens: v[0],
+      categorie: v[1],
+      role: v[2],
+      couleur: v[3],
+      source: 'défaut'
+    }]));
+    return virtual = {
+      virtuel: true,
+      dates,
+      pilotes,
+      records,
+      legende,
+      flotte: {}
+    };
+  }
+  /** Données de la grille : le classeur lu, sinon la semaine sans classeur. */
+  const gridData = () => data || emptyWeek();
+  const pad2 = n => String(n).padStart(2, '0');
+  /** Créneau (jour j, créneau k) : celui du plan, sinon un créneau vide (sans classeur) pour affecter quand même. */
+  const slotOf = (j, k) => slots.find(x => x.jourIndex === j && x.creneauIndex === k) || {
+    jourIndex: j,
+    jour: C.DAYS[j],
+    date: gridData().dates[j],
+    creneauIndex: k,
+    creneau: (C.SLOTS || ['matin', 'après-midi', 'soir'])[k],
+    heures: `${pad2(settings.hours[k][0])}-${pad2(settings.hours[k][1])}z`,
+    n: 0,
+    pilotes: [],
+    atc: [],
+    eviter: [],
+    missions: [],
+    toutesMissions: []
+  };
+
   // ------------------------------------------------------------------ outils d'affichage
   /** Nom complet d'un pilote s'il est connu localement (référence DEFA, champ nom facultatif), sinon ''. */
   function fullName(t) {
@@ -81,7 +146,7 @@
   const slotTitle = s => `${s.jour} ${dateFr(s.date)} — ${s.creneau} (${s.heures})`;
   /** Case de la grille : code en couleur de la légende, commentaire au survol. */
   function codeCell(r) {
-    const e = r.code ? data.legende[r.code] : null,
+    const e = r.code ? gridData().legende[r.code] : null,
       col = e?.couleur || null;
     const title = [r.code ? `${r.code}${r.marque ? ' + ' + r.marque : ''} : ${r.sens || C.CATEGORIES[r.categorie]}` : C.CATEGORIES[r.categorie], r.commentaire ? `« ${r.commentaire} »` : '', r.source].filter(Boolean).join('\n');
     const style = col ? ` style="background:#${col};color:${inkOn(col)}"` : '';
@@ -176,6 +241,7 @@
     $('odvFile').dispatchEvent(new Event('change'));
     $('odvRecapText').value = '';
     render();
+    window.OdvAssign?.load(emptyWeek(), settings).then(renderGrid).catch(() => {});
     notify('Données effacées de la page.', 'info');
   }
 
@@ -265,16 +331,12 @@
 
   function renderGrid() {
     renderGridFilters();
-    if (!data) {
-      $('odvLegend').innerHTML = '';
-      resetTable('odvGrid', '<p class="odv-empty">Chargez un classeur ODV.</p>');
-      return;
-    }
+    const data = gridData(); // classeur lu, sinon semaine sans classeur (ligne du classeur vide)
     // légende : codes de la légende et nombre de cases
     const counts = {};
     for (const r of data.records)
       if (r.code) counts[r.code] = (counts[r.code] || 0) + 1;
-    $('odvLegend').innerHTML = Object.values(data.legende).map(e => `<span>${codeCell({ code: e.code, sens: e.sens, categorie: e.categorie, source: '' })} ${esc(e.sens)}${counts[e.code] ? ` <b>${counts[e.code]}</b>` : ''}</span>`).join('') +
+    $('odvLegend').innerHTML = (data.virtuel ? `<span class="odv-noxl">Pas de classeur : semaine du ${esc(dateFr(data.dates[0]))} au ${esc(dateFr(data.dates[6]))}, ligne du classeur vide ; déclarations des pilotes et affectations.</span>` : '') + Object.values(data.legende).map(e => `<span>${codeCell({ code: e.code, sens: e.sens, categorie: e.categorie, source: '' })} ${esc(e.sens)}${counts[e.code] ? ` <b>${counts[e.code]}</b>` : ''}</span>`).join('') +
       `<span>${codeCell({ categorie: 'inconnu', source: '' })} ${esc(C.CATEGORIES.inconnu)}</span>`;
     const byPilot = new Map(data.pilotes.map(p => [p.trigramme, []]));
     for (const r of data.records) byPilot.get(r.pilote)?.push(r);
@@ -303,7 +365,8 @@
       type: 'number'
     }, {
       key: 'pilote',
-      label: 'Pilote (classeur / déclaration)',
+      label: 'Pilote',
+      title: 'Par pilote : ligne du classeur ODV, puis sa déclaration (Mes missions)',
       html: (v, r) => tri(v, r.couleur)
     }, {
       key: 'dispo',
@@ -322,7 +385,7 @@
       });
     // colonnes longues coupées sur une ligne (texte complet au survol) : la grille reste compacte
     const cut = v => `<span class="odv-cut" title="${esc(v)}">${esc(v || '—')}</span>`;
-    cols.push({
+    if (!data.virtuel) cols.push({ // rôles et simulateurs : feuille FLOTTE du classeur (sans classeur : colonnes vides)
       key: 'roles',
       label: 'Rôles (FLOTTE)',
       html: cut
@@ -636,7 +699,7 @@
   document.addEventListener('click', e => {
     const c = e.target.closest('[data-odv-slot]');
     if (!c) return;
-    const s = slots.find(x => `${x.jourIndex}${x.creneauIndex}` === c.dataset.odvSlot);
+    const s = slotOf(+c.dataset.odvSlot[0], +c.dataset.odvSlot[1]);
     if (s) pickMission(s, '', {
       pilots: [c.dataset.tri]
     });
@@ -964,6 +1027,7 @@
     fillSettings();
     bindSettings();
     bindExports();
+    window.OdvAssign?.load(emptyWeek(), settings).then(() => data || renderGrid()).catch(() => {}); // grille sans classeur
     $('odvFile').addEventListener('change', e => {
       const f = e.target.files?.[0];
       if (f) loadFile(f);
