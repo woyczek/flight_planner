@@ -55,6 +55,9 @@
   .pm-dr{display:none}.pm-book .pm-dr{display:block;position:absolute;z-index:2;width:190px;aspect-ratio:505/200;background:url("../../shared/deco/cabinet/stamp-diffusion-restreinte.webp") center/contain no-repeat;opacity:.8;pointer-events:none}
   .pm-book [data-part="order"] .pm-dr{top:58px;right:-6px;transform:rotate(-6deg)}
   .pm-mdtable{width:100%;border-collapse:collapse;font-size:12px}.pm-mdtable th,.pm-mdtable td{text-align:left;padding:3px 6px;border-bottom:1px dotted rgba(43,33,18,.4)}
+  .pm-dl{display:grid;grid-template-columns:auto 1fr;gap:1px 10px;margin:2px 0 6px;font-size:11.5px}.pm-dl dt{opacity:.75}.pm-dl dd{margin:0}.pm-dl dl{font-size:11px}
+  #pmDetail h5{margin:8px 0 2px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;opacity:.85}
+  .pm-log{margin:0;padding-left:16px;font-size:11.5px}
   .pm-page blockquote{margin:6px 0;padding:4px 10px;border-left:3px solid rgba(43,33,18,.45);font-style:italic}
   .pm-sign{position:relative;margin-top:22px;display:grid;justify-items:end;gap:2px;text-align:right}
   .pm-book .pm-sign .pm-dr{position:absolute;left:0;top:-4px;transform:rotate(-12deg)}
@@ -121,11 +124,11 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=9839b88b"></script>
-<script src="../../shared/repository_nav.js?v=b3e78cc5"></script>
+<script src="../../shared/repository_nav.js?v=9659c62f"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=90cadad7"></script>
-<script src="../../shared/assignments.js?v=16cd6eac"></script>
+<script src="../../shared/assignments.js?v=1bec37b6"></script>
 <script>
 (() => {
   'use strict';
@@ -252,7 +255,9 @@
       const r = await fetch(fileUrl(a, a.files?.md || `summary${a.mission}.md`), { cache: 'no-store' });
       if (r.ok) md = await r.text();
     } catch { /* pas de résumé : yaml seul */ }
-    render(a, mission || {}, md);
+    let log = [];
+    try { log = (await A.readLog()).filter(e => e.mission === a.mission); } catch { /* pas de journal */ }
+    render(a, mission || {}, md, log);
     $('pmMission').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
@@ -304,10 +309,19 @@
       : `<p>${inline(b.trim()).replace(/ {2,}\n|\n/g, '<br>')}</p>`).join('');
     return Object.entries(raw).map(([title, v]) => ({ title, html: html(v) })).filter(s => s.html);
   }
+  /** Fiche technique : tout champ du yaml qui n'a pas sa place ailleurs dans le dossier (rien n'est perdu). */
+  const SHOWN = new Set(['schema', 'schema_version', 'title', 'summary', 'detailed_description', 'objectives', 'notes', 'turning_points', 'teams', 'target']);
+  const LABELS = { mission: 'Mission', operation: 'Opération', origin: 'Départ', destination: 'Destination', aircraft: 'Appareils', rendezvous: 'Rendez-vous', zones: 'Zones', timing: 'Horaires', weather: 'Météo', vertical_profile: 'Profil vertical', exercise: 'Exercice', alert: 'Astreinte', maps: 'Cartes', rendering: 'Rendu des cartes', route_order: 'Ordre de la route', theatre: 'Théâtre' };
+  function techSheet(y) {
+    const dump = v => v == null || v === '' ? '—' : Array.isArray(v) ? (v.length ? `<ul>${v.map(x => `<li>${dump(x)}</li>`).join('')}</ul>` : '—')
+      : typeof v === 'object' ? `<dl class="pm-dl">${Object.entries(v).filter(([, x]) => x != null && x !== '').map(([k, x]) => `<dt>${esc(k)}</dt><dd>${dump(x)}</dd>`).join('')}</dl>` : esc(String(v));
+    const keys = Object.keys(y || {}).filter(k => !SHOWN.has(k) && y[k] != null && y[k] !== '' && !(Array.isArray(y[k]) && !y[k].length));
+    return keys.map(k => `<h5>${esc(LABELS[k] || k)}</h5>${dump(y[k])}`).join('');
+  }
   /** Contenu de la mission, en parties (data-part) lues dans l'ordre : présentation ordinaire, ou pages du dossier
    *  (Cabinet) : title (étiquette), order (en-tête, ordre, résumé), details (description, risques, équipes, route),
    *  maps (cartes), final (objectifs, remarques, signature). */
-  function render(a, y, md = '') {
+  function render(a, y, md = '', log = []) {
     const pts = routeOf(y), dist = pts.slice(1).reduce((s, p, i) => s + nm(pts[i], p), 0);
     const alert = a.alert || y.alert;
     const secs = mdSections(md);
@@ -329,7 +343,7 @@
     const teams = (y.teams || []).filter(t => t?.name && !/^[-\s]*$/.test(t.name));
     const maps = (a.files?.maps?.length ? a.files.maps : (y.maps || []).map(m => m?.filename).filter(Boolean));
     const mapCaption = m => (y.maps || []).find(x => x?.filename === m)?.description || m;
-    const summary = y.summary ? para(y.summary) : mdSummary?.html || mdIntro?.html || '';
+    const summary = y.summary ? para(y.summary) : mdSummary?.html || '';
     const objectives = [y.objectives?.primary && `<p><b>Objectif principal</b> : ${esc(y.objectives.primary)}</p>`, ...(Array.isArray(y.objectives?.secondary) ? y.objectives.secondary : y.objectives?.secondary ? [y.objectives.secondary] : []).map(o => `<p><b>Objectif secondaire</b> : ${esc(o)}</p>`)].filter(Boolean).join('');
     const notes = (Array.isArray(y.notes) ? y.notes : y.notes ? [y.notes] : []).filter(n => !String(n).startsWith(`Mission ${a.mission}`));
     const signed = new Date(Date.parse(a.updated_at || '') || Date.now()).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -339,6 +353,7 @@
         <h3>Ordre de mission — ${esc(y.title || a.title || '')}</h3>
         ${order}${ferryText}${alertText}
         ${team.length ? `<p><b>Avec</b> : ${team.map(x => `${esc(x.callsign || '')} (${esc(x.pilot)}, ${esc([x.aircraft?.type, x.aircraft?.registration].filter(Boolean).join(' '))}, décollage ${esc(hhmm(A.when(x)))})`).join(' · ')}</p>` : ''}
+        ${sec('Introduction', mdIntro?.html)}
         ${sec('Résumé', summary)}
       </div>
       <div class="pm-actions" data-part="actions">
@@ -349,7 +364,7 @@
         ${isDevelop() ? '<button type="button" class="ghost" data-reseal title="Canal develop : remettre la mission sous scellés (non lue)">Resceller</button>' : ''}
       </div>
       <div data-part="details">
-        ${y.summary && mdIntro ? sec('Introduction', mdIntro.html) : ''}
+        ${y.target?.name || Number.isFinite(+y.target?.lat) ? sec('Cible / secteur', `<p><b>${esc(y.target.name || y.target.id || 'Cible')}</b>${Number.isFinite(+y.target.lat) ? ` — ${esc(coord({ lat: +y.target.lat, lon: +y.target.lon }))}` : ''}${y.target.description ? `<br>${esc(y.target.description)}` : ''}</p>`) : ''}
         ${sec('Description détaillée', y.detailed_description ? para(y.detailed_description) : mdDetail?.html)}
         ${sec('Risques et points d’attention', mdRisks?.html)}
         ${sec('Équipes engagées', mdTeams?.html || (teams.length ? `<ul>${teams.map(t => `<li><b>${esc(t.name)}</b> — ${esc([t.service, t.type].filter(Boolean).join(', '))}</li>`).join('')}</ul>` : ''))}
@@ -361,7 +376,9 @@
         ${sec('Objectifs', objectives)}
         ${sec('Remarques', notes.length ? `<ul>${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : '')}
         ${secs.map(s => sec(s.title, s.html)).join('')}
-        <div class="pm-sign"><i class="pm-dr" aria-label="Diffusion restreinte"></i><span>Fait le ${esc(signed)}, pour le Centre</span><em class="pm-signature">${esc(a.by || 'CPCO')}</em><small>Le chef de centre</small></div>
+        ${sec('Fiche technique', techSheet(y))}
+        ${sec('Historique des affectations', log.length ? `<ul class="pm-log">${log.map(e => `<li>${esc(A.logText(e))}</li>`).join('')}</ul>` : '')}
+        <div class="pm-sign"><i class="pm-dr" aria-label="Diffusion restreinte"></i><span>Fait le ${esc(signed)}, pour le Centre</span><em class="pm-signature">${esc(a.by || 'CPCO')}</em><small>Le chef de centre — ${esc(a.by || 'CPCO')}</small></div>
       </div>`;
     $('pmDetail').querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go, a, y, pts, dist));
     const reseal = $('pmDetail').querySelector('[data-reseal]');

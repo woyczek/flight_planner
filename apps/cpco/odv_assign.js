@@ -12,7 +12,8 @@
   let D = null, // données ODV (dates, pilotes)
     S = null, // réglages (heures des créneaux)
     decl = {}, // TRI → déclaration (grille, appareils)
-    list = []; // affectations (index)
+    list = [], // affectations (index)
+    journal = []; // journal des affectations (récentes d'abord)
   const hooks = []; // à rappeler après une affectation (grille redessinée)
 
   /** Charge déclarations (data/disponibilites/<TRI>.json, ou celles de ce navigateur) et affectations. */
@@ -24,6 +25,7 @@
     list = (await M().index({
       fresh: true
     })).assignments;
+    journal = await M().readLog().catch(() => []);
     await Promise.all(data.pilotes.map(async p => {
       decl[p.trigramme] = await M().availability(p.trigramme);
     }));
@@ -134,6 +136,7 @@
     freePilots,
     inSlot,
     week,
+    journal: () => journal,
     onChange: f => hooks.push(f)
   };
 })();

@@ -997,6 +997,81 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     }
     return out;
   }
+  // ---- journal des affectations : data/missions/affectations_log.json { entries: [{ at, by, action, mission, title,
+  // pilot, aircraft, callsign, takeoff, role }] } ; action : affecte, modifie, retire, convoyage
+  const LOG_FILE = 'affectations_log.json';
+  /** Entrées du journal pour une écriture : différence entre les affectations d'avant et les participants écrits. */
+  function logEntries(mission, before, participants, by, at) {
+    const out = [],
+      line = (action, p, role = 'mission') => ({
+        at,
+        by,
+        action,
+        mission: mission.id,
+        title: mission.title || '',
+        pilot: p.pilot,
+        aircraft: p.aircraft ? [p.aircraft.type, p.aircraft.registration].filter(Boolean).join(' ') : '',
+        callsign: p.callsign || '',
+        takeoff: p.takeoff || '',
+        role
+      });
+    for (const p of participants) {
+      const old = before.find(a => a.pilot === p.pilot);
+      if (!old) out.push(line('affecte', p));
+      else if ((old.aircraft?.registration || '') !== (p.aircraft?.registration || '') || (old.callsign || '') !== (p.callsign || '') || old.takeoff !== p.takeoff) out.push(line('modifie', p));
+      if (p.ferry?.pilot && p.ferry.pilot !== p.pilot && p.ferry.takeoff && !(old?.ferry?.pilot === p.ferry.pilot)) out.push({
+        ...line('convoyage', { ...p, pilot: p.ferry.pilot, takeoff: p.ferry.takeoff, callsign: '' }, 'convoyage'),
+        for_pilot: p.pilot
+      });
+    }
+    for (const a of before)
+      if (!participants.some(p => p.pilot === a.pilot)) out.push(line('retire', a));
+    return out;
+  }
+  async function appendLog(dir, entries) {
+    if (!entries.length) return;
+    let log = {
+      entries: []
+    };
+    try {
+      log = JSON.parse(await (await (await dir.getFileHandle(LOG_FILE)).getFile()).text());
+    } catch {
+      /* premier journal */ }
+    log.entries = [...(log.entries || []), ...entries];
+    log.updatedAt = entries[entries.length - 1].at;
+    const w = await (await dir.getFileHandle(LOG_FILE, {
+      create: true
+    })).createWritable();
+    await w.write(JSON.stringify(log, null, 1));
+    await w.close();
+  }
+  /** Journal des affectations (dossier autorisé, sinon copie servie) ; entrées les plus récentes d'abord. */
+  async function readLog() {
+    let log = null;
+    try {
+      const st = await window.FileAccess?.status?.('__missions');
+      if (st?.handle && st.permission === 'granted') log = JSON.parse(await (await (await st.handle.getFileHandle(LOG_FILE)).getFile()).text());
+    } catch {
+      log = null;
+    }
+    if (!log) try {
+      const r = await fetch(new URL(`data/missions/${LOG_FILE}`, root()).href, {
+        cache: 'no-store'
+      });
+      log = r.ok ? await r.json() : null;
+    } catch {
+      log = null;
+    }
+    return [...(log?.entries || [])].sort((x, y) => String(y.at).localeCompare(String(x.at)));
+  }
+  /** Phrase d'une entrée : « 01/10 10:35 · DCP affecte M-002 à RBR (H145 F-ZBPO, DRAGON05, décollage 30/09 08:00Z) ». */
+  function logText(e) {
+    const d = s => s ? new Date(s).toISOString().slice(5, 16).replace(/(\d\d)-(\d\d)T/, '$2/$1 ') : '';
+    const what = { affecte: 'affecte', modifie: 'modifie', retire: 'retire', convoyage: 'confie le convoyage de' }[e.action] || e.action;
+    const detail = [e.aircraft, e.callsign, e.takeoff && `décollage ${d(e.takeoff)}Z`].filter(Boolean).join(', ');
+    if (e.action === 'retire') return `${d(e.at)} · ${e.by || '?'} retire ${e.pilot} de ${e.mission}`;
+    return `${d(e.at)} · ${e.by || '?'} ${what} ${e.mission} à ${e.pilot}${e.for_pilot ? ` (pour ${e.for_pilot})` : ''}${detail ? ` (${detail})` : ''}`;
+  }
   /** Écrit affectations.yaml dans le dossier de la mission et met à jour data/missions/affectations.json (index : une
    *  ligne par participant, et une ligne « convoyage » pour un convoyeur autre que le pilote). mission : entrée du
    *  registre { id, type, title, folder, files, maps } ; participants : [{ pilot, callsign, aircraft:{ registration, type,
@@ -1044,6 +1119,7 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
       updated_at: at,
       by: doc.by
     };
+    const before = (idx.assignments || []).filter(a => a.mission === mission.id && a.role !== 'convoyage');
     idx.assignments = (idx.assignments || []).filter(a => a.mission !== mission.id);
     for (const p of participants) {
       idx.assignments.push({
@@ -1074,6 +1150,7 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     await wi.write(JSON.stringify(idx, null, 2));
     await wi.close();
     cache = idx; // l'index écrit fait foi pour les relectures (même si la page sert une autre copie)
+    await appendLog(dir, logEntries(mission, before, participants, doc.by, at));
     envelope();
     return `${mh.folder}/affectations.yaml`;
   }
@@ -1130,6 +1207,8 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     poolLabel,
     planSlot,
     writeAssignment,
+    readLog,
+    logText,
     buildParticipants,
     missionsDir
   };
