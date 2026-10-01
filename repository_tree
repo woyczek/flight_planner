@@ -1,0 +1,22 @@
+/* ═══════════════════════════════════════════════════════════════════════════════════════════════════════
+   Vous cherchez la configuration de la suite DEFA ? Elle a déménagé : config/repository_tree.
+
+   Ce petit fichier ne sert qu'aux installations en 4.6.0 et avant : leur contrôle des mises à jour lit encore ici la
+   version publiée (le bloc tout en bas). Il disparaîtra dans quelques versions. Rien d'autre à voir…
+
+   … sauf pour les curieux.
+
+                      ___|___
+          ===========(___o___)===========
+                  ____|_____|____             « DEFA 01, ici le Centre : vous êtes dans un fichier de
+                 /  _    ___    _ \              compatibilité. Remettez les gaz, tour de piste à gauche,
+            ====|  |_|  |___|  |_| |====          rappelez vent arrière config/. »
+                 \_______________/
+                     |_|   |_|
+
+   Message chiffré pour les plus obstinés (code de César, décalage de 13 — les Romains ne volaient pas, mais ils chiffraient) :
+   Ovra wbhé, phevrhk. Ibhf nirm gebhié yr svpuvre frperg qh PCPB : qrznaqrm ibger pnsé nh Prager, zbg qr cnffr « gbhe qr cvfgr ».
+
+   Vous en êtes venu à bout ? Alors vous lisez aussi les notices de montage. Respect.
+   ═══════════════════════════════════════════════════════════════════════════════════════════════════════ */
+window.REPOSITORY_TREE_COMPAT = { release:{date:"2026-10-01",version:"4.6.0",id:"XPS-4.6.0"} };

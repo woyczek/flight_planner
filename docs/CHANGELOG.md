@@ -10,6 +10,28 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+### Ajouté
+
+- **Lanceurs** `lancer.cmd` (Windows) et `lancer.sh` (macOS / Linux) : Python trouvé ou installé, données récupérées,
+  serveur local démarré, navigateur ouvert sur la page **Premier lancement** (`tools/launch.py`).
+- **Premier lancement** (`apps/settings/premier_lancement.html`) : données (identifiants framagit ou archive reçue par
+  mail ; journal des vols DEFA en option), profil (trigramme, IVAO, VATSIM, SimBrief, identifiants du site DEFA hors
+  sauvegardes), dossiers (dossier de l'application, classeur ODV : OneDrive ou fichier Excel), puis mise à jour SIA ;
+  bouton « Nettoyer et recommencer ».
+- Planning ODV : classeur rouvert à l'arrivée (dossier OneDrive, sinon copie gardée du dernier classeur).
+
+### Modifié
+
+- Racine rangée : `README.md` pour débutant, documentation dans `docs/` (sommaire), configuration dans
+  `config/repository_tree` ; `repository_tree` à la racine ne reste que comme relais pour le contrôle des mises à jour
+  des versions 4.6.0 et antérieures (bloc release seul, généré par `tools/bump_versions.py`), à retirer en 4.9.
+- Paramètres › Sources et dossiers : dossier du dépôt en tête ; le choisir règle data/, ses sous-dossiers et la
+  sauvegarde locale.
+
+### Corrigé
+
+- Pages `*_core_*` de FIRE / HEMS ressuscitées par erreur en 4.6.0 : retirées.
+
 ## [4.6.0] — 2026-10-01
 
 Affectation des missions aux pilotes et page pilote « Mes missions » : la mission arrive scellée dans un dossier propre

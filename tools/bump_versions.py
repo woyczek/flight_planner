@@ -14,6 +14,9 @@ Ce qui est versionné :
 Un script qui versionne ses images avec son propre ?v= (DEPENDANCES) reçoit une empreinte qui couvre aussi ces images.
 Les empreintes se propagent : une image modifiée change la feuille qui la nomme, donc la page qui charge la feuille.
 Fins de ligne normalisées avant calcul (même empreinte quelle que soit l'extraction git).
+
+Écrit aussi repository_tree à la racine : fichier de compatibilité (bloc release seul, lu par le contrôle des mises à
+jour des versions 4.6.0 et antérieures, qui ne cherchaient pas encore dans config/). À retirer à partir de la 4.9.
 """
 import glob, hashlib, io, json, os, re, sys
 sys.stdout.reconfigure(encoding='utf-8')
@@ -94,6 +97,37 @@ for css in ('designs_skeuo.css', 'block_icons.css'):
 
 # 2. table FILE_V de repository_nav.js (feuilles de design chargées à la demande)
 tree = io.open(os.path.join(ROOT, 'config', 'repository_tree'), encoding='utf-8').read()
+COMPAT = '''/* ═══════════════════════════════════════════════════════════════════════════════════════════════════════
+   Vous cherchez la configuration de la suite DEFA ? Elle a déménagé : config/repository_tree.
+
+   Ce petit fichier ne sert qu'aux installations en 4.6.0 et avant : leur contrôle des mises à jour lit encore ici la
+   version publiée (le bloc tout en bas). Il disparaîtra dans quelques versions. Rien d'autre à voir…
+
+   … sauf pour les curieux.
+
+                      ___|___
+          ===========(___o___)===========
+                  ____|_____|____             « DEFA 01, ici le Centre : vous êtes dans un fichier de
+                 /  _    ___    _ \              compatibilité. Remettez les gaz, tour de piste à gauche,
+            ====|  |_|  |___|  |_| |====          rappelez vent arrière config/. »
+                 \_______________/
+                     |_|   |_|
+
+   Message chiffré pour les plus obstinés (code de César, décalage de 13 — les Romains ne volaient pas, mais ils chiffraient) :
+   {egg}
+
+   Vous en êtes venu à bout ? Alors vous lisez aussi les notices de montage. Respect.
+   ═══════════════════════════════════════════════════════════════════════════════════════════════════════ */
+window.REPOSITORY_TREE_COMPAT = {{ release:{{date:"{date}",version:"{version}",id:"{id}"}} }};
+'''
+EGG = 'Ovra wbhé, phevrhk. Ibhf nirm gebhié yr svpuvre frperg qh PCPB : qrznaqrm ibger pnsé nh Prager, zbg qr cnffr « gbhe qr cvfgr ».'
+release_block = re.search(r'release\s*:\s*\{([^}]*)\}', tree).group(1)
+field = lambda k: (re.search(k + r'\s*:\s*"([^"]*)"', release_block) or [None, ''])[1]
+compat = COMPAT.format(egg=EGG, date=field('date'), version=field('version'), id=field('id'))
+compat_path = os.path.join(ROOT, 'repository_tree')
+if not os.path.isfile(compat_path) or io.open(compat_path, encoding='utf-8').read() != compat:
+    io.open(compat_path, 'w', encoding='utf-8').write(compat)  # fin de ligne du système (comme la copie de travail)
+    print('repository_tree (compatibilité 4.6.0) écrit.')
 design_css = sorted(set(re.findall(r'css:"([\w.-]+\.css)"', tree)))
 # 3. chargements écrits dans les scripts, jusqu'à stabilité (une empreinte changée change le script qui la cite)
 scripts = [p for p in glob.glob(os.path.join(ROOT, 'shared', '**', '*.js'), recursive=True) + glob.glob(os.path.join(ROOT, 'apps', '**', '*.js'), recursive=True)

@@ -56,6 +56,7 @@ Tout est dans [docs/](docs/README.md) : installation détaillée, tutoriel, manu
 | `docs/` | documentation |
 | `examples/` | données d'exemple (sans `data/`) |
 | `tools/` | outils de maintenance |
+| `repository_tree` | relais pour les anciennes versions (contrôle des mises à jour), provisoire — rien à y faire |
 
 ---
 
