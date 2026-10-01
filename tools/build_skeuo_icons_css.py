@@ -25,7 +25,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def skeuo_sets():
     """Jeux d'icônes à matières → dossier d'images, lus dans le registre des designs (repository_tree, designs.list) :
     chaque design marqué skeuo:true fournit son jeu icons:"…", dont les images sont dans shared/icons/skeuo/<id du design>."""
-    with open(os.path.join(ROOT, 'repository_tree'), encoding='utf-8') as f:
+    with open(os.path.join(ROOT, 'config', 'repository_tree'), encoding='utf-8') as f:
         tree = f.read()
     sets = {}
     for design, body in re.findall(r'^\s*(\w+):\{([^\n]*)\},?\s*$', tree, re.M):
@@ -150,7 +150,7 @@ s = s.rstrip('\n') + '\n' + bump_css('\n'.join(out), designs=True)[0] + '\n'
 open(p, 'wb').write((s.replace('\n', '\r\n') if crlf else s).encode('utf-8'))
 
 # jeux composés → repository_tree (barre latérale, page Apparence)
-p = os.path.join(ROOT, 'repository_tree')
+p = os.path.join(ROOT, 'config', 'repository_tree')
 raw = open(p, 'rb').read().decode('utf-8'); crlf = '\r\n' in raw; s = raw.replace('\r\n', '\n')
 line = f'// jeux d\'icônes composés (fond vierge + glyphe), écrit par tools/build_skeuo_icons_css.py\nwindow.REPOSITORY_TREE.iconComposed={json.dumps(tree, ensure_ascii=False, separators=(",", ":"))};\n'
 s = re.sub(r"// jeux d'icônes composés \(fond vierge \+ glyphe\), écrit par tools/build_skeuo_icons_css\.py\nwindow\.REPOSITORY_TREE\.iconComposed=.*;\n", '', s)

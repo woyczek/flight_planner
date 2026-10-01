@@ -135,7 +135,11 @@
   // ---- Version entre deux publications : commit courant lu dans le dépôt servi (.git/HEAD, référence de la branche,
   // tag v<version> : objet du tag annoté décompressé, ou packed-refs). Commit ≠ celui de la version publiée → le pied de
   // page affiche « v4.4.0+abc1234 » (lien vers le commit). Copie sans .git (téléchargement, publication) : rien ne change.
-  const gitRoot = () => new URL(".", document.querySelector('script[src*="repository_tree"]')?.src || location.href).href;
+  // racine de l'application : config/repository_tree est un dossier plus bas
+  const gitRoot = () => {
+    const src = document.querySelector('script[src*="repository_tree"]')?.src;
+    return src ? new URL(/\/config\/repository_tree/.test(src) ? ".." : ".", src).href : new URL(".", location.href).href;
+  };
   const gitText = async path => {
     const res = await fetch(gitRoot() + ".git/" + path, {
       cache: "no-store"

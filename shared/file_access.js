@@ -17,8 +17,8 @@
   const FOLDERS = {
     __repo: {
       label: L('Dossier du dépôt', 'Repository folder', 'Repository-Ordner', 'Carpeta del repositorio'),
-      expect: L('racine de l’application : le dossier qui contient repository_tree, apps/, shared/ (et data/)', 'application root: the folder containing repository_tree, apps/, shared/ (and data/)', 'Repository-Wurzel: Ordner „Documentation“ (mit repository_tree, shared/, apps/cr/…)', 'raíz del repositorio: la carpeta «Documentation» (con repository_tree, shared/, apps/cr/…)'),
-      check: 'repository_tree'
+      expect: L('racine de l’application : le dossier qui contient lancer.cmd, lancer.sh, apps/, config/, shared/ (et data/)', 'application root: the folder containing lancer.cmd, lancer.sh, apps/, config/, shared/ (and data/)', 'Repository-Wurzel: Ordner „Documentation“ (mit repository_tree, shared/, apps/cr/…)', 'raíz del repositorio: la carpeta «Documentation» (con repository_tree, shared/, apps/cr/…)'),
+      check: 'config/repository_tree'
     },
     __data: {
       label: L('Dossier des données', 'Data folder', 'Datenordner', 'Carpeta de datos'),

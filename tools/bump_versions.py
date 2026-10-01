@@ -93,7 +93,7 @@ for css in ('designs_skeuo.css', 'block_icons.css'):
     ecrire_si_change(p, s, versionner(s, SHARED, IMG))
 
 # 2. table FILE_V de repository_nav.js (feuilles de design chargées à la demande)
-tree = io.open(os.path.join(ROOT, 'repository_tree'), encoding='utf-8').read()
+tree = io.open(os.path.join(ROOT, 'config', 'repository_tree'), encoding='utf-8').read()
 design_css = sorted(set(re.findall(r'css:"([\w.-]+\.css)"', tree)))
 # 3. chargements écrits dans les scripts, jusqu'à stabilité (une empreinte changée change le script qui la cite)
 scripts = [p for p in glob.glob(os.path.join(ROOT, 'shared', '**', '*.js'), recursive=True) + glob.glob(os.path.join(ROOT, 'apps', '**', '*.js'), recursive=True)

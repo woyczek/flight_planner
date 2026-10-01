@@ -5,9 +5,9 @@ window.DataAdminI18n = {
     "Direktes Schreiben in diesem Browser nicht verfügbar (Chrome / Edge erforderlich): „Herunterladen“ verwenden.",
     "Escritura directa no disponible en este navegador (se requiere Chrome / Edge): use «Descargar»."
   ],
-  "Ce dossier ne contient pas « repository_tree » : est-ce bien la racine du dépôt ?": [
-    "Dieser Ordner enthält kein „repository_tree“: ist es wirklich das Stammverzeichnis?",
-    "Esta carpeta no tiene «repository_tree»: ¿es realmente la raíz del repositorio?"
+  "Ce dossier ne contient pas « config/repository_tree » : est-ce bien la racine du dépôt ?": [
+    "Dieser Ordner enthält kein „config/repository_tree“: ist es wirklich das Stammverzeichnis?",
+    "Esta carpeta no tiene «config/repository_tree»: ¿es realmente la raíz del repositorio?"
   ],
   "Dossier refusé": [
     "Ordner abgelehnt",

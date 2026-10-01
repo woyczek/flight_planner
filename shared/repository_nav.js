@@ -903,7 +903,7 @@
     profile.src = new URL("pilot_profile.js?v=f1357c65", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=4a2f6a07", script.src).href;
+    files.src = new URL("file_access.js?v=d5a938d1", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
     for (const f of ["icons/repository_icons.js?v=58f492d6", "block_icons.js?v=ff923add", "side_nav.js?v=355697e6"]) {
@@ -919,7 +919,7 @@
     assign.src = new URL("assignments.js?v=854c1200", script.src).href;
     document.head.append(assign);
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=d84028ad", script.src).href;
+    update.src = new URL("suite_update.js?v=798086a3", script.src).href;
     document.head.append(update)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

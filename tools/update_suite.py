@@ -50,7 +50,8 @@ def log(entry):
 
 def release(ref=None):
     """Version de la suite (repository_tree : release.version) dans l'arbre de travail ou dans une référence git."""
-    text = git('show', f'{ref}:repository_tree', check=False) if ref else open(os.path.join(ROOT, 'repository_tree'), encoding='utf-8').read()
+    text = (git('show', f'{ref}:config/repository_tree', check=False) or git('show', f'{ref}:repository_tree', check=False)) if ref \
+        else open(os.path.join(ROOT, 'config', 'repository_tree'), encoding='utf-8').read()
     m = re.search(r'release\s*:\s*\{[^}]*version\s*:\s*"([^"]+)"', text or '')
     return m.group(1) if m else '?'
 
