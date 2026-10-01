@@ -36,7 +36,7 @@ def from_template(name, title):
 
 
 os.makedirs(os.path.join(ROOT, APP, folder), exist_ok=True)
-for name, suffix, title in (('hems_core_cr.html', 'cr', cfg['cr_title']), ('hems_core_reporting.html', 'reporting', cfg['rep_title'])):
+for name, suffix, title in (('hems_medevac_cr.html', 'cr', cfg['cr_title']), ('hems_medevac_reporting.html', 'reporting', cfg['rep_title'])):
     io.open(os.path.join(ROOT, APP, folder, f'{prefix}_{suffix}.html'), 'w', encoding='utf-8', newline='\n').write(from_template(name, title))
 
 p = os.path.join(ROOT, 'repository_tree')

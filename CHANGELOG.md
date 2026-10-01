@@ -20,6 +20,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   `lib`, en dessous) ; les designs, hors couche, l'emportent sans `!important`. Les `!important` du socle et des pages
   sont convertis en sélecteurs renforcés (`:not(#imp)`) ; rendu inchangé au banc de non-régression.
 - Banc de non-régression : un panel réduit se compare au *snap* du panel complet.
+- CR FIRE / GAAR et HEMS / MEDEVAC : les pages du Mission Core remplacent les pages historiques, à la même adresse
+  (mêmes champs ; anciens registres CSV importables depuis la page : « Importer l'ancien registre … »). Toutes les
+  familles de CR partagent désormais le même socle.
+- Outils à fond sombre (Landing, planificateur, planning ODV, reporting des opérations) : une palette commune aux noms
+  de la palette claire, atteinte par les designs ; la Landing et le reporting des opérations changent de quelques
+  nuances.
 - Designs : leurs `!important` convertis eux aussi (`designs.css` 29 → 0, `designs_skeuo.css` 279 → 32 : impression,
   masquage et quatre cas contre un style en ligne) ; rendu inchangé au banc.
 

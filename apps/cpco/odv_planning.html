@@ -1,31 +1,23 @@
 <!doctype html>
-<html lang="fr">
+<html data-tool="dark" lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Planning ODV</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=1b40bb6b">
-<script src="../../repository_tree?v=e86e8e5c"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=280b3eb0">
+<script src="../../repository_tree?v=443f614d"></script>
 <style data-layer="app">
 @layer app {
 /* Couleurs : sombres par défaut (thème du planificateur), claires si le ton de la page est clair (Apparence). */
 :root {
   font-family: Inter, system-ui, Segoe UI, Arial, sans-serif;
-  color-scheme: dark;
-  --text: #eef3f7;
-  --muted: #9ba8b5;
-  --panel: #181d23;
-  --field: #11161c;
-  --line: #2b3440;
-  --soft: #ffffff0d;
-  --card: var(--panel);
-  --ink: var(--text)
+  color-scheme: dark
 }
 * {
   box-sizing: border-box
 }
 body {
   margin: 0;
-  color: var(--text)
+  color: var(--ink)
 }
 header {
   padding: 10px 18px
@@ -40,7 +32,7 @@ main.odv-page {
   padding: 16px 16px 48px
 }
 main.odv-page>section {
-  background: var(--panel);
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 14px 16px;
@@ -60,7 +52,7 @@ main.odv-page h3 {
 .odv-page input:not([type=checkbox]):not([type=file]),
 .odv-page textarea {
   background: var(--field);
-  color: var(--text);
+  color: var(--ink);
   border: 1px solid var(--line);
   border-radius: 7px;
   padding: 6px 9px;
@@ -287,7 +279,7 @@ main.odv-page h3 {
 .odv-heat button small {
   display: block;
   font-size: 10.5px;
-  color: var(--text);
+  color: var(--ink);
   opacity: .8
 }
 .odv-heat button.sel {
@@ -452,9 +444,9 @@ main.odv-page h3 {
 </style><style data-layer="designs">
 html[data-tone="light"] {
   color-scheme: light;
-  --text: #18242b;
+  --ink: #18242b;
   --muted: #5b6b76;
-  --panel: #ffffff;
+  --card: #ffffff;
   --field: #ffffff;
   --line: #d3dfe5;
   --soft: #0000000a

@@ -209,9 +209,26 @@ Suivi des assets (cahier des charges, consignes de génération, intégration) :
   secondaires des CR (`color: inherit` en ligne), champs de route du studio (`background: transparent` en ligne),
   taille des icônes de la barre latérale (`--rs` en ligne). Banc (panel réduit puis complet, contre le snap) : écarts
   restants identiques à HEAD.
-- **Suivant** : C (palettes `:root` des pages vers les jetons communs) ; 7 au fil des assets livrés
-  ([PROMPTS_ASSETS_PHASE2.md](PROMPTS_ASSETS_PHASE2.md)) ; fusion des règles scindées par la conversion quand le banc
-  montre que le renfort est inutile (lisibilité).
+- **C, palettes des pages (2 octobre 2026)** :
+  - **Outils à fond sombre** (Landing, planificateur, planning ODV, reporting des opérations) : une palette commune
+    `:root[data-tool="dark"]` (`repository_nav.css`, couche app) aux noms de la palette claire de `core.css` (`--bg`,
+    `--card`, `--card-2`, `--field`, `--ink`, `--muted`, `--line`, `--soft`, `--accent`, `--accent-2`, `--ok`,
+    `--warn`, `--bad`) ; chaque page la demande par `<html data-tool="dark">` et ses variables sont renommées
+    (`--panel`→`--card`, `--text`→`--ink`, `--p`→`--card`, `--b`→`--line`, `--mut`→`--muted`, `--good`→`--ok`…) :
+    les designs les atteignent. `color-scheme: dark` reste à la page (ODV, planificateur : la Landing et le reporting
+    des opérations ne l'avaient pas). Valeurs : celles d'ODV et du planificateur (identiques) ; la Landing et le
+    reporting des opérations changent de quelques unités (`#0f1115`→`#101317`…), écarts attendus au banc.
+  - **CR Fire / HEMS unifiés** : les pages historiques autonomes (`fire_cr.html`, `fire_reporting.html`,
+    `hems_medevac_cr.html`, `hems_medevac_reporting.html`, palette et script propres) sont remplacées, **à la même
+    adresse**, par les pages du Mission Core (ex-`*_core_*`, « validation ») — étapes 2a / 2b du plan
+    (`mission_report_core_audit.md`, §F–G) : mêmes champs, anciens registres importables depuis la page
+    (« Importer l'ancien registre … (CSV) »). Liens CR ⇄ reporting (`families/*.js`), préfixes de `vocab.js`, modèle
+    de `new_family_pages.py`, arbre et pages témoins du banc mis à jour ; scripts des seules pages historiques retirés
+    (`gaar_reporting.js`, `hems_reporting.js`, `hems_mission_sync.js`). Toutes les familles de CR passent par le Core.
+- **Suivant** : 7 au fil des assets livrés ([PROMPTS_ASSETS_PHASE2.md](PROMPTS_ASSETS_PHASE2.md)) ; traductions des
+  pages historiques (`gaar_i18n.js`, `hems_i18n.js`, encore chargées par `reporting_i18n.js`) et
+  `aircraft_directory.js` (orphelin) à trier ; fusion des règles scindées par la conversion quand le banc montre que le
+  renfort est inutile (lisibilité).
 
 ## Utiliser la boîte à outils (D)
 
