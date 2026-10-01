@@ -1,239 +1,167 @@
 (() => {
   'use strict';
-  // Centre : affecter une mission à un ou plusieurs pilotes (docs/AFFECTATION_MISSIONS.md, § 2 et § 5). Ouvert par le bouton
-  // « Affecter… » du détail d'une mission (registre des missions).
-  //   · heure : décollage (UTC), ou heure H d'un exercice (décollage de chaque participant = H + son décalage,
-  //     exercise.participants[].takeoff « H-20 ») ; mission d'astreinte : prêt à, préavis, fin d'astreinte ;
-  //   · participants (patrouille : + équipier) : pilote (référence DEFA ; disponibilité de sa semaine type à l'heure du
-  //     décollage, qualification sur le type), appareil du type demandé (flotte : basé au terrain de départ d'abord ;
-  //     ailleurs → convoyage : distance / vitesse de croisière + 20 min, décollage du convoyage), indicatif (suivi : 31, 32…) ;
-  //   · conflits : même pilote ou même appareil déjà affecté sur le créneau (bloc estimé + 30 min de remise en œuvre) ;
-  //   · enregistrement : MissionAssignments.writeAssignment (affectations.yaml de la mission + index affectations.json).
-  // API : AssignDialog.open(entrée du registre, yaml de la mission, { maps })
+  // Centre : affecter une mission à un ou plusieurs pilotes (docs/AFFECTATION_MISSIONS.md). Ouvert par « Affecter… » du
+  // registre des missions et par le planning ODV (créneau cliqué : pilotes et heure préremplis). Outils communs (convoyage,
+  // qualification, créneaux, conflits, écriture) : shared/assignments.js.
+  //   · heure : décollage (UTC), ou heure H d'un exercice (décollage du participant = H + son décalage) ; astreinte ;
+  //   · participants (patrouille : + équipier, indicatif suivi) : pilote (qualification sur le type déclarée ou connue,
+  //     disponibilité à l'heure), appareil du type demandé (basé au terrain de départ d'abord ; ailleurs : convoyage,
+  //     confiable à un autre pilote), conflits ;
+  //   · enregistrement : MissionAssignments.writeAssignment (affectations.yaml de la mission + index).
+  // API : AssignDialog.open(entrée du registre, yaml de la mission, { maps, pilots: [TRI…], takeoff: ms, note })
   const K = window.RepositoryKit,
     esc = K.esc,
     A = () => window.MissionAssignments;
-  const TURN_MIN = 30,
-    FERRY_SETUP_MIN = 20;
-  const typeOf = s => String(s || '').trim().split(/\s+/)[0].toUpperCase();
-  const icaoOf = p => /\(([A-Z]{4})\)/.exec(p?.name || '')?.[1] || '';
   const hhmm = ms => new Date(ms).toISOString().slice(11, 16) + 'Z';
-  const nm = (a, b) => {
-    const R = 3440.065,
-      r = x => x * Math.PI / 180,
-      dl = r(b.lat - a.lat),
-      dg = r(b.lon - a.lon);
-    const h = Math.sin(dl / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dg / 2) ** 2;
-    return 2 * R * Math.asin(Math.sqrt(h));
-  };
-  /** « H-20 » → -20 (minutes) ; « H » → 0 ; heure réelle ignorée (0). */
+  /** « H-20 » → -20 (minutes) ; « H » → 0. */
   const offsetOf = s => {
     const m = /^H\s*([+-])\s*(\d+)/i.exec(String(s || '').trim());
     return m ? (m[1] === '-' ? -1 : 1) * +m[2] : 0;
   };
-  /** Indicatif suivant d'une patrouille : MERCURE31 → MERCURE32 (dernier nombre + n). */
+  /** Indicatif suivant d'une patrouille : MERCURE31 → MERCURE32. */
   const nextCallsign = (cs, n) => String(cs || '').replace(/(\d+)(?!.*\d)/, d => String(+d + n).padStart(d.length, '0'));
-
-  // ---- terrains : coordonnées (base SIA du navigateur, puis aérodromes des missions du registre)
-  let airports = null;
-  async function airportsMap() {
-    if (airports) return airports;
-    airports = {};
-    try {
-      const base = await window.SiaBase?.get?.({
-        any: true
-      });
-      for (const ad of base?.aero?.aerodromes || []) {
-        const code = ad.icao || ad.code || ad.id;
-        if (code && Number.isFinite(+ad.lat)) airports[code] = {
-          lat: +ad.lat,
-          lon: +ad.lon
-        };
-      }
-    } catch {
-      /* base SIA absente */ }
-    try {
-      const reg = JSON.parse(localStorage.getItem('missionRegistry:v1') || '{}');
-      for (const m of reg.missions || [])
-        for (const p of [m.origin, m.destination])
-          if (p && typeof p === 'object' && icaoOf(p) && Number.isFinite(+p.lat)) airports[icaoOf(p)] = airports[icaoOf(p)] || {
-            lat: +p.lat,
-            lon: +p.lon
-          };
-    } catch {
-      /* registre illisible */ }
-    return airports;
-  }
-  // dernier recours : cache des terrains de la suite (missionAirports:v1), puis base mondiale des aérodromes (source
-  // « airports » de repository_tree, réglable dans Paramètres › Maintenance › Sources), chargée une fois à la demande
-  const AP_KEY = 'missionAirports:v1';
-  let worldLoad = null;
-  async function coordsOf(code, ap) {
-    if (!code) return null;
-    if (ap[code]) return ap[code];
-    let cache = {};
-    try {
-      cache = JSON.parse(localStorage.getItem(AP_KEY) || '{}') || {};
-    } catch {
-      /* cache illisible */ }
-    if (Number.isFinite(+cache[code]?.lat)) return ap[code] = {
-      lat: +cache[code].lat,
-      lon: +cache[code].lon
-    };
-    const url = window.RepositoryNav?.source?.('airports') || 'https://cdn.jsdelivr.net/gh/mwgg/Airports@master/airports.json';
-    const world = await (worldLoad ||= fetch(url).then(r => r.ok ? r.json() : null).catch(() => null));
-    const w = world?.[code];
-    if (!w || !Number.isFinite(+w.lat)) return null;
-    cache[code] = {
-      ...(cache[code] || {}),
-      icao: code,
-      name: w.name,
-      country: w.country,
-      lat: +w.lat,
-      lon: +w.lon,
-      elevation: w.elevation,
-      tz: w.tz
-    };
-    try {
-      localStorage.setItem(AP_KEY, JSON.stringify(cache));
-    } catch {
-      /* stockage plein */ }
-    return ap[code] = {
-      lat: +w.lat,
-      lon: +w.lon
-    };
-  }
-  const cruiseKt = type => +window.AIRCRAFT_PERF?.[type]?.cruise?.tasKt || ({
-    RFAL: 480,
-    MIR2: 450,
-    A332: 460,
-    A400: 340,
-    C30J: 300,
-    PC21: 300
-  })[type] || 250;
+  const chip = (text, kind = '') => `<span class="ad-chip ${kind}">${text}</span>`;
 
   let dlg = null;
   async function open(m, y, {
-    maps = []
+    maps = [],
+    pilots: preset = [],
+    takeoff: presetTakeoff = 0,
+    note = ''
   } = {}) {
-    const fleet = window.DEFA_FLEET || [],
-      pilots = window.DEFA_REFERENCE?.pilots || [];
-    const idx = await A().index({
+    const M = A(),
+      fleet = window.DEFA_FLEET || [],
+      ref = window.DEFA_REFERENCE?.pilots || [];
+    const idx = await M.index({
       fresh: true
     });
-    const existing = idx.assignments.filter(a => a.mission === m.id);
-    const type = typeOf(y.aircraft?.[0]?.type || existing[0]?.aircraft?.type),
-      departure = icaoOf(y.origin) || existing[0]?.departure || '',
-      origin = y.origin && Number.isFinite(+y.origin.lat) ? {
-        lat: +y.origin.lat,
-        lon: +y.origin.lon
-      } : null,
+    const existing = idx.assignments.filter(a => a.mission === m.id && a.role !== 'convoyage');
+    const type = M.typeOf(y.aircraft?.[0]?.type || existing[0]?.aircraft?.type),
+      departure = M.geo.icaoOf(y.origin) || existing[0]?.departure || '',
       callsign = y.aircraft?.[0]?.callsign || '',
       blockMin = +y.timing?.estimated_block_min || +y.timing?.estimated_flight_min || 120,
       ex = y.exercise,
       myOffset = offsetOf(ex?.participants?.find(p => p.mission === m.id)?.takeoff);
-    const ap = await airportsMap();
-    if (origin && departure) ap[departure] = ap[departure] || origin;
-    // heure par défaut : affectation existante, sinon demain 10:00Z
-    const t0 = Date.parse(existing[0]?.takeoff || '') || (() => {
+    M.rememberAirport(departure, y.origin);
+    const t0 = presetTakeoff || Date.parse(existing[0]?.takeoff || '') || (() => {
       const d = new Date();
       d.setUTCDate(d.getUTCDate() + 1);
       d.setUTCHours(10, 0, 0, 0);
       return +d;
     })();
-    const toInput = ms => new Date(ms).toISOString().slice(0, 16);
-    const rows = existing.length ? existing.map(a => ({
+    const rows = preset.length ? preset.map((p, i) => ({
+      pilot: p,
+      registration: '',
+      callsign: nextCallsign(callsign, i),
+      ferryPilot: ''
+    })) : existing.length ? existing.map(a => ({
       pilot: a.pilot,
       registration: a.aircraft?.registration || '',
-      callsign: a.callsign || ''
+      callsign: a.callsign || '',
+      ferryPilot: a.ferry?.pilot && a.ferry.pilot !== a.pilot ? a.ferry.pilot : ''
     })) : [{
       pilot: '',
       registration: '',
-      callsign
+      callsign,
+      ferryPilot: ''
     }];
     const alert0 = existing[0]?.alert || null;
+    const decl = {}; // déclarations des pilotes (disponibilités, appareils)
+    const declOf = async tri => tri ? (decl[tri] ??= await M.availability(tri)) : null;
+    const planes = fleet.filter(f => M.typeOf(f.type) === type || M.typeOf(f.variant) === type)
+      .sort((a, b) => (b.base === departure) - (a.base === departure) || (b.operational !== false) - (a.operational !== false) || String(a.base).localeCompare(String(b.base)));
+    const pilotList = [...new Set([...ref.map(p => p.trigram), ...preset])].filter(Boolean).sort();
 
     if (!dlg) {
       dlg = document.createElement('dialog');
       dlg.className = 'repo-ap-dialog ad-dialog';
       document.body.append(dlg);
+      dlg.addEventListener('click', e => {
+        if (e.target === dlg) dlg.close();
+      });
     }
-    const planes = fleet.filter(f => typeOf(f.type) === type || typeOf(f.variant) === type);
-    const pilotList = pilots.map(p => p.trigram).filter(Boolean).sort();
+    const toInput = ms => new Date(ms).toISOString().slice(0, 16);
     dlg.innerHTML = `<form method="dialog" class="ad-form">
-      <h3>Affecter ${esc(m.id)} — ${esc(m.title || y.title || '')}</h3>
-      <p class="small">Type demandé : <b>${esc(type || '?')}</b> · terrain de départ : <b>${esc(departure || '?')}</b> · bloc estimé ${esc(blockMin)} min${ex ? ` · exercice : décollage H${myOffset >= 0 ? '+' : ''}${myOffset} min` : ''}. Heures en UTC.</p>
-      <div class="ad-grid">
-        <label>${ex ? 'Heure H (UTC)' : 'Décollage (UTC)'}<input type="datetime-local" data-k="t" value="${esc(toInput(existing[0] && ex ? t0 - myOffset * 6e4 : t0))}"></label>
-        <label><span><input type="checkbox" data-k="alert" ${alert0 || y.alert ? 'checked' : ''}> Mission d'astreinte</span><small>prêt à l'heure ci-dessus, décollage sur ordre</small></label>
-        <label>Préavis (min)<input type="number" min="0" data-k="notice" value="${esc(alert0?.notice_min ?? y.alert?.notice_min ?? 15)}"></label>
-        <label>Fin d'astreinte (h après)<input type="number" min="0" step="0.5" data-k="window" value="${esc(alert0?.window_end_utc ? (Date.parse(alert0.window_end_utc) - Date.parse(alert0.ready_at_utc)) / 36e5 : 2)}"></label>
+      <header class="ad-head"><div><h3>Affecter ${esc(m.id)}</h3><p>${esc(m.title || y.title || '')}</p></div><button type="button" class="repo-plain ad-x" data-close aria-label="Fermer">×</button></header>
+      <div class="ad-body">
+        <p class="ad-facts">${chip(`Type <b>${esc(type || '?')}</b>`)}${chip(`Départ <b>${esc(departure || '?')}</b>`)}${chip(`Bloc <b>${esc(blockMin)} min</b>`)}${ex ? chip(`Exercice : décollage H${myOffset >= 0 ? '+' : ''}${myOffset} min`) : ''}${chip('heures UTC')}</p>
+        ${note ? `<p class="ad-note">${esc(note)}</p>` : ''}
+        <fieldset class="ad-when"><legend>Horaire</legend>
+          <label>${ex ? 'Heure H' : 'Décollage'}<input type="datetime-local" data-k="t" value="${esc(toInput(ex && !presetTakeoff && existing[0] ? t0 - myOffset * 6e4 : t0))}"></label>
+          <label class="ad-check-l"><input type="checkbox" data-k="alert" ${alert0 || y.alert ? 'checked' : ''}> Astreinte <small>prêt à l'heure, décollage sur ordre</small></label>
+          <label>Préavis (min)<input type="number" min="0" data-k="notice" value="${esc(alert0?.notice_min ?? y.alert?.notice_min ?? 15)}"></label>
+          <label>Fin d'astreinte (h après)<input type="number" min="0" step="0.5" data-k="window" value="${esc(alert0?.window_end_utc ? (Date.parse(alert0.window_end_utc) - Date.parse(alert0.ready_at_utc)) / 36e5 : 2)}"></label>
+        </fieldset>
+        <div class="ad-rows"></div>
+        <p><button type="button" class="secondary" data-add>+ Équipier (patrouille)</button></p>
+        <datalist id="adPilots">${pilotList.map(p => `<option value="${esc(p)}">`).join('')}</datalist>
       </div>
-      <table class="ad-rows"><thead><tr><th>Pilote</th><th>Appareil</th><th>Indicatif</th><th>Contrôles</th><th></th></tr></thead><tbody></tbody></table>
-      <p><button type="button" class="secondary" data-add>+ Équipier (patrouille)</button></p>
-      <datalist id="adPilots">${pilotList.map(p => `<option value="${esc(p)}">`).join('')}</datalist>
-      <p class="ad-msg small" data-status></p>
-      <p class="ad-actions"><button type="button" class="primary" data-save data-icon="save">Enregistrer l'affectation</button><button type="button" class="ghost" data-close>Fermer</button></p>
+      <footer class="ad-foot"><p class="ad-msg" data-status></p><button type="button" class="primary" data-save data-icon="save">Enregistrer l'affectation</button><button type="button" class="ghost" data-close>Fermer</button></footer>
     </form>`;
     const $ = s => dlg.querySelector(s);
-    const tbody = $('.ad-rows tbody');
+    const box = $('.ad-rows');
     const takeoffOf = () => {
       const v = Date.parse($('[data-k="t"]').value + ':00Z');
       return ex ? v + myOffset * 6e4 : v;
     };
-    const planeOpts = sel => `<option value="">— appareil —</option>${planes.map(p => {
-      const away = departure && p.base && p.base !== departure;
-      return `<option value="${esc(p.registration)}" ${p.registration === sel ? 'selected' : ''}>${esc(p.registration)} · ${esc(p.variant || p.type)} · ${esc(p.base || '?')}${away ? ' (convoyage)' : ''}${p.operational === false ? ' — indisponible' : ''}</option>`;
-    }).join('')}<option value="__other">autre (saisie)…</option>`;
-    const drawRows = () => {
-      tbody.innerHTML = rows.map((r, i) => `<tr data-i="${i}"><td><input list="adPilots" data-r="pilot" value="${esc(r.pilot)}" maxlength="4" style="width:5em;text-transform:uppercase"></td>
-        <td><select data-r="registration">${planeOpts(r.registration)}</select></td>
-        <td><input data-r="callsign" value="${esc(r.callsign)}" style="width:9em;text-transform:uppercase"></td>
-        <td class="ad-check small"></td><td>${i ? `<button type="button" class="ghost" data-del="${i}">✕</button>` : ''}</td></tr>`).join('');
+    const planeOpts = sel => `<option value="">— appareil —</option>${planes.map(p => `<option value="${esc(p.registration)}" ${p.registration === sel ? 'selected' : ''}>${esc(p.registration)} · ${esc(p.variant || p.type)} · ${esc(p.base || '?')}${p.base && p.base !== departure ? ' (convoyage)' : ''}${p.operational === false ? ' — indisponible' : ''}</option>`).join('')}<option value="__other">autre (saisie)…</option>`;
+    const draw = () => {
+      box.innerHTML = rows.map((r, i) => `<section class="ad-card" data-i="${i}">
+        <div class="ad-line"><label>Pilote<input list="adPilots" data-r="pilot" value="${esc(r.pilot)}" maxlength="4"></label>
+        <label class="ad-grow">Appareil<select data-r="registration">${planeOpts(r.registration)}</select></label>
+        <label>Indicatif<input data-r="callsign" value="${esc(r.callsign)}"></label>
+        ${i ? `<button type="button" class="repo-plain ad-del" data-del="${i}" title="Retirer cet équipier">✕</button>` : ''}</div>
+        <div class="ad-ferry" hidden></div><div class="ad-checks"></div></section>`).join('');
       check();
     };
-    /** Contrôles d'une ligne : disponibilité, qualification, conflits, convoyage ; retourne le participant. */
-    const evaluate = async (r, i, t) => {
-      const notes = [],
-        plane = fleet.find(f => f.registration === r.registration);
-      let ferry = null;
-      if (plane && departure && plane.base && plane.base !== departure) {
-        const a = await coordsOf(plane.base, ap),
-          b = await coordsOf(departure, ap);
-        const minutes = a && b ? Math.round(nm(a, b) / cruiseKt(type) * 60 + FERRY_SETUP_MIN) : null;
-        ferry = {
-          from: plane.base,
-          minutes,
-          takeoff: minutes ? new Date(t - (minutes + TURN_MIN) * 6e4).toISOString() : null
-        };
-        notes.push(minutes ? `convoyage ${plane.base} → ${departure} ≈ ${minutes} min (décollage ${hhmm(t - (minutes + TURN_MIN) * 6e4)})` : `convoyage depuis ${plane.base} : distance inconnue (terrain sans coordonnées connues)`);
-      }
-      if (plane?.operational === false) notes.push('<span class="err">appareil non opérationnel</span>');
-      const p = pilots.find(x => x.trigram === r.pilot);
-      if (r.pilot && !p) notes.push('<span class="warn">trigramme inconnu de la référence</span>');
-      if (p && type && !(p.types || []).some(x => typeOf(x) === type)) notes.push(`<span class="warn">pas de vol connu sur ${esc(type)}</span>`);
-      if (r.pilot) {
-        // disponibilité à l'heure (codes de l'ODV) : dispo couvrant la famille → ok ; dispo d'un autre rôle → avertissement
-        const av = await A().availability(r.pilot),
-          start = ferry?.takeoff ? Date.parse(ferry.takeoff) : t,
-          s = A().availabilityAt(av, start, m.type);
-        notes.push(!s ? 'disponibilité non renseignée' : s.ok ? `<span class="ok">${esc(s.code)} — ${esc(s.label)}</span>` : s.category === 'dispo' ? `<span class="warn">${esc(s.code)} — ${esc(s.label)} (autre rôle que ${esc(m.type || '?')})</span>` : `<span class="err">${esc(s.code)} — ${esc(s.label)}</span>`);
-      }
-      // conflits avec les autres affectations
-      const from = (ferry?.takeoff ? Date.parse(ferry.takeoff) : t),
-        to = t + (blockMin + TURN_MIN) * 6e4;
-      for (const o of idx.assignments.filter(o => o.mission !== m.id)) {
-        const os = Date.parse(o.ferry?.takeoff || o.takeoff || ''),
-          oe = Date.parse(o.takeoff || '') + ((+o.block_min || 120) + TURN_MIN) * 6e4;
-        if (!os || os >= to || oe <= from) continue;
-        if (r.pilot && o.pilot === r.pilot) notes.push(`<span class="err">${esc(r.pilot)} déjà affecté : ${esc(o.mission)} ${hhmm(os)}</span>`);
-        if (r.registration && o.aircraft?.registration === r.registration) notes.push(`<span class="err">${esc(r.registration)} déjà pris : ${esc(o.mission)}</span>`);
-      }
-      if (rows.some((x, j) => j !== i && x.pilot && x.pilot === r.pilot)) notes.push('<span class="err">pilote en double</span>');
-      if (rows.some((x, j) => j !== i && x.registration && x.registration === r.registration)) notes.push('<span class="err">appareil en double</span>');
-      return {
-        notes,
-        participant: {
+    let last = [];
+    /** Évalue chaque participant (convoyage, qualification, disponibilité, conflits) ; affiche ses contrôles. */
+    async function check() {
+      const t = takeoffOf();
+      last = [];
+      for (const [i, r] of rows.entries()) {
+        const card = box.querySelector(`.ad-card[data-i="${i}"]`),
+          plane = fleet.find(f => f.registration === r.registration),
+          tk = t + i * 6e4,
+          notes = [];
+        const ferry = plane ? await M.ferryOf({
+          base: plane.base,
+          departure,
+          type,
+          takeoff: tk,
+          pilot: r.ferryPilot || r.pilot
+        }) : null;
+        const fz = card?.querySelector('.ad-ferry');
+        if (fz) {
+          fz.hidden = !ferry;
+          if (ferry) fz.innerHTML = `${ferry.minutes ? `Convoyage <b>${esc(ferry.from)} → ${esc(departure)}</b> ≈ ${ferry.minutes} min, décollage <b>${hhmm(Date.parse(ferry.takeoff))}</b>` : `Convoyage depuis <b>${esc(ferry.from)}</b> : distance inconnue`} — par <input list="adPilots" data-r="ferryPilot" value="${esc(r.ferryPilot)}" placeholder="${esc(r.pilot || 'le pilote')}" maxlength="4">`;
+        }
+        if (plane?.operational === false) notes.push(chip('appareil non opérationnel', 'err'));
+        if (r.pilot) {
+          const d = await declOf(r.pilot),
+            q = M.qualification(d, r.pilot, type);
+          notes.push(chip(esc(q.text), q.level === 'mastered' ? 'ok' : q.level === 'owned' || q.level === 'flown' ? 'warn' : 'err'));
+          const s = M.availabilityAt(d, ferry?.takeoff && (r.ferryPilot || r.pilot) === r.pilot ? Date.parse(ferry.takeoff) : tk, m.type);
+          notes.push(!s ? chip('disponibilité non renseignée') : chip(`${esc(s.code)} — ${esc(s.label)}`, s.ok ? 'ok' : s.category === 'dispo' ? 'warn' : 'err'));
+          if (!ref.some(p => p.trigram === r.pilot)) notes.push(chip('trigramme inconnu de la référence', 'warn'));
+        }
+        if (ferry?.takeoff && r.ferryPilot && r.ferryPilot !== r.pilot) {
+          const s = M.availabilityAt(await declOf(r.ferryPilot), Date.parse(ferry.takeoff), '');
+          notes.push(chip(`convoyeur ${esc(r.ferryPilot)} : ${s ? esc(s.code + ' — ' + s.label) : 'disponibilité non renseignée'}`, s ? (s.category === 'dispo' ? 'ok' : 'err') : ''));
+        }
+        const from = ferry?.takeoff ? Date.parse(ferry.takeoff) : tk;
+        for (const c of M.conflicts(idx.assignments, {
+            mission: m.id,
+            pilot: r.pilot,
+            registration: r.registration,
+            ferryPilot: r.ferryPilot,
+            from,
+            to: tk + (blockMin + M.TURN_MIN) * 6e4
+          })) notes.push(chip(esc(c), 'err'));
+        if (rows.some((x, j) => j !== i && x.pilot && x.pilot === r.pilot)) notes.push(chip('pilote en double', 'err'));
+        if (rows.some((x, j) => j !== i && x.registration && x.registration === r.registration)) notes.push(chip('appareil en double', 'err'));
+        if (card) card.querySelector('.ad-checks').innerHTML = notes.join('') || chip('—');
+        last.push({
           pilot: r.pilot,
           callsign: r.callsign,
           aircraft: plane ? {
@@ -246,51 +174,41 @@
             type
           } : null,
           departure,
-          takeoff: new Date(t + i * 6e4).toISOString(), // équipiers : une minute d'écart
+          takeoff: new Date(tk).toISOString(),
           ferry: ferry?.minutes ? ferry : null,
           block_min: blockMin,
           status: 'affectée'
-        }
-      };
-    };
-    let last = [];
-    async function check() {
-      const t = takeoffOf();
-      last = [];
-      for (const [i, r] of rows.entries()) {
-        const e = await evaluate(r, i, t);
-        last.push(e);
-        const cell = tbody.querySelector(`tr[data-i="${i}"] .ad-check`);
-        if (cell) cell.innerHTML = e.notes.join(' · ') || '—';
+        });
       }
     }
-    tbody.addEventListener('change', e => {
-      const tr = e.target.closest('tr[data-i]'),
-        i = +tr.dataset.i,
+    box.addEventListener('change', e => {
+      const card = e.target.closest('.ad-card'),
         k = e.target.dataset.r;
+      if (!card || !k) return;
+      const i = +card.dataset.i;
       let v = e.target.value.trim();
-      if (k === 'pilot') v = v.toUpperCase();
+      if (k === 'pilot' || k === 'ferryPilot') v = v.toUpperCase();
       if (k === 'registration' && v === '__other') v = (prompt('Immatriculation de l’appareil') || '').trim().toUpperCase();
       rows[i][k] = v;
-      if (k === 'registration' && v === '') e.target.value = '';
       check();
     });
-    tbody.addEventListener('click', e => {
+    box.addEventListener('click', e => {
       const d = e.target.closest('[data-del]');
       if (!d) return;
       rows.splice(+d.dataset.del, 1);
-      drawRows();
+      draw();
     });
     $('[data-add]').onclick = () => {
       rows.push({
         pilot: '',
         registration: '',
-        callsign: nextCallsign(rows[0]?.callsign || callsign, rows.length)
+        callsign: nextCallsign(rows[0]?.callsign || callsign, rows.length),
+        ferryPilot: ''
       });
-      drawRows();
+      draw();
     };
     dlg.querySelectorAll('[data-k]').forEach(el => el.addEventListener('change', check));
-    $('[data-close]').onclick = () => dlg.close();
+    dlg.querySelectorAll('[data-close]').forEach(b => b.onclick = () => dlg.close());
     $('[data-save]').onclick = async () => {
       const msg = $('.ad-msg');
       await check();
@@ -299,33 +217,56 @@
         return;
       }
       const t = takeoffOf(),
-        isAlert = $('[data-k="alert"]').checked;
-      const alert = isAlert ? {
-        ready_at_utc: new Date(t).toISOString(),
-        aerodrome: departure,
-        notice_min: +$('[data-k="notice"]').value || 0,
-        window_end_utc: new Date(t + (+$('[data-k="window"]').value || 2) * 36e5).toISOString()
-      } : null;
+        alert = $('[data-k="alert"]').checked ? {
+          ready_at_utc: new Date(t).toISOString(),
+          aerodrome: departure,
+          notice_min: +$('[data-k="notice"]').value || 0,
+          window_end_utc: new Date(t + (+$('[data-k="window"]').value || 2) * 36e5).toISOString()
+        } : null;
       try {
-        const f = await A().writeAssignment({
+        const f = await M.writeAssignment({
           ...m,
           maps
-        }, last.map(e => e.participant), {
+        }, last, {
           h_hour: ex ? new Date(t - myOffset * 6e4).toISOString() : null,
           alert
         });
-        msg.innerHTML = `<span class="ok">Affectation enregistrée : data/missions/${esc(f)} (et l’index affectations.json).</span>`;
+        msg.innerHTML = `<span class="ok">Enregistrée : data/missions/${esc(f)}</span>`;
         window.AppFramework?.notify?.(`${m.id} affectée à ${rows.map(r => r.pilot).join(', ')}.`, 'ok');
+        dlg.dispatchEvent(new CustomEvent('assigned', {
+          detail: {
+            mission: m.id
+          }
+        }));
       } catch (e) {
-        msg.innerHTML = `<span class="err">Affectation non enregistrée : ${esc(e.message)}</span>`;
+        msg.innerHTML = `<span class="err">Non enregistrée : ${esc(e.message)}</span>`;
       }
     };
-    drawRows();
-    if (!document.getElementById('adCss')) document.head.insertAdjacentHTML('beforeend', `<style id="adCss">.ad-dialog{max-width:min(980px,96vw);width:100%}.ad-form h3{margin:0 0 4px}
-.ad-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px 14px;margin:8px 0}.ad-grid label{display:grid;gap:3px;font-size:12px;font-weight:600}
-.ad-grid small{font-weight:400;opacity:.75}.ad-rows{width:100%;border-collapse:collapse;margin:6px 0}.ad-rows th,.ad-rows td{padding:4px 6px;text-align:left;vertical-align:top;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent)}
-.ad-rows select{max-width:300px}.ad-check{min-width:220px}.ad-actions{display:flex;gap:8px}</style>`);
-    dlg.showModal();
+    draw();
+    if (!document.getElementById('adCss')) document.head.insertAdjacentHTML('beforeend', `<style id="adCss">
+.ad-dialog{width:min(920px,96vw);max-height:92vh;padding:0;border:1px solid color-mix(in srgb,currentColor 25%,transparent);border-radius:10px;box-shadow:0 18px 50px rgba(0,0,0,.45);overflow:hidden}
+.ad-dialog::backdrop{background:rgba(10,14,20,.55)}
+.ad-form{display:flex;flex-direction:column;max-height:92vh}
+.ad-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:12px 16px;border-bottom:1px solid color-mix(in srgb,currentColor 18%,transparent)}
+.ad-head h3{margin:0;font-size:17px}.ad-head p{margin:2px 0 0;font-size:12.5px;opacity:.8}.ad-x{font-size:22px;line-height:1;cursor:pointer;background:none;border:0;color:inherit;opacity:.7}.ad-x:hover{opacity:1}
+.ad-body{padding:12px 16px;overflow:auto}
+.ad-facts{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.ad-chip{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;line-height:1.6;background:color-mix(in srgb,currentColor 9%,transparent);margin:0 4px 4px 0}
+.ad-chip.ok{background:color-mix(in srgb,#2e9d5b 22%,transparent)}.ad-chip.warn{background:color-mix(in srgb,#e0a400 26%,transparent)}.ad-chip.err{background:color-mix(in srgb,#e5484d 26%,transparent)}
+.ad-note{padding:6px 10px;border-left:3px solid #e0a400;background:color-mix(in srgb,#e0a400 10%,transparent);font-size:12.5px}
+.ad-when{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px 14px;align-items:end;margin:0 0 12px;padding:8px 12px 10px;border:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:8px}
+.ad-when legend{font-weight:700;font-size:12px;padding:0 4px}
+.ad-dialog label{display:grid;gap:3px;font-size:12px;font-weight:600}.ad-dialog label small{font-weight:400;opacity:.75}
+.ad-check-l{display:flex!important;align-items:center;gap:6px!important}
+.ad-card{border:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:8px;padding:8px 12px;margin:0 0 8px}
+.ad-line{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:end}.ad-line input{width:7em}.ad-line .ad-grow{flex:1;min-width:240px}.ad-line select{width:100%}
+.ad-del{margin-left:auto;font-size:15px;cursor:pointer;background:none;border:0;color:inherit;opacity:.6}.ad-del:hover{opacity:1}
+.ad-ferry{margin:6px 0 0;font-size:12.5px}.ad-ferry input{width:5em;margin-left:4px}.ad-checks{margin:6px 0 0}
+.ad-foot{display:flex;gap:8px;align-items:center;padding:10px 16px;border-top:1px solid color-mix(in srgb,currentColor 18%,transparent)}.ad-msg{flex:1;margin:0;font-size:12.5px}
+html[data-skeuo] .ad-dialog,html[data-skeuo] .ad-card,html[data-skeuo] .ad-when,html[data-skeuo] .ad-chip{border-radius:0}
+</style>`);
+    if (!dlg.open) dlg.showModal();
+    return dlg;
   }
 
   window.AssignDialog = {
