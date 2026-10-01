@@ -28,37 +28,45 @@
   .pm-open{margin:0}
   /* « CONFIDENTIEL » : tampon encreur (image commune aux designs) ; le mot reste lu par les lecteurs d'écran */
   .pm-label{position:relative;background:var(--sheet-card-bg,#f4ead0);color:var(--sheet-ink,#2b2112)} /* papier : lisible sur tout fond */
-  .pm-label small{position:absolute;z-index:2;top:-14px;right:-18px;width:180px;aspect-ratio:700/245;background:url("../../shared/deco/stamp-confidential.webp?v=85ab3564") center/contain no-repeat;color:transparent;font-size:0;transform:rotate(-9deg);opacity:.8;pointer-events:none}
-  /* Cabinet, Aqua, Durci : dossier fermé (ficelé et scellé, noué d'un ruban ou sanglé, tant que la mission n'est pas ouverte) ;
-     ouvrir brise le sceau (dénoue le ruban). Images par design : --pm-cover, --pm-seal, proportions --pm-ratio, largeur --pm-cwk (part du dossier ouvert) */
+  .pm-label small{position:absolute;z-index:2;top:var(--pm-stamp-top,-14px);right:var(--pm-stamp-right,-18px);width:var(--pm-stamp-w,180px);aspect-ratio:700/245;background:url("../../shared/deco/stamp-confidential.webp?v=85ab3564") center/contain no-repeat;color:transparent;font-size:0;transform:rotate(-9deg);opacity:.8;pointer-events:none}
+  /* Dossier fermé (Cabinet, Carnet de vol, Aqua, Durci) : une règle commune, des jetons par design — chaque design ne
+     déclare que ce qu'il a :
+       --pm-cover            couverture du dossier fermé (mission lue, descellée)
+       --pm-cover-sealed     couverture scellée (mission non ouverte) ; défaut : --pm-cover
+       --pm-seal             calque du scellé posé par-dessus (ficelle, ruban, cachet), à la toile exacte du dossier
+       --pm-ratio(-sealed), --pm-cwk(-sealed)   proportions, largeur (part du dossier ouvert) par état
+       --pm-label-top(-sealed), --pm-label-rot(-sealed)   place de l'étiquette par état
+       --pm-tape-1 / -2      scotchs de l'étiquette scellée (facultatifs)
+       --pm-open-fade        0 : le dossier scellé s'efface entier à l'ouverture (couverture scellée propre) ;
+                             1 (défaut) : seul le calque s'efface
+       --pm-open-bottom      place du bouton « Ouvrir »
+     Ouvrir brise le sceau ; dossier rouvert après lecture : couverture fermée, sans calque. */
   html[data-design="cabinet"]{--pm-cover:url("../../shared/deco/cabinet/mission-cover.webp?v=2bf76d77");--pm-seal:url("../../shared/deco/cabinet/mission-seal-fitted.webp?v=9c2ac112");--pm-ratio:720/1015;--pm-cwk:.4266}
-  /* Durci : dossier zippé fermé (étiquette « CONFIDENTIEL » à la tirette) ; scellé : ficelle en croix et cachet de cire
-     (calque à la toile du dossier, découpé au corps du dossier : mission-seal-fitted.webp) */
-  html[data-design="field"]{--pm-cover:url("../../shared/deco/field/mission-closed.webp?v=45e80a15");--pm-seal:url("../../shared/deco/field/mission-seal-fitted.webp?v=db24e3b1");--pm-ratio:961/1441;--pm-cwk:.529}
-  html[data-design="field"] .pm-cover .pm-open{bottom:20%}
-  /* Carnet de vol : enveloppe cachetée (en-tête du ministère), le carnet dedans ; la mission sur une étiquette scotchée
-     de travers, tampon à travers ; ouverte, l'enveloppe s'efface ; mission lue : le carnet fermé */
-  html[data-design="flightlog"]{--pm-cover:url("../../shared/deco/flightlog/mission-closed.webp?v=3ad105ce");--pm-seal:none;--pm-ratio:600/852;--pm-cwk:.509}
-  html[data-design="flightlog"] .pm-cover.sealed{--pm-cover:url("../../shared/deco/flightlog/mission-sealed.webp?v=d2ff2cc7");--pm-ratio:640/900;--pm-cwk:.54;transition:opacity .38s ease-in}
-  html[data-design="flightlog"] .pm-cover.sealed.open{opacity:0}
-  html[data-design="flightlog"] .pm-cover .pm-label{margin-top:30%} /* sous la plaque du carnet */
-  html[data-design="flightlog"] .pm-cover.sealed .pm-label{margin-top:56%;transform:rotate(1.8deg)} /* sous le cachet */
-  html[data-design="flightlog"] .pm-cover.sealed .pm-label::before,html[data-design="flightlog"] .pm-cover.sealed .pm-label::after{content:"";position:absolute;z-index:3;width:34%;aspect-ratio:420/73;background:url("../../shared/deco/flightlog/tape-1.webp?v=463c91c8") center/100% 100% no-repeat;opacity:.9;pointer-events:none}
-  html[data-design="flightlog"] .pm-cover.sealed .pm-label::before{top:-10px;left:-9%;transform:rotate(-14deg)}
-  html[data-design="flightlog"] .pm-cover.sealed .pm-label::after{bottom:-8px;right:-8%;transform:rotate(-9deg);background-image:url("../../shared/deco/flightlog/tape-2.webp?v=9cba6e50")}
+  /* Carnet de vol : scellé, l'enveloppe cachetée (en-tête du ministère), la mission sur une étiquette scotchée de
+     travers ; lu, le carnet fermé (étiquette sous la plaque) */
+  html[data-design="flightlog"]{--pm-cover:url("../../shared/deco/flightlog/mission-closed.webp?v=3ad105ce");--pm-cover-sealed:url("../../shared/deco/flightlog/mission-sealed.webp?v=d2ff2cc7");--pm-ratio:600/852;--pm-ratio-sealed:640/900;--pm-cwk:.509;--pm-cwk-sealed:.54;--pm-label-top:30%;--pm-label-top-sealed:56%;--pm-label-rot-sealed:1.8deg;--pm-tape-1:url("../../shared/deco/flightlog/tape-1.webp?v=463c91c8");--pm-tape-2:url("../../shared/deco/flightlog/tape-2.webp?v=9cba6e50");--pm-open-fade:0}
   html[data-design="aqua"]{--pm-cover:url("../../shared/deco/aqua/mission-cover.webp?v=999d136a");--pm-seal:url("../../shared/deco/aqua/mission-seal-fitted.webp?v=101a308a");--pm-ratio:720/954;--pm-cwk:.445}
+  /* Durci : scellé, fermeture intacte (étiquette « CONFIDENTIEL » à la tirette) et ficelle en croix cachetée ; lu,
+     fermeture brisée ; tampon de l'étiquette sur l'étiquette (pas sur la toile) */
+  html[data-design="field"]{--pm-cover:url("../../shared/deco/field/mission-closed.webp?v=9ae3fcc8");--pm-cover-sealed:url("../../shared/deco/field/mission-sealed.webp?v=45e80a15");--pm-seal:url("../../shared/deco/field/mission-seal-fitted.webp?v=db24e3b1");--pm-ratio:961/1441;--pm-cwk:.529;--pm-open-bottom:20%;--pm-stamp-top:6px;--pm-stamp-right:6px;--pm-stamp-w:130px}
   html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) #pmDetail{--pm-bw:min(1064px,100%)}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover{position:relative;box-sizing:border-box;width:calc(var(--pm-bw) * var(--pm-cwk));aspect-ratio:var(--pm-ratio);margin:0 0 0 auto;padding:7% 0 0;border:0;align-content:start;background:var(--pm-cover) center/100% 100% no-repeat;filter:drop-shadow(0 10px 16px rgba(0,0,0,.45))}
-  /* scellé : ficelle passée dans les œillets et sceau (Cabinet) ou ruban noué (Aqua), calque à la toile exacte du
-     dossier (ombre et découpe comprises : mission-seal-fitted.webp) ; dossier rouvert après lecture : sans scellé */
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover.sealed::after{content:"";position:absolute;z-index:2;inset:0;background:var(--pm-seal) center/100% 100% no-repeat;pointer-events:none;transition:opacity .38s ease-in}
+  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover{position:relative;box-sizing:border-box;width:calc(var(--pm-bw) * var(--pm-cwk));aspect-ratio:var(--pm-ratio);margin:0 0 0 auto;padding:7% 0 0;border:0;align-content:start;background:var(--pm-cover) center/100% 100% no-repeat;filter:drop-shadow(0 10px 16px rgba(0,0,0,.45));transition:opacity .38s ease-in}
+  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover.sealed{width:calc(var(--pm-bw) * var(--pm-cwk-sealed, var(--pm-cwk)));aspect-ratio:var(--pm-ratio-sealed, var(--pm-ratio));background-image:var(--pm-cover-sealed, var(--pm-cover))}
+  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover.sealed::after{content:"";position:absolute;z-index:2;inset:0;background:var(--pm-seal, none) center/100% 100% no-repeat;pointer-events:none;transition:opacity .38s ease-in}
   html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover.sealed.open::after{opacity:0}
+  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover.sealed.open{opacity:var(--pm-open-fade, 1)}
   @media (max-width:759px){html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover{width:min(380px,92%);margin:0 auto}}
   html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-label{position:relative;z-index:1;margin-top:4%;min-width:0;width:72%;padding:12px 16px;background:#f4ead0;color:#2b2112;border:1px solid rgba(60,40,20,.35);box-shadow:0 1px 3px rgba(0,0,0,.3);transform:rotate(-1.2deg);font-family:Georgia,"Times New Roman",serif}
+  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover .pm-label{margin-top:var(--pm-label-top, 4%);transform:rotate(var(--pm-label-rot, -1.2deg))}
+  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover.sealed .pm-label{margin-top:var(--pm-label-top-sealed, var(--pm-label-top, 4%));transform:rotate(var(--pm-label-rot-sealed, var(--pm-label-rot, -1.2deg)))}
+  /* scotchs de l'étiquette scellée (jetons --pm-tape-1 / -2 ; sans jeton : rien) */
+  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover.sealed .pm-label::before,html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover.sealed .pm-label::after{content:"";position:absolute;z-index:3;width:34%;aspect-ratio:420/73;background:var(--pm-tape-1, none) center/100% 100% no-repeat;opacity:.9;pointer-events:none}
+  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover.sealed .pm-label::before{top:-10px;left:-9%;transform:rotate(-14deg)}
+  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover.sealed .pm-label::after{bottom:-8px;right:-8%;transform:rotate(-9deg);background-image:var(--pm-tape-2, none)}
   /* Aqua : étiquette blanche collée, tampon « URGENT » */
   html[data-design="aqua"] .pm-label{background:#fbfaf6;color:#1d2530;border-color:rgba(40,50,60,.25);transform:rotate(-.8deg);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif}
   html[data-design="aqua"] .pm-label small{aspect-ratio:700/194;background-image:url("../../shared/deco/stamp-urgent.webp?v=f32486f9")}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-open{position:absolute;z-index:3;left:0;right:0;bottom:7%;text-align:center}
+  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-open{position:absolute;z-index:3;left:0;right:0;bottom:var(--pm-open-bottom, 7%);text-align:center}
   @media (prefers-reduced-motion:reduce){html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover::after{transition:none}}
   /* Cabinet (Carnet de vol, Aqua, Durci : surcharges plus bas) : dossier ouvert (pages : zones claires de mission-open.webp) */
   .pm-book{container-type:inline-size;position:relative;width:var(--pm-bw,min(1064px,100%));aspect-ratio:1400/842;margin:0 0 12px auto;background:url("../../shared/deco/cabinet/mission-open.webp?v=141b7dc8") center/contain no-repeat;filter:drop-shadow(0 10px 18px rgba(0,0,0,.45))}
@@ -239,7 +247,7 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=1466c9a9"></script>
-<script src="../../shared/repository_nav.js?v=4fdd9e28"></script>
+<script src="../../shared/repository_nav.js?v=b8dc4802"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=db00c09c"></script>
