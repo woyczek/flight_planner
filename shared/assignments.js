@@ -210,11 +210,25 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     const v = g?.[d]?.[h];
     return v === true ? 'O' : typeof v === 'string' && LEGEND[v] ? v : '';
   }));
+  // ---- semaines : une grille par semaine (weeks, clé : lundi ISO UTC) ; tant qu'aucune semaine n'est saisie, l'ancienne
+  // grille « semaine type » (grid) vaut pour toutes les semaines (déclarations antérieures)
+  /** Lundi (date ISO, UTC) de la semaine d'un instant. */
+  const weekKey = ms => {
+    const d = new Date(ms);
+    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - (d.getUTCDay() + 6) % 7)).toISOString().slice(0, 10);
+  };
+  /** Semaine décalée de n semaines (clé lundi ISO). */
+  const addWeeks = (week, n) => new Date(Date.parse(`${week}T00:00:00Z`) + n * 7 * 864e5).toISOString().slice(0, 10);
+  const hasWeeks = av => !!av?.weeks && Object.keys(av.weeks).length > 0;
+  /** Grille d'une semaine (normalisée) : saisie de la semaine, sinon semaine type (déclaration sans semaines), sinon vide. */
+  const weekGrid = (av, week) => normGrid(hasWeeks(av) ? av.weeks[week] : av?.grid);
+  /** Grille qui vaut à un instant ; null si rien n'est déclaré pour cette semaine. */
+  const gridAt = (av, ms) => hasWeeks(av) ? av.weeks[weekKey(ms)] || null : av?.grid || null;
   /** Disponibilités d'un pilote : locales (son poste), sinon data/disponibilites/<TRI>.json (fetch) ; null si aucune. */
   async function availability(tri) {
     tri = String(tri || '').toUpperCase();
     const local = json(AVAIL, {})[tri];
-    let doc = local?.grid ? local : null;
+    let doc = local?.grid || hasWeeks(local) ? local : null;
     if (!doc) try {
       const r = await fetch(new URL(`data/disponibilites/${encodeURIComponent(tri)}.json`, root()).href, {
         cache: 'no-store'
@@ -230,18 +244,30 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
   }
   /** Mémorise la grille (local) et, si demandé, l'écrit dans data/disponibilites/<TRI>.json (dossier des données). */
   async function saveAvailability(tri, grid, {
-    toFolder = false
+    toFolder = false,
+    week = '', // semaine (lundi ISO) : grille de cette semaine ; sinon semaine type (ancien format)
+    base = null // déclaration lue (fichier) : ses semaines sont gardées si ce poste n'en a pas de copie
   } = {}) {
     tri = String(tri || '').toUpperCase();
+    const prev = json(AVAIL, {})[tri] || base || {};
+    // semaines gardées : douze semaines passées au plus
+    const keepFrom = addWeeks(weekKey(Date.now()), -12),
+      weeks = Object.fromEntries(Object.entries({
+        ...(prev.weeks || {}),
+        ...(week ? {
+          [week]: normGrid(grid)
+        } : {})
+      }).filter(([k]) => k >= keepFrom));
     const doc = {
       pilot: tri,
       granularity_min: 60,
       timezone: 'UTC',
       legend: 'ODV (Code couleur)',
       updated_at: new Date().toISOString(),
-      grid: normGrid(grid),
-      aircraft: json(AVAIL, {})[tri]?.aircraft || null,
-      sims: json(AVAIL, {})[tri]?.sims || null
+      grid: week ? normGrid(prev.grid) : normGrid(grid),
+      weeks,
+      aircraft: prev.aircraft || null,
+      sims: prev.sims || null
     };
     const all = json(AVAIL, {});
     all[tri] = doc;
@@ -324,16 +350,19 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
    *  glisser sur les cases ; second clic sur une case de ce code : elle est effacée (glisser efface alors aussi). */
   function gridEditor(host, grid, onChange, {
     code = 'O',
-    onBrush = null // code choisi dans la palette (pour le garder)
+    onBrush = null, // code choisi dans la palette (pour le garder)
+    days = null // libellés des lignes (ex. « Lun 28/09 ») ; sinon jours de la semaine
   } = {}) {
     grid = normGrid(grid);
+    const dayLabel = i => days?.[i] || t(DAYS[i]);
     let brush = LEGEND[code] ? code : 'O';
     // couleur de la case : valeur propre à la case, posée avec !important (les designs rendent les cases de tableau
     // transparentes avec !important ; seul un style en ligne !important l'emporte)
-    const cell = (d, h, v) => `<td data-d="${d}" data-h="${h}" title="${K.esc(t(DAYS[d]))} ${h}h–${h + 1}h UTC${v ? ' · ' + K.esc(LEGEND[v][0]) : ''}"${v ? ` data-code="${v}" style="background-color:${colorOf(v)} !important;color:${inkOf(v)} !important"` : ''}>${v}</td>`;
+    const cell = (d, h, v) => `<td data-d="${d}" data-h="${h}" title="${K.esc(dayLabel(d))} ${h}h–${h + 1}h UTC${v ? ' · ' + K.esc(LEGEND[v][0]) : ''}"${v ? ` data-code="${v}" style="background-color:${colorOf(v)} !important;color:${inkOf(v)} !important"` : ''}>${v}</td>`;
+    const rows = () => DAYS.map((_, i) => `<tr><th>${K.esc(dayLabel(i))}</th>${grid[i].map((v, h) => cell(i, h, v)).join('')}</tr>`).join('');
     host.classList.add('pa-grid');
     host.innerHTML = `<div class="pa-palette" role="radiogroup" aria-label="${K.esc(t(['Code à poser', 'Code to paint', 'Zu setzender Code', 'Código a pintar']))}">${Object.entries(LEGEND).map(([k, [label]]) => `<button type="button" class="repo-plain pa-code" data-code="${k}" role="radio" aria-checked="${k === brush}" title="${K.esc(label)}" style="background:${colorOf(k)};color:${inkOf(k)}">${k}<small>${K.esc(label)}</small></button>`).join('')}</div>
-      <table><thead><tr><th></th>${Array.from({ length: 24 }, (_, h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${DAYS.map((d, i) => `<tr><th>${K.esc(t(d))}</th>${grid[i].map((v, h) => cell(i, h, v)).join('')}</tr>`).join('')}</tbody></table>`;
+      <table><thead><tr><th></th>${Array.from({ length: 24 }, (_, h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows()}</tbody></table>`;
     host.querySelector('.pa-palette').onclick = e => {
       const b = e.target.closest('.pa-code');
       if (!b) return;
@@ -341,23 +370,30 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
       host.querySelectorAll('.pa-code').forEach(x => x.setAttribute('aria-checked', String(x === b)));
       onBrush?.(brush);
     };
-    let paint = null; // code posé pendant le geste ('' : effacement)
-    const set = td => {
-      const d = +td.dataset.d,
-        h = +td.dataset.h;
-      grid[d][h] = paint;
-      td.outerHTML = cell(d, h, paint);
+    // geste : rectangle entre la case de départ et la case survolée (jours × heures), recalculé à chaque case
+    let paint = null, // code posé pendant le geste ('' : effacement)
+      anchor = null,
+      before = null; // grille au début du geste
+    const fill = (d1, h1) => {
+      const [da, db] = [Math.min(anchor[0], d1), Math.max(anchor[0], d1)],
+        [ha, hb] = [Math.min(anchor[1], h1), Math.max(anchor[1], h1)];
+      grid.forEach((row, d) => row.forEach((_, h) => {
+        row[h] = d >= da && d <= db && h >= ha && h <= hb ? paint : before[d][h];
+      }));
+      host.querySelector('tbody').innerHTML = rows();
     };
     host.onpointerdown = e => {
       const td = e.target.closest('td[data-d]');
       if (!td) return;
       e.preventDefault();
-      paint = grid[+td.dataset.d][+td.dataset.h] === brush ? '' : brush; // second clic sur ce code : effacer
-      set(td);
+      anchor = [+td.dataset.d, +td.dataset.h];
+      before = grid.map(r => [...r]);
+      paint = grid[anchor[0]][anchor[1]] === brush ? '' : brush; // second clic sur ce code : effacer
+      fill(...anchor);
     };
     host.onpointerover = e => {
       const td = e.target.closest('td[data-d]');
-      if (td && paint !== null && grid[+td.dataset.d][+td.dataset.h] !== paint) set(td);
+      if (td && paint !== null) fill(+td.dataset.d, +td.dataset.h);
     };
     const stop = () => {
       if (paint === null) return;
@@ -368,7 +404,9 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     host.onpointerleave = stop;
     // design ou ton changé : couleurs réaccordées
     window.addEventListener('repository-design-change', () => setTimeout(() => host.isConnected && gridEditor(host, grid, onChange, {
-      code: brush
+      code: brush,
+      onBrush,
+      days
     })), {
       once: true
     });
@@ -377,9 +415,10 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
   /** Disponibilité à une heure UTC (grille semaine type) : { code, label, category, role, ok } ; null si non renseignée.
    *  ok : code « dispo » qui couvre la famille de la mission (rôle ; O : tout rôle). */
   function availabilityAt(av, ms, family) {
-    if (!av?.grid || !ms) return null;
+    const g = ms ? gridAt(av, ms) : null;
+    if (!g) return null;
     const d = new Date(ms),
-      code = normGrid(av.grid)[(d.getUTCDay() + 6) % 7]?.[d.getUTCHours()];
+      code = normGrid(g)[(d.getUTCDay() + 6) % 7]?.[d.getUTCHours()];
     if (!code) return null;
     const [label, category, role] = LEGEND[code];
     const roles = FAMILY_ROLES[String(family || '').toUpperCase()];
@@ -644,7 +683,7 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
   const slotRange = (date, h0, h1) => [Date.parse(`${date}T${String(h0).padStart(2, '0')}:00:00Z`), Date.parse(`${date}T00:00:00Z`) + h1 * 36e5];
   /** Déclaration d'un pilote sur une plage : code dominant (les « dispo » d'abord), dispo, codes rencontrés. */
   function declaredOver(av, start, end) {
-    if (!av?.grid || !start || !end) return null;
+    if (!av || !start || !end) return null;
     const codes = {};
     for (let ms = start; ms < end; ms += 36e5) {
       const a = availabilityAt(av, ms);
@@ -1019,6 +1058,9 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     saveAvailability,
     saveAircraft,
     saveSims,
+    weekKey,
+    addWeeks,
+    weekGrid,
     simulators,
     SIMULATORS,
     gridEditor,
