@@ -30,17 +30,20 @@
   .pm-label{position:relative}
   .pm-label small{position:absolute;z-index:2;top:-14px;right:-18px;width:180px;aspect-ratio:700/245;background:url("../../shared/deco/stamp-confidential.webp") center/contain no-repeat;color:transparent;font-size:0;transform:rotate(-9deg);opacity:.8;pointer-events:none}
   /* Cabinet : dossier ficelé et scellé (mission non ouverte) ; ouvrir brise le sceau */
-  html[data-design="cabinet"] .pm-cover{position:relative;box-sizing:border-box;width:min(380px,92%);aspect-ratio:720/1015;margin:0 auto;padding:7% 0 0;border:0;align-content:start;background:url("../../shared/deco/cabinet/mission-cover.webp") center/100% 100% no-repeat;filter:drop-shadow(0 10px 16px rgba(0,0,0,.45))}
-  /* ficelle multiple passée dans les œillets : calque calé sur les œillets du dossier (mesurés) */
-  html[data-design="cabinet"] .pm-cover::after{content:"";position:absolute;z-index:2;left:-2.11%;top:-2.39%;width:104.44%;height:105.69%;background:url("../../shared/deco/cabinet/mission-seal-multi.webp") center/100% 100% no-repeat;pointer-events:none;transition:opacity .38s ease-in,transform .38s ease-in}
-  html[data-design="cabinet"] .pm-cover.open::after{opacity:0;transform:scale(1.18) rotate(4deg)}
+  html[data-design="cabinet"] #pmDetail{--pm-bw:min(1064px,100%)}
+  html[data-design="cabinet"] .pm-cover{position:relative;box-sizing:border-box;width:calc(var(--pm-bw) * .4266);aspect-ratio:720/1015;margin:0 0 0 auto;padding:7% 0 0;border:0;align-content:start;background:url("../../shared/deco/cabinet/mission-cover.webp") center/100% 100% no-repeat;filter:drop-shadow(0 10px 16px rgba(0,0,0,.45))}
+  /* scellé : ficelle passée dans les œillets et sceau, calque à la toile exacte du dossier (ajusté sur les œillets,
+     ombre et découpe comprises : mission-seal-fitted.webp) ; dossier rouvert après lecture : sans scellé */
+  html[data-design="cabinet"] .pm-cover.sealed::after{content:"";position:absolute;z-index:2;inset:0;background:url("../../shared/deco/cabinet/mission-seal-fitted.webp") center/100% 100% no-repeat;pointer-events:none;transition:opacity .38s ease-in}
+  html[data-design="cabinet"] .pm-cover.sealed.open::after{opacity:0}
+  @media (max-width:759px){html[data-design="cabinet"] .pm-cover{width:min(380px,92%);margin:0 auto}}
   html[data-design="cabinet"] .pm-label{position:relative;z-index:1;margin-top:4%;min-width:0;width:72%;padding:12px 16px;background:#f4ead0;color:#2b2112;border:1px solid rgba(60,40,20,.35);box-shadow:0 1px 3px rgba(0,0,0,.3);transform:rotate(-1.2deg);font-family:Georgia,"Times New Roman",serif}
   html[data-design="cabinet"] .pm-open{position:absolute;z-index:3;left:0;right:0;bottom:7%;text-align:center}
   @media (prefers-reduced-motion:reduce){html[data-design="cabinet"] .pm-cover::after{transition:none}}
   /* Cabinet : dossier ouvert (pages : zones claires de mission-open.webp) */
-  .pm-book{position:relative;width:min(1120px,100%);aspect-ratio:1400/842;margin:0 auto 12px;background:url("../../shared/deco/cabinet/mission-open.webp") center/contain no-repeat;filter:drop-shadow(0 10px 18px rgba(0,0,0,.45))}
+  .pm-book{position:relative;width:var(--pm-bw,min(1064px,100%));aspect-ratio:1400/842;margin:0 0 12px auto;background:url("../../shared/deco/cabinet/mission-open.webp") center/contain no-repeat;filter:drop-shadow(0 10px 18px rgba(0,0,0,.45))}
   .pm-page{position:absolute;top:10.5%;bottom:10%;overflow:auto;padding:1.6% 2.4% 3%;font:12.5px/1.5 "Courier Prime","Courier New",Courier,monospace;color:#2b2112;scrollbar-width:thin}
-  .pm-left{left:6.5%;right:54.5%}.pm-right{left:54.6%;right:6.6%}
+  .pm-left{left:6.5%;right:54.5%}.pm-left.pm-inside{cursor:pointer}.pm-right{left:54.6%;right:6.6%}
   .pm-page::after{content:attr(data-folio);position:sticky;display:block;bottom:0;text-align:center;font-size:11px;opacity:.55;margin-top:8px}
   .pm-page h3{margin:0 0 10px;font-size:17px;letter-spacing:.02em;border-bottom:1px solid rgba(43,33,18,.35);padding-bottom:6px}
   .pm-page h4{margin:12px 0 6px;font-size:13.5px;text-transform:uppercase;letter-spacing:.08em}
@@ -118,7 +121,7 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=9839b88b"></script>
-<script src="../../shared/repository_nav.js?v=17124019"></script>
+<script src="../../shared/repository_nav.js?v=b3e78cc5"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=90cadad7"></script>
@@ -211,14 +214,15 @@
       <dl><dt>Appareil</dt><dd>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' ') || '—')}</dd><dt>Indicatif</dt><dd>${esc(a.callsign || '—')}</dd><dt>Décollage</dt><dd>${esc(a.alert ? 'astreinte ' + hhmm(Date.parse(a.alert.ready_at_utc)) : fmt(A.when(a)))}</dd></dl></div>`;
   /** Couverture d'une mission pas encore ouverte (scellée) ; l'ouvrir la marque lue (pastille du menu, pli cacheté). */
   function cover(a, { scroll = true } = {}) {
+    const sealed = !A.isRead(a);
     $('pmMission').hidden = false;
-    $('pmDetail').innerHTML = `<div class="pm-cover" role="button" tabindex="0" title="Ouvrir la mission">${labelHtml(a)}
-      <p class="pm-open"><button type="button" class="primary" data-open>Ouvrir la mission</button></p></div>`;
-    // ouverture : le sceau se brise (Cabinet), puis la mission s'affiche
+    $('pmDetail').innerHTML = `<div class="pm-cover${sealed ? ' sealed' : ''}" role="button" tabindex="0" title="${sealed ? 'Ouvrir la mission (briser le sceau)' : 'Ouvrir le dossier'}">${labelHtml(a)}
+      <p class="pm-open"><button type="button" class="primary" data-open>${sealed ? 'Ouvrir la mission' : 'Ouvrir le dossier'}</button></p></div>`;
+    // ouverture : le sceau se brise (Cabinet, mission scellée), puis la mission s'affiche
     const open = () => {
       const cv = $('pmDetail').querySelector('.pm-cover');
       cv.classList.add('open');
-      const anim = getComputedStyle(cv, '::after').transitionDuration !== '0s' && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const anim = sealed && document.documentElement.dataset.design === 'cabinet' && !matchMedia('(prefers-reduced-motion: reduce)').matches;
       setTimeout(() => show(a, { open: true }), anim ? 380 : 0);
     };
     $('pmDetail').querySelector('.pm-cover').onclick = open;
@@ -341,6 +345,7 @@
         <button type="button" class="primary" data-go="maps" data-icon="map" ${y.mission ? '' : 'disabled'}>Ouvrir dans les Cartes de vol</button>
         <button type="button" class="secondary" data-go="fuel" data-icon="fuel" ${pts.length > 1 ? '' : 'disabled'}>Carburant (planificateur)</button>
         <button type="button" class="secondary" data-go="cr" data-icon="clipboard" ${y.mission ? '' : 'disabled'}>Créer le CR</button>
+        <button type="button" class="ghost" data-close-book hidden>Refermer le dossier</button>
         ${isDevelop() ? '<button type="button" class="ghost" data-reseal title="Canal develop : remettre la mission sous scellés (non lue)">Resceller</button>' : ''}
       </div>
       <div data-part="details">
@@ -361,6 +366,8 @@
     $('pmDetail').querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go, a, y, pts, dist));
     const reseal = $('pmDetail').querySelector('[data-reseal]');
     if (reseal) reseal.onclick = () => { A.markUnread(a); load(); cover(a); };
+    const close = $('pmDetail').querySelector('[data-close-book]');
+    if (close) close.onclick = () => cover(a, { scroll: false }); // dossier refermé, non rescellé (mission lue)
     bookify();
     window.AppFramework?.refresh?.();
   }
@@ -422,7 +429,8 @@
     const draw = () => {
       left.replaceChildren(...(pages[at] ? [pages[at]] : []));
       right.replaceChildren(...(pages[at + 1] ? [pages[at + 1]] : []));
-      left.classList.toggle('pm-inside', !pages[at]); // intérieur de la couverture
+      left.classList.toggle('pm-inside', !pages[at]); // intérieur de la couverture (clic : refermer)
+      left.title = pages[at] ? '' : 'Refermer le dossier';
       left.dataset.folio = pages[at] ? at : '';
       right.dataset.folio = pages[at + 1] ? at + 1 : '';
       prev.hidden = at === 0;
@@ -440,6 +448,11 @@
     };
     prev.onclick = () => turn(-1);
     next.onclick = () => turn(1);
+    // refermer : bouton sous le dossier, ou clic sur l'intérieur de la couverture
+    const closeBtn = host.querySelector('[data-close-book]');
+    if (closeBtn) closeBtn.hidden = false;
+    left.onclick = () => { if (!pages[at]) closeBtn?.click(); };
+    left.title = '';
     draw();
   }
 
