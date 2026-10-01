@@ -25,6 +25,7 @@
   <label>Pages <select id="set"><option value="temoins">témoins (9)</option><option value="toutes">toutes</option></select></label>
   <span id="designs"></span>
   <label><input type="checkbox" id="light" checked> ton clair</label><label><input type="checkbox" id="dark" checked> ton sombre</label>
+  <label title="Ne relever que les combinaisons sans référence (relevé interrompu)"><input type="checkbox" id="resume"> reprendre</label>
   <button id="ref">Référence</button><button id="cmp">Comparer</button><span id="state"></span>
 </header>
 <div id="log"></div>
@@ -96,6 +97,16 @@ const loadRef = async set => {
   return r;
 };
 const saveRef = (set, r) => idb('readwrite', s => s.put(r, set));
+// une entrée par combinaison (design|ton|page), écrite dès qu'elle est relevée : rien ne s'accumule en mémoire, et un
+// relevé interrompu se reprend (« reprendre ») ; clé du jeu « liste » : empreinte de la liste des pages
+const hashOf = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return (h >>> 0).toString(36); };
+const setKey = () => { const v = $('set').value; return v.startsWith('liste:') ? `liste:${hashOf(v)}` : v; };
+const comboKey = k => `${setKey()}::${k}`;
+const saveCombo = (k, v) => idb('readwrite', s => s.put(v, comboKey(k)));
+const loadCombo = async k => (await idb('readonly', s => s.get(comboKey(k)))) ?? (await loadRef($('set').value))?.[k];
+// grand relevé (liste de plus de 20 pages) : sélecteurs propres des pages gardés en empreinte (un écart se signale ;
+// un relevé ciblé sur la page en donne le détail)
+const compact = () => $('set').value.startsWith('liste:') && LISTE.length > 20;
 
 /** Styles calculés des composants d'un document (valeurs sans version de cache). */
 /** Sélecteurs des styles propres de la page (blocs <style> de la page, mission_core/core.css, maintenance.css) : relevés
@@ -120,8 +131,10 @@ function pageSelectors(d) {
 }
 function snap(d) {
   const w = d.defaultView, out = {};
-  const sels = $('set').value.startsWith('liste:') ? [...new Set([...SEL, ...pageSelectors(d)])] : SEL;
-  for (const s of sels) {
+  const own = $('set').value.startsWith('liste:') ? pageSelectors(d).filter(s => !SEL.includes(s)) : [];
+  const short = compact();
+  for (const s of [...SEL, ...own]) {
+    const isOwn = own.includes(s);
     let els = [];
     try {
       els = [...d.querySelectorAll(s)].slice(0, 2);
@@ -133,14 +146,15 @@ function snap(d) {
         if (pe && (cs.content === 'none' || cs.content === 'normal')) continue;
         const o = {};
         for (const p of PROPS) o[p] = cs.getPropertyValue(p);
-        out[`${s}#${i}${pe}`] = JSON.stringify(o).replace(/\?v=[0-9a-z]+/g, '');
+        const v = JSON.stringify(o).replace(/\?v=[0-9a-z]+/g, '');
+        out[`${s}#${i}${pe}`] = short && isOwn ? '#' + hashOf(v) : v;
       }
     });
   }
   return out;
 }
 /** Charge chaque page dans chaque design et ton cochés ; visit(clé, relevé) pour chaque combinaison. */
-async function sweep(visit) {
+async function sweep(visit, skip) {
   const pages = $('set').value === 'toutes' ? TOUTES : $('set').value.startsWith('liste:') ? LISTE : TEMOINS;
   const tones = ['light', 'dark'].filter(t => $(t).checked);
   const designs = DESIGNS.filter(d => document.querySelector(`[data-d="${d}"]`).checked);
@@ -150,6 +164,7 @@ async function sweep(visit) {
     localStorage.setItem('repositoryDesign', des);
     for (const p of pages) {
       $('state').textContent = `${des} · ${p} (${++n}/${designs.length * pages.length})`;
+      if (skip && (await Promise.all(tones.map(tone => skip(`${des}|${tone}|${p}`)))).every(Boolean)) continue;
       const f = document.createElement('iframe');
       document.body.append(f);
       f.src = `/${p}${p.includes('?') ? '&' : '?'}_=${Date.now()}`; // adresse unique : jamais la page en cache
@@ -160,7 +175,7 @@ async function sweep(visit) {
       for (const tone of tones) {
         f.contentDocument.documentElement.dataset.tone = tone;
         await new Promise(r => setTimeout(r, 120));
-        visit(`${des}|${tone}|${p}`, snap(f.contentDocument));
+        await visit(`${des}|${tone}|${p}`, snap(f.contentDocument));
       }
       f.remove();
     }
@@ -171,23 +186,21 @@ async function sweep(visit) {
 }
 $('ref').onclick = async () => {
   $('log').textContent = '';
-  const set = $('set').value, base = (await loadRef(set)) || {};
   let n = 0;
-  await sweep((k, v) => { base[k] = v; n++; });   // les combinaisons non relevées gardent leur référence
-  await saveRef(set, base);
-  log(`Référence « ${set} » : ${n} combinaison(s) relevée(s), ${Object.keys(base).length} en tout.`);
+  const resume = $('resume').checked;
+  await sweep(async (k, v) => { await saveCombo(k, v); n++; }, resume ? async k => !!(await idb('readonly', s => s.get(comboKey(k)))) : null);
+  log(`Référence « ${$('set').value.slice(0, 60)}${$('set').value.length > 60 ? '…' : ''} » : ${n} combinaison(s) relevée(s)${resume ? ' (reprise : les autres l’étaient déjà)' : ''}.`);
 };
 $('cmp').onclick = async () => {
   $('log').textContent = '';
-  const set = $('set').value, base = await loadRef(set);
-  if (!base) return log(`Pas de référence « ${set} » : cliquer d'abord « Référence ».`);
   let n = 0;
-  await sweep((k, now) => {
-    const old = base[k];
+  await sweep(async (k, now) => {
+    const old = await loadCombo(k);
     if (!old) { log(`${k}  (pas de référence)`); return; }
     for (const s of new Set([...Object.keys(old), ...Object.keys(now)])) {
       if (old[s] === now[s]) continue;
       if (!old[s] || !now[s]) { n++; log(`${k}  ${s}  ${old[s] ? 'disparu' : 'nouveau'}`); continue; }
+      if (old[s][0] === '#' || now[s][0] === '#') { n++; log(`${k}  ${s}  modifié (relevé ciblé sur la page pour le détail)`); continue; }
       const a = JSON.parse(old[s]), b = JSON.parse(now[s]);
       for (const p in a) if (a[p] !== b[p]) { n++; log(`${k}  ${s}  ${p}\n    avant : ${a[p]}\n    après : ${b[p]}`); }
     }
