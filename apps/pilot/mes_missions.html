@@ -32,8 +32,13 @@
   /* Cabinet, Aqua, Durci : dossier fermé (ficelé et scellé, noué d'un ruban ou sanglé, tant que la mission n'est pas ouverte) ;
      ouvrir brise le sceau (dénoue le ruban). Images par design : --pm-cover, --pm-seal, proportions --pm-ratio, largeur --pm-cwk (part du dossier ouvert) */
   html[data-design="cabinet"]{--pm-cover:url("../../shared/deco/cabinet/mission-cover.webp");--pm-seal:url("../../shared/deco/cabinet/mission-seal-fitted.webp");--pm-ratio:720/1015;--pm-cwk:.4266}
-  /* Durci : carnet de terrain fermé (la sangle à boucle fait le scellé : pas de calque) */
-  html[data-design="field"]{--pm-cover:url("../../shared/deco/field/notebook-closed.webp");--pm-seal:none;--pm-ratio:491/560;--pm-cwk:.52}
+  /* Durci : dossier zippé fermé (étiquette « CONFIDENTIEL » à la tirette) ; scellé : couverture ficelée et cachetée
+     (géométrie propre, en attendant la ficelle seule : pas de calque) qui s'efface à l'ouverture */
+  html[data-design="field"]{--pm-cover:url("../../shared/deco/field/mission-closed.webp");--pm-seal:none;--pm-ratio:961/1441;--pm-cwk:.529}
+  html[data-design="field"] .pm-cover.sealed{--pm-cover:url("../../shared/deco/field/mission-sealed.webp");--pm-ratio:1027/1345;--pm-cwk:.511;transition:opacity .38s ease-in}
+  html[data-design="field"] .pm-cover.sealed.open{opacity:0}
+  html[data-design="field"] .pm-cover .pm-open{bottom:20%}
+  html[data-design="field"] .pm-label small{background-image:none} /* l'étiquette de la tirette dit déjà « CONFIDENTIEL » */
   html[data-design="aqua"]{--pm-cover:url("../../shared/deco/aqua/mission-cover.webp");--pm-seal:url("../../shared/deco/aqua/mission-seal-fitted.webp");--pm-ratio:720/954;--pm-cwk:.445}
   html:is([data-design="cabinet"],[data-design="aqua"],[data-design="field"]) #pmDetail{--pm-bw:min(1064px,100%)}
   html:is([data-design="cabinet"],[data-design="aqua"],[data-design="field"]) .pm-cover{position:relative;box-sizing:border-box;width:calc(var(--pm-bw) * var(--pm-cwk));aspect-ratio:var(--pm-ratio);margin:0 0 0 auto;padding:7% 0 0;border:0;align-content:start;background:var(--pm-cover) center/100% 100% no-repeat;filter:drop-shadow(0 10px 16px rgba(0,0,0,.45))}
@@ -119,18 +124,18 @@
   html[data-design="aqua"] .pm-book .pm-head>:not(.pm-no){position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
   html[data-design="aqua"] .pm-book .pm-head .pm-no{position:absolute;top:calc(100% + 6px);right:0;font-size:11px;letter-spacing:.06em;color:#14285a}
   html[data-design="aqua"] .pm-book [data-part="order"] .pm-dr{top:auto;bottom:-10px}
-  /* Durci : carnet de terrain ouvert (pages : x 63–473 et 475–871, dos à 474 sur 1000 × 595 ; texte dans le réglé) */
-  html[data-design="field"] .pm-book{aspect-ratio:1000/595;background-image:url("../../shared/deco/field/notebook-open.webp")}
-  html[data-design="field"] .pm-page{top:8.4%;bottom:7%;color:#1f2a1c}
-  html[data-design="field"] .pm-left{left:7.6%;right:53.2%}html[data-design="field"] .pm-right{left:48.1%;right:13.4%}
-  html[data-design="field"] .pm-leaf{top:5.21%;bottom:5.71%;left:47.5%;right:12.9%;transform-origin:-.25% 50%}
-  html[data-design="field"] .pm-leaf.back{left:6.3%;right:52.7%;transform-origin:100.24% 50%}
-  html[data-design="field"] .pm-leaf .pm-face{inset:0;background-image:url("../../shared/deco/field/mission-page.webp");padding:3.5cqw 2.9cqw 5.97cqw 3cqw;color:#1f2a1c}
-  html[data-design="field"] .pm-leaf.fwd .pm-back{padding:3.5cqw 2.9cqw 5.97cqw 2.3cqw}
-  html[data-design="field"] .pm-leaf.back .pm-front{padding:3.5cqw 2.9cqw 5.97cqw 3.7cqw}
-  html[data-design="field"] .pm-leaf.back .pm-back{padding:3.5cqw 4.3cqw 5.97cqw 3cqw}
-  html[data-design="field"] .pm-corner{width:5.5%;background-image:url("../../shared/deco/field/page-corner.webp")}
-  html[data-design="field"] .pm-next{right:12.9%;bottom:5.71%}html[data-design="field"] .pm-prev{left:6.3%;bottom:5.71%}
+  /* Durci : dossier zippé ouvert (feuilles : x 81–561 et 675–1155, y 59–759, dos à 618 sur 1236 × 979 ; tirette
+     sous le dossier) ; marges des faces calculées comme pour le Cabinet */
+  html[data-design="field"] .pm-book{aspect-ratio:1236/979;background-image:url("../../shared/deco/field/mission-open.webp")}
+  html[data-design="field"] .pm-page{top:9.63%;bottom:26.57%;color:#1f2a1c}
+  html[data-design="field"] .pm-left{left:8.55%;right:56.61%}html[data-design="field"] .pm-right{left:56.61%;right:8.55%}
+  html[data-design="field"] .pm-leaf{top:6.13%;bottom:22.57%;left:54.61%;right:6.55%;transform-origin:-11.88% 50%}
+  html[data-design="field"] .pm-leaf.back{top:6.03%;bottom:22.47%;left:6.55%;right:54.61%;transform-origin:111.88% 50%}
+  html[data-design="field"] .pm-leaf .pm-face{inset:0;background-image:url("../../shared/deco/field/mission-page.webp");padding:4.37cqw 4.4cqw 8.37cqw 4.4cqw;color:#1f2a1c}
+  html[data-design="field"] .pm-leaf.fwd .pm-back{padding:4.37cqw 4.4cqw 8.37cqw 4.4cqw}
+  html[data-design="field"] .pm-leaf.back :is(.pm-front,.pm-back){padding:4.45cqw 4.4cqw 8.45cqw 4.4cqw}
+  html[data-design="field"] .pm-corner{background-image:url("../../shared/deco/field/page-corner.webp")}
+  html[data-design="field"] .pm-next{right:6.55%;bottom:22.57%}html[data-design="field"] .pm-prev{left:6.55%;bottom:22.47%}
   .pm-week{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}.pm-week input{width:auto}.pm-week button{min-width:2.2em}
   .pm-types-sum{margin:0 0 8px;font-weight:600}
   .pm-sims{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 14px}
