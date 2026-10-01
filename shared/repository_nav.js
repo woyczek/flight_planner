@@ -322,7 +322,7 @@
     document.head.append(l);
     // illustrations du décor complet (frise de Cabinet, radar de Durci), même version
     const d = document.createElement("script");
-    d.src = new URL("design_deco.js?v=95df47de", script.src).href;
+    d.src = new URL("design_deco.js?v=7a540029", script.src).href;
     document.head.append(d);
   };
   designCss(design);
@@ -514,7 +514,7 @@
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
-      sc.src = new URL("appearance_page.js?v=9ccc994e", script.src).href;
+      sc.src = new URL("appearance_page.js?v=55a7250a", script.src).href;
       sc.onload = show;
       document.head.append(sc);
     }
@@ -796,6 +796,11 @@
         label: ["Cartes", "Maps", "Karten", "Mapas"],
         title: ["Cartes de vol : route, topo, approche, rendez-vous, destination", "Flight maps: route, topo, approach, rendezvous, destination", "Flugkarten", "Mapas de vuelo"]
       }, {
+        icon: "send",
+        path: "apps/pilot/mes_missions.html",
+        label: ["Mes missions", "My missions", "Meine Missionen", "Mis misiones"],
+        title: ["Missions qui vous sont affectées par le Centre, vos disponibilités et vos appareils", "Missions assigned to you by the Centre, your availability and aircraft", "Vom Zentrum zugewiesene Missionen, Verfügbarkeit und Luftfahrzeuge", "Misiones asignadas por el Centro, disponibilidad y aeronaves"]
+      }, {
         icon: "plane",
         path: "apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html",
         label: ["Atterrissages", "Landings", "Landungen", "Aterrizajes"]
@@ -895,13 +900,13 @@
   } {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=7b0ee603", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=f1357c65", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
     files.src = new URL("file_access.js?v=e274fbbc", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=1bfdb961", "block_icons.js?v=ff923add", "side_nav.js?v=355697e6"]) {
+    for (const f of ["icons/repository_icons.js?v=58f492d6", "block_icons.js?v=ff923add", "side_nav.js?v=355697e6"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
@@ -910,6 +915,9 @@
     const store = document.createElement("script");
     store.src = new URL("browser_store.js?v=938ce9e7", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
+    const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
+    assign.src = new URL("assignments.js?v=854c1200", script.src).href;
+    document.head.append(assign);
     const update = document.createElement("script");
     update.src = new URL("suite_update.js?v=d84028ad", script.src).href;
     document.head.append(update)

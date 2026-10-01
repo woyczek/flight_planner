@@ -3,7 +3,36 @@
 Une section par version publiée, la plus récente en tête, écrite à chaque release (avec la section du
 [CHANGELOG](CHANGELOG.md), qui détaille tout) : **synthèse** (ce qui change pour l'utilisateur), **actions à
 effectuer** (ce que chacun doit faire après la mise à jour), **notes** (limites connues, points d'attention, à venir).
-Entre deux versions, le pied de page affiche le commit en cours (`v4.5.0+abc1234`).
+Entre deux versions, le pied de page affiche le commit en cours (`v4.6.0+abc1234`).
+
+## 4.6.0 — 1ᵉʳ octobre 2026
+
+### Synthèse
+
+- **Les missions arrivent aux pilotes.** Le Centre affecte une mission (pilotes, appareils, horaire, astreinte,
+  convoyage) depuis le registre ou un créneau de l'ODV ; le pilote la retrouve dans sa page **« Mes missions »**, signalée
+  par un pli cacheté dans l'en-tête, avec ses disponibilités et ses appareils.
+- **Un vrai dossier de mission.** Dans les designs à matières, la mission non lue arrive scellée : dossier ficelé et
+  cacheté (Cabinet), enveloppe cachetée du ministère (Carnet de vol), porte-documents noué d'un ruban « URGENT » (Aqua),
+  dossier zippé ficelé en croix (Durci). L'ouvrir brise le sceau ; le dossier s'ouvre en livre : on tourne les pages
+  par le coin corné ou d'un clic, un signet mène à la dernière page, l'ordre porte l'en-tête de son époque.
+- **Planning ODV** plus dense et plus lisible, déclarations des pilotes et missions probables.
+- **Sous le capot** : échappement HTML commun, images des pages versionnées (plus d'ancienne image gardée en cache),
+  ménage des images sources.
+
+### Actions à effectuer
+
+1. **Recharger chaque page ouverte** (Ctrl+F5) : nouvelles versions des scripts, des feuilles et des images.
+2. **Pilotes** : renseigner son **trigramme DEFA** dans ☰ › Profil pilote, pour voir ses missions dans « Mes missions ».
+3. **Centre** : le dossier des missions doit être autorisé (Paramètres › Sources et dossiers) pour enregistrer les
+   affectations et le journal (`data/missions/`).
+4. **Sous Brave** : serveur local seulement, et `brave://flags/#file-system-access-api` → Enabled (voir INSTALL).
+
+### Notes
+
+- Le dossier de mission en livre s'affiche à partir de 760 px de large ; en dessous, présentation ordinaire. Aqua n'a
+  pas de signet, Standard n'a pas de dossier.
+- `cabinet/1800` : panneaux sources gardés, à convertir.
 
 ## 4.5.0 — 1ᵉʳ octobre 2026
 
@@ -36,7 +65,7 @@ Entre deux versions, le pied de page affiche le commit en cours (`v4.5.0+abc1234
 - Sans le dépôt de données (`data/`), un seul 404 reste en console (`data/data_tree.js`) : il est voulu et sert à
   basculer sur les exemples.
 - Toolkit : phase 3 en cours (187 renforts `:not(#imp)` encore utiles, traités au cas par cas). La page « Mes
-  missions » (dossiers Cabinet, Aqua, Durci) est en développement sur une branche à part, hors de cette version.
+  missions » est publiée en 4.6.0.
 
 ## 4.4.0 — 30 septembre 2026
 

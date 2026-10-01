@@ -14,12 +14,7 @@
   // aérodromes) : enregistrées directement (et sauvegardées par ☰ › Données locales).
   // Registres des missions (« base des opérations ») : édition YAML par famille.
   /** Échappe un texte pour HTML. */
-  const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;'
-  } [c]));
+  const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   /** Valeur JSON d'une clé du localStorage ; null si absente ou illisible. */
   const read = key => {
     try {

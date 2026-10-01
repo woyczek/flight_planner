@@ -1509,6 +1509,7 @@
     slotOfHour,
     slotsOfSpan,
     eligible,
+    rolesOfTypes,
     toCsv,
     recap,
     hhmm,

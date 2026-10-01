@@ -10,12 +10,7 @@
     L = V.L,
     C = window.MissionCharts;
   /** Échappe un texte pour HTML. */
-  const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;'
-  } [c]));
+  const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   /** Nombre d'une valeur ; 0 si invalide. */
   const n = v => {
     const x = Number(v);

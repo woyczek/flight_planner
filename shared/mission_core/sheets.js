@@ -11,12 +11,7 @@
     L = V.L,
     C = window.MissionCharts;
   /** Échappe un texte pour HTML. */
-  const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;'
-  } [c]));
+  const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   /** Rang (0–3) de la langue de la page. */
   const idx = () => Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'));
   /** Texte d'une ligne [fr, en, de, es] dans la langue de la page. */

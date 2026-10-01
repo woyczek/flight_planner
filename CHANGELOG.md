@@ -10,6 +10,36 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+## [4.6.0] — 2026-10-01
+
+Affectation des missions aux pilotes et page pilote « Mes missions » : la mission arrive scellée dans un dossier propre
+à chaque design (dossier ficelé du Cabinet, enveloppe cachetée du Carnet de vol, porte-documents noué d'Aqua, dossier
+zippé de Durci), s'ouvre comme un livre dont on tourne les pages ; Planning ODV dense ; échappement HTML commun.
+
+### Ajouté
+
+- **Affectation des missions aux pilotes** : bouton « Affecter… » du registre (pilotes, appareils, heure, astreinte,
+  convoyage, postes par équipage, conflits), vivier de pilotes disponibles possédant l'appareil, matrice d'un créneau
+  ODV, journal des affectations (date, qui, quoi, à qui) ; trigramme dans le profil pilote ; bloc `alert` (astreinte)
+  dans le prompt du générateur. Conception : [docs/AFFECTATION_MISSIONS.md](docs/AFFECTATION_MISSIONS.md).
+- **Page pilote « Mes missions »** : missions de la semaine, disponibilités aux codes et couleurs de l'ODV, appareils
+  du pilote ; pli cacheté dans l'en-tête pour une mission non lue ; transferts Cartes de vol, Carburant, CR.
+- **Dossier de mission** dans les designs à matières : mission non lue scellée (ficelle et cachet, ruban noué,
+  enveloppe cachetée, ficelle en croix), ouvrir brise le sceau ; dossier ouvert en livre (page 1 l'étiquette, puis
+  l'ordre avec l'en-tête du design, le détail, les cartes posées, objectifs et signature), pages tournées autour du dos
+  par le coin corné ou un clic, numéros en bas de page ; signets (Cabinet, Carnet de vol) qui mènent à la dernière
+  page ; tampons « CONFIDENTIEL », « URGENT », « DIFFUSION RESTREINTE ».
+- **Planning ODV** : grille dense, déclarations des pilotes, missions probables, simulateurs abrégés et colorés,
+  affectation depuis un créneau, en-têtes en icônes.
+
+### Modifié
+
+- Modules applicatifs : l'échappement HTML commun (`RepositoryKit.esc`) remplace 24 copies ; `kit.js` chargé avant
+  tout module qui s'en sert.
+- Versions de cache : les images des styles d'une page sont versionnées (`url("…?v=…")`), comme les scripts.
+- INSTALL : Brave uniquement en mode serveur local, accès aux dossiers à activer.
+- Images sources ChatGPT orphelines retirées du dépôt (86).
+
 ## [4.5.0] — 2026-10-01
 
 CR FIRE / GAAR et HEMS / MEDEVAC sur le Mission Core (toutes les familles de CR partagent le même socle) ; toolkit
@@ -52,6 +82,7 @@ sombres ; messages clairs quand le navigateur ne permet pas de choisir un dossie
   Firefox, Safari : Chrome ou Edge. Affiché en notification.
 - Paramètres › Maintenance sans dossier `data/` : plus de requêtes vers `data/` ni vers `VERSION.json` (404 en
   console) ; seul reste le 404 de `data/data_tree.js`, qui détecte l'absence des données.
+
 
 ## [4.4.0] — 2026-09-30
 

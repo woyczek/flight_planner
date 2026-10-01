@@ -1126,13 +1126,7 @@
 
   // ===================================================================== bloc d'interface commun
   const L = row => row[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'))] || row[0];
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
-  })[c]);
+  const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   const T = {
     folder: ['Dossier SIA', 'SIA folder', 'SIA-Ordner', 'Carpeta SIA'],
     reread: ['Relire le dossier', 'Re-read the folder', 'Ordner neu einlesen', 'Releer la carpeta'],

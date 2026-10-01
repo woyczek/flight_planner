@@ -8,12 +8,7 @@
     V = window.MissionVocab,
     L = V.L;
   /** Échappe un texte pour HTML. */
-  const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;'
-  } [c]));
+  const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   /** Minutes → « 1h05 ». */
   const duration = n => {
     n = Math.round(n || 0);

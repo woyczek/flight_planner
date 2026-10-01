@@ -6,12 +6,7 @@
   //   MissionCharts.stackedBars({ buckets, series, value, format, height }) → SVG
   //   MissionCharts.donut(items, { format, center }) → HTML (SVG + légende)
   //   MissionCharts.hbars(items, { format, max }) → HTML
-  const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;'
-  } [c]));
+  const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   /** Nombre sur deux chiffres. */
   const pad = n => String(n).padStart(2, '0');
   /** Date UTC au format AAAA-MM-JJ. */

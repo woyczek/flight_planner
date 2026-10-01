@@ -335,12 +335,7 @@
 
   // Cellule éditable (mode « modifier dans le tableau ») : champ lié à la ligne (data-uid).
   /** Échappe un texte pour HTML. */
-  const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;'
-  } [c]));
+  const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   /** Minutes → « 1h05 ». */
   const dur = v => v == null || v === '' ? '' : `${Math.floor(v / 60)}h${String(Math.round(v % 60)).padStart(2, '0')}`;
 

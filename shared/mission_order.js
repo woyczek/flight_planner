@@ -37,13 +37,7 @@
     const i = Math.max(0, LANGS.indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'));
     return String(row[i] ?? row[1] ?? row[0]).replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
   };
-  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
-  } [c]));
+  const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   const readJson = (k, d) => {
     try {
       return JSON.parse(localStorage.getItem(k) || 'null') ?? d;

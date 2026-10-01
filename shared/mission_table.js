@@ -7,7 +7,7 @@
   // Utilisé par tous les tableaux des reportings HEMS, GAAR et général.
   //
   // SortedTable.render(container, {
-  //   rows, columns: [{ key, label, type: 'number'|'text', format(value,row) → texte,
+  //   rows, columns: [{ key, label, icon (en-tête en icône, libellé en infobulle), title, type: 'number'|'text', format(value,row) → texte,
   //                     html(value,row) → HTML de confiance, sortValue(row) }],
   //   defaultSortKey, defaultDir (1 croissant, -1 décroissant),
   //   onRowClick(row)  → ligne cliquable (hors boutons / liens),
@@ -52,12 +52,7 @@
   }
 
   /** Échappe un texte pour HTML. */
-  const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;'
-  } [c]));
+  const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   // Même règle de tri que le tableau des atterrissages : nombres comparés numériquement,
   // texte avec localeCompare numérique insensible à la casse.
   const sortable = v => {
@@ -131,7 +126,9 @@
         const active = sortKey === c.key;
         const cls = ['st-sortable', c.type === 'number' ? 'st-num' : '', active ? (sortDir === 1 ? 'st-asc' : 'st-desc') : ''].filter(Boolean).join(' ');
         const arrow = active ? (sortDir === 1 ? '▲' : '▼') : '↕';
-        return `<th data-key="${esc(c.key)}" class="${cls}" aria-sort="${active ? (sortDir === 1 ? 'ascending' : 'descending') : 'none'}">${esc(c.label)}<span class="st-arrow">${arrow}</span><span class="st-grip" title="${esc(GRIP_TITLE)}"></span></th>`;
+        // icon : en-tête condensé (icône du jeu de la suite), libellé en infobulle et pour les lecteurs d'écran
+        const ico = c.icon && window.RepositoryIcons?.svg(c.icon, { size: 15, title: c.label });
+        return `<th data-key="${esc(c.key)}" class="${cls}${ico ? ' st-ico' : ''}" title="${esc(c.title || c.label)}" aria-sort="${active ? (sortDir === 1 ? 'ascending' : 'descending') : 'none'}">${ico || esc(c.label)}<span class="st-arrow">${arrow}</span><span class="st-grip" title="${esc(GRIP_TITLE)}"></span></th>`;
       }).join('')}${hasActions ? '<th class="st-actions"></th>' : ''}</tr>`;
       const span = columns.length + (hasActions ? 1 : 0);
       const body = view.length ? view.map(row => `<tr data-id="${keyOf(row)}"${opts.onRowClick ? ` class="st-clickable" title="${esc(opts.rowTitle || 'Cliquer pour modifier')}"` : ''}>${columns.map(c =>

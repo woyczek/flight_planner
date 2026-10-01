@@ -65,6 +65,12 @@ fonctionnent, mais le navigateur interdit la lecture des fichiers voisins (regis
 du dépôt, fichiers servis) ; seules les copies du navigateur et les dossiers autorisés
 restent alors lisibles.
 
+> **Brave** : uniquement en mode serveur local (lancé **à la racine du dossier**, pages ouvertes par
+> `http://127.0.0.1:8000/…`), jamais en `file://`. Il faut en plus activer l'accès aux dossiers, que Brave coupe par
+> défaut : ouvrir `brave://flags/#file-system-access-api`, passer **File System Access API** à **Enabled**, relancer
+> Brave. Sans ce réglage, le choix des dossiers (Paramètres › Sources et dossiers) est impossible. Chrome et Edge n'ont
+> besoin d'aucun réglage.
+
 ### Ouverture directe
 
 Double-cliquer sur `apps/cr/mission_cr.html` (ou toute autre page) : les pages calculent leurs liens

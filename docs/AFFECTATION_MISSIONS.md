@@ -1,6 +1,7 @@
 # Affectation des missions aux pilotes — conception (à valider)
 
-État : **étude** (1ᵉʳ octobre 2026), rien n'est encore codé. Objet : le Centre (CPCO) affecte une mission existante à un ou
+État : **publiée en 4.6.0** (1ᵉʳ octobre 2026). Lots 1 à 4
+faits (§ 8), astreinte : bloc `alert` dans le prompt et affichage côté pilote ; décisions par défaut ci-dessous (§ 9). Objet : le Centre (CPCO) affecte une mission existante à un ou
 plusieurs pilotes, sur un horaire, avec un appareil nominatif chacun ; chaque pilote voit, hors du Centre, les missions à
 venir qui lui sont affectées, signalées par un pli cacheté dans l'en-tête.
 
@@ -141,3 +142,56 @@ ailleurs. Clic → « Mes missions » ; ouvrir la mission marque l'affectation l
 4. **Granularité** : 1 h par défaut, 30 min en option — d'accord ?
 5. **Page pilote** : dans le menu ☰ de tous (« Mes missions ») ou seulement si un trigramme est réglé ?
 6. **Pli cacheté** : une image par design à matières (à fournir), ou une seule partagée ?
+
+## 10. Réalisation (branche feature/affectations)
+
+- **Socle** `shared/assignments.js` (toutes les pages, chargé par `repository_nav.js`) : trigramme du profil pilote
+  (☰ › Profil pilote, champ « Trigramme DEFA »), index `data/missions/affectations.json` lu par fetch, lu / non lu local
+  (`assignmentsRead:v1`), **pli cacheté** dans l'en-tête (enveloppe à cachet de cire, compteur ; habillage des designs à
+  matières), grille de disponibilités, écriture d'une affectation (Centre).
+- **Page pilote** `apps/pilot/mes_missions.html` (menu ☰ « Mes missions ») : missions à venir, mission en lecture seule
+  (appareil, indicatif, terrain, heure de décollage ou consigne d'astreinte, convoyage, coéquipiers, résumé, route et
+  plan, cartes fournies), **Ouvrir dans les Cartes de vol** (mission partagée de l'espace « planner »), **Carburant**
+  (route OACI, distance, niveau, route vraie : `plannerHandoff:v1`), **Créer le CR** (immatriculation attribuée) ;
+  **Mes disponibilités** : semaine type, cases d'une heure peintes avec les **codes de l'ODV** (palette : O, SC, C, T,
+  S, N, AT, AM, G, DC, IR, IN, V, Q — légende « Code couleur » du classeur ; couleurs = familles de l'ODV accordées au
+  design) ; clic ou glisser pose le code choisi, un second clic sur une case de ce code l'efface ; enregistrées dans le
+  navigateur et, au bouton, dans `data/disponibilites/<TRI>.json`. Le dialogue du Centre affiche le code à l'heure du
+  décollage et avertit s'il ne couvre pas la famille de la mission (ex. T « Transport » sur une mission COMBAT).
+- **Centre** : bouton **« Affecter… »** du détail d'une mission (registre ; pas pour les missions d'organisation Z),
+  `shared/assign_dialog.js` : heure de décollage ou heure H (exercice : décalage du participant), astreinte (prêt à,
+  préavis, fin), participants (+ équipier, indicatif suivi), pilote (référence DEFA : qualification sur le type,
+  disponibilité à l'heure), appareil du type demandé (flotte ; basé au terrain de départ ou **convoyage** : distance
+  depuis la base SIA, le registre ou la base mondiale des aérodromes, vitesse de croisière + 20 min, décollage du
+  convoyage = décollage − durée − 30 min), conflits (pilote ou appareil déjà pris, doublons), enregistrement
+  (`affectations.yaml` de la mission + index).
+- **Planning ODV** (`apps/cpco/odv_assign.js`) : **deux lignes par pilote** dans la grille — code du classeur, puis
+  déclaration du pilote ramenée au créneau (code dominant des heures déclarées, même rendu que le classeur) ; **encadré
+  rouge** : disponible (déclaration, sinon classeur) et non affecté ; n° de mission : affecté ; **clic sur la déclaration**
+  → missions du registre pour ce pilote et ce créneau → « Affecter » (dialogue prérempli : pilote, heure de début du
+  créneau) ; **créneau commun** (« Missions du registre… ») : « Affecter » propose les pilotes libres du créneau (autant
+  que d'équipes de la mission, les autres cités).
+- **Appareils du pilote** (« Mes appareils ») : types de la flotte possédés / maîtrisés, rangés avec ses disponibilités ;
+  le dialogue s'en sert (maîtrisé : ok ; possédé ou vols connus : avertissement ; non déclaré : erreur).
+- **Convoyage** confiable à un autre pilote (« par … » dans le dialogue) : ligne « convoyage » dans l'index, visible dans
+  ses « Mes missions » (amener l'appareil de sa base au terrain de départ).
+- **Factorisation** : géographie, terrains, convoyage, qualification, créneaux, conflits et écriture dans
+  `shared/assignments.js`, utilisés par le dialogue, l'ODV et la page pilote ; l'écriture ne dépend plus du registre.
+- **Décisions par défaut** (§ 9, à confirmer) : partage par le dépôt `data/` ; pas d'acceptation (l'affectation vaut
+  ordre, le pilote en accuse lecture) ; heures UTC ; cases d'une heure ; « Mes missions » dans le menu de tous ; une
+  enveloppe dessinée (SVG) habillée par design.
+- **Tester** : régler son trigramme (☰ › Profil pilote, ex. RBR) ; dans le registre, détail d'une mission →
+  « Affecter… » (dossier des missions autorisé) ; recharger une page : pli cacheté ; « Mes missions ».
+- **Postes** (1ᵉʳ octobre 2026) : une mission demande un pilote par équipage aérien — `aircraft[]`, ou `teams[]` du
+  schéma hélico (indicatif, type ; type générique « Hélicoptère » : un hélicoptère de la flotte, du service de l'équipe
+  d'abord — Gendarmerie → Gendarmerie nationale) ; équipes au sol écartées (`MissionAssignments.postsOf`, `planesFor`,
+  `fits`). Le dialogue présente un poste par carte (type, appareils et qualification propres).
+- **Matrice d'un créneau (ODV)** : missions × postes, pilote libre et appareil par poste, préremplis par la proposition ;
+  transaction : choix en attente visibles (« RBR → I-01A · appareil · indicatif »), « Enregistrer » écrit les missions
+  cochées, « Annuler les modifications » revient à la proposition ; fermeture quand tous les pilotes libres sont affectés,
+  ou sur demande (confirmation si modifications en attente). « ✎ détail » : dialogue complet, dont le résultat revient
+  dans la matrice (« Reporter dans le créneau »), rien n'est écrit avant « Enregistrer ».
+- **Semaines** (1ᵉʳ octobre 2026) : disponibilités par semaine (`weeks`, clé : lundi ISO UTC, douze semaines passées
+  gardées) ; l'ancienne grille « semaine type » (`grid`) vaut tant qu'aucune semaine n'est saisie. « Mes missions » :
+  barre de semaine (‹, date, ›, ⟲ semaine en cours) commune à la liste et à la grille ; « ⧉ S-1 » recopie la semaine
+  précédente ; tracé en rectangle (jours × heures). Le Centre et l'ODV lisent la grille de la semaine concernée.

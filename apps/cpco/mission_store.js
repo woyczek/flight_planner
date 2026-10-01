@@ -850,13 +850,7 @@
     setTimeout(mount, 1500); // secours : en-tête sans bandeau commun
   }
   /** Échappe un texte pour HTML. */
-  const esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
-  })[ch]);
+  const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   // Rappel à chaque modification faite par une AUTRE page (ou un autre onglet).
   function subscribe(me, cb) {
     /** Transmet le document courant à l'abonné s'il vient d'une autre page. */

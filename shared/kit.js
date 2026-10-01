@@ -1,6 +1,7 @@
 // Boîte à outils commune de la suite (window.RepositoryKit) : petits utilitaires jusqu'ici recopiés dans chaque module
 // (échappement HTML, langue et traductions, stockage local protégé, couleurs et contraste WCAG). Chargé par chaque page
-// juste avant repository_nav.js ; sans dépendance. Les fonctions de langue lisent RepositoryNav au moment de l'appel
+// avant repository_nav.js et avant tout module qui s'en sert (en tête des pages qui chargent des modules tôt) ; sans
+// dépendance. Les fonctions de langue lisent RepositoryNav au moment de l'appel
 // (il est posé juste après ce fichier).
 //
 // Usage : const K = window.RepositoryKit;

@@ -252,8 +252,15 @@ K.store.get('cle', 'défaut'); K.store.json('cle', {}); K.store.set('cle', 'v');
 K.color.contrast('#fff', '#1d3557');  // rapport WCAG
 ```
 
-Nouveau module : ne plus recopier ces utilitaires ; une page qui charge `repository_nav.js` charge `kit.js` juste avant
-(insertion faite dans toutes les pages ; les pages générées la reprennent de leur modèle).
+Nouveau module : ne plus recopier ces utilitaires ; une page qui charge `repository_nav.js` charge `kit.js` avant lui
+et avant tout module qui s'en sert (en tête du `<head>` si des modules sont chargés tôt ; les pages générées la
+reprennent de leur modèle).
+
+- **Modules applicatifs, échappement (1ᵉʳ octobre 2026)** : les 24 copies d'`esc` (Mission Core, registre et
+  générateur de missions, studio, planificateur de carte, Landing, ODV, Maintenance, icônes…) remplacées par
+  `RepositoryKit.esc` (toutes étaient des sous-ensembles : `'` en plus, sans effet en HTML) ; `kit.js` placé en tête des
+  quatre pages qui chargeaient ces modules avant lui (studio, générateur, planificateur de carte, reporting des
+  opérations) et ajouté à l'outil des icônes. Suivant : traduction d'une ligne et `localStorage` protégé.
 
 ## Ajouter un design (A)
 
