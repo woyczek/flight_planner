@@ -13,23 +13,23 @@ compliquée.
    - **Windows** : double-cliquer sur **`lancer.cmd`** ;
    - **macOS / Linux** : dans un terminal ouvert sur le dossier, taper **`sh lancer.sh`**.
 
-   Le lanceur installe Python si besoin, récupère les données, démarre la suite et ouvre le navigateur sur les
-   **Paramètres**.
-3. **Dans la page qui s'ouvre** : cliquer sur le bouton de la **première ligne** (« Dossier du dépôt ») et choisir **ce
-   dossier** (celui qui contient `lancer.cmd`). Tous les autres dossiers en sont déduits.
-4. Suivre **Mises à jour** (lien proposé), et c'est prêt.
+   Le lanceur installe Python si besoin, démarre la suite et ouvre la page **Premier lancement**.
+3. **Dans cette page**, quatre étapes :
+   1. **Données** : vos identifiants framagit (ou l'archive reçue par mail) ;
+   2. **Profil** : trigramme, IVAO, VATSIM, SimBrief, identifiants du site DEFA ;
+   3. **Dossiers** : choisir **ce dossier** (celui qui contient `lancer.cmd`) — tous les autres en sont déduits —, puis
+      le dossier OneDrive du classeur ODV (ou le fichier Excel) ;
+   4. **Terminer** : la mise à jour des données SIA s'enchaîne.
 
 Les fois suivantes : relancer `lancer.cmd` / `lancer.sh`, laisser sa fenêtre ouverte pendant l'utilisation, la fermer
 pour arrêter.
 
 ## Les données
 
-Les données DEFA (flotte, missions, registres…) sont dans un **dépôt privé**, rangé dans le dossier `data/`. Le lanceur
-le récupère tout seul si vous y avez accès (compte framagit). Sinon :
-
-- demandez l'accès au Centre, puis relancez le lanceur ;
-- ou demandez **un jeu de données par mail** : déposez l'archive `.zip` reçue dans ce dossier, à côté de `lancer.cmd`,
-  puis relancez — elle est installée automatiquement.
+Les données DEFA (flotte, missions, registres…) sont dans un **dépôt privé**, rangé dans le dossier `data/`. La page
+de premier lancement le récupère avec vos identifiants framagit (mot de passe, ou jeton d'accès si votre compte a la
+double authentification). Pas encore d'accès ? Demandez **un jeu de données par mail** et donnez l'archive `.zip` à la
+même page (ou déposez-la à côté de `lancer.cmd` et relancez).
 
 Sans données, la suite démarre sur de petits exemples.
 

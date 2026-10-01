@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Premier lancement</title>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=2bab0c08"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=f33b51fd">
+<script src="../../config/repository_tree?v=c3cc7215"></script>
+<style>
+  main.pl-page{max-width:980px;margin:18px auto;padding:0 16px 48px}
+  main.pl-page>section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:0 0 16px}
+  main.pl-page h2{font-size:17px;margin:0 0 4px;display:flex;align-items:center;gap:10px}
+  .pl-n{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--accent,#2f6fd6);color:#fff;font-size:14px;flex:none}
+  section.pl-done .pl-n{background:var(--ok,#2e9d5b)}
+  .pl-state{font-weight:600;margin:6px 0 10px}
+  .pl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+  .pl-card{border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .pl-card h3{margin:0 0 8px;font-size:14.5px}
+  .pl-form{display:grid;grid-template-columns:auto 1fr;gap:8px 10px;align-items:center}
+  .pl-form label{font-size:13px}
+  .pl-form input[type=text],.pl-form input[type=password]{width:100%;box-sizing:border-box}
+  .pl-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0 0}
+  .pl-msg{white-space:pre-line;font-size:13px;margin:8px 0 0}
+  .pl-msg.ok{color:var(--ok,#2e9d5b)}.pl-msg.err{color:var(--bad,#c62828)}
+  .pl-hint{font-size:12.5px;opacity:.8;margin:6px 0 0}
+  /* recommencer : avertissement bordeaux */
+  .pl-warn{border:1px solid #7a1f2b;border-left:5px solid #7a1f2b;background:color-mix(in srgb,#7a1f2b 9%,transparent);border-radius:8px;padding:10px 14px;margin:8px 0 10px;color:inherit}
+  .pl-warn b{color:#7a1f2b}
+  button.pl-danger{background:#7a1f2b;border-color:#5c1520;color:#fff}
+</style>
+</head><body>
+<!-- Premier lancement : page ouverte par le lanceur (lancer.cmd / lancer.sh → tools/launch.py). Quatre étapes :
+     données (identifiants framagit → clone par le serveur du lanceur, ou archive reçue par mail ; journal DEFA en
+     option → référence DEFA), profil (trigramme, IVAO, VATSIM, SimBrief ; identifiants DEFA gardés dans ce navigateur,
+     hors sauvegardes), dossiers (dossier de l'application : tous les dossiers déduits ; classeur ODV : dossier OneDrive
+     ou, à défaut, le fichier Excel gardé dans le navigateur), puis la mise à jour SIA. Les étapes « données » passent par
+     l'interface locale du lanceur (/__setup/…) ; sans lanceur, la page le dit. Une fois terminé (suiteSetup:v1), le
+     lanceur renvoie vers l'accueil. -->
+<header class="mc-header"><h1>Premier lancement</h1><p>DEFA Virtual — régler la suite en quatre étapes</p></header>
+<main class="pl-page">
+  <section id="plData"><h2><span class="pl-n">1</span>Données</h2>
+    <p class="pl-state" id="plDataState">Vérification…</p>
+    <div class="pl-grid" id="plDataForms" hidden>
+      <div class="pl-card"><h3>J’ai un accès au dépôt (framagit)</h3>
+        <div class="pl-form">
+          <label for="plUser">Identifiant</label><input type="text" id="plUser" autocomplete="username" spellcheck="false">
+          <label for="plSecret">Mot de passe ou jeton</label><input type="password" id="plSecret" autocomplete="current-password">
+        </div>
+        <label class="pl-row"><input type="checkbox" id="plRemember"> mémoriser dans le gestionnaire d’identifiants de Git</label>
+        <p class="pl-hint">Compte avec double authentification : un jeton d’accès (framagit › Préférences › Jetons d’accès, droit <code>read_repository</code>). Les identifiants servent au téléchargement, sur cet ordinateur seulement.</p>
+        <div class="pl-row"><button type="button" class="primary" id="plClone">Récupérer les données</button></div>
+        <p class="pl-msg" id="plCloneMsg"></p>
+      </div>
+      <div class="pl-card"><h3>J’ai reçu les données par mail</h3>
+        <p class="pl-hint">L’archive <code>.zip</code> du jeu de données (elle contient <code>data_tree.js</code>).</p>
+        <div class="pl-row"><button type="button" class="secondary" data-pick="plZip">Archive des données…</button><input type="file" id="plZip" accept=".zip" hidden></div>
+        <p class="pl-msg" id="plZipMsg"></p>
+      </div>
+    </div>
+    <div class="pl-card" id="plLogCard" hidden style="margin-top:14px"><h3>Journal des vols DEFA (facultatif)</h3>
+      <p class="pl-hint">La page « Log des vols » du site DEFA enregistrée (<code>.html</code>) : pilotes et appareils de la référence DEFA (aide à la saisie).</p>
+      <div class="pl-row"><button type="button" class="secondary" data-pick="plLog">Journal DEFA (.html)…</button><input type="file" id="plLog" accept=".html,.htm" hidden></div>
+      <p class="pl-msg" id="plLogMsg"></p>
+    </div>
+  </section>
+
+  <section id="plProfile"><h2><span class="pl-n">2</span>Profil</h2>
+    <p class="pl-hint">Repris par toutes les pages (☰ › Profil pilote). Les identifiants DEFA restent dans ce navigateur et ne sont jamais écrits dans une sauvegarde.</p>
+    <div class="pl-grid">
+      <div class="pl-card"><h3>Pilote</h3>
+        <div class="pl-form">
+          <label for="plTri">Trigramme DEFA</label><input type="text" id="plTri" maxlength="4" spellcheck="false">
+          <label for="plIvao">ID IVAO (VID)</label><input type="text" id="plIvao" inputmode="numeric">
+          <label for="plVatsim">ID VATSIM (CID)</label><input type="text" id="plVatsim" inputmode="numeric">
+          <label for="plSimbrief">SimBrief</label><input type="text" id="plSimbrief" spellcheck="false">
+        </div>
+      </div>
+      <div class="pl-card"><h3>Site DEFA</h3>
+        <div class="pl-form">
+          <label for="plDefaLogin">Identifiant</label><input type="text" id="plDefaLogin" autocomplete="off" spellcheck="false">
+          <label for="plDefaPass">Mot de passe</label><input type="password" id="plDefaPass" autocomplete="off">
+        </div>
+      </div>
+    </div>
+    <div class="pl-row"><button type="button" class="primary" id="plSaveProfile">Enregistrer le profil</button><span class="pl-msg" id="plProfileMsg"></span></div>
+  </section>
+
+  <section id="plFolders"><h2><span class="pl-n">3</span>Dossiers</h2>
+    <p class="pl-hint">Le navigateur demande de désigner chaque dossier une fois (il le mémorise).</p>
+    <div class="pl-grid">
+      <div class="pl-card"><h3>Dossier de l’application</h3>
+        <p class="pl-hint">Le dossier qui contient <code>lancer.cmd</code> et <code>lancer.sh</code> : données, registre, missions, SIA, performances et sauvegarde locale en sont déduits.</p>
+        <div class="pl-row"><button type="button" class="primary" id="plRepo" data-icon="folder">Choisir le dossier de l’application</button></div>
+        <p class="pl-msg" id="plRepoMsg"></p>
+      </div>
+      <div class="pl-card"><h3>Classeur ODV</h3>
+        <p class="pl-hint">Le dossier OneDrive (synchronisé) où l’escadrille dépose le classeur : le Planning ODV ouvre le plus récent. Sans OneDrive : choisir le fichier Excel, gardé dans ce navigateur.</p>
+        <div class="pl-row"><button type="button" class="secondary" id="plOdvDir" data-icon="folder">Dossier OneDrive…</button>
+          <button type="button" class="secondary" data-pick="plOdvFile">ou le fichier Excel…</button><input type="file" id="plOdvFile" accept=".xlsx" hidden></div>
+        <p class="pl-msg" id="plOdvMsg"></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="plSia"><h2><span class="pl-n">4</span>Données SIA</h2>
+    <p class="pl-hint">Cartes et missions utilisent les données AIRAC du SIA (cycle de 28 jours). La mise à jour se fait par étapes guidées ; le téléchargement sur le site du SIA demande d’accepter sa licence Open Data.</p>
+    <div class="pl-row"><button type="button" class="primary" id="plFinish">Terminer et mettre à jour les données SIA</button>
+      <a class="secondary" href="../../index.html">Accueil</a></div>
+  </section>
+
+  <section id="plReset"><h2>Recommencer</h2>
+    <div class="pl-warn"><b>⚠ Nettoyer efface les réglages de ce navigateur</b> : dossiers mémorisés (application, données,
+      registre, missions, SIA, ODV, X-Plane, performances, sauvegarde locale), copie du classeur ODV, identifiants du site
+      DEFA, profil (trigramme, IVAO, VATSIM, SimBrief) et l’indicateur « suite réglée ». Les fichiers sur le disque —
+      dossier <code>data/</code>, registres, sauvegarde <code>defa_local_store.yaml</code> — ne sont pas touchés.
+      À faire seulement pour reprendre le premier lancement de zéro.</div>
+    <div class="pl-row"><button type="button" class="pl-danger" id="plClean">Nettoyer et recommencer…</button></div>
+  </section>
+</main>
+<script src="../../shared/kit.js?v=1466c9a9"></script>
+<script src="../../shared/repository_nav.js?v=299c1809"></script>
+<script src="../../shared/content_i18n.js?v=cf6396e2"></script>
+<script src="../../shared/app_framework.js?v=dd1dca56"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const notify = (m, k) => window.AppFramework?.notify ? window.AppFramework.notify(m, k) : alert(m);
+  const DONE = 'suiteSetup:v1', PROFILE = 'missionReportingConfig:v1', DEFA = 'defaCredentials:v1';
+  const api = (path, opts = {}) => fetch(`/__setup/${path}`, { ...opts, headers: { 'X-DEFA-Setup': '1', ...(opts.headers || {}) }, cache: 'no-store' })
+    .then(r => r.ok ? r.json() : Promise.reject(new Error(r.status === 404 ? 'lanceur absent' : `${r.status}`)));
+  const msg = (id, text, kind) => { const el = $(id); el.textContent = text || ''; el.className = `pl-msg ${kind || ''}`; };
+  // actions par délégation : le framework reconstruit les blocs (disposition mémorisée), les nœuds d'origine disparaissent
+  const handlers = { click: {}, change: {} };
+  const on = (type, id, fn) => { handlers[type][id] = fn; };
+  for (const type of Object.keys(handlers)) document.addEventListener(type, e => {
+    const el = e.target.closest?.('[id], [data-pick]');
+    if (!el) return;
+    if (type === 'click' && el.dataset.pick) return $(el.dataset.pick).click(); // bouton → sélecteur de fichier
+    handlers[type][el.id]?.(e);
+  });
+  const done = (id, yes) => $(id).classList.toggle('pl-done', !!yes);
+  const read = k => { try { return JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch { return {}; } };
+
+  // 1. données
+  async function dataState() {
+    let st;
+    try { st = await api('status'); } catch {
+      $('plDataState').textContent = 'Pour cette étape, ouvrez la suite avec le lanceur (lancer.cmd sous Windows, sh lancer.sh sous macOS / Linux).';
+      return;
+    }
+    done('plData', st.data);
+    $('plLogCard').hidden = !st.data;
+    $('plDataForms').hidden = st.data;
+    $('plDataState').textContent = st.data ? `Données présentes${st.dataGit ? ' (dépôt git, mis à jour à chaque lancement)' : ''}.`
+      : st.git ? 'Pas encore de données : identifiants framagit, ou archive reçue par mail.' : 'Pas encore de données. Git n’est pas installé : archive reçue par mail (ou installer Git, puis relancer).';
+    $('plClone').disabled = !st.git;
+  }
+  on('click', 'plClone', async () => {
+    const user = $('plUser').value.trim(), secret = $('plSecret').value;
+    if (!user || !secret) return msg('plCloneMsg', 'Identifiant et mot de passe (ou jeton) nécessaires.', 'err');
+    $('plClone').disabled = true;
+    msg('plCloneMsg', 'Téléchargement des données… (quelques minutes la première fois)');
+    try {
+      const r = await api('clone', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user, secret, remember: $('plRemember').checked }) });
+      msg('plCloneMsg', r.message, r.ok ? 'ok' : 'err');
+      if (r.ok) { $('plSecret').value = ''; dataState(); }
+    } catch (e) { msg('plCloneMsg', `Échec : ${e.message}`, 'err'); }
+    $('plClone').disabled = false;
+  });
+  const upload = (id, kind, out, after) => on('change', id, async e => {
+    const input = e.target, f = input.files?.[0];
+    input.value = '';
+    if (!f) return;
+    msg(out, `Envoi de ${f.name}…`);
+    try {
+      const r = await api(`upload?kind=${kind}`, { method: 'POST', body: f });
+      msg(out, r.message, r.ok ? 'ok' : 'err');
+      if (r.ok) after?.();
+    } catch (e) { msg(out, `Échec : ${e.message}`, 'err'); }
+  });
+  upload('plZip', 'data', 'plZipMsg', dataState);
+  upload('plLog', 'log', 'plLogMsg');
+
+  // 2. profil
+  function profileLoad() {
+    const p = read(PROFILE), d = read(DEFA);
+    $('plTri').value = p.trigram || ''; $('plIvao').value = p.ivaoId || ''; $('plVatsim').value = p.vatsimId || ''; $('plSimbrief').value = p.simbriefUser || '';
+    $('plDefaLogin').value = d.login || ''; $('plDefaPass').value = d.password || '';
+    done('plProfile', p.trigram);
+  }
+  on('click', 'plSaveProfile', () => {
+    const p = read(PROFILE);
+    Object.assign(p, { trigram: $('plTri').value.trim().toUpperCase(), ivaoId: $('plIvao').value.trim(), vatsimId: $('plVatsim').value.trim(), simbriefUser: $('plSimbrief').value.trim() });
+    localStorage.setItem(PROFILE, JSON.stringify(p));
+    const login = $('plDefaLogin').value.trim(), password = $('plDefaPass').value;
+    if (login || password) localStorage.setItem(DEFA, JSON.stringify({ login, password }));
+    else localStorage.removeItem(DEFA);
+    msg('plProfileMsg', 'Profil enregistré.', 'ok');
+    done('plProfile', p.trigram);
+  });
+
+  // 3. dossiers
+  async function foldersState() {
+    const FA = window.FileAccess;
+    if (!FA) return;
+    const repo = await FA.status('__repo'), odvDir = await FA.status('__odv'), odvFile = await FA.get('__odvFile');
+    done('plFolders', repo.handle);
+    msg('plRepoMsg', repo.handle ? `Choisi : ${repo.name}` : '', repo.handle ? 'ok' : '');
+    msg('plOdvMsg', odvDir.handle ? `Dossier : ${odvDir.name}` : odvFile ? `Classeur gardé : ${odvFile.name || 'classeur'}` : '', odvDir.handle || odvFile ? 'ok' : '');
+  }
+  const pick = (key, out, labels) => async () => {
+    try {
+      const h = await window.FileAccess.pickFolder(key);
+      const derived = (h.derived || []).length;
+      msg(out, `Choisi : ${h.name}${derived ? ` — ${derived} dossier(s) réglé(s) d’après lui` : ''}`, 'ok');
+      foldersState();
+    } catch (e) {
+      if (e?.name !== 'AbortError' && e?.message !== 'Dossier refusé') notify(e.message, 'warn');
+    }
+  };
+  on('click', 'plRepo', pick('__repo', 'plRepoMsg'));
+  on('click', 'plOdvDir', pick('__odv', 'plOdvMsg'));
+  on('change', 'plOdvFile', async e => {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    if (!f || !window.FileAccess) return;
+    await window.FileAccess.set('__odvFile', f);
+    msg('plOdvMsg', `Classeur gardé : ${f.name}`, 'ok');
+  });
+
+  // 4. fin : mise à jour SIA
+  on('click', 'plFinish', () => {
+    localStorage.setItem(DONE, JSON.stringify({ at: new Date().toISOString() }));
+    location.href = 'parametrage.html?m=sia';
+  });
+
+  // recommencer : réglages de ce navigateur effacés (fichiers sur le disque intacts), page rechargée
+  on('click', 'plClean', async () => {
+    if (!confirm('Nettoyer les réglages du premier lancement dans ce navigateur (dossiers mémorisés, classeur ODV gardé, identifiants DEFA, profil) ? Les fichiers sur le disque ne sont pas touchés.')) return;
+    const FA = window.FileAccess;
+    if (FA) for (const key of [...Object.keys(FA.FOLDERS), '__odvFile']) await FA.set(key, null);
+    localStorage.removeItem(DONE);
+    localStorage.removeItem(DEFA);
+    const p = read(PROFILE);
+    for (const f of ['trigram', 'ivaoId', 'vatsimId', 'simbriefUser']) delete p[f];
+    localStorage.setItem(PROFILE, JSON.stringify(p));
+    location.replace('premier_lancement.html?force');
+  });
+
+  // déjà réglée : l'accueil (lanceur relancé), sauf ?force
+  async function start() {
+    const FA = await new Promise(res => { let n = 0; const t = setInterval(() => { if (window.FileAccess || ++n > 40) { clearInterval(t); res(window.FileAccess); } }, 50); });
+    if (localStorage.getItem(DONE) && !new URLSearchParams(location.search).has('force') && FA && (await FA.status('__repo')).handle) {
+      location.replace('../../index.html');
+      return;
+    }
+    dataState();
+    profileLoad();
+    foldersState();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})();
+</script>
+</body></html>

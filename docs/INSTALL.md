@@ -12,19 +12,28 @@ local. Rien à compiler.
 2. Lancer, depuis ce dossier :
    - **Windows** : double-clic sur `lancer.cmd` ;
    - **macOS / Linux** : `sh lancer.sh` dans un terminal (ou `./lancer.sh`).
-3. Dans la page **Paramètres › Sources et dossiers** qui s'ouvre : bouton de la première ligne, **Dossier du dépôt**,
-   choisir le dossier de l'application. Données, registre, missions, SIA, performances et sauvegarde locale en sont
-   déduits.
-4. **Mises à jour** (lien proposé une fois le dossier choisi).
+3. Dans la page **Premier lancement** qui s'ouvre (`apps/settings/premier_lancement.html`) :
+   1. **Données** : identifiants framagit (mot de passe ou jeton ; « mémoriser » les confie au gestionnaire
+      d'identifiants de Git) → clone de `data/` ; ou l'archive `.zip` reçue par mail. En option, le journal des vols
+      DEFA (page « Log des vols » enregistrée, `.html`) → référence DEFA (`tools/defa_reference.py`) ;
+   2. **Profil** : trigramme, ID IVAO, ID VATSIM, SimBrief ; identifiants du site DEFA, gardés dans ce navigateur et
+      exclus des sauvegardes ;
+   3. **Dossiers** : dossier de l'application (données, registre, missions, SIA, performances et sauvegarde locale en
+      sont déduits) ; classeur ODV : dossier OneDrive où l'escadrille le dépose, ou à défaut le fichier Excel ;
+   4. **Terminer** : mise à jour des données SIA (Paramètres › Maintenance › Mise à jour SIA, étapes guidées ; le
+      téléchargement sur le site du SIA demande d'accepter sa licence Open Data).
+
+   Une fois réglée, la suite s'ouvre sur l'accueil aux lancements suivants (la page reste accessible :
+   `premier_lancement.html?force`).
 
 Ce que fait le lanceur (`lancer.cmd` / `lancer.sh` → `tools/launch.py`) :
 
 | Étape | Détail |
 |---|---|
 | Python | cherché (`py`, `python`, `python3`, version 3.8 ou plus) ; absent : installé — `winget` sous Windows, Homebrew ou outils de développement d'Apple sous macOS, gestionnaire de paquets sous Linux (après accord) ; à défaut, la page de téléchargement de python.org s'ouvre |
-| Données `data/` | présentes : mises à jour (`git pull`) si c'est un clone ; sinon une archive `.zip` reçue par mail, déposée à côté du lanceur, est extraite dans `data/` ; sinon le dépôt privé est cloné (identifiants framagit demandés au besoin) |
-| Serveur | serveur web local de Python sur `http://127.0.0.1`, premier port libre à partir de 8000 ; déjà lancé : le navigateur est seulement rouvert |
-| Navigateur | ouvert sur Paramètres › Sources et dossiers, en mode premier lancement |
+| Données `data/` | présentes : mises à jour (`git pull`) si c'est un clone ; sinon une archive `.zip` déposée à côté du lanceur est extraite dans `data/` ; sinon clone du dépôt privé si Git connaît déjà les identifiants — à défaut, la page de premier lancement les demande |
+| Serveur | serveur web local de Python sur `http://127.0.0.1`, premier port libre à partir de 8000, avec l'interface de la page de premier lancement (`/__setup/…`, réservée aux pages servies par ce serveur) ; déjà lancé : le navigateur est seulement rouvert |
+| Navigateur | ouvert sur la page Premier lancement (l'accueil une fois la suite réglée) |
 
 Laisser la fenêtre du lanceur ouverte pendant l'utilisation ; la fermer (ou Ctrl+C) arrête la suite. Options :
 `--port 8010`, `--no-browser`, `--no-data`, `--page apps/cr/mission_cr.html`.

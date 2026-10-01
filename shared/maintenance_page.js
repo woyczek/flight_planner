@@ -460,7 +460,7 @@
   // ===== 1 bis. Sources et dossiers
   // premier lancement (lanceur : ?m=sources&setup=1), lu une fois : la page réécrit ensuite son adresse (?m=…)
   const SETUP = new URLSearchParams(location.search).has('setup');
-  const FOLDER_ORDER = ['__repo', '__data', '__ledger', '__missions', '__sia', '__xplane', '__perf', '__store']; // le dépôt d'abord : les autres s'en déduisent
+  const FOLDER_ORDER = ['__repo', '__data', '__ledger', '__missions', '__sia', '__odv', '__xplane', '__perf', '__store']; // le dépôt d'abord : les autres s'en déduisent
   async function renderSources() {
     const host = hosts.sources,
       FA = await waitFor('FileAccess'),

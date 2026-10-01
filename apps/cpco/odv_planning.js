@@ -274,12 +274,15 @@
   }
 
   // ------------------------------------------------------------------ chargement
-  async function loadFile(file) {
+  async function loadFile(file, {
+    keep = true
+  } = {}) {
     if (!file) return;
     if (!/\.xlsx$/i.test(file.name)) notify(`« ${file.name} » n’a pas l’extension .xlsx : lecture tentée quand même.`, 'warn');
     try {
       book = await C.openWorkbook(file);
       fileName = file.name;
+      if (keep) window.FileAccess?.set('__odvFile', file).catch(() => {}); // copie gardée : rouverte au prochain passage
       selected = null;
       await rebuild();
       announce();
@@ -1312,6 +1315,29 @@
     });
     $('odvClear').onclick = clearAll;
     render();
+    autoLoad();
+  }
+  /** Classeur à l'arrivée : le plus récent du dossier ODV (OneDrive…, Paramètres › Sources et dossiers) s'il est
+   *  autorisé, sinon la copie gardée dans le navigateur (dernier classeur ouvert, ou choisi au premier lancement). */
+  async function autoLoad() {
+    const FA = window.FileAccess;
+    if (!FA || book) return;
+    try {
+      const dir = await FA.get('__odv');
+      if (dir && (await dir.queryPermission?.({ mode: 'read' })) === 'granted') {
+        let best = null;
+        for await (const h of dir.values()) {
+          if (h.kind !== 'file' || !/\.xlsx$/i.test(h.name) || /^~\$/.test(h.name)) continue;
+          const f = await h.getFile();
+          if (!best || f.lastModified > best.lastModified) best = f;
+        }
+        if (best) return loadFile(best);
+      }
+      const copy = await FA.get('__odvFile');
+      if (copy instanceof Blob) loadFile(copy, { keep: false });
+    } catch (e) {
+      console.warn('ODV : classeur non rouvert', e);
+    }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();

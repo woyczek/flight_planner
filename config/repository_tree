@@ -154,6 +154,7 @@ window.REPOSITORY_TREE={
     {path:"apps/cr/equipage.html",menu:false,label:"Fiche équipage",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/settings/parametrage.html",menu:false,slot:"settings",label:"Paramètres — bases de données et maintenance",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/settings/apparence.html",menu:false,slot:"settings",label:"Apparence",decor:"full",theme:"core",favicon:"assets/favicon-flight.svg"},
+    {path:"apps/settings/premier_lancement.html",menu:false,slot:"settings",label:"Premier lancement",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/settings/maintenance.html",menu:false,slot:"settings",label:"Maintenance",decor:"sober",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html",menu:"Landing Performance Dashboard",label:"Landing Performance Dashboard"},
     {path:"apps/cpco/mission_editor.html",menu:"Centre — Générateur de mission",label:"Générateur de mission — Centre de planification et de conduite des opérations"},

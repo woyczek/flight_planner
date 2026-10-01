@@ -45,6 +45,10 @@
       label: L('Dossier X-Plane (atterrissages)', 'X-Plane folder (landings)', 'X-Plane-Ordner (Landungen)', 'Carpeta X-Plane (aterrizajes)'),
       expect: L('dossier où le plugin d’atterrissage d’X-Plane écrit ses journaux CSV (Landing Performance Dashboard)', 'folder where the X-Plane landing plugin writes its CSV logs (Landing Performance Dashboard)', 'Ordner, in den das X-Plane-Landungs-Plugin seine CSV-Protokolle schreibt', 'carpeta donde el plugin de aterrizaje de X-Plane escribe sus registros CSV')
     },
+    __odv: {
+      label: L('Dossier du classeur ODV', 'ODV workbook folder', 'Ordner der ODV-Arbeitsmappe', 'Carpeta del libro ODV'),
+      expect: L('dossier synchronisé (OneDrive…) où l’escadrille dépose le classeur ODV (.xlsx) : le Planning ODV ouvre le plus récent ; sans OneDrive, le classeur choisi est gardé dans le navigateur', 'synchronised folder (OneDrive…) where the squadron puts the ODV workbook (.xlsx): ODV planning opens the latest; without OneDrive, the chosen workbook is kept in the browser', 'synchronisierter Ordner (OneDrive…) mit der ODV-Arbeitsmappe (.xlsx)', 'carpeta sincronizada (OneDrive…) con el libro ODV (.xlsx)')
+    },
     __perf: {
       label: L('Dossier performances', 'Performance folder', 'Leistungsordner', 'Carpeta de rendimiento'),
       expect: L('dossier des profils de performance (.lnmperf, .json ; la base flight_performance_database.fpdb.json y est écrite)', 'performance profiles folder (.lnmperf, .json; flight_performance_database.fpdb.json is written there)', 'Ordner der Leistungsprofile (.lnmperf, .json)', 'carpeta de perfiles de rendimiento (.lnmperf, .json)')
@@ -269,6 +273,7 @@
     if (/\/apps\/planner\//.test(p)) return '__perf';
     if (/\/apps\/landing\//.test(p)) return '__xplane';
     if (/mission_registry\.html$/.test(p)) return '__missions';
+    if (/odv_planning\.html$/.test(p)) return '__odv';
     if (/\/apps\/sia\//.test(p)) return '__sia';
     return '';
   };
