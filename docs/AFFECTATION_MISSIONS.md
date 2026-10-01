@@ -1,6 +1,6 @@
 # Affectation des missions aux pilotes — conception (à valider)
 
-État : **première version sur la branche `feature/affectations`** (1ᵉʳ octobre 2026), à tester avant fusion. Lots 1 à 4
+État : **publiée en 4.6.0** (1ᵉʳ octobre 2026). Lots 1 à 4
 faits (§ 8), astreinte : bloc `alert` dans le prompt et affichage côté pilote ; décisions par défaut ci-dessous (§ 9). Objet : le Centre (CPCO) affecte une mission existante à un ou
 plusieurs pilotes, sur un horaire, avec un appareil nominatif chacun ; chaque pilote voit, hors du Centre, les missions à
 venir qui lui sont affectées, signalées par un pli cacheté dans l'en-tête.
