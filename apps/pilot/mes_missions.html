@@ -41,8 +41,8 @@
   html[data-design="cabinet"] .pm-open{position:absolute;z-index:3;left:0;right:0;bottom:7%;text-align:center}
   @media (prefers-reduced-motion:reduce){html[data-design="cabinet"] .pm-cover::after{transition:none}}
   /* Cabinet : dossier ouvert (pages : zones claires de mission-open.webp) */
-  .pm-book{position:relative;width:var(--pm-bw,min(1064px,100%));aspect-ratio:1400/842;margin:0 0 12px auto;background:url("../../shared/deco/cabinet/mission-open.webp") center/contain no-repeat;filter:drop-shadow(0 10px 18px rgba(0,0,0,.45))}
-  .pm-page{position:absolute;top:8.5%;bottom:8%;overflow:auto;padding:1.6% 2.4% 5.2%;font:12.5px/1.5 "Courier Prime","Courier New",Courier,monospace;color:#2b2112;scrollbar-width:thin}
+  .pm-book{container-type:inline-size;position:relative;width:var(--pm-bw,min(1064px,100%));aspect-ratio:1400/842;margin:0 0 12px auto;background:url("../../shared/deco/cabinet/mission-open.webp") center/contain no-repeat;filter:drop-shadow(0 10px 18px rgba(0,0,0,.45))}
+  .pm-page{position:absolute;top:8.5%;bottom:8%;overflow:auto;padding:1.6cqw 2.4cqw 5.2cqw;font:12.5px/1.5 "Courier Prime","Courier New",Courier,monospace;color:#2b2112;scrollbar-width:thin}
   .pm-left{left:5.6%;right:54.4%}.pm-right{left:53.6%;right:5.3%}.pm-page{cursor:pointer}
   .pm-page:has(> [data-part="title"]){overflow:hidden} /* page 1 : le tampon déborde de l'étiquette, sans barre de défilement */
   .pm-page::after{content:attr(data-folio);position:sticky;display:block;bottom:0;text-align:center;font-size:11px;opacity:.55;margin-top:8px}
@@ -77,8 +77,13 @@
      droite → gauche : feuille droite (725–1352), origine à −30 px ; gauche → droite : feuille gauche (50–665), +30 px */
   .pm-leaf{position:absolute;z-index:3;top:4.75%;bottom:4%;left:51.8%;right:3.43%;transform-style:preserve-3d;transform-origin:-4.79% 50%;pointer-events:none}
   .pm-leaf.back{left:3.57%;right:52.5%;transform-origin:104.88% 50%}
-  .pm-leaf .pm-face{position:absolute;inset:0;overflow:hidden;cursor:default;backface-visibility:hidden;background:url("../../shared/deco/cabinet/mission-page.webp") center/100% 100%;box-shadow:0 0 22px rgba(0,0,0,.25);padding:3.9% 5% 9%;font:12.5px/1.5 "Courier Prime","Courier New",Courier,monospace;color:#2b2112}
+  .pm-leaf .pm-face{position:absolute;inset:0;overflow:hidden;cursor:default;backface-visibility:hidden;background:url("../../shared/deco/cabinet/mission-page.webp") center/100% 100%;box-shadow:0 0 22px rgba(0,0,0,.25);padding:3.86cqw 4.27cqw 7.61cqw 4.2cqw;font:12.5px/1.5 "Courier Prime","Courier New",Courier,monospace;color:#2b2112}
   .pm-leaf .pm-back{transform:rotateY(180deg)}
+  /* marges des faces : le texte tombe exactement sur celui des pages fixes, au départ comme à l'arrivée (géométrie
+     mesurée : feuilles, zones de texte, rotation autour du dos ; en centièmes de la largeur du dossier) */
+  .pm-leaf.fwd .pm-back{padding:3.86cqw 4.29cqw 7.61cqw 5.28cqw}
+  .pm-leaf.back .pm-front{padding:3.86cqw 4.3cqw 7.61cqw 4.43cqw}
+  .pm-leaf.back .pm-back{padding:3.86cqw 3.42cqw 7.61cqw 4.21cqw}
   .pm-leaf.fwd{animation:pmTurn .7s cubic-bezier(.45,.05,.35,1) forwards}.pm-leaf.back{animation:pmTurnBack .7s cubic-bezier(.45,.05,.35,1) forwards}
   @keyframes pmTurn{from{transform:perspective(2200px) rotateY(0)}to{transform:perspective(2200px) rotateY(-180deg)}}
   @keyframes pmTurnBack{from{transform:perspective(2200px) rotateY(0)}to{transform:perspective(2200px) rotateY(180deg)}}
