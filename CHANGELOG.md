@@ -10,11 +10,26 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
-> **Annonce : suite du refactoring du toolkit.** La phase 2 (exceptions par design remplacées par des jetons) est
-> livrée en 4.4.0 ; la phase 3 (couches CSS, retrait des `!important`) est en cours et pourra encore modifier
-> légèrement l'apparence des designs à matières. Plan : [docs/REFACTORING_TOOLKIT.md](docs/REFACTORING_TOOLKIT.md).
+## [4.5.0] — 2026-10-01
+
+CR FIRE / GAAR et HEMS / MEDEVAC sur le Mission Core (toutes les familles de CR partagent le même socle) ; toolkit
+phase 3 (couches CSS : les designs l'emportent sans `!important`, rendu inchangé au banc) ; palette commune des outils
+sombres ; messages clairs quand le navigateur ne permet pas de choisir un dossier (Brave, http, Firefox).
+
+> **Annonce : suite du refactoring du toolkit.** La phase 3 (couches CSS, retrait des `!important`) se poursuit et
+> pourra encore modifier légèrement l'apparence des designs à matières. Plan :
+> [docs/REFACTORING_TOOLKIT.md](docs/REFACTORING_TOOLKIT.md).
+
+### Ajouté
+
+- Générateur : durée de l'opération en tailles (XS · S · M · L · XL, de 30 min à 8 h).
+- Pied de page : numéro de commit entre deux versions (`v4.5.0+abc1234`).
 
 ### Modifié
+
+- Planificateur carburant : nom d'appareil « référence surnom — constructeur » (plus de nom tronqué sur l'essentiel).
+- Renforts `:not(#imp)` sans effet (audit sur toutes les pages × designs × tons, `tools/imp_audit.html`) rendus à
+  leur règle d'origine : 113 règles ; rendu inchangé au banc.
 
 - Framework : socle, styles des pages et styles posés par les scripts rangés dans une couche CSS `app` (MapLibre en
   `lib`, en dessous) ; les designs, hors couche, l'emportent sans `!important`. Les `!important` du socle et des pages

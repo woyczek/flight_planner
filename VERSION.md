@@ -3,7 +3,40 @@
 Une section par version publiée, la plus récente en tête, écrite à chaque release (avec la section du
 [CHANGELOG](CHANGELOG.md), qui détaille tout) : **synthèse** (ce qui change pour l'utilisateur), **actions à
 effectuer** (ce que chacun doit faire après la mise à jour), **notes** (limites connues, points d'attention, à venir).
-Entre deux versions, le pied de page affiche le commit en cours (`v4.4.0+abc1234`).
+Entre deux versions, le pied de page affiche le commit en cours (`v4.5.0+abc1234`).
+
+## 4.5.0 — 1ᵉʳ octobre 2026
+
+### Synthèse
+
+- **CR FIRE / GAAR et HEMS / MEDEVAC sur le Mission Core** : les pages historiques sont remplacées, à la même adresse
+  (favoris et liens inchangés), par les pages du socle commun — mêmes champs, mêmes outils que les autres familles
+  (import, partage, reporting). Toutes les familles de CR partagent désormais le même socle.
+- **Designs** : les styles sont rangés en couches CSS ; les designs l'emportent sans `!important`. Rendu inchangé
+  (contrôlé au banc de non-régression sur toutes les pages, dans chaque design et chaque ton).
+- **Outils à fond sombre** (Landing, planificateur, planning ODV, reporting des opérations) : une palette commune ;
+  la Landing et le reporting des opérations changent de quelques nuances.
+- **Choix d'un dossier impossible** : le message dit quoi faire (Brave : réglage à activer ; page en http hors
+  localhost ; Firefox, Safari : Chrome ou Edge), en notification. Console plus propre sans dossier `data/`.
+- Générateur : durée de l'opération en tailles (XS à XL) ; planificateur : noms d'appareil lisibles.
+
+### Actions à effectuer
+
+1. **Recharger chaque page ouverte** (Ctrl+F5) : nouvelles versions des scripts et des feuilles de style.
+2. **Anciens registres FIRE / HEMS** (CSV des pages historiques) : ils ne sont plus lus d'office. Les importer une fois
+   depuis la page de la famille : **« Importer l'ancien registre FIRE (CSV) »** / **« … HEMS (CSV) »**.
+3. **Sous Brave** : pour choisir les dossiers (Paramètres › Sources et dossiers), ouvrir
+   `brave://flags/#file-system-access-api`, passer « File System Access API » à **Enabled**, relancer Brave — ou
+   utiliser Chrome / Edge.
+4. Toujours servir la suite par un serveur local lancé **à la racine du dossier** (`python -m http.server 8000
+   --bind 127.0.0.1`) et l'ouvrir par `http://127.0.0.1:8000/…`, pas en `file://`.
+
+### Notes
+
+- Sans le dépôt de données (`data/`), un seul 404 reste en console (`data/data_tree.js`) : il est voulu et sert à
+  basculer sur les exemples.
+- Toolkit : phase 3 en cours (187 renforts `:not(#imp)` encore utiles, traités au cas par cas). La page « Mes
+  missions » (dossiers Cabinet, Aqua, Durci) est en développement sur une branche à part, hors de cette version.
 
 ## 4.4.0 — 30 septembre 2026
 
