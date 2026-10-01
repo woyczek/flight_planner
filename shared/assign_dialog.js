@@ -213,10 +213,11 @@
       if (r.pilot && !p) notes.push('<span class="warn">trigramme inconnu de la référence</span>');
       if (p && type && !(p.types || []).some(x => typeOf(x) === type)) notes.push(`<span class="warn">pas de vol connu sur ${esc(type)}</span>`);
       if (r.pilot) {
+        // disponibilité à l'heure (codes de l'ODV) : dispo couvrant la famille → ok ; dispo d'un autre rôle → avertissement
         const av = await A().availability(r.pilot),
           start = ferry?.takeoff ? Date.parse(ferry.takeoff) : t,
-          ok = A().availableAt(av, start);
-        notes.push(ok === null ? 'disponibilité inconnue' : ok ? '<span class="ok">disponible</span>' : '<span class="err">indisponible à cette heure</span>');
+          s = A().availabilityAt(av, start, m.type);
+        notes.push(!s ? 'disponibilité non renseignée' : s.ok ? `<span class="ok">${esc(s.code)} — ${esc(s.label)}</span>` : s.category === 'dispo' ? `<span class="warn">${esc(s.code)} — ${esc(s.label)} (autre rôle que ${esc(m.type || '?')})</span>` : `<span class="err">${esc(s.code)} — ${esc(s.label)}</span>`);
       }
       // conflits avec les autres affectations
       const from = (ferry?.takeoff ? Date.parse(ferry.takeoff) : t),

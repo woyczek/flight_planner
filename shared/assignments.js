@@ -119,12 +119,48 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
 .pa-grid{overflow-x:auto;user-select:none;touch-action:none}.pa-grid table{border-collapse:collapse;font:11px/1 system-ui,sans-serif}
 .pa-grid th{padding:3px 4px;font-weight:600;opacity:.8;text-align:center}.pa-grid tbody th{text-align:left;padding-right:8px}
 .pa-grid td{width:22px;height:20px;border:1px solid color-mix(in srgb,currentColor 22%,transparent);background:color-mix(in srgb,currentColor 6%,transparent);cursor:pointer}
-.pa-grid td.on{background:#2e9d5b;border-color:#1f6e3f}.pa-grid td:nth-child(7n+1){border-left-width:2px}
-html[data-design="field"] .pa-grid td.on{background:#7fd65e;border-color:#3f7a25}`;
+.pa-grid td{font:700 9.5px/20px system-ui,sans-serif;text-align:center}.pa-grid td:nth-child(7n+1){border-left-width:2px}
+.pa-palette{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 8px}.pa-palette .pa-code{display:inline-flex;align-items:baseline;gap:5px;padding:3px 7px;border:2px solid transparent;border-radius:4px;font:700 11px/1.3 system-ui,sans-serif;cursor:pointer}
+.pa-palette .pa-code small{font-weight:500;font-size:10.5px;opacity:.9}.pa-palette .pa-code[aria-checked=true]{border-color:currentColor;box-shadow:0 0 0 2px rgba(0,0,0,.35)}
+html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     document.head.append(s);
   }
 
-  // ---- disponibilités du pilote : semaine type, 7 jours × 24 heures (true : disponible), lundi en premier
+  // ---- disponibilités du pilote : semaine type, 7 jours × 24 heures (heures UTC), lundi en premier ; chaque case porte
+  // un code de la légende de l'ODV (« Code couleur » du classeur hebdomadaire : même table que OdvCore.LEGEND,
+  // apps/cpco/odv_core.js) ou '' (non renseigné). Anciennes grilles (true / false) : true → O (dispo, tout rôle).
+  // Couleurs : familles de l'ODV, accordées au design par RepositoryNav.chartColor (comme les graphiques).
+  const LEGEND = {
+    O: ['DISPO (Tout)', 'dispo', null, '00B050'],
+    SC: ['DISPO sécu civile', 'dispo', 'SECU', '2F5597'],
+    C: ['DISPO Chasse FAF', 'dispo', 'CHASSE', '0070C0'],
+    T: ['DISPO Transport FAF', 'dispo', 'TRANSPORT', 'F4B183'],
+    S: ['Exercice IVAO SO', 'dispo', 'EXERCICE', 'FF0000'],
+    N: ['DISPO FNY', 'dispo', 'FNY', '8693A0'],
+    AT: ['Contrôle IVAO civil', 'atc', 'ATC', '7030A0'],
+    AM: ['Contrôle IVAO SO', 'atc', 'ATC', 'C4BD97'],
+    G: ['Vol IVAO hors SO', 'occupe', null, 'FFD966'],
+    DC: ['Mission DCS', 'occupe', null, '002060'],
+    IR: ['MANIP IRL', 'indispo', null, 'FFFF00'],
+    IN: ['INDISPO', 'indispo', null, 'BFBFBF'],
+    V: ['VACANCES', 'indispo', null, 'FFC000'],
+    Q: ['RÉCUP', 'indispo', null, 'D9D9D9']
+  };
+  /** Rôles qu'un code de disponibilité couvre, par famille de mission (avertissement seulement : le Centre décide). */
+  const FAMILY_ROLES = {
+    COMBAT: ['CHASSE', 'EXERCICE'],
+    ISR: ['CHASSE', 'EXERCICE'],
+    COMMAND: ['CHASSE', 'EXERCICE'],
+    AAR: ['TRANSPORT', 'EXERCICE'],
+    AIRLIFT: ['TRANSPORT'],
+    AIRBORNE: ['TRANSPORT'],
+    HADR: ['TRANSPORT', 'SECU'],
+    FIRE: ['SECU'],
+    HEMS: ['SECU'],
+    SAR: ['SECU', 'FNY'],
+    MARITIME: ['FNY'],
+    LE: ['SECU']
+  };
   const DAYS = [
     ['Lun', 'Mon', 'Mo', 'Lun'],
     ['Mar', 'Tue', 'Di', 'Mar'],
@@ -134,20 +170,31 @@ html[data-design="field"] .pa-grid td.on{background:#7fd65e;border-color:#3f7a25
     ['Sam', 'Sat', 'Sa', 'Sáb'],
     ['Dim', 'Sun', 'So', 'Dom']
   ];
-  const emptyGrid = () => DAYS.map(() => Array(24).fill(false));
+  const emptyGrid = () => DAYS.map(() => Array(24).fill(''));
+  /** Grille normalisée : codes de la légende ('' : non renseigné) ; true → O, false → ''. */
+  const normGrid = g => DAYS.map((_, d) => Array.from({
+    length: 24
+  }, (_, h) => {
+    const v = g?.[d]?.[h];
+    return v === true ? 'O' : typeof v === 'string' && LEGEND[v] ? v : '';
+  }));
   /** Disponibilités d'un pilote : locales (son poste), sinon data/disponibilites/<TRI>.json (fetch) ; null si aucune. */
   async function availability(tri) {
     tri = String(tri || '').toUpperCase();
     const local = json(AVAIL, {})[tri];
-    if (local?.grid) return local;
-    try {
+    let doc = local?.grid ? local : null;
+    if (!doc) try {
       const r = await fetch(new URL(`data/disponibilites/${encodeURIComponent(tri)}.json`, root()).href, {
         cache: 'no-store'
       });
-      return r.ok ? await r.json() : null;
+      doc = r.ok ? await r.json() : null;
     } catch {
-      return null;
+      doc = null;
     }
+    return doc ? {
+      ...doc,
+      grid: normGrid(doc.grid)
+    } : null;
   }
   /** Mémorise la grille (local) et, si demandé, l'écrit dans data/disponibilites/<TRI>.json (dossier des données). */
   async function saveAvailability(tri, grid, {
@@ -158,8 +205,9 @@ html[data-design="field"] .pa-grid td.on{background:#7fd65e;border-color:#3f7a25
       pilot: tri,
       granularity_min: 60,
       timezone: 'UTC',
+      legend: 'ODV (Code couleur)',
       updated_at: new Date().toISOString(),
-      grid
+      grid: normGrid(grid)
     };
     const all = json(AVAIL, {});
     all[tri] = doc;
@@ -182,28 +230,51 @@ html[data-design="field"] .pa-grid td.on{background:#7fd65e;border-color:#3f7a25
     await w.close();
     return `data/disponibilites/${tri}.json`;
   }
-  /** Grille éditable (jours × heures UTC) : clic ou glisser sur les cases pour basculer disponible / indisponible. */
-  function gridEditor(host, grid, onChange) {
-    grid = grid || emptyGrid();
+  /** Couleur d'un code : famille de l'ODV accordée au design (RepositoryNav.chartColor) ; encre lisible dessus. */
+  const colorOf = code => {
+    const c = '#' + (LEGEND[code]?.[3] || 'D9D9D9');
+    return window.RepositoryNav?.chartColor?.(c) || c;
+  };
+  const inkOf = code => {
+    const L = K?.color?.luminance?.(colorOf(code));
+    return L != null && L < .35 ? '#fff' : '#1b1b1b';
+  };
+  /** Grille éditable (jours × heures UTC), peinte avec les codes de l'ODV : un code choisi dans la palette, clic ou
+   *  glisser sur les cases ; second clic sur une case de ce code : elle est effacée (glisser efface alors aussi). */
+  function gridEditor(host, grid, onChange, {
+    code = 'O'
+  } = {}) {
+    grid = normGrid(grid);
+    let brush = LEGEND[code] ? code : 'O';
+    // couleur de la case : valeur propre à la case, posée avec !important (les designs rendent les cases de tableau
+    // transparentes avec !important ; seul un style en ligne !important l'emporte)
+    const cell = (d, h, v) => `<td data-d="${d}" data-h="${h}" title="${K.esc(t(DAYS[d]))} ${h}h–${h + 1}h UTC${v ? ' · ' + K.esc(LEGEND[v][0]) : ''}"${v ? ` data-code="${v}" style="background-color:${colorOf(v)} !important;color:${inkOf(v)} !important"` : ''}>${v}</td>`;
     host.classList.add('pa-grid');
-    host.innerHTML = `<table><thead><tr><th></th>${Array.from({ length: 24 }, (_, h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${DAYS.map((d, i) => `<tr><th>${K.esc(t(d))}</th>${grid[i].map((v, h) => `<td data-d="${i}" data-h="${h}" class="${v ? 'on' : ''}"></td>`).join('')}</tr>`).join('')}</tbody></table>`;
-    let paint = null;
+    host.innerHTML = `<div class="pa-palette" role="radiogroup" aria-label="${K.esc(t(['Code à poser', 'Code to paint', 'Zu setzender Code', 'Código a pintar']))}">${Object.entries(LEGEND).map(([k, [label]]) => `<button type="button" class="repo-plain pa-code" data-code="${k}" role="radio" aria-checked="${k === brush}" title="${K.esc(label)}" style="background:${colorOf(k)};color:${inkOf(k)}">${k}<small>${K.esc(label)}</small></button>`).join('')}</div>
+      <table><thead><tr><th></th>${Array.from({ length: 24 }, (_, h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${DAYS.map((d, i) => `<tr><th>${K.esc(t(d))}</th>${grid[i].map((v, h) => cell(i, h, v)).join('')}</tr>`).join('')}</tbody></table>`;
+    host.querySelector('.pa-palette').onclick = e => {
+      const b = e.target.closest('.pa-code');
+      if (!b) return;
+      brush = b.dataset.code;
+      host.querySelectorAll('.pa-code').forEach(x => x.setAttribute('aria-checked', String(x === b)));
+    };
+    let paint = null; // code posé pendant le geste ('' : effacement)
     const set = td => {
       const d = +td.dataset.d,
         h = +td.dataset.h;
       grid[d][h] = paint;
-      td.classList.toggle('on', paint);
+      td.outerHTML = cell(d, h, paint);
     };
     host.onpointerdown = e => {
       const td = e.target.closest('td[data-d]');
       if (!td) return;
       e.preventDefault();
-      paint = !grid[+td.dataset.d][+td.dataset.h];
+      paint = grid[+td.dataset.d][+td.dataset.h] === brush ? '' : brush; // second clic sur ce code : effacer
       set(td);
     };
     host.onpointerover = e => {
       const td = e.target.closest('td[data-d]');
-      if (td && paint !== null) set(td);
+      if (td && paint !== null && grid[+td.dataset.d][+td.dataset.h] !== paint) set(td);
     };
     const stop = () => {
       if (paint === null) return;
@@ -212,14 +283,35 @@ html[data-design="field"] .pa-grid td.on{background:#7fd65e;border-color:#3f7a25
     };
     host.onpointerup = stop;
     host.onpointerleave = stop;
+    // design ou ton changé : couleurs réaccordées
+    window.addEventListener('repository-design-change', () => setTimeout(() => host.isConnected && gridEditor(host, grid, onChange, {
+      code: brush
+    })), {
+      once: true
+    });
     return grid;
   }
-  /** Disponible à une heure UTC donnée (grille semaine type) ; null si inconnu. */
-  function availableAt(av, ms) {
+  /** Disponibilité à une heure UTC (grille semaine type) : { code, label, category, role, ok } ; null si non renseignée.
+   *  ok : code « dispo » qui couvre la famille de la mission (rôle ; O : tout rôle). */
+  function availabilityAt(av, ms, family) {
     if (!av?.grid || !ms) return null;
     const d = new Date(ms),
-      day = (d.getUTCDay() + 6) % 7; // lundi = 0
-    return !!av.grid[day]?.[d.getUTCHours()];
+      code = normGrid(av.grid)[(d.getUTCDay() + 6) % 7]?.[d.getUTCHours()];
+    if (!code) return null;
+    const [label, category, role] = LEGEND[code];
+    const roles = FAMILY_ROLES[String(family || '').toUpperCase()];
+    return {
+      code,
+      label,
+      category,
+      role,
+      ok: category === 'dispo' && (!role || !roles || roles.includes(role))
+    };
+  }
+  /** Disponible à une heure UTC (code « dispo ») ; null si non renseigné. */
+  function availableAt(av, ms) {
+    const a = availabilityAt(av, ms);
+    return a ? a.category === 'dispo' : null;
   }
 
   // ---- Centre : écriture d'une affectation (dossier de la mission + index)
@@ -299,7 +391,9 @@ html[data-design="field"] .pa-grid td.on{background:#7fd65e;border-color:#3f7a25
     markRead,
     envelope,
     DAYS,
+    LEGEND,
     emptyGrid,
+    availabilityAt,
     availability,
     availableAt,
     saveAvailability,

@@ -153,8 +153,11 @@ ailleurs. Clic → « Mes missions » ; ouvrir la mission marque l'affectation l
   (appareil, indicatif, terrain, heure de décollage ou consigne d'astreinte, convoyage, coéquipiers, résumé, route et
   plan, cartes fournies), **Ouvrir dans les Cartes de vol** (mission partagée de l'espace « planner »), **Carburant**
   (route OACI, distance, niveau, route vraie : `plannerHandoff:v1`), **Créer le CR** (immatriculation attribuée) ;
-  **Mes disponibilités** : semaine type, cases d'une heure (clic ou glisser), enregistrées dans le navigateur et, au
-  bouton, dans `data/disponibilites/<TRI>.json`.
+  **Mes disponibilités** : semaine type, cases d'une heure peintes avec les **codes de l'ODV** (palette : O, SC, C, T,
+  S, N, AT, AM, G, DC, IR, IN, V, Q — légende « Code couleur » du classeur ; couleurs = familles de l'ODV accordées au
+  design) ; clic ou glisser pose le code choisi, un second clic sur une case de ce code l'efface ; enregistrées dans le
+  navigateur et, au bouton, dans `data/disponibilites/<TRI>.json`. Le dialogue du Centre affiche le code à l'heure du
+  décollage et avertit s'il ne couvre pas la famille de la mission (ex. T « Transport » sur une mission COMBAT).
 - **Centre** : bouton **« Affecter… »** du détail d'une mission (registre ; pas pour les missions d'organisation Z),
   `shared/assign_dialog.js` : heure de décollage ou heure H (exercice : décalage du participant), astreinte (prêt à,
   préavis, fin), participants (+ équipier, indicatif suivi), pilote (référence DEFA : qualification sur le type,
