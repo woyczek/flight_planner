@@ -27,7 +27,7 @@
   .pm-label dl{display:grid;grid-template-columns:auto auto;gap:2px 12px;margin:8px 0 0;font-size:12.5px;text-align:left}.pm-label dt{opacity:.7}.pm-label dd{margin:0;font-weight:600}
   .pm-open{margin:0}
   /* « CONFIDENTIEL » : tampon encreur (image commune aux designs) ; le mot reste lu par les lecteurs d'écran */
-  .pm-label{position:relative}
+  .pm-label{position:relative;background:var(--sheet-card-bg,#f4ead0);color:var(--sheet-ink,#2b2112)} /* papier : lisible sur tout fond */
   .pm-label small{position:absolute;z-index:2;top:-14px;right:-18px;width:180px;aspect-ratio:700/245;background:url("../../shared/deco/stamp-confidential.webp") center/contain no-repeat;color:transparent;font-size:0;transform:rotate(-9deg);opacity:.8;pointer-events:none}
   /* Cabinet : dossier ficelé et scellé (mission non ouverte) ; ouvrir brise le sceau */
   html[data-design="cabinet"] #pmDetail{--pm-bw:min(1064px,100%)}
@@ -52,7 +52,7 @@
   .pm-page [data-part="title"]{display:grid;place-items:center;min-height:100%}.pm-page [data-part="title"] .pm-label{transform:rotate(-1deg)}
   .pm-head{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;margin:0 0 10px;padding-bottom:8px;border-bottom:1px solid rgba(43,33,18,.4);text-transform:uppercase;font-size:10.5px;letter-spacing:.12em}
   .pm-head div{display:grid}.pm-head b{font-size:12px}.pm-emblem{width:72px;height:auto}.pm-no{white-space:nowrap}
-  #pmDetail>[data-part="title"],.pm-emblem{display:none}.pm-book .pm-emblem{display:block}
+  .pm-content>[data-part="title"],.pm-emblem{display:none}.pm-book .pm-emblem{display:block}
   .pm-dr{display:none}.pm-book .pm-dr{display:block;position:absolute;z-index:2;width:190px;aspect-ratio:505/200;background:url("../../shared/deco/cabinet/stamp-diffusion-restreinte.webp") center/contain no-repeat;opacity:.8;pointer-events:none}
   .pm-book [data-part="order"] .pm-dr{top:58px;right:-6px;transform:rotate(-6deg)}
   .pm-mdtable{width:100%;border-collapse:collapse;font-size:12px}.pm-mdtable th,.pm-mdtable td{text-align:left;padding:3px 6px;border-bottom:1px dotted rgba(43,33,18,.4)}
@@ -355,7 +355,17 @@
   /** Contenu de la mission, en parties (data-part) lues dans l'ordre : présentation ordinaire, ou pages du dossier
    *  (Cabinet) : title (étiquette), order (en-tête, ordre, résumé), details (description, risques, équipes, route),
    *  maps (cartes), final (objectifs, remarques, signature). */
+  let lastRender = null; // [mission, yaml, résumé, journal] : redessin au changement de design
+  window.addEventListener('repository-design-change', () => setTimeout(() => {
+    const host = $('pmDetail');
+    if (!lastRender || !host.querySelector('.pm-content')) return;
+    const closed = !!host.querySelector('.pm-content')?.hidden;
+    bookStart = +host.dataset.bookAt || 0;
+    render(...lastRender);
+    setClosed(lastRender[0], closed);
+  }, 60));
   function render(a, y, md = '', log = []) {
+    lastRender = [a, y, md, log];
     const pts = routeOf(y), dist = pts.slice(1).reduce((s, p, i) => s + nm(pts[i], p), 0);
     const alert = a.alert || y.alert;
     const secs = mdSections(md);
@@ -433,6 +443,7 @@
   // objectifs, remarques et signature. Double page : intérieur de la couverture + page 1 à l'ouverture, puis 2-3, 4-5…
   // Le coin corné tourne la page (suivante en bas à droite, précédente en bas à gauche) ; le contenu trop long passe
   // sur la page suivante. Écran étroit (< 760 px) ou autre design : présentation ordinaire.
+  let bookStart = 0; // double page à rouvrir quand le livre est redessiné (changement de design)
   function bookify() {
     if (document.documentElement.dataset.design !== 'cabinet' || !matchMedia('(min-width: 760px)').matches) return;
     const host = $('pmDetail'),
@@ -485,7 +496,8 @@
     const title = part('title');
     title?.remove();
     const pages = [null, title, ...split(part('order')), ...split(part('details')), ...mapPages, ...split(part('final'))].filter((p, i) => i === 0 || p);
-    let at = 0, busy = false;
+    let at = Math.min(bookStart, Math.max(0, pages.length - 1)) & ~1, busy = false;
+    bookStart = 0;
     const draw = () => {
       left.replaceChildren(...(pages[at] ? [pages[at]] : []));
       right.replaceChildren(...(pages[at + 1] ? [pages[at + 1]] : []));
@@ -496,6 +508,7 @@
       prev.title = prev.ariaLabel = at === 0 ? 'Refermer le dossier' : 'Page précédente';
       next.hidden = at + 2 >= pages.length;
       left.scrollTop = right.scrollTop = 0;
+      host.dataset.bookAt = at; // double page affichée (gardée si le livre est redessiné)
     };
     // tourner : la feuille pivote autour du dos, d'un côté à l'autre ; recto = page qui part, verso = page qui arrive ;
     // la page découverte dessous est déjà la suivante, la page d'en face ne change qu'à l'arrivée de la feuille
@@ -518,6 +531,7 @@
         left.dataset.folio = pages[to] ? to : '';
         left.classList.toggle('pm-inside', !pages[to]);
       }
+      prev.hidden = next.hidden = true; // coins rétablis par draw() à l'arrivée de la feuille
       leaf.className = `pm-leaf ${dir > 0 ? 'fwd' : 'back'}`;
       leaf.hidden = false;
       setTimeout(() => { // fin de la rotation (0,7 s, voir .pm-leaf.fwd) : la feuille se pose, la page d'en face change
