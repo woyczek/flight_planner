@@ -338,6 +338,34 @@ html[data-tone="light"] :is(.odv-bad, .odv-notes .warn) {
   background: var(--soft);
   border: 1px solid var(--line)
 }
+/* deux lignes par pilote : classeur, puis déclaration du pilote (encadré rouge : disponible et non affecté) */
+.odv-pair {
+  display: grid;
+  gap: 2px;
+  justify-items: center
+}
+.odv-decl {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  cursor: pointer
+}
+.odv-decl .odv-code {
+  opacity: .9;
+  font-size: .92em
+}
+.odv-decl.odv-free {
+  border-color: #e5484d
+}
+.odv-asg {
+  font-size: 9.5px;
+  padding: 0 3px;
+  border-radius: 3px;
+  background: color-mix(in srgb, #2e9d5b 30%, transparent)
+}
 .odv-cut {
   display: inline-block;
   max-width: 16em;
@@ -539,7 +567,8 @@ html[data-design="field"] .odv-heat button.sel {
 <script src="../../shared/data_files.js?v=50601f47" data-file="references/defa_reference.js"></script>
 <script src="../../shared/mission_table.js?v=9375486d"></script>
 <script src="../../shared/sia_base.js?v=2f8158b3"></script><script src="odv_core.js?v=68eb8dbc"></script>
-<script src="odv_planning.js?v=8c16ad85"></script>
+<script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/assignments.js?v=590e1d09"></script><script src="../../shared/assign_dialog.js?v=1b18eaca"></script><script src="odv_assign.js?v=d16da6b3"></script>
+<script src="odv_planning.js?v=a7c39d48"></script>
 <script src="../../shared/app_framework.js?v=a63ce655"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script>

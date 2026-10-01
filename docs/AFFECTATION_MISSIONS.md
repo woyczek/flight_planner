@@ -165,6 +165,18 @@ ailleurs. Clic → « Mes missions » ; ouvrir la mission marque l'affectation l
   depuis la base SIA, le registre ou la base mondiale des aérodromes, vitesse de croisière + 20 min, décollage du
   convoyage = décollage − durée − 30 min), conflits (pilote ou appareil déjà pris, doublons), enregistrement
   (`affectations.yaml` de la mission + index).
+- **Planning ODV** (`apps/cpco/odv_assign.js`) : **deux lignes par pilote** dans la grille — code du classeur, puis
+  déclaration du pilote ramenée au créneau (code dominant des heures déclarées, même rendu que le classeur) ; **encadré
+  rouge** : disponible (déclaration, sinon classeur) et non affecté ; n° de mission : affecté ; **clic sur la déclaration**
+  → missions du registre pour ce pilote et ce créneau → « Affecter » (dialogue prérempli : pilote, heure de début du
+  créneau) ; **créneau commun** (« Missions du registre… ») : « Affecter » propose les pilotes libres du créneau (autant
+  que d'équipes de la mission, les autres cités).
+- **Appareils du pilote** (« Mes appareils ») : types de la flotte possédés / maîtrisés, rangés avec ses disponibilités ;
+  le dialogue s'en sert (maîtrisé : ok ; possédé ou vols connus : avertissement ; non déclaré : erreur).
+- **Convoyage** confiable à un autre pilote (« par … » dans le dialogue) : ligne « convoyage » dans l'index, visible dans
+  ses « Mes missions » (amener l'appareil de sa base au terrain de départ).
+- **Factorisation** : géographie, terrains, convoyage, qualification, créneaux, conflits et écriture dans
+  `shared/assignments.js`, utilisés par le dialogue, l'ODV et la page pilote ; l'écriture ne dépend plus du registre.
 - **Décisions par défaut** (§ 9, à confirmer) : partage par le dépôt `data/` ; pas d'acceptation (l'affectation vaut
   ordre, le pilote en accuse lecture) ; heures UTC ; cases d'une heure ; « Mes missions » dans le menu de tous ; une
   enveloppe dessinée (SVG) habillée par design.
