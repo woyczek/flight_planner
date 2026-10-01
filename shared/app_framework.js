@@ -122,7 +122,65 @@
       f = document.querySelector("footer") || document.createElement("footer");
     f.className = "repo-footer no-print";
     f.innerHTML = `CC RBR - DEFA Virtual - ${r.date||"2026-09-21"} - <a href="${r.changelog||"https://framagit.org/asr/flight_planner/-/blob/master/CHANGELOG.md"}" target="_blank" rel="noopener" title="Changelog / notes de version">v${r.version||"2026.09"}</a> - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a>`;
-    if (!f.isConnected) document.body.append(f)
+    if (!f.isConnected) document.body.append(f);
+    buildOf(r).then(b => {
+      if (!b) return;
+      const a = f.querySelector("a");
+      a.textContent = `v${r.version}+${b.short}`;
+      a.title = `${b.branch || "HEAD"} — commit ${b.short}, après la version ${r.version} (non publiée)`;
+      a.href = `${r.repository?.web || "https://framagit.org/asr/flight_planner"}/-/commit/${b.sha}`
+    }).catch(() => {})
+  }
+
+  // ---- Version entre deux publications : commit courant lu dans le dépôt servi (.git/HEAD, référence de la branche,
+  // tag v<version> : objet du tag annoté décompressé, ou packed-refs). Commit ≠ celui de la version publiée → le pied de
+  // page affiche « v4.4.0+abc1234 » (lien vers le commit). Copie sans .git (téléchargement, publication) : rien ne change.
+  const gitRoot = () => new URL(".", document.querySelector('script[src*="repository_tree"]')?.src || location.href).href;
+  const gitText = async path => {
+    const res = await fetch(gitRoot() + ".git/" + path, {
+      cache: "no-store"
+    });
+    return res.ok ? res.text() : null;
+  };
+  /** SHA d'une référence (fichier libre, sinon packed-refs ; peel : commit pointé par un tag annoté). */
+  async function gitRef(ref, peel) {
+    const loose = (await gitText(ref))?.trim();
+    if (/^[0-9a-f]{40}$/.test(loose || "")) return peel ? peelTag(loose) : loose;
+    const packed = (await gitText("packed-refs")) || "",
+      lines = packed.split("\n"),
+      i = lines.findIndex(l => l.endsWith(" " + ref));
+    if (i < 0) return null;
+    const sha = lines[i].slice(0, 40),
+      peeled = lines[i + 1]?.startsWith("^") ? lines[i + 1].slice(1, 41) : null;
+    return peel ? peeled || peelTag(sha) : sha;
+  }
+  /** Commit pointé par un objet tag (objet libre zlib : « tag n\0object <sha> ») ; l'objet lui-même s'il n'est pas un tag. */
+  async function peelTag(sha) {
+    try {
+      const res = await fetch(`${gitRoot()}.git/objects/${sha.slice(0, 2)}/${sha.slice(2)}`, {
+        cache: "no-store"
+      });
+      if (!res.ok || !window.DecompressionStream) return sha;
+      const text = await new Response(res.body.pipeThrough(new DecompressionStream("deflate"))).text();
+      return /^tag \d+\0object ([0-9a-f]{40})/.exec(text)?.[1] || sha;
+    } catch {
+      return sha;
+    }
+  }
+  /** { sha, short, branch } si le commit courant n'est pas celui de la version publiée ; null sinon (ou sans .git). */
+  async function buildOf(r) {
+    if (!r.version || !/^https?:$/.test(location.protocol)) return null;
+    const head = (await gitText("HEAD"))?.trim();
+    if (!head) return null;
+    const branch = head.startsWith("ref: ") ? head.slice(5) : "",
+      sha = branch ? await gitRef(branch) : head;
+    if (!/^[0-9a-f]{40}$/.test(sha || "")) return null;
+    const tagged = await gitRef(`refs/tags/v${r.version}`, true);
+    return tagged === sha ? null : {
+      sha,
+      short: sha.slice(0, 7),
+      branch: branch.replace(/^refs\/heads\//, "")
+    };
   }
 
   /** Libellé d'un bouton de bloc (show / hide / move…) dans la langue de la page. */
