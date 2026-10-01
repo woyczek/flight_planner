@@ -43,6 +43,7 @@
     fileName = '',
     data = null,
     slots = [],
+    basis = null, // données du calcul : classeur, sinon déclarations (declWeek)
     flights = [],
     selected = null;
   const view = {
@@ -97,6 +98,89 @@
       records,
       legende,
       flotte: {}
+    };
+  }
+  /** Données du calcul (créneaux communs, missions probables, vols) : le classeur lu, sinon la semaine sans classeur
+   *  remplie par les déclarations des pilotes (codes ODV, appareils → rôles, simulateurs) et les affectations (vols). */
+  function declWeek() {
+    const w = emptyWeek(),
+      O = window.OdvAssign,
+      M = window.MissionAssignments;
+    const models = Object.fromEntries((M?.fleetTypes?.() || []).map(x => [x.type, x.model]));
+    const flotte = {};
+    for (const p of w.pilotes) {
+      const d = O?.declaration?.(p.trigramme),
+        types = [...new Set([...(d?.aircraft?.owned || []), ...(d?.aircraft?.mastered || [])])];
+      p.profil = flotte[p.trigramme] = {
+        trigramme: p.trigramme,
+        ligne: p.ligne,
+        types: types.map(type => ({
+          type,
+          niveau: null,
+          retenu: true
+        })),
+        roles: [...C.rolesOfTypes(types.map(x => `${x} ${models[x] || ''}`).join(' / '))].sort(),
+        sims: d?.sims || [],
+        simNotes: [],
+        vide: !types.length
+      };
+    }
+    const records = w.records.map(r => {
+      const d = O?.declared(r.pilote, r.jourIndex, r.creneauIndex);
+      return d ? {
+        ...r,
+        code: d.code,
+        sens: d.label,
+        categorie: C.LEGEND[d.code]?.[1] || M?.LEGEND?.[d.code]?.[1] || 'inconnu',
+        role_impose: C.LEGEND[d.code]?.[2] || null,
+        source: 'déclaration du pilote'
+      } : r;
+    });
+    for (const p of w.pilotes) p.rempli = records.some(r => r.pilote === p.trigramme && r.code);
+    // vols : missions affectées de la semaine (un vol par mission et heure de décollage, convoyages à part)
+    const vols = [];
+    for (const a of O?.week() || []) {
+      if (a.role === 'convoyage') continue;
+      const at = new Date(a.takeoff),
+        j = w.dates.indexOf(at.toISOString().slice(0, 10));
+      if (j < 0) continue;
+      const h0 = at.getUTCHours() + at.getUTCMinutes() / 60,
+        h1 = Math.min(24, h0 + (+a.block_min || 120) / 60);
+      const v = vols.find(x => x.mission === a.mission && x.jourIndex === j && x.h_debut === h0);
+      if (v) {
+        if (!v.equipage.includes(a.pilot)) v.equipage.push(a.pilot);
+        continue;
+      }
+      vols.push({
+        mission: a.mission,
+        jourIndex: j,
+        jour: C.DAYS[j],
+        date: w.dates[j],
+        h_debut: h0,
+        h_fin: h1,
+        debut: C.hhmm(h0),
+        fin: C.hhmm(h1),
+        dep: a.departure || '',
+        arr: a.destination || a.departure || '',
+        appareil: [a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' '),
+        objet: [a.mission, a.title].filter(Boolean).join(' '),
+        indicatif: a.callsign || '',
+        equipage: [a.pilot],
+        roles_type: [...C.rolesOfTypes(`${a.aircraft?.type || ''} ${models[a.aircraft?.type] || ''}`)],
+        texte: '',
+        couloir: 'affectation'
+      });
+    }
+    return {
+      ...w,
+      records,
+      flotte,
+      vols,
+      evenements: [],
+      frise: [],
+      zones: [],
+      theme: '',
+      anomalies: []
     };
   }
   /** Données de la grille : le classeur lu, sinon la semaine sans classeur. */
@@ -208,8 +292,16 @@
   }
 
   function compute() {
-    slots = C.plan(data, settings);
-    flights = C.checkFlights(data, settings);
+    basis = data || declWeek();
+    if (data) window.MissionAssignments?.simulators?.(Object.values(data.flotte).flatMap(p => p.sims)); // liste des préférences pilote
+    slots = C.plan(basis, settings);
+    flights = C.checkFlights(basis, settings);
+  }
+  /** Sans classeur : calcul sur les déclarations et affectations, puis tout redessiner. */
+  function refreshNoBook() {
+    if (data) return;
+    compute();
+    render();
   }
   /** Notifications après chargement : résumé, décalage de date, avertissements, vols à vérifier. */
   function announce() {
@@ -228,6 +320,7 @@
   function clearAll() {
     book = null;
     data = null;
+    basis = null;
     slots = [];
     flights = [];
     fileName = '';
@@ -236,7 +329,7 @@
     $('odvFile').dispatchEvent(new Event('change'));
     $('odvRecapText').value = '';
     render();
-    window.OdvAssign?.load(emptyWeek(), settings).then(renderGrid).catch(() => {});
+    window.OdvAssign?.load(emptyWeek(), settings).then(refreshNoBook).catch(() => {});
     notify('Données effacées de la page.', 'info');
   }
 
@@ -284,7 +377,8 @@
   // --- grille
 
   function renderGridFilters() {
-    const host = $('odvGridFilters');
+    const host = $('odvGridFilters'),
+      data = basis;
     if (!data) {
       host.innerHTML = '';
       return;
@@ -294,14 +388,14 @@
     const sims = [...new Set(Object.values(data.flotte).flatMap(p => p.sims))].sort();
     const opt = (v, l, cur) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(l)}</option>`;
     host.innerHTML = `<label><input type="checkbox" id="odvHideEmpty"${view.hideEmpty ? ' checked' : ''}> Masquer les grilles vides</label>
-      <label>Couleur du trigramme <select id="odvColor">${opt('', 'toutes', view.color)}${colors.map(c => opt(c, `#${c} (${data.pilotes.filter(p => p.couleur === c).length})`, view.color)).join('')}</select></label>
-      <label>Rôle (FLOTTE) <select id="odvRole">${opt('', 'tous', view.role)}${roles.map(r => opt(r, C.ROLES[r] || r, view.role)).join('')}</select></label>
+      ${colors.length ? `<label>Couleur du trigramme <select id="odvColor">${opt('', 'toutes', view.color)}${colors.map(c => opt(c, `#${c} (${data.pilotes.filter(p => p.couleur === c).length})`, view.color)).join('')}</select></label>` : ''}
+      <label>Rôle (${data.virtuel ? 'appareils déclarés' : 'FLOTTE'}) <select id="odvRole">${opt('', 'tous', view.role)}${roles.map(r => opt(r, C.ROLES[r] || r, view.role)).join('')}</select></label>
       <label>Simulateur <select id="odvSimF">${opt('', 'tous', view.sim)}${sims.map(s => opt(s, s, view.sim)).join('')}</select></label>`;
     $('odvHideEmpty').onchange = e => {
       view.hideEmpty = e.target.checked;
       renderGrid();
     };
-    $('odvColor').onchange = e => {
+    if ($('odvColor')) $('odvColor').onchange = e => {
       view.color = e.target.value;
       renderGrid();
     };
@@ -367,7 +461,8 @@
 
   // --- créneaux communs
   function renderSlotFilters() {
-    const host = $('odvSlotFilters');
+    const host = $('odvSlotFilters'),
+      data = basis;
     if (!data) {
       host.innerHTML = '';
       return;
@@ -393,6 +488,7 @@
 
   function renderSlots() {
     renderSlotFilters();
+    const data = basis;
     if (!data) {
       $('odvHeat').innerHTML = '';
       $('odvSlotDetail').innerHTML = '';
@@ -486,7 +582,8 @@
 
   function renderDetail() {
     const host = $('odvSlotDetail');
-    const s = data && selected ? slots.find(x => `${x.jourIndex}${x.creneauIndex}` === selected) : null;
+    const data = basis,
+      s = data && selected ? slots.find(x => `${x.jourIndex}${x.creneauIndex}` === selected) : null;
     if (!s) {
       host.innerHTML = data ? '<p class="mut">Cliquez un créneau (carte ou tableau) pour son détail.</p>' : '';
       return;
@@ -684,7 +781,7 @@
       focus: c.dataset.tri
     });
   });
-  window.OdvAssign?.onChange(() => renderGrid());
+  window.OdvAssign?.onChange(() => data ? renderGrid() : refreshNoBook());
   document.addEventListener('click', e => {
     const b = e.target.closest('[data-pick]');
     if (!b) return;
@@ -698,7 +795,7 @@
     const rules = $('odvRules');
     rules.innerHTML = `<summary>Règles des familles et du score</summary><ul>${Object.entries(C.FAMILIES).map(([f, d]) => `<li><span class="odv-fam">${esc(f)}</span> ${esc(d.rule)}</li>`).join('')}</ul>
       <p class="mut">Rôles d'un pilote : le code impose le rôle (SC → sécu civile + hélico / avion sécu d'après FLOTTE, C → chasse, T → transport + ravitailleur / largage, N → FNY / maritime, S → exercice + rôles FLOTTE) ; O → tous les rôles que FLOTTE lui attribue. Score = participants + 2 par pilote à code restreint employé dans son domaine (SC : SAR, FIRE, HEMS ; N : MARITIME ; C : AAR, ISR, SPECIAL ; T : AIRLIFT, AIRBORNE, AAR) + 1 par contrôleur en ligne (2 au plus) pour TRAINING. À score égal : ordre de préférence des réglages (${esc(settings.preference.join(', '))}). Les rôles FLOTTE restent indicatifs : le planificateur valide.</p>`;
-    if (!data) {
+    if (!basis) {
       resetTable('odvMissions', '<p class="odv-empty">Chargez un classeur ODV.</p>');
       return;
     }
@@ -758,6 +855,7 @@
 
   // --- frise
   function renderFlights() {
+    const data = basis;
     if (!data) {
       $('odvZones').innerHTML = '';
       resetTable('odvFlights', '<p class="odv-empty">Chargez un classeur ODV.</p>');
@@ -811,7 +909,7 @@
         }
       ],
       defaultSortKey: 'ordre',
-      emptyText: 'Aucun vol sur la frise.',
+      emptyText: data.virtuel ? 'Pas de classeur : aucune mission affectée cette semaine.' : 'Aucun vol sur la frise.',
       storageKey: 'sortedTableWidths:odvPlanning#flights'
     }, flights.map(f => ({
       ...f,
@@ -1007,7 +1105,7 @@
     fillSettings();
     bindSettings();
     bindExports();
-    window.OdvAssign?.load(emptyWeek(), settings).then(() => data || renderGrid()).catch(() => {}); // grille sans classeur
+    window.OdvAssign?.load(emptyWeek(), settings).then(refreshNoBook).catch(() => {}); // sans classeur : déclarations
     $('odvFile').addEventListener('change', e => {
       const f = e.target.files?.[0];
       if (f) loadFile(f);

@@ -916,7 +916,7 @@
     store.src = new URL("browser_store.js?v=938ce9e7", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
-    assign.src = new URL("assignments.js?v=0293bd13", script.src).href;
+    assign.src = new URL("assignments.js?v=558689c1", script.src).href;
     document.head.append(assign);
     const update = document.createElement("script");
     update.src = new URL("suite_update.js?v=d84028ad", script.src).href;
