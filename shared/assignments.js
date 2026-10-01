@@ -484,19 +484,61 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
 
   // ---- appareils du pilote : types de la flotte possédés (dans son simulateur) et maîtrisés, déclarés dans « Mes
   // missions », rangés avec ses disponibilités (même fichier : data/disponibilites/<TRI>.json, champ aircraft)
-  /** Types de la flotte (désignateur OACI → variantes), pour le choix du pilote. */
+  /** Catégorie d'un type d'après sa description OACI (Doc 8643 : L2J = avion terrestre biréacteur, H1T = hélicoptère
+   *  monoturbine…) : clé et libellé. */
+  const CATEGORY = {
+    H: ['helico', ['Hélicoptères', 'Helicopters', 'Hubschrauber', 'Helicópteros']],
+    J: ['jet', ['Avions à réaction', 'Jet aircraft', 'Strahlflugzeuge', 'Aviones a reacción']],
+    T: ['turboprop', ['Avions à turbopropulseurs', 'Turboprop aircraft', 'Turboprop-Flugzeuge', 'Aviones turbohélice']],
+    P: ['piston', ['Avions à pistons', 'Piston aircraft', 'Kolbenmotorflugzeuge', 'Aviones de pistón']],
+    '?': ['other', ['Autres', 'Other', 'Andere', 'Otros']]
+  };
+  const categoryOf = desc => {
+    const d = String(desc || '').toUpperCase();
+    return CATEGORY[d.startsWith('H') || d.startsWith('G') ? 'H' : d.charAt(2)] || CATEGORY['?'];
+  };
+  /** Nom lisible d'un modèle de la base OACI : « DASSAULT Rafale » → « Dassault Rafale ». */
+  // (mots entiers de lettres seulement : « AS-365 », « EC135 » gardés en capitales)
+  const modelName = s => String(s || '').replace(/(^|[\s(])([A-Z]{3,})(?=$|[\s),])/g, (_, b, w) => b + w.charAt(0) + w.slice(1).toLowerCase());
+  /** Types de la flotte, détaillés : désignateur OACI, modèle (base OACI), catégorie, variantes, nombre d'appareils
+   *  (opérationnels), bases, opérateurs — pour le choix du pilote et le Centre. */
   function fleetTypes() {
     const out = new Map();
     for (const f of window.DEFA_FLEET || []) {
       const k = typeOf(f.type);
       if (!k) continue;
-      if (!out.has(k)) out.set(k, new Set());
-      if (f.variant) out.get(k).add(f.variant);
+      const e = out.get(k) || {
+        type: k,
+        variants: new Set(),
+        bases: new Map(),
+        operators: new Set(),
+        count: 0,
+        operational: 0
+      };
+      if (f.variant) e.variants.add(f.variant);
+      if (f.base) e.bases.set(f.base, (e.bases.get(f.base) || 0) + 1);
+      if (f.operator) e.operators.add(f.operator);
+      e.count++;
+      if (f.operational !== false) e.operational++;
+      out.set(k, e);
     }
-    return [...out].map(([type, v]) => ({
-      type,
-      variants: [...v].sort()
-    })).sort((a, b) => a.type.localeCompare(b.type));
+    const db = window.AIRCRAFT_DB || {};
+    return [...out.values()].map(e => {
+      const info = db[e.type] || db[db.__aliases?.[e.type]] || {},
+        [category, categoryLabel] = categoryOf(info.description);
+      return {
+        type: e.type,
+        model: modelName(info.model) || [...e.variants][0] || e.type,
+        description: info.description || '',
+        category,
+        categoryLabel: t(categoryLabel),
+        variants: [...e.variants].sort(),
+        count: e.count,
+        operational: e.operational,
+        bases: [...e.bases].sort((a, b) => b[1] - a[1]).map(([b]) => b),
+        operators: [...e.operators].sort()
+      };
+    }).sort((a, b) => a.model.localeCompare(b.model));
   }
   /** Qualification d'un pilote sur un type : déclaration (maîtrisé, possédé), sinon vols connus de la référence DEFA.
    *  { level: 'mastered' | 'owned' | 'flown' | 'none' | 'unknown', text } */
