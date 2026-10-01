@@ -543,13 +543,15 @@
         key: 'jour',
         label: 'Créneau',
         sortValue: s => s.jourIndex * 3 + s.creneauIndex,
-        format: (v, s) => `${s.jour} ${dateFr(s.date)} ${s.creneau}`
+        html: (v, s) => `<span title="${esc(`${s.jour} ${dateFr(s.date)} ${s.creneau}`)}">${esc(s.jour.slice(0, 3))} ${esc(dateFr(s.date))} ${esc(SHORT[s.creneauIndex] || s.creneau)}</span>`
       }, {
         key: 'heures',
-        label: 'Heures'
+        label: 'Heures',
+        icon: 'clock'
       }, {
         key: 'n',
-        label: 'Pilotes',
+        label: 'Pilotes disponibles',
+        icon: 'users',
         type: 'number'
       }, {
         key: 'pilotes',
@@ -559,33 +561,39 @@
       }, {
         key: 'atc',
         label: 'Contrôleurs',
+        icon: 'headset',
         sortValue: s => s.atc.length,
         html: v => v.length ? v.map(p => `${tri(p.trigramme, null, false)}<small class="mut"> ${esc(p.code)}</small>`).join(' ') : '—'
       }, {
         key: 'roles',
         label: 'Rôles possibles',
+        icon: 'shield',
         html: v => {
           const t = v.map(r => C.ROLES[r] || r).join(', ');
           return `<span class="odv-cut" title="${esc(t)}">${esc(t || '—')}</span>`;
         }
       }, {
         key: 'simsCommuns',
-        label: 'Sim. communs',
+        label: 'Simulateurs communs',
+        icon: 'layers',
         sortValue: s => s.simsCommuns.length,
-        html: v => window.MissionAssignments?.simChips(v) || esc(v.join(', ') || '—')
+        html: v => `<span class="odv-sims">${window.MissionAssignments?.simChips(v) || esc(v.join(', ') || '—')}</span>`
       }, {
         key: 'mission',
         label: 'Mission probable',
+        icon: 'target',
         sortValue: s => s.missions[0]?.famille || '',
         html: (v, s) => s.missions[0] ? `<span class="odv-fam">${esc(s.missions[0].famille)}</span>` : '—'
       }, {
         key: 'registre',
-        label: 'Registre',
+        label: 'Planifier (missions du registre)',
+        icon: 'clipboard',
         sortValue: s => s.n,
-        html: (v, s) => pickButton(s) || '—'
+        html: (v, s) => pickButton(s, '', true) || '—'
       }, {
         key: 'contexte',
-        label: 'Contexte',
+        label: 'Contexte (vols posés, événements, horaires)',
+        icon: 'info',
         html: (v, s) => `<span class="odv-wrap">${esc([s.evenements.length ? '★ ' + s.evenements.map(e => e.groupe).join(', ') : '', s.vols.length ? `✈ ${s.vols.length} vol(s) posé(s)` : '', s.pilotes.some(p => p.commentaire) ? '✎ horaires en commentaire' : ''].filter(Boolean).join(' · ') || '—')}</span>`
       }],
       defaultSortKey: 'n',
@@ -965,7 +973,7 @@
     render();
   }
   /** Bouton « Missions du registre… » d'un créneau à plusieurs pilotes (famille facultative). */
-  const pickButton = (s, fam = '', short = false) => s.n >= 2 ? `<button type="button" class="odv-pick-btn" data-pick="${s.jourIndex}${s.creneauIndex}" data-fam="${esc(fam)}"${centreOn() ? (short ? ' title="Missions du registre…"' : '') : ' disabled title="Centre verrouillé : l’activer dans Paramètres › Centre (CPCO)"'}>${short ? 'Registre…' : 'Missions du registre…'}</button>` : '';
+  const pickButton = (s, fam = '', short = false) => s.n >= 2 ? `<button type="button" class="odv-pick-btn" data-pick="${s.jourIndex}${s.creneauIndex}" data-fam="${esc(fam)}"${centreOn() ? (short ? ' title="Missions du registre…"' : '') : ' disabled title="Centre verrouillé : l’activer dans Paramètres › Centre (CPCO)"'}>${short ? 'Planifier' : 'Missions du registre…'}</button>` : '';
   document.addEventListener('click', e => {
     const c = e.target.closest('[data-odv-slot]');
     if (!c) return;
@@ -1022,9 +1030,10 @@
         html: v => v.length ? v.map(t => tri(t, null, false)).join(' ') : '—'
       }, {
         key: 'sims',
-        label: 'Sim.',
+        label: 'Simulateurs communs',
+        icon: 'layers',
         sortValue: r => r.slot.simsCommuns.length,
-        html: (v, r) => window.MissionAssignments?.simChips(r.slot.simsCommuns) || '—'
+        html: (v, r) => `<span class="odv-sims">${window.MissionAssignments?.simChips(r.slot.simsCommuns) || '—'}</span>`
       }, {
         key: 'score',
         label: 'Score',
@@ -1032,7 +1041,8 @@
         html: (v, r) => `<span title="${esc(r.calcul)}">${esc(v)}</span>`
       }, {
         key: 'registre',
-        label: 'Registre',
+        label: 'Planifier (missions du registre)',
+        icon: 'clipboard',
         sortValue: r => r.slot.n,
         html: (v, r) => pickButton(r.slot, r.famille, true) || '—'
       }, {
