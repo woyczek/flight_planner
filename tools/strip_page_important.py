@@ -10,6 +10,8 @@ Usage (à la racine du dépôt) :
     python tools/strip_page_important.py shared/mission_core/core.css [--check]
     --bump : au lieu de les retirer, convertit les !important en règles renforcées « :not(#imp) » (avant la mise en
              couche : rendu inchangé entre règles de l'application ; voir bump_css)
+    --designs (avec --bump) : feuilles des designs, règles des designs comprises (étape 4 : rendu inchangé entre
+             règles des designs ; un !important qui bat un style en ligne reste, suivi de /* garder */)
 
 Concerné : les blocs <style> de la page (ou la feuille .css donnée), sauf les règles propres aux designs (sélecteur
 html[data-skeuo…], html[data-design…], html[data-tone…], html[data-decor…] : côté habillage, traitées avec les designs)
@@ -86,11 +88,12 @@ def bump_selector(sel):
     return ',\n'.join(out)
 
 
-def bump_css(css):
-    """(css où les !important des règles de l'application deviennent des règles renforcées, nombre converti)."""
+def bump_css(css, designs=False):
+    """(css où les !important deviennent des règles renforcées, nombre converti) ; designs : règles des designs
+    comprises (feuilles des designs, étape 4 : ordre entre règles des designs inchangé)."""
     out, n = [], 0
     for b in blocs(css):
-        if est_design(b) or b.lstrip().startswith('@') or '{' not in b:
+        if (est_design(b) and not designs) or b.lstrip().startswith('@') or '{' not in b:
             out.append(b)
             continue
         head, body = b.split('{', 1)
@@ -123,7 +126,7 @@ def main():
         p = os.path.join(ROOT, rel)
         s = io.open(p, encoding='utf-8', newline='').read()
         total = 0
-        conv = bump_css if '--bump' in sys.argv else strip_css
+        conv = (lambda c: bump_css(c, designs='--designs' in sys.argv)) if '--bump' in sys.argv else strip_css
         if rel.endswith('.css'):
             t, total = conv(s)
         else:
@@ -135,7 +138,7 @@ def main():
             t = re.sub(r'<style([^>]*)>(.*?)</style>', st, s, flags=re.S)
         if not check and t != s:
             io.open(p, 'w', encoding='utf-8', newline='').write(t)
-        print(f'{rel} : {total} !important {"converti(s)" if conv is bump_css else "retiré(s)"}{" (essai)" if check else ""}')
+        print(f'{rel} : {total} !important {"converti(s)" if '--bump' in sys.argv else "retiré(s)"}{" (essai)" if check else ""}')
 
 
 if __name__ == '__main__':

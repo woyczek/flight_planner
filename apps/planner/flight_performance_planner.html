@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Flight Performance & Fuel Planner</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=33766a66">
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=1b40bb6b">
 <script src="../../repository_tree?v=e86e8e5c"></script>
 <style data-layer="app">
 @layer app {
@@ -911,17 +911,21 @@ abbr[title] {
 /* ================================================================================================ CADRANS DU PLANIFICATEUR
    Cadrans réalistes (shared/flight_instruments.js) : le boîtier est dessiné dans le SVG ; ombre portée du boîtier. */
 html[data-skeuo] .fp-gauge svg {
-  background: none !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
   overflow: visible;
   filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, .7)) drop-shadow(0 6px 8px rgba(0, 0, 0, .45))
 }
+html[data-skeuo] .fp-gauge svg:not(#imp) {
+  background: none;
+  box-shadow: none;
+  border-radius: 0
+}
 /* ombre recréée sur la silhouette du boîtier (contact + portée) */
 html[data-skeuo] .fp-fuel-mode {
-  background: #0d0e10 !important;
-  border: 1px solid currentColor !important;
   box-shadow: inset 0 1px 3px #000
+}
+html[data-skeuo] .fp-fuel-mode:not(#imp) {
+  background: #0d0e10;
+  border: 1px solid currentColor
 }
 /* ================================================================================================ PLANIFICATEUR : GRAPHIQUES ET CURSEURS
    Graphiques du devis carburant (svg.opt-chart) en écran d'instrument, curseurs verticaux (input.vr) en commandes :
@@ -934,26 +938,26 @@ html[data-skeuo] svg.opt-chart {
   border-radius: var(--sk-chart-radius);
   box-shadow: var(--sk-chart-shadow)
 }
-html[data-skeuo] svg.opt-chart .grid-line {
-  stroke: var(--sk-chart-grid) !important
+html[data-skeuo] svg.opt-chart .grid-line:not(#imp) {
+  stroke: var(--sk-chart-grid)
 }
-html[data-skeuo] svg.opt-chart .axis {
-  stroke: var(--sk-chart-axis) !important
+html[data-skeuo] svg.opt-chart .axis:not(#imp) {
+  stroke: var(--sk-chart-axis)
 }
-html[data-skeuo] svg.opt-chart text {
-  fill: var(--sk-chart-text) !important
+html[data-skeuo] svg.opt-chart text:not(#imp) {
+  fill: var(--sk-chart-text)
 }
 html[data-design-base="cabinet"] svg.opt-chart .grid-line {
   stroke-dasharray: 2 4
 }
-html[data-design-base="cabinet"] svg.opt-chart .axis {
-  stroke-width: 1.6 !important
+html[data-design-base="cabinet"] svg.opt-chart .axis:not(#imp) {
+  stroke-width: 1.6
 }
-html[data-design-base="cabinet"] svg.opt-chart text {
-  font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif !important
+html[data-design-base="cabinet"] svg.opt-chart text:not(#imp) {
+  font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif
 }
-html[data-design="field"] svg.opt-chart text {
-  font-family: Bahnschrift, "Arial Narrow", ui-monospace, monospace !important
+html[data-design="field"] svg.opt-chart text:not(#imp) {
+  font-family: Bahnschrift, "Arial Narrow", ui-monospace, monospace
 }
 html[data-design="field"] svg.opt-chart :is(path, polyline, circle) {
   filter: drop-shadow(0 0 2px rgba(140, 255, 160, .45))
@@ -991,13 +995,15 @@ html[data-skeuo] .vslider input.vr::-webkit-slider-thumb {
   box-shadow: var(--sk-thumb-shadow)
 }
 /* planificateur : bouton « épingler déplié » du bloc Résultat, icône à la taille des autres outils */
-html[data-skeuo] .repo-block-tools .fp-result-pin svg {
-  width: 18px !important;
-  height: 18px !important
+html[data-skeuo] .repo-block-tools .fp-result-pin svg:not(#imp) {
+  width: 18px;
+  height: 18px
 }
 html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"] {
-  background-color: rgba(255, 255, 255, .18) !important;
   opacity: 1
+}
+html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp) {
+  background-color: rgba(255, 255, 255, .18)
 }
 </style>
 </head>
@@ -1078,7 +1084,7 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"] {
 
 <!-- navigation (en-tête, barre latérale) avant les scripts de calcul : la barre et la marge du contenu paraissent tout de suite -->
 <script src="../../shared/kit.js?v=79889dfe"></script>
-<script src="../../shared/repository_nav.js?v=dd41dd3c"></script>
+<script src="../../shared/repository_nav.js?v=a48e9ea6"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=4737efea"></script>
 <script src="../../AircraftDB/aircraft_icons.js"></script>
 <script src="../../AircraftDB/aircraft_perf.js"></script>

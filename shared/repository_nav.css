@@ -639,15 +639,15 @@ html[data-cpco="off"] .cpco-only {
 }
 /* règles propres aux designs : hors couche (au-dessus de l'application) */
 /* jeux skeuomorphes (icônes de 50 px) : entrées resserrées, pour tenir dans une fenêtre de 800 px */
-html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-item {
-  padding: 5px 2px !important;
-  gap: 2px !important
+html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-item:not(#imp) {
+  padding: 5px 2px;
+  gap: 2px
 }
-html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-brand {
-  min-height: 68px !important
+html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-brand:not(#imp) {
+  min-height: 68px
 }
-html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-sep:not(.repo-sidenav-bottom) {
-  margin: 6px 14px !important
+html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-sep:not(.repo-sidenav-bottom):not(#imp) {
+  margin: 6px 14px
 }
 /* jeux skeuomorphes : images posées dès la construction de la barre (taille réservée : pas de décalage) ; tracé masqué */
 html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-ic {

@@ -347,8 +347,8 @@ code.mt-chg {
 }
 }
 /* règles propres aux designs : hors couche (au-dessus de l'application) */
-html[data-design="field"] .mt-block :is(button.secondary, .mt-file) {
-  background: linear-gradient(#26364e, #0f1a2a) !important;
-  color: #eef0e6 !important;
-  border-color: #0b0d08 !important
+html[data-design="field"] .mt-block :is(button.secondary, .mt-file):not(#imp) {
+  background: linear-gradient(#26364e, #0f1a2a);
+  color: #eef0e6;
+  border-color: #0b0d08
 }

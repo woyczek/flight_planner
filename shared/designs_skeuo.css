@@ -77,7 +77,6 @@ html[data-design-base="cabinet"] {
   --cab-field: #fbf5e6;
   --cab-screw: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cdefs%3E%3CradialGradient id='g' cx='.35' cy='.3' r='.8'%3E%3Cstop offset='0' stop-color='%23fff4c8'/%3E%3Cstop offset='.45' stop-color='%23c9a24a'/%3E%3Cstop offset='1' stop-color='%235a4012'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='10' cy='10.6' r='8.6' fill='%233a2a0c' opacity='.5'/%3E%3Ccircle cx='10' cy='10' r='8' fill='url(%23g)'/%3E%3Cpath d='M5 13 15 7' stroke='%234a3510' stroke-width='1.8' stroke-linecap='round'/%3E%3Cpath d='M5.3 13.8 15.3 7.8' stroke='%23fff0bd' stroke-width='.6' stroke-linecap='round' opacity='.7'/%3E%3C/svg%3E");
   --repo-surface: #efe3c4;
-  background: #3a2112 url("textures/leather-brown.webp?v=45953b4a") center/256px !important;
   /* jetons des composants communs (section COMPOSANTS COMMUNS) */
   --sk-ink: var(--cab-ink);
   --sk-ink-2: var(--cab-ink-2);
@@ -203,7 +202,10 @@ html[data-design-base="cabinet"] {
   --sk-thumb-radius: 50%;
   --sk-thumb-border: 1px solid #3a2808;
   --sk-thumb-bg: repeating-conic-gradient(rgba(0, 0, 0, .18) 0 6deg, transparent 6deg 12deg), radial-gradient(circle at 35% 30%, #fff3c4, #d6ae55 45%, #7a5520);
-  --sk-thumb-shadow: 0 2px 3px rgba(0, 0, 0, .6), inset 0 1px 1px rgba(255, 255, 255, .6);
+  --sk-thumb-shadow: 0 2px 3px rgba(0, 0, 0, .6), inset 0 1px 1px rgba(255, 255, 255, .6)
+}
+html[data-design-base="cabinet"]:not(#imp) {
+  background: #3a2112 url("textures/leather-brown.webp?v=45953b4a") center/256px
 }
 html[data-design-base="cabinet"][data-tone="dark"] {
   --sk-code-bg: #141a21;
@@ -226,15 +228,17 @@ html[data-design-base="cabinet"][data-tone="dark"] {
 /* cadre de la page (designs à cadre) : marge, fond et ombre par jetons (--sk-page-*) ; encre du design */
 html[data-skeuo="frame"] body {
   position: relative;
-  margin-top: var(--sk-page-margin) !important;
-  margin-bottom: var(--sk-page-margin) !important;
-  margin-left: var(--sk-page-margin) !important;
-  margin-right: var(--sk-page-margin) !important;
-  padding-top: 12px !important;
   border-radius: 14px;
-  background: var(--sk-page-bg) !important;
   color: var(--sk-ink);
   box-shadow: var(--sk-page-shadow)
+}
+html[data-skeuo="frame"] body:not(#imp) {
+  margin-top: var(--sk-page-margin);
+  margin-bottom: var(--sk-page-margin);
+  margin-left: var(--sk-page-margin);
+  margin-right: var(--sk-page-margin);
+  padding-top: 12px;
+  background: var(--sk-page-bg) !important /* garder : fond posé en ligne (style) sur body par les pages */
 }
 html[data-design-base="cabinet"][data-decor="full"]::before {
   content: "";
@@ -263,8 +267,10 @@ html[data-skeuo="frame"][data-decor="full"] .repo-header::before {
   background: var(--sk-corner-screw) var(--sk-header-screw-at) var(--sk-header-screw-at)/var(--sk-header-screw-size) no-repeat, var(--sk-corner-screw) right var(--sk-header-screw-at) top var(--sk-header-screw-at)/var(--sk-header-screw-size) no-repeat, var(--sk-corner-screw) var(--sk-header-screw-at) calc(100% - var(--sk-header-screw-at))/var(--sk-header-screw-size) no-repeat, var(--sk-corner-screw) right var(--sk-header-screw-at) bottom var(--sk-header-screw-at)/var(--sk-header-screw-size) no-repeat
 }
 html[data-design-base="cabinet"] .repo-header-subtitle {
-  font-style: italic;
-  color: color-mix(in srgb, var(--cab-cream) 85%, transparent) !important
+  font-style: italic
+}
+html[data-design-base="cabinet"] .repo-header-subtitle:not(#imp) {
+  color: color-mix(in srgb, var(--cab-cream) 85%, transparent)
 }
 /* emblème de l'en-tête (designs à cadre) : taille, marges et ombre par jetons (--sk-emblem-*) */
 html[data-skeuo="frame"] .repo-header-emblem {
@@ -282,8 +288,8 @@ html[data-skeuo="frame"] .repo-header-emblem svg {
 html[data-design-base="cabinet"] .repo-header :is(button, select, .headerButton):not(.repo-menu-button):not(.repo-language-button) {
   font-family: "Palatino Linotype", Georgia, serif
 }
-html[data-design-base="cabinet"] :is(.repo-menu, .repo-language-menu) {
-  box-shadow: 0 10px 24px rgba(0, 0, 0, .45) !important
+html[data-design-base="cabinet"] :is(.repo-menu, .repo-language-menu):not(#imp) {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .45)
 }
 /* blocs : parchemin serti dans un cadre de cuir brun piqué, vis laiton aux coins (fond : panneaux par thème, design_deco.js).
    Cuir : bord arrondi (lumière en haut et à gauche, ombre en bas et à droite, dégradés sur la bordure), parchemin posé
@@ -299,9 +305,9 @@ html[data-design-base="cabinet"] .repo-block {
     position: relative
   }
 }
-html[data-design="cabinet"][data-decor="full"] .repo-block {
-  outline: 1.6px dashed rgba(238, 210, 156, .78) !important;
-  outline-offset: -6px !important
+html[data-design="cabinet"][data-decor="full"] .repo-block:not(#imp) {
+  outline: 1.6px dashed rgba(238, 210, 156, .78);
+  outline-offset: -6px
 }
 html[data-skeuo="frame"][data-decor="full"] .repo-block::after {
   content: "";
@@ -328,15 +334,17 @@ html[data-design="flightlog"][data-decor="full"] .repo-block::before {
 html[data-skeuo="frame"] :is(.repo-block-titles, .repo-block-heading)>h2 {
   position: relative;
   display: inline-block;
-  padding: var(--sk-plate-padding) !important;
   border-radius: 4px;
-  font: var(--sk-plate-font) !important;
   letter-spacing: var(--sk-plate-spacing);
   text-transform: uppercase;
-  color: var(--sk-plate-ink) !important;
   text-shadow: var(--sk-plate-text-shadow);
-  background: var(--sk-plate-bg) !important;
   box-shadow: var(--sk-plate-shadow)
+}
+html[data-skeuo="frame"] :is(.repo-block-titles, .repo-block-heading)>h2:not(#imp) {
+  padding: var(--sk-plate-padding);
+  font: var(--sk-plate-font);
+  color: var(--sk-plate-ink);
+  background: var(--sk-plate-bg)
 }
 html[data-skeuo="frame"] :is(.repo-block-titles, .repo-block-heading)>h2::before,
 html[data-skeuo="frame"] :is(.repo-block-titles, .repo-block-heading)>h2::after {
@@ -368,8 +376,8 @@ html[data-skeuo="frame"][data-decor="full"] .repo-card::after {
 }
 /* textes, champs */
 /* textes des blocs (designs à cadre) : libellés et intertitres, petits textes (jetons --sk-label-ink, --sk-ink-2) */
-html[data-skeuo="frame"] .repo-block :is(label, legend, th, h3, h4) {
-  color: var(--sk-label-ink) !important
+html[data-skeuo="frame"] .repo-block :is(label, legend, th, h3, h4):not(#imp) {
+  color: var(--sk-label-ink)
 }
 /* gris secondaire des pages (var(--muted), pensé pour le design standard) : encre secondaire du design dans les blocs */
 html[data-skeuo="frame"] .repo-block {
@@ -385,17 +393,19 @@ html[data-skeuo="frame"] .repo-block :is(p, li, td, summary) {
 html[data-skeuo="frame"] .repo-block :is(label, legend, th, h3, h4) {
   font-family: var(--sk-label-family, inherit)
 }
-html[data-skeuo="frame"] .repo-block :is(.small, .note, .muted, .hint) {
-  color: var(--sk-ink-2) !important
+html[data-skeuo="frame"] .repo-block :is(.small, .note, .muted, .hint):not(#imp) {
+  color: var(--sk-ink-2)
 }
 /* composants des designs à cadre (Cabinet, Carnet de vol, Durci) : une règle, valeurs par jetons ; facultatifs (repli :
    hérité) : --sk-card-title-family / -case / -spacing, --sk-pick-case / -spacing, --sk-step-family */
 html[data-skeuo="frame"] .repo-block-step {
-  border-radius: var(--sk-step-radius) !important;
-  background: var(--sk-step-bg) !important;
-  color: var(--sk-step-ink) !important;
-  box-shadow: var(--sk-step-shadow) !important;
   font-family: var(--sk-step-family, inherit)
+}
+html[data-skeuo="frame"] .repo-block-step:not(#imp) {
+  border-radius: var(--sk-step-radius);
+  background: var(--sk-step-bg);
+  color: var(--sk-step-ink);
+  box-shadow: var(--sk-step-shadow)
 }
 html[data-skeuo="frame"] .repo-card {
   position: relative
@@ -403,14 +413,16 @@ html[data-skeuo="frame"] .repo-card {
 html[data-skeuo="frame"] .repo-card-titles>:is(strong, h3) {
   font-family: var(--sk-card-title-family, inherit);
   text-transform: var(--sk-card-title-case, inherit);
-  letter-spacing: var(--sk-card-title-spacing, inherit);
-  color: var(--sk-card-title-ink) !important
+  letter-spacing: var(--sk-card-title-spacing, inherit)
 }
-html[data-skeuo="frame"] .repo-card-subtitle {
-  color: var(--sk-card-sub-ink) !important
+html[data-skeuo="frame"] .repo-card-titles>:is(strong, h3):not(#imp) {
+  color: var(--sk-card-title-ink)
 }
-html[data-skeuo="frame"] .repo-dropzone {
-  color: var(--sk-drop-ink) !important
+html[data-skeuo="frame"] .repo-card-subtitle:not(#imp) {
+  color: var(--sk-card-sub-ink)
+}
+html[data-skeuo="frame"] .repo-dropzone:not(#imp) {
+  color: var(--sk-drop-ink)
 }
 html[data-skeuo="frame"] .repo-dropzone-pick {
   font-weight: 700;
@@ -418,8 +430,8 @@ html[data-skeuo="frame"] .repo-dropzone-pick {
   letter-spacing: var(--sk-pick-spacing, inherit)
 }
 /* couleur : --sk-pick-ink (règle commune) */
-html[data-skeuo="frame"] .repo-dropzone-state {
-  color: var(--sk-drop-state-ink) !important
+html[data-skeuo="frame"] .repo-dropzone-state:not(#imp) {
+  color: var(--sk-drop-state-ink)
 }
 html[data-skeuo="frame"] .repo-notice>.repo-icon {
   color: var(--sk-notice-icon)
@@ -428,37 +440,41 @@ html[data-skeuo="frame"] .repo-block :is(input:not([type=checkbox]):not([type=ra
   font-variant-numeric: tabular-nums
 }
 html[data-skeuo="frame"] :is(input, select, textarea, button):focus-visible {
-  outline: 2px solid var(--sk-focus) !important;
   outline-offset: 2px
 }
-html[data-skeuo="frame"] .repo-footer {
-  box-shadow: var(--sk-footer-shadow) !important
+html[data-skeuo="frame"] :is(input, select, textarea, button):focus-visible:not(#imp) {
+  outline: 2px solid var(--sk-focus)
 }
-html[data-skeuo="frame"] .repo-footer a {
-  color: var(--sk-footer-link) !important
+html[data-skeuo="frame"] .repo-footer:not(#imp) {
+  box-shadow: var(--sk-footer-shadow)
 }
-html[data-design-base="cabinet"] .repo-block textarea {
-  background: repeating-linear-gradient(transparent 0 23px, rgba(29, 53, 87, .1) 23px 24px), var(--cab-field) !important
+html[data-skeuo="frame"] .repo-footer a:not(#imp) {
+  color: var(--sk-footer-link)
+}
+html[data-design-base="cabinet"] .repo-block textarea:not(#imp) {
+  background: repeating-linear-gradient(transparent 0 23px, rgba(29, 53, 87, .1) 23px 24px), var(--cab-field) !important /* garder : fond transparent en ligne (studio, champs de route) */
 }
 html[data-design-base="cabinet"] .repo-block :is(table) {
   background: color-mix(in srgb, var(--cab-field) 60%, transparent)
 }
 /* boutons : cuir marine à bord laiton (principal : bandeau du thème assombri), parchemin (secondaire), cuir brun (discret) */
-html[data-skeuo="frame"] button:where(:not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-sidenav-item):not(.col-split):not(.repo-block-tools button):not([role=menuitem]):not(.repo-icon-only):not(.repo-plain)),
-html[data-skeuo="frame"] .buttonLink,
-html[data-skeuo="frame"] a.mc-button {
-  font-family: var(--sk-btn-family) !important
+html[data-skeuo="frame"] button:where(:not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-sidenav-item):not(.col-split):not(.repo-block-tools button):not([role=menuitem]):not(.repo-icon-only):not(.repo-plain)):not(#imp),
+html[data-skeuo="frame"] .buttonLink:not(#imp),
+html[data-skeuo="frame"] a.mc-button:not(#imp) {
+  font-family: var(--sk-btn-family)
 }
 /* convention commune des boutons : 1er bouton de l'en-tête principal, les suivants secondaires ; liens secondaires et
    « Ajouter des fichiers » secondaires (mêmes éléments dans tous les designs) */
 html[data-design-base="cabinet"] :is(button.secondary, a.secondary, label.rg-file, .repo-header button.headerButton:not(:first-of-type)):not(.repo-block-tools button):not(.repo-menu-button):not(.repo-language-button) {
-  color: #0b1830 !important;
-  font-weight: 700 !important;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, .75);
-  background: #efe3c4 url("textures/parchment.webp?v=c0677c03") center/300px !important
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .75)
 }
-html[data-design-base="cabinet"] button:is(.ghost, .danger):not(.repo-block-tools button) {
-  background: #4a2712 url("textures/leather-brown.webp?v=45953b4a") center/200px !important
+html[data-design-base="cabinet"] :is(button.secondary, a.secondary, label.rg-file, .repo-header button.headerButton:not(:first-of-type)):not(.repo-block-tools button):not(.repo-menu-button):not(.repo-language-button):not(#imp) {
+  color: #0b1830 !important /* garder : liens secondaires des CR en style en ligne « color: inherit » */;
+  font-weight: 700;
+  background: #efe3c4 url("textures/parchment.webp?v=c0677c03") center/300px
+}
+html[data-design-base="cabinet"] button:is(.ghost, .danger):not(.repo-block-tools button):not(#imp) {
+  background: #4a2712 url("textures/leather-brown.webp?v=45953b4a") center/200px
 }
 html[data-design-base="cabinet"] .repo-header button.headerButton {
   font-size: 13px
@@ -515,7 +531,6 @@ html[data-design="field"] {
   --fd-unit: var(--repo-accent);
   --fd-screw: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cdefs%3E%3CradialGradient id='g' cx='.35' cy='.3' r='.85'%3E%3Cstop offset='0' stop-color='%23f2f4f0'/%3E%3Cstop offset='.5' stop-color='%23959a90'/%3E%3Cstop offset='1' stop-color='%23353a30'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='10' cy='10.6' r='8.6' fill='%23000' opacity='.55'/%3E%3Ccircle cx='10' cy='10' r='8' fill='url(%23g)'/%3E%3Cpath d='M10 5v10M5 10h10' stroke='%232a2e25' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
   --repo-surface: #4a5040;
-  background: #cfc4a4 url("textures/topo.webp?v=7b703ce4") center/512px !important;
   /* jetons des composants communs */
   --sk-ink: var(--fd-text);
   --sk-ink-2: var(--fd-text-2);
@@ -641,29 +656,32 @@ html[data-design="field"] {
   --sk-thumb-radius: 3px;
   --sk-thumb-border: 1px solid #0b0d08;
   --sk-thumb-bg: linear-gradient(transparent 45%, rgba(0, 0, 0, .55) 45% 55%, transparent 55%), linear-gradient(#77805f, #3a4030 50%, #262a1e);
-  --sk-thumb-shadow: 0 2px 3px rgba(0, 0, 0, .7), inset 0 1px 0 rgba(255, 255, 255, .3);
+  --sk-thumb-shadow: 0 2px 3px rgba(0, 0, 0, .7), inset 0 1px 0 rgba(255, 255, 255, .3)
+}
+html[data-design="field"]:not(#imp) {
+  background: #cfc4a4 url("textures/topo.webp?v=7b703ce4") center/512px
 }
 html[data-design="field"] body {
   font-family: Bahnschrift, "DIN Alternate", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif
 }
-html[data-design="field"] :is(.repo-menu-button, .repo-language-button) {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18) !important
+html[data-design="field"] :is(.repo-menu-button, .repo-language-button):not(#imp) {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18)
 }
 /* blocs : panneaux d'acier gris-vert usé, vis cruciformes, bande d'unité (couleur du thème) à gauche */
-html[data-design="field"] .repo-dropzone:hover {
-  border-color: var(--fd-led) !important;
-  border-style: solid !important
+html[data-design="field"] .repo-dropzone:hover:not(#imp) {
+  border-color: var(--fd-led);
+  border-style: solid
 }
 /* Durci éclaire aussi gras, italique et définitions (blocs sombres) */
 html[data-design="field"] .repo-block :is(strong, b, em, dt, dd) {
   color: var(--fd-text)
 }
-html[data-design="field"] .repo-block :is(table, thead, tbody, tr, th, td) {
-  background-color: transparent !important;
-  border-color: #2a2e22 !important
+html[data-design="field"] .repo-block :is(table, thead, tbody, tr, th, td):not(#imp) {
+  background-color: transparent;
+  border-color: #2a2e22
 }
-html[data-design="field"] .repo-block thead th {
-  background-color: rgba(10, 12, 8, .45) !important
+html[data-design="field"] .repo-block thead th:not(#imp) {
+  background-color: rgba(10, 12, 8, .45)
 }
 html[data-design="field"] .repo-block a {
   color: var(--fd-led)
@@ -676,11 +694,11 @@ html[data-design="field"] select option {
   color: #e6ecd6
 }
 /* boutons : noir canon de fusil ; principal et en-tête : vert lumineux à voyant ; secondaire : bleu nuit */
-html[data-design="field"] :is(button.primary, .repo-header button.headerButton:first-of-type, button[data-icon="sparkles"]) {
-  background: linear-gradient(#3fa83f, #146b1c) !important;
-  color: #fff !important;
-  border-color: transparent !important;
-  box-shadow: inset 0 1px 0 rgba(220, 255, 200, .45), 0 0 0 1px #0b2a0b, 0 0 0 3px #4a4f40, 0 0 14px rgba(80, 255, 90, .4), 0 3px 5px rgba(0, 0, 0, .6) !important
+html[data-design="field"] :is(button.primary, .repo-header button.headerButton:first-of-type, button[data-icon="sparkles"]):not(#imp) {
+  background: linear-gradient(#3fa83f, #146b1c);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: inset 0 1px 0 rgba(220, 255, 200, .45), 0 0 0 1px #0b2a0b, 0 0 0 3px #4a4f40, 0 0 14px rgba(80, 255, 90, .4), 0 3px 5px rgba(0, 0, 0, .6)
 }
 html[data-design="field"] :is(button.primary, .repo-header button.headerButton:first-of-type, button[data-icon="sparkles"])::after {
   content: "";
@@ -693,12 +711,12 @@ html[data-design="field"] :is(button.primary, .repo-header button.headerButton:f
   box-shadow: 0 0 6px #6dff5e;
   vertical-align: 1px
 }
-html[data-design="field"] :is(button.secondary, a.secondary, label.rg-file):not(.repo-block-tools button),
-html[data-design="field"] .repo-header button.headerButton {
-  background: linear-gradient(#26364e, #0f1a2a) !important
+html[data-design="field"] :is(button.secondary, a.secondary, label.rg-file):not(.repo-block-tools button):not(#imp),
+html[data-design="field"] .repo-header button.headerButton:not(#imp) {
+  background: linear-gradient(#26364e, #0f1a2a)
 }
-html[data-design="field"] button.danger {
-  background: linear-gradient(#7a2a20, #3c120c) !important
+html[data-design="field"] button.danger:not(#imp) {
+  background: linear-gradient(#7a2a20, #3c120c)
 }
 /* icônes « matière » : plaques d'acier vissées */
 /* barre latérale : noir mat, entrée active à voyant ; pied : barre d'état, voyant de sauvegarde, radar */
@@ -747,7 +765,6 @@ html[data-design="aqua"] {
   /* / verre blanc : 14,5:1 et 6,6:1 */
   --aq-gel: var(--repo-accent);
   --repo-surface: #f6f9fc;
-  background: linear-gradient(180deg, #e9eff5, #d9e3ec) !important;
   /* jetons des composants communs */
   --sk-ink: var(--aq-ink);
   --sk-ink-2: var(--aq-ink-2);
@@ -830,34 +847,45 @@ html[data-design="aqua"] {
   --sk-thumb-radius: 50%;
   --sk-thumb-border: 1px solid color-mix(in srgb, var(--aq-gel) 70%, #000);
   --sk-thumb-bg: radial-gradient(ellipse 60% 35% at 50% 28%, rgba(255, 255, 255, .95), rgba(255, 255, 255, 0) 70%), radial-gradient(circle at 50% 75%, color-mix(in srgb, var(--aq-gel) 45%, #fff), var(--aq-gel) 60%, color-mix(in srgb, var(--aq-gel) 70%, #000));
-  --sk-thumb-shadow: 0 2px 4px rgba(20, 40, 70, .45);
+  --sk-thumb-shadow: 0 2px 4px rgba(20, 40, 70, .45)
+}
+html[data-design="aqua"]:not(#imp) {
+  background: linear-gradient(180deg, #e9eff5, #d9e3ec)
 }
 html[data-design="aqua"] body {
-  background: transparent !important;
   color: var(--aq-ink);
   font-family: "Segoe UI Variable", "Segoe UI", -apple-system, "Helvetica Neue", Inter, system-ui, sans-serif
 }
-html[data-design="aqua"] .repo-header-subtitle,
-html[data-design="aqua"] .repo-language-label {
-  color: var(--aq-ink-2) !important
+html[data-design="aqua"] body:not(#imp) {
+  background: transparent !important /* garder : fond posé en ligne (style) sur body par les pages */
 }
-html[data-design="aqua"] :is(.repo-menu-button, .repo-language-button) {
-  box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 0, 0, .15) !important
+html[data-design="aqua"] .repo-header-subtitle:not(#imp),
+html[data-design="aqua"] .repo-language-label:not(#imp) {
+  color: var(--aq-ink-2)
+}
+html[data-design="aqua"] :is(.repo-menu-button, .repo-language-button):not(#imp) {
+  box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 0, 0, .15)
 }
 html[data-design="aqua"] :is(.repo-menu, .repo-language-menu) {
-  border-radius: 12px !important;
-  box-shadow: 0 14px 34px rgba(30, 50, 80, .25) !important;
   backdrop-filter: blur(10px)
 }
+html[data-design="aqua"] :is(.repo-menu, .repo-language-menu):not(#imp) {
+  border-radius: 12px;
+  box-shadow: 0 14px 34px rgba(30, 50, 80, .25)
+}
 html[data-design="aqua"] :is(.repo-block-titles, .repo-block-heading)>h2 {
-  color: var(--aq-ink) !important;
-  font-weight: 650 !important;
   letter-spacing: 0
 }
+html[data-design="aqua"] :is(.repo-block-titles, .repo-block-heading)>h2:not(#imp) {
+  color: var(--aq-ink);
+  font-weight: 650
+}
 html[data-design="aqua"] .repo-block :is(input, select, textarea):focus {
-  border-color: var(--aq-gel) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--aq-gel) 30%, transparent), inset 0 1px 2px rgba(20, 40, 70, .12) !important;
   outline: 0
+}
+html[data-design="aqua"] .repo-block :is(input, select, textarea):focus:not(#imp) {
+  border-color: var(--aq-gel);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--aq-gel) 30%, transparent), inset 0 1px 2px rgba(20, 40, 70, .12)
 }
 /* boutons : gel (couleur du thème) par défaut, verre clair (secondaire), ardoise (discret) */
 /* boutons en gel : jetons posés sur les boutons eux-mêmes (ils suivent --aq-gel du bouton : rouge des boutons « danger ») */
@@ -867,15 +895,17 @@ html[data-design="aqua"] :is(button, .buttonLink, a.mc-button) {
   --sk-btn-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 2px 5px color-mix(in srgb, var(--aq-gel) 40%, transparent)
 }
 html[data-design="aqua"] :is(button.secondary, a.secondary, label.rg-file, .repo-header button.headerButton:not(:first-of-type)):not(.repo-block-tools button) {
-  border-color: #9aa6b2 !important;
-  color: var(--aq-ink) !important;
-  text-shadow: 0 1px 0 #fff;
-  background: linear-gradient(#ffffff, #e9eef3 50%, #dde4eb 51%, #f1f4f7) !important;
-  box-shadow: inset 0 1px 0 #fff, 0 1px 3px rgba(0, 0, 0, .15) !important
+  text-shadow: 0 1px 0 #fff
 }
-html[data-design="aqua"] button.ghost:not(.repo-block-tools button) {
-  border-color: #3c4a58 !important;
-  background: linear-gradient(#7d8b99, #56646f 50%, #4a5763 51%, #6b7885) !important
+html[data-design="aqua"] :is(button.secondary, a.secondary, label.rg-file, .repo-header button.headerButton:not(:first-of-type)):not(.repo-block-tools button):not(#imp) {
+  border-color: #9aa6b2;
+  color: var(--aq-ink);
+  background: linear-gradient(#ffffff, #e9eef3 50%, #dde4eb 51%, #f1f4f7);
+  box-shadow: inset 0 1px 0 #fff, 0 1px 3px rgba(0, 0, 0, .15)
+}
+html[data-design="aqua"] button.ghost:not(.repo-block-tools button):not(#imp) {
+  border-color: #3c4a58;
+  background: linear-gradient(#7d8b99, #56646f 50%, #4a5763 51%, #6b7885)
 }
 html[data-design="aqua"] button.danger {
   --aq-gel: #d33a2c
@@ -900,7 +930,6 @@ html[data-design="aqua"][data-tone="dark"] {
   --aq-ink: #e6edf5;
   --aq-ink-2: #aebccb;
   --repo-surface: #26303b;
-  background: linear-gradient(180deg, #1b2129, #10151b) !important;
   --sk-header-border: 0 solid #0b0f14;
   --sk-header-bg: linear-gradient(rgba(255, 255, 255, .12), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, .2)), linear-gradient(rgba(20, 26, 34, .72), rgba(20, 26, 34, .72)), #d8dde2 url("textures/brushed-light.webp?v=6bef2cba") center/256px;
   --sk-header-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 6px 16px rgba(0, 0, 0, .45);
@@ -933,13 +962,19 @@ html[data-design="aqua"][data-tone="dark"] {
   --sk-chart-text: #aebccb;
   --sk-slider-track: linear-gradient(90deg, #10151b, #2a333d 60%, #10151b)
 }
+html[data-design="aqua"][data-tone="dark"]:not(#imp) {
+  background: linear-gradient(180deg, #1b2129, #10151b)
+}
 html[data-design="aqua"][data-tone="dark"] :is(.repo-menu-button, .repo-language-button),
 html[data-design="aqua"][data-tone="dark"] :is(button.secondary, a.secondary, label.rg-file, .repo-header button.headerButton:not(:first-of-type), a.headerButton):not(.repo-block-tools button) {
-  background: linear-gradient(#4a5663, #323c47 50%, #2a333d 51%, #3b4652) !important;
-  color: #e6edf5 !important;
-  border-color: #11161c !important;
-  text-shadow: 0 -1px 0 rgba(0, 0, 0, .5);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .15), 0 1px 3px rgba(0, 0, 0, .4) !important
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, .5)
+}
+html[data-design="aqua"][data-tone="dark"] :is(.repo-menu-button, .repo-language-button):not(#imp),
+html[data-design="aqua"][data-tone="dark"] :is(button.secondary, a.secondary, label.rg-file, .repo-header button.headerButton:not(:first-of-type), a.headerButton):not(.repo-block-tools button):not(#imp) {
+  background: linear-gradient(#4a5663, #323c47 50%, #2a333d 51%, #3b4652);
+  color: #e6edf5;
+  border-color: #11161c;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .15), 0 1px 3px rgba(0, 0, 0, .4)
 }
 html[data-design="aqua"][data-tone="dark"] .repo-footer {
   border-color: #2c3642
@@ -951,79 +986,85 @@ html[data-design="aqua"][data-tone="dark"] .repo-footer {
 /* titre de l'en-tête : encre et ombre (tous les designs à matières), police, largeur, capitales et interlettrage
    (designs à cadre ; défauts : ceux du navigateur) */
 html[data-skeuo] .repo-header h1 {
-  color: var(--sk-title-ink) !important;
   text-shadow: var(--sk-title-shadow)
 }
+html[data-skeuo] .repo-header h1:not(#imp) {
+  color: var(--sk-title-ink)
+}
 html[data-skeuo="frame"] .repo-header h1 {
-  font-family: var(--sk-title-family) !important;
   font-weight: 700;
   font-stretch: var(--sk-title-stretch, normal);
   text-transform: var(--sk-title-case, none);
   letter-spacing: var(--sk-title-spacing, normal)
 }
-html[data-skeuo] .repo-header {
-  border-radius: var(--sk-header-radius) !important;
-  border: var(--sk-header-border) !important;
-  border-bottom-width: var(--sk-header-bbw, 0px) !important;
-  margin: var(--sk-header-margin) !important;
-  color: var(--sk-header-ink) !important;
-  background: var(--sk-header-bg) !important;
-  box-shadow: var(--sk-header-shadow) !important
+html[data-skeuo="frame"] .repo-header h1:not(#imp) {
+  font-family: var(--sk-title-family)
 }
-html[data-skeuo] :is(.repo-menu-button, .repo-language-button) {
-  background: var(--sk-mbtn-bg) !important;
-  color: var(--sk-mbtn-ink) !important;
-  border: var(--sk-mbtn-border) !important;
-  border-radius: var(--sk-mbtn-radius) !important
+html[data-skeuo] .repo-header:not(#imp) {
+  border-radius: var(--sk-header-radius);
+  border: var(--sk-header-border);
+  border-bottom-width: var(--sk-header-bbw, 0px);
+  margin: var(--sk-header-margin);
+  color: var(--sk-header-ink);
+  background: var(--sk-header-bg);
+  box-shadow: var(--sk-header-shadow)
 }
-html[data-skeuo] :is(.repo-menu, .repo-language-menu) {
-  background: var(--sk-menu-bg) !important;
-  color: var(--sk-menu-ink) !important;
-  border: var(--sk-menu-border) !important
+html[data-skeuo] :is(.repo-menu-button, .repo-language-button):not(#imp) {
+  background: var(--sk-mbtn-bg);
+  color: var(--sk-mbtn-ink);
+  border: var(--sk-mbtn-border);
+  border-radius: var(--sk-mbtn-radius)
 }
-html[data-skeuo] .repo-menu :is(a, button, summary) {
-  color: var(--sk-menu-ink) !important
+html[data-skeuo] :is(.repo-menu, .repo-language-menu):not(#imp) {
+  background: var(--sk-menu-bg);
+  color: var(--sk-menu-ink);
+  border: var(--sk-menu-border)
 }
-html[data-skeuo] .repo-block {
-  border: var(--sk-block-border) !important;
-  border-left: var(--sk-block-border-left, var(--sk-block-border)) !important;
-  border-radius: var(--sk-block-radius) !important;
-  background: var(--sk-block-bg) !important;
-  color: var(--sk-ink) !important;
-  box-shadow: var(--sk-block-shadow) !important
+html[data-skeuo] .repo-menu :is(a, button, summary):not(#imp) {
+  color: var(--sk-menu-ink)
 }
-html[data-skeuo] .repo-block-subtitle {
-  color: var(--sk-ink-2) !important
+html[data-skeuo] .repo-block:not(#imp) {
+  border: var(--sk-block-border);
+  border-left: var(--sk-block-border-left, var(--sk-block-border));
+  border-radius: var(--sk-block-radius);
+  background: var(--sk-block-bg);
+  color: var(--sk-ink);
+  box-shadow: var(--sk-block-shadow)
 }
-html[data-skeuo] .repo-card {
-  background: var(--sk-card-bg) !important;
-  border: var(--sk-card-border) !important;
-  border-radius: var(--sk-card-radius) !important;
-  box-shadow: var(--sk-card-shadow) !important;
-  color: var(--sk-ink) !important
+html[data-skeuo] .repo-block-subtitle:not(#imp) {
+  color: var(--sk-ink-2)
 }
-html[data-skeuo] .repo-dropzone {
-  background: var(--sk-drop-bg) !important;
-  border: var(--sk-drop-border) !important;
-  border-radius: var(--sk-drop-radius) !important;
-  box-shadow: var(--sk-drop-shadow) !important
+html[data-skeuo] .repo-card:not(#imp) {
+  background: var(--sk-card-bg);
+  border: var(--sk-card-border);
+  border-radius: var(--sk-card-radius);
+  box-shadow: var(--sk-card-shadow);
+  color: var(--sk-ink)
+}
+html[data-skeuo] .repo-dropzone:not(#imp) {
+  background: var(--sk-drop-bg);
+  border: var(--sk-drop-border);
+  border-radius: var(--sk-drop-radius);
+  box-shadow: var(--sk-drop-shadow)
 }
 html[data-skeuo] .repo-notice {
-  background: var(--sk-notice-bg) !important;
-  border: var(--sk-notice-border) !important;
-  border-left: var(--sk-notice-border-left, var(--sk-notice-border)) !important;
-  border-radius: var(--sk-notice-radius) !important;
-  color: var(--sk-notice-ink) !important;
-  box-shadow: var(--sk-notice-shadow, none) !important;
   outline: var(--sk-notice-outline, none);
   outline-offset: var(--sk-notice-outline-offset, 0)
 }
-html[data-skeuo] .repo-block :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select, textarea) {
-  background: var(--sk-input-bg) !important;
-  color: var(--sk-input-ink) !important;
-  border: var(--sk-input-border) !important;
-  border-radius: var(--sk-input-radius) !important;
-  box-shadow: var(--sk-input-shadow) !important
+html[data-skeuo] .repo-notice:not(#imp) {
+  background: var(--sk-notice-bg);
+  border: var(--sk-notice-border);
+  border-left: var(--sk-notice-border-left, var(--sk-notice-border));
+  border-radius: var(--sk-notice-radius);
+  color: var(--sk-notice-ink);
+  box-shadow: var(--sk-notice-shadow, none)
+}
+html[data-skeuo] .repo-block :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select, textarea):not(#imp) {
+  background: var(--sk-input-bg) !important /* garder : fond transparent en ligne (studio, champs de route) */;
+  color: var(--sk-input-ink);
+  border: var(--sk-input-border);
+  border-radius: var(--sk-input-radius);
+  box-shadow: var(--sk-input-shadow)
 }
 /* boutons : habillage du design (police : dans la section du design) */
 /* graisse : valeur par défaut du design, dans la couche app (les règles plus précises des pages la règlent) */
@@ -1037,12 +1078,16 @@ html[data-skeuo] button:where(:not([class*="maplibregl-ctrl"]):not(.repo-menu-bu
 html[data-skeuo] button:where(:not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-sidenav-item):not(.col-split):not(.repo-block-tools button):not([role=menuitem]):not(.repo-icon-only):not(.repo-plain)),
 html[data-skeuo] .buttonLink,
 html[data-skeuo] a.mc-button {
-  border: var(--sk-btn-border) !important;
-  border-radius: var(--sk-btn-radius) !important;
-  color: var(--sk-btn-ink) !important;
-  text-shadow: var(--sk-btn-text-shadow);
-  background: var(--sk-btn-bg) !important;
-  box-shadow: var(--sk-btn-shadow) !important
+  text-shadow: var(--sk-btn-text-shadow)
+}
+html[data-skeuo] button:where(:not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-sidenav-item):not(.col-split):not(.repo-block-tools button):not([role=menuitem]):not(.repo-icon-only):not(.repo-plain)):not(#imp),
+html[data-skeuo] .buttonLink:not(#imp),
+html[data-skeuo] a.mc-button:not(#imp) {
+  border: var(--sk-btn-border);
+  border-radius: var(--sk-btn-radius);
+  color: var(--sk-btn-ink);
+  background: var(--sk-btn-bg);
+  box-shadow: var(--sk-btn-shadow)
 }
 html[data-skeuo] button:not(:disabled):hover {
   filter: var(--sk-btn-hover)
@@ -1050,42 +1095,42 @@ html[data-skeuo] button:not(:disabled):hover {
 html[data-skeuo] button:disabled {
   filter: var(--sk-btn-disabled)
 }
-html[data-skeuo] .repo-block-tools button {
-  background: var(--sk-tool-bg) !important
+html[data-skeuo] .repo-block-tools button:not(#imp) {
+  background: var(--sk-tool-bg)
 }
-html[data-skeuo] .repo-sidenav {
-  background: var(--sk-sidenav-bg) !important;
-  border-right: var(--sk-sidenav-border) !important;
-  color: var(--sk-sidenav-ink) !important;
-  box-shadow: var(--sk-sidenav-shadow, none) !important
+html[data-skeuo] .repo-sidenav:not(#imp) {
+  background: var(--sk-sidenav-bg);
+  border-right: var(--sk-sidenav-border);
+  color: var(--sk-sidenav-ink);
+  box-shadow: var(--sk-sidenav-shadow, none)
 }
 html[data-skeuo="frame"] .repo-footer {
   position: relative
 }
-html[data-skeuo] .repo-footer {
-  margin: var(--sk-footer-margin) !important;
-  padding: var(--sk-footer-padding) !important;
-  background: var(--sk-footer-bg) !important;
-  color: var(--sk-footer-ink) !important
+html[data-skeuo] .repo-footer:not(#imp) {
+  margin: var(--sk-footer-margin);
+  padding: var(--sk-footer-padding);
+  background: var(--sk-footer-bg);
+  color: var(--sk-footer-ink)
 }
 
 /* ================================================================================================ ESPACEMENTS
    Blocs plus aérés que les pages d'origine (bordures et plaques épaisses) ; en-tête de bloc : icône, titre et outils
    alignés, marge sous la plaque ; médaillons et plaques d'icônes sans déborder sur le titre. */
-html[data-skeuo] .repo-block {
-  padding: 20px 22px 22px !important;
-  margin-bottom: 18px !important
+html[data-skeuo] .repo-block:not(#imp) {
+  padding: 20px 22px 22px;
+  margin-bottom: 18px
 }
-html[data-skeuo] .repo-block-heading-rich {
-  gap: 14px !important;
-  margin-bottom: 18px !important;
-  align-items: flex-start !important
+html[data-skeuo] .repo-block-heading-rich:not(#imp) {
+  gap: 14px;
+  margin-bottom: 18px;
+  align-items: flex-start
 }
-html[data-skeuo] .repo-block-subtitle {
-  margin-top: 8px !important
+html[data-skeuo] .repo-block-subtitle:not(#imp) {
+  margin-top: 8px
 }
-html[data-skeuo] .repo-card {
-  padding: 18px 20px !important
+html[data-skeuo] .repo-card:not(#imp) {
+  padding: 18px 20px
 }
 html[data-skeuo] .repo-card-head {
   gap: 12px;
@@ -1095,77 +1140,97 @@ html[data-skeuo] .repo-block-tools {
   align-self: flex-start
 }
 /* en-tête de bloc : icône, titre (plaque) et outils alignés en haut */
-html[data-skeuo] :is(.repo-block-titles, .repo-block-lead) {
-  align-self: flex-start !important
+html[data-skeuo] :is(.repo-block-titles, .repo-block-lead):not(#imp) {
+  align-self: flex-start
 }
-html[data-skeuo] .repo-block-lead {
-  align-items: flex-start !important
+html[data-skeuo] .repo-block-lead:not(#imp) {
+  align-items: flex-start
 }
 html[data-skeuo] :is(.repo-block, .repo-header, .repo-actionbar, .status-bar) :is(button, a.headerButton, .buttonLink):not(.repo-block-tools button):not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-icon-only):not([role=menuitem]):not(.repo-plain):not(td *) {
-  padding: 8px 16px !important;
   min-height: 38px
 }
+html[data-skeuo] :is(.repo-block, .repo-header, .repo-actionbar, .status-bar) :is(button, a.headerButton, .buttonLink):not(.repo-block-tools button):not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-icon-only):not([role=menuitem]):not(.repo-plain):not(td *):not(#imp) {
+  padding: 8px 16px
+}
 html[data-skeuo] .repo-block-tools button {
-  padding: 5px 11px !important;
   min-height: 30px
+}
+html[data-skeuo] .repo-block-tools button:not(#imp) {
+  padding: 5px 11px
 }
 /* bouton icône seule : même hauteur que les autres, carré */
 html[data-skeuo] :is(.repo-block, .repo-header, .repo-actionbar, .status-bar) :is(button, .buttonLink).repo-icon-only:not(.repo-block-tools button):not(td *) {
   min-height: 38px;
-  min-width: 38px;
-  padding: 0 8px !important
+  min-width: 38px
+}
+html[data-skeuo] :is(.repo-block, .repo-header, .repo-actionbar, .status-bar) :is(button, .buttonLink).repo-icon-only:not(.repo-block-tools button):not(td *):not(#imp) {
+  padding: 0 8px
 }
 html[data-skeuo] .repo-block :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select):not(td *) {
-  min-height: 38px;
-  padding: 7px 10px !important
+  min-height: 38px
+}
+html[data-skeuo] .repo-block :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select):not(td *):not(#imp) {
+  padding: 7px 10px
 }
 /* dans les cellules des tableaux : commandes compactes (lignes serrées) */
 html[data-skeuo] .repo-block td :is(button, a.headerButton, .buttonLink):not(.repo-plain) {
-  padding: 2px 9px !important;
   min-height: 26px
 }
+html[data-skeuo] .repo-block td :is(button, a.headerButton, .buttonLink):not(.repo-plain):not(#imp) {
+  padding: 2px 9px
+}
 html[data-skeuo] .repo-block td :is(button, .buttonLink).repo-icon-only {
-  min-width: 26px;
-  padding: 0 5px !important
+  min-width: 26px
+}
+html[data-skeuo] .repo-block td :is(button, .buttonLink).repo-icon-only:not(#imp) {
+  padding: 0 5px
 }
 html[data-skeuo] .repo-block td :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select) {
-  min-height: 28px;
-  padding: 3px 8px !important
+  min-height: 28px
+}
+html[data-skeuo] .repo-block td :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select):not(#imp) {
+  padding: 3px 8px
 }
 
 /* ================================================================================================ LIENS EN BOUTONS
    Liens d'action (retour au générateur, « Choisir des fichiers » des zones de dépôt) : même habillage que les boutons. */
-html[data-skeuo="frame"] a.headerButton {
-  font-family: var(--sk-lbtn-family) !important
+html[data-skeuo="frame"] a.headerButton:not(#imp) {
+  font-family: var(--sk-lbtn-family)
 }
 html[data-skeuo] a.headerButton {
   font-weight: var(--sk-lbtn-weight);
-  border: var(--sk-lbtn-border) !important;
-  border-radius: var(--sk-lbtn-radius) !important;
-  color: var(--sk-lbtn-ink) !important;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background: var(--sk-lbtn-bg) !important;
-  box-shadow: var(--sk-lbtn-shadow) !important
+  gap: 8px
+}
+html[data-skeuo] a.headerButton:not(#imp) {
+  border: var(--sk-lbtn-border);
+  border-radius: var(--sk-lbtn-radius);
+  color: var(--sk-lbtn-ink);
+  background: var(--sk-lbtn-bg);
+  box-shadow: var(--sk-lbtn-shadow)
 }
 html[data-skeuo] .repo-dropzone-pick {
   display: inline-block;
   margin: 0 4px 2px 0;
   padding: 5px 12px;
-  border-radius: 5px;
-  text-decoration: none !important
+  border-radius: 5px
+}
+html[data-skeuo] .repo-dropzone-pick:not(#imp) {
+  text-decoration: none
 }
 html[data-design="aqua"] .repo-dropzone-pick {
   border: 1px solid #9aa6b2;
   border-radius: 8px
 }
 html[data-skeuo] .repo-dropzone-pick {
-  color: var(--sk-pick-ink) !important;
   background: var(--sk-pick-bg);
   box-shadow: var(--sk-pick-shadow, none);
   font-family: var(--sk-pick-family, inherit)
+}
+html[data-skeuo] .repo-dropzone-pick:not(#imp) {
+  color: var(--sk-pick-ink)
 }
 
 /* ================================================================================================ COMMUN */
@@ -1538,15 +1603,17 @@ html[data-skeuo="frame"][data-decor="full"] .repo-deco-side {
 }
 /* barres d'état des pages (#status, .status : « Aucune mission chargée »…) : habillées comme les champs */
 html[data-skeuo="frame"] .repo-block :is(#status, .status) {
-  background: var(--sk-status-bg) !important;
-  border: var(--sk-status-border) !important;
-  color: var(--sk-status-ink) !important;
   box-shadow: var(--sk-status-shadow)
 }
-html[data-design="aqua"][data-tone="dark"] .repo-block :is(#status, .status) {
-  background: #141a21 !important;
-  border-color: #46525f !important;
-  color: #e6edf5 !important
+html[data-skeuo="frame"] .repo-block :is(#status, .status):not(#imp) {
+  background: var(--sk-status-bg);
+  border: var(--sk-status-border);
+  color: var(--sk-status-ink)
+}
+html[data-design="aqua"][data-tone="dark"] .repo-block :is(#status, .status):not(#imp) {
+  background: #141a21;
+  border-color: #46525f;
+  color: #e6edf5
 }
 
 /* ================================================================================================ CARNET DE VOL
@@ -1581,9 +1648,9 @@ html[data-design="flightlog"] {
 html[data-design="flightlog"][data-tone="dark"] {
   --sk-block-bg: url("textures/parchment-dark.webp?v=d9b8cd4f") center/512px padding-box #1c2230
 }
-html[data-design="flightlog"] .repo-block {
-  border-image: url("deco/flightlog/frame.webp?v=50dc8083") 36 / 22px round !important;
-  padding: 14px 18px 18px !important
+html[data-design="flightlog"] .repo-block:not(#imp) {
+  border-image: url("deco/flightlog/frame.webp?v=50dc8083") 36 / 22px round;
+  padding: 14px 18px 18px
 }
 html[data-design="flightlog"][data-decor="full"] .repo-block::after {
   display: none
@@ -1653,15 +1720,17 @@ html[data-design="flightlog"] .repo-header-emblem img {
 html[data-skeuo] dialog.repo-ap-dialog {
   background: var(--sk-dialog-bg)
 }
-html[data-skeuo] dialog.repo-ap-dialog .repo-ap-head {
-  margin: 10px !important
+html[data-skeuo] dialog.repo-ap-dialog .repo-ap-head:not(#imp) {
+  margin: 10px
 }
 /* ================================================================================================ EN-TÊTE DE BLOC ÉTROIT
    La plaque de titre ne dépasse jamais sa colonne (elle passe à la ligne) et les outils (↕, Masquer) restent au
    premier plan, visibles et cliquables, même dans les blocs étroits (reportings). */
 html[data-skeuo] .repo-block-titles {
-  min-width: 0 !important;
   flex: 1 1 0
+}
+html[data-skeuo] .repo-block-titles:not(#imp) {
+  min-width: 0
 }
 html[data-skeuo] :is(.repo-block-titles, .repo-block-heading)>h2 {
   max-width: 100%;
@@ -1672,8 +1741,8 @@ html[data-skeuo] :is(.repo-block-titles, .repo-block-heading)>h2 {
 }
 /* blocs étroits (grilles du reporting…) : la plaque reste sur la première ligne, à côté de l'icône (outils au coin du
    bloc, hors du flux) ; elle passe à la ligne entre les mots, jamais au milieu d'un mot */
-html[data-skeuo] .repo-block-heading-rich {
-  flex-wrap: nowrap !important
+html[data-skeuo] .repo-block-heading-rich:not(#imp) {
+  flex-wrap: nowrap
 }
 html[data-skeuo] .repo-block-tools {
   position: relative;
@@ -1685,141 +1754,161 @@ html[data-skeuo] .repo-block-tools {
    (Durci : #e6ecd6 / #121410 = 15,3:1 ; sombres : #e6edf5 / #141a21 = 15:1 ; clairs : encre sur blanc translucide). */
 /* fond, encre, bord et rayon par design et par ton (--sk-code-*) */
 html[data-skeuo] .repo-block :is(code, kbd, samp) {
-  background: var(--sk-code-bg) !important;
-  color: var(--sk-code-ink) !important;
-  border: var(--sk-code-border) !important;
   border-radius: var(--sk-code-radius);
   padding: 0 .35em
+}
+html[data-skeuo] .repo-block :is(code, kbd, samp):not(#imp) {
+  background: var(--sk-code-bg);
+  color: var(--sk-code-ink);
+  border: var(--sk-code-border)
 }
 /* ================================================================================================ BARRE D'ACTION (repo-actionbar)
    Barre d'action collée en bas d'une page (studio : « Générer les cartes et le ZIP ») : classe du framework, habillée
    par le design (la page garde sa disposition). Texte : ≥ 4,5:1 sur la matière. */
 html[data-skeuo] .repo-actionbar {
-  background: var(--sk-abar-bg) !important;
-  border-top: var(--sk-abar-border) !important;
   color: var(--sk-abar-ink)
 }
-html[data-skeuo="frame"] .repo-actionbar {
-  box-shadow: var(--sk-abar-shadow) !important
+html[data-skeuo] .repo-actionbar:not(#imp) {
+  background: var(--sk-abar-bg);
+  border-top: var(--sk-abar-border)
+}
+html[data-skeuo="frame"] .repo-actionbar:not(#imp) {
+  box-shadow: var(--sk-abar-shadow)
 }
 /* Aqua : ombre de la page */
 html[data-skeuo] .repo-actionbar {
   z-index: 50
 }
 /* barre collante au-dessus des objets entre les blocs (.repo-deco-sep, 40) */
-html[data-skeuo] .repo-actionbar :is(.small, span) {
-  color: var(--sk-abar-ink-2, var(--sk-abar-ink)) !important
+html[data-skeuo] .repo-actionbar :is(.small, span):not(#imp) {
+  color: var(--sk-abar-ink-2, var(--sk-abar-ink))
 }
 
 /* ================================================================================================ ENCADRÉS D'ÉTAT DES PAGES (.warn, .ok, .err)
    Couleurs codées en dur par les pages (fond jaune pâle, vert et rouge foncés) : accordées aux matières sombres.
    Pas dans l'Apparence (pastilles WCAG sur fond clair propre). Durci : texte #f3e6c4 / encadré #3a3322 = 10,6:1 ; ok #9fe870 et err #ff9a8a sur panneau ≥ 5:1. */
-html[data-skeuo][data-surface="dark"] .repo-block .warn:not(.ap-page *) {
-  background: rgba(58, 51, 34, .92) !important;
-  border-left-color: #e8b85a !important;
-  color: #f3e6c4 !important
+html[data-skeuo][data-surface="dark"] .repo-block .warn:not(.ap-page *):not(#imp) {
+  background: rgba(58, 51, 34, .92);
+  border-left-color: #e8b85a;
+  color: #f3e6c4
 }
-html[data-skeuo][data-surface="dark"] .repo-block .ok:not(.ap-page *) {
-  color: #9fe870 !important
+html[data-skeuo][data-surface="dark"] .repo-block .ok:not(.ap-page *):not(#imp) {
+  color: #9fe870
 }
-html[data-skeuo][data-surface="dark"] .repo-block .err:not(.ap-page *) {
-  color: #ff9a8a !important
+html[data-skeuo][data-surface="dark"] .repo-block .err:not(.ap-page *):not(#imp) {
+  color: #ff9a8a
 }
 /* ================================================================================================ OUTILS DE BLOC (DÉPLACER, MASQUER)
    Icônes seules, sans bouton ni libellé (libellé en infobulle), toujours dans le coin haut droit du bloc, quelle que
    soit la hauteur de la plaque de titre (qui garde la place à sa droite). */
 html[data-skeuo] .repo-block-tools {
-  position: absolute !important;
   top: 10px;
   right: 10px;
-  margin: 0 !important;
   display: flex;
   gap: 2px;
   z-index: 3
 }
-html[data-skeuo] .repo-block-heading-rich {
-  padding-right: 70px !important
+html[data-skeuo] .repo-block-tools:not(#imp) {
+  position: absolute;
+  margin: 0
+}
+html[data-skeuo] .repo-block-heading-rich:not(#imp) {
+  padding-right: 70px
 }
 html[data-skeuo] .repo-block-tools button {
-  font-size: 0 !important;
   width: 30px;
   height: 30px;
-  min-height: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-  border-radius: 50% !important;
-  box-shadow: none !important;
-  background-color: transparent !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   opacity: .85
 }
-html[data-skeuo] .repo-block-tools button:not(.repo-drag) {
-  background-image: none !important
+html[data-skeuo] .repo-block-tools button:not(#imp) {
+  font-size: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  box-shadow: none;
+  background-color: transparent
+}
+html[data-skeuo] .repo-block-tools button:not(.repo-drag):not(#imp) {
+  background-image: none
 }
 html[data-skeuo] .repo-block-tools button:is(:hover, :focus-visible) {
-  opacity: 1;
-  background-color: rgba(255, 255, 255, .14) !important
+  opacity: 1
+}
+html[data-skeuo] .repo-block-tools button:is(:hover, :focus-visible):not(#imp) {
+  background-color: rgba(255, 255, 255, .14)
 }
 html[data-skeuo] .repo-block-tools .repo-drag {
-  background-size: 24px !important;
   cursor: grab
 }
+html[data-skeuo] .repo-block-tools .repo-drag:not(#imp) {
+  background-size: 24px
+}
 html[data-skeuo]:not(:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"])) .repo-block-tools .repo-drag {
-  font-size: 18px !important;
   line-height: 1
 }
+html[data-skeuo]:not(:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"])) .repo-block-tools .repo-drag:not(#imp) {
+  font-size: 18px
+}
 html[data-skeuo] .repo-block-tools .repo-toggle::before {
-  margin: 0 !important;
   width: 14px;
   height: 14px
 }
-html[data-skeuo]:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-block-tools .repo-toggle::before {
-  width: 24px !important;
-  height: 24px !important
+html[data-skeuo] .repo-block-tools .repo-toggle:not(#imp)::before {
+  margin: 0
 }
-html[data-skeuo] .repo-block-tools button {
-  color: var(--sk-tool-ink) !important
+html[data-skeuo]:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-block-tools .repo-toggle:not(#imp)::before {
+  width: 24px;
+  height: 24px
 }
-html[data-design="aqua"] .repo-block-tools button:is(:hover, :focus-visible) {
-  background-color: rgba(0, 40, 90, .08) !important
+html[data-skeuo] .repo-block-tools button:not(#imp) {
+  color: var(--sk-tool-ink)
+}
+html[data-design="aqua"] .repo-block-tools button:is(:hover, :focus-visible):not(#imp) {
+  background-color: rgba(0, 40, 90, .08)
 }
 /* ================================================================================================ AQUA : PLUS DE BOUTONS PLATS
    Listes déroulantes et segments (vignettes et rangées de l'Apparence : appearance_page.js) : verre bombé (clair ou sombre selon le ton),
    état choisi en gel de la couleur Aqua. */
-html[data-design="aqua"] select:not([multiple]):not([size]) {
-  background-image: linear-gradient(#ffffff, #eef2f6 50%, #e2e8ee 51%, #f4f7fa) !important;
-  box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(20, 40, 70, .12) !important
+html[data-design="aqua"] select:not([multiple]):not([size]):not(#imp) {
+  background-image: linear-gradient(#ffffff, #eef2f6 50%, #e2e8ee 51%, #f4f7fa);
+  box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(20, 40, 70, .12)
 }
-html[data-design="aqua"][data-tone="dark"] select:not([multiple]):not([size]) {
-  background-image: linear-gradient(#4a5663, #323c47 50%, #2a333d 51%, #3a4652) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 1px 2px rgba(0, 0, 0, .4) !important;
-  color: #e6edf5 !important
+html[data-design="aqua"][data-tone="dark"] select:not([multiple]):not([size]):not(#imp) {
+  background-image: linear-gradient(#4a5663, #323c47 50%, #2a333d 51%, #3a4652);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 1px 2px rgba(0, 0, 0, .4);
+  color: #e6edf5
 }
 /* ================================================================================================ GRAPHIQUES EN RELIEF (style « relief » : choisi ou automatique dans les designs à matières)
    Plus d'aplats « métro » : barres horizontales dans une rainure gravée avec reflet, anneaux et barres ombrés
    (charts.js : reflet SVG), repères gravés, pastilles de légende bombées, chiffres dans la police du design. */
 html[data-chart-style="relief"][data-design="aqua"]:not([data-tone="dark"]) .mcg-htrack {
-  background: linear-gradient(#cfd8e2, #e6ecf2) !important;
   box-shadow: inset 0 1px 3px rgba(20, 40, 70, .35), 0 1px 0 #fff
 }
-html[data-chart-style="relief"][data-design="aqua"] .mcg-htrack {
-  height: 13px !important;
-  border-radius: 7px !important
+html[data-chart-style="relief"][data-design="aqua"]:not([data-tone="dark"]) .mcg-htrack:not(#imp) {
+  background: linear-gradient(#cfd8e2, #e6ecf2)
 }
-html[data-design="aqua"] .mcg-htrack i {
-  border-radius: 7px !important
+html[data-chart-style="relief"][data-design="aqua"] .mcg-htrack:not(#imp) {
+  height: 13px;
+  border-radius: 7px
+}
+html[data-design="aqua"] .mcg-htrack i:not(#imp) {
+  border-radius: 7px
 }
 html[data-skeuo="frame"] .mcg-chart .mcg-gridline {
-  stroke: rgba(255, 255, 255, .1) !important;
   stroke-dasharray: 2 5
 }
+html[data-skeuo="frame"] .mcg-chart .mcg-gridline:not(#imp) {
+  stroke: rgba(255, 255, 255, .1)
+}
 /* ligne de base et police des axes (designs à cadre) : --sk-chart-base, --sk-chart-font, --sk-chart-stretch */
-html[data-skeuo="frame"] .mcg-chart .mcg-base {
-  stroke: var(--sk-chart-base) !important;
-  stroke-width: 2 !important
+html[data-skeuo="frame"] .mcg-chart .mcg-base:not(#imp) {
+  stroke: var(--sk-chart-base);
+  stroke-width: 2
 }
 html[data-skeuo="frame"] :is(.mcg-chart .mcg-axis, .mcg-donut .mcg-total) {
   font-family: var(--sk-chart-font);
@@ -1899,8 +1988,8 @@ html[data-design="cabinet"] .repo-has-bg:has(>.repo-deco-panel) {
 html[data-design="cabinet"][data-tone="dark"] .repo-has-bg:has(>.repo-deco-panel) {
   --repo-veil: rgba(14, 22, 40, .62)
 }
-html .repo-block.repo-has-bg:has(>.repo-deco-panel) table:not(.report table) {
-  background-color: var(--repo-veil) !important
+html .repo-block.repo-has-bg:has(>.repo-deco-panel) table:not(.report table):not(#imp) {
+  background-color: var(--repo-veil)
 }
 /* passe devant « table transparente » des designs */
 /* feuille de registre (ton clair, design_deco.js, SHEETS) : carnet ou dossier en fond des blocs de tableau des registres,
@@ -2109,8 +2198,8 @@ html[data-design="field"] {
   isolation: isolate;
   --k: var(--sh-k)
 }
-html body .repo-block.repo-has-sheet {
-  padding: calc(var(--sh-pad-t) * var(--k)) calc(var(--sh-pad-r) * var(--k)) calc(var(--sh-pad-b) * var(--k)) calc((var(--sh-pad-l) + var(--sh-gut, 0px)) * var(--k)) !important
+html body .repo-block.repo-has-sheet:not(#imp) {
+  padding: calc(var(--sh-pad-t) * var(--k)) calc(var(--sh-pad-r) * var(--k)) calc(var(--sh-pad-b) * var(--k)) calc((var(--sh-pad-l) + var(--sh-gut, 0px)) * var(--k))
 }
 .repo-deco-sheet {
   position: absolute;
@@ -2192,19 +2281,19 @@ html[data-skeuo] .repo-block.repo-has-sheet {
   --sk-label-ink: var(--sheet-label-ink, var(--sheet-ink));
   color: var(--sheet-ink)
 }
-html[data-skeuo] .repo-has-sheet :is(p, td) {
-  color: var(--sheet-text, var(--sheet-ink-2)) !important;
-  text-shadow: none !important
+html[data-skeuo] .repo-has-sheet :is(p, td):not(#imp) {
+  color: var(--sheet-text, var(--sheet-ink-2));
+  text-shadow: none
 }
-html[data-skeuo] .repo-has-sheet :is(.repo-block-subtitle, .repo-card-subtitle, .muted, .small, .hint) {
-  color: var(--sheet-ink-2) !important;
-  text-shadow: none !important
+html[data-skeuo] .repo-has-sheet :is(.repo-block-subtitle, .repo-card-subtitle, .muted, .small, .hint):not(#imp) {
+  color: var(--sheet-ink-2);
+  text-shadow: none
 }
 /* textes que les designs sombres éclaircissent (gras, italique, listes…) : encre foncée sur le papier */
-html[data-skeuo] .repo-has-sheet .repo-block-body :is(strong, b, em, li, summary, dt, dd),
-html[data-skeuo] .repo-has-sheet td :is(strong, b, em) {
-  color: var(--sheet-ink) !important;
-  text-shadow: none !important
+html[data-skeuo] .repo-has-sheet .repo-block-body :is(strong, b, em, li, summary, dt, dd):not(#imp),
+html[data-skeuo] .repo-has-sheet td :is(strong, b, em):not(#imp) {
+  color: var(--sheet-ink);
+  text-shadow: none
 }
 /* carte posée sur la feuille (détail d'une mission du registre…) : papier punaisé à encre foncée, le bloc restant un
    carnet ou un dossier (et non une plaque ou un panneau) ; papier et punaise : jetons --sheet-card-bg, --sheet-pin */
@@ -2220,19 +2309,21 @@ html[data-skeuo] .repo-has-sheet .repo-card {
   --sk-ink: var(--sheet-ink);
   --sk-ink-2: var(--sheet-ink-2);
   --sk-label-ink: var(--sheet-label-ink, var(--sheet-ink));
-  --muted: var(--sheet-ink-2);
-  color: var(--sheet-ink) !important;
-  text-shadow: none !important
+  --muted: var(--sheet-ink-2)
 }
-html[data-skeuo] .repo-has-sheet .repo-card :is(p, span, div, li, small, .small, .muted, .hint, h3, h4, summary, strong, b):not(button, button *) {
-  text-shadow: none !important
+html[data-skeuo] .repo-has-sheet .repo-card:not(#imp) {
+  color: var(--sheet-ink);
+  text-shadow: none
+}
+html[data-skeuo] .repo-has-sheet .repo-card :is(p, span, div, li, small, .small, .muted, .hint, h3, h4, summary, strong, b):not(button, button *):not(#imp) {
+  text-shadow: none
 }
 /* en-têtes de tableau et boutons gardent leur fond sombre et leur encre claire */
-html[data-skeuo] .repo-has-sheet .repo-card :is(strong, b, em, dt, dd, summary):not(th, th *, button, button *, .badge, .badge *) {
-  color: var(--sheet-ink) !important
+html[data-skeuo] .repo-has-sheet .repo-card :is(strong, b, em, dt, dd, summary):not(th, th *, button, button *, .badge, .badge *):not(#imp) {
+  color: var(--sheet-ink)
 }
-html[data-skeuo] .repo-has-sheet .repo-card :is(h3, h4, legend, label):not(th, th *, button, button *, .badge, .badge *) {
-  color: var(--sheet-label-ink, var(--sheet-ink)) !important
+html[data-skeuo] .repo-has-sheet .repo-card :is(h3, h4, legend, label):not(th, th *, button, button *, .badge, .badge *):not(#imp) {
+  color: var(--sheet-label-ink, var(--sheet-ink))
 }
 @media print {
   .repo-deco-sheet {
@@ -2270,17 +2361,21 @@ html[data-skeuo="frame"] .repo-notebooks:empty::before {
 }
 html[data-skeuo="frame"] .repo-notebook {
   aspect-ratio: var(--nb-ratio);
-  padding: var(--nb-pad) !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  background: var(--nb-open) center/100% 100% no-repeat !important;
   filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .5));
   cursor: pointer
 }
+html[data-skeuo="frame"] .repo-notebook:not(#imp) {
+  padding: var(--nb-pad);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--nb-open) center/100% 100% no-repeat
+}
 html[data-skeuo="frame"] .repo-notebook strong {
-  color: #2b2a22 !important;
   margin-bottom: 4px
+}
+html[data-skeuo="frame"] .repo-notebook strong:not(#imp) {
+  color: #2b2a22
 }
 html[data-design="field"] .repo-notebook strong {
   font: 700 12px/1.2 Bahnschrift, "Arial Narrow", sans-serif;
@@ -2288,12 +2383,14 @@ html[data-design="field"] .repo-notebook strong {
   letter-spacing: .04em
 }
 html[data-skeuo="frame"] .repo-notebook img {
-  background: #fff !important;
   padding: 4px;
   box-sizing: border-box;
   transform: rotate(-1.5deg);
   box-shadow: 0 3px 8px rgba(0, 0, 0, .45);
   cursor: zoom-in
+}
+html[data-skeuo="frame"] .repo-notebook img:not(#imp) {
+  background: #fff
 }
 /* appareil de page (design_deco.js, SETS.device, DEVICE_AT) : emplacement réel entre les blocs 2 et 3,
    objets réglés par leur hauteur (ratio conservé) et calés à droite ; décor complet des designs à matières seulement */
@@ -2378,10 +2475,10 @@ html[data-design="cabinet"][data-tone="dark"] .repo-deco-bgimg.repo-deco-panel {
   opacity: .3
 }
 /* déplacer et masquer : même taille d'icône (24 px) et même bouton (30 px), quel que soit le jeu d'icônes */
-html[data-skeuo] .repo-block-heading .repo-block-tools .repo-drag {
-  background-size: 24px 24px !important;
-  min-width: 0 !important;
-  width: 30px !important
+html[data-skeuo] .repo-block-heading .repo-block-tools .repo-drag:not(#imp) {
+  background-size: 24px 24px;
+  min-width: 0;
+  width: 30px
 }
 html[data-design="flightlog"] .repo-deco-bgimg.repo-deco-bg-cover {
   opacity: .9
@@ -2583,26 +2680,26 @@ html[data-design="aqua"][data-tone="dark"] {
 }
 /* fond des fenêtres surgissantes des pages (Mission Core : .mc-pop…) posé ici et non dans la feuille de la page :
    l'url() d'un jeton se résout par rapport à la feuille qui l'emploie (textures/ est à côté de celle-ci) */
-html[data-skeuo] :is(.mc-pop, .mc-switch-pop, .mc-import-pop) {
-  background: var(--sk-pop) !important
+html[data-skeuo] :is(.mc-pop, .mc-switch-pop, .mc-import-pop):not(#imp) {
+  background: var(--sk-pop)
 }
 /* cartes et encadrés partagés par plusieurs pages (.note, .kpi) : habillés comme les cartes du design */
-html[data-skeuo] .repo-block :is(.note, .kpi>div) {
-  background: var(--sk-card) !important;
-  color: var(--sk-card-ink) !important;
-  border-color: var(--sk-card-bd) !important
+html[data-skeuo] .repo-block :is(.note, .kpi>div):not(#imp) {
+  background: var(--sk-card);
+  color: var(--sk-card-ink);
+  border-color: var(--sk-card-bd)
 }
-html[data-skeuo] .repo-block .badge {
-  background: color-mix(in srgb, currentColor 14%, transparent) !important;
-  color: inherit !important
+html[data-skeuo] .repo-block .badge:not(#imp) {
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  color: inherit
 }
-html[data-skeuo] .repo-block table:not(.report table) {
-  background: transparent !important;
-  color: var(--sk-card-ink) !important
+html[data-skeuo] .repo-block table:not(.report table):not(#imp) {
+  background: transparent;
+  color: var(--sk-card-ink)
 }
-html[data-skeuo] .repo-block table:not(.report table) th {
-  background: var(--sk-card) !important;
-  color: var(--sk-card-ink) !important
+html[data-skeuo] .repo-block table:not(.report table) th:not(#imp) {
+  background: var(--sk-card);
+  color: var(--sk-card-ink)
 }
 /* voyant de sauvegarde (Durci) : bouton actif (sauvegarde immédiate) */
 button.repo-deco-status {
@@ -2649,9 +2746,9 @@ html[data-design="field"][data-decor="full"] .repo-deco>:is(.repo-deco-plate-img
 }
 
 /* Aqua : pied de page pleine largeur → angles droits (barre d'outils) ; en-tête : jetons --sk-header-* */
-html[data-design="aqua"] .repo-footer {
-  border-radius: 0 !important;
-  border-width: 1px 0 0 !important
+html[data-design="aqua"] .repo-footer:not(#imp) {
+  border-radius: 0;
+  border-width: 1px 0 0
 }
 
 /* Bandeaux (Carnet de vol, Cabinet, Durci) : le panneau (body) reste dans le cadre cousu ; l'en-tête est une plaque
@@ -2665,8 +2762,8 @@ html[data-design="aqua"] .repo-footer {
 
 /* Pas d'arrondis sur les bandeaux et barres des designs skeuomorphes (bandeau décoratif — carte et radar du Durci ; plaque et bloc de sauvegarde gardent leur arrondi —, pied de page / barre d'état,
    barre d'action) : angles droits, sauf demande explicite */
-html[data-skeuo] :is(.repo-deco, .repo-deco-radar, .repo-footer, .repo-actionbar) {
-  border-radius: 0 !important
+html[data-skeuo] :is(.repo-deco, .repo-deco-radar, .repo-footer, .repo-actionbar):not(#imp) {
+  border-radius: 0
 }
 
 /* Centre (CPCO) : icônes du Centre = fond du Centre des jeux composés (règles générées dans block_icons.css) */
@@ -2681,14 +2778,16 @@ html[data-skeuo] .repo-segs {
 }
 html[data-skeuo] .repo-seg {
   min-height: 34px;
-  padding: 6px 14px !important;
-  background-color: transparent !important;
-  background-image: var(--sk-seg-bg, none) !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
   font-weight: 700;
   letter-spacing: .02em;
   cursor: pointer
+}
+html[data-skeuo] .repo-seg:not(#imp) {
+  padding: 6px 14px;
+  background-color: transparent;
+  background-image: var(--sk-seg-bg, none);
+  border-radius: 0;
+  box-shadow: none
 }
 /* designs à cadre : cadre, texte, séparateurs et segment choisi par jetons (--sk-segs-*, --sk-seg-*) ; Durci ajoute
    son voyant au segment choisi ; Aqua : boutons gel (ci-dessous) */
@@ -2699,18 +2798,22 @@ html[data-skeuo="frame"] .repo-segs {
   background: var(--sk-segs-bg)
 }
 html[data-skeuo] .repo-seg {
-  color: var(--sk-seg-ink) !important;
   text-shadow: var(--sk-seg-shadow)
 }
-html[data-skeuo] .repo-seg+.repo-seg {
-  border-left: var(--sk-seg-sep) !important;
-  box-shadow: var(--sk-seg-sep-shadow) !important
+html[data-skeuo] .repo-seg:not(#imp) {
+  color: var(--sk-seg-ink)
+}
+html[data-skeuo] .repo-seg+.repo-seg:not(#imp) {
+  border-left: var(--sk-seg-sep);
+  box-shadow: var(--sk-seg-sep-shadow)
 }
 html[data-skeuo] .repo-seg[aria-pressed="true"] {
-  background: var(--sk-seg-on-bg) !important;
-  color: var(--sk-seg-on-ink) !important;
-  text-shadow: var(--sk-seg-on-text-shadow, var(--sk-seg-shadow));
-  box-shadow: var(--sk-seg-on-shadow) !important
+  text-shadow: var(--sk-seg-on-text-shadow, var(--sk-seg-shadow))
+}
+html[data-skeuo] .repo-seg[aria-pressed="true"]:not(#imp) {
+  background: var(--sk-seg-on-bg);
+  color: var(--sk-seg-on-ink);
+  box-shadow: var(--sk-seg-on-shadow)
 }
 html[data-design="field"] .repo-seg[aria-pressed="true"]::before {
   content: "";

@@ -20,6 +20,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   `lib`, en dessous) ; les designs, hors couche, l'emportent sans `!important`. Les `!important` du socle et des pages
   sont convertis en sélecteurs renforcés (`:not(#imp)`) ; rendu inchangé au banc de non-régression.
 - Banc de non-régression : un panel réduit se compare au *snap* du panel complet.
+- Designs : leurs `!important` convertis eux aussi (`designs.css` 29 → 0, `designs_skeuo.css` 279 → 32 : impression,
+  masquage et quatre cas contre un style en ligne) ; rendu inchangé au banc.
 
 ## [4.4.0] — 2026-09-30
 

@@ -199,8 +199,19 @@ Suivi des assets (cahier des charges, consignes de génération, intégration) :
   Apparence, Maintenance, Landing, studio, planning ODV, registre), comparé au snap (empreintes comparées par
   empreinte) ; panel complet en fin, contre le même snap. Détail d'un écart en empreinte : relevé ciblé, ou
   comparaison des styles calculés contre un arbre de travail de référence servi à côté (`/_ref/`, jonction locale).
-- **Suivant** : (4) retirer les `!important` des designs (ils n'ont plus à battre l'application, sauf `garder`) ; 7 au fil
-  des assets livrés.
+- **Fait (4, 1ᵉʳ octobre 2026)** : `!important` des designs convertis de la même façon (`strip_page_important.py --bump
+  --designs` : règles des designs comprises), partout où il y a des règles de design — `designs.css` 29 → 0,
+  `designs_skeuo.css` 279 → 32, et les règles de design du socle et des pages (`core.css` 30, `block_icons.css` 78,
+  `repository_nav.css` 4, `maintenance.css` 3, studio, registre, planificateur 22) : l'ordre entre règles des designs est
+  inchangé. `build_skeuo_icons_css.py` écrit sa section déjà convertie.
+  Restent `!important` : blocs `@media` (impression), `display: none`, et `/* garder */` contre un **style en ligne**
+  (seul un `!important` bat un attribut `style`) — fond de `body` posé par les pages (designs à cadre, Aqua), liens
+  secondaires des CR (`color: inherit` en ligne), champs de route du studio (`background: transparent` en ligne),
+  taille des icônes de la barre latérale (`--rs` en ligne). Banc (panel réduit puis complet, contre le snap) : écarts
+  restants identiques à HEAD.
+- **Suivant** : C (palettes `:root` des pages vers les jetons communs) ; 7 au fil des assets livrés
+  ([PROMPTS_ASSETS_PHASE2.md](PROMPTS_ASSETS_PHASE2.md)) ; fusion des règles scindées par la conversion quand le banc
+  montre que le renfort est inutile (lisibilité).
 
 ## Utiliser la boîte à outils (D)
 
