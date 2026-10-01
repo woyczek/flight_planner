@@ -22,6 +22,9 @@
   .pm-text p{white-space:pre-line;margin:.4em 0}
   .pm-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0}
   .pm-types-sum{margin:0 0 8px;font-weight:600}
+  .pm-sims{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 14px}
+  .pm-sims label{display:inline-flex;align-items:center;gap:6px;margin:0}
+  .pm-sims input{margin:0}
   .pm-types-cards{display:grid;gap:10px}
   .pm-type-table{width:100%;border-collapse:collapse;font-size:12.5px}
   .pm-type-table th,.pm-type-table td{padding:5px 8px;text-align:left;vertical-align:middle;border-bottom:1px solid color-mix(in srgb,currentColor 12%,transparent)}
@@ -52,6 +55,10 @@
   <div id="pmTypes" class="pm-types"></div>
   <p id="pmTypesMsg" class="small">Enregistré dans ce navigateur, et avec vos disponibilités (« Enregistrer dans le dossier des données »).</p>
 </section>
+<section data-block-id="sims" data-icon="layers" data-subtitle="Simulateurs et outils installés (colonnes de la feuille FLOTTE du classeur ODV) : le Centre s’en sert pour réunir des pilotes sur un simulateur commun."><h2>Mes simulateurs</h2>
+  <div id="pmSims" class="pm-sims"></div>
+  <p id="pmSimsMsg" class="small">Enregistré dans ce navigateur, et avec vos disponibilités (« Enregistrer dans le dossier des données »).</p>
+</section>
 <section data-block-id="availability" data-icon="clock" data-subtitle="Semaine type, heures UTC, codes de l’ODV : choisir un code, puis cliquer ou glisser sur les cases ; un second clic sur une case de ce code l’efface. Le Centre s’en sert pour affecter les missions."><h2>Mes disponibilités</h2>
   <div id="pmGrid"></div>
   <div class="pm-actions"><button type="button" id="pmGridSave" class="secondary" data-icon="save">Enregistrer dans le dossier des données</button><button type="button" id="pmGridClear" class="ghost">Tout effacer</button></div>
@@ -59,11 +66,11 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=9839b88b"></script>
-<script src="../../shared/repository_nav.js?v=04d04e51"></script>
+<script src="../../shared/repository_nav.js?v=7931ef53"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=90cadad7"></script>
-<script src="../../shared/assignments.js?v=0293bd13"></script>
+<script src="../../shared/assignments.js?v=558689c1"></script>
 <script>
 (() => {
   'use strict';
@@ -241,6 +248,19 @@
     window.AppFramework?.refresh?.(); // en-têtes des sous-cartes (icône, titre, sous-titre)
   }
 
+  // ---- simulateurs (liste de la feuille FLOTTE du classeur ODV)
+  async function simsLoad() {
+    const tri = A.trigram(), host = $('pmSims');
+    const mine = new Set((tri ? (await A.availability(tri))?.sims : null) || []);
+    const list = [...new Set([...A.simulators(), ...mine])];
+    host.innerHTML = list.map(s => `<label><input type="checkbox" data-sim="${esc(s)}" ${mine.has(s) ? 'checked' : ''}> ${esc(s)}</label>`).join('');
+    host.onchange = () => {
+      if (!tri) { $('pmSimsMsg').textContent = 'Trigramme non réglé.'; return; }
+      A.saveSims(tri, [...host.querySelectorAll('[data-sim]:checked')].map(x => x.dataset.sim));
+      $('pmSimsMsg').textContent = 'Gardé dans ce navigateur ; « Enregistrer dans le dossier des données » (disponibilités) pour le Centre.';
+    };
+  }
+
   // ---- disponibilités
   let grid = null;
   async function gridLoad() {
@@ -261,8 +281,8 @@
 
   // index complet gardé pour les coéquipiers
   const keepAll = async () => { A._all = (await A.index()).assignments; };
-  window.addEventListener('storage', e => { if (e.key === PROFILE) { load(); gridLoad(); typesLoad(); } });
-  keepAll().then(load).then(gridLoad).then(typesLoad);
+  window.addEventListener('storage', e => { if (e.key === PROFILE) { load(); gridLoad(); typesLoad(); simsLoad(); } });
+  keepAll().then(load).then(gridLoad).then(typesLoad).then(simsLoad);
 })();
 </script>
 <script src="../../shared/app_framework.js?v=a63ce655"></script>

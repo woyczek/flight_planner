@@ -16,7 +16,7 @@
   //
   // API (window.MissionAssignments) : identité et index — trigram(), index({ fresh }), mine(liste?, { all }), key(a),
   //   when(a), isRead(a), markRead(a), envelope() ; déclaration du pilote — LEGEND, availability(TRI),
-  //   availabilityAt(décl, ms, famille), saveAvailability(TRI, grille, { toFolder }), saveAircraft(TRI, { owned, mastered }),
+  //   availabilityAt(décl, ms, famille), saveAvailability(TRI, grille, { toFolder }), saveAircraft(TRI, { owned, mastered }), saveSims(TRI, [sim…]), simulators(),
   //   gridEditor(hôte, grille, onChange) ; outils — geo { nm, brg, icaoOf, coord }, typeOf, cruiseKt, coordsOf(OACI),
   //   ferryOf({ base, departure, type, takeoff, pilot }), fleetTypes(), qualification(décl, TRI, type), slotRange(date, h0, h1),
   //   declaredOver(décl, début, fin), busyRange(a), assignedOver(liste, TRI, début, fin), conflicts(liste, {…}) ;
@@ -226,7 +226,8 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
       legend: 'ODV (Code couleur)',
       updated_at: new Date().toISOString(),
       grid: normGrid(grid),
-      aircraft: json(AVAIL, {})[tri]?.aircraft || null
+      aircraft: json(AVAIL, {})[tri]?.aircraft || null,
+      sims: json(AVAIL, {})[tri]?.sims || null
     };
     const all = json(AVAIL, {});
     all[tri] = doc;
@@ -264,6 +265,33 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
         owned: [...new Set(aircraft?.owned || [])].sort(),
         mastered: [...new Set(aircraft?.mastered || [])].sort()
       },
+      updated_at: new Date().toISOString()
+    };
+    setJson(AVAIL, all);
+    return all[tri];
+  }
+  // Simulateurs et outils : colonnes de la feuille FLOTTE du classeur ODV (S39), complétées par celles des classeurs lus
+  // sur la page ODV (simulateurs des profils, mémorisés dans odvSimulators:v1).
+  const SIMULATORS = ['P3D', 'MSFS 2020', 'MSFS 2024', 'X-PLANE 11', 'X-PLANE 12', 'DCS SRS RADIO', 'vPAR', 'JOIN FS', 'HAMACHI'];
+  const SIMS_SEEN = 'odvSimulators:v1';
+  /** Liste des simulateurs proposés (classeur ODV), avec ceux vus dans les classeurs lus ; learn : à ajouter. */
+  function simulators(learn = []) {
+    const seen = json(SIMS_SEEN, []),
+      add = learn.filter(s => s && !SIMULATORS.includes(s) && !seen.includes(s));
+    if (add.length) setJson(SIMS_SEEN, [...seen, ...add]);
+    return [...SIMULATORS, ...seen, ...add];
+  }
+  /** Simulateurs du pilote (liste de la feuille FLOTTE) : gardés avec ses disponibilités, comme ses appareils. */
+  function saveSims(tri, sims) {
+    tri = String(tri || '').toUpperCase();
+    const all = json(AVAIL, {});
+    all[tri] = {
+      pilot: tri,
+      granularity_min: 60,
+      timezone: 'UTC',
+      grid: emptyGrid(),
+      ...(all[tri] || {}),
+      sims: [...new Set(sims || [])],
       updated_at: new Date().toISOString()
     };
     setJson(AVAIL, all);
@@ -864,6 +892,9 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     availableAt,
     saveAvailability,
     saveAircraft,
+    saveSims,
+    simulators,
+    SIMULATORS,
     gridEditor,
     geo,
     typeOf,

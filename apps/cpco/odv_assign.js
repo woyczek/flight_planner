@@ -5,7 +5,7 @@
   // grille (seconde ligne par pilote : sa déclaration ; non affecté et disponible : encadré rouge ; affecté : n° de la
   // mission) et pour affecter depuis un créneau (dialogue « Affecter… », pilotes et heure préremplis).
   // Outils communs : shared/assignments.js (MissionAssignments) ; dialogue : shared/assign_dialog.js (AssignDialog).
-  // API (window.OdvAssign) : load(données ODV, réglages), range(j, k), declared(TRI, j, k), assigned(TRI, j, k),
+  // API (window.OdvAssign) : load(données ODV, réglages), declaration(TRI), range(j, k), declared(TRI, j, k), assigned(TRI, j, k),
   //   free(TRI, j, k), freePilots(j, k), inSlot(j, k), week(), line(TRI, j, k, cellule), assign(entrée, [TRI…], début, note)
   const M = () => window.MissionAssignments;
   const esc = s => window.RepositoryKit.esc(s);
@@ -104,6 +104,7 @@
 
   window.OdvAssign = {
     load,
+    declaration: tri => decl[tri] || null,
     range,
     declared,
     assigned,
