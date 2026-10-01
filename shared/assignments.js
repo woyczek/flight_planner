@@ -94,6 +94,13 @@
     return (list || cache?.assignments || []).filter(a => me && String(a.pilot).toUpperCase() === me && a.status !== 'annulée' && (all || !when(a) || when(a) >= now)).sort((x, y) => when(x) - when(y));
   }
   const isRead = a => !!json(READ, {})[key(a)];
+  /** Remet une mission « non lue » (scellée) : outil du canal develop. */
+  function markUnread(a) {
+    const r = json(READ, {});
+    delete r[key(a)];
+    setJson(READ, r);
+    envelope();
+  }
   function markRead(a) {
     const r = json(READ, {});
     r[key(a)] = new Date().toISOString();
@@ -1053,6 +1060,7 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     when,
     isRead,
     markRead,
+    markUnread,
     envelope,
     DAYS,
     LEGEND,
