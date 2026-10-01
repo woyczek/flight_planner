@@ -796,6 +796,11 @@
         label: ["Cartes", "Maps", "Karten", "Mapas"],
         title: ["Cartes de vol : route, topo, approche, rendez-vous, destination", "Flight maps: route, topo, approach, rendezvous, destination", "Flugkarten", "Mapas de vuelo"]
       }, {
+        icon: "send",
+        path: "apps/pilot/mes_missions.html",
+        label: ["Mes missions", "My missions", "Meine Missionen", "Mis misiones"],
+        title: ["Missions qui vous sont affectées par le Centre, vos disponibilités et vos appareils", "Missions assigned to you by the Centre, your availability and aircraft", "Vom Zentrum zugewiesene Missionen, Verfügbarkeit und Luftfahrzeuge", "Misiones asignadas por el Centro, disponibilidad y aeronaves"]
+      }, {
         icon: "plane",
         path: "apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html",
         label: ["Atterrissages", "Landings", "Landungen", "Aterrizajes"]
@@ -911,7 +916,7 @@
     store.src = new URL("browser_store.js?v=938ce9e7", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
-    assign.src = new URL("assignments.js?v=425a9e9b", script.src).href;
+    assign.src = new URL("assignments.js?v=590e1d09", script.src).href;
     document.head.append(assign);
     const update = document.createElement("script");
     update.src = new URL("suite_update.js?v=d84028ad", script.src).href;

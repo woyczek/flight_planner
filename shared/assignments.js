@@ -10,9 +10,17 @@
   //   · disponibilités du pilote : grille jours × heures (1 h), locale (pilotAvailability:v1), enregistrée dans
   //     data/disponibilites/<TRI>.json (dossier des données) pour le Centre, qui la lit par fetch.
   //
-  // API (window.MissionAssignments) : trigram(), index({ fresh }), mine(liste?, { all }), isRead(a), markRead(a),
-  //   key(a), envelope(), availability(TRI), saveAvailability(TRI, grille, { toFolder }), gridEditor(hôte, grille, onChange),
-  //   writeAssignment(mission, participants, extra) (Centre : dossier de la mission + index), PAGE (adresse de la page).
+  //   · appareils du pilote : types de la flotte possédés et maîtrisés (même déclaration que ses disponibilités) ;
+  //   · outils communs au Centre (dialogue « Affecter… »), au planning ODV et à la page pilote : géographie (distances,
+  //     terrains, convoyage), qualification, créneaux, conflits, écriture d'une affectation.
+  //
+  // API (window.MissionAssignments) : identité et index — trigram(), index({ fresh }), mine(liste?, { all }), key(a),
+  //   when(a), isRead(a), markRead(a), envelope() ; déclaration du pilote — LEGEND, availability(TRI),
+  //   availabilityAt(décl, ms, famille), saveAvailability(TRI, grille, { toFolder }), saveAircraft(TRI, { owned, mastered }),
+  //   gridEditor(hôte, grille, onChange) ; outils — geo { nm, brg, icaoOf, coord }, typeOf, cruiseKt, coordsOf(OACI),
+  //   ferryOf({ base, departure, type, takeoff, pilot }), fleetTypes(), qualification(décl, TRI, type), slotRange(date, h0, h1),
+  //   declaredOver(décl, début, fin), busyRange(a), assignedOver(liste, TRI, début, fin), conflicts(liste, {…}) ;
+  //   écriture — writeAssignment(mission, participants, extra).
   if (window.MissionAssignments) return;
   const K = window.RepositoryKit;
   const PROFILE = 'missionReportingConfig:v1',
@@ -87,6 +95,15 @@
     let b = document.getElementById('repoAssignEnvelope');
     const me = trigram();
     const list = me ? mine((await index()).assignments).filter(a => !isRead(a)) : [];
+    // barre latérale : pastille du nombre de missions non lues sur l'entrée « Mes missions »
+    document.querySelectorAll(`.repo-sidenav-item[href$="${PAGE}"]`).forEach(item => {
+      let n = item.querySelector('.repo-assign-badge');
+      if (!list.length) return n?.remove();
+      if (!n) item.append(n = Object.assign(document.createElement('b'), {
+        className: 'repo-assign-badge'
+      }));
+      n.textContent = list.length;
+    });
     if (!list.length) {
       b?.remove();
       return;
@@ -116,6 +133,7 @@ html[data-skeuo] .repo-assign-envelope .pa-paper{fill:#efe3c4;stroke:#6b5228}htm
 html[data-skeuo] .repo-assign-envelope .pa-seal{fill:#a3161a;stroke:#5e0b0d}html[data-skeuo] .repo-assign-envelope b{border-radius:0}
 html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3e4a2c}html[data-design="field"] .repo-assign-envelope .pa-fold{stroke:#3e4a2c}
 @media print{.repo-assign-envelope{display:none}}
+.repo-sidenav-item{position:relative}.repo-assign-badge{position:absolute;top:2px;right:6px;min-width:15px;height:15px;padding:0 3px;border-radius:8px;background:#c62828;color:#fff;font:700 9.5px/15px system-ui,sans-serif;text-align:center}html[data-skeuo] .repo-assign-badge{border-radius:0}
 .pa-grid{overflow-x:auto;user-select:none;touch-action:none}.pa-grid table{border-collapse:collapse;font:11px/1 system-ui,sans-serif}
 .pa-grid th{padding:3px 4px;font-weight:600;opacity:.8;text-align:center}.pa-grid tbody th{text-align:left;padding-right:8px}
 .pa-grid td{width:22px;height:20px;border:1px solid color-mix(in srgb,currentColor 22%,transparent);background:color-mix(in srgb,currentColor 6%,transparent);cursor:pointer}
@@ -207,7 +225,8 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
       timezone: 'UTC',
       legend: 'ODV (Code couleur)',
       updated_at: new Date().toISOString(),
-      grid: normGrid(grid)
+      grid: normGrid(grid),
+      aircraft: json(AVAIL, {})[tri]?.aircraft || null
     };
     const all = json(AVAIL, {});
     all[tri] = doc;
@@ -229,6 +248,26 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     await w.write(JSON.stringify(doc, null, 2));
     await w.close();
     return `data/disponibilites/${tri}.json`;
+  }
+  /** Types d'appareils du pilote (désignateurs OACI) : { owned, mastered } — gardés avec ses disponibilités (même
+   *  déclaration, même fichier) ; enregistrés dans le dossier des données avec la grille. */
+  function saveAircraft(tri, aircraft) {
+    tri = String(tri || '').toUpperCase();
+    const all = json(AVAIL, {});
+    all[tri] = {
+      pilot: tri,
+      granularity_min: 60,
+      timezone: 'UTC',
+      grid: emptyGrid(),
+      ...(all[tri] || {}),
+      aircraft: {
+        owned: [...new Set(aircraft?.owned || [])].sort(),
+        mastered: [...new Set(aircraft?.mastered || [])].sort()
+      },
+      updated_at: new Date().toISOString()
+    };
+    setJson(AVAIL, all);
+    return all[tri];
   }
   /** Couleur d'un code : famille de l'ODV accordée au design (RepositoryNav.chartColor) ; encre lisible dessus. */
   const colorOf = code => {
@@ -314,15 +353,278 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     return a ? a.category === 'dispo' : null;
   }
 
-  // ---- Centre : écriture d'une affectation (dossier de la mission + index)
-  /** Écrit affectations.yaml dans le dossier de la mission et met à jour data/missions/affectations.json (index, une ligne
-   *  par participant). mission : entrée du registre { id, type, title, folder, files, images } ; participants : [{ pilot,
-   *  callsign, aircraft:{ registration, type, base }, departure, takeoff, ferry, status }] ; extra : { h_hour, alert, by }. */
+  // ---- géographie et appareils (communs au Centre, à l'ODV et à la page pilote)
+  const TURN_MIN = 30, // remise en œuvre d'un appareil entre deux vols
+    FERRY_SETUP_MIN = 20; // mise en œuvre d'un convoyage (en plus du vol)
+  const rad = x => x * Math.PI / 180;
+  const geo = {
+    /** Distance orthodromique (NM). */
+    nm: (a, b) => {
+      const dl = rad(b.lat - a.lat),
+        dg = rad(b.lon - a.lon),
+        h = Math.sin(dl / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dg / 2) ** 2;
+      return 2 * 3440.065 * Math.asin(Math.sqrt(h));
+    },
+    /** Route vraie initiale (degrés). */
+    brg: (a, b) => {
+      const y = Math.sin(rad(b.lon - a.lon)) * Math.cos(rad(b.lat)),
+        x = Math.cos(rad(a.lat)) * Math.sin(rad(b.lat)) - Math.sin(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.cos(rad(b.lon - a.lon));
+      return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+    },
+    /** Code OACI d'un point « Nom (LFBM) » ; '' sinon. */
+    icaoOf: p => /\(([A-Z]{4})\)/.exec(p?.name || '')?.[1] || '',
+    /** Position en degrés et minutes pour une route de plan de vol : 4422N00052W. */
+    coord: p => {
+      const f = (v, w, pos, neg) => {
+        const a = Math.abs(v),
+          d = Math.floor(a),
+          m = Math.round((a - d) * 60);
+        return String(d + (m === 60 ? 1 : 0)).padStart(w, '0') + String(m === 60 ? 0 : m).padStart(2, '0') + (v >= 0 ? pos : neg);
+      };
+      return f(p.lat, 2, 'N', 'S') + f(p.lon, 3, 'E', 'W');
+    }
+  };
+  /** Désignateur OACI d'un texte de type (« RFAL Rafale » → RFAL). */
+  const typeOf = s => String(s || '').trim().split(/\s+/)[0].toUpperCase();
+  /** Vitesse de croisière d'un type (kt) : performances de la base d'appareils, sinon valeurs d'usage. */
+  const cruiseKt = type => +window.AIRCRAFT_PERF?.[type]?.cruise?.tasKt || ({
+    RFAL: 480,
+    MIR2: 450,
+    A332: 460,
+    A400: 340,
+    C30J: 300,
+    PC21: 300
+  })[type] || 250;
+  // coordonnées des terrains : base SIA du navigateur, aérodromes des missions du registre, cache des terrains de la
+  // suite (missionAirports:v1), puis base mondiale des aérodromes (source « airports », chargée une fois à la demande)
+  const AP_KEY = 'missionAirports:v1';
+  let airports = null,
+    worldLoad = null;
+  async function knownAirports() {
+    if (airports) return airports;
+    airports = {};
+    try {
+      const base = await window.SiaBase?.get?.({
+        any: true
+      });
+      for (const ad of base?.aero?.aerodromes || []) {
+        const code = ad.icao || ad.code || ad.id;
+        if (code && Number.isFinite(+ad.lat)) airports[code] = {
+          lat: +ad.lat,
+          lon: +ad.lon
+        };
+      }
+    } catch {
+      /* base SIA absente */ }
+    for (const m of json('missionRegistry:v1', {})?.missions || [])
+      for (const p of [m.origin, m.destination])
+        if (p && typeof p === 'object' && geo.icaoOf(p) && Number.isFinite(+p.lat)) airports[geo.icaoOf(p)] ||= {
+          lat: +p.lat,
+          lon: +p.lon
+        };
+    return airports;
+  }
+  /** Position d'un terrain (OACI) ; null si introuvable. */
+  async function coordsOf(code) {
+    if (!code) return null;
+    const ap = await knownAirports();
+    if (ap[code]) return ap[code];
+    const cache = json(AP_KEY, {});
+    if (Number.isFinite(+cache[code]?.lat)) return ap[code] = {
+      lat: +cache[code].lat,
+      lon: +cache[code].lon
+    };
+    const url = window.RepositoryNav?.source?.('airports') || 'https://cdn.jsdelivr.net/gh/mwgg/Airports@master/airports.json';
+    const w = (await (worldLoad ||= fetch(url).then(r => r.ok ? r.json() : null).catch(() => null)))?.[code];
+    if (!w || !Number.isFinite(+w.lat)) return null;
+    cache[code] = {
+      ...(cache[code] || {}),
+      icao: code,
+      name: w.name,
+      country: w.country,
+      lat: +w.lat,
+      lon: +w.lon,
+      elevation: w.elevation,
+      tz: w.tz
+    };
+    setJson(AP_KEY, cache);
+    return ap[code] = {
+      lat: +w.lat,
+      lon: +w.lon
+    };
+  }
+  /** Terrain connu (registre, base SIA) : à appeler avec l'origine d'une mission pour éviter une recherche. */
+  const rememberAirport = (code, p) => {
+    if (code && p && Number.isFinite(+p.lat)) (airports ||= {})[code] ||= {
+      lat: +p.lat,
+      lon: +p.lon
+    };
+  };
+  /** Convoyage d'un appareil basé hors du terrain de départ : { from, to, minutes, takeoff, pilot } ; null s'il est sur
+   *  place. minutes null : distance inconnue. Décollage du convoyage = décollage de la mission − durée − remise en œuvre. */
+  async function ferryOf({
+    base,
+    departure,
+    type,
+    takeoff,
+    pilot = ''
+  }) {
+    if (!base || !departure || base === departure) return null;
+    const a = await coordsOf(base),
+      b = await coordsOf(departure),
+      minutes = a && b ? Math.round(geo.nm(a, b) / cruiseKt(typeOf(type)) * 60 + FERRY_SETUP_MIN) : null;
+    return {
+      from: base,
+      to: departure,
+      minutes,
+      takeoff: minutes && takeoff ? new Date(takeoff - (minutes + TURN_MIN) * 6e4).toISOString() : null,
+      pilot
+    };
+  }
+
+  // ---- appareils du pilote : types de la flotte possédés (dans son simulateur) et maîtrisés, déclarés dans « Mes
+  // missions », rangés avec ses disponibilités (même fichier : data/disponibilites/<TRI>.json, champ aircraft)
+  /** Types de la flotte (désignateur OACI → variantes), pour le choix du pilote. */
+  function fleetTypes() {
+    const out = new Map();
+    for (const f of window.DEFA_FLEET || []) {
+      const k = typeOf(f.type);
+      if (!k) continue;
+      if (!out.has(k)) out.set(k, new Set());
+      if (f.variant) out.get(k).add(f.variant);
+    }
+    return [...out].map(([type, v]) => ({
+      type,
+      variants: [...v].sort()
+    })).sort((a, b) => a.type.localeCompare(b.type));
+  }
+  /** Qualification d'un pilote sur un type : déclaration (maîtrisé, possédé), sinon vols connus de la référence DEFA.
+   *  { level: 'mastered' | 'owned' | 'flown' | 'none' | 'unknown', text } */
+  function qualification(decl, tri, type) {
+    type = typeOf(type);
+    if (!type) return {
+      level: 'unknown',
+      text: ''
+    };
+    const ac = decl?.aircraft;
+    if (ac?.mastered?.includes(type)) return {
+      level: 'mastered',
+      text: t([`${type} maîtrisé`, `${type} mastered`])
+    };
+    if (ac?.owned?.includes(type)) return {
+      level: 'owned',
+      text: t([`${type} possédé, non maîtrisé`, `${type} owned, not mastered`])
+    };
+    const p = (window.DEFA_REFERENCE?.pilots || []).find(x => x.trigram === tri);
+    if (p && (p.types || []).some(x => typeOf(x) === type)) return {
+      level: 'flown',
+      text: t([`vols connus sur ${type}`, `known flights on ${type}`])
+    };
+    return {
+      level: ac ? 'none' : 'unknown',
+      text: ac ? t([`${type} non déclaré`, `${type} not declared`]) : t([`pas de vol connu sur ${type}`, `no known flight on ${type}`])
+    };
+  }
+
+  // ---- créneaux (ODV : jour × matin / après-midi / soir ; affectations)
+  /** Plage d'un créneau : date ISO du jour, heures z de début et de fin → [début, fin] (ms). */
+  const slotRange = (date, h0, h1) => [Date.parse(`${date}T${String(h0).padStart(2, '0')}:00:00Z`), Date.parse(`${date}T00:00:00Z`) + h1 * 36e5];
+  /** Déclaration d'un pilote sur une plage : code dominant (les « dispo » d'abord), dispo, codes rencontrés. */
+  function declaredOver(av, start, end) {
+    if (!av?.grid || !start || !end) return null;
+    const codes = {};
+    for (let ms = start; ms < end; ms += 36e5) {
+      const a = availabilityAt(av, ms);
+      if (a) codes[a.code] = (codes[a.code] || 0) + 1;
+    }
+    const list = Object.entries(codes).sort((x, y) => (LEGEND[y[0]][1] === 'dispo') - (LEGEND[x[0]][1] === 'dispo') || y[1] - x[1]);
+    if (!list.length) return null;
+    const code = list[0][0];
+    return {
+      code,
+      label: LEGEND[code][0],
+      dispo: LEGEND[code][1] === 'dispo',
+      codes
+    };
+  }
+  /** Plage occupée par une affectation : du décollage (ou du convoyage, ou de l'astreinte) à l'atterrissage estimé,
+   *  remise en œuvre comprise. */
+  function busyRange(a) {
+    const t0 = Date.parse(a.takeoff || a.alert?.ready_at_utc || '') || 0,
+      from = Math.min(t0 || Infinity, Date.parse(a.ferry?.takeoff || '') || Infinity, Date.parse(a.alert?.ready_at_utc || '') || Infinity),
+      to = Math.max(t0 + ((+a.block_min || 120) + TURN_MIN) * 6e4, Date.parse(a.alert?.window_end_utc || '') || 0);
+    return Number.isFinite(from) ? [from, to] : [0, 0];
+  }
+  /** Affectations d'un pilote (ou d'un convoyeur) qui recouvrent une plage. */
+  const assignedOver = (list, tri, start, end) => (list || []).filter(a => a.status !== 'annulée' && (a.pilot === tri || a.ferry?.pilot === tri) && (([f, l]) => f < end && l > start)(busyRange(a)));
+  /** Conflits d'un participant (pilote, appareil, convoyeur) avec les autres affectations : textes. */
+  function conflicts(list, {
+    mission,
+    pilot,
+    registration,
+    ferryPilot,
+    from,
+    to
+  }) {
+    const out = [];
+    for (const o of (list || []).filter(o => o.mission !== mission && o.status !== 'annulée')) {
+      const [os, oe] = busyRange(o);
+      if (!os || os >= to || oe <= from) continue;
+      const at = new Date(os).toISOString().slice(11, 16) + 'Z';
+      for (const who of [pilot, ferryPilot].filter(Boolean))
+        if (o.pilot === who || o.ferry?.pilot === who) out.push(t([`${who} déjà affecté : ${o.mission} ${at}`, `${who} already assigned: ${o.mission} ${at}`]));
+      if (registration && o.aircraft?.registration === registration) out.push(t([`${registration} déjà pris : ${o.mission} ${at}`, `${registration} already taken: ${o.mission} ${at}`]));
+    }
+    return [...new Set(out)];
+  }
+
+  // ---- Centre : écriture d'une affectation (dossier de la mission + index), sans dépendre du registre : dossier des
+  // missions autorisé (FileAccess, « __missions »), dossier de la mission d'après son entrée de registre (folder) ou
+  // la règle <lettre>_<FAMILLE>/<ID>
+  async function missionsDir() {
+    const FA = window.FileAccess;
+    if (!FA) throw new Error(t(['Module d’accès aux dossiers absent', 'Folder access module missing']));
+    const st = await FA.status('__missions');
+    if (st.handle && st.permission === 'granted') return st.handle;
+    if (st.handle) try {
+      if ((await st.handle.requestPermission({
+          mode: 'readwrite'
+        })) === 'granted') return st.handle;
+    } catch {
+      /* dossier déplacé */ }
+    try {
+      return await FA.pickFolder('__missions');
+    } catch (e) {
+      throw new Error(t([`Dossier des missions non autorisé (${e?.name || ''} ${e?.message || ''})`, `Missions folder not authorised (${e?.name || ''} ${e?.message || ''})`]));
+    }
+  }
+  /** Dossier d'une mission (créé au besoin) : { h, folder }. */
+  async function missionFolder(dir, mission) {
+    let folder = mission.folder;
+    if (!folder) {
+      const letter = String(mission.id || '').charAt(0),
+        fam = [];
+      for await (const [n, x] of dir.entries())
+        if (x.kind === 'directory' && n.startsWith(letter + '_')) fam.push(n);
+      folder = `${fam[0] || `${letter}_${String(mission.type || 'MISSION').toUpperCase()}`}/${mission.id}`;
+    }
+    let h = dir;
+    for (const part of folder.split('/').filter(Boolean)) h = await h.getDirectoryHandle(part, {
+      create: true
+    });
+    return {
+      h,
+      folder
+    };
+  }
+  /** Écrit affectations.yaml dans le dossier de la mission et met à jour data/missions/affectations.json (index : une
+   *  ligne par participant, et une ligne « convoyage » pour un convoyeur autre que le pilote). mission : entrée du
+   *  registre { id, type, title, folder, files, maps } ; participants : [{ pilot, callsign, aircraft:{ registration, type,
+   *  base }, departure, takeoff, ferry:{ from, to, minutes, takeoff, pilot }, block_min, status }] ; extra : { h_hour,
+   *  alert, by }. Retour : chemin du fichier de la mission. */
   async function writeAssignment(mission, participants, extra = {}) {
-    const C = window.MissionRegistryCore;
-    if (!C) throw new Error('MissionRegistryCore absent');
-    const dir = await C.missionsDir(true);
-    const at = new Date().toISOString();
+    const dir = await missionsDir(),
+      at = new Date().toISOString();
     const doc = {
       mission: mission.id,
       updated_at: at,
@@ -331,20 +633,15 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
       participants,
       alert: extra.alert || null
     };
-    const mh = await C.missionHandle(mission.id, mission.type, {
-      request: true,
-      folder: mission.folder
-    });
-    if (!mh) throw new Error(t(['Dossier de la mission introuvable', 'Mission folder not found']));
+    const mh = await missionFolder(dir, mission);
     const w = await (await mh.h.getFileHandle('affectations.yaml', {
       create: true
     })).createWritable();
-    await w.write(`# Affectations de la mission ${mission.id} — docs/AFFECTATION_MISSIONS.md\n` + window.jsyaml.dump(doc, {
+    await w.write(`# Affectations de la mission ${mission.id} — docs/AFFECTATION_MISSIONS.md\n` + (window.jsyaml ? window.jsyaml.dump(doc, {
       lineWidth: -1,
       noRefs: true
-    }));
+    }) : JSON.stringify(doc, null, 2)));
     await w.close();
-    // index : lignes de cette mission remplacées
     let idx = {
       assignments: []
     };
@@ -352,8 +649,7 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
       idx = JSON.parse(await (await (await dir.getFileHandle('affectations.json')).getFile()).text());
     } catch {
       /* premier index */ }
-    idx.assignments = (idx.assignments || []).filter(a => a.mission !== mission.id);
-    for (const p of participants) idx.assignments.push({
+    const common = {
       mission: mission.id,
       title: mission.title || '',
       type: mission.type || '',
@@ -361,14 +657,36 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
       files: {
         yaml: (mission.files || []).find(f => /\.ya?ml$/i.test(f)) || `mission${mission.id}.yaml`,
         md: (mission.files || []).find(f => /\.md$/i.test(f)) || '',
-        maps: (mission.images || mission.maps || []).map(x => typeof x === 'string' ? x : x?.name || x?.file).filter(Boolean)
+        maps: (mission.maps || mission.images || []).map(x => typeof x === 'string' ? x : x?.name || x?.file).filter(Boolean)
       },
       h_hour: doc.h_hour,
       alert: doc.alert,
       updated_at: at,
-      by: doc.by,
-      ...p
-    });
+      by: doc.by
+    };
+    idx.assignments = (idx.assignments || []).filter(a => a.mission !== mission.id);
+    for (const p of participants) {
+      idx.assignments.push({
+        ...common,
+        ...p,
+        role: 'mission'
+      });
+      // convoyeur autre que le pilote : sa propre ligne (il voit le convoyage dans « Mes missions »)
+      if (p.ferry?.pilot && p.ferry.pilot !== p.pilot && p.ferry.takeoff) idx.assignments.push({
+        ...common,
+        role: 'convoyage',
+        pilot: p.ferry.pilot,
+        callsign: '',
+        aircraft: p.aircraft,
+        departure: p.ferry.from,
+        destination: p.ferry.to,
+        takeoff: p.ferry.takeoff,
+        block_min: p.ferry.minutes,
+        ferry: null,
+        for_pilot: p.pilot,
+        status: p.status
+      });
+    }
     idx.updatedAt = at;
     const wi = await (await dir.getFileHandle('affectations.json', {
       create: true
@@ -382,6 +700,7 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
 
   window.MissionAssignments = {
     PAGE,
+    TURN_MIN,
     trigram,
     index,
     mine,
@@ -393,11 +712,25 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     DAYS,
     LEGEND,
     emptyGrid,
-    availabilityAt,
     availability,
+    availabilityAt,
     availableAt,
     saveAvailability,
+    saveAircraft,
     gridEditor,
+    geo,
+    typeOf,
+    cruiseKt,
+    coordsOf,
+    rememberAirport,
+    ferryOf,
+    fleetTypes,
+    qualification,
+    slotRange,
+    declaredOver,
+    busyRange,
+    assignedOver,
+    conflicts,
     writeAssignment
   };
   // en-tête prêt après repository_nav.js : pli cacheté posé dès que possible, puis rafraîchi au retour sur l'onglet

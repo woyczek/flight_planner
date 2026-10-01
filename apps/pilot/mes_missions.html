@@ -21,6 +21,8 @@
   .pm-maps figcaption{font-size:11.5px;opacity:.8;margin-top:3px}
   .pm-text p{white-space:pre-line;margin:.4em 0}
   .pm-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0}
+  .pm-types{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:4px 14px}.pm-types label{display:flex;gap:8px;align-items:center;font-size:12.5px}
+  .pm-types .pm-tt{flex:1}.pm-types small{opacity:.7}.pm-types input{margin:0}.pm-types-head{font-weight:700;font-size:11.5px;opacity:.75}
   .pm-who{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.pm-who input{width:6em;text-transform:uppercase}
 </style>
 </head><body>
@@ -41,6 +43,10 @@
 <section data-block-id="mission" data-icon="target" data-subtitle="Mission affectée, en lecture seule : ce qui vous est demandé, la route, les cartes fournies." id="pmMission" hidden><h2>Mission</h2>
   <div id="pmDetail"></div>
 </section>
+<section data-block-id="aircraft" data-icon="plane" data-subtitle="Types de la flotte que vous possédez dans votre simulateur et ceux que vous maîtrisez : le Centre s’en sert pour vous affecter un appareil."><h2>Mes appareils</h2>
+  <div id="pmTypes" class="pm-types"></div>
+  <p id="pmTypesMsg" class="small">Enregistré dans ce navigateur, et avec vos disponibilités (« Enregistrer dans le dossier des données »).</p>
+</section>
 <section data-block-id="availability" data-icon="clock" data-subtitle="Semaine type, heures UTC, codes de l’ODV : choisir un code, puis cliquer ou glisser sur les cases ; un second clic sur une case de ce code l’efface. Le Centre s’en sert pour affecter les missions."><h2>Mes disponibilités</h2>
   <div id="pmGrid"></div>
   <div class="pm-actions"><button type="button" id="pmGridSave" class="secondary" data-icon="save">Enregistrer dans le dossier des données</button><button type="button" id="pmGridClear" class="ghost">Tout effacer</button></div>
@@ -48,11 +54,11 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=9839b88b"></script>
-<script src="../../shared/repository_nav.js?v=fc5b7c37"></script>
+<script src="../../shared/repository_nav.js?v=cb9d99a7"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
-<script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
+<script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=90cadad7"></script>
-<script src="../../shared/assignments.js?v=425a9e9b"></script>
+<script src="../../shared/assignments.js?v=590e1d09"></script>
 <script>
 (() => {
   'use strict';
@@ -89,7 +95,7 @@
     const tri = A.trigram();
     if (!tri) { $('pmList').innerHTML = '<p class="pm-empty">Aucun trigramme réglé.</p>'; return; }
     if (!list.length) { $('pmList').innerHTML = `<p class="pm-empty">Aucune mission à venir affectée à ${esc(tri)}.</p>`; return; }
-    $('pmList').innerHTML = `<table><thead><tr><th>Décollage (UTC)</th><th>Mission</th><th>Titre</th><th>Appareil</th><th>Terrain</th><th>Indicatif</th></tr></thead><tbody>${list.map((a, i) => `<tr data-i="${i}" class="${A.isRead(a) ? '' : 'pm-unread'}${current && A.key(current) === A.key(a) ? ' pm-current' : ''}"><td>${a.alert ? 'astreinte ' + esc(hhmm(Date.parse(a.alert.ready_at_utc))) : esc(fmt(A.when(a)))}</td><td><b>${esc(a.mission)}</b></td><td>${esc(a.title || '')}</td><td>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' '))}</td><td>${esc(a.departure || '')}</td><td>${esc(a.callsign || '')}</td></tr>`).join('')}</tbody></table>`;
+    $('pmList').innerHTML = `<table><thead><tr><th>Décollage (UTC)</th><th>Mission</th><th>Titre</th><th>Appareil</th><th>Terrain</th><th>Indicatif</th></tr></thead><tbody>${list.map((a, i) => `<tr data-i="${i}" class="${A.isRead(a) ? '' : 'pm-unread'}${current && A.key(current) === A.key(a) ? ' pm-current' : ''}"><td>${a.alert ? 'astreinte ' + esc(hhmm(Date.parse(a.alert.ready_at_utc))) : esc(fmt(A.when(a)))}</td><td><b>${esc(a.mission)}</b>${a.role === 'convoyage' ? ' <small>convoyage</small>' : ''}</td><td>${esc(a.title || '')}</td><td>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' '))}</td><td>${esc(a.departure || '')}</td><td>${esc(a.callsign || '')}</td></tr>`).join('')}</tbody></table>`;
     const want = new URLSearchParams(location.search).get('mission');
     const pick = current ? list.find(a => A.key(a) === A.key(current)) : want ? list.find(a => a.mission === want) : null;
     if (pick) show(pick);
@@ -131,11 +137,8 @@
     const order = Array.isArray(y.route_order) && y.route_order.length ? y.route_order : ['ORIGIN', ...(y.turning_points || []).map(p => p.id), 'TARGET', 'DESTINATION'];
     return order.map(id => by[id]).filter(Boolean);
   }
-  const nm = (a, b) => { const R = 3440.065, r = x => x * Math.PI / 180, dl = r(b.lat - a.lat), dg = r(b.lon - a.lon); const h = Math.sin(dl / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dg / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
-  const brg = (a, b) => { const r = x => x * Math.PI / 180, y = Math.sin(r(b.lon - a.lon)) * Math.cos(r(b.lat)), x = Math.cos(r(a.lat)) * Math.sin(r(b.lat)) - Math.sin(r(a.lat)) * Math.cos(r(b.lat)) * Math.cos(r(b.lon - a.lon)); return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360; };
-  const icaoOf = p => /\(([A-Z]{4})\)/.exec(p?.name || '')?.[1] || '';
-  const coord = p => { const f = (v, w, pos, neg) => { const a = Math.abs(v), d = Math.floor(a), m = Math.round((a - d) * 60); return String(d).padStart(w, '0') + String(m === 60 ? 0 : m).padStart(2, '0') + (v >= 0 ? pos : neg); }; return f(p.lat, 2, 'N', 'S') + f(p.lon, 3, 'E', 'W'); };
 
+  const { nm, brg, icaoOf, coord } = A.geo; // outils communs (shared/assignments.js)
   /** Plan de la route (projection équirectangulaire locale), points et terrains nommés. */
   function plan(pts) {
     if (pts.length < 2) return '';
@@ -156,11 +159,12 @@
       <div><span>${alert ? 'Prêt à' : 'Décollage demandé'}</span><b>${esc(alert ? hhmm(Date.parse(alert.ready_at_utc)) : fmt(A.when(a)))}</b></div>
       ${a.ferry ? `<div><span>Convoyage depuis ${esc(a.ferry.from)}</span><b>${esc(a.ferry.minutes)} min · décollage ${esc(hhmm(Date.parse(a.ferry.takeoff)))}</b></div>` : ''}
       <div><span>Statut</span><b>${esc(a.status || 'affectée')}</b></div></div>`;
+    const ferryText = a.role === 'convoyage' ? `<p class="pm-alert">Convoyage : amener ${esc(a.aircraft?.registration || 'l’appareil')} de ${esc(a.departure)} à ${esc(a.destination)} (décollage ${esc(fmt(A.when(a)))}, environ ${esc(a.block_min)} min) pour ${esc(a.for_pilot || '')}, qui l’emploie en mission ${esc(a.mission)}.</p>` : '';
     const alertText = alert ? `<p class="pm-alert">Soyez prêt à ${esc(hhmm(Date.parse(alert.ready_at_utc)))} sur ${esc(alert.aerodrome || a.departure || '')} et attendez les ordres ; décollage prévisible en ${esc(alert.notice_min ?? '?')} minutes.${alert.window_end_utc ? ` Fin d'astreinte ${esc(hhmm(Date.parse(alert.window_end_utc)))}.` : ''}</p>` : '';
     const team = (A._all || []).filter(x => x.mission === a.mission && x.pilot !== a.pilot);
     const maps = (a.files?.maps || []);
     $('pmDetail').innerHTML = `<h3>${esc(a.mission)} — ${esc(y.title || a.title || '')}</h3>
-      ${order}${alertText}
+      ${order}${ferryText}${alertText}
       ${team.length ? `<p><b>Avec</b> : ${team.map(x => `${esc(x.callsign || '')} (${esc(x.pilot)}, ${esc([x.aircraft?.type, x.aircraft?.registration].filter(Boolean).join(' '))}, décollage ${esc(hhmm(A.when(x)))})`).join(' · ')}</p>` : ''}
       <div class="pm-actions">
         <button type="button" class="primary" data-go="maps" data-icon="map" ${y.mission ? '' : 'disabled'}>Ouvrir dans les Cartes de vol</button>
@@ -200,6 +204,23 @@
     }
   }
 
+  // ---- appareils du pilote : types de la flotte possédés / maîtrisés (maîtrisé implique possédé)
+  async function typesLoad() {
+    const tri = A.trigram(), host = $('pmTypes');
+    const types = A.fleetTypes();
+    if (!types.length) { host.innerHTML = '<p class="small">Flotte non chargée.</p>'; return; }
+    const ac = (tri ? (await A.availability(tri))?.aircraft : null) || { owned: [], mastered: [] };
+    host.innerHTML = '<span class="pm-types-head">Type</span><span class="pm-types-head">Possédé · Maîtrisé</span>' + types.map(x => `<label title="${esc(x.variants.join(', '))}"><span class="pm-tt"><b>${esc(x.type)}</b> <small>${esc(x.variants.slice(0, 2).join(', '))}${x.variants.length > 2 ? '…' : ''}</small></span><input type="checkbox" data-own="${esc(x.type)}" ${ac.owned.includes(x.type) || ac.mastered.includes(x.type) ? 'checked' : ''} title="Possédé"><input type="checkbox" data-master="${esc(x.type)}" ${ac.mastered.includes(x.type) ? 'checked' : ''} title="Maîtrisé"></label>`).join('');
+    host.onchange = e => {
+      if (!tri) { $('pmTypesMsg').textContent = 'Trigramme non réglé.'; return; }
+      const m = e.target.dataset.master, o = e.target.dataset.own;
+      if (m && e.target.checked) host.querySelector(`[data-own="${m}"]`).checked = true;      // maîtrisé → possédé
+      if (o && !e.target.checked) host.querySelector(`[data-master="${o}"]`).checked = false; // non possédé → non maîtrisé
+      A.saveAircraft(tri, { owned: [...host.querySelectorAll('[data-own]:checked')].map(x => x.dataset.own), mastered: [...host.querySelectorAll('[data-master]:checked')].map(x => x.dataset.master) });
+      $('pmTypesMsg').textContent = 'Gardé dans ce navigateur ; « Enregistrer dans le dossier des données » (disponibilités) pour le Centre.';
+    };
+  }
+
   // ---- disponibilités
   let grid = null;
   async function gridLoad() {
@@ -220,8 +241,8 @@
 
   // index complet gardé pour les coéquipiers
   const keepAll = async () => { A._all = (await A.index()).assignments; };
-  window.addEventListener('storage', e => { if (e.key === PROFILE) { load(); gridLoad(); } });
-  keepAll().then(load).then(gridLoad);
+  window.addEventListener('storage', e => { if (e.key === PROFILE) { load(); gridLoad(); typesLoad(); } });
+  keepAll().then(load).then(gridLoad).then(typesLoad);
 })();
 </script>
 <script src="../../shared/app_framework.js?v=a63ce655"></script>
