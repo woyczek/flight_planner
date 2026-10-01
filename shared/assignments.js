@@ -334,6 +334,34 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     if (add.length) setJson(SIMS_SEEN, [...seen, ...add]);
     return [...SIMULATORS, ...seen, ...add];
   }
+  // abréviation et couleur de chaque simulateur (pastilles denses : ODV, Mes missions) ; inconnu : initiales, teinte
+  // tirée du nom ; couleurs accordées au design comme les codes de l'ODV
+  const SIM_TAGS = [
+    [/^P3D|PREPAR3D/i, 'P3D', '#6b4fa0'],
+    [/MSFS.*2020|FS\s*2020/i, 'FS20', '#1f6fb2'],
+    [/MSFS.*2024|FS\s*2024/i, 'FS24', '#0d8ab8'],
+    [/X-?PLANE\s*11|XP\s*11/i, 'XP11', '#2f8f3a'],
+    [/X-?PLANE\s*12|XP\s*12/i, 'XP12', '#5aae3c'],
+    [/^DCS/i, 'DCS', '#b2402f'],
+    [/^VPAR/i, 'vPAR', '#c27c0e'],
+    [/JOIN\s*FS/i, 'JFS', '#8a5a2b'],
+    [/HAMACHI/i, 'HAM', '#d4a100']
+  ];
+  /** { abbr, color, name } d'un simulateur. */
+  function simTag(name) {
+    const s = String(name || '').trim(),
+      hit = SIM_TAGS.find(([re]) => re.test(s));
+    if (hit) return { abbr: hit[1], color: window.RepositoryNav?.chartColor?.(hit[2]) || hit[2], name: s };
+    const abbr = (s.match(/[A-Z0-9]+/gi) || [s]).map(w => /\d/.test(w) ? w : w[0]).join('').slice(0, 4).toUpperCase();
+    let h = 0;
+    for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 360;
+    return { abbr, color: `hsl(${h} 45% 42%)`, name: s };
+  }
+  /** Pastilles des simulateurs (abréviation colorée, nom complet au survol). */
+  function simChips(list) {
+    if (!document.getElementById('simChipCss')) document.head.insertAdjacentHTML('beforeend', '<style id="simChipCss">.sim-chip{display:inline-block;margin:0 3px 2px 0;padding:0 5px;border-radius:3px;font:700 10.5px/1.6 system-ui,sans-serif;letter-spacing:.03em;color:#fff;background:var(--sim);vertical-align:middle;white-space:nowrap}</style>');
+    return (list || []).map(simTag).map(t => `<span class="sim-chip" style="--sim:${t.color}" title="${K.esc(t.name)}">${K.esc(t.abbr)}</span>`).join('');
+  }
   /** Simulateurs du pilote (liste de la feuille FLOTTE) : gardés avec ses disponibilités, comme ses appareils. */
   function saveSims(tri, sims) {
     tri = String(tri || '').toUpperCase();
@@ -1071,6 +1099,8 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     saveAvailability,
     saveAircraft,
     saveSims,
+    simTag,
+    simChips,
     weekKey,
     addWeeks,
     weekGrid,

@@ -568,8 +568,9 @@
         }
       }, {
         key: 'simsCommuns',
-        label: 'Simulateurs communs',
-        html: v => `<span class="odv-wrap">${esc(v.join(', ') || '—')}</span>`
+        label: 'Sim. communs',
+        sortValue: s => s.simsCommuns.length,
+        html: v => window.MissionAssignments?.simChips(v) || esc(v.join(', ') || '—')
       }, {
         key: 'mission',
         label: 'Mission probable',
@@ -962,7 +963,7 @@
     render();
   }
   /** Bouton « Missions du registre… » d'un créneau à plusieurs pilotes (famille facultative). */
-  const pickButton = (s, fam = '') => s.n >= 2 ? `<button type="button" class="odv-pick-btn" data-pick="${s.jourIndex}${s.creneauIndex}" data-fam="${esc(fam)}"${centreOn() ? '' : ' disabled title="Centre verrouillé : l’activer dans Paramètres › Centre (CPCO)"'}>Missions du registre…</button>` : '';
+  const pickButton = (s, fam = '', short = false) => s.n >= 2 ? `<button type="button" class="odv-pick-btn" data-pick="${s.jourIndex}${s.creneauIndex}" data-fam="${esc(fam)}"${centreOn() ? (short ? ' title="Missions du registre…"' : '') : ' disabled title="Centre verrouillé : l’activer dans Paramètres › Centre (CPCO)"'}>${short ? 'Registre…' : 'Missions du registre…'}</button>` : '';
   document.addEventListener('click', e => {
     const c = e.target.closest('[data-odv-slot]');
     if (!c) return;
@@ -1002,11 +1003,7 @@
         key: 'ordre',
         label: 'Créneau',
         type: 'number',
-        format: (v, r) => `${r.slot.jour} ${dateFr(r.slot.date)} ${r.slot.creneau}`
-      }, {
-        key: 'rang',
-        label: 'Rang',
-        type: 'number'
+        html: (v, r) => `${esc(r.slot.jour.slice(0, 3))} ${esc(dateFr(r.slot.date))} ${esc(SHORT[r.slot.creneauIndex] || r.slot.creneau)}<sup class="odv-rank" title="Rang ${r.rang}">${r.rang}</sup>`
       }, {
         key: 'famille',
         label: 'Famille',
@@ -1015,25 +1012,31 @@
         key: 'affectation',
         label: 'Affectation proposée',
         sortValue: r => r.affectation.map(a => a.pilote).join(' '),
-        html: v => v.map(a => `${tri(a.pilote, null, false)} <small class="mut">${esc(a.role === '*' ? 'autre pilote' : C.ROLES[a.role] || a.role)}</small>`).join(' + ')
+        html: v => v.map(a => `${tri(a.pilote, null, false)}<small class="mut"> ${esc(a.role === '*' ? 'autre' : String(C.ROLES[a.role] || a.role).replace(/\s*\(.*\)$/, ''))}</small>`).join(' + ')
       }, {
         key: 'renforts',
-        label: 'Peuvent rejoindre',
+        label: '+',
         sortValue: r => r.renforts.length,
         html: v => v.length ? v.map(t => tri(t, null, false)).join(' ') : '—'
       }, {
+        key: 'sims',
+        label: 'Sim.',
+        sortValue: r => r.slot.simsCommuns.length,
+        html: (v, r) => window.MissionAssignments?.simChips(r.slot.simsCommuns) || '—'
+      }, {
         key: 'score',
         label: 'Score',
-        type: 'number'
+        type: 'number',
+        html: (v, r) => `<span title="${esc(r.calcul)}">${esc(v)}</span>`
       }, {
         key: 'registre',
         label: 'Registre',
         sortValue: r => r.slot.n,
-        html: (v, r) => pickButton(r.slot, r.famille) || '—'
+        html: (v, r) => pickButton(r.slot, r.famille, true) || '—'
       }, {
         key: 'calcul',
-        label: 'Justification',
-        html: (v, r) => `<span class="odv-why">${esc(v)}<br>Règle : ${esc(r.regle)}${r.rang === 1 && r.slot.contexte.length ? `<br>Contexte : ${esc(r.slot.contexte.join(' ; '))}` : ''}</span>`
+        label: 'Règle',
+        html: (v, r) => `<span class="odv-why" title="${esc([v, `Règle : ${r.regle}`, ...(r.rang === 1 ? r.slot.contexte : [])].join('\n'))}">${esc(r.regle)}</span>`
       }],
       defaultSortKey: 'ordre',
       onRowClick: r => select(`${r.slot.jourIndex}${r.slot.creneauIndex}`),

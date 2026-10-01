@@ -466,10 +466,36 @@ html[data-tone="light"] :is(.odv-bad, .odv-notes .warn) {
   text-overflow: ellipsis;
   vertical-align: bottom
 }
+/* missions probables : tableau dense (règle sur une ligne, calcul et contexte au survol) */
+#odvMissions table {
+  font-size: 12px
+}
+#odvMissions th,
+#odvMissions td {
+  padding: 3px 6px
+}
+#odvMissions td {
+  line-height: 1.3
+}
+#odvMissions td button.odv-pick-btn {
+  min-height: 0;
+  padding: 0 7px !important;
+  font-size: 11px;
+  line-height: 1.6
+}
+.odv-rank {
+  margin-left: 2px;
+  font-size: 9.5px;
+  opacity: .7
+}
 .odv-why {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
   white-space: normal;
-  min-width: 280px;
-  font-size: 11.5px;
+  min-width: 260px;
+  font-size: 11px;
   color: var(--muted)
 }
 .odv-wrap {
@@ -605,13 +631,13 @@ html[data-design="field"] .odv-heat button.sel {
 </section>
 </main>
 <script src="../../shared/kit.js?v=9839b88b"></script>
-<script src="../../shared/repository_nav.js?v=425e51bd"></script>
+<script src="../../shared/repository_nav.js?v=17124019"></script>
 <script src="../../shared/zip_store.js?v=1b42107f"></script>
 <script src="../../shared/data_files.js?v=50601f47" data-file="references/defa_reference.js"></script>
 <script src="../../shared/mission_table.js?v=9375486d"></script>
 <script src="../../shared/sia_base.js?v=2f8158b3"></script><script src="odv_core.js?v=267b30e8"></script>
-<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/assignments.js?v=66793878"></script><script src="../../shared/assign_dialog.js?v=7ec5b366"></script><script src="odv_assign.js?v=846aaf8c"></script>
-<script src="odv_planning.js?v=05b5b330"></script>
+<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/assignments.js?v=16cd6eac"></script><script src="../../shared/assign_dialog.js?v=7ec5b366"></script><script src="odv_assign.js?v=846aaf8c"></script>
+<script src="odv_planning.js?v=a6a6653b"></script>
 <script src="../../shared/app_framework.js?v=817d675e"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script>
