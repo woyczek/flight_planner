@@ -1,7 +1,7 @@
 # Données de la suite — provenance, mise à jour, sauvegarde
 
 Depuis la v3, les données (tout ce qui est DEFA, saisi ou recalculé) sont **hors du dépôt de l'application**, dans le
-dépôt de données (privé) cloné dans `data/` : `references/`, `cr/`, `missions/`, `sia/`, `planner/` (voir INSTALL.md,
+dépôt de données (privé) cloné dans `data/` : `references/`, `cr/`, `missions/`, `sia/`, `planner/` (voir [INSTALL.md](INSTALL.md),
 `tools/data_template/README.md`). Le dépôt de l'application ne garde que le code, les bases OACI / APD générées et des
 exemples fictifs (`examples/`).
 

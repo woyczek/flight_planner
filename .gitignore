@@ -1,5 +1,5 @@
 # v3 : l'application seule est versionnée ici. Les données (registres, missions, références DEFA, MORA, AIRAC…)
-# vivent dans data/, clone du dépôt de données (privé) — voir INSTALL.md.
+# vivent dans data/, clone du dépôt de données (privé) — voir docs/INSTALL.md.
 data/
 
 # Caches et fichiers de travail

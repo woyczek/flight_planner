@@ -1,6 +1,6 @@
 # X-Plane Web Suite — DEFA Virtual
 
-*[English version: README.md](README.md)*
+*[Sommaire de la documentation](README.md) · [English version](PRESENTATION_en.md)*
 
 Un ensemble de pages web statiques pour les opérations aériennes virtuelles (X-Plane,
 IVAO, VATSIM) : comptes rendus de mission pour 15 familles de missions, reporting et
@@ -10,8 +10,8 @@ fonctionnent dans le navigateur et gardent leurs données dans des fichiers loca
 et dans le navigateur.
 
 - Dépôt : <https://framagit.org/asr/flight_planner>
-- Installation : [INSTALL.md](INSTALL.md)
-- Notes de version : [CHANGELOG.md](CHANGELOG.md) — version 2.2.2 (lien en pied de page)
+- Installation : [INSTALL.md](INSTALL.md) — ou, plus simple, le lanceur : voir le [README du dossier](../README.md)
+- Notes de version : [VERSION.md](VERSION.md) (synthèse) et [CHANGELOG.md](CHANGELOG.md) (détail)
 
 ## Quatre applications, un framework commun
 
@@ -21,7 +21,7 @@ et dans le navigateur.
 | **Landing Performance Dashboard** | `apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html` | Analyse des atterrissages (score, FPM, G) à partir des journaux CSV / LOG, tendances, filtres | [docs/LANDING_DASHBOARD.md](docs/LANDING_DASHBOARD.md) · [mise à jour de la base d'aéronefs](apps/landing/README.md) |
 | **Flight Performance & Fuel Planner** | `apps/planner/flight_performance_planner.html` | Profils de performance par avion, devis carburant, altitude optimale, calibration SimBrief, échange Little Navmap | [docs/FLIGHT_PLANNER.md](docs/FLIGHT_PLANNER.md) |
 | **Missions SIA** | `apps/cpco/` — ☰ › Centre — Générateur de mission, Centre — Studio cartographique | Brief de mission (textes, points, PDF final) et cartes PNG / SVG depuis les données AIRAC du SIA : zones, MORA, quadrillage, hippodromes de ravitaillement, fonds OSM ; passerelle vers un CR DEFA pré-rempli | [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md) |
-| **Framework commun** | `repository_tree`, `shared/`, `AircraftDB/`, `tools/` | Bandeau et menu ☰, langues, blocs, période et zoom (TimePeriod), graphiques, tableaux, profil pilote, données locales, bases d'aéronefs | [docs/FRAMEWORK.md](docs/FRAMEWORK.md) |
+| **Framework commun** | `config/repository_tree`, `shared/`, `AircraftDB/`, `tools/` | Bandeau et menu ☰, langues, blocs, période et zoom (TimePeriod), graphiques, tableaux, profil pilote, données locales, bases d'aéronefs | [docs/FRAMEWORK.md](docs/FRAMEWORK.md) |
 
 Les applications se parlent par le framework : même profil pilote (IVAO, VATSIM,
 SimBrief), même composant de période (zoom par glisser sur les graphiques, boutons ◀ 🔍− ▶
@@ -101,7 +101,7 @@ Dossier `apps/cpco/` ; détail : [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md).
 
 ### Framework commun (résumé — détail : [docs/FRAMEWORK.md](docs/FRAMEWORK.md))
 
-- `repository_tree` : arborescence des pages, libellés, thèmes, favicons (fichier JavaScript
+- `config/repository_tree` : arborescence des pages, libellés, thèmes, favicons (fichier JavaScript
   sans extension).
 - `shared/repository_nav.js` / `.css` : bandeau, menu ☰, langue (FR / EN / DE / ES), profil
   pilote (ID IVAO / VATSIM, identifiant SimBrief), sauvegarde des données locales.
@@ -152,9 +152,8 @@ Version 2.3.0. Contournements indiqués en fin de ligne.
 
 ## Démarrage rapide
 
-1. Récupérer le dépôt (clone ou archive) — voir [INSTALL.md](INSTALL.md).
-2. Le servir localement, par exemple `python -m http.server 8000` à la racine du dépôt, puis
-   ouvrir <http://127.0.0.1:8000/apps/cr/mission_cr.html> dans Chrome ou Edge.
+1. Récupérer le dossier et lancer `lancer.cmd` (Windows) ou `sh lancer.sh` (macOS / Linux) — voir
+   [INSTALL.md](INSTALL.md) ; la page des paramètres s'ouvre : choisir le dossier de l'application.
 3. ☰ › Profil pilote : saisir ses ID IVAO / VATSIM (et l'identifiant SimBrief).
 4. Suivre le [tutoriel](docs/TUTORIAL.md).
 

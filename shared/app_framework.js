@@ -121,7 +121,7 @@
     const r = window.REPOSITORY_TREE?.release || {},
       f = document.querySelector("footer") || document.createElement("footer");
     f.className = "repo-footer no-print";
-    f.innerHTML = `CC RBR - DEFA Virtual - ${r.date||"2026-09-21"} - <a href="${r.changelog||"https://framagit.org/asr/flight_planner/-/blob/master/CHANGELOG.md"}" target="_blank" rel="noopener" title="Changelog / notes de version">v${r.version||"2026.09"}</a> - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a>`;
+    f.innerHTML = `CC RBR - DEFA Virtual - ${r.date||"2026-09-21"} - <a href="${r.changelog||"https://framagit.org/asr/flight_planner/-/blob/master/docs/CHANGELOG.md"}" target="_blank" rel="noopener" title="Changelog / notes de version">v${r.version||"2026.09"}</a> - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a>`;
     if (!f.isConnected) document.body.append(f);
     buildOf(r).then(b => {
       if (!b) return;

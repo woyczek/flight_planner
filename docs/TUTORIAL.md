@@ -1,12 +1,12 @@
 # Tutoriel — votre premier compte rendu de mission
 
-*[README](../README_fr.md) · [Installation](../INSTALL.md) · [Manuel d'exploitation](MANUEL_EXPLOITATION.md)*
+*[Sommaire](README.md) · [Présentation](PRESENTATION.md) · [Installation](INSTALL.md) · [Manuel d'exploitation](MANUEL_EXPLOITATION.md)*
 
 Exemple suivi de bout en bout : une mission **FIRE / GAAR** (guet aérien armé) sur
 Canadair, préparée avec SimBrief, volée sur IVAO ou VATSIM, puis enregistrée et retrouvée
 dans le reporting. Comptez 15 minutes. Les autres familles fonctionnent de la même façon.
 
-Prérequis : dépôt installé et servi (voir [INSTALL.md](../INSTALL.md)), Chrome ou Edge.
+Prérequis : dépôt installé et servi (voir [INSTALL.md](INSTALL.md)), Chrome ou Edge.
 
 ---
 
@@ -319,7 +319,7 @@ Exemple : `examples/missions/Mission 02.md` (ravitaillement en vol sur l'axe SIM
 [SIA_MISSIONS.md](SIA_MISSIONS.md).
 
 1. **Données** (une fois par cycle AIRAC) : ☰ › Centre — Studio cartographique › bloc 1 ›
-   « Dossier SIA XML » → choisir `apps/cpco/` (voir [INSTALL.md](../INSTALL.md)).
+   « Dossier SIA XML » → choisir `apps/cpco/` (voir [INSTALL.md](INSTALL.md)).
 2. **Brief** : ☰ › Centre — Générateur de mission › « YAML et/ou Markdown » → `Mission 02.md`.
    Le fichier n'a ni résumé ni description : ils sont **proposés** (type, cible, zone,
    participants MISTRAL 41/42 et VAILLANT 31, axe SIMONE 010°, 48 NM, 14 NM, virages par la
