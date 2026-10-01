@@ -472,6 +472,40 @@ main.odv-page h3 {
   font-size: 11px;
   line-height: 1.6
 }
+/* en-têtes en icône, simulateurs sur deux lignes (trois pastilles par ligne au plus) */
+#odvSlots th.st-ico,
+#odvMissions th.st-ico {
+  text-align: center
+}
+#odvSlots th.st-ico .repo-svg,
+#odvMissions th.st-ico .repo-svg {
+  display: inline-block;
+  vertical-align: -3px
+}
+.odv-sims {
+  display: inline-flex;
+  white-space: nowrap
+}
+/* créneaux communs : simulateurs sur deux lignes (trois pastilles par ligne), cellules serrées */
+#odvSlots .odv-sims {
+  flex-wrap: wrap;
+  width: 9.6em;
+  row-gap: 1px
+}
+#odvSlots table {
+  font-size: 12px
+}
+#odvSlots th,
+#odvSlots td {
+  padding: 3px 6px;
+  line-height: 1.3
+}
+#odvSlots td button.odv-pick-btn {
+  min-height: 0;
+  padding: 0 7px !important;
+  font-size: 11px;
+  line-height: 1.6
+}
 .odv-rank {
   margin-left: 2px;
   font-size: 9.5px;
@@ -634,13 +668,13 @@ html[data-design="field"] .odv-heat button.sel {
 </section>
 </main>
 <script src="../../shared/kit.js?v=9839b88b"></script>
-<script src="../../shared/repository_nav.js?v=8335ba10"></script>
+<script src="../../shared/repository_nav.js?v=887ba889"></script>
 <script src="../../shared/zip_store.js?v=1b42107f"></script>
 <script src="../../shared/data_files.js?v=50601f47" data-file="references/defa_reference.js"></script>
-<script src="../../shared/mission_table.js?v=9375486d"></script>
+<script src="../../shared/mission_table.js?v=017dd597"></script>
 <script src="../../shared/sia_base.js?v=2f8158b3"></script><script src="odv_core.js?v=267b30e8"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/assignments.js?v=854c1200"></script><script src="../../shared/assign_dialog.js?v=7ec5b366"></script><script src="odv_assign.js?v=5b264224"></script>
-<script src="odv_planning.js?v=8f37b7f1"></script>
+<script src="odv_planning.js?v=b1fef456"></script>
 <script src="../../shared/app_framework.js?v=817d675e"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script>
