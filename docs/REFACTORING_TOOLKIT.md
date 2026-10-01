@@ -169,7 +169,20 @@ Suivi des assets (cahier des charges, consignes de génération, intégration) :
   52 `!important` retirés (studio, générateur, planificateur de performances, planning ODV, Landing) : aucun écart.
   Restent côté pages : `mission_core/core.css` (24), `maintenance.css` (2), Paramètres (3) — ils l'emportent sur le
   socle (fonds et boutons des CR, boutons des tableaux en design standard) : ils partiront à l'étape (2).
-- **Suivant** : (2) socle en couche ; 7 au fil des assets livrés.
+- **Modèle « app » (1ᵉʳ octobre 2026)** : une seule couche `app` pour le socle, les styles des pages et ceux posés par les
+  scripts (ordre et spécificité entre eux inchangés : avec `base < page`, une règle générique de page — `button {…}` —
+  passerait devant les composants du socle), `lib` en dessous (MapLibre), designs hors couche. Outils :
+  `tools/layer_app.py` (feuilles du socle et pages ; règles des designs gardées hors couche) et garde de `kit.js` (tout
+  `<style>` posé par un script rejoint `app`). Banc complet (52 pages × 5 designs × 2 tons, sélecteurs propres en
+  empreinte) : **30 914 écarts** à mi-parcours — les `!important` du socle, une fois en couche, l'emportent sur ceux des
+  designs (fond du bouton ☰ transparent devant le cuir de Cabinet, en-têtes, boutons d'outils des blocs). Essai remis de
+  côté (`git stash` « couches CSS modèle app »).
+- **Enseignement** : la mise en couche et le retrait des `!important` d'un fichier vont ensemble ; un `!important` du
+  socle ne sert qu'à battre une autre règle de l'application (même couche après mise en couche : la spécificité
+  suffit, ou un sélecteur plus précis) ou un design (inutile : les designs seront au-dessus).
+- **Suivant** : (2) `repository_nav.css` et styles des scripts en couche `app` **avec** retrait de leurs `!important`
+  (`strip_page_important.py` sur la feuille ; garde de `kit.js` retirant ceux des styles posés), banc ; puis pages et
+  `core.css` ; 7 au fil des assets livrés.
 
 ## Utiliser la boîte à outils (D)
 
