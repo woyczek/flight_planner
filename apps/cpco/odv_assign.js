@@ -6,7 +6,7 @@
   // mission) et pour affecter depuis un créneau (dialogue « Affecter… », pilotes et heure préremplis).
   // Outils communs : shared/assignments.js (MissionAssignments) ; dialogue : shared/assign_dialog.js (AssignDialog).
   // API (window.OdvAssign) : load(données ODV, réglages), range(j, k), declared(TRI, j, k), assigned(TRI, j, k),
-  //   free(TRI, j, k), line(TRI, j, k, cellule), assign(entrée du registre, [TRI…], début, note)
+  //   free(TRI, j, k), freePilots(j, k), inSlot(j, k), week(), line(TRI, j, k, cellule), assign(entrée, [TRI…], début, note)
   const M = () => window.MissionAssignments;
   const esc = s => window.RepositoryKit.esc(s);
   let D = null, // données ODV (dates, pilotes)
@@ -45,6 +45,20 @@
     const d = declared(tri, j, k);
     const dispo = d ? d.dispo : xlRecord?.categorie === 'dispo';
     return dispo && !assigned(tri, j, k).length;
+  };
+  /** Pilotes libres d'un créneau : disponibles (déclaration, sinon classeur) et non affectés. */
+  const freePilots = (j, k) => (D?.pilotes || []).map(p => p.trigramme).filter(tr => free(tr, j, k, (D.records || []).find(r => r.pilote === tr && r.jourIndex === j && r.creneauIndex === k)));
+  /** Affectations qui recouvrent un créneau (tous pilotes). */
+  const inSlot = (j, k) => {
+    const r = range(j, k);
+    return r ? list.filter(a => a.status !== 'annulée' && (([f, l]) => f < r[1] && l > r[0])(M().busyRange(a))) : [];
+  };
+  /** Affectations de la semaine affichée, par heure. */
+  const week = () => {
+    if (!D?.dates) return [];
+    const from = Date.parse(`${D.dates[0]}T00:00:00Z`),
+      to = from + 7 * 864e5;
+    return list.filter(a => a.status !== 'annulée' && (([f]) => f >= from && f < to)(M().busyRange(a))).sort((x, y) => M().busyRange(x)[0] - M().busyRange(y)[0]);
   };
   /** Seconde ligne de la case (déclaration du pilote) : code coloré par codeCell (même rendu que la ligne du classeur),
    *  encadré rouge si disponible et non affecté, n° de mission si affecté ; cliquable : affecter sur ce créneau. */
@@ -96,6 +110,9 @@
     free,
     line,
     assign,
+    freePilots,
+    inSlot,
+    week,
     onChange: f => hooks.push(f)
   };
 })();

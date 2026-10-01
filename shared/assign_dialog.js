@@ -70,7 +70,24 @@
     const declOf = async tri => tri ? (decl[tri] ??= await M.availability(tri)) : null;
     const planes = fleet.filter(f => M.typeOf(f.type) === type || M.typeOf(f.variant) === type)
       .sort((a, b) => (b.base === departure) - (a.base === departure) || (b.operational !== false) - (a.operational !== false) || String(a.base).localeCompare(String(b.base)));
-    const pilotList = [...new Set([...ref.map(p => p.trigram), ...preset])].filter(Boolean).sort();
+    const pilotList = [...new Set([...ref.map(p => p.trigram), ...preset, ...rows.map(r => r.pilot)])].filter(Boolean).sort();
+    const decls = await M.declarations(pilotList);
+    /** Options d'un choix de pilote : vivier (disponibles et possédant le type, à l'heure donnée), puis les autres. */
+    const poolOpts = (sel, at, {
+      exclude = [],
+      none = ''
+    } = {}) => {
+      const list = M.pool(pilotList, decls, {
+        type,
+        at,
+        family: m.type,
+        exclude
+      });
+      const opt = c => `<option value="${esc(c.tri)}" ${c.tri === sel ? 'selected' : ''}>${esc(M.poolLabel(c))}</option>`;
+      const ok = list.filter(c => c.ok),
+        other = list.filter(c => !c.ok);
+      return `<option value="">${esc(none || '— pilote —')}</option>${ok.length ? `<optgroup label="Disponibles, possèdent le ${esc(type)} (${ok.length})">${ok.map(opt).join('')}</optgroup>` : ''}<optgroup label="Autres (non déclarés, indisponibles ou sans l’appareil)">${other.map(opt).join('')}</optgroup>`;
+    };
 
     if (!dlg) {
       dlg = document.createElement('dialog');
@@ -107,7 +124,7 @@
     const planeOpts = sel => `<option value="">— appareil —</option>${planes.map(p => `<option value="${esc(p.registration)}" ${p.registration === sel ? 'selected' : ''}>${esc(p.registration)} · ${esc(p.variant || p.type)} · ${esc(p.base || '?')}${p.base && p.base !== departure ? ' (convoyage)' : ''}${p.operational === false ? ' — indisponible' : ''}</option>`).join('')}<option value="__other">autre (saisie)…</option>`;
     const draw = () => {
       box.innerHTML = rows.map((r, i) => `<section class="ad-card" data-i="${i}">
-        <div class="ad-line"><label>Pilote<input list="adPilots" data-r="pilot" value="${esc(r.pilot)}" maxlength="4"></label>
+        <div class="ad-line"><label class="ad-pilot">Pilote<select data-r="pilot">${poolOpts(r.pilot, takeoffOf() + i * 6e4, { exclude: rows.filter((x, j) => j !== i).map(x => x.pilot) })}</select></label>
         <label class="ad-grow">Appareil<select data-r="registration">${planeOpts(r.registration)}</select></label>
         <label>Indicatif<input data-r="callsign" value="${esc(r.callsign)}"></label>
         ${i ? `<button type="button" class="repo-plain ad-del" data-del="${i}" title="Retirer cet équipier">✕</button>` : ''}</div>
@@ -134,7 +151,7 @@
         const fz = card?.querySelector('.ad-ferry');
         if (fz) {
           fz.hidden = !ferry;
-          if (ferry) fz.innerHTML = `${ferry.minutes ? `Convoyage <b>${esc(ferry.from)} → ${esc(departure)}</b> ≈ ${ferry.minutes} min, décollage <b>${hhmm(Date.parse(ferry.takeoff))}</b>` : `Convoyage depuis <b>${esc(ferry.from)}</b> : distance inconnue`} — par <input list="adPilots" data-r="ferryPilot" value="${esc(r.ferryPilot)}" placeholder="${esc(r.pilot || 'le pilote')}" maxlength="4">`;
+          if (ferry) fz.innerHTML = `${ferry.minutes ? `Convoyage <b>${esc(ferry.from)} → ${esc(departure)}</b> ≈ ${ferry.minutes} min, décollage <b>${hhmm(Date.parse(ferry.takeoff))}</b>` : `Convoyage depuis <b>${esc(ferry.from)}</b> : distance inconnue`} — par <select data-r="ferryPilot">${poolOpts(r.ferryPilot, ferry.takeoff ? Date.parse(ferry.takeoff) : tk, { none: `${r.pilot || 'le pilote'} (le pilote de la mission)`, exclude: [r.pilot] })}</select>`;
         }
         if (plane?.operational === false) notes.push(chip('appareil non opérationnel', 'err'));
         if (r.pilot) {
@@ -190,7 +207,8 @@
       if (k === 'pilot' || k === 'ferryPilot') v = v.toUpperCase();
       if (k === 'registration' && v === '__other') v = (prompt('Immatriculation de l’appareil') || '').trim().toUpperCase();
       rows[i][k] = v;
-      check();
+      if (k === 'pilot') draw();
+      else check();
     });
     box.addEventListener('click', e => {
       const d = e.target.closest('[data-del]');
@@ -207,7 +225,7 @@
       });
       draw();
     };
-    dlg.querySelectorAll('[data-k]').forEach(el => el.addEventListener('change', check));
+    dlg.querySelectorAll('[data-k]').forEach(el => el.addEventListener('change', () => el.dataset.k === 't' ? draw() : check())); // heure : vivier recalculé
     dlg.querySelectorAll('[data-close]').forEach(b => b.onclick = () => dlg.close());
     $('[data-save]').onclick = async () => {
       const msg = $('.ad-msg');
@@ -259,7 +277,7 @@
 .ad-dialog label{display:grid;gap:3px;font-size:12px;font-weight:600}.ad-dialog label small{font-weight:400;opacity:.75}
 .ad-check-l{display:flex!important;align-items:center;gap:6px!important}
 .ad-card{border:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:8px;padding:8px 12px;margin:0 0 8px}
-.ad-line{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:end}.ad-line input{width:7em}.ad-line .ad-grow{flex:1;min-width:240px}.ad-line select{width:100%}
+.ad-line{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:end}.ad-line input{width:7em}.ad-pilot select{min-width:250px}.ad-ferry select{max-width:320px;margin-left:4px}.ad-line .ad-grow{flex:1;min-width:240px}.ad-line select{width:100%}
 .ad-del{margin-left:auto;font-size:15px;cursor:pointer;background:none;border:0;color:inherit;opacity:.6}.ad-del:hover{opacity:1}
 .ad-ferry{margin:6px 0 0;font-size:12.5px}.ad-ferry input{width:5em;margin-left:4px}.ad-checks{margin:6px 0 0}
 .ad-foot{display:flex;gap:8px;align-items:center;padding:10px 16px;border-top:1px solid color-mix(in srgb,currentColor 18%,transparent)}.ad-msg{flex:1;margin:0;font-size:12.5px}
