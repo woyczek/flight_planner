@@ -8,7 +8,8 @@
   //     disponibilité à l'heure), appareil du type demandé (basé au terrain de départ d'abord ; ailleurs : convoyage,
   //     confiable à un autre pilote), conflits ;
   //   · enregistrement : MissionAssignments.writeAssignment (affectations.yaml de la mission + index).
-  // API : AssignDialog.open(entrée du registre, yaml de la mission, { maps, pilots: [TRI…], takeoff: ms, note })
+  // API : AssignDialog.open(entrée du registre, yaml de la mission, { maps, pilots: [TRI…], takeoff: ms, note }) ;
+  //   frame(id, { title, subtitle, body, foot, wide }) : fenêtre au même gabarit ; chip(texte, ok|warn|err|focus).
   const K = window.RepositoryKit,
     esc = K.esc,
     A = () => window.MissionAssignments;
@@ -21,6 +22,61 @@
   /** Indicatif suivant d'une patrouille : MERCURE31 → MERCURE32. */
   const nextCallsign = (cs, n) => String(cs || '').replace(/(\d+)(?!.*\d)/, d => String(+d + n).padStart(d.length, '0'));
   const chip = (text, kind = '') => `<span class="ad-chip ${kind}">${text}</span>`;
+
+  const css = () => {
+    if (!document.getElementById('adCss')) document.head.insertAdjacentHTML('beforeend', `<style id="adCss">
+.ad-dialog{width:min(920px,96vw);max-height:92vh;padding:0;border:1px solid color-mix(in srgb,currentColor 25%,transparent);border-radius:10px;box-shadow:0 18px 50px rgba(0,0,0,.45);overflow:hidden}
+.ad-dialog::backdrop{background:rgba(10,14,20,.55)}
+.ad-form{display:flex;flex-direction:column;max-height:92vh}
+.ad-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:12px 16px;border-bottom:1px solid color-mix(in srgb,currentColor 18%,transparent)}
+.ad-head h3{margin:0;font-size:17px}.ad-head p{margin:2px 0 0;font-size:12.5px;opacity:.8}.ad-x{font-size:22px;line-height:1;cursor:pointer;background:none;border:0;color:inherit;opacity:.7}.ad-x:hover{opacity:1}
+.ad-body{padding:12px 16px;overflow:auto}
+.ad-facts{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.ad-chip{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;line-height:1.6;background:color-mix(in srgb,currentColor 9%,transparent);margin:0 4px 4px 0}
+.ad-chip.ok{background:color-mix(in srgb,#2e9d5b 22%,transparent)}.ad-chip.warn{background:color-mix(in srgb,#e0a400 26%,transparent)}.ad-chip.err{background:color-mix(in srgb,#e5484d 26%,transparent)}
+.ad-note{padding:6px 10px;border-left:3px solid #e0a400;background:color-mix(in srgb,#e0a400 10%,transparent);font-size:12.5px}
+.ad-when{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px 14px;align-items:end;margin:0 0 12px;padding:8px 12px 10px;border:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:8px}
+.ad-when legend{font-weight:700;font-size:12px;padding:0 4px}
+.ad-dialog label{display:grid;gap:3px;font-size:12px;font-weight:600}.ad-dialog label small{font-weight:400;opacity:.75}
+.ad-check-l{display:flex!important;align-items:center;gap:6px!important}
+.ad-card{border:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:8px;padding:8px 12px;margin:0 0 8px}
+.ad-line{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:end}.ad-line input{width:7em}.ad-pilot select{min-width:250px}.ad-ferry select{max-width:320px;margin-left:4px}.ad-line .ad-grow{flex:1;min-width:240px}.ad-line select{width:100%}
+.ad-del{margin-left:auto;font-size:15px;cursor:pointer;background:none;border:0;color:inherit;opacity:.6}.ad-del:hover{opacity:1}
+.ad-ferry{margin:6px 0 0;font-size:12.5px}.ad-ferry input{width:5em;margin-left:4px}.ad-checks{margin:6px 0 0}
+.ad-foot{display:flex;gap:8px;align-items:center;padding:10px 16px;border-top:1px solid color-mix(in srgb,currentColor 18%,transparent)}.ad-msg{flex:1;margin:0;font-size:12.5px}
+.ad-wide{width:min(1180px,96vw)}
+.ad-chip.focus{outline:2px solid #e5484d;outline-offset:1px}
+.ad-card h4{margin:0 0 6px;font-size:13px}.ad-help{margin:4px 0 0;font-size:12px;opacity:.8}.ad-list{margin:0;padding-left:18px;font-size:12.5px}
+.ad-inline{display:inline-flex!important;align-items:center;gap:6px!important}
+.ad-table{width:100%;border-collapse:collapse;font-size:12.5px}.ad-table th,.ad-table td{padding:4px 6px;text-align:left;vertical-align:top;border-top:1px solid color-mix(in srgb,currentColor 14%,transparent)}.ad-table th{font-size:11.5px;opacity:.8}
+.ad-table tr.bad td{opacity:.55;background:color-mix(in srgb,#e5484d 8%,transparent)}.ad-table hr{border:0;border-top:1px dashed color-mix(in srgb,currentColor 25%,transparent);margin:3px 0}.ad-table .ad-act{white-space:nowrap}.ad-table .ad-chip{margin:0 4px 2px 0}
+html[data-skeuo] .ad-dialog,html[data-skeuo] .ad-card,html[data-skeuo] .ad-when,html[data-skeuo] .ad-chip{border-radius:0}
+</style>`);
+  };
+  /** Fenêtre au gabarit du dialogue (en-tête : titre, sous-titre, ×, corps défilant, pied facultatif) ; titre, sous-titre,
+   *  corps et pied en HTML (échappés par l'appelant). Réutilisée par le planning ODV (choix des missions d'un créneau). */
+  function frame(id, {
+    title,
+    subtitle = '',
+    body = '',
+    foot = '',
+    wide = false
+  }) {
+    css();
+    let d = document.getElementById(id);
+    if (!d) {
+      d = document.createElement('dialog');
+      d.id = id;
+      document.body.append(d);
+      d.addEventListener('click', e => {
+        if (e.target === d || e.target.closest('[data-close]')) d.close();
+      });
+    }
+    d.className = `repo-ap-dialog ad-dialog${wide ? ' ad-wide' : ''}`;
+    d.innerHTML = `<div class="ad-form"><header class="ad-head"><div><h3>${title}</h3>${subtitle ? `<p>${subtitle}</p>` : ''}</div><button type="button" class="repo-plain ad-x" data-close aria-label="Fermer">×</button></header><div class="ad-body">${body}</div>${foot ? `<footer class="ad-foot">${foot}</footer>` : ''}</div>`;
+    if (!d.open) d.showModal();
+    return d;
+  }
 
   let dlg = null;
   async function open(m, y, {
@@ -261,33 +317,14 @@
       }
     };
     draw();
-    if (!document.getElementById('adCss')) document.head.insertAdjacentHTML('beforeend', `<style id="adCss">
-.ad-dialog{width:min(920px,96vw);max-height:92vh;padding:0;border:1px solid color-mix(in srgb,currentColor 25%,transparent);border-radius:10px;box-shadow:0 18px 50px rgba(0,0,0,.45);overflow:hidden}
-.ad-dialog::backdrop{background:rgba(10,14,20,.55)}
-.ad-form{display:flex;flex-direction:column;max-height:92vh}
-.ad-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:12px 16px;border-bottom:1px solid color-mix(in srgb,currentColor 18%,transparent)}
-.ad-head h3{margin:0;font-size:17px}.ad-head p{margin:2px 0 0;font-size:12.5px;opacity:.8}.ad-x{font-size:22px;line-height:1;cursor:pointer;background:none;border:0;color:inherit;opacity:.7}.ad-x:hover{opacity:1}
-.ad-body{padding:12px 16px;overflow:auto}
-.ad-facts{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
-.ad-chip{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;line-height:1.6;background:color-mix(in srgb,currentColor 9%,transparent);margin:0 4px 4px 0}
-.ad-chip.ok{background:color-mix(in srgb,#2e9d5b 22%,transparent)}.ad-chip.warn{background:color-mix(in srgb,#e0a400 26%,transparent)}.ad-chip.err{background:color-mix(in srgb,#e5484d 26%,transparent)}
-.ad-note{padding:6px 10px;border-left:3px solid #e0a400;background:color-mix(in srgb,#e0a400 10%,transparent);font-size:12.5px}
-.ad-when{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px 14px;align-items:end;margin:0 0 12px;padding:8px 12px 10px;border:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:8px}
-.ad-when legend{font-weight:700;font-size:12px;padding:0 4px}
-.ad-dialog label{display:grid;gap:3px;font-size:12px;font-weight:600}.ad-dialog label small{font-weight:400;opacity:.75}
-.ad-check-l{display:flex!important;align-items:center;gap:6px!important}
-.ad-card{border:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:8px;padding:8px 12px;margin:0 0 8px}
-.ad-line{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:end}.ad-line input{width:7em}.ad-pilot select{min-width:250px}.ad-ferry select{max-width:320px;margin-left:4px}.ad-line .ad-grow{flex:1;min-width:240px}.ad-line select{width:100%}
-.ad-del{margin-left:auto;font-size:15px;cursor:pointer;background:none;border:0;color:inherit;opacity:.6}.ad-del:hover{opacity:1}
-.ad-ferry{margin:6px 0 0;font-size:12.5px}.ad-ferry input{width:5em;margin-left:4px}.ad-checks{margin:6px 0 0}
-.ad-foot{display:flex;gap:8px;align-items:center;padding:10px 16px;border-top:1px solid color-mix(in srgb,currentColor 18%,transparent)}.ad-msg{flex:1;margin:0;font-size:12.5px}
-html[data-skeuo] .ad-dialog,html[data-skeuo] .ad-card,html[data-skeuo] .ad-when,html[data-skeuo] .ad-chip{border-radius:0}
-</style>`);
+    css();
     if (!dlg.open) dlg.showModal();
     return dlg;
   }
 
   window.AssignDialog = {
-    open
+    open,
+    frame,
+    chip
   };
 })();

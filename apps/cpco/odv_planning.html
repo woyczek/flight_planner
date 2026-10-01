@@ -409,25 +409,6 @@ html[data-tone="light"] :is(.odv-bad, .odv-notes .warn) {
   font-size: 9.5px;
   padding: 0 3px
 }
-.odv-pick-pil {
-  display: inline-flex;
-  gap: 4px;
-  align-items: center;
-  margin: 0 8px 4px 0;
-  font-size: 11.5px
-}
-.odv-pick-pil.focus {
-  outline: 2px solid #e5484d;
-  outline-offset: 1px
-}
-.odv-pick h4 {
-  margin: 12px 0 4px
-}
-.odv-pick-table hr {
-  border: 0;
-  border-top: 1px dashed color-mix(in srgb, currentColor 25%, transparent);
-  margin: 3px 0
-}
 .odv-week-h {
   margin: 14px 0 4px
 }
@@ -534,56 +515,6 @@ html[data-tone="light"] :is(.odv-bad, .odv-notes .warn) {
     border-left-color: #999
   }
 }
-.odv-pick {
-  width: min(1100px, calc(100vw - 32px));
-  max-height: 86vh;
-  padding: 12px 16px;
-  border: 1px solid var(--line, #c8d6dd);
-  border-radius: 10px;
-  background: var(--card, #fff);
-  color: inherit
-}
-.odv-pick::backdrop {
-  background: #0006
-}
-.odv-pick-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px
-}
-.odv-pick-head h3 {
-  margin: 0
-}
-.odv-pick-head button {
-  font-size: 18px;
-  padding: 0 8px
-}
-.odv-pick-avoid {
-  padding: 6px 10px;
-  border-left: 4px solid #e0a400;
-  background: #e0a40014
-}
-.odv-pick-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  margin-top: 8px
-}
-.odv-pick-table th,
-.odv-pick-table td {
-  padding: 4px 6px;
-  border-top: 1px solid var(--line, #dde5ea);
-  text-align: left;
-  vertical-align: top
-}
-.odv-pick-table tr.bad td {
-  opacity: .55;
-  background: #e5484d12
-}
-.odv-pick-table tr.warn td:nth-child(9) {
-  color: #9a6b00
-}
 .odv-pick-btn {
   font-size: 12px;
   padding: 3px 9px
@@ -679,8 +610,8 @@ html[data-design="field"] .odv-heat button.sel {
 <script src="../../shared/data_files.js?v=50601f47" data-file="references/defa_reference.js"></script>
 <script src="../../shared/mission_table.js?v=9375486d"></script>
 <script src="../../shared/sia_base.js?v=2f8158b3"></script><script src="odv_core.js?v=267b30e8"></script>
-<script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/assignments.js?v=558689c1"></script><script src="../../shared/assign_dialog.js?v=b6a5164d"></script><script src="odv_assign.js?v=15ed498c"></script>
-<script src="odv_planning.js?v=a994310b"></script>
+<script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/assignments.js?v=558689c1"></script><script src="../../shared/assign_dialog.js?v=b9f30ecf"></script><script src="odv_assign.js?v=15ed498c"></script>
+<script src="odv_planning.js?v=e0d9aaad"></script>
 <script src="../../shared/app_framework.js?v=a63ce655"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script>
