@@ -29,24 +29,26 @@
   /* « CONFIDENTIEL » : tampon encreur (image commune aux designs) ; le mot reste lu par les lecteurs d'écran */
   .pm-label{position:relative;background:var(--sheet-card-bg,#f4ead0);color:var(--sheet-ink,#2b2112)} /* papier : lisible sur tout fond */
   .pm-label small{position:absolute;z-index:2;top:-14px;right:-18px;width:180px;aspect-ratio:700/245;background:url("../../shared/deco/stamp-confidential.webp") center/contain no-repeat;color:transparent;font-size:0;transform:rotate(-9deg);opacity:.8;pointer-events:none}
-  /* Cabinet, Aqua : dossier fermé (ficelé et scellé, ou noué d'un ruban, tant que la mission n'est pas ouverte) ;
-     ouvrir brise le sceau (dénoue le ruban). Images par design : --pm-cover, --pm-seal, proportions --pm-ratio */
-  html[data-design="cabinet"]{--pm-cover:url("../../shared/deco/cabinet/mission-cover.webp");--pm-seal:url("../../shared/deco/cabinet/mission-seal-fitted.webp");--pm-ratio:720/1015;--pm-cw:calc(var(--pm-bw) * .4266)}
-  html[data-design="aqua"]{--pm-cover:url("../../shared/deco/aqua/mission-cover.webp");--pm-seal:url("../../shared/deco/aqua/mission-seal-fitted.webp");--pm-ratio:720/954;--pm-cw:calc(var(--pm-bw) * .46)}
-  html:is([data-design="cabinet"],[data-design="aqua"]) #pmDetail{--pm-bw:min(1064px,100%)}
-  html:is([data-design="cabinet"],[data-design="aqua"]) .pm-cover{position:relative;box-sizing:border-box;width:var(--pm-cw);aspect-ratio:var(--pm-ratio);margin:0 0 0 auto;padding:7% 0 0;border:0;align-content:start;background:var(--pm-cover) center/100% 100% no-repeat;filter:drop-shadow(0 10px 16px rgba(0,0,0,.45))}
+  /* Cabinet, Aqua, Durci : dossier fermé (ficelé et scellé, noué d'un ruban ou sanglé, tant que la mission n'est pas ouverte) ;
+     ouvrir brise le sceau (dénoue le ruban). Images par design : --pm-cover, --pm-seal, proportions --pm-ratio, largeur --pm-cwk (part du dossier ouvert) */
+  html[data-design="cabinet"]{--pm-cover:url("../../shared/deco/cabinet/mission-cover.webp");--pm-seal:url("../../shared/deco/cabinet/mission-seal-fitted.webp");--pm-ratio:720/1015;--pm-cwk:.4266}
+  /* Durci : carnet de terrain fermé (la sangle à boucle fait le scellé : pas de calque) */
+  html[data-design="field"]{--pm-cover:url("../../shared/deco/field/notebook-closed.webp");--pm-seal:none;--pm-ratio:491/560;--pm-cwk:.52}
+  html[data-design="aqua"]{--pm-cover:url("../../shared/deco/aqua/mission-cover.webp");--pm-seal:url("../../shared/deco/aqua/mission-seal-fitted.webp");--pm-ratio:720/954;--pm-cwk:.445}
+  html:is([data-design="cabinet"],[data-design="aqua"],[data-design="field"]) #pmDetail{--pm-bw:min(1064px,100%)}
+  html:is([data-design="cabinet"],[data-design="aqua"],[data-design="field"]) .pm-cover{position:relative;box-sizing:border-box;width:calc(var(--pm-bw) * var(--pm-cwk));aspect-ratio:var(--pm-ratio);margin:0 0 0 auto;padding:7% 0 0;border:0;align-content:start;background:var(--pm-cover) center/100% 100% no-repeat;filter:drop-shadow(0 10px 16px rgba(0,0,0,.45))}
   /* scellé : ficelle passée dans les œillets et sceau (Cabinet) ou ruban noué (Aqua), calque à la toile exacte du
      dossier (ombre et découpe comprises : mission-seal-fitted.webp) ; dossier rouvert après lecture : sans scellé */
-  html:is([data-design="cabinet"],[data-design="aqua"]) .pm-cover.sealed::after{content:"";position:absolute;z-index:2;inset:0;background:var(--pm-seal) center/100% 100% no-repeat;pointer-events:none;transition:opacity .38s ease-in}
-  html:is([data-design="cabinet"],[data-design="aqua"]) .pm-cover.sealed.open::after{opacity:0}
-  @media (max-width:759px){html:is([data-design="cabinet"],[data-design="aqua"]) .pm-cover{width:min(380px,92%);margin:0 auto}}
-  html:is([data-design="cabinet"],[data-design="aqua"]) .pm-label{position:relative;z-index:1;margin-top:4%;min-width:0;width:72%;padding:12px 16px;background:#f4ead0;color:#2b2112;border:1px solid rgba(60,40,20,.35);box-shadow:0 1px 3px rgba(0,0,0,.3);transform:rotate(-1.2deg);font-family:Georgia,"Times New Roman",serif}
+  html:is([data-design="cabinet"],[data-design="aqua"],[data-design="field"]) .pm-cover.sealed::after{content:"";position:absolute;z-index:2;inset:0;background:var(--pm-seal) center/100% 100% no-repeat;pointer-events:none;transition:opacity .38s ease-in}
+  html:is([data-design="cabinet"],[data-design="aqua"],[data-design="field"]) .pm-cover.sealed.open::after{opacity:0}
+  @media (max-width:759px){html:is([data-design="cabinet"],[data-design="aqua"],[data-design="field"]) .pm-cover{width:min(380px,92%);margin:0 auto}}
+  html:is([data-design="cabinet"],[data-design="aqua"],[data-design="field"]) .pm-label{position:relative;z-index:1;margin-top:4%;min-width:0;width:72%;padding:12px 16px;background:#f4ead0;color:#2b2112;border:1px solid rgba(60,40,20,.35);box-shadow:0 1px 3px rgba(0,0,0,.3);transform:rotate(-1.2deg);font-family:Georgia,"Times New Roman",serif}
   /* Aqua : étiquette blanche collée, tampon « URGENT » */
   html[data-design="aqua"] .pm-label{background:#fbfaf6;color:#1d2530;border-color:rgba(40,50,60,.25);transform:rotate(-.8deg);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif}
   html[data-design="aqua"] .pm-label small{aspect-ratio:700/194;background-image:url("../../shared/deco/stamp-urgent.webp")}
-  html:is([data-design="cabinet"],[data-design="aqua"]) .pm-open{position:absolute;z-index:3;left:0;right:0;bottom:7%;text-align:center}
-  @media (prefers-reduced-motion:reduce){html:is([data-design="cabinet"],[data-design="aqua"]) .pm-cover::after{transition:none}}
-  /* Cabinet (Aqua : surcharges plus bas) : dossier ouvert (pages : zones claires de mission-open.webp) */
+  html:is([data-design="cabinet"],[data-design="aqua"],[data-design="field"]) .pm-open{position:absolute;z-index:3;left:0;right:0;bottom:7%;text-align:center}
+  @media (prefers-reduced-motion:reduce){html:is([data-design="cabinet"],[data-design="aqua"],[data-design="field"]) .pm-cover::after{transition:none}}
+  /* Cabinet (Aqua, Durci : surcharges plus bas) : dossier ouvert (pages : zones claires de mission-open.webp) */
   .pm-book{container-type:inline-size;position:relative;width:var(--pm-bw,min(1064px,100%));aspect-ratio:1400/842;margin:0 0 12px auto;background:url("../../shared/deco/cabinet/mission-open.webp") center/contain no-repeat;filter:drop-shadow(0 10px 18px rgba(0,0,0,.45))}
   .pm-page{position:absolute;top:8.5%;bottom:8%;overflow:auto;padding:1.6cqw 2.4cqw 5.2cqw;font:12.5px/1.5 "Courier Prime","Courier New",Courier,monospace;color:#2b2112;scrollbar-width:thin}
   .pm-left{left:5.6%;right:54.4%}.pm-right{left:53.6%;right:5.3%}.pm-page{cursor:pointer}
@@ -117,6 +119,18 @@
   html[data-design="aqua"] .pm-book .pm-head>:not(.pm-no){position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
   html[data-design="aqua"] .pm-book .pm-head .pm-no{position:absolute;top:calc(100% + 6px);right:0;font-size:11px;letter-spacing:.06em;color:#14285a}
   html[data-design="aqua"] .pm-book [data-part="order"] .pm-dr{top:auto;bottom:-10px}
+  /* Durci : carnet de terrain ouvert (pages : x 63–473 et 475–871, dos à 474 sur 1000 × 595 ; texte dans le réglé) */
+  html[data-design="field"] .pm-book{aspect-ratio:1000/595;background-image:url("../../shared/deco/field/notebook-open.webp")}
+  html[data-design="field"] .pm-page{top:8.4%;bottom:7%;color:#1f2a1c}
+  html[data-design="field"] .pm-left{left:7.6%;right:53.2%}html[data-design="field"] .pm-right{left:48.1%;right:13.4%}
+  html[data-design="field"] .pm-leaf{top:5.21%;bottom:5.71%;left:47.5%;right:12.9%;transform-origin:-.25% 50%}
+  html[data-design="field"] .pm-leaf.back{left:6.3%;right:52.7%;transform-origin:100.24% 50%}
+  html[data-design="field"] .pm-leaf .pm-face{inset:0;background-image:url("../../shared/deco/field/mission-page.webp");padding:3.5cqw 2.9cqw 5.97cqw 3cqw;color:#1f2a1c}
+  html[data-design="field"] .pm-leaf.fwd .pm-back{padding:3.5cqw 2.9cqw 5.97cqw 2.3cqw}
+  html[data-design="field"] .pm-leaf.back .pm-front{padding:3.5cqw 2.9cqw 5.97cqw 3.7cqw}
+  html[data-design="field"] .pm-leaf.back .pm-back{padding:3.5cqw 4.3cqw 5.97cqw 3cqw}
+  html[data-design="field"] .pm-corner{width:5.5%;background-image:url("../../shared/deco/field/page-corner.webp")}
+  html[data-design="field"] .pm-next{right:12.9%;bottom:5.71%}html[data-design="field"] .pm-prev{left:6.3%;bottom:5.71%}
   .pm-week{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}.pm-week input{width:auto}.pm-week button{min-width:2.2em}
   .pm-types-sum{margin:0 0 8px;font-weight:600}
   .pm-sims{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 14px}
@@ -280,7 +294,7 @@
     host.insertBefore(cv, actions || null);
     const open = () => {
       cv.classList.add('open');
-      const anim = sealed && ['cabinet', 'aqua'].includes(document.documentElement.dataset.design) && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const anim = sealed && ['cabinet', 'aqua', 'field'].includes(document.documentElement.dataset.design) && !matchMedia('(prefers-reduced-motion: reduce)').matches;
       setTimeout(() => {
         if (sealed) {
           A.markRead(a);
@@ -468,14 +482,14 @@
     window.AppFramework?.refresh?.();
   }
 
-  // ---- dossier ouvert (Cabinet, Aqua), pages dans l'ordre d'un livre : 1 l'étiquette (titre), 2 l'en-tête, l'ordre et le
+  // ---- dossier ouvert (Cabinet, Aqua, Durci), pages dans l'ordre d'un livre : 1 l'étiquette (titre), 2 l'en-tête, l'ordre et le
   // résumé (diffusion restreinte), 3 et suivantes le détail, puis les cartes (deux par page, posées de travers), enfin
   // objectifs, remarques et signature. Double page : intérieur de la couverture + page 1 à l'ouverture, puis 2-3, 4-5…
   // Le coin corné tourne la page (suivante en bas à droite, précédente en bas à gauche) ; le contenu trop long passe
   // sur la page suivante. Écran étroit (< 760 px) ou autre design : présentation ordinaire.
   let bookStart = 0; // double page à rouvrir quand le livre est redessiné (changement de design)
   function bookify() {
-    if (!['cabinet', 'aqua'].includes(document.documentElement.dataset.design) || !matchMedia('(min-width: 760px)').matches) return;
+    if (!['cabinet', 'aqua', 'field'].includes(document.documentElement.dataset.design) || !matchMedia('(min-width: 760px)').matches) return;
     const host = $('pmDetail'),
       part = n => host.querySelector(`[data-part="${n}"]`),
       actions = part('actions');
