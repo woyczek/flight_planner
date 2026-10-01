@@ -322,7 +322,7 @@
     document.head.append(l);
     // illustrations du décor complet (frise de Cabinet, radar de Durci), même version
     const d = document.createElement("script");
-    d.src = new URL("design_deco.js?v=95df47de", script.src).href;
+    d.src = new URL("design_deco.js?v=ef00e49c", script.src).href;
     document.head.append(d);
   };
   designCss(design);
@@ -514,7 +514,7 @@
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
-      sc.src = new URL("appearance_page.js?v=9ccc994e", script.src).href;
+      sc.src = new URL("appearance_page.js?v=19a712e9", script.src).href;
       sc.onload = show;
       document.head.append(sc);
     }
@@ -906,7 +906,7 @@
     files.src = new URL("file_access.js?v=e274fbbc", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=dacbb72b", "block_icons.js?v=ff923add", "side_nav.js?v=355697e6"]) {
+    for (const f of ["icons/repository_icons.js?v=58f492d6", "block_icons.js?v=ff923add", "side_nav.js?v=355697e6"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
@@ -916,7 +916,7 @@
     store.src = new URL("browser_store.js?v=938ce9e7", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
-    assign.src = new URL("assignments.js?v=d74e7849", script.src).href;
+    assign.src = new URL("assignments.js?v=854c1200", script.src).href;
     document.head.append(assign);
     const update = document.createElement("script");
     update.src = new URL("suite_update.js?v=d84028ad", script.src).href;
