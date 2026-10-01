@@ -75,19 +75,23 @@
     const title = a.length ? `Affecté : ${a.map(x => `${x.mission}${x.role === 'convoyage' ? ' (convoyage)' : ''}`).join(', ')}` : isFree ? 'Disponible, non affecté : cliquer pour affecter une mission sur ce créneau' : 'Cliquer pour affecter une mission sur ce créneau';
     return `<span class="odv-decl${isFree ? ' odv-free' : ''}" data-odv-slot="${j}${k}" data-tri="${esc(tri)}" title="${esc(title)}">${decl}${a.length ? `<b class="odv-asg">${esc(a[0].mission)}${a.length > 1 ? '+' : ''}</b>` : ''}</span>`;
   }
-  /** Ouvre le dialogue d'affectation pour une mission du registre, pilotes et heure préremplis (yaml lu par fetch). */
-  async function assign(m, pilots, takeoff, note = '') {
-    if (!window.AssignDialog) throw new Error('Dialogue d’affectation absent');
+  /** Yaml d'une mission du registre (fetch) ; {} si illisible. */
+  async function yamlOf(m) {
     const root = window.RepositoryNav?.root || new URL('../../', location.href).href,
       file = (m.files || []).find(f => /\.ya?ml$/i.test(f)) || `mission${m.id}.yaml`;
-    let y = {};
     try {
       const r = await fetch(new URL(`data/missions/${m.folder}/${file}`, root).href, {
         cache: 'no-store'
       });
-      if (r.ok) y = window.jsyaml.load((await r.text()).replace(/^#.*\n/, '')) || {};
+      if (r.ok) return window.jsyaml.load((await r.text()).replace(/^#.*\n/, '')) || {};
     } catch {
-      /* mission illisible : dialogue sur l'entrée du registre */ }
+      /* mission illisible : entrée du registre seule */ }
+    return {};
+  }
+  /** Ouvre le dialogue d'affectation pour une mission du registre, pilotes et heure préremplis. */
+  async function assign(m, pilots, takeoff, note = '') {
+    if (!window.AssignDialog) throw new Error('Dialogue d’affectation absent');
+    const y = await yamlOf(m);
     const dlg = await window.AssignDialog.open(m, y, {
       maps: m.images || [],
       pilots,
@@ -102,6 +106,20 @@
     });
   }
 
+  /** Affecte directement (matrice du créneau) : rows [{ pilot, registration, callsign }] ; puis relit et prévient. */
+  async function write(m, rows, takeoff) {
+    const M = window.MissionAssignments,
+      y = await yamlOf(m);
+    const parts = await M.buildParticipants(y, rows, takeoff);
+    const f = await M.writeAssignment({
+      ...m,
+      maps: m.images || []
+    }, parts, {});
+    await load(D, S);
+    hooks.forEach(h => h());
+    return f;
+  }
+
   window.OdvAssign = {
     load,
     declaration: tri => decl[tri] || null,
@@ -111,6 +129,8 @@
     free,
     line,
     assign,
+    write,
+    yamlOf,
     freePilots,
     inSlot,
     week,

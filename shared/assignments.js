@@ -571,6 +571,33 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
   /** Qualification d'un pilote sur un type : déclaration (maîtrisé, possédé), sinon vols connus de la référence DEFA.
    *  { level: 'mastered' | 'owned' | 'flown' | 'none' | 'unknown', text } */
   function qualification(decl, tri, type) {
+    if (type && typeof type === 'object') {
+      if (type.type) type = type.type;
+      else {
+        // poste générique : meilleur type de la catégorie déclaré par le pilote
+        const spec = type,
+          lbl = specLabel(spec),
+          ac = decl?.aircraft,
+          ms = (ac?.mastered || []).filter(x => fits(spec, x)),
+          ow = (ac?.owned || []).filter(x => fits(spec, x));
+        if (!spec.kind) return {
+          level: 'unknown',
+          text: ''
+        };
+        if (ms.length) return {
+          level: 'mastered',
+          text: t([`${lbl} maîtrisé (${ms.join(', ')})`, `${lbl} mastered (${ms.join(', ')})`])
+        };
+        if (ow.length) return {
+          level: 'owned',
+          text: t([`${lbl} possédé (${ow.join(', ')})`, `${lbl} owned (${ow.join(', ')})`])
+        };
+        return {
+          level: ac ? 'none' : 'unknown',
+          text: ac ? t([`aucun ${lbl} déclaré`, `no ${lbl} declared`]) : t([`appareils non déclarés`, `aircraft not declared`])
+        };
+      }
+    }
     type = typeOf(type);
     if (!type) return {
       level: 'unknown',
@@ -658,7 +685,55 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     return Object.fromEntries([...new Set(tris)].map(tr => [tr, declCache[tr] ?? null]));
   }
   /** Possède l'appareil (déclaré possédé ou maîtrisé) ; null si le pilote n'a rien déclaré. */
-  const ownsType = (decl, type) => decl?.aircraft ? [...(decl.aircraft.owned || []), ...(decl.aircraft.mastered || [])].includes(typeOf(type)) : null;
+  // ---- postes d'une mission : un par équipage aérien, chacun son type (désignateur) ou, type générique du schéma
+  // hélico (« Hélicoptère »), une catégorie et un service (« Gendarmerie » → appareils de la Gendarmerie nationale)
+  /** Catégorie d'un désignateur (base OACI) : helico, jet, turboprop, piston, other. */
+  const catOfType = ty => {
+    const db = window.AIRCRAFT_DB || {};
+    return categoryOf((db[ty] || db[db.__aliases?.[ty]] || {}).description)[0];
+  };
+  const fold = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().trim();
+  const kindOf = s => /h[ée]lico|helicopter|rotor/i.test(s) ? 'helico' : /avion|aircraft|airplane|plane|jet/i.test(s) ? 'avion' : '';
+  /** Poste : { callsign, type ('' si générique), kind (helico | avion | ''), service, label }. */
+  function post(callsign, rawType, service = '') {
+    const ty = typeOf(rawType),
+      known = !!ty && (fleetTypes().some(x => x.type === ty) || !!(window.AIRCRAFT_DB || {})[ty]);
+    return {
+      callsign: String(callsign || ''),
+      type: known ? ty : '',
+      kind: known ? (catOfType(ty) === 'helico' ? 'helico' : 'avion') : kindOf(rawType),
+      service: String(service || ''),
+      label: String(rawType || '')
+    };
+  }
+  const isTeam = x => x && x.name && !/^[-\s]*$/.test(x.name) && !/^[-\s]*$/.test(String(x.type || ''));
+  /** Postes d'une mission : yaml (aircraft[], ou teams[] du schéma hélico), sinon entrée du registre (teams,
+   *  aircraftTypes) ; équipes au sol (type ni appareil ni hélicoptère/avion) écartées. */
+  function postsOf(entry, y = {}) {
+    let out = [];
+    if (Array.isArray(y?.aircraft) && y.aircraft.length) out = y.aircraft.map(a => post(a.callsign, a.type, a.operator || a.service));
+    else if (Array.isArray(y?.teams) && y.teams.length) out = y.teams.filter(isTeam).map(x => post(x.name, x.type, x.service));
+    else if (entry?.teams?.length) out = entry.teams.filter(isTeam).map(x => post(x.name, x.type, x.service));
+    out = out.filter(p => p.type || p.kind);
+    if (!out.length) out = (entry?.aircraftTypes || []).map((ty, i) => post(entry.callsigns?.[i], ty));
+    return out.length ? out : [post('', '')];
+  }
+  /** Un type d'appareil convient-il au poste (désignateur, ou poste générique : sa catégorie) ? spec : poste ou type. */
+  const fits = (spec, ty) => {
+    const k = typeOf(ty);
+    if (!spec || typeof spec === 'string') return !typeOf(spec) || k === typeOf(spec);
+    if (spec.type) return k === spec.type;
+    return spec.kind === 'helico' ? catOfType(k) === 'helico' : spec.kind === 'avion' ? catOfType(k) !== 'helico' : true;
+  };
+  const specLabel = spec => typeof spec === 'string' ? typeOf(spec) : spec?.type || (spec?.kind === 'helico' ? t(['hélicoptère', 'helicopter']) : spec?.kind === 'avion' ? t(['avion', 'aircraft']) : '');
+  /** Appareils de la flotte pour un poste : du type (ou de la catégorie), service du poste puis terrain de départ d'abord. */
+  function planesFor(spec, departure = '') {
+    const svc = fold(spec?.service || '');
+    return (window.DEFA_FLEET || []).filter(f => fits(spec, f.type) || (spec?.type && typeOf(f.variant) === spec.type))
+      .sort((a, b) => (!!svc && fold(b.operator).startsWith(svc)) - (!!svc && fold(a.operator).startsWith(svc)) || (b.base === departure) - (a.base === departure) || (b.operational !== false) - (a.operational !== false) || String(a.base).localeCompare(String(b.base)));
+  }
+  /** Le pilote a-t-il un appareil pour ce poste (type, ou catégorie d'un poste générique) ? null : appareils non déclarés. */
+  const ownsType = (decl, spec) => decl?.aircraft ? [...(decl.aircraft.owned || []), ...(decl.aircraft.mastered || [])].some(ty => fits(spec, ty)) : null;
   /** Vivier pour un type et une heure : pilotes qui possèdent l'appareil et sont disponibles (code dispo) d'abord —
    *  maîtrisé avant possédé —, puis les autres (non déclarés, indisponibles), pour choisir quand même en connaissance de
    *  cause. [{ tri, qual, avail, owns, ok }] ; ok : possède le type et disponible. */
@@ -702,26 +777,26 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     }
     const options = [];
     for (const missions of units.values()) {
-      const slots = missions.flatMap(m => Array.from({
-        length: Math.max(1, (m.callsigns || []).length || 1)
-      }, () => ({
+      const slots = missions.flatMap(m => postsOf(m).map(p => ({
         mission: m,
-        types: (m.aircraftTypes || []).map(typeOf).filter(Boolean)
+        post: p
       })));
+      const masters = (tr, s) => (decls[tr]?.aircraft?.mastered || []).some(ty => fits(s.post, ty));
       // affectation gloutonne : postes les plus rares d'abord (moins de pilotes éligibles), maîtrisé avant possédé
-      const elig = s => free.filter(tr => !s.types.length || s.types.some(ty => ownsType(decls[tr], ty)));
+      const elig = s => free.filter(tr => !(s.post.type || s.post.kind) || ownsType(decls[tr], s.post));
       const order = [...slots].sort((a, b) => elig(a).length - elig(b).length);
       const used = new Set(),
         pairs = [];
       let mastered = 0;
       for (const s of order) {
-        const cands = elig(s).filter(tr => !used.has(tr)).sort((x, y) => (y === focus) - (x === focus) || (s.types.some(ty => decls[y]?.aircraft?.mastered?.includes(ty))) - (s.types.some(ty => decls[x]?.aircraft?.mastered?.includes(ty))));
+        const cands = elig(s).filter(tr => !used.has(tr)).sort((x, y) => (y === focus) - (x === focus) || masters(y, s) - masters(x, s));
         if (!cands.length) continue;
         used.add(cands[0]);
-        if (s.types.some(ty => decls[cands[0]]?.aircraft?.mastered?.includes(ty))) mastered++;
+        if (masters(cands[0], s)) mastered++;
         pairs.push({
           mission: s.mission.id,
-          tri: cands[0]
+          tri: cands[0],
+          post: s.post
         });
       }
       if (!pairs.length) continue;
@@ -791,6 +866,40 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
       h,
       folder
     };
+  }
+  /** Participants d'une affectation, comme les calcule le dialogue : appareil de la flotte, convoyage depuis sa base,
+   *  heures (décalées d'une minute par équipier). rows : [{ pilot, registration, callsign, ferryPilot }] ; y : yaml. */
+  async function buildParticipants(y, rows, takeoff) {
+    const departure = geo.icaoOf(y?.origin) || '',
+      blockMin = +y?.timing?.estimated_block_min || +y?.timing?.estimated_flight_min || 120,
+      out = [];
+    for (const [i, r] of rows.entries()) {
+      const plane = (window.DEFA_FLEET || []).find(f => f.registration === r.registration),
+        tk = takeoff + i * 6e4;
+      const ferry = plane ? await ferryOf({
+        base: plane.base,
+        departure,
+        type: plane.type,
+        takeoff: tk,
+        pilot: r.ferryPilot || r.pilot
+      }) : null;
+      out.push({
+        pilot: r.pilot,
+        callsign: r.callsign || '',
+        aircraft: plane ? {
+          registration: plane.registration,
+          type: plane.type,
+          variant: plane.variant || '',
+          base: plane.base || ''
+        } : null,
+        departure,
+        takeoff: new Date(tk).toISOString(),
+        ferry: ferry?.minutes ? ferry : null,
+        block_min: blockMin,
+        status: 'affectée'
+      });
+    }
+    return out;
   }
   /** Écrit affectations.yaml dans le dossier de la mission et met à jour data/missions/affectations.json (index : une
    *  ligne par participant, et une ligne « convoyage » pour un convoyeur autre que le pilote). mission : entrée du
@@ -911,10 +1020,15 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     conflicts,
     declarations,
     ownsType,
+    postsOf,
+    planesFor,
+    fits,
+    specLabel,
     pool,
     poolLabel,
     planSlot,
-    writeAssignment
+    writeAssignment,
+    buildParticipants
   };
   // en-tête prêt après repository_nav.js : pli cacheté posé dès que possible, puis rafraîchi au retour sur l'onglet
   const start = () => envelope().catch(() => {});

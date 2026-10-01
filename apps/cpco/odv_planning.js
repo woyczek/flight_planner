@@ -697,15 +697,18 @@
   async function pickMission(s, fam = '', {
     focus = ''
   } = {}) {
-    // Vue de synthèse d'un créneau : pilotes libres (disponibles et non affectés : déclaration, sinon classeur) et
-    // leurs appareils ; proposition « pour tout le monde » (missions complètes et complémentaires, sans pilote commun,
-    // MissionAssignments.planSlot) ; autres missions compatibles ; missions déjà affectées sur le créneau. Chaque
-    // mission : « Affecter » (dialogue prérempli : ses pilotes, heure de début du créneau). focus : case cliquée.
-    // Fenêtre au gabarit du dialogue d'affectation (AssignDialog.frame).
+    // Matrice d'un créneau (transaction) : missions du registre × postes (un par équipage : indicatif, type ou catégorie
+    // et service) ; pour chaque poste, pilote libre et appareil de la flotte, préremplis par la proposition « pour tout
+    // le monde » (MissionAssignments.planSlot). Les choix restent en attente, visibles (« RBR → I-01A · appareil ·
+    // indicatif ») : « Enregistrer » écrit les missions cochées, « Annuler les modifications » revient à la proposition ;
+    // la fenêtre se ferme quand tous les pilotes libres sont affectés, ou sur demande (confirmation si modifications en
+    // attente). « ✎ Détail » : dialogue d'affectation complet, dont le résultat revient dans la matrice.
     const O = window.OdvAssign,
       M = window.MissionAssignments,
       AD = window.AssignDialog,
-      range = O?.range(s.jourIndex, s.creneauIndex);
+      j = s.jourIndex,
+      k = s.creneauIndex,
+      range = O?.range(j, k);
     if (!centreOn()) {
       notify('Registre des missions : Centre verrouillé — l’activer dans Paramètres › Centre (CPCO).', 'warn');
       return;
@@ -715,58 +718,208 @@
       notify('Registre des missions vide dans ce navigateur : ouvrir le registre du Centre et relire le dossier des missions.', 'warn');
       return;
     }
-    if (!O || !M || !AD?.frame) return notify('Affectations : modules absents (assignments.js, odv_assign.js, assign_dialog.js).', 'err');
+    if (!O?.write || !M?.postsOf || !AD?.frame) return notify('Affectations : modules absents (assignments.js, odv_assign.js, assign_dialog.js).', 'err');
     const zones = await zonesToAvoid(s.eviter);
     const fams = [...new Set([...s.toutesMissions.map(m => m.famille), ...all.map(m => fold(m.family || m.type)).filter(Boolean)])].sort();
-    const chip = AD.chip;
-    const render = async famSel => {
-      const free = O.freePilots(s.jourIndex, s.creneauIndex),
+    const chip = AD.chip,
+      takeoff = range?.[0],
+      title = `${esc(slotTitle(s))} — affecter les pilotes libres`;
+    let famSel = fam || '',
+      ctx = null, // { free, decls, d: Map(id → { m, on, rows: [{ post, pilot, registration, callsign, ferryPilot }] }) }
+      initial = '',
+      dlg = null;
+    const snap = () => JSON.stringify([...ctx.d.values()].map(x => [x.m.id, x.on, x.rows.map(r => [r.pilot, r.registration, r.callsign])]));
+    const dirty = () => !!ctx && snap() !== initial;
+    /** Proposition : missions des options (proposition d'abord), postes préremplis (pilote proposé, premier appareil libre). */
+    async function build() {
+      const free = O.freePilots(j, k),
         decls = await M.declarations(free),
-        assigned = O.inSlot(s.jourIndex, s.creneauIndex);
-      const entries = all.filter(m => !famSel || fold(m.family || m.type).startsWith(famSel));
-      const plan = M.planSlot(free, entries, decls, {
-        focus
-      });
-      const byId = id => all.find(x => x.id === id);
-      const conf = m => conflictsOf(m, zones);
+        entries = all.filter(m => !famSel || fold(m.family || m.type).startsWith(famSel)),
+        plan = M.planSlot(free, entries, decls, {
+          focus
+        });
+      const busy = new Set(O.inSlot(j, k).map(a => a.aircraft?.registration).filter(Boolean)),
+        usedPlanes = new Set(),
+        d = new Map();
+      for (const o of [...plan.proposal, ...plan.options.filter(o => !plan.proposal.includes(o))].slice(0, 20))
+        for (const m of o.missions) {
+          if (d.has(m.id)) continue;
+          const on = plan.proposal.includes(o),
+            pairs = o.pairs.filter(p => p.mission === m.id).map(p => ({
+              ...p
+            }));
+          const rows = M.postsOf(m).map(post => {
+            const pr = pairs.find(p => !p.used && p.post?.callsign === post.callsign && p.post?.label === post.label);
+            if (pr) pr.used = true;
+            const plane = on && pr ? M.planesFor(post, m.origin || '').find(f => f.operational !== false && !busy.has(f.registration) && !usedPlanes.has(f.registration)) : null;
+            if (plane) usedPlanes.add(plane.registration);
+            return {
+              post,
+              pilot: on && pr ? pr.tri : '',
+              registration: plane?.registration || '',
+              callsign: post.callsign || '',
+              ferryPilot: ''
+            };
+          });
+          d.set(m.id, {
+            m,
+            on,
+            rows
+          });
+        }
+      ctx = {
+        free,
+        decls,
+        d
+      };
+      initial = snap();
+    }
+    const planeOf = reg => (window.DEFA_FLEET || []).find(f => f.registration === reg);
+    function render() {
+      const {
+        free,
+        decls,
+        d
+      } = ctx;
+      const assigned = O.inSlot(j, k),
+        busy = new Set(assigned.map(a => a.aircraft?.registration).filter(Boolean));
+      const on = [...d.values()].filter(x => x.on),
+        useP = {},
+        useA = {};
+      for (const x of on)
+        for (const r of x.rows) {
+          if (r.pilot) useP[r.pilot] = (useP[r.pilot] || 0) + 1;
+          if (r.registration) useA[r.registration] = (useA[r.registration] || 0) + 1;
+        }
+      const pend = on.flatMap(x => x.rows.filter(r => r.pilot && r.registration).map(r => ({
+        m: x.m,
+        r
+      })));
+      const pendOf = tr => pend.find(p => p.r.pilot === tr);
+      const errs = r => [useP[r.pilot] > 1 && 'pilote en double', useA[r.registration] > 1 && 'appareil en double', busy.has(r.registration) && 'appareil déjà engagé sur le créneau'].filter(Boolean);
       const types = tr => {
         const ac = decls[tr]?.aircraft;
         if (!ac) return '<small>appareils non déclarés</small>';
         const ms = new Set(ac.mastered || []);
         return [...new Set([...(ac.owned || []), ...ms])].map(ty => ms.has(ty) ? `<b>${esc(ty)}</b>` : esc(ty)).join(' ') || '<small>aucun</small>';
       };
-      const optionRow = o => `<tr class="${o.missions.some(m => conf(m).some(c => c.grave)) ? 'bad' : o.missions.some(m => conf(m).length) ? 'warn' : ''}">
-        <td>${o.missions.map(m => `<b>${esc(m.id)}</b> ${esc(m.title || '')}<br><small>${esc(m.type || '')} · ${esc((m.aircraftTypes || []).join(', ') || 'type libre')} · ${hmOf(m.estimate?.block ?? m.estimate?.flight)}</small>`).join('<hr>')}</td>
-        <td>${o.pairs.map(p => `${esc(p.mission)} → ${tri(p.tri, null, false)}`).join('<br>')}</td>
-        <td>${chip(`${o.covered}/${o.need}`, o.full ? 'ok' : 'warn')}</td>
-        <td>${o.missions.flatMap(m => conf(m)).map(c => chip(esc(c.texte), c.grave ? 'err' : 'warn')).join('') || chip('ok', 'ok')}</td>
-        <td class="ad-act">${o.missions.map(m => `<button type="button" class="primary" data-assign="${esc(m.id)}" data-pilots="${esc(o.pairs.filter(p => p.mission === m.id).map(p => p.tri).join(','))}">Affecter ${esc(m.id)}</button>`).join(' ')}</td></tr>`;
-      const head = '<thead><tr><th>Mission(s)</th><th>Pilotes proposés</th><th>Postes</th><th>Espaces</th><th></th></tr></thead>';
-      const others = plan.options.filter(o => !plan.proposal.includes(o)).slice(0, 25);
-      const d = AD.frame('odvPick', {
+      const pilotOpts = r => {
+        const own = free.filter(tr => M.ownsType(decls[tr], r.post)),
+          other = free.filter(tr => !own.includes(tr));
+        const o = tr => `<option value="${esc(tr)}"${tr === r.pilot ? ' selected' : ''}>${esc(tr)}${pendOf(tr) && tr !== r.pilot ? ` (→ ${esc(pendOf(tr).m.id)})` : ''}</option>`;
+        return `<option value="">—</option>${own.length ? `<optgroup label="Libres, avec l’appareil">${own.map(o).join('')}</optgroup>` : ''}${other.length ? `<optgroup label="Libres, appareil non déclaré">${other.map(o).join('')}</optgroup>` : ''}${r.pilot && !free.includes(r.pilot) ? `<option value="${esc(r.pilot)}" selected>${esc(r.pilot)} (non libre)</option>` : ''}`;
+      };
+      const planeOpts = (r, m) => `<option value="">—</option>${M.planesFor(r.post, m.origin || '').slice(0, 60).map(p => `<option value="${esc(p.registration)}"${p.registration === r.registration ? ' selected' : ''}>${esc(p.registration)} · ${esc(p.variant || p.type)} · ${esc(p.base || '?')}${r.post?.service && p.operator ? ` · ${esc(p.operator)}` : ''}${p.operational === false ? ' — indisponible' : ''}${busy.has(p.registration) ? ' — engagé' : ''}</option>`).join('')}`;
+      const checks = (x, r) => {
+        const c = [];
+        if (r.pilot) {
+          const q = M.qualification(decls[r.pilot], r.pilot, r.registration ? planeOf(r.registration)?.type || r.post : r.post);
+          if (q.text) c.push(chip(esc(q.text), q.level === 'mastered' ? 'ok' : q.level === 'owned' || q.level === 'flown' ? 'warn' : 'err'));
+        }
+        for (const e of errs(r)) c.push(chip(e, 'err'));
+        if (x.on && r.pilot && r.registration && !errs(r).length) c.push(chip(`${esc(r.pilot)} → ${esc(x.m.id)} · ${esc(r.registration)}${r.callsign ? ` · ${esc(r.callsign)}` : ''}`, 'ok'));
+        return c.join('') || '<small>—</small>';
+      };
+      const body = [...d.values()].map(x => {
+        const m = x.m,
+          conf = conflictsOf(m, zones),
+          n = x.rows.length;
+        return `<tbody class="ad-mx${x.on ? ' on' : ''}" data-m="${esc(m.id)}">${x.rows.map((r, i) => `<tr class="${x.on && r.pilot && r.registration && !errs(r).length ? 'ad-set' : ''}" data-i="${i}">
+          ${i ? '' : `<td rowspan="${n}"><input type="checkbox" data-on${x.on ? ' checked' : ''} aria-label="Affecter ${esc(m.id)}"></td><td rowspan="${n}"><b>${esc(m.id)}</b> ${esc(m.title || '')}<br><small>${esc(m.family || m.type || '')} · ${hmOf(m.estimate?.block ?? m.estimate?.flight)}</small>${conf.length ? `<br>${conf.map(c => chip(esc(c.texte), c.grave ? 'err' : 'warn')).join('')}` : ''}<br><button type="button" class="repo-plain ad-link" data-detail>✎ détail</button></td>`}
+          <td><b>${esc(r.callsign || r.post?.callsign || `poste ${i + 1}`)}</b><br><small>${esc(r.post?.type || r.post?.label || 'type libre')}${r.post?.service ? ` · ${esc(r.post.service)}` : ''}</small></td>
+          <td><select data-f="pilot">${pilotOpts(r)}</select></td>
+          <td><select data-f="registration">${planeOpts(r, m)}</select></td>
+          <td><input data-f="callsign" value="${esc(r.callsign)}" size="9"></td>
+          <td>${checks(x, r)}</td></tr>`).join('')}</tbody>`;
+      }).join('');
+      const keep = dlg?.querySelector('.ad-body')?.scrollTop || 0;
+      dlg = AD.frame('odvPick', {
         wide: true,
-        title: `${esc(slotTitle(s))} — affecter les pilotes libres`,
-        subtitle: `${free.length} pilote(s) libre(s), ${assigned.length} affectation(s) sur le créneau`,
-        body: `<p class="ad-facts">${free.length ? free.map(tr => chip(`${tri(tr, null, false)} ${types(tr)}`, tr === focus ? 'focus' : '')).join('') : chip('aucun pilote libre (tous affectés ou indisponibles)', 'warn')}</p>
+        title,
+        subtitle: `${free.length} pilote(s) libre(s) · ${pend.length} affectation(s) en attente · ${assigned.length} enregistrée(s) sur le créneau`,
+        beforeClose: () => !dirty() || confirm('Abandonner les affectations en attente (non enregistrées) ?'),
+        body: `<p class="ad-facts">${free.length ? free.map(tr => pendOf(tr) ? chip(`${tri(tr, null, false)} → <b>${esc(pendOf(tr).m.id)}</b> · ${esc(pendOf(tr).r.registration)}${pendOf(tr).r.callsign ? ` · ${esc(pendOf(tr).r.callsign)}` : ''}`, 'ok') : chip(`${tri(tr, null, false)} ${types(tr)}`, tr === focus ? 'focus' : '')).join('') : chip('aucun pilote libre (tous affectés ou indisponibles)', 'warn')}</p>
         <p><label class="ad-inline">Famille <select data-fam><option value="">toutes</option>${fams.map(f => `<option value="${esc(f)}"${f === famSel ? ' selected' : ''}>${esc(f)}${s.missions[0]?.famille === f ? ' (proposée)' : ''}</option>`).join('')}</select></label></p>
         ${zones.length ? `<p class="ad-note">À éviter : ${zones.map(z => `<b>${esc(z.type)} ${esc(z.position)}</b> — CTR ${esc(z.ctr.map(a => a.name).join(', ') || '?')}${z.tma.length ? `, TMA ${esc(z.tma.map(a => a.name).join(', '))} (si possible)` : ''}`).join(' · ')}</p>` : ''}
-        <section class="ad-card"><h4>Proposition pour tout le monde${plan.proposal.length ? ` — ${free.length - plan.left.length}/${free.length} pilote(s)` : ''}</h4>
-        ${plan.proposal.length ? `<table class="ad-table">${head}<tbody>${plan.proposal.map(optionRow).join('')}</tbody></table>${plan.left.length ? `<p class="ad-help">Sans mission complète : ${plan.left.map(tr => tri(tr, null, false)).join(' ')} — voir les missions partielles ci-dessous.</p>` : ''}` : '<p class="ad-help">Aucune mission complète avec les appareils déclarés des pilotes libres.</p>'}</section>
-        <section class="ad-card"><h4>Autres missions compatibles</h4>
-        ${others.length ? `<table class="ad-table">${head}<tbody>${others.map(optionRow).join('')}</tbody></table>` : '<p class="ad-help">Aucune autre.</p>'}</section>
-        <section class="ad-card"><h4>Déjà affectées sur ce créneau</h4>
-        ${assigned.length ? `<ul class="ad-list">${assigned.map(a => `<li><b>${esc(a.mission)}</b>${a.role === 'convoyage' ? ' (convoyage)' : ''} — ${tri(a.pilot, null, false)} ${esc(a.aircraft?.registration || '')} · décollage ${esc(String(a.takeoff || '').slice(11, 16))}Z</li>`).join('')}</ul>` : '<p class="ad-help">Aucune.</p>'}</section>`,
-        foot: '<p class="ad-msg ad-help">Pilotes proposés : possèdent l’appareil de la mission (« Mes appareils »), maîtrise et pilote de la case cliquée d’abord ; une opération (missions A, B, C…) est proposée d’un seul tenant.</p><button type="button" class="ghost" data-close>Fermer</button>'
+        ${d.size ? `<table class="ad-table ad-matrix"><thead><tr><th></th><th>Mission</th><th>Poste</th><th>Pilote</th><th>Appareil</th><th>Indicatif</th><th>État</th></tr></thead>${body}</table>` : '<p class="ad-help">Aucune mission du registre pour ces pilotes et cette famille.</p>'}
+        <section class="ad-card"><h4>En attente (${pend.length})</h4>${pend.length ? `<ul class="ad-list">${pend.map(p => `<li>${tri(p.r.pilot, null, false)} sur <b>${esc(p.m.id)}</b> — ${esc(planeOf(p.r.registration)?.type || '')} ${esc(p.r.registration)}${p.r.callsign ? ` — ${esc(p.r.callsign)}` : ''}</li>`).join('')}</ul>` : '<p class="ad-help">Aucune : cocher une mission et choisir ses pilotes et appareils.</p>'}</section>
+        <section class="ad-card"><h4>Enregistrées sur ce créneau</h4>${assigned.length ? `<ul class="ad-list">${assigned.map(a => `<li><b>${esc(a.mission)}</b>${a.role === 'convoyage' ? ' (convoyage)' : ''} — ${tri(a.pilot, null, false)} ${esc(a.aircraft?.registration || '')}${a.callsign ? ` · ${esc(a.callsign)}` : ''} · décollage ${esc(String(a.takeoff || '').slice(11, 16))}Z</li>`).join('')}</ul>` : '<p class="ad-help">Aucune.</p>'}</section>`,
+        foot: `<p class="ad-msg" data-status></p><button type="button" class="ghost" data-undo${dirty() ? '' : ' disabled'}>Annuler les modifications</button><button type="button" class="primary" data-save data-icon="save"${pend.length ? '' : ' disabled'}>Enregistrer (${pend.length})</button><button type="button" class="ghost" data-close>Fermer</button>`
       });
-      d.querySelector('[data-fam]').onchange = e => render(e.target.value);
-      d.querySelectorAll('[data-assign]').forEach(b => b.onclick = () => {
-        const m = byId(b.dataset.assign),
-          crew = b.dataset.pilots.split(',').filter(Boolean);
-        d.close();
-        O.assign(m, crew, range?.[0], `Créneau ${slotTitle(s)}`).catch(e => notify(e.message, 'err'));
+      const bodyEl = dlg.querySelector('.ad-body');
+      bodyEl.scrollTop = keep;
+      dlg.querySelector('[data-fam]').onchange = async e => {
+        if (dirty() && !confirm('Changer de famille abandonne les affectations en attente. Continuer ?')) return render();
+        famSel = e.target.value;
+        await build();
+        render();
+      };
+      bodyEl.addEventListener('change', e => {
+        const tb = e.target.closest('tbody[data-m]');
+        if (!tb) return;
+        const x = ctx.d.get(tb.dataset.m);
+        if (e.target.matches('[data-on]')) x.on = e.target.checked;
+        else {
+          const r = x.rows[+e.target.closest('tr').dataset.i];
+          r[e.target.dataset.f] = e.target.value.trim();
+          if (e.target.dataset.f === 'pilot' || e.target.dataset.f === 'registration') x.on = x.on || !!(r.pilot && r.registration);
+        }
+        render();
       });
-    };
-    await render(fam || '');
+      bodyEl.addEventListener('click', async e => {
+        const b = e.target.closest('[data-detail]');
+        if (!b) return;
+        const x = ctx.d.get(b.closest('tbody[data-m]').dataset.m);
+        await AD.open(x.m, await O.yamlOf(x.m), {
+          maps: x.m.images || [],
+          takeoff,
+          note: `Créneau ${slotTitle(s)} — le résultat revient dans la fenêtre du créneau`,
+          rows: x.rows,
+          apply: rows => {
+            x.rows = rows;
+            x.on = true;
+            render();
+          }
+        });
+      });
+      dlg.querySelector('[data-undo]').onclick = () => {
+        const back = JSON.parse(initial);
+        for (const [id, isOn, rs] of back) {
+          const x = ctx.d.get(id);
+          x.on = isOn;
+          x.rows.forEach((r, i) => [r.pilot, r.registration, r.callsign] = rs[i] || ['', '', r.post?.callsign || '']);
+        }
+        render();
+      };
+      dlg.querySelector('[data-save]').onclick = async () => {
+        const msg = dlg.querySelector('[data-status]');
+        const todo = [...ctx.d.values()].filter(x => x.on && x.rows.some(r => r.pilot && r.registration));
+        const bad = todo.filter(x => x.rows.some(r => errs(r).length));
+        if (bad.length) {
+          msg.innerHTML = `<span class="err">À corriger avant d’enregistrer : ${bad.map(x => esc(x.m.id)).join(', ')} (doublons ou appareil engagé).</span>`;
+          return;
+        }
+        const ok = [],
+          ko = [];
+        for (const x of todo) try {
+          await O.write(x.m, x.rows.filter(r => r.pilot && r.registration), takeoff);
+          ok.push(`${x.m.id} (${x.rows.filter(r => r.pilot && r.registration).map(r => r.pilot).join(', ')})`);
+        } catch (err) {
+          ko.push(`${x.m.id} : ${err.message}`);
+        }
+        if (ok.length) notify(`Affectations enregistrées : ${ok.join(' ; ')}.`, 'ok');
+        for (const e of ko) notify(`Non enregistrée — ${e}`, 'err');
+        await build();
+        if (!ctx.free.length && !ko.length) {
+          dlg.close();
+          notify('Tous les pilotes libres du créneau sont affectés.', 'ok');
+          return;
+        }
+        render();
+      };
+    }
+    await build();
+    render();
   }
   /** Bouton « Missions du registre… » d'un créneau à plusieurs pilotes (famille facultative). */
   const pickButton = (s, fam = '') => s.n >= 2 ? `<button type="button" class="odv-pick-btn" data-pick="${s.jourIndex}${s.creneauIndex}" data-fam="${esc(fam)}"${centreOn() ? '' : ' disabled title="Centre verrouillé : l’activer dans Paramètres › Centre (CPCO)"'}>Missions du registre…</button>` : '';
