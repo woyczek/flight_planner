@@ -531,7 +531,7 @@
         left.dataset.folio = pages[to] ? to : '';
         left.classList.toggle('pm-inside', !pages[to]);
       }
-      prev.hidden = next.hidden = true; // coins rétablis par draw() à l'arrivée de la feuille
+      next.hidden = to + 2 >= pages.length; // coin « suivante » masqué dès le départ s'il n'y a pas de page suivante ; sinon, coins inchangés
       leaf.className = `pm-leaf ${dir > 0 ? 'fwd' : 'back'}`;
       leaf.hidden = false;
       setTimeout(() => { // fin de la rotation (0,7 s, voir .pm-leaf.fwd) : la feuille se pose, la page d'en face change
