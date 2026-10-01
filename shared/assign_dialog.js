@@ -9,7 +9,8 @@
   //     confiable à un autre pilote), conflits ;
   //   · enregistrement : MissionAssignments.writeAssignment (affectations.yaml de la mission + index).
   // API : AssignDialog.open(entrée du registre, yaml de la mission, { maps, pilots: [TRI…], takeoff: ms, note }) ;
-  //   frame(id, { title, subtitle, body, foot, wide }) : fenêtre au même gabarit ; chip(texte, ok|warn|err|focus).
+  //   { rows, apply } : lignes préremplies, résultat rendu à apply(lignes) au lieu d'être écrit (matrice d'un créneau) ;
+  //   frame(id, { title, subtitle, body, foot, wide, beforeClose }) : fenêtre au même gabarit ; chip(texte, ok|warn|err|focus).
   const K = window.RepositoryKit,
     esc = K.esc,
     A = () => window.MissionAssignments;
@@ -45,6 +46,9 @@
 .ad-ferry{margin:6px 0 0;font-size:12.5px}.ad-ferry input{width:5em;margin-left:4px}.ad-checks{margin:6px 0 0}
 .ad-foot{display:flex;gap:8px;align-items:center;padding:10px 16px;border-top:1px solid color-mix(in srgb,currentColor 18%,transparent)}.ad-msg{flex:1;margin:0;font-size:12.5px}
 .ad-wide{width:min(1180px,96vw)}
+.ad-post{margin:0 0 6px;font-size:12.5px}.ad-link{background:none;border:0;padding:0;color:inherit;text-decoration:underline;cursor:pointer;font-size:12px}
+.ad-matrix select{max-width:220px}.ad-matrix tbody{border-top:2px solid color-mix(in srgb,currentColor 22%,transparent)}.ad-matrix tbody:not(.on){opacity:.7}
+.ad-matrix tr.ad-set td{background:color-mix(in srgb,#2e9d5b 12%,transparent)}.ad-matrix input[data-f]{width:8em}
 .ad-chip.focus{outline:2px solid #e5484d;outline-offset:1px}
 .ad-card h4{margin:0 0 6px;font-size:13px}.ad-help{margin:4px 0 0;font-size:12px;opacity:.8}.ad-list{margin:0;padding-left:18px;font-size:12.5px}
 .ad-inline{display:inline-flex!important;align-items:center;gap:6px!important}
@@ -54,13 +58,15 @@ html[data-skeuo] .ad-dialog,html[data-skeuo] .ad-card,html[data-skeuo] .ad-when,
 </style>`);
   };
   /** Fenêtre au gabarit du dialogue (en-tête : titre, sous-titre, ×, corps défilant, pied facultatif) ; titre, sous-titre,
-   *  corps et pied en HTML (échappés par l'appelant). Réutilisée par le planning ODV (choix des missions d'un créneau). */
+   *  corps et pied en HTML (échappés par l'appelant) ; beforeClose : false refuse la fermeture. Réutilisée par le
+   *  planning ODV (matrice d'un créneau). */
   function frame(id, {
     title,
     subtitle = '',
     body = '',
     foot = '',
-    wide = false
+    wide = false,
+    beforeClose = null
   }) {
     css();
     let d = document.getElementById(id);
@@ -68,10 +74,15 @@ html[data-skeuo] .ad-dialog,html[data-skeuo] .ad-card,html[data-skeuo] .ad-when,
       d = document.createElement('dialog');
       d.id = id;
       document.body.append(d);
+      // fermeture (×, Fermer, fond, Échap) : beforeClose() === false la refuse (modifications en attente)
       d.addEventListener('click', e => {
-        if (e.target === d || e.target.closest('[data-close]')) d.close();
+        if ((e.target === d || e.target.closest('[data-close]')) && d._beforeClose?.() !== false) d.close();
+      });
+      d.addEventListener('cancel', e => {
+        if (d._beforeClose?.() === false) e.preventDefault();
       });
     }
+    d._beforeClose = beforeClose;
     d.className = `repo-ap-dialog ad-dialog${wide ? ' ad-wide' : ''}`;
     d.innerHTML = `<div class="ad-form"><header class="ad-head"><div><h3>${title}</h3>${subtitle ? `<p>${subtitle}</p>` : ''}</div><button type="button" class="repo-plain ad-x" data-close aria-label="Fermer">×</button></header><div class="ad-body">${body}</div>${foot ? `<footer class="ad-foot">${foot}</footer>` : ''}</div>`;
     if (!d.open) d.showModal();
@@ -83,7 +94,9 @@ html[data-skeuo] .ad-dialog,html[data-skeuo] .ad-card,html[data-skeuo] .ad-when,
     maps = [],
     pilots: preset = [],
     takeoff: presetTakeoff = 0,
-    note = ''
+    note = '',
+    rows: presetRows = null,
+    apply = null
   } = {}) {
     const M = A(),
       fleet = window.DEFA_FLEET || [],
@@ -92,9 +105,10 @@ html[data-skeuo] .ad-dialog,html[data-skeuo] .ad-card,html[data-skeuo] .ad-when,
       fresh: true
     });
     const existing = idx.assignments.filter(a => a.mission === m.id && a.role !== 'convoyage');
-    const type = M.typeOf(y.aircraft?.[0]?.type || existing[0]?.aircraft?.type),
+    const posts = M.postsOf(m, y), // un poste par équipage aérien (type, ou catégorie et service : schéma hélico)
+      postOfType = ty => posts.find(p => M.fits(p, ty)) || M.postsOf({ aircraftTypes: [ty] })[0],
       departure = M.geo.icaoOf(y.origin) || existing[0]?.departure || '',
-      callsign = y.aircraft?.[0]?.callsign || '',
+      callsign = posts[0]?.callsign || '',
       blockMin = +y.timing?.estimated_block_min || +y.timing?.estimated_flight_min || 120,
       ex = y.exercise,
       myOffset = offsetOf(ex?.participants?.find(p => p.mission === m.id)?.takeoff);
@@ -105,36 +119,43 @@ html[data-skeuo] .ad-dialog,html[data-skeuo] .ad-card,html[data-skeuo] .ad-when,
       d.setUTCHours(10, 0, 0, 0);
       return +d;
     })();
-    const rows = preset.length ? preset.map((p, i) => ({
-      pilot: p,
+    const postRow = (post, pilot = '', i = 0) => ({
+      pilot,
       registration: '',
-      callsign: nextCallsign(callsign, i),
-      ferryPilot: ''
-    })) : existing.length ? existing.map(a => ({
+      callsign: post?.callsign || nextCallsign(callsign, i),
+      ferryPilot: '',
+      post
+    });
+    const rows = presetRows ? presetRows.map((r, i) => ({
+      pilot: r.pilot || '',
+      registration: r.registration || '',
+      callsign: r.callsign || posts[i]?.callsign || '',
+      ferryPilot: r.ferryPilot || '',
+      post: r.post || posts[i] || posts[0]
+    })) : existing.length && !preset.length ? existing.map(a => ({
       pilot: a.pilot,
       registration: a.aircraft?.registration || '',
       callsign: a.callsign || '',
-      ferryPilot: a.ferry?.pilot && a.ferry.pilot !== a.pilot ? a.ferry.pilot : ''
-    })) : [{
-      pilot: '',
-      registration: '',
-      callsign,
-      ferryPilot: ''
-    }];
+      ferryPilot: a.ferry?.pilot && a.ferry.pilot !== a.pilot ? a.ferry.pilot : '',
+      post: posts.find(p => p.callsign && p.callsign === a.callsign) || postOfType(a.aircraft?.type)
+    })) : Array.from({
+      length: Math.max(posts.length, preset.length)
+    }, (_, i) => postRow(posts[i] || posts[posts.length - 1], preset[i] || '', i));
+    const typeLabel = post => M.specLabel(post) || '?';
     const alert0 = existing[0]?.alert || null;
     const decl = {}; // déclarations des pilotes (disponibilités, appareils)
     const declOf = async tri => tri ? (decl[tri] ??= await M.availability(tri)) : null;
-    const planes = fleet.filter(f => M.typeOf(f.type) === type || M.typeOf(f.variant) === type)
-      .sort((a, b) => (b.base === departure) - (a.base === departure) || (b.operational !== false) - (a.operational !== false) || String(a.base).localeCompare(String(b.base)));
+    const planesOf = post => M.planesFor(post, departure); // du type ou de la catégorie du poste, service puis terrain d'abord
     const pilotList = [...new Set([...ref.map(p => p.trigram), ...preset, ...rows.map(r => r.pilot)])].filter(Boolean).sort();
     const decls = await M.declarations(pilotList);
     /** Options d'un choix de pilote : vivier (disponibles et possédant le type, à l'heure donnée), puis les autres. */
     const poolOpts = (sel, at, {
       exclude = [],
-      none = ''
+      none = '',
+      spec = ''
     } = {}) => {
       const list = M.pool(pilotList, decls, {
-        type,
+        type: spec,
         at,
         family: m.type,
         exclude
@@ -142,7 +163,7 @@ html[data-skeuo] .ad-dialog,html[data-skeuo] .ad-card,html[data-skeuo] .ad-when,
       const opt = c => `<option value="${esc(c.tri)}" ${c.tri === sel ? 'selected' : ''}>${esc(M.poolLabel(c))}</option>`;
       const ok = list.filter(c => c.ok),
         other = list.filter(c => !c.ok);
-      return `<option value="">${esc(none || '— pilote —')}</option>${ok.length ? `<optgroup label="Disponibles, possèdent le ${esc(type)} (${ok.length})">${ok.map(opt).join('')}</optgroup>` : ''}<optgroup label="Autres (non déclarés, indisponibles ou sans l’appareil)">${other.map(opt).join('')}</optgroup>`;
+      return `<option value="">${esc(none || '— pilote —')}</option>${ok.length ? `<optgroup label="Disponibles, possèdent : ${esc(typeLabel(spec))} (${ok.length})">${ok.map(opt).join('')}</optgroup>` : ''}<optgroup label="Autres (non déclarés, indisponibles ou sans l’appareil)">${other.map(opt).join('')}</optgroup>`;
     };
 
     if (!dlg) {
@@ -157,7 +178,7 @@ html[data-skeuo] .ad-dialog,html[data-skeuo] .ad-card,html[data-skeuo] .ad-when,
     dlg.innerHTML = `<form method="dialog" class="ad-form">
       <header class="ad-head"><div><h3>Affecter ${esc(m.id)}</h3><p>${esc(m.title || y.title || '')}</p></div><button type="button" class="repo-plain ad-x" data-close aria-label="Fermer">×</button></header>
       <div class="ad-body">
-        <p class="ad-facts">${chip(`Type <b>${esc(type || '?')}</b>`)}${chip(`Départ <b>${esc(departure || '?')}</b>`)}${chip(`Bloc <b>${esc(blockMin)} min</b>`)}${ex ? chip(`Exercice : décollage H${myOffset >= 0 ? '+' : ''}${myOffset} min`) : ''}${chip('heures UTC')}</p>
+        <p class="ad-facts">${posts.map(p => chip(`${esc(p.callsign || 'poste')} <b>${esc(p.type || p.label || '?')}</b>${p.service ? ` · ${esc(p.service)}` : ''}`)).join('')}${chip(`Départ <b>${esc(departure || '?')}</b>`)}${chip(`Bloc <b>${esc(blockMin)} min</b>`)}${ex ? chip(`Exercice : décollage H${myOffset >= 0 ? '+' : ''}${myOffset} min`) : ''}${chip('heures UTC')}</p>
         ${note ? `<p class="ad-note">${esc(note)}</p>` : ''}
         <fieldset class="ad-when"><legend>Horaire</legend>
           <label>${ex ? 'Heure H' : 'Décollage'}<input type="datetime-local" data-k="t" value="${esc(toInput(ex && !presetTakeoff && existing[0] ? t0 - myOffset * 6e4 : t0))}"></label>
@@ -169,7 +190,7 @@ html[data-skeuo] .ad-dialog,html[data-skeuo] .ad-card,html[data-skeuo] .ad-when,
         <p><button type="button" class="secondary" data-add>+ Équipier (patrouille)</button></p>
         <datalist id="adPilots">${pilotList.map(p => `<option value="${esc(p)}">`).join('')}</datalist>
       </div>
-      <footer class="ad-foot"><p class="ad-msg" data-status></p><button type="button" class="primary" data-save data-icon="save">Enregistrer l'affectation</button><button type="button" class="ghost" data-close>Fermer</button></footer>
+      <footer class="ad-foot"><p class="ad-msg" data-status></p><button type="button" class="primary" data-save data-icon="save">${apply ? 'Reporter dans le créneau' : "Enregistrer l'affectation"}</button><button type="button" class="ghost" data-close>Fermer</button></footer>
     </form>`;
     const $ = s => dlg.querySelector(s);
     const box = $('.ad-rows');
@@ -177,11 +198,11 @@ html[data-skeuo] .ad-dialog,html[data-skeuo] .ad-card,html[data-skeuo] .ad-when,
       const v = Date.parse($('[data-k="t"]').value + ':00Z');
       return ex ? v + myOffset * 6e4 : v;
     };
-    const planeOpts = sel => `<option value="">— appareil —</option>${planes.map(p => `<option value="${esc(p.registration)}" ${p.registration === sel ? 'selected' : ''}>${esc(p.registration)} · ${esc(p.variant || p.type)} · ${esc(p.base || '?')}${p.base && p.base !== departure ? ' (convoyage)' : ''}${p.operational === false ? ' — indisponible' : ''}</option>`).join('')}<option value="__other">autre (saisie)…</option>`;
+    const planeOpts = (sel, post) => `<option value="">— appareil —</option>${planesOf(post).map(p => `<option value="${esc(p.registration)}" ${p.registration === sel ? 'selected' : ''}>${esc(p.registration)} · ${esc(p.variant || p.type)} · ${esc(p.base || '?')}${post?.service && p.operator ? ` · ${esc(p.operator)}` : ''}${p.base && p.base !== departure ? ' (convoyage)' : ''}${p.operational === false ? ' — indisponible' : ''}</option>`).join('')}<option value="__other">autre (saisie)…</option>`;
     const draw = () => {
-      box.innerHTML = rows.map((r, i) => `<section class="ad-card" data-i="${i}">
-        <div class="ad-line"><label class="ad-pilot">Pilote<select data-r="pilot">${poolOpts(r.pilot, takeoffOf() + i * 6e4, { exclude: rows.filter((x, j) => j !== i).map(x => x.pilot) })}</select></label>
-        <label class="ad-grow">Appareil<select data-r="registration">${planeOpts(r.registration)}</select></label>
+      box.innerHTML = rows.map((r, i) => `<section class="ad-card" data-i="${i}"><h4 class="ad-post">${esc(r.callsign || `Équipage ${i + 1}`)} — ${esc(r.post?.type || r.post?.label || 'type libre')}${r.post?.service ? ` · ${esc(r.post.service)}` : ''}</h4>
+        <div class="ad-line"><label class="ad-pilot">Pilote<select data-r="pilot">${poolOpts(r.pilot, takeoffOf() + i * 6e4, { exclude: rows.filter((x, j) => j !== i).map(x => x.pilot), spec: r.post })}</select></label>
+        <label class="ad-grow">Appareil<select data-r="registration">${planeOpts(r.registration, r.post)}</select></label>
         <label>Indicatif<input data-r="callsign" value="${esc(r.callsign)}"></label>
         ${i ? `<button type="button" class="repo-plain ad-del" data-del="${i}" title="Retirer cet équipier">✕</button>` : ''}</div>
         <div class="ad-ferry" hidden></div><div class="ad-checks"></div></section>`).join('');
@@ -197,6 +218,7 @@ html[data-skeuo] .ad-dialog,html[data-skeuo] .ad-card,html[data-skeuo] .ad-when,
           plane = fleet.find(f => f.registration === r.registration),
           tk = t + i * 6e4,
           notes = [];
+        const type = plane?.type || r.post?.type || '';
         const ferry = plane ? await M.ferryOf({
           base: plane.base,
           departure,
@@ -207,12 +229,12 @@ html[data-skeuo] .ad-dialog,html[data-skeuo] .ad-card,html[data-skeuo] .ad-when,
         const fz = card?.querySelector('.ad-ferry');
         if (fz) {
           fz.hidden = !ferry;
-          if (ferry) fz.innerHTML = `${ferry.minutes ? `Convoyage <b>${esc(ferry.from)} → ${esc(departure)}</b> ≈ ${ferry.minutes} min, décollage <b>${hhmm(Date.parse(ferry.takeoff))}</b>` : `Convoyage depuis <b>${esc(ferry.from)}</b> : distance inconnue`} — par <select data-r="ferryPilot">${poolOpts(r.ferryPilot, ferry.takeoff ? Date.parse(ferry.takeoff) : tk, { none: `${r.pilot || 'le pilote'} (le pilote de la mission)`, exclude: [r.pilot] })}</select>`;
+          if (ferry) fz.innerHTML = `${ferry.minutes ? `Convoyage <b>${esc(ferry.from)} → ${esc(departure)}</b> ≈ ${ferry.minutes} min, décollage <b>${hhmm(Date.parse(ferry.takeoff))}</b>` : `Convoyage depuis <b>${esc(ferry.from)}</b> : distance inconnue`} — par <select data-r="ferryPilot">${poolOpts(r.ferryPilot, ferry.takeoff ? Date.parse(ferry.takeoff) : tk, { spec: type, none: `${r.pilot || 'le pilote'} (le pilote de la mission)`, exclude: [r.pilot] })}</select>`;
         }
         if (plane?.operational === false) notes.push(chip('appareil non opérationnel', 'err'));
         if (r.pilot) {
           const d = await declOf(r.pilot),
-            q = M.qualification(d, r.pilot, type);
+            q = M.qualification(d, r.pilot, plane ? plane.type : r.post);
           notes.push(chip(esc(q.text), q.level === 'mastered' ? 'ok' : q.level === 'owned' || q.level === 'flown' ? 'warn' : 'err'));
           const s = M.availabilityAt(d, ferry?.takeoff && (r.ferryPilot || r.pilot) === r.pilot ? Date.parse(ferry.takeoff) : tk, m.type);
           notes.push(!s ? chip('disponibilité non renseignée') : chip(`${esc(s.code)} — ${esc(s.label)}`, s.ok ? 'ok' : s.category === 'dispo' ? 'warn' : 'err'));
@@ -273,11 +295,13 @@ html[data-skeuo] .ad-dialog,html[data-skeuo] .ad-card,html[data-skeuo] .ad-when,
       draw();
     });
     $('[data-add]').onclick = () => {
+      const lastPost = rows[rows.length - 1]?.post || posts[0];
       rows.push({
         pilot: '',
         registration: '',
-        callsign: nextCallsign(rows[0]?.callsign || callsign, rows.length),
-        ferryPilot: ''
+        callsign: nextCallsign(rows[rows.length - 1]?.callsign || callsign, 1),
+        ferryPilot: '',
+        post: lastPost
       });
       draw();
     };
@@ -285,6 +309,13 @@ html[data-skeuo] .ad-dialog,html[data-skeuo] .ad-card,html[data-skeuo] .ad-when,
     dlg.querySelectorAll('[data-close]').forEach(b => b.onclick = () => dlg.close());
     $('[data-save]').onclick = async () => {
       const msg = $('.ad-msg');
+      if (apply) { // ouvert depuis la matrice d'un créneau : le résultat y revient, en attente (rien n'est écrit ici)
+        apply(rows.map(r => ({
+          ...r
+        })));
+        dlg.close();
+        return;
+      }
       await check();
       if (!rows.every(r => r.pilot && r.registration)) {
         msg.innerHTML = '<span class="err">Chaque participant a besoin d’un pilote et d’un appareil.</span>';

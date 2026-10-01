@@ -182,3 +182,12 @@ ailleurs. Clic → « Mes missions » ; ouvrir la mission marque l'affectation l
   enveloppe dessinée (SVG) habillée par design.
 - **Tester** : régler son trigramme (☰ › Profil pilote, ex. RBR) ; dans le registre, détail d'une mission →
   « Affecter… » (dossier des missions autorisé) ; recharger une page : pli cacheté ; « Mes missions ».
+- **Postes** (1ᵉʳ octobre 2026) : une mission demande un pilote par équipage aérien — `aircraft[]`, ou `teams[]` du
+  schéma hélico (indicatif, type ; type générique « Hélicoptère » : un hélicoptère de la flotte, du service de l'équipe
+  d'abord — Gendarmerie → Gendarmerie nationale) ; équipes au sol écartées (`MissionAssignments.postsOf`, `planesFor`,
+  `fits`). Le dialogue présente un poste par carte (type, appareils et qualification propres).
+- **Matrice d'un créneau (ODV)** : missions × postes, pilote libre et appareil par poste, préremplis par la proposition ;
+  transaction : choix en attente visibles (« RBR → I-01A · appareil · indicatif »), « Enregistrer » écrit les missions
+  cochées, « Annuler les modifications » revient à la proposition ; fermeture quand tous les pilotes libres sont affectés,
+  ou sur demande (confirmation si modifications en attente). « ✎ détail » : dialogue complet, dont le résultat revient
+  dans la matrice (« Reporter dans le créneau »), rien n'est écrit avant « Enregistrer ».
