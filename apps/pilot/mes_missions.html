@@ -36,9 +36,9 @@
      de vol et le planificateur carburant, création du CR ; disponibilités de la semaine type (grille d'une heure).
      Données : data/missions/affectations.json (index écrit par le Centre) et fichiers des missions, lus par fetch ;
      socle : shared/assignments.js. Conception : docs/AFFECTATION_MISSIONS.md. -->
-<header><h1>Mes missions</h1><p>Missions affectées par le Centre, disponibilités</p></header>
-<main id="pilotMissions">
-<section data-block-id="who" data-icon="user" data-subtitle="Trigramme DEFA du profil pilote (menu ☰) : les missions affectées à ce trigramme s'affichent ici."><h2>Pilote</h2>
+<header class="mc-header"><h1>Mes missions</h1><p>Missions affectées par le Centre, disponibilités</p></header>
+<main id="pilotMissions" class="mc-reporting">
+<section data-block-id="who" data-icon="users" data-subtitle="Trigramme DEFA du profil pilote (menu ☰) : les missions affectées à ce trigramme s'affichent ici."><h2>Pilote</h2>
   <div class="pm-who"><label>Trigramme <input id="pmTri" maxlength="4" autocomplete="off"></label><span id="pmWhoNote" class="small"></span></div>
 </section>
 <section data-block-id="list" data-icon="calendar" data-subtitle="Missions à venir, par heure de décollage (UTC) ; ● : nouvelle, pas encore ouverte."><h2>Missions à venir</h2>
