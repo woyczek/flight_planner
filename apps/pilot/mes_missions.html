@@ -73,11 +73,15 @@
   /* coin corné : couleur accordée dans l'image (moyenne du papier sans ombre = celle des feuilles), pas de filtre */
   .pm-corner:hover{filter:brightness(1.04) drop-shadow(0 2px 3px rgba(0,0,0,.35))}
   .pm-next{right:3.43%}.pm-prev{left:3.57%;transform:scaleX(-1)}
-  .pm-leaf{position:absolute;top:4.75%;bottom:4%;left:51.8%;right:3.43%;z-index:3;background:url("../../shared/deco/cabinet/mission-page.webp") center/100% 100%;transform-origin:left center;pointer-events:none;box-shadow:0 0 18px rgba(0,0,0,.25)}
-  .pm-leaf.back{left:3.57%;right:52.5%;transform-origin:right center}
-  .pm-leaf.fwd{animation:pmTurn .52s ease-in-out forwards}.pm-leaf.back{animation:pmTurnBack .52s ease-in-out forwards}
-  @keyframes pmTurn{from{transform:perspective(1800px) rotateY(0)}to{transform:perspective(1800px) rotateY(-180deg)}}
-  @keyframes pmTurnBack{from{transform:perspective(1800px) rotateY(0)}to{transform:perspective(1800px) rotateY(180deg)}}
+  /* feuille qui tourne : deux faces, pivot sur le dos du dossier (x 695 sur 1400, entre les feuilles 665 et 725) ;
+     droite → gauche : feuille droite (725–1352), origine à −30 px ; gauche → droite : feuille gauche (50–665), +30 px */
+  .pm-leaf{position:absolute;z-index:3;top:4.75%;bottom:4%;left:51.8%;right:3.43%;transform-style:preserve-3d;transform-origin:-4.79% 50%;pointer-events:none}
+  .pm-leaf.back{left:3.57%;right:52.5%;transform-origin:104.88% 50%}
+  .pm-leaf .pm-face{position:absolute;inset:0;overflow:hidden;cursor:default;backface-visibility:hidden;background:url("../../shared/deco/cabinet/mission-page.webp") center/100% 100%;box-shadow:0 0 22px rgba(0,0,0,.25);padding:3.9% 5% 9%;font:12.5px/1.5 "Courier Prime","Courier New",Courier,monospace;color:#2b2112}
+  .pm-leaf .pm-back{transform:rotateY(180deg)}
+  .pm-leaf.fwd{animation:pmTurn .7s cubic-bezier(.45,.05,.35,1) forwards}.pm-leaf.back{animation:pmTurnBack .7s cubic-bezier(.45,.05,.35,1) forwards}
+  @keyframes pmTurn{from{transform:perspective(2200px) rotateY(0)}to{transform:perspective(2200px) rotateY(-180deg)}}
+  @keyframes pmTurnBack{from{transform:perspective(2200px) rotateY(0)}to{transform:perspective(2200px) rotateY(180deg)}}
   .pm-week{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}.pm-week input{width:auto}.pm-week button{min-width:2.2em}
   .pm-types-sum{margin:0 0 8px;font-weight:600}
   .pm-sims{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 14px}
@@ -332,7 +336,10 @@
     return Object.entries(raw).map(([title, v]) => ({ title, html: html(v) })).filter(s => s.html);
   }
   /** Fiche technique : tout champ du yaml qui n'a pas sa place ailleurs dans le dossier (rien n'est perdu). */
-  const SHOWN = new Set(['schema', 'schema_version', 'title', 'summary', 'detailed_description', 'objectives', 'notes', 'turning_points', 'teams', 'target']);
+  // déjà présentés ailleurs, ou techniques sans intérêt pour l'équipage (rendu et liste des cartes, méta-données,
+  // dates de mise à jour, participants de l'affectation)
+  const SHOWN = new Set(['schema', 'schema_version', 'title', 'summary', 'detailed_description', 'objectives', 'notes', 'turning_points', 'teams', 'target',
+    'rendering', 'meta', 'updated_at', 'updatedAt', 'participants', 'maps', 'generated', 'generator']);
   const LABELS = { mission: 'Mission', operation: 'Opération', origin: 'Départ', destination: 'Destination', aircraft: 'Appareils', rendezvous: 'Rendez-vous', zones: 'Zones', timing: 'Horaires', weather: 'Météo', vertical_profile: 'Profil vertical', exercise: 'Exercice', alert: 'Astreinte', maps: 'Cartes', rendering: 'Rendu des cartes', route_order: 'Ordre de la route', theatre: 'Théâtre' };
   function techSheet(y) {
     const dump = v => v == null || v === '' ? '—' : Array.isArray(v) ? (v.length ? `<ul>${v.map(x => `<li>${dump(x)}</li>`).join('')}</ul>` : '—')
@@ -428,7 +435,7 @@
       actions = part('actions');
     const book = document.createElement('div');
     book.className = 'pm-book';
-    book.innerHTML = '<div class="pm-page pm-left"></div><div class="pm-page pm-right"></div><button type="button" class="repo-plain pm-corner pm-prev" title="Page précédente" aria-label="Page précédente"></button><button type="button" class="repo-plain pm-corner pm-next" title="Page suivante" aria-label="Page suivante"></button><div class="pm-leaf" hidden></div>';
+    book.innerHTML = '<div class="pm-page pm-left"></div><div class="pm-page pm-right"></div><button type="button" class="repo-plain pm-corner pm-prev" title="Page précédente" aria-label="Page précédente"></button><button type="button" class="repo-plain pm-corner pm-next" title="Page suivante" aria-label="Page suivante"></button><div class="pm-leaf" hidden><div class="pm-page pm-face pm-front"></div><div class="pm-page pm-face pm-back"></div></div>';
     host.prepend(book);
     if (actions) book.after(actions);
     const [left, right, prev, next, leaf] = ['.pm-left', '.pm-right', '.pm-prev', '.pm-next', '.pm-leaf'].map(s => book.querySelector(s));
@@ -485,14 +492,35 @@
       next.hidden = at + 2 >= pages.length;
       left.scrollTop = right.scrollTop = 0;
     };
+    // tourner : la feuille pivote autour du dos, d'un côté à l'autre ; recto = page qui part, verso = page qui arrive ;
+    // la page découverte dessous est déjà la suivante, la page d'en face ne change qu'à l'arrivée de la feuille
+    const face = (el, page) => el.replaceChildren(...(page ? [page.cloneNode(true)] : []));
     const turn = dir => {
       if (busy) return;
-      if (matchMedia('(prefers-reduced-motion: reduce)').matches) { at += 2 * dir; return draw(); }
+      const to = at + 2 * dir;
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) { at = to; return draw(); }
       busy = true;
+      const [front, back] = [leaf.querySelector('.pm-front'), leaf.querySelector('.pm-back')];
+      if (dir > 0) { // la page de droite part vers la gauche ; dessous : la nouvelle page de droite
+        face(front, pages[at + 1]);
+        face(back, pages[to]);
+        right.replaceChildren(...(pages[to + 1] ? [pages[to + 1]] : []));
+        right.dataset.folio = pages[to + 1] ? to + 1 : '';
+      } else { // la page de gauche part vers la droite ; dessous : la nouvelle page de gauche
+        face(front, pages[at]);
+        face(back, pages[to + 1]);
+        left.replaceChildren(...(pages[to] ? [pages[to]] : []));
+        left.dataset.folio = pages[to] ? to : '';
+        left.classList.toggle('pm-inside', !pages[to]);
+      }
       leaf.className = `pm-leaf ${dir > 0 ? 'fwd' : 'back'}`;
       leaf.hidden = false;
-      setTimeout(() => { at += 2 * dir; draw(); }, 260); // à mi-course : la feuille tournée cache le changement
-      setTimeout(() => { leaf.hidden = true; busy = false; }, 560);
+      setTimeout(() => { // fin de la rotation (0,7 s, voir .pm-leaf.fwd) : la feuille se pose, la page d'en face change
+        at = to;
+        draw();
+        leaf.hidden = true;
+        busy = false;
+      }, 700);
     };
     prev.onclick = () => turn(-1);
     next.onclick = () => turn(1);
