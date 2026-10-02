@@ -269,7 +269,7 @@
   <p id="pmSimsMsg" class="small">Enregistré dans ce navigateur, et avec vos disponibilités (« Enregistrer dans le dossier des données »).</p>
 </section>
 </main>
-<script src="../../shared/kit.js?v=9bc0c53d"></script>
+<script src="../../shared/kit.js?v=5ed81dcf"></script>
 <script src="../../shared/repository_nav.js?v=5a7c8f48"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
@@ -662,6 +662,18 @@
       </div>
       ${plis.length ? `<div data-part="plis"><h4>Plis et messages en vol</h4>${plis.map(pliHtml).join('')}</div>` : ''}`;
     $('pmDetail').querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go, a, y, pts, dist));
+    // cartes (fournies, jointes aux plis) : visionneuse commune (croix, Échap), pas d'onglet à part ; écoute posée une
+    // fois, en capture (avant le clic de page qui tournerait la page)
+    if (!$('pmDetail').dataset.viewer) {
+      $('pmDetail').dataset.viewer = '1';
+      $('pmDetail').addEventListener('click', e => {
+        const l = e.target.closest('.pm-maps figure a');
+        if (!l) return;
+        e.preventDefault();
+        e.stopPropagation();
+        window.RepositoryKit.viewImage(l.href, l.closest('figure').querySelector('figcaption')?.textContent || '');
+      }, true);
+    }
     // briser le scellé : clic sur l'enveloppe ou sur son bouton ; avant l'heure, confirmation en deux temps (le bouton
     // la demande, second clic dans les 5 s) ; chaque geste est porté au journal
     $('pmDetail').querySelectorAll('.pm-pli[data-pli]').forEach(env => env.onclick = e => {

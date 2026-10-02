@@ -257,8 +257,29 @@
     const a = Math.abs(m), h = Math.floor(a / 60), r = a % 60;
     return m ? `${ref}${m > 0 ? '+' : '−'}${h ? `${h}h` : ''}${r ? `${r}mn` : ''}` : ref;
   };
+  /** Visionneuse d'image commune : fenêtre modale, titre, croix (et Échap, clic hors de l'image) pour fermer ; clic sur
+   *  l'image : ajustée à l'écran ↔ taille réelle (défilement). */
+  function viewImage(src, title = '') {
+    let d = document.getElementById('repoImageViewer');
+    if (!d) {
+      document.head.insertAdjacentHTML('beforeend', '<style id="repoImageViewerCss">#repoImageViewer{width:min(96vw,1400px);max-height:94vh;padding:0;border:0;border-radius:calc(10px * var(--repo-round, 1));background:#111;color:#eee;overflow:hidden}#repoImageViewer::backdrop{background:rgba(0,0,0,.7)}#repoImageViewer header{display:flex;align-items:center;gap:10px;padding:6px 10px;background:#1c1c1c}#repoImageViewer header b{flex:1;font:600 13px system-ui,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#repoImageViewer header button{all:unset;cursor:pointer;font:600 22px/1 system-ui,sans-serif;padding:2px 8px;color:#eee}#repoImageViewer header button:hover{color:#fff;background:#c0392b}#repoImageViewer .rv-body{overflow:auto;max-height:calc(94vh - 40px);display:grid;place-items:center}#repoImageViewer img{display:block;max-width:100%;max-height:calc(94vh - 40px);cursor:zoom-in}#repoImageViewer.rv-full img{max-width:none;max-height:none;cursor:zoom-out}</style>');
+      d = document.createElement('dialog');
+      d.id = 'repoImageViewer';
+      d.innerHTML = '<header><b></b><button type="button" class="repo-plain" aria-label="Fermer" title="Fermer">×</button></header><div class="rv-body"><img alt=""></div>';
+      d.querySelector('button').onclick = () => d.close();
+      d.querySelector('img').onclick = () => d.classList.toggle('rv-full');
+      d.addEventListener('click', e => { if (e.target === d) d.close(); }); // clic sur le fond
+      document.body.append(d);
+    }
+    d.classList.remove('rv-full');
+    d.querySelector('b').textContent = title;
+    d.querySelector('img').src = src;
+    d.querySelector('img').alt = title;
+    d.showModal();
+  }
   window.RepositoryKit = {
     LANGS,
+    viewImage,
     hOffset,
     hText,
     esc,
