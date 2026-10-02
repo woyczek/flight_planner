@@ -193,6 +193,16 @@ data/missions/<lettre>_<FAMILLE>/<identifiant>/
   générateur. État : **complète** (toutes les cartes), **partielle** (cartes manquantes) ou **sans cartes**
   (régénérables depuis le YAML).
 
+## 2 sexies. Brief traduit (bloc i18n)
+
+Réglage **Traductions** de la commande (registre, générateur : `en` par défaut, `en, de, es`, ou aucune) → paramètre
+`TRADUCTIONS` du prompt → le YAML porte en fin de fichier un bloc `i18n` : une clé par langue, mêmes clés que le texte
+français (`title`, `summary`, `detailed_description`, `objectives`, `notes` et `risks` dans le même ordre, `maps` :
+légendes par id de carte ; organisation d'un exercice : `events` et `tracks` par id). `shared/mission_i18n.js`
+(`MissionI18n.localize(yaml, lang)`, `here(yaml)`) superpose la traduction au texte français, champ par champ : ce qui
+n'est pas traduit reste en français. « Mes missions » s'en sert (ordre, résumé, description, objectifs, risques, plis et
+pistes, légendes des cartes) et suit le changement de langue ; le Markdown et les champs techniques restent en français.
+
 ## 2 quinquies. Exercice : organisation, chiffons, chronologie
 
 `shared/mission_exercise.js` (`MissionExercise`). Une opération devient un **exercice** quand des informations ne sont

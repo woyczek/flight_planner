@@ -314,7 +314,7 @@
 <script src="../../shared/content_i18n.js?v=2d61c23a"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=db00c09c"></script>
-<script src="../../shared/mission_estimate.js?v=fe2b9cad"></script><script src="../../shared/mission_exercise.js?v=d66c8758"></script>
+<script src="../../shared/mission_estimate.js?v=fe2b9cad"></script><script src="../../shared/mission_i18n.js?v=fde27e07"></script><script src="../../shared/mission_exercise.js?v=d66c8758"></script>
 <script src="../../shared/assignments.js?v=a5d19ee4"></script>
 <script>
 (() => {
@@ -420,13 +420,14 @@
    *  cartes d'exercice de la mission (maps[].exercise : un événement, ou « all » : toutes ses pistes, avec le dernier
    *  pli qui en révèle) ne sont visibles qu'à l'ouverture du pli. */
   function plisOf(a, y) {
-    const X = window.MissionExercise, ex = X?.of(y, exDocs), me = ex && X.participantOf(ex, y.mission?.id);
+    const docs = exDocs.map(d => window.MissionI18n?.here?.(d) || d), // textes d'exercice traduits (organisation)
+      X = window.MissionExercise, ex = X?.of(y, docs), me = ex && X.participantOf(ex, y.mission?.id);
     if (!me) return [];
     const up = s => String(s || '').trim().toUpperCase(),
       // lecteur : l'indicatif de l'affectation (mission à plusieurs équipages : un pli ne concerne que son destinataire
       // ou son émetteur, qui le passe à l'heure dite), sinon le participant de la mission
       cs = up(a.callsign) || me.callsign,
-      list = X.timeline(ex, [y, ...exDocs]).filter(e => e.to.includes(cs) || e.to.includes('ALL') || e.to.includes('TOUS') || up(e.from) === cs),
+      list = X.timeline(ex, [y, ...docs]).filter(e => e.to.includes(cs) || e.to.includes('ALL') || e.to.includes('TOUS') || up(e.from) === cs),
       // heure H réelle : décollage du participant de la mission (son affectation, même s'il n'est pas le lecteur) moins
       // son décalage ; sans son affectation, heure inconnue (ouverture au passage du point)
       anchor = me.callsign === cs ? a : (A._all || []).find(x => x.mission === a.mission && up(x.callsign) === me.callsign),
@@ -584,7 +585,7 @@
   // dates de mise à jour, participants de l'affectation)
   const SHOWN = new Set(['schema', 'schema_version', 'title', 'summary', 'detailed_description', 'objectives', 'notes', 'turning_points', 'teams', 'target',
     'rendering', 'meta', 'updated_at', 'updatedAt', 'participants', 'maps', 'generated', 'generator',
-    'tracks', 'injects', 'phases', 'exercise']); // exercice : seulement dans les plis, à leur heure
+    'tracks', 'injects', 'phases', 'exercise', 'i18n']); // exercice : seulement dans les plis, à leur heure
   const LABELS = { risks: 'Risques', payload: 'Charge utile', return_options: 'Déroutements', air_refueling: 'Ravitaillement en vol', mission: 'Mission', operation: 'Opération', origin: 'Départ', destination: 'Destination', aircraft: 'Appareils', rendezvous: 'Rendez-vous', zones: 'Zones', timing: 'Horaires', weather: 'Météo', vertical_profile: 'Profil vertical', exercise: 'Exercice', alert: 'Astreinte', maps: 'Cartes', rendering: 'Rendu des cartes', route_order: 'Ordre de la route', theatre: 'Théâtre' };
   // libellés des champs des sous-objets ; champs techniques des outils (rendu, profil) et valeurs nulles non montrés
   const SUB = { id: 'Id', name: 'Nom', type: 'Type', subtype: 'Sous-type', missions: 'Missions', callsign: 'Indicatif', operator: 'Opérateur', role: 'Rôle',
@@ -642,8 +643,10 @@
     setClosed(lastRender[0], closed);
   }
   window.addEventListener('repository-design-change', () => setTimeout(redraw, 60));
+  window.addEventListener('repository-language-change', () => setTimeout(redraw, 60)); // brief traduit, phrases à valeurs
   function render(a, y, md = '', log = []) {
     lastRender = [a, y, md, log];
+    y = window.MissionI18n?.here?.(y) || y; // brief dans la langue de la page (bloc i18n du YAML), sinon en français
     const pts = routeOf(y), dist = pts.slice(1).reduce((s, p, i) => s + nm(pts[i], p), 0);
     const alert = a.alert || y.alert;
     const secs = mdSections(md);

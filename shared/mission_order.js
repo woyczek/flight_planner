@@ -93,6 +93,7 @@
       ground: 'libre',
       aar: 'libre',
       duration: 'libre',
+      translations: 'en',
       ...readJson(ORDER_KEY, {})
     };
     if (!/^\d+$/.test(String(o.serie || ''))) o.serie = ''; // série : numéro dans la famille (vide = la suivante)
@@ -144,7 +145,8 @@
     rdv: o.rdv,
     ground: o.ground,
     aar: o.aar,
-    duration: o.duration || 'libre'
+    duration: o.duration || 'libre',
+    translations: o.translations || 'en'
   });
 
   /** Inscrit la commande au registre (statut « commandée ») : via le registre s'il est chargé, sinon dans missionRegistry:v1. */
@@ -212,6 +214,7 @@
     p = set(p, 'ÉQUIPES_SOL', r.ground ?? 'libre');
     p = set(p, 'RAVITAILLEMENT', r.aar || 'libre');
     p = set(p, 'DURÉE', r.duration || 'libre');
+    p = p.replace(/^(\s*TRADUCTIONS\s*=\s*)\S+/m, (_, a) => a + String(r.translations || 'en').replace(/\$/g, '$$$$')); // valeur à espaces (« en, de, es »)
     let copied = false;
     try {
       await navigator.clipboard.writeText(p);
@@ -278,6 +281,7 @@
         <label>${esc(t(['Rendez-vous', 'Rendezvous', 'Treffpunkt', 'Encuentro']))}<select data-o="rdv">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.rdv)}${opt('avec', t(['avec', 'with', 'mit', 'con']), o.rdv)}${opt('sans', t(['sans', 'without', 'ohne', 'sin']), o.rdv)}</select></label>
         <label>${esc(t(['Équipes au sol', 'Ground teams', 'Bodenteams', 'Equipos en tierra']))}<select data-o="ground">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.ground)}${[0, 1, 2, 3].map(n => opt(n, n, o.ground)).join('')}</select></label>
         <label title="${esc(t(['Durée de l’opération, du premier décollage au dernier atterrissage des équipes DEFA : repère pour le générateur, pas une borne stricte', 'Operation duration, first take-off to last landing of the DEFA teams: a guide for the generator, not a strict limit']))}">${esc(t(['Durée', 'Duration', 'Dauer', 'Duración']))}<select data-o="duration">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.duration)}${DURATIONS.map(([k, l]) => opt(k, `${k} — ${l}`, o.duration)).join('')}</select></label>
+        <label title="${esc(t(['Langues du brief traduit dans le YAML (bloc i18n), en plus du français : les pilotes le lisent dans leur langue', 'Languages of the translated brief in the YAML (i18n block), besides French: pilots read it in their language', 'Sprachen des übersetzten Briefings im YAML (i18n-Block), zusätzlich zum Französischen: Piloten lesen es in ihrer Sprache', 'Idiomas del brief traducido en el YAML (bloque i18n), además del francés: los pilotos lo leen en su idioma']))}">${esc(t(['Traductions', 'Translations', 'Übersetzungen', 'Traducciones']))}<select data-o="translations">${opt('en', 'en', o.translations)}${opt('en, de, es', 'en, de, es', o.translations)}${opt('aucune', t(['aucune', 'none', 'keine', 'ninguna']), o.translations)}</select></label>
         <label>${esc(t(['Ravitaillement en vol', 'Air refuelling', 'Luftbetankung', 'Reabastecimiento en vuelo']))}<select data-o="aar">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.aar)}${opt('oui', t(['oui', 'yes', 'ja', 'sí']), o.aar)}${opt('non', t(['non', 'no', 'nein', 'no']), o.aar)}</select></label>
       </div>
       <p><b>${esc(t(['Aéronef de chaque équipe en vol', 'Aircraft of each flying team', 'Luftfahrzeug jeder Besatzung', 'Aeronave de cada equipo']))}</b></p>

@@ -33,6 +33,8 @@ PARAMÈTRES DE CETTE EXÉCUTION
   ÉQUIPES_SOL     = libre            (0 à 3 : équipes au sol en plus des équipes en vol)
   RAVITAILLEMENT  = libre            (oui : ravitaillement en vol planifié ; non : aucun)
   DURÉE           = libre            (XS · S · M · L · XL : durée de l'opération, voir ci-dessous)
+  TRADUCTIONS     = en               (langues du brief traduit, en plus du français : en · de · es, liées par
+                                     « , », ex. « en, de, es » ; aucune : français seul — bloc i18n, voir ci-dessous)
 
 Tu produis une série cohérente de NOMBRE_MISSIONS missions de simulation aérienne de la famille TYPE.
 Si TYPE = aléatoire, choisis UNE famille du § 2 et garde-la pour toute la série.
@@ -78,6 +80,12 @@ format ci-dessous est un contrat, pas une suggestion.
   sécurité ou du réalisme opérationnel : la mission reste crédible et exécutable. Un trait par texte
   suffit ; varier les ressorts d'une mission à l'autre.
 - Langue : français. Pas de texte hors des fichiers demandés (§ 3), sauf le bloc VALIDATION final.
+- Traductions : pour chaque langue de TRADUCTIONS (en anglais, allemand, espagnol), le YAML porte en fin de fichier un
+  bloc i18n avec la traduction des textes du brief, mêmes clés que le texte français (modèle ci-dessous, après notes) :
+  title, summary, detailed_description, objectives, notes, risks (même ordre), légendes des cartes (par id), et pour l'organisation d'un exercice
+  les textes des événements (par id) et des pistes (par id). Traduction fidèle et naturelle, même ton, même humour ;
+  indicatifs, codes OACI, noms propres, coordonnées, niveaux et heures inchangés. Le Markdown et les champs techniques
+  restent en français. TRADUCTIONS = aucune : pas de bloc i18n.
 
 ────────────────────────────────────────────────────────────────────────────
 2. FAMILLES ET SOUS-TYPES (codes EXACTS)
@@ -360,6 +368,27 @@ rendering:
 notes:
   - "Exercice de simulation aérienne."
   - "Toute coordonnée approximative est signalée ici (point et raison)."
+i18n:                          # selon TRADUCTIONS (sinon OMETTRE le bloc) : une clé par langue (en, de, es)
+  en:
+    title: "AXE CECILE — refuelling a Rafale patrol"
+    summary: |-
+      …
+    detailed_description: |-
+      …
+    objectives:
+      primary: "…"
+      secondary:
+        - "…"
+    notes:                     # même ordre que notes
+      - "…"
+    risks:                     # même ordre que risks
+      - { hazard: "…", consequence: "…", mitigation: "…" }
+    events:                    # organisation d'un exercice seulement : textes des événements, par id
+      EV-1: { title: "…", text: "…" }
+    tracks:                    # organisation d'un exercice seulement : textes des pistes, par id
+      TRACK-401: { nature: "…", task: "…", conduct: "…" }
+    maps:                      # légendes des cartes (description), par id de carte
+      general: "…"
 
 Zones (dessinées sur toutes les cartes) : toute mission dont le travail porte sur une SURFACE et non sur un point
 en a une — recherche d'une personne, d'une épave ou d'un véhicule (SAR, LE, HEMS en recherche : kind search), secteur
