@@ -686,9 +686,7 @@
     // voyant de la barre d'état des designs à matières (designs_skeuo.css) : vert si tout est sauvegardé, ambre sinon
     document.documentElement.dataset.dirty = n > 0 ? '1' : '0';
     const label = `${row[0]} (${n}) · ${row[2]} ${m.savedAt ? new Date(m.savedAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }) : t('never')}`,
-      icon = window.RepositoryIcons?.svg('save', {
-        size: 14
-      });
+      icon = window.RepositoryIcons?.svg('save'); // taille : celle des icônes de bouton du jeu (pas de taille en ligne)
     button.textContent = icon ? ' ' + label : '💾 ' + label;
     if (icon) button.insertAdjacentHTML('afterbegin', icon);
     button.title = row[1].replace('{n}', n).replace('{last}', last);

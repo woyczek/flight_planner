@@ -118,7 +118,8 @@ for key, d in composed.items():
         # bulle grise teintée sur son disque intérieur (le cerclage reste gris), découpée à sa forme, glyphe non filtré
         shape = f'url("icons/skeuo/{centre}") center/contain no-repeat'
         out.append(f'{H} .repo-svg[data-i]{{background:url("icons/skeuo/{centre}") center/contain no-repeat,{disc(g)} center/contain no-repeat!important;background-color:transparent!important;background-blend-mode:overlay,normal!important;-webkit-mask:{shape};mask:{shape};filter:none!important;{common}}}')
-        gel = f'--aq-gel:{g["centreGel"]};' if g.get('centreGel') else ''
+        # bulle du Centre : teinte propre et disque recentré (up remonte le disque : visible sur une teinte sombre)
+        gel = f'--aq-gel:{g["centreGel"]};background:url("icons/skeuo/{centre}") center/contain no-repeat,{disc({**g, "up": -0.5})} center/contain no-repeat!important;' if g.get('centreGel') else ''
         out.append(f'{CENTRE}{{{gel}color:var(--ico-glyph-centre,{g["centre"]})!important}}')
         tree[key] = {'normal': centre, 'centre': centre, 'disc': disc(g), 'glyph': g['color'], 'glyphCentre': g['centre']}
     else:

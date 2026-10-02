@@ -181,20 +181,20 @@
      rangé sous la dernière page, son bout dépasse sous les feuilles ; à la dernière double page, ruban et signet entiers
      sur la page de droite le long du dos. Clic : dernière page (de là : retour au début). Par design : images ; largeur
      --pm-sig-w, largeur du ruban --pm-sig-body-w, hauteur du signet --pm-sig-tail-h, part qui dépasse --pm-sig-out,
-     retrait depuis le bord de la feuille --pm-sig-x ; ruban visible tout du long en lecture : --pm-sig-rest-top (haut
-     de la feuille) et --pm-sig-slice (bas du signet montré : part sous la feuille + part qui dépasse) */
+     retrait depuis le bord de la feuille --pm-sig-x ; part du signet montrée en lecture --pm-sig-show (défaut : tout le
+     signet ; 100 % : de la feuille au bout, pour un signet plus haut que cette part) */
   .pm-sig{display:none}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-sig{display:block;position:absolute;z-index:0;left:calc(var(--pm-sheet-l) + var(--pm-sig-x, 1.2cqw));width:var(--pm-sig-w, 2.4cqw);top:var(--pm-sig-rest-top, calc(100% - var(--pm-sheet-b)));bottom:calc(-1 * var(--pm-sig-out, 4.5cqw));border:0;padding:0;background:none;cursor:pointer;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.35))}
+  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-sig{display:block;position:absolute;z-index:0;left:calc(var(--pm-sheet-l) + var(--pm-sig-x, 1.2cqw));width:var(--pm-sig-w, 2.4cqw);top:calc(100% - var(--pm-sheet-b));bottom:calc(-1 * var(--pm-sig-out, 4.5cqw));border:0;padding:0;background:none;cursor:pointer;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.35))}
   .pm-sig::before{content:"";position:absolute;top:0;left:calc(50% - var(--pm-sig-body-w, 100%) / 2);width:var(--pm-sig-body-w, 100%);bottom:calc(var(--pm-sig-show, var(--pm-sig-tail-h, 3.34cqw)) - .04cqw);background:var(--pm-sig-body) top/100% auto repeat-y}
   .pm-sig::after{content:"";position:absolute;left:0;right:0;bottom:0;height:var(--pm-sig-show, var(--pm-sig-tail-h, 3.34cqw));background:var(--pm-sig-tail) bottom/100% auto no-repeat}
-  html .pm-book.pm-at-end .pm-sig{top:var(--pm-sheet-t);--pm-sig-show:var(--pm-sig-tail-h, 3.34cqw)}
+  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-book.pm-at-end .pm-sig{top:var(--pm-sheet-t);--pm-sig-show:var(--pm-sig-tail-h, 3.34cqw)} /* même préfixe que la règle de base : hors de la couche app, comme elle */
   html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-book{margin-bottom:calc(12px + min(48px, 4.5vw))} /* place du bout du signet */
   html[data-design="cabinet"] .pm-book{--pm-sig-body:url("../../shared/deco/cabinet/bookmark-body.webp?v=448f0fbb");--pm-sig-tail:url("../../shared/deco/cabinet/bookmark-tail.webp?v=6c5d9661")}
   html[data-design="flightlog"] .pm-book{--pm-sig-body:url("../../shared/deco/flightlog/bookmark-body.webp?v=5ff34cd3");--pm-sig-tail:url("../../shared/deco/flightlog/bookmark-tail.webp?v=4dfe039d")}
-  /* Aqua : ruban bleu, carte « Guide essentiel » ; Durci : sangle olive, sangle entoilée à œillet (part sous la feuille :
-     bas de feuille du dossier ouvert, 6,38 % × 831/1409 et 15,59 % × 898/1236 de la largeur) */
-  html[data-design="aqua"] .pm-book{--pm-sig-body:url("../../shared/deco/aqua/bookmark-body.webp?v=8ed06630");--pm-sig-tail:url("../../shared/deco/aqua/bookmark-tail.webp?v=3fda32e4");--pm-sig-w:6.5cqw;--pm-sig-body-w:.85cqw;--pm-sig-tail-h:20.4cqw;--pm-sig-out:4.5cqw;--pm-sig-x:3cqw;--pm-sig-rest-top:var(--pm-sheet-t);--pm-sig-show:8.3cqw}
-  html[data-design="field"] .pm-book{--pm-sig-body:url("../../shared/deco/field/bookmark-body.webp?v=429e6201");--pm-sig-tail:url("../../shared/deco/field/bookmark-tail.webp?v=9dc4aeea");--pm-sig-w:2.6cqw;--pm-sig-tail-h:12.9cqw;--pm-sig-out:4.5cqw;--pm-sig-x:1.5cqw;--pm-sig-rest-top:var(--pm-sheet-t);--pm-sig-show:12.9cqw}
+  /* Aqua : ruban bleu, carte « Guide essentiel » ; Durci : sangle olive, sangle entoilée à œillet. Signet plus haut que
+     la part visible sous la feuille : --pm-sig-show:100% (en lecture, seul le bas du signet, coupé au bord de la feuille) */
+  html[data-design="aqua"] .pm-book{--pm-sig-body:url("../../shared/deco/aqua/bookmark-body.webp?v=8ed06630");--pm-sig-tail:url("../../shared/deco/aqua/bookmark-tail.webp?v=3fda32e4");--pm-sig-w:9cqw;--pm-sig-body-w:1.2cqw;--pm-sig-tail-h:28.3cqw;--pm-sig-out:2.5cqw;--pm-sig-x:3cqw;--pm-sig-show:100%}
+  html[data-design="field"] .pm-book{--pm-sig-body:url("../../shared/deco/field/bookmark-body.webp?v=429e6201");--pm-sig-tail:url("../../shared/deco/field/bookmark-tail.webp?v=9dc4aeea");--pm-sig-w:5.2cqw;--pm-sig-tail-h:25.8cqw;--pm-sig-out:2.5cqw;--pm-sig-x:1.5cqw;--pm-sig-show:100%}
   .pm-week{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}.pm-week input{width:auto}.pm-week button{min-width:2.2em}
   .pm-types-sum{margin:0 0 8px;font-weight:600}
   .pm-sims{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 14px}
@@ -243,7 +243,7 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=1466c9a9"></script>
-<script src="../../shared/repository_nav.js?v=5e65929e"></script>
+<script src="../../shared/repository_nav.js?v=9f903e62"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=db00c09c"></script>
