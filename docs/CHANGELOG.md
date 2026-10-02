@@ -10,6 +10,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+## [4.7.0] — 2026-10-02
+
+Exercices et plis scellés : les messages et pistes d'un exercice arrivent au pilote dans des enveloppes cachetées,
+derrière le signet de son dossier de mission, ouvertes à leur heure ; le Centre affecte une opération entière (toutes
+ses missions, une heure H) d'une seule ligne de l'ODV. Lanceurs et page « Premier lancement » ; décor complet et Aqua
+par défaut ; galons argent / or ; signets, enveloppes et appareils de page dans les quatre designs à matières.
+
 ### Ajouté
 
 - **Lanceurs** `lancer.cmd` (Windows) et `lancer.sh` (macOS / Linux) : Python trouvé ou installé, données récupérées,
@@ -19,6 +26,32 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   sauvegardes), dossiers (dossier de l'application, classeur ODV : OneDrive ou fichier Excel), puis mise à jour SIA ;
   bouton « Nettoyer et recommencer ».
 - Planning ODV : classeur rouvert à l'arrivée (dossier OneDrive, sinon copie gardée du dernier classeur).
+- **Plis scellés de l'exercice** (« Mes missions ») : événements adressés à l'équipage (ou émis par lui : « message à
+  transmettre ») dans l'enveloppe cachetée du design, derrière le signet (page « Informations complémentaires », 4
+  langues) ; heure d'ouverture calculée (décollage du participant, décalage, passage du point), ouverture automatique
+  à l'heure, scellé brisé d'un clic sur l'enveloppe (confirmation en deux temps avant l'heure), « Resceller » ; pistes
+  et cartes d'exercice visibles seulement dans le pli ouvert.
+- **Journal des gestes du pilote** (`LocalStore.logEvent`, `kind: 'mission'`) : mission ouverte ou rescellée, plis
+  ouverts (à l'heure, avant), rescellés, envois vers les Cartes de vol, le carburant, le CR — base du CR prérempli.
+- **ODV, opérations à plusieurs missions** : une ligne, une coche, un poste par équipage de chaque mission, « +
+  équipier » sous chaque équipage, enregistrement de toutes les missions d'un coup ; **heure H** de l'opération et
+  décollage de chaque équipage à H + son décalage, convoyage calculé sur ce décollage.
+- **ODV** : « Modifier » montre les missions enregistrées du créneau, préremplies ; vols de la frise horaire →
+  « Planifier… / Modifier… » ; choix de la semaine (précédente, suivante, en cours, semaine du classeur) ; convoyage
+  par un tiers = mission (« à affecter », puis confiée) ; décollage avancé ou choisi ; missions sur plusieurs
+  créneaux ; appareils compatibles seulement, triés par distance, temps de convoyage affiché ; missions probables
+  pondérées par les CR de la famille.
+- **Heure d'exercice** : une seule référence (H, T ou M), décalages avec leur unité (`H+2mn`, `H-20mn`, `H+1h`) ;
+  lecture et écriture communes (`RepositoryKit.hOffset` / `hText`) ; éditeur, prompt du générateur et doc.
+- **Visionneuse d'image commune** (`RepositoryKit.viewImage` : croix, Échap, taille réelle au clic) : cartes de
+  « Mes missions ».
+- **En-tête de l'ordre de mission selon la famille** (Aqua : 9 émetteurs).
+- **Designs** : galons (argent, or au Centre) dans les quatre designs à matières ; signets (Aqua, Durci) et enveloppes
+  de pli par design ; appareil de page d'Aqua (défibrillateur, moniteur) ; nouvelle frise de pied de page d'Aqua ;
+  panneaux du ton sombre d'Aqua et du Carnet de vol ; feuille de registre d'Aqua (porte-bloc, pince, en-tête CPCO-DEFA).
+- **Pied de page en `file://`** : numéro de commit lu dans `config/build.js` (crochets git ; `sh tools/install_hooks.sh`
+  une fois par clone).
+- `tools/assets_status.py` : inventaire des assets des designs.
 
 ### Modifié
 
@@ -27,10 +60,25 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   des versions 4.6.0 et antérieures (bloc release seul, généré par `tools/bump_versions.py`), à retirer en 4.9.
 - Paramètres › Sources et dossiers : dossier du dépôt en tête ; le choisir règle data/, ses sous-dossiers et la
   sauvegarde locale.
+- **Décor complet par défaut** partout, **Aqua design par défaut** d'une nouvelle installation.
+- **Convoyage** : le pilote convoyeur ne reçoit que l'ordre de convoyage (appareil, départ, arrivée, heure).
+- **Une mission par pilote et par tranche** (matin, après-midi, soir), convoyeurs compris.
+- **Mes missions** : dernière page du dossier à gauche, signet posé à la fin du dossier (il tourne avec la page) ;
+  fiche technique lisible (libellés, tableaux, coordonnées ; ni pistes ni injects) ; cartes de pistes retirées des
+  cartes fournies.
+- Fenêtres d'affectation lisibles dans les designs à matières (fond d'un bloc), ancrées sur l'élément en cours de
+  saisie ; bouton « Enregistrer dans le dossier » au style « danger » du design, sur une ligne.
+- Framework : jeton d'angles `--repo-round` ; panneaux de blocs sur une seule classe ; fonds illustrés (BG) retirés.
 
 ### Corrigé
 
 - Pages `*_core_*` de FIRE / HEMS ressuscitées par erreur en 4.6.0 : retirées.
+- ODV : une mission d'exercice n'affecte plus toutes les équipes de l'opération ; mission d'organisation (…Z) jamais
+  proposée ; distance et convoyage pour toutes les missions (départ par position) ; appareil déjà affecté grisé.
+- Planificateur carburant : appareil de la mission transmise sélectionné ; SimBrief : sa réponse au lieu de
+  « indisponible ».
+- Landing : « Cannot access 'esc' before initialization ».
+- Signets : clignotements et sauts au tournage des pages ; numéros de page sans saut.
 
 ## [4.6.0] — 2026-10-01
 

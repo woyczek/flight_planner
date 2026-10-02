@@ -214,6 +214,9 @@ les familles sont concernées (ISR, HEMS, FIRE, COMMAND…).
 - **Destinataires** : l'organisation voit tout ; chaque équipage ne reçoit que les événements qui lui sont adressés
   (ou à tous) et ne connaît que les pistes qu'ils révèlent ; chaque chiffon joué reçoit sa route, son heure de
   départ, ses consignes et sa carte.
+- **Réception** (« Mes missions », pilote) : les événements adressés à l'équipage sont des plis scellés derrière le
+  signet, ouverts à leur heure ; pistes et cartes d'exercice n'y paraissent qu'à l'ouverture (voir
+  [AFFECTATION_MISSIONS.md](AFFECTATION_MISSIONS.md), § 10).
 - **Ancien format** (`tracks`, `injects`, `phases` dans une mission) : toujours lu, converti en événements adressés à
   l'équipage de la mission ; « Créer l'organisation de l'exercice » les reprend dans la nouvelle mission Z.
 

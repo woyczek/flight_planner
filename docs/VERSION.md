@@ -5,6 +5,44 @@ Une section par version publiée, la plus récente en tête, écrite à chaque r
 effectuer** (ce que chacun doit faire après la mise à jour), **notes** (limites connues, points d'attention, à venir).
 Entre deux versions, le pied de page affiche le commit en cours (`v4.6.0+abc1234`).
 
+## 4.7.0 — 2 octobre 2026
+
+### Synthèse
+
+- **Exercices : les plis scellés arrivent au pilote.** Dans « Mes missions », les messages et pistes d'un exercice
+  sont des enveloppes cachetées, derrière le signet du dossier (page « Informations complémentaires »). Chacune porte
+  son heure d'ouverture et s'ouvre seule à l'heure ; on peut briser le scellé avant (confirmation), et le resceller.
+  Pistes et cartes d'exercice ne se voient qu'une fois le pli ouvert.
+- **Le Centre affecte une opération d'un coup.** Dans l'ODV, les missions d'un exercice (I-001A, B, C…) tiennent sur
+  une ligne : une coche, un pilote par équipage, une **heure H** commune — chaque équipage décolle à H + son décalage,
+  son convoyage est calculé en conséquence. « + équipier » sous chaque équipage pour une patrouille.
+- **ODV plus pratique** : « Modifier » rouvre les missions enregistrées du créneau, préremplies ; les vols de la frise
+  mènent à leur créneau ; appareils déjà pris grisés ; la fenêtre ne saute plus pendant la saisie ; choix de la semaine.
+- **Convoyage** : le convoyeur ne reçoit que son ordre de convoyage (sans le brief de la mission). Un pilote : une
+  mission par tranche (matin, après-midi, soir).
+- **Heures d'exercice avec unité** : `H+2mn`, `H-20mn`, `H+1h` (H, T ou M, une seule référence).
+- **Prise en main** : lanceurs `lancer.cmd` / `lancer.sh` et page **Premier lancement** ; décor complet et design
+  **Aqua** par défaut.
+- **Designs** : galons argent (or au Centre), signets et enveloppes par design, nouveaux panneaux et frise d'Aqua.
+
+### Actions à effectuer
+
+1. **Recharger chaque page ouverte** (Ctrl+F5).
+2. **Centre** : relire le dossier des missions dans le registre (« Relire le dossier ») avant d'affecter un exercice.
+3. **Missions d'exercice** : écrire les décalages avec leur unité (`H-20mn`, `H+1h`) ; les anciens `H-20` restent lus
+   en minutes. Les cartes d'exercice des équipages doivent être **enregistrées dans le dossier** depuis le Studio
+   (« Enregistrer dans le dossier » coché et autorisé) pour être jointes aux plis.
+4. **Développeurs, pages ouvertes en `file://`** : `sh tools/install_hooks.sh` une fois par clone, pour le numéro de
+   commit en pied de page.
+
+### Notes
+
+- Le journal des gestes du pilote est tenu dans le navigateur ; le CR prérempli qui s'en servira est à venir.
+- La position de l'appareil n'est pas suivie : un pli « au passage d'un point » sans heure estimée reste scellé
+  jusqu'à ce que le pilote l'ouvre.
+- Libellés encore en français seulement (plis, signet, matrice d'affectation) : traduction à venir.
+- Chiffons (pistes jouées par un pilote) : dossier propre dans « Mes missions » à venir.
+
 ## 4.6.0 — 1ᵉʳ octobre 2026
 
 ### Synthèse

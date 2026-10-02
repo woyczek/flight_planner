@@ -218,6 +218,38 @@ ailleurs. Clic → « Mes missions » ; ouvrir la mission marque l'affectation l
   cochées, « Annuler les modifications » revient à la proposition ; fermeture quand tous les pilotes libres sont affectés,
   ou sur demande (confirmation si modifications en attente). « ✎ détail » : dialogue complet, dont le résultat revient
   dans la matrice (« Reporter dans le créneau »), rien n'est écrit avant « Enregistrer ».
+- **Exercice dans la matrice** (2 octobre 2026) : les missions d'une même opération (`I-001A`, `I-001B`, `I-001C` ;
+  opération tirée de l'identifiant, sinon du registre ; la mission d'organisation …Z n'est jamais proposée) tiennent
+  sur **une ligne** : bandeau « ⛓ Opération … — n missions liées », liseré, **une seule coche**, un poste par équipage de
+  chaque mission (ses propres indicatifs), **« + équipier » sous chaque équipage** (patrouille dans sa mission,
+  indicatif suivant) ; « Enregistrer » écrit toutes les missions de l'opération, chacune avec ses pilotes.
+- **Heure H** : un exercice n'a qu'une heure de référence (H, T ou M : le même instant) ; décalages avec leur unité
+  (`H+2mn`, `H-20mn`, `H+1h`, `H+1h30mn` ; sans unité : minutes, anciens fichiers ; lecture et écriture communes
+  `RepositoryKit.hOffset` / `hText`). Sur la ligne d'une opération, le champ devient « heure H » (par défaut, le
+  premier équipage décolle au début du créneau) ; chaque équipage décolle à H + son décalage (participants de la …Z),
+  son convoyage est calculé sur ce décollage, chaque mission est enregistrée à son heure.
+- **« Modifier »** (créneau garni) : les missions enregistrées sur le créneau sont en tête de la matrice, cochées et
+  préremplies (pilotes, appareils, indicatifs, convoyage, décollage) ; « Enregistrer » les réécrit. Vols de la frise
+  horaire : bouton **Planifier… / Modifier…** vers leur créneau.
+- **Appareils** : un appareil déjà pris par un autre poste coché (équipier, autre mission) ou engagé sur le créneau
+  est grisé (« déjà affecté », « engagé »). La fenêtre reste ancrée sur l'élément en cours de saisie au redessin.
+- **Une mission par pilote et par tranche** (matin, après-midi, soir), même si ses disponibilités déclarées sont plus
+  larges ; un convoyeur n'a aucune autre mission dans les créneaux que touche son convoyage.
+- **Convoyage** : le pilote convoyeur ne reçoit que l'ordre de convoyage (appareil, départ, arrivée, heure, pour qui),
+  pas le brief, les cartes ni les plis de la mission.
+- **Plis de l'exercice dans « Mes missions »** : les événements adressés à l'équipage (ou émis par lui : « message à
+  transmettre ») sont des **plis scellés** derrière le signet : l'enveloppe du design (`shared/deco/<design>/pli-sealed.webp`),
+  l'heure d'ouverture (décollage du participant − son décalage + heure de l'événement), le nombre de pistes et de cartes
+  jointes. Le pli s'ouvre seul à l'heure (notification) ; un clic sur l'enveloppe brise le scellé (avant l'heure :
+  confirmation en deux temps) ; « Resceller » le referme. Les pistes (nature, route, niveau, à établir) et les cartes
+  d'exercice (`maps[].exercise`) ne paraissent que dans le pli ouvert ; la fiche technique ne montre ni `tracks`, ni
+  `injects`, ni `exercise`.
+- **Livre** : la dernière page du dossier est à gauche (page « intentionnellement laissée blanche » avant si besoin) ;
+  en face, la page « Informations complémentaires » mène aux annexes (plis) par le coin ou d'un clic ; le signet, posé
+  à la fin du dossier, les ouvre ou y ramène, et tourne avec la page. Cartes : visionneuse commune
+  (`RepositoryKit.viewImage` : croix, Échap).
+- **Journal** (`LocalStore.logEvent`, `kind: 'mission'`) : mission ouverte, rescellée, plis ouverts (à l'heure, avant
+  l'heure), rescellés, envois vers les Cartes de vol, le carburant, le CR — base du CR prérempli à venir.
 - **Semaines** (1ᵉʳ octobre 2026) : disponibilités par semaine (`weeks`, clé : lundi ISO UTC, douze semaines passées
   gardées) ; l'ancienne grille « semaine type » (`grid`) vaut tant qu'aucune semaine n'est saisie. « Mes missions » :
   barre de semaine (‹, date, ›, ⟲ semaine en cours) commune à la liste et à la grille ; « ⧉ S-1 » recopie la semaine
