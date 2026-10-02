@@ -19,6 +19,15 @@
   .pm-plan .leg{fill:none;stroke:#2f6fd6;stroke-width:2}.pm-plan .pt{fill:#2f6fd6}.pm-plan .ad{fill:#c62828}.pm-plan text{font:10px system-ui,sans-serif;fill:currentColor}
   .pm-maps{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}.pm-maps figure{margin:0}.pm-maps img{width:100%;border:1px solid color-mix(in srgb,currentColor 20%,transparent)}
   .pm-maps figcaption{font-size:11.5px;opacity:.8;margin-top:3px}
+  /* plis d'exercice scellés : enveloppe (jeton --pm-pli : image d'enveloppe du design ; sinon papier kraft dessiné),
+     heure d'ouverture, cartes jointes ; ouverts : en-tête, provenance, texte, cartes */
+  .pm-pli{position:relative;display:grid;justify-items:center;gap:4px;margin:12px auto;padding:22px 16px 16px;max-width:420px;text-align:center;color:#3b2f1c;background:var(--pm-pli, linear-gradient(160deg,#d9bf8c,#c9a96e)) center/100% 100% no-repeat;border:1px solid rgba(80,55,20,.35);box-shadow:0 3px 8px rgba(0,0,0,.25)}
+  .pm-pli::before{content:"";position:absolute;inset:0 0 auto;height:46%;background:linear-gradient(to bottom right,transparent calc(50% - 1px),rgba(80,55,20,.35) 50%,transparent calc(50% + 1px)) left/50% 100% no-repeat,linear-gradient(to bottom left,transparent calc(50% - 1px),rgba(80,55,20,.35) 50%,transparent calc(50% + 1px)) right/50% 100% no-repeat;pointer-events:none}
+  .pm-pli::after{content:"";width:30px;height:30px;margin:2px 0;border-radius:50%;background:radial-gradient(circle at 40% 35%,#c44 0,#8e1b1b 60%,#5e0f0f);box-shadow:0 1px 2px rgba(0,0,0,.4);order:-1}
+  .pm-pli>b{font-size:14px;letter-spacing:.08em;text-transform:uppercase}
+  .pm-pli-at{font-weight:600}
+  .pm-pli small{opacity:.8}
+  .pm-pli-meta{font-size:12px;opacity:.8;margin-top:-4px}
   .pm-text p{white-space:pre-line;margin:.4em 0}
   .pm-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0}
   .pm-cover{display:grid;justify-items:center;gap:12px;padding:28px 16px;cursor:pointer;border:1px solid color-mix(in srgb,currentColor 22%,transparent);background:color-mix(in srgb,currentColor 5%,transparent)}
@@ -243,11 +252,12 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=1466c9a9"></script>
-<script src="../../shared/repository_nav.js?v=9f903e62"></script>
+<script src="../../shared/repository_nav.js?v=6e9617e3"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=db00c09c"></script>
-<script src="../../shared/assignments.js?v=03fd7e4a"></script>
+<script src="../../shared/mission_estimate.js?v=fe2b9cad"></script><script src="../../shared/mission_exercise.js?v=a3890760"></script>
+<script src="../../shared/assignments.js?v=fdf71b3d"></script>
 <script>
 (() => {
   'use strict';
@@ -331,6 +341,39 @@
   // ---- mission (lecture seule)
   const fileUrl = (a, name) => new URL(`data/missions/${a.folder}/${name}`, root()).href;
   let mapUrls = {}; // nom de carte → adresse affichable (dossier autorisé : URL d'objet ; sinon copie servie)
+  let exDocs = []; // missions de l'exercice de l'opération : organisation (…Z) et autres participants
+  /** Missions de l'exercice d'une mission d'équipage : la mission d'organisation de son opération, puis celles des
+   *  autres participants (heures de passage des événements déclenchés par eux), lues dans les dossiers voisins. */
+  async function exerciseDocs(a, y) {
+    const X = window.MissionExercise, op = y?.operation?.id;
+    if (!X || !op || X.isOrganisation(y)) return [];
+    const read = async id => {
+      const f = await A.missionFirst(String(a.folder).replace(/[^/]*$/, id), [`mission${id}.yaml`, `mission${id.replace('-', '')}.yaml`]);
+      try { return f ? window.jsyaml.load(f.value.replace(/^#.*\n/, '')) : null; } catch { return null; }
+    };
+    const z = await read(X.organisationId(op));
+    if (!z?.exercise) return [];
+    const others = (z.exercise.participants || []).map(p => String(p?.mission || '').toUpperCase()).filter(id => id && id !== String(y.mission?.id || '').toUpperCase());
+    return [z, ...(await Promise.all(others.map(read))).filter(Boolean)];
+  }
+  /** Plis et messages de l'exercice adressés à cet équipage, dans l'ordre : { id, kind, from, title, text, when, at (ms,
+   *  heure d'ouverture ; null si le point n'a pas d'heure estimée), open, maps (cartes de pistes qu'il apporte) }. Les
+   *  cartes d'exercice de la mission (maps[].exercise : un événement, ou « all » : toutes ses pistes, avec le dernier
+   *  pli qui en révèle) ne sont visibles qu'à l'ouverture du pli. */
+  function plisOf(a, y) {
+    const X = window.MissionExercise, ex = X?.of(y, exDocs), me = ex && X.participantOf(ex, y.mission?.id);
+    if (!me) return [];
+    const list = X.eventsFor(X.timeline(ex, [y, ...exDocs]), me.callsign),
+      t0 = A.when(a) - (X.parseH(me.takeoff) ?? 0) * 6e4, // heure H réelle : décollage de l'équipage moins son décalage
+      lastReveal = [...list].reverse().find(e => e.reveals.length)?.id,
+      mapsOf = id => (y.maps || []).filter(m => m?.filename && (m.exercise === id || (m.exercise === 'all' && id === lastReveal))).map(m => m.filename);
+    return list.map(e => {
+      const at = e.t != null && A.when(a) ? t0 + e.t * 6e4 : null;
+      return { ...e, at, open: (at != null && Date.now() >= at) || A.isPliOpen(a, e.id), maps: mapsOf(e.id) };
+    });
+  }
+  /** Carte d'exercice (réservée à un pli) ? */
+  const isExerciseMap = (y, name) => !!(y.maps || []).find(m => m?.filename === name && m.exercise && m.exercise !== 'none');
   /** Étiquette d'une mission (couverture scellée, page 1 du dossier) : numéro, nom, appareil, indicatif, décollage ;
    *  tampon « CONFIDENTIEL » posé par-dessus, à place fixe. */
   const labelHtml = a => `<div class="pm-label"><small aria-label="Confidentiel">CONFIDENTIEL</small><b>${esc(a.mission)}</b><span>${esc(a.title || '')}</span>
@@ -393,6 +436,7 @@
     const mapNames = a.files?.maps?.length ? a.files.maps : (mission?.maps || []).map(m => m?.filename).filter(Boolean);
     mapUrls = {};
     for (const m of mapNames) mapUrls[m] = (await A.missionFirst(a.folder, [`cartes/${m}`, m], { as: 'url' }))?.value || '';
+    exDocs = await exerciseDocs(a, mission);
     let log = [];
     try { log = (await A.readLog()).filter(e => e.mission === a.mission); } catch { /* pas de journal */ }
     render(a, mission || {}, md, log);
@@ -464,14 +508,17 @@
    *  (Cabinet) : title (étiquette), order (en-tête, ordre, résumé), details (description, risques, équipes, route),
    *  maps (cartes), final (objectifs, remarques, signature). */
   let lastRender = null; // [mission, yaml, résumé, journal] : redessin au changement de design
-  window.addEventListener('repository-design-change', () => setTimeout(() => {
+  let pliTimer = 0;
+  /** Redessine la mission affichée : même double page, dossier dans le même état (changement de design, pli ouvert). */
+  function redraw() {
     const host = $('pmDetail');
     if (!lastRender || !host.querySelector('.pm-content')) return;
     const closed = !!host.querySelector('.pm-content')?.hidden;
     bookStart = +host.dataset.bookAt || 0;
     render(...lastRender);
     setClosed(lastRender[0], closed);
-  }, 60));
+  }
+  window.addEventListener('repository-design-change', () => setTimeout(redraw, 60));
   function render(a, y, md = '', log = []) {
     lastRender = [a, y, md, log];
     const pts = routeOf(y), dist = pts.slice(1).reduce((s, p, i) => s + nm(pts[i], p), 0);
@@ -493,8 +540,19 @@
     const alertText = alert ? `<p class="pm-alert">Soyez prêt à ${esc(hhmm(Date.parse(alert.ready_at_utc)))} sur ${esc(alert.aerodrome || a.departure || '')} et attendez les ordres ; décollage prévisible en ${esc(alert.notice_min ?? '?')} minutes.${alert.window_end_utc ? ` Fin d'astreinte ${esc(hhmm(Date.parse(alert.window_end_utc)))}.` : ''}</p>` : '';
     const team = (A._all || []).filter(x => x.mission === a.mission && x.pilot !== a.pilot);
     const teams = (y.teams || []).filter(t => t?.name && !/^[-\s]*$/.test(t.name));
-    const maps = (a.files?.maps?.length ? a.files.maps : (y.maps || []).map(m => m?.filename).filter(Boolean)).filter(m => mapUrls[m]);
+    const maps = (a.files?.maps?.length ? a.files.maps : (y.maps || []).map(m => m?.filename).filter(Boolean)).filter(m => mapUrls[m] && !isExerciseMap(y, m));
     const mapCaption = m => (y.maps || []).find(x => x?.filename === m)?.description || m;
+    const figure = m => `<figure><a href="${esc(mapUrls[m])}" target="_blank" rel="noopener"><img loading="lazy" src="${esc(mapUrls[m])}" alt="${esc(m)}"></a><figcaption>${esc(mapCaption(m))}</figcaption></figure>`;
+    // plis : scellés (enveloppe, heure d'ouverture) jusqu'à l'heure, puis contenu et cartes (deux par bloc)
+    const plis = plisOf(a, y);
+    const pliWhen = p => `${p.at != null ? `${hhmm(p.at)} — ` : ''}${p.when}`;
+    const pliHtml = p => p.open
+      ? `<h5 class="pm-pli-head">${p.kind === 'pli' ? 'Pli' : 'Message radio'} ${esc(p.id)}${p.title ? ` — ${esc(p.title)}` : ''}</h5>
+        <p class="pm-pli-meta">${p.from ? `De ${esc(p.from)} · ` : ''}${esc(pliWhen(p))}</p>${para(p.text)}
+        ${Array.from({ length: Math.ceil(p.maps.filter(m => mapUrls[m]).length / 2) }, (_, i) => `<div class="pm-maps">${p.maps.filter(m => mapUrls[m]).slice(i * 2, i * 2 + 2).map(figure).join('')}</div>`).join('')}`
+      : `<div class="pm-pli" data-kind="${p.kind}"><b>${p.kind === 'pli' ? 'Pli scellé' : 'Message radio attendu'}</b><span>${esc(p.id)}${p.from ? ` · de ${esc(p.from)}` : ''}</span>
+        <span class="pm-pli-at">À ouvrir : ${esc(pliWhen(p))}</span>${p.maps.length ? `<small>${p.maps.length} carte${p.maps.length > 1 ? 's' : ''} jointe${p.maps.length > 1 ? 's' : ''}</small>` : ''}
+        <button type="button" class="ghost" data-pli-open="${esc(p.id)}">Briser le scellé</button></div>`;
     const summary = y.summary ? para(y.summary) : mdSummary?.html || '';
     const objectives = [y.objectives?.primary && `<p><b>Objectif principal</b> : ${esc(y.objectives.primary)}</p>`, ...(Array.isArray(y.objectives?.secondary) ? y.objectives.secondary : y.objectives?.secondary ? [y.objectives.secondary] : []).map(o => `<p><b>Objectif secondaire</b> : ${esc(o)}</p>`)].filter(Boolean).join('');
     const notes = (Array.isArray(y.notes) ? y.notes : y.notes ? [y.notes] : []).filter(n => !String(n).startsWith(`Mission ${a.mission}`));
@@ -525,7 +583,8 @@
         ${pts.length ? `<h4>Route fournie — ${Math.round(dist)} NM${y.vertical_profile?.cruise ? `, ${esc(y.vertical_profile.cruise)}` : ''}</h4>
         <div class="pm-route"><table><thead><tr><th>Point</th><th>Nom</th><th>Rôle</th><th>Position</th></tr></thead><tbody>${pts.map(p => `<tr><td>${esc(p.id)}</td><td>${esc(p.name)}</td><td>${esc(p.role)}</td><td>${esc(coord(p))}</td></tr>`).join('')}</tbody></table>${plan(pts)}</div>` : ''}
       </div>
-      <div data-part="maps"><h4>Cartes fournies</h4>${maps.length ? `<div class="pm-maps">${maps.map(m => `<figure><a href="${esc(mapUrls[m])}" target="_blank" rel="noopener"><img loading="lazy" src="${esc(mapUrls[m])}" alt="${esc(m)}"></a><figcaption>${esc(mapCaption(m))}</figcaption></figure>`).join('')}</div>` : '<p class="small">Aucune carte fournie avec la mission (les Cartes de vol les génèrent depuis la route).</p>'}</div>
+      <div data-part="maps"><h4>Cartes fournies</h4>${maps.length ? `<div class="pm-maps">${maps.map(figure).join('')}</div>` : '<p class="small">Aucune carte fournie avec la mission (les Cartes de vol les génèrent depuis la route).</p>'}</div>
+      ${plis.length ? `<div data-part="plis"><h4>Plis et messages en vol</h4>${plis.map(pliHtml).join('')}</div>` : ''}
       <div data-part="final">
         ${sec('Objectifs', objectives)}
         ${sec('Remarques', notes.length ? `<ul>${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : '')}
@@ -535,6 +594,20 @@
         <div class="pm-sign"><i class="pm-dr" aria-label="Diffusion restreinte"></i><span>Fait le ${esc(signed)}, pour le Centre</span><em class="pm-signature">${esc(a.by || 'CPCO')}</em><small>Le chef de centre — ${esc(a.by || 'CPCO')}</small></div>
       </div>`;
     $('pmDetail').querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go, a, y, pts, dist));
+    $('pmDetail').querySelectorAll('[data-pli-open]').forEach(b => b.onclick = () => {
+      const p = plis.find(x => x.id === b.dataset.pliOpen);
+      if (!p || !window.confirm(`Ouvrir ${p.kind === 'pli' ? 'le pli' : 'le message'} ${p.id} avant l'heure ? Il est prévu pour : ${pliWhen(p)}.`)) return;
+      A.openPli(a, p.id);
+      redraw();
+    });
+    clearInterval(pliTimer); // ouverture à l'heure : redessin quand un pli scellé atteint la sienne
+    const due = plis.filter(p => !p.open && p.at != null);
+    if (due.length) pliTimer = setInterval(() => {
+      const now = due.filter(p => Date.now() >= p.at);
+      if (!now.length || current !== a) return;
+      window.AppFramework?.notify?.(`${now.map(p => `${p.kind === 'pli' ? 'Pli' : 'Message'} ${p.id}`).join(', ')} : heure d'ouverture atteinte.`, 'info');
+      redraw();
+    }, 20e3);
     const reseal = $('pmDetail').querySelector('[data-reseal]');
     if (reseal) reseal.onclick = () => { A.markUnread(a); load(); setClosed(a, true); };
     const close = $('pmDetail').querySelector('[data-close-book]');
@@ -565,7 +638,7 @@
     host.prepend(book);
     if (actions) book.after(actions);
     const [left, right, prev, next, leaf, sig] = ['.pm-left', '.pm-right', '.pm-prev', '.pm-next', '.pm-leaf', '.pm-sig'].map(s => book.querySelector(s));
-    host.querySelectorAll('[data-part="maps"] figure').forEach((f, i) => f.style.setProperty('--tilt', `${[-3, 2.5, -1.5, 3.5][i % 4]}deg`));
+    host.querySelectorAll(':is([data-part="maps"], [data-part="plis"]) figure').forEach((f, i) => f.style.setProperty('--tilt', `${[-3, 2.5, -1.5, 3.5][i % 4]}deg`));
     // découpe d'une partie en pages : éléments ajoutés un à un dans une page témoin ; débordement → page suivante
     // (un titre reste avec ce qui le suit)
     const split = el => {
@@ -605,7 +678,7 @@
     mapsPart?.remove();
     const title = part('title');
     title?.remove();
-    const pages = [null, title, ...split(part('order')), ...split(part('details')), ...mapPages, ...split(part('final'))].filter((p, i) => i === 0 || p);
+    const pages = [null, title, ...split(part('order')), ...split(part('details')), ...mapPages, ...split(part('plis')), ...split(part('final'))].filter((p, i) => i === 0 || p);
     let at = Math.min(bookStart, Math.max(0, pages.length - 1)) & ~1, busy = false;
     bookStart = 0;
     const draw = () => {

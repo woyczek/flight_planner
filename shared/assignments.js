@@ -94,6 +94,14 @@
     return (list || cache?.assignments || []).filter(a => me && String(a.pilot).toUpperCase() === me && a.status !== 'annulée' && (all || !when(a) || when(a) >= now)).sort((x, y) => when(x) - when(y));
   }
   const isRead = a => !!json(READ, {})[key(a)];
+  /** Plis d'exercice ouverts avant l'heure par le pilote (scellé brisé) : clé de l'affectation + identifiant du pli. */
+  const PLIS = 'pilotPlis:v1';
+  const isPliOpen = (a, id) => !!json(PLIS, {})[`${key(a)}|${id}`];
+  function openPli(a, id) {
+    const r = json(PLIS, {});
+    r[`${key(a)}|${id}`] = new Date().toISOString();
+    setJson(PLIS, r);
+  }
   /** Remet une mission « non lue » (scellée) : outil du canal develop. */
   function markUnread(a) {
     const r = json(READ, {});
@@ -1325,6 +1333,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     key,
     when,
     isRead,
+    isPliOpen,
+    openPli,
     markRead,
     markUnread,
     envelope,
