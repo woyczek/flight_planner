@@ -25,7 +25,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def skeuo_sets():
     """Jeux d'icônes à matières → dossier d'images, lus dans le registre des designs (repository_tree, designs.list) :
     chaque design marqué skeuo:true fournit son jeu icons:"…", dont les images sont dans shared/icons/skeuo/<id du design>."""
-    with open(os.path.join(ROOT, 'repository_tree'), encoding='utf-8') as f:
+    with open(os.path.join(ROOT, 'config', 'repository_tree'), encoding='utf-8') as f:
         tree = f.read()
     sets = {}
     for design, body in re.findall(r'^\s*(\w+):\{([^\n]*)\},?\s*$', tree, re.M):
@@ -42,7 +42,9 @@ ALIASES = {'brass': {'save': 'bookmark', 'file': 'file'}, 'steel': {'file': 'fil
 # (fraction de la taille de l'icône) ; tint : couleur du fond gris (mode Aqua), core : rayon teinté (% du rayon),
 # up / shrink : centre du disque teinté remonté de « up » px et diamètre réduit de « shrink » px (ajustement au cerclage) ;
 GLYPH = {
-    'gel': {'color': '#ffffff', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.55))', 'pad': .24, 'tint': 'var(--aq-gel,#2473db)', 'core': 86, 'up': 1, 'shrink': 2},
+    # centreGel : teinte de la bulle des icônes du Centre (mode tint) — marine : signe propre, lisible sur le gel or des
+    # pages du Centre (galons, designs_skeuo.css)
+    'gel': {'color': '#ffffff', 'centre': '#ffd23f', 'centreGel': '#1b2440', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.55))', 'pad': .24, 'tint': 'var(--aq-gel,#2473db)', 'core': 86, 'up': 1, 'shrink': 2},
     'brass': {'color': '#f1e4c0', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.7))', 'pad': .26},
     'steel': {'color': '#e9ecdf', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.75))', 'pad': .24},
     'avio': {'color': '#f4ecd8', 'centre': '#ffd23f', 'shadow': 'drop-shadow(.5px 1px .6px rgba(0,0,0,.7))', 'pad': .26},
@@ -116,7 +118,9 @@ for key, d in composed.items():
         # bulle grise teintée sur son disque intérieur (le cerclage reste gris), découpée à sa forme, glyphe non filtré
         shape = f'url("icons/skeuo/{centre}") center/contain no-repeat'
         out.append(f'{H} .repo-svg[data-i]{{background:url("icons/skeuo/{centre}") center/contain no-repeat,{disc(g)} center/contain no-repeat!important;background-color:transparent!important;background-blend-mode:overlay,normal!important;-webkit-mask:{shape};mask:{shape};filter:none!important;{common}}}')
-        out.append(f'{CENTRE}{{color:var(--ico-glyph-centre,{g["centre"]})!important}}')
+        # bulle du Centre : teinte propre et disque recentré (up remonte le disque : visible sur une teinte sombre)
+        gel = f'--aq-gel:{g["centreGel"]};background:url("icons/skeuo/{centre}") center/contain no-repeat,{disc({**g, "up": -0.5})} center/contain no-repeat!important;' if g.get('centreGel') else ''
+        out.append(f'{CENTRE}{{{gel}color:var(--ico-glyph-centre,{g["centre"]})!important}}')
         tree[key] = {'normal': centre, 'centre': centre, 'disc': disc(g), 'glyph': g['color'], 'glyphCentre': g['centre']}
     else:
         out.append(f'{H} .repo-svg[data-i]{{background-image:url("icons/skeuo/{normal}")!important;{common}}}')
@@ -150,7 +154,7 @@ s = s.rstrip('\n') + '\n' + bump_css('\n'.join(out), designs=True)[0] + '\n'
 open(p, 'wb').write((s.replace('\n', '\r\n') if crlf else s).encode('utf-8'))
 
 # jeux composés → repository_tree (barre latérale, page Apparence)
-p = os.path.join(ROOT, 'repository_tree')
+p = os.path.join(ROOT, 'config', 'repository_tree')
 raw = open(p, 'rb').read().decode('utf-8'); crlf = '\r\n' in raw; s = raw.replace('\r\n', '\n')
 line = f'// jeux d\'icônes composés (fond vierge + glyphe), écrit par tools/build_skeuo_icons_css.py\nwindow.REPOSITORY_TREE.iconComposed={json.dumps(tree, ensure_ascii=False, separators=(",", ":"))};\n'
 s = re.sub(r"// jeux d'icônes composés \(fond vierge \+ glyphe\), écrit par tools/build_skeuo_icons_css\.py\nwindow\.REPOSITORY_TREE\.iconComposed=.*;\n", '', s)

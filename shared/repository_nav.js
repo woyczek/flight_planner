@@ -256,7 +256,8 @@
 
   function applyAqua(accent) {
     const v = readPref("repositoryAquaColor", "blue");
-    const [h, s] = v === "app" ? K.color.hueSat(accent || "#2f7de1") : AQUA[v] || AQUA.blue;
+    // pages du Centre : gel or (galons de l'état-major), quel que soit le choix d'Apparence
+    const [h, s] = currentTheme === "cpco" ? [43, 78] : v === "app" ? K.color.hueSat(accent || "#2f7de1") : AQUA[v] || AQUA.blue;
     // clarté abaissée jusqu'à un contraste WCAG de 4,5:1 avec le texte blanc des boutons
     let l = 52,
       c = hslHex(h, s, l);
@@ -311,7 +312,7 @@
   // Designs à matières (Cabinet, Durci, Aqua : textures, plaques, vis) : feuille propre (designs.list[id].css),
   // chargée seulement quand l'un d'eux est choisi, avec sa propre version (empreinte de son contenu, table FILE_V
   // écrite par tools/bump_versions.py).
-  const FILE_V = {"designs_skeuo.css": "1e125447"};
+  const FILE_V = {"designs_skeuo.css": "7b3fce1f"};
   const designCss = id => {
     const f = designs[id]?.css;
     if (!f || document.querySelector(`link[data-design-css="${f}"]`)) return;
@@ -322,13 +323,13 @@
     document.head.append(l);
     // illustrations du décor complet (frise de Cabinet, radar de Durci), même version
     const d = document.createElement("script");
-    d.src = new URL("design_deco.js?v=7a540029", script.src).href;
+    d.src = new URL("design_deco.js?v=40be467c", script.src).href;
     document.head.append(d);
   };
   designCss(design);
-  // Décor des designs à matières : « full » (vis, filigranes, poignées, radar) ou « sober » (matières et plaques
-  // seulement) ; préférence repositoryDecor, sinon réglage de la page / du dossier (decor), sinon complet.
-  const decorDefault = page?.decor || folderSettings.decor || "full";
+  // Décor des designs à matières : « full » (vis, panneaux, poignées, radar ; par défaut) ou « sober » (matières et
+  // plaques seulement) : préférence repositoryDecor, la même sur toutes les pages.
+  const decorDefault = "full";
   doc.dataset.decor = readPref("repositoryDecor", null) || decorDefault;
   if (favicon) {
     let f = document.querySelector('link[rel~="icon"]');
@@ -514,7 +515,7 @@
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
-      sc.src = new URL("appearance_page.js?v=55a7250a", script.src).href;
+      sc.src = new URL("appearance_page.js?v=332eed62", script.src).href;
       sc.onload = show;
       document.head.append(sc);
     }
@@ -675,7 +676,7 @@
           aqua: v || "blue"
         });
       },
-      /** Décor des designs à matières : "full", "sober", ou null (réglage de chaque page). */
+      /** Décor des designs à matières : "full" (null : par défaut, complet) ou "sober". */
       setDecor(v) {
         writePref("repositoryDecor", v || null);
         doc.dataset.decor = v || decorDefault;
@@ -903,23 +904,23 @@
     profile.src = new URL("pilot_profile.js?v=f1357c65", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=e274fbbc", script.src).href;
+    files.src = new URL("file_access.js?v=356d0486", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=58f492d6", "block_icons.js?v=ff923add", "side_nav.js?v=355697e6"]) {
+    for (const f of ["icons/repository_icons.js?v=58f492d6", "block_icons.js?v=28956286", "side_nav.js?v=355697e6"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=938ce9e7", script.src).href;
+    store.src = new URL("browser_store.js?v=504cf79e", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
-    assign.src = new URL("assignments.js?v=854c1200", script.src).href;
+    assign.src = new URL("assignments.js?v=a5d19ee4", script.src).href;
     document.head.append(assign);
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=d84028ad", script.src).href;
+    update.src = new URL("suite_update.js?v=798086a3", script.src).href;
     document.head.append(update)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

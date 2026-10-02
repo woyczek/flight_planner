@@ -7,7 +7,7 @@ seuls sur chaque page. Ce document décrit chaque composant, son rôle et son in
 
 | Composant | Fichier | Utilisé par |
 |---|---|---|
-| Arborescence et thèmes | `repository_tree` | toutes les pages |
+| Arborescence et thèmes | `config/repository_tree` | toutes les pages |
 | Bandeau, menu ☰, langue | `shared/repository_nav.js`, `.css` | toutes les pages |
 | Apparence (designs, icônes, barre latérale, couleurs) | `shared/designs.css`, `block_icons.js/.css`, `icons/repository_icons.js`, `side_nav.js`, `appearance_page.js` | toutes les pages ; réglages sur la page Apparence |
 | Colonnes redimensionnables | `shared/column_resize.js` | Planner |
@@ -30,9 +30,10 @@ seuls sur chaque page. Ce document décrit chaque composant, son rôle et son in
 | Registre des missions générées | `shared/mission_registry.js` | `apps/cpco/mission_registry.html` |
 | Outils de maintenance | `tools/` | dépôt |
 
-## 1. `repository_tree` — arborescence, thèmes, menu
+## 1. `config/repository_tree` — arborescence, thèmes, menu
 
-Fichier JavaScript **sans extension** (à servir en `text/javascript`, voir INSTALL) qui
+Fichier JavaScript **sans extension** (à servir en `text/javascript`, voir INSTALL), chargé en tête de chaque page
+(`config/repository_tree?v=…`) ; la racine de l'application se déduit de son adresse (`app_framework.js`). Il
 définit `window.REPOSITORY_TREE` :
 
 - `release` : version de la suite (`version`, `date`, `changelog` : lien affiché en pied de page de
@@ -115,8 +116,13 @@ liste `DISPLAY` : design, icônes, couleurs, barre latérale, langue, onglets, s
   - **jetons** `--sk-*` par design et par ton, **composants communs** écrits une fois (`designs_skeuo.css`) ; les
     règles d'une page (CR, planificateur, éditeur, Apparence) sont dans la feuille de la page, avec ces jetons ;
     banc de non-régression : `tools/skeuo_regression.html` ;
-  - **fonds des blocs** (`design_deco.js`) : fonds illustrés déclarés (`BG`, blocs `data-deco-bg` : Carnet de vol,
-    Aqua) ; **panneaux par thème** (`PANELS` : Cabinet « 1930 » marine / ivoire selon le ton, Durci) choisis d'après
+  - **angles** : jeton commun `--repo-round` (1 arrondis, 0 dans les designs à matières) ; un rayon s'écrit
+    `calc(<rayon> * var(--repo-round, 1))`, jamais une exception `html[data-skeuo] … { border-radius: 0 }` par élément ;
+    surfaces de données posées sur un bloc habillé : `background: var(--repo-veil, …)` (voile du design) ;
+  - **une page = des blocs** : tout contenu dans une `<section>` à `<h2>` de `main` (en-tête, déplacer / masquer, décor),
+    rien de posé hors bloc ;
+  - **fonds des blocs** (`design_deco.js`) : **panneaux par thème** (`PANELS` : Cabinet « 1930 » marine / ivoire selon
+    le ton, Carnet de vol plans marine / parchemin, Durci, Aqua) choisis d'après
     le titre, l'icône puis le sous-titre du bloc ; **feuille de registre** (`SHEETS`, Cabinet, Carnet de vol et Durci, ton
     clair : blocs de tableau
     des registres, une planche par design découpée par `tools/cut_register_sheet.py`, géométrie en jetons `--sh-*`) ;
@@ -307,8 +313,10 @@ Paramètres › Maintenance › Sources et dossiers) sinon valeur par défaut ; 
 
 ## 6 bis. `file_access.js` — dossiers et fichiers
 
-- Dossiers mémorisés (IndexedDB `missionCore` › `handles`) : **dépôt** (`__repo` : le dossier
-  « Documentation », qui contient `repository_tree`), **registre** (`__ledger` :
+- Dossiers mémorisés (IndexedDB `missionCore` › `handles`) : **dépôt** (`__repo` : la racine de l'application, qui
+  contient `config/repository_tree` — le choisir règle d'un coup `data/` et ses sous-dossiers, et la sauvegarde locale
+  si elle n'est pas choisie : `deriveFromRepo`), **classeur ODV** (`__odv` : dossier OneDrive du classeur ; copie du
+  dernier classeur gardée sous `__odvFile`), **registre** (`__ledger` :
   `Documentation/CR DEFA`, qui contient `mission_cr.html`), **sauvegarde locale** (`__store`),
   **performances** (`__perf`, Flight Planner), **SIA XML** (`__sia` : données AIRAC, témoin
   `mora.csv`), **missions** (`__missions` : `Documentation/Missions`, séries générées ; registre
@@ -471,12 +479,24 @@ appareil). `link(item)` : lien en tête de carte (fiche appareil). Ajout par le 
 - `tools/new_family_pages.py` : crée les pages d'une nouvelle famille de missions dans
   `apps/cr/`.
 
+## Lanceur et premier lancement
+
+- `lancer.cmd` / `lancer.sh` (racine) : trouvent ou installent Python, puis `tools/launch.py` : données (`data/` à jour,
+  archive `.zip` déposée, ou clone du dépôt privé), serveur local (`http://127.0.0.1`, premier port libre à partir de
+  8000), navigateur sur `apps/settings/premier_lancement.html`.
+- Le serveur du lanceur porte une interface locale `/__setup/` (état, clone avec identifiants, envoi de l'archive ou du
+  journal DEFA), refusée hors des pages qu'il sert (hôte `127.0.0.1:<port>` et en-tête `X-DEFA-Setup` exigés).
+- Premier lancement : données, profil (`missionReportingConfig:v1` ; identifiants DEFA `defaCredentials:v1`, exclus des
+  sauvegardes par `browser_store.js`), dossiers (`__repo`, `__odv` / `__odvFile`), puis Paramètres › Mise à jour SIA ;
+  `suiteSetup:v1` marque la suite réglée (le lanceur ouvre alors l'accueil), « Nettoyer » l'efface.
+
 ## Ajouter une page à la suite
 
 1. Créer la page (un `<header>` avec un `<h1>`, un `<main>`).
-2. Charger `../repository_tree` en tête, puis en fin de page `shared/repository_nav.js`,
+2. Charger `config/repository_tree` en tête (chemin relatif à la page), puis en fin de page `shared/kit.js`,
+   `shared/repository_nav.js`,
    `shared/app_framework.js` (et `content_i18n.js` pour la traduction).
-3. La déclarer dans `repository_tree` (`pages`), avec son thème et sa place dans le menu.
+3. La déclarer dans `config/repository_tree` (`pages`), avec son thème et sa place dans le menu.
 4. `python tools/bump_versions.py`.
 
 ## Base SIA commune (`shared/sia_base.js`)

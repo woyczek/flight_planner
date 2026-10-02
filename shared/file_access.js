@@ -17,8 +17,8 @@
   const FOLDERS = {
     __repo: {
       label: L('Dossier du dépôt', 'Repository folder', 'Repository-Ordner', 'Carpeta del repositorio'),
-      expect: L('racine de l’application : le dossier qui contient repository_tree, apps/, shared/ (et data/)', 'application root: the folder containing repository_tree, apps/, shared/ (and data/)', 'Repository-Wurzel: Ordner „Documentation“ (mit repository_tree, shared/, apps/cr/…)', 'raíz del repositorio: la carpeta «Documentation» (con repository_tree, shared/, apps/cr/…)'),
-      check: 'repository_tree'
+      expect: L('racine de l’application : le dossier qui contient lancer.cmd, lancer.sh, apps/, config/, shared/ (et data/)', 'application root: the folder containing lancer.cmd, lancer.sh, apps/, config/, shared/ (and data/)', 'Repository-Wurzel: Ordner „Documentation“ (mit repository_tree, shared/, apps/cr/…)', 'raíz del repositorio: la carpeta «Documentation» (con repository_tree, shared/, apps/cr/…)'),
+      check: 'config/repository_tree'
     },
     __data: {
       label: L('Dossier des données', 'Data folder', 'Datenordner', 'Carpeta de datos'),
@@ -44,6 +44,10 @@
     __xplane: {
       label: L('Dossier X-Plane (atterrissages)', 'X-Plane folder (landings)', 'X-Plane-Ordner (Landungen)', 'Carpeta X-Plane (aterrizajes)'),
       expect: L('dossier où le plugin d’atterrissage d’X-Plane écrit ses journaux CSV (Landing Performance Dashboard)', 'folder where the X-Plane landing plugin writes its CSV logs (Landing Performance Dashboard)', 'Ordner, in den das X-Plane-Landungs-Plugin seine CSV-Protokolle schreibt', 'carpeta donde el plugin de aterrizaje de X-Plane escribe sus registros CSV')
+    },
+    __odv: {
+      label: L('Dossier du classeur ODV', 'ODV workbook folder', 'Ordner der ODV-Arbeitsmappe', 'Carpeta del libro ODV'),
+      expect: L('dossier synchronisé (OneDrive…) où l’escadrille dépose le classeur ODV (.xlsx) : le Planning ODV ouvre le plus récent ; sans OneDrive, le classeur choisi est gardé dans le navigateur', 'synchronised folder (OneDrive…) where the squadron puts the ODV workbook (.xlsx): ODV planning opens the latest; without OneDrive, the chosen workbook is kept in the browser', 'synchronisierter Ordner (OneDrive…) mit der ODV-Arbeitsmappe (.xlsx)', 'carpeta sincronizada (OneDrive…) con el libro ODV (.xlsx)')
     },
     __perf: {
       label: L('Dossier performances', 'Performance folder', 'Leistungsordner', 'Carpeta de rendimiento'),
@@ -165,6 +169,37 @@
       /* stockage indisponible */ }
   })();
 
+  /** Vrai si le dossier contient le fichier (chemin relatif, sous-dossiers compris : « config/repository_tree »). */
+  async function has(handle, path) {
+    try {
+      const parts = String(path).split('/');
+      let dir = handle;
+      for (const d of parts.slice(0, -1)) dir = await dir.getDirectoryHandle(d);
+      await dir.getFileHandle(parts[parts.length - 1]);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  /** Dossier du dépôt choisi : tout ce qui s'en déduit est réglé d'un coup — data/ (s'il contient data_tree.js) et ses
+   *  sous-dossiers (registre, missions, SIA, performances), sauvegarde locale (racine du dépôt, si elle n'est pas
+   *  déjà choisie : defa_local_store.yaml y est ignoré par git). Retourne les clés réglées. */
+  async function deriveFromRepo(repo) {
+    const done = [];
+    try {
+      const data = await repo.getDirectoryHandle('data');
+      if (await has(data, 'data_tree.js')) {
+        await set('__data', data);
+        done.push('__data', ...await deriveFromData(data));
+      }
+    } catch {
+      /* pas de data/ : données par exemples ou par archive, à choisir à part */ }
+    if (!await get('__store')) {
+      await set('__store', repo);
+      done.push('__store');
+    }
+    return done;
+  }
   // Choix d'un dossier : le sélecteur s'ouvre sur le dossier actuel ; contrôle du contenu attendu.
   async function pickFolder(key, {
     mode = 'readwrite'
@@ -180,17 +215,12 @@
       } : {})
     });
     if (info.check) {
-      let ok = false;
-      try {
-        await handle.getFileHandle(info.check);
-        ok = true;
-      } catch {
-        /* absent */
-      }
+      const ok = await has(handle, info.check);
       if (!ok && !confirm(`« ${handle.name} » ${tr(STATE.notExpected).replace('{f}', info.check)}\n${tr(STATE.expected)} : ${tr(info.expect)}`)) throw new Error('Dossier refusé');
     }
     await set(key, handle);
     if (key === '__data') await deriveFromData(handle);
+    if (key === '__repo') handle.derived = await deriveFromRepo(handle);
     return handle;
   }
   // Libellé et infobulle d'un dossier : « Dossier du registre : CR DEFA ✓ ».
@@ -243,6 +273,7 @@
     if (/\/apps\/planner\//.test(p)) return '__perf';
     if (/\/apps\/landing\//.test(p)) return '__xplane';
     if (/mission_registry\.html$/.test(p)) return '__missions';
+    if (/odv_planning\.html$/.test(p)) return '__odv';
     if (/\/apps\/sia\//.test(p)) return '__sia';
     return '';
   };
@@ -406,6 +437,8 @@
     decorate,
     fileHint,
     defaultFolder,
-    deriveFromData
+    deriveFromData,
+    deriveFromRepo,
+    has
   };
 })();

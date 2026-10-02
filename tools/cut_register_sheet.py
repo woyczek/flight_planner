@@ -9,7 +9,7 @@ morceaux dans la planche. Le script écrit shared/deco/<design>/sheet-*.webp et 
 ici.
 
 Usage (ImageMagick 7, à la racine du dépôt) :
-  python tools/cut_register_sheet.py cabinet|flightlog|field [--write]
+  python tools/cut_register_sheet.py cabinet|flightlog|field|aqua [--write]
 --write : réécrit aussi le bloc « découpe » du design dans shared/designs_skeuo.css (tailles et arrêts ; les « réglages »
 — papier, marges, en-tête, accessoire — restent à la main). Puis python tools/bump_versions.py et vérification dans une
 page à registre (ton clair).
@@ -77,6 +77,23 @@ CONFIGS = {
         'right': ((800, 520, 224, 330, 40, 'y'), dict(left=30), dict(shear=0.02, y0=685)),
         'pieces': {},
         'paper': ((300, 320, 480, 480), (300, 320, 480, 480)),
+    },
+    # porte-bloc d'Aqua : plastique bleu translucide, feuilles blanches droites (planche livrée sans la pince) ; le haut du
+    # cadre commence 97 px au-dessus du plastique (zone transparente : anneau de la pince) ; motif net, bords droits :
+    # aucun fondu, pièces bord à bord (raccord des bandes sur 8 px). Livrés à part (non produits ici) : la pince
+    # (sheet-clip.webp, centrée) et le logo CPCO-DEFA (sheet-head.webp, en-tête du papier)
+    'aqua': {
+        'src': 'ChatGPT Image 2 Oct 2026, 15_26_57.png',
+        'tl': ((78, 45, 200, 260), dict()),
+        'tr': ((735, 45, 211, 260), dict()),
+        'bl': ((78, 1240, 220, 172), dict()),
+        'br': ((726, 1240, 220, 172), dict()),
+        'top': ((750, 45, 100, 155, 8, 'x'), dict()),   # plastique jusqu'au bord des feuilles, comme les coins (sinon marche)
+        'bot': ((400, 1240, 140, 172, 8, 'x'), dict()),
+        'left': ((78, 500, 100, 300, 8, 'y'), dict()),
+        'right': ((846, 500, 100, 300, 8, 'y'), dict()),
+        'pieces': {},
+        'paper': ((300, 500, 480, 480), (300, 500, 480, 480)),
     },
 }
 Q = ['-quality', '86', '-define', 'webp:alpha-quality=92']

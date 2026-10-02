@@ -110,9 +110,9 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       mode: 'readwrite'
     });
     try {
-      await handle.getFileHandle('repository_tree');
+      await (await handle.getDirectoryHandle('config')).getFileHandle('repository_tree');
     } catch {
-      if (!confirm(T('Ce dossier ne contient pas « repository_tree » : est-ce bien la racine du dépôt ?', 'This folder has no “repository_tree”: is it really the repository root?'))) throw new Error(T('Dossier refusé', 'Folder rejected'));
+      if (!confirm(T('Ce dossier ne contient pas « config/repository_tree » : est-ce bien la racine du dépôt ?', 'This folder has no “config/repository_tree”: is it really the repository root?'))) throw new Error(T('Dossier refusé', 'Folder rejected'));
     }
     await idbSet('folder:__repo', handle);
     return handle;

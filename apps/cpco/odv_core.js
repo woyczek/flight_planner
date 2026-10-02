@@ -43,6 +43,8 @@
     minPilots: 2, // créneaux communs : au moins N pilotes
     sim: '', // simulateur commun exigé ('' : indifférent)
     top: 3, // missions probables montrées par créneau
+    playWeight: 0.5, // missions probables : malus d'une famille déjà jouée, playWeight × log2(1 + nombre de CR) (négatif : bonus)
+    plays: {}, // CR par famille ({ FIRE: 7, … } : registre des CR, fourni par la page)
     preference: ['AAR', 'AIRBORNE', 'ISR', 'SPECIAL', 'SAR', 'MARITIME', 'FIRE', 'AIRLIFT', 'HEMS', 'TRAINING']
   };
 
@@ -1364,17 +1366,21 @@
           const part = dispo.filter(p => taken.has(p.trigramme) || joins.includes('*') || joins.some(r => p.roles.has(r))).map(p => p.trigramme);
           const inDomain = part.filter(t => (DOMAIN[dispo.find(p => p.trigramme === t).code] || []).includes(fam));
           const ctrl = fam === 'TRAINING' ? Math.min(2, atc.length) : 0;
-          const score = part.length + 2 * inDomain.length + ctrl;
+          // famille déjà jouée (CR) : léger recul, pour varier ; log : chaque CR de plus pèse moins
+          const played = +settings.plays?.[fam] || 0,
+            malus = played ? Math.round(settings.playWeight * Math.log2(1 + played) * 10) / 10 : 0;
+          const score = Math.round((part.length + 2 * inDomain.length + ctrl - malus) * 10) / 10;
           const why = [`${part.length} participant${part.length > 1 ? 's' : ''}`];
           if (inDomain.length) why.push(`+2 × ${inDomain.length} (code restreint dans son domaine : ${inDomain.map(t => `${t} ${dispo.find(p => p.trigramme === t).code}`).join(', ')})`);
           if (ctrl) why.push(`+${ctrl} (contrôleur${ctrl > 1 ? 's' : ''} en ligne : ${atc.map(x => x.trigramme).join(', ')})`);
+          if (malus) why.push(`${malus > 0 ? '−' : '+'} ${String(Math.abs(malus)).replace('.', ',')} (déjà jouée : ${played} CR)`);
           cands.push({
             famille: fam,
             affectation: a,
             participants: part,
             renforts: part.filter(t => !taken.has(t)),
             score,
-            calcul: `score ${score} = ${why.join(' ')}`,
+            calcul: `score ${String(score).replace('.', ',')} = ${why.join(' ')}`,
             regle: rule
           });
         }

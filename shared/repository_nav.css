@@ -6,7 +6,10 @@
   --repo-bar: #101319;
   --repo-bar-text: #eef3f7;
   --repo-page: #fff;
-  --repo-accent: #69a7ff
+  --repo-accent: #69a7ff;
+  /* angles : 1 arrondis, 0 droits (designs à matières, designs_skeuo.css) ; un rayon s'écrit
+     calc(<rayon> * var(--repo-round, 1)) au lieu d'une exception html[data-skeuo] … { border-radius: 0 } par élément */
+  --repo-round: 1
 }
 .repo-header {
   top: 0;

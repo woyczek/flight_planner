@@ -242,8 +242,46 @@
     : navigator.brave ? t(['Brave désactive l’accès aux dossiers locaux. Pour l’activer : ouvrir brave://flags/#file-system-access-api, passer « File System Access API » à Enabled, puis relancer Brave. Ou utiliser Chrome / Edge.', 'Brave disables local folder access. To enable it: open brave://flags/#file-system-access-api, set “File System Access API” to Enabled, then restart Brave. Or use Chrome / Edge.', 'Brave deaktiviert den Zugriff auf lokale Ordner. Aktivieren: brave://flags/#file-system-access-api öffnen, „File System Access API“ auf Enabled setzen, Brave neu starten. Oder Chrome / Edge verwenden.', 'Brave desactiva el acceso a carpetas locales. Para activarlo: abrir brave://flags/#file-system-access-api, poner «File System Access API» en Enabled y reiniciar Brave. O usar Chrome / Edge.'])
     : t(['Ce navigateur ne permet pas de choisir un dossier local (File System Access API) : utiliser Chrome ou Edge.', 'This browser cannot choose a local folder (File System Access API): use Chrome or Edge.', 'Dieser Browser kann keinen lokalen Ordner wählen (File System Access API): Chrome oder Edge verwenden.', 'Este navegador no permite elegir una carpeta local (File System Access API): usar Chrome o Edge.']);
 
+  // heure d'un exercice : une seule référence (H, T ou M : le même instant) et un décalage avec son unité : « H+2mn »,
+  // « T-20mn », « H+1h », « H+1h30mn », « M+39mn » ; sans unité (anciens fichiers : « H-20 », « H+60 ») : minutes
+  /** « H+1h30mn » → 90 ; « H » → 0 ; null si ce n'est pas une heure relative. */
+  const hOffset = s => {
+    const m = /^\s*([HTM])\s*(?:([+\-−])\s*(?:(\d+)\s*h(?![a-z]))?\s*(?:(\d+)\s*(?:mn|min|m)?)?)?\s*$/i.exec(String(s ?? ''));
+    if (!m || (m[2] && m[3] == null && m[4] == null)) return null;
+    return m[2] ? (m[2] === '+' ? 1 : -1) * ((+m[3] || 0) * 60 + (+m[4] || 0)) : 0;
+  };
+  /** Minutes → « H+2mn », « H−20mn », « H+1h », « H+1h30mn », « H » (référence ref : H par défaut). */
+  const hText = (m, ref = 'H') => {
+    if (m == null) return `${ref}+?`;
+    m = Math.round(m);
+    const a = Math.abs(m), h = Math.floor(a / 60), r = a % 60;
+    return m ? `${ref}${m > 0 ? '+' : '−'}${h ? `${h}h` : ''}${r ? `${r}mn` : ''}` : ref;
+  };
+  /** Visionneuse d'image commune : fenêtre modale, titre, croix (et Échap, clic hors de l'image) pour fermer ; clic sur
+   *  l'image : ajustée à l'écran ↔ taille réelle (défilement). */
+  function viewImage(src, title = '') {
+    let d = document.getElementById('repoImageViewer');
+    if (!d) {
+      document.head.insertAdjacentHTML('beforeend', '<style id="repoImageViewerCss">#repoImageViewer{width:min(96vw,1400px);max-height:94vh;padding:0;border:0;border-radius:calc(10px * var(--repo-round, 1));background:#111;color:#eee;overflow:hidden}#repoImageViewer::backdrop{background:rgba(0,0,0,.7)}#repoImageViewer header{display:flex;align-items:center;gap:10px;padding:6px 10px;background:#1c1c1c}#repoImageViewer header b{flex:1;font:600 13px system-ui,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#repoImageViewer header button{all:unset;cursor:pointer;font:600 22px/1 system-ui,sans-serif;padding:2px 8px;color:#eee}#repoImageViewer header button:hover{color:#fff;background:#c0392b}#repoImageViewer .rv-body{overflow:auto;max-height:calc(94vh - 40px);display:grid;place-items:center}#repoImageViewer img{display:block;max-width:100%;max-height:calc(94vh - 40px);cursor:zoom-in}#repoImageViewer.rv-full img{max-width:none;max-height:none;cursor:zoom-out}</style>');
+      d = document.createElement('dialog');
+      d.id = 'repoImageViewer';
+      d.innerHTML = '<header><b></b><button type="button" class="repo-plain" aria-label="Fermer" title="Fermer">×</button></header><div class="rv-body"><img alt=""></div>';
+      d.querySelector('button').onclick = () => d.close();
+      d.querySelector('img').onclick = () => d.classList.toggle('rv-full');
+      d.addEventListener('click', e => { if (e.target === d) d.close(); }); // clic sur le fond
+      document.body.append(d);
+    }
+    d.classList.remove('rv-full');
+    d.querySelector('b').textContent = title;
+    d.querySelector('img').src = src;
+    d.querySelector('img').alt = title;
+    d.showModal();
+  }
   window.RepositoryKit = {
     LANGS,
+    viewImage,
+    hOffset,
+    hText,
     esc,
     lang,
     langIndex,

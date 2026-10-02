@@ -7,14 +7,16 @@
   //
   // Stockage : la mission d'ORGANISATION de l'opération, identifiant <lettre>-<nnn>Z (I-001Z, M-001Z…), porte le bloc
   //   exercise:
-  //     h_hour: "H"                          heure de référence commune (libellé ; heure réelle facultative : « 14:00Z »)
+  //     h_hour: "H"                          heure de référence unique de l'exercice (H, T ou M : le même instant ;
+  //                                          heure réelle facultative : « 14:00Z ») ; décalages avec leur unité :
+  //                                          « H+2mn », « H-20mn », « H+1h », « H+1h30mn » (sans unité : minutes)
   //     participants:                        les équipages de l'opération
-  //       - { callsign: CYRANO01, mission: I-001A, takeoff: "H+0", role: "…" }     décollage par rapport à H
+  //       - { callsign: CYRANO01, mission: I-001A, takeoff: "H-20mn", role: "…" }   décollage par rapport à H
   //     tracks:                              chiffons : pistes d'exercice à reconnaître, intercepter, escorter…
-  //       - { id: TRACK-401, name, nature, played: true|false, callsign, start: "H+60", points: [{ name, lat, lon }…],
+  //       - { id: TRACK-401, name, nature, played: true|false, callsign, start: "H+1h", points: [{ name, lat, lon }…],
   //           level, speed_kt, task (ce que les équipages doivent établir), conduct (consignes du chiffon joué) }
   //     events:                              chronologie de l'exercice
-  //       - { id: EV-1, at: "H+60" | <id de point>, by: <participant qui passe le point>, delay_min,
+  //       - { id: EV-1, at: "H+1h" | <id de point>, by: <participant qui passe le point>, delay_min,
   //           kind: radio | pli, from: CYRANO01, to: [RAFALE31] | [ALL], title, text, reveals: [TRACK-401…] }
   //         radio : message passé par l'organisation (ou l'émetteur) au moment indiqué ;
   //         pli   : pli scellé remis avant le vol, ouvert par le destinataire au moment indiqué.
@@ -30,13 +32,9 @@
   const up = v => String(v ?? '').trim().toUpperCase();
   const yamlOf = d => d?.yaml || d || {};
   const hm = m => m == null ? '?' : window.MissionEstimate?.hm?.(Math.abs(m)) || `${Math.abs(m)} min`;
-  /** « H+60 », « H-15 », « H » → minutes par rapport à H ; null si ce n'est pas une heure H. */
-  const parseH = s => {
-    const m = /^\s*H\s*(?:([+\-−])\s*(\d+))?\s*(?:min)?\s*$/i.exec(String(s ?? ''));
-    return m ? (m[1] ? (m[1] === '+' ? 1 : -1) * +m[2] : 0) : null;
-  };
-  /** Minutes → « H+60 » / « H−15 » / « H ». */
-  const hText = m => m == null ? 'H+?' : m === 0 ? 'H' : `H${m > 0 ? '+' : '−'}${Math.abs(Math.round(m))}`;
+  // heure relative à H (T ou M) : lecture et écriture communes (shared/kit.js) : « H+1h30mn » ↔ 90 minutes
+  const parseH = window.RepositoryKit.hOffset;
+  const hText = window.RepositoryKit.hText;
 
   // ---- identité de la mission d'organisation
   /** Mission d'organisation : identifiant en Z (I-001Z) ou mission.role « organisation », ou bloc exercise. */
@@ -174,7 +172,7 @@
     }
     return null;
   }
-  /** Moment d'un événement en clair : « H+60 », « RDV-2 (RAFALE31) + 5 min ». */
+  /** Moment d'un événement en clair : « H+1h », « RDV-2 (RAFALE31) + 5 min ». */
   const whenOf = x => {
     const h = parseH(x.at);
     if (h != null) return hText(h);
@@ -354,14 +352,14 @@
     host.classList.add('mx');
     host.innerHTML = `
       <h3>Heure H et participants</h3>
-      <p class="mx-help">Heure de référence commune à toute l’opération ; chaque participant décolle à H plus ou moins un délai. Les événements se placent à H+… ou au passage d’un point par un participant.</p>
+      <p class="mx-help">Heure de référence commune à toute l’opération ; chaque participant décolle à H plus ou moins un délai. Une seule heure H (T ou M) ; décalages avec leur unité : H+2mn, H-20mn, H+1h, H+1h30mn. Les événements se placent à H+… ou au passage d’un point par un participant.</p>
       <div class="mx-grid" style="max-width:420px"><label>Heure H (libellé ou heure réelle)<input data-h value="${esc(X.h_hour)}" placeholder="H, 14:00Z…"></label></div>
-      <table><thead><tr><th>Indicatif</th><th>Mission</th><th>Décollage (H±min)</th><th>Rôle</th><th></th></tr></thead><tbody>${X.participants.map((p, i) => `<tr data-p="${i}"><td><input data-k="callsign" value="${esc(p.callsign)}"></td><td><input data-k="mission" value="${esc(p.mission)}"></td><td><input data-k="takeoff" value="${esc(p.takeoff ?? 'H')}" placeholder="H, H+10, H-15"></td><td><input data-k="role" value="${esc(p.role)}"></td><td><button type="button" class="secondary mx-del" data-del-p="${i}" title="Retirer">×</button></td></tr>`).join('')}</tbody></table>
+      <table><thead><tr><th>Indicatif</th><th>Mission</th><th>Décollage (H-20mn, H+1h)</th><th>Rôle</th><th></th></tr></thead><tbody>${X.participants.map((p, i) => `<tr data-p="${i}"><td><input data-k="callsign" value="${esc(p.callsign)}"></td><td><input data-k="mission" value="${esc(p.mission)}"></td><td><input data-k="takeoff" value="${esc(p.takeoff ?? 'H')}" placeholder="H, H+10mn, H-15mn, H+1h"></td><td><input data-k="role" value="${esc(p.role)}"></td><td><button type="button" class="secondary mx-del" data-del-p="${i}" title="Retirer">×</button></td></tr>`).join('')}</tbody></table>
       <div class="mx-row"><button type="button" class="secondary" data-add-p>+ Participant</button>${ys.length ? `<button type="button" class="secondary" data-fill-p>Reprendre les missions de l’opération</button>` : ''}${missingMissions.length ? `<span class="mx-warn">Missions de l’opération non chargées : ${esc(missingMissions.join(', '))} (heures des passages de points inconnues).</span>` : ''}</div>
 
       <h3>Chiffons</h3>
       <p class="mx-help">Pistes d’exercice que les équipages doivent reconnaître, intercepter ou escorter. Un chiffon « joué » est piloté par un joueur : il reçoit sa carte, son heure de départ et ses consignes ; un chiffon simulé n’est que dessiné.</p>
-      <table><thead><tr><th>Nom</th><th>Joué</th><th>Indicatif</th><th>Départ (H+min)</th><th>Nature</th><th>Points (« Nom lat, lon ; … »)</th><th>Niveau</th><th>Vitesse (kt)</th><th>À établir par les équipages</th><th>Consignes du chiffon</th><th></th></tr></thead><tbody>${X.tracks.map((t, i) => `<tr data-t="${i}"><td><input data-k="name" value="${esc(t.name || t.id)}"></td><td><input type="checkbox" data-k="played"${t.played ? ' checked' : ''}></td><td><input data-k="callsign" value="${esc(t.callsign)}"></td><td><input data-k="start" value="${esc(t.start)}" placeholder="H+60"></td><td><input data-k="nature" value="${esc(t.nature)}"></td><td><input data-k="points" value="${esc(pointsText(t.points))}"></td><td><input data-k="level" value="${esc(t.level)}"></td><td><input data-k="speed_kt" type="number" value="${esc(t.speed_kt ?? '')}"></td><td><input data-k="task" value="${esc(t.task)}"></td><td><input data-k="conduct" value="${esc(t.conduct)}"></td><td><button type="button" class="secondary mx-del" data-del-t="${i}" title="Retirer">×</button></td></tr>`).join('')}</tbody></table>
+      <table><thead><tr><th>Nom</th><th>Joué</th><th>Indicatif</th><th>Départ (H+5mn, H+1h)</th><th>Nature</th><th>Points (« Nom lat, lon ; … »)</th><th>Niveau</th><th>Vitesse (kt)</th><th>À établir par les équipages</th><th>Consignes du chiffon</th><th></th></tr></thead><tbody>${X.tracks.map((t, i) => `<tr data-t="${i}"><td><input data-k="name" value="${esc(t.name || t.id)}"></td><td><input type="checkbox" data-k="played"${t.played ? ' checked' : ''}></td><td><input data-k="callsign" value="${esc(t.callsign)}"></td><td><input data-k="start" value="${esc(t.start)}" placeholder="H+1h"></td><td><input data-k="nature" value="${esc(t.nature)}"></td><td><input data-k="points" value="${esc(pointsText(t.points))}"></td><td><input data-k="level" value="${esc(t.level)}"></td><td><input data-k="speed_kt" type="number" value="${esc(t.speed_kt ?? '')}"></td><td><input data-k="task" value="${esc(t.task)}"></td><td><input data-k="conduct" value="${esc(t.conduct)}"></td><td><button type="button" class="secondary mx-del" data-del-t="${i}" title="Retirer">×</button></td></tr>`).join('')}</tbody></table>
       <div class="mx-row"><button type="button" class="secondary" data-add-t>+ Chiffon</button><details><summary class="mx-help">Importer un tableau Markdown de pistes</summary><textarea data-md placeholder="| Piste | Nature simulée | Route / points de passage | Niveau / vitesse | Ce que … doit établir |"></textarea><button type="button" class="secondary" data-import>Importer (remplace les pistes de même nom)</button></details></div>
 
       <h3>Chronologie</h3>
@@ -370,7 +368,7 @@
         <div class="mx-ev-head"><span class="mx-t">${esc(e.t == null ? 'H+?' : hText(e.t))}</span><span class="mx-kind">${e.kind === 'pli' ? 'PLI SCELLÉ' : 'RADIO'}</span><span>${esc(e.from || '—')} → ${esc(e.to.join(', ') || '—')}</span><span>${esc(e.title || '')}</span></div>
         <div class="mx-grid">
           <label>Déclencheur<select data-k="trigger"><option value="h"${isH ? ' selected' : ''}>Heure (H+…)</option><option value="pt"${!isH ? ' selected' : ''}>Passage d’un point</option></select></label>
-          ${isH ? `<label>Heure<input data-k="at" value="${esc(x.at || 'H+0')}" placeholder="H+60"></label>` : `<label>Point<select data-k="at">${[...points.keys()].concat(points.has(up(x.at)) ? [] : [up(x.at)]).map(id => `<option${id === up(x.at) ? ' selected' : ''}>${esc(id)}</option>`).join('')}</select></label><label>Par<select data-k="by"><option value="">(le premier qui y passe)</option>${ex.participants.map(p => `<option${p.callsign === up(x.by) ? ' selected' : ''}>${esc(p.callsign)}</option>`).join('')}</select></label><label>+ min<input data-k="delay_min" type="number" value="${esc(x.delay_min ?? 0)}"></label>`}
+          ${isH ? `<label>Heure<input data-k="at" value="${esc(x.at || 'H')}" placeholder="H+2mn, H+1h"></label>` : `<label>Point<select data-k="at">${[...points.keys()].concat(points.has(up(x.at)) ? [] : [up(x.at)]).map(id => `<option${id === up(x.at) ? ' selected' : ''}>${esc(id)}</option>`).join('')}</select></label><label>Par<select data-k="by"><option value="">(le premier qui y passe)</option>${ex.participants.map(p => `<option${p.callsign === up(x.by) ? ' selected' : ''}>${esc(p.callsign)}</option>`).join('')}</select></label><label>+ min<input data-k="delay_min" type="number" value="${esc(x.delay_min ?? 0)}"></label>`}
           <label>Forme<select data-k="kind"><option value="radio"${e.kind === 'radio' ? ' selected' : ''}>message radio</option><option value="pli"${e.kind === 'pli' ? ' selected' : ''}>pli scellé</option></select></label>
           <label>Émetteur<input data-k="from" value="${esc(x.from || '')}" placeholder="CYRANO01, directeur d’exercice…"></label>
           <label>Titre<input data-k="title" value="${esc(x.title || '')}"></label>
@@ -418,7 +416,7 @@
         const k = el.dataset.k;
         if (k === 'trigger') {
           if (el.value === 'h') {
-            x.at = 'H+0';
+            x.at = 'H';
             delete x.by;
             x.delay_min = 0;
           } else {
@@ -495,7 +493,7 @@
     host.querySelectorAll('[data-add-e]').forEach(b => b.onclick = () => {
       X.events.push({
         id: `EV-${X.events.length + 1}`,
-        at: 'H+0',
+        at: 'H',
         delay_min: 0,
         kind: b.dataset.addE,
         from: '',
@@ -540,11 +538,11 @@
   // ---- traductions des libellés fixes (fr / en / de / es) : couche commune (content_i18n.js), chargée après ce module
   const ROWS = ([
     ['Heure H et participants', 'H-hour and participants', 'Stunde H und Teilnehmer', 'Hora H y participantes'],
-    ['Heure de référence commune à toute l’opération ; chaque participant décolle à H plus ou moins un délai. Les événements se placent à H+… ou au passage d’un point par un participant.', 'Reference time common to the whole operation; each participant takes off at H plus or minus a delay. Events are placed at H+… or when a participant passes a point.', 'Gemeinsame Bezugszeit der ganzen Operation; jeder Teilnehmer startet bei H plus oder minus einer Verzögerung. Ereignisse liegen bei H+… oder beim Überflug eines Punktes durch einen Teilnehmer.', 'Hora de referencia común a toda la operación; cada participante despega a H más o menos un retraso. Los eventos se sitúan en H+… o al paso de un participante por un punto.'],
+    ['Heure de référence commune à toute l’opération ; chaque participant décolle à H plus ou moins un délai. Une seule heure H (T ou M) ; décalages avec leur unité : H+2mn, H-20mn, H+1h, H+1h30mn. Les événements se placent à H+… ou au passage d’un point par un participant.', 'Reference time common to the whole operation; each participant takes off at H plus or minus a delay. A single H-hour (T or M); offsets with their unit: H+2mn, H-20mn, H+1h, H+1h30mn. Events are placed at H+… or when a participant passes a point.', 'Gemeinsame Bezugszeit der ganzen Operation; jeder Teilnehmer startet bei H plus oder minus einer Verzögerung. Eine einzige Stunde H (T oder M); Versätze mit Einheit: H+2mn, H-20mn, H+1h, H+1h30mn. Ereignisse liegen bei H+… oder beim Überflug eines Punktes durch einen Teilnehmer.', 'Hora de referencia común a toda la operación; cada participante despega a H más o menos un retraso. Una sola hora H (T o M); desfases con su unidad: H+2mn, H-20mn, H+1h, H+1h30mn. Los eventos se sitúan en H+… o al paso de un participante por un punto.'],
     ['Heure H (libellé ou heure réelle)', 'H-hour (label or real time)', 'Stunde H (Bezeichnung oder Uhrzeit)', 'Hora H (etiqueta u hora real)'],
     ['Indicatif', 'Callsign', 'Rufzeichen', 'Indicativo'],
     ['Mission', 'Mission', 'Mission', 'Misión'],
-    ['Décollage (H±min)', 'Take-off (H±min)', 'Start (H±min)', 'Despegue (H±min)'],
+    ['Décollage (H-20mn, H+1h)', 'Take-off (H-20mn, H+1h)', 'Start (H-20mn, H+1h)', 'Despegue (H-20mn, H+1h)'],
     ['Rôle', 'Role', 'Rolle', 'Función'],
     ['+ Participant', '+ Participant', '+ Teilnehmer', '+ Participante'],
     ['Reprendre les missions de l’opération', 'Take the operation’s missions', 'Missionen der Operation übernehmen', 'Tomar las misiones de la operación'],
@@ -552,7 +550,7 @@
     ['Pistes d’exercice que les équipages doivent reconnaître, intercepter ou escorter. Un chiffon « joué » est piloté par un joueur : il reçoit sa carte, son heure de départ et ses consignes ; un chiffon simulé n’est que dessiné.', 'Exercise tracks the crews must identify, intercept or escort. A “played” target is flown by a player: it gets its map, departure time and instructions; a simulated target is only drawn.', 'Übungsspuren, die die Besatzungen aufklären, abfangen oder begleiten sollen. Ein „gespieltes“ Ziel wird von einem Spieler geflogen: Es erhält Karte, Startzeit und Anweisungen; ein simuliertes Ziel wird nur gezeichnet.', 'Pistas de ejercicio que las tripulaciones deben reconocer, interceptar o escoltar. Un blanco «jugado» lo pilota un jugador: recibe su mapa, su hora de salida y sus consignas; un blanco simulado solo se dibuja.'],
     ['Nom', 'Name', 'Name', 'Nombre'],
     ['Joué', 'Played', 'Gespielt', 'Jugado'],
-    ['Départ (H+min)', 'Departure (H+min)', 'Abflug (H+min)', 'Salida (H+min)'],
+    ['Départ (H+5mn, H+1h)', 'Departure (H+5mn, H+1h)', 'Abflug (H+5mn, H+1h)', 'Salida (H+5mn, H+1h)'],
     ['Nature', 'Nature', 'Art', 'Naturaleza'],
     ['Points (« Nom lat, lon ; … »)', 'Points (“Name lat, lon; …”)', 'Punkte („Name lat, lon; …“)', 'Puntos («Nombre lat, lon; …»)'],
     ['Niveau', 'Level', 'Höhe', 'Nivel'],

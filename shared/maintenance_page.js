@@ -458,7 +458,9 @@
   }
 
   // ===== 1 bis. Sources et dossiers
-  const FOLDER_ORDER = ['__data', '__repo', '__ledger', '__missions', '__sia', '__xplane', '__perf', '__store'];
+  // premier lancement (lanceur : ?m=sources&setup=1), lu une fois : la page réécrit ensuite son adresse (?m=…)
+  const SETUP = new URLSearchParams(location.search).has('setup');
+  const FOLDER_ORDER = ['__repo', '__data', '__ledger', '__missions', '__sia', '__odv', '__xplane', '__perf', '__store']; // le dépôt d'abord : les autres s'en déduisent
   async function renderSources() {
     const host = hosts.sources,
       FA = await waitFor('FileAccess'),
@@ -474,10 +476,8 @@
         info = FA.FOLDERS[key] || {};
       let marker = '';
       if (st.handle && st.permission === 'granted' && info.check) {
-        try {
-          await st.handle.getFileHandle(info.check);
-          marker = pill('ok', info.check);
-        } catch {
+        if (await FA.has(st.handle, info.check)) marker = pill('ok', info.check);
+        else {
           marker = pill('warn', t(['« {f} » absent : dossier attendu ?', '“{f}” missing: expected folder?'], {
             f: info.check
           }));
@@ -494,13 +494,24 @@
       /* illisible */ }
     const eff = window.Airac?.cycle?.();
     const openUrl = (k, u) => k === 'siaCycle' && eff ? eff.url : u;
-    host.innerHTML = `
+    // premier lancement (lanceur lancer.cmd / lancer.sh : ?m=sources&setup=1) : un seul choix, le dossier du dépôt
+    const setup = SETUP;
+    const repo = await FA.status('__repo');
+    const setupBox = !setup ? '' : repo.handle ? `<div class="repo-notice mt-setup ok"><b>${esc(t(['Dossiers réglés.', 'Folders set.', 'Ordner eingestellt.', 'Carpetas configuradas.']))}</b> ${esc(t(['Le dossier de l’application est choisi : données, registre, missions, SIA, performances et sauvegarde locale en sont déduits. Il reste à dérouler les mises à jour.', 'The application folder is chosen: data, ledger, missions, SIA, performance and local backup are derived from it. What is left: run the updates.', 'Der Anwendungsordner ist gewählt: Daten, Register, Missionen, SIA, Leistung und lokale Sicherung werden daraus abgeleitet. Bleiben die Updates.', 'La carpeta de la aplicación está elegida: datos, registro, misiones, SIA, rendimiento y copia local se deducen de ella. Quedan las actualizaciones.']))} <a href="?m=updates">${esc(t(['Mises à jour →', 'Updates →', 'Updates →', 'Actualizaciones →']))}</a></div>`
+      : `<div class="repo-notice mt-setup"><b>${esc(t(['Premier lancement : une seule étape.', 'First run: one single step.', 'Erster Start: ein einziger Schritt.', 'Primer inicio: un solo paso.']))}</b> ${esc(t(['Cliquez sur le bouton de la première ligne, « Dossier du dépôt », et choisissez le dossier de l’application (celui qui contient lancer.cmd et lancer.sh). Les autres dossiers en sont déduits.', 'Click the button on the first row, “Repository folder”, and choose the application folder (the one containing lancer.cmd and lancer.sh). The other folders are derived from it.', 'Klicken Sie in der ersten Zeile „Repository-Ordner“ und wählen Sie den Anwendungsordner (mit lancer.cmd und lancer.sh). Die anderen Ordner werden daraus abgeleitet.', 'Pulse el botón de la primera fila, «Carpeta del repositorio», y elija la carpeta de la aplicación (la que contiene lancer.cmd y lancer.sh). Las demás carpetas se deducen de ella.']))}</div>`;
+    host.innerHTML = `${setupBox}
       <h3>${esc(t(['Dossiers locaux', 'Local folders', 'Lokale Ordner', 'Carpetas locales']))}</h3>
       <p class="mt-small">${esc(t(['Chaque dossier est choisi une fois (le navigateur mémorise l’autorisation, parfois à reconfirmer après un redémarrage). Les sélecteurs de fichiers des pages s’ouvrent directement dans le dossier correspondant.', 'Each folder is chosen once (the browser remembers the permission, sometimes to be confirmed again after a restart). File pickers open directly in the matching folder.']))}</p>
       <div class="mt-scroll"><table class="mt-table mt-wide mt-folders"><tbody>${rows.join('')}</tbody></table></div>
       <h3>${esc(t(['Sources externes', 'External sources', 'Externe Quellen', 'Fuentes externas']))}</h3>
       <p class="mt-small">${esc(t(['Adresses par défaut livrées avec l’application (repository_tree) ; une valeur saisie ici ne vaut que pour ce navigateur (sauvegardée avec les données locales).', 'Default addresses ship with the application (repository_tree); a value entered here applies to this browser only (saved with local data).']))}</p>
-      <table class="mt-table mt-wide mt-sources"><tbody>${Object.entries(src).map(([k, v]) => `<tr data-src="${esc(k)}"><td><b>${esc(t(v.label || [k]))}</b></td><td><input type="url" class="mt-url" value="${esc(local[k] || '')}" placeholder="${esc(v.url)}" spellcheck="false"></td><td class="mt-nowrap">${local[k] ? pill('info', t(['modifiée', 'changed', 'geändert', 'cambiada'])) : ''} <button type="button" class="secondary" data-reset ${local[k] ? '' : 'hidden'}>↺</button> <a class="mt-link" href="${esc(openUrl(k, nav.source(k)))}" target="_blank" rel="noopener">${esc(t(['Ouvrir', 'Open', 'Öffnen', 'Abrir']))} ↗</a></td></tr>`).join('')}</tbody></table>`;
+      <table class="mt-table mt-wide mt-sources"><tbody>${Object.entries(src).map(([k, v]) => `<tr data-src="${esc(k)}"><td><b>${esc(t(v.label || [k]))}</b></td><td><input type="url" class="mt-url" value="${esc(local[k] || '')}" placeholder="${esc(v.url)}" spellcheck="false"></td><td class="mt-nowrap">${local[k] ? pill('info', t(['modifiée', 'changed', 'geändert', 'cambiada'])) : ''} <button type="button" class="secondary" data-reset ${local[k] ? '' : 'hidden'}>↺</button> <a class="mt-link" href="${esc(openUrl(k, nav.source(k)))}" target="_blank" rel="noopener">${esc(t(['Ouvrir', 'Open', 'Öffnen', 'Abrir']))} ↗</a></td></tr>`).join('')}</tbody></table>
+      <h3>${esc(t(['Premier lancement', 'First run', 'Erster Start', 'Primer inicio']))}</h3>
+      <div class="mt-reset"><b>⚠ ${esc(t(['« Nettoyer » efface les réglages de ce navigateur', '“Clean” erases this browser’s settings', '„Bereinigen“ löscht die Einstellungen dieses Browsers', '«Limpiar» borra los ajustes de este navegador']))}</b> : ${esc(t(['dossiers mémorisés, copie du classeur ODV, identifiants du site DEFA, profil et l’indicateur « suite réglée » (confirmation sur la page du premier lancement). Les fichiers sur le disque ne sont pas touchés.', 'remembered folders, ODV workbook copy, DEFA site credentials, profile and the “suite set up” flag (confirmed on the first-run page). Files on disk are not touched.']))}</div>
+      <p class="row"><button type="button" class="secondary" id="mtSetupOpen" data-icon="refresh">${esc(t(['Rouvrir le premier lancement', 'Reopen the first run', 'Ersten Start erneut öffnen', 'Reabrir el primer inicio']))}</button> <button type="button" class="mt-danger" id="mtSetupClean">${esc(t(['Nettoyer et recommencer…', 'Clean and start over…', 'Bereinigen und neu beginnen…', 'Limpiar y empezar de nuevo…']))}</button></p>`;
+    host.querySelector('#mtSetupOpen').onclick = () => location.assign('premier_lancement.html?force');
+    host.querySelector('#mtSetupClean').onclick = () => location.assign('premier_lancement.html?force&clean');
+    if (setup && !repo.handle) host.querySelector('tr[data-key="__repo"]')?.classList.add('mt-setup-row');
     host.querySelectorAll('tr[data-key]').forEach(tr => tr.querySelector('.mt-fcell').append(folderButton(tr.dataset.key, () => {
       renderSources();
       renderVersions();
@@ -830,7 +841,7 @@
     const s4 = info && lat && info.airac === lat.date && !info.mixed ? 'ok' : 'todo';
     const cmp = baseSummary && prev ? diffSummaries(prev, baseSummary) : null;
     const help = t([
-      `<p>Tous les 28 jours (le jeudi), un nouveau cycle AIRAC entre en vigueur. Le SIA publie ses données environ trois semaines avant : charger le cycle à venir est sans risque. Six étapes, dans l’ordre ; chaque pastille passe au vert quand l’étape est faite.</p><ol><li><b>Cycle AIRAC</b> — constater le cycle en vigueur et celui de la base.</li><li><b>Télécharger et extraire</b> — sur la page SIA du cycle, télécharger le ZIP <code>export_xml_bd_SIA_&lt;date&gt;-vNN.zip</code>, puis « ZIP d’export du SIA… » : les XML (<code>AIXM4.5_all_FR_OM_&lt;date&gt;.xml</code>, <code>XML_SIA_&lt;date&gt;.xml</code>, Lisez-moi) sont écrits dans <code>data/sia</code>. Rien d’autre à télécharger.</li><li><b>Archiver</b> les fichiers des cycles précédents (<code>_archives/</code>).</li><li><b>Reconstruire la base</b> — « Relire le dossier » : <code>data/sia</code> est relu ici même (quelques secondes) et la base analysée est mémorisée dans le navigateur ; c’est le même bloc que « Base de données SIA » du studio.</li><li><b>Contrôler les différences</b> avec la base précédente (automatique au retour).</li><li><b>Recalculer</b> la grille MORA (obstacles du nouveau cycle) et contrôler la cohérence ; committer <code>mora.csv</code> s’il a changé.</li></ol><p class="mt-small">Les XML AIRAC restent hors dépôt (≈ 80 Mo par cycle). Valeurs MORA calculées, non certifiées.</p>`,
+      `<p>Tous les 28 jours (le jeudi), un nouveau cycle AIRAC entre en vigueur. Le SIA publie ses données environ trois semaines avant : charger le cycle à venir est sans risque. Six étapes, dans l’ordre ; chaque pastille passe au vert quand l’étape est faite.</p><ol><li><b>Cycle AIRAC</b> — constater le cycle en vigueur et celui de la base.</li><li><b>Télécharger</b> — sur le site du SIA, page du cycle (liens de l’étape 1) : se connecter à son compte SIA (création gratuite, une fois), « Ajouter au panier » (produit gratuit, 0 €), ouvrir le panier et « Passer commande » en acceptant la licence d’utilisation ; le ZIP <code>export_xml_bd_SIA_&lt;date&gt;.zip</code> se télécharge depuis la confirmation de commande (ou « Mes commandes »).</li><li><b>Extraire</b> — « Récupérer le ZIP téléchargé » (le serveur du lanceur le prend dans le dossier Téléchargements), ou « ZIP d’export du SIA… » pour le choisir : les XML (<code>AIXM4.5_all_FR_OM_&lt;date&gt;.xml</code>, <code>XML_SIA_&lt;date&gt;.xml</code>, Lisez-moi) sont écrits dans <code>data/sia</code>. Rien d’autre à télécharger.</li><li><b>Archiver</b> les fichiers des cycles précédents (<code>_archives/</code>).</li><li><b>Reconstruire la base</b> — « Relire le dossier » : <code>data/sia</code> est relu ici même (quelques secondes) et la base analysée est mémorisée dans le navigateur ; c’est le même bloc que « Base de données SIA » du studio.</li><li><b>Contrôler les différences</b> avec la base précédente (automatique au retour).</li><li><b>Recalculer</b> la grille MORA (obstacles du nouveau cycle) et contrôler la cohérence ; committer <code>mora.csv</code> s’il a changé.</li></ol><p class="mt-small">Les XML AIRAC restent hors dépôt (≈ 80 Mo par cycle). Valeurs MORA calculées, non certifiées.</p>`,
       `<p>Every 28 days (Thursday) a new AIRAC cycle comes into force; the SIA publishes it about three weeks ahead. Six steps, in order; each badge turns green when done.</p><ol><li><b>AIRAC cycle</b> — check the cycle in force and the base cycle.</li><li><b>Download and extract</b> the SIA ZIP <code>export_xml_bd_SIA_&lt;date&gt;-vNN.zip</code> into <code>data/sia</code>.</li><li><b>Archive</b> previous cycles (<code>_archives/</code>).</li><li><b>Rebuild the base</b> — “Re-read the folder”: <code>data/sia</code> is re-read right here and the analysed base is stored; same block as the studio’s “SIA database”.</li><li><b>Check the differences</b> (automatic on return).</li><li><b>Recalculate</b> the MORA grid and check consistency; commit <code>mora.csv</code> if it changed.</li></ol>`
     ]);
     const todo = (txt, ack) => `<p class="mt-todo"><b>${esc(t(['À faire', 'To do', 'Zu tun', 'Por hacer']))}</b> : ${txt}${ack ? `<button type="button" class="secondary mt-ack" data-ack="${ack}" data-icon="check">${esc(t(['Vu, c’est fait', 'Done', 'Erledigt', 'Hecho']))}</button>` : ''}</p>`;
@@ -852,10 +863,10 @@
           <p class="row"><a class="mt-link" href="${esc(eff.url)}" target="_blank" rel="noopener">SIA — AIRAC ${esc(eff.label)}</a> <a class="mt-link" href="${esc(nxt.url)}" target="_blank" rel="noopener">SIA — AIRAC ${esc(nxt.label)}</a> <a class="mt-link" href="${esc(window.RepositoryNav?.source?.('siaData'))}" target="_blank" rel="noopener">${esc(t(['Bases de données SIA', 'SIA databases']))}</a></p>
         </div>
         <div class="mt-step" id="mt-step-2">${stepHead(2, s2, t(['Télécharger et extraire l’export du SIA', 'Download and extract the SIA export', 'SIA-Export herunterladen und entpacken', 'Descargar y extraer la exportación del SIA']))}
-          ${s2 === 'ok' ? '' : todo(esc(t(['télécharger le ZIP sur la page SIA du cycle (étape 1), puis « ZIP d’export du SIA… » ci-dessous (ou « Extraire » s’il est déjà dans le dossier).', 'download the ZIP from the SIA cycle page (step 1), then “SIA export ZIP…” below.'])))}
+          ${s2 === 'ok' ? '' : todo(esc(t(['sur la page du cycle (étape 1) : compte SIA, « Ajouter au panier » (0 €), « Passer commande » en acceptant la licence, télécharger le ZIP ; puis « Récupérer le ZIP téléchargé » ci-dessous (ou « ZIP d’export du SIA… » pour le choisir, ou « Extraire » s’il est déjà dans le dossier).', 'on the cycle page (step 1): SIA account, “Add to cart” (free), “Checkout” accepting the licence, download the ZIP; then “Fetch the downloaded ZIP” below (or “SIA export ZIP…” to pick it).'])))}
           <p class="row" id="mtSiaFolder"></p>
           ${f ? folderTable(f) : `<p class="mt-small">${esc(t(['Choisir (une fois) le dossier des données (Sources et dossiers) — data/sia en est déduit —, puis « Analyser ».', 'Choose the data folder once (Sources and folders) — data/sia is derived from it —, then “Analyse”.']))}</p>`}
-          <p class="row"><label class="secondary mt-file">${esc(t(['ZIP d’export du SIA…', 'SIA export ZIP…', 'SIA-Export-ZIP…', 'ZIP de exportación…']))}<input type="file" id="mtSiaZip" accept=".zip" hidden data-picker-folder="__sia"></label>${f?.zips?.length ? `<button type="button" class="secondary" id="mtSiaZipFolder" data-icon="box">${esc(t(['Extraire {z}', 'Extract {z}'], { z: f.zips[0].name }))}</button>` : ''} <span class="mt-small" id="mtExtract">${extractMsg}</span></p>
+          <p class="row"><button type="button" class="primary" id="mtSiaFetch" data-icon="download" title="${esc(t(['Prend le dernier export_xml_bd_SIA_….zip du dossier Téléchargements (serveur du lanceur)', 'Takes the latest export_xml_bd_SIA_….zip from the Downloads folder (launcher server)']))}">${esc(t(['Récupérer le ZIP téléchargé', 'Fetch the downloaded ZIP', 'Heruntergeladenes ZIP holen', 'Recuperar el ZIP descargado']))}</button><label class="secondary mt-file">${esc(t(['ZIP d’export du SIA…', 'SIA export ZIP…', 'SIA-Export-ZIP…', 'ZIP de exportación…']))}<input type="file" id="mtSiaZip" accept=".zip" hidden data-picker-folder="__sia"></label>${f?.zips?.length ? `<button type="button" class="secondary" id="mtSiaZipFolder" data-icon="box">${esc(t(['Extraire {z}', 'Extract {z}'], { z: f.zips[0].name }))}</button>` : ''} <span class="mt-small" id="mtExtract">${extractMsg}</span></p>
         </div>
         <div class="mt-step" id="mt-step-3">${stepHead(3, s3, t(['Anciens cycles', 'Old cycles', 'Alte Zyklen', 'Ciclos antiguos']))}
           ${!f ? `<p class="mt-small">${esc(t(['Analyser d’abord le dossier (étape 2).', 'Analyse the folder first (step 2).']))}</p>` : f.old.length ? `<p>${f.old.map(o => `<code>${esc(o.date)}</code> (${o.items.length} ${esc(t(['fichier(s)', 'file(s)']))}, ${fmtSize(o.items.reduce((n, i) => n + i.size, 0))})`).join(' · ')}</p><p class="row"><button type="button" class="secondary" id="mtArchive" data-icon="box">${esc(t(['Archiver dans _archives/', 'Archive into _archives/', 'In _archives/ archivieren', 'Archivar en _archives/']))}</button></p>` : `<p>${pill('ok', t(['un seul cycle dans le dossier', 'a single cycle in the folder']))}</p>`}
@@ -904,6 +915,22 @@
       if (file) extractZip(file);
     };
     host.querySelector('#mtSiaZipFolder')?.addEventListener('click', () => extractZip(siaFolderState.zips[0].file));
+    // ZIP du SIA pris dans le dossier Téléchargements par le serveur du lanceur (tools/launch.py, /__setup/sia-zip)
+    host.querySelector('#mtSiaFetch').onclick = async () => {
+      const say = (m, k = 'warn') => (window.AppFramework?.notify || alert)(m, k);
+      const api = q => fetch(`/__setup/sia-zip${q}`, { headers: { 'X-DEFA-Setup': '1' }, cache: 'no-store' });
+      let info;
+      try {
+        const r = await api('?info');
+        if (!r.ok) throw new Error(r.status);
+        info = await r.json();
+      } catch {
+        return say(t(['Le serveur du lanceur ne répond pas : ouvrez la suite avec lancer.cmd / lancer.sh, ou choisissez le ZIP avec « ZIP d’export du SIA… ».', 'The launcher server does not answer: open the suite with lancer.cmd / lancer.sh, or pick the ZIP with “SIA export ZIP…”.']));
+      }
+      if (!info.found) return say(t(['Aucun export_xml_bd_SIA_….zip dans {d} : téléchargez-le d’abord sur le site du SIA (étape 1).', 'No export_xml_bd_SIA_….zip in {d}: download it from the SIA site first (step 1).'], { d: info.where.join(', ') }));
+      const blob = await (await api('')).blob();
+      extractZip(new File([blob], info.name, { type: 'application/zip', lastModified: info.mtime * 1000 }));
+    };
     host.querySelector('#mtArchive')?.addEventListener('click', archiveOld);
     // Bloc commun (SiaBase.panel) créé une fois, replacé à chaque rendu : ses messages restent affichés.
     basePanelEl ??= (() => {

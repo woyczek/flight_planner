@@ -15,8 +15,9 @@
   const FILE = 'defa_local_store.yaml',
     SCHEMA = 1;
   // Suivi réseau en cours (propre à l'onglet) ; clef du webservice d'envoi des CR (secret, jamais dans un fichier).
-  // Base DEFA (journal des vols) : rechargeable depuis son fichier, gardée hors sauvegarde.
-  const SKIP = [/^networkWatch:/, /^missionSendKey:/, /^defaFlightLog:/];
+  // Base DEFA (journal des vols) : rechargeable depuis son fichier, gardée hors sauvegarde ; identifiants du site DEFA
+  // (page de premier lancement) : secrets, jamais dans un fichier.
+  const SKIP = [/^networkWatch:/, /^missionSendKey:/, /^defaFlightLog:/, /^defaCredentials:/];
   const META = 'defaLocalStore:v1'; // { savedAt, hash } — non sauvegardé lui-même
   const PENDING = 'defaLocalStore:pending'; // modifications depuis la dernière sauvegarde
   // Journal des sauvegardes et restaurations (trace de chaque rechargement : origine, date de la sauvegarde relue,
@@ -669,11 +670,11 @@
   };
   const button = document.createElement('button');
   button.type = 'button';
-  button.className = 'repo-backup-button';
+  button.className = 'repo-backup-button danger'; // designs à matières : leur bouton « danger » (gel rouge, cuir…)
   button.hidden = true;
   const tools = document.querySelector('.repo-header-tools');
   if (tools) tools.prepend(button);
-  if (!document.getElementById('repoBackupStyle')) document.head.insertAdjacentHTML('beforeend', '<style id="repoBackupStyle">.repo-backup-button{height:32px;border:0!important;border-radius:7px!important;padding:4px 10px!important;background:#dc2626!important;color:#fff!important;font:600 12px/1 Inter,system-ui,Segoe UI,Arial,sans-serif;cursor:pointer;white-space:nowrap}.repo-backup-button:hover{background:#b91c1c!important}.repo-backup-button .repo-svg{vertical-align:-2px;margin-right:2px}@media print{.repo-backup-button{display:none!important}}</style>');
+  if (!document.getElementById('repoBackupStyle')) document.head.insertAdjacentHTML('beforeend', '<style id="repoBackupStyle">.repo-backup-button{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;cursor:pointer}.repo-backup-button:not([hidden]){display:inline-flex}.repo-backup-button[hidden]{display:none}.repo-backup-button .repo-svg{flex:none;display:block}html:not([data-skeuo]) .repo-backup-button{height:32px;border:0!important;border-radius:7px!important;padding:4px 10px!important;background:#dc2626!important;color:#fff!important;font:600 12px/1 Inter,system-ui,Segoe UI,Arial,sans-serif}html:not([data-skeuo]) .repo-backup-button:hover{background:#b91c1c!important}@media print{.repo-backup-button{display:none!important}}</style>');
 
   /** Bouton rouge « Sauvegarder (n) · dernière : … » de l'en-tête : affiché à partir de REMIND modifications non sauvegardées. */
   function reminder() {
@@ -685,10 +686,8 @@
     // voyant de la barre d'état des designs à matières (designs_skeuo.css) : vert si tout est sauvegardé, ambre sinon
     document.documentElement.dataset.dirty = n > 0 ? '1' : '0';
     const label = `${row[0]} (${n}) · ${row[2]} ${m.savedAt ? new Date(m.savedAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }) : t('never')}`,
-      icon = window.RepositoryIcons?.svg('save', {
-        size: 14
-      });
-    button.textContent = icon ? ' ' + label : '💾 ' + label;
+      icon = window.RepositoryIcons?.svg('save'); // taille : celle des icônes de bouton du jeu (pas de taille en ligne)
+    button.textContent = icon ? label : '💾 ' + label;
     if (icon) button.insertAdjacentHTML('afterbegin', icon);
     button.title = row[1].replace('{n}', n).replace('{last}', last);
   }

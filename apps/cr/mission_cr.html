@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Nouveau compte rendu de mission</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=2bab0c08"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=f33b51fd">
-<script src="../../repository_tree?v=317ad031"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=9fd5d2aa"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=f33b51fd">
+<script src="../../config/repository_tree?v=3184ea0e"></script>
 <style data-layer="app">
 @layer app {
   .mc-choose {
@@ -18,10 +18,12 @@
   .mc-choose a {
     display: block;
     padding: 14px;
-    border-radius: 12px;
-    border: 1px solid var(--line);
-    background: var(--card);
-    color: var(--ink);
+    border-radius: calc(12px * var(--repo-round, 1));
+    /* surfaces du framework : voile du design sur un bloc habillé d'un panneau (décor complet), sinon carte du design
+       (jetons --sk-card*, designs à matières), sinon carte du thème */
+    border: 1px solid var(--sk-card-bd, var(--line));
+    background: var(--repo-veil, var(--sk-card, var(--card)));
+    color: var(--sk-card-ink, var(--ink));
     text-decoration: none
   }
   .mc-choose a:hover {
@@ -46,9 +48,9 @@
     font: inherit;
     font-size: 15px;
     border: 1px solid var(--line);
-    border-radius: 10px;
-    background: var(--card);
-    color: var(--ink)
+    border-radius: calc(10px * var(--repo-round, 1));
+    background: var(--repo-veil, var(--sk-card, var(--card)));
+    color: var(--sk-card-ink, var(--ink))
   }
   .mc-choose a.dim {
     opacity: .35
@@ -61,13 +63,15 @@
 </head><body>
 <header class="mc-header"><h1>Nouveau compte rendu de mission</h1><p>DEFA Virtual — Mission Report Core</p></header>
 <main class="mc-choose" id="choose">
-  <p class="small" data-text="intro"></p>
-  <input id="familySearch" class="mc-find" type="search" autocomplete="off">
-  <p class="small" id="familyHint"></p>
-  <div class="mc-choose-grid"></div>
+  <section id="family" data-icon="clipboard"><h2 data-text="title"></h2>
+    <p class="small" data-text="intro"></p>
+    <input id="familySearch" class="mc-find" type="search" autocomplete="off">
+    <p class="small" id="familyHint"></p>
+    <div class="mc-choose-grid"></div>
+  </section>
 </main>
-<script src="../../shared/kit.js?v=1466c9a9"></script>
-<script src="../../shared/repository_nav.js?v=b8dc4802"></script>
+<script src="../../shared/kit.js?v=5ed81dcf"></script>
+<script src="../../shared/repository_nav.js?v=0e68edda"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script src="../../shared/mission_core/vocab.js?v=db00c09c"></script>
 <script>
@@ -85,7 +89,9 @@
     const lastFamily = families.find(f => f.id === last);
     const intro = ['Choisissez la famille de mission (la popup de l’en-tête des pages permet ensuite d’en changer).', 'Choose the mission family (the page header popup lets you switch afterwards).', 'Einsatzfamilie wählen (das Popup in der Kopfzeile wechselt sie danach).', 'Elija la familia de misión (la ventana de la cabecera permite cambiarla después).'];
     const again = ['Continuer avec', 'Continue with', 'Weiter mit', 'Continuar con'];
+    const title = ['Famille de mission', 'Mission family', 'Einsatzfamilie', 'Familia de misión'];
     document.querySelector('[data-text="intro"]').textContent = intro[0];
+    document.querySelector('[data-text="title"]').textContent = title[0];
     const ordered = lastFamily ? [lastFamily, ...families.filter(f => f !== lastFamily)] : families;
     const grid = document.querySelector('.mc-choose-grid'),
       tile = (f, cls = '') => `<a href="${f.cr}" data-family="${f.id}" title="${(f.descriptions || [''])[0]}" class="${[f === lastFamily && !cls ? 'last' : '', cls].filter(Boolean).join(' ')}">${f === lastFamily && !cls ? `<span class="small">${again[0]}</span>` : ''}<b>${f.id}</b><span class="small">${f.labels[0]}</span></a>`;
@@ -139,9 +145,9 @@
     });
     find.focus();
     // libellés des familles dans les 4 langues ; exemple du champ de recherche traduit aussi
-    window.RepositoryContentI18n?.([intro, again, hint, noHit, ph, ...families.map(f => f.labels), ...families.map(f => f.descriptions).filter(Boolean)]);
+    window.RepositoryContentI18n?.([title, intro, again, hint, noHit, ph, ...families.map(f => f.labels), ...families.map(f => f.descriptions).filter(Boolean)]);
     document.getElementById('choose').hidden = false;
   })();
 </script>
-<script src="../../shared/app_framework.js?v=817d675e"></script>
+<script src="../../shared/app_framework.js?v=f587f576"></script>
 </body></html>

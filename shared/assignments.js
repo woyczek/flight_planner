@@ -94,6 +94,16 @@
     return (list || cache?.assignments || []).filter(a => me && String(a.pilot).toUpperCase() === me && a.status !== 'annulée' && (all || !when(a) || when(a) >= now)).sort((x, y) => when(x) - when(y));
   }
   const isRead = a => !!json(READ, {})[key(a)];
+  /** État d'un pli d'exercice pour le pilote (clé de l'affectation + identifiant du pli) : { state: 'open' (scellé brisé)
+   *  | 'sealed' (rescellé), at, logged (ouverture à l'heure déjà portée au journal) } ; {} : rien de fait. */
+  const PLIS = 'pilotPlis:v2';
+  const pliState = (a, id) => json(PLIS, {})[`${key(a)}|${id}`] || {};
+  function setPliState(a, id, patch) {
+    const r = json(PLIS, {}),
+      k = `${key(a)}|${id}`;
+    r[k] = { ...(r[k] || {}), ...patch };
+    setJson(PLIS, r);
+  }
   /** Remet une mission « non lue » (scellée) : outil du canal develop. */
   function markUnread(a) {
     const r = json(READ, {});
@@ -147,21 +157,20 @@
 .repo-assign-envelope svg{width:34px;height:24px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
 .repo-assign-envelope .pa-paper{fill:#f4f6f8;stroke:#7a8794;stroke-width:1.2}.repo-assign-envelope .pa-fold{fill:none;stroke:#7a8794;stroke-width:1.2}
 .repo-assign-envelope .pa-seal{fill:#c62828;stroke:#7f1414;stroke-width:1}.repo-assign-envelope .pa-seal-mark{stroke:#ffd7d0;stroke-width:1.3}
-.repo-assign-envelope b{position:absolute;top:-2px;right:-4px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#c62828;color:#fff;font:700 10px/16px system-ui,sans-serif;text-align:center}
+.repo-assign-envelope b{position:absolute;top:-2px;right:-4px;min-width:16px;height:16px;padding:0 4px;border-radius:calc(8px * var(--repo-round, 1));background:#c62828;color:#fff;font:700 10px/16px system-ui,sans-serif;text-align:center}
 @keyframes repo-assign-pulse{50%{transform:scale(1.08)}}.repo-assign-envelope svg{animation:repo-assign-pulse 2.4s ease-in-out 3}
 @media (prefers-reduced-motion:reduce){.repo-assign-envelope svg{animation:none}}
 html[data-skeuo] .repo-assign-envelope .pa-paper{fill:#efe3c4;stroke:#6b5228}html[data-skeuo] .repo-assign-envelope .pa-fold{stroke:#6b5228}
-html[data-skeuo] .repo-assign-envelope .pa-seal{fill:#a3161a;stroke:#5e0b0d}html[data-skeuo] .repo-assign-envelope b{border-radius:0}
+html[data-skeuo] .repo-assign-envelope .pa-seal{fill:#a3161a;stroke:#5e0b0d}
 html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3e4a2c}html[data-design="field"] .repo-assign-envelope .pa-fold{stroke:#3e4a2c}
 @media print{.repo-assign-envelope{display:none}}
-.repo-sidenav-item{position:relative}.repo-assign-badge{position:absolute;top:2px;right:6px;min-width:15px;height:15px;padding:0 3px;border-radius:8px;background:#c62828;color:#fff;font:700 9.5px/15px system-ui,sans-serif;text-align:center}html[data-skeuo] .repo-assign-badge{border-radius:0}
+.repo-sidenav-item{position:relative}.repo-assign-badge{position:absolute;top:2px;right:6px;min-width:15px;height:15px;padding:0 3px;border-radius:calc(8px * var(--repo-round, 1));background:#c62828;color:#fff;font:700 9.5px/15px system-ui,sans-serif;text-align:center}
 .pa-grid{overflow-x:auto;user-select:none;touch-action:none}.pa-grid table{border-collapse:collapse;font:11px/1 system-ui,sans-serif}
 .pa-grid th{padding:3px 4px;font-weight:600;opacity:.8;text-align:center}.pa-grid tbody th{text-align:left;padding-right:8px}
 .pa-grid td{width:22px;height:20px;border:1px solid color-mix(in srgb,currentColor 22%,transparent);background:color-mix(in srgb,currentColor 6%,transparent);cursor:pointer}
 .pa-grid td{font:700 9.5px/20px system-ui,sans-serif;text-align:center}.pa-grid td:nth-child(7n+1){border-left-width:2px}
-.pa-palette{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 8px}.pa-palette .pa-code{display:inline-flex;align-items:baseline;gap:5px;padding:3px 7px;border:2px solid transparent;border-radius:4px;font:700 11px/1.3 system-ui,sans-serif;cursor:pointer}
-.pa-palette .pa-code small{font-weight:500;font-size:10.5px;opacity:.9}.pa-palette .pa-code[aria-checked=true]{border-color:currentColor;box-shadow:0 0 0 2px rgba(0,0,0,.35)}
-html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
+.pa-palette{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 8px}.pa-palette .pa-code{display:inline-flex;align-items:baseline;gap:5px;padding:3px 7px;border:2px solid transparent;border-radius:calc(4px * var(--repo-round, 1));font:700 11px/1.3 system-ui,sans-serif;cursor:pointer}
+.pa-palette .pa-code small{font-weight:500;font-size:10.5px;opacity:.9}.pa-palette .pa-code[aria-checked=true]{border-color:currentColor;box-shadow:0 0 0 2px rgba(0,0,0,.35)}`;
     document.head.append(s);
   }
 
@@ -584,22 +593,70 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
       lon: +p.lon
     };
   };
-  /** Convoyage d'un appareil basé hors du terrain de départ : { from, to, minutes, takeoff, pilot } ; null s'il est sur
-   *  place. minutes null : distance inconnue. Décollage du convoyage = décollage de la mission − durée − remise en œuvre. */
+  /** Terrain connu le plus proche d'une position (base SIA du navigateur, registre, cache, bases de la flotte) : code ;
+   *  '' au-delà de maxNm. */
+  async function nearestAirport(p, maxNm = 10) {
+    if (!p || !Number.isFinite(+p.lat)) return '';
+    const known = {
+      ...await knownAirports()
+    };
+    for (const b of new Set((window.DEFA_FLEET || []).map(f => f.base).filter(Boolean)))
+      if (!known[b]) {
+        const q = await coordsOf(b);
+        if (q) known[b] = q;
+      }
+    let best = '',
+      d = maxNm;
+    for (const [code, q] of Object.entries(known)) {
+      const n = geo.nm(p, q);
+      if (n < d) {
+        d = n;
+        best = code;
+      }
+    }
+    return best;
+  }
+  /** Départ d'une mission : { code, pos, name }. Code OACI de l'origine ; sinon position de l'origine, du premier point
+   *  tournant, de l'objectif ou (entrée du registre) du premier point de la route estimée, rattachée au terrain connu le
+   *  plus proche (10 NM). y : yaml de la mission ({} si seule l'entrée du registre est connue). */
+  async function departureOf(y = {}, entry = null) {
+    const o = y?.origin || {};
+    let code = geo.icaoOf(o) || geo.icaoOf({
+        name: entry?.origin
+      }),
+      pos = code ? await coordsOf(code) : null;
+    const p = [o, ...(y?.turning_points || []), y?.target, entry?.estimate?.points?.[0]].find(q => q && Number.isFinite(+q.lat) && Number.isFinite(+q.lon) && (+q.lat || +q.lon));
+    if (!pos && p) pos = {
+      lat: +p.lat,
+      lon: +p.lon
+    };
+    if (!code && pos) code = await nearestAirport(pos);
+    return {
+      code,
+      pos,
+      name: code || p?.name || o.name || entry?.origin || ''
+    };
+  }
+  /** Convoyage d'un appareil basé hors du terrain de départ : { from, to, minutes, takeoff, pilot, baseKnown } ; null
+   *  s'il est sur place. departure : code du départ ; to : sa position (départ sans terrain : premier point de la route).
+   *  minutes null : position de la base inconnue (hélistation absente sans la base SIA du navigateur). Décollage du
+   *  convoyage = décollage de la mission − durée − remise en œuvre. */
   async function ferryOf({
     base,
     departure,
+    to = null,
     type,
     takeoff,
     pilot = ''
   }) {
-    if (!base || !departure || base === departure) return null;
+    if (!base || (!departure && !to) || base === departure) return null;
     const a = await coordsOf(base),
-      b = await coordsOf(departure),
+      b = to || await coordsOf(departure),
       minutes = a && b ? Math.round(geo.nm(a, b) / cruiseKt(typeOf(type)) * 60 + FERRY_SETUP_MIN) : null;
     return {
       from: base,
-      to: departure,
+      to: departure || 'départ',
+      baseKnown: !!a,
       minutes,
       takeoff: minutes && takeoff ? new Date(takeoff - (minutes + TURN_MIN) * 6e4).toISOString() : null,
       pilot
@@ -744,12 +801,15 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
    *  remise en œuvre comprise. */
   function busyRange(a) {
     const t0 = Date.parse(a.takeoff || a.alert?.ready_at_utc || '') || 0,
-      from = Math.min(t0 || Infinity, Date.parse(a.ferry?.takeoff || '') || Infinity, Date.parse(a.alert?.ready_at_utc || '') || Infinity),
+      // convoyage par le pilote lui-même : il commence au décollage du convoyage ; confié à un autre ou à affecter : ligne
+      // « convoyage » à part (son propre créneau), le pilote de la mission n'est pris qu'au décollage de la mission
+      self = a.ferry && !a.ferry.open && (!a.ferry.pilot || a.ferry.pilot === a.pilot),
+      from = Math.min(t0 || Infinity, self ? Date.parse(a.ferry.takeoff || '') || Infinity : Infinity, Date.parse(a.alert?.ready_at_utc || '') || Infinity),
       to = Math.max(t0 + ((+a.block_min || 120) + TURN_MIN) * 6e4, Date.parse(a.alert?.window_end_utc || '') || 0);
     return Number.isFinite(from) ? [from, to] : [0, 0];
   }
-  /** Affectations d'un pilote (ou d'un convoyeur) qui recouvrent une plage. */
-  const assignedOver = (list, tri, start, end) => (list || []).filter(a => a.status !== 'annulée' && (a.pilot === tri || a.ferry?.pilot === tri) && (([f, l]) => f < end && l > start)(busyRange(a)));
+  /** Affectations d'un pilote qui recouvrent une plage (un convoyeur a sa propre ligne « convoyage »). */
+  const assignedOver = (list, tri, start, end) => (list || []).filter(a => a.status !== 'annulée' && a.pilot === tri && (([f, l]) => f < end && l > start)(busyRange(a)));
   /** Conflits d'un participant (pilote, appareil, convoyeur) avec les autres affectations : textes. */
   function conflicts(list, {
     mission,
@@ -765,7 +825,7 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
       if (!os || os >= to || oe <= from) continue;
       const at = new Date(os).toISOString().slice(11, 16) + 'Z';
       for (const who of [pilot, ferryPilot].filter(Boolean))
-        if (o.pilot === who || o.ferry?.pilot === who) out.push(t([`${who} déjà affecté : ${o.mission} ${at}`, `${who} already assigned: ${o.mission} ${at}`]));
+        if (o.pilot === who) out.push(t([`${who} déjà affecté : ${o.mission} ${at}`, `${who} already assigned: ${o.mission} ${at}`]));
       if (registration && o.aircraft?.registration === registration) out.push(t([`${registration} déjà pris : ${o.mission} ${at}`, `${registration} already taken: ${o.mission} ${at}`]));
     }
     return [...new Set(out)];
@@ -789,14 +849,65 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     return categoryOf((db[ty] || db[db.__aliases?.[ty]] || {}).description)[0];
   };
   const fold = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().trim();
-  const kindOf = s => /h[ée]lico|helicopter|rotor/i.test(s) ? 'helico' : /avion|aircraft|airplane|plane|jet/i.test(s) ? 'avion' : '';
-  /** Poste : { callsign, type ('' si générique), kind (helico | avion | ''), service, label }. */
+  const kindOf = s => /h[ée]lico|helicopter|rotor/i.test(s) ? 'helico' : /avion|airplane|plane|jet/i.test(s) ? 'avion' : /a[ée]ronef|aircraft/i.test(s) ? 'any' : '';
+  // ---- type écrit en clair dans une mission (« H225M Caracal », « Rafale », « E-3F / A400M ») → désignateurs de la
+  // flotte, mot à mot : désignateur, alias de la base OACI (H135 → EC35), synonymes d'usage ci-dessous (noms militaires
+  // absents des alias), mots de la variante (« Rafale B ») ou du modèle (« LOCKHEED C-130H Hercules ») d'un type de la
+  // flotte. Sans cela, un type inconnu rendait le poste générique : toute la flotte était proposée.
+  const SYNONYMS = {
+    H225: 'EC25',
+    H225M: 'EC25',
+    CARACAL: 'EC25',
+    E3F: 'E3CF',
+    AWACS: 'E3CF',
+    A400M: 'A400',
+    ATLAS: 'A400',
+    C130J: 'C130',
+    C130J30: 'C130',
+    MRTT: 'A332',
+    PHENIX: 'A332'
+  };
+  const norm = s => fold(s).replace(/[^A-Z0-9]/g, '');
+  let fleetKeys = null;
+  /** Mot normalisé → désignateur de la flotte (construit une fois). */
+  function fleetIndex() {
+    if (fleetKeys) return fleetKeys;
+    const db = window.AIRCRAFT_DB || {},
+      types = [...new Set((window.DEFA_FLEET || []).map(f => typeOf(f.type)).filter(Boolean))],
+      keys = new Map(),
+      add = (k, ty) => {
+        k = norm(k);
+        if (k.length >= 2 && !keys.has(k)) keys.set(k, ty);
+      };
+    types.forEach(ty => add(ty, ty));
+    for (const [k, v] of Object.entries(db.__aliases || {}))
+      if (types.includes(v)) add(k, v);
+    for (const [k, v] of Object.entries(SYNONYMS))
+      if (types.includes(v)) add(k, v);
+    for (const f of window.DEFA_FLEET || [])
+      for (const w of String(f.variant || '').split(/\s+/)) if (/^[a-zé]{4,}$/i.test(w)) add(w, typeOf(f.type));
+    // modèle : la référence à tiret (EC-725, C-130H) et le nom propre final (Rafale, Hercules, Sentry)
+    for (const ty of types) {
+      const words = String(db[ty]?.model || '').split(/\s+/);
+      words.filter(w => /[A-Z]-?\d/i.test(w) && w.includes('-')).forEach(w => add(w, ty));
+      if (/^[a-z]{4,}$/i.test(words.at(-1) || '') && words.length > 1) add(words.at(-1), ty);
+    }
+    return fleetKeys = keys;
+  }
+  /** Désignateurs de la flotte nommés dans un texte de type (dans l'ordre, sans doublon). */
+  const fleetTypesIn = raw => [...new Set(String(raw || '').split(/[\s\/,;+]+/).map(w => fleetIndex().get(norm(w))).filter(Boolean))];
+  /** Poste : { callsign, type ('' si générique), types (plusieurs types possibles), kind (helico | avion | any | ''),
+   *  service, label }. */
   function post(callsign, rawType, service = '') {
-    const ty = typeOf(rawType),
-      known = !!ty && (fleetTypes().some(x => x.type === ty) || !!(window.AIRCRAFT_DB || {})[ty]);
+    const found = fleetTypesIn(rawType),
+      ty = found[0] || typeOf(rawType),
+      known = !!found.length || (!!ty && !!(window.AIRCRAFT_DB || {})[ty]);
     return {
       callsign: String(callsign || ''),
       type: known ? ty : '',
+      ...(found.length > 1 ? {
+        types: found
+      } : {}),
       kind: known ? (catOfType(ty) === 'helico' ? 'helico' : 'avion') : kindOf(rawType),
       service: String(service || ''),
       label: String(rawType || '')
@@ -804,12 +915,19 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
   }
   const isTeam = x => x && x.name && !/^[-\s]*$/.test(x.name) && !/^[-\s]*$/.test(String(x.type || ''));
   /** Postes d'une mission : yaml (aircraft[], ou teams[] du schéma hélico), sinon entrée du registre (teams,
-   *  aircraftTypes) ; équipes au sol (type ni appareil ni hélicoptère/avion) écartées. */
+   *  aircraftTypes) ; équipes au sol (type ni appareil ni hélicoptère/avion) écartées. Mission d'une opération à
+   *  plusieurs missions (exercice) : teams liste toute l'opération → seulement les équipes de ses propres appareils
+   *  (callsigns). */
   function postsOf(entry, y = {}) {
     let out = [];
+    const own = list => {
+      const cs = new Set((entry?.callsigns || []).map(c => String(c).trim().toUpperCase()));
+      const mine = list.filter(x => cs.has(String(x.name || '').trim().toUpperCase()));
+      return mine.length ? mine : list;
+    };
     if (Array.isArray(y?.aircraft) && y.aircraft.length) out = y.aircraft.map(a => post(a.callsign, a.type, a.operator || a.service));
-    else if (Array.isArray(y?.teams) && y.teams.length) out = y.teams.filter(isTeam).map(x => post(x.name, x.type, x.service));
-    else if (entry?.teams?.length) out = entry.teams.filter(isTeam).map(x => post(x.name, x.type, x.service));
+    else if (Array.isArray(y?.teams) && y.teams.length) out = own(y.teams.filter(isTeam)).map(x => post(x.name, x.type, x.service));
+    else if (entry?.teams?.length) out = own(entry.teams.filter(isTeam)).map(x => post(x.name, x.type, x.service));
     out = out.filter(p => p.type || p.kind);
     if (!out.length) out = (entry?.aircraftTypes || []).map((ty, i) => post(entry.callsigns?.[i], ty));
     return out.length ? out : [post('', '')];
@@ -818,15 +936,22 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
   const fits = (spec, ty) => {
     const k = typeOf(ty);
     if (!spec || typeof spec === 'string') return !typeOf(spec) || k === typeOf(spec);
-    if (spec.type) return k === spec.type;
+    if (spec.type) return k === spec.type || !!spec.types?.includes(k);
     return spec.kind === 'helico' ? catOfType(k) === 'helico' : spec.kind === 'avion' ? catOfType(k) !== 'helico' : true;
   };
-  const specLabel = spec => typeof spec === 'string' ? typeOf(spec) : spec?.type || (spec?.kind === 'helico' ? t(['hélicoptère', 'helicopter']) : spec?.kind === 'avion' ? t(['avion', 'aircraft']) : '');
-  /** Appareils de la flotte pour un poste : du type (ou de la catégorie), service du poste puis terrain de départ d'abord. */
+  const specLabel = spec => typeof spec === 'string' ? typeOf(spec) : spec?.types?.join(' / ') || spec?.type || (spec?.kind === 'helico' ? t(['hélicoptère', 'helicopter']) : spec?.kind === 'avion' ? t(['avion', 'aircraft']) : spec?.kind === 'any' ? t(['aéronef', 'aircraft']) : '');
+  /** L'opérateur d'un appareil est-il le service du poste (« Gendarmerie » ↔ « Gendarmerie nationale ») ? */
+  const serves = (svc, f) => {
+    const o = fold(f.operator);
+    return !!svc && !!o && (o.startsWith(svc) || svc.startsWith(o));
+  };
+  /** Appareils compatibles avec un poste : du type (ou des types, ou de la catégorie d'un poste générique) et, quand
+   *  le service du poste est un opérateur de la flotte, de cet opérateur seulement ; terrain de départ d'abord. */
   function planesFor(spec, departure = '') {
     const svc = fold(spec?.service || '');
-    return (window.DEFA_FLEET || []).filter(f => fits(spec, f.type) || (spec?.type && typeOf(f.variant) === spec.type))
-      .sort((a, b) => (!!svc && fold(b.operator).startsWith(svc)) - (!!svc && fold(a.operator).startsWith(svc)) || (b.base === departure) - (a.base === departure) || (b.operational !== false) - (a.operational !== false) || String(a.base).localeCompare(String(b.base)));
+    let list = (window.DEFA_FLEET || []).filter(f => fits(spec, f.type) || (spec?.type && typeOf(f.variant) === spec.type));
+    if (list.some(f => serves(svc, f))) list = list.filter(f => serves(svc, f));
+    return list.sort((a, b) => (b.base === departure) - (a.base === departure) || (b.operational !== false) - (a.operational !== false) || String(a.base).localeCompare(String(b.base)));
   }
   /** Le pilote a-t-il un appareil pour ce poste (type, ou catégorie d'un poste générique) ? null : appareils non déclarés. */
   const ownsType = (decl, spec) => decl?.aircraft ? [...(decl.aircraft.owned || []), ...(decl.aircraft.mastered || [])].some(ty => fits(spec, ty)) : null;
@@ -964,21 +1089,26 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     };
   }
   /** Participants d'une affectation, comme les calcule le dialogue : appareil de la flotte, convoyage depuis sa base,
-   *  heures (décalées d'une minute par équipier). rows : [{ pilot, registration, callsign, ferryPilot }] ; y : yaml. */
-  async function buildParticipants(y, rows, takeoff) {
-    const departure = geo.icaoOf(y?.origin) || '',
+   *  heures (décalées d'une minute par équipier). rows : [{ pilot, registration, callsign, ferryPilot }] ; y : yaml ;
+   *  ferryPilot : convoyeur (vide : le pilote ; « __open » : convoyage à affecter). */
+  async function buildParticipants(y, rows, takeoff, dep = null) {
+    dep ||= await departureOf(y);
+    const departure = dep.code,
       blockMin = +y?.timing?.estimated_block_min || +y?.timing?.estimated_flight_min || 120,
       out = [];
     for (const [i, r] of rows.entries()) {
       const plane = (window.DEFA_FLEET || []).find(f => f.registration === r.registration),
         tk = takeoff + i * 6e4;
-      const ferry = plane ? await ferryOf({
+      // départ sans terrain (mission en mer, sur un objectif) : l'appareil part de sa base, pas de convoyage
+      const ferry = plane && departure ? await ferryOf({
         base: plane.base,
         departure,
+        to: dep.pos,
         type: plane.type,
         takeoff: tk,
-        pilot: r.ferryPilot || r.pilot
+        pilot: r.ferryPilot === '__open' ? '' : r.ferryPilot || r.pilot
       }) : null;
+      if (ferry && r.ferryPilot === '__open') ferry.open = true; // convoyage à affecter : une mission à part, sans pilote
       out.push({
         pilot: r.pilot,
         callsign: r.callsign || '',
@@ -1174,11 +1304,12 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
         ...p,
         role: 'mission'
       });
-      // convoyeur autre que le pilote : sa propre ligne (il voit le convoyage dans « Mes missions »)
-      if (p.ferry?.pilot && p.ferry.pilot !== p.pilot && p.ferry.takeoff) idx.assignments.push({
+      // convoyage par un autre pilote : une mission à part, sa propre ligne (le convoyeur la voit dans « Mes missions ») ;
+      // à affecter : même ligne sans pilote, proposée dans la fenêtre du créneau où elle tombe (planning ODV)
+      if (p.ferry?.takeoff && (p.ferry.open || (p.ferry.pilot && p.ferry.pilot !== p.pilot))) idx.assignments.push({
         ...common,
         role: 'convoyage',
-        pilot: p.ferry.pilot,
+        pilot: p.ferry.open ? '' : p.ferry.pilot,
         callsign: '',
         aircraft: p.aircraft,
         departure: p.ferry.from,
@@ -1187,7 +1318,7 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
         block_min: p.ferry.minutes,
         ferry: null,
         for_pilot: p.pilot,
-        status: p.status
+        status: p.ferry.open ? 'à affecter' : p.status
       });
     }
     idx.updatedAt = at;
@@ -1211,6 +1342,8 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     key,
     when,
     isRead,
+    pliState,
+    setPliState,
     markRead,
     markUnread,
     envelope,
@@ -1237,6 +1370,8 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     coordsOf,
     rememberAirport,
     ferryOf,
+    departureOf,
+    nearestAirport,
     fleetTypes,
     qualification,
     slotRange,

@@ -316,14 +316,7 @@ html[data-skeuo="frame"][data-decor="full"] .repo-block::after {
 /* ↑ vis dans la boîte du bloc : un pseudo-élément qui dépassait faisait apparaître une barre de défilement dans les
    blocs à défilement (reporting : .section, overflow:auto), qui disparaissait au calcul suivant (blocs qui changeaient
    de taille en boucle) */
-html[data-design="flightlog"][data-decor="full"] .repo-block::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none
-}
-/* plans trois vues (Carnet de vol, plus bas) ; Cabinet : plus de filigrane (les panneaux habillent les blocs) */
+/* Cabinet et Carnet de vol : plus de filigrane ni de plans au coin des blocs (les panneaux habillent les blocs) */
 /* titre de bloc : plaque de laiton gravée, vis aux deux bouts */
 /* plaques de titre des blocs (designs à cadre) : laiton gravé (Cabinet), aluminium brossé (Carnet de vol), kaki (Durci) ;
    vis aux deux bouts ; jetons --sk-plate-* et --sk-screw */
@@ -898,6 +891,11 @@ html[data-design="aqua"] button.danger {
 html[data-design="aqua"] .repo-footer {
   border: 1px solid #d5dde6
 }
+/* galons (section GALONS) : titres de bloc sans plaque → barrette de galon sous le titre */
+html[data-design="aqua"] :is(.repo-block-titles, .repo-block-heading)>h2 {
+  padding-bottom: 4px;
+  background: var(--galon-grad) left bottom/48px 3px no-repeat
+}
 
 /* ================================================================================================ AQUA SOMBRE
    Pages à thème sombre (planificateur, Landing : graphiques conçus pour un fond sombre) : graphite, verre fumé,
@@ -1268,7 +1266,7 @@ html[data-skeuo="frame"][data-dirty="1"] .repo-footer::before {
 .repo-deco {
   display: none
 }
-html[data-skeuo="frame"][data-decor="full"] .repo-deco {
+html[data-skeuo][data-decor="full"] .repo-deco {
   display: block;
   margin: 18px 0 0
 }
@@ -1326,6 +1324,13 @@ html[data-design="field"][data-decor="full"] .repo-deco>.repo-deco-plate-img {
 html[data-design="field"][data-decor="full"] .repo-deco>.repo-deco-status {
   grid-column: 2;
   grid-row: 2
+}
+/* sangle de toile (frise du design) : sous le radar et la colonne de droite, toute la largeur */
+html[data-design="field"][data-decor="full"] .repo-deco>.repo-deco-strip {
+  grid-column: 1/-1;
+  grid-row: 3;
+  min-height: 0;
+  object-fit: contain
 }
 .repo-deco-plate {
   display: flex;
@@ -1528,7 +1533,7 @@ html[data-design="field"][data-decor="full"] {
 .repo-deco-side {
   display: none
 }
-html[data-skeuo="frame"][data-decor="full"] .repo-deco-sep {
+html[data-skeuo][data-decor="full"] .repo-deco-sep {
   display: block;
   position: relative;
   height: 0;
@@ -1542,7 +1547,7 @@ html[data-skeuo="frame"][data-decor="full"] .repo-deco-sep {
   transform: translate(-50%, -50%);
   filter: drop-shadow(0 4px 5px rgba(0, 0, 0, .5))
 }
-html[data-skeuo="frame"][data-decor="full"] .repo-deco-side {
+html[data-skeuo][data-decor="full"] .repo-deco-side {
   display: block;
   position: absolute;
   z-index: 0;
@@ -1613,43 +1618,6 @@ html[data-design="flightlog"] .repo-block:not(#imp) {
 html[data-design="flightlog"][data-decor="full"] .repo-block::after {
   display: none
 }
-/* Carnet de vol : plans trois vues (Islander, DC-3, B-17, P-51, Concorde) au coin des blocs, en alternance d'un bloc à l'autre
-   (rang data-deco-n posé par app_framework.js dans l'ordre de la page) ; ton clair : traits sépia foncés sur le parchemin,
-   ton sombre : traits crème (versions -clair) sur le parchemin sombre. Taille : 45 % de la largeur du bloc, 340 px au plus. */
-html[data-design="flightlog"][data-decor="full"] .repo-block::before {
-  opacity: .5;
-  mix-blend-mode: multiply;
-  background: url("deco/flightlog/blueprint-islander.webp?v=72eff2fb") right 10px bottom 10px/min(45%, 340px) auto no-repeat
-}
-html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="2"]::before {
-  background-image: url("deco/flightlog/blueprint-dc3.webp?v=2d4cac70")
-}
-html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="3"]::before {
-  background-image: url("deco/flightlog/blueprint-b17.webp?v=ace6cbb2")
-}
-html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="4"]::before {
-  background-image: url("deco/flightlog/blueprint-mustang.webp?v=8672487c")
-}
-html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="5"]::before {
-  background-image: url("deco/flightlog/blueprint-concorde.webp?v=2b358373")
-}
-html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block::before {
-  opacity: .3;
-  mix-blend-mode: normal;
-  background-image: url("deco/flightlog/blueprint-islander-clair.webp?v=efeaed88")
-}
-html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="2"]::before {
-  background-image: url("deco/flightlog/blueprint-dc3-clair.webp?v=a852ea81")
-}
-html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="3"]::before {
-  background-image: url("deco/flightlog/blueprint-b17-clair.webp?v=a0ad1544")
-}
-html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="4"]::before {
-  background-image: url("deco/flightlog/blueprint-mustang-clair.webp?v=33150b72")
-}
-html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="5"]::before {
-  background-image: url("deco/flightlog/blueprint-concorde-clair.webp?v=40d83d5e")
-}
 /* marge haute et basse dans le bandeau */
 html[data-design="flightlog"] .repo-header-emblem img {
   width: 100%;
@@ -1680,6 +1648,11 @@ html[data-skeuo] dialog.repo-ap-dialog {
 }
 html[data-skeuo] dialog.repo-ap-dialog .repo-ap-head:not(#imp) {
   margin: 10px
+}
+/* fenêtres d'affectation (assign_dialog.js : texte posé à même la fenêtre, sans blocs) : fond d'un bloc du design
+   (parchemin, plaque…), pas celui de la page, pour que l'encre reste lisible */
+html[data-skeuo] dialog.repo-ap-dialog.ad-dialog {
+  background: var(--sk-block-bg, var(--sk-dialog-bg))
 }
 /* ================================================================================================ EN-TÊTE DE BLOC ÉTROIT
    La plaque de titre ne dépasse jamais sa colonne (elle passe à la ligne) et les outils (↕, Masquer) restent au
@@ -1861,9 +1834,10 @@ html[data-skeuo="frame"] :is(.mcg-chart .mcg-axis, .mcg-donut .mcg-total) {
 html[data-skeuo="frame"] .mcg-chart g:hover .mcg-hover {
   fill: rgba(232, 210, 150, .1)
 }
-/* ================================================================================================ FONDS ILLUSTRÉS DES BLOCS
-   design_deco.js (BG) : image sous le contenu du bloc (empilement propre au bloc : fond du bloc, puis l'image, puis le
-   contenu), fondue vers la droite et le bas pour garder le texte lisible. */
+/* ================================================================================================ PANNEAUX DES BLOCS
+   design_deco.js (PANELS) : image sous le contenu du bloc (empilement propre au bloc : fond du bloc, puis le panneau,
+   puis le contenu), couvrant le bloc, calée à droite, atténuée de façon uniforme (opacité par design et par ton ;
+   lisibilité : voile --repo-veil sous les données). */
 .repo-has-bg {
   isolation: isolate
 }
@@ -1873,39 +1847,24 @@ html[data-skeuo="frame"] .mcg-chart g:hover .mcg-hover {
   z-index: -1;
   border-radius: inherit;
   pointer-events: none;
-  background-repeat: no-repeat;
-  opacity: .55;
-  -webkit-mask-image: linear-gradient(135deg, #000 0%, #000 35%, transparent 95%);
-  mask-image: linear-gradient(135deg, #000 0%, #000 35%, transparent 95%)
-}
-.repo-deco-bg-anchor {
-  background-position: left top;
-  background-size: auto
-}
-.repo-deco-bg-cover {
-  background-position: center;
-  background-size: cover
+  background: right center/cover no-repeat;
+  opacity: .5
 }
 @media print {
   .repo-deco-bgimg {
     display: none
   }
 }
-/* fonds « cover » (images de scène : piste, globe…) : image entière visible, atténuée de façon uniforme (texte lisible) */
-.repo-deco-bgimg.repo-deco-bg-cover {
-  -webkit-mask-image: none;
-  mask-image: none;
-  opacity: .5
-}
-html[data-design="field"] .repo-deco-bgimg.repo-deco-bg-cover {
-  opacity: .6
-}
-/* Durci : même peinture que le bloc, pochoirs clairs (texte lisible) */
-html[data-design="aqua"] .repo-deco-bgimg.repo-deco-bg-cover {
+html[data-design="aqua"] .repo-deco-bgimg.repo-deco-panel {
   opacity: .35
 }
-html[data-design="aqua"][data-tone="dark"] .repo-deco-bgimg.repo-deco-bg-cover {
-  opacity: .5
+/* Aqua, ton sombre : panneaux bleu nuit (panels/) voilés par la surface du bloc (opacité basse) ; voile sombre sous
+   les données */
+html[data-design="aqua"][data-tone="dark"] .repo-deco-bgimg.repo-deco-panel {
+  opacity: .45
+}
+html[data-design="aqua"][data-tone="dark"] .repo-has-bg:has(>.repo-deco-panel) {
+  --repo-veil: rgba(14, 18, 26, .62)
 }
 /* Cabinet : panneaux « 1930 » très contrastés (marine, laiton, cartes claires) : atténués pour le texte ; ton clair :
    fonds ivoire (1930/clair), proches du parchemin, moins atténués */
@@ -1940,7 +1899,8 @@ html .repo-block.repo-has-bg:has(>.repo-deco-panel) table:not(.report table):not
    découpé dans une planche par tools/cut_register_sheet.py : papier uni en mosaïque (.sh-paper, dans le cadre) ; bandes
    répétées en haut, en bas, à gauche et à droite (raccordables, arrêtées aux coins) ; coins fixes aux bords intérieurs
    fondus ; accessoire transparent posé sur le bord gauche (ficelle de Cabinet, crayon de Durci : --sheet-string) ;
-   en-tête facultatif en deux pièces (--sheet-head à gauche, --sheet-stamp à droite) ; le contenu est décalé sous
+   en-tête facultatif en deux pièces (--sheet-head à gauche, --sheet-stamp à droite) et pièce centrée en haut
+   (--sheet-clip : pince d'un porte-bloc, --sh-clip-y, --sh-clip-w) ; le contenu est décalé sous
    l'en-tête et à l'intérieur du cadre.
    Par design : images (--sheet-*) et géométrie (--sh-*, en px de la planche, affichés à l'échelle --k) : tailles des
    coins et des motifs de bande ; arrêts des bandes (--sh-top-l : fin du coin haut gauche…, donnés par l'outil) ; retrait
@@ -2078,6 +2038,65 @@ html[data-design="flightlog"] {
   --sh-acc-r: 178/600;
   --sh-k: .7
 }
+/* Aqua : porte-bloc en plastique bleu translucide, pince métallique centrée en haut (son anneau dépasse au-dessus de
+   la planche), feuilles blanches à en-tête CPCO-DEFA (sous la pince, à gauche) ; encre marine */
+html[data-design="aqua"] {
+  --sheet-ink: #14285a;
+  --sheet-ink-2: #3a4a66;
+  --sheet-card-bg: #f7f8fa url("deco/aqua/sheet-paper.webp?v=fd7285cd") left top/480px;
+  --sheet-paper: url("deco/aqua/sheet-paper.webp?v=fd7285cd");
+  --sheet-top: url("deco/aqua/sheet-top.webp?v=aa540570");
+  --sheet-bot: url("deco/aqua/sheet-bot.webp?v=c40f266b");
+  --sheet-left: url("deco/aqua/sheet-left.webp?v=52601958");
+  --sheet-right: url("deco/aqua/sheet-right.webp?v=3d5de3fc");
+  --sheet-head: url("deco/aqua/sheet-head.webp?v=5fe24d23");
+  --sheet-clip: url("deco/aqua/sheet-clip.webp?v=02a0536c");
+  --sheet-tl: url("deco/aqua/sheet-tl.webp?v=aa6b5008");
+  --sheet-tr: url("deco/aqua/sheet-tr.webp?v=382b9f40");
+  --sheet-bl: url("deco/aqua/sheet-bl.webp?v=c0b51f3a");
+  --sheet-br: url("deco/aqua/sheet-br.webp?v=6f7dc0d4");
+  /* découpe : tools/cut_register_sheet.py aqua --write */
+  --sh-tl-w: 200px;
+  --sh-tl-h: 260px;
+  --sh-tr-w: 211px;
+  --sh-tr-h: 260px;
+  --sh-bl-w: 220px;
+  --sh-bl-h: 172px;
+  --sh-br-w: 220px;
+  --sh-br-h: 172px;
+  --sh-top-w: 100px;
+  --sh-top-h: 155px;
+  --sh-bot-w: 140px;
+  --sh-bot-h: 172px;
+  --sh-left-w: 100px;
+  --sh-left-h: 300px;
+  --sh-right-w: 100px;
+  --sh-right-h: 300px;
+  --sh-top-l: 200px;
+  --sh-top-r: 211px;
+  --sh-bot-l: 220px;
+  --sh-bot-r: 220px;
+  --sh-left-t: 260px;
+  --sh-left-b: 172px;
+  --sh-right-t: 260px;
+  --sh-right-b: 172px;
+  /* réglages */
+  --sh-paper-t: 155px;
+  --sh-paper-r: 45px;
+  --sh-paper-b: 95px;
+  --sh-paper-l: 55px;
+  --sh-paper-w: 480px;
+  --sh-pad-t: 415px;
+  --sh-pad-r: 80px;
+  --sh-pad-b: 120px;
+  --sh-pad-l: 90px;
+  --sh-clip-y: 2px;
+  --sh-clip-w: 433px;
+  --sh-head-x: 72px;
+  --sh-head-y: 222px;
+  --sh-head-w: 950px;
+  --sh-k: .6
+}
 /* Durci : carnet de terrain dans sa pochette olive à fermeture éclair, crayon dans son étui élastique sur le bord
    gauche ; pas d'en-tête */
 html[data-design="field"] {
@@ -2194,6 +2213,7 @@ html body .repo-block.repo-has-sheet:not(#imp) {
 .repo-deco-sheet>.sh-frame {
   inset: 0;
   background:
+    var(--sheet-clip, none) center calc(var(--sh-clip-y, 0px) * var(--k))/calc(var(--sh-clip-w, 0px) * var(--k)) auto no-repeat,
     var(--sheet-head, none) calc(var(--sh-head-x, 0px) * var(--k)) calc(var(--sh-head-y, 0px) * var(--k))/calc(var(--sh-head-w, 0px) * var(--k)) auto no-repeat,
     var(--sheet-stamp, none) right calc(var(--sh-stamp-r, 0px) * var(--k)) top calc(var(--sh-stamp-y, 0px) * var(--k))/calc(var(--sh-stamp-w, 0px) * var(--k)) auto no-repeat,
     var(--sheet-tl) left top/calc(var(--sh-tl-w) * var(--k)) calc(var(--sh-tl-h) * var(--k)) no-repeat,
@@ -2277,7 +2297,7 @@ html[data-skeuo] .repo-has-sheet .repo-card :is(h3, h4, legend, label):not(th, t
     padding: revert !important
   }
 }
-/* carnet des aperçus (composant des designs à cadre) : galerie .repo-notebooks, cartes .repo-notebook — carnet fermé
+/* carnet des aperçus (composant des designs à matières) : galerie .repo-notebooks, cartes .repo-notebook — carnet fermé
    tant que la galerie est vide (à la place de la première carte, à sa hauteur, calé sur la page de droite : il s'ouvre
    vers la gauche), puis chaque carte posée sur un carnet ouvert (image sur feuille blanche légèrement de travers).
    Utilisé par le Studio cartographique (aperçus des cartes). Par design : images --nb-closed / --nb-open, ratio du
@@ -2288,13 +2308,19 @@ html[data-design="field"] {
   --nb-ratio: 1000/595;
   --nb-pad: 5% 14% 6% 8%
 }
+html[data-design="aqua"] {
+  --nb-closed: url("deco/aqua/notebook-closed.webp?v=fd1954d8");
+  --nb-open: url("deco/aqua/notebook-open.webp?v=2ec4d1be");
+  --nb-ratio: 1000/595;
+  --nb-pad: 4% 6% 6% 6%
+}
 html[data-design-base="cabinet"] {
   --nb-closed: url("deco/flightlog/notebook-closed.webp?v=35ba10c8");
   --nb-open: url("deco/flightlog/notebook-open.webp?v=07ac79a7");
   --nb-ratio: 900/677;
   --nb-pad: 5% 12% 5% 6%
 }
-html[data-skeuo="frame"] .repo-notebooks:empty::before {
+html[data-skeuo] .repo-notebooks:empty::before {
   content: "";
   justify-self: start;
   width: max(280px, calc((100% - 24px) / 3));
@@ -2303,22 +2329,22 @@ html[data-skeuo="frame"] .repo-notebooks:empty::before {
   filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .5));
   cursor: pointer
 }
-html[data-skeuo="frame"] .repo-notebook {
+html[data-skeuo] .repo-notebook {
   aspect-ratio: var(--nb-ratio);
   filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .5));
   cursor: pointer
 }
-html[data-skeuo="frame"] .repo-notebook:not(#imp) {
+html[data-skeuo] .repo-notebook:not(#imp) {
   padding: var(--nb-pad);
   border: 0;
   border-radius: 0;
   box-shadow: none;
   background: var(--nb-open) center/100% 100% no-repeat
 }
-html[data-skeuo="frame"] .repo-notebook strong {
+html[data-skeuo] .repo-notebook strong {
   margin-bottom: 4px
 }
-html[data-skeuo="frame"] .repo-notebook strong:not(#imp) {
+html[data-skeuo] .repo-notebook strong:not(#imp) {
   color: #2b2a22
 }
 html[data-design="field"] .repo-notebook strong {
@@ -2326,14 +2352,14 @@ html[data-design="field"] .repo-notebook strong {
   text-transform: uppercase;
   letter-spacing: .04em
 }
-html[data-skeuo="frame"] .repo-notebook img {
+html[data-skeuo] .repo-notebook img {
   padding: 4px;
   box-sizing: border-box;
   transform: rotate(-1.5deg);
   box-shadow: 0 3px 8px rgba(0, 0, 0, .45);
   cursor: zoom-in
 }
-html[data-skeuo="frame"] .repo-notebook img:not(#imp) {
+html[data-skeuo] .repo-notebook img:not(#imp) {
   background: #fff
 }
 /* appareil de page (design_deco.js, SETS.device, DEVICE_AT) : emplacement réel entre les blocs 2 et 3,
@@ -2408,13 +2434,6 @@ html[data-tone="dark"] .repo-deco-prop {
     display: none
   }
 }
-/* panneaux d'habillage (Durci, Cabinet) : couvrent le bloc, atténués de façon uniforme (pas de dégradé en
-   transparence) ; lisibilité : opacité par design et voile --repo-veil sous les données */
-.repo-deco-bgimg.repo-deco-panel {
-  background-position: right center;
-  -webkit-mask-image: none;
-  mask-image: none
-}
 html[data-design="cabinet"][data-tone="dark"] .repo-deco-bgimg.repo-deco-panel {
   opacity: .3
 }
@@ -2424,26 +2443,57 @@ html[data-skeuo] .repo-block-heading .repo-block-tools .repo-drag {
   min-width: 0;
   width: 30px
 }
-html[data-design="flightlog"] .repo-deco-bgimg.repo-deco-bg-cover {
+html[data-design="flightlog"] .repo-deco-bgimg.repo-deco-panel {
   opacity: .9
+}
+/* Carnet de vol, ton sombre : panneaux bleu marine (panels/) atténués sur le parchemin sombre ; voile marine sous les
+   données */
+html[data-design="flightlog"][data-tone="dark"] .repo-deco-bgimg.repo-deco-panel {
+  opacity: .75
+}
+html[data-design="flightlog"][data-tone="dark"] .repo-has-bg:has(>.repo-deco-panel) {
+  --repo-veil: rgba(14, 20, 32, .6)
 }
 /* Carnet de vol : fonds sombres, tracés fins */
 /* ================================================================================================ BARRES DE DÉFILEMENT STABLES
    Place de la barre verticale toujours réservée (la largeur de la page ne change pas quand elle apparaît : pas de
    recalcul des décors en boucle, pas de barres qui clignotent) ; décors des marges jamais à l'origine d'un défilement
    horizontal. */
+/* ================================================================================================ GALONS
+   Métal des finitions, comme les galons d'un uniforme : argent sur les pages ordinaires, or sur les pages du Centre
+   (thème cpco). Jetons communs ; chaque design les pose sur ses finitions (filet du bandeau, barrette des titres de
+   bloc, frise du pied de page, filet des en-têtes de tableau). Les icônes du Centre gardent leur signe propre (bulle
+   sombre, glyphe or), où qu'elles soient. */
 html[data-skeuo] {
-  scrollbar-gutter: stable
+  --galon: #9ea8b2;
+  --galon-grad: linear-gradient(90deg, #7f8892, #eef1f4 28%, #a9b2bb 52%, #f6f8fa 74%, #858e98)
+}
+html[data-skeuo][data-app-theme="cpco"] {
+  --galon: #c49a22;
+  --galon-grad: linear-gradient(90deg, #7d5f10, #f4dc84 28%, #b78f1d 52%, #fff2bd 74%, #8a6a12)
+}
+/* finitions communes : filet sous le bandeau, cadre du pied de page, filet des en-têtes de tableau ; titres de bloc :
+   liseré des plaques (designs à cadre), barrette sous le titre (Aqua, sans plaque) */
+html[data-skeuo] .repo-header:not(#imp) {
+  border-bottom: 3px solid;
+  border-image: var(--galon-grad) 1
+}
+html[data-skeuo] .repo-footer:not(#imp) {
+  border: 2px solid;
+  border-image: var(--galon-grad) 1
+}
+html[data-skeuo] .repo-block th:not(#imp) {
+  border-bottom: 2px solid var(--galon)
+}
+html[data-skeuo="frame"] :is(.repo-block-titles, .repo-block-heading)>h2:not(#imp) {
+  border-color: var(--galon)
+}
+html[data-skeuo] {
+  scrollbar-gutter: stable;
+  --repo-round: 0 /* angles droits partout (repository_nav.css : rayons calc(… * var(--repo-round, 1))) */
 }
 html[data-skeuo] body {
   overflow-x: clip
-}
-.repo-deco-bgimg.repo-deco-bg-side {
-  background-size: auto 100%;
-  background-position: right center;
-  opacity: .75;
-  -webkit-mask-image: linear-gradient(to left, #000 0, #000 30%, transparent 70%);
-  mask-image: linear-gradient(to left, #000 0, #000 30%, transparent 70%)
 }
 /* ================================================================================================ BARRES DE PROGRESSION
    <progress> (tâches longues : AppFramework.task ; jauges des pages : base SIA…) : piste creusée et remplissage dans la

@@ -322,10 +322,10 @@ air_refueling:                 # AAR, ou toute mission comportant un ravitaillem
   role: tanker                 # tanker | receiver
   track: CECILE                # nom d'axe de la liste du § 7
 alert:                         # mission d'ASTREINTE (QRA, alerte, réserve) seulement ; sinon OMETTRE le bloc
-  ready_at: "H-30"             # prêt à partir de (relatif à H, ou heure réelle « 12:30Z »)
+  ready_at: "H-30mn"           # prêt à partir de (relatif à H, unité comprise, ou heure réelle « 12:30Z »)
   aerodrome: LFBM              # terrain d'attente (OACI)
   notice_min: 15               # décollage prévisible XX minutes après l'ordre
-  window_end: "H+120"          # fin d'astreinte
+  window_end: "H+2h"           # fin d'astreinte
   trigger: "ordre du CDC (mission d'organisation Z, événement EV-1)"
   phases:                      # suites possibles selon l'ordre reçu (1 à 3)
     - { id: P1, if: "piste nord", route: [PT1, PT2], task: "interception" }
@@ -429,9 +429,11 @@ summary: |-                    # brief général remis à tous
 detailed_description: |-
   …
 exercise:
-  h_hour: "H"                  # « H », ou une heure réelle (« 14:00Z ») si le scénario l'impose
+  h_hour: "H"                  # UNE seule heure de référence pour tout l'exercice : « H » (ou « T », « M » : le même
+                               # instant), ou une heure réelle (« 14:00Z ») si le scénario l'impose. Tout décalage porte
+                               # son unité : « H+2mn », « H-15mn », « H+1h », « H+1h30mn » ; jamais « H+50 » sans unité
   participants:                # une ligne par équipe DEFA en vol (callsign = aircraft[0].callsign de sa mission)
-    - { callsign: CYRANO01, mission: 'I-001A', takeoff: "H-15", role: "surveillance et fourniture des pistes" }
+    - { callsign: CYRANO01, mission: 'I-001A', takeoff: "H-15mn", role: "surveillance et fourniture des pistes" }
     - { callsign: RAFALE31, mission: 'I-001C', takeoff: "H", role: "reconnaissance des pistes" }
   tracks:                      # chiffons ; points réels, coordonnées vérifiables (§ 5)
     - id: TRACK-401
@@ -439,7 +441,7 @@ exercise:
       nature: "trafic léger non coopératif"
       played: true             # true : tenu par un aéronef du simulateur ; false : seulement dessiné
       callsign: CHIFFON401     # indicatif du chiffon joué (vide sinon)
-      start: "H+50"            # départ du premier point (chiffon joué)
+      start: "H+50mn"          # départ du premier point (chiffon joué)
       points:                  # route, dans l'ordre (2 points au moins) ; UN point pour une position fixe (cible
                                # révélée en vol : véhicule, personne, épave)
         - { name: "Rosnay", lat: 46.701667, lon: 1.215278 }
@@ -451,7 +453,7 @@ exercise:
         …
   events:                      # chronologie ; ids EV-1, EV-2… dans l'ordre
     - id: EV-1
-      at: RDV-2                # « H+60 », ou id d'un point de la mission du participant « by »
+      at: RDV-2                # « H+1h », « H+45mn », ou id d'un point de la mission du participant « by »
       by: RAFALE31             # participant dont le passage à « at » déclenche l'événement (si at est un point)
       delay_min: 0             # minutes après ce passage
       kind: radio              # radio : passé en vol par l'émetteur ; pli : remis avant le vol, ouvert au moment dit

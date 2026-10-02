@@ -203,7 +203,7 @@ les familles sont concernées (ISR, HEMS, FIRE, COMMAND…).
   des missions des équipes (`I-001A`, `I-001B`…) dans `data/missions/<lettre>_<FAMILLE>/I-001Z/missionI-001Z.yaml`.
   Elle porte le **brief général** (summary, detailed_description) et le bloc `exercise` ; les missions des équipes
   citent `operation.organisation: I-001Z`. Voir le prompt, § 3 et § 4 bis.
-- **Bloc `exercise`** : `h_hour` (heure H commune) ; `participants` (indicatif, mission, décollage `H±n`, rôle) ;
+- **Bloc `exercise`** : `h_hour` (heure H commune) ; `participants` (indicatif, mission, décollage `H-20mn`, `H+1h` : une seule heure H — ou T, ou M —, décalages avec leur unité ; sans unité, minutes, rôle) ;
   `tracks` = **chiffons** (nom, nature, points, niveau, vitesse, à établir ; `played` : tenu par un aéronef du
   simulateur, avec `callsign`, départ `start` et consignes `conduct`, sinon seulement dessiné) ; `events` =
   **chronologie** (`at` : `H+n` ou point de la mission du participant `by`, `delay_min` ; `kind` : **radio** passé
@@ -214,6 +214,9 @@ les familles sont concernées (ISR, HEMS, FIRE, COMMAND…).
 - **Destinataires** : l'organisation voit tout ; chaque équipage ne reçoit que les événements qui lui sont adressés
   (ou à tous) et ne connaît que les pistes qu'ils révèlent ; chaque chiffon joué reçoit sa route, son heure de
   départ, ses consignes et sa carte.
+- **Réception** (« Mes missions », pilote) : les événements adressés à l'équipage sont des plis scellés derrière le
+  signet, ouverts à leur heure ; pistes et cartes d'exercice n'y paraissent qu'à l'ouverture (voir
+  [AFFECTATION_MISSIONS.md](AFFECTATION_MISSIONS.md), § 10).
 - **Ancien format** (`tracks`, `injects`, `phases` dans une mission) : toujours lu, converti en événements adressés à
   l'équipage de la mission ; « Créer l'organisation de l'exercice » les reprend dans la nouvelle mission Z.
 

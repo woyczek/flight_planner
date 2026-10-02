@@ -15,18 +15,15 @@
     esc = K.esc,
     A = () => window.MissionAssignments;
   const hhmm = ms => new Date(ms).toISOString().slice(11, 16) + 'Z';
-  /** « H-20 » → -20 (minutes) ; « H » → 0. */
-  const offsetOf = s => {
-    const m = /^H\s*([+-])\s*(\d+)/i.exec(String(s || '').trim());
-    return m ? (m[1] === '-' ? -1 : 1) * +m[2] : 0;
-  };
+  /** « H-20mn » → -20, « H+1h » → 60 (minutes) ; « H » → 0 (lecture commune, shared/kit.js). */
+  const offsetOf = s => K.hOffset(s) ?? 0;
   /** Indicatif suivant d'une patrouille : MERCURE31 → MERCURE32. */
   const nextCallsign = (cs, n) => String(cs || '').replace(/(\d+)(?!.*\d)/, d => String(+d + n).padStart(d.length, '0'));
   const chip = (text, kind = '') => `<span class="ad-chip ${kind}">${text}</span>`;
 
   const css = () => {
     if (!document.getElementById('adCss')) document.head.insertAdjacentHTML('beforeend', `<style id="adCss">
-.ad-dialog{width:min(920px,96vw);max-height:92vh;padding:0;border:1px solid color-mix(in srgb,currentColor 25%,transparent);border-radius:10px;box-shadow:0 18px 50px rgba(0,0,0,.45);overflow:hidden}
+.ad-dialog{width:min(920px,96vw);max-height:92vh;padding:0;border:1px solid color-mix(in srgb,currentColor 25%,transparent);border-radius:calc(10px * var(--repo-round, 1));box-shadow:0 18px 50px rgba(0,0,0,.45);overflow:hidden}
 .ad-dialog::backdrop{background:rgba(10,14,20,.55)}
 /* fenêtre en colonne : en-tête et pied fixes, seul le corps défile (dialog.repo-ap-dialog, plus précis, imposait
    overflow:auto à la fenêtre : double défilement, en-tête et barre d'état à moitié visibles, coins droits coupés) */
@@ -36,20 +33,21 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
 .ad-head h3{margin:0;font-size:17px}.ad-head p{margin:2px 0 0;font-size:12.5px;opacity:.8}.ad-x{font-size:22px;line-height:1;cursor:pointer;background:none;border:0;color:inherit;opacity:.7}.ad-x:hover{opacity:1}
 .ad-body{padding:12px 16px;overflow:auto}
 .ad-facts{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
-.ad-chip{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;line-height:1.6;background:color-mix(in srgb,currentColor 9%,transparent);margin:0 4px 4px 0}
+.ad-chip{display:inline-block;padding:2px 8px;border-radius:calc(999px * var(--repo-round, 1));font-size:11.5px;line-height:1.6;background:color-mix(in srgb,currentColor 9%,transparent);margin:0 4px 4px 0}
 .ad-chip.ok{background:color-mix(in srgb,#2e9d5b 22%,transparent)}.ad-chip.warn{background:color-mix(in srgb,#e0a400 26%,transparent)}.ad-chip.err{background:color-mix(in srgb,#e5484d 26%,transparent)}
 .ad-note{padding:6px 10px;border-left:3px solid #e0a400;background:color-mix(in srgb,#e0a400 10%,transparent);font-size:12.5px}
-.ad-when{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px 14px;align-items:end;margin:0 0 12px;padding:8px 12px 10px;border:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:8px}
+.ad-when{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px 14px;align-items:end;margin:0 0 12px;padding:8px 12px 10px;border:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:calc(8px * var(--repo-round, 1))}
 .ad-when legend{font-weight:700;font-size:12px;padding:0 4px}
 .ad-dialog label{display:grid;gap:3px;font-size:12px;font-weight:600}.ad-dialog label small{font-weight:400;opacity:.75}
 .ad-check-l{display:flex!important;align-items:center;gap:6px!important}
-.ad-card{border:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:8px;padding:8px 12px;margin:0 0 8px}
+.ad-card{border:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:calc(8px * var(--repo-round, 1));padding:8px 12px;margin:0 0 8px}
 .ad-line{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:end}.ad-line input{width:7em}.ad-pilot select{min-width:250px}.ad-ferry select{max-width:320px;margin-left:4px}.ad-line .ad-grow{flex:1;min-width:240px}.ad-line select{width:100%}
 .ad-del{margin-left:auto;font-size:15px;cursor:pointer;background:none;border:0;color:inherit;opacity:.6}.ad-del:hover{opacity:1}
 .ad-ferry{margin:6px 0 0;font-size:12.5px}.ad-ferry input{width:5em;margin-left:4px}.ad-checks{margin:6px 0 0}
 .ad-foot{display:flex;gap:8px;align-items:center;padding:10px 16px;border-top:1px solid color-mix(in srgb,currentColor 18%,transparent)}.ad-msg{flex:1;margin:0;font-size:12.5px}
 .ad-wide{width:min(1180px,96vw)}
 .ad-post{margin:0 0 6px;font-size:12.5px}.ad-link{background:none;border:0;padding:0;color:inherit;text-decoration:underline;cursor:pointer;font-size:12px}
+.ad-matrix tbody.ad-op{box-shadow:inset 4px 0 0 #2f7de1}.ad-matrix .ad-op-head td{padding:4px 8px;font-size:12px;background:color-mix(in srgb,#2f7de1 10%,transparent)}.ad-matrix option:disabled{color:#999}
 .ad-matrix select{max-width:220px}.ad-matrix tbody{border-top:2px solid color-mix(in srgb,currentColor 22%,transparent)}.ad-matrix tbody:not(.on){opacity:.7}
 .ad-matrix tr.ad-set td{background:color-mix(in srgb,#2e9d5b 12%,transparent)}.ad-matrix input[data-f]{width:8em}
 .ad-chip.focus{outline:2px solid #e5484d;outline-offset:1px}
@@ -57,7 +55,6 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
 .ad-inline{display:inline-flex!important;align-items:center;gap:6px!important}
 .ad-table{width:100%;border-collapse:collapse;font-size:12.5px}.ad-table th,.ad-table td{padding:4px 6px;text-align:left;vertical-align:top;border-top:1px solid color-mix(in srgb,currentColor 14%,transparent)}.ad-table th{font-size:11.5px;opacity:.8}
 .ad-table tr.bad td{opacity:.55;background:color-mix(in srgb,#e5484d 8%,transparent)}.ad-table hr{border:0;border-top:1px dashed color-mix(in srgb,currentColor 25%,transparent);margin:3px 0}.ad-table .ad-act{white-space:nowrap}.ad-table .ad-chip{margin:0 4px 2px 0}
-html[data-skeuo] .ad-dialog,html[data-skeuo] .ad-card,html[data-skeuo] .ad-when,html[data-skeuo] .ad-chip{border-radius:0}
 </style>`);
   };
   /** Fenêtre au gabarit du dialogue (en-tête : titre, sous-titre, ×, corps défilant, pied facultatif) ; titre, sous-titre,

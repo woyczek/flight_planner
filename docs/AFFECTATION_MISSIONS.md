@@ -91,6 +91,33 @@ alert: null                         # astreinte : § 6
 - **Convoyage** : appareil pris hors du terrain de départ → distance orthodromique base → départ, vitesse de croisière du
   type (`AircraftDB`), + 20 min de mise en œuvre ; le décollage du convoyage est affiché et contrôlé (pilote et appareil
   disponibles dès ce moment) ; le convoyage peut être confié au même pilote ou laissé « à organiser ».
+- **Appareils compatibles** : le type écrit en clair dans la mission (« H225M Caracal », « Rafale », « E-3F / A400M »)
+  est ramené aux désignateurs de la flotte (alias de la base OACI, synonymes d'usage, variantes et modèles :
+  `MissionAssignments.postsOf`) ; seuls les appareils de ce type (ou de ces types, ou de la catégorie d'un poste
+  générique) sont proposés, et seulement ceux de l'opérateur quand le service du poste en désigne un (« Hélicoptère /
+  Gendarmerie » → hélicoptères de la Gendarmerie nationale).
+- **Fenêtre d'un créneau** (bouton « Missions du registre… », dès qu'un pilote est libre sur le créneau : une mission à
+  un seul équipage se planifie comme une patrouille) : rien n'est présélectionné ; on coche la mission, on choisit
+  l'appareil (compatibles seulement, du plus proche au plus lointain du terrain de départ, temps de convoyage dans la
+  liste), puis le pilote (libres jusqu'à la fin de la mission et possédant le type d'abord). Les missions déjà affectées
+  (semaine affichée ou passé) ne sont pas proposées ; celles que les pilotes libres peuvent armer viennent d'abord.
+- **Créneaux et missions probables** : un pilote affecté sur un créneau (mission ou convoyage) n'y compte plus ;
+  effectif, missions probables et score sont recalculés après chaque affectation.
+- **Mission sur plusieurs créneaux** (fenêtre d'un créneau du planning ODV) : décollage au début du créneau, fin =
+  décollage + bloc + remise en œuvre ; les créneaux recouverts sont affichés (« mobilise lundi après-midi, lundi soir »)
+  et le pilote doit être libre jusqu'à la fin (déclaration heure par heure, sinon classeur ; aucune autre affectation).
+- **Convoyage depuis la fenêtre d'un créneau** : affiché de bout en bout (trajet, décollage → arrivée). Trois choix :
+  - **un autre pilote** (proposé parmi les pilotes libres sur toute la durée du convoyage, maîtrise du type d'abord) ;
+  - **le pilote de la mission lui-même** : convoyage avancé avant le créneau s'il y est déclaré libre (au quart d'heure le
+    plus tôt), sinon fait dès le début du créneau, la mission décalée d'autant ;
+  - **à affecter** : le convoyage devient une mission à part, sans pilote (ligne « convoyage », statut « à affecter ») ;
+    il apparaît dans la fenêtre du créneau où il tombe (« Convoyages à affecter »), où on le confie à un pilote libre.
+  Décollage de la mission modifiable (heure UTC, avancée ou retardée ; vide : automatique) ; un pilote non déclaré libre
+  sur toute la plage (convoyage compris) est signalé.
+- **Le convoyage par un tiers est une mission** : sa propre ligne dans l'index (role `convoyage`, pilote, appareil,
+  trajet, heures), visible dans « Mes missions » du convoyeur, dans la semaine du planning et sur son créneau. Il
+  n'occupe que le convoyeur : le pilote de la mission n'est pris qu'à son décollage (il ne l'est dès le convoyage que
+  s'il le fait lui-même).
 - **Patrouille** : un appareil nominatif par participant ; indicatifs suivis (MERCURE31 → MERCURE32) ; même type si
   la mission l'impose (`TYPES_EQUIPES` imposés), sinon type compatible.
 
@@ -191,6 +218,38 @@ ailleurs. Clic → « Mes missions » ; ouvrir la mission marque l'affectation l
   cochées, « Annuler les modifications » revient à la proposition ; fermeture quand tous les pilotes libres sont affectés,
   ou sur demande (confirmation si modifications en attente). « ✎ détail » : dialogue complet, dont le résultat revient
   dans la matrice (« Reporter dans le créneau »), rien n'est écrit avant « Enregistrer ».
+- **Exercice dans la matrice** (2 octobre 2026) : les missions d'une même opération (`I-001A`, `I-001B`, `I-001C` ;
+  opération tirée de l'identifiant, sinon du registre ; la mission d'organisation …Z n'est jamais proposée) tiennent
+  sur **une ligne** : bandeau « ⛓ Opération … — n missions liées », liseré, **une seule coche**, un poste par équipage de
+  chaque mission (ses propres indicatifs), **« + équipier » sous chaque équipage** (patrouille dans sa mission,
+  indicatif suivant) ; « Enregistrer » écrit toutes les missions de l'opération, chacune avec ses pilotes.
+- **Heure H** : un exercice n'a qu'une heure de référence (H, T ou M : le même instant) ; décalages avec leur unité
+  (`H+2mn`, `H-20mn`, `H+1h`, `H+1h30mn` ; sans unité : minutes, anciens fichiers ; lecture et écriture communes
+  `RepositoryKit.hOffset` / `hText`). Sur la ligne d'une opération, le champ devient « heure H » (par défaut, le
+  premier équipage décolle au début du créneau) ; chaque équipage décolle à H + son décalage (participants de la …Z),
+  son convoyage est calculé sur ce décollage, chaque mission est enregistrée à son heure.
+- **« Modifier »** (créneau garni) : les missions enregistrées sur le créneau sont en tête de la matrice, cochées et
+  préremplies (pilotes, appareils, indicatifs, convoyage, décollage) ; « Enregistrer » les réécrit. Vols de la frise
+  horaire : bouton **Planifier… / Modifier…** vers leur créneau.
+- **Appareils** : un appareil déjà pris par un autre poste coché (équipier, autre mission) ou engagé sur le créneau
+  est grisé (« déjà affecté », « engagé »). La fenêtre reste ancrée sur l'élément en cours de saisie au redessin.
+- **Une mission par pilote et par tranche** (matin, après-midi, soir), même si ses disponibilités déclarées sont plus
+  larges ; un convoyeur n'a aucune autre mission dans les créneaux que touche son convoyage.
+- **Convoyage** : le pilote convoyeur ne reçoit que l'ordre de convoyage (appareil, départ, arrivée, heure, pour qui),
+  pas le brief, les cartes ni les plis de la mission.
+- **Plis de l'exercice dans « Mes missions »** : les événements adressés à l'équipage (ou émis par lui : « message à
+  transmettre ») sont des **plis scellés** derrière le signet : l'enveloppe du design (`shared/deco/<design>/pli-sealed.webp`),
+  l'heure d'ouverture (décollage du participant − son décalage + heure de l'événement), le nombre de pistes et de cartes
+  jointes. Le pli s'ouvre seul à l'heure (notification) ; un clic sur l'enveloppe brise le scellé (avant l'heure :
+  confirmation en deux temps) ; « Resceller » le referme. Les pistes (nature, route, niveau, à établir) et les cartes
+  d'exercice (`maps[].exercise`) ne paraissent que dans le pli ouvert ; la fiche technique ne montre ni `tracks`, ni
+  `injects`, ni `exercise`.
+- **Livre** : la dernière page du dossier est à gauche (page « intentionnellement laissée blanche » avant si besoin) ;
+  en face, la page « Informations complémentaires » mène aux annexes (plis) par le coin ou d'un clic ; le signet, posé
+  à la fin du dossier, les ouvre ou y ramène, et tourne avec la page. Cartes : visionneuse commune
+  (`RepositoryKit.viewImage` : croix, Échap).
+- **Journal** (`LocalStore.logEvent`, `kind: 'mission'`) : mission ouverte, rescellée, plis ouverts (à l'heure, avant
+  l'heure), rescellés, envois vers les Cartes de vol, le carburant, le CR — base du CR prérempli à venir.
 - **Semaines** (1ᵉʳ octobre 2026) : disponibilités par semaine (`weeks`, clé : lundi ISO UTC, douze semaines passées
   gardées) ; l'ancienne grille « semaine type » (`grid`) vaut tant qu'aucune semaine n'est saisie. « Mes missions » :
   barre de semaine (‹, date, ›, ⟲ semaine en cours) commune à la liste et à la grille ; « ⧉ S-1 » recopie la semaine

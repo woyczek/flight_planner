@@ -5,7 +5,6 @@
 //
 // Deux familles :
 //  · fonds des blocs (décor complet ou sobre selon le cas) :
-//      - BG      : fond illustré d'un bloc marqué data-deco-bg (Carnet de vol, Aqua) ;
 //      - SHEETS  : feuille de registre en fond des blocs de tableau des registres (Cabinet, Carnet de vol, Durci ; ton clair) ;
 //      - PANELS  : panneau choisi par thème pour tous les autres blocs (Cabinet, Durci ; décor complet) ;
 //      - PROPS   : objet posé dans un bloc, coin bas droit (Cabinet ; décor complet) ;
@@ -38,6 +37,7 @@
   const tr = k => window.RepositoryKit.t(T[k]); // shared/kit.js
 
   // ------------------------------------------------------------------ décor de page, par design
+  // (tous facultatifs sauf foot)
   // foot     : frise du pied de page, liste de composants (FOOT) : 'strip' (image « footer » du design), 'plate'
   //            (plaque DEFA), 'radar' (écran de veille animé), 'status' (voyant de sauvegarde, fonction réelle) ;
   // between  : objets entre les blocs, tour à tour : [image, largeur px, option] ; option : 'pair' (deux exemplaires)
@@ -63,6 +63,14 @@
   };
   const DEVICE_AT = 2; // appareil de page : entre les blocs 2 et 3 (tous les designs ; une page à 3 blocs l'accueille)
   const SETS = {
+    // Aqua : frise de verre bleu ; appareil de page : défibrillateur posé à côté du moniteur de surveillance
+    aqua: {
+      foot: ['strip'],
+      device: [
+        ['defibrillator', 170, -5],
+        ['monitor', 230]
+      ]
+    },
     // Cabinet : objets de navigation des années 1930 (planches « objets 1930 » et objets de face)
     cabinet: {
       foot: ['strip'],
@@ -123,7 +131,7 @@
     // (grille d'aération, lampe grillagée, plaque vierge, blindage riveté, interrupteur à capot, crayon, cadran) ; appareil
     // de page : câble et poste radio
     field: {
-      foot: ['plate', 'radar', 'status'],
+      foot: ['plate', 'radar', 'status', 'strip'],
       device: [
         ['cable', 170],
         ['radio', 360]
@@ -157,34 +165,6 @@
     }
   };
 
-  // ------------------------------------------------------------------ fonds illustrés (data-deco-bg)
-  // Un bloc marqué data-deco-bg="<clé>" (reporting : aerodromes, capabilities, outcomes, aircraft, families, series,
-  // daynight, network, context ; studio : maps ; éditeur : import, identification ; planificateur : result) reçoit
-  // l'image déclarée ici pour le design courant ; seules les images déclarées sont chargées.
-  // Entrée : mode, ou [mode, cadrage (background-position), image « <design>/<nom> » (défaut : <design>/bg-<clé>),
-  // opacité (défaut : celle du design, designs_skeuo.css)]. Modes : « anchor » (taille d'origine, calée en haut à
-  // gauche), « cover » (couvre le bloc), « side » (hauteur du bloc, calée à droite, fondue vers la gauche).
-  // Cabinet et Durci n'en ont plus : les panneaux par thème (PANELS) habillent tous leurs blocs.
-  const BG = {
-    // Carnet de vol : cuir marine et tracés or (hélicoptères et montagnes, rose des vents, biplan et globe, piste de nuit…)
-    flightlog: {
-      aerodromes: ['cover', 'center', null, .5],
-      daynight: ['cover', 'center bottom'],
-      capabilities: ['cover', 'center'],
-      outcomes: ['cover', 'center'],
-      aircraft: ['cover', 'center'],
-      series: ['cover', 'center'],
-      families: ['cover', 'center']
-    },
-    // Aqua : eau et verre, cadrés différemment sur chaque bloc
-    aqua: {
-      aerodromes: ['cover', 'center bottom', 'aqua/bg-water'],
-      capabilities: ['cover', 'left center', 'aqua/bg-water'],
-      outcomes: ['cover', 'center top', 'aqua/bg-water'],
-      aircraft: ['cover', 'right center', 'aqua/bg-water']
-    }
-  };
-
   // ------------------------------------------------------------------ panneaux par thème (PANELS)
   // Thème d'un bloc : premier motif reconnu dans son titre, sinon dans son icône et son identifiant, sinon dans son
   // sous-titre (ordre du tableau ; « ops » par défaut). Fichiers : shared/deco/<design>/<dossier>/panel-<thème>-<w|t>
@@ -200,35 +180,32 @@
     ['families', /famil|s[ée]rie|series|type|mission|cat[ée]gor/],
     ['ops', /./]
   ];
-  // Par design : dir (dossier des panneaux), only (orientations disponibles quand il en manque une), clair (jeu propre au
-  // ton clair, avec alias : thème → panneau du jeu quand il a moins de thèmes). Cabinet : jeu « 1930 » ; un jeu « 1800 »
+  // Par design : dir (dossier des panneaux), only (facultatif : orientations disponibles quand il en manque une), clair
+  // (jeu propre au ton clair, même forme). Cabinet : jeu « 1930 » ; un jeu « 1800 »
   // attend dans cabinet/1800 : remplacer '1930' par '1800' (dir et clair.dir) une fois ses panneaux convertis.
   const PANELS = {
-    field: {
-      dir: '',
-      only: {
-        awards: 't',
-        families: 't'
+    // Carnet de vol : ton sombre, plans au trait sur bleu marine (panels/) ; ton clair : parchemin ivoire, gravures bleues (clair/)
+    flightlog: {
+      dir: 'panels',
+      clair: {
+        dir: 'clair'
       }
+    },
+    // Aqua : équipements sur métal brossé, bleu nuit en ton sombre (panels/), clair en ton clair (clair/)
+    aqua: {
+      dir: 'panels',
+      clair: {
+        dir: 'clair'
+      }
+    },
+    field: {
+      dir: ''
     },
     cabinet: {
       dir: '1930',
-      only: {},
-      // ton clair : fonds ivoire (cartes côtières, paquebot, hydravions, instruments)
+      // ton clair : fonds ivoire (cartes côtières aquarellées, objets de laiton), 9 thèmes complets
       clair: {
-        dir: '1930/clair',
-        only: {
-          instruments: 'w'
-        }, // portrait à venir
-        alias: {
-          airfield: 'nav',
-          ops: 'ships',
-          families: 'ships',
-          awards: 'ships',
-          gear: 'instruments',
-          radio: 'instruments',
-          time: 'instruments'
-        }
+        dir: '1930/clair'
       }
     }
   };
@@ -252,7 +229,8 @@
   const SHEETS = {
     cabinet: SHEET_BLOCKS,
     flightlog: SHEET_BLOCKS,
-    field: SHEET_BLOCKS
+    field: SHEET_BLOCKS,
+    aqua: SHEET_BLOCKS
   };
 
   /** Texte d'identification d'un bloc : titre, icône, identifiant (en minuscules). */
@@ -305,50 +283,33 @@
     // titre, puis icône et identifiant, puis sous-titre : premier niveau qui reconnaît un thème autre que « ops »
     const themes = [b.querySelector('h2,h3')?.textContent, `${b.dataset.icon || ''} ${b.dataset.blockId || ''}`, b.dataset.subtitle]
       .map(hit).find(h => h.length > 1) || hit('-');
-    const names = [...new Set(themes.map(([n]) => set.alias?.[n] || n))];
+    const names = [...new Set(themes.map(([n]) => n))];
     const files = names.flatMap(n => {
-      const or = set.only[n] || 'wt'; // orientations disponibles
+      const or = set.only?.[n] || 'wt'; // orientations disponibles
       const order = [or.includes(o) ? o : or, ...or.replace(o, '')];
       return order.map(x => `${set.dir ? set.dir + '/' : ''}panel-${n}-${x}`);
     });
     return files.find(f => f !== prev) || files[0];
   }
 
-  /** Fonds des blocs : fonds illustrés, feuille de registre, panneaux (dans cet ordre : un bloc n'en reçoit qu'un). */
+  /** Fonds des blocs : feuille de registre, puis panneaux (un bloc n'en reçoit qu'un). */
   function backgrounds(d) {
     document.querySelectorAll('.repo-deco-bgimg,.repo-deco-prop,.repo-deco-sheet').forEach(n => n.remove());
     document.querySelectorAll('.repo-has-bg,.repo-has-prop,.repo-has-sheet')
       .forEach(b => b.classList.remove('repo-has-bg', 'repo-has-prop', 'repo-has-sheet'));
 
-    // 1. fonds illustrés déclarés (pas de return si le design n'en a pas : les étapes suivantes s'appliquent)
-    const list = BG[d] || {};
-    document.querySelectorAll('[data-deco-bg]').forEach(b => {
-      const e = list[b.dataset.decoBg];
-      if (!e) return;
-      const [mode, pos, file, alpha] = Array.isArray(e) ? e : [e];
-      const [fd, fn] = (file || `${d}/bg-${b.dataset.decoBg}`).split('/');
-      const el = document.createElement('div');
-      el.className = `repo-deco-bgimg repo-deco-bg-${mode}`;
-      el.setAttribute('aria-hidden', 'true');
-      el.style.backgroundImage = `url("${DECO(fd)(fn)}")`;
-      if (pos) el.style.backgroundPosition = pos;
-      if (alpha != null) el.style.opacity = alpha;
-      b.classList.add('repo-has-bg');
-      b.prepend(el);
-    });
-
-    // 2. feuille de registre
+    // 1. feuille de registre
     sheets(d);
 
-    // 3. panneaux par thème (décor complet) : tous les autres blocs ; blocs imbriqués : un seul fond, sur le grand
+    // 2. panneaux par thème (décor complet) : tous les autres blocs ; blocs imbriqués : un seul fond, sur le grand
     const set = PANELS[d] && (html.dataset.tone !== 'dark' && PANELS[d].clair || PANELS[d]);
-    if (!set || !fullDecor()) return;
+    if (!set || set.dir == null || !fullDecor()) return; // jeu absent pour ce ton (ex. Carnet de vol sombre)
     let prev = '';
     document.querySelectorAll('.repo-block').forEach(b => {
       if (b.hidden || !b.offsetHeight || b.classList.contains('repo-has-bg') || b.parentElement.closest('.repo-block.repo-has-bg')) return;
       const f = prev = panelOf(b, set, prev);
       const el = document.createElement('div');
-      el.className = 'repo-deco-bgimg repo-deco-bg-cover repo-deco-panel';
+      el.className = 'repo-deco-bgimg repo-deco-panel';
       el.setAttribute('aria-hidden', 'true');
       el.style.backgroundImage = `url("${DECO(d)(f)}")`;
       b.classList.add('repo-has-bg');
@@ -475,7 +436,7 @@
           nodes.push(dv);
           return;
         }
-        if (i % 2 || !ok) return;
+        if (i % 2 || !ok || !set.between?.length) return;
         // objet entre les blocs : hauteur nulle, centré dans l'écart
         const [name, w, opt] = set.between[k++ % set.between.length];
         const sep = document.createElement('div');
@@ -494,7 +455,7 @@
     const col = (document.querySelector('body>main') || document.body).getBoundingClientRect();
     const gutter = Math.min(col.left - body.left, body.right - col.right) - 10,
       H = document.body.scrollHeight;
-    if (gutter < 90) return;
+    if (gutter < 90 || !set.sides?.length) return;
     let side = 0;
     for (let y = 180, n = 0; y < H - 200; y += 650, n++) {
       const [name, w0] = set.sides[n % set.sides.length], w = Math.min(w0, gutter - 24), left = side++ % 2 === 0;
