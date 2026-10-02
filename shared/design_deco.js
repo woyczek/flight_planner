@@ -63,9 +63,13 @@
   };
   const DEVICE_AT = 2; // appareil de page : entre les blocs 2 et 3 (tous les designs ; une page à 3 blocs l'accueille)
   const SETS = {
-    // Aqua : frise de verre bleu (le reste du décor de page attend ses objets : appareil de page)
+    // Aqua : frise de verre bleu ; appareil de page : défibrillateur posé à côté du moniteur de surveillance
     aqua: {
-      foot: ['strip']
+      foot: ['strip'],
+      device: [
+        ['defibrillator', 170, -5],
+        ['monitor', 180]
+      ]
     },
     // Cabinet : objets de navigation des années 1930 (planches « objets 1930 » et objets de face)
     cabinet: {

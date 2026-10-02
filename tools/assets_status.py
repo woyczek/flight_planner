@@ -53,13 +53,15 @@ SPEC = {
     'Signet du dossier de mission': (True, {
         'cabinet': ['bookmark-body.webp', 'bookmark-tail.webp'], 'flightlog': ['bookmark-body.webp', 'bookmark-tail.webp'],
         'field': ['bookmark-body.webp', 'bookmark-tail.webp'], 'aqua': ['bookmark-body.webp', 'bookmark-tail.webp']}),
+    'Pli scellé de l’exercice (Mes missions)': (True, {
+        'cabinet': ['pli-sealed.webp'], 'flightlog': ['pli-sealed.webp'], 'field': ['pli-sealed.webp'], 'aqua': ['pli-sealed.webp']}),
 }
 
 
 def code_checks():
     """Attentes portées par le code : appareil de page d'Aqua (SETS.aqua.device)."""
     deco = io.open(os.path.join(ROOT, 'shared', 'design_deco.js'), encoding='utf-8').read()
-    m = re.search(r'\n    aqua: \{(.*?)\n    \}', deco[deco.index('const SETS'):deco.index('const BG')], re.S) if 'const BG' in deco else None
+    m = re.search(r'\n    aqua: \{(.*?)\n    \}', deco[deco.index('const SETS'):], re.S) if 'const SETS' in deco else None
     has_device = bool(m and 'device' in m.group(1))
     return {'Appareil de page (deux objets)': {
         'cabinet': True, 'flightlog': True, 'field': True, 'aqua': has_device}}
