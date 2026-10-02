@@ -28,6 +28,7 @@
   .pm-pli-at{font-weight:600}
   .pm-pli small{opacity:.8}
   .pm-pli-meta{font-size:12px;opacity:.8;margin-top:-4px}
+  .pm-blank{height:100%;display:grid;place-items:center}.pm-blank p{font-style:italic;opacity:.55;text-align:center}
   .pm-tracks{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0}.pm-tracks :is(th,td){text-align:left;vertical-align:top;padding:2px 4px}
   /* designs à matières : l'enveloppe cachetée du design (--pm-pli, --pm-pli-ratio) au-dessus des mentions, sans papier dessiné */
   html[data-design="cabinet"]{--pm-pli:url("../../shared/deco/cabinet/pli-sealed.webp?v=2e89c25c");--pm-pli-ratio:1.4579}
@@ -742,14 +743,23 @@
     // le coin de page s'arrête à la fin du dossier, le signet ouvre les plis
     part('plis')?.querySelector(':scope > h4')?.remove(); // le signet tient lieu de titre
     const plisPages = split(part('plis'));
-    if (plisPages.length && pages.length % 2) pages.push(Object.assign(document.createElement('div'), { className: 'pm-blank' }));
+    // la dernière page du dossier est une page de gauche, rien en face (le signet posé là) : si elle tombe à droite,
+    // page « laissée blanche » avant elle ; les plis commencent à la double page suivante
+    if (pages.length % 2 === 0) {
+      const blank = Object.assign(document.createElement('div'), { className: 'pm-blank' });
+      blank.innerHTML = `<p>${esc(window.RepositoryKit.t(['Page intentionnellement laissée blanche', 'This page intentionally left blank', 'Diese Seite wurde absichtlich leer gelassen', 'Página dejada en blanco intencionadamente']))}</p>`;
+      pages.splice(pages.length - 1, 0, blank);
+    }
+    if (plisPages.length) pages.push(null); // page de droite vide, en face de la dernière
     const P = pages.length; // première page des plis (double page paire) ; sans plis : fin du livre
     pages.push(...plisPages);
     let at = Math.min(bookStart, Math.max(0, pages.length - 1)) & ~1, busy = false;
     bookStart = 0;
     // fin de feuilletage : fin du dossier avant les plis, fin du livre dans les plis ; signet posé : aux plis (ou à la fin)
-    const endOf = n => n + 2 >= (n < P ? P : pages.length),
-      atSig = n => plisPages.length ? n >= P : n + 2 >= pages.length;
+    // signet : posé sur la double page de fin du dossier (dernière page à gauche, page vide en face), plis derrière
+    const S = plisPages.length ? P - 2 : (pages.length - 1) & ~1,
+      endOf = n => n + 2 >= (n < P ? P : pages.length),
+      atSig = n => n === S;
     const draw = () => {
       left.replaceChildren(...(pages[at] ? [pages[at]] : []));
       right.replaceChildren(...(pages[at + 1] ? [pages[at + 1]] : []));
@@ -760,7 +770,7 @@
       prev.title = prev.ariaLabel = at === 0 ? 'Refermer le dossier' : 'Page précédente';
       next.hidden = endOf(at);
       book.classList.toggle('pm-at-end', atSig(at)); // signet posé : dernière double page, ou plis (posé devant eux)
-      sig.title = sig.ariaLabel = atSig(at) ? 'Signet : retour au début' : plisPages.length ? 'Signet : plis scellés' : 'Signet : dernière page';
+      sig.title = sig.ariaLabel = !atSig(at) ? 'Signet : fin du dossier' : plisPages.length ? 'Signet : ouvrir les plis scellés' : 'Signet : retour au début';
       left.scrollTop = right.scrollTop = 0;
       host.dataset.bookAt = at; // double page affichée (gardée si le livre est redessiné)
     };
@@ -808,9 +818,8 @@
     };
     prev.onclick = () => turn(-1);
     next.onclick = () => turn(1);
-    // signet : d'un geste aux plis (sinon à la dernière double page) ; de là, retour au début
-    const last = plisPages.length ? P : (pages.length - 1) & ~1;
-    sig.onclick = () => atSig(at) ? turn(-1, 0) : turn(1, last);
+    // signet : d'un geste à la fin du dossier ; de là, aux plis (sinon retour au début)
+    sig.onclick = () => atSig(at) ? (plisPages.length ? turn(1, P) : turn(-1, 0)) : turn(at < S ? 1 : -1, S);
     // refermer : bouton sous le dossier, ou coin de la 2de de couverture (première double page)
     prev.onclick = () => at === 0 ? host.querySelector('[data-close-book]')?.click() : turn(-1);
     // un clic sur une page fait comme son coin (liens, boutons et sélections de texte gardent leur effet)
