@@ -204,6 +204,18 @@
   // ton clair, avec alias : thème → panneau du jeu quand il a moins de thèmes). Cabinet : jeu « 1930 » ; un jeu « 1800 »
   // attend dans cabinet/1800 : remplacer '1930' par '1800' (dir et clair.dir) une fois ses panneaux convertis.
   const PANELS = {
+    // Carnet de vol : jeu clair seulement (parchemin ivoire, gravures bleues) ; ton sombre : fonds en cuir (BG)
+    flightlog: {
+      clair: {
+        dir: 'clair',
+        only: {
+          aircraft: 't'
+        }, // paysage à venir
+        alias: {
+          radio: 'nav' // radio à venir
+        }
+      }
+    },
     field: {
       dir: '',
       only: {
@@ -342,7 +354,7 @@
 
     // 3. panneaux par thème (décor complet) : tous les autres blocs ; blocs imbriqués : un seul fond, sur le grand
     const set = PANELS[d] && (html.dataset.tone !== 'dark' && PANELS[d].clair || PANELS[d]);
-    if (!set || !fullDecor()) return;
+    if (!set || set.dir == null || !fullDecor()) return; // jeu absent pour ce ton (ex. Carnet de vol sombre)
     let prev = '';
     document.querySelectorAll('.repo-block').forEach(b => {
       if (b.hidden || !b.offsetHeight || b.classList.contains('repo-has-bg') || b.parentElement.closest('.repo-block.repo-has-bg')) return;
