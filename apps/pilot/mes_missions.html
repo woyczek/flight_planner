@@ -881,7 +881,9 @@
         left.dataset.folio = pages[to] ? to : '';
         left.classList.toggle('pm-inside', !pages[to]);
       }
-      if (!(dir < 0 && to === S)) {
+      // signet : retour vers la fin du dossier, bascule à mi-course (ride) ; départ de la fin du dossier vers l'arrière,
+      // il reste posé sous la page qui revient et passe en demi-signet à l'arrivée (même dépassement : sans saut)
+      if (!(dir < 0 && (to === S || at === S))) {
         book.classList.toggle('pm-at-end', atSig(to));
         book.classList.toggle('pm-past', to > S);
       }
