@@ -175,6 +175,26 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             git = shutil.which('git')
             return self._json({'server': True, 'root': ROOT, 'git': bool(git), 'data': has_data(),
                                'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url()})
+        if self.path.split('?')[0] == '/__setup/sia-zip':
+            # ZIP du SIA téléchargé : ?info → nom, taille, date ; sinon le fichier lui-même
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            z = sia_zip()
+            if 'info' in self.path:
+                return self._json({'found': bool(z), 'name': os.path.basename(z) if z else '', 'size': os.path.getsize(z) if z else 0,
+                                   'mtime': os.path.getmtime(z) if z else 0, 'where': [os.path.basename(d) or d for d in downloads_dirs()]})
+            if not z:
+                return self._json({'error': 'aucun ZIP du SIA'}, 404)
+            with open(z, 'rb') as f:
+                body = f.read()
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/zip')
+            self.send_header('X-File-Name', urllib.parse.quote(os.path.basename(z)))
+            self.send_header('Content-Length', str(len(body)))
+            self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+            self.wfile.write(body)
+            return None
         return super().do_GET()
 
     def do_POST(self):
@@ -214,6 +234,26 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 except OSError:
                     pass
         return self._json({'error': 'inconnu'}, 404)
+
+
+def downloads_dirs():
+    """Dossiers où chercher un téléchargement : Téléchargements (emplacement réel sous Windows, même déplacé), racine."""
+    dirs = []
+    if os.name == 'nt':
+        try:
+            import winreg
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders') as k:
+                dirs.append(os.path.expandvars(winreg.QueryValueEx(k, '{374DE290-123F-4565-9164-39C4925E467B}')[0]))
+        except OSError:
+            pass
+    dirs += [os.path.join(os.path.expanduser('~'), 'Downloads'), os.path.join(os.path.expanduser('~'), 'Téléchargements'), ROOT]
+    return [d for i, d in enumerate(dirs) if os.path.isdir(d) and d not in dirs[:i]]
+
+
+def sia_zip():
+    """Dernier ZIP d'export du SIA téléchargé (export_xml_bd_SIA_<date>[-vNN].zip), ou None."""
+    found = [p for d in downloads_dirs() for p in glob.glob(os.path.join(d, 'export_xml_bd_SIA_*.zip'))]
+    return max(found, key=os.path.getmtime) if found else None
 
 
 def ours(port):

@@ -141,8 +141,10 @@ Bibliothèque standard uniquement :
 ### Données SIA (Missions SIA)
 
 Le studio cartographique utilise les données AIRAC du SIA, **hors dépôt** (≈ 80 Mo par cycle) : Paramètres ›
-Maintenance › Mise à jour SIA, ou export XML téléchargé sur le site du SIA (`AIXM4.5_all_FR_OM_<date>.xml`,
-`XML_SIA_<date>.xml`) déposé dans `data/sia/`. Détail : [SIA_MISSIONS.md](SIA_MISSIONS.md).
+Maintenance › Mise à jour SIA, six étapes guidées. Le ZIP s'obtient sur la boutique du SIA, page du cycle : compte SIA
+(gratuit), « Ajouter au panier » (0 €), « Passer commande » en acceptant la licence, téléchargement depuis la
+confirmation ou « Mes commandes ». Puis **Récupérer le ZIP téléchargé** : le serveur du lanceur prend le dernier
+`export_xml_bd_SIA_*.zip` du dossier Téléchargements et la page l'extrait dans `data/sia/`. Détail : [SIA_MISSIONS.md](SIA_MISSIONS.md).
 
 ## 7. Mise à jour
 
