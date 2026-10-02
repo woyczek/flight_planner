@@ -789,14 +789,65 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     return categoryOf((db[ty] || db[db.__aliases?.[ty]] || {}).description)[0];
   };
   const fold = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().trim();
-  const kindOf = s => /h[ée]lico|helicopter|rotor/i.test(s) ? 'helico' : /avion|aircraft|airplane|plane|jet/i.test(s) ? 'avion' : '';
-  /** Poste : { callsign, type ('' si générique), kind (helico | avion | ''), service, label }. */
+  const kindOf = s => /h[ée]lico|helicopter|rotor/i.test(s) ? 'helico' : /avion|airplane|plane|jet/i.test(s) ? 'avion' : /a[ée]ronef|aircraft/i.test(s) ? 'any' : '';
+  // ---- type écrit en clair dans une mission (« H225M Caracal », « Rafale », « E-3F / A400M ») → désignateurs de la
+  // flotte, mot à mot : désignateur, alias de la base OACI (H135 → EC35), synonymes d'usage ci-dessous (noms militaires
+  // absents des alias), mots de la variante (« Rafale B ») ou du modèle (« LOCKHEED C-130H Hercules ») d'un type de la
+  // flotte. Sans cela, un type inconnu rendait le poste générique : toute la flotte était proposée.
+  const SYNONYMS = {
+    H225: 'EC25',
+    H225M: 'EC25',
+    CARACAL: 'EC25',
+    E3F: 'E3CF',
+    AWACS: 'E3CF',
+    A400M: 'A400',
+    ATLAS: 'A400',
+    C130J: 'C130',
+    C130J30: 'C130',
+    MRTT: 'A332',
+    PHENIX: 'A332'
+  };
+  const norm = s => fold(s).replace(/[^A-Z0-9]/g, '');
+  let fleetKeys = null;
+  /** Mot normalisé → désignateur de la flotte (construit une fois). */
+  function fleetIndex() {
+    if (fleetKeys) return fleetKeys;
+    const db = window.AIRCRAFT_DB || {},
+      types = [...new Set((window.DEFA_FLEET || []).map(f => typeOf(f.type)).filter(Boolean))],
+      keys = new Map(),
+      add = (k, ty) => {
+        k = norm(k);
+        if (k.length >= 2 && !keys.has(k)) keys.set(k, ty);
+      };
+    types.forEach(ty => add(ty, ty));
+    for (const [k, v] of Object.entries(db.__aliases || {}))
+      if (types.includes(v)) add(k, v);
+    for (const [k, v] of Object.entries(SYNONYMS))
+      if (types.includes(v)) add(k, v);
+    for (const f of window.DEFA_FLEET || [])
+      for (const w of String(f.variant || '').split(/\s+/)) if (/^[a-zé]{4,}$/i.test(w)) add(w, typeOf(f.type));
+    // modèle : la référence à tiret (EC-725, C-130H) et le nom propre final (Rafale, Hercules, Sentry)
+    for (const ty of types) {
+      const words = String(db[ty]?.model || '').split(/\s+/);
+      words.filter(w => /[A-Z]-?\d/i.test(w) && w.includes('-')).forEach(w => add(w, ty));
+      if (/^[a-z]{4,}$/i.test(words.at(-1) || '') && words.length > 1) add(words.at(-1), ty);
+    }
+    return fleetKeys = keys;
+  }
+  /** Désignateurs de la flotte nommés dans un texte de type (dans l'ordre, sans doublon). */
+  const fleetTypesIn = raw => [...new Set(String(raw || '').split(/[\s\/,;+]+/).map(w => fleetIndex().get(norm(w))).filter(Boolean))];
+  /** Poste : { callsign, type ('' si générique), types (plusieurs types possibles), kind (helico | avion | any | ''),
+   *  service, label }. */
   function post(callsign, rawType, service = '') {
-    const ty = typeOf(rawType),
-      known = !!ty && (fleetTypes().some(x => x.type === ty) || !!(window.AIRCRAFT_DB || {})[ty]);
+    const found = fleetTypesIn(rawType),
+      ty = found[0] || typeOf(rawType),
+      known = !!found.length || (!!ty && !!(window.AIRCRAFT_DB || {})[ty]);
     return {
       callsign: String(callsign || ''),
       type: known ? ty : '',
+      ...(found.length > 1 ? {
+        types: found
+      } : {}),
       kind: known ? (catOfType(ty) === 'helico' ? 'helico' : 'avion') : kindOf(rawType),
       service: String(service || ''),
       label: String(rawType || '')
@@ -818,15 +869,22 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
   const fits = (spec, ty) => {
     const k = typeOf(ty);
     if (!spec || typeof spec === 'string') return !typeOf(spec) || k === typeOf(spec);
-    if (spec.type) return k === spec.type;
+    if (spec.type) return k === spec.type || !!spec.types?.includes(k);
     return spec.kind === 'helico' ? catOfType(k) === 'helico' : spec.kind === 'avion' ? catOfType(k) !== 'helico' : true;
   };
-  const specLabel = spec => typeof spec === 'string' ? typeOf(spec) : spec?.type || (spec?.kind === 'helico' ? t(['hélicoptère', 'helicopter']) : spec?.kind === 'avion' ? t(['avion', 'aircraft']) : '');
-  /** Appareils de la flotte pour un poste : du type (ou de la catégorie), service du poste puis terrain de départ d'abord. */
+  const specLabel = spec => typeof spec === 'string' ? typeOf(spec) : spec?.types?.join(' / ') || spec?.type || (spec?.kind === 'helico' ? t(['hélicoptère', 'helicopter']) : spec?.kind === 'avion' ? t(['avion', 'aircraft']) : spec?.kind === 'any' ? t(['aéronef', 'aircraft']) : '');
+  /** L'opérateur d'un appareil est-il le service du poste (« Gendarmerie » ↔ « Gendarmerie nationale ») ? */
+  const serves = (svc, f) => {
+    const o = fold(f.operator);
+    return !!svc && !!o && (o.startsWith(svc) || svc.startsWith(o));
+  };
+  /** Appareils compatibles avec un poste : du type (ou des types, ou de la catégorie d'un poste générique) et, quand
+   *  le service du poste est un opérateur de la flotte, de cet opérateur seulement ; terrain de départ d'abord. */
   function planesFor(spec, departure = '') {
     const svc = fold(spec?.service || '');
-    return (window.DEFA_FLEET || []).filter(f => fits(spec, f.type) || (spec?.type && typeOf(f.variant) === spec.type))
-      .sort((a, b) => (!!svc && fold(b.operator).startsWith(svc)) - (!!svc && fold(a.operator).startsWith(svc)) || (b.base === departure) - (a.base === departure) || (b.operational !== false) - (a.operational !== false) || String(a.base).localeCompare(String(b.base)));
+    let list = (window.DEFA_FLEET || []).filter(f => fits(spec, f.type) || (spec?.type && typeOf(f.variant) === spec.type));
+    if (list.some(f => serves(svc, f))) list = list.filter(f => serves(svc, f));
+    return list.sort((a, b) => (b.base === departure) - (a.base === departure) || (b.operational !== false) - (a.operational !== false) || String(a.base).localeCompare(String(b.base)));
   }
   /** Le pilote a-t-il un appareil pour ce poste (type, ou catégorie d'un poste générique) ? null : appareils non déclarés. */
   const ownsType = (decl, spec) => decl?.aircraft ? [...(decl.aircraft.owned || []), ...(decl.aircraft.mastered || [])].some(ty => fits(spec, ty)) : null;

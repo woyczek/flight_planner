@@ -322,7 +322,7 @@
     document.head.append(l);
     // illustrations du décor complet (frise de Cabinet, radar de Durci), même version
     const d = document.createElement("script");
-    d.src = new URL("design_deco.js?v=cf9f5d48", script.src).href;
+    d.src = new URL("design_deco.js?v=59d8d694", script.src).href;
     document.head.append(d);
   };
   designCss(design);
@@ -514,7 +514,7 @@
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
-      sc.src = new URL("appearance_page.js?v=37f75667", script.src).href;
+      sc.src = new URL("appearance_page.js?v=783f10c4", script.src).href;
       sc.onload = show;
       document.head.append(sc);
     }
@@ -916,7 +916,7 @@
     store.src = new URL("browser_store.js?v=fad42c07", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
-    assign.src = new URL("assignments.js?v=854c1200", script.src).href;
+    assign.src = new URL("assignments.js?v=1f00e5d0", script.src).href;
     document.head.append(assign);
     const update = document.createElement("script");
     update.src = new URL("suite_update.js?v=798086a3", script.src).href;

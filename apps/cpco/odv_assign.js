@@ -6,7 +6,8 @@
   // mission) et pour affecter depuis un créneau (dialogue « Affecter… », pilotes et heure préremplis).
   // Outils communs : shared/assignments.js (MissionAssignments) ; dialogue : shared/assign_dialog.js (AssignDialog).
   // API (window.OdvAssign) : load(données ODV, réglages), declaration(TRI), range(j, k), declared(TRI, j, k), assigned(TRI, j, k),
-  //   free(TRI, j, k), freePilots(j, k), inSlot(j, k), week(), line(TRI, j, k, cellule), assign(entrée, [TRI…], début, note)
+  //   free(TRI, j, k), freePilots(j, k), freeOver(TRI, début, fin), slotsOver(début, fin), pilots(), inSlot(j, k), week(),
+  //   line(TRI, j, k, cellule), assign(entrée, [TRI…], début, note), write(entrée, lignes, décollage)
   const M = () => window.MissionAssignments;
   const esc = s => window.RepositoryKit.esc(s);
   let D = null, // données ODV (dates, pilotes)
@@ -50,6 +51,42 @@
   };
   /** Pilotes libres d'un créneau : disponibles (déclaration, sinon classeur) et non affectés. */
   const freePilots = (j, k) => (D?.pilotes || []).map(p => p.trigramme).filter(tr => free(tr, j, k, (D.records || []).find(r => r.pilote === tr && r.jourIndex === j && r.creneauIndex === k)));
+  /** Créneau (jour, créneau) qui contient l'heure ms ; null hors de la semaine ou entre deux créneaux. */
+  const slotAt = ms => {
+    for (const [j] of (D?.dates || []).entries())
+      for (const [k] of (S?.hours || []).entries()) {
+        const r = range(j, k);
+        if (r && ms >= r[0] && ms < r[1]) return [j, k];
+      }
+    return null;
+  };
+  /** Libre sur toute une plage (mission sur plusieurs créneaux, convoyage sur un créneau antérieur) : chaque heure
+   *  disponible (déclaration du pilote, sinon ligne du classeur pour le créneau de cette heure) et aucune affectation
+   *  qui la recouvre. */
+  const freeOver = (tri, from, to) => {
+    if (!(to > from) || M().assignedOver(list, tri, from, to).length) return false;
+    for (let h = Math.floor(from / 36e5) * 36e5; h < to; h += 36e5) {
+      const a = M().availabilityAt(decl[tri], Math.max(h, from));
+      if (a) {
+        if (a.category !== 'dispo') return false;
+        continue;
+      }
+      const s = slotAt(Math.max(h, from)),
+        rec = s && (D.records || []).find(r => r.pilote === tri && r.jourIndex === s[0] && r.creneauIndex === s[1]);
+      if (rec?.categorie !== 'dispo') return false;
+    }
+    return true;
+  };
+  /** Créneaux recouverts par une plage : [[j, k]…], dans l'ordre. */
+  const slotsOver = (from, to) => {
+    const out = [];
+    for (const [j] of (D?.dates || []).entries())
+      for (const [k] of (S?.hours || []).entries()) {
+        const r = range(j, k);
+        if (r && r[0] < to && r[1] > from) out.push([j, k]);
+      }
+    return out;
+  };
   /** Affectations qui recouvrent un créneau (tous pilotes). */
   const inSlot = (j, k) => {
     const r = range(j, k);
@@ -106,7 +143,8 @@
     });
   }
 
-  /** Affecte directement (matrice du créneau) : rows [{ pilot, registration, callsign }] ; puis relit et prévient. */
+  /** Affecte directement (matrice du créneau) : rows [{ pilot, registration, callsign, ferryPilot }] ; takeoff :
+   *  décollage de la mission (début du créneau, ou décalé pour le convoyage) ; puis relit et prévient. */
   async function write(m, rows, takeoff) {
     const M = window.MissionAssignments,
       y = await yamlOf(m);
@@ -132,6 +170,9 @@
     write,
     yamlOf,
     freePilots,
+    freeOver,
+    slotsOver,
+    pilots: () => (D?.pilotes || []).map(p => p.trigramme),
     inSlot,
     week,
     journal: () => journal,

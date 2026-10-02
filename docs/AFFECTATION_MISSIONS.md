@@ -91,6 +91,19 @@ alert: null                         # astreinte : § 6
 - **Convoyage** : appareil pris hors du terrain de départ → distance orthodromique base → départ, vitesse de croisière du
   type (`AircraftDB`), + 20 min de mise en œuvre ; le décollage du convoyage est affiché et contrôlé (pilote et appareil
   disponibles dès ce moment) ; le convoyage peut être confié au même pilote ou laissé « à organiser ».
+- **Appareils compatibles** : le type écrit en clair dans la mission (« H225M Caracal », « Rafale », « E-3F / A400M »)
+  est ramené aux désignateurs de la flotte (alias de la base OACI, synonymes d'usage, variantes et modèles :
+  `MissionAssignments.postsOf`) ; seuls les appareils de ce type (ou de ces types, ou de la catégorie d'un poste
+  générique) sont proposés, et seulement ceux de l'opérateur quand le service du poste en désigne un (« Hélicoptère /
+  Gendarmerie » → hélicoptères de la Gendarmerie nationale).
+- **Mission sur plusieurs créneaux** (fenêtre d'un créneau du planning ODV) : décollage au début du créneau, fin =
+  décollage + bloc + remise en œuvre ; les créneaux recouverts sont affichés (« mobilise lundi après-midi, lundi soir »)
+  et le pilote doit être libre jusqu'à la fin (déclaration heure par heure, sinon classeur ; aucune autre affectation) —
+  la proposition remplace un pilote qui ne l'est pas par un autre pilote libre du créneau.
+- **Convoyage depuis la fenêtre d'un créneau** : convoyeur proposé parmi les pilotes libres sur toute la durée du
+  convoyage, avant le créneau (maîtrise du type d'abord), modifiable ; à défaut (ou au choix « mission décalée »), le
+  pilote de la mission convoie dès le début du créneau et la mission est décalée d'autant (horaire recalculé, créneaux
+  suivants mobilisés). Le convoyeur reçoit sa ligne « convoyage » à l'enregistrement.
 - **Patrouille** : un appareil nominatif par participant ; indicatifs suivis (MERCURE31 → MERCURE32) ; même type si
   la mission l'impose (`TYPES_EQUIPES` imposés), sinon type compatible.
 

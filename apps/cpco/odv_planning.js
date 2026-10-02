@@ -737,6 +737,9 @@
     // indicatif ») : « Enregistrer » écrit les missions cochées, « Annuler les modifications » revient à la proposition ;
     // la fenêtre se ferme quand tous les pilotes libres sont affectés, ou sur demande (confirmation si modifications en
     // attente). « ✎ Détail » : dialogue d'affectation complet, dont le résultat revient dans la matrice.
+    // Durée : une mission plus longue que le créneau mobilise les suivants (son pilote doit être libre jusqu'à la fin).
+    // Convoyage (appareil basé ailleurs) : confié à un pilote libre avant le créneau (proposé, ou choisi) ; sinon le
+    // pilote de la mission le fait en début de créneau et la mission est décalée d'autant (horaire : timeAll).
     const O = window.OdvAssign,
       M = window.MissionAssignments,
       AD = window.AssignDialog,
@@ -762,12 +765,84 @@
       ctx = null, // { free, decls, d: Map(id → { m, on, rows: [{ post, pilot, registration, callsign, ferryPilot }] }) }
       initial = '',
       dlg = null;
-    const snap = () => JSON.stringify([...ctx.d.values()].map(x => [x.m.id, x.on, x.rows.map(r => [r.pilot, r.registration, r.callsign])]));
+    const snap = () => JSON.stringify([...ctx.d.values()].map(x => [x.m.id, x.on, x.rows.map(r => [r.pilot, r.registration, r.callsign, r.ferryPilot || '', !!r.ferrySelf])]));
+    const TURN = M.TURN_MIN,
+      icao = s => /\(([A-Z]{4})\)/.exec(s || '')?.[1] || '',
+      blockOf = m => +(m.estimate?.block ?? m.estimate?.flight) || 120,
+      hm = ms => new Date(ms).toISOString().slice(11, 16) + 'Z',
+      slotName = ([jj, kk]) => (sl => `${sl.jour} ${sl.creneau}`)(slotOf(jj, kk));
+    /** Horaire des missions (cochées d'abord) : convoyages (convoyeur choisi s'il reste libre, sinon le meilleur pilote
+     *  libre sur tout le convoyage, avec l'appareil ; à défaut le pilote de la mission, qui la décale), décollage, fin,
+     *  créneaux mobilisés, pilote libre sur toute la mission. Un convoyeur ne sert qu'une fois. */
+    async function timeAll() {
+      const t0 = takeoff,
+        taken = new Set([...ctx.d.values()].filter(x => x.on).flatMap(x => x.rows.map(r => r.pilot).filter(Boolean)));
+      for (const x of [...ctx.d.values()].sort((a, b) => b.on - a.on)) {
+        const dep = icao(x.m.origin),
+          block = blockOf(x.m);
+        const legs = await Promise.all(x.rows.map(async r => {
+          const pl = planeOf(r.registration);
+          return pl && dep && pl.base && pl.base !== dep ? await M.ferryOf({
+            base: pl.base,
+            departure: dep,
+            type: pl.type,
+            takeoff: t0
+          }) : null;
+        }));
+        let tk = t0;
+        for (let pass = 0; pass < 4; pass++) {
+          const used = new Set();
+          let need = 0;
+          x.rows.forEach((r, i) => {
+            const f = legs[i],
+              pl = planeOf(r.registration);
+            r.ferry = null;
+            r.ferryBy = '';
+            r.ferryCands = [];
+            if (!f?.minutes) return;
+            const a = tk - (f.minutes + TURN) * 6e4,
+              b = tk - TURN * 6e4;
+            r.ferry = {
+              ...f,
+              takeoff: a,
+              land: b
+            };
+            const owns = tr => M.ownsType(ctx.declsAll[tr], pl.type);
+            r.ferryCands = O.pilots().filter(tr => tr !== r.pilot && !(x.on && taken.has(tr)) && !used.has(tr) && owns(tr) !== false && O.freeOver(tr, a, b))
+              .map(tr => ({
+                tri: tr,
+                q: M.qualification(ctx.declsAll[tr], tr, pl.type)
+              }))
+              .sort((p, q) => (q.q.level === 'mastered') - (p.q.level === 'mastered') || (owns(q.tri) === true) - (owns(p.tri) === true) || p.tri.localeCompare(q.tri));
+            if (!r.ferrySelf) r.ferryBy = r.ferryCands.some(c => c.tri === r.ferryPilot) ? r.ferryPilot : r.ferryCands[0]?.tri || '';
+            if (r.ferryBy) used.add(r.ferryBy);
+            else need = Math.max(need, (f.minutes + TURN) * 6e4); // le pilote convoie dès le début du créneau
+          });
+          if (t0 + need <= tk) break;
+          tk = t0 + need;
+        }
+        const own = x.rows.filter(r => r.ferry && !r.ferryBy).map(r => r.ferry.takeoff),
+          start = Math.min(tk, ...own),
+          end = tk + (block + TURN) * 6e4;
+        x.timing = {
+          takeoff: tk,
+          shift: tk - t0,
+          start,
+          end,
+          slots: O.slotsOver(start, end)
+        };
+        for (const r of x.rows) {
+          r.spanOk = !r.pilot || O.freeOver(r.pilot, r.ferry && !r.ferryBy ? r.ferry.takeoff : tk, end);
+          if (x.on && r.ferryBy) taken.add(r.ferryBy);
+        }
+      }
+    }
     const dirty = () => !!ctx && snap() !== initial;
     /** Proposition : missions des options (proposition d'abord), postes préremplis (pilote proposé, premier appareil libre). */
     async function build() {
       const free = O.freePilots(j, k),
         decls = await M.declarations(free),
+        declsAll = await M.declarations(O.pilots()),
         entries = all.filter(m => !famSel || fold(m.family || m.type).startsWith(famSel)),
         plan = M.planSlot(free, entries, decls, {
           focus
@@ -785,7 +860,7 @@
           const rows = M.postsOf(m).map(post => {
             const pr = pairs.find(p => !p.used && p.post?.callsign === post.callsign && p.post?.label === post.label);
             if (pr) pr.used = true;
-            const plane = on && pr ? M.planesFor(post, m.origin || '').find(f => f.operational !== false && !busy.has(f.registration) && !usedPlanes.has(f.registration)) : null;
+            const plane = on && pr ? M.planesFor(post, icao(m.origin)).find(f => f.operational !== false && !busy.has(f.registration) && !usedPlanes.has(f.registration)) : null;
             if (plane) usedPlanes.add(plane.registration);
             return {
               post,
@@ -804,8 +879,25 @@
       ctx = {
         free,
         decls,
+        declsAll,
         d
       };
+      await timeAll();
+      // proposition : le pilote d'une mission plus longue que le créneau doit être libre jusqu'à sa fin ; sinon un autre
+      // pilote libre du créneau, avec l'appareil et libre sur toute la mission, le remplace
+      const inUse = new Set([...d.values()].filter(x => x.on).flatMap(x => x.rows.map(r => r.pilot).filter(Boolean)));
+      let swapped = false;
+      for (const x of [...d.values()].filter(x => x.on))
+        for (const r of x.rows.filter(r => r.pilot && !r.spanOk)) {
+          const from = r.ferry && !r.ferryBy ? r.ferry.takeoff : x.timing.takeoff,
+            alt = free.find(tr => !inUse.has(tr) && M.ownsType(decls[tr], r.post) && O.freeOver(tr, from, x.timing.end));
+          if (!alt) continue;
+          inUse.delete(r.pilot);
+          inUse.add(alt);
+          r.pilot = alt;
+          swapped = true;
+        }
+      if (swapped) await timeAll();
       initial = snap();
     }
     const planeOf = reg => (window.DEFA_FLEET || []).find(f => f.registration === reg);
@@ -843,9 +935,18 @@
         const o = tr => `<option value="${esc(tr)}"${tr === r.pilot ? ' selected' : ''}>${esc(tr)}${pendOf(tr) && tr !== r.pilot ? ` (→ ${esc(pendOf(tr).m.id)})` : ''}</option>`;
         return `<option value="">—</option>${own.length ? `<optgroup label="Libres, avec l’appareil">${own.map(o).join('')}</optgroup>` : ''}${other.length ? `<optgroup label="Libres, appareil non déclaré">${other.map(o).join('')}</optgroup>` : ''}${r.pilot && !free.includes(r.pilot) ? `<option value="${esc(r.pilot)}" selected>${esc(r.pilot)} (non libre)</option>` : ''}`;
       };
-      const planeOpts = (r, m) => `<option value="">—</option>${M.planesFor(r.post, m.origin || '').slice(0, 60).map(p => `<option value="${esc(p.registration)}"${p.registration === r.registration ? ' selected' : ''}>${esc(p.registration)} · ${esc(p.variant || p.type)} · ${esc(p.base || '?')}${r.post?.service && p.operator ? ` · ${esc(p.operator)}` : ''}${p.operational === false ? ' — indisponible' : ''}${busy.has(p.registration) ? ' — engagé' : ''}</option>`).join('')}`;
+      const planeOpts = (r, m) => `<option value="">—</option>${M.planesFor(r.post, icao(m.origin)).slice(0, 60).map(p => `<option value="${esc(p.registration)}"${p.registration === r.registration ? ' selected' : ''}>${esc(p.registration)} · ${esc(p.variant || p.type)} · ${esc(p.base || '?')}${r.post?.service && p.operator ? ` · ${esc(p.operator)}` : ''}${p.operational === false ? ' — indisponible' : ''}${busy.has(p.registration) ? ' — engagé' : ''}</option>`).join('')}`;
+      /** Convoyage d'un poste : trajet, heure, convoyeur (pilotes libres avant le créneau, ou le pilote : mission décalée). */
+      const ferryLine = r => {
+        if (!r.ferry) return '';
+        const f = r.ferry,
+          opts = `${r.ferryCands.map(c => `<option value="${esc(c.tri)}"${c.tri === r.ferryBy ? ' selected' : ''}>${esc(c.tri)}${c.q.level === 'mastered' ? ' (maîtrisé)' : ''}</option>`).join('')}<option value="__self"${r.ferryBy ? '' : ' selected'}>${esc(r.pilot || 'le pilote')} — mission décalée</option>`;
+        return `<div class="ad-help">Convoyage <b>${esc(f.from)} → ${esc(f.to)}</b> ≈ ${f.minutes} min, décollage ${hm(f.takeoff)}${r.ferryCands.length ? '' : ' — aucun pilote libre avant le créneau'} · par <select data-f="ferry">${opts}</select></div>`;
+      };
       const checks = (x, r) => {
         const c = [];
+        if (r.pilot && r.spanOk === false) c.push(chip(`${esc(r.pilot)} non libre jusqu’à la fin (${hm(x.timing.end)})`, 'err'));
+        if (r.ferryBy) c.push(chip(`convoyage : ${esc(r.ferryBy)}`, 'ok'));
         if (r.pilot) {
           const q = M.qualification(decls[r.pilot], r.pilot, r.registration ? planeOf(r.registration)?.type || r.post : r.post);
           if (q.text) c.push(chip(esc(q.text), q.level === 'mastered' ? 'ok' : q.level === 'owned' || q.level === 'flown' ? 'warn' : 'err'));
@@ -859,10 +960,10 @@
           conf = conflictsOf(m, zones),
           n = x.rows.length;
         return `<tbody class="ad-mx${x.on ? ' on' : ''}" data-m="${esc(m.id)}">${x.rows.map((r, i) => `<tr class="${x.on && r.pilot && r.registration && !errs(r).length ? 'ad-set' : ''}" data-i="${i}">
-          ${i ? '' : `<td rowspan="${n}"><input type="checkbox" data-on${x.on ? ' checked' : ''} aria-label="Affecter ${esc(m.id)}"></td><td rowspan="${n}"><b>${esc(m.id)}</b> ${esc(m.title || '')}<br><small>${esc(m.family || m.type || '')} · ${hmOf(m.estimate?.block ?? m.estimate?.flight)}</small>${conf.length ? `<br>${conf.map(c => chip(esc(c.texte), c.grave ? 'err' : 'warn')).join('')}` : ''}<br><button type="button" class="repo-plain ad-link" data-detail>✎ détail</button></td>`}
+          ${i ? '' : `<td rowspan="${n}"><input type="checkbox" data-on${x.on ? ' checked' : ''} aria-label="Affecter ${esc(m.id)}"></td><td rowspan="${n}"><b>${esc(m.id)}</b> ${esc(m.title || '')}<br><small>${esc(m.family || m.type || '')} · ${hmOf(m.estimate?.block ?? m.estimate?.flight)}</small>${x.timing ? `<br><small>décollage <b>${hm(x.timing.takeoff)}</b>${x.timing.shift ? ` (décalée de ${hmOf(x.timing.shift / 6e4)} : convoyage)` : ''}, fin ${hm(x.timing.end)}${x.timing.slots.length > 1 ? ` · mobilise ${x.timing.slots.map(slotName).join(', ')}` : ''}</small>` : ''}${conf.length ? `<br>${conf.map(c => chip(esc(c.texte), c.grave ? 'err' : 'warn')).join('')}` : ''}<br><button type="button" class="repo-plain ad-link" data-detail>✎ détail</button></td>`}
           <td><b>${esc(r.callsign || r.post?.callsign || `poste ${i + 1}`)}</b><br><small>${esc(r.post?.type || r.post?.label || 'type libre')}${r.post?.service ? ` · ${esc(r.post.service)}` : ''}</small></td>
           <td><select data-f="pilot">${pilotOpts(r)}</select></td>
-          <td><select data-f="registration">${planeOpts(r, m)}</select></td>
+          <td><select data-f="registration">${planeOpts(r, m)}</select>${ferryLine(r)}</td>
           <td><input data-f="callsign" value="${esc(r.callsign)}" size="9"></td>
           <td>${checks(x, r)}</td></tr>`).join('')}</tbody>`;
       }).join('');
@@ -873,7 +974,7 @@
         title,
         subtitle: `${free.length} pilote(s) libre(s) · ${pend.length} affectation(s) en attente · ${assigned.length} enregistrée(s) sur le créneau`,
         beforeClose: () => !dirty() || confirm('Abandonner les affectations en attente (non enregistrées) ?'),
-        body: `<p class="ad-facts">${free.length ? free.map(tr => pendOf(tr) ? chip(`${tri(tr, null, false)} → <b>${esc(pendOf(tr).m.id)}</b> · ${esc(pendOf(tr).r.registration)}${pendOf(tr).r.callsign ? ` · ${esc(pendOf(tr).r.callsign)}` : ''}`, 'ok') : chip(`${tri(tr, null, false)} ${types(tr)}`, tr === focus ? 'focus' : '')).join('') : chip('aucun pilote libre (tous affectés ou indisponibles)', 'warn')}</p>
+        body: `<p class="ad-help">Une mission plus longue que le créneau mobilise les suivants. Appareil basé ailleurs : convoyage confié à un pilote libre avant le créneau, sinon fait par le pilote de la mission, décalée d’autant.</p><p class="ad-facts">${free.length ? free.map(tr => pendOf(tr) ? chip(`${tri(tr, null, false)} → <b>${esc(pendOf(tr).m.id)}</b> · ${esc(pendOf(tr).r.registration)}${pendOf(tr).r.callsign ? ` · ${esc(pendOf(tr).r.callsign)}` : ''}`, 'ok') : chip(`${tri(tr, null, false)} ${types(tr)}`, tr === focus ? 'focus' : '')).join('') : chip('aucun pilote libre (tous affectés ou indisponibles)', 'warn')}</p>
         <p><label class="ad-inline">Famille <select data-fam><option value="">toutes</option>${fams.map(f => `<option value="${esc(f)}"${f === famSel ? ' selected' : ''}>${esc(f)}${s.missions[0]?.famille === f ? ' (proposée)' : ''}</option>`).join('')}</select></label></p>
         ${zones.length ? `<p class="ad-note">À éviter : ${zones.map(z => `<b>${esc(z.type)} ${esc(z.position)}</b> — CTR ${esc(z.ctr.map(a => a.name).join(', ') || '?')}${z.tma.length ? `, TMA ${esc(z.tma.map(a => a.name).join(', '))} (si possible)` : ''}`).join(' · ')}</p>` : ''}
         ${d.size ? `<table class="ad-table ad-matrix"><thead><tr><th></th><th>Mission</th><th>Poste</th><th>Pilote</th><th>Appareil</th><th>Indicatif</th><th>État</th></tr></thead>${body}</table>` : '<p class="ad-help">Aucune mission du registre pour ces pilotes et cette famille.</p>'}
@@ -890,16 +991,22 @@
         await build();
         render();
       };
-      bodyEl.addEventListener('change', e => {
+      bodyEl.addEventListener('change', async e => {
         const tb = e.target.closest('tbody[data-m]');
         if (!tb) return;
         const x = ctx.d.get(tb.dataset.m);
         if (e.target.matches('[data-on]')) x.on = e.target.checked;
         else {
-          const r = x.rows[+e.target.closest('tr').dataset.i];
-          r[e.target.dataset.f] = e.target.value.trim();
-          if (e.target.dataset.f === 'pilot' || e.target.dataset.f === 'registration') x.on = x.on || !!(r.pilot && r.registration);
+          const r = x.rows[+e.target.closest('tr').dataset.i],
+            f = e.target.dataset.f,
+            v = e.target.value.trim();
+          if (f === 'ferry') {
+            r.ferrySelf = v === '__self';
+            r.ferryPilot = r.ferrySelf ? '' : v;
+          } else r[f] = v;
+          if (f === 'pilot' || f === 'registration') x.on = x.on || !!(r.pilot && r.registration);
         }
+        await timeAll();
         render();
       });
       bodyEl.addEventListener('click', async e => {
@@ -908,23 +1015,25 @@
         const x = ctx.d.get(b.closest('tbody[data-m]').dataset.m);
         await AD.open(x.m, await O.yamlOf(x.m), {
           maps: x.m.images || [],
-          takeoff,
+          takeoff: x.timing?.takeoff || takeoff,
           note: `Créneau ${slotTitle(s)} — le résultat revient dans la fenêtre du créneau`,
           rows: x.rows,
-          apply: rows => {
+          apply: async rows => {
             x.rows = rows;
             x.on = true;
+            await timeAll();
             render();
           }
         });
       });
-      dlg.querySelector('[data-undo]').onclick = () => {
+      dlg.querySelector('[data-undo]').onclick = async () => {
         const back = JSON.parse(initial);
         for (const [id, isOn, rs] of back) {
           const x = ctx.d.get(id);
           x.on = isOn;
-          x.rows.forEach((r, i) => [r.pilot, r.registration, r.callsign] = rs[i] || ['', '', r.post?.callsign || '']);
+          x.rows.forEach((r, i) => [r.pilot, r.registration, r.callsign, r.ferryPilot, r.ferrySelf] = rs[i] || ['', '', r.post?.callsign || '', '', false]);
         }
+        await timeAll();
         render();
       };
       dlg.querySelector('[data-save]').onclick = async () => {
@@ -950,7 +1059,10 @@
           ko = [];
         msg.textContent = `Enregistrement de ${todo.length} mission(s)…`;
         for (const x of todo) try {
-          await O.write(x.m, x.rows.filter(r => r.pilot && r.registration), takeoff);
+          await O.write(x.m, x.rows.filter(r => r.pilot && r.registration).map(r => ({
+            ...r,
+            ferryPilot: r.ferryBy || ''
+          })), x.timing?.takeoff || takeoff);
           ok.push(`${x.m.id} (${x.rows.filter(r => r.pilot && r.registration).map(r => r.pilot).join(', ')})`);
         } catch (err) {
           ko.push(`${x.m.id} : ${err.message}`);
