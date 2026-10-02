@@ -39,8 +39,10 @@
   html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-pli::before{display:none}
   html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-pli::after{width:min(100%,260px);height:auto;aspect-ratio:var(--pm-pli-ratio);margin:0 0 6px;border-radius:0;background:var(--pm-pli) center/contain no-repeat;box-shadow:none;filter:drop-shadow(1px 3px 3px rgba(0,0,0,.35))}
   /* dans le livre : enveloppe à l'échelle de la page (la page suit la largeur du dossier) */
-  .pm-page .pm-pli{margin:6px auto}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-page .pm-pli::after{width:min(100%,26cqw)}
+  .pm-page .pm-pli{margin:6px auto;max-width:none;width:100%}
+  .pm-pli[data-pli]{cursor:pointer}.pm-pli.armed [data-pli-open]{outline:2px solid #c0392b;color:#c0392b}
+  .pm-annex{height:100%;display:grid;place-items:center;text-align:center}.pm-page .pm-annex h3{font-size:2.1em;line-height:1.3;letter-spacing:.12em;border:0}
+  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-page .pm-pli::after{width:100%}
   .pm-text p{white-space:pre-line;margin:.4em 0}
   .pm-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0}
   .pm-cover{display:grid;justify-items:center;gap:12px;padding:28px 16px;cursor:pointer;border:1px solid color-mix(in srgb,currentColor 22%,transparent);background:color-mix(in srgb,currentColor 5%,transparent)}
@@ -268,12 +270,12 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=9bc0c53d"></script>
-<script src="../../shared/repository_nav.js?v=a697bb91"></script>
+<script src="../../shared/repository_nav.js?v=5a7c8f48"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=db00c09c"></script>
 <script src="../../shared/mission_estimate.js?v=fe2b9cad"></script><script src="../../shared/mission_exercise.js?v=d66c8758"></script>
-<script src="../../shared/assignments.js?v=5c0de25b"></script>
+<script src="../../shared/assignments.js?v=a5d19ee4"></script>
 <script>
 (() => {
   'use strict';
@@ -392,12 +394,15 @@
       mapsOf = id => (y.maps || []).filter(m => m?.filename && (m.exercise === id || (m.exercise === 'all' && id === lastReveal))).map(m => m.filename);
     return list.map(e => {
       const at = e.t != null && t0 != null ? t0 + e.t * 6e4 : null;
-      return { ...e, at, emitter: up(e.from) === cs && !e.to.includes(cs), open: (at != null && Date.now() >= at) || A.isPliOpen(a, e.id), maps: mapsOf(e.id),
+      const st = A.pliState(a, e.id), due = at != null && Date.now() >= at;
+      return { ...e, at, due, st, emitter: up(e.from) === cs && !e.to.includes(cs), open: st.state === 'open' || (due && st.state !== 'sealed'), maps: mapsOf(e.id),
         tracks: ex.tracks.filter(k => e.reveals.includes(k.id)) };
     });
   }
   /** Pistes révélées par un pli (dans l'enveloppe seulement) : nature, route, niveau, vitesse, ce qu'il faut établir. */
   const tracksHtml = list => list.length ? `<table class="pm-tracks"><thead><tr><th>Piste</th><th>Nature</th><th>Route</th><th>Niveau, vitesse</th></tr></thead><tbody>${list.map(k => `<tr><td>${esc(k.name || k.id)}</td><td>${esc(k.nature || '')}</td><td>${esc((k.points || []).map(p => `${p.name || ''}${Number.isFinite(+p.lat) ? ` (${coord({ lat: +p.lat, lon: +p.lon })})` : ''}`).join(' → '))}</td><td>${esc([k.level, k.speed_kt && `${k.speed_kt} kt`].filter(Boolean).join(', '))}</td></tr>${k.task ? `<tr><td></td><td colspan="3"><i>À établir</i> : ${esc(k.task)}</td></tr>` : ''}`).join('')}</tbody></table>` : '';
+  /** Journal (LocalStore) : geste du pilote sur sa mission, en événement daté (le CR s'en préremplira). */
+  const logMission = (a, action, extra = {}) => window.LocalStore?.logEvent?.({ kind: 'mission', action, mission: a.mission, pilot: a.pilot, callsign: a.callsign || '', ...extra });
   /** Carte d'exercice (réservée à un pli) ? */
   const isExerciseMap = (y, name) => !!(y.maps || []).find(m => m?.filename === name && m.exercise && m.exercise !== 'none');
   /** Étiquette d'une mission (couverture scellée, page 1 du dossier) : numéro, nom, appareil, indicatif, décollage ;
@@ -431,6 +436,7 @@
       setTimeout(() => {
         if (sealed) {
           A.markRead(a);
+          logMission(a, 'mission ouverte (scellé brisé)');
           document.querySelectorAll('#pmList tr.pm-unread').forEach(tr => { if (list[+tr.dataset.i] === a) tr.classList.remove('pm-unread'); });
         }
         setClosed(a, false);
@@ -466,7 +472,7 @@
     let log = [];
     try { log = (await A.readLog()).filter(e => e.mission === a.mission); } catch { /* pas de journal */ }
     render(a, mission || {}, md, log);
-    if (open && !A.isRead(a)) A.markRead(a);
+    if (open && !A.isRead(a)) { A.markRead(a); logMission(a, 'mission ouverte (scellé brisé)'); }
     setClosed(a, !open && !A.isRead(a));
   }
 
@@ -610,9 +616,9 @@
     const pliWhen = p => `${p.at != null ? `${hhmm(p.at)} — ` : ''}${p.when}`;
     const pliHtml = p => p.open
       ? `<h5 class="pm-pli-head">${p.emitter ? 'Message à transmettre' : p.kind === 'pli' ? 'Pli' : 'Message radio'} ${esc(p.id)}${p.title ? ` — ${esc(p.title)}` : ''}</h5>
-        <p class="pm-pli-meta">${p.emitter ? `À ${esc(p.to.join(', '))} · ` : p.from ? `De ${esc(p.from)} · ` : ''}${esc(pliWhen(p))}</p>${para(p.text)}${tracksHtml(p.tracks)}
+        <p class="pm-pli-meta">${p.emitter ? `À ${esc(p.to.join(', '))} · ` : p.from ? `De ${esc(p.from)} · ` : ''}${esc(pliWhen(p))} · <button type="button" class="repo-plain ad-link pm-reseal" data-pli-reseal="${esc(p.id)}">Resceller</button></p>${para(p.text)}${tracksHtml(p.tracks)}
         ${Array.from({ length: Math.ceil(p.maps.filter(m => mapUrls[m]).length / 2) }, (_, i) => `<div class="pm-maps">${p.maps.filter(m => mapUrls[m]).slice(i * 2, i * 2 + 2).map(figure).join('')}</div>`).join('')}`
-      : `<div class="pm-pli" data-kind="${p.kind}"><b>${p.emitter ? 'Message à transmettre' : p.kind === 'pli' ? 'Pli scellé' : 'Message radio attendu'}</b><span>${esc(p.id)}${p.emitter ? ` · à ${esc(p.to.join(', '))}` : p.from ? ` · de ${esc(p.from)}` : ''}</span>
+      : `<div class="pm-pli" data-kind="${p.kind}" data-pli="${esc(p.id)}" title="Briser le scellé"><b>${p.emitter ? 'Message à transmettre' : p.kind === 'pli' ? 'Pli scellé' : 'Message radio attendu'}</b><span>${esc(p.id)}${p.emitter ? ` · à ${esc(p.to.join(', '))}` : p.from ? ` · de ${esc(p.from)}` : ''}</span>
         <span class="pm-pli-at">À ouvrir : ${esc(pliWhen(p))}</span>${p.tracks.length ? `<small>${p.tracks.length} piste${p.tracks.length > 1 ? 's' : ''}</small>` : ''}${p.maps.length ? `<small>${p.maps.length} carte${p.maps.length > 1 ? 's' : ''} jointe${p.maps.length > 1 ? 's' : ''}</small>` : ''}
         <button type="button" class="ghost" data-pli-open="${esc(p.id)}">Briser le scellé</button></div>`;
     const summary = y.summary ? para(y.summary) : mdSummary?.html || '';
@@ -656,14 +662,37 @@
       </div>
       ${plis.length ? `<div data-part="plis"><h4>Plis et messages en vol</h4>${plis.map(pliHtml).join('')}</div>` : ''}`;
     $('pmDetail').querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go, a, y, pts, dist));
-    $('pmDetail').querySelectorAll('[data-pli-open]').forEach(b => b.onclick = () => {
-      const p = plis.find(x => x.id === b.dataset.pliOpen);
-      if (!p || !window.confirm(`Ouvrir ${p.kind === 'pli' ? 'le pli' : 'le message'} ${p.id} avant l'heure ? Il est prévu pour : ${pliWhen(p)}.`)) return;
-      A.openPli(a, p.id);
+    // briser le scellé : clic sur l'enveloppe ou sur son bouton ; avant l'heure, confirmation en deux temps (le bouton
+    // la demande, second clic dans les 5 s) ; chaque geste est porté au journal
+    $('pmDetail').querySelectorAll('.pm-pli[data-pli]').forEach(env => env.onclick = e => {
+      e.stopPropagation(); // pas de page tournée
+      const p = plis.find(x => x.id === env.dataset.pli),
+        b = env.querySelector('[data-pli-open]');
+      if (!p) return;
+      if (!p.due && !env.classList.contains('armed')) {
+        env.classList.add('armed');
+        b.textContent = 'Confirmer : ouvrir avant l’heure';
+        setTimeout(() => { env.classList.remove('armed'); b.textContent = 'Briser le scellé'; }, 5000);
+        return;
+      }
+      A.setPliState(a, p.id, { state: 'open', at: new Date().toISOString(), logged: true });
+      logMission(a, p.due ? 'pli ouvert' : 'pli ouvert avant l’heure', { pli: p.id, title: p.title || '', planned: p.at ? new Date(p.at).toISOString() : p.when });
       redraw();
     });
+    $('pmDetail').querySelectorAll('[data-pli-reseal]').forEach(b => b.onclick = e => {
+      e.stopPropagation();
+      const p = plis.find(x => x.id === b.dataset.pliReseal);
+      A.setPliState(a, p.id, { state: 'sealed', at: new Date().toISOString() });
+      logMission(a, 'pli rescellé', { pli: p.id, title: p.title || '' });
+      redraw();
+    });
+    // ouverture à l'heure : une fois au journal (même si la page n'était pas ouverte à ce moment)
+    for (const p of plis.filter(x => x.open && x.due && !x.st.logged)) {
+      A.setPliState(a, p.id, { logged: true });
+      logMission(a, 'pli ouvert à l’heure', { pli: p.id, title: p.title || '', planned: new Date(p.at).toISOString() });
+    }
     clearInterval(pliTimer); // ouverture à l'heure : redessin quand un pli scellé atteint la sienne
-    const due = plis.filter(p => !p.open && p.at != null);
+    const due = plis.filter(p => !p.open && p.at != null && p.st.state !== 'sealed');
     if (due.length) pliTimer = setInterval(() => {
       const now = due.filter(p => Date.now() >= p.at);
       if (!now.length || current !== a) return;
@@ -671,7 +700,7 @@
       redraw();
     }, 20e3);
     const reseal = $('pmDetail').querySelector('[data-reseal]');
-    if (reseal) reseal.onclick = () => { A.markUnread(a); load(); setClosed(a, true); };
+    if (reseal) reseal.onclick = () => { A.markUnread(a); logMission(a, 'mission rescellée'); load(); setClosed(a, true); };
     const close = $('pmDetail').querySelector('[data-close-book]');
     if (close) close.onclick = () => setClosed(a, true); // dossier refermé, non rescellé (mission lue)
     bookify();
@@ -752,7 +781,13 @@
       blank.innerHTML = `<p>${esc(window.RepositoryKit.t(['Page intentionnellement laissée blanche', 'This page intentionally left blank', 'Diese Seite wurde absichtlich leer gelassen', 'Página dejada en blanco intencionadamente']))}</p>`;
       pages.splice(pages.length - 1, 0, blank);
     }
-    if (plisPages.length) pages.push(null); // page de droite vide, en face de la dernière
+    // annexes (plis) : page de droite « Informations complémentaires », en face de la dernière ; on y entre par le coin,
+    // un clic sur la page, ou le signet
+    if (plisPages.length) {
+      const annex = Object.assign(document.createElement('div'), { className: 'pm-annex' });
+      annex.innerHTML = `<h3>${window.RepositoryKit.t(['Informations<br>complémentaires', 'Additional<br>information', 'Zusätzliche<br>Informationen', 'Información<br>complementaria'])}</h3>`;
+      pages.push(annex);
+    }
     const P = pages.length; // première page des plis (double page paire) ; sans plis : fin du livre
     pages.push(...plisPages);
     let at = Math.min(bookStart, Math.max(0, pages.length - 1)) & ~1, busy = false;
@@ -760,7 +795,7 @@
     // fin de feuilletage : fin du dossier avant les plis, fin du livre dans les plis ; signet posé : aux plis (ou à la fin)
     // signet : posé sur la double page de fin du dossier (dernière page à gauche, page vide en face), plis derrière
     const S = plisPages.length ? P - 2 : (pages.length - 1) & ~1,
-      endOf = n => n + 2 >= (n < P ? P : pages.length),
+      endOf = n => n + 2 >= pages.length,
       atSig = n => n === S;
     const draw = () => {
       left.replaceChildren(...(pages[at] ? [pages[at]] : []));
@@ -790,6 +825,27 @@
         gap = (bottom(leaf) - bottom(right)) / (book.clientWidth / 100);
       leaf.style.setProperty('--pm-folio-b', `calc(1.9cqw + ${gap.toFixed(3)}cqw)`);
     };
+    // signet posé (fin du dossier) emporté par la feuille : en avant, il part avec la page de droite et disparaît à
+    // mi-course ; en arrière (retour des annexes), il revient avec la page et paraît à mi-course. Copie dans la feuille
+    // (au revers pour le retour : position en miroir autour du dos), le vrai signet masqué le temps de la rotation.
+    const ride = way => {
+      if (!way) return;
+      const was = [book.classList.contains('pm-at-end'), book.classList.contains('pm-past')];
+      book.classList.add('pm-at-end');
+      book.classList.remove('pm-past');
+      const s = sig.getBoundingClientRect(),
+        l = leaf.getBoundingClientRect();
+      book.classList.toggle('pm-at-end', was[0]);
+      book.classList.toggle('pm-past', was[1]);
+      const c = sig.cloneNode(false),
+        spine = l.left + (parseFloat(getComputedStyle(leaf).transformOrigin) || l.width), // axe de rotation de la feuille (px)
+        x = way > 0 ? s.left - l.left : 2 * spine - l.left - s.width - s.left;
+      c.className = 'pm-sig pm-sig-ride';
+      c.removeAttribute('title');
+      c.style.cssText = `position:absolute;left:${x}px;top:${s.top - l.top}px;width:${s.width}px;height:${s.height}px;bottom:auto;--pm-sig-show:var(--pm-sig-tail-h, 3.34cqw);backface-visibility:hidden;pointer-events:none;transform:${way > 0 ? 'translateZ(1px)' : 'rotateY(180deg) translateZ(1px)'}`;
+      leaf.append(c);
+      sig.style.visibility = 'hidden';
+    };
     const turn = (dir, to = at + 2 * dir) => {
       if (busy || to === at) return;
       if (matchMedia('(prefers-reduced-motion: reduce)').matches) { at = to; return draw(); }
@@ -813,9 +869,12 @@
       leaf.className = `pm-leaf ${dir > 0 ? 'fwd' : 'back'}`;
       leaf.hidden = false;
       folioOnFaces();
+      ride(dir > 0 && at === S ? 1 : dir < 0 && to === S ? -1 : 0);
       setTimeout(() => { // fin de la rotation (0,7 s, voir .pm-leaf.fwd) : la feuille se pose, la page d'en face change
         at = to;
         draw();
+        leaf.querySelector('.pm-sig-ride')?.remove();
+        sig.style.visibility = '';
         leaf.hidden = true;
         busy = false;
       }, 700);
@@ -828,7 +887,7 @@
     prev.onclick = () => at === 0 ? host.querySelector('[data-close-book]')?.click() : turn(-1);
     // un clic sur une page fait comme son coin (liens, boutons et sélections de texte gardent leur effet)
     const pageClick = corner => e => {
-      if (e.target.closest('a, button, input, select, textarea, summary') || String(getSelection?.() || '')) return;
+      if (e.target.closest('a, button, input, select, textarea, summary, .pm-pli') || String(getSelection?.() || '')) return;
       if (!corner.hidden) corner.click();
     };
     right.onclick = pageClick(next);
@@ -838,6 +897,7 @@
 
   // ---- transferts
   function go(where, a, y, pts, dist) {
+    logMission(a, { maps: 'ouverte dans les Cartes de vol', fuel: 'envoyée au planificateur carburant', cr: 'CR commencé' }[where] || where);
     if (where === 'maps') {
       // Cartes de vol : mission partagée de l'espace « planner » (SIA_MISSION_NS), appareil attribué en tête
       const yaml = structuredClone(y);

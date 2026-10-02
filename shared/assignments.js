@@ -94,12 +94,14 @@
     return (list || cache?.assignments || []).filter(a => me && String(a.pilot).toUpperCase() === me && a.status !== 'annulée' && (all || !when(a) || when(a) >= now)).sort((x, y) => when(x) - when(y));
   }
   const isRead = a => !!json(READ, {})[key(a)];
-  /** Plis d'exercice ouverts avant l'heure par le pilote (scellé brisé) : clé de l'affectation + identifiant du pli. */
-  const PLIS = 'pilotPlis:v1';
-  const isPliOpen = (a, id) => !!json(PLIS, {})[`${key(a)}|${id}`];
-  function openPli(a, id) {
-    const r = json(PLIS, {});
-    r[`${key(a)}|${id}`] = new Date().toISOString();
+  /** État d'un pli d'exercice pour le pilote (clé de l'affectation + identifiant du pli) : { state: 'open' (scellé brisé)
+   *  | 'sealed' (rescellé), at, logged (ouverture à l'heure déjà portée au journal) } ; {} : rien de fait. */
+  const PLIS = 'pilotPlis:v2';
+  const pliState = (a, id) => json(PLIS, {})[`${key(a)}|${id}`] || {};
+  function setPliState(a, id, patch) {
+    const r = json(PLIS, {}),
+      k = `${key(a)}|${id}`;
+    r[k] = { ...(r[k] || {}), ...patch };
     setJson(PLIS, r);
   }
   /** Remet une mission « non lue » (scellée) : outil du canal develop. */
@@ -1340,8 +1342,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     key,
     when,
     isRead,
-    isPliOpen,
-    openPli,
+    pliState,
+    setPliState,
     markRead,
     markUnread,
     envelope,
