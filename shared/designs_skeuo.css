@@ -1649,6 +1649,11 @@ html[data-skeuo] dialog.repo-ap-dialog {
 html[data-skeuo] dialog.repo-ap-dialog .repo-ap-head:not(#imp) {
   margin: 10px
 }
+/* fenêtres d'affectation (assign_dialog.js : texte posé à même la fenêtre, sans blocs) : fond d'un bloc du design
+   (parchemin, plaque…), pas celui de la page, pour que l'encre reste lisible */
+html[data-skeuo] dialog.repo-ap-dialog.ad-dialog {
+  background: var(--sk-block-bg, var(--sk-dialog-bg))
+}
 /* ================================================================================================ EN-TÊTE DE BLOC ÉTROIT
    La plaque de titre ne dépasse jamais sa colonne (elle passe à la ligne) et les outils (↕, Masquer) restent au
    premier plan, visibles et cliquables, même dans les blocs étroits (reportings). */

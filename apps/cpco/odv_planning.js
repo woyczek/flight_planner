@@ -733,8 +733,9 @@
   // en training → écartée, TMA contenant le terrain → signalée. Ouverture dans le registre (?mission=…).
   const centreOn = () => !!window.RepositoryNav?.cpco?.enabled?.();
   const fold = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
-  /** Opération d'une mission : celle du registre, sinon tirée de l'identifiant (I-001A → I-001) ; '' sinon. */
-  const opOf = m => m?.operation?.id || (/^([A-Z]+-\d+)[A-Y]$/i.exec(String(m?.id || '')) || [])[1] || '';
+  /** Opération d'une mission : tirée de l'identifiant (I-001A → I-001 : missions d'équipage d'une opération), sinon
+   *  celle du registre (registres anciens ou incomplets : l'identifiant fait foi) ; '' sinon. */
+  const opOf = m => (/^([A-Z]+-\d+)[A-Y]$/i.exec(String(m?.id || '')) || [])[1] || m?.operation?.id || '';
   const regMissions = () => {
     try {
       return JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions || [];
