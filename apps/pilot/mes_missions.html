@@ -40,7 +40,7 @@
   html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-pli::after{width:min(100%,260px);height:auto;aspect-ratio:var(--pm-pli-ratio);margin:0 0 6px;border-radius:0;background:var(--pm-pli) center/contain no-repeat;box-shadow:none;filter:drop-shadow(1px 3px 3px rgba(0,0,0,.35))}
   /* dans le livre : enveloppe à l'échelle de la page (la page suit la largeur du dossier) */
   .pm-page .pm-pli{margin:6px auto}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-page .pm-pli::after{width:min(100%,17cqw)}
+  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-page .pm-pli::after{width:min(100%,26cqw)}
   .pm-text p{white-space:pre-line;margin:.4em 0}
   .pm-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0}
   .pm-cover{display:grid;justify-items:center;gap:12px;padding:28px 16px;cursor:pointer;border:1px solid color-mix(in srgb,currentColor 22%,transparent);background:color-mix(in srgb,currentColor 5%,transparent)}
@@ -210,7 +210,9 @@
   html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-sig{display:block;position:absolute;z-index:0;left:calc(var(--pm-sheet-l) + var(--pm-sig-x, 1.2cqw));width:var(--pm-sig-w, 2.4cqw);top:calc(100% - var(--pm-sheet-b));bottom:calc(-1 * var(--pm-sig-out, 4.5cqw));border:0;padding:0;background:none;cursor:pointer;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.35))}
   .pm-sig::before{content:"";position:absolute;top:0;left:calc(50% - var(--pm-sig-body-w, 100%) / 2);width:var(--pm-sig-body-w, 100%);bottom:calc(var(--pm-sig-show, var(--pm-sig-tail-h, 3.34cqw)) - .04cqw);background:var(--pm-sig-body) top/100% auto repeat-y}
   .pm-sig::after{content:"";position:absolute;left:0;right:0;bottom:0;height:var(--pm-sig-show, var(--pm-sig-tail-h, 3.34cqw));background:var(--pm-sig-tail) bottom/100% auto no-repeat}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-book.pm-at-end .pm-sig{top:var(--pm-sheet-t);--pm-sig-show:var(--pm-sig-tail-h, 3.34cqw)} /* même préfixe que la règle de base : hors de la couche app, comme elle */
+  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-book.pm-at-end .pm-sig{top:var(--pm-sheet-t);--pm-sig-show:var(--pm-sig-tail-h, 3.34cqw)}
+  /* plis : le signet est dans les pages déjà tournées → il pend sous la page de gauche (position en miroir) */
+  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-book.pm-past .pm-sig{left:calc(100% - var(--pm-sheet-l) - var(--pm-sig-x, 1.2cqw) - var(--pm-sig-w, 2.4cqw))} /* même préfixe que la règle de base : hors de la couche app, comme elle */
   html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-book{margin-bottom:calc(12px + min(48px, 4.5vw))} /* place du bout du signet */
   html[data-design="cabinet"] .pm-book{--pm-sig-body:url("../../shared/deco/cabinet/bookmark-body.webp?v=448f0fbb");--pm-sig-tail:url("../../shared/deco/cabinet/bookmark-tail.webp?v=6c5d9661")}
   html[data-design="flightlog"] .pm-book{--pm-sig-body:url("../../shared/deco/flightlog/bookmark-body.webp?v=5ff34cd3");--pm-sig-tail:url("../../shared/deco/flightlog/bookmark-tail.webp?v=4dfe039d")}
@@ -769,7 +771,8 @@
       prev.hidden = false; // à la première double page : refermer le dossier
       prev.title = prev.ariaLabel = at === 0 ? 'Refermer le dossier' : 'Page précédente';
       next.hidden = endOf(at);
-      book.classList.toggle('pm-at-end', atSig(at)); // signet posé : dernière double page, ou plis (posé devant eux)
+      book.classList.toggle('pm-at-end', atSig(at)); // signet posé : double page de fin du dossier
+      book.classList.toggle('pm-past', at > S); // plis : signet passé, sous la page de gauche
       sig.title = sig.ariaLabel = !atSig(at) ? 'Signet : fin du dossier' : plisPages.length ? 'Signet : ouvrir les plis scellés' : 'Signet : retour au début';
       left.scrollTop = right.scrollTop = 0;
       host.dataset.bookAt = at; // double page affichée (gardée si le livre est redessiné)
@@ -805,6 +808,7 @@
         left.classList.toggle('pm-inside', !pages[to]);
       }
       book.classList.toggle('pm-at-end', atSig(to));
+      book.classList.toggle('pm-past', to > S);
       next.hidden = endOf(to); // coin « suivante » masqué dès le départ s'il n'y a pas de page suivante ; sinon, coins inchangés
       leaf.className = `pm-leaf ${dir > 0 ? 'fwd' : 'back'}`;
       leaf.hidden = false;
