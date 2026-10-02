@@ -3352,12 +3352,25 @@ function renderDefaSheets() {
   });
   box.innerHTML = list.length ? `Appareils DEFA de ce type (fiche : statut, terrain, activité) : ${list.map(a=>`<a href="../cr/appareil.html?reg=${encodeURIComponent(a.registration)}">${escXml(a.registration)}</a>`).join(" · ")}` : ""
 }
-/* ?aircraft=<type ou profil> : ouverture depuis une fiche appareil (profil existant, sinon créé depuis le type DEFA). */
+/* ?aircraft=<type ou profil> : ouverture depuis une fiche appareil (profil existant, sinon créé depuis le type DEFA) ;
+   transfert d'une mission (?handoff=1, plannerHandoff:v1 : Mes missions, studio, Cartes de vol) : son appareil, si
+   l'adresse n'en donne pas. */
 refreshLandingAircraft();
 restore();
 applyHeaderPreferences();
 {
-  const wanted = new URLSearchParams(location.search).get("aircraft"),
+  const params = new URLSearchParams(location.search),
+    handoff = (() => {
+      if (!params.has("handoff")) return null;
+      try {
+        const h = JSON.parse(localStorage.getItem("plannerHandoff:v1") || "null");
+        return h && Date.now() - (h.at || 0) < 36e5 ? h : null
+      } catch {
+        return null
+      }
+    })(),
+    wanted = params.get("aircraft") || handoff?.aircraft,
+    why = params.get("aircraft") ? "fiche appareil" : "mission transmise",
     k = aKey(wanted || ""),
     db = window.AIRCRAFT_DB || {},
     res = aKey(db.__aliases?.[k] || k),
@@ -3368,8 +3381,8 @@ applyHeaderPreferences();
     found = k && Object.values(state.profiles || {}).find(p => [p.id, p.icao, p.type].some(same)),
     cand = k && !found && landingOnlyAircraft(Object.values(state.profiles || {}).filter(p => p && typeof p === "object").map(p => normalize(p))).find(p => [p.id, p.icao, p.type].some(same)),
     created = cand && newProfileFromLanding(cand.id);
-  if (found) setActive(found, "fiche appareil");
-  else if (created) setActive(created, "fiche appareil (type DEFA)");
+  if (found) setActive(found, why);
+  else if (created) setActive(created, `${why} (type DEFA)`);
   else if (state.lastAircraft && state.profiles[state.lastAircraft]) setActive(state.profiles[state.lastAircraft], "état restauré");
   else syncAircraftPicker();
 }
