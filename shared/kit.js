@@ -8,6 +8,9 @@
 //   K.esc(texte)                         texte échappé pour HTML
 //   K.lang() / K.langIndex()             langue courante (fr, en, de, es) / son rang dans K.LANGS
 //   K.t([fr, en, de, es])                ligne de traduction dans la langue courante (typographie française appliquée)
+//   K.tf([fr, en, de, es], { n: 2 })     même chose, valeurs {clé} insérées (déjà échappées si c'est du HTML)
+//   K.hOffset('H+1h30mn') / K.hText(90)  heure d'exercice : une seule référence (H, T ou M), décalage avec son unité
+//   K.viewImage(src, titre) / K.viewHtml(titre, html)   visionneuse commune (croix, Échap ; image : taille réelle au clic)
 //   K.store.get(clé, défaut) / .set / .remove / .json(clé, défaut) / .setJson
 //   K.color.rgb(c) / .hex(rgb) / .luminance(c) / .contrast(a, b) / .hsl(h, s, l) / .hueSat(c) / .lightness(c)
 //   K.noFolderAccess()                   message : choix d'un dossier impossible ici (Brave, Firefox, http hors localhost)
@@ -32,9 +35,9 @@
     for (let i = 0; i < css.length; i++)
       if (css[i] === '{') depth++;
       else if (css[i] === '}' && !--depth) {
-        out.push(css.slice(start, i + 1));
-        start = i + 1;
-      }
+      out.push(css.slice(start, i + 1));
+      start = i + 1;
+    }
     if (css.slice(start).trim()) out.push(css.slice(start));
     return out;
   };
@@ -242,9 +245,9 @@
   /** Pourquoi ce navigateur ne peut pas choisir de dossier (File System Access API absente) et quoi faire : Brave la
    *  désactive par défaut (réglage à activer) ; page en http hors localhost (contexte non sécurisé) ; Firefox, Safari. */
   const noFolderAccess = () =>
-    !window.isSecureContext ? t([`Choix d’un dossier impossible : page servie en http depuis ${location.host}. Ouvrir la suite par http://127.0.0.1 ou http://localhost (ou en https).`, `Cannot choose a folder: page served over http from ${location.host}. Open the suite via http://127.0.0.1 or http://localhost (or https).`, `Ordnerwahl nicht möglich: Seite per http von ${location.host}. Die Suite über http://127.0.0.1 oder http://localhost (oder https) öffnen.`, `No se puede elegir una carpeta: página servida por http desde ${location.host}. Abrir la suite con http://127.0.0.1 o http://localhost (o https).`])
-    : navigator.brave ? t(['Brave désactive l’accès aux dossiers locaux. Pour l’activer : ouvrir brave://flags/#file-system-access-api, passer « File System Access API » à Enabled, puis relancer Brave. Ou utiliser Chrome / Edge.', 'Brave disables local folder access. To enable it: open brave://flags/#file-system-access-api, set “File System Access API” to Enabled, then restart Brave. Or use Chrome / Edge.', 'Brave deaktiviert den Zugriff auf lokale Ordner. Aktivieren: brave://flags/#file-system-access-api öffnen, „File System Access API“ auf Enabled setzen, Brave neu starten. Oder Chrome / Edge verwenden.', 'Brave desactiva el acceso a carpetas locales. Para activarlo: abrir brave://flags/#file-system-access-api, poner «File System Access API» en Enabled y reiniciar Brave. O usar Chrome / Edge.'])
-    : t(['Ce navigateur ne permet pas de choisir un dossier local (File System Access API) : utiliser Chrome ou Edge.', 'This browser cannot choose a local folder (File System Access API): use Chrome or Edge.', 'Dieser Browser kann keinen lokalen Ordner wählen (File System Access API): Chrome oder Edge verwenden.', 'Este navegador no permite elegir una carpeta local (File System Access API): usar Chrome o Edge.']);
+    !window.isSecureContext ? t([`Choix d’un dossier impossible : page servie en http depuis ${location.host}. Ouvrir la suite par http://127.0.0.1 ou http://localhost (ou en https).`, `Cannot choose a folder: page served over http from ${location.host}. Open the suite via http://127.0.0.1 or http://localhost (or https).`, `Ordnerwahl nicht möglich: Seite per http von ${location.host}. Die Suite über http://127.0.0.1 oder http://localhost (oder https) öffnen.`, `No se puede elegir una carpeta: página servida por http desde ${location.host}. Abrir la suite con http://127.0.0.1 o http://localhost (o https).`]) :
+    navigator.brave ? t(['Brave désactive l’accès aux dossiers locaux. Pour l’activer : ouvrir brave://flags/#file-system-access-api, passer « File System Access API » à Enabled, puis relancer Brave. Ou utiliser Chrome / Edge.', 'Brave disables local folder access. To enable it: open brave://flags/#file-system-access-api, set “File System Access API” to Enabled, then restart Brave. Or use Chrome / Edge.', 'Brave deaktiviert den Zugriff auf lokale Ordner. Aktivieren: brave://flags/#file-system-access-api öffnen, „File System Access API“ auf Enabled setzen, Brave neu starten. Oder Chrome / Edge verwenden.', 'Brave desactiva el acceso a carpetas locales. Para activarlo: abrir brave://flags/#file-system-access-api, poner «File System Access API» en Enabled y reiniciar Brave. O usar Chrome / Edge.']) :
+    t(['Ce navigateur ne permet pas de choisir un dossier local (File System Access API) : utiliser Chrome ou Edge.', 'This browser cannot choose a local folder (File System Access API): use Chrome or Edge.', 'Dieser Browser kann keinen lokalen Ordner wählen (File System Access API): Chrome oder Edge verwenden.', 'Este navegador no permite elegir una carpeta local (File System Access API): usar Chrome o Edge.']);
 
   // heure d'un exercice : une seule référence (H, T ou M : le même instant) et un décalage avec son unité : « H+2mn »,
   // « T-20mn », « H+1h », « H+1h30mn », « M+39mn » ; sans unité (anciens fichiers : « H-20 », « H+60 ») : minutes
@@ -258,7 +261,9 @@
   const hText = (m, ref = 'H') => {
     if (m == null) return `${ref}+?`;
     m = Math.round(m);
-    const a = Math.abs(m), h = Math.floor(a / 60), r = a % 60;
+    const a = Math.abs(m),
+      h = Math.floor(a / 60),
+      r = a % 60;
     return m ? `${ref}${m > 0 ? '+' : '−'}${h ? `${h}h` : ''}${r ? `${r}mn` : ''}` : ref;
   };
   /** Visionneuse commune (fenêtre modale, titre, croix ; Échap ou clic sur le fond pour fermer). viewImage : image, clic
@@ -278,6 +283,7 @@
     document.body.append(d);
     return d;
   }
+
   function show(title, html, doc) {
     const d = viewer();
     d.classList.remove('rv-full');

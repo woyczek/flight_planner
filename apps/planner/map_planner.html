@@ -4,9 +4,11 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cartes de vol</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=9fd5d2aa">
-<script src="../../config/repository_tree?v=014ce40b"></script><script src="../../shared/kit.js?v=d0c3ca5f"></script>
-<style data-layer="lib">@import url("../../shared/carto/maplibre-gl.css") layer(lib);.volForm{display:grid;grid-template-columns:repeat(2,minmax(0,260px));gap:8px 12px;align-items:end}.volForm label{display:grid;gap:3px;font-size:13px}
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=d774850b">
+<script src="../../config/repository_tree?v=014ce40b"></script><script src="../../shared/kit.js?v=a2ce6913"></script>
+<style data-layer="lib">
+@import url("../../shared/carto/maplibre-gl.css") layer(lib);
+.volForm{display:grid;grid-template-columns:repeat(2,minmax(0,260px));gap:8px 12px;align-items:end}.volForm label{display:grid;gap:3px;font-size:13px}
 #volStatus:empty{display:none}
 .volMaps{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin:8px 0 2px}
 #vprofPtsBox{display:none!important}
@@ -14,1091 +16,1091 @@
 </style>
 <script src="../../shared/carto/maplibre-gl.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script>window.SIA_MISSION_NS='planner'</script><script src="../cpco/mission_store.js?v=bc34f56d"></script>
-<script src="../../shared/carto/aero_symbols.js?v=8393fb57"></script><script src="../../shared/carto/vertical_profile.js?v=75163ccf"></script><script src="../../shared/carto/vprof_editor.js?v=e34b66fc"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/flight_performance_model.js?v=9f9c9116"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=ec32b1f9"></script><script src="../../shared/mission_estimate.js?v=fe2b9cad"></script><script src="../../shared/mission_exercise.js?v=d66c8758"></script>
-<script src="../../shared/sia_base.js?v=16b7b107"></script><script src="../../shared/aar_tracks.js?v=f4061047"></script><script src="../../shared/airac.js?v=62723a04"></script><script src="../../shared/sticky_frame.js?v=90db4df1"></script>
+<script>window.SIA_MISSION_NS='planner'</script><script src="../cpco/mission_store.js?v=dab8a174"></script>
+<script src="../../shared/carto/aero_symbols.js?v=8393fb57"></script><script src="../../shared/carto/vertical_profile.js?v=75163ccf"></script><script src="../../shared/carto/vprof_editor.js?v=e34b66fc"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/flight_performance_model.js?v=9f9c9116"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=37689d94"></script><script src="../../shared/mission_estimate.js?v=7d806302"></script><script src="../../shared/mission_exercise.js?v=d66c8758"></script>
+<script src="../../shared/sia_base.js?v=fa6592d6"></script><script src="../../shared/aar_tracks.js?v=f4061047"></script><script src="../../shared/airac.js?v=6d1d8444"></script><script src="../../shared/sticky_frame.js?v=90db4df1"></script>
 <style data-layer="app">
 @layer app {
-:root {
-  font: 15px/1.45 system-ui, sans-serif;
-  color: #18242b;
-  background: #edf3f6
-}
-body {
-  max-width: 1500px;
-  margin: 0 auto;
-  padding: 0 18px 50px
-}
-header,
-section {
-  background: #fff;
-  border: 1px solid #d3dfe5;
-  border-radius: 12px;
-  padding: 20px;
-  margin: 14px 0;
-  box-shadow: 0 2px 8px #18313e0d
-}
-h1 {
-  margin: 0;
-  font-size: 1.65rem
-}
-h2 {
-  margin: 0 0 13px;
-  font-size: 1.1rem
-}
-.sub {
-  color: #586a74;
-  margin: .35rem 0
-}
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(235px, 1fr));
-  gap: 14px
-}
-.box {
-  border: 1px solid #dce5e9;
-  border-radius: 9px;
-  padding: 12px
-}
-.check {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin: 7px 0;
-  font-weight: 600
-}
-.check input {
-  width: 18px;
-  height: 18px
-}
-label {
-  display: block;
-  font-weight: 650;
-  margin: 7px 0
-}
-input[type=file],
-input[type=number],
-textarea {
-  width: 100%;
-  box-sizing: border-box;
-  margin-top: 4px;
-  padding: 8px;
-  border: 1px solid #afc1ca;
-  border-radius: 7px;
-  font: inherit
-}
-textarea {
-  min-height: 105px;
-  font-family: ui-monospace, monospace
-}
-button,
-.buttonLink {
-  border: 0;
-  border-radius: 8px;
-  background: #075ca8;
-  color: #fff;
-  padding: 10px 16px;
-  font: inherit;
-  font-weight: 750;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-block
-}
-button:disabled {
-  opacity: .45;
-  cursor: not-allowed
-}
-.warn {
-  background: #fff7d9;
-  border-left: 4px solid #dfa400;
-  padding: 9px 11px
-}
-.ok {
-  color: #08723c
-}
-.err {
-  color: #a12622
-}
-code {
-  background: #eef2f4;
-  padding: 2px 5px;
-  border-radius: 4px
-}
-#maps {
-  padding-left: 20px
-}
-.actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap
-}
-.small {
-  font-size: .88rem;
-  color: #5c6d76
-}
-progress {
-  width: 100%;
-  height: 18px
-}
-input[type=range] {
-  width: 100%;
-  margin: 5px 0
-}
-select {
-  width: 100%;
-  box-sizing: border-box;
-  margin-top: 4px;
-  padding: 8px;
-  border: 1px solid #afc1ca;
-  border-radius: 7px;
-  background: #fff;
-  font: inherit
-}
-#generalPreview,
-#assemblyPreview {
-  display: block;
-  width: 100%;
-  min-height: 220px;
-  max-height: 680px;
-  object-fit: contain;
-  margin-top: 12px;
-  border: 1px solid #c8d6dd;
-  border-radius: 9px;
-  background: #f4f7f8
-}
-#previewGallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 12px;
-  margin-top: 12px
-}
-.previewCard {
-  border: 1px solid #c8d6dd;
-  border-radius: 9px;
-  padding: 8px;
-  background: #f7fafb
-}
-.previewCard img {
-  display: block;
-  width: 100%;
-  aspect-ratio: 16/10;
-  object-fit: contain;
-  background: #eef3f5
-}
-.previewCard strong {
-  display: block;
-  margin-bottom: 6px
-}
-.colorRow {
-  display: grid;
-  grid-template-columns: 1fr 46px;
-  gap: 8px;
-  align-items: end
-}
-.colorRow input[type=color] {
-  width: 46px;
-  height: 34px;
-  padding: 2px;
-  border: 1px solid #afc1ca;
-  border-radius: 6px;
-  background: #fff
-}
-#osmLivePreview {
-  width: 100%;
-  height: 620px;
-  margin-top: 12px;
-  border: 1px solid #c8d6dd;
-  border-radius: 9px;
-  overflow: hidden;
-  transform: translateZ(0);
-  isolation: isolate
-}
-.missionMarker,
-.cityMarker {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  white-space: nowrap;
-  pointer-events: none
-}
-.missionMarkerDot,
-.cityMarkerDot {
-  display: block;
-  border: 2px solid #17202a;
-  border-radius: 50%;
-  background: #ffb000;
-  box-sizing: border-box
-}
-.missionMarkerLabel,
-.cityMarkerLabel {
-  font: 700 12px Arial, sans-serif;
-  color: #17202a;
-  text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff
-}
-.cityMarkerDot {
-  border: 0;
-  background: #17202a;
-  width: 5px;
-  height: 5px
-}
-.osmLayers {
-  margin-top: 10px
-}
-.osmLayers .check {
-  font-weight: 500
-}
-.previewCard img,
-#generalPreview,
-#assemblyPreview {
-  cursor: zoom-in
-}
-dialog#previewDialog {
-  width: min(96vw, 1800px);
-  height: min(94vh, 1100px);
-  padding: 42px 12px 12px;
-  border: 0;
-  border-radius: 10px;
-  background: #152027
-}
-dialog#previewDialog::backdrop {
-  background: rgba(0, 0, 0, .8)
-}
-#previewDialog img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain
-}
-#closePreview {
-  position: absolute;
-  right: 10px;
-  top: 8px;
-  padding: 6px 12px
-}
-.denseGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
-  gap: 2px 10px
-}
-.denseGrid .check {
-  margin: 2px 0;
-  font-size: .9rem
-}
-.profileBar {
-  display: grid;
-  grid-template-columns: 1.2fr 1.5fr 1.3fr auto;
-  gap: 8px;
-  align-items: end
-}
-.mapProfileRow {
-  display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(180px, 280px);
-  gap: 10px;
-  align-items: center;
-  padding: 5px 0;
-  border-bottom: 1px solid #e4ebee
-}
-.peakMarker {
-  white-space: nowrap;
-  font-weight: 700;
-  text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff
-}
-@media(max-width:760px) {
-  .profileBar,
+  :root {
+    font: 15px/1.45 system-ui, sans-serif;
+    color: #18242b;
+    background: #edf3f6
+  }
+  body {
+    max-width: 1500px;
+    margin: 0 auto;
+    padding: 0 18px 50px
+  }
+  header,
+  section {
+    background: #fff;
+    border: 1px solid #d3dfe5;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 14px 0;
+    box-shadow: 0 2px 8px #18313e0d
+  }
+  h1 {
+    margin: 0;
+    font-size: 1.65rem
+  }
+  h2 {
+    margin: 0 0 13px;
+    font-size: 1.1rem
+  }
+  .sub {
+    color: #586a74;
+    margin: .35rem 0
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(235px, 1fr));
+    gap: 14px
+  }
+  .box {
+    border: 1px solid #dce5e9;
+    border-radius: 9px;
+    padding: 12px
+  }
+  .check {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin: 7px 0;
+    font-weight: 600
+  }
+  .check input {
+    width: 18px;
+    height: 18px
+  }
+  label {
+    display: block;
+    font-weight: 650;
+    margin: 7px 0
+  }
+  input[type=file],
+  input[type=number],
+  textarea {
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 4px;
+    padding: 8px;
+    border: 1px solid #afc1ca;
+    border-radius: 7px;
+    font: inherit
+  }
+  textarea {
+    min-height: 105px;
+    font-family: ui-monospace, monospace
+  }
+  button,
+  .buttonLink {
+    border: 0;
+    border-radius: 8px;
+    background: #075ca8;
+    color: #fff;
+    padding: 10px 16px;
+    font: inherit;
+    font-weight: 750;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block
+  }
+  button:disabled {
+    opacity: .45;
+    cursor: not-allowed
+  }
+  .warn {
+    background: #fff7d9;
+    border-left: 4px solid #dfa400;
+    padding: 9px 11px
+  }
+  .ok {
+    color: #08723c
+  }
+  .err {
+    color: #a12622
+  }
+  code {
+    background: #eef2f4;
+    padding: 2px 5px;
+    border-radius: 4px
+  }
+  #maps {
+    padding-left: 20px
+  }
+  .actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap
+  }
+  .small {
+    font-size: .88rem;
+    color: #5c6d76
+  }
+  progress {
+    width: 100%;
+    height: 18px
+  }
+  input[type=range] {
+    width: 100%;
+    margin: 5px 0
+  }
+  select {
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 4px;
+    padding: 8px;
+    border: 1px solid #afc1ca;
+    border-radius: 7px;
+    background: #fff;
+    font: inherit
+  }
+  #generalPreview,
+  #assemblyPreview {
+    display: block;
+    width: 100%;
+    min-height: 220px;
+    max-height: 680px;
+    object-fit: contain;
+    margin-top: 12px;
+    border: 1px solid #c8d6dd;
+    border-radius: 9px;
+    background: #f4f7f8
+  }
+  #previewGallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+    margin-top: 12px
+  }
+  .previewCard {
+    border: 1px solid #c8d6dd;
+    border-radius: 9px;
+    padding: 8px;
+    background: #f7fafb
+  }
+  .previewCard img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16/10;
+    object-fit: contain;
+    background: #eef3f5
+  }
+  .previewCard strong {
+    display: block;
+    margin-bottom: 6px
+  }
+  .colorRow {
+    display: grid;
+    grid-template-columns: 1fr 46px;
+    gap: 8px;
+    align-items: end
+  }
+  .colorRow input[type=color] {
+    width: 46px;
+    height: 34px;
+    padding: 2px;
+    border: 1px solid #afc1ca;
+    border-radius: 6px;
+    background: #fff
+  }
+  #osmLivePreview {
+    width: 100%;
+    height: 620px;
+    margin-top: 12px;
+    border: 1px solid #c8d6dd;
+    border-radius: 9px;
+    overflow: hidden;
+    transform: translateZ(0);
+    isolation: isolate
+  }
+  .missionMarker,
+  .cityMarker {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    pointer-events: none
+  }
+  .missionMarkerDot,
+  .cityMarkerDot {
+    display: block;
+    border: 2px solid #17202a;
+    border-radius: 50%;
+    background: #ffb000;
+    box-sizing: border-box
+  }
+  .missionMarkerLabel,
+  .cityMarkerLabel {
+    font: 700 12px Arial, sans-serif;
+    color: #17202a;
+    text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff
+  }
+  .cityMarkerDot {
+    border: 0;
+    background: #17202a;
+    width: 5px;
+    height: 5px
+  }
+  .osmLayers {
+    margin-top: 10px
+  }
+  .osmLayers .check {
+    font-weight: 500
+  }
+  .previewCard img,
+  #generalPreview,
+  #assemblyPreview {
+    cursor: zoom-in
+  }
+  dialog#previewDialog {
+    width: min(96vw, 1800px);
+    height: min(94vh, 1100px);
+    padding: 42px 12px 12px;
+    border: 0;
+    border-radius: 10px;
+    background: #152027
+  }
+  dialog#previewDialog::backdrop {
+    background: rgba(0, 0, 0, .8)
+  }
+  #previewDialog img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain
+  }
+  #closePreview {
+    position: absolute;
+    right: 10px;
+    top: 8px;
+    padding: 6px 12px
+  }
+  .denseGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+    gap: 2px 10px
+  }
+  .denseGrid .check {
+    margin: 2px 0;
+    font-size: .9rem
+  }
+  .profileBar {
+    display: grid;
+    grid-template-columns: 1.2fr 1.5fr 1.3fr auto;
+    gap: 8px;
+    align-items: end
+  }
   .mapProfileRow {
-    grid-template-columns: 1fr
+    display: grid;
+    grid-template-columns: minmax(180px, 1fr) minmax(180px, 280px);
+    gap: 10px;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid #e4ebee
   }
-}
-header {
-  margin: 0;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  padding: 10px 20px
-}
-header .header-row {
-  display: flex;
-  align-items: center;
-  gap: 8px 14px;
-  min-height: 46px;
-  flex-wrap: wrap
-}
-header .repo-header-tools {
-  margin-left: auto
-}
-header .repo-header-spacer {
-  display: none
-}
-header h1 {
-  font-size: 22px;
-  margin: 0;
-  white-space: nowrap
-}
-header .headerButton {
-  white-space: nowrap
-}
-body {
-  max-width: none;
-  margin: 0;
-  padding: 0
-}
-main {
-  max-width: 1500px;
-  margin: 0 auto;
-  padding: 0 18px 50px
-}
-header .headerButton {
-  background: color-mix(in srgb, var(--repo-bar-text, #fff) 16%, transparent);
-  border: 1px solid color-mix(in srgb, var(--repo-bar-text, #fff) 35%, transparent);
-  color: inherit;
-  padding: 6px 12px;
-  font-size: .9rem;
-  font-weight: 650;
-  border-radius: 7px;
-  cursor: pointer;
-  text-decoration: none
-}
-header .headerButton:hover {
-  background: color-mix(in srgb, var(--repo-bar-text, #fff) 28%, transparent)
-}
-.profileLayout {
-  display: grid;
-  grid-template-columns: minmax(0, var(--split-left, 60fr)) 12px minmax(280px, var(--split-right, 40fr));
-  gap: 0 6px;
-  align-items: start
-}
-.splitter {
-  align-self: stretch;
-  cursor: col-resize;
-  border-radius: 6px;
-  background: linear-gradient(90deg, transparent 4px, #c8d6dd 4px, #c8d6dd 8px, transparent 8px)
-}
-.splitter:hover,
-.splitter.drag {
-  background: linear-gradient(90deg, transparent 3px, #075ca8 3px, #075ca8 9px, transparent 9px)
-}
-.profileTabs {
-  display: flex;
-  gap: 4px;
-  margin: 10px 0 0;
-  border-bottom: 2px solid #075ca8
-}
-.profileTabs button {
-  background: #e3edf3;
-  color: #18242b;
-  border-radius: 8px 8px 0 0;
-  padding: 7px 14px
-}
-.profileTabs button.on {
-  background: #075ca8;
-  color: #fff
-}
-.tabPanel {
-  margin-top: 8px
-}
-.tabPanel[data-panel=fond] {
-  margin-top: 8px
-}
-.zoneGrid {
-  grid-template-columns: 1fr 1fr
-}
-.famBox .check {
-  white-space: nowrap;
-  margin: 2px 0
-}
-.zoneGrid .zonePick,
-.zoneGrid>.box:last-child {
-  grid-column: 1/-1
-}
-.profileLeft input:not([type]),
-.profileLeft input[type=text],
-.profileLeft textarea {
-  width: 100%;
-  box-sizing: border-box;
-  margin-top: 4px;
-  padding: 8px;
-  border: 1px solid #afc1ca;
-  border-radius: 7px;
-  font: inherit
-}
-.profileLeft .zoneAdd input {
-  margin-top: 0
-}
-.profileLeft .profileBar {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)
-}
-.profileLeft .profileBar label:nth-of-type(3),
-.profileLeft .profileBar .actions {
-  grid-column: 1/-1
-}
-.profileLeft .profileBar .actions {
-  margin-top: 2px
-}
-.profileLeft .profileBar .actions button {
-  padding: 7px 12px
-}
-.howto {
-  margin: 8px 0
-}
-.profileLeft .box {
-  padding: 10px 12px;
-  margin: 8px 0
-}
-.profileLeft .grid {
-  gap: 8px
-}
-.elemGrid {
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr))
-}
-body.previewWindow>header,
-body.previewWindow>footer,
-body.previewWindow main>section:not([data-block-id=sia-route]),
-body.previewWindow .routeBar,
-body.previewWindow #routeInfo,
-body.previewWindow #vprofImg,
-body.previewWindow #vprofStatus,
-body.previewWindow .vprofSettings,
-body.previewWindow .splitter,
-body.previewWindow .repo-block-heading,
-body.previewWindow #previewWindow,
-body.previewWindow #previewPop {
-  display: none !important
-}
-body.previewWindow {
-  max-width: none;
-  padding: 0;
-  margin: 0
-}
-body.previewWindow main,
-body.previewWindow section {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  box-shadow: none
-}
-body.previewWindow .profileLayout {
-  display: block
-}
-body.previewWindow .profilePreview {
-  position: fixed;
-  inset: 0;
-  margin: 0;
-  border-radius: 0;
-  display: flex;
-  flex-direction: column
-}
-body.previewWindow #osmLivePreview {
-  flex: 1;
-  height: auto
-}
-body.previewWindow #generalPreview {
-  flex: 1;
-  max-height: none
-}
-.profileLeft,
-.profileLeft * {
-  min-width: 0
-}
-.profileLeft .zoneAdd input {
-  flex: 1 1 0;
-  width: auto
-}
-.zoneModeRow {
-  flex-wrap: wrap
-}
-.profileLeft .actions {
-  flex-wrap: wrap
-}
-.zoneGrid {
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr))
-}
-.zoneGrid .wide {
-  grid-column: 1/-1
-}
-.aarPick summary {
-  cursor: pointer;
-  padding: 6px 8px;
-  border: 1px solid #afc1ca;
-  border-radius: 7px;
-  background: #fff
-}
-.aarOptions {
-  max-height: 230px;
-  overflow: auto;
-  border: 1px solid #c8d6dd;
-  border-top: 0;
-  padding: 4px 8px;
-  background: #fff
-}
-.aarOptions .check {
-  margin: 2px 0
-}
-.profilePreview.popped>:not(#osmLivePreview):not(#generalPreview):not(.viewBar):not(#previewStatus),
-body.previewWindow .profilePreview>:not(#osmLivePreview):not(#generalPreview):not(.viewBar):not(#previewStatus) {
-  display: none !important
-}
-.profilePreview.popped {
-  position: fixed;
-  inset: 56px 2vw 2vh 2vw;
-  z-index: 1500;
-  background: #fff;
-  padding: 12px;
-  border-radius: 12px;
-  margin: 0;
-  box-shadow: 0 10px 40px #0006;
-  display: flex;
-  flex-direction: column
-}
-.profilePreview.popped #osmLivePreview {
-  flex: 1;
-  height: auto
-}
-.profilePreview.popped #generalPreview {
-  flex: 1;
-  max-height: none
-}
-.profilePreview {
-  position: sticky;
-  top: 60px
-}
-.profilePreview .previewBar {
-  display: flex;
-  gap: 10px;
-  align-items: end
-}
-.profilePreview .previewBar label {
-  flex: 1
-}
-.profilePreview #osmLivePreview {
-  height: 560px
-}
-.profilePreview #generalPreview {
-  max-height: 560px
-}
-@media(max-width:980px) {
-  .profileLayout {
-    grid-template-columns: 1fr
+  .peakMarker {
+    white-space: nowrap;
+    font-weight: 700;
+    text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff
   }
-  .splitter {
+  @media(max-width:760px) {
+    .profileBar,
+    .mapProfileRow {
+      grid-template-columns: 1fr
+    }
+  }
+  header {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 10px 20px
+  }
+  header .header-row {
+    display: flex;
+    align-items: center;
+    gap: 8px 14px;
+    min-height: 46px;
+    flex-wrap: wrap
+  }
+  header .repo-header-tools {
+    margin-left: auto
+  }
+  header .repo-header-spacer {
     display: none
   }
-  .profilePreview {
-    position: static
+  header h1 {
+    font-size: 22px;
+    margin: 0;
+    white-space: nowrap
   }
-}
-.danger {
-  background: #b3261e
-}
-.folderBar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center
-}
-.folderBar [data-folder-state="prompt"] {
-  outline: 2px solid #d39b00
-}
-[hidden] {
-  display: none !important
-}
-#vprofBox .profileBar>.check {
-  grid-column: 1/-1;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  min-width: 0
-}
-#vprofBox .profileBar>.check code {
-  overflow-wrap: anywhere
-}
-#vprofBox .profileBar>button {
-  grid-column: 1/-1;
-  justify-self: start
-}
-#vprofCruise {
-  width: 100%;
-  box-sizing: border-box
-}
-.zoneModeRow,
-.zoneAdd {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin: 6px 0
-}
-.zoneAdd input {
-  flex: 1
-}
-.zoneChips {
-  list-style: none;
-  padding: 0;
-  margin: 6px 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px
-}
-.zoneChips li {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #e3edf3;
-  border: 1px solid #b9ccd6;
-  border-radius: 14px;
-  padding: 2px 4px 2px 10px;
-  font-size: .88rem
-}
-.zoneChips li.none {
-  background: #fbe9e7;
-  border-color: #e0a59c
-}
-.zoneChips button {
-  background: transparent;
-  color: inherit;
-  padding: 0 6px;
-  font-size: 1rem;
-  line-height: 1
-}
-.elemBox .elemHead {
-  font-weight: 700;
-  display: block;
-  margin-bottom: 4px
-}
-.elemBox .sub {
-  margin-left: 4px
-}
-.logRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 14px;
-  margin: 6px 0
-}
-.logRow>label {
-  margin: 0
-}
-.logSlider {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: 1;
-  min-width: 210px
-}
-.logSlider output {
-  min-width: 5.5em;
-  text-align: right
-}
-.logSlider input[type=range] {
-  flex: 1
-}
-.elemBox.nested {
-  border-top: 1px solid #d5e0e6;
-  margin-top: 10px;
-  padding-top: 8px
-}
-.elemBox.off>.sub {
-  opacity: .4;
-  pointer-events: none
-}
-.famHead {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-bottom: 4px
-}
-.famHead .check {
-  margin: 0;
-  font-weight: 500
-}
-.checkGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 0 10px
-}
-.viewBar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  align-items: center;
-  margin-top: 8px
-}
-.viewBar .viewSpacer {
-  flex: 1
-}
-.missionOpen {
-  margin-top: 8px
-}
-.missionOpen>summary,
-.profileEdit>summary {
-  cursor: pointer;
-  font-weight: 650;
-  padding: 4px 0
-}
-.missionOpen[open]>summary {
-  margin-bottom: 8px
-}
-.mapsHead {
-  display: flex;
-  gap: 10px;
-  align-items: baseline;
-  flex-wrap: wrap
-}
-.profileEdit {
-  margin-top: 12px;
-  border-top: 1px solid #d3dfe5;
-  padding-top: 8px
-}
-.profileEdit[open]>summary {
-  margin-bottom: 8px
-}
-.viewBar button {
-  padding: 5px 9px;
-  min-width: 30px
-}
-.mapList {
-  margin-top: 6px;
-  border-top: 1px solid #d3dfe5
-}
-.mapRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 6px;
-  align-items: center;
-  padding: 5px 0;
-  border-bottom: 1px solid #eef3f6
-}
-.mapRow .mapShow {
-  flex: 1 1 14em;
-  min-width: 0;
-  text-align: left;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap
-}
-.mapRow select {
-  flex: 1 1 9em;
-  min-width: 0;
-  width: auto
-}
-.mapRow .mapZip,
-.mapRow .mapDel {
-  flex: 0 0 auto
-}
-.mapRow.on .mapShow {
-  font-weight: 800;
-  color: #075ca8
-}
-.mapRow.off .mapShow {
-  text-decoration: line-through;
-  opacity: .55
-}
-.mapShow {
-  background: none;
-  color: inherit;
-  padding: 2px 0;
-  text-align: left;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap
-}
-.mapRow select {
-  margin: 0;
-  padding: 4px
-}
-.galleryMission {
-  grid-column: 1/-1;
-  margin: 10px 0 2px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid #b9cbd4
-}
-/* pied de page semi-fixe : collé en bas de la fenêtre pendant le défilement, à sa place en fin de page */
-.studio-footer {
-  position: sticky;
-  bottom: 0;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 8px 18px;
-  background: color-mix(in srgb, var(--repo-page, #edf3f6) 92%, #fff);
-  border-top: 1px solid #b9cbd4;
-  box-shadow: 0 -4px 16px #17354a1f
-}
-.studio-footer .small {
-  margin-right: auto;
-  color: #44525b
-}
-.previewZip {
-  margin-right: 6px
-}
-.previewCard .mapZip {
-  float: right
-}
-.previewCard.nozip img {
-  opacity: .45
-}
-.mapZip {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 12px;
-  white-space: nowrap;
-  cursor: pointer
-}
-.mapZip input {
-  margin: 0
-}
-.mapRow.nozip .mapShow {
-  text-decoration: line-through;
-  opacity: .65
-}
-.mapRow .mapDel {
-  background: none;
-  color: #b3261e;
-  padding: 2px 8px
-}
-.mapAdd {
-  display: flex;
-  gap: 6px;
-  margin-top: 6px
-}
-.mapAdd input {
-  flex: 1;
-  min-width: 0
-}
-.check input[type=checkbox] {
-  flex: 0 0 auto;
-  width: 16px;
-  height: 16px;
-  min-width: 16px;
-  margin: 0 6px 0 0
-}
-.check {
-  display: flex;
-  align-items: center
-}
-.mapAdd select {
-  width: auto;
-  flex: 0 0 auto;
-  margin: 0
-}
-.mapAdd input {
-  flex: 1 1 140px;
-  min-width: 100px;
-  width: auto
-}
-.profilePreview .profileBar {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  display: grid;
-  gap: 8px
-}
-.profilePreview .profileBar .actions {
-  grid-column: 1/-1
-}
-.profilePreview #profileSettings {
-  margin-top: 10px
-}
-.profilePreview input:not([type]) {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 8px;
-  border: 1px solid #afc1ca;
-  border-radius: 7px
-}
-.aliasCard {
-  border: 1px solid #c8d6dd;
-  border-radius: 8px;
-  padding: 6px 8px;
-  margin: 6px 0
-}
-.aliasCard .zoneAdd input {
-  font-weight: 700
-}
-.aliasCard textarea {
-  width: 100%;
-  min-height: 70px;
-  box-sizing: border-box
-}
-.zoneMatchedList {
-  max-height: 260px;
-  overflow: auto;
-  margin: 6px 0;
-  padding-left: 18px;
-  font-size: .86rem
-}
-#zoneMode.black {
-  background: #3b3b3b;
-  color: #fff
-}
-.mapProfileRow.off code {
-  text-decoration: line-through;
-  opacity: .55
-}
-.cpco-eyebrow {
-  display: block;
-  margin: 0 0 2px;
-  line-height: 1.2;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: inherit;
-  opacity: .78
-}
-.vprof-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin: 4px 0
-}
-.vprof-chip {
-  padding: 1px 6px;
-  border: 1px solid #c8d6dd;
-  border-radius: 4px;
-  background: #fff;
-  color: #17202a;
-  font: 12px/1.5 ui-monospace, Consolas, monospace;
-  cursor: default
-}
-.vprof-chip.lvl {
-  opacity: .7;
-  font-style: italic
-}
-.vprof-chip.on {
-  background: #ffe08a;
-  border-color: #d69600
-}
-.routeText {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  min-height: 3.2em;
-  margin: 0 0 8px;
-  padding: 8px;
-  font: 13px/1.45 ui-monospace, Consolas, monospace;
-  resize: vertical
-}
-.routeBar {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px 18px
-}
-.routeGroup {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px
-}
-.routeInline {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-  font-weight: 600
-}
-.routeBar select {
-  width: auto;
-  min-width: 0;
-  max-width: 14em
-}
-.routeBar #vprofCruise {
-  width: 6.5em;
-  min-width: 0
-}
-#routeInfo:empty {
-  display: none
-}
-.route-help {
-  margin-top: 6px
-}
-.route-help summary {
-  cursor: pointer;
-  font-weight: 650
-}
-.route-help p {
-  margin: 6px 0 0
-}
-.route-edit-mirror span.on {
-  background: rgba(255, 196, 0, .55);
-  border-radius: 2px;
-  box-shadow: 0 0 0 1px rgba(214, 150, 0, .9)
-}
-.routeMap.profilePreview {
-  position: static;
-  margin: 8px 0
-}
-.routeProfileEdit {
-  margin: 0 0 8px
-}
-.routeProfileEdit>.profileEdit {
-  margin: 0
-}
-.routeMapBar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  align-items: center;
-  margin: 0 0 8px
-}
-.routeMapBar select {
-  width: auto;
-  min-width: 0;
-  max-width: 22em
-}
-.routeMap #osmLivePreview {
-  height: 480px
-}
-/* point de route sur la carte : le marqueur est la pastille seule (12 × 12, centrée sur le point : ancre « center »,
+  header .headerButton {
+    white-space: nowrap
+  }
+  body {
+    max-width: none;
+    margin: 0;
+    padding: 0
+  }
+  main {
+    max-width: 1500px;
+    margin: 0 auto;
+    padding: 0 18px 50px
+  }
+  header .headerButton {
+    background: color-mix(in srgb, var(--repo-bar-text, #fff) 16%, transparent);
+    border: 1px solid color-mix(in srgb, var(--repo-bar-text, #fff) 35%, transparent);
+    color: inherit;
+    padding: 6px 12px;
+    font-size: .9rem;
+    font-weight: 650;
+    border-radius: 7px;
+    cursor: pointer;
+    text-decoration: none
+  }
+  header .headerButton:hover {
+    background: color-mix(in srgb, var(--repo-bar-text, #fff) 28%, transparent)
+  }
+  .profileLayout {
+    display: grid;
+    grid-template-columns: minmax(0, var(--split-left, 60fr)) 12px minmax(280px, var(--split-right, 40fr));
+    gap: 0 6px;
+    align-items: start
+  }
+  .splitter {
+    align-self: stretch;
+    cursor: col-resize;
+    border-radius: 6px;
+    background: linear-gradient(90deg, transparent 4px, #c8d6dd 4px, #c8d6dd 8px, transparent 8px)
+  }
+  .splitter:hover,
+  .splitter.drag {
+    background: linear-gradient(90deg, transparent 3px, #075ca8 3px, #075ca8 9px, transparent 9px)
+  }
+  .profileTabs {
+    display: flex;
+    gap: 4px;
+    margin: 10px 0 0;
+    border-bottom: 2px solid #075ca8
+  }
+  .profileTabs button {
+    background: #e3edf3;
+    color: #18242b;
+    border-radius: 8px 8px 0 0;
+    padding: 7px 14px
+  }
+  .profileTabs button.on {
+    background: #075ca8;
+    color: #fff
+  }
+  .tabPanel {
+    margin-top: 8px
+  }
+  .tabPanel[data-panel=fond] {
+    margin-top: 8px
+  }
+  .zoneGrid {
+    grid-template-columns: 1fr 1fr
+  }
+  .famBox .check {
+    white-space: nowrap;
+    margin: 2px 0
+  }
+  .zoneGrid .zonePick,
+  .zoneGrid>.box:last-child {
+    grid-column: 1/-1
+  }
+  .profileLeft input:not([type]),
+  .profileLeft input[type=text],
+  .profileLeft textarea {
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 4px;
+    padding: 8px;
+    border: 1px solid #afc1ca;
+    border-radius: 7px;
+    font: inherit
+  }
+  .profileLeft .zoneAdd input {
+    margin-top: 0
+  }
+  .profileLeft .profileBar {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)
+  }
+  .profileLeft .profileBar label:nth-of-type(3),
+  .profileLeft .profileBar .actions {
+    grid-column: 1/-1
+  }
+  .profileLeft .profileBar .actions {
+    margin-top: 2px
+  }
+  .profileLeft .profileBar .actions button {
+    padding: 7px 12px
+  }
+  .howto {
+    margin: 8px 0
+  }
+  .profileLeft .box {
+    padding: 10px 12px;
+    margin: 8px 0
+  }
+  .profileLeft .grid {
+    gap: 8px
+  }
+  .elemGrid {
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr))
+  }
+  body.previewWindow>header,
+  body.previewWindow>footer,
+  body.previewWindow main>section:not([data-block-id=sia-route]),
+  body.previewWindow .routeBar,
+  body.previewWindow #routeInfo,
+  body.previewWindow #vprofImg,
+  body.previewWindow #vprofStatus,
+  body.previewWindow .vprofSettings,
+  body.previewWindow .splitter,
+  body.previewWindow .repo-block-heading,
+  body.previewWindow #previewWindow,
+  body.previewWindow #previewPop {
+    display: none !important
+  }
+  body.previewWindow {
+    max-width: none;
+    padding: 0;
+    margin: 0
+  }
+  body.previewWindow main,
+  body.previewWindow section {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    box-shadow: none
+  }
+  body.previewWindow .profileLayout {
+    display: block
+  }
+  body.previewWindow .profilePreview {
+    position: fixed;
+    inset: 0;
+    margin: 0;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column
+  }
+  body.previewWindow #osmLivePreview {
+    flex: 1;
+    height: auto
+  }
+  body.previewWindow #generalPreview {
+    flex: 1;
+    max-height: none
+  }
+  .profileLeft,
+  .profileLeft * {
+    min-width: 0
+  }
+  .profileLeft .zoneAdd input {
+    flex: 1 1 0;
+    width: auto
+  }
+  .zoneModeRow {
+    flex-wrap: wrap
+  }
+  .profileLeft .actions {
+    flex-wrap: wrap
+  }
+  .zoneGrid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr))
+  }
+  .zoneGrid .wide {
+    grid-column: 1/-1
+  }
+  .aarPick summary {
+    cursor: pointer;
+    padding: 6px 8px;
+    border: 1px solid #afc1ca;
+    border-radius: 7px;
+    background: #fff
+  }
+  .aarOptions {
+    max-height: 230px;
+    overflow: auto;
+    border: 1px solid #c8d6dd;
+    border-top: 0;
+    padding: 4px 8px;
+    background: #fff
+  }
+  .aarOptions .check {
+    margin: 2px 0
+  }
+  .profilePreview.popped>:not(#osmLivePreview):not(#generalPreview):not(.viewBar):not(#previewStatus),
+  body.previewWindow .profilePreview>:not(#osmLivePreview):not(#generalPreview):not(.viewBar):not(#previewStatus) {
+    display: none !important
+  }
+  .profilePreview.popped {
+    position: fixed;
+    inset: 56px 2vw 2vh 2vw;
+    z-index: 1500;
+    background: #fff;
+    padding: 12px;
+    border-radius: 12px;
+    margin: 0;
+    box-shadow: 0 10px 40px #0006;
+    display: flex;
+    flex-direction: column
+  }
+  .profilePreview.popped #osmLivePreview {
+    flex: 1;
+    height: auto
+  }
+  .profilePreview.popped #generalPreview {
+    flex: 1;
+    max-height: none
+  }
+  .profilePreview {
+    position: sticky;
+    top: 60px
+  }
+  .profilePreview .previewBar {
+    display: flex;
+    gap: 10px;
+    align-items: end
+  }
+  .profilePreview .previewBar label {
+    flex: 1
+  }
+  .profilePreview #osmLivePreview {
+    height: 560px
+  }
+  .profilePreview #generalPreview {
+    max-height: 560px
+  }
+  @media(max-width:980px) {
+    .profileLayout {
+      grid-template-columns: 1fr
+    }
+    .splitter {
+      display: none
+    }
+    .profilePreview {
+      position: static
+    }
+  }
+  .danger {
+    background: #b3261e
+  }
+  .folderBar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center
+  }
+  .folderBar [data-folder-state="prompt"] {
+    outline: 2px solid #d39b00
+  }
+  [hidden] {
+    display: none !important
+  }
+  #vprofBox .profileBar>.check {
+    grid-column: 1/-1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    min-width: 0
+  }
+  #vprofBox .profileBar>.check code {
+    overflow-wrap: anywhere
+  }
+  #vprofBox .profileBar>button {
+    grid-column: 1/-1;
+    justify-self: start
+  }
+  #vprofCruise {
+    width: 100%;
+    box-sizing: border-box
+  }
+  .zoneModeRow,
+  .zoneAdd {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin: 6px 0
+  }
+  .zoneAdd input {
+    flex: 1
+  }
+  .zoneChips {
+    list-style: none;
+    padding: 0;
+    margin: 6px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px
+  }
+  .zoneChips li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #e3edf3;
+    border: 1px solid #b9ccd6;
+    border-radius: 14px;
+    padding: 2px 4px 2px 10px;
+    font-size: .88rem
+  }
+  .zoneChips li.none {
+    background: #fbe9e7;
+    border-color: #e0a59c
+  }
+  .zoneChips button {
+    background: transparent;
+    color: inherit;
+    padding: 0 6px;
+    font-size: 1rem;
+    line-height: 1
+  }
+  .elemBox .elemHead {
+    font-weight: 700;
+    display: block;
+    margin-bottom: 4px
+  }
+  .elemBox .sub {
+    margin-left: 4px
+  }
+  .logRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 14px;
+    margin: 6px 0
+  }
+  .logRow>label {
+    margin: 0
+  }
+  .logSlider {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 210px
+  }
+  .logSlider output {
+    min-width: 5.5em;
+    text-align: right
+  }
+  .logSlider input[type=range] {
+    flex: 1
+  }
+  .elemBox.nested {
+    border-top: 1px solid #d5e0e6;
+    margin-top: 10px;
+    padding-top: 8px
+  }
+  .elemBox.off>.sub {
+    opacity: .4;
+    pointer-events: none
+  }
+  .famHead {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 4px
+  }
+  .famHead .check {
+    margin: 0;
+    font-weight: 500
+  }
+  .checkGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0 10px
+  }
+  .viewBar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+    margin-top: 8px
+  }
+  .viewBar .viewSpacer {
+    flex: 1
+  }
+  .missionOpen {
+    margin-top: 8px
+  }
+  .missionOpen>summary,
+  .profileEdit>summary {
+    cursor: pointer;
+    font-weight: 650;
+    padding: 4px 0
+  }
+  .missionOpen[open]>summary {
+    margin-bottom: 8px
+  }
+  .mapsHead {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    flex-wrap: wrap
+  }
+  .profileEdit {
+    margin-top: 12px;
+    border-top: 1px solid #d3dfe5;
+    padding-top: 8px
+  }
+  .profileEdit[open]>summary {
+    margin-bottom: 8px
+  }
+  .viewBar button {
+    padding: 5px 9px;
+    min-width: 30px
+  }
+  .mapList {
+    margin-top: 6px;
+    border-top: 1px solid #d3dfe5
+  }
+  .mapRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid #eef3f6
+  }
+  .mapRow .mapShow {
+    flex: 1 1 14em;
+    min-width: 0;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap
+  }
+  .mapRow select {
+    flex: 1 1 9em;
+    min-width: 0;
+    width: auto
+  }
+  .mapRow .mapZip,
+  .mapRow .mapDel {
+    flex: 0 0 auto
+  }
+  .mapRow.on .mapShow {
+    font-weight: 800;
+    color: #075ca8
+  }
+  .mapRow.off .mapShow {
+    text-decoration: line-through;
+    opacity: .55
+  }
+  .mapShow {
+    background: none;
+    color: inherit;
+    padding: 2px 0;
+    text-align: left;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap
+  }
+  .mapRow select {
+    margin: 0;
+    padding: 4px
+  }
+  .galleryMission {
+    grid-column: 1/-1;
+    margin: 10px 0 2px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #b9cbd4
+  }
+  /* pied de page semi-fixe : collé en bas de la fenêtre pendant le défilement, à sa place en fin de page */
+  .studio-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 8px 18px;
+    background: color-mix(in srgb, var(--repo-page, #edf3f6) 92%, #fff);
+    border-top: 1px solid #b9cbd4;
+    box-shadow: 0 -4px 16px #17354a1f
+  }
+  .studio-footer .small {
+    margin-right: auto;
+    color: #44525b
+  }
+  .previewZip {
+    margin-right: 6px
+  }
+  .previewCard .mapZip {
+    float: right
+  }
+  .previewCard.nozip img {
+    opacity: .45
+  }
+  .mapZip {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 12px;
+    white-space: nowrap;
+    cursor: pointer
+  }
+  .mapZip input {
+    margin: 0
+  }
+  .mapRow.nozip .mapShow {
+    text-decoration: line-through;
+    opacity: .65
+  }
+  .mapRow .mapDel {
+    background: none;
+    color: #b3261e;
+    padding: 2px 8px
+  }
+  .mapAdd {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px
+  }
+  .mapAdd input {
+    flex: 1;
+    min-width: 0
+  }
+  .check input[type=checkbox] {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    margin: 0 6px 0 0
+  }
+  .check {
+    display: flex;
+    align-items: center
+  }
+  .mapAdd select {
+    width: auto;
+    flex: 0 0 auto;
+    margin: 0
+  }
+  .mapAdd input {
+    flex: 1 1 140px;
+    min-width: 100px;
+    width: auto
+  }
+  .profilePreview .profileBar {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    display: grid;
+    gap: 8px
+  }
+  .profilePreview .profileBar .actions {
+    grid-column: 1/-1
+  }
+  .profilePreview #profileSettings {
+    margin-top: 10px
+  }
+  .profilePreview input:not([type]) {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px;
+    border: 1px solid #afc1ca;
+    border-radius: 7px
+  }
+  .aliasCard {
+    border: 1px solid #c8d6dd;
+    border-radius: 8px;
+    padding: 6px 8px;
+    margin: 6px 0
+  }
+  .aliasCard .zoneAdd input {
+    font-weight: 700
+  }
+  .aliasCard textarea {
+    width: 100%;
+    min-height: 70px;
+    box-sizing: border-box
+  }
+  .zoneMatchedList {
+    max-height: 260px;
+    overflow: auto;
+    margin: 6px 0;
+    padding-left: 18px;
+    font-size: .86rem
+  }
+  #zoneMode.black {
+    background: #3b3b3b;
+    color: #fff
+  }
+  .mapProfileRow.off code {
+    text-decoration: line-through;
+    opacity: .55
+  }
+  .cpco-eyebrow {
+    display: block;
+    margin: 0 0 2px;
+    line-height: 1.2;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: inherit;
+    opacity: .78
+  }
+  .vprof-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 4px 0
+  }
+  .vprof-chip {
+    padding: 1px 6px;
+    border: 1px solid #c8d6dd;
+    border-radius: 4px;
+    background: #fff;
+    color: #17202a;
+    font: 12px/1.5 ui-monospace, Consolas, monospace;
+    cursor: default
+  }
+  .vprof-chip.lvl {
+    opacity: .7;
+    font-style: italic
+  }
+  .vprof-chip.on {
+    background: #ffe08a;
+    border-color: #d69600
+  }
+  .routeText {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 3.2em;
+    margin: 0 0 8px;
+    padding: 8px;
+    font: 13px/1.45 ui-monospace, Consolas, monospace;
+    resize: vertical
+  }
+  .routeBar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px 18px
+  }
+  .routeGroup {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px
+  }
+  .routeInline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    font-weight: 600
+  }
+  .routeBar select {
+    width: auto;
+    min-width: 0;
+    max-width: 14em
+  }
+  .routeBar #vprofCruise {
+    width: 6.5em;
+    min-width: 0
+  }
+  #routeInfo:empty {
+    display: none
+  }
+  .route-help {
+    margin-top: 6px
+  }
+  .route-help summary {
+    cursor: pointer;
+    font-weight: 650
+  }
+  .route-help p {
+    margin: 6px 0 0
+  }
+  .route-edit-mirror span.on {
+    background: rgba(255, 196, 0, .55);
+    border-radius: 2px;
+    box-shadow: 0 0 0 1px rgba(214, 150, 0, .9)
+  }
+  .routeMap.profilePreview {
+    position: static;
+    margin: 8px 0
+  }
+  .routeProfileEdit {
+    margin: 0 0 8px
+  }
+  .routeProfileEdit>.profileEdit {
+    margin: 0
+  }
+  .routeMapBar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    align-items: center;
+    margin: 0 0 8px
+  }
+  .routeMapBar select {
+    width: auto;
+    min-width: 0;
+    max-width: 22em
+  }
+  .routeMap #osmLivePreview {
+    height: 480px
+  }
+  /* point de route sur la carte : le marqueur est la pastille seule (12 × 12, centrée sur le point : ancre « center »,
    sans décalage) ; l'étiquette est posée à côté, hors de son cadre. Aucun « position » sur le marqueur : MapLibre le place
    en absolu (.maplibregl-marker) — l'écraser décale les points (banc d'essai : tools/stub_marker_offset.html). */
-.route-edit-pt {
-  display: block;
-  width: 12px;
-  height: 12px;
-  cursor: grab
-}
-.route-edit-pt i {
-  display: block;
-  box-sizing: border-box;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #fff;
-  border: 2px solid #d0021b;
-  box-shadow: 0 0 0 2px #fff8;
-  transition: transform .12s
-}
-.route-edit-pt span {
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  white-space: nowrap;
-  pointer-events: none;
-  font: 700 11px Arial, sans-serif;
-  color: #17202a;
-  text-shadow: 0 0 2px #fff, 0 0 2px #fff
-}
-.route-edit-pt.on i {
-  transform: scale(1.5);
-  background: #ffc400;
-  border-color: #d69600
-}
-.vprofSettings {
-  margin-top: 8px
-}
-.vprofSettings summary {
-  cursor: pointer;
-  font-weight: 650
-}
-.profileLayout {
-  grid-template-columns: minmax(0, 1fr)
-}
+  .route-edit-pt {
+    display: block;
+    width: 12px;
+    height: 12px;
+    cursor: grab
+  }
+  .route-edit-pt i {
+    display: block;
+    box-sizing: border-box;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #d0021b;
+    box-shadow: 0 0 0 2px #fff8;
+    transition: transform .12s
+  }
+  .route-edit-pt span {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    white-space: nowrap;
+    pointer-events: none;
+    font: 700 11px Arial, sans-serif;
+    color: #17202a;
+    text-shadow: 0 0 2px #fff, 0 0 2px #fff
+  }
+  .route-edit-pt.on i {
+    transform: scale(1.5);
+    background: #ffc400;
+    border-color: #d69600
+  }
+  .vprofSettings {
+    margin-top: 8px
+  }
+  .vprofSettings summary {
+    cursor: pointer;
+    font-weight: 650
+  }
+  .profileLayout {
+    grid-template-columns: minmax(0, 1fr)
+  }
 }
 </style>
 </head>
@@ -2455,7 +2457,8 @@ function flatProjection(map) {
         type: 'mercator'
       })
     } catch {
-      /* style sans projection */ }
+      /* style sans projection */
+    }
   })
 }
 
@@ -4589,7 +4592,8 @@ function scheduleExerciseMaps() {
         window.AppFramework?.notify?.(`${n} carte(s) d’exercice ajoutée(s) : enregistrer la mission dans le dossier pour les garder.`, 'info')
       }
     } catch {
-      /* exercice incomplet */ }
+      /* exercice incomplet */
+    }
   }, 500)
 }
 /* Réglages du studio gardés dans le YAML (profil et emprise de chaque carte) puis mission enregistrée dans son dossier. */
@@ -6786,7 +6790,7 @@ if(!new URLSearchParams(location.search).has('fpl')&&sharedDoc?.yaml?.mission?.i
 if(new URLSearchParams(location.search).has('fpl')){history.replaceState(null,'',location.pathname+location.hash);(async()=>{for(let i=0;i<100&&!baseReady();i++)await new Promise(r=>setTimeout(r,200));if(baseReady()&&$v('vprofRoute').value.trim())build(false)})()}
 })();
 </script>
-<script src="../../shared/repository_nav.js?v=a5ef0693"></script>
-<script src="../../shared/app_framework.js?v=608608cc"></script>
+<script src="../../shared/repository_nav.js?v=9aa760c7"></script>
+<script src="../../shared/app_framework.js?v=a2972a9a"></script>
 <script src="../../shared/content_i18n.js?v=2d61c23a"></script><script src="../cpco/sia_i18n.js?v=552c5671"></script>
 </body></html>

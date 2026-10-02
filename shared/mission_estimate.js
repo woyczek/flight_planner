@@ -645,7 +645,8 @@
       try {
         localStorage.setItem(ROUTE_KEY, e.target.checked ? '1' : '0');
       } catch {
-        /* stockage indisponible */ }
+        /* stockage indisponible */
+      }
       host.querySelector('[data-me-routebox]').hidden = !e.target.checked;
     };
   }

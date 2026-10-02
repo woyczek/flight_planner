@@ -453,7 +453,8 @@
       try {
         localStorage.setItem(JOURNAL, JSON.stringify(list.slice(0, 10)));
       } catch {
-        /* quota */ }
+        /* quota */
+      }
     }
     window.dispatchEvent(new CustomEvent('local-store-journal', {
       detail: list[0]

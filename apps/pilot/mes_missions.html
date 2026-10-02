@@ -1,58 +1,337 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mes missions</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=9fd5d2aa"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=f33b51fd">
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=d774850b"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=7e4ed0f1">
 <script src="../../config/repository_tree?v=014ce40b"></script>
 <style>
-  .pm-empty{opacity:.8}
-  .pm-list table{width:100%;border-collapse:collapse}.pm-list th,.pm-list td{padding:5px 8px;text-align:left;border-bottom:1px solid color-mix(in srgb,currentColor 15%,transparent)}
-  .pm-list tbody tr{cursor:pointer}.pm-list tbody tr:hover{background:color-mix(in srgb,currentColor 7%,transparent)}
-  .pm-list tr.pm-unread td:first-child::before{content:"●";color:#c62828;margin-right:6px}
-  .pm-list tr.pm-current{outline:2px solid color-mix(in srgb,currentColor 35%,transparent);outline-offset:-2px}
-  .pm-order{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px 16px;margin:6px 0 10px}
-  .pm-order div{display:grid;gap:2px}.pm-order span{font-size:11.5px;opacity:.75}.pm-order b{font-size:15px}
-  .pm-alert{padding:10px 12px;border-left:4px solid #e0a400;background:color-mix(in srgb,#e0a400 10%,transparent);margin:6px 0 10px;font-weight:600}
-  .pm-route{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;align-items:start}
-  @media (max-width:900px){.pm-route{grid-template-columns:1fr}}
-  .pm-route table{width:100%;border-collapse:collapse;font-size:12.5px}.pm-route th,.pm-route td{padding:4px 6px;text-align:left;border-bottom:1px solid color-mix(in srgb,currentColor 12%,transparent)}
-  .pm-plan{width:100%;aspect-ratio:1;border:1px solid color-mix(in srgb,currentColor 20%,transparent);background:color-mix(in srgb,currentColor 4%,transparent)}
-  .pm-plan .leg{fill:none;stroke:#2f6fd6;stroke-width:2}.pm-plan .pt{fill:#2f6fd6}.pm-plan .ad{fill:#c62828}.pm-plan text{font:10px system-ui,sans-serif;fill:currentColor}
-  .pm-maps{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}.pm-maps figure{margin:0}.pm-maps img{width:100%;border:1px solid color-mix(in srgb,currentColor 20%,transparent)}
-  .pm-maps figcaption{font-size:11.5px;opacity:.8;margin-top:3px}
+  .pm-empty {
+    opacity: .8
+  }
+  .pm-list table {
+    width: 100%;
+    border-collapse: collapse
+  }
+  .pm-list th,
+  .pm-list td {
+    padding: 5px 8px;
+    text-align: left;
+    border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent)
+  }
+  .pm-list tbody tr {
+    cursor: pointer
+  }
+  .pm-list tbody tr:hover {
+    background: color-mix(in srgb, currentColor 7%, transparent)
+  }
+  .pm-list tr.pm-unread td:first-child::before {
+    content: "●";
+    color: #c62828;
+    margin-right: 6px
+  }
+  .pm-list tr.pm-current {
+    outline: 2px solid color-mix(in srgb, currentColor 35%, transparent);
+    outline-offset: -2px
+  }
+  .pm-order {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px 16px;
+    margin: 6px 0 10px
+  }
+  .pm-order div {
+    display: grid;
+    gap: 2px
+  }
+  .pm-order span {
+    font-size: 11.5px;
+    opacity: .75
+  }
+  .pm-order b {
+    font-size: 15px
+  }
+  .pm-alert {
+    padding: 10px 12px;
+    border-left: 4px solid #e0a400;
+    background: color-mix(in srgb, #e0a400 10%, transparent);
+    margin: 6px 0 10px;
+    font-weight: 600
+  }
+  .pm-route {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 14px;
+    align-items: start
+  }
+  @media (max-width:900px) {
+    .pm-route {
+      grid-template-columns: 1fr
+    }
+  }
+  .pm-route table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px
+  }
+  .pm-route th,
+  .pm-route td {
+    padding: 4px 6px;
+    text-align: left;
+    border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent)
+  }
+  .pm-plan {
+    width: 100%;
+    aspect-ratio: 1;
+    border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+    background: color-mix(in srgb, currentColor 4%, transparent)
+  }
+  .pm-plan .leg {
+    fill: none;
+    stroke: #2f6fd6;
+    stroke-width: 2
+  }
+  .pm-plan .pt {
+    fill: #2f6fd6
+  }
+  .pm-plan .ad {
+    fill: #c62828
+  }
+  .pm-plan text {
+    font: 10px system-ui, sans-serif;
+    fill: currentColor
+  }
+  .pm-maps {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px
+  }
+  .pm-maps figure {
+    margin: 0
+  }
+  .pm-maps img {
+    width: 100%;
+    border: 1px solid color-mix(in srgb, currentColor 20%, transparent)
+  }
+  .pm-maps figcaption {
+    font-size: 11.5px;
+    opacity: .8;
+    margin-top: 3px
+  }
   /* plis d'exercice scellés : enveloppe (jeton --pm-pli : image d'enveloppe du design ; sinon papier kraft dessiné),
      heure d'ouverture, cartes jointes ; ouverts : en-tête, provenance, texte, cartes */
-  .pm-pli{position:relative;display:grid;justify-items:center;gap:4px;margin:12px auto;padding:22px 16px 16px;max-width:420px;text-align:center;color:#3b2f1c;background:var(--pm-pli, linear-gradient(160deg,#d9bf8c,#c9a96e)) center/100% 100% no-repeat;border:1px solid rgba(80,55,20,.35);box-shadow:0 3px 8px rgba(0,0,0,.25)}
-  .pm-pli::before{content:"";position:absolute;inset:0 0 auto;height:46%;background:linear-gradient(to bottom right,transparent calc(50% - 1px),rgba(80,55,20,.35) 50%,transparent calc(50% + 1px)) left/50% 100% no-repeat,linear-gradient(to bottom left,transparent calc(50% - 1px),rgba(80,55,20,.35) 50%,transparent calc(50% + 1px)) right/50% 100% no-repeat;pointer-events:none}
-  .pm-pli::after{content:"";width:30px;height:30px;margin:2px 0;border-radius:50%;background:radial-gradient(circle at 40% 35%,#c44 0,#8e1b1b 60%,#5e0f0f);box-shadow:0 1px 2px rgba(0,0,0,.4);order:-1}
-  .pm-pli>b{font-size:14px;letter-spacing:.08em;text-transform:uppercase}
-  .pm-pli-at{font-weight:600}
-  .pm-pli small{opacity:.8}
-  .pm-pli-meta{font-size:12px;opacity:.8;margin-top:-4px}
-  .pm-blank{height:100%;display:grid;place-items:center}.pm-blank p{font-style:italic;opacity:.55;text-align:center}
-  .pm-tracks{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0}.pm-tracks :is(th,td){text-align:left;vertical-align:top;padding:2px 4px}
+  .pm-pli {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+    margin: 12px auto;
+    padding: 22px 16px 16px;
+    max-width: 420px;
+    text-align: center;
+    color: #3b2f1c;
+    background: var(--pm-pli, linear-gradient(160deg, #d9bf8c, #c9a96e)) center/100% 100% no-repeat;
+    border: 1px solid rgba(80, 55, 20, .35);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, .25)
+  }
+  .pm-pli::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 46%;
+    background: linear-gradient(to bottom right, transparent calc(50% - 1px), rgba(80, 55, 20, .35) 50%, transparent calc(50% + 1px)) left/50% 100% no-repeat, linear-gradient(to bottom left, transparent calc(50% - 1px), rgba(80, 55, 20, .35) 50%, transparent calc(50% + 1px)) right/50% 100% no-repeat;
+    pointer-events: none
+  }
+  .pm-pli::after {
+    content: "";
+    width: 30px;
+    height: 30px;
+    margin: 2px 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #c44 0, #8e1b1b 60%, #5e0f0f);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .4);
+    order: -1
+  }
+  .pm-pli>b {
+    font-size: 14px;
+    letter-spacing: .08em;
+    text-transform: uppercase
+  }
+  .pm-pli-at {
+    font-weight: 600
+  }
+  .pm-pli small {
+    opacity: .8
+  }
+  .pm-pli-meta {
+    font-size: 12px;
+    opacity: .8;
+    margin-top: -4px
+  }
+  .pm-blank {
+    height: 100%;
+    display: grid;
+    place-items: center
+  }
+  .pm-blank p {
+    font-style: italic;
+    opacity: .55;
+    text-align: center
+  }
+  .pm-tracks {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin: 6px 0
+  }
+  .pm-tracks :is(th, td) {
+    text-align: left;
+    vertical-align: top;
+    padding: 2px 4px
+  }
   /* designs à matières : l'enveloppe cachetée du design (--pm-pli, --pm-pli-ratio) au-dessus des mentions, sans papier dessiné */
-  html[data-design="cabinet"]{--pm-pli:url("../../shared/deco/cabinet/pli-sealed.webp?v=2e89c25c");--pm-pli-ratio:1.4579}
-  html[data-design="flightlog"]{--pm-pli:url("../../shared/deco/flightlog/pli-sealed.webp?v=70c15353");--pm-pli-ratio:1.4713}
-  html[data-design="aqua"]{--pm-pli:url("../../shared/deco/aqua/pli-sealed.webp?v=604b3bed");--pm-pli-ratio:1.5274}
-  html[data-design="field"]{--pm-pli:url("../../shared/deco/field/pli-sealed.webp?v=98eb4a6c");--pm-pli-ratio:1.5274}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-pli{padding:0;background:none;border:0;box-shadow:none;color:inherit}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-pli::before{display:none}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-pli::after{width:min(100%,260px);height:auto;aspect-ratio:var(--pm-pli-ratio);margin:0 0 6px;border-radius:0;background:var(--pm-pli) center/contain no-repeat;box-shadow:none;filter:drop-shadow(1px 3px 3px rgba(0,0,0,.35))}
+  html[data-design="cabinet"] {
+    --pm-pli: url("../../shared/deco/cabinet/pli-sealed.webp?v=2e89c25c");
+    --pm-pli-ratio: 1.4579
+  }
+  html[data-design="flightlog"] {
+    --pm-pli: url("../../shared/deco/flightlog/pli-sealed.webp?v=70c15353");
+    --pm-pli-ratio: 1.4713
+  }
+  html[data-design="aqua"] {
+    --pm-pli: url("../../shared/deco/aqua/pli-sealed.webp?v=604b3bed");
+    --pm-pli-ratio: 1.5274
+  }
+  html[data-design="field"] {
+    --pm-pli: url("../../shared/deco/field/pli-sealed.webp?v=98eb4a6c");
+    --pm-pli-ratio: 1.5274
+  }
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-pli {
+    padding: 0;
+    background: none;
+    border: 0;
+    box-shadow: none;
+    color: inherit
+  }
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-pli::before {
+    display: none
+  }
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-pli::after {
+    width: min(100%, 260px);
+    height: auto;
+    aspect-ratio: var(--pm-pli-ratio);
+    margin: 0 0 6px;
+    border-radius: 0;
+    background: var(--pm-pli) center/contain no-repeat;
+    box-shadow: none;
+    filter: drop-shadow(1px 3px 3px rgba(0, 0, 0, .35))
+  }
   /* dans le livre : enveloppe à l'échelle de la page (la page suit la largeur du dossier) */
-  .pm-page .pm-pli{margin:6px auto;max-width:none;width:100%}
-  .pm-pli[data-pli]{cursor:pointer}.pm-pli.armed [data-pli-open]{outline:2px solid #c0392b;color:#c0392b}
-  .pm-annex{height:100%;display:grid;place-items:center;text-align:center}.pm-page .pm-annex h3{font-size:2.1em;line-height:1.3;letter-spacing:.12em;border:0}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-page .pm-pli::after{width:100%}
-  .pm-text p{white-space:pre-line;margin:.4em 0}
-  .pm-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0}
-  .pm-cover{display:grid;justify-items:center;gap:12px;padding:28px 16px;cursor:pointer;border:1px solid color-mix(in srgb,currentColor 22%,transparent);background:color-mix(in srgb,currentColor 5%,transparent)}
-  .pm-label{display:grid;gap:4px;justify-items:center;text-align:center;min-width:min(420px,100%);padding:14px 22px;border:2px solid color-mix(in srgb,currentColor 45%,transparent);background:var(--card,#fff)}
-  .pm-label small{letter-spacing:.3em;font-weight:800;color:#b3261e}.pm-label b{font-size:22px;letter-spacing:.06em}.pm-label span{font-size:13px}
-  .pm-label dl{display:grid;grid-template-columns:auto auto;gap:2px 12px;margin:8px 0 0;font-size:12.5px;text-align:left}.pm-label dt{opacity:.7}.pm-label dd{margin:0;font-weight:600}
-  .pm-open{margin:0}
+  .pm-page .pm-pli {
+    margin: 6px auto;
+    max-width: none;
+    width: 100%
+  }
+  .pm-pli[data-pli] {
+    cursor: pointer
+  }
+  .pm-pli.armed [data-pli-open] {
+    outline: 2px solid #c0392b;
+    color: #c0392b
+  }
+  .pm-annex {
+    height: 100%;
+    display: grid;
+    place-items: center;
+    text-align: center
+  }
+  .pm-page .pm-annex h3 {
+    font-size: 2.1em;
+    line-height: 1.3;
+    letter-spacing: .12em;
+    border: 0
+  }
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-page .pm-pli::after {
+    width: 100%
+  }
+  .pm-text p {
+    white-space: pre-line;
+    margin: .4em 0
+  }
+  .pm-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 10px 0 0
+  }
+  .pm-cover {
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    padding: 28px 16px;
+    cursor: pointer;
+    border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+    background: color-mix(in srgb, currentColor 5%, transparent)
+  }
+  .pm-label {
+    display: grid;
+    gap: 4px;
+    justify-items: center;
+    text-align: center;
+    min-width: min(420px, 100%);
+    padding: 14px 22px;
+    border: 2px solid color-mix(in srgb, currentColor 45%, transparent);
+    background: var(--card, #fff)
+  }
+  .pm-label small {
+    letter-spacing: .3em;
+    font-weight: 800;
+    color: #b3261e
+  }
+  .pm-label b {
+    font-size: 22px;
+    letter-spacing: .06em
+  }
+  .pm-label span {
+    font-size: 13px
+  }
+  .pm-label dl {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 2px 12px;
+    margin: 8px 0 0;
+    font-size: 12.5px;
+    text-align: left
+  }
+  .pm-label dt {
+    opacity: .7
+  }
+  .pm-label dd {
+    margin: 0;
+    font-weight: 600
+  }
+  .pm-open {
+    margin: 0
+  }
   /* « CONFIDENTIEL » : tampon encreur (image commune aux designs) ; le mot reste lu par les lecteurs d'écran */
-  .pm-label{position:relative;background:var(--sheet-card-bg,#f4ead0);color:var(--sheet-ink,#2b2112)} /* papier : lisible sur tout fond */
-  .pm-label small{position:absolute;z-index:2;top:var(--pm-stamp-top,-14px);right:var(--pm-stamp-right,-18px);width:var(--pm-stamp-w,180px);aspect-ratio:700/245;background:url("../../shared/deco/stamp-confidential.webp?v=85ab3564") center/contain no-repeat;color:transparent;font-size:0;transform:rotate(-9deg);opacity:.8;pointer-events:none}
+  .pm-label {
+    position: relative;
+    background: var(--sheet-card-bg, #f4ead0);
+    color: var(--sheet-ink, #2b2112)
+  }
+  /* papier : lisible sur tout fond */
+  .pm-label small {
+    position: absolute;
+    z-index: 2;
+    top: var(--pm-stamp-top, -14px);
+    right: var(--pm-stamp-right, -18px);
+    width: var(--pm-stamp-w, 180px);
+    aspect-ratio: 700/245;
+    background: url("../../shared/deco/stamp-confidential.webp?v=85ab3564") center/contain no-repeat;
+    color: transparent;
+    font-size: 0;
+    transform: rotate(-9deg);
+    opacity: .8;
+    pointer-events: none
+  }
   /* Dossier fermé (Cabinet, Carnet de vol, Aqua, Durci) : une règle commune, des jetons par design — chaque design ne
      déclare que ce qu'il a :
        --pm-cover            couverture du dossier fermé (mission lue, descellée)
@@ -65,221 +344,1187 @@
                              1 (défaut) : seul le calque s'efface
        --pm-open-bottom      place du bouton « Ouvrir »
      Ouvrir brise le sceau ; dossier rouvert après lecture : couverture fermée, sans calque. */
-  html[data-design="cabinet"]{--pm-cover:url("../../shared/deco/cabinet/mission-cover.webp?v=2bf76d77");--pm-seal:url("../../shared/deco/cabinet/mission-seal-fitted.webp?v=9c2ac112");--pm-ratio:720/1015;--pm-cwk:.4266}
+  html[data-design="cabinet"] {
+    --pm-cover: url("../../shared/deco/cabinet/mission-cover.webp?v=2bf76d77");
+    --pm-seal: url("../../shared/deco/cabinet/mission-seal-fitted.webp?v=9c2ac112");
+    --pm-ratio: 720/1015;
+    --pm-cwk: .4266
+  }
   /* Carnet de vol : scellé, l'enveloppe cachetée (en-tête du ministère), la mission sur une étiquette scotchée de
      travers ; lu, le carnet fermé (étiquette sous la plaque) */
-  html[data-design="flightlog"]{--pm-cover:url("../../shared/deco/flightlog/mission-closed.webp?v=3ad105ce");--pm-cover-sealed:url("../../shared/deco/flightlog/mission-sealed.webp?v=d2ff2cc7");--pm-ratio:600/852;--pm-ratio-sealed:640/900;--pm-cwk:.509;--pm-cwk-sealed:.54;--pm-label-top:30%;--pm-label-top-sealed:56%;--pm-label-rot-sealed:1.8deg;--pm-tape-1:url("../../shared/deco/flightlog/tape-1.webp?v=463c91c8");--pm-tape-2:url("../../shared/deco/flightlog/tape-2.webp?v=9cba6e50");--pm-open-fade:0}
-  html[data-design="aqua"]{--pm-cover:url("../../shared/deco/aqua/mission-cover.webp?v=999d136a");--pm-seal:url("../../shared/deco/aqua/mission-seal-fitted.webp?v=101a308a");--pm-ratio:720/954;--pm-cwk:.445}
+  html[data-design="flightlog"] {
+    --pm-cover: url("../../shared/deco/flightlog/mission-closed.webp?v=3ad105ce");
+    --pm-cover-sealed: url("../../shared/deco/flightlog/mission-sealed.webp?v=d2ff2cc7");
+    --pm-ratio: 600/852;
+    --pm-ratio-sealed: 640/900;
+    --pm-cwk: .509;
+    --pm-cwk-sealed: .54;
+    --pm-label-top: 30%;
+    --pm-label-top-sealed: 56%;
+    --pm-label-rot-sealed: 1.8deg;
+    --pm-tape-1: url("../../shared/deco/flightlog/tape-1.webp?v=463c91c8");
+    --pm-tape-2: url("../../shared/deco/flightlog/tape-2.webp?v=9cba6e50");
+    --pm-open-fade: 0
+  }
+  html[data-design="aqua"] {
+    --pm-cover: url("../../shared/deco/aqua/mission-cover.webp?v=999d136a");
+    --pm-seal: url("../../shared/deco/aqua/mission-seal-fitted.webp?v=101a308a");
+    --pm-ratio: 720/954;
+    --pm-cwk: .445
+  }
   /* Durci : scellé, fermeture intacte (étiquette « CONFIDENTIEL » à la tirette) et ficelle en croix cachetée ; lu,
      fermeture brisée ; tampon de l'étiquette sur l'étiquette (pas sur la toile) */
-  html[data-design="field"]{--pm-cover:url("../../shared/deco/field/mission-closed.webp?v=9ae3fcc8");--pm-cover-sealed:url("../../shared/deco/field/mission-sealed.webp?v=45e80a15");--pm-seal:url("../../shared/deco/field/mission-seal-fitted.webp?v=db24e3b1");--pm-ratio:961/1441;--pm-cwk:.529;--pm-open-bottom:20%;--pm-stamp-top:6px;--pm-stamp-right:6px;--pm-stamp-w:130px}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) #pmDetail{--pm-bw:min(1064px,100%)}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover{position:relative;box-sizing:border-box;width:calc(var(--pm-bw) * var(--pm-cwk));aspect-ratio:var(--pm-ratio);margin:0 0 0 auto;padding:7% 0 0;border:0;align-content:start;background:var(--pm-cover) center/100% 100% no-repeat;filter:drop-shadow(0 10px 16px rgba(0,0,0,.45));transition:opacity .38s ease-in}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover.sealed{width:calc(var(--pm-bw) * var(--pm-cwk-sealed, var(--pm-cwk)));aspect-ratio:var(--pm-ratio-sealed, var(--pm-ratio));background-image:var(--pm-cover-sealed, var(--pm-cover))}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover.sealed::after{content:"";position:absolute;z-index:2;inset:0;background:var(--pm-seal, none) center/100% 100% no-repeat;pointer-events:none;transition:opacity .38s ease-in}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover.sealed.open::after{opacity:0}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover.sealed.open{opacity:var(--pm-open-fade, 1)}
-  @media (max-width:759px){html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover{width:min(380px,92%);margin:0 auto}}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-label{position:relative;z-index:1;margin-top:4%;min-width:0;width:72%;padding:12px 16px;background:#f4ead0;color:#2b2112;border:1px solid rgba(60,40,20,.35);box-shadow:0 1px 3px rgba(0,0,0,.3);transform:rotate(-1.2deg);font-family:Georgia,"Times New Roman",serif}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover .pm-label{margin-top:var(--pm-label-top, 4%);transform:rotate(var(--pm-label-rot, -1.2deg))}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover.sealed .pm-label{margin-top:var(--pm-label-top-sealed, var(--pm-label-top, 4%));transform:rotate(var(--pm-label-rot-sealed, var(--pm-label-rot, -1.2deg)))}
+  html[data-design="field"] {
+    --pm-cover: url("../../shared/deco/field/mission-closed.webp?v=9ae3fcc8");
+    --pm-cover-sealed: url("../../shared/deco/field/mission-sealed.webp?v=45e80a15");
+    --pm-seal: url("../../shared/deco/field/mission-seal-fitted.webp?v=db24e3b1");
+    --pm-ratio: 961/1441;
+    --pm-cwk: .529;
+    --pm-open-bottom: 20%;
+    --pm-stamp-top: 6px;
+    --pm-stamp-right: 6px;
+    --pm-stamp-w: 130px
+  }
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) #pmDetail {
+    --pm-bw: min(1064px, 100%)
+  }
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-cover {
+    position: relative;
+    box-sizing: border-box;
+    width: calc(var(--pm-bw) * var(--pm-cwk));
+    aspect-ratio: var(--pm-ratio);
+    margin: 0 0 0 auto;
+    padding: 7% 0 0;
+    border: 0;
+    align-content: start;
+    background: var(--pm-cover) center/100% 100% no-repeat;
+    filter: drop-shadow(0 10px 16px rgba(0, 0, 0, .45));
+    transition: opacity .38s ease-in
+  }
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-cover.sealed {
+    width: calc(var(--pm-bw) * var(--pm-cwk-sealed, var(--pm-cwk)));
+    aspect-ratio: var(--pm-ratio-sealed, var(--pm-ratio));
+    background-image: var(--pm-cover-sealed, var(--pm-cover))
+  }
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-cover.sealed::after {
+    content: "";
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    background: var(--pm-seal, none) center/100% 100% no-repeat;
+    pointer-events: none;
+    transition: opacity .38s ease-in
+  }
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-cover.sealed.open::after {
+    opacity: 0
+  }
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-cover.sealed.open {
+    opacity: var(--pm-open-fade, 1)
+  }
+  @media (max-width:759px) {
+    html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-cover {
+      width: min(380px, 92%);
+      margin: 0 auto
+    }
+  }
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-label {
+    position: relative;
+    z-index: 1;
+    margin-top: 4%;
+    min-width: 0;
+    width: 72%;
+    padding: 12px 16px;
+    background: #f4ead0;
+    color: #2b2112;
+    border: 1px solid rgba(60, 40, 20, .35);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .3);
+    transform: rotate(-1.2deg);
+    font-family: Georgia, "Times New Roman", serif
+  }
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-cover .pm-label {
+    margin-top: var(--pm-label-top, 4%);
+    transform: rotate(var(--pm-label-rot, -1.2deg))
+  }
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-cover.sealed .pm-label {
+    margin-top: var(--pm-label-top-sealed, var(--pm-label-top, 4%));
+    transform: rotate(var(--pm-label-rot-sealed, var(--pm-label-rot, -1.2deg)))
+  }
   /* scotchs de l'étiquette scellée (jetons --pm-tape-1 / -2 ; sans jeton : rien) */
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover.sealed .pm-label::before,html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover.sealed .pm-label::after{content:"";position:absolute;z-index:3;width:34%;aspect-ratio:420/73;background:var(--pm-tape-1, none) center/100% 100% no-repeat;opacity:.9;pointer-events:none}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover.sealed .pm-label::before{top:-10px;left:-9%;transform:rotate(-14deg)}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover.sealed .pm-label::after{bottom:-8px;right:-8%;transform:rotate(-9deg);background-image:var(--pm-tape-2, none)}
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-cover.sealed .pm-label::before,
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-cover.sealed .pm-label::after {
+    content: "";
+    position: absolute;
+    z-index: 3;
+    width: 34%;
+    aspect-ratio: 420/73;
+    background: var(--pm-tape-1, none) center/100% 100% no-repeat;
+    opacity: .9;
+    pointer-events: none
+  }
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-cover.sealed .pm-label::before {
+    top: -10px;
+    left: -9%;
+    transform: rotate(-14deg)
+  }
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-cover.sealed .pm-label::after {
+    bottom: -8px;
+    right: -8%;
+    transform: rotate(-9deg);
+    background-image: var(--pm-tape-2, none)
+  }
   /* Aqua : étiquette blanche collée, tampon « URGENT » */
-  html[data-design="aqua"] .pm-label{background:#fbfaf6;color:#1d2530;border-color:rgba(40,50,60,.25);transform:rotate(-.8deg);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif}
-  html[data-design="aqua"] .pm-label small{aspect-ratio:700/194;background-image:url("../../shared/deco/stamp-urgent.webp?v=f32486f9")}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-open{position:absolute;z-index:3;left:0;right:0;bottom:var(--pm-open-bottom, 7%);text-align:center}
-  @media (prefers-reduced-motion:reduce){html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-cover::after{transition:none}}
+  html[data-design="aqua"] .pm-label {
+    background: #fbfaf6;
+    color: #1d2530;
+    border-color: rgba(40, 50, 60, .25);
+    transform: rotate(-.8deg);
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif
+  }
+  html[data-design="aqua"] .pm-label small {
+    aspect-ratio: 700/194;
+    background-image: url("../../shared/deco/stamp-urgent.webp?v=f32486f9")
+  }
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-open {
+    position: absolute;
+    z-index: 3;
+    left: 0;
+    right: 0;
+    bottom: var(--pm-open-bottom, 7%);
+    text-align: center
+  }
+  @media (prefers-reduced-motion:reduce) {
+    html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-cover::after {
+      transition: none
+    }
+  }
   /* Cabinet (Carnet de vol, Aqua, Durci : surcharges plus bas) : dossier ouvert (pages : zones claires de mission-open.webp) */
   /* Livre ouvert : géométrie et images par design (mesures sur l'image du dossier ouvert, en % ; marges des faces de la
      feuille qui tourne en cqw, calculées pour que son texte tombe sur celui des pages fixes). page-* : zone de texte des
      pages ; lpage / rpage : pages gauche / droite ; sheet / bsheet : feuilles droite / gauche (feuille qui tourne, coins,
      signet) ; turn-o / bturn-o : pivot (dos) relatif à la feuille ; pad, pad-fb, pad-bf, pad-bb : faces (départ, verso
      vers la gauche, recto et verso vers la droite) ; font / ink : caractères et encre des pages (défaut : machine à écrire) */
-  html[data-design="cabinet"] .pm-book{--pm-open:url("../../shared/deco/cabinet/mission-open.webp?v=141b7dc8");--pm-ratio-open:1400/842;--pm-page-t:8.5%;--pm-page-b:8%;--pm-lpage-l:5.6%;--pm-lpage-r:54.4%;--pm-rpage-l:53.6%;--pm-rpage-r:5.3%;--pm-sheet-t:4.75%;--pm-sheet-b:4%;--pm-sheet-l:51.8%;--pm-sheet-r:3.43%;--pm-turn-o:-4.79%;--pm-bsheet-t:4.75%;--pm-bsheet-b:4%;--pm-bsheet-l:3.57%;--pm-bsheet-r:52.5%;--pm-bturn-o:104.88%;--pm-face:url("../../shared/deco/cabinet/mission-page.webp?v=6cfcdf40");--pm-pad:3.86cqw 4.27cqw 7.61cqw 4.2cqw;--pm-pad-fb:3.86cqw 4.29cqw 7.61cqw 5.28cqw;--pm-pad-bf:3.86cqw 4.3cqw 7.61cqw 4.43cqw;--pm-pad-bb:3.86cqw 3.42cqw 7.61cqw 4.21cqw;--pm-corner:url("../../shared/deco/cabinet/page-corner.webp?v=ffa933b3")}
-  html[data-design="flightlog"] .pm-book{--pm-open:url("../../shared/deco/flightlog/mission-open.webp?v=17d1364d");--pm-ratio-open:1428/1032;--pm-page-t:8.05%;--pm-page-b:9.33%;--pm-lpage-l:7.25%;--pm-lpage-r:54.59%;--pm-rpage-l:53.54%;--pm-rpage-r:9.35%;--pm-sheet-t:4.55%;--pm-sheet-b:5.33%;--pm-sheet-l:51.54%;--pm-sheet-r:7.35%;--pm-turn-o:-6.3%;--pm-bsheet-t:4.55%;--pm-bsheet-b:5.33%;--pm-bsheet-l:5.25%;--pm-bsheet-r:52.59%;--pm-bturn-o:103.66%;--pm-face:url("../../shared/deco/flightlog/mission-page.webp?v=18c232e3");--pm-pad:4.13cqw 4.4cqw 8.09cqw 4.4cqw;--pm-pad-fb:4.13cqw 3.35cqw 8.09cqw 4.4cqw;--pm-pad-bf:4.13cqw 4.4cqw 8.09cqw 4.4cqw;--pm-pad-bb:4.13cqw 4.4cqw 8.09cqw 5.45cqw;--pm-corner:url("../../shared/deco/flightlog/page-corner.webp?v=fe1aedb9")}
-  html[data-design="aqua"] .pm-book{--pm-open:url("../../shared/deco/aqua/mission-open.webp?v=25da795c");--pm-ratio-open:1409/831;--pm-page-t:11.7%;--pm-page-b:10.4%;--pm-lpage-l:6.33%;--pm-lpage-r:57.07%;--pm-rpage-l:58.07%;--pm-rpage-r:6.83%;--pm-sheet-t:8.18%;--pm-sheet-b:6.38%;--pm-sheet-l:56.07%;--pm-sheet-r:4.83%;--pm-turn-o:-16.15%;--pm-bsheet-t:7.94%;--pm-bsheet-b:5.54%;--pm-bsheet-l:4.33%;--pm-bsheet-r:55.07%;--pm-bturn-o:111.89%;--pm-face:url("../../shared/deco/aqua/mission-page.webp?v=25c8e227");--pm-pad:3.67cqw 4.4cqw 7.57cqw 4.4cqw;--pm-pad-fb:3.67cqw 2.91cqw 7.57cqw 4.4cqw;--pm-pad-bf:3.82cqw 4.4cqw 8.07cqw 4.4cqw;--pm-pad-bb:3.82cqw 4.41cqw 8.07cqw 5.89cqw;--pm-corner:url("../../shared/deco/aqua/page-corner.webp?v=12b36be8");--pm-font:Marianne,"Helvetica Neue",Arial,sans-serif;--pm-ink:#1e2733}
-  html[data-design="field"] .pm-book{--pm-open:url("../../shared/deco/field/mission-open.webp?v=243c9b80");--pm-ratio-open:1236/898;--pm-page-t:10.18%;--pm-page-b:19.59%;--pm-lpage-l:8.55%;--pm-lpage-r:56.61%;--pm-rpage-l:56.61%;--pm-rpage-r:8.55%;--pm-sheet-t:6.68%;--pm-sheet-b:15.59%;--pm-sheet-l:54.61%;--pm-sheet-r:6.55%;--pm-turn-o:-11.88%;--pm-bsheet-t:6.57%;--pm-bsheet-b:15.48%;--pm-bsheet-l:6.55%;--pm-bsheet-r:54.61%;--pm-bturn-o:111.88%;--pm-face:url("../../shared/deco/field/mission-page.webp?v=bcbd3569");--pm-pad:4.14cqw 4.4cqw 8.11cqw 4.4cqw;--pm-pad-fb:4.14cqw 4.4cqw 8.11cqw 4.4cqw;--pm-pad-bf:4.22cqw 4.4cqw 8.19cqw 4.4cqw;--pm-pad-bb:4.22cqw 4.4cqw 8.19cqw 4.4cqw;--pm-corner:url("../../shared/deco/field/page-corner.webp?v=55121820");--pm-ink:#1f2a1c}
-  .pm-book{container-type:inline-size;position:relative;width:var(--pm-bw,min(1064px,100%));aspect-ratio:var(--pm-ratio-open);margin:0 0 12px auto;background:var(--pm-open) center/contain no-repeat;filter:drop-shadow(0 10px 18px rgba(0,0,0,.45))}
-  .pm-page{position:absolute;top:var(--pm-page-t);bottom:var(--pm-page-b);overflow:auto;padding:1.6cqw 2.4cqw 5.2cqw;font:12.5px/1.5 var(--pm-font, "Courier Prime","Courier New",Courier,monospace);color:var(--pm-ink, #2b2112);scrollbar-width:thin}
-  .pm-left{left:var(--pm-lpage-l);right:var(--pm-lpage-r)}.pm-right{left:var(--pm-rpage-l);right:var(--pm-rpage-r)}.pm-page{cursor:pointer}
-  .pm-page:has(> [data-part="title"]){overflow:hidden} /* page 1 : le tampon déborde de l'étiquette, sans barre de défilement */
-  .pm-page::after{content:attr(data-folio);position:absolute;left:0;right:0;bottom:var(--pm-folio-b, 1.9cqw);text-align:center;font-size:11px;opacity:.55;pointer-events:none}
-  .pm-page h3{margin:0 0 10px;font-size:17px;letter-spacing:.02em;border-bottom:1px solid rgba(43,33,18,.35);padding-bottom:6px}
-  .pm-page h4{margin:12px 0 6px;font-size:13.5px;text-transform:uppercase;letter-spacing:.08em}
+  html[data-design="cabinet"] .pm-book {
+    --pm-open: url("../../shared/deco/cabinet/mission-open.webp?v=141b7dc8");
+    --pm-ratio-open: 1400/842;
+    --pm-page-t: 8.5%;
+    --pm-page-b: 8%;
+    --pm-lpage-l: 5.6%;
+    --pm-lpage-r: 54.4%;
+    --pm-rpage-l: 53.6%;
+    --pm-rpage-r: 5.3%;
+    --pm-sheet-t: 4.75%;
+    --pm-sheet-b: 4%;
+    --pm-sheet-l: 51.8%;
+    --pm-sheet-r: 3.43%;
+    --pm-turn-o: -4.79%;
+    --pm-bsheet-t: 4.75%;
+    --pm-bsheet-b: 4%;
+    --pm-bsheet-l: 3.57%;
+    --pm-bsheet-r: 52.5%;
+    --pm-bturn-o: 104.88%;
+    --pm-face: url("../../shared/deco/cabinet/mission-page.webp?v=6cfcdf40");
+    --pm-pad: 3.86cqw 4.27cqw 7.61cqw 4.2cqw;
+    --pm-pad-fb: 3.86cqw 4.29cqw 7.61cqw 5.28cqw;
+    --pm-pad-bf: 3.86cqw 4.3cqw 7.61cqw 4.43cqw;
+    --pm-pad-bb: 3.86cqw 3.42cqw 7.61cqw 4.21cqw;
+    --pm-corner: url("../../shared/deco/cabinet/page-corner.webp?v=ffa933b3")
+  }
+  html[data-design="flightlog"] .pm-book {
+    --pm-open: url("../../shared/deco/flightlog/mission-open.webp?v=17d1364d");
+    --pm-ratio-open: 1428/1032;
+    --pm-page-t: 8.05%;
+    --pm-page-b: 9.33%;
+    --pm-lpage-l: 7.25%;
+    --pm-lpage-r: 54.59%;
+    --pm-rpage-l: 53.54%;
+    --pm-rpage-r: 9.35%;
+    --pm-sheet-t: 4.55%;
+    --pm-sheet-b: 5.33%;
+    --pm-sheet-l: 51.54%;
+    --pm-sheet-r: 7.35%;
+    --pm-turn-o: -6.3%;
+    --pm-bsheet-t: 4.55%;
+    --pm-bsheet-b: 5.33%;
+    --pm-bsheet-l: 5.25%;
+    --pm-bsheet-r: 52.59%;
+    --pm-bturn-o: 103.66%;
+    --pm-face: url("../../shared/deco/flightlog/mission-page.webp?v=18c232e3");
+    --pm-pad: 4.13cqw 4.4cqw 8.09cqw 4.4cqw;
+    --pm-pad-fb: 4.13cqw 3.35cqw 8.09cqw 4.4cqw;
+    --pm-pad-bf: 4.13cqw 4.4cqw 8.09cqw 4.4cqw;
+    --pm-pad-bb: 4.13cqw 4.4cqw 8.09cqw 5.45cqw;
+    --pm-corner: url("../../shared/deco/flightlog/page-corner.webp?v=fe1aedb9")
+  }
+  html[data-design="aqua"] .pm-book {
+    --pm-open: url("../../shared/deco/aqua/mission-open.webp?v=25da795c");
+    --pm-ratio-open: 1409/831;
+    --pm-page-t: 11.7%;
+    --pm-page-b: 10.4%;
+    --pm-lpage-l: 6.33%;
+    --pm-lpage-r: 57.07%;
+    --pm-rpage-l: 58.07%;
+    --pm-rpage-r: 6.83%;
+    --pm-sheet-t: 8.18%;
+    --pm-sheet-b: 6.38%;
+    --pm-sheet-l: 56.07%;
+    --pm-sheet-r: 4.83%;
+    --pm-turn-o: -16.15%;
+    --pm-bsheet-t: 7.94%;
+    --pm-bsheet-b: 5.54%;
+    --pm-bsheet-l: 4.33%;
+    --pm-bsheet-r: 55.07%;
+    --pm-bturn-o: 111.89%;
+    --pm-face: url("../../shared/deco/aqua/mission-page.webp?v=25c8e227");
+    --pm-pad: 3.67cqw 4.4cqw 7.57cqw 4.4cqw;
+    --pm-pad-fb: 3.67cqw 2.91cqw 7.57cqw 4.4cqw;
+    --pm-pad-bf: 3.82cqw 4.4cqw 8.07cqw 4.4cqw;
+    --pm-pad-bb: 3.82cqw 4.41cqw 8.07cqw 5.89cqw;
+    --pm-corner: url("../../shared/deco/aqua/page-corner.webp?v=12b36be8");
+    --pm-font: Marianne, "Helvetica Neue", Arial, sans-serif;
+    --pm-ink: #1e2733
+  }
+  html[data-design="field"] .pm-book {
+    --pm-open: url("../../shared/deco/field/mission-open.webp?v=243c9b80");
+    --pm-ratio-open: 1236/898;
+    --pm-page-t: 10.18%;
+    --pm-page-b: 19.59%;
+    --pm-lpage-l: 8.55%;
+    --pm-lpage-r: 56.61%;
+    --pm-rpage-l: 56.61%;
+    --pm-rpage-r: 8.55%;
+    --pm-sheet-t: 6.68%;
+    --pm-sheet-b: 15.59%;
+    --pm-sheet-l: 54.61%;
+    --pm-sheet-r: 6.55%;
+    --pm-turn-o: -11.88%;
+    --pm-bsheet-t: 6.57%;
+    --pm-bsheet-b: 15.48%;
+    --pm-bsheet-l: 6.55%;
+    --pm-bsheet-r: 54.61%;
+    --pm-bturn-o: 111.88%;
+    --pm-face: url("../../shared/deco/field/mission-page.webp?v=bcbd3569");
+    --pm-pad: 4.14cqw 4.4cqw 8.11cqw 4.4cqw;
+    --pm-pad-fb: 4.14cqw 4.4cqw 8.11cqw 4.4cqw;
+    --pm-pad-bf: 4.22cqw 4.4cqw 8.19cqw 4.4cqw;
+    --pm-pad-bb: 4.22cqw 4.4cqw 8.19cqw 4.4cqw;
+    --pm-corner: url("../../shared/deco/field/page-corner.webp?v=55121820");
+    --pm-ink: #1f2a1c
+  }
+  .pm-book {
+    container-type: inline-size;
+    position: relative;
+    width: var(--pm-bw, min(1064px, 100%));
+    aspect-ratio: var(--pm-ratio-open);
+    margin: 0 0 12px auto;
+    background: var(--pm-open) center/contain no-repeat;
+    filter: drop-shadow(0 10px 18px rgba(0, 0, 0, .45))
+  }
+  .pm-page {
+    position: absolute;
+    top: var(--pm-page-t);
+    bottom: var(--pm-page-b);
+    overflow: auto;
+    padding: 1.6cqw 2.4cqw 5.2cqw;
+    font: 12.5px/1.5 var(--pm-font, "Courier Prime", "Courier New", Courier, monospace);
+    color: var(--pm-ink, #2b2112);
+    scrollbar-width: thin
+  }
+  .pm-left {
+    left: var(--pm-lpage-l);
+    right: var(--pm-lpage-r)
+  }
+  .pm-right {
+    left: var(--pm-rpage-l);
+    right: var(--pm-rpage-r)
+  }
+  .pm-page {
+    cursor: pointer
+  }
+  .pm-page:has(> [data-part="title"]) {
+    overflow: hidden
+  }
+  /* page 1 : le tampon déborde de l'étiquette, sans barre de défilement */
+  .pm-page::after {
+    content: attr(data-folio);
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: var(--pm-folio-b, 1.9cqw);
+    text-align: center;
+    font-size: 11px;
+    opacity: .55;
+    pointer-events: none
+  }
+  .pm-page h3 {
+    margin: 0 0 10px;
+    font-size: 17px;
+    letter-spacing: .02em;
+    border-bottom: 1px solid rgba(43, 33, 18, .35);
+    padding-bottom: 6px
+  }
+  .pm-page h4 {
+    margin: 12px 0 6px;
+    font-size: 13.5px;
+    text-transform: uppercase;
+    letter-spacing: .08em
+  }
   /* titres des feuilles : caractères des pages (machine à écrire, ou ceux du design de la page : Aqua), pas la police
      d'affichage du design (Palatino…) qui vise les titres des blocs */
-  #pmDetail .pm-book :is(h3,h4){font-family:inherit}
+  #pmDetail .pm-book :is(h3, h4) {
+    font-family: inherit
+  }
   /* texte des feuilles : encre de la page (les designs à surface sombre, Durci, éclaircissent le texte des blocs) */
-  html[data-skeuo] #pmDetail :is(.pm-book .pm-page, .pm-label) :is(h3,h4,h5,p,li,dl,dt,dd,td,th,b,strong,span,div,label){color:inherit} /* hors couche, comme les designs */
-  #pmDetail .pm-book h3{font-size:14.5px;line-height:1.35}
-  .pm-page [data-part]{position:relative}
-  .pm-page [data-part="title"]{display:grid;place-items:center;min-height:100%}.pm-page [data-part="title"] .pm-label{transform:rotate(-1deg)}
-  .pm-head{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;margin:0 0 10px;padding-bottom:8px;border-bottom:1px solid rgba(43,33,18,.4);text-transform:uppercase;font-size:10.5px;letter-spacing:.12em}
-  .pm-head div{display:grid}.pm-head b{font-size:12px}.pm-emblem{width:72px;height:auto}.pm-no{white-space:nowrap}
-  .pm-content>[data-part="title"],.pm-emblem{display:none}.pm-book .pm-emblem{display:block}
-  .pm-dr{display:none}.pm-book .pm-dr{display:block;position:absolute;z-index:2;width:190px;aspect-ratio:505/200;background:url("../../shared/deco/cabinet/stamp-diffusion-restreinte.webp?v=73254f39") center/contain no-repeat;opacity:.8;pointer-events:none}
-  .pm-book [data-part="order"] .pm-dr{top:58px;right:-6px;transform:rotate(-6deg)}
+  html[data-skeuo] #pmDetail :is(.pm-book .pm-page, .pm-label) :is(h3, h4, h5, p, li, dl, dt, dd, td, th, b, strong, span, div, label) {
+    color: inherit
+  }
+  /* hors couche, comme les designs */
+  #pmDetail .pm-book h3 {
+    font-size: 14.5px;
+    line-height: 1.35
+  }
+  .pm-page [data-part] {
+    position: relative
+  }
+  .pm-page [data-part="title"] {
+    display: grid;
+    place-items: center;
+    min-height: 100%
+  }
+  .pm-page [data-part="title"] .pm-label {
+    transform: rotate(-1deg)
+  }
+  .pm-head {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
+    align-items: center;
+    margin: 0 0 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(43, 33, 18, .4);
+    text-transform: uppercase;
+    font-size: 10.5px;
+    letter-spacing: .12em
+  }
+  .pm-head div {
+    display: grid
+  }
+  .pm-head b {
+    font-size: 12px
+  }
+  .pm-emblem {
+    width: 72px;
+    height: auto
+  }
+  .pm-no {
+    white-space: nowrap
+  }
+  .pm-content>[data-part="title"],
+  .pm-emblem {
+    display: none
+  }
+  .pm-book .pm-emblem {
+    display: block
+  }
+  .pm-dr {
+    display: none
+  }
+  .pm-book .pm-dr {
+    display: block;
+    position: absolute;
+    z-index: 2;
+    width: 190px;
+    aspect-ratio: 505/200;
+    background: url("../../shared/deco/cabinet/stamp-diffusion-restreinte.webp?v=73254f39") center/contain no-repeat;
+    opacity: .8;
+    pointer-events: none
+  }
+  .pm-book [data-part="order"] .pm-dr {
+    top: 58px;
+    right: -6px;
+    transform: rotate(-6deg)
+  }
   /* logo en page 1 (Cabinet, Carnet de vol, Durci) : l'en-tête de l'ordre, en haut à gauche, au-dessus de l'étiquette */
-  .pm-logo{display:none}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="field"]) .pm-book [data-part="title"] .pm-logo{position:absolute;top:0;left:0;margin:0}
-  html[data-design="cabinet"] .pm-book [data-part="title"] .pm-logo{display:grid;grid-template-columns:auto 1fr;right:0;border-bottom:0}
-  html[data-design="flightlog"] .pm-book [data-part="title"] .pm-logo{right:0}
-  html:not([data-design="cabinet"],[data-design="flightlog"],[data-design="field"]) .pm-book .pm-logo{display:none}
-  .pm-mdtable{width:100%;border-collapse:collapse;font-size:12px}.pm-mdtable th,.pm-mdtable td{text-align:left;padding:3px 6px;border-bottom:1px dotted rgba(43,33,18,.4)}
-  .pm-tech{width:100%;border-collapse:collapse;font-size:11px;margin:2px 0 8px}.pm-tech :is(th,td){text-align:left;vertical-align:top;padding:2px 5px;border-bottom:1px solid color-mix(in srgb,currentColor 15%,transparent)}.pm-tech th{font-weight:600;opacity:.8}
-  .pm-dl{display:grid;grid-template-columns:auto 1fr;gap:1px 10px;margin:2px 0 6px;font-size:11.5px}.pm-dl dt{opacity:.75}.pm-dl dd{margin:0}.pm-dl dl{font-size:11px}
-  #pmDetail h5{margin:8px 0 2px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;opacity:.85}
-  .pm-log{margin:0;padding-left:16px;font-size:11.5px}
-  .pm-page blockquote{margin:6px 0;padding:4px 10px;border-left:3px solid rgba(43,33,18,.45);font-style:italic}
-  .pm-sign{position:relative;margin-top:22px;display:grid;justify-items:end;gap:2px;text-align:right}
-  .pm-book .pm-sign .pm-dr{position:absolute;left:12%;top:-6px;transform:rotate(-12deg)} /* au-dessus de la signature, loin des coins */
-  .pm-signature{font:italic 26px/1 "Brush Script MT","Segoe Script","Lucida Handwriting",cursive;color:#1d2f5a;transform:rotate(-4deg);margin:4px 8px 0 0}
-  .pm-sign small{font-size:11px;opacity:.8}
-  .pm-page .pm-order{grid-template-columns:1fr 1fr;background:none;border:0;padding:0}
-  .pm-page .pm-order>div{border-bottom:1px dotted rgba(43,33,18,.35);padding:4px 0}
-  .pm-page .pm-route{grid-template-columns:1fr}
-  .pm-page .pm-maps{grid-template-columns:repeat(2,1fr);gap:16px 14px;padding:6px}
-  .pm-page .pm-maps figure{transform:rotate(var(--tilt,0deg));background:#fbf7ec;padding:6px 6px 4px;box-shadow:0 3px 8px rgba(0,0,0,.35)}
-  .pm-corner{position:absolute;bottom:var(--pm-sheet-b);width:6.5%;aspect-ratio:1;border:0;padding:0;background:var(--pm-corner) right bottom/contain no-repeat;cursor:pointer;z-index:2}
+  .pm-logo {
+    display: none
+  }
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="field"]) .pm-book [data-part="title"] .pm-logo {
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0
+  }
+  html[data-design="cabinet"] .pm-book [data-part="title"] .pm-logo {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    right: 0;
+    border-bottom: 0
+  }
+  html[data-design="flightlog"] .pm-book [data-part="title"] .pm-logo {
+    right: 0
+  }
+  html:not([data-design="cabinet"], [data-design="flightlog"], [data-design="field"]) .pm-book .pm-logo {
+    display: none
+  }
+  .pm-mdtable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px
+  }
+  .pm-mdtable th,
+  .pm-mdtable td {
+    text-align: left;
+    padding: 3px 6px;
+    border-bottom: 1px dotted rgba(43, 33, 18, .4)
+  }
+  .pm-tech {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    margin: 2px 0 8px
+  }
+  .pm-tech :is(th, td) {
+    text-align: left;
+    vertical-align: top;
+    padding: 2px 5px;
+    border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent)
+  }
+  .pm-tech th {
+    font-weight: 600;
+    opacity: .8
+  }
+  .pm-dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1px 10px;
+    margin: 2px 0 6px;
+    font-size: 11.5px
+  }
+  .pm-dl dt {
+    opacity: .75
+  }
+  .pm-dl dd {
+    margin: 0
+  }
+  .pm-dl dl {
+    font-size: 11px
+  }
+  #pmDetail h5 {
+    margin: 8px 0 2px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    opacity: .85
+  }
+  .pm-log {
+    margin: 0;
+    padding-left: 16px;
+    font-size: 11.5px
+  }
+  .pm-page blockquote {
+    margin: 6px 0;
+    padding: 4px 10px;
+    border-left: 3px solid rgba(43, 33, 18, .45);
+    font-style: italic
+  }
+  .pm-sign {
+    position: relative;
+    margin-top: 22px;
+    display: grid;
+    justify-items: end;
+    gap: 2px;
+    text-align: right
+  }
+  .pm-book .pm-sign .pm-dr {
+    position: absolute;
+    left: 12%;
+    top: -6px;
+    transform: rotate(-12deg)
+  }
+  /* au-dessus de la signature, loin des coins */
+  .pm-signature {
+    font: italic 26px/1 "Brush Script MT", "Segoe Script", "Lucida Handwriting", cursive;
+    color: #1d2f5a;
+    transform: rotate(-4deg);
+    margin: 4px 8px 0 0
+  }
+  .pm-sign small {
+    font-size: 11px;
+    opacity: .8
+  }
+  .pm-page .pm-order {
+    grid-template-columns: 1fr 1fr;
+    background: none;
+    border: 0;
+    padding: 0
+  }
+  .pm-page .pm-order>div {
+    border-bottom: 1px dotted rgba(43, 33, 18, .35);
+    padding: 4px 0
+  }
+  .pm-page .pm-route {
+    grid-template-columns: 1fr
+  }
+  .pm-page .pm-maps {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px 14px;
+    padding: 6px
+  }
+  .pm-page .pm-maps figure {
+    transform: rotate(var(--tilt, 0deg));
+    background: #fbf7ec;
+    padding: 6px 6px 4px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, .35)
+  }
+  .pm-corner {
+    position: absolute;
+    bottom: var(--pm-sheet-b);
+    width: 6.5%;
+    aspect-ratio: 1;
+    border: 0;
+    padding: 0;
+    background: var(--pm-corner) right bottom/contain no-repeat;
+    cursor: pointer;
+    z-index: 2
+  }
   /* coin corné : couleur accordée dans l'image (moyenne du papier sans ombre = celle des feuilles), pas de filtre */
-  .pm-corner:hover{filter:brightness(1.04) drop-shadow(0 2px 3px rgba(0,0,0,.35))}
-  .pm-next{right:var(--pm-sheet-r)}.pm-prev{left:var(--pm-bsheet-l);bottom:var(--pm-bsheet-b);transform:scaleX(-1)}
+  .pm-corner:hover {
+    filter: brightness(1.04) drop-shadow(0 2px 3px rgba(0, 0, 0, .35))
+  }
+  .pm-next {
+    right: var(--pm-sheet-r)
+  }
+  .pm-prev {
+    left: var(--pm-bsheet-l);
+    bottom: var(--pm-bsheet-b);
+    transform: scaleX(-1)
+  }
   /* feuille qui tourne : deux faces, pivot sur le dos du dossier (x 695 sur 1400, entre les feuilles 665 et 725) ;
      droite → gauche : feuille droite (725–1352), origine à −30 px ; gauche → droite : feuille gauche (50–665), +30 px */
-  .pm-leaf{position:absolute;z-index:3;top:var(--pm-sheet-t);bottom:var(--pm-sheet-b);left:var(--pm-sheet-l);right:var(--pm-sheet-r);transform-style:preserve-3d;transform-origin:var(--pm-turn-o) 50%;pointer-events:none}
-  .pm-leaf.back{top:var(--pm-bsheet-t);bottom:var(--pm-bsheet-b);left:var(--pm-bsheet-l);right:var(--pm-bsheet-r);transform-origin:var(--pm-bturn-o) 50%}
-  .pm-leaf .pm-face{position:absolute;inset:0;overflow:hidden;cursor:default;backface-visibility:hidden;background:var(--pm-face) center/100% 100%;box-shadow:0 0 22px rgba(0,0,0,.25);padding:var(--pm-pad);font:12.5px/1.5 var(--pm-font, "Courier Prime","Courier New",Courier,monospace);color:var(--pm-ink, #2b2112)}
-  .pm-leaf .pm-back{transform:rotateY(180deg)}
+  .pm-leaf {
+    position: absolute;
+    z-index: 3;
+    top: var(--pm-sheet-t);
+    bottom: var(--pm-sheet-b);
+    left: var(--pm-sheet-l);
+    right: var(--pm-sheet-r);
+    transform-style: preserve-3d;
+    transform-origin: var(--pm-turn-o) 50%;
+    pointer-events: none
+  }
+  .pm-leaf.back {
+    top: var(--pm-bsheet-t);
+    bottom: var(--pm-bsheet-b);
+    left: var(--pm-bsheet-l);
+    right: var(--pm-bsheet-r);
+    transform-origin: var(--pm-bturn-o) 50%
+  }
+  .pm-leaf .pm-face {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    cursor: default;
+    backface-visibility: hidden;
+    background: var(--pm-face) center/100% 100%;
+    box-shadow: 0 0 22px rgba(0, 0, 0, .25);
+    padding: var(--pm-pad);
+    font: 12.5px/1.5 var(--pm-font, "Courier Prime", "Courier New", Courier, monospace);
+    color: var(--pm-ink, #2b2112)
+  }
+  .pm-leaf .pm-back {
+    transform: rotateY(180deg)
+  }
   /* marges des faces : le texte tombe exactement sur celui des pages fixes, au départ comme à l'arrivée (géométrie
      mesurée : feuilles, zones de texte, rotation autour du dos ; en centièmes de la largeur du dossier) */
-  .pm-leaf.fwd .pm-back{padding:var(--pm-pad-fb)}
-  .pm-leaf.back .pm-front{padding:var(--pm-pad-bf)}
-  .pm-leaf.back .pm-back{padding:var(--pm-pad-bb)}
-  .pm-leaf.fwd{animation:pmTurn .7s cubic-bezier(.45,.05,.35,1) forwards}.pm-leaf.back{animation:pmTurnBack .7s cubic-bezier(.45,.05,.35,1) forwards}
-  @keyframes pmTurn{from{transform:perspective(2200px) rotateY(0)}to{transform:perspective(2200px) rotateY(-180deg)}}
-  @keyframes pmTurnBack{from{transform:perspective(2200px) rotateY(0)}to{transform:perspective(2200px) rotateY(180deg)}}
+  .pm-leaf.fwd .pm-back {
+    padding: var(--pm-pad-fb)
+  }
+  .pm-leaf.back .pm-front {
+    padding: var(--pm-pad-bf)
+  }
+  .pm-leaf.back .pm-back {
+    padding: var(--pm-pad-bb)
+  }
+  .pm-leaf.fwd {
+    animation: pmTurn .7s cubic-bezier(.45, .05, .35, 1) forwards
+  }
+  .pm-leaf.back {
+    animation: pmTurnBack .7s cubic-bezier(.45, .05, .35, 1) forwards
+  }
+  @keyframes pmTurn {
+    from {
+      transform: perspective(2200px) rotateY(0)
+    }
+    to {
+      transform: perspective(2200px) rotateY(-180deg)
+    }
+  }
+  @keyframes pmTurnBack {
+    from {
+      transform: perspective(2200px) rotateY(0)
+    }
+    to {
+      transform: perspective(2200px) rotateY(180deg)
+    }
+  }
   /* Aqua : porte-documents toilé ouvert (feuilles : x 61–633 et 790–1341, dos à 701 sur 1409 × 831 ; marges des faces
      calculées comme pour le Cabinet : le texte de la feuille qui tourne tombe sur celui des pages fixes) ; ordre au
      modèle de l'administration (bandeau d'en-tête, rubriques en capitales soulignées, caractères sans empattement) */
-  html[data-design="aqua"] .pm-book :is(h3,h4){color:#14285a}
-  html[data-design="aqua"] .pm-book h3{border-bottom-color:rgba(20,40,90,.35)}
-  html[data-design="aqua"] .pm-book h4{text-decoration:underline;text-underline-offset:2px;letter-spacing:.04em}
-  html[data-design="aqua"] .pm-book :is(.pm-mdtable th,.pm-mdtable td,.pm-order>div){border-bottom-color:rgba(20,40,90,.25)}
-  html[data-design="aqua"] .pm-book .pm-signature{color:#14285a}
+  html[data-design="aqua"] .pm-book :is(h3, h4) {
+    color: #14285a
+  }
+  html[data-design="aqua"] .pm-book h3 {
+    border-bottom-color: rgba(20, 40, 90, .35)
+  }
+  html[data-design="aqua"] .pm-book h4 {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    letter-spacing: .04em
+  }
+  html[data-design="aqua"] .pm-book :is(.pm-mdtable th, .pm-mdtable td, .pm-order>div) {
+    border-bottom-color: rgba(20, 40, 90, .25)
+  }
+  html[data-design="aqua"] .pm-book .pm-signature {
+    color: #14285a
+  }
   /* en-tête : bandeau du centre opérationnel (image) ; numéro de l'ordre dessous, à droite */
-  html[data-design="aqua"] .pm-book .pm-head{display:block;position:relative;aspect-ratio:908/276;margin:0 0 26px;padding:0;border:0;background:url("../../shared/deco/aqua/order-header.webp?v=2015f881") center/100% 100% no-repeat;box-shadow:0 1px 2px rgba(0,0,0,.15)}
-  html[data-design="aqua"] .pm-book .pm-head>:not(.pm-no){position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+  html[data-design="aqua"] .pm-book .pm-head {
+    display: block;
+    position: relative;
+    aspect-ratio: 908/276;
+    margin: 0 0 26px;
+    padding: 0;
+    border: 0;
+    background: url("../../shared/deco/aqua/order-header.webp?v=2015f881") center/100% 100% no-repeat;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .15)
+  }
+  html[data-design="aqua"] .pm-book .pm-head>:not(.pm-no) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%)
+  }
   /* en-tête de l'ordre selon la famille de la mission (#pmDetail[data-family], posé par la page pour tous les designs) :
      un design qui a plusieurs en-têtes les déclare ici ; sans déclaration, l'en-tête unique du design. Aqua : émetteur
      civil de la demande (SDIS, SAMU, centre hospitalier, ARS, préfet, Intérieur, COZ, CPCO) ; familles militaires :
      demande de concours des armées (en-tête par défaut ci-dessus) */
-  html[data-design="aqua"] #pmDetail[data-family="FIRE"] .pm-book .pm-head{background-image:url("../../shared/deco/aqua/order-header-sdis.webp?v=d1587c8f");aspect-ratio:753/239}
-  html[data-design="aqua"] #pmDetail[data-family="HEMS"] .pm-book .pm-head{background-image:url("../../shared/deco/aqua/order-header-samu.webp?v=5f3999a5");aspect-ratio:753/239}
-  html[data-design="aqua"] #pmDetail[data-family="AIRLIFT"] .pm-book .pm-head{background-image:url("../../shared/deco/aqua/order-header-hopital.webp?v=991b0712");aspect-ratio:753/239}
-  html[data-design="aqua"] #pmDetail[data-family="SURVEY"] .pm-book .pm-head{background-image:url("../../shared/deco/aqua/order-header-ars.webp?v=fd33f021");aspect-ratio:753/239}
-  html[data-design="aqua"] #pmDetail[data-family="LE"] .pm-book .pm-head,html[data-design="aqua"] #pmDetail[data-family="MARITIME"] .pm-book .pm-head{background-image:url("../../shared/deco/aqua/order-header-prefet.webp?v=9e499c9c");aspect-ratio:753/239}
-  html[data-design="aqua"] #pmDetail[data-family="SAR"] .pm-book .pm-head{background-image:url("../../shared/deco/aqua/order-header-interieur.webp?v=9ab122e0");aspect-ratio:753/239}
-  html[data-design="aqua"] #pmDetail[data-family="HADR"] .pm-book .pm-head{background-image:url("../../shared/deco/aqua/order-header-coz.webp?v=4eee4ed3");aspect-ratio:753/239}
-  html[data-design="aqua"] #pmDetail[data-family="COMMAND"] .pm-book .pm-head,html[data-design="aqua"] #pmDetail[data-family="SPECIAL"] .pm-book .pm-head{background-image:url("../../shared/deco/aqua/order-header-cpco.webp?v=dfa1df57");aspect-ratio:753/239}
-  html[data-design="aqua"] .pm-book .pm-head .pm-no{position:absolute;top:calc(100% + 6px);right:0;font-size:11px;letter-spacing:.06em;color:#14285a}
-  html[data-design="aqua"] .pm-book [data-part="order"] .pm-dr{top:auto;bottom:-10px}
+  html[data-design="aqua"] #pmDetail[data-family="FIRE"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/aqua/order-header-sdis.webp?v=d1587c8f");
+    aspect-ratio: 753/239
+  }
+  html[data-design="aqua"] #pmDetail[data-family="HEMS"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/aqua/order-header-samu.webp?v=5f3999a5");
+    aspect-ratio: 753/239
+  }
+  html[data-design="aqua"] #pmDetail[data-family="AIRLIFT"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/aqua/order-header-hopital.webp?v=991b0712");
+    aspect-ratio: 753/239
+  }
+  html[data-design="aqua"] #pmDetail[data-family="SURVEY"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/aqua/order-header-ars.webp?v=fd33f021");
+    aspect-ratio: 753/239
+  }
+  html[data-design="aqua"] #pmDetail[data-family="LE"] .pm-book .pm-head,
+  html[data-design="aqua"] #pmDetail[data-family="MARITIME"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/aqua/order-header-prefet.webp?v=9e499c9c");
+    aspect-ratio: 753/239
+  }
+  html[data-design="aqua"] #pmDetail[data-family="SAR"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/aqua/order-header-interieur.webp?v=9ab122e0");
+    aspect-ratio: 753/239
+  }
+  html[data-design="aqua"] #pmDetail[data-family="HADR"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/aqua/order-header-coz.webp?v=4eee4ed3");
+    aspect-ratio: 753/239
+  }
+  html[data-design="aqua"] #pmDetail[data-family="COMMAND"] .pm-book .pm-head,
+  html[data-design="aqua"] #pmDetail[data-family="SPECIAL"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/aqua/order-header-cpco.webp?v=dfa1df57");
+    aspect-ratio: 753/239
+  }
+  html[data-design="aqua"] .pm-book .pm-head .pm-no {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    font-size: 11px;
+    letter-spacing: .06em;
+    color: #14285a
+  }
+  html[data-design="aqua"] .pm-book [data-part="order"] .pm-dr {
+    top: auto;
+    bottom: -10px
+  }
   /* Durci : dossier zippé ouvert (feuilles : x 81–561 et 675–1155, y 59–759, dos à 618 sur 1236 × 898 ; tirette
      sous le dossier) ; marges des faces calculées comme pour le Cabinet */
   /* en-tête de l'ordre : logo du CPCO en tenue de terrain (« Ordre de mission ») ; numéro dessous, à droite */
-  html[data-design="field"] .pm-book .pm-head{display:block;position:relative;aspect-ratio:1100/554;margin:0 0 20px;width:56%;padding:0;border:0;background:url("../../shared/deco/field/order-header.webp?v=b361e25b") center/100% 100% no-repeat}
+  html[data-design="field"] .pm-book .pm-head {
+    display: block;
+    position: relative;
+    aspect-ratio: 1100/554;
+    margin: 0 0 20px;
+    width: 56%;
+    padding: 0;
+    border: 0;
+    background: url("../../shared/deco/field/order-header.webp?v=b361e25b") center/100% 100% no-repeat
+  }
   /* Durci : en-tête de l'ordre selon la famille (émetteur militaire), bandeau pleine largeur */
-  html[data-design="field"] #pmDetail[data-family="FIRE"] .pm-book .pm-head{background-image:url("../../shared/deco/field/order-header-bspp.webp?v=163928f0");aspect-ratio:760/223;width:100%}
-  html[data-design="field"] #pmDetail[data-family="HEMS"] .pm-book .pm-head{background-image:url("../../shared/deco/field/order-header-ssa.webp?v=543ebc72");aspect-ratio:760/213;width:100%}
-  html[data-design="field"] #pmDetail[data-family="AIRLIFT"] .pm-book .pm-head{background-image:url("../../shared/deco/field/order-header-hia.webp?v=33872398");aspect-ratio:746/209;width:100%}
-  html[data-design="field"] #pmDetail[data-family="SURVEY"] .pm-book .pm-head{background-image:url("../../shared/deco/field/order-header-dcssa.webp?v=2c197954");aspect-ratio:770/216;width:100%}
-  html[data-design="field"] #pmDetail[data-family="LE"] .pm-book .pm-head,html[data-design="field"] #pmDetail[data-family="MARITIME"] .pm-book .pm-head{background-image:url("../../shared/deco/field/order-header-dmd.webp?v=f115c20c");aspect-ratio:800/190;width:100%}
-  html[data-design="field"] #pmDetail[data-family="SAR"] .pm-book .pm-head,html[data-design="field"] #pmDetail[data-family="HADR"] .pm-book .pm-head{background-image:url("../../shared/deco/field/order-header-emzd.webp?v=0a1ba46b");aspect-ratio:742/233;width:100%}
-  html[data-design="field"] #pmDetail[data-family="COMMAND"] .pm-book .pm-head,html[data-design="field"] #pmDetail[data-family="SPECIAL"] .pm-book .pm-head{background-image:url("../../shared/deco/field/order-header-cpco.webp?v=4f8f929d");aspect-ratio:763/210;width:100%}
-  html[data-design="field"] #pmDetail[data-family="COMBAT"] .pm-book .pm-head,html[data-design="field"] #pmDetail[data-family="SOF"] .pm-book .pm-head,html[data-design="field"] #pmDetail[data-family="ISR"] .pm-book .pm-head,html[data-design="field"] #pmDetail[data-family="AAR"] .pm-book .pm-head,html[data-design="field"] #pmDetail[data-family="AIRBORNE"] .pm-book .pm-head{background-image:url("../../shared/deco/field/order-header-ema.webp?v=21844b34");aspect-ratio:800/245;width:100%}
+  html[data-design="field"] #pmDetail[data-family="FIRE"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/field/order-header-bspp.webp?v=163928f0");
+    aspect-ratio: 760/223;
+    width: 100%
+  }
+  html[data-design="field"] #pmDetail[data-family="HEMS"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/field/order-header-ssa.webp?v=543ebc72");
+    aspect-ratio: 760/213;
+    width: 100%
+  }
+  html[data-design="field"] #pmDetail[data-family="AIRLIFT"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/field/order-header-hia.webp?v=33872398");
+    aspect-ratio: 746/209;
+    width: 100%
+  }
+  html[data-design="field"] #pmDetail[data-family="SURVEY"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/field/order-header-dcssa.webp?v=2c197954");
+    aspect-ratio: 770/216;
+    width: 100%
+  }
+  html[data-design="field"] #pmDetail[data-family="LE"] .pm-book .pm-head,
+  html[data-design="field"] #pmDetail[data-family="MARITIME"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/field/order-header-dmd.webp?v=f115c20c");
+    aspect-ratio: 800/190;
+    width: 100%
+  }
+  html[data-design="field"] #pmDetail[data-family="SAR"] .pm-book .pm-head,
+  html[data-design="field"] #pmDetail[data-family="HADR"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/field/order-header-emzd.webp?v=0a1ba46b");
+    aspect-ratio: 742/233;
+    width: 100%
+  }
+  html[data-design="field"] #pmDetail[data-family="COMMAND"] .pm-book .pm-head,
+  html[data-design="field"] #pmDetail[data-family="SPECIAL"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/field/order-header-cpco.webp?v=4f8f929d");
+    aspect-ratio: 763/210;
+    width: 100%
+  }
+  html[data-design="field"] #pmDetail[data-family="COMBAT"] .pm-book .pm-head,
+  html[data-design="field"] #pmDetail[data-family="SOF"] .pm-book .pm-head,
+  html[data-design="field"] #pmDetail[data-family="ISR"] .pm-book .pm-head,
+  html[data-design="field"] #pmDetail[data-family="AAR"] .pm-book .pm-head,
+  html[data-design="field"] #pmDetail[data-family="AIRBORNE"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/field/order-header-ema.webp?v=21844b34");
+    aspect-ratio: 800/245;
+    width: 100%
+  }
   /* Cabinet : en-tête de l'ordre selon la famille (aéronautique navale) : l'en-tête image remplace l'emblème et le texte */
-  html[data-design="cabinet"] #pmDetail:is([data-family="COMMAND"],[data-family="SPECIAL"],[data-family="SOF"],[data-family="AAR"],[data-family="AIRBORNE"],[data-family="SURVEY"],[data-family="FI"],[data-family="LE"],[data-family="MARITIME"],[data-family="SAR"],[data-family="FIRE"],[data-family="AIRLIFT"],[data-family="HEMS"],[data-family="MEDEVAC"],[data-family="HADR"],[data-family="ISR"],[data-family="COMBAT"],[data-family="DEMO"]) .pm-book [data-part="order"] .pm-head{display:block;position:relative;width:88%;margin:0 auto 22px;padding:0;border:0;background:center/100% 100% no-repeat}
-  html[data-design="cabinet"] #pmDetail:is([data-family="COMMAND"],[data-family="SPECIAL"],[data-family="SOF"],[data-family="AAR"],[data-family="AIRBORNE"],[data-family="SURVEY"],[data-family="FI"],[data-family="LE"],[data-family="MARITIME"],[data-family="SAR"],[data-family="FIRE"],[data-family="AIRLIFT"],[data-family="HEMS"],[data-family="MEDEVAC"],[data-family="HADR"],[data-family="ISR"],[data-family="COMBAT"],[data-family="DEMO"]) .pm-book [data-part="order"] .pm-head>:not(.pm-no){position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
-  html[data-design="cabinet"] #pmDetail:is([data-family="COMMAND"],[data-family="SPECIAL"],[data-family="SOF"],[data-family="AAR"],[data-family="AIRBORNE"],[data-family="SURVEY"],[data-family="FI"],[data-family="LE"],[data-family="MARITIME"],[data-family="SAR"],[data-family="FIRE"],[data-family="AIRLIFT"],[data-family="HEMS"],[data-family="MEDEVAC"],[data-family="HADR"],[data-family="ISR"],[data-family="COMBAT"],[data-family="DEMO"]) .pm-book [data-part="order"] .pm-head .pm-no{position:absolute;top:calc(100% + 4px);right:0;font-size:11px;letter-spacing:.06em}
-  html[data-design="cabinet"] #pmDetail[data-family="COMMAND"] .pm-book .pm-head,html[data-design="cabinet"] #pmDetail[data-family="SPECIAL"] .pm-book .pm-head,html[data-design="cabinet"] #pmDetail[data-family="SOF"] .pm-book [data-part="order"] .pm-head{background-image:url("../../shared/deco/cabinet/order-header-emg.webp?v=2f0f1503");aspect-ratio:761/233;}
-  html[data-design="cabinet"] #pmDetail[data-family="AAR"] .pm-book .pm-head,html[data-design="cabinet"] #pmDetail[data-family="AIRBORNE"] .pm-book [data-part="order"] .pm-head{background-image:url("../../shared/deco/cabinet/order-header-fam.webp?v=1ded3e31");aspect-ratio:635/210;}
-  html[data-design="cabinet"] #pmDetail[data-family="SURVEY"] .pm-book .pm-head,html[data-design="cabinet"] #pmDetail[data-family="FI"] .pm-book [data-part="order"] .pm-head{background-image:url("../../shared/deco/cabinet/order-header-dfam.webp?v=8a9b6aa6");aspect-ratio:863/208;}
-  html[data-design="cabinet"] #pmDetail[data-family="LE"] .pm-book .pm-head,html[data-design="cabinet"] #pmDetail[data-family="MARITIME"] .pm-book .pm-head,html[data-design="cabinet"] #pmDetail[data-family="SAR"] .pm-book .pm-head,html[data-design="cabinet"] #pmDetail[data-family="FIRE"] .pm-book [data-part="order"] .pm-head{background-image:url("../../shared/deco/cabinet/order-header-prefmar.webp?v=8ea59c39");aspect-ratio:724/189;}
-  html[data-design="cabinet"] #pmDetail[data-family="AIRLIFT"] .pm-book .pm-head,html[data-design="cabinet"] #pmDetail[data-family="HEMS"] .pm-book .pm-head,html[data-design="cabinet"] #pmDetail[data-family="MEDEVAC"] .pm-book .pm-head,html[data-design="cabinet"] #pmDetail[data-family="HADR"] .pm-book [data-part="order"] .pm-head{background-image:url("../../shared/deco/cabinet/order-header-ban.webp?v=76f49d13");aspect-ratio:841/171;}
-  html[data-design="cabinet"] #pmDetail[data-family="ISR"] .pm-book [data-part="order"] .pm-head{background-image:url("../../shared/deco/cabinet/order-header-escadrille.webp?v=18bc5a76");aspect-ratio:803/170;}
-  html[data-design="cabinet"] #pmDetail[data-family="COMBAT"] .pm-book [data-part="order"] .pm-head{background-image:url("../../shared/deco/cabinet/order-header-embarquee.webp?v=f7ab3a69");aspect-ratio:852/184;}
-  html[data-design="cabinet"] #pmDetail[data-family="DEMO"] .pm-book [data-part="order"] .pm-head{background-image:url("../../shared/deco/cabinet/order-header-mn.webp?v=1ad5de38");aspect-ratio:835/208;}
+  html[data-design="cabinet"] #pmDetail:is([data-family="COMMAND"], [data-family="SPECIAL"], [data-family="SOF"], [data-family="AAR"], [data-family="AIRBORNE"], [data-family="SURVEY"], [data-family="FI"], [data-family="LE"], [data-family="MARITIME"], [data-family="SAR"], [data-family="FIRE"], [data-family="AIRLIFT"], [data-family="HEMS"], [data-family="MEDEVAC"], [data-family="HADR"], [data-family="ISR"], [data-family="COMBAT"], [data-family="DEMO"]) .pm-book [data-part="order"] .pm-head {
+    display: block;
+    position: relative;
+    width: 88%;
+    margin: 0 auto 22px;
+    padding: 0;
+    border: 0;
+    background: center/100% 100% no-repeat
+  }
+  html[data-design="cabinet"] #pmDetail:is([data-family="COMMAND"], [data-family="SPECIAL"], [data-family="SOF"], [data-family="AAR"], [data-family="AIRBORNE"], [data-family="SURVEY"], [data-family="FI"], [data-family="LE"], [data-family="MARITIME"], [data-family="SAR"], [data-family="FIRE"], [data-family="AIRLIFT"], [data-family="HEMS"], [data-family="MEDEVAC"], [data-family="HADR"], [data-family="ISR"], [data-family="COMBAT"], [data-family="DEMO"]) .pm-book [data-part="order"] .pm-head>:not(.pm-no) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%)
+  }
+  html[data-design="cabinet"] #pmDetail:is([data-family="COMMAND"], [data-family="SPECIAL"], [data-family="SOF"], [data-family="AAR"], [data-family="AIRBORNE"], [data-family="SURVEY"], [data-family="FI"], [data-family="LE"], [data-family="MARITIME"], [data-family="SAR"], [data-family="FIRE"], [data-family="AIRLIFT"], [data-family="HEMS"], [data-family="MEDEVAC"], [data-family="HADR"], [data-family="ISR"], [data-family="COMBAT"], [data-family="DEMO"]) .pm-book [data-part="order"] .pm-head .pm-no {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    font-size: 11px;
+    letter-spacing: .06em
+  }
+  html[data-design="cabinet"] #pmDetail[data-family="COMMAND"] .pm-book .pm-head,
+  html[data-design="cabinet"] #pmDetail[data-family="SPECIAL"] .pm-book .pm-head,
+  html[data-design="cabinet"] #pmDetail[data-family="SOF"] .pm-book [data-part="order"] .pm-head {
+    background-image: url("../../shared/deco/cabinet/order-header-emg.webp?v=2f0f1503");
+    aspect-ratio: 761/233;
+  }
+  html[data-design="cabinet"] #pmDetail[data-family="AAR"] .pm-book .pm-head,
+  html[data-design="cabinet"] #pmDetail[data-family="AIRBORNE"] .pm-book [data-part="order"] .pm-head {
+    background-image: url("../../shared/deco/cabinet/order-header-fam.webp?v=1ded3e31");
+    aspect-ratio: 635/210;
+  }
+  html[data-design="cabinet"] #pmDetail[data-family="SURVEY"] .pm-book .pm-head,
+  html[data-design="cabinet"] #pmDetail[data-family="FI"] .pm-book [data-part="order"] .pm-head {
+    background-image: url("../../shared/deco/cabinet/order-header-dfam.webp?v=8a9b6aa6");
+    aspect-ratio: 863/208;
+  }
+  html[data-design="cabinet"] #pmDetail[data-family="LE"] .pm-book .pm-head,
+  html[data-design="cabinet"] #pmDetail[data-family="MARITIME"] .pm-book .pm-head,
+  html[data-design="cabinet"] #pmDetail[data-family="SAR"] .pm-book .pm-head,
+  html[data-design="cabinet"] #pmDetail[data-family="FIRE"] .pm-book [data-part="order"] .pm-head {
+    background-image: url("../../shared/deco/cabinet/order-header-prefmar.webp?v=8ea59c39");
+    aspect-ratio: 724/189;
+  }
+  html[data-design="cabinet"] #pmDetail[data-family="AIRLIFT"] .pm-book .pm-head,
+  html[data-design="cabinet"] #pmDetail[data-family="HEMS"] .pm-book .pm-head,
+  html[data-design="cabinet"] #pmDetail[data-family="MEDEVAC"] .pm-book .pm-head,
+  html[data-design="cabinet"] #pmDetail[data-family="HADR"] .pm-book [data-part="order"] .pm-head {
+    background-image: url("../../shared/deco/cabinet/order-header-ban.webp?v=76f49d13");
+    aspect-ratio: 841/171;
+  }
+  html[data-design="cabinet"] #pmDetail[data-family="ISR"] .pm-book [data-part="order"] .pm-head {
+    background-image: url("../../shared/deco/cabinet/order-header-escadrille.webp?v=18bc5a76");
+    aspect-ratio: 803/170;
+  }
+  html[data-design="cabinet"] #pmDetail[data-family="COMBAT"] .pm-book [data-part="order"] .pm-head {
+    background-image: url("../../shared/deco/cabinet/order-header-embarquee.webp?v=f7ab3a69");
+    aspect-ratio: 852/184;
+  }
+  html[data-design="cabinet"] #pmDetail[data-family="DEMO"] .pm-book [data-part="order"] .pm-head {
+    background-image: url("../../shared/deco/cabinet/order-header-mn.webp?v=1ad5de38");
+    aspect-ratio: 835/208;
+  }
   /* Carnet de vol : en-tête de l'ordre selon la famille (protection civile, secours) et tampon de l'émetteur à la signature */
-  html[data-design="flightlog"] #pmDetail[data-family="HADR"] .pm-book .pm-head,html[data-design="flightlog"] #pmDetail[data-family="LE"] .pm-book .pm-head,html[data-design="flightlog"] #pmDetail[data-family="COMMAND"] .pm-book .pm-head{background-image:url("../../shared/deco/flightlog/order-header-snpc.webp?v=ad0c9122");aspect-ratio:400/205;width:64%;margin-left:auto;margin-right:auto}
-  html[data-design="flightlog"] #pmDetail[data-family="FIRE"] .pm-book .pm-head{background-image:url("../../shared/deco/flightlog/order-header-marignane.webp?v=b39e26a2");aspect-ratio:437/213;width:64%;margin-left:auto;margin-right:auto}
-  html[data-design="flightlog"] #pmDetail[data-family="HEMS"] .pm-book .pm-head{background-image:url("../../shared/deco/flightlog/order-header-helico.webp?v=a6c50da4");aspect-ratio:425/198;width:64%;margin-left:auto;margin-right:auto}
-  html[data-design="flightlog"] #pmDetail[data-family="SAR"] .pm-book .pm-head{background-image:url("../../shared/deco/flightlog/order-header-sna.webp?v=223d99da");aspect-ratio:432/217;width:64%;margin-left:auto;margin-right:auto}
-  html[data-design="flightlog"] #pmDetail[data-family="MEDEVAC"] .pm-book .pm-head{background-image:url("../../shared/deco/flightlog/order-header-alat.webp?v=b6484b50");aspect-ratio:408/221;width:64%;margin-left:auto;margin-right:auto}
-  html[data-design="flightlog"] #pmDetail[data-family="AIRLIFT"] .pm-book .pm-head,html[data-design="flightlog"] #pmDetail[data-family="AIRBORNE"] .pm-book .pm-head{background-image:url("../../shared/deco/flightlog/order-header-tam.webp?v=afa2f059");aspect-ratio:445/233;width:64%;margin-left:auto;margin-right:auto}
-  html[data-design="flightlog"] #pmDetail[data-family="MARITIME"] .pm-book .pm-head{background-image:url("../../shared/deco/flightlog/order-header-aeronavale.webp?v=c83c36ce");aspect-ratio:413/219;width:64%;margin-left:auto;margin-right:auto}
-  html[data-design="flightlog"] #pmDetail[data-family="FI"] .pm-book .pm-head,html[data-design="flightlog"] #pmDetail[data-family="SURVEY"] .pm-book .pm-head,html[data-design="flightlog"] #pmDetail[data-family="DEMO"] .pm-book .pm-head{background-image:url("../../shared/deco/flightlog/order-header-cev.webp?v=cb5d3a74");aspect-ratio:427/238;width:64%;margin-left:auto;margin-right:auto}
-  html[data-design="flightlog"] #pmDetail[data-family="HADR"] .pm-book .pm-sign,html[data-design="flightlog"] #pmDetail[data-family="LE"] .pm-book .pm-sign,html[data-design="flightlog"] #pmDetail[data-family="COMMAND"] .pm-book .pm-sign{--pm-fam-stamp:url("../../shared/deco/flightlog/order-stamp-snpc.webp?v=c7a1b087")}
-  html[data-design="flightlog"] #pmDetail[data-family="FIRE"] .pm-book .pm-sign{--pm-fam-stamp:url("../../shared/deco/flightlog/order-stamp-marignane.webp?v=2ae3e285")}
-  html[data-design="flightlog"] #pmDetail[data-family="HEMS"] .pm-book .pm-sign{--pm-fam-stamp:url("../../shared/deco/flightlog/order-stamp-helico.webp?v=229868d0")}
-  html[data-design="flightlog"] #pmDetail[data-family="SAR"] .pm-book .pm-sign{--pm-fam-stamp:url("../../shared/deco/flightlog/order-stamp-sna.webp?v=01d0b4bc")}
-  html[data-design="flightlog"] #pmDetail[data-family="MEDEVAC"] .pm-book .pm-sign{--pm-fam-stamp:url("../../shared/deco/flightlog/order-stamp-alat.webp?v=b41f7511")}
-  html[data-design="flightlog"] #pmDetail[data-family="AIRLIFT"] .pm-book .pm-sign,html[data-design="flightlog"] #pmDetail[data-family="AIRBORNE"] .pm-book .pm-sign{--pm-fam-stamp:url("../../shared/deco/flightlog/order-stamp-tam.webp?v=8652571e")}
-  html[data-design="flightlog"] #pmDetail[data-family="MARITIME"] .pm-book .pm-sign{--pm-fam-stamp:url("../../shared/deco/flightlog/order-stamp-aeronavale.webp?v=5d7072fc")}
-  html[data-design="flightlog"] #pmDetail[data-family="FI"] .pm-book .pm-sign,html[data-design="flightlog"] #pmDetail[data-family="SURVEY"] .pm-book .pm-sign,html[data-design="flightlog"] #pmDetail[data-family="DEMO"] .pm-book .pm-sign{--pm-fam-stamp:url("../../shared/deco/flightlog/order-stamp-cev.webp?v=113def84")}
-  .pm-book .pm-sign::before{content:"";position:absolute;left:8%;top:calc(100% + 8px);width:26%;aspect-ratio:1;background:var(--pm-fam-stamp, none) center/contain no-repeat;transform:rotate(-9deg);opacity:.85;mix-blend-mode:multiply;pointer-events:none}
-  html[data-design="field"] .pm-book .pm-head>:not(.pm-no){position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
-  html[data-design="field"] .pm-book .pm-head .pm-no{position:absolute;top:calc(100% + 4px);right:0;font-size:11px;letter-spacing:.06em}
-  html[data-design="field"] .pm-book [data-part="order"] .pm-dr{top:auto;bottom:-10px}
+  html[data-design="flightlog"] #pmDetail[data-family="HADR"] .pm-book .pm-head,
+  html[data-design="flightlog"] #pmDetail[data-family="LE"] .pm-book .pm-head,
+  html[data-design="flightlog"] #pmDetail[data-family="COMMAND"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/flightlog/order-header-snpc.webp?v=ad0c9122");
+    aspect-ratio: 400/205;
+    width: 64%;
+    margin-left: auto;
+    margin-right: auto
+  }
+  html[data-design="flightlog"] #pmDetail[data-family="FIRE"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/flightlog/order-header-marignane.webp?v=b39e26a2");
+    aspect-ratio: 437/213;
+    width: 64%;
+    margin-left: auto;
+    margin-right: auto
+  }
+  html[data-design="flightlog"] #pmDetail[data-family="HEMS"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/flightlog/order-header-helico.webp?v=a6c50da4");
+    aspect-ratio: 425/198;
+    width: 64%;
+    margin-left: auto;
+    margin-right: auto
+  }
+  html[data-design="flightlog"] #pmDetail[data-family="SAR"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/flightlog/order-header-sna.webp?v=223d99da");
+    aspect-ratio: 432/217;
+    width: 64%;
+    margin-left: auto;
+    margin-right: auto
+  }
+  html[data-design="flightlog"] #pmDetail[data-family="MEDEVAC"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/flightlog/order-header-alat.webp?v=b6484b50");
+    aspect-ratio: 408/221;
+    width: 64%;
+    margin-left: auto;
+    margin-right: auto
+  }
+  html[data-design="flightlog"] #pmDetail[data-family="AIRLIFT"] .pm-book .pm-head,
+  html[data-design="flightlog"] #pmDetail[data-family="AIRBORNE"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/flightlog/order-header-tam.webp?v=afa2f059");
+    aspect-ratio: 445/233;
+    width: 64%;
+    margin-left: auto;
+    margin-right: auto
+  }
+  html[data-design="flightlog"] #pmDetail[data-family="MARITIME"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/flightlog/order-header-aeronavale.webp?v=c83c36ce");
+    aspect-ratio: 413/219;
+    width: 64%;
+    margin-left: auto;
+    margin-right: auto
+  }
+  html[data-design="flightlog"] #pmDetail[data-family="FI"] .pm-book .pm-head,
+  html[data-design="flightlog"] #pmDetail[data-family="SURVEY"] .pm-book .pm-head,
+  html[data-design="flightlog"] #pmDetail[data-family="DEMO"] .pm-book .pm-head {
+    background-image: url("../../shared/deco/flightlog/order-header-cev.webp?v=cb5d3a74");
+    aspect-ratio: 427/238;
+    width: 64%;
+    margin-left: auto;
+    margin-right: auto
+  }
+  html[data-design="flightlog"] #pmDetail[data-family="HADR"] .pm-book .pm-sign,
+  html[data-design="flightlog"] #pmDetail[data-family="LE"] .pm-book .pm-sign,
+  html[data-design="flightlog"] #pmDetail[data-family="COMMAND"] .pm-book .pm-sign {
+    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-snpc.webp?v=c7a1b087")
+  }
+  html[data-design="flightlog"] #pmDetail[data-family="FIRE"] .pm-book .pm-sign {
+    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-marignane.webp?v=2ae3e285")
+  }
+  html[data-design="flightlog"] #pmDetail[data-family="HEMS"] .pm-book .pm-sign {
+    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-helico.webp?v=229868d0")
+  }
+  html[data-design="flightlog"] #pmDetail[data-family="SAR"] .pm-book .pm-sign {
+    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-sna.webp?v=01d0b4bc")
+  }
+  html[data-design="flightlog"] #pmDetail[data-family="MEDEVAC"] .pm-book .pm-sign {
+    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-alat.webp?v=b41f7511")
+  }
+  html[data-design="flightlog"] #pmDetail[data-family="AIRLIFT"] .pm-book .pm-sign,
+  html[data-design="flightlog"] #pmDetail[data-family="AIRBORNE"] .pm-book .pm-sign {
+    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-tam.webp?v=8652571e")
+  }
+  html[data-design="flightlog"] #pmDetail[data-family="MARITIME"] .pm-book .pm-sign {
+    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-aeronavale.webp?v=5d7072fc")
+  }
+  html[data-design="flightlog"] #pmDetail[data-family="FI"] .pm-book .pm-sign,
+  html[data-design="flightlog"] #pmDetail[data-family="SURVEY"] .pm-book .pm-sign,
+  html[data-design="flightlog"] #pmDetail[data-family="DEMO"] .pm-book .pm-sign {
+    --pm-fam-stamp: url("../../shared/deco/flightlog/order-stamp-cev.webp?v=113def84")
+  }
+  .pm-book .pm-sign::before {
+    content: "";
+    position: absolute;
+    left: 8%;
+    top: calc(100% + 8px);
+    width: 26%;
+    aspect-ratio: 1;
+    background: var(--pm-fam-stamp, none) center/contain no-repeat;
+    transform: rotate(-9deg);
+    opacity: .85;
+    mix-blend-mode: multiply;
+    pointer-events: none
+  }
+  html[data-design="field"] .pm-book .pm-head>:not(.pm-no) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%)
+  }
+  html[data-design="field"] .pm-book .pm-head .pm-no {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    font-size: 11px;
+    letter-spacing: .06em
+  }
+  html[data-design="field"] .pm-book [data-part="order"] .pm-dr {
+    top: auto;
+    bottom: -10px
+  }
   /* Carnet de vol : carnet ouvert (pages : x 75–677 et 736–1323, y 47–977, dos à 699 sur 1428 × 1032) ; marges des
      faces calculées comme pour le Cabinet ; en-tête de l'ordre : bandeau du ministère ; cartes scotchées */
-  html[data-design="flightlog"] .pm-book .pm-head{display:block;position:relative;aspect-ratio:1300/305;margin:0 0 24px;padding:0;border:0;background:url("../../shared/deco/flightlog/order-header.webp?v=183a04de") center/100% 100% no-repeat}
-  html[data-design="flightlog"] .pm-book .pm-head>:not(.pm-no){position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
-  html[data-design="flightlog"] .pm-book .pm-head .pm-no{position:absolute;top:calc(100% + 4px);right:0;font-size:11px;letter-spacing:.06em}
-  html[data-design="flightlog"] .pm-book [data-part="order"] .pm-dr{top:auto;bottom:-10px}
-  html[data-design="flightlog"] .pm-page .pm-maps figure{position:relative;box-shadow:0 2px 5px rgba(0,0,0,.28)}
-  html[data-design="flightlog"] .pm-page .pm-maps figure::before{content:"";position:absolute;z-index:1;top:-9px;left:50%;width:44%;aspect-ratio:420/73;transform:translateX(-50%) rotate(-3deg);background:url("../../shared/deco/flightlog/tape-1.webp?v=463c91c8") center/100% 100% no-repeat;opacity:.92;pointer-events:none}
-  html[data-design="flightlog"] .pm-page .pm-maps figure:nth-child(even)::before{background-image:url("../../shared/deco/flightlog/tape-2.webp?v=9cba6e50");transform:translateX(-50%) rotate(2.5deg)}
+  html[data-design="flightlog"] .pm-book .pm-head {
+    display: block;
+    position: relative;
+    aspect-ratio: 1300/305;
+    margin: 0 0 24px;
+    padding: 0;
+    border: 0;
+    background: url("../../shared/deco/flightlog/order-header.webp?v=183a04de") center/100% 100% no-repeat
+  }
+  html[data-design="flightlog"] .pm-book .pm-head>:not(.pm-no) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%)
+  }
+  html[data-design="flightlog"] .pm-book .pm-head .pm-no {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    font-size: 11px;
+    letter-spacing: .06em
+  }
+  html[data-design="flightlog"] .pm-book [data-part="order"] .pm-dr {
+    top: auto;
+    bottom: -10px
+  }
+  html[data-design="flightlog"] .pm-page .pm-maps figure {
+    position: relative;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, .28)
+  }
+  html[data-design="flightlog"] .pm-page .pm-maps figure::before {
+    content: "";
+    position: absolute;
+    z-index: 1;
+    top: -9px;
+    left: 50%;
+    width: 44%;
+    aspect-ratio: 420/73;
+    transform: translateX(-50%) rotate(-3deg);
+    background: url("../../shared/deco/flightlog/tape-1.webp?v=463c91c8") center/100% 100% no-repeat;
+    opacity: .92;
+    pointer-events: none
+  }
+  html[data-design="flightlog"] .pm-page .pm-maps figure:nth-child(even)::before {
+    background-image: url("../../shared/deco/flightlog/tape-2.webp?v=9cba6e50");
+    transform: translateX(-50%) rotate(2.5deg)
+  }
   /* signet (tous les designs à matières) : ruban (--pm-sig-body, étiré) au bout duquel pend le signet (--pm-sig-tail) ;
      rangé sous la dernière page, son bout dépasse sous les feuilles ; à la dernière double page, ruban et signet entiers
      sur la page de droite le long du dos. Clic : dernière page (de là : retour au début). Par design : images ; largeur
      --pm-sig-w, largeur du ruban --pm-sig-body-w, hauteur du signet --pm-sig-tail-h, part qui dépasse --pm-sig-out,
      retrait depuis le bord de la feuille --pm-sig-x ; part du signet montrée en lecture --pm-sig-show (défaut : tout le
      signet ; 100 % : de la feuille au bout, pour un signet plus haut que cette part) */
-  .pm-sig{display:none}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-sig{display:block;position:absolute;z-index:0;left:calc(var(--pm-sheet-l) + var(--pm-sig-x, 1.2cqw));width:var(--pm-sig-w, 2.4cqw);top:calc(100% - var(--pm-sheet-b));bottom:calc(-1 * var(--pm-sig-out, 4.5cqw));border:0;padding:0;background:none;cursor:pointer;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.35))}
-  .pm-sig::before{content:"";position:absolute;top:0;left:calc(50% - var(--pm-sig-body-w, 100%) / 2);width:var(--pm-sig-body-w, 100%);bottom:calc(var(--pm-sig-show, var(--pm-sig-tail-h, 3.34cqw)) - .04cqw);background:var(--pm-sig-body) top/100% auto repeat-y}
-  .pm-sig::after{content:"";position:absolute;left:0;right:0;bottom:0;height:var(--pm-sig-show, var(--pm-sig-tail-h, 3.34cqw));background:var(--pm-sig-tail) bottom/100% auto no-repeat}
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-book.pm-at-end .pm-sig{top:var(--pm-sheet-t);--pm-sig-show:var(--pm-sig-tail-h, 3.34cqw)}
+  .pm-sig {
+    display: none
+  }
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-sig {
+    display: block;
+    position: absolute;
+    z-index: 0;
+    left: calc(var(--pm-sheet-l) + var(--pm-sig-x, 1.2cqw));
+    width: var(--pm-sig-w, 2.4cqw);
+    top: calc(100% - var(--pm-sheet-b));
+    bottom: calc(-1 * var(--pm-sig-out, 4.5cqw));
+    border: 0;
+    padding: 0;
+    background: none;
+    cursor: pointer;
+    filter: drop-shadow(1px 2px 2px rgba(0, 0, 0, .35))
+  }
+  .pm-sig::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: calc(50% - var(--pm-sig-body-w, 100%) / 2);
+    width: var(--pm-sig-body-w, 100%);
+    bottom: calc(var(--pm-sig-show, var(--pm-sig-tail-h, 3.34cqw)) - .04cqw);
+    background: var(--pm-sig-body) top/100% auto repeat-y
+  }
+  .pm-sig::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: var(--pm-sig-show, var(--pm-sig-tail-h, 3.34cqw));
+    background: var(--pm-sig-tail) bottom/100% auto no-repeat
+  }
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-book.pm-at-end .pm-sig {
+    top: var(--pm-sheet-t);
+    --pm-sig-show: var(--pm-sig-tail-h, 3.34cqw)
+  }
   /* plis : le signet est dans les pages déjà tournées → il pend sous la page de gauche (position en miroir) */
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-book.pm-past .pm-sig{left:calc(100% - var(--pm-sheet-l) - var(--pm-sig-x, 1.2cqw) - var(--pm-sig-w, 2.4cqw))} /* même préfixe que la règle de base : hors de la couche app, comme elle */
-  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-book{margin-bottom:calc(12px + min(48px, 4.5vw))} /* place du bout du signet */
-  html[data-design="cabinet"] .pm-book{--pm-sig-body:url("../../shared/deco/cabinet/bookmark-body.webp?v=448f0fbb");--pm-sig-tail:url("../../shared/deco/cabinet/bookmark-tail.webp?v=6c5d9661")}
-  html[data-design="flightlog"] .pm-book{--pm-sig-body:url("../../shared/deco/flightlog/bookmark-body.webp?v=5ff34cd3");--pm-sig-tail:url("../../shared/deco/flightlog/bookmark-tail.webp?v=4dfe039d")}
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-book.pm-past .pm-sig {
+    left: calc(100% - var(--pm-sheet-l) - var(--pm-sig-x, 1.2cqw) - var(--pm-sig-w, 2.4cqw))
+  }
+  /* même préfixe que la règle de base : hors de la couche app, comme elle */
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-book {
+    margin-bottom: calc(12px + min(48px, 4.5vw))
+  }
+  /* place du bout du signet */
+  html[data-design="cabinet"] .pm-book {
+    --pm-sig-body: url("../../shared/deco/cabinet/bookmark-body.webp?v=448f0fbb");
+    --pm-sig-tail: url("../../shared/deco/cabinet/bookmark-tail.webp?v=6c5d9661")
+  }
+  html[data-design="flightlog"] .pm-book {
+    --pm-sig-body: url("../../shared/deco/flightlog/bookmark-body.webp?v=5ff34cd3");
+    --pm-sig-tail: url("../../shared/deco/flightlog/bookmark-tail.webp?v=4dfe039d")
+  }
   /* Aqua : ruban bleu, carte « Guide essentiel » ; Durci : sangle olive, sangle entoilée à œillet. Signet plus haut que
      la part visible sous la feuille : --pm-sig-show:100% (en lecture, seul le bas du signet, coupé au bord de la feuille) */
-  html[data-design="aqua"] .pm-book{--pm-sig-body:url("../../shared/deco/aqua/bookmark-body.webp?v=4aad1e14");--pm-sig-tail:url("../../shared/deco/aqua/bookmark-tail.webp?v=8d4faa7a");--pm-sig-w:9cqw;--pm-sig-body-w:1.06cqw;--pm-sig-tail-h:28.64cqw;--pm-sig-out:1.2cqw;--pm-sig-x:3cqw;--pm-sig-show:100%}
-  html[data-design="field"] .pm-book{--pm-sig-body:url("../../shared/deco/field/bookmark-body.webp?v=429e6201");--pm-sig-tail:url("../../shared/deco/field/bookmark-tail.webp?v=9dc4aeea");--pm-sig-w:5.2cqw;--pm-sig-tail-h:25.8cqw;--pm-sig-out:2.5cqw;--pm-sig-x:1.5cqw;--pm-sig-show:100%}
-  .pm-week{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}.pm-week input{width:auto}.pm-week button{min-width:2.2em}
-  .pm-types-sum{margin:0 0 8px;font-weight:600}
-  .pm-sims{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 14px}
-  .pm-sims label{display:inline-flex;align-items:center;gap:6px;margin:0}
-  .pm-sims input{margin:0}
-  .pm-types-cards{display:grid;gap:10px}
-  .pm-type-table{width:100%;border-collapse:collapse;font-size:12.5px}
-  .pm-type-table th,.pm-type-table td{padding:5px 8px;text-align:left;vertical-align:middle;border-bottom:1px solid color-mix(in srgb,currentColor 12%,transparent)}
-  .pm-type-table th{font-size:11.5px;font-weight:700;opacity:.8}
-  .pm-type-table .pm-c{width:5.5em;text-align:center}.pm-type-table .pm-c input{margin:0;width:16px;height:16px;vertical-align:middle;cursor:pointer}
-  .pm-type-table code{font-size:11px}.pm-type-table small{opacity:.75}
-  .pm-who{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.pm-who input{width:6em;text-transform:uppercase}
+  html[data-design="aqua"] .pm-book {
+    --pm-sig-body: url("../../shared/deco/aqua/bookmark-body.webp?v=4aad1e14");
+    --pm-sig-tail: url("../../shared/deco/aqua/bookmark-tail.webp?v=8d4faa7a");
+    --pm-sig-w: 9cqw;
+    --pm-sig-body-w: 1.06cqw;
+    --pm-sig-tail-h: 28.64cqw;
+    --pm-sig-out: 1.2cqw;
+    --pm-sig-x: 3cqw;
+    --pm-sig-show: 100%
+  }
+  html[data-design="field"] .pm-book {
+    --pm-sig-body: url("../../shared/deco/field/bookmark-body.webp?v=429e6201");
+    --pm-sig-tail: url("../../shared/deco/field/bookmark-tail.webp?v=9dc4aeea");
+    --pm-sig-w: 5.2cqw;
+    --pm-sig-tail-h: 25.8cqw;
+    --pm-sig-out: 2.5cqw;
+    --pm-sig-x: 1.5cqw;
+    --pm-sig-show: 100%
+  }
+  .pm-week {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 10px
+  }
+  .pm-week input {
+    width: auto
+  }
+  .pm-week button {
+    min-width: 2.2em
+  }
+  .pm-types-sum {
+    margin: 0 0 8px;
+    font-weight: 600
+  }
+  .pm-sims {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 6px 14px
+  }
+  .pm-sims label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0
+  }
+  .pm-sims input {
+    margin: 0
+  }
+  .pm-types-cards {
+    display: grid;
+    gap: 10px
+  }
+  .pm-type-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px
+  }
+  .pm-type-table th,
+  .pm-type-table td {
+    padding: 5px 8px;
+    text-align: left;
+    vertical-align: middle;
+    border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent)
+  }
+  .pm-type-table th {
+    font-size: 11.5px;
+    font-weight: 700;
+    opacity: .8
+  }
+  .pm-type-table .pm-c {
+    width: 5.5em;
+    text-align: center
+  }
+  .pm-type-table .pm-c input {
+    margin: 0;
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+    cursor: pointer
+  }
+  .pm-type-table code {
+    font-size: 11px
+  }
+  .pm-type-table small {
+    opacity: .75
+  }
+  .pm-who {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap
+  }
+  .pm-who input {
+    width: 6em;
+    text-transform: uppercase
+  }
 </style>
 </head><body>
 <!-- Missions affectées au pilote (trigramme du profil pilote) par le Centre : liste des missions à venir, mission en lecture
      seule (appareil, terrain, heure de décollage ou consigne d'astreinte, route, cartes fournies), transfert vers les Cartes
      de vol et le planificateur carburant, création du CR ; disponibilités de la semaine type (grille d'une heure).
+     Dossier de mission en livre (designs à matières) : signet posé à la fin du dossier, annexes derrière lui (plis de
+     l'exercice scellés jusqu'à leur heure, MissionExercise), brief dans la langue de la page (bloc i18n, MissionI18n),
+     convoyage : ordre de convoyage seul ; gestes du pilote portés au journal (LocalStore.logEvent, kind « mission »).
      Données : data/missions/affectations.json (index écrit par le Centre) et fichiers des missions, lus par fetch ;
-     socle : shared/assignments.js. Conception : docs/AFFECTATION_MISSIONS.md. -->
+     socle : shared/assignments.js. Conception : docs/AFFECTATION_MISSIONS.md (§ 10). -->
 <header class="mc-header"><h1>Mes missions</h1><p>Missions affectées par le Centre, disponibilités</p></header>
 <main id="pilotMissions" class="mc-reporting">
 <section data-block-id="who" data-icon="users" data-subtitle="Trigramme DEFA du profil pilote (menu ☰) : les missions affectées à ce trigramme s'affichent ici."><h2>Pilote</h2>
@@ -308,32 +1553,45 @@
   <p id="pmSimsMsg" class="small">Enregistré dans ce navigateur, et avec vos disponibilités (« Enregistrer dans le dossier des données »).</p>
 </section>
 </main>
-<script src="../../shared/kit.js?v=d0c3ca5f"></script>
-<script src="../../shared/repository_nav.js?v=a5ef0693"></script>
+<script src="../../shared/kit.js?v=a2ce6913"></script>
+<script src="../../shared/repository_nav.js?v=9aa760c7"></script>
 <script src="mes_missions_i18n.js?v=b0ab8b58" defer></script>
 <script src="../../shared/content_i18n.js?v=2d61c23a"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=db00c09c"></script>
-<script src="../../shared/mission_estimate.js?v=fe2b9cad"></script><script src="../../shared/mission_i18n.js?v=fde27e07"></script><script src="../../shared/mission_exercise.js?v=d66c8758"></script>
-<script src="../../shared/assignments.js?v=a5d19ee4"></script>
+<script src="../../shared/mission_estimate.js?v=7d806302"></script><script src="../../shared/mission_i18n.js?v=bfd45c20"></script><script src="../../shared/mission_exercise.js?v=d66c8758"></script>
+<script src="../../shared/assignments.js?v=82afa493"></script>
 <script>
 (() => {
   'use strict';
-  const $ = id => document.getElementById(id), A = window.MissionAssignments, K = window.RepositoryKit, esc = K.esc;
+  const $ = id => document.getElementById(id),
+    A = window.MissionAssignments,
+    K = window.RepositoryKit,
+    esc = K.esc;
   const root = () => window.RepositoryNav?.root || new URL('../../', location.href).href;
   const PROFILE = 'missionReportingConfig:v1';
-  let list = [], current = null, mission = null;
+  let list = [],
+    current = null,
+    mission = null;
   // semaine affichée (lundi ISO UTC), commune à la liste et aux disponibilités
   let week = A.weekKey(Date.now());
-  const dayFr = (w, i) => new Date(Date.parse(`${w}T00:00:00Z`) + i * 864e5).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit', timeZone: 'UTC' }).replace('.', '');
+  const dayFr = (w, i) => new Date(Date.parse(`${w}T00:00:00Z`) + i * 864e5).toLocaleDateString('fr-FR', {
+    weekday: 'short',
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: 'UTC'
+  }).replace('.', '');
+
   function weekBars() {
-    const end = A.addWeeks(week, 1), last = new Date(Date.parse(`${end}T00:00:00Z`) - 864e5).toISOString().slice(0, 10);
+    const end = A.addWeeks(week, 1),
+      last = new Date(Date.parse(`${end}T00:00:00Z`) - 864e5).toISOString().slice(0, 10);
     const label = `du ${dayFr(week, 0)} au ${dayFr(week, 6)}${week === A.weekKey(Date.now()) ? ' (cette semaine)' : ''}`;
     document.querySelectorAll('[data-weekbar]').forEach(b => {
       b.innerHTML = `<button type="button" class="secondary" data-wk="-1" title="Semaine précédente">‹</button><input type="date" data-wk-date value="${week}" title="Aller à la semaine d’une date"><button type="button" class="secondary" data-wk="1" title="Semaine suivante">›</button>${week === A.weekKey(Date.now()) ? '' : '<button type="button" class="secondary" data-wk="0" title="Revenir à la semaine en cours" aria-label="Semaine en cours">⟲</button>'}<span class="small">${esc(label)}</span>`;
       b.dataset.end = last;
     });
   }
+
   function goWeek(w) {
     if (!w || w === week) return;
     week = w;
@@ -352,7 +1610,14 @@
 
   /** Date et heure UTC lisibles : « sam. 04/10 12:40Z ». */
   const tv = window.RepositoryKit.tf; // phrase traduite, valeurs {clé} insérées (shared/kit.js)
-  const fmt = ms => ms ? new Date(ms).toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }).replace(',', '') + 'Z' : '—';
+  const fmt = ms => ms ? new Date(ms).toLocaleString('fr-FR', {
+    weekday: 'short',
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'UTC'
+  }).replace(',', '') + 'Z' : '—';
   const hhmm = ms => ms ? new Date(ms).toISOString().slice(11, 16) + 'Z' : '—';
 
   // ---- identité (profil pilote partagé avec le menu ☰)
@@ -363,10 +1628,14 @@
   }
   $('pmTri').addEventListener('change', () => {
     let cfg = {};
-    try { cfg = JSON.parse(localStorage.getItem(PROFILE) || '{}') || {}; } catch {}
+    try {
+      cfg = JSON.parse(localStorage.getItem(PROFILE) || '{}') || {};
+    } catch {}
     cfg.trigram = $('pmTri').value.trim().toUpperCase();
     localStorage.setItem(PROFILE, JSON.stringify(cfg));
-    window.dispatchEvent(new StorageEvent('storage', { key: PROFILE }));
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: PROFILE
+    }));
     A.envelope();
     load();
   });
@@ -374,12 +1643,23 @@
   // ---- liste
   async function load() {
     who();
-    const idx = await A.index({ fresh: true });
-    const from = Date.parse(`${week}T00:00:00Z`), to = Date.parse(`${A.addWeeks(week, 1)}T00:00:00Z`);
-    list = A.mine(idx.assignments, { all: $('pmAll').checked }).filter(a => !A.when(a) || (A.when(a) >= from && A.when(a) < to));
+    const idx = await A.index({
+      fresh: true
+    });
+    const from = Date.parse(`${week}T00:00:00Z`),
+      to = Date.parse(`${A.addWeeks(week, 1)}T00:00:00Z`);
+    list = A.mine(idx.assignments, {
+      all: $('pmAll').checked
+    }).filter(a => !A.when(a) || (A.when(a) >= from && A.when(a) < to));
     const tri = A.trigram();
-    if (!tri) { $('pmList').innerHTML = '<p class="pm-empty">Aucun trigramme réglé.</p>'; return; }
-    if (!list.length) { $('pmList').innerHTML = `<p class="pm-empty">Aucune mission${$('pmAll').checked ? '' : ' à venir'} affectée à ${esc(tri)} cette semaine-là.</p>`; return; }
+    if (!tri) {
+      $('pmList').innerHTML = '<p class="pm-empty">Aucun trigramme réglé.</p>';
+      return;
+    }
+    if (!list.length) {
+      $('pmList').innerHTML = `<p class="pm-empty">Aucune mission${$('pmAll').checked ? '' : ' à venir'} affectée à ${esc(tri)} cette semaine-là.</p>`;
+      return;
+    }
     $('pmList').innerHTML = `<table><thead><tr><th>Décollage (UTC)</th><th>Mission</th><th>Titre</th><th>Appareil</th><th>Terrain</th><th>Indicatif</th></tr></thead><tbody>${list.map((a, i) => `<tr data-i="${i}" class="${A.isRead(a) ? '' : 'pm-unread'}${current && A.key(current) === A.key(a) ? ' pm-current' : ''}"><td>${a.alert ? 'astreinte ' + esc(hhmm(Date.parse(a.alert.ready_at_utc))) : esc(fmt(A.when(a)))}</td><td><b>${esc(a.mission)}</b>${a.role === 'convoyage' ? ' <small>convoyage</small>' : ''}</td><td>${esc(titleOf(a))}</td><td>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' '))}</td><td>${esc(a.departure || '')}</td><td>${esc(a.callsign || '')}</td></tr>`).join('')}</tbody></table>`;
     const want = new URLSearchParams(location.search).get('mission');
     const pick = current ? list.find(a => A.key(a) === A.key(current)) : want ? list.find(a => a.mission === want) : null;
@@ -391,11 +1671,26 @@
   });
   // paramètres d'affichage gardés dans ce navigateur (pilotMissionsView:v1) : missions passées, code de la palette
   const VIEW_KEY = 'pilotMissionsView:v1';
-  const view = { all: false, brush: 'O' };
-  try { Object.assign(view, JSON.parse(localStorage.getItem(VIEW_KEY) || '{}') || {}); } catch { /* valeurs par défaut */ }
-  const saveView = () => { try { localStorage.setItem(VIEW_KEY, JSON.stringify(view)); } catch { /* stockage refusé */ } };
+  const view = {
+    all: false,
+    brush: 'O'
+  };
+  try {
+    Object.assign(view, JSON.parse(localStorage.getItem(VIEW_KEY) || '{}') || {});
+  } catch {
+    /* valeurs par défaut */ }
+  const saveView = () => {
+    try {
+      localStorage.setItem(VIEW_KEY, JSON.stringify(view));
+    } catch {
+      /* stockage refusé */ }
+  };
   $('pmAll').checked = !!view.all;
-  $('pmAll').addEventListener('change', () => { view.all = $('pmAll').checked; saveView(); load(); });
+  $('pmAll').addEventListener('change', () => {
+    view.all = $('pmAll').checked;
+    saveView();
+    load();
+  });
 
   // ---- mission (lecture seule)
   const fileUrl = (a, name) => new URL(`data/missions/${a.folder}/${name}`, root()).href;
@@ -404,11 +1699,16 @@
   /** Missions de l'exercice d'une mission d'équipage : la mission d'organisation de son opération, puis celles des
    *  autres participants (heures de passage des événements déclenchés par eux), lues dans les dossiers voisins. */
   async function exerciseDocs(a, y) {
-    const X = window.MissionExercise, op = y?.operation?.id;
+    const X = window.MissionExercise,
+      op = y?.operation?.id;
     if (!X || !op || X.isOrganisation(y)) return [];
     const read = async id => {
       const f = await A.missionFirst(String(a.folder).replace(/[^/]*$/, id), [`mission${id}.yaml`, `mission${id.replace('-', '')}.yaml`]);
-      try { return f ? window.jsyaml.load(f.value.replace(/^#.*\n/, '')) : null; } catch { return null; }
+      try {
+        return f ? window.jsyaml.load(f.value.replace(/^#.*\n/, '')) : null;
+      } catch {
+        return null;
+      }
     };
     const z = await read(X.organisationId(op));
     if (!z?.exercise) return [];
@@ -421,7 +1721,9 @@
    *  pli qui en révèle) ne sont visibles qu'à l'ouverture du pli. */
   function plisOf(a, y) {
     const docs = exDocs.map(d => window.MissionI18n?.here?.(d) || d), // textes d'exercice traduits (organisation)
-      X = window.MissionExercise, ex = X?.of(y, docs), me = ex && X.participantOf(ex, y.mission?.id);
+      X = window.MissionExercise,
+      ex = X?.of(y, docs),
+      me = ex && X.participantOf(ex, y.mission?.id);
     if (!me) return [];
     const up = s => String(s || '').trim().toUpperCase(),
       // lecteur : l'indicatif de l'affectation (mission à plusieurs équipages : un pli ne concerne que son destinataire
@@ -436,15 +1738,31 @@
       mapsOf = id => (y.maps || []).filter(m => m?.filename && (m.exercise === id || (m.exercise === 'all' && id === lastReveal))).map(m => m.filename);
     return list.map(e => {
       const at = e.t != null && t0 != null ? t0 + e.t * 6e4 : null;
-      const st = A.pliState(a, e.id), due = at != null && Date.now() >= at;
-      return { ...e, at, due, st, emitter: up(e.from) === cs && !e.to.includes(cs), open: st.state === 'open' || (due && st.state !== 'sealed'), maps: mapsOf(e.id),
-        tracks: ex.tracks.filter(k => e.reveals.includes(k.id)) };
+      const st = A.pliState(a, e.id),
+        due = at != null && Date.now() >= at;
+      return {
+        ...e,
+        at,
+        due,
+        st,
+        emitter: up(e.from) === cs && !e.to.includes(cs),
+        open: st.state === 'open' || (due && st.state !== 'sealed'),
+        maps: mapsOf(e.id),
+        tracks: ex.tracks.filter(k => e.reveals.includes(k.id))
+      };
     });
   }
   /** Pistes révélées par un pli (dans l'enveloppe seulement) : nature, route, niveau, vitesse, ce qu'il faut établir. */
   const tracksHtml = list => list.length ? `<table class="pm-tracks"><thead><tr><th>Piste</th><th>Nature</th><th>Route</th><th>Niveau, vitesse</th></tr></thead><tbody>${list.map(k => `<tr><td>${esc(k.name || k.id)}</td><td>${esc(k.nature || '')}</td><td>${esc((k.points || []).map(p => `${p.name || ''}${Number.isFinite(+p.lat) ? ` (${coord({ lat: +p.lat, lon: +p.lon })})` : ''}`).join(' → '))}</td><td>${esc([k.level, k.speed_kt && `${k.speed_kt} kt`].filter(Boolean).join(', '))}</td></tr>${k.task ? `<tr><td></td><td colspan="3"><i>À établir</i> : ${esc(k.task)}</td></tr>` : ''}`).join('')}</tbody></table>` : '';
   /** Journal (LocalStore) : geste du pilote sur sa mission, en événement daté (le CR s'en préremplira). */
-  const logMission = (a, action, extra = {}) => window.LocalStore?.logEvent?.({ kind: 'mission', action, mission: a.mission, pilot: a.pilot, callsign: a.callsign || '', ...extra });
+  const logMission = (a, action, extra = {}) => window.LocalStore?.logEvent?.({
+    kind: 'mission',
+    action,
+    mission: a.mission,
+    pilot: a.pilot,
+    callsign: a.callsign || '',
+    ...extra
+  });
   /** Carte d'exercice (réservée à un pli) ? */
   const isExerciseMap = (y, name) => !!(y.maps || []).find(m => m?.filename === name && m.exercise && m.exercise !== 'none');
   /** Étiquette d'une mission (couverture scellée, page 1 du dossier) : numéro, nom, appareil, indicatif, décollage ;
@@ -482,26 +1800,42 @@
         if (sealed) {
           A.markRead(a);
           logMission(a, 'mission ouverte (scellé brisé)');
-          document.querySelectorAll('#pmList tr.pm-unread').forEach(tr => { if (list[+tr.dataset.i] === a) tr.classList.remove('pm-unread'); });
+          document.querySelectorAll('#pmList tr.pm-unread').forEach(tr => {
+            if (list[+tr.dataset.i] === a) tr.classList.remove('pm-unread');
+          });
         }
         setClosed(a, false);
       }, anim ? 380 : 0);
     };
     cv.onclick = open;
-    cv.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } };
+    cv.onkeydown = e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        open();
+      }
+    };
   }
   /** Canal « develop » (réglage de mise à jour de la suite) : outils de test (resceller une mission). */
   const isDevelop = () => {
-    try { return (window.SuiteUpdate?.settings?.() || JSON.parse(localStorage.getItem('suiteUpdate:v1') || '{}')).channel === 'develop'; } catch { return false; }
+    try {
+      return (window.SuiteUpdate?.settings?.() || JSON.parse(localStorage.getItem('suiteUpdate:v1') || '{}')).channel === 'develop';
+    } catch {
+      return false;
+    }
   };
   /** Affiche une mission : chargée (yaml, résumé .md, journal) puis dossier fermé et scellé si elle n'est pas lue,
    *  ouvert sinon (ou si open) ; défilement jusqu'au bloc. */
-  async function show(a, { open = false } = {}) {
+  async function show(a, {
+    open = false
+  } = {}) {
     current = a;
     document.querySelectorAll('#pmList tr').forEach(tr => tr.classList.toggle('pm-current', list[+tr.dataset.i] === a));
     $('pmMission').hidden = false;
     $('pmDetail').innerHTML = '<p class="pm-empty">Chargement de la mission…</p>';
-    $('pmMission').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    $('pmMission').scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
     // fichiers de la mission : dossier des missions autorisé d'abord (même hors de la copie servie), sinon copie servie
     const bare = String(a.mission).replace('-', '');
     mission = null;
@@ -510,49 +1844,91 @@
     // convoyage : l'ordre de convoyage seul (départ, arrivée, appareil, heure), pas le brief de la mission
     if (a.role === 'convoyage') {
       let log = [];
-      try { log = (await A.readLog()).filter(e => e.mission === a.mission); } catch { /* pas de journal */ }
+      try {
+        log = (await A.readLog()).filter(e => e.mission === a.mission);
+      } catch {
+        /* pas de journal */ }
       render(a, {}, '', log);
-      if (open && !A.isRead(a)) { A.markRead(a); logMission(a, 'convoyage ouvert'); }
+      if (open && !A.isRead(a)) {
+        A.markRead(a);
+        logMission(a, 'convoyage ouvert');
+      }
       setClosed(a, !open && !A.isRead(a));
       return;
     }
     const yf = await A.missionFirst(a.folder, [a.files?.yaml, `mission${a.mission}.yaml`, `mission${bare}.yaml`]);
-    try { if (yf) mission = window.jsyaml.load(yf.value.replace(/^#.*\n/, '')); } catch { /* mission illisible : affectation seule */ }
+    try {
+      if (yf) mission = window.jsyaml.load(yf.value.replace(/^#.*\n/, ''));
+    } catch {
+      /* mission illisible : affectation seule */ }
     const md = (await A.missionFirst(a.folder, [a.files?.md, `summary${a.mission}.md`, `summary${bare}.md`]))?.value || '';
     if (!yf) window.AppFramework?.notify?.(`Mission ${a.mission} : fichier introuvable (dossier « ${a.folder} »), ni dans le dossier des missions autorisé ni dans la copie servie — seule l’affectation est affichée.`, 'warn');
     // cartes : index de l'affectation, sinon yaml ; adresse résolue (cartes/x.png, sinon x.png)
     const mapNames = a.files?.maps?.length ? a.files.maps : (mission?.maps || []).map(m => m?.filename).filter(Boolean);
     mapUrls = {};
-    for (const m of mapNames) mapUrls[m] = (await A.missionFirst(a.folder, [`cartes/${m}`, m], { as: 'url' }))?.value || '';
+    for (const m of mapNames) mapUrls[m] = (await A.missionFirst(a.folder, [`cartes/${m}`, m], {
+      as: 'url'
+    }))?.value || '';
     exDocs = await exerciseDocs(a, mission);
     let log = [];
-    try { log = (await A.readLog()).filter(e => e.mission === a.mission); } catch { /* pas de journal */ }
+    try {
+      log = (await A.readLog()).filter(e => e.mission === a.mission);
+    } catch {
+      /* pas de journal */ }
     render(a, mission || {}, md, log);
-    if (open && !A.isRead(a)) { A.markRead(a); logMission(a, 'mission ouverte (scellé brisé)'); }
+    if (open && !A.isRead(a)) {
+      A.markRead(a);
+      logMission(a, 'mission ouverte (scellé brisé)');
+    }
     setClosed(a, !open && !A.isRead(a));
   }
 
   /** Points de la route dans l'ordre (origine, points tournants, rendez-vous, cible, destination) ; route_order si présent. */
   function routeOf(y) {
     const by = {};
-    const add = (id, p, kind) => { if (p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon)) by[id] = { id, name: p.name || id, lat: +p.lat, lon: +p.lon, kind, role: p.role || '' }; };
+    const add = (id, p, kind) => {
+      if (p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon)) by[id] = {
+        id,
+        name: p.name || id,
+        lat: +p.lat,
+        lon: +p.lon,
+        kind,
+        role: p.role || ''
+      };
+    };
     add('ORIGIN', y.origin, 'ad');
     (y.turning_points || []).forEach(p => add(p.id, p, 'pt'));
     (y.rendezvous || []).forEach(p => add(p.id, p, 'rdv'));
-    (y.zones || []).forEach(z => add(z.id, { ...z, lat: z.centre?.lat, lon: z.centre?.lon }, 'zone'));
+    (y.zones || []).forEach(z => add(z.id, {
+      ...z,
+      lat: z.centre?.lat,
+      lon: z.centre?.lon
+    }, 'zone'));
     add('TARGET', y.target, 'target');
     add('DESTINATION', y.destination, 'ad');
     const order = Array.isArray(y.route_order) && y.route_order.length ? y.route_order : ['ORIGIN', ...(y.turning_points || []).map(p => p.id), 'TARGET', 'DESTINATION'];
     return order.map(id => by[id]).filter(Boolean);
   }
 
-  const { nm, brg, icaoOf, coord } = A.geo; // outils communs (shared/assignments.js)
+  const {
+    nm,
+    brg,
+    icaoOf,
+    coord
+  } = A.geo; // outils communs (shared/assignments.js)
   /** Plan de la route (projection équirectangulaire locale), points et terrains nommés. */
   function plan(pts) {
     if (pts.length < 2) return '';
-    const lat0 = pts.reduce((s, p) => s + p.lat, 0) / pts.length, k = Math.cos(lat0 * Math.PI / 180);
-    const xs = pts.map(p => p.lon * k), ys = pts.map(p => p.lat), minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
-    const span = Math.max(maxX - minX, maxY - minY) || 1, P = q => [10 + (q.lon * k - minX) / span * 280, 290 - (q.lat - minY) / span * 280];
+    const lat0 = pts.reduce((s, p) => s + p.lat, 0) / pts.length,
+      k = Math.cos(lat0 * Math.PI / 180);
+    const xs = pts.map(p => p.lon * k),
+      ys = pts.map(p => p.lat),
+      minX = Math.min(...xs),
+      maxX = Math.max(...xs),
+      minY = Math.min(...ys),
+      maxY = Math.max(...ys);
+    const span = Math.max(maxX - minX, maxY - minY) || 1,
+      P = q => [10 + (q.lon * k - minX) / span * 280, 290 - (q.lat - minY) / span * 280];
     const path = pts.map((p, i) => (i ? 'L' : 'M') + P(p).map(v => v.toFixed(1)).join(' ')).join(' ');
     return `<svg class="pm-plan" viewBox="0 0 300 300" role="img" aria-label="Plan de la route"><path class="leg" d="${path}"/>${pts.map(p => { const [x, y] = P(p); return `<circle class="${p.kind === 'ad' ? 'ad' : 'pt'}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${p.kind === 'ad' ? 4.5 : 3}"/><text x="${(x + 6).toFixed(1)}" y="${(y - 5).toFixed(1)}">${esc(icaoOf(p) || p.id)}</text>`; }).join('')}</svg>`;
   }
@@ -563,7 +1939,11 @@
     let cur = '';
     for (const line of String(md || '').split(/\r?\n/)) {
       const h = /^##\s+(.*)$/.exec(line);
-      if (h) { cur = h[1].trim(); raw[cur] = ''; continue; }
+      if (h) {
+        cur = h[1].trim();
+        raw[cur] = '';
+        continue;
+      }
       if (cur) raw[cur] += line + '\n';
     }
     const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
@@ -573,33 +1953,96 @@
       const [head, ...body] = rows.map(cells);
       return `<table class="pm-mdtable"><thead><tr>${head.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${body.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
     };
-    const html = s => s.trim().split(/\n\s*\n/).map(b => /^\s*\|/.test(b) ? table(b) : /^\s*>/.test(b)
-      ? `<blockquote>${inline(b.replace(/^\s*>\s?/gm, '').trim()).replace(/\n/g, '<br>')}</blockquote>`
-      : /^\s*[-*] /.test(b)
-      ? `<ul>${b.split('\n').filter(l => l.trim()).map(l => `<li>${inline(l.replace(/^\s*[-*]\s+/, ''))}</li>`).join('')}</ul>`
-      : `<p>${inline(b.trim()).replace(/ {2,}\n|\n/g, '<br>')}</p>`).join('');
-    return Object.entries(raw).map(([title, v]) => ({ title, html: html(v) })).filter(s => s.html);
+    const html = s => s.trim().split(/\n\s*\n/).map(b => /^\s*\|/.test(b) ? table(b) : /^\s*>/.test(b) ?
+      `<blockquote>${inline(b.replace(/^\s*>\s?/gm, '').trim()).replace(/\n/g, '<br>')}</blockquote>` :
+      /^\s*[-*] /.test(b) ?
+      `<ul>${b.split('\n').filter(l => l.trim()).map(l => `<li>${inline(l.replace(/^\s*[-*]\s+/, ''))}</li>`).join('')}</ul>` :
+      `<p>${inline(b.trim()).replace(/ {2,}\n|\n/g, '<br>')}</p>`).join('');
+    return Object.entries(raw).map(([title, v]) => ({
+      title,
+      html: html(v)
+    })).filter(s => s.html);
   }
   /** Fiche technique : tout champ du yaml qui n'a pas sa place ailleurs dans le dossier (rien n'est perdu). */
   // déjà présentés ailleurs, ou techniques sans intérêt pour l'équipage (rendu et liste des cartes, méta-données,
   // dates de mise à jour, participants de l'affectation)
   const SHOWN = new Set(['schema', 'schema_version', 'title', 'summary', 'detailed_description', 'objectives', 'notes', 'turning_points', 'teams', 'target',
     'rendering', 'meta', 'updated_at', 'updatedAt', 'participants', 'maps', 'generated', 'generator',
-    'tracks', 'injects', 'phases', 'exercise', 'i18n']); // exercice : seulement dans les plis, à leur heure
-  const LABELS = { risks: 'Risques', payload: 'Charge utile', return_options: 'Déroutements', air_refueling: 'Ravitaillement en vol', mission: 'Mission', operation: 'Opération', origin: 'Départ', destination: 'Destination', aircraft: 'Appareils', rendezvous: 'Rendez-vous', zones: 'Zones', timing: 'Horaires', weather: 'Météo', vertical_profile: 'Profil vertical', exercise: 'Exercice', alert: 'Astreinte', maps: 'Cartes', rendering: 'Rendu des cartes', route_order: 'Ordre de la route', theatre: 'Théâtre' };
+    'tracks', 'injects', 'phases', 'exercise', 'i18n'
+  ]); // exercice : seulement dans les plis, à leur heure
+  const LABELS = {
+    risks: 'Risques',
+    payload: 'Charge utile',
+    return_options: 'Déroutements',
+    air_refueling: 'Ravitaillement en vol',
+    mission: 'Mission',
+    operation: 'Opération',
+    origin: 'Départ',
+    destination: 'Destination',
+    aircraft: 'Appareils',
+    rendezvous: 'Rendez-vous',
+    zones: 'Zones',
+    timing: 'Horaires',
+    weather: 'Météo',
+    vertical_profile: 'Profil vertical',
+    exercise: 'Exercice',
+    alert: 'Astreinte',
+    maps: 'Cartes',
+    rendering: 'Rendu des cartes',
+    route_order: 'Ordre de la route',
+    theatre: 'Théâtre'
+  };
   // libellés des champs des sous-objets ; champs techniques des outils (rendu, profil) et valeurs nulles non montrés
-  const SUB = { id: 'Id', name: 'Nom', type: 'Type', subtype: 'Sous-type', missions: 'Missions', callsign: 'Indicatif', operator: 'Opérateur', role: 'Rôle',
-    cruise_speed_kt: 'Croisière (kt)', cruise_level: 'Niveau', participants: 'Avec', time_on_task_min: 'Sur place (min)', radius_km: 'Rayon (km)',
-    condition: 'Condition', then_base: 'Puis retour base', estimated_flight_min: 'Vol estimé (min)', estimated_block_min: 'Bloc estimé (min)',
-    category: 'Catégorie', description: 'Description', mass_kg: 'Masse (kg)', passengers: 'Passagers', constraints: 'Contraintes', hazard: 'Danger',
-    consequence: 'Conséquence', mitigation: 'Parade', capable: 'Apte', planned: 'Prévu', track: 'Hippodrome', route: 'Profil', cruise: 'Croisière',
-    position: 'Position', centre: 'Centre', center: 'Centre', variant: 'Version', registration: 'Immatriculation', base: 'Base', notes: 'Notes' };
+  const SUB = {
+    id: 'Id',
+    name: 'Nom',
+    type: 'Type',
+    subtype: 'Sous-type',
+    missions: 'Missions',
+    callsign: 'Indicatif',
+    operator: 'Opérateur',
+    role: 'Rôle',
+    cruise_speed_kt: 'Croisière (kt)',
+    cruise_level: 'Niveau',
+    participants: 'Avec',
+    time_on_task_min: 'Sur place (min)',
+    radius_km: 'Rayon (km)',
+    condition: 'Condition',
+    then_base: 'Puis retour base',
+    estimated_flight_min: 'Vol estimé (min)',
+    estimated_block_min: 'Bloc estimé (min)',
+    category: 'Catégorie',
+    description: 'Description',
+    mass_kg: 'Masse (kg)',
+    passengers: 'Passagers',
+    constraints: 'Contraintes',
+    hazard: 'Danger',
+    consequence: 'Conséquence',
+    mitigation: 'Parade',
+    capable: 'Apte',
+    planned: 'Prévu',
+    track: 'Hippodrome',
+    route: 'Profil',
+    cruise: 'Croisière',
+    position: 'Position',
+    centre: 'Centre',
+    center: 'Centre',
+    variant: 'Version',
+    registration: 'Immatriculation',
+    base: 'Base',
+    notes: 'Notes'
+  };
   const NOISE = new Set(['output', 'on_map', 'profile', 'climb_fpm', 'climb_kt', 'descent_fpm', 'descent_kt', 'ceiling_ft', 'floor_ft', 'series', 'number', 'include']);
   const isPos = v => v && typeof v === 'object' && !Array.isArray(v) && Number.isFinite(+v.lat) && Number.isFinite(+v.lon);
   const human = k => SUB[k] || (k.charAt(0).toUpperCase() + k.slice(1)).replace(/_/g, ' ');
   /** Objet → paires [libellé, valeur] lisibles : position (lat, lon) en une coordonnée, oui/non, champs vides ou techniques retirés. */
   const fieldsOf = o => {
-    const out = isPos(o) ? [['position', coord({ lat: +o.lat, lon: +o.lon })]] : [];
+    const out = isPos(o) ? [
+      ['position', coord({
+        lat: +o.lat,
+        lon: +o.lon
+      })]
+    ] : [];
     for (const [k, v] of Object.entries(o)) {
       if (k === 'lat' || k === 'lon' || NOISE.has(k) || v == null || v === '' || (Array.isArray(v) && !v.length)) continue;
       if ((v === 0 || v === false) && /_(kg|ft)$|^passengers$|^then_base$/.test(k)) continue;
@@ -607,14 +2050,18 @@
     }
     return out;
   };
-  const val = v => typeof v === 'boolean' ? (v ? 'oui' : 'non') : isPos(v) ? esc(coord({ lat: +v.lat, lon: +v.lon })) : typeof v === 'object' ? dump(v) : esc(String(v));
+  const val = v => typeof v === 'boolean' ? (v ? 'oui' : 'non') : isPos(v) ? esc(coord({
+    lat: +v.lat,
+    lon: +v.lon
+  })) : typeof v === 'object' ? dump(v) : esc(String(v));
   /** Valeur YAML → HTML : liste d'objets en tableau, objet en liste de définitions, liste simple à puces. */
   function dump(v) {
     if (v == null || v === '') return '—';
     if (Array.isArray(v)) {
       if (!v.length) return '—';
       if (v.every(x => x && typeof x === 'object' && !Array.isArray(x))) {
-        const rows = v.map(fieldsOf), cols = [...new Set(rows.flatMap(r => r.map(([k]) => k)))];
+        const rows = v.map(fieldsOf),
+          cols = [...new Set(rows.flatMap(r => r.map(([k]) => k)))];
         return `<table class="pm-tech"><thead><tr>${cols.map(k => `<th>${esc(human(k))}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${cols.map(k => { const c = r.find(([x]) => x === k); return `<td>${c ? val(c[1]) : ''}</td>`; }).join('')}</tr>`).join('')}</tbody></table>`;
       }
       return v.every(x => typeof x !== 'object') && v.join(', ').length < 90 ? esc(v.join(', ')) : `<ul>${v.map(x => `<li>${typeof x === 'object' ? dump(x) : esc(String(x))}</li>`).join('')}</ul>`;
@@ -624,6 +2071,7 @@
   }
   // déjà montrés ailleurs (route fournie, ordre de mission) : pas repris dans la fiche
   const ELSEWHERE = new Set(['mission', 'origin', 'destination', 'route_order']);
+
   function techSheet(y) {
     const keys = Object.keys(y || {}).filter(k => !SHOWN.has(k) && !ELSEWHERE.has(k) && y[k] != null && y[k] !== '' && !(Array.isArray(y[k]) && !y[k].length));
     return keys.map(k => `<h5>${esc(LABELS[k] || human(k))}</h5>${dump(y[k])}`).join('');
@@ -647,12 +2095,19 @@
   function render(a, y, md = '', log = []) {
     lastRender = [a, y, md, log];
     y = window.MissionI18n?.here?.(y) || y; // brief dans la langue de la page (bloc i18n du YAML), sinon en français
-    const pts = routeOf(y), dist = pts.slice(1).reduce((s, p, i) => s + nm(pts[i], p), 0);
+    const pts = routeOf(y),
+      dist = pts.slice(1).reduce((s, p, i) => s + nm(pts[i], p), 0);
     const alert = a.alert || y.alert;
     const secs = mdSections(md);
-    const take = re => { const i = secs.findIndex(s => re.test(s.title)); return i < 0 ? null : secs.splice(i, 1)[0]; };
-    const mdSummary = take(/^(summary|r[ée]sum[ée])/i), mdIntro = take(/^introduction/i), mdDetail = take(/description/i),
-      mdRisks = take(/risque|attention|s[ée]curit/i), mdTeams = take(/[ée]quipe/i);
+    const take = re => {
+      const i = secs.findIndex(s => re.test(s.title));
+      return i < 0 ? null : secs.splice(i, 1)[0];
+    };
+    const mdSummary = take(/^(summary|r[ée]sum[ée])/i),
+      mdIntro = take(/^introduction/i),
+      mdDetail = take(/description/i),
+      mdRisks = take(/risque|attention|s[ée]curit/i),
+      mdTeams = take(/[ée]quipe/i);
     const sec = (title, body) => body ? `<h4>${esc(title)}</h4>${body}` : '';
     const para = s => s ? String(s).trim().split(/\n\s*\n/).map(p => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`).join('') : '';
     const order = `<div class="pm-order">
@@ -672,17 +2127,21 @@
     // plis : scellés (enveloppe, heure d'ouverture) jusqu'à l'heure, puis contenu et cartes (deux par bloc)
     const plis = plisOf(a, y);
     const pliWhen = p => `${p.at != null ? `${hhmm(p.at)} — ` : ''}${p.when}`;
-    const pliHtml = p => p.open
-      ? `<h5 class="pm-pli-head">${p.emitter ? 'Message à transmettre' : p.kind === 'pli' ? 'Pli' : 'Message radio'} ${esc(p.id)}${p.title ? ` — ${esc(p.title)}` : ''}</h5>
+    const pliHtml = p => p.open ?
+      `<h5 class="pm-pli-head">${p.emitter ? 'Message à transmettre' : p.kind === 'pli' ? 'Pli' : 'Message radio'} ${esc(p.id)}${p.title ? ` — ${esc(p.title)}` : ''}</h5>
         <p class="pm-pli-meta">${p.emitter ? tv(['À {x} · ', 'To {x} · ', 'An {x} · ', 'A {x} · '], { x: esc(p.to.join(', ')) }) : p.from ? tv(['De {x} · ', 'From {x} · ', 'Von {x} · ', 'De {x} · '], { x: esc(p.from) }) : ''}${esc(pliWhen(p))} · <button type="button" class="repo-plain ad-link pm-reseal" data-pli-reseal="${esc(p.id)}">Resceller</button></p>${para(p.text)}${tracksHtml(p.tracks)}
-        ${Array.from({ length: Math.ceil(p.maps.filter(m => mapUrls[m]).length / 2) }, (_, i) => `<div class="pm-maps">${p.maps.filter(m => mapUrls[m]).slice(i * 2, i * 2 + 2).map(figure).join('')}</div>`).join('')}`
-      : `<div class="pm-pli" data-kind="${p.kind}" data-pli="${esc(p.id)}" title="Briser le scellé"><b>${p.emitter ? 'Message à transmettre' : p.kind === 'pli' ? 'Pli scellé' : 'Message radio attendu'}</b><span>${esc(p.id)}${p.emitter ? tv([' · à {x}', ' · to {x}', ' · an {x}', ' · a {x}'], { x: esc(p.to.join(', ')) }) : p.from ? tv([' · de {x}', ' · from {x}', ' · von {x}', ' · de {x}'], { x: esc(p.from) }) : ''}</span>
+        ${Array.from({ length: Math.ceil(p.maps.filter(m => mapUrls[m]).length / 2) }, (_, i) => `<div class="pm-maps">${p.maps.filter(m => mapUrls[m]).slice(i * 2, i * 2 + 2).map(figure).join('')}</div>`).join('')}` :
+      `<div class="pm-pli" data-kind="${p.kind}" data-pli="${esc(p.id)}" title="Briser le scellé"><b>${p.emitter ? 'Message à transmettre' : p.kind === 'pli' ? 'Pli scellé' : 'Message radio attendu'}</b><span>${esc(p.id)}${p.emitter ? tv([' · à {x}', ' · to {x}', ' · an {x}', ' · a {x}'], { x: esc(p.to.join(', ')) }) : p.from ? tv([' · de {x}', ' · from {x}', ' · von {x}', ' · de {x}'], { x: esc(p.from) }) : ''}</span>
         <span class="pm-pli-at">À ouvrir : ${esc(pliWhen(p))}</span>${p.tracks.length ? `<small>${tv(p.tracks.length > 1 ? ['{n} pistes', '{n} tracks', '{n} Spuren', '{n} pistas'] : ['1 piste', '1 track', '1 Spur', '1 pista'], { n: p.tracks.length })}</small>` : ''}${p.maps.length ? `<small>${tv(p.maps.length > 1 ? ['{n} cartes jointes', '{n} maps attached', '{n} Karten beigefügt', '{n} mapas adjuntos'] : ['1 carte jointe', '1 map attached', '1 Karte beigefügt', '1 mapa adjunto'], { n: p.maps.length })}</small>` : ''}
         <button type="button" class="ghost" data-pli-open="${esc(p.id)}">Briser le scellé</button></div>`;
     const summary = y.summary ? para(y.summary) : mdSummary?.html || '';
     const objectives = [y.objectives?.primary && `<p><b>Objectif principal</b> : ${esc(y.objectives.primary)}</p>`, ...(Array.isArray(y.objectives?.secondary) ? y.objectives.secondary : y.objectives?.secondary ? [y.objectives.secondary] : []).map(o => `<p><b>Objectif secondaire</b> : ${esc(o)}</p>`)].filter(Boolean).join('');
     const notes = (Array.isArray(y.notes) ? y.notes : y.notes ? [y.notes] : []).filter(n => !String(n).startsWith(`Mission ${a.mission}`));
-    const signed = new Date(Date.parse(a.updated_at || '') || Date.now()).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    const signed = new Date(Date.parse(a.updated_at || '') || Date.now()).toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
     // famille de la mission : en-tête de l'ordre propre à la famille quand le design en a un (feuille de la page)
     $('pmDetail').dataset.family = window.MissionVocab?.familyForType?.(y.mission?.type || a.type) || '';
     $('pmDetail').innerHTML = `<div data-part="title"><header class="pm-head pm-logo" aria-hidden="true"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>DEFA Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div></header>${labelHtml({ ...a, title: y.title || a.title })}</div>
@@ -742,24 +2201,47 @@
       if (!p.due && !env.classList.contains('armed')) {
         env.classList.add('armed');
         b.textContent = 'Confirmer : ouvrir avant l’heure';
-        setTimeout(() => { env.classList.remove('armed'); b.textContent = 'Briser le scellé'; }, 5000);
+        setTimeout(() => {
+          env.classList.remove('armed');
+          b.textContent = 'Briser le scellé';
+        }, 5000);
         return;
       }
-      A.setPliState(a, p.id, { state: 'open', at: new Date().toISOString(), logged: true });
-      logMission(a, p.due ? 'pli ouvert' : 'pli ouvert avant l’heure', { pli: p.id, title: p.title || '', planned: p.at ? new Date(p.at).toISOString() : p.when });
+      A.setPliState(a, p.id, {
+        state: 'open',
+        at: new Date().toISOString(),
+        logged: true
+      });
+      logMission(a, p.due ? 'pli ouvert' : 'pli ouvert avant l’heure', {
+        pli: p.id,
+        title: p.title || '',
+        planned: p.at ? new Date(p.at).toISOString() : p.when
+      });
       redraw();
     });
     $('pmDetail').querySelectorAll('[data-pli-reseal]').forEach(b => b.onclick = e => {
       e.stopPropagation();
       const p = plis.find(x => x.id === b.dataset.pliReseal);
-      A.setPliState(a, p.id, { state: 'sealed', at: new Date().toISOString() });
-      logMission(a, 'pli rescellé', { pli: p.id, title: p.title || '' });
+      A.setPliState(a, p.id, {
+        state: 'sealed',
+        at: new Date().toISOString()
+      });
+      logMission(a, 'pli rescellé', {
+        pli: p.id,
+        title: p.title || ''
+      });
       redraw();
     });
     // ouverture à l'heure : une fois au journal (même si la page n'était pas ouverte à ce moment)
     for (const p of plis.filter(x => x.open && x.due && !x.st.logged)) {
-      A.setPliState(a, p.id, { logged: true });
-      logMission(a, 'pli ouvert à l’heure', { pli: p.id, title: p.title || '', planned: new Date(p.at).toISOString() });
+      A.setPliState(a, p.id, {
+        logged: true
+      });
+      logMission(a, 'pli ouvert à l’heure', {
+        pli: p.id,
+        title: p.title || '',
+        planned: new Date(p.at).toISOString()
+      });
     }
     clearInterval(pliTimer); // ouverture à l'heure : redessin quand un pli scellé atteint la sienne
     const due = plis.filter(p => !p.open && p.at != null && p.st.state !== 'sealed');
@@ -770,12 +2252,18 @@
       redraw();
     }, 20e3);
     const reseal = $('pmDetail').querySelector('[data-reseal]');
-    if (reseal) reseal.onclick = () => { A.markUnread(a); logMission(a, 'mission rescellée'); load(); setClosed(a, true); };
+    if (reseal) reseal.onclick = () => {
+      A.markUnread(a);
+      logMission(a, 'mission rescellée');
+      load();
+      setClosed(a, true);
+    };
     const close = $('pmDetail').querySelector('[data-close-book]');
     if (close) close.onclick = () => setClosed(a, true); // dossier refermé, non rescellé (mission lue)
     bookify();
     // contenu (dossier ou présentation ordinaire) dans un conteneur : masqué quand le dossier est fermé
-    const host = $('pmDetail'), wrap = document.createElement('div');
+    const host = $('pmDetail'),
+      wrap = document.createElement('div');
     wrap.className = 'pm-content';
     wrap.append(...[...host.children].filter(c => !c.matches('[data-part="actions"]')));
     host.prepend(wrap);
@@ -829,8 +2317,11 @@
       return out.filter(p => p.textContent.trim() || p.querySelector('img'));
     };
     // cartes : deux par page
-    const mapsPart = part('maps'), figs = mapsPart ? [...mapsPart.querySelectorAll('figure')] : [];
-    const mapPages = figs.length ? Array.from({ length: Math.ceil(figs.length / 2) }, (_, i) => {
+    const mapsPart = part('maps'),
+      figs = mapsPart ? [...mapsPart.querySelectorAll('figure')] : [];
+    const mapPages = figs.length ? Array.from({
+      length: Math.ceil(figs.length / 2)
+    }, (_, i) => {
       const p = mapsPart.cloneNode(false);
       p.innerHTML = `<h4>Cartes fournies${figs.length > 2 ? ` (${i + 1}/${Math.ceil(figs.length / 2)})` : ''}</h4><div class="pm-maps"></div>`;
       p.querySelector('.pm-maps').append(...figs.slice(i * 2, i * 2 + 2));
@@ -847,20 +2338,25 @@
     // la dernière page du dossier est une page de gauche, rien en face (le signet posé là) : si elle tombe à droite,
     // page « laissée blanche » avant elle ; les plis commencent à la double page suivante
     if (pages.length % 2 === 0) {
-      const blank = Object.assign(document.createElement('div'), { className: 'pm-blank' });
+      const blank = Object.assign(document.createElement('div'), {
+        className: 'pm-blank'
+      });
       blank.innerHTML = `<p>${esc(window.RepositoryKit.t(['Page intentionnellement laissée blanche', 'This page intentionally left blank', 'Diese Seite wurde absichtlich leer gelassen', 'Página dejada en blanco intencionadamente']))}</p>`;
       pages.splice(pages.length - 1, 0, blank);
     }
     // annexes (plis) : page de droite « Informations complémentaires », en face de la dernière ; on y entre par le coin,
     // un clic sur la page, ou le signet
     if (plisPages.length) {
-      const annex = Object.assign(document.createElement('div'), { className: 'pm-annex' });
+      const annex = Object.assign(document.createElement('div'), {
+        className: 'pm-annex'
+      });
       annex.innerHTML = `<h3>${window.RepositoryKit.t(['Informations<br>complémentaires', 'Additional<br>information', 'Zusätzliche<br>Informationen', 'Información<br>complementaria'])}</h3>`;
       pages.push(annex);
     }
     const P = pages.length; // première page des plis (double page paire) ; sans plis : fin du livre
     pages.push(...plisPages);
-    let at = Math.min(bookStart, Math.max(0, pages.length - 1)) & ~1, busy = false;
+    let at = Math.min(bookStart, Math.max(0, pages.length - 1)) & ~1,
+      busy = false;
     bookStart = 0;
     // fin de feuilletage : fin du dossier avant les plis, fin du livre dans les plis ; signet posé : aux plis (ou à la fin)
     // signet : posé sur la double page de fin du dossier (dernière page à gauche, page vide en face), plis derrière
@@ -936,7 +2432,10 @@
     };
     const turn = (dir, to = at + 2 * dir) => {
       if (busy || to === at) return;
-      if (matchMedia('(prefers-reduced-motion: reduce)').matches) { at = to; return draw(); }
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        at = to;
+        return draw();
+      }
       busy = true;
       const [front, back] = [leaf.querySelector('.pm-front'), leaf.querySelector('.pm-back')];
       if (dir > 0) { // la page de droite part vers la gauche ; dessous : la nouvelle page de droite
@@ -989,17 +2488,40 @@
 
   // ---- transferts
   function go(where, a, y, pts, dist) {
-    logMission(a, { maps: 'ouverte dans les Cartes de vol', fuel: 'envoyée au planificateur carburant', cr: 'CR commencé' }[where] || where);
+    logMission(a, {
+      maps: 'ouverte dans les Cartes de vol',
+      fuel: 'envoyée au planificateur carburant',
+      cr: 'CR commencé'
+    } [where] || where);
     if (where === 'maps') {
       // Cartes de vol : mission partagée de l'espace « planner » (SIA_MISSION_NS), appareil attribué en tête
       const yaml = structuredClone(y);
       if (yaml.aircraft?.[0] && a.aircraft?.registration) yaml.aircraft[0].registration = a.aircraft.registration;
-      localStorage.setItem('siaMissionShared:planner', JSON.stringify({ yaml, narrative: { summary: '', detailed: '', sections: [] }, sourceNames: [`mission${a.mission}.yaml`], rev: Date.now(), at: Date.now(), by: 'pilot' }));
+      localStorage.setItem('siaMissionShared:planner', JSON.stringify({
+        yaml,
+        narrative: {
+          summary: '',
+          detailed: '',
+          sections: []
+        },
+        sourceNames: [`mission${a.mission}.yaml`],
+        rev: Date.now(),
+        at: Date.now(),
+        by: 'pilot'
+      }));
       location.href = new URL('apps/planner/map_planner.html', root()).href;
     } else if (where === 'fuel') {
       const route = pts.map((p, i) => (i === 0 || i === pts.length - 1) && icaoOf(p) ? icaoOf(p) : coord(p)).join(' ');
       const lvl = /FL(\d{2,3})/.exec(y.vertical_profile?.cruise || y.aircraft?.[0]?.cruise_level || '')?.[1];
-      localStorage.setItem('plannerHandoff:v1', JSON.stringify({ route, distNm: dist, trackDeg: brg(pts[0], pts[1]), cruiseFt: lvl ? +lvl * 100 : 0, aircraft: (a.aircraft?.type || '').split(' ')[0], from: `${a.mission} — ${y.title || ''}`, at: Date.now() }));
+      localStorage.setItem('plannerHandoff:v1', JSON.stringify({
+        route,
+        distNm: dist,
+        trackDeg: brg(pts[0], pts[1]),
+        cruiseFt: lvl ? +lvl * 100 : 0,
+        aircraft: (a.aircraft?.type || '').split(' ')[0],
+        from: `${a.mission} — ${y.title || ''}`,
+        at: Date.now()
+      }));
       window.open(new URL('apps/planner/flight_performance_planner.html?handoff=1', root()).href, '_blank');
     } else if (where === 'cr') {
       const yaml = structuredClone(y);
@@ -1015,13 +2537,27 @@
   // (hélicoptères, réacteurs, turbopropulseurs, pistons), tableau : type (désignateur et modèle), variantes de la flotte,
   // appareils et bases, cases Possédé / Maîtrisé (maîtrisé implique possédé)
   async function typesLoad() {
-    const tri = A.trigram(), host = $('pmTypes');
+    const tri = A.trigram(),
+      host = $('pmTypes');
     const types = A.fleetTypes();
-    if (!types.length) { host.innerHTML = '<p class="small">Flotte non chargée.</p>'; return; }
-    const ac = (tri ? (await A.availability(tri))?.aircraft : null) || { owned: [], mastered: [] };
-    const owned = new Set([...ac.owned, ...ac.mastered]), mastered = new Set(ac.mastered);
+    if (!types.length) {
+      host.innerHTML = '<p class="small">Flotte non chargée.</p>';
+      return;
+    }
+    const ac = (tri ? (await A.availability(tri))?.aircraft : null) || {
+      owned: [],
+      mastered: []
+    };
+    const owned = new Set([...ac.owned, ...ac.mastered]),
+      mastered = new Set(ac.mastered);
     const groups = [...new Set(types.map(x => x.category))].map(c => types.filter(x => x.category === c));
-    const ICON = { helico: 'propeller', jet: 'plane', turboprop: 'propeller', piston: 'propeller', other: 'plane' };
+    const ICON = {
+      helico: 'propeller',
+      jet: 'plane',
+      turboprop: 'propeller',
+      piston: 'propeller',
+      other: 'plane'
+    };
     const summary = () => `${mastered.size} type(s) maîtrisé(s), ${owned.size} possédé(s) sur ${types.length} types de la flotte.`;
     host.innerHTML = `<p class="pm-types-sum" id="pmTypesSum">${esc(summary())}</p><div class="pm-types-cards">${groups.map(g => `<div class="repo-card pm-type-card" data-icon="${ICON[g[0].category] || 'plane'}" data-subtitle="${g.length} type(s)"><h3>${esc(g[0].categoryLabel)}</h3>
       <table class="pm-type-table"><thead><tr><th>Type</th><th>Variantes de la flotte</th><th>Appareils</th><th class="pm-c">Possédé</th><th class="pm-c">Maîtrisé</th></tr></thead><tbody>${g.map(x => `<tr>
@@ -1031,12 +2567,22 @@
         <td class="pm-c"><input type="checkbox" data-own="${esc(x.type)}" ${owned.has(x.type) ? 'checked' : ''} aria-label="${esc(x.model)} possédé"></td>
         <td class="pm-c"><input type="checkbox" data-master="${esc(x.type)}" ${mastered.has(x.type) ? 'checked' : ''} aria-label="${esc(x.model)} maîtrisé"></td></tr>`).join('')}</tbody></table></div>`).join('')}</div>`;
     host.onchange = e => {
-      if (!tri) { $('pmTypesMsg').textContent = 'Trigramme non réglé.'; return; }
-      const m = e.target.dataset.master, o = e.target.dataset.own;
-      if (m && e.target.checked) host.querySelector(`[data-own="${m}"]`).checked = true;      // maîtrisé → possédé
+      if (!tri) {
+        $('pmTypesMsg').textContent = 'Trigramme non réglé.';
+        return;
+      }
+      const m = e.target.dataset.master,
+        o = e.target.dataset.own;
+      if (m && e.target.checked) host.querySelector(`[data-own="${m}"]`).checked = true; // maîtrisé → possédé
       if (o && !e.target.checked) host.querySelector(`[data-master="${o}"]`).checked = false; // non possédé → non maîtrisé
-      const decl = A.saveAircraft(tri, { owned: [...host.querySelectorAll('[data-own]:checked')].map(x => x.dataset.own), mastered: [...host.querySelectorAll('[data-master]:checked')].map(x => x.dataset.master) });
-      owned.clear(); decl.aircraft.owned.forEach(x => owned.add(x)); mastered.clear(); decl.aircraft.mastered.forEach(x => mastered.add(x));
+      const decl = A.saveAircraft(tri, {
+        owned: [...host.querySelectorAll('[data-own]:checked')].map(x => x.dataset.own),
+        mastered: [...host.querySelectorAll('[data-master]:checked')].map(x => x.dataset.master)
+      });
+      owned.clear();
+      decl.aircraft.owned.forEach(x => owned.add(x));
+      mastered.clear();
+      decl.aircraft.mastered.forEach(x => mastered.add(x));
       $('pmTypesSum').textContent = summary();
       $('pmTypesMsg').textContent = 'Gardé dans ce navigateur ; « Enregistrer dans le dossier des données » (disponibilités) pour le Centre.';
     };
@@ -1045,12 +2591,16 @@
 
   // ---- simulateurs (liste de la feuille FLOTTE du classeur ODV)
   async function simsLoad() {
-    const tri = A.trigram(), host = $('pmSims');
+    const tri = A.trigram(),
+      host = $('pmSims');
     const mine = new Set((tri ? (await A.availability(tri))?.sims : null) || []);
     const list = [...new Set([...A.simulators(), ...mine])];
     host.innerHTML = list.map(s => `<label><input type="checkbox" data-sim="${esc(s)}" ${mine.has(s) ? 'checked' : ''}> ${A.simChips([s])}${esc(s)}</label>`).join('');
     host.onchange = () => {
-      if (!tri) { $('pmSimsMsg').textContent = 'Trigramme non réglé.'; return; }
+      if (!tri) {
+        $('pmSimsMsg').textContent = 'Trigramme non réglé.';
+        return;
+      }
       A.saveSims(tri, [...host.querySelectorAll('[data-sim]:checked')].map(x => x.dataset.sim));
       $('pmSimsMsg').textContent = 'Gardé dans ce navigateur ; « Enregistrer dans le dossier des données » (disponibilités) pour le Centre.';
     };
@@ -1067,37 +2617,84 @@
   /** Éditeur de la grille : chaque retouche gardée dans ce navigateur ; code de la palette gardé (view.brush). */
   function editor(g) {
     const tri = A.trigram();
-    return A.gridEditor($('pmGrid'), g, x => { if (tri) A.saveAvailability(tri, x, { week, base: doc }); $('pmGridMsg').textContent = 'Gardé dans ce navigateur ; « Enregistrer dans le dossier des données » pour le Centre.'; },
-      { code: view.brush, onBrush: b => { view.brush = b; saveView(); }, days: Array.from({ length: 7 }, (_, i) => dayFr(week, i)) });
+    return A.gridEditor($('pmGrid'), g, x => {
+      if (tri) A.saveAvailability(tri, x, {
+        week,
+        base: doc
+      });
+      $('pmGridMsg').textContent = 'Gardé dans ce navigateur ; « Enregistrer dans le dossier des données » pour le Centre.';
+    }, {
+      code: view.brush,
+      onBrush: b => {
+        view.brush = b;
+        saveView();
+      },
+      days: Array.from({
+        length: 7
+      }, (_, i) => dayFr(week, i))
+    });
   }
   $('pmGridSave').onclick = async () => {
     const tri = A.trigram();
-    if (!tri) { $('pmGridMsg').innerHTML = '<span class="err">Trigramme non réglé.</span>'; return; }
+    if (!tri) {
+      $('pmGridMsg').innerHTML = '<span class="err">Trigramme non réglé.</span>';
+      return;
+    }
     try {
-      const f = await A.saveAvailability(tri, grid, { toFolder: true, week, base: doc });
+      const f = await A.saveAvailability(tri, grid, {
+        toFolder: true,
+        week,
+        base: doc
+      });
       $('pmGridMsg').innerHTML = `<span class="ok">Disponibilités enregistrées : ${esc(f)}</span>`;
       window.AppFramework?.notify?.(`Disponibilités enregistrées : ${f}`, 'ok');
-    } catch (e) { $('pmGridMsg').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+    } catch (e) {
+      $('pmGridMsg').innerHTML = `<span class="err">${esc(e.message)}</span>`;
+    }
   };
-  $('pmGridClear').onclick = () => { grid = editor(A.emptyGrid()); A.saveAvailability(A.trigram(), grid, { week, base: doc }); };
+  $('pmGridClear').onclick = () => {
+    grid = editor(A.emptyGrid());
+    A.saveAvailability(A.trigram(), grid, {
+      week,
+      base: doc
+    });
+  };
   // recopie de la semaine précédente (remplace la semaine affichée)
   $('pmGridCopy').onclick = async () => {
     const tri = A.trigram();
-    if (!tri) { $('pmGridMsg').innerHTML = '<span class="err">Trigramme non réglé.</span>'; return; }
+    if (!tri) {
+      $('pmGridMsg').innerHTML = '<span class="err">Trigramme non réglé.</span>';
+      return;
+    }
     doc = await A.availability(tri);
     const prev = A.weekGrid(doc, A.addWeeks(week, -1));
-    if (!prev.some(r => r.some(Boolean))) { $('pmGridMsg').innerHTML = '<span class="err">Semaine précédente vide : rien à recopier.</span>'; return; }
+    if (!prev.some(r => r.some(Boolean))) {
+      $('pmGridMsg').innerHTML = '<span class="err">Semaine précédente vide : rien à recopier.</span>';
+      return;
+    }
     grid = editor(prev);
-    await A.saveAvailability(tri, grid, { week, base: doc });
+    await A.saveAvailability(tri, grid, {
+      week,
+      base: doc
+    });
     doc = await A.availability(tri);
     $('pmGridMsg').textContent = `Disponibilités de la semaine du ${dayFr(A.addWeeks(week, -1), 0)} recopiées (gardées dans ce navigateur).`;
   };
 
   // index complet gardé pour les coéquipiers
-  const keepAll = async () => { A._all = (await A.index()).assignments; };
-  window.addEventListener('storage', e => { if (e.key === PROFILE) { load(); gridLoad(); typesLoad(); simsLoad(); } });
+  const keepAll = async () => {
+    A._all = (await A.index()).assignments;
+  };
+  window.addEventListener('storage', e => {
+    if (e.key === PROFILE) {
+      load();
+      gridLoad();
+      typesLoad();
+      simsLoad();
+    }
+  });
   keepAll().then(load).then(gridLoad).then(typesLoad).then(simsLoad);
 })();
 </script>
-<script src="../../shared/app_framework.js?v=608608cc"></script>
+<script src="../../shared/app_framework.js?v=a2972a9a"></script>
 </body></html>

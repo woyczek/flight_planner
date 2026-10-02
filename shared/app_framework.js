@@ -186,7 +186,11 @@
     if (!r.version) return null;
     if (!/^https?:$/.test(location.protocol)) { // file:// : commit écrit par les crochets git
       const b = await buildFile();
-      return b?.sha && b.tag !== `v${r.version}` ? { sha: b.sha, short: b.sha.slice(0, 7), branch: b.branch || "" } : null;
+      return b?.sha && b.tag !== `v${r.version}` ? {
+        sha: b.sha,
+        short: b.sha.slice(0, 7),
+        branch: b.branch || ""
+      } : null;
     }
     const head = (await gitText("HEAD"))?.trim();
     if (!head) return null;
@@ -322,7 +326,8 @@
       if (box.matches(":popover-open")) box.hidePopover();
       box.showPopover();
     } catch {
-      /* navigateur sans popover : position fixe ordinaire */ }
+      /* navigateur sans popover : position fixe ordinaire */
+    }
     return box;
   }
   /** Confirmation dans la page (remplace window.confirm, bloquée dans certains navigateurs intégrés et hors du design) :
@@ -370,6 +375,7 @@
       yes.focus();
     });
   }
+
   function notify(message, kind = "info", {
     timeout
   } = {}) {
@@ -694,6 +700,7 @@
       return r;
     },
     notify,
+    /** Confirmation dans la page (promesse : true si confirmé) ; remplace window.confirm. */
     ask,
     /** Journal des alertes de la page (erreurs, avertissements) : liste, tout acquitter. */
     alerts: {

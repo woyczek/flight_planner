@@ -10,6 +10,35 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+### Ajouté
+
+- **En-têtes de l'ordre selon la famille** pour Durci (EMA, BSPP, SSA, HIA, DCSSA, EMZD, DMD, CPCO), Cabinet (aéronautique
+  navale) et Carnet de vol (protection civile, secours), avec le **tampon de l'émetteur** à la signature (Carnet de vol).
+- `AppFramework.ask` : confirmation dans la page (fond d'un bloc du design, 4 langues) ; `RepositoryKit.viewHtml` et
+  `RepositoryKit.tf` (phrase traduite à valeurs).
+- Traductions (en, de, es) : Mes missions (dossier, plis, signet, fiche technique), fenêtre et dialogue d'affectation de
+  l'ODV, semaines et filtres de l'ODV, générateur et studio, planificateur, Premier lancement.
+- **Brief de mission traduit** : bloc `i18n` du YAML (réglage « Traductions » du générateur, `en` par défaut), lu par
+  `shared/mission_i18n.js` ; Mes missions affiche le brief, les plis et les pistes dans la langue de la page (repli sur
+  le français champ par champ). Doc : `docs/SIA_MISSIONS.md` § 2 sexies.
+- Audit de sécurité (`docs/AUDIT_SECURITE_2026-10-02.md`).
+
+### Modifié
+
+- Boîtes natives (`confirm`, `alert`) remplacées par la confirmation dans la page et les notifications (gardées : sortie
+  de page, fermeture synchrone de la fenêtre d'un créneau, changement d'identifiant du générateur).
+- Visionneuse commune pour le registre des missions (YAML, Markdown, versions, cartes).
+- Plus de galon sous le bandeau des designs à matières ; bouton désactivé nettement grisé (Cabinet, Carnet de vol).
+- Couche de traduction : comparaison sans la typographie de la langue ; libellé court suivi d'une flèche de tri.
+- Sources remises en forme (`tools/format_sources.py`) ; commentaires d'en-tête et `docs/FRAMEWORK.md` à jour.
+
+### Sécurité
+
+- Lanceur : en-tête `Host` de la machine exigé (parade au « DNS rebinding »), envois limités à 512 Mo, `nosniff`,
+  identifiants framagit sans retour à la ligne.
+- Planificateur : commentaire et noms de phase d'un profil importé échappés.
+- Webservice d'envoi des CR : `https://` obligatoire (hors localhost).
+
 ## [4.7.0] — 2026-10-02
 
 Exercices et plis scellés : les messages et pistes d'un exercice arrivent au pilote dans des enveloppes cachetées,

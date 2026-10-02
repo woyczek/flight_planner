@@ -221,7 +221,10 @@
     if (doc.dataset.surface !== s) doc.dataset.surface = s;
   }
   // suit tout changement de ton ou de design, même posé hors de ce script (banc de non-régression, autres outils)
-  new MutationObserver(markSurface).observe(doc, { attributes: true, attributeFilter: ["data-tone", "data-design"] });
+  new MutationObserver(markSurface).observe(doc, {
+    attributes: true,
+    attributeFilter: ["data-tone", "data-design"]
+  });
 
   function applyTheme(name) {
     const t = themeColors(name);
@@ -312,7 +315,7 @@
   // Designs à matières (Cabinet, Durci, Aqua : textures, plaques, vis) : feuille propre (designs.list[id].css),
   // chargée seulement quand l'un d'eux est choisi, avec sa propre version (empreinte de son contenu, table FILE_V
   // écrite par tools/bump_versions.py).
-  const FILE_V = {"designs_skeuo.css": "e22cf9ac"};
+  const FILE_V = {"designs_skeuo.css": "3c1a100f"};
   const designCss = id => {
     const f = designs[id]?.css;
     if (!f || document.querySelector(`link[data-design-css="${f}"]`)) return;
@@ -323,7 +326,7 @@
     document.head.append(l);
     // illustrations du décor complet (frise de Cabinet, radar de Durci), même version
     const d = document.createElement("script");
-    d.src = new URL("design_deco.js?v=c6818a9d", script.src).href;
+    d.src = new URL("design_deco.js?v=ad09d535", script.src).href;
     document.head.append(d);
   };
   designCss(design);
@@ -914,23 +917,23 @@
     profile.src = new URL("pilot_profile.js?v=f1357c65", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=dbb9039b", script.src).href;
+    files.src = new URL("file_access.js?v=70abfeed", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=58f492d6", "block_icons.js?v=28956286", "side_nav.js?v=355697e6"]) {
+    for (const f of ["icons/repository_icons.js?v=58f492d6", "block_icons.js?v=9e1df4ee", "side_nav.js?v=355697e6"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=504cf79e", script.src).href;
+    store.src = new URL("browser_store.js?v=42c3e0d5", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
-    assign.src = new URL("assignments.js?v=a5d19ee4", script.src).href;
+    assign.src = new URL("assignments.js?v=82afa493", script.src).href;
     document.head.append(assign);
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=798086a3", script.src).href;
+    update.src = new URL("suite_update.js?v=649cb695", script.src).href;
     document.head.append(update)
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {

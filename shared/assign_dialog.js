@@ -107,7 +107,9 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
     });
     const existing = idx.assignments.filter(a => a.mission === m.id && a.role !== 'convoyage');
     const posts = M.postsOf(m, y), // un poste par équipage aérien (type, ou catégorie et service : schéma hélico)
-      postOfType = ty => posts.find(p => M.fits(p, ty)) || M.postsOf({ aircraftTypes: [ty] })[0],
+      postOfType = ty => posts.find(p => M.fits(p, ty)) || M.postsOf({
+        aircraftTypes: [ty]
+      })[0],
       departure = M.geo.icaoOf(y.origin) || existing[0]?.departure || '',
       callsign = posts[0]?.callsign || '',
       blockMin = +y.timing?.estimated_block_min || +y.timing?.estimated_flight_min || 120,
@@ -243,7 +245,10 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
         }
         if (ferry?.takeoff && r.ferryPilot && r.ferryPilot !== r.pilot) {
           const s = M.availabilityAt(await declOf(r.ferryPilot), Date.parse(ferry.takeoff), '');
-          notes.push(chip(L(['convoyeur {p} : {s}', 'ferry pilot {p}: {s}', 'Überführungspilot {p}: {s}', 'piloto de traslado {p}: {s}'], { p: esc(r.ferryPilot), s: s ? esc(s.code + ' — ' + s.label) : L(['disponibilité non renseignée', 'availability not filled in', 'Verfügbarkeit nicht angegeben', 'disponibilidad no indicada']) }), s ? (s.category === 'dispo' ? 'ok' : 'err') : ''));
+          notes.push(chip(L(['convoyeur {p} : {s}', 'ferry pilot {p}: {s}', 'Überführungspilot {p}: {s}', 'piloto de traslado {p}: {s}'], {
+            p: esc(r.ferryPilot),
+            s: s ? esc(s.code + ' — ' + s.label) : L(['disponibilité non renseignée', 'availability not filled in', 'Verfügbarkeit nicht angegeben', 'disponibilidad no indicada'])
+          }), s ? (s.category === 'dispo' ? 'ok' : 'err') : ''));
         }
         const from = ferry?.takeoff ? Date.parse(ferry.takeoff) : tk;
         for (const c of M.conflicts(idx.assignments, {
@@ -338,7 +343,10 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
           alert
         });
         msg.innerHTML = `<span class="ok">${L(['Enregistrée : {f}', 'Saved: {f}', 'Gespeichert: {f}', 'Guardada: {f}'], { f: `data/missions/${esc(f)}` })}</span>`;
-        window.AppFramework?.notify?.(L(['{m} affectée à {p}.', '{m} assigned to {p}.', '{m} zugewiesen an {p}.', '{m} asignada a {p}.'], { m: m.id, p: rows.map(r => r.pilot).join(', ') }), 'ok');
+        window.AppFramework?.notify?.(L(['{m} affectée à {p}.', '{m} assigned to {p}.', '{m} zugewiesen an {p}.', '{m} asignada a {p}.'], {
+          m: m.id,
+          p: rows.map(r => r.pilot).join(', ')
+        }), 'ok');
         dlg.dispatchEvent(new CustomEvent('assigned', {
           detail: {
             mission: m.id

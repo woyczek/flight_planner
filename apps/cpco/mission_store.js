@@ -787,7 +787,8 @@
       try {
         from = NS ? null : JSON.parse(sessionStorage.getItem('siaFromRegistry:v1') || 'null');
       } catch {
-        /* stockage indisponible */ }
+        /* stockage indisponible */
+      }
       if (from) {
         const back = document.createElement('a');
         back.id = 'siaBackRegistry';
@@ -913,7 +914,8 @@
     try {
       reg = JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions || [];
     } catch {
-      /* registre illisible */ }
+      /* registre illisible */
+    }
     const letter = FAMILY_LETTERS[String(family || '').toUpperCase()] || '';
     const mine = reg.filter(m => letter && parseId(m.id).letter === letter);
     const num = Math.max(0, ...mine.map(m => parseId(m.id).num || 0)) + 1,

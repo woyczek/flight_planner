@@ -179,7 +179,8 @@
           await writer.close();
         }
       } catch {
-        /* Selection cancelled: the imported names remain available in the form. */ }
+        /* Selection cancelled: the imported names remain available in the form. */
+      }
     };
     input.closest('div').append(button, upload);
   }

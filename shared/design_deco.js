@@ -51,15 +51,21 @@
     strip: img => `<img class="repo-deco-strip" src="${img('footer')}" alt="">`,
     plate: img => `<div class="repo-deco-plate-img"><img src="${img('plate-defa')}" alt=""></div>`,
     // plots du radar : position dans l'écran (%) et couleur ; délai d'allumage calculé au rendu (passage du balayage)
-    radar: img => `<div class="repo-deco-radar" title="${tr('radar')}"><div class="repo-deco-radar-stage">`
-      + `<img src="${img('radar')}" alt=""><span class="repo-deco-sweep"></span>`
-      + [[30.7, 33.5, '#7dff8a'], [65.6, 59.6, '#7dff8a'], [72, 79.5, '#7dff8a'], [30.96, 82.6, '#7dff8a'], [82.95, 46.44, '#ff4d3d']]
-        .map(([x, y, c]) => `<i style="left:${x}%;top:${y}%;--c:${c}"></i>`).join('')
-      + '</div></div>',
+    radar: img => `<div class="repo-deco-radar" title="${tr('radar')}"><div class="repo-deco-radar-stage">` +
+      `<img src="${img('radar')}" alt=""><span class="repo-deco-sweep"></span>` +
+      [
+        [30.7, 33.5, '#7dff8a'],
+        [65.6, 59.6, '#7dff8a'],
+        [72, 79.5, '#7dff8a'],
+        [30.96, 82.6, '#7dff8a'],
+        [82.95, 46.44, '#ff4d3d']
+      ]
+      .map(([x, y, c]) => `<i style="left:${x}%;top:${y}%;--c:${c}"></i>`).join('') +
+      '</div></div>',
     // voyant de sauvegarde : état réel (html[data-dirty], browser_store.js) ; clic = sauvegarder maintenant
-    status: img => `<button type="button" class="repo-deco-status repo-plain">`
-      + `<img src="${img('plane-plate')}" alt="" onerror="this.remove()">`
-      + '<span class="repo-deco-leds"><i class="led-save"></i><i class="led-on"></i><i></i></span><span class="repo-deco-state"></span></button>'
+    status: img => `<button type="button" class="repo-deco-status repo-plain">` +
+      `<img src="${img('plane-plate')}" alt="" onerror="this.remove()">` +
+      '<span class="repo-deco-leds"><i class="led-save"></i><i class="led-on"></i><i></i></span><span class="repo-deco-state"></span></button>'
   };
   const DEVICE_AT = 2; // appareil de page : entre les blocs 2 et 3 (tous les designs ; une page à 3 blocs l'accueille)
   const SETS = {

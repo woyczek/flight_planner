@@ -245,7 +245,8 @@
       } try {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
     } catch {
-      /* stockage indisponible */ }
+      /* stockage indisponible */
+    }
     return settings();
   }
   const MODES = ['auto', 'airways', 'rtba', 'direct'];

@@ -146,7 +146,8 @@
     for await (const [name, h] of handle.entries()) if (h.kind === 'file') try {
       out.push(await h.getFile());
     } catch {
-      /* verrouillé */ }
+      /* verrouillé */
+    }
     return out;
   }
 

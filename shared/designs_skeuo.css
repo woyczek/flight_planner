@@ -164,7 +164,8 @@ html[data-design-base="cabinet"] {
   --sk-btn-bg: linear-gradient(color-mix(in srgb, var(--cab-bar) 45%, transparent), color-mix(in srgb, var(--cab-bar) 45%, transparent)), #0f2140 url("textures/leather-navy.webp?v=1bacc4e6") center/200px;
   --sk-btn-shadow: 0 0 0 2px var(--cab-brass), 0 0 0 3px #5a4012, inset 0 1px 0 rgba(255, 255, 255, .22), inset 0 -6px 12px rgba(0, 0, 0, .4), 0 4px 6px rgba(0, 0, 0, .4);
   --sk-btn-hover: brightness(1.12);
-  --sk-btn-disabled: grayscale(1) opacity(.5); /* bouton désactivé nettement grisé, même sur le bleu marine et le bois */
+  --sk-btn-disabled: grayscale(1) opacity(.5);
+  /* bouton désactivé nettement grisé, même sur le bleu marine et le bois */
   --sk-lbtn-weight: 700;
   --sk-lbtn-border: 0;
   --sk-lbtn-radius: 6px;
@@ -234,7 +235,8 @@ html[data-skeuo="frame"] body {
   margin-left: var(--sk-page-margin);
   margin-right: var(--sk-page-margin);
   padding-top: 12px;
-  background: var(--sk-page-bg) !important /* garder : fond posé en ligne (style) sur body par les pages */
+  background: var(--sk-page-bg) !important
+    /* garder : fond posé en ligne (style) sur body par les pages */
 }
 html[data-design-base="cabinet"][data-decor="full"]::before {
   content: "";
@@ -439,7 +441,8 @@ html[data-skeuo="frame"] .repo-footer a {
   color: var(--sk-footer-link)
 }
 html[data-design-base="cabinet"] .repo-block textarea {
-  background: repeating-linear-gradient(transparent 0 23px, rgba(29, 53, 87, .1) 23px 24px), var(--cab-field) !important /* garder : fond transparent en ligne (studio, champs de route) */
+  background: repeating-linear-gradient(transparent 0 23px, rgba(29, 53, 87, .1) 23px 24px), var(--cab-field) !important
+    /* garder : fond transparent en ligne (studio, champs de route) */
 }
 html[data-design-base="cabinet"] .repo-block :is(table) {
   background: color-mix(in srgb, var(--cab-field) 60%, transparent)
@@ -456,7 +459,9 @@ html[data-design-base="cabinet"] :is(button.secondary, a.secondary, label.rg-fil
   text-shadow: 0 1px 0 rgba(255, 255, 255, .75)
 }
 html[data-design-base="cabinet"] :is(button.secondary, a.secondary, label.rg-file, .repo-header button.headerButton:not(:first-of-type)):not(.repo-block-tools button):not(.repo-menu-button):not(.repo-language-button):not(#imp) {
-  color: #0b1830 !important /* garder : liens secondaires des CR en style en ligne « color: inherit » */;
+  color: #0b1830 !important
+    /* garder : liens secondaires des CR en style en ligne « color: inherit » */
+  ;
   font-weight: 700;
   background: #efe3c4 url("textures/parchment.webp?v=c0677c03") center/300px
 }
@@ -838,7 +843,8 @@ html[data-design="aqua"] {
 html[data-design="aqua"] body {
   color: var(--aq-ink);
   font-family: "Segoe UI Variable", "Segoe UI", -apple-system, "Helvetica Neue", Inter, system-ui, sans-serif;
-  background: transparent !important /* garder : fond posé en ligne (style) sur body par les pages */
+  background: transparent !important
+    /* garder : fond posé en ligne (style) sur body par les pages */
 }
 html[data-design="aqua"] .repo-header-subtitle,
 html[data-design="aqua"] .repo-language-label {
@@ -1038,7 +1044,9 @@ html[data-skeuo] .repo-notice:not(#imp) {
   box-shadow: var(--sk-notice-shadow, none)
 }
 html[data-skeuo] .repo-block :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select, textarea):not(#imp) {
-  background: var(--sk-input-bg) !important /* garder : fond transparent en ligne (studio, champs de route) */;
+  background: var(--sk-input-bg) !important
+    /* garder : fond transparent en ligne (studio, champs de route) */
+  ;
   color: var(--sk-input-ink);
   border: var(--sk-input-border);
   border-radius: var(--sk-input-radius);
@@ -1047,7 +1055,7 @@ html[data-skeuo] .repo-block :is(input:not([type=checkbox]):not([type=radio]):no
 /* boutons : habillage du design (police : dans la section du design) */
 /* graisse : valeur par défaut du design, dans la couche app (les règles plus précises des pages la règlent) */
 @layer app {
-html[data-skeuo] button:where(:not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-sidenav-item):not(.col-split):not(.repo-block-tools button):not([role=menuitem]):not(.repo-icon-only):not(.repo-plain)),
+  html[data-skeuo] button:where(:not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-sidenav-item):not(.col-split):not(.repo-block-tools button):not([role=menuitem]):not(.repo-icon-only):not(.repo-plain)),
   html[data-skeuo] .buttonLink,
   html[data-skeuo] a.mc-button {
     font-weight: var(--sk-btn-weight)
@@ -2487,7 +2495,8 @@ html[data-skeuo="frame"] :is(.repo-block-titles, .repo-block-heading)>h2:not(#im
 }
 html[data-skeuo] {
   scrollbar-gutter: stable;
-  --repo-round: 0 /* angles droits partout (repository_nav.css : rayons calc(… * var(--repo-round, 1))) */
+  --repo-round: 0
+    /* angles droits partout (repository_nav.css : rayons calc(… * var(--repo-round, 1))) */
 }
 html[data-skeuo] body {
   overflow-x: clip

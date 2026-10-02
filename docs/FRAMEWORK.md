@@ -132,7 +132,9 @@ liste `DISPLAY` : design, icônes, couleurs, barre latérale, langue, onglets, s
     aperçus** (composant `.repo-notebooks` / `.repo-notebook` de `designs_skeuo.css`, jetons `--nb-*` : carnet fermé
     tant que la galerie est vide, puis carnet ouvert sous chaque carte ; Studio cartographique) ;
   - **boîte à outils** `shared/kit.js` (`window.RepositoryKit`, chargée avant `repository_nav.js` et avant tout module qui s'en sert) : échappement,
-    langue et traductions, stockage protégé, couleurs et contraste WCAG.
+    langue et traductions (`t`, `tf` : phrase à valeurs `{clé}`), stockage protégé, couleurs et contraste WCAG, heure
+    d'exercice (`hOffset`, `hText` : une seule référence H, T ou M, décalages avec unité), visionneuse commune
+    (`viewImage`, `viewHtml` : croix, Échap, taille réelle au clic).
 - **Réglages** : boutons « Apparence » et « Paramètres » en tête du menu ☰ ; dans la barre latérale, groupe du bas
   (Apparence, Paramètres, Menu).
 - **Icônes** (`repositoryIcons`, `<html data-icons>`) : trait normal, fin, épais ; quatre jeux **skeuomorphes**,
@@ -188,6 +190,12 @@ qu'elle tourne (fermeture ou rechargement : fenêtre du navigateur ; lien intern
 sa propre jauge (import SIA), la tâche ne sert qu'à la garde de sortie. Les erreurs des pages passent par les zones
 `data-status` (relayées en notifications) ou par `job.fail`. Tâches en cours : `AppFramework.busyTasks()`.
 
+**Confirmation** (`AppFramework.ask(message, { ok, cancel, danger })`) : fenêtre dans la page, au fond d'un bloc du
+design, « Confirmer » / « Annuler » en 4 langues (Échap, clic à côté : annuler) ; promesse `true` si confirmé.
+Remplace `window.confirm` (bloquée dans certains navigateurs intégrés, hors du design) ; le clic sur « Confirmer » est
+lui-même un geste de l'utilisateur (ouverture d'onglet ou de dossier permise ensuite). Les alertes passent par
+`AppFramework.notify`. Gardés natifs : sortie de page, fermetures qui exigent une réponse immédiate.
+
 Option `grow: true` de `StickyFrame.follow` : l'ancre prend au moins la hauteur du cadre (+ gap), pour
 qu'un cadre plus haut que sa rangée ne déborde pas sur le cadre suivant (panneaux du planificateur). L'ancre ne
 fait que grandir (pas de va-et-vient pendant un réglage) ; `StickyFrame.resetGrow()` la remet à la mesure après
@@ -231,7 +239,10 @@ dashboard fournit ses lignes depuis ses propres dictionnaires (`landingI18nRows(
 
 `window.RepositoryContentI18n(lignes)` : lignes `[fr, en, de, es]`. Les nœuds texte (et
 `title`, `placeholder`) dont la valeur est un des textes connus sont traduits dans la langue
-du bandeau, y compris ceux ajoutés plus tard (observateur). Les textes composés par le code
+du bandeau, y compris ceux ajoutés plus tard (observateur). Comparaison sans la typographie de la langue (espace
+avant `:` retirée en anglais avant la traduction) ; un texte connu suivi d'une fin libre (texte d'au moins 8 signes,
+ou terminé par `.` `:` `→`) ou de signes seuls (flèche de tri, astérisque) est aussi reconnu. Les libellés du menu
+(titres de page) sont inscrits par `repository_nav.js`. Les textes composés par le code
 sont produits directement dans la langue courante (`RepositoryNav.getLanguage()`). Les pages
 du Landing Dashboard et du Planner ont en plus leur dictionnaire propre (`TR`,
 `flight_i18n.js`).

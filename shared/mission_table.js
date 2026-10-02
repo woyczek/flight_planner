@@ -152,7 +152,8 @@
       try {
         if (storageKey) localStorage.setItem(storageKey, JSON.stringify(widths));
       } catch {
-        /* stockage indisponible */ }
+        /* stockage indisponible */
+      }
     };
     /** Fixe les largeurs : mesure naturelle (disposition automatique), puis largeurs choisies par-dessus. */
     function applyWidths(live) {
@@ -195,7 +196,8 @@
       try {
         grip.setPointerCapture(event.pointerId);
       } catch {
-        /* pointeur déjà relâché */ }
+        /* pointeur déjà relâché */
+      }
       const move = e => {
         widths[key] = Math.max(32, w0 + e.clientX - x0);
         applyWidths(true);

@@ -55,7 +55,8 @@
     try {
       localStorage.setItem(k, JSON.stringify(v));
     } catch {
-      /* quota */ }
+      /* quota */
+    }
   };
 
   /** Réglages { channel, mode, periodDays, updatedAt }. */
@@ -136,7 +137,7 @@
         get(`${REPO.api}/repository/branches/${encodeURIComponent(ch)}`, 'json'),
         // config/repository_tree (depuis la 4.7) ; repository_tree à la racine pour les versions antérieures du canal
         get(`${REPO.api}/repository/files/config%2Frepository_tree/raw?ref=${encodeURIComponent(ch)}`, 'text')
-          .catch(() => get(`${REPO.api}/repository/files/repository_tree/raw?ref=${encodeURIComponent(ch)}`, 'text')).catch(() => '')
+        .catch(() => get(`${REPO.api}/repository/files/repository_tree/raw?ref=${encodeURIComponent(ch)}`, 'text')).catch(() => '')
       ]);
       const rel = releaseOf(tree),
         remote = {

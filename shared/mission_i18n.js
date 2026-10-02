@@ -9,14 +9,20 @@
 (() => {
   'use strict';
   const arr = v => Array.isArray(v) ? v : v == null || v === '' ? [] : [v];
-  const merge = (base, tr) => tr && typeof tr === 'object' ? { ...base, ...tr } : base;
+  const merge = (base, tr) => tr && typeof tr === 'object' ? {
+    ...base,
+    ...tr
+  } : base;
 
   /** Brief traduit dans lang : titre, résumé, description, objectifs, notes, risques, textes d'exercice. */
   function localize(y, lang) {
     const tr = y?.i18n?.[lang];
     if (!y || !tr || typeof tr !== 'object' || lang === 'fr') return y;
-    const out = { ...y };
-    for (const k of ['title', 'summary', 'detailed_description']) if (typeof tr[k] === 'string' && tr[k].trim()) out[k] = tr[k];
+    const out = {
+      ...y
+    };
+    for (const k of ['title', 'summary', 'detailed_description'])
+      if (typeof tr[k] === 'string' && tr[k].trim()) out[k] = tr[k];
     if (tr.objectives && typeof tr.objectives === 'object') out.objectives = merge(y.objectives || {}, tr.objectives);
     if (Array.isArray(tr.notes)) out.notes = arr(y.notes).map((n, i) => tr.notes[i] ?? n);
     if (Array.isArray(tr.risks)) out.risks = arr(y.risks).map((r, i) => merge(r, tr.risks[i]));
@@ -32,7 +38,10 @@
     // légendes des cartes : par id de carte, sinon par nom de fichier
     if (tr.maps && Array.isArray(y.maps)) out.maps = y.maps.map(m => {
       const d = tr.maps[m?.id] ?? tr.maps[m?.filename];
-      return typeof d === 'string' ? { ...m, description: d } : m;
+      return typeof d === 'string' ? {
+        ...m,
+        description: d
+      } : m;
     });
     return out;
   }

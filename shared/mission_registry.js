@@ -26,7 +26,8 @@
     try {
       localStorage.setItem(k, JSON.stringify(v));
     } catch {
-      /* quota */ }
+      /* quota */
+    }
   };
   const waitFor = (name, ms = 6000) => new Promise(resolve => {
     const t0 = Date.now();
@@ -73,7 +74,8 @@
           type: 'region'
         }).of(c) || c;
       } catch {
-        /* navigateur ancien */ }
+        /* navigateur ancien */
+      }
       return `étranger — ${name}`;
     }
     return /étranger|foreign/i.test(String(meta?.theatre || '')) || (Number.isFinite(+pt?.lat) && Number.isFinite(+pt?.lon)) ? 'étranger' : '';
@@ -601,7 +603,8 @@
           });
         }
       } catch {
-        /* absent */ }
+        /* absent */
+      }
     };
     await walk(mh.h, '');
     for (const s of [SUB.maps, SUB.versions, SUB.received]) await walk(mh.h, s);
@@ -635,7 +638,8 @@
         await f.dir.removeEntry(f.name);
         n++;
       } catch {
-        /* déjà absent, ou refusé */ }
+        /* déjà absent, ou refusé */
+      }
     }
     return n;
   }
@@ -803,7 +807,8 @@
       const c = readJson('missionCoreLedger:v2', null);
       crs = window.jsyaml.load(c?.text || '')?.missions || [];
     } catch {
-      /* registre illisible */ }
+      /* registre illisible */
+    }
     const rank = {},
       all = crs.map(r => ({
         r,
@@ -1124,7 +1129,8 @@
           try {
             bar.setPointerCapture(e.pointerId);
           } catch {
-            /* pointeur relâché */ }
+            /* pointeur relâché */
+          }
           const move = ev => {
             box.style.height = `${Math.max(120, h0 + ev.clientY - y0)}px`;
           };
@@ -1141,7 +1147,8 @@
           try {
             localStorage.removeItem(TABLE_H);
           } catch {
-            /* stockage indisponible */ }
+            /* stockage indisponible */
+          }
         };
       }
     }
@@ -1342,7 +1349,8 @@
           h: x
         });
       } catch {
-        /* absent */ }
+        /* absent */
+      }
       return out.sort((a, b) => b.name.localeCompare(a.name));
     };
     const root = await list(mh.h),
@@ -1444,7 +1452,8 @@
             f = h && await readText(h.h, `mission${normMissionId(x.id)}.yaml`);
           if (f) docs.push(window.jsyaml.load(f.replace(/^#.*\n/, '')));
         } catch {
-          /* illisible */ }
+          /* illisible */
+        }
       }
       view(`summary${normMissionId(m.id)}.md — ${t(['généré depuis le YAML', 'generated from the YAML', 'aus dem YAML erzeugt', 'generado desde el YAML'])}`, mdHtml(window.SiaMission.markdownOf(y, {
         docs
@@ -1459,7 +1468,8 @@
         try {
           sessionStorage.setItem('siaAutoPdf:v1', m.id);
         } catch {
-          /* */ }
+          /* */
+        }
         return go(m, 'editor');
       }
       return go(m, k === 'studio' ? 'studio' : 'editor');
@@ -1516,7 +1526,8 @@
           text: await f.text()
         });
       } catch {
-        /* absent */ }
+        /* absent */
+      }
     }
     return files;
   }
@@ -1537,7 +1548,8 @@
           type: m.type
         }));
       } catch {
-        /* stockage indisponible */ }
+        /* stockage indisponible */
+      }
       window.SiaMission.importTexts(files, 'registry');
       const b = window.SiaMission.loadBatch(),
         i = b ? b.docs.findIndex(d => String(d.yaml?.mission?.id || '').toUpperCase() === String(m.id).toUpperCase()) : -1;
@@ -1567,7 +1579,8 @@
           type: m.type
         }));
       } catch {
-        /* stockage indisponible */ }
+        /* stockage indisponible */
+      }
       const dir = await missionsDir(true);
       if (!dir) throw new Error(t(['dossier des missions non autorisé', 'missions folder not authorised']));
       const files = await missionFiles(dir, m);
@@ -1578,10 +1591,11 @@
         try {
           let h = dir;
           for (const part of (m.folder || '').split('/').filter(Boolean)) h = await h.getDirectoryHandle(part);
-          for await (const [n, x] of (await h.getDirectoryHandle(SUB.maps)).entries())
-            if (x.kind === 'file' && /\.(png|jpe?g|webp)$/i.test(n)) maps.push(n);
+          for await (const [n, x] of(await h.getDirectoryHandle(SUB.maps)).entries())
+          if (x.kind === 'file' && /\.(png|jpe?g|webp)$/i.test(n)) maps.push(n);
         } catch {
-          /* pas de cartes rangées */ }
+          /* pas de cartes rangées */
+        }
         window.AssignDialog?.open(m, window.SiaMission.fromTexts(files).yaml || {}, {
           maps: maps.sort()
         });

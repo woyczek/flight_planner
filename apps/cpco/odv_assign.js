@@ -53,8 +53,8 @@
   const freePilots = (j, k) => (D?.pilotes || []).map(p => p.trigramme).filter(tr => free(tr, j, k, (D.records || []).find(r => r.pilote === tr && r.jourIndex === j && r.creneauIndex === k)));
   /** Créneau (jour, créneau) qui contient l'heure ms ; null hors de la semaine ou entre deux créneaux. */
   const slotAt = ms => {
-    for (const [j] of (D?.dates || []).entries())
-      for (const [k] of (S?.hours || []).entries()) {
+    for (const [j] of(D?.dates || []).entries())
+      for (const [k] of(S?.hours || []).entries()) {
         const r = range(j, k);
         if (r && ms >= r[0] && ms < r[1]) return [j, k];
       }
@@ -80,8 +80,8 @@
   /** Créneaux recouverts par une plage : [[j, k]…], dans l'ordre. */
   const slotsOver = (from, to) => {
     const out = [];
-    for (const [j] of (D?.dates || []).entries())
-      for (const [k] of (S?.hours || []).entries()) {
+    for (const [j] of(D?.dates || []).entries())
+      for (const [k] of(S?.hours || []).entries()) {
         const r = range(j, k);
         if (r && r[0] < to && r[1] > from) out.push([j, k]);
       }

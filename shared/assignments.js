@@ -15,7 +15,8 @@
   //     terrains, convoyage), qualification, créneaux, conflits, écriture d'une affectation.
   //
   // API (window.MissionAssignments) : identité et index — trigram(), index({ fresh }), mine(liste?, { all }), key(a),
-  //   when(a), isRead(a), markRead(a), envelope() ; déclaration du pilote — LEGEND, availability(TRI),
+  //   when(a), isRead(a), markRead(a), markUnread(a), pliState(a, id), setPliState(a, id, { state, at, logged }) (plis
+  //   d'exercice : ouvert, rescellé, ouverture à l'heure notée au journal), envelope() ; déclaration du pilote — LEGEND, availability(TRI),
   //   availabilityAt(décl, ms, famille), saveAvailability(TRI, grille, { toFolder }), saveAircraft(TRI, { owned, mastered }), saveSims(TRI, [sim…]), simulators(),
   //   gridEditor(hôte, grille, onChange) ; outils — geo { nm, brg, icaoOf, coord }, typeOf, cruiseKt, coordsOf(OACI),
   //   ferryOf({ base, departure, type, takeoff, pilot }), fleetTypes(), qualification(décl, TRI, type), slotRange(date, h0, h1),
@@ -40,7 +41,8 @@
     try {
       localStorage.setItem(k, JSON.stringify(v));
     } catch {
-      /* stockage indisponible */ }
+      /* stockage indisponible */
+    }
   };
 
   /** Trigramme de l'utilisateur (profil pilote), en capitales ; '' s'il n'est pas réglé. */
@@ -98,10 +100,14 @@
    *  | 'sealed' (rescellé), at, logged (ouverture à l'heure déjà portée au journal) } ; {} : rien de fait. */
   const PLIS = 'pilotPlis:v2';
   const pliState = (a, id) => json(PLIS, {})[`${key(a)}|${id}`] || {};
+
   function setPliState(a, id, patch) {
     const r = json(PLIS, {}),
       k = `${key(a)}|${id}`;
-    r[k] = { ...(r[k] || {}), ...patch };
+    r[k] = {
+      ...(r[k] || {}),
+      ...patch
+    };
     setJson(PLIS, r);
   }
   /** Remet une mission « non lue » (scellée) : outil du canal develop. */
@@ -111,6 +117,7 @@
     setJson(READ, r);
     envelope();
   }
+
   function markRead(a) {
     const r = json(READ, {});
     r[key(a)] = new Date().toISOString();
@@ -360,11 +367,19 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   function simTag(name) {
     const s = String(name || '').trim(),
       hit = SIM_TAGS.find(([re]) => re.test(s));
-    if (hit) return { abbr: hit[1], color: window.RepositoryNav?.chartColor?.(hit[2]) || hit[2], name: s };
+    if (hit) return {
+      abbr: hit[1],
+      color: window.RepositoryNav?.chartColor?.(hit[2]) || hit[2],
+      name: s
+    };
     const abbr = (s.match(/[A-Z0-9]+/gi) || [s]).map(w => /\d/.test(w) ? w : w[0]).join('').slice(0, 4).toUpperCase();
     let h = 0;
     for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 360;
-    return { abbr, color: `hsl(${h} 45% 42%)`, name: s };
+    return {
+      abbr,
+      color: `hsl(${h} 45% 42%)`,
+      name: s
+    };
   }
   /** Pastilles des simulateurs (abréviation colorée, nom complet au survol). */
   function simChips(list) {
@@ -426,7 +441,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       before = null; // grille au début du geste
     const fill = (d1, h1) => {
       const [da, db] = [Math.min(anchor[0], d1), Math.max(anchor[0], d1)],
-        [ha, hb] = [Math.min(anchor[1], h1), Math.max(anchor[1], h1)];
+      [ha, hb] = [Math.min(anchor[1], h1), Math.max(anchor[1], h1)];
       grid.forEach((row, d) => row.forEach((_, h) => {
         row[h] = d >= da && d <= db && h >= ha && h <= hb ? paint : before[d][h];
       }));
@@ -548,7 +563,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
         };
       }
     } catch {
-      /* base SIA absente */ }
+      /* base SIA absente */
+    }
     for (const m of json('missionRegistry:v1', {})?.missions || [])
       for (const p of [m.origin, m.destination])
         if (p && typeof p === 'object' && geo.icaoOf(p) && Number.isFinite(+p.lat)) airports[geo.icaoOf(p)] ||= {
@@ -588,7 +604,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   }
   /** Terrain connu (registre, base SIA) : à appeler avec l'origine d'une mission pour éviter une recherche. */
   const rememberAirport = (code, p) => {
-    if (code && p && Number.isFinite(+p.lat)) (airports ||= {})[code] ||= {
+    if (code && p && Number.isFinite(+p.lat))(airports ||= {})[code] ||= {
       lat: +p.lat,
       lon: +p.lon
     };
@@ -885,7 +901,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     for (const [k, v] of Object.entries(SYNONYMS))
       if (types.includes(v)) add(k, v);
     for (const f of window.DEFA_FLEET || [])
-      for (const w of String(f.variant || '').split(/\s+/)) if (/^[a-zé]{4,}$/i.test(w)) add(w, typeOf(f.type));
+      for (const w of String(f.variant || '').split(/\s+/))
+        if (/^[a-zé]{4,}$/i.test(w)) add(w, typeOf(f.type));
     // modèle : la référence à tiret (EC-725, C-130H) et le nom propre final (Rafale, Hercules, Sentry)
     for (const ty of types) {
       const words = String(db[ty]?.model || '').split(/\s+/);
@@ -1062,7 +1079,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
           mode: 'readwrite'
         })) === 'granted') return st.handle;
     } catch {
-      /* dossier déplacé */ }
+      /* dossier déplacé */
+    }
     try {
       return await FA.pickFolder('__missions');
     } catch (e) {
@@ -1076,7 +1094,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       const letter = String(mission.id || '').charAt(0),
         fam = [];
       for await (const [n, x] of dir.entries())
-        if (x.kind === 'directory' && n.startsWith(letter + '_')) fam.push(n);
+      if (x.kind === 'directory' && n.startsWith(letter + '_')) fam.push(n);
       folder = `${fam[0] || `${letter}_${String(mission.type || 'MISSION').toUpperCase()}`}/${mission.id}`;
     }
     let h = dir;
@@ -1150,7 +1168,12 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       if (!old) out.push(line('affecte', p));
       else if ((old.aircraft?.registration || '') !== (p.aircraft?.registration || '') || (old.callsign || '') !== (p.callsign || '') || old.takeoff !== p.takeoff) out.push(line('modifie', p));
       if (p.ferry?.pilot && p.ferry.pilot !== p.pilot && p.ferry.takeoff && !(old?.ferry?.pilot === p.ferry.pilot)) out.push({
-        ...line('convoyage', { ...p, pilot: p.ferry.pilot, takeoff: p.ferry.takeoff, callsign: '' }, 'convoyage'),
+        ...line('convoyage', {
+          ...p,
+          pilot: p.ferry.pilot,
+          takeoff: p.ferry.takeoff,
+          callsign: ''
+        }, 'convoyage'),
         for_pilot: p.pilot
       });
     }
@@ -1166,7 +1189,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     try {
       log = JSON.parse(await (await (await dir.getFileHandle(LOG_FILE)).getFile()).text());
     } catch {
-      /* premier journal */ }
+      /* premier journal */
+    }
     log.entries = [...(log.entries || []), ...entries];
     log.updatedAt = entries[entries.length - 1].at;
     const w = await (await dir.getFileHandle(LOG_FILE, {
@@ -1202,7 +1226,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       const f = await (await d.getFileHandle(parts[parts.length - 1])).getFile();
       return as === 'url' ? URL.createObjectURL(f) : await f.text();
     } catch {
-      /* absent du dossier autorisé : copie servie */ }
+      /* absent du dossier autorisé : copie servie */
+    }
     const url = new URL(`data/missions/${folder}/${name}`, root()).href;
     try {
       const r = await fetch(url, {
@@ -1218,7 +1243,10 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   async function missionFirst(folder, names, opts) {
     for (const n of [...new Set(names.filter(Boolean))]) {
       const v = await missionFile(folder, n, opts);
-      if (v != null) return { name: n, value: v };
+      if (v != null) return {
+        name: n,
+        value: v
+      };
     }
     return null;
   }
@@ -1244,7 +1272,12 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   /** Phrase d'une entrée : « 01/10 10:35 · DCP affecte M-002 à RBR (H145 F-ZBPO, DRAGON05, décollage 30/09 08:00Z) ». */
   function logText(e) {
     const d = s => s ? new Date(s).toISOString().slice(5, 16).replace(/(\d\d)-(\d\d)T/, '$2/$1 ') : '';
-    const what = { affecte: 'affecte', modifie: 'modifie', retire: 'retire', convoyage: 'confie le convoyage de' }[e.action] || e.action;
+    const what = {
+      affecte: 'affecte',
+      modifie: 'modifie',
+      retire: 'retire',
+      convoyage: 'confie le convoyage de'
+    } [e.action] || e.action;
     const detail = [e.aircraft, e.callsign, e.takeoff && `décollage ${d(e.takeoff)}Z`].filter(Boolean).join(', ');
     if (e.action === 'retire') return `${d(e.at)} · ${e.by || '?'} retire ${e.pilot} de ${e.mission}`;
     return `${d(e.at)} · ${e.by || '?'} ${what} ${e.mission} à ${e.pilot}${e.for_pilot ? ` (pour ${e.for_pilot})` : ''}${detail ? ` (${detail})` : ''}`;
@@ -1280,7 +1313,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     try {
       idx = JSON.parse(await (await (await dir.getFileHandle('affectations.json')).getFile()).text());
     } catch {
-      /* premier index */ }
+      /* premier index */
+    }
     const common = {
       mission: mission.id,
       title: mission.title || '',

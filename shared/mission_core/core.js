@@ -908,7 +908,8 @@
       try {
         est = (JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions || []).find(x => x.id === id)?.estimate || null;
       } catch {
-        /* registre illisible */ }
+        /* registre illisible */
+      }
       const real = M.computeStatistics(mission).flightMinutes,
         diff = est && real > 0 ? Math.round(real - est.flight) : null;
       const estText = est ? ` · ${esc(t('estimated'))} ${esc(duration(est.flight))}${real > 0 ? ` — ${esc(t('thisFlight'))} ${esc(duration(real))} (${diff >= 0 ? '+' : '−'}${Math.abs(diff)} min, ${diff >= 0 ? '+' : '−'}${Math.abs(Math.round(diff / est.flight * 100))} %)` : ''}` : '';

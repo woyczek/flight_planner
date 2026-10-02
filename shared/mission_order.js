@@ -49,7 +49,8 @@
     try {
       localStorage.setItem(k, JSON.stringify(v));
     } catch {
-      /* stockage indisponible */ }
+      /* stockage indisponible */
+    }
   };
 
   /** Familles et sous-types : § 2 du prompt de génération (source unique : docs/PROMPT_GENERATEUR_MISSIONS.md). */
@@ -220,7 +221,8 @@
       await navigator.clipboard.writeText(p);
       copied = true;
     } catch {
-      /* refus du navigateur */ }
+      /* refus du navigateur */
+    }
     window.open(p.length < 7000 ? `https://chatgpt.com/?q=${encodeURIComponent(p)}` : 'https://chatgpt.com/', '_blank', 'noopener');
     if (out) {
       if (copied) out.textContent = t(['Prompt copié ({n} caractères) : dans ChatGPT, coller (Ctrl+V) puis envoyer.', 'Prompt copied ({n} characters): paste it in ChatGPT (Ctrl+V) and send.', 'Prompt kopiert ({n} Zeichen): in ChatGPT einfügen (Strg+V) und senden.', 'Prompt copiado ({n} caracteres): pegarlo en ChatGPT (Ctrl+V) y enviar.'], {

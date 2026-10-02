@@ -1,29 +1,115 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Premier lancement</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=9fd5d2aa"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=f33b51fd">
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=d774850b"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=7e4ed0f1">
 <script src="../../config/repository_tree?v=014ce40b"></script>
 <style>
-  main.pl-page{max-width:980px;margin:18px auto;padding:0 16px 48px}
-  main.pl-page>section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:0 0 16px}
-  main.pl-page h2{font-size:17px;margin:0 0 4px;display:flex;align-items:center;gap:10px}
-  .pl-n{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--accent,#2f6fd6);color:#fff;font-size:14px;flex:none}
-  section.pl-done .pl-n{background:var(--ok,#2e9d5b)}
-  .pl-state{font-weight:600;margin:6px 0 10px}
-  .pl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
-  .pl-card{border:1px solid var(--line);border-radius:10px;padding:12px 14px}
-  .pl-card h3{margin:0 0 8px;font-size:14.5px}
-  .pl-form{display:grid;grid-template-columns:auto 1fr;gap:8px 10px;align-items:center}
-  .pl-form label{font-size:13px}
-  .pl-form input[type=text],.pl-form input[type=password]{width:100%;box-sizing:border-box}
-  .pl-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0 0}
-  .pl-msg{white-space:pre-line;font-size:13px;margin:8px 0 0}
-  .pl-msg.ok{color:var(--ok,#2e9d5b)}.pl-msg.err{color:var(--bad,#c62828)}
-  .pl-hint{font-size:12.5px;opacity:.8;margin:6px 0 0}
+  main.pl-page {
+    max-width: 980px;
+    margin: 18px auto;
+    padding: 0 16px 48px
+  }
+  main.pl-page>section {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin: 0 0 16px
+  }
+  main.pl-page h2 {
+    font-size: 17px;
+    margin: 0 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px
+  }
+  .pl-n {
+    display: inline-grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--accent, #2f6fd6);
+    color: #fff;
+    font-size: 14px;
+    flex: none
+  }
+  section.pl-done .pl-n {
+    background: var(--ok, #2e9d5b)
+  }
+  .pl-state {
+    font-weight: 600;
+    margin: 6px 0 10px
+  }
+  .pl-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px
+  }
+  .pl-card {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px
+  }
+  .pl-card h3 {
+    margin: 0 0 8px;
+    font-size: 14.5px
+  }
+  .pl-form {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 10px;
+    align-items: center
+  }
+  .pl-form label {
+    font-size: 13px
+  }
+  .pl-form input[type=text],
+  .pl-form input[type=password] {
+    width: 100%;
+    box-sizing: border-box
+  }
+  .pl-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin: 10px 0 0
+  }
+  .pl-msg {
+    white-space: pre-line;
+    font-size: 13px;
+    margin: 8px 0 0
+  }
+  .pl-msg.ok {
+    color: var(--ok, #2e9d5b)
+  }
+  .pl-msg.err {
+    color: var(--bad, #c62828)
+  }
+  .pl-hint {
+    font-size: 12.5px;
+    opacity: .8;
+    margin: 6px 0 0
+  }
   /* recommencer : avertissement bordeaux */
-  .pl-warn{border:1px solid #7a1f2b;border-left:5px solid #7a1f2b;background:color-mix(in srgb,#7a1f2b 9%,transparent);border-radius:8px;padding:10px 14px;margin:8px 0 10px;color:inherit}
-  .pl-warn b{color:#7a1f2b}
-  button.pl-danger{background:#7a1f2b;border-color:#5c1520;color:#fff}
+  .pl-warn {
+    border: 1px solid #7a1f2b;
+    border-left: 5px solid #7a1f2b;
+    background: color-mix(in srgb, #7a1f2b 9%, transparent);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 8px 0 10px;
+    color: inherit
+  }
+  .pl-warn b {
+    color: #7a1f2b
+  }
+  button.pl-danger {
+    background: #7a1f2b;
+    border-color: #5c1520;
+    color: #fff
+  }
 </style>
 </head><body>
 <!-- Premier lancement : page ouverte par le lanceur (lancer.cmd / lancer.sh → tools/launch.py). Quatre étapes :
@@ -114,22 +200,40 @@
     <div class="pl-row"><button type="button" class="pl-danger" id="plClean">Nettoyer et recommencer…</button></div>
   </section>
 </main>
-<script src="../../shared/kit.js?v=d0c3ca5f"></script>
-<script src="../../shared/repository_nav.js?v=a5ef0693"></script>
+<script src="../../shared/kit.js?v=a2ce6913"></script>
+<script src="../../shared/repository_nav.js?v=9aa760c7"></script>
 <script src="../../shared/content_i18n.js?v=2d61c23a"></script><script src="premier_lancement_i18n.js?v=c7b76b9d"></script>
-<script src="../../shared/app_framework.js?v=608608cc"></script>
+<script src="../../shared/app_framework.js?v=a2972a9a"></script>
 <script>
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
   const notify = (m, k) => window.AppFramework?.notify ? window.AppFramework.notify(m, k) : alert(m);
-  const DONE = 'suiteSetup:v1', PROFILE = 'missionReportingConfig:v1', DEFA = 'defaCredentials:v1';
-  const api = (path, opts = {}) => fetch(`/__setup/${path}`, { ...opts, headers: { 'X-DEFA-Setup': '1', ...(opts.headers || {}) }, cache: 'no-store' })
+  const DONE = 'suiteSetup:v1',
+    PROFILE = 'missionReportingConfig:v1',
+    DEFA = 'defaCredentials:v1';
+  const api = (path, opts = {}) => fetch(`/__setup/${path}`, {
+      ...opts,
+      headers: {
+        'X-DEFA-Setup': '1',
+        ...(opts.headers || {})
+      },
+      cache: 'no-store'
+    })
     .then(r => r.ok ? r.json() : Promise.reject(new Error(r.status === 404 ? 'lanceur absent' : `${r.status}`)));
-  const msg = (id, text, kind) => { const el = $(id); el.textContent = text || ''; el.className = `pl-msg ${kind || ''}`; };
+  const msg = (id, text, kind) => {
+    const el = $(id);
+    el.textContent = text || '';
+    el.className = `pl-msg ${kind || ''}`;
+  };
   // actions par délégation : le framework reconstruit les blocs (disposition mémorisée), les nœuds d'origine disparaissent
-  const handlers = { click: {}, change: {} };
-  const on = (type, id, fn) => { handlers[type][id] = fn; };
+  const handlers = {
+    click: {},
+    change: {}
+  };
+  const on = (type, id, fn) => {
+    handlers[type][id] = fn;
+  };
   for (const type of Object.keys(handlers)) document.addEventListener(type, e => {
     const el = e.target.closest?.('[id], [data-pick]');
     if (!el) return;
@@ -137,61 +241,105 @@
     handlers[type][el.id]?.(e);
   });
   const done = (id, yes) => $(id).classList.toggle('pl-done', !!yes);
-  const read = k => { try { return JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch { return {}; } };
+  const read = k => {
+    try {
+      return JSON.parse(localStorage.getItem(k) || '{}') || {};
+    } catch {
+      return {};
+    }
+  };
 
   // 1. données
   async function dataState() {
     let st;
-    try { st = await api('status'); } catch {
+    try {
+      st = await api('status');
+    } catch {
       $('plDataState').textContent = 'Pour cette étape, ouvrez la suite avec le lanceur (lancer.cmd sous Windows, sh lancer.sh sous macOS / Linux).';
       return;
     }
     done('plData', st.data);
     $('plLogCard').hidden = !st.data;
     $('plDataForms').hidden = st.data;
-    $('plDataState').textContent = st.data ? `Données présentes${st.dataGit ? ' (dépôt git, mis à jour à chaque lancement)' : ''}.`
-      : st.git ? 'Pas encore de données : identifiants framagit, ou archive reçue par mail.' : 'Pas encore de données. Git n’est pas installé : archive reçue par mail (ou installer Git, puis relancer).';
+    $('plDataState').textContent = st.data ? `Données présentes${st.dataGit ? ' (dépôt git, mis à jour à chaque lancement)' : ''}.` :
+      st.git ? 'Pas encore de données : identifiants framagit, ou archive reçue par mail.' : 'Pas encore de données. Git n’est pas installé : archive reçue par mail (ou installer Git, puis relancer).';
     $('plClone').disabled = !st.git;
   }
   on('click', 'plClone', async () => {
-    const user = $('plUser').value.trim(), secret = $('plSecret').value;
+    const user = $('plUser').value.trim(),
+      secret = $('plSecret').value;
     if (!user || !secret) return msg('plCloneMsg', 'Identifiant et mot de passe (ou jeton) nécessaires.', 'err');
     $('plClone').disabled = true;
     msg('plCloneMsg', 'Téléchargement des données… (quelques minutes la première fois)');
     try {
-      const r = await api('clone', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user, secret, remember: $('plRemember').checked }) });
+      const r = await api('clone', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          user,
+          secret,
+          remember: $('plRemember').checked
+        })
+      });
       msg('plCloneMsg', r.message, r.ok ? 'ok' : 'err');
-      if (r.ok) { $('plSecret').value = ''; dataState(); }
-    } catch (e) { msg('plCloneMsg', `Échec : ${e.message}`, 'err'); }
+      if (r.ok) {
+        $('plSecret').value = '';
+        dataState();
+      }
+    } catch (e) {
+      msg('plCloneMsg', `Échec : ${e.message}`, 'err');
+    }
     $('plClone').disabled = false;
   });
   const upload = (id, kind, out, after) => on('change', id, async e => {
-    const input = e.target, f = input.files?.[0];
+    const input = e.target,
+      f = input.files?.[0];
     input.value = '';
     if (!f) return;
     msg(out, `Envoi de ${f.name}…`);
     try {
-      const r = await api(`upload?kind=${kind}`, { method: 'POST', body: f });
+      const r = await api(`upload?kind=${kind}`, {
+        method: 'POST',
+        body: f
+      });
       msg(out, r.message, r.ok ? 'ok' : 'err');
       if (r.ok) after?.();
-    } catch (e) { msg(out, `Échec : ${e.message}`, 'err'); }
+    } catch (e) {
+      msg(out, `Échec : ${e.message}`, 'err');
+    }
   });
   upload('plZip', 'data', 'plZipMsg', dataState);
   upload('plLog', 'log', 'plLogMsg');
 
   // 2. profil
   function profileLoad() {
-    const p = read(PROFILE), d = read(DEFA);
-    $('plTri').value = p.trigram || ''; $('plIvao').value = p.ivaoId || ''; $('plVatsim').value = p.vatsimId || ''; $('plSimbrief').value = p.simbriefUser || '';
-    $('plDefaLogin').value = d.login || ''; $('plDefaPass').value = d.password || '';
+    const p = read(PROFILE),
+      d = read(DEFA);
+    $('plTri').value = p.trigram || '';
+    $('plIvao').value = p.ivaoId || '';
+    $('plVatsim').value = p.vatsimId || '';
+    $('plSimbrief').value = p.simbriefUser || '';
+    $('plDefaLogin').value = d.login || '';
+    $('plDefaPass').value = d.password || '';
     done('plProfile', p.trigram);
   }
   on('click', 'plSaveProfile', () => {
     const p = read(PROFILE);
-    Object.assign(p, { trigram: $('plTri').value.trim().toUpperCase(), ivaoId: $('plIvao').value.trim(), vatsimId: $('plVatsim').value.trim(), simbriefUser: $('plSimbrief').value.trim() });
+    Object.assign(p, {
+      trigram: $('plTri').value.trim().toUpperCase(),
+      ivaoId: $('plIvao').value.trim(),
+      vatsimId: $('plVatsim').value.trim(),
+      simbriefUser: $('plSimbrief').value.trim()
+    });
     localStorage.setItem(PROFILE, JSON.stringify(p));
-    const login = $('plDefaLogin').value.trim(), password = $('plDefaPass').value;
-    if (login || password) localStorage.setItem(DEFA, JSON.stringify({ login, password }));
+    const login = $('plDefaLogin').value.trim(),
+      password = $('plDefaPass').value;
+    if (login || password) localStorage.setItem(DEFA, JSON.stringify({
+      login,
+      password
+    }));
     else localStorage.removeItem(DEFA);
     msg('plProfileMsg', 'Profil enregistré.', 'ok');
     done('plProfile', p.trigram);
@@ -201,7 +349,9 @@
   async function foldersState() {
     const FA = window.FileAccess;
     if (!FA) return;
-    const repo = await FA.status('__repo'), odvDir = await FA.status('__odv'), odvFile = await FA.get('__odvFile');
+    const repo = await FA.status('__repo'),
+      odvDir = await FA.status('__odv'),
+      odvFile = await FA.get('__odvFile');
     done('plFolders', repo.handle);
     msg('plRepoMsg', repo.handle ? `Choisi : ${repo.name}` : '', repo.handle ? 'ok' : '');
     msg('plOdvMsg', odvDir.handle ? `Dossier : ${odvDir.name}` : odvFile ? `Classeur gardé : ${odvFile.name || 'classeur'}` : '', odvDir.handle || odvFile ? 'ok' : '');
@@ -228,7 +378,9 @@
 
   // 4. fin : mise à jour SIA
   on('click', 'plFinish', () => {
-    localStorage.setItem(DONE, JSON.stringify({ at: new Date().toISOString() }));
+    localStorage.setItem(DONE, JSON.stringify({
+      at: new Date().toISOString()
+    }));
     location.href = 'parametrage.html?m=sia';
   });
 
@@ -236,7 +388,8 @@
   on('click', 'plClean', async () => {
     if (!await window.AppFramework.ask('Nettoyer les réglages du premier lancement dans ce navigateur (dossiers mémorisés, classeur ODV gardé, identifiants DEFA, profil) ? Les fichiers sur le disque ne sont pas touchés.')) return;
     const FA = window.FileAccess;
-    if (FA) for (const key of [...Object.keys(FA.FOLDERS), '__odvFile']) await FA.set(key, null);
+    if (FA)
+      for (const key of [...Object.keys(FA.FOLDERS), '__odvFile']) await FA.set(key, null);
     localStorage.removeItem(DONE);
     localStorage.removeItem(DEFA);
     const p = read(PROFILE);
@@ -247,7 +400,15 @@
 
   // déjà réglée : l'accueil (lanceur relancé), sauf ?force
   async function start() {
-    const FA = await new Promise(res => { let n = 0; const t = setInterval(() => { if (window.FileAccess || ++n > 40) { clearInterval(t); res(window.FileAccess); } }, 50); });
+    const FA = await new Promise(res => {
+      let n = 0;
+      const t = setInterval(() => {
+        if (window.FileAccess || ++n > 40) {
+          clearInterval(t);
+          res(window.FileAccess);
+        }
+      }, 50);
+    });
     if (localStorage.getItem(DONE) && !new URLSearchParams(location.search).has('force') && FA && (await FA.status('__repo')).handle) {
       location.replace('../../index.html');
       return;
@@ -258,7 +419,9 @@
     // Paramètres › Sources et dossiers › « Nettoyer et recommencer… » : même nettoyage, confirmé ici
     if (new URLSearchParams(location.search).has('clean')) {
       history.replaceState(null, '', 'premier_lancement.html?force');
-      document.getElementById('plReset').scrollIntoView({ block: 'center' });
+      document.getElementById('plReset').scrollIntoView({
+        block: 'center'
+      });
       document.getElementById('plClean').click();
     }
   }

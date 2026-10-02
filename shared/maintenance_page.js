@@ -48,7 +48,8 @@
     try {
       localStorage.setItem(k, JSON.stringify(v));
     } catch {
-      /* quota */ }
+      /* quota */
+    }
   };
   const root = () => window.RepositoryNav?.root || new URL('../', location.href).href;
   /** Attend un composant chargé à la demande par repository_nav.js (FileAccess, LocalStore, SuiteUpdate). */
@@ -127,7 +128,8 @@
             file: await h.getFile()
           });
         } catch {
-          /* verrouillé */ }
+          /* verrouillé */
+        }
       }
     }
     return out;
@@ -145,7 +147,7 @@
         await window.FileAccess.pickFolder(key);
         after?.();
       } catch (e) {
-        if (e?.name !== 'AbortError' && e?.message !== 'Dossier refusé') (window.AppFramework?.notify || alert)(e.message, 'warn');
+        if (e?.name !== 'AbortError' && e?.message !== 'Dossier refusé')(window.AppFramework?.notify || alert)(e.message, 'warn');
       }
     };
     waitFor('FileAccess').then(FA => FA?.decorate(b, key, {
@@ -451,7 +453,8 @@
           b.textContent = '✓';
           setTimeout(() => b.textContent = t(['Copier', 'Copy', 'Kopieren', 'Copiar']), 1500);
         } catch {
-          /* refus */ }
+          /* refus */
+        }
       };
       pre.before(b);
     });
@@ -491,14 +494,15 @@
     try {
       local = JSON.parse(localStorage.getItem('suiteSources:v1') || '{}') || {};
     } catch {
-      /* illisible */ }
+      /* illisible */
+    }
     const eff = window.Airac?.cycle?.();
     const openUrl = (k, u) => k === 'siaCycle' && eff ? eff.url : u;
     // premier lancement (lanceur lancer.cmd / lancer.sh : ?m=sources&setup=1) : un seul choix, le dossier du dépôt
     const setup = SETUP;
     const repo = await FA.status('__repo');
-    const setupBox = !setup ? '' : repo.handle ? `<div class="repo-notice mt-setup ok"><b>${esc(t(['Dossiers réglés.', 'Folders set.', 'Ordner eingestellt.', 'Carpetas configuradas.']))}</b> ${esc(t(['Le dossier de l’application est choisi : données, registre, missions, SIA, performances et sauvegarde locale en sont déduits. Il reste à dérouler les mises à jour.', 'The application folder is chosen: data, ledger, missions, SIA, performance and local backup are derived from it. What is left: run the updates.', 'Der Anwendungsordner ist gewählt: Daten, Register, Missionen, SIA, Leistung und lokale Sicherung werden daraus abgeleitet. Bleiben die Updates.', 'La carpeta de la aplicación está elegida: datos, registro, misiones, SIA, rendimiento y copia local se deducen de ella. Quedan las actualizaciones.']))} <a href="?m=updates">${esc(t(['Mises à jour →', 'Updates →', 'Updates →', 'Actualizaciones →']))}</a></div>`
-      : `<div class="repo-notice mt-setup"><b>${esc(t(['Premier lancement : une seule étape.', 'First run: one single step.', 'Erster Start: ein einziger Schritt.', 'Primer inicio: un solo paso.']))}</b> ${esc(t(['Cliquez sur le bouton de la première ligne, « Dossier du dépôt », et choisissez le dossier de l’application (celui qui contient lancer.cmd et lancer.sh). Les autres dossiers en sont déduits.', 'Click the button on the first row, “Repository folder”, and choose the application folder (the one containing lancer.cmd and lancer.sh). The other folders are derived from it.', 'Klicken Sie in der ersten Zeile „Repository-Ordner“ und wählen Sie den Anwendungsordner (mit lancer.cmd und lancer.sh). Die anderen Ordner werden daraus abgeleitet.', 'Pulse el botón de la primera fila, «Carpeta del repositorio», y elija la carpeta de la aplicación (la que contiene lancer.cmd y lancer.sh). Las demás carpetas se deducen de ella.']))}</div>`;
+    const setupBox = !setup ? '' : repo.handle ? `<div class="repo-notice mt-setup ok"><b>${esc(t(['Dossiers réglés.', 'Folders set.', 'Ordner eingestellt.', 'Carpetas configuradas.']))}</b> ${esc(t(['Le dossier de l’application est choisi : données, registre, missions, SIA, performances et sauvegarde locale en sont déduits. Il reste à dérouler les mises à jour.', 'The application folder is chosen: data, ledger, missions, SIA, performance and local backup are derived from it. What is left: run the updates.', 'Der Anwendungsordner ist gewählt: Daten, Register, Missionen, SIA, Leistung und lokale Sicherung werden daraus abgeleitet. Bleiben die Updates.', 'La carpeta de la aplicación está elegida: datos, registro, misiones, SIA, rendimiento y copia local se deducen de ella. Quedan las actualizaciones.']))} <a href="?m=updates">${esc(t(['Mises à jour →', 'Updates →', 'Updates →', 'Actualizaciones →']))}</a></div>` :
+      `<div class="repo-notice mt-setup"><b>${esc(t(['Premier lancement : une seule étape.', 'First run: one single step.', 'Erster Start: ein einziger Schritt.', 'Primer inicio: un solo paso.']))}</b> ${esc(t(['Cliquez sur le bouton de la première ligne, « Dossier du dépôt », et choisissez le dossier de l’application (celui qui contient lancer.cmd et lancer.sh). Les autres dossiers en sont déduits.', 'Click the button on the first row, “Repository folder”, and choose the application folder (the one containing lancer.cmd and lancer.sh). The other folders are derived from it.', 'Klicken Sie in der ersten Zeile „Repository-Ordner“ und wählen Sie den Anwendungsordner (mit lancer.cmd und lancer.sh). Die anderen Ordner werden daraus abgeleitet.', 'Pulse el botón de la primera fila, «Carpeta del repositorio», y elija la carpeta de la aplicación (la que contiene lancer.cmd y lancer.sh). Las demás carpetas se deducen de ella.']))}</div>`;
     host.innerHTML = `${setupBox}
       <h3>${esc(t(['Dossiers locaux', 'Local folders', 'Lokale Ordner', 'Carpetas locales']))}</h3>
       <p class="mt-small">${esc(t(['Chaque dossier est choisi une fois (le navigateur mémorise l’autorisation, parfois à reconfirmer après un redémarrage). Les sélecteurs de fichiers des pages s’ouvrent directement dans le dossier correspondant.', 'Each folder is chosen once (the browser remembers the permission, sometimes to be confirmed again after a restart). File pickers open directly in the matching folder.']))}</p>
@@ -557,7 +561,8 @@
     try {
       if (indexedDB.databases && !(await indexedDB.databases()).some(d => d.name === name)) return null;
     } catch {
-      /* API absente */ }
+      /* API absente */
+    }
     return new Promise(resolve => {
       const r = indexedDB.open(name);
       r.onupgradeneeded = () => {
@@ -624,7 +629,8 @@
         lastModified: Date.parse(r.headers.get('last-modified') || '') || 0
       };
     } catch {
-      /* file:// */ }
+      /* file:// */
+    }
     return null;
   }
   let siaFolderState = null,
@@ -918,7 +924,12 @@
     // ZIP du SIA pris dans le dossier Téléchargements par le serveur du lanceur (tools/launch.py, /__setup/sia-zip)
     host.querySelector('#mtSiaFetch').onclick = async () => {
       const say = (m, k = 'warn') => (window.AppFramework?.notify || alert)(m, k);
-      const api = q => fetch(`/__setup/sia-zip${q}`, { headers: { 'X-DEFA-Setup': '1' }, cache: 'no-store' });
+      const api = q => fetch(`/__setup/sia-zip${q}`, {
+        headers: {
+          'X-DEFA-Setup': '1'
+        },
+        cache: 'no-store'
+      });
       let info;
       try {
         const r = await api('?info');
@@ -927,9 +938,14 @@
       } catch {
         return say(t(['Le serveur du lanceur ne répond pas : ouvrez la suite avec lancer.cmd / lancer.sh, ou choisissez le ZIP avec « ZIP d’export du SIA… ».', 'The launcher server does not answer: open the suite with lancer.cmd / lancer.sh, or pick the ZIP with “SIA export ZIP…”.']));
       }
-      if (!info.found) return say(t(['Aucun export_xml_bd_SIA_….zip dans {d} : téléchargez-le d’abord sur le site du SIA (étape 1).', 'No export_xml_bd_SIA_….zip in {d}: download it from the SIA site first (step 1).'], { d: info.where.join(', ') }));
+      if (!info.found) return say(t(['Aucun export_xml_bd_SIA_….zip dans {d} : téléchargez-le d’abord sur le site du SIA (étape 1).', 'No export_xml_bd_SIA_….zip in {d}: download it from the SIA site first (step 1).'], {
+        d: info.where.join(', ')
+      }));
       const blob = await (await api('')).blob();
-      extractZip(new File([blob], info.name, { type: 'application/zip', lastModified: info.mtime * 1000 }));
+      extractZip(new File([blob], info.name, {
+        type: 'application/zip',
+        lastModified: info.mtime * 1000
+      }));
     };
     host.querySelector('#mtArchive')?.addEventListener('click', archiveOld);
     // Bloc commun (SiaBase.panel) créé une fois, replacé à chaque rendu : ses messages restent affichés.
@@ -1383,7 +1399,8 @@
             base: d.dir + '/'
           }));
         } catch {
-          /* absent */ }
+          /* absent */
+        }
       }
       return {
         dir,
@@ -1494,7 +1511,7 @@
         recursive: true
       }]);
     } catch (e) {
-      if (e?.name !== 'AbortError') (window.AppFramework?.notify || alert)(e.message, 'warn');
+      if (e?.name !== 'AbortError')(window.AppFramework?.notify || alert)(e.message, 'warn');
     }
     renderBackup();
   }
@@ -1857,7 +1874,8 @@
     try {
       localStorage.removeItem(k);
     } catch {
-      /* stockage indisponible */ }
+      /* stockage indisponible */
+    }
   });
   /** Recharge depuis le serveur (cache: 'reload') les scripts, styles et repository_tree de la page : le cache HTTP du navigateur est remplacé. */
   async function refreshAppFiles() {
@@ -1874,7 +1892,8 @@
       try {
         for (const k of await caches.keys()) await caches.delete(k);
       } catch {
-        /* file:// */ }
+        /* file:// */
+      }
     }
     return {
       ok,
@@ -1982,7 +2001,8 @@
         u: fmtSize(e.usage)
       });
     } catch {
-      /* API absente */ }
+      /* API absente */
+    }
     const list = CACHES();
     host.innerHTML = `
       <p class="mt-small">${esc(t(['Purger ne supprime aucune donnée utilisateur (registres, brouillons, profils, OFP, sauvegardes) : seulement ce qui se reconstruit seul ou se relit.', 'Purging never removes user data (registries, drafts, profiles, OFPs, backups): only what rebuilds itself or is read again.']))} ${esc(est)}</p>
@@ -2020,7 +2040,8 @@
     cacheMsg = sessionStorage.getItem('mtCacheMsg') || '';
     sessionStorage.removeItem('mtCacheMsg');
   } catch {
-    /* stockage indisponible */ }
+    /* stockage indisponible */
+  }
 
   // ===== Espace disque : place occupée par les missions (par mission, par type, total) et par le navigateur ; purge
   //       des cartes surnuméraires (absentes du YAML) et des cartes générées (régénérables depuis le YAML par le studio).

@@ -104,7 +104,8 @@
           storedAt: new Date().toISOString()
         }));
       } catch {
-        /* quota */ }
+        /* quota */
+      }
     }
     const db = await openDb();
     if (!db) throw new Error('IndexedDB indisponible');
@@ -116,7 +117,8 @@
     try {
       if (base.folderName) localStorage.setItem(FOLDER_NAME, base.folderName);
     } catch {
-      /* quota */ }
+      /* quota */
+    }
   }
   /** Met à jour des champs de la base mémorisée (ex. moraCells après un recalcul) ; faux si elle est absente. */
   async function patch(fields) {
@@ -142,7 +144,8 @@
     try {
       localStorage.removeItem(INFO);
     } catch {
-      /* stockage indisponible */ }
+      /* stockage indisponible */
+    }
     window.dispatchEvent(new CustomEvent('sia-base-change', {
       detail: {
         purged: true
@@ -216,7 +219,8 @@
         checkedAt: new Date().toISOString()
       }));
     } catch {
-      /* quota */ }
+      /* quota */
+    }
     window.dispatchEvent(new CustomEvent('sia-base-change', {
       detail: {
         summary: s
@@ -934,7 +938,8 @@
     for await (const h of dir.values()) if (h.kind === 'file') try {
       out.push(await h.getFile());
     } catch {
-      /* verrouillé */ }
+      /* verrouillé */
+    }
     return out;
   }
   /** Fichier livré avec l'application (shared/carto/) : fetch (page servie en http), sinon dossier de l'application
@@ -944,7 +949,8 @@
       const r = await fetch(appUrl('shared/carto/' + encodeURIComponent(name)));
       if (r.ok) return new File([await r.blob()], name);
     } catch {
-      /* file:// */ }
+      /* file:// */
+    }
     try {
       const st = await window.FileAccess?.status?.('__repo');
       if (st?.handle && st.permission === 'granted') {
@@ -953,7 +959,8 @@
         return await (await d.getFileHandle(name)).getFile();
       }
     } catch {
-      /* absent */ }
+      /* absent */
+    }
     return null;
   }
   const AIRAC_NAME = /^(?:AIXM4\.5_all_FR_OM_|XML_SIA_|sia-airspaces-)(\d{4}-\d{2}-\d{2})\.xml$/i;

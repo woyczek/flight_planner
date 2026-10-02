@@ -147,7 +147,8 @@
         }));
         done.push(key);
       } catch {
-        /* lecture seule */ }
+        /* lecture seule */
+      }
     }
     return done;
   }
@@ -166,7 +167,8 @@
       const data = await get('__data');
       if (data) await deriveFromData(data);
     } catch {
-      /* stockage indisponible */ }
+      /* stockage indisponible */
+    }
   })();
 
   /** Vrai si le dossier contient le fichier (chemin relatif, sous-dossiers compris : « config/repository_tree »). */
@@ -193,7 +195,8 @@
         done.push('__data', ...await deriveFromData(data));
       }
     } catch {
-      /* pas de data/ : données par exemples ou par archive, à choisir à part */ }
+      /* pas de data/ : données par exemples ou par archive, à choisir à part */
+    }
     if (!await get('__store')) {
       await set('__store', repo);
       done.push('__store');

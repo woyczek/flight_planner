@@ -4,6 +4,9 @@
   // Le classeur n'est gardé qu'en mémoire (variable book) : rien dans le stockage du navigateur hormis les réglages
   // (odvPlanning:v1) ; « Effacer les données » le libère. Avertissements de lecture : notifications flottantes
   // (AppFramework.notify) et liste du rapport de lecture. Tableaux : SortedTable (shared/mission_table.js).
+  // Fenêtre d'un créneau (pickMission) : matrice missions × postes ; une opération à plusieurs missions (exercice) tient
+  // sur une ligne, heure H commune et décalage par équipage ; « Modifier » rouvre les missions enregistrées du créneau ;
+  // une mission par pilote et par tranche (convoyeurs compris). Textes : RepositoryKit.tf (4 langues).
   const C = window.OdvCore;
   const $ = id => document.getElementById(id);
   const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
@@ -35,7 +38,8 @@
     try {
       localStorage.setItem(KEY, JSON.stringify(settings));
     } catch {
-      /* stockage indisponible */ }
+      /* stockage indisponible */
+    }
   };
   let settings = loadSettings();
 
@@ -61,12 +65,14 @@
   try {
     Object.assign(view, JSON.parse(localStorage.getItem(VIEW_KEY) || '{}') || {});
   } catch {
-    /* stockage refusé ou illisible : valeurs par défaut */ }
+    /* stockage refusé ou illisible : valeurs par défaut */
+  }
   const saveView = () => {
     try {
       localStorage.setItem(VIEW_KEY, JSON.stringify(view));
     } catch {
-      /* stockage refusé */ }
+      /* stockage refusé */
+    }
   };
   const tables = {};
 
@@ -89,6 +95,7 @@
       y = Date.UTC(d.getUTCFullYear(), 0, 4);
     return 1 + Math.round((d - mondayOf(y)) / 6048e5);
   };
+
   function emptyWeek() {
     const mon = shownMonday();
     if (virtual && virtual.dates[0] === isoDay(mon)) return virtual;
@@ -339,7 +346,9 @@
     const mon = shownMonday(),
       cur = mondayOf(Date.now()),
       xm = xlMonday();
-    const src = xm === mon ? L(['classeur {f}', 'workbook {f}', 'Arbeitsmappe {f}', 'libro {f}'], { f: fileName }) : L(['déclarations des pilotes et affectations (pas de classeur pour cette semaine)', 'pilot declarations and assignments (no workbook for this week)', 'Pilotenangaben und Zuweisungen (keine Arbeitsmappe für diese Woche)', 'declaraciones de los pilotos y asignaciones (sin libro para esta semana)']);
+    const src = xm === mon ? L(['classeur {f}', 'workbook {f}', 'Arbeitsmappe {f}', 'libro {f}'], {
+      f: fileName
+    }) : L(['déclarations des pilotes et affectations (pas de classeur pour cette semaine)', 'pilot declarations and assignments (no workbook for this week)', 'Pilotenangaben und Zuweisungen (keine Arbeitsmappe für diese Woche)', 'declaraciones de los pilotos y asignaciones (sin libro para esta semana)']);
     host.innerHTML = `<button type="button" class="secondary" data-wk="-1">◀ ${L(['Semaine précédente', 'Previous week', 'Vorherige Woche', 'Semana anterior'])}</button>
       <b>${L(['Semaine {n} — du {a} au {b}', 'Week {n} — from {a} to {b}', 'Woche {n} — vom {a} bis {b}', 'Semana {n} — del {a} al {b}'], { n: isoWeekNo(mon), a: esc(dateFr(isoDay(mon))), b: esc(dateFr(isoDay(mon + 6 * 864e5))) })}</b> <span class="mut">${esc(src)}</span>
       <button type="button" class="secondary" data-wk="1">${L(['Semaine suivante', 'Next week', 'Nächste Woche', 'Semana siguiente'])} ▶</button>${mon !== cur ? `<button type="button" class="ghost" data-wk="now">${L(['Cette semaine', 'This week', 'Diese Woche', 'Esta semana'])}</button>` : ''}${xm != null && xm !== mon ? `<button type="button" class="ghost" data-wk="xl">${L(['Semaine du classeur', 'Workbook week', 'Woche der Arbeitsmappe', 'Semana del libro'])}</button>` : ''}`;
@@ -366,13 +375,15 @@
     try {
       list = window.jsyaml.load(JSON.parse(localStorage.getItem('missionCoreLedger:v2') || 'null')?.text || '')?.missions || [];
     } catch {
-      /* registre illisible */ }
+      /* registre illisible */
+    }
     if (!list.length) try {
       list = window.jsyaml.load(await (await fetch(new URL('data/cr/missions.yaml', root).href, {
         cache: 'no-store'
       })).text())?.missions || [];
     } catch {
-      /* pas de registre servi */ }
+      /* pas de registre servi */
+    }
     plays = {};
     for (const m of list)
       if (m?.family) plays[fold(m.family)] = (plays[fold(m.family)] || 0) + 1;
@@ -1012,7 +1023,8 @@
         units.get(key).push(m);
       }
       for (const [key, ms] of units) {
-        const rows = [], planes = [];
+        const rows = [],
+          planes = [];
         // exercice : une seule heure H ; chaque équipage décolle à H + son décalage (participants de la …Z : « H-20mn »)
         const z = key.startsWith('op:') ? all.find(x => x.id === `${key.slice(3)}Z`) : null,
           parts = (z ? await O.yamlOf(z).catch(() => null) : null)?.exercise?.participants || [],
@@ -1020,7 +1032,17 @@
         for (const m of ms) {
           const dep = await M.departureOf(await O.yamlOf(m).catch(() => ({})), m);
           for (const post of M.postsOf(m)) {
-            rows.push({ post, mid: m.id, dep, off: offOf(post.callsign, m.id), block: blockOf(m), pilot: '', registration: '', callsign: post.callsign || '', ferryPilot: '' });
+            rows.push({
+              post,
+              mid: m.id,
+              dep,
+              off: offOf(post.callsign, m.id),
+              block: blockOf(m),
+              pilot: '',
+              registration: '',
+              callsign: post.callsign || '',
+              ferryPilot: ''
+            });
             planes.push(await planeList(post, dep));
           }
         }
@@ -1028,7 +1050,9 @@
           ...ms[0],
           id: key.slice(3),
           title: ms[0].operation?.name || ms[0].title,
-          estimate: { block: Math.max(...ms.map(blockOf)) }
+          estimate: {
+            block: Math.max(...ms.map(blockOf))
+          }
         } : ms[0];
         // enregistrée sur ce créneau : postes remplis avec ses lignes (pilote, appareil, indicatif, convoyage), décollage
         // repris (heure H d'une opération : décollage moins le décalage)
@@ -1037,8 +1061,18 @@
           const line = here.find(a => a.mission === r.mid && (!r.callsign || a.callsign === r.callsign) && !rows.some(o => o !== r && o.pilot === a.pilot)) ||
             here.find(a => a.mission === r.mid && !rows.some(o => o !== r && o.pilot === a.pilot));
           if (!line) continue;
-          Object.assign(r, { pilot: line.pilot || '', registration: line.aircraft?.registration || '', callsign: line.callsign || r.callsign });
-          if (line.ferry) Object.assign(r, line.ferry.open ? { ferryOpen: true } : line.ferry.pilot && line.ferry.pilot !== line.pilot ? { ferryPilot: line.ferry.pilot } : { ferrySelf: true });
+          Object.assign(r, {
+            pilot: line.pilot || '',
+            registration: line.aircraft?.registration || '',
+            callsign: line.callsign || r.callsign
+          });
+          if (line.ferry) Object.assign(r, line.ferry.open ? {
+            ferryOpen: true
+          } : line.ferry.pilot && line.ferry.pilot !== line.pilot ? {
+            ferryPilot: line.ferry.pilot
+          } : {
+            ferrySelf: true
+          });
           if (takeoffSet == null && Date.parse(line.takeoff || '')) takeoffSet = Date.parse(line.takeoff) - (r.off || 0) * 6e4;
         }
         d.set(m.id, {
@@ -1064,6 +1098,7 @@
       initial = snap();
     }
     const planeOf = reg => (window.DEFA_FLEET || []).find(f => f.registration === reg);
+
     function render() {
       const {
         free,
@@ -1109,7 +1144,11 @@
       /** Appareils compatibles d'un poste, du plus proche au plus lointain du départ, temps de convoyage affiché. */
       const planeOpts = (x, i) => {
         const r = x.rows[i],
-          away = (min, why) => min === 0 ? L(['sur place', 'on site', 'vor Ort', 'en el lugar']) : min == null ? why : x.dep.code ? L(['convoyage {d}', 'ferry {d}', 'Überführung {d}', 'traslado {d}'], { d: hmOf(min) }) : L(['transit {d}', 'transit {d}', 'Transit {d}', 'tránsito {d}'], { d: hmOf(min) });
+          away = (min, why) => min === 0 ? L(['sur place', 'on site', 'vor Ort', 'en el lugar']) : min == null ? why : x.dep.code ? L(['convoyage {d}', 'ferry {d}', 'Überführung {d}', 'traslado {d}'], {
+            d: hmOf(min)
+          }) : L(['transit {d}', 'transit {d}', 'Transit {d}', 'tránsito {d}'], {
+            d: hmOf(min)
+          });
         // appareil déjà pris par un autre poste coché (équipier, autre mission) ou engagé ailleurs : grisé
         const taken = reg => reg !== r.registration && (busy.has(reg) || on.some(y => y.rows.some(o => o !== r && o.registration === reg)));
         return `<option value="">${L(['— appareil —', '— aircraft —', '— Luftfahrzeug —', '— aeronave —'])}</option>${x.planes[i].map(({ f, min, why }) => `<option value="${esc(f.registration)}"${f.registration === r.registration ? ' selected' : ''}${taken(f.registration) ? ' disabled' : ''}>${esc(f.registration)} · ${esc(f.variant || f.type)} · ${esc(f.base || '?')} — ${away(min, why)}${f.operational === false ? L([' — indisponible', ' — unavailable', ' — nicht verfügbar', ' — no disponible']) : ''}${busy.has(f.registration) ? L([' — engagé', ' — engaged', ' — eingesetzt', ' — asignada']) : taken(f.registration) ? L([' — déjà affecté', ' — already assigned', ' — bereits zugewiesen', ' — ya asignada']) : ''}</option>`).join('')}`;
@@ -1124,8 +1163,14 @@
       };
       const checks = (x, r) => {
         const c = [];
-        if (r.pilot && r.spanOk === false) c.push(chip(L(['{p} non déclaré libre sur toute la plage {a} → {b}', '{p} not declared free over the whole span {a} → {b}', '{p} nicht über die ganze Spanne {a} → {b} frei gemeldet', '{p} no declarado libre en todo el intervalo {a} → {b}'], { p: esc(r.pilot), a: hm(r.ferry && !r.ferryBy && !r.ferryOpen ? r.ferry.takeoff : x.timing.takeoff), b: hm(x.timing.end) }), 'warn'));
-        if (r.ferryBy) c.push(chip(L(['convoyage : {p}', 'ferry: {p}', 'Überführung: {p}', 'traslado: {p}'], { p: esc(r.ferryBy) }), 'ok'));
+        if (r.pilot && r.spanOk === false) c.push(chip(L(['{p} non déclaré libre sur toute la plage {a} → {b}', '{p} not declared free over the whole span {a} → {b}', '{p} nicht über die ganze Spanne {a} → {b} frei gemeldet', '{p} no declarado libre en todo el intervalo {a} → {b}'], {
+          p: esc(r.pilot),
+          a: hm(r.ferry && !r.ferryBy && !r.ferryOpen ? r.ferry.takeoff : x.timing.takeoff),
+          b: hm(x.timing.end)
+        }), 'warn'));
+        if (r.ferryBy) c.push(chip(L(['convoyage : {p}', 'ferry: {p}', 'Überführung: {p}', 'traslado: {p}'], {
+          p: esc(r.ferryBy)
+        }), 'ok'));
         if (r.ferryOpen) c.push(chip(L(['convoyage à affecter', 'ferry to assign', 'Überführung zuzuweisen', 'traslado por asignar']), 'warn'));
         if (r.pilot) {
           const q = M.qualification(decls[r.pilot], r.pilot, r.registration ? planeOf(r.registration)?.type || r.post : r.post);
@@ -1167,7 +1212,11 @@
       dlg = AD.frame('odvPick', {
         wide: true,
         title,
-        subtitle: L(['{f} pilote(s) libre(s) · {p} affectation(s) en attente · {a} enregistrée(s) sur le créneau', '{f} free pilot(s) · {p} pending assignment(s) · {a} saved in the slot', '{f} freie(r) Pilot(en) · {p} ausstehende Zuweisung(en) · {a} im Zeitfenster gespeichert', '{f} piloto(s) libre(s) · {p} asignación(es) pendiente(s) · {a} guardada(s) en la franja'], { f: free.length, p: pend.length, a: assigned.length }),
+        subtitle: L(['{f} pilote(s) libre(s) · {p} affectation(s) en attente · {a} enregistrée(s) sur le créneau', '{f} free pilot(s) · {p} pending assignment(s) · {a} saved in the slot', '{f} freie(r) Pilot(en) · {p} ausstehende Zuweisung(en) · {a} im Zeitfenster gespeichert', '{f} piloto(s) libre(s) · {p} asignación(es) pendiente(s) · {a} guardada(s) en la franja'], {
+          f: free.length,
+          p: pend.length,
+          a: assigned.length
+        }),
         beforeClose: () => !dirty() || confirm(L(['Abandonner les affectations en attente (non enregistrées) ?', 'Discard the pending (unsaved) assignments?', 'Ausstehende (nicht gespeicherte) Zuweisungen verwerfen?', '¿Descartar las asignaciones pendientes (no guardadas)?'])),
         body: `<p class="ad-help">${L(['Cocher la mission, choisir l’appareil (du plus proche au plus lointain du départ, temps de convoyage indiqué), puis le pilote. Missions déjà affectées (cette semaine ou avant) masquées{h}. Une mission plus longue que le créneau mobilise les suivants ; appareil basé ailleurs : convoyage confié à un pilote libre avant le créneau, sinon fait par le pilote de la mission, décalée d’autant.', 'Tick the mission, choose the aircraft (nearest to farthest from the departure, ferry time shown), then the pilot. Missions already assigned (this week or before) hidden{h}. A mission longer than the slot uses the following ones; aircraft based elsewhere: ferry given to a pilot free before the slot, otherwise flown by the mission pilot, the mission shifted accordingly.', 'Mission anhaken, Luftfahrzeug wählen (vom nächsten zum fernsten zum Abflug, Überführungszeit angegeben), dann den Piloten. Bereits zugewiesene Missionen (diese Woche oder früher) ausgeblendet{h}. Eine Mission, die länger als das Zeitfenster ist, belegt die folgenden; anderswo stationiertes Luftfahrzeug: Überführung durch einen vorher freien Piloten, sonst durch den Missionspiloten, Mission entsprechend verschoben.', 'Marque la misión, elija la aeronave (de la más cercana a la más lejana de la salida, tiempo de traslado indicado) y luego el piloto. Misiones ya asignadas (esta semana o antes) ocultas{h}. Una misión más larga que la franja ocupa las siguientes; aeronave basada en otro lugar: traslado confiado a un piloto libre antes de la franja, si no lo hace el piloto de la misión, desplazada en consecuencia.'], { h: ctx.hidden ? `: ${ctx.hidden}` : '' })}</p><p class="ad-facts">${free.length ? free.map(tr => pendOf(tr) ? chip(`${tri(tr, null, false)} → <b>${esc(pendOf(tr).m.id)}</b> · ${esc(pendOf(tr).r.registration)}${pendOf(tr).r.callsign ? ` · ${esc(pendOf(tr).r.callsign)}` : ''}`, 'ok') : chip(`${tri(tr, null, false)} ${types(tr)}`, tr === focus ? 'focus' : '')).join('') : chip(L(['aucun pilote libre (tous affectés ou indisponibles)', 'no free pilot (all assigned or unavailable)', 'kein freier Pilot (alle zugewiesen oder nicht verfügbar)', 'ningún piloto libre (todos asignados o no disponibles)']), 'warn')}</p>
         <p><label class="ad-inline">${L(['Famille', 'Family', 'Familie', 'Familia'])} <select data-fam><option value="">${L(['toutes', 'all', 'alle', 'todas'])}</option>${fams.map(f => `<option value="${esc(f)}"${f === famSel ? ' selected' : ''}>${esc(f)}${s.missions[0]?.famille === f ? L([' (proposée)', ' (suggested)', ' (vorgeschlagen)', ' (propuesta)']) : ''}</option>`).join('')}</select></label></p>
@@ -1191,7 +1240,9 @@
           el = (anchor.sel && (tr || tb)?.querySelector(anchor.sel)) || tr || tb;
         if (el) {
           bodyEl.scrollTop += el.getBoundingClientRect().top - bodyEl.getBoundingClientRect().top - anchor.y;
-          if (el.matches('input, select, button')) el.focus({ preventScroll: true });
+          if (el.matches('input, select, button')) el.focus({
+            preventScroll: true
+          });
         }
       }
       dlg.querySelector('[data-status]').innerHTML = status; // compte rendu du dernier enregistrement, gardé au redessin
@@ -1209,8 +1260,7 @@
         else if (e.target.dataset.f === 'takeoff') {
           const v = e.target.value.trim();
           x.takeoffSet = v ? Date.parse(`${new Date(takeoff).toISOString().slice(0, 10)}T${v}:00Z`) : null;
-        }
-        else {
+        } else {
           const r = x.rows[+e.target.closest('tr').dataset.i],
             f = e.target.dataset.f,
             v = e.target.value.trim();
@@ -1228,9 +1278,14 @@
         const ed = e.target.closest('[data-edit]');
         if (!ed) return;
         const m = all.find(x => x.id === ed.dataset.edit);
-        if (!m) return notify(L(['{m} absente du registre de ce navigateur : relire le registre du Centre.', '{m} missing from this browser’s registry: re-read the Centre registry.', '{m} fehlt im Register dieses Browsers: das Register des Zentrums neu einlesen.', '{m} falta en el registro de este navegador: volver a leer el registro del Centro.'], { m: ed.dataset.edit }), 'warn');
+        if (!m) return notify(L(['{m} absente du registre de ce navigateur : relire le registre du Centre.', '{m} missing from this browser’s registry: re-read the Centre registry.', '{m} fehlt im Register dieses Browsers: das Register des Zentrums neu einlesen.', '{m} falta en el registro de este navegador: volver a leer el registro del Centro.'], {
+          m: ed.dataset.edit
+        }), 'warn');
         const line = O.inSlot(j, k).find(a => a.mission === m.id && a.role !== 'convoyage');
-        const d = await O.assign(m, [], Date.parse(line?.takeoff || '') || takeoff, L(['Créneau {s} — affectation enregistrée de {m}', 'Slot {s} — saved assignment of {m}', 'Zeitfenster {s} — gespeicherte Zuweisung von {m}', 'Franja {s} — asignación guardada de {m}'], { s: slotTitle(s), m: m.id }));
+        const d = await O.assign(m, [], Date.parse(line?.takeoff || '') || takeoff, L(['Créneau {s} — affectation enregistrée de {m}', 'Slot {s} — saved assignment of {m}', 'Zeitfenster {s} — gespeicherte Zuweisung von {m}', 'Franja {s} — asignación guardada de {m}'], {
+          s: slotTitle(s),
+          m: m.id
+        }));
         d?.addEventListener('reloaded', async () => {
           await build();
           render();
@@ -1285,7 +1340,11 @@
         try {
           await M.missionsDir();
           await O.assignFerry(a, tr);
-          notify(L(['Convoyage de {m} ({r}) confié à {p}.', 'Ferry of {m} ({r}) assigned to {p}.', 'Überführung von {m} ({r}) an {p} übertragen.', 'Traslado de {m} ({r}) confiado a {p}.'], { m: a.mission, r: a.aircraft?.registration || '', p: tr }), 'ok');
+          notify(L(['Convoyage de {m} ({r}) confié à {p}.', 'Ferry of {m} ({r}) assigned to {p}.', 'Überführung von {m} ({r}) an {p} übertragen.', 'Traslado de {m} ({r}) confiado a {p}.'], {
+            m: a.mission,
+            r: a.aircraft?.registration || '',
+            p: tr
+          }), 'ok');
           msg.innerHTML = `<span class="ok">${L(['Convoyage de {m} confié à {p}.', 'Ferry of {m} assigned to {p}.', 'Überführung von {m} an {p} übertragen.', 'Traslado de {m} confiado a {p}.'], { m: esc(a.mission), p: esc(tr) })}</span>`;
           await build();
           render();
@@ -1300,7 +1359,9 @@
         await AD.open(x.m, await O.yamlOf(x.m), {
           maps: x.m.images || [],
           takeoff: x.timing?.takeoff || takeoff,
-          note: L(['Créneau {s} — le résultat revient dans la fenêtre du créneau', 'Slot {s} — the result comes back to the slot window', 'Zeitfenster {s} — das Ergebnis kehrt in das Fenster des Zeitfensters zurück', 'Franja {s} — el resultado vuelve a la ventana de la franja'], { s: slotTitle(s) }),
+          note: L(['Créneau {s} — le résultat revient dans la fenêtre du créneau', 'Slot {s} — the result comes back to the slot window', 'Zeitfenster {s} — das Ergebnis kehrt in das Fenster des Zeitfensters zurück', 'Franja {s} — el resultado vuelve a la ventana de la franja'], {
+            s: slotTitle(s)
+          }),
           rows: x.rows,
           apply: async rows => {
             x.planes = await Promise.all(rows.map((r, i) => x.rows[i] && x.rows[i].post === r.post ? x.planes[i] : planeList(r.post, x.dep)));
@@ -1348,7 +1409,9 @@
         }
         const ok = [],
           ko = [];
-        msg.textContent = L(['Enregistrement de {n} mission(s)…', 'Saving {n} mission(s)…', '{n} Mission(en) werden gespeichert…', 'Guardando {n} misión(es)…'], { n: todo.length });
+        msg.textContent = L(['Enregistrement de {n} mission(s)…', 'Saving {n} mission(s)…', '{n} Mission(en) werden gespeichert…', 'Guardando {n} misión(es)…'], {
+          n: todo.length
+        });
         for (const x of todo)
           for (const m of x.members || [x.m]) try {
             const rows = x.rows.filter(r => r.pilot && r.registration && (!x.members || r.mid === m.id));
@@ -1361,8 +1424,12 @@
           } catch (err) {
             ko.push(`${m.id} : ${err.message}`);
           }
-        if (ok.length) notify(L(['Affectations enregistrées : {l}.', 'Assignments saved: {l}.', 'Zuweisungen gespeichert: {l}.', 'Asignaciones guardadas: {l}.'], { l: ok.join(' ; ') }), 'ok');
-        for (const e of ko) notify(L(['Non enregistrée — {e}', 'Not saved — {e}', 'Nicht gespeichert — {e}', 'No guardada — {e}'], { e }), 'err');
+        if (ok.length) notify(L(['Affectations enregistrées : {l}.', 'Assignments saved: {l}.', 'Zuweisungen gespeichert: {l}.', 'Asignaciones guardadas: {l}.'], {
+          l: ok.join(' ; ')
+        }), 'ok');
+        for (const e of ko) notify(L(['Non enregistrée — {e}', 'Not saved — {e}', 'Nicht gespeichert — {e}', 'No guardada — {e}'], {
+          e
+        }), 'err');
         msg.innerHTML = [ok.length ? `<span class="ok">${L(['Enregistrées : {l}.', 'Saved: {l}.', 'Gespeichert: {l}.', 'Guardadas: {l}.'], { l: esc(ok.join(' ; ')) })}</span>` : '', ...ko.map(e => `<span class="err">${L(['Non enregistrée — {e}', 'Not saved — {e}', 'Nicht gespeichert — {e}', 'No guardada — {e}'], { e: esc(e) })}</span>`)].filter(Boolean).join('<br>');
         await build();
         if (!ctx.free.length && !ko.length) {
@@ -1757,7 +1824,9 @@
     if (!FA || book) return;
     try {
       const dir = await FA.get('__odv');
-      if (dir && (await dir.queryPermission?.({ mode: 'read' })) === 'granted') {
+      if (dir && (await dir.queryPermission?.({
+          mode: 'read'
+        })) === 'granted') {
         let best = null;
         for await (const h of dir.values()) {
           if (h.kind !== 'file' || !/\.xlsx$/i.test(h.name) || /^~\$/.test(h.name)) continue;
@@ -1767,7 +1836,9 @@
         if (best) return loadFile(best);
       }
       const copy = await FA.get('__odvFile');
-      if (copy instanceof Blob) loadFile(copy, { keep: false });
+      if (copy instanceof Blob) loadFile(copy, {
+        keep: false
+      });
     } catch (e) {
       console.warn('ODV : classeur non rouvert', e);
     }
