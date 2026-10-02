@@ -170,7 +170,11 @@
     ["fiche appareil (type DEFA)", "aircraft sheet (DEFA type)", "Flugzeugblatt (DEFA-Muster)", "ficha de aeronave (tipo DEFA)"],
     ["base locale", "local database", "lokale Datenbank", "base local"],
     ["VFR détaillé", "VFR detailed", "VFR detailliert", "VFR detallado"],
-    ["VFR simplifié", "VFR simplified", "VFR vereinfacht", "VFR simplificado"]
+    ["VFR simplifié", "VFR simplified", "VFR vereinfacht", "VFR simplificado"],
+    ["Syntaxe du plan de vol", "Flight plan syntax", "Flugplan-Syntax", "Sintaxis del plan de vuelo"],
+    ["Masse au décollage prévue (", "Planned take-off mass (", "Geplante Startmasse (", "Masa de despegue prevista ("],
+    ["Fuel bloc, temps de vol et détail par phase.", "Block fuel, flight time and breakdown by phase.", "Blockkraftstoff, Flugzeit und Aufteilung nach Phase.", "Combustible de bloque, tiempo de vuelo y detalle por fase."],
+    ["Coupe le long de la route : relief, espaces aériens, trajectoire.", "Section along the route: terrain, airspace, trajectory.", "Schnitt entlang der Route: Gelände, Lufträume, Flugbahn.", "Corte a lo largo de la ruta: relieve, espacios aéreos, trayectoria."]
   ];
   window.RepositoryContentI18n(rows);
 })();

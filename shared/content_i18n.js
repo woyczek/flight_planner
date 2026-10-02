@@ -3,8 +3,11 @@ window.RepositoryContentI18n = function(rows) {
   const languages = ['fr', 'en', 'de', 'es'],
     index = new Map(),
     records = new WeakMap();
+  // clé de comparaison : espaces normalisés, sans espace devant : ; ! ? » ni après « — la typographie de la langue
+  // affichée (espace fine du français, aucune en anglais) est posée avant la traduction et ne doit pas l'empêcher
+  const norm = s => String(s).trim().replace(/\s+/g, ' ').replace(/ ([:;!?»])/g, '$1').replace(/« /g, '«');
   rows.forEach(row => row.forEach(value => {
-    if (value && !index.has(value)) index.set(value, row)
+    if (value && !index.has(norm(value))) index.set(norm(value), row)
   }));
   // Zones non traduites : code, saisie, [data-no-i18n] (textes déjà composés dans la langue courante), outils de
   // l'en-tête et des blocs (traduits par le menu). Un conteneur [data-i18n] placé dans ces outils (ex. options de
@@ -29,9 +32,17 @@ window.RepositoryContentI18n = function(rows) {
     }
     let rec = all[key];
     if (!rec || value !== rec.last) {
-      const normalized = value.trim().replace(/\s+/g, ' ');
+      const normalized = norm(value);
       let row = index.get(normalized),
         tail = '';
+      // texte connu suivi de signes seulement (flèche de tri ↕ ▲ ▼, astérisque, deux-points) : quelle que soit sa longueur
+      if (!row) {
+        const m = /^(.*?)(\s*[↕▲▼↑↓*:]+)$/u.exec(normalized);
+        if (m && index.has(m[1])) {
+          row = index.get(m[1]);
+          tail = m[2]
+        }
+      }
       if (!row) {
         const source = [...index.keys()].filter(item => (item.length >= 8 || /[.:→]$/.test(item)) && normalized.startsWith(item + ' ')).sort((a, b) => b.length - a.length)[0];
         if (source) {

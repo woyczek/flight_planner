@@ -7,6 +7,8 @@
   const C = window.OdvCore;
   const $ = id => document.getElementById(id);
   const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
+  /** Phrase [fr, en, de, es] dans la langue de la page, valeurs {clé} insérées (déjà échappées par l'appelant). */
+  const L = (row, vals = {}) => window.RepositoryKit.t(row).replace(/\{(\w+)\}/g, (_, k) => vals[k] ?? '');
   const notify = (msg, kind) => window.AppFramework?.notify ? window.AppFramework.notify(msg, kind) : console.warn(msg);
   const KEY = 'odvPlanning:v1';
   const SHORT = ['M', 'A', 'S'];
@@ -338,10 +340,10 @@
     const mon = shownMonday(),
       cur = mondayOf(Date.now()),
       xm = xlMonday();
-    const src = xm === mon ? `classeur ${fileName}` : 'déclarations des pilotes et affectations (pas de classeur pour cette semaine)';
-    host.innerHTML = `<button type="button" class="secondary" data-wk="-1">◀ Semaine précédente</button>
-      <b>Semaine ${isoWeekNo(mon)} — du ${esc(dateFr(isoDay(mon)))} au ${esc(dateFr(isoDay(mon + 6 * 864e5)))}</b> <span class="mut">${esc(src)}</span>
-      <button type="button" class="secondary" data-wk="1">Semaine suivante ▶</button>${mon !== cur ? '<button type="button" class="ghost" data-wk="now">Cette semaine</button>' : ''}${xm != null && xm !== mon ? '<button type="button" class="ghost" data-wk="xl">Semaine du classeur</button>' : ''}`;
+    const src = xm === mon ? L(['classeur {f}', 'workbook {f}', 'Arbeitsmappe {f}', 'libro {f}'], { f: fileName }) : L(['déclarations des pilotes et affectations (pas de classeur pour cette semaine)', 'pilot declarations and assignments (no workbook for this week)', 'Pilotenangaben und Zuweisungen (keine Arbeitsmappe für diese Woche)', 'declaraciones de los pilotos y asignaciones (sin libro para esta semana)']);
+    host.innerHTML = `<button type="button" class="secondary" data-wk="-1">◀ ${L(['Semaine précédente', 'Previous week', 'Vorherige Woche', 'Semana anterior'])}</button>
+      <b>${L(['Semaine {n} — du {a} au {b}', 'Week {n} — from {a} to {b}', 'Woche {n} — vom {a} bis {b}', 'Semana {n} — del {a} al {b}'], { n: isoWeekNo(mon), a: esc(dateFr(isoDay(mon))), b: esc(dateFr(isoDay(mon + 6 * 864e5))) })}</b> <span class="mut">${esc(src)}</span>
+      <button type="button" class="secondary" data-wk="1">${L(['Semaine suivante', 'Next week', 'Nächste Woche', 'Semana siguiente'])} ▶</button>${mon !== cur ? `<button type="button" class="ghost" data-wk="now">${L(['Cette semaine', 'This week', 'Diese Woche', 'Esta semana'])}</button>` : ''}${xm != null && xm !== mon ? `<button type="button" class="ghost" data-wk="xl">${L(['Semaine du classeur', 'Workbook week', 'Woche der Arbeitsmappe', 'Semana del libro'])}</button>` : ''}`;
     host.querySelectorAll('[data-wk]').forEach(b => b.onclick = () => {
       const v = b.dataset.wk;
       weekMon = v === 'now' ? null : v === 'xl' ? xm : mon + +v * 6048e5;
@@ -495,10 +497,10 @@
     if (view.role && !roles.includes(view.role)) view.role = '';
     if (view.sim && !sims.includes(view.sim)) view.sim = '';
     const opt = (v, l, cur) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(l)}</option>`;
-    host.innerHTML = `<label><input type="checkbox" id="odvHideEmpty"${view.hideEmpty ? ' checked' : ''}> Masquer les grilles vides</label>
-      ${colors.length ? `<label>Couleur du trigramme <select id="odvColor">${opt('', 'toutes', view.color)}${colors.map(c => opt(c, `#${c} (${data.pilotes.filter(p => p.couleur === c).length})`, view.color)).join('')}</select></label>` : ''}
-      <label>Rôle (${data.virtuel ? 'appareils déclarés' : 'FLOTTE'}) <select id="odvRole">${opt('', 'tous', view.role)}${roles.map(r => opt(r, C.ROLES[r] || r, view.role)).join('')}</select></label>
-      <label>Simulateur <select id="odvSimF">${opt('', 'tous', view.sim)}${sims.map(s => opt(s, s, view.sim)).join('')}</select></label>`;
+    host.innerHTML = `<label><input type="checkbox" id="odvHideEmpty"${view.hideEmpty ? ' checked' : ''}> ${L(['Masquer les grilles vides', 'Hide empty grids', 'Leere Raster ausblenden', 'Ocultar las cuadrículas vacías'])}</label>
+      ${colors.length ? `<label>${L(['Couleur du trigramme', 'Trigram colour', 'Farbe des Kürzels', 'Color del trigrama'])} <select id="odvColor">${opt('', L(['toutes', 'all', 'alle', 'todas']), view.color)}${colors.map(c => opt(c, `#${c} (${data.pilotes.filter(p => p.couleur === c).length})`, view.color)).join('')}</select></label>` : ''}
+      <label>${L(['Rôle', 'Role', 'Rolle', 'Función'])} (${data.virtuel ? L(['appareils déclarés', 'declared aircraft', 'angegebene Luftfahrzeuge', 'aeronaves declaradas']) : 'FLOTTE'}) <select id="odvRole">${opt('', L(['tous', 'all', 'alle', 'todos']), view.role)}${roles.map(r => opt(r, C.ROLES[r] || r, view.role)).join('')}</select></label>
+      <label>${L(['Simulateur', 'Simulator', 'Simulator', 'Simulador'])} <select id="odvSimF">${opt('', L(['tous', 'all', 'alle', 'todos']), view.sim)}${sims.map(s => opt(s, s, view.sim)).join('')}</select></label>`;
     $('odvHideEmpty').onchange = e => {
       view.hideEmpty = e.target.checked;
       saveView();
@@ -528,7 +530,7 @@
     const counts = {};
     for (const r of data.records)
       if (r.code) counts[r.code] = (counts[r.code] || 0) + 1;
-    $('odvLegend').innerHTML = (data.virtuel ? `<span class="odv-noxl">Pas de classeur : semaine du ${esc(dateFr(data.dates[0]))} au ${esc(dateFr(data.dates[6]))}, ligne du classeur vide ; déclarations des pilotes et affectations.</span>` : '') + Object.values(data.legende).map(e => `<span>${codeCell({ code: e.code, sens: e.sens, categorie: e.categorie, source: '' })} ${esc(e.sens)}${counts[e.code] ? ` <b>${counts[e.code]}</b>` : ''}</span>`).join('') +
+    $('odvLegend').innerHTML = (data.virtuel ? `<span class="odv-noxl">${L(['Pas de classeur : semaine du {a} au {b}, ligne du classeur vide ; déclarations des pilotes et affectations.', 'No workbook: week from {a} to {b}, workbook row empty; pilot declarations and assignments.', 'Keine Arbeitsmappe: Woche vom {a} bis {b}, Zeile der Arbeitsmappe leer; Pilotenangaben und Zuweisungen.', 'Sin libro: semana del {a} al {b}, fila del libro vacía; declaraciones de los pilotos y asignaciones.'], { a: esc(dateFr(data.dates[0])), b: esc(dateFr(data.dates[6])) })}</span>` : '') + Object.values(data.legende).map(e => `<span>${codeCell({ code: e.code, sens: e.sens, categorie: e.categorie, source: '' })} ${esc(e.sens)}${counts[e.code] ? ` <b>${counts[e.code]}</b>` : ''}</span>`).join('') +
       `<span>${codeCell({ categorie: 'inconnu', source: '' })} ${esc(C.CATEGORIES.inconnu)}</span>`;
     const byPilot = new Map(data.pilotes.map(p => [p.trigramme, []]));
     for (const r of data.records) byPilot.get(r.pilote)?.push(r);
@@ -854,7 +856,7 @@
     const fams = [...new Set([...s.toutesMissions.map(m => m.famille), ...all.map(m => fold(m.family || m.type)).filter(Boolean)])].sort();
     const chip = AD.chip,
       takeoff = range?.[0],
-      title = `${esc(slotTitle(s))} — affecter les pilotes libres`;
+      title = `${esc(slotTitle(s))} — ${L(['affecter les pilotes libres', 'assign the free pilots', 'freie Piloten zuweisen', 'asignar los pilotos libres'])}`;
     let famSel = fam || '',
       ctx = null, // { free, decls, d: Map(id → { m, on, rows: [{ post, pilot, registration, callsign, ferryPilot }] }) }
       initial = '',
@@ -1086,46 +1088,46 @@
         r
       })));
       const pendOf = tr => pend.find(p => p.r.pilot === tr);
-      const errs = r => [useP[r.pilot] > 1 && 'pilote en double', useA[r.registration] > 1 && 'appareil en double', busy.has(r.registration) && 'appareil déjà engagé sur le créneau'].filter(Boolean);
+      const errs = r => [useP[r.pilot] > 1 && L(['pilote en double', 'pilot twice', 'Pilot doppelt', 'piloto duplicado']), useA[r.registration] > 1 && L(['appareil en double', 'aircraft twice', 'Luftfahrzeug doppelt', 'aeronave duplicada']), busy.has(r.registration) && L(['appareil déjà engagé sur le créneau', 'aircraft already engaged in the slot', 'Luftfahrzeug im Zeitfenster bereits eingesetzt', 'aeronave ya asignada en la franja'])].filter(Boolean);
       const types = tr => {
         const ac = decls[tr]?.aircraft;
-        if (!ac) return '<small>appareils non déclarés</small>';
+        if (!ac) return `<small>${L(['appareils non déclarés', 'aircraft not declared', 'Luftfahrzeuge nicht angegeben', 'aeronaves no declaradas'])}</small>`;
         const ms = new Set(ac.mastered || []);
-        return [...new Set([...(ac.owned || []), ...ms])].map(ty => ms.has(ty) ? `<b>${esc(ty)}</b>` : esc(ty)).join(' ') || '<small>aucun</small>';
+        return [...new Set([...(ac.owned || []), ...ms])].map(ty => ms.has(ty) ? `<b>${esc(ty)}</b>` : esc(ty)).join(' ') || `<small>${L(['aucun', 'none', 'keines', 'ninguno'])}</small>`;
       };
       /** Pilotes d'un poste, une fois l'appareil choisi : libres jusqu'à la fin de la mission et possédant le type de
        *  l'appareil d'abord, puis les autres pilotes libres du créneau. */
       const pilotOpts = (x, r) => {
-        if (!r.registration) return '<option value="">— appareil d’abord —</option>';
+        if (!r.registration) return `<option value="">${L(['— appareil d’abord —', '— aircraft first —', '— zuerst das Luftfahrzeug —', '— primero la aeronave —'])}</option>`;
         const ty = planeOf(r.registration)?.type || r.post,
           from = x.timing?.start ?? takeoff,
           to = x.timing?.end ?? takeoff;
         const best = free.filter(tr => M.ownsType(decls[tr], ty) && O.freeOver(tr, from, to)),
           other = free.filter(tr => !best.includes(tr));
-        const o = tr => `<option value="${esc(tr)}"${tr === r.pilot ? ' selected' : ''}>${esc(tr)}${M.qualification(decls[tr], tr, ty).level === 'mastered' ? ' (maîtrisé)' : ''}${pendOf(tr) && tr !== r.pilot ? ` (→ ${esc(pendOf(tr).m.id)})` : ''}</option>`;
-        return `<option value="">— pilote —</option>${best.length ? `<optgroup label="Libres jusqu’à la fin, avec l’appareil (${best.length})">${best.map(o).join('')}</optgroup>` : ''}${other.length ? `<optgroup label="Libres sur ce créneau seulement, ou sans l’appareil déclaré">${other.map(o).join('')}</optgroup>` : ''}${r.pilot && !free.includes(r.pilot) ? `<option value="${esc(r.pilot)}" selected>${esc(r.pilot)} (non libre)</option>` : ''}`;
+        const o = tr => `<option value="${esc(tr)}"${tr === r.pilot ? ' selected' : ''}>${esc(tr)}${M.qualification(decls[tr], tr, ty).level === 'mastered' ? `${L([' (maîtrisé)', ' (mastered)', ' (beherrscht)', ' (dominado)'])}` : ''}${pendOf(tr) && tr !== r.pilot ? ` (→ ${esc(pendOf(tr).m.id)})` : ''}</option>`;
+        return `<option value="">${L(['— pilote —', '— pilot —', '— Pilot —', '— piloto —'])}</option>${best.length ? `<optgroup label="${L(['Libres jusqu’à la fin, avec l’appareil ({n})', 'Free until the end, with the aircraft ({n})', 'Bis zum Ende frei, mit dem Luftfahrzeug ({n})', 'Libres hasta el final, con la aeronave ({n})'], { n: best.length })}">${best.map(o).join('')}</optgroup>` : ''}${other.length ? `<optgroup label="${L(['Libres sur ce créneau seulement, ou sans l’appareil déclaré', 'Free in this slot only, or without the aircraft declared', 'Nur in diesem Zeitfenster frei, oder ohne angegebenes Luftfahrzeug', 'Libres solo en esta franja, o sin la aeronave declarada'])}">${other.map(o).join('')}</optgroup>` : ''}${r.pilot && !free.includes(r.pilot) ? `<option value="${esc(r.pilot)}" selected>${esc(r.pilot)} ${L(['(non libre)', '(not free)', '(nicht frei)', '(no libre)'])}</option>` : ''}`;
       };
       /** Appareils compatibles d'un poste, du plus proche au plus lointain du départ, temps de convoyage affiché. */
       const planeOpts = (x, i) => {
         const r = x.rows[i],
-          away = (min, why) => min === 0 ? 'sur place' : min == null ? why : x.dep.code ? `convoyage ${hmOf(min)}` : `transit ${hmOf(min)}`;
+          away = (min, why) => min === 0 ? L(['sur place', 'on site', 'vor Ort', 'en el lugar']) : min == null ? why : x.dep.code ? L(['convoyage {d}', 'ferry {d}', 'Überführung {d}', 'traslado {d}'], { d: hmOf(min) }) : L(['transit {d}', 'transit {d}', 'Transit {d}', 'tránsito {d}'], { d: hmOf(min) });
         // appareil déjà pris par un autre poste coché (équipier, autre mission) ou engagé ailleurs : grisé
         const taken = reg => reg !== r.registration && (busy.has(reg) || on.some(y => y.rows.some(o => o !== r && o.registration === reg)));
-        return `<option value="">— appareil —</option>${x.planes[i].map(({ f, min, why }) => `<option value="${esc(f.registration)}"${f.registration === r.registration ? ' selected' : ''}${taken(f.registration) ? ' disabled' : ''}>${esc(f.registration)} · ${esc(f.variant || f.type)} · ${esc(f.base || '?')} — ${away(min, why)}${f.operational === false ? ' — indisponible' : ''}${busy.has(f.registration) ? ' — engagé' : taken(f.registration) ? ' — déjà affecté' : ''}</option>`).join('')}`;
+        return `<option value="">${L(['— appareil —', '— aircraft —', '— Luftfahrzeug —', '— aeronave —'])}</option>${x.planes[i].map(({ f, min, why }) => `<option value="${esc(f.registration)}"${f.registration === r.registration ? ' selected' : ''}${taken(f.registration) ? ' disabled' : ''}>${esc(f.registration)} · ${esc(f.variant || f.type)} · ${esc(f.base || '?')} — ${away(min, why)}${f.operational === false ? L([' — indisponible', ' — unavailable', ' — nicht verfügbar', ' — no disponible']) : ''}${busy.has(f.registration) ? L([' — engagé', ' — engaged', ' — eingesetzt', ' — asignada']) : taken(f.registration) ? L([' — déjà affecté', ' — already assigned', ' — bereits zugewiesen', ' — ya asignada']) : ''}</option>`).join('')}`;
       };
       /** Convoyage d'un poste : trajet, heure, convoyeur (pilotes libres avant le créneau, ou le pilote : mission décalée). */
       const ferryLine = r => {
         if (!r.ferry) return '';
         const f = r.ferry,
           self = !r.ferryBy && !r.ferryOpen,
-          opts = `${r.ferryCands.map(c => `<option value="${esc(c.tri)}"${c.tri === r.ferryBy ? ' selected' : ''}>${esc(c.tri)}${c.q.level === 'mastered' ? ' (maîtrisé)' : ''}</option>`).join('')}<option value="__self"${self ? ' selected' : ''}>${esc(r.pilot || 'le pilote')} lui-même</option><option value="__open"${r.ferryOpen ? ' selected' : ''}>à affecter (mission de convoyage)</option>`;
-        return `<div class="ad-help">Convoyage <b>${esc(f.from)} → ${esc(f.to)}</b> <b>${hm(f.takeoff)} → ${hm(f.land)}</b> (≈ ${hmOf(f.minutes)})${r.ferryCands.length ? '' : ' — aucun pilote libre à cette heure'} · par <select data-f="ferry">${opts}</select></div>`;
+          opts = `${r.ferryCands.map(c => `<option value="${esc(c.tri)}"${c.tri === r.ferryBy ? ' selected' : ''}>${esc(c.tri)}${c.q.level === 'mastered' ? `${L([' (maîtrisé)', ' (mastered)', ' (beherrscht)', ' (dominado)'])}` : ''}</option>`).join('')}<option value="__self"${self ? ' selected' : ''}>${L(['{p} lui-même', '{p} himself', '{p} selbst', '{p} mismo'], { p: esc(r.pilot || L(['le pilote', 'the pilot', 'der Pilot', 'el piloto'])) })}</option><option value="__open"${r.ferryOpen ? ' selected' : ''}>${L(['à affecter (mission de convoyage)', 'to assign (ferry mission)', 'zuzuweisen (Überführungsmission)', 'por asignar (misión de traslado)'])}</option>`;
+        return `<div class="ad-help">${L(['Convoyage', 'Ferry', 'Überführung', 'Traslado'])} <b>${esc(f.from)} → ${esc(f.to)}</b> <b>${hm(f.takeoff)} → ${hm(f.land)}</b> (≈ ${hmOf(f.minutes)})${r.ferryCands.length ? '' : L([' — aucun pilote libre à cette heure', ' — no pilot free at that time', ' — kein Pilot zu dieser Zeit frei', ' — ningún piloto libre a esa hora'])} · ${L(['par', 'by', 'durch', 'por'])} <select data-f="ferry">${opts}</select></div>`;
       };
       const checks = (x, r) => {
         const c = [];
-        if (r.pilot && r.spanOk === false) c.push(chip(`${esc(r.pilot)} non déclaré libre sur toute la plage ${hm(r.ferry && !r.ferryBy && !r.ferryOpen ? r.ferry.takeoff : x.timing.takeoff)} → ${hm(x.timing.end)}`, 'warn'));
-        if (r.ferryBy) c.push(chip(`convoyage : ${esc(r.ferryBy)}`, 'ok'));
-        if (r.ferryOpen) c.push(chip('convoyage à affecter', 'warn'));
+        if (r.pilot && r.spanOk === false) c.push(chip(L(['{p} non déclaré libre sur toute la plage {a} → {b}', '{p} not declared free over the whole span {a} → {b}', '{p} nicht über die ganze Spanne {a} → {b} frei gemeldet', '{p} no declarado libre en todo el intervalo {a} → {b}'], { p: esc(r.pilot), a: hm(r.ferry && !r.ferryBy && !r.ferryOpen ? r.ferry.takeoff : x.timing.takeoff), b: hm(x.timing.end) }), 'warn'));
+        if (r.ferryBy) c.push(chip(L(['convoyage : {p}', 'ferry: {p}', 'Überführung: {p}', 'traslado: {p}'], { p: esc(r.ferryBy) }), 'ok'));
+        if (r.ferryOpen) c.push(chip(L(['convoyage à affecter', 'ferry to assign', 'Überführung zuzuweisen', 'traslado por asignar']), 'warn'));
         if (r.pilot) {
           const q = M.qualification(decls[r.pilot], r.pilot, r.registration ? planeOf(r.registration)?.type || r.post : r.post);
           if (q.text) c.push(chip(esc(q.text), q.level === 'mastered' ? 'ok' : q.level === 'owned' || q.level === 'flown' ? 'warn' : 'err'));
@@ -1138,12 +1140,12 @@
         const m = x.m,
           conf = conflictsOf(m, zones),
           n = x.rows.length;
-        return `<tbody class="ad-mx${x.on ? ' on' : ''}${x.members ? ' ad-op' : ''}" data-m="${esc(m.id)}">${x.members ? `<tr class="ad-op-head"><td colspan="7">⛓ Opération <b>${esc(m.id)}</b> ${esc(m.title || '')} — ${x.members.length} missions liées (${x.members.map(mm => esc(mm.id)).join(' · ')}) : une seule coche, un pilote par mission, enregistrées ensemble${x.saved ? ' · <i>enregistrée sur ce créneau</i>' : ''}</td></tr>` : x.saved ? `<tr class="ad-op-head"><td colspan="7"><i>Enregistrée sur ce créneau — modifiable ici</i></td></tr>` : ''}${x.rows.map((r, i) => `<tr class="${x.on && r.pilot && r.registration && !errs(r).length ? 'ad-set' : ''}" data-i="${i}">
-          ${i ? '' : `<td rowspan="${n}"><input type="checkbox" data-on${x.on ? ' checked' : ''} aria-label="Affecter ${esc(m.id)}"></td><td rowspan="${n}"><b>${esc(m.id)}</b> ${esc(m.title || '')}${x.armable ? '' : ' <small class="mut">(aucun pilote libre ne déclare l’appareil)</small>'}<br><small>${esc(m.family || m.type || '')} · ${hmOf(m.estimate?.block ?? m.estimate?.flight)} · départ ${esc(x.dep?.name || '?')}</small>${x.timing ? `<br><label class="ad-inline"><small>${x.members ? 'heure H' : 'décollage'}</small><input type="time" data-f="takeoff" value="${hm(x.timing.takeoff).slice(0, 5)}"${x.on ? '' : ' disabled'} title="Heure UTC ; vide : automatique (début du créneau, décalé si le pilote convoie et n’est pas libre avant)"></label><small>${x.takeoffSet != null ? ' (choisie)' : x.timing.shift ? ` (décalée de ${hmOf(x.timing.shift / 6e4)} : convoyage)` : ''}${x.timing.start < x.timing.takeoff ? ` · convoyage dès <b>${hm(x.timing.start)}</b>` : ''}, fin ${hm(x.timing.end)}${x.timing.slots.length > 1 ? ` · mobilise ${x.timing.slots.map(slotName).join(', ')}` : ''}</small>` : ''}${conf.length ? `<br>${conf.map(c => chip(esc(c.texte), c.grave ? 'err' : 'warn')).join('')}` : ''}<br>${x.members ? '' : `<button type="button" class="repo-plain ad-link" data-detail>✎ détail</button> · <button type="button" class="repo-plain ad-link" data-wing${x.on ? '' : ' disabled'} title="Patrouille : un équipier de plus (même type d’appareil, indicatif suivant)">+ équipier</button>`}</td>`}
-          <td><b>${esc(r.callsign || r.post?.callsign || `poste ${i + 1}`)}</b>${x.members ? ` <small>${esc(r.mid)} · décollage ${r.takeoff ? hm(r.takeoff) : '?'} (${esc(window.RepositoryKit.hText(r.off || 0))})</small>${r.wing ? '' : ` <button type="button" class="repo-plain ad-link" data-wing data-wing-of="${i}"${x.on ? '' : ' disabled'} title="Patrouille : un équipier de plus pour cet équipage (même mission, indicatif suivant)">+ équipier</button>`}` : ''}<br><small>${esc(r.post?.type || r.post?.label || 'type libre')}${r.post?.service ? ` · ${esc(r.post.service)}` : ''}</small></td>
+        return `<tbody class="ad-mx${x.on ? ' on' : ''}${x.members ? ' ad-op' : ''}" data-m="${esc(m.id)}">${x.members ? `<tr class="ad-op-head"><td colspan="7">⛓ ${L(['Opération', 'Operation', 'Operation', 'Operación'])} <b>${esc(m.id)}</b> ${esc(m.title || '')} — ${L(['{n} missions liées ({ids}) : une seule coche, un pilote par mission, enregistrées ensemble', '{n} linked missions ({ids}): one tick, one pilot per mission, saved together', '{n} verbundene Missionen ({ids}): ein Haken, ein Pilot pro Mission, zusammen gespeichert', '{n} misiones vinculadas ({ids}): una sola marca, un piloto por misión, guardadas juntas'], { n: x.members.length, ids: x.members.map(mm => esc(mm.id)).join(' · ') })}${x.saved ? ` · <i>${L(['enregistrée sur ce créneau', 'saved in this slot', 'in diesem Zeitfenster gespeichert', 'guardada en esta franja'])}</i>` : ''}</td></tr>` : x.saved ? `<tr class="ad-op-head"><td colspan="7"><i>${L(['Enregistrée sur ce créneau — modifiable ici', 'Saved in this slot — editable here', 'In diesem Zeitfenster gespeichert — hier änderbar', 'Guardada en esta franja — editable aquí'])}</i></td></tr>` : ''}${x.rows.map((r, i) => `<tr class="${x.on && r.pilot && r.registration && !errs(r).length ? 'ad-set' : ''}" data-i="${i}">
+          ${i ? '' : `<td rowspan="${n}"><input type="checkbox" data-on${x.on ? ' checked' : ''} aria-label="${L(['Affecter {m}', 'Assign {m}', '{m} zuweisen', 'Asignar {m}'], { m: esc(m.id) })}"></td><td rowspan="${n}"><b>${esc(m.id)}</b> ${esc(m.title || '')}${x.armable ? '' : ` <small class="mut">${L(['(aucun pilote libre ne déclare l’appareil)', '(no free pilot declares the aircraft)', '(kein freier Pilot gibt das Luftfahrzeug an)', '(ningún piloto libre declara la aeronave)'])}</small>`}<br><small>${esc(m.family || m.type || '')} · ${hmOf(m.estimate?.block ?? m.estimate?.flight)} · ${L(['départ', 'departure', 'Abflug', 'salida'])} ${esc(x.dep?.name || '?')}</small>${x.timing ? `<br><label class="ad-inline"><small>${x.members ? L(['heure H', 'H-hour', 'Stunde H', 'hora H']) : L(['décollage', 'take-off', 'Start', 'despegue'])}</small><input type="time" data-f="takeoff" value="${hm(x.timing.takeoff).slice(0, 5)}"${x.on ? '' : ' disabled'} title="${L(['Heure UTC ; vide : automatique (début du créneau, décalé si le pilote convoie et n’est pas libre avant)', 'UTC time; empty: automatic (start of the slot, shifted if the pilot ferries and is not free before)', 'UTC-Zeit; leer: automatisch (Beginn des Zeitfensters, verschoben, wenn der Pilot überführt und vorher nicht frei ist)', 'Hora UTC; vacío: automático (inicio de la franja, desplazado si el piloto hace el traslado y no está libre antes)'])}"></label><small>${x.takeoffSet != null ? L([' (choisie)', ' (chosen)', ' (gewählt)', ' (elegida)']) : x.timing.shift ? L([' (décalée de {d} : convoyage)', ' (shifted by {d}: ferry)', ' (um {d} verschoben: Überführung)', ' (desplazada {d}: traslado)'], { d: hmOf(x.timing.shift / 6e4) }) : ''}${x.timing.start < x.timing.takeoff ? L([' · convoyage dès {t}', ' · ferry from {t}', ' · Überführung ab {t}', ' · traslado desde {t}'], { t: `<b>${hm(x.timing.start)}</b>` }) : ''}${L([', fin {t}', ', end {t}', ', Ende {t}', ', fin {t}'], { t: hm(x.timing.end) })}${x.timing.slots.length > 1 ? L([' · mobilise {s}', ' · uses {s}', ' · belegt {s}', ' · ocupa {s}'], { s: x.timing.slots.map(slotName).join(', ') }) : ''}</small>` : ''}${conf.length ? `<br>${conf.map(c => chip(esc(c.texte), c.grave ? 'err' : 'warn')).join('')}` : ''}<br>${x.members ? '' : `<button type="button" class="repo-plain ad-link" data-detail>✎ ${L(['détail', 'detail', 'Details', 'detalle'])}</button> · <button type="button" class="repo-plain ad-link" data-wing${x.on ? '' : ' disabled'} title="${L(['Patrouille : un équipier de plus (même type d’appareil, indicatif suivant)', 'Patrol: one more wingman (same aircraft type, next callsign)', 'Rotte: ein Flügelmann mehr (gleicher Typ, nächstes Rufzeichen)', 'Patrulla: un punto más (mismo tipo, indicativo siguiente)'])}">${L(['+ équipier', '+ wingman', '+ Flügelmann', '+ punto'])}</button>`}</td>`}
+          <td><b>${esc(r.callsign || r.post?.callsign || L(['poste {n}', 'post {n}', 'Posten {n}', 'puesto {n}'], { n: i + 1 }))}</b>${x.members ? ` <small>${esc(r.mid)} · ${L(['décollage', 'take-off', 'Start', 'despegue'])} ${r.takeoff ? hm(r.takeoff) : '?'} (${esc(window.RepositoryKit.hText(r.off || 0))})</small>${r.wing ? '' : ` <button type="button" class="repo-plain ad-link" data-wing data-wing-of="${i}"${x.on ? '' : ' disabled'} title="${L(['Patrouille : un équipier de plus pour cet équipage (même mission, indicatif suivant)', 'Patrol: one more wingman for this crew (same mission, next callsign)', 'Rotte: ein Flügelmann mehr für diese Besatzung (gleiche Mission, nächstes Rufzeichen)', 'Patrulla: un punto más para esta tripulación (misma misión, indicativo siguiente)'])}">${L(['+ équipier', '+ wingman', '+ Flügelmann', '+ punto'])}</button>`}` : ''}<br><small>${esc(r.post?.type || r.post?.label || L(['type libre', 'any type', 'beliebiger Typ', 'tipo libre']))}${r.post?.service ? ` · ${esc(r.post.service)}` : ''}</small></td>
           <td><select data-f="registration"${x.on ? '' : ' disabled'}>${planeOpts(x, i)}</select>${ferryLine(r)}</td>
           <td><select data-f="pilot"${x.on && r.registration ? '' : ' disabled'}>${pilotOpts(x, r)}</select></td>
-          <td><input data-f="callsign" value="${esc(r.callsign)}" size="9">${r.wing ? ` <button type="button" class="repo-plain ad-del" data-unwing="${i}" title="Retirer cet équipier">✕</button>` : ''}</td>
+          <td><input data-f="callsign" value="${esc(r.callsign)}" size="9">${r.wing ? ` <button type="button" class="repo-plain ad-del" data-unwing="${i}" title="${L(['Retirer cet équipier', 'Remove this wingman', 'Diesen Flügelmann entfernen', 'Quitar este punto'])}">✕</button>` : ''}</td>
           <td>${checks(x, r)}</td></tr>`).join('')}</tbody>`;
       }).join('');
       const keep = dlg?.querySelector('.ad-body')?.scrollTop || 0,
@@ -1166,21 +1168,21 @@
       dlg = AD.frame('odvPick', {
         wide: true,
         title,
-        subtitle: `${free.length} pilote(s) libre(s) · ${pend.length} affectation(s) en attente · ${assigned.length} enregistrée(s) sur le créneau`,
-        beforeClose: () => !dirty() || confirm('Abandonner les affectations en attente (non enregistrées) ?'),
-        body: `<p class="ad-help">Cocher la mission, choisir l’appareil (du plus proche au plus lointain du départ, temps de convoyage indiqué), puis le pilote. Missions déjà affectées (cette semaine ou avant) masquées${ctx.hidden ? ` : ${ctx.hidden}` : ''}. Une mission plus longue que le créneau mobilise les suivants ; appareil basé ailleurs : convoyage confié à un pilote libre avant le créneau, sinon fait par le pilote de la mission, décalée d’autant.</p><p class="ad-facts">${free.length ? free.map(tr => pendOf(tr) ? chip(`${tri(tr, null, false)} → <b>${esc(pendOf(tr).m.id)}</b> · ${esc(pendOf(tr).r.registration)}${pendOf(tr).r.callsign ? ` · ${esc(pendOf(tr).r.callsign)}` : ''}`, 'ok') : chip(`${tri(tr, null, false)} ${types(tr)}`, tr === focus ? 'focus' : '')).join('') : chip('aucun pilote libre (tous affectés ou indisponibles)', 'warn')}</p>
-        <p><label class="ad-inline">Famille <select data-fam><option value="">toutes</option>${fams.map(f => `<option value="${esc(f)}"${f === famSel ? ' selected' : ''}>${esc(f)}${s.missions[0]?.famille === f ? ' (proposée)' : ''}</option>`).join('')}</select></label></p>
-        ${zones.length ? `<p class="ad-note">À éviter : ${zones.map(z => `<b>${esc(z.type)} ${esc(z.position)}</b> — CTR ${esc(z.ctr.map(a => a.name).join(', ') || '?')}${z.tma.length ? `, TMA ${esc(z.tma.map(a => a.name).join(', '))} (si possible)` : ''}`).join(' · ')}</p>` : ''}
-        ${d.size ? `<table class="ad-table ad-matrix"><thead><tr><th>Planifier</th><th>Mission</th><th>Poste</th><th>Appareil</th><th>Pilote</th><th>Indicatif</th><th>État</th></tr></thead>${body}</table>` : '<p class="ad-help">Aucune mission du registre pour ces pilotes et cette famille.</p>'}
-        ${ferries.length ? `<section class="ad-card"><h4>Convoyages à affecter (${ferries.length})</h4><table class="ad-table"><thead><tr><th>Mission</th><th>Appareil</th><th>Trajet</th><th>Heures</th><th>Convoyeur</th><th></th></tr></thead><tbody>${ferries.map((a, i) => {
+        subtitle: L(['{f} pilote(s) libre(s) · {p} affectation(s) en attente · {a} enregistrée(s) sur le créneau', '{f} free pilot(s) · {p} pending assignment(s) · {a} saved in the slot', '{f} freie(r) Pilot(en) · {p} ausstehende Zuweisung(en) · {a} im Zeitfenster gespeichert', '{f} piloto(s) libre(s) · {p} asignación(es) pendiente(s) · {a} guardada(s) en la franja'], { f: free.length, p: pend.length, a: assigned.length }),
+        beforeClose: () => !dirty() || confirm(L(['Abandonner les affectations en attente (non enregistrées) ?', 'Discard the pending (unsaved) assignments?', 'Ausstehende (nicht gespeicherte) Zuweisungen verwerfen?', '¿Descartar las asignaciones pendientes (no guardadas)?'])),
+        body: `<p class="ad-help">${L(['Cocher la mission, choisir l’appareil (du plus proche au plus lointain du départ, temps de convoyage indiqué), puis le pilote. Missions déjà affectées (cette semaine ou avant) masquées{h}. Une mission plus longue que le créneau mobilise les suivants ; appareil basé ailleurs : convoyage confié à un pilote libre avant le créneau, sinon fait par le pilote de la mission, décalée d’autant.', 'Tick the mission, choose the aircraft (nearest to farthest from the departure, ferry time shown), then the pilot. Missions already assigned (this week or before) hidden{h}. A mission longer than the slot uses the following ones; aircraft based elsewhere: ferry given to a pilot free before the slot, otherwise flown by the mission pilot, the mission shifted accordingly.', 'Mission anhaken, Luftfahrzeug wählen (vom nächsten zum fernsten zum Abflug, Überführungszeit angegeben), dann den Piloten. Bereits zugewiesene Missionen (diese Woche oder früher) ausgeblendet{h}. Eine Mission, die länger als das Zeitfenster ist, belegt die folgenden; anderswo stationiertes Luftfahrzeug: Überführung durch einen vorher freien Piloten, sonst durch den Missionspiloten, Mission entsprechend verschoben.', 'Marque la misión, elija la aeronave (de la más cercana a la más lejana de la salida, tiempo de traslado indicado) y luego el piloto. Misiones ya asignadas (esta semana o antes) ocultas{h}. Una misión más larga que la franja ocupa las siguientes; aeronave basada en otro lugar: traslado confiado a un piloto libre antes de la franja, si no lo hace el piloto de la misión, desplazada en consecuencia.'], { h: ctx.hidden ? `: ${ctx.hidden}` : '' })}</p><p class="ad-facts">${free.length ? free.map(tr => pendOf(tr) ? chip(`${tri(tr, null, false)} → <b>${esc(pendOf(tr).m.id)}</b> · ${esc(pendOf(tr).r.registration)}${pendOf(tr).r.callsign ? ` · ${esc(pendOf(tr).r.callsign)}` : ''}`, 'ok') : chip(`${tri(tr, null, false)} ${types(tr)}`, tr === focus ? 'focus' : '')).join('') : chip(L(['aucun pilote libre (tous affectés ou indisponibles)', 'no free pilot (all assigned or unavailable)', 'kein freier Pilot (alle zugewiesen oder nicht verfügbar)', 'ningún piloto libre (todos asignados o no disponibles)']), 'warn')}</p>
+        <p><label class="ad-inline">${L(['Famille', 'Family', 'Familie', 'Familia'])} <select data-fam><option value="">${L(['toutes', 'all', 'alle', 'todas'])}</option>${fams.map(f => `<option value="${esc(f)}"${f === famSel ? ' selected' : ''}>${esc(f)}${s.missions[0]?.famille === f ? L([' (proposée)', ' (suggested)', ' (vorgeschlagen)', ' (propuesta)']) : ''}</option>`).join('')}</select></label></p>
+        ${zones.length ? `<p class="ad-note">${L(['À éviter :', 'To avoid:', 'Zu meiden:', 'A evitar:'])} ${zones.map(z => `<b>${esc(z.type)} ${esc(z.position)}</b> — CTR ${esc(z.ctr.map(a => a.name).join(', ') || '?')}${z.tma.length ? `, TMA ${esc(z.tma.map(a => a.name).join(', '))} ${L(['(si possible)', '(if possible)', '(wenn möglich)', '(si es posible)'])}` : ''}`).join(' · ')}</p>` : ''}
+        ${d.size ? `<table class="ad-table ad-matrix"><thead><tr><th>${L(['Planifier', 'Plan', 'Planen', 'Planificar'])}</th><th>${L(['Mission', 'Mission', 'Mission', 'Misión'])}</th><th>${L(['Poste', 'Post', 'Posten', 'Puesto'])}</th><th>${L(['Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'])}</th><th>${L(['Pilote', 'Pilot', 'Pilot', 'Piloto'])}</th><th>${L(['Indicatif', 'Callsign', 'Rufzeichen', 'Indicativo'])}</th><th>${L(['État', 'Status', 'Status', 'Estado'])}</th></tr></thead>${body}</table>` : `<p class="ad-help">${L(['Aucune mission du registre pour ces pilotes et cette famille.', 'No registry mission for these pilots and this family.', 'Keine Registermission für diese Piloten und diese Familie.', 'Ninguna misión del registro para estos pilotos y esta familia.'])}</p>`}
+        ${ferries.length ? `<section class="ad-card"><h4>${L(['Convoyages à affecter ({n})', 'Ferries to assign ({n})', 'Zuzuweisende Überführungen ({n})', 'Traslados por asignar ({n})'], { n: ferries.length })}</h4><table class="ad-table"><thead><tr><th>${L(['Mission', 'Mission', 'Mission', 'Misión'])}</th><th>${L(['Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'])}</th><th>${L(['Trajet', 'Route', 'Strecke', 'Trayecto'])}</th><th>${L(['Heures', 'Times', 'Zeiten', 'Horas'])}</th><th>${L(['Convoyeur', 'Ferry pilot', 'Überführungspilot', 'Piloto de traslado'])}</th><th></th></tr></thead><tbody>${ferries.map((a, i) => {
           const from = Date.parse(a.takeoff),
             to = from + (+a.block_min || 60) * 6e4,
             cands = O.pilots().filter(tr => tr !== a.for_pilot && M.ownsType(ctx.declsAll[tr], a.aircraft?.type) !== false && O.freeOver(tr, from, to + TURN * 6e4));
-          return `<tr data-fy="${i}"><td><b>${esc(a.mission)}</b> pour ${esc(a.for_pilot || '?')}</td><td>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' '))}</td><td>${esc(a.departure || '')} → ${esc(a.destination || '')}</td><td>${hm(from)} → ${hm(to)}</td><td><select data-fy-pilot><option value="">— ${cands.length ? 'convoyeur' : 'aucun pilote libre'} —</option>${cands.map(tr => `<option value="${esc(tr)}">${esc(tr)}${M.qualification(ctx.declsAll[tr], tr, a.aircraft?.type).level === 'mastered' ? ' (maîtrisé)' : ''}</option>`).join('')}</select></td><td><button type="button" class="secondary" data-fy-go>Confier</button></td></tr>`;
+          return `<tr data-fy="${i}"><td><b>${esc(a.mission)}</b> ${L(['pour', 'for', 'für', 'para'])} ${esc(a.for_pilot || '?')}</td><td>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' '))}</td><td>${esc(a.departure || '')} → ${esc(a.destination || '')}</td><td>${hm(from)} → ${hm(to)}</td><td><select data-fy-pilot><option value="">— ${cands.length ? L(['convoyeur', 'ferry pilot', 'Überführungspilot', 'piloto de traslado']) : L(['aucun pilote libre', 'no free pilot', 'kein freier Pilot', 'ningún piloto libre'])} —</option>${cands.map(tr => `<option value="${esc(tr)}">${esc(tr)}${M.qualification(ctx.declsAll[tr], tr, a.aircraft?.type).level === 'mastered' ? `${L([' (maîtrisé)', ' (mastered)', ' (beherrscht)', ' (dominado)'])}` : ''}</option>`).join('')}</select></td><td><button type="button" class="secondary" data-fy-go>${L(['Confier', 'Assign', 'Übertragen', 'Confiar'])}</button></td></tr>`;
         }).join('')}</tbody></table></section>` : ''}
-        <section class="ad-card"><h4>En attente (${pend.length})</h4>${pend.length ? `<ul class="ad-list">${pend.map(p => `<li>${tri(p.r.pilot, null, false)} sur <b>${esc(p.m.id)}</b> — ${esc(planeOf(p.r.registration)?.type || '')} ${esc(p.r.registration)}${p.r.callsign ? ` — ${esc(p.r.callsign)}` : ''}</li>`).join('')}</ul>` : '<p class="ad-help">Aucune : cocher une mission et choisir ses pilotes et appareils.</p>'}</section>
-        <section class="ad-card"><h4>Enregistrées sur ce créneau</h4>${assigned.length ? `<ul class="ad-list">${assigned.map((a, i) => `<li>${a.role !== 'convoyage' && assigned.findIndex(b => b.mission === a.mission && b.role !== 'convoyage') === i ? `<button type="button" class="repo-plain ad-link" data-edit="${esc(a.mission)}">Modifier…</button> ` : ''}<b>${esc(a.mission)}</b>${a.role === 'convoyage' ? ` (convoyage ${esc(a.departure || '')} → ${esc(a.destination || '')} pour ${esc(a.for_pilot || '')})` : ''} — ${a.pilot ? tri(a.pilot, null, false) : '<i>à affecter</i>'} ${esc(a.aircraft?.registration || '')}${a.callsign ? ` · ${esc(a.callsign)}` : ''} · décollage ${esc(String(a.takeoff || '').slice(11, 16))}Z${a.ferry ? ` · convoyage ${esc(a.ferry.from)} dès ${esc(String(a.ferry.takeoff || '').slice(11, 16))}Z, ${a.ferry.open ? 'à affecter' : a.ferry.pilot && a.ferry.pilot !== a.pilot ? `par ${esc(a.ferry.pilot)}` : 'par le pilote'}` : ''}</li>`).join('')}</ul>` : '<p class="ad-help">Aucune.</p>'}</section>`,
-        foot: `<p class="ad-msg" data-status></p><button type="button" class="ghost" data-undo${dirty() ? '' : ' disabled'}>Annuler les modifications</button><button type="button" class="primary" data-save data-icon="save">Enregistrer (${pend.length})</button><button type="button" class="ghost" data-close>Fermer</button>`
+        <section class="ad-card"><h4>${L(['En attente ({n})', 'Pending ({n})', 'Ausstehend ({n})', 'Pendientes ({n})'], { n: pend.length })}</h4>${pend.length ? `<ul class="ad-list">${pend.map(p => `<li>${tri(p.r.pilot, null, false)} ${L(['sur', 'on', 'auf', 'en'])} <b>${esc(p.m.id)}</b> — ${esc(planeOf(p.r.registration)?.type || '')} ${esc(p.r.registration)}${p.r.callsign ? ` — ${esc(p.r.callsign)}` : ''}</li>`).join('')}</ul>` : `<p class="ad-help">${L(['Aucune : cocher une mission et choisir ses pilotes et appareils.', 'None: tick a mission and choose its pilots and aircraft.', 'Keine: eine Mission anhaken und ihre Piloten und Luftfahrzeuge wählen.', 'Ninguna: marque una misión y elija sus pilotos y aeronaves.'])}</p>`}</section>
+        <section class="ad-card"><h4>${L(['Enregistrées sur ce créneau', 'Saved in this slot', 'In diesem Zeitfenster gespeichert', 'Guardadas en esta franja'])}</h4>${assigned.length ? `<ul class="ad-list">${assigned.map((a, i) => `<li>${a.role !== 'convoyage' && assigned.findIndex(b => b.mission === a.mission && b.role !== 'convoyage') === i ? `<button type="button" class="repo-plain ad-link" data-edit="${esc(a.mission)}">${L(['Modifier…', 'Edit…', 'Ändern…', 'Modificar…'])}</button> ` : ''}<b>${esc(a.mission)}</b>${a.role === 'convoyage' ? L([' (convoyage {a} → {b} pour {p})', ' (ferry {a} → {b} for {p})', ' (Überführung {a} → {b} für {p})', ' (traslado {a} → {b} para {p})'], { a: esc(a.departure || ''), b: esc(a.destination || ''), p: esc(a.for_pilot || '') }) : ''} — ${a.pilot ? tri(a.pilot, null, false) : `<i>${L(['à affecter', 'to assign', 'zuzuweisen', 'por asignar'])}</i>`} ${esc(a.aircraft?.registration || '')}${a.callsign ? ` · ${esc(a.callsign)}` : ''} · ${L(['décollage', 'take-off', 'Start', 'despegue'])} ${esc(String(a.takeoff || '').slice(11, 16))}Z${a.ferry ? L([' · convoyage {f} dès {t}Z, {by}', ' · ferry {f} from {t}Z, {by}', ' · Überführung {f} ab {t}Z, {by}', ' · traslado {f} desde {t}Z, {by}'], { f: esc(a.ferry.from), t: esc(String(a.ferry.takeoff || '').slice(11, 16)), by: a.ferry.open ? L(['à affecter', 'to assign', 'zuzuweisen', 'por asignar']) : a.ferry.pilot && a.ferry.pilot !== a.pilot ? L(['par {p}', 'by {p}', 'durch {p}', 'por {p}'], { p: esc(a.ferry.pilot) }) : L(['par le pilote', 'by the pilot', 'durch den Piloten', 'por el piloto']) }) : ''}</li>`).join('')}</ul>` : `<p class="ad-help">${L(['Aucune.', 'None.', 'Keine.', 'Ninguna.'])}</p>`}</section>`,
+        foot: `<p class="ad-msg" data-status></p><button type="button" class="ghost" data-undo${dirty() ? '' : ' disabled'}>${L(['Annuler les modifications', 'Undo changes', 'Änderungen verwerfen', 'Deshacer cambios'])}</button><button type="button" class="primary" data-save data-icon="save">${L(['Enregistrer ({n})', 'Save ({n})', 'Speichern ({n})', 'Guardar ({n})'], { n: pend.length })}</button><button type="button" class="ghost" data-close>${L(['Fermer', 'Close', 'Schließen', 'Cerrar'])}</button>`
       });
       const bodyEl = dlg.querySelector('.ad-body');
       bodyEl.scrollTop = keep;
@@ -1195,7 +1197,7 @@
       }
       dlg.querySelector('[data-status]').innerHTML = status; // compte rendu du dernier enregistrement, gardé au redessin
       dlg.querySelector('[data-fam]').onchange = async e => {
-        if (dirty() && !confirm('Changer de famille abandonne les affectations en attente. Continuer ?')) return render();
+        if (dirty() && !confirm(L(['Changer de famille abandonne les affectations en attente. Continuer ?', 'Changing family discards the pending assignments. Continue?', 'Ein Familienwechsel verwirft die ausstehenden Zuweisungen. Fortfahren?', 'Cambiar de familia descarta las asignaciones pendientes. ¿Continuar?']))) return render();
         famSel = e.target.value;
         await build();
         render();
@@ -1227,9 +1229,9 @@
         const ed = e.target.closest('[data-edit]');
         if (!ed) return;
         const m = all.find(x => x.id === ed.dataset.edit);
-        if (!m) return notify(`${ed.dataset.edit} absente du registre de ce navigateur : relire le registre du Centre.`, 'warn');
+        if (!m) return notify(L(['{m} absente du registre de ce navigateur : relire le registre du Centre.', '{m} missing from this browser’s registry: re-read the Centre registry.', '{m} fehlt im Register dieses Browsers: das Register des Zentrums neu einlesen.', '{m} falta en el registro de este navegador: volver a leer el registro del Centro.'], { m: ed.dataset.edit }), 'warn');
         const line = O.inSlot(j, k).find(a => a.mission === m.id && a.role !== 'convoyage');
-        const d = await O.assign(m, [], Date.parse(line?.takeoff || '') || takeoff, `Créneau ${slotTitle(s)} — affectation enregistrée de ${m.id}`);
+        const d = await O.assign(m, [], Date.parse(line?.takeoff || '') || takeoff, L(['Créneau {s} — affectation enregistrée de {m}', 'Slot {s} — saved assignment of {m}', 'Zeitfenster {s} — gespeicherte Zuweisung von {m}', 'Franja {s} — asignación guardada de {m}'], { s: slotTitle(s), m: m.id }));
         d?.addEventListener('reloaded', async () => {
           await build();
           render();
@@ -1280,16 +1282,16 @@
           a = ferries[+row.dataset.fy],
           tr = row.querySelector('[data-fy-pilot]').value,
           msg = dlg.querySelector('[data-status]');
-        if (!tr) return notify('Choisir le convoyeur.', 'warn');
+        if (!tr) return notify(L(['Choisir le convoyeur.', 'Choose the ferry pilot.', 'Überführungspiloten wählen.', 'Elija el piloto de traslado.']), 'warn');
         try {
           await M.missionsDir();
           await O.assignFerry(a, tr);
-          notify(`Convoyage de ${a.mission} (${a.aircraft?.registration || ''}) confié à ${tr}.`, 'ok');
-          msg.innerHTML = `<span class="ok">Convoyage de ${esc(a.mission)} confié à ${esc(tr)}.</span>`;
+          notify(L(['Convoyage de {m} ({r}) confié à {p}.', 'Ferry of {m} ({r}) assigned to {p}.', 'Überführung von {m} ({r}) an {p} übertragen.', 'Traslado de {m} ({r}) confiado a {p}.'], { m: a.mission, r: a.aircraft?.registration || '', p: tr }), 'ok');
+          msg.innerHTML = `<span class="ok">${L(['Convoyage de {m} confié à {p}.', 'Ferry of {m} assigned to {p}.', 'Überführung von {m} an {p} übertragen.', 'Traslado de {m} confiado a {p}.'], { m: esc(a.mission), p: esc(tr) })}</span>`;
           await build();
           render();
         } catch (err) {
-          msg.innerHTML = `<span class="err">Convoyage non confié : ${esc(err.message)}</span>`;
+          msg.innerHTML = `<span class="err">${L(['Convoyage non confié : {e}', 'Ferry not assigned: {e}', 'Überführung nicht übertragen: {e}', 'Traslado no confiado: {e}'], { e: esc(err.message) })}</span>`;
         }
       });
       bodyEl.addEventListener('click', async e => {
@@ -1299,7 +1301,7 @@
         await AD.open(x.m, await O.yamlOf(x.m), {
           maps: x.m.images || [],
           takeoff: x.timing?.takeoff || takeoff,
-          note: `Créneau ${slotTitle(s)} — le résultat revient dans la fenêtre du créneau`,
+          note: L(['Créneau {s} — le résultat revient dans la fenêtre du créneau', 'Slot {s} — the result comes back to the slot window', 'Zeitfenster {s} — das Ergebnis kehrt in das Fenster des Zeitfensters zurück', 'Franja {s} — el resultado vuelve a la ventana de la franja'], { s: slotTitle(s) }),
           rows: x.rows,
           apply: async rows => {
             x.planes = await Promise.all(rows.map((r, i) => x.rows[i] && x.rows[i].post === r.post ? x.planes[i] : planeList(r.post, x.dep)));
@@ -1330,12 +1332,12 @@
         const msg = dlg.querySelector('[data-status]');
         const todo = [...ctx.d.values()].filter(x => x.on && x.rows.some(r => r.pilot && r.registration));
         if (!todo.length) {
-          msg.innerHTML = '<span class="err">Rien à enregistrer : cocher une mission et choisir, pour au moins un poste, un pilote et un appareil.</span>';
+          msg.innerHTML = `<span class="err">${L(['Rien à enregistrer : cocher une mission et choisir, pour au moins un poste, un pilote et un appareil.', 'Nothing to save: tick a mission and choose, for at least one post, a pilot and an aircraft.', 'Nichts zu speichern: eine Mission anhaken und für mindestens einen Posten Pilot und Luftfahrzeug wählen.', 'Nada que guardar: marque una misión y elija, para al menos un puesto, un piloto y una aeronave.'])}</span>`;
           return;
         }
         const bad = todo.filter(x => x.rows.some(r => errs(r).length));
         if (bad.length) {
-          msg.innerHTML = `<span class="err">À corriger avant d’enregistrer : ${bad.map(x => esc(x.m.id)).join(', ')} (doublons ou appareil engagé).</span>`;
+          msg.innerHTML = `<span class="err">${L(['À corriger avant d’enregistrer : {l} (doublons ou appareil engagé).', 'To fix before saving: {l} (duplicates or aircraft engaged).', 'Vor dem Speichern zu korrigieren: {l} (Doppelungen oder eingesetztes Luftfahrzeug).', 'A corregir antes de guardar: {l} (duplicados o aeronave asignada).'], { l: bad.map(x => esc(x.m.id)).join(', ') })}</span>`;
           return;
         }
         // accès au dossier des missions demandé d'abord, dans le clic (après d'autres attentes, le navigateur refuse)
@@ -1347,7 +1349,7 @@
         }
         const ok = [],
           ko = [];
-        msg.textContent = `Enregistrement de ${todo.length} mission(s)…`;
+        msg.textContent = L(['Enregistrement de {n} mission(s)…', 'Saving {n} mission(s)…', '{n} Mission(en) werden gespeichert…', 'Guardando {n} misión(es)…'], { n: todo.length });
         for (const x of todo)
           for (const m of x.members || [x.m]) try {
             const rows = x.rows.filter(r => r.pilot && r.registration && (!x.members || r.mid === m.id));
@@ -1360,13 +1362,13 @@
           } catch (err) {
             ko.push(`${m.id} : ${err.message}`);
           }
-        if (ok.length) notify(`Affectations enregistrées : ${ok.join(' ; ')}.`, 'ok');
-        for (const e of ko) notify(`Non enregistrée — ${e}`, 'err');
-        msg.innerHTML = [ok.length ? `<span class="ok">Enregistrées : ${esc(ok.join(' ; '))}.</span>` : '', ...ko.map(e => `<span class="err">Non enregistrée — ${esc(e)}</span>`)].filter(Boolean).join('<br>');
+        if (ok.length) notify(L(['Affectations enregistrées : {l}.', 'Assignments saved: {l}.', 'Zuweisungen gespeichert: {l}.', 'Asignaciones guardadas: {l}.'], { l: ok.join(' ; ') }), 'ok');
+        for (const e of ko) notify(L(['Non enregistrée — {e}', 'Not saved — {e}', 'Nicht gespeichert — {e}', 'No guardada — {e}'], { e }), 'err');
+        msg.innerHTML = [ok.length ? `<span class="ok">${L(['Enregistrées : {l}.', 'Saved: {l}.', 'Gespeichert: {l}.', 'Guardadas: {l}.'], { l: esc(ok.join(' ; ')) })}</span>` : '', ...ko.map(e => `<span class="err">${L(['Non enregistrée — {e}', 'Not saved — {e}', 'Nicht gespeichert — {e}', 'No guardada — {e}'], { e: esc(e) })}</span>`)].filter(Boolean).join('<br>');
         await build();
         if (!ctx.free.length && !ko.length) {
           dlg.close();
-          notify('Tous les pilotes libres du créneau sont affectés.', 'ok');
+          notify(L(['Tous les pilotes libres du créneau sont affectés.', 'All free pilots of the slot are assigned.', 'Alle freien Piloten des Zeitfensters sind zugewiesen.', 'Todos los pilotos libres de la franja están asignados.']), 'ok');
           return;
         }
         render();
@@ -1534,7 +1536,7 @@
         }
       ],
       defaultSortKey: 'ordre',
-      emptyText: data.virtuel ? 'Pas de classeur : aucune mission affectée cette semaine.' : 'Aucun vol sur la frise.',
+      emptyText: data.virtuel ? L(['Pas de classeur : aucune mission affectée cette semaine.', 'No workbook: no mission assigned this week.', 'Keine Arbeitsmappe: diese Woche keine Mission zugewiesen.', 'Sin libro: ninguna misión asignada esta semana.']) : L(['Aucun vol sur la frise.', 'No flight on the timeline.', 'Kein Flug auf der Zeitleiste.', 'Ningún vuelo en la cronología.']),
       storageKey: 'sortedTableWidths:odvPlanning#flights'
     }, flights.map(f => ({
       ...f,

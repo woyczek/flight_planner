@@ -824,6 +824,16 @@
         title: ["Toutes les pages, profil, données locales, design", "All pages, profile, local data, design", "Alle Seiten, Profil, lokale Daten, Design", "Todas las páginas, perfil, datos locales, diseño"]
       }
     ];
+    // libellés du menu : aussi pour les titres de page qui les reprennent (« Paramètres ») — couche de traduction
+    // (content_i18n.js, chargée après ce script), inscrits une fois par page
+    if (!window.__navI18n) {
+      window.__navI18n = true;
+      const navRows = items.filter(x => Array.isArray(x.label) && x.label.length === 4).map(x => x.label),
+        reg = () => window.RepositoryContentI18n?.(navRows);
+      window.RepositoryContentI18n ? reg() : addEventListener("DOMContentLoaded", reg, {
+        once: true
+      });
+    }
     const known = new Set(cfg.pages.map(p => p.path)),
       current = page?.path || "";
     // entrée active : la page elle-même, sinon la première entrée dont « match » est contenu dans le chemin courant

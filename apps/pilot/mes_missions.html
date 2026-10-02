@@ -309,8 +309,9 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=5ed81dcf"></script>
-<script src="../../shared/repository_nav.js?v=a82fbc42"></script>
-<script src="../../shared/content_i18n.js?v=cf6396e2"></script>
+<script src="../../shared/repository_nav.js?v=1ca2cafe"></script>
+<script src="mes_missions_i18n.js?v=b0ab8b58" defer></script>
+<script src="../../shared/content_i18n.js?v=2d61c23a"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=db00c09c"></script>
 <script src="../../shared/mission_estimate.js?v=fe2b9cad"></script><script src="../../shared/mission_exercise.js?v=d66c8758"></script>
@@ -350,6 +351,8 @@
   weekBars();
 
   /** Date et heure UTC lisibles : « sam. 04/10 12:40Z ». */
+  /** Phrase [fr, en, de, es] dans la langue de la page, valeurs {clé} insérées (déjà échappées par l'appelant). */
+  const tv = (row, vals = {}) => window.RepositoryKit.t(row).replace(/\{(\w+)\}/g, (_, k) => vals[k] ?? '');
   const fmt = ms => ms ? new Date(ms).toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }).replace(',', '') + 'Z' : '—';
   const hhmm = ms => ms ? new Date(ms).toISOString().slice(11, 16) + 'Z' : '—';
 
@@ -655,10 +658,10 @@
       <div><span>Indicatif</span><b>${esc(a.callsign || y.aircraft?.[0]?.callsign || '—')}</b></div>
       <div><span>Terrain de départ</span><b>${esc(a.departure || icaoOf(y.origin) || y.origin?.name || '—')}</b></div>
       <div><span>${alert ? 'Prêt à' : 'Décollage demandé'}</span><b>${esc(alert ? hhmm(Date.parse(alert.ready_at_utc)) : fmt(A.when(a)))}</b></div>
-      ${a.ferry ? `<div><span>Convoyage depuis ${esc(a.ferry.from)}</span><b>${esc(a.ferry.minutes)} min · décollage ${esc(hhmm(Date.parse(a.ferry.takeoff)))}</b></div>` : ''}
+      ${a.ferry ? `<div><span>${tv(['Convoyage depuis {x}', 'Ferry from {x}', 'Überführung ab {x}', 'Traslado desde {x}'], { x: esc(a.ferry.from) })}</span><b>${tv(['{m} min · décollage {t}', '{m} min · take-off {t}', '{m} min · Start {t}', '{m} min · despegue {t}'], { m: esc(a.ferry.minutes), t: esc(hhmm(Date.parse(a.ferry.takeoff))) })}</b></div>` : ''}
       <div><span>Statut</span><b>${esc(a.status || 'affectée')}</b></div></div>`;
-    const ferryText = a.role === 'convoyage' ? `<p class="pm-alert">Convoyage : amener ${esc(a.aircraft?.registration || 'l’appareil')} de ${esc(a.departure)} à ${esc(a.destination)} (décollage ${esc(fmt(A.when(a)))}, environ ${esc(a.block_min)} min) pour ${esc(a.for_pilot || '')}, qui l’emploie en mission ${esc(a.mission)}.</p>` : '';
-    const alertText = alert ? `<p class="pm-alert">Soyez prêt à ${esc(hhmm(Date.parse(alert.ready_at_utc)))} sur ${esc(alert.aerodrome || a.departure || '')} et attendez les ordres ; décollage prévisible en ${esc(alert.notice_min ?? '?')} minutes.${alert.window_end_utc ? ` Fin d'astreinte ${esc(hhmm(Date.parse(alert.window_end_utc)))}.` : ''}</p>` : '';
+    const ferryText = a.role === 'convoyage' ? `<p class="pm-alert">${tv(['Convoyage : amener {reg} de {dep} à {arr} (décollage {t}, environ {min} min) pour {pil}, qui l’emploie en mission {m}.', 'Ferry: take {reg} from {dep} to {arr} (take-off {t}, about {min} min) for {pil}, who flies it on mission {m}.', 'Überführung: {reg} von {dep} nach {arr} bringen (Start {t}, etwa {min} min) für {pil}, der es in Mission {m} einsetzt.', 'Traslado: llevar {reg} de {dep} a {arr} (despegue {t}, unos {min} min) para {pil}, que lo emplea en la misión {m}.'], { reg: esc(a.aircraft?.registration || '—'), dep: esc(a.departure), arr: esc(a.destination), t: esc(fmt(A.when(a))), min: esc(a.block_min), pil: esc(a.for_pilot || ''), m: esc(a.mission) })}</p>` : '';
+    const alertText = alert ? `<p class="pm-alert">${tv(['Soyez prêt à {t} sur {ad} et attendez les ordres ; décollage prévisible en {n} minutes.{end}', 'Be ready at {t} on {ad} and await orders; take-off expected within {n} minutes.{end}', 'Seien Sie um {t} in {ad} bereit und warten Sie auf Befehle; Start voraussichtlich in {n} Minuten.{end}', 'Esté listo a las {t} en {ad} y espere órdenes; despegue previsible en {n} minutos.{end}'], { t: esc(hhmm(Date.parse(alert.ready_at_utc))), ad: esc(alert.aerodrome || a.departure || ''), n: esc(alert.notice_min ?? '?'), end: alert.window_end_utc ? ' ' + tv(['Fin d’astreinte {t}.', 'End of standby {t}.', 'Ende der Bereitschaft {t}.', 'Fin de la guardia {t}.'], { t: esc(hhmm(Date.parse(alert.window_end_utc))) }) : '' })}</p>` : '';
     const team = a.role === 'convoyage' ? [] : (A._all || []).filter(x => x.mission === a.mission && x.pilot !== a.pilot);
     const teams = (y.teams || []).filter(t => t?.name && !/^[-\s]*$/.test(t.name));
     const maps = (a.files?.maps?.length ? a.files.maps : (y.maps || []).map(m => m?.filename).filter(Boolean)).filter(m => mapUrls[m] && !isExerciseMap(y, m));
@@ -669,10 +672,10 @@
     const pliWhen = p => `${p.at != null ? `${hhmm(p.at)} — ` : ''}${p.when}`;
     const pliHtml = p => p.open
       ? `<h5 class="pm-pli-head">${p.emitter ? 'Message à transmettre' : p.kind === 'pli' ? 'Pli' : 'Message radio'} ${esc(p.id)}${p.title ? ` — ${esc(p.title)}` : ''}</h5>
-        <p class="pm-pli-meta">${p.emitter ? `À ${esc(p.to.join(', '))} · ` : p.from ? `De ${esc(p.from)} · ` : ''}${esc(pliWhen(p))} · <button type="button" class="repo-plain ad-link pm-reseal" data-pli-reseal="${esc(p.id)}">Resceller</button></p>${para(p.text)}${tracksHtml(p.tracks)}
+        <p class="pm-pli-meta">${p.emitter ? tv(['À {x} · ', 'To {x} · ', 'An {x} · ', 'A {x} · '], { x: esc(p.to.join(', ')) }) : p.from ? tv(['De {x} · ', 'From {x} · ', 'Von {x} · ', 'De {x} · '], { x: esc(p.from) }) : ''}${esc(pliWhen(p))} · <button type="button" class="repo-plain ad-link pm-reseal" data-pli-reseal="${esc(p.id)}">Resceller</button></p>${para(p.text)}${tracksHtml(p.tracks)}
         ${Array.from({ length: Math.ceil(p.maps.filter(m => mapUrls[m]).length / 2) }, (_, i) => `<div class="pm-maps">${p.maps.filter(m => mapUrls[m]).slice(i * 2, i * 2 + 2).map(figure).join('')}</div>`).join('')}`
-      : `<div class="pm-pli" data-kind="${p.kind}" data-pli="${esc(p.id)}" title="Briser le scellé"><b>${p.emitter ? 'Message à transmettre' : p.kind === 'pli' ? 'Pli scellé' : 'Message radio attendu'}</b><span>${esc(p.id)}${p.emitter ? ` · à ${esc(p.to.join(', '))}` : p.from ? ` · de ${esc(p.from)}` : ''}</span>
-        <span class="pm-pli-at">À ouvrir : ${esc(pliWhen(p))}</span>${p.tracks.length ? `<small>${p.tracks.length} piste${p.tracks.length > 1 ? 's' : ''}</small>` : ''}${p.maps.length ? `<small>${p.maps.length} carte${p.maps.length > 1 ? 's' : ''} jointe${p.maps.length > 1 ? 's' : ''}</small>` : ''}
+      : `<div class="pm-pli" data-kind="${p.kind}" data-pli="${esc(p.id)}" title="Briser le scellé"><b>${p.emitter ? 'Message à transmettre' : p.kind === 'pli' ? 'Pli scellé' : 'Message radio attendu'}</b><span>${esc(p.id)}${p.emitter ? tv([' · à {x}', ' · to {x}', ' · an {x}', ' · a {x}'], { x: esc(p.to.join(', ')) }) : p.from ? tv([' · de {x}', ' · from {x}', ' · von {x}', ' · de {x}'], { x: esc(p.from) }) : ''}</span>
+        <span class="pm-pli-at">À ouvrir : ${esc(pliWhen(p))}</span>${p.tracks.length ? `<small>${tv(p.tracks.length > 1 ? ['{n} pistes', '{n} tracks', '{n} Spuren', '{n} pistas'] : ['1 piste', '1 track', '1 Spur', '1 pista'], { n: p.tracks.length })}</small>` : ''}${p.maps.length ? `<small>${tv(p.maps.length > 1 ? ['{n} cartes jointes', '{n} maps attached', '{n} Karten beigefügt', '{n} mapas adjuntos'] : ['1 carte jointe', '1 map attached', '1 Karte beigefügt', '1 mapa adjunto'], { n: p.maps.length })}</small>` : ''}
         <button type="button" class="ghost" data-pli-open="${esc(p.id)}">Briser le scellé</button></div>`;
     const summary = y.summary ? para(y.summary) : mdSummary?.html || '';
     const objectives = [y.objectives?.primary && `<p><b>Objectif principal</b> : ${esc(y.objectives.primary)}</p>`, ...(Array.isArray(y.objectives?.secondary) ? y.objectives.secondary : y.objectives?.secondary ? [y.objectives.secondary] : []).map(o => `<p><b>Objectif secondaire</b> : ${esc(o)}</p>`)].filter(Boolean).join('');
@@ -711,7 +714,7 @@
         ${secs.filter(s => !/piste|track|inject|chiffon|chronolog|exercice|plis?|message/i.test(s.title)).map(s => sec(s.title, s.html)).join('')}
         ${sec('Fiche technique', techSheet(y))}
         ${sec('Historique des affectations', log.length ? `<ul class="pm-log">${log.map(e => `<li>${esc(A.logText(e))}</li>`).join('')}</ul>` : '')}
-        <div class="pm-sign"><i class="pm-dr" aria-label="Diffusion restreinte"></i><span>Fait le ${esc(signed)}, pour le Centre</span><em class="pm-signature">${esc(a.by || 'CPCO')}</em><small>Le chef de centre — ${esc(a.by || 'CPCO')}</small></div>
+        <div class="pm-sign"><i class="pm-dr" aria-label="Diffusion restreinte"></i><span>${tv(['Fait le {d}, pour le Centre', 'Done on {d}, for the Centre', 'Gegeben am {d}, für das Zentrum', 'Hecho el {d}, por el Centro'], { d: esc(signed) })}</span><em class="pm-signature">${esc(a.by || 'CPCO')}</em><small>Le chef de centre — ${esc(a.by || 'CPCO')}</small></div>
       </div>
       ${plis.length ? `<div data-part="plis"><h4>Plis et messages en vol</h4>${plis.map(pliHtml).join('')}</div>` : ''}`;
     $('pmDetail').querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go, a, y, pts, dist));
