@@ -1817,9 +1817,10 @@ html[data-skeuo="frame"] :is(.mcg-chart .mcg-axis, .mcg-donut .mcg-total) {
 html[data-skeuo="frame"] .mcg-chart g:hover .mcg-hover {
   fill: rgba(232, 210, 150, .1)
 }
-/* ================================================================================================ FONDS ILLUSTRÉS DES BLOCS
-   design_deco.js (BG) : image sous le contenu du bloc (empilement propre au bloc : fond du bloc, puis l'image, puis le
-   contenu), fondue vers la droite et le bas pour garder le texte lisible. */
+/* ================================================================================================ PANNEAUX DES BLOCS
+   design_deco.js (PANELS) : image sous le contenu du bloc (empilement propre au bloc : fond du bloc, puis le panneau,
+   puis le contenu), couvrant le bloc, calée à droite, atténuée de façon uniforme (opacité par design et par ton ;
+   lisibilité : voile --repo-veil sous les données). */
 .repo-has-bg {
   isolation: isolate
 }
@@ -1829,39 +1830,16 @@ html[data-skeuo="frame"] .mcg-chart g:hover .mcg-hover {
   z-index: -1;
   border-radius: inherit;
   pointer-events: none;
-  background-repeat: no-repeat;
-  opacity: .55;
-  -webkit-mask-image: linear-gradient(135deg, #000 0%, #000 35%, transparent 95%);
-  mask-image: linear-gradient(135deg, #000 0%, #000 35%, transparent 95%)
-}
-.repo-deco-bg-anchor {
-  background-position: left top;
-  background-size: auto
-}
-.repo-deco-bg-cover {
-  background-position: center;
-  background-size: cover
+  background: right center/cover no-repeat;
+  opacity: .5
 }
 @media print {
   .repo-deco-bgimg {
     display: none
   }
 }
-/* fonds « cover » (images de scène : piste, globe…) : image entière visible, atténuée de façon uniforme (texte lisible) */
-.repo-deco-bgimg.repo-deco-bg-cover {
-  -webkit-mask-image: none;
-  mask-image: none;
-  opacity: .5
-}
-html[data-design="field"] .repo-deco-bgimg.repo-deco-bg-cover {
-  opacity: .6
-}
-/* Durci : même peinture que le bloc, pochoirs clairs (texte lisible) */
-html[data-design="aqua"] .repo-deco-bgimg.repo-deco-bg-cover {
+html[data-design="aqua"] .repo-deco-bgimg.repo-deco-panel {
   opacity: .35
-}
-html[data-design="aqua"][data-tone="dark"] .repo-deco-bgimg.repo-deco-bg-cover {
-  opacity: .5
 }
 /* Aqua, ton sombre : panneaux bleu nuit (panels/) voilés par la surface du bloc (opacité basse) ; voile sombre sous
    les données */
@@ -2429,13 +2407,6 @@ html[data-tone="dark"] .repo-deco-prop {
     display: none
   }
 }
-/* panneaux d'habillage (Durci, Cabinet) : couvrent le bloc, atténués de façon uniforme (pas de dégradé en
-   transparence) ; lisibilité : opacité par design et voile --repo-veil sous les données */
-.repo-deco-bgimg.repo-deco-panel {
-  background-position: right center;
-  -webkit-mask-image: none;
-  mask-image: none
-}
 html[data-design="cabinet"][data-tone="dark"] .repo-deco-bgimg.repo-deco-panel {
   opacity: .3
 }
@@ -2445,7 +2416,7 @@ html[data-skeuo] .repo-block-heading .repo-block-tools .repo-drag {
   min-width: 0;
   width: 30px
 }
-html[data-design="flightlog"] .repo-deco-bgimg.repo-deco-bg-cover {
+html[data-design="flightlog"] .repo-deco-bgimg.repo-deco-panel {
   opacity: .9
 }
 /* Carnet de vol, ton sombre : panneaux bleu marine (panels/) atténués sur le parchemin sombre ; voile marine sous les
@@ -2467,13 +2438,6 @@ html[data-skeuo] {
 }
 html[data-skeuo] body {
   overflow-x: clip
-}
-.repo-deco-bgimg.repo-deco-bg-side {
-  background-size: auto 100%;
-  background-position: right center;
-  opacity: .75;
-  -webkit-mask-image: linear-gradient(to left, #000 0, #000 30%, transparent 70%);
-  mask-image: linear-gradient(to left, #000 0, #000 30%, transparent 70%)
 }
 /* ================================================================================================ BARRES DE PROGRESSION
    <progress> (tâches longues : AppFramework.task ; jauges des pages : base SIA…) : piste creusée et remplissage dans la

@@ -872,9 +872,8 @@
           block = blockOf(x.m);
         const legs = await Promise.all(x.rows.map(async r => {
           const pl = planeOf(r.registration);
-          const near = pl?.base && dep.pos ? await M.coordsOf(pl.base) : null;
           // départ sans terrain (mission en mer, sur un objectif) : l'appareil part de sa base, pas de convoyage
-          return pl && dep.code && dep.pos && pl.base && pl.base !== dep.code && !(near && M.geo.nm(near, dep.pos) < 3) ? await M.ferryOf({
+          return pl && dep.code && dep.pos && pl.base && !(await atDeparture(pl.base, dep)) ? await M.ferryOf({
             base: pl.base,
             departure: dep.code,
             to: dep.pos,
@@ -943,14 +942,15 @@
     }
     const dirty = () => !!ctx && snap() !== initial;
     /** Proposition : missions des options (proposition d'abord), postes préremplis (pilote proposé, premier appareil libre). */
+    /** L'appareil basé à base est-il au départ (même terrain, ou base à moins de 3 NM d'un départ donné par sa position) ? */
+    const atDeparture = async (base, dep) => !!base && ((!!dep.code && base === dep.code) || (!!dep.pos && (q => !!q && M.geo.nm(q, dep.pos) < 3)(await M.coordsOf(base))));
     /** Appareils compatibles d'un poste, du plus proche au plus lointain du terrain de départ : { f, nm, min }
      *  (min : convoyage en minutes, 0 sur place, null distance inconnue). */
     async function planeList(post, dep) {
       const out = await Promise.all(M.planesFor(post, dep.code).map(async f => {
         const from = f.base ? await M.coordsOf(f.base) : null,
-          // sur place : même terrain, ou base à moins de 3 NM du départ (départ donné par sa position)
-          here = f => !!f.base && ((!!dep.code && f.base === dep.code) || (!!from && !!dep.pos && M.geo.nm(from, dep.pos) < 3)),
-          ferry = f.base && !here(f) ? await M.ferryOf({
+          here = await atDeparture(f.base, dep),
+          ferry = f.base && !here ? await M.ferryOf({
             base: f.base,
             departure: dep.code,
             to: dep.pos,
@@ -958,9 +958,9 @@
           }) : null;
         return {
           f,
-          nm: here(f) ? 0 : dep.pos && from ? M.geo.nm(from, dep.pos) : null,
-          min: here(f) ? 0 : ferry?.minutes ?? null,
-          why: here(f) ? '' : !f.base ? 'base non renseignée dans la flotte' : !dep.pos ? 'départ sans position' : !from ? `position de ${f.base} inconnue (base SIA à charger)` : ''
+          nm: here ? 0 : dep.pos && from ? M.geo.nm(from, dep.pos) : null,
+          min: here ? 0 : ferry?.minutes ?? null,
+          why: here ? '' : !f.base ? 'base non renseignée dans la flotte' : !dep.pos ? 'départ sans position' : !from ? `position de ${f.base} inconnue (base SIA à charger)` : ''
         };
       }));
       return out.sort((a, b) => (a.nm ?? 1e9) - (b.nm ?? 1e9) || (b.f.operational !== false) - (a.f.operational !== false) || a.f.registration.localeCompare(b.f.registration));

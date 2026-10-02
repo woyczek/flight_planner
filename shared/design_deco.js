@@ -171,8 +171,8 @@
     ['families', /famil|s[ée]rie|series|type|mission|cat[ée]gor/],
     ['ops', /./]
   ];
-  // Par design : dir (dossier des panneaux), only (orientations disponibles quand il en manque une), clair (jeu propre au
-  // ton clair ; alias possible : thème → panneau du jeu quand il a moins de thèmes). Cabinet : jeu « 1930 » ; un jeu « 1800 »
+  // Par design : dir (dossier des panneaux), only (facultatif : orientations disponibles quand il en manque une), clair
+  // (jeu propre au ton clair, même forme). Cabinet : jeu « 1930 » ; un jeu « 1800 »
   // attend dans cabinet/1800 : remplacer '1930' par '1800' (dir et clair.dir) une fois ses panneaux convertis.
   const PANELS = {
     // Carnet de vol : ton sombre, plans au trait sur bleu marine (panels/ ; families et ops : portrait seulement, en
@@ -193,10 +193,8 @@
     // Aqua : équipements sur métal brossé, bleu nuit en ton sombre (panels/), clair en ton clair (clair/)
     aqua: {
       dir: 'panels',
-      only: {},
       clair: {
-        dir: 'clair',
-        only: {}
+        dir: 'clair'
       }
     },
     field: {
@@ -208,11 +206,9 @@
     },
     cabinet: {
       dir: '1930',
-      only: {},
       // ton clair : fonds ivoire (cartes côtières aquarellées, objets de laiton), 9 thèmes complets
       clair: {
-        dir: '1930/clair',
-        only: {}
+        dir: '1930/clair'
       }
     }
   };
@@ -290,9 +286,9 @@
     // titre, puis icône et identifiant, puis sous-titre : premier niveau qui reconnaît un thème autre que « ops »
     const themes = [b.querySelector('h2,h3')?.textContent, `${b.dataset.icon || ''} ${b.dataset.blockId || ''}`, b.dataset.subtitle]
       .map(hit).find(h => h.length > 1) || hit('-');
-    const names = [...new Set(themes.map(([n]) => set.alias?.[n] || n))];
+    const names = [...new Set(themes.map(([n]) => n))];
     const files = names.flatMap(n => {
-      const or = set.only[n] || 'wt'; // orientations disponibles
+      const or = set.only?.[n] || 'wt'; // orientations disponibles
       const order = [or.includes(o) ? o : or, ...or.replace(o, '')];
       return order.map(x => `${set.dir ? set.dir + '/' : ''}panel-${n}-${x}`);
     });
@@ -316,7 +312,7 @@
       if (b.hidden || !b.offsetHeight || b.classList.contains('repo-has-bg') || b.parentElement.closest('.repo-block.repo-has-bg')) return;
       const f = prev = panelOf(b, set, prev);
       const el = document.createElement('div');
-      el.className = 'repo-deco-bgimg repo-deco-bg-cover repo-deco-panel';
+      el.className = 'repo-deco-bgimg repo-deco-panel';
       el.setAttribute('aria-hidden', 'true');
       el.style.backgroundImage = `url("${DECO(d)(f)}")`;
       b.classList.add('repo-has-bg');
