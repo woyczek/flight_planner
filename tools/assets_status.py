@@ -6,7 +6,8 @@ Usage (à la racine du dépôt) :
     python tools/assets_status.py --new        en plus : images déposées depuis le dernier relevé (dossier de dépôt)
     python tools/assets_status.py --mark       note le relevé (les images déposées jusqu'ici sont « vues »)
     --drop <dossier>                           dossier de dépôt des images (défaut : shared/deco du dossier Synology s'il
-                                               existe, sinon shared/deco du dépôt)
+                                               existe — E:/SynologyDrive ou ~/SynologyDrive, le même partage —,
+                                               sinon shared/deco du dépôt)
 
 Une famille est « complète » pour un design quand tous ses fichiers sont là ; les familles facultatives sont signalées.
 Les attentes sont décrites dans SPEC (noms de fichiers sous shared/deco/<design>/), plus deux contrôles dans le code
@@ -17,7 +18,10 @@ import argparse, glob, io, json, os, re, sys
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 DECO = os.path.join(ROOT, 'shared', 'deco')
 SEEN = os.path.join(ROOT, 'tools', '.assets_seen.json')
-SYNOLOGY = r'E:\SynologyDrive\XP11\Documentation\shared\deco'
+# dossier de dépôt : le partage Synology (synchronisé sur E: et dans le profil, même contenu)
+SYNOLOGY = next((d for d in (r'E:\SynologyDrive\XP11\Documentation\shared\deco',
+                             os.path.join(os.path.expanduser('~'), 'SynologyDrive', 'XP11', 'Documentation', 'shared', 'deco'))
+                 if os.path.isdir(d)), r'E:\SynologyDrive\XP11\Documentation\shared\deco')
 THEMES = ['aircraft', 'airfield', 'time', 'radio', 'nav', 'gear', 'awards', 'families', 'ops']
 PANELS = [f'panel-{t}-{o}.webp' for t in THEMES for o in 'wt']
 SHEET = [f'sheet-{p}.webp' for p in ('tl', 'tr', 'bl', 'br', 'top', 'bot', 'left', 'right', 'paper')]
@@ -30,7 +34,8 @@ SPEC = {
         'cabinet': ['1930/' + f for f in PANELS], 'field': PANELS,
         'flightlog': ['panels/' + f for f in PANELS], 'aqua': ['panels/' + f for f in PANELS]}),
     'Panneaux, ton clair': (False, {
-        'cabinet': ['1930/clair/' + f for f in PANELS], 'flightlog': ['clair/' + f for f in PANELS], 'field': None, 'aqua': None}),
+        'cabinet': ['1930/clair/' + f for f in PANELS], 'flightlog': ['clair/' + f for f in PANELS], 'field': None,
+        'aqua': ['clair/' + f for f in PANELS]}),
     'Feuille de registre': (False, {d: SHEET for d in DESIGNS}),
     'Carnets du Studio (aperçus des cartes)': (False, {
         'cabinet': None, 'flightlog': ['notebook-closed.webp', 'notebook-open.webp'],

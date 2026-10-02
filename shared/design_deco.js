@@ -190,10 +190,14 @@
         } // paysage à venir
       }
     },
-    // Aqua : métal brossé clair et équipements (panels/), un seul jeu pour les deux tons
+    // Aqua : équipements sur métal brossé, bleu nuit en ton sombre (panels/), clair en ton clair (clair/)
     aqua: {
       dir: 'panels',
-      only: {}
+      only: {},
+      clair: {
+        dir: 'clair',
+        only: {}
+      }
     },
     field: {
       dir: '',
