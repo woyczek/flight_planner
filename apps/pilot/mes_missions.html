@@ -188,6 +188,16 @@
   html:is([data-design="cabinet"],[data-design="flightlog"]) .pm-book{margin-bottom:calc(12px + min(48px, 4.5vw))} /* place de la pointe du signet */
   html[data-design="cabinet"] .pm-book{--pm-sig-body:url("../../shared/deco/cabinet/bookmark-body.webp?v=448f0fbb");--pm-sig-tail:url("../../shared/deco/cabinet/bookmark-tail.webp?v=6c5d9661")}
   html[data-design="flightlog"] .pm-book{--pm-sig-body:url("../../shared/deco/flightlog/bookmark-body.webp?v=5ff34cd3");--pm-sig-tail:url("../../shared/deco/flightlog/bookmark-tail.webp?v=4dfe039d")}
+  /* signet rigide (une seule image : carte d'Aqua, sangle de Durci), glissé entre les pages, de travers : .pm-sig est la
+     fenêtre droite hors du papier (sous le livre, ou au-dessus avec --pm-sig-top), coupée net au bord des feuilles ;
+     l'image inclinée est son ::before (calée en bas de la fenêtre, ou en haut pour un signet qui dépasse au-dessus :
+     carte à ruban d'Aqua). Par design : --pm-sig-img, --pm-sig-ratio (largeur/hauteur), --pm-sig-w (largeur),
+     --pm-sig-out (part qui dépasse), --pm-sig-x (retrait depuis le bord gauche de la feuille), --pm-sig-rot (inclinaison) ; au-dessus : --pm-sig-top, --pm-sig-at-top:0 */
+  html:is([data-design="aqua"],[data-design="field"]) .pm-sig{display:block;position:absolute;z-index:0;left:calc(var(--pm-sheet-l) + var(--pm-sig-x, 1cqw));width:calc(var(--pm-sig-w) + 3cqw);height:var(--pm-sig-out);top:var(--pm-sig-top, calc(100% - var(--pm-sheet-b)));overflow:hidden;border:0;padding:0;background:none;cursor:pointer;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.35))}
+  html:is([data-design="aqua"],[data-design="field"]) .pm-sig::before{content:"";position:absolute;left:1.5cqw;width:var(--pm-sig-w);aspect-ratio:var(--pm-sig-ratio);top:var(--pm-sig-at-top, auto);bottom:var(--pm-sig-at-bottom, 0);background:var(--pm-sig-img) center/100% 100% no-repeat;transform:rotate(var(--pm-sig-rot))}
+  html:is([data-design="aqua"],[data-design="field"]) .pm-sig::after{content:none}
+  html[data-design="aqua"] .pm-book{--pm-sig-img:url("../../shared/deco/aqua/bookmark.webp?v=0e29b630");--pm-sig-ratio:174/600;--pm-sig-w:7.5cqw;--pm-sig-out:11cqw;--pm-sig-top:calc(var(--pm-sheet-t) - 11cqw);--pm-sig-at-top:.6cqw;--pm-sig-at-bottom:auto;--pm-sig-rot:5deg}
+  html[data-design="field"] .pm-book{--pm-sig-img:url("../../shared/deco/field/bookmark.webp?v=22060f2f");--pm-sig-ratio:119/600;--pm-sig-w:4.2cqw;--pm-sig-out:9cqw;--pm-sig-x:12cqw;--pm-sig-rot:-4deg}
   .pm-week{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}.pm-week input{width:auto}.pm-week button{min-width:2.2em}
   .pm-types-sum{margin:0 0 8px;font-weight:600}
   .pm-sims{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 14px}
@@ -236,7 +246,7 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=1466c9a9"></script>
-<script src="../../shared/repository_nav.js?v=5b344fd9"></script>
+<script src="../../shared/repository_nav.js?v=71678c42"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=db00c09c"></script>
