@@ -311,7 +311,7 @@
   // Designs à matières (Cabinet, Durci, Aqua : textures, plaques, vis) : feuille propre (designs.list[id].css),
   // chargée seulement quand l'un d'eux est choisi, avec sa propre version (empreinte de son contenu, table FILE_V
   // écrite par tools/bump_versions.py).
-  const FILE_V = {"designs_skeuo.css": "154f6f36"};
+  const FILE_V = {"designs_skeuo.css": "37ca1c6b"};
   const designCss = id => {
     const f = designs[id]?.css;
     if (!f || document.querySelector(`link[data-design-css="${f}"]`)) return;
@@ -916,7 +916,7 @@
     store.src = new URL("browser_store.js?v=fad42c07", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
-    assign.src = new URL("assignments.js?v=31e88546", script.src).href;
+    assign.src = new URL("assignments.js?v=e2bfedf7", script.src).href;
     document.head.append(assign);
     const update = document.createElement("script");
     update.src = new URL("suite_update.js?v=798086a3", script.src).href;

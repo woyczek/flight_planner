@@ -2406,7 +2406,8 @@ html[data-design="flightlog"][data-tone="dark"] .repo-has-bg:has(>.repo-deco-pan
    recalcul des décors en boucle, pas de barres qui clignotent) ; décors des marges jamais à l'origine d'un défilement
    horizontal. */
 html[data-skeuo] {
-  scrollbar-gutter: stable
+  scrollbar-gutter: stable;
+  --repo-round: 0 /* angles droits partout (repository_nav.css : rayons calc(… * var(--repo-round, 1))) */
 }
 html[data-skeuo] body {
   overflow-x: clip

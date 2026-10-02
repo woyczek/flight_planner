@@ -116,8 +116,13 @@ liste `DISPLAY` : design, icônes, couleurs, barre latérale, langue, onglets, s
   - **jetons** `--sk-*` par design et par ton, **composants communs** écrits une fois (`designs_skeuo.css`) ; les
     règles d'une page (CR, planificateur, éditeur, Apparence) sont dans la feuille de la page, avec ces jetons ;
     banc de non-régression : `tools/skeuo_regression.html` ;
-  - **fonds des blocs** (`design_deco.js`) : fonds illustrés déclarés (`BG`, blocs `data-deco-bg` : Carnet de vol,
-    Aqua) ; **panneaux par thème** (`PANELS` : Cabinet « 1930 » marine / ivoire selon le ton, Durci) choisis d'après
+  - **angles** : jeton commun `--repo-round` (1 arrondis, 0 dans les designs à matières) ; un rayon s'écrit
+    `calc(<rayon> * var(--repo-round, 1))`, jamais une exception `html[data-skeuo] … { border-radius: 0 }` par élément ;
+    surfaces de données posées sur un bloc habillé : `background: var(--repo-veil, …)` (voile du design) ;
+  - **une page = des blocs** : tout contenu dans une `<section>` à `<h2>` de `main` (en-tête, déplacer / masquer, décor),
+    rien de posé hors bloc ;
+  - **fonds des blocs** (`design_deco.js`) : **panneaux par thème** (`PANELS` : Cabinet « 1930 » marine / ivoire selon
+    le ton, Carnet de vol plans marine / parchemin, Durci, Aqua) choisis d'après
     le titre, l'icône puis le sous-titre du bloc ; **feuille de registre** (`SHEETS`, Cabinet, Carnet de vol et Durci, ton
     clair : blocs de tableau
     des registres, une planche par design découpée par `tools/cut_register_sheet.py`, géométrie en jetons `--sh-*`) ;
