@@ -41,7 +41,9 @@
   // état de la page (mémoire seulement)
   let book = null,
     fileName = '',
-    data = null,
+    xl = null, // classeur lu (sa semaine)
+    data = null, // données affichées : le classeur si la semaine affichée est la sienne, sinon null (sans classeur)
+    weekMon = null, // lundi affiché (ms) ; null : semaine du classeur, sinon la semaine en cours
     slots = [],
     basis = null, // données du calcul : classeur, sinon déclarations (declWeek)
     flights = [],
@@ -70,10 +72,24 @@
   // Sans classeur, la grille reste affichée : pilotes de la référence DEFA, semaine en cours, ligne du classeur vide
   // (« non renseigné »), déclarations des pilotes et affectations ; légende par défaut (OdvCore.LEGEND).
   let virtual = null;
+  const isoDay = ms => new Date(ms).toISOString().slice(0, 10);
+  /** Lundi (UTC, ms) de la semaine qui contient ms. */
+  const mondayOf = ms => {
+    const d = new Date(ms);
+    return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - (d.getUTCDay() + 6) % 7);
+  };
+  const xlMonday = () => xl ? Date.parse(`${xl.dates[0]}T00:00:00Z`) : null;
+  /** Lundi affiché : choisi (◀ ▶), sinon celui du classeur, sinon la semaine en cours. */
+  const shownMonday = () => weekMon ?? xlMonday() ?? mondayOf(Date.now());
+  /** Numéro de semaine ISO. */
+  const isoWeekNo = ms => {
+    const d = new Date(mondayOf(ms) + 3 * 864e5),
+      y = Date.UTC(d.getUTCFullYear(), 0, 4);
+    return 1 + Math.round((d - mondayOf(y)) / 6048e5);
+  };
   function emptyWeek() {
-    if (virtual) return virtual;
-    const now = new Date(),
-      mon = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (now.getUTCDay() + 6) % 7);
+    const mon = shownMonday();
+    if (virtual && virtual.dates[0] === isoDay(mon)) return virtual;
     const dates = Array.from({
       length: 7
     }, (_, j) => new Date(mon + j * 864e5).toISOString().slice(0, 10));
@@ -294,15 +310,39 @@
   async function rebuild() {
     if (!book) return render();
     try {
-      data = await C.extract(book, settings, fileName);
-      await window.OdvAssign?.load(data, settings).catch(e => console.warn(e)); // déclarations des pilotes, affectations
-      compute(); // après les affectations : créneaux et missions probables sur les pilotes libres
+      xl = await C.extract(book, settings, fileName);
     } catch (e) {
       console.error(e);
       notify(`Analyse impossible : ${e.message}`, 'err');
-      data = null;
+      xl = null;
     }
+    await showWeek();
+  }
+  /** Affiche la semaine choisie : le classeur si c'est la sienne, sinon les déclarations des pilotes et les affectations
+   *  (comme sans classeur) ; affectations relues, créneaux et missions probables recalculés. */
+  async function showWeek() {
+    data = xl && xl.dates[0] === isoDay(shownMonday()) ? xl : null;
+    await window.OdvAssign?.load(data || emptyWeek(), settings).catch(e => console.warn(e)); // déclarations, affectations
+    compute(); // après les affectations : créneaux et missions probables sur les pilotes libres
     render();
+  }
+  /** Sélecteur de semaine (au-dessus de la grille) : précédente, suivante, en cours, semaine du classeur. */
+  function renderWeekNav() {
+    const host = $('odvWeekNav');
+    if (!host) return;
+    const mon = shownMonday(),
+      cur = mondayOf(Date.now()),
+      xm = xlMonday();
+    const src = xm === mon ? `classeur ${fileName}` : 'déclarations des pilotes et affectations (pas de classeur pour cette semaine)';
+    host.innerHTML = `<button type="button" class="secondary" data-wk="-1">◀ Semaine précédente</button>
+      <b>Semaine ${isoWeekNo(mon)} — du ${esc(dateFr(isoDay(mon)))} au ${esc(dateFr(isoDay(mon + 6 * 864e5)))}</b> <span class="mut">${esc(src)}</span>
+      <button type="button" class="secondary" data-wk="1">Semaine suivante ▶</button>${mon !== cur ? '<button type="button" class="ghost" data-wk="now">Cette semaine</button>' : ''}${xm != null && xm !== mon ? '<button type="button" class="ghost" data-wk="xl">Semaine du classeur</button>' : ''}`;
+    host.querySelectorAll('[data-wk]').forEach(b => b.onclick = () => {
+      const v = b.dataset.wk;
+      weekMon = v === 'now' ? cur : v === 'xl' ? null : mon + +v * 6048e5;
+      selected = null;
+      showWeek();
+    });
   }
 
   // CR par famille (registre des CR de ce navigateur, sinon data/cr/missions.yaml servi) : pondération des missions
@@ -375,6 +415,8 @@
 
   function clearAll() {
     book = null;
+    xl = null;
+    weekMon = null;
     data = null;
     basis = null;
     slots = [];
@@ -397,6 +439,7 @@
     });
     $('odvCopy').disabled = !has || !$('odvRecapText').value;
     renderReport();
+    renderWeekNav();
     renderGrid();
     renderSlots();
     renderMissions();
