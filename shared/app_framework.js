@@ -134,6 +134,7 @@
   // ---- Version entre deux publications : commit courant lu dans le dépôt servi (.git/HEAD, référence de la branche,
   // tag v<version> : objet du tag annoté décompressé, ou packed-refs). Commit ≠ celui de la version publiée → le pied de
   // page affiche « v4.4.0+abc1234 » (lien vers le commit). Copie sans .git (téléchargement, publication) : rien ne change.
+  // En file:// (page ouverte sans le lanceur), .git est illisible : config/build.js, écrit par les crochets git.
   // racine de l'application : config/repository_tree est un dossier plus bas
   const gitRoot = () => {
     const src = document.querySelector('script[src*="repository_tree"]')?.src;
@@ -170,9 +171,23 @@
       return sha;
     }
   }
+  /** Commit écrit par les crochets git (tools/write_build.sh → config/build.js) : lisible aussi en file://, où le
+   *  navigateur refuse de lire .git ; null sans fichier. */
+  const buildFile = () => new Promise(done => {
+    if (window.REPOSITORY_BUILD) return done(window.REPOSITORY_BUILD);
+    const s = document.createElement("script");
+    s.src = gitRoot() + "config/build.js?t=" + Date.now();
+    s.onload = () => done(window.REPOSITORY_BUILD || null);
+    s.onerror = () => done(null);
+    document.head.append(s);
+  });
   /** { sha, short, branch } si le commit courant n'est pas celui de la version publiée ; null sinon (ou sans .git). */
   async function buildOf(r) {
-    if (!r.version || !/^https?:$/.test(location.protocol)) return null;
+    if (!r.version) return null;
+    if (!/^https?:$/.test(location.protocol)) { // file:// : commit écrit par les crochets git
+      const b = await buildFile();
+      return b?.sha && b.tag !== `v${r.version}` ? { sha: b.sha, short: b.sha.slice(0, 7), branch: b.branch || "" } : null;
+    }
     const head = (await gitText("HEAD"))?.trim();
     if (!head) return null;
     const branch = head.startsWith("ref: ") ? head.slice(5) : "",
