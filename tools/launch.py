@@ -256,6 +256,16 @@ def sia_zip():
     return max(found, key=os.path.getmtime) if found else None
 
 
+class Server(http.server.ThreadingHTTPServer):
+    """Serveur de la suite : une connexion coupée par le navigateur (page quittée, image ou téléchargement annulé) n'est
+    pas une erreur, elle ne s'affiche pas ; les autres gardent leur trace."""
+
+    def handle_error(self, request, client_address):
+        if isinstance(sys.exc_info()[1], (ConnectionAbortedError, ConnectionResetError, BrokenPipeError)):
+            return
+        super().handle_error(request, client_address)
+
+
 def ours(port):
     """Vrai si la suite répond déjà sur ce port (lanceur relancé)."""
     for path in ('config/repository_tree', 'repository_tree'):
@@ -309,7 +319,7 @@ def main():
         return 1
     Setup.port = port
     handler = lambda *x, **k: Setup(*x, directory=ROOT, **k)
-    srv = http.server.ThreadingHTTPServer(('127.0.0.1', port), handler)
+    srv = Server(('127.0.0.1', port), handler)
     url = f'http://127.0.0.1:{port}/{a.page}'
     say(f'  Suite servie sur http://127.0.0.1:{port}/')
     say('')
