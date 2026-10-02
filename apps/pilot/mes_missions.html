@@ -339,7 +339,7 @@
     const tri = A.trigram();
     if (!tri) { $('pmList').innerHTML = '<p class="pm-empty">Aucun trigramme réglé.</p>'; return; }
     if (!list.length) { $('pmList').innerHTML = `<p class="pm-empty">Aucune mission${$('pmAll').checked ? '' : ' à venir'} affectée à ${esc(tri)} cette semaine-là.</p>`; return; }
-    $('pmList').innerHTML = `<table><thead><tr><th>Décollage (UTC)</th><th>Mission</th><th>Titre</th><th>Appareil</th><th>Terrain</th><th>Indicatif</th></tr></thead><tbody>${list.map((a, i) => `<tr data-i="${i}" class="${A.isRead(a) ? '' : 'pm-unread'}${current && A.key(current) === A.key(a) ? ' pm-current' : ''}"><td>${a.alert ? 'astreinte ' + esc(hhmm(Date.parse(a.alert.ready_at_utc))) : esc(fmt(A.when(a)))}</td><td><b>${esc(a.mission)}</b>${a.role === 'convoyage' ? ' <small>convoyage</small>' : ''}</td><td>${esc(a.title || '')}</td><td>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' '))}</td><td>${esc(a.departure || '')}</td><td>${esc(a.callsign || '')}</td></tr>`).join('')}</tbody></table>`;
+    $('pmList').innerHTML = `<table><thead><tr><th>Décollage (UTC)</th><th>Mission</th><th>Titre</th><th>Appareil</th><th>Terrain</th><th>Indicatif</th></tr></thead><tbody>${list.map((a, i) => `<tr data-i="${i}" class="${A.isRead(a) ? '' : 'pm-unread'}${current && A.key(current) === A.key(a) ? ' pm-current' : ''}"><td>${a.alert ? 'astreinte ' + esc(hhmm(Date.parse(a.alert.ready_at_utc))) : esc(fmt(A.when(a)))}</td><td><b>${esc(a.mission)}</b>${a.role === 'convoyage' ? ' <small>convoyage</small>' : ''}</td><td>${esc(titleOf(a))}</td><td>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' '))}</td><td>${esc(a.departure || '')}</td><td>${esc(a.callsign || '')}</td></tr>`).join('')}</tbody></table>`;
     const want = new URLSearchParams(location.search).get('mission');
     const pick = current ? list.find(a => A.key(a) === A.key(current)) : want ? list.find(a => a.mission === want) : null;
     if (pick) show(pick);
@@ -407,7 +407,10 @@
   const isExerciseMap = (y, name) => !!(y.maps || []).find(m => m?.filename === name && m.exercise && m.exercise !== 'none');
   /** Étiquette d'une mission (couverture scellée, page 1 du dossier) : numéro, nom, appareil, indicatif, décollage ;
    *  tampon « CONFIDENTIEL » posé par-dessus, à place fixe. */
-  const labelHtml = a => `<div class="pm-label"><small aria-label="Confidentiel">CONFIDENTIEL</small><b>${esc(a.mission)}</b><span>${esc(a.title || '')}</span>
+  /** Titre d'une affectation : convoyage → son trajet seulement (le pilote convoyeur ne reçoit pas le brief de la
+   *  mission) ; sinon le titre de la mission. */
+  const titleOf = a => a.role === 'convoyage' ? `Convoyage ${a.aircraft?.registration || ''} ${a.departure || '?'} → ${a.destination || '?'}`.replace(/\s+/g, ' ') : a.title || '';
+  const labelHtml = a => `<div class="pm-label"><small aria-label="Confidentiel">CONFIDENTIEL</small><b>${esc(a.mission)}</b><span>${esc(titleOf(a))}</span>
       <dl><dt>Appareil</dt><dd>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' ') || '—')}</dd><dt>Indicatif</dt><dd>${esc(a.callsign || '—')}</dd><dt>Décollage</dt><dd>${esc(a.alert ? 'astreinte ' + hhmm(Date.parse(a.alert.ready_at_utc)) : fmt(A.when(a)))}</dd></dl></div>`;
   /** Dossier fermé ou ouvert, sans rien redessiner : la couverture (scellée si la mission n'est pas lue, sinon simple)
    *  prend la place du contenu ; la barre d'actions reste (grisée tant que la mission est scellée) : pas de saut de mise
@@ -460,6 +463,17 @@
     // fichiers de la mission : dossier des missions autorisé d'abord (même hors de la copie servie), sinon copie servie
     const bare = String(a.mission).replace('-', '');
     mission = null;
+    mapUrls = {};
+    exDocs = [];
+    // convoyage : l'ordre de convoyage seul (départ, arrivée, appareil, heure), pas le brief de la mission
+    if (a.role === 'convoyage') {
+      let log = [];
+      try { log = (await A.readLog()).filter(e => e.mission === a.mission); } catch { /* pas de journal */ }
+      render(a, {}, '', log);
+      if (open && !A.isRead(a)) { A.markRead(a); logMission(a, 'convoyage ouvert'); }
+      setClosed(a, !open && !A.isRead(a));
+      return;
+    }
     const yf = await A.missionFirst(a.folder, [a.files?.yaml, `mission${a.mission}.yaml`, `mission${bare}.yaml`]);
     try { if (yf) mission = window.jsyaml.load(yf.value.replace(/^#.*\n/, '')); } catch { /* mission illisible : affectation seule */ }
     const md = (await A.missionFirst(a.folder, [a.files?.md, `summary${a.mission}.md`, `summary${bare}.md`]))?.value || '';
@@ -606,7 +620,7 @@
       <div><span>Statut</span><b>${esc(a.status || 'affectée')}</b></div></div>`;
     const ferryText = a.role === 'convoyage' ? `<p class="pm-alert">Convoyage : amener ${esc(a.aircraft?.registration || 'l’appareil')} de ${esc(a.departure)} à ${esc(a.destination)} (décollage ${esc(fmt(A.when(a)))}, environ ${esc(a.block_min)} min) pour ${esc(a.for_pilot || '')}, qui l’emploie en mission ${esc(a.mission)}.</p>` : '';
     const alertText = alert ? `<p class="pm-alert">Soyez prêt à ${esc(hhmm(Date.parse(alert.ready_at_utc)))} sur ${esc(alert.aerodrome || a.departure || '')} et attendez les ordres ; décollage prévisible en ${esc(alert.notice_min ?? '?')} minutes.${alert.window_end_utc ? ` Fin d'astreinte ${esc(hhmm(Date.parse(alert.window_end_utc)))}.` : ''}</p>` : '';
-    const team = (A._all || []).filter(x => x.mission === a.mission && x.pilot !== a.pilot);
+    const team = a.role === 'convoyage' ? [] : (A._all || []).filter(x => x.mission === a.mission && x.pilot !== a.pilot);
     const teams = (y.teams || []).filter(t => t?.name && !/^[-\s]*$/.test(t.name));
     const maps = (a.files?.maps?.length ? a.files.maps : (y.maps || []).map(m => m?.filename).filter(Boolean)).filter(m => mapUrls[m] && !isExerciseMap(y, m));
     const mapCaption = m => (y.maps || []).find(x => x?.filename === m)?.description || m;
@@ -630,7 +644,7 @@
     $('pmDetail').innerHTML = `<div data-part="title"><header class="pm-head pm-logo" aria-hidden="true"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>DEFA Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div></header>${labelHtml({ ...a, title: y.title || a.title })}</div>
       <div data-part="order"><header class="pm-head"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>DEFA Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div><span class="pm-no">N° ${esc(a.mission)}</span></header>
         <i class="pm-dr" aria-label="Diffusion restreinte"></i>
-        <h3>Ordre de mission — ${esc(y.title || a.title || '')}</h3>
+        <h3>${a.role === 'convoyage' ? `Ordre de convoyage — ${esc(titleOf(a).replace(/^Convoyage /, ''))}` : `Ordre de mission — ${esc(y.title || a.title || '')}`}</h3>
         ${order}${ferryText}${alertText}
         ${team.length ? `<p><b>Avec</b> : ${team.map(x => `${esc(x.callsign || '')} (${esc(x.pilot)}, ${esc([x.aircraft?.type, x.aircraft?.registration].filter(Boolean).join(' '))}, décollage ${esc(hhmm(A.when(x)))})`).join(' · ')}</p>` : ''}
         ${sec('Introduction', mdIntro?.html)}
@@ -651,7 +665,7 @@
         ${pts.length ? `<h4>Route fournie — ${Math.round(dist)} NM${y.vertical_profile?.cruise ? `, ${esc(y.vertical_profile.cruise)}` : ''}</h4>
         <div class="pm-route"><table><thead><tr><th>Point</th><th>Nom</th><th>Rôle</th><th>Position</th></tr></thead><tbody>${pts.map(p => `<tr><td>${esc(p.id)}</td><td>${esc(p.name)}</td><td>${esc(p.role)}</td><td>${esc(coord(p))}</td></tr>`).join('')}</tbody></table>${plan(pts)}</div>` : ''}
       </div>
-      <div data-part="maps"><h4>Cartes fournies</h4>${maps.length ? `<div class="pm-maps">${maps.map(figure).join('')}</div>` : '<p class="small">Aucune carte fournie avec la mission (les Cartes de vol les génèrent depuis la route).</p>'}</div>
+      ${a.role === 'convoyage' ? '' : `<div data-part="maps"><h4>Cartes fournies</h4>${maps.length ? `<div class="pm-maps">${maps.map(figure).join('')}</div>` : '<p class="small">Aucune carte fournie avec la mission (les Cartes de vol les génèrent depuis la route).</p>'}</div>`}
       <div data-part="final">
         ${sec('Objectifs', objectives)}
         ${sec('Remarques', notes.length ? `<ul>${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : '')}

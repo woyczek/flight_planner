@@ -868,7 +868,8 @@
      *  libre sur tout le convoyage, avec l'appareil ; à défaut le pilote de la mission, qui la décale), décollage, fin,
      *  créneaux mobilisés, pilote libre sur toute la mission. Un convoyeur ne sert qu'une fois. */
     async function timeAll() {
-      const t0 = takeoff,
+      const inWin = new Set([...ctx.d.values()].flatMap(y => (y.members || [y.m]).map(mm => mm.id))),
+        t0 = takeoff,
         taken = new Set([...ctx.d.values()].filter(x => x.on).flatMap(x => x.rows.map(r => r.pilot).filter(Boolean)));
       for (const x of [...ctx.d.values()].sort((a, b) => b.on - a.on)) {
         const dep = x.dep,
@@ -910,7 +911,10 @@
               land: b
             };
             const owns = tr => M.ownsType(ctx.declsAll[tr], pl.type);
-            r.ferryCands = O.pilots().filter(tr => tr !== r.pilot && !(x.on && taken.has(tr)) && !used.has(tr) && owns(tr) !== false && O.freeOver(tr, a, b))
+            // convoyeur : libre sur tout le convoyage et sans autre mission dans les créneaux qu'il touche (une mission
+            // par pilote et par tranche, même si ses disponibilités déclarées sont plus larges)
+            const slotFree = tr => O.slotsOver(a, b).every(([jj, kk]) => !O.assigned(tr, jj, kk).some(l => !inWin.has(l.mission))); // missions de la fenêtre : en cours de modification
+            r.ferryCands = O.pilots().filter(tr => tr !== r.pilot && !(x.on && taken.has(tr)) && !used.has(tr) && owns(tr) !== false && O.freeOver(tr, a, b) && slotFree(tr))
               .map(tr => ({
                 tri: tr,
                 q: M.qualification(ctx.declsAll[tr], tr, pl.type)

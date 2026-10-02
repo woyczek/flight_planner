@@ -52,6 +52,11 @@ trigrammes présents d'un seul côté.
   l'affectation, le calcul et la règle.
 - **Vols de la frise** : chaque équipier est comparé à sa grille sur les créneaux que couvre le vol (codé
   indisponible, grille vide, appareil hors du domaine de son code).
+- **Une mission par pilote et par tranche** (matin, après-midi, soir), même si ses disponibilités déclarées sont plus
+  larges (heures saisies à la main) : un pilote affecté sur un créneau n'y est plus proposé, et un convoyeur doit n'avoir
+  aucune autre mission dans les créneaux que touche son convoyage (le convoyage par un tiers est une mission).
+- **Convoyage** : le pilote convoyeur ne reçoit que l'ordre de convoyage (appareil, départ, arrivée, heure), pas le
+  brief de la mission (Mes missions).
 
 ## Réglages (réponses par défaut aux questions ouvertes)
 
