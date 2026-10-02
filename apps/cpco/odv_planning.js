@@ -974,7 +974,8 @@
         declsAll = await M.declarations(O.pilots()),
         weekEnd = O.range(6, (settings.hours || []).length - 1)?.[1] || Infinity,
         done = O.missionsAssigned(weekEnd),
-        entries = all.filter(m => !done.has(m.id) && (!famSel || fold(m.family || m.type).startsWith(famSel))),
+        // mission d'organisation d'un exercice (…Z) : personne ne la vole, elle n'est pas affectée
+        entries = all.filter(m => !done.has(m.id) && !/Z$/.test(m.id) && !m.organisation && (!famSel || fold(m.family || m.type).startsWith(famSel))),
         plan = M.planSlot(free, entries, decls, {
           focus
         }),

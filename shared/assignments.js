@@ -913,12 +913,19 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   }
   const isTeam = x => x && x.name && !/^[-\s]*$/.test(x.name) && !/^[-\s]*$/.test(String(x.type || ''));
   /** Postes d'une mission : yaml (aircraft[], ou teams[] du schéma hélico), sinon entrée du registre (teams,
-   *  aircraftTypes) ; équipes au sol (type ni appareil ni hélicoptère/avion) écartées. */
+   *  aircraftTypes) ; équipes au sol (type ni appareil ni hélicoptère/avion) écartées. Mission d'une opération à
+   *  plusieurs missions (exercice) : teams liste toute l'opération → seulement les équipes de ses propres appareils
+   *  (callsigns). */
   function postsOf(entry, y = {}) {
     let out = [];
+    const own = list => {
+      const cs = new Set((entry?.callsigns || []).map(c => String(c).trim().toUpperCase()));
+      const mine = list.filter(x => cs.has(String(x.name || '').trim().toUpperCase()));
+      return mine.length ? mine : list;
+    };
     if (Array.isArray(y?.aircraft) && y.aircraft.length) out = y.aircraft.map(a => post(a.callsign, a.type, a.operator || a.service));
-    else if (Array.isArray(y?.teams) && y.teams.length) out = y.teams.filter(isTeam).map(x => post(x.name, x.type, x.service));
-    else if (entry?.teams?.length) out = entry.teams.filter(isTeam).map(x => post(x.name, x.type, x.service));
+    else if (Array.isArray(y?.teams) && y.teams.length) out = own(y.teams.filter(isTeam)).map(x => post(x.name, x.type, x.service));
+    else if (entry?.teams?.length) out = own(entry.teams.filter(isTeam)).map(x => post(x.name, x.type, x.service));
     out = out.filter(p => p.type || p.kind);
     if (!out.length) out = (entry?.aircraftTypes || []).map((ty, i) => post(entry.callsigns?.[i], ty));
     return out.length ? out : [post('', '')];
