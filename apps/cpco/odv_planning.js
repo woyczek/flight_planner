@@ -1142,7 +1142,22 @@
           <td><input data-f="callsign" value="${esc(r.callsign)}" size="9">${r.wing ? ` <button type="button" class="repo-plain ad-del" data-unwing="${i}" title="Retirer cet équipier">✕</button>` : ''}</td>
           <td>${checks(x, r)}</td></tr>`).join('')}</tbody>`;
       }).join('');
-      const keep = dlg?.querySelector('.ad-body')?.scrollTop || 0;
+      const keep = dlg?.querySelector('.ad-body')?.scrollTop || 0,
+        // ancre : l'élément en cours de saisie (champ, sinon sa ligne, sinon sa mission) reste à la même hauteur dans la
+        // fenêtre après le redessin, même si des lignes apparaissent au-dessus (convoyage, équipier, attente)
+        anchor = (() => {
+          const body = dlg?.querySelector('.ad-body'),
+            el = document.activeElement;
+          if (!body || !el || !body.contains(el)) return null;
+          const tb = el.closest('tbody[data-m]'),
+            tr = el.closest('tr[data-i]');
+          return {
+            m: tb?.dataset.m,
+            i: tr?.dataset.i,
+            sel: el.dataset.f ? `[data-f="${el.dataset.f}"]` : el.hasAttribute('data-on') ? '[data-on]' : el.dataset.wingOf != null ? `[data-wing-of="${el.dataset.wingOf}"]` : '',
+            y: el.getBoundingClientRect().top - body.getBoundingClientRect().top
+          };
+        })();
       const status = dlg?.querySelector('[data-status]')?.innerHTML || '';
       dlg = AD.frame('odvPick', {
         wide: true,
@@ -1165,6 +1180,15 @@
       });
       const bodyEl = dlg.querySelector('.ad-body');
       bodyEl.scrollTop = keep;
+      if (anchor?.m) {
+        const tb = bodyEl.querySelector(`tbody[data-m="${CSS.escape(anchor.m)}"]`),
+          tr = anchor.i != null ? tb?.querySelector(`tr[data-i="${anchor.i}"]`) : null,
+          el = (anchor.sel && (tr || tb)?.querySelector(anchor.sel)) || tr || tb;
+        if (el) {
+          bodyEl.scrollTop += el.getBoundingClientRect().top - bodyEl.getBoundingClientRect().top - anchor.y;
+          if (el.matches('input, select, button')) el.focus({ preventScroll: true });
+        }
+      }
       dlg.querySelector('[data-status]').innerHTML = status; // compte rendu du dernier enregistrement, gardé au redessin
       dlg.querySelector('[data-fam]').onchange = async e => {
         if (dirty() && !confirm('Changer de famille abandonne les affectations en attente. Continuer ?')) return render();
