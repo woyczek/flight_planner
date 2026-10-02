@@ -883,7 +883,11 @@
           }) : null;
         }));
         // décollage : heure choisie (avancée ou retardée), sinon début du créneau, décalé si un convoyage l'exige
-        const base0 = x.takeoffSet ?? t0;
+        // décollage d'un poste : tk (heure H d'une opération) + son décalage ; H par défaut : le premier équipage
+        // décolle au début du créneau
+        const at = r => tk + (r.off || 0) * 6e4,
+          auto = t0 - Math.min(0, ...x.rows.map(r => r.off || 0)) * 6e4,
+          base0 = x.takeoffSet ?? auto;
         let tk = base0;
         for (let pass = 0; pass < 4; pass++) {
           const used = new Set();
@@ -895,8 +899,8 @@
             r.ferryBy = '';
             r.ferryCands = [];
             if (!f?.minutes) return;
-            const a = tk - (f.minutes + TURN) * 6e4,
-              b = tk - TURN * 6e4;
+            const a = at(r) - (f.minutes + TURN) * 6e4,
+              b = at(r) - TURN * 6e4;
             r.ferry = {
               ...f,
               takeoff: a,
@@ -926,17 +930,19 @@
           tk = base0 + need;
         }
         const own = x.rows.filter(r => r.ferry && !r.ferryBy && !r.ferryOpen).map(r => r.ferry.takeoff),
-          start = Math.min(tk, ...own),
-          end = tk + (block + TURN) * 6e4;
+          endOf = r => at(r) + ((r.block || block) + TURN) * 6e4,
+          start = Math.min(...x.rows.map(at), ...own),
+          end = Math.max(...x.rows.map(endOf));
+        for (const r of x.rows) r.takeoff = at(r);
         x.timing = {
           takeoff: tk,
-          shift: tk - t0,
+          shift: tk - auto,
           start,
           end,
           slots: O.slotsOver(start, end)
         };
         for (const r of x.rows) {
-          r.spanOk = !r.pilot || O.freeOver(r.pilot, r.ferry && !r.ferryBy && !r.ferryOpen ? r.ferry.takeoff : tk, end);
+          r.spanOk = !r.pilot || O.freeOver(r.pilot, r.ferry && !r.ferryBy && !r.ferryOpen ? r.ferry.takeoff : at(r), endOf(r));
           if (x.on && r.ferryBy) taken.add(r.ferryBy);
         }
       }
@@ -993,10 +999,14 @@
       }
       for (const [k, ms] of units) {
         const rows = [], planes = [];
+        // exercice : une seule heure H ; chaque équipage décolle à H + son décalage (participants de la …Z : « H-20mn »)
+        const z = k.startsWith('op:') ? all.find(x => x.id === `${k.slice(3)}Z`) : null,
+          parts = (z ? await O.yamlOf(z).catch(() => null) : null)?.exercise?.participants || [],
+          offOf = (cs, mid) => window.RepositoryKit.hOffset((parts.find(p => fold(p?.callsign) === fold(cs)) || parts.find(p => fold(p?.mission) === fold(mid)))?.takeoff) ?? 0;
         for (const m of ms) {
           const dep = await M.departureOf(await O.yamlOf(m).catch(() => ({})), m);
           for (const post of M.postsOf(m)) {
-            rows.push({ post, mid: m.id, dep, pilot: '', registration: '', callsign: post.callsign || '', ferryPilot: '' });
+            rows.push({ post, mid: m.id, dep, off: offOf(post.callsign, m.id), block: blockOf(m), pilot: '', registration: '', callsign: post.callsign || '', ferryPilot: '' });
             planes.push(await planeList(post, dep));
           }
         }
@@ -1100,8 +1110,8 @@
           conf = conflictsOf(m, zones),
           n = x.rows.length;
         return `<tbody class="ad-mx${x.on ? ' on' : ''}" data-m="${esc(m.id)}">${x.rows.map((r, i) => `<tr class="${x.on && r.pilot && r.registration && !errs(r).length ? 'ad-set' : ''}" data-i="${i}">
-          ${i ? '' : `<td rowspan="${n}"><input type="checkbox" data-on${x.on ? ' checked' : ''} aria-label="Affecter ${esc(m.id)}"></td><td rowspan="${n}"><b>${esc(m.id)}</b> ${esc(m.title || '')}${x.members ? `<br><small>opération : ${x.members.map(mm => esc(mm.id)).join(', ')} — un pilote par mission, enregistrées ensemble</small>` : ''}${x.armable ? '' : ' <small class="mut">(aucun pilote libre ne déclare l’appareil)</small>'}<br><small>${esc(m.family || m.type || '')} · ${hmOf(m.estimate?.block ?? m.estimate?.flight)} · départ ${esc(x.dep?.name || '?')}</small>${x.timing ? `<br><label class="ad-inline"><small>décollage</small><input type="time" data-f="takeoff" value="${hm(x.timing.takeoff).slice(0, 5)}"${x.on ? '' : ' disabled'} title="Heure UTC ; vide : automatique (début du créneau, décalé si le pilote convoie et n’est pas libre avant)"></label><small>${x.takeoffSet != null ? ' (choisie)' : x.timing.shift ? ` (décalée de ${hmOf(x.timing.shift / 6e4)} : convoyage)` : ''}${x.timing.start < x.timing.takeoff ? ` · convoyage dès <b>${hm(x.timing.start)}</b>` : ''}, fin ${hm(x.timing.end)}${x.timing.slots.length > 1 ? ` · mobilise ${x.timing.slots.map(slotName).join(', ')}` : ''}</small>` : ''}${conf.length ? `<br>${conf.map(c => chip(esc(c.texte), c.grave ? 'err' : 'warn')).join('')}` : ''}<br>${x.members ? '' : '<button type="button" class="repo-plain ad-link" data-detail>✎ détail</button> · '}<button type="button" class="repo-plain ad-link" data-wing${x.on ? '' : ' disabled'} title="Patrouille : un équipier de plus (même type d’appareil, indicatif suivant)">+ équipier</button></td>`}
-          <td><b>${esc(r.callsign || r.post?.callsign || `poste ${i + 1}`)}</b>${x.members ? ` <small>${esc(r.mid)}</small>` : ''}<br><small>${esc(r.post?.type || r.post?.label || 'type libre')}${r.post?.service ? ` · ${esc(r.post.service)}` : ''}</small></td>
+          ${i ? '' : `<td rowspan="${n}"><input type="checkbox" data-on${x.on ? ' checked' : ''} aria-label="Affecter ${esc(m.id)}"></td><td rowspan="${n}"><b>${esc(m.id)}</b> ${esc(m.title || '')}${x.members ? `<br><small>opération : ${x.members.map(mm => esc(mm.id)).join(', ')} — un pilote par mission, enregistrées ensemble</small>` : ''}${x.armable ? '' : ' <small class="mut">(aucun pilote libre ne déclare l’appareil)</small>'}<br><small>${esc(m.family || m.type || '')} · ${hmOf(m.estimate?.block ?? m.estimate?.flight)} · départ ${esc(x.dep?.name || '?')}</small>${x.timing ? `<br><label class="ad-inline"><small>${x.members ? 'heure H' : 'décollage'}</small><input type="time" data-f="takeoff" value="${hm(x.timing.takeoff).slice(0, 5)}"${x.on ? '' : ' disabled'} title="Heure UTC ; vide : automatique (début du créneau, décalé si le pilote convoie et n’est pas libre avant)"></label><small>${x.takeoffSet != null ? ' (choisie)' : x.timing.shift ? ` (décalée de ${hmOf(x.timing.shift / 6e4)} : convoyage)` : ''}${x.timing.start < x.timing.takeoff ? ` · convoyage dès <b>${hm(x.timing.start)}</b>` : ''}, fin ${hm(x.timing.end)}${x.timing.slots.length > 1 ? ` · mobilise ${x.timing.slots.map(slotName).join(', ')}` : ''}</small>` : ''}${conf.length ? `<br>${conf.map(c => chip(esc(c.texte), c.grave ? 'err' : 'warn')).join('')}` : ''}<br>${x.members ? '' : '<button type="button" class="repo-plain ad-link" data-detail>✎ détail</button> · '}<button type="button" class="repo-plain ad-link" data-wing${x.on ? '' : ' disabled'} title="Patrouille : un équipier de plus (même type d’appareil, indicatif suivant)">+ équipier</button></td>`}
+          <td><b>${esc(r.callsign || r.post?.callsign || `poste ${i + 1}`)}</b>${x.members ? ` <small>${esc(r.mid)} · décollage ${r.takeoff ? hm(r.takeoff) : '?'} (${esc(window.RepositoryKit.hText(r.off || 0))})</small>` : ''}<br><small>${esc(r.post?.type || r.post?.label || 'type libre')}${r.post?.service ? ` · ${esc(r.post.service)}` : ''}</small></td>
           <td><select data-f="registration"${x.on ? '' : ' disabled'}>${planeOpts(x, i)}</select>${ferryLine(r)}</td>
           <td><select data-f="pilot"${x.on && r.registration ? '' : ' disabled'}>${pilotOpts(x, r)}</select></td>
           <td><input data-f="callsign" value="${esc(r.callsign)}" size="9">${r.wing ? ` <button type="button" class="repo-plain ad-del" data-unwing="${i}" title="Retirer cet équipier">✕</button>` : ''}</td>
@@ -1186,6 +1196,8 @@
             post: last.post,
             mid: last.mid,
             dep: last.dep,
+            off: last.off,
+            block: last.block,
             pilot: '',
             registration: '',
             callsign: String(last.callsign || '').replace(/(\d+)(?!.*\d)/, d => String(+d + 1).padStart(d.length, '0')),
@@ -1284,7 +1296,7 @@
             await O.write(m, rows.map(r => ({
               ...r,
               ferryPilot: r.ferryOpen ? '__open' : r.ferryBy || ''
-            })), x.timing?.takeoff || takeoff, rows[0].dep || x.dep);
+            })), rows[0].takeoff || x.timing?.takeoff || takeoff, rows[0].dep || x.dep);
             ok.push(`${m.id} (${rows.map(r => r.pilot).join(', ')})`);
           } catch (err) {
             ko.push(`${m.id} : ${err.message}`);
