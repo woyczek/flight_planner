@@ -9,7 +9,7 @@ morceaux dans la planche. Le script écrit shared/deco/<design>/sheet-*.webp et 
 ici.
 
 Usage (ImageMagick 7, à la racine du dépôt) :
-  python tools/cut_register_sheet.py cabinet|flightlog|field [--write]
+  python tools/cut_register_sheet.py cabinet|flightlog|field|aqua [--write]
 --write : réécrit aussi le bloc « découpe » du design dans shared/designs_skeuo.css (tailles et arrêts ; les « réglages »
 — papier, marges, en-tête, accessoire — restent à la main). Puis python tools/bump_versions.py et vérification dans une
 page à registre (ton clair).
@@ -77,6 +77,24 @@ CONFIGS = {
         'right': ((800, 520, 224, 330, 40, 'y'), dict(left=30), dict(shear=0.02, y0=685)),
         'pieces': {},
         'paper': ((300, 320, 480, 480), (300, 320, 480, 480)),
+    },
+    # porte-bloc d'Aqua : planche de cuir marine surpiquée, légèrement évasée vers le bas (bords redressés), deux feuilles
+    # blanches ; pince métallique centrée en haut, son anneau au-dessus de la planche (le haut du cadre commence à
+    # l'anneau : zone transparente au-dessus du cuir) : pièce centrée « clip », bords fondus dans la bande du haut
+    'aqua': {
+        'src': 'ChatGPT Image 2 Oct 2026, 15_01_44.png',
+        'tl': ((186, 30, 212, 250), dict(right=40, bottom=40), dict(shear=-0.01, y0=685)),
+        'tr': ((868, 30, 207, 250), dict(left=40, bottom=40), dict(shear=0.011, y0=685)),
+        'bl': ((186, 1060, 240, 134), dict(right=40, top=40), dict(shear=-0.01, y0=685)),
+        'br': ((850, 1060, 225, 134), dict(left=40, top=40), dict(shear=0.011, y0=685)),
+        'top': ((890, 30, 100, 175, 30, 'x'), dict(bottom=30)),   # cuir seul : le bord des feuilles, de biais, ferait des créneaux
+        'bot': ((450, 1060, 140, 134, 40, 'x'), dict(top=30)),
+        'left': ((186, 450, 110, 300, 40, 'y'), dict(right=30), dict(shear=-0.01, y0=685)),
+        'right': ((975, 450, 100, 300, 40, 'y'), dict(left=30), dict(shear=0.011, y0=685)),
+        'pieces': {
+            'clip': ((380, 30, 510, 250), [], dict(left=60, right=60, bottom=30)),
+        },
+        'paper': ((400, 400, 480, 480), (400, 400, 480, 480)),
     },
 }
 Q = ['-quality', '86', '-define', 'webp:alpha-quality=92']

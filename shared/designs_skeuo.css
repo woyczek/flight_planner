@@ -1904,7 +1904,8 @@ html .repo-block.repo-has-bg:has(>.repo-deco-panel) table:not(.report table):not
    découpé dans une planche par tools/cut_register_sheet.py : papier uni en mosaïque (.sh-paper, dans le cadre) ; bandes
    répétées en haut, en bas, à gauche et à droite (raccordables, arrêtées aux coins) ; coins fixes aux bords intérieurs
    fondus ; accessoire transparent posé sur le bord gauche (ficelle de Cabinet, crayon de Durci : --sheet-string) ;
-   en-tête facultatif en deux pièces (--sheet-head à gauche, --sheet-stamp à droite) ; le contenu est décalé sous
+   en-tête facultatif en deux pièces (--sheet-head à gauche, --sheet-stamp à droite) et pièce centrée en haut
+   (--sheet-clip : pince d'un porte-bloc, --sh-clip-y, --sh-clip-w) ; le contenu est décalé sous
    l'en-tête et à l'intérieur du cadre.
    Par design : images (--sheet-*) et géométrie (--sh-*, en px de la planche, affichés à l'échelle --k) : tailles des
    coins et des motifs de bande ; arrêts des bandes (--sh-top-l : fin du coin haut gauche…, donnés par l'outil) ; retrait
@@ -2042,6 +2043,61 @@ html[data-design="flightlog"] {
   --sh-acc-r: 178/600;
   --sh-k: .7
 }
+/* Aqua : porte-bloc en cuir marine, pince métallique centrée en haut (son anneau dépasse au-dessus de la planche),
+   feuilles blanches ; encre marine */
+html[data-design="aqua"] {
+  --sheet-ink: #14285a;
+  --sheet-ink-2: #3a4a66;
+  --sheet-card-bg: #f7f8fa url("deco/aqua/sheet-paper.webp?v=ac338bf4") left top/480px;
+  --sheet-paper: url("deco/aqua/sheet-paper.webp?v=ac338bf4");
+  --sheet-top: url("deco/aqua/sheet-top.webp?v=b39ed4cf");
+  --sheet-bot: url("deco/aqua/sheet-bot.webp?v=a6938619");
+  --sheet-left: url("deco/aqua/sheet-left.webp?v=8bd14205");
+  --sheet-right: url("deco/aqua/sheet-right.webp?v=6ad2f0f0");
+  --sheet-clip: url("deco/aqua/sheet-clip.webp?v=b9c4a122");
+  --sheet-tl: url("deco/aqua/sheet-tl.webp?v=239ad4f1");
+  --sheet-tr: url("deco/aqua/sheet-tr.webp?v=f28b580d");
+  --sheet-bl: url("deco/aqua/sheet-bl.webp?v=e37fac52");
+  --sheet-br: url("deco/aqua/sheet-br.webp?v=38088322");
+  /* découpe : tools/cut_register_sheet.py aqua --write */
+  --sh-tl-w: 212px;
+  --sh-tl-h: 250px;
+  --sh-tr-w: 207px;
+  --sh-tr-h: 250px;
+  --sh-bl-w: 240px;
+  --sh-bl-h: 134px;
+  --sh-br-w: 225px;
+  --sh-br-h: 134px;
+  --sh-top-w: 100px;
+  --sh-top-h: 175px;
+  --sh-bot-w: 140px;
+  --sh-bot-h: 134px;
+  --sh-left-w: 110px;
+  --sh-left-h: 300px;
+  --sh-right-w: 100px;
+  --sh-right-h: 300px;
+  --sh-top-l: 172px;
+  --sh-top-r: 167px;
+  --sh-bot-l: 200px;
+  --sh-bot-r: 185px;
+  --sh-left-t: 210px;
+  --sh-left-b: 94px;
+  --sh-right-t: 210px;
+  --sh-right-b: 94px;
+  /* réglages */
+  --sh-paper-t: 190px;
+  --sh-paper-r: 80px;
+  --sh-paper-b: 80px;
+  --sh-paper-l: 90px;
+  --sh-paper-w: 480px;
+  --sh-pad-t: 250px;
+  --sh-pad-r: 110px;
+  --sh-pad-b: 110px;
+  --sh-pad-l: 120px;
+  --sh-clip-y: 0px;
+  --sh-clip-w: 510px;
+  --sh-k: .6
+}
 /* Durci : carnet de terrain dans sa pochette olive à fermeture éclair, crayon dans son étui élastique sur le bord
    gauche ; pas d'en-tête */
 html[data-design="field"] {
@@ -2158,6 +2214,7 @@ html body .repo-block.repo-has-sheet:not(#imp) {
 .repo-deco-sheet>.sh-frame {
   inset: 0;
   background:
+    var(--sheet-clip, none) center calc(var(--sh-clip-y, 0px) * var(--k))/calc(var(--sh-clip-w, 0px) * var(--k)) auto no-repeat,
     var(--sheet-head, none) calc(var(--sh-head-x, 0px) * var(--k)) calc(var(--sh-head-y, 0px) * var(--k))/calc(var(--sh-head-w, 0px) * var(--k)) auto no-repeat,
     var(--sheet-stamp, none) right calc(var(--sh-stamp-r, 0px) * var(--k)) top calc(var(--sh-stamp-y, 0px) * var(--k))/calc(var(--sh-stamp-w, 0px) * var(--k)) auto no-repeat,
     var(--sheet-tl) left top/calc(var(--sh-tl-w) * var(--k)) calc(var(--sh-tl-h) * var(--k)) no-repeat,

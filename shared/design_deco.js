@@ -236,7 +236,8 @@
   const SHEETS = {
     cabinet: SHEET_BLOCKS,
     flightlog: SHEET_BLOCKS,
-    field: SHEET_BLOCKS
+    field: SHEET_BLOCKS,
+    aqua: SHEET_BLOCKS
   };
 
   /** Texte d'identification d'un bloc : titre, icône, identifiant (en minuscules). */
