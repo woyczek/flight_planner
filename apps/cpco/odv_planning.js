@@ -306,8 +306,36 @@
     render();
   }
 
+  // CR par famille (registre des CR de ce navigateur, sinon data/cr/missions.yaml servi) : pondération des missions
+  // probables (une famille souvent jouée recule un peu : odv_core.js, playWeight)
+  let plays = null;
+  async function loadPlays() {
+    const root = window.RepositoryNav?.root || new URL('../../', location.href).href;
+    if (!window.jsyaml) await new Promise(res => {
+      const s = document.createElement('script');
+      s.src = new URL('shared/mission_core/vendor/js-yaml.min.js', root).href;
+      s.onload = s.onerror = res;
+      document.head.append(s);
+    });
+    let list = [];
+    try {
+      list = window.jsyaml.load(JSON.parse(localStorage.getItem('missionCoreLedger:v2') || 'null')?.text || '')?.missions || [];
+    } catch {
+      /* registre illisible */ }
+    if (!list.length) try {
+      list = window.jsyaml.load(await (await fetch(new URL('data/cr/missions.yaml', root).href, {
+        cache: 'no-store'
+      })).text())?.missions || [];
+    } catch {
+      /* pas de registre servi */ }
+    plays = {};
+    for (const m of list)
+      if (m?.family) plays[fold(m.family)] = (plays[fold(m.family)] || 0) + 1;
+  }
   /** Créneaux, missions probables et vols de la frise. Un pilote déjà affecté sur un créneau (mission ou convoyage) n'y
-   *  compte plus : effectif, missions probables et score ne portent que sur les pilotes libres. */
+   *  compte plus : effectif, missions probables et score ne portent que sur les pilotes libres. Un créneau garde sa
+   *  place (seuil « au moins N pilotes ») d'après son effectif avant affectations (n0), pour proposer encore des
+   *  missions aux pilotes restés libres. */
   function compute() {
     const all = data || declWeek(),
       O = window.OdvAssign;
@@ -316,7 +344,14 @@
       records: all.records.filter(r => !O.assigned(r.pilote, r.jourIndex, r.creneauIndex).length)
     } : all;
     if (data) window.MissionAssignments?.simulators?.(Object.values(data.flotte).flatMap(p => p.sims)); // liste des préférences pilote
-    slots = C.plan(basis, settings);
+    slots = C.plan(basis, {
+      ...settings,
+      plays: plays || {}
+    });
+    const full = basis === all ? slots : C.plan(all, settings);
+    slots.forEach((s, i) => {
+      s.n0 = full[i]?.n ?? s.n;
+    });
     flights = C.checkFlights(all, settings);
   }
   /** Sans classeur : calcul sur les déclarations et affectations, puis tout redessiner. */
@@ -535,14 +570,14 @@
         const s = slots[j * 3 + k],
           key = `${j}${k}`;
         const bits = [s.atc.length ? `+${s.atc.length} ctrl` : '', s.vols.length ? `✈ ${s.vols.length}` : '', s.evenements.length ? '★' : ''].filter(Boolean).join(' · ');
-        html += `<button type="button" data-slot="${key}" class="repo-plain${selected === key ? ' sel' : ''}${s.n < settings.minPilots ? ' low' : ''}" style="--pct:${Math.round(s.n / max * 70)}%" title="${esc(slotTitle(s))} : ${s.n} pilote(s), ${s.atc.length} contrôleur(s)"><b>${s.n}</b><small>${esc(bits || ' ')}</small></button>`;
+        html += `<button type="button" data-slot="${key}" class="repo-plain${selected === key ? ' sel' : ''}${s.n0 < settings.minPilots ? ' low' : ''}" style="--pct:${Math.round(s.n / max * 70)}%" title="${esc(slotTitle(s))} : ${s.n} pilote(s) libre(s)${s.n0 > s.n ? ` sur ${s.n0}` : ''}, ${s.atc.length} contrôleur(s)"><b>${s.n}</b><small>${esc(bits || ' ')}</small></button>`;
       }
     }
     $('odvHeat').innerHTML = html + '</div>';
     $('odvHeat').querySelectorAll('button[data-slot]').forEach(b => {
       b.onclick = () => select(b.dataset.slot);
     });
-    const rows = slots.filter(s => s.n >= settings.minPilots);
+    const rows = slots.filter(s => s.n0 >= settings.minPilots);
     table('odvSlots', {
       columns: [{
         key: 'jour',
@@ -555,9 +590,10 @@
         icon: 'clock'
       }, {
         key: 'n',
-        label: 'Pilotes disponibles',
+        label: 'Pilotes libres',
         icon: 'users',
-        type: 'number'
+        type: 'number',
+        html: (v, s) => s.n0 > s.n ? `${v} <small class="mut" title="${s.n0 - s.n} déjà affecté(s)">/ ${s.n0}</small>` : esc(v)
       }, {
         key: 'pilotes',
         label: 'Disponibles',
@@ -1135,14 +1171,14 @@
   function renderMissions() {
     const rules = $('odvRules');
     rules.innerHTML = `<summary>Règles des familles et du score</summary><ul>${Object.entries(C.FAMILIES).map(([f, d]) => `<li><span class="odv-fam">${esc(f)}</span> ${esc(d.rule)}</li>`).join('')}</ul>
-      <p class="mut">Rôles d'un pilote : le code impose le rôle (SC → sécu civile + hélico / avion sécu d'après FLOTTE, C → chasse, T → transport + ravitailleur / largage, N → FNY / maritime, S → exercice + rôles FLOTTE) ; O → tous les rôles que FLOTTE lui attribue. Score = participants + 2 par pilote à code restreint employé dans son domaine (SC : SAR, FIRE, HEMS ; N : MARITIME ; C : AAR, ISR, SPECIAL ; T : AIRLIFT, AIRBORNE, AAR) + 1 par contrôleur en ligne (2 au plus) pour TRAINING. À score égal : ordre de préférence des réglages (${esc(settings.preference.join(', '))}). Les rôles FLOTTE restent indicatifs : le planificateur valide.</p>`;
+      <p class="mut">Rôles d'un pilote : le code impose le rôle (SC → sécu civile + hélico / avion sécu d'après FLOTTE, C → chasse, T → transport + ravitailleur / largage, N → FNY / maritime, S → exercice + rôles FLOTTE) ; O → tous les rôles que FLOTTE lui attribue. Score = participants + 2 par pilote à code restreint employé dans son domaine (SC : SAR, FIRE, HEMS ; N : MARITIME ; C : AAR, ISR, SPECIAL ; T : AIRLIFT, AIRBORNE, AAR) + 1 par contrôleur en ligne (2 au plus) pour TRAINING. Famille déjà jouée : − ${esc(String(settings.playWeight ?? 0.5).replace('.', ','))} × log2(1 + nombre de CR) (1 CR : − 0,5 ; 7 CR : − 1,5), pour varier. À score égal : ordre de préférence des réglages (${esc(settings.preference.join(', '))}). Les rôles FLOTTE restent indicatifs : le planificateur valide.</p>`;
     if (!basis) {
       resetTable('odvMissions', '<p class="odv-empty">Chargez un classeur ODV.</p>');
       return;
     }
     const rows = [];
     for (const s of slots)
-      if (s.n >= settings.minPilots) s.missions.forEach((m, i) => rows.push({
+      if (s.n0 >= settings.minPilots) s.missions.forEach((m, i) => rows.push({
         ...m,
         slot: s,
         rang: i + 1,
@@ -1178,7 +1214,7 @@
         key: 'score',
         label: 'Score',
         type: 'number',
-        html: (v, r) => `<span title="${esc(r.calcul)}">${esc(v)}</span>`
+        html: (v, r) => `<span title="${esc(r.calcul)}">${esc(String(v).replace('.', ','))}</span>`
       }, {
         key: 'registre',
         label: 'Planifier (missions du registre)',
@@ -1451,6 +1487,12 @@
     bindSettings();
     bindExports();
     window.OdvAssign?.load(emptyWeek(), settings).then(refreshNoBook).catch(() => {}); // sans classeur : déclarations
+    loadPlays().then(() => {
+      if (basis) {
+        compute();
+        render();
+      }
+    });
     $('odvFile').addEventListener('change', e => {
       const f = e.target.files?.[0];
       if (f) loadFile(f);
