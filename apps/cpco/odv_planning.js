@@ -1060,7 +1060,7 @@
           return `<tr data-fy="${i}"><td><b>${esc(a.mission)}</b> pour ${esc(a.for_pilot || '?')}</td><td>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' '))}</td><td>${esc(a.departure || '')} → ${esc(a.destination || '')}</td><td>${hm(from)} → ${hm(to)}</td><td><select data-fy-pilot><option value="">— ${cands.length ? 'convoyeur' : 'aucun pilote libre'} —</option>${cands.map(tr => `<option value="${esc(tr)}">${esc(tr)}${M.qualification(ctx.declsAll[tr], tr, a.aircraft?.type).level === 'mastered' ? ' (maîtrisé)' : ''}</option>`).join('')}</select></td><td><button type="button" class="secondary" data-fy-go>Confier</button></td></tr>`;
         }).join('')}</tbody></table></section>` : ''}
         <section class="ad-card"><h4>En attente (${pend.length})</h4>${pend.length ? `<ul class="ad-list">${pend.map(p => `<li>${tri(p.r.pilot, null, false)} sur <b>${esc(p.m.id)}</b> — ${esc(planeOf(p.r.registration)?.type || '')} ${esc(p.r.registration)}${p.r.callsign ? ` — ${esc(p.r.callsign)}` : ''}</li>`).join('')}</ul>` : '<p class="ad-help">Aucune : cocher une mission et choisir ses pilotes et appareils.</p>'}</section>
-        <section class="ad-card"><h4>Enregistrées sur ce créneau</h4>${assigned.length ? `<ul class="ad-list">${assigned.map(a => `<li><b>${esc(a.mission)}</b>${a.role === 'convoyage' ? ` (convoyage ${esc(a.departure || '')} → ${esc(a.destination || '')} pour ${esc(a.for_pilot || '')})` : ''} — ${a.pilot ? tri(a.pilot, null, false) : '<i>à affecter</i>'} ${esc(a.aircraft?.registration || '')}${a.callsign ? ` · ${esc(a.callsign)}` : ''} · décollage ${esc(String(a.takeoff || '').slice(11, 16))}Z${a.ferry ? ` · convoyage ${esc(a.ferry.from)} dès ${esc(String(a.ferry.takeoff || '').slice(11, 16))}Z, ${a.ferry.open ? 'à affecter' : a.ferry.pilot && a.ferry.pilot !== a.pilot ? `par ${esc(a.ferry.pilot)}` : 'par le pilote'}` : ''}</li>`).join('')}</ul>` : '<p class="ad-help">Aucune.</p>'}</section>`,
+        <section class="ad-card"><h4>Enregistrées sur ce créneau</h4>${assigned.length ? `<ul class="ad-list">${assigned.map((a, i) => `<li>${a.role !== 'convoyage' && assigned.findIndex(b => b.mission === a.mission && b.role !== 'convoyage') === i ? `<button type="button" class="repo-plain ad-link" data-edit="${esc(a.mission)}">Modifier…</button> ` : ''}<b>${esc(a.mission)}</b>${a.role === 'convoyage' ? ` (convoyage ${esc(a.departure || '')} → ${esc(a.destination || '')} pour ${esc(a.for_pilot || '')})` : ''} — ${a.pilot ? tri(a.pilot, null, false) : '<i>à affecter</i>'} ${esc(a.aircraft?.registration || '')}${a.callsign ? ` · ${esc(a.callsign)}` : ''} · décollage ${esc(String(a.takeoff || '').slice(11, 16))}Z${a.ferry ? ` · convoyage ${esc(a.ferry.from)} dès ${esc(String(a.ferry.takeoff || '').slice(11, 16))}Z, ${a.ferry.open ? 'à affecter' : a.ferry.pilot && a.ferry.pilot !== a.pilot ? `par ${esc(a.ferry.pilot)}` : 'par le pilote'}` : ''}</li>`).join('')}</ul>` : '<p class="ad-help">Aucune.</p>'}</section>`,
         foot: `<p class="ad-msg" data-status></p><button type="button" class="ghost" data-undo${dirty() ? '' : ' disabled'}>Annuler les modifications</button><button type="button" class="primary" data-save data-icon="save">Enregistrer (${pend.length})</button><button type="button" class="ghost" data-close>Fermer</button>`
       });
       const bodyEl = dlg.querySelector('.ad-body');
@@ -1093,6 +1093,21 @@
         }
         await timeAll();
         render();
+      });
+      // mission enregistrée : affectation complète rouverte avec ses valeurs ; relue puis fenêtre recalculée
+      bodyEl.addEventListener('click', async e => {
+        const ed = e.target.closest('[data-edit]');
+        if (!ed) return;
+        const m = all.find(x => x.id === ed.dataset.edit);
+        if (!m) return notify(`${ed.dataset.edit} absente du registre de ce navigateur : relire le registre du Centre.`, 'warn');
+        const line = O.inSlot(j, k).find(a => a.mission === m.id && a.role !== 'convoyage');
+        const d = await O.assign(m, [], Date.parse(line?.takeoff || '') || takeoff, `Créneau ${slotTitle(s)} — affectation enregistrée de ${m.id}`);
+        d?.addEventListener('reloaded', async () => {
+          await build();
+          render();
+        }, {
+          once: true
+        });
       });
       // patrouille : équipier ajouté (poste du dernier équipage, indicatif suivant) ou retiré
       bodyEl.addEventListener('click', async e => {
@@ -1221,7 +1236,14 @@
   }
   /** Bouton « Missions du registre… » d'un créneau où au moins un pilote est libre (famille facultative) : une mission
    *  à un seul équipage se planifie aussi bien qu'une patrouille. */
-  const pickButton = (s, fam = '', short = false) => s.n >= 1 ? `<button type="button" class="odv-pick-btn" data-pick="${s.jourIndex}${s.creneauIndex}" data-fam="${esc(fam)}"${centreOn() ? (short ? ' title="Missions du registre…"' : '') : ' disabled title="Centre verrouillé : l’activer dans Paramètres › Centre (CPCO)"'}>${short ? 'Planifier' : 'Missions du registre…'}</button>` : '';
+  // créneau déjà garni (mission affectée) : « Modifier la mission » — même fenêtre, missions enregistrées modifiables ;
+  // le bouton reste quand plus aucun pilote n'est libre
+  const pickButton = (s, fam = '', short = false) => {
+    const has = (window.OdvAssign?.inSlot(s.jourIndex, s.creneauIndex) || []).some(a => a.role !== 'convoyage');
+    if (s.n < 1 && !has) return '';
+    const label = has ? (short ? 'Modifier' : 'Modifier la mission…') : short ? 'Planifier' : 'Missions du registre…';
+    return `<button type="button" class="odv-pick-btn" data-pick="${s.jourIndex}${s.creneauIndex}" data-fam="${esc(fam)}"${centreOn() ? ` title="${has ? 'Modifier les missions affectées sur ce créneau, ou en planifier d’autres' : 'Missions du registre…'}"` : ' disabled title="Centre verrouillé : l’activer dans Paramètres › Centre (CPCO)"'}>${label}</button>`;
+  };
   document.addEventListener('click', e => {
     const c = e.target.closest('[data-odv-slot]');
     if (!c) return;

@@ -160,7 +160,8 @@
       return {}; // mission illisible : entrée du registre seule
     }
   }
-  /** Ouvre le dialogue d'affectation pour une mission du registre, pilotes et heure préremplis. */
+  /** Ouvre le dialogue d'affectation pour une mission du registre, pilotes et heure préremplis (sans pilotes : son
+   *  affectation enregistrée, à modifier) ; rend la fenêtre, qui émet « reloaded » une fois les affectations relues. */
   async function assign(m, pilots, takeoff, note = '') {
     if (!window.AssignDialog) throw new Error('Dialogue d’affectation absent');
     const y = await yamlOf(m);
@@ -173,9 +174,11 @@
     dlg?.addEventListener('assigned', async () => {
       await load(D, S);
       hooks.forEach(f => f());
+      dlg.dispatchEvent(new CustomEvent('reloaded'));
     }, {
       once: true
     });
+    return dlg;
   }
 
   /** Affecte directement (matrice du créneau) : rows [{ pilot, registration, callsign, ferryPilot }] ; takeoff :
