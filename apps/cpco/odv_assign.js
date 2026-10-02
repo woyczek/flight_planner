@@ -87,6 +87,8 @@
       }
     return out;
   };
+  /** Missions déjà affectées (affectation non annulée) qui commencent avant until (ms) : semaine affichée et passé. */
+  const missionsAssigned = until => new Set(list.filter(a => a.status !== 'annulée' && M().busyRange(a)[0] < until).map(a => a.mission));
   /** Affectations qui recouvrent un créneau (tous pilotes). */
   const inSlot = (j, k) => {
     const r = range(j, k);
@@ -172,6 +174,7 @@
     freePilots,
     freeOver,
     slotsOver,
+    missionsAssigned,
     pilots: () => (D?.pilotes || []).map(p => p.trigramme),
     inSlot,
     week,

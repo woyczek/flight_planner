@@ -96,10 +96,16 @@ alert: null                         # astreinte : § 6
   `MissionAssignments.postsOf`) ; seuls les appareils de ce type (ou de ces types, ou de la catégorie d'un poste
   générique) sont proposés, et seulement ceux de l'opérateur quand le service du poste en désigne un (« Hélicoptère /
   Gendarmerie » → hélicoptères de la Gendarmerie nationale).
+- **Fenêtre d'un créneau** (bouton « Missions du registre… », dès qu'un pilote est libre sur le créneau : une mission à
+  un seul équipage se planifie comme une patrouille) : rien n'est présélectionné ; on coche la mission, on choisit
+  l'appareil (compatibles seulement, du plus proche au plus lointain du terrain de départ, temps de convoyage dans la
+  liste), puis le pilote (libres jusqu'à la fin de la mission et possédant le type d'abord). Les missions déjà affectées
+  (semaine affichée ou passé) ne sont pas proposées ; celles que les pilotes libres peuvent armer viennent d'abord.
+- **Créneaux et missions probables** : un pilote affecté sur un créneau (mission ou convoyage) n'y compte plus ;
+  effectif, missions probables et score sont recalculés après chaque affectation.
 - **Mission sur plusieurs créneaux** (fenêtre d'un créneau du planning ODV) : décollage au début du créneau, fin =
   décollage + bloc + remise en œuvre ; les créneaux recouverts sont affichés (« mobilise lundi après-midi, lundi soir »)
-  et le pilote doit être libre jusqu'à la fin (déclaration heure par heure, sinon classeur ; aucune autre affectation) —
-  la proposition remplace un pilote qui ne l'est pas par un autre pilote libre du créneau.
+  et le pilote doit être libre jusqu'à la fin (déclaration heure par heure, sinon classeur ; aucune autre affectation).
 - **Convoyage depuis la fenêtre d'un créneau** : convoyeur proposé parmi les pilotes libres sur toute la durée du
   convoyage, avant le créneau (maîtrise du type d'abord), modifiable ; à défaut (ou au choix « mission décalée »), le
   pilote de la mission convoie dès le début du créneau et la mission est décalée d'autant (horaire recalculé, créneaux

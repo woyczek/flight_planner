@@ -296,8 +296,8 @@
     if (!book) return render();
     try {
       data = await C.extract(book, settings, fileName);
-      compute();
       await window.OdvAssign?.load(data, settings).catch(e => console.warn(e)); // déclarations des pilotes, affectations
+      compute(); // après les affectations : créneaux et missions probables sur les pilotes libres
     } catch (e) {
       console.error(e);
       notify(`Analyse impossible : ${e.message}`, 'err');
@@ -306,11 +306,18 @@
     render();
   }
 
+  /** Créneaux, missions probables et vols de la frise. Un pilote déjà affecté sur un créneau (mission ou convoyage) n'y
+   *  compte plus : effectif, missions probables et score ne portent que sur les pilotes libres. */
   function compute() {
-    basis = data || declWeek();
+    const all = data || declWeek(),
+      O = window.OdvAssign;
+    basis = O ? {
+      ...all,
+      records: all.records.filter(r => !O.assigned(r.pilote, r.jourIndex, r.creneauIndex).length)
+    } : all;
     if (data) window.MissionAssignments?.simulators?.(Object.values(data.flotte).flatMap(p => p.sims)); // liste des préférences pilote
     slots = C.plan(basis, settings);
-    flights = C.checkFlights(basis, settings);
+    flights = C.checkFlights(all, settings);
   }
   /** Sans classeur : calcul sur les déclarations et affectations, puis tout redessiner. */
   function refreshNoBook() {
@@ -630,13 +637,13 @@
       <b>Événements de groupe</b>${li(s.evenements.map(e => `<li>${esc(e.groupe)}${e.commentaire ? ` — ${esc(e.commentaire)}` : ''}${e.recurrent ? ' <span class="mut">(tous les jours : habillage probable)</span>' : ''}</li>`))}
       <b>Vols déjà posés sur la frise</b>${li(s.vols.map(v => `<li>${esc(v.debut)}–${esc(v.fin)}z ${esc(v.dep)}-${esc(v.arr)} · ${esc(v.appareil)} · ${esc(v.objet)} — ${v.equipage.map(t => tri(t, null, false)).join(' ') || '?'}</li>`).concat(s.autres.map(v => `<li class="mut">${esc(v.debut)}z ${esc(v.couloir)} : ${esc(v.texte)} ${v.equipage.map(t => tri(t, null, false)).join(' ')}</li>`)))}
       <b>Missions probables</b>${li(s.toutesMissions.map((m, i) => `<li>${i < settings.top ? '' : '<span class="mut">'}<span class="odv-fam">${esc(m.famille)}</span> ${m.affectation.map(a => `${tri(a.pilote, null, false)} <small class="mut">${esc(a.role === '*' ? 'autre pilote' : C.ROLES[a.role] || a.role)}</small>`).join(' + ')}${m.renforts.length ? ` (+ ${esc(m.renforts.join(', '))})` : ''} — ${esc(m.calcul)} ; règle : ${esc(m.regle)}${i < settings.top ? '' : '</span>'}</li>`))}
-      ${s.n >= 2 ? `<p>${pickButton(s)}</p>` : ''}
+      ${pickButton(s) ? `<p>${pickButton(s)}</p>` : ''}
       ${s.eviter.length ? `<b>Espaces à éviter</b>${li(s.eviter.map(e => `<li><b>${esc(e.type)} ${esc(e.position)}</b> : pas de mission dans la CTR de ${esc(e.icao)}, et si possible hors de ses TMA — <i>« ${esc(e.texte)} »</i></li>`))}` : ''}
       ${s.contexte.length ? `<b>Contexte</b>${li(s.contexte.map(c => `<li>${esc(c)}</li>`))}` : ''}
     </div>`;
   }
 
-  // --- choix d'une mission du registre (Centre) pour un créneau à plusieurs pilotes
+  // --- choix d'une mission du registre (Centre) pour un créneau où des pilotes sont libres
   // Missions du registre du navigateur (missionRegistry:v1, rempli par le registre du Centre) avec rendez-vous ou à
   // plusieurs équipes, famille du créneau, pas plus d'équipes en l'air que de pilotes disponibles ; route estimée
   // (points du registre, tronçons échantillonnés) confrontée aux sessions ATC du créneau : CTR du terrain en examen ou
@@ -732,9 +739,10 @@
     focus = ''
   } = {}) {
     // Matrice d'un créneau (transaction) : missions du registre × postes (un par équipage : indicatif, type ou catégorie
-    // et service) ; pour chaque poste, pilote libre et appareil de la flotte, préremplis par la proposition « pour tout
-    // le monde » (MissionAssignments.planSlot). Les choix restent en attente, visibles (« RBR → I-01A · appareil ·
-    // indicatif ») : « Enregistrer » écrit les missions cochées, « Annuler les modifications » revient à la proposition ;
+    // et service) ; rien de présélectionné : le planificateur coche une mission, choisit l'appareil (compatible, du plus
+    // proche au plus lointain du départ, convoyage indiqué), puis le pilote (libres jusqu'à la fin avec l'appareil
+    // d'abord). Missions déjà affectées (semaine affichée ou passé) écartées. Les choix restent en attente, visibles (« RBR → I-01A · appareil ·
+    // indicatif ») : « Enregistrer » écrit les missions cochées, « Annuler les modifications » revient à l'ouverture ;
     // la fenêtre se ferme quand tous les pilotes libres sont affectés, ou sur demande (confirmation si modifications en
     // attente). « ✎ Détail » : dialogue d'affectation complet, dont le résultat revient dans la matrice.
     // Durée : une mission plus longue que le créneau mobilise les suivants (son pilote doit être libre jusqu'à la fin).
@@ -839,65 +847,65 @@
     }
     const dirty = () => !!ctx && snap() !== initial;
     /** Proposition : missions des options (proposition d'abord), postes préremplis (pilote proposé, premier appareil libre). */
+    /** Appareils compatibles d'un poste, du plus proche au plus lointain du terrain de départ : { f, nm, min }
+     *  (min : convoyage en minutes, 0 sur place, null distance inconnue). */
+    async function planeList(post, dep) {
+      const to = dep ? await M.coordsOf(dep) : null;
+      const out = await Promise.all(M.planesFor(post, dep).map(async f => {
+        const from = f.base ? await M.coordsOf(f.base) : null,
+          ferry = f.base && dep && f.base !== dep ? await M.ferryOf({
+            base: f.base,
+            departure: dep,
+            type: f.type
+          }) : null;
+        return {
+          f,
+          nm: f.base === dep ? 0 : to && from ? M.geo.nm(from, to) : null,
+          min: f.base === dep ? 0 : ferry?.minutes ?? null
+        };
+      }));
+      return out.sort((a, b) => (a.nm ?? 1e9) - (b.nm ?? 1e9) || (b.f.operational !== false) - (a.f.operational !== false) || a.f.registration.localeCompare(b.f.registration));
+    }
+    /** Missions proposées, rien de présélectionné : registre (famille choisie), sans les missions déjà affectées (semaine
+     *  affichée ou passé) ; celles que les pilotes libres peuvent armer d'abord (MissionAssignments.planSlot), puis les
+     *  autres. Le planificateur coche une mission, choisit l'appareil, puis le pilote. */
     async function build() {
       const free = O.freePilots(j, k),
         decls = await M.declarations(free),
         declsAll = await M.declarations(O.pilots()),
-        entries = all.filter(m => !famSel || fold(m.family || m.type).startsWith(famSel)),
+        weekEnd = O.range(6, (settings.hours || []).length - 1)?.[1] || Infinity,
+        done = O.missionsAssigned(weekEnd),
+        entries = all.filter(m => !done.has(m.id) && (!famSel || fold(m.family || m.type).startsWith(famSel))),
         plan = M.planSlot(free, entries, decls, {
           focus
-        });
-      const busy = new Set(O.inSlot(j, k).map(a => a.aircraft?.registration).filter(Boolean)),
-        usedPlanes = new Set(),
+        }),
+        first = [...new Set(plan.options.flatMap(o => o.missions))],
+        rest = entries.filter(m => !first.includes(m) && m.id && m.status !== 'ordered' && !/Z$/.test(m.id) && !m.organisation),
         d = new Map();
-      for (const o of [...plan.proposal, ...plan.options.filter(o => !plan.proposal.includes(o))].slice(0, 20))
-        for (const m of o.missions) {
-          if (d.has(m.id)) continue;
-          const on = plan.proposal.includes(o),
-            pairs = o.pairs.filter(p => p.mission === m.id).map(p => ({
-              ...p
-            }));
-          const rows = M.postsOf(m).map(post => {
-            const pr = pairs.find(p => !p.used && p.post?.callsign === post.callsign && p.post?.label === post.label);
-            if (pr) pr.used = true;
-            const plane = on && pr ? M.planesFor(post, icao(m.origin)).find(f => f.operational !== false && !busy.has(f.registration) && !usedPlanes.has(f.registration)) : null;
-            if (plane) usedPlanes.add(plane.registration);
-            return {
-              post,
-              pilot: on && pr ? pr.tri : '',
-              registration: plane?.registration || '',
-              callsign: post.callsign || '',
-              ferryPilot: ''
-            };
-          });
-          d.set(m.id, {
-            m,
-            on,
-            rows
-          });
-        }
+      for (const m of [...first, ...rest].slice(0, 40)) {
+        const posts = M.postsOf(m);
+        d.set(m.id, {
+          m,
+          on: false,
+          armable: first.includes(m),
+          planes: await Promise.all(posts.map(p => planeList(p, icao(m.origin)))),
+          rows: posts.map(post => ({
+            post,
+            pilot: '',
+            registration: '',
+            callsign: post.callsign || '',
+            ferryPilot: ''
+          }))
+        });
+      }
       ctx = {
         free,
         decls,
         declsAll,
-        d
+        d,
+        hidden: done.size
       };
       await timeAll();
-      // proposition : le pilote d'une mission plus longue que le créneau doit être libre jusqu'à sa fin ; sinon un autre
-      // pilote libre du créneau, avec l'appareil et libre sur toute la mission, le remplace
-      const inUse = new Set([...d.values()].filter(x => x.on).flatMap(x => x.rows.map(r => r.pilot).filter(Boolean)));
-      let swapped = false;
-      for (const x of [...d.values()].filter(x => x.on))
-        for (const r of x.rows.filter(r => r.pilot && !r.spanOk)) {
-          const from = r.ferry && !r.ferryBy ? r.ferry.takeoff : x.timing.takeoff,
-            alt = free.find(tr => !inUse.has(tr) && M.ownsType(decls[tr], r.post) && O.freeOver(tr, from, x.timing.end));
-          if (!alt) continue;
-          inUse.delete(r.pilot);
-          inUse.add(alt);
-          r.pilot = alt;
-          swapped = true;
-        }
-      if (swapped) await timeAll();
       initial = snap();
     }
     const planeOf = reg => (window.DEFA_FLEET || []).find(f => f.registration === reg);
@@ -929,13 +937,24 @@
         const ms = new Set(ac.mastered || []);
         return [...new Set([...(ac.owned || []), ...ms])].map(ty => ms.has(ty) ? `<b>${esc(ty)}</b>` : esc(ty)).join(' ') || '<small>aucun</small>';
       };
-      const pilotOpts = r => {
-        const own = free.filter(tr => M.ownsType(decls[tr], r.post)),
-          other = free.filter(tr => !own.includes(tr));
-        const o = tr => `<option value="${esc(tr)}"${tr === r.pilot ? ' selected' : ''}>${esc(tr)}${pendOf(tr) && tr !== r.pilot ? ` (→ ${esc(pendOf(tr).m.id)})` : ''}</option>`;
-        return `<option value="">—</option>${own.length ? `<optgroup label="Libres, avec l’appareil">${own.map(o).join('')}</optgroup>` : ''}${other.length ? `<optgroup label="Libres, appareil non déclaré">${other.map(o).join('')}</optgroup>` : ''}${r.pilot && !free.includes(r.pilot) ? `<option value="${esc(r.pilot)}" selected>${esc(r.pilot)} (non libre)</option>` : ''}`;
+      /** Pilotes d'un poste, une fois l'appareil choisi : libres jusqu'à la fin de la mission et possédant le type de
+       *  l'appareil d'abord, puis les autres pilotes libres du créneau. */
+      const pilotOpts = (x, r) => {
+        if (!r.registration) return '<option value="">— appareil d’abord —</option>';
+        const ty = planeOf(r.registration)?.type || r.post,
+          from = x.timing?.start ?? takeoff,
+          to = x.timing?.end ?? takeoff;
+        const best = free.filter(tr => M.ownsType(decls[tr], ty) && O.freeOver(tr, from, to)),
+          other = free.filter(tr => !best.includes(tr));
+        const o = tr => `<option value="${esc(tr)}"${tr === r.pilot ? ' selected' : ''}>${esc(tr)}${M.qualification(decls[tr], tr, ty).level === 'mastered' ? ' (maîtrisé)' : ''}${pendOf(tr) && tr !== r.pilot ? ` (→ ${esc(pendOf(tr).m.id)})` : ''}</option>`;
+        return `<option value="">— pilote —</option>${best.length ? `<optgroup label="Libres jusqu’à la fin, avec l’appareil (${best.length})">${best.map(o).join('')}</optgroup>` : ''}${other.length ? `<optgroup label="Libres sur ce créneau seulement, ou sans l’appareil déclaré">${other.map(o).join('')}</optgroup>` : ''}${r.pilot && !free.includes(r.pilot) ? `<option value="${esc(r.pilot)}" selected>${esc(r.pilot)} (non libre)</option>` : ''}`;
       };
-      const planeOpts = (r, m) => `<option value="">—</option>${M.planesFor(r.post, icao(m.origin)).slice(0, 60).map(p => `<option value="${esc(p.registration)}"${p.registration === r.registration ? ' selected' : ''}>${esc(p.registration)} · ${esc(p.variant || p.type)} · ${esc(p.base || '?')}${r.post?.service && p.operator ? ` · ${esc(p.operator)}` : ''}${p.operational === false ? ' — indisponible' : ''}${busy.has(p.registration) ? ' — engagé' : ''}</option>`).join('')}`;
+      /** Appareils compatibles d'un poste, du plus proche au plus lointain du départ, temps de convoyage affiché. */
+      const planeOpts = (x, i) => {
+        const r = x.rows[i],
+          away = min => min === 0 ? 'sur place' : min == null ? 'distance inconnue' : `convoyage ${hmOf(min)}`;
+        return `<option value="">— appareil —</option>${x.planes[i].map(({ f, min }) => `<option value="${esc(f.registration)}"${f.registration === r.registration ? ' selected' : ''}>${esc(f.registration)} · ${esc(f.variant || f.type)} · ${esc(f.base || '?')} — ${away(min)}${f.operational === false ? ' — indisponible' : ''}${busy.has(f.registration) ? ' — engagé' : ''}</option>`).join('')}`;
+      };
       /** Convoyage d'un poste : trajet, heure, convoyeur (pilotes libres avant le créneau, ou le pilote : mission décalée). */
       const ferryLine = r => {
         if (!r.ferry) return '';
@@ -960,10 +979,10 @@
           conf = conflictsOf(m, zones),
           n = x.rows.length;
         return `<tbody class="ad-mx${x.on ? ' on' : ''}" data-m="${esc(m.id)}">${x.rows.map((r, i) => `<tr class="${x.on && r.pilot && r.registration && !errs(r).length ? 'ad-set' : ''}" data-i="${i}">
-          ${i ? '' : `<td rowspan="${n}"><input type="checkbox" data-on${x.on ? ' checked' : ''} aria-label="Affecter ${esc(m.id)}"></td><td rowspan="${n}"><b>${esc(m.id)}</b> ${esc(m.title || '')}<br><small>${esc(m.family || m.type || '')} · ${hmOf(m.estimate?.block ?? m.estimate?.flight)}</small>${x.timing ? `<br><small>décollage <b>${hm(x.timing.takeoff)}</b>${x.timing.shift ? ` (décalée de ${hmOf(x.timing.shift / 6e4)} : convoyage)` : ''}, fin ${hm(x.timing.end)}${x.timing.slots.length > 1 ? ` · mobilise ${x.timing.slots.map(slotName).join(', ')}` : ''}</small>` : ''}${conf.length ? `<br>${conf.map(c => chip(esc(c.texte), c.grave ? 'err' : 'warn')).join('')}` : ''}<br><button type="button" class="repo-plain ad-link" data-detail>✎ détail</button></td>`}
+          ${i ? '' : `<td rowspan="${n}"><input type="checkbox" data-on${x.on ? ' checked' : ''} aria-label="Affecter ${esc(m.id)}"></td><td rowspan="${n}"><b>${esc(m.id)}</b> ${esc(m.title || '')}${x.armable ? '' : ' <small class="mut">(aucun pilote libre ne déclare l’appareil)</small>'}<br><small>${esc(m.family || m.type || '')} · ${hmOf(m.estimate?.block ?? m.estimate?.flight)}</small>${x.timing ? `<br><small>décollage <b>${hm(x.timing.takeoff)}</b>${x.timing.shift ? ` (décalée de ${hmOf(x.timing.shift / 6e4)} : convoyage)` : ''}, fin ${hm(x.timing.end)}${x.timing.slots.length > 1 ? ` · mobilise ${x.timing.slots.map(slotName).join(', ')}` : ''}</small>` : ''}${conf.length ? `<br>${conf.map(c => chip(esc(c.texte), c.grave ? 'err' : 'warn')).join('')}` : ''}<br><button type="button" class="repo-plain ad-link" data-detail>✎ détail</button></td>`}
           <td><b>${esc(r.callsign || r.post?.callsign || `poste ${i + 1}`)}</b><br><small>${esc(r.post?.type || r.post?.label || 'type libre')}${r.post?.service ? ` · ${esc(r.post.service)}` : ''}</small></td>
-          <td><select data-f="pilot">${pilotOpts(r)}</select></td>
-          <td><select data-f="registration">${planeOpts(r, m)}</select>${ferryLine(r)}</td>
+          <td><select data-f="registration"${x.on ? '' : ' disabled'}>${planeOpts(x, i)}</select>${ferryLine(r)}</td>
+          <td><select data-f="pilot"${x.on && r.registration ? '' : ' disabled'}>${pilotOpts(x, r)}</select></td>
           <td><input data-f="callsign" value="${esc(r.callsign)}" size="9"></td>
           <td>${checks(x, r)}</td></tr>`).join('')}</tbody>`;
       }).join('');
@@ -974,10 +993,10 @@
         title,
         subtitle: `${free.length} pilote(s) libre(s) · ${pend.length} affectation(s) en attente · ${assigned.length} enregistrée(s) sur le créneau`,
         beforeClose: () => !dirty() || confirm('Abandonner les affectations en attente (non enregistrées) ?'),
-        body: `<p class="ad-help">Une mission plus longue que le créneau mobilise les suivants. Appareil basé ailleurs : convoyage confié à un pilote libre avant le créneau, sinon fait par le pilote de la mission, décalée d’autant.</p><p class="ad-facts">${free.length ? free.map(tr => pendOf(tr) ? chip(`${tri(tr, null, false)} → <b>${esc(pendOf(tr).m.id)}</b> · ${esc(pendOf(tr).r.registration)}${pendOf(tr).r.callsign ? ` · ${esc(pendOf(tr).r.callsign)}` : ''}`, 'ok') : chip(`${tri(tr, null, false)} ${types(tr)}`, tr === focus ? 'focus' : '')).join('') : chip('aucun pilote libre (tous affectés ou indisponibles)', 'warn')}</p>
+        body: `<p class="ad-help">Cocher la mission, choisir l’appareil (du plus proche au plus lointain du départ, temps de convoyage indiqué), puis le pilote. Missions déjà affectées (cette semaine ou avant) masquées${ctx.hidden ? ` : ${ctx.hidden}` : ''}. Une mission plus longue que le créneau mobilise les suivants ; appareil basé ailleurs : convoyage confié à un pilote libre avant le créneau, sinon fait par le pilote de la mission, décalée d’autant.</p><p class="ad-facts">${free.length ? free.map(tr => pendOf(tr) ? chip(`${tri(tr, null, false)} → <b>${esc(pendOf(tr).m.id)}</b> · ${esc(pendOf(tr).r.registration)}${pendOf(tr).r.callsign ? ` · ${esc(pendOf(tr).r.callsign)}` : ''}`, 'ok') : chip(`${tri(tr, null, false)} ${types(tr)}`, tr === focus ? 'focus' : '')).join('') : chip('aucun pilote libre (tous affectés ou indisponibles)', 'warn')}</p>
         <p><label class="ad-inline">Famille <select data-fam><option value="">toutes</option>${fams.map(f => `<option value="${esc(f)}"${f === famSel ? ' selected' : ''}>${esc(f)}${s.missions[0]?.famille === f ? ' (proposée)' : ''}</option>`).join('')}</select></label></p>
         ${zones.length ? `<p class="ad-note">À éviter : ${zones.map(z => `<b>${esc(z.type)} ${esc(z.position)}</b> — CTR ${esc(z.ctr.map(a => a.name).join(', ') || '?')}${z.tma.length ? `, TMA ${esc(z.tma.map(a => a.name).join(', '))} (si possible)` : ''}`).join(' · ')}</p>` : ''}
-        ${d.size ? `<table class="ad-table ad-matrix"><thead><tr><th></th><th>Mission</th><th>Poste</th><th>Pilote</th><th>Appareil</th><th>Indicatif</th><th>État</th></tr></thead>${body}</table>` : '<p class="ad-help">Aucune mission du registre pour ces pilotes et cette famille.</p>'}
+        ${d.size ? `<table class="ad-table ad-matrix"><thead><tr><th>Planifier</th><th>Mission</th><th>Poste</th><th>Appareil</th><th>Pilote</th><th>Indicatif</th><th>État</th></tr></thead>${body}</table>` : '<p class="ad-help">Aucune mission du registre pour ces pilotes et cette famille.</p>'}
         <section class="ad-card"><h4>En attente (${pend.length})</h4>${pend.length ? `<ul class="ad-list">${pend.map(p => `<li>${tri(p.r.pilot, null, false)} sur <b>${esc(p.m.id)}</b> — ${esc(planeOf(p.r.registration)?.type || '')} ${esc(p.r.registration)}${p.r.callsign ? ` — ${esc(p.r.callsign)}` : ''}</li>`).join('')}</ul>` : '<p class="ad-help">Aucune : cocher une mission et choisir ses pilotes et appareils.</p>'}</section>
         <section class="ad-card"><h4>Enregistrées sur ce créneau</h4>${assigned.length ? `<ul class="ad-list">${assigned.map(a => `<li><b>${esc(a.mission)}</b>${a.role === 'convoyage' ? ' (convoyage)' : ''} — ${tri(a.pilot, null, false)} ${esc(a.aircraft?.registration || '')}${a.callsign ? ` · ${esc(a.callsign)}` : ''} · décollage ${esc(String(a.takeoff || '').slice(11, 16))}Z</li>`).join('')}</ul>` : '<p class="ad-help">Aucune.</p>'}</section>`,
         foot: `<p class="ad-msg" data-status></p><button type="button" class="ghost" data-undo${dirty() ? '' : ' disabled'}>Annuler les modifications</button><button type="button" class="primary" data-save data-icon="save">Enregistrer (${pend.length})</button><button type="button" class="ghost" data-close>Fermer</button>`
@@ -1004,7 +1023,6 @@
             r.ferrySelf = v === '__self';
             r.ferryPilot = r.ferrySelf ? '' : v;
           } else r[f] = v;
-          if (f === 'pilot' || f === 'registration') x.on = x.on || !!(r.pilot && r.registration);
         }
         await timeAll();
         render();
@@ -1082,8 +1100,9 @@
     await build();
     render();
   }
-  /** Bouton « Missions du registre… » d'un créneau à plusieurs pilotes (famille facultative). */
-  const pickButton = (s, fam = '', short = false) => s.n >= 2 ? `<button type="button" class="odv-pick-btn" data-pick="${s.jourIndex}${s.creneauIndex}" data-fam="${esc(fam)}"${centreOn() ? (short ? ' title="Missions du registre…"' : '') : ' disabled title="Centre verrouillé : l’activer dans Paramètres › Centre (CPCO)"'}>${short ? 'Planifier' : 'Missions du registre…'}</button>` : '';
+  /** Bouton « Missions du registre… » d'un créneau où au moins un pilote est libre (famille facultative) : une mission
+   *  à un seul équipage se planifie aussi bien qu'une patrouille. */
+  const pickButton = (s, fam = '', short = false) => s.n >= 1 ? `<button type="button" class="odv-pick-btn" data-pick="${s.jourIndex}${s.creneauIndex}" data-fam="${esc(fam)}"${centreOn() ? (short ? ' title="Missions du registre…"' : '') : ' disabled title="Centre verrouillé : l’activer dans Paramètres › Centre (CPCO)"'}>${short ? 'Planifier' : 'Missions du registre…'}</button>` : '';
   document.addEventListener('click', e => {
     const c = e.target.closest('[data-odv-slot]');
     if (!c) return;
@@ -1092,7 +1111,11 @@
       focus: c.dataset.tri
     });
   });
-  window.OdvAssign?.onChange(() => data ? renderGrid() : refreshNoBook());
+  // après une affectation : créneaux, missions probables et score recalculés sur les pilotes restés libres
+  window.OdvAssign?.onChange(() => {
+    compute();
+    render();
+  });
   document.addEventListener('click', e => {
     const b = e.target.closest('[data-pick]');
     if (!b) return;
