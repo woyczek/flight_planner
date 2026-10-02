@@ -1060,7 +1060,7 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 <section class="card span12" data-block-id="rpm-curve-editor" data-icon="chart" data-subtitle="Courbe de consommation à éditer point par point."><h2>Cartographie moteur — édition RPM / puissance → consommation</h2><div id="curveEditor"><div class="mut">Choisis ou importe un profil.</div></div></section>
 
 <section class="card span6" data-icon="refresh" data-subtitle="Recaler le profil sur un plan de vol SimBrief réel."><h2>Calibration SimBrief depuis OFP</h2>
-<div class="mut">« Récupérer dernier FPL SimBrief » charge directement le dernier OFP de Woyczek. L’import JSON reste un secours si le navigateur bloque SimBrief.</div>
+<div class="mut">« Récupérer dernier FPL SimBrief » charge directement le dernier OFP de l’identifiant SimBrief du profil pilote (☰ › Profil pilote). L’import JSON reste un secours si le navigateur bloque SimBrief.</div>
 <div style="height:10px"></div><div class="row"><button id="ofpFileBtn" class="primary">Importer OFP JSON</button><button id="calibrateBtn" data-icon="refresh">Calibrer le profil actif</button><button id="exportAuditBtn">Exporter audit JSON</button><input id="ofpFile" type="file" accept=".json,application/json" hidden></div>
 <div id="ofpStatus" class="mut" style="margin-top:8px">Aucun OFP analysé.</div></section>
 
@@ -1107,7 +1107,6 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 //                     airframes SimBrief · cache IndexedDB · calibration OFP · appareils du Landing / DEFA.
 const $ = id => document.getElementById(id);
 const DEFAULT = {
-  simbriefUser: "Woyczek",
   lastAircraft: null,
   profiles: {},
   settings: {
@@ -3091,16 +3090,24 @@ $("simBtn").onclick = async () => {
       } catch {
         return ""
       }
-    })() || state.simbriefUser || "Woyczek"; /* profil pilote commun (☰ › Profil pilote) d'abord */
-    const ofp = await fetch(`https://www.simbrief.com/api/xml.fetcher.php?username=${encodeURIComponent(u)}&json=v2`).then(r => {
-      if (!r.ok) throw Error("SimBrief HTTP " + r.status);
-      return r.json()
-    });
+    })(); /* profil pilote commun (☰ › Profil pilote) */
+    if (!u) throw Object.assign(Error("identifiant SimBrief à saisir dans ☰ › Profil pilote"), { simbrief: "SimBrief : identifiant manquant" });
+    // SimBrief répond 400 avec un JSON ({ fetch: { status: "Error: …" } }) quand il n'a pas de plan de vol pour ce compte :
+    // c'est sa réponse qui est affichée, pas « indisponible » (le réseau marche)
+    let r;
+    try {
+      r = await fetch(`https://www.simbrief.com/api/xml.fetcher.php?${/^\d+$/.test(u)?"userid":"username"}=${encodeURIComponent(u)}&json=v2`, { cache: "no-store" });
+    } catch {
+      throw Object.assign(Error("SimBrief injoignable (réseau, bloqueur de contenu ?)"), { simbrief: "SimBrief injoignable" });
+    }
+    const ofp = await r.json().catch(() => null);
+    const said = String(ofp?.fetch?.status || "");
+    if (!r.ok || /^error/i.test(said)) throw Object.assign(Error(/no flight plan/i.test(said) ? `aucun plan de vol sur SimBrief pour « ${u} » (en générer un sur simbrief.com)` : said.replace(/^error:\s*/i, "") || "SimBrief HTTP " + r.status), { simbrief: "SimBrief : pas de FPL" });
     await importOFPProfile(ofp, "SimBrief dernier FPL — " + u, "SimBrief : dernier FPL");
     $("source").textContent = `SimBrief : dernier FPL ${active?.name||active?.icao||""} chargé`;
   } catch (e) {
-    $("source").textContent = "SimBrief indisponible";
-    $("ofpStatus").textContent = "Récupération directe impossible : " + e.message + ". Importe le JSON OFP téléchargé depuis SimBrief."
+    $("source").textContent = e.simbrief || "SimBrief : FPL illisible";
+    $("ofpStatus").textContent = "Récupération directe impossible : " + e.message + ". Sinon, importe le JSON OFP téléchargé depuis SimBrief."
   } finally {
     $("simBtn").disabled = false
   }

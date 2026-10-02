@@ -255,6 +255,12 @@
     dataState();
     profileLoad();
     foldersState();
+    // Paramètres › Sources et dossiers › « Nettoyer et recommencer… » : même nettoyage, confirmé ici
+    if (new URLSearchParams(location.search).has('clean')) {
+      history.replaceState(null, '', 'premier_lancement.html?force');
+      document.getElementById('plReset').scrollIntoView({ block: 'center' });
+      document.getElementById('plClean').click();
+    }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();

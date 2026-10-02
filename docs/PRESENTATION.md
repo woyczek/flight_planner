@@ -142,6 +142,9 @@ Version 2.3.0. Contournements indiqués en fin de ligne.
 - **Studio SIA — fonds et données en ligne** (OpenFreeMap, OpenTopoMap, Overpass, tuiles d'altitude) :
   sans réseau, pas de fond de carte ni de sommets ; les sommets ne sont cherchés que sur les petites
   emprises. La MORA est calculée, non certifiée.
+- **Paramètres — boutons sans effet** : signalé après l'activation du Centre ou l'autorisation d'un
+  dossier (X-Plane) sur une installation fraîche ; non reproduit, disparu au redémarrage du navigateur.
+  Fermer et rouvrir le navigateur ; si cela revient, noter la console (F12) et le dernier geste.
 - **Après une mise à jour** : le navigateur peut garder l'ancienne page en cache (Ctrl + F5) ; le
   studio demande de relire une fois le dossier SIA (base mémorisée d'une version précédente).
 - **Pages ouvertes en `file://`** : les registres CSV à côté des pages ne sont pas lus (sécurité du
