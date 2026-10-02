@@ -1035,11 +1035,11 @@
           conf = conflictsOf(m, zones),
           n = x.rows.length;
         return `<tbody class="ad-mx${x.on ? ' on' : ''}" data-m="${esc(m.id)}">${x.rows.map((r, i) => `<tr class="${x.on && r.pilot && r.registration && !errs(r).length ? 'ad-set' : ''}" data-i="${i}">
-          ${i ? '' : `<td rowspan="${n}"><input type="checkbox" data-on${x.on ? ' checked' : ''} aria-label="Affecter ${esc(m.id)}"></td><td rowspan="${n}"><b>${esc(m.id)}</b> ${esc(m.title || '')}${x.armable ? '' : ' <small class="mut">(aucun pilote libre ne déclare l’appareil)</small>'}<br><small>${esc(m.family || m.type || '')} · ${hmOf(m.estimate?.block ?? m.estimate?.flight)} · départ ${esc(x.dep?.name || '?')}</small>${x.timing ? `<br><label class="ad-inline"><small>décollage</small><input type="time" data-f="takeoff" value="${hm(x.timing.takeoff).slice(0, 5)}"${x.on ? '' : ' disabled'} title="Heure UTC ; vide : automatique (début du créneau, décalé si le pilote convoie et n’est pas libre avant)"></label><small>${x.takeoffSet != null ? ' (choisie)' : x.timing.shift ? ` (décalée de ${hmOf(x.timing.shift / 6e4)} : convoyage)` : ''}${x.timing.start < x.timing.takeoff ? ` · convoyage dès <b>${hm(x.timing.start)}</b>` : ''}, fin ${hm(x.timing.end)}${x.timing.slots.length > 1 ? ` · mobilise ${x.timing.slots.map(slotName).join(', ')}` : ''}</small>` : ''}${conf.length ? `<br>${conf.map(c => chip(esc(c.texte), c.grave ? 'err' : 'warn')).join('')}` : ''}<br><button type="button" class="repo-plain ad-link" data-detail>✎ détail</button></td>`}
+          ${i ? '' : `<td rowspan="${n}"><input type="checkbox" data-on${x.on ? ' checked' : ''} aria-label="Affecter ${esc(m.id)}"></td><td rowspan="${n}"><b>${esc(m.id)}</b> ${esc(m.title || '')}${x.armable ? '' : ' <small class="mut">(aucun pilote libre ne déclare l’appareil)</small>'}<br><small>${esc(m.family || m.type || '')} · ${hmOf(m.estimate?.block ?? m.estimate?.flight)} · départ ${esc(x.dep?.name || '?')}</small>${x.timing ? `<br><label class="ad-inline"><small>décollage</small><input type="time" data-f="takeoff" value="${hm(x.timing.takeoff).slice(0, 5)}"${x.on ? '' : ' disabled'} title="Heure UTC ; vide : automatique (début du créneau, décalé si le pilote convoie et n’est pas libre avant)"></label><small>${x.takeoffSet != null ? ' (choisie)' : x.timing.shift ? ` (décalée de ${hmOf(x.timing.shift / 6e4)} : convoyage)` : ''}${x.timing.start < x.timing.takeoff ? ` · convoyage dès <b>${hm(x.timing.start)}</b>` : ''}, fin ${hm(x.timing.end)}${x.timing.slots.length > 1 ? ` · mobilise ${x.timing.slots.map(slotName).join(', ')}` : ''}</small>` : ''}${conf.length ? `<br>${conf.map(c => chip(esc(c.texte), c.grave ? 'err' : 'warn')).join('')}` : ''}<br><button type="button" class="repo-plain ad-link" data-detail>✎ détail</button> · <button type="button" class="repo-plain ad-link" data-wing${x.on ? '' : ' disabled'} title="Patrouille : un équipier de plus (même type d’appareil, indicatif suivant)">+ équipier</button></td>`}
           <td><b>${esc(r.callsign || r.post?.callsign || `poste ${i + 1}`)}</b><br><small>${esc(r.post?.type || r.post?.label || 'type libre')}${r.post?.service ? ` · ${esc(r.post.service)}` : ''}</small></td>
           <td><select data-f="registration"${x.on ? '' : ' disabled'}>${planeOpts(x, i)}</select>${ferryLine(r)}</td>
           <td><select data-f="pilot"${x.on && r.registration ? '' : ' disabled'}>${pilotOpts(x, r)}</select></td>
-          <td><input data-f="callsign" value="${esc(r.callsign)}" size="9"></td>
+          <td><input data-f="callsign" value="${esc(r.callsign)}" size="9">${r.wing ? ` <button type="button" class="repo-plain ad-del" data-unwing="${i}" title="Retirer cet équipier">✕</button>` : ''}</td>
           <td>${checks(x, r)}</td></tr>`).join('')}</tbody>`;
       }).join('');
       const keep = dlg?.querySelector('.ad-body')?.scrollTop || 0;
@@ -1094,6 +1094,31 @@
         await timeAll();
         render();
       });
+      // patrouille : équipier ajouté (poste du dernier équipage, indicatif suivant) ou retiré
+      bodyEl.addEventListener('click', async e => {
+        const add = e.target.closest('[data-wing]'),
+          del = e.target.closest('[data-unwing]');
+        if (!add && !del) return;
+        const x = ctx.d.get(e.target.closest('tbody[data-m]').dataset.m);
+        if (add) {
+          const last = x.rows[x.rows.length - 1];
+          x.rows.push({
+            post: last.post,
+            pilot: '',
+            registration: '',
+            callsign: String(last.callsign || '').replace(/(\d+)(?!.*\d)/, d => String(+d + 1).padStart(d.length, '0')),
+            ferryPilot: '',
+            wing: true
+          });
+          x.planes.push(x.planes[x.planes.length - 1]);
+        } else {
+          const i = +del.dataset.unwing;
+          x.rows.splice(i, 1);
+          x.planes.splice(i, 1);
+        }
+        await timeAll();
+        render();
+      });
       // convoyage à affecter : confié tout de suite (affectations de sa mission réécrites)
       bodyEl.addEventListener('click', async e => {
         const go = e.target.closest('[data-fy-go]');
@@ -1124,7 +1149,11 @@
           note: `Créneau ${slotTitle(s)} — le résultat revient dans la fenêtre du créneau`,
           rows: x.rows,
           apply: async rows => {
-            x.rows = rows;
+            x.planes = await Promise.all(rows.map((r, i) => x.rows[i] && x.rows[i].post === r.post ? x.planes[i] : planeList(r.post, x.dep)));
+            x.rows = rows.map((r, i) => ({
+              ...r,
+              wing: i >= M.postsOf(x.m).length
+            }));
             x.on = true;
             await timeAll();
             render();
@@ -1137,6 +1166,8 @@
           const x = ctx.d.get(id);
           x.on = isOn;
           x.takeoffSet = back.find(b => b[0] === id)?.[2] ?? null;
+          x.rows.length = Math.min(x.rows.length, rs.length); // équipiers ajoutés retirés
+          x.planes.length = x.rows.length;
           x.rows.forEach((r, i) => [r.pilot, r.registration, r.callsign, r.ferryPilot, r.ferrySelf, r.ferryOpen] = rs[i] || ['', '', r.post?.callsign || '', '', false, false]);
         }
         await timeAll();
