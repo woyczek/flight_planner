@@ -15,11 +15,8 @@
     esc = K.esc,
     A = () => window.MissionAssignments;
   const hhmm = ms => new Date(ms).toISOString().slice(11, 16) + 'Z';
-  /** « H-20 » → -20 (minutes) ; « H » → 0. */
-  const offsetOf = s => {
-    const m = /^H\s*([+-])\s*(\d+)/i.exec(String(s || '').trim());
-    return m ? (m[1] === '-' ? -1 : 1) * +m[2] : 0;
-  };
+  /** « H-20mn » → -20, « H+1h » → 60 (minutes) ; « H » → 0 (lecture commune, shared/kit.js). */
+  const offsetOf = s => K.hOffset(s) ?? 0;
   /** Indicatif suivant d'une patrouille : MERCURE31 → MERCURE32. */
   const nextCallsign = (cs, n) => String(cs || '').replace(/(\d+)(?!.*\d)/, d => String(+d + n).padStart(d.length, '0'));
   const chip = (text, kind = '') => `<span class="ad-chip ${kind}">${text}</span>`;

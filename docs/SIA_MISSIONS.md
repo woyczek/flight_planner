@@ -203,7 +203,7 @@ les familles sont concernées (ISR, HEMS, FIRE, COMMAND…).
   des missions des équipes (`I-001A`, `I-001B`…) dans `data/missions/<lettre>_<FAMILLE>/I-001Z/missionI-001Z.yaml`.
   Elle porte le **brief général** (summary, detailed_description) et le bloc `exercise` ; les missions des équipes
   citent `operation.organisation: I-001Z`. Voir le prompt, § 3 et § 4 bis.
-- **Bloc `exercise`** : `h_hour` (heure H commune) ; `participants` (indicatif, mission, décollage `H±n`, rôle) ;
+- **Bloc `exercise`** : `h_hour` (heure H commune) ; `participants` (indicatif, mission, décollage `H-20mn`, `H+1h` : une seule heure H — ou T, ou M —, décalages avec leur unité ; sans unité, minutes, rôle) ;
   `tracks` = **chiffons** (nom, nature, points, niveau, vitesse, à établir ; `played` : tenu par un aéronef du
   simulateur, avec `callsign`, départ `start` et consignes `conduct`, sinon seulement dessiné) ; `events` =
   **chronologie** (`at` : `H+n` ou point de la mission du participant `by`, `delay_min` ; `kind` : **radio** passé
