@@ -316,14 +316,7 @@ html[data-skeuo="frame"][data-decor="full"] .repo-block::after {
 /* ↑ vis dans la boîte du bloc : un pseudo-élément qui dépassait faisait apparaître une barre de défilement dans les
    blocs à défilement (reporting : .section, overflow:auto), qui disparaissait au calcul suivant (blocs qui changeaient
    de taille en boucle) */
-html[data-design="flightlog"][data-decor="full"] .repo-block::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none
-}
-/* plans trois vues (Carnet de vol, plus bas) ; Cabinet : plus de filigrane (les panneaux habillent les blocs) */
+/* Cabinet et Carnet de vol : plus de filigrane ni de plans au coin des blocs (les panneaux habillent les blocs) */
 /* titre de bloc : plaque de laiton gravée, vis aux deux bouts */
 /* plaques de titre des blocs (designs à cadre) : laiton gravé (Cabinet), aluminium brossé (Carnet de vol), kaki (Durci) ;
    vis aux deux bouts ; jetons --sk-plate-* et --sk-screw */
@@ -1613,43 +1606,6 @@ html[data-design="flightlog"] .repo-block:not(#imp) {
 html[data-design="flightlog"][data-decor="full"] .repo-block::after {
   display: none
 }
-/* Carnet de vol : plans trois vues (Islander, DC-3, B-17, P-51, Concorde) au coin des blocs, en alternance d'un bloc à l'autre
-   (rang data-deco-n posé par app_framework.js dans l'ordre de la page) ; ton clair : traits sépia foncés sur le parchemin,
-   ton sombre : traits crème (versions -clair) sur le parchemin sombre. Taille : 45 % de la largeur du bloc, 340 px au plus. */
-html[data-design="flightlog"][data-decor="full"] .repo-block::before {
-  opacity: .5;
-  mix-blend-mode: multiply;
-  background: url("deco/flightlog/blueprint-islander.webp?v=72eff2fb") right 10px bottom 10px/min(45%, 340px) auto no-repeat
-}
-html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="2"]::before {
-  background-image: url("deco/flightlog/blueprint-dc3.webp?v=2d4cac70")
-}
-html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="3"]::before {
-  background-image: url("deco/flightlog/blueprint-b17.webp?v=ace6cbb2")
-}
-html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="4"]::before {
-  background-image: url("deco/flightlog/blueprint-mustang.webp?v=8672487c")
-}
-html[data-design="flightlog"][data-decor="full"] .repo-block[data-deco-n="5"]::before {
-  background-image: url("deco/flightlog/blueprint-concorde.webp?v=2b358373")
-}
-html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block::before {
-  opacity: .3;
-  mix-blend-mode: normal;
-  background-image: url("deco/flightlog/blueprint-islander-clair.webp?v=efeaed88")
-}
-html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="2"]::before {
-  background-image: url("deco/flightlog/blueprint-dc3-clair.webp?v=a852ea81")
-}
-html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="3"]::before {
-  background-image: url("deco/flightlog/blueprint-b17-clair.webp?v=a0ad1544")
-}
-html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="4"]::before {
-  background-image: url("deco/flightlog/blueprint-mustang-clair.webp?v=33150b72")
-}
-html[data-design="flightlog"][data-tone="dark"][data-decor="full"] .repo-block[data-deco-n="5"]::before {
-  background-image: url("deco/flightlog/blueprint-concorde-clair.webp?v=40d83d5e")
-}
 /* marge haute et basse dans le bandeau */
 html[data-design="flightlog"] .repo-header-emblem img {
   width: 100%;
@@ -2426,6 +2382,14 @@ html[data-skeuo] .repo-block-heading .repo-block-tools .repo-drag {
 }
 html[data-design="flightlog"] .repo-deco-bgimg.repo-deco-bg-cover {
   opacity: .9
+}
+/* Carnet de vol, ton sombre : panneaux bleu marine (panels/) atténués sur le parchemin sombre ; voile marine sous les
+   données */
+html[data-design="flightlog"][data-tone="dark"] .repo-deco-bgimg.repo-deco-panel {
+  opacity: .75
+}
+html[data-design="flightlog"][data-tone="dark"] .repo-has-bg:has(>.repo-deco-panel) {
+  --repo-veil: rgba(14, 20, 32, .6)
 }
 /* Carnet de vol : fonds sombres, tracés fins */
 /* ================================================================================================ BARRES DE DÉFILEMENT STABLES

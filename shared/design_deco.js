@@ -164,18 +164,8 @@
   // Entrée : mode, ou [mode, cadrage (background-position), image « <design>/<nom> » (défaut : <design>/bg-<clé>),
   // opacité (défaut : celle du design, designs_skeuo.css)]. Modes : « anchor » (taille d'origine, calée en haut à
   // gauche), « cover » (couvre le bloc), « side » (hauteur du bloc, calée à droite, fondue vers la gauche).
-  // Cabinet et Durci n'en ont plus : les panneaux par thème (PANELS) habillent tous leurs blocs.
+  // Cabinet, Durci et Carnet de vol n'en ont plus : les panneaux par thème (PANELS) habillent tous leurs blocs.
   const BG = {
-    // Carnet de vol : cuir marine et tracés or (hélicoptères et montagnes, rose des vents, biplan et globe, piste de nuit…)
-    flightlog: {
-      aerodromes: ['cover', 'center', null, .5],
-      daynight: ['cover', 'center bottom'],
-      capabilities: ['cover', 'center'],
-      outcomes: ['cover', 'center'],
-      aircraft: ['cover', 'center'],
-      series: ['cover', 'center'],
-      families: ['cover', 'center']
-    },
     // Aqua : eau et verre, cadrés différemment sur chaque bloc
     aqua: {
       aerodromes: ['cover', 'center bottom', 'aqua/bg-water'],
@@ -204,8 +194,14 @@
   // ton clair ; alias possible : thème → panneau du jeu quand il a moins de thèmes). Cabinet : jeu « 1930 » ; un jeu « 1800 »
   // attend dans cabinet/1800 : remplacer '1930' par '1800' (dir et clair.dir) une fois ses panneaux convertis.
   const PANELS = {
-    // Carnet de vol : jeu clair seulement (parchemin ivoire, gravures bleues) ; ton sombre : fonds en cuir (BG)
+    // Carnet de vol : ton sombre, plans au trait sur bleu marine (panels/ ; families et ops : portrait seulement, en
+    // attendant leur paysage) ; ton clair : parchemin ivoire, gravures bleues (clair/)
     flightlog: {
+      dir: 'panels',
+      only: {
+        families: 't',
+        ops: 't'
+      },
       clair: {
         dir: 'clair',
         only: {
