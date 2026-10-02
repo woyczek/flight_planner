@@ -19,9 +19,11 @@
     display: block;
     padding: 14px;
     border-radius: calc(12px * var(--repo-round, 1));
-    border: 1px solid var(--line);
-    background: var(--repo-veil, var(--card)); /* bloc habillé d'un panneau : voile du design (le décor transparaît) */
-    color: var(--ink);
+    /* surfaces du framework : voile du design sur un bloc habillé d'un panneau (décor complet), sinon carte du design
+       (jetons --sk-card*, designs à matières), sinon carte du thème */
+    border: 1px solid var(--sk-card-bd, var(--line));
+    background: var(--repo-veil, var(--sk-card, var(--card)));
+    color: var(--sk-card-ink, var(--ink));
     text-decoration: none
   }
   .mc-choose a:hover {
@@ -47,8 +49,8 @@
     font-size: 15px;
     border: 1px solid var(--line);
     border-radius: calc(10px * var(--repo-round, 1));
-    background: var(--repo-veil, var(--card));
-    color: var(--ink)
+    background: var(--repo-veil, var(--sk-card, var(--card)));
+    color: var(--sk-card-ink, var(--ink))
   }
   .mc-choose a.dim {
     opacity: .35
