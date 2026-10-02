@@ -78,23 +78,23 @@ CONFIGS = {
         'pieces': {},
         'paper': ((300, 320, 480, 480), (300, 320, 480, 480)),
     },
-    # porte-bloc d'Aqua : planche de cuir marine surpiquée, légèrement évasée vers le bas (bords redressés), deux feuilles
-    # blanches ; pince métallique centrée en haut, son anneau au-dessus de la planche (le haut du cadre commence à
-    # l'anneau : zone transparente au-dessus du cuir) : pièce centrée « clip », bords fondus dans la bande du haut
+    # porte-bloc d'Aqua : plastique bleu translucide, feuilles blanches droites ; pince métallique centrée en haut, son
+    # anneau au-dessus de la planche (le haut du cadre commence à l'anneau : zone transparente au-dessus du plastique) :
+    # pièce centrée « clip », bords fondus dans la bande du haut
     'aqua': {
-        'src': 'ChatGPT Image 2 Oct 2026, 15_01_44.png',
-        'tl': ((186, 30, 212, 250), dict(right=40, bottom=40), dict(shear=-0.01, y0=685)),
-        'tr': ((868, 30, 207, 250), dict(left=40, bottom=40), dict(shear=0.011, y0=685)),
-        'bl': ((186, 1060, 240, 134), dict(right=40, top=40), dict(shear=-0.01, y0=685)),
-        'br': ((850, 1060, 225, 134), dict(left=40, top=40), dict(shear=0.011, y0=685)),
-        'top': ((890, 30, 100, 175, 30, 'x'), dict(bottom=30)),   # cuir seul : le bord des feuilles, de biais, ferait des créneaux
-        'bot': ((450, 1060, 140, 134, 40, 'x'), dict(top=30)),
-        'left': ((186, 450, 110, 300, 40, 'y'), dict(right=30), dict(shear=-0.01, y0=685)),
-        'right': ((975, 450, 100, 300, 40, 'y'), dict(left=30), dict(shear=0.011, y0=685)),
+        'src': 'ChatGPT Image 2 Oct 2026, 15_12_33.png',
+        'tl': ((78, 45, 200, 260), dict(right=40, bottom=40)),
+        'tr': ((735, 45, 211, 260), dict(left=40, bottom=40)),
+        'bl': ((78, 1240, 220, 172), dict(right=40, top=40)),
+        'br': ((726, 1240, 220, 172), dict(left=40, top=40)),
+        'top': ((750, 45, 100, 150, 30, 'x'), dict(bottom=30)),   # plastique seul, au-dessus des feuilles
+        'bot': ((400, 1240, 140, 172, 40, 'x'), dict(top=30)),
+        'left': ((78, 500, 100, 300, 40, 'y'), dict(right=30)),
+        'right': ((846, 500, 100, 300, 40, 'y'), dict(left=30)),
         'pieces': {
-            'clip': ((380, 30, 510, 250), [], dict(left=60, right=60, bottom=30)),
+            'clip': ((280, 45, 464, 215), [], dict(left=60, right=60, bottom=30)),
         },
-        'paper': ((400, 400, 480, 480), (400, 400, 480, 480)),
+        'paper': ((300, 500, 480, 480), (300, 500, 480, 480)),
     },
 }
 Q = ['-quality', '86', '-define', 'webp:alpha-quality=92']

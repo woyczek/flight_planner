@@ -2043,59 +2043,59 @@ html[data-design="flightlog"] {
   --sh-acc-r: 178/600;
   --sh-k: .7
 }
-/* Aqua : porte-bloc en cuir marine, pince métallique centrée en haut (son anneau dépasse au-dessus de la planche),
-   feuilles blanches ; encre marine */
+/* Aqua : porte-bloc en plastique bleu translucide, pince métallique centrée en haut (son anneau dépasse au-dessus de
+   la planche), feuilles blanches ; encre marine */
 html[data-design="aqua"] {
   --sheet-ink: #14285a;
   --sheet-ink-2: #3a4a66;
-  --sheet-card-bg: #f7f8fa url("deco/aqua/sheet-paper.webp?v=ac338bf4") left top/480px;
-  --sheet-paper: url("deco/aqua/sheet-paper.webp?v=ac338bf4");
-  --sheet-top: url("deco/aqua/sheet-top.webp?v=b39ed4cf");
-  --sheet-bot: url("deco/aqua/sheet-bot.webp?v=a6938619");
-  --sheet-left: url("deco/aqua/sheet-left.webp?v=8bd14205");
-  --sheet-right: url("deco/aqua/sheet-right.webp?v=6ad2f0f0");
-  --sheet-clip: url("deco/aqua/sheet-clip.webp?v=b9c4a122");
-  --sheet-tl: url("deco/aqua/sheet-tl.webp?v=239ad4f1");
-  --sheet-tr: url("deco/aqua/sheet-tr.webp?v=f28b580d");
-  --sheet-bl: url("deco/aqua/sheet-bl.webp?v=e37fac52");
-  --sheet-br: url("deco/aqua/sheet-br.webp?v=38088322");
+  --sheet-card-bg: #f7f8fa url("deco/aqua/sheet-paper.webp?v=92ca6309") left top/480px;
+  --sheet-paper: url("deco/aqua/sheet-paper.webp?v=92ca6309");
+  --sheet-top: url("deco/aqua/sheet-top.webp?v=779430dc");
+  --sheet-bot: url("deco/aqua/sheet-bot.webp?v=3d2f6f68");
+  --sheet-left: url("deco/aqua/sheet-left.webp?v=fc91adef");
+  --sheet-right: url("deco/aqua/sheet-right.webp?v=c5c167b2");
+  --sheet-clip: url("deco/aqua/sheet-clip.webp?v=11c8e94d");
+  --sheet-tl: url("deco/aqua/sheet-tl.webp?v=4beacb44");
+  --sheet-tr: url("deco/aqua/sheet-tr.webp?v=4a837bce");
+  --sheet-bl: url("deco/aqua/sheet-bl.webp?v=90f15400");
+  --sheet-br: url("deco/aqua/sheet-br.webp?v=b4f467ac");
   /* découpe : tools/cut_register_sheet.py aqua --write */
-  --sh-tl-w: 212px;
-  --sh-tl-h: 250px;
-  --sh-tr-w: 207px;
-  --sh-tr-h: 250px;
-  --sh-bl-w: 240px;
-  --sh-bl-h: 134px;
-  --sh-br-w: 225px;
-  --sh-br-h: 134px;
+  --sh-tl-w: 200px;
+  --sh-tl-h: 260px;
+  --sh-tr-w: 211px;
+  --sh-tr-h: 260px;
+  --sh-bl-w: 220px;
+  --sh-bl-h: 172px;
+  --sh-br-w: 220px;
+  --sh-br-h: 172px;
   --sh-top-w: 100px;
-  --sh-top-h: 175px;
+  --sh-top-h: 150px;
   --sh-bot-w: 140px;
-  --sh-bot-h: 134px;
-  --sh-left-w: 110px;
+  --sh-bot-h: 172px;
+  --sh-left-w: 100px;
   --sh-left-h: 300px;
   --sh-right-w: 100px;
   --sh-right-h: 300px;
-  --sh-top-l: 172px;
-  --sh-top-r: 167px;
-  --sh-bot-l: 200px;
-  --sh-bot-r: 185px;
-  --sh-left-t: 210px;
-  --sh-left-b: 94px;
-  --sh-right-t: 210px;
-  --sh-right-b: 94px;
+  --sh-top-l: 160px;
+  --sh-top-r: 171px;
+  --sh-bot-l: 180px;
+  --sh-bot-r: 180px;
+  --sh-left-t: 220px;
+  --sh-left-b: 132px;
+  --sh-right-t: 220px;
+  --sh-right-b: 132px;
   /* réglages */
-  --sh-paper-t: 190px;
-  --sh-paper-r: 80px;
-  --sh-paper-b: 80px;
-  --sh-paper-l: 90px;
+  --sh-paper-t: 160px;
+  --sh-paper-r: 45px;
+  --sh-paper-b: 95px;
+  --sh-paper-l: 55px;
   --sh-paper-w: 480px;
-  --sh-pad-t: 250px;
-  --sh-pad-r: 110px;
-  --sh-pad-b: 110px;
-  --sh-pad-l: 120px;
+  --sh-pad-t: 230px;
+  --sh-pad-r: 80px;
+  --sh-pad-b: 120px;
+  --sh-pad-l: 90px;
   --sh-clip-y: 0px;
-  --sh-clip-w: 510px;
+  --sh-clip-w: 464px;
   --sh-k: .6
 }
 /* Durci : carnet de terrain dans sa pochette olive à fermeture éclair, crayon dans son étui élastique sur le bord
