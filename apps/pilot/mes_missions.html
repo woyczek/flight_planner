@@ -846,12 +846,18 @@
       leaf.append(c);
       // demi-signet (pendant sous la page de gauche, dans les annexes) : paraît à mi-course en avant, s'efface à
       // mi-course au retour — pas d'apparition brutale en fin de rotation
-      sig.style.transition = 'opacity .15s';
       if (way > 0) {
+        sig.style.transition = 'none'; // masqué tout de suite (pas de fondu vers 0 : il clignoterait)
         sig.style.opacity = '0';
-        setTimeout(() => { sig.style.opacity = ''; }, 350);
+        setTimeout(() => {
+          sig.style.transition = 'opacity .15s';
+          sig.style.opacity = '';
+        }, 350);
       } else {
-        setTimeout(() => { sig.style.opacity = '0'; }, 200);
+        setTimeout(() => {
+          sig.style.transition = 'opacity .15s';
+          sig.style.opacity = '0';
+        }, 200);
         setTimeout(() => {
           book.classList.add('pm-at-end');
           book.classList.remove('pm-past');
