@@ -96,6 +96,8 @@ def clone(user=None, secret=None, remember=False):
         return False, 'Git n’est pas installé (https://git-scm.com) : utilisez l’archive des données.'
     if os.path.isdir(DATA) and os.listdir(DATA):
         return False, 'Le dossier data/ existe déjà et n’est pas vide : il est laissé tel quel.'
+    if any(c in (user or '') + (secret or '') for c in '\r\n\0'):
+        return False, 'Identifiant ou mot de passe invalide (retour à la ligne).'  # pas de champ glissé dans « git credential »
     url = data_repo_url()
     env = git_env()
     cmd = [git]
@@ -152,12 +154,37 @@ def ensure_data():
 # à laquelle ce serveur ne répond pas)
 class Setup(http.server.SimpleHTTPRequestHandler):
     port = 0
+    MAX_UPLOAD = 512 * 1024 * 1024  # archive des données ou journal DEFA : 512 Mo au plus
 
     def log_message(self, *a):
         pass
 
+    def _local_host(self):
+        """En-tête Host de cette machine : une page d'un autre site qui ferait pointer son nom vers 127.0.0.1
+        (« DNS rebinding ») envoie son propre nom et se voit refuser tout le dossier, données comprises."""
+        return self.headers.get('Host') in (f'127.0.0.1:{self.port}', f'localhost:{self.port}', f'[::1]:{self.port}')
+
     def _allowed(self):
-        return self.headers.get('Host') in (f'127.0.0.1:{self.port}', f'localhost:{self.port}') and self.headers.get('X-DEFA-Setup') == '1'
+        return self._local_host() and self.headers.get('X-DEFA-Setup') == '1'
+
+    purge = True  # première page servie par ce lanceur : vider le cache du navigateur pour ce site
+
+    def end_headers(self):
+        if getattr(self, '_purge', False):
+            # versions précédentes : pages et scripts gardés en cache (dont un type refusé avec nosniff) ; le navigateur
+            # les jette tous à la première page de chaque lancement
+            self.send_header('Clear-Site-Data', '"cache"')
+            Setup.purge = False
+        self.send_header('X-Content-Type-Options', 'nosniff')
+        self.send_header('Cache-Control', 'no-cache')  # revalidé à chaque fois : jamais de script périmé (ni de type) en cache
+        super().end_headers()
+
+    def guess_type(self, path):
+        # config/repository_tree (sans extension) est un script : avec nosniff, servi en octet-stream il ne
+        # s'exécuterait pas (plus de menu ni de barre latérale)
+        if os.path.basename(str(path).split('?')[0]) == 'repository_tree':
+            return 'text/javascript'
+        return super().guess_type(path)
 
     def _json(self, obj, code=200):
         body = json.dumps(obj, ensure_ascii=False).encode('utf-8')
@@ -168,7 +195,15 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def do_HEAD(self):
+        if not self._local_host():
+            return self._json({'error': 'refusé'}, 403)
+        return super().do_HEAD()
+
     def do_GET(self):
+        if not self._local_host():
+            return self._json({'error': 'refusé'}, 403)
+        self._purge = Setup.purge and re.search(r'(\.html|/)$', self.path.split('?')[0]) is not None
         if self.path.split('?')[0] == '/__setup/status':
             if not self._allowed():
                 return self._json({'error': 'refusé'}, 403)
@@ -201,7 +236,12 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         path = self.path.split('?')[0]
         if not path.startswith('/__setup/') or not self._allowed():
             return self._json({'error': 'refusé'}, 403)
-        size = int(self.headers.get('Content-Length') or 0)
+        try:
+            size = int(self.headers.get('Content-Length') or 0)
+        except ValueError:
+            return self._json({'error': 'taille invalide'}, 400)
+        if size < 0 or size > self.MAX_UPLOAD:
+            return self._json({'error': 'fichier trop gros'}, 413)
         body = self.rfile.read(size) if size else b''
         if path == '/__setup/clone':
             try:
@@ -306,7 +346,7 @@ def main():
     port = a.port
     for p in range(a.port, a.port + 20):
         if ours(p):
-            url = f'http://127.0.0.1:{p}/{a.page}'
+            url = f'http://127.0.0.1:{p}/{a.page}?t={int(time.time())}'  # adresse neuve : page jamais reprise du cache
             say(f'  La suite tourne déjà : {url}')
             if not a.no_browser:
                 webbrowser.open(url)
@@ -320,7 +360,7 @@ def main():
     Setup.port = port
     handler = lambda *x, **k: Setup(*x, directory=ROOT, **k)
     srv = Server(('127.0.0.1', port), handler)
-    url = f'http://127.0.0.1:{port}/{a.page}'
+    url = f'http://127.0.0.1:{port}/{a.page}?t={int(time.time())}'  # adresse neuve : page jamais reprise du cache
     say(f'  Suite servie sur http://127.0.0.1:{port}/')
     say('')
     say('3. Navigateur')

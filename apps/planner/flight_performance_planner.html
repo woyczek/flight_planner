@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Flight Performance & Fuel Planner</title>
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=9fd5d2aa">
-<script src="../../config/repository_tree?v=3184ea0e"></script>
+<script src="../../config/repository_tree?v=014ce40b"></script>
 <style data-layer="app">
 @layer app {
 :root {
@@ -1671,7 +1671,7 @@ function renderProfile() {
     ["TOD", `${active.tod.gradientFtPerNm||300} ft/NM + ${active.tod.bufferNm||0} NM`]
   ];
   $("profile").innerHTML = vals.map(x => `<div>${x[0]}</div><div>${x[1]}</div>`).join("");
-  $("curve").innerHTML = (active.rpmFuelCurve || []).sort((a, b) => a.rpm - b.rpm).map(x => `<tr><td>${x.rpm}</td><td>${showFuel(x.fuelFlowMin??x.fuelFlowPerHour)}</td><td>${showFuel(x.fuelFlowPerHour)}</td><td>${showFuel(x.fuelFlowMax??x.fuelFlowPerHour)}</td><td>${fuelUnit()}/h</td><td>${x.comment||""}</td></tr>`).join("") || '<tr><td colspan="6">Pas de courbe RPM dans ce profil.</td></tr>';
+  $("curve").innerHTML = (active.rpmFuelCurve || []).sort((a, b) => a.rpm - b.rpm).map(x => `<tr><td>${x.rpm}</td><td>${showFuel(x.fuelFlowMin??x.fuelFlowPerHour)}</td><td>${showFuel(x.fuelFlowPerHour)}</td><td>${showFuel(x.fuelFlowMax??x.fuelFlowPerHour)}</td><td>${fuelUnit()}/h</td><td>${window.RepositoryKit.esc(x.comment||"")}</td></tr>`).join("") || '<tr><td colspan="6">Pas de courbe RPM dans ce profil.</td></tr>';
   renderProfileEditor();
 }
 // ===== Devis carburant : composante de vent, temps et consommation par phase =====
@@ -3030,7 +3030,7 @@ function extractOfpCalibration(ofp) {
 /** Tableau d'audit de la calibration OFP (mesures par phase) et sa provenance. */
 function renderCalibration(c) {
   const u = fuelUnit(),
-    rows = Object.values(c.phases).map(p => `<tr><td>${p.name}</td><td>${p.source}</td><td>${fmt(p.timeMin,1)} min</td><td>${fmt(p.airDistanceNm??p.distanceNm,1)} NM${p.airDistanceNm===null?" sol":" air"}</td><td>${showFuel(p.fuel)} ${u}</td><td>${showFuel(p.fuelFlowPerHour)} ${u}/h</td><td>${p.tasKt?fmt(p.tasKt)+" TAS":p.groundSpeedKt?fmt(p.groundSpeedKt)+" GS (estimé)":"—"}</td><td>${fmt(p.rateFpm)} ft/min</td></tr>`).join("");
+    rows = Object.values(c.phases).map(p => `<tr><td>${window.RepositoryKit.esc(p.name)}</td><td>${window.RepositoryKit.esc(p.source)}</td><td>${fmt(p.timeMin,1)} min</td><td>${fmt(p.airDistanceNm??p.distanceNm,1)} NM${p.airDistanceNm===null?" sol":" air"}</td><td>${showFuel(p.fuel)} ${u}</td><td>${showFuel(p.fuelFlowPerHour)} ${u}/h</td><td>${p.tasKt?fmt(p.tasKt)+" TAS":p.groundSpeedKt?fmt(p.groundSpeedKt)+" GS (estimé)":"—"}</td><td>${fmt(p.rateFpm)} ft/min</td></tr>`).join("");
   $("ofpAudit").innerHTML = rows;
   $("calibrationMeta").innerHTML = [
     ["OFP analysé", c.createdAt],

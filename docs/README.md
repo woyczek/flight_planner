@@ -39,4 +39,4 @@
 | [PROMPT_GENERATEUR_MISSIONS.md](PROMPT_GENERATEUR_MISSIONS.md) | prompt de génération des missions |
 | [PROMPTS_ASSETS_PHASE2.md](PROMPTS_ASSETS_PHASE2.md) · [PROMPTS_LIVRE_MISSION.md](PROMPTS_LIVRE_MISSION.md) | prompts des images des designs |
 | [PROPOSITION_DESIGN_ICONES.md](PROPOSITION_DESIGN_ICONES.md) · [demo_design_icones.html](demo_design_icones.html) | icônes des designs |
-| [mission_report_core_audit.md](mission_report_core_audit.md) · [AUDIT_2026-09-28.md](AUDIT_2026-09-28.md) | notes de conception et audits |
+| [mission_report_core_audit.md](mission_report_core_audit.md) · [AUDIT_2026-09-28.md](AUDIT_2026-09-28.md) · [AUDIT_SECURITE_2026-10-02.md](AUDIT_SECURITE_2026-10-02.md) | notes de conception et audits |

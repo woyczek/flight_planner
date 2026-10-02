@@ -1268,6 +1268,11 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
             status(T('Adresse invalide (http:// ou https://)', 'Invalid address (http:// or https://)'));
             return;
           }
+          // la clef d'envoi part dans un en-tête : https obligatoire, sauf sur cette machine (essais)
+          if (/^http:\/\//i.test(url) && !/^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?(\/|$)/i.test(url)) {
+            status(T('Adresse en https:// obligatoire (la clef d’envoi passerait en clair).', 'https:// address required (the sending key would travel in clear).'));
+            return;
+          }
           write('missionSendConfig:v1', {
             url,
             header: input('header').value.trim() || 'Authorization',

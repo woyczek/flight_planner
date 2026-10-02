@@ -1,3 +1,4 @@
+// Arbre de la suite (script, servi en text/javascript) : pages, menus, designs, sources.
 window.REPOSITORY_TREE={
   version:3,
   release:{date:"2026-10-02",version:"4.7.0",id:"XPS-4.7.0",changelog:"https://framagit.org/asr/flight_planner/-/blob/master/docs/CHANGELOG.md",
