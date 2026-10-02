@@ -37,6 +37,7 @@
   const tr = k => window.RepositoryKit.t(T[k]); // shared/kit.js
 
   // ------------------------------------------------------------------ décor de page, par design
+  // (tous facultatifs sauf foot)
   // foot     : frise du pied de page, liste de composants (FOOT) : 'strip' (image « footer » du design), 'plate'
   //            (plaque DEFA), 'radar' (écran de veille animé), 'status' (voyant de sauvegarde, fonction réelle) ;
   // between  : objets entre les blocs, tour à tour : [image, largeur px, option] ; option : 'pair' (deux exemplaires)
@@ -62,6 +63,10 @@
   };
   const DEVICE_AT = 2; // appareil de page : entre les blocs 2 et 3 (tous les designs ; une page à 3 blocs l'accueille)
   const SETS = {
+    // Aqua : frise de verre bleu (le reste du décor de page attend ses objets : appareil de page)
+    aqua: {
+      foot: ['strip']
+    },
     // Cabinet : objets de navigation des années 1930 (planches « objets 1930 » et objets de face)
     cabinet: {
       foot: ['strip'],
@@ -427,7 +432,7 @@
           nodes.push(dv);
           return;
         }
-        if (i % 2 || !ok) return;
+        if (i % 2 || !ok || !set.between?.length) return;
         // objet entre les blocs : hauteur nulle, centré dans l'écart
         const [name, w, opt] = set.between[k++ % set.between.length];
         const sep = document.createElement('div');
@@ -446,7 +451,7 @@
     const col = (document.querySelector('body>main') || document.body).getBoundingClientRect();
     const gutter = Math.min(col.left - body.left, body.right - col.right) - 10,
       H = document.body.scrollHeight;
-    if (gutter < 90) return;
+    if (gutter < 90 || !set.sides?.length) return;
     let side = 0;
     for (let y = 180, n = 0; y < H - 200; y += 650, n++) {
       const [name, w0] = set.sides[n % set.sides.length], w = Math.min(w0, gutter - 24), left = side++ % 2 === 0;

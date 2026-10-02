@@ -1266,7 +1266,7 @@ html[data-skeuo="frame"][data-dirty="1"] .repo-footer::before {
 .repo-deco {
   display: none
 }
-html[data-skeuo="frame"][data-decor="full"] .repo-deco {
+html[data-skeuo][data-decor="full"] .repo-deco {
   display: block;
   margin: 18px 0 0
 }
@@ -1533,7 +1533,7 @@ html[data-design="field"][data-decor="full"] {
 .repo-deco-side {
   display: none
 }
-html[data-skeuo="frame"][data-decor="full"] .repo-deco-sep {
+html[data-skeuo][data-decor="full"] .repo-deco-sep {
   display: block;
   position: relative;
   height: 0;
@@ -1547,7 +1547,7 @@ html[data-skeuo="frame"][data-decor="full"] .repo-deco-sep {
   transform: translate(-50%, -50%);
   filter: drop-shadow(0 4px 5px rgba(0, 0, 0, .5))
 }
-html[data-skeuo="frame"][data-decor="full"] .repo-deco-side {
+html[data-skeuo][data-decor="full"] .repo-deco-side {
   display: block;
   position: absolute;
   z-index: 0;
@@ -2292,7 +2292,7 @@ html[data-skeuo] .repo-has-sheet .repo-card :is(h3, h4, legend, label):not(th, t
     padding: revert !important
   }
 }
-/* carnet des aperçus (composant des designs à cadre) : galerie .repo-notebooks, cartes .repo-notebook — carnet fermé
+/* carnet des aperçus (composant des designs à matières) : galerie .repo-notebooks, cartes .repo-notebook — carnet fermé
    tant que la galerie est vide (à la place de la première carte, à sa hauteur, calé sur la page de droite : il s'ouvre
    vers la gauche), puis chaque carte posée sur un carnet ouvert (image sur feuille blanche légèrement de travers).
    Utilisé par le Studio cartographique (aperçus des cartes). Par design : images --nb-closed / --nb-open, ratio du
@@ -2303,13 +2303,19 @@ html[data-design="field"] {
   --nb-ratio: 1000/595;
   --nb-pad: 5% 14% 6% 8%
 }
+html[data-design="aqua"] {
+  --nb-closed: url("deco/aqua/notebook-closed.webp?v=fd1954d8");
+  --nb-open: url("deco/aqua/notebook-open.webp?v=2ec4d1be");
+  --nb-ratio: 1000/595;
+  --nb-pad: 4% 6% 6% 6%
+}
 html[data-design-base="cabinet"] {
   --nb-closed: url("deco/flightlog/notebook-closed.webp?v=35ba10c8");
   --nb-open: url("deco/flightlog/notebook-open.webp?v=07ac79a7");
   --nb-ratio: 900/677;
   --nb-pad: 5% 12% 5% 6%
 }
-html[data-skeuo="frame"] .repo-notebooks:empty::before {
+html[data-skeuo] .repo-notebooks:empty::before {
   content: "";
   justify-self: start;
   width: max(280px, calc((100% - 24px) / 3));
@@ -2318,22 +2324,22 @@ html[data-skeuo="frame"] .repo-notebooks:empty::before {
   filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .5));
   cursor: pointer
 }
-html[data-skeuo="frame"] .repo-notebook {
+html[data-skeuo] .repo-notebook {
   aspect-ratio: var(--nb-ratio);
   filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .5));
   cursor: pointer
 }
-html[data-skeuo="frame"] .repo-notebook:not(#imp) {
+html[data-skeuo] .repo-notebook:not(#imp) {
   padding: var(--nb-pad);
   border: 0;
   border-radius: 0;
   box-shadow: none;
   background: var(--nb-open) center/100% 100% no-repeat
 }
-html[data-skeuo="frame"] .repo-notebook strong {
+html[data-skeuo] .repo-notebook strong {
   margin-bottom: 4px
 }
-html[data-skeuo="frame"] .repo-notebook strong:not(#imp) {
+html[data-skeuo] .repo-notebook strong:not(#imp) {
   color: #2b2a22
 }
 html[data-design="field"] .repo-notebook strong {
@@ -2341,14 +2347,14 @@ html[data-design="field"] .repo-notebook strong {
   text-transform: uppercase;
   letter-spacing: .04em
 }
-html[data-skeuo="frame"] .repo-notebook img {
+html[data-skeuo] .repo-notebook img {
   padding: 4px;
   box-sizing: border-box;
   transform: rotate(-1.5deg);
   box-shadow: 0 3px 8px rgba(0, 0, 0, .45);
   cursor: zoom-in
 }
-html[data-skeuo="frame"] .repo-notebook img:not(#imp) {
+html[data-skeuo] .repo-notebook img:not(#imp) {
   background: #fff
 }
 /* appareil de page (design_deco.js, SETS.device, DEVICE_AT) : emplacement réel entre les blocs 2 et 3,
