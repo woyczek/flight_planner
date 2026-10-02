@@ -891,22 +891,10 @@ html[data-design="aqua"] button.danger {
 html[data-design="aqua"] .repo-footer {
   border: 1px solid #d5dde6
 }
-/* galons (argent, or au Centre) : filet sous le bandeau, barrette sous les titres de bloc, cadre de la frise du pied
-   de page, filet des en-têtes de tableau */
-html[data-design="aqua"] .repo-header:not(#imp) {
-  border-bottom: 3px solid;
-  border-image: var(--galon-grad) 1
-}
+/* galons (section GALONS) : titres de bloc sans plaque → barrette de galon sous le titre */
 html[data-design="aqua"] :is(.repo-block-titles, .repo-block-heading)>h2 {
   padding-bottom: 4px;
   background: var(--galon-grad) left bottom/48px 3px no-repeat
-}
-html[data-design="aqua"] .repo-footer:not(#imp) {
-  border: 2px solid;
-  border-image: var(--galon-grad) 1
-}
-html[data-design="aqua"] .repo-block th:not(#imp) {
-  border-bottom: 2px solid var(--galon)
 }
 
 /* ================================================================================================ AQUA SOMBRE
@@ -2464,7 +2452,7 @@ html[data-design="flightlog"][data-tone="dark"] .repo-has-bg:has(>.repo-deco-pan
    Métal des finitions, comme les galons d'un uniforme : argent sur les pages ordinaires, or sur les pages du Centre
    (thème cpco). Jetons communs ; chaque design les pose sur ses finitions (filet du bandeau, barrette des titres de
    bloc, frise du pied de page, filet des en-têtes de tableau). Les icônes du Centre gardent leur signe propre (bulle
-   sombre, glyphe or), où qu'elles soient. Design témoin : Aqua. */
+   sombre, glyphe or), où qu'elles soient. */
 html[data-skeuo] {
   --galon: #9ea8b2;
   --galon-grad: linear-gradient(90deg, #7f8892, #eef1f4 28%, #a9b2bb 52%, #f6f8fa 74%, #858e98)
@@ -2472,6 +2460,22 @@ html[data-skeuo] {
 html[data-skeuo][data-app-theme="cpco"] {
   --galon: #c49a22;
   --galon-grad: linear-gradient(90deg, #7d5f10, #f4dc84 28%, #b78f1d 52%, #fff2bd 74%, #8a6a12)
+}
+/* finitions communes : filet sous le bandeau, cadre du pied de page, filet des en-têtes de tableau ; titres de bloc :
+   liseré des plaques (designs à cadre), barrette sous le titre (Aqua, sans plaque) */
+html[data-skeuo] .repo-header:not(#imp) {
+  border-bottom: 3px solid;
+  border-image: var(--galon-grad) 1
+}
+html[data-skeuo] .repo-footer:not(#imp) {
+  border: 2px solid;
+  border-image: var(--galon-grad) 1
+}
+html[data-skeuo] .repo-block th:not(#imp) {
+  border-bottom: 2px solid var(--galon)
+}
+html[data-skeuo="frame"] :is(.repo-block-titles, .repo-block-heading)>h2:not(#imp) {
+  border-color: var(--galon)
 }
 html[data-skeuo] {
   scrollbar-gutter: stable;
