@@ -840,11 +840,23 @@
       const c = sig.cloneNode(false),
         spine = l.left + (parseFloat(getComputedStyle(leaf).transformOrigin) || l.width), // axe de rotation de la feuille (px)
         x = way > 0 ? s.left - l.left : 2 * spine - l.left - s.width - s.left;
-      c.className = 'pm-sig pm-sig-ride';
+      c.className = 'repo-plain pm-sig pm-sig-ride'; // repo-plain : pas d'habillage de bouton du design
       c.removeAttribute('title');
       c.style.cssText = `position:absolute;left:${x}px;top:${s.top - l.top}px;width:${s.width}px;height:${s.height}px;bottom:auto;--pm-sig-show:var(--pm-sig-tail-h, 3.34cqw);backface-visibility:hidden;pointer-events:none;transform:${way > 0 ? 'translateZ(1px)' : 'rotateY(180deg) translateZ(1px)'}`;
       leaf.append(c);
-      sig.style.visibility = 'hidden';
+      // demi-signet (pendant sous la page de gauche, dans les annexes) : paraît à mi-course en avant, s'efface à
+      // mi-course au retour — pas d'apparition brutale en fin de rotation
+      sig.style.transition = 'opacity .15s';
+      if (way > 0) {
+        sig.style.opacity = '0';
+        setTimeout(() => { sig.style.opacity = ''; }, 350);
+      } else {
+        setTimeout(() => { sig.style.opacity = '0'; }, 200);
+        setTimeout(() => {
+          book.classList.add('pm-at-end');
+          book.classList.remove('pm-past');
+        }, 350);
+      }
     };
     const turn = (dir, to = at + 2 * dir) => {
       if (busy || to === at) return;
@@ -863,8 +875,10 @@
         left.dataset.folio = pages[to] ? to : '';
         left.classList.toggle('pm-inside', !pages[to]);
       }
-      book.classList.toggle('pm-at-end', atSig(to));
-      book.classList.toggle('pm-past', to > S);
+      if (!(dir < 0 && to === S)) {
+        book.classList.toggle('pm-at-end', atSig(to));
+        book.classList.toggle('pm-past', to > S);
+      }
       next.hidden = endOf(to); // coin « suivante » masqué dès le départ s'il n'y a pas de page suivante ; sinon, coins inchangés
       leaf.className = `pm-leaf ${dir > 0 ? 'fwd' : 'back'}`;
       leaf.hidden = false;
@@ -874,7 +888,7 @@
         at = to;
         draw();
         leaf.querySelector('.pm-sig-ride')?.remove();
-        sig.style.visibility = '';
+        sig.style.transition = sig.style.opacity = '';
         leaf.hidden = true;
         busy = false;
       }, 700);
