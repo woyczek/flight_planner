@@ -80,19 +80,19 @@ CONFIGS = {
     },
     # porte-bloc d'Aqua : plastique bleu translucide, feuilles blanches droites ; pince métallique centrée en haut, son
     # anneau au-dessus de la planche (le haut du cadre commence à l'anneau : zone transparente au-dessus du plastique) :
-    # pièce centrée « clip », bords fondus dans la bande du haut
+    # pièce centrée « clip » ; motif net, bords droits : aucun fondu, pièces bord à bord (raccord des bandes sur 8 px)
     'aqua': {
         'src': 'ChatGPT Image 2 Oct 2026, 15_12_33.png',
-        'tl': ((78, 45, 200, 260), dict(right=40, bottom=40)),
-        'tr': ((735, 45, 211, 260), dict(left=40, bottom=40)),
-        'bl': ((78, 1240, 220, 172), dict(right=40, top=40)),
-        'br': ((726, 1240, 220, 172), dict(left=40, top=40)),
-        'top': ((750, 45, 100, 150, 30, 'x'), dict(bottom=30)),   # plastique seul, au-dessus des feuilles
-        'bot': ((400, 1240, 140, 172, 40, 'x'), dict(top=30)),
-        'left': ((78, 500, 100, 300, 40, 'y'), dict(right=30)),
-        'right': ((846, 500, 100, 300, 40, 'y'), dict(left=30)),
+        'tl': ((78, 45, 200, 260), dict()),
+        'tr': ((735, 45, 211, 260), dict()),
+        'bl': ((78, 1240, 220, 172), dict()),
+        'br': ((726, 1240, 220, 172), dict()),
+        'top': ((750, 45, 100, 150, 8, 'x'), dict()),   # plastique seul, au-dessus des feuilles
+        'bot': ((400, 1240, 140, 172, 8, 'x'), dict()),
+        'left': ((78, 500, 100, 300, 8, 'y'), dict()),
+        'right': ((846, 500, 100, 300, 8, 'y'), dict()),
         'pieces': {
-            'clip': ((280, 45, 464, 215), [], dict(left=60, right=60, bottom=30)),
+            'clip': ((280, 45, 464, 215), [], dict()),
         },
         'paper': ((300, 500, 480, 480), (300, 500, 480, 480)),
     },

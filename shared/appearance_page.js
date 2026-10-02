@@ -56,13 +56,12 @@
       app: ['Couleur de chaque application', 'Colour of each application', 'Farbe jeder Anwendung', 'Color de cada aplicación']
     },
     aquaHelp: ['Boutons et icônes du design Aqua (icônes d’état : couleurs d’origine).', 'Buttons and icons of the Aqua design (status icons keep their colours).', 'Schaltflächen und Symbole des Aqua-Designs (Statussymbole behalten ihre Farben).', 'Botones e iconos del diseño Aqua (los iconos de estado conservan sus colores).'],
-    decor: ['Décor (Cabinet, Durci)', 'Decoration (Cabinet, Rugged)', 'Dekor (Kabinett, Robust)', 'Decoración (Gabinete, Robusto)'],
+    decor: ['Décor (designs à matières)', 'Decoration (material designs)', 'Dekor (Material-Designs)', 'Decoración (diseños con materiales)'],
     decorSet: {
-      auto: ['Selon la page', 'Depending on page', 'Je nach Seite', 'Según la página'],
       full: ['Complet', 'Full', 'Vollständig', 'Completo'],
       sober: ['Sobre', 'Plain', 'Schlicht', 'Sobrio']
     },
-    decorHelp: ['Complet : vis, piqûres, poignées, radar. Sobre : matières et plaques seulement (par défaut sur les CR, le planificateur et Landing).', 'Full: screws, stitching, handles, radar. Plain: materials and plates only (default on reports, planner and Landing).', 'Vollständig: Schrauben, Nähte, Griffe, Radar. Schlicht: nur Materialien und Schilder (Standard bei Berichten, Planer und Landing).', 'Completo: tornillos, costuras, asas, radar. Sobrio: solo materiales y placas (por defecto en informes, planificador y Landing).'],
+    decorHelp: ['Complet (par défaut) : panneaux illustrés des blocs, feuilles de registre, vis, poignées, radar. Sobre : matières et plaques seulement, sur toutes les pages.', 'Full (default): illustrated block panels, register sheets, screws, handles, radar. Plain: materials and plates only, on every page.', 'Vollständig (Standard): illustrierte Blockfelder, Registerblätter, Schrauben, Griffe, Radar. Schlicht: nur Materialien und Schilder, auf allen Seiten.', 'Completo (por defecto): paneles ilustrados, hojas de registro, tornillos, asas, radar. Sobrio: solo materiales y placas, en todas las páginas.'],
     sideSet: {
       auto: ['Selon le design', 'Depending on design', 'Je nach Design', 'Según el diseño'],
       on: ['Toujours', 'Always', 'Immer', 'Siempre'],
@@ -138,7 +137,7 @@
     const sampleOf = id => id === 'off' ? '' : id === 'auto' ? sampleOf(a.designs[cur.design]?.icons || 'line') : COMP[id] ? sample.map(n => composedIc(COMP[id], n)).join('') : a.iconFolder(id) ? sample.map(n => `<img class="ap-ic" src="${ICO}${a.iconFolder(id)}/${n}.webp${VER}" alt="" width="34" height="34">`).join('') : sample.map(n => `<span class="ap-ic">${stroke(n)}</span>`).join('');
     const iconSel = cur.iconsSaved && cur.iconsSaved !== 'matter' ? cur.iconsSaved : 'auto';
     const iconRows = Object.entries(T.iconSet).map(([id, row]) => `<button type="button" class="ap-iconrow repo-plain" data-icons="${id}" aria-pressed="${id === iconSel}"><b>${esc(t(row))}</b><span class="ap-iconset" data-set="${id}">${sampleOf(id)}</span></button>`).join('');
-    const decor = cur.decorSaved || 'auto',
+    const decor = cur.decorSaved || 'full',
       decorBtns = Object.entries(T.decorSet).map(([id, row]) => `<button type="button" class="ap-seg repo-seg repo-plain" data-decor="${id}" aria-pressed="${id === decor}">${esc(t(row))}</button>`).join('');
     const aq = a.aquaColor?.() || 'blue',
       aquaDots = (a.aquaColors || []).concat('app').map(id => `<button type="button" class="repo-plain ap-dot${id === 'app' ? ' ap-origin' : ''}" data-aqua="${id}" title="${esc(t(T.aquaSet[id]))}" aria-label="${esc(t(T.aquaSet[id]))}" aria-pressed="${id === aq}" style="background:${id === 'app' ? 'conic-gradient(#d33,#e90,#3a5,#2ab,#36d,#a4d,#d33)' : a.aquaSample(id)}"></button>`).join('');
@@ -326,7 +325,7 @@ main.ap-page .ap-pill.ok{background:#e3f4e8!important/*garder*/;color:#14532d!im
         a.setAqua(b.dataset.aqua);
         render();
       } else if (b.dataset.decor) {
-        a.setDecor(b.dataset.decor === 'auto' ? null : b.dataset.decor);
+        a.setDecor(b.dataset.decor === 'full' ? null : b.dataset.decor);
         render();
       } else if (b.dataset.side) {
         a.setSidenav(b.dataset.side === 'auto' ? null : b.dataset.side === 'on');

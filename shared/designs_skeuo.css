@@ -2050,15 +2050,15 @@ html[data-design="aqua"] {
   --sheet-ink-2: #3a4a66;
   --sheet-card-bg: #f7f8fa url("deco/aqua/sheet-paper.webp?v=92ca6309") left top/480px;
   --sheet-paper: url("deco/aqua/sheet-paper.webp?v=92ca6309");
-  --sheet-top: url("deco/aqua/sheet-top.webp?v=779430dc");
-  --sheet-bot: url("deco/aqua/sheet-bot.webp?v=3d2f6f68");
-  --sheet-left: url("deco/aqua/sheet-left.webp?v=fc91adef");
-  --sheet-right: url("deco/aqua/sheet-right.webp?v=c5c167b2");
-  --sheet-clip: url("deco/aqua/sheet-clip.webp?v=11c8e94d");
-  --sheet-tl: url("deco/aqua/sheet-tl.webp?v=4beacb44");
-  --sheet-tr: url("deco/aqua/sheet-tr.webp?v=4a837bce");
-  --sheet-bl: url("deco/aqua/sheet-bl.webp?v=90f15400");
-  --sheet-br: url("deco/aqua/sheet-br.webp?v=b4f467ac");
+  --sheet-top: url("deco/aqua/sheet-top.webp?v=e4f4765a");
+  --sheet-bot: url("deco/aqua/sheet-bot.webp?v=2c70fe0e");
+  --sheet-left: url("deco/aqua/sheet-left.webp?v=ac2ee457");
+  --sheet-right: url("deco/aqua/sheet-right.webp?v=75c68d31");
+  --sheet-clip: url("deco/aqua/sheet-clip.webp?v=cfc333ad");
+  --sheet-tl: url("deco/aqua/sheet-tl.webp?v=a923a52c");
+  --sheet-tr: url("deco/aqua/sheet-tr.webp?v=c2882c4d");
+  --sheet-bl: url("deco/aqua/sheet-bl.webp?v=8b34d893");
+  --sheet-br: url("deco/aqua/sheet-br.webp?v=17559996");
   /* découpe : tools/cut_register_sheet.py aqua --write */
   --sh-tl-w: 200px;
   --sh-tl-h: 260px;
@@ -2076,14 +2076,14 @@ html[data-design="aqua"] {
   --sh-left-h: 300px;
   --sh-right-w: 100px;
   --sh-right-h: 300px;
-  --sh-top-l: 160px;
-  --sh-top-r: 171px;
-  --sh-bot-l: 180px;
-  --sh-bot-r: 180px;
-  --sh-left-t: 220px;
-  --sh-left-b: 132px;
-  --sh-right-t: 220px;
-  --sh-right-b: 132px;
+  --sh-top-l: 200px;
+  --sh-top-r: 211px;
+  --sh-bot-l: 220px;
+  --sh-bot-r: 220px;
+  --sh-left-t: 260px;
+  --sh-left-b: 172px;
+  --sh-right-t: 260px;
+  --sh-right-b: 172px;
   /* réglages */
   --sh-paper-t: 160px;
   --sh-paper-r: 45px;

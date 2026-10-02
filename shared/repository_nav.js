@@ -311,7 +311,7 @@
   // Designs à matières (Cabinet, Durci, Aqua : textures, plaques, vis) : feuille propre (designs.list[id].css),
   // chargée seulement quand l'un d'eux est choisi, avec sa propre version (empreinte de son contenu, table FILE_V
   // écrite par tools/bump_versions.py).
-  const FILE_V = {"designs_skeuo.css": "aed6606a"};
+  const FILE_V = {"designs_skeuo.css": "c3bea5b9"};
   const designCss = id => {
     const f = designs[id]?.css;
     if (!f || document.querySelector(`link[data-design-css="${f}"]`)) return;
@@ -322,13 +322,13 @@
     document.head.append(l);
     // illustrations du décor complet (frise de Cabinet, radar de Durci), même version
     const d = document.createElement("script");
-    d.src = new URL("design_deco.js?v=f67a7804", script.src).href;
+    d.src = new URL("design_deco.js?v=2e23a9b9", script.src).href;
     document.head.append(d);
   };
   designCss(design);
-  // Décor des designs à matières : « full » (vis, filigranes, poignées, radar) ou « sober » (matières et plaques
-  // seulement) ; préférence repositoryDecor, sinon réglage de la page / du dossier (decor), sinon complet.
-  const decorDefault = page?.decor || folderSettings.decor || "full";
+  // Décor des designs à matières : « full » (vis, panneaux, poignées, radar ; par défaut) ou « sober » (matières et
+  // plaques seulement) : préférence repositoryDecor, la même sur toutes les pages.
+  const decorDefault = "full";
   doc.dataset.decor = readPref("repositoryDecor", null) || decorDefault;
   if (favicon) {
     let f = document.querySelector('link[rel~="icon"]');
@@ -514,7 +514,7 @@
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
-      sc.src = new URL("appearance_page.js?v=85770154", script.src).href;
+      sc.src = new URL("appearance_page.js?v=0996d004", script.src).href;
       sc.onload = show;
       document.head.append(sc);
     }
@@ -675,7 +675,7 @@
           aqua: v || "blue"
         });
       },
-      /** Décor des designs à matières : "full", "sober", ou null (réglage de chaque page). */
+      /** Décor des designs à matières : "full" (null : par défaut, complet) ou "sober". */
       setDecor(v) {
         writePref("repositoryDecor", v || null);
         doc.dataset.decor = v || decorDefault;
