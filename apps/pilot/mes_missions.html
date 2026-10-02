@@ -147,6 +147,18 @@
   /* en-tête : bandeau du centre opérationnel (image) ; numéro de l'ordre dessous, à droite */
   html[data-design="aqua"] .pm-book .pm-head{display:block;position:relative;aspect-ratio:908/276;margin:0 0 26px;padding:0;border:0;background:url("../../shared/deco/aqua/order-header.webp?v=2015f881") center/100% 100% no-repeat;box-shadow:0 1px 2px rgba(0,0,0,.15)}
   html[data-design="aqua"] .pm-book .pm-head>:not(.pm-no){position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+  /* en-tête de l'ordre selon la famille de la mission (#pmDetail[data-family], posé par la page pour tous les designs) :
+     un design qui a plusieurs en-têtes les déclare ici ; sans déclaration, l'en-tête unique du design. Aqua : émetteur
+     civil de la demande (SDIS, SAMU, centre hospitalier, ARS, préfet, Intérieur, COZ, CPCO) ; familles militaires :
+     demande de concours des armées (en-tête par défaut ci-dessus) */
+  html[data-design="aqua"] #pmDetail[data-family="FIRE"] .pm-book .pm-head{background-image:url("../../shared/deco/aqua/order-header-sdis.webp?v=d1587c8f");aspect-ratio:753/239}
+  html[data-design="aqua"] #pmDetail[data-family="HEMS"] .pm-book .pm-head{background-image:url("../../shared/deco/aqua/order-header-samu.webp?v=5f3999a5");aspect-ratio:753/239}
+  html[data-design="aqua"] #pmDetail[data-family="AIRLIFT"] .pm-book .pm-head{background-image:url("../../shared/deco/aqua/order-header-hopital.webp?v=991b0712");aspect-ratio:753/239}
+  html[data-design="aqua"] #pmDetail[data-family="SURVEY"] .pm-book .pm-head{background-image:url("../../shared/deco/aqua/order-header-ars.webp?v=fd33f021");aspect-ratio:753/239}
+  html[data-design="aqua"] #pmDetail[data-family="LE"] .pm-book .pm-head,html[data-design="aqua"] #pmDetail[data-family="MARITIME"] .pm-book .pm-head{background-image:url("../../shared/deco/aqua/order-header-prefet.webp?v=9e499c9c");aspect-ratio:753/239}
+  html[data-design="aqua"] #pmDetail[data-family="SAR"] .pm-book .pm-head{background-image:url("../../shared/deco/aqua/order-header-interieur.webp?v=9ab122e0");aspect-ratio:753/239}
+  html[data-design="aqua"] #pmDetail[data-family="HADR"] .pm-book .pm-head{background-image:url("../../shared/deco/aqua/order-header-coz.webp?v=4eee4ed3");aspect-ratio:753/239}
+  html[data-design="aqua"] #pmDetail[data-family="COMMAND"] .pm-book .pm-head,html[data-design="aqua"] #pmDetail[data-family="SPECIAL"] .pm-book .pm-head{background-image:url("../../shared/deco/aqua/order-header-cpco.webp?v=dfa1df57");aspect-ratio:753/239}
   html[data-design="aqua"] .pm-book .pm-head .pm-no{position:absolute;top:calc(100% + 6px);right:0;font-size:11px;letter-spacing:.06em;color:#14285a}
   html[data-design="aqua"] .pm-book [data-part="order"] .pm-dr{top:auto;bottom:-10px}
   /* Durci : dossier zippé ouvert (feuilles : x 81–561 et 675–1155, y 59–759, dos à 618 sur 1236 × 898 ; tirette
@@ -224,7 +236,7 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=1466c9a9"></script>
-<script src="../../shared/repository_nav.js?v=f39ff892"></script>
+<script src="../../shared/repository_nav.js?v=442f55c0"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=db00c09c"></script>
@@ -480,6 +492,8 @@
     const objectives = [y.objectives?.primary && `<p><b>Objectif principal</b> : ${esc(y.objectives.primary)}</p>`, ...(Array.isArray(y.objectives?.secondary) ? y.objectives.secondary : y.objectives?.secondary ? [y.objectives.secondary] : []).map(o => `<p><b>Objectif secondaire</b> : ${esc(o)}</p>`)].filter(Boolean).join('');
     const notes = (Array.isArray(y.notes) ? y.notes : y.notes ? [y.notes] : []).filter(n => !String(n).startsWith(`Mission ${a.mission}`));
     const signed = new Date(Date.parse(a.updated_at || '') || Date.now()).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    // famille de la mission : en-tête de l'ordre propre à la famille quand le design en a un (feuille de la page)
+    $('pmDetail').dataset.family = window.MissionVocab?.familyForType?.(y.mission?.type || a.type) || '';
     $('pmDetail').innerHTML = `<div data-part="title"><header class="pm-head pm-logo" aria-hidden="true"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>DEFA Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div></header>${labelHtml({ ...a, title: y.title || a.title })}</div>
       <div data-part="order"><header class="pm-head"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>DEFA Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div><span class="pm-no">N° ${esc(a.mission)}</span></header>
         <i class="pm-dr" aria-label="Diffusion restreinte"></i>

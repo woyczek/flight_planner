@@ -43,7 +43,8 @@
     fileName = '',
     xl = null, // classeur lu (sa semaine)
     data = null, // données affichées : le classeur si la semaine affichée est la sienne, sinon null (sans classeur)
-    weekMon = null, // lundi affiché (ms) ; null : semaine du classeur, sinon la semaine en cours
+    weekMon = null, // lundi affiché (ms) ; null : la semaine en cours
+    jumpToXl = false, // classeur choisi à la main : afficher sa semaine (rouvert tout seul : semaine en cours)
     slots = [],
     basis = null, // données du calcul : classeur, sinon déclarations (declWeek)
     flights = [],
@@ -79,8 +80,8 @@
     return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - (d.getUTCDay() + 6) % 7);
   };
   const xlMonday = () => xl ? Date.parse(`${xl.dates[0]}T00:00:00Z`) : null;
-  /** Lundi affiché : choisi (◀ ▶), sinon celui du classeur, sinon la semaine en cours. */
-  const shownMonday = () => weekMon ?? xlMonday() ?? mondayOf(Date.now());
+  /** Lundi affiché : choisi (◀ ▶, classeur choisi à la main), sinon la semaine en cours. */
+  const shownMonday = () => weekMon ?? mondayOf(Date.now());
   /** Numéro de semaine ISO. */
   const isoWeekNo = ms => {
     const d = new Date(mondayOf(ms) + 3 * 864e5),
@@ -290,8 +291,10 @@
 
   // ------------------------------------------------------------------ chargement
   async function loadFile(file, {
-    keep = true
+    keep = true,
+    jump = false
   } = {}) {
+    jumpToXl = jump;
     if (!file) return;
     if (!/\.xlsx$/i.test(file.name)) notify(`« ${file.name} » n’a pas l’extension .xlsx : lecture tentée quand même.`, 'warn');
     try {
@@ -311,6 +314,8 @@
     if (!book) return render();
     try {
       xl = await C.extract(book, settings, fileName);
+      if (jumpToXl) weekMon = xlMonday();
+      jumpToXl = false;
     } catch (e) {
       console.error(e);
       notify(`Analyse impossible : ${e.message}`, 'err');
@@ -339,7 +344,7 @@
       <button type="button" class="secondary" data-wk="1">Semaine suivante ▶</button>${mon !== cur ? '<button type="button" class="ghost" data-wk="now">Cette semaine</button>' : ''}${xm != null && xm !== mon ? '<button type="button" class="ghost" data-wk="xl">Semaine du classeur</button>' : ''}`;
     host.querySelectorAll('[data-wk]').forEach(b => b.onclick = () => {
       const v = b.dataset.wk;
-      weekMon = v === 'now' ? cur : v === 'xl' ? null : mon + +v * 6048e5;
+      weekMon = v === 'now' ? null : v === 'xl' ? xm : mon + +v * 6048e5;
       selected = null;
       showWeek();
     });
@@ -1636,7 +1641,9 @@
     });
     $('odvFile').addEventListener('change', e => {
       const f = e.target.files?.[0];
-      if (f) loadFile(f);
+      if (f) loadFile(f, {
+        jump: true
+      }); // choisi à la main : sa semaine affichée
     });
     $('odvClear').onclick = clearAll;
     render();
