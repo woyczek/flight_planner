@@ -2052,7 +2052,7 @@ html[data-design="aqua"] {
   --sheet-ink-2: #3a4a66;
   --sheet-card-bg: #f7f8fa url("deco/aqua/sheet-paper.webp?v=fd7285cd") left top/480px;
   --sheet-paper: url("deco/aqua/sheet-paper.webp?v=fd7285cd");
-  --sheet-top: url("deco/aqua/sheet-top.webp?v=ddd02a75");
+  --sheet-top: url("deco/aqua/sheet-top.webp?v=aa540570");
   --sheet-bot: url("deco/aqua/sheet-bot.webp?v=c40f266b");
   --sheet-left: url("deco/aqua/sheet-left.webp?v=52601958");
   --sheet-right: url("deco/aqua/sheet-right.webp?v=3d5de3fc");
@@ -2072,7 +2072,7 @@ html[data-design="aqua"] {
   --sh-br-w: 220px;
   --sh-br-h: 172px;
   --sh-top-w: 100px;
-  --sh-top-h: 150px;
+  --sh-top-h: 155px;
   --sh-bot-w: 140px;
   --sh-bot-h: 172px;
   --sh-left-w: 100px;
@@ -2088,12 +2088,12 @@ html[data-design="aqua"] {
   --sh-right-t: 260px;
   --sh-right-b: 172px;
   /* réglages */
-  --sh-paper-t: 160px;
+  --sh-paper-t: 155px;
   --sh-paper-r: 45px;
   --sh-paper-b: 95px;
   --sh-paper-l: 55px;
   --sh-paper-w: 480px;
-  --sh-pad-t: 340px;
+  --sh-pad-t: 415px;
   --sh-pad-r: 80px;
   --sh-pad-b: 120px;
   --sh-pad-l: 90px;
@@ -2101,7 +2101,7 @@ html[data-design="aqua"] {
   --sh-clip-w: 433px;
   --sh-head-x: 72px;
   --sh-head-y: 222px;
-  --sh-head-w: 500px;
+  --sh-head-w: 950px;
   --sh-k: .6
 }
 /* Durci : carnet de terrain dans sa pochette olive à fermeture éclair, crayon dans son étui élastique sur le bord

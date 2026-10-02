@@ -88,7 +88,7 @@ CONFIGS = {
         'tr': ((735, 45, 211, 260), dict()),
         'bl': ((78, 1240, 220, 172), dict()),
         'br': ((726, 1240, 220, 172), dict()),
-        'top': ((750, 45, 100, 150, 8, 'x'), dict()),   # plastique seul, au-dessus des feuilles
+        'top': ((750, 45, 100, 155, 8, 'x'), dict()),   # plastique jusqu'au bord des feuilles, comme les coins (sinon marche)
         'bot': ((400, 1240, 140, 172, 8, 'x'), dict()),
         'left': ((78, 500, 100, 300, 8, 'y'), dict()),
         'right': ((846, 500, 100, 300, 8, 'y'), dict()),
