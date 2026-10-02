@@ -733,6 +733,8 @@
   // en training → écartée, TMA contenant le terrain → signalée. Ouverture dans le registre (?mission=…).
   const centreOn = () => !!window.RepositoryNav?.cpco?.enabled?.();
   const fold = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+  /** Opération d'une mission : celle du registre, sinon tirée de l'identifiant (I-001A → I-001) ; '' sinon. */
+  const opOf = m => m?.operation?.id || (/^([A-Z]+-\d+)[A-Y]$/i.exec(String(m?.id || '')) || [])[1] || '';
   const regMissions = () => {
     try {
       return JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions || [];
@@ -980,27 +982,33 @@
         decls = await M.declarations(free),
         declsAll = await M.declarations(O.pilots()),
         weekEnd = O.range(6, (settings.hours || []).length - 1)?.[1] || Infinity,
-        done = O.missionsAssigned(weekEnd),
+        // missions enregistrées sur ce créneau : en tête de la matrice, cochées et préremplies (modifiables) ; les
+        // autres missions déjà affectées (semaine, passé) restent écartées
+        here = O.inSlot(j, k).filter(a => a.role !== 'convoyage'),
+        hereIds = new Set(here.map(a => a.mission)),
+        done = new Set([...O.missionsAssigned(weekEnd)].filter(id => !hereIds.has(id))),
         // mission d'organisation d'un exercice (…Z) : personne ne la vole, elle n'est pas affectée
         entries = all.filter(m => !done.has(m.id) && !/Z$/.test(m.id) && !m.organisation && (!famSel || fold(m.family || m.type).startsWith(famSel))),
         plan = M.planSlot(free, entries, decls, {
           focus
         }),
         first = [...new Set(plan.options.flatMap(o => o.missions))],
-        rest = entries.filter(m => !first.includes(m) && m.id && m.status !== 'ordered' && !/Z$/.test(m.id) && !m.organisation),
+        rest = entries.filter(m => !first.includes(m) && m.id && (m.status !== 'ordered' || hereIds.has(m.id)) && !/Z$/.test(m.id) && !m.organisation),
+        mine = entries.filter(m => hereIds.has(m.id)),
         d = new Map();
       // opération à plusieurs missions (exercice) : une ligne, une coche, un poste par équipage de chaque mission
       // (r.mid : sa mission) ; « Enregistrer » écrit chaque mission avec ses pilotes, d'un coup
       const units = new Map();
-      for (const m of [...first, ...rest].slice(0, 40)) {
-        const op = m.operation?.id, k = op && all.filter(x => x.operation?.id === op && !/Z$/.test(x.id)).length > 1 ? `op:${op}` : m.id;
-        if (!units.has(k)) units.set(k, []);
-        units.get(k).push(m);
+      for (const m of [...new Set([...mine, ...first, ...rest])].slice(0, 40)) {
+        const op = opOf(m),
+          key = op && all.filter(x => opOf(x) === op && !/Z$/.test(x.id)).length > 1 ? `op:${op}` : m.id;
+        if (!units.has(key)) units.set(key, []);
+        units.get(key).push(m);
       }
-      for (const [k, ms] of units) {
+      for (const [key, ms] of units) {
         const rows = [], planes = [];
         // exercice : une seule heure H ; chaque équipage décolle à H + son décalage (participants de la …Z : « H-20mn »)
-        const z = k.startsWith('op:') ? all.find(x => x.id === `${k.slice(3)}Z`) : null,
+        const z = key.startsWith('op:') ? all.find(x => x.id === `${key.slice(3)}Z`) : null,
           parts = (z ? await O.yamlOf(z).catch(() => null) : null)?.exercise?.participants || [],
           offOf = (cs, mid) => window.RepositoryKit.hOffset((parts.find(p => fold(p?.callsign) === fold(cs)) || parts.find(p => fold(p?.mission) === fold(mid)))?.takeoff) ?? 0;
         for (const m of ms) {
@@ -1010,16 +1018,29 @@
             planes.push(await planeList(post, dep));
           }
         }
-        const m = k.startsWith('op:') ? {
+        const m = key.startsWith('op:') ? {
           ...ms[0],
-          id: k.slice(3),
+          id: key.slice(3),
           title: ms[0].operation?.name || ms[0].title,
           estimate: { block: Math.max(...ms.map(blockOf)) }
         } : ms[0];
+        // enregistrée sur ce créneau : postes remplis avec ses lignes (pilote, appareil, indicatif, convoyage), décollage
+        // repris (heure H d'une opération : décollage moins le décalage)
+        let takeoffSet = null;
+        for (const r of rows) {
+          const line = here.find(a => a.mission === r.mid && (!r.callsign || a.callsign === r.callsign) && !rows.some(o => o !== r && o.pilot === a.pilot)) ||
+            here.find(a => a.mission === r.mid && !rows.some(o => o !== r && o.pilot === a.pilot));
+          if (!line) continue;
+          Object.assign(r, { pilot: line.pilot || '', registration: line.aircraft?.registration || '', callsign: line.callsign || r.callsign });
+          if (line.ferry) Object.assign(r, line.ferry.open ? { ferryOpen: true } : line.ferry.pilot && line.ferry.pilot !== line.pilot ? { ferryPilot: line.ferry.pilot } : { ferrySelf: true });
+          if (takeoffSet == null && Date.parse(line.takeoff || '')) takeoffSet = Date.parse(line.takeoff) - (r.off || 0) * 6e4;
+        }
         d.set(m.id, {
           m,
-          members: k.startsWith('op:') ? ms : null,
-          on: false,
+          members: key.startsWith('op:') ? ms : null,
+          on: ms.some(x => hereIds.has(x.id)),
+          saved: ms.some(x => hereIds.has(x.id)),
+          takeoffSet,
           armable: ms.some(x => first.includes(x)),
           dep: rows[0].dep,
           planes,
@@ -1045,7 +1066,8 @@
       } = ctx;
       const assigned = O.inSlot(j, k),
         ferries = O.openFerries(j, k),
-        busy = new Set(assigned.map(a => a.aircraft?.registration).filter(Boolean));
+        inWin = new Set([...d.values()].flatMap(x => (x.members || [x.m]).map(mm => mm.id))),
+        busy = new Set(assigned.filter(a => !inWin.has(a.mission)).map(a => a.aircraft?.registration).filter(Boolean));
       const on = [...d.values()].filter(x => x.on),
         useP = {},
         useA = {};
@@ -1082,7 +1104,9 @@
       const planeOpts = (x, i) => {
         const r = x.rows[i],
           away = (min, why) => min === 0 ? 'sur place' : min == null ? why : x.dep.code ? `convoyage ${hmOf(min)}` : `transit ${hmOf(min)}`;
-        return `<option value="">— appareil —</option>${x.planes[i].map(({ f, min, why }) => `<option value="${esc(f.registration)}"${f.registration === r.registration ? ' selected' : ''}>${esc(f.registration)} · ${esc(f.variant || f.type)} · ${esc(f.base || '?')} — ${away(min, why)}${f.operational === false ? ' — indisponible' : ''}${busy.has(f.registration) ? ' — engagé' : ''}</option>`).join('')}`;
+        // appareil déjà pris par un autre poste coché (équipier, autre mission) ou engagé ailleurs : grisé
+        const taken = reg => reg !== r.registration && (busy.has(reg) || on.some(y => y.rows.some(o => o !== r && o.registration === reg)));
+        return `<option value="">— appareil —</option>${x.planes[i].map(({ f, min, why }) => `<option value="${esc(f.registration)}"${f.registration === r.registration ? ' selected' : ''}${taken(f.registration) ? ' disabled' : ''}>${esc(f.registration)} · ${esc(f.variant || f.type)} · ${esc(f.base || '?')} — ${away(min, why)}${f.operational === false ? ' — indisponible' : ''}${busy.has(f.registration) ? ' — engagé' : taken(f.registration) ? ' — déjà affecté' : ''}</option>`).join('')}`;
       };
       /** Convoyage d'un poste : trajet, heure, convoyeur (pilotes libres avant le créneau, ou le pilote : mission décalée). */
       const ferryLine = r => {
@@ -1109,8 +1133,8 @@
         const m = x.m,
           conf = conflictsOf(m, zones),
           n = x.rows.length;
-        return `<tbody class="ad-mx${x.on ? ' on' : ''}" data-m="${esc(m.id)}">${x.rows.map((r, i) => `<tr class="${x.on && r.pilot && r.registration && !errs(r).length ? 'ad-set' : ''}" data-i="${i}">
-          ${i ? '' : `<td rowspan="${n}"><input type="checkbox" data-on${x.on ? ' checked' : ''} aria-label="Affecter ${esc(m.id)}"></td><td rowspan="${n}"><b>${esc(m.id)}</b> ${esc(m.title || '')}${x.members ? `<br><small>opération : ${x.members.map(mm => esc(mm.id)).join(', ')} — un pilote par mission, enregistrées ensemble</small>` : ''}${x.armable ? '' : ' <small class="mut">(aucun pilote libre ne déclare l’appareil)</small>'}<br><small>${esc(m.family || m.type || '')} · ${hmOf(m.estimate?.block ?? m.estimate?.flight)} · départ ${esc(x.dep?.name || '?')}</small>${x.timing ? `<br><label class="ad-inline"><small>${x.members ? 'heure H' : 'décollage'}</small><input type="time" data-f="takeoff" value="${hm(x.timing.takeoff).slice(0, 5)}"${x.on ? '' : ' disabled'} title="Heure UTC ; vide : automatique (début du créneau, décalé si le pilote convoie et n’est pas libre avant)"></label><small>${x.takeoffSet != null ? ' (choisie)' : x.timing.shift ? ` (décalée de ${hmOf(x.timing.shift / 6e4)} : convoyage)` : ''}${x.timing.start < x.timing.takeoff ? ` · convoyage dès <b>${hm(x.timing.start)}</b>` : ''}, fin ${hm(x.timing.end)}${x.timing.slots.length > 1 ? ` · mobilise ${x.timing.slots.map(slotName).join(', ')}` : ''}</small>` : ''}${conf.length ? `<br>${conf.map(c => chip(esc(c.texte), c.grave ? 'err' : 'warn')).join('')}` : ''}<br>${x.members ? '' : '<button type="button" class="repo-plain ad-link" data-detail>✎ détail</button> · '}<button type="button" class="repo-plain ad-link" data-wing${x.on ? '' : ' disabled'} title="Patrouille : un équipier de plus (même type d’appareil, indicatif suivant)">+ équipier</button></td>`}
+        return `<tbody class="ad-mx${x.on ? ' on' : ''}${x.members ? ' ad-op' : ''}" data-m="${esc(m.id)}">${x.members ? `<tr class="ad-op-head"><td colspan="7">⛓ Opération <b>${esc(m.id)}</b> ${esc(m.title || '')} — ${x.members.length} missions liées (${x.members.map(mm => esc(mm.id)).join(' · ')}) : une seule coche, un pilote par mission, enregistrées ensemble${x.saved ? ' · <i>enregistrée sur ce créneau</i>' : ''}</td></tr>` : x.saved ? `<tr class="ad-op-head"><td colspan="7"><i>Enregistrée sur ce créneau — modifiable ici</i></td></tr>` : ''}${x.rows.map((r, i) => `<tr class="${x.on && r.pilot && r.registration && !errs(r).length ? 'ad-set' : ''}" data-i="${i}">
+          ${i ? '' : `<td rowspan="${n}"><input type="checkbox" data-on${x.on ? ' checked' : ''} aria-label="Affecter ${esc(m.id)}"></td><td rowspan="${n}"><b>${esc(m.id)}</b> ${esc(m.title || '')}${x.armable ? '' : ' <small class="mut">(aucun pilote libre ne déclare l’appareil)</small>'}<br><small>${esc(m.family || m.type || '')} · ${hmOf(m.estimate?.block ?? m.estimate?.flight)} · départ ${esc(x.dep?.name || '?')}</small>${x.timing ? `<br><label class="ad-inline"><small>${x.members ? 'heure H' : 'décollage'}</small><input type="time" data-f="takeoff" value="${hm(x.timing.takeoff).slice(0, 5)}"${x.on ? '' : ' disabled'} title="Heure UTC ; vide : automatique (début du créneau, décalé si le pilote convoie et n’est pas libre avant)"></label><small>${x.takeoffSet != null ? ' (choisie)' : x.timing.shift ? ` (décalée de ${hmOf(x.timing.shift / 6e4)} : convoyage)` : ''}${x.timing.start < x.timing.takeoff ? ` · convoyage dès <b>${hm(x.timing.start)}</b>` : ''}, fin ${hm(x.timing.end)}${x.timing.slots.length > 1 ? ` · mobilise ${x.timing.slots.map(slotName).join(', ')}` : ''}</small>` : ''}${conf.length ? `<br>${conf.map(c => chip(esc(c.texte), c.grave ? 'err' : 'warn')).join('')}` : ''}<br>${x.members ? '' : '<button type="button" class="repo-plain ad-link" data-detail>✎ détail</button> · '}<button type="button" class="repo-plain ad-link" data-wing${x.on ? '' : ' disabled'} title="Patrouille : un équipier de plus (même type d’appareil, indicatif suivant)">+ équipier</button></td>`}
           <td><b>${esc(r.callsign || r.post?.callsign || `poste ${i + 1}`)}</b>${x.members ? ` <small>${esc(r.mid)} · décollage ${r.takeoff ? hm(r.takeoff) : '?'} (${esc(window.RepositoryKit.hText(r.off || 0))})</small>` : ''}<br><small>${esc(r.post?.type || r.post?.label || 'type libre')}${r.post?.service ? ` · ${esc(r.post.service)}` : ''}</small></td>
           <td><select data-f="registration"${x.on ? '' : ' disabled'}>${planeOpts(x, i)}</select>${ferryLine(r)}</td>
           <td><select data-f="pilot"${x.on && r.registration ? '' : ' disabled'}>${pilotOpts(x, r)}</select></td>
@@ -1343,7 +1367,7 @@
     const b = e.target.closest('[data-pick]');
     if (!b) return;
     e.stopPropagation();
-    const s = slots.find(x => `${x.jourIndex}${x.creneauIndex}` === b.dataset.pick);
+    const s = slots.find(x => `${x.jourIndex}${x.creneauIndex}` === b.dataset.pick) || slotOf(+b.dataset.pick[0], +b.dataset.pick[1]);
     if (s) pickMission(s, b.dataset.fam || '');
   }, true);
 
@@ -1463,6 +1487,11 @@
           sortValue: r => r.equipage.join(' '),
           html: v => v.length ? v.map(t => tri(t)).join(' ') : '<span class="odv-alert">?</span>'
         }, {
+          key: 'mission',
+          label: 'Mission',
+          sortValue: r => r.slotKey,
+          html: (v, r) => r.slotKey ? `<button type="button" class="repo-plain ad-link" data-pick="${r.slotKey}">${(window.OdvAssign?.inSlot(+r.slotKey[0], +r.slotKey[1]) || []).some(a => a.role !== 'convoyage') ? 'Modifier…' : 'Planifier…'}</button>` : '—'
+        }, {
           key: 'alertes',
           label: 'Disponibilités',
           sortValue: r => r.alertes.length,
@@ -1475,7 +1504,9 @@
     }, flights.map(f => ({
       ...f,
       ordre: f.jourIndex * 100 + f.h_debut,
-      trajet: `${f.dep}-${f.arr}`
+      trajet: `${f.dep}-${f.arr}`,
+      // créneau du vol : celui qui contient son début (sinon le plus proche)
+      slotKey: (settings.hours || []).length ? `${f.jourIndex}${(k => k < 0 ? settings.hours.reduce((b, h, i) => Math.abs(h[0] - f.h_debut) < Math.abs(settings.hours[b][0] - f.h_debut) ? i : b, 0) : k)(settings.hours.findIndex(([a, b]) => f.h_debut >= a && f.h_debut < b))}` : ''
     })));
     table('odvOthers', {
       columns: [

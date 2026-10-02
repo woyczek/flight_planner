@@ -47,6 +47,7 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
 .ad-foot{display:flex;gap:8px;align-items:center;padding:10px 16px;border-top:1px solid color-mix(in srgb,currentColor 18%,transparent)}.ad-msg{flex:1;margin:0;font-size:12.5px}
 .ad-wide{width:min(1180px,96vw)}
 .ad-post{margin:0 0 6px;font-size:12.5px}.ad-link{background:none;border:0;padding:0;color:inherit;text-decoration:underline;cursor:pointer;font-size:12px}
+.ad-matrix tbody.ad-op{box-shadow:inset 4px 0 0 #2f7de1}.ad-matrix .ad-op-head td{padding:4px 8px;font-size:12px;background:color-mix(in srgb,#2f7de1 10%,transparent)}.ad-matrix option:disabled{color:#999}
 .ad-matrix select{max-width:220px}.ad-matrix tbody{border-top:2px solid color-mix(in srgb,currentColor 22%,transparent)}.ad-matrix tbody:not(.on){opacity:.7}
 .ad-matrix tr.ad-set td{background:color-mix(in srgb,#2e9d5b 12%,transparent)}.ad-matrix input[data-f]{width:8em}
 .ad-chip.focus{outline:2px solid #e5484d;outline-offset:1px}
