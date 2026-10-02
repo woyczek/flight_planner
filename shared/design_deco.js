@@ -5,7 +5,6 @@
 //
 // Deux familles :
 //  · fonds des blocs (décor complet ou sobre selon le cas) :
-//      - BG      : fond illustré d'un bloc marqué data-deco-bg (Carnet de vol, Aqua) ;
 //      - SHEETS  : feuille de registre en fond des blocs de tableau des registres (Cabinet, Carnet de vol, Durci ; ton clair) ;
 //      - PANELS  : panneau choisi par thème pour tous les autres blocs (Cabinet, Durci ; décor complet) ;
 //      - PROPS   : objet posé dans un bloc, coin bas droit (Cabinet ; décor complet) ;
@@ -157,24 +156,6 @@
     }
   };
 
-  // ------------------------------------------------------------------ fonds illustrés (data-deco-bg)
-  // Un bloc marqué data-deco-bg="<clé>" (reporting : aerodromes, capabilities, outcomes, aircraft, families, series,
-  // daynight, network, context ; studio : maps ; éditeur : import, identification ; planificateur : result) reçoit
-  // l'image déclarée ici pour le design courant ; seules les images déclarées sont chargées.
-  // Entrée : mode, ou [mode, cadrage (background-position), image « <design>/<nom> » (défaut : <design>/bg-<clé>),
-  // opacité (défaut : celle du design, designs_skeuo.css)]. Modes : « anchor » (taille d'origine, calée en haut à
-  // gauche), « cover » (couvre le bloc), « side » (hauteur du bloc, calée à droite, fondue vers la gauche).
-  // Cabinet, Durci et Carnet de vol n'en ont plus : les panneaux par thème (PANELS) habillent tous leurs blocs.
-  const BG = {
-    // Aqua : eau et verre, cadrés différemment sur chaque bloc
-    aqua: {
-      aerodromes: ['cover', 'center bottom', 'aqua/bg-water'],
-      capabilities: ['cover', 'left center', 'aqua/bg-water'],
-      outcomes: ['cover', 'center top', 'aqua/bg-water'],
-      aircraft: ['cover', 'right center', 'aqua/bg-water']
-    }
-  };
-
   // ------------------------------------------------------------------ panneaux par thème (PANELS)
   // Thème d'un bloc : premier motif reconnu dans son titre, sinon dans son icône et son identifiant, sinon dans son
   // sous-titre (ordre du tableau ; « ops » par défaut). Fichiers : shared/deco/<design>/<dossier>/panel-<thème>-<w|t>
@@ -208,6 +189,11 @@
           aircraft: 't'
         } // paysage à venir
       }
+    },
+    // Aqua : métal brossé clair et équipements (panels/), un seul jeu pour les deux tons
+    aqua: {
+      dir: 'panels',
+      only: {}
     },
     field: {
       dir: '',
@@ -308,33 +294,16 @@
     return files.find(f => f !== prev) || files[0];
   }
 
-  /** Fonds des blocs : fonds illustrés, feuille de registre, panneaux (dans cet ordre : un bloc n'en reçoit qu'un). */
+  /** Fonds des blocs : feuille de registre, puis panneaux (un bloc n'en reçoit qu'un). */
   function backgrounds(d) {
     document.querySelectorAll('.repo-deco-bgimg,.repo-deco-prop,.repo-deco-sheet').forEach(n => n.remove());
     document.querySelectorAll('.repo-has-bg,.repo-has-prop,.repo-has-sheet')
       .forEach(b => b.classList.remove('repo-has-bg', 'repo-has-prop', 'repo-has-sheet'));
 
-    // 1. fonds illustrés déclarés (pas de return si le design n'en a pas : les étapes suivantes s'appliquent)
-    const list = BG[d] || {};
-    document.querySelectorAll('[data-deco-bg]').forEach(b => {
-      const e = list[b.dataset.decoBg];
-      if (!e) return;
-      const [mode, pos, file, alpha] = Array.isArray(e) ? e : [e];
-      const [fd, fn] = (file || `${d}/bg-${b.dataset.decoBg}`).split('/');
-      const el = document.createElement('div');
-      el.className = `repo-deco-bgimg repo-deco-bg-${mode}`;
-      el.setAttribute('aria-hidden', 'true');
-      el.style.backgroundImage = `url("${DECO(fd)(fn)}")`;
-      if (pos) el.style.backgroundPosition = pos;
-      if (alpha != null) el.style.opacity = alpha;
-      b.classList.add('repo-has-bg');
-      b.prepend(el);
-    });
-
-    // 2. feuille de registre
+    // 1. feuille de registre
     sheets(d);
 
-    // 3. panneaux par thème (décor complet) : tous les autres blocs ; blocs imbriqués : un seul fond, sur le grand
+    // 2. panneaux par thème (décor complet) : tous les autres blocs ; blocs imbriqués : un seul fond, sur le grand
     const set = PANELS[d] && (html.dataset.tone !== 'dark' && PANELS[d].clair || PANELS[d]);
     if (!set || set.dir == null || !fullDecor()) return; // jeu absent pour ce ton (ex. Carnet de vol sombre)
     let prev = '';

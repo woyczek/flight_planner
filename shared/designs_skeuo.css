@@ -1863,6 +1863,15 @@ html[data-design="aqua"] .repo-deco-bgimg.repo-deco-bg-cover {
 html[data-design="aqua"][data-tone="dark"] .repo-deco-bgimg.repo-deco-bg-cover {
   opacity: .5
 }
+/* Aqua : panneaux en métal brossé clair (panels/, un jeu pour les deux tons) ; ton sombre : assombris (sinon ils
+   délavent le bloc en gris), voile sombre sous les données */
+html[data-design="aqua"][data-tone="dark"] .repo-deco-bgimg.repo-deco-panel {
+  filter: brightness(.45) saturate(.9);
+  opacity: .7
+}
+html[data-design="aqua"][data-tone="dark"] .repo-has-bg:has(>.repo-deco-panel) {
+  --repo-veil: rgba(14, 18, 26, .62)
+}
 /* Cabinet : panneaux « 1930 » très contrastés (marine, laiton, cartes claires) : atténués pour le texte ; ton clair :
    fonds ivoire (1930/clair), proches du parchemin, moins atténués */
 html[data-design="cabinet"] .repo-deco-bgimg.repo-deco-panel {
