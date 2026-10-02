@@ -99,6 +99,9 @@ Durci 77, Aqua 43, Carnet de vol 30, Cabinet 9 (+ 54 par la base Cabinet) ; `!im
 
 ### Assets à fournir ou à refaire
 
+Suivi détaillé (consignes de génération, intégration) : [ASSETS_A_FOURNIR.md](ASSETS_A_FOURNIR.md) ; état à jour :
+`python tools/assets_status.py`.
+
 | Design | Manque | Effet |
 | --- | --- | --- |
 | Aqua | feuille de registre, carnet ouvert / fermé, appareil de page, panneaux par thème, objets | Aqua rejoint les familles communes (plus de BG spécifique) |

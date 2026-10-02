@@ -210,10 +210,7 @@
         dir: 'clair',
         only: {
           aircraft: 't'
-        }, // paysage à venir
-        alias: {
-          radio: 'nav' // radio à venir
-        }
+        } // paysage à venir
       }
     },
     field: {

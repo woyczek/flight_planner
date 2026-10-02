@@ -18,3 +18,4 @@ dist/
 VERSION.json
 defa_local_store.yaml
 flight_performance_database_merged.fpdb.json
+tools/.assets_seen.json

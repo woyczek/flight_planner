@@ -5,8 +5,15 @@ Durci = `field`, Aqua) ne soit plus que des jetons et des images aux noms conven
 [REFACTORING_TOOLKIT.md › Phase 2](REFACTORING_TOOLKIT.md#phase-2--supprimer-les-exceptions-pistes-30-septembre-2026).
 Chaque asset livré fait disparaître une exception de `shared/design_deco.js` ou de `shared/designs_skeuo.css`.
 
-État relevé le 30 septembre 2026 (branche `develop`, copie de travail). Les noms de tableaux et de jetons cités ici sont
-ceux du code à cette date : les revérifier avant d'intégrer.
+**État à jour : `python tools/assets_status.py`** (tableau par famille et par design, liste des manquants ; `--new` : images
+déposées depuis le dernier relevé, `--mark` : noter le relevé). Les cases de ce document datent du 30 septembre 2026 et ne
+sont plus tenues : l'outil fait foi. Ce document garde les consignes de génération et d'intégration.
+
+Livré depuis : dossiers de mission des quatre designs (Mes missions) ; signets Cabinet et Carnet de vol ; appareil de page
+du Carnet de vol (carnet fermé + DME) ; panneaux du **ton clair** du Carnet de vol (parchemin, gravures bleues :
+`shared/deco/flightlog/clair/`, `PANELS.flightlog.clair`) — 17 sur 18, manque aircraft en paysage. Les livraisons arrivent
+au fil de l'eau, avec des améliorations et des doublons : le tri (meilleure version, remplacement) se fait à
+l'intégration ; les sources restent dans le dossier de dépôt.
 
 ## Mode d'emploi
 
