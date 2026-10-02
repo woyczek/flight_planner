@@ -119,7 +119,8 @@
   /** Yaml d'une mission du registre (fetch) ; {} si illisible. */
   async function yamlOf(m) {
     // dossier des missions autorisé d'abord (même hors de la copie servie), sinon copie servie
-    const file = (m.files || []).find(f => /\.ya?ml$/i.test(f)),
+    // le yaml de la mission, pas affectations.yaml (posé dans le même dossier à la première affectation)
+    const file = (m.files || []).find(f => /\.ya?ml$/i.test(f) && !/^affectations/i.test(f)),
       found = await M().missionFirst(m.folder, [file, `mission${m.id}.yaml`, `mission${String(m.id).replace('-', '')}.yaml`]);
     try {
       return found ? window.jsyaml.load(found.value.replace(/^#.*\n/, '')) || {} : {};
@@ -146,11 +147,12 @@
   }
 
   /** Affecte directement (matrice du créneau) : rows [{ pilot, registration, callsign, ferryPilot }] ; takeoff :
-   *  décollage de la mission (début du créneau, ou décalé pour le convoyage) ; puis relit et prévient. */
-  async function write(m, rows, takeoff) {
+   *  décollage de la mission (début du créneau, ou décalé pour le convoyage) ; dep : départ (departureOf) ; puis relit
+   *  et prévient. */
+  async function write(m, rows, takeoff, dep = null) {
     const M = window.MissionAssignments,
       y = await yamlOf(m);
-    const parts = await M.buildParticipants(y, rows, takeoff);
+    const parts = await M.buildParticipants(y, rows, takeoff, dep);
     const f = await M.writeAssignment({
       ...m,
       maps: m.images || []

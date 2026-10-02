@@ -584,22 +584,70 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
       lon: +p.lon
     };
   };
-  /** Convoyage d'un appareil basé hors du terrain de départ : { from, to, minutes, takeoff, pilot } ; null s'il est sur
-   *  place. minutes null : distance inconnue. Décollage du convoyage = décollage de la mission − durée − remise en œuvre. */
+  /** Terrain connu le plus proche d'une position (base SIA du navigateur, registre, cache, bases de la flotte) : code ;
+   *  '' au-delà de maxNm. */
+  async function nearestAirport(p, maxNm = 10) {
+    if (!p || !Number.isFinite(+p.lat)) return '';
+    const known = {
+      ...await knownAirports()
+    };
+    for (const b of new Set((window.DEFA_FLEET || []).map(f => f.base).filter(Boolean)))
+      if (!known[b]) {
+        const q = await coordsOf(b);
+        if (q) known[b] = q;
+      }
+    let best = '',
+      d = maxNm;
+    for (const [code, q] of Object.entries(known)) {
+      const n = geo.nm(p, q);
+      if (n < d) {
+        d = n;
+        best = code;
+      }
+    }
+    return best;
+  }
+  /** Départ d'une mission : { code, pos, name }. Code OACI de l'origine ; sinon position de l'origine, du premier point
+   *  tournant, de l'objectif ou (entrée du registre) du premier point de la route estimée, rattachée au terrain connu le
+   *  plus proche (10 NM). y : yaml de la mission ({} si seule l'entrée du registre est connue). */
+  async function departureOf(y = {}, entry = null) {
+    const o = y?.origin || {};
+    let code = geo.icaoOf(o) || geo.icaoOf({
+        name: entry?.origin
+      }),
+      pos = code ? await coordsOf(code) : null;
+    const p = [o, ...(y?.turning_points || []), y?.target, entry?.estimate?.points?.[0]].find(q => q && Number.isFinite(+q.lat) && Number.isFinite(+q.lon) && (+q.lat || +q.lon));
+    if (!pos && p) pos = {
+      lat: +p.lat,
+      lon: +p.lon
+    };
+    if (!code && pos) code = await nearestAirport(pos);
+    return {
+      code,
+      pos,
+      name: code || p?.name || o.name || entry?.origin || ''
+    };
+  }
+  /** Convoyage d'un appareil basé hors du terrain de départ : { from, to, minutes, takeoff, pilot, baseKnown } ; null
+   *  s'il est sur place. departure : code du départ ; to : sa position (départ sans terrain : premier point de la route).
+   *  minutes null : position de la base inconnue (hélistation absente sans la base SIA du navigateur). Décollage du
+   *  convoyage = décollage de la mission − durée − remise en œuvre. */
   async function ferryOf({
     base,
     departure,
+    to = null,
     type,
     takeoff,
     pilot = ''
   }) {
-    if (!base || !departure || base === departure) return null;
+    if (!base || (!departure && !to) || base === departure) return null;
     const a = await coordsOf(base),
-      b = await coordsOf(departure),
+      b = to || await coordsOf(departure),
       minutes = a && b ? Math.round(geo.nm(a, b) / cruiseKt(typeOf(type)) * 60 + FERRY_SETUP_MIN) : null;
     return {
       from: base,
-      to: departure,
+      to: departure || 'départ',
+      baseKnown: !!a,
       minutes,
       takeoff: minutes && takeoff ? new Date(takeoff - (minutes + TURN_MIN) * 6e4).toISOString() : null,
       pilot
@@ -1023,16 +1071,19 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
   }
   /** Participants d'une affectation, comme les calcule le dialogue : appareil de la flotte, convoyage depuis sa base,
    *  heures (décalées d'une minute par équipier). rows : [{ pilot, registration, callsign, ferryPilot }] ; y : yaml. */
-  async function buildParticipants(y, rows, takeoff) {
-    const departure = geo.icaoOf(y?.origin) || '',
+  async function buildParticipants(y, rows, takeoff, dep = null) {
+    dep ||= await departureOf(y);
+    const departure = dep.code,
       blockMin = +y?.timing?.estimated_block_min || +y?.timing?.estimated_flight_min || 120,
       out = [];
     for (const [i, r] of rows.entries()) {
       const plane = (window.DEFA_FLEET || []).find(f => f.registration === r.registration),
         tk = takeoff + i * 6e4;
-      const ferry = plane ? await ferryOf({
+      // départ sans terrain (mission en mer, sur un objectif) : l'appareil part de sa base, pas de convoyage
+      const ferry = plane && departure ? await ferryOf({
         base: plane.base,
         departure,
+        to: dep.pos,
         type: plane.type,
         takeoff: tk,
         pilot: r.ferryPilot || r.pilot
@@ -1295,6 +1346,8 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     coordsOf,
     rememberAirport,
     ferryOf,
+    departureOf,
+    nearestAirport,
     fleetTypes,
     qualification,
     slotRange,

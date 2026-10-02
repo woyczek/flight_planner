@@ -775,7 +775,6 @@
       dlg = null;
     const snap = () => JSON.stringify([...ctx.d.values()].map(x => [x.m.id, x.on, x.rows.map(r => [r.pilot, r.registration, r.callsign, r.ferryPilot || '', !!r.ferrySelf])]));
     const TURN = M.TURN_MIN,
-      icao = s => /\(([A-Z]{4})\)/.exec(s || '')?.[1] || '',
       blockOf = m => +(m.estimate?.block ?? m.estimate?.flight) || 120,
       hm = ms => new Date(ms).toISOString().slice(11, 16) + 'Z',
       slotName = ([jj, kk]) => (sl => `${sl.jour} ${sl.creneau}`)(slotOf(jj, kk));
@@ -786,13 +785,16 @@
       const t0 = takeoff,
         taken = new Set([...ctx.d.values()].filter(x => x.on).flatMap(x => x.rows.map(r => r.pilot).filter(Boolean)));
       for (const x of [...ctx.d.values()].sort((a, b) => b.on - a.on)) {
-        const dep = icao(x.m.origin),
+        const dep = x.dep,
           block = blockOf(x.m);
         const legs = await Promise.all(x.rows.map(async r => {
           const pl = planeOf(r.registration);
-          return pl && dep && pl.base && pl.base !== dep ? await M.ferryOf({
+          const near = pl?.base && dep.pos ? await M.coordsOf(pl.base) : null;
+          // départ sans terrain (mission en mer, sur un objectif) : l'appareil part de sa base, pas de convoyage
+          return pl && dep.code && dep.pos && pl.base && pl.base !== dep.code && !(near && M.geo.nm(near, dep.pos) < 3) ? await M.ferryOf({
             base: pl.base,
-            departure: dep,
+            departure: dep.code,
+            to: dep.pos,
             type: pl.type,
             takeoff: t0
           }) : null;
@@ -850,18 +852,21 @@
     /** Appareils compatibles d'un poste, du plus proche au plus lointain du terrain de départ : { f, nm, min }
      *  (min : convoyage en minutes, 0 sur place, null distance inconnue). */
     async function planeList(post, dep) {
-      const to = dep ? await M.coordsOf(dep) : null;
-      const out = await Promise.all(M.planesFor(post, dep).map(async f => {
+      const out = await Promise.all(M.planesFor(post, dep.code).map(async f => {
         const from = f.base ? await M.coordsOf(f.base) : null,
-          ferry = f.base && dep && f.base !== dep ? await M.ferryOf({
+          // sur place : même terrain, ou base à moins de 3 NM du départ (départ donné par sa position)
+          here = f => !!f.base && ((!!dep.code && f.base === dep.code) || (!!from && !!dep.pos && M.geo.nm(from, dep.pos) < 3)),
+          ferry = f.base && !here(f) ? await M.ferryOf({
             base: f.base,
-            departure: dep,
+            departure: dep.code,
+            to: dep.pos,
             type: f.type
           }) : null;
         return {
           f,
-          nm: f.base === dep ? 0 : to && from ? M.geo.nm(from, to) : null,
-          min: f.base === dep ? 0 : ferry?.minutes ?? null
+          nm: here(f) ? 0 : dep.pos && from ? M.geo.nm(from, dep.pos) : null,
+          min: here(f) ? 0 : ferry?.minutes ?? null,
+          why: here(f) ? '' : !f.base ? 'base non renseignée dans la flotte' : !dep.pos ? 'départ sans position' : !from ? `position de ${f.base} inconnue (base SIA à charger)` : ''
         };
       }));
       return out.sort((a, b) => (a.nm ?? 1e9) - (b.nm ?? 1e9) || (b.f.operational !== false) - (a.f.operational !== false) || a.f.registration.localeCompare(b.f.registration));
@@ -883,12 +888,14 @@
         rest = entries.filter(m => !first.includes(m) && m.id && m.status !== 'ordered' && !/Z$/.test(m.id) && !m.organisation),
         d = new Map();
       for (const m of [...first, ...rest].slice(0, 40)) {
-        const posts = M.postsOf(m);
+        const posts = M.postsOf(m),
+          dep = await M.departureOf(await O.yamlOf(m).catch(() => ({})), m);
         d.set(m.id, {
           m,
           on: false,
           armable: first.includes(m),
-          planes: await Promise.all(posts.map(p => planeList(p, icao(m.origin)))),
+          dep,
+          planes: await Promise.all(posts.map(p => planeList(p, dep))),
           rows: posts.map(post => ({
             post,
             pilot: '',
@@ -952,8 +959,8 @@
       /** Appareils compatibles d'un poste, du plus proche au plus lointain du départ, temps de convoyage affiché. */
       const planeOpts = (x, i) => {
         const r = x.rows[i],
-          away = min => min === 0 ? 'sur place' : min == null ? 'distance inconnue' : `convoyage ${hmOf(min)}`;
-        return `<option value="">— appareil —</option>${x.planes[i].map(({ f, min }) => `<option value="${esc(f.registration)}"${f.registration === r.registration ? ' selected' : ''}>${esc(f.registration)} · ${esc(f.variant || f.type)} · ${esc(f.base || '?')} — ${away(min)}${f.operational === false ? ' — indisponible' : ''}${busy.has(f.registration) ? ' — engagé' : ''}</option>`).join('')}`;
+          away = (min, why) => min === 0 ? 'sur place' : min == null ? why : x.dep.code ? `convoyage ${hmOf(min)}` : `transit ${hmOf(min)}`;
+        return `<option value="">— appareil —</option>${x.planes[i].map(({ f, min, why }) => `<option value="${esc(f.registration)}"${f.registration === r.registration ? ' selected' : ''}>${esc(f.registration)} · ${esc(f.variant || f.type)} · ${esc(f.base || '?')} — ${away(min, why)}${f.operational === false ? ' — indisponible' : ''}${busy.has(f.registration) ? ' — engagé' : ''}</option>`).join('')}`;
       };
       /** Convoyage d'un poste : trajet, heure, convoyeur (pilotes libres avant le créneau, ou le pilote : mission décalée). */
       const ferryLine = r => {
@@ -979,7 +986,7 @@
           conf = conflictsOf(m, zones),
           n = x.rows.length;
         return `<tbody class="ad-mx${x.on ? ' on' : ''}" data-m="${esc(m.id)}">${x.rows.map((r, i) => `<tr class="${x.on && r.pilot && r.registration && !errs(r).length ? 'ad-set' : ''}" data-i="${i}">
-          ${i ? '' : `<td rowspan="${n}"><input type="checkbox" data-on${x.on ? ' checked' : ''} aria-label="Affecter ${esc(m.id)}"></td><td rowspan="${n}"><b>${esc(m.id)}</b> ${esc(m.title || '')}${x.armable ? '' : ' <small class="mut">(aucun pilote libre ne déclare l’appareil)</small>'}<br><small>${esc(m.family || m.type || '')} · ${hmOf(m.estimate?.block ?? m.estimate?.flight)}</small>${x.timing ? `<br><small>décollage <b>${hm(x.timing.takeoff)}</b>${x.timing.shift ? ` (décalée de ${hmOf(x.timing.shift / 6e4)} : convoyage)` : ''}, fin ${hm(x.timing.end)}${x.timing.slots.length > 1 ? ` · mobilise ${x.timing.slots.map(slotName).join(', ')}` : ''}</small>` : ''}${conf.length ? `<br>${conf.map(c => chip(esc(c.texte), c.grave ? 'err' : 'warn')).join('')}` : ''}<br><button type="button" class="repo-plain ad-link" data-detail>✎ détail</button></td>`}
+          ${i ? '' : `<td rowspan="${n}"><input type="checkbox" data-on${x.on ? ' checked' : ''} aria-label="Affecter ${esc(m.id)}"></td><td rowspan="${n}"><b>${esc(m.id)}</b> ${esc(m.title || '')}${x.armable ? '' : ' <small class="mut">(aucun pilote libre ne déclare l’appareil)</small>'}<br><small>${esc(m.family || m.type || '')} · ${hmOf(m.estimate?.block ?? m.estimate?.flight)} · départ ${esc(x.dep?.name || '?')}</small>${x.timing ? `<br><small>décollage <b>${hm(x.timing.takeoff)}</b>${x.timing.shift ? ` (décalée de ${hmOf(x.timing.shift / 6e4)} : convoyage)` : ''}, fin ${hm(x.timing.end)}${x.timing.slots.length > 1 ? ` · mobilise ${x.timing.slots.map(slotName).join(', ')}` : ''}</small>` : ''}${conf.length ? `<br>${conf.map(c => chip(esc(c.texte), c.grave ? 'err' : 'warn')).join('')}` : ''}<br><button type="button" class="repo-plain ad-link" data-detail>✎ détail</button></td>`}
           <td><b>${esc(r.callsign || r.post?.callsign || `poste ${i + 1}`)}</b><br><small>${esc(r.post?.type || r.post?.label || 'type libre')}${r.post?.service ? ` · ${esc(r.post.service)}` : ''}</small></td>
           <td><select data-f="registration"${x.on ? '' : ' disabled'}>${planeOpts(x, i)}</select>${ferryLine(r)}</td>
           <td><select data-f="pilot"${x.on && r.registration ? '' : ' disabled'}>${pilotOpts(x, r)}</select></td>
@@ -1080,7 +1087,7 @@
           await O.write(x.m, x.rows.filter(r => r.pilot && r.registration).map(r => ({
             ...r,
             ferryPilot: r.ferryBy || ''
-          })), x.timing?.takeoff || takeoff);
+          })), x.timing?.takeoff || takeoff, x.dep);
           ok.push(`${x.m.id} (${x.rows.filter(r => r.pilot && r.registration).map(r => r.pilot).join(', ')})`);
         } catch (err) {
           ko.push(`${x.m.id} : ${err.message}`);
