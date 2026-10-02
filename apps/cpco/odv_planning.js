@@ -1135,8 +1135,8 @@
           conf = conflictsOf(m, zones),
           n = x.rows.length;
         return `<tbody class="ad-mx${x.on ? ' on' : ''}${x.members ? ' ad-op' : ''}" data-m="${esc(m.id)}">${x.members ? `<tr class="ad-op-head"><td colspan="7">⛓ Opération <b>${esc(m.id)}</b> ${esc(m.title || '')} — ${x.members.length} missions liées (${x.members.map(mm => esc(mm.id)).join(' · ')}) : une seule coche, un pilote par mission, enregistrées ensemble${x.saved ? ' · <i>enregistrée sur ce créneau</i>' : ''}</td></tr>` : x.saved ? `<tr class="ad-op-head"><td colspan="7"><i>Enregistrée sur ce créneau — modifiable ici</i></td></tr>` : ''}${x.rows.map((r, i) => `<tr class="${x.on && r.pilot && r.registration && !errs(r).length ? 'ad-set' : ''}" data-i="${i}">
-          ${i ? '' : `<td rowspan="${n}"><input type="checkbox" data-on${x.on ? ' checked' : ''} aria-label="Affecter ${esc(m.id)}"></td><td rowspan="${n}"><b>${esc(m.id)}</b> ${esc(m.title || '')}${x.armable ? '' : ' <small class="mut">(aucun pilote libre ne déclare l’appareil)</small>'}<br><small>${esc(m.family || m.type || '')} · ${hmOf(m.estimate?.block ?? m.estimate?.flight)} · départ ${esc(x.dep?.name || '?')}</small>${x.timing ? `<br><label class="ad-inline"><small>${x.members ? 'heure H' : 'décollage'}</small><input type="time" data-f="takeoff" value="${hm(x.timing.takeoff).slice(0, 5)}"${x.on ? '' : ' disabled'} title="Heure UTC ; vide : automatique (début du créneau, décalé si le pilote convoie et n’est pas libre avant)"></label><small>${x.takeoffSet != null ? ' (choisie)' : x.timing.shift ? ` (décalée de ${hmOf(x.timing.shift / 6e4)} : convoyage)` : ''}${x.timing.start < x.timing.takeoff ? ` · convoyage dès <b>${hm(x.timing.start)}</b>` : ''}, fin ${hm(x.timing.end)}${x.timing.slots.length > 1 ? ` · mobilise ${x.timing.slots.map(slotName).join(', ')}` : ''}</small>` : ''}${conf.length ? `<br>${conf.map(c => chip(esc(c.texte), c.grave ? 'err' : 'warn')).join('')}` : ''}<br>${x.members ? '' : '<button type="button" class="repo-plain ad-link" data-detail>✎ détail</button> · '}<button type="button" class="repo-plain ad-link" data-wing${x.on ? '' : ' disabled'} title="Patrouille : un équipier de plus (même type d’appareil, indicatif suivant)">+ équipier</button></td>`}
-          <td><b>${esc(r.callsign || r.post?.callsign || `poste ${i + 1}`)}</b>${x.members ? ` <small>${esc(r.mid)} · décollage ${r.takeoff ? hm(r.takeoff) : '?'} (${esc(window.RepositoryKit.hText(r.off || 0))})</small>` : ''}<br><small>${esc(r.post?.type || r.post?.label || 'type libre')}${r.post?.service ? ` · ${esc(r.post.service)}` : ''}</small></td>
+          ${i ? '' : `<td rowspan="${n}"><input type="checkbox" data-on${x.on ? ' checked' : ''} aria-label="Affecter ${esc(m.id)}"></td><td rowspan="${n}"><b>${esc(m.id)}</b> ${esc(m.title || '')}${x.armable ? '' : ' <small class="mut">(aucun pilote libre ne déclare l’appareil)</small>'}<br><small>${esc(m.family || m.type || '')} · ${hmOf(m.estimate?.block ?? m.estimate?.flight)} · départ ${esc(x.dep?.name || '?')}</small>${x.timing ? `<br><label class="ad-inline"><small>${x.members ? 'heure H' : 'décollage'}</small><input type="time" data-f="takeoff" value="${hm(x.timing.takeoff).slice(0, 5)}"${x.on ? '' : ' disabled'} title="Heure UTC ; vide : automatique (début du créneau, décalé si le pilote convoie et n’est pas libre avant)"></label><small>${x.takeoffSet != null ? ' (choisie)' : x.timing.shift ? ` (décalée de ${hmOf(x.timing.shift / 6e4)} : convoyage)` : ''}${x.timing.start < x.timing.takeoff ? ` · convoyage dès <b>${hm(x.timing.start)}</b>` : ''}, fin ${hm(x.timing.end)}${x.timing.slots.length > 1 ? ` · mobilise ${x.timing.slots.map(slotName).join(', ')}` : ''}</small>` : ''}${conf.length ? `<br>${conf.map(c => chip(esc(c.texte), c.grave ? 'err' : 'warn')).join('')}` : ''}<br>${x.members ? '' : `<button type="button" class="repo-plain ad-link" data-detail>✎ détail</button> · <button type="button" class="repo-plain ad-link" data-wing${x.on ? '' : ' disabled'} title="Patrouille : un équipier de plus (même type d’appareil, indicatif suivant)">+ équipier</button>`}</td>`}
+          <td><b>${esc(r.callsign || r.post?.callsign || `poste ${i + 1}`)}</b>${x.members ? ` <small>${esc(r.mid)} · décollage ${r.takeoff ? hm(r.takeoff) : '?'} (${esc(window.RepositoryKit.hText(r.off || 0))})</small>${r.wing ? '' : ` <button type="button" class="repo-plain ad-link" data-wing data-wing-of="${i}"${x.on ? '' : ' disabled'} title="Patrouille : un équipier de plus pour cet équipage (même mission, indicatif suivant)">+ équipier</button>`}` : ''}<br><small>${esc(r.post?.type || r.post?.label || 'type libre')}${r.post?.service ? ` · ${esc(r.post.service)}` : ''}</small></td>
           <td><select data-f="registration"${x.on ? '' : ' disabled'}>${planeOpts(x, i)}</select>${ferryLine(r)}</td>
           <td><select data-f="pilot"${x.on && r.registration ? '' : ' disabled'}>${pilotOpts(x, r)}</select></td>
           <td><input data-f="callsign" value="${esc(r.callsign)}" size="9">${r.wing ? ` <button type="button" class="repo-plain ad-del" data-unwing="${i}" title="Retirer cet équipier">✕</button>` : ''}</td>
@@ -1216,20 +1216,26 @@
         if (!add && !del) return;
         const x = ctx.d.get(e.target.closest('tbody[data-m]').dataset.m);
         if (add) {
-          const last = x.rows[x.rows.length - 1];
-          x.rows.push({
-            post: last.post,
-            mid: last.mid,
-            dep: last.dep,
-            off: last.off,
-            block: last.block,
+          // équipier d'un équipage (opération : bouton de chaque équipage ; sinon le dernier) : placé sous lui et ses
+          // équipiers, même mission, même poste et décalage, indicatif suivant (RAFALE31 → RAFALE32)
+          const i0 = add.dataset.wingOf != null ? +add.dataset.wingOf : x.rows.length - 1,
+            base = x.rows[i0];
+          let at = i0 + 1;
+          while (x.rows[at]?.wing && x.rows[at].mid === base.mid) at++;
+          const prev = x.rows[at - 1];
+          x.rows.splice(at, 0, {
+            post: base.post,
+            mid: base.mid,
+            dep: base.dep,
+            off: base.off,
+            block: base.block,
             pilot: '',
             registration: '',
-            callsign: String(last.callsign || '').replace(/(\d+)(?!.*\d)/, d => String(+d + 1).padStart(d.length, '0')),
+            callsign: String(prev.callsign || base.callsign || '').replace(/(\d+)(?!.*\d)/, d => String(+d + 1).padStart(d.length, '0')),
             ferryPilot: '',
             wing: true
           });
-          x.planes.push(x.planes[x.planes.length - 1]);
+          x.planes.splice(at, 0, x.planes[i0]);
         } else {
           const i = +del.dataset.unwing;
           x.rows.splice(i, 1);
