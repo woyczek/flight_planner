@@ -33,7 +33,7 @@
   html[data-design="cabinet"]{--pm-pli:url("../../shared/deco/cabinet/pli-sealed.webp?v=2e89c25c");--pm-pli-ratio:1.4579}
   html[data-design="flightlog"]{--pm-pli:url("../../shared/deco/flightlog/pli-sealed.webp?v=70c15353");--pm-pli-ratio:1.4713}
   html[data-design="aqua"]{--pm-pli:url("../../shared/deco/aqua/pli-sealed.webp?v=aaff940c");--pm-pli-ratio:1.4191}
-  html[data-design="field"]{--pm-pli:url("../../shared/deco/field/pli-sealed.webp?v=67f0b75a");--pm-pli-ratio:1.4953}
+  html[data-design="field"]{--pm-pli:url("../../shared/deco/field/pli-sealed.webp?v=98eb4a6c");--pm-pli-ratio:1.5274}
   html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-pli{padding:0;background:none;border:0;box-shadow:none;color:inherit}
   html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-pli::before{display:none}
   html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-pli::after{width:min(100%,260px);height:auto;aspect-ratio:var(--pm-pli-ratio);margin:0 0 6px;border-radius:0;background:var(--pm-pli) center/contain no-repeat;box-shadow:none;filter:drop-shadow(1px 3px 3px rgba(0,0,0,.35))}
@@ -126,6 +126,7 @@
   html[data-design="flightlog"] .pm-book [data-part="title"] .pm-logo{right:0}
   html:not([data-design="cabinet"],[data-design="flightlog"],[data-design="field"]) .pm-book .pm-logo{display:none}
   .pm-mdtable{width:100%;border-collapse:collapse;font-size:12px}.pm-mdtable th,.pm-mdtable td{text-align:left;padding:3px 6px;border-bottom:1px dotted rgba(43,33,18,.4)}
+  .pm-tech{width:100%;border-collapse:collapse;font-size:11px;margin:2px 0 8px}.pm-tech :is(th,td){text-align:left;vertical-align:top;padding:2px 5px;border-bottom:1px solid color-mix(in srgb,currentColor 15%,transparent)}.pm-tech th{font-weight:600;opacity:.8}
   .pm-dl{display:grid;grid-template-columns:auto 1fr;gap:1px 10px;margin:2px 0 6px;font-size:11.5px}.pm-dl dt{opacity:.75}.pm-dl dd{margin:0}.pm-dl dl{font-size:11px}
   #pmDetail h5{margin:8px 0 2px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;opacity:.85}
   .pm-log{margin:0;padding-left:16px;font-size:11.5px}
@@ -264,7 +265,7 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=1466c9a9"></script>
-<script src="../../shared/repository_nav.js?v=02582fbc"></script>
+<script src="../../shared/repository_nav.js?v=87228c85"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=db00c09c"></script>
@@ -520,12 +521,47 @@
   const SHOWN = new Set(['schema', 'schema_version', 'title', 'summary', 'detailed_description', 'objectives', 'notes', 'turning_points', 'teams', 'target',
     'rendering', 'meta', 'updated_at', 'updatedAt', 'participants', 'maps', 'generated', 'generator',
     'tracks', 'injects', 'phases', 'exercise']); // exercice : seulement dans les plis, à leur heure
-  const LABELS = { mission: 'Mission', operation: 'Opération', origin: 'Départ', destination: 'Destination', aircraft: 'Appareils', rendezvous: 'Rendez-vous', zones: 'Zones', timing: 'Horaires', weather: 'Météo', vertical_profile: 'Profil vertical', exercise: 'Exercice', alert: 'Astreinte', maps: 'Cartes', rendering: 'Rendu des cartes', route_order: 'Ordre de la route', theatre: 'Théâtre' };
+  const LABELS = { risks: 'Risques', payload: 'Charge utile', return_options: 'Déroutements', air_refueling: 'Ravitaillement en vol', mission: 'Mission', operation: 'Opération', origin: 'Départ', destination: 'Destination', aircraft: 'Appareils', rendezvous: 'Rendez-vous', zones: 'Zones', timing: 'Horaires', weather: 'Météo', vertical_profile: 'Profil vertical', exercise: 'Exercice', alert: 'Astreinte', maps: 'Cartes', rendering: 'Rendu des cartes', route_order: 'Ordre de la route', theatre: 'Théâtre' };
+  // libellés des champs des sous-objets ; champs techniques des outils (rendu, profil) et valeurs nulles non montrés
+  const SUB = { id: 'Id', name: 'Nom', type: 'Type', subtype: 'Sous-type', missions: 'Missions', callsign: 'Indicatif', operator: 'Opérateur', role: 'Rôle',
+    cruise_speed_kt: 'Croisière (kt)', cruise_level: 'Niveau', participants: 'Avec', time_on_task_min: 'Sur place (min)', radius_km: 'Rayon (km)',
+    condition: 'Condition', then_base: 'Puis retour base', estimated_flight_min: 'Vol estimé (min)', estimated_block_min: 'Bloc estimé (min)',
+    category: 'Catégorie', description: 'Description', mass_kg: 'Masse (kg)', passengers: 'Passagers', constraints: 'Contraintes', hazard: 'Danger',
+    consequence: 'Conséquence', mitigation: 'Parade', capable: 'Apte', planned: 'Prévu', track: 'Hippodrome', route: 'Profil', cruise: 'Croisière',
+    position: 'Position', centre: 'Centre', center: 'Centre', variant: 'Version', registration: 'Immatriculation', base: 'Base', notes: 'Notes' };
+  const NOISE = new Set(['output', 'on_map', 'profile', 'climb_fpm', 'climb_kt', 'descent_fpm', 'descent_kt', 'ceiling_ft', 'floor_ft', 'series', 'number', 'include']);
+  const isPos = v => v && typeof v === 'object' && !Array.isArray(v) && Number.isFinite(+v.lat) && Number.isFinite(+v.lon);
+  const human = k => SUB[k] || (k.charAt(0).toUpperCase() + k.slice(1)).replace(/_/g, ' ');
+  /** Objet → paires [libellé, valeur] lisibles : position (lat, lon) en une coordonnée, oui/non, champs vides ou techniques retirés. */
+  const fieldsOf = o => {
+    const out = isPos(o) ? [['position', coord({ lat: +o.lat, lon: +o.lon })]] : [];
+    for (const [k, v] of Object.entries(o)) {
+      if (k === 'lat' || k === 'lon' || NOISE.has(k) || v == null || v === '' || (Array.isArray(v) && !v.length)) continue;
+      if ((v === 0 || v === false) && /_(kg|ft)$|^passengers$|^then_base$/.test(k)) continue;
+      out.push([k, v]);
+    }
+    return out;
+  };
+  const val = v => typeof v === 'boolean' ? (v ? 'oui' : 'non') : isPos(v) ? esc(coord({ lat: +v.lat, lon: +v.lon })) : typeof v === 'object' ? dump(v) : esc(String(v));
+  /** Valeur YAML → HTML : liste d'objets en tableau, objet en liste de définitions, liste simple à puces. */
+  function dump(v) {
+    if (v == null || v === '') return '—';
+    if (Array.isArray(v)) {
+      if (!v.length) return '—';
+      if (v.every(x => x && typeof x === 'object' && !Array.isArray(x))) {
+        const rows = v.map(fieldsOf), cols = [...new Set(rows.flatMap(r => r.map(([k]) => k)))];
+        return `<table class="pm-tech"><thead><tr>${cols.map(k => `<th>${esc(human(k))}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${cols.map(k => { const c = r.find(([x]) => x === k); return `<td>${c ? val(c[1]) : ''}</td>`; }).join('')}</tr>`).join('')}</tbody></table>`;
+      }
+      return v.every(x => typeof x !== 'object') && v.join(', ').length < 90 ? esc(v.join(', ')) : `<ul>${v.map(x => `<li>${typeof x === 'object' ? dump(x) : esc(String(x))}</li>`).join('')}</ul>`;
+    }
+    if (typeof v === 'object') return `<dl class="pm-dl">${fieldsOf(v).map(([k, x]) => `<dt>${esc(human(k))}</dt><dd>${val(x)}</dd>`).join('')}</dl>`;
+    return val(v);
+  }
+  // déjà montrés ailleurs (route fournie, ordre de mission) : pas repris dans la fiche
+  const ELSEWHERE = new Set(['mission', 'origin', 'destination', 'route_order']);
   function techSheet(y) {
-    const dump = v => v == null || v === '' ? '—' : Array.isArray(v) ? (v.length ? `<ul>${v.map(x => `<li>${dump(x)}</li>`).join('')}</ul>` : '—')
-      : typeof v === 'object' ? `<dl class="pm-dl">${Object.entries(v).filter(([, x]) => x != null && x !== '').map(([k, x]) => `<dt>${esc(k)}</dt><dd>${dump(x)}</dd>`).join('')}</dl>` : esc(String(v));
-    const keys = Object.keys(y || {}).filter(k => !SHOWN.has(k) && y[k] != null && y[k] !== '' && !(Array.isArray(y[k]) && !y[k].length));
-    return keys.map(k => `<h5>${esc(LABELS[k] || k)}</h5>${dump(y[k])}`).join('');
+    const keys = Object.keys(y || {}).filter(k => !SHOWN.has(k) && !ELSEWHERE.has(k) && y[k] != null && y[k] !== '' && !(Array.isArray(y[k]) && !y[k].length));
+    return keys.map(k => `<h5>${esc(LABELS[k] || human(k))}</h5>${dump(y[k])}`).join('');
   }
   /** Contenu de la mission, en parties (data-part) lues dans l'ordre : présentation ordinaire, ou pages du dossier
    *  (Cabinet) : title (étiquette), order (en-tête, ordre, résumé), details (description, risques, équipes, route),
