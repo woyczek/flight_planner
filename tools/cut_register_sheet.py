@@ -78,11 +78,12 @@ CONFIGS = {
         'pieces': {},
         'paper': ((300, 320, 480, 480), (300, 320, 480, 480)),
     },
-    # porte-bloc d'Aqua : plastique bleu translucide, feuilles blanches droites ; pince métallique centrée en haut, son
-    # anneau au-dessus de la planche (le haut du cadre commence à l'anneau : zone transparente au-dessus du plastique) :
-    # pièce centrée « clip » ; motif net, bords droits : aucun fondu, pièces bord à bord (raccord des bandes sur 8 px)
+    # porte-bloc d'Aqua : plastique bleu translucide, feuilles blanches droites (planche livrée sans la pince) ; le haut du
+    # cadre commence 97 px au-dessus du plastique (zone transparente : anneau de la pince) ; motif net, bords droits :
+    # aucun fondu, pièces bord à bord (raccord des bandes sur 8 px). Livrés à part (non produits ici) : la pince
+    # (sheet-clip.webp, centrée) et le logo CPCO-DEFA (sheet-head.webp, en-tête du papier)
     'aqua': {
-        'src': 'ChatGPT Image 2 Oct 2026, 15_12_33.png',
+        'src': 'ChatGPT Image 2 Oct 2026, 15_26_57.png',
         'tl': ((78, 45, 200, 260), dict()),
         'tr': ((735, 45, 211, 260), dict()),
         'bl': ((78, 1240, 220, 172), dict()),
@@ -91,9 +92,7 @@ CONFIGS = {
         'bot': ((400, 1240, 140, 172, 8, 'x'), dict()),
         'left': ((78, 500, 100, 300, 8, 'y'), dict()),
         'right': ((846, 500, 100, 300, 8, 'y'), dict()),
-        'pieces': {
-            'clip': ((280, 45, 464, 215), [], dict()),
-        },
+        'pieces': {},
         'paper': ((300, 500, 480, 480), (300, 500, 480, 480)),
     },
 }
