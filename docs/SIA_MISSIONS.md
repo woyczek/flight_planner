@@ -215,7 +215,8 @@ les familles sont concernées (ISR, HEMS, FIRE, COMMAND…).
   citent `operation.organisation: I-001Z`. Voir le prompt, § 3 et § 4 bis.
 - **Bloc `exercise`** : `h_hour` (heure H commune) ; `participants` (indicatif, mission, décollage `H-20mn`, `H+1h` : une seule heure H — ou T, ou M —, décalages avec leur unité ; sans unité, minutes, rôle) ;
   `tracks` = **chiffons** (nom, nature, points, niveau, vitesse, à établir ; `played` : tenu par un aéronef du
-  simulateur, avec `callsign`, départ `start` et consignes `conduct`, sinon seulement dessiné) ; `events` =
+  simulateur, avec `callsign`, départ `start` et consignes `conduct`, sinon seulement dessiné ; chiffon joué :
+  `mission` — sa propre mission de l'opération, rôle `chiffon` —, `takeoff`, `aircraft_type`) ; `events` =
   **chronologie** (`at` : `H+n` ou point de la mission du participant `by`, `delay_min` ; `kind` : **radio** passé
   en vol ou **pli** scellé remis avant le vol ; `from`, `to` : participants, chiffons joués ou `ALL` ; `title`,
   `text` ; `reveals` : pistes révélées).
@@ -224,6 +225,12 @@ les familles sont concernées (ISR, HEMS, FIRE, COMMAND…).
 - **Destinataires** : l'organisation voit tout ; chaque équipage ne reçoit que les événements qui lui sont adressés
   (ou à tous) et ne connaît que les pistes qu'ils révèlent ; chaque chiffon joué reçoit sa route, son heure de
   départ, ses consignes et sa carte.
+- **Chiffon joué = mission d'équipe** : sa mission (`I-001D`, `mission.role: chiffon`) est une mission comme les
+  autres — registre, affectation dans l'ODV (ligne de l'opération, décalage `takeoff`), « Mes missions » (brief,
+  consignes, plis qui lui sont adressés par id de piste ou indicatif), planificateur. `MissionExercise.crews(ex)` et
+  `participantOf` la traitent en participant (rôle chiffon) ; `chiffonOf` rend sa piste. Opérations d'avant : bouton
+  « Créer les missions des chiffons joués » du bloc Opération du générateur (base du premier équipage, route de la
+  piste, décollage = départ moins le transit estimé).
 - **Réception** (« Mes missions », pilote) : les événements adressés à l'équipage sont des plis scellés derrière le
   signet, ouverts à leur heure ; pistes et cartes d'exercice n'y paraissent qu'à l'ouverture (voir
   [AFFECTATION_MISSIONS.md](AFFECTATION_MISSIONS.md), § 10).

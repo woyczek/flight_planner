@@ -114,7 +114,7 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
       callsign = posts[0]?.callsign || '',
       blockMin = +y.timing?.estimated_block_min || +y.timing?.estimated_flight_min || 120,
       ex = y.exercise,
-      myOffset = offsetOf(ex?.participants?.find(p => p.mission === m.id)?.takeoff);
+      myOffset = offsetOf((p => p?.takeoff ?? p?.start)(ex?.participants?.find(p => p.mission === m.id) || ex?.tracks?.find(t => t?.played && t.mission === m.id)));
     M.rememberAirport(departure, y.origin);
     const t0 = presetTakeoff || Date.parse(existing[0]?.takeoff || '') || (() => {
       const d = new Date();

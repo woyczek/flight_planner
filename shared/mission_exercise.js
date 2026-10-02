@@ -14,7 +14,9 @@
   //       - { callsign: CYRANO01, mission: I-001A, takeoff: "H-20mn", role: "…" }   décollage par rapport à H
   //     tracks:                              chiffons : pistes d'exercice à reconnaître, intercepter, escorter…
   //       - { id: TRACK-401, name, nature, played: true|false, callsign, start: "H+1h", points: [{ name, lat, lon }…],
-  //           level, speed_kt, task (ce que les équipages doivent établir), conduct (consignes du chiffon joué) }
+  //           level, speed_kt, task (ce que les équipages doivent établir), conduct (consignes du chiffon joué),
+  //           mission: I-001D, takeoff: "H+35mn" }   chiffon joué : sa propre mission de l'opération (rôle chiffon),
+  //                                          affectée et volée comme les autres ; takeoff : son décollage (sinon start)
   //     events:                              chronologie de l'exercice
   //       - { id: EV-1, at: "H+1h" | <id de point>, by: <participant qui passe le point>, delay_min,
   //           kind: radio | pli, from: CYRANO01, to: [RAFALE31] | [ALL], title, text, reveals: [TRACK-401…] }
@@ -23,7 +25,8 @@
   // Les missions A, B, C… gardent chacune leur vol ; l'exercice les retrouve par operation.id.
   // Anciennes missions : tracks / injects / phases dans la mission elle-même → lus comme un exercice à un participant.
   //
-  // API : of(yaml, docs) · isOrganisation(yaml) · organisationId(opId) · audiences(ex) · timeline(ex, docs) ·
+  // API : of(yaml, docs) · isOrganisation(yaml) · organisationId(opId) · audiences(ex) · crews(ex) ·
+  //       participantOf(ex, missionId) (équipage ou chiffon joué à mission) · chiffonOf(ex, missionId) · timeline(ex, docs) ·
   //       eventsFor(tl, audience) · revealedFor(ex, tl, audience, upTo) · editor(host, yaml, { docs, onChange }) ·
   //       crewPanel(host, yaml, docs) · fromLegacy(yaml) · compatibilité : schedule(y) · revealed(y, id) · injectsOf(y)
   //       · whenText(x) · pointsText(pts) · parseTracksTable(md).
@@ -61,13 +64,22 @@
       id: up(t.id || t.name || `TRACK-${i + 1}`),
       name: t.name || t.id || `TRACK ${i + 1}`,
       played: !!t.played,
+      callsign: up(t.callsign),
+      mission: up(t.mission),
       points: arr(t.points)
     }));
+    // destinataire « chiffon joué » : son id de piste et son indicatif désignent le même joueur
+    const alias = new Map();
+    for (const t of e.tracks.filter(t => t.played && t.callsign)) {
+      alias.set(t.id, t.callsign);
+      alias.set(t.callsign, t.id);
+    }
+    const withAlias = list => [...new Set(list.flatMap(v => alias.has(v) ? [v, alias.get(v)] : [v]))];
     e.events = arr(ex.events).filter(Boolean).map((x, i) => ({
       ...x,
       id: up(x.id || `EV-${i + 1}`),
       kind: /pli|seal/i.test(x.kind || '') ? 'pli' : 'radio',
-      to: arr(x.to).map(up).filter(Boolean),
+      to: withAlias(arr(x.to).map(up).filter(Boolean)),
       reveals: arr(x.reveals ?? x.tracks).map(up).filter(Boolean),
       by: up(x.by),
       at: String(x.at ?? ''),
@@ -145,12 +157,24 @@
       ...ex.tracks.filter(t => t.played).map(t => ({
         id: t.id,
         kind: 'chiffon',
+        mission: t.mission,
         label: t.callsign ? `${t.callsign} (${t.name})` : t.name
       }))
     ];
   }
-  /** Participant d'une mission (par son identifiant). */
-  const participantOf = (ex, missionId) => ex?.participants.find(p => p.mission === up(missionId)) || null;
+  /** Équipages en vol : participants, puis chiffons joués qui ont leur propre mission (traités comme des participants :
+   *  indicatif, mission, décollage — takeoff, sinon start —, rôle « chiffon », track : id de la piste). */
+  const crews = ex => ex ? [...ex.participants, ...ex.tracks.filter(t => t.played && t.mission && !ex.participants.some(p => p.mission === t.mission)).map(t => ({
+    callsign: t.callsign || t.id,
+    mission: t.mission,
+    takeoff: t.takeoff ?? t.start ?? 'H',
+    role: 'chiffon',
+    track: t.id
+  }))] : [];
+  /** Participant d'une mission (par son identifiant) : équipage, ou chiffon joué à mission. */
+  const participantOf = (ex, missionId) => crews(ex).find(p => p.mission === up(missionId)) || null;
+  /** Chiffon joué tenu par une mission (piste), null sinon. */
+  const chiffonOf = (ex, missionId) => ex?.tracks.find(t => t.played && t.mission && t.mission === up(missionId)) || null;
 
   // ---- chronologie : minutes par rapport à H
   /** Passage d'un point par la route probable d'une mission (MissionEstimate) : minutes après son décollage. */
@@ -190,7 +214,8 @@
       let t = null;
       if (h != null) t = h;
       else {
-        const p = ex.participants.find(q => q.callsign === x.by) || ex.participants.find(q => hasPoint(missionYaml(q.mission), x.at)) || (ex.legacy ? ex.participants[0] : null);
+        const all = crews(ex),
+          p = all.find(q => q.callsign === x.by) || all.find(q => hasPoint(missionYaml(q.mission), x.at)) || (ex.legacy ? ex.participants[0] : null);
         const y = p && missionYaml(p.mission),
           s = y && passage(y, x.at);
         if (s != null) t = offset(p) + s + (+x.delay_min || 0);
@@ -343,7 +368,7 @@
     const aud = audiences(ex).filter(a => a.kind !== 'org');
     // points proposés comme déclencheurs : ceux des missions des participants (id → participants qui le passent)
     const points = new Map();
-    for (const p of ex.participants) {
+    for (const p of crews(ex)) {
       const m = ys.find(d => up(d.mission.id) === p.mission);
       for (const q of [...arr(m?.turning_points), ...arr(m?.rendezvous), ...arr(m?.zones), m?.target].filter(Boolean))
         if (q.id) points.set(up(q.id), [...(points.get(up(q.id)) || []), p.callsign]);
@@ -465,6 +490,7 @@
       for (const d of ys) {
         const id = up(d.mission.id),
           cs = up(arr(d.aircraft)[0]?.callsign || id);
+        if (ex.tracks.some(t => t.mission === id) || /chiffon/i.test(d.mission?.role || '')) continue; // mission d'un chiffon joué
         if (!X.participants.some(p => up(p.mission) === id)) X.participants.push({
           callsign: cs,
           mission: id,
@@ -530,8 +556,10 @@
     }
     const tl = timeline(ex, [y, ...arr(docs)]),
       me = participantOf(ex, y.mission?.id),
+      ch = chiffonOf(ex, y.mission?.id),
       list = me ? eventsFor(tl, me.callsign) : [];
-    host.innerHTML = `<p class="mx-help">${ex.legacy ? 'Exercice décrit dans cette mission (ancien format) : pour plusieurs acteurs, le reprendre dans la mission d’organisation.' : `Exercice de l’opération, tenu dans la mission d’organisation ${esc(ex.owner)} : à modifier là-bas.`} ${me ? `Participant : ${esc(me.callsign)}, décollage ${esc(hText(parseH(me.takeoff) ?? 0))}.` : '<span class="mx-warn">Cette mission n’est pas encore déclarée parmi les participants.</span>'}</p>
+    host.innerHTML = `<p class="mx-help">${ex.legacy ? 'Exercice décrit dans cette mission (ancien format) : pour plusieurs acteurs, le reprendre dans la mission d’organisation.' : `Exercice de l’opération, tenu dans la mission d’organisation ${esc(ex.owner)} : à modifier là-bas.`} ${me ? `${ch ? `Chiffon ${esc(ch.name)}` : 'Participant'} : ${esc(me.callsign)}, décollage ${esc(hText(parseH(me.takeoff) ?? 0))}${ch?.start ? `, départ de la piste ${esc(hText(parseH(ch.start) ?? 0))}` : ''}.` : '<span class="mx-warn">Cette mission n’est pas encore déclarée parmi les participants.</span>'}</p>
+      ${ch?.conduct ? `<div class="mx-ev"><div class="mx-ev-head"><span class="mx-kind">CONSIGNES DU CHIFFON</span></div><div class="mx-help" style="white-space:pre-line">${esc(ch.conduct)}</div></div>` : ''}
       ${list.length ? list.map(e => `<div class="mx-ev${e.kind === 'pli' ? ' pli' : ''}"><div class="mx-ev-head"><span class="mx-t">${esc(e.t == null ? 'H+?' : hText(e.t))}</span><span class="mx-kind">${e.kind === 'pli' ? 'PLI SCELLÉ' : 'RADIO'}</span><span>${esc(e.from || '—')}</span><span>${esc(e.title || '')}</span></div><div class="mx-help">${esc(e.when)}${e.reveals.length ? ` · pistes : ${esc(e.reveals.join(', '))}` : ''}</div></div>`).join('') : '<p class="mx-help">Aucun message ni pli adressé à cet équipage.</p>'}`;
   }
 
@@ -588,6 +616,7 @@
     ['Ce que reçoit chacun', 'What each one receives', 'Was jeder erhält', 'Lo que recibe cada uno'],
     ['sa route, son heure de départ, ses consignes, sa carte', 'its route, departure time, instructions and map', 'seine Route, Startzeit, Anweisungen und Karte', 'su ruta, su hora de salida, sus consignas y su mapa'],
     ['Aucun message ni pli adressé à cet équipage.', 'No message or envelope addressed to this crew.', 'Keine Nachricht und kein Umschlag an diese Besatzung.', 'Ningún mensaje ni sobre dirigido a esta tripulación.'],
+    ['CONSIGNES DU CHIFFON', 'TARGET INSTRUCTIONS', 'ANWEISUNGEN DES ZIELS', 'CONSIGNAS DEL BLANCO'],
     ['Cette mission n’est pas encore déclarée parmi les participants.', 'This mission is not yet declared among the participants.', 'Diese Mission ist noch nicht unter den Teilnehmern eingetragen.', 'Esta misión aún no figura entre los participantes.']
   ]);
   const register = () => {
@@ -608,7 +637,9 @@
     isOrganisation,
     organisationId,
     audiences,
+    crews,
     participantOf,
+    chiffonOf,
     timeline,
     eventsFor,
     revealedFor,

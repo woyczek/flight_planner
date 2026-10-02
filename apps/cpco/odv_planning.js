@@ -1027,7 +1027,13 @@
           planes = [];
         // exercice : une seule heure H ; chaque équipage décolle à H + son décalage (participants de la …Z : « H-20mn »)
         const z = key.startsWith('op:') ? all.find(x => x.id === `${key.slice(3)}Z`) : null,
-          parts = (z ? await O.yamlOf(z).catch(() => null) : null)?.exercise?.participants || [],
+          zx = (z ? await O.yamlOf(z).catch(() => null) : null)?.exercise,
+          // chiffons joués à mission : affectés comme les équipages, décollage takeoff (sinon start)
+          parts = [...zx?.participants || [], ...(zx?.tracks || []).filter(t => t?.played && t.mission).map(t => ({
+            callsign: t.callsign,
+            mission: t.mission,
+            takeoff: t.takeoff ?? t.start
+          }))],
           offOf = (cs, mid) => window.RepositoryKit.hOffset((parts.find(p => fold(p?.callsign) === fold(cs)) || parts.find(p => fold(p?.mission) === fold(mid)))?.takeoff) ?? 0;
         for (const m of ms) {
           const dep = await M.departureOf(await O.yamlOf(m).catch(() => ({})), m);

@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=d774850b">
 <script src="../../config/repository_tree?v=014ce40b"></script><script src="../../shared/kit.js?v=a2ce6913"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script src="mission_prompt.js?v=f6941ddb"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../shared/mission_order.js?v=8aa44fa4"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=0e2b9529"></script><script src="../../shared/mission_estimate.js?v=7d806302"></script><script src="../../shared/sia_base.js?v=fa6592d6"></script><script src="../../shared/mission_routing.js?v=37689d94"></script><script src="../../shared/mission_airspaces.js?v=f9dae1f0"></script><script src="../../shared/mission_exercise.js?v=d66c8758"></script><script src="../../shared/mission_registry.js?v=cbc69cbf"></script>
+<script src="mission_prompt.js?v=8f1336cb"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../shared/mission_order.js?v=8aa44fa4"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=0e2b9529"></script><script src="../../shared/mission_estimate.js?v=7d806302"></script><script src="../../shared/sia_base.js?v=fa6592d6"></script><script src="../../shared/mission_routing.js?v=37689d94"></script><script src="../../shared/mission_airspaces.js?v=f9dae1f0"></script><script src="../../shared/mission_exercise.js?v=6c6aed4f"></script><script src="../../shared/mission_registry.js?v=cbc69cbf"></script>
 <script src="mission_store.js?v=dab8a174"></script>
 <script src="../../shared/aar_tracks.js?v=f4061047"></script>
 <script src="../../shared/mission_core/vocab.js?v=db00c09c"></script>
@@ -1152,7 +1152,9 @@ function renderOperation() {
     window.AppFramework?.refresh?.();
     return
   }
-  host.innerHTML = `<p class="small">Opération <b>${esc(op.name||op.id)}</b> (${esc(op.id)}) : ${ids.length-1} mission(s) d’équipage et l’organisation de l’exercice ${esc(zId)}.${ex&&!ex.legacy?` Heure H : ${esc(ex.h_hour)}.`:''}</p><div class="opMembers">${ids.map(id=>{const d=have(id),z=id===zId,p=ex?.participants.find(q=>q.mission===id),label=z?'Organisation':(d?.aircraft?.[0]?.callsign||p?.callsign||'—'),note=!d?(z?'à créer':'non chargée'):z?'brief général, chiffons, chronologie':p?`décollage ${X.hText(X.parseH(p.takeoff)??0)}`:(d.aircraft?.[0]?.type||'');return`<button type="button" class="opMember${id===cur?' current':''}${d?'':' missing'}" data-op-go="${esc(id)}"${d&&id!==cur?'':' disabled'}><b>${esc(id)}</b><span>${esc(label)}</span><small>${esc(note)}</small></button>`}).join('')}</div>${have(zId)?'':`<div class="actions"><button type="button" id="createOrganisation" data-icon="plus">Créer l’organisation de l’exercice</button><span class="small">Mission ${esc(zId)} : brief général, heure H, participants, chiffons et chronologie ; les pistes et injects des missions (ancien format) y sont repris.</span></div>`}`;
+  host.innerHTML = `<p class="small">Opération <b>${esc(op.name||op.id)}</b> (${esc(op.id)}) : ${ids.length-1} mission(s) d’équipage et l’organisation de l’exercice ${esc(zId)}.${ex&&!ex.legacy?` Heure H : ${esc(ex.h_hour)}.`:''}</p><div class="opMembers">${ids.map(id=>{const d=have(id),z=id===zId,p=X.participantOf(ex,id),label=z?'Organisation':(d?.aircraft?.[0]?.callsign||p?.callsign||'—'),note=!d?(z?'à créer':'non chargée'):z?'brief général, chiffons, chronologie':p?`${p.track?'chiffon · ':''}décollage ${X.hText(X.parseH(p.takeoff)??0)}`:(d.aircraft?.[0]?.type||'');return`<button type="button" class="opMember${id===cur?' current':''}${d?'':' missing'}" data-op-go="${esc(id)}"${d&&id!==cur?'':' disabled'}><b>${esc(id)}</b><span>${esc(label)}</span><small>${esc(note)}</small></button>`}).join('')}</div>${have(zId)?'':`<div class="actions"><button type="button" id="createOrganisation" data-icon="plus">Créer l’organisation de l’exercice</button><span class="small">Mission ${esc(zId)} : brief général, heure H, participants, chiffons et chronologie ; les pistes et injects des missions (ancien format) y sont repris.</span></div>`}${chiffonsToCreate(docs).length?`<div class="actions"><button type="button" id="createChiffons" data-icon="plus">Créer les missions des chiffons joués (${chiffonsToCreate(docs).length})</button><span class="small">Chaque chiffon joué devient une mission de l’opération, affectée et volée comme les autres : départ de la base du premier équipage, route de la piste, consignes, décollage calculé d’après son heure de départ.</span></div>`:''}`;
+  const cc = $('createChiffons');
+  if (cc) cc.onclick = () => createChiffonMissions();
   host.querySelectorAll('[data-op-go]').forEach(b => b.onclick = () => {
     const bt = SiaMission.loadBatch();
     if (!bt) return;
@@ -1245,6 +1247,155 @@ function createOrganisation(zId) {
     sourceNames: []
   }, 'generator'));
   setStatus(`Organisation ${zId} créée, brief général proposé d’après les missions : le compléter, régler l’heure H, les chiffons et la chronologie, puis « Enregistrer dans le dossier ».`, 'ok')
+}
+
+/** Chiffons joués de l'organisation de l'opération sans mission propre chargée : [{ z, t }]. */
+function chiffonsToCreate(docs) {
+  const X = window.MissionExercise,
+    z = docs.find(d => X.isOrganisation(d) && d.exercise),
+    ids = new Set(docs.map(d => String(d.mission?.id || '').toUpperCase()));
+  return z ? (z.exercise.tracks || []).filter(t => t?.played && !ids.has(String(t.mission || '').toUpperCase())).map(t => ({
+    z,
+    t
+  })) : []
+}
+/** Missions des chiffons joués : chacune est une mission d'équipage de l'opération (lettre suivante, rôle chiffon) —
+ *  appareil (type du chiffon, sinon avion ou hélicoptère d'après sa nature), base de départ et de retour du premier
+ *  équipage, route = points de la piste, consignes en description ; décollage = départ de la piste moins le transit
+ *  (MissionEstimate), arrondi aux 5 minutes. L'organisation garde la piste (dessin, révélations) avec mission et
+ *  takeoff ; operation.missions mis à jour dans toutes les missions du lot. */
+function createChiffonMissions() {
+  const X = window.MissionExercise,
+    docs = opDocs(),
+    todo = chiffonsToCreate(docs);
+  if (!todo.length) return;
+  syncNarrative();
+  shareMission(true);
+  const cur = String(state.yaml.mission?.id || '').toUpperCase(),
+    z = todo[0].z,
+    op = z.operation || {},
+    crews = docs.filter(d => !X.isOrganisation(d) && d.origin),
+    base = crews[0] || {},
+    taken = new Set([...docs.map(d => String(d.mission?.id || '').toUpperCase()), ...(op.missions || []).map(v => String(v).toUpperCase())]),
+    stem = String(op.id || z.mission?.id || '').replace(/Z$/i, '');
+  let letter = 'A'.charCodeAt(0);
+  const nextId = () => {
+    while (taken.has(`${stem}${String.fromCharCode(letter)}`) || String.fromCharCode(letter) === 'Z') letter++;
+    const id = `${stem}${String.fromCharCode(letter)}`;
+    taken.add(id);
+    return id
+  };
+  const made = [];
+  for (const {
+      t
+    }
+    of todo) {
+    const id = nextId(),
+      cs = String(t.callsign || t.id || id).toUpperCase(),
+      type = t.aircraft_type || (/h[ée]lico|rotor/i.test(t.nature || '') ? 'hélicoptère' : 'avion'),
+      pts = (t.points || []).filter(p => Number.isFinite(+p.lat) && Number.isFinite(+p.lon)),
+      y = {
+        schema: 'helo-xp-mission',
+        schema_version: base.schema_version || '2.0',
+        mission: {
+          series: z.mission?.series ?? 1,
+          number: z.mission?.number ?? 1,
+          id,
+          type: z.mission?.type || base.mission?.type || '',
+          subtype: 'CHIFFON',
+          role: 'chiffon'
+        },
+        operation: {
+          ...op
+        },
+        title: `${op.name||op.id} — chiffon ${t.name||t.id}`,
+        author: z.author || '',
+        date: todayIso(),
+        summary: [`Chiffon joué de l’exercice ${op.name||op.id} : ${cs}, ${t.nature||'piste d’exercice'}.`, `Départ de la piste à ${t.start||'H'} au premier point, puis ${pts.length>1?'la route de la piste jusqu’au dernier point':'tenue du point'}${t.level?`, ${t.level}`:''}${t.speed_kt?`, ${t.speed_kt} kt`:''} ; retour à la base.`, t.task ? `Attendu des équipages : ${t.task}.` : ''].filter(Boolean).join('\n\n'),
+        detailed_description: t.conduct || '',
+        aircraft: [{
+          id: 'AC1',
+          type,
+          callsign: cs,
+          role: `chiffon de l’exercice (${t.name||t.id})`,
+          ...(t.speed_kt ? {
+            cruise_speed_kt: +t.speed_kt
+          } : {}),
+          ...(t.level ? {
+            cruise_level: String(t.level)
+          } : {})
+        }],
+        ...(base.origin ? {
+          origin: base.origin,
+          destination: base.origin
+        } : {}),
+        turning_points: pts.map((p, i) => ({
+          id: `P${i+1}`,
+          name: p.name || `${t.name||t.id} ${i+1}`,
+          lat: +p.lat,
+          lon: +p.lon,
+          role: i ? 'point de la piste' : `début de la piste (${t.start||'H'})`,
+          time_on_task_min: 0
+        })),
+        route_order: ['ORIGIN', ...pts.map((_, i) => `P${i+1}`), 'DESTINATION'],
+        teams: [{
+          name: cs,
+          type,
+          role: `chiffon de l’exercice (${t.name||t.id})`
+        }],
+        notes: [`Chiffon de l’exercice : piste ${t.id}, tenue dans l’organisation ${z.mission?.id||''} (révélations aux équipages, carte).`],
+        maps: []
+      };
+    let e = null;
+    try {
+      e = window.MissionEstimate?.estimate?.(y)
+    } catch {
+      e = null
+    }
+    const transit = e?.ok ? +e.legs?.[0]?.min : NaN,
+      start = X.parseH(t.start) ?? 0;
+    if (e?.ok && Number.isFinite(+e.flight)) y.timing = {
+      estimated_flight_min: Math.round(+e.flight),
+      estimated_block_min: Math.round(+(e.block ?? e.flight + 20))
+    };
+    t.mission = id;
+    t.takeoff = X.hText(Number.isFinite(transit) ? Math.floor((start - transit) / 5) * 5 : start);
+    made.push(y)
+  }
+  const ids = made.map(y => y.mission.id),
+    missions = [...new Set([...(op.missions || []).map(v => String(v).toUpperCase()), ...ids])];
+  for (const y of made) y.operation.missions = missions;
+  const b = SiaMission.loadBatch(),
+    docOf = y => b?.docs.find(d => String(d.yaml?.mission?.id || '').toUpperCase() === String(y.mission?.id || '').toUpperCase()) || {
+      narrative: {
+        summary: '',
+        detailed: '',
+        sections: []
+      },
+      sourceNames: []
+    };
+  for (const y of made) SiaMission.addToBatch({
+    yaml: y
+  }, 'generator');
+  for (const d of docs) {
+    d.operation = {
+      ...d.operation,
+      missions
+    };
+    const keep = d === state.yaml ? {
+      narrative: state.narrative,
+      sourceNames: state.sourceNames || docOf(d).sourceNames
+    } : docOf(d);
+    SiaMission.addToBatch({
+      yaml: d,
+      narrative: keep.narrative,
+      sourceNames: keep.sourceNames
+    }, 'generator')
+  }
+  const bt = SiaMission.loadBatch(),
+    i = bt.docs.findIndex(d => String(d.yaml?.mission?.id || '').toUpperCase() === cur);
+  applyBatchDoc(SiaMission.go(Math.max(0, i), 'generator'));
+  setStatus(`Missions de chiffon créées : ${ids.join(', ')} (opération ${op.name||op.id}). Les vérifier (appareil, base, horaire), ouvrir chacune dans le studio pour ses cartes, puis « Enregistrer dans le dossier » : elles s’affectent dans l’ODV comme les autres.`, 'ok')
 }
 
 /** Bloc « Exercice » : éditeur complet pour la mission d'organisation, vue de l'équipage pour une mission participante ; masqué sinon. */
@@ -2623,5 +2774,5 @@ $('openCr').onclick = () => {
 </script>
 <script src="../../shared/repository_nav.js?v=9aa760c7"></script>
 <script src="../../shared/app_framework.js?v=a2972a9a"></script>
-<script src="../../shared/content_i18n.js?v=2d61c23a"></script><script src="sia_i18n.js?v=552c5671"></script>
+<script src="../../shared/content_i18n.js?v=2d61c23a"></script><script src="sia_i18n.js?v=d86839cd"></script>
 </body></html>

@@ -22,6 +22,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   `shared/mission_i18n.js` ; Mes missions affiche le brief, les plis et les pistes dans la langue de la page (repli sur
   le français champ par champ). Doc : `docs/SIA_MISSIONS.md` § 2 sexies.
 - Audit de sécurité (`docs/AUDIT_SECURITE_2026-10-02.md`).
+- **Chiffons joués traités comme des missions** : chaque chiffon joué a sa mission d'équipe dans l'opération
+  (`mission.role: chiffon`, piste de la Z reliée par `mission` et `takeoff`) — registre, affectation dans l'ODV sur la
+  ligne de l'opération (décalage par rapport à H), Mes missions (brief, consignes, plis adressés par id de piste ou
+  indicatif). Prompt du générateur mis à jour ; pour les opérations existantes, bouton « Créer les missions des
+  chiffons joués » dans le bloc Opération du générateur.
 
 ### Modifié
 

@@ -1559,7 +1559,7 @@
 <script src="../../shared/content_i18n.js?v=2d61c23a"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=db00c09c"></script>
-<script src="../../shared/mission_estimate.js?v=7d806302"></script><script src="../../shared/mission_i18n.js?v=bfd45c20"></script><script src="../../shared/mission_exercise.js?v=d66c8758"></script>
+<script src="../../shared/mission_estimate.js?v=7d806302"></script><script src="../../shared/mission_i18n.js?v=bfd45c20"></script><script src="../../shared/mission_exercise.js?v=6c6aed4f"></script>
 <script src="../../shared/assignments.js?v=82afa493"></script>
 <script>
 (() => {
@@ -1712,7 +1712,7 @@
     };
     const z = await read(X.organisationId(op));
     if (!z?.exercise) return [];
-    const others = (z.exercise.participants || []).map(p => String(p?.mission || '').toUpperCase()).filter(id => id && id !== String(y.mission?.id || '').toUpperCase());
+    const others = [...z.exercise.participants || [], ...(z.exercise.tracks || []).filter(t => t?.played)].map(p => String(p?.mission || '').toUpperCase()).filter(id => id && id !== String(y.mission?.id || '').toUpperCase());
     return [z, ...(await Promise.all(others.map(read))).filter(Boolean)];
   }
   /** Plis et messages de l'exercice adressés à cet équipage, dans l'ordre : { id, kind, from, title, text, when, at (ms,

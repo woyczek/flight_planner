@@ -159,7 +159,12 @@ livrée APRÈS les missions des équipes (missionNNZ.yaml puis summaryNNZ.md). E
   - les chiffons : pistes que les équipages doivent reconnaître, intercepter, escorter ou retrouver. Un chiffon est
     « joué » (played: true) quand un aéronef du simulateur peut tenir le rôle (trafic léger, hélicoptère, avion
     d'affaires, bateau suivi par un hélico…) : il reçoit sa route, son heure de départ et ses consignes ; sinon il
-    n'est que dessiné (played: false). Choisir selon ce que l'exercice demande, les deux peuvent coexister ;
+    n'est que dessiné (played: false). Choisir selon ce que l'exercice demande, les deux peuvent coexister.
+    Un chiffon joué est volé par un pilote DEFA : il a SA MISSION, comme une équipe (§ 4 complet : appareil avec
+    l'indicatif du chiffon, départ et retour sur un terrain réel proche de la piste, route = points de la piste,
+    timing, cartes), lettre suivant celles des équipes (I-001D…), mission.role: chiffon, subtype: CHIFFON, citée dans
+    operation.missions ; son brief dit ce que le joueur doit faire (consignes) et rien de ce que les équipages doivent
+    découvrir. La piste de la Z garde le dessin et les révélations, et renvoie à cette mission (mission, takeoff) ;
   - la chronologie : chaque événement dit QUAND (H+n, ou passage d'un point par un participant, plus un délai),
     SOUS QUELLE FORME (radio : passé par l'émetteur en vol ; pli : remis avant le vol, ouvert au moment indiqué),
     DE QUI, À QUI (un ou plusieurs participants, un chiffon joué, ou ALL) et quelles pistes il révèle.
@@ -471,6 +476,9 @@ exercise:
       played: true             # true : tenu par un aéronef du simulateur ; false : seulement dessiné
       callsign: CHIFFON401     # indicatif du chiffon joué (vide sinon)
       start: "H+50mn"          # départ du premier point (chiffon joué)
+      mission: 'I-001D'        # chiffon joué : sa mission (même indicatif en aircraft[0].callsign), sinon omis
+      takeoff: "H+35mn"        # chiffon joué : décollage de sa mission (start moins le transit jusqu'au premier point)
+      aircraft_type: "PC-21"   # chiffon joué : type de l'appareil qui tient le rôle (celui de sa mission)
       points:                  # route, dans l'ordre (2 points au moins) ; UN point pour une position fixe (cible
                                # révélée en vol : véhicule, personne, épave)
         - { name: "Rosnay", lat: 46.701667, lon: 1.215278 }
@@ -495,8 +503,9 @@ exercise:
 
 Règles : toute piste est révélée par au moins un événement ; un événement lié à un point cite un point qui existe
 dans la mission de son participant « by » ; les décollages (takeoff) et départs (start) sont cohérents avec les
-timings des missions et les rendez-vous ; chaque chiffon joué a callsign, start et conduct ; les destinataires sont
-des participants, des chiffons joués ou ALL.
+timings des missions et les rendez-vous ; chaque chiffon joué a callsign, start, conduct, mission, takeoff et
+aircraft_type, et sa mission est livrée avec celles des équipes (avant la Z) ; les participants ne listent que les
+équipes, pas les chiffons ; les destinataires sont des participants, des chiffons joués (id ou indicatif) ou ALL.
 
 ────────────────────────────────────────────────────────────────────────────
 5. GÉOGRAPHIE — CONTRE LES ERREURS
@@ -746,7 +755,8 @@ liste des corrections faites :
       feu, levé, largage) ; position connue seulement en vol → exercice, chiffon à un point, pas de carte détaillée de TARGET
   [ ] exercice (§ 3, § 4 bis) : mission NNZ livrée après les équipes, operation.organisation dans toutes les missions
       de l'opération ; participants = équipes en vol avec leur décollage ; chiffons réels, niveaux et vitesses cohérents
-      avec la nature, chiffons joués avec callsign, start et conduct ; chaque événement a un moment, une forme
+      avec la nature, chiffons joués avec callsign, start, conduct, mission, takeoff, aircraft_type et leur mission
+      livrée (§ 4 complet, role chiffon) ; chaque événement a un moment, une forme
       (radio / pli), un émetteur, des destinataires, un texte ; toute piste est révélée ; aucun tracks / injects dans
       les missions des équipes
   [ ] phases (s'il y en a) : trigger_point existant, délai réaliste, message, brief, route_order reprise à trigger_point ;
