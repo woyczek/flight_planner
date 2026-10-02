@@ -1863,9 +1863,10 @@ html[data-design="aqua"] .repo-deco-bgimg.repo-deco-bg-cover {
 html[data-design="aqua"][data-tone="dark"] .repo-deco-bgimg.repo-deco-bg-cover {
   opacity: .5
 }
-/* Aqua, ton sombre : panneaux bleu nuit (panels/) ; voile sombre sous les données */
+/* Aqua, ton sombre : panneaux bleu nuit (panels/) voilés par la surface du bloc (opacité basse) ; voile sombre sous
+   les données */
 html[data-design="aqua"][data-tone="dark"] .repo-deco-bgimg.repo-deco-panel {
-  opacity: .75
+  opacity: .45
 }
 html[data-design="aqua"][data-tone="dark"] .repo-has-bg:has(>.repo-deco-panel) {
   --repo-veil: rgba(14, 18, 26, .62)
