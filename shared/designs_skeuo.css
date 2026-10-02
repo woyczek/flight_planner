@@ -1337,6 +1337,13 @@ html[data-design="field"][data-decor="full"] .repo-deco>.repo-deco-status {
   grid-column: 2;
   grid-row: 2
 }
+/* sangle de toile (frise du design) : sous le radar et la colonne de droite, toute la largeur */
+html[data-design="field"][data-decor="full"] .repo-deco>.repo-deco-strip {
+  grid-column: 1/-1;
+  grid-row: 3;
+  min-height: 0;
+  object-fit: contain
+}
 .repo-deco-plate {
   display: flex;
   align-items: center;

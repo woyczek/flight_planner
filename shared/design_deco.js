@@ -122,7 +122,7 @@
     // (grille d'aération, lampe grillagée, plaque vierge, blindage riveté, interrupteur à capot, crayon, cadran) ; appareil
     // de page : câble et poste radio
     field: {
-      foot: ['plate', 'radar', 'status'],
+      foot: ['plate', 'radar', 'status', 'strip'],
       device: [
         ['cable', 170],
         ['radio', 360]
@@ -175,19 +175,11 @@
   // (jeu propre au ton clair, même forme). Cabinet : jeu « 1930 » ; un jeu « 1800 »
   // attend dans cabinet/1800 : remplacer '1930' par '1800' (dir et clair.dir) une fois ses panneaux convertis.
   const PANELS = {
-    // Carnet de vol : ton sombre, plans au trait sur bleu marine (panels/ ; families et ops : portrait seulement, en
-    // attendant leur paysage) ; ton clair : parchemin ivoire, gravures bleues (clair/)
+    // Carnet de vol : ton sombre, plans au trait sur bleu marine (panels/) ; ton clair : parchemin ivoire, gravures bleues (clair/)
     flightlog: {
       dir: 'panels',
-      only: {
-        families: 't',
-        ops: 't'
-      },
       clair: {
-        dir: 'clair',
-        only: {
-          aircraft: 't'
-        } // paysage à venir
+        dir: 'clair'
       }
     },
     // Aqua : équipements sur métal brossé, bleu nuit en ton sombre (panels/), clair en ton clair (clair/)
@@ -198,11 +190,7 @@
       }
     },
     field: {
-      dir: '',
-      only: {
-        awards: 't',
-        families: 't'
-      }
+      dir: ''
     },
     cabinet: {
       dir: '1930',
