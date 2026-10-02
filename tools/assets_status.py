@@ -53,6 +53,19 @@ SPEC = {
     'Signet du dossier de mission': (True, {
         'cabinet': ['bookmark-body.webp', 'bookmark-tail.webp'], 'flightlog': ['bookmark-body.webp', 'bookmark-tail.webp'],
         'field': ['bookmark-body.webp', 'bookmark-tail.webp'], 'aqua': ['bookmark-body.webp', 'bookmark-tail.webp']}),
+    'En-têtes d’ordre par famille (Mes missions)': (True, {
+        'cabinet': ['order-header-mn.webp', 'order-header-emg.webp', 'order-header-fam.webp', 'order-header-dfam.webp',
+                    'order-header-prefmar.webp', 'order-header-ban.webp', 'order-header-escadrille.webp', 'order-header-embarquee.webp'],
+        'flightlog': ['order-header-snpc.webp', 'order-header-marignane.webp', 'order-header-cev.webp', 'order-header-tam.webp',
+                      'order-header-helico.webp', 'order-header-sna.webp', 'order-header-alat.webp', 'order-header-aeronavale.webp'],
+        'field': ['order-header-ema.webp', 'order-header-bspp.webp', 'order-header-ssa.webp', 'order-header-hia.webp',
+                  'order-header-dcssa.webp', 'order-header-emzd.webp', 'order-header-dmd.webp', 'order-header-cpco.webp'],
+        'aqua': ['order-header-sdis.webp', 'order-header-samu.webp', 'order-header-hopital.webp', 'order-header-ars.webp',
+                 'order-header-prefet.webp', 'order-header-interieur.webp', 'order-header-coz.webp', 'order-header-cpco.webp']}),
+    'Tampons d’émetteur par famille (Mes missions, signature)': (True, {
+        'cabinet': ['order-stamp-emg.webp'], 'field': ['order-stamp-ema.webp'], 'aqua': None,
+        'flightlog': ['order-stamp-snpc.webp', 'order-stamp-marignane.webp', 'order-stamp-cev.webp', 'order-stamp-tam.webp',
+                      'order-stamp-helico.webp', 'order-stamp-sna.webp', 'order-stamp-alat.webp', 'order-stamp-aeronavale.webp']}),
     'Pli scellé de l’exercice (Mes missions)': (True, {
         'cabinet': ['pli-sealed.webp'], 'flightlog': ['pli-sealed.webp'], 'field': ['pli-sealed.webp'], 'aqua': ['pli-sealed.webp']}),
 }

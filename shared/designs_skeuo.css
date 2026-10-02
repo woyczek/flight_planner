@@ -164,7 +164,7 @@ html[data-design-base="cabinet"] {
   --sk-btn-bg: linear-gradient(color-mix(in srgb, var(--cab-bar) 45%, transparent), color-mix(in srgb, var(--cab-bar) 45%, transparent)), #0f2140 url("textures/leather-navy.webp?v=1bacc4e6") center/200px;
   --sk-btn-shadow: 0 0 0 2px var(--cab-brass), 0 0 0 3px #5a4012, inset 0 1px 0 rgba(255, 255, 255, .22), inset 0 -6px 12px rgba(0, 0, 0, .4), 0 4px 6px rgba(0, 0, 0, .4);
   --sk-btn-hover: brightness(1.12);
-  --sk-btn-disabled: grayscale(.6) opacity(.6);
+  --sk-btn-disabled: grayscale(1) opacity(.5); /* bouton désactivé nettement grisé, même sur le bleu marine et le bois */
   --sk-lbtn-weight: 700;
   --sk-lbtn-border: 0;
   --sk-lbtn-radius: 6px;
@@ -2462,7 +2462,7 @@ html[data-design="flightlog"][data-tone="dark"] .repo-has-bg:has(>.repo-deco-pan
 /* ================================================================================================ GALONS
    Métal des finitions, comme les galons d'un uniforme : argent sur les pages ordinaires, or sur les pages du Centre
    (thème cpco). Jetons communs ; chaque design les pose sur ses finitions (filet du bandeau, barrette des titres de
-   bloc, frise du pied de page, filet des en-têtes de tableau). Les icônes du Centre gardent leur signe propre (bulle
+   bloc, frise du pied de page, filet des en-têtes de tableau ; rien sous le bandeau). Les icônes du Centre gardent leur signe propre (bulle
    sombre, glyphe or), où qu'elles soient. */
 html[data-skeuo] {
   --galon: #9ea8b2;
@@ -2472,12 +2472,9 @@ html[data-skeuo][data-app-theme="cpco"] {
   --galon: #c49a22;
   --galon-grad: linear-gradient(90deg, #7d5f10, #f4dc84 28%, #b78f1d 52%, #fff2bd 74%, #8a6a12)
 }
-/* finitions communes : filet sous le bandeau, cadre du pied de page, filet des en-têtes de tableau ; titres de bloc :
-   liseré des plaques (designs à cadre), barrette sous le titre (Aqua, sans plaque) */
-html[data-skeuo] .repo-header:not(#imp) {
-  border-bottom: 3px solid;
-  border-image: var(--galon-grad) 1
-}
+/* finitions communes : cadre du pied de page, filet des en-têtes de tableau ; titres de bloc : liseré des plaques
+   (designs à cadre), barrette sous le titre (Aqua, sans plaque). Pas de galon sous le bandeau (souhait : bandeau du
+   design seul) */
 html[data-skeuo] .repo-footer:not(#imp) {
   border: 2px solid;
   border-image: var(--galon-grad) 1
