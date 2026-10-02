@@ -1179,7 +1179,7 @@
         ledger.replace(edit.index, mission);
         edit.missionId = mission.metadata.missionId;
       } else {
-        if (ledger.count(mission.metadata.missionId) && !confirm(t('duplicate'))) {
+        if (ledger.count(mission.metadata.missionId) && !await window.AppFramework.ask(t('duplicate'))) {
           form.querySelector('[data-path="metadata.missionId"]')?.focus();
           return;
         }
@@ -1235,11 +1235,11 @@
     $a('send').onclick = async () => {
       const config = sendConfig();
       if (!config.url) {
-        if (confirm(inLanguage(UI.sendSetupNow))) window.open(settingsUrl('send'), '_blank');
+        if (await window.AppFramework.ask(inLanguage(UI.sendSetupNow))) window.open(settingsUrl('send'), '_blank');
         else status.textContent = inLanguage(UI.sendNotConfigured);
         return;
       }
-      if ((!edit || dirty) && !confirm(inLanguage(UI.sendUnsaved))) return;
+      if ((!edit || dirty) && !await window.AppFramework.ask(inLanguage(UI.sendUnsaved))) return;
       M.upperText(mission);
       renderReport();
       const shown = isPublic() ? M.redact(mission, family) : mission,
@@ -1316,7 +1316,7 @@
     window.addEventListener('repository-language-change', () => setTimeout(renderReport));
     window.addEventListener('repository-design-change', () => setTimeout(renderReport)); // palette, style des graphiques
     $a('delete').onclick = async () => {
-      if (!edit || !confirm(t('confirmDelete'))) return;
+      if (!edit || !await window.AppFramework.ask(t('confirmDelete'))) return;
       const current = ledger.missions[edit.index];
       if (!current || normId(current.metadata?.missionId) !== normId(edit.missionId)) {
         say('editGone');
@@ -1328,8 +1328,8 @@
       dirty = false;
       location.href = family.pages.reporting || location.pathname;
     };
-    $a('new').onclick = () => {
-      if (dirty && !confirm(t('confirmNew'))) return;
+    $a('new').onclick = async () => {
+      if (dirty && !await window.AppFramework.ask(t('confirmNew'))) return;
       localStorage.removeItem(draftKey);
       edit = null;
       history.replaceState(null, '', location.pathname);
@@ -1355,10 +1355,10 @@
       const file = picker.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = () => {
+      reader.onload = async () => {
         try {
           const imported = M.parse(reader.result, family.id);
-          if (imported.family && imported.family !== family.id && !confirm(t('otherFamily'))) return;
+          if (imported.family && imported.family !== family.id && !await window.AppFramework.ask(t('otherFamily'))) return;
           mission = imported;
           edit = null;
           history.replaceState(null, '', location.pathname);

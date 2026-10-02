@@ -114,10 +114,10 @@
     <div class="pl-row"><button type="button" class="pl-danger" id="plClean">Nettoyer et recommencer…</button></div>
   </section>
 </main>
-<script src="../../shared/kit.js?v=5ed81dcf"></script>
-<script src="../../shared/repository_nav.js?v=1ca2cafe"></script>
+<script src="../../shared/kit.js?v=d0c3ca5f"></script>
+<script src="../../shared/repository_nav.js?v=a5ef0693"></script>
 <script src="../../shared/content_i18n.js?v=2d61c23a"></script><script src="premier_lancement_i18n.js?v=c7b76b9d"></script>
-<script src="../../shared/app_framework.js?v=f587f576"></script>
+<script src="../../shared/app_framework.js?v=608608cc"></script>
 <script>
 (() => {
   'use strict';
@@ -234,7 +234,7 @@
 
   // recommencer : réglages de ce navigateur effacés (fichiers sur le disque intacts), page rechargée
   on('click', 'plClean', async () => {
-    if (!confirm('Nettoyer les réglages du premier lancement dans ce navigateur (dossiers mémorisés, classeur ODV gardé, identifiants DEFA, profil) ? Les fichiers sur le disque ne sont pas touchés.')) return;
+    if (!await window.AppFramework.ask('Nettoyer les réglages du premier lancement dans ce navigateur (dossiers mémorisés, classeur ODV gardé, identifiants DEFA, profil) ? Les fichiers sur le disque ne sont pas touchés.')) return;
     const FA = window.FileAccess;
     if (FA) for (const key of [...Object.keys(FA.FOLDERS), '__odvFile']) await FA.set(key, null);
     localStorage.removeItem(DONE);

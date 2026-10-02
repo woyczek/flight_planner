@@ -7,8 +7,7 @@
   const C = window.OdvCore;
   const $ = id => document.getElementById(id);
   const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
-  /** Phrase [fr, en, de, es] dans la langue de la page, valeurs {clé} insérées (déjà échappées par l'appelant). */
-  const L = (row, vals = {}) => window.RepositoryKit.t(row).replace(/\{(\w+)\}/g, (_, k) => vals[k] ?? '');
+  const L = window.RepositoryKit.tf; // phrase traduite, valeurs {clé} insérées (shared/kit.js)
   const notify = (msg, kind) => window.AppFramework?.notify ? window.AppFramework.notify(msg, kind) : console.warn(msg);
   const KEY = 'odvPlanning:v1';
   const SHORT = ['M', 'A', 'S'];
@@ -1197,7 +1196,7 @@
       }
       dlg.querySelector('[data-status]').innerHTML = status; // compte rendu du dernier enregistrement, gardé au redessin
       dlg.querySelector('[data-fam]').onchange = async e => {
-        if (dirty() && !confirm(L(['Changer de famille abandonne les affectations en attente. Continuer ?', 'Changing family discards the pending assignments. Continue?', 'Ein Familienwechsel verwirft die ausstehenden Zuweisungen. Fortfahren?', 'Cambiar de familia descarta las asignaciones pendientes. ¿Continuar?']))) return render();
+        if (dirty() && !await window.AppFramework.ask(L(['Changer de famille abandonne les affectations en attente. Continuer ?', 'Changing family discards the pending assignments. Continue?', 'Ein Familienwechsel verwirft die ausstehenden Zuweisungen. Fortfahren?', 'Cambiar de familia descarta las asignaciones pendientes. ¿Continuar?']))) return render();
         famSel = e.target.value;
         await build();
         render();

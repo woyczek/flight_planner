@@ -1651,7 +1651,7 @@ html[data-skeuo] dialog.repo-ap-dialog .repo-ap-head:not(#imp) {
 }
 /* fenêtres d'affectation (assign_dialog.js : texte posé à même la fenêtre, sans blocs) : fond d'un bloc du design
    (parchemin, plaque…), pas celui de la page, pour que l'encre reste lisible */
-html[data-skeuo] dialog.repo-ap-dialog.ad-dialog {
+html[data-skeuo] :is(dialog.repo-ap-dialog.ad-dialog, dialog.repo-ask) {
   background: var(--sk-block-bg, var(--sk-dialog-bg))
 }
 /* ================================================================================================ EN-TÊTE DE BLOC ÉTROIT

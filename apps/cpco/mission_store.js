@@ -827,7 +827,7 @@
           const d = go(i, me);
           if (d) apply(d);
         } catch (e) {
-          alert(e.message);
+          window.AppFramework.notify(e.message, 'err');
         }
         render();
       };

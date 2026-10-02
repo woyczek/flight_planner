@@ -312,7 +312,7 @@
   // Designs à matières (Cabinet, Durci, Aqua : textures, plaques, vis) : feuille propre (designs.list[id].css),
   // chargée seulement quand l'un d'eux est choisi, avec sa propre version (empreinte de son contenu, table FILE_V
   // écrite par tools/bump_versions.py).
-  const FILE_V = {"designs_skeuo.css": "2393be45"};
+  const FILE_V = {"designs_skeuo.css": "e22cf9ac"};
   const designCss = id => {
     const f = designs[id]?.css;
     if (!f || document.querySelector(`link[data-design-css="${f}"]`)) return;
@@ -914,7 +914,7 @@
     profile.src = new URL("pilot_profile.js?v=f1357c65", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=356d0486", script.src).href;
+    files.src = new URL("file_access.js?v=dbb9039b", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
     for (const f of ["icons/repository_icons.js?v=58f492d6", "block_icons.js?v=28956286", "side_nav.js?v=355697e6"]) {

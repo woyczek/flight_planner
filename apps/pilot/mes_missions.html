@@ -308,8 +308,8 @@
   <p id="pmSimsMsg" class="small">Enregistré dans ce navigateur, et avec vos disponibilités (« Enregistrer dans le dossier des données »).</p>
 </section>
 </main>
-<script src="../../shared/kit.js?v=5ed81dcf"></script>
-<script src="../../shared/repository_nav.js?v=1ca2cafe"></script>
+<script src="../../shared/kit.js?v=d0c3ca5f"></script>
+<script src="../../shared/repository_nav.js?v=a5ef0693"></script>
 <script src="mes_missions_i18n.js?v=b0ab8b58" defer></script>
 <script src="../../shared/content_i18n.js?v=2d61c23a"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
@@ -351,8 +351,7 @@
   weekBars();
 
   /** Date et heure UTC lisibles : « sam. 04/10 12:40Z ». */
-  /** Phrase [fr, en, de, es] dans la langue de la page, valeurs {clé} insérées (déjà échappées par l'appelant). */
-  const tv = (row, vals = {}) => window.RepositoryKit.t(row).replace(/\{(\w+)\}/g, (_, k) => vals[k] ?? '');
+  const tv = window.RepositoryKit.tf; // phrase traduite, valeurs {clé} insérées (shared/kit.js)
   const fmt = ms => ms ? new Date(ms).toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }).replace(',', '') + 'Z' : '—';
   const hhmm = ms => ms ? new Date(ms).toISOString().slice(11, 16) + 'Z' : '—';
 
@@ -1097,5 +1096,5 @@
   keepAll().then(load).then(gridLoad).then(typesLoad).then(simsLoad);
 })();
 </script>
-<script src="../../shared/app_framework.js?v=f587f576"></script>
+<script src="../../shared/app_framework.js?v=608608cc"></script>
 </body></html>

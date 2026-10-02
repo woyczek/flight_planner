@@ -20,8 +20,7 @@
   /** Indicatif suivant d'une patrouille : MERCURE31 → MERCURE32. */
   const nextCallsign = (cs, n) => String(cs || '').replace(/(\d+)(?!.*\d)/, d => String(+d + n).padStart(d.length, '0'));
   const chip = (text, kind = '') => `<span class="ad-chip ${kind}">${text}</span>`;
-  /** Phrase [fr, en, de, es] dans la langue de la page, valeurs {clé} insérées (déjà échappées par l'appelant). */
-  const L = (row, vals = {}) => K.t(row).replace(/\{(\w+)\}/g, (_, k) => vals[k] ?? '');
+  const L = K.tf; // phrase traduite, valeurs {clé} insérées (shared/kit.js)
 
   const css = () => {
     if (!document.getElementById('adCss')) document.head.insertAdjacentHTML('beforeend', `<style id="adCss">

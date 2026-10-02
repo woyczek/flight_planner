@@ -4,12 +4,12 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CPCO — Studio cartographique</title>
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=9fd5d2aa">
-<script src="../../config/repository_tree?v=3184ea0e"></script><script src="../../shared/kit.js?v=5ed81dcf"></script>
+<script src="../../config/repository_tree?v=3184ea0e"></script><script src="../../shared/kit.js?v=d0c3ca5f"></script>
 <style data-layer="lib">@import url("../../shared/carto/maplibre-gl.css") layer(lib);</style>
 <script src="../../shared/carto/maplibre-gl.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script src="mission_store.js?v=9ea69da6"></script>
-<script src="../../shared/carto/aero_symbols.js?v=8393fb57"></script><script src="../../shared/carto/vertical_profile.js?v=75163ccf"></script><script src="../../shared/carto/vprof_editor.js?v=e34b66fc"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/flight_performance_model.js?v=9f9c9116"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=ec32b1f9"></script><script src="../../shared/mission_estimate.js?v=fe2b9cad"></script><script src="../../shared/mission_exercise.js?v=d66c8758"></script><script src="../../shared/mission_registry.js?v=dea5bba7"></script>
+<script src="mission_store.js?v=bc34f56d"></script>
+<script src="../../shared/carto/aero_symbols.js?v=8393fb57"></script><script src="../../shared/carto/vertical_profile.js?v=75163ccf"></script><script src="../../shared/carto/vprof_editor.js?v=e34b66fc"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/flight_performance_model.js?v=9f9c9116"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=ec32b1f9"></script><script src="../../shared/mission_estimate.js?v=fe2b9cad"></script><script src="../../shared/mission_exercise.js?v=d66c8758"></script><script src="../../shared/mission_registry.js?v=08bed13b"></script>
 <script src="../../shared/sia_base.js?v=16b7b107"></script><script src="../../shared/aar_tracks.js?v=f4061047"></script><script src="../../shared/airac.js?v=62723a04"></script><script src="../../shared/sticky_frame.js?v=90db4df1"></script>
 <style data-layer="app">
 @layer app {
@@ -5355,9 +5355,9 @@ function viewOp(op) {
   $('refreshPreview').click()
 }
 
-function deleteMap(i) {
+async function deleteMap(i) {
   const m = mission?.maps?.[i];
-  if (!m || !confirm(`Supprimer la carte « ${m.file} » de la mission ?`)) return;
+  if (!m || !await window.AppFramework.ask(`Supprimer la carte « ${m.file} » de la mission ?`)) return;
   try {
     editDoc(y => {
       y.maps.splice(m._src, 1)
@@ -5888,14 +5888,14 @@ $('addProfile').onclick = () => {
   saveProfiles();
   $('profileName').select()
 };
-$('deleteProfile').onclick = () => {
+$('deleteProfile').onclick = async () => {
   const p = activeProfile();
   if (displayProfiles.length < 2) {
-    alert('Il faut garder au moins un profil.');
+    window.AppFramework.notify('Il faut garder au moins un profil.', 'warn');
     return
   }
   const used = (mission?.maps || []).filter(m => m._profileId === p.id).map(m => m.file);
-  if (!confirm(`Supprimer le profil « ${p.name} » ?${used.length?`\nCartes qui l’utilisent (profil remplacé par « ${displayProfiles.find(x=>x.id!==p.id).name} ») : ${used.join(', ')}`:''}`)) return;
+  if (!await window.AppFramework.ask(`Supprimer le profil « ${p.name} » ?${used.length?`\nCartes qui l’utilisent (profil remplacé par « ${displayProfiles.find(x=>x.id!==p.id).name} ») : ${used.join(', ')}`:''}`)) return;
   displayProfiles = displayProfiles.filter(x => x.id !== p.id);
   $('activeProfile').value = displayProfiles[0].id;
   localStorage.setItem('siaDisplayProfiles', JSON.stringify(displayProfiles));
@@ -5966,8 +5966,8 @@ $('zoneMode').onclick = () => {
   zoneModeValue = zoneModeValue === 'black' ? 'white' : 'black';
   zoneCommit()
 };
-$('zoneClear').onclick = () => {
-  if (zoneItems.length && confirm(`Retirer les ${zoneItems.length} zone(s) de la liste ?`)) {
+$('zoneClear').onclick = async () => {
+  if (zoneItems.length && await window.AppFramework.ask(`Retirer les ${zoneItems.length} zone(s) de la liste ?`)) {
     zoneItems = [];
     zoneCommit()
   }
@@ -6029,10 +6029,10 @@ $('aliasList').addEventListener('change', e => {
   renderAliases();
   zoneCommit()
 });
-$('aliasList').addEventListener('click', e => {
+$('aliasList').addEventListener('click', async e => {
   if (!e.target.matches('[data-alias-delete]')) return;
   const k = e.target.closest('.aliasCard').dataset.alias;
-  if (!confirm(`Supprimer l’alias « ${k} » ?`)) return;
+  if (!await window.AppFramework.ask(`Supprimer l’alias « ${k} » ?`)) return;
   delete zoneAliases[k];
   saveAliases();
   renderAliases();
@@ -6701,7 +6701,7 @@ applyOutputPrefs();;
   }
 })();
 </script>
-<script src="../../shared/repository_nav.js?v=1ca2cafe"></script>
-<script src="../../shared/app_framework.js?v=f587f576"></script>
+<script src="../../shared/repository_nav.js?v=a5ef0693"></script>
+<script src="../../shared/app_framework.js?v=608608cc"></script>
 <script src="../../shared/content_i18n.js?v=2d61c23a"></script><script src="sia_i18n.js?v=552c5671"></script>
 </body></html>

@@ -1253,7 +1253,6 @@
     none: ['partielle : cartes non générées (régénérables)', 'partial: maps not generated (can be regenerated)', 'ohne Karten', 'sin mapas']
   };
   // ---- fichiers de la mission : YAML, Markdown (lisible), cartes, versions, textes reçus ; PDF à la demande (générateur)
-  let viewer = null;
   /** Styles de la visionneuse et des vignettes de cartes, injectés une fois (dès l'affichage des fichiers). */
   /** Vignette d'une image (320 px de large, JPEG) ; l'image elle-même si le navigateur ne sait pas la réduire. */
   async function thumbnail(file) {
@@ -1277,22 +1276,15 @@
     if (document.getElementById('rgViewerCss')) return;
     const css = document.createElement('style');
     css.id = 'rgViewerCss';
-    css.textContent = '.rg-viewer{width:min(96vw,1100px);max-height:90vh;padding:0;border:0;border-radius:10px}.rg-viewer::backdrop{background:rgba(0,0,0,.55)}.rg-viewer-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #ccd;position:sticky;top:0;background:inherit}.rg-viewer-body{padding:12px 16px;overflow:auto;max-height:80vh}.rg-viewer-body pre{white-space:pre-wrap;font:12px ui-monospace,monospace}.rg-viewer-body table{border-collapse:collapse}.rg-viewer-body td,.rg-viewer-body th{border:1px solid #ccd;padding:2px 6px}.rg-viewer-body img{max-width:100%}.rg-thumbs{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}.rg-thumbs figure{margin:0;width:160px}.rg-thumbs img{width:160px;height:100px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid #ccd}.rg-thumbs figcaption{font-size:11px;word-break:break-all}.rg-thumbs .rg-surplus img{opacity:.55;outline:2px dashed #c0392b;outline-offset:-2px}.rg-thumbs figure{position:relative}.rg-thumbs .rg-del{position:absolute;top:4px;right:4px;border:0;background:#c0392b;color:#fff;border-radius:50%;width:22px;height:22px;line-height:20px;padding:0;cursor:pointer;font-size:15px;box-shadow:0 1px 4px #0006;opacity:.85}.rg-thumbs .rg-del:hover{opacity:1}';
+    css.textContent = '.rg-thumbs{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}.rg-thumbs figure{margin:0;width:160px}.rg-thumbs img{width:160px;height:100px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid #ccd}.rg-thumbs figcaption{font-size:11px;word-break:break-all}.rg-thumbs .rg-surplus img{opacity:.55;outline:2px dashed #c0392b;outline-offset:-2px}.rg-thumbs figure{position:relative}.rg-thumbs .rg-del{position:absolute;top:4px;right:4px;border:0;background:#c0392b;color:#fff;border-radius:50%;width:22px;height:22px;line-height:20px;padding:0;cursor:pointer;font-size:15px;box-shadow:0 1px 4px #0006;opacity:.85}.rg-thumbs .rg-del:hover{opacity:1}';
     document.head.append(css);
   }
 
-  function view(title, html) {
-    viewerCss();
-    if (!viewer) {
-      viewer = document.createElement('dialog');
-      viewer.className = 'rg-viewer';
-      viewer.innerHTML = '<form method="dialog" class="rg-viewer-head"><b></b><button type="submit">×</button></form><div class="rg-viewer-body"></div>';
-      document.body.append(viewer);
-    }
-    viewer.querySelector('b').textContent = title;
-    viewer.querySelector('.rg-viewer-body').innerHTML = html;
-    viewer.showModal();
-  }
+  /** Fichier de la mission à l'écran : visionneuse commune (kit.js) ; une carte s'ouvre en image (taille réelle au clic). */
+  const view = (title, html) => {
+    const img = /^<img src="([^"]+)"[^>]*>$/.exec(html);
+    return img ? window.RepositoryKit.viewImage(img[1], title) : window.RepositoryKit.viewHtml(title, html);
+  };
   /** Markdown → HTML (titres, paragraphes, listes, tableaux, gras, italique, code). */
   function mdHtml(md) {
     const inline = x => esc(x).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/(^|\W)\*(.+?)\*(?=\W|$)/g, '$1<i>$2</i>').replace(/`(.+?)`/g, '<code>$1</code>');

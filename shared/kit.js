@@ -132,6 +132,10 @@
     return f ? f(s, lang()) : s;
   };
 
+  /** Phrase [fr, en, de, es] dans la langue courante, valeurs {clé} insérées (déjà échappées par l'appelant s'il
+   *  s'agit de HTML) : tf(['{n} pistes', '{n} tracks', …], { n: 2 }). */
+  const tf = (row, vals = {}, opts) => t(row, opts).replace(/\{(\w+)\}/g, (_, k) => vals[k] ?? '');
+
   // ------------------------------------------------------------------ stockage local (navigation privée, stockage bloqué : sans erreur)
   const store = {
     /** Valeur texte de la clé, sinon défaut. */
@@ -257,35 +261,45 @@
     const a = Math.abs(m), h = Math.floor(a / 60), r = a % 60;
     return m ? `${ref}${m > 0 ? '+' : '−'}${h ? `${h}h` : ''}${r ? `${r}mn` : ''}` : ref;
   };
-  /** Visionneuse d'image commune : fenêtre modale, titre, croix (et Échap, clic hors de l'image) pour fermer ; clic sur
-   *  l'image : ajustée à l'écran ↔ taille réelle (défilement). */
-  function viewImage(src, title = '') {
+  /** Visionneuse commune (fenêtre modale, titre, croix ; Échap ou clic sur le fond pour fermer). viewImage : image, clic
+   *  = ajustée à l'écran ↔ taille réelle ; viewHtml : document (texte, YAML, Markdown rendu, tableaux). */
+  function viewer() {
     let d = document.getElementById('repoImageViewer');
-    if (!d) {
-      document.head.insertAdjacentHTML('beforeend', '<style id="repoImageViewerCss">#repoImageViewer{width:min(96vw,1400px);max-height:94vh;padding:0;border:0;border-radius:calc(10px * var(--repo-round, 1));background:#111;color:#eee;overflow:hidden}#repoImageViewer::backdrop{background:rgba(0,0,0,.7)}#repoImageViewer header{display:flex;align-items:center;gap:10px;padding:6px 10px;background:#1c1c1c}#repoImageViewer header b{flex:1;font:600 13px system-ui,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#repoImageViewer header button{all:unset;cursor:pointer;font:600 22px/1 system-ui,sans-serif;padding:2px 8px;color:#eee}#repoImageViewer header button:hover{color:#fff;background:#c0392b}#repoImageViewer .rv-body{overflow:auto;max-height:calc(94vh - 40px);display:grid;place-items:center}#repoImageViewer img{display:block;max-width:100%;max-height:calc(94vh - 40px);cursor:zoom-in}#repoImageViewer.rv-full img{max-width:none;max-height:none;cursor:zoom-out}</style>');
-      d = document.createElement('dialog');
-      d.id = 'repoImageViewer';
-      d.innerHTML = '<header><b></b><button type="button" class="repo-plain" aria-label="Fermer" title="Fermer">×</button></header><div class="rv-body"><img alt=""></div>';
-      d.querySelector('button').onclick = () => d.close();
-      d.querySelector('img').onclick = () => d.classList.toggle('rv-full');
-      d.addEventListener('click', e => { if (e.target === d) d.close(); }); // clic sur le fond
-      document.body.append(d);
-    }
-    d.classList.remove('rv-full');
-    d.querySelector('b').textContent = title;
-    d.querySelector('img').src = src;
-    d.querySelector('img').alt = title;
-    d.showModal();
+    if (d) return d;
+    document.head.insertAdjacentHTML('beforeend', '<style id="repoImageViewerCss">#repoImageViewer{width:min(96vw,1400px);max-height:94vh;padding:0;border:0;border-radius:calc(10px * var(--repo-round, 1));background:#111;color:#eee;overflow:hidden}#repoImageViewer::backdrop{background:rgba(0,0,0,.7)}#repoImageViewer header{display:flex;align-items:center;gap:10px;padding:6px 10px;background:#1c1c1c}#repoImageViewer header b{flex:1;font:600 13px system-ui,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#repoImageViewer header button{all:unset;cursor:pointer;font:600 22px/1 system-ui,sans-serif;padding:2px 8px;color:#eee}#repoImageViewer header button:hover{color:#fff;background:#c0392b}#repoImageViewer .rv-body{overflow:auto;max-height:calc(94vh - 40px);display:grid;place-items:center}#repoImageViewer .rv-body>img{display:block;max-width:100%;max-height:calc(94vh - 40px);cursor:zoom-in}#repoImageViewer.rv-full .rv-body>img{max-width:none;max-height:none;cursor:zoom-out}#repoImageViewer.rv-doc{width:min(96vw,1100px);background:var(--repo-page, #f4f6f8);color:var(--repo-ink, #1d2633)}#repoImageViewer.rv-doc header{background:color-mix(in srgb,currentColor 8%,transparent)}#repoImageViewer.rv-doc header button{color:inherit}#repoImageViewer.rv-doc .rv-body{display:block;padding:12px 16px}#repoImageViewer.rv-doc pre{white-space:pre-wrap;font:12px ui-monospace,monospace}#repoImageViewer.rv-doc table{border-collapse:collapse}#repoImageViewer.rv-doc :is(td,th){border:1px solid color-mix(in srgb,currentColor 25%,transparent);padding:2px 6px}#repoImageViewer.rv-doc img{max-width:100%}</style>');
+    d = document.createElement('dialog');
+    d.id = 'repoImageViewer';
+    d.innerHTML = '<header><b></b><button type="button" class="repo-plain" aria-label="Fermer" title="Fermer">×</button></header><div class="rv-body"></div>';
+    d.querySelector('button').onclick = () => d.close();
+    d.addEventListener('click', e => {
+      if (e.target === d) d.close(); // clic sur le fond
+      else if (e.target.matches('.rv-body>img')) d.classList.toggle('rv-full');
+    });
+    document.body.append(d);
+    return d;
   }
+  function show(title, html, doc) {
+    const d = viewer();
+    d.classList.remove('rv-full');
+    d.classList.toggle('rv-doc', doc);
+    d.querySelector('b').textContent = title;
+    d.querySelector('.rv-body').innerHTML = html;
+    d.showModal();
+    return d;
+  }
+  const viewImage = (src, title = '') => show(title, `<img src="${esc(src)}" alt="${esc(title)}">`, false);
+  const viewHtml = (title, html) => show(title, html, true);
   window.RepositoryKit = {
     LANGS,
     viewImage,
+    viewHtml,
     hOffset,
     hText,
     esc,
     lang,
     langIndex,
     t,
+    tf,
     store,
     noFolderAccess,
     color: {

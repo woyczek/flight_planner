@@ -903,7 +903,7 @@
     an.textContent = t(['Analyser', 'Analyse', 'Analysieren', 'Analizar']);
     an.onclick = async () => {
       await scanSiaFolder(true);
-      if (!siaFolderState) alert(t(['Dossier SIA XML non choisi ou non autorisé.', 'SIA XML folder not chosen or not authorised.']));
+      if (!siaFolderState) window.AppFramework.notify(t(['Dossier SIA XML non choisi ou non autorisé.', 'SIA XML folder not chosen or not authorised.']), 'warn');
       renderSia();
       renderVersions();
       renderDeps();
@@ -1042,7 +1042,7 @@
     const f = siaFolderState;
     if (!f?.old.length) return;
     const names = f.old.flatMap(o => o.items.map(i => i.name));
-    if (!confirm(t(['Déplacer ces fichiers dans _archives/<cycle>/ ?\n\n{l}', 'Move these files into _archives/<cycle>/?\n\n{l}'], {
+    if (!await window.AppFramework.ask(t(['Déplacer ces fichiers dans _archives/<cycle>/ ?\n\n{l}', 'Move these files into _archives/<cycle>/?\n\n{l}'], {
         l: names.join('\n')
       }))) return;
     try {
@@ -1475,7 +1475,7 @@
     try {
       new RegExp(pattern);
     } catch {
-      alert(t(['Expression invalide', 'Invalid expression']));
+      window.AppFramework.notify(t(['Expression invalide', 'Invalid expression']), 'warn');
       return;
     }
     const id = 'x' + Date.now().toString(36),
@@ -1756,7 +1756,7 @@
     const picks = [...document.querySelectorAll('input[data-restore]')].filter(x => x.checked).map(x => p.items[+x.dataset.restore]);
     const withBrowser = document.getElementById('mtRestoreBrowser')?.checked;
     if (!picks.length && !withBrowser) return;
-    if (!confirm(t(['Restaurer {n} fichier(s){b} ? Les fichiers remplacés sont d’abord copiés dans _avant_restauration/ de leur dossier.', 'Restore {n} file(s){b}? Replaced files are first copied into _avant_restauration/ in their folder.'], {
+    if (!await window.AppFramework.ask(t(['Restaurer {n} fichier(s){b} ? Les fichiers remplacés sont d’abord copiés dans _avant_restauration/ de leur dossier.', 'Restore {n} file(s){b}? Replaced files are first copied into _avant_restauration/ in their folder.'], {
         n: picks.length,
         b: withBrowser ? t([' et les données du navigateur', ' and browser data']) : ''
       }))) return;
@@ -2003,12 +2003,12 @@
     };
     host.querySelectorAll('tr[data-cache] button').forEach(btn => btn.onclick = async () => {
       const c = list.find(x => x.id === btn.closest('tr').dataset.cache);
-      if (c.confirm && !window.confirm(t(c.confirm))) return;
+      if (c.confirm && !await window.AppFramework.ask(t(c.confirm))) return;
       btn.disabled = true;
       await done([await c.purge()], c.reload);
     });
     host.querySelector('#mtPurgeAll').onclick = async e => {
-      if (!window.confirm(t(['Purger tous les caches (dont la base SIA, à relire ensuite) et recharger la page ?', 'Purge all caches (including the SIA base, to be read again afterwards) and reload the page?']))) return;
+      if (!await window.AppFramework.ask(t(['Purger tous les caches (dont la base SIA, à relire ensuite) et recharger la page ?', 'Purge all caches (including the SIA base, to be read again afterwards) and reload the page?']))) return;
       e.target.disabled = true;
       const msgs = [];
       for (const c of list) msgs.push(await c.purge());
@@ -2159,7 +2159,7 @@
       if (b) b.onclick = e => busy(e.currentTarget, async () => {
         const list = storageState.rows.flatMap(pick),
           size = list.reduce((a, f) => a + f.size, 0);
-        if (!list.length || !confirm(t(['Supprimer {n} fichier(s) ({s}) : {w} ? Ils se régénèrent depuis le YAML (cartes : studio ; PDF : générateur).', 'Delete {n} file(s) ({s}): {w}? They can be regenerated from the YAML (maps: studio; PDFs: generator).'], {
+        if (!list.length || !await window.AppFramework.ask(t(['Supprimer {n} fichier(s) ({s}) : {w} ? Ils se régénèrent depuis le YAML (cartes : studio ; PDF : générateur).', 'Delete {n} file(s) ({s}): {w}? They can be regenerated from the YAML (maps: studio; PDFs: generator).'], {
             n: list.length,
             s: B(size),
             w: what

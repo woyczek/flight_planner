@@ -216,7 +216,7 @@
     });
     if (info.check) {
       const ok = await has(handle, info.check);
-      if (!ok && !confirm(`« ${handle.name} » ${tr(STATE.notExpected).replace('{f}', info.check)}\n${tr(STATE.expected)} : ${tr(info.expect)}`)) throw new Error('Dossier refusé');
+      if (!ok && !await window.AppFramework.ask(`« ${handle.name} » ${tr(STATE.notExpected).replace('{f}', info.check)}\n${tr(STATE.expected)} : ${tr(info.expect)}`)) throw new Error('Dossier refusé');
     }
     await set(key, handle);
     if (key === '__data') await deriveFromData(handle);

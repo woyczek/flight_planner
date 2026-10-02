@@ -1060,13 +1060,13 @@
       status.textContent = `${family.id} : ${added} ${tr(UI.legacyDone)} ${skipped}`;
       render();
     }
-    legacySelect.onchange = () => {
+    legacySelect.onchange = async () => {
       const family = legacyFamilies.find(f => f.id === legacySelect.value);
       legacySelect.value = '';
       if (!family) return;
       const cached = window.MissionReportingConfig?.cached?.(family.legacy.configKey);
       picker.dataset.family = family.id;
-      if (cached?.text && confirm(`${cached.name || family.legacy.configKey} — OK : ${family.id} ; ${tr(UI.legacy)} ?`)) importLegacy(family, cached.text);
+      if (cached?.text && await window.AppFramework.ask(`${cached.name || family.legacy.configKey} — OK : ${family.id} ; ${tr(UI.legacy)} ?`)) importLegacy(family, cached.text);
       else picker.click();
     };
     picker.onchange = async () => {

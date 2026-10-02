@@ -112,7 +112,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     try {
       await (await handle.getDirectoryHandle('config')).getFileHandle('repository_tree');
     } catch {
-      if (!confirm(T('Ce dossier ne contient pas « config/repository_tree » : est-ce bien la racine du dépôt ?', 'This folder has no “config/repository_tree”: is it really the repository root?'))) throw new Error(T('Dossier refusé', 'Folder rejected'));
+      if (!await window.AppFramework.ask(T('Ce dossier ne contient pas « config/repository_tree » : est-ce bien la racine du dépôt ?', 'This folder has no “config/repository_tree”: is it really the repository root?'))) throw new Error(T('Dossier refusé', 'Folder rejected'));
     }
     await idbSet('folder:__repo', handle);
     return handle;
@@ -865,8 +865,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     root.innerHTML = `<aside class="da-nav">${groups.map(g => `<h3>${esc(g)}</h3>${DATASETS.filter(d => d.group === g).map(d => `<button type="button" data-set="${d.id}">${esc(d.title)}</button>`).join('')}`).join('')}</aside>
       <section class="da-main" data-icon="database"><h2></h2><p class="small da-intro"></p><div class="row da-actions"></div><p class="small da-status"></p><div class="da-body"></div><details class="da-howto"><summary>${esc(T('Mode opératoire', 'Procedure'))}</summary><div></div></details></section>`;
     // Dossiers mémorisés et sources externes : réglés dans Paramètres › Maintenance (bloc « Sources et dossiers »).
-    root.querySelectorAll('[data-set]').forEach(b => b.onclick = () => {
-      if (dirty && !confirm(T('Modifications non enregistrées : changer de base quand même ?', 'Unsaved changes: switch anyway?'))) return;
+    root.querySelectorAll('[data-set]').forEach(b => b.onclick = async () => {
+      if (dirty && !await window.AppFramework.ask(T('Modifications non enregistrées : changer de base quand même ?', 'Unsaved changes: switch anyway?'))) return;
       dirty = false;
       current.id = b.dataset.set;
       history.replaceState(null, '', `?base=${current.id}`);
@@ -970,8 +970,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
             dirty = false;
             show();
           }],
-          [T('Revenir au fichier du dépôt', 'Back to repository file'), () => {
-            if (!confirm(T('Supprimer les modifications locales de cette base ?', 'Delete local changes of this base?'))) return;
+          [T('Revenir au fichier du dépôt', 'Back to repository file'), async () => {
+            if (!await window.AppFramework.ask(T('Supprimer les modifications locales de cette base ?', 'Delete local changes of this base?'))) return;
             localStorage.removeItem(set.overrideKey);
             loadWork();
             dirty = false;
@@ -1135,8 +1135,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           importedAt: data.importedAt,
           records: list
         }, null, 1), 'application/json')],
-        [T('Effacer la base DEFA de ce navigateur', 'Clear the DEFA base from this browser'), () => {
-          if (!confirm(T('Effacer le journal des vols DEFA de ce navigateur ? (rechargeable depuis le fichier)', 'Clear the DEFA flight log from this browser? (reloadable from the file)'))) return;
+        [T('Effacer la base DEFA de ce navigateur', 'Clear the DEFA base from this browser'), async () => {
+          if (!await window.AppFramework.ask(T('Effacer le journal des vols DEFA de ce navigateur ? (rechargeable depuis le fichier)', 'Clear the DEFA flight log from this browser? (reloadable from the file)'))) return;
           D.clear();
           status(T('Base DEFA effacée', 'DEFA base cleared'));
           defaLog(body);
@@ -1309,9 +1309,9 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
             }));
           });
         body.innerHTML = rows.length ? `<table class="da-table"><thead><tr><th>${esc(T('Type', 'Type'))}</th><th>${esc(T('Ancien', 'Old'))}</th><th>${esc(T('Devient', 'Becomes'))}</th><th>${esc(T('Résultat', 'Result'))}</th><th></th></tr></thead><tbody>${rows.map((r, i) => `<tr${r.loop ? ' style="background:#fee2e2"' : ''}><td>${esc(r.kind === 'crew' ? T('Pilote', 'Pilot') : T('Appareil', 'Aircraft'))}</td><td><b>${esc(r.from)}</b></td><td>${esc(r.to)}</td><td>${r.loop ? `⚠ ${esc(T('boucle', 'loop'))}` : esc(r.end)}</td><td><button type="button" class="secondary" data-unmerge="${i}">${esc(T('Supprimer', 'Delete'))}</button></td></tr>`).join('')}</tbody></table>` : `<p class="small">${esc(T('Aucune fusion mémorisée.', 'No stored merge.'))}</p>`;
-        body.querySelectorAll('[data-unmerge]').forEach(b => b.onclick = () => {
+        body.querySelectorAll('[data-unmerge]').forEach(b => b.onclick = async () => {
           const r = rows[+b.dataset.unmerge];
-          if (!confirm(`${T('Supprimer l’équivalence', 'Delete the equivalence')} ${r.from} → ${r.to} ?`)) return;
+          if (!await window.AppFramework.ask(`${T('Supprimer l’équivalence', 'Delete the equivalence')} ${r.from} → ${r.to} ?`)) return;
           G.unmerge(r.kind, r.from);
           status(`${r.from} → ${r.to} : ${T('supprimée', 'deleted')}`);
           draw();

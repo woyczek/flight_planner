@@ -325,6 +325,51 @@
       /* navigateur sans popover : position fixe ordinaire */ }
     return box;
   }
+  /** Confirmation dans la page (remplace window.confirm, bloquée dans certains navigateurs intégrés et hors du design) :
+   *  fenêtre modale au fond d'un bloc du design, message, « Confirmer » / « Annuler » (Échap, clic à côté : annuler).
+   *  Promesse : true si confirmé. Options : ok, cancel (libellés), danger (bouton rouge). */
+  function ask(message, {
+    ok,
+    cancel,
+    danger = false
+  } = {}) {
+    const K = window.RepositoryKit,
+      tt = row => K?.t ? K.t(row) : row[0];
+    if (!document.getElementById("repoAskCss")) document.head.insertAdjacentHTML("beforeend", `<style id="repoAskCss">.repo-ask{max-width:min(520px,92vw);padding:0;border:1px solid color-mix(in srgb,currentColor 25%,transparent);border-radius:calc(10px * var(--repo-round, 1));background:var(--repo-card, #fff);color:var(--sk-ink, var(--repo-ink, #1d2633));box-shadow:0 18px 50px rgba(0,0,0,.45)}.repo-ask::backdrop{background:rgba(10,14,20,.5)}.repo-ask p{margin:0;padding:16px 18px 6px;white-space:pre-line;font:14px/1.45 system-ui,sans-serif}.repo-ask footer{display:flex;justify-content:flex-end;gap:8px;padding:10px 14px 14px}</style>`);
+    const d = document.createElement("dialog"),
+      p = document.createElement("p"),
+      foot = document.createElement("footer"),
+      no = document.createElement("button"),
+      yes = document.createElement("button");
+    d.className = "repo-ask";
+    p.textContent = String(message ?? "");
+    no.type = yes.type = "button";
+    no.className = "ghost";
+    yes.className = danger ? "danger" : "primary";
+    no.textContent = cancel || tt(["Annuler", "Cancel", "Abbrechen", "Cancelar"]);
+    yes.textContent = ok || tt(["Confirmer", "Confirm", "Bestätigen", "Confirmar"]);
+    foot.append(no, yes);
+    d.append(p, foot);
+    document.body.append(d);
+    return new Promise(resolve => {
+      const end = v => {
+        d.close();
+        d.remove();
+        resolve(v);
+      };
+      yes.onclick = () => end(true);
+      no.onclick = () => end(false);
+      d.addEventListener("cancel", e => {
+        e.preventDefault();
+        end(false);
+      });
+      d.addEventListener("click", e => {
+        if (e.target === d) end(false);
+      });
+      d.showModal();
+      yes.focus();
+    });
+  }
   function notify(message, kind = "info", {
     timeout
   } = {}) {
@@ -649,6 +694,7 @@
       return r;
     },
     notify,
+    ask,
     /** Journal des alertes de la page (erreurs, avertissements) : liste, tout acquitter. */
     alerts: {
       list: () => journal.map(e => ({
