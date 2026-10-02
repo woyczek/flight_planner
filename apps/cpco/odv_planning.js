@@ -871,7 +871,8 @@
         const dep = x.dep,
           block = blockOf(x.m);
         const legs = await Promise.all(x.rows.map(async r => {
-          const pl = planeOf(r.registration);
+          const pl = planeOf(r.registration),
+            dep = r.dep || x.dep; // opération : départ de la mission du poste
           // départ sans terrain (mission en mer, sur un objectif) : l'appareil part de sa base, pas de convoyage
           return pl && dep.code && dep.pos && pl.base && !(await atDeparture(pl.base, dep)) ? await M.ferryOf({
             base: pl.base,
@@ -982,22 +983,37 @@
         first = [...new Set(plan.options.flatMap(o => o.missions))],
         rest = entries.filter(m => !first.includes(m) && m.id && m.status !== 'ordered' && !/Z$/.test(m.id) && !m.organisation),
         d = new Map();
+      // opération à plusieurs missions (exercice) : une ligne, une coche, un poste par équipage de chaque mission
+      // (r.mid : sa mission) ; « Enregistrer » écrit chaque mission avec ses pilotes, d'un coup
+      const units = new Map();
       for (const m of [...first, ...rest].slice(0, 40)) {
-        const posts = M.postsOf(m),
-          dep = await M.departureOf(await O.yamlOf(m).catch(() => ({})), m);
+        const op = m.operation?.id, k = op && all.filter(x => x.operation?.id === op && !/Z$/.test(x.id)).length > 1 ? `op:${op}` : m.id;
+        if (!units.has(k)) units.set(k, []);
+        units.get(k).push(m);
+      }
+      for (const [k, ms] of units) {
+        const rows = [], planes = [];
+        for (const m of ms) {
+          const dep = await M.departureOf(await O.yamlOf(m).catch(() => ({})), m);
+          for (const post of M.postsOf(m)) {
+            rows.push({ post, mid: m.id, dep, pilot: '', registration: '', callsign: post.callsign || '', ferryPilot: '' });
+            planes.push(await planeList(post, dep));
+          }
+        }
+        const m = k.startsWith('op:') ? {
+          ...ms[0],
+          id: k.slice(3),
+          title: ms[0].operation?.name || ms[0].title,
+          estimate: { block: Math.max(...ms.map(blockOf)) }
+        } : ms[0];
         d.set(m.id, {
           m,
+          members: k.startsWith('op:') ? ms : null,
           on: false,
-          armable: first.includes(m),
-          dep,
-          planes: await Promise.all(posts.map(p => planeList(p, dep))),
-          rows: posts.map(post => ({
-            post,
-            pilot: '',
-            registration: '',
-            callsign: post.callsign || '',
-            ferryPilot: ''
-          }))
+          armable: ms.some(x => first.includes(x)),
+          dep: rows[0].dep,
+          planes,
+          rows
         });
       }
       ctx = {
@@ -1076,7 +1092,7 @@
           if (q.text) c.push(chip(esc(q.text), q.level === 'mastered' ? 'ok' : q.level === 'owned' || q.level === 'flown' ? 'warn' : 'err'));
         }
         for (const e of errs(r)) c.push(chip(e, 'err'));
-        if (x.on && r.pilot && r.registration && !errs(r).length) c.push(chip(`${esc(r.pilot)} → ${esc(x.m.id)} · ${esc(r.registration)}${r.callsign ? ` · ${esc(r.callsign)}` : ''}`, 'ok'));
+        if (x.on && r.pilot && r.registration && !errs(r).length) c.push(chip(`${esc(r.pilot)} → ${esc(r.mid || x.m.id)} · ${esc(r.registration)}${r.callsign ? ` · ${esc(r.callsign)}` : ''}`, 'ok'));
         return c.join('') || '<small>—</small>';
       };
       const body = [...d.values()].map(x => {
@@ -1084,8 +1100,8 @@
           conf = conflictsOf(m, zones),
           n = x.rows.length;
         return `<tbody class="ad-mx${x.on ? ' on' : ''}" data-m="${esc(m.id)}">${x.rows.map((r, i) => `<tr class="${x.on && r.pilot && r.registration && !errs(r).length ? 'ad-set' : ''}" data-i="${i}">
-          ${i ? '' : `<td rowspan="${n}"><input type="checkbox" data-on${x.on ? ' checked' : ''} aria-label="Affecter ${esc(m.id)}"></td><td rowspan="${n}"><b>${esc(m.id)}</b> ${esc(m.title || '')}${x.armable ? '' : ' <small class="mut">(aucun pilote libre ne déclare l’appareil)</small>'}<br><small>${esc(m.family || m.type || '')} · ${hmOf(m.estimate?.block ?? m.estimate?.flight)} · départ ${esc(x.dep?.name || '?')}</small>${x.timing ? `<br><label class="ad-inline"><small>décollage</small><input type="time" data-f="takeoff" value="${hm(x.timing.takeoff).slice(0, 5)}"${x.on ? '' : ' disabled'} title="Heure UTC ; vide : automatique (début du créneau, décalé si le pilote convoie et n’est pas libre avant)"></label><small>${x.takeoffSet != null ? ' (choisie)' : x.timing.shift ? ` (décalée de ${hmOf(x.timing.shift / 6e4)} : convoyage)` : ''}${x.timing.start < x.timing.takeoff ? ` · convoyage dès <b>${hm(x.timing.start)}</b>` : ''}, fin ${hm(x.timing.end)}${x.timing.slots.length > 1 ? ` · mobilise ${x.timing.slots.map(slotName).join(', ')}` : ''}</small>` : ''}${conf.length ? `<br>${conf.map(c => chip(esc(c.texte), c.grave ? 'err' : 'warn')).join('')}` : ''}<br><button type="button" class="repo-plain ad-link" data-detail>✎ détail</button> · <button type="button" class="repo-plain ad-link" data-wing${x.on ? '' : ' disabled'} title="Patrouille : un équipier de plus (même type d’appareil, indicatif suivant)">+ équipier</button></td>`}
-          <td><b>${esc(r.callsign || r.post?.callsign || `poste ${i + 1}`)}</b><br><small>${esc(r.post?.type || r.post?.label || 'type libre')}${r.post?.service ? ` · ${esc(r.post.service)}` : ''}</small></td>
+          ${i ? '' : `<td rowspan="${n}"><input type="checkbox" data-on${x.on ? ' checked' : ''} aria-label="Affecter ${esc(m.id)}"></td><td rowspan="${n}"><b>${esc(m.id)}</b> ${esc(m.title || '')}${x.members ? `<br><small>opération : ${x.members.map(mm => esc(mm.id)).join(', ')} — un pilote par mission, enregistrées ensemble</small>` : ''}${x.armable ? '' : ' <small class="mut">(aucun pilote libre ne déclare l’appareil)</small>'}<br><small>${esc(m.family || m.type || '')} · ${hmOf(m.estimate?.block ?? m.estimate?.flight)} · départ ${esc(x.dep?.name || '?')}</small>${x.timing ? `<br><label class="ad-inline"><small>décollage</small><input type="time" data-f="takeoff" value="${hm(x.timing.takeoff).slice(0, 5)}"${x.on ? '' : ' disabled'} title="Heure UTC ; vide : automatique (début du créneau, décalé si le pilote convoie et n’est pas libre avant)"></label><small>${x.takeoffSet != null ? ' (choisie)' : x.timing.shift ? ` (décalée de ${hmOf(x.timing.shift / 6e4)} : convoyage)` : ''}${x.timing.start < x.timing.takeoff ? ` · convoyage dès <b>${hm(x.timing.start)}</b>` : ''}, fin ${hm(x.timing.end)}${x.timing.slots.length > 1 ? ` · mobilise ${x.timing.slots.map(slotName).join(', ')}` : ''}</small>` : ''}${conf.length ? `<br>${conf.map(c => chip(esc(c.texte), c.grave ? 'err' : 'warn')).join('')}` : ''}<br>${x.members ? '' : '<button type="button" class="repo-plain ad-link" data-detail>✎ détail</button> · '}<button type="button" class="repo-plain ad-link" data-wing${x.on ? '' : ' disabled'} title="Patrouille : un équipier de plus (même type d’appareil, indicatif suivant)">+ équipier</button></td>`}
+          <td><b>${esc(r.callsign || r.post?.callsign || `poste ${i + 1}`)}</b>${x.members ? ` <small>${esc(r.mid)}</small>` : ''}<br><small>${esc(r.post?.type || r.post?.label || 'type libre')}${r.post?.service ? ` · ${esc(r.post.service)}` : ''}</small></td>
           <td><select data-f="registration"${x.on ? '' : ' disabled'}>${planeOpts(x, i)}</select>${ferryLine(r)}</td>
           <td><select data-f="pilot"${x.on && r.registration ? '' : ' disabled'}>${pilotOpts(x, r)}</select></td>
           <td><input data-f="callsign" value="${esc(r.callsign)}" size="9">${r.wing ? ` <button type="button" class="repo-plain ad-del" data-unwing="${i}" title="Retirer cet équipier">✕</button>` : ''}</td>
@@ -1168,6 +1184,8 @@
           const last = x.rows[x.rows.length - 1];
           x.rows.push({
             post: last.post,
+            mid: last.mid,
+            dep: last.dep,
             pilot: '',
             registration: '',
             callsign: String(last.callsign || '').replace(/(\d+)(?!.*\d)/, d => String(+d + 1).padStart(d.length, '0')),
@@ -1259,15 +1277,18 @@
         const ok = [],
           ko = [];
         msg.textContent = `Enregistrement de ${todo.length} mission(s)…`;
-        for (const x of todo) try {
-          await O.write(x.m, x.rows.filter(r => r.pilot && r.registration).map(r => ({
-            ...r,
-            ferryPilot: r.ferryOpen ? '__open' : r.ferryBy || ''
-          })), x.timing?.takeoff || takeoff, x.dep);
-          ok.push(`${x.m.id} (${x.rows.filter(r => r.pilot && r.registration).map(r => r.pilot).join(', ')})`);
-        } catch (err) {
-          ko.push(`${x.m.id} : ${err.message}`);
-        }
+        for (const x of todo)
+          for (const m of x.members || [x.m]) try {
+            const rows = x.rows.filter(r => r.pilot && r.registration && (!x.members || r.mid === m.id));
+            if (!rows.length) continue;
+            await O.write(m, rows.map(r => ({
+              ...r,
+              ferryPilot: r.ferryOpen ? '__open' : r.ferryBy || ''
+            })), x.timing?.takeoff || takeoff, rows[0].dep || x.dep);
+            ok.push(`${m.id} (${rows.map(r => r.pilot).join(', ')})`);
+          } catch (err) {
+            ko.push(`${m.id} : ${err.message}`);
+          }
         if (ok.length) notify(`Affectations enregistrées : ${ok.join(' ; ')}.`, 'ok');
         for (const e of ko) notify(`Non enregistrée — ${e}`, 'err');
         msg.innerHTML = [ok.length ? `<span class="ok">Enregistrées : ${esc(ok.join(' ; '))}.</span>` : '', ...ko.map(e => `<span class="err">Non enregistrée — ${esc(e)}</span>`)].filter(Boolean).join('<br>');
