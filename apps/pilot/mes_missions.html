@@ -82,7 +82,7 @@
   .pm-page{position:absolute;top:var(--pm-page-t);bottom:var(--pm-page-b);overflow:auto;padding:1.6cqw 2.4cqw 5.2cqw;font:12.5px/1.5 var(--pm-font, "Courier Prime","Courier New",Courier,monospace);color:var(--pm-ink, #2b2112);scrollbar-width:thin}
   .pm-left{left:var(--pm-lpage-l);right:var(--pm-lpage-r)}.pm-right{left:var(--pm-rpage-l);right:var(--pm-rpage-r)}.pm-page{cursor:pointer}
   .pm-page:has(> [data-part="title"]){overflow:hidden} /* page 1 : le tampon déborde de l'étiquette, sans barre de défilement */
-  .pm-page::after{content:attr(data-folio);position:absolute;left:0;right:0;bottom:1.9cqw;text-align:center;font-size:11px;opacity:.55;pointer-events:none}
+  .pm-page::after{content:attr(data-folio);position:absolute;left:0;right:0;bottom:var(--pm-folio-b, 1.9cqw);text-align:center;font-size:11px;opacity:.55;pointer-events:none}
   .pm-page h3{margin:0 0 10px;font-size:17px;letter-spacing:.02em;border-bottom:1px solid rgba(43,33,18,.35);padding-bottom:6px}
   .pm-page h4{margin:12px 0 6px;font-size:13.5px;text-transform:uppercase;letter-spacing:.08em}
   /* titres des feuilles : caractères des pages (machine à écrire, ou ceux du design de la page : Aqua), pas la police
@@ -177,27 +177,24 @@
   html[data-design="flightlog"] .pm-page .pm-maps figure{position:relative;box-shadow:0 2px 5px rgba(0,0,0,.28)}
   html[data-design="flightlog"] .pm-page .pm-maps figure::before{content:"";position:absolute;z-index:1;top:-9px;left:50%;width:44%;aspect-ratio:420/73;transform:translateX(-50%) rotate(-3deg);background:url("../../shared/deco/flightlog/tape-1.webp?v=463c91c8") center/100% 100% no-repeat;opacity:.92;pointer-events:none}
   html[data-design="flightlog"] .pm-page .pm-maps figure:nth-child(even)::before{background-image:url("../../shared/deco/flightlog/tape-2.webp?v=9cba6e50");transform:translateX(-50%) rotate(2.5deg)}
-  /* signet (Cabinet, Carnet de vol) : rangé sous la dernière page, son bout dépasse sous les feuilles ; à la dernière
-     double page, posé sur la page de droite le long du dos. Clic : dernière page (de là : retour au début).
-     Par design : --pm-sig-body / --pm-sig-tail (images) ; place : jetons des feuilles (--pm-sheet-*) */
+  /* signet (tous les designs à matières) : ruban (--pm-sig-body, étiré) au bout duquel pend le signet (--pm-sig-tail) ;
+     rangé sous la dernière page, son bout dépasse sous les feuilles ; à la dernière double page, ruban et signet entiers
+     sur la page de droite le long du dos. Clic : dernière page (de là : retour au début). Par design : images ; largeur
+     --pm-sig-w, largeur du ruban --pm-sig-body-w, hauteur du signet --pm-sig-tail-h, part qui dépasse --pm-sig-out,
+     retrait depuis le bord de la feuille --pm-sig-x ; ruban visible tout du long en lecture : --pm-sig-rest-top (haut
+     de la feuille) et --pm-sig-slice (bas du signet montré : part sous la feuille + part qui dépasse) */
   .pm-sig{display:none}
-  html:is([data-design="cabinet"],[data-design="flightlog"]) .pm-sig{display:block;position:absolute;z-index:0;left:calc(var(--pm-sheet-l) + 1.2cqw);width:2.4cqw;top:calc(100% - var(--pm-sheet-b));bottom:-4.5cqw;border:0;padding:0;background:none;cursor:pointer;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.35))}
-  .pm-sig::before{content:"";position:absolute;top:0;left:0;right:0;bottom:3.3cqw;background:var(--pm-sig-body) top/100% auto repeat-y}
-  .pm-sig::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3.34cqw;background:var(--pm-sig-tail) bottom/100% 100% no-repeat}
-  html:is([data-design="cabinet"],[data-design="flightlog"]) .pm-book.pm-at-end .pm-sig{top:var(--pm-sheet-t)}
-  html:is([data-design="cabinet"],[data-design="flightlog"]) .pm-book{margin-bottom:calc(12px + min(48px, 4.5vw))} /* place de la pointe du signet */
+  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-sig{display:block;position:absolute;z-index:0;left:calc(var(--pm-sheet-l) + var(--pm-sig-x, 1.2cqw));width:var(--pm-sig-w, 2.4cqw);top:var(--pm-sig-rest-top, calc(100% - var(--pm-sheet-b)));bottom:calc(-1 * var(--pm-sig-out, 4.5cqw));border:0;padding:0;background:none;cursor:pointer;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.35))}
+  .pm-sig::before{content:"";position:absolute;top:0;left:calc(50% - var(--pm-sig-body-w, 100%) / 2);width:var(--pm-sig-body-w, 100%);bottom:calc(var(--pm-sig-show, var(--pm-sig-tail-h, 3.34cqw)) - .04cqw);background:var(--pm-sig-body) top/100% auto repeat-y}
+  .pm-sig::after{content:"";position:absolute;left:0;right:0;bottom:0;height:var(--pm-sig-show, var(--pm-sig-tail-h, 3.34cqw));background:var(--pm-sig-tail) bottom/100% auto no-repeat}
+  html .pm-book.pm-at-end .pm-sig{top:var(--pm-sheet-t);--pm-sig-show:var(--pm-sig-tail-h, 3.34cqw)}
+  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-book{margin-bottom:calc(12px + min(48px, 4.5vw))} /* place du bout du signet */
   html[data-design="cabinet"] .pm-book{--pm-sig-body:url("../../shared/deco/cabinet/bookmark-body.webp?v=448f0fbb");--pm-sig-tail:url("../../shared/deco/cabinet/bookmark-tail.webp?v=6c5d9661")}
   html[data-design="flightlog"] .pm-book{--pm-sig-body:url("../../shared/deco/flightlog/bookmark-body.webp?v=5ff34cd3");--pm-sig-tail:url("../../shared/deco/flightlog/bookmark-tail.webp?v=4dfe039d")}
-  /* signet rigide (une seule image : carte d'Aqua, sangle de Durci), glissé entre les pages, de travers : .pm-sig est la
-     fenêtre droite hors du papier (sous le livre, ou au-dessus avec --pm-sig-top), coupée net au bord des feuilles ;
-     l'image inclinée est son ::before (calée en bas de la fenêtre, ou en haut pour un signet qui dépasse au-dessus :
-     carte à ruban d'Aqua). Par design : --pm-sig-img, --pm-sig-ratio (largeur/hauteur), --pm-sig-w (largeur),
-     --pm-sig-out (part qui dépasse), --pm-sig-x (retrait depuis le bord gauche de la feuille), --pm-sig-rot (inclinaison) ; au-dessus : --pm-sig-top, --pm-sig-at-top:0 */
-  html:is([data-design="aqua"],[data-design="field"]) .pm-sig{display:block;position:absolute;z-index:0;left:calc(var(--pm-sheet-l) + var(--pm-sig-x, 1cqw));width:calc(var(--pm-sig-w) + 3cqw);height:var(--pm-sig-out);top:var(--pm-sig-top, calc(100% - var(--pm-sheet-b)));overflow:hidden;border:0;padding:0;background:none;cursor:pointer;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.35))}
-  html:is([data-design="aqua"],[data-design="field"]) .pm-sig::before{content:"";position:absolute;left:1.5cqw;width:var(--pm-sig-w);aspect-ratio:var(--pm-sig-ratio);top:var(--pm-sig-at-top, auto);bottom:var(--pm-sig-at-bottom, 0);background:var(--pm-sig-img) center/100% 100% no-repeat;transform:rotate(var(--pm-sig-rot))}
-  html:is([data-design="aqua"],[data-design="field"]) .pm-sig::after{content:none}
-  html[data-design="aqua"] .pm-book{--pm-sig-img:url("../../shared/deco/aqua/bookmark.webp?v=0e29b630");--pm-sig-ratio:174/600;--pm-sig-w:7.5cqw;--pm-sig-out:11cqw;--pm-sig-top:calc(var(--pm-sheet-t) - 11cqw);--pm-sig-at-top:.6cqw;--pm-sig-at-bottom:auto;--pm-sig-rot:5deg}
-  html[data-design="field"] .pm-book{--pm-sig-img:url("../../shared/deco/field/bookmark.webp?v=69e97c6f");--pm-sig-ratio:121/600;--pm-sig-w:4.2cqw;--pm-sig-out:9cqw;--pm-sig-x:12cqw;--pm-sig-rot:-4deg}
+  /* Aqua : ruban bleu, carte « Guide essentiel » ; Durci : sangle olive, sangle entoilée à œillet (part sous la feuille :
+     bas de feuille du dossier ouvert, 6,38 % × 831/1409 et 15,59 % × 898/1236 de la largeur) */
+  html[data-design="aqua"] .pm-book{--pm-sig-body:url("../../shared/deco/aqua/bookmark-body.webp?v=8ed06630");--pm-sig-tail:url("../../shared/deco/aqua/bookmark-tail.webp?v=3fda32e4");--pm-sig-w:6.5cqw;--pm-sig-body-w:.85cqw;--pm-sig-tail-h:20.4cqw;--pm-sig-out:4.5cqw;--pm-sig-x:3cqw;--pm-sig-rest-top:var(--pm-sheet-t);--pm-sig-show:8.3cqw}
+  html[data-design="field"] .pm-book{--pm-sig-body:url("../../shared/deco/field/bookmark-body.webp?v=429e6201");--pm-sig-tail:url("../../shared/deco/field/bookmark-tail.webp?v=9dc4aeea");--pm-sig-w:2.6cqw;--pm-sig-tail-h:12.9cqw;--pm-sig-out:4.5cqw;--pm-sig-x:1.5cqw;--pm-sig-rest-top:var(--pm-sheet-t);--pm-sig-show:12.9cqw}
   .pm-week{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}.pm-week input{width:auto}.pm-week button{min-width:2.2em}
   .pm-types-sum{margin:0 0 8px;font-weight:600}
   .pm-sims{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 14px}
@@ -246,7 +243,7 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=1466c9a9"></script>
-<script src="../../shared/repository_nav.js?v=49dfa072"></script>
+<script src="../../shared/repository_nav.js?v=5e65929e"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=db00c09c"></script>
@@ -631,6 +628,13 @@
       el.replaceChildren(...(page ? [page.cloneNode(true)] : []));
       el.dataset.folio = page ? n : ''; // numéro de la page portée par la face
     };
+    // numéro de page d'une face à la hauteur de celui des pages fixes : la face (feuille) descend plus bas que la page
+    // (zone de texte) ; écart mesuré sur la mise en page, hors rotation
+    const folioOnFaces = () => {
+      const bottom = el => el.offsetTop + el.offsetHeight,
+        gap = (bottom(leaf) - bottom(right)) / (book.clientWidth / 100);
+      leaf.style.setProperty('--pm-folio-b', `calc(1.9cqw + ${gap.toFixed(3)}cqw)`);
+    };
     const turn = (dir, to = at + 2 * dir) => {
       if (busy || to === at) return;
       if (matchMedia('(prefers-reduced-motion: reduce)').matches) { at = to; return draw(); }
@@ -652,6 +656,7 @@
       next.hidden = to + 2 >= pages.length; // coin « suivante » masqué dès le départ s'il n'y a pas de page suivante ; sinon, coins inchangés
       leaf.className = `pm-leaf ${dir > 0 ? 'fwd' : 'back'}`;
       leaf.hidden = false;
+      folioOnFaces();
       setTimeout(() => { // fin de la rotation (0,7 s, voir .pm-leaf.fwd) : la feuille se pose, la page d'en face change
         at = to;
         draw();

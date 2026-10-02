@@ -52,7 +52,7 @@ SPEC = {
         'aqua': ['mission-cover.webp', 'mission-seal-fitted.webp', 'mission-open.webp', 'mission-page.webp', 'page-corner.webp', 'order-header.webp']}),
     'Signet du dossier de mission': (True, {
         'cabinet': ['bookmark-body.webp', 'bookmark-tail.webp'], 'flightlog': ['bookmark-body.webp', 'bookmark-tail.webp'],
-        'field': ['bookmark.webp'], 'aqua': ['bookmark.webp']}),   # signet rigide : une seule image (Mes missions)
+        'field': ['bookmark-body.webp', 'bookmark-tail.webp'], 'aqua': ['bookmark-body.webp', 'bookmark-tail.webp']}),
 }
 
 
