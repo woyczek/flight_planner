@@ -592,6 +592,7 @@ html[data-icons="gel"] .repo-svg[data-i] {
 }
 html[data-app-theme="cpco"][data-icons="gel"] .repo-svg[data-i]:not(.repo-sidenav .repo-svg):not(#imp),
 html[data-icons="gel"] .repo-sidenav-cpco .repo-svg[data-i]:not(#imp) {
+  --aq-gel:#1b2440; /* bulle marine du Centre (build_skeuo_icons_css.py : centreGel) */
   color:var(--ico-glyph-centre,#ffd23f)
 }
 html[data-icons="gel"] .repo-svg[data-i]>*{display:inline;filter:var(--ico-glyph-shadow,drop-shadow(.5px 1px .6px rgba(0,0,0,.55)))}

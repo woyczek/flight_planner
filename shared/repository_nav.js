@@ -256,7 +256,8 @@
 
   function applyAqua(accent) {
     const v = readPref("repositoryAquaColor", "blue");
-    const [h, s] = v === "app" ? K.color.hueSat(accent || "#2f7de1") : AQUA[v] || AQUA.blue;
+    // pages du Centre : gel or (galons de l'état-major), quel que soit le choix d'Apparence
+    const [h, s] = currentTheme === "cpco" ? [43, 78] : v === "app" ? K.color.hueSat(accent || "#2f7de1") : AQUA[v] || AQUA.blue;
     // clarté abaissée jusqu'à un contraste WCAG de 4,5:1 avec le texte blanc des boutons
     let l = 52,
       c = hslHex(h, s, l);
@@ -311,7 +312,7 @@
   // Designs à matières (Cabinet, Durci, Aqua : textures, plaques, vis) : feuille propre (designs.list[id].css),
   // chargée seulement quand l'un d'eux est choisi, avec sa propre version (empreinte de son contenu, table FILE_V
   // écrite par tools/bump_versions.py).
-  const FILE_V = {"designs_skeuo.css": "aafd6d3b"};
+  const FILE_V = {"designs_skeuo.css": "44f6058e"};
   const designCss = id => {
     const f = designs[id]?.css;
     if (!f || document.querySelector(`link[data-design-css="${f}"]`)) return;
@@ -906,7 +907,7 @@
     files.src = new URL("file_access.js?v=356d0486", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=58f492d6", "block_icons.js?v=ff923add", "side_nav.js?v=355697e6"]) {
+    for (const f of ["icons/repository_icons.js?v=58f492d6", "block_icons.js?v=e02e32ae", "side_nav.js?v=355697e6"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
