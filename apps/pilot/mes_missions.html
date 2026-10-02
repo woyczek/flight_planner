@@ -28,6 +28,7 @@
   .pm-pli-at{font-weight:600}
   .pm-pli small{opacity:.8}
   .pm-pli-meta{font-size:12px;opacity:.8;margin-top:-4px}
+  .pm-tracks{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0}.pm-tracks :is(th,td){text-align:left;vertical-align:top;padding:2px 4px}
   /* designs à matières : l'enveloppe cachetée du design (--pm-pli, --pm-pli-ratio) au-dessus des mentions, sans papier dessiné */
   html[data-design="cabinet"]{--pm-pli:url("../../shared/deco/cabinet/pli-sealed.webp?v=2e89c25c");--pm-pli-ratio:1.4579}
   html[data-design="flightlog"]{--pm-pli:url("../../shared/deco/flightlog/pli-sealed.webp?v=70c15353");--pm-pli-ratio:1.4713}
@@ -36,6 +37,9 @@
   html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-pli{padding:0;background:none;border:0;box-shadow:none;color:inherit}
   html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-pli::before{display:none}
   html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-pli::after{width:min(100%,260px);height:auto;aspect-ratio:var(--pm-pli-ratio);margin:0 0 6px;border-radius:0;background:var(--pm-pli) center/contain no-repeat;box-shadow:none;filter:drop-shadow(1px 3px 3px rgba(0,0,0,.35))}
+  /* dans le livre : enveloppe à l'échelle de la page (la page suit la largeur du dossier) */
+  .pm-page .pm-pli{margin:6px auto}
+  html:is([data-design="cabinet"],[data-design="flightlog"],[data-design="aqua"],[data-design="field"]) .pm-page .pm-pli::after{width:min(100%,17cqw)}
   .pm-text p{white-space:pre-line;margin:.4em 0}
   .pm-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0}
   .pm-cover{display:grid;justify-items:center;gap:12px;padding:28px 16px;cursor:pointer;border:1px solid color-mix(in srgb,currentColor 22%,transparent);background:color-mix(in srgb,currentColor 5%,transparent)}
@@ -210,7 +214,7 @@
   html[data-design="flightlog"] .pm-book{--pm-sig-body:url("../../shared/deco/flightlog/bookmark-body.webp?v=5ff34cd3");--pm-sig-tail:url("../../shared/deco/flightlog/bookmark-tail.webp?v=4dfe039d")}
   /* Aqua : ruban bleu, carte « Guide essentiel » ; Durci : sangle olive, sangle entoilée à œillet. Signet plus haut que
      la part visible sous la feuille : --pm-sig-show:100% (en lecture, seul le bas du signet, coupé au bord de la feuille) */
-  html[data-design="aqua"] .pm-book{--pm-sig-body:url("../../shared/deco/aqua/bookmark-body.webp?v=4aad1e14");--pm-sig-tail:url("../../shared/deco/aqua/bookmark-tail.webp?v=8d4faa7a");--pm-sig-w:9cqw;--pm-sig-body-w:1.06cqw;--pm-sig-tail-h:28.64cqw;--pm-sig-out:2.5cqw;--pm-sig-x:3cqw;--pm-sig-show:100%}
+  html[data-design="aqua"] .pm-book{--pm-sig-body:url("../../shared/deco/aqua/bookmark-body.webp?v=4aad1e14");--pm-sig-tail:url("../../shared/deco/aqua/bookmark-tail.webp?v=8d4faa7a");--pm-sig-w:9cqw;--pm-sig-body-w:1.06cqw;--pm-sig-tail-h:28.64cqw;--pm-sig-out:1.2cqw;--pm-sig-x:3cqw;--pm-sig-show:100%}
   html[data-design="field"] .pm-book{--pm-sig-body:url("../../shared/deco/field/bookmark-body.webp?v=429e6201");--pm-sig-tail:url("../../shared/deco/field/bookmark-tail.webp?v=9dc4aeea");--pm-sig-w:5.2cqw;--pm-sig-tail-h:25.8cqw;--pm-sig-out:2.5cqw;--pm-sig-x:1.5cqw;--pm-sig-show:100%}
   .pm-week{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}.pm-week input{width:auto}.pm-week button{min-width:2.2em}
   .pm-types-sum{margin:0 0 8px;font-weight:600}
@@ -260,7 +264,7 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=1466c9a9"></script>
-<script src="../../shared/repository_nav.js?v=822af544"></script>
+<script src="../../shared/repository_nav.js?v=02582fbc"></script>
 <script src="../../shared/content_i18n.js?v=cf6396e2"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=db00c09c"></script>
@@ -371,15 +375,25 @@
   function plisOf(a, y) {
     const X = window.MissionExercise, ex = X?.of(y, exDocs), me = ex && X.participantOf(ex, y.mission?.id);
     if (!me) return [];
-    const list = X.eventsFor(X.timeline(ex, [y, ...exDocs]), me.callsign),
-      t0 = A.when(a) - (X.parseH(me.takeoff) ?? 0) * 6e4, // heure H réelle : décollage de l'équipage moins son décalage
+    const up = s => String(s || '').trim().toUpperCase(),
+      // lecteur : l'indicatif de l'affectation (mission à plusieurs équipages : un pli ne concerne que son destinataire
+      // ou son émetteur, qui le passe à l'heure dite), sinon le participant de la mission
+      cs = up(a.callsign) || me.callsign,
+      list = X.timeline(ex, [y, ...exDocs]).filter(e => e.to.includes(cs) || e.to.includes('ALL') || e.to.includes('TOUS') || up(e.from) === cs),
+      // heure H réelle : décollage du participant de la mission (son affectation, même s'il n'est pas le lecteur) moins
+      // son décalage ; sans son affectation, heure inconnue (ouverture au passage du point)
+      anchor = me.callsign === cs ? a : (A._all || []).find(x => x.mission === a.mission && up(x.callsign) === me.callsign),
+      t0 = anchor && A.when(anchor) ? A.when(anchor) - (X.parseH(me.takeoff) ?? 0) * 6e4 : null,
       lastReveal = [...list].reverse().find(e => e.reveals.length)?.id,
       mapsOf = id => (y.maps || []).filter(m => m?.filename && (m.exercise === id || (m.exercise === 'all' && id === lastReveal))).map(m => m.filename);
     return list.map(e => {
-      const at = e.t != null && A.when(a) ? t0 + e.t * 6e4 : null;
-      return { ...e, at, open: (at != null && Date.now() >= at) || A.isPliOpen(a, e.id), maps: mapsOf(e.id) };
+      const at = e.t != null && t0 != null ? t0 + e.t * 6e4 : null;
+      return { ...e, at, emitter: up(e.from) === cs && !e.to.includes(cs), open: (at != null && Date.now() >= at) || A.isPliOpen(a, e.id), maps: mapsOf(e.id),
+        tracks: ex.tracks.filter(k => e.reveals.includes(k.id)) };
     });
   }
+  /** Pistes révélées par un pli (dans l'enveloppe seulement) : nature, route, niveau, vitesse, ce qu'il faut établir. */
+  const tracksHtml = list => list.length ? `<table class="pm-tracks"><thead><tr><th>Piste</th><th>Nature</th><th>Route</th><th>Niveau, vitesse</th></tr></thead><tbody>${list.map(k => `<tr><td>${esc(k.name || k.id)}</td><td>${esc(k.nature || '')}</td><td>${esc((k.points || []).map(p => `${p.name || ''}${Number.isFinite(+p.lat) ? ` (${coord({ lat: +p.lat, lon: +p.lon })})` : ''}`).join(' → '))}</td><td>${esc([k.level, k.speed_kt && `${k.speed_kt} kt`].filter(Boolean).join(', '))}</td></tr>${k.task ? `<tr><td></td><td colspan="3"><i>À établir</i> : ${esc(k.task)}</td></tr>` : ''}`).join('')}</tbody></table>` : '';
   /** Carte d'exercice (réservée à un pli) ? */
   const isExerciseMap = (y, name) => !!(y.maps || []).find(m => m?.filename === name && m.exercise && m.exercise !== 'none');
   /** Étiquette d'une mission (couverture scellée, page 1 du dossier) : numéro, nom, appareil, indicatif, décollage ;
@@ -504,7 +518,8 @@
   // déjà présentés ailleurs, ou techniques sans intérêt pour l'équipage (rendu et liste des cartes, méta-données,
   // dates de mise à jour, participants de l'affectation)
   const SHOWN = new Set(['schema', 'schema_version', 'title', 'summary', 'detailed_description', 'objectives', 'notes', 'turning_points', 'teams', 'target',
-    'rendering', 'meta', 'updated_at', 'updatedAt', 'participants', 'maps', 'generated', 'generator']);
+    'rendering', 'meta', 'updated_at', 'updatedAt', 'participants', 'maps', 'generated', 'generator',
+    'tracks', 'injects', 'phases', 'exercise']); // exercice : seulement dans les plis, à leur heure
   const LABELS = { mission: 'Mission', operation: 'Opération', origin: 'Départ', destination: 'Destination', aircraft: 'Appareils', rendezvous: 'Rendez-vous', zones: 'Zones', timing: 'Horaires', weather: 'Météo', vertical_profile: 'Profil vertical', exercise: 'Exercice', alert: 'Astreinte', maps: 'Cartes', rendering: 'Rendu des cartes', route_order: 'Ordre de la route', theatre: 'Théâtre' };
   function techSheet(y) {
     const dump = v => v == null || v === '' ? '—' : Array.isArray(v) ? (v.length ? `<ul>${v.map(x => `<li>${dump(x)}</li>`).join('')}</ul>` : '—')
@@ -555,11 +570,11 @@
     const plis = plisOf(a, y);
     const pliWhen = p => `${p.at != null ? `${hhmm(p.at)} — ` : ''}${p.when}`;
     const pliHtml = p => p.open
-      ? `<h5 class="pm-pli-head">${p.kind === 'pli' ? 'Pli' : 'Message radio'} ${esc(p.id)}${p.title ? ` — ${esc(p.title)}` : ''}</h5>
-        <p class="pm-pli-meta">${p.from ? `De ${esc(p.from)} · ` : ''}${esc(pliWhen(p))}</p>${para(p.text)}
+      ? `<h5 class="pm-pli-head">${p.emitter ? 'Message à transmettre' : p.kind === 'pli' ? 'Pli' : 'Message radio'} ${esc(p.id)}${p.title ? ` — ${esc(p.title)}` : ''}</h5>
+        <p class="pm-pli-meta">${p.emitter ? `À ${esc(p.to.join(', '))} · ` : p.from ? `De ${esc(p.from)} · ` : ''}${esc(pliWhen(p))}</p>${para(p.text)}${tracksHtml(p.tracks)}
         ${Array.from({ length: Math.ceil(p.maps.filter(m => mapUrls[m]).length / 2) }, (_, i) => `<div class="pm-maps">${p.maps.filter(m => mapUrls[m]).slice(i * 2, i * 2 + 2).map(figure).join('')}</div>`).join('')}`
-      : `<div class="pm-pli" data-kind="${p.kind}"><b>${p.kind === 'pli' ? 'Pli scellé' : 'Message radio attendu'}</b><span>${esc(p.id)}${p.from ? ` · de ${esc(p.from)}` : ''}</span>
-        <span class="pm-pli-at">À ouvrir : ${esc(pliWhen(p))}</span>${p.maps.length ? `<small>${p.maps.length} carte${p.maps.length > 1 ? 's' : ''} jointe${p.maps.length > 1 ? 's' : ''}</small>` : ''}
+      : `<div class="pm-pli" data-kind="${p.kind}"><b>${p.emitter ? 'Message à transmettre' : p.kind === 'pli' ? 'Pli scellé' : 'Message radio attendu'}</b><span>${esc(p.id)}${p.emitter ? ` · à ${esc(p.to.join(', '))}` : p.from ? ` · de ${esc(p.from)}` : ''}</span>
+        <span class="pm-pli-at">À ouvrir : ${esc(pliWhen(p))}</span>${p.tracks.length ? `<small>${p.tracks.length} piste${p.tracks.length > 1 ? 's' : ''}</small>` : ''}${p.maps.length ? `<small>${p.maps.length} carte${p.maps.length > 1 ? 's' : ''} jointe${p.maps.length > 1 ? 's' : ''}</small>` : ''}
         <button type="button" class="ghost" data-pli-open="${esc(p.id)}">Briser le scellé</button></div>`;
     const summary = y.summary ? para(y.summary) : mdSummary?.html || '';
     const objectives = [y.objectives?.primary && `<p><b>Objectif principal</b> : ${esc(y.objectives.primary)}</p>`, ...(Array.isArray(y.objectives?.secondary) ? y.objectives.secondary : y.objectives?.secondary ? [y.objectives.secondary] : []).map(o => `<p><b>Objectif secondaire</b> : ${esc(o)}</p>`)].filter(Boolean).join('');
@@ -592,15 +607,15 @@
         <div class="pm-route"><table><thead><tr><th>Point</th><th>Nom</th><th>Rôle</th><th>Position</th></tr></thead><tbody>${pts.map(p => `<tr><td>${esc(p.id)}</td><td>${esc(p.name)}</td><td>${esc(p.role)}</td><td>${esc(coord(p))}</td></tr>`).join('')}</tbody></table>${plan(pts)}</div>` : ''}
       </div>
       <div data-part="maps"><h4>Cartes fournies</h4>${maps.length ? `<div class="pm-maps">${maps.map(figure).join('')}</div>` : '<p class="small">Aucune carte fournie avec la mission (les Cartes de vol les génèrent depuis la route).</p>'}</div>
-      ${plis.length ? `<div data-part="plis"><h4>Plis et messages en vol</h4>${plis.map(pliHtml).join('')}</div>` : ''}
       <div data-part="final">
         ${sec('Objectifs', objectives)}
         ${sec('Remarques', notes.length ? `<ul>${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : '')}
-        ${secs.map(s => sec(s.title, s.html)).join('')}
+        ${secs.filter(s => !/piste|track|inject|chiffon|chronolog|exercice|plis?|message/i.test(s.title)).map(s => sec(s.title, s.html)).join('')}
         ${sec('Fiche technique', techSheet(y))}
         ${sec('Historique des affectations', log.length ? `<ul class="pm-log">${log.map(e => `<li>${esc(A.logText(e))}</li>`).join('')}</ul>` : '')}
         <div class="pm-sign"><i class="pm-dr" aria-label="Diffusion restreinte"></i><span>Fait le ${esc(signed)}, pour le Centre</span><em class="pm-signature">${esc(a.by || 'CPCO')}</em><small>Le chef de centre — ${esc(a.by || 'CPCO')}</small></div>
-      </div>`;
+      </div>
+      ${plis.length ? `<div data-part="plis"><h4>Plis et messages en vol</h4>${plis.map(pliHtml).join('')}</div>` : ''}`;
     $('pmDetail').querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go, a, y, pts, dist));
     $('pmDetail').querySelectorAll('[data-pli-open]').forEach(b => b.onclick = () => {
       const p = plis.find(x => x.id === b.dataset.pliOpen);
@@ -686,9 +701,19 @@
     mapsPart?.remove();
     const title = part('title');
     title?.remove();
-    const pages = [null, title, ...split(part('order')), ...split(part('details')), ...mapPages, ...split(part('plis')), ...split(part('final'))].filter((p, i) => i === 0 || p);
+    const pages = [null, title, ...split(part('order')), ...split(part('details')), ...mapPages, ...split(part('final'))].filter((p, i) => i === 0 || p);
+    // plis de l'exercice : derrière le signet, sur une double page à eux (page blanche en face de la fin du dossier) ;
+    // le coin de page s'arrête à la fin du dossier, le signet ouvre les plis
+    part('plis')?.querySelector(':scope > h4')?.remove(); // le signet tient lieu de titre
+    const plisPages = split(part('plis'));
+    if (plisPages.length && pages.length % 2) pages.push(Object.assign(document.createElement('div'), { className: 'pm-blank' }));
+    const P = pages.length; // première page des plis (double page paire) ; sans plis : fin du livre
+    pages.push(...plisPages);
     let at = Math.min(bookStart, Math.max(0, pages.length - 1)) & ~1, busy = false;
     bookStart = 0;
+    // fin de feuilletage : fin du dossier avant les plis, fin du livre dans les plis ; signet posé : aux plis (ou à la fin)
+    const endOf = n => n + 2 >= (n < P ? P : pages.length),
+      atSig = n => plisPages.length ? n >= P : n + 2 >= pages.length;
     const draw = () => {
       left.replaceChildren(...(pages[at] ? [pages[at]] : []));
       right.replaceChildren(...(pages[at + 1] ? [pages[at + 1]] : []));
@@ -697,9 +722,9 @@
       right.dataset.folio = pages[at + 1] ? at + 1 : '';
       prev.hidden = false; // à la première double page : refermer le dossier
       prev.title = prev.ariaLabel = at === 0 ? 'Refermer le dossier' : 'Page précédente';
-      next.hidden = at + 2 >= pages.length;
-      book.classList.toggle('pm-at-end', at + 2 >= pages.length); // signet posé sur la dernière double page
-      sig.title = sig.ariaLabel = at + 2 >= pages.length ? 'Signet : retour au début' : 'Signet : dernière page';
+      next.hidden = endOf(at);
+      book.classList.toggle('pm-at-end', atSig(at)); // signet posé : dernière double page, ou plis (posé devant eux)
+      sig.title = sig.ariaLabel = atSig(at) ? 'Signet : retour au début' : plisPages.length ? 'Signet : plis scellés' : 'Signet : dernière page';
       left.scrollTop = right.scrollTop = 0;
       host.dataset.bookAt = at; // double page affichée (gardée si le livre est redessiné)
     };
@@ -733,8 +758,8 @@
         left.dataset.folio = pages[to] ? to : '';
         left.classList.toggle('pm-inside', !pages[to]);
       }
-      book.classList.toggle('pm-at-end', to + 2 >= pages.length);
-      next.hidden = to + 2 >= pages.length; // coin « suivante » masqué dès le départ s'il n'y a pas de page suivante ; sinon, coins inchangés
+      book.classList.toggle('pm-at-end', atSig(to));
+      next.hidden = endOf(to); // coin « suivante » masqué dès le départ s'il n'y a pas de page suivante ; sinon, coins inchangés
       leaf.className = `pm-leaf ${dir > 0 ? 'fwd' : 'back'}`;
       leaf.hidden = false;
       folioOnFaces();
@@ -747,9 +772,9 @@
     };
     prev.onclick = () => turn(-1);
     next.onclick = () => turn(1);
-    // signet : d'un geste à la dernière double page ; de là, retour au début
-    const last = (pages.length - 1) & ~1;
-    sig.onclick = () => at === last ? turn(-1, 0) : turn(1, last);
+    // signet : d'un geste aux plis (sinon à la dernière double page) ; de là, retour au début
+    const last = plisPages.length ? P : (pages.length - 1) & ~1;
+    sig.onclick = () => atSig(at) ? turn(-1, 0) : turn(1, last);
     // refermer : bouton sous le dossier, ou coin de la 2de de couverture (première double page)
     prev.onclick = () => at === 0 ? host.querySelector('[data-close-book]')?.click() : turn(-1);
     // un clic sur une page fait comme son coin (liens, boutons et sélections de texte gardent leur effet)

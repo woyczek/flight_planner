@@ -68,7 +68,7 @@
       foot: ['strip'],
       device: [
         ['defibrillator', 170, -5],
-        ['monitor', 180]
+        ['monitor', 230]
       ]
     },
     // Cabinet : objets de navigation des années 1930 (planches « objets 1930 » et objets de face)
