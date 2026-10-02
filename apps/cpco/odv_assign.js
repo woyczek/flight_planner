@@ -87,6 +87,38 @@
       }
     return out;
   };
+  /** Convoyages à affecter (ligne « convoyage » sans pilote) qui recouvrent le créneau. */
+  const openFerries = (j, k) => {
+    const r = range(j, k);
+    return r ? list.filter(a => a.role === 'convoyage' && !a.pilot && a.status !== 'annulée' && (([f, l]) => f < r[1] && l > r[0])(M().busyRange(a))) : [];
+  };
+  /** Confie un convoyage à affecter (ligne de l'index) au pilote tri : participants de la mission réécrits, convoyeur posé. */
+  async function assignFerry(line, tri) {
+    const keys = ['pilot', 'callsign', 'aircraft', 'departure', 'takeoff', 'ferry', 'block_min', 'status'];
+    const lines = list.filter(a => a.mission === line.mission && a.role !== 'convoyage');
+    const parts = lines.map(a => Object.fromEntries(keys.filter(k => k in a).map(k => [k, a[k]])));
+    const p = parts.find(x => x.pilot === line.for_pilot && x.aircraft?.registration === line.aircraft?.registration && x.ferry?.open);
+    if (!p) throw new Error(`convoyage de ${line.mission} introuvable dans ses affectations`);
+    p.ferry = {
+      ...p.ferry,
+      pilot: tri,
+      open: false
+    };
+    const f = await M().writeAssignment({
+      id: line.mission,
+      title: line.title,
+      type: line.type,
+      folder: line.folder,
+      files: [line.files?.yaml, line.files?.md].filter(Boolean),
+      maps: line.files?.maps || []
+    }, parts, {
+      h_hour: lines[0]?.h_hour || null,
+      alert: lines[0]?.alert || null
+    });
+    await load(D, S);
+    hooks.forEach(h => h());
+    return f;
+  }
   /** Missions déjà affectées (affectation non annulée) qui commencent avant until (ms) : semaine affichée et passé. */
   const missionsAssigned = until => new Set(list.filter(a => a.status !== 'annulée' && M().busyRange(a)[0] < until).map(a => a.mission));
   /** Affectations qui recouvrent un créneau (tous pilotes). */
@@ -177,6 +209,8 @@
     freeOver,
     slotsOver,
     missionsAssigned,
+    openFerries,
+    assignFerry,
     pilots: () => (D?.pilotes || []).map(p => p.trigramme),
     inSlot,
     week,

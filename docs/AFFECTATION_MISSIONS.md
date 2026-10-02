@@ -106,10 +106,18 @@ alert: null                         # astreinte : § 6
 - **Mission sur plusieurs créneaux** (fenêtre d'un créneau du planning ODV) : décollage au début du créneau, fin =
   décollage + bloc + remise en œuvre ; les créneaux recouverts sont affichés (« mobilise lundi après-midi, lundi soir »)
   et le pilote doit être libre jusqu'à la fin (déclaration heure par heure, sinon classeur ; aucune autre affectation).
-- **Convoyage depuis la fenêtre d'un créneau** : convoyeur proposé parmi les pilotes libres sur toute la durée du
-  convoyage, avant le créneau (maîtrise du type d'abord), modifiable ; à défaut (ou au choix « mission décalée »), le
-  pilote de la mission convoie dès le début du créneau et la mission est décalée d'autant (horaire recalculé, créneaux
-  suivants mobilisés). Le convoyeur reçoit sa ligne « convoyage » à l'enregistrement.
+- **Convoyage depuis la fenêtre d'un créneau** : affiché de bout en bout (trajet, décollage → arrivée). Trois choix :
+  - **un autre pilote** (proposé parmi les pilotes libres sur toute la durée du convoyage, maîtrise du type d'abord) ;
+  - **le pilote de la mission lui-même** : convoyage avancé avant le créneau s'il y est déclaré libre (au quart d'heure le
+    plus tôt), sinon fait dès le début du créneau, la mission décalée d'autant ;
+  - **à affecter** : le convoyage devient une mission à part, sans pilote (ligne « convoyage », statut « à affecter ») ;
+    il apparaît dans la fenêtre du créneau où il tombe (« Convoyages à affecter »), où on le confie à un pilote libre.
+  Décollage de la mission modifiable (heure UTC, avancée ou retardée ; vide : automatique) ; un pilote non déclaré libre
+  sur toute la plage (convoyage compris) est signalé.
+- **Le convoyage par un tiers est une mission** : sa propre ligne dans l'index (role `convoyage`, pilote, appareil,
+  trajet, heures), visible dans « Mes missions » du convoyeur, dans la semaine du planning et sur son créneau. Il
+  n'occupe que le convoyeur : le pilote de la mission n'est pris qu'à son décollage (il ne l'est dès le convoyage que
+  s'il le fait lui-même).
 - **Patrouille** : un appareil nominatif par participant ; indicatifs suivis (MERCURE31 → MERCURE32) ; même type si
   la mission l'impose (`TYPES_EQUIPES` imposés), sinon type compatible.
 

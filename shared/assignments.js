@@ -792,12 +792,15 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
    *  remise en œuvre comprise. */
   function busyRange(a) {
     const t0 = Date.parse(a.takeoff || a.alert?.ready_at_utc || '') || 0,
-      from = Math.min(t0 || Infinity, Date.parse(a.ferry?.takeoff || '') || Infinity, Date.parse(a.alert?.ready_at_utc || '') || Infinity),
+      // convoyage par le pilote lui-même : il commence au décollage du convoyage ; confié à un autre ou à affecter : ligne
+      // « convoyage » à part (son propre créneau), le pilote de la mission n'est pris qu'au décollage de la mission
+      self = a.ferry && !a.ferry.open && (!a.ferry.pilot || a.ferry.pilot === a.pilot),
+      from = Math.min(t0 || Infinity, self ? Date.parse(a.ferry.takeoff || '') || Infinity : Infinity, Date.parse(a.alert?.ready_at_utc || '') || Infinity),
       to = Math.max(t0 + ((+a.block_min || 120) + TURN_MIN) * 6e4, Date.parse(a.alert?.window_end_utc || '') || 0);
     return Number.isFinite(from) ? [from, to] : [0, 0];
   }
-  /** Affectations d'un pilote (ou d'un convoyeur) qui recouvrent une plage. */
-  const assignedOver = (list, tri, start, end) => (list || []).filter(a => a.status !== 'annulée' && (a.pilot === tri || a.ferry?.pilot === tri) && (([f, l]) => f < end && l > start)(busyRange(a)));
+  /** Affectations d'un pilote qui recouvrent une plage (un convoyeur a sa propre ligne « convoyage »). */
+  const assignedOver = (list, tri, start, end) => (list || []).filter(a => a.status !== 'annulée' && a.pilot === tri && (([f, l]) => f < end && l > start)(busyRange(a)));
   /** Conflits d'un participant (pilote, appareil, convoyeur) avec les autres affectations : textes. */
   function conflicts(list, {
     mission,
@@ -813,7 +816,7 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
       if (!os || os >= to || oe <= from) continue;
       const at = new Date(os).toISOString().slice(11, 16) + 'Z';
       for (const who of [pilot, ferryPilot].filter(Boolean))
-        if (o.pilot === who || o.ferry?.pilot === who) out.push(t([`${who} déjà affecté : ${o.mission} ${at}`, `${who} already assigned: ${o.mission} ${at}`]));
+        if (o.pilot === who) out.push(t([`${who} déjà affecté : ${o.mission} ${at}`, `${who} already assigned: ${o.mission} ${at}`]));
       if (registration && o.aircraft?.registration === registration) out.push(t([`${registration} déjà pris : ${o.mission} ${at}`, `${registration} already taken: ${o.mission} ${at}`]));
     }
     return [...new Set(out)];
@@ -1070,7 +1073,8 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
     };
   }
   /** Participants d'une affectation, comme les calcule le dialogue : appareil de la flotte, convoyage depuis sa base,
-   *  heures (décalées d'une minute par équipier). rows : [{ pilot, registration, callsign, ferryPilot }] ; y : yaml. */
+   *  heures (décalées d'une minute par équipier). rows : [{ pilot, registration, callsign, ferryPilot }] ; y : yaml ;
+   *  ferryPilot : convoyeur (vide : le pilote ; « __open » : convoyage à affecter). */
   async function buildParticipants(y, rows, takeoff, dep = null) {
     dep ||= await departureOf(y);
     const departure = dep.code,
@@ -1086,8 +1090,9 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
         to: dep.pos,
         type: plane.type,
         takeoff: tk,
-        pilot: r.ferryPilot || r.pilot
+        pilot: r.ferryPilot === '__open' ? '' : r.ferryPilot || r.pilot
       }) : null;
+      if (ferry && r.ferryPilot === '__open') ferry.open = true; // convoyage à affecter : une mission à part, sans pilote
       out.push({
         pilot: r.pilot,
         callsign: r.callsign || '',
@@ -1283,11 +1288,12 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
         ...p,
         role: 'mission'
       });
-      // convoyeur autre que le pilote : sa propre ligne (il voit le convoyage dans « Mes missions »)
-      if (p.ferry?.pilot && p.ferry.pilot !== p.pilot && p.ferry.takeoff) idx.assignments.push({
+      // convoyage par un autre pilote : une mission à part, sa propre ligne (le convoyeur la voit dans « Mes missions ») ;
+      // à affecter : même ligne sans pilote, proposée dans la fenêtre du créneau où elle tombe (planning ODV)
+      if (p.ferry?.takeoff && (p.ferry.open || (p.ferry.pilot && p.ferry.pilot !== p.pilot))) idx.assignments.push({
         ...common,
         role: 'convoyage',
-        pilot: p.ferry.pilot,
+        pilot: p.ferry.open ? '' : p.ferry.pilot,
         callsign: '',
         aircraft: p.aircraft,
         departure: p.ferry.from,
@@ -1296,7 +1302,7 @@ html[data-skeuo] .pa-palette .pa-code{border-radius:0}`;
         block_min: p.ferry.minutes,
         ferry: null,
         for_pilot: p.pilot,
-        status: p.status
+        status: p.ferry.open ? 'à affecter' : p.status
       });
     }
     idx.updatedAt = at;
