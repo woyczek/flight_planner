@@ -201,7 +201,7 @@
     ['ops', /./]
   ];
   // Par design : dir (dossier des panneaux), only (orientations disponibles quand il en manque une), clair (jeu propre au
-  // ton clair, avec alias : thème → panneau du jeu quand il a moins de thèmes). Cabinet : jeu « 1930 » ; un jeu « 1800 »
+  // ton clair ; alias possible : thème → panneau du jeu quand il a moins de thèmes). Cabinet : jeu « 1930 » ; un jeu « 1800 »
   // attend dans cabinet/1800 : remplacer '1930' par '1800' (dir et clair.dir) une fois ses panneaux convertis.
   const PANELS = {
     // Carnet de vol : jeu clair seulement (parchemin ivoire, gravures bleues) ; ton sombre : fonds en cuir (BG)
@@ -223,21 +223,10 @@
     cabinet: {
       dir: '1930',
       only: {},
-      // ton clair : fonds ivoire (cartes côtières, paquebot, hydravions, instruments)
+      // ton clair : fonds ivoire (cartes côtières aquarellées, objets de laiton), 9 thèmes complets
       clair: {
         dir: '1930/clair',
-        only: {
-          instruments: 'w'
-        }, // portrait à venir
-        alias: {
-          airfield: 'nav',
-          ops: 'ships',
-          families: 'ships',
-          awards: 'ships',
-          gear: 'instruments',
-          radio: 'instruments',
-          time: 'instruments'
-        }
+        only: {}
       }
     }
   };

@@ -11,7 +11,8 @@ sont plus tenues : l'outil fait foi. Ce document garde les consignes de généra
 
 Livré depuis : dossiers de mission des quatre designs (Mes missions) ; signets Cabinet et Carnet de vol ; appareil de page
 du Carnet de vol (carnet fermé + DME) ; panneaux du **ton clair** du Carnet de vol (parchemin, gravures bleues :
-`shared/deco/flightlog/clair/`, `PANELS.flightlog.clair`) — 17 sur 18, manque aircraft en paysage. Les livraisons arrivent
+`shared/deco/flightlog/clair/`, `PANELS.flightlog.clair`) — 17 sur 18, manque aircraft en paysage. Panneaux du ton clair de
+Cabinet : 18 sur 18 (2 octobre 2026 ; `PANELS.cabinet.clair` sans alias, anciens `ships` / `instruments` retirés). Les livraisons arrivent
 au fil de l'eau, avec des améliorations et des doublons : le tri (meilleure version, remplacement) se fait à
 l'intégration ; les sources restent dans le dossier de dépôt.
 
@@ -322,6 +323,8 @@ Cabinet et Durci (appareil de page commun).
 ---
 
 ## 3. Cabinet, ton clair (`shared/deco/cabinet/1930/clair/`)
+
+**Livré et intégré le 2 octobre 2026** (9 thèmes × 2) : ce chapitre ne sert plus que de modèle pour un jeu clair « 1800 ».
 
 Matière : parchemin ivoire, cartes côtières aquarellées bleu pâle, instruments de laiton, gravures de navires ; voir
 `1930/clair/panel-ships-w.webp`, `panel-instruments-w.webp`, `panel-nav-w.webp`. Le jeu clair n'a que quatre sujets
