@@ -701,6 +701,13 @@
     await waitFor('SiaMission');
     const found = [],
       problems = [];
+    // relecture incrémentale : un dossier dont les fichiers (nom, date, taille) et les cartes n'ont pas changé depuis la
+    // dernière lecture reprend ses entrées du registre, sans relire ni réanalyser ses fichiers (missionRegistryScan:v1)
+    const SCAN = 'missionRegistryScan:v1',
+      seenSig = readJson(SCAN, {}),
+      nextSig = {},
+      before = JSON.stringify(reg.missions);
+    let reused = 0;
     // barre indéterminée (nombre de dossiers inconnu d'avance) : dossier en cours et missions trouvées
     const job = window.AppFramework?.task?.(t(['Lecture du dossier des missions', 'Reading the missions folder', 'Missionsordner wird gelesen', 'Leyendo la carpeta de misiones']));
     async function walk(h, path, depth) {
@@ -718,10 +725,19 @@
         else if (/\.(ya?ml|md)$/i.test(name) && name !== FILE && !/^(maps_manifest|AAR_TRACKS_REFERENCE|OSM_WORK_PROMPT|README|VALIDATION)/i.test(name)) files.push(x);
       }
       if (files.length) {
+        const got = await Promise.all(files.map(fh => fh.getFile()));
+        const sig = [...got.map(f => `${f.name}:${f.lastModified}:${f.size}`), ...images].sort().join('|');
+        nextSig[path] = sig;
+        const known = reg.missions.filter(m => m.source === 'dossier' && m.folder === path);
+        if (seenSig[path] === sig && known.length) {
+          found.push(...known); // inchangé : entrées reprises telles quelles
+          reused++;
+          for (const [name, x] of subs) await walk(x, path ? `${path}/${name}` : name, depth + 1);
+          return;
+        }
         const texts = [];
         let newest = 0;
-        for (const fh of files) {
-          const f = await fh.getFile();
+        for (const f of got) {
           newest = Math.max(newest, f.lastModified);
           texts.push({
             name: f.name,
@@ -758,9 +774,13 @@
       m.missingFile = m.source === 'dossier' && !seen.has(keyOf(m));
     });
     linkReports();
-    persist();
+    writeJson(SCAN, nextSig);
+    // registre réécrit (navigateur et mission_registry.yaml) seulement s'il a changé : plus de fichier modifié à chaque
+    // ouverture de la page
+    if (JSON.stringify(reg.missions) !== before) persist();
     return {
       found: found.length,
+      reused,
       problems
     };
   }

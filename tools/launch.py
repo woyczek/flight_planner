@@ -14,7 +14,7 @@
 Usage : python tools/launch.py [--port 8000] [--page apps/…] [--no-browser] [--no-data]
 Arrêt : fermer la fenêtre, ou Ctrl+C.
 """
-import argparse, glob, http.server, io, json, os, re, shutil, socket, subprocess, sys, tempfile, threading, time
+import argparse, glob, http.server, io, json, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
 import urllib.parse, urllib.request, webbrowser, zipfile
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -327,6 +327,27 @@ def free(port):
             return False
 
 
+# Repère de cette installation : un jeton tiré à chaque lancement, écrit à la racine et dans les dossiers de données.
+# Les pages le lisent par le serveur et dans le dossier autorisé du navigateur (FileAccess) : jetons différents = le
+# dossier choisi est une autre copie de la suite (ex. « DEFA - Copy »), signalée. Fichier ignoré par git.
+INSTANCE_FILE = '.defa_instance'
+INSTANCE_DIRS = ('', 'data', os.path.join('data', 'missions'), os.path.join('data', 'cr'), os.path.join('data', 'sia'),
+                 os.path.join('data', 'planner'))
+
+
+def mark_instance():
+    token = secrets.token_hex(8)
+    for d in INSTANCE_DIRS:
+        p = os.path.join(ROOT, d)
+        if os.path.isdir(p):
+            try:
+                with open(os.path.join(p, INSTANCE_FILE), 'w', encoding='utf-8', newline='\n') as f:
+                    f.write(token + '\n')
+            except OSError:
+                pass  # dossier en lecture seule : pas de contrôle pour lui
+    return token
+
+
 def main():
     ap = argparse.ArgumentParser(description='Lanceur de la suite DEFA (données, serveur local, navigateur).')
     ap.add_argument('--port', type=int, default=8000)
@@ -358,6 +379,7 @@ def main():
         say('  Aucun port libre entre {} et {}.'.format(a.port, a.port + 19))
         return 1
     Setup.port = port
+    mark_instance()
     handler = lambda *x, **k: Setup(*x, directory=ROOT, **k)
     srv = Server(('127.0.0.1', port), handler)
     url = f'http://127.0.0.1:{port}/{a.page}?t={int(time.time())}'  # adresse neuve : page jamais reprise du cache

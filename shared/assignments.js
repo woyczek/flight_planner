@@ -48,28 +48,103 @@
   /** Trigramme de l'utilisateur (profil pilote), en capitales ; '' s'il n'est pas réglé. */
   const trigram = () => String(json(PROFILE, {})?.trigram || '').trim().toUpperCase();
 
+  // ---- petite base de fichiers (données servies par la suite) : lectures gardées en mémoire et revalidées à bas coût
+  // (requête conditionnelle : 304 du lanceur si le fichier n'a pas changé ; fichier absent gardé aussi), invalidées
+  // entre les onglets à chaque écriture (BroadcastChannel « defa-data », événement « defa-data-change ») ; écritures
+  // sérialisées par des verrous (Web Locks) : deux onglets ou deux pages n'écrasent plus l'écriture de l'autre.
+  const store = (() => {
+    const mem = new Map(), // adresse → { at, value } (value null : fichier absent)
+      TTL = 60e3;
+    const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('defa-data') : null;
+    const drop = path => {
+      if (!path) mem.clear();
+      else
+        for (const k of [...mem.keys()])
+          if (k.split('?')[0].endsWith(path)) mem.delete(k);
+    };
+    const announce = path => window.dispatchEvent(new CustomEvent('defa-data-change', {
+      detail: {
+        path
+      }
+    }));
+    if (channel) channel.onmessage = e => {
+      drop(e.data?.path);
+      announce(e.data?.path);
+    };
+    return {
+      /** JSON d'un fichier de données servi (chemin relatif à la suite) ; null s'il est absent. fresh : revalidé. */
+      async read(path, {
+        fresh = false
+      } = {}) {
+        const url = new URL(path, root()).href,
+          hit = mem.get(url);
+        if (hit && !fresh && Date.now() - hit.at < TTL) return hit.value;
+        let value = null;
+        try {
+          const r = await fetch(url, {
+            cache: 'no-cache'
+          });
+          value = r.ok ? await r.json() : null;
+        } catch {
+          value = hit ? hit.value : null; // lanceur arrêté : dernière valeur connue
+        }
+        mem.set(url, {
+          at: Date.now(),
+          value
+        });
+        return value;
+      },
+      /** Fichier écrit : oublié ici et dans les autres onglets, qui relisent à la demande. */
+      changed(path) {
+        drop(path);
+        channel?.postMessage({
+          path
+        });
+        announce(path);
+      },
+      /** Exécute fn sous le verrou name (tous les onglets de la suite) ; sans Web Locks : directement. */
+      lock: (name, fn) => navigator.locks?.request ? navigator.locks.request(`defa:${name}`, fn) : fn()
+    };
+  })();
+  // dossier des missions autorisé, par rapport à la suite servie : true (le même : la copie servie suffit), false
+  // (autre copie : ignoré), null (contrôle impossible : sans lanceur, le dossier est lu directement)
+  async function missionsSource() {
+    const st = await window.FileAccess?.status?.('__missions');
+    if (!st?.handle || st.permission !== 'granted') return {
+      handle: null,
+      same: null
+    };
+    return {
+      handle: st.handle,
+      same: (await window.FileAccess?.sameAsServed?.('__missions', st.handle)) ?? null
+    };
+  }
+
   let cache = null;
+  // index écrit par un autre onglet (ou une autre page) : relu à la prochaine demande
+  window.addEventListener('defa-data-change', e => {
+    if (!e.detail?.path || /affectations/.test(e.detail.path)) cache = null;
+  });
   /** Index des affectations (data/missions/affectations.json) : { updatedAt, assignments: [...] } ; vide si absent. */
   let warned = false; // dossier autorisé ≠ fichiers servis : signalé une fois
+  let warnedOther = false; // dossier autorisé d'une autre copie de la suite : signalé une fois
   async function index({
     fresh = false
   } = {}) {
     if (cache && !fresh) return cache;
-    // source : le dossier des missions autorisé (celui où l'on écrit), sinon la copie servie (fetch) ; si les deux
-    // diffèrent, le dossier autorisé l'emporte et un avertissement dit que la page ne sert pas ce dossier
-    let served = null,
-      local = null;
+    // source : la copie servie (petite base ci-dessus) ; le dossier autorisé n'est lu que si la page ne peut pas dire
+    // s'il est celui de la suite (sans lanceur) — même dossier : inutile de le relire ; autre copie : ignoré
+    const served = await store.read('data/missions/affectations.json', {
+      fresh
+    });
+    let local = null;
     try {
-      const r = await fetch(new URL('data/missions/affectations.json', root()).href, {
-        cache: 'no-store'
-      });
-      served = r.ok ? await r.json() : null;
-    } catch {
-      served = null;
-    }
-    try {
-      const st = await window.FileAccess?.status?.('__missions');
-      if (st?.handle && st.permission === 'granted') local = JSON.parse(await (await (await st.handle.getFileHandle('affectations.json')).getFile()).text());
+      const src = await missionsSource();
+      if (src.same === false && !warnedOther) {
+        warnedOther = true;
+        window.AppFramework?.notify?.(t(['Affectations : le dossier des missions autorisé appartient à une autre copie de la suite — ignoré ; rechoisir data/missions de la suite (Premier lancement ou Paramètres).', 'Assignments: the authorised missions folder belongs to another copy of the suite — ignored; choose the suite’s data/missions again (First run or Settings).']), 'warn');
+      }
+      if (src.handle && src.same === null) local = JSON.parse(await (await (await src.handle.getFileHandle('affectations.json')).getFile()).text());
     } catch {
       local = null; // pas d'index dans le dossier autorisé, ou dossier déplacé
     }
@@ -258,14 +333,9 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     tri = String(tri || '').toUpperCase();
     const local = json(AVAIL, {})[tri];
     let doc = local?.grid || hasWeeks(local) ? local : null;
-    if (!doc) try {
-      const r = await fetch(new URL(`data/disponibilites/${encodeURIComponent(tri)}.json`, root()).href, {
-        cache: 'no-store'
-      });
-      doc = r.ok ? await r.json() : null;
-    } catch {
-      doc = null;
-    }
+    // déclaration servie (petite base : gardée une minute, fichier absent compris — plus de rafale de 404 à chaque
+    // reconstruction de l'ODV ; oubliée dès qu'un onglet l'écrit)
+    if (!doc) doc = await store.read(`data/disponibilites/${encodeURIComponent(tri)}.json`);
     return doc ? {
       ...doc,
       grid: normGrid(doc.grid)
@@ -309,15 +379,21 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
         mode: 'readwrite'
       })) !== 'granted') dir = null;
     if (!dir) throw new Error(t(['Dossier des données non autorisé : le choisir dans Paramètres › Maintenance › Sources et dossiers.', 'Data folder not authorised: choose it in Settings › Maintenance › Sources and folders.']));
-    const sub = await dir.getDirectoryHandle('disponibilites', {
-      create: true
+    // dossier des données d'une autre copie de la suite : le Centre ne verrait pas la déclaration
+    if (await FA.sameAsServed?.('__data', dir) === false) throw new Error(t(['Dossier des données d’une autre copie de la suite : rechoisir le dossier de l’application (Premier lancement).', 'Data folder of another copy of the suite: choose the application folder again (First run).']));
+    const path = `data/disponibilites/${tri}.json`;
+    await store.lock(`disponibilites:${tri}`, async () => {
+      const sub = await dir.getDirectoryHandle('disponibilites', {
+        create: true
+      });
+      const w = await (await sub.getFileHandle(`${tri}.json`, {
+        create: true
+      })).createWritable();
+      await w.write(JSON.stringify(doc, null, 2));
+      await w.close();
     });
-    const w = await (await sub.getFileHandle(`${tri}.json`, {
-      create: true
-    })).createWritable();
-    await w.write(JSON.stringify(doc, null, 2));
-    await w.close();
-    return `data/disponibilites/${tri}.json`;
+    store.changed(path);
+    return path;
   }
   /** Types d'appareils du pilote (désignateurs OACI) : { owned, mastered } — gardés avec ses disponibilités (même
    *  déclaration, même fichier) ; enregistrés dans le dossier des données avec la grille. */
@@ -1072,20 +1148,35 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   async function missionsDir() {
     const FA = window.FileAccess;
     if (!FA) throw new Error(t(['Module d’accès aux dossiers absent', 'Folder access module missing']));
+    const pick = async () => {
+      try {
+        return await FA.pickFolder('__missions');
+      } catch (e) {
+        throw new Error(t([`Dossier des missions non autorisé (${e?.name || ''} ${e?.message || ''})`, `Missions folder not authorised (${e?.name || ''} ${e?.message || ''})`]));
+      }
+    };
+    // dossier d'une autre copie de la suite (ancien emplacement, « DEFA - Copy »…) : l'affectation n'y serait vue
+    // ni par Mes missions ni par l'ODV, qui lisent les données de la suite lancée → rien n'est écrit sans le bon dossier
+    const checked = async h => {
+      if (await FA.sameAsServed?.('__missions', h) !== false) return h;
+      const ok = await window.AppFramework?.ask?.(K.tf(['Le dossier des missions autorisé (« {n} ») n’est pas celui de la suite lancée : l’affectation y serait écrite sans être vue par Mes missions ni par l’ODV. Choisir le dossier data/missions de la suite ?', 'The authorised missions folder (“{n}”) is not the one of the running suite: the assignment would be written there without being seen by My missions or the ODV. Choose the suite’s data/missions folder?', 'Der erlaubte Missionsordner („{n}“) gehört nicht zur gestarteten Suite: die Zuweisung würde dort geschrieben, ohne von Meine Missionen oder der ODV gesehen zu werden. Den Ordner data/missions der Suite wählen?', 'La carpeta de misiones autorizada («{n}») no es la de la suite iniciada: la asignación se escribiría allí sin que la vean Mis misiones ni el ODV. ¿Elegir la carpeta data/missions de la suite?'], {
+        n: h.name
+      }), {
+        danger: true
+      });
+      if (!ok) throw new Error(t(['Affectation non enregistrée : dossier des missions d’une autre copie de la suite.', 'Assignment not saved: missions folder of another copy of the suite.']));
+      return pick();
+    };
     const st = await FA.status('__missions');
-    if (st.handle && st.permission === 'granted') return st.handle;
+    if (st.handle && st.permission === 'granted') return checked(st.handle);
     if (st.handle) try {
       if ((await st.handle.requestPermission({
           mode: 'readwrite'
-        })) === 'granted') return st.handle;
+        })) === 'granted') return checked(st.handle);
     } catch {
       /* dossier déplacé */
     }
-    try {
-      return await FA.pickFolder('__missions');
-    } catch (e) {
-      throw new Error(t([`Dossier des missions non autorisé (${e?.name || ''} ${e?.message || ''})`, `Missions folder not authorised (${e?.name || ''} ${e?.message || ''})`]));
-    }
+    return pick();
   }
   /** Dossier d'une mission (créé au besoin) : { h, folder }. */
   async function missionFolder(dir, mission) {
@@ -1218,7 +1309,12 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   async function missionFile(folder, name, {
     as = 'text'
   } = {}) {
-    const dir = await missionsRead();
+    // dossier autorisé = la suite servie : lecture servie (plus rapide, mise en cache par le navigateur) ; autre copie :
+    // ignoré ; contrôle impossible (sans lanceur) : le dossier d'abord, comme avant
+    const src = await missionsSource().catch(() => ({
+      same: null
+    }));
+    const dir = src.same === null ? await missionsRead() : null;
     if (dir) try {
       let d = dir;
       const parts = `${folder}/${name}`.split('/').filter(Boolean);
@@ -1231,7 +1327,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     const url = new URL(`data/missions/${folder}/${name}`, root()).href;
     try {
       const r = await fetch(url, {
-        cache: 'no-store',
+        cache: 'no-cache', // revalidé (304 si inchangé)
         method: as === 'url' ? 'HEAD' : 'GET'
       });
       return r.ok ? (as === 'url' ? url : await r.text()) : null;
@@ -1254,19 +1350,14 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   async function readLog() {
     let log = null;
     try {
-      const st = await window.FileAccess?.status?.('__missions');
-      if (st?.handle && st.permission === 'granted') log = JSON.parse(await (await (await st.handle.getFileHandle(LOG_FILE)).getFile()).text());
+      const src = await missionsSource();
+      if (src.handle && src.same === null) log = JSON.parse(await (await (await src.handle.getFileHandle(LOG_FILE)).getFile()).text());
     } catch {
       log = null;
     }
-    if (!log) try {
-      const r = await fetch(new URL(`data/missions/${LOG_FILE}`, root()).href, {
-        cache: 'no-store'
-      });
-      log = r.ok ? await r.json() : null;
-    } catch {
-      log = null;
-    }
+    if (!log) log = await store.read(`data/missions/${LOG_FILE}`, {
+      fresh: true
+    });
     return [...(log?.entries || [])].sort((x, y) => String(y.at).localeCompare(String(x.at)));
   }
   /** Phrase d'une entrée : « 01/10 10:35 · DCP affecte M-002 à RBR (H145 F-ZBPO, DRAGON05, décollage 30/09 08:00Z) ». */
@@ -1288,8 +1379,16 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
    *  base }, departure, takeoff, ferry:{ from, to, minutes, takeoff, pilot }, block_min, status }] ; extra : { h_hour,
    *  alert, by }. Retour : chemin du fichier de la mission. */
   async function writeAssignment(mission, participants, extra = {}) {
-    const dir = await missionsDir(),
-      at = new Date().toISOString();
+    const dir = await missionsDir();
+    // lecture, modification et écriture de l'index et du journal sous un même verrou (onglets, pages) : l'écriture
+    // d'un autre poste du navigateur n'est plus écrasée par une copie lue avant elle
+    const out = await store.lock('affectations', () => writeAssignmentLocked(dir, mission, participants, extra));
+    store.changed('data/missions/affectations.json');
+    store.changed(`data/missions/${LOG_FILE}`);
+    return out;
+  }
+  async function writeAssignmentLocked(dir, mission, participants, extra) {
+    const at = new Date().toISOString();
     const doc = {
       mission: mission.id,
       updated_at: at,

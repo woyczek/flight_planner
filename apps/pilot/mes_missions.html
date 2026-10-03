@@ -4,6 +4,11 @@
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=d774850b"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=7e4ed0f1">
 <script src="../../config/repository_tree?v=014ce40b"></script>
 <style>
+  /* liste en cours de lecture (affectations) : estompée */
+  #pmList[aria-busy="true"] {
+    opacity: .55;
+    transition: opacity .2s
+  }
   .pm-empty {
     opacity: .8
   }
@@ -1554,13 +1559,13 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=a2ce6913"></script>
-<script src="../../shared/repository_nav.js?v=e45a1ad6"></script>
+<script src="../../shared/repository_nav.js?v=8ad6303d"></script>
 <script src="mes_missions_i18n.js?v=b0ab8b58" defer></script>
 <script src="../../shared/content_i18n.js?v=2d61c23a"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=db00c09c"></script>
 <script src="../../shared/mission_estimate.js?v=7d806302"></script><script src="../../shared/mission_i18n.js?v=bfd45c20"></script><script src="../../shared/mission_exercise.js?v=6c6aed4f"></script>
-<script src="../../shared/assignments.js?v=82afa493"></script>
+<script src="../../shared/assignments.js?v=3318925e"></script>
 <script>
 (() => {
   'use strict';
@@ -1607,6 +1612,10 @@
     if (e.target.matches('[data-weekbar] [data-wk-date]') && e.target.value) goWeek(A.weekKey(Date.parse(`${e.target.value}T12:00:00Z`)));
   });
   weekBars();
+  // affectation écrite dans un autre onglet (Centre, ODV) : liste relue aussitôt (index revalidé, sans tout relire)
+  window.addEventListener('defa-data-change', e => {
+    if (/affectations\.json$/.test(e.detail?.path || '')) load();
+  });
 
   /** Date et heure UTC lisibles : « sam. 04/10 12:40Z ». */
   const tv = window.RepositoryKit.tf; // phrase traduite, valeurs {clé} insérées (shared/kit.js)
@@ -1641,11 +1650,24 @@
   });
 
   // ---- liste
+  // chargements de la liste : seul le dernier lancé affiche (changement de semaine, de langue, de profil… pendant une
+  // lecture : une lecture plus ancienne qui finit après ne remplace plus la liste) ; barre de progression pendant la lecture
+  let loadSeq = 0;
   async function load() {
     who();
-    const idx = await A.index({
-      fresh: true
-    });
+    const seq = ++loadSeq,
+      job = window.AppFramework?.task?.(tv(['Lecture des affectations', 'Reading the assignments', 'Zuweisungen werden gelesen', 'Leyendo las asignaciones']));
+    $('pmList').setAttribute('aria-busy', 'true');
+    let idx;
+    try {
+      idx = await A.index({
+        fresh: true
+      });
+    } finally {
+      job?.end();
+      if (seq === loadSeq) $('pmList').removeAttribute('aria-busy');
+    }
+    if (seq !== loadSeq) return; // un chargement plus récent est en cours : il affichera
     const from = Date.parse(`${week}T00:00:00Z`),
       to = Date.parse(`${A.addWeeks(week, 1)}T00:00:00Z`);
     list = A.mine(idx.assignments, {
