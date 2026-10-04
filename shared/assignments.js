@@ -265,17 +265,54 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     SC: ['DISPO sécu civile', 'dispo', 'SECU', '2F5597'],
     C: ['DISPO Chasse FAF', 'dispo', 'CHASSE', '0070C0'],
     T: ['DISPO Transport FAF', 'dispo', 'TRANSPORT', 'F4B183'],
-    S: ['Exercice IVAO SO', 'dispo', 'EXERCICE', 'FF0000'],
+    S: ['Exercice SO (IVAO / VATSIM)', 'dispo', 'EXERCICE', 'FF0000'],
     N: ['DISPO FNY', 'dispo', 'FNY', '8693A0'],
-    AT: ['Contrôle IVAO civil', 'atc', 'ATC', '7030A0'],
-    AM: ['Contrôle IVAO SO', 'atc', 'ATC', 'C4BD97'],
-    G: ['Vol IVAO hors SO', 'occupe', null, 'FFD966'],
+    AT: ['Contrôle civil (IVAO / VATSIM)', 'atc', 'ATC', '7030A0'],
+    AM: ['Contrôle SO (IVAO / VATSIM)', 'atc', 'ATC', 'C4BD97'],
+    G: ['Vol hors SO (IVAO / VATSIM)', 'occupe', null, 'FFD966'],
     DC: ['Mission DCS', 'occupe', null, '002060'],
     IR: ['MANIP IRL', 'indispo', null, 'FFFF00'],
     IN: ['INDISPO', 'indispo', null, 'BFBFBF'],
     V: ['VACANCES', 'indispo', null, 'FFC000'],
     Q: ['RÉCUP', 'indispo', null, 'D9D9D9']
   };
+  // libellés de la légende (et « code : libellé » des infobulles) traduits à l'affichage, sur toutes les pages
+  const LEGEND_I18N = [
+    ["DISPO (Tout)", "AVAILABLE (all)", "VERFÜGBAR (alle)", "DISPONIBLE (todo)"],
+    ["O : DISPO (Tout)", "O: AVAILABLE (all)", "O: VERFÜGBAR (alle)", "O: DISPONIBLE (todo)"],
+    ["DISPO sécu civile", "AVAILABLE civil security", "VERFÜGBAR Zivilschutz", "DISPONIBLE seguridad civil"],
+    ["SC : DISPO sécu civile", "SC: AVAILABLE civil security", "SC: VERFÜGBAR Zivilschutz", "SC: DISPONIBLE seguridad civil"],
+    ["DISPO Chasse FAF", "AVAILABLE FAF fighters", "VERFÜGBAR FAF-Jagd", "DISPONIBLE caza FAF"],
+    ["C : DISPO Chasse FAF", "C: AVAILABLE FAF fighters", "C: VERFÜGBAR FAF-Jagd", "C: DISPONIBLE caza FAF"],
+    ["DISPO Transport FAF", "AVAILABLE FAF transport", "VERFÜGBAR FAF-Transport", "DISPONIBLE transporte FAF"],
+    ["T : DISPO Transport FAF", "T: AVAILABLE FAF transport", "T: VERFÜGBAR FAF-Transport", "T: DISPONIBLE transporte FAF"],
+    ["Exercice SO (IVAO / VATSIM)", "SO exercise (IVAO / VATSIM)", "SO-Übung (IVAO / VATSIM)", "Ejercicio SO (IVAO / VATSIM)"],
+    ["S : Exercice SO (IVAO / VATSIM)", "S: SO exercise (IVAO / VATSIM)", "S: SO-Übung (IVAO / VATSIM)", "S: Ejercicio SO (IVAO / VATSIM)"],
+    ["DISPO FNY", "AVAILABLE FNY", "VERFÜGBAR FNY", "DISPONIBLE FNY"],
+    ["N : DISPO FNY", "N: AVAILABLE FNY", "N: VERFÜGBAR FNY", "N: DISPONIBLE FNY"],
+    ["Contrôle civil (IVAO / VATSIM)", "Civil ATC (IVAO / VATSIM)", "Zivile Flugsicherung (IVAO / VATSIM)", "Control civil (IVAO / VATSIM)"],
+    ["AT : Contrôle civil (IVAO / VATSIM)", "AT: Civil ATC (IVAO / VATSIM)", "AT: Zivile Flugsicherung (IVAO / VATSIM)", "AT: Control civil (IVAO / VATSIM)"],
+    ["Contrôle SO (IVAO / VATSIM)", "SO ATC (IVAO / VATSIM)", "SO-Flugsicherung (IVAO / VATSIM)", "Control SO (IVAO / VATSIM)"],
+    ["AM : Contrôle SO (IVAO / VATSIM)", "AM: SO ATC (IVAO / VATSIM)", "AM: SO-Flugsicherung (IVAO / VATSIM)", "AM: Control SO (IVAO / VATSIM)"],
+    ["Vol hors SO (IVAO / VATSIM)", "Flight outside SO (IVAO / VATSIM)", "Flug außerhalb SO (IVAO / VATSIM)", "Vuelo fuera de SO (IVAO / VATSIM)"],
+    ["G : Vol hors SO (IVAO / VATSIM)", "G: Flight outside SO (IVAO / VATSIM)", "G: Flug außerhalb SO (IVAO / VATSIM)", "G: Vuelo fuera de SO (IVAO / VATSIM)"],
+    ["Mission DCS", "DCS mission", "DCS-Mission", "Misión DCS"],
+    ["DC : Mission DCS", "DC: DCS mission", "DC: DCS-Mission", "DC: Misión DCS"],
+    ["MANIP IRL", "REAL-LIFE ACTIVITY", "TERMIN IM ECHTEN LEBEN", "ACTIVIDAD REAL"],
+    ["IR : MANIP IRL", "IR: REAL-LIFE ACTIVITY", "IR: TERMIN IM ECHTEN LEBEN", "IR: ACTIVIDAD REAL"],
+    ["INDISPO", "UNAVAILABLE", "NICHT VERFÜGBAR", "NO DISPONIBLE"],
+    ["IN : INDISPO", "IN: UNAVAILABLE", "IN: NICHT VERFÜGBAR", "IN: NO DISPONIBLE"],
+    ["VACANCES", "HOLIDAYS", "URLAUB", "VACACIONES"],
+    ["V : VACANCES", "V: HOLIDAYS", "V: URLAUB", "V: VACACIONES"],
+    ["RÉCUP", "TIME OFF", "AUSGLEICH", "DESCANSO"],
+    ["Q : RÉCUP", "Q: TIME OFF", "Q: AUSGLEICH", "Q: DESCANSO"],
+    ["CONTRÔLE (marque de suivi)", "CHECK (tracking mark)", "KONTROLLE (Markierung)", "CONTROL (marca de seguimiento)"],
+    ["A : CONTRÔLE (marque de suivi)", "A: CHECK (tracking mark)", "A: KONTROLLE (Markierung)", "A: CONTROL (marca de seguimiento)"],
+  ];
+  const legendI18n = () => window.RepositoryContentI18n?.(LEGEND_I18N);
+  document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', legendI18n, {
+    once: true
+  }) : legendI18n();
   /** Rôles qu'un code de disponibilité couvre, par famille de mission (avertissement seulement : le Centre décide). */
   const FAMILY_ROLES = {
     COMBAT: ['CHASSE', 'EXERCICE'],
@@ -1363,15 +1400,21 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   /** Phrase d'une entrée : « 01/10 10:35 · DCP affecte M-002 à RBR (H145 F-ZBPO, DRAGON05, décollage 30/09 08:00Z) ». */
   function logText(e) {
     const d = s => s ? new Date(s).toISOString().slice(5, 16).replace(/(\d\d)-(\d\d)T/, '$2/$1 ') : '';
-    const what = {
-      affecte: 'affecte',
-      modifie: 'modifie',
-      retire: 'retire',
-      convoyage: 'confie le convoyage de'
-    } [e.action] || e.action;
-    const detail = [e.aircraft, e.callsign, e.takeoff && `décollage ${d(e.takeoff)}Z`].filter(Boolean).join(', ');
-    if (e.action === 'retire') return `${d(e.at)} · ${e.by || '?'} retire ${e.pilot} de ${e.mission}`;
-    return `${d(e.at)} · ${e.by || '?'} ${what} ${e.mission} à ${e.pilot}${e.for_pilot ? ` (pour ${e.for_pilot})` : ''}${detail ? ` (${detail})` : ''}`;
+    // langue de la page (fr, en, de, es) ; phrase composée ici, la couche de traduction ne la reconnaîtrait pas
+    const li = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'));
+    const W = {
+      affecte: ['affecte {m} à {p}', 'assigns {m} to {p}', 'weist {m} {p} zu', 'asigna {m} a {p}'],
+      modifie: ['modifie {m} pour {p}', 'changes {m} for {p}', 'ändert {m} für {p}', 'modifica {m} para {p}'],
+      convoyage: ['confie le convoyage de {m} à {p}', 'gives the ferry of {m} to {p}', 'überträgt die Überführung für {m} an {p}', 'confía el traslado de {m} a {p}'],
+      retire: ['retire {p} de {m}', 'removes {p} from {m}', 'entfernt {p} aus {m}', 'retira a {p} de {m}'],
+      pour: ['pour {x}', 'for {x}', 'für {x}', 'para {x}'],
+      takeoff: ['décollage {x}', 'take-off {x}', 'Start {x}', 'despegue {x}']
+    };
+    const w = (k, v) => W[k][li].replace(/\{(\w)\}/g, (_, c) => v[c] ?? '');
+    const act = W[e.action] ? w(e.action, { m: e.mission, p: e.pilot }) : `${e.action} ${e.mission} ${e.pilot}`;
+    const detail = [e.aircraft, e.callsign, e.takeoff && w('takeoff', { x: `${d(e.takeoff)}Z` })].filter(Boolean).join(', ');
+    if (e.action === 'retire') return `${d(e.at)} · ${e.by || '?'} ${act}`;
+    return `${d(e.at)} · ${e.by || '?'} ${act}${e.for_pilot ? ` (${w('pour', { x: e.for_pilot })})` : ''}${detail ? ` (${detail})` : ''}`;
   }
   /** Écrit affectations.yaml dans le dossier de la mission et met à jour data/missions/affectations.json (index : une
    *  ligne par participant, et une ligne « convoyage » pour un convoyeur autre que le pilote). mission : entrée du

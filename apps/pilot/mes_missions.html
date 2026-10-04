@@ -2,7 +2,7 @@
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mes missions</title>
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=d774850b"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=7e4ed0f1">
-<script src="../../config/repository_tree?v=014ce40b"></script>
+<script src="../../config/repository_tree?v=73e716b3"></script>
 <style>
   /* liste en cours de lecture (affectations) : estompée */
   #pmList[aria-busy="true"] {
@@ -1559,13 +1559,13 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=a2ce6913"></script>
-<script src="../../shared/repository_nav.js?v=8ad6303d"></script>
-<script src="mes_missions_i18n.js?v=b0ab8b58" defer></script>
-<script src="../../shared/content_i18n.js?v=2d61c23a"></script>
+<script src="../../shared/repository_nav.js?v=c7809654"></script>
+<script src="mes_missions_i18n.js?v=0207db7b" defer></script>
+<script src="../../shared/content_i18n.js?v=be5cfc1c"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
-<script src="../../shared/mission_core/vocab.js?v=db00c09c"></script>
-<script src="../../shared/mission_estimate.js?v=7d806302"></script><script src="../../shared/mission_i18n.js?v=bfd45c20"></script><script src="../../shared/mission_exercise.js?v=6c6aed4f"></script>
-<script src="../../shared/assignments.js?v=3318925e"></script>
+<script src="../../shared/mission_core/vocab.js?v=74550207"></script>
+<script src="../../shared/mission_estimate.js?v=7d806302"></script><script src="../../shared/mission_i18n.js?v=bfd45c20"></script><script src="../../shared/machine_translate.js?v=c029bc1a"></script><script src="../../shared/mission_exercise.js?v=6c6aed4f"></script>
+<script src="../../shared/assignments.js?v=e024506d"></script>
 <script>
 (() => {
   'use strict';
@@ -1580,7 +1580,10 @@
     mission = null;
   // semaine affichée (lundi ISO UTC), commune à la liste et aux disponibilités
   let week = A.weekKey(Date.now());
-  const dayFr = (w, i) => new Date(Date.parse(`${w}T00:00:00Z`) + i * 864e5).toLocaleDateString('fr-FR', {
+  const tv = window.RepositoryKit.tf; // phrase traduite, valeurs {clé} insérées (shared/kit.js)
+  /** Paramètres régionaux de la langue de la page (dates : « mer. 30/09 », « Wed 30/09 »…). */
+  const loc = () => ({ fr: 'fr-FR', en: 'en-GB', de: 'de-DE', es: 'es-ES' })[window.RepositoryNav?.getLanguage?.() || 'fr'] || 'fr-FR';
+  const dayFr = (w, i) => new Date(Date.parse(`${w}T00:00:00Z`) + i * 864e5).toLocaleDateString(loc(), {
     weekday: 'short',
     day: '2-digit',
     month: '2-digit',
@@ -1590,7 +1593,7 @@
   function weekBars() {
     const end = A.addWeeks(week, 1),
       last = new Date(Date.parse(`${end}T00:00:00Z`) - 864e5).toISOString().slice(0, 10);
-    const label = `du ${dayFr(week, 0)} au ${dayFr(week, 6)}${week === A.weekKey(Date.now()) ? ' (cette semaine)' : ''}`;
+    const label = tv(week === A.weekKey(Date.now()) ? ['du {a} au {b} (cette semaine)', 'from {a} to {b} (this week)', 'vom {a} bis {b} (diese Woche)', 'del {a} al {b} (esta semana)'] : ['du {a} au {b}', 'from {a} to {b}', 'vom {a} bis {b}', 'del {a} al {b}'], { a: dayFr(week, 0), b: dayFr(week, 6) });
     document.querySelectorAll('[data-weekbar]').forEach(b => {
       b.innerHTML = `<button type="button" class="secondary" data-wk="-1" title="Semaine précédente">‹</button><input type="date" data-wk-date value="${week}" title="Aller à la semaine d’une date"><button type="button" class="secondary" data-wk="1" title="Semaine suivante">›</button>${week === A.weekKey(Date.now()) ? '' : '<button type="button" class="secondary" data-wk="0" title="Revenir à la semaine en cours" aria-label="Semaine en cours">⟲</button>'}<span class="small">${esc(label)}</span>`;
       b.dataset.end = last;
@@ -1616,10 +1619,19 @@
   window.addEventListener('defa-data-change', e => {
     if (/affectations\.json$/.test(e.detail?.path || '')) load();
   });
+  // changement de langue : semaine, liste (dates, phrases) et grille dans la nouvelle langue
+  // titre de l'onglet (hors de la page : la couche de traduction ne le voit pas)
+  const pageTitle = () => { document.title = tv(['Mes missions', 'My missions', 'Meine Missionen', 'Mis misiones']); };
+  pageTitle();
+  window.addEventListener('repository-language-change', () => {
+    pageTitle();
+    weekBars();
+    load();
+    gridLoad();
+  });
 
   /** Date et heure UTC lisibles : « sam. 04/10 12:40Z ». */
-  const tv = window.RepositoryKit.tf; // phrase traduite, valeurs {clé} insérées (shared/kit.js)
-  const fmt = ms => ms ? new Date(ms).toLocaleString('fr-FR', {
+  const fmt = ms => ms ? new Date(ms).toLocaleString(loc(), {
     weekday: 'short',
     day: '2-digit',
     month: '2-digit',
@@ -1679,7 +1691,7 @@
       return;
     }
     if (!list.length) {
-      $('pmList').innerHTML = `<p class="pm-empty">Aucune mission${$('pmAll').checked ? '' : ' à venir'} affectée à ${esc(tri)} cette semaine-là.</p>`;
+      $('pmList').innerHTML = `<p class="pm-empty">${tv($('pmAll').checked ? ['Aucune mission affectée à {t} cette semaine-là.', 'No mission assigned to {t} that week.', 'Keine Mission für {t} in dieser Woche.', 'Ninguna misión asignada a {t} esa semana.'] : ['Aucune mission à venir affectée à {t} cette semaine-là.', 'No upcoming mission assigned to {t} that week.', 'Keine anstehende Mission für {t} in dieser Woche.', 'Ninguna misión próxima asignada a {t} esa semana.'], { t: esc(tri) })}</p>`;
       return;
     }
     $('pmList').innerHTML = `<table><thead><tr><th>Décollage (UTC)</th><th>Mission</th><th>Titre</th><th>Appareil</th><th>Terrain</th><th>Indicatif</th></tr></thead><tbody>${list.map((a, i) => `<tr data-i="${i}" class="${A.isRead(a) ? '' : 'pm-unread'}${current && A.key(current) === A.key(a) ? ' pm-current' : ''}"><td>${a.alert ? 'astreinte ' + esc(hhmm(Date.parse(a.alert.ready_at_utc))) : esc(fmt(A.when(a)))}</td><td><b>${esc(a.mission)}</b>${a.role === 'convoyage' ? ' <small>convoyage</small>' : ''}</td><td>${esc(titleOf(a))}</td><td>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' '))}</td><td>${esc(a.departure || '')}</td><td>${esc(a.callsign || '')}</td></tr>`).join('')}</tbody></table>`;
@@ -1956,7 +1968,7 @@
   }
 
   /** Sections du résumé .md de la mission (« ## Titre » → HTML simple : paragraphes, gras, listes). */
-  function mdSections(md) {
+  function mdSections(md, T = s => s) {
     const raw = {};
     let cur = '';
     for (const line of String(md || '').split(/\r?\n/)) {
@@ -1982,7 +1994,8 @@
       `<p>${inline(b.trim()).replace(/ {2,}\n|\n/g, '<br>')}</p>`).join('');
     return Object.entries(raw).map(([title, v]) => ({
       title,
-      html: html(v)
+      label: T(title), // titre affiché (traduit) ; title (source) sert au tri des rubriques
+      html: html(T(v.trim()))
     })).filter(s => s.html);
   }
   /** Fiche technique : tout champ du yaml qui n'a pas sa place ailleurs dans le dossier (rien n'est perdu). */
@@ -2113,14 +2126,98 @@
     setClosed(lastRender[0], closed);
   }
   window.addEventListener('repository-design-change', () => setTimeout(redraw, 60));
-  window.addEventListener('repository-language-change', () => setTimeout(redraw, 60)); // brief traduit, phrases à valeurs
+  window.addEventListener('repository-language-change', () => {
+    mtNone = false; // autre langue : traducteur à interroger de nouveau
+    mtStart = null;
+    setTimeout(redraw, 60);
+  }); // brief traduit, phrases à valeurs
+  /** Brief sans traduction fournie (bloc i18n) : textes du YAML passés au traducteur du navigateur (MachineTranslate),
+   *  champs rédigés seulement — noms de lieux, identifiants, valeurs techniques restent tels quels. */
+  function mtYaml(y, T) {
+    const arr = v => Array.isArray(v) ? v : v == null || v === '' ? [] : [v];
+    const role = list => arr(list).map(p => p && typeof p === 'object' && p.role ? {
+      ...p,
+      role: T(p.role)
+    } : p);
+    return {
+      ...y,
+      title: T(y.title),
+      summary: T(y.summary),
+      detailed_description: T(y.detailed_description),
+      objectives: y.objectives && typeof y.objectives === 'object' ? {
+        ...y.objectives,
+        primary: T(y.objectives.primary),
+        secondary: Array.isArray(y.objectives.secondary) ? y.objectives.secondary.map(T) : T(y.objectives.secondary)
+      } : y.objectives,
+      notes: Array.isArray(y.notes) ? y.notes.map(T) : T(y.notes),
+      risks: arr(y.risks).map(r => r && typeof r === 'object' ? {
+        ...r,
+        hazard: T(r.hazard),
+        consequence: T(r.consequence),
+        mitigation: T(r.mitigation)
+      } : T(r)),
+      target: y.target && typeof y.target === 'object' ? {
+        ...y.target,
+        description: T(y.target.description)
+      } : y.target,
+      turning_points: role(y.turning_points),
+      rendezvous: role(y.rendezvous),
+      zones: role(y.zones)
+    };
+  }
+  /** Traduction automatique du livre : état gardé entre deux redessins (le livre est redessiné quand elle est prête). */
+  let mtStart = null, // modèle à télécharger : fonction à appeler depuis le clic sur « Traduire le contenu »
+    mtNone = false; // traducteur indisponible pour cette langue
+  /** Note de traduction automatique, en tête de l'ordre (écrite au rendu : les pages du livre ne sont dans le document
+   *  qu'à leur affichage). */
+  function mtNoteHtml() {
+    const MT = window.MachineTranslate;
+    if (!MT.supported()) return esc(tv(['Contenu de la mission en français : la mission n’apporte pas sa traduction et ce navigateur n’a pas de traducteur intégré (Chrome ou Edge récents).', 'Mission content in French: the mission has no translation and this browser has no built-in translator (recent Chrome or Edge).', 'Missionsinhalt auf Französisch: die Mission bringt keine Übersetzung mit und dieser Browser hat keinen eingebauten Übersetzer (aktuelles Chrome oder Edge).', 'Contenido de la misión en francés: la misión no trae traducción y este navegador no tiene traductor integrado (Chrome o Edge recientes).']));
+    if (mtNone) return esc(tv(['Contenu de la mission en français : traducteur du navigateur indisponible pour cette langue.', 'Mission content in French: the browser translator is not available for this language.', 'Missionsinhalt auf Französisch: Browser-Übersetzer für diese Sprache nicht verfügbar.', 'Contenido de la misión en francés: traductor del navegador no disponible para este idioma.']));
+    if (mtStart) return `${esc(tv(['Contenu de la mission en français : le traducteur du navigateur doit d’abord télécharger sa langue (une fois).', 'Mission content in French: the browser translator first needs to download its language (once).', 'Missionsinhalt auf Französisch: der Browser-Übersetzer muss zuerst seine Sprache herunterladen (einmalig).', 'Contenido de la misión en francés: el traductor del navegador debe descargar primero su idioma (una vez).']))} <button type="button" class="secondary" data-mt-go>${esc(tv(['Traduire le contenu', 'Translate the content', 'Inhalt übersetzen', 'Traducir el contenido']))}</button>`;
+    if (MT.pending()) return esc(tv(['Traduction automatique du contenu en cours…', 'Translating the content automatically…', 'Inhalt wird automatisch übersetzt…', 'Traduciendo el contenido automáticamente…']));
+    return esc(tv(['Contenu traduit automatiquement par le navigateur (la mission n’apporte pas sa traduction) : à lire avec prudence.', 'Content translated automatically by the browser (the mission has no translation): read with care.', 'Inhalt automatisch vom Browser übersetzt (die Mission bringt keine Übersetzung mit): mit Vorsicht lesen.', 'Contenido traducido automáticamente por el navegador (la misión no trae traducción): leer con prudencia.']));
+  }
+  /** Traduit les textes notés au rendu, puis redessine le livre (ou le redessine avec le bouton de téléchargement). */
+  function mtFlush() {
+    const MT = window.MachineTranslate;
+    if (!MT.pending() || mtStart || mtNone) return;
+    MT.flush({
+      onDone: () => redraw(),
+      onUnavailable: () => {
+        mtNone = true;
+        redraw();
+      },
+      onNeedClick: start => {
+        mtStart = start;
+        redraw();
+      }
+    });
+  }
+  // « Traduire le contenu » : écoute posée une fois, en capture (avant le clic de page qui tournerait la page)
+  document.addEventListener('click', e => {
+    const b = e.target.closest?.('[data-mt-go]');
+    if (!b) return;
+    e.stopPropagation();
+    e.preventDefault();
+    const start = mtStart;
+    mtStart = null;
+    b.disabled = true;
+    b.textContent = tv(['Téléchargement du modèle de traduction…', 'Downloading the translation model…', 'Übersetzungsmodell wird heruntergeladen…', 'Descargando el modelo de traducción…']);
+    start?.();
+  }, true);
   function render(a, y, md = '', log = []) {
     lastRender = [a, y, md, log];
+    const pageLang = window.RepositoryNav?.getLanguage?.() || 'fr',
+      // traduction automatique : langue autre que le français, et ni bloc i18n ni traduction fournie pour elle
+      auto = pageLang !== 'fr' && !y?.i18n?.[pageLang] && !!window.MachineTranslate,
+      T = auto ? s => window.MachineTranslate.text(s) : s => s;
     y = window.MissionI18n?.here?.(y) || y; // brief dans la langue de la page (bloc i18n du YAML), sinon en français
+    if (auto) y = mtYaml(y, T);
     const pts = routeOf(y),
       dist = pts.slice(1).reduce((s, p, i) => s + nm(pts[i], p), 0);
     const alert = a.alert || y.alert;
-    const secs = mdSections(md);
+    const secs = mdSections(md, T);
     const take = re => {
       const i = secs.findIndex(s => re.test(s.title));
       return i < 0 ? null : secs.splice(i, 1)[0];
@@ -2150,8 +2247,8 @@
     const plis = plisOf(a, y);
     const pliWhen = p => `${p.at != null ? `${hhmm(p.at)} — ` : ''}${p.when}`;
     const pliHtml = p => p.open ?
-      `<h5 class="pm-pli-head">${p.emitter ? 'Message à transmettre' : p.kind === 'pli' ? 'Pli' : 'Message radio'} ${esc(p.id)}${p.title ? ` — ${esc(p.title)}` : ''}</h5>
-        <p class="pm-pli-meta">${p.emitter ? tv(['À {x} · ', 'To {x} · ', 'An {x} · ', 'A {x} · '], { x: esc(p.to.join(', ')) }) : p.from ? tv(['De {x} · ', 'From {x} · ', 'Von {x} · ', 'De {x} · '], { x: esc(p.from) }) : ''}${esc(pliWhen(p))} · <button type="button" class="repo-plain ad-link pm-reseal" data-pli-reseal="${esc(p.id)}">Resceller</button></p>${para(p.text)}${tracksHtml(p.tracks)}
+      `<h5 class="pm-pli-head">${p.emitter ? 'Message à transmettre' : p.kind === 'pli' ? 'Pli' : 'Message radio'} ${esc(p.id)}${p.title ? ` — ${esc(T(p.title))}` : ''}</h5>
+        <p class="pm-pli-meta">${p.emitter ? tv(['À {x} · ', 'To {x} · ', 'An {x} · ', 'A {x} · '], { x: esc(p.to.join(', ')) }) : p.from ? tv(['De {x} · ', 'From {x} · ', 'Von {x} · ', 'De {x} · '], { x: esc(p.from) }) : ''}${esc(pliWhen(p))} · <button type="button" class="repo-plain ad-link pm-reseal" data-pli-reseal="${esc(p.id)}">Resceller</button></p>${para(T(p.text))}${tracksHtml(p.tracks)}
         ${Array.from({ length: Math.ceil(p.maps.filter(m => mapUrls[m]).length / 2) }, (_, i) => `<div class="pm-maps">${p.maps.filter(m => mapUrls[m]).slice(i * 2, i * 2 + 2).map(figure).join('')}</div>`).join('')}` :
       `<div class="pm-pli" data-kind="${p.kind}" data-pli="${esc(p.id)}" title="Briser le scellé"><b>${p.emitter ? 'Message à transmettre' : p.kind === 'pli' ? 'Pli scellé' : 'Message radio attendu'}</b><span>${esc(p.id)}${p.emitter ? tv([' · à {x}', ' · to {x}', ' · an {x}', ' · a {x}'], { x: esc(p.to.join(', ')) }) : p.from ? tv([' · de {x}', ' · from {x}', ' · von {x}', ' · de {x}'], { x: esc(p.from) }) : ''}</span>
         <span class="pm-pli-at">À ouvrir : ${esc(pliWhen(p))}</span>${p.tracks.length ? `<small>${tv(p.tracks.length > 1 ? ['{n} pistes', '{n} tracks', '{n} Spuren', '{n} pistas'] : ['1 piste', '1 track', '1 Spur', '1 pista'], { n: p.tracks.length })}</small>` : ''}${p.maps.length ? `<small>${tv(p.maps.length > 1 ? ['{n} cartes jointes', '{n} maps attached', '{n} Karten beigefügt', '{n} mapas adjuntos'] : ['1 carte jointe', '1 map attached', '1 Karte beigefügt', '1 mapa adjunto'], { n: p.maps.length })}</small>` : ''}
@@ -2159,7 +2256,7 @@
     const summary = y.summary ? para(y.summary) : mdSummary?.html || '';
     const objectives = [y.objectives?.primary && `<p><b>Objectif principal</b> : ${esc(y.objectives.primary)}</p>`, ...(Array.isArray(y.objectives?.secondary) ? y.objectives.secondary : y.objectives?.secondary ? [y.objectives.secondary] : []).map(o => `<p><b>Objectif secondaire</b> : ${esc(o)}</p>`)].filter(Boolean).join('');
     const notes = (Array.isArray(y.notes) ? y.notes : y.notes ? [y.notes] : []).filter(n => !String(n).startsWith(`Mission ${a.mission}`));
-    const signed = new Date(Date.parse(a.updated_at || '') || Date.now()).toLocaleDateString('fr-FR', {
+    const signed = new Date(Date.parse(a.updated_at || '') || Date.now()).toLocaleDateString(loc(), {
       day: '2-digit',
       month: 'long',
       year: 'numeric'
@@ -2170,8 +2267,9 @@
       <div data-part="order"><header class="pm-head"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>DEFA Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div><span class="pm-no">N° ${esc(a.mission)}</span></header>
         <i class="pm-dr" aria-label="Diffusion restreinte"></i>
         <h3>${a.role === 'convoyage' ? `Ordre de convoyage — ${esc(titleOf(a).replace(/^Convoyage /, ''))}` : `Ordre de mission — ${esc(y.title || a.title || '')}`}</h3>
+        ${auto ? `<p class="pm-mt small" data-mt-note data-no-i18n>${mtNoteHtml()}</p>` : ''}
         ${order}${ferryText}${alertText}
-        ${team.length ? `<p><b>Avec</b> : ${team.map(x => `${esc(x.callsign || '')} (${esc(x.pilot)}, ${esc([x.aircraft?.type, x.aircraft?.registration].filter(Boolean).join(' '))}, décollage ${esc(hhmm(A.when(x)))})`).join(' · ')}</p>` : ''}
+        ${team.length ? `<p><b>Avec</b> : ${team.map(x => `${esc(x.callsign || '')} (${esc(x.pilot)}, ${esc([x.aircraft?.type, x.aircraft?.registration].filter(Boolean).join(' '))}, ${tv(['décollage {t}', 'take-off {t}', 'Start {t}', 'despegue {t}'], { t: esc(hhmm(A.when(x))) })})`).join(' · ')}</p>` : ''}
         ${sec('Introduction', mdIntro?.html)}
         ${sec('Résumé', summary)}
       </div>
@@ -2194,7 +2292,7 @@
       <div data-part="final">
         ${sec('Objectifs', objectives)}
         ${sec('Remarques', notes.length ? `<ul>${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : '')}
-        ${secs.filter(s => !/piste|track|inject|chiffon|chronolog|exercice|plis?|message/i.test(s.title)).map(s => sec(s.title, s.html)).join('')}
+        ${secs.filter(s => !/piste|track|inject|chiffon|chronolog|exercice|\bplis?\b|message/i.test(s.title)).map(s => sec(s.label || s.title, s.html)).join('')}
         ${sec('Fiche technique', techSheet(y))}
         ${sec('Historique des affectations', log.length ? `<ul class="pm-log">${log.map(e => `<li>${esc(A.logText(e))}</li>`).join('')}</ul>` : '')}
         <div class="pm-sign"><i class="pm-dr" aria-label="Diffusion restreinte"></i><span>${tv(['Fait le {d}, pour le Centre', 'Done on {d}, for the Centre', 'Gegeben am {d}, für das Zentrum', 'Hecho el {d}, por el Centro'], { d: esc(signed) })}</span><em class="pm-signature">${esc(a.by || 'CPCO')}</em><small>Le chef de centre — ${esc(a.by || 'CPCO')}</small></div>
@@ -2291,6 +2389,7 @@
     const close = $('pmDetail').querySelector('[data-close-book]');
     if (close) close.onclick = () => setClosed(a, true); // dossier refermé, non rescellé (mission lue)
     bookify();
+    if (auto) mtFlush();
     // contenu (dossier ou présentation ordinaire) dans un conteneur : masqué quand le dossier est fermé
     const host = $('pmDetail'),
       wrap = document.createElement('div');
@@ -2400,11 +2499,12 @@
       left.dataset.folio = pages[at] ? at : '';
       right.dataset.folio = pages[at + 1] ? at + 1 : '';
       prev.hidden = false; // à la première double page : refermer le dossier
-      prev.title = prev.ariaLabel = at === 0 ? 'Refermer le dossier' : 'Page précédente';
+      // infobulles écrites traduites (réécrites à chaque page tournée : la couche de traduction les laisserait au garde-fou)
+      prev.title = prev.ariaLabel = at === 0 ? tv(['Refermer le dossier', 'Close the folder', 'Mappe schließen', 'Cerrar la carpeta']) : tv(['Page précédente', 'Previous page', 'Vorherige Seite', 'Página anterior']);
       next.hidden = endOf(at);
       book.classList.toggle('pm-at-end', atSig(at)); // signet posé : double page de fin du dossier
       book.classList.toggle('pm-past', at > S); // plis : signet passé, sous la page de gauche
-      sig.title = sig.ariaLabel = !atSig(at) ? 'Signet : fin du dossier' : plisPages.length ? 'Signet : ouvrir les plis scellés' : 'Signet : retour au début';
+      sig.title = sig.ariaLabel = tv(!atSig(at) ? ['Signet : fin du dossier', 'Bookmark: end of the folder', 'Lesezeichen: Ende der Mappe', 'Marcapáginas: fin de la carpeta'] : plisPages.length ? ['Signet : ouvrir les plis scellés', 'Bookmark: open the sealed envelopes', 'Lesezeichen: versiegelte Umschläge öffnen', 'Marcapáginas: abrir los sobres sellados'] : ['Signet : retour au début', 'Bookmark: back to the start', 'Lesezeichen: zurück zum Anfang', 'Marcapáginas: volver al principio']);
       left.scrollTop = right.scrollTop = 0;
       host.dataset.bookAt = at; // double page affichée (gardée si le livre est redessiné)
     };
@@ -2588,7 +2688,7 @@
       piston: 'propeller',
       other: 'plane'
     };
-    const summary = () => `${mastered.size} type(s) maîtrisé(s), ${owned.size} possédé(s) sur ${types.length} types de la flotte.`;
+    const summary = () => tv(['{m} type(s) maîtrisé(s), {o} possédé(s) sur {n} types de la flotte.', '{m} type(s) mastered, {o} owned out of {n} fleet types.', '{m} Typ(en) beherrscht, {o} besessen von {n} Flottentypen.', '{m} tipo(s) dominado(s), {o} poseído(s) de {n} tipos de la flota.'], { m: mastered.size, o: owned.size, n: types.length });
     host.innerHTML = `<p class="pm-types-sum" id="pmTypesSum">${esc(summary())}</p><div class="pm-types-cards">${groups.map(g => `<div class="repo-card pm-type-card" data-icon="${ICON[g[0].category] || 'plane'}" data-subtitle="${g.length} type(s)"><h3>${esc(g[0].categoryLabel)}</h3>
       <table class="pm-type-table"><thead><tr><th>Type</th><th>Variantes de la flotte</th><th>Appareils</th><th class="pm-c">Possédé</th><th class="pm-c">Maîtrisé</th></tr></thead><tbody>${g.map(x => `<tr>
         <td><b>${esc(x.model)}</b><br><code>${esc(x.type)}</code>${x.description ? ` <small title="Description OACI (Doc 8643)">${esc(x.description)}</small>` : ''}</td>

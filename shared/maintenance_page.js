@@ -496,6 +496,27 @@
     } catch {
       /* illisible */
     }
+    // compagnie virtuelle : défauts (repository_tree.va) en indication, réglage local dans les champs
+    const vaRows = () => {
+      const d = window.REPOSITORY_TREE?.va || {};
+      let o = {};
+      try {
+        o = JSON.parse(localStorage.getItem('suiteVA:v1') || '{}') || {};
+      } catch {
+        /* illisible */
+      }
+      const field = (key, label, def, val) => `<tr><td><b>${esc(t(label))}</b></td><td><input type="text" class="mt-url" data-va="${esc(key)}" value="${esc(val || '')}" placeholder="${esc(def || '')}" spellcheck="false"></td></tr>`;
+      return [
+        field('name', ['Nom', 'Name', 'Name', 'Nombre'], d.name, o.name),
+        field('short', ['Sigle', 'Short name', 'Kürzel', 'Sigla'], d.short, o.short),
+        field('centre', ['Centre (sigle)', 'Centre (short)', 'Zentrum (Kürzel)', 'Centro (sigla)'], d.centre, o.centre),
+        field('centreName', ['Centre (nom complet)', 'Centre (full name)', 'Zentrum (voller Name)', 'Centro (nombre completo)'], d.centreName, o.centreName),
+        field('pages.home', ['Page d’accueil', 'Home page', 'Startseite', 'Página de inicio'], d.pages?.home, o.pages?.home),
+        field('pages.log', ['Log des vols', 'Flight log', 'Flugbuch', 'Registro de vuelos'], d.pages?.log, o.pages?.log),
+        field('pages.fleet', ['Flotte', 'Fleet', 'Flotte', 'Flota'], d.pages?.fleet, o.pages?.fleet),
+        field('pages.aircraft', ['Fiche d’un appareil', 'Aircraft page', 'Flugzeugseite', 'Ficha de un avión'], d.pages?.aircraft, o.pages?.aircraft)
+      ].join('');
+    };
     const eff = window.Airac?.cycle?.();
     const openUrl = (k, u) => k === 'siaCycle' && eff ? eff.url : u;
     // premier lancement (lanceur lancer.cmd / lancer.sh : ?m=sources&setup=1) : un seul choix, le dossier du dépôt
@@ -510,9 +531,30 @@
       <h3>${esc(t(['Sources externes', 'External sources', 'Externe Quellen', 'Fuentes externas']))}</h3>
       <p class="mt-small">${esc(t(['Adresses par défaut livrées avec l’application (repository_tree) ; une valeur saisie ici ne vaut que pour ce navigateur (sauvegardée avec les données locales).', 'Default addresses ship with the application (repository_tree); a value entered here applies to this browser only (saved with local data).']))}</p>
       <table class="mt-table mt-wide mt-sources"><tbody>${Object.entries(src).map(([k, v]) => `<tr data-src="${esc(k)}"><td><b>${esc(t(v.label || [k]))}</b></td><td><input type="url" class="mt-url" value="${esc(local[k] || '')}" placeholder="${esc(v.url)}" spellcheck="false"></td><td class="mt-nowrap">${local[k] ? pill('info', t(['modifiée', 'changed', 'geändert', 'cambiada'])) : ''} <button type="button" class="secondary" data-reset ${local[k] ? '' : 'hidden'}>↺</button> <a class="mt-link" href="${esc(openUrl(k, nav.source(k)))}" target="_blank" rel="noopener">${esc(t(['Ouvrir', 'Open', 'Öffnen', 'Abrir']))} ↗</a></td></tr>`).join('')}</tbody></table>
+      <h3>${esc(t(['Compagnie virtuelle', 'Virtual airline', 'Virtuelle Fluggesellschaft', 'Aerolínea virtual']))}</h3>
+      <p class="mt-small">${esc(t(['Nom, sigle et centre affichés dans la suite (DEFA Virtual, DEFA, CPCO par défaut) et pages du site de la compagnie (adresse : « Site de la compagnie virtuelle » ci-dessus ; chemin sous ce site, ou adresse complète ; {id} : numéro de l’appareil). Vide : valeur par défaut. Vaut pour ce navigateur.', 'Name, short name and centre shown in the suite (DEFA Virtual, DEFA, CPCO by default) and pages of the airline website (address: “Virtual airline website” above; path under that site, or full address; {id}: aircraft number). Empty: default value. Applies to this browser.', 'Name, Kürzel und Zentrum in der Suite (standardmäßig DEFA Virtual, DEFA, CPCO) und Seiten der Website (Adresse: oben; Pfad unter dieser Website oder vollständige Adresse; {id}: Flugzeugnummer). Leer: Standardwert. Gilt für diesen Browser.', 'Nombre, sigla y centro mostrados en la suite (DEFA Virtual, DEFA, CPCO por defecto) y páginas del sitio de la aerolínea (dirección: arriba; ruta bajo ese sitio o dirección completa; {id}: número del avión). Vacío: valor por defecto. Vale para este navegador.']))}</p>
+      <table class="mt-table mt-wide mt-va"><tbody>${vaRows()}</tbody></table>
+      <p class="row"><button type="button" class="secondary" id="mtVaReset" data-icon="refresh">${esc(t(['Revenir à DEFA Virtual', 'Back to DEFA Virtual', 'Zurück zu DEFA Virtual', 'Volver a DEFA Virtual']))}</button></p>
       <h3>${esc(t(['Premier lancement', 'First run', 'Erster Start', 'Primer inicio']))}</h3>
       <div class="mt-reset"><b>⚠ ${esc(t(['« Nettoyer » efface les réglages de ce navigateur', '“Clean” erases this browser’s settings', '„Bereinigen“ löscht die Einstellungen dieses Browsers', '«Limpiar» borra los ajustes de este navegador']))}</b> : ${esc(t(['dossiers mémorisés, copie du classeur ODV, identifiants du site DEFA, profil et l’indicateur « suite réglée » (confirmation sur la page du premier lancement). Les fichiers sur le disque ne sont pas touchés.', 'remembered folders, ODV workbook copy, DEFA site credentials, profile and the “suite set up” flag (confirmed on the first-run page). Files on disk are not touched.']))}</div>
       <p class="row"><button type="button" class="secondary" id="mtSetupOpen" data-icon="refresh">${esc(t(['Rouvrir le premier lancement', 'Reopen the first run', 'Ersten Start erneut öffnen', 'Reabrir el primer inicio']))}</button> <button type="button" class="mt-danger" id="mtSetupClean">${esc(t(['Nettoyer et recommencer…', 'Clean and start over…', 'Bereinigen und neu beginnen…', 'Limpiar y empezar de nuevo…']))}</button></p>`;
+    // compagnie virtuelle : un champ modifié → réglage local (RepositoryNav.setVa), défauts de repository_tree sinon
+    host.querySelectorAll('.mt-va [data-va]').forEach(input => input.onchange = () => {
+      const o = JSON.parse(localStorage.getItem('suiteVA:v1') || '{}') || {},
+        [k, sub] = input.dataset.va.split('.'),
+        v = input.value.trim();
+      if (sub) o.pages = {
+        ...(o.pages || {}),
+        [sub]: v
+      };
+      else o[k] = v;
+      nav.setVa(o);
+      renderSources();
+    });
+    host.querySelector('#mtVaReset').onclick = () => {
+      nav.setVa({});
+      renderSources();
+    };
     host.querySelector('#mtSetupOpen').onclick = () => location.assign('premier_lancement.html?force');
     host.querySelector('#mtSetupClean').onclick = () => location.assign('premier_lancement.html?force&clean');
     if (setup && !repo.handle) host.querySelector('tr[data-key="__repo"]')?.classList.add('mt-setup-row');

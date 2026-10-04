@@ -66,11 +66,11 @@
     SC: ['DISPO sécu civile', 'dispo', 'SECU', '2F5597'],
     C: ['DISPO Chasse FAF', 'dispo', 'CHASSE', '0070C0'],
     T: ['DISPO Transport FAF', 'dispo', 'TRANSPORT', 'F4B183'],
-    S: ['Exercice IVAO SO', 'dispo', 'EXERCICE', 'FF0000'],
+    S: ['Exercice SO (IVAO / VATSIM)', 'dispo', 'EXERCICE', 'FF0000'],
     N: ['DISPO FNY', 'dispo', 'FNY', '8693A0'],
-    AT: ['Contrôle IVAO civil', 'atc', 'ATC', '7030A0'],
-    AM: ['Contrôle IVAO SO', 'atc', 'ATC', 'C4BD97'],
-    G: ['Vol IVAO hors SO', 'occupe', null, 'FFD966'],
+    AT: ['Contrôle civil (IVAO / VATSIM)', 'atc', 'ATC', '7030A0'],
+    AM: ['Contrôle SO (IVAO / VATSIM)', 'atc', 'ATC', 'C4BD97'],
+    G: ['Vol hors SO (IVAO / VATSIM)', 'occupe', null, 'FFD966'],
     DC: ['Mission DCS', 'occupe', null, '002060'],
     IR: ['MANIP IRL', 'indispo', null, 'FFFF00'],
     IN: ['INDISPO', 'indispo', null, 'BFBFBF'],
@@ -94,7 +94,7 @@
     SECU: 'Sécu civile (code SC)',
     FNY: 'FNY (code N)',
     MARITIME: 'Maritime',
-    EXERCICE: 'Exercice IVAO SO',
+    EXERCICE: 'Exercice SO (IVAO / VATSIM)',
     TOUT: 'Tout rôle (code O)'
   };
 

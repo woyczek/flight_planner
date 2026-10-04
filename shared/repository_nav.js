@@ -581,6 +581,29 @@
   document.body.style.backgroundColor = theme.page || "";
   /** Adresse d'une source externe : réglage local (suiteSources:v1, Paramètres › Maintenance) sinon repository_tree.sources. */
   const source = key => String(K.store.json("suiteSources:v1", {})[key] || cfg.sources?.[key]?.url || "").replace(/\/+$/, "");
+  /** Compagnie virtuelle : repository_tree.va (DEFA Virtual par défaut) et réglage local (suiteVA:v1) ; url : site
+   *  (sources.defa). { name, short, centre, centreName, url, pages: { home, log, fleet, aircraft } }. */
+  const va = () => {
+    const d = cfg.va || {},
+      o = K.store.json("suiteVA:v1", {}) || {};
+    return {
+      name: o.name || d.name || "DEFA Virtual",
+      short: o.short || d.short || "DEFA",
+      centre: o.centre || d.centre || "CPCO",
+      centreName: o.centreName || d.centreName || "",
+      url: source("defa"),
+      pages: {
+        ...(d.pages || {}),
+        ...(o.pages || {})
+      }
+    };
+  };
+  /** Adresse d'une page du site de la compagnie virtuelle (home, log, fleet, aircraft) ; vars : {id}… */
+  const vaUrl = (pageKey, vars = {}) => {
+    const v = va(),
+      p = String(v.pages[pageKey] ?? "").replace(/\{(\w+)\}/g, (_, k) => encodeURIComponent(vars[k] ?? ""));
+    return /^https?:/i.test(p) ? p : v.url + (p && !p.startsWith("/") ? "/" : "") + p;
+  };
   /** Émet « repository-design-change » (detail : ce qui a changé) : décors, icônes, graphiques des pages se refont. */
   const designChanged = detail => window.dispatchEvent(new CustomEvent("repository-design-change", {
     detail
@@ -589,6 +612,20 @@
   window.RepositoryNav = {
     cpco,
     source,
+    va,
+    vaUrl,
+    /** Enregistre la surcharge locale de la compagnie virtuelle (objet vide : défauts) ; événement « suite-sources-change ». */
+    setVa(o) {
+      const clean = Object.fromEntries(Object.entries(o || {}).filter(([k, v]) => k === "pages" ? v && Object.values(v).some(Boolean) : String(v || "").trim()));
+      if (clean.pages) clean.pages = Object.fromEntries(Object.entries(clean.pages).filter(([, v]) => String(v || "").trim()));
+      if (Object.keys(clean).length) K.store.setJson("suiteVA:v1", clean);
+      else K.store.remove("suiteVA:v1");
+      window.dispatchEvent(new CustomEvent("suite-sources-change", {
+        detail: {
+          key: "va"
+        }
+      }));
+    },
     /** Enregistre (ou efface, valeur vide) la surcharge locale d'une source ; événement « suite-sources-change ». */
     setSource(key, value) {
       const o = K.store.json("suiteSources:v1", {}),
@@ -859,7 +896,7 @@
     // haut de la barre : logo DEFA décliné selon le design (shared/icons/defa/<id du design à matières>.webp, sinon
     // flat), lien vers le site de la flotte DEFA Virtual (nouvel onglet : la page en cours reste ouverte)
     const logoSrc = () => new URL(`icons/defa/${designs[doc.dataset.design]?.skeuo ? doc.dataset.design : "flat"}.webp${ver}`, script.src).href;
-    side.innerHTML = `<a class="repo-sidenav-brand" href="${source("defa") || "https://flotte.defa-virtual.fr"}/index.php" target="_blank" rel="noopener" title="DEFA Virtual — ${source("defa").replace(/^https?:\/\//, "")}"><img class="repo-sidenav-logo" src="${logoSrc()}" alt="DEFA Virtual"></a><ul></ul>`;
+    side.innerHTML = `<a class="repo-sidenav-brand" href="${K.esc(vaUrl("home"))}" target="_blank" rel="noopener" title="${K.esc(va().name)} — ${K.esc(source("defa").replace(/^https?:\/\//, ""))}"><img class="repo-sidenav-logo" src="${logoSrc()}" alt="${K.esc(va().name)}"></a><ul></ul>`;
     const ul = side.querySelector("ul");
     items.forEach((it, i) => {
       const li = document.createElement("li");
@@ -930,11 +967,52 @@
     store.src = new URL("browser_store.js?v=42c3e0d5", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
-    assign.src = new URL("assignments.js?v=3318925e", script.src).href;
+    assign.src = new URL("assignments.js?v=e024506d", script.src).href;
     document.head.append(assign);
     const update = document.createElement("script");
     update.src = new URL("suite_update.js?v=649cb695", script.src).href;
     document.head.append(update)
+  }
+  {
+    /* Autre compagnie virtuelle que DEFA (Paramètres › Sources et dossiers) : « DEFA Virtual », « DEFA » et « CPCO »
+       des textes de la suite affichés avec le nom, le sigle et le centre réglés (nœuds texte et infobulles, pages et
+       contenus ajoutés ensuite). Rien n'est fait avec les réglages par défaut. */
+    const rebrand = () => {
+      const v = va(),
+        d = cfg.va || {},
+        rules = [
+          [/\bDEFA Virtual\b/g, v.name, d.name || "DEFA Virtual"],
+          [/\bDEFA\b/g, v.short, d.short || "DEFA"],
+          [/\bCPCO\b/g, v.centre, d.centre || "CPCO"]
+        ].filter(([, to, from]) => to && to !== from);
+      if (!rules.length) return;
+      const fix = s => rules.reduce((x, [re, to]) => x.replace(re, to), s);
+      const skip = el => !el || el.closest("script,style,textarea,input,code,pre,[contenteditable],[data-no-rebrand]");
+      const walk = root => {
+        const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());)
+          if (!skip(n.parentElement) && /DEFA|CPCO/.test(n.nodeValue)) {
+            const s = fix(n.nodeValue);
+            if (s !== n.nodeValue) n.nodeValue = s;
+          }
+        if (root.querySelectorAll)
+          for (const el of root.querySelectorAll("[title]"))
+            if (/DEFA|CPCO/.test(el.title)) el.title = fix(el.title);
+      };
+      walk(document.body);
+      if (document.title) document.title = fix(document.title);
+      new MutationObserver(list => {
+        for (const m of list)
+          for (const n of m.type === "characterData" ? [m.target] : m.addedNodes) n.nodeType === 3 ? (!skip(n.parentElement) && /DEFA|CPCO/.test(n.nodeValue) && (n.nodeValue = fix(n.nodeValue))) : n.nodeType === 1 && !skip(n) && walk(n);
+      }).observe(document.body, {
+        childList: true,
+        characterData: true, // textes traduits ensuite (content_i18n.js)
+        subtree: true
+      });
+    };
+    document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", rebrand, {
+      once: true
+    }) : rebrand();
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {
     detail: window.RepositoryNav

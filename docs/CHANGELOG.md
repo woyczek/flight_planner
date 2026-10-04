@@ -22,6 +22,18 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   `shared/mission_i18n.js` ; Mes missions affiche le brief, les plis et les pistes dans la langue de la page (repli sur
   le français champ par champ). Doc : `docs/SIA_MISSIONS.md` § 2 sexies.
 - Audit de sécurité (`docs/AUDIT_SECURITE_2026-10-02.md`).
+- **Livre de mission traduit automatiquement** quand la mission n'apporte pas sa traduction (pas de bloc `i18n`) :
+  traducteur intégré du navigateur (Chrome / Edge, sur l'ordinateur, rien n'est envoyé), résultats gardés
+  (`shared/machine_translate.js`) ; note en tête de l'ordre, bouton quand la langue doit d'abord être téléchargée.
+- **Compagnie virtuelle configurable** (Paramètres › Sources et dossiers) : nom, sigle, centre, pages du site (log des
+  vols, flotte, fiche appareil) ; DEFA Virtual par défaut (`repository_tree.va`, `RepositoryNav.va()` / `vaUrl()`) ;
+  autre compagnie : « DEFA Virtual », « DEFA » et « CPCO » affichés avec ses valeurs dans toute la suite.
+- Outil `tools/audit_i18n.html` : textes restés en français, page par page, dans une autre langue.
+- **Journal DEFA** : favori « → Journal DEFA » (copie toute la page « Log des vols », tableau compris), collage du
+  HTML du presse-papiers plutôt que du texte seul, bouton « Coller depuis le presse-papiers » ; adresse du log prise dans
+  la configuration de la compagnie virtuelle.
+- Planches contact des en-têtes de l'ordre de mission par organisme, pour chaque design à matières
+  (`tools/planche_rubriques.py` → `docs/planches/`).
 - **Dossier d'une autre copie signalé** : le lanceur écrit à chaque démarrage un repère (`.defa_instance`, ignoré par
   git) à la racine et dans `data/` ; un dossier autorisé qui n'est pas celui de la suite lancée (ex. « DEFA - Copy »)
   est confirmé au choix et marqué ⚠ avec une notification sur les boutons de dossier (`FileAccess.sameAsServed`).
@@ -38,6 +50,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - Visionneuse commune pour le registre des missions (YAML, Markdown, versions, cartes).
 - Plus de galon sous le bandeau des designs à matières ; bouton désactivé nettement grisé (Cabinet, Carnet de vol).
 - Couche de traduction : comparaison sans la typographie de la langue ; libellé court suivi d'une flèche de tri.
+- Mes missions : dates et semaine dans la langue de la page ; liste et grille redessinées au changement de langue ;
+  rubriques du résumé « pli / plis » de nouveau écartées du dossier (expression abîmée par un caractère de contrôle).
+- Traductions : générateur, studio, Cartes de vol, planificateur, ODV (infobulles des zones calculées, créneaux, jours),
+  Paramètres, Premier lancement, en-têtes des CR (« FIRE / GAAR — Compte rendu de mission ») ; la couche de traduction
+  reconnaît « début libre — texte connu », traduit les infobulles des zones calculées et ne dépend plus du rafraîchissement
+  de l'écran (onglet en arrière-plan).
+- IVAO et VATSIM à égalité : légende des codes de disponibilité neutre (« Exercice SO (IVAO / VATSIM) »…), favori du CR
+  présenté pour le tracker IVAO et StatSim (VATSIM).
 - **Lecture des missions et affectations plus fluide** : petite base de fichiers dans `assignments.js` (lectures
   gardées en mémoire et revalidées par requête conditionnelle, fichiers absents compris ; invalidation entre onglets
   `defa-data` ; écritures des affectations, du journal et des disponibilités sous verrous Web Locks) ; plus de relecture

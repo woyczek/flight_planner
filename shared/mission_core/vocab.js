@@ -518,3 +518,26 @@
     operatorDesignators
   };
 })();
+
+// En-têtes des pages de compte rendu et de reporting (« FIRE / GAAR — Compte rendu de mission ») : lignes de
+// traduction (la couche de traduction reconnaît « début libre — texte connu »).
+(() => {
+  const rows = [
+    ['Compte rendu de mission', 'Mission report', 'Einsatzbericht', 'Informe de misión'],
+    ['compte rendu de mission', 'mission report', 'Einsatzbericht', 'informe de misión'],
+    ['Reporting missions', 'Mission reporting', 'Einsatzauswertung', 'Reporting de misiones'],
+    ['reporting missions', 'mission reporting', 'Einsatzauswertung', 'reporting de misiones'],
+    ['Nouveau compte rendu', 'New report', 'Neuer Bericht', 'Nuevo informe'],
+    ['Nouveau compte rendu de mission', 'New mission report', 'Neuer Einsatzbericht', 'Nuevo informe de misión'],
+    ['Démonstration', 'Demonstration', 'Demonstration', 'Demostración'],
+    ['AAR / RAVITAILLEMENT EN VOL', 'AAR / AIR-TO-AIR REFUELLING', 'AAR / LUFTBETANKUNG', 'AAR / REABASTECIMIENTO EN VUELO'],
+    ['Heures de mission', 'Mission hours', 'Einsatzstunden', 'Horas de misión'],
+    ['Cliquer pour modifier', 'Click to edit', 'Zum Bearbeiten klicken', 'Clic para editar'],
+    ['Glisser pour élargir ou réduire la colonne (double-clic : largeur automatique)', 'Drag to widen or narrow the column (double-click: automatic width)', 'Ziehen, um die Spalte zu verbreitern oder zu verkleinern (Doppelklick: automatische Breite)', 'Arrastrar para ensanchar o estrechar la columna (doble clic: ancho automático)'],
+    ['Non renseigné', 'Not specified', 'Nicht angegeben', 'Sin indicar']
+  ];
+  const reg = () => window.RepositoryContentI18n?.(rows);
+  document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', reg, {
+    once: true
+  }) : reg();
+})();

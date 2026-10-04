@@ -258,7 +258,21 @@
     return `<span class="odv-tri" style="--c:${c ? '#' + c : '#556'};--t:${inkOn(c)}">${esc(t)}</span>${n ? `<span class="odv-name">${esc(n)}</span>` : ''}`;
   }
   const dateFr = iso => iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : '';
-  const slotTitle = s => `${s.jour} ${dateFr(s.date)} — ${s.creneau} (${s.heures})`;
+  // jour et créneau du classeur (en français) dans la langue de la page
+  const DAY_ROWS = {
+    lundi: ['Lundi', 'Monday', 'Montag', 'Lunes'],
+    mardi: ['Mardi', 'Tuesday', 'Dienstag', 'Martes'],
+    mercredi: ['Mercredi', 'Wednesday', 'Mittwoch', 'Miércoles'],
+    jeudi: ['Jeudi', 'Thursday', 'Donnerstag', 'Jueves'],
+    vendredi: ['Vendredi', 'Friday', 'Freitag', 'Viernes'],
+    samedi: ['Samedi', 'Saturday', 'Samstag', 'Sábado'],
+    dimanche: ['Dimanche', 'Sunday', 'Sonntag', 'Domingo'],
+    matin: ['matin', 'morning', 'Morgen', 'mañana'],
+    'après-midi': ['après-midi', 'afternoon', 'Nachmittag', 'tarde'],
+    soir: ['soir', 'evening', 'Abend', 'noche']
+  };
+  const wordL = w => DAY_ROWS[String(w || '').toLowerCase()] ? L(DAY_ROWS[String(w).toLowerCase()]) : w;
+  const slotTitle = s => `${wordL(s.jour)} ${dateFr(s.date)} — ${wordL(s.creneau)} (${s.heures})`;
   /** Case de la grille : code en couleur de la légende, commentaire au survol. */
   function codeCell(r) {
     const e = r.code ? gridData().legende[r.code] : null,
@@ -569,9 +583,9 @@
     // sur la déclaration : affecter sur ce créneau. Rôles et simulateurs (feuille FLOTTE) : infobulle du pilote.
     const withDecl = !!window.OdvAssign;
     const head = `<thead><tr><th rowspan="2" class="odv-d-pil">Pilote</th><th rowspan="2" class="odv-d-n" title="Créneaux disponibles (+ contrôle)">Dispo</th>${C.DAYS.map((d, j) => `<th colspan="3" class="odv-d-day">${esc(d.slice(0, 3))} ${esc(dateFr(data.dates[j]))}</th>`).join('')}</tr>
-      <tr>${C.DAYS.map(() => SHORT.map((s, k) => `<th class="odv-d-slot" title="${esc((C.SLOTS || [])[k] || s)} (${esc(`${String(settings.hours[k][0]).padStart(2, '0')}-${String(settings.hours[k][1]).padStart(2, '0')}z`)})">${s}</th>`).join('')).join('')}</tr></thead>`;
+      <tr>${C.DAYS.map(() => SHORT.map((s, k) => `<th class="odv-d-slot" title="${esc(L([['matin', 'morning', 'Morgen', 'mañana'], ['après-midi', 'afternoon', 'Nachmittag', 'tarde'], ['soir', 'evening', 'Abend', 'noche']][k] || [s, s, s, s]))} (${esc(`${String(settings.hours[k][0]).padStart(2, '0')}-${String(settings.hours[k][1]).padStart(2, '0')}z`)})">${s}</th>`).join('')).join('')}</tr></thead>`;
     const body = rows.map(r => {
-      const tip = [r.roles && `Rôles : ${r.roles}`, r.sims && `Simulateurs : ${r.sims}`, `Ligne ${r.ligne} du classeur`].filter(Boolean).join('\n');
+      const tip = [r.roles && L(['Rôles : {x}', 'Roles: {x}', 'Rollen: {x}', 'Funciones: {x}'], { x: r.roles }), r.sims && L(['Simulateurs : {x}', 'Simulators: {x}', 'Simulatoren: {x}', 'Simuladores: {x}'], { x: r.sims }), L(['Ligne {n} du classeur', 'Workbook row {n}', 'Zeile {n} der Arbeitsmappe', 'Fila {n} del libro'], { n: r.ligne })].filter(Boolean).join('\n');
       return `<tr><th class="odv-d-pil" title="${esc(tip)}">${tri(r.pilote, r.couleur, false)}</th><td class="odv-d-n">${r.dispo}${r.atc ? `<small>+${r.atc}</small>` : ''}</td>${C.DAYS.map((_, j) => [0, 1, 2].map(k => {
         const v = r[`s${j}${k}`];
         return `<td class="odv-d-cell${k === 2 ? ' odv-d-end' : ''}">${codeCell(v)}${withDecl ? window.OdvAssign.line(r.pilote, j, k, v, codeCell) : ''}</td>`;
@@ -629,7 +643,7 @@
         const s = slots[j * 3 + k],
           key = `${j}${k}`;
         const bits = [s.atc.length ? `+${s.atc.length} ctrl` : '', s.vols.length ? `✈ ${s.vols.length}` : '', s.evenements.length ? '★' : ''].filter(Boolean).join(' · ');
-        html += `<button type="button" data-slot="${key}" class="repo-plain${selected === key ? ' sel' : ''}${s.n0 < settings.minPilots ? ' low' : ''}" style="--pct:${Math.round(s.n / max * 70)}%" title="${esc(slotTitle(s))} : ${s.n} pilote(s) libre(s)${s.n0 > s.n ? ` sur ${s.n0}` : ''}, ${s.atc.length} contrôleur(s)"><b>${s.n}</b><small>${esc(bits || ' ')}</small></button>`;
+        html += `<button type="button" data-slot="${key}" class="repo-plain${selected === key ? ' sel' : ''}${s.n0 < settings.minPilots ? ' low' : ''}" style="--pct:${Math.round(s.n / max * 70)}%" title="${esc(L(s.n0 > s.n ? ['{t} : {n} pilote(s) libre(s) sur {m}, {a} contrôleur(s)', '{t}: {n} free pilot(s) of {m}, {a} controller(s)', '{t}: {n} freie(r) Pilot(en) von {m}, {a} Lotse(n)', '{t}: {n} piloto(s) libre(s) de {m}, {a} controlador(es)'] : ['{t} : {n} pilote(s) libre(s), {a} contrôleur(s)', '{t}: {n} free pilot(s), {a} controller(s)', '{t}: {n} freie(r) Pilot(en), {a} Lotse(n)', '{t}: {n} piloto(s) libre(s), {a} controlador(es)'], { t: slotTitle(s), n: s.n, m: s.n0, a: s.atc.length }))}"><b>${s.n}</b><small>${esc(bits || ' ')}</small></button>`;
       }
     }
     $('odvHeat').innerHTML = html + '</div>';

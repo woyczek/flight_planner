@@ -1,6 +1,10 @@
 // Traductions allemandes et espagnoles de la page Paramétrage (shared/data_admin.js), repérées par le texte
 // français de chaque T(fr, en) : T() les ajoute aux lignes [fr, en, de, es] de la couche de traduction.
 window.DataAdminI18n = {
+  "bases de données (flotte, types, indicatifs, registres…) et maintenance (mises à jour, sources et dossiers, données SIA, sauvegarde)": [
+    "Datenbanken (Flotte, Typen, Rufzeichen, Register…) und Wartung (Aktualisierungen, Quellen und Ordner, SIA-Daten, Sicherung)",
+    "bases de datos (flota, tipos, indicativos, registros…) y mantenimiento (actualizaciones, fuentes y carpetas, datos SIA, copia de seguridad)"
+  ],
   "Écriture directe impossible dans ce navigateur (Chrome / Edge requis) : utilisez « Télécharger ».": [
     "Direktes Schreiben in diesem Browser nicht verfügbar (Chrome / Edge erforderlich): „Herunterladen“ verwenden.",
     "Escritura directa no disponible en este navegador (se requiere Chrome / Edge): use «Descargar»."

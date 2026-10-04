@@ -36,6 +36,8 @@
     rows.push([fr, en, x?.[0] || en, x?.[1] || en]);
     return fr;
   };
+  // sous-titre de la page Paramètres (« DEFA Virtual — … » : la couche de traduction traduit la partie après le tiret)
+  T('bases de données (flotte, types, indicatifs, registres…) et maintenance (mises à jour, sources et dossiers, données SIA, sauvegarde)', 'databases (fleet, types, callsigns, ledgers…) and maintenance (updates, sources and folders, SIA data, backup)');
 
   // ---- format commun des fichiers de données (identique à AircraftDB/datafile.py)
   /** Texte d'un fichier de données du dépôt, au format commun (identique à AircraftDB/datafile.py) : commentaire d'en-tête, méta (updatedAt), une ligne JSON par élément, clé de surcharge locale, variable exportée. */
@@ -427,7 +429,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       ],
       overlay: () => fleetData(),
       howto: `<p>${T('Mise à jour complète depuis le site de la flotte :', 'Full update from the fleet website:')}</p>
-        <ol><li>${T('Ouvrir', 'Open')} <a href="${esc(window.RepositoryNav?.source?.('defa') || 'https://flotte.defa-virtual.fr')}/flotte.php" target="_blank" rel="noopener">flotte.defa-virtual.fr › Flotte virtuelle</a>, ${T('puis Fichier › Enregistrer sous… (« Flotte.html »).', 'then File › Save as… (“Flotte.html”).')}</li>
+        <ol><li>${T('Ouvrir', 'Open')} <a href="${esc(window.RepositoryNav?.vaUrl?.('fleet') || 'https://flotte.defa-virtual.fr/flotte.php')}" target="_blank" rel="noopener">${esc((window.RepositoryNav?.source?.('defa') || 'flotte.defa-virtual.fr').replace(/^https?:\/\//, ''))} › ${T('Flotte virtuelle', 'Virtual fleet')}</a>, <span>${T('puis Fichier › Enregistrer sous… (« Flotte.html »).', 'then File › Save as… (“Flotte.html”).')}</span></li>
         <li>${T('À la racine du dépôt :', 'At the repository root:')} <code>python AircraftDB/update_fleet.py Flotte.html</code></li>
         <li>${T('Les appareils de la page remplacent ceux du fichier ; les indicatifs supplémentaires et les appareils ajoutés ici sont conservés.', 'Aircraft from the page replace those of the file; extra callsigns and aircraft added here are kept.')}</li>
         <li>${T('Recharger cette page ; supprimer les modifications locales si elles ont été intégrées.', 'Reload this page; delete local changes once integrated.')}</li></ol>`
@@ -1116,7 +1118,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       const paint = () => {
         const q = up(filter.value),
           shown = (q ? list.filter(r => up(Object.values(r).join(' ')).includes(q)) : list);
-        flights.innerHTML = `<p class="small">${shown.length} ${T('vols', 'flights')}${shown.length > 300 ? ` — ${T('300 premiers affichés', 'first 300 shown')}` : ''}</p><table class="da-table"><thead><tr>${['Date', T('Durée', 'Duration'), T('Pilote', 'Pilot'), T('Indicatif', 'Callsign'), T('Immat.', 'Reg.'), 'Type', T('Départ', 'Dep.'), T('Arrivée', 'Arr.'), 'Mission'].map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${shown.slice(0, 300).map(r => `<tr><td>${esc(r.date)} ${esc(r.time)}</td><td>${r.durationMin == null ? '—' : hours(r.durationMin)}</td><td>${esc(r.trigram)}</td><td>${esc(r.callsign)}</td><td>${r.fleetId ? `<a href="${esc(window.RepositoryNav?.source?.('defa') || 'https://flotte.defa-virtual.fr')}/appareil.php?id=${esc(r.fleetId)}" target="_blank" rel="noopener">${esc(r.registration)}</a>` : esc(r.registration)}</td><td>${esc([r.type, r.variant].filter(Boolean).join(' '))}</td><td>${esc(r.dep)}</td><td>${esc(r.arr)}</td><td>${esc(r.mission)}</td></tr>`).join('')}</tbody></table>`;
+        flights.innerHTML = `<p class="small">${shown.length} ${T('vols', 'flights')}${shown.length > 300 ? ` — ${T('300 premiers affichés', 'first 300 shown')}` : ''}</p><table class="da-table"><thead><tr>${['Date', T('Durée', 'Duration'), T('Pilote', 'Pilot'), T('Indicatif', 'Callsign'), T('Immat.', 'Reg.'), 'Type', T('Départ', 'Dep.'), T('Arrivée', 'Arr.'), 'Mission'].map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${shown.slice(0, 300).map(r => `<tr><td>${esc(r.date)} ${esc(r.time)}</td><td>${r.durationMin == null ? '—' : hours(r.durationMin)}</td><td>${esc(r.trigram)}</td><td>${esc(r.callsign)}</td><td>${r.fleetId ? `<a href="${esc(window.RepositoryNav?.vaUrl?.('aircraft', { id: r.fleetId }) || `https://flotte.defa-virtual.fr/appareil.php?id=${r.fleetId}`)}" target="_blank" rel="noopener">${esc(r.registration)}</a>` : esc(r.registration)}</td><td>${esc([r.type, r.variant].filter(Boolean).join(' '))}</td><td>${esc(r.dep)}</td><td>${esc(r.arr)}</td><td>${esc(r.mission)}</td></tr>`).join('')}</tbody></table>`;
       };
       filter.oninput = paint;
       paint();

@@ -12,8 +12,13 @@ window.REPOSITORY_TREE={
   },
   // Sources externes (adresses par défaut ; réglables dans Paramètres › Maintenance › Sources et dossiers, surcharge
   // locale suiteSources:v1) : RepositoryNav.source(clé). {nn} / {yy} : numéro du cycle AIRAC et année sur deux chiffres.
+  // Compagnie virtuelle (DEFA Virtual par défaut ; réglable dans Paramètres › Maintenance › Sources et dossiers,
+  // surcharge locale suiteVA:v1) : RepositoryNav.va() ; adresse du site : sources.defa ; pages : chemins sous ce site,
+  // {id} remplacé (RepositoryNav.vaUrl(page, { id })).
+  va:{name:"DEFA Virtual",short:"DEFA",centre:"CPCO",centreName:"Centre de planification et de conduite des opérations",
+    pages:{home:"/index.php",log:"/log_vols.php",fleet:"/flotte.php",aircraft:"/appareil.php?id={id}"}},
   sources:{
-    defa:{url:"https://flotte.defa-virtual.fr",label:["Site de la flotte DEFA Virtual","DEFA Virtual fleet site","DEFA-Virtual-Flottenseite","Sitio de la flota DEFA Virtual"]},
+    defa:{url:"https://flotte.defa-virtual.fr",label:["Site de la compagnie virtuelle (DEFA Virtual)","Virtual airline website (DEFA Virtual)","Website der virtuellen Fluggesellschaft (DEFA Virtual)","Sitio de la aerolínea virtual (DEFA Virtual)"]},
     siaData:{url:"https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/les-bases-de-donnees-sia.html",label:["SIA — bases de données (export XML)","SIA — databases (XML export)","SIA — Datenbanken (XML-Export)","SIA — bases de datos (XML)"]},
     siaCycle:{url:"https://www.sia.aviation-civile.gouv.fr/donnees-aeronautiques-xml-airac-{nn}-{yy}.html",label:["SIA — page d’un cycle AIRAC","SIA — AIRAC cycle page","SIA — Seite eines AIRAC-Zyklus","SIA — página de un ciclo AIRAC"]},
     siaEaip:{url:"https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/eaip.html",label:["SIA — eAIP","SIA — eAIP","SIA — eAIP","SIA — eAIP"]},
