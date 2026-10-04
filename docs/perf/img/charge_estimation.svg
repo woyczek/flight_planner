@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="230" font-family="system-ui,Segoe UI,sans-serif" font-size="10">
+<rect width="100%" height="100%" fill="#fff"/><text x="0" y="13" font-size="12" font-weight="600" fill="#1b1f24">Estimation de route d'une mission avec un registre de n missions</text>
+<line x1="52" y1="196" x2="452" y2="196" stroke="#d5d9df"/><line x1="52" y1="22" x2="52" y2="196" stroke="#d5d9df"/>
+<text x="48" y="171.4" text-anchor="end" fill="#5b6470">0.1 ms</text><line x1="52" y1="168.4" x2="452" y2="168.4" stroke="#eef0f3"/>
+<text x="48" y="118.6" text-anchor="end" fill="#5b6470">1 ms</text><line x1="52" y1="115.6" x2="452" y2="115.6" stroke="#eef0f3"/>
+<text x="48" y="65.8" text-anchor="end" fill="#5b6470">10 ms</text><line x1="52" y1="62.8" x2="452" y2="62.8" stroke="#eef0f3"/>
+<text x="52.0" y="210" text-anchor="middle" fill="#5b6470">73</text>
+<text x="184.4" y="210" text-anchor="middle" fill="#5b6470">300</text>
+<text x="232.3" y="210" text-anchor="middle" fill="#5b6470">500</text>
+<text x="314.3" y="210" text-anchor="middle" fill="#5b6470">1200</text>
+<text x="362.2" y="210" text-anchor="middle" fill="#5b6470">2000</text>
+<text x="448.0" y="210" text-anchor="middle" fill="#5b6470">5000</text>
+<polyline fill="none" stroke="#d8763b" stroke-width="2" points="52.0,131.0 184.4,98.8 314.3,61.5 379.2,43.8"/>
+<circle cx="52.0" cy="131.0" r="3" fill="#d8763b"/>
+<circle cx="184.4" cy="98.8" r="3" fill="#d8763b"/>
+<circle cx="314.3" cy="61.5" r="3" fill="#d8763b"/>
+<circle cx="379.2" cy="43.8" r="3" fill="#d8763b"/>
+<polyline fill="none" stroke="#d8763b" stroke-width="1.5" stroke-dasharray="4 3" points="379.2,43.8 448.0,26.0"/>
+<polyline fill="none" stroke="#3b6fd8" stroke-width="2" points="52.0,196.0 184.4,173.5 314.3,145.6 379.2,118.3"/>
+<circle cx="52.0" cy="196.0" r="3" fill="#3b6fd8"/>
+<circle cx="184.4" cy="173.5" r="3" fill="#3b6fd8"/>
+<circle cx="314.3" cy="145.6" r="3" fill="#3b6fd8"/>
+<circle cx="379.2" cy="118.3" r="3" fill="#3b6fd8"/>
+<polyline fill="none" stroke="#3b6fd8" stroke-width="1.5" stroke-dasharray="4 3" points="379.2,118.3 448.0,103.4"/>
+<text x="452" y="224" text-anchor="end" fill="#5b6470">missions (échelle log) — pointillés : extrapolation</text>
+</svg>

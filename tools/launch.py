@@ -248,6 +248,18 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         if size < 0 or size > self.MAX_UPLOAD:
             return self._json({'error': 'fichier trop gros'}, 413)
         body = self.rfile.read(size) if size else b''
+        if path == '/__setup/perf':
+            # mesures de l'audit de performance (tools/perf_audit.html) : docs/perf/runs/<nom>.json
+            name = re.sub(r'[^\w.-]+', '_', urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('name', ['audit'])[0])[:80]
+            try:
+                json.loads(body or b'null')
+            except ValueError:
+                return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+            out = os.path.join(ROOT, 'docs', 'perf', 'runs')
+            os.makedirs(out, exist_ok=True)
+            with open(os.path.join(out, name + '.json'), 'wb') as f:
+                f.write(body)
+            return self._json({'ok': True, 'file': f'docs/perf/runs/{name}.json'})
         if path == '/__setup/clone':
             try:
                 a = json.loads(body or b'{}')
@@ -376,6 +388,24 @@ INSTANCE_DIRS = ('', 'data', os.path.join('data', 'missions'), os.path.join('dat
                  os.path.join('data', 'planner'))
 
 
+def index_availability():
+    """data/disponibilites/_index.json : pilotes qui ont déclaré leurs disponibilités (fichier <TRI>.json). Les pages
+    ne demandent que ces fichiers (l'ODV en demandait un par pilote, presque tous absents). Réécrit seulement s'il
+    change ; ignoré par git (régénéré)."""
+    d = os.path.join(DATA, 'disponibilites')
+    if not os.path.isdir(d):
+        return
+    pilots = {m.group(1).upper(): True for m in (re.match(r'^([A-Za-z0-9]{2,5})\.json$', n) for n in sorted(os.listdir(d))) if m}
+    p = os.path.join(d, '_index.json')
+    try:
+        old = json.load(open(p, encoding='utf-8')).get('pilots')
+    except (OSError, ValueError):
+        old = None
+    if old != pilots:
+        with open(p, 'w', encoding='utf-8', newline='\n') as f:
+            json.dump({'updated_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'pilots': pilots}, f, indent=1)
+
+
 def mark_instance():
     token = secrets.token_hex(8)
     for d in INSTANCE_DIRS:
@@ -421,6 +451,7 @@ def main():
         return 1
     Setup.port = port
     mark_instance()
+    index_availability()
     handler = lambda *x, **k: Setup(*x, directory=ROOT, **k)
     srv = Server(('127.0.0.1', port), handler)
     url = f'http://127.0.0.1:{port}/{a.page}?t={int(time.time())}'  # adresse neuve : page jamais reprise du cache

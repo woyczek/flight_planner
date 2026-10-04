@@ -67,24 +67,33 @@
 
   // ---- dossiers mémorisés (même base que ledger.js, data_admin.js, browser_store.js)
   /** Base IndexedDB « missionCore » (magasin handles) : dossiers mémorisés, partagée avec ledger.js, data_admin.js et browser_store.js. */
-  const idb = () => new Promise((resolve, reject) => {
-    const r = indexedDB.open('missionCore', 1);
-    r.onupgradeneeded = () => r.result.createObjectStore('handles');
-    r.onsuccess = () => resolve(r.result);
-    r.onerror = () => reject(r.error);
-  });
+  // connexion partagée par la page (RepositoryKit.idb) : plus une ouverture par lecture
+  const idb = () => window.RepositoryKit.idb('missionCore', 1, db => db.objectStoreNames.contains('handles') || db.createObjectStore('handles'));
+  // dossiers mémorisés gardés 10 s en mémoire (une page en lit des dizaines par écran) ; oubliés quand un dossier est
+  // rechoisi (ici ou par une autre page : file-access-change)
+  const handleMemo = new Map();
+  window.addEventListener('file-access-change', () => handleMemo.clear());
   /** Dossier mémorisé (handle) de la clé key (__repo, __ledger, __perf, __store…) ; null sinon. */
   async function get(key) {
-    try {
-      const db = await idb();
-      return await new Promise(res => {
-        const q = db.transaction('handles').objectStore('handles').get(`folder:${key}`);
-        q.onsuccess = () => res(q.result || null);
-        q.onerror = () => res(null);
-      });
-    } catch {
-      return null;
-    }
+    const hit = handleMemo.get(key);
+    if (hit && Date.now() - hit.at < 10e3) return hit.value;
+    const value = await (async () => {
+      try {
+        const db = await idb();
+        return await new Promise(res => {
+          const q = db.transaction('handles').objectStore('handles').get(`folder:${key}`);
+          q.onsuccess = () => res(q.result || null);
+          q.onerror = () => res(null);
+        });
+      } catch {
+        return null;
+      }
+    })();
+    handleMemo.set(key, {
+      at: Date.now(),
+      value
+    });
+    return value;
   }
   /** Mémorise le dossier handle sous la clé key. */
   async function set(key, handle) {
@@ -217,6 +226,7 @@
       await new Promise(r => {
         tx.oncomplete = tx.onerror = r;
       });
+      handleMemo.clear();
       localStorage.setItem('fileAccessLayout', '3');
       const data = await get('__data');
       if (data) await deriveFromData(data);

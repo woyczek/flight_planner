@@ -560,7 +560,7 @@
     }) || null;
     window.addEventListener('repository-language-change', () => setTimeout(render));
     window.addEventListener('repository-design-change', () => setTimeout(render)); // palette, style des graphiques
-    window.addEventListener('load', () => window.RepositoryNav?.addAction?.(`${t('newReport')} ${family.id}`, () => {
+    window.addEventListener('load', () => window.RepositoryNav?.addAction?.(UI.newReport.map(s => `${s} ${family.id}`), () => { // libellé des 4 langues : le menu le traduit
       location.href = family.pages.cr;
     }));
     const ready = ledger.load().then(render);

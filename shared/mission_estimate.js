@@ -104,7 +104,7 @@
   function plannerProfile(code) {
     if (!code) return null;
     try {
-      const all = Object.values(JSON.parse(localStorage.getItem('flightPerfState') || '{}').profiles || {});
+      const all = Object.values((window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('flightPerfState', {}) : JSON.parse(localStorage.getItem('flightPerfState') || '{}'))?.profiles || {});
       return all.find(p => String(p.icao || p.type || '').toUpperCase() === code) || null;
     } catch {
       return null;
@@ -355,7 +355,7 @@
   function provenTimes(r) {
     let reg = [];
     try {
-      reg = JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions || [];
+      reg = (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('missionRegistry:v1', null) : JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null'))?.missions || []; // lecture mémorisée : une estimation ne réanalyse plus tout le registre
     } catch {
       return {};
     }

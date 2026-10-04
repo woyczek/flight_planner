@@ -764,7 +764,7 @@
   const opOf = m => (/^([A-Z]+-\d+)[A-Y]$/i.exec(String(m?.id || '')) || [])[1] || m?.operation?.id || '';
   const regMissions = () => {
     try {
-      return JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions || [];
+      return (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('missionRegistry:v1', null) : JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null'))?.missions || [];
     } catch {
       return [];
     }

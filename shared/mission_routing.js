@@ -226,7 +226,7 @@
   function settings() {
     let s = {};
     try {
-      s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') || {};
+      s = (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached(SETTINGS_KEY, {}) : JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')) || {}; // lecture mémorisée
     } catch {
       s = {};
     }

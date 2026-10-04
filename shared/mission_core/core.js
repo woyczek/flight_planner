@@ -906,7 +906,7 @@
       // durée estimée de la mission (registre des missions, shared/mission_estimate.js) et écart avec ce vol
       let est = null;
       try {
-        est = (JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions || []).find(x => x.id === id)?.estimate || null;
+        est = ((window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('missionRegistry:v1', null) : JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null'))?.missions || []).find(x => x.id === id)?.estimate || null;
       } catch {
         /* registre illisible */
       }

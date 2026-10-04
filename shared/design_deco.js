@@ -481,6 +481,10 @@
       nodes.push(el);
     }
   }
+  if (window.__perf) { // audit de performance : durée et nombre de passes (tools/perf_audit.html)
+    const raw = render;
+    render = (...a) => window.__perf.time('deco', () => raw(...a));
+  }
 
   /** Libellé et action du voyant de sauvegarde (Durci). */
   function state() {

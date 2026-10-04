@@ -30,9 +30,11 @@
     PAGE = 'apps/pilot/mes_missions.html';
   const t = row => K?.t ? K.t(row) : row[0];
   const root = () => window.RepositoryNav?.root || new URL('../', document.currentScript?.src || location.href).href;
+  // lectures mémorisées (RepositoryKit.store.jsonCached) : analyse refaite seulement si le texte a changé — isRead,
+  // pliState, disponibilités… sont lus à chaque ligne de la liste et à chaque case de la grille
   const json = (k, d) => {
     try {
-      return JSON.parse(localStorage.getItem(k) || 'null') ?? d;
+      return K?.store?.jsonCached ? K.store.jsonCached(k, d) : JSON.parse(localStorage.getItem(k) || 'null') ?? d;
     } catch {
       return d;
     }
@@ -53,6 +55,7 @@
   // entre les onglets à chaque écriture (BroadcastChannel « defa-data », événement « defa-data-change ») ; écritures
   // sérialisées par des verrous (Web Locks) : deux onglets ou deux pages n'écrasent plus l'écriture de l'autre.
   const store = (() => {
+    const inflight = new Map(); // adresse → lecture en cours (promesse partagée)
     const mem = new Map(), // adresse → { at, value } (value null : fichier absent)
       TTL = 60e3;
     const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('defa-data') : null;
@@ -79,20 +82,30 @@
         const url = new URL(path, root()).href,
           hit = mem.get(url);
         if (hit && !fresh && Date.now() - hit.at < TTL) return hit.value;
-        let value = null;
-        try {
-          const r = await fetch(url, {
-            cache: 'no-cache'
+        // lecture déjà en cours pour cette adresse (appels parallèles : un par pilote de l'ODV) : partagée
+        if (inflight.has(url)) return inflight.get(url);
+        const p = (async () => {
+          let value = null;
+          try {
+            const r = await fetch(url, {
+              cache: 'no-cache'
+            });
+            value = r.ok ? await r.json() : null;
+          } catch {
+            value = hit ? hit.value : null; // lanceur arrêté : dernière valeur connue
+          }
+          mem.set(url, {
+            at: Date.now(),
+            value
           });
-          value = r.ok ? await r.json() : null;
-        } catch {
-          value = hit ? hit.value : null; // lanceur arrêté : dernière valeur connue
+          return value;
+        })();
+        inflight.set(url, p);
+        try {
+          return await p;
+        } finally {
+          inflight.delete(url);
         }
-        mem.set(url, {
-          at: Date.now(),
-          value
-        });
-        return value;
       },
       /** Fichier écrit : oublié ici et dans les autres onglets, qui relisent à la demande. */
       changed(path) {
@@ -372,7 +385,12 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     let doc = local?.grid || hasWeeks(local) ? local : null;
     // déclaration servie (petite base : gardée une minute, fichier absent compris — plus de rafale de 404 à chaque
     // reconstruction de l'ODV ; oubliée dès qu'un onglet l'écrit)
-    if (!doc) doc = await store.read(`data/disponibilites/${encodeURIComponent(tri)}.json`);
+    // index des déclarations (data/disponibilites/_index.json : pilotes qui ont un fichier) : un pilote absent de
+    // l'index n'est pas demandé (l'ODV demandait un fichier par pilote, presque tous en 404) ; sans index, comme avant
+    if (!doc) {
+      const idx = await store.read('data/disponibilites/_index.json');
+      if (!idx?.pilots || idx.pilots[tri]) doc = await store.read(`data/disponibilites/${encodeURIComponent(tri)}.json`);
+    }
     return doc ? {
       ...doc,
       grid: normGrid(doc.grid)
@@ -428,8 +446,23 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       })).createWritable();
       await w.write(JSON.stringify(doc, null, 2));
       await w.close();
+      // index refait d'après la liste du dossier (toujours complet, même si des fichiers ont été ajoutés à la main)
+      const pilots = {};
+      for await (const [name, h] of sub.entries()) {
+        const m = /^([A-Z0-9]{2,5})\.json$/i.exec(name);
+        if (m && h.kind === 'file') pilots[m[1].toUpperCase()] = name === `${tri}.json` ? doc.updated_at : true;
+      }
+      const wi = await (await sub.getFileHandle('_index.json', {
+        create: true
+      })).createWritable();
+      await wi.write(JSON.stringify({
+        updated_at: doc.updated_at,
+        pilots
+      }, null, 1));
+      await wi.close();
     });
     store.changed(path);
+    store.changed('data/disponibilites/_index.json');
     return path;
   }
   /** Types d'appareils du pilote (désignateurs OACI) : { owned, mastered } — gardés avec ses disponibilités (même

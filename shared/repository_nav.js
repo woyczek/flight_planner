@@ -326,7 +326,7 @@
     document.head.append(l);
     // illustrations du décor complet (frise de Cabinet, radar de Durci), même version
     const d = document.createElement("script");
-    d.src = new URL("design_deco.js?v=a0ea721b", script.src).href;
+    d.src = new URL("design_deco.js?v=03695d26", script.src).href;
     document.head.append(d);
   };
   designCss(design);
@@ -954,10 +954,10 @@
     profile.src = new URL("pilot_profile.js?v=f1357c65", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=28826511", script.src).href;
+    files.src = new URL("file_access.js?v=1e823776", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=58f492d6", "block_icons.js?v=9e1df4ee", "side_nav.js?v=355697e6"]) {
+    for (const f of ["icons/repository_icons.js?v=58f492d6", "block_icons.js?v=562bd4e5", "side_nav.js?v=355697e6"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
@@ -967,7 +967,7 @@
     store.src = new URL("browser_store.js?v=42c3e0d5", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
-    assign.src = new URL("assignments.js?v=e024506d", script.src).href;
+    assign.src = new URL("assignments.js?v=c98a7f01", script.src).href;
     document.head.append(assign);
     const update = document.createElement("script");
     update.src = new URL("suite_update.js?v=649cb695", script.src).href;

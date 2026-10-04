@@ -12,8 +12,9 @@
     BATCH = NS ? 'siaMissionBatch' + NS : 'siaMissionBatch:v1'; // lot de missions (opération à plusieurs équipes) : { docs, index }
   /** Clé de texte : minuscules sans accents, mots séparés par « _ ». */
   const norm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-  /** Copie profonde (JSON). */
-  const deepClone = v => JSON.parse(JSON.stringify(v));
+  /** Copie profonde : valeurs simples telles quelles (la copie JSON de chaque nombre ou texte coûtait des milliers
+   *  d'analyses par relecture du dossier des missions), objets par structuredClone. */
+  const deepClone = v => v === null || typeof v !== 'object' ? v : structuredClone(v);
 
   // ---- lecture Markdown (titres « ## Summary », ancien format à blocs TYPE: / TURNING POINTS: …)
   function parseMarkdown(text) {
@@ -912,7 +913,7 @@
   function nextNumbering(family) {
     let reg = [];
     try {
-      reg = JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions || [];
+      reg = (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('missionRegistry:v1', null) : JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null'))?.missions || []; // lecture mémorisée (texte inchangé : pas de nouvelle analyse)
     } catch {
       /* registre illisible */
     }

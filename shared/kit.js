@@ -14,6 +14,13 @@
 //   K.store.get(clé, défaut) / .set / .remove / .json(clé, défaut) / .setJson
 //   K.color.rgb(c) / .hex(rgb) / .luminance(c) / .contrast(a, b) / .hsl(h, s, l) / .hueSat(c) / .lightness(c)
 //   K.noFolderAccess()                   message : choix d'un dossier impossible ici (Brave, Firefox, http hors localhost)
+// Audit de performance (tools/perf_audit.html) : sonde insérée juste après ce fichier, avant les scripts de la page,
+// seulement si localStorage « perfProbe » vaut « 1 » (rien sinon).
+try {
+  if (localStorage.getItem('perfProbe') === '1' && !window.__perf && document.readyState === 'loading') document.write(`<script src="${new URL('perf_probe.js', document.currentScript.src).href}"></scr` + 'ipt>');
+} catch {
+  /* stockage indisponible : pas de sonde */
+}
 (() => {
   'use strict';
   if (window.RepositoryKit) return;
@@ -176,8 +183,66 @@
     },
     setJson(key, value) {
       return store.set(key, JSON.stringify(value));
+    },
+    /** Valeur JSON de la clé, analysée seulement si son texte a changé depuis la dernière lecture (registre, profils,
+     *  réglages relus à chaque estimation, chaque case ou chaque ligne). Valeur partagée : la lire, ou la modifier
+     *  puis l'écrire aussitôt (setJson). */
+    jsonCached(key, fallback = null) {
+      let raw = null;
+      try {
+        raw = localStorage.getItem(key);
+      } catch {
+        return fallback;
+      }
+      const hit = jsonMemo.get(key);
+      if (hit && hit.raw === raw) return hit.value ?? fallback;
+      let value = null;
+      try {
+        value = JSON.parse(raw || 'null');
+      } catch {
+        value = null;
+      }
+      jsonMemo.set(key, {
+        raw,
+        value
+      });
+      return value ?? fallback;
     }
   };
+  const jsonMemo = new Map();
+
+  // ------------------------------------------------------------------ IndexedDB
+  // Une connexion par base et par page, réutilisée (ouvrir une connexion à chaque lecture coûtait des dizaines
+  // d'ouvertures par écran, jamais refermées) ; refermée et oubliée si une autre page met la base à niveau.
+  const idbConns = new Map();
+  /** Connexion (promesse) à la base name ; upgrade(db, ancienneVersion) à la création ou à la mise à niveau. */
+  function idb(name, version = 1, upgrade = null) {
+    const k = `${name}@${version}`;
+    if (idbConns.has(k)) return idbConns.get(k);
+    const p = new Promise((resolve, reject) => {
+      const r = indexedDB.open(name, version);
+      r.onupgradeneeded = e => upgrade?.(r.result, e.oldVersion);
+      r.onsuccess = () => {
+        const db = r.result;
+        db.onversionchange = () => {
+          db.close();
+          idbConns.delete(k);
+        };
+        db.onclose = () => idbConns.delete(k);
+        resolve(db);
+      };
+      r.onerror = () => {
+        idbConns.delete(k);
+        reject(r.error);
+      };
+      r.onblocked = () => {
+        idbConns.delete(k);
+        reject(new Error(`IndexedDB ${name} : ouverture bloquée`));
+      };
+    });
+    idbConns.set(k, p);
+    return p;
+  }
 
   // ------------------------------------------------------------------ couleurs
   /** « #rgb », « #rrggbb » ou « rgb(a)(…) » → [r, g, b] (0–255) ; null si illisible ou totalement transparent. */
@@ -296,6 +361,7 @@
   const viewImage = (src, title = '') => show(title, `<img src="${esc(src)}" alt="${esc(title)}">`, false);
   const viewHtml = (title, html) => show(title, html, true);
   window.RepositoryKit = {
+    idb,
     LANGS,
     viewImage,
     viewHtml,

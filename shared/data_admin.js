@@ -62,12 +62,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
 
   // ---- dossier du dépôt (IndexedDB partagée avec les registres du Core)
   /** Base IndexedDB « missionCore » (magasin handles) : dossiers autorisés. */
-  const idb = () => new Promise((resolve, reject) => {
-    const r = indexedDB.open('missionCore', 1);
-    r.onupgradeneeded = () => r.result.createObjectStore('handles');
-    r.onsuccess = () => resolve(r.result);
-    r.onerror = () => reject(r.error);
-  });
+  // connexion partagée par la page (RepositoryKit.idb) : plus une ouverture par lecture
+  const idb = () => window.RepositoryKit.idb('missionCore', 1, db => db.objectStoreNames.contains('handles') || db.createObjectStore('handles'));
   /** Valeur d'une clé du magasin handles ; null si absente. */
   const idbGet = async key => {
     try {

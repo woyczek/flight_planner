@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Montée en charge</title>
+<style>
+  body { font: 14px/1.45 system-ui, sans-serif; margin: 16px; color: #1b1f24; background: #fff; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  h2 { font-size: 16px; margin: 20px 0 6px; }
+  table { border-collapse: collapse; margin-top: 6px; font-size: 13px; }
+  th, td { border: 1px solid #d5d9df; padding: 3px 8px; text-align: right; }
+  th { background: #f2f4f7; }
+  td.l, th.l { text-align: left; }
+  .mut { color: #5b6470; }
+</style>
+</head>
+<body>
+<h1>Montée en charge</h1>
+<p>Données fictives de taille croissante, traitées par les vraies fonctions de la suite (affectations, grille de l'ODV,
+registre et estimation de route, registre des CR, couche de traduction). Chaque mesure est la médiane de trois essais ;
+la croissance est ajustée en loi de puissance <code>t = a·n^b</code> (b ≈ 1 : linéaire ; b ≈ 2 : quadratique) puis
+extrapolée. Servir le dépôt avec le lanceur, ouvrir <code>/tools/perf_scale.html</code>.</p>
+<p><label>Libellé <input id="label" size="24" value="avant"></label> <button id="go">Mesurer</button> <button id="save">Enregistrer dans docs/perf</button> <span id="state" class="mut"></span></p>
+<div id="out"></div>
+<script>
+  // sans sonde ni mode « sans serveur » (audit de parcours) : mesures du code seul
+  if (localStorage.getItem('perfProbe') || localStorage.getItem('perfNoServer')) {
+    localStorage.removeItem('perfProbe');
+    localStorage.removeItem('perfNoServer');
+    location.reload();
+  }
+</script>
+<script src="../config/repository_tree"></script>
+<script src="../shared/kit.js"></script>
+<script src="../shared/mission_core/vendor/js-yaml.min.js"></script>
+<script src="../AircraftDB/aircraft_db.js"></script>
+<script src="../AircraftDB/aircraft_perf.js"></script>
+<script src="../shared/mission_estimate.js"></script>
+<script src="../shared/assignments.js"></script>
+<script src="../shared/content_i18n.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const now = () => performance.now();
+  const median = a => a.slice().sort((x, y) => x - y)[Math.floor(a.length / 2)];
+  async function time(fn, reps = 3) {
+    const out = [];
+    for (let i = 0; i < reps; i++) {
+      const t0 = now();
+      await fn();
+      out.push(now() - t0);
+      await sleep(10);
+    }
+    return median(out);
+  }
+  // ---- données fictives
+  const TRIS = Array.from({ length: 150 }, (_, i) => String.fromCharCode(65 + i % 26, 65 + Math.floor(i / 26) % 26, 65 + i % 7));
+  const WEEK0 = Date.parse('2026-01-05T00:00:00Z');
+  function assignments(n, pilots = 50) {
+    return Array.from({ length: n }, (_, i) => {
+      const t = WEEK0 + (i * 7919 % (365 * 24)) * 36e5;
+      return { mission: `S-${String(i % 900).padStart(3, '0')}${'ABC'[i % 3]}`, title: 'Mission fictive', type: 'SAR', folder: 'S_SAR/S-001', files: { yaml: 'missionS-001.yaml', md: '', maps: [] }, pilot: TRIS[i % pilots], callsign: 'FNY50' + (i % 9), aircraft: { registration: 'F-TEST', type: 'NH90', base: 'LFRL' }, departure: 'LFRL', takeoff: new Date(t).toISOString(), block_min: 120, status: 'affectée', role: 'mission', updated_at: new Date(t - 864e5).toISOString(), by: 'CPCO' };
+    });
+  }
+  let regSample = null, crSample = null;
+  async function samples() {
+    try { regSample = JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions?.slice(0, 50) || null; } catch {}
+    if (!regSample?.length) {
+      const y = jsyaml.load(await (await fetch('../data/missions/mission_registry.yaml')).text());
+      regSample = (y?.missions || []).slice(0, 50);
+    }
+    const cr = jsyaml.load(await (await fetch('../data/cr/missions.yaml')).text());
+    crSample = (cr?.missions || []).slice(0, 20);
+  }
+  const replicate = (src, n, edit) => Array.from({ length: n }, (_, i) => edit({ ...structuredClone(src[i % src.length]) }, i));
+
+  // ---- cas mesurés
+  const CASES = [
+    { id: 'affectations', label: 'Mes missions : lire l\'index et choisir ses missions (n affectations)', unit: 'affectations', sizes: [500, 2000, 8000, 32000],
+      async run(n) {
+        const text = JSON.stringify({ assignments: assignments(n) });
+        localStorage.setItem('missionReportingConfig:v1', JSON.stringify({ trigram: TRIS[0] }));
+        return time(() => { const idx = JSON.parse(text); window.MissionAssignments.mine(idx.assignments, { all: true }); });
+      } },
+    { id: 'odv-grille', label: 'ODV : grille de la semaine, 50 pilotes × 21 créneaux (n affectations)', unit: 'affectations', sizes: [500, 2000, 8000, 32000],
+      async run(n) {
+        const list = assignments(n), M = window.MissionAssignments;
+        return time(() => {
+          for (let p = 0; p < 50; p++) for (let s = 0; s < 21; s++) { const a = WEEK0 + s * 8 * 36e5; M.assignedOver(list, TRIS[p], a, a + 4 * 36e5); }
+        });
+      } },
+    { id: 'registre-stockage', label: 'Registre dans le navigateur : écriture + lecture (n missions)', unit: 'missions', sizes: [73, 300, 1200, 2400],
+      async run(n) {
+        const reg = { missions: replicate(regSample, n, (m, i) => ({ ...m, id: `X-${i}`, folder: `X/${i}` })) };
+        const text = JSON.stringify(reg);
+        this.extra = this.extra || {};
+        this.extra[n] = Math.round(text.length / 1024) + ' Ko';
+        try { localStorage.setItem('perfScaleProbe', text); } catch (e) { this.extra[n] += ' (quota dépassé)'; return null; }
+        const ms = await time(() => JSON.parse(localStorage.getItem('perfScaleProbe')));
+        localStorage.removeItem('perfScaleProbe');
+        return ms;
+      } },
+    { id: 'estimation', label: 'Estimation de route d\'une mission avec un registre de n missions', unit: 'missions', sizes: [73, 300, 1200, 2400],
+      async run(n) {
+        const reg = { missions: replicate(regSample, n, (m, i) => ({ ...m, id: `X-${i}` })) };
+        const keep = localStorage.getItem('missionRegistry:v1');
+        try { localStorage.setItem('missionRegistry:v1', JSON.stringify(reg)); } catch { return null; }
+        const y = { mission: { id: 'T-1' }, aircraft: [{ type: 'NH90', cruise_speed_kt: 130 }], origin: { name: 'LFRL', lat: 48.45, lon: -4.42 }, destination: { name: 'LFRL', lat: 48.45, lon: -4.42 }, target: { id: 'TARGET', lat: 48.1, lon: -4.9, time_on_task_min: 20 }, route_order: ['ORIGIN', 'TARGET', 'DESTINATION'] };
+        try { return await time(() => { for (let i = 0; i < 20; i++) window.MissionEstimate.estimate(y); }) / 20; }
+        finally { keep == null ? localStorage.removeItem('missionRegistry:v1') : localStorage.setItem('missionRegistry:v1', keep); }
+      } },
+    { id: 'cr', label: 'Registre des CR : lire missions.yaml (n CR)', unit: 'CR', sizes: [100, 500, 2000, 6000],
+      async run(n) {
+        const text = jsyaml.dump({ schemaVersion: 2, missions: replicate(crSample, n, (m, i) => ({ ...m, metadata: { ...(m.metadata || {}), missionId: `CRX-${i}` } })) }, { lineWidth: -1, noRefs: true });
+        this.extra = this.extra || {};
+        this.extra[n] = Math.round(text.length / 1024) + ' Ko';
+        return time(() => jsyaml.load(text));
+      } },
+    { id: 'traduction', label: 'Couche de traduction : une passe sur n textes (500 lignes connues)', unit: 'textes', sizes: [500, 2000, 8000],
+      async run(n) {
+        const rows = Array.from({ length: 500 }, (_, i) => [`Texte connu numéro ${i}`, `Known text ${i}`, `Text ${i}`, `Texto ${i}`]);
+        const box = document.createElement('div');
+        box.hidden = true;
+        box.innerHTML = Array.from({ length: n }, (_, i) => `<p>${i % 3 ? `Contenu libre de mission ${i} : description` : `Texte connu numéro ${i % 500}`}</p>`).join('');
+        document.body.append(box);
+        // passe faite juste après l'appel (regroupement des fichiers de traductions)
+        try { return await time(async () => { window.RepositoryContentI18n(rows); await Promise.resolve(); }, 1); } finally { box.remove(); }
+      } }
+  ];
+  // ---- ajustement t = a·n^b (moindres carrés en log-log) et extrapolation
+  function fit(points) {
+    const p = points.filter(([n, t]) => t > 0.05);
+    if (p.length < 2) return null;
+    const xs = p.map(([n]) => Math.log(n)), ys = p.map(([, t]) => Math.log(t));
+    const mx = xs.reduce((a, b) => a + b) / xs.length, my = ys.reduce((a, b) => a + b) / ys.length;
+    const b = xs.reduce((s, x, i) => s + (x - mx) * (ys[i] - my), 0) / xs.reduce((s, x) => s + (x - mx) ** 2, 0);
+    return { a: Math.exp(my - b * mx), b };
+  }
+  const TARGETS = { affectations: [5000, 20000, 100000], 'odv-grille': [5000, 20000, 100000], 'registre-stockage': [500, 2000, 5000], estimation: [500, 2000, 5000], cr: [1000, 5000, 20000], traduction: [3000, 10000, 30000] };
+  let last = null;
+  $('go').onclick = async () => {
+    const keepCfg = localStorage.getItem('missionReportingConfig:v1');
+    await samples();
+    const results = [];
+    try {
+      for (const c of CASES) {
+        const pts = [];
+        for (const n of c.sizes) {
+          $('state').textContent = `${c.id} — ${n}`;
+          await sleep(30);
+          const ms = await c.run(n);
+          pts.push([n, ms == null ? null : Math.round(ms * 100) / 100]);
+        }
+        const f = fit(pts.filter(p => p[1] != null));
+        results.push({ id: c.id, label: c.label, unit: c.unit, points: pts, extra: c.extra || null, fit: f, extrapolation: f ? TARGETS[c.id].map(n => [n, Math.round(f.a * n ** f.b * 10) / 10]) : null });
+      }
+    } finally {
+      keepCfg == null ? localStorage.removeItem('missionReportingConfig:v1') : localStorage.setItem('missionReportingConfig:v1', keepCfg);
+    }
+    last = { label: $('label').value.trim(), date: new Date().toISOString(), build: window.REPOSITORY_BUILD || null, results };
+    $('out').innerHTML = results.map(r => `<h2>${r.label}</h2><table><thead><tr><th class="l">${r.unit}</th>${r.points.map(p => `<th>${p[0]}</th>`).join('')}<th>exposant b</th>${(r.extrapolation || []).map(e => `<th>→ ${e[0]}</th>`).join('')}</tr></thead><tbody><tr><td class="l">ms</td>${r.points.map(p => `<td>${p[1] ?? '—'}${r.extra?.[p[0]] ? `<br><small>${r.extra[p[0]]}</small>` : ''}</td>`).join('')}<td>${r.fit ? r.fit.b.toFixed(2) : '—'}</td>${(r.extrapolation || []).map(e => `<td>${e[1]}</td>`).join('')}</tr></tbody></table>`).join('');
+    $('state').textContent = 'Terminé.';
+    window.__scale = last;
+  };
+  $('save').onclick = async () => {
+    if (!last) return;
+    const r = await fetch(`../__setup/perf?name=${encodeURIComponent(new Date().toISOString().slice(0, 10) + '_scale_' + (last.label || 'mesure'))}`, { method: 'POST', headers: { 'X-DEFA-Setup': '1', 'Content-Type': 'application/json' }, body: JSON.stringify(last, null, 1) });
+    $('state').textContent = r.ok ? `Enregistré : ${(await r.json()).file}` : 'Enregistrement impossible (lanceur requis).';
+  };
+})();
+</script>
+<script src="../config/build.js"></script>
+</body>
+</html>

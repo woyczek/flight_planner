@@ -259,6 +259,10 @@
     document.querySelectorAll('input[type=file][data-dropzone]').forEach(dropzone);
     document.querySelectorAll('.repo-block,.repo-card,.repo-header').forEach(tuneIcons);
   }
+  if (window.__perf) { // audit de performance : durée et nombre de passes (tools/perf_audit.html)
+    const raw = decorate;
+    decorate = (...a) => window.__perf.time('icons', () => raw(...a));
+  }
 
   // Après app_framework.js (son init est sur « load », enregistré avant le nôtre) ; puis après chaque
   // AppFramework.refresh(), et pour les éléments ajoutés plus tard par la page (observateur, un passage par image).
@@ -273,14 +277,35 @@
     };
     f.__blockIcons = true;
   }
+  /** Passe limitée aux éléments ajoutés (et à ce qu'ils contiennent) : la passe complète recalculait aussi les couleurs
+   *  (styles calculés) de tous les blocs de la page à chaque modification. */
+  function decorateIn(root) {
+    const all = sel => [...(root.matches(sel) ? [root] : []), ...root.querySelectorAll(sel)];
+    all('.repo-block').forEach(decorateBlock);
+    all('.repo-card').forEach(decorateCard);
+    all('[data-icon],[data-icon-end]').forEach(decorateInline);
+    all('input[type=file][data-dropzone]').forEach(dropzone);
+    all('.repo-block,.repo-card,.repo-header').forEach(tuneIcons);
+  }
   let pending = false;
-  const observer = new MutationObserver(() => {
-    if (pending) return;
+  const added = new Set();
+  const observer = new MutationObserver(list => {
+    for (const m of list)
+      for (const n of m.addedNodes)
+        if (n.nodeType === 1) added.add(n);
+    if (pending || !added.size) return;
     pending = true;
-    requestAnimationFrame(() => {
+    const go = () => {
+      if (!pending) return;
       pending = false;
-      decorate();
-    });
+      const roots = [...added].filter(n => n.isConnected);
+      added.clear();
+      const t0 = performance.now();
+      roots.forEach(decorateIn);
+      window.__perf?.add?.('icons.ms', performance.now() - t0); // audit de performance
+    };
+    requestAnimationFrame(go);
+    setTimeout(go, 150); // onglet en arrière-plan : pas d'image
   });
   // Dès que le DOM est prêt (ce script, chargé à la volée, arrive souvent après) : les icônes paraissent sans attendre
   // images, polices et cartes ; nouvelle passe au chargement complet (decorate est ré-exécutable).

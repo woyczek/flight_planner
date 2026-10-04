@@ -1,0 +1,8556 @@
+[
+ {
+  "label": "après",
+  "mode": "serveur",
+  "date": "2026-10-04T20:06:27.463Z",
+  "build": {
+   "sha": "c683ddd5",
+   "branch": "feature/perf-audit",
+   "tag": ""
+  },
+  "steps": [
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 302,
+    "nodes": 1294,
+    "resources": 49,
+    "counters": {
+     "storage.get": 59,
+     "storage.getBytes": 1015,
+     "json.parse": 30,
+     "json.chars": 489,
+     "mo.calls": 33,
+     "mo.ms": 0.2,
+     "fetch": 8,
+     "fetch.data": 4,
+     "idb.open": 1,
+     "i18n.ms": 4.8,
+     "i18n.n": 6,
+     "icons.ms": 8.9,
+     "icons.n": 3,
+     "deco.ms": 2.6,
+     "deco.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 9,
+      "ms": 0.1
+     },
+     "content_i18n.js": {
+      "calls": 15,
+      "ms": 0
+     },
+     "perf_audit.html": {
+      "calls": 7,
+      "ms": 0.1
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json pilot_profile.js:17": 5,
+     "json kit.js:201": 4,
+     "json suite_update.js:49": 3,
+     "json app_framework.js:17": 3,
+     "json browser_store.js:377": 2,
+     "idb kit.js:223": 1,
+     "json aircraft_fleet.js:221": 1,
+     "json mes_missions.html:1711": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 14,
+     "assignmentsRead:v1": 8,
+     "suiteSources:v1": 6,
+     "suiteVA:v1": 4,
+     "repositoryFramework:apps/pilot/mes_missions.html": 3,
+     "pilotAvailability:v1": 3,
+     "defaLocalStore:v1": 2,
+     "cpcoAccess:v1": 1,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1,
+     "repositorySidenav": 1,
+     "repositoryDesign": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "semaine suivante",
+    "done": true,
+    "timeout": false,
+    "settleMs": 350,
+    "nodes": 1267,
+    "resources": 2,
+    "counters": {
+     "storage.get": 9,
+     "storage.getBytes": 215,
+     "fetch": 1,
+     "fetch.data": 1,
+     "mo.calls": 12,
+     "mo.ms": 0,
+     "icons.ms": 0,
+     "i18n.ms": 1,
+     "i18n.n": 2,
+     "deco.ms": 10.7,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 4,
+      "ms": 0
+     }
+    },
+    "callers": {},
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "assignmentsRead:v1": 2,
+     "pilotAvailability:v1": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "semaine précédente",
+    "done": true,
+    "timeout": false,
+    "settleMs": 38,
+    "nodes": 1297,
+    "resources": 1,
+    "counters": {
+     "storage.get": 12,
+     "storage.getBytes": 475,
+     "fetch": 1,
+     "fetch.data": 1,
+     "mo.calls": 8,
+     "mo.ms": 0.1,
+     "icons.ms": 0,
+     "i18n.ms": 1.1,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {},
+    "storageKeys": {
+     "assignmentsRead:v1": 6,
+     "missionReportingConfig:v1": 5,
+     "pilotAvailability:v1": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "semaine suivante",
+    "done": true,
+    "timeout": false,
+    "settleMs": 34,
+    "nodes": 1267,
+    "resources": 1,
+    "counters": {
+     "storage.get": 8,
+     "storage.getBytes": 215,
+     "fetch": 1,
+     "fetch.data": 1,
+     "mo.calls": 8,
+     "mo.ms": 0,
+     "icons.ms": 0.2,
+     "i18n.ms": 0.6,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {},
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "assignmentsRead:v1": 2,
+     "pilotAvailability:v1": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "ouvrir la 1re mission",
+    "done": true,
+    "timeout": false,
+    "settleMs": 259,
+    "nodes": 1311,
+    "resources": 18,
+    "counters": {
+     "mo.calls": 6,
+     "mo.ms": 0.1,
+     "fetch": 10,
+     "fetch.data": 10,
+     "fetch.404": 7,
+     "storage.get": 3,
+     "storage.getBytes": 65,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 1.4,
+     "icons.n": 1,
+     "i18n.ms": 0.4,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "assignmentsRead:v1": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "ouvrir le dossier",
+    "done": true,
+    "timeout": false,
+    "settleMs": 32,
+    "nodes": 1311,
+    "resources": 0,
+    "counters": {
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {},
+    "callers": {},
+    "storageKeys": {}
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "page suivante ×2",
+    "done": true,
+    "timeout": false,
+    "settleMs": 1780,
+    "nodes": 1325,
+    "resources": 1,
+    "counters": {
+     "mo.calls": 11,
+     "mo.ms": 0.1,
+     "icons.ms": 0,
+     "i18n.ms": 0.8,
+     "i18n.n": 4,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 3,
+      "ms": 0
+     }
+    },
+    "callers": {},
+    "storageKeys": {}
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Cabinet",
+    "done": true,
+    "timeout": false,
+    "settleMs": 359,
+    "nodes": 1455,
+    "resources": 24,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 4,
+     "storage.set": 1,
+     "storage.setBytes": 7,
+     "mo.calls": 23,
+     "mo.ms": 0,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 7.3,
+     "icons.n": 1,
+     "i18n.ms": 1.1,
+     "i18n.n": 2,
+     "deco.ms": 10.9,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:cabinet": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Carnet de vol",
+    "done": true,
+    "timeout": false,
+    "settleMs": 355,
+    "nodes": 1344,
+    "resources": 23,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 7,
+     "storage.set": 1,
+     "storage.setBytes": 9,
+     "mo.calls": 23,
+     "mo.ms": 0,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 5.7,
+     "icons.n": 1,
+     "i18n.ms": 1.2,
+     "i18n.n": 2,
+     "deco.ms": 10.7,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:flightlog": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Durci",
+    "done": true,
+    "timeout": false,
+    "settleMs": 342,
+    "nodes": 1380,
+    "resources": 29,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 9,
+     "storage.set": 1,
+     "storage.setBytes": 5,
+     "mo.calls": 23,
+     "mo.ms": 0.2,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 5.8,
+     "icons.n": 1,
+     "i18n.ms": 1.3,
+     "i18n.n": 2,
+     "deco.ms": 11.5,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:field": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Aqua",
+    "done": true,
+    "timeout": false,
+    "settleMs": 357,
+    "nodes": 1309,
+    "resources": 7,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 5,
+     "storage.set": 1,
+     "storage.setBytes": 4,
+     "mo.calls": 23,
+     "mo.ms": 0.2,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 4.2,
+     "icons.n": 1,
+     "i18n.ms": 1,
+     "i18n.n": 2,
+     "deco.ms": 9.1,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0.1
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "langue anglais",
+    "done": true,
+    "timeout": false,
+    "settleMs": 262,
+    "nodes": 1311,
+    "resources": 1,
+    "counters": {
+     "storage.get": 19,
+     "storage.getBytes": 443,
+     "storage.set": 1,
+     "storage.setBytes": 2,
+     "json.parse": 8,
+     "json.chars": 244,
+     "i18n.ms": 3.4,
+     "i18n.n": 3,
+     "fetch": 1,
+     "fetch.data": 1,
+     "mo.calls": 23,
+     "mo.ms": 0.3,
+     "icons.ms": 1,
+     "icons.n": 1,
+     "deco.ms": 8.7,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0.1
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 4,
+     "json browser_store.js:377": 2,
+     "json machine_translate.js:20": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "defaLocalStore:v1": 2,
+     "suiteUpdate:v1": 2,
+     "assignmentsRead:v1": 2,
+     "repositoryLanguageMode": 1,
+     "defaLocalStore:pending": 1,
+     "suiteUpdateCheck:v1": 1,
+     "siaBaseInfo:v1": 1,
+     "pilotAvailability:v1": 1,
+     "machineTranslate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "langue français",
+    "done": true,
+    "timeout": false,
+    "settleMs": 368,
+    "nodes": 1309,
+    "resources": 1,
+    "counters": {
+     "storage.get": 18,
+     "storage.getBytes": 443,
+     "storage.set": 1,
+     "storage.setBytes": 2,
+     "json.parse": 7,
+     "json.chars": 242,
+     "i18n.ms": 2.6,
+     "i18n.n": 3,
+     "fetch": 1,
+     "fetch.data": 1,
+     "mo.calls": 17,
+     "mo.ms": 0.2,
+     "icons.ms": 1.1,
+     "icons.n": 1,
+     "deco.ms": 7.8,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 6,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 4,
+     "json browser_store.js:377": 2,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "defaLocalStore:v1": 2,
+     "suiteUpdate:v1": 2,
+     "assignmentsRead:v1": 2,
+     "repositoryLanguageMode": 1,
+     "defaLocalStore:pending": 1,
+     "suiteUpdateCheck:v1": 1,
+     "siaBaseInfo:v1": 1,
+     "pilotAvailability:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "ouvrir la 2e mission",
+    "done": true,
+    "timeout": false,
+    "settleMs": 243,
+    "nodes": 1326,
+    "resources": 4,
+    "counters": {
+     "mo.calls": 6,
+     "mo.ms": 0,
+     "fetch": 3,
+     "fetch.data": 3,
+     "storage.get": 4,
+     "storage.getBytes": 130,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 1,
+     "icons.n": 1,
+     "i18n.ms": 0.7,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "assignmentsRead:v1": 2,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1
+    }
+   },
+   {
+    "page": "apps/cpco/odv_planning.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 242,
+    "nodes": 6248,
+    "resources": 56,
+    "counters": {
+     "storage.get": 136,
+     "storage.getBytes": 482,
+     "json.parse": 36,
+     "json.chars": 775,
+     "mo.calls": 22,
+     "mo.ms": 0.1,
+     "fetch": 13,
+     "fetch.data": 9,
+     "idb.open": 1,
+     "i18n.ms": 24.7,
+     "i18n.n": 4,
+     "icons.ms": 13.2,
+     "icons.n": 2,
+     "deco.ms": 10.6,
+     "deco.n": 1,
+     "blocked.ms": 60.8,
+     "blocked.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 7,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 9,
+      "ms": 0.1
+     },
+     "perf_audit.html": {
+      "calls": 4,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json pilot_profile.js:17": 5,
+     "json mission_table.js:147": 4,
+     "json kit.js:201": 3,
+     "json suite_update.js:49": 3,
+     "json browser_store.js:377": 2,
+     "json app_framework.js:17": 2,
+     "idb kit.js:223": 1,
+     "json defa_reference.js:277": 1,
+     "json aircraft_fleet.js:221": 1,
+     "json odv_planning.js:24": 1,
+     "json odv_planning.js:19": 1
+    },
+    "storageKeys": {
+     "pilotAvailability:v1": 46,
+     "cpcoAccess:v1": 43,
+     "missionReportingConfig:v1": 7,
+     "suiteSources:v1": 6,
+     "suiteVA:v1": 4,
+     "defaLocalStore:v1": 2,
+     "assignmentsRead:v1": 2,
+     "repositoryFramework:apps/cpco/odv_planning.html": 2,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1,
+     "repositorySidenav": 1,
+     "repositoryDesign": 1
+    }
+   },
+   {
+    "page": "apps/cpco/odv_planning.html",
+    "step": "semaine suivante",
+    "done": true,
+    "timeout": false,
+    "settleMs": 466,
+    "nodes": 5014,
+    "resources": 2,
+    "counters": {
+     "fetch": 2,
+     "fetch.data": 2,
+     "storage.get": 47,
+     "storage.getBytes": 0,
+     "mo.calls": 8,
+     "mo.ms": 0.1,
+     "icons.ms": 0.4,
+     "i18n.ms": 11,
+     "i18n.n": 2,
+     "deco.ms": 30.6,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 4,
+      "ms": 0
+     }
+    },
+    "callers": {},
+    "storageKeys": {
+     "pilotAvailability:v1": 46,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/cpco/odv_planning.html",
+    "step": "semaine précédente",
+    "done": true,
+    "timeout": false,
+    "settleMs": 250,
+    "nodes": 6248,
+    "resources": 2,
+    "counters": {
+     "fetch": 2,
+     "fetch.data": 2,
+     "storage.get": 87,
+     "storage.getBytes": 0,
+     "mo.calls": 4,
+     "mo.ms": 0,
+     "icons.ms": 0.3,
+     "i18n.ms": 12.5,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {},
+    "storageKeys": {
+     "pilotAvailability:v1": 46,
+     "cpcoAccess:v1": 41
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 233,
+    "nodes": 1948,
+    "resources": 65,
+    "counters": {
+     "storage.get": 50,
+     "storage.getBytes": 320062,
+     "json.parse": 35,
+     "json.chars": 320057,
+     "mo.calls": 47,
+     "mo.ms": 0.1,
+     "i18n.ms": 9.3,
+     "i18n.n": 5,
+     "fetch": 5,
+     "fetch.data": 1,
+     "idb.open": 2,
+     "icons.ms": 12.3,
+     "icons.n": 2,
+     "deco.ms": 7.7,
+     "deco.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 37,
+      "ms": 0.1
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 5,
+      "ms": 0
+     },
+     "perf_audit.html": {
+      "calls": 3,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json pilot_profile.js:17": 5,
+     "json mission_registry.js:20": 5,
+     "json kit.js:201": 3,
+     "json suite_update.js:49": 3,
+     "json browser_store.js:377": 2,
+     "json app_framework.js:17": 2,
+     "idb kit.js:223": 1,
+     "json aircraft_fleet.js:221": 1,
+     "json defa_reference.js:277": 1,
+     "idb sia_base.js:36": 1,
+     "json mission_order.js:43": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 7,
+     "suiteSources:v1": 6,
+     "suiteVA:v1": 4,
+     "cpcoAccess:v1": 2,
+     "defaLocalStore:v1": 2,
+     "assignmentsRead:v1": 2,
+     "missionRegistry:v1": 2,
+     "repositoryFramework:apps/cpco/mission_registry.html": 2,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1,
+     "repositorySidenav": 1,
+     "repositoryDesign": 1
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "filtre COMBAT",
+    "done": true,
+    "timeout": false,
+    "settleMs": 366,
+    "nodes": 968,
+    "resources": 0,
+    "counters": {
+     "storage.get": 11,
+     "storage.getBytes": 159852,
+     "storage.set": 2,
+     "storage.setBytes": 124,
+     "json.parse": 6,
+     "json.chars": 16,
+     "icons.ms": 5.7,
+     "icons.n": 2,
+     "mo.calls": 12,
+     "mo.ms": 0.1,
+     "i18n.ms": 2.1,
+     "i18n.n": 2,
+     "deco.ms": 5.2,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 5,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json app_framework.js:17": 2,
+     "json browser_store.js:377": 1,
+     "json mission_order.js:43": 1,
+     "json mission_registry.js:20": 1,
+     "json mission_table.js:147": 1
+    },
+    "storageKeys": {
+     "defaLocalStore:pending": 2,
+     "repositoryFramework:apps/cpco/mission_registry.html": 2,
+     "missionRegistryFilters:v1": 1,
+     "defaLocalStore:v1": 1,
+     "missionRegistryOrder:v1": 1,
+     "missionRegistry:v1": 1,
+     "missionRegistryTableHeight:v1": 1,
+     "sortedTableWidths:/apps/cpco/mission_registry.html#rgTable": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "effacer les filtres",
+    "done": true,
+    "timeout": false,
+    "settleMs": 263,
+    "nodes": 1930,
+    "resources": 0,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 159854,
+     "storage.set": 1,
+     "storage.setBytes": 116,
+     "json.parse": 5,
+     "json.chars": 14,
+     "icons.ms": 7.8,
+     "icons.n": 2,
+     "mo.calls": 7,
+     "mo.ms": 0,
+     "i18n.ms": 5.5,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 3,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json app_framework.js:17": 2,
+     "json mission_order.js:43": 1,
+     "json mission_registry.js:20": 1,
+     "json mission_table.js:147": 1
+    },
+    "storageKeys": {
+     "repositoryFramework:apps/cpco/mission_registry.html": 2,
+     "missionRegistryFilters:v1": 1,
+     "missionRegistryOrder:v1": 1,
+     "missionRegistry:v1": 1,
+     "missionRegistryTableHeight:v1": 1,
+     "sortedTableWidths:/apps/cpco/mission_registry.html#rgTable": 1
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "relire le dossier (à chaud)",
+    "done": true,
+    "timeout": false,
+    "settleMs": 244,
+    "nodes": 1931,
+    "resources": 0,
+    "counters": {
+     "mo.calls": 10,
+     "mo.ms": 0,
+     "storage.get": 6,
+     "storage.getBytes": 159732,
+     "json.parse": 5,
+     "json.chars": 14,
+     "icons.ms": 7.5,
+     "icons.n": 2,
+     "i18n.ms": 5.5,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 4,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json app_framework.js:17": 2,
+     "json mission_order.js:43": 1,
+     "json mission_registry.js:20": 1,
+     "json mission_table.js:147": 1
+    },
+    "storageKeys": {
+     "repositoryFramework:apps/cpco/mission_registry.html": 2,
+     "missionRegistryOrder:v1": 1,
+     "missionRegistry:v1": 1,
+     "missionRegistryTableHeight:v1": 1,
+     "sortedTableWidths:/apps/cpco/mission_registry.html#rgTable": 1
+    }
+   },
+   {
+    "page": "apps/cpco/mission_editor.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 527,
+    "nodes": 1013,
+    "resources": 57,
+    "counters": {
+     "storage.get": 59,
+     "storage.getBytes": 479678,
+     "json.parse": 42,
+     "json.chars": 319975,
+     "idb.open": 3,
+     "mo.calls": 41,
+     "mo.ms": 0.1,
+     "i18n.ms": 4.5,
+     "i18n.n": 7,
+     "icons.ms": 3.1,
+     "icons.n": 2,
+     "fetch": 5,
+     "fetch.data": 1,
+     "deco.ms": 6.3,
+     "deco.n": 1,
+     "blocked.ms": 67.5,
+     "blocked.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 18,
+      "ms": 0.1
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 11,
+      "ms": 0
+     },
+     "perf_audit.html": {
+      "calls": 10,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json mission_store.js:560": 8,
+     "json pilot_profile.js:17": 5,
+     "json kit.js:201": 4,
+     "json suite_update.js:49": 3,
+     "idb sia_base.js:36": 2,
+     "json app_framework.js:17": 2,
+     "json browser_store.js:377": 2,
+     "json aircraft_fleet.js:221": 1,
+     "json mission_registry.js:20": 1,
+     "json mission_order.js:43": 1,
+     "json mission_store.js:388": 1
+    },
+    "storageKeys": {
+     "siaMissionBatch:v1": 8,
+     "missionReportingConfig:v1": 7,
+     "suiteSources:v1": 6,
+     "suiteVA:v1": 4,
+     "missionRegistry:v1": 3,
+     "cpcoAccess:v1": 2,
+     "siaFromRegistry:v1": 2,
+     "repositoryFramework:apps/cpco/mission_editor.html": 2,
+     "defaLocalStore:v1": 2,
+     "assignmentsRead:v1": 2,
+     "dataOverride:fleet:v1": 1,
+     "missionRegistryOrder:v1": 1
+    }
+   },
+   {
+    "page": "apps/planner/map_planner.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 1371,
+    "nodes": 5310,
+    "resources": 55,
+    "counters": {
+     "storage.get": 52,
+     "storage.getBytes": 3494,
+     "json.parse": 35,
+     "json.chars": 3485,
+     "idb.open": 3,
+     "storage.set": 3,
+     "storage.setBytes": 43,
+     "fetch": 6,
+     "fetch.data": 2,
+     "mo.calls": 71,
+     "mo.ms": 2.5,
+     "i18n.ms": 10,
+     "i18n.n": 7,
+     "icons.ms": 6.5,
+     "icons.n": 2,
+     "deco.ms": 11.6,
+     "deco.n": 2,
+     "longtask.n": 2,
+     "longtask.ms": 202,
+     "blocked.ms": 290.1,
+     "blocked.n": 1,
+     "fetch.404": 1
+    },
+    "observers": {
+     "map_planner.html": {
+      "calls": 4,
+      "ms": 0.2
+     },
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 26,
+      "ms": 1.2
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "app_framework.js": {
+      "calls": 5,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 18,
+      "ms": 1.1
+     },
+     "perf_audit.html": {
+      "calls": 16,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 12,
+     "json pilot_profile.js:17": 5,
+     "json suite_update.js:49": 3,
+     "idb sia_base.js:36": 2,
+     "json mission_store.js:560": 2,
+     "json app_framework.js:17": 2,
+     "json browser_store.js:377": 2,
+     "json kit.js:201": 2,
+     "json map_planner.html:1331": 1,
+     "json map_planner.html:1955": 1,
+     "json map_planner.html:6584": 1,
+     "json mission_store.js:388": 1
+    },
+    "storageKeys": {
+     "suiteSources:v1": 7,
+     "missionReportingConfig:v1": 7,
+     "suiteVA:v1": 4,
+     "siaMissionBatch:planner": 2,
+     "repositoryFramework:apps/planner/map_planner.html": 2,
+     "defaLocalStore:v1": 2,
+     "repositoryDeviceX:aqua": 2,
+     "assignmentsRead:v1": 2,
+     "siaDisplayProfiles": 1,
+     "siaZoneAliases": 1,
+     "siaProfileTab": 1,
+     "siaProfileSplit": 1
+    }
+   },
+   {
+    "page": "apps/cr/FIRE/fire_cr.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 235,
+    "nodes": 1530,
+    "resources": 66,
+    "counters": {
+     "storage.get": 91,
+     "storage.getBytes": 6810,
+     "json.parse": 74,
+     "json.chars": 6897,
+     "mo.calls": 34,
+     "mo.ms": 0.2,
+     "idb.open": 1,
+     "fetch": 6,
+     "fetch.data": 2,
+     "storage.set": 1,
+     "storage.setBytes": 4,
+     "i18n.ms": 6.2,
+     "i18n.n": 6,
+     "icons.ms": 22.3,
+     "icons.n": 3,
+     "deco.ms": 7.6,
+     "deco.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 9,
+      "ms": 0.1
+     },
+     "content_i18n.js": {
+      "calls": 14,
+      "ms": 0.1
+     },
+     "network_tracker.js": {
+      "calls": 3,
+      "ms": 0
+     },
+     "perf_audit.html": {
+      "calls": 6,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json ledger.js:156": 17,
+     "json ledger.js:166": 17,
+     "json kit.js:179": 12,
+     "json pilot_profile.js:17": 5,
+     "json core.js:1212": 4,
+     "json suite_update.js:49": 3,
+     "json app_framework.js:17": 3,
+     "json browser_store.js:377": 2,
+     "json kit.js:201": 2,
+     "json aircraft_catalog.js:14": 2,
+     "idb kit.js:223": 1,
+     "json defa_reference.js:277": 1
+    },
+    "storageKeys": {
+     "missionCoreLedger:legacyAbsent:v1": 17,
+     "missionReportingConfig:v1": 8,
+     "suiteSources:v1": 7,
+     "suiteVA:v1": 4,
+     "repositoryFramework:apps/cr/FIRE/fire_cr.html": 3,
+     "defaLocalStore:v1": 2,
+     "assignmentsRead:v1": 2,
+     "missionSendConfig:v1": 2,
+     "missionSendKey:v1": 2,
+     "missionSendLog:v1": 2,
+     "cpcoAccess:v1": 1,
+     "repositoryColors": 1
+    }
+   },
+   {
+    "page": "apps/cr/FIRE/fire_reporting.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 95,
+    "nodes": 807,
+    "resources": 68,
+    "counters": {
+     "storage.get": 97,
+     "storage.getBytes": 6895,
+     "json.parse": 79,
+     "json.chars": 6980,
+     "mo.calls": 30,
+     "mo.ms": 0.3,
+     "idb.open": 1,
+     "fetch": 6,
+     "fetch.data": 2,
+     "storage.set": 1,
+     "storage.setBytes": 4,
+     "i18n.ms": 3.6,
+     "i18n.n": 7,
+     "icons.ms": 4.7,
+     "icons.n": 2,
+     "deco.ms": 2.8,
+     "deco.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 9,
+      "ms": 0.1
+     },
+     "content_i18n.js": {
+      "calls": 14,
+      "ms": 0.2
+     },
+     "perf_audit.html": {
+      "calls": 5,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json ledger.js:156": 17,
+     "json ledger.js:166": 17,
+     "json kit.js:179": 13,
+     "json time_period.js:94": 7,
+     "json mission_reporting_config.js:29": 6,
+     "json pilot_profile.js:17": 5,
+     "json suite_update.js:49": 3,
+     "json browser_store.js:377": 2,
+     "json kit.js:201": 2,
+     "json app_framework.js:17": 2,
+     "idb kit.js:223": 1,
+     "json callsigns.js:86": 1
+    },
+    "storageKeys": {
+     "missionCoreLedger:legacyAbsent:v1": 17,
+     "missionReportingConfig:v1": 13,
+     "suiteSources:v1": 7,
+     "missionReportingPeriod:v1": 7,
+     "suiteVA:v1": 5,
+     "missionReportingSource:v1": 3,
+     "defaLocalStore:v1": 2,
+     "repositoryFramework:apps/cr/FIRE/fire_reporting.html": 2,
+     "assignmentsRead:v1": 2,
+     "cpcoAccess:v1": 1,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1
+    }
+   },
+   {
+    "page": "apps/settings/parametrage.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 402,
+    "nodes": 7781,
+    "resources": 63,
+    "counters": {
+     "storage.get": 109,
+     "storage.getBytes": 322702,
+     "json.parse": 91,
+     "json.chars": 322423,
+     "mo.calls": 71,
+     "mo.ms": 0.4,
+     "idb.open": 5,
+     "fetch": 8,
+     "fetch.data": 3,
+     "i18n.ms": 24,
+     "i18n.n": 7,
+     "icons.ms": 63.9,
+     "icons.n": 10,
+     "deco.ms": 28.8,
+     "deco.n": 1,
+     "longtask.n": 2,
+     "longtask.ms": 47,
+     "blocked.ms": 129.3,
+     "blocked.n": 1,
+     "storage.set": 1,
+     "storage.setBytes": 224,
+     "fetch.404": 1
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 17,
+      "ms": 0.3
+     },
+     "content_i18n.js": {
+      "calls": 32,
+      "ms": 0
+     },
+     "perf_audit.html": {
+      "calls": 20,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 35,
+     "json app_framework.js:17": 10,
+     "json maintenance_page.js:42": 10,
+     "json suite_update.js:49": 8,
+     "json pilot_profile.js:17": 5,
+     "json data_admin.js:21": 4,
+     "json sia_base.js:193": 3,
+     "json browser_store.js:436": 3,
+     "json browser_store.js:377": 2,
+     "json kit.js:201": 2,
+     "json aircraft_catalog.js:14": 2,
+     "idb sia_base.js:36": 2
+    },
+    "storageKeys": {
+     "suiteSources:v1": 29,
+     "repositoryFramework:apps/settings/parametrage.html": 10,
+     "suiteVA:v1": 7,
+     "missionReportingConfig:v1": 7,
+     "siaBaseInfo:v1": 6,
+     "suiteUpdateCheck:v1": 4,
+     "defaLocalStore:v1": 3,
+     "suiteBackupLog:v1": 3,
+     "cpcoAccess:v1": 2,
+     "suiteUpdate:v1": 2,
+     "dataOverride:defaReference:v1": 2,
+     "dataOverride:aircraftDb:v1": 2
+    }
+   }
+  ]
+ },
+ {
+  "label": "après",
+  "mode": "sans serveur",
+  "date": "2026-10-04T20:06:56.943Z",
+  "build": {
+   "sha": "c683ddd5",
+   "branch": "feature/perf-audit",
+   "tag": ""
+  },
+  "steps": [
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 293,
+    "nodes": 1286,
+    "resources": 49,
+    "counters": {
+     "storage.get": 57,
+     "storage.getBytes": 885,
+     "json.parse": 31,
+     "json.chars": 14158,
+     "mo.calls": 33,
+     "mo.ms": 0.1,
+     "fetch": 8,
+     "fetch.data": 4,
+     "fetch.blocked": 4,
+     "idb.open": 1,
+     "i18n.ms": 4,
+     "i18n.n": 6,
+     "fs.getFileHandle": 1,
+     "icons.ms": 10.8,
+     "icons.n": 3,
+     "deco.ms": 2.5,
+     "deco.n": 1,
+     "fs.getFile": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 9,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 15,
+      "ms": 0.1
+     },
+     "perf_audit.html": {
+      "calls": 7,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json pilot_profile.js:17": 5,
+     "json kit.js:201": 4,
+     "json suite_update.js:49": 3,
+     "json app_framework.js:17": 3,
+     "json browser_store.js:377": 2,
+     "idb kit.js:223": 1,
+     "json aircraft_fleet.js:221": 1,
+     "json mes_missions.html:1711": 1,
+     "json assignments.js:160": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 14,
+     "suiteSources:v1": 6,
+     "assignmentsRead:v1": 6,
+     "suiteVA:v1": 4,
+     "repositoryFramework:apps/pilot/mes_missions.html": 3,
+     "pilotAvailability:v1": 3,
+     "defaLocalStore:v1": 2,
+     "cpcoAccess:v1": 1,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1,
+     "repositorySidenav": 1,
+     "repositoryDesign": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "semaine suivante",
+    "done": true,
+    "timeout": false,
+    "settleMs": 338,
+    "nodes": 1259,
+    "resources": 3,
+    "counters": {
+     "storage.get": 9,
+     "storage.getBytes": 215,
+     "fetch": 1,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "mo.calls": 12,
+     "mo.ms": 0,
+     "fs.getFileHandle": 1,
+     "fs.getFile": 1,
+     "json.parse": 1,
+     "json.chars": 13669,
+     "icons.ms": 0.1,
+     "i18n.ms": 0.9,
+     "i18n.n": 2,
+     "deco.ms": 11.1,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 4,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json assignments.js:160": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "assignmentsRead:v1": 2,
+     "pilotAvailability:v1": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "semaine précédente",
+    "done": true,
+    "timeout": false,
+    "settleMs": 23,
+    "nodes": 1289,
+    "resources": 2,
+    "counters": {
+     "storage.get": 12,
+     "storage.getBytes": 475,
+     "fetch": 1,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "mo.calls": 8,
+     "mo.ms": 0.1,
+     "fs.getFileHandle": 1,
+     "fs.getFile": 1,
+     "json.parse": 1,
+     "json.chars": 13669,
+     "icons.ms": 0.1,
+     "i18n.ms": 0.8,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json assignments.js:160": 1
+    },
+    "storageKeys": {
+     "assignmentsRead:v1": 6,
+     "missionReportingConfig:v1": 5,
+     "pilotAvailability:v1": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "semaine suivante",
+    "done": true,
+    "timeout": false,
+    "settleMs": 30,
+    "nodes": 1259,
+    "resources": 2,
+    "counters": {
+     "storage.get": 8,
+     "storage.getBytes": 215,
+     "fetch": 1,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "mo.calls": 8,
+     "mo.ms": 0,
+     "fs.getFileHandle": 1,
+     "fs.getFile": 1,
+     "json.parse": 1,
+     "json.chars": 13669,
+     "icons.ms": 0.1,
+     "i18n.ms": 0.7,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json assignments.js:160": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "assignmentsRead:v1": 2,
+     "pilotAvailability:v1": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "ouvrir la 1re mission",
+    "done": true,
+    "timeout": false,
+    "settleMs": 240,
+    "nodes": 1303,
+    "resources": 21,
+    "counters": {
+     "mo.calls": 6,
+     "mo.ms": 0.1,
+     "fs.getDirectoryHandle": 19,
+     "fs.getFileHandle": 10,
+     "fs.getFile": 3,
+     "fetch": 7,
+     "fetch.data": 7,
+     "fetch.blocked": 7,
+     "json.parse": 3,
+     "json.chars": 8283,
+     "storage.get": 3,
+     "storage.getBytes": 65,
+     "icons.ms": 1.2,
+     "icons.n": 1,
+     "i18n.ms": 0.3,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json assignments.js:1424": 1,
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "assignmentsRead:v1": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "ouvrir le dossier",
+    "done": true,
+    "timeout": false,
+    "settleMs": 31,
+    "nodes": 1303,
+    "resources": 0,
+    "counters": {
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {},
+    "callers": {},
+    "storageKeys": {}
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "page suivante ×2",
+    "done": true,
+    "timeout": false,
+    "settleMs": 1789,
+    "nodes": 1317,
+    "resources": 1,
+    "counters": {
+     "mo.calls": 11,
+     "mo.ms": 0.1,
+     "icons.ms": 0,
+     "i18n.ms": 0.8,
+     "i18n.n": 4,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 3,
+      "ms": 0
+     }
+    },
+    "callers": {},
+    "storageKeys": {}
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Cabinet",
+    "done": true,
+    "timeout": false,
+    "settleMs": 359,
+    "nodes": 1447,
+    "resources": 24,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 4,
+     "storage.set": 1,
+     "storage.setBytes": 7,
+     "mo.calls": 23,
+     "mo.ms": 0.2,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 6.2,
+     "icons.n": 1,
+     "i18n.ms": 1.3,
+     "i18n.n": 2,
+     "deco.ms": 11.6,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:cabinet": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Carnet de vol",
+    "done": true,
+    "timeout": false,
+    "settleMs": 369,
+    "nodes": 1336,
+    "resources": 23,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 7,
+     "storage.set": 1,
+     "storage.setBytes": 9,
+     "mo.calls": 23,
+     "mo.ms": 0.2,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 5.6,
+     "icons.n": 1,
+     "i18n.ms": 1.1,
+     "i18n.n": 2,
+     "deco.ms": 11.7,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:flightlog": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Durci",
+    "done": true,
+    "timeout": false,
+    "settleMs": 346,
+    "nodes": 1372,
+    "resources": 29,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 9,
+     "storage.set": 1,
+     "storage.setBytes": 5,
+     "mo.calls": 23,
+     "mo.ms": 0,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 5.4,
+     "icons.n": 1,
+     "i18n.ms": 1.4,
+     "i18n.n": 2,
+     "deco.ms": 11.8,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:field": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Aqua",
+    "done": true,
+    "timeout": false,
+    "settleMs": 354,
+    "nodes": 1301,
+    "resources": 6,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 5,
+     "storage.set": 1,
+     "storage.setBytes": 4,
+     "mo.calls": 23,
+     "mo.ms": 0,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 4.2,
+     "icons.n": 1,
+     "i18n.ms": 1,
+     "i18n.n": 2,
+     "deco.ms": 9.1,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "langue anglais",
+    "done": true,
+    "timeout": false,
+    "settleMs": 272,
+    "nodes": 1303,
+    "resources": 2,
+    "counters": {
+     "storage.get": 19,
+     "storage.getBytes": 443,
+     "storage.set": 1,
+     "storage.setBytes": 2,
+     "json.parse": 9,
+     "json.chars": 13913,
+     "i18n.ms": 3.2,
+     "i18n.n": 3,
+     "fetch": 1,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "mo.calls": 23,
+     "mo.ms": 0,
+     "fs.getFileHandle": 1,
+     "fs.getFile": 1,
+     "icons.ms": 1.1,
+     "icons.n": 1,
+     "deco.ms": 9.8,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 4,
+     "json browser_store.js:377": 2,
+     "json assignments.js:160": 1,
+     "json machine_translate.js:20": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "defaLocalStore:v1": 2,
+     "suiteUpdate:v1": 2,
+     "assignmentsRead:v1": 2,
+     "repositoryLanguageMode": 1,
+     "defaLocalStore:pending": 1,
+     "suiteUpdateCheck:v1": 1,
+     "siaBaseInfo:v1": 1,
+     "pilotAvailability:v1": 1,
+     "machineTranslate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "langue français",
+    "done": true,
+    "timeout": false,
+    "settleMs": 347,
+    "nodes": 1301,
+    "resources": 2,
+    "counters": {
+     "storage.get": 18,
+     "storage.getBytes": 443,
+     "storage.set": 1,
+     "storage.setBytes": 2,
+     "json.parse": 8,
+     "json.chars": 13911,
+     "i18n.ms": 3,
+     "i18n.n": 3,
+     "fetch": 1,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "mo.calls": 17,
+     "mo.ms": 0.3,
+     "fs.getFileHandle": 1,
+     "fs.getFile": 1,
+     "icons.ms": 1.4,
+     "icons.n": 1,
+     "deco.ms": 9,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 6,
+      "ms": 0.1
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 4,
+     "json browser_store.js:377": 2,
+     "json assignments.js:160": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "defaLocalStore:v1": 2,
+     "suiteUpdate:v1": 2,
+     "assignmentsRead:v1": 2,
+     "repositoryLanguageMode": 1,
+     "defaLocalStore:pending": 1,
+     "suiteUpdateCheck:v1": 1,
+     "siaBaseInfo:v1": 1,
+     "pilotAvailability:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "ouvrir la 2e mission",
+    "done": true,
+    "timeout": false,
+    "settleMs": 241,
+    "nodes": 1318,
+    "resources": 7,
+    "counters": {
+     "mo.calls": 6,
+     "mo.ms": 0,
+     "fs.getDirectoryHandle": 4,
+     "fs.getFileHandle": 3,
+     "fs.getFile": 3,
+     "json.parse": 3,
+     "json.chars": 8283,
+     "storage.get": 4,
+     "storage.getBytes": 130,
+     "icons.ms": 1.1,
+     "icons.n": 1,
+     "i18n.ms": 0.4,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json assignments.js:1424": 1,
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "assignmentsRead:v1": 2,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1
+    }
+   },
+   {
+    "page": "apps/cpco/odv_planning.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 255,
+    "nodes": 5284,
+    "resources": 53,
+    "counters": {
+     "storage.get": 93,
+     "storage.getBytes": 352,
+     "json.parse": 37,
+     "json.chars": 22656,
+     "mo.calls": 22,
+     "mo.ms": 0.3,
+     "fetch": 54,
+     "fetch.data": 50,
+     "fetch.blocked": 50,
+     "idb.open": 1,
+     "i18n.ms": 23,
+     "i18n.n": 4,
+     "icons.ms": 11.8,
+     "icons.n": 2,
+     "fs.getFileHandle": 2,
+     "deco.ms": 9.6,
+     "deco.n": 1,
+     "blocked.ms": 57.7,
+     "blocked.n": 1,
+     "fs.getFile": 2,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 7,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 9,
+      "ms": 0.1
+     },
+     "perf_audit.html": {
+      "calls": 4,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json pilot_profile.js:17": 5,
+     "json mission_table.js:147": 4,
+     "json suite_update.js:49": 3,
+     "json kit.js:201": 2,
+     "json browser_store.js:377": 2,
+     "json app_framework.js:17": 2,
+     "idb kit.js:223": 1,
+     "json defa_reference.js:277": 1,
+     "json aircraft_fleet.js:221": 1,
+     "json odv_planning.js:24": 1,
+     "json odv_planning.js:19": 1
+    },
+    "storageKeys": {
+     "pilotAvailability:v1": 46,
+     "missionReportingConfig:v1": 7,
+     "suiteSources:v1": 6,
+     "suiteVA:v1": 4,
+     "cpcoAccess:v1": 2,
+     "defaLocalStore:v1": 2,
+     "repositoryFramework:apps/cpco/odv_planning.html": 2,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1,
+     "repositorySidenav": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1
+    }
+   },
+   {
+    "page": "apps/cpco/odv_planning.html",
+    "step": "semaine suivante",
+    "done": true,
+    "timeout": false,
+    "settleMs": 456,
+    "nodes": 4986,
+    "resources": 4,
+    "counters": {
+     "fetch": 1,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "fs.getFileHandle": 2,
+     "fs.getFile": 2,
+     "json.parse": 2,
+     "json.chars": 21946,
+     "storage.get": 47,
+     "storage.getBytes": 0,
+     "mo.calls": 8,
+     "mo.ms": 0.1,
+     "icons.ms": 0.7,
+     "i18n.ms": 11.3,
+     "i18n.n": 2,
+     "deco.ms": 31.5,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 4,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json assignments.js:160": 1,
+     "json assignments.js:1424": 1
+    },
+    "storageKeys": {
+     "pilotAvailability:v1": 46,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/cpco/odv_planning.html",
+    "step": "semaine précédente",
+    "done": true,
+    "timeout": false,
+    "settleMs": 249,
+    "nodes": 5284,
+    "resources": 4,
+    "counters": {
+     "fetch": 1,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "fs.getFileHandle": 2,
+     "fs.getFile": 2,
+     "json.parse": 2,
+     "json.chars": 21946,
+     "storage.get": 46,
+     "storage.getBytes": 0,
+     "mo.calls": 4,
+     "mo.ms": 0.1,
+     "icons.ms": 0.6,
+     "i18n.ms": 11.7,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0.1
+     }
+    },
+    "callers": {
+     "json assignments.js:160": 1,
+     "json assignments.js:1424": 1
+    },
+    "storageKeys": {
+     "pilotAvailability:v1": 46
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 1391,
+    "nodes": 1939,
+    "resources": 250,
+    "counters": {
+     "storage.get": 577,
+     "storage.getBytes": 6403012,
+     "json.parse": 44,
+     "json.chars": 320360,
+     "mo.calls": 66,
+     "mo.ms": 0.2,
+     "i18n.ms": 15.6,
+     "i18n.n": 7,
+     "fetch": 5,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "idb.open": 2,
+     "fs.list": 72,
+     "icons.ms": 23.9,
+     "icons.n": 4,
+     "deco.ms": 23.1,
+     "deco.n": 2,
+     "blocked.ms": 56.4,
+     "blocked.n": 1,
+     "fs.getFile": 123,
+     "longtask.n": 1,
+     "longtask.ms": 3,
+     "fetch.404": 1,
+     "storage.set": 2,
+     "storage.setBytes": 7740
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 41,
+      "ms": 0.1
+     },
+     "design_deco.js": {
+      "calls": 2,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 10,
+      "ms": 0.1
+     },
+     "perf_audit.html": {
+      "calls": 12,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json mission_registry.js:20": 8,
+     "json pilot_profile.js:17": 5,
+     "json kit.js:201": 4,
+     "json app_framework.js:17": 4,
+     "json browser_store.js:377": 3,
+     "json suite_update.js:49": 3,
+     "json mission_order.js:43": 2,
+     "json mission_table.js:147": 2,
+     "idb kit.js:223": 1,
+     "json aircraft_fleet.js:221": 1,
+     "json defa_reference.js:277": 1
+    },
+    "storageKeys": {
+     "missionRoutingSettings:v1": 440,
+     "missionRegistry:v1": 40,
+     "flightPerfState": 39,
+     "missionReportingConfig:v1": 7,
+     "suiteSources:v1": 6,
+     "suiteVA:v1": 4,
+     "repositoryFramework:apps/cpco/mission_registry.html": 4,
+     "defaLocalStore:v1": 3,
+     "defaLocalStore:pending": 3,
+     "cpcoAccess:v1": 2,
+     "missionCoreLedger:v2": 2,
+     "missionRegistryOrder:v1": 2
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "filtre COMBAT",
+    "done": true,
+    "timeout": false,
+    "settleMs": 259,
+    "nodes": 949,
+    "resources": 0,
+    "counters": {
+     "storage.get": 10,
+     "storage.getBytes": 159852,
+     "storage.set": 2,
+     "storage.setBytes": 124,
+     "json.parse": 6,
+     "json.chars": 16,
+     "icons.ms": 4.9,
+     "icons.n": 2,
+     "mo.calls": 8,
+     "mo.ms": 0.1,
+     "i18n.ms": 2.2,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 3,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json app_framework.js:17": 2,
+     "json browser_store.js:377": 1,
+     "json mission_order.js:43": 1,
+     "json mission_registry.js:20": 1,
+     "json mission_table.js:147": 1
+    },
+    "storageKeys": {
+     "defaLocalStore:pending": 2,
+     "repositoryFramework:apps/cpco/mission_registry.html": 2,
+     "missionRegistryFilters:v1": 1,
+     "defaLocalStore:v1": 1,
+     "missionRegistryOrder:v1": 1,
+     "missionRegistry:v1": 1,
+     "missionRegistryTableHeight:v1": 1,
+     "sortedTableWidths:/apps/cpco/mission_registry.html#rgTable": 1
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "effacer les filtres",
+    "done": true,
+    "timeout": false,
+    "settleMs": 268,
+    "nodes": 1925,
+    "resources": 0,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 159854,
+     "storage.set": 1,
+     "storage.setBytes": 116,
+     "json.parse": 5,
+     "json.chars": 14,
+     "icons.ms": 7.5,
+     "icons.n": 2,
+     "mo.calls": 7,
+     "mo.ms": 0.1,
+     "i18n.ms": 5.3,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 3,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json app_framework.js:17": 2,
+     "json mission_order.js:43": 1,
+     "json mission_registry.js:20": 1,
+     "json mission_table.js:147": 1
+    },
+    "storageKeys": {
+     "repositoryFramework:apps/cpco/mission_registry.html": 2,
+     "missionRegistryFilters:v1": 1,
+     "missionRegistryOrder:v1": 1,
+     "missionRegistry:v1": 1,
+     "missionRegistryTableHeight:v1": 1,
+     "sortedTableWidths:/apps/cpco/mission_registry.html#rgTable": 1
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "relire le dossier (à chaud)",
+    "done": true,
+    "timeout": false,
+    "settleMs": 345,
+    "nodes": 1928,
+    "resources": 0,
+    "counters": {
+     "mo.calls": 229,
+     "mo.ms": 0.4,
+     "storage.get": 9,
+     "storage.getBytes": 175208,
+     "json.parse": 7,
+     "json.chars": 7756,
+     "fs.list": 72,
+     "fs.getFile": 123,
+     "i18n.ms": 5.5,
+     "i18n.n": 2,
+     "icons.ms": 9.4,
+     "storage.set": 1,
+     "storage.setBytes": 7738,
+     "icons.n": 2,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 77,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json mission_registry.js:20": 3,
+     "json app_framework.js:17": 2,
+     "json mission_order.js:43": 1,
+     "json mission_table.js:147": 1
+    },
+    "storageKeys": {
+     "missionRegistryScan:v1": 2,
+     "repositoryFramework:apps/cpco/mission_registry.html": 2,
+     "missionCoreLedger:v2": 1,
+     "missionRegistryOrder:v1": 1,
+     "missionRegistry:v1": 1,
+     "missionRegistryTableHeight:v1": 1,
+     "sortedTableWidths:/apps/cpco/mission_registry.html#rgTable": 1
+    }
+   },
+   {
+    "page": "apps/cpco/mission_editor.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 516,
+    "nodes": 1005,
+    "resources": 56,
+    "counters": {
+     "storage.get": 57,
+     "storage.getBytes": 479548,
+     "json.parse": 41,
+     "json.chars": 319910,
+     "idb.open": 3,
+     "mo.calls": 38,
+     "mo.ms": 0.1,
+     "i18n.ms": 4.7,
+     "i18n.n": 7,
+     "icons.ms": 3.2,
+     "icons.n": 2,
+     "fetch": 5,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "deco.ms": 9.7,
+     "deco.n": 1,
+     "longtask.n": 1,
+     "longtask.ms": 5,
+     "blocked.ms": 83.6,
+     "blocked.n": 1,
+     "fetch.404": 1
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 17,
+      "ms": 0.1
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 10,
+      "ms": 0
+     },
+     "perf_audit.html": {
+      "calls": 9,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json mission_store.js:560": 8,
+     "json pilot_profile.js:17": 5,
+     "json kit.js:201": 3,
+     "json suite_update.js:49": 3,
+     "idb sia_base.js:36": 2,
+     "json app_framework.js:17": 2,
+     "json browser_store.js:377": 2,
+     "json aircraft_fleet.js:221": 1,
+     "json mission_registry.js:20": 1,
+     "json mission_order.js:43": 1,
+     "json mission_store.js:388": 1
+    },
+    "storageKeys": {
+     "siaMissionBatch:v1": 8,
+     "missionReportingConfig:v1": 7,
+     "suiteSources:v1": 6,
+     "suiteVA:v1": 4,
+     "missionRegistry:v1": 3,
+     "cpcoAccess:v1": 2,
+     "siaFromRegistry:v1": 2,
+     "repositoryFramework:apps/cpco/mission_editor.html": 2,
+     "defaLocalStore:v1": 2,
+     "dataOverride:fleet:v1": 1,
+     "missionRegistryOrder:v1": 1,
+     "siaMissionShared:v1": 1
+    }
+   },
+   {
+    "page": "apps/planner/map_planner.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 1282,
+    "nodes": 5302,
+    "resources": 54,
+    "counters": {
+     "storage.get": 50,
+     "storage.getBytes": 3364,
+     "json.parse": 34,
+     "json.chars": 3420,
+     "idb.open": 3,
+     "storage.set": 3,
+     "storage.setBytes": 43,
+     "fetch": 7,
+     "fetch.data": 2,
+     "fetch.blocked": 2,
+     "mo.calls": 64,
+     "mo.ms": 2.2,
+     "i18n.ms": 9.9,
+     "i18n.n": 7,
+     "fetch.404": 2,
+     "icons.ms": 6.8,
+     "icons.n": 2,
+     "deco.ms": 11.3,
+     "deco.n": 2,
+     "longtask.n": 2,
+     "longtask.ms": 234,
+     "blocked.ms": 338.6,
+     "blocked.n": 1
+    },
+    "observers": {
+     "map_planner.html": {
+      "calls": 4,
+      "ms": 0.1
+     },
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 24,
+      "ms": 0.9
+     },
+     "app_framework.js": {
+      "calls": 4,
+      "ms": 0.1
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 15,
+      "ms": 1.1
+     },
+     "perf_audit.html": {
+      "calls": 15,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 12,
+     "json pilot_profile.js:17": 5,
+     "json suite_update.js:49": 3,
+     "idb sia_base.js:36": 2,
+     "json mission_store.js:560": 2,
+     "json app_framework.js:17": 2,
+     "json browser_store.js:377": 2,
+     "json map_planner.html:1331": 1,
+     "json map_planner.html:1955": 1,
+     "json map_planner.html:6584": 1,
+     "json mission_store.js:388": 1,
+     "json mission_store.js:397": 1
+    },
+    "storageKeys": {
+     "suiteSources:v1": 7,
+     "missionReportingConfig:v1": 7,
+     "suiteVA:v1": 4,
+     "siaMissionBatch:planner": 2,
+     "repositoryFramework:apps/planner/map_planner.html": 2,
+     "defaLocalStore:v1": 2,
+     "repositoryDeviceX:aqua": 2,
+     "siaDisplayProfiles": 1,
+     "siaZoneAliases": 1,
+     "siaProfileTab": 1,
+     "siaProfileSplit": 1,
+     "siaOutput": 1
+    }
+   },
+   {
+    "page": "apps/cr/FIRE/fire_cr.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 332,
+    "nodes": 1526,
+    "resources": 56,
+    "counters": {
+     "storage.get": 55,
+     "storage.getBytes": 503,
+     "json.parse": 40,
+     "json.chars": 14189,
+     "mo.calls": 34,
+     "mo.ms": 0.2,
+     "idb.open": 1,
+     "fetch": 6,
+     "fetch.data": 2,
+     "fetch.blocked": 2,
+     "fs.getFileHandle": 1,
+     "fs.getFile": 1,
+     "storage.set": 1,
+     "storage.setBytes": 4,
+     "i18n.ms": 6.4,
+     "i18n.n": 7,
+     "icons.ms": 13.9,
+     "icons.n": 2,
+     "deco.ms": 6.2,
+     "deco.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 10,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 15,
+      "ms": 0.2
+     },
+     "network_tracker.js": {
+      "calls": 4,
+      "ms": 0
+     },
+     "perf_audit.html": {
+      "calls": 3,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 12,
+     "json pilot_profile.js:17": 5,
+     "json core.js:1212": 4,
+     "json suite_update.js:49": 3,
+     "json browser_store.js:377": 2,
+     "json kit.js:201": 2,
+     "json aircraft_catalog.js:14": 2,
+     "json app_framework.js:17": 2,
+     "idb kit.js:223": 1,
+     "json defa_reference.js:277": 1,
+     "json aircraft_fleet.js:221": 1,
+     "json assignments.js:160": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 8,
+     "suiteSources:v1": 7,
+     "suiteVA:v1": 4,
+     "defaLocalStore:v1": 2,
+     "assignmentsRead:v1": 2,
+     "missionSendConfig:v1": 2,
+     "missionSendKey:v1": 2,
+     "missionSendLog:v1": 2,
+     "repositoryFramework:apps/cr/FIRE/fire_cr.html": 2,
+     "cpcoAccess:v1": 1,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1
+    }
+   },
+   {
+    "page": "apps/cr/FIRE/fire_reporting.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 304,
+    "nodes": 556,
+    "resources": 68,
+    "counters": {
+     "storage.get": 58,
+     "storage.getBytes": 503,
+     "json.parse": 41,
+     "json.chars": 14189,
+     "mo.calls": 35,
+     "mo.ms": 0.4,
+     "idb.open": 1,
+     "fetch": 6,
+     "fetch.data": 2,
+     "fetch.blocked": 2,
+     "fs.getFileHandle": 1,
+     "storage.set": 1,
+     "storage.setBytes": 4,
+     "i18n.ms": 3.1,
+     "i18n.n": 7,
+     "fs.getFile": 1,
+     "icons.ms": 4.8,
+     "icons.n": 2,
+     "deco.ms": 2.6,
+     "deco.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 10,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 14,
+      "ms": 0.2
+     },
+     "perf_audit.html": {
+      "calls": 9,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 13,
+     "json time_period.js:94": 7,
+     "json pilot_profile.js:17": 5,
+     "json suite_update.js:49": 3,
+     "json browser_store.js:377": 2,
+     "json kit.js:201": 2,
+     "json app_framework.js:17": 2,
+     "idb kit.js:223": 1,
+     "json callsigns.js:86": 1,
+     "json reporting.js:137": 1,
+     "json defa_log.js:27": 1,
+     "json mission_table.js:147": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 8,
+     "suiteSources:v1": 7,
+     "missionReportingPeriod:v1": 7,
+     "suiteVA:v1": 5,
+     "missionReportingSource:v1": 3,
+     "defaLocalStore:v1": 2,
+     "repositoryFramework:apps/cr/FIRE/fire_reporting.html": 2,
+     "assignmentsRead:v1": 2,
+     "cpcoAccess:v1": 1,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1,
+     "repositorySidenav": 1
+    }
+   },
+   {
+    "page": "apps/settings/parametrage.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 583,
+    "nodes": 7884,
+    "resources": 103,
+    "counters": {
+     "storage.get": 127,
+     "storage.getBytes": 483613,
+     "json.parse": 111,
+     "json.chars": 483438,
+     "mo.calls": 91,
+     "mo.ms": 0.5,
+     "idb.open": 7,
+     "fetch": 5,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "i18n.ms": 23.3,
+     "i18n.n": 9,
+     "fs.list": 2,
+     "fs.getDirectoryHandle": 30,
+     "fs.getFileHandle": 18,
+     "icons.ms": 64.1,
+     "icons.n": 12,
+     "deco.ms": 28.3,
+     "deco.n": 1,
+     "fs.getFile": 24,
+     "longtask.n": 2,
+     "longtask.ms": 45,
+     "blocked.ms": 127,
+     "blocked.n": 1,
+     "fetch.404": 1,
+     "storage.set": 2,
+     "storage.setBytes": 655
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 22,
+      "ms": 0.3
+     },
+     "content_i18n.js": {
+      "calls": 37,
+      "ms": 0.1
+     },
+     "perf_audit.html": {
+      "calls": 30,
+      "ms": 0.1
+     }
+    },
+    "callers": {
+     "json kit.js:179": 43,
+     "json maintenance_page.js:42": 15,
+     "json app_framework.js:17": 12,
+     "json suite_update.js:49": 9,
+     "json pilot_profile.js:17": 5,
+     "json sia_base.js:193": 5,
+     "json data_admin.js:21": 4,
+     "idb maintenance_page.js:609": 4,
+     "json browser_store.js:436": 4,
+     "json browser_store.js:377": 2,
+     "json aircraft_catalog.js:14": 2,
+     "json suite_update.js:309": 2
+    },
+    "storageKeys": {
+     "suiteSources:v1": 37,
+     "repositoryFramework:apps/settings/parametrage.html": 12,
+     "siaBaseInfo:v1": 8,
+     "suiteVA:v1": 7,
+     "missionReportingConfig:v1": 7,
+     "suiteUpdateCheck:v1": 5,
+     "defaLocalStore:v1": 4,
+     "suiteBackupLog:v1": 4,
+     "flightPerfState": 4,
+     "suiteUpdate:v1": 3,
+     "missionRegistry:v1": 3,
+     "cpcoAccess:v1": 2
+    }
+   }
+  ]
+ },
+ {
+  "label": "après",
+  "mode": "serveur",
+  "date": "2026-10-04T20:09:27.678Z",
+  "build": {
+   "sha": "c683ddd5",
+   "branch": "feature/perf-audit",
+   "tag": ""
+  },
+  "steps": [
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 312,
+    "nodes": 1294,
+    "resources": 49,
+    "counters": {
+     "storage.get": 59,
+     "storage.getBytes": 1015,
+     "json.parse": 30,
+     "json.chars": 489,
+     "mo.calls": 33,
+     "mo.ms": 0,
+     "fetch": 8,
+     "fetch.data": 4,
+     "idb.open": 1,
+     "i18n.ms": 4.8,
+     "i18n.n": 6,
+     "icons.ms": 13.4,
+     "icons.n": 3,
+     "deco.ms": 2.9,
+     "deco.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 9,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 15,
+      "ms": 0
+     },
+     "perf_audit.html": {
+      "calls": 7,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json pilot_profile.js:17": 5,
+     "json kit.js:201": 4,
+     "json suite_update.js:49": 3,
+     "json app_framework.js:17": 3,
+     "json browser_store.js:377": 2,
+     "idb kit.js:223": 1,
+     "json aircraft_fleet.js:221": 1,
+     "json mes_missions.html:1711": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 14,
+     "assignmentsRead:v1": 8,
+     "suiteSources:v1": 6,
+     "suiteVA:v1": 4,
+     "repositoryFramework:apps/pilot/mes_missions.html": 3,
+     "pilotAvailability:v1": 3,
+     "defaLocalStore:v1": 2,
+     "cpcoAccess:v1": 1,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1,
+     "repositorySidenav": 1,
+     "repositoryDesign": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "semaine suivante",
+    "done": true,
+    "timeout": false,
+    "settleMs": 346,
+    "nodes": 1267,
+    "resources": 2,
+    "counters": {
+     "storage.get": 9,
+     "storage.getBytes": 215,
+     "fetch": 1,
+     "fetch.data": 1,
+     "mo.calls": 12,
+     "mo.ms": 0.2,
+     "icons.ms": 0,
+     "i18n.ms": 1,
+     "i18n.n": 2,
+     "deco.ms": 11.2,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 4,
+      "ms": 0
+     }
+    },
+    "callers": {},
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "assignmentsRead:v1": 2,
+     "pilotAvailability:v1": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "semaine précédente",
+    "done": true,
+    "timeout": false,
+    "settleMs": 29,
+    "nodes": 1297,
+    "resources": 1,
+    "counters": {
+     "storage.get": 12,
+     "storage.getBytes": 475,
+     "fetch": 1,
+     "fetch.data": 1,
+     "mo.calls": 8,
+     "mo.ms": 0,
+     "icons.ms": 0,
+     "i18n.ms": 1.1,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {},
+    "storageKeys": {
+     "assignmentsRead:v1": 6,
+     "missionReportingConfig:v1": 5,
+     "pilotAvailability:v1": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "semaine suivante",
+    "done": true,
+    "timeout": false,
+    "settleMs": 29,
+    "nodes": 1267,
+    "resources": 1,
+    "counters": {
+     "storage.get": 8,
+     "storage.getBytes": 215,
+     "fetch": 1,
+     "fetch.data": 1,
+     "mo.calls": 8,
+     "mo.ms": 0.1,
+     "icons.ms": 0,
+     "i18n.ms": 0.7,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {},
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "assignmentsRead:v1": 2,
+     "pilotAvailability:v1": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "ouvrir la 1re mission",
+    "done": true,
+    "timeout": false,
+    "settleMs": 252,
+    "nodes": 1311,
+    "resources": 18,
+    "counters": {
+     "mo.calls": 6,
+     "mo.ms": 0,
+     "fetch": 10,
+     "fetch.data": 10,
+     "fetch.404": 7,
+     "storage.get": 3,
+     "storage.getBytes": 65,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 1.2,
+     "icons.n": 1,
+     "i18n.ms": 0.5,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "assignmentsRead:v1": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "ouvrir le dossier",
+    "done": true,
+    "timeout": false,
+    "settleMs": 31,
+    "nodes": 1311,
+    "resources": 0,
+    "counters": {
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {},
+    "callers": {},
+    "storageKeys": {}
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "page suivante ×2",
+    "done": true,
+    "timeout": false,
+    "settleMs": 1779,
+    "nodes": 1325,
+    "resources": 1,
+    "counters": {
+     "mo.calls": 11,
+     "mo.ms": 0,
+     "icons.ms": 0,
+     "i18n.ms": 0.7,
+     "i18n.n": 4,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 3,
+      "ms": 0
+     }
+    },
+    "callers": {},
+    "storageKeys": {}
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Cabinet",
+    "done": true,
+    "timeout": false,
+    "settleMs": 337,
+    "nodes": 1455,
+    "resources": 24,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 4,
+     "storage.set": 1,
+     "storage.setBytes": 7,
+     "mo.calls": 23,
+     "mo.ms": 0,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 9.4,
+     "icons.n": 1,
+     "i18n.ms": 1.2,
+     "i18n.n": 2,
+     "deco.ms": 10.8,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:cabinet": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Carnet de vol",
+    "done": true,
+    "timeout": false,
+    "settleMs": 331,
+    "nodes": 1344,
+    "resources": 23,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 7,
+     "storage.set": 1,
+     "storage.setBytes": 9,
+     "mo.calls": 23,
+     "mo.ms": 1,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 6.3,
+     "icons.n": 1,
+     "i18n.ms": 1.3,
+     "i18n.n": 2,
+     "deco.ms": 10.8,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:flightlog": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Durci",
+    "done": true,
+    "timeout": false,
+    "settleMs": 349,
+    "nodes": 1380,
+    "resources": 29,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 9,
+     "storage.set": 1,
+     "storage.setBytes": 5,
+     "mo.calls": 23,
+     "mo.ms": 0,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 6.3,
+     "icons.n": 1,
+     "i18n.ms": 1.2,
+     "i18n.n": 2,
+     "deco.ms": 11.3,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:field": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Aqua",
+    "done": true,
+    "timeout": false,
+    "settleMs": 340,
+    "nodes": 1309,
+    "resources": 11,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 5,
+     "storage.set": 1,
+     "storage.setBytes": 4,
+     "mo.calls": 23,
+     "mo.ms": 0.2,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 5.1,
+     "icons.n": 1,
+     "i18n.ms": 1.1,
+     "i18n.n": 2,
+     "deco.ms": 10.2,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "langue anglais",
+    "done": true,
+    "timeout": false,
+    "settleMs": 366,
+    "nodes": 1311,
+    "resources": 1,
+    "counters": {
+     "storage.get": 19,
+     "storage.getBytes": 443,
+     "storage.set": 1,
+     "storage.setBytes": 2,
+     "json.parse": 8,
+     "json.chars": 244,
+     "i18n.ms": 3.2,
+     "i18n.n": 3,
+     "fetch": 1,
+     "fetch.data": 1,
+     "mo.calls": 23,
+     "mo.ms": 0,
+     "icons.ms": 1,
+     "icons.n": 1,
+     "deco.ms": 9.4,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 4,
+     "json browser_store.js:377": 2,
+     "json machine_translate.js:20": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "defaLocalStore:v1": 2,
+     "suiteUpdate:v1": 2,
+     "assignmentsRead:v1": 2,
+     "repositoryLanguageMode": 1,
+     "defaLocalStore:pending": 1,
+     "suiteUpdateCheck:v1": 1,
+     "siaBaseInfo:v1": 1,
+     "pilotAvailability:v1": 1,
+     "machineTranslate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "langue français",
+    "done": true,
+    "timeout": false,
+    "settleMs": 377,
+    "nodes": 1309,
+    "resources": 1,
+    "counters": {
+     "storage.get": 18,
+     "storage.getBytes": 443,
+     "storage.set": 1,
+     "storage.setBytes": 2,
+     "json.parse": 7,
+     "json.chars": 242,
+     "i18n.ms": 3,
+     "i18n.n": 3,
+     "fetch": 1,
+     "fetch.data": 1,
+     "mo.calls": 17,
+     "mo.ms": 0.2,
+     "icons.ms": 0.9,
+     "icons.n": 1,
+     "deco.ms": 9.3,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 6,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 4,
+     "json browser_store.js:377": 2,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "defaLocalStore:v1": 2,
+     "suiteUpdate:v1": 2,
+     "assignmentsRead:v1": 2,
+     "repositoryLanguageMode": 1,
+     "defaLocalStore:pending": 1,
+     "suiteUpdateCheck:v1": 1,
+     "siaBaseInfo:v1": 1,
+     "pilotAvailability:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "ouvrir la 2e mission",
+    "done": true,
+    "timeout": false,
+    "settleMs": 235,
+    "nodes": 1326,
+    "resources": 4,
+    "counters": {
+     "mo.calls": 6,
+     "mo.ms": 0.1,
+     "fetch": 3,
+     "fetch.data": 3,
+     "storage.get": 4,
+     "storage.getBytes": 130,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 1.1,
+     "icons.n": 1,
+     "i18n.ms": 0.3,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "assignmentsRead:v1": 2,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1
+    }
+   },
+   {
+    "page": "apps/cpco/odv_planning.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 262,
+    "nodes": 6248,
+    "resources": 56,
+    "counters": {
+     "storage.get": 136,
+     "storage.getBytes": 482,
+     "json.parse": 36,
+     "json.chars": 775,
+     "mo.calls": 22,
+     "mo.ms": 0.1,
+     "fetch": 13,
+     "fetch.data": 9,
+     "idb.open": 1,
+     "i18n.ms": 26.8,
+     "i18n.n": 4,
+     "icons.ms": 13.6,
+     "icons.n": 2,
+     "deco.ms": 10.4,
+     "deco.n": 1,
+     "blocked.ms": 70.8,
+     "blocked.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 7,
+      "ms": 0.1
+     },
+     "content_i18n.js": {
+      "calls": 9,
+      "ms": 0
+     },
+     "perf_audit.html": {
+      "calls": 4,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json pilot_profile.js:17": 5,
+     "json mission_table.js:147": 4,
+     "json kit.js:201": 3,
+     "json suite_update.js:49": 3,
+     "json browser_store.js:377": 2,
+     "json app_framework.js:17": 2,
+     "idb kit.js:223": 1,
+     "json defa_reference.js:277": 1,
+     "json aircraft_fleet.js:221": 1,
+     "json odv_planning.js:24": 1,
+     "json odv_planning.js:19": 1
+    },
+    "storageKeys": {
+     "pilotAvailability:v1": 46,
+     "cpcoAccess:v1": 43,
+     "missionReportingConfig:v1": 7,
+     "suiteSources:v1": 6,
+     "suiteVA:v1": 4,
+     "defaLocalStore:v1": 2,
+     "assignmentsRead:v1": 2,
+     "repositoryFramework:apps/cpco/odv_planning.html": 2,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1,
+     "repositorySidenav": 1,
+     "repositoryDesign": 1
+    }
+   },
+   {
+    "page": "apps/cpco/odv_planning.html",
+    "step": "semaine suivante",
+    "done": true,
+    "timeout": false,
+    "settleMs": 466,
+    "nodes": 5014,
+    "resources": 2,
+    "counters": {
+     "fetch": 2,
+     "fetch.data": 2,
+     "storage.get": 47,
+     "storage.getBytes": 0,
+     "mo.calls": 8,
+     "mo.ms": 0.1,
+     "icons.ms": 0.5,
+     "i18n.ms": 11.5,
+     "i18n.n": 2,
+     "deco.ms": 34.5,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 4,
+      "ms": 0
+     }
+    },
+    "callers": {},
+    "storageKeys": {
+     "pilotAvailability:v1": 46,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/cpco/odv_planning.html",
+    "step": "semaine précédente",
+    "done": true,
+    "timeout": false,
+    "settleMs": 256,
+    "nodes": 6248,
+    "resources": 2,
+    "counters": {
+     "fetch": 2,
+     "fetch.data": 2,
+     "storage.get": 87,
+     "storage.getBytes": 0,
+     "mo.calls": 4,
+     "mo.ms": 0.1,
+     "icons.ms": 0.4,
+     "i18n.ms": 13,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {},
+    "storageKeys": {
+     "pilotAvailability:v1": 46,
+     "cpcoAccess:v1": 41
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 252,
+    "nodes": 1948,
+    "resources": 63,
+    "counters": {
+     "storage.get": 50,
+     "storage.getBytes": 320062,
+     "json.parse": 35,
+     "json.chars": 320057,
+     "mo.calls": 47,
+     "mo.ms": 0.3,
+     "i18n.ms": 9.3,
+     "i18n.n": 5,
+     "fetch": 5,
+     "fetch.data": 1,
+     "idb.open": 2,
+     "icons.ms": 13.8,
+     "icons.n": 2,
+     "deco.ms": 9.2,
+     "deco.n": 1,
+     "blocked.ms": 53.4,
+     "blocked.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 37,
+      "ms": 0.2
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 5,
+      "ms": 0.1
+     },
+     "perf_audit.html": {
+      "calls": 3,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json pilot_profile.js:17": 5,
+     "json mission_registry.js:20": 5,
+     "json kit.js:201": 3,
+     "json suite_update.js:49": 3,
+     "json browser_store.js:377": 2,
+     "json app_framework.js:17": 2,
+     "idb kit.js:223": 1,
+     "json aircraft_fleet.js:221": 1,
+     "json defa_reference.js:277": 1,
+     "idb sia_base.js:36": 1,
+     "json mission_order.js:43": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 7,
+     "suiteSources:v1": 6,
+     "suiteVA:v1": 4,
+     "cpcoAccess:v1": 2,
+     "defaLocalStore:v1": 2,
+     "assignmentsRead:v1": 2,
+     "missionRegistry:v1": 2,
+     "repositoryFramework:apps/cpco/mission_registry.html": 2,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1,
+     "repositorySidenav": 1,
+     "repositoryDesign": 1
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "filtre COMBAT",
+    "done": true,
+    "timeout": false,
+    "settleMs": 366,
+    "nodes": 968,
+    "resources": 0,
+    "counters": {
+     "storage.get": 11,
+     "storage.getBytes": 159852,
+     "storage.set": 2,
+     "storage.setBytes": 124,
+     "json.parse": 6,
+     "json.chars": 16,
+     "icons.ms": 6.1,
+     "icons.n": 2,
+     "mo.calls": 12,
+     "mo.ms": 0.1,
+     "i18n.ms": 1.9,
+     "i18n.n": 2,
+     "deco.ms": 5,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 5,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json app_framework.js:17": 2,
+     "json browser_store.js:377": 1,
+     "json mission_order.js:43": 1,
+     "json mission_registry.js:20": 1,
+     "json mission_table.js:147": 1
+    },
+    "storageKeys": {
+     "defaLocalStore:pending": 2,
+     "repositoryFramework:apps/cpco/mission_registry.html": 2,
+     "missionRegistryFilters:v1": 1,
+     "defaLocalStore:v1": 1,
+     "missionRegistryOrder:v1": 1,
+     "missionRegistry:v1": 1,
+     "missionRegistryTableHeight:v1": 1,
+     "sortedTableWidths:/apps/cpco/mission_registry.html#rgTable": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "effacer les filtres",
+    "done": true,
+    "timeout": false,
+    "settleMs": 260,
+    "nodes": 1930,
+    "resources": 0,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 159854,
+     "storage.set": 1,
+     "storage.setBytes": 116,
+     "json.parse": 5,
+     "json.chars": 14,
+     "icons.ms": 8.1,
+     "icons.n": 2,
+     "mo.calls": 7,
+     "mo.ms": 0,
+     "i18n.ms": 5.6,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 3,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json app_framework.js:17": 2,
+     "json mission_order.js:43": 1,
+     "json mission_registry.js:20": 1,
+     "json mission_table.js:147": 1
+    },
+    "storageKeys": {
+     "repositoryFramework:apps/cpco/mission_registry.html": 2,
+     "missionRegistryFilters:v1": 1,
+     "missionRegistryOrder:v1": 1,
+     "missionRegistry:v1": 1,
+     "missionRegistryTableHeight:v1": 1,
+     "sortedTableWidths:/apps/cpco/mission_registry.html#rgTable": 1
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "relire le dossier (à chaud)",
+    "done": true,
+    "timeout": false,
+    "settleMs": 247,
+    "nodes": 1931,
+    "resources": 0,
+    "counters": {
+     "mo.calls": 10,
+     "mo.ms": 0,
+     "storage.get": 6,
+     "storage.getBytes": 159732,
+     "json.parse": 5,
+     "json.chars": 14,
+     "icons.ms": 8.1,
+     "icons.n": 2,
+     "i18n.ms": 6.2,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 4,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json app_framework.js:17": 2,
+     "json mission_order.js:43": 1,
+     "json mission_registry.js:20": 1,
+     "json mission_table.js:147": 1
+    },
+    "storageKeys": {
+     "repositoryFramework:apps/cpco/mission_registry.html": 2,
+     "missionRegistryOrder:v1": 1,
+     "missionRegistry:v1": 1,
+     "missionRegistryTableHeight:v1": 1,
+     "sortedTableWidths:/apps/cpco/mission_registry.html#rgTable": 1
+    }
+   },
+   {
+    "page": "apps/cpco/mission_editor.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 530,
+    "nodes": 1013,
+    "resources": 55,
+    "counters": {
+     "storage.get": 59,
+     "storage.getBytes": 479678,
+     "json.parse": 42,
+     "json.chars": 319975,
+     "idb.open": 3,
+     "mo.calls": 41,
+     "mo.ms": 0.3,
+     "i18n.ms": 4.8,
+     "i18n.n": 7,
+     "icons.ms": 3.2,
+     "icons.n": 2,
+     "fetch": 5,
+     "fetch.data": 1,
+     "deco.ms": 6.3,
+     "deco.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 18,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 11,
+      "ms": 0.1
+     },
+     "perf_audit.html": {
+      "calls": 10,
+      "ms": 0.1
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json mission_store.js:560": 8,
+     "json pilot_profile.js:17": 5,
+     "json kit.js:201": 4,
+     "json suite_update.js:49": 3,
+     "idb sia_base.js:36": 2,
+     "json app_framework.js:17": 2,
+     "json browser_store.js:377": 2,
+     "json aircraft_fleet.js:221": 1,
+     "json mission_registry.js:20": 1,
+     "json mission_order.js:43": 1,
+     "json mission_store.js:388": 1
+    },
+    "storageKeys": {
+     "siaMissionBatch:v1": 8,
+     "missionReportingConfig:v1": 7,
+     "suiteSources:v1": 6,
+     "suiteVA:v1": 4,
+     "missionRegistry:v1": 3,
+     "cpcoAccess:v1": 2,
+     "siaFromRegistry:v1": 2,
+     "repositoryFramework:apps/cpco/mission_editor.html": 2,
+     "defaLocalStore:v1": 2,
+     "assignmentsRead:v1": 2,
+     "dataOverride:fleet:v1": 1,
+     "missionRegistryOrder:v1": 1
+    }
+   },
+   {
+    "page": "apps/planner/map_planner.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 1376,
+    "nodes": 5310,
+    "resources": 53,
+    "counters": {
+     "storage.get": 52,
+     "storage.getBytes": 3494,
+     "json.parse": 35,
+     "json.chars": 3485,
+     "idb.open": 3,
+     "storage.set": 3,
+     "storage.setBytes": 43,
+     "fetch": 6,
+     "fetch.data": 2,
+     "mo.calls": 71,
+     "mo.ms": 1.7,
+     "i18n.ms": 10.1,
+     "i18n.n": 7,
+     "icons.ms": 6.5,
+     "icons.n": 2,
+     "deco.ms": 11.7,
+     "deco.n": 2,
+     "longtask.n": 2,
+     "longtask.ms": 210,
+     "blocked.ms": 298,
+     "blocked.n": 1,
+     "fetch.404": 1
+    },
+    "observers": {
+     "map_planner.html": {
+      "calls": 4,
+      "ms": 0
+     },
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 26,
+      "ms": 0.7
+     },
+     "app_framework.js": {
+      "calls": 5,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 18,
+      "ms": 1
+     },
+     "perf_audit.html": {
+      "calls": 16,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 12,
+     "json pilot_profile.js:17": 5,
+     "json suite_update.js:49": 3,
+     "idb sia_base.js:36": 2,
+     "json mission_store.js:560": 2,
+     "json app_framework.js:17": 2,
+     "json kit.js:201": 2,
+     "json browser_store.js:377": 2,
+     "json map_planner.html:1331": 1,
+     "json map_planner.html:1955": 1,
+     "json map_planner.html:6584": 1,
+     "json mission_store.js:388": 1
+    },
+    "storageKeys": {
+     "suiteSources:v1": 7,
+     "missionReportingConfig:v1": 7,
+     "suiteVA:v1": 4,
+     "siaMissionBatch:planner": 2,
+     "repositoryFramework:apps/planner/map_planner.html": 2,
+     "defaLocalStore:v1": 2,
+     "repositoryDeviceX:aqua": 2,
+     "assignmentsRead:v1": 2,
+     "siaDisplayProfiles": 1,
+     "siaZoneAliases": 1,
+     "siaProfileTab": 1,
+     "siaProfileSplit": 1
+    }
+   },
+   {
+    "page": "apps/cr/FIRE/fire_cr.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 233,
+    "nodes": 1530,
+    "resources": 64,
+    "counters": {
+     "storage.get": 91,
+     "storage.getBytes": 6810,
+     "json.parse": 74,
+     "json.chars": 6897,
+     "mo.calls": 35,
+     "mo.ms": 0.4,
+     "idb.open": 1,
+     "fetch": 6,
+     "fetch.data": 2,
+     "storage.set": 1,
+     "storage.setBytes": 4,
+     "i18n.ms": 6.2,
+     "i18n.n": 6,
+     "icons.ms": 21.4,
+     "icons.n": 3,
+     "deco.ms": 7.3,
+     "deco.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0.1
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 9,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 15,
+      "ms": 0.2
+     },
+     "network_tracker.js": {
+      "calls": 3,
+      "ms": 0
+     },
+     "perf_audit.html": {
+      "calls": 6,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json ledger.js:156": 17,
+     "json ledger.js:166": 17,
+     "json kit.js:179": 12,
+     "json pilot_profile.js:17": 5,
+     "json core.js:1212": 4,
+     "json suite_update.js:49": 3,
+     "json app_framework.js:17": 3,
+     "json browser_store.js:377": 2,
+     "json kit.js:201": 2,
+     "json aircraft_catalog.js:14": 2,
+     "idb kit.js:223": 1,
+     "json defa_reference.js:277": 1
+    },
+    "storageKeys": {
+     "missionCoreLedger:legacyAbsent:v1": 17,
+     "missionReportingConfig:v1": 8,
+     "suiteSources:v1": 7,
+     "suiteVA:v1": 4,
+     "repositoryFramework:apps/cr/FIRE/fire_cr.html": 3,
+     "defaLocalStore:v1": 2,
+     "assignmentsRead:v1": 2,
+     "missionSendConfig:v1": 2,
+     "missionSendKey:v1": 2,
+     "missionSendLog:v1": 2,
+     "cpcoAccess:v1": 1,
+     "repositoryColors": 1
+    }
+   },
+   {
+    "page": "apps/cr/FIRE/fire_reporting.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 98,
+    "nodes": 807,
+    "resources": 68,
+    "counters": {
+     "storage.get": 97,
+     "storage.getBytes": 6895,
+     "json.parse": 79,
+     "json.chars": 6980,
+     "mo.calls": 30,
+     "mo.ms": 0.2,
+     "idb.open": 1,
+     "fetch": 6,
+     "fetch.data": 2,
+     "storage.set": 1,
+     "storage.setBytes": 4,
+     "i18n.ms": 3.7,
+     "i18n.n": 7,
+     "icons.ms": 5.3,
+     "icons.n": 2,
+     "deco.ms": 2.8,
+     "deco.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 9,
+      "ms": 0.1
+     },
+     "content_i18n.js": {
+      "calls": 14,
+      "ms": 0.1
+     },
+     "perf_audit.html": {
+      "calls": 5,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json ledger.js:156": 17,
+     "json ledger.js:166": 17,
+     "json kit.js:179": 13,
+     "json time_period.js:94": 7,
+     "json mission_reporting_config.js:29": 6,
+     "json pilot_profile.js:17": 5,
+     "json suite_update.js:49": 3,
+     "json browser_store.js:377": 2,
+     "json kit.js:201": 2,
+     "json app_framework.js:17": 2,
+     "idb kit.js:223": 1,
+     "json callsigns.js:86": 1
+    },
+    "storageKeys": {
+     "missionCoreLedger:legacyAbsent:v1": 17,
+     "missionReportingConfig:v1": 13,
+     "suiteSources:v1": 7,
+     "missionReportingPeriod:v1": 7,
+     "suiteVA:v1": 5,
+     "missionReportingSource:v1": 3,
+     "defaLocalStore:v1": 2,
+     "repositoryFramework:apps/cr/FIRE/fire_reporting.html": 2,
+     "assignmentsRead:v1": 2,
+     "cpcoAccess:v1": 1,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1
+    }
+   },
+   {
+    "page": "apps/settings/parametrage.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 358,
+    "nodes": 7781,
+    "resources": 63,
+    "counters": {
+     "storage.get": 109,
+     "storage.getBytes": 322702,
+     "json.parse": 91,
+     "json.chars": 322423,
+     "mo.calls": 71,
+     "mo.ms": 0.5,
+     "idb.open": 5,
+     "fetch": 8,
+     "fetch.data": 3,
+     "i18n.ms": 23.2,
+     "i18n.n": 6,
+     "icons.ms": 64.8,
+     "icons.n": 10,
+     "deco.ms": 28,
+     "deco.n": 1,
+     "longtask.n": 2,
+     "longtask.ms": 41,
+     "blocked.ms": 122.3,
+     "blocked.n": 1,
+     "storage.set": 1,
+     "storage.setBytes": 224,
+     "fetch.404": 1
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 17,
+      "ms": 0.3
+     },
+     "content_i18n.js": {
+      "calls": 32,
+      "ms": 0.1
+     },
+     "perf_audit.html": {
+      "calls": 20,
+      "ms": 0.1
+     }
+    },
+    "callers": {
+     "json kit.js:179": 35,
+     "json app_framework.js:17": 10,
+     "json maintenance_page.js:42": 10,
+     "json suite_update.js:49": 8,
+     "json pilot_profile.js:17": 5,
+     "json data_admin.js:21": 4,
+     "json sia_base.js:193": 3,
+     "json browser_store.js:436": 3,
+     "json browser_store.js:377": 2,
+     "json kit.js:201": 2,
+     "json aircraft_catalog.js:14": 2,
+     "idb sia_base.js:36": 2
+    },
+    "storageKeys": {
+     "suiteSources:v1": 29,
+     "repositoryFramework:apps/settings/parametrage.html": 10,
+     "suiteVA:v1": 7,
+     "missionReportingConfig:v1": 7,
+     "siaBaseInfo:v1": 6,
+     "suiteUpdateCheck:v1": 4,
+     "defaLocalStore:v1": 3,
+     "suiteBackupLog:v1": 3,
+     "cpcoAccess:v1": 2,
+     "suiteUpdate:v1": 2,
+     "dataOverride:defaReference:v1": 2,
+     "dataOverride:aircraftDb:v1": 2
+    }
+   }
+  ]
+ },
+ {
+  "label": "après",
+  "mode": "sans serveur",
+  "date": "2026-10-04T20:09:57.168Z",
+  "build": {
+   "sha": "c683ddd5",
+   "branch": "feature/perf-audit",
+   "tag": ""
+  },
+  "steps": [
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 307,
+    "nodes": 1286,
+    "resources": 49,
+    "counters": {
+     "storage.get": 57,
+     "storage.getBytes": 885,
+     "json.parse": 31,
+     "json.chars": 14158,
+     "mo.calls": 33,
+     "mo.ms": 0.1,
+     "fetch": 8,
+     "fetch.data": 4,
+     "fetch.blocked": 4,
+     "idb.open": 1,
+     "i18n.ms": 4,
+     "i18n.n": 6,
+     "fs.getFileHandle": 1,
+     "icons.ms": 11,
+     "icons.n": 3,
+     "deco.ms": 2.5,
+     "deco.n": 1,
+     "fs.getFile": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0.1
+     },
+     "block_icons.js": {
+      "calls": 9,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 15,
+      "ms": 0
+     },
+     "perf_audit.html": {
+      "calls": 7,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json pilot_profile.js:17": 5,
+     "json kit.js:201": 4,
+     "json suite_update.js:49": 3,
+     "json app_framework.js:17": 3,
+     "json browser_store.js:377": 2,
+     "idb kit.js:223": 1,
+     "json aircraft_fleet.js:221": 1,
+     "json mes_missions.html:1711": 1,
+     "json assignments.js:160": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 14,
+     "suiteSources:v1": 6,
+     "assignmentsRead:v1": 6,
+     "suiteVA:v1": 4,
+     "repositoryFramework:apps/pilot/mes_missions.html": 3,
+     "pilotAvailability:v1": 3,
+     "defaLocalStore:v1": 2,
+     "cpcoAccess:v1": 1,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1,
+     "repositorySidenav": 1,
+     "repositoryDesign": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "semaine suivante",
+    "done": true,
+    "timeout": false,
+    "settleMs": 350,
+    "nodes": 1259,
+    "resources": 3,
+    "counters": {
+     "storage.get": 9,
+     "storage.getBytes": 215,
+     "fetch": 1,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "mo.calls": 12,
+     "mo.ms": 0,
+     "fs.getFileHandle": 1,
+     "fs.getFile": 1,
+     "json.parse": 1,
+     "json.chars": 13669,
+     "icons.ms": 0.2,
+     "i18n.ms": 0.9,
+     "i18n.n": 2,
+     "deco.ms": 11.1,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 4,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json assignments.js:160": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "assignmentsRead:v1": 2,
+     "pilotAvailability:v1": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "semaine précédente",
+    "done": true,
+    "timeout": false,
+    "settleMs": 32,
+    "nodes": 1289,
+    "resources": 2,
+    "counters": {
+     "storage.get": 12,
+     "storage.getBytes": 475,
+     "fetch": 1,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "mo.calls": 8,
+     "mo.ms": 0,
+     "fs.getFileHandle": 1,
+     "fs.getFile": 1,
+     "json.parse": 1,
+     "json.chars": 13669,
+     "icons.ms": 0,
+     "i18n.ms": 0.9,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json assignments.js:160": 1
+    },
+    "storageKeys": {
+     "assignmentsRead:v1": 6,
+     "missionReportingConfig:v1": 5,
+     "pilotAvailability:v1": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "semaine suivante",
+    "done": true,
+    "timeout": false,
+    "settleMs": 36,
+    "nodes": 1259,
+    "resources": 2,
+    "counters": {
+     "storage.get": 8,
+     "storage.getBytes": 215,
+     "fetch": 1,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "mo.calls": 8,
+     "mo.ms": 0.1,
+     "fs.getFileHandle": 1,
+     "fs.getFile": 1,
+     "json.parse": 1,
+     "json.chars": 13669,
+     "icons.ms": 0,
+     "i18n.ms": 0.7,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0.1
+     }
+    },
+    "callers": {
+     "json assignments.js:160": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "assignmentsRead:v1": 2,
+     "pilotAvailability:v1": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "ouvrir la 1re mission",
+    "done": true,
+    "timeout": false,
+    "settleMs": 260,
+    "nodes": 1303,
+    "resources": 21,
+    "counters": {
+     "mo.calls": 6,
+     "mo.ms": 0.1,
+     "fs.getDirectoryHandle": 19,
+     "fs.getFileHandle": 10,
+     "fs.getFile": 3,
+     "fetch": 7,
+     "fetch.data": 7,
+     "fetch.blocked": 7,
+     "json.parse": 3,
+     "json.chars": 8283,
+     "storage.get": 3,
+     "storage.getBytes": 65,
+     "icons.ms": 1.4,
+     "icons.n": 1,
+     "i18n.ms": 0.3,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json assignments.js:1424": 1,
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "assignmentsRead:v1": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "ouvrir le dossier",
+    "done": true,
+    "timeout": false,
+    "settleMs": 34,
+    "nodes": 1303,
+    "resources": 0,
+    "counters": {
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {},
+    "callers": {},
+    "storageKeys": {}
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "page suivante ×2",
+    "done": true,
+    "timeout": false,
+    "settleMs": 1785,
+    "nodes": 1317,
+    "resources": 1,
+    "counters": {
+     "mo.calls": 11,
+     "mo.ms": 0,
+     "icons.ms": 0.1,
+     "i18n.ms": 0.9,
+     "i18n.n": 4,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 3,
+      "ms": 0
+     }
+    },
+    "callers": {},
+    "storageKeys": {}
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Cabinet",
+    "done": true,
+    "timeout": false,
+    "settleMs": 369,
+    "nodes": 1447,
+    "resources": 24,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 4,
+     "storage.set": 1,
+     "storage.setBytes": 7,
+     "mo.calls": 23,
+     "mo.ms": 0.1,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 6.2,
+     "icons.n": 1,
+     "i18n.ms": 1.2,
+     "i18n.n": 2,
+     "deco.ms": 10.5,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:cabinet": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Carnet de vol",
+    "done": true,
+    "timeout": false,
+    "settleMs": 362,
+    "nodes": 1336,
+    "resources": 23,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 7,
+     "storage.set": 1,
+     "storage.setBytes": 9,
+     "mo.calls": 23,
+     "mo.ms": 0,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 5.6,
+     "icons.n": 1,
+     "i18n.ms": 1.1,
+     "i18n.n": 2,
+     "deco.ms": 11,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:flightlog": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Durci",
+    "done": true,
+    "timeout": false,
+    "settleMs": 369,
+    "nodes": 1372,
+    "resources": 29,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 9,
+     "storage.set": 1,
+     "storage.setBytes": 5,
+     "mo.calls": 23,
+     "mo.ms": 0.1,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 5.4,
+     "icons.n": 1,
+     "i18n.ms": 1.2,
+     "i18n.n": 2,
+     "deco.ms": 11.7,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:field": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Aqua",
+    "done": true,
+    "timeout": false,
+    "settleMs": 369,
+    "nodes": 1301,
+    "resources": 1,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 5,
+     "storage.set": 1,
+     "storage.setBytes": 4,
+     "mo.calls": 23,
+     "mo.ms": 0.2,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 3.7,
+     "icons.n": 1,
+     "i18n.ms": 1.1,
+     "i18n.n": 2,
+     "deco.ms": 8.2,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0.1
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "langue anglais",
+    "done": true,
+    "timeout": false,
+    "settleMs": 267,
+    "nodes": 1303,
+    "resources": 2,
+    "counters": {
+     "storage.get": 19,
+     "storage.getBytes": 443,
+     "storage.set": 1,
+     "storage.setBytes": 2,
+     "json.parse": 9,
+     "json.chars": 13913,
+     "i18n.ms": 3.2,
+     "i18n.n": 3,
+     "fetch": 1,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "mo.calls": 23,
+     "mo.ms": 0,
+     "fs.getFileHandle": 1,
+     "fs.getFile": 1,
+     "icons.ms": 1.2,
+     "icons.n": 1,
+     "deco.ms": 8.9,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 4,
+     "json browser_store.js:377": 2,
+     "json assignments.js:160": 1,
+     "json machine_translate.js:20": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "defaLocalStore:v1": 2,
+     "suiteUpdate:v1": 2,
+     "assignmentsRead:v1": 2,
+     "repositoryLanguageMode": 1,
+     "defaLocalStore:pending": 1,
+     "suiteUpdateCheck:v1": 1,
+     "siaBaseInfo:v1": 1,
+     "pilotAvailability:v1": 1,
+     "machineTranslate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "langue français",
+    "done": true,
+    "timeout": false,
+    "settleMs": 363,
+    "nodes": 1301,
+    "resources": 2,
+    "counters": {
+     "storage.get": 18,
+     "storage.getBytes": 443,
+     "storage.set": 1,
+     "storage.setBytes": 2,
+     "json.parse": 8,
+     "json.chars": 13911,
+     "i18n.ms": 2.9,
+     "i18n.n": 3,
+     "fetch": 1,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "mo.calls": 17,
+     "mo.ms": 0.1,
+     "fs.getFileHandle": 1,
+     "fs.getFile": 1,
+     "icons.ms": 1,
+     "icons.n": 1,
+     "deco.ms": 9.1,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 6,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 4,
+     "json browser_store.js:377": 2,
+     "json assignments.js:160": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "defaLocalStore:v1": 2,
+     "suiteUpdate:v1": 2,
+     "assignmentsRead:v1": 2,
+     "repositoryLanguageMode": 1,
+     "defaLocalStore:pending": 1,
+     "suiteUpdateCheck:v1": 1,
+     "siaBaseInfo:v1": 1,
+     "pilotAvailability:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "ouvrir la 2e mission",
+    "done": true,
+    "timeout": false,
+    "settleMs": 245,
+    "nodes": 1318,
+    "resources": 7,
+    "counters": {
+     "mo.calls": 6,
+     "mo.ms": 0,
+     "fs.getDirectoryHandle": 4,
+     "fs.getFileHandle": 3,
+     "fs.getFile": 3,
+     "json.parse": 3,
+     "json.chars": 8283,
+     "storage.get": 4,
+     "storage.getBytes": 130,
+     "icons.ms": 1.1,
+     "icons.n": 1,
+     "i18n.ms": 0.3,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json assignments.js:1424": 1,
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "assignmentsRead:v1": 2,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1
+    }
+   },
+   {
+    "page": "apps/cpco/odv_planning.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 249,
+    "nodes": 5284,
+    "resources": 53,
+    "counters": {
+     "storage.get": 93,
+     "storage.getBytes": 352,
+     "json.parse": 37,
+     "json.chars": 22656,
+     "mo.calls": 22,
+     "mo.ms": 0.2,
+     "fetch": 54,
+     "fetch.data": 50,
+     "fetch.blocked": 50,
+     "idb.open": 1,
+     "i18n.ms": 23.4,
+     "i18n.n": 4,
+     "icons.ms": 12.2,
+     "icons.n": 2,
+     "fs.getFileHandle": 2,
+     "deco.ms": 9.4,
+     "deco.n": 1,
+     "fs.getFile": 2,
+     "blocked.ms": 53.9,
+     "blocked.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 7,
+      "ms": 0.1
+     },
+     "content_i18n.js": {
+      "calls": 9,
+      "ms": 0.1
+     },
+     "perf_audit.html": {
+      "calls": 4,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json pilot_profile.js:17": 5,
+     "json mission_table.js:147": 4,
+     "json suite_update.js:49": 3,
+     "json kit.js:201": 2,
+     "json browser_store.js:377": 2,
+     "json app_framework.js:17": 2,
+     "idb kit.js:223": 1,
+     "json defa_reference.js:277": 1,
+     "json aircraft_fleet.js:221": 1,
+     "json odv_planning.js:24": 1,
+     "json odv_planning.js:19": 1
+    },
+    "storageKeys": {
+     "pilotAvailability:v1": 46,
+     "missionReportingConfig:v1": 7,
+     "suiteSources:v1": 6,
+     "suiteVA:v1": 4,
+     "cpcoAccess:v1": 2,
+     "defaLocalStore:v1": 2,
+     "repositoryFramework:apps/cpco/odv_planning.html": 2,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1,
+     "repositorySidenav": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1
+    }
+   },
+   {
+    "page": "apps/cpco/odv_planning.html",
+    "step": "semaine suivante",
+    "done": true,
+    "timeout": false,
+    "settleMs": 465,
+    "nodes": 4986,
+    "resources": 4,
+    "counters": {
+     "fetch": 1,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "fs.getFileHandle": 2,
+     "fs.getFile": 2,
+     "json.parse": 2,
+     "json.chars": 21946,
+     "storage.get": 47,
+     "storage.getBytes": 0,
+     "mo.calls": 8,
+     "mo.ms": 0,
+     "icons.ms": 0.6,
+     "i18n.ms": 10.9,
+     "i18n.n": 2,
+     "deco.ms": 37.2,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 4,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json assignments.js:160": 1,
+     "json assignments.js:1424": 1
+    },
+    "storageKeys": {
+     "pilotAvailability:v1": 46,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/cpco/odv_planning.html",
+    "step": "semaine précédente",
+    "done": true,
+    "timeout": false,
+    "settleMs": 244,
+    "nodes": 5284,
+    "resources": 4,
+    "counters": {
+     "fetch": 1,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "fs.getFileHandle": 2,
+     "fs.getFile": 2,
+     "json.parse": 2,
+     "json.chars": 21946,
+     "storage.get": 46,
+     "storage.getBytes": 0,
+     "mo.calls": 4,
+     "mo.ms": 0,
+     "icons.ms": 0.6,
+     "i18n.ms": 11.6,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json assignments.js:160": 1,
+     "json assignments.js:1424": 1
+    },
+    "storageKeys": {
+     "pilotAvailability:v1": 46
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 1402,
+    "nodes": 1939,
+    "resources": 250,
+    "counters": {
+     "storage.get": 577,
+     "storage.getBytes": 6403012,
+     "json.parse": 44,
+     "json.chars": 320360,
+     "mo.calls": 66,
+     "mo.ms": 0.3,
+     "i18n.ms": 15.2,
+     "i18n.n": 7,
+     "fetch": 5,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "idb.open": 2,
+     "fs.list": 72,
+     "icons.ms": 21.9,
+     "icons.n": 4,
+     "deco.ms": 20.2,
+     "deco.n": 2,
+     "fs.getFile": 123,
+     "fetch.404": 1,
+     "storage.set": 2,
+     "storage.setBytes": 7740,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 41,
+      "ms": 0.1
+     },
+     "design_deco.js": {
+      "calls": 2,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 10,
+      "ms": 0
+     },
+     "perf_audit.html": {
+      "calls": 12,
+      "ms": 0.1
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json mission_registry.js:20": 8,
+     "json pilot_profile.js:17": 5,
+     "json kit.js:201": 4,
+     "json app_framework.js:17": 4,
+     "json browser_store.js:377": 3,
+     "json suite_update.js:49": 3,
+     "json mission_order.js:43": 2,
+     "json mission_table.js:147": 2,
+     "idb kit.js:223": 1,
+     "json aircraft_fleet.js:221": 1,
+     "json defa_reference.js:277": 1
+    },
+    "storageKeys": {
+     "missionRoutingSettings:v1": 440,
+     "missionRegistry:v1": 40,
+     "flightPerfState": 39,
+     "missionReportingConfig:v1": 7,
+     "suiteSources:v1": 6,
+     "suiteVA:v1": 4,
+     "repositoryFramework:apps/cpco/mission_registry.html": 4,
+     "defaLocalStore:v1": 3,
+     "defaLocalStore:pending": 3,
+     "cpcoAccess:v1": 2,
+     "missionCoreLedger:v2": 2,
+     "missionRegistryOrder:v1": 2
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "filtre COMBAT",
+    "done": true,
+    "timeout": false,
+    "settleMs": 263,
+    "nodes": 949,
+    "resources": 0,
+    "counters": {
+     "storage.get": 10,
+     "storage.getBytes": 159852,
+     "storage.set": 2,
+     "storage.setBytes": 124,
+     "json.parse": 6,
+     "json.chars": 16,
+     "icons.ms": 5.4,
+     "icons.n": 2,
+     "mo.calls": 8,
+     "mo.ms": 0,
+     "i18n.ms": 2.2,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 3,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json app_framework.js:17": 2,
+     "json browser_store.js:377": 1,
+     "json mission_order.js:43": 1,
+     "json mission_registry.js:20": 1,
+     "json mission_table.js:147": 1
+    },
+    "storageKeys": {
+     "defaLocalStore:pending": 2,
+     "repositoryFramework:apps/cpco/mission_registry.html": 2,
+     "missionRegistryFilters:v1": 1,
+     "defaLocalStore:v1": 1,
+     "missionRegistryOrder:v1": 1,
+     "missionRegistry:v1": 1,
+     "missionRegistryTableHeight:v1": 1,
+     "sortedTableWidths:/apps/cpco/mission_registry.html#rgTable": 1
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "effacer les filtres",
+    "done": true,
+    "timeout": false,
+    "settleMs": 254,
+    "nodes": 1925,
+    "resources": 0,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 159854,
+     "storage.set": 1,
+     "storage.setBytes": 116,
+     "json.parse": 5,
+     "json.chars": 14,
+     "icons.ms": 8.7,
+     "icons.n": 2,
+     "mo.calls": 7,
+     "mo.ms": 0,
+     "i18n.ms": 6.3,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 3,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json app_framework.js:17": 2,
+     "json mission_order.js:43": 1,
+     "json mission_registry.js:20": 1,
+     "json mission_table.js:147": 1
+    },
+    "storageKeys": {
+     "repositoryFramework:apps/cpco/mission_registry.html": 2,
+     "missionRegistryFilters:v1": 1,
+     "missionRegistryOrder:v1": 1,
+     "missionRegistry:v1": 1,
+     "missionRegistryTableHeight:v1": 1,
+     "sortedTableWidths:/apps/cpco/mission_registry.html#rgTable": 1
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "relire le dossier (à chaud)",
+    "done": true,
+    "timeout": false,
+    "settleMs": 356,
+    "nodes": 1928,
+    "resources": 0,
+    "counters": {
+     "mo.calls": 229,
+     "mo.ms": 0.7,
+     "storage.get": 9,
+     "storage.getBytes": 175208,
+     "json.parse": 7,
+     "json.chars": 7756,
+     "fs.list": 72,
+     "fs.getFile": 123,
+     "i18n.ms": 5.1,
+     "i18n.n": 2,
+     "icons.ms": 9.6,
+     "storage.set": 1,
+     "storage.setBytes": 7738,
+     "icons.n": 2,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 77,
+      "ms": 0.1
+     }
+    },
+    "callers": {
+     "json mission_registry.js:20": 3,
+     "json app_framework.js:17": 2,
+     "json mission_order.js:43": 1,
+     "json mission_table.js:147": 1
+    },
+    "storageKeys": {
+     "missionRegistryScan:v1": 2,
+     "repositoryFramework:apps/cpco/mission_registry.html": 2,
+     "missionCoreLedger:v2": 1,
+     "missionRegistryOrder:v1": 1,
+     "missionRegistry:v1": 1,
+     "missionRegistryTableHeight:v1": 1,
+     "sortedTableWidths:/apps/cpco/mission_registry.html#rgTable": 1
+    }
+   },
+   {
+    "page": "apps/cpco/mission_editor.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 544,
+    "nodes": 1005,
+    "resources": 56,
+    "counters": {
+     "storage.get": 57,
+     "storage.getBytes": 479548,
+     "json.parse": 41,
+     "json.chars": 319910,
+     "idb.open": 3,
+     "mo.calls": 38,
+     "mo.ms": 0.2,
+     "i18n.ms": 4.6,
+     "i18n.n": 7,
+     "icons.ms": 3.3,
+     "icons.n": 2,
+     "fetch": 5,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "deco.ms": 6.1,
+     "deco.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 17,
+      "ms": 0.2
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 10,
+      "ms": 0
+     },
+     "perf_audit.html": {
+      "calls": 9,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json mission_store.js:560": 8,
+     "json pilot_profile.js:17": 5,
+     "json kit.js:201": 3,
+     "json suite_update.js:49": 3,
+     "idb sia_base.js:36": 2,
+     "json app_framework.js:17": 2,
+     "json browser_store.js:377": 2,
+     "json aircraft_fleet.js:221": 1,
+     "json mission_registry.js:20": 1,
+     "json mission_order.js:43": 1,
+     "json mission_store.js:388": 1
+    },
+    "storageKeys": {
+     "siaMissionBatch:v1": 8,
+     "missionReportingConfig:v1": 7,
+     "suiteSources:v1": 6,
+     "suiteVA:v1": 4,
+     "missionRegistry:v1": 3,
+     "cpcoAccess:v1": 2,
+     "siaFromRegistry:v1": 2,
+     "repositoryFramework:apps/cpco/mission_editor.html": 2,
+     "defaLocalStore:v1": 2,
+     "dataOverride:fleet:v1": 1,
+     "missionRegistryOrder:v1": 1,
+     "siaMissionShared:v1": 1
+    }
+   },
+   {
+    "page": "apps/planner/map_planner.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 1365,
+    "nodes": 5302,
+    "resources": 54,
+    "counters": {
+     "storage.get": 50,
+     "storage.getBytes": 3364,
+     "json.parse": 34,
+     "json.chars": 3420,
+     "idb.open": 3,
+     "storage.set": 3,
+     "storage.setBytes": 43,
+     "fetch": 7,
+     "fetch.data": 2,
+     "fetch.blocked": 2,
+     "mo.calls": 64,
+     "mo.ms": 2,
+     "i18n.ms": 10.2,
+     "i18n.n": 7,
+     "fetch.404": 2,
+     "icons.ms": 6.9,
+     "icons.n": 2,
+     "deco.ms": 11.1,
+     "deco.n": 2,
+     "longtask.n": 2,
+     "longtask.ms": 199,
+     "blocked.ms": 305.5,
+     "blocked.n": 1
+    },
+    "observers": {
+     "map_planner.html": {
+      "calls": 4,
+      "ms": 0
+     },
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 24,
+      "ms": 0.8
+     },
+     "app_framework.js": {
+      "calls": 4,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0.1
+     },
+     "block_icons.js": {
+      "calls": 15,
+      "ms": 1
+     },
+     "perf_audit.html": {
+      "calls": 15,
+      "ms": 0.1
+     }
+    },
+    "callers": {
+     "json kit.js:179": 12,
+     "json pilot_profile.js:17": 5,
+     "json suite_update.js:49": 3,
+     "idb sia_base.js:36": 2,
+     "json mission_store.js:560": 2,
+     "json app_framework.js:17": 2,
+     "json browser_store.js:377": 2,
+     "json map_planner.html:1331": 1,
+     "json map_planner.html:1955": 1,
+     "json map_planner.html:6584": 1,
+     "json mission_store.js:388": 1,
+     "json mission_store.js:397": 1
+    },
+    "storageKeys": {
+     "suiteSources:v1": 7,
+     "missionReportingConfig:v1": 7,
+     "suiteVA:v1": 4,
+     "siaMissionBatch:planner": 2,
+     "repositoryFramework:apps/planner/map_planner.html": 2,
+     "defaLocalStore:v1": 2,
+     "repositoryDeviceX:aqua": 2,
+     "siaDisplayProfiles": 1,
+     "siaZoneAliases": 1,
+     "siaProfileTab": 1,
+     "siaProfileSplit": 1,
+     "siaOutput": 1
+    }
+   },
+   {
+    "page": "apps/cr/FIRE/fire_cr.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 332,
+    "nodes": 1518,
+    "resources": 54,
+    "counters": {
+     "storage.get": 53,
+     "storage.getBytes": 373,
+     "json.parse": 38,
+     "json.chars": 455,
+     "mo.calls": 35,
+     "mo.ms": 0.2,
+     "idb.open": 1,
+     "fetch": 6,
+     "fetch.data": 2,
+     "fetch.blocked": 2,
+     "storage.set": 1,
+     "storage.setBytes": 4,
+     "i18n.ms": 6.7,
+     "i18n.n": 7,
+     "icons.ms": 18.3,
+     "icons.n": 2,
+     "deco.ms": 6.2,
+     "deco.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 10,
+      "ms": 0.1
+     },
+     "content_i18n.js": {
+      "calls": 16,
+      "ms": 0.1
+     },
+     "network_tracker.js": {
+      "calls": 4,
+      "ms": 0
+     },
+     "perf_audit.html": {
+      "calls": 3,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 12,
+     "json pilot_profile.js:17": 5,
+     "json core.js:1212": 4,
+     "json suite_update.js:49": 3,
+     "json browser_store.js:377": 2,
+     "json aircraft_catalog.js:14": 2,
+     "json app_framework.js:17": 2,
+     "idb kit.js:223": 1,
+     "json kit.js:201": 1,
+     "json defa_reference.js:277": 1,
+     "json aircraft_fleet.js:221": 1,
+     "json callsigns.js:86": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 8,
+     "suiteSources:v1": 7,
+     "suiteVA:v1": 4,
+     "defaLocalStore:v1": 2,
+     "missionSendConfig:v1": 2,
+     "missionSendKey:v1": 2,
+     "missionSendLog:v1": 2,
+     "repositoryFramework:apps/cr/FIRE/fire_cr.html": 2,
+     "cpcoAccess:v1": 1,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1,
+     "repositorySidenav": 1
+    }
+   },
+   {
+    "page": "apps/cr/FIRE/fire_reporting.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 100,
+    "nodes": 556,
+    "resources": 68,
+    "counters": {
+     "storage.get": 58,
+     "storage.getBytes": 503,
+     "json.parse": 41,
+     "json.chars": 14189,
+     "mo.calls": 30,
+     "mo.ms": 0.1,
+     "idb.open": 1,
+     "fetch": 6,
+     "fetch.data": 2,
+     "fetch.blocked": 2,
+     "fs.getFileHandle": 1,
+     "storage.set": 1,
+     "storage.setBytes": 4,
+     "i18n.ms": 3.2,
+     "i18n.n": 7,
+     "fs.getFile": 1,
+     "icons.ms": 5.1,
+     "icons.n": 2,
+     "deco.ms": 2.7,
+     "deco.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 9,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 14,
+      "ms": 0
+     },
+     "perf_audit.html": {
+      "calls": 5,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 13,
+     "json time_period.js:94": 7,
+     "json pilot_profile.js:17": 5,
+     "json suite_update.js:49": 3,
+     "json browser_store.js:377": 2,
+     "json kit.js:201": 2,
+     "json app_framework.js:17": 2,
+     "idb kit.js:223": 1,
+     "json callsigns.js:86": 1,
+     "json reporting.js:137": 1,
+     "json defa_log.js:27": 1,
+     "json mission_table.js:147": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 8,
+     "suiteSources:v1": 7,
+     "missionReportingPeriod:v1": 7,
+     "suiteVA:v1": 5,
+     "missionReportingSource:v1": 3,
+     "defaLocalStore:v1": 2,
+     "repositoryFramework:apps/cr/FIRE/fire_reporting.html": 2,
+     "assignmentsRead:v1": 2,
+     "cpcoAccess:v1": 1,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1,
+     "repositorySidenav": 1
+    }
+   },
+   {
+    "page": "apps/settings/parametrage.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 562,
+    "nodes": 7892,
+    "resources": 105,
+    "counters": {
+     "storage.get": 129,
+     "storage.getBytes": 483743,
+     "json.parse": 113,
+     "json.chars": 497172,
+     "mo.calls": 94,
+     "mo.ms": 0.4,
+     "idb.open": 7,
+     "fetch": 5,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "fs.getFileHandle": 19,
+     "fs.getFile": 25,
+     "i18n.ms": 23.8,
+     "i18n.n": 8,
+     "fs.list": 2,
+     "fs.getDirectoryHandle": 30,
+     "icons.ms": 70.1,
+     "icons.n": 12,
+     "deco.ms": 29.4,
+     "deco.n": 1,
+     "longtask.n": 2,
+     "longtask.ms": 46,
+     "blocked.ms": 127.4,
+     "blocked.n": 1,
+     "fetch.404": 1,
+     "storage.set": 2,
+     "storage.setBytes": 655
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 23,
+      "ms": 0.2
+     },
+     "content_i18n.js": {
+      "calls": 38,
+      "ms": 0.2
+     },
+     "perf_audit.html": {
+      "calls": 31,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 43,
+     "json maintenance_page.js:42": 15,
+     "json app_framework.js:17": 12,
+     "json suite_update.js:49": 9,
+     "json pilot_profile.js:17": 5,
+     "json sia_base.js:193": 5,
+     "json data_admin.js:21": 4,
+     "idb maintenance_page.js:609": 4,
+     "json browser_store.js:436": 4,
+     "json browser_store.js:377": 2,
+     "json kit.js:201": 2,
+     "json aircraft_catalog.js:14": 2
+    },
+    "storageKeys": {
+     "suiteSources:v1": 37,
+     "repositoryFramework:apps/settings/parametrage.html": 12,
+     "siaBaseInfo:v1": 8,
+     "suiteVA:v1": 7,
+     "missionReportingConfig:v1": 7,
+     "suiteUpdateCheck:v1": 5,
+     "defaLocalStore:v1": 4,
+     "flightPerfState": 4,
+     "suiteBackupLog:v1": 4,
+     "suiteUpdate:v1": 3,
+     "missionRegistry:v1": 3,
+     "cpcoAccess:v1": 2
+    }
+   }
+  ]
+ },
+ {
+  "label": "après",
+  "mode": "serveur",
+  "date": "2026-10-04T20:12:27.220Z",
+  "build": {
+   "sha": "c683ddd5",
+   "branch": "feature/perf-audit",
+   "tag": ""
+  },
+  "steps": [
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 209,
+    "nodes": 1294,
+    "resources": 49,
+    "counters": {
+     "storage.get": 59,
+     "storage.getBytes": 1015,
+     "json.parse": 30,
+     "json.chars": 489,
+     "mo.calls": 33,
+     "mo.ms": 0.2,
+     "fetch": 8,
+     "fetch.data": 4,
+     "idb.open": 1,
+     "i18n.ms": 4.8,
+     "i18n.n": 6,
+     "icons.ms": 21,
+     "icons.n": 3,
+     "deco.ms": 2.9,
+     "deco.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 9,
+      "ms": 0.1
+     },
+     "content_i18n.js": {
+      "calls": 15,
+      "ms": 0.1
+     },
+     "perf_audit.html": {
+      "calls": 7,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json pilot_profile.js:17": 5,
+     "json kit.js:201": 4,
+     "json suite_update.js:49": 3,
+     "json app_framework.js:17": 3,
+     "json browser_store.js:377": 2,
+     "idb kit.js:223": 1,
+     "json aircraft_fleet.js:221": 1,
+     "json mes_missions.html:1711": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 14,
+     "assignmentsRead:v1": 8,
+     "suiteSources:v1": 6,
+     "suiteVA:v1": 4,
+     "repositoryFramework:apps/pilot/mes_missions.html": 3,
+     "pilotAvailability:v1": 3,
+     "defaLocalStore:v1": 2,
+     "cpcoAccess:v1": 1,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1,
+     "repositorySidenav": 1,
+     "repositoryDesign": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "semaine suivante",
+    "done": true,
+    "timeout": false,
+    "settleMs": 367,
+    "nodes": 1267,
+    "resources": 2,
+    "counters": {
+     "storage.get": 9,
+     "storage.getBytes": 215,
+     "fetch": 1,
+     "fetch.data": 1,
+     "mo.calls": 12,
+     "mo.ms": 0.1,
+     "icons.ms": 0,
+     "i18n.ms": 1,
+     "i18n.n": 2,
+     "deco.ms": 10.8,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 4,
+      "ms": 0
+     }
+    },
+    "callers": {},
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "assignmentsRead:v1": 2,
+     "pilotAvailability:v1": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "semaine précédente",
+    "done": true,
+    "timeout": false,
+    "settleMs": 38,
+    "nodes": 1297,
+    "resources": 1,
+    "counters": {
+     "storage.get": 12,
+     "storage.getBytes": 475,
+     "fetch": 1,
+     "fetch.data": 1,
+     "mo.calls": 8,
+     "mo.ms": 0.2,
+     "icons.ms": 0,
+     "i18n.ms": 1,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {},
+    "storageKeys": {
+     "assignmentsRead:v1": 6,
+     "missionReportingConfig:v1": 5,
+     "pilotAvailability:v1": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "semaine suivante",
+    "done": true,
+    "timeout": false,
+    "settleMs": 32,
+    "nodes": 1267,
+    "resources": 1,
+    "counters": {
+     "storage.get": 8,
+     "storage.getBytes": 215,
+     "fetch": 1,
+     "fetch.data": 1,
+     "mo.calls": 8,
+     "mo.ms": 0.1,
+     "icons.ms": 0,
+     "i18n.ms": 0.8,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {},
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "assignmentsRead:v1": 2,
+     "pilotAvailability:v1": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "ouvrir la 1re mission",
+    "done": true,
+    "timeout": false,
+    "settleMs": 259,
+    "nodes": 1311,
+    "resources": 18,
+    "counters": {
+     "mo.calls": 6,
+     "mo.ms": 0.1,
+     "fetch": 10,
+     "fetch.data": 10,
+     "fetch.404": 7,
+     "storage.get": 3,
+     "storage.getBytes": 65,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 1.4,
+     "icons.n": 1,
+     "i18n.ms": 0.4,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "assignmentsRead:v1": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "ouvrir le dossier",
+    "done": true,
+    "timeout": false,
+    "settleMs": 30,
+    "nodes": 1311,
+    "resources": 0,
+    "counters": {
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {},
+    "callers": {},
+    "storageKeys": {}
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "page suivante ×2",
+    "done": true,
+    "timeout": false,
+    "settleMs": 1878,
+    "nodes": 1325,
+    "resources": 1,
+    "counters": {
+     "mo.calls": 11,
+     "mo.ms": 0.1,
+     "icons.ms": 0,
+     "i18n.ms": 1.3,
+     "i18n.n": 4,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 3,
+      "ms": 0
+     }
+    },
+    "callers": {},
+    "storageKeys": {}
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Cabinet",
+    "done": true,
+    "timeout": false,
+    "settleMs": 350,
+    "nodes": 1455,
+    "resources": 24,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 4,
+     "storage.set": 1,
+     "storage.setBytes": 7,
+     "mo.calls": 23,
+     "mo.ms": 0.2,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 9.3,
+     "icons.n": 1,
+     "i18n.ms": 1.3,
+     "i18n.n": 2,
+     "deco.ms": 11.3,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:cabinet": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Carnet de vol",
+    "done": true,
+    "timeout": false,
+    "settleMs": 359,
+    "nodes": 1344,
+    "resources": 23,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 7,
+     "storage.set": 1,
+     "storage.setBytes": 9,
+     "mo.calls": 23,
+     "mo.ms": 0.2,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 5.7,
+     "icons.n": 1,
+     "i18n.ms": 1.2,
+     "i18n.n": 2,
+     "deco.ms": 11.3,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:flightlog": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Durci",
+    "done": true,
+    "timeout": false,
+    "settleMs": 342,
+    "nodes": 1380,
+    "resources": 29,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 9,
+     "storage.set": 1,
+     "storage.setBytes": 5,
+     "mo.calls": 23,
+     "mo.ms": 0.2,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 5.4,
+     "icons.n": 1,
+     "i18n.ms": 1.5,
+     "i18n.n": 2,
+     "deco.ms": 11.7,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:field": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Aqua",
+    "done": true,
+    "timeout": false,
+    "settleMs": 339,
+    "nodes": 1309,
+    "resources": 11,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 5,
+     "storage.set": 1,
+     "storage.setBytes": 4,
+     "mo.calls": 23,
+     "mo.ms": 0.2,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 7.9,
+     "icons.n": 1,
+     "i18n.ms": 1.1,
+     "i18n.n": 2,
+     "deco.ms": 9.5,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "langue anglais",
+    "done": true,
+    "timeout": false,
+    "settleMs": 361,
+    "nodes": 1311,
+    "resources": 1,
+    "counters": {
+     "storage.get": 19,
+     "storage.getBytes": 443,
+     "storage.set": 1,
+     "storage.setBytes": 2,
+     "json.parse": 8,
+     "json.chars": 244,
+     "i18n.ms": 3.2,
+     "i18n.n": 3,
+     "fetch": 1,
+     "fetch.data": 1,
+     "mo.calls": 23,
+     "mo.ms": 0,
+     "icons.ms": 1,
+     "icons.n": 1,
+     "deco.ms": 9.2,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 4,
+     "json browser_store.js:377": 2,
+     "json machine_translate.js:20": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "defaLocalStore:v1": 2,
+     "suiteUpdate:v1": 2,
+     "assignmentsRead:v1": 2,
+     "repositoryLanguageMode": 1,
+     "defaLocalStore:pending": 1,
+     "suiteUpdateCheck:v1": 1,
+     "siaBaseInfo:v1": 1,
+     "pilotAvailability:v1": 1,
+     "machineTranslate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "langue français",
+    "done": true,
+    "timeout": false,
+    "settleMs": 267,
+    "nodes": 1309,
+    "resources": 1,
+    "counters": {
+     "storage.get": 18,
+     "storage.getBytes": 443,
+     "storage.set": 1,
+     "storage.setBytes": 2,
+     "json.parse": 7,
+     "json.chars": 242,
+     "i18n.ms": 3.3,
+     "i18n.n": 3,
+     "fetch": 1,
+     "fetch.data": 1,
+     "mo.calls": 17,
+     "mo.ms": 0,
+     "icons.ms": 0.9,
+     "icons.n": 1,
+     "deco.ms": 9.3,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 6,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 4,
+     "json browser_store.js:377": 2,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "defaLocalStore:v1": 2,
+     "suiteUpdate:v1": 2,
+     "assignmentsRead:v1": 2,
+     "repositoryLanguageMode": 1,
+     "defaLocalStore:pending": 1,
+     "suiteUpdateCheck:v1": 1,
+     "siaBaseInfo:v1": 1,
+     "pilotAvailability:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "ouvrir la 2e mission",
+    "done": true,
+    "timeout": false,
+    "settleMs": 240,
+    "nodes": 1326,
+    "resources": 4,
+    "counters": {
+     "mo.calls": 6,
+     "mo.ms": 0,
+     "fetch": 3,
+     "fetch.data": 3,
+     "storage.get": 4,
+     "storage.getBytes": 130,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 1,
+     "icons.n": 1,
+     "i18n.ms": 0.6,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "assignmentsRead:v1": 2,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1
+    }
+   },
+   {
+    "page": "apps/cpco/odv_planning.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 243,
+    "nodes": 6248,
+    "resources": 56,
+    "counters": {
+     "storage.get": 136,
+     "storage.getBytes": 482,
+     "json.parse": 36,
+     "json.chars": 775,
+     "mo.calls": 22,
+     "mo.ms": 0.1,
+     "fetch": 13,
+     "fetch.data": 9,
+     "idb.open": 1,
+     "i18n.ms": 26.2,
+     "i18n.n": 4,
+     "icons.ms": 14.2,
+     "icons.n": 2,
+     "deco.ms": 11,
+     "deco.n": 1,
+     "blocked.ms": 67.3,
+     "blocked.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 7,
+      "ms": 0.1
+     },
+     "content_i18n.js": {
+      "calls": 9,
+      "ms": 0
+     },
+     "perf_audit.html": {
+      "calls": 4,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json pilot_profile.js:17": 5,
+     "json mission_table.js:147": 4,
+     "json kit.js:201": 3,
+     "json suite_update.js:49": 3,
+     "json browser_store.js:377": 2,
+     "json app_framework.js:17": 2,
+     "idb kit.js:223": 1,
+     "json defa_reference.js:277": 1,
+     "json aircraft_fleet.js:221": 1,
+     "json odv_planning.js:24": 1,
+     "json odv_planning.js:19": 1
+    },
+    "storageKeys": {
+     "pilotAvailability:v1": 46,
+     "cpcoAccess:v1": 43,
+     "missionReportingConfig:v1": 7,
+     "suiteSources:v1": 6,
+     "suiteVA:v1": 4,
+     "assignmentsRead:v1": 2,
+     "defaLocalStore:v1": 2,
+     "repositoryFramework:apps/cpco/odv_planning.html": 2,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1,
+     "repositorySidenav": 1,
+     "repositoryDesign": 1
+    }
+   },
+   {
+    "page": "apps/cpco/odv_planning.html",
+    "step": "semaine suivante",
+    "done": true,
+    "timeout": false,
+    "settleMs": 470,
+    "nodes": 5014,
+    "resources": 2,
+    "counters": {
+     "fetch": 2,
+     "fetch.data": 2,
+     "storage.get": 47,
+     "storage.getBytes": 0,
+     "mo.calls": 8,
+     "mo.ms": 0,
+     "icons.ms": 0.5,
+     "i18n.ms": 10.8,
+     "i18n.n": 2,
+     "deco.ms": 30.9,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 4,
+      "ms": 0
+     }
+    },
+    "callers": {},
+    "storageKeys": {
+     "pilotAvailability:v1": 46,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/cpco/odv_planning.html",
+    "step": "semaine précédente",
+    "done": true,
+    "timeout": false,
+    "settleMs": 255,
+    "nodes": 6248,
+    "resources": 2,
+    "counters": {
+     "fetch": 2,
+     "fetch.data": 2,
+     "storage.get": 87,
+     "storage.getBytes": 0,
+     "mo.calls": 4,
+     "mo.ms": 0,
+     "icons.ms": 0.5,
+     "i18n.ms": 12.7,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {},
+    "storageKeys": {
+     "pilotAvailability:v1": 46,
+     "cpcoAccess:v1": 41
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 254,
+    "nodes": 1948,
+    "resources": 63,
+    "counters": {
+     "storage.get": 50,
+     "storage.getBytes": 320062,
+     "json.parse": 35,
+     "json.chars": 320057,
+     "mo.calls": 47,
+     "mo.ms": 0.1,
+     "i18n.ms": 9.6,
+     "i18n.n": 5,
+     "fetch": 5,
+     "fetch.data": 1,
+     "idb.open": 2,
+     "icons.ms": 14,
+     "icons.n": 2,
+     "deco.ms": 8.4,
+     "deco.n": 1,
+     "blocked.ms": 53.6,
+     "blocked.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 37,
+      "ms": 0.1
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 5,
+      "ms": 0
+     },
+     "perf_audit.html": {
+      "calls": 3,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json pilot_profile.js:17": 5,
+     "json mission_registry.js:20": 5,
+     "json kit.js:201": 3,
+     "json suite_update.js:49": 3,
+     "json browser_store.js:377": 2,
+     "json app_framework.js:17": 2,
+     "idb kit.js:223": 1,
+     "json aircraft_fleet.js:221": 1,
+     "json defa_reference.js:277": 1,
+     "idb sia_base.js:36": 1,
+     "json mission_order.js:43": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 7,
+     "suiteSources:v1": 6,
+     "suiteVA:v1": 4,
+     "cpcoAccess:v1": 2,
+     "defaLocalStore:v1": 2,
+     "assignmentsRead:v1": 2,
+     "missionRegistry:v1": 2,
+     "repositoryFramework:apps/cpco/mission_registry.html": 2,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1,
+     "repositorySidenav": 1,
+     "repositoryDesign": 1
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "filtre COMBAT",
+    "done": true,
+    "timeout": false,
+    "settleMs": 363,
+    "nodes": 968,
+    "resources": 0,
+    "counters": {
+     "storage.get": 11,
+     "storage.getBytes": 159852,
+     "storage.set": 2,
+     "storage.setBytes": 124,
+     "json.parse": 6,
+     "json.chars": 16,
+     "icons.ms": 7.2,
+     "icons.n": 2,
+     "mo.calls": 12,
+     "mo.ms": 0,
+     "i18n.ms": 1.8,
+     "i18n.n": 2,
+     "deco.ms": 5.5,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 5,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json app_framework.js:17": 2,
+     "json browser_store.js:377": 1,
+     "json mission_order.js:43": 1,
+     "json mission_registry.js:20": 1,
+     "json mission_table.js:147": 1
+    },
+    "storageKeys": {
+     "defaLocalStore:pending": 2,
+     "repositoryFramework:apps/cpco/mission_registry.html": 2,
+     "missionRegistryFilters:v1": 1,
+     "defaLocalStore:v1": 1,
+     "missionRegistryOrder:v1": 1,
+     "missionRegistry:v1": 1,
+     "missionRegistryTableHeight:v1": 1,
+     "sortedTableWidths:/apps/cpco/mission_registry.html#rgTable": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "effacer les filtres",
+    "done": true,
+    "timeout": false,
+    "settleMs": 259,
+    "nodes": 1930,
+    "resources": 0,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 159854,
+     "storage.set": 1,
+     "storage.setBytes": 116,
+     "json.parse": 5,
+     "json.chars": 14,
+     "icons.ms": 8.6,
+     "icons.n": 2,
+     "mo.calls": 7,
+     "mo.ms": 0,
+     "i18n.ms": 4.9,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 3,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json app_framework.js:17": 2,
+     "json mission_order.js:43": 1,
+     "json mission_registry.js:20": 1,
+     "json mission_table.js:147": 1
+    },
+    "storageKeys": {
+     "repositoryFramework:apps/cpco/mission_registry.html": 2,
+     "missionRegistryFilters:v1": 1,
+     "missionRegistryOrder:v1": 1,
+     "missionRegistry:v1": 1,
+     "missionRegistryTableHeight:v1": 1,
+     "sortedTableWidths:/apps/cpco/mission_registry.html#rgTable": 1
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "relire le dossier (à chaud)",
+    "done": true,
+    "timeout": false,
+    "settleMs": 238,
+    "nodes": 1931,
+    "resources": 0,
+    "counters": {
+     "mo.calls": 10,
+     "mo.ms": 0,
+     "storage.get": 6,
+     "storage.getBytes": 159732,
+     "json.parse": 5,
+     "json.chars": 14,
+     "icons.ms": 8.6,
+     "icons.n": 2,
+     "i18n.ms": 5.5,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 4,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json app_framework.js:17": 2,
+     "json mission_order.js:43": 1,
+     "json mission_registry.js:20": 1,
+     "json mission_table.js:147": 1
+    },
+    "storageKeys": {
+     "repositoryFramework:apps/cpco/mission_registry.html": 2,
+     "missionRegistryOrder:v1": 1,
+     "missionRegistry:v1": 1,
+     "missionRegistryTableHeight:v1": 1,
+     "sortedTableWidths:/apps/cpco/mission_registry.html#rgTable": 1
+    }
+   },
+   {
+    "page": "apps/cpco/mission_editor.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 533,
+    "nodes": 1013,
+    "resources": 55,
+    "counters": {
+     "storage.get": 59,
+     "storage.getBytes": 479678,
+     "json.parse": 42,
+     "json.chars": 319975,
+     "idb.open": 3,
+     "mo.calls": 41,
+     "mo.ms": 0.3,
+     "i18n.ms": 4.6,
+     "i18n.n": 7,
+     "icons.ms": 3.1,
+     "icons.n": 2,
+     "fetch": 5,
+     "fetch.data": 1,
+     "deco.ms": 6.4,
+     "deco.n": 1,
+     "blocked.ms": 76.7,
+     "blocked.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 18,
+      "ms": 0.2
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 11,
+      "ms": 0
+     },
+     "perf_audit.html": {
+      "calls": 10,
+      "ms": 0.1
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json mission_store.js:560": 8,
+     "json pilot_profile.js:17": 5,
+     "json kit.js:201": 4,
+     "json suite_update.js:49": 3,
+     "idb sia_base.js:36": 2,
+     "json app_framework.js:17": 2,
+     "json browser_store.js:377": 2,
+     "json aircraft_fleet.js:221": 1,
+     "json mission_registry.js:20": 1,
+     "json mission_order.js:43": 1,
+     "json mission_store.js:388": 1
+    },
+    "storageKeys": {
+     "siaMissionBatch:v1": 8,
+     "missionReportingConfig:v1": 7,
+     "suiteSources:v1": 6,
+     "suiteVA:v1": 4,
+     "missionRegistry:v1": 3,
+     "cpcoAccess:v1": 2,
+     "siaFromRegistry:v1": 2,
+     "repositoryFramework:apps/cpco/mission_editor.html": 2,
+     "defaLocalStore:v1": 2,
+     "assignmentsRead:v1": 2,
+     "dataOverride:fleet:v1": 1,
+     "missionRegistryOrder:v1": 1
+    }
+   },
+   {
+    "page": "apps/planner/map_planner.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 1294,
+    "nodes": 5310,
+    "resources": 53,
+    "counters": {
+     "storage.get": 52,
+     "storage.getBytes": 3494,
+     "json.parse": 35,
+     "json.chars": 3485,
+     "idb.open": 3,
+     "storage.set": 3,
+     "storage.setBytes": 43,
+     "fetch": 6,
+     "fetch.data": 2,
+     "mo.calls": 71,
+     "mo.ms": 2,
+     "i18n.ms": 9.9,
+     "i18n.n": 7,
+     "icons.ms": 6.5,
+     "icons.n": 2,
+     "deco.ms": 11.8,
+     "deco.n": 2,
+     "longtask.n": 2,
+     "longtask.ms": 213,
+     "blocked.ms": 301.5,
+     "blocked.n": 1,
+     "fetch.404": 1
+    },
+    "observers": {
+     "map_planner.html": {
+      "calls": 4,
+      "ms": 0.1
+     },
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 26,
+      "ms": 0.9
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "app_framework.js": {
+      "calls": 5,
+      "ms": 0.1
+     },
+     "block_icons.js": {
+      "calls": 18,
+      "ms": 0.9
+     },
+     "perf_audit.html": {
+      "calls": 16,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 12,
+     "json pilot_profile.js:17": 5,
+     "json suite_update.js:49": 3,
+     "idb sia_base.js:36": 2,
+     "json mission_store.js:560": 2,
+     "json app_framework.js:17": 2,
+     "json browser_store.js:377": 2,
+     "json kit.js:201": 2,
+     "json map_planner.html:1331": 1,
+     "json map_planner.html:1955": 1,
+     "json map_planner.html:6584": 1,
+     "json mission_store.js:388": 1
+    },
+    "storageKeys": {
+     "suiteSources:v1": 7,
+     "missionReportingConfig:v1": 7,
+     "suiteVA:v1": 4,
+     "siaMissionBatch:planner": 2,
+     "repositoryFramework:apps/planner/map_planner.html": 2,
+     "defaLocalStore:v1": 2,
+     "repositoryDeviceX:aqua": 2,
+     "assignmentsRead:v1": 2,
+     "siaDisplayProfiles": 1,
+     "siaZoneAliases": 1,
+     "siaProfileTab": 1,
+     "siaProfileSplit": 1
+    }
+   },
+   {
+    "page": "apps/cr/FIRE/fire_cr.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 226,
+    "nodes": 1530,
+    "resources": 66,
+    "counters": {
+     "storage.get": 91,
+     "storage.getBytes": 6810,
+     "json.parse": 74,
+     "json.chars": 6897,
+     "mo.calls": 35,
+     "mo.ms": 0.3,
+     "idb.open": 1,
+     "fetch": 6,
+     "fetch.data": 2,
+     "storage.set": 1,
+     "storage.setBytes": 4,
+     "i18n.ms": 6.2,
+     "i18n.n": 6,
+     "icons.ms": 22,
+     "icons.n": 3,
+     "deco.ms": 7.4,
+     "deco.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 9,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 15,
+      "ms": 0.2
+     },
+     "network_tracker.js": {
+      "calls": 3,
+      "ms": 0
+     },
+     "perf_audit.html": {
+      "calls": 6,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json ledger.js:156": 17,
+     "json ledger.js:166": 17,
+     "json kit.js:179": 12,
+     "json pilot_profile.js:17": 5,
+     "json core.js:1212": 4,
+     "json suite_update.js:49": 3,
+     "json app_framework.js:17": 3,
+     "json browser_store.js:377": 2,
+     "json kit.js:201": 2,
+     "json aircraft_catalog.js:14": 2,
+     "idb kit.js:223": 1,
+     "json defa_reference.js:277": 1
+    },
+    "storageKeys": {
+     "missionCoreLedger:legacyAbsent:v1": 17,
+     "missionReportingConfig:v1": 8,
+     "suiteSources:v1": 7,
+     "suiteVA:v1": 4,
+     "repositoryFramework:apps/cr/FIRE/fire_cr.html": 3,
+     "defaLocalStore:v1": 2,
+     "assignmentsRead:v1": 2,
+     "missionSendConfig:v1": 2,
+     "missionSendKey:v1": 2,
+     "missionSendLog:v1": 2,
+     "cpcoAccess:v1": 1,
+     "repositoryColors": 1
+    }
+   },
+   {
+    "page": "apps/cr/FIRE/fire_reporting.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 100,
+    "nodes": 807,
+    "resources": 68,
+    "counters": {
+     "storage.get": 97,
+     "storage.getBytes": 6895,
+     "json.parse": 79,
+     "json.chars": 6980,
+     "mo.calls": 30,
+     "mo.ms": 0.3,
+     "idb.open": 1,
+     "fetch": 6,
+     "fetch.data": 2,
+     "storage.set": 1,
+     "storage.setBytes": 4,
+     "i18n.ms": 3.6,
+     "i18n.n": 7,
+     "icons.ms": 5.6,
+     "icons.n": 2,
+     "deco.ms": 3,
+     "deco.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 9,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 14,
+      "ms": 0.2
+     },
+     "perf_audit.html": {
+      "calls": 5,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json ledger.js:156": 17,
+     "json ledger.js:166": 17,
+     "json kit.js:179": 13,
+     "json time_period.js:94": 7,
+     "json mission_reporting_config.js:29": 6,
+     "json pilot_profile.js:17": 5,
+     "json suite_update.js:49": 3,
+     "json browser_store.js:377": 2,
+     "json kit.js:201": 2,
+     "json app_framework.js:17": 2,
+     "idb kit.js:223": 1,
+     "json callsigns.js:86": 1
+    },
+    "storageKeys": {
+     "missionCoreLedger:legacyAbsent:v1": 17,
+     "missionReportingConfig:v1": 13,
+     "suiteSources:v1": 7,
+     "missionReportingPeriod:v1": 7,
+     "suiteVA:v1": 5,
+     "missionReportingSource:v1": 3,
+     "defaLocalStore:v1": 2,
+     "repositoryFramework:apps/cr/FIRE/fire_reporting.html": 2,
+     "assignmentsRead:v1": 2,
+     "cpcoAccess:v1": 1,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1
+    }
+   },
+   {
+    "page": "apps/settings/parametrage.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 346,
+    "nodes": 7781,
+    "resources": 63,
+    "counters": {
+     "storage.get": 109,
+     "storage.getBytes": 322702,
+     "json.parse": 91,
+     "json.chars": 322423,
+     "mo.calls": 71,
+     "mo.ms": 0.7,
+     "idb.open": 5,
+     "fetch": 8,
+     "fetch.data": 3,
+     "i18n.ms": 23.7,
+     "i18n.n": 7,
+     "icons.ms": 75.3,
+     "icons.n": 10,
+     "deco.ms": 28.7,
+     "deco.n": 1,
+     "longtask.n": 2,
+     "longtask.ms": 44,
+     "blocked.ms": 124.8,
+     "blocked.n": 1,
+     "storage.set": 1,
+     "storage.setBytes": 224,
+     "fetch.404": 1
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 17,
+      "ms": 0.3
+     },
+     "content_i18n.js": {
+      "calls": 32,
+      "ms": 0.3
+     },
+     "perf_audit.html": {
+      "calls": 20,
+      "ms": 0.1
+     }
+    },
+    "callers": {
+     "json kit.js:179": 35,
+     "json app_framework.js:17": 10,
+     "json maintenance_page.js:42": 10,
+     "json suite_update.js:49": 8,
+     "json pilot_profile.js:17": 5,
+     "json data_admin.js:21": 4,
+     "json sia_base.js:193": 3,
+     "json browser_store.js:436": 3,
+     "json browser_store.js:377": 2,
+     "json kit.js:201": 2,
+     "json aircraft_catalog.js:14": 2,
+     "idb sia_base.js:36": 2
+    },
+    "storageKeys": {
+     "suiteSources:v1": 29,
+     "repositoryFramework:apps/settings/parametrage.html": 10,
+     "suiteVA:v1": 7,
+     "missionReportingConfig:v1": 7,
+     "siaBaseInfo:v1": 6,
+     "suiteUpdateCheck:v1": 4,
+     "defaLocalStore:v1": 3,
+     "suiteBackupLog:v1": 3,
+     "cpcoAccess:v1": 2,
+     "suiteUpdate:v1": 2,
+     "dataOverride:defaReference:v1": 2,
+     "dataOverride:aircraftDb:v1": 2
+    }
+   }
+  ]
+ },
+ {
+  "label": "après",
+  "mode": "sans serveur",
+  "date": "2026-10-04T20:12:56.760Z",
+  "build": {
+   "sha": "c683ddd5",
+   "branch": "feature/perf-audit",
+   "tag": ""
+  },
+  "steps": [
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 303,
+    "nodes": 1286,
+    "resources": 49,
+    "counters": {
+     "storage.get": 57,
+     "storage.getBytes": 885,
+     "json.parse": 31,
+     "json.chars": 14158,
+     "mo.calls": 33,
+     "mo.ms": 0.1,
+     "fetch": 8,
+     "fetch.data": 4,
+     "fetch.blocked": 4,
+     "idb.open": 1,
+     "i18n.ms": 4.3,
+     "i18n.n": 6,
+     "fs.getFileHandle": 1,
+     "icons.ms": 12.3,
+     "icons.n": 3,
+     "deco.ms": 2.7,
+     "deco.n": 1,
+     "fs.getFile": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 9,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 15,
+      "ms": 0.1
+     },
+     "perf_audit.html": {
+      "calls": 7,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json pilot_profile.js:17": 5,
+     "json kit.js:201": 4,
+     "json suite_update.js:49": 3,
+     "json app_framework.js:17": 3,
+     "json browser_store.js:377": 2,
+     "idb kit.js:223": 1,
+     "json aircraft_fleet.js:221": 1,
+     "json mes_missions.html:1711": 1,
+     "json assignments.js:160": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 14,
+     "suiteSources:v1": 6,
+     "assignmentsRead:v1": 6,
+     "suiteVA:v1": 4,
+     "repositoryFramework:apps/pilot/mes_missions.html": 3,
+     "pilotAvailability:v1": 3,
+     "defaLocalStore:v1": 2,
+     "cpcoAccess:v1": 1,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1,
+     "repositorySidenav": 1,
+     "repositoryDesign": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "semaine suivante",
+    "done": true,
+    "timeout": false,
+    "settleMs": 348,
+    "nodes": 1259,
+    "resources": 3,
+    "counters": {
+     "storage.get": 9,
+     "storage.getBytes": 215,
+     "fetch": 1,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "mo.calls": 12,
+     "mo.ms": 0,
+     "fs.getFileHandle": 1,
+     "fs.getFile": 1,
+     "json.parse": 1,
+     "json.chars": 13669,
+     "icons.ms": 0.1,
+     "i18n.ms": 0.9,
+     "i18n.n": 2,
+     "deco.ms": 11.1,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 4,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json assignments.js:160": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "assignmentsRead:v1": 2,
+     "pilotAvailability:v1": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "semaine précédente",
+    "done": true,
+    "timeout": false,
+    "settleMs": 30,
+    "nodes": 1289,
+    "resources": 2,
+    "counters": {
+     "storage.get": 12,
+     "storage.getBytes": 475,
+     "fetch": 1,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "mo.calls": 8,
+     "mo.ms": 0.1,
+     "fs.getFileHandle": 1,
+     "fs.getFile": 1,
+     "json.parse": 1,
+     "json.chars": 13669,
+     "icons.ms": 0.1,
+     "i18n.ms": 0.8,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json assignments.js:160": 1
+    },
+    "storageKeys": {
+     "assignmentsRead:v1": 6,
+     "missionReportingConfig:v1": 5,
+     "pilotAvailability:v1": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "semaine suivante",
+    "done": true,
+    "timeout": false,
+    "settleMs": 37,
+    "nodes": 1259,
+    "resources": 2,
+    "counters": {
+     "storage.get": 8,
+     "storage.getBytes": 215,
+     "fetch": 1,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "mo.calls": 8,
+     "mo.ms": 0,
+     "fs.getFileHandle": 1,
+     "fs.getFile": 1,
+     "json.parse": 1,
+     "json.chars": 13669,
+     "icons.ms": 0.1,
+     "i18n.ms": 0.6,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json assignments.js:160": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "assignmentsRead:v1": 2,
+     "pilotAvailability:v1": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "ouvrir la 1re mission",
+    "done": true,
+    "timeout": false,
+    "settleMs": 264,
+    "nodes": 1303,
+    "resources": 21,
+    "counters": {
+     "mo.calls": 6,
+     "mo.ms": 0.1,
+     "fs.getDirectoryHandle": 19,
+     "fs.getFileHandle": 10,
+     "fs.getFile": 3,
+     "fetch": 7,
+     "fetch.data": 7,
+     "fetch.blocked": 7,
+     "json.parse": 3,
+     "json.chars": 8283,
+     "storage.get": 3,
+     "storage.getBytes": 65,
+     "icons.ms": 1.3,
+     "icons.n": 1,
+     "i18n.ms": 0.3,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json assignments.js:1424": 1,
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "assignmentsRead:v1": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "ouvrir le dossier",
+    "done": true,
+    "timeout": false,
+    "settleMs": 34,
+    "nodes": 1303,
+    "resources": 0,
+    "counters": {
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {},
+    "callers": {},
+    "storageKeys": {}
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "page suivante ×2",
+    "done": true,
+    "timeout": false,
+    "settleMs": 1870,
+    "nodes": 1317,
+    "resources": 1,
+    "counters": {
+     "mo.calls": 11,
+     "mo.ms": 0.1,
+     "icons.ms": 0,
+     "i18n.ms": 1.1,
+     "i18n.n": 4,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 3,
+      "ms": 0
+     }
+    },
+    "callers": {},
+    "storageKeys": {}
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Cabinet",
+    "done": true,
+    "timeout": false,
+    "settleMs": 356,
+    "nodes": 1447,
+    "resources": 24,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 4,
+     "storage.set": 1,
+     "storage.setBytes": 7,
+     "mo.calls": 23,
+     "mo.ms": 0,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 6.3,
+     "icons.n": 1,
+     "i18n.ms": 1.1,
+     "i18n.n": 2,
+     "deco.ms": 10.4,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:cabinet": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Carnet de vol",
+    "done": true,
+    "timeout": false,
+    "settleMs": 350,
+    "nodes": 1336,
+    "resources": 23,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 7,
+     "storage.set": 1,
+     "storage.setBytes": 9,
+     "mo.calls": 23,
+     "mo.ms": 0.2,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 5.6,
+     "icons.n": 1,
+     "i18n.ms": 1.2,
+     "i18n.n": 2,
+     "deco.ms": 11.3,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0.1
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:flightlog": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Durci",
+    "done": true,
+    "timeout": false,
+    "settleMs": 339,
+    "nodes": 1372,
+    "resources": 29,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 9,
+     "storage.set": 1,
+     "storage.setBytes": 5,
+     "mo.calls": 23,
+     "mo.ms": 0.1,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 5.7,
+     "icons.n": 1,
+     "i18n.ms": 1.3,
+     "i18n.n": 2,
+     "deco.ms": 12.4,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:field": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "design Aqua",
+    "done": true,
+    "timeout": false,
+    "settleMs": 358,
+    "nodes": 1301,
+    "resources": 1,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 5,
+     "storage.set": 1,
+     "storage.setBytes": 4,
+     "mo.calls": 23,
+     "mo.ms": 0,
+     "json.parse": 2,
+     "json.chars": 6,
+     "icons.ms": 3.7,
+     "icons.n": 1,
+     "i18n.ms": 1.2,
+     "i18n.n": 2,
+     "deco.ms": 9,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "repositoryIcons": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1,
+     "repositoryChartStyle": 1,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "langue anglais",
+    "done": true,
+    "timeout": false,
+    "settleMs": 359,
+    "nodes": 1303,
+    "resources": 2,
+    "counters": {
+     "storage.get": 19,
+     "storage.getBytes": 443,
+     "storage.set": 1,
+     "storage.setBytes": 2,
+     "json.parse": 9,
+     "json.chars": 13913,
+     "i18n.ms": 3.2,
+     "i18n.n": 3,
+     "fetch": 1,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "mo.calls": 23,
+     "mo.ms": 0.1,
+     "fs.getFileHandle": 1,
+     "fs.getFile": 1,
+     "icons.ms": 1.1,
+     "icons.n": 1,
+     "deco.ms": 10.4,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 8,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 4,
+     "json browser_store.js:377": 2,
+     "json assignments.js:160": 1,
+     "json machine_translate.js:20": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "defaLocalStore:v1": 2,
+     "suiteUpdate:v1": 2,
+     "assignmentsRead:v1": 2,
+     "repositoryLanguageMode": 1,
+     "defaLocalStore:pending": 1,
+     "suiteUpdateCheck:v1": 1,
+     "siaBaseInfo:v1": 1,
+     "pilotAvailability:v1": 1,
+     "machineTranslate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "langue français",
+    "done": true,
+    "timeout": false,
+    "settleMs": 266,
+    "nodes": 1301,
+    "resources": 2,
+    "counters": {
+     "storage.get": 18,
+     "storage.getBytes": 443,
+     "storage.set": 1,
+     "storage.setBytes": 2,
+     "json.parse": 8,
+     "json.chars": 13911,
+     "i18n.ms": 2.9,
+     "i18n.n": 3,
+     "fetch": 1,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "mo.calls": 17,
+     "mo.ms": 0.2,
+     "fs.getFileHandle": 1,
+     "fs.getFile": 1,
+     "icons.ms": 0.9,
+     "icons.n": 1,
+     "deco.ms": 8.7,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 6,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json suite_update.js:49": 4,
+     "json browser_store.js:377": 2,
+     "json assignments.js:160": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 5,
+     "defaLocalStore:v1": 2,
+     "suiteUpdate:v1": 2,
+     "assignmentsRead:v1": 2,
+     "repositoryLanguageMode": 1,
+     "defaLocalStore:pending": 1,
+     "suiteUpdateCheck:v1": 1,
+     "siaBaseInfo:v1": 1,
+     "pilotAvailability:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/pilot/mes_missions.html",
+    "step": "ouvrir la 2e mission",
+    "done": true,
+    "timeout": false,
+    "settleMs": 243,
+    "nodes": 1318,
+    "resources": 7,
+    "counters": {
+     "mo.calls": 6,
+     "mo.ms": 0,
+     "fs.getDirectoryHandle": 4,
+     "fs.getFileHandle": 3,
+     "fs.getFile": 3,
+     "json.parse": 3,
+     "json.chars": 8283,
+     "storage.get": 4,
+     "storage.getBytes": 130,
+     "icons.ms": 1.3,
+     "icons.n": 1,
+     "i18n.ms": 0.5,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json assignments.js:1424": 1,
+     "json suite_update.js:49": 1,
+     "json app_framework.js:17": 1
+    },
+    "storageKeys": {
+     "assignmentsRead:v1": 2,
+     "suiteUpdate:v1": 1,
+     "repositoryFramework:apps/pilot/mes_missions.html": 1
+    }
+   },
+   {
+    "page": "apps/cpco/odv_planning.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 242,
+    "nodes": 5284,
+    "resources": 53,
+    "counters": {
+     "storage.get": 93,
+     "storage.getBytes": 352,
+     "json.parse": 37,
+     "json.chars": 22656,
+     "mo.calls": 22,
+     "mo.ms": 0.2,
+     "fetch": 54,
+     "fetch.data": 50,
+     "fetch.blocked": 50,
+     "idb.open": 1,
+     "i18n.ms": 24.1,
+     "i18n.n": 4,
+     "icons.ms": 16.1,
+     "icons.n": 2,
+     "fs.getFileHandle": 2,
+     "deco.ms": 11,
+     "deco.n": 1,
+     "blocked.ms": 70,
+     "blocked.n": 1,
+     "fs.getFile": 2,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 7,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 9,
+      "ms": 0.2
+     },
+     "perf_audit.html": {
+      "calls": 4,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json pilot_profile.js:17": 5,
+     "json mission_table.js:147": 4,
+     "json suite_update.js:49": 3,
+     "json kit.js:201": 2,
+     "json browser_store.js:377": 2,
+     "json app_framework.js:17": 2,
+     "idb kit.js:223": 1,
+     "json defa_reference.js:277": 1,
+     "json aircraft_fleet.js:221": 1,
+     "json odv_planning.js:24": 1,
+     "json odv_planning.js:19": 1
+    },
+    "storageKeys": {
+     "pilotAvailability:v1": 46,
+     "missionReportingConfig:v1": 7,
+     "suiteSources:v1": 6,
+     "suiteVA:v1": 4,
+     "cpcoAccess:v1": 2,
+     "defaLocalStore:v1": 2,
+     "repositoryFramework:apps/cpco/odv_planning.html": 2,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1,
+     "repositorySidenav": 1,
+     "repositoryDesign": 1,
+     "repositoryChartPalette": 1
+    }
+   },
+   {
+    "page": "apps/cpco/odv_planning.html",
+    "step": "semaine suivante",
+    "done": true,
+    "timeout": false,
+    "settleMs": 462,
+    "nodes": 4986,
+    "resources": 4,
+    "counters": {
+     "fetch": 1,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "fs.getFileHandle": 2,
+     "fs.getFile": 2,
+     "json.parse": 2,
+     "json.chars": 21946,
+     "storage.get": 47,
+     "storage.getBytes": 0,
+     "mo.calls": 8,
+     "mo.ms": 0,
+     "icons.ms": 0.5,
+     "i18n.ms": 10.5,
+     "i18n.n": 2,
+     "deco.ms": 44,
+     "deco.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 4,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json assignments.js:160": 1,
+     "json assignments.js:1424": 1
+    },
+    "storageKeys": {
+     "pilotAvailability:v1": 46,
+     "repositoryDeviceX:aqua": 1
+    }
+   },
+   {
+    "page": "apps/cpco/odv_planning.html",
+    "step": "semaine précédente",
+    "done": true,
+    "timeout": false,
+    "settleMs": 242,
+    "nodes": 5284,
+    "resources": 4,
+    "counters": {
+     "fetch": 1,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "fs.getFileHandle": 2,
+     "fs.getFile": 2,
+     "json.parse": 2,
+     "json.chars": 21946,
+     "storage.get": 46,
+     "storage.getBytes": 0,
+     "mo.calls": 4,
+     "mo.ms": 0,
+     "icons.ms": 0.4,
+     "i18n.ms": 10.9,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 2,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json assignments.js:160": 1,
+     "json assignments.js:1424": 1
+    },
+    "storageKeys": {
+     "pilotAvailability:v1": 46
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 1398,
+    "nodes": 1939,
+    "resources": 250,
+    "counters": {
+     "storage.get": 577,
+     "storage.getBytes": 6403012,
+     "json.parse": 44,
+     "json.chars": 320360,
+     "mo.calls": 66,
+     "mo.ms": 0.2,
+     "i18n.ms": 15.7,
+     "i18n.n": 7,
+     "fetch": 5,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "idb.open": 2,
+     "fs.list": 72,
+     "icons.ms": 22.8,
+     "icons.n": 4,
+     "deco.ms": 20.2,
+     "deco.n": 2,
+     "fs.getFile": 123,
+     "fetch.404": 1,
+     "storage.set": 2,
+     "storage.setBytes": 7740,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 41,
+      "ms": 0.2
+     },
+     "design_deco.js": {
+      "calls": 2,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 10,
+      "ms": 0
+     },
+     "perf_audit.html": {
+      "calls": 12,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json mission_registry.js:20": 8,
+     "json pilot_profile.js:17": 5,
+     "json kit.js:201": 4,
+     "json app_framework.js:17": 4,
+     "json browser_store.js:377": 3,
+     "json suite_update.js:49": 3,
+     "json mission_order.js:43": 2,
+     "json mission_table.js:147": 2,
+     "idb kit.js:223": 1,
+     "json aircraft_fleet.js:221": 1,
+     "json defa_reference.js:277": 1
+    },
+    "storageKeys": {
+     "missionRoutingSettings:v1": 440,
+     "missionRegistry:v1": 40,
+     "flightPerfState": 39,
+     "missionReportingConfig:v1": 7,
+     "suiteSources:v1": 6,
+     "suiteVA:v1": 4,
+     "repositoryFramework:apps/cpco/mission_registry.html": 4,
+     "defaLocalStore:v1": 3,
+     "defaLocalStore:pending": 3,
+     "cpcoAccess:v1": 2,
+     "missionCoreLedger:v2": 2,
+     "missionRegistryOrder:v1": 2
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "filtre COMBAT",
+    "done": true,
+    "timeout": false,
+    "settleMs": 275,
+    "nodes": 949,
+    "resources": 0,
+    "counters": {
+     "storage.get": 10,
+     "storage.getBytes": 159852,
+     "storage.set": 2,
+     "storage.setBytes": 124,
+     "json.parse": 6,
+     "json.chars": 16,
+     "icons.ms": 6.5,
+     "icons.n": 2,
+     "mo.calls": 8,
+     "mo.ms": 0,
+     "i18n.ms": 2.1,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 3,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json app_framework.js:17": 2,
+     "json browser_store.js:377": 1,
+     "json mission_order.js:43": 1,
+     "json mission_registry.js:20": 1,
+     "json mission_table.js:147": 1
+    },
+    "storageKeys": {
+     "defaLocalStore:pending": 2,
+     "repositoryFramework:apps/cpco/mission_registry.html": 2,
+     "missionRegistryFilters:v1": 1,
+     "defaLocalStore:v1": 1,
+     "missionRegistryOrder:v1": 1,
+     "missionRegistry:v1": 1,
+     "missionRegistryTableHeight:v1": 1,
+     "sortedTableWidths:/apps/cpco/mission_registry.html#rgTable": 1
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "effacer les filtres",
+    "done": true,
+    "timeout": false,
+    "settleMs": 263,
+    "nodes": 1925,
+    "resources": 0,
+    "counters": {
+     "storage.get": 7,
+     "storage.getBytes": 159854,
+     "storage.set": 1,
+     "storage.setBytes": 116,
+     "json.parse": 5,
+     "json.chars": 14,
+     "icons.ms": 9,
+     "icons.n": 2,
+     "mo.calls": 7,
+     "mo.ms": 0.1,
+     "i18n.ms": 5.4,
+     "i18n.n": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 3,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json app_framework.js:17": 2,
+     "json mission_order.js:43": 1,
+     "json mission_registry.js:20": 1,
+     "json mission_table.js:147": 1
+    },
+    "storageKeys": {
+     "repositoryFramework:apps/cpco/mission_registry.html": 2,
+     "missionRegistryFilters:v1": 1,
+     "missionRegistryOrder:v1": 1,
+     "missionRegistry:v1": 1,
+     "missionRegistryTableHeight:v1": 1,
+     "sortedTableWidths:/apps/cpco/mission_registry.html#rgTable": 1
+    }
+   },
+   {
+    "page": "apps/cpco/mission_registry.html",
+    "step": "relire le dossier (à chaud)",
+    "done": true,
+    "timeout": false,
+    "settleMs": 335,
+    "nodes": 1928,
+    "resources": 0,
+    "counters": {
+     "mo.calls": 229,
+     "mo.ms": 0.2,
+     "storage.get": 9,
+     "storage.getBytes": 175208,
+     "json.parse": 7,
+     "json.chars": 7756,
+     "fs.list": 72,
+     "fs.getFile": 123,
+     "i18n.ms": 5.3,
+     "i18n.n": 2,
+     "icons.ms": 9.8,
+     "storage.set": 1,
+     "storage.setBytes": 7738,
+     "icons.n": 2,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "perf_audit.html": {
+      "calls": 77,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json mission_registry.js:20": 3,
+     "json app_framework.js:17": 2,
+     "json mission_order.js:43": 1,
+     "json mission_table.js:147": 1
+    },
+    "storageKeys": {
+     "missionRegistryScan:v1": 2,
+     "repositoryFramework:apps/cpco/mission_registry.html": 2,
+     "missionCoreLedger:v2": 1,
+     "missionRegistryOrder:v1": 1,
+     "missionRegistry:v1": 1,
+     "missionRegistryTableHeight:v1": 1,
+     "sortedTableWidths:/apps/cpco/mission_registry.html#rgTable": 1
+    }
+   },
+   {
+    "page": "apps/cpco/mission_editor.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 532,
+    "nodes": 1005,
+    "resources": 56,
+    "counters": {
+     "storage.get": 57,
+     "storage.getBytes": 479548,
+     "json.parse": 41,
+     "json.chars": 319910,
+     "idb.open": 3,
+     "mo.calls": 38,
+     "mo.ms": 0.2,
+     "i18n.ms": 4.6,
+     "i18n.n": 7,
+     "icons.ms": 4.6,
+     "icons.n": 2,
+     "fetch": 5,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "deco.ms": 6.4,
+     "deco.n": 1,
+     "blocked.ms": 63.7,
+     "blocked.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 17,
+      "ms": 0.1
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 10,
+      "ms": 0.1
+     },
+     "perf_audit.html": {
+      "calls": 9,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 11,
+     "json mission_store.js:560": 8,
+     "json pilot_profile.js:17": 5,
+     "json kit.js:201": 3,
+     "json suite_update.js:49": 3,
+     "idb sia_base.js:36": 2,
+     "json app_framework.js:17": 2,
+     "json browser_store.js:377": 2,
+     "json aircraft_fleet.js:221": 1,
+     "json mission_registry.js:20": 1,
+     "json mission_order.js:43": 1,
+     "json mission_store.js:388": 1
+    },
+    "storageKeys": {
+     "siaMissionBatch:v1": 8,
+     "missionReportingConfig:v1": 7,
+     "suiteSources:v1": 6,
+     "suiteVA:v1": 4,
+     "missionRegistry:v1": 3,
+     "cpcoAccess:v1": 2,
+     "siaFromRegistry:v1": 2,
+     "repositoryFramework:apps/cpco/mission_editor.html": 2,
+     "defaLocalStore:v1": 2,
+     "dataOverride:fleet:v1": 1,
+     "missionRegistryOrder:v1": 1,
+     "siaMissionShared:v1": 1
+    }
+   },
+   {
+    "page": "apps/planner/map_planner.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 1398,
+    "nodes": 5302,
+    "resources": 54,
+    "counters": {
+     "storage.get": 50,
+     "storage.getBytes": 3364,
+     "json.parse": 34,
+     "json.chars": 3420,
+     "idb.open": 3,
+     "storage.set": 3,
+     "storage.setBytes": 43,
+     "fetch": 7,
+     "fetch.data": 2,
+     "fetch.blocked": 2,
+     "mo.calls": 65,
+     "mo.ms": 8.7,
+     "i18n.ms": 10.7,
+     "i18n.n": 7,
+     "fetch.404": 2,
+     "icons.ms": 6.8,
+     "icons.n": 2,
+     "deco.ms": 11.8,
+     "deco.n": 2,
+     "blocked.ms": 314.9,
+     "blocked.n": 1,
+     "longtask.n": 2,
+     "longtask.ms": 211
+    },
+    "observers": {
+     "map_planner.html": {
+      "calls": 4,
+      "ms": 0
+     },
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 25,
+      "ms": 0.7
+     },
+     "app_framework.js": {
+      "calls": 4,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0.1
+     },
+     "block_icons.js": {
+      "calls": 15,
+      "ms": 7.7
+     },
+     "perf_audit.html": {
+      "calls": 15,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 12,
+     "json pilot_profile.js:17": 5,
+     "json suite_update.js:49": 3,
+     "idb sia_base.js:36": 2,
+     "json mission_store.js:560": 2,
+     "json app_framework.js:17": 2,
+     "json browser_store.js:377": 2,
+     "json map_planner.html:1331": 1,
+     "json map_planner.html:1955": 1,
+     "json map_planner.html:6584": 1,
+     "json mission_store.js:388": 1,
+     "json mission_store.js:397": 1
+    },
+    "storageKeys": {
+     "suiteSources:v1": 7,
+     "missionReportingConfig:v1": 7,
+     "suiteVA:v1": 4,
+     "siaMissionBatch:planner": 2,
+     "repositoryFramework:apps/planner/map_planner.html": 2,
+     "defaLocalStore:v1": 2,
+     "repositoryDeviceX:aqua": 2,
+     "siaDisplayProfiles": 1,
+     "siaZoneAliases": 1,
+     "siaProfileTab": 1,
+     "siaProfileSplit": 1,
+     "siaOutput": 1
+    }
+   },
+   {
+    "page": "apps/cr/FIRE/fire_cr.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 334,
+    "nodes": 1518,
+    "resources": 54,
+    "counters": {
+     "storage.get": 53,
+     "storage.getBytes": 373,
+     "json.parse": 38,
+     "json.chars": 455,
+     "mo.calls": 35,
+     "mo.ms": 0.3,
+     "idb.open": 1,
+     "fetch": 6,
+     "fetch.data": 2,
+     "fetch.blocked": 2,
+     "storage.set": 1,
+     "storage.setBytes": 4,
+     "i18n.ms": 6.7,
+     "i18n.n": 7,
+     "icons.ms": 26.4,
+     "icons.n": 2,
+     "deco.ms": 6,
+     "deco.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 10,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 16,
+      "ms": 0.2
+     },
+     "network_tracker.js": {
+      "calls": 4,
+      "ms": 0.1
+     },
+     "perf_audit.html": {
+      "calls": 3,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 12,
+     "json pilot_profile.js:17": 5,
+     "json core.js:1212": 4,
+     "json suite_update.js:49": 3,
+     "json browser_store.js:377": 2,
+     "json aircraft_catalog.js:14": 2,
+     "json app_framework.js:17": 2,
+     "idb kit.js:223": 1,
+     "json kit.js:201": 1,
+     "json defa_reference.js:277": 1,
+     "json aircraft_fleet.js:221": 1,
+     "json callsigns.js:86": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 8,
+     "suiteSources:v1": 7,
+     "suiteVA:v1": 4,
+     "defaLocalStore:v1": 2,
+     "missionSendConfig:v1": 2,
+     "missionSendKey:v1": 2,
+     "missionSendLog:v1": 2,
+     "repositoryFramework:apps/cr/FIRE/fire_cr.html": 2,
+     "cpcoAccess:v1": 1,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1,
+     "repositorySidenav": 1
+    }
+   },
+   {
+    "page": "apps/cr/FIRE/fire_reporting.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 93,
+    "nodes": 556,
+    "resources": 68,
+    "counters": {
+     "storage.get": 58,
+     "storage.getBytes": 503,
+     "json.parse": 41,
+     "json.chars": 14189,
+     "mo.calls": 30,
+     "mo.ms": 0.2,
+     "idb.open": 1,
+     "fetch": 6,
+     "fetch.data": 2,
+     "fetch.blocked": 2,
+     "fs.getFileHandle": 1,
+     "storage.set": 1,
+     "storage.setBytes": 4,
+     "i18n.ms": 3.5,
+     "i18n.n": 7,
+     "fs.getFile": 1,
+     "icons.ms": 5.7,
+     "icons.n": 2,
+     "deco.ms": 2.7,
+     "deco.n": 1,
+     "fetch.404": 1,
+     "longtask.ms": 0,
+     "longtask.n": 0
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 9,
+      "ms": 0.1
+     },
+     "content_i18n.js": {
+      "calls": 14,
+      "ms": 0
+     },
+     "perf_audit.html": {
+      "calls": 5,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 13,
+     "json time_period.js:94": 7,
+     "json pilot_profile.js:17": 5,
+     "json suite_update.js:49": 3,
+     "json browser_store.js:377": 2,
+     "json kit.js:201": 2,
+     "json app_framework.js:17": 2,
+     "idb kit.js:223": 1,
+     "json callsigns.js:86": 1,
+     "json reporting.js:137": 1,
+     "json defa_log.js:27": 1,
+     "json mission_table.js:147": 1
+    },
+    "storageKeys": {
+     "missionReportingConfig:v1": 8,
+     "suiteSources:v1": 7,
+     "missionReportingPeriod:v1": 7,
+     "suiteVA:v1": 5,
+     "missionReportingSource:v1": 3,
+     "defaLocalStore:v1": 2,
+     "repositoryFramework:apps/cr/FIRE/fire_reporting.html": 2,
+     "assignmentsRead:v1": 2,
+     "cpcoAccess:v1": 1,
+     "repositoryColors": 1,
+     "repositoryAquaColor": 1,
+     "repositorySidenav": 1
+    }
+   },
+   {
+    "page": "apps/settings/parametrage.html",
+    "step": "chargement",
+    "timeout": false,
+    "settleMs": 601,
+    "nodes": 7892,
+    "resources": 107,
+    "counters": {
+     "storage.get": 129,
+     "storage.getBytes": 483743,
+     "json.parse": 113,
+     "json.chars": 497172,
+     "mo.calls": 95,
+     "mo.ms": 0.1,
+     "idb.open": 7,
+     "fetch": 5,
+     "fetch.data": 1,
+     "fetch.blocked": 1,
+     "fs.getFileHandle": 20,
+     "fs.getFile": 26,
+     "i18n.ms": 23.6,
+     "i18n.n": 9,
+     "fs.list": 2,
+     "fs.getDirectoryHandle": 31,
+     "icons.ms": 77.8,
+     "icons.n": 12,
+     "deco.ms": 28.3,
+     "deco.n": 1,
+     "longtask.n": 2,
+     "longtask.ms": 46,
+     "blocked.ms": 127.4,
+     "blocked.n": 1,
+     "fetch.404": 1,
+     "storage.set": 2,
+     "storage.setBytes": 655
+    },
+    "observers": {
+     "repository_nav.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "design_deco.js": {
+      "calls": 1,
+      "ms": 0
+     },
+     "block_icons.js": {
+      "calls": 23,
+      "ms": 0
+     },
+     "content_i18n.js": {
+      "calls": 38,
+      "ms": 0.1
+     },
+     "perf_audit.html": {
+      "calls": 32,
+      "ms": 0
+     }
+    },
+    "callers": {
+     "json kit.js:179": 43,
+     "json maintenance_page.js:42": 15,
+     "json app_framework.js:17": 12,
+     "json suite_update.js:49": 9,
+     "json pilot_profile.js:17": 5,
+     "json sia_base.js:193": 5,
+     "json data_admin.js:21": 4,
+     "idb maintenance_page.js:609": 4,
+     "json browser_store.js:436": 4,
+     "json browser_store.js:377": 2,
+     "json kit.js:201": 2,
+     "json aircraft_catalog.js:14": 2
+    },
+    "storageKeys": {
+     "suiteSources:v1": 37,
+     "repositoryFramework:apps/settings/parametrage.html": 12,
+     "siaBaseInfo:v1": 8,
+     "suiteVA:v1": 7,
+     "missionReportingConfig:v1": 7,
+     "suiteUpdateCheck:v1": 5,
+     "defaLocalStore:v1": 4,
+     "suiteBackupLog:v1": 4,
+     "flightPerfState": 4,
+     "suiteUpdate:v1": 3,
+     "missionRegistry:v1": 3,
+     "cpcoAccess:v1": 2
+    }
+   }
+  ]
+ }
+]

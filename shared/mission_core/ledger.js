@@ -22,7 +22,8 @@
   const DB = 'missionCore',
     STORE = 'handles';
   /** Base IndexedDB « missionCore » (magasin handles) : dossier du registre. */
-  const idb = () => new Promise((resolve, reject) => {
+  // connexion partagée par la page (RepositoryKit.idb) : plus une ouverture par lecture
+  const idb = () => window.RepositoryKit?.idb ? window.RepositoryKit.idb(DB, 1, db => db.objectStoreNames.contains(STORE) || db.createObjectStore(STORE)) : new Promise((resolve, reject) => {
     const request = indexedDB.open(DB, 1);
     request.onupgradeneeded = () => request.result.createObjectStore(STORE);
     request.onsuccess = () => resolve(request.result);

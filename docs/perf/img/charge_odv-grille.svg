@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="230" font-family="system-ui,Segoe UI,sans-serif" font-size="10">
+<rect width="100%" height="100%" fill="#fff"/><text x="0" y="13" font-size="12" font-weight="600" fill="#1b1f24">ODV : grille de la semaine, 50 pilotes × 21 créneaux (n affectations)</text>
+<line x1="52" y1="196" x2="452" y2="196" stroke="#d5d9df"/><line x1="52" y1="22" x2="52" y2="196" stroke="#d5d9df"/>
+<text x="48" y="188.8" text-anchor="end" fill="#5b6470">10 ms</text><line x1="52" y1="185.8" x2="452" y2="185.8" stroke="#eef0f3"/>
+<text x="48" y="110.7" text-anchor="end" fill="#5b6470">100 ms</text><line x1="52" y1="107.7" x2="452" y2="107.7" stroke="#eef0f3"/>
+<text x="48" y="32.6" text-anchor="end" fill="#5b6470">1000 ms</text><line x1="52" y1="29.6" x2="452" y2="29.6" stroke="#eef0f3"/>
+<text x="52.0" y="210" text-anchor="middle" fill="#5b6470">500</text>
+<text x="155.6" y="210" text-anchor="middle" fill="#5b6470">2000</text>
+<text x="224.1" y="210" text-anchor="middle" fill="#5b6470">5000</text>
+<text x="259.2" y="210" text-anchor="middle" fill="#5b6470">8000</text>
+<text x="327.7" y="210" text-anchor="middle" fill="#5b6470">20000</text>
+<text x="362.8" y="210" text-anchor="middle" fill="#5b6470">32000</text>
+<text x="448.0" y="210" text-anchor="middle" fill="#5b6470">100000</text>
+<polyline fill="none" stroke="#d8763b" stroke-width="2" points="52.0,192.5 155.6,148.2 259.2,112.7 362.8,63.7"/>
+<circle cx="52.0" cy="192.5" r="3" fill="#d8763b"/>
+<circle cx="155.6" cy="148.2" r="3" fill="#d8763b"/>
+<circle cx="259.2" cy="112.7" r="3" fill="#d8763b"/>
+<circle cx="362.8" cy="63.7" r="3" fill="#d8763b"/>
+<polyline fill="none" stroke="#d8763b" stroke-width="1.5" stroke-dasharray="4 3" points="362.8,63.7 448.0,31.3"/>
+<polyline fill="none" stroke="#3b6fd8" stroke-width="2" points="52.0,196.0 155.6,154.2 259.2,111.7 362.8,60.2"/>
+<circle cx="52.0" cy="196.0" r="3" fill="#3b6fd8"/>
+<circle cx="155.6" cy="154.2" r="3" fill="#3b6fd8"/>
+<circle cx="259.2" cy="111.7" r="3" fill="#3b6fd8"/>
+<circle cx="362.8" cy="60.2" r="3" fill="#3b6fd8"/>
+<polyline fill="none" stroke="#3b6fd8" stroke-width="1.5" stroke-dasharray="4 3" points="362.8,60.2 448.0,26.0"/>
+<text x="452" y="224" text-anchor="end" fill="#5b6470">affectations (échelle log) — pointillés : extrapolation</text>
+</svg>

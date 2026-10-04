@@ -1558,14 +1558,14 @@
   <p id="pmSimsMsg" class="small">Enregistré dans ce navigateur, et avec vos disponibilités (« Enregistrer dans le dossier des données »).</p>
 </section>
 </main>
-<script src="../../shared/kit.js?v=a2ce6913"></script>
-<script src="../../shared/repository_nav.js?v=c7809654"></script>
+<script src="../../shared/kit.js?v=42566549"></script>
+<script src="../../shared/repository_nav.js?v=18652d6f"></script>
 <script src="mes_missions_i18n.js?v=0207db7b" defer></script>
-<script src="../../shared/content_i18n.js?v=be5cfc1c"></script>
+<script src="../../shared/content_i18n.js?v=7afecb78"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=74550207"></script>
-<script src="../../shared/mission_estimate.js?v=7d806302"></script><script src="../../shared/mission_i18n.js?v=bfd45c20"></script><script src="../../shared/machine_translate.js?v=c029bc1a"></script><script src="../../shared/mission_exercise.js?v=6c6aed4f"></script>
-<script src="../../shared/assignments.js?v=e024506d"></script>
+<script src="../../shared/mission_estimate.js?v=9b0cd5b6"></script><script src="../../shared/mission_i18n.js?v=bfd45c20"></script><script src="../../shared/machine_translate.js?v=c029bc1a"></script><script src="../../shared/mission_exercise.js?v=6c6aed4f"></script>
+<script src="../../shared/assignments.js?v=c98a7f01"></script>
 <script>
 (() => {
   'use strict';
@@ -1697,7 +1697,9 @@
     $('pmList').innerHTML = `<table><thead><tr><th>Décollage (UTC)</th><th>Mission</th><th>Titre</th><th>Appareil</th><th>Terrain</th><th>Indicatif</th></tr></thead><tbody>${list.map((a, i) => `<tr data-i="${i}" class="${A.isRead(a) ? '' : 'pm-unread'}${current && A.key(current) === A.key(a) ? ' pm-current' : ''}"><td>${a.alert ? 'astreinte ' + esc(hhmm(Date.parse(a.alert.ready_at_utc))) : esc(fmt(A.when(a)))}</td><td><b>${esc(a.mission)}</b>${a.role === 'convoyage' ? ' <small>convoyage</small>' : ''}</td><td>${esc(titleOf(a))}</td><td>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' '))}</td><td>${esc(a.departure || '')}</td><td>${esc(a.callsign || '')}</td></tr>`).join('')}</tbody></table>`;
     const want = new URLSearchParams(location.search).get('mission');
     const pick = current ? list.find(a => A.key(a) === A.key(current)) : want ? list.find(a => a.mission === want) : null;
-    if (pick) show(pick);
+    // mission déjà affichée et inchangée (même clé : mission, pilote, mise à jour) : gardée telle quelle — la relire à
+    // chaque rechargement de la liste (langue, semaine, écriture d'un autre onglet) refaisait toutes ses lectures
+    if (pick && !(shown && A.key(pick) === shown && $('pmDetail').querySelector('.pm-content, [data-part]'))) show(pick);
   }
   $('pmList').addEventListener('click', e => {
     const tr = e.target.closest('tr[data-i]');
@@ -1859,10 +1861,15 @@
   };
   /** Affiche une mission : chargée (yaml, résumé .md, journal) puis dossier fermé et scellé si elle n'est pas lue,
    *  ouvert sinon (ou si open) ; défilement jusqu'au bloc. */
+  let showSeq = 0,
+    shown = ''; // clé de l'affectation affichée (lectures faites)
   async function show(a, {
     open = false
   } = {}) {
+    const seq = ++showSeq; // un affichage plus récent rend celui-ci caduc (ses lectures ne s'affichent pas)
+    const stale = () => seq !== showSeq;
     current = a;
+    shown = '';
     document.querySelectorAll('#pmList tr').forEach(tr => tr.classList.toggle('pm-current', list[+tr.dataset.i] === a));
     $('pmMission').hidden = false;
     $('pmDetail').innerHTML = '<p class="pm-empty">Chargement de la mission…</p>';
@@ -1882,7 +1889,9 @@
         log = (await A.readLog()).filter(e => e.mission === a.mission);
       } catch {
         /* pas de journal */ }
+      if (stale()) return;
       render(a, {}, '', log);
+      shown = A.key(a);
       if (open && !A.isRead(a)) {
         A.markRead(a);
         logMission(a, 'convoyage ouvert');
@@ -1891,6 +1900,7 @@
       return;
     }
     const yf = await A.missionFirst(a.folder, [a.files?.yaml, `mission${a.mission}.yaml`, `mission${bare}.yaml`]);
+    if (stale()) return;
     try {
       if (yf) mission = window.jsyaml.load(yf.value.replace(/^#.*\n/, ''));
     } catch {
@@ -1899,17 +1909,35 @@
     if (!yf) window.AppFramework?.notify?.(`Mission ${a.mission} : fichier introuvable (dossier « ${a.folder} »), ni dans le dossier des missions autorisé ni dans la copie servie — seule l’affectation est affichée.`, 'warn');
     // cartes : index de l'affectation, sinon yaml ; adresse résolue (cartes/x.png, sinon x.png)
     const mapNames = a.files?.maps?.length ? a.files.maps : (mission?.maps || []).map(m => m?.filename).filter(Boolean);
-    mapUrls = {};
-    for (const m of mapNames) mapUrls[m] = (await A.missionFirst(a.folder, [`cartes/${m}`, m], {
-      as: 'url'
-    }))?.value || '';
+    // cartes : cherchées en parallèle, d'abord là où la mission range ses cartes (dossier cartes/ ou racine, appris sur
+    // la première trouvée) — plus deux requêtes en série, dont une en 404, par carte
+    const urls = {},
+      first = mapNames[0] ? await A.missionFirst(a.folder, [`cartes/${mapNames[0]}`, mapNames[0]], {
+        as: 'url'
+      }) : null;
+    if (stale()) return;
+    if (first) urls[mapNames[0]] = first.value;
+    // première carte introuvable aux deux endroits : les cartes de la mission manquent (non générées) — les autres ne
+    // sont cherchées qu'à la racine (une requête chacune au lieu de deux)
+    const inCartes = first ? first.name.startsWith('cartes/') : false,
+      where = m => first ? (inCartes ? [`cartes/${m}`, m] : [m, `cartes/${m}`]) : [m];
+    await Promise.all(mapNames.slice(1).map(async m => {
+      urls[m] = (await A.missionFirst(a.folder, where(m), {
+        as: 'url'
+      }))?.value || '';
+    }));
+    if (stale()) return;
+    mapUrls = urls;
     exDocs = await exerciseDocs(a, mission);
+    if (stale()) return;
     let log = [];
     try {
       log = (await A.readLog()).filter(e => e.mission === a.mission);
     } catch {
       /* pas de journal */ }
+    if (stale()) return;
     render(a, mission || {}, md, log);
+    shown = A.key(a);
     if (open && !A.isRead(a)) {
       A.markRead(a);
       logMission(a, 'mission ouverte (scellé brisé)');
