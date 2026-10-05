@@ -147,6 +147,19 @@
   .pm-book.pm-bare>* {
     visibility: hidden
   }
+  .pm-st-face {
+    position: absolute;
+    inset: 0;
+    transform-origin: 0 0
+  }
+  .pm-book.pm-replica {
+    position: absolute;
+    margin: 0;
+    aspect-ratio: auto;
+    background: none;
+    filter: none;
+    pointer-events: none
+  }
   #pilotMissions.pm-dossier:not(.pm-wide) .pm-col-r>.repo-block:not(#pmMission):not(.pm-unfold)>:not(.repo-block-heading) {
     display: none
   }
@@ -2216,8 +2229,10 @@
     pocket: 717 / 1015,
     spine: .496
   };
-  /** Scène Cabinet posée sur le dossier : range-dossier (fond, avant) au rectangle c de la couverture, liasse (avec une
-   *  copie de l'étiquette, label) à sa place dedans, volet gauche du dossier ouvert (caché) contre le dos du livre b. */
+  /** Scène Cabinet posée sur le dossier : range-dossier (fond, avant) au rectangle c de la couverture, liasse à sa place
+   *  dedans, volet gauche du dossier ouvert (caché) contre le dos du livre b. La liasse a deux faces : celle de la
+   *  couverture (copie de son étiquette, label, à la même place) et la page 1 du livre (copie de la page de droite à la
+   *  première double page : en-tête, étiquette, tampon) ; elle passe de l'une à l'autre en glissant vers la page. */
   function cabStage(c, b, book, label) {
     const st = document.createElement('div');
     st.className = 'pm-stage';
@@ -2234,6 +2249,8 @@
       h: c.h * CAB.sh
     };
     box(sheet, s0);
+    sheet.innerHTML = '<div class="pm-st-face pm-st-cover"></div><div class="pm-st-face pm-st-title"></div>';
+    const [coverFace, titleFace] = sheet.children;
     if (label) { // l'étiquette collée sur la liasse, à la place qu'elle a sur la couverture
       const l = label.el.cloneNode(true);
       l.removeAttribute('style');
@@ -2245,7 +2262,7 @@
         width: `${label.w}px`,
         transform: label.t
       });
-      sheet.append(l);
+      coverFace.append(l);
     }
     box(panel, {
       x: b.x,
@@ -2263,19 +2280,36 @@
         w: b.w * (1 - pct(`--pm-${p}sheet-l`) - pct(`--pm-${p}sheet-r`)),
         h: b.h * (1 - pct(`--pm-${p}sheet-t`) - pct(`--pm-${p}sheet-b`))
       });
+    // page 1 du livre telle qu'elle est sur la page de droite (mêmes styles : copie dans un livre de même taille)
+    const right = area(''),
+      page = book.querySelector('.pm-right');
+    if (page) {
+      const rep = document.createElement('div');
+      rep.className = 'pm-book pm-replica';
+      Object.assign(rep.style, {
+        left: `${b.x - right.x}px`,
+        top: `${b.y - right.y}px`,
+        width: `${b.w}px`,
+        height: `${b.h}px`
+      });
+      rep.append(page.cloneNode(true));
+      titleFace.append(rep);
+    }
     return {
       st,
       back,
       front,
       panel,
       sheet,
+      coverFace,
+      titleFace,
       s0,
       up: { // liasse sortie de la poche (au-dessus du range-dossier)
         ...s0,
         y: c.y + c.h * CAB.pocket - s0.h - 4
       },
       left: area('b'),
-      right: area(''),
+      right,
       wing: { // volet droit du dossier ouvert (là où le range-dossier se pose en s'ouvrant)
         x: b.x + b.w * CAB.spine,
         y: b.y,
@@ -2283,6 +2317,32 @@
         h: b.h
       }
     };
+  }
+  /** Faces de la liasse : de la couverture vers la page 1 (toPage) ou l'inverse ; la page 1 à l'échelle de la liasse
+   *  (largeur de la feuille de gauche, puis de droite). */
+  function faces(S, toPage, duration) {
+    const k = S.left.w / S.right.w,
+      sc = [{
+        transform: `scale(${k})`
+      }, {
+        transform: 'scale(1)'
+      }],
+      on = [{
+        opacity: 0
+      }, {
+        opacity: 1
+      }];
+    return Promise.all([play(S.titleFace, toPage ? sc : sc.reverse(), {
+      duration,
+      easing: 'cubic-bezier(.35,.1,.25,1)',
+      fill: 'forwards'
+    }), play(S.titleFace, toPage ? on : [...on].reverse(), {
+      duration,
+      fill: 'forwards'
+    }), play(S.coverFace, toPage ? [...on].reverse() : on, {
+      duration,
+      fill: 'forwards'
+    })]);
   }
   /** Étiquette de la couverture : place dans la couverture et inclinaison (copiée sur la liasse). */
   const labelOf = cv => {
@@ -2333,6 +2393,7 @@
     book.style.visibility = 'hidden';
     const b = rel(book),
       S = cabStage(c, b, book, label);
+    S.titleFace.style.opacity = '0';
     // 1. la liasse sort de la poche, puis passe au-dessus et se pose à gauche, le temps d'ouvrir le range-dossier
     await play(S.sheet, [boxKf(S.s0), boxKf(S.up)], {
       duration: T(560),
@@ -2388,12 +2449,13 @@
     if (!S.st.isConnected) return;
     book.style.clipPath = '';
     S.panel.style.visibility = 'hidden';
-    // 3. la liasse glisse sur la page de droite et s'y pose ; les pages du dossier prennent sa place
-    await play(S.sheet, [boxKf(S.left), boxKf(S.right)], {
+    // 3. la liasse glisse sur la page de droite et s'y pose (sa face devient la page 1) ; les pages du dossier
+    // prennent sa place
+    await Promise.all([play(S.sheet, [boxKf(S.left), boxKf(S.right)], {
       duration: T(620),
       easing: 'cubic-bezier(.35,.1,.25,1)',
       fill: 'forwards'
-    });
+    }), faces(S, true, T(620))]);
     if (!S.st.isConnected) return;
     S.sheet.classList.remove('lift');
     await Promise.all([bare(book, false), play(S.sheet, [{
@@ -2427,6 +2489,7 @@
       S = cabStage(c, b, book, label);
     box(S.sheet, S.right);
     S.st.append(S.sheet); // posée sur la page : au-dessus de tout
+    S.coverFace.style.opacity = '0';
     S.back.style.opacity = S.front.style.opacity = '0';
     // 1. la liasse prend la place des pages, se soulève et glisse à gauche
     await Promise.all([bare(book, true), play(S.sheet, [{
@@ -2438,11 +2501,11 @@
     })]);
     if (!S.st.isConnected) return;
     S.sheet.classList.add('lift');
-    const aside = play(S.sheet, [boxKf(S.right), boxKf(S.left)], {
+    const aside = Promise.all([play(S.sheet, [boxKf(S.right), boxKf(S.left)], {
       duration: T(620),
       easing: 'cubic-bezier(.35,.1,.25,1)',
       fill: 'forwards'
-    });
+    }), faces(S, false, T(620))]);
     await wait(T(380));
     if (!S.st.isConnected) return;
     // 2. le volet gauche se replie sur le droit, le dossier redevient range-dossier
@@ -2688,7 +2751,8 @@
     cv.tabIndex = 0;
     cv.setAttribute('role', 'button');
     cv.title = sealed ? 'Ouvrir la mission (briser le sceau)' : 'Ouvrir le dossier';
-    cv.innerHTML = `${labelHtml(a)}<p class="pm-open"><button type="button" class="primary" data-open>${sealed ? 'Ouvrir la mission' : 'Ouvrir le dossier'}</button></p>`;
+    const y0 = lastRender?.[0] === a ? lastRender[1] : null; // même titre que l'étiquette de la page 1
+    cv.innerHTML = `${labelHtml({ ...a, title: y0?.title || a.title })}<p class="pm-open"><button type="button" class="primary" data-open>${sealed ? 'Ouvrir la mission' : 'Ouvrir le dossier'}</button></p>`;
     host.insertBefore(cv, actions || null);
     const open = () => {
       if (cv.dataset.opening) return Promise.resolve();
