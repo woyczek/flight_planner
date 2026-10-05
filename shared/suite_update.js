@@ -55,7 +55,8 @@
     try {
       localStorage.setItem(k, JSON.stringify(v));
     } catch {
-      /* quota */ }
+      /* quota */
+    }
   };
 
   /** Réglages { channel, mode, periodDays, updatedAt }. */
@@ -136,7 +137,7 @@
         get(`${REPO.api}/repository/branches/${encodeURIComponent(ch)}`, 'json'),
         // config/repository_tree (depuis la 4.7) ; repository_tree à la racine pour les versions antérieures du canal
         get(`${REPO.api}/repository/files/config%2Frepository_tree/raw?ref=${encodeURIComponent(ch)}`, 'text')
-          .catch(() => get(`${REPO.api}/repository/files/repository_tree/raw?ref=${encodeURIComponent(ch)}`, 'text')).catch(() => '')
+        .catch(() => get(`${REPO.api}/repository/files/repository_tree/raw?ref=${encodeURIComponent(ch)}`, 'text')).catch(() => '')
       ]);
       const rel = releaseOf(tree),
         remote = {
@@ -378,7 +379,7 @@
     airac: ['AIRAC', 'AIRAC', 'AIRAC', 'AIRAC'],
     airacTitle: ['Cycle AIRAC {e} en vigueur ; base SIA du studio : {b} — mettre à jour les données SIA (Paramètres › Maintenance)', 'AIRAC cycle {e} in force; map studio SIA base: {b} — update SIA data (Settings › Maintenance)', 'AIRAC-Zyklus {e} gültig; SIA-Basis des Studios: {b} — SIA-Daten aktualisieren', 'Ciclo AIRAC {e} vigente; base SIA del estudio: {b} — actualizar los datos SIA']
   };
-  const page = block => new URL(`apps/settings/parametrage.html?m=${block}`, nav.root).href; // Paramètres › Maintenance
+  const page = block => nav.settingsUrl?.(block) || new URL(`apps/settings/maintenance.html?m=${block}`, nav.root).href; // Paramètres › Maintenance
   let host = null;
 
   function badge() {

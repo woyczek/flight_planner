@@ -19,7 +19,7 @@ ravitaillement ENR 5.7), composants du
 framework (bandeau et menu ☰, blocs, `FileAccess`, fenêtres de copier-coller, sauvegarde locale).
 Bibliothèques livrées dans le dossier : MapLibre GL (`maplibre-gl.js/.css`), jsPDF
 (`jspdf.umd.min.js`) ; js-yaml est celui du framework. Notes de conception :
-[SIA_XML_INTEGRATION.md](SIA_XML_INTEGRATION.md).
+[SIA_XML_INTEGRATION.md](technique/SIA_XML_INTEGRATION.md).
 
 ## 1. Données
 
@@ -51,7 +51,7 @@ version précédente est relue automatiquement si l'accès au dossier est déjà
 ## 2. Format des missions
 
 Pour faire produire une série par un assistant externe (ChatGPT…) : prompt complet, aligné sur ce que lit
-la suite, dans [PROMPT_GENERATEUR_MISSIONS.md](PROMPT_GENERATEUR_MISSIONS.md).
+la suite, dans [PROMPT_GENERATEUR_MISSIONS.md](technique/PROMPT_GENERATEUR_MISSIONS.md).
 
 **Identifiants** : lettre de la famille + tiret + numéro d'opération sur 3 chiffres, compté par famille, + lettre d'équipe
 quand l'opération engage plusieurs équipes — « M-016 », « S-002A », « S-002B ». Lettres : M HEMS / MEDEVAC, H HADR,
@@ -193,6 +193,16 @@ data/missions/<lettre>_<FAMILLE>/<identifiant>/
   générateur. État : **complète** (toutes les cartes), **partielle** (cartes manquantes) ou **sans cartes**
   (régénérables depuis le YAML).
 
+## 2 sexies. Brief traduit (bloc i18n)
+
+Réglage **Traductions** de la commande (registre, générateur : `en` par défaut, `en, de, es`, ou aucune) → paramètre
+`TRADUCTIONS` du prompt → le YAML porte en fin de fichier un bloc `i18n` : une clé par langue, mêmes clés que le texte
+français (`title`, `summary`, `detailed_description`, `objectives`, `notes` et `risks` dans le même ordre, `maps` :
+légendes par id de carte ; organisation d'un exercice : `events` et `tracks` par id). `shared/mission_i18n.js`
+(`MissionI18n.localize(yaml, lang)`, `here(yaml)`) superpose la traduction au texte français, champ par champ : ce qui
+n'est pas traduit reste en français. « Mes missions » s'en sert (ordre, résumé, description, objectifs, risques, plis et
+pistes, légendes des cartes) et suit le changement de langue ; le Markdown et les champs techniques restent en français.
+
 ## 2 quinquies. Exercice : organisation, chiffons, chronologie
 
 `shared/mission_exercise.js` (`MissionExercise`). Une opération devient un **exercice** quand des informations ne sont
@@ -205,7 +215,8 @@ les familles sont concernées (ISR, HEMS, FIRE, COMMAND…).
   citent `operation.organisation: I-001Z`. Voir le prompt, § 3 et § 4 bis.
 - **Bloc `exercise`** : `h_hour` (heure H commune) ; `participants` (indicatif, mission, décollage `H-20mn`, `H+1h` : une seule heure H — ou T, ou M —, décalages avec leur unité ; sans unité, minutes, rôle) ;
   `tracks` = **chiffons** (nom, nature, points, niveau, vitesse, à établir ; `played` : tenu par un aéronef du
-  simulateur, avec `callsign`, départ `start` et consignes `conduct`, sinon seulement dessiné) ; `events` =
+  simulateur, avec `callsign`, départ `start` et consignes `conduct`, sinon seulement dessiné ; chiffon joué :
+  `mission` — sa propre mission de l'opération, rôle `chiffon` —, `takeoff`, `aircraft_type`) ; `events` =
   **chronologie** (`at` : `H+n` ou point de la mission du participant `by`, `delay_min` ; `kind` : **radio** passé
   en vol ou **pli** scellé remis avant le vol ; `from`, `to` : participants, chiffons joués ou `ALL` ; `title`,
   `text` ; `reveals` : pistes révélées).
@@ -214,9 +225,15 @@ les familles sont concernées (ISR, HEMS, FIRE, COMMAND…).
 - **Destinataires** : l'organisation voit tout ; chaque équipage ne reçoit que les événements qui lui sont adressés
   (ou à tous) et ne connaît que les pistes qu'ils révèlent ; chaque chiffon joué reçoit sa route, son heure de
   départ, ses consignes et sa carte.
+- **Chiffon joué = mission d'équipe** : sa mission (`I-001D`, `mission.role: chiffon`) est une mission comme les
+  autres — registre, affectation dans l'ODV (ligne de l'opération, décalage `takeoff`), « Mes missions » (brief,
+  consignes, plis qui lui sont adressés par id de piste ou indicatif), planificateur. `MissionExercise.crews(ex)` et
+  `participantOf` la traitent en participant (rôle chiffon) ; `chiffonOf` rend sa piste. Opérations d'avant : bouton
+  « Créer les missions des chiffons joués » du bloc Opération du générateur (base du premier équipage, route de la
+  piste, décollage = départ moins le transit estimé).
 - **Réception** (« Mes missions », pilote) : les événements adressés à l'équipage sont des plis scellés derrière le
   signet, ouverts à leur heure ; pistes et cartes d'exercice n'y paraissent qu'à l'ouverture (voir
-  [AFFECTATION_MISSIONS.md](AFFECTATION_MISSIONS.md), § 10).
+  [AFFECTATION_MISSIONS.md](technique/AFFECTATION_MISSIONS.md), § 10).
 - **Ancien format** (`tracks`, `injects`, `phases` dans une mission) : toujours lu, converti en événements adressés à
   l'équipage de la mission ; « Créer l'organisation de l'exercice » les reprend dans la nouvelle mission Z.
 
@@ -308,7 +325,7 @@ Page `apps/cpco/mission_editor.html`.
    équipes au sol, ravitaillement ; réglages partagés (`missionRegistryOrder:v1`) ; « Commander » inscrit la mission au
    registre (« commandée »), copie le prompt réglé pour une seule mission et ouvre ChatGPT dans un nouvel onglet (coller,
    envoyer, puis charger ou coller `mission<ID>.yaml` et `summary<ID>.md`). Le prompt vient de
-   [PROMPT_GENERATEUR_MISSIONS.md](PROMPT_GENERATEUR_MISSIONS.md), embarqué dans `apps/cpco/mission_prompt.js` par
+   [PROMPT_GENERATEUR_MISSIONS.md](technique/PROMPT_GENERATEUR_MISSIONS.md), embarqué dans `apps/cpco/mission_prompt.js` par
    `tools/build_mission_prompt.py` (relancé par `tools/bump_versions.py`) : pas de lecture réseau du dossier docs/.
    (« ou coller son contenu… », Markdown reconnu à ses titres `##`) (fusionnés, lecture commune avec le
    studio : `SiaMission.fromTexts`), et les cartes (PNG ou

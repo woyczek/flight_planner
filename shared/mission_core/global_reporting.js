@@ -1060,13 +1060,13 @@
       status.textContent = `${family.id} : ${added} ${tr(UI.legacyDone)} ${skipped}`;
       render();
     }
-    legacySelect.onchange = () => {
+    legacySelect.onchange = async () => {
       const family = legacyFamilies.find(f => f.id === legacySelect.value);
       legacySelect.value = '';
       if (!family) return;
       const cached = window.MissionReportingConfig?.cached?.(family.legacy.configKey);
       picker.dataset.family = family.id;
-      if (cached?.text && confirm(`${cached.name || family.legacy.configKey} — OK : ${family.id} ; ${tr(UI.legacy)} ?`)) importLegacy(family, cached.text);
+      if (cached?.text && await window.AppFramework.ask(`${cached.name || family.legacy.configKey} — OK : ${family.id} ; ${tr(UI.legacy)} ?`)) importLegacy(family, cached.text);
       else picker.click();
     };
     picker.onchange = async () => {
@@ -1083,6 +1083,7 @@
     window.addEventListener('repository-language-change', () => setTimeout(render));
     window.addEventListener('repository-design-change', () => setTimeout(render)); // palette, style des graphiques
     window.addEventListener('local-store-restored', () => L2.load(true).then(render));
+    window.addEventListener('mission-ledger-change', () => render()); // enregistré dans un autre onglet (déjà relu)
     const ready = L2.load().then(render).catch(error => {
       status.textContent = error.message;
       render();

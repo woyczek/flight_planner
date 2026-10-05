@@ -4,7 +4,7 @@
 <!-- Banc d'essai (outil de développement) : relève les styles calculés des composants du framework (en-tête, blocs,
      boutons, champs, barres, cartes…, pseudo-éléments compris) sur des pages, dans chaque design et chaque ton, puis
      compare un état ultérieur à cette référence (propriété par propriété). Sert à refactorer designs_skeuo.css sans
-     changement visuel involontaire (docs/REFACTORING_TOOLKIT.md).
+     changement visuel involontaire (docs/technique/REFACTORING_TOOLKIT.md).
      Pages : « témoins » (9 pages représentatives, ~6 min) ou « toutes » (les pages de l'arborescence, repository_tree,
      ~35 min), ou « liste » (?pages=a.html,b.html dans l'adresse : quelques secondes par page) ; designs à cocher,
      dont « standard » (sans design à matières : styles des pages seuls). Une référence par jeu de pages, gardée dans ce navigateur (IndexedDB).
@@ -12,7 +12,7 @@
      http://127.0.0.1:8767/tools/skeuo_regression.html ; « Référence » avant la modification, « Comparer » après
      (versions de cache à jour : python tools/bump_versions.py). Le design choisi dans la suite est modifié pendant les
      relevés (repositoryDesign), puis rétabli. -->
-<script src="../config/repository_tree"></script>
+<script src="../config/repository_tree" data-no-design></script>
 <style>
   body{margin:0;font:14px system-ui,sans-serif;background:#f4f6f8;color:#17202a}
   header{padding:12px 16px;background:#fff;border-bottom:1px solid #ccd;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
@@ -34,7 +34,7 @@
 // registre, Paramètres) ; « toutes » : chaque page de l'arborescence de la suite
 const TEMOINS = ['apps/cr/HEMS/hems_medevac_cr.html', 'apps/cr/HEMS/hems_medevac_reporting.html', 'apps/planner/flight_performance_planner.html',
   'apps/cpco/map_parser.html', 'apps/settings/apparence.html', 'apps/cpco/mission_editor.html',
-  'apps/cpco/odv_planning.html', 'apps/cpco/mission_registry.html', 'apps/settings/parametrage.html'];
+  'apps/cpco/odv_planning.html', 'apps/cpco/mission_registry.html', 'apps/settings/maintenance.html', 'apps/settings/profil.html'];
 const TOUTES = (() => {
   const out = new Set();
   const walk = x => {

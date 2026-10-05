@@ -37,6 +37,14 @@
     });
   };
   const pill = (level, text) => `<span class="mt-pill mt-${level}">${level === 'ok' ? '✓' : level === 'warn' ? '⚠' : level === 'err' ? '✗' : 'ℹ'} ${esc(text)}</span>`;
+  /** Registre des missions : index IndexedDB (shared/data_index.js), sinon ancienne copie du navigateur. */
+  const regIndex = async () => {
+    await window.MissionIndex?.ready;
+    return window.MissionIndex ? {
+      missions: window.MissionIndex.all(),
+      updatedAt: window.MissionIndex.updatedAt()
+    } : readJson('missionRegistry:v1', null);
+  };
   const readJson = (k, d = null) => {
     try {
       return JSON.parse(localStorage.getItem(k) || 'null') ?? d;
@@ -48,7 +56,8 @@
     try {
       localStorage.setItem(k, JSON.stringify(v));
     } catch {
-      /* quota */ }
+      /* quota */
+    }
   };
   const root = () => window.RepositoryNav?.root || new URL('../', location.href).href;
   /** Attend un composant chargé à la demande par repository_nav.js (FileAccess, LocalStore, SuiteUpdate). */
@@ -127,7 +136,8 @@
             file: await h.getFile()
           });
         } catch {
-          /* verrouillé */ }
+          /* verrouillé */
+        }
       }
     }
     return out;
@@ -145,7 +155,7 @@
         await window.FileAccess.pickFolder(key);
         after?.();
       } catch (e) {
-        if (e?.name !== 'AbortError' && e?.message !== 'Dossier refusé') (window.AppFramework?.notify || alert)(e.message, 'warn');
+        if (e?.name !== 'AbortError' && e?.message !== 'Dossier refusé')(window.AppFramework?.notify || alert)(e.message, 'warn');
       }
     };
     waitFor('FileAccess').then(FA => FA?.decorate(b, key, {
@@ -201,6 +211,12 @@
     title: ['Journal des sauvegardes et rechargements', 'Backup and reload journal', 'Protokoll der Sicherungen und Wiederherstellungen', 'Registro de copias y recargas'],
     sub: ['Chaque sauvegarde, restauration ou rechargement : date, origine, ce qui a changé', 'Every backup, restore or reload: date, origin, what changed', 'Jede Sicherung oder Wiederherstellung: Datum, Herkunft, Änderungen', 'Cada copia o recarga: fecha, origen, qué cambió']
   }];
+  // Paramètres en quatre pages (main[data-settings]) : blocs de la page seulement dans le menu (REPOSITORY_TREE.settings
+  // .sections : « Sources et dossiers » sur Installation, les autres sur Maintenance) ; un bloc d'une autre page s'ouvre
+  // sur sa page. Sans data-settings (page autonome, ancienne page unique) : tous les blocs.
+  const PAGE = embedded ? main.dataset.settings || '' : '',
+    SECTIONS = window.REPOSITORY_TREE?.settings?.sections || {};
+  const onPage = id => !PAGE || !SECTIONS[id] || SECTIONS[id] === PAGE;
   const hosts = {};
   for (const b of BLOCKS) {
     const s = document.createElement('section');
@@ -239,7 +255,7 @@
 
   function navLabels() {
     if (!navHost) return;
-    navHost.querySelector('h3').textContent = t(['Maintenance', 'Maintenance', 'Wartung', 'Mantenimiento']);
+    navHost.querySelector('h3').textContent = PAGE === 'installation' ? t(['Dossiers et sources', 'Folders and sources', 'Ordner und Quellen', 'Carpetas y fuentes']) : t(['Maintenance', 'Maintenance', 'Wartung', 'Mantenimiento']);
     navHost.querySelectorAll('[data-mt]').forEach(b => {
       b.textContent = t(NAV[b.dataset.mt]);
     });
@@ -263,6 +279,7 @@
   });
 
   function showBlock(id) {
+    if (embedded && NAV[id] && !onPage(id) && window.RepositoryNav?.settingsUrl) return location.assign(window.RepositoryNav.settingsUrl(id));
     if (!embedded || !document.getElementById(id) || cpcoLocked(id)) return;
     main.querySelector('.da-main')?.setAttribute('hidden', '');
     BLOCKS.forEach(b => {
@@ -281,8 +298,9 @@
     if (nav) {
       navHost = document.createElement('div');
       navHost.className = 'da-mt-nav';
-      navHost.innerHTML = `<h3></h3>${BLOCKS.map(b => `<button type="button" data-mt="${b.id}"></button>`).join('')}`;
-      nav.append(navHost);
+      navHost.innerHTML = `<h3></h3>${BLOCKS.filter(b => onPage(b.id)).map(b => `<button type="button" data-mt="${b.id}"></button>`).join('')}`;
+      if (PAGE === 'maintenance') nav.prepend(navHost); // page Maintenance : les blocs d'abord, les fichiers de référence ensuite
+      else nav.append(navHost);
       navHost.querySelectorAll('[data-mt]').forEach(b => b.onclick = () => showBlock(b.dataset.mt));
       cpcoNav();
     }
@@ -451,7 +469,8 @@
           b.textContent = '✓';
           setTimeout(() => b.textContent = t(['Copier', 'Copy', 'Kopieren', 'Copiar']), 1500);
         } catch {
-          /* refus */ }
+          /* refus */
+        }
       };
       pre.before(b);
     });
@@ -491,14 +510,36 @@
     try {
       local = JSON.parse(localStorage.getItem('suiteSources:v1') || '{}') || {};
     } catch {
-      /* illisible */ }
+      /* illisible */
+    }
+    // compagnie virtuelle : défauts (repository_tree.va) en indication, réglage local dans les champs
+    const vaRows = () => {
+      const d = window.REPOSITORY_TREE?.va || {};
+      let o = {};
+      try {
+        o = JSON.parse(localStorage.getItem('suiteVA:v1') || '{}') || {};
+      } catch {
+        /* illisible */
+      }
+      const field = (key, label, def, val) => `<tr><td><b>${esc(t(label))}</b></td><td><input type="text" class="mt-url" data-va="${esc(key)}" value="${esc(val || '')}" placeholder="${esc(def || '')}" spellcheck="false"></td></tr>`;
+      return [
+        field('name', ['Nom', 'Name', 'Name', 'Nombre'], d.name, o.name),
+        field('short', ['Sigle', 'Short name', 'Kürzel', 'Sigla'], d.short, o.short),
+        field('centre', ['Centre (sigle)', 'Centre (short)', 'Zentrum (Kürzel)', 'Centro (sigla)'], d.centre, o.centre),
+        field('centreName', ['Centre (nom complet)', 'Centre (full name)', 'Zentrum (voller Name)', 'Centro (nombre completo)'], d.centreName, o.centreName),
+        field('pages.home', ['Page d’accueil', 'Home page', 'Startseite', 'Página de inicio'], d.pages?.home, o.pages?.home),
+        field('pages.log', ['Log des vols', 'Flight log', 'Flugbuch', 'Registro de vuelos'], d.pages?.log, o.pages?.log),
+        field('pages.fleet', ['Flotte', 'Fleet', 'Flotte', 'Flota'], d.pages?.fleet, o.pages?.fleet),
+        field('pages.aircraft', ['Fiche d’un appareil', 'Aircraft page', 'Flugzeugseite', 'Ficha de un avión'], d.pages?.aircraft, o.pages?.aircraft)
+      ].join('');
+    };
     const eff = window.Airac?.cycle?.();
     const openUrl = (k, u) => k === 'siaCycle' && eff ? eff.url : u;
     // premier lancement (lanceur lancer.cmd / lancer.sh : ?m=sources&setup=1) : un seul choix, le dossier du dépôt
     const setup = SETUP;
     const repo = await FA.status('__repo');
-    const setupBox = !setup ? '' : repo.handle ? `<div class="repo-notice mt-setup ok"><b>${esc(t(['Dossiers réglés.', 'Folders set.', 'Ordner eingestellt.', 'Carpetas configuradas.']))}</b> ${esc(t(['Le dossier de l’application est choisi : données, registre, missions, SIA, performances et sauvegarde locale en sont déduits. Il reste à dérouler les mises à jour.', 'The application folder is chosen: data, ledger, missions, SIA, performance and local backup are derived from it. What is left: run the updates.', 'Der Anwendungsordner ist gewählt: Daten, Register, Missionen, SIA, Leistung und lokale Sicherung werden daraus abgeleitet. Bleiben die Updates.', 'La carpeta de la aplicación está elegida: datos, registro, misiones, SIA, rendimiento y copia local se deducen de ella. Quedan las actualizaciones.']))} <a href="?m=updates">${esc(t(['Mises à jour →', 'Updates →', 'Updates →', 'Actualizaciones →']))}</a></div>`
-      : `<div class="repo-notice mt-setup"><b>${esc(t(['Premier lancement : une seule étape.', 'First run: one single step.', 'Erster Start: ein einziger Schritt.', 'Primer inicio: un solo paso.']))}</b> ${esc(t(['Cliquez sur le bouton de la première ligne, « Dossier du dépôt », et choisissez le dossier de l’application (celui qui contient lancer.cmd et lancer.sh). Les autres dossiers en sont déduits.', 'Click the button on the first row, “Repository folder”, and choose the application folder (the one containing lancer.cmd and lancer.sh). The other folders are derived from it.', 'Klicken Sie in der ersten Zeile „Repository-Ordner“ und wählen Sie den Anwendungsordner (mit lancer.cmd und lancer.sh). Die anderen Ordner werden daraus abgeleitet.', 'Pulse el botón de la primera fila, «Carpeta del repositorio», y elija la carpeta de la aplicación (la que contiene lancer.cmd y lancer.sh). Las demás carpetas se deducen de ella.']))}</div>`;
+    const setupBox = !setup ? '' : repo.handle ? `<div class="repo-notice mt-setup ok"><b>${esc(t(['Dossiers réglés.', 'Folders set.', 'Ordner eingestellt.', 'Carpetas configuradas.']))}</b> ${esc(t(['Le dossier de l’application est choisi : données, registre, missions, SIA, performances et sauvegarde locale en sont déduits. Il reste à dérouler les mises à jour.', 'The application folder is chosen: data, ledger, missions, SIA, performance and local backup are derived from it. What is left: run the updates.', 'Der Anwendungsordner ist gewählt: Daten, Register, Missionen, SIA, Leistung und lokale Sicherung werden daraus abgeleitet. Bleiben die Updates.', 'La carpeta de la aplicación está elegida: datos, registro, misiones, SIA, rendimiento y copia local se deducen de ella. Quedan las actualizaciones.']))} <a href="?m=updates">${esc(t(['Mises à jour →', 'Updates →', 'Updates →', 'Actualizaciones →']))}</a></div>` :
+      `<div class="repo-notice mt-setup"><b>${esc(t(['Premier lancement : une seule étape.', 'First run: one single step.', 'Erster Start: ein einziger Schritt.', 'Primer inicio: un solo paso.']))}</b> ${esc(t(['Cliquez sur le bouton de la première ligne, « Dossier du dépôt », et choisissez le dossier de l’application (celui qui contient lancer.cmd et lancer.sh). Les autres dossiers en sont déduits.', 'Click the button on the first row, “Repository folder”, and choose the application folder (the one containing lancer.cmd and lancer.sh). The other folders are derived from it.', 'Klicken Sie in der ersten Zeile „Repository-Ordner“ und wählen Sie den Anwendungsordner (mit lancer.cmd und lancer.sh). Die anderen Ordner werden daraus abgeleitet.', 'Pulse el botón de la primera fila, «Carpeta del repositorio», y elija la carpeta de la aplicación (la que contiene lancer.cmd y lancer.sh). Las demás carpetas se deducen de ella.']))}</div>`;
     host.innerHTML = `${setupBox}
       <h3>${esc(t(['Dossiers locaux', 'Local folders', 'Lokale Ordner', 'Carpetas locales']))}</h3>
       <p class="mt-small">${esc(t(['Chaque dossier est choisi une fois (le navigateur mémorise l’autorisation, parfois à reconfirmer après un redémarrage). Les sélecteurs de fichiers des pages s’ouvrent directement dans le dossier correspondant.', 'Each folder is chosen once (the browser remembers the permission, sometimes to be confirmed again after a restart). File pickers open directly in the matching folder.']))}</p>
@@ -506,9 +547,30 @@
       <h3>${esc(t(['Sources externes', 'External sources', 'Externe Quellen', 'Fuentes externas']))}</h3>
       <p class="mt-small">${esc(t(['Adresses par défaut livrées avec l’application (repository_tree) ; une valeur saisie ici ne vaut que pour ce navigateur (sauvegardée avec les données locales).', 'Default addresses ship with the application (repository_tree); a value entered here applies to this browser only (saved with local data).']))}</p>
       <table class="mt-table mt-wide mt-sources"><tbody>${Object.entries(src).map(([k, v]) => `<tr data-src="${esc(k)}"><td><b>${esc(t(v.label || [k]))}</b></td><td><input type="url" class="mt-url" value="${esc(local[k] || '')}" placeholder="${esc(v.url)}" spellcheck="false"></td><td class="mt-nowrap">${local[k] ? pill('info', t(['modifiée', 'changed', 'geändert', 'cambiada'])) : ''} <button type="button" class="secondary" data-reset ${local[k] ? '' : 'hidden'}>↺</button> <a class="mt-link" href="${esc(openUrl(k, nav.source(k)))}" target="_blank" rel="noopener">${esc(t(['Ouvrir', 'Open', 'Öffnen', 'Abrir']))} ↗</a></td></tr>`).join('')}</tbody></table>
+      <h3>${esc(t(['Compagnie virtuelle', 'Virtual airline', 'Virtuelle Fluggesellschaft', 'Aerolínea virtual']))}</h3>
+      <p class="mt-small">${esc(t(['Nom, sigle et centre affichés dans la suite (DEFA Virtual, DEFA, CPCO par défaut) et pages du site de la compagnie (adresse : « Site de la compagnie virtuelle » ci-dessus ; chemin sous ce site, ou adresse complète ; {id} : numéro de l’appareil). Vide : valeur par défaut. Vaut pour ce navigateur.', 'Name, short name and centre shown in the suite (DEFA Virtual, DEFA, CPCO by default) and pages of the airline website (address: “Virtual airline website” above; path under that site, or full address; {id}: aircraft number). Empty: default value. Applies to this browser.', 'Name, Kürzel und Zentrum in der Suite (standardmäßig DEFA Virtual, DEFA, CPCO) und Seiten der Website (Adresse: oben; Pfad unter dieser Website oder vollständige Adresse; {id}: Flugzeugnummer). Leer: Standardwert. Gilt für diesen Browser.', 'Nombre, sigla y centro mostrados en la suite (DEFA Virtual, DEFA, CPCO por defecto) y páginas del sitio de la aerolínea (dirección: arriba; ruta bajo ese sitio o dirección completa; {id}: número del avión). Vacío: valor por defecto. Vale para este navegador.']))}</p>
+      <table class="mt-table mt-wide mt-va"><tbody>${vaRows()}</tbody></table>
+      <p class="row"><button type="button" class="secondary" id="mtVaReset" data-icon="refresh">${esc(t(['Revenir à DEFA Virtual', 'Back to DEFA Virtual', 'Zurück zu DEFA Virtual', 'Volver a DEFA Virtual']))}</button></p>
       <h3>${esc(t(['Premier lancement', 'First run', 'Erster Start', 'Primer inicio']))}</h3>
       <div class="mt-reset"><b>⚠ ${esc(t(['« Nettoyer » efface les réglages de ce navigateur', '“Clean” erases this browser’s settings', '„Bereinigen“ löscht die Einstellungen dieses Browsers', '«Limpiar» borra los ajustes de este navegador']))}</b> : ${esc(t(['dossiers mémorisés, copie du classeur ODV, identifiants du site DEFA, profil et l’indicateur « suite réglée » (confirmation sur la page du premier lancement). Les fichiers sur le disque ne sont pas touchés.', 'remembered folders, ODV workbook copy, DEFA site credentials, profile and the “suite set up” flag (confirmed on the first-run page). Files on disk are not touched.']))}</div>
       <p class="row"><button type="button" class="secondary" id="mtSetupOpen" data-icon="refresh">${esc(t(['Rouvrir le premier lancement', 'Reopen the first run', 'Ersten Start erneut öffnen', 'Reabrir el primer inicio']))}</button> <button type="button" class="mt-danger" id="mtSetupClean">${esc(t(['Nettoyer et recommencer…', 'Clean and start over…', 'Bereinigen und neu beginnen…', 'Limpiar y empezar de nuevo…']))}</button></p>`;
+    // compagnie virtuelle : un champ modifié → réglage local (RepositoryNav.setVa), défauts de repository_tree sinon
+    host.querySelectorAll('.mt-va [data-va]').forEach(input => input.onchange = () => {
+      const o = JSON.parse(localStorage.getItem('suiteVA:v1') || '{}') || {},
+        [k, sub] = input.dataset.va.split('.'),
+        v = input.value.trim();
+      if (sub) o.pages = {
+        ...(o.pages || {}),
+        [sub]: v
+      };
+      else o[k] = v;
+      nav.setVa(o);
+      renderSources();
+    });
+    host.querySelector('#mtVaReset').onclick = () => {
+      nav.setVa({});
+      renderSources();
+    };
     host.querySelector('#mtSetupOpen').onclick = () => location.assign('premier_lancement.html?force');
     host.querySelector('#mtSetupClean').onclick = () => location.assign('premier_lancement.html?force&clean');
     if (setup && !repo.handle) host.querySelector('tr[data-key="__repo"]')?.classList.add('mt-setup-row');
@@ -557,7 +619,8 @@
     try {
       if (indexedDB.databases && !(await indexedDB.databases()).some(d => d.name === name)) return null;
     } catch {
-      /* API absente */ }
+      /* API absente */
+    }
     return new Promise(resolve => {
       const r = indexedDB.open(name);
       r.onupgradeneeded = () => {
@@ -624,7 +687,8 @@
         lastModified: Date.parse(r.headers.get('last-modified') || '') || 0
       };
     } catch {
-      /* file:// */ }
+      /* file:// */
+    }
     return null;
   }
   let siaFolderState = null,
@@ -700,10 +764,13 @@
     const ps = readJson('flightPerfState', {});
     const profs = Object.values(ps?.profiles || {});
     add(G.user, t(['Profils d’appareils du planificateur', 'Planner aircraft profiles']), `${profs.length}`, '', '', 'flightPerfState');
-    const ledger = readJson('missionCoreLedger:v2', null);
-    const ledgerAt = /updatedAt: "([^"]+)"/.exec(ledger?.text || '')?.[1] || ledger?.savedAt || '';
-    add(G.user, t(['Registre des CR (missions.yaml)', 'Report ledger (missions.yaml)']), `${((ledger?.text || '').match(/^ {2}- schemaVersion/gm) || []).length} CR`, fmtDate(ledgerAt), '', 'CR DEFA');
-    const reg = readJson('missionRegistry:v1', null);
+    // registre des CR : copie indexée (shared/data_index.js), sinon ancienne copie texte du navigateur
+    const crMeta = await window.ReportIndex?.meta?.();
+    const ledger = crMeta ? null : readJson('missionCoreLedger:v2', null);
+    const ledgerAt = crMeta?.updatedAt || /updatedAt: "([^"]+)"/.exec(ledger?.text || '')?.[1] || ledger?.savedAt || '';
+    const crCount = crMeta ? await window.ReportIndex.count() : ((ledger?.text || '').match(/^ {2}- schemaVersion/gm) || []).length;
+    add(G.user, t(['Registre des CR (missions.yaml)', 'Report ledger (missions.yaml)']), `${crCount} CR`, fmtDate(ledgerAt), '', 'CR DEFA');
+    const reg = await regIndex();
     add(G.user, t(['Registre des missions générées', 'Generated mission registry']), `${(reg?.missions || []).length}`, fmtDate(reg?.updatedAt), '', 'mission_registry.yaml');
     const land = await idbAll('LandingPerformanceDashboardCache', 'datasets');
     const lands = Object.values(land || {});
@@ -793,13 +860,13 @@
       l: [...new Set(profUnknown)].join(', ')
     })) : pill('ok', ''));
     // prompt des missions
-    const md = await repoText('docs/PROMPT_GENERATEUR_MISSIONS.md');
+    const md = await repoText('docs/technique/PROMPT_GENERATEUR_MISSIONS.md');
     let promptState = pill('info', t(['non lisible', 'not readable']));
     if (md && typeof window.MISSION_PROMPT === 'string') {
       const block = /```text\n([\s\S]*?)\n```/.exec(md.text.replace(/\r\n/g, '\n'))?.[1];
       promptState = block == null ? pill('warn', '?') : block.trim() === window.MISSION_PROMPT.trim() ? pill('ok', t(['synchronisé', 'in sync'])) : pill('warn', t(['à régénérer : python tools/build_mission_prompt.py', 'rebuild: python tools/build_mission_prompt.py']));
     }
-    add(t(['Prompt des missions', 'Mission prompt']), 'apps/cpco/mission_prompt.js ← docs/PROMPT_GENERATEUR_MISSIONS.md', t(['git ; en-tête « GÉNÉRÉ »', 'git; “GENERATED” header']), 'build_mission_prompt.py (bump_versions.py)', t(['générateur, registre des missions', 'generator, mission registry']), promptState);
+    add(t(['Prompt des missions', 'Mission prompt']), 'apps/cpco/mission_prompt.js ← docs/technique/PROMPT_GENERATEUR_MISSIONS.md', t(['git ; en-tête « GÉNÉRÉ »', 'git; “GENERATED” header']), 'build_mission_prompt.py (bump_versions.py)', t(['générateur, registre des missions', 'generator, mission registry']), promptState);
     host.innerHTML = `<p class="row"><button type="button" class="secondary" id="mtDepRefresh" data-icon="refresh">${esc(t(['Vérifier', 'Check', 'Prüfen', 'Comprobar']))}</button></p>
       <div class="mt-scroll"><table class="mt-table mt-wide"><thead><tr><th>${esc(t(['Référence', 'Reference', 'Referenz', 'Referencia']))}</th><th>${esc(t(['Fichier', 'File', 'Datei', 'Archivo']))}</th><th>${esc(t(['Traçage', 'Tracing', 'Nachverfolgung', 'Trazado']))}</th><th>${esc(t(['Mise à jour', 'Update', 'Aktualisierung', 'Actualización']))}</th><th>${esc(t(['Dépendants', 'Dependents', 'Abhängige', 'Dependientes']))}</th><th>${esc(t(['Contrôle', 'Check', 'Prüfung', 'Control']))}</th></tr></thead><tbody>
       ${rows.map(r => `<tr><td><b>${esc(r.ref)}</b></td><td class="mt-small"><code>${esc(r.file)}</code></td><td class="mt-small">${esc(r.traced)}</td><td class="mt-small">${esc(r.process)}</td><td class="mt-small">${esc(r.dependents)}</td><td>${r.state}</td></tr>`).join('')}
@@ -903,7 +970,7 @@
     an.textContent = t(['Analyser', 'Analyse', 'Analysieren', 'Analizar']);
     an.onclick = async () => {
       await scanSiaFolder(true);
-      if (!siaFolderState) alert(t(['Dossier SIA XML non choisi ou non autorisé.', 'SIA XML folder not chosen or not authorised.']));
+      if (!siaFolderState) window.AppFramework.notify(t(['Dossier SIA XML non choisi ou non autorisé.', 'SIA XML folder not chosen or not authorised.']), 'warn');
       renderSia();
       renderVersions();
       renderDeps();
@@ -918,7 +985,12 @@
     // ZIP du SIA pris dans le dossier Téléchargements par le serveur du lanceur (tools/launch.py, /__setup/sia-zip)
     host.querySelector('#mtSiaFetch').onclick = async () => {
       const say = (m, k = 'warn') => (window.AppFramework?.notify || alert)(m, k);
-      const api = q => fetch(`/__setup/sia-zip${q}`, { headers: { 'X-DEFA-Setup': '1' }, cache: 'no-store' });
+      const api = q => fetch(`/__setup/sia-zip${q}`, {
+        headers: {
+          'X-DEFA-Setup': '1'
+        },
+        cache: 'no-store'
+      });
       let info;
       try {
         const r = await api('?info');
@@ -927,9 +999,14 @@
       } catch {
         return say(t(['Le serveur du lanceur ne répond pas : ouvrez la suite avec lancer.cmd / lancer.sh, ou choisissez le ZIP avec « ZIP d’export du SIA… ».', 'The launcher server does not answer: open the suite with lancer.cmd / lancer.sh, or pick the ZIP with “SIA export ZIP…”.']));
       }
-      if (!info.found) return say(t(['Aucun export_xml_bd_SIA_….zip dans {d} : téléchargez-le d’abord sur le site du SIA (étape 1).', 'No export_xml_bd_SIA_….zip in {d}: download it from the SIA site first (step 1).'], { d: info.where.join(', ') }));
+      if (!info.found) return say(t(['Aucun export_xml_bd_SIA_….zip dans {d} : téléchargez-le d’abord sur le site du SIA (étape 1).', 'No export_xml_bd_SIA_….zip in {d}: download it from the SIA site first (step 1).'], {
+        d: info.where.join(', ')
+      }));
       const blob = await (await api('')).blob();
-      extractZip(new File([blob], info.name, { type: 'application/zip', lastModified: info.mtime * 1000 }));
+      extractZip(new File([blob], info.name, {
+        type: 'application/zip',
+        lastModified: info.mtime * 1000
+      }));
     };
     host.querySelector('#mtArchive')?.addEventListener('click', archiveOld);
     // Bloc commun (SiaBase.panel) créé une fois, replacé à chaque rendu : ses messages restent affichés.
@@ -1042,7 +1119,7 @@
     const f = siaFolderState;
     if (!f?.old.length) return;
     const names = f.old.flatMap(o => o.items.map(i => i.name));
-    if (!confirm(t(['Déplacer ces fichiers dans _archives/<cycle>/ ?\n\n{l}', 'Move these files into _archives/<cycle>/?\n\n{l}'], {
+    if (!await window.AppFramework.ask(t(['Déplacer ces fichiers dans _archives/<cycle>/ ?\n\n{l}', 'Move these files into _archives/<cycle>/?\n\n{l}'], {
         l: names.join('\n')
       }))) return;
     try {
@@ -1176,7 +1253,7 @@
       const mf = siaFolderState?.fixed.find(x => x.id === 'mora')?.file,
         text = mf ? await mf.file.text() : '';
       // théâtres couverts, plus les emprises des missions du registre situées ailleurs (relief et sommets seulement : pas d'obstacles hors AIXM)
-      const extra = window.SiaBase.moraZonesOfMissions?.(readJson('missionRegistry:v1', null)?.missions || []) || [];
+      const extra = window.SiaBase.moraZonesOfMissions?.((await regIndex())?.missions || []) || [];
       const cells = await window.SiaBase.computeMoraGrid(b.obstacleMax, {}, (d, n, step) => {
         say(`<span class="mt-small">${esc(step)} : ${d}/${n}…</span>`);
         job?.set(d, n, step);
@@ -1267,7 +1344,7 @@
     const perf = window.AIRCRAFT_PERF || {};
     // terrains des missions du registre présents dans l'AIXM
     const ads = new Set((b?.aero?.aerodromes || []).map(a => a.code || a.icao || a.id).filter(Boolean));
-    const reg = readJson('missionRegistry:v1', null)?.missions || [],
+    const reg = (await regIndex())?.missions || [],
       regUrl = new URL('apps/cpco/mission_registry.html', root()).href;
     const regEmpty = pill('info', t(['registre des missions vide dans ce navigateur : ouvrir le Registre des missions (il relit data/missions), puis « Contrôler à nouveau »', 'mission registry empty in this browser: open the Mission registry (it re-reads data/missions), then “Check again”'])) + ` <a class="mt-link" href="${esc(regUrl)}" target="_blank" rel="noopener">${esc(t(['Registre des missions', 'Mission registry']))}</a>`;
     const used = [...new Set(reg.flatMap(m => [m.origin, m.destination]).map(s => /\(([A-Z]{4})\)|\b(LF[A-Z]{2})\b/.exec(s || '')).filter(Boolean).map(m => m[1] || m[2]))];
@@ -1383,7 +1460,8 @@
             base: d.dir + '/'
           }));
         } catch {
-          /* absent */ }
+          /* absent */
+        }
       }
       return {
         dir,
@@ -1475,7 +1553,7 @@
     try {
       new RegExp(pattern);
     } catch {
-      alert(t(['Expression invalide', 'Invalid expression']));
+      window.AppFramework.notify(t(['Expression invalide', 'Invalid expression']), 'warn');
       return;
     }
     const id = 'x' + Date.now().toString(36),
@@ -1494,7 +1572,7 @@
         recursive: true
       }]);
     } catch (e) {
-      if (e?.name !== 'AbortError') (window.AppFramework?.notify || alert)(e.message, 'warn');
+      if (e?.name !== 'AbortError')(window.AppFramework?.notify || alert)(e.message, 'warn');
     }
     renderBackup();
   }
@@ -1756,7 +1834,7 @@
     const picks = [...document.querySelectorAll('input[data-restore]')].filter(x => x.checked).map(x => p.items[+x.dataset.restore]);
     const withBrowser = document.getElementById('mtRestoreBrowser')?.checked;
     if (!picks.length && !withBrowser) return;
-    if (!confirm(t(['Restaurer {n} fichier(s){b} ? Les fichiers remplacés sont d’abord copiés dans _avant_restauration/ de leur dossier.', 'Restore {n} file(s){b}? Replaced files are first copied into _avant_restauration/ in their folder.'], {
+    if (!await window.AppFramework.ask(t(['Restaurer {n} fichier(s){b} ? Les fichiers remplacés sont d’abord copiés dans _avant_restauration/ de leur dossier.', 'Restore {n} file(s){b}? Replaced files are first copied into _avant_restauration/ in their folder.'], {
         n: picks.length,
         b: withBrowser ? t([' et les données du navigateur', ' and browser data']) : ''
       }))) return;
@@ -1857,7 +1935,8 @@
     try {
       localStorage.removeItem(k);
     } catch {
-      /* stockage indisponible */ }
+      /* stockage indisponible */
+    }
   });
   /** Recharge depuis le serveur (cache: 'reload') les scripts, styles et repository_tree de la page : le cache HTTP du navigateur est remplacé. */
   async function refreshAppFiles() {
@@ -1874,7 +1953,8 @@
       try {
         for (const k of await caches.keys()) await caches.delete(k);
       } catch {
-        /* file:// */ }
+        /* file:// */
+      }
     }
     return {
       ok,
@@ -1882,6 +1962,17 @@
     };
   }
   const CACHES = () => [{
+    id: 'dataIndex',
+    icon: 'refresh',
+    label: ['Index des données', 'Data index', 'Datenindex', 'Índice de datos'],
+    where: 'IndexedDB defaIndex',
+    state: () => t(['Registre des missions, CR, copies des fichiers du pool (disponibilités, fiches) ; les fichiers font foi.', 'Mission registry, reports, copies of pool files (availability, user cards); the files prevail.']),
+    after: ['Base effacée, reconstruite depuis les fichiers au prochain chargement des pages (après un changement extérieur des fichiers sans lanceur, par exemple).', 'Base erased, rebuilt from the files when pages next load (after the files changed outside the suite without the launcher, for example).'],
+    purge: async () => {
+      await window.DataIndex?.rebuild?.();
+      return t(['Index des données effacé : il se reconstruit depuis les fichiers.', 'Data index erased: it rebuilds from the files.']);
+    }
+  }, {
     id: 'airports',
     icon: 'map',
     label: ['Aérodromes utilisés', 'Aerodromes used', 'Verwendete Flugplätze', 'Aeródromos usados'],
@@ -1982,7 +2073,8 @@
         u: fmtSize(e.usage)
       });
     } catch {
-      /* API absente */ }
+      /* API absente */
+    }
     const list = CACHES();
     host.innerHTML = `
       <p class="mt-small">${esc(t(['Purger ne supprime aucune donnée utilisateur (registres, brouillons, profils, OFP, sauvegardes) : seulement ce qui se reconstruit seul ou se relit.', 'Purging never removes user data (registries, drafts, profiles, OFPs, backups): only what rebuilds itself or is read again.']))} ${esc(est)}</p>
@@ -2003,12 +2095,12 @@
     };
     host.querySelectorAll('tr[data-cache] button').forEach(btn => btn.onclick = async () => {
       const c = list.find(x => x.id === btn.closest('tr').dataset.cache);
-      if (c.confirm && !window.confirm(t(c.confirm))) return;
+      if (c.confirm && !await window.AppFramework.ask(t(c.confirm))) return;
       btn.disabled = true;
       await done([await c.purge()], c.reload);
     });
     host.querySelector('#mtPurgeAll').onclick = async e => {
-      if (!window.confirm(t(['Purger tous les caches (dont la base SIA, à relire ensuite) et recharger la page ?', 'Purge all caches (including the SIA base, to be read again afterwards) and reload the page?']))) return;
+      if (!await window.AppFramework.ask(t(['Purger tous les caches (dont la base SIA, à relire ensuite) et recharger la page ?', 'Purge all caches (including the SIA base, to be read again afterwards) and reload the page?']))) return;
       e.target.disabled = true;
       const msgs = [];
       for (const c of list) msgs.push(await c.purge());
@@ -2020,7 +2112,8 @@
     cacheMsg = sessionStorage.getItem('mtCacheMsg') || '';
     sessionStorage.removeItem('mtCacheMsg');
   } catch {
-    /* stockage indisponible */ }
+    /* stockage indisponible */
+  }
 
   // ===== Espace disque : place occupée par les missions (par mission, par type, total) et par le navigateur ; purge
   //       des cartes surnuméraires (absentes du YAML) et des cartes générées (régénérables depuis le YAML par le studio).
@@ -2159,7 +2252,7 @@
       if (b) b.onclick = e => busy(e.currentTarget, async () => {
         const list = storageState.rows.flatMap(pick),
           size = list.reduce((a, f) => a + f.size, 0);
-        if (!list.length || !confirm(t(['Supprimer {n} fichier(s) ({s}) : {w} ? Ils se régénèrent depuis le YAML (cartes : studio ; PDF : générateur).', 'Delete {n} file(s) ({s}): {w}? They can be regenerated from the YAML (maps: studio; PDFs: generator).'], {
+        if (!list.length || !await window.AppFramework.ask(t(['Supprimer {n} fichier(s) ({s}) : {w} ? Ils se régénèrent depuis le YAML (cartes : studio ; PDF : générateur).', 'Delete {n} file(s) ({s}): {w}? They can be regenerated from the YAML (maps: studio; PDFs: generator).'], {
             n: list.length,
             s: B(size),
             w: what
@@ -2205,12 +2298,16 @@
         ['Journal', renderJournal, hosts.journal],
         ['Caches', renderCaches, hosts.caches],
         ['Espace disque', renderStorage, hosts.storage]
-      ]) guard(what, fn, host);
-    await guard('Versions et synchronisation', renderVersions, hosts.versions);
-    await guard('Références et dépendances', renderDeps, hosts.deps);
+      ]) {
+      if (!onPage(Object.keys(hosts).find(k => hosts[k] === host))) continue; // bloc d'une autre page de Paramètres
+      guard(what, fn, host);
+    }
+    if (onPage('versions')) await guard('Versions et synchronisation', renderVersions, hosts.versions);
+    if (onPage('deps')) await guard('Références et dépendances', renderDeps, hosts.deps);
     const want = new URLSearchParams(location.search).get('m') || location.hash.slice(1);
     if (embedded) {
       if (NAV[want]) showBlock(want);
+      else if (PAGE === 'maintenance' && !new URLSearchParams(location.search).get('base')) showBlock('updates');
     } else {
       const target = want && document.getElementById(want);
       if (target) setTimeout(() => target.scrollIntoView({

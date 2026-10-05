@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="230" font-family="system-ui,Segoe UI,sans-serif" font-size="10">
+<rect width="100%" height="100%" fill="#fff"/><text x="0" y="13" font-size="12" font-weight="600" fill="#1b1f24">Registre des CR : lire missions.yaml (n CR)</text>
+<line x1="52" y1="196" x2="452" y2="196" stroke="#d5d9df"/><line x1="52" y1="22" x2="52" y2="196" stroke="#d5d9df"/>
+<text x="48" y="132.1" text-anchor="end" fill="#5b6470">100 ms</text><line x1="52" y1="129.1" x2="452" y2="129.1" stroke="#eef0f3"/>
+<text x="48" y="58.0" text-anchor="end" fill="#5b6470">1000 ms</text><line x1="52" y1="55.0" x2="452" y2="55.0" stroke="#eef0f3"/>
+<text x="52.0" y="210" text-anchor="middle" fill="#5b6470">100</text>
+<text x="172.3" y="210" text-anchor="middle" fill="#5b6470">500</text>
+<text x="224.1" y="210" text-anchor="middle" fill="#5b6470">1000</text>
+<text x="275.9" y="210" text-anchor="middle" fill="#5b6470">2000</text>
+<text x="344.4" y="210" text-anchor="middle" fill="#5b6470">5000</text>
+<text x="448.0" y="210" text-anchor="middle" fill="#5b6470">20000</text>
+<polyline fill="none" stroke="#d8763b" stroke-width="2" points="52.0,186.9 172.3,138.9 275.9,101.7 358.0,65.9"/>
+<circle cx="52.0" cy="186.9" r="3" fill="#d8763b"/>
+<circle cx="172.3" cy="138.9" r="3" fill="#d8763b"/>
+<circle cx="275.9" cy="101.7" r="3" fill="#d8763b"/>
+<circle cx="358.0" cy="65.9" r="3" fill="#d8763b"/>
+<polyline fill="none" stroke="#d8763b" stroke-width="1.5" stroke-dasharray="4 3" points="358.0,65.9 448.0,32.0"/>
+<polyline fill="none" stroke="#3b6fd8" stroke-width="2" points="52.0,196.0 172.3,146.3 275.9,98.9 358.0,65.1"/>
+<circle cx="52.0" cy="196.0" r="3" fill="#3b6fd8"/>
+<circle cx="172.3" cy="146.3" r="3" fill="#3b6fd8"/>
+<circle cx="275.9" cy="98.9" r="3" fill="#3b6fd8"/>
+<circle cx="358.0" cy="65.1" r="3" fill="#3b6fd8"/>
+<polyline fill="none" stroke="#3b6fd8" stroke-width="1.5" stroke-dasharray="4 3" points="358.0,65.1 448.0,26.0"/>
+<text x="452" y="224" text-anchor="end" fill="#5b6470">CR (échelle log) — pointillés : extrapolation</text>
+</svg>

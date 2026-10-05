@@ -10,6 +10,128 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+## [4.8.0] — 2026-10-05
+
+Les données se partagent : bouton « Synchroniser » (dépôt git de `data/`, fusion fiche par fiche), utilisateurs et
+droits, disponibilités en catégories configurables, index des données dans le navigateur. Paramètres en quatre pages ;
+Aide intégrée (fenêtre au chapitre de la page, manuels utilisateur et administrateur en quatre langues, sans lanceur
+aussi) ; documentation réorganisée. Mes missions : dossier animé selon le design, liste et dossier côte à côte. Briefs
+traduits, compagnie virtuelle configurable, en-têtes de l'ordre selon la famille, onglets habillés par design.
+
+### Ajouté
+
+- **En-têtes de l'ordre selon la famille** pour Durci (EMA, BSPP, SSA, HIA, DCSSA, EMZD, DMD, CPCO), Cabinet (aéronautique
+  navale) et Carnet de vol (protection civile, secours), avec le **tampon de l'émetteur** à la signature (Carnet de vol).
+- `AppFramework.ask` : confirmation dans la page (fond d'un bloc du design, 4 langues) ; `RepositoryKit.viewHtml` et
+  `RepositoryKit.tf` (phrase traduite à valeurs).
+- Traductions (en, de, es) : Mes missions (dossier, plis, signet, fiche technique), fenêtre et dialogue d'affectation de
+  l'ODV, semaines et filtres de l'ODV, générateur et studio, planificateur, Premier lancement.
+- **Brief de mission traduit** : bloc `i18n` du YAML (réglage « Traductions » du générateur, `en` par défaut), lu par
+  `shared/mission_i18n.js` ; Mes missions affiche le brief, les plis et les pistes dans la langue de la page (repli sur
+  le français champ par champ). Doc : `docs/SIA_MISSIONS.md` § 2 sexies.
+- Audit de sécurité (`docs/technique/AUDIT_SECURITE_2026-10-02.md`).
+- **Livre de mission traduit automatiquement** quand la mission n'apporte pas sa traduction (pas de bloc `i18n`) :
+  traducteur intégré du navigateur (Chrome / Edge, sur l'ordinateur, rien n'est envoyé), résultats gardés
+  (`shared/machine_translate.js`) ; note en tête de l'ordre, bouton quand la langue doit d'abord être téléchargée.
+- **Compagnie virtuelle configurable** (Paramètres › Sources et dossiers) : nom, sigle, centre, pages du site (log des
+  vols, flotte, fiche appareil) ; DEFA Virtual par défaut (`repository_tree.va`, `RepositoryNav.va()` / `vaUrl()`) ;
+  autre compagnie : « DEFA Virtual », « DEFA » et « CPCO » affichés avec ses valeurs dans toute la suite.
+- Outil `tools/audit_i18n.html` : textes restés en français, page par page, dans une autre langue.
+- **Journal DEFA** : favori « → Journal DEFA » (copie toute la page « Log des vols », tableau compris), collage du
+  HTML du presse-papiers plutôt que du texte seul, bouton « Coller depuis le presse-papiers » ; adresse du log prise dans
+  la configuration de la compagnie virtuelle.
+- Planches contact des en-têtes de l'ordre de mission par organisme, pour chaque design à matières
+  (`tools/planche_rubriques.py` → `docs/planches/`).
+- **Dossier d'une autre copie signalé** : le lanceur écrit à chaque démarrage un repère (`.defa_instance`, ignoré par
+  git) à la racine et dans `data/` ; un dossier autorisé qui n'est pas celui de la suite lancée (ex. « DEFA - Copy »)
+  est confirmé au choix et marqué ⚠ avec une notification sur les boutons de dossier (`FileAccess.sameAsServed`).
+- **Chiffons joués traités comme des missions** : chaque chiffon joué a sa mission d'équipe dans l'opération
+  (`mission.role: chiffon`, piste de la Z reliée par `mission` et `takeoff`) — registre, affectation dans l'ODV sur la
+  ligne de l'opération (décalage par rapport à H), Mes missions (brief, consignes, plis adressés par id de piste ou
+  indicatif). Prompt du générateur mis à jour ; pour les opérations existantes, bouton « Créer les missions des
+  chiffons joués » dans le bloc Opération du générateur.
+
+- **Synchronisation des données** : bouton « Synchroniser (n) » de l'en-tête (`shared/sync.js`) — fichiers du pool
+  commités au nom du trigramme connecté, fusion fiche par fiche par le lanceur (`tools/data_sync.py`), copies de
+  conflit dans `_conflits/` ; dépôt git de `data/` (git@ ou https) renseigné et vérifié dans Premier lancement, sans
+  bloquer. Architecture : `docs/technique/SYNCHRONISATION.md`.
+- **Utilisateurs et droits** : fiches `data/utilisateurs/<TRI>.json` (rôle, actif, empreinte PBKDF2-SHA256 salée), mode
+  `develop` / `production` (`data/config/suite.json`), connexion, changement et réinitialisation du mot de passe,
+  usurpation par l'administrateur du Centre.
+- **Disponibilités en catégories configurables** (Paramètres › Centre › Catégories, `data/config/disponibilites.json`) :
+  palette d'une ligne par groupe, libellés abrégés (infobulles), plages précises à la minute, préférences de thèmes par
+  domaine (Mon profil) ; ancienne grille horaire importée dans la semaine ; planning ODV aux couleurs des catégories,
+  sessions ATC VATSIM / IVAO.
+- **Index des données** (IndexedDB) : registres des missions et des CR, suivi du Centre, disponibilités et fiches
+  utilisateurs lus par signature (`_index.json` tenus par le lanceur) ; « Index des données » dans Maintenance › caches.
+- **Aide** : entrée « Aide » de la barre latérale (à la place de « Menu ») et ☰ › Aide, en fenêtre au-dessus de la page,
+  au chapitre de la page en cours ; index documentaire, sommaire, recherche ; **manuels utilisateur et administrateur**
+  (un chapitre par page, une section par bloc) en français, anglais, allemand et espagnol ; documents intégrés
+  (`apps/aide/docs_bundle.js`, `tools/build_docs_bundle.py`) pour l'ouverture sans lanceur.
+- **Mes missions : dossier animé** selon le design — ouverture et fermeture propres à chacun (Cabinet : liasse sortie
+  du range-dossier, couverture tournée ; Carnet de vol : carnet sorti de l'enveloppe) ; changement de mission : le
+  dossier se referme, part à gauche, le suivant arrive de la droite et se rouvre s'il l'était.
+- **Paramètres en quatre pages** : Mon profil, Centre, Installation, Maintenance.
+- **Flotte DEFA** : « Coller la page Flotte du site… » (Paramètres › Maintenance › Flotte DEFA).
+- Barre latérale configurable (Apparence) ; Apparence, Paramètres et Aide fixés en bas ; bouton « Missions » du
+  générateur et du studio.
+- Onglets de page habillés par design à matières (Carnet de vol, Cabinet, Durci, Aqua).
+- Planning ODV : résumé d'une mission probable déplié sous sa ligne.
+- Outils : sommaire `tools/index.html`, jeu de test fantôme, `tools/cabinet_layers.py` ; lanceur `--data <dossier>`
+  (servir une copie des données pour les essais).
+
+### Modifié
+
+- Boîtes natives (`confirm`, `alert`) remplacées par la confirmation dans la page et les notifications (gardées : sortie
+  de page, fermeture synchrone de la fenêtre d'un créneau, changement d'identifiant du générateur).
+- Visionneuse commune pour le registre des missions (YAML, Markdown, versions, cartes).
+- Plus de galon sous le bandeau des designs à matières ; bouton désactivé nettement grisé (Cabinet, Carnet de vol).
+- Couche de traduction : comparaison sans la typographie de la langue ; libellé court suivi d'une flèche de tri.
+- Mes missions : dates et semaine dans la langue de la page ; liste et grille redessinées au changement de langue ;
+  rubriques du résumé « pli / plis » de nouveau écartées du dossier (expression abîmée par un caractère de contrôle).
+- Traductions : générateur, studio, Cartes de vol, planificateur, ODV (infobulles des zones calculées, créneaux, jours),
+  Paramètres, Premier lancement, en-têtes des CR (« FIRE / GAAR — Compte rendu de mission ») ; la couche de traduction
+  reconnaît « début libre — texte connu », traduit les infobulles des zones calculées et ne dépend plus du rafraîchissement
+  de l'écran (onglet en arrière-plan).
+- IVAO et VATSIM à égalité : légende des codes de disponibilité neutre (« Exercice SO (IVAO / VATSIM) »…), favori du CR
+  présenté pour le tracker IVAO et StatSim (VATSIM).
+- **Lecture des missions et affectations plus fluide** : petite base de fichiers dans `assignments.js` (lectures
+  gardées en mémoire et revalidées par requête conditionnelle, fichiers absents compris ; invalidation entre onglets
+  `defa-data` ; écritures des affectations, du journal et des disponibilités sous verrous Web Locks) ; plus de relecture
+  par le dossier autorisé quand il est celui de la suite servie ; registre : relecture incrémentale du dossier (dossiers
+  inchangés repris sans réanalyse) et `mission_registry.yaml` réécrit seulement s'il change ; Mes missions se met à jour
+  dès qu'un autre onglet écrit une affectation.
+- Sources remises en forme (`tools/format_sources.py`) ; commentaires d'en-tête et `docs/technique/FRAMEWORK.md` à jour.
+- **Mes missions** : liste et dossier côte à côte, disponibilités en dessous sur toute la largeur ; bloc « Pilote »
+  remplacé par trois boutons vers Mon profil (Pilote, Appareils maîtrisés, Simulateurs) ; appareils et simulateurs
+  saisis dans Paramètres › Mon profil.
+- **Documentation réorganisée** : au premier niveau de `docs/`, installation, paramétrage, utilisation et versions ; la
+  documentation technique (architecture, synchronisation, feuille de route, dette technique, audits, propositions)
+  dans `docs/technique/`.
+- Planning ODV : classeur ODV masqué par défaut ; changement de créneau sans clignotement.
+- Performances : audit et actions de priorité 1 et 2 (`docs/technique/perf/`) ; changement de page par les onglets et
+  décor recalculé sans clignotement.
+- Versions de cache : l'empreinte des images d'un script ne couvre que les images suivies par git.
+- Aqua : bannière livrée en bas de page (sombre / clair selon le ton) ; Durci : poignées latérales retirées.
+
+### Corrigé
+
+- Disponibilités : plus de perte en changeant de semaine.
+- Mes missions : le livre ne clignote plus au clic sur une mission ; cartes sans doublons ; CR créé depuis une mission
+  avec l'immatriculation de l'appareil affecté.
+- Cartes de vol : mission reçue plus remplacée par « Tracer » / « Carburant ».
+- Atterrissages : plusieurs fichiers CSV / LOG lus ensemble (bouton et glisser-déposer).
+- Paramètres › Centre : utilisateur ajouté affiché aussitôt ; préférences de thèmes lisibles en Cabinet et Carnet de vol.
+- Plaques de titre : plus de texte qui déborde dans une colonne étroite.
+- Données lues là où elles sont écrites (alerte sinon).
+
+### Sécurité
+
+- Lanceur : en-tête `Host` de la machine exigé (parade au « DNS rebinding »), envois limités à 512 Mo, `nosniff`,
+  identifiants framagit sans retour à la ligne.
+- Planificateur : commentaire et noms de phase d'un profil importé échappés.
+- Webservice d'envoi des CR : `https://` obligatoire (hors localhost).
+
 ## [4.7.0] — 2026-10-02
 
 Exercices et plis scellés : les messages et pistes d'un exercice arrivent au pilote dans des enveloppes cachetées,
@@ -91,7 +213,7 @@ zippé de Durci), s'ouvre comme un livre dont on tourne les pages ; Planning ODV
 - **Affectation des missions aux pilotes** : bouton « Affecter… » du registre (pilotes, appareils, heure, astreinte,
   convoyage, postes par équipage, conflits), vivier de pilotes disponibles possédant l'appareil, matrice d'un créneau
   ODV, journal des affectations (date, qui, quoi, à qui) ; trigramme dans le profil pilote ; bloc `alert` (astreinte)
-  dans le prompt du générateur. Conception : [docs/AFFECTATION_MISSIONS.md](docs/AFFECTATION_MISSIONS.md).
+  dans le prompt du générateur. Conception : [docs/AFFECTATION_MISSIONS.md](technique/AFFECTATION_MISSIONS.md).
 - **Page pilote « Mes missions »** : missions de la semaine, disponibilités aux codes et couleurs de l'ODV, appareils
   du pilote ; pli cacheté dans l'en-tête pour une mission non lue ; transferts Cartes de vol, Carburant, CR.
 - **Dossier de mission** dans les designs à matières : mission non lue scellée (ficelle et cachet, ruban noué,
@@ -118,7 +240,7 @@ sombres ; messages clairs quand le navigateur ne permet pas de choisir un dossie
 
 > **Annonce : suite du refactoring du toolkit.** La phase 3 (couches CSS, retrait des `!important`) se poursuit et
 > pourra encore modifier légèrement l'apparence des designs à matières. Plan :
-> [docs/REFACTORING_TOOLKIT.md](docs/REFACTORING_TOOLKIT.md).
+> [docs/REFACTORING_TOOLKIT.md](technique/REFACTORING_TOOLKIT.md).
 
 ### Ajouté
 
@@ -476,7 +598,7 @@ plans trois vues du Carnet de vol.
   commentaire, contrôleurs, événements, vols posés), missions probables par règles expliquées (familles de la suite +
   TRAINING avec contrôleur), vols de la frise contrôlés contre les disponibilités, zones à activer ; décalage de date
   de la frise et anomalies signalés par notifications ; exports CSV, JSON et récapitulatif texte. Voir
-  [docs/ODV_PLANNING.md](docs/ODV_PLANNING.md).
+  [docs/ODV_PLANNING.md](ODV_PLANNING.md).
 
 ## [4.1.0] — 2026-09-29
 
@@ -817,7 +939,7 @@ Migration d'une installation v2 : INSTALL.md § 2 (`tools/migrate_v3.py`).
 - **Corrigé** : `tools/bump_versions.py` re-versionne aussi les scripts de `SIA XML/` (`mission_store.js`,
   `sia_i18n.js`…). Manuel : la version de la suite vient de `repository_tree` (`VERSION.json`, ignoré et périmé,
   n'est lu par rien).
-- **Audit** du 28/09/2026 (entrées SIA, installation, git, dépendances) : [docs/AUDIT_2026-09-28.md](docs/AUDIT_2026-09-28.md).
+- **Audit** du 28/09/2026 (entrées SIA, installation, git, dépendances) : [docs/AUDIT_2026-09-28.md](technique/AUDIT_2026-09-28.md).
 
 ## [2.5.0] — 2026-09-27
 
@@ -1406,7 +1528,7 @@ de la suite.
 
 ### Missions SIA (nouvelle application, dossier `SIA XML/`)
 
-- **Documentation** : [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md) (générateur de mission et studio :
+- **Documentation** : [docs/SIA_MISSIONS.md](SIA_MISSIONS.md) (générateur de mission et studio :
   données, format des missions, profils, zones, MORA, hippodromes, stockage, services) ; README
   EN / FR (quatre applications), INSTALL (données SIA), tutoriel (§ 13, mission SIMONE), manuel
   d'exploitation (§ 9.1 : cycle AIRAC, MORA, axes ENR 5.7), FRAMEWORK (`aar_tracks.js`,

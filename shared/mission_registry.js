@@ -4,7 +4,7 @@
   // (missionNN.yaml, summaryNN.md, schéma helo-xp-mission) et des missions commandées, avec choix par type, sous-type,
   // rendez-vous, nombre et types d'équipes, ravitaillement, théâtre, statut ; tirage au sort ; ouverture dans le
   // générateur, le studio ou un nouveau CR ; commande d'une nouvelle mission (prompt ChatGPT réglé).
-  // Données : localStorage missionRegistry:v1 (sauvegardé avec les données locales) et fichier
+  // Données : index IndexedDB « defaIndex » (MissionIndex, shared/data_index.js ; sauvegardé avec les données locales) et fichier
   // Missions/mission_registry.yaml (dossier autorisé __missions). Statut « CR fait » repris du registre des CR
   // (missionCoreLedger:v2 : metadata.missionNumber = identifiant de la mission).
   const host = document.getElementById('missionRegistry'); // page du registre ; ailleurs : noyau seul (MissionRegistryCore)
@@ -26,7 +26,8 @@
     try {
       localStorage.setItem(k, JSON.stringify(v));
     } catch {
-      /* quota */ }
+      /* quota */
+    }
   };
   const waitFor = (name, ms = 6000) => new Promise(resolve => {
     const t0 = Date.now();
@@ -73,14 +74,15 @@
           type: 'region'
         }).of(c) || c;
       } catch {
-        /* navigateur ancien */ }
+        /* navigateur ancien */
+      }
       return `étranger — ${name}`;
     }
     return /étranger|foreign/i.test(String(meta?.theatre || '')) || (Number.isFinite(+pt?.lat) && Number.isFinite(+pt?.lon)) ? 'étranger' : '';
   }
   const theatreOf = (lat, lon) => (Number.isFinite(+lat) && Number.isFinite(+lon) && THEATRES.find(([, s, n, w, e]) => lat >= s && lat <= n && lon >= w && lon <= e)?.[0]) || '';
 
-  // ---- familles et sous-types : § 2 du prompt de génération (source unique : docs/PROMPT_GENERATEUR_MISSIONS.md)
+  // ---- familles et sous-types : § 2 du prompt de génération (source unique : docs/technique/PROMPT_GENERATEUR_MISSIONS.md)
   /** Familles et sous-types (§ 2 du prompt) : MissionOrder.families (shared/mission_order.js). */
   const families = () => window.MissionOrder?.families?.() || [];
 
@@ -91,13 +93,106 @@
     updatedAt: '',
     missions: []
   });
-  let reg = readJson(KEY, null) || empty();
+  // registre gardé dans l'index IndexedDB (MissionIndex, shared/data_index.js) : plus de limite du stockage du
+  // navigateur ; ancienne copie localStorage seulement sans IndexedDB
+  const IDX = window.MissionIndex;
+  const loadReg = () => IDX ? {
+    ...empty(),
+    updatedAt: IDX.updatedAt(),
+    missions: IDX.all()
+  } : readJson(KEY, null) || empty();
+  let reg = loadReg();
   const keyOf = m => `${m.folder || ''}|${m.id || m.title || ''}`;
 
   function persist() {
     reg.updatedAt = new Date().toISOString();
-    writeJson(KEY, reg);
+    if (IDX) IDX.save(reg.missions, reg.updatedAt).catch(e => window.AppFramework?.notify?.(t(['Registre des missions non enregistré dans le navigateur : {e}', 'Mission registry not saved in the browser: {e}', 'Missionsregister im Browser nicht gespeichert: {e}', 'Registro de misiones no guardado en el navegador: {e}'], {
+      e: e?.message || e
+    }), 'err'));
+    else writeJson(KEY, reg);
     writeFile().catch(() => {});
+  }
+  // ---- suivi du Centre (statut, notes, date de vol) : suivi.yaml dans le dossier de chaque mission
+  // (docs/technique/INDEX_DONNEES.md § 6) : partagé avec les autres postes et la synchronisation, relu par la relecture du
+  // dossier ; écrit à chaque changement, sous verrou, fusionné champ par champ si un autre poste l'a modifié entre-temps
+  const SUIVI = 'suivi.yaml',
+    SUIVI_FIELDS = ['status', 'statusAt', 'notes', 'flownAt'];
+  const suiviBase = new Map(); // id → suivi tel que lu ou écrit en dernier par cette page (base de la fusion)
+  const readSuivi = text => {
+    try {
+      const y = window.jsyaml?.load(String(text || '')) || null;
+      return y && typeof y === 'object' ? y : null;
+    } catch {
+      return null;
+    }
+  };
+  const me = () => {
+    try {
+      return JSON.parse(localStorage.getItem('missionReportingConfig:v1') || '{}').trigram || '';
+    } catch {
+      return '';
+    }
+  };
+  /** Écrit le suivi d'une mission rangée (dossier autorisé, sans demande) ; false sinon. */
+  async function writeSuivi(m) {
+    if (!m?.id || !m.folder || !window.jsyaml) return false;
+    const dir = await missionsDir(false);
+    if (!dir) return false;
+    const run = async () => {
+      let h = dir;
+      for (const part of m.folder.split('/').filter(Boolean)) h = await h.getDirectoryHandle(part);
+      let theirs = null;
+      try {
+        theirs = readSuivi(await (await (await h.getFileHandle(SUIVI)).getFile()).text());
+      } catch {
+        theirs = null;
+      }
+      const base = suiviBase.get(m.id) || null,
+        out = {},
+        clash = [];
+      for (const k of SUIVI_FIELDS) {
+        const mine = m[k] ?? '',
+          th = theirs?.[k] ?? '',
+          b = base?.[k] ?? '';
+        // changé ailleurs depuis la base et pas ici → le leur ; changé des deux côtés → le mien, signalé
+        if (theirs && String(th) !== String(b) && String(mine) === String(b)) out[k] = th;
+        else {
+          if (theirs && base && String(th) !== String(b) && String(mine) !== String(th)) clash.push(k);
+          out[k] = mine;
+        }
+      }
+      const now = new Date().toISOString();
+      const doc = {
+        mission: m.id,
+        ...out,
+        updated_at: now,
+        by: me()
+      };
+      const w = await (await h.getFileHandle(SUIVI, {
+        create: true
+      })).createWritable();
+      await w.write(`# Suivi de la mission par le Centre — XPlane Web Suite (registre des missions)\n` + window.jsyaml.dump(doc, {
+        lineWidth: -1
+      }));
+      await w.close();
+      Object.assign(m, out, {
+        suiviAt: now
+      });
+      suiviBase.set(m.id, doc);
+      return clash;
+    };
+    try {
+      const clash = await (navigator.locks?.request ? navigator.locks.request(`defa:suivi:${m.id}`, run) : run());
+      if (clash.length) window.AppFramework?.notify?.(t(['{id} : suivi modifié en même temps sur un autre poste ({k}) ; votre saisie est gardée.', '{id}: tracking changed at the same time on another computer ({k}); your entry is kept.', '{id}: Verfolgung gleichzeitig auf einem anderen Rechner geändert ({k}); Ihre Eingabe bleibt.', '{id}: seguimiento modificado a la vez en otro equipo ({k}); se conserva su entrada.'], {
+        id: m.id,
+        k: clash.join(', ')
+      }), 'warn');
+      persist();
+      return true;
+    } catch (e) {
+      console.warn('suivi.yaml non écrit :', m.id, e);
+      return false;
+    }
   }
   /** Écrit Missions/mission_registry.yaml (dossier autorisé, sans demande). */
   async function writeFile(request = false) {
@@ -272,6 +367,16 @@
       request: prev?.request || null,
       addedAt: prev?.addedAt || new Date().toISOString()
     };
+    // suivi.yaml du dossier plus récent que ce que ce navigateur en connaît : il fait foi (autre poste, synchronisation)
+    if (e.suivi) {
+      if (String(e.suivi.updated_at || '') > String(prev?.suiviAt || '')) {
+        for (const k of SUIVI_FIELDS)
+          if (e.suivi[k] !== undefined) merged[k] = e.suivi[k];
+        merged.suiviAt = e.suivi.updated_at || '';
+      }
+      suiviBase.set(merged.id, e.suivi);
+      delete merged.suivi;
+    }
     if (i >= 0) reg.missions[i] = merged;
     else if (j >= 0) reg.missions[j] = merged;
     else reg.missions.push(merged);
@@ -556,7 +661,8 @@
     } catch (e) {
       res.error = e.message;
     }
-    reg = readJson(KEY, null) || empty();
+    await IDX?.ready;
+    reg = loadReg();
     const e = entryOf(doc, {
       folder: res.folder,
       files: res.folder ? [`mission${normMissionId(doc.yaml?.mission?.id)}.yaml`, ...(md ? [`summary${normMissionId(doc.yaml?.mission?.id)}.md`] : [])] : [],
@@ -601,7 +707,8 @@
           });
         }
       } catch {
-        /* absent */ }
+        /* absent */
+      }
     };
     await walk(mh.h, '');
     for (const s of [SUB.maps, SUB.versions, SUB.received]) await walk(mh.h, s);
@@ -635,7 +742,8 @@
         await f.dir.removeEntry(f.name);
         n++;
       } catch {
-        /* déjà absent, ou refusé */ }
+        /* déjà absent, ou refusé */
+      }
     }
     return n;
   }
@@ -697,6 +805,13 @@
     await waitFor('SiaMission');
     const found = [],
       problems = [];
+    // relecture incrémentale : un dossier dont les fichiers (nom, date, taille) et les cartes n'ont pas changé depuis la
+    // dernière lecture reprend ses entrées du registre, sans relire ni réanalyser ses fichiers (missionRegistryScan:v1)
+    const SCAN = 'missionRegistryScan:v1',
+      seenSig = readJson(SCAN, {}),
+      nextSig = {},
+      before = JSON.stringify(reg.missions);
+    let reused = 0;
     // barre indéterminée (nombre de dossiers inconnu d'avance) : dossier en cours et missions trouvées
     const job = window.AppFramework?.task?.(t(['Lecture du dossier des missions', 'Reading the missions folder', 'Missionsordner wird gelesen', 'Leyendo la carpeta de misiones']));
     async function walk(h, path, depth) {
@@ -704,6 +819,7 @@
       const files = [],
         subs = [],
         images = [];
+      let suiviFile = null; // suivi.yaml : statut, notes, date de vol (Centre), hors fichiers de la mission
       for await (const [name, x] of h.entries()) {
         if (x.kind === 'directory') {
           if (SUB[name]) {
@@ -711,13 +827,24 @@
               for await (const [n2, y2] of x.entries()) if (y2.kind === 'file' && /\.(png|jpe?g|webp)$/i.test(n2)) images.push(n2);
           } else if (depth < 3 && !/^(_|\.)/.test(name)) subs.push([name, x]);
         } else if (/\.(png|jpe?g|webp)$/i.test(name)) images.push(name);
+        else if (name === SUIVI) suiviFile = x;
         else if (/\.(ya?ml|md)$/i.test(name) && name !== FILE && !/^(maps_manifest|AAR_TRACKS_REFERENCE|OSM_WORK_PROMPT|README|VALIDATION)/i.test(name)) files.push(x);
       }
       if (files.length) {
+        const got = await Promise.all(files.map(fh => fh.getFile()));
+        const sf = suiviFile ? await suiviFile.getFile() : null;
+        const sig = [...got.map(f => `${f.name}:${f.lastModified}:${f.size}`), ...images, ...(sf ? [`${SUIVI}:${sf.lastModified}:${sf.size}`] : [])].sort().join('|');
+        nextSig[path] = sig;
+        const known = reg.missions.filter(m => m.source === 'dossier' && m.folder === path);
+        if (seenSig[path] === sig && known.length) {
+          found.push(...known); // inchangé : entrées reprises telles quelles
+          reused++;
+          for (const [name, x] of subs) await walk(x, path ? `${path}/${name}` : name, depth + 1);
+          return;
+        }
         const texts = [];
         let newest = 0;
-        for (const fh of files) {
-          const f = await fh.getFile();
+        for (const f of got) {
           newest = Math.max(newest, f.lastModified);
           texts.push({
             name: f.name,
@@ -728,14 +855,17 @@
           const {
             docs
           } = window.SiaMission.fromTextsBatch(texts);
+          const suivi = sf ? readSuivi(await sf.text()) : null;
           for (const d of docs) {
             const names = d.sourceNames || [];
-            found.push(entryOf(d, {
+            const e = entryOf(d, {
               folder: path,
               files: names,
               generatedAt: new Date(newest).toISOString(),
               images
-            }));
+            });
+            if (suivi && (!suivi.mission || suivi.mission === e.id)) e.suivi = suivi;
+            found.push(e);
           }
         } catch (e) {
           problems.push(`${path || '.'} : ${e.message}`);
@@ -754,9 +884,13 @@
       m.missingFile = m.source === 'dossier' && !seen.has(keyOf(m));
     });
     linkReports();
-    persist();
+    writeJson(SCAN, nextSig);
+    // registre réécrit (navigateur et mission_registry.yaml) seulement s'il a changé : plus de fichier modifié à chaque
+    // ouverture de la page
+    if (JSON.stringify(reg.missions) !== before) persist();
     return {
       found: found.length,
+      reused,
       problems
     };
   }
@@ -793,17 +927,30 @@
     persist();
     return n;
   }
+  // CR du registre des CR : copie indexée (ReportIndex, shared/data_index.js), lue à l'ouverture et quand un CR est
+  // enregistré ; sans index : ancienne copie texte du navigateur (analyse YAML)
+  let crList = null;
+  async function loadReports() {
+    const i = await window.ReportIndex?.load?.();
+    if (i) crList = i.missions;
+    else try {
+      crList = window.jsyaml?.load(readJson('missionCoreLedger:v2', null)?.text || '')?.missions || [];
+    } catch {
+      crList = [];
+    }
+    return crList;
+  }
   /** CR de chaque mission (registre des CR, missionCoreLedger:v2) : n° de CR CR<mission>-<vol> (ou metadata.missionNumber).
    *  m.reports = [{ missionId, family, date, index }] du plus récent au plus ancien (index : rang dans la famille, lien
    *  ?edit= de la page de CR) ; m.report = le dernier ; statut « CR fait » dès le premier. Une mission récurrente (ravitaillement
    *  sur SIMONE, dix fois par mois) garde tous ses vols : CRR-001-1, CRR-001-2… */
   function linkReports() {
-    let crs = [];
-    try {
-      const c = readJson('missionCoreLedger:v2', null);
-      crs = window.jsyaml.load(c?.text || '')?.missions || [];
-    } catch {
-      /* registre illisible */ }
+    // CR pas encore lus : liaison faite dès qu'ils le sont (jamais avec une liste vide, qui effacerait les liens)
+    if (!crList) return void loadReports().then(() => {
+      linkReports();
+      if (host) render();
+    });
+    const crs = crList;
     const rank = {},
       all = crs.map(r => ({
         r,
@@ -1124,7 +1271,8 @@
           try {
             bar.setPointerCapture(e.pointerId);
           } catch {
-            /* pointeur relâché */ }
+            /* pointeur relâché */
+          }
           const move = ev => {
             box.style.height = `${Math.max(120, h0 + ev.clientY - y0)}px`;
           };
@@ -1141,7 +1289,8 @@
           try {
             localStorage.removeItem(TABLE_H);
           } catch {
-            /* stockage indisponible */ }
+            /* stockage indisponible */
+          }
         };
       }
     }
@@ -1216,24 +1365,27 @@
         <label>${esc(t(['Volée le', 'Flown on', 'Geflogen am', 'Volada el']))}<input type="date" id="rgFlown" value="${esc(m.flownAt || '')}"></label>
         <label class="rg-notes">${esc(t(['Notes', 'Notes', 'Notizen', 'Notas']))}<input id="rgNotes" value="${esc(m.notes || '')}"></label>
       </div>
-      <p class="row">${m.files?.length ? `<button type="button" class="primary" data-go="editor" data-icon="edit">${esc(t(['Ouvrir dans le générateur', 'Open in generator', 'Im Generator öffnen', 'Abrir en el generador']))}</button><button type="button" class="secondary" data-go="studio" data-icon="map">${esc(t(['Ouvrir dans le studio', 'Open in map studio', 'Im Kartenstudio öffnen', 'Abrir en el estudio']))}</button>${/Z$/.test(m.id || '') ? '' : `<button type="button" class="secondary" data-go="assign" data-icon="users" title="${esc(t(['Affecter la mission à un ou plusieurs pilotes : heure, appareils, astreinte (docs/AFFECTATION_MISSIONS.md)', 'Assign the mission to one or more pilots: time, aircraft, standby']))}">${esc(t(['Affecter…', 'Assign…', 'Zuweisen…', 'Asignar…']))}</button>`}<button type="button" class="secondary" data-go="cr" data-icon="clipboard" title="${esc(t(['Nouveau CR de cette mission : n° de vol suivant', 'New report for this mission: next flight number']))}">${esc(m.reports?.length ? t(['Nouveau CR (vol {n})', 'New report (flight {n})', 'Neuer Bericht (Flug {n})', 'Nuevo informe (vuelo {n})'], { n: m.reports.length + 1 }) : t(['Créer le CR', 'Create report', 'Bericht erstellen', 'Crear informe']))}</button>` : ''}${m.status === 'ordered' ? `<button type="button" class="secondary" data-go="prompt" data-icon="send">${esc(t(['Recopier le prompt', 'Copy prompt again']))}</button>` : ''}<span class="rg-small">${esc((m.files || []).join(', '))}</span></p>
+      <p class="row">${m.files?.length ? `<button type="button" class="primary" data-go="editor" data-icon="edit">${esc(t(['Ouvrir dans le générateur', 'Open in generator', 'Im Generator öffnen', 'Abrir en el generador']))}</button><button type="button" class="secondary" data-go="studio" data-icon="map">${esc(t(['Ouvrir dans le studio', 'Open in map studio', 'Im Kartenstudio öffnen', 'Abrir en el estudio']))}</button>${/Z$/.test(m.id || '') ? '' : `<button type="button" class="secondary" data-go="assign" data-icon="users" title="${esc(t(['Affecter la mission à un ou plusieurs pilotes : heure, appareils, astreinte (docs/technique/AFFECTATION_MISSIONS.md)', 'Assign the mission to one or more pilots: time, aircraft, standby']))}">${esc(t(['Affecter…', 'Assign…', 'Zuweisen…', 'Asignar…']))}</button>`}<button type="button" class="secondary" data-go="cr" data-icon="clipboard" title="${esc(t(['Nouveau CR de cette mission : n° de vol suivant', 'New report for this mission: next flight number']))}">${esc(m.reports?.length ? t(['Nouveau CR (vol {n})', 'New report (flight {n})', 'Neuer Bericht (Flug {n})', 'Nuevo informe (vuelo {n})'], { n: m.reports.length + 1 }) : t(['Créer le CR', 'Create report', 'Bericht erstellen', 'Crear informe']))}</button>` : ''}${m.status === 'ordered' ? `<button type="button" class="secondary" data-go="prompt" data-icon="send">${esc(t(['Recopier le prompt', 'Copy prompt again']))}</button>` : ''}<span class="rg-small">${esc((m.files || []).join(', '))}</span></p>
       <p class="rg-small" id="rgGoMsg"></p></div>`;
     box.querySelector('#rgStatus').onchange = e => {
       m.status = e.target.value;
       m.statusAt = new Date().toISOString();
       if (m.status === 'flown' && !m.flownAt) m.flownAt = new Date().toISOString().slice(0, 10);
       persist();
+      writeSuivi(m);
       render();
     };
     box.querySelector('#rgFlown').onchange = e => {
       m.flownAt = e.target.value;
       if (m.flownAt && ['generated', 'planned', 'ordered'].includes(m.status)) m.status = 'flown';
       persist();
+      writeSuivi(m);
       render();
     };
     box.querySelector('#rgNotes').onchange = e => {
       m.notes = e.target.value;
       persist();
+      writeSuivi(m);
     };
     box.querySelectorAll('[data-go]').forEach(x => x.onclick = () => go(m, x.dataset.go));
     box.querySelectorAll('[data-op-select]').forEach(x => x.onclick = () => {
@@ -1253,7 +1405,6 @@
     none: ['partielle : cartes non générées (régénérables)', 'partial: maps not generated (can be regenerated)', 'ohne Karten', 'sin mapas']
   };
   // ---- fichiers de la mission : YAML, Markdown (lisible), cartes, versions, textes reçus ; PDF à la demande (générateur)
-  let viewer = null;
   /** Styles de la visionneuse et des vignettes de cartes, injectés une fois (dès l'affichage des fichiers). */
   /** Vignette d'une image (320 px de large, JPEG) ; l'image elle-même si le navigateur ne sait pas la réduire. */
   async function thumbnail(file) {
@@ -1277,22 +1428,15 @@
     if (document.getElementById('rgViewerCss')) return;
     const css = document.createElement('style');
     css.id = 'rgViewerCss';
-    css.textContent = '.rg-viewer{width:min(96vw,1100px);max-height:90vh;padding:0;border:0;border-radius:10px}.rg-viewer::backdrop{background:rgba(0,0,0,.55)}.rg-viewer-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #ccd;position:sticky;top:0;background:inherit}.rg-viewer-body{padding:12px 16px;overflow:auto;max-height:80vh}.rg-viewer-body pre{white-space:pre-wrap;font:12px ui-monospace,monospace}.rg-viewer-body table{border-collapse:collapse}.rg-viewer-body td,.rg-viewer-body th{border:1px solid #ccd;padding:2px 6px}.rg-viewer-body img{max-width:100%}.rg-thumbs{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}.rg-thumbs figure{margin:0;width:160px}.rg-thumbs img{width:160px;height:100px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid #ccd}.rg-thumbs figcaption{font-size:11px;word-break:break-all}.rg-thumbs .rg-surplus img{opacity:.55;outline:2px dashed #c0392b;outline-offset:-2px}.rg-thumbs figure{position:relative}.rg-thumbs .rg-del{position:absolute;top:4px;right:4px;border:0;background:#c0392b;color:#fff;border-radius:50%;width:22px;height:22px;line-height:20px;padding:0;cursor:pointer;font-size:15px;box-shadow:0 1px 4px #0006;opacity:.85}.rg-thumbs .rg-del:hover{opacity:1}';
+    css.textContent = '.rg-thumbs{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}.rg-thumbs figure{margin:0;width:160px}.rg-thumbs img{width:160px;height:100px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid #ccd}.rg-thumbs figcaption{font-size:11px;word-break:break-all}.rg-thumbs .rg-surplus img{opacity:.55;outline:2px dashed #c0392b;outline-offset:-2px}.rg-thumbs figure{position:relative}.rg-thumbs .rg-del{position:absolute;top:4px;right:4px;border:0;background:#c0392b;color:#fff;border-radius:50%;width:22px;height:22px;line-height:20px;padding:0;cursor:pointer;font-size:15px;box-shadow:0 1px 4px #0006;opacity:.85}.rg-thumbs .rg-del:hover{opacity:1}';
     document.head.append(css);
   }
 
-  function view(title, html) {
-    viewerCss();
-    if (!viewer) {
-      viewer = document.createElement('dialog');
-      viewer.className = 'rg-viewer';
-      viewer.innerHTML = '<form method="dialog" class="rg-viewer-head"><b></b><button type="submit">×</button></form><div class="rg-viewer-body"></div>';
-      document.body.append(viewer);
-    }
-    viewer.querySelector('b').textContent = title;
-    viewer.querySelector('.rg-viewer-body').innerHTML = html;
-    viewer.showModal();
-  }
+  /** Fichier de la mission à l'écran : visionneuse commune (kit.js) ; une carte s'ouvre en image (taille réelle au clic). */
+  const view = (title, html) => {
+    const img = /^<img src="([^"]+)"[^>]*>$/.exec(html);
+    return img ? window.RepositoryKit.viewImage(img[1], title) : window.RepositoryKit.viewHtml(title, html);
+  };
   /** Markdown → HTML (titres, paragraphes, listes, tableaux, gras, italique, code). */
   function mdHtml(md) {
     const inline = x => esc(x).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/(^|\W)\*(.+?)\*(?=\W|$)/g, '$1<i>$2</i>').replace(/`(.+?)`/g, '<code>$1</code>');
@@ -1350,7 +1494,8 @@
           h: x
         });
       } catch {
-        /* absent */ }
+        /* absent */
+      }
       return out.sort((a, b) => b.name.localeCompare(a.name));
     };
     const root = await list(mh.h),
@@ -1452,7 +1597,8 @@
             f = h && await readText(h.h, `mission${normMissionId(x.id)}.yaml`);
           if (f) docs.push(window.jsyaml.load(f.replace(/^#.*\n/, '')));
         } catch {
-          /* illisible */ }
+          /* illisible */
+        }
       }
       view(`summary${normMissionId(m.id)}.md — ${t(['généré depuis le YAML', 'generated from the YAML', 'aus dem YAML erzeugt', 'generado desde el YAML'])}`, mdHtml(window.SiaMission.markdownOf(y, {
         docs
@@ -1467,7 +1613,8 @@
         try {
           sessionStorage.setItem('siaAutoPdf:v1', m.id);
         } catch {
-          /* */ }
+          /* */
+        }
         return go(m, 'editor');
       }
       return go(m, k === 'studio' ? 'studio' : 'editor');
@@ -1524,7 +1671,8 @@
           text: await f.text()
         });
       } catch {
-        /* absent */ }
+        /* absent */
+      }
     }
     return files;
   }
@@ -1545,7 +1693,8 @@
           type: m.type
         }));
       } catch {
-        /* stockage indisponible */ }
+        /* stockage indisponible */
+      }
       window.SiaMission.importTexts(files, 'registry');
       const b = window.SiaMission.loadBatch(),
         i = b ? b.docs.findIndex(d => String(d.yaml?.mission?.id || '').toUpperCase() === String(m.id).toUpperCase()) : -1;
@@ -1575,7 +1724,8 @@
           type: m.type
         }));
       } catch {
-        /* stockage indisponible */ }
+        /* stockage indisponible */
+      }
       const dir = await missionsDir(true);
       if (!dir) throw new Error(t(['dossier des missions non autorisé', 'missions folder not authorised']));
       const files = await missionFiles(dir, m);
@@ -1586,10 +1736,11 @@
         try {
           let h = dir;
           for (const part of (m.folder || '').split('/').filter(Boolean)) h = await h.getDirectoryHandle(part);
-          for await (const [n, x] of (await h.getDirectoryHandle(SUB.maps)).entries())
-            if (x.kind === 'file' && /\.(png|jpe?g|webp)$/i.test(n)) maps.push(n);
+          for await (const [n, x] of(await h.getDirectoryHandle(SUB.maps)).entries())
+          if (x.kind === 'file' && /\.(png|jpe?g|webp)$/i.test(n)) maps.push(n);
         } catch {
-          /* pas de cartes rangées */ }
+          /* pas de cartes rangées */
+        }
         window.AssignDialog?.open(m, window.SiaMission.fromTexts(files).yaml || {}, {
           maps: maps.sort()
         });
@@ -1604,6 +1755,7 @@
           m.status = 'flown';
           m.flownAt = m.flownAt || new Date().toISOString().slice(0, 10);
           persist();
+          await writeSuivi(m); // avant de quitter la page
         }
         location.href = new URL(`apps/cr/${target.cr}?from=sia`, window.RepositoryNav.root).href;
         return;
@@ -1613,6 +1765,7 @@
         m.status = 'planned';
         m.statusAt = new Date().toISOString();
         persist();
+        await writeSuivi(m); // avant de quitter la page
       }
       location.href = new URL(where === 'studio' ? 'apps/cpco/map_parser.html' : 'apps/cpco/mission_editor.html', window.RepositoryNav.root).href;
     } catch (e) {
@@ -1668,18 +1821,33 @@
   window.MissionRouting?.loadFromBase().then(ok => {
     if (ok) renderDetail();
   });
-  window.addEventListener('local-store-restored', () => {
-    reg = readJson(KEY, null) || empty();
+  // sauvegarde restaurée (ancienne copie du registre comprise : reprise si plus récente), registre enregistré par un
+  // autre onglet : relu
+  window.addEventListener('local-store-restored', async () => {
+    await IDX?.ready; // reprise de la copie restaurée : MissionIndex (mission-index-change)
+    if (!IDX) reg = loadReg();
     render();
   });
-  window.addEventListener('storage', e => {
+  window.addEventListener('mission-index-change', () => {
+    reg = loadReg();
+    render();
+  });
+  // CR enregistré dans un autre onglet (MissionLedger, message « defa-data ») : CR des missions relus
+  if (typeof BroadcastChannel === 'function') new BroadcastChannel('defa-data').addEventListener('message', e => {
+    if (e.data?.path === 'data/cr/missions.yaml') loadReports().then(() => {
+      linkReports();
+      render();
+    });
+  });
+  if (!IDX) window.addEventListener('storage', e => {
     if (e.key === KEY) {
-      reg = readJson(KEY, null) || empty();
+      reg = loadReg();
       render();
     }
   });
   window.MissionRegistry = {
     scan,
+    writeSuivi,
     cleanup,
     addOrder,
     addFiles,
@@ -1699,6 +1867,9 @@
   };
   (async () => {
     await waitFor('jsyaml', 3000);
+    await IDX?.ready; // registre lu dans l'index (ouverture de la page)
+    reg = loadReg();
+    await loadReports();
     linkReports();
     // ?mission=M-016 (retour du générateur, du studio ou d'un CR) : mission choisie et affichée
     const want = normMissionId(new URLSearchParams(location.search).get('mission') || '');

@@ -7,7 +7,7 @@
   //   · paramètres : type, sous-type (§ 2 du prompt), théâtre(s), série (vide = la suivante), identifiant calculé
   //     (SiaMission.nextNumbering), équipes DEFA en vol et aéronef de chaque équipe (A, B, C… ; vide = automatique ;
   //     complétion par les types courants et la flotte DEFA), rendez-vous, équipes au sol, ravitaillement en vol ;
-  //   · prompt : window.MISSION_PROMPT (apps/cpco/mission_prompt.js, construit depuis docs/PROMPT_GENERATEUR_MISSIONS.md
+  //   · prompt : window.MISSION_PROMPT (apps/cpco/mission_prompt.js, construit depuis docs/technique/PROMPT_GENERATEUR_MISSIONS.md
   //     par tools/build_mission_prompt.py), paramètres réglés en tête, copié puis ChatGPT ouvert dans un nouvel onglet ;
   //   · la commande est inscrite au registre (statut « commandée », missionRegistry:v1) puis rapprochée de la mission
   //     générée à la relecture du dossier (même série) ;
@@ -49,10 +49,11 @@
     try {
       localStorage.setItem(k, JSON.stringify(v));
     } catch {
-      /* stockage indisponible */ }
+      /* stockage indisponible */
+    }
   };
 
-  /** Familles et sous-types : § 2 du prompt de génération (source unique : docs/PROMPT_GENERATEUR_MISSIONS.md). */
+  /** Familles et sous-types : § 2 du prompt de génération (source unique : docs/technique/PROMPT_GENERATEUR_MISSIONS.md). */
   function families() {
     const text = String(window.MISSION_PROMPT || ''),
       out = [];
@@ -93,6 +94,7 @@
       ground: 'libre',
       aar: 'libre',
       duration: 'libre',
+      translations: 'en',
       ...readJson(ORDER_KEY, {})
     };
     if (!/^\d+$/.test(String(o.serie || ''))) o.serie = ''; // série : numéro dans la famille (vide = la suivante)
@@ -144,7 +146,8 @@
     rdv: o.rdv,
     ground: o.ground,
     aar: o.aar,
-    duration: o.duration || 'libre'
+    duration: o.duration || 'libre',
+    translations: o.translations || 'en'
   });
 
   /** Inscrit la commande au registre (statut « commandée ») : via le registre s'il est chargé, sinon dans missionRegistry:v1. */
@@ -178,6 +181,8 @@
       notes: ''
     };
     if (window.MissionRegistry?.addOrder) return window.MissionRegistry.addOrder(entry);
+    // registre non chargé sur cette page : index IndexedDB (shared/data_index.js), sinon ancienne copie du navigateur
+    if (window.MissionIndex) return window.MissionIndex.ready.then(() => window.MissionIndex.save([...window.MissionIndex.all(), entry], now));
     const reg = readJson(REG_KEY, null) || {
       schema: 'mission-registry',
       version: 1,
@@ -189,7 +194,7 @@
     writeJson(REG_KEY, reg);
   }
 
-  /** Prompt de génération réglé (paramètres en tête du bloc de docs/PROMPT_GENERATEUR_MISSIONS.md) copié, puis ChatGPT ouvert.
+  /** Prompt de génération réglé (paramètres en tête du bloc de docs/technique/PROMPT_GENERATEUR_MISSIONS.md) copié, puis ChatGPT ouvert.
    *  out : élément du message (copie faite, ou texte à copier à la main si le navigateur refuse). Retourne le prompt. */
   async function sendPrompt(r, out) {
     const base = window.MISSION_PROMPT;
@@ -212,12 +217,14 @@
     p = set(p, 'ÉQUIPES_SOL', r.ground ?? 'libre');
     p = set(p, 'RAVITAILLEMENT', r.aar || 'libre');
     p = set(p, 'DURÉE', r.duration || 'libre');
+    p = p.replace(/^(\s*TRADUCTIONS\s*=\s*)\S+/m, (_, a) => a + String(r.translations || 'en').replace(/\$/g, '$$$$')); // valeur à espaces (« en, de, es »)
     let copied = false;
     try {
       await navigator.clipboard.writeText(p);
       copied = true;
     } catch {
-      /* refus du navigateur */ }
+      /* refus du navigateur */
+    }
     window.open(p.length < 7000 ? `https://chatgpt.com/?q=${encodeURIComponent(p)}` : 'https://chatgpt.com/', '_blank', 'noopener');
     if (out) {
       if (copied) out.textContent = t(['Prompt copié ({n} caractères) : dans ChatGPT, coller (Ctrl+V) puis envoyer.', 'Prompt copied ({n} characters): paste it in ChatGPT (Ctrl+V) and send.', 'Prompt kopiert ({n} Zeichen): in ChatGPT einfügen (Strg+V) und senden.', 'Prompt copiado ({n} caracteres): pegarlo en ChatGPT (Ctrl+V) y enviar.'], {
@@ -278,6 +285,7 @@
         <label>${esc(t(['Rendez-vous', 'Rendezvous', 'Treffpunkt', 'Encuentro']))}<select data-o="rdv">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.rdv)}${opt('avec', t(['avec', 'with', 'mit', 'con']), o.rdv)}${opt('sans', t(['sans', 'without', 'ohne', 'sin']), o.rdv)}</select></label>
         <label>${esc(t(['Équipes au sol', 'Ground teams', 'Bodenteams', 'Equipos en tierra']))}<select data-o="ground">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.ground)}${[0, 1, 2, 3].map(n => opt(n, n, o.ground)).join('')}</select></label>
         <label title="${esc(t(['Durée de l’opération, du premier décollage au dernier atterrissage des équipes DEFA : repère pour le générateur, pas une borne stricte', 'Operation duration, first take-off to last landing of the DEFA teams: a guide for the generator, not a strict limit']))}">${esc(t(['Durée', 'Duration', 'Dauer', 'Duración']))}<select data-o="duration">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.duration)}${DURATIONS.map(([k, l]) => opt(k, `${k} — ${l}`, o.duration)).join('')}</select></label>
+        <label title="${esc(t(['Langues du brief traduit dans le YAML (bloc i18n), en plus du français : les pilotes le lisent dans leur langue', 'Languages of the translated brief in the YAML (i18n block), besides French: pilots read it in their language', 'Sprachen des übersetzten Briefings im YAML (i18n-Block), zusätzlich zum Französischen: Piloten lesen es in ihrer Sprache', 'Idiomas del brief traducido en el YAML (bloque i18n), además del francés: los pilotos lo leen en su idioma']))}">${esc(t(['Traductions', 'Translations', 'Übersetzungen', 'Traducciones']))}<select data-o="translations">${opt('en', 'en', o.translations)}${opt('en, de, es', 'en, de, es', o.translations)}${opt('aucune', t(['aucune', 'none', 'keine', 'ninguna']), o.translations)}</select></label>
         <label>${esc(t(['Ravitaillement en vol', 'Air refuelling', 'Luftbetankung', 'Reabastecimiento en vuelo']))}<select data-o="aar">${opt('libre', t(['libre', 'free', 'frei', 'libre']), o.aar)}${opt('oui', t(['oui', 'yes', 'ja', 'sí']), o.aar)}${opt('non', t(['non', 'no', 'nein', 'no']), o.aar)}</select></label>
       </div>
       <p><b>${esc(t(['Aéronef de chaque équipe en vol', 'Aircraft of each flying team', 'Luftfahrzeug jeder Besatzung', 'Aeronave de cada equipo']))}</b></p>

@@ -6,7 +6,7 @@ carburant, calibrés sur les OFP SimBrief, échangés avec Little Navmap.
 
 Code : la page elle-même, `shared/flight_ui.js` (actions du menu ☰, préférences),
 `shared/flight_i18n.js` (traductions FR / EN / DE / ES), et les composants du framework
-(bandeau, menu ☰, blocs déplaçables / masquables — voir [FRAMEWORK.md](FRAMEWORK.md)).
+(bandeau, menu ☰, blocs déplaçables / masquables — voir [FRAMEWORK.md](technique/FRAMEWORK.md)).
 Bases partagées : `AircraftDB/aircraft_db.js` (types OACI) et `AircraftDB/aircraft_icons.js`.
 Profil vertical : `shared/flight_vertical_profile.js` et le module du studio SIA
 (`shared/carto/vertical_profile.js`, `shared/carto/aero_symbols.js`).

@@ -190,7 +190,7 @@
   // Recharge la base locale depuis le stockage (abandonne les modifications en mémoire) et réactive le dernier avion.
   $("statusReload").onclick = () => {
     let restored = JSON.parse(localStorage.getItem("flightPerfState") || "null");
-    if (!restored?.profiles) return alert("Aucune base locale enregistrée.");
+    if (!restored?.profiles) return window.AppFramework.notify("Aucune base locale enregistrée.", 'warn');
     state = restored;
     let id = state.lastAircraft;
     if (id && state.profiles[id]) rawSetActive(state.profiles[id], "base locale rechargée");
@@ -476,16 +476,16 @@
     n.addAction(["Importer les préférences", "Import preferences", "Einstellungen importieren", "Importar preferencias"], importPrefs)
   }
   // Restaure la sauvegarde locale précédente (flightPerfState.backup) après confirmation, puis recharge la page.
-  function restoreBackup() {
+  async function restoreBackup() {
     try {
       let backup = JSON.parse(localStorage.getItem("flightPerfState.backup") || "null");
       if (!backup?.profiles) throw Error("Aucune sauvegarde précédente disponible.");
-      if (!confirm("Restaurer la sauvegarde locale précédente ?")) return;
+      if (!await window.AppFramework.ask("Restaurer la sauvegarde locale précédente ?")) return;
       state = backup;
       localStorage.setItem("flightPerfState", JSON.stringify(state));
       location.reload()
     } catch (e) {
-      alert(e.message)
+      window.AppFramework.notify(e.message, 'err')
     }
   }
   // Exporte les préférences (réglages, unité, langue, blocs) en JSON.
@@ -518,7 +518,7 @@
         save();
         location.reload()
       } catch (e) {
-        alert(e.message)
+        window.AppFramework.notify(e.message, 'err')
       }
     };
     input.click()

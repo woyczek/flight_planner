@@ -51,7 +51,8 @@
         by: 'planner'
       }));
     } catch {
-      /* stockage indisponible */ }
+      /* stockage indisponible */
+    }
   };
   const store = () => {
     try {
@@ -258,7 +259,8 @@
       try {
         await loadData();
       } catch {
-        /* base absente */ }
+        /* base absente */
+      }
     }
     const {
       points,
@@ -288,7 +290,8 @@
     try {
       if (window.active !== null) window.planQuote?.();
     } catch {
-      /* devis au prochain calcul */ }
+      /* devis au prochain calcul */
+    }
   }
   $('vpRoute').addEventListener('change', () => applyRoute());
   // vers les Cartes de vol : même plan de vol (partagé), carte, profil vertical et cartes
@@ -309,7 +312,8 @@
     try {
       h = JSON.parse(localStorage.getItem('plannerHandoff:v1') || 'null');
     } catch {
-      /* illisible */ }
+      /* illisible */
+    }
     if (!h?.route || Date.now() - (h.at || 0) > 36e5) return false;
     $('vpRoute').value = h.route;
     if (h.distNm > 0 && $('dist')) $('dist').value = Math.round(h.distNm);
@@ -322,7 +326,8 @@
     try {
       window.calculate?.();
     } catch {
-      /* calcul relancé à la prochaine saisie */ }
+      /* calcul relancé à la prochaine saisie */
+    }
     window.AppFramework?.notify?.(tl(`Route reprise${h.from ? ` de « ${h.from} »` : ''} : ${Math.round(h.distNm || 0)} NM${h.cruiseFt ? `, niveau ${Math.round(h.cruiseFt / 100)}` : ''}.`, `Route taken${h.from ? ` from “${h.from}”` : ''}: ${Math.round(h.distNm || 0)} NM.`), 'ok');
     return true;
   }

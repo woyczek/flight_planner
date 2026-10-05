@@ -1,297 +1,297 @@
 /* Framework — icônes, numéros, sous-titres des blocs, sous-cartes, zones de dépôt, bandeau d'information, barre
-   latérale et design « Console » (voir docs/PROPOSITION_DESIGN_ICONES.md). Chargé par shared/block_icons.js.
+   latérale et design « Console » (voir docs/technique/PROPOSITION_DESIGN_ICONES.md). Chargé par shared/block_icons.js.
    Mêmes règles que designs.css : couleurs issues du thème (--repo-bar, --repo-bar-text, --repo-page, --repo-accent)
    ou de la surface (currentColor) ; --repo-icon (≥ 3:1) et --repo-ink (≥ 4,5:1) sont choisis par block_icons.js
    parmi les couleurs du thème d'après la surface réelle de chaque bloc. */
 
 @layer app {
-/* ---- icônes */
-.repo-icon {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  line-height: 0
-}
-/* taille des icônes : variable --rs (posée par le contexte ou par RepositoryIcons.svg), imposée : les règles « svg{…} »
-   des pages (graphiques en pleine largeur…) ne déforment plus les icônes */
-.repo-svg {
-  display: block
-}
-.repo-svg:not(#imp) {
-  width: var(--rs, 1.15em);
-  height: var(--rs, 1.15em);
-  max-width: none;
-  max-height: none;
-  flex: none;
-  margin: 0
-}
-.repo-has-icon:not(label):not(p):not(h1) {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: .5em
-}
-.repo-has-icon .repo-icon-start svg,
-.repo-has-icon .repo-icon-end svg {
-  --rs: 1.15em
-}
-.repo-label-line {
-  display: inline-flex;
-  align-items: center;
-  gap: .45em
-}
-.repo-label-line .repo-icon svg {
-  --rs: 1.05em
-}
-
-/* ---- en-tête de bloc : pastille, icône, titre et sous-titre */
-/* icône, titre + sous-titre et outils centrés verticalement sur le bloc de texte (designs au trait) ; les designs à
-   matières (designs_skeuo.css) alignent en haut, outils au coin du bloc */
-.repo-block-heading-rich {
-  margin-bottom: 14px;
-  align-items: center;
-  gap: 12px
-}
-.repo-block-heading-rich>:is(.repo-block-lead, .repo-block-tools) {
-  align-self: center
-}
-.repo-block-lead {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 0 0 auto
-}
-.repo-block-titles {
-  flex: 1;
-  min-width: 0;
-  align-self: center
-}
-.repo-block-titles>h2:not(#imp) {
-  margin: 0
-}
-.repo-block-subtitle {
-  margin: 2px 0 0;
-  font-size: .88rem;
-  font-weight: 400;
-  line-height: 1.35;
-  text-transform: none;
-  letter-spacing: 0;
-  color: color-mix(in srgb, currentColor 75%, transparent)
-}
-.repo-block-step {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  height: 28px;
-  padding: 0 7px;
-  border-radius: 999px;
-  background: var(--repo-bar);
-  color: var(--repo-bar-text);
-  font: 750 14px/1 Inter, system-ui, "Segoe UI", Arial, sans-serif;
-  font-variant-numeric: tabular-nums;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--repo-bar-text) 28%, transparent)
-}
-/* liseré : pastille visible même quand le bandeau a la teinte de la surface (thèmes sombres) */
-.repo-block-icon {
-  color: var(--repo-icon, currentColor)
-}
-.repo-block-icon svg {
-  --rs: 24px
-}
-/* bouton Masquer / Afficher : chevron en masque CSS (le texte du bouton est réécrit par app_framework.js) */
-.repo-block-heading-rich .repo-toggle::before {
-  content: "";
-  display: inline-block;
-  width: 11px;
-  height: 11px;
-  margin-right: 5px;
-  vertical-align: -1px;
-  background: currentColor;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat
-}
-.repo-block-hidden>.repo-block-heading-rich .repo-toggle::before {
-  transform: rotate(180deg)
-}
-.repo-block-hidden>.repo-block-heading-rich {
-  margin-bottom: 0
-}
-
-/* ---- sous-cartes */
-.repo-card {
-  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
-  border-radius: 10px;
-  padding: 16px;
-  min-width: 0
-}
-.repo-card-head {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 12px
-}
-.repo-card-icon {
-  color: var(--repo-icon, currentColor)
-}
-.repo-card-icon svg {
-  --rs: 28px
-}
-.repo-card-titles {
-  flex: 1;
-  min-width: 0
-}
-.repo-card-titles>h3,
-.repo-card-titles>h4,
-.repo-card-titles>strong {
-  display: block;
-  margin: 0;
-  font-size: 1rem;
-  line-height: 1.3
-}
-.repo-card-subtitle {
-  margin: 2px 0 0;
-  font-size: .86rem;
-  line-height: 1.35;
-  color: color-mix(in srgb, currentColor 75%, transparent)
-}
-.repo-card-tools {
-  display: flex;
-  gap: 6px;
-  margin-left: auto
-}
-
-/* ---- zone de dépôt de fichiers (enveloppe un <input type=file data-dropzone>) */
-.repo-dropzone {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  min-height: 96px;
-  padding: 16px;
-  border: 1.5px dashed color-mix(in srgb, currentColor 40%, transparent);
-  border-radius: 8px;
-  cursor: pointer;
-  text-align: left;
-  font-weight: 400;
-  transition: background .15s, border-color .15s
-}
-.repo-dropzone:hover,
-.repo-dropzone.is-over {
-  border-color: var(--repo-icon, currentColor);
-  background: color-mix(in srgb, var(--repo-icon, currentColor) 7%, transparent)
-}
-.repo-dropzone.is-over {
-  border-style: solid
-}
-.repo-dropzone:focus-within {
-  outline: 2px solid var(--repo-icon, currentColor);
-  outline-offset: 2px
-}
-.repo-dropzone-input {
-  clip-path: inset(50%)
-}
-.repo-dropzone-input:not(#imp) {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  opacity: 0;
-  overflow: hidden
-}
-.repo-dropzone-badge {
-  display: inline-flex;
-  flex: 0 0 auto;
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  align-items: center;
-  justify-content: center;
-  background: color-mix(in srgb, currentColor 8%, transparent);
-  color: var(--repo-icon, currentColor)
-}
-.repo-dropzone-badge svg {
-  --rs: 24px
-}
-.repo-dropzone-text {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0
-}
-.repo-dropzone-pick {
-  font-weight: 700;
-  color: var(--repo-ink, currentColor);
-  text-decoration: underline;
-  text-underline-offset: 3px
-}
-.repo-dropzone-state {
-  font-size: .86rem;
-  color: color-mix(in srgb, currentColor 75%, transparent);
-  overflow-wrap: anywhere
-}
-.repo-dropzone.has-files .repo-dropzone-state {
-  color: inherit;
-  font-weight: 600
-}
-.repo-dropzone.is-refused .repo-dropzone-state {
-  color: inherit;
-  font-weight: 700
-}
-.repo-dropzone.is-refused .repo-dropzone-state::before {
-  content: "⚠ "
-}
-
-/* ---- bandeau d'information */
-.repo-notice {
-  align-items: flex-start;
-  gap: 10px;
-  margin: 12px 0 0;
-  padding: 10px 14px;
-  border-radius: 8px;
-  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
-  background: color-mix(in srgb, currentColor 4%, transparent);
-  display: flex
-}
-.repo-notice>.repo-icon {
-  color: var(--repo-icon, currentColor);
-  margin-top: 1px
-}
-.repo-notice>.repo-icon svg {
-  --rs: 18px
-}
-
-/* ---- titre de page : icône et sous-titre dans le bandeau */
-.repo-header h1.repo-has-icon {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px
-}
-.repo-header h1 .repo-icon svg {
-  --rs: 1.05em
-}
-.repo-header-titles {
-  display: flex;
-  flex-direction: column;
-  min-width: 0
-}
-.repo-header-titles>h1 {
-  margin: 0
-}
-.repo-header-subtitle {
-  font: 12.5px/1.3 Inter, system-ui, "Segoe UI", Arial, sans-serif;
-  color: color-mix(in srgb, var(--repo-bar-text) 84%, transparent)
-}
-
-@media print {
-  .repo-dropzone-badge {
-    display: none !important
+  /* ---- icônes */
+  .repo-icon {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    line-height: 0
   }
-}
+  /* taille des icônes : variable --rs (posée par le contexte ou par RepositoryIcons.svg), imposée : les règles « svg{…} »
+   des pages (graphiques en pleine largeur…) ne déforment plus les icônes */
+  .repo-svg {
+    display: block
+  }
+  .repo-svg:not(#imp) {
+    width: var(--rs, 1.15em);
+    height: var(--rs, 1.15em);
+    max-width: none;
+    max-height: none;
+    flex: none;
+    margin: 0
+  }
+  .repo-has-icon:not(label):not(p):not(h1) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5em
+  }
+  .repo-has-icon .repo-icon-start svg,
+  .repo-has-icon .repo-icon-end svg {
+    --rs: 1.15em
+  }
+  .repo-label-line {
+    display: inline-flex;
+    align-items: center;
+    gap: .45em
+  }
+  .repo-label-line .repo-icon svg {
+    --rs: 1.05em
+  }
+
+  /* ---- en-tête de bloc : pastille, icône, titre et sous-titre */
+  /* icône, titre + sous-titre et outils centrés verticalement sur le bloc de texte (designs au trait) ; les designs à
+   matières (designs_skeuo.css) alignent en haut, outils au coin du bloc */
+  .repo-block-heading-rich {
+    margin-bottom: 14px;
+    align-items: center;
+    gap: 12px
+  }
+  .repo-block-heading-rich>:is(.repo-block-lead, .repo-block-tools) {
+    align-self: center
+  }
+  .repo-block-lead {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto
+  }
+  .repo-block-titles {
+    flex: 1;
+    min-width: 0;
+    align-self: center
+  }
+  .repo-block-titles>h2:not(#imp) {
+    margin: 0
+  }
+  .repo-block-subtitle {
+    margin: 2px 0 0;
+    font-size: .88rem;
+    font-weight: 400;
+    line-height: 1.35;
+    text-transform: none;
+    letter-spacing: 0;
+    color: color-mix(in srgb, currentColor 75%, transparent)
+  }
+  .repo-block-step {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: var(--repo-bar);
+    color: var(--repo-bar-text);
+    font: 750 14px/1 Inter, system-ui, "Segoe UI", Arial, sans-serif;
+    font-variant-numeric: tabular-nums;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--repo-bar-text) 28%, transparent)
+  }
+  /* liseré : pastille visible même quand le bandeau a la teinte de la surface (thèmes sombres) */
+  .repo-block-icon {
+    color: var(--repo-icon, currentColor)
+  }
+  .repo-block-icon svg {
+    --rs: 24px
+  }
+  /* bouton Masquer / Afficher : chevron en masque CSS (le texte du bouton est réécrit par app_framework.js) */
+  .repo-block-heading-rich .repo-toggle::before {
+    content: "";
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    margin-right: 5px;
+    vertical-align: -1px;
+    background: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E") center/contain no-repeat
+  }
+  .repo-block-hidden>.repo-block-heading-rich .repo-toggle::before {
+    transform: rotate(180deg)
+  }
+  .repo-block-hidden>.repo-block-heading-rich {
+    margin-bottom: 0
+  }
+
+  /* ---- sous-cartes */
+  .repo-card {
+    border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+    border-radius: 10px;
+    padding: 16px;
+    min-width: 0
+  }
+  .repo-card-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px
+  }
+  .repo-card-icon {
+    color: var(--repo-icon, currentColor)
+  }
+  .repo-card-icon svg {
+    --rs: 28px
+  }
+  .repo-card-titles {
+    flex: 1;
+    min-width: 0
+  }
+  .repo-card-titles>h3,
+  .repo-card-titles>h4,
+  .repo-card-titles>strong {
+    display: block;
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.3
+  }
+  .repo-card-subtitle {
+    margin: 2px 0 0;
+    font-size: .86rem;
+    line-height: 1.35;
+    color: color-mix(in srgb, currentColor 75%, transparent)
+  }
+  .repo-card-tools {
+    display: flex;
+    gap: 6px;
+    margin-left: auto
+  }
+
+  /* ---- zone de dépôt de fichiers (enveloppe un <input type=file data-dropzone>) */
+  .repo-dropzone {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    min-height: 96px;
+    padding: 16px;
+    border: 1.5px dashed color-mix(in srgb, currentColor 40%, transparent);
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    font-weight: 400;
+    transition: background .15s, border-color .15s
+  }
+  .repo-dropzone:hover,
+  .repo-dropzone.is-over {
+    border-color: var(--repo-icon, currentColor);
+    background: color-mix(in srgb, var(--repo-icon, currentColor) 7%, transparent)
+  }
+  .repo-dropzone.is-over {
+    border-style: solid
+  }
+  .repo-dropzone:focus-within {
+    outline: 2px solid var(--repo-icon, currentColor);
+    outline-offset: 2px
+  }
+  .repo-dropzone-input {
+    clip-path: inset(50%)
+  }
+  .repo-dropzone-input:not(#imp) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    overflow: hidden
+  }
+  .repo-dropzone-badge {
+    display: inline-flex;
+    flex: 0 0 auto;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, currentColor 8%, transparent);
+    color: var(--repo-icon, currentColor)
+  }
+  .repo-dropzone-badge svg {
+    --rs: 24px
+  }
+  .repo-dropzone-text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0
+  }
+  .repo-dropzone-pick {
+    font-weight: 700;
+    color: var(--repo-ink, currentColor);
+    text-decoration: underline;
+    text-underline-offset: 3px
+  }
+  .repo-dropzone-state {
+    font-size: .86rem;
+    color: color-mix(in srgb, currentColor 75%, transparent);
+    overflow-wrap: anywhere
+  }
+  .repo-dropzone.has-files .repo-dropzone-state {
+    color: inherit;
+    font-weight: 600
+  }
+  .repo-dropzone.is-refused .repo-dropzone-state {
+    color: inherit;
+    font-weight: 700
+  }
+  .repo-dropzone.is-refused .repo-dropzone-state::before {
+    content: "⚠ "
+  }
+
+  /* ---- bandeau d'information */
+  .repo-notice {
+    align-items: flex-start;
+    gap: 10px;
+    margin: 12px 0 0;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+    background: color-mix(in srgb, currentColor 4%, transparent);
+    display: flex
+  }
+  .repo-notice>.repo-icon {
+    color: var(--repo-icon, currentColor);
+    margin-top: 1px
+  }
+  .repo-notice>.repo-icon svg {
+    --rs: 18px
+  }
+
+  /* ---- titre de page : icône et sous-titre dans le bandeau */
+  .repo-header h1.repo-has-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px
+  }
+  .repo-header h1 .repo-icon svg {
+    --rs: 1.05em
+  }
+  .repo-header-titles {
+    display: flex;
+    flex-direction: column;
+    min-width: 0
+  }
+  .repo-header-titles>h1 {
+    margin: 0
+  }
+  .repo-header-subtitle {
+    font: 12.5px/1.3 Inter, system-ui, "Segoe UI", Arial, sans-serif;
+    color: color-mix(in srgb, var(--repo-bar-text) 84%, transparent)
+  }
+
+  @media print {
+    .repo-dropzone-badge {
+      display: none !important
+    }
+  }
 }
 /* règles propres aux designs : hors couche (au-dessus de l'application) */
 /* ---- adaptation aux designs existants (forme seulement) */

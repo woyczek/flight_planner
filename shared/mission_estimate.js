@@ -104,7 +104,7 @@
   function plannerProfile(code) {
     if (!code) return null;
     try {
-      const all = Object.values(JSON.parse(localStorage.getItem('flightPerfState') || '{}').profiles || {});
+      const all = Object.values((window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('flightPerfState', {}) : JSON.parse(localStorage.getItem('flightPerfState') || '{}'))?.profiles || {});
       return all.find(p => String(p.icao || p.type || '').toUpperCase() === code) || null;
     } catch {
       return null;
@@ -355,7 +355,8 @@
   function provenTimes(r) {
     let reg = [];
     try {
-      reg = JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions || [];
+      // registre des missions : copie en mémoire de l'index (shared/data_index.js), rien à analyser par estimation
+      reg = (window.MissionIndex ? window.MissionIndex.all() : (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('missionRegistry:v1', null) : JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null'))?.missions) || [];
     } catch {
       return {};
     }
@@ -645,7 +646,8 @@
       try {
         localStorage.setItem(ROUTE_KEY, e.target.checked ? '1' : '0');
       } catch {
-        /* stockage indisponible */ }
+        /* stockage indisponible */
+      }
       host.querySelector('[data-me-routebox]').hidden = !e.target.checked;
     };
   }

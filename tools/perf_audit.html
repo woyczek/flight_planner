@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Audit de performance</title>
+<style>
+  :root { --ink: #1b1f24; --mut: #5b6470; --line: #d5d9df; --bg: #fff; --head: #f2f4f7; --bar: #3b6fd8; --bar2: #d8763b; --ok: #1d7a3a; --bad: #a3241a; }
+  body { font: 14px/1.45 system-ui, sans-serif; margin: 16px; background: var(--bg); color: var(--ink); }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  h2 { font-size: 16px; margin: 22px 0 6px; }
+  p, li { max-width: 980px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
+  table { border-collapse: collapse; width: 100%; margin-top: 8px; font-size: 13px; }
+  th, td { border: 1px solid var(--line); padding: 3px 6px; text-align: right; vertical-align: top; }
+  th { background: var(--head); }
+  td.l, th.l { text-align: left; }
+  code { font-size: 12px; }
+  .mut { color: var(--mut); }
+  iframe { width: 1300px; height: 900px; border: 1px solid var(--line); transform: scale(.35); transform-origin: 0 0; margin-bottom: -580px; }
+  .better { color: var(--ok); font-weight: 600; }
+  .worse { color: var(--bad); font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>Audit de performance</h1>
+<p>Rejoue toujours le même parcours de clics dans les pages de la suite (Mes missions, ODV, registre, générateur, Cartes
+de vol, CR et reporting, Paramètres) et mesure chaque étape : temps jusqu'à stabilisation de la page, requêtes, lectures
+du stockage du navigateur, JSON analysé, ouvertures IndexedDB, accès aux dossiers, rappels d'observateurs, temps où la
+page ne répond pas. Deux modes : <b>serveur</b> (lanceur) et <b>sans serveur</b> (données non servies, dossiers
+autorisés simulés — le chemin d'une page ouverte en <code>file://</code>). Servir le dépôt avec
+<code>python tools/launch.py</code>, ouvrir <code>/tools/perf_audit.html</code>, lancer ; les mesures sont gardées dans ce
+navigateur (perfAuditRuns) et exportables en JSON (docs/technique/perf/).</p>
+<div class="row">
+  <label>Libellé <input id="label" size="28" placeholder="avant / après…"></label>
+  <label><input type="checkbox" id="srv" checked> serveur</label>
+  <label><input type="checkbox" id="nosrv" checked> sans serveur</label>
+  <label>Trigramme <input id="tri" size="4" value="RBR"></label>
+  <button id="go">Lancer l'audit</button>
+  <button id="export">Exporter les mesures (JSON)</button>
+  <button id="save" title="Lanceur seulement : écrit docs/technique/perf/runs/&lt;libellé&gt;.json (mesures de ce navigateur)">Enregistrer dans docs/perf</button>
+  <span id="state" class="mut"></span>
+</div>
+<div id="out"></div>
+<h2>Comparaison</h2>
+<div class="row"><label>Avant <select id="runA"></select></label><label>Après <select id="runB"></select></label><button id="cmp">Comparer</button></div>
+<div id="compare"></div>
+<iframe id="frame" title="page auditée"></iframe>
+<script src="../config/build.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const frame = $('frame');
+  const W = () => frame.contentWindow,
+    D = () => frame.contentDocument;
+  const RUNS = 'perfAuditRuns';
+  const KEEP = ['perfProbe', 'perfNoServer', 'missionRegistry:v1', 'missionRegistryScan:v1', 'repositoryLanguageMode', 'repositoryDesign', 'missionReportingConfig:v1', 'pilotMissionsView:v1'];
+
+  // ---- attente : page stable (aucune modification du document ni requête en cours pendant 700 ms ; 15 s au plus)
+  async function settle(max = 15000) {
+    const t0 = performance.now();
+    let last = t0;
+    let mo = null;
+    const attach = () => {
+      try {
+        mo?.disconnect();
+        mo = new (W().MutationObserver)(() => (last = performance.now()));
+        mo.observe(D().documentElement, { subtree: true, childList: true, characterData: true, attributes: true });
+      } catch { /* document en cours de remplacement */ }
+    };
+    attach();
+    while (performance.now() - t0 < max) {
+      await sleep(100);
+      if (!D()?.documentElement) continue;
+      if (W().__perf?.inflight?.() > 0) last = performance.now();
+      if (performance.now() - last >= 700) break;
+    }
+    mo?.disconnect();
+    return { ms: Math.round(last - t0), timeout: performance.now() - t0 >= max };
+  }
+  async function open(url) {
+    const t0 = performance.now();
+    await new Promise(r => { frame.onload = r; frame.src = url; });
+    const s = await settle();
+    return { ms: Math.round(performance.now() - t0 - (s.timeout ? 0 : 700)), timeout: s.timeout };
+  }
+  const click = sel => { const el = typeof sel === 'string' ? D().querySelector(sel) : sel; el?.click(); return !!el; };
+  const byText = (sel, re) => [...D().querySelectorAll(sel)].find(e => re.test(e.textContent));
+
+  // ---- parcours : mêmes clics à chaque audit (une étape = une action + attente de stabilisation)
+  const SCENARIO = [
+    { page: 'apps/pilot/mes_missions.html', steps: [
+      ['semaine suivante', () => click('[data-weekbar] [data-wk="1"]')],
+      ['semaine précédente', () => click('[data-weekbar] [data-wk="-1"]')],
+      ['semaine suivante', () => click('[data-weekbar] [data-wk="1"]')],
+      ['ouvrir la 1re mission', () => click('#pmList tbody tr')],
+      ['ouvrir le dossier', () => { const b = byText('#pmDetail button', /Ouvrir la mission|Open the mission/); b ? b.click() : null; return true; }], // déjà ouvert : pas de couverture
+      ['page suivante ×2', async () => { click('#pmDetail .pm-next'); await sleep(900); click('#pmDetail .pm-next'); }],
+      ['design Cabinet', () => W().RepositoryNav.appearance.setDesign('cabinet')],
+      ['design Carnet de vol', () => W().RepositoryNav.appearance.setDesign('flightlog')],
+      ['design Durci', () => W().RepositoryNav.appearance.setDesign('field')],
+      ['design Aqua', () => W().RepositoryNav.appearance.setDesign('aqua')],
+      ['langue anglais', () => click('[data-lang="en"]')],
+      ['langue français', () => click('[data-lang="fr"]')],
+      ['ouvrir la 2e mission', () => click(D().querySelectorAll('#pmList tbody tr')[1])]
+    ] },
+    { page: 'apps/cpco/odv_planning.html', steps: [
+      ['semaine suivante', () => click(byText('button', /Semaine suivante|Next week/))],
+      ['semaine précédente', () => click(byText('button', /Semaine précédente|Previous week/))]
+    ] },
+    { page: 'apps/cpco/mission_registry.html', steps: [
+      ['filtre COMBAT', () => { const s = D().querySelector('[data-f="type"]'); if (s) { s.value = 'COMBAT'; s.dispatchEvent(new Event('change', { bubbles: true })); } }],
+      ['effacer les filtres', () => click(byText('button', /Effacer les filtres|Clear filters/))],
+      ['relire le dossier (à chaud)', () => click(byText('button', /Relire le dossier|Re-read folder/))]
+    ] },
+    { page: 'apps/cpco/mission_editor.html', steps: [] },
+    { page: 'apps/planner/map_planner.html', steps: [] },
+    { page: 'apps/cr/FIRE/fire_cr.html', steps: [] },
+    { page: 'apps/cr/FIRE/fire_reporting.html', steps: [] },
+    { page: 'apps/settings/maintenance.html', steps: [] }
+  ];
+
+  // tâches longues : observées ici (la page auditée, dans le cadre, partage le fil d'exécution ; le cadre ne les reçoit
+  // pas lui-même), comptées pour l'étape en cours — temps de blocage = durée au-delà de 50 ms
+  const lt = { ms: 0, n: 0 };
+  try { new PerformanceObserver(l => { for (const e of l.getEntries()) { lt.ms += e.duration - 50; lt.n++; } }).observe({ type: 'longtask' }); } catch {}
+  const snap = () => {
+    const s = W().__perf?.snapshot?.() || null;
+    if (s) Object.assign(s.counters, { 'longtask.ms': Math.round(lt.ms), 'longtask.n': lt.n });
+    lt.ms = lt.n = 0;
+    return s;
+  };
+  async function runMode(noServer, label) {
+    localStorage.setItem('perfProbe', '1');
+    noServer ? localStorage.setItem('perfNoServer', '1') : localStorage.removeItem('perfNoServer');
+    localStorage.removeItem('missionRegistryScan:v1'); // registre à froid : même point de départ à chaque audit
+    const steps = [];
+    for (const sc of SCENARIO) {
+      $('state').textContent = `${noServer ? 'sans serveur' : 'serveur'} — ${sc.page}`;
+      lt.ms = lt.n = 0;
+      const o = await open('../' + sc.page);
+      const s0 = snap();
+      steps.push({ page: sc.page, step: 'chargement', settleMs: o.ms, timeout: o.timeout, ...s0 });
+      for (const [name, act] of sc.steps) {
+        $('state').textContent = `${noServer ? 'sans serveur' : 'serveur'} — ${sc.page} — ${name}`;
+        W().__perf?.reset?.();
+        lt.ms = lt.n = 0;
+        const r0 = W().performance.getEntriesByType('resource').length;
+        const t0 = performance.now();
+        let ok = true;
+        try { ok = (await act()) !== false; } catch (e) { ok = false; }
+        const s = await settle();
+        const sn = snap();
+        steps.push({ page: sc.page, step: name, done: ok, settleMs: Math.round(performance.now() - t0 - (s.timeout ? 0 : 700)), timeout: s.timeout, ...sn, resources: W().performance.getEntriesByType('resource').length - r0 });
+      }
+    }
+    return { label, mode: noServer ? 'sans serveur' : 'serveur', date: new Date().toISOString(), build: window.REPOSITORY_BUILD || null, ua: navigator.userAgent, steps };
+  }
+
+  const fmt = v => v == null ? '—' : typeof v === 'number' ? (Math.abs(v) >= 100 ? Math.round(v) : Math.round(v * 10) / 10) : v;
+  const COLS = [['settleMs', 'stable (ms)'], ['longtask.ms', 'blocage (ms)'], ['blocked.ms', 'retard minuterie (ms)'], ['fetch', 'requêtes'], ['fetch.404', '404'], ['storage.get', 'stockage lu'], ['storage.getBytes', 'octets lus'], ['json.parse', 'JSON.parse'], ['json.chars', 'car. JSON'], ['idb.open', 'IDB ouvertes'], ['fs.getFileHandle', 'fichiers (dossier)'], ['fs.getFile', 'lectures (dossier)'], ['fs.list', 'listes (dossier)'], ['mo.calls', 'observateurs'], ['mo.ms', 'obs. (ms)'], ['i18n.n', 'passes trad.'], ['i18n.ms', 'trad. (ms)'], ['icons.ms', 'icônes (ms)'], ['deco.ms', 'décors (ms)'], ['nodes', 'nœuds']];
+  const val = (s, k) => k === 'settleMs' || k === 'nodes' ? s[k] : s.counters?.[k] || 0;
+  function table(run) {
+    return `<h2>${run.label || '(sans libellé)'} — ${run.mode} — ${run.date.slice(0, 16).replace('T', ' ')} ${run.build ? `— ${run.build.branch} ${String(run.build.sha).slice(0, 8)}` : ''}</h2>
+      <table><thead><tr><th class="l">page</th><th class="l">étape</th>${COLS.map(c => `<th>${c[1]}</th>`).join('')}</tr></thead><tbody>${run.steps.map(s => `<tr><td class="l">${s.page.split('/').pop()}</td><td class="l">${s.step}${s.timeout ? ' ⏱' : ''}${s.done === false ? ' ✗' : ''}</td>${COLS.map(c => `<td>${fmt(val(s, c[0]))}</td>`).join('')}</tr>`).join('')}</tbody></table>
+      <p class="mut">Observateurs les plus coûteux : ${Object.entries(run.steps.reduce((acc, s) => { for (const [f, o] of Object.entries(s.observers || {})) { acc[f] = acc[f] || { calls: 0, ms: 0 }; acc[f].calls += o.calls; acc[f].ms += o.ms; } return acc; }, {})).sort((a, b) => b[1].ms - a[1].ms).slice(0, 6).map(([f, o]) => `${f} ${Math.round(o.ms)} ms / ${o.calls}`).join(' · ')}</p>`;
+  }
+  const runs = () => { try { return JSON.parse(localStorage.getItem(RUNS) || '[]'); } catch { return []; } };
+  const saveRun = r => { const a = runs(); a.push(r); localStorage.setItem(RUNS, JSON.stringify(a.slice(-40))); };
+  function fillSelects() {
+    const a = runs();
+    for (const id of ['runA', 'runB']) $(id).innerHTML = a.map((r, i) => `<option value="${i}">${i} — ${r.label || '?'} — ${r.mode} — ${r.date.slice(5, 16).replace('T', ' ')}</option>`).join('');
+    if (a.length > 1) { $('runA').value = a.length - 2; $('runB').value = a.length - 1; }
+  }
+  // ---- comparaison : barres avant / après par étape (temps de stabilisation) et totaux par indicateur
+  function compare(A, B) {
+    const key = s => `${s.page.split('/').pop()} · ${s.step}`;
+    const map = new Map(B.steps.map(s => [key(s), s]));
+    const rows = A.steps.map(s => [key(s), s, map.get(key(s))]).filter(r => r[2]);
+    const max = Math.max(1, ...rows.flatMap(r => [r[1].settleMs, r[2].settleMs]));
+    const w = 560;
+    const svg = `<svg width="${w + 330}" height="${rows.length * 22 + 30}" font-size="11" font-family="system-ui">${rows.map((r, i) => { const y = 20 + i * 22, a = r[1].settleMs / max * w, b = r[2].settleMs / max * w; return `<text x="0" y="${y + 12}">${r[0].slice(0, 46)}</text><rect x="320" y="${y}" width="${a}" height="8" fill="var(--bar2)"/><rect x="320" y="${y + 9}" width="${b}" height="8" fill="var(--bar)"/><text x="${325 + Math.max(a, b)}" y="${y + 13}">${r[1].settleMs} → ${r[2].settleMs} ms</text>`; }).join('')}<text x="320" y="12" fill="var(--bar2)">avant</text><text x="370" y="12" fill="var(--bar)">après</text></svg>`;
+    const tot = k => [rows.reduce((s, r) => s + val(r[1], k), 0), rows.reduce((s, r) => s + val(r[2], k), 0)];
+    const totals = COLS.map(([k, l]) => { const [a, b] = tot(k), d = a ? (b - a) / a * 100 : 0; return `<tr><td class="l">${l}</td><td>${fmt(a)}</td><td>${fmt(b)}</td><td class="${d < -5 ? 'better' : d > 5 ? 'worse' : ''}">${a ? (d > 0 ? '+' : '') + Math.round(d) + ' %' : '—'}</td></tr>`; }).join('');
+    return `${svg}<table style="max-width:520px"><thead><tr><th class="l">indicateur (total du parcours)</th><th>avant</th><th>après</th><th>écart</th></tr></thead><tbody>${totals}</tbody></table>`;
+  }
+
+  $('go').onclick = async () => {
+    const saved = Object.fromEntries(KEEP.map(k => [k, localStorage.getItem(k)]));
+    // conditions identiques à chaque audit : français, Aqua, trigramme, missions passées affichées
+    localStorage.setItem('repositoryLanguageMode', 'fr');
+    localStorage.setItem('repositoryDesign', 'aqua');
+    let cfg = {}; try { cfg = JSON.parse(saved['missionReportingConfig:v1'] || '{}') || {}; } catch {}
+    localStorage.setItem('missionReportingConfig:v1', JSON.stringify({ ...cfg, trigram: $('tri').value.trim().toUpperCase() }));
+    localStorage.setItem('pilotMissionsView:v1', JSON.stringify({ all: true, brush: 'O' }));
+    const label = $('label').value.trim();
+    try {
+      if ($('srv').checked) { const r = await runMode(false, label); saveRun(r); $('out').insertAdjacentHTML('beforeend', table(r)); }
+      if ($('nosrv').checked) { const r = await runMode(true, label); saveRun(r); $('out').insertAdjacentHTML('beforeend', table(r)); }
+    } finally {
+      for (const [k, v] of Object.entries(saved)) v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v);
+      frame.src = 'about:blank';
+      $('state').textContent = 'Terminé.';
+      fillSelects();
+    }
+  };
+  $('export').onclick = () => {
+    const blob = new Blob([JSON.stringify(runs(), null, 1)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `perf_audit_${new Date().toISOString().slice(0, 10)}.json`; a.click();
+  };
+  // mesures arrondies (sans l'agent du navigateur) : écrites par le lanceur dans docs/technique/perf/runs/<libellé>.json
+  const compact = list => list.map(r => ({ ...r, ua: undefined, steps: r.steps.map(s => ({ page: s.page, step: s.step, done: s.done, timeout: s.timeout, settleMs: s.settleMs, nodes: s.nodes, resources: s.resources, counters: Object.fromEntries(Object.entries(s.counters || {}).map(([k, v]) => [k, Math.round(v * 10) / 10])), observers: Object.fromEntries(Object.entries(s.observers || {}).filter(([, o]) => o.calls).map(([k, o]) => [k, { calls: o.calls, ms: Math.round(o.ms * 10) / 10 }])), callers: s.callers, storageKeys: s.storageKeys })) })); // origines (fichier:ligne, clés lues) : pistes pour l'audit suivant
+  async function saveToRepo(name, list) {
+    const r = await fetch(`../__setup/perf?name=${encodeURIComponent(name)}`, { method: 'POST', headers: { 'X-DEFA-Setup': '1', 'Content-Type': 'application/json' }, body: JSON.stringify(compact(list), null, 1) });
+    return r.ok ? (await r.json()).file : null;
+  }
+  $('save').onclick = async () => {
+    const label = $('label').value.trim() || 'audit';
+    const list = runs().filter(r => (r.label || 'audit') === label);
+    const f = await saveToRepo(`${new Date().toISOString().slice(0, 10)}_${label}`, list.length ? list : runs());
+    $('state').textContent = f ? `Enregistré : ${f}` : 'Enregistrement impossible (lanceur requis).';
+  };
+  $('cmp').onclick = () => { const a = runs(); $('compare').innerHTML = compare(a[+$('runA').value], a[+$('runB').value]); };
+  fillSelects();
+  window.__audit = { runMode, runs, compare, table, SCENARIO, saveToRepo };
+})();
+</script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Audit des renforts</title>
-<!-- Audit des règles renforcées « :not(#imp) » (outil de développement, docs/REFACTORING_TOOLKIT.md) : la conversion des
+<!-- Audit des règles renforcées « :not(#imp) » (outil de développement, docs/technique/REFACTORING_TOOLKIT.md) : la conversion des
      !important (strip_page_important.py --bump, garde de kit.js) a scindé des règles en une règle ordinaire et une
      règle renforcée. Pour chaque page de l'arborescence, chaque design et chaque ton, chaque règle renforcée est retirée
      de son renfort (sélecteur sans « :not(#imp) », même place dans la feuille) puis rétablie ; les propriétés qu'elle
@@ -12,7 +12,7 @@
      ne vise rien. Résultat : JSON (bouton Copier, window.impAudit), lu par tools/merge_imp_rules.py.
      Usage : servir le dépôt (python -m http.server 8767 --bind 127.0.0.1), ouvrir
      http://127.0.0.1:8767/tools/imp_audit.html (?pages=a.html,b.html : liste réduite), « Auditer ». -->
-<script src="../config/repository_tree"></script>
+<script src="../config/repository_tree" data-no-design></script>
 <style>
   body{margin:0;font:14px system-ui,sans-serif;background:#f4f6f8;color:#17202a}
   header{padding:12px 16px;background:#fff;border-bottom:1px solid #ccd;display:flex;gap:10px;flex-wrap:wrap;align-items:center}

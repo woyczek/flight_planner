@@ -38,7 +38,8 @@
 
   // ------------------------------------------------------------------ décor de page, par design
   // (tous facultatifs sauf foot)
-  // foot     : frise du pied de page, liste de composants (FOOT) : 'strip' (image « footer » du design), 'plate'
+  // foot     : frise du pied de page, liste de composants (FOOT) : 'strip' (image « footer » du design ; footTones :
+  //            « footer-sombre » ou « footer-clair » selon le ton, tools/cut_banner.py), 'plate'
   //            (plaque DEFA), 'radar' (écran de veille animé), 'status' (voyant de sauvegarde, fonction réelle) ;
   // between  : objets entre les blocs, tour à tour : [image, largeur px, option] ; option : 'pair' (deux exemplaires)
   //            ou { x, y, rot } (décalage en px depuis le centre, inclinaison en degrés) ;
@@ -48,24 +49,32 @@
   // sides    : objets des marges, alternativement à gauche et à droite : [image, largeur px maximale].
   // composants de la frise : img(nom) → adresse de l'image du design
   const FOOT = {
-    strip: img => `<img class="repo-deco-strip" src="${img('footer')}" alt="">`,
+    strip: (img, set) => `<img class="repo-deco-strip" src="${img(set?.footTones ? `footer-${html.dataset.tone === 'dark' ? 'sombre' : 'clair'}` : 'footer')}" alt="">`,
     plate: img => `<div class="repo-deco-plate-img"><img src="${img('plate-defa')}" alt=""></div>`,
     // plots du radar : position dans l'écran (%) et couleur ; délai d'allumage calculé au rendu (passage du balayage)
-    radar: img => `<div class="repo-deco-radar" title="${tr('radar')}"><div class="repo-deco-radar-stage">`
-      + `<img src="${img('radar')}" alt=""><span class="repo-deco-sweep"></span>`
-      + [[30.7, 33.5, '#7dff8a'], [65.6, 59.6, '#7dff8a'], [72, 79.5, '#7dff8a'], [30.96, 82.6, '#7dff8a'], [82.95, 46.44, '#ff4d3d']]
-        .map(([x, y, c]) => `<i style="left:${x}%;top:${y}%;--c:${c}"></i>`).join('')
-      + '</div></div>',
+    radar: img => `<div class="repo-deco-radar" title="${tr('radar')}"><div class="repo-deco-radar-stage">` +
+      `<img src="${img('radar')}" alt=""><span class="repo-deco-sweep"></span>` +
+      [
+        [30.7, 33.5, '#7dff8a'],
+        [65.6, 59.6, '#7dff8a'],
+        [72, 79.5, '#7dff8a'],
+        [30.96, 82.6, '#7dff8a'],
+        [82.95, 46.44, '#ff4d3d']
+      ]
+      .map(([x, y, c]) => `<i style="left:${x}%;top:${y}%;--c:${c}"></i>`).join('') +
+      '</div></div>',
     // voyant de sauvegarde : état réel (html[data-dirty], browser_store.js) ; clic = sauvegarder maintenant
-    status: img => `<button type="button" class="repo-deco-status repo-plain">`
-      + `<img src="${img('plane-plate')}" alt="" onerror="this.remove()">`
-      + '<span class="repo-deco-leds"><i class="led-save"></i><i class="led-on"></i><i></i></span><span class="repo-deco-state"></span></button>'
+    status: img => `<button type="button" class="repo-deco-status repo-plain">` +
+      `<img src="${img('plane-plate')}" alt="" onerror="this.remove()">` +
+      '<span class="repo-deco-leds"><i class="led-save"></i><i class="led-on"></i><i></i></span><span class="repo-deco-state"></span></button>'
   };
   const DEVICE_AT = 2; // appareil de page : entre les blocs 2 et 3 (tous les designs ; une page à 3 blocs l'accueille)
   const SETS = {
-    // Aqua : frise de verre bleu ; appareil de page : défibrillateur posé à côté du moniteur de surveillance
+    // Aqua : bandeau du bas sombre ou clair selon le ton (planche « bannière ») ; appareil de page : défibrillateur posé
+    // à côté du moniteur de surveillance
     aqua: {
       foot: ['strip'],
+      footTones: true,
       device: [
         ['defibrillator', 170, -5],
         ['monitor', 230]
@@ -250,7 +259,7 @@
       // papier (dans le cadre), tranches répétées (arrêtées aux coins), coins et en-tête, puis accessoire du bord gauche
       el.innerHTML = '<i class="sh-paper"></i><i class="sh-top"></i><i class="sh-bot"></i><i class="sh-left"></i><i class="sh-right"></i><i class="sh-frame"></i><i class="sh-acc"></i>';
       b.classList.add('repo-has-sheet', 'repo-has-bg');
-      b.prepend(el);
+      if (reuse(el, b) === el) b.prepend(el);
     });
   }
 
@@ -269,7 +278,7 @@
       el.src = DECO(d)(hit[1]);
       el.style.width = `${hit[2]}px`;
       b.classList.add('repo-has-prop');
-      b.append(el);
+      if (reuse(el, b) === el) b.append(el);
     });
   }
 
@@ -294,7 +303,7 @@
 
   /** Fonds des blocs : feuille de registre, puis panneaux (un bloc n'en reçoit qu'un). */
   function backgrounds(d) {
-    document.querySelectorAll('.repo-deco-bgimg,.repo-deco-prop,.repo-deco-sheet').forEach(n => n.remove());
+    // anciens fonds laissés en place (render : repris s'ils sont identiques, sinon retirés à la fin de la passe)
     document.querySelectorAll('.repo-has-bg,.repo-has-prop,.repo-has-sheet')
       .forEach(b => b.classList.remove('repo-has-bg', 'repo-has-prop', 'repo-has-sheet'));
 
@@ -306,23 +315,31 @@
     if (!set || set.dir == null || !fullDecor()) return; // jeu absent pour ce ton (ex. Carnet de vol sombre)
     let prev = '';
     document.querySelectorAll('.repo-block').forEach(b => {
-      if (b.hidden || !b.offsetHeight || b.classList.contains('repo-has-bg') || b.parentElement.closest('.repo-block.repo-has-bg')) return;
+      // data-no-deco : bloc sans panneau (texte long, ex. la page Aide : un panneau couvrirait tout le document)
+      if (b.hidden || !b.offsetHeight || b.hasAttribute('data-no-deco') || b.classList.contains('repo-has-bg') || b.parentElement.closest('.repo-block.repo-has-bg')) return;
       const f = prev = panelOf(b, set, prev);
       const el = document.createElement('div');
       el.className = 'repo-deco-bgimg repo-deco-panel';
       el.setAttribute('aria-hidden', 'true');
       el.style.backgroundImage = `url("${DECO(d)(f)}")`;
       b.classList.add('repo-has-bg');
-      b.prepend(el);
+      if (reuse(el, b) === el) b.prepend(el);
     });
   }
 
   // ------------------------------------------------------------------ décor de page
-  let nodes = [];
-  const clear = () => {
-    nodes.forEach(n => n.remove());
-    nodes = [];
-  };
+  let nodes = [],
+    keep = []; // décor de la passe précédente, réutilisable
+  /** Décor recalculé (page qui change de hauteur, dossier animé…) : un nœud identique à un nœud de la passe précédente
+   *  (même balisage à la création, même bloc pour les fonds) est repris tel quel au lieu d'être recréé — ses images ne
+   *  sont ni rechargées ni redessinées : plus de clignotement ni de travail pendant les animations. */
+  function reuse(el, parent) {
+    const s = el.outerHTML,
+      i = keep.findIndex(n => n._sig === s && (!parent || n.parentNode === parent));
+    const n = i < 0 ? el : keep.splice(i, 1)[0];
+    n._sig = s;
+    return n;
+  }
   /** Image d'un objet entre les blocs, avec son option (voir SETS.between). */
   const betweenHtml = (src, w, opt) => {
     if (opt === 'pair') {
@@ -344,7 +361,7 @@
     const scale = () => Math.min(1, dv.clientWidth / (set.offsetWidth || 1));
     const room = () => Math.max(0, dv.clientWidth - set.offsetWidth * scale());
     let frac = Math.min(1, Math.max(0, +K.store.get(deviceKey(d), 0) || 0));
-    const place = () => {
+    const place = dv._place = () => {
       set.style.transform = `translateX(${-Math.round(frac * room())}px) scale(${scale().toFixed(3)})`;
     };
     requestAnimationFrame(place);
@@ -379,7 +396,20 @@
   }
 
   function render() {
-    clear();
+    // décor de page retiré (mesures des écarts sans lui), fonds des blocs laissés en place ; repris s'ils reviennent
+    keep = nodes.map(n => (n.remove(), n));
+    nodes = [];
+    keep.push(...document.querySelectorAll('.repo-deco-bgimg,.repo-deco-prop,.repo-deco-sheet'));
+    shown = blocksShown();
+    try {
+      build();
+    } finally {
+      keep.forEach(n => n.remove());
+      keep = [];
+    }
+  }
+
+  function build() {
     const d = html.dataset.design,
       set = SETS[d];
     backgrounds(d);
@@ -391,7 +421,7 @@
     const foot = document.createElement('div');
     foot.className = 'repo-deco no-print';
     foot.dataset.for = d;
-    foot.innerHTML = set.foot.map(k => FOOT[k](img)).join('');
+    foot.innerHTML = set.foot.map(k => FOOT[k](img, set)).join('');
     // radar (Durci) : chaque plot s'allume au passage du front (rotation horaire de 5 s partant du haut, centre du
     // réticule 49,86 % / 46,44 % d'un écran 1402 × 478) → délai d'animation = angle du plot depuis le haut / 360 × période
     foot.querySelectorAll('.repo-deco-radar i').forEach(b => {
@@ -400,10 +430,11 @@
       const a = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
       b.style.animationDelay = `${(a / 360 * 5).toFixed(2)}s`;
     });
-    const footer = document.querySelector('body>footer.repo-footer');
-    if (footer) footer.before(foot);
-    else document.body.append(foot);
-    nodes.push(foot);
+    const footer = document.querySelector('body>footer.repo-footer'),
+      ft = reuse(foot);
+    if (footer) footer.before(ft);
+    else document.body.append(ft);
+    nodes.push(ft);
     state();
 
     // 2. entre les blocs : un intervalle sur deux, dans chaque conteneur de blocs empilés ; l'appareil de page prend
@@ -431,9 +462,11 @@
           dv.innerHTML = `<span class="repo-deco-device-set">${set.device
             .map(([n, h, rot]) => `<img src="${img(n)}" alt="" draggable="false" style="height:${h}px${rot ? `;transform:rotate(${rot}deg)` : ''}">`)
             .join('')}</span>`;
-          b.before(dv);
-          slideDevice(dv, d);
-          nodes.push(dv);
+          const dn = reuse(dv);
+          b.before(dn);
+          if (dn === dv) slideDevice(dv, d);
+          else requestAnimationFrame(dn._place); // repris : position recalculée pour la largeur actuelle
+          nodes.push(dn);
           return;
         }
         if (i % 2 || !ok || !set.between?.length) return;
@@ -444,8 +477,9 @@
         sep.setAttribute('aria-hidden', 'true');
         sep.innerHTML = betweenHtml(img(name), w, opt);
         sep.style.top = `${-gap / 2}px`;
-        b.before(sep);
-        nodes.push(sep);
+        const sn = reuse(sep);
+        b.before(sn);
+        nodes.push(sn);
       });
     });
 
@@ -471,9 +505,14 @@
       el.alt = '';
       el.setAttribute('aria-hidden', 'true');
       el.style.cssText = `width:${w}px;top:${top}px;${left ? `left:${x}px` : `right:${x}px`};transform:rotate(${[-8, 5, -3, 7][n % 4]}deg)`;
-      document.body.append(el);
-      nodes.push(el);
+      const en = reuse(el);
+      document.body.append(en);
+      nodes.push(en);
     }
+  }
+  if (window.__perf) { // audit de performance : durée et nombre de passes (tools/perf_audit.html)
+    const raw = render;
+    render = (...a) => window.__perf.time('deco', () => raw(...a));
   }
 
   /** Libellé et action du voyant de sauvegarde (Durci). */
@@ -507,17 +546,50 @@
       later();
     }
   }).observe(document.body);
+  // blocs affichés qui changent sans changer la hauteur de la page (Paramètres : une section remplace l'autre dans le
+  // même bloc, même hauteur) : le décor d'avant (accessoire, panneau) resterait — recalcul si la liste des blocs de
+  // premier niveau affichés (titre, icône, identifiant) a changé ; vérifiée une fois par image, sans lire la mise en page
+  let shown = '',
+    checking = false;
+  function blocksShown() {
+    return [...document.querySelectorAll('.repo-block')].filter(b => !b.hidden && !b.parentElement.closest('.repo-block')).map(blockText).join('|');
+  }
+  new MutationObserver(() => {
+    if (checking) return;
+    checking = true;
+    requestAnimationFrame(() => {
+      checking = false;
+      if (blocksShown() !== shown) later();
+    });
+  }).observe(document.body, {
+    childList: true,
+    subtree: true,
+    characterData: true,
+    attributes: true,
+    attributeFilter: ['hidden']
+  });
   new MutationObserver(state).observe(html, {
     attributes: true,
     attributeFilter: ['data-dirty']
   });
+  // ton clair / sombre changé (thème) : bandeau du bas du ton (footTones)
+  new MutationObserver(later).observe(html, {
+    attributes: true,
+    attributeFilter: ['data-tone']
+  });
   // blocs et pied de page posés au chargement complet (app_framework.js) ; les pages rendues plus tard (CR) se
   // stabilisent ensuite : nouvelle passe après une seconde
   if (document.readyState === 'complete') render();
-  else window.addEventListener('load', () => {
-    render();
-    setTimeout(render, 1200);
-  });
+  else {
+    // blocs posés par app_framework.js dès la fin de l'analyse : décor rendu aussitôt (premier affichage retenu
+    // jusque-là, config/repository_tree) au lieu d'attendre la fin du chargement, qui le faisait apparaître après coup
+    if (document.readyState === 'interactive') setTimeout(render);
+    else document.addEventListener('DOMContentLoaded', () => setTimeout(render));
+    window.addEventListener('load', () => {
+      render();
+      setTimeout(render, 1200);
+    });
+  }
   window.RepositoryDeco = {
     render
   };

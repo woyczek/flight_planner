@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Démonstration — design, icônes et couleurs</title>
+<!-- Démonstration du framework (docs/PROPOSITION_DESIGN_ICONES.md) : la maquette du générateur reconstruite avec les
+     composants communs (icônes, numéros, sous-titres, sous-cartes, zones de dépôt, barre latérale), accessible depuis
+     Paramétrage › Apparence. Design, jeu d'icônes et barre latérale choisis ici = réglages de l'apparence (toutes les
+     pages) ; le thème choisi ici n'est qu'un aperçu (avec ses couleurs réglées). -->
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=bc0f3060">
+<script src="../../config/repository_tree?v=531e4e18"></script>
+<style>
+:root{font:15px/1.45 Inter,system-ui,"Segoe UI",Arial,sans-serif;color:#17242b}
+*{box-sizing:border-box}
+body{margin:0;background:#edf3f6}
+header{padding:8px 20px}
+header .header-row{display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap;min-height:46px}
+header h1{font-size:21px;margin:0;white-space:nowrap}
+header .repo-header-spacer{display:none}
+header .repo-header-tools{margin-left:auto}
+.headerButton{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid color-mix(in srgb,var(--repo-bar-text) 45%,transparent);border-radius:7px;background:color-mix(in srgb,var(--repo-bar-text) 12%,transparent);color:var(--repo-bar-text);font:600 14px/1.2 inherit;cursor:pointer}
+.headerButton.strong{background:var(--repo-bar-text);color:var(--repo-bar);border-color:var(--repo-bar-text)}
+.demo-switch{display:flex;flex-direction:column;gap:2px;font-size:12px;font-weight:650}
+.demo-switch>span{display:flex;align-items:center;gap:6px}
+.demo-switch select{min-width:260px;padding:6px 8px;border-radius:6px;border:1px solid #afc1ca;background:#fff;color:#17242b;font:inherit;font-weight:500}
+.demo-switch button{width:32px;height:32px;padding:0;border:1px solid color-mix(in srgb,var(--repo-bar-text) 40%,transparent);border-radius:6px;background:transparent;color:var(--repo-bar-text);cursor:pointer}
+main{max-width:1280px;margin:0 auto;padding:16px 18px 60px}
+section{background:#fff;border:1px solid #d3dfe5;border-radius:12px;padding:20px;margin:14px 0}
+h2{margin:0 0 14px;font-size:1.15rem}
+h3{font-size:1rem}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;margin:12px 0}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+label{display:grid;gap:5px;font-weight:650;font-size:.92rem}
+input:not([type=checkbox]),select,textarea{width:100%;padding:8px;border:1px solid #afc1ca;border-radius:7px;font:inherit;font-weight:400;background:#fff;color:#17242b}
+textarea{min-height:170px;font-family:ui-monospace,Consolas,monospace}
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+button.act{padding:10px 18px;border:1px solid transparent;border-radius:7px;background:var(--repo-bar);color:var(--repo-bar-text);font:650 14px/1.2 inherit;cursor:pointer}
+button.act.secondary{background:#4b5563;color:#fff}
+button.act.ghost{background:transparent;color:inherit;border-color:#afc1ca}
+.small{font-size:.86rem;color:#5c6d76}
+.hint{font-style:italic;max-width:430px;margin:0}
+table{border-collapse:collapse;width:100%;font-size:.9rem;font-variant-numeric:tabular-nums}
+th,td{padding:6px 8px;border-bottom:1px solid #d3dfe5;text-align:left;vertical-align:middle}
+.swatch{display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid #0003;vertical-align:-2px;margin-right:5px}
+.ok{font-weight:700}.ko{font-weight:700;text-decoration:underline wavy}
+.icon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.icon-grid div{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border:1px solid #d3dfe5;border-radius:8px;font:12px/1.2 ui-monospace,Consolas,monospace}
+.icon-grid .repo-icon{color:var(--repo-icon,currentColor)}
+/* surfaces sombres pour les thèmes à page sombre (flight, landing) */
+html.demo-dark :root,html.demo-dark{color:#e6edf3}
+html.demo-dark body{background:#0d1015}
+html.demo-dark section{background:#161b22;border-color:#2c3440;color:#e6edf3}
+html.demo-dark input:not([type=checkbox]),html.demo-dark select,html.demo-dark textarea{background:#0d1117;color:#e6edf3;border-color:#3b4553}
+html.demo-dark .small{color:#aab6c2}
+html.demo-dark th,html.demo-dark td,html.demo-dark .icon-grid div{border-color:#2c3440}
+html.demo-dark button.act.ghost{border-color:#3b4553}
+html.demo-dark button.act{border-color:color-mix(in srgb,var(--repo-bar-text) 35%,transparent)}
+</style>
+</head>
+<body>
+<header><div class="header-row">
+  <h1 data-icon="target" data-subtitle="Créez, importez et préparez vos missions DEFA">Générateur complet de mission</h1>
+  <div class="demo-switch"><span>Mission</span><span><button type="button" data-icon="chevron-left" aria-label="Mission précédente" title="Mission précédente"></button><select aria-label="Mission" data-no-i18n><option>Mission 11B — LA VIEILLE A DE LA VISITE — Caïm</option><option>Mission 11A — PREMIER PASSAGE — Caïm</option></select><button type="button" data-icon="chevron-right" aria-label="Mission suivante" title="Mission suivante"></button></span></div>
+  <button class="headerButton" type="button" data-icon="send" data-icon-end="arrow-right">Transmettre au studio cartographique</button>
+  <button class="headerButton strong" type="button" data-icon-end="arrow-right">Créer le CR DEFA</button>
+</div></header>
+
+<main>
+<section data-block-id="demo-import" data-step="1" data-subtitle="Choisissez vos fichiers, générez une mission avec ChatGPT.">
+  <h2>Importer une mission</h2>
+  <div class="grid2">
+    <div class="repo-card" data-icon="file" data-subtitle="Importez un ou plusieurs fichiers de mission (YAML, .md).">
+      <h3>YAML et/ou Markdown</h3>
+      <input id="demoMissionFiles" type="file" accept=".yaml,.yml,.md,text/markdown,text/yaml" multiple data-dropzone>
+    </div>
+    <div class="repo-card" data-icon="map" data-subtitle="Importez un ZIP ou des cartes PNG associées à la mission.">
+      <h3>Cartes ou ZIP livré par le générateur</h3>
+      <input id="demoMapFiles" type="file" accept=".zip,application/zip,image/png,image/jpeg,image/webp" multiple data-dropzone>
+    </div>
+  </div>
+  <div class="actions"><button class="act secondary" type="button" data-icon="link">ou coller son contenu…</button><p class="small hint">Collez directement le contenu d’un fichier YAML/Markdown pour éviter un import.</p></div>
+  <div class="grid2">
+    <div class="repo-card" data-icon="wand" data-subtitle="Générez une mission complète selon vos critères.">
+      <h3>Créer une mission avec ChatGPT</h3>
+      <div class="fields">
+        <label data-icon="box">Type<select><option>Aléatoire</option><option>HEMS</option><option>SAR</option></select></label>
+        <label data-icon="globe">Théâtre<select><option>Aléatoire</option><option>Métropole</option><option>Corse</option></select></label>
+        <label data-icon="map">Second théâtre<select><option>—</option><option>Métropole</option></select></label>
+        <label data-icon="list">Série<input type="number" min="1" max="9" value="1"></label>
+        <label data-icon="users">Équipes DEFA en vol<select><option>1</option><option selected>2</option><option>3</option></select></label>
+      </div>
+      <div class="actions"><button class="act" type="button" data-icon="sparkles" data-icon-end="arrow-right">ChatGPT</button><p class="small hint">Le prompt (une mission) est copié, puis ChatGPT s’ouvre dans un nouvel onglet : coller et envoyer. Les équipes sol s’ajoutent selon la mission.</p></div>
+    </div>
+    <div class="repo-card" data-icon="file-text" data-subtitle="Collez ici le contenu de votre mission pour l’importer ou le prévisualiser.">
+      <h3>Coller le contenu Markdown ou YAML de la mission</h3>
+      <span class="repo-card-tools"><button class="act ghost" type="button" data-icon="maximize" aria-label="Agrandir" title="Agrandir"></button></span>
+      <textarea placeholder="Colle ici le contenu Markdown ou YAML de la mission…"></textarea>
+      <div class="actions"><button class="act ghost" type="button" data-icon="eye">Lire la mission</button><button class="act" type="button" data-icon="x">Fermer</button></div>
+    </div>
+  </div>
+  <div class="repo-card" data-icon="database" data-subtitle="Chargez une nouvelle mission, mémorisez ou rechargez le brouillon actuel.">
+    <h3>Actions sur la mission</h3>
+    <div class="actions"><button class="act" type="button" data-icon="plus">Nouvelle mission</button><button class="act secondary" type="button" data-icon="bookmark">Mémoriser le brouillon</button><button class="act secondary" type="button" data-icon="refresh">Recharger le brouillon</button></div>
+    <p class="repo-notice" data-icon="info">Aucune mission chargée.</p>
+  </div>
+</section>
+
+<section data-block-id="demo-identification" data-step="2" data-subtitle="Nom, numéro, type et théâtre de la mission.">
+  <h2>Identification</h2>
+  <div class="fields">
+    <label data-icon="hash">Numéro<input value="11B"></label>
+    <label data-icon="target">Nom<input value="LA VIEILLE A DE LA VISITE"></label>
+    <label data-icon="calendar">Date<input type="date" value="2026-09-26"></label>
+    <label data-icon="pin">Terrain de départ<input value="LFKJ"></label>
+  </div>
+</section>
+
+<section data-block-id="demo-settings" data-icon="settings" data-subtitle="Thème, design et barre latérale : pour vérifier le rendu dans chaque combinaison.">
+  <h2>Réglages de la démonstration</h2>
+  <div class="fields">
+    <label data-icon="layers">Thème<select id="demoTheme" data-no-i18n></select></label>
+    <label data-icon="wand">Design<select id="demoDesign" data-no-i18n></select></label>
+    <label data-icon="box">Jeu d’icônes<select id="demoIconSet"><option value="line">Trait normal</option><option value="fine">Trait fin</option><option value="bold">Trait épais</option><option value="off">Aucune icône</option></select></label>
+    <label data-icon="map">Barre latérale<select id="demoSidenav"><option value="auto">Selon le design</option><option value="on">Affichée</option><option value="off">Masquée</option></select></label>
+  </div>
+  <p class="repo-notice" data-icon="info">Design, jeu d’icônes et barre latérale choisis ici s’appliquent à toutes les pages (comme dans Paramétrage › Apparence) ; le thème n’est qu’un aperçu. La langue se choisit dans le bandeau.</p>
+</section>
+
+<section data-block-id="demo-contrast" data-icon="check" data-subtitle="Rapports WCAG calculés pour chaque thème de repository_tree, sur la surface des blocs.">
+  <h2>Contrôle des contrastes</h2>
+  <div style="overflow-x:auto" data-no-i18n><table id="demoContrast"></table></div>
+  <p class="small">Icône : 3:1 minimum (WCAG 1.4.11, éléments graphiques). Texte coloré et sous-titres : 4,5:1 minimum (WCAG 1.4.3).</p>
+</section>
+
+<section data-block-id="demo-icons" data-icon="box" data-subtitle="Icônes de la suite (shared/icons/repository_icons.js), grille 24, trait réglable." data-default-hidden="1">
+  <h2>Jeu d’icônes</h2>
+  <div id="demoIcons" class="icon-grid" data-no-i18n></div>
+</section>
+</main>
+
+<script src="../../shared/kit.js?v=a819e6df"></script>
+<script src="../../shared/repository_nav.js?v=63c2b74d"></script>
+<script src="../../shared/app_framework.js?v=a2972a9a"></script>
+<script src="../../shared/content_i18n.js?v=7afecb78"></script>
+<script>
+(() => {
+  // Traductions des textes de la démonstration [fr, en, de, es] (sources en français, espaces simples).
+  RepositoryContentI18n([
+    ['Générateur complet de mission', 'Complete mission generator', 'Vollständiger Missionsgenerator', 'Generador completo de misiones'],
+    ['Créez, importez et préparez vos missions DEFA', 'Create, import and prepare your DEFA missions', 'DEFA-Missionen erstellen, importieren und vorbereiten', 'Cree, importe y prepare sus misiones DEFA'],
+    ['Mission précédente', 'Previous mission', 'Vorherige Mission', 'Misión anterior'],
+    ['Mission suivante', 'Next mission', 'Nächste Mission', 'Misión siguiente'],
+    ['Transmettre au studio cartographique', 'Send to the map studio', 'An das Kartenstudio senden', 'Enviar al estudio cartográfico'],
+    ['Créer le CR DEFA', 'Create the DEFA report', 'DEFA-Bericht erstellen', 'Crear el informe DEFA'],
+    ['Importer une mission', 'Import a mission', 'Mission importieren', 'Importar una misión'],
+    ['Choisissez vos fichiers, générez une mission avec ChatGPT.', 'Choose your files, generate a mission with ChatGPT.', 'Dateien auswählen, eine Mission mit ChatGPT erzeugen.', 'Elija sus archivos, genere una misión con ChatGPT.'],
+    ['YAML et/ou Markdown', 'YAML and/or Markdown', 'YAML und/oder Markdown', 'YAML y/o Markdown'],
+    ['Importez un ou plusieurs fichiers de mission (YAML, .md).', 'Import one or more mission files (YAML, .md).', 'Eine oder mehrere Missionsdateien importieren (YAML, .md).', 'Importe uno o varios archivos de misión (YAML, .md).'],
+    ['Cartes ou ZIP livré par le générateur', 'Maps or ZIP delivered by the generator', 'Karten oder vom Generator geliefertes ZIP', 'Mapas o ZIP entregado por el generador'],
+    ['Importez un ZIP ou des cartes PNG associées à la mission.', 'Import a ZIP or the PNG maps linked to the mission.', 'Ein ZIP oder die PNG-Karten der Mission importieren.', 'Importe un ZIP o los mapas PNG asociados a la misión.'],
+    ['ou coller son contenu…', 'or paste its content…', 'oder Inhalt einfügen…', 'o pegar su contenido…'],
+    ['Collez directement le contenu d’un fichier YAML/Markdown pour éviter un import.', 'Paste the content of a YAML/Markdown file directly instead of importing it.', 'Inhalt einer YAML-/Markdown-Datei direkt einfügen, statt sie zu importieren.', 'Pegue directamente el contenido de un archivo YAML/Markdown para evitar una importación.'],
+    ['Créer une mission avec ChatGPT', 'Create a mission with ChatGPT', 'Mission mit ChatGPT erstellen', 'Crear una misión con ChatGPT'],
+    ['Générez une mission complète selon vos critères.', 'Generate a complete mission from your criteria.', 'Eine vollständige Mission nach Ihren Kriterien erzeugen.', 'Genere una misión completa según sus criterios.'],
+    ['Type', 'Type', 'Typ', 'Tipo'], ['Théâtre', 'Theatre', 'Schauplatz', 'Teatro'], ['Second théâtre', 'Second theatre', 'Zweiter Schauplatz', 'Segundo teatro'],
+    ['Série', 'Series', 'Serie', 'Serie'], ['Équipes DEFA en vol', 'DEFA flight crews', 'DEFA-Flugbesatzungen', 'Equipos DEFA en vuelo'],
+    ['Aléatoire', 'Random', 'Zufällig', 'Aleatorio'], ['Métropole', 'Mainland France', 'Mutterland', 'Francia metropolitana'],
+    ['Le prompt (une mission) est copié, puis ChatGPT s’ouvre dans un nouvel onglet : coller et envoyer. Les équipes sol s’ajoutent selon la mission.', 'The prompt (one mission) is copied, then ChatGPT opens in a new tab: paste and send. Ground teams are added as the mission requires.', 'Der Prompt (eine Mission) wird kopiert, dann öffnet sich ChatGPT in einem neuen Tab: einfügen und senden. Bodenteams kommen je nach Mission hinzu.', 'Se copia el prompt (una misión) y ChatGPT se abre en una pestaña nueva: pegar y enviar. Los equipos de tierra se añaden según la misión.'],
+    ['Coller le contenu Markdown ou YAML de la mission', 'Paste the mission Markdown or YAML', 'Markdown oder YAML der Mission einfügen', 'Pegar el Markdown o YAML de la misión'],
+    ['Collez ici le contenu de votre mission pour l’importer ou le prévisualiser.', 'Paste your mission here to import or preview it.', 'Mission hier einfügen, um sie zu importieren oder anzuzeigen.', 'Pegue aquí su misión para importarla o previsualizarla.'],
+    ['Colle ici le contenu Markdown ou YAML de la mission…', 'Paste the mission Markdown or YAML here…', 'Markdown oder YAML der Mission hier einfügen…', 'Pega aquí el Markdown o YAML de la misión…'],
+    ['Agrandir', 'Enlarge', 'Vergrößern', 'Ampliar'], ['Lire la mission', 'Read the mission', 'Mission lesen', 'Leer la misión'], ['Fermer', 'Close', 'Schließen', 'Cerrar'],
+    ['Actions sur la mission', 'Mission actions', 'Aktionen zur Mission', 'Acciones sobre la misión'],
+    ['Chargez une nouvelle mission, mémorisez ou rechargez le brouillon actuel.', 'Load a new mission, save or reload the current draft.', 'Neue Mission laden, aktuellen Entwurf speichern oder neu laden.', 'Cargue una misión nueva, guarde o recargue el borrador actual.'],
+    ['Nouvelle mission', 'New mission', 'Neue Mission', 'Nueva misión'], ['Mémoriser le brouillon', 'Save the draft', 'Entwurf speichern', 'Guardar el borrador'], ['Recharger le brouillon', 'Reload the draft', 'Entwurf neu laden', 'Recargar el borrador'],
+    ['Aucune mission chargée.', 'No mission loaded.', 'Keine Mission geladen.', 'Ninguna misión cargada.'],
+    ['Identification', 'Identification', 'Identifikation', 'Identificación'],
+    ['Nom, numéro, type et théâtre de la mission.', 'Mission name, number, type and theatre.', 'Name, Nummer, Typ und Schauplatz der Mission.', 'Nombre, número, tipo y teatro de la misión.'],
+    ['Numéro', 'Number', 'Nummer', 'Número'], ['Nom', 'Name', 'Name', 'Nombre'], ['Date', 'Date', 'Datum', 'Fecha'], ['Terrain de départ', 'Departure airfield', 'Startflugplatz', 'Aeródromo de salida'],
+    ['Réglages de la démonstration', 'Demo settings', 'Einstellungen der Demo', 'Ajustes de la demostración'],
+    ['Thème, design et barre latérale : pour vérifier le rendu dans chaque combinaison.', 'Theme, design and sidebar: to check the rendering in every combination.', 'Thema, Design und Seitenleiste: um die Darstellung in jeder Kombination zu prüfen.', 'Tema, diseño y barra lateral: para comprobar el resultado en cada combinación.'],
+    ['Thème', 'Theme', 'Thema', 'Tema'], ['Design', 'Design', 'Design', 'Diseño'], ['Barre latérale', 'Sidebar', 'Seitenleiste', 'Barra lateral'],
+    ['Selon le design', 'Depends on design', 'Je nach Design', 'Según el diseño'], ['Affichée', 'Shown', 'Angezeigt', 'Visible'], ['Masquée', 'Hidden', 'Ausgeblendet', 'Oculta'],
+    ['Design, jeu d’icônes et barre latérale choisis ici s’appliquent à toutes les pages (comme dans Paramétrage › Apparence) ; le thème n’est qu’un aperçu. La langue se choisit dans le bandeau.', 'Design, icon set and side bar chosen here apply to every page (as in Settings › Appearance); the theme is only a preview. The language is chosen in the header.', 'Design, Symbolsatz und Seitenleiste gelten hier für alle Seiten (wie unter Einstellungen › Darstellung); das Thema ist nur eine Vorschau. Die Sprache wird in der Kopfzeile gewählt.', 'El diseño, el juego de iconos y la barra lateral elegidos aquí se aplican a todas las páginas (como en Configuración › Apariencia); el tema es solo una vista previa. El idioma se elige en la cabecera.'],
+    ['Jeu d’icônes', 'Icon set', 'Symbolsatz', 'Juego de iconos'], ['Trait normal', 'Normal stroke', 'Normale Linie', 'Trazo normal'], ['Trait fin', 'Thin stroke', 'Dünne Linie', 'Trazo fino'], ['Trait épais', 'Bold stroke', 'Dicke Linie', 'Trazo grueso'], ['Aucune icône', 'No icons', 'Keine Symbole', 'Sin iconos'],
+    ['Contrôle des contrastes', 'Contrast check', 'Kontrastprüfung', 'Control de contrastes'],
+    ['Rapports WCAG calculés pour chaque thème de repository_tree, sur la surface des blocs.', 'WCAG ratios computed for each repository_tree theme, on the block surface.', 'WCAG-Verhältnisse für jedes Thema aus repository_tree, auf der Blockfläche berechnet.', 'Relaciones WCAG calculadas para cada tema de repository_tree, sobre la superficie de los bloques.'],
+    ['Icône : 3:1 minimum (WCAG 1.4.11, éléments graphiques). Texte coloré et sous-titres : 4,5:1 minimum (WCAG 1.4.3).', 'Icon: 3:1 minimum (WCAG 1.4.11, graphical objects). Coloured text and subtitles: 4.5:1 minimum (WCAG 1.4.3).', 'Symbol: mindestens 3:1 (WCAG 1.4.11, Grafiken). Farbiger Text und Untertitel: mindestens 4,5:1 (WCAG 1.4.3).', 'Icono: 3:1 mínimo (WCAG 1.4.11, objetos gráficos). Texto en color y subtítulos: 4,5:1 mínimo (WCAG 1.4.3).'],
+    ['Jeu d’icônes', 'Icon set', 'Symbolsatz', 'Juego de iconos'],
+    ['Icônes de la suite (shared/icons/repository_icons.js), grille 24, trait réglable.', 'Suite icons (shared/icons/repository_icons.js), 24 grid, adjustable stroke.', 'Symbole der Suite (shared/icons/repository_icons.js), Raster 24, einstellbare Linie.', 'Iconos de la suite (shared/icons/repository_icons.js), cuadrícula 24, trazo ajustable.'],
+  ]);
+
+  const tree = window.REPOSITORY_TREE, doc = document.documentElement;
+  const store = (k, v) => { try { if (v === undefined) return sessionStorage.getItem(k); sessionStorage.setItem(k, v); } catch { return null; } }; // sessionStorage : hors sauvegarde locale (browser_store.js)
+  const lumOf = hex => { const h = hex.replace('#', ''); const c = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(x => x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+  const isDark = name => lumOf(tree.themes[name].page) < 0.2;
+
+  // Thème : un de repository_tree ; les thèmes à page sombre passent la démonstration en surfaces sombres.
+  const themeSel = document.getElementById('demoTheme');
+  themeSel.innerHTML = Object.keys(tree.themes).map(k => `<option value="${k}">${k}</option>`).join('');
+  const applyTheme = name => {
+    RepositoryNav.setTheme(name);
+    doc.classList.toggle('demo-dark', isDark(name));
+    themeSel.value = name;
+    store('demoIconsTheme', name);
+    requestAnimationFrame(() => window.BlockIcons?.retune());
+  };
+  themeSel.onchange = () => applyTheme(themeSel.value);
+
+  // Design, jeu d'icônes, barre latérale : réglages de l'apparence (RepositoryNav.appearance), pour toutes les pages.
+  const AP = RepositoryNav.appearance, designSel = document.getElementById('demoDesign'), iconSel = document.getElementById('demoIconSet');
+  designSel.innerHTML = Object.entries(tree.designs?.list || {}).map(([k, d]) => `<option value="${k}">${d.label?.[0] || k}</option>`).join('');
+  designSel.value = AP.current().design;
+  designSel.onchange = () => AP.setDesign(designSel.value);
+  iconSel.value = AP.current().icons;
+  iconSel.onchange = () => AP.setIcons(iconSel.value);
+  window.addEventListener('repository-design-change', e => { if (e.detail?.design && designSel.value !== e.detail.design) designSel.value = e.detail.design; });
+
+  // Barre latérale : selon le design (console), forcée ou masquée.
+  const sideSel = document.getElementById('demoSidenav');
+  sideSel.onchange = () => AP.setSidenav(sideSel.value === 'auto' ? null : sideSel.value === 'on');
+  sideSel.value = doc.dataset.sidenav || 'auto';
+
+  // Tableau des contrastes, pour tous les thèmes (pas seulement le thème affiché).
+  const C = (a, b) => window.BlockIcons.contrast(a, b);
+  const mix = (fg, bg, p) => { const h = x => x.replace('#', ''), f = h(fg), b = h(bg); return '#' + [0, 2, 4].map(i => Math.round(parseInt(f.slice(i, i + 2), 16) * p + parseInt(b.slice(i, i + 2), 16) * (1 - p)).toString(16).padStart(2, '0')).join(''); };
+  const cell = (r, min) => `<span class="${r >= min ? 'ok' : 'ko'}">${r.toFixed(2)} ${r >= min ? '✓' : '✗'}</span>`;
+  const sw = c => `<span class="swatch" style="background:${c}"></span>`;
+  function contrastTable() {
+    const rows = Object.keys(tree.themes).map(name => [name, AP.themeColors(name)]).map(([name, t]) => {
+      const surf = isDark(name) ? '#161b22' : '#ffffff', text = isDark(name) ? '#e6edf3' : '#17242b';
+      const cands = [t.accent, t.bar, t.barText];
+      const icon = cands.find(c => C(c, surf) >= 3) || text, ink = cands.find(c => C(c, surf) >= 4.5) || text;
+      return `<tr><td>${name}</td><td>${sw(surf)}${surf}</td><td>${cell(C(t.barText, t.bar), 4.5)}</td><td>${cell(C(mix(t.barText, t.bar, 0.84), t.bar), 4.5)}</td><td>${sw(t.accent)}${cell(C(t.accent, surf), 3)}</td><td>${sw(icon)}${cell(C(icon, surf), 3)}</td><td>${sw(ink)}${cell(C(ink, surf), 4.5)}</td><td>${cell(C(mix(text, surf, 0.75), surf), 4.5)}</td></tr>`;
+    }).join('');
+    document.getElementById('demoContrast').innerHTML = `<thead><tr><th>thème</th><th>surface du bloc</th><th>bandeau : texte / fond</th><th>sous-titre d’en-tête (84 %)</th><th>accent / surface</th><th>icône retenue (≥ 3)</th><th>texte coloré retenu (≥ 4,5)</th><th>sous-titre de bloc (75 %)</th></tr></thead><tbody>${rows}</tbody>`;
+  }
+
+
+  // Démonstration : les fichiers choisis sont seulement listés (aucune lecture).
+  document.querySelectorAll('input[type=file]').forEach(i => i.addEventListener('change', () => console.log('[démo] change', i.id, [...i.files].map(f => f.name))));
+
+  window.addEventListener('load', () => {
+    // catalogue des icônes (registre chargé par repository_nav.js)
+    document.getElementById('demoIcons').innerHTML = RepositoryIcons.names().map(n => `<div><span class="repo-icon">${RepositoryIcons.svg(n, { size: 26 })}</span>${n}</div>`).join('');
+    applyTheme(store('demoIconsTheme') || 'sia');
+    contrastTable();
+  });
+  window.addEventListener('repository-design-change', e => { if (e.detail?.colors) { applyTheme(themeSel.value); contrastTable(); } });
+  window.addEventListener('repository-language-change', () => document.getElementById('demoContrast').rows.length && contrastTable()); // typographie de la langue
+})();
+</script>
+</body>
+</html>

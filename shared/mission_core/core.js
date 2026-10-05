@@ -81,10 +81,10 @@
     fplNeedId: L('Renseignez votre identifiant dans le menu ☰ › Profil pilote (ou dans le bloc « Trace réseau »).', 'Enter your ID in menu ☰ › Pilot profile (or in the “Network track” block).', 'Kennung im Menü ☰ › Pilotenprofil (oder im Block „Netzwerkspur“) eingeben.', 'Indique su identificador en el menú ☰ › Perfil de piloto (o en el bloque «Traza de red»).'),
     fplLearned: L('Forme plan de vol mémorisée pour cet indicatif', 'Flight plan form remembered for this callsign', 'Flugplanform für dieses Rufzeichen gespeichert', 'Forma de plan de vuelo memorizada para este indicativo'),
     importTitle: L('Analyser / importer…', 'Analyse / import…', 'Auswerten / importieren…', 'Analizar / importar…'),
-    importIntro: L('Collez un plan de vol OACI « (FPL-…) », une page du tracker IVAO (détails d’un vol ou liste des connexions : Ctrl+A, Ctrl+C sur la page), la page d’un vol StatSim (VATSIM), l’historique VATSIM (JSON) ou un METAR : les champs vides sont remplis. Heures du tracker converties en heure locale du terrain de départ.', 'Paste an ICAO flight plan “(FPL-…)”, an IVAO tracker page (flight details or connection list: Ctrl+A, Ctrl+C on the page), the VATSIM history (JSON) or a METAR: empty fields are filled. Tracker times converted to local time at the departure aerodrome.', 'Einen ICAO-Flugplan „(FPL-…)“, eine IVAO-Tracker-Seite (Flugdetails oder Verbindungsliste: Strg+A, Strg+C auf der Seite), die VATSIM-Historie (JSON) oder ein METAR einfügen: leere Felder werden ausgefüllt. Tracker-Zeiten in Ortszeit des Startflugplatzes umgerechnet.', 'Pegue un plan de vuelo OACI «(FPL-…)», una página del tracker IVAO (detalle de un vuelo o lista de conexiones: Ctrl+A, Ctrl+C en la página), el historial VATSIM (JSON) o un METAR: se rellenan los campos vacíos. Horas del tracker convertidas a hora local del aeródromo de salida.'),
+    importIntro: L('Collez un plan de vol OACI « (FPL-…) », une page du tracker IVAO (détails d’un vol ou liste des connexions : Ctrl+A, Ctrl+C sur la page), la page d’un vol StatSim (VATSIM), l’historique VATSIM (JSON) ou un METAR : les champs vides sont remplis. Heures du tracker converties en heure locale du terrain de départ.', 'Paste an ICAO flight plan “(FPL-…)”, an IVAO tracker page (flight details or connection list: Ctrl+A, Ctrl+C on the page), a StatSim flight page (VATSIM), the VATSIM history (JSON) or a METAR: empty fields are filled. Tracker times converted to local time at the departure aerodrome.', 'Einen ICAO-Flugplan „(FPL-…)“, eine IVAO-Tracker-Seite (Flugdetails oder Verbindungsliste: Strg+A, Strg+C auf der Seite), die VATSIM-Historie (JSON) oder ein METAR einfügen: leere Felder werden ausgefüllt. Tracker-Zeiten in Ortszeit des Startflugplatzes umgerechnet.', 'Pegue un plan de vuelo OACI «(FPL-…)», una página del tracker IVAO (detalle de un vuelo o lista de conexiones: Ctrl+A, Ctrl+C en la página), el historial VATSIM (JSON) o un METAR: se rellenan los campos vacíos. Horas del tracker convertidas a hora local del aeródromo de salida.'),
     importRun: L('Analyser et remplir', 'Analyse and fill', 'Auswerten und ausfüllen', 'Analizar y rellenar'),
     importClip: L('Coller depuis le presse-papiers', 'Paste from clipboard', 'Aus Zwischenablage einfügen', 'Pegar desde el portapapeles'),
-    importBookmarklet: L('← à glisser dans la barre des favoris : un clic sur la page du tracker IVAO la copie ; revenez ici, elle est analysée.', '← drag to the bookmarks bar: one click on the IVAO tracker page copies it; come back here, it is analysed.', '← in die Lesezeichenleiste ziehen: ein Klick auf der IVAO-Tracker-Seite kopiert sie; hierher zurückkehren, sie wird ausgewertet.', '← arrastre a la barra de marcadores: un clic en la página del tracker IVAO la copia; vuelva aquí, se analiza.'),
+    importBookmarklet: L('← à glisser dans la barre des favoris : un clic sur la page d’un vol (tracker IVAO, ou StatSim pour VATSIM) la copie ; revenez ici, elle est analysée.', '← drag to the bookmarks bar: one click on a flight page (IVAO tracker, or StatSim for VATSIM) copies it; come back here, it is analysed.', '← in die Lesezeichenleiste ziehen: ein Klick auf einer Flugseite (IVAO-Tracker, oder StatSim für VATSIM) kopiert sie; hierher zurückkehren, sie wird ausgewertet.', '← arrastre a la barra de marcadores: un clic en la página de un vuelo (tracker IVAO, o StatSim para VATSIM) la copia; vuelva aquí, se analiza.'),
     ledgerUnavailable: L('registre illisible (serveur ou fichier indisponible) — mission conservée en brouillon, réessayez.', 'ledger unreadable (server or file unavailable) — mission kept as a draft, try again.', 'Register nicht lesbar (Server oder Datei nicht verfügbar) — Einsatz als Entwurf behalten, erneut versuchen.', 'registro ilegible (servidor o archivo no disponible) — misión conservada como borrador, reinténtelo.'),
     menuNetwork: L('Suivi réseau', 'Network tracking', 'Netzwerk-Tracking', 'Seguimiento de red'),
     menuMission: L('Mission', 'Mission', 'Einsatz', 'Misión'),
@@ -272,7 +272,7 @@
       tools.querySelector(`[data-menu="${k}"]`).textContent = t(key);
     });
     /** Lien vers Paramétrage (base donnée ouverte). */
-    const settingsUrl = base => new URL(`parametrage.html${base ? `?base=${base}` : ''}`, window.MissionLedger.APP).href;
+    const settingsUrl = base => window.RepositoryNav?.settingsUrl?.(base) || new URL(`parametrage.html${base ? `?base=${base}` : ''}`, window.MissionLedger.APP).href;
     $a('sendSettings').textContent = t('sendSettings');
     $a('sendSettings').href = settingsUrl('send');
     $a('settings').textContent = t('settingsPage');
@@ -906,9 +906,18 @@
       // durée estimée de la mission (registre des missions, shared/mission_estimate.js) et écart avec ce vol
       let est = null;
       try {
-        est = (JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions || []).find(x => x.id === id)?.estimate || null;
+        const IDX = window.MissionIndex; // registre des missions : index IndexedDB (shared/data_index.js)
+        est = ((IDX ? IDX.all() : (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('missionRegistry:v1', null) : JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null'))?.missions) || []).find(x => x.id === id)?.estimate || null;
+        if (IDX && !IDX.loaded && !missionLink.waiting) { // index pas encore lu : lien refait dès qu'il l'est
+          missionLink.waiting = true;
+          IDX.ready.then(() => {
+            missionLink.waiting = false;
+            missionLink();
+          });
+        }
       } catch {
-        /* registre illisible */ }
+        /* registre illisible */
+      }
       const real = M.computeStatistics(mission).flightMinutes,
         diff = est && real > 0 ? Math.round(real - est.flight) : null;
       const estText = est ? ` · ${esc(t('estimated'))} ${esc(duration(est.flight))}${real > 0 ? ` — ${esc(t('thisFlight'))} ${esc(duration(real))} (${diff >= 0 ? '+' : '−'}${Math.abs(diff)} min, ${diff >= 0 ? '+' : '−'}${Math.abs(Math.round(diff / est.flight * 100))} %)` : ''}` : '';
@@ -1179,7 +1188,7 @@
         ledger.replace(edit.index, mission);
         edit.missionId = mission.metadata.missionId;
       } else {
-        if (ledger.count(mission.metadata.missionId) && !confirm(t('duplicate'))) {
+        if (ledger.count(mission.metadata.missionId) && !await window.AppFramework.ask(t('duplicate'))) {
           form.querySelector('[data-path="metadata.missionId"]')?.focus();
           return;
         }
@@ -1235,11 +1244,11 @@
     $a('send').onclick = async () => {
       const config = sendConfig();
       if (!config.url) {
-        if (confirm(inLanguage(UI.sendSetupNow))) window.open(settingsUrl('send'), '_blank');
+        if (await window.AppFramework.ask(inLanguage(UI.sendSetupNow))) window.open(settingsUrl('send'), '_blank');
         else status.textContent = inLanguage(UI.sendNotConfigured);
         return;
       }
-      if ((!edit || dirty) && !confirm(inLanguage(UI.sendUnsaved))) return;
+      if ((!edit || dirty) && !await window.AppFramework.ask(inLanguage(UI.sendUnsaved))) return;
       M.upperText(mission);
       renderReport();
       const shown = isPublic() ? M.redact(mission, family) : mission,
@@ -1316,7 +1325,7 @@
     window.addEventListener('repository-language-change', () => setTimeout(renderReport));
     window.addEventListener('repository-design-change', () => setTimeout(renderReport)); // palette, style des graphiques
     $a('delete').onclick = async () => {
-      if (!edit || !confirm(t('confirmDelete'))) return;
+      if (!edit || !await window.AppFramework.ask(t('confirmDelete'))) return;
       const current = ledger.missions[edit.index];
       if (!current || normId(current.metadata?.missionId) !== normId(edit.missionId)) {
         say('editGone');
@@ -1328,8 +1337,8 @@
       dirty = false;
       location.href = family.pages.reporting || location.pathname;
     };
-    $a('new').onclick = () => {
-      if (dirty && !confirm(t('confirmNew'))) return;
+    $a('new').onclick = async () => {
+      if (dirty && !await window.AppFramework.ask(t('confirmNew'))) return;
       localStorage.removeItem(draftKey);
       edit = null;
       history.replaceState(null, '', location.pathname);
@@ -1355,10 +1364,10 @@
       const file = picker.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = () => {
+      reader.onload = async () => {
         try {
           const imported = M.parse(reader.result, family.id);
-          if (imported.family && imported.family !== family.id && !confirm(t('otherFamily'))) return;
+          if (imported.family && imported.family !== family.id && !await window.AppFramework.ask(t('otherFamily'))) return;
           mission = imported;
           edit = null;
           history.replaceState(null, '', location.pathname);
@@ -1393,6 +1402,15 @@
       if (dirty) {
         event.preventDefault();
         event.returnValue = t('leave');
+      }
+    });
+    // Registre enregistré par un autre onglet (déjà relu par MissionLedger) : informations et n° proposé à jour, saisie
+    // en cours intacte.
+    window.addEventListener('mission-ledger-change', () => {
+      ledgerInfo();
+      if (!edit && !dirty) {
+        mission = fresh();
+        redraw();
       }
     });
     // Données locales restaurées (menu ☰ › Données locales) : registre relu.
@@ -1561,7 +1579,11 @@
         ...(known?.category ? {
           category: known.category
         } : {}),
-        callsign: String(a.callsign || '').replace(/\s+/g, '')
+        callsign: String(a.callsign || '').replace(/\s+/g, ''),
+        // appareil affecté (Mes missions : immatriculation de l'affectation) : repris tel quel
+        ...(a.registration ? {
+          registration: String(a.registration).trim().toUpperCase()
+        } : {})
       });
     });
     m.organisation.organisation = aircraft[0]?.operator || m.organisation.organisation;

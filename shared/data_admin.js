@@ -31,11 +31,22 @@
   const rows = [];
   // allemand et espagnol : table DataAdminI18n (shared/data_admin_i18n.js), repérée par le texte français ; sinon anglais
   /** Texte source (français) d'un libellé de la page ; enregistre sa ligne de traduction [fr, en, de, es] pour le traducteur commun (de / es tirés de DataAdminI18n par le texte français, anglais à défaut). Retourne fr : la traduction se fait à l'affichage. */
+  // lignes déjà données au traducteur commun (une fois chacune) ; celles qui n'apparaissent qu'après le premier affichage
+  // (sections ouvertes ensuite : « Enregistrer », « entrées »…) lui sont données par lot, sinon elles restaient en français
+  const seen = new Set(),
+    pending = [];
+  let registered = false;
   const T = (fr, en) => {
-    const x = window.DataAdminI18n?.[fr];
-    rows.push([fr, en, x?.[0] || en, x?.[1] || en]);
+    if (seen.has(fr)) return fr;
+    seen.add(fr);
+    const x = window.DataAdminI18n?.[fr],
+      row = [fr, en, x?.[0] || en, x?.[1] || en];
+    rows.push(row);
+    if (registered && pending.push(row) === 1) queueMicrotask(() => window.RepositoryContentI18n?.(pending.splice(0)));
     return fr;
   };
+  // sous-titre de la page Paramètres (« DEFA Virtual — … » : la couche de traduction traduit la partie après le tiret)
+  T('bases de données (flotte, types, indicatifs, registres…) et maintenance (mises à jour, sources et dossiers, données SIA, sauvegarde)', 'databases (fleet, types, callsigns, ledgers…) and maintenance (updates, sources and folders, SIA data, backup)');
 
   // ---- format commun des fichiers de données (identique à AircraftDB/datafile.py)
   /** Texte d'un fichier de données du dépôt, au format commun (identique à AircraftDB/datafile.py) : commentaire d'en-tête, méta (updatedAt), une ligne JSON par élément, clé de surcharge locale, variable exportée. */
@@ -60,12 +71,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
 
   // ---- dossier du dépôt (IndexedDB partagée avec les registres du Core)
   /** Base IndexedDB « missionCore » (magasin handles) : dossiers autorisés. */
-  const idb = () => new Promise((resolve, reject) => {
-    const r = indexedDB.open('missionCore', 1);
-    r.onupgradeneeded = () => r.result.createObjectStore('handles');
-    r.onsuccess = () => resolve(r.result);
-    r.onerror = () => reject(r.error);
-  });
+  // connexion partagée par la page (RepositoryKit.idb) : plus une ouverture par lecture
+  const idb = () => window.RepositoryKit.idb('missionCore', 1, db => db.objectStoreNames.contains('handles') || db.createObjectStore('handles'));
   /** Valeur d'une clé du magasin handles ; null si absente. */
   const idbGet = async key => {
     try {
@@ -112,7 +119,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     try {
       await (await handle.getDirectoryHandle('config')).getFileHandle('repository_tree');
     } catch {
-      if (!confirm(T('Ce dossier ne contient pas « config/repository_tree » : est-ce bien la racine du dépôt ?', 'This folder has no “config/repository_tree”: is it really the repository root?'))) throw new Error(T('Dossier refusé', 'Folder rejected'));
+      if (!await window.AppFramework.ask(T('Ce dossier ne contient pas « config/repository_tree » : est-ce bien la racine du dépôt ?', 'This folder has no “config/repository_tree”: is it really the repository root?'))) throw new Error(T('Dossier refusé', 'Folder rejected'));
     }
     await idbSet('folder:__repo', handle);
     return handle;
@@ -238,6 +245,167 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
   /** Organismes connus (table des indicatifs + SAMU), pour les listes de choix. */
   // (les organismes sont dans work.callsigns.data.operators et dans le tableau « Organismes » en cours d'édition — l'ancienne
   // lecture de work.callsigns.operators, inexistant, ne proposait que SAMU)
+  // ---- page « Flotte virtuelle » du site de la DEFA, copiée-collée (ou enregistrée) : mêmes règles que
+  // AircraftDB/update_fleet.py — une section par opérateur, une ligne par appareil (type, immatriculation, code, numéro,
+  // indicatif, base, emplacement, heures de vol, opérationnel)
+  const FLEET_OPERATORS = {
+    "Armee de l'Air et de l'Espace": "Armée de l'Air et de l'Espace",
+    'Sécurite Civile': 'Sécurité civile',
+    'Marine Nationale': 'Marine nationale',
+    'Gendarmerie Nationale': 'Gendarmerie nationale'
+  };
+  const FLEET_VARIANTS = {
+    'A332 MRTT': 'A330 MRTT Phénix',
+    'A332 PAX': 'A330-200',
+    'A332 VIP': 'A330-200 VIP',
+    'MIR2 5': 'Mirage 2000-5',
+    'MIR2 B': 'Mirage 2000B',
+    'MIR2 D': 'Mirage 2000D',
+    'RFAL B': 'Rafale B',
+    'RFAL C': 'Rafale C',
+    'RFAL M': 'Rafale M',
+    'H145 D3': 'H145 D3'
+  };
+  // en-têtes de colonnes et menu du site : jamais pris pour un nom d'opérateur (copie en texte)
+  const FLEET_NOISE = /^(appareil|immatriculation|code|numéro|callsign|base|emplacement|heures de vol|op[ée]rationn?el|▲\s*▼|accueil|enregistrer mon vol|log des vols|flotte virtuelle|maintenance|statistiques|connexion)$/i;
+  /** Appareils d'une page Flotte collée : HTML (tableaux, titres d'opérateur) ou texte (colonnes séparées par des
+   *  tabulations, titre d'opérateur seul sur sa ligne). */
+  function parseFleetPage(text) {
+    const out = [],
+      blank = v => v === '-' ? '' : v,
+      reg = v => {
+        v = v.trim().toUpperCase();
+        return /^[FD][A-Z]{4}$/.test(v) ? `${v[0]}-${v.slice(1)}` : v;
+      };
+    const row = (operator, cells) => {
+      if (cells.length < 9) return;
+      const [name, registration, code, number, callsign, base, , , operational] = cells.map(c => String(c).replace(/\s+/g, ' ').trim());
+      if (!name || !registration || FLEET_NOISE.test(name)) return;
+      out.push({
+        operator: FLEET_OPERATORS[operator] || operator,
+        type: name.split(' ')[0].toUpperCase(),
+        variant: FLEET_VARIANTS[name] || '',
+        registration: reg(registration),
+        tacticalNumber: blank(code),
+        number: blank(number),
+        callsigns: blank(callsign).toUpperCase().split('/').filter(c => c && !c.includes(' ')),
+        base: blank(base).toUpperCase(),
+        operational: /^oui/i.test(operational)
+      });
+    };
+    let operator = '';
+    if (/<t[dr][\s>]/i.test(text)) {
+      const doc = new DOMParser().parseFromString(text, 'text/html');
+      doc.querySelectorAll('h1, h2, h3, h4, tr').forEach(el => {
+        if (el.tagName !== 'TR') {
+          const h = el.textContent.replace(/\s+/g, ' ').trim();
+          if (h && !FLEET_NOISE.test(h)) operator = h;
+        } else row(operator, [...el.querySelectorAll('td')].map(td => td.textContent));
+      });
+    } else
+      for (const line of String(text).split(/\r?\n/)) {
+        const cells = line.split('\t');
+        if (cells.length >= 9) row(operator, cells);
+        else if (cells.length === 1 && line.trim() && !FLEET_NOISE.test(line.trim())) operator = line.trim();
+      }
+    return out;
+  }
+  /** Fusion avec la flotte du fichier (update_fleet.py) : un appareil de la page remplace celui du fichier (même
+   *  immatriculation) en gardant ses indicatifs supplémentaires ; les appareils absents de la page sont conservés. */
+  function mergeFleet(rows, page) {
+    const known = new Map(page.map(a => [a.registration, a]));
+    let updated = 0,
+      kept = 0;
+    for (const old of rows) {
+      const r = old.registration;
+      if (known.has(r)) {
+        const a = known.get(r);
+        for (const c of [].concat(old.callsigns || [])) if (c && !a.callsigns.includes(c)) a.callsigns.push(c);
+        updated++;
+      } else if (r) {
+        page.push({
+          ...old
+        });
+        known.set(r, old);
+        kept++;
+      }
+    }
+    return {
+      rows: page,
+      added: page.length - updated - kept,
+      updated,
+      kept
+    };
+  }
+  /** Fenêtre « Coller la page Flotte du site » : collage (HTML de préférence), presse-papiers, ou page enregistrée ;
+   *  onRows(appareils) avec les appareils lus. */
+  function fleetPasteDialog(onRows) {
+    const url = window.RepositoryNav?.vaUrl?.('fleet') || 'https://flotte.defa-virtual.fr/flotte.php';
+    const dialog = document.createElement('dialog');
+    dialog.className = 'defa-loader';
+    dialog.innerHTML = `<form method="dialog"><h3>${esc(T('Flotte — coller la page du site', 'Fleet — paste the website page'))}</h3>
+      <p class="small">${esc(T('Ouvrir la page « Flotte virtuelle » du site, tout sélectionner (Ctrl+A), copier (Ctrl+C), puis coller ici (Ctrl+V).', 'Open the “Virtual fleet” page of the website, select all (Ctrl+A), copy (Ctrl+C), then paste here (Ctrl+V).'))}</p>
+      <p><a target="_blank" rel="noopener" href="${esc(url)}">${esc(url)} ↗</a></p>
+      <textarea rows="7" spellcheck="false" placeholder="Ctrl+V"></textarea>
+      <div class="dl-row"><button type="button" data-a="clip">${esc(T('Lire le presse-papiers', 'Read the clipboard'))}</button><label class="dl-file"><span>${esc(T('ou page enregistrée…', 'or saved page…'))}</span><input type="file" accept=".html,.htm,.txt"></label></div>
+      <div class="dl-row"><button type="button" data-a="load" class="primary">${esc(T('Lire', 'Read'))}</button></div>
+      <p class="small dl-result"></p></form>`;
+    const area = dialog.querySelector('textarea'),
+      result = dialog.querySelector('.dl-result');
+    const run = text => {
+      const list = parseFleetPage(text || '');
+      if (!list.length) {
+        result.textContent = T('Aucun appareil reconnu : copier toute la page « Flotte virtuelle » (tableaux compris).', 'No aircraft recognised: copy the whole “Virtual fleet” page (tables included).');
+        return;
+      }
+      dialog.close();
+      onRows(list);
+    };
+    dialog.querySelector('[data-a="load"]').onclick = () => run(area.value);
+    area.addEventListener('paste', e => {
+      const html = e.clipboardData?.getData('text/html') || '';
+      if (/<tr[\s>]/i.test(html)) {
+        e.preventDefault();
+        run(html);
+        return;
+      }
+      setTimeout(() => run(area.value));
+    });
+    dialog.querySelector('[data-a="clip"]').onclick = async () => {
+      try {
+        let text = '';
+        for (const item of await navigator.clipboard.read?.() || []) {
+          if (item.types.includes('text/html')) text = await (await item.getType('text/html')).text();
+          if (!/<tr[\s>]/i.test(text) && item.types.includes('text/plain')) text = await (await item.getType('text/plain')).text();
+        }
+        run(text || await navigator.clipboard.readText());
+      } catch {
+        result.textContent = T('Presse-papiers illisible ici : coller avec Ctrl+V dans la zone.', 'Clipboard unreadable here: paste with Ctrl+V into the box.');
+      }
+    };
+    const file = dialog.querySelector('input[type=file]');
+    file.onchange = async () => {
+      if (file.files[0]) run(await file.files[0].text());
+      file.value = '';
+    };
+    dialog.addEventListener('close', () => dialog.remove());
+    const panel = window.FileAccess?.pastePanel?.({
+      root: dialog.querySelector('form'),
+      area,
+      run: dialog.querySelector('[data-a="load"]'),
+      close: () => dialog.close(),
+      runLabel: () => T('Lire', 'Read')
+    });
+    if (!panel) {
+      const close = document.createElement('button');
+      close.type = 'submit';
+      close.textContent = T('Fermer', 'Close');
+      dialog.querySelector('.dl-row:last-of-type').append(close);
+    }
+    document.body.append(dialog);
+    dialog.showModal();
+    area.focus();
+  }
   const operatorNames = () => [...(work.callsigns?.operatorRows || []).map(r => r.name), ...Object.keys(work.callsigns?.data?.operators || {}),
     ...(work.callsigns?.data?.table || []).map(r => r.operator), 'SAMU'
   ].filter((v, i, a) => v && a.indexOf(v) === i).sort((a, b) => a.localeCompare(b, 'fr'));
@@ -426,8 +594,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         ['data/references/aircraft_fleet.js', render(FLEET_COMMENT, fleetData(), 'dataOverride:fleet:v1', "window.DEFA_FLEET = data.rows.map(row => ({ ...row, callsign: (row.callsigns || [])[0] || '' })); window.DEFA_FLEET_META = META; window.DEFA_FLEET_FILE = fileData.rows;", stamp)]
       ],
       overlay: () => fleetData(),
-      howto: `<p>${T('Mise à jour complète depuis le site de la flotte :', 'Full update from the fleet website:')}</p>
-        <ol><li>${T('Ouvrir', 'Open')} <a href="${esc(window.RepositoryNav?.source?.('defa') || 'https://flotte.defa-virtual.fr')}/flotte.php" target="_blank" rel="noopener">flotte.defa-virtual.fr › Flotte virtuelle</a>, ${T('puis Fichier › Enregistrer sous… (« Flotte.html »).', 'then File › Save as… (“Flotte.html”).')}</li>
+      howto: `<p>${T('Mise à jour depuis le site : « Coller la page Flotte du site… » (copier-coller de la page « Flotte virtuelle »), vérifier, puis « Enregistrer dans le dépôt ». Ou, avec le script :', 'Update from the website: “Paste the website Fleet page…” (copy-paste of the “Virtual fleet” page), check, then “Save to repository”. Or, with the script:')}</p>
+        <ol><li>${T('Ouvrir', 'Open')} <a href="${esc(window.RepositoryNav?.vaUrl?.('fleet') || 'https://flotte.defa-virtual.fr/flotte.php')}" target="_blank" rel="noopener">${esc((window.RepositoryNav?.source?.('defa') || 'flotte.defa-virtual.fr').replace(/^https?:\/\//, ''))} › ${T('Flotte virtuelle', 'Virtual fleet')}</a>, <span>${T('puis Fichier › Enregistrer sous… (« Flotte.html »).', 'then File › Save as… (“Flotte.html”).')}</span></li>
         <li>${T('À la racine du dépôt :', 'At the repository root:')} <code>python AircraftDB/update_fleet.py Flotte.html</code></li>
         <li>${T('Les appareils de la page remplacent ceux du fichier ; les indicatifs supplémentaires et les appareils ajoutés ici sont conservés.', 'Aircraft from the page replace those of the file; extra callsigns and aircraft added here are kept.')}</li>
         <li>${T('Recharger cette page ; supprimer les modifications locales si elles ont été intégrées.', 'Reload this page; delete local changes once integrated.')}</li></ol>`
@@ -825,7 +993,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       intro: T('Équivalences mémorisées par « Fusionner avec… / renommer » des fiches : appliquées au journal DEFA rechargé, à la référence et au catalogue. Une boucle (A → B et B → A) échange les deux noms : supprime l’entrée fautive, puis refais la fusion depuis la fiche.', 'Equivalences stored by the sheets’ “Merge with… / rename”: applied to the reloaded DEFA log, the reference and the catalogue. A loop (A → B and B → A) swaps both names: delete the wrong entry, then redo the merge from the sheet.')
     }, {
       id: 'send',
-      group: T('Missions', 'Missions'),
+      group: T('Centre (CPCO)', 'Centre (CPCO)'),
       title: T('Envoi des comptes rendus (webservice)', 'Report sending (web service)'),
       custom: true,
       intro: T('Bouton « Envoyer le CR » des pages de saisie : POST JSON (mission, CR HTML et texte, calculs) vers l’adresse ci-dessous. La clef reste dans ce navigateur (missionSendKey:v1), hors sauvegarde locale. Le service doit accepter les appels de cette origine (CORS).', '“Send report” button of the entry pages: JSON POST (mission, report HTML and text, calculations) to the address below. The key stays in this browser (missionSendKey:v1), outside the local backup. The service must accept calls from this origin (CORS).')
@@ -858,15 +1026,32 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     const status = text => {
       root.querySelector('.da-status').textContent = text;
     };
+    // Paramètres en quatre pages (main[data-settings] : profile, centre, installation, maintenance) : rubriques de la
+    // page seulement (REPOSITORY_TREE.settings.sections), dans l'ordre de cette table ; rubriques ajoutées par
+    // shared/settings_panels.js (window.SettingsPanels : { id, group, title, intro, render(body, api) }). Sans
+    // data-settings : toutes les rubriques (ancienne page unique).
+    const page = root.dataset.settings || '',
+      sections = window.REPOSITORY_TREE?.settings?.sections || {},
+      order = Object.keys(sections);
+    const SETS = [...DATASETS, ...(window.SettingsPanels?.list || [])].filter(d => !page || sections[d.id] === page)
+      .sort((a, b) => page ? order.indexOf(a.id) - order.indexOf(b.id) : 0);
+    // page Centre : rubriques réservées tant que le Centre est verrouillé (seul l'accès reste)
+    const locked = d => sections[d.id] === 'centre' && d.id !== 'cpco' && !window.RepositoryNav?.cpco?.enabled?.();
+    const wanted = new URLSearchParams(location.search).get('base');
+    // rubrique d'une autre page (ancien lien, lien interne) : ouverte sur sa page
+    if (page && wanted && sections[wanted] && sections[wanted] !== page && window.RepositoryNav?.settingsUrl) {
+      location.replace(window.RepositoryNav.settingsUrl(wanted));
+      return;
+    }
     const current = {
-      id: new URLSearchParams(location.search).get('base') || 'fleet'
+      id: SETS.some(d => d.id === wanted) ? wanted : SETS[0]?.id || 'fleet'
     };
-    const groups = [...new Set(DATASETS.map(d => d.group))];
-    root.innerHTML = `<aside class="da-nav">${groups.map(g => `<h3>${esc(g)}</h3>${DATASETS.filter(d => d.group === g).map(d => `<button type="button" data-set="${d.id}">${esc(d.title)}</button>`).join('')}`).join('')}</aside>
+    const groups = [...new Set(SETS.map(d => d.group))];
+    root.innerHTML = `<aside class="da-nav">${groups.map(g => `<h3>${esc(g)}</h3>${SETS.filter(d => d.group === g).map(d => `<button type="button" data-set="${d.id}">${esc(d.title)}</button>`).join('')}`).join('')}</aside>
       <section class="da-main" data-icon="database"><h2></h2><p class="small da-intro"></p><div class="row da-actions"></div><p class="small da-status"></p><div class="da-body"></div><details class="da-howto"><summary>${esc(T('Mode opératoire', 'Procedure'))}</summary><div></div></details></section>`;
     // Dossiers mémorisés et sources externes : réglés dans Paramètres › Maintenance (bloc « Sources et dossiers »).
-    root.querySelectorAll('[data-set]').forEach(b => b.onclick = () => {
-      if (dirty && !confirm(T('Modifications non enregistrées : changer de base quand même ?', 'Unsaved changes: switch anyway?'))) return;
+    root.querySelectorAll('[data-set]').forEach(b => b.onclick = async () => {
+      if (dirty && !await window.AppFramework.ask(T('Modifications non enregistrées : changer de base quand même ?', 'Unsaved changes: switch anyway?'))) return;
       dirty = false;
       current.id = b.dataset.set;
       history.replaceState(null, '', `?base=${current.id}`);
@@ -906,8 +1091,33 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     }
 
     /** Affiche la base choisie : titre, présentation, mode d'emploi, éditeur (tableaux ou panneau dédié : envoi, journal DEFA, fusions, registres). */
+    /** Rubriques réservées au Centre masquées tant qu'il est verrouillé (titres de groupe vides compris). */
+    function lockNav() {
+      root.querySelectorAll('.da-nav [data-set]').forEach(b => {
+        b.hidden = locked(SETS.find(d => d.id === b.dataset.set) || {});
+      });
+      root.querySelectorAll('.da-nav h3').forEach(h => {
+        let n = h.nextElementSibling,
+          any = false;
+        for (; n && n.matches('[data-set]'); n = n.nextElementSibling) any ||= !n.hidden;
+        h.hidden = !any;
+      });
+    }
+    // rubriques de settings_panels.js (textes composés dans la langue courante) : refaites au changement de langue
+    window.addEventListener('repository-language-change', () => {
+      const set = SETS.find(d => d.id === current.id);
+      if (set?.render && !dirty && !root.querySelector('.da-main').hidden) show();
+    });
+    window.addEventListener('cpco-access-change', () => {
+      lockNav();
+      if (locked(SETS.find(d => d.id === current.id) || {})) current.id = 'cpco';
+      if (!root.querySelector('.da-main').hidden) show();
+    });
     function show() {
-      const set = DATASETS.find(d => d.id === current.id) || DATASETS[0];
+      let set = SETS.find(d => d.id === current.id) || SETS[0];
+      if (locked(set)) set = SETS.find(d => d.id === 'cpco') || set;
+      current.id = set.id;
+      lockNav();
       // rubrique Maintenance (maintenance_page.js) : ses blocs se masquent quand une base est affichée
       root.querySelector('.da-main').hidden = false;
       window.dispatchEvent(new CustomEvent('data-admin-show', {
@@ -923,6 +1133,21 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       howto.querySelector('div').innerHTML = set.howto || '';
       const body = root.querySelector('.da-body');
       body.innerHTML = '';
+      // rubrique de shared/settings_panels.js : sa propre interface, avec les outils de la page
+      if (set.render) return set.render(body, {
+        status,
+        actions,
+        changed,
+        saved: () => {
+          dirty = false;
+        },
+        show,
+        open: id => {
+          current.id = id;
+          history.replaceState(null, '', `?base=${id}`);
+          show();
+        }
+      });
       if (set.custom) return set.id === 'cpco' ? cpcoSettings(body) : set.id === 'planner' ? plannerSettings(body) : set.id === 'send' ? sendSettings(body) : set.id === 'defaLog' ? defaLog(body) : set.id === 'merges' ? merges(body) : ledgers(body);
       if (set.file) {
         const w = work[set.id];
@@ -938,6 +1163,15 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           });
         });
         actions([
+          ...(set.id === 'fleet' ? [
+            [T('Coller la page Flotte du site…', 'Paste the website Fleet page…'), () => fleetPasteDialog(page => {
+              const r = mergeFleet(w.data.rows, page);
+              w.data.rows.splice(0, w.data.rows.length, ...r.rows);
+              changed();
+              show();
+              status(T('Page Flotte lue', 'Fleet page read') + ` : ${r.updated} ${T('appareils mis à jour', 'aircraft updated')}, ${r.added} ${T('ajoutés', 'added')}, ${r.kept} ${T('conservés (absents de la page)', 'kept (not on the page)')} — ${T('vérifier, puis « Enregistrer dans le dépôt »', 'check, then “Save to repository”')}`);
+            }), 'primary']
+          ] : []),
           [T('Appliquer dans ce navigateur', 'Apply in this browser'), async () => {
             const stamp = now();
             write(set.overrideKey, {
@@ -970,8 +1204,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
             dirty = false;
             show();
           }],
-          [T('Revenir au fichier du dépôt', 'Back to repository file'), () => {
-            if (!confirm(T('Supprimer les modifications locales de cette base ?', 'Delete local changes of this base?'))) return;
+          [T('Revenir au fichier du dépôt', 'Back to repository file'), async () => {
+            if (!await window.AppFramework.ask(T('Supprimer les modifications locales de cette base ?', 'Delete local changes of this base?'))) return;
             localStorage.removeItem(set.overrideKey);
             loadWork();
             dirty = false;
@@ -987,7 +1221,9 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         })) : Object.values(raw).map(r => ({
           ...r
         }));
-      status(`${list.length} ${T('entrées', 'entries')}`);
+      status(window.RepositoryKit.tf(['{n} entrées', '{n} entries', '{n} Einträge', '{n} entradas'], {
+        n: list.length
+      }));
       grid(body, {
         columns: set.columns,
         data: list,
@@ -1116,7 +1352,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       const paint = () => {
         const q = up(filter.value),
           shown = (q ? list.filter(r => up(Object.values(r).join(' ')).includes(q)) : list);
-        flights.innerHTML = `<p class="small">${shown.length} ${T('vols', 'flights')}${shown.length > 300 ? ` — ${T('300 premiers affichés', 'first 300 shown')}` : ''}</p><table class="da-table"><thead><tr>${['Date', T('Durée', 'Duration'), T('Pilote', 'Pilot'), T('Indicatif', 'Callsign'), T('Immat.', 'Reg.'), 'Type', T('Départ', 'Dep.'), T('Arrivée', 'Arr.'), 'Mission'].map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${shown.slice(0, 300).map(r => `<tr><td>${esc(r.date)} ${esc(r.time)}</td><td>${r.durationMin == null ? '—' : hours(r.durationMin)}</td><td>${esc(r.trigram)}</td><td>${esc(r.callsign)}</td><td>${r.fleetId ? `<a href="${esc(window.RepositoryNav?.source?.('defa') || 'https://flotte.defa-virtual.fr')}/appareil.php?id=${esc(r.fleetId)}" target="_blank" rel="noopener">${esc(r.registration)}</a>` : esc(r.registration)}</td><td>${esc([r.type, r.variant].filter(Boolean).join(' '))}</td><td>${esc(r.dep)}</td><td>${esc(r.arr)}</td><td>${esc(r.mission)}</td></tr>`).join('')}</tbody></table>`;
+        flights.innerHTML = `<p class="small">${shown.length} ${T('vols', 'flights')}${shown.length > 300 ? ` — ${T('300 premiers affichés', 'first 300 shown')}` : ''}</p><table class="da-table"><thead><tr>${['Date', T('Durée', 'Duration'), T('Pilote', 'Pilot'), T('Indicatif', 'Callsign'), T('Immat.', 'Reg.'), 'Type', T('Départ', 'Dep.'), T('Arrivée', 'Arr.'), 'Mission'].map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${shown.slice(0, 300).map(r => `<tr><td>${esc(r.date)} ${esc(r.time)}</td><td>${r.durationMin == null ? '—' : hours(r.durationMin)}</td><td>${esc(r.trigram)}</td><td>${esc(r.callsign)}</td><td>${r.fleetId ? `<a href="${esc(window.RepositoryNav?.vaUrl?.('aircraft', { id: r.fleetId }) || `https://flotte.defa-virtual.fr/appareil.php?id=${r.fleetId}`)}" target="_blank" rel="noopener">${esc(r.registration)}</a>` : esc(r.registration)}</td><td>${esc([r.type, r.variant].filter(Boolean).join(' '))}</td><td>${esc(r.dep)}</td><td>${esc(r.arr)}</td><td>${esc(r.mission)}</td></tr>`).join('')}</tbody></table>`;
       };
       filter.oninput = paint;
       paint();
@@ -1135,8 +1371,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           importedAt: data.importedAt,
           records: list
         }, null, 1), 'application/json')],
-        [T('Effacer la base DEFA de ce navigateur', 'Clear the DEFA base from this browser'), () => {
-          if (!confirm(T('Effacer le journal des vols DEFA de ce navigateur ? (rechargeable depuis le fichier)', 'Clear the DEFA flight log from this browser? (reloadable from the file)'))) return;
+        [T('Effacer la base DEFA de ce navigateur', 'Clear the DEFA base from this browser'), async () => {
+          if (!await window.AppFramework.ask(T('Effacer le journal des vols DEFA de ce navigateur ? (rechargeable depuis le fichier)', 'Clear the DEFA flight log from this browser? (reloadable from the file)'))) return;
           D.clear();
           status(T('Base DEFA effacée', 'DEFA base cleared'));
           defaLog(body);
@@ -1268,6 +1504,11 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
             status(T('Adresse invalide (http:// ou https://)', 'Invalid address (http:// or https://)'));
             return;
           }
+          // la clef d'envoi part dans un en-tête : https obligatoire, sauf sur cette machine (essais)
+          if (/^http:\/\//i.test(url) && !/^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?(\/|$)/i.test(url)) {
+            status(T('Adresse en https:// obligatoire (la clef d’envoi passerait en clair).', 'https:// address required (the sending key would travel in clear).'));
+            return;
+          }
           write('missionSendConfig:v1', {
             url,
             header: input('header').value.trim() || 'Authorization',
@@ -1309,9 +1550,9 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
             }));
           });
         body.innerHTML = rows.length ? `<table class="da-table"><thead><tr><th>${esc(T('Type', 'Type'))}</th><th>${esc(T('Ancien', 'Old'))}</th><th>${esc(T('Devient', 'Becomes'))}</th><th>${esc(T('Résultat', 'Result'))}</th><th></th></tr></thead><tbody>${rows.map((r, i) => `<tr${r.loop ? ' style="background:#fee2e2"' : ''}><td>${esc(r.kind === 'crew' ? T('Pilote', 'Pilot') : T('Appareil', 'Aircraft'))}</td><td><b>${esc(r.from)}</b></td><td>${esc(r.to)}</td><td>${r.loop ? `⚠ ${esc(T('boucle', 'loop'))}` : esc(r.end)}</td><td><button type="button" class="secondary" data-unmerge="${i}">${esc(T('Supprimer', 'Delete'))}</button></td></tr>`).join('')}</tbody></table>` : `<p class="small">${esc(T('Aucune fusion mémorisée.', 'No stored merge.'))}</p>`;
-        body.querySelectorAll('[data-unmerge]').forEach(b => b.onclick = () => {
+        body.querySelectorAll('[data-unmerge]').forEach(b => b.onclick = async () => {
           const r = rows[+b.dataset.unmerge];
-          if (!confirm(`${T('Supprimer l’équivalence', 'Delete the equivalence')} ${r.from} → ${r.to} ?`)) return;
+          if (!await window.AppFramework.ask(`${T('Supprimer l’équivalence', 'Delete the equivalence')} ${r.from} → ${r.to} ?`)) return;
           G.unmerge(r.kind, r.from);
           status(`${r.from} → ${r.to} : ${T('supprimée', 'deleted')}`);
           draw();
@@ -1426,6 +1667,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
 
     show();
     window.RepositoryContentI18n?.(rows);
+    registered = true;
   }
 
   window.DataAdmin = {

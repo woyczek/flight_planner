@@ -10,6 +10,9 @@
     rel = decodeURIComponent(location.href.startsWith(root.href) ? location.href.slice(root.href.length).split(/[?#]/)[0] : "");
   const page = cfg.pages.find(p => p.path === rel) || cfg.pages.find(p => location.pathname.endsWith("/" + p.path)),
     doc = document.documentElement;
+  // page ouverte dans la fenêtre d'aide d'une autre page (cadre « repo-help », voir openHelp) : sans en-tête ni barre
+  // latérale (repository_nav.css, html[data-help-frame])
+  if (window.name === "repo-help" && window.top !== window.self) doc.setAttribute("data-help-frame", "");
   const folderPath = (page?.path || rel).split("/").slice(0, -1),
     folderSettings = {};
   Object.assign(folderSettings, cfg.folders?.[""] || {});
@@ -87,6 +90,17 @@
   const cpcoOn = () => readPref(CPCO_KEY, "") === "on",
     isCpco = p => String(p || "").startsWith("apps/cpco/");
   doc.dataset.cpco = cpcoOn() ? "on" : "off";
+  /** Adresse d'une rubrique de Paramètres (REPOSITORY_TREE.settings : rubrique → page ; ?base= pour les rubriques de
+   *  data_admin.js et settings_panels.js, ?m= pour les blocs de maintenance_page.js) ; sans rubrique : Mon profil. */
+  const MT_BLOCKS = ["updates", "sources", "versions", "deps", "sia", "caches", "storage", "backup", "journal"];
+  const settingsUrl = (section, hash = "") => {
+    const s = cfg.settings || {},
+      page = s.pages?.[s.sections?.[section]] || s.pages?.profile || "apps/settings/parametrage.html",
+      u = new URL(page, root);
+    if (section) u.search = `?${MT_BLOCKS.includes(section) ? "m" : "base"}=${encodeURIComponent(section)}`;
+    if (hash) u.hash = hash;
+    return u.href;
+  };
   const cpco = {
     enabled: cpcoOn,
     /** Active le Centre si le mot de passe est bon ; true si activé. */
@@ -118,7 +132,7 @@
       const box = document.createElement("div");
       box.className = "cpco-lock";
       box.setAttribute("role", "alert");
-      box.innerHTML = `<div><b>Centre de planification et de conduite des opérations</b><p>Accès réservé. Le Centre s'active dans Paramètres › Centre (CPCO).</p><a href="${new URL("apps/settings/parametrage.html?base=cpco", root).href}">Activer le Centre…</a> · <a href="${new URL("index.html", root).href}">Accueil</a></div>`;
+      box.innerHTML = `<div><b>Centre de planification et de conduite des opérations</b><p>Accès réservé. Le Centre s'active dans Paramètres › Centre (CPCO).</p><a href="${settingsUrl("cpco")}">Activer le Centre…</a> · <a href="${new URL("index.html", root).href}">Accueil</a></div>`;
       document.body.append(box);
     };
     if (document.body) lockNotice();
@@ -221,7 +235,10 @@
     if (doc.dataset.surface !== s) doc.dataset.surface = s;
   }
   // suit tout changement de ton ou de design, même posé hors de ce script (banc de non-régression, autres outils)
-  new MutationObserver(markSurface).observe(doc, { attributes: true, attributeFilter: ["data-tone", "data-design"] });
+  new MutationObserver(markSurface).observe(doc, {
+    attributes: true,
+    attributeFilter: ["data-tone", "data-design"]
+  });
 
   function applyTheme(name) {
     const t = themeColors(name);
@@ -302,7 +319,7 @@
   /** Dossier des images d'un jeu d'icônes à matières : id du design à matières dont c'est le jeu (brass → cabinet…). */
   const iconFolder = set => Object.keys(designs).find(id => designs[id].skeuo && designs[id].icons === set) || null;
   doc.dataset.icons = iconsFor(design);
-  {
+  if (!document.getElementById("repoDesignsCss")) { // déjà posée dès l'en-tête par config/repository_tree, en général
     const css = document.createElement("link");
     css.rel = "stylesheet";
     css.href = new URL("designs.css?v=51c18d91", script.src).href;
@@ -312,18 +329,23 @@
   // Designs à matières (Cabinet, Durci, Aqua : textures, plaques, vis) : feuille propre (designs.list[id].css),
   // chargée seulement quand l'un d'eux est choisi, avec sa propre version (empreinte de son contenu, table FILE_V
   // écrite par tools/bump_versions.py).
-  const FILE_V = {"designs_skeuo.css": "7b3fce1f"};
+  const FILE_V = {"designs_skeuo.css": "f210af06"};
   const designCss = id => {
     const f = designs[id]?.css;
-    if (!f || document.querySelector(`link[data-design-css="${f}"]`)) return;
-    const l = document.createElement("link");
-    l.rel = "stylesheet";
-    l.dataset.designCss = f;
-    l.href = new URL(`${f}?v=${FILE_V[f] || ""}`, script.src).href;
-    document.head.append(l);
-    // illustrations du décor complet (frise de Cabinet, radar de Durci), même version
+    if (!f) return;
+    // feuille déjà posée dès l'en-tête (config/repository_tree) ou par un choix précédent : gardée
+    if (!document.querySelector(`link[data-design-css="${f}"]`)) {
+      const l = document.createElement("link");
+      l.rel = "stylesheet";
+      l.dataset.designCss = f;
+      l.href = new URL(`${f}?v=${FILE_V[f] || ""}`, script.src).href;
+      document.head.append(l);
+    }
+    // illustrations du décor complet (frise de Cabinet, radar de Durci), une fois
+    if (document.getElementById("repoDesignDeco")) return;
     const d = document.createElement("script");
-    d.src = new URL("design_deco.js?v=40be467c", script.src).href;
+    d.id = "repoDesignDeco";
+    d.src = new URL("design_deco.js?v=5ea5b4d3", script.src).href;
     document.head.append(d);
   };
   designCss(design);
@@ -466,8 +488,8 @@
       close();
     }
   });
-  menu.querySelector(".repo-parametrage-link").href = new URL("apps/settings/parametrage.html", root).href;
-  // Maintenance (mises à jour, sources et dossiers, SIA, sauvegarde) : rubrique de Paramètres (parametrage.html?m=…)
+  menu.querySelector(".repo-parametrage-link").href = settingsUrl();
+  // Maintenance (mises à jour, sources et dossiers, SIA, sauvegarde) : page Paramètres › Maintenance (maintenance.html?m=…)
   menu.insertAdjacentHTML("beforeend", '<div class="repo-page-actions"></div>');
   /** Enregistre et applique le design id (événement « repository-design-change »). */
   const setDesign = id => {
@@ -515,12 +537,67 @@
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
-      sc.src = new URL("appearance_page.js?v=332eed62", script.src).href;
+      sc.src = new URL("appearance_page.js?v=48974e65", script.src).href;
       sc.onload = show;
       document.head.append(sc);
     }
     return true;
   }
+  /** Aide en fenêtre modale au-dessus de la page courante (plutôt qu'en changeant de page) : apps/aide/aide.html dans
+   *  un cadre nommé « repo-help » (la page s'y montre sans en-tête ni barre latérale), ouverte au chapitre de la page
+   *  courante, ou au document du lien (?doc=) ; cadre gardé d'une ouverture à l'autre (lecture reprise où elle en
+   *  était). Marche aussi en fichier local (file://) : le cadre ne parle à la page que par messages (fermeture par
+   *  Échap, adresse lue pour « ↗ »). Sur la page Aide elle-même ou dans le cadre : rien (false, le lien s'ouvre). */
+  const HELP = "apps/aide/aide.html";
+  let helpDialog = null,
+    helpAt = "";
+
+  function openHelp(href = "") {
+    if (rel === HELP || page?.path === HELP || doc.hasAttribute("data-help-frame")) return false;
+    const base = new URL(HELP, root).href,
+      wanted = /[?&]doc=/.test(href) ? base + href.slice(href.indexOf("?")) : "",
+      from = page?.path || rel;
+    if (!helpDialog) {
+      helpDialog = document.createElement("dialog");
+      helpDialog.className = "repo-ap-dialog repo-help-dialog";
+      helpDialog.setAttribute("data-no-i18n", "");
+      helpDialog.innerHTML = '<div class="repo-ap-head repo-header"><div class="repo-header-line1"><h1></h1><span class="repo-header-spacer"></span><a class="repo-ap-close repo-help-page repo-plain">↗</a><button type="button" class="repo-ap-close repo-plain">✕</button></div></div><iframe name="repo-help" class="repo-help-frame"></iframe>';
+      document.body.append(helpDialog);
+      const frame = helpDialog.querySelector("iframe");
+      frame.src = helpAt = wanted || base + (from ? `?from=${encodeURIComponent(from)}` : "");
+      helpDialog.querySelector("button.repo-ap-close").onclick = () => helpDialog.close();
+      helpDialog.addEventListener("click", e => {
+        if (e.target === helpDialog) helpDialog.close();
+      });
+      // « ↗ » : l'aide en page entière, là où on en est
+      helpDialog.querySelector(".repo-help-page").onclick = e => {
+        e.preventDefault();
+        location.href = helpAt;
+      };
+      window.addEventListener("message", e => {
+        if (e.source !== frame.contentWindow || !e.data?.repoHelp) return;
+        if (e.data.repoHelp === "close") helpDialog.close();
+        else if (e.data.repoHelp === "at" && typeof e.data.href === "string") helpAt = e.data.href;
+      });
+    } else if (wanted) helpDialog.querySelector("iframe").src = helpAt = wanted;
+    const i = Math.max(0, ["fr", "en", "de", "es"].indexOf(language));
+    helpDialog.querySelector("h1").textContent = ["Aide", "Help", "Hilfe", "Ayuda"][i];
+    helpDialog.querySelector(".repo-help-page").title = ["Ouvrir l'aide en page entière", "Open the help as a full page", "Hilfe als ganze Seite öffnen", "Abrir la ayuda en página completa"][i];
+    helpDialog.querySelector("button.repo-ap-close").setAttribute("aria-label", ["Fermer", "Close", "Schließen", "Cerrar"][i]);
+    if (!helpDialog.open) helpDialog.showModal();
+    return true;
+  }
+  // tout lien vers l'Aide (barre latérale, menu ☰, liens des pages) : fenêtre d'aide ; Ctrl/Maj-clic, autre cible :
+  // lien ordinaire
+  document.addEventListener("click", e => {
+    const a = e.target.closest?.("a[href]");
+    if (!a || e.defaultPrevented || e.button || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || (a.target && a.target !== "_self")) return;
+    if (a.href.split(/[?#]/)[0] !== new URL(HELP, root).href) return;
+    if (openHelp(a.getAttribute("href"))) {
+      e.preventDefault();
+      close();
+    }
+  });
   /** Ferme le menu ☰ et le menu des langues. */
   const close = () => {
     menu.hidden = true;
@@ -578,6 +655,29 @@
   document.body.style.backgroundColor = theme.page || "";
   /** Adresse d'une source externe : réglage local (suiteSources:v1, Paramètres › Maintenance) sinon repository_tree.sources. */
   const source = key => String(K.store.json("suiteSources:v1", {})[key] || cfg.sources?.[key]?.url || "").replace(/\/+$/, "");
+  /** Compagnie virtuelle : repository_tree.va (DEFA Virtual par défaut) et réglage local (suiteVA:v1) ; url : site
+   *  (sources.defa). { name, short, centre, centreName, url, pages: { home, log, fleet, aircraft } }. */
+  const va = () => {
+    const d = cfg.va || {},
+      o = K.store.json("suiteVA:v1", {}) || {};
+    return {
+      name: o.name || d.name || "DEFA Virtual",
+      short: o.short || d.short || "DEFA",
+      centre: o.centre || d.centre || "CPCO",
+      centreName: o.centreName || d.centreName || "",
+      url: source("defa"),
+      pages: {
+        ...(d.pages || {}),
+        ...(o.pages || {})
+      }
+    };
+  };
+  /** Adresse d'une page du site de la compagnie virtuelle (home, log, fleet, aircraft) ; vars : {id}… */
+  const vaUrl = (pageKey, vars = {}) => {
+    const v = va(),
+      p = String(v.pages[pageKey] ?? "").replace(/\{(\w+)\}/g, (_, k) => encodeURIComponent(vars[k] ?? ""));
+    return /^https?:/i.test(p) ? p : v.url + (p && !p.startsWith("/") ? "/" : "") + p;
+  };
   /** Émet « repository-design-change » (detail : ce qui a changé) : décors, icônes, graphiques des pages se refont. */
   const designChanged = detail => window.dispatchEvent(new CustomEvent("repository-design-change", {
     detail
@@ -585,7 +685,29 @@
   // API publique.
   window.RepositoryNav = {
     cpco,
+    settingsUrl,
+    /** Langue de la suite : "auto" (navigateur) ou fr / en / de / es ; mémorisée, appliquée à la page. */
+    setLanguage(value) {
+      if (value !== "auto" && !supported.includes(value)) return;
+      mode = value;
+      K.store.set("repositoryLanguageMode", mode);
+      applyLanguage();
+    },
     source,
+    va,
+    vaUrl,
+    /** Enregistre la surcharge locale de la compagnie virtuelle (objet vide : défauts) ; événement « suite-sources-change ». */
+    setVa(o) {
+      const clean = Object.fromEntries(Object.entries(o || {}).filter(([k, v]) => k === "pages" ? v && Object.values(v).some(Boolean) : String(v || "").trim()));
+      if (clean.pages) clean.pages = Object.fromEntries(Object.entries(clean.pages).filter(([, v]) => String(v || "").trim()));
+      if (Object.keys(clean).length) K.store.setJson("suiteVA:v1", clean);
+      else K.store.remove("suiteVA:v1");
+      window.dispatchEvent(new CustomEvent("suite-sources-change", {
+        detail: {
+          key: "va"
+        }
+      }));
+    },
     /** Enregistre (ou efface, valeur vide) la surcharge locale d'une source ; événement « suite-sources-change ». */
     setSource(key, value) {
       const o = K.store.json("suiteSources:v1", {}),
@@ -758,53 +880,49 @@
   // side_nav.js dans les emplacements réservés (span[data-sidenav-icon], taille fixe : pas de décalage).
   // Entrées : REPOSITORY_TREE.sidebar si présent, sinon la liste ci-dessous ; seules les pages déclarées sont retenues.
   {
+    // liste de secours (repository_tree sans clé sidebar) : même ordre, pilote d'abord, puis le Centre
     const items = cfg.sidebar || [{
-        icon: "target",
-        path: "apps/cpco/mission_editor.html",
-        label: ["Missions", "Missions", "Missionen", "Misiones"]
-      }, {
-        icon: "list",
-        path: "apps/cpco/mission_registry.html",
-        label: ["Registre", "Registry", "Register", "Registro"],
-        title: ["Registre des missions générées", "Generated mission registry", "Register der erzeugten Missionen", "Registro de misiones generadas"]
-      }, {
-        icon: "calendar",
-        path: "apps/cpco/odv_planning.html",
-        label: ["ODV", "ODV", "ODV", "ODV"],
-        title: ["Planning ODV (Centre) : créneaux communs, missions probables", "ODV planning (Centre)", "ODV-Planung (Zentrum)", "Planificación ODV (Centro)"]
-      }, {
-        icon: "map",
-        path: "apps/cpco/map_parser.html",
-        label: ["Studio", "Studio", "Studio", "Estudio"],
-        title: ["Studio cartographique du Centre", "Centre map studio", "Kartenstudio des Zentrums", "Estudio cartográfico del Centro"]
+        icon: "send",
+        path: "apps/pilot/mes_missions.html",
+        label: ["Mes missions", "My missions", "Meine Missionen", "Mis misiones"]
       }, {
         icon: "clipboard",
         path: "apps/cr/mission_cr.html",
         match: "apps/cr/",
         label: ["CR DEFA", "DEFA report", "DEFA-Bericht", "Informe DEFA"]
       }, {
-        icon: "chart",
-        path: "apps/cr/mission_operations_reporting.html",
-        match: "_reporting.html",
-        label: ["Reporting", "Reporting", "Berichte", "Informes"]
+        icon: "map",
+        path: "apps/planner/map_planner.html",
+        label: ["Cartes de vol", "Flight maps", "Flugkarten", "Mapas de vuelo"]
       }, {
         icon: "fuel",
         path: "apps/planner/flight_performance_planner.html",
         label: ["Carburant", "Fuel", "Kraftstoff", "Combustible"]
       }, {
-        icon: "map",
-        path: "apps/planner/map_planner.html",
-        label: ["Cartes", "Maps", "Karten", "Mapas"],
-        title: ["Cartes de vol : route, topo, approche, rendez-vous, destination", "Flight maps: route, topo, approach, rendezvous, destination", "Flugkarten", "Mapas de vuelo"]
-      }, {
-        icon: "send",
-        path: "apps/pilot/mes_missions.html",
-        label: ["Mes missions", "My missions", "Meine Missionen", "Mis misiones"],
-        title: ["Missions qui vous sont affectées par le Centre, vos disponibilités et vos appareils", "Missions assigned to you by the Centre, your availability and aircraft", "Vom Zentrum zugewiesene Missionen, Verfügbarkeit und Luftfahrzeuge", "Misiones asignadas por el Centro, disponibilidad y aeronaves"]
-      }, {
         icon: "plane",
         path: "apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html",
         label: ["Atterrissages", "Landings", "Landungen", "Aterrizajes"]
+      }, {
+        icon: "chart",
+        path: "apps/cr/mission_operations_reporting.html",
+        match: "_reporting.html",
+        label: ["Reporting", "Reporting", "Berichte", "Informes"]
+      }, {
+        sep: true,
+        title: ["Centre", "Centre", "Zentrum", "Centro"]
+      }, {
+        icon: "target",
+        path: "apps/cpco/mission_editor.html",
+        match: ["apps/cpco/mission_editor.html", "apps/cpco/map_parser.html"],
+        label: ["Missions", "Missions", "Missionen", "Misiones"]
+      }, {
+        icon: "list",
+        path: "apps/cpco/mission_registry.html",
+        label: ["Registre", "Registry", "Register", "Registro"]
+      }, {
+        icon: "calendar",
+        path: "apps/cpco/odv_planning.html",
+        label: ["ODV", "ODV", "ODV", "ODV"]
       }, {
         sep: true,
         bottom: true
@@ -815,20 +933,30 @@
         label: ["Apparence", "Appearance", "Darstellung", "Apariencia"]
       }, {
         icon: "settings",
-        path: "apps/settings/parametrage.html",
+        path: "apps/settings/profil.html",
+        match: "apps/settings/",
         label: ["Paramètres", "Settings", "Einstellungen", "Ajustes"]
       }, {
         icon: "help",
-        menu: true,
-        label: ["Menu", "Menu", "Menü", "Menú"],
-        title: ["Toutes les pages, profil, données locales, design", "All pages, profile, local data, design", "Alle Seiten, Profil, lokale Daten, Design", "Todas las páginas, perfil, datos locales, diseño"]
+        path: "apps/aide/aide.html",
+        label: ["Aide", "Help", "Hilfe", "Ayuda"]
       }
     ];
+    // libellés du menu : aussi pour les titres de page qui les reprennent (« Paramètres ») — couche de traduction
+    // (content_i18n.js, chargée après ce script), inscrits une fois par page
+    if (!window.__navI18n) {
+      window.__navI18n = true;
+      const navRows = items.filter(x => Array.isArray(x.label) && x.label.length === 4).map(x => x.label),
+        reg = () => window.RepositoryContentI18n?.(navRows);
+      window.RepositoryContentI18n ? reg() : addEventListener("DOMContentLoaded", reg, {
+        once: true
+      });
+    }
     const known = new Set(cfg.pages.map(p => p.path)),
       current = page?.path || "";
     // entrée active : la page elle-même, sinon la première entrée dont « match » est contenu dans le chemin courant
     let active = items.findIndex(x => x.path === current);
-    if (active < 0) active = items.findIndex(x => x.match && current.includes(x.match));
+    if (active < 0) active = items.findIndex(x => x.match && [].concat(x.match).some(m => current.includes(m)));
     const side = document.createElement("nav");
     side.className = "repo-sidenav no-print";
     side.setAttribute("aria-label", "Applications");
@@ -846,12 +974,23 @@
     // haut de la barre : logo DEFA décliné selon le design (shared/icons/defa/<id du design à matières>.webp, sinon
     // flat), lien vers le site de la flotte DEFA Virtual (nouvel onglet : la page en cours reste ouverte)
     const logoSrc = () => new URL(`icons/defa/${designs[doc.dataset.design]?.skeuo ? doc.dataset.design : "flat"}.webp${ver}`, script.src).href;
-    side.innerHTML = `<a class="repo-sidenav-brand" href="${source("defa") || "https://flotte.defa-virtual.fr"}/index.php" target="_blank" rel="noopener" title="DEFA Virtual — ${source("defa").replace(/^https?:\/\//, "")}"><img class="repo-sidenav-logo" src="${logoSrc()}" alt="DEFA Virtual"></a><ul></ul>`;
-    const ul = side.querySelector("ul");
+    side.innerHTML = `<a class="repo-sidenav-brand" href="${K.esc(vaUrl("home"))}" target="_blank" rel="noopener" title="${K.esc(va().name)} — ${K.esc(source("defa").replace(/^https?:\/\//, ""))}"><img class="repo-sidenav-logo" src="${logoSrc()}" alt="${K.esc(va().name)}"></a><ul></ul><ul class="repo-sidenav-foot"></ul>`;
+    // entrées du bas (séparateur « bottom » et suivantes : Apparence, Paramètres, Aide) dans leur propre liste, fixée en
+    // bas de la barre ; seule la liste du haut défile quand les entrées dépassent la hauteur de la fenêtre
+    let ul = side.querySelector("ul");
     items.forEach((it, i) => {
+      if (it.bottom) ul = side.querySelector(".repo-sidenav-foot");
       const li = document.createElement("li");
       if (it.sep) {
-        li.className = "repo-sidenav-sep" + (it.bottom ? " repo-sidenav-bottom" : "");
+        li.className = "repo-sidenav-sep" + (it.bottom ? " repo-sidenav-bottom" : "") + (it.title ? " repo-sidenav-titled" : "");
+        if (it.title) {
+          // séparateur titré (« Centre ») : masqué avec le Centre si toutes ses entrées en sont
+          li._it = it;
+          li.innerHTML = '<span class="repo-sidenav-sep-title"></span>';
+          const next = items.slice(i + 1),
+            group = next.slice(0, (next.findIndex(x => x.sep) + 1 || next.length + 1) - 1).filter(x => x.path);
+          if (group.length && group.every(x => isCpco(x.path))) li.classList.add("cpco-only");
+        }
         ul.append(li);
         return;
       }
@@ -866,6 +1005,8 @@
           document.querySelector(".repo-menu-button")?.click();
         };
       } else a.href = new URL(it.path, root).href;
+      // Aide : ouverte au chapitre de la page d'où l'on vient (apps/aide/aide.js, ?from=)
+      if (it.path === "apps/aide/aide.html" && current && current !== it.path) a.href += `?from=${encodeURIComponent(current)}`;
       if (it.path === "apps/settings/apparence.html") a.addEventListener("click", e => {
         if (openAppearance()) e.preventDefault();
       });
@@ -881,6 +1022,9 @@
       side.querySelectorAll(".repo-sidenav-item").forEach(a => {
         a.querySelector(".repo-sidenav-label").textContent = a._it.label[i] || a._it.label[0];
         a.title = a._it.title?.[i] || a._it.title?.[0] || a._it.label[i] || a._it.label[0];
+      });
+      side.querySelectorAll(".repo-sidenav-titled").forEach(li => {
+        li.querySelector(".repo-sidenav-sep-title").textContent = li._it.title[i] || li._it.title[0];
       });
     };
     label();
@@ -898,30 +1042,122 @@
       element: side,
       set: on => window.RepositoryNav.appearance.setSidenav(on)
     };
+  }
+  // ---- Onglets en tête de page (REPOSITORY_TREE.tabs) : pages sœurs d'un même bouton de la barre latérale (générateur
+  // et studio sous « Missions », les quatre pages de Paramètres). Avant de partir, événement « repository-tab-leave »
+  // (detail : { from, to }) : la page transmet son travail (mission partagée) ; un écouteur peut annuler (preventDefault).
+  {
+    const current = page?.path || rel,
+      group = (cfg.tabs || []).find(g => g.pages.some(p => p.path === current));
+    if (group) {
+      const bar = document.createElement("nav");
+      bar.className = "repo-tabs no-print";
+      bar.dataset.tabs = group.id;
+      bar.setAttribute("data-no-i18n", "");
+      bar.setAttribute("aria-label", group.id);
+      for (const p of group.pages) {
+        const a = document.createElement("a");
+        a.className = "repo-tab" + (isCpco(p.path) && !isCpco(current) ? " cpco-only" : "");
+        a.href = new URL(p.path, root).href;
+        a._label = p.label;
+        if (p.path === current) a.setAttribute("aria-current", "page");
+        else a.addEventListener("click", e => {
+          if (e.ctrlKey || e.metaKey || e.shiftKey || e.button) return; // nouvel onglet du navigateur : rien à transmettre
+          const ev = new CustomEvent("repository-tab-leave", {
+            cancelable: true,
+            detail: {
+              from: current,
+              to: p.path
+            }
+          });
+          if (!window.dispatchEvent(ev)) e.preventDefault();
+        });
+        bar.append(a);
+      }
+      header.after(bar);
+      const tabLabels = () => bar.querySelectorAll(".repo-tab").forEach(a => {
+        a.textContent = a._label[Math.max(0, supported.indexOf(language))] || a._label[0];
+      });
+      tabLabels();
+      window.addEventListener("repository-language-change", tabLabels);
+    }
   } {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=f1357c65", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=78a8d79d", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=356d0486", script.src).href;
+    files.src = new URL("file_access.js?v=726783dc", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=58f492d6", "block_icons.js?v=28956286", "side_nav.js?v=355697e6"]) {
+    for (const f of ["icons/repository_icons.js?v=27853364", "block_icons.js?v=c8ee7213", "side_nav.js?v=19f74efd"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=504cf79e", script.src).href;
+    store.src = new URL("browser_store.js?v=7860c8db", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
-    assign.src = new URL("assignments.js?v=a5d19ee4", script.src).href;
+    assign.src = new URL("assignments.js?v=9e7845c6", script.src).href;
     document.head.append(assign);
+    /* Utilisateurs et droits : mode develop / production, connexion, usurpation (bandeau sur toutes les pages) */
+    const users = document.createElement("script");
+    users.src = new URL("users.js?v=5d9d50a7", script.src).href;
+    document.head.append(users);
+    /* Synchronisation git du pool de données : bouton « Synchroniser » de l'en-tête (lanceur, data/ dépôt git) */
+    const sync = document.createElement("script");
+    sync.src = new URL("sync.js?v=14aeb29b", script.src).href;
+    document.head.append(sync);
+    /* Disponibilités : catégories configurables, thèmes ouverts, déclarations par semaine */
+    const dispos = document.createElement("script");
+    dispos.src = new URL("dispos.js?v=d99a8e23", script.src).href;
+    document.head.append(dispos);
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=798086a3", script.src).href;
+    update.src = new URL("suite_update.js?v=a6f1e9d1", script.src).href;
     document.head.append(update)
+  }
+  {
+    /* Autre compagnie virtuelle que DEFA (Paramètres › Sources et dossiers) : « DEFA Virtual », « DEFA » et « CPCO »
+       des textes de la suite affichés avec le nom, le sigle et le centre réglés (nœuds texte et infobulles, pages et
+       contenus ajoutés ensuite). Rien n'est fait avec les réglages par défaut. */
+    const rebrand = () => {
+      const v = va(),
+        d = cfg.va || {},
+        rules = [
+          [/\bDEFA Virtual\b/g, v.name, d.name || "DEFA Virtual"],
+          [/\bDEFA\b/g, v.short, d.short || "DEFA"],
+          [/\bCPCO\b/g, v.centre, d.centre || "CPCO"]
+        ].filter(([, to, from]) => to && to !== from);
+      if (!rules.length) return;
+      const fix = s => rules.reduce((x, [re, to]) => x.replace(re, to), s);
+      const skip = el => !el || el.closest("script,style,textarea,input,code,pre,[contenteditable],[data-no-rebrand]");
+      const walk = root => {
+        const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());)
+          if (!skip(n.parentElement) && /DEFA|CPCO/.test(n.nodeValue)) {
+            const s = fix(n.nodeValue);
+            if (s !== n.nodeValue) n.nodeValue = s;
+          }
+        if (root.querySelectorAll)
+          for (const el of root.querySelectorAll("[title]"))
+            if (/DEFA|CPCO/.test(el.title)) el.title = fix(el.title);
+      };
+      walk(document.body);
+      if (document.title) document.title = fix(document.title);
+      new MutationObserver(list => {
+        for (const m of list)
+          for (const n of m.type === "characterData" ? [m.target] : m.addedNodes) n.nodeType === 3 ? (!skip(n.parentElement) && /DEFA|CPCO/.test(n.nodeValue) && (n.nodeValue = fix(n.nodeValue))) : n.nodeType === 1 && !skip(n) && walk(n);
+      }).observe(document.body, {
+        childList: true,
+        characterData: true, // textes traduits ensuite (content_i18n.js)
+        subtree: true
+      });
+    };
+    document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", rebrand, {
+      once: true
+    }) : rebrand();
   }
   window.dispatchEvent(new CustomEvent("repository-nav-ready", {
     detail: window.RepositoryNav

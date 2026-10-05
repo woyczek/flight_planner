@@ -1,7 +1,7 @@
 /* Designs à matières : Cabinet (cabinet de navigation), Carnet de vol (sa déclinaison aéronautique), Durci (console de
    terrain), Aqua (métal brossé, verre, gel). Chargé à la demande par repository_nav.js (designs.list[id].css de
    repository_tree), versionné comme les autres.
-   Organisation (docs/FRAMEWORK.md § 2 bis, docs/REFACTORING_TOOLKIT.md) :
+   Organisation (docs/technique/FRAMEWORK.md § 2 bis, docs/technique/REFACTORING_TOOLKIT.md) :
    - sélecteurs posés d'après le registre des designs (repository_tree, designs.list) : html[data-skeuo] (tout design à
      matières), html[data-skeuo="frame"] (cadre cousu autour de la page : Cabinet, Carnet de vol, Durci),
      html[data-design-base="cabinet"] (Cabinet et sa déclinaison Carnet de vol), html[data-design="…"] (un seul design) ;
@@ -17,7 +17,7 @@
    - les règles propres à une page vivent dans la feuille de cette page (Mission Core : shared/mission_core/core.css ;
      planificateur, éditeur de mission, Apparence), avec les jetons d'ici ;
    - vérification de toute retouche : tools/skeuo_regression.html (styles calculés, avant / après).
-   Principe (docs/FRAMEWORK.md § 2 bis) :
+   Principe (docs/technique/FRAMEWORK.md § 2 bis) :
    - les MATIÈRES (cuir, bois, parchemin, laiton, peinture olive, acier, verre) ont une palette propre au design,
      textures WebP de shared/textures/ (générées par tools/textures_generator.html) ;
    - les COULEURS D'INFORMATION restent celles du thème : Cabinet assombrit le bandeau du thème (bandeau, boutons
@@ -164,7 +164,8 @@ html[data-design-base="cabinet"] {
   --sk-btn-bg: linear-gradient(color-mix(in srgb, var(--cab-bar) 45%, transparent), color-mix(in srgb, var(--cab-bar) 45%, transparent)), #0f2140 url("textures/leather-navy.webp?v=1bacc4e6") center/200px;
   --sk-btn-shadow: 0 0 0 2px var(--cab-brass), 0 0 0 3px #5a4012, inset 0 1px 0 rgba(255, 255, 255, .22), inset 0 -6px 12px rgba(0, 0, 0, .4), 0 4px 6px rgba(0, 0, 0, .4);
   --sk-btn-hover: brightness(1.12);
-  --sk-btn-disabled: grayscale(.6) opacity(.6);
+  --sk-btn-disabled: grayscale(1) opacity(.5);
+  /* bouton désactivé nettement grisé, même sur le bleu marine et le bois */
   --sk-lbtn-weight: 700;
   --sk-lbtn-border: 0;
   --sk-lbtn-radius: 6px;
@@ -234,7 +235,8 @@ html[data-skeuo="frame"] body {
   margin-left: var(--sk-page-margin);
   margin-right: var(--sk-page-margin);
   padding-top: 12px;
-  background: var(--sk-page-bg) !important /* garder : fond posé en ligne (style) sur body par les pages */
+  background: var(--sk-page-bg) !important
+    /* garder : fond posé en ligne (style) sur body par les pages */
 }
 html[data-design-base="cabinet"][data-decor="full"]::before {
   content: "";
@@ -439,7 +441,8 @@ html[data-skeuo="frame"] .repo-footer a {
   color: var(--sk-footer-link)
 }
 html[data-design-base="cabinet"] .repo-block textarea {
-  background: repeating-linear-gradient(transparent 0 23px, rgba(29, 53, 87, .1) 23px 24px), var(--cab-field) !important /* garder : fond transparent en ligne (studio, champs de route) */
+  background: repeating-linear-gradient(transparent 0 23px, rgba(29, 53, 87, .1) 23px 24px), var(--cab-field) !important
+    /* garder : fond transparent en ligne (studio, champs de route) */
 }
 html[data-design-base="cabinet"] .repo-block :is(table) {
   background: color-mix(in srgb, var(--cab-field) 60%, transparent)
@@ -456,7 +459,9 @@ html[data-design-base="cabinet"] :is(button.secondary, a.secondary, label.rg-fil
   text-shadow: 0 1px 0 rgba(255, 255, 255, .75)
 }
 html[data-design-base="cabinet"] :is(button.secondary, a.secondary, label.rg-file, .repo-header button.headerButton:not(:first-of-type)):not(.repo-block-tools button):not(.repo-menu-button):not(.repo-language-button):not(#imp) {
-  color: #0b1830 !important /* garder : liens secondaires des CR en style en ligne « color: inherit » */;
+  color: #0b1830 !important
+    /* garder : liens secondaires des CR en style en ligne « color: inherit » */
+  ;
   font-weight: 700;
   background: #efe3c4 url("textures/parchment.webp?v=c0677c03") center/300px
 }
@@ -838,7 +843,8 @@ html[data-design="aqua"] {
 html[data-design="aqua"] body {
   color: var(--aq-ink);
   font-family: "Segoe UI Variable", "Segoe UI", -apple-system, "Helvetica Neue", Inter, system-ui, sans-serif;
-  background: transparent !important /* garder : fond posé en ligne (style) sur body par les pages */
+  background: transparent !important
+    /* garder : fond posé en ligne (style) sur body par les pages */
 }
 html[data-design="aqua"] .repo-header-subtitle,
 html[data-design="aqua"] .repo-language-label {
@@ -1038,7 +1044,9 @@ html[data-skeuo] .repo-notice:not(#imp) {
   box-shadow: var(--sk-notice-shadow, none)
 }
 html[data-skeuo] .repo-block :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select, textarea):not(#imp) {
-  background: var(--sk-input-bg) !important /* garder : fond transparent en ligne (studio, champs de route) */;
+  background: var(--sk-input-bg) !important
+    /* garder : fond transparent en ligne (studio, champs de route) */
+  ;
   color: var(--sk-input-ink);
   border: var(--sk-input-border);
   border-radius: var(--sk-input-radius);
@@ -1047,7 +1055,7 @@ html[data-skeuo] .repo-block :is(input:not([type=checkbox]):not([type=radio]):no
 /* boutons : habillage du design (police : dans la section du design) */
 /* graisse : valeur par défaut du design, dans la couche app (les règles plus précises des pages la règlent) */
 @layer app {
-html[data-skeuo] button:where(:not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-sidenav-item):not(.col-split):not(.repo-block-tools button):not([role=menuitem]):not(.repo-icon-only):not(.repo-plain)),
+  html[data-skeuo] button:where(:not([class*="maplibregl-ctrl"]):not(.repo-menu-button):not(.repo-language-button):not(.repo-sidenav-item):not(.col-split):not(.repo-block-tools button):not([role=menuitem]):not(.repo-icon-only):not(.repo-plain)),
   html[data-skeuo] .buttonLink,
   html[data-skeuo] a.mc-button {
     font-weight: var(--sk-btn-weight)
@@ -1502,30 +1510,6 @@ html[data-design="field"] {
 html[data-design-base="cabinet"] {
   --cab-screw: url("deco/cabinet/tack.webp?v=d13b9116")
 }
-/* poignées de Durci : celles de la planche, au premier plan (devant blocs et en-tête collant, 1000 ; sous les menus
-   et la barre latérale, 1100), aux deux tiers sur la page */
-@media (min-width:1100px) {
-  html[data-design="field"][data-decor="full"] body::before,
-  html[data-design="field"][data-decor="full"] body::after {
-    content: "";
-    position: absolute;
-    top: 140px;
-    width: 42px;
-    height: 180px;
-    background: url("deco/field/handle-v.webp?v=6f1ff9fd") center/contain no-repeat;
-    z-index: 1050
-  }
-  html[data-design="field"][data-decor="full"] body::before {
-    left: -12px
-  }
-  html[data-design="field"][data-decor="full"] body::after {
-    right: -12px
-  }
-}
-/* (poignées débordant de la marge droite : pas de défilement horizontal de la page) */
-html[data-design="field"][data-decor="full"] {
-  overflow-x: clip
-}
 /* ================================================================================================ DÉCORS DISSÉMINÉS (design_deco.js)
    Entre les blocs (sans décaler la mise en page : hauteur nulle, image centrée sur l'intervalle) et dans les marges
    de la page (grands écrans). Invisibles hors Cabinet / Durci en décor complet. */
@@ -1651,7 +1635,7 @@ html[data-skeuo] dialog.repo-ap-dialog .repo-ap-head:not(#imp) {
 }
 /* fenêtres d'affectation (assign_dialog.js : texte posé à même la fenêtre, sans blocs) : fond d'un bloc du design
    (parchemin, plaque…), pas celui de la page, pour que l'encre reste lisible */
-html[data-skeuo] dialog.repo-ap-dialog.ad-dialog {
+html[data-skeuo] :is(dialog.repo-ap-dialog.ad-dialog, dialog.repo-ask) {
   background: var(--sk-block-bg, var(--sk-dialog-bg))
 }
 /* ================================================================================================ EN-TÊTE DE BLOC ÉTROIT
@@ -1659,7 +1643,8 @@ html[data-skeuo] dialog.repo-ap-dialog.ad-dialog {
    premier plan, visibles et cliquables, même dans les blocs étroits (reportings). */
 html[data-skeuo] .repo-block-titles {
   flex: 1 1 0;
-  min-width: 0
+  min-width: 0;
+  container-type: inline-size
 }
 html[data-skeuo] :is(.repo-block-titles, .repo-block-heading)>h2 {
   max-width: 100%;
@@ -1667,6 +1652,15 @@ html[data-skeuo] :is(.repo-block-titles, .repo-block-heading)>h2 {
   overflow-wrap: normal;
   word-break: normal;
   hyphens: manual
+}
+/* colonne étroite (« Mes disponibilités » à côté de l'icône et des outils) : plaque plus compacte ; un mot encore plus
+   large que la colonne est coupé plutôt que de dépasser de la plaque (dernier recours, les mots courts restent entiers) */
+@container (max-width: 240px) {
+  html[data-skeuo] .repo-block-titles>h2:not(#imp) {
+    font-size: .8rem;
+    letter-spacing: .02em;
+    overflow-wrap: anywhere
+  }
 }
 /* blocs étroits (grilles du reporting…) : la plaque reste sur la première ligne, à côté de l'icône (outils au coin du
    bloc, hors du flux) ; elle passe à la ligne entre les mots, jamais au milieu d'un mot */
@@ -1890,6 +1884,10 @@ html[data-design="cabinet"] .repo-has-bg:has(>.repo-deco-panel) {
 }
 html[data-design="cabinet"][data-tone="dark"] .repo-has-bg:has(>.repo-deco-panel) {
   --repo-veil: rgba(14, 22, 40, .62)
+}
+/* Carnet de vol, ton clair : panneaux chargés (cadrans, cartes) ; voile papier comme Cabinet */
+html[data-design="flightlog"] .repo-has-bg:has(>.repo-deco-panel) {
+  --repo-veil: rgba(246, 240, 226, .82)
 }
 html .repo-block.repo-has-bg:has(>.repo-deco-panel) table:not(.report table):not(#imp) {
   background-color: var(--repo-veil)
@@ -2462,7 +2460,7 @@ html[data-design="flightlog"][data-tone="dark"] .repo-has-bg:has(>.repo-deco-pan
 /* ================================================================================================ GALONS
    Métal des finitions, comme les galons d'un uniforme : argent sur les pages ordinaires, or sur les pages du Centre
    (thème cpco). Jetons communs ; chaque design les pose sur ses finitions (filet du bandeau, barrette des titres de
-   bloc, frise du pied de page, filet des en-têtes de tableau). Les icônes du Centre gardent leur signe propre (bulle
+   bloc, frise du pied de page, filet des en-têtes de tableau ; rien sous le bandeau). Les icônes du Centre gardent leur signe propre (bulle
    sombre, glyphe or), où qu'elles soient. */
 html[data-skeuo] {
   --galon: #9ea8b2;
@@ -2472,12 +2470,9 @@ html[data-skeuo][data-app-theme="cpco"] {
   --galon: #c49a22;
   --galon-grad: linear-gradient(90deg, #7d5f10, #f4dc84 28%, #b78f1d 52%, #fff2bd 74%, #8a6a12)
 }
-/* finitions communes : filet sous le bandeau, cadre du pied de page, filet des en-têtes de tableau ; titres de bloc :
-   liseré des plaques (designs à cadre), barrette sous le titre (Aqua, sans plaque) */
-html[data-skeuo] .repo-header:not(#imp) {
-  border-bottom: 3px solid;
-  border-image: var(--galon-grad) 1
-}
+/* finitions communes : cadre du pied de page, filet des en-têtes de tableau ; titres de bloc : liseré des plaques
+   (designs à cadre), barrette sous le titre (Aqua, sans plaque). Pas de galon sous le bandeau (souhait : bandeau du
+   design seul) */
 html[data-skeuo] .repo-footer:not(#imp) {
   border: 2px solid;
   border-image: var(--galon-grad) 1
@@ -2490,7 +2485,8 @@ html[data-skeuo="frame"] :is(.repo-block-titles, .repo-block-heading)>h2:not(#im
 }
 html[data-skeuo] {
   scrollbar-gutter: stable;
-  --repo-round: 0 /* angles droits partout (repository_nav.css : rayons calc(… * var(--repo-round, 1))) */
+  --repo-round: 0
+    /* angles droits partout (repository_nav.css : rayons calc(… * var(--repo-round, 1))) */
 }
 html[data-skeuo] body {
   overflow-x: clip
@@ -2822,4 +2818,362 @@ html[data-design="field"] .repo-seg[aria-pressed="true"]::before {
 }
 html[data-skeuo] .repo-seg:not([aria-pressed="true"]):is(:hover, :focus-visible) {
   filter: brightness(1.1)
+}
+/* ================================================================================================ ONGLETS DE PAGE (repo-tabs)
+   Onglets en tête de page (repository_nav.js, REPOSITORY_TREE.tabs : pages de Paramètres, générateur ⇄ studio) : un
+   rail à angles droits, vissé aux deux bouts, et une plaque ou un poussoir par page ; la page courante est éclairée, les
+   autres un peu éteintes. Cabinet, Durci : plaque gravée vissée (jetons --sk-plate-*) ; Carnet de vol : bouton du design
+   (cuir sombre cerclé de laiton) et voyant ambre sur la page courante ; Aqua : bouton gel.
+   Images à venir (docs/technique/ASSETS_A_FOURNIR.md, famille « Onglets de page ») : posées par design dès que les fichiers sont
+   là, en découpe 9 parties (border-image) — --sk-tabs-rail-img / --sk-tabs-rail-slice (rail), --sk-tab-img /
+   --sk-tab-img-on / --sk-tab-slice (poussoir relâché / enfoncé) ; sans elles, les jetons ci-dessous. */
+html[data-skeuo] {
+  --sk-tab-bg: var(--sk-plate-bg, var(--sk-btn-bg));
+  --sk-tab-ink: var(--sk-plate-ink, var(--sk-btn-ink));
+  --sk-tab-font: var(--sk-plate-font, 600 .9rem/1.2 var(--sk-btn-family, inherit));
+  --sk-tab-text-shadow: var(--sk-plate-text-shadow, var(--sk-btn-text-shadow, none));
+  --sk-tab-shadow: var(--sk-plate-shadow, var(--sk-btn-shadow));
+  --sk-tab-padding: 6px 28px;
+  --sk-tab-screw: var(--sk-screw, none);
+  --sk-tab-screw-size: var(--sk-plate-screw, 10px);
+  --sk-tab-glow: rgba(255, 214, 120, .55);
+  --sk-tabs-rail: linear-gradient(rgba(0, 0, 0, .3), rgba(0, 0, 0, .42));
+  --sk-tabs-rail-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), inset 0 -1px 0 rgba(0, 0, 0, .5), 0 2px 4px rgba(0, 0, 0, .35)
+}
+/* Carnet de vol : poussoirs sombres cerclés de laiton sur un rail de laiton, voyant ambre */
+html[data-design="flightlog"] {
+  --sk-tab-bg: var(--sk-btn-bg);
+  --sk-tab-ink: var(--sk-btn-ink);
+  --sk-tab-font: 700 .9rem/1.2 var(--sk-btn-family, inherit);
+  --sk-tab-text-shadow: var(--sk-btn-text-shadow, none);
+  --sk-tab-shadow: var(--sk-btn-shadow);
+  --sk-tab-padding: 6px 22px;
+  --sk-tab-screw: none;
+  --sk-tab-led: #ffb020;
+  --sk-tabs-rail: #a8823a url("textures/brass.webp?v=f418b500") center/256px;
+  --sk-tabs-rail-shadow: inset 0 1px 0 #fff3c4, inset 0 -2px 0 rgba(60, 40, 10, .45), 0 2px 4px rgba(0, 0, 0, .4)
+}
+/* Aqua : comme le sélecteur segmenté — verre clair, page courante en gel ; rail de métal brossé, sans vis */
+html[data-design="aqua"] {
+  --sk-tab-bg: var(--sk-seg-bg);
+  --sk-tab-ink: var(--sk-seg-ink);
+  --sk-tab-text-shadow: var(--sk-seg-shadow);
+  --sk-tab-shadow: inset 0 1px 0 #fff, 0 0 0 1px #9aa6b2, 0 1px 3px rgba(0, 0, 0, .18);
+  --sk-tab-on-bg: var(--sk-seg-on-bg);
+  --sk-tab-on-ink: var(--sk-seg-on-ink);
+  --sk-tab-on-text-shadow: var(--sk-seg-on-text-shadow);
+  --sk-tab-font: 600 .9rem/1.2 system-ui, "Segoe UI", Arial, sans-serif;
+  --sk-tab-off-filter: none;
+  --sk-tab-glow: color-mix(in srgb, var(--aq-gel) 45%, transparent);
+  --sk-tab-padding: 6px 18px;
+  --sk-tab-screw: none;
+  --sk-tabs-rail: linear-gradient(#e9edf2, #c9d1da);
+  --sk-tabs-rail-shadow: inset 0 1px 0 #fff, 0 1px 3px rgba(0, 0, 0, .25)
+}
+html[data-skeuo] .repo-tabs:not(#imp) {
+  position: relative;
+  gap: 8px;
+  margin: 8px 16px 0; /* rail sur toute la largeur de la page */
+  padding: 8px 30px;
+  border: 0;
+  border-radius: 0;
+  background: var(--sk-tabs-rail);
+  box-shadow: var(--sk-tabs-rail-shadow);
+  border-style: solid;
+  border-width: var(--sk-tabs-rail-slice-w, 0);
+  border-image: var(--sk-tabs-rail-img, none) var(--sk-tabs-rail-slice, 0) fill / var(--sk-tabs-rail-slice-w, 0) stretch
+}
+/* vis du rail, aux deux bouts */
+html[data-skeuo] .repo-tabs::before,
+html[data-skeuo] .repo-tabs::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin-top: -6px;
+  background: var(--sk-screw, none) center/12px no-repeat
+}
+html[data-skeuo] .repo-tabs::before {
+  left: 9px
+}
+html[data-skeuo] .repo-tabs::after {
+  right: 9px
+}
+html[data-skeuo] .repo-tab:not(#imp) {
+  position: relative;
+  margin: 0;
+  padding: var(--sk-tab-padding);
+  border: 0;
+  border-radius: 4px;
+  font: var(--sk-tab-font);
+  color: var(--sk-tab-ink);
+  text-shadow: var(--sk-tab-text-shadow);
+  background: var(--sk-tab-bg);
+  box-shadow: var(--sk-tab-shadow);
+  opacity: 1;
+  filter: var(--sk-tab-off-filter, brightness(.8) saturate(.85));
+  border-style: solid;
+  border-width: var(--sk-tab-slice-w, 0);
+  border-image: var(--sk-tab-img, none) var(--sk-tab-slice, 0) fill / var(--sk-tab-slice-w, 0) stretch;
+  transition: filter .12s
+}
+html[data-skeuo] .repo-tab:not([aria-current="page"]):is(:hover, :focus-visible):not(#imp) {
+  filter: brightness(.95)
+}
+/* page courante : poussoir enfoncé et éclairé */
+html[data-skeuo] .repo-tab[aria-current="page"]:not(#imp) {
+  margin: 0;
+  background: var(--sk-tab-on-bg, var(--sk-tab-bg));
+  color: var(--sk-tab-on-ink, var(--sk-tab-ink));
+  text-shadow: var(--sk-tab-on-text-shadow, var(--sk-tab-text-shadow));
+  filter: brightness(1.1);
+  box-shadow: var(--sk-tab-shadow), 0 0 12px var(--sk-tab-glow);
+  border-image: var(--sk-tab-img-on, var(--sk-tab-img, none)) var(--sk-tab-slice, 0) fill / var(--sk-tab-slice-w, 0) stretch;
+  transform: translateY(1px)
+}
+/* vis de la plaque, aux deux bouts (Cabinet, Durci) */
+html[data-skeuo] .repo-tab::before,
+html[data-skeuo] .repo-tab::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: var(--sk-tab-screw-size);
+  height: var(--sk-tab-screw-size);
+  margin-top: calc(var(--sk-tab-screw-size) / -2);
+  background: var(--sk-tab-screw) center/var(--sk-tab-screw-size) no-repeat
+}
+html[data-skeuo] .repo-tab::before {
+  left: 9px
+}
+html[data-skeuo] .repo-tab::after {
+  right: 9px
+}
+/* voyant de la page courante (Carnet de vol : --sk-tab-led) à la place de la vis de gauche */
+html[data-design="flightlog"] .repo-tab[aria-current="page"]::before {
+  width: 8px;
+  height: 8px;
+  left: 8px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff2c8, var(--sk-tab-led) 55%, #a05a00);
+  box-shadow: 0 0 6px var(--sk-tab-led), 0 0 12px color-mix(in srgb, var(--sk-tab-led) 60%, transparent)
+}
+@media print {
+  html[data-skeuo] .repo-tabs {
+    display: none
+  }
+}
+/* ---- onglets en images (tools/cut_tabs.py depuis docs/technique/planches/onglets_<design>.webp) ----------------------------- */
+/* Carnet de vol : la barre de laiton de la planche — chaque onglet est une cellule du rail (demi-séparateurs rivetés,
+   fenêtre, poussoir : relâché, ou allumé avec voyant et lueur), les cellules accolées refont la barre, ses embouts
+   vissés la ferment ; elle a la longueur des onglets (barre fermée, comme la planche). Échelle : 52 px de haut pour
+   197 px d'image (× .264) ; découpes : embouts 92 px, cellule 110 px à gauche (voyant compris) et 70 px à droite. */
+html[data-design="flightlog"] .repo-tabs:not(#imp) {
+  width: fit-content;
+  max-width: calc(100% - 32px);
+  gap: 0;
+  padding: 0 24px;
+  background: none;
+  box-shadow: none;
+  border: 0;
+  border-image: url("deco/flightlog/tabs/rail.webp?v=a3e12860") 0 92 0 92 / 0 24px 0 24px stretch
+}
+html[data-design="flightlog"] .repo-tabs::before,
+html[data-design="flightlog"] .repo-tabs::after,
+html[data-design="flightlog"] .repo-tab::before,
+html[data-design="flightlog"] .repo-tab::after {
+  content: none
+}
+html[data-design="flightlog"] .repo-tab:not(#imp) {
+  height: 52px;
+  padding: 0 24px 0 34px;
+  line-height: 52px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  filter: none;
+  transform: none;
+  color: #e9e2cf;
+  text-shadow: 0 1px 0 #000, 0 0 6px rgba(0, 0, 0, .6);
+  border: 0;
+  border-image: url("deco/flightlog/tabs/tab.webp?v=958ae537") 0 70 0 110 fill / 0 18.5px 0 29px stretch
+}
+html[data-design="flightlog"] .repo-tab[aria-current="page"]:not(#imp) {
+  color: #ffe2a8;
+  text-shadow: 0 1px 0 #000, 0 0 8px rgba(255, 170, 40, .55);
+  box-shadow: none;
+  filter: none;
+  transform: none;
+  border-image: url("deco/flightlog/tabs/tab-on.webp?v=f6c9c38b") 0 70 0 110 fill / 0 18.5px 0 29px stretch
+}
+html[data-design="flightlog"] .repo-tab:not([aria-current="page"]):is(:hover, :focus-visible):not(#imp) {
+  filter: brightness(1.15)
+}
+/* Cabinet : étiquettes « complémentaires » (retouche de l'utilisateur) — chaque plaque porte une demi-patte rivetée à
+   chaque bout : accolées, deux plaques forment une patte entière ; aux deux bouts de la rangée, la demi-patte qui
+   manque est prise dans l'autre bout de la plaque (pseudo-éléments) ; barre d'acier nue (tabs/rail.vierge.webp) sous
+   toute la rangée, sur toute la largeur de la page. Plaque : 44 px de haut pour 269 px d'image (× .1636), découpe
+   autour du papier (64 / 138 / 58 / 132), demi-pattes de 38 px (6.2 px) ; barre : 79 px → 12.9 px. */
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tabs:not(#imp) {
+  gap: 0;
+  padding: 4px 24px;
+  background: none;
+  box-shadow: none;
+  border: 0;
+  border-image: none
+}
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tabs::before {
+  inset: 50% 0 auto;
+  width: auto;
+  height: 12.9px;
+  margin-top: -6.45px;
+  border-image: none;
+  background: url("deco/cabinet/tabs/rail.vierge.webp?v=d6cb265f") left center/auto 100% repeat-x
+}
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tabs::after,
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab::before,
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab::after {
+  content: none
+}
+/* bouts de la rangée : demi-patte complémentaire (bout droit de la plaque à gauche, bout gauche à droite) */
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:first-child::before,
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:last-child::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 6.2px;
+  height: 100%;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none
+}
+/* mesures de l'image (797 px, × .1636) : opaque de x 1 à 794, cadre de 36 à 758 — demi-patte gauche x 1–35 (35 px,
+   5.73 px), droite x 759–794 (36 px, 5.89 px) ; chaque terminateur montre exactement sa demi-patte (colonnes
+   transparentes et début du cadre exclus) et se colle à la plaque */
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:first-child::before {
+  left: -5.72px;
+  width: 5.89px;
+  background: url("deco/cabinet/tabs/tab.webp?v=7d2ddfc4") right -0.33px center/auto 100% no-repeat
+}
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:last-child::after {
+  right: -5.4px;
+  width: 5.73px;
+  background: url("deco/cabinet/tabs/tab.webp?v=7d2ddfc4") left -0.16px center/auto 100% no-repeat
+}
+/* plaques serrées d'1 px : colonnes transparentes des bords (1 + 2 px d'image) sans fente entre deux demi-pattes */
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab + .repo-tab:not(#imp) {
+  margin-left: -1px
+}
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:not(#imp) {
+  z-index: 1;
+  height: 44px;
+  padding: 0 24px;
+  line-height: 44px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  filter: none;
+  transform: none;
+  color: #2b2418;
+  text-shadow: 0 1px 0 rgba(255, 248, 225, .6);
+  border: 0;
+  border-image: url("deco/cabinet/tabs/tab.webp?v=7d2ddfc4") 64 138 58 132 fill / 10.5px 22.6px 9.5px 21.6px stretch
+}
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab[aria-current="page"]:not(#imp) {
+  color: #3a2808;
+  text-shadow: 0 1px 0 rgba(255, 244, 200, .8);
+  box-shadow: none;
+  filter: none;
+  transform: none;
+  border-image: url("deco/cabinet/tabs/tab-on.webp?v=88e2b4fe") 64 138 58 132 fill / 10.5px 22.6px 9.5px 21.6px stretch
+}
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:not([aria-current="page"]):is(:hover, :focus-visible):not(#imp) {
+  filter: brightness(1.08)
+}
+/* Durci : sangle de toile cousue sur toute la largeur de la page (embouts vissés, toile répétée), une cellule par
+   onglet (cadre d'acier vissé, bouton de toile ; page courante : toile éclairée et voyant ambre au centre, posé à part
+   pour ne pas s'étirer avec la cellule). Échelle : 56 px de haut pour 385 px d'image (× .1455) ; embouts 99 / 105 px,
+   cellule 80 px de chaque côté (cadre et vis) ; voyant 119 × 79 px à 20 px du haut. */
+html[data-design="field"] .repo-tabs:not(#imp) {
+  gap: 0;
+  padding: 0 16px;
+  background: none;
+  box-shadow: none;
+  border: 0;
+  border-image: url("deco/field/tabs/rail.webp?v=7b0fa1f5") 0 105 0 99 fill / 0 15.3px 0 14.4px round stretch
+}
+html[data-design="field"] .repo-tabs::before,
+html[data-design="field"] .repo-tabs::after,
+html[data-design="field"] .repo-tab::after {
+  content: none
+}
+html[data-design="field"] .repo-tab:not(#imp) {
+  height: 56px;
+  padding: 0 20px;
+  line-height: 56px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  filter: none;
+  transform: none;
+  color: #e6e2c8;
+  text-shadow: 0 1px 1px #000, 0 0 4px rgba(0, 0, 0, .5);
+  border: 0;
+  border-image: url("deco/field/tabs/tab.webp?v=c2977df9") 0 80 0 80 fill / 0 11.6px 0 11.6px stretch
+}
+html[data-design="field"] .repo-tab[aria-current="page"]:not(#imp) {
+  color: #262612;
+  text-shadow: 0 1px 0 rgba(255, 240, 180, .55);
+  box-shadow: none;
+  filter: none;
+  transform: none;
+  border-image: url("deco/field/tabs/tab-on.webp?v=2cce5070") 0 80 0 80 fill / 0 11.6px 0 11.6px stretch
+}
+/* voyant au centre du haut de chaque onglet : éteint (tabs/led.off.webp, fourni par l'utilisateur), allumé sur la page
+   courante (tabs/led.webp) */
+html[data-design="field"] .repo-tab::before {
+  content: "";
+  position: absolute;
+  top: 2.9px;
+  left: 50%;
+  width: 17.3px;
+  height: 11.5px;
+  margin: 0 0 0 -8.65px;
+  border-radius: 0;
+  box-shadow: none;
+  background: url("deco/field/tabs/led.off.webp?v=4e819eef") center/100% 100% no-repeat
+}
+html[data-design="field"] .repo-tab[aria-current="page"]::before {
+  background-image: url("deco/field/tabs/led.webp?v=2c3c2da4")
+}
+html[data-design="field"] .repo-tab:not([aria-current="page"]):is(:hover, :focus-visible):not(#imp) {
+  filter: brightness(1.12)
+}
+/* Liseré du bloc à onglets : le bloc qui suit la barre d'onglets (main) est entouré d'un liseré — laiton (Cabinet,
+   Carnet de vol), acier (Durci, Aqua) — qui le désigne comme la page des onglets. Liseré : cadre à coins arrondis de
+   la planche (tools/cut_tabs.py, docs/technique/planches/lisere_*.webp), trait d'environ 6 px ; découpe 75 (laiton) / 85 (acier). */
+html[data-skeuo] .repo-tabs + main:not(#imp) {
+  margin-top: 8px;
+  padding-top: 10px;
+  border: 6px solid transparent;
+  border-image: var(--sk-tabs-lisere, none) var(--sk-tabs-lisere-slice, 0) / var(--sk-tabs-lisere-w, 0) stretch
+}
+html[data-design-base="cabinet"] {
+  --sk-tabs-lisere: url("deco/cabinet/tabs/lisere.webp?v=062612e9");
+  --sk-tabs-lisere-slice: 75;
+  --sk-tabs-lisere-w: 12.8px
+}
+html[data-design="flightlog"] {
+  --sk-tabs-lisere: url("deco/flightlog/tabs/lisere.webp?v=062612e9")
+}
+html[data-design="field"] {
+  --sk-tabs-lisere: url("deco/field/tabs/lisere.webp?v=5582b766");
+  --sk-tabs-lisere-slice: 85;
+  --sk-tabs-lisere-w: 12.2px
+}
+html[data-design="aqua"] {
+  --sk-tabs-lisere: url("deco/aqua/tabs/lisere.webp?v=5582b766");
+  --sk-tabs-lisere-slice: 85;
+  --sk-tabs-lisere-w: 12.2px
 }

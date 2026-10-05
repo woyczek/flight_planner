@@ -1,18 +1,20 @@
 (() => {
   'use strict';
-  // Planning ODV ↔ affectations des missions (docs/AFFECTATION_MISSIONS.md) : déclarations des pilotes (disponibilités
+  // Planning ODV ↔ affectations des missions (docs/technique/AFFECTATION_MISSIONS.md) : déclarations des pilotes (disponibilités
   // d'une heure ramenées aux créneaux matin / après-midi / soir, appareils) et affectations de la semaine, pour la
   // grille (seconde ligne par pilote : sa déclaration ; non affecté et disponible : encadré rouge ; affecté : n° de la
   // mission) et pour affecter depuis un créneau (dialogue « Affecter… », pilotes et heure préremplis).
   // Outils communs : shared/assignments.js (MissionAssignments) ; dialogue : shared/assign_dialog.js (AssignDialog).
   // API (window.OdvAssign) : load(données ODV, réglages), declaration(TRI), range(j, k), declared(TRI, j, k), assigned(TRI, j, k),
-  //   free(TRI, j, k), freePilots(j, k), freeOver(TRI, début, fin), slotsOver(début, fin), pilots(), inSlot(j, k), week(),
+  //   free(TRI, j, k), slotAt(ms), freePilots(j, k), freeOver(TRI, début, fin), slotsOver(début, fin), pilots(), inSlot(j, k), week(),
   //   line(TRI, j, k, cellule), assign(entrée, [TRI…], début, note), write(entrée, lignes, décollage)
   const M = () => window.MissionAssignments;
   const esc = s => window.RepositoryKit.esc(s);
+  const L = (row, vals) => window.RepositoryKit.tf(row, vals); // phrase traduite, valeurs {clé} insérées (shared/kit.js)
   let D = null, // données ODV (dates, pilotes)
     S = null, // réglages (heures des créneaux)
     decl = {}, // TRI → déclaration (grille, appareils)
+    prefs = {}, // TRI → préférences de thèmes (fiche utilisateur)
     list = [], // affectations (index)
     journal = []; // journal des affectations (récentes d'abord)
   const hooks = []; // à rappeler après une affectation (grille redessinée)
@@ -27,8 +29,11 @@
       fresh: true
     })).assignments;
     journal = await M().readLog().catch(() => []);
+    prefs = {};
     await Promise.all(data.pilotes.map(async p => {
       decl[p.trigramme] = await M().availability(p.trigramme);
+      // préférences de thèmes (fiche utilisateur) : aussi pour les pilotes sans déclaration (codes du classeur)
+      prefs[p.trigramme] = decl[p.trigramme]?.prefs ?? await window.SuiteUsers?.themePrefs?.(p.trigramme).catch(() => null) ?? null;
     }));
   }
   /** Plage d'un créneau (jour j, créneau k) : [début, fin] en ms ; null sans date. */
@@ -53,8 +58,8 @@
   const freePilots = (j, k) => (D?.pilotes || []).map(p => p.trigramme).filter(tr => free(tr, j, k, (D.records || []).find(r => r.pilote === tr && r.jourIndex === j && r.creneauIndex === k)));
   /** Créneau (jour, créneau) qui contient l'heure ms ; null hors de la semaine ou entre deux créneaux. */
   const slotAt = ms => {
-    for (const [j] of (D?.dates || []).entries())
-      for (const [k] of (S?.hours || []).entries()) {
+    for (const [j] of(D?.dates || []).entries())
+      for (const [k] of(S?.hours || []).entries()) {
         const r = range(j, k);
         if (r && ms >= r[0] && ms < r[1]) return [j, k];
       }
@@ -80,8 +85,8 @@
   /** Créneaux recouverts par une plage : [[j, k]…], dans l'ordre. */
   const slotsOver = (from, to) => {
     const out = [];
-    for (const [j] of (D?.dates || []).entries())
-      for (const [k] of (S?.hours || []).entries()) {
+    for (const [j] of(D?.dates || []).entries())
+      for (const [k] of(S?.hours || []).entries()) {
         const r = range(j, k);
         if (r && r[0] < to && r[1] > from) out.push([j, k]);
       }
@@ -98,7 +103,7 @@
     const lines = list.filter(a => a.mission === line.mission && a.role !== 'convoyage');
     const parts = lines.map(a => Object.fromEntries(keys.filter(k => k in a).map(k => [k, a[k]])));
     const p = parts.find(x => x.pilot === line.for_pilot && x.aircraft?.registration === line.aircraft?.registration && x.ferry?.open);
-    if (!p) throw new Error(`convoyage de ${line.mission} introuvable dans ses affectations`);
+    if (!p) throw new Error(L(['convoyage de {m} introuvable dans ses affectations', 'ferry of {m} not found in its assignments', 'Überführung von {m} in ihren Zuweisungen nicht gefunden', 'traslado de {m} no encontrado en sus asignaciones'], { m: line.mission }));
     p.ferry = {
       ...p.ferry,
       pilot: tri,
@@ -139,14 +144,43 @@
     const d = declared(tri, j, k),
       a = assigned(tri, j, k),
       isFree = free(tri, j, k, xlRecord),
-      decl = d ? codeCell({
+      decl = d?.groupe && window.SuiteDispos ? catCell(d) : d ? codeCell({
         code: d.code,
         sens: d.label,
-        categorie: M().LEGEND[d.code][1],
-        source: 'déclaration du pilote (Mes missions)'
-      }) : '<span class="odv-code c-inconnu" title="Pas de déclaration du pilote">·</span>';
-    const title = a.length ? `Affecté : ${a.map(x => `${x.mission}${x.role === 'convoyage' ? ' (convoyage)' : ''}`).join(', ')}` : isFree ? 'Disponible, non affecté : cliquer pour affecter une mission sur ce créneau' : 'Cliquer pour affecter une mission sur ce créneau';
+        categorie: M().LEGEND[d.code]?.[1] || d.category,
+        source: L(['déclaration du pilote (Mes missions)', 'pilot declaration (My missions)', 'Angabe des Piloten (Meine Missionen)', 'declaración del piloto (Mis misiones)'])
+      }) : `<span class="odv-code c-inconnu" title="${esc(L(['Pas de déclaration du pilote', 'No pilot declaration', 'Keine Angabe des Piloten', 'Sin declaración del piloto']))}">·</span>`;
+    const ferry = L(['convoyage', 'ferry', 'Überführung', 'traslado']);
+    const title = a.length ? L(['Affecté : {m}', 'Assigned: {m}', 'Zugewiesen: {m}', 'Asignado: {m}'], {
+      m: a.map(x => `${x.mission}${x.role === 'convoyage' ? ` (${ferry})` : ''}`).join(', ')
+    }) : isFree ? L(['Disponible, non affecté : cliquer pour affecter une mission sur ce créneau', 'Available, not assigned: click to assign a mission on this slot', 'Verfügbar, nicht zugewiesen: klicken, um diesem Zeitfenster eine Mission zuzuweisen', 'Disponible, sin asignar: haga clic para asignar una misión en esta franja']) : L(['Cliquer pour affecter une mission sur ce créneau', 'Click to assign a mission on this slot', 'Klicken, um diesem Zeitfenster eine Mission zuzuweisen', 'Haga clic para asignar una misión en esta franja']);
     return `<span class="odv-decl${isFree ? ' odv-free' : ''}" data-odv-slot="${j}${k}" data-tri="${esc(tri)}" title="${esc(title)}">${decl}${a.length ? `<b class="odv-asg">${esc(a[0].mission)}${a.length > 1 ? '+' : ''}</b>` : ''}</span>`;
+  }
+  /** Déclaration par catégories, même rendu que la grille de Mes missions (shared/dispos_editor.js) : lettre de chaque
+   *  catégorie du créneau (O, SC, D+, SC-…) sur sa couleur (plusieurs : bandes) ; groupe, catégories et thèmes ouverts
+   *  dans l'infobulle. Ancienne grille sans catégorie : lettre du groupe (groupCell). */
+  function catCell(d) {
+    const SD = window.SuiteDispos,
+      K = window.RepositoryKit;
+    const cs = [...new Set((d.details || [d]).map(x => x.categorie).filter(Boolean))].map(id => SD.category(id)).filter(Boolean);
+    if (!cs.length || !SD.code) return groupCell(d);
+    const cols = cs.map(SD.color),
+      bg = cols.length === 1 ? cols[0] : `linear-gradient(135deg,${cols.map((c, n) => `${c} ${n * 100 / cols.length}% ${(n + 1) * 100 / cols.length}%`).join(',')})`,
+      ink = (K.color.luminance(cols[0]) ?? 1) < .4 ? '#fff' : '#1b1b1b';
+    const tip = [SD.label(SD.group(d.groupe)?.label || d.groupe), ...cs.map(c => `· ${SD.code(c)} ${SD.label(c.label)}`), K.t(['déclaration du pilote (Mes missions)', 'pilot declaration (My missions)', 'Pilotenangabe (Meine Missionen)', 'declaración del piloto (Mis misiones)'])].join('\n');
+    return `<span class="odv-code c-${esc(d.category || 'inconnu')}" style="background:${esc(bg)};color:${ink}" title="${esc(tip)}">${esc(cs.map(SD.code).filter(Boolean).join('/'))}</span>`;
+  }
+  /** Déclaration regroupée (docs/technique/DISPOS_ET_REORGANISATION.md § 1.2) : lettre (court : D, E, O, I) et couleur du groupe
+   *  (Disponible, Exercice DEFA, Occupé, Indisponible) ; catégories et thèmes ouverts dans l'infobulle. */
+  function groupCell(d) {
+    const SD = window.SuiteDispos,
+      K = window.RepositoryKit,
+      g = SD.group(d.groupe) || {},
+      name = SD.label(g.label || d.groupe),
+      col = window.RepositoryNav?.chartColor?.(g.couleur || '#BFBFBF') || g.couleur || '#BFBFBF',
+      ink = (K.color.luminance(col) ?? 1) < .35 ? '#fff' : '#1b1b1b';
+    const tip = [name, ...(d.details || [d]).map(x => `· ${x.label}`), K.t(['déclaration du pilote (Mes missions)', 'pilot declaration (My missions)', 'Pilotenangabe (Meine Missionen)', 'declaración del piloto (Mis misiones)'])].join('\n');
+    return `<span class="odv-code c-${esc(d.category || 'inconnu')}" style="background:${esc(col)};color:${ink}" title="${esc(tip)}">${esc(g.court || name.slice(0, 1).toUpperCase())}</span>`;
   }
   /** Yaml d'une mission du registre (fetch) ; {} si illisible. */
   async function yamlOf(m) {
@@ -163,7 +197,7 @@
   /** Ouvre le dialogue d'affectation pour une mission du registre, pilotes et heure préremplis (sans pilotes : son
    *  affectation enregistrée, à modifier) ; rend la fenêtre, qui émet « reloaded » une fois les affectations relues. */
   async function assign(m, pilots, takeoff, note = '') {
-    if (!window.AssignDialog) throw new Error('Dialogue d’affectation absent');
+    if (!window.AssignDialog) throw new Error(L(['Dialogue d’affectation absent', 'Assignment dialog missing', 'Zuweisungsdialog fehlt', 'Falta el diálogo de asignación']));
     const y = await yamlOf(m);
     const dlg = await window.AssignDialog.open(m, y, {
       maps: m.images || [],
@@ -199,8 +233,13 @@
 
   window.OdvAssign = {
     load,
+    groupCell,
+    catCell,
     declaration: tri => decl[tri] || null,
+    /** Préférences de thèmes d'un pilote (missions probables : thèmes ouverts des codes du classeur). */
+    prefsOf: tri => prefs[tri] || null,
     range,
+    slotAt,
     declared,
     assigned,
     free,

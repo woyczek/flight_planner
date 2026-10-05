@@ -226,7 +226,7 @@
   function settings() {
     let s = {};
     try {
-      s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') || {};
+      s = (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached(SETTINGS_KEY, {}) : JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')) || {}; // lecture mémorisée
     } catch {
       s = {};
     }
@@ -245,7 +245,8 @@
       } try {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
     } catch {
-      /* stockage indisponible */ }
+      /* stockage indisponible */
+    }
     return settings();
   }
   const MODES = ['auto', 'airways', 'rtba', 'direct'];

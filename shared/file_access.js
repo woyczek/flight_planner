@@ -67,24 +67,33 @@
 
   // ---- dossiers mémorisés (même base que ledger.js, data_admin.js, browser_store.js)
   /** Base IndexedDB « missionCore » (magasin handles) : dossiers mémorisés, partagée avec ledger.js, data_admin.js et browser_store.js. */
-  const idb = () => new Promise((resolve, reject) => {
-    const r = indexedDB.open('missionCore', 1);
-    r.onupgradeneeded = () => r.result.createObjectStore('handles');
-    r.onsuccess = () => resolve(r.result);
-    r.onerror = () => reject(r.error);
-  });
+  // connexion partagée par la page (RepositoryKit.idb) : plus une ouverture par lecture
+  const idb = () => window.RepositoryKit.idb('missionCore', 1, db => db.objectStoreNames.contains('handles') || db.createObjectStore('handles'));
+  // dossiers mémorisés gardés 10 s en mémoire (une page en lit des dizaines par écran) ; oubliés quand un dossier est
+  // rechoisi (ici ou par une autre page : file-access-change)
+  const handleMemo = new Map();
+  window.addEventListener('file-access-change', () => handleMemo.clear());
   /** Dossier mémorisé (handle) de la clé key (__repo, __ledger, __perf, __store…) ; null sinon. */
   async function get(key) {
-    try {
-      const db = await idb();
-      return await new Promise(res => {
-        const q = db.transaction('handles').objectStore('handles').get(`folder:${key}`);
-        q.onsuccess = () => res(q.result || null);
-        q.onerror = () => res(null);
-      });
-    } catch {
-      return null;
-    }
+    const hit = handleMemo.get(key);
+    if (hit && Date.now() - hit.at < 10e3) return hit.value;
+    const value = await (async () => {
+      try {
+        const db = await idb();
+        return await new Promise(res => {
+          const q = db.transaction('handles').objectStore('handles').get(`folder:${key}`);
+          q.onsuccess = () => res(q.result || null);
+          q.onerror = () => res(null);
+        });
+      } catch {
+        return null;
+      }
+    })();
+    handleMemo.set(key, {
+      at: Date.now(),
+      value
+    });
+    return value;
   }
   /** Mémorise le dossier handle sous la clé key. */
   async function set(key, handle) {
@@ -101,6 +110,61 @@
       }
     }));
   }
+  // ---- même installation que la suite servie ? Le lanceur (tools/launch.py) écrit à chaque démarrage un jeton dans
+  // .defa_instance (racine, data/, data/missions…) : lu par le serveur et dans le dossier autorisé, deux jetons
+  // différents = le dossier choisi est une autre copie de la suite (« DEFA - Copy »…). Sans lanceur : pas de contrôle.
+  const ROOT_URL = new URL('../', document.currentScript?.src || location.href).href;
+  const REL = {
+    __repo: '',
+    __data: 'data/',
+    __ledger: 'data/cr/',
+    __missions: 'data/missions/',
+    __sia: 'data/sia/',
+    __perf: 'data/planner/'
+  };
+  const INSTANCE = '.defa_instance';
+  /** true : le dossier est celui de la suite servie ; false : autre copie ; null : contrôle impossible. */
+  // résultat gardé 30 s par dossier (nom) : les lectures de fichiers d'une page ne relisent pas le repère à chaque fois ;
+  // oublié quand un dossier est rechoisi
+  const sameMemo = new Map();
+  window.addEventListener('file-access-change', () => sameMemo.clear());
+  async function sameAsServed(key, handle) {
+    if (!(key in REL) || !handle || !/^https?:$/.test(location.protocol)) return null;
+    const memoKey = `${key}|${handle.name}`,
+      hit = sameMemo.get(memoKey);
+    if (hit && Date.now() - hit.at < 30e3) return hit.value;
+    const value = await (async () => {
+      try {
+        // jeton servi relu à chaque contrôle (mémo de 30 s ci-dessous) : data/ partagé par plusieurs copies (lien) reçoit
+        // un nouveau jeton à chaque lancement de l'une d'elles ; gardé toute la vie de la page, l'ancien faisait conclure
+        // « autre copie » et les écritures restaient dans le navigateur
+        const want = await fetch(new URL(REL[key] + INSTANCE, ROOT_URL), {
+          cache: 'no-store'
+        }).then(r => r.ok ? r.text() : null).then(s => s?.trim() || null, () => null);
+        if (!want) return null;
+        const got = (await (await handle.getFileHandle(INSTANCE)).getFile().then(f => f.text())).trim();
+        return got === want;
+      } catch {
+        return false; // pas de repère dans le dossier choisi alors que la suite servie en a un : autre dossier
+      }
+    })();
+    sameMemo.set(memoKey, {
+      at: Date.now(),
+      value
+    });
+    return value;
+  }
+  /** Dossier de la suite servie (chemin donné par le lanceur), pour le message. */
+  const servedRoot = () => fetch(new URL('__setup/status', ROOT_URL), {
+    headers: {
+      'X-DEFA-Setup': '1'
+    },
+    cache: 'no-store'
+  }).then(r => r.json()).then(j => j.root || '', () => '');
+  const OTHER = L('n’est pas le dossier de la suite lancée ({root}) : autre copie ?', 'is not the folder of the running suite ({root}): another copy?', 'ist nicht der Ordner der gestarteten Suite ({root}): eine andere Kopie?', 'no es la carpeta de la suite iniciada ({root}): ¿otra copia?');
+  const otherText = async (key, name) => `${tr(FOLDERS[key]?.label || L(key, key))} « ${name} » ${tr(OTHER).replace('{root}', await servedRoot() || '?')}`;
+  const warned = new Set(); // une notification par dossier et par page
+
   /** État d'un dossier mémorisé : { handle, name, permission } (permission : granted / prompt / denied / none). */
   async function status(key) {
     const handle = await get(key);
@@ -147,7 +211,8 @@
         }));
         done.push(key);
       } catch {
-        /* lecture seule */ }
+        /* lecture seule */
+      }
     }
     return done;
   }
@@ -162,11 +227,13 @@
       await new Promise(r => {
         tx.oncomplete = tx.onerror = r;
       });
+      handleMemo.clear();
       localStorage.setItem('fileAccessLayout', '3');
       const data = await get('__data');
       if (data) await deriveFromData(data);
     } catch {
-      /* stockage indisponible */ }
+      /* stockage indisponible */
+    }
   })();
 
   /** Vrai si le dossier contient le fichier (chemin relatif, sous-dossiers compris : « config/repository_tree »). */
@@ -193,7 +260,8 @@
         done.push('__data', ...await deriveFromData(data));
       }
     } catch {
-      /* pas de data/ : données par exemples ou par archive, à choisir à part */ }
+      /* pas de data/ : données par exemples ou par archive, à choisir à part */
+    }
     if (!await get('__store')) {
       await set('__store', repo);
       done.push('__store');
@@ -216,8 +284,12 @@
     });
     if (info.check) {
       const ok = await has(handle, info.check);
-      if (!ok && !confirm(`« ${handle.name} » ${tr(STATE.notExpected).replace('{f}', info.check)}\n${tr(STATE.expected)} : ${tr(info.expect)}`)) throw new Error('Dossier refusé');
+      if (!ok && !await window.AppFramework.ask(`« ${handle.name} » ${tr(STATE.notExpected).replace('{f}', info.check)}\n${tr(STATE.expected)} : ${tr(info.expect)}`)) throw new Error('Dossier refusé');
     }
+    // autre copie de la suite que celle qui est servie : confirmation
+    if (await sameAsServed(key, handle) === false && !await window.AppFramework.ask(await otherText(key, handle.name), {
+        danger: true
+      })) throw new Error('Dossier refusé');
     await set(key, handle);
     if (key === '__data') await deriveFromData(handle);
     if (key === '__repo') handle.derived = await deriveFromRepo(handle);
@@ -230,11 +302,13 @@
         label: L(key, key),
         expect: L('', '')
       };
-    const mark = s.permission === 'granted' ? '✓' : s.permission === 'none' ? '' : '⚠';
+    const other = s.permission === 'granted' && await sameAsServed(key, s.handle) === false;
+    const mark = other ? '⚠' : s.permission === 'granted' ? '✓' : s.permission === 'none' ? '' : '⚠';
     const short = s.name ? `${s.name} ${mark}`.trim() : tr(STATE.none);
-    const title = `${tr(info.label)} — ${tr(STATE.expected)} : ${tr(info.expect)}\n${tr(STATE.current)} : ${s.name ? `${s.name} (${tr(STATE[s.permission] || STATE.prompt)})` : tr(STATE.none)}`;
+    const title = `${tr(info.label)} — ${tr(STATE.expected)} : ${tr(info.expect)}\n${tr(STATE.current)} : ${s.name ? `${s.name} (${tr(STATE[s.permission] || STATE.prompt)})` : tr(STATE.none)}${other ? `\n⚠ ${await otherText(key, s.name)}` : ''}`;
     return {
       ...s,
+      other,
       label: tr(info.label),
       short,
       title
@@ -252,7 +326,11 @@
       button.textContent = withLabel ? `${d.label} : ${d.short}` : d.short;
       if (icons.length) button.prepend(...icons);
       button.title = d.title;
-      button.dataset.folderState = d.permission;
+      button.dataset.folderState = d.other ? 'other' : d.permission;
+      if (d.other && !warned.has(key)) {
+        warned.add(key);
+        window.AppFramework?.notify?.(await otherText(key, d.name), 'warn');
+      }
     };
     await refresh();
     if (!button.dataset.folderWatch) {
@@ -265,10 +343,10 @@
   }
 
   // ---- ouverture de fichiers : sélecteur du système dans le dossier paramétré
-  // Dossier par défaut selon la page (application CR DEFA : registre ; Paramétrage : dépôt).
+  // Dossier par défaut selon la page (application CR DEFA : registre ; Paramètres : dépôt).
   const defaultFolder = () => {
     const p = decodeURI(location.pathname);
-    if (/\/apps\/settings\/parametrage\.html$/.test(p)) return '__data';
+    if (/\/apps\/settings\/(parametrage|profil|centre|installation|maintenance)\.html$/.test(p)) return '__data';
     if (/\/apps\/cr\//.test(p)) return '__ledger';
     if (/\/apps\/planner\//.test(p)) return '__perf';
     if (/\/apps\/landing\//.test(p)) return '__xplane';
@@ -439,6 +517,7 @@
     defaultFolder,
     deriveFromData,
     deriveFromRepo,
-    has
+    has,
+    sameAsServed
   };
 })();

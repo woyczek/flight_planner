@@ -992,15 +992,12 @@
       const x0 = X(K.reachTop),
         x1 = X(m.ceiling),
         above = flTxt(K.reachTop);
-      const why = K.stopReason === "short" ?
-        [tl("inaccessible — trajet trop court", "unreachable — trip too short", "unerreichbar — Strecke zu kurz", "inaccesible — trayecto corto"),
+      const why = K.stopReason === "short" ? [tl("inaccessible — trajet trop court", "unreachable — trip too short", "unerreichbar — Strecke zu kurz", "inaccesible — trayecto corto"),
           tl(`Niveaux au-dessus de ${above} : le trajet (${fmt(c.D, 0)} NM) est trop court pour y monter puis redescendre.`, `Levels above ${above}: the trip (${fmt(c.D, 0)} NM) is too short to climb there and descend again.`, `Flughöhen über ${above}: die Strecke (${fmt(c.D, 0)} NM) ist zu kurz, um dorthin zu steigen und wieder zu sinken.`, `Niveles por encima de ${above}: el trayecto (${fmt(c.D, 0)} NM) es demasiado corto para subir y volver a bajar.`)
         ] :
-        K.stopReason === "thrust" ?
-        [tl("inaccessible — puissance insuffisante", "unreachable — not enough power", "unerreichbar — zu wenig Leistung", "inaccesible — potencia insuficiente"),
+        K.stopReason === "thrust" ? [tl("inaccessible — puissance insuffisante", "unreachable — not enough power", "unerreichbar — zu wenig Leistung", "inaccesible — potencia insuficiente"),
           tl(`Niveaux au-dessus de ${above} : la puissance disponible ne suffit plus pour tenir la vitesse de croisière du profil (moteurs, air moins dense).`, `Levels above ${above}: the available power no longer holds the profile cruise speed (engines, thinner air).`, `Flughöhen über ${above}: die verfügbare Leistung reicht nicht mehr für die Reisegeschwindigkeit des Profils (Triebwerke, dünnere Luft).`, `Niveles por encima de ${above}: la potencia disponible ya no mantiene la velocidad de crucero del perfil (motores, aire menos denso).`)
-        ] :
-        [tl("inaccessible", "unreachable", "unerreichbar", "inaccesible"),
+        ] : [tl("inaccessible", "unreachable", "unerreichbar", "inaccesible"),
           tl(`Niveaux au-dessus de ${above} : le modèle ne trouve pas de vol possible (voir Limites).`, `Levels above ${above}: the model finds no feasible flight (see Limits).`, `Flughöhen über ${above}: das Modell findet keinen möglichen Flug (siehe Grenzen).`, `Niveles por encima de ${above}: el modelo no encuentra vuelo posible (ver Límites).`)
         ];
       zn.push(why);

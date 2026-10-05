@@ -1,4 +1,4 @@
-"""Couches CSS, modèle « app » (docs/REFACTORING_TOOLKIT.md, phase 3) : socle, styles des scripts et styles des pages
+"""Couches CSS, modèle « app » (docs/technique/REFACTORING_TOOLKIT.md, phase 3) : socle, styles des scripts et styles des pages
 dans UNE couche « app » (ordre et spécificité entre eux inchangés), bibliothèques dans « lib » en dessous, designs hors
 couche au-dessus : les designs l'emportent sur l'application sans !important.
 

@@ -466,7 +466,11 @@
   const LOADER = {
     title: ['Journal DEFA — charger / mettre à jour', 'DEFA log — load / update', 'DEFA-Journal — laden / aktualisieren', 'Diario DEFA — cargar / actualizar'],
     step1: ['1. Ouvrir « Log des vols » sur le site de la DEFA (connexion DEFA) :', '1. Open “Log des vols” on the DEFA website (DEFA login):', '1. „Log des vols“ auf der DEFA-Website öffnen:', '1. Abrir «Log des vols» en el sitio DEFA:'],
-    step2: ['2. Sur cette page : Ctrl+A puis Ctrl+C, et coller ici (Ctrl+V) — ou choisir la page enregistrée (Ctrl+S).', '2. On that page: Ctrl+A then Ctrl+C, and paste here (Ctrl+V) — or choose the saved page (Ctrl+S).', '2. Dort: Strg+A, Strg+C, hier einfügen — oder die gespeicherte Seite wählen.', '2. En esa página: Ctrl+A y Ctrl+C, y pegar aquí — o elegir la página guardada.'],
+    step2: ['2. Sur cette page : un clic sur le favori ci-dessous copie toute la page (ou Ctrl+A puis Ctrl+C) ; revenir ici et coller (Ctrl+V ou « Coller depuis le presse-papiers ») — ou choisir la page enregistrée (Ctrl+S).', '2. On that page: one click on the bookmark below copies the whole page (or Ctrl+A then Ctrl+C); come back here and paste (Ctrl+V or “Paste from clipboard”) — or choose the saved page (Ctrl+S).', '2. Dort: ein Klick auf das Lesezeichen unten kopiert die ganze Seite (oder Strg+A, Strg+C); hierher zurück und einfügen (Strg+V oder „Aus der Zwischenablage einfügen“) — oder die gespeicherte Seite wählen.', '2. En esa página: un clic en el marcador de abajo copia toda la página (o Ctrl+A y Ctrl+C); volver aquí y pegar (Ctrl+V o «Pegar desde el portapapeles») — o elegir la página guardada.'],
+    bookmark: ['← à glisser dans la barre des favoris (une fois) : sur la page « Log des vols », un clic copie toute la page, tableau compris.', '← drag to the bookmarks bar (once): on the “Log des vols” page, one click copies the whole page, table included.', '← einmal in die Lesezeichenleiste ziehen: auf der Seite „Log des vols“ kopiert ein Klick die ganze Seite samt Tabelle.', '← arrastrar a la barra de marcadores (una vez): en la página «Log des vols», un clic copia toda la página, tabla incluida.'],
+    bookmarkHelp: ['Ce lien s’utilise depuis la barre des favoris, sur la page « Log des vols » (glisser-déposer le lien dans la barre).', 'Use this link from the bookmarks bar, on the “Log des vols” page (drag and drop the link to the bar).', 'Diesen Link aus der Lesezeichenleiste auf der Seite „Log des vols“ verwenden (in die Leiste ziehen).', 'Use este enlace desde la barra de marcadores, en la página «Log des vols» (arrastrarlo a la barra).'],
+    clip: ['Coller depuis le presse-papiers', 'Paste from clipboard', 'Aus der Zwischenablage einfügen', 'Pegar desde el portapapeles'],
+    clipFail: ['Presse-papiers illisible ici : coller avec Ctrl+V dans la zone.', 'Clipboard not readable here: paste with Ctrl+V in the box.', 'Zwischenablage hier nicht lesbar: mit Strg+V in das Feld einfügen.', 'Portapapeles no legible aquí: pegar con Ctrl+V en el cuadro.'],
     merge: ['Mettre à jour (ajoute les nouveaux vols, garde l’historique)', 'Update (adds new flights, keeps history)', 'Aktualisieren (neue Flüge hinzufügen, Historie behalten)', 'Actualizar (añade vuelos nuevos, conserva el historial)'],
     replace: ['Remplacer le journal', 'Replace the log', 'Journal ersetzen', 'Reemplazar el diario'],
     file: ['Page enregistrée…', 'Saved page…', 'Gespeicherte Seite…', 'Página guardada…'],
@@ -475,9 +479,31 @@
     done: ['{n} vols lus, {a} nouveaux — journal : {t} vols ({d1} → {d2})', '{n} flights read, {a} new — log: {t} flights ({d1} → {d2})', '{n} Flüge gelesen, {a} neu — Journal: {t} Flüge ({d1} → {d2})', '{n} vuelos leídos, {a} nuevos — diario: {t} vuelos ({d1} → {d2})'],
     none: ['Aucun vol reconnu dans ce texte.', 'No flight recognised in this text.', 'Kein Flug erkannt.', 'Ningún vuelo reconocido.']
   };
-  // page « Log des vols » du site DEFA (adresse réglable : Paramètres › Maintenance › Sources et dossiers)
+  // page « Log des vols » du site DEFA (adresse réglable : Paramètres › Installation › Sources et dossiers)
   const defaUrl = () => window.RepositoryNav?.source?.('defa') || 'https://flotte.defa-virtual.fr';
-  const LOG_URL = defaUrl() + '/log_vols.php';
+  const LOG_URL = window.RepositoryNav?.vaUrl?.('log') || defaUrl() + '/log_vols.php'; // page du log de la compagnie virtuelle
+
+  // Favori (bookmarklet) « → Journal DEFA », à glisser dans la barre des favoris : sur la page « Log des vols » du site,
+  // copie la page entière (son HTML : le tableau garde ses colonnes et les liens des appareils) ; la suite la lit comme
+  // la page enregistrée. Le copier-coller ordinaire ne donne que du texte, souvent sans les colonnes.
+  // Pas de commentaire de ligne ni de « % » dans cette fonction : elle devient une adresse javascript: sur une ligne.
+  async function defaLogCopy() {
+    const html = '<!-- ' + location.href + ' -->' + String.fromCharCode(10) + document.documentElement.outerHTML;
+    const rows = document.querySelectorAll('tr').length;
+    try {
+      await navigator.clipboard.writeText(html);
+      alert('Journal copié (' + rows + ' lignes) : revenez sur la suite et collez-le. / Log copied (' + rows + ' rows): go back to the suite and paste it.');
+    } catch (error) {
+      const area = document.createElement('textarea');
+      area.value = html;
+      document.body.append(area);
+      area.select();
+      const ok = document.execCommand('copy');
+      area.remove();
+      alert(ok ? 'Journal copié : revenez sur la suite et collez-le. / Log copied: go back to the suite and paste it.' : 'Copie impossible / Copy failed: ' + error.message);
+    }
+  }
+  const LOG_BOOKMARKLET = 'javascript:(' + defaLogCopy.toString().replace(/\s*\n\s*/g, ' ') + ')()';
   /** Fenêtre de chargement du journal DEFA (fichier ou copier-coller de la page « Log des vols »), onLoaded appelé après chargement. */
   function loaderDialog({
     onLoaded
@@ -487,7 +513,9 @@
     const dialog = document.createElement('dialog');
     dialog.className = 'defa-loader';
     dialog.innerHTML = `<form method="dialog"><h3></h3><p class="small"></p><p><a target="_blank" rel="noopener"></a></p><p class="small"></p>
+      <p class="dl-row"><a class="dl-bookmarklet" draggable="true"></a><span class="small" data-t="bookmark"></span></p>
       <textarea rows="7" spellcheck="false" placeholder="Ctrl+V"></textarea>
+      <div class="dl-row"><button type="button" data-a="clip"></button></div>
       <div class="dl-row"><label><input type="radio" name="mode" value="merge" checked> <span data-t="merge"></span></label><label><input type="radio" name="mode" value="replace"> <span data-t="replace"></span></label></div>
       <div class="dl-row"><button type="button" data-a="load" class="primary"></button><label class="dl-file"><span data-t="file"></span><input type="file" accept=".html,.htm,.csv,.json,text/html" hidden></label></div>
       <p class="small dl-result"></p></form>`;
@@ -496,7 +524,14 @@
     ps[0].textContent = T('step1');
     ps[1].textContent = T('step2');
     const link = dialog.querySelector('a');
-    const logUrl = defaUrl() + '/log_vols.php';
+    const logUrl = window.RepositoryNav?.vaUrl?.('log') || LOG_URL;
+    const mark = dialog.querySelector('.dl-bookmarklet');
+    mark.textContent = `→ ${T('title').split(' — ')[0]}`;
+    mark.href = LOG_BOOKMARKLET;
+    mark.onclick = e => {
+      e.preventDefault(); // depuis la barre des favoris seulement
+      dialog.querySelector('.dl-result').textContent = T('bookmarkHelp');
+    };
     link.href = logUrl;
     link.textContent = `${logUrl} ↗`;
     dialog.querySelectorAll('[data-t]').forEach(el => {
@@ -529,7 +564,32 @@
       onLoaded?.(data);
     };
     dialog.querySelector('[data-a="load"]').onclick = () => run(area.value, '');
-    area.addEventListener('paste', () => setTimeout(() => run(area.value, '')));
+    // collage : le HTML copié (tableau et liens) plutôt que le texte seul, quand le presse-papiers le fournit
+    area.addEventListener('paste', e => {
+      const html = e.clipboardData?.getData('text/html') || '';
+      if (/<tr[\s>]/i.test(html)) {
+        e.preventDefault();
+        run(html, '');
+        return;
+      }
+      setTimeout(() => run(area.value, ''));
+    });
+    const clip = dialog.querySelector('[data-a="clip"]');
+    clip.textContent = T('clip');
+    clip.onclick = async () => {
+      try {
+        let text = '';
+        // presse-papiers riche (HTML) d'abord, sinon texte (page copiée par le favori : son HTML en texte)
+        for (const item of await navigator.clipboard.read?.() || []) {
+          if (item.types.includes('text/html')) text = await (await item.getType('text/html')).text();
+          if (!/<tr[\s>]/i.test(text) && item.types.includes('text/plain')) text = await (await item.getType('text/plain')).text();
+        }
+        if (!text) text = await navigator.clipboard.readText();
+        run(text, '');
+      } catch {
+        result.textContent = T('clipFail');
+      }
+    };
     const file = dialog.querySelector('input[type=file]');
     file.onchange = async () => {
       const f = file.files[0];

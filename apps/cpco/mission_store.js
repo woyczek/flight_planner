@@ -12,8 +12,9 @@
     BATCH = NS ? 'siaMissionBatch' + NS : 'siaMissionBatch:v1'; // lot de missions (opération à plusieurs équipes) : { docs, index }
   /** Clé de texte : minuscules sans accents, mots séparés par « _ ». */
   const norm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-  /** Copie profonde (JSON). */
-  const deepClone = v => JSON.parse(JSON.stringify(v));
+  /** Copie profonde : valeurs simples telles quelles (la copie JSON de chaque nombre ou texte coûtait des milliers
+   *  d'analyses par relecture du dossier des missions), objets par structuredClone. */
+  const deepClone = v => v === null || typeof v !== 'object' ? v : structuredClone(v);
 
   // ---- lecture Markdown (titres « ## Summary », ancien format à blocs TYPE: / TURNING POINTS: …)
   function parseMarkdown(text) {
@@ -787,7 +788,8 @@
       try {
         from = NS ? null : JSON.parse(sessionStorage.getItem('siaFromRegistry:v1') || 'null');
       } catch {
-        /* stockage indisponible */ }
+        /* stockage indisponible */
+      }
       if (from) {
         const back = document.createElement('a');
         back.id = 'siaBackRegistry';
@@ -827,7 +829,7 @@
           const d = go(i, me);
           if (d) apply(d);
         } catch (e) {
-          alert(e.message);
+          window.AppFramework.notify(e.message, 'err');
         }
         render();
       };
@@ -867,7 +869,7 @@
   }
   // ---- numérotation : lettre de FAMILLE + tiret + numéro sur 3 chiffres par famille (+ lettre d'équipe) — « M-016 », « S-002A »
   // (écritures sans tiret « M016 » acceptées et ramenées à ce format).
-  // Même table que tools/family_letters.py et que le prompt (docs/PROMPT_GENERATEUR_MISSIONS.md, § 3).
+  // Même table que tools/family_letters.py et que le prompt (docs/technique/PROMPT_GENERATEUR_MISSIONS.md, § 3).
   const FAMILY_LETTERS = {
     HEMS: 'M',
     MEDEVAC: 'M',
@@ -911,9 +913,11 @@
   function nextNumbering(family) {
     let reg = [];
     try {
-      reg = JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions || [];
+      // registre des missions : copie en mémoire de l'index (shared/data_index.js), lue à l'ouverture de la page
+      reg = (window.MissionIndex ? window.MissionIndex.all() : (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('missionRegistry:v1', null) : JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null'))?.missions) || [];
     } catch {
-      /* registre illisible */ }
+      /* registre illisible */
+    }
     const letter = FAMILY_LETTERS[String(family || '').toUpperCase()] || '';
     const mine = reg.filter(m => letter && parseId(m.id).letter === letter);
     const num = Math.max(0, ...mine.map(m => parseId(m.id).num || 0)) + 1,
@@ -933,7 +937,7 @@
     }).join(' · ');
   }
   // ---- Markdown d'une mission (summary<ID>.md) produit depuis son YAML : format du § 9 du prompt de génération
-  //      (docs/PROMPT_GENERATEUR_MISSIONS.md), relu par fromTexts ; mission d'organisation (…Z) : son format propre.
+  //      (docs/technique/PROMPT_GENERATEUR_MISSIONS.md), relu par fromTexts ; mission d'organisation (…Z) : son format propre.
   //      docs : autres missions de l'opération (YAML), pour la section « Exercice » d'une mission d'équipage.
   function markdownOf(y, {
     docs = []

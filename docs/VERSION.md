@@ -5,6 +5,51 @@ Une section par version publiée, la plus récente en tête, écrite à chaque r
 effectuer** (ce que chacun doit faire après la mise à jour), **notes** (limites connues, points d'attention, à venir).
 Entre deux versions, le pied de page affiche le commit en cours (`v4.6.0+abc1234`).
 
+## 4.8.0 — 5 octobre 2026
+
+### Synthèse
+
+- **Les données se partagent.** Le bouton **« Synchroniser (n) »** de l'en-tête envoie vos fichiers (disponibilités,
+  affectations, journal, fiches) au dépôt git de `data/` et reçoit ceux des autres. Une fiche modifiée des deux côtés
+  garde la version la plus récente, l'autre est copiée dans `_conflits/` : rien ne se perd.
+- **Utilisateurs et droits.** Chaque utilisateur a sa fiche (rôle, mot de passe chiffré). En mode `develop` (par
+  défaut), la connexion reste facultative ; en mode `production`, elle est exigée pour Mes missions et le Centre.
+- **Disponibilités en catégories** définies par le Centre (Paramètres › Centre › Catégories) : palette par groupe,
+  plages à la minute ; préférences de thèmes de missions dans Mon profil. Le planning ODV les montre aux mêmes couleurs.
+- **Mes missions** : liste et dossier côte à côte, disponibilités en dessous ; le dossier s'ouvre, se ferme et change
+  de mission avec une animation propre au design. Trois boutons mènent au profil : Pilote, Appareils maîtrisés,
+  Simulateurs.
+- **Aide intégrée** : entrée « Aide » de la barre latérale, en fenêtre au-dessus de la page, ouverte au chapitre de la
+  page. Manuel utilisateur et manuel administrateur en français, anglais, allemand et espagnol ; recherche ; utilisable
+  aussi sans le lanceur.
+- **Paramètres en quatre pages** : Mon profil, Centre, Installation, Maintenance. Flotte DEFA importée par copier-coller
+  de la page du site.
+- **Plus rapide** : index des données dans le navigateur (ODV : deuxième chargement de 114 à 11 requêtes), pages et
+  décor sans clignotement.
+
+### Actions à effectuer
+
+1. **Relancer le lanceur** (fermer sa fenêtre, puis `lancer.cmd` ou `lancer.sh`) : il porte la synchronisation et les
+   index des données. Puis **recharger chaque page ouverte** (Ctrl+F5).
+2. **Pilotes** : vérifier dans **Paramètres › Mon profil** le trigramme, les **appareils maîtrisés et simulateurs**
+   (ils ne se règlent plus dans Mes missions) et les préférences de thèmes.
+3. **Centre** : vérifier les catégories de disponibilité (Paramètres › Centre › Catégories) ; créer les fiches des
+   utilisateurs (Paramètres › Centre › Utilisateurs et droits) **avant** de passer la compagnie en mode `production`.
+4. **Partager les données entre plusieurs postes** : Paramètres › Installation › Premier lancement, carte « Dépôt git de
+   synchronisation des données » — adresse (git@… ou https://…), « Vérifier », « Enregistrer » ; puis « Synchroniser »
+   dans l'en-tête. La première synchronisation crée la branche distante.
+5. **Favoris vers la documentation technique** : elle a déménagé dans `docs/technique/` (le premier niveau de `docs/`
+   ne garde que l'installation, le paramétrage, l'utilisation et les versions).
+
+### Notes
+
+- La synchronisation passe par git en attendant le serveur web minimal (voir la feuille de route,
+  `docs/technique/ROADMAP.md`) ; les données restent pour l'instant sur la branche `test` du dépôt des données.
+- Les libellés des catégories propres à la compagnie se traduisent avec l'audit des traductions
+  (`tools/audit_i18n.html`, section « Libellés des données »).
+- Aide sans lanceur : à vérifier en ouvrant une page depuis le disque.
+- À venir : comptes rendus rangés par année, envoi des CR par le site DEFA (copier-coller en attendant une API).
+
 ## 4.7.0 — 2 octobre 2026
 
 ### Synthèse
@@ -136,7 +181,7 @@ Entre deux versions, le pied de page affiche le commit en cours (`v4.6.0+abc1234
 ### Notes
 
 - Toolkit : phase 2 terminée ; phase 3 (couches CSS, retrait des `!important`) commencée — le rendu peut encore
-  légèrement bouger. Plan : [docs/REFACTORING_TOOLKIT.md](docs/REFACTORING_TOOLKIT.md).
+  légèrement bouger. Plan : [docs/REFACTORING_TOOLKIT.md](technique/REFACTORING_TOOLKIT.md).
 - La punaise des cartes posées sur la feuille de Durci reprend celle de Cabinet (une punaise propre à Durci peut être
   fournie : `shared/deco/field/`).
 - Durci en ton sombre : pas de carnet sous les tableaux de registre (bloc d'acier), comme Cabinet et Carnet de vol.

@@ -2,634 +2,782 @@
    pied de page ; couleurs par thème via --repo-bar, --repo-bar-text, --repo-page, --repo-accent. */
 @layer lib, app;
 @layer app {
-:root {
-  --repo-bar: #101319;
-  --repo-bar-text: #eef3f7;
-  --repo-page: #fff;
-  --repo-accent: #69a7ff;
-  /* angles : 1 arrondis, 0 droits (designs à matières, designs_skeuo.css) ; un rayon s'écrit
+  :root {
+    --repo-bar: #101319;
+    --repo-bar-text: #eef3f7;
+    --repo-page: #fff;
+    --repo-accent: #69a7ff;
+    /* angles : 1 arrondis, 0 droits (designs à matières, designs_skeuo.css) ; un rayon s'écrit
      calc(<rayon> * var(--repo-round, 1)) au lieu d'une exception html[data-skeuo] … { border-radius: 0 } par élément */
-  --repo-round: 1
-}
-.repo-header {
-  top: 0;
-  z-index: 1000;
-  border-bottom: 1px solid color-mix(in srgb, var(--repo-bar-text) 18%, transparent)
-}
-.repo-header:not(#imp) {
-  position: sticky;
-  background: var(--repo-bar);
-  color: var(--repo-bar-text)
-}
-.repo-header-line1 {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 43px
-}
-.repo-header-line1 h1 {
-  color: inherit
-}
-.repo-header-spacer {
-  flex: 1;
-  min-width: 12px
-}
-.repo-header-tools {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  flex: 0 0 auto
-}
-.repo-language-popup,
-.repo-menu-wrap {
-  position: relative
-}
-.repo-language-button,
-.repo-menu-button {
-  height: 32px;
-  cursor: pointer;
-  font: 13px/1 Inter, system-ui, Segoe UI, Arial, sans-serif;
-  border: 1px solid color-mix(in srgb, var(--repo-bar-text) 25%, transparent);
-  border-radius: 7px;
-  background: transparent;
-  color: inherit
-}
-.repo-language-button {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 8px
-}
-.repo-language-flag {
-  font-size: 15px
-}
-.repo-language-name {
-  font-size: 12px
-}
-.repo-caret {
-  font-size: 9px;
-  opacity: .95
-}
-/* bouton ☰ : glyphe centré dans sa case (sans marge intérieure héritée des boutons de la page ou du design) */
-.repo-menu-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  padding: 0;
-  font-size: 19px
-}
-.repo-language-menu,
-.repo-menu {
-  position: absolute;
-  z-index: 1200;
-  right: 0;
-  top: calc(100% + 6px);
-  width: max-content;
-  min-width: 150px;
-  max-width: min(360px, calc(100vw - 20px));
-  max-height: 75vh;
-  overflow: auto;
-  padding: 7px;
-  background: var(--repo-bar);
-  color: var(--repo-bar-text);
-  border: 1px solid color-mix(in srgb, var(--repo-bar-text) 25%, transparent);
-  border-radius: 9px;
-  box-shadow: 0 12px 36px #0008
-}
-.repo-menu {
-  width: min(360px, calc(100vw - 20px))
-}
-.repo-language-menu[hidden],
-.repo-menu[hidden] {
-  display: none
-}
-.repo-language-menu button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  cursor: pointer
-}
-.repo-language-menu button:hover {
-  background: color-mix(in srgb, var(--repo-accent) 22%, transparent)
-}
-.repo-group {
-  margin: 5px 4px 2px;
-  padding: 5px 5px 3px;
-  color: color-mix(in srgb, var(--repo-bar-text) 66%, transparent);
-  font-size: 11px;
-  font-weight: 750;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  border-bottom: 1px solid color-mix(in srgb, var(--repo-bar-text) 16%, transparent)
-}
-.repo-tree-group {
-  margin: 3px 0
-}
-.repo-tree-group summary {
-  cursor: pointer;
-  list-style: none;
-  margin: 5px 4px 2px;
-  padding: 6px 5px;
-  color: color-mix(in srgb, var(--repo-bar-text) 76%, transparent);
-  font-size: 11px;
-  font-weight: 750;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  border-bottom: 1px solid color-mix(in srgb, var(--repo-bar-text) 16%, transparent)
-}
-.repo-tree-group summary::-webkit-details-marker {
-  display: none
-}
-.repo-tree-group summary:before {
-  content: "▸";
-  display: inline-block;
-  width: 14px
-}
-.repo-tree-group[open] summary:before {
-  content: "▾"
-}
-.repo-link,
-.repo-action {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: 8px;
-  padding: 8px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  text-decoration: none;
-  cursor: pointer
-}
-.repo-link:hover,
-.repo-action:hover,
-.repo-link.active {
-  background: color-mix(in srgb, var(--repo-accent) 22%, transparent)
-}
-.repo-sub {
-  padding-left: 23px
-}
-.repo-sep {
-  height: 1px;
-  margin: 6px;
-  background: color-mix(in srgb, var(--repo-bar-text) 16%, transparent)
-}
-.repo-unit-control {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 8px;
-  white-space: nowrap;
-  font-size: 12px
-}
-.repo-unit-control label {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  cursor: pointer
-}
-.repo-unit-control input {
-  margin: 0
-}
-.repo-footer {
-  padding: 14px 18px;
-  text-align: center;
-  background: var(--repo-bar);
-  color: var(--repo-bar-text);
-  font: 12px/1.4 Inter, system-ui, Segoe UI, Arial, sans-serif
-}
-.repo-footer a {
-  color: inherit
-}
-.repo-block {
-  position: relative
-}
-.repo-block-heading {
-  align-items: center;
-  gap: 8px;
-  display: flex
-}
-.repo-block-heading h2 {
-  flex: 1
-}
-.repo-block-tools {
-  display: flex;
-  gap: 5px;
-  margin-left: auto
-}
-.repo-block-tools button {
-  line-height: 1.1;
-  cursor: pointer
-}
-.repo-block-tools button:not(#imp) {
-  padding: 4px 7px;
-  font-size: 11px
-}
-.repo-block.repo-block-hidden>:not(.repo-block-heading) {
-  display: none !important
-}
-.repo-block-dragging {
-  opacity: .5
-}
-.repo-block-drop-before {
-  box-shadow: 0 -3px 0 var(--repo-accent)
-}
-.has-status-bar .repo-footer {
-  margin-bottom: 58px
-}
-.repo-header [hidden] {
-  display: none !important
-}
-.repo-language-flag,
-.repo-language-menu svg {
-  display: inline-block;
-  width: 27px;
-  height: 18px;
-  border-radius: 2px;
-  vertical-align: middle
-}
-.repo-auto-mark {
-  display: inline-flex;
-  width: 27px;
-  height: 18px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid currentColor;
-  border-radius: 2px;
-  font-size: 11px
-}
-.repo-header .repo-unit-control {
-  margin-left: auto
-}
-.repo-block {
-  margin-bottom: 14px
-}
-.repo-block:not(.card):not(#imp) {
-  margin-bottom: 18px
-}
-.repo-tree-group summary {
-  font-size: 13px;
-  text-transform: none;
-  border-bottom: 0;
-  letter-spacing: 0
-}
-.repo-tree-group {
-  border: 0
-}
-@media print {
-  .repo-header,
-  .repo-footer,
-  .repo-block-tools {
-    display: none !important
+    --repo-round: 1
   }
-}
-@media(max-width:600px) {
-  .repo-language-name {
-    display: none
+  .repo-header {
+    top: 0;
+    z-index: 1000;
+    border-bottom: 1px solid color-mix(in srgb, var(--repo-bar-text) 18%, transparent)
+  }
+  .repo-header:not(#imp) {
+    position: sticky;
+    background: var(--repo-bar);
+    color: var(--repo-bar-text)
   }
   .repo-header-line1 {
-    gap: 6px
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 43px
+  }
+  .repo-header-line1 h1 {
+    color: inherit
+  }
+  .repo-header-spacer {
+    flex: 1;
+    min-width: 12px
   }
   .repo-header-tools {
-    gap: 5px
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex: 0 0 auto
   }
-}
-.repo-language-label {
-  font: 12px/1 Inter, system-ui, Segoe UI, Arial, sans-serif;
-  color: inherit;
-  white-space: nowrap
-}
-.repo-language-flag {
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  flex: 0 0 27px;
-  display: inline-flex;
-  width: 27px;
-  height: 18px
-}
-.repo-language-flag svg,
-.repo-language-menu svg {
-  display: block;
-  width: 27px;
-  height: 18px;
-  min-width: 27px;
-  min-height: 18px;
-  max-width: 27px;
-  max-height: 18px;
-  border-radius: 2px
-}
-.repo-language-button {
-  min-width: 48px;
-  justify-content: center
-}
-@media(max-width:600px) {
-  .repo-language-label {
+  .repo-language-popup,
+  .repo-menu-wrap {
+    position: relative
+  }
+  .repo-language-button,
+  .repo-menu-button {
+    height: 32px;
+    cursor: pointer;
+    font: 13px/1 Inter, system-ui, Segoe UI, Arial, sans-serif;
+    border: 1px solid color-mix(in srgb, var(--repo-bar-text) 25%, transparent);
+    border-radius: 7px;
+    background: transparent;
+    color: inherit
+  }
+  .repo-language-button {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px
+  }
+  .repo-language-flag {
+    font-size: 15px
+  }
+  .repo-language-name {
+    font-size: 12px
+  }
+  .repo-caret {
+    font-size: 9px;
+    opacity: .95
+  }
+  /* bouton ☰ : glyphe centré dans sa case (sans marge intérieure héritée des boutons de la page ou du design) */
+  .repo-menu-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    padding: 0;
+    font-size: 19px
+  }
+  .repo-language-menu,
+  .repo-menu {
+    position: absolute;
+    z-index: 1200;
+    right: 0;
+    top: calc(100% + 6px);
+    width: max-content;
+    min-width: 150px;
+    max-width: min(360px, calc(100vw - 20px));
+    max-height: 75vh;
+    overflow: auto;
+    padding: 7px;
+    background: var(--repo-bar);
+    color: var(--repo-bar-text);
+    border: 1px solid color-mix(in srgb, var(--repo-bar-text) 25%, transparent);
+    border-radius: 9px;
+    box-shadow: 0 12px 36px #0008
+  }
+  .repo-menu {
+    width: min(360px, calc(100vw - 20px))
+  }
+  .repo-language-menu[hidden],
+  .repo-menu[hidden] {
+    display: none
+  }
+  .repo-language-menu button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    cursor: pointer
+  }
+  .repo-language-menu button:hover {
+    background: color-mix(in srgb, var(--repo-accent) 22%, transparent)
+  }
+  .repo-group {
+    margin: 5px 4px 2px;
+    padding: 5px 5px 3px;
+    color: color-mix(in srgb, var(--repo-bar-text) 66%, transparent);
+    font-size: 11px;
+    font-weight: 750;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    border-bottom: 1px solid color-mix(in srgb, var(--repo-bar-text) 16%, transparent)
+  }
+  .repo-tree-group {
+    margin: 3px 0
+  }
+  .repo-tree-group summary {
+    cursor: pointer;
+    list-style: none;
+    margin: 5px 4px 2px;
+    padding: 6px 5px;
+    color: color-mix(in srgb, var(--repo-bar-text) 76%, transparent);
+    font-size: 11px;
+    font-weight: 750;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    border-bottom: 1px solid color-mix(in srgb, var(--repo-bar-text) 16%, transparent)
+  }
+  .repo-tree-group summary::-webkit-details-marker {
+    display: none
+  }
+  .repo-tree-group summary:before {
+    content: "▸";
+    display: inline-block;
+    width: 14px
+  }
+  .repo-tree-group[open] summary:before {
+    content: "▾"
+  }
+  .repo-link,
+  .repo-action {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer
+  }
+  .repo-link:hover,
+  .repo-action:hover,
+  .repo-link.active {
+    background: color-mix(in srgb, var(--repo-accent) 22%, transparent)
+  }
+  .repo-sub {
+    padding-left: 23px
+  }
+  .repo-sep {
+    height: 1px;
+    margin: 6px;
+    background: color-mix(in srgb, var(--repo-bar-text) 16%, transparent)
+  }
+  .repo-unit-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 8px;
+    white-space: nowrap;
+    font-size: 12px
+  }
+  .repo-unit-control label {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer
+  }
+  .repo-unit-control input {
+    margin: 0
+  }
+  .repo-footer {
+    padding: 14px 18px;
+    text-align: center;
+    background: var(--repo-bar);
+    color: var(--repo-bar-text);
+    font: 12px/1.4 Inter, system-ui, Segoe UI, Arial, sans-serif
+  }
+  .repo-footer a {
+    color: inherit
+  }
+  .repo-block {
+    position: relative
+  }
+  .repo-block-heading {
+    align-items: center;
+    gap: 8px;
+    display: flex
+  }
+  .repo-block-heading h2 {
+    flex: 1
+  }
+  .repo-block-tools {
+    display: flex;
+    gap: 5px;
+    margin-left: auto
+  }
+  .repo-block-tools button {
+    line-height: 1.1;
+    cursor: pointer
+  }
+  .repo-block-tools button:not(#imp) {
+    padding: 4px 7px;
     font-size: 11px
   }
-}
-/* ---- barre latérale (construite par repository_nav.js dès son exécution, icônes posées par side_nav.js) : ici et non
+  .repo-block.repo-block-hidden>:not(.repo-block-heading) {
+    display: none !important
+  }
+  .repo-block-dragging {
+    opacity: .5
+  }
+  .repo-block-drop-before {
+    box-shadow: 0 -3px 0 var(--repo-accent)
+  }
+  .has-status-bar .repo-footer {
+    margin-bottom: 58px
+  }
+  .repo-header [hidden] {
+    display: none !important
+  }
+  .repo-language-flag,
+  .repo-language-menu svg {
+    display: inline-block;
+    width: 27px;
+    height: 18px;
+    border-radius: 2px;
+    vertical-align: middle
+  }
+  .repo-auto-mark {
+    display: inline-flex;
+    width: 27px;
+    height: 18px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid currentColor;
+    border-radius: 2px;
+    font-size: 11px
+  }
+  .repo-header .repo-unit-control {
+    margin-left: auto
+  }
+  .repo-block {
+    margin-bottom: 14px
+  }
+  .repo-block:not(.card):not(#imp) {
+    margin-bottom: 18px
+  }
+  .repo-tree-group summary {
+    font-size: 13px;
+    text-transform: none;
+    border-bottom: 0;
+    letter-spacing: 0
+  }
+  .repo-tree-group {
+    border: 0
+  }
+  @media print {
+    .repo-header,
+    .repo-footer,
+    .repo-block-tools {
+      display: none !important
+    }
+  }
+  @media(max-width:600px) {
+    .repo-language-name {
+      display: none
+    }
+    .repo-header-line1 {
+      gap: 6px
+    }
+    .repo-header-tools {
+      gap: 5px
+    }
+  }
+  .repo-language-label {
+    font: 12px/1 Inter, system-ui, Segoe UI, Arial, sans-serif;
+    color: inherit;
+    white-space: nowrap
+  }
+  .repo-language-flag {
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex: 0 0 27px;
+    display: inline-flex;
+    width: 27px;
+    height: 18px
+  }
+  .repo-language-flag svg,
+  .repo-language-menu svg {
+    display: block;
+    width: 27px;
+    height: 18px;
+    min-width: 27px;
+    min-height: 18px;
+    max-width: 27px;
+    max-height: 18px;
+    border-radius: 2px
+  }
+  .repo-language-button {
+    min-width: 48px;
+    justify-content: center
+  }
+  @media(max-width:600px) {
+    .repo-language-label {
+      font-size: 11px
+    }
+  }
+  /* ---- barre latérale (construite par repository_nav.js dès son exécution, icônes posées par side_nav.js) : ici et non
    dans block_icons.css (chargé plus tard) pour que la barre et la marge du contenu paraissent avec l'en-tête ; préférence html[data-sidenav="on"] ou design « console » */
-:root {
-  --repo-sidenav-w: 84px
-}
-.repo-sidenav {
-  display: none;
-  position: fixed;
-  z-index: 1100;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: var(--repo-sidenav-w);
-  flex-direction: column;
-  overflow-y: auto;
-  background: color-mix(in srgb, var(--repo-bar) 86%, #000);
-  color: var(--repo-bar-text);
-  border-right: 1px solid color-mix(in srgb, var(--repo-bar-text) 14%, transparent)
-}
-html[data-sidenav="on"] .repo-sidenav,
-html[data-design="console"]:not([data-sidenav="off"]) .repo-sidenav {
-  display: flex
-}
-html[data-sidenav="on"],
-html[data-design="console"]:not([data-sidenav="off"]) {
-  padding-left: var(--repo-sidenav-w)
-}
-.repo-sidenav-brand {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 64px;
-  margin-top: 16px
-}
-/* contenu de la barre un peu descendu : logo DEFA centré dans sa case */
-/* modèle de boîte imposé : la barre ne dépend pas du CSS de la page (le studio n'a pas de box-sizing global :
+  :root {
+    --repo-sidenav-w: 84px
+  }
+  .repo-sidenav {
+    display: none;
+    position: fixed;
+    z-index: 1100;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: var(--repo-sidenav-w);
+    flex-direction: column;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--repo-bar) 86%, #000);
+    color: var(--repo-bar-text);
+    border-right: 1px solid color-mix(in srgb, var(--repo-bar-text) 14%, transparent)
+  }
+  html[data-sidenav="on"] .repo-sidenav,
+  html[data-design="console"]:not([data-sidenav="off"]) .repo-sidenav {
+    display: flex
+  }
+  html[data-sidenav="on"],
+  html[data-design="console"]:not([data-sidenav="off"]) {
+    padding-left: var(--repo-sidenav-w)
+  }
+  .repo-sidenav-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 64px;
+    margin-top: 16px
+  }
+  /* contenu de la barre un peu descendu : logo DEFA centré dans sa case */
+  /* modèle de boîte imposé : la barre ne dépend pas du CSS de la page (le studio n'a pas de box-sizing global :
    liens de 84 px + retrait + liseré = 95 px, icônes décalées) */
-.repo-sidenav,
-.repo-sidenav *,
-.repo-sidenav *::before,
-.repo-sidenav *::after {
-  box-sizing: border-box
-}
-/* barre plus haute que la fenêtre : défilement sans barre visible (elle mangerait la largeur des entrées) */
-.repo-sidenav {
-  scrollbar-width: none
-}
-.repo-sidenav::-webkit-scrollbar {
-  display: none
-}
-.repo-sidenav ul {
-  list-style: none;
-  margin: 0;
-  padding: 0 0 8px;
-  flex: 1;
-  display: flex;
-  flex-direction: column
-}
-.repo-sidenav-bottom:not(#imp) {
-  margin-top: auto
-}
-.repo-sidenav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  width: 100%;
-  padding: 11px 4px;
-  border: 0;
-  border-left: 3px solid transparent;
-  border-radius: 0;
-  background: transparent;
-  color: inherit;
-  font: 600 11.5px/1.2 Inter, system-ui, "Segoe UI", Arial, sans-serif;
-  text-align: center;
-  text-decoration: none;
-  cursor: pointer
-}
-.repo-sidenav-item:hover {
-  background: color-mix(in srgb, var(--repo-bar-text) 10%, transparent)
-}
-/* entrée de la page courante : fond et liseré réglables par les designs (--sk-nav-on-bg, --sk-nav-on-edge) */
-.repo-sidenav-item[aria-current="page"] {
-  background: var(--sk-nav-on-bg, color-mix(in srgb, var(--repo-bar-text) 17%, transparent));
-  border-left-color: var(--sk-nav-on-edge, var(--repo-bar-text))
-}
-.repo-sidenav-item:focus-visible {
-  outline: 2px solid var(--repo-bar-text);
-  outline-offset: -4px
-}
-.repo-sidenav-sep {
-  height: 1px;
-  margin: 10px 14px;
-  background: color-mix(in srgb, var(--repo-bar-text) 20%, transparent)
-}
-@media (max-width:760px) {
-  html[data-sidenav],
-  html[data-design="console"] {
-    padding-left: 0 !important
+  .repo-sidenav,
+  .repo-sidenav *,
+  .repo-sidenav *::before,
+  .repo-sidenav *::after {
+    box-sizing: border-box
   }
-  .repo-sidenav {
+  /* entrées plus hautes que la fenêtre : la liste du haut défile, sans barre visible (elle mangerait la largeur des
+     entrées) ; logo et entrées du bas (Apparence, Paramètres, Aide : .repo-sidenav-foot) restent en place */
+  .repo-sidenav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 8px;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: none;
+    display: flex;
+    flex-direction: column
+  }
+  .repo-sidenav ul::-webkit-scrollbar {
+    display: none
+  }
+  .repo-sidenav ul.repo-sidenav-foot {
+    flex: 0 0 auto;
+    overflow: visible
+  }
+  /* fenêtre très basse (logo et entrées du bas plus hauts qu'elle) : toute la barre défile, comme avant */
+  @media (max-height: 460px) {
+    .repo-sidenav {
+      overflow-y: auto;
+      scrollbar-width: none
+    }
+    .repo-sidenav ul {
+      flex: 0 0 auto;
+      overflow: visible
+    }
+  }
+  .repo-sidenav-bottom:not(#imp) {
+    margin-top: auto
+  }
+  .repo-sidenav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    width: 100%;
+    padding: 11px 4px;
+    border: 0;
+    border-left: 3px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    font: 600 11.5px/1.2 Inter, system-ui, "Segoe UI", Arial, sans-serif;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer
+  }
+  .repo-sidenav-item:hover {
+    background: color-mix(in srgb, var(--repo-bar-text) 10%, transparent)
+  }
+  /* entrée de la page courante : fond et liseré réglables par les designs (--sk-nav-on-bg, --sk-nav-on-edge) */
+  .repo-sidenav-item[aria-current="page"] {
+    background: var(--sk-nav-on-bg, color-mix(in srgb, var(--repo-bar-text) 17%, transparent));
+    border-left-color: var(--sk-nav-on-edge, var(--repo-bar-text))
+  }
+  .repo-sidenav-item:focus-visible {
+    outline: 2px solid var(--repo-bar-text);
+    outline-offset: -4px
+  }
+  .repo-sidenav-sep {
+    height: 1px;
+    margin: 10px 14px;
+    background: color-mix(in srgb, var(--repo-bar-text) 20%, transparent)
+  }
+  /* séparateur titré (« Centre ») : filet surmonté d'un petit titre en capitales */
+  .repo-sidenav-sep.repo-sidenav-titled {
+    height: auto;
+    margin: 12px 6px 4px;
+    padding-top: 5px;
+    background: none;
+    border-top: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+    text-align: center
+  }
+  .repo-sidenav-sep-title {
+    display: block;
+    font: 700 9.5px/1.2 Inter, system-ui, "Segoe UI", Arial, sans-serif;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    opacity: .72
+  }
+  /* onglets en tête de page (repository_nav.js, REPOSITORY_TREE.tabs) : générateur ⇄ studio, pages de Paramètres */
+  .repo-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 6px 16px 0;
+    border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent)
+  }
+  .repo-tab {
+    padding: 7px 14px 6px;
+    border: 1px solid transparent;
+    border-bottom: 0;
+    border-radius: calc(7px * var(--repo-round, 1)) calc(7px * var(--repo-round, 1)) 0 0;
+    color: inherit;
+    font: 600 13px/1.2 Inter, system-ui, "Segoe UI", Arial, sans-serif;
+    text-decoration: none;
+    opacity: .75
+  }
+  .repo-tab:hover {
+    opacity: 1;
+    background: color-mix(in srgb, currentColor 7%, transparent)
+  }
+  .repo-tab[aria-current="page"] {
+    opacity: 1;
+    margin-bottom: -1px;
+    border-color: color-mix(in srgb, currentColor 18%, transparent);
+    background: var(--card, var(--repo-page));
+    box-shadow: inset 0 3px 0 var(--repo-accent)
+  }
+  @media (max-width:760px) {
+    html[data-sidenav],
+    html[data-design="console"] {
+      padding-left: 0 !important
+    }
+    .repo-sidenav {
+      display: none !important
+    }
+  }
+  .repo-sidenav .repo-svg {
+    --rs: 22px
+  }
+  .repo-sidenav-ic {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px
+  }
+  .repo-sidenav-brand .repo-sidenav-ic {
+    width: 30px;
+    height: 30px
+  }
+  .repo-sidenav-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    grid-area: 1/1
+  }
+  .repo-sidenav-ic:has(>.repo-sidenav-img) .repo-svg {
     display: none !important
   }
-}
-.repo-sidenav .repo-svg {
-  --rs: 22px
-}
-.repo-sidenav-ic {
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px
-}
-.repo-sidenav-brand .repo-sidenav-ic {
-  width: 30px;
-  height: 30px
-}
-.repo-sidenav-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  grid-area: 1/1
-}
-.repo-sidenav-ic:has(>.repo-sidenav-img) .repo-svg {
-  display: none !important
-}
-.repo-sidenav-ic .repo-svg {
-  grid-area: 1/1
-}
-@media print {
-  html {
+  .repo-sidenav-ic .repo-svg {
+    grid-area: 1/1
+  }
+  @media print {
+    html {
+      padding-left: 0 !important
+    }
+    .repo-sidenav {
+      display: none !important
+    }
+  }
+  /* réglages en tête du menu ☰ (Apparence, Paramètres), en boutons */
+  .repo-settings-row {
+    display: flex;
+    gap: 6px;
+    padding: 4px 4px 8px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid color-mix(in srgb, var(--repo-bar-text) 18%, transparent)
+  }
+  .repo-settings-button {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 10px;
+    border: 1px solid color-mix(in srgb, var(--repo-bar-text) 30%, transparent);
+    border-radius: 7px;
+    background: color-mix(in srgb, var(--repo-bar-text) 10%, transparent);
+    font: 600 12.5px/1.2 Inter, system-ui, Segoe UI, Arial, sans-serif;
+    color: inherit;
+    text-decoration: none
+  }
+  .repo-settings-button:hover {
+    background: color-mix(in srgb, var(--repo-bar-text) 20%, transparent)
+  }
+  /* fenêtre modale Apparence (repository_nav.js, contenu : appearance_page.js) */
+  dialog.repo-ap-dialog {
+    width: min(1120px, 94vw);
+    max-height: 90vh;
+    padding: 0;
+    border: 0;
+    border-radius: 14px;
+    background: var(--repo-page, #f4f6f8);
+    color: inherit;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, .55);
+    overflow: auto
+  }
+  dialog.repo-ap-dialog::backdrop {
+    background: rgba(8, 12, 18, .6);
+    backdrop-filter: blur(2px)
+  }
+  .repo-ap-head {
+    top: 0;
+    z-index: 50
+  }
+  .repo-ap-head:not(#imp) {
+    position: sticky;
+    padding: 10px 18px
+  }
+  .repo-ap-head h1 {
+    margin: 0;
+    font-size: 19px
+  }
+  .repo-ap-close {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px
+  }
+  .repo-ap-close:hover {
+    background: color-mix(in srgb, var(--repo-bar-text) 16%, transparent)
+  }
+  /* fenêtre d'aide (repository_nav.js, openHelp) : page Aide dans un cadre, sur toute la hauteur de la fenêtre */
+  dialog.repo-help-dialog[open] {
+    width: min(1440px, 96vw);
+    height: 92vh;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden
+  }
+  .repo-help-frame {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 0;
+    border: 0;
+    background: transparent
+  }
+  a.repo-help-page {
+    text-decoration: none;
+    font-size: 18px
+  }
+  /* page dans le cadre de la fenêtre d'aide : ni en-tête ni barre latérale (la fenêtre a les siens) */
+  html[data-help-frame] {
     padding-left: 0 !important
   }
-  .repo-sidenav {
+  html[data-help-frame] :is(.repo-sidenav, body > header.repo-header) {
     display: none !important
   }
-}
-/* réglages en tête du menu ☰ (Apparence, Paramètres), en boutons */
-.repo-settings-row {
-  display: flex;
-  gap: 6px;
-  padding: 4px 4px 8px;
-  margin-bottom: 6px;
-  border-bottom: 1px solid color-mix(in srgb, var(--repo-bar-text) 18%, transparent)
-}
-.repo-settings-button {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 7px 10px;
-  border: 1px solid color-mix(in srgb, var(--repo-bar-text) 30%, transparent);
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--repo-bar-text) 10%, transparent);
-  font: 600 12.5px/1.2 Inter, system-ui, Segoe UI, Arial, sans-serif;
-  color: inherit;
-  text-decoration: none
-}
-.repo-settings-button:hover {
-  background: color-mix(in srgb, var(--repo-bar-text) 20%, transparent)
-}
-/* fenêtre modale Apparence (repository_nav.js, contenu : appearance_page.js) */
-dialog.repo-ap-dialog {
-  width: min(1120px, 94vw);
-  max-height: 90vh;
-  padding: 0;
-  border: 0;
-  border-radius: 14px;
-  background: var(--repo-page, #f4f6f8);
-  color: inherit;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, .55);
-  overflow: auto
-}
-dialog.repo-ap-dialog::backdrop {
-  background: rgba(8, 12, 18, .6);
-  backdrop-filter: blur(2px)
-}
-.repo-ap-head {
-  top: 0;
-  z-index: 50
-}
-.repo-ap-head:not(#imp) {
-  position: sticky;
-  padding: 10px 18px
-}
-.repo-ap-head h1 {
-  margin: 0;
-  font-size: 19px
-}
-.repo-ap-close {
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 6px
-}
-.repo-ap-close:hover {
-  background: color-mix(in srgb, var(--repo-bar-text) 16%, transparent)
-}
-dialog.repo-ap-dialog main.ap-page {
-  max-width: none;
-  margin: 0;
-  padding: 16px 18px 20px
-}
-/* logo DEFA en haut de la barre latérale (lien vers le site de la flotte) */
-a.repo-sidenav-brand {
-  text-decoration: none
-}
-.repo-sidenav-logo {
-  width: 46px;
-  height: 46px;
-  object-fit: contain;
-  display: block;
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .4));
-  transition: transform .15s
-}
-a.repo-sidenav-brand:hover .repo-sidenav-logo,
-a.repo-sidenav-brand:focus-visible .repo-sidenav-logo {
-  transform: scale(1.06)
-}
-/* barres fixées en bas des pages (planificateur : .status-bar ; Landing : .analysis-dock) : décalées de la largeur de la
+  dialog.repo-ap-dialog main.ap-page {
+    max-width: none;
+    margin: 0;
+    padding: 16px 18px 20px
+  }
+  /* logo DEFA en haut de la barre latérale (lien vers le site de la flotte) */
+  a.repo-sidenav-brand {
+    text-decoration: none
+  }
+  .repo-sidenav-logo {
+    width: 46px;
+    height: 46px;
+    object-fit: contain;
+    display: block;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .4));
+    transition: transform .15s
+  }
+  a.repo-sidenav-brand:hover .repo-sidenav-logo,
+  a.repo-sidenav-brand:focus-visible .repo-sidenav-logo {
+    transform: scale(1.06)
+  }
+  /* barres fixées en bas des pages (planificateur : .status-bar ; Landing : .analysis-dock) : décalées de la largeur de la
    barre latérale quand elle est affichée (sinon leur texte passe dessous) */
-html[data-sidenav="on"] :is(.status-bar, .analysis-dock),
-html[data-design="console"]:not([data-sidenav="off"]) :is(.status-bar, .analysis-dock) {
-  left: var(--repo-sidenav-w)
-}
+  html[data-sidenav="on"] :is(.status-bar, .analysis-dock),
+  html[data-design="console"]:not([data-sidenav="off"]) :is(.status-bar, .analysis-dock) {
+    left: var(--repo-sidenav-w)
+  }
 
-/* Centre (CPCO) verrouillé : entrées masquées, page du Centre recouverte d'un avis (shared/repository_nav.js) */
-html[data-cpco="off"] .cpco-only {
-  display: none !important
-}
-.cpco-lock {
-  position: fixed;
-  inset: 0;
-  z-index: 1050;
-  display: grid;
-  place-items: center;
-  padding: 16px;
-  background: #1b2440;
-  color: #f2f0ea;
-  font: 15px/1.5 system-ui, Segoe UI, Arial, sans-serif;
-  text-align: center
-}
-.cpco-lock>div {
-  max-width: 520px;
-  padding: 24px 28px;
-  border: 1px solid #e2c16b66;
-  border-radius: 14px;
-  background: #141b31
-}
-.cpco-lock b {
-  display: block;
-  color: #e2c16b;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  font-size: 13px
-}
-.cpco-lock a {
-  color: #e2c16b;
-  font-weight: 650
-}
-/* Sélecteur segmenté (framework) : <span class="repo-segs" role="group"><button class="repo-seg" aria-pressed="true|false">…
+  /* Centre (CPCO) verrouillé : entrées masquées, page du Centre recouverte d'un avis (shared/repository_nav.js) */
+  html[data-cpco="off"] .cpco-only {
+    display: none !important
+  }
+  .cpco-lock {
+    position: fixed;
+    inset: 0;
+    z-index: 1050;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    background: #1b2440;
+    color: #f2f0ea;
+    font: 15px/1.5 system-ui, Segoe UI, Arial, sans-serif;
+    text-align: center
+  }
+  .cpco-lock>div {
+    max-width: 520px;
+    padding: 24px 28px;
+    border: 1px solid #e2c16b66;
+    border-radius: 14px;
+    background: #141b31
+  }
+  .cpco-lock b {
+    display: block;
+    color: #e2c16b;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    font-size: 13px
+  }
+  .cpco-lock a {
+    color: #e2c16b;
+    font-weight: 650
+  }
+  /* connexion exigée (mode production, shared/users.js) : même habillage que l'avis du Centre, formulaire en plus */
+  .suite-login form {
+    display: grid;
+    gap: 8px;
+    margin: 12px auto 4px;
+    max-width: 280px
+  }
+  .suite-login input {
+    padding: 7px 9px;
+    border: 1px solid #e2c16b66;
+    border-radius: calc(6px * var(--repo-round, 1));
+    background: #0e1426;
+    color: inherit;
+    font: inherit
+  }
+  .suite-login button {
+    padding: 7px 12px;
+    border: 0;
+    border-radius: calc(6px * var(--repo-round, 1));
+    background: #e2c16b;
+    color: #141b31;
+    font: 650 14px/1.2 system-ui, Segoe UI, Arial, sans-serif;
+    cursor: pointer
+  }
+  .suite-login .suite-login-msg {
+    min-height: 1.3em;
+    color: #ffb4a8;
+    font-size: 13px
+  }
+  /* usurpation d'identité par un administrateur (shared/users.js) : bandeau fixe en bas de toutes les pages, angles droits */
+  .suite-imp-banner {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1200;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 14px;
+    background: #7a1f2b;
+    color: #fff;
+    font: 650 14px/1.3 system-ui, Segoe UI, Arial, sans-serif;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, .35)
+  }
+  .suite-imp-banner button {
+    padding: 3px 10px;
+    border: 1px solid #ffffff99;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer
+  }
+  html.suite-impersonating body {
+    padding-bottom: 42px
+  }
+  /* Sélecteur segmenté (framework) : <span class="repo-segs" role="group"><button class="repo-seg" aria-pressed="true|false">…
    Habillage des designs à matières : shared/designs_skeuo.css (laiton, aluminium, acier, gel). */
-.repo-segs {
-  display: inline-flex;
-  vertical-align: middle;
-  border: 1px solid var(--line, #c8d6dd);
-  border-radius: 9px;
-  overflow: hidden
-}
-.repo-seg {
-  border: 0;
-  margin: 0;
-  padding: 7px 14px;
-  background: var(--card, #fff);
-  color: inherit;
-  cursor: pointer;
-  font: inherit;
-  border-radius: 0
-}
-.repo-seg+.repo-seg {
-  border-left: 1px solid var(--line, #c8d6dd)
-}
-.repo-seg[aria-pressed="true"] {
-  background: var(--repo-accent, #075ca8);
-  color: #fff;
-  font-weight: 700
-}
+  .repo-segs {
+    display: inline-flex;
+    vertical-align: middle;
+    border: 1px solid var(--line, #c8d6dd);
+    border-radius: 9px;
+    overflow: hidden
+  }
+  .repo-seg {
+    border: 0;
+    margin: 0;
+    padding: 7px 14px;
+    background: var(--card, #fff);
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    border-radius: 0
+  }
+  .repo-seg+.repo-seg {
+    border-left: 1px solid var(--line, #c8d6dd)
+  }
+  .repo-seg[aria-pressed="true"] {
+    background: var(--repo-accent, #075ca8);
+    color: #fff;
+    font-weight: 700
+  }
 }
 /* règles propres aux designs : hors couche (au-dessus de l'application) */
 /* jeux skeuomorphes (icônes de 50 px) : entrées resserrées, pour tenir dans une fenêtre de 800 px */
@@ -640,7 +788,7 @@ html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-ic
 html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-brand {
   min-height: 68px
 }
-html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-sep:not(.repo-sidenav-bottom):not(#imp) {
+html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-sep:not(.repo-sidenav-bottom):not(.repo-sidenav-titled):not(#imp) {
   margin: 6px 14px
 }
 /* jeux skeuomorphes : images posées dès la construction de la barre (taille réservée : pas de décalage) ; tracé masqué */
@@ -656,7 +804,7 @@ html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-ic
   width: 56px;
   height: 56px
 }
-/* palette « outil sombre » (docs/REFACTORING_TOOLKIT.md, C) : pages d'outil à fond sombre en design standard (Landing,
+/* palette « outil sombre » (docs/technique/REFACTORING_TOOLKIT.md, C) : pages d'outil à fond sombre en design standard (Landing,
    planificateur, planning ODV, reporting des opérations) ; mêmes noms que la palette claire de mission_core/core.css,
    pour que les designs les atteignent ; une page la demande par <html data-tool="dark"> (color-scheme : à la page) */
 @layer app {
@@ -674,5 +822,17 @@ html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-ic
     --ok: #44c06a;
     --warn: #e2b84b;
     --bad: #e05a63
+  }
+}
+/* Changement de page dans la suite (onglets, barre latérale) : la page précédente reste à l'écran jusqu'au premier
+   affichage de la suivante (retenu jusqu'à la fin de sa construction : config/repository_tree), puis fondu court ;
+   rien si moins d'animations est demandé. */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: .16s
   }
 }

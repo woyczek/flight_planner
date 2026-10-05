@@ -1,0 +1,407 @@
+"""Synchronisation git du pool de données (docs/technique/INDEX_DONNEES.md § 9, étape 8), appelée par le lanceur
+(tools/launch.py : GET /__setup/sync-status, POST /__setup/sync, bouton « Synchroniser » de l'en-tête, shared/sync.js).
+
+Un passage de synchronisation (run) :
+  1. les fichiers du pool modifiés sur ce poste (POOL, hors index régénérés et copies de conflits) sont commités, au nom
+     du trigramme connecté (auteur du commit) ;
+  2. la branche distante est récupérée (fetch) puis fusionnée (merge, pas de rebase : l'historique n'est jamais
+     réécrit, une seule fusion à résoudre) ;
+  3. fichier en conflit → fusion par le lanceur, fiche par fiche (resolve) : les données sont découpées à une fiche
+     par fichier (semaine d'un pilote, utilisateur, mission) — la plus récente (updated_at) l'emporte, l'autre est
+     gardée dans <dossier>/_conflits/ et signalée ; les deux fichiers qui regroupent plusieurs fiches sont fusionnés
+     entrée par entrée (missions/affectations.json par mission, pilote et rôle ; missions/affectations_log.json, journal
+     en ajout seul : réunion) ;
+  4. le résultat est poussé (push).
+
+Essai sans toucher au vrai dépôt : python tools/data_sync.py --essai (dépôt distant et deux copies dans un dossier
+temporaire, modifications croisées, conflits, vérifications).
+"""
+import json, os, re, shutil, subprocess, sys, tempfile, time
+
+# chemins synchronisés (relatifs à data/) ; index régénérés et repère du lanceur exclus
+POOL = ['disponibilites', 'utilisateurs', 'config', 'missions', 'cr', 'atc']
+EXCLUDE = [':(exclude,glob)**/_index.json', ':(exclude,glob)**/_conflits/**', ':(exclude).defa_instance']
+TIMEOUT = 120
+
+try:
+    import yaml  # PyYAML : updated_at des fichiers YAML (sinon : expression régulière)
+except ImportError:  # pragma: no cover
+    yaml = None
+
+
+def git_env():
+    """Git sans question dans le terminal ni fenêtre d'identifiants ; SSH sans question non plus (clé ou rien ; hôte
+    inconnu accepté à la première connexion, refusé s'il a changé)."""
+    return dict(os.environ, GIT_TERMINAL_PROMPT='0', GCM_INTERACTIVE='never',
+                GIT_SSH_COMMAND=os.environ.get('GIT_SSH_COMMAND', 'ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15'))
+
+
+# ---- dépôt distant de synchronisation (premier lancement : adresse précisée, vérifiée, jamais bloquante)
+REMOTE_RE = re.compile(r'^(?:[\w.-]+@[\w.-]+:[\w./~-]+|ssh://\S+|https?://\S+)$')
+
+
+def remote_info(data):
+    """Dépôt distant de data/ : { repo, remote (nom), url, branch }."""
+    if not is_repo(data):
+        return {'repo': False, 'remote': '', 'url': '', 'branch': ''}
+    br, _, remote = branch_info(data)
+    url = git(data, 'remote', 'get-url', remote)[1] if remote else ''
+    return {'repo': True, 'remote': remote, 'url': url, 'branch': br}
+
+
+def check_remote(url):
+    """Le dépôt répond-il ? git ls-remote, sans question (identifiants, clé SSH) ; rend { ok, message, branches }."""
+    url = (url or '').strip()
+    if not REMOTE_RE.match(url):
+        return {'ok': False, 'message': 'Adresse invalide : git@hôte:compte/dépôt.git ou https://hôte/compte/dépôt.git.', 'branches': []}
+    if not shutil.which('git'):
+        return {'ok': False, 'message': 'Git n’est pas installé sur cet ordinateur.', 'branches': []}
+    try:
+        r = subprocess.run(['git', 'ls-remote', '--heads', url], capture_output=True, text=True, encoding='utf-8',
+                           errors='replace', env=git_env(), timeout=30)
+    except subprocess.TimeoutExpired:
+        return {'ok': False, 'message': 'Pas de réponse en 30 s (réseau, adresse, pare-feu).', 'branches': []}
+    except OSError as e:
+        return {'ok': False, 'message': str(e), 'branches': []}
+    out = (r.stdout + r.stderr).strip()
+    if r.returncode:
+        if re.search(r'Permission denied|publickey|Authentication failed|could not read Username|403|401|terminal prompts disabled', out, re.I):
+            msg = 'Le dépôt existe peut-être, mais l’accès est refusé : clé SSH (adresse git@…) ou identifiants enregistrés dans Git (adresse https://…) à régler sur cet ordinateur.'
+        elif re.search(r'not found|does not exist|Repository not found|404', out, re.I):
+            msg = 'Dépôt introuvable à cette adresse.'
+        elif re.search(r'Could not resolve|unable to access|Connection|timed out', out, re.I):
+            msg = 'Hôte injoignable (réseau, nom d’hôte, pare-feu).'
+        else:
+            msg = out[-300:] or 'Échec de git ls-remote.'
+        return {'ok': False, 'message': msg, 'branches': []}
+    branches = [l.split('refs/heads/', 1)[1] for l in r.stdout.splitlines() if 'refs/heads/' in l]
+    return {'ok': True, 'message': f'Le dépôt répond : {len(branches)} branche(s).', 'branches': branches}
+
+
+def set_remote(data, url):
+    """Adresse du dépôt distant de data/ (dépôt distant de la branche, sinon origin, créé au besoin)."""
+    url = (url or '').strip()
+    if not REMOTE_RE.match(url):
+        return {'ok': False, 'message': 'Adresse invalide.'}
+    if not is_repo(data):
+        return {'ok': False, 'message': 'data/ n’est pas encore un dépôt git : l’adresse servira à récupérer les données.'}
+    info = remote_info(data)
+    name = info['remote'] or 'origin'
+    code, out = git(data, 'remote', 'set-url', name, url) if info['remote'] else git(data, 'remote', 'add', name, url)
+    return {'ok': code == 0, 'message': f'Dépôt distant « {name} » : {url}' if code == 0 else out}
+
+
+def git(data, *args, env=None, check=False):
+    """git -C data … ; rend (code, sortie texte)."""
+    try:
+        r = subprocess.run(['git', '-C', data, *args], capture_output=True, text=True, encoding='utf-8', errors='replace',
+                           env=env or git_env(), timeout=TIMEOUT)
+    except (OSError, subprocess.SubprocessError) as e:
+        if check:
+            raise RuntimeError(str(e))
+        return 1, str(e)
+    out = (r.stdout + r.stderr).strip()
+    if check and r.returncode:
+        raise RuntimeError(out or f'git {" ".join(args)} : échec')
+    return r.returncode, out
+
+
+def blob(data, stage, path):
+    """Contenu d'une version d'un fichier en conflit (1 base, 2 la nôtre, 3 la leur) ; None si absente."""
+    try:
+        r = subprocess.run(['git', '-C', data, 'show', f':{stage}:{path}'], capture_output=True, env=git_env(), timeout=TIMEOUT)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return r.stdout if r.returncode == 0 else None
+
+
+def is_repo(data):
+    return os.path.isdir(os.path.join(data, '.git')) and shutil.which('git') is not None
+
+
+def branch_info(data):
+    """Branche, branche suivie (amont), dépôt distant."""
+    _, br = git(data, 'rev-parse', '--abbrev-ref', 'HEAD')
+    code, up = git(data, 'rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}')
+    up = up if code == 0 else ''
+    remote = up.split('/', 1)[0] if up else ''
+    if not remote:
+        _, rs = git(data, 'remote')
+        remote = (rs.split() or [''])[0]
+    return br, up, remote
+
+
+def pool_changes(data):
+    """Fichiers du pool modifiés, ajoutés ou supprimés sur ce poste (non commités)."""
+    try:  # sortie brute, -z : l'espace de tête du code d'état compte (pas de strip) ; chemins sans guillemets
+        out = subprocess.run(['git', '-C', data, 'status', '--porcelain', '-z', '-uall', '--', *POOL, *EXCLUDE],
+                             capture_output=True, env=git_env(), timeout=TIMEOUT).stdout.decode('utf-8', errors='replace')
+    except (OSError, subprocess.SubprocessError):
+        return []
+    items, files = out.split('\0'), []
+    i = 0
+    while i < len(items):
+        e = items[i]
+        if len(e) > 3:
+            files.append(e[3:])
+            if e[0] in 'RC':  # renommage : l'ancien chemin suit
+                i += 1
+                files.append(items[i])
+        i += 1
+    return files
+
+
+def status(data, fetch=False):
+    """État pour l'en-tête : dépôt, branche, modifications locales, commits à envoyer / à recevoir."""
+    if not is_repo(data):
+        return {'repo': False}
+    br, up, remote = branch_info(data)
+    if fetch and remote:
+        git(data, 'fetch', '--quiet', remote)
+    ahead = behind = 0
+    if up:
+        code, out = git(data, 'rev-list', '--left-right', '--count', f'HEAD...{up}')
+        if code == 0 and len(out.split()) == 2:
+            ahead, behind = map(int, out.split())
+    merging = os.path.exists(os.path.join(data, '.git', 'MERGE_HEAD'))
+    return {'repo': True, 'branch': br, 'upstream': up, 'remote': remote, 'changes': len(pool_changes(data)),
+            'ahead': ahead, 'behind': behind, 'merging': merging, 'last': last_sync(data)}
+
+
+def last_sync(data):
+    try:
+        return json.load(open(os.path.join(data, 'local', 'sync.json'), encoding='utf-8'))
+    except (OSError, ValueError):
+        return None
+
+
+def remember(data, result):
+    os.makedirs(os.path.join(data, 'local'), exist_ok=True)  # local/ : propre au poste, ignoré par git
+    with open(os.path.join(data, 'local', 'sync.json'), 'w', encoding='utf-8', newline='\n') as f:
+        json.dump({k: result.get(k) for k in ('at', 'author', 'committed', 'received', 'pushed', 'conflicts', 'ok')}, f,
+                  ensure_ascii=False, indent=1)
+
+
+# ---- fusion fiche par fiche
+def parse(raw, path):
+    if raw is None:
+        return None
+    text = raw.decode('utf-8', errors='replace')
+    if path.endswith('.json'):
+        try:
+            return json.loads(text)
+        except ValueError:
+            return None
+    if path.endswith(('.yaml', '.yml')) and yaml:
+        try:
+            return yaml.safe_load(text)
+        except yaml.YAMLError:
+            return None
+    return None
+
+
+def stamp(raw, path):
+    """updated_at d'une version (fiche), '' sinon."""
+    v = parse(raw, path)
+    if isinstance(v, dict):
+        return str(v.get('updated_at') or v.get('updatedAt') or '')
+    m = re.search(rb'^updated_at:\s*[\'"]?([^\'"\r\n]+)', raw or b'', re.M)
+    return m.group(1).decode() if m else ''
+
+
+def keep_copy(data, path, raw, side):
+    """Version perdante gardée dans <dossier>/_conflits/ (non synchronisé) ; chemin relatif rendu."""
+    d, name = os.path.split(path)
+    base, ext = os.path.splitext(name)
+    rel = '/'.join(x for x in (d, '_conflits', f'{base}.{side}.{time.strftime("%Y%m%d-%H%M%S")}{ext}') if x)
+    full = os.path.join(data, *rel.split('/'))
+    os.makedirs(os.path.dirname(full), exist_ok=True)
+    with open(full, 'wb') as f:
+        f.write(raw)
+    return rel
+
+
+def merge_records(base, ours, theirs, key):
+    """Fusion à trois de listes de fiches (dict) identifiées par key ; conflit (modifiée des deux côtés) : la plus
+    récente (updated_at). Rend (liste, conflits)."""
+    b = {key(x): x for x in base or []}
+    o = {key(x): x for x in ours or []}
+    t = {key(x): x for x in theirs or []}
+    out, conflicts = [], []
+    for k in list(dict.fromkeys([*o, *t])):
+        x, y, z = b.get(k), o.get(k), t.get(k)
+        if y is None or z is None:  # présente d'un seul côté
+            other = z if y is None else y
+            if x is not None and other == x:
+                continue  # supprimée d'un côté, inchangée de l'autre : supprimée
+            out.append(other)
+        elif y == z or z == x:
+            out.append(y)
+        elif y == x:
+            out.append(z)
+        else:
+            conflicts.append(k)
+            out.append(y if str(y.get('updated_at') or '') >= str(z.get('updated_at') or '') else z)
+    return out, conflicts
+
+
+def resolve(data, path):
+    """Fichier en conflit résolu et ajouté ; rend {'path', 'how', 'copy'?}."""
+    raw = {s: blob(data, s, path) for s in (1, 2, 3)}
+    base, ours, theirs = (parse(raw[s], path) for s in (1, 2, 3))
+    full = os.path.join(data, *path.split('/'))
+    write = lambda text: open(full, 'w', encoding='utf-8', newline='\n').write(text)
+    if path.endswith('missions/affectations.json') and isinstance(ours, dict) and isinstance(theirs, dict):
+        key = lambda a: f"{a.get('mission')}|{a.get('pilot')}|{a.get('role') or ''}"
+        merged, conflicts = merge_records((base or {}).get('assignments'), ours.get('assignments'), theirs.get('assignments'), key)
+        doc = {**theirs, **ours, 'assignments': merged,
+               'updatedAt': max(str(ours.get('updatedAt') or ''), str(theirs.get('updatedAt') or ''))}
+        write(json.dumps(doc, ensure_ascii=False, indent=1) + '\n')
+        git(data, 'add', '--', path)
+        return {'path': path, 'how': 'fiches', 'conflicts': conflicts}
+    if path.endswith('missions/affectations_log.json') and isinstance(ours, dict) and isinstance(theirs, dict):
+        seen, entries = set(), []
+        for e in [*(ours.get('entries') or []), *(theirs.get('entries') or [])]:
+            k = json.dumps(e, sort_keys=True, ensure_ascii=False)
+            if k not in seen:
+                seen.add(k)
+                entries.append(e)
+        entries.sort(key=lambda e: str(e.get('at') or ''))
+        doc = {**theirs, **ours, 'entries': entries,
+               'updatedAt': max(str(ours.get('updatedAt') or ''), str(theirs.get('updatedAt') or ''))}
+        write(json.dumps(doc, ensure_ascii=False, indent=1) + '\n')
+        git(data, 'add', '--', path)
+        return {'path': path, 'how': 'journal'}
+    # une fiche par fichier : supprimée d'un côté, modifiée de l'autre → gardée ; sinon la plus récente
+    if raw[2] is None or raw[3] is None:
+        win = raw[2] if raw[2] is not None else raw[3]
+        open(full, 'wb').write(win)
+        git(data, 'add', '--', path)
+        return {'path': path, 'how': 'gardée (supprimée d’un côté seulement)'}
+    mine_wins = stamp(raw[2], path) >= stamp(raw[3], path)
+    win, lose, side = (raw[2], raw[3], 'distante') if mine_wins else (raw[3], raw[2], 'locale')
+    open(full, 'wb').write(win)
+    copy = keep_copy(data, path, lose, side)
+    git(data, 'add', '--', path)
+    return {'path': path, 'how': 'la plus récente', 'copy': copy}
+
+
+def run(data, author, name=''):
+    """Un passage de synchronisation ; rend le compte rendu (ok, committed, received, pushed, conflicts, message)."""
+    res = {'ok': False, 'at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'author': author, 'committed': 0,
+           'received': 0, 'pushed': False, 'conflicts': []}
+    if not is_repo(data):
+        res['message'] = 'data/ n’est pas un dépôt git (ou git est absent).'
+        return res
+    if not re.fullmatch(r'[A-Z0-9]{2,5}', author or ''):
+        res['message'] = 'Trigramme de l’auteur manquant ou invalide.'
+        return res
+    if os.path.exists(os.path.join(data, '.git', 'MERGE_HEAD')) or os.path.isdir(os.path.join(data, '.git', 'rebase-merge')):
+        res['message'] = 'Une fusion ou un rebase est en cours dans data/ : à terminer ou annuler à la main.'
+        return res
+    who = ['-c', f'user.name={author}', '-c', f'user.email={author.lower()}@defa.local']
+    env = dict(git_env(), GIT_AUTHOR_NAME=f'{author}{" " + name if name else ""}', GIT_AUTHOR_EMAIL=f'{author.lower()}@defa.local')
+    try:
+        # 1. modifications de ce poste
+        changes = pool_changes(data)
+        if changes:
+            git(data, 'add', '-A', '--', *changes, check=True)  # fichiers modifiés seuls (dossier du pool absent : pas d'erreur)
+            code, _ = git(data, 'diff', '--cached', '--quiet')
+            if code:
+                git(data, *who, 'commit', '-m', f'Synchronisation {author} : {len(changes)} fichier(s)', env=env, check=True)
+                res['committed'] = len(changes)
+        br, up, remote = branch_info(data)
+        if not remote:
+            res.update(ok=True, message='Commit local seulement : pas de dépôt distant.')
+            return res
+        # 2. branche distante
+        git(data, 'fetch', remote, env=env, check=True)
+        target = up or f'{remote}/{br}'
+        code, _ = git(data, 'rev-parse', '--verify', '--quiet', target)
+        if code == 0:
+            _, before = git(data, 'rev-parse', 'HEAD')
+            code, out = git(data, *who, 'merge', '--no-edit', target, env=env)
+            if code:
+                _, unmerged = git(data, 'diff', '--name-only', '--diff-filter=U')
+                if not unmerged.strip():
+                    raise RuntimeError(out)
+                # 3. conflits : fusion fiche par fiche
+                for path in unmerged.splitlines():
+                    r = resolve(data, path.strip())
+                    if r.get('copy') or r.get('conflicts'):
+                        res['conflicts'].append(r)
+                git(data, *who, 'commit', '--no-edit', env=env, check=True)
+            _, n = git(data, 'diff', '--name-only', f'{before}..HEAD')
+            res['received'] = len([x for x in n.splitlines() if x.strip()])
+        # 4. envoi
+        git(data, 'push', *([] if up else ['-u']), remote, f'HEAD:{br}', env=env, check=True)
+        res['pushed'] = True
+        res['ok'] = True
+        res['message'] = 'Synchronisé.'
+    except RuntimeError as e:
+        res['message'] = str(e)[-800:]
+        if os.path.exists(os.path.join(data, '.git', 'MERGE_HEAD')):
+            git(data, 'merge', '--abort')  # jamais de dépôt laissé à moitié fusionné
+    finally:
+        remember(data, res)
+    return res
+
+
+# ---- essai sur des copies (aucun accès au vrai dépôt)
+def _essai():  # pragma: no cover
+    tmp = tempfile.mkdtemp(prefix='defa-sync-')
+    remote, a, b = (os.path.join(tmp, x) for x in ('distant.git', 'A', 'B'))
+    sh = lambda *args, cwd=tmp: subprocess.run(['git', *args], cwd=cwd, check=True, capture_output=True)
+    sh('init', '--bare', '-b', 'main', remote)
+    sh('clone', remote, a)
+    for x in ('user.name', 'user.email'):
+        sh('config', x, 'essai', cwd=a)
+
+    def put(root, rel, obj):
+        p = os.path.join(root, *rel.split('/'))
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        json.dump(obj, open(p, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+
+    get = lambda root, rel: json.load(open(os.path.join(root, *rel.split('/')), encoding='utf-8'))
+    week = 'disponibilites/AAA/2026-W41.json'
+    aff = 'missions/affectations.json'
+    log = 'missions/affectations_log.json'
+    put(a, week, {'updated_at': '2026-10-05T10:00:00Z', 'dispos': {'lun': 1}})
+    put(a, aff, {'updatedAt': 'x', 'assignments': [{'mission': 'M1', 'pilot': 'AAA', 'role': 'mission', 'updated_at': '1'}]})
+    put(a, log, {'updatedAt': 'x', 'entries': [{'at': '1', 'mission': 'M1'}]})
+    put(a, 'disponibilites/_index.json', {'pilots': {}})
+    r = run(a, 'AAA')
+    assert r['ok'] and r['committed'] == 3, r  # _index.json exclu
+    sh('clone', remote, b)
+    # modifications croisées : même semaine des deux côtés (B plus récent), affectations différentes, journal
+    put(a, week, {'updated_at': '2026-10-05T11:00:00Z', 'dispos': {'lun': 'A'}})
+    put(b, week, {'updated_at': '2026-10-05T12:00:00Z', 'dispos': {'lun': 'B'}})
+    da, db = get(a, aff), get(b, aff)
+    da['assignments'].append({'mission': 'M2', 'pilot': 'AAA', 'role': 'mission', 'updated_at': '2'})
+    db['assignments'].append({'mission': 'M3', 'pilot': 'BBB', 'role': 'mission', 'updated_at': '2'})
+    put(a, aff, da)
+    put(b, aff, db)
+    la, lb = get(a, log), get(b, log)
+    la['entries'].append({'at': '2', 'mission': 'M2'})
+    lb['entries'].append({'at': '3', 'mission': 'M3'})
+    put(a, log, la)
+    put(b, log, lb)
+    rb = run(b, 'BBB')
+    assert rb['ok'], rb
+    r = run(a, 'AAA')
+    assert r['ok'], r
+    assert get(a, week)['dispos'] == {'lun': 'B'}, 'la plus récente gagne'
+    assert any(c.get('copy') for c in r['conflicts']), 'copie gardée'
+    assert sorted(x['mission'] for x in get(a, aff)['assignments']) == ['M1', 'M2', 'M3'], 'affectations réunies'
+    assert [e['mission'] for e in get(a, log)['entries']] == ['M1', 'M2', 'M3'], 'journal réuni'
+    assert run(b, 'BBB')['ok'] and get(b, aff) == get(a, aff), 'B reçoit la fusion'
+    _, author = git(a, 'log', '-1', '--format=%an', '--', week)
+    print('essai réussi :', tmp, '— conflits :', r['conflicts'])
+    shutil.rmtree(tmp, ignore_errors=True)
+
+
+if __name__ == '__main__':
+    if '--essai' in sys.argv:
+        _essai()
+    else:
+        print(__doc__)

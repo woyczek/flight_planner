@@ -1,4 +1,4 @@
-// Framework — icônes de la barre latérale de navigation (voir docs/PROPOSITION_DESIGN_ICONES.md).
+// Framework — icônes de la barre latérale de navigation (voir docs/technique/PROPOSITION_DESIGN_ICONES.md).
 // La barre elle-même (entrées, libellés, entrée active) est construite par repository_nav.js dès son exécution, avec
 // ses styles dans repository_nav.css, pour paraître avec l'en-tête ; ce script, chargé par repository_nav.js après
 // shared/icons/repository_icons.js, remplit les emplacements réservés (span[data-sidenav-icon], taille fixe).

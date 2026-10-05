@@ -1,6 +1,7 @@
+// Arbre de la suite (script, servi en text/javascript) : pages, menus, designs, sources.
 window.REPOSITORY_TREE={
   version:3,
-  release:{date:"2026-10-02",version:"4.7.0",id:"XPS-4.7.0",changelog:"https://framagit.org/asr/flight_planner/-/blob/master/docs/CHANGELOG.md",
+  release:{date:"2026-10-05",version:"4.8.0",id:"XPS-4.8.0",changelog:"https://framagit.org/asr/flight_planner/-/blob/master/docs/CHANGELOG.md",
     // dépôt de publication : contrôle des mises à jour (Paramètres › Maintenance, shared/suite_update.js) ; canaux = branches
     repository:{web:"https://framagit.org/asr/flight_planner",api:"https://framagit.org/api/v4/projects/asr%2Fflight_planner",channels:{master:"stable",develop:"early"}}},
   defaults:{
@@ -11,8 +12,13 @@ window.REPOSITORY_TREE={
   },
   // Sources externes (adresses par défaut ; réglables dans Paramètres › Maintenance › Sources et dossiers, surcharge
   // locale suiteSources:v1) : RepositoryNav.source(clé). {nn} / {yy} : numéro du cycle AIRAC et année sur deux chiffres.
+  // Compagnie virtuelle (DEFA Virtual par défaut ; réglable dans Paramètres › Maintenance › Sources et dossiers,
+  // surcharge locale suiteVA:v1) : RepositoryNav.va() ; adresse du site : sources.defa ; pages : chemins sous ce site,
+  // {id} remplacé (RepositoryNav.vaUrl(page, { id })).
+  va:{name:"DEFA Virtual",short:"DEFA",centre:"CPCO",centreName:"Centre de planification et de conduite des opérations",
+    pages:{home:"/index.php",log:"/log_vols.php",fleet:"/flotte.php",aircraft:"/appareil.php?id={id}"}},
   sources:{
-    defa:{url:"https://flotte.defa-virtual.fr",label:["Site de la flotte DEFA Virtual","DEFA Virtual fleet site","DEFA-Virtual-Flottenseite","Sitio de la flota DEFA Virtual"]},
+    defa:{url:"https://flotte.defa-virtual.fr",label:["Site de la compagnie virtuelle (DEFA Virtual)","Virtual airline website (DEFA Virtual)","Website der virtuellen Fluggesellschaft (DEFA Virtual)","Sitio de la aerolínea virtual (DEFA Virtual)"]},
     siaData:{url:"https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/les-bases-de-donnees-sia.html",label:["SIA — bases de données (export XML)","SIA — databases (XML export)","SIA — Datenbanken (XML-Export)","SIA — bases de datos (XML)"]},
     siaCycle:{url:"https://www.sia.aviation-civile.gouv.fr/donnees-aeronautiques-xml-airac-{nn}-{yy}.html",label:["SIA — page d’un cycle AIRAC","SIA — AIRAC cycle page","SIA — Seite eines AIRAC-Zyklus","SIA — página de un ciclo AIRAC"]},
     siaEaip:{url:"https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/eaip.html",label:["SIA — eAIP","SIA — eAIP","SIA — eAIP","SIA — eAIP"]},
@@ -112,6 +118,57 @@ window.REPOSITORY_TREE={
     "apps/cr/COMBAT":{theme:"combat",favicon:"assets/favicon-combat.svg"},
     "apps/landing":{theme:"landing",favicon:"assets/favicon-landing.svg"}
   },
+  // Barre latérale (shared/repository_nav.js) : entrées dans l'ordre, pilote d'abord puis Centre (docs/technique/DISPOS_ET_REORGANISATION.md
+  // § 3). Entrée : icon (registre d'icônes), path (page déclarée ci-dessous), label et title [fr, en, de, es], match
+  // (texte ou liste : entrée active aussi sur les pages dont le chemin le contient), menu:true (ouvre le menu ☰).
+  // Séparateur : {sep:true} ; title : séparateur titré (masqué, comme le Centre, si toutes ses entrées sont du Centre) ;
+  // bottom : la suite est rangée en bas de la colonne.
+  sidebar:[
+    {icon:"send",path:"apps/pilot/mes_missions.html",match:"apps/pilot/",label:["Mes missions","My missions","Meine Missionen","Mis misiones"],title:["Missions qui vous sont affectées par le Centre, vos disponibilités et vos appareils","Missions assigned to you by the Centre, your availability and aircraft","Vom Zentrum zugewiesene Missionen, Verfügbarkeit und Luftfahrzeuge","Misiones asignadas por el Centro, disponibilidad y aeronaves"]},
+    {icon:"clipboard",path:"apps/cr/mission_cr.html",match:"apps/cr/",label:["CR DEFA","DEFA report","DEFA-Bericht","Informe DEFA"]},
+    {icon:"map",path:"apps/planner/map_planner.html",label:["Cartes de vol","Flight maps","Flugkarten","Mapas de vuelo"],title:["Cartes de vol : route, topo, approche, rendez-vous, destination","Flight maps: route, topo, approach, rendezvous, destination","Flugkarten: Route, Topo, Anflug, Treffpunkt, Ziel","Mapas de vuelo: ruta, topo, aproximación, encuentro, destino"]},
+    {icon:"fuel",path:"apps/planner/flight_performance_planner.html",label:["Carburant","Fuel","Kraftstoff","Combustible"]},
+    {icon:"plane",path:"apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html",label:["Atterrissages","Landings","Landungen","Aterrizajes"]},
+    {icon:"chart",path:"apps/cr/mission_operations_reporting.html",match:"_reporting.html",label:["Reporting","Reporting","Berichte","Informes"]},
+    {sep:true,title:["Centre","Centre","Zentrum","Centro"]},
+    {icon:"target",path:"apps/cpco/mission_editor.html",match:["apps/cpco/mission_editor.html","apps/cpco/map_parser.html"],label:["Missions","Missions","Missionen","Misiones"],title:["Générateur de mission et studio cartographique du Centre","Centre mission generator and map studio","Missionsgenerator und Kartenstudio des Zentrums","Generador de misiones y estudio cartográfico del Centro"]},
+    {icon:"list",path:"apps/cpco/mission_registry.html",label:["Registre","Registry","Register","Registro"],title:["Registre des missions générées","Generated mission registry","Register der erzeugten Missionen","Registro de misiones generadas"]},
+    {icon:"calendar",path:"apps/cpco/odv_planning.html",label:["ODV","ODV","ODV","ODV"],title:["Planning ODV (Centre) : créneaux communs, missions probables","ODV planning (Centre): common slots, likely missions","ODV-Planung (Zentrum): gemeinsame Zeitfenster, wahrscheinliche Missionen","Planificación ODV (Centro): franjas comunes, misiones probables"]},
+    {sep:true,bottom:true},
+    {icon:"palette",path:"apps/settings/apparence.html",label:["Apparence","Appearance","Darstellung","Apariencia"]},
+    {icon:"settings",path:"apps/settings/profil.html",match:"apps/settings/",label:["Paramètres","Settings","Einstellungen","Ajustes"],title:["Paramètres : mon profil, Centre, installation, maintenance","Settings: my profile, Centre, installation, maintenance","Einstellungen: mein Profil, Zentrum, Installation, Wartung","Ajustes: mi perfil, Centro, instalación, mantenimiento"]},
+    {icon:"help",path:"apps/aide/aide.html",label:["Aide","Help","Hilfe","Ayuda"],title:["Aide : manuels et documentation, au chapitre de la page en cours","Help: manuals and documentation, at the chapter of the current page","Hilfe: Handbücher und Dokumentation, beim Kapitel der aktuellen Seite","Ayuda: manuales y documentación, en el capítulo de la página actual"]}
+  ],
+  // Onglets en tête de page (shared/repository_nav.js) : pages sœurs d'un même bouton de la barre latérale. Clic : événement
+  // « repository-tab-leave » (detail : { from, to }) pour que la page transmette son travail (mission partagée), puis
+  // ouverture de l'onglet.
+  tabs:[
+    {id:"pilot",pages:[
+      {path:"apps/pilot/mes_missions.html",label:["Mes missions","My missions","Meine Missionen","Mis misiones"]},
+      {path:"apps/pilot/disponibilites.html",label:["Mes disponibilités","My availability","Meine Verfügbarkeit","Mi disponibilidad"]}]},
+    {id:"missions",pages:[
+      {path:"apps/cpco/mission_editor.html",label:["Générateur de mission","Mission generator","Missionsgenerator","Generador de misiones"]},
+      {path:"apps/cpco/map_parser.html",label:["Studio cartographique","Map studio","Kartenstudio","Estudio cartográfico"]}]},
+    {id:"settings",pages:[
+      {path:"apps/settings/profil.html",label:["Mon profil","My profile","Mein Profil","Mi perfil"]},
+      {path:"apps/settings/centre.html",label:["Centre","Centre","Zentrum","Centro"]},
+      {path:"apps/settings/installation.html",label:["Installation","Installation","Installation","Instalación"]},
+      {path:"apps/settings/maintenance.html",label:["Maintenance","Maintenance","Wartung","Mantenimiento"]}]}
+  ],
+  // Paramètres en quatre pages (docs/technique/DISPOS_ET_REORGANISATION.md § 2) : rubrique (?base=<id> de shared/data_admin.js et
+  // shared/settings_panels.js, ?m=<id> de shared/maintenance_page.js) → page. Les anciennes adresses
+  // (parametrage.html?base=…, ?m=…, maintenance.html#…) y renvoient ; RepositoryNav.settingsUrl(rubrique) en donne l'adresse.
+  settings:{
+    pages:{profile:"apps/settings/profil.html",centre:"apps/settings/centre.html",installation:"apps/settings/installation.html",maintenance:"apps/settings/maintenance.html"},
+    sections:{
+      identity:"profile",account:"profile",themes:"profile",equipment:"profile",planner:"profile",
+      cpco:"centre",users:"centre",dispoCategories:"centre",odv:"centre",send:"centre",
+      setup:"installation",sources:"installation",
+      fleet:"maintenance",aircraftDb:"maintenance",callsigns:"maintenance",defaReference:"maintenance",defaLog:"maintenance",merges:"maintenance",ledgers:"maintenance",
+      registry:"maintenance",localTypes:"maintenance",learned:"maintenance",airports:"maintenance",
+      updates:"maintenance",versions:"maintenance",deps:"maintenance",sia:"maintenance",caches:"maintenance",storage:"maintenance",backup:"maintenance",journal:"maintenance"
+    }
+  },
   pages:[
     {path:"apps/cr/FIRE/fire_cr.html",menu:false,label:"FIRE / GAAR — Compte rendu de mission"},
     {path:"apps/cr/FIRE/fire_reporting.html",menu:false,label:"FIRE / GAAR — Reporting missions"},
@@ -151,15 +208,20 @@ window.REPOSITORY_TREE={
     {path:"apps/cr/mission_operations_reporting.html",menu:"Reporting missions",label:"Reporting missions — CR DEFA",theme:"landing",favicon:"assets/favicon-landing.svg",files:{gaarLedgerName:"FIRE/mission_ledger.csv",ledgerName:"HEMS/hems_mission_ledger.csv"}},
     {path:"apps/cr/appareil.html",menu:false,label:"Fiche appareil",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/cr/equipage.html",menu:false,label:"Fiche équipage",theme:"core",favicon:"assets/favicon-flight.svg"},
-    {path:"apps/settings/parametrage.html",menu:false,slot:"settings",label:"Paramètres — bases de données et maintenance",theme:"core",favicon:"assets/favicon-flight.svg"},
+    {path:"apps/settings/parametrage.html",menu:false,label:"Paramètres",theme:"core",favicon:"assets/favicon-flight.svg"},
+    {path:"apps/settings/profil.html",menu:false,slot:"settings",label:"Mon profil",theme:"core",favicon:"assets/favicon-flight.svg"},
+    {path:"apps/settings/centre.html",menu:false,slot:"settings",label:"Paramètres — Centre",theme:"core",favicon:"assets/favicon-flight.svg"},
+    {path:"apps/settings/installation.html",menu:false,slot:"settings",label:"Paramètres — Installation",theme:"core",favicon:"assets/favicon-flight.svg"},
+    {path:"apps/settings/maintenance.html",menu:false,slot:"settings",label:"Paramètres — Maintenance",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/settings/apparence.html",menu:false,slot:"settings",label:"Apparence",theme:"core",favicon:"assets/favicon-flight.svg"},
+    {path:"apps/aide/aide.html",menu:"Aide",label:"Aide — manuels et documentation de la suite",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/settings/premier_lancement.html",menu:false,slot:"settings",label:"Premier lancement",theme:"core",favicon:"assets/favicon-flight.svg"},
-    {path:"apps/settings/maintenance.html",menu:false,slot:"settings",label:"Maintenance",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html",menu:"Landing Performance Dashboard",label:"Landing Performance Dashboard"},
     {path:"apps/cpco/mission_editor.html",menu:"Centre — Générateur de mission",label:"Générateur de mission — Centre de planification et de conduite des opérations"},
     {path:"apps/cpco/map_parser.html",menu:"Centre — Studio cartographique",label:"Studio cartographique — Centre de planification et de conduite des opérations"},
     {path:"apps/cpco/mission_registry.html",menu:"Centre — Registre des missions",label:"Registre des missions — Centre de planification et de conduite des opérations"},
     {path:"apps/planner/flight_performance_planner.html",menu:"Flight Performance & Fuel Planner",label:"Flight Performance & Fuel Planner"},
+    {path:"apps/pilot/disponibilites.html",menu:false,label:"Mes disponibilités — saisie par plages, par catégorie"},
     {path:"apps/pilot/mes_missions.html",menu:"Mes missions",label:"Mes missions — missions affectées par le Centre, disponibilités"},
     {path:"apps/planner/map_planner.html",menu:"Cartes de vol",label:"Cartes de vol — route, cartes topographiques, approche, rendez-vous, destination"},
     {path:"apps/cpco/odv_planning.html",menu:"Centre — Planning ODV",label:"Planning ODV — Centre de planification et de conduite des opérations"}
@@ -174,9 +236,15 @@ window.REPOSITORY_TREE={
     "Paramétrage — bases de données":["Paramétrage — bases de données","Settings — databases","Einstellungen — Datenbanken","Configuración — bases de datos"],
     "Paramètres — bases de données et maintenance":["Paramètres — bases de données et maintenance","Settings — databases and maintenance","Einstellungen — Datenbanken und Wartung","Ajustes — bases de datos y mantenimiento"],
     "Cartes de vol":["Cartes de vol","Flight maps","Flugkarten","Mapas de vuelo"],
+    "Mes missions":["Mes missions","My missions","Meine Missionen","Mis misiones"],
     "Centre — Planning ODV":["Centre — Planning ODV","Centre — ODV planning","Zentrum — ODV-Planung","Centro — Planificación ODV"],
     "Apparence":["Apparence","Appearance","Darstellung","Apariencia"],
     "Paramètres":["Paramètres","Settings","Einstellungen","Ajustes"],
+    "Mon profil":["Mon profil","My profile","Mein Profil","Mi perfil"],
+    "Premier lancement":["Premier lancement","First run","Erststart","Primer arranque"],
+    "Paramètres — Centre":["Paramètres — Centre","Settings — Centre","Einstellungen — Zentrum","Ajustes — Centro"],
+    "Paramètres — Installation":["Paramètres — Installation","Settings — Installation","Einstellungen — Installation","Ajustes — Instalación"],
+    "Paramètres — Maintenance":["Paramètres — Maintenance","Settings — Maintenance","Einstellungen — Wartung","Ajustes — Mantenimiento"],
     "Apparence…":["Apparence (design, icônes, couleurs)…","Appearance (design, icons, colours)…","Darstellung (Design, Symbole, Farben)…","Apariencia (diseño, iconos, colores)…"]
   }
 };
@@ -186,3 +254,14 @@ window.REPOSITORY_TREE.iconComposed={"brass":{"normal":"cabinet/vierge.webp","ce
 // design sur <html>, pour que la marge du contenu et le design paraissent avant les scripts de calcul de la page ;
 // shared/repository_nav.js les revalide ensuite (design inconnu : défaut) et construit la barre.
 (function(){try{var d=document.documentElement,s=localStorage.getItem("repositorySidenav"),g=localStorage.getItem("repositoryDesign");if(s!=="auto")d.dataset.sidenav=s||"on";d.dataset.cpco=localStorage.getItem("cpcoAccess:v1")==="on"?"on":"off";if(g&&window.REPOSITORY_TREE.designs&&window.REPOSITORY_TREE.designs.list&&window.REPOSITORY_TREE.designs.list[g])d.dataset.design=g}catch(e){}})();
+// Feuilles du design écrites dès l'en-tête (designs.css, et celle du design à matières choisi) : liens posés par le
+// parseur, la page attend leur chargement avant de s'afficher — plus de passage par le style de base avant le design
+// (repository_nav.js, chargé en fin de page, posait ces feuilles après un premier affichage). Design par défaut si
+// aucun choix ; data-design-base, data-skeuo et data-decor posés avec. repository_nav.js reprend ces liens.
+// Pages sans barre ni design (accueil, bancs d'essai) : <script src="…repository_tree" data-no-design>.
+// Premier affichage retenu jusqu'à la fin de l'analyse de la page (module shared/render_gate.js, blocking="render" :
+// un module ne s'exécute qu'une fois la page analysée) : barre latérale, onglets et contenu sont construits par les
+// scripts de fin de page — sans cela, la page paraissait à moitié construite puis se complétait (clignotement au
+// changement de page) ; le navigateur garde la page précédente à l'écran en attendant.
+// Versions : tools/bump_versions.py (empreinte de designs.css, table FILE_V des feuilles des designs à matières).
+(function(){try{var c=document.currentScript,T=window.REPOSITORY_TREE,L=T.designs&&T.designs.list||{},g=localStorage.getItem("repositoryDesign"),id=L[g]?g:(T.designs&&L[T.designs.default]?T.designs.default:"standard"),x=L[id]||{},d=document.documentElement,FILE_V = {"designs_skeuo.css": "f210af06"};if(!c||c.hasAttribute("data-no-design"))return;d.dataset.design=id;d.dataset.designBase=x.base||id;if(x.skeuo)d.dataset.skeuo=x.frame?"frame":"";d.dataset.decor=localStorage.getItem("repositoryDecor")||"full";document.write('<script type="module" blocking="render" src="'+new URL("../shared/render_gate.js?v=65174496",c.src).href+'"><\/script><link rel="stylesheet" id="repoDesignsCss" href="'+new URL("../shared/designs.css?v=51c18d91",c.src).href+'">'+(x.css?'<link rel="stylesheet" data-design-css="'+x.css+'" href="'+new URL("../shared/"+x.css+"?v="+(FILE_V[x.css]||""),c.src).href+'">':""))}catch(e){}})();

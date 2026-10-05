@@ -1,0 +1,269 @@
+{
+ "label": "avant",
+ "date": "2026-10-04T20:15:48.095Z",
+ "build": {
+  "sha": "4f0b0283b0fef0620deea4d408230287868dd93a",
+  "branch": "HEAD",
+  "tag": ""
+ },
+ "results": [
+  {
+   "id": "affectations",
+   "label": "Mes missions : lire l'index et choisir ses missions (n affectations)",
+   "unit": "affectations",
+   "points": [
+    [
+     500,
+     0.5
+    ],
+    [
+     2000,
+     2.3
+    ],
+    [
+     8000,
+     6.6
+    ],
+    [
+     32000,
+     28.3
+    ]
+   ],
+   "extra": null,
+   "fit": {
+    "a": 0.0014555499794720087,
+    "b": 0.9494511303567499
+   },
+   "extrapolation": [
+    [
+     5000,
+     4.7
+    ],
+    [
+     20000,
+     17.6
+    ],
+    [
+     100000,
+     81.3
+    ]
+   ]
+  },
+  {
+   "id": "odv-grille",
+   "label": "ODV : grille de la semaine, 50 pilotes × 21 créneaux (n affectations)",
+   "unit": "affectations",
+   "points": [
+    [
+     500,
+     8.2
+    ],
+    [
+     2000,
+     30.3
+    ],
+    [
+     8000,
+     86.2
+    ],
+    [
+     32000,
+     365.9
+    ]
+   ],
+   "extra": null,
+   "fit": {
+    "a": 0.030984766935041895,
+    "b": 0.8973707581389578
+   },
+   "extrapolation": [
+    [
+     5000,
+     64.6
+    ],
+    [
+     20000,
+     224.3
+    ],
+    [
+     100000,
+     950.6
+    ]
+   ]
+  },
+  {
+   "id": "registre-stockage",
+   "label": "Registre dans le navigateur : écriture + lecture (n missions)",
+   "unit": "missions",
+   "points": [
+    [
+     73,
+     0.5
+    ],
+    [
+     300,
+     2.6
+    ],
+    [
+     1200,
+     10.2
+    ],
+    [
+     2400,
+     18.4
+    ]
+   ],
+   "extra": {
+    "73": "219 Ko",
+    "300": "798 Ko",
+    "1200": "3195 Ko",
+    "2400": "6392 Ko"
+   },
+   "fit": {
+    "a": 0.006384428056574772,
+    "b": 1.033985398871106
+   },
+   "extrapolation": [
+    [
+     500,
+     3.9
+    ],
+    [
+     2000,
+     16.5
+    ],
+    [
+     5000,
+     42.6
+    ]
+   ]
+  },
+  {
+   "id": "estimation",
+   "label": "Estimation de route d'une mission avec un registre de n missions",
+   "unit": "missions",
+   "points": [
+    [
+     73,
+     0.51
+    ],
+    [
+     300,
+     2.08
+    ],
+    [
+     1200,
+     10.56
+    ],
+    [
+     2400,
+     22.83
+    ]
+   ],
+   "extra": null,
+   "fit": {
+    "a": 0.004398552546043388,
+    "b": 1.0958095606606222
+   },
+   "extrapolation": [
+    [
+     500,
+     4
+    ],
+    [
+     2000,
+     18.2
+    ],
+    [
+     5000,
+     49.7
+    ]
+   ]
+  },
+  {
+   "id": "cr",
+   "label": "Registre des CR : lire missions.yaml (n CR)",
+   "unit": "CR",
+   "points": [
+    [
+     100,
+     16.6
+    ],
+    [
+     500,
+     73.6
+    ],
+    [
+     2000,
+     234
+    ],
+    [
+     6000,
+     713
+    ]
+   ],
+   "extra": {
+    "100": "332 Ko",
+    "500": "1661 Ko",
+    "2000": "6646 Ko",
+    "6000": "19939 Ko"
+   },
+   "fit": {
+    "a": 0.2524638959609021,
+    "b": 0.9085037152893846
+   },
+   "extrapolation": [
+    [
+     1000,
+     134.2
+    ],
+    [
+     5000,
+     579.1
+    ],
+    [
+     20000,
+     2040.3
+    ]
+   ]
+  },
+  {
+   "id": "traduction",
+   "label": "Couche de traduction : une passe sur n textes (500 lignes connues)",
+   "unit": "textes",
+   "points": [
+    [
+     500,
+     19.8
+    ],
+    [
+     2000,
+     57.5
+    ],
+    [
+     8000,
+     290
+    ]
+   ],
+   "extra": null,
+   "fit": {
+    "a": 0.04403351812082217,
+    "b": 0.9681201412056716
+   },
+   "extrapolation": [
+    [
+     3000,
+     102.3
+    ],
+    [
+     10000,
+     328.3
+    ],
+    [
+     30000,
+     951
+    ]
+   ]
+  }
+ ]
+}

@@ -5,6 +5,9 @@ Python 3 et bibliothèque standard sauf mention contraire. Chaque script détail
 (`python tools/<script>.py --help` n'existe pas toujours : lire l'en-tête). Les pages HTML s'ouvrent dans le
 navigateur (servies par `tools/save_textures.py` quand elles écrivent des fichiers).
 
+Sommaire navigable de tous les outils, avec ces explications : **`tools/index.html`** (dépôt servi par le lanceur ;
+sans lui, seuls les outils décrits ici sont listés).
+
 Trois familles :
 
 1. **Outils courants** — à relancer à chaque fois que leur source change ;
@@ -18,9 +21,10 @@ Trois familles :
 
 | Outil | Quand | Ce qu'il fait |
 |---|---|---|
-| `bump_versions.py` | après toute modification d'un script, d'une feuille ou d'une image | Versions de cache `?v=` par **empreinte du contenu** (8 caractères de SHA-1) : chaque référence reçoit l'empreinte du fichier visé ; une version ne change que si son fichier change (une page n'est modifiée que si l'un de ses fichiers l'est). Couvre les attributs `src` / `href` des pages, les chargements écrits dans les scripts (`'fichier.js?v=…'`), la table `FILE_V` de `repository_nav.js` (feuilles de design) et les images des feuilles des designs ; un script qui versionne ses images avec son propre `?v=` a une empreinte qui couvre ces images (`DEPENDANCES` dans le script). Idempotent ; signale les références vers un fichier absent. Relance aussi `build_mission_prompt.py` et le contrôle des images. |
+| `bump_versions.py` | après toute modification d'un script, d'une feuille ou d'une image | Versions de cache `?v=` par **empreinte du contenu** (8 caractères de SHA-1) : chaque référence reçoit l'empreinte du fichier visé ; une version ne change que si son fichier change (une page n'est modifiée que si l'un de ses fichiers l'est). Couvre les attributs `src` / `href` des pages, les chargements écrits dans les scripts (`'fichier.js?v=…'`), la table `FILE_V` de `repository_nav.js` (feuilles de design) et les images des feuilles des designs ; un script qui versionne ses images avec son propre `?v=` a une empreinte qui couvre ces images (`DEPENDANCES` dans le script). Idempotent ; signale les références vers un fichier absent. Relance aussi `build_mission_prompt.py`, `build_docs_bundle.py` et le contrôle des images. |
 | `build_map_planner.py` | après toute modification de `apps/cpco/map_parser.html` (studio du Centre) | Génère la page publique **Cartes de vol** (`apps/planner/map_planner.html`) depuis le studio : même moteur, même bloc Route, sans le bloc Mission ; ajoute le bloc « Cartes du vol ». La page générée ne s'édite pas à la main. |
-| `build_mission_prompt.py` | après modification de `docs/PROMPT_GENERATEUR_MISSIONS.md` | Recopie le prompt du générateur de missions (bloc ```text du document) dans `apps/cpco/mission_prompt.js`, lu par le bouton « Commander à ChatGPT ». |
+| `build_mission_prompt.py` | après modification de `docs/technique/PROMPT_GENERATEUR_MISSIONS.md` | Recopie le prompt du générateur de missions (bloc ```text du document) dans `apps/cpco/mission_prompt.js`, lu par le bouton « Commander à ChatGPT ». |
+| `build_docs_bundle.py` | lancé par `bump_versions.py` (après modification d'un document de `docs/`) | Recopie tous les documents Markdown de `docs/` dans `apps/aide/docs_bundle.js` : la page Aide s'ouvre ainsi aussi depuis le disque (`file://`, sans lanceur) ; servie par le lanceur, elle lit les fichiers eux-mêmes. |
 | `build_skeuo_icons_css.py` | après ajout ou retouche d'icônes dans `shared/icons/skeuo/` | Régénère la section « jeux d'icônes skeuomorphes » de `shared/block_icons.css` : une règle par icône et par jeu (Laiton → `cabinet/`, Acier → `field/`, Gel → `aqua/`, Aviation → `flightlog/` : jeux lus dans le registre des designs, `repository_tree` › `designs.list`, designs `skeuo:true`), alias, chevrons et poignée des blocs. Puis `bump_versions.py`. |
 | `check_assets.py` | lancé par `bump_versions.py` ; seul : `python tools/check_assets.py` | Contrôle les images des designs (`shared/deco`, `shared/textures`, `shared/icons/skeuo`) : format réel conforme à l'extension (un PNG renommé en `.webp` est refusé), poids au-delà de 400 ko, images nommées par `design_deco.js` ou les feuilles des designs mais absentes, images que plus rien ne nomme (orphelines). Code de sortie 1 s'il y a une erreur. |
 | `format_sources.py` | après une retouche de code compacté, ou avant une relecture | Met en forme le JavaScript, le CSS et les blocs `<script>` / `<style>` des pages (jsbeautifier, cssbeautifier ; gabarits `` `…` `` protégés : jsbeautifier en abîme le contenu imbriqué). Seuls les blancs changent. Contrôle obligatoire ensuite : `tools/verify_format.html` (dépôt servi) compare avant / après — arbres syntaxiques JS (acorn) et règles CSS lues par le navigateur. `--check` : liste sans écrire. Hors champ : bibliothèques, fichiers générés (relancer leur générateur). |
@@ -35,6 +39,9 @@ Trois familles :
 | `new_family_pages.py` | ajout d'une famille de CR | Crée les deux pages d'une nouvelle famille du Mission Report Core (saisie de CR et reporting, copiées de HEMS) et les déclare dans `repository_tree`, d'après un petit fichier JSON (famille, dossier, préfixe, couleur). Reste à déclarer la famille dans `shared/mission_core/vocab.js`. |
 | `migrate_missions_schema.py` | après une montée du format de mission | Passe les YAML de `data/missions` au format `helo-xp-mission` courant (2.0) ; aperçu sans `--write`. Les fichiers hors format sont signalés, pas modifiés. |
 | `data_template/` | création d'un dépôt de données | Squelette du dépôt `data/` (README, `data_tree.js`), repris par `migrate_v3.py`. |
+| `install_hooks.sh` | une fois par clone | Pose dans les crochets git locaux (post-commit, post-checkout, post-merge) l'appel de `write_build.sh`, puis l'exécute. |
+| `write_build.sh` | appelé par les crochets git | Écrit `config/build.js` (commit, branche, étiquette courants, hors dépôt) : le pied de page affiche la version exacte, même en `file://`. |
+| `planche_rubriques.py` | après retouche des en-têtes de l'ordre de mission | Planche contact des en-têtes de l'ordre de mission par organisme, pour chaque design à matières (`docs/technique/planches/rubriques_<design>.jpg` et planche d'ensemble), d'après les règles de `apps/pilot/mes_missions.html`. |
 
 ## 2. Ateliers graphiques (designs skeuomorphes)
 
@@ -49,6 +56,7 @@ Pages HTML à ouvrir via le petit serveur d'écriture : `python tools/save_textu
 | `textures_from_photos.html` | Textures photographiques d'après des matières CC0 d'ambientCG (JPG `*_color` / `*_normal` du dossier `--src`). |
 | `icons_from_sheets.html` | Découpe des icônes et décors dans les planches de maquette (Cabinet, Durci, Aqua, Carnet de vol). |
 | `icons_skeuo_generator.html` | Fabrique, dans le style des planches, les icônes du registre qui n'y figurent pas. |
+| `cut_tabs.py` | Découpe les onglets de page d'un design (`python tools/cut_tabs.py [design…]`) depuis sa planche `docs/technique/planches/onglets_<design>.webp` : `shared/deco/<design>/tabs/rail.webp`, `tab.webp`, `tab-on.webp`, sans texte ; montage « plaques » (Cabinet) ou « cellules » (Carnet de vol : rail à fenêtres, poussoir dans chaque cellule, lueur de la page courante) ; cadrages dans `CONFIG` ; affiche les tailles utiles aux découpes 9 parties de `designs_skeuo.css`. Pillow. Consigne : `docs/technique/ASSETS_A_FOURNIR.md` § 6. |
 | `cut_register_sheet.py` | Découpe une feuille de registre (`python tools/cut_register_sheet.py cabinet\|flightlog\|field [--write]`) en morceaux `shared/deco/<design>/sheet-*.webp` : coins aux bords intérieurs fondus, tranches raccordables, pièces d'en-tête facultatives, papier de fond ; affiche les jetons de géométrie `--sh-*` et, avec `--write`, réécrit le bloc « découpe » du design dans `designs_skeuo.css` (les « réglages » restent à la main). Planches sources non versionnées (configurations en tête du script) ; accessoire du bord gauche (ficelle, crayon) livré à part ; ImageMagick 7. |
 | `gauges_from_sheets.html` | Découpe des boîtiers de cadrans (laiton → Cabinet, métal sombre → Carnet de vol, plaque sombre → Durci, chrome → Aqua). |
 
@@ -71,6 +79,20 @@ même nom de fichier ; relancer ensuite les deux mêmes commandes.
 |---|---|
 | `skeuo_regression.html` | Non-régression des designs à matières : relève les styles calculés des composants du framework sur six pages témoins (4 designs × 2 tons), puis compare un état ultérieur à cette référence, propriété par propriété. À lancer avant et après toute retouche de `designs_skeuo.css` (dépôt servi par `python -m http.server 8767 --bind 127.0.0.1`, puis `http://127.0.0.1:8767/tools/skeuo_regression.html`). |
 | `stub_marker_offset.html` | Marqueurs des points de route (bloc Route) comparés aux positions exactes dessinées par la carte ; boutons de décalage X / Y au pixel, ancre, étiquettes : mesure du décalage à corriger. Ouvrir tel quel. |
+| `jeu_fantome.py` | Jeu de test « fantôme », **sur une branche de test du dépôt de données** (jamais `main`) : déclarations de disponibilités d'une semaine (défaut : la semaine en cours) pour des pilotes de la référence DEFA sans déclaration réelle, et missions du registre affectées à ces pilotes (disponibles au décollage, appareil de la flotte libre, patrouilles de chasseurs). Tout est marqué `phantom: true`, `by: FANTOME`. Sans option : aperçu ; `--write` : écrit ; `--clean --write` : retire les fantômes ; `--week`, `--pilots`, `--missions`, `--seed`. PyYAML. |
+| `audit_i18n.html` | Audit des traductions : charge chaque page de l'index dans une langue (`?lang=en`, `de` ou `es` ; `&auto` lance aussitôt, `&only=<expression>` filtre les pages) et relève les textes visibles et infobulles restés en français. Les données (missions, noms propres) peuvent rester en français : liste de pistes. |
+| `verify_format.html` | Contrôle obligatoire après `format_sources.py` : compare avant / après les arbres syntaxiques JavaScript (acorn) et les règles CSS lues par le navigateur ; seuls les blancs doivent avoir changé. |
+
+## Chantier des couches CSS
+
+Outils du refactoring `docs/technique/REFACTORING_TOOLKIT.md` (designs qui l'emportent sur l'application sans `!important`) ;
+chaque passage se vérifie au banc `skeuo_regression.html`. Tous ont `--check` (aperçu sans écrire).
+
+| Outil | Ce qu'il fait |
+|---|---|
+| `strip_page_important.py` | Retire les `!important` des styles propres d'une page ou d'une feuille (préalable aux couches) ; `--bump` les convertit plutôt en règles renforcées `:not(#imp)`. |
+| `layer_pages.py` | Range les styles d'une page en couches (`lib` < `page` < hors couche) ; les règles propres aux designs restent hors couche. |
+| `layer_app.py` | Modèle « app » : socle, styles des scripts et des pages dans une seule couche `app`, bibliothèques dans `lib`, designs au-dessus (`--css` pour les feuilles du socle). |
 
 ## 3. Migrations ponctuelles (déjà passées)
 

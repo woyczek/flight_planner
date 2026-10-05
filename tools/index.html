@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Sommaire des outils de maintenance : chaque page et chaque script de tools/, avec son usage.">
+<title>Outils de la suite</title>
+<style>
+  /* Sommaire des outils : familles du README dans l'ordre, une fiche par outil ; non décrits à la fin */
+  :root {
+    --bg: #f3f5f7; --surface: #fff; --ink: #18212b; --mut: #5d6977; --line: #d5dce3; --accent: #2b5ea8; --chip: #e7ecf2; --warn: #9a5b12;
+    --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #10161d; --surface: #17212b; --ink: #e2e8ef; --mut: #94a2b3; --line: #2b3946; --accent: #7aa7ec; --chip: #222f3c; --warn: #e0a55a; color-scheme: dark; }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, "Segoe UI", sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 60px; display: grid; gap: 28px; }
+  header { display: grid; gap: 10px; }
+  h1 { margin: 0; font-size: 28px; }
+  h2 { margin: 0; font-size: 20px; }
+  p { margin: 0; max-width: 75ch; }
+  .mut { color: var(--mut); }
+  .warn { color: var(--warn); }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  #q { flex: 1 1 260px; padding: 7px 10px; font: inherit; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+  #q:focus-visible, a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  section { display: grid; gap: 12px; }
+  .intro { color: var(--mut); font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+  .tool { background: var(--surface); border: 1px solid var(--line); padding: 12px 14px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+  .tool h3 { margin: 0; font: 600 15px var(--mono); word-break: break-all; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .chip { font: 500 11px system-ui, sans-serif; text-transform: uppercase; letter-spacing: .05em; background: var(--chip); color: var(--mut); padding: 1px 7px; }
+  .when { font-size: 13px; color: var(--mut); }
+  .when b { color: var(--ink); font-weight: 600; }
+  .desc { font-size: 14px; }
+  code { font: 13px var(--mono); background: var(--chip); padding: 0 4px; }
+  .act { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .act a, .act button { font: 13px system-ui, sans-serif; border: 1px solid var(--line); background: var(--bg); color: var(--accent); padding: 3px 10px; text-decoration: none; cursor: pointer; }
+  .act .cmd { font: 12px var(--mono); color: var(--mut); overflow-wrap: anywhere; }
+  details { font-size: 13px; }
+  summary { cursor: pointer; color: var(--mut); }
+  pre { margin: 6px 0 0; white-space: pre-wrap; font: 12px/1.45 var(--mono); color: var(--mut); max-height: 320px; overflow: auto; }
+  .empty { color: var(--mut); font-style: italic; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Outils de la suite</h1>
+  <p class="mut">Pages et scripts de <code>tools/</code>, rangés comme dans <code>tools/README.md</code> : quand s'en servir et ce que fait chacun. Les scripts se lancent à la racine du dépôt (<code>python tools/…</code>).</p>
+  <div class="bar"><input id="q" type="search" placeholder="Filtrer : nom, usage, mot-clé…" aria-label="Filtrer les outils"><span id="state" class="mut"></span></div>
+</header>
+<div id="out"></div>
+</main>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  // markdown en ligne du README : `code`, **gras**, [texte](lien)
+  const inline = s => esc(s).replace(/```(\w*)/g, '<code>&#96;&#96;&#96;$1</code>').replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+  const KIND = { html: 'page', py: 'Python', sh: 'shell', dossier: 'dossier', md: 'texte' };
+
+  /** README → familles [{ title, intro, tools: [{ names, when, desc }] }] : titres « ## », paragraphes d'introduction,
+   *  tableaux dont la première colonne nomme le ou les outils (`nom`), colonnes « Quand » et description. */
+  function parseReadme(md) {
+    const families = [];
+    let cur = null, head = null;
+    for (const line of md.split(/\r?\n/)) {
+      const h = /^##\s+(.*)/.exec(line);
+      if (h) { cur = { title: h[1].replace(/^\d+\.\s*/, ''), intro: [], tools: [] }; families.push(cur); head = null; continue; }
+      if (!cur) continue;
+      if (/^\|/.test(line)) {
+        const cells = line.replace(/^\||\|\s*$/g, '').split(/(?<!\\)\|/).map(c => c.trim());
+        if (cells.every(c => /^:?-+:?$/.test(c))) continue;
+        if (!head) { head = cells.map(c => c.toLowerCase()); continue; }
+        const names = [...cells[0].matchAll(/`([^`]+)`/g)].map(m => m[1].replace(/\/$/, ''));
+        if (!names.length) continue;
+        const wi = head.findIndex(c => c.startsWith('quand'));
+        cur.tools.push({ names, when: wi > 0 ? cells[wi] : '', desc: cells[cells.length - 1] });
+      } else {
+        head = null;
+        if (line.trim() && !cur.tools.length && !/^---/.test(line)) cur.intro.push(line.trim());
+      }
+    }
+    return families.filter(f => f.tools.length);
+  }
+
+  async function getText(url) {
+    const r = await fetch(url, { cache: 'no-cache' });
+    if (!r.ok) throw new Error(r.status);
+    return r.text();
+  }
+  async function inventory() { // lanceur : tous les fichiers de tools/ avec leur en-tête
+    try {
+      const r = await fetch('../__setup/tools', { headers: { 'X-DEFA-Setup': '1' }, cache: 'no-store' });
+      return r.ok ? (await r.json()).tools : null;
+    } catch { return null; }
+  }
+
+  function card(name, info, doc) {
+    const kind = info?.kind || (/\.(\w+)$/.exec(name)?.[1]) || 'dossier';
+    const cmd = kind === 'py' ? `python tools/${name}` : kind === 'sh' ? `sh tools/${name}` : '';
+    const desc = doc ? inline(doc.desc) : esc(info?.head?.split(/\n\s*\n/)[0] || info?.title || '');
+    const text = [name, doc?.when, doc?.desc, info?.title, info?.head].join(' ').toLowerCase();
+    return `<article class="tool" data-text="${esc(text)}">
+      <h3>${esc(name)} <span class="chip">${esc(KIND[kind] || kind)}</span></h3>
+      ${info?.title ? `<div class="when">${esc(info.title)}</div>` : ''}
+      ${doc?.when ? `<div class="when"><b>Quand :</b> ${inline(doc.when)}</div>` : ''}
+      <div class="desc">${desc || '<span class="empty">Pas de description.</span>'}</div>
+      <div class="act">${kind === 'html' ? `<a href="${esc(name)}" target="_blank" rel="noopener">Ouvrir</a>` : ''}
+        ${cmd ? `<button type="button" data-copy="${esc(cmd)}">Copier la commande</button><span class="cmd">${esc(cmd)}</span>` : ''}</div>
+      ${info?.head && info.kind !== 'html' ? `<details><summary>En-tête du fichier (usage, options)</summary><pre>${esc(info.head)}</pre></details>` : ''}
+    </article>`;
+  }
+
+  async function render() {
+    $('state').textContent = 'Lecture…';
+    let families = [], md = '';
+    try { md = await getText('README.md'); families = parseReadme(md); } catch { /* sans serveur */ }
+    const inv = await inventory();
+    const byName = new Map((inv || []).map(t => [t.name, t]));
+    const seen = new Set();
+    let html = '';
+    for (const f of families) {
+      const cards = f.tools.flatMap(t => t.names.map(n => (seen.add(n), card(n, byName.get(n), t))));
+      html += `<section><h2>${inline(f.title)}</h2>${f.intro.length ? `<p class="intro">${inline(f.intro.join(' '))}</p>` : ''}<div class="grid">${cards.join('')}</div></section>`;
+    }
+    const rest = (inv || []).filter(t => !seen.has(t.name));
+    if (rest.length) html += `<section><h2>Non décrits dans le README</h2><p class="intro">Présents dans <code>tools/</code> ; explication tirée de l'en-tête du fichier. À ajouter au README.</p><div class="grid">${rest.map(t => card(t.name, t, null)).join('')}</div></section>`;
+    if (!md && !inv) html = `<p class="warn">Lecture impossible : ouvrir cette page par le lanceur de la suite (<code>lancer.cmd</code> ou <code>python tools/launch.py</code>), pas en fichier local.</p>`;
+    $('out').innerHTML = html;
+    const n = seen.size + rest.length;
+    $('state').textContent = `${n} outil(s)` + (inv ? '' : ' — liste du README seulement (lanceur absent : fichiers non décrits invisibles)');
+    filter();
+  }
+  function filter() {
+    const q = $('q').value.trim().toLowerCase();
+    for (const el of document.querySelectorAll('.tool')) el.hidden = !!q && !q.split(/\s+/).every(w => el.dataset.text.includes(w));
+    for (const s of document.querySelectorAll('section')) s.hidden = ![...s.querySelectorAll('.tool')].some(el => !el.hidden);
+  }
+  $('q').addEventListener('input', filter);
+  document.addEventListener('click', async e => {
+    const b = e.target.closest('[data-copy]');
+    if (!b) return;
+    try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = 'Copiée'; } catch { b.textContent = 'Sélectionner la commande'; }
+    setTimeout(() => { b.textContent = 'Copier la commande'; }, 1500);
+  });
+  render();
+})();
+</script>
+</body>
+</html>

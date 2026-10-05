@@ -8,14 +8,31 @@
 //   K.esc(texte)                         texte échappé pour HTML
 //   K.lang() / K.langIndex()             langue courante (fr, en, de, es) / son rang dans K.LANGS
 //   K.t([fr, en, de, es])                ligne de traduction dans la langue courante (typographie française appliquée)
+//   K.tf([fr, en, de, es], { n: 2 })     même chose, valeurs {clé} insérées (déjà échappées si c'est du HTML)
+//   K.hOffset('H+1h30mn') / K.hText(90)  heure d'exercice : une seule référence (H, T ou M), décalage avec son unité
+//   K.viewImage(src, titre) / K.viewHtml(titre, html)   visionneuse commune (croix, Échap ; image : taille réelle au clic)
 //   K.store.get(clé, défaut) / .set / .remove / .json(clé, défaut) / .setJson
 //   K.color.rgb(c) / .hex(rgb) / .luminance(c) / .contrast(a, b) / .hsl(h, s, l) / .hueSat(c) / .lightness(c)
 //   K.noFolderAccess()                   message : choix d'un dossier impossible ici (Brave, Firefox, http hors localhost)
+// Audit de performance (tools/perf_audit.html) : sonde insérée juste après ce fichier, avant les scripts de la page,
+// seulement si localStorage « perfProbe » vaut « 1 » (rien sinon).
+try {
+  if (localStorage.getItem('perfProbe') === '1' && !window.__perf && document.readyState === 'loading') document.write(`<script src="${new URL('perf_probe.js', document.currentScript.src).href}"></scr` + 'ipt>');
+} catch {
+  /* stockage indisponible : pas de sonde */
+}
+// Index des données (shared/data_index.js : registre des missions en IndexedDB, docs/technique/INDEX_DONNEES.md) : inséré de même,
+// avant les scripts de la page ; kit chargé après coup (page déjà lue) : ajouté à la fin du document.
+if (!window.DataIndex) {
+  const src = new URL('data_index.js?v=1d9fdbb3', document.currentScript?.src || location.href).href;
+  if (document.readyState === 'loading') document.write(`<script src="${src}"></scr` + 'ipt>');
+  else document.head.append(Object.assign(document.createElement('script'), { src }));
+}
 (() => {
   'use strict';
   if (window.RepositoryKit) return;
 
-  // ------------------------------------------------------------------ couches CSS (docs/REFACTORING_TOOLKIT.md, phase 3)
+  // ------------------------------------------------------------------ couches CSS (docs/technique/REFACTORING_TOOLKIT.md, phase 3)
   // Socle, styles des pages et styles posés par les scripts partagent la couche « app » (ordre et spécificité entre eux
   // inchangés) ; les designs restent hors couche, au-dessus, et l'emportent sans !important. Les feuilles du socle et les
   // <style> des pages sont rangés par tools/layer_app.py (data-layer) ; ici, tout autre <style> — posé par un script,
@@ -32,9 +49,9 @@
     for (let i = 0; i < css.length; i++)
       if (css[i] === '{') depth++;
       else if (css[i] === '}' && !--depth) {
-        out.push(css.slice(start, i + 1));
-        start = i + 1;
-      }
+      out.push(css.slice(start, i + 1));
+      start = i + 1;
+    }
     if (css.slice(start).trim()) out.push(css.slice(start));
     return out;
   };
@@ -132,6 +149,10 @@
     return f ? f(s, lang()) : s;
   };
 
+  /** Phrase [fr, en, de, es] dans la langue courante, valeurs {clé} insérées (déjà échappées par l'appelant s'il
+   *  s'agit de HTML) : tf(['{n} pistes', '{n} tracks', …], { n: 2 }). */
+  const tf = (row, vals = {}, opts) => t(row, opts).replace(/\{(\w+)\}/g, (_, k) => vals[k] ?? '');
+
   // ------------------------------------------------------------------ stockage local (navigation privée, stockage bloqué : sans erreur)
   const store = {
     /** Valeur texte de la clé, sinon défaut. */
@@ -169,8 +190,66 @@
     },
     setJson(key, value) {
       return store.set(key, JSON.stringify(value));
+    },
+    /** Valeur JSON de la clé, analysée seulement si son texte a changé depuis la dernière lecture (registre, profils,
+     *  réglages relus à chaque estimation, chaque case ou chaque ligne). Valeur partagée : la lire, ou la modifier
+     *  puis l'écrire aussitôt (setJson). */
+    jsonCached(key, fallback = null) {
+      let raw = null;
+      try {
+        raw = localStorage.getItem(key);
+      } catch {
+        return fallback;
+      }
+      const hit = jsonMemo.get(key);
+      if (hit && hit.raw === raw) return hit.value ?? fallback;
+      let value = null;
+      try {
+        value = JSON.parse(raw || 'null');
+      } catch {
+        value = null;
+      }
+      jsonMemo.set(key, {
+        raw,
+        value
+      });
+      return value ?? fallback;
     }
   };
+  const jsonMemo = new Map();
+
+  // ------------------------------------------------------------------ IndexedDB
+  // Une connexion par base et par page, réutilisée (ouvrir une connexion à chaque lecture coûtait des dizaines
+  // d'ouvertures par écran, jamais refermées) ; refermée et oubliée si une autre page met la base à niveau.
+  const idbConns = new Map();
+  /** Connexion (promesse) à la base name ; upgrade(db, ancienneVersion) à la création ou à la mise à niveau. */
+  function idb(name, version = 1, upgrade = null) {
+    const k = `${name}@${version}`;
+    if (idbConns.has(k)) return idbConns.get(k);
+    const p = new Promise((resolve, reject) => {
+      const r = indexedDB.open(name, version);
+      r.onupgradeneeded = e => upgrade?.(r.result, e.oldVersion);
+      r.onsuccess = () => {
+        const db = r.result;
+        db.onversionchange = () => {
+          db.close();
+          idbConns.delete(k);
+        };
+        db.onclose = () => idbConns.delete(k);
+        resolve(db);
+      };
+      r.onerror = () => {
+        idbConns.delete(k);
+        reject(r.error);
+      };
+      r.onblocked = () => {
+        idbConns.delete(k);
+        reject(new Error(`IndexedDB ${name} : ouverture bloquée`));
+      };
+    });
+    idbConns.set(k, p);
+    return p;
+  }
 
   // ------------------------------------------------------------------ couleurs
   /** « #rgb », « #rrggbb » ou « rgb(a)(…) » → [r, g, b] (0–255) ; null si illisible ou totalement transparent. */
@@ -238,9 +317,9 @@
   /** Pourquoi ce navigateur ne peut pas choisir de dossier (File System Access API absente) et quoi faire : Brave la
    *  désactive par défaut (réglage à activer) ; page en http hors localhost (contexte non sécurisé) ; Firefox, Safari. */
   const noFolderAccess = () =>
-    !window.isSecureContext ? t([`Choix d’un dossier impossible : page servie en http depuis ${location.host}. Ouvrir la suite par http://127.0.0.1 ou http://localhost (ou en https).`, `Cannot choose a folder: page served over http from ${location.host}. Open the suite via http://127.0.0.1 or http://localhost (or https).`, `Ordnerwahl nicht möglich: Seite per http von ${location.host}. Die Suite über http://127.0.0.1 oder http://localhost (oder https) öffnen.`, `No se puede elegir una carpeta: página servida por http desde ${location.host}. Abrir la suite con http://127.0.0.1 o http://localhost (o https).`])
-    : navigator.brave ? t(['Brave désactive l’accès aux dossiers locaux. Pour l’activer : ouvrir brave://flags/#file-system-access-api, passer « File System Access API » à Enabled, puis relancer Brave. Ou utiliser Chrome / Edge.', 'Brave disables local folder access. To enable it: open brave://flags/#file-system-access-api, set “File System Access API” to Enabled, then restart Brave. Or use Chrome / Edge.', 'Brave deaktiviert den Zugriff auf lokale Ordner. Aktivieren: brave://flags/#file-system-access-api öffnen, „File System Access API“ auf Enabled setzen, Brave neu starten. Oder Chrome / Edge verwenden.', 'Brave desactiva el acceso a carpetas locales. Para activarlo: abrir brave://flags/#file-system-access-api, poner «File System Access API» en Enabled y reiniciar Brave. O usar Chrome / Edge.'])
-    : t(['Ce navigateur ne permet pas de choisir un dossier local (File System Access API) : utiliser Chrome ou Edge.', 'This browser cannot choose a local folder (File System Access API): use Chrome or Edge.', 'Dieser Browser kann keinen lokalen Ordner wählen (File System Access API): Chrome oder Edge verwenden.', 'Este navegador no permite elegir una carpeta local (File System Access API): usar Chrome o Edge.']);
+    !window.isSecureContext ? t([`Choix d’un dossier impossible : page servie en http depuis ${location.host}. Ouvrir la suite par http://127.0.0.1 ou http://localhost (ou en https).`, `Cannot choose a folder: page served over http from ${location.host}. Open the suite via http://127.0.0.1 or http://localhost (or https).`, `Ordnerwahl nicht möglich: Seite per http von ${location.host}. Die Suite über http://127.0.0.1 oder http://localhost (oder https) öffnen.`, `No se puede elegir una carpeta: página servida por http desde ${location.host}. Abrir la suite con http://127.0.0.1 o http://localhost (o https).`]) :
+    navigator.brave ? t(['Brave désactive l’accès aux dossiers locaux. Pour l’activer : ouvrir brave://flags/#file-system-access-api, passer « File System Access API » à Enabled, puis relancer Brave. Ou utiliser Chrome / Edge.', 'Brave disables local folder access. To enable it: open brave://flags/#file-system-access-api, set “File System Access API” to Enabled, then restart Brave. Or use Chrome / Edge.', 'Brave deaktiviert den Zugriff auf lokale Ordner. Aktivieren: brave://flags/#file-system-access-api öffnen, „File System Access API“ auf Enabled setzen, Brave neu starten. Oder Chrome / Edge verwenden.', 'Brave desactiva el acceso a carpetas locales. Para activarlo: abrir brave://flags/#file-system-access-api, poner «File System Access API» en Enabled y reiniciar Brave. O usar Chrome / Edge.']) :
+    t(['Ce navigateur ne permet pas de choisir un dossier local (File System Access API) : utiliser Chrome ou Edge.', 'This browser cannot choose a local folder (File System Access API): use Chrome or Edge.', 'Dieser Browser kann keinen lokalen Ordner wählen (File System Access API): Chrome oder Edge verwenden.', 'Este navegador no permite elegir una carpeta local (File System Access API): usar Chrome o Edge.']);
 
   // heure d'un exercice : une seule référence (H, T ou M : le même instant) et un décalage avec son unité : « H+2mn »,
   // « T-20mn », « H+1h », « H+1h30mn », « M+39mn » ; sans unité (anciens fichiers : « H-20 », « H+60 ») : minutes
@@ -254,38 +333,52 @@
   const hText = (m, ref = 'H') => {
     if (m == null) return `${ref}+?`;
     m = Math.round(m);
-    const a = Math.abs(m), h = Math.floor(a / 60), r = a % 60;
+    const a = Math.abs(m),
+      h = Math.floor(a / 60),
+      r = a % 60;
     return m ? `${ref}${m > 0 ? '+' : '−'}${h ? `${h}h` : ''}${r ? `${r}mn` : ''}` : ref;
   };
-  /** Visionneuse d'image commune : fenêtre modale, titre, croix (et Échap, clic hors de l'image) pour fermer ; clic sur
-   *  l'image : ajustée à l'écran ↔ taille réelle (défilement). */
-  function viewImage(src, title = '') {
+  /** Visionneuse commune (fenêtre modale, titre, croix ; Échap ou clic sur le fond pour fermer). viewImage : image, clic
+   *  = ajustée à l'écran ↔ taille réelle ; viewHtml : document (texte, YAML, Markdown rendu, tableaux). */
+  function viewer() {
     let d = document.getElementById('repoImageViewer');
-    if (!d) {
-      document.head.insertAdjacentHTML('beforeend', '<style id="repoImageViewerCss">#repoImageViewer{width:min(96vw,1400px);max-height:94vh;padding:0;border:0;border-radius:calc(10px * var(--repo-round, 1));background:#111;color:#eee;overflow:hidden}#repoImageViewer::backdrop{background:rgba(0,0,0,.7)}#repoImageViewer header{display:flex;align-items:center;gap:10px;padding:6px 10px;background:#1c1c1c}#repoImageViewer header b{flex:1;font:600 13px system-ui,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#repoImageViewer header button{all:unset;cursor:pointer;font:600 22px/1 system-ui,sans-serif;padding:2px 8px;color:#eee}#repoImageViewer header button:hover{color:#fff;background:#c0392b}#repoImageViewer .rv-body{overflow:auto;max-height:calc(94vh - 40px);display:grid;place-items:center}#repoImageViewer img{display:block;max-width:100%;max-height:calc(94vh - 40px);cursor:zoom-in}#repoImageViewer.rv-full img{max-width:none;max-height:none;cursor:zoom-out}</style>');
-      d = document.createElement('dialog');
-      d.id = 'repoImageViewer';
-      d.innerHTML = '<header><b></b><button type="button" class="repo-plain" aria-label="Fermer" title="Fermer">×</button></header><div class="rv-body"><img alt=""></div>';
-      d.querySelector('button').onclick = () => d.close();
-      d.querySelector('img').onclick = () => d.classList.toggle('rv-full');
-      d.addEventListener('click', e => { if (e.target === d) d.close(); }); // clic sur le fond
-      document.body.append(d);
-    }
-    d.classList.remove('rv-full');
-    d.querySelector('b').textContent = title;
-    d.querySelector('img').src = src;
-    d.querySelector('img').alt = title;
-    d.showModal();
+    if (d) return d;
+    document.head.insertAdjacentHTML('beforeend', '<style id="repoImageViewerCss">#repoImageViewer{width:min(96vw,1400px);max-height:94vh;padding:0;border:0;border-radius:calc(10px * var(--repo-round, 1));background:#111;color:#eee;overflow:hidden}#repoImageViewer::backdrop{background:rgba(0,0,0,.7)}#repoImageViewer header{display:flex;align-items:center;gap:10px;padding:6px 10px;background:#1c1c1c}#repoImageViewer header b{flex:1;font:600 13px system-ui,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#repoImageViewer header button{all:unset;cursor:pointer;font:600 22px/1 system-ui,sans-serif;padding:2px 8px;color:#eee}#repoImageViewer header button:hover{color:#fff;background:#c0392b}#repoImageViewer .rv-body{overflow:auto;max-height:calc(94vh - 40px);display:grid;place-items:center}#repoImageViewer .rv-body>img{display:block;max-width:100%;max-height:calc(94vh - 40px);cursor:zoom-in}#repoImageViewer.rv-full .rv-body>img{max-width:none;max-height:none;cursor:zoom-out}#repoImageViewer.rv-doc{width:min(96vw,1100px);background:var(--repo-page, #f4f6f8);color:var(--repo-ink, #1d2633)}#repoImageViewer.rv-doc header{background:color-mix(in srgb,currentColor 8%,transparent)}#repoImageViewer.rv-doc header button{color:inherit}#repoImageViewer.rv-doc .rv-body{display:block;padding:12px 16px}#repoImageViewer.rv-doc pre{white-space:pre-wrap;font:12px ui-monospace,monospace}#repoImageViewer.rv-doc table{border-collapse:collapse}#repoImageViewer.rv-doc :is(td,th){border:1px solid color-mix(in srgb,currentColor 25%,transparent);padding:2px 6px}#repoImageViewer.rv-doc img{max-width:100%}</style>');
+    d = document.createElement('dialog');
+    d.id = 'repoImageViewer';
+    d.innerHTML = '<header><b></b><button type="button" class="repo-plain" aria-label="Fermer" title="Fermer">×</button></header><div class="rv-body"></div>';
+    d.querySelector('button').onclick = () => d.close();
+    d.addEventListener('click', e => {
+      if (e.target === d) d.close(); // clic sur le fond
+      else if (e.target.matches('.rv-body>img')) d.classList.toggle('rv-full');
+    });
+    document.body.append(d);
+    return d;
   }
+
+  function show(title, html, doc) {
+    const d = viewer();
+    d.classList.remove('rv-full');
+    d.classList.toggle('rv-doc', doc);
+    d.querySelector('b').textContent = title;
+    d.querySelector('.rv-body').innerHTML = html;
+    d.showModal();
+    return d;
+  }
+  const viewImage = (src, title = '') => show(title, `<img src="${esc(src)}" alt="${esc(title)}">`, false);
+  const viewHtml = (title, html) => show(title, html, true);
   window.RepositoryKit = {
+    idb,
     LANGS,
     viewImage,
+    viewHtml,
     hOffset,
     hText,
     esc,
     lang,
     langIndex,
     t,
+    tf,
     store,
     noFolderAccess,
     color: {

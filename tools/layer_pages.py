@@ -1,4 +1,4 @@
-"""Couches CSS d'une page (docs/REFACTORING_TOOLKIT.md, chantier 3) : ordre lib < page < hors couche (framework,
+"""Couches CSS d'une page (docs/technique/REFACTORING_TOOLKIT.md, chantier 3) : ordre lib < page < hors couche (framework,
 designs, styles posés par les scripts), pour que les designs à matières l'emportent sans !important.
 
 Usage (à la racine du dépôt) :

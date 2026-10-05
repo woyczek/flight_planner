@@ -4,901 +4,901 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Flight Performance & Fuel Planner</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=9fd5d2aa">
-<script src="../../config/repository_tree?v=3184ea0e"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=bc0f3060">
+<script src="../../config/repository_tree?v=531e4e18"></script>
 <style data-layer="app">
 @layer app {
-:root {
-  font-family: Inter, system-ui, Segoe UI, Arial, sans-serif;
-  color-scheme: dark
-}
-* {
-  box-sizing: border-box
-}
-body {
-  margin: 0;
-  background: var(--bg);
-  color: #eef3f7
-}
-header {
-  padding: 10px 18px;
-  border-bottom: 1px solid var(--line);
-  position: sticky;
-  top: 0;
-  background: #101317ee;
-  backdrop-filter: blur(8px);
-  z-index: 20
-}
-.header-row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap
-}
-.header-row+.header-row {
-  margin-top: 8px
-}
-.header-spacer {
-  flex: 1
-}
-.control {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 12px;
-  color: var(--muted)
-}
-h1 {
-  font-size: 18px;
-  margin: 0
-}
-button,
-input,
-select,
-textarea {
-  background: #11161c;
-  color: #eef3f7;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  padding: 8px
-}
-button {
-  cursor: pointer
-}
-.primary {
-  background: #173a5c;
-  border-color: #2d6fa9
-}
-.wrap {
-  max-width: 1180px;
-  margin: auto;
-  padding: 16px
-}
-.grid {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 12px
-}
-.card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 14px
-}
-.span6 {
-  grid-column: span 6
-}
-.span12 {
-  grid-column: span 12
-}
-.span4 {
-  grid-column: span 4
-}
-h2 {
-  font-size: 15px;
-  margin: 0 0 12px
-}
-.fields {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px
-}
-.field label {
-  display: block;
-  color: var(--muted);
-  font-size: 12px;
-  margin-bottom: 4px
-}
-.field input,
-.field select,
-.field textarea {
-  width: 100%
-}
-.field textarea {
-  min-height: 64px;
-  resize: vertical
-}
-.big {
-  font-size: 26px;
-  font-weight: 700
-}
-.mut {
-  color: var(--muted);
-  font-size: 12px
-}
-.row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap
-}
-.kv {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 5px 12px;
-  font-size: 13px
-}
-.kv div:nth-child(even) {
-  font-variant-numeric: tabular-nums;
-  text-align: right
-}
-.mapval {
-  display: block;
-  margin-top: 2px;
-  color: #75c8ff;
-  font-size: 11px
-}
-.mapval small {
-  color: #a9b9c9
-}
-.ok {
-  color: #7ed69b
-}
-.warn {
-  color: #f2c879
-}
-.err {
-  color: #ff8d8d
-}
-dialog {
-  background: var(--card);
-  color: #eef3f7;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  width: min(760px, 92vw)
-}
-dialog::backdrop {
-  background: #0009
-}
-.airlist {
-  max-height: 55vh;
-  overflow: auto
-}
-.air {
-  display: flex;
-  justify-content: space-between;
-  padding: 9px;
-  border-bottom: 1px solid var(--line);
-  cursor: pointer
-}
-.air:hover {
-  background: #222a33
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px
-}
-th,
-td {
-  padding: 7px;
-  border-bottom: 1px solid var(--line);
-  text-align: right
-}
-th:first-child,
-td:first-child {
-  text-align: left
-}
-@media(max-width:800px) {
-  .span6,
-  .span4 {
-    grid-column: span 12
+  :root {
+    font-family: Inter, system-ui, Segoe UI, Arial, sans-serif;
+    color-scheme: dark
   }
-  .fields {
-    grid-template-columns: repeat(2, 1fr)
+  * {
+    box-sizing: border-box
   }
-}
-.lang-popup,
-.prefs-popup,
-.aircraft-popup {
-  position: relative;
-  display: inline-block
-}
-.lang-current,
-.prefs-current {
-  height: 34px;
-  min-width: 44px;
-  padding: 4px 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px
-}
-.lang-current svg {
-  width: 27px;
-  height: 18px;
-  display: block;
-  border-radius: 2px
-}
-.lang-menu,
-.prefs-menu,
-.aircraft-menu {
-  position: absolute;
-  top: calc(100% + 5px);
-  z-index: 50;
-  padding: 5px;
-  background: #101319;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  box-shadow: 0 10px 30px #0008
-}
-.lang-menu,
-.prefs-menu {
-  right: 0;
-  min-width: 170px
-}
-.aircraft-menu {
-  left: 0;
-  min-width: 290px;
-  max-width: 420px;
-  max-height: 65vh;
-  overflow: auto
-}
-.lang-menu[hidden],
-.prefs-menu[hidden],
-.aircraft-menu[hidden] {
-  display: none
-}
-.lang-item,
-.prefs-item,
-.aircraft-item {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 8px;
-  border: 0;
-  background: transparent;
-  text-align: left;
-  border-radius: 5px;
-  color: #eef3f7
-}
-.lang-item:hover,
-.prefs-item:hover,
-.aircraft-item:hover,
-.aircraft-item.active {
-  background: #202735
-}
-.lang-item svg {
-  width: 27px;
-  height: 18px
-}
-.aircraft-current {
-  min-width: 250px;
-  max-width: 360px;
-  height: 36px;
-  padding: 4px 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  text-align: left
-}
-.aircraft-current-text {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap
-}
-.caret {
-  font-size: 10px;
-  color: var(--muted)
-}
-.ac-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  color: #b9c5d8;
-  line-height: 0
-}
-.ac-icon svg {
-  display: block;
-  width: 23px;
-  height: 23px;
-  overflow: visible;
-  transform: scale(1.22);
-  transform-origin: center
-}
-.ac-icon.wtc-M svg {
-  width: 24px;
-  height: 24px
-}
-.ac-icon.wtc-H svg {
-  width: 26px;
-  height: 26px
-}
-.ac-icon.wtc-J svg {
-  width: 28px;
-  height: 28px
-}
-.ac-icon.unknown {
-  opacity: .58
-}
-.aircraft-item .ac-meta {
-  color: var(--muted);
-  font-size: 11px;
-  margin-left: auto;
-  white-space: nowrap
-}
-.aircraft-group {
-  margin: 7px 7px 3px;
-  padding: 5px 2px 3px;
-  border-bottom: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 650;
-  text-transform: uppercase;
-  letter-spacing: .04em
-}
-@media(max-width:800px) {
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: #eef3f7
+  }
   header {
-    padding: 9px 12px
-  }
-  .aircraft-current {
-    min-width: 210px;
-    max-width: calc(100vw - 24px)
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    background: #101317ee;
+    backdrop-filter: blur(8px);
+    z-index: 20
   }
   .header-row {
-    gap: 7px
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap
   }
-}
-}
-</style>
-<style data-layer="app">
-@layer app {
-.wrap {
-  max-width: none;
-  width: 100%
-}
-.editorGroup {
-  grid-column: auto;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 10px;
-  min-width: 0
-}
-.editorGroup h3 {
-  font-size: 13px;
-  margin: 0 0 8px
-}
-.editorGroup .fields {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr))
-}
-.editorGroup .wide {
-  grid-column: 1 / -1
-}
-.editorGroup .field,
-.editorGroup input,
-.editorGroup select,
-.editorGroup textarea {
-  min-width: 0;
-  max-width: 100%
-}
-.editorGroupSingle .fields {
-  grid-template-columns: 1fr
-}
-.editorGroupSingle textarea {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere
-}
-#profileEditor {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: start
-}
-.card {
-  min-width: 0
-}
-#curveEditor {
-  overflow: auto
-}
-#curveEditor table {
-  min-width: 900px;
-  table-layout: fixed
-}
-#curveEditor th:nth-last-child(2),
-#curveEditor td:nth-last-child(2) {
-  width: 30%;
-  white-space: normal
-}
-#curveEditor textarea {
-  width: 100%;
-  min-width: 150px;
-  min-height: 48px;
-  resize: vertical;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere
-}
-#curveEditor input,
-#curveEditor select {
-  width: 100%;
-  min-width: 0
-}
-.grid {
-  grid-template-areas: "fuel result" "engine rpmtable";
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr)
-}
-[data-block-id="fuel-plan"] {
-  grid-area: fuel;
-  grid-column: auto
-}
-.perf-side {
-  grid-area: result;
-  grid-column: auto;
-  position: relative;
-  min-width: 0
-}
-.perf-side>[data-block-id="result"] {
-  z-index: 6;
-  box-shadow: 0 6px 18px #0008
-}
-.perf-side .big {
-  font-size: 20px
-}
-.perf-side>[data-block-id="result"].is-stuck:not(.fp-expanded)>:not(.row):not(.repo-block-heading):not(h2):not(#perfPinned) {
-  display: none
-}
-.perf-side>[data-block-id="result"].is-stuck:not(.fp-expanded) {
-  padding: 8px 14px
-}
-.perf-side>[data-block-id="result"].is-stuck:not(.fp-expanded) .big {
-  font-size: 16px
-}
-.fp-result-pin[aria-pressed="true"] {
-  color: var(--accent, #69a7ff);
-  border-color: currentColor
-}
-.result-group {
-  margin-top: 14px;
-  padding-top: 10px;
-  border-top: 1px solid var(--line)
-}
-.result-group>h3 {
-  margin: 0 0 8px
-}
-[data-block-id="flight-regimes"] {
-  grid-area: regimes;
-  grid-column: auto
-}
-[data-block-id="engine-performance"] {
-  grid-area: engine
-}
-[data-block-id="rpm-table"] {
-  grid-area: rpmtable;
-  overflow: auto
-}
-.engine-card .fields {
-  grid-template-columns: repeat(3, minmax(0, 1fr))
-}
-@media(max-width:800px) {
-  #profileEditor {
-    grid-template-columns: 1fr !important
+  .header-row+.header-row {
+    margin-top: 8px
+  }
+  .header-spacer {
+    flex: 1
+  }
+  .control {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--muted)
+  }
+  h1 {
+    font-size: 18px;
+    margin: 0
+  }
+  button,
+  input,
+  select,
+  textarea {
+    background: #11161c;
+    color: #eef3f7;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 8px
+  }
+  button {
+    cursor: pointer
+  }
+  .primary {
+    background: #173a5c;
+    border-color: #2d6fa9
+  }
+  .wrap {
+    max-width: 1180px;
+    margin: auto;
+    padding: 16px
   }
   .grid {
-    grid-template-areas: none;
-    grid-template-columns: 1fr
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 12px
   }
-  .perf-side {
-    grid-area: auto !important
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px
   }
-  .perf-side>* {
-    margin-bottom: 10px
+  .span6 {
+    grid-column: span 6
   }
-  [data-block-id] {
-    grid-area: auto !important
+  .span12 {
+    grid-column: span 12
   }
-  .engine-card .fields {
-    grid-template-columns: 1fr
+  .span4 {
+    grid-column: span 4
   }
-}
+  h2 {
+    font-size: 15px;
+    margin: 0 0 12px
+  }
+  .fields {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px
+  }
+  .field label {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 4px
+  }
+  .field input,
+  .field select,
+  .field textarea {
+    width: 100%
+  }
+  .field textarea {
+    min-height: 64px;
+    resize: vertical
+  }
+  .big {
+    font-size: 26px;
+    font-weight: 700
+  }
+  .mut {
+    color: var(--muted);
+    font-size: 12px
+  }
+  .row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap
+  }
+  .kv {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 5px 12px;
+    font-size: 13px
+  }
+  .kv div:nth-child(even) {
+    font-variant-numeric: tabular-nums;
+    text-align: right
+  }
+  .mapval {
+    display: block;
+    margin-top: 2px;
+    color: #75c8ff;
+    font-size: 11px
+  }
+  .mapval small {
+    color: #a9b9c9
+  }
+  .ok {
+    color: #7ed69b
+  }
+  .warn {
+    color: #f2c879
+  }
+  .err {
+    color: #ff8d8d
+  }
+  dialog {
+    background: var(--card);
+    color: #eef3f7;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    width: min(760px, 92vw)
+  }
+  dialog::backdrop {
+    background: #0009
+  }
+  .airlist {
+    max-height: 55vh;
+    overflow: auto
+  }
+  .air {
+    display: flex;
+    justify-content: space-between;
+    padding: 9px;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer
+  }
+  .air:hover {
+    background: #222a33
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px
+  }
+  th,
+  td {
+    padding: 7px;
+    border-bottom: 1px solid var(--line);
+    text-align: right
+  }
+  th:first-child,
+  td:first-child {
+    text-align: left
+  }
+  @media(max-width:800px) {
+    .span6,
+    .span4 {
+      grid-column: span 12
+    }
+    .fields {
+      grid-template-columns: repeat(2, 1fr)
+    }
+  }
+  .lang-popup,
+  .prefs-popup,
+  .aircraft-popup {
+    position: relative;
+    display: inline-block
+  }
+  .lang-current,
+  .prefs-current {
+    height: 34px;
+    min-width: 44px;
+    padding: 4px 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px
+  }
+  .lang-current svg {
+    width: 27px;
+    height: 18px;
+    display: block;
+    border-radius: 2px
+  }
+  .lang-menu,
+  .prefs-menu,
+  .aircraft-menu {
+    position: absolute;
+    top: calc(100% + 5px);
+    z-index: 50;
+    padding: 5px;
+    background: #101319;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: 0 10px 30px #0008
+  }
+  .lang-menu,
+  .prefs-menu {
+    right: 0;
+    min-width: 170px
+  }
+  .aircraft-menu {
+    left: 0;
+    min-width: 290px;
+    max-width: 420px;
+    max-height: 65vh;
+    overflow: auto
+  }
+  .lang-menu[hidden],
+  .prefs-menu[hidden],
+  .aircraft-menu[hidden] {
+    display: none
+  }
+  .lang-item,
+  .prefs-item,
+  .aircraft-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 8px;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    border-radius: 5px;
+    color: #eef3f7
+  }
+  .lang-item:hover,
+  .prefs-item:hover,
+  .aircraft-item:hover,
+  .aircraft-item.active {
+    background: #202735
+  }
+  .lang-item svg {
+    width: 27px;
+    height: 18px
+  }
+  .aircraft-current {
+    min-width: 250px;
+    max-width: 360px;
+    height: 36px;
+    padding: 4px 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    text-align: left
+  }
+  .aircraft-current-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap
+  }
+  .caret {
+    font-size: 10px;
+    color: var(--muted)
+  }
+  .ac-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    color: #b9c5d8;
+    line-height: 0
+  }
+  .ac-icon svg {
+    display: block;
+    width: 23px;
+    height: 23px;
+    overflow: visible;
+    transform: scale(1.22);
+    transform-origin: center
+  }
+  .ac-icon.wtc-M svg {
+    width: 24px;
+    height: 24px
+  }
+  .ac-icon.wtc-H svg {
+    width: 26px;
+    height: 26px
+  }
+  .ac-icon.wtc-J svg {
+    width: 28px;
+    height: 28px
+  }
+  .ac-icon.unknown {
+    opacity: .58
+  }
+  .aircraft-item .ac-meta {
+    color: var(--muted);
+    font-size: 11px;
+    margin-left: auto;
+    white-space: nowrap
+  }
+  .aircraft-group {
+    margin: 7px 7px 3px;
+    padding: 5px 2px 3px;
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 650;
+    text-transform: uppercase;
+    letter-spacing: .04em
+  }
+  @media(max-width:800px) {
+    header {
+      padding: 9px 12px
+    }
+    .aircraft-current {
+      min-width: 210px;
+      max-width: calc(100vw - 24px)
+    }
+    .header-row {
+      gap: 7px
+    }
+  }
 }
 </style>
 <style data-layer="app">
 @layer app {
-/* ===== Vue des courbes de performances (shared/flight_perf_view.js) ===== */
-.opt-chart {
-  width: 100%;
-  height: auto;
-  display: block;
-  background: #10151b;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  touch-action: none
-}
-.opt-chart text {
-  fill: #9ba8b5;
-  font: 11px system-ui
-}
-.opt-chart .grid-line {
-  stroke: #2b3440;
-  stroke-width: 1
-}
-.opt-chart .axis {
-  stroke: #43505e;
-  stroke-width: 1
-}
-.opt-chart .curve {
-  fill: none;
-  stroke: var(--fc-prof, #75c8ff);
-  stroke-width: 2.2
-}
-.opt-chart .curve-eco {
-  fill: none;
-  stroke: var(--fc-eco, #7ed69b);
-  stroke-width: 2.2
-}
-.opt-chart .curve-fuel {
-  fill: none;
-  stroke: var(--fc-fast, #f0b86e);
-  stroke-width: 1.6
-}
-.opt-chart .curve-man {
-  fill: none;
-  stroke: var(--fc-man, #c792ea);
-  stroke-width: 2
-}
-.opt-chart .band {
-  fill: none;
-  stroke: #9ba8b5;
-  stroke-width: 1;
-  stroke-dasharray: 4 3
-}
-.opt-chart .target {
-  stroke: var(--fc-man, #c792ea);
-  stroke-width: 1;
-  stroke-dasharray: 2 4
-}
-.opt-chart .cursor {
-  stroke: #eef3f7;
-  stroke-opacity: .35;
-  stroke-width: 1
-}
-.opt-chart .pin {
-  stroke: #eef3f7;
-  stroke-width: 1.5;
-  stroke-dasharray: 4 3
-}
-#optBlock {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line)
-}
-.perf-row {
-  margin: 0 0 12px
-}
-.perf-row h3,
-.perf-row h4 {
-  font-size: 13px;
-  margin: 0 0 6px
-}
-#optBlock table {
-  font-size: 12.5px
-}
-#optBlock td.best {
-  font-weight: 700
-}
-#optBlock td.unreach {
-  text-align: left;
-  color: var(--muted)
-}
-.chart-wrap {
-  display: flex;
-  align-items: flex-start;
-  gap: 4px
-}
-.chart-wrap svg {
-  flex: 1;
-  min-width: 0
-}
-.chart-wrap.no-sliders .vslider {
-  display: none
-}
-.vslider {
-  width: 40px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  font-size: 11px;
-  color: var(--muted)
-}
-.vslider output {
-  color: #eef3f7;
-  font-variant-numeric: tabular-nums;
-  height: 16px
-}
-.vslider input.vr {
-  writing-mode: vertical-lr;
-  direction: rtl;
-  width: 22px;
-  padding: 0;
-  margin: 0;
-  accent-color: var(--fc-man, #c792ea);
-  background: transparent;
-  border: 0
-}
-.side-panel {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 13px;
-  line-height: 1.5;
-  z-index: 2;
-  overflow: auto;
-  max-height: calc(100vh - 140px)
-}
-.side-panel h4 {
-  font-size: 13px;
-  margin: 0 0 6px
-}
-.side-panel p {
-  margin: 6px 0
-}
-.side-panel details {
-  margin: 6px 0
-}
-.side-panel summary {
-  cursor: pointer;
-  color: var(--muted)
-}
-.kvp {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 2px 10px;
-  margin: 4px 0
-}
-.kvp dt {
-  color: var(--muted)
-}
-.kvp dd {
-  margin: 0;
-  font-variant-numeric: tabular-nums
-}
-.k {
-  font-weight: 600
-}
-.readout:not(:empty) {
-  margin: 6px 0;
-  padding: 6px 8px;
-  border-radius: 8px;
-  background: #ffffff08
-}
-.reading {
-  color: var(--muted)
-}
-.perf-warn {
-  color: #f0b86e
-}
-.legend {
-  list-style: none;
-  padding: 0;
-  margin: 6px 0
-}
-.legend li {
-  margin: 2px 0
-}
-.sw {
-  display: inline-block;
-  width: 18px;
-  border-top: 2px solid;
-  vertical-align: middle;
-  margin-right: 6px
-}
-.sw.dash {
-  border-top-style: dashed
-}
-abbr[title] {
-  text-decoration: underline dotted;
-  cursor: help
-}
-.field.has-help>label {
-  cursor: help;
-  text-decoration: underline dotted #5d6b79;
-  text-underline-offset: 3px
-}
-.opt-chart .curve-vx {
-  fill: none;
-  stroke: var(--fc-prof, #75c8ff);
-  stroke-width: 1.3;
-  stroke-dasharray: 1 3
-}
-#perfPinned .pinned {
-  margin: 10px 0 0;
-  padding: 8px 10px;
-  border: 1px solid #eef3f744;
-  border-radius: 8px;
-  font-size: 13px
-}
-#perfPinned .pin-head {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: space-between
-}
-.mini {
-  padding: 2px 8px;
-  font-size: 12px
-}
-.apd-bar {
-  margin-top: 8px;
-  line-height: 1.6
-}
-.apd-tag {
-  margin-top: 4px;
-  padding: 1px 7px;
-  font-size: 11px;
-  border-radius: 10px;
-  border: 1px solid currentColor;
-  background: transparent;
-  cursor: pointer
-}
-.apd-same {
-  color: #7ed69b
-}
-.apd-diff {
-  color: #f0b86e
-}
-.apd-empty {
-  color: #75c8ff
-}
-@media(max-width:800px) {
-  .side-panel {
-    max-height: none
+  .wrap {
+    max-width: none;
+    width: 100%
+  }
+  .editorGroup {
+    grid-column: auto;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px;
+    min-width: 0
+  }
+  .editorGroup h3 {
+    font-size: 13px;
+    margin: 0 0 8px
+  }
+  .editorGroup .fields {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr))
+  }
+  .editorGroup .wide {
+    grid-column: 1 / -1
+  }
+  .editorGroup .field,
+  .editorGroup input,
+  .editorGroup select,
+  .editorGroup textarea {
+    min-width: 0;
+    max-width: 100%
+  }
+  .editorGroupSingle .fields {
+    grid-template-columns: 1fr
+  }
+  .editorGroupSingle textarea {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere
+  }
+  #profileEditor {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start
+  }
+  .card {
+    min-width: 0
+  }
+  #curveEditor {
+    overflow: auto
+  }
+  #curveEditor table {
+    min-width: 900px;
+    table-layout: fixed
+  }
+  #curveEditor th:nth-last-child(2),
+  #curveEditor td:nth-last-child(2) {
+    width: 30%;
+    white-space: normal
+  }
+  #curveEditor textarea {
+    width: 100%;
+    min-width: 150px;
+    min-height: 48px;
+    resize: vertical;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere
+  }
+  #curveEditor input,
+  #curveEditor select {
+    width: 100%;
+    min-width: 0
+  }
+  .grid {
+    grid-template-areas: "fuel result" "engine rpmtable";
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr)
+  }
+  [data-block-id="fuel-plan"] {
+    grid-area: fuel;
+    grid-column: auto
+  }
+  .perf-side {
+    grid-area: result;
+    grid-column: auto;
+    position: relative;
+    min-width: 0
+  }
+  .perf-side>[data-block-id="result"] {
+    z-index: 6;
+    box-shadow: 0 6px 18px #0008
+  }
+  .perf-side .big {
+    font-size: 20px
+  }
+  .perf-side>[data-block-id="result"].is-stuck:not(.fp-expanded)>:not(.row):not(.repo-block-heading):not(h2):not(#perfPinned) {
+    display: none
+  }
+  .perf-side>[data-block-id="result"].is-stuck:not(.fp-expanded) {
+    padding: 8px 14px
+  }
+  .perf-side>[data-block-id="result"].is-stuck:not(.fp-expanded) .big {
+    font-size: 16px
+  }
+  .fp-result-pin[aria-pressed="true"] {
+    color: var(--accent, #69a7ff);
+    border-color: currentColor
+  }
+  .result-group {
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line)
+  }
+  .result-group>h3 {
+    margin: 0 0 8px
+  }
+  [data-block-id="flight-regimes"] {
+    grid-area: regimes;
+    grid-column: auto
+  }
+  [data-block-id="engine-performance"] {
+    grid-area: engine
+  }
+  [data-block-id="rpm-table"] {
+    grid-area: rpmtable;
+    overflow: auto
+  }
+  .engine-card .fields {
+    grid-template-columns: repeat(3, minmax(0, 1fr))
+  }
+  @media(max-width:800px) {
+    #profileEditor {
+      grid-template-columns: 1fr !important
+    }
+    .grid {
+      grid-template-areas: none;
+      grid-template-columns: 1fr
+    }
+    .perf-side {
+      grid-area: auto !important
+    }
+    .perf-side>* {
+      margin-bottom: 10px
+    }
+    [data-block-id] {
+      grid-area: auto !important
+    }
+    .engine-card .fields {
+      grid-template-columns: 1fr
+    }
   }
 }
+</style>
+<style data-layer="app">
+@layer app {
+  /* ===== Vue des courbes de performances (shared/flight_perf_view.js) ===== */
+  .opt-chart {
+    width: 100%;
+    height: auto;
+    display: block;
+    background: #10151b;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    touch-action: none
+  }
+  .opt-chart text {
+    fill: #9ba8b5;
+    font: 11px system-ui
+  }
+  .opt-chart .grid-line {
+    stroke: #2b3440;
+    stroke-width: 1
+  }
+  .opt-chart .axis {
+    stroke: #43505e;
+    stroke-width: 1
+  }
+  .opt-chart .curve {
+    fill: none;
+    stroke: var(--fc-prof, #75c8ff);
+    stroke-width: 2.2
+  }
+  .opt-chart .curve-eco {
+    fill: none;
+    stroke: var(--fc-eco, #7ed69b);
+    stroke-width: 2.2
+  }
+  .opt-chart .curve-fuel {
+    fill: none;
+    stroke: var(--fc-fast, #f0b86e);
+    stroke-width: 1.6
+  }
+  .opt-chart .curve-man {
+    fill: none;
+    stroke: var(--fc-man, #c792ea);
+    stroke-width: 2
+  }
+  .opt-chart .band {
+    fill: none;
+    stroke: #9ba8b5;
+    stroke-width: 1;
+    stroke-dasharray: 4 3
+  }
+  .opt-chart .target {
+    stroke: var(--fc-man, #c792ea);
+    stroke-width: 1;
+    stroke-dasharray: 2 4
+  }
+  .opt-chart .cursor {
+    stroke: #eef3f7;
+    stroke-opacity: .35;
+    stroke-width: 1
+  }
+  .opt-chart .pin {
+    stroke: #eef3f7;
+    stroke-width: 1.5;
+    stroke-dasharray: 4 3
+  }
+  #optBlock {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line)
+  }
+  .perf-row {
+    margin: 0 0 12px
+  }
+  .perf-row h3,
+  .perf-row h4 {
+    font-size: 13px;
+    margin: 0 0 6px
+  }
+  #optBlock table {
+    font-size: 12.5px
+  }
+  #optBlock td.best {
+    font-weight: 700
+  }
+  #optBlock td.unreach {
+    text-align: left;
+    color: var(--muted)
+  }
+  .chart-wrap {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px
+  }
+  .chart-wrap svg {
+    flex: 1;
+    min-width: 0
+  }
+  .chart-wrap.no-sliders .vslider {
+    display: none
+  }
+  .vslider {
+    width: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 11px;
+    color: var(--muted)
+  }
+  .vslider output {
+    color: #eef3f7;
+    font-variant-numeric: tabular-nums;
+    height: 16px
+  }
+  .vslider input.vr {
+    writing-mode: vertical-lr;
+    direction: rtl;
+    width: 22px;
+    padding: 0;
+    margin: 0;
+    accent-color: var(--fc-man, #c792ea);
+    background: transparent;
+    border: 0
+  }
+  .side-panel {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    z-index: 2;
+    overflow: auto;
+    max-height: calc(100vh - 140px)
+  }
+  .side-panel h4 {
+    font-size: 13px;
+    margin: 0 0 6px
+  }
+  .side-panel p {
+    margin: 6px 0
+  }
+  .side-panel details {
+    margin: 6px 0
+  }
+  .side-panel summary {
+    cursor: pointer;
+    color: var(--muted)
+  }
+  .kvp {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 2px 10px;
+    margin: 4px 0
+  }
+  .kvp dt {
+    color: var(--muted)
+  }
+  .kvp dd {
+    margin: 0;
+    font-variant-numeric: tabular-nums
+  }
+  .k {
+    font-weight: 600
+  }
+  .readout:not(:empty) {
+    margin: 6px 0;
+    padding: 6px 8px;
+    border-radius: 8px;
+    background: #ffffff08
+  }
+  .reading {
+    color: var(--muted)
+  }
+  .perf-warn {
+    color: #f0b86e
+  }
+  .legend {
+    list-style: none;
+    padding: 0;
+    margin: 6px 0
+  }
+  .legend li {
+    margin: 2px 0
+  }
+  .sw {
+    display: inline-block;
+    width: 18px;
+    border-top: 2px solid;
+    vertical-align: middle;
+    margin-right: 6px
+  }
+  .sw.dash {
+    border-top-style: dashed
+  }
+  abbr[title] {
+    text-decoration: underline dotted;
+    cursor: help
+  }
+  .field.has-help>label {
+    cursor: help;
+    text-decoration: underline dotted #5d6b79;
+    text-underline-offset: 3px
+  }
+  .opt-chart .curve-vx {
+    fill: none;
+    stroke: var(--fc-prof, #75c8ff);
+    stroke-width: 1.3;
+    stroke-dasharray: 1 3
+  }
+  #perfPinned .pinned {
+    margin: 10px 0 0;
+    padding: 8px 10px;
+    border: 1px solid #eef3f744;
+    border-radius: 8px;
+    font-size: 13px
+  }
+  #perfPinned .pin-head {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between
+  }
+  .mini {
+    padding: 2px 8px;
+    font-size: 12px
+  }
+  .apd-bar {
+    margin-top: 8px;
+    line-height: 1.6
+  }
+  .apd-tag {
+    margin-top: 4px;
+    padding: 1px 7px;
+    font-size: 11px;
+    border-radius: 10px;
+    border: 1px solid currentColor;
+    background: transparent;
+    cursor: pointer
+  }
+  .apd-same {
+    color: #7ed69b
+  }
+  .apd-diff {
+    color: #f0b86e
+  }
+  .apd-empty {
+    color: #75c8ff
+  }
+  @media(max-width:800px) {
+    .side-panel {
+      max-height: none
+    }
+  }
 }
 </style>
 <style id="fpColumns" data-layer="app">
 @layer app {
-.opt-chart .beyond {
-  fill: #8a96a3;
-  fill-opacity: .2;
-  pointer-events: none
-}
-.opt-chart .beyond-edge {
-  stroke: #9ba8b5;
-  stroke-width: 1;
-  stroke-dasharray: 3 3;
-  pointer-events: none
-}
-.opt-chart .beyond-label {
-  fill: #b5c0ca;
-  font-size: 10px;
-  pointer-events: none
-}
-.chart-zones {
-  margin: 6px 0 0 44px;
-  padding: 0;
-  list-style: none;
-  font-size: 12px;
-  color: var(--muted)
-}
-.chart-zones li {
-  margin: 2px 0
-}
-.chart-zones b {
-  color: inherit;
-  font-weight: 700
-}
-.opt-chart .short-zone {
-  fill: #8a96a3;
-  fill-opacity: .1;
-  stroke: none;
-  cursor: help
-}
-.opt-chart .oxygen-zone {
-  fill: #6fb7ff;
-  fill-opacity: .07;
-  cursor: help
-}
-.opt-chart .oxygen-edge {
-  stroke: #6fb7ff;
-  stroke-opacity: .6;
-  stroke-width: 1;
-  stroke-dasharray: 2 3;
-  pointer-events: none
-}
-.opt-chart .oxygen-label {
-  fill: #8cc6ff;
-  font-size: 10px
-}
-.opt-chart .zone-tip {
-  pointer-events: auto;
-  cursor: help
-}
-.opt-chart .tas-line {
-  fill: none;
-  stroke-width: 1.5;
-  stroke-dasharray: 6 3;
-  opacity: .75
-}
-.quote-basis {
-  font-size: 12px;
-  margin: -4px 0 8px;
-  min-height: 2.9em
-}
-.wx-impact h4 {
-  margin: 10px 0 4px;
-  font-size: 13px
-}
-.wx-impact:empty {
-  display: none
-}
-/* Trois colonnes (écran large) : saisie + courbes | Résultat + panneaux | instruments ; largeurs réglables
+  .opt-chart .beyond {
+    fill: #8a96a3;
+    fill-opacity: .2;
+    pointer-events: none
+  }
+  .opt-chart .beyond-edge {
+    stroke: #9ba8b5;
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+    pointer-events: none
+  }
+  .opt-chart .beyond-label {
+    fill: #b5c0ca;
+    font-size: 10px;
+    pointer-events: none
+  }
+  .chart-zones {
+    margin: 6px 0 0 44px;
+    padding: 0;
+    list-style: none;
+    font-size: 12px;
+    color: var(--muted)
+  }
+  .chart-zones li {
+    margin: 2px 0
+  }
+  .chart-zones b {
+    color: inherit;
+    font-weight: 700
+  }
+  .opt-chart .short-zone {
+    fill: #8a96a3;
+    fill-opacity: .1;
+    stroke: none;
+    cursor: help
+  }
+  .opt-chart .oxygen-zone {
+    fill: #6fb7ff;
+    fill-opacity: .07;
+    cursor: help
+  }
+  .opt-chart .oxygen-edge {
+    stroke: #6fb7ff;
+    stroke-opacity: .6;
+    stroke-width: 1;
+    stroke-dasharray: 2 3;
+    pointer-events: none
+  }
+  .opt-chart .oxygen-label {
+    fill: #8cc6ff;
+    font-size: 10px
+  }
+  .opt-chart .zone-tip {
+    pointer-events: auto;
+    cursor: help
+  }
+  .opt-chart .tas-line {
+    fill: none;
+    stroke-width: 1.5;
+    stroke-dasharray: 6 3;
+    opacity: .75
+  }
+  .quote-basis {
+    font-size: 12px;
+    margin: -4px 0 8px;
+    min-height: 2.9em
+  }
+  .wx-impact h4 {
+    margin: 10px 0 4px;
+    font-size: 13px
+  }
+  .wx-impact:empty {
+    display: none
+  }
+  /* Trois colonnes (écran large) : saisie + courbes | Résultat + panneaux | instruments ; largeurs réglables
    (shared/column_resize.js). Les blocs pleine largeur (span12) couvrent les trois colonnes : plus de colonnes
    implicites (l'ancienne grille à 12 colonnes laissait 10 écarts vides à droite du Résultat). */
-@media(min-width:801px) {
-  .wrap>.grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, .62fr) minmax(0, .17fr);
-    grid-template-areas: "fuel result instr" "engine rpmtable instr" !important
+  @media(min-width:801px) {
+    .wrap>.grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, .62fr) minmax(0, .17fr);
+      grid-template-areas: "fuel result instr" "engine rpmtable instr" !important
+    }
+    .wrap>.grid>.span12 {
+      grid-column: 1/-1 !important
+    }
   }
-  .wrap>.grid>.span12 {
-    grid-column: 1/-1 !important
-  }
-}
-.instr-col {
-  grid-area: instr;
-  min-width: 0
-}
-.fp-instr-sticky {
-  position: sticky;
-  top: 70px
-}
-.instr-col .fp-instruments {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-  margin: 0
-}
-/* cinq cadrans : taille bornée par la largeur de la colonne et par la hauteur de la fenêtre (tout reste visible) */
-.instr-col .fp-gauge svg {
-  width: 100%;
-  height: auto;
-  max-width: min(210px, calc((100vh - 150px) / 5 - 34px));
-  aspect-ratio: 1;
-  margin: 0 auto
-}
-.instr-col .fp-gauge figcaption {
-  white-space: normal;
-  font-size: 11px
-}
-@media(max-width:800px) {
   .instr-col {
-    grid-area: auto
+    grid-area: instr;
+    min-width: 0
   }
   .fp-instr-sticky {
-    position: static
+    position: sticky;
+    top: 70px
   }
   .instr-col .fp-instruments {
-    flex-direction: row;
-    justify-content: center
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    margin: 0
   }
+  /* cinq cadrans : taille bornée par la largeur de la colonne et par la hauteur de la fenêtre (tout reste visible) */
   .instr-col .fp-gauge svg {
-    width: 90px !important
+    width: 100%;
+    height: auto;
+    max-width: min(210px, calc((100vh - 150px) / 5 - 34px));
+    aspect-ratio: 1;
+    margin: 0 auto
   }
-}
+  .instr-col .fp-gauge figcaption {
+    white-space: normal;
+    font-size: 11px
+  }
+  @media(max-width:800px) {
+    .instr-col {
+      grid-area: auto
+    }
+    .fp-instr-sticky {
+      position: static
+    }
+    .instr-col .fp-instruments {
+      flex-direction: row;
+      justify-content: center
+    }
+    .instr-col .fp-gauge svg {
+      width: 90px !important
+    }
+  }
 }
 </style>
 <style id="skeuoPlanner" data-layer="designs">
@@ -1078,12 +1078,12 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 <dialog id="dlg"><div class="row"><h2 style="flex:1">Choisir l’avion</h2><button onclick="dlg.close()">Fermer</button></div><input id="search" placeholder="Rechercher ICAO / nom…" style="width:100%;margin-bottom:8px"><div id="airlist" class="airlist"></div></dialog>
 
 <!-- navigation (en-tête, barre latérale) avant les scripts de calcul : la barre et la marge du contenu paraissent tout de suite -->
-<script src="../../shared/kit.js?v=5ed81dcf"></script>
-<script src="../../shared/repository_nav.js?v=0e68edda"></script>
+<script src="../../shared/kit.js?v=a819e6df"></script>
+<script src="../../shared/repository_nav.js?v=63c2b74d"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=69e8ef45"></script>
 <script src="../../AircraftDB/aircraft_icons.js"></script>
 <script src="../../AircraftDB/aircraft_perf.js"></script>
-<script src="../../shared/sticky_frame.js?v=90db4df1"></script><script src="../../shared/flight_profile_help.js?v=07335da9"></script><script src="../../shared/column_resize.js?v=953e38b1"></script><script src="../../shared/flight_instruments.js?v=173a2b7f"></script><script src="../../shared/flight_perf_view.js?v=16cd3bb7"></script>
+<script src="../../shared/sticky_frame.js?v=90db4df1"></script><script src="../../shared/flight_profile_help.js?v=07335da9"></script><script src="../../shared/column_resize.js?v=953e38b1"></script><script src="../../shared/flight_instruments.js?v=2f03114c"></script><script src="../../shared/flight_perf_view.js?v=f333994e"></script>
 <script src="../../shared/flight_performance_model.js?v=9f9c9116"></script>
 <script>
 // Planificateur de performances : profils d'appareils (SimBrief, Little Navmap, CSV, calibration par
@@ -1671,7 +1671,7 @@ function renderProfile() {
     ["TOD", `${active.tod.gradientFtPerNm||300} ft/NM + ${active.tod.bufferNm||0} NM`]
   ];
   $("profile").innerHTML = vals.map(x => `<div>${x[0]}</div><div>${x[1]}</div>`).join("");
-  $("curve").innerHTML = (active.rpmFuelCurve || []).sort((a, b) => a.rpm - b.rpm).map(x => `<tr><td>${x.rpm}</td><td>${showFuel(x.fuelFlowMin??x.fuelFlowPerHour)}</td><td>${showFuel(x.fuelFlowPerHour)}</td><td>${showFuel(x.fuelFlowMax??x.fuelFlowPerHour)}</td><td>${fuelUnit()}/h</td><td>${x.comment||""}</td></tr>`).join("") || '<tr><td colspan="6">Pas de courbe RPM dans ce profil.</td></tr>';
+  $("curve").innerHTML = (active.rpmFuelCurve || []).sort((a, b) => a.rpm - b.rpm).map(x => `<tr><td>${x.rpm}</td><td>${showFuel(x.fuelFlowMin??x.fuelFlowPerHour)}</td><td>${showFuel(x.fuelFlowPerHour)}</td><td>${showFuel(x.fuelFlowMax??x.fuelFlowPerHour)}</td><td>${fuelUnit()}/h</td><td>${window.RepositoryKit.esc(x.comment||"")}</td></tr>`).join("") || '<tr><td colspan="6">Pas de courbe RPM dans ce profil.</td></tr>';
   renderProfileEditor();
 }
 // ===== Devis carburant : composante de vent, temps et consommation par phase =====
@@ -1684,7 +1684,7 @@ function windComponent(track, from, speed) {
 // réglée par les curseurs verticaux (au départ, Badin et vario du profil). opts.quoteOnly : devis seul, sans
 // redessiner les courbes (appelé par les curseurs et l'épingle, via planQuote).
 function calculate(opts) {
-  if (!active) return alert("Choisis ou importe d’abord un profil avion.");
+  if (!active) return window.AppFramework.notify("Choisis ou importe d’abord un profil avion.", 'warn');
   const quoteOnly = opts?.quoteOnly === true,
     pinned = window.FlightPerfView?.sync?.pinned ?? null,
     mq = window.FlightPerfView?.manual?.() || null;
@@ -1733,7 +1733,8 @@ function calculate(opts) {
       speed: law0
     }) : null,
     law = lawClimb ? law0 : null,
-    /* loi réglée qui n'atteint pas le niveau : montée modélisée du profil */ pClimb = lawClimb || (perf && alt > 0 ? perf.climbTo(Math.min(alt, perf.ceiling)) : null),
+    /* loi réglée qui n'atteint pas le niveau : montée modélisée du profil */
+    pClimb = lawClimb || (perf && alt > 0 ? perf.climbTo(Math.min(alt, perf.ceiling)) : null),
     pCruise = perf ? perf.cruise(alt, "normal") : null;
   const climbMin = pClimb ? pClimb.minutes : alt / (active.climb.rateFpm || 1200),
     descentMin = alt / Math.abs(active.descent.rateFpm || 1500);
@@ -2248,7 +2249,7 @@ $("copyJsonBtn").onclick = async () => {
     await navigator.clipboard.writeText(JSON.stringify(window.__lastImportedJson, null, 2));
     $("jsonMeta").textContent += " · copié"
   } catch (e) {
-    alert("Copie impossible : " + e.message)
+    window.AppFramework.notify("Copie impossible : " + e.message, 'err')
   }
 };
 // Vide l'affichage du JSON importé.
@@ -2378,7 +2379,7 @@ $("fileInput").onchange = async e => {
     }
   }
   if (last && !ofpCount) setActive(last, `${ok} profil(s) importé(s)`);
-  if (!last && !ofpCount) alert("Aucun profil reconnu." + (errors.length ? "\n\n" + errors.join("\n") : ""));
+  if (!last && !ofpCount) window.AppFramework.notify("Aucun profil reconnu." + (errors.length ? "\n\n" + errors.join("\n") : ""), 'warn');
   else if (errors.length) $("profileEditStatus").textContent = `Import partiel : ${errors.join(" | ")}`;
   e.target.value = "";
 };
@@ -2400,10 +2401,10 @@ $("toggleProfileEditor").onclick = () => {
   save()
 };
 // Supprime le profil actif du stockage local (après confirmation).
-$("deleteProfileBtn").onclick = () => {
+$("deleteProfileBtn").onclick = async () => {
   if (!active) return;
   let label = active.name || active.id;
-  if (!confirm(`Supprimer définitivement le profil « ${label} » du stockage local ?`)) return;
+  if (!await window.AppFramework.ask(`Supprimer définitivement le profil « ${label} » du stockage local ?`)) return;
   delete state.profiles[active.id];
   clearActive(`Profil supprimé : ${label}`)
 };
@@ -2460,7 +2461,7 @@ window.addEventListener("load", async () => {
 });
 // Choix du dossier performances : lit les profils (.json, .lnmperf, .csv) qu'il contient.
 $("dirBtn").onclick = async () => {
-  if (!window.showDirectoryPicker) return alert("Ce navigateur ne permet pas l’accès direct à un dossier. Utilise Chrome/Edge ou importe les fichiers.");
+  if (!window.showDirectoryPicker) return window.AppFramework.notify("Ce navigateur ne permet pas l’accès direct à un dossier. Utilise Chrome/Edge ou importe les fichiers.", 'warn');
   try {
     dirHandle = window.FileAccess ? await window.FileAccess.pickFolder("__perf") : await showDirectoryPicker({
       mode: "readwrite"
@@ -2480,9 +2481,9 @@ $("dirBtn").onclick = async () => {
       }
     }
     save();
-    alert(`${count} profil(s) chargé(s). La BDD locale sera écrite ici via « Exporter BDD locale ».`)
+    window.AppFramework.notify(`${count} profil(s) chargé(s). La BDD locale sera écrite ici via « Exporter BDD locale ».`, 'ok')
   } catch (e) {
-    if (e.name !== "AbortError") alert(e.message)
+    if (e.name !== "AbortError") window.AppFramework.notify(e.message, 'err')
   }
 };
 
@@ -3030,7 +3031,7 @@ function extractOfpCalibration(ofp) {
 /** Tableau d'audit de la calibration OFP (mesures par phase) et sa provenance. */
 function renderCalibration(c) {
   const u = fuelUnit(),
-    rows = Object.values(c.phases).map(p => `<tr><td>${p.name}</td><td>${p.source}</td><td>${fmt(p.timeMin,1)} min</td><td>${fmt(p.airDistanceNm??p.distanceNm,1)} NM${p.airDistanceNm===null?" sol":" air"}</td><td>${showFuel(p.fuel)} ${u}</td><td>${showFuel(p.fuelFlowPerHour)} ${u}/h</td><td>${p.tasKt?fmt(p.tasKt)+" TAS":p.groundSpeedKt?fmt(p.groundSpeedKt)+" GS (estimé)":"—"}</td><td>${fmt(p.rateFpm)} ft/min</td></tr>`).join("");
+    rows = Object.values(c.phases).map(p => `<tr><td>${window.RepositoryKit.esc(p.name)}</td><td>${window.RepositoryKit.esc(p.source)}</td><td>${fmt(p.timeMin,1)} min</td><td>${fmt(p.airDistanceNm??p.distanceNm,1)} NM${p.airDistanceNm===null?" sol":" air"}</td><td>${showFuel(p.fuel)} ${u}</td><td>${showFuel(p.fuelFlowPerHour)} ${u}/h</td><td>${p.tasKt?fmt(p.tasKt)+" TAS":p.groundSpeedKt?fmt(p.groundSpeedKt)+" GS (estimé)":"—"}</td><td>${fmt(p.rateFpm)} ft/min</td></tr>`).join("");
   $("ofpAudit").innerHTML = rows;
   $("calibrationMeta").innerHTML = [
     ["OFP analysé", c.createdAt],
@@ -3076,7 +3077,7 @@ $("calibrateBtn").onclick = async () => {
 // Exporte l'audit du dernier OFP (JSON).
 $("exportAuditBtn").onclick = async () => {
   let saved = await loadOFP();
-  if (!saved?.calibration) return alert("Aucun audit OFP à exporter.");
+  if (!saved?.calibration) return window.AppFramework.notify("Aucun audit OFP à exporter.", 'warn');
   downloadText(`simbrief_ofp_audit_${saved.calibration.createdAt.replace(/[:.]/g,"-")}.json`, JSON.stringify(saved, null, 2), "application/json")
 };
 // Récupère le dernier FPL SimBrief de l'utilisateur (profil pilote commun) et l'importe comme OFP.
@@ -3091,18 +3092,26 @@ $("simBtn").onclick = async () => {
         return ""
       }
     })(); /* profil pilote commun (☰ › Profil pilote) */
-    if (!u) throw Object.assign(Error("identifiant SimBrief à saisir dans ☰ › Profil pilote"), { simbrief: "SimBrief : identifiant manquant" });
+    if (!u) throw Object.assign(Error("identifiant SimBrief à saisir dans ☰ › Profil pilote"), {
+      simbrief: "SimBrief : identifiant manquant"
+    });
     // SimBrief répond 400 avec un JSON ({ fetch: { status: "Error: …" } }) quand il n'a pas de plan de vol pour ce compte :
     // c'est sa réponse qui est affichée, pas « indisponible » (le réseau marche)
     let r;
     try {
-      r = await fetch(`https://www.simbrief.com/api/xml.fetcher.php?${/^\d+$/.test(u)?"userid":"username"}=${encodeURIComponent(u)}&json=v2`, { cache: "no-store" });
+      r = await fetch(`https://www.simbrief.com/api/xml.fetcher.php?${/^\d+$/.test(u)?"userid":"username"}=${encodeURIComponent(u)}&json=v2`, {
+        cache: "no-store"
+      });
     } catch {
-      throw Object.assign(Error("SimBrief injoignable (réseau, bloqueur de contenu ?)"), { simbrief: "SimBrief injoignable" });
+      throw Object.assign(Error("SimBrief injoignable (réseau, bloqueur de contenu ?)"), {
+        simbrief: "SimBrief injoignable"
+      });
     }
     const ofp = await r.json().catch(() => null);
     const said = String(ofp?.fetch?.status || "");
-    if (!r.ok || /^error/i.test(said)) throw Object.assign(Error(/no flight plan/i.test(said) ? `aucun plan de vol sur SimBrief pour « ${u} » (en générer un sur simbrief.com)` : said.replace(/^error:\s*/i, "") || "SimBrief HTTP " + r.status), { simbrief: "SimBrief : pas de FPL" });
+    if (!r.ok || /^error/i.test(said)) throw Object.assign(Error(/no flight plan/i.test(said) ? `aucun plan de vol sur SimBrief pour « ${u} » (en générer un sur simbrief.com)` : said.replace(/^error:\s*/i, "") || "SimBrief HTTP " + r.status), {
+      simbrief: "SimBrief : pas de FPL"
+    });
     await importOFPProfile(ofp, "SimBrief dernier FPL — " + u, "SimBrief : dernier FPL");
     $("source").textContent = `SimBrief : dernier FPL ${active?.name||active?.icao||""} chargé`;
   } catch (e) {
@@ -3387,10 +3396,10 @@ applyHeaderPreferences();
   else syncAircraftPicker();
 }
 </script>
-<script src="../../shared/app_framework.js?v=f587f576"></script>
-<script src="../../shared/flight_ui.js?v=4064c2b6"></script>
-<script src="../../shared/carto/aero_symbols.js?v=8393fb57"></script><script src="../../shared/carto/vertical_profile.js?v=75163ccf"></script><script src="../../shared/flight_vertical_profile.js?v=ee7dded4"></script>
-<script src="../../shared/content_i18n.js"></script><script src="../../shared/flight_i18n.js"></script>
+<script src="../../shared/app_framework.js?v=a2972a9a"></script>
+<script src="../../shared/flight_ui.js?v=d3c58dea"></script>
+<script src="../../shared/carto/aero_symbols.js?v=8393fb57"></script><script src="../../shared/carto/vertical_profile.js?v=75163ccf"></script><script src="../../shared/flight_vertical_profile.js?v=90896573"></script>
+<script src="../../shared/content_i18n.js?v=7afecb78"></script><script src="../../shared/flight_i18n.js?v=0f0c2730"></script>
 <footer class="repo-footer no-print">CC RBR - DEFA Virtual - 2026-09-21 - 2.0.7 - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a></footer>
 <script>
 /* Colonnes redimensionnables (framework : shared/column_resize.js) ; poignées sur la hauteur des deux premières rangées */

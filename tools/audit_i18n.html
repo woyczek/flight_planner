@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Audit des traductions</title>
+<style>
+  body { font: 14px/1.45 system-ui, sans-serif; margin: 16px; background: #fff; color: #1b1f24; }
+  h1 { font-size: 20px; margin: 0 0 8px; }
+  table { border-collapse: collapse; width: 100%; margin-top: 12px; }
+  th, td { border: 1px solid #d0d4da; padding: 4px 6px; text-align: left; vertical-align: top; }
+  th { background: #f1f3f6; }
+  code { font-size: 12px; }
+  .ok { color: #1d7a3a; }
+  .bad { color: #a3241a; }
+  iframe { position: absolute; left: -5000px; width: 1300px; height: 900px; }
+</style>
+</head>
+<body>
+<h1>Audit des traductions</h1>
+<p>Charge chaque page de l'index dans la langue choisie et relève les textes visibles restés en français (accents,
+mots courants). Les données (missions, noms propres) peuvent rester en français : à lire comme une liste de pistes.
+Servir le dépôt (<code>python tools/launch.py</code> ou <code>python -m http.server</code>), puis ouvrir
+<code>/tools/audit_i18n.html?lang=en</code> (en, de, es).</p>
+<p><button id="go">Lancer</button> <span id="state"></span></p>
+<table><thead><tr><th>Page</th><th>Textes en français</th></tr></thead><tbody id="out"></tbody></table>
+<h2>Libellés des données</h2>
+<p>Libellés saisis en français seulement dans les paramètres (catégories de disponibilité, groupes, domaines, thèmes :
+<code>data/config/disponibilites.json</code>) ; traduction absente dans la langue choisie : à compléter dans le fichier
+(tableau <code>label</code> : fr, en, de, es). Un libellé français modifié dans les paramètres perd ses traductions.</p>
+<table><thead><tr><th>Entrée</th><th>Français</th><th>Traduction</th></tr></thead><tbody id="data"></tbody></table>
+<script src="../config/repository_tree" data-no-design></script>
+<script>
+(() => {
+  'use strict';
+  const lang = new URLSearchParams(location.search).get('lang') || 'en';
+  const FR = /[éèêàçùôîûœ]|\b(le|la|les|des|du|une|et|pour|dans|avec|sur|aucun|aucune|choisir|ouvrir|enregistrer|dossier|fichier|données|mission|missions|pilote|appareil|carte|cartes|page|non|oui|tous|toutes|à|au|aux|ce|cette|ces|est|sont|pas|plus|vers|depuis|heure)\b/i;
+  const only = new URLSearchParams(location.search).get('only'); // filtre de pages (expression régulière)
+  const pages = [...new Set(JSON.stringify(window.REPOSITORY_TREE || {}).match(/apps\/[\w\/.-]+\.html/g) || [])].filter(p => !only || new RegExp(only).test(p));
+  const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  function frenchTexts(doc) {
+    const out = new Map();
+    const w = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
+    for (let n; (n = w.nextNode());) {
+      const el = n.parentElement;
+      if (!el || el.closest('script,style,code,pre,textarea,[data-no-i18n],.repo-sidenav-brand')) continue;
+      const s = n.nodeValue.replace(/\s+/g, ' ').trim();
+      if (s.length < 3 || !FR.test(s) || !/[a-zà-ÿ]{3}/i.test(s)) continue;
+      const cs = doc.defaultView.getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+      out.set(s, (out.get(s) || 0) + 1);
+    }
+    for (const el of doc.querySelectorAll('[title],[placeholder]'))
+      for (const a of ['title', 'placeholder']) {
+        const s = (el.getAttribute(a) || '').trim();
+        if (s.length >= 3 && FR.test(s)) out.set(`[${a}] ${s}`, (out.get(`[${a}] ${s}`) || 0) + 1);
+      }
+    return [...out.keys()];
+  }
+  async function run() {
+    localStorage.setItem('repositoryLanguageMode', lang);
+    const out = document.getElementById('out'),
+      state = document.getElementById('state');
+    out.innerHTML = '';
+    const all = {};
+    for (const [i, p] of pages.entries()) {
+      state.textContent = `${i + 1}/${pages.length} — ${p}`;
+      const f = document.createElement('iframe');
+      f.src = '../' + p;
+      document.body.append(f);
+      await new Promise(r => { f.onload = r; setTimeout(r, 9000); });
+      await new Promise(r => setTimeout(r, 3500));
+      let list = [];
+      // page encore sans corps (redirection, rechargement) : on l'attend jusqu'à 5 s de plus
+      for (let k = 0; k < 25 && !f.contentDocument?.body; k++) await new Promise(r => setTimeout(r, 200));
+      const doc = f.contentDocument;
+      try { list = doc?.body ? frenchTexts(doc) : [`(page sans contenu lisible : ${f.contentWindow?.location?.href || 'adresse inconnue'})`]; } catch (e) { list = ['(lecture impossible : ' + e.message + ')']; }
+      f.remove();
+      all[p] = list;
+      out.insertAdjacentHTML('beforeend', `<tr><td><a href="../${esc(p)}" target="_blank">${esc(p)}</a></td><td class="${list.length ? 'bad' : 'ok'}">${list.length ? `<b>${list.length}</b><br>${list.map(esc).join('<br>')}` : '—'}</td></tr>`);
+    }
+    state.textContent = `Terminé : ${Object.values(all).reduce((n, l) => n + l.length, 0)} texte(s) sur ${pages.length} page(s).`;
+    window.__audit = all;
+  }
+  /** Libellés de data/config/disponibilites.json sans traduction dans la langue choisie. */
+  async function dataLabels() {
+    const out = document.getElementById('data'),
+      i = ['fr', 'en', 'de', 'es'].indexOf(lang);
+    let cfg;
+    try { cfg = await (await fetch('../data/config/disponibilites.json', { cache: 'no-store' })).json(); } catch (e) {
+      out.innerHTML = `<tr><td colspan="3">(fichier illisible : ${esc(e.message)})</td></tr>`;
+      return;
+    }
+    const rows = [
+      ...(cfg.categories || []).filter(c => !c.retiree).map(c => [`catégorie ${c.id}`, c.label]),
+      ...(cfg.groupes || []).map(g => [`groupe ${g.id}`, g.label]),
+      ...(cfg.domaines || []).map(d => [`domaine ${d.id}`, d.label]),
+      ...Object.entries(cfg.themes || {}).map(([k, v]) => [`thème ${k}`, v])
+    ].map(([k, row]) => [k, Array.isArray(row) ? row : [row]]).filter(([, row]) => i > 0 && !String(row[i] || '').trim());
+    out.innerHTML = rows.length ? rows.map(([k, row]) => `<tr><td><code>${esc(k)}</code></td><td>${esc(row[0] || '')}</td><td class="bad">manquante (${lang})</td></tr>`).join('')
+      : `<tr><td colspan="3" class="ok">${i > 0 ? 'Toutes traduites.' : 'Langue de référence : rien à traduire.'}</td></tr>`;
+  }
+  dataLabels();
+  document.getElementById('go').onclick = run;
+  if (new URLSearchParams(location.search).has('auto')) run();
+})();
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  // Affectations des missions aux pilotes (docs/AFFECTATION_MISSIONS.md) : socle commun, chargé sur chaque page par
+  // Affectations des missions aux pilotes (docs/technique/AFFECTATION_MISSIONS.md) : socle commun, chargé sur chaque page par
   // repository_nav.js.
   //   · identité : trigramme du profil pilote (☰ › Profil pilote, missionReportingConfig:v1.trigram) ;
   //   · index des affectations : data/missions/affectations.json (écrit par le Centre, lu par fetch — pas d'autorisation de
@@ -15,7 +15,8 @@
   //     terrains, convoyage), qualification, créneaux, conflits, écriture d'une affectation.
   //
   // API (window.MissionAssignments) : identité et index — trigram(), index({ fresh }), mine(liste?, { all }), key(a),
-  //   when(a), isRead(a), markRead(a), envelope() ; déclaration du pilote — LEGEND, availability(TRI),
+  //   when(a), isRead(a), markRead(a), markUnread(a), pliState(a, id), setPliState(a, id, { state, at, logged }) (plis
+  //   d'exercice : ouvert, rescellé, ouverture à l'heure notée au journal), envelope() ; déclaration du pilote — LEGEND, availability(TRI),
   //   availabilityAt(décl, ms, famille), saveAvailability(TRI, grille, { toFolder }), saveAircraft(TRI, { owned, mastered }), saveSims(TRI, [sim…]), simulators(),
   //   gridEditor(hôte, grille, onChange) ; outils — geo { nm, brg, icaoOf, coord }, typeOf, cruiseKt, coordsOf(OACI),
   //   ferryOf({ base, departure, type, takeoff, pilot }), fleetTypes(), qualification(décl, TRI, type), slotRange(date, h0, h1),
@@ -28,10 +29,13 @@
     AVAIL = 'pilotAvailability:v1',
     PAGE = 'apps/pilot/mes_missions.html';
   const t = row => K?.t ? K.t(row) : row[0];
+  const tf = (row, v) => K?.tf ? K.tf(row, v) : row[0].replace(/\{(\w+)\}/g, (_, k) => v[k] ?? '');
   const root = () => window.RepositoryNav?.root || new URL('../', document.currentScript?.src || location.href).href;
+  // lectures mémorisées (RepositoryKit.store.jsonCached) : analyse refaite seulement si le texte a changé — isRead,
+  // pliState, disponibilités… sont lus à chaque ligne de la liste et à chaque case de la grille
   const json = (k, d) => {
     try {
-      return JSON.parse(localStorage.getItem(k) || 'null') ?? d;
+      return K?.store?.jsonCached ? K.store.jsonCached(k, d) : JSON.parse(localStorage.getItem(k) || 'null') ?? d;
     } catch {
       return d;
     }
@@ -40,34 +44,322 @@
     try {
       localStorage.setItem(k, JSON.stringify(v));
     } catch {
-      /* stockage indisponible */ }
+      /* stockage indisponible */
+    }
   };
 
-  /** Trigramme de l'utilisateur (profil pilote), en capitales ; '' s'il n'est pas réglé. */
-  const trigram = () => String(json(PROFILE, {})?.trigram || '').trim().toUpperCase();
+  /** Trigramme du profil pilote (☰ › Profil pilote), en capitales ; '' s'il n'est pas réglé. */
+  const profileTrigram = () => String(json(PROFILE, {})?.trigram || '').trim().toUpperCase();
+  /** Trigramme de l'utilisateur : utilisateur usurpé, utilisateur connecté (mode production) ou profil pilote
+   *  (shared/users.js : SuiteUsers.effective) ; '' s'il n'est pas réglé. */
+  const trigram = () => window.SuiteUsers?.effective?.() || profileTrigram();
+
+  // ---- petite base de fichiers (données servies par la suite) : lectures gardées en mémoire et revalidées à bas coût
+  // (requête conditionnelle : 304 du lanceur si le fichier n'a pas changé ; fichier absent gardé aussi), invalidées
+  // entre les onglets à chaque écriture (BroadcastChannel « defa-data », événement « defa-data-change ») ; écritures
+  // sérialisées par des verrous (Web Locks) : deux onglets ou deux pages n'écrasent plus l'écriture de l'autre.
+  const store = (() => {
+    const inflight = new Map(); // adresse → lecture en cours (promesse partagée)
+    const mem = new Map(), // adresse → { at, value } (value null : fichier absent)
+      TTL = 60e3;
+    const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('defa-data') : null;
+    // fichiers écrits depuis leur dernière lecture : relus sans requête conditionnelle (le lanceur date les fichiers à la
+    // seconde : un fichier réécrit dans la seconde de sa lecture répondait « 304, inchangé » et l'ancien contenu restait
+    // — utilisateur ajouté absent de la liste, index des disponibilités d'avant l'enregistrement)
+    const written = new Set();
+    const drop = path => {
+      if (!path) {
+        mem.clear();
+        inflight.clear();
+      } else
+        for (const m of [mem, inflight])
+          for (const k of [...m.keys()])
+            if (k.split('?')[0].endsWith(path)) {
+              m.delete(k); // lecture en cours d'avant l'écriture : plus partagée avec les lectures suivantes
+              written.add(k);
+            }
+      if (path) written.add(new URL(path, root()).href);
+    };
+    const announce = path => window.dispatchEvent(new CustomEvent('defa-data-change', {
+      detail: {
+        path
+      }
+    }));
+    if (channel) channel.onmessage = e => {
+      drop(e.data?.path);
+      announce(e.data?.path);
+    };
+    return {
+      /** JSON d'un fichier de données servi (chemin relatif à la suite) ; null s'il est absent. fresh : revalidé. */
+      async read(path, {
+        fresh = false
+      } = {}) {
+        const url = new URL(path, root()).href,
+          hit = mem.get(url);
+        if (hit && !fresh && Date.now() - hit.at < TTL) return hit.value;
+        // lecture déjà en cours pour cette adresse (appels parallèles : un par pilote de l'ODV) : partagée
+        if (inflight.has(url)) return inflight.get(url);
+        // lecture « fraîche » ou fichier écrit depuis : sans cache HTTP (pas de 304 sur une date à la seconde)
+        const bypass = fresh || written.delete(url);
+        const p = (async () => {
+          let value = null;
+          try {
+            const r = await fetch(url, {
+              cache: bypass ? 'no-store' : 'no-cache'
+            });
+            value = r.ok ? await r.json() : null;
+          } catch {
+            value = hit ? hit.value : null; // lanceur arrêté : dernière valeur connue
+          }
+          mem.set(url, {
+            at: Date.now(),
+            value
+          });
+          return value;
+        })();
+        inflight.set(url, p);
+        try {
+          return await p;
+        } finally {
+          if (inflight.get(url) === p) inflight.delete(url); // pas une lecture plus récente (après écriture)
+        }
+      },
+      /** Fichier écrit : oublié ici et dans les autres onglets, qui relisent à la demande. */
+      changed(path) {
+        drop(path);
+        channel?.postMessage({
+          path
+        });
+        announce(path);
+      },
+      /** Exécute fn sous le verrou name (tous les onglets de la suite) ; sans Web Locks : directement. */
+      lock: (name, fn) => navigator.locks?.request ? navigator.locks.request(`defa:${name}`, fn) : fn()
+    };
+  })();
+  // ---- fichiers du pool synchronisé (docs/technique/INDEX_DONNEES.md § 9 : disponibilités, utilisateurs, configuration partagée) :
+  // écrits dans le dossier des données autorisé (Paramètres › Installation › Sources et dossiers), sous verrou, puis
+  // annoncés (store.changed) ; sans dossier autorisé, gardés dans ce navigateur (boîte d'envoi suiteDataOutbox:v1, relue
+  // en priorité tant qu'elle est plus récente que le fichier) et écrits au prochain flushData().
+  const OUTBOX = 'suiteDataOutbox:v1';
+  const outbox = () => json(OUTBOX, {}) || {};
+  /** Dossier des données autorisé en écriture (handle) ; erreur expliquée sinon. */
+  async function dataDir() {
+    const FA = window.FileAccess;
+    const st = FA ? await FA.status('__data') : null;
+    let dir = st?.handle;
+    if (dir && st.permission !== 'granted') {
+      try {
+        if ((await dir.requestPermission({
+            mode: 'readwrite'
+          })) !== 'granted') dir = null;
+      } catch {
+        dir = null; // sans geste de l'utilisateur, l'autorisation ne peut pas être demandée
+      }
+    }
+    if (!dir) throw new Error(t(['Dossier des données non autorisé : le choisir dans Paramètres › Installation › Sources et dossiers.', 'Data folder not authorised: choose it in Settings › Installation › Sources and folders.', 'Datenordner nicht freigegeben: unter Einstellungen › Installation › Quellen und Ordner wählen.', 'Carpeta de datos no autorizada: elegirla en Ajustes › Instalación › Fuentes y carpetas.']));
+    if (await FA.sameAsServed?.('__data', dir) === false) throw new Error(t(['Dossier des données d’une autre copie de la suite : rechoisir le dossier de l’application (Premier lancement).', 'Data folder of another copy of the suite: choose the application folder again (First run).', 'Datenordner einer anderen Kopie der Suite: Anwendungsordner neu wählen (Erststart).', 'Carpeta de datos de otra copia de la suite: volver a elegir la carpeta de la aplicación (Primer arranque).']));
+    return dir;
+  }
+  /** Écrit value (JSON) dans data/<rel> du dossier autorisé ; null : supprime le fichier. */
+  async function writeFile(dir, rel, value) {
+    const parts = rel.split('/'),
+      name = parts.pop();
+    let d = dir;
+    for (const p of parts) d = await d.getDirectoryHandle(p, {
+      create: true
+    });
+    if (value === null) return d.removeEntry(name).catch(() => {});
+    const w = await (await d.getFileHandle(name, {
+      create: true
+    })).createWritable();
+    await w.write(JSON.stringify(value, null, 1));
+    await w.close();
+  }
+  // ---- lecture et écriture au même endroit : dossier autorisé reconnu comme celui de la suite servie → écrit dans le
+  // dossier, relu par le serveur (même fichiers) ; contrôle impossible (sans lanceur, jeton non servi) → écrit ET relu
+  // dans le dossier ; autre copie → rien d'écrit dans le dossier (boîte d'envoi) ; alerte dans les deux derniers cas
+  let srcMemo = null;
+  /** Dossier des données accordé et résultat du contrôle de copie : { dir, same } (mémorisé 5 s). */
+  function poolSource() {
+    if (srcMemo && Date.now() - srcMemo.at < 5e3) return srcMemo.p;
+    const p = (async () => {
+      const FA = window.FileAccess,
+        st = FA ? await FA.status('__data') : null;
+      if (!st?.handle || st.permission !== 'granted') return {
+        dir: null,
+        same: null
+      };
+      return {
+        dir: st.handle,
+        same: (await FA.sameAsServed?.('__data', st.handle)) ?? null
+      };
+    })().catch(() => ({
+      dir: null,
+      same: null
+    }));
+    srcMemo = {
+      at: Date.now(),
+      p
+    };
+    return p;
+  }
+  window.addEventListener('file-access-change', () => {
+    srcMemo = null;
+  });
+  const alerted = new Map(); // message → instant (une alerte identique toutes les 5 s au plus : fichier + index)
+  function alertOnce(text) {
+    if (Date.now() - (alerted.get(text) || 0) < 5e3) return;
+    alerted.set(text, Date.now());
+    window.AppFramework?.notify?.(text, 'warn');
+  }
+  const uncheckedText = name => tf(['Dossier des données « {n} » : impossible de vérifier qu’il est celui de la suite servie (lanceur absent ou d’une version antérieure). Les données sont lues et écrites dans ce dossier.', 'Data folder “{n}”: cannot check that it is the one of the served suite (launcher missing or from an earlier version). Data is read from and written to this folder.', 'Datenordner „{n}“: Es lässt sich nicht prüfen, ob er der der bereitgestellten Suite ist (Starter fehlt oder ist älter). Daten werden in diesem Ordner gelesen und geschrieben.', 'Carpeta de datos «{n}»: no se puede comprobar que sea la de la suite servida (lanzador ausente o de una versión anterior). Los datos se leen y escriben en esta carpeta.'], {
+    n: name
+  });
+  /** JSON de data/<rel> lu dans le dossier autorisé ; null s'il est absent ou illisible. */
+  async function readFile(dir, rel) {
+    const parts = rel.split('/'),
+      name = parts.pop();
+    try {
+      let d = dir;
+      for (const p of parts) d = await d.getDirectoryHandle(p);
+      return JSON.parse(await (await (await d.getFileHandle(name)).getFile()).text());
+    } catch {
+      return null;
+    }
+  }
+  /** Fichier du pool : boîte d'envoi de ce navigateur si plus récente, sinon fichier servi (data/<rel>) — ou, si le
+   *  dossier autorisé ne peut pas être comparé à la suite servie, ce dossier (celui où writeData écrit) ; null si absent. */
+  async function readData(rel, {
+    fresh = false
+  } = {}) {
+    const local = outbox()[rel],
+      src = await poolSource();
+    if (src.dir && src.same === null) alertOnce(uncheckedText(src.dir.name));
+    const served = src.dir && src.same === null ? await readFile(src.dir, rel) : await store.read(`data/${rel}`, {
+      fresh
+    });
+    if (local && (!served || String(local.value?.updated_at || local.at) >= String(served.updated_at || ''))) return local.value;
+    return served;
+  }
+  /** Fichier du pool lu par l'index (docs/technique/INDEX_DONNEES.md § 3) : sig = signature donnée par l'index du dossier
+   *  (updated_at du fichier, data/disponibilites/_index.json, data/utilisateurs/_index.json) ; la copie de l'index
+   *  (base defaIndex, store files) sert sans requête tant qu'elle a cette signature, sinon le fichier est relu et sa
+   *  copie remplacée. Sans signature, fichier dans la boîte d'envoi, lecture « fraîche » ou index indisponible :
+   *  readData. Une page qui lit cinquante fiches n'envoie plus que les requêtes des fiches changées. */
+  async function readIndexed(rel, sig, {
+    fresh = false
+  } = {}) {
+    const I = window.DataIndex,
+      path = `data/${rel}`;
+    if (sig && !fresh && I && !(rel in outbox())) {
+      const hit = await I.get('files', path).catch(() => null);
+      if (hit && hit.sig === sig) return hit.value;
+    }
+    const value = await readData(rel, {
+      fresh
+    });
+    keep(rel, value);
+    return value;
+  }
+  /** Copie d'un fichier du pool dans l'index, signée de son updated_at (rien sans updated_at). */
+  function keep(rel, value) {
+    if (value?.updated_at && window.DataIndex) window.DataIndex.put('files', {
+      path: `data/${rel}`,
+      sig: String(value.updated_at),
+      value,
+      at: Date.now()
+    }).catch(() => {});
+  }
+  /** Écrit un fichier du pool (data/<rel>) : dossier autorisé (sous le verrou du fichier), sinon boîte d'envoi de ce
+   *  navigateur. Retour : { where: 'folder' | 'local', error } ; événement « defa-data-change » dans tous les onglets. */
+  async function writeData(rel, value) {
+    const box = outbox();
+    box[rel] = {
+      at: new Date().toISOString(),
+      value
+    };
+    setJson(OUTBOX, box);
+    let where = 'local',
+      error = null;
+    try {
+      const dir = await dataDir();
+      await store.lock(`data:${rel}`, () => writeFile(dir, rel, value));
+      const b = outbox();
+      delete b[rel];
+      setJson(OUTBOX, b);
+      where = 'folder';
+      srcMemo = null; // autorisation peut-être accordée à l'instant : relue
+      if ((await poolSource()).same === null) alertOnce(uncheckedText(dir.name));
+    } catch (e) {
+      error = e;
+      // gardé dans ce navigateur : raison réelle (dossier non autorisé, autre copie de la suite…), pas seulement l'absence
+      alertOnce(tf(['Enregistré dans ce navigateur seulement : {e}', 'Saved in this browser only: {e}', 'Nur in diesem Browser gespeichert: {e}', 'Guardado solo en este navegador: {e}'], {
+        e: e?.message || String(e)
+      }));
+    }
+    store.changed(`data/${rel}`);
+    keep(rel, value); // l'index suit ce qui vient d'être écrit (la signature de l'index du dossier sera la sienne)
+    return {
+      where,
+      error
+    };
+  }
+  /** Écrit dans le dossier autorisé les fichiers restés dans la boîte d'envoi ; retour : chemins écrits. */
+  async function flushData() {
+    const dir = await dataDir(),
+      done = [];
+    for (const [rel, e] of Object.entries(outbox())) {
+      await store.lock(`data:${rel}`, () => writeFile(dir, rel, e.value));
+      const b = outbox();
+      delete b[rel];
+      setJson(OUTBOX, b);
+      store.changed(`data/${rel}`);
+      done.push(rel);
+    }
+    return done;
+  }
+  /** Chemins (sous data/) encore dans la boîte d'envoi de ce navigateur. */
+  const pendingData = () => Object.keys(outbox());
+
+  // dossier des missions autorisé, par rapport à la suite servie : true (le même : la copie servie suffit), false
+  // (autre copie : ignoré), null (contrôle impossible : sans lanceur, le dossier est lu directement)
+  async function missionsSource() {
+    const st = await window.FileAccess?.status?.('__missions');
+    if (!st?.handle || st.permission !== 'granted') return {
+      handle: null,
+      same: null
+    };
+    return {
+      handle: st.handle,
+      same: (await window.FileAccess?.sameAsServed?.('__missions', st.handle)) ?? null
+    };
+  }
 
   let cache = null;
+  // index écrit par un autre onglet (ou une autre page) : relu à la prochaine demande
+  window.addEventListener('defa-data-change', e => {
+    if (!e.detail?.path || /affectations/.test(e.detail.path)) cache = null;
+  });
   /** Index des affectations (data/missions/affectations.json) : { updatedAt, assignments: [...] } ; vide si absent. */
   let warned = false; // dossier autorisé ≠ fichiers servis : signalé une fois
+  let warnedOther = false; // dossier autorisé d'une autre copie de la suite : signalé une fois
   async function index({
     fresh = false
   } = {}) {
     if (cache && !fresh) return cache;
-    // source : le dossier des missions autorisé (celui où l'on écrit), sinon la copie servie (fetch) ; si les deux
-    // diffèrent, le dossier autorisé l'emporte et un avertissement dit que la page ne sert pas ce dossier
-    let served = null,
-      local = null;
+    // source : la copie servie (petite base ci-dessus) ; le dossier autorisé n'est lu que si la page ne peut pas dire
+    // s'il est celui de la suite (sans lanceur) — même dossier : inutile de le relire ; autre copie : ignoré
+    const served = await store.read('data/missions/affectations.json', {
+      fresh
+    });
+    let local = null;
     try {
-      const r = await fetch(new URL('data/missions/affectations.json', root()).href, {
-        cache: 'no-store'
-      });
-      served = r.ok ? await r.json() : null;
-    } catch {
-      served = null;
-    }
-    try {
-      const st = await window.FileAccess?.status?.('__missions');
-      if (st?.handle && st.permission === 'granted') local = JSON.parse(await (await (await st.handle.getFileHandle('affectations.json')).getFile()).text());
+      const src = await missionsSource();
+      if (src.same === false && !warnedOther) {
+        warnedOther = true;
+        window.AppFramework?.notify?.(t(['Affectations : le dossier des missions autorisé appartient à une autre copie de la suite — ignoré ; rechoisir data/missions de la suite (Premier lancement ou Paramètres).', 'Assignments: the authorised missions folder belongs to another copy of the suite — ignored; choose the suite’s data/missions again (First run or Settings).']), 'warn');
+      }
+      if (src.handle && src.same === null) local = JSON.parse(await (await (await src.handle.getFileHandle('affectations.json')).getFile()).text());
     } catch {
       local = null; // pas d'index dans le dossier autorisé, ou dossier déplacé
     }
@@ -98,10 +390,14 @@
    *  | 'sealed' (rescellé), at, logged (ouverture à l'heure déjà portée au journal) } ; {} : rien de fait. */
   const PLIS = 'pilotPlis:v2';
   const pliState = (a, id) => json(PLIS, {})[`${key(a)}|${id}`] || {};
+
   function setPliState(a, id, patch) {
     const r = json(PLIS, {}),
       k = `${key(a)}|${id}`;
-    r[k] = { ...(r[k] || {}), ...patch };
+    r[k] = {
+      ...(r[k] || {}),
+      ...patch
+    };
     setJson(PLIS, r);
   }
   /** Remet une mission « non lue » (scellée) : outil du canal develop. */
@@ -111,6 +407,7 @@
     setJson(READ, r);
     envelope();
   }
+
   function markRead(a) {
     const r = json(READ, {});
     r[key(a)] = new Date().toISOString();
@@ -167,7 +464,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
 .repo-sidenav-item{position:relative}.repo-assign-badge{position:absolute;top:2px;right:6px;min-width:15px;height:15px;padding:0 3px;border-radius:calc(8px * var(--repo-round, 1));background:#c62828;color:#fff;font:700 9.5px/15px system-ui,sans-serif;text-align:center}
 .pa-grid{overflow-x:auto;user-select:none;touch-action:none}.pa-grid table{border-collapse:collapse;font:11px/1 system-ui,sans-serif}
 .pa-grid th{padding:3px 4px;font-weight:600;opacity:.8;text-align:center}.pa-grid tbody th{text-align:left;padding-right:8px}
-.pa-grid td{width:22px;height:20px;border:1px solid color-mix(in srgb,currentColor 22%,transparent);background:color-mix(in srgb,currentColor 6%,transparent);cursor:pointer}
+.pa-grid td{width:22px;height:20px;border:1px solid color-mix(in srgb,currentColor 22%,transparent);background:color-mix(in srgb,currentColor 6%,transparent);cursor:pointer}.pa-readonly td{cursor:default}
 .pa-grid td{font:700 9.5px/20px system-ui,sans-serif;text-align:center}.pa-grid td:nth-child(7n+1){border-left-width:2px}
 .pa-palette{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 8px}.pa-palette .pa-code{display:inline-flex;align-items:baseline;gap:5px;padding:3px 7px;border:2px solid transparent;border-radius:calc(4px * var(--repo-round, 1));font:700 11px/1.3 system-ui,sans-serif;cursor:pointer}
 .pa-palette .pa-code small{font-weight:500;font-size:10.5px;opacity:.9}.pa-palette .pa-code[aria-checked=true]{border-color:currentColor;box-shadow:0 0 0 2px rgba(0,0,0,.35)}`;
@@ -183,17 +480,56 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     SC: ['DISPO sécu civile', 'dispo', 'SECU', '2F5597'],
     C: ['DISPO Chasse FAF', 'dispo', 'CHASSE', '0070C0'],
     T: ['DISPO Transport FAF', 'dispo', 'TRANSPORT', 'F4B183'],
-    S: ['Exercice IVAO SO', 'dispo', 'EXERCICE', 'FF0000'],
+    S: ['Exercice SO (IVAO / VATSIM)', 'dispo', 'EXERCICE', 'FF0000'],
     N: ['DISPO FNY', 'dispo', 'FNY', '8693A0'],
-    AT: ['Contrôle IVAO civil', 'atc', 'ATC', '7030A0'],
-    AM: ['Contrôle IVAO SO', 'atc', 'ATC', 'C4BD97'],
-    G: ['Vol IVAO hors SO', 'occupe', null, 'FFD966'],
+    AT: ['Contrôle civil (IVAO / VATSIM)', 'atc', 'ATC', '7030A0'],
+    AM: ['Contrôle SO (IVAO / VATSIM)', 'atc', 'ATC', 'C4BD97'],
+    G: ['Vol hors SO (IVAO / VATSIM)', 'occupe', null, 'FFD966'],
     DC: ['Mission DCS', 'occupe', null, '002060'],
     IR: ['MANIP IRL', 'indispo', null, 'FFFF00'],
     IN: ['INDISPO', 'indispo', null, 'BFBFBF'],
     V: ['VACANCES', 'indispo', null, 'FFC000'],
     Q: ['RÉCUP', 'indispo', null, 'D9D9D9']
   };
+  // libellés de la légende (et « code : libellé » des infobulles) traduits à l'affichage, sur toutes les pages
+  const LEGEND_I18N = [
+    ["DISPO (Tout)", "AVAILABLE (all)", "VERFÜGBAR (alle)", "DISPONIBLE (todo)"],
+    ["O : DISPO (Tout)", "O: AVAILABLE (all)", "O: VERFÜGBAR (alle)", "O: DISPONIBLE (todo)"],
+    ["DISPO sécu civile", "AVAILABLE civil security", "VERFÜGBAR Zivilschutz", "DISPONIBLE seguridad civil"],
+    ["SC : DISPO sécu civile", "SC: AVAILABLE civil security", "SC: VERFÜGBAR Zivilschutz", "SC: DISPONIBLE seguridad civil"],
+    ["DISPO Chasse FAF", "AVAILABLE FAF fighters", "VERFÜGBAR FAF-Jagd", "DISPONIBLE caza FAF"],
+    ["C : DISPO Chasse FAF", "C: AVAILABLE FAF fighters", "C: VERFÜGBAR FAF-Jagd", "C: DISPONIBLE caza FAF"],
+    ["DISPO Transport FAF", "AVAILABLE FAF transport", "VERFÜGBAR FAF-Transport", "DISPONIBLE transporte FAF"],
+    ["T : DISPO Transport FAF", "T: AVAILABLE FAF transport", "T: VERFÜGBAR FAF-Transport", "T: DISPONIBLE transporte FAF"],
+    ["Exercice SO (IVAO / VATSIM)", "SO exercise (IVAO / VATSIM)", "SO-Übung (IVAO / VATSIM)", "Ejercicio SO (IVAO / VATSIM)"],
+    ["S : Exercice SO (IVAO / VATSIM)", "S: SO exercise (IVAO / VATSIM)", "S: SO-Übung (IVAO / VATSIM)", "S: Ejercicio SO (IVAO / VATSIM)"],
+    ["DISPO FNY", "AVAILABLE FNY", "VERFÜGBAR FNY", "DISPONIBLE FNY"],
+    ["N : DISPO FNY", "N: AVAILABLE FNY", "N: VERFÜGBAR FNY", "N: DISPONIBLE FNY"],
+    ["Contrôle civil (IVAO / VATSIM)", "Civil ATC (IVAO / VATSIM)", "Zivile Flugsicherung (IVAO / VATSIM)", "Control civil (IVAO / VATSIM)"],
+    ["AT : Contrôle civil (IVAO / VATSIM)", "AT: Civil ATC (IVAO / VATSIM)", "AT: Zivile Flugsicherung (IVAO / VATSIM)", "AT: Control civil (IVAO / VATSIM)"],
+    ["Contrôle SO (IVAO / VATSIM)", "SO ATC (IVAO / VATSIM)", "SO-Flugsicherung (IVAO / VATSIM)", "Control SO (IVAO / VATSIM)"],
+    ["AM : Contrôle SO (IVAO / VATSIM)", "AM: SO ATC (IVAO / VATSIM)", "AM: SO-Flugsicherung (IVAO / VATSIM)", "AM: Control SO (IVAO / VATSIM)"],
+    ["Vol hors SO (IVAO / VATSIM)", "Flight outside SO (IVAO / VATSIM)", "Flug außerhalb SO (IVAO / VATSIM)", "Vuelo fuera de SO (IVAO / VATSIM)"],
+    ["G : Vol hors SO (IVAO / VATSIM)", "G: Flight outside SO (IVAO / VATSIM)", "G: Flug außerhalb SO (IVAO / VATSIM)", "G: Vuelo fuera de SO (IVAO / VATSIM)"],
+    ["Mission DCS", "DCS mission", "DCS-Mission", "Misión DCS"],
+    ["DC : Mission DCS", "DC: DCS mission", "DC: DCS-Mission", "DC: Misión DCS"],
+    ["MANIP IRL", "REAL-LIFE ACTIVITY", "TERMIN IM ECHTEN LEBEN", "ACTIVIDAD REAL"],
+    ["IR : MANIP IRL", "IR: REAL-LIFE ACTIVITY", "IR: TERMIN IM ECHTEN LEBEN", "IR: ACTIVIDAD REAL"],
+    ["INDISPO", "UNAVAILABLE", "NICHT VERFÜGBAR", "NO DISPONIBLE"],
+    ["IN : INDISPO", "IN: UNAVAILABLE", "IN: NICHT VERFÜGBAR", "IN: NO DISPONIBLE"],
+    ["VACANCES", "HOLIDAYS", "URLAUB", "VACACIONES"],
+    ["V : VACANCES", "V: HOLIDAYS", "V: URLAUB", "V: VACACIONES"],
+    ["RÉCUP", "TIME OFF", "AUSGLEICH", "DESCANSO"],
+    ["Q : RÉCUP", "Q: TIME OFF", "Q: AUSGLEICH", "Q: DESCANSO"],
+    ["CONTRÔLE (marque de suivi)", "CHECK (tracking mark)", "KONTROLLE (Markierung)", "CONTROL (marca de seguimiento)"],
+    ["A : CONTRÔLE (marque de suivi)", "A: CHECK (tracking mark)", "A: KONTROLLE (Markierung)", "A: CONTROL (marca de seguimiento)"],
+  ];
+  const legendI18n = () => window.RepositoryContentI18n?.(LEGEND_I18N);
+  /** Ligne [fr, en, de, es] d'un libellé de la légende (texte français exact), sinon null (Planning ODV). */
+  const legendRow = label => LEGEND_I18N.find(r => r[0] === label) || null;
+  document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', legendI18n, {
+    once: true
+  }) : legendI18n();
   /** Rôles qu'un code de disponibilité couvre, par famille de mission (avertissement seulement : le Centre décide). */
   const FAMILY_ROLES = {
     COMBAT: ['CHASSE', 'EXERCICE'],
@@ -251,18 +587,36 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     tri = String(tri || '').toUpperCase();
     const local = json(AVAIL, {})[tri];
     let doc = local?.grid || hasWeeks(local) ? local : null;
-    if (!doc) try {
-      const r = await fetch(new URL(`data/disponibilites/${encodeURIComponent(tri)}.json`, root()).href, {
-        cache: 'no-store'
-      });
-      doc = r.ok ? await r.json() : null;
-    } catch {
-      doc = null;
-    }
-    return doc ? {
-      ...doc,
-      grid: normGrid(doc.grid)
+    // déclaration servie (petite base : gardée une minute, fichier absent compris — plus de rafale de 404 à chaque
+    // reconstruction de l'ODV ; oubliée dès qu'un onglet l'écrit)
+    // index des déclarations (data/disponibilites/_index.json : pilotes qui ont un fichier) : un pilote absent de
+    // l'index n'est pas demandé (l'ODV demandait un fichier par pilote, presque tous en 404) ; sans index, comme avant.
+    // Entrée de l'index : true (ancien fichier <TRI>.json) ou { weeks, legacy } (fichiers par semaine, ancien fichier).
+    const idx = await store.read('data/disponibilites/_index.json');
+    const entry = idx?.pilots?.[tri];
+    // ancien fichier : lu par l'index du navigateur tant que sa signature (legacy_at) n'a pas changé
+    if (!doc && (!idx?.pilots || entry === true || entry?.legacy)) doc = entry?.legacy_at ? await readIndexed(`disponibilites/${tri}.json`, entry.legacy_at) : await store.read(`data/disponibilites/${encodeURIComponent(tri)}.json`);
+    // nouveau format (docs/technique/DISPOS_ET_REORGANISATION.md § 1.3, shared/dispos.js) : une déclaration par semaine ISO ;
+    // préférences de thèmes du pilote (fiche utilisateur) pour calculer les thèmes ouverts
+    const weeks2 = await window.SuiteDispos?.readPilot?.(tri).catch(() => ({})) || {};
+    const prefs = await window.SuiteUsers?.themePrefs?.(tri).catch(() => null) || null;
+    const has2 = Object.keys(weeks2).length > 0;
+    if (!doc && !has2) return null;
+    // appareils et simulateurs : semaine déclarée la plus récente, sinon l'ancienne déclaration
+    const last = has2 ? weeks2[Object.keys(weeks2).sort().pop()] : null;
+    const ac = last?.appareils && (last.appareils.possedes?.length || last.appareils.maitrises?.length) ? {
+      owned: last.appareils.possedes || [],
+      mastered: last.appareils.maitrises || []
     } : null;
+    return {
+      pilot: tri,
+      ...(doc || {}),
+      grid: normGrid(doc?.grid),
+      weeks2,
+      prefs,
+      aircraft: local?.aircraft || ac || doc?.aircraft || null,
+      sims: local?.sims || (last?.simulateurs?.length ? last.simulateurs : null) || doc?.sims || null
+    };
   }
   /** Mémorise la grille (local) et, si demandé, l'écrit dans data/disponibilites/<TRI>.json (dossier des données). */
   async function saveAvailability(tri, grid, {
@@ -301,16 +655,37 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     if (dir && st.permission !== 'granted' && (await dir.requestPermission({
         mode: 'readwrite'
       })) !== 'granted') dir = null;
-    if (!dir) throw new Error(t(['Dossier des données non autorisé : le choisir dans Paramètres › Maintenance › Sources et dossiers.', 'Data folder not authorised: choose it in Settings › Maintenance › Sources and folders.']));
-    const sub = await dir.getDirectoryHandle('disponibilites', {
-      create: true
+    if (!dir) throw new Error(t(['Dossier des données non autorisé : le choisir dans Paramètres › Installation › Sources et dossiers.', 'Data folder not authorised: choose it in Settings › Installation › Sources and folders.']));
+    // dossier des données d'une autre copie de la suite : le Centre ne verrait pas la déclaration
+    if (await FA.sameAsServed?.('__data', dir) === false) throw new Error(t(['Dossier des données d’une autre copie de la suite : rechoisir le dossier de l’application (Premier lancement).', 'Data folder of another copy of the suite: choose the application folder again (First run).']));
+    const path = `data/disponibilites/${tri}.json`;
+    await store.lock(`disponibilites:${tri}`, async () => {
+      const sub = await dir.getDirectoryHandle('disponibilites', {
+        create: true
+      });
+      const w = await (await sub.getFileHandle(`${tri}.json`, {
+        create: true
+      })).createWritable();
+      await w.write(JSON.stringify(doc, null, 2));
+      await w.close();
+      // index refait d'après la liste du dossier (toujours complet, même si des fichiers ont été ajoutés à la main)
+      const pilots = {};
+      for await (const [name, h] of sub.entries()) {
+        const m = /^([A-Z0-9]{2,5})\.json$/i.exec(name);
+        if (m && h.kind === 'file') pilots[m[1].toUpperCase()] = name === `${tri}.json` ? doc.updated_at : true;
+      }
+      const wi = await (await sub.getFileHandle('_index.json', {
+        create: true
+      })).createWritable();
+      await wi.write(JSON.stringify({
+        updated_at: doc.updated_at,
+        pilots
+      }, null, 1));
+      await wi.close();
     });
-    const w = await (await sub.getFileHandle(`${tri}.json`, {
-      create: true
-    })).createWritable();
-    await w.write(JSON.stringify(doc, null, 2));
-    await w.close();
-    return `data/disponibilites/${tri}.json`;
+    store.changed(path);
+    store.changed('data/disponibilites/_index.json');
+    return path;
   }
   /** Types d'appareils du pilote (désignateurs OACI) : { owned, mastered } — gardés avec ses disponibilités (même
    *  déclaration, même fichier) ; enregistrés dans le dossier des données avec la grille. */
@@ -360,11 +735,19 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   function simTag(name) {
     const s = String(name || '').trim(),
       hit = SIM_TAGS.find(([re]) => re.test(s));
-    if (hit) return { abbr: hit[1], color: window.RepositoryNav?.chartColor?.(hit[2]) || hit[2], name: s };
+    if (hit) return {
+      abbr: hit[1],
+      color: window.RepositoryNav?.chartColor?.(hit[2]) || hit[2],
+      name: s
+    };
     const abbr = (s.match(/[A-Z0-9]+/gi) || [s]).map(w => /\d/.test(w) ? w : w[0]).join('').slice(0, 4).toUpperCase();
     let h = 0;
     for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 360;
-    return { abbr, color: `hsl(${h} 45% 42%)`, name: s };
+    return {
+      abbr,
+      color: `hsl(${h} 45% 42%)`,
+      name: s
+    };
   }
   /** Pastilles des simulateurs (abréviation colorée, nom complet au survol). */
   function simChips(list) {
@@ -401,7 +784,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   function gridEditor(host, grid, onChange, {
     code = 'O',
     onBrush = null, // code choisi dans la palette (pour le garder)
-    days = null // libellés des lignes (ex. « Lun 28/09 ») ; sinon jours de la semaine
+    days = null, // libellés des lignes (ex. « Lun 28/09 ») ; sinon jours de la semaine
+    readOnly = false // ancienne grille montrée en lecture seule (saisie par plages : shared/dispos_editor.js)
   } = {}) {
     grid = normGrid(grid);
     const dayLabel = i => days?.[i] || t(DAYS[i]);
@@ -411,6 +795,12 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     const cell = (d, h, v) => `<td data-d="${d}" data-h="${h}" title="${K.esc(dayLabel(d))} ${h}h–${h + 1}h UTC${v ? ' · ' + K.esc(LEGEND[v][0]) : ''}"${v ? ` data-code="${v}" style="background-color:${colorOf(v)} !important;color:${inkOf(v)} !important"` : ''}>${v}</td>`;
     const rows = () => DAYS.map((_, i) => `<tr><th>${K.esc(dayLabel(i))}</th>${grid[i].map((v, h) => cell(i, h, v)).join('')}</tr>`).join('');
     host.classList.add('pa-grid');
+    host.classList.toggle('pa-readonly', readOnly);
+    if (readOnly) {
+      host.innerHTML = `<table><thead><tr><th></th>${Array.from({ length: 24 }, (_, h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows()}</tbody></table>`;
+      host.onpointerdown = host.onpointerover = host.onpointerup = host.onpointerleave = null;
+      return grid;
+    }
     host.innerHTML = `<div class="pa-palette" role="radiogroup" aria-label="${K.esc(t(['Code à poser', 'Code to paint', 'Zu setzender Code', 'Código a pintar']))}">${Object.entries(LEGEND).map(([k, [label]]) => `<button type="button" class="repo-plain pa-code" data-code="${k}" role="radio" aria-checked="${k === brush}" title="${K.esc(label)}" style="background:${colorOf(k)};color:${inkOf(k)}">${k}<small>${K.esc(label)}</small></button>`).join('')}</div>
       <table><thead><tr><th></th>${Array.from({ length: 24 }, (_, h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows()}</tbody></table>`;
     host.querySelector('.pa-palette').onclick = e => {
@@ -426,7 +816,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       before = null; // grille au début du geste
     const fill = (d1, h1) => {
       const [da, db] = [Math.min(anchor[0], d1), Math.max(anchor[0], d1)],
-        [ha, hb] = [Math.min(anchor[1], h1), Math.max(anchor[1], h1)];
+      [ha, hb] = [Math.min(anchor[1], h1), Math.max(anchor[1], h1)];
       grid.forEach((row, d) => row.forEach((_, h) => {
         row[h] = d >= da && d <= db && h >= ha && h <= hb ? paint : before[d][h];
       }));
@@ -465,11 +855,22 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   /** Disponibilité à une heure UTC (grille semaine type) : { code, label, category, role, ok } ; null si non renseignée.
    *  ok : code « dispo » qui couvre la famille de la mission (rôle ; O : tout rôle). */
   function availabilityAt(av, ms, family) {
+    const SD = window.SuiteDispos;
+    // nouveau format : plages de la semaine déclarée (plusieurs possibles, superposées)
+    const entries = SD && ms ? SD.entriesAt(av?.weeks2, ms) : null;
+    if (entries) return entries.length ? themed(av, entries.map(x => ({
+      categorie: x.categorie
+    })), family) : null;
     const g = ms ? gridAt(av, ms) : null;
     if (!g) return null;
     const d = new Date(ms),
       code = normGrid(g)[(d.getUTCDay() + 6) % 7]?.[d.getUTCHours()];
     if (!code) return null;
+    // ancienne grille : code de l'ODV ramené à sa catégorie (thèmes : catégorie + préférences du pilote)
+    if (SD?.codeCategory(code)) return themed(av, [{
+      categorie: SD.codeCategory(code),
+      code
+    }], family);
     const [label, category, role] = LEGEND[code];
     const roles = FAMILY_ROLES[String(family || '').toUpperCase()];
     return {
@@ -478,6 +879,44 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       category,
       role,
       ok: category === 'dispo' && (!role || !roles || roles.includes(role))
+    };
+  }
+  const TYPE_RANK = {
+    dispo: 0,
+    atc: 1,
+    occupe: 2,
+    indispo: 3
+  };
+  /** Disponibilité tirée des catégories (shared/dispos.js) : la plus favorable pour la famille — ouverte à la famille,
+   *  puis par type (dispo, contrôle, occupé, indisponible). { code (code ODV de la catégorie, sinon son identifiant),
+   *  label, category (type), categorie, groupe, themes, ok, others } ; ok : type « dispo » et famille ouverte. */
+  function themed(av, list, family) {
+    const SD = window.SuiteDispos;
+    const all = list.map(x => {
+      const c = SD.category(x.categorie);
+      if (!c) return null;
+      const th = SD.openThemes(c, av?.prefs);
+      return {
+        c,
+        code: x.code || c.odv?.[0] || c.id,
+        th,
+        ok: c.type === 'dispo' && SD.opens(th, family)
+      };
+    }).filter(Boolean).sort((a, b) => b.ok - a.ok || (TYPE_RANK[a.c.type] ?? 9) - (TYPE_RANK[b.c.type] ?? 9));
+    if (!all.length) return null;
+    const best = all[0];
+    const themes = [...best.th];
+    const restricted = themes.length && !best.th.has('*') && best.c.type === 'dispo';
+    return {
+      code: best.code,
+      label: SD.label(best.c.label) + (restricted ? ` (${themes.map(SD.themeLabel).join(', ')})` : ''),
+      category: best.c.type,
+      role: null,
+      categorie: best.c.id,
+      groupe: best.c.groupe,
+      themes,
+      ok: best.ok,
+      others: all.slice(1).map(x => x.c.id)
     };
   }
   /** Disponible à une heure UTC (code « dispo ») ; null si non renseigné. */
@@ -548,8 +987,10 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
         };
       }
     } catch {
-      /* base SIA absente */ }
-    for (const m of json('missionRegistry:v1', {})?.missions || [])
+      /* base SIA absente */
+    }
+    await window.MissionIndex?.ready; // registre des missions (index IndexedDB, shared/data_index.js)
+    for (const m of (window.MissionIndex ? window.MissionIndex.all() : json('missionRegistry:v1', {})?.missions) || [])
       for (const p of [m.origin, m.destination])
         if (p && typeof p === 'object' && geo.icaoOf(p) && Number.isFinite(+p.lat)) airports[geo.icaoOf(p)] ||= {
           lat: +p.lat,
@@ -588,7 +1029,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   }
   /** Terrain connu (registre, base SIA) : à appeler avec l'origine d'une mission pour éviter une recherche. */
   const rememberAirport = (code, p) => {
-    if (code && p && Number.isFinite(+p.lat)) (airports ||= {})[code] ||= {
+    if (code && p && Number.isFinite(+p.lat))(airports ||= {})[code] ||= {
       lat: +p.lat,
       lon: +p.lon
     };
@@ -782,19 +1223,31 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   /** Déclaration d'un pilote sur une plage : code dominant (les « dispo » d'abord), dispo, codes rencontrés. */
   function declaredOver(av, start, end) {
     if (!av || !start || !end) return null;
-    const codes = {};
-    for (let ms = start; ms < end; ms += 36e5) {
+    // pas d'un quart d'heure pour les déclarations par plages (nouveau format), d'une heure pour les anciennes grilles
+    const step = av.weeks2 && Object.keys(av.weeks2).length ? 9e5 : 36e5;
+    const codes = {},
+      seen = {};
+    for (let ms = start; ms < end; ms += step) {
       const a = availabilityAt(av, ms);
-      if (a) codes[a.code] = (codes[a.code] || 0) + 1;
+      if (!a) continue;
+      codes[a.code] = (codes[a.code] || 0) + 1;
+      seen[a.code] ||= a;
     }
-    const list = Object.entries(codes).sort((x, y) => (LEGEND[y[0]][1] === 'dispo') - (LEGEND[x[0]][1] === 'dispo') || y[1] - x[1]);
+    const isDispo = c => (seen[c].category || LEGEND[c]?.[1]) === 'dispo';
+    const list = Object.entries(codes).sort((x, y) => isDispo(y[0]) - isDispo(x[0]) || y[1] - x[1]);
     if (!list.length) return null;
-    const code = list[0][0];
+    const code = list[0][0],
+      a = seen[code];
     return {
       code,
-      label: LEGEND[code][0],
-      dispo: LEGEND[code][1] === 'dispo',
-      codes
+      label: a.label,
+      dispo: isDispo(code),
+      category: a.category,
+      categorie: a.categorie || null,
+      groupe: a.groupe || null,
+      themes: a.themes || null,
+      codes,
+      details: list.map(([c]) => seen[c])
     };
   }
   /** Plage occupée par une affectation : du décollage (ou du convoyage, ou de l'astreinte) à l'atterrissage estimé,
@@ -885,7 +1338,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     for (const [k, v] of Object.entries(SYNONYMS))
       if (types.includes(v)) add(k, v);
     for (const f of window.DEFA_FLEET || [])
-      for (const w of String(f.variant || '').split(/\s+/)) if (/^[a-zé]{4,}$/i.test(w)) add(w, typeOf(f.type));
+      for (const w of String(f.variant || '').split(/\s+/))
+        if (/^[a-zé]{4,}$/i.test(w)) add(w, typeOf(f.type));
     // modèle : la référence à tiret (EC-725, C-130H) et le nom propre final (Rafale, Hercules, Sentry)
     for (const ty of types) {
       const words = String(db[ty]?.model || '').split(/\s+/);
@@ -1055,19 +1509,35 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   async function missionsDir() {
     const FA = window.FileAccess;
     if (!FA) throw new Error(t(['Module d’accès aux dossiers absent', 'Folder access module missing']));
+    const pick = async () => {
+      try {
+        return await FA.pickFolder('__missions');
+      } catch (e) {
+        throw new Error(t([`Dossier des missions non autorisé (${e?.name || ''} ${e?.message || ''})`, `Missions folder not authorised (${e?.name || ''} ${e?.message || ''})`]));
+      }
+    };
+    // dossier d'une autre copie de la suite (ancien emplacement, « DEFA - Copy »…) : l'affectation n'y serait vue
+    // ni par Mes missions ni par l'ODV, qui lisent les données de la suite lancée → rien n'est écrit sans le bon dossier
+    const checked = async h => {
+      if (await FA.sameAsServed?.('__missions', h) !== false) return h;
+      const ok = await window.AppFramework?.ask?.(K.tf(['Le dossier des missions autorisé (« {n} ») n’est pas celui de la suite lancée : l’affectation y serait écrite sans être vue par Mes missions ni par l’ODV. Choisir le dossier data/missions de la suite ?', 'The authorised missions folder (“{n}”) is not the one of the running suite: the assignment would be written there without being seen by My missions or the ODV. Choose the suite’s data/missions folder?', 'Der erlaubte Missionsordner („{n}“) gehört nicht zur gestarteten Suite: die Zuweisung würde dort geschrieben, ohne von Meine Missionen oder der ODV gesehen zu werden. Den Ordner data/missions der Suite wählen?', 'La carpeta de misiones autorizada («{n}») no es la de la suite iniciada: la asignación se escribiría allí sin que la vean Mis misiones ni el ODV. ¿Elegir la carpeta data/missions de la suite?'], {
+        n: h.name
+      }), {
+        danger: true
+      });
+      if (!ok) throw new Error(t(['Affectation non enregistrée : dossier des missions d’une autre copie de la suite.', 'Assignment not saved: missions folder of another copy of the suite.']));
+      return pick();
+    };
     const st = await FA.status('__missions');
-    if (st.handle && st.permission === 'granted') return st.handle;
+    if (st.handle && st.permission === 'granted') return checked(st.handle);
     if (st.handle) try {
       if ((await st.handle.requestPermission({
           mode: 'readwrite'
-        })) === 'granted') return st.handle;
+        })) === 'granted') return checked(st.handle);
     } catch {
-      /* dossier déplacé */ }
-    try {
-      return await FA.pickFolder('__missions');
-    } catch (e) {
-      throw new Error(t([`Dossier des missions non autorisé (${e?.name || ''} ${e?.message || ''})`, `Missions folder not authorised (${e?.name || ''} ${e?.message || ''})`]));
+      /* dossier déplacé */
     }
+    return pick();
   }
   /** Dossier d'une mission (créé au besoin) : { h, folder }. */
   async function missionFolder(dir, mission) {
@@ -1076,7 +1546,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       const letter = String(mission.id || '').charAt(0),
         fam = [];
       for await (const [n, x] of dir.entries())
-        if (x.kind === 'directory' && n.startsWith(letter + '_')) fam.push(n);
+      if (x.kind === 'directory' && n.startsWith(letter + '_')) fam.push(n);
       folder = `${fam[0] || `${letter}_${String(mission.type || 'MISSION').toUpperCase()}`}/${mission.id}`;
     }
     let h = dir;
@@ -1150,7 +1620,12 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       if (!old) out.push(line('affecte', p));
       else if ((old.aircraft?.registration || '') !== (p.aircraft?.registration || '') || (old.callsign || '') !== (p.callsign || '') || old.takeoff !== p.takeoff) out.push(line('modifie', p));
       if (p.ferry?.pilot && p.ferry.pilot !== p.pilot && p.ferry.takeoff && !(old?.ferry?.pilot === p.ferry.pilot)) out.push({
-        ...line('convoyage', { ...p, pilot: p.ferry.pilot, takeoff: p.ferry.takeoff, callsign: '' }, 'convoyage'),
+        ...line('convoyage', {
+          ...p,
+          pilot: p.ferry.pilot,
+          takeoff: p.ferry.takeoff,
+          callsign: ''
+        }, 'convoyage'),
         for_pilot: p.pilot
       });
     }
@@ -1166,7 +1641,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     try {
       log = JSON.parse(await (await (await dir.getFileHandle(LOG_FILE)).getFile()).text());
     } catch {
-      /* premier journal */ }
+      /* premier journal */
+    }
     log.entries = [...(log.entries || []), ...entries];
     log.updatedAt = entries[entries.length - 1].at;
     const w = await (await dir.getFileHandle(LOG_FILE, {
@@ -1194,7 +1670,12 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   async function missionFile(folder, name, {
     as = 'text'
   } = {}) {
-    const dir = await missionsRead();
+    // dossier autorisé = la suite servie : lecture servie (plus rapide, mise en cache par le navigateur) ; autre copie :
+    // ignoré ; contrôle impossible (sans lanceur) : le dossier d'abord, comme avant
+    const src = await missionsSource().catch(() => ({
+      same: null
+    }));
+    const dir = src.same === null ? await missionsRead() : null;
     if (dir) try {
       let d = dir;
       const parts = `${folder}/${name}`.split('/').filter(Boolean);
@@ -1202,11 +1683,12 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       const f = await (await d.getFileHandle(parts[parts.length - 1])).getFile();
       return as === 'url' ? URL.createObjectURL(f) : await f.text();
     } catch {
-      /* absent du dossier autorisé : copie servie */ }
+      /* absent du dossier autorisé : copie servie */
+    }
     const url = new URL(`data/missions/${folder}/${name}`, root()).href;
     try {
       const r = await fetch(url, {
-        cache: 'no-store',
+        cache: 'no-cache', // revalidé (304 si inchangé)
         method: as === 'url' ? 'HEAD' : 'GET'
       });
       return r.ok ? (as === 'url' ? url : await r.text()) : null;
@@ -1218,7 +1700,10 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   async function missionFirst(folder, names, opts) {
     for (const n of [...new Set(names.filter(Boolean))]) {
       const v = await missionFile(folder, n, opts);
-      if (v != null) return { name: n, value: v };
+      if (v != null) return {
+        name: n,
+        value: v
+      };
     }
     return null;
   }
@@ -1226,28 +1711,34 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   async function readLog() {
     let log = null;
     try {
-      const st = await window.FileAccess?.status?.('__missions');
-      if (st?.handle && st.permission === 'granted') log = JSON.parse(await (await (await st.handle.getFileHandle(LOG_FILE)).getFile()).text());
+      const src = await missionsSource();
+      if (src.handle && src.same === null) log = JSON.parse(await (await (await src.handle.getFileHandle(LOG_FILE)).getFile()).text());
     } catch {
       log = null;
     }
-    if (!log) try {
-      const r = await fetch(new URL(`data/missions/${LOG_FILE}`, root()).href, {
-        cache: 'no-store'
-      });
-      log = r.ok ? await r.json() : null;
-    } catch {
-      log = null;
-    }
+    if (!log) log = await store.read(`data/missions/${LOG_FILE}`, {
+      fresh: true
+    });
     return [...(log?.entries || [])].sort((x, y) => String(y.at).localeCompare(String(x.at)));
   }
   /** Phrase d'une entrée : « 01/10 10:35 · DCP affecte M-002 à RBR (H145 F-ZBPO, DRAGON05, décollage 30/09 08:00Z) ». */
   function logText(e) {
     const d = s => s ? new Date(s).toISOString().slice(5, 16).replace(/(\d\d)-(\d\d)T/, '$2/$1 ') : '';
-    const what = { affecte: 'affecte', modifie: 'modifie', retire: 'retire', convoyage: 'confie le convoyage de' }[e.action] || e.action;
-    const detail = [e.aircraft, e.callsign, e.takeoff && `décollage ${d(e.takeoff)}Z`].filter(Boolean).join(', ');
-    if (e.action === 'retire') return `${d(e.at)} · ${e.by || '?'} retire ${e.pilot} de ${e.mission}`;
-    return `${d(e.at)} · ${e.by || '?'} ${what} ${e.mission} à ${e.pilot}${e.for_pilot ? ` (pour ${e.for_pilot})` : ''}${detail ? ` (${detail})` : ''}`;
+    // langue de la page (fr, en, de, es) ; phrase composée ici, la couche de traduction ne la reconnaîtrait pas
+    const li = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'));
+    const W = {
+      affecte: ['affecte {m} à {p}', 'assigns {m} to {p}', 'weist {m} {p} zu', 'asigna {m} a {p}'],
+      modifie: ['modifie {m} pour {p}', 'changes {m} for {p}', 'ändert {m} für {p}', 'modifica {m} para {p}'],
+      convoyage: ['confie le convoyage de {m} à {p}', 'gives the ferry of {m} to {p}', 'überträgt die Überführung für {m} an {p}', 'confía el traslado de {m} a {p}'],
+      retire: ['retire {p} de {m}', 'removes {p} from {m}', 'entfernt {p} aus {m}', 'retira a {p} de {m}'],
+      pour: ['pour {x}', 'for {x}', 'für {x}', 'para {x}'],
+      takeoff: ['décollage {x}', 'take-off {x}', 'Start {x}', 'despegue {x}']
+    };
+    const w = (k, v) => W[k][li].replace(/\{(\w)\}/g, (_, c) => v[c] ?? '');
+    const act = W[e.action] ? w(e.action, { m: e.mission, p: e.pilot }) : `${e.action} ${e.mission} ${e.pilot}`;
+    const detail = [e.aircraft, e.callsign, e.takeoff && w('takeoff', { x: `${d(e.takeoff)}Z` })].filter(Boolean).join(', ');
+    if (e.action === 'retire') return `${d(e.at)} · ${e.by || '?'} ${act}`;
+    return `${d(e.at)} · ${e.by || '?'} ${act}${e.for_pilot ? ` (${w('pour', { x: e.for_pilot })})` : ''}${detail ? ` (${detail})` : ''}`;
   }
   /** Écrit affectations.yaml dans le dossier de la mission et met à jour data/missions/affectations.json (index : une
    *  ligne par participant, et une ligne « convoyage » pour un convoyeur autre que le pilote). mission : entrée du
@@ -1255,12 +1746,20 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
    *  base }, departure, takeoff, ferry:{ from, to, minutes, takeoff, pilot }, block_min, status }] ; extra : { h_hour,
    *  alert, by }. Retour : chemin du fichier de la mission. */
   async function writeAssignment(mission, participants, extra = {}) {
-    const dir = await missionsDir(),
-      at = new Date().toISOString();
+    const dir = await missionsDir();
+    // lecture, modification et écriture de l'index et du journal sous un même verrou (onglets, pages) : l'écriture
+    // d'un autre poste du navigateur n'est plus écrasée par une copie lue avant elle
+    const out = await store.lock('affectations', () => writeAssignmentLocked(dir, mission, participants, extra));
+    store.changed('data/missions/affectations.json');
+    store.changed(`data/missions/${LOG_FILE}`);
+    return out;
+  }
+  async function writeAssignmentLocked(dir, mission, participants, extra) {
+    const at = new Date().toISOString();
     const doc = {
       mission: mission.id,
       updated_at: at,
-      by: extra.by || trigram() || 'CPCO',
+      by: extra.by || window.SuiteUsers?.by?.() || trigram() || 'CPCO',
       h_hour: extra.h_hour || null,
       participants,
       alert: extra.alert || null
@@ -1280,7 +1779,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     try {
       idx = JSON.parse(await (await (await dir.getFileHandle('affectations.json')).getFile()).text());
     } catch {
-      /* premier index */ }
+      /* premier index */
+    }
     const common = {
       mission: mission.id,
       title: mission.title || '',
@@ -1337,6 +1837,14 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     PAGE,
     TURN_MIN,
     trigram,
+    profileTrigram,
+    // fichiers du pool synchronisé (utilisateurs, configuration partagée, disponibilités)
+    dataStore: store,
+    readData,
+    readIndexed,
+    writeData,
+    flushData,
+    pendingData,
     index,
     mine,
     key,
@@ -1349,6 +1857,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     envelope,
     DAYS,
     LEGEND,
+    legendRow,
     emptyGrid,
     availability,
     availabilityAt,

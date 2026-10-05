@@ -11,6 +11,9 @@
   //                     html(value,row) → HTML de confiance, sortValue(row) }],
   //   defaultSortKey, defaultDir (1 croissant, -1 décroissant),
   //   onRowClick(row)  → ligne cliquable (hors boutons / liens),
+  //   detail(row)      → HTML de confiance d'un résumé déplié sous la ligne, une ligne à la fois (triangle ▸ ; clic sur la
+  //                      ligne hors boutons / liens : déplier / replier, à la place de onRowClick),
+  //   detailKey(row)   → clé stable d'une ligne dépliée (lignes recalculées : reste dépliée ; défaut : l'objet ligne),
   //   onDelete(row)    → bouton « Supprimer » ; return false pour annuler,
   //   deleteMessage(row), onChange(rows), emptyText
   //   storageKey       → clé des largeurs de colonnes mémorisées (défaut : page + id du conteneur)
@@ -46,6 +49,9 @@
 .st-grip{position:absolute;top:0;right:-3px;bottom:0;width:7px;cursor:col-resize;z-index:2;touch-action:none}
 .st-grip::after{content:"";position:absolute;top:25%;bottom:25%;left:3px;border-left:1px solid currentColor;opacity:.25}
 .st-table th:hover .st-grip::after,.st-grip.st-on::after{opacity:.7}
+.st-twisty{display:inline-block;width:1em;margin:0 4px 0 0;text-align:center;font-size:10px;line-height:1;cursor:pointer;transition:transform .15s}.st-twisty[aria-expanded="true"]{transform:rotate(90deg)}
+.st-table tr.st-detail>td{white-space:normal;padding:6px 12px 12px 26px;background:color-mix(in srgb,var(--accent,#6fa8ff) 6%,transparent)}
+.st-table tbody tr.st-detail:hover td{background:color-mix(in srgb,var(--accent,#6fa8ff) 6%,transparent)}
 .st-table.st-fixed{table-layout:fixed}.st-table.st-fixed :is(th,td){overflow:hidden;text-overflow:ellipsis}
 @media print{.st-table th{position:static}.st-actions{display:none}.st-grip{display:none}}`;
     document.head.appendChild(style);
@@ -90,6 +96,9 @@
     let sortKey = opts.defaultSortKey ?? columns[0]?.key ?? null;
     let sortDir = opts.defaultDir || 1;
     const hasActions = typeof opts.onDelete === 'function';
+    const hasDetail = typeof opts.detail === 'function',
+      open = new Set(), // lignes dépliées (clés detailKey)
+      dk = row => String(opts.detailKey ? opts.detailKey(row) : keyOf(row));
 
     /** Valeur de tri d'une cellule (sortValue de la colonne, sinon valeur brute). */
     const cellValue = (col, row) => col.sortValue ? col.sortValue(row) : row[col.key];
@@ -131,8 +140,12 @@
         return `<th data-key="${esc(c.key)}" class="${cls}${ico ? ' st-ico' : ''}" title="${esc(c.title || c.label)}" aria-sort="${active ? (sortDir === 1 ? 'ascending' : 'descending') : 'none'}">${ico || esc(c.label)}<span class="st-arrow">${arrow}</span><span class="st-grip" title="${esc(GRIP_TITLE)}"></span></th>`;
       }).join('')}${hasActions ? '<th class="st-actions"></th>' : ''}</tr>`;
       const span = columns.length + (hasActions ? 1 : 0);
-      const body = view.length ? view.map(row => `<tr data-id="${keyOf(row)}"${opts.onRowClick ? ` class="st-clickable" title="${esc(opts.rowTitle || 'Cliquer pour modifier')}"` : ''}>${columns.map(c =>
-        `<td${c.type === 'number' ? ' class="st-num"' : ''}>${cell(c, row)}</td>`).join('')}${hasActions ? `<td class="st-actions"><button type="button" class="st-delete">${esc(opts.deleteLabel || 'Supprimer')}</button></td>` : ''}</tr>`).join('') :
+      const body = view.length ? view.map(row => {
+        const on = hasDetail && open.has(dk(row)),
+          twisty = hasDetail ? `<span class="st-twisty" role="button" tabindex="0" aria-expanded="${on}" aria-label="${esc(opts.rowTitle || '▸')}">▸</span>` : '';
+        return `<tr data-id="${keyOf(row)}"${opts.onRowClick || hasDetail ? ` class="st-clickable" title="${esc(opts.rowTitle || 'Cliquer pour modifier')}"` : ''}>${columns.map((c, n) =>
+          `<td${c.type === 'number' ? ' class="st-num"' : ''}>${n ? '' : twisty}${cell(c, row)}</td>`).join('')}${hasActions ? `<td class="st-actions"><button type="button" class="st-delete">${esc(opts.deleteLabel || 'Supprimer')}</button></td>` : ''}</tr>${on ? `<tr class="st-detail"><td colspan="${span}">${opts.detail(row)}</td></tr>` : ''}`;
+      }).join('') :
         `<tr><td colspan="${span}" class="st-empty">${esc(opts.emptyText || 'Aucune donnée pour la période sélectionnée.')}</td></tr>`;
       container.innerHTML = `<div class="st-wrap"><table class="st-table"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
       applyWidths();
@@ -152,7 +165,8 @@
       try {
         if (storageKey) localStorage.setItem(storageKey, JSON.stringify(widths));
       } catch {
-        /* stockage indisponible */ }
+        /* stockage indisponible */
+      }
     };
     /** Fixe les largeurs : mesure naturelle (disposition automatique), puis largeurs choisies par-dessus. */
     function applyWidths(live) {
@@ -195,7 +209,8 @@
       try {
         grip.setPointerCapture(event.pointerId);
       } catch {
-        /* pointeur déjà relâché */ }
+        /* pointeur déjà relâché */
+      }
       const move = e => {
         widths[key] = Math.max(32, w0 + e.clientX - x0);
         applyWidths(true);
@@ -222,6 +237,13 @@
 
     // Délégation d'événements : un seul jeu d'écouteurs, conservé d'un rendu à l'autre.
     const find = id => rows.find(r => keyOf(r) === id);
+    // triangle au clavier (Entrée, Espace) : même effet qu'un clic
+    container.onkeydown = event => {
+      if (hasDetail && (event.key === 'Enter' || event.key === ' ') && event.target.closest('.st-twisty')) {
+        event.preventDefault();
+        event.target.click();
+      }
+    };
     container.onclick = event => {
       const th = event.target.closest('th[data-key]');
       if (th && (event.target.closest('.st-grip') || Date.now() - resizedAt < 300)) return; // fin d'un redimensionnement : pas de tri
@@ -248,8 +270,19 @@
         paint();
         return;
       }
+      // résumé déplié sous la ligne : triangle, ou clic sur la ligne hors liens et contrôles
+      const toggle = () => {
+        // une seule ligne dépliée : en ouvrir une referme la précédente
+        const k = dk(row),
+          was = open.has(k);
+        open.clear();
+        if (!was) open.add(k);
+        paint();
+      };
+      if (hasDetail && event.target.closest('.st-twisty')) return toggle();
       // Les liens (ex. trace IVAO/VATSIM) et contrôles restent utilisables normalement.
       if (event.target.closest('a,button,input,select,textarea')) return;
+      if (hasDetail) return toggle();
       if (typeof opts.onRowClick === 'function') opts.onRowClick(row);
     };
 

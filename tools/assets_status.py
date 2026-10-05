@@ -1,4 +1,4 @@
-"""État des assets des designs à matières : ce que le code attend, ce qui est là, ce qui manque (docs/ASSETS_A_FOURNIR.md
+"""État des assets des designs à matières : ce que le code attend, ce qui est là, ce qui manque (docs/technique/ASSETS_A_FOURNIR.md
 pour les consignes de génération et d'intégration).
 
 Usage (à la racine du dépôt) :
@@ -26,6 +26,7 @@ THEMES = ['aircraft', 'airfield', 'time', 'radio', 'nav', 'gear', 'awards', 'fam
 PANELS = [f'panel-{t}-{o}.webp' for t in THEMES for o in 'wt']
 SHEET = [f'sheet-{p}.webp' for p in ('tl', 'tr', 'bl', 'br', 'top', 'bot', 'left', 'right', 'paper')]
 DESIGNS = ['cabinet', 'flightlog', 'field', 'aqua']
+TABS = ['tabs/rail.webp', 'tabs/tab.webp', 'tabs/tab-on.webp']
 NAMES = {'cabinet': 'Cabinet', 'flightlog': 'Carnet de vol', 'field': 'Durci', 'aqua': 'Aqua'}
 
 # famille → (facultative ?, {design: [fichiers attendus, relatifs à shared/deco/<design>/]} ; None : sans objet)
@@ -53,8 +54,25 @@ SPEC = {
     'Signet du dossier de mission': (True, {
         'cabinet': ['bookmark-body.webp', 'bookmark-tail.webp'], 'flightlog': ['bookmark-body.webp', 'bookmark-tail.webp'],
         'field': ['bookmark-body.webp', 'bookmark-tail.webp'], 'aqua': ['bookmark-body.webp', 'bookmark-tail.webp']}),
+    'En-têtes d’ordre par famille (Mes missions)': (True, {
+        'cabinet': ['order-header-mn.webp', 'order-header-emg.webp', 'order-header-fam.webp', 'order-header-dfam.webp',
+                    'order-header-prefmar.webp', 'order-header-ban.webp', 'order-header-escadrille.webp', 'order-header-embarquee.webp'],
+        'flightlog': ['order-header-snpc.webp', 'order-header-marignane.webp', 'order-header-cev.webp', 'order-header-tam.webp',
+                      'order-header-helico.webp', 'order-header-sna.webp', 'order-header-alat.webp', 'order-header-aeronavale.webp'],
+        'field': ['order-header-ema.webp', 'order-header-bspp.webp', 'order-header-ssa.webp', 'order-header-hia.webp',
+                  'order-header-dcssa.webp', 'order-header-emzd.webp', 'order-header-dmd.webp', 'order-header-cpco.webp'],
+        'aqua': ['order-header-sdis.webp', 'order-header-samu.webp', 'order-header-hopital.webp', 'order-header-ars.webp',
+                 'order-header-prefet.webp', 'order-header-interieur.webp', 'order-header-coz.webp', 'order-header-cpco.webp']}),
+    'Tampons d’émetteur par famille (Mes missions, signature)': (True, {
+        'cabinet': ['order-stamp-emg.webp'], 'field': ['order-stamp-ema.webp'], 'aqua': None,
+        'flightlog': ['order-stamp-snpc.webp', 'order-stamp-marignane.webp', 'order-stamp-cev.webp', 'order-stamp-tam.webp',
+                      'order-stamp-helico.webp', 'order-stamp-sna.webp', 'order-stamp-alat.webp', 'order-stamp-aeronavale.webp']}),
     'Pli scellé de l’exercice (Mes missions)': (True, {
         'cabinet': ['pli-sealed.webp'], 'flightlog': ['pli-sealed.webp'], 'field': ['pli-sealed.webp'], 'aqua': ['pli-sealed.webp']}),
+    # onglets en tête de page (repository_nav.js, REPOSITORY_TREE.tabs) : rail, poussoir relâché, poussoir enfoncé et
+    # éclairé (page courante) ; sans texte (libellés en 4 langues posés par la page) ; docs/technique/ASSETS_A_FOURNIR.md § 6
+    'Onglets de page (Paramètres, générateur ⇄ studio)': (True, {d: TABS + (['tabs/led.webp'] if d == 'field' else []) for d in DESIGNS}),
+    'Liseré du bloc à onglets (laiton : Cabinet, Carnet de vol ; acier : Durci, Aqua)': (True, {d: ['tabs/lisere.webp'] for d in DESIGNS}),
 }
 
 

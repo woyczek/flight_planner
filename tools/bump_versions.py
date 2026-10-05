@@ -9,16 +9,20 @@ Ce qui est versionné :
 - pages HTML : attributs src / href « …?v=… », @import url("…?v=…") et images des styles de la page
   url("…image?v=…") vers un fichier du dépôt (chemin relatif à la page) ;
 - scripts : chargements « 'fichier.js?v=…' » / « "feuille.css?v=…" » écrits dans le code (chemin relatif au script) ;
-- repository_nav.js : table FILE_V des feuilles de design chargées à la demande (designs.list[id].css) ;
+- repository_nav.js et config/repository_tree : table FILE_V des feuilles de design (designs.list[id].css) ;
+  repository_tree : aussi « ../shared/designs.css?v=… » (feuilles posées dès l'en-tête) ;
 - feuilles des designs (designs_skeuo.css, block_icons.css) : images textures / deco / icons/skeuo.
-Un script qui versionne ses images avec son propre ?v= (DEPENDANCES) reçoit une empreinte qui couvre aussi ces images.
+Un script qui versionne ses images avec son propre ?v= (DEPENDANCES) reçoit une empreinte qui couvre aussi ces images
+— seulement celles que git suit (index : image ajoutée par « git add »), par leur identifiant git : les images déposées
+dans un espace de travail et pas encore ajoutées ne changent rien, et l'empreinte est la même dans tous les espaces
+(fichier LFS téléchargé ou non). Sans git : contenu des images présentes, comme avant.
 Les empreintes se propagent : une image modifiée change la feuille qui la nomme, donc la page qui charge la feuille.
 Fins de ligne normalisées avant calcul (même empreinte quelle que soit l'extraction git).
 
 Écrit aussi repository_tree à la racine : fichier de compatibilité (bloc release seul, lu par le contrôle des mises à
 jour des versions 4.6.0 et antérieures, qui ne cherchaient pas encore dans config/). À retirer à partir de la 4.9.
 """
-import glob, hashlib, io, json, os, re, sys
+import glob, hashlib, io, json, os, re, subprocess, sys
 sys.stdout.reconfigure(encoding='utf-8')
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 SHARED = os.path.join(ROOT, 'shared')
@@ -43,15 +47,38 @@ def lire(path):
     return b if path.lower().endswith(BINAIRE) else b.replace(b'\r\n', b'\n')
 
 
+_suivis = None
+
+
+def suivis():
+    """Fichiers suivis par git (index) → identifiant du blob ; None sans git ou hors d'un dépôt."""
+    global _suivis
+    if _suivis is None:
+        try:
+            out = subprocess.run(['git', 'ls-files', '-s', '-z', '--', 'shared'], cwd=ROOT, capture_output=True, check=True).stdout
+            _suivis = {}
+            for ligne in out.decode('utf-8').split('\0'):
+                if '\t' in ligne:
+                    tete, chemin = ligne.split('\t', 1)
+                    _suivis[chemin] = tete.split()[1]
+        except (OSError, subprocess.CalledProcessError, IndexError):
+            _suivis = False
+    return _suivis or None
+
+
 def empreinte(path):
     """Empreinte du fichier (et de ses dépendances déclarées) ; 8 caractères hexadécimaux."""
     path = os.path.normpath(path)
     if path in _cache:
         return _cache[path]
     h = hashlib.sha1(lire(path))
+    idx = suivis()
     for motif in DEPENDANCES.get(rel(path), []):
         for dep in sorted(glob.glob(os.path.join(ROOT, motif), recursive=True)):
-            h.update(rel(dep).encode() + hashlib.sha1(lire(dep)).digest())
+            if idx is None:  # sans git : contenu des images présentes
+                h.update(rel(dep).encode() + hashlib.sha1(lire(dep)).digest())
+            elif rel(dep) in idx:  # image suivie : son identifiant git (le même partout)
+                h.update(rel(dep).encode() + idx[rel(dep)].encode())
     _cache[path] = h.hexdigest()[:8]
     return _cache[path]
 
@@ -78,7 +105,7 @@ def versionner(texte, base, motif):
     return motif.sub(sub, texte)
 
 
-IMG = re.compile(r'(\(\s*["\']?)((?:textures|deco/[\w/]+|icons/skeuo/[\w/-]+)/[\w-]+\.webp)\?v=\w+')
+IMG = re.compile(r'(\(\s*["\']?)((?:textures|deco/[\w/]+|icons/skeuo/[\w/-]+)/[\w.-]+\.webp)\?v=\w+')  # noms à point compris (rail.vierge.webp)
 LIT = re.compile(r'(["\'`])((?:\.{1,2}/)?[\w./-]+\.(?:js|css))\?v=\w+')
 ATTR = re.compile(r'((?:src|href)=["\'])([^"\'?#:]+)\?v=\w+')
 IMPORT = re.compile(r'(@import url\(["\'])([^"\'?#:]+)\?v=\w+')   # feuilles importées dans une couche (tools/layer_pages.py)
@@ -88,6 +115,9 @@ PAGEIMG = re.compile(r'(url\(["\']?)([^"\'()?#:]+\.(?:webp|png|jpe?g|svg))\?v=\w
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import build_mission_prompt
 build_mission_prompt.build(verbose=False)
+# documents de l'Aide pour l'ouverture en fichier local (tools/build_docs_bundle.py)
+import build_docs_bundle
+build_docs_bundle.build(verbose=False)
 
 # 1. images des feuilles des designs
 for css in ('designs_skeuo.css', 'block_icons.css'):
@@ -131,16 +161,19 @@ if not os.path.isfile(compat_path) or io.open(compat_path, encoding='utf-8').rea
 design_css = sorted(set(re.findall(r'css:"([\w.-]+\.css)"', tree)))
 # 3. chargements écrits dans les scripts, jusqu'à stabilité (une empreinte changée change le script qui la cite)
 scripts = [p for p in glob.glob(os.path.join(ROOT, 'shared', '**', '*.js'), recursive=True) + glob.glob(os.path.join(ROOT, 'apps', '**', '*.js'), recursive=True)
-           if not re.search(r'\.min\.js$|maplibre|jspdf', p)]
+           if not re.search(r'\.min\.js$|maplibre|jspdf|docs_bundle\.js$', p)]  # docs_bundle.js : texte des documents, pas des chargements
+# config/repository_tree : feuilles du design posées dès l'en-tête (designs.css, table FILE_V)
+tree_path = os.path.join(ROOT, 'config', 'repository_tree')
+scripts.append(tree_path)
 nav = os.path.join(SHARED, 'repository_nav.js')
 for _ in range(8):
     change = False
     for p in scripts:
         s = io.open(p, encoding='utf-8', newline='').read()
         t = versionner(s, os.path.dirname(p), LIT)
-        if p == nav:
+        if p in (nav, tree_path):
             table = json.dumps({f: empreinte(os.path.join(SHARED, f)) for f in design_css}, separators=(', ', ': '))
-            t = re.sub(r'const FILE_V = \{[^}]*\};', f'const FILE_V = {table};', t)
+            t = re.sub(r'\bFILE_V = \{[^}]*\};', f'FILE_V = {table};', t)
         change |= ecrire_si_change(p, s, t)
     if not change:
         break

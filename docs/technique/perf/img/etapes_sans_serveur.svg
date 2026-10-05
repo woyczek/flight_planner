@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="970" height="616" font-family="system-ui,Segoe UI,sans-serif" font-size="11">
+<rect width="100%" height="100%" fill="#fff"/><text x="0" y="14" font-size="13" font-weight="600" fill="#1b1f24">Temps jusqu’à page stable, par étape — sans serveur</text>
+<rect x="300" y="22" width="10" height="8" fill="#d8763b"/><text x="314" y="30" fill="#5b6470">avant</text>
+<rect x="360" y="22" width="10" height="8" fill="#3b6fd8"/><text x="374" y="30" fill="#5b6470">après</text>
+<text x="0" y="52" fill="#1b1f24">mes_missions · chargement</text>
+<rect x="300" y="40" width="88.5" height="8" fill="#d8763b"/><rect x="300" y="49" width="87.9" height="8" fill="#3b6fd8"/>
+<text x="394.5" y="53" fill="#5b6470">305 → 303 ms</text>
+<text x="0" y="74" fill="#1b1f24">mes_missions · semaine suivante</text>
+<rect x="300" y="62" width="104.5" height="8" fill="#d8763b"/><rect x="300" y="71" width="10.4" height="8" fill="#3b6fd8"/>
+<text x="410.5" y="75" fill="#5b6470">360 → 36 ms</text>
+<text x="0" y="96" fill="#1b1f24">mes_missions · semaine précédente</text>
+<rect x="300" y="84" width="9.9" height="8" fill="#d8763b"/><rect x="300" y="93" width="8.7" height="8" fill="#3b6fd8"/>
+<text x="315.9" y="97" fill="#5b6470">34 → 30 ms</text>
+<text x="0" y="118" fill="#1b1f24">mes_missions · semaine suivante</text>
+<rect x="300" y="106" width="10.4" height="8" fill="#d8763b"/><rect x="300" y="115" width="10.4" height="8" fill="#3b6fd8"/>
+<text x="316.4" y="119" fill="#5b6470">36 → 36 ms</text>
+<text x="0" y="140" fill="#1b1f24">mes_missions · ouvrir la 1re mission</text>
+<rect x="300" y="128" width="73.4" height="8" fill="#d8763b"/><rect x="300" y="137" width="75.4" height="8" fill="#3b6fd8"/>
+<text x="381.4" y="141" fill="#5b6470">253 → 260 ms</text>
+<text x="0" y="162" fill="#1b1f24">mes_missions · ouvrir le dossier</text>
+<rect x="300" y="150" width="9.9" height="8" fill="#d8763b"/><rect x="300" y="159" width="9.9" height="8" fill="#3b6fd8"/>
+<text x="315.9" y="163" fill="#5b6470">34 → 34 ms</text>
+<text x="0" y="184" fill="#1b1f24">mes_missions · page suivante ×2</text>
+<rect x="300" y="172" width="520.0" height="8" fill="#d8763b"/><rect x="300" y="181" width="519.1" height="8" fill="#3b6fd8"/>
+<text x="826.0" y="185" fill="#5b6470">1792 → 1789 ms</text>
+<text x="0" y="206" fill="#1b1f24">mes_missions · design Cabinet</text>
+<rect x="300" y="194" width="108.8" height="8" fill="#d8763b"/><rect x="300" y="203" width="104.2" height="8" fill="#3b6fd8"/>
+<text x="414.8" y="207" fill="#5b6470">375 → 359 ms</text>
+<text x="0" y="228" fill="#1b1f24">mes_missions · design Carnet de vol</text>
+<rect x="300" y="216" width="107.1" height="8" fill="#d8763b"/><rect x="300" y="225" width="105.0" height="8" fill="#3b6fd8"/>
+<text x="413.1" y="229" fill="#5b6470">369 → 362 ms</text>
+<text x="0" y="250" fill="#1b1f24">mes_missions · design Durci</text>
+<rect x="300" y="238" width="107.7" height="8" fill="#d8763b"/><rect x="300" y="247" width="100.4" height="8" fill="#3b6fd8"/>
+<text x="413.7" y="251" fill="#5b6470">371 → 346 ms</text>
+<text x="0" y="272" fill="#1b1f24">mes_missions · design Aqua</text>
+<rect x="300" y="260" width="108.5" height="8" fill="#d8763b"/><rect x="300" y="269" width="103.9" height="8" fill="#3b6fd8"/>
+<text x="414.5" y="273" fill="#5b6470">374 → 358 ms</text>
+<text x="0" y="294" fill="#1b1f24">mes_missions · langue anglais</text>
+<rect x="300" y="282" width="108.5" height="8" fill="#d8763b"/><rect x="300" y="291" width="78.9" height="8" fill="#3b6fd8"/>
+<text x="414.5" y="295" fill="#5b6470">374 → 272 ms</text>
+<text x="0" y="316" fill="#1b1f24">mes_missions · langue français</text>
+<rect x="300" y="304" width="80.1" height="8" fill="#d8763b"/><rect x="300" y="313" width="100.7" height="8" fill="#3b6fd8"/>
+<text x="406.7" y="317" fill="#5b6470">276 → 347 ms</text>
+<text x="0" y="338" fill="#1b1f24">mes_missions · ouvrir la 2e mission</text>
+<rect x="300" y="326" width="69.6" height="8" fill="#d8763b"/><rect x="300" y="335" width="70.5" height="8" fill="#3b6fd8"/>
+<text x="376.5" y="339" fill="#5b6470">240 → 243 ms</text>
+<text x="0" y="360" fill="#1b1f24">odv_planning · chargement</text>
+<rect x="300" y="348" width="81.5" height="8" fill="#d8763b"/><rect x="300" y="357" width="72.3" height="8" fill="#3b6fd8"/>
+<text x="387.5" y="361" fill="#5b6470">281 → 249 ms</text>
+<text x="0" y="382" fill="#1b1f24">odv_planning · semaine suivante</text>
+<rect x="300" y="370" width="112.0" height="8" fill="#d8763b"/><rect x="300" y="379" width="134.1" height="8" fill="#3b6fd8"/>
+<text x="440.1" y="383" fill="#5b6470">386 → 462 ms</text>
+<text x="0" y="404" fill="#1b1f24">odv_planning · semaine précédente</text>
+<rect x="300" y="392" width="70.8" height="8" fill="#d8763b"/><rect x="300" y="401" width="70.8" height="8" fill="#3b6fd8"/>
+<text x="376.8" y="405" fill="#5b6470">244 → 244 ms</text>
+<text x="0" y="426" fill="#1b1f24">mission_registry · chargement</text>
+<rect x="300" y="414" width="390.9" height="8" fill="#d8763b"/><rect x="300" y="423" width="405.7" height="8" fill="#3b6fd8"/>
+<text x="711.7" y="427" fill="#5b6470">1347 → 1398 ms</text>
+<text x="0" y="448" fill="#1b1f24">mission_registry · filtre COMBAT</text>
+<rect x="300" y="436" width="75.4" height="8" fill="#d8763b"/><rect x="300" y="445" width="76.3" height="8" fill="#3b6fd8"/>
+<text x="382.3" y="449" fill="#5b6470">260 → 263 ms</text>
+<text x="0" y="470" fill="#1b1f24">mission_registry · effacer les filtres</text>
+<rect x="300" y="458" width="79.5" height="8" fill="#d8763b"/><rect x="300" y="467" width="76.3" height="8" fill="#3b6fd8"/>
+<text x="385.5" y="471" fill="#5b6470">274 → 263 ms</text>
+<text x="0" y="492" fill="#1b1f24">mission_registry · relire le dossier (à chaud)</text>
+<rect x="300" y="480" width="130.9" height="8" fill="#d8763b"/><rect x="300" y="489" width="100.1" height="8" fill="#3b6fd8"/>
+<text x="436.9" y="493" fill="#5b6470">451 → 345 ms</text>
+<text x="0" y="514" fill="#1b1f24">mission_editor · chargement</text>
+<rect x="300" y="502" width="152.3" height="8" fill="#d8763b"/><rect x="300" y="511" width="154.4" height="8" fill="#3b6fd8"/>
+<text x="460.4" y="515" fill="#5b6470">525 → 532 ms</text>
+<text x="0" y="536" fill="#1b1f24">map_planner · chargement</text>
+<rect x="300" y="524" width="442.2" height="8" fill="#d8763b"/><rect x="300" y="533" width="396.1" height="8" fill="#3b6fd8"/>
+<text x="748.2" y="537" fill="#5b6470">1524 → 1365 ms</text>
+<text x="0" y="558" fill="#1b1f24">fire_cr · chargement</text>
+<rect x="300" y="546" width="65.6" height="8" fill="#d8763b"/><rect x="300" y="555" width="96.3" height="8" fill="#3b6fd8"/>
+<text x="402.3" y="559" fill="#5b6470">226 → 332 ms</text>
+<text x="0" y="580" fill="#1b1f24">fire_reporting · chargement</text>
+<rect x="300" y="568" width="90.5" height="8" fill="#d8763b"/><rect x="300" y="577" width="29.0" height="8" fill="#3b6fd8"/>
+<text x="396.5" y="581" fill="#5b6470">312 → 100 ms</text>
+<text x="0" y="602" fill="#1b1f24">parametrage · chargement</text>
+<rect x="300" y="590" width="171.8" height="8" fill="#d8763b"/><rect x="300" y="599" width="169.2" height="8" fill="#3b6fd8"/>
+<text x="477.8" y="603" fill="#5b6470">592 → 583 ms</text>
+</svg>
