@@ -33,11 +33,23 @@
     ['Dans ce document', 'In this document', 'In diesem Dokument', 'En este documento'],
     ['Chargement de la documentation…', 'Loading the documentation…', 'Dokumentation wird geladen…', 'Cargando la documentación…']
   ]);
-  /** Texte d'un document de docs/ (gardé pour la recherche) ; null s'il est absent. */
+  /** Texte d'un document de docs/ (gardé pour la recherche) ; null s'il est absent. Un échec n'est pas gardé (serveur
+   *  relancé, coupure) : relu à la demande suivante ; sa cause (code HTTP, serveur injoignable) reste dans failed. */
+  const failed = new Map();
+  // page ouverte en fichier local (file://, sans le lanceur) : le navigateur interdit la lecture des documents
+  const LOCAL = location.protocol === 'file:';
+  const localText = () => window.RepositoryKit.t(['Page ouverte en fichier local (file://) : le navigateur interdit d’y lire les documents. Ouvrir la suite par son lanceur — lancer.cmd (Windows) ou lancer.sh, à la racine de la suite — puis l’Aide depuis la barre latérale.', 'Page opened as a local file (file://): the browser does not allow reading the documents there. Open the suite through its launcher — lancer.cmd (Windows) or lancer.sh, at the root of the suite — then Help from the sidebar.', 'Seite als lokale Datei geöffnet (file://): Der Browser erlaubt dort nicht, die Dokumente zu lesen. Die Suite über ihren Starter öffnen — lancer.cmd (Windows) oder lancer.sh im Stammordner der Suite — dann die Hilfe über die Seitenleiste.', 'Página abierta como archivo local (file://): el navegador no permite leer allí los documentos. Abrir la suite con su lanzador — lancer.cmd (Windows) o lancer.sh, en la raíz de la suite — y luego la Ayuda desde la barra lateral.']);
   async function text(name) {
-    if (!cache.has(name)) cache.set(name, fetch(new URL(name, DOCS), {
-      cache: 'no-cache'
-    }).then(r => r.ok ? r.text() : null).catch(() => null));
+    if (!cache.has(name)) {
+      const p = fetch(new URL(name, DOCS), {
+        cache: 'no-cache'
+      }).then(r => r.ok ? r.text() : (failed.set(name, `HTTP ${r.status}`), null)).catch(e => (failed.set(name, e.message || 'réseau'), null));
+      cache.set(name, p);
+      p.then(v => {
+        if (v == null && cache.get(name) === p) cache.delete(name);
+        else failed.delete(name);
+      });
+    }
     return cache.get(name);
   }
   const LANGS = ['en', 'de', 'es'];
@@ -70,8 +82,14 @@
     const file = await localized(INDEX),
       md = await text(file),
       host = $('.doc-index');
+    if (!md && LOCAL) {
+      host.innerHTML = '';
+      return;
+    }
     if (!md) {
-      host.innerHTML = '<p class="doc-empty">Index documentaire introuvable (docs/README.md).</p>';
+      host.innerHTML = `<p class="doc-empty">${esc(window.RepositoryKit.tf(['Index documentaire introuvable (docs/README.md{c}).', 'Documentation index not found (docs/README.md{c}).', 'Dokumentationsverzeichnis nicht gefunden (docs/README.md{c}).', 'Índice de la documentación no encontrado (docs/README.md{c}).'], {
+        c: failed.has(file) ? ` — ${failed.get(file)}` : ''
+      }))}</p>`;
       return;
     }
     const groups = [];
@@ -105,8 +123,15 @@
   async function show(name, hash = '') {
     const file = await localized(name),
       md = await text(file);
+    if (md == null && LOCAL) {
+      body.innerHTML = `<p class="doc-empty">${esc(localText())}</p>`;
+      return;
+    }
     if (md == null) {
-      body.innerHTML = `<p class="doc-empty">Document introuvable : docs/${esc(name)}. La documentation se lit depuis la suite servie par le lanceur.</p>`;
+      body.innerHTML = `<p class="doc-empty">${esc(window.RepositoryKit.tf(['Document introuvable : docs/{n}{c}. La documentation se lit depuis la suite servie par le lanceur (tools/launch.py).', 'Document not found: docs/{n}{c}. The documentation is read from the suite served by the launcher (tools/launch.py).', 'Dokument nicht gefunden: docs/{n}{c}. Die Dokumentation wird aus der vom Starter bereitgestellten Suite gelesen (tools/launch.py).', 'Documento no encontrado: docs/{n}{c}. La documentación se lee desde la suite servida por el lanzador (tools/launch.py).'], {
+        n: name,
+        c: failed.has(file) ? ` (${failed.get(file)})` : ''
+      }))}</p>`;
       return;
     }
     if (shown !== file) {
