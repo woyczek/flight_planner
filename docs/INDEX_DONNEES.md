@@ -153,6 +153,26 @@ reçus, les écritures (§ 5) appellent `push` après le fichier. Le transport s
   --port <n>`, HTTPS derrière un proxy (Caddy, nginx) ;
 - même format de fichiers que `data/` : un poste peut passer de git au webservice (et revenir) sans conversion.
 
+### 9.4 Transport git : ce qui est fait (étape 8, décisions du 5 octobre)
+
+- **Déclenchement** : bouton « Synchroniser (n) » de l'en-tête (`shared/sync.js`), pas d'envoi automatique ; n =
+  modifications de ce poste + commits à envoyer et à recevoir (dépôt distant relu toutes les 5 minutes). Affiché quand
+  la suite est servie par le lanceur et que `data/` est un dépôt git.
+- **Un passage** (`tools/data_sync.py`, routes `GET /__setup/sync-status`, `POST /__setup/sync` du lanceur) : boîte
+  d'envoi du navigateur écrite dans le dossier, commit des fichiers du pool (`disponibilites`, `utilisateurs`, `config`,
+  `missions`, `cr`, `atc` ; sans les `_index.json` régénérés ni les copies `_conflits/`) **au nom du trigramme connecté**,
+  `fetch` puis **fusion** (merge, pas de rebase : historique jamais réécrit), `push`. Compte rendu en notifications.
+- **Conflits, fiche par fiche** : une fiche par fichier (semaine d'un pilote, utilisateur, mission…) → la plus récente
+  (`updated_at`) l'emporte, l'autre est gardée dans `<dossier>/_conflits/<nom>.<locale|distante>.<date>` (non
+  synchronisé) et signalée ; `missions/affectations.json` fusionné par affectation (mission, pilote, rôle) à trois
+  versions ; `missions/affectations_log.json` (journal en ajout seul) réuni. Échec au milieu d'une fusion : fusion
+  annulée, dépôt jamais laissé à moitié fusionné.
+- **Limite connue** : `cr/missions.yaml` regroupe tous les CR — en conflit, la plus récente l'emporte et l'autre est
+  gardée dans `_conflits/` (à fusionner à la main) ; le découpage par année (étape 7) réduira ces conflits.
+- **Essais** : `python tools/data_sync.py --essai` (dépôt distant et deux copies temporaires : modifications croisées,
+  conflit, fusion, réception) ; `python tools/launch.py --port 8774 --data <copie>` sert une copie de `data/` pour
+  essayer le bouton sans toucher au vrai dépôt.
+
 ### 9.3 Étapes (après le § 8)
 
 8. `shared/sync.js`, transport git (routes `/__sync/*` du lanceur), bouton et état dans l'en-tête.
@@ -170,6 +190,6 @@ reçus, les écritures (§ 5) appellent `push` après le fichier. Le transport s
 | 5. CR indexés, relus seulement si un fichier a changé (signature, 304) | fait (`c1ffb070`) |
 | 6. Suivi des missions dans `suivi.yaml` (fusion champ par champ) | fait (`eabd0a6f`) ; affectations : remplacement par mission sous verrou (existant) |
 | 7. Découpage par année | à faire avant le 31 décembre |
-| 8. Synchronisation git par le lanceur | à faire |
+| 8. Synchronisation git par le lanceur | fait (§ 9.4) : bouton « Synchroniser » de l'en-tête, auteur = trigramme connecté, fusion fiche par fiche ; essais sur des copies (`python tools/data_sync.py --essai`, lanceur `--data <copie>`) |
 | 9. Moteur central minimal et transport webservice | à faire |
 | 10. Mode `production` | à faire |

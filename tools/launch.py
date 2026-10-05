@@ -16,6 +16,8 @@ Arrêt : fermer la fenêtre, ou Ctrl+C.
 """
 import argparse, glob, http.server, io, json, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
 import urllib.parse, urllib.request, webbrowser, zipfile
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import data_sync  # synchronisation git du pool de données (bouton « Synchroniser »)
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 DATA = os.path.join(ROOT, 'data')
@@ -167,6 +169,17 @@ class Setup(http.server.SimpleHTTPRequestHandler):
     def _allowed(self):
         return self._local_host() and self.headers.get('X-DEFA-Setup') == '1'
 
+    def translate_path(self, path):
+        """/data/… : dossier de données choisi (--data), s'il n'est pas celui de la suite."""
+        p = super().translate_path(path)
+        if os.path.normcase(DATA) == os.path.normcase(os.path.join(ROOT, 'data')):
+            return p
+        rel = urllib.parse.unquote(path.split('?', 1)[0].split('#', 1)[0])
+        if rel == '/data' or rel.startswith('/data/'):
+            out = os.path.normpath(os.path.join(DATA, *[x for x in rel[6:].split('/') if x]))
+            return out if out == DATA or out.startswith(DATA + os.sep) else DATA
+        return p
+
     purge = True  # première page servie par ce lanceur : vider le cache du navigateur pour ce site
 
     def end_headers(self):
@@ -224,6 +237,12 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             git = shutil.which('git')
             return self._json({'server': True, 'root': ROOT, 'git': bool(git), 'data': has_data(),
                                'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url()})
+        if self.path.split('?')[0] == '/__setup/sync-status':
+            # synchronisation git du pool (tools/data_sync.py) : état pour le bouton de l'en-tête ; ?fetch=1 : relu
+            # sur le dépôt distant (commits à recevoir)
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            return self._json(data_sync.status(DATA, fetch='fetch=1' in self.path))
         if self.path.split('?')[0] == '/__setup/tools':
             # outils de tools/ (sommaire tools/index.html) : nom, sorte, titre et en-tête de chaque fichier
             if not self._allowed():
@@ -280,6 +299,19 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             with open(os.path.join(out, name + '.json'), 'wb') as f:
                 f.write(body)
             return self._json({'ok': True, 'file': f'docs/perf/runs/{name}.json'})
+        if path == '/__setup/sync':
+            # un passage de synchronisation (commit au nom du trigramme, fusion fiche par fiche, envoi), un à la fois
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                a = {}
+            with SYNC_LOCK:
+                r = data_sync.run(DATA, str(a.get('author') or '').upper(), str(a.get('name') or '')[:60])
+            if r.get('received'):
+                with INDEX_LOCK:
+                    index_availability()
+                    index_users()
+            return self._json(r)
         if path == '/__setup/clone':
             try:
                 a = json.loads(body or b'{}')
@@ -427,7 +459,8 @@ INSTANCE_DIRS = ('', 'data', os.path.join('data', 'missions'), os.path.join('dat
                  os.path.join('data', 'planner'))
 
 
-INDEX_LOCK = threading.Lock()  # index du pool refaits à la demande (do_GET)
+INDEX_LOCK = threading.Lock()
+SYNC_LOCK = threading.Lock()  # une synchronisation git à la fois (tools/data_sync.py)  # index du pool refaits à la demande (do_GET)
 
 
 def index_availability():
@@ -521,12 +554,19 @@ def main():
     ap.add_argument('--page', default=PAGE)
     ap.add_argument('--no-browser', action='store_true')
     ap.add_argument('--no-data', action='store_true')
+    ap.add_argument('--data', help='autre dossier de données servi sous /data/ (essais sur une copie, ex. synchronisation)')
     a = ap.parse_args()
+    global DATA
+    if a.data:  # autre dossier de données (copie d'essai) : servi sous /data/, ni clone ni mise à jour au démarrage
+        DATA = os.path.abspath(a.data)
+        a.no_data = True
     if sys.version_info < (3, 8):
         say('Python 3.8 ou plus récent est nécessaire : https://www.python.org/downloads/')
         return 1
     say('Suite DEFA — lanceur')
     say(f'Dossier : {ROOT}')
+    if a.data:
+        say(f'Données : {DATA} (--data)')
     say('')
     if not a.no_data:
         ensure_data()

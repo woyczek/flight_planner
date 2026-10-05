@@ -1043,6 +1043,10 @@
     const users = document.createElement("script");
     users.src = new URL("users.js?v=1db04bb0", script.src).href;
     document.head.append(users);
+    /* Synchronisation git du pool de données : bouton « Synchroniser » de l'en-tête (lanceur, data/ dépôt git) */
+    const sync = document.createElement("script");
+    sync.src = new URL("sync.js?v=c2644b6c", script.src).href;
+    document.head.append(sync);
     /* Disponibilités : catégories configurables, thèmes ouverts, déclarations par semaine */
     const dispos = document.createElement("script");
     dispos.src = new URL("dispos.js?v=f07e0591", script.src).href;
