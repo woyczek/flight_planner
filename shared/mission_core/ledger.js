@@ -102,6 +102,116 @@
     if (id === HANDLE) store.folder = h.name;
     return h;
   }
+  // ---- écritures concurrentes (docs/INDEX_DONNEES.md § 5) : un autre onglet, un autre poste sur le même dossier
+  // Base = missions telles que lues ou écrites en dernier par cette page ; à l'enregistrement, si le registre a changé
+  // ailleurs depuis, fusion mission par mission (base, mienne, la leur) au lieu d'écraser.
+  let base = new Map(),
+    baseStamp = '';
+  const PATH = 'data/cr/missions.yaml',
+    CONFLICTS = 'missionCoreLedger:conflits:v1'; // versions écartées sans dossier autorisé
+  const remember = () => {
+    base = new Map(store.missions.map(m => [key(m), JSON.stringify(m)]));
+    baseStamp = store.updatedAt;
+  };
+  /** Fusion à trois : modifiée d'un seul côté → ce côté ; ajoutée d'un côté → gardée ; supprimée d'un côté sans
+   *  changement de l'autre → supprimée ; changée des deux côtés (ou supprimée d'un côté, changée de l'autre) → conflit :
+   *  ma version est gardée, la leur est retournée dans conflicts. Ordre : le leur, puis mes ajouts. */
+  function merge(mineList, theirsList) {
+    const mine = new Map(mineList.map(m => [key(m), m])),
+      theirs = new Map(theirsList.map(m => [key(m), m])),
+      out = [],
+      conflicts = [],
+      seen = new Set();
+    const pick = k => {
+      const b = base.get(k),
+        mi = mine.get(k),
+        th = theirs.get(k),
+        ms = mi && JSON.stringify(mi),
+        ts = th && JSON.stringify(th);
+      if (mi && th) {
+        if (ms === ts || ts === b) return mi;
+        if (ms === b) return th;
+        conflicts.push(th);
+        return mi;
+      }
+      if (mi) { // absente chez eux
+        if (b === undefined) return mi; // ajoutée ici
+        if (ms === b) return null; // supprimée ailleurs, pas modifiée ici
+        return mi; // modifiée ici, supprimée ailleurs : gardée (la suppression est perdue, pas la saisie)
+      }
+      if (th) { // absente ici
+        if (b === undefined) return th; // ajoutée ailleurs
+        if (ts === b) return null; // supprimée ici
+        conflicts.push(th); // supprimée ici, modifiée ailleurs : leur version gardée et signalée
+        return th;
+      }
+      return null;
+    };
+    for (const list of [theirsList, mineList])
+      for (const m of list) {
+        const k = key(m);
+        if (seen.has(k)) continue;
+        seen.add(k);
+        const r = pick(k);
+        if (r) out.push(r);
+      }
+    return {
+      missions: out,
+      conflicts
+    };
+  }
+  /** Registre tel qu'il est maintenant (dossier, copie indexée et copie texte du navigateur, partagées par les
+   *  onglets) : le plus récent de ceux qui ont changé depuis la dernière lecture ou écriture de cette page (signatures :
+   *  rien n'est relu ni analysé sinon) ; null si rien n'a changé. */
+  async function current(dir) {
+    const found = [];
+    if (dir) try {
+      const file = await (await dir.getFileHandle(FILE)).getFile();
+      if (`${file.lastModified}:${file.size}` !== lastSig.folder) found.push(parse(await file.text()));
+    } catch {
+      /* absent ou illisible : ignoré */
+    }
+    if (window.ReportIndex) {
+      const meta = await window.ReportIndex.meta();
+      if (meta && meta.updatedAt !== baseStamp) {
+        const i = await window.ReportIndex.load();
+        if (i) found.push({
+          updatedAt: i.meta.updatedAt || '',
+          legacyImported: i.meta.legacyImported || {},
+          missions: i.missions
+        });
+      }
+    }
+    try {
+      const cached = JSON.parse(localStorage.getItem(CACHE) || 'null');
+      if (cached?.text && String(cached.updatedAt || '') > String(baseStamp)) found.push(parse(cached.text));
+    } catch {
+      /* copie illisible */
+    }
+    return found.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))[0] || null;
+  }
+  // autres onglets : prévenus après chaque écriture, ils relisent le registre (événement mission-ledger-change)
+  const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('defa-data') : null;
+  channel?.addEventListener('message', e => {
+    if (e.data?.path !== PATH || e.data.updatedAt === store.updatedAt) return;
+    // relecture à la suite des enregistrements de cette page (jamais pendant : elle remettrait une version dépassée)
+    serial(async () => {
+      loading = null;
+      await load(true);
+    }).then(() => window.dispatchEvent(new CustomEvent('mission-ledger-change', {
+      detail: {
+        updatedAt: store.updatedAt
+      }
+    })));
+  });
+  // enregistrements et relectures de cette page, l'un après l'autre
+  let queue = Promise.resolve();
+  const serial = fn => {
+    const p = queue.then(fn, fn);
+    queue = p.catch(() => {});
+    return p;
+  };
+  const withLock = fn => navigator.locks?.request ? navigator.locks.request('defa:' + PATH, fn) : fn();
   /** Texte d'un fichier du dossier ; null s'il n'existe pas. */
   const readFile = async (dir, name) => {
     try {
@@ -121,15 +231,24 @@
       return null;
     }
   };
-  // Statut conservé : un fichier absent (404) n'est pas une erreur de chargement.
-  const fetchStatus = async url => {
+  // Statut conservé : un fichier absent (404) n'est pas une erreur de chargement. validators : { etag, lastModified }
+  // de la lecture précédente → requête conditionnelle (304, sans texte, si le fichier n'a pas changé).
+  const fetchStatus = async (url, validators = null) => {
     try {
+      const headers = {};
+      if (validators?.etag) headers['If-None-Match'] = validators.etag;
+      if (validators?.lastModified) headers['If-Modified-Since'] = validators.lastModified;
       const r = await fetch(url, {
-        cache: 'no-store'
+        cache: 'no-store',
+        headers
       });
       return {
         status: r.status,
-        text: r.ok ? await r.text() : null
+        text: r.ok ? await r.text() : null,
+        validators: {
+          etag: r.headers.get('ETag') || '',
+          lastModified: r.headers.get('Last-Modified') || ''
+        }
       };
     } catch {
       return {
@@ -200,40 +319,65 @@
     if (loading && !force) return loading;
     loading = (async () => {
       const candidates = [];
+      // copie indexée (shared/data_index.js) : un fichier n'est relu et analysé que si sa signature a changé
+      const idx = window.ReportIndex ? await window.ReportIndex.load() : null;
+      const fromIndex = source => idx && {
+        source,
+        updatedAt: idx.meta.updatedAt || '',
+        legacyImported: idx.meta.legacyImported || {},
+        missions: idx.missions,
+        indexed: true
+      };
+      const sig = {
+        ...(idx?.meta?.sig || {})
+      };
       const dir = await directory(false);
       if (dir) {
-        const text = await readFile(dir, FILE);
-        if (text) try {
-          candidates.push({
-            source: 'folder',
-            ...parse(text)
-          });
+        let file = null;
+        try {
+          file = await (await dir.getFileHandle(FILE)).getFile();
         } catch {
-          /* illisible */
+          file = null;
+        }
+        if (file) {
+          const fsig = `${file.lastModified}:${file.size}`;
+          if (idx && idx.meta.sig?.folder === fsig) candidates.push(fromIndex('folder'));
+          else try {
+            candidates.push({
+              source: 'folder',
+              ...parse(await file.text())
+            });
+            sig.folder = fsig;
+          } catch {
+            /* illisible */
+          }
         }
       }
+      if (idx) candidates.push(fromIndex('browser'));
+      // ancienne copie du navigateur (version antérieure de la suite, sauvegarde restaurée) : lue si plus récente
       try {
         const cached = JSON.parse(localStorage.getItem(CACHE) || 'null');
-        if (cached?.text) candidates.push({
+        if (cached?.text && (!idx || String(cached.updatedAt || '') > String(idx.meta.updatedAt || ''))) candidates.push({
           source: 'browser',
           ...parse(cached.text)
         });
       } catch {
         /* copie illisible */
       }
+      // fichier servi : requête conditionnelle (304 = inchangé depuis la dernière lecture), toujours tentée — un
+      // registre mis à jour par synchronisation (git, webservice) est vu même avec une copie dans le navigateur
       let unavailable = false;
-      if (!candidates.length) {
-        const served = await fetchStatus(new URL(FILE, APP));
-        if (served.text) try {
-          candidates.push({
-            source: 'file',
-            ...parse(served.text)
-          });
-        } catch {
-          unavailable = true;
-        }
-        else unavailable = served.status !== 404; // erreur réseau / serveur : registre inconnu, pas « vide »
+      const served = await fetchStatus(new URL(FILE, APP), sig.served);
+      if (served.text) try {
+        candidates.push({
+          source: 'file',
+          ...parse(served.text)
+        });
+        sig.served = served.validators;
+      } catch {
+        unavailable = !candidates.length;
       }
+      else if (!candidates.length) unavailable = served.status !== 404 && served.status !== 304; // erreur réseau / serveur : registre inconnu, pas « vide »
       // Registre illisible : rien n'est migré ni enregistré (sinon une copie partielle
       // remplacerait le registre complet) ; nouvel essai au prochain chargement / enregistrement.
       if (unavailable) {
@@ -254,6 +398,7 @@
         source: best.source,
         legacyImported: best.legacyImported || {}
       });
+      remember(); // version lue : base de la fusion si un autre onglet ou poste écrit entre-temps
       // Migration des anciens registres par famille (une fois par version de chacun).
       let migrated = 0;
       const known = new Set(store.missions.map(key));
@@ -275,13 +420,48 @@
       store.missions.forEach(m => {
         delete m.__caseChanged;
       });
-      if (changed) await save({
+      lastSig = sig;
+      if (changed) await saveNow({
         request: false
       });
+      // copie indexée à jour : registre relu d'un fichier, ou signatures changées
+      else if (window.ReportIndex && (!best?.indexed || JSON.stringify(sig) !== JSON.stringify(idx?.meta?.sig || {}))) await writeIndex().catch(() => {});
       store.migrated = migrated;
       return store;
     })();
     return loading;
+  }
+  // ---- copie indexée (shared/data_index.js, docs/INDEX_DONNEES.md § 2) : remplace l'ancienne copie texte du
+  // navigateur (missionCoreLedger:v2), gardée pour la compatibilité tant qu'elle fait moins de 2 Mo
+  let lastSig = {};
+  const MIRROR_MAX = 2e6;
+  /** Enregistrements de l'index : clé unique, famille, année, n° du CR, mission, date, CR. */
+  function records() {
+    const seen = new Set();
+    return store.missions.map(m => {
+      let k = key(m);
+      while (seen.has(k)) k += '#'; // doublon gardé, pas écrasé
+      seen.add(k);
+      const id = String(m.metadata?.missionId || '');
+      return {
+        key: k,
+        family: m.family || '',
+        year: String(m.metadata?.date || '').slice(0, 4),
+        missionId: id,
+        mission: window.MissionVocab?.parseCrId?.(id)?.mission || String(m.metadata?.missionNumber || '').trim().toUpperCase(),
+        date: m.metadata?.date || '',
+        m
+      };
+    });
+  }
+  async function writeIndex(sig = lastSig) {
+    if (!window.ReportIndex) return;
+    lastSig = sig;
+    await window.ReportIndex.save(records(), {
+      updatedAt: store.updatedAt,
+      legacyImported: store.legacyImported,
+      sig
+    });
   }
 
   /** Document du registre (schéma, date, missions) à écrire. */
@@ -296,8 +476,10 @@
     ...doc(),
     missions
   }, title);
-  // Écrit la copie navigateur et, si autorisé, data/cr/missions.yaml.
-  async function save({
+  // Écrit la copie navigateur et, si autorisé, data/cr/missions.yaml (à la suite des autres enregistrements et
+  // relectures de la page).
+  const save = options => serial(() => saveNow(options));
+  async function saveNow({
     request = true
   } = {}) {
     // Registre non chargé (erreur réseau) : nouvel essai, puis fusion des missions saisies
@@ -311,34 +493,119 @@
         if (!known.has(key(m))) store.missions.push(m);
       });
     }
-    store.updatedAt = new Date().toISOString();
-    const text = yaml();
+    let dir = null;
     try {
-      localStorage.setItem(CACHE, JSON.stringify({
-        filename: FILE,
-        text,
-        updatedAt: store.updatedAt
-      }));
+      dir = await directory(request);
     } catch {
-      /* quota : le dossier local ou le téléchargement prennent le relais */
+      dir = null;
     }
-    let written = false;
-    try {
-      const dir = await directory(request);
-      if (dir) {
-        const writable = await (await dir.getFileHandle(FILE, {
-          create: true
-        })).createWritable();
-        await writable.write(text);
-        await writable.close();
-        written = true;
+    // relecture et écriture sous un même verrou (onglets du navigateur) ; changé ailleurs depuis la lecture → fusion
+    const result = await withLock(async () => {
+      const now = await current(dir);
+      let conflicts = [];
+      if (now && now.updatedAt && now.updatedAt !== baseStamp) {
+        const merged = merge(store.missions, now.missions);
+        store.missions.splice(0, store.missions.length, ...merged.missions); // même tableau : les vues par famille le gardent
+        conflicts = merged.conflicts;
+        // anciens registres déjà repris : réunion, la date la plus récente de chaque côté
+        const mineImported = { ...store.legacyImported };
+        for (const [fam, stamp] of Object.entries(now.legacyImported || {}))
+          if (!mineImported[fam] || String(stamp) > String(mineImported[fam])) mineImported[fam] = stamp;
+        store.legacyImported = mineImported;
       }
-    } catch {
-      written = false;
-    }
+      store.updatedAt = new Date().toISOString();
+      const text = yaml();
+      // copie indexée d'abord ; copie texte de compatibilité tant qu'elle est petite (toujours sans index)
+      let indexed = false;
+      try {
+        await writeIndex();
+        indexed = true;
+      } catch {
+        indexed = false;
+      }
+      try {
+        if (!indexed || text.length < MIRROR_MAX) localStorage.setItem(CACHE, JSON.stringify({
+          filename: FILE,
+          text,
+          updatedAt: store.updatedAt
+        }));
+        else localStorage.removeItem(CACHE);
+      } catch {
+        /* quota : l'index, le dossier local ou le téléchargement prennent le relais */
+        try {
+          if (indexed) localStorage.removeItem(CACHE);
+        } catch {
+          /* stockage indisponible */
+        }
+      }
+      let written = false;
+      try {
+        if (dir) {
+          const handle = await dir.getFileHandle(FILE, {
+            create: true
+          });
+          const writable = await handle.createWritable();
+          await writable.write(text);
+          await writable.close();
+          written = true;
+          // signature du fichier écrit : la prochaine relecture ne l'analysera pas (inchangé depuis)
+          const file = await handle.getFile();
+          lastSig = {
+            ...lastSig,
+            folder: `${file.lastModified}:${file.size}`
+          };
+          await writeIndex().catch(() => {});
+          // versions écartées d'un conflit gardées à côté : rien n'est perdu
+          if (conflicts.length) {
+            const sub = await dir.getDirectoryHandle('_conflits', {
+              create: true
+            });
+            const w = await (await sub.getFileHandle(`missions_${store.updatedAt.replace(/[:.]/g, '-')}.yaml`, {
+              create: true
+            })).createWritable();
+            await w.write(M.toYaml({
+              ...doc(),
+              missions: conflicts
+            }, 'Versions écartées lors d’une fusion du registre des CR'));
+            await w.close();
+          }
+        }
+      } catch {
+        written = false;
+      }
+      // sans dossier : versions écartées gardées dans le navigateur (20 dernières ; vue dans Paramètres : étape 6 de
+      // docs/INDEX_DONNEES.md)
+      if (conflicts.length && !written) try {
+        const kept = JSON.parse(localStorage.getItem(CONFLICTS) || '[]');
+        kept.unshift(...conflicts.map(m => ({
+          at: store.updatedAt,
+          mission: m
+        })));
+        localStorage.setItem(CONFLICTS, JSON.stringify(kept.slice(0, 20)));
+      } catch {
+        /* quota */
+      }
+      remember();
+      return {
+        written,
+        text,
+        conflicts,
+        updatedAt: store.updatedAt
+      };
+    });
+    channel?.postMessage({
+      path: PATH,
+      updatedAt: result.updatedAt // date posée sous le verrou
+    });
+    const tf = window.RepositoryKit?.tf || (row => row[0]);
+    if (result.conflicts.length) window.AppFramework?.notify?.(result.written ? tf(['{n} compte(s) rendu(s) modifié(s) en même temps ailleurs : votre version est gardée, l’autre est rangée dans data/cr/_conflits.', '{n} report(s) changed elsewhere at the same time: your version is kept, the other one is stored in data/cr/_conflits.', '{n} Bericht(e) gleichzeitig anderswo geändert: Ihre Fassung bleibt, die andere liegt in data/cr/_conflits.', '{n} informe(s) modificado(s) a la vez en otro lugar: se conserva su versión, la otra se guarda en data/cr/_conflits.'], {
+      n: result.conflicts.length
+    }) : tf(['{n} compte(s) rendu(s) modifié(s) en même temps ailleurs : votre version est gardée, l’autre est conservée dans ce navigateur.', '{n} report(s) changed elsewhere at the same time: your version is kept, the other one is kept in this browser.', '{n} Bericht(e) gleichzeitig anderswo geändert: Ihre Fassung bleibt, die andere wird in diesem Browser aufbewahrt.', '{n} informe(s) modificado(s) a la vez en otro lugar: se conserva su versión, la otra se guarda en este navegador.'], {
+      n: result.conflicts.length
+    }), 'warn');
     return {
-      written,
-      text
+      written: result.written,
+      text: result.text
     };
   }
   /** Choix du dossier du registre (data/cr), puis rechargement. */

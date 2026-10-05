@@ -395,6 +395,14 @@
   // probables (une famille souvent jouée recule un peu : odv_core.js, playWeight)
   let plays = null;
   async function loadPlays() {
+    // copie indexée du registre des CR (shared/data_index.js) : comptage sans analyse YAML
+    const idx = await window.ReportIndex?.load?.();
+    if (idx?.missions.length) {
+      plays = {};
+      for (const m of idx.missions)
+        if (m?.family) plays[fold(m.family)] = (plays[fold(m.family)] || 0) + 1;
+      return;
+    }
     const root = window.RepositoryNav?.root || new URL('../../', location.href).href;
     if (!window.jsyaml) await new Promise(res => {
       const s = document.createElement('script');
@@ -798,7 +806,8 @@
   const opOf = m => (/^([A-Z]+-\d+)[A-Y]$/i.exec(String(m?.id || '')) || [])[1] || m?.operation?.id || '';
   const regMissions = () => {
     try {
-      return (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('missionRegistry:v1', null) : JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null'))?.missions || [];
+      // registre des missions : copie en mémoire de l'index (shared/data_index.js)
+      return (window.MissionIndex ? window.MissionIndex.all() : (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('missionRegistry:v1', null) : JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null'))?.missions) || [];
     } catch {
       return [];
     }

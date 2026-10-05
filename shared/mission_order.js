@@ -181,6 +181,8 @@
       notes: ''
     };
     if (window.MissionRegistry?.addOrder) return window.MissionRegistry.addOrder(entry);
+    // registre non chargé sur cette page : index IndexedDB (shared/data_index.js), sinon ancienne copie du navigateur
+    if (window.MissionIndex) return window.MissionIndex.ready.then(() => window.MissionIndex.save([...window.MissionIndex.all(), entry], now));
     const reg = readJson(REG_KEY, null) || {
       schema: 'mission-registry',
       version: 1,

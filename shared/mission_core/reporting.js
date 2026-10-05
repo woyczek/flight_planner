@@ -571,6 +571,7 @@
     }));
     const ready = ledger.load().then(render);
     window.addEventListener('local-store-restored', () => ledger.load(true).then(render));
+    window.addEventListener('mission-ledger-change', () => render()); // enregistré dans un autre onglet (déjà relu)
     return {
       family,
       ledger,

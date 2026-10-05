@@ -355,7 +355,8 @@
   function provenTimes(r) {
     let reg = [];
     try {
-      reg = (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('missionRegistry:v1', null) : JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null'))?.missions || []; // lecture mémorisée : une estimation ne réanalyse plus tout le registre
+      // registre des missions : copie en mémoire de l'index (shared/data_index.js), rien à analyser par estimation
+      reg = (window.MissionIndex ? window.MissionIndex.all() : (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('missionRegistry:v1', null) : JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null'))?.missions) || [];
     } catch {
       return {};
     }

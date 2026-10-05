@@ -4,10 +4,10 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CPCO — Générateur de mission</title>
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=d774850b">
-<script src="../../config/repository_tree?v=8e6a1191"></script><script src="../../shared/kit.js?v=42566549"></script>
+<script src="../../config/repository_tree?v=8e6a1191"></script><script src="../../shared/kit.js?v=65a16a49"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script src="mission_prompt.js?v=8f1336cb"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../shared/mission_order.js?v=8aa44fa4"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=0e2b9529"></script><script src="../../shared/mission_estimate.js?v=9b0cd5b6"></script><script src="../../shared/sia_base.js?v=fa6592d6"></script><script src="../../shared/mission_routing.js?v=c23f4287"></script><script src="../../shared/mission_airspaces.js?v=f9dae1f0"></script><script src="../../shared/mission_exercise.js?v=6c6aed4f"></script><script src="../../shared/mission_registry.js?v=cd7df7a9"></script>
-<script src="mission_store.js?v=754e1fb8"></script>
+<script src="mission_prompt.js?v=8f1336cb"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../shared/mission_order.js?v=05e30fc1"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=0e2b9529"></script><script src="../../shared/mission_estimate.js?v=1e7731a5"></script><script src="../../shared/sia_base.js?v=fa6592d6"></script><script src="../../shared/mission_routing.js?v=c23f4287"></script><script src="../../shared/mission_airspaces.js?v=f9dae1f0"></script><script src="../../shared/mission_exercise.js?v=6c6aed4f"></script><script src="../../shared/mission_registry.js?v=b688dfca"></script>
+<script src="mission_store.js?v=e9dd761e"></script>
 <script src="../../shared/aar_tracks.js?v=f4061047"></script>
 <script src="../../shared/mission_core/vocab.js?v=74550207"></script>
 <script src="jspdf.umd.min.js"></script>
@@ -1452,16 +1452,35 @@ function syncDocButtons() {
   $('docOperation').hidden = !b || b.docs.length < 2;
   if (b) $('exportPdfAll').title = `${b.docs.length} PDF, un par mission`
 }
-/* Durée estimée (shared/mission_estimate.js) et CR de la mission (registre des CR du navigateur : missionCoreLedger:v2,
-   n° CR<mission>-<vol>, durées MissionModel.computeStatistics). Recalculée à chaque modification du YAML. */
+/* Durée estimée (shared/mission_estimate.js) et CR de la mission (registre des CR : copie indexée ReportIndex,
+   shared/data_index.js, sinon ancienne copie texte du navigateur ; n° CR<mission>-<vol>, durées
+   MissionModel.computeStatistics). Liste lue une fois (puis à chaque CR enregistré ailleurs), pas à chaque modification
+   du YAML. */
+let crReports = null;
+async function loadCrReports() {
+  const i = await window.ReportIndex?.load?.();
+  if (i) crReports = i.missions;
+  else try {
+    crReports = jsyaml.load(JSON.parse(localStorage.getItem('missionCoreLedger:v2') || 'null')?.text || '')?.missions || []
+  } catch {
+    crReports = []
+  }
+  renderEstimate()
+}
+if (typeof BroadcastChannel === 'function') new BroadcastChannel('defa-data').addEventListener('message', e => {
+  if (e.data?.path === 'data/cr/missions.yaml') loadCrReports()
+});
 function missionReports(id) {
   const mid = window.MissionVocab?.missionIdOf?.(id);
-  if (!mid || !window.jsyaml) return [];
-  let list = [];
-  try {
-    list = jsyaml.load(JSON.parse(localStorage.getItem('missionCoreLedger:v2') || 'null')?.text || '')?.missions || []
-  } catch {}
-  return list.filter(r => MissionVocab.parseCrId(r?.metadata?.missionId)?.mission === mid).map(r => {
+  if (!mid) return [];
+  if (!crReports) {
+    if (crReports === null) {
+      crReports = undefined; // lecture en cours
+      loadCrReports()
+    }
+    return []
+  }
+  return crReports.filter(r => MissionVocab.parseCrId(r?.metadata?.missionId)?.mission === mid).map(r => {
     const st = window.MissionModel?.computeStatistics?.(r) || {};
     return {
       missionId: r.metadata.missionId,
@@ -2486,7 +2505,8 @@ $('missionId').addEventListener('input', () => {
     setPath(state.yaml, ['mission', 'number'], p.num);
     $('missionNumber').value = p.num
   }
-  updateIdentHints()
+  updateIdentHints();
+  window.MissionIndex?.ready.then(updateIdentHints) // prochain identifiant libre : recalculé une fois le registre lu
 });
 /* Identifiant changé : une mission d'opération est citée par les autres (operation.missions / organisation, participants
    de l'exercice, noms des cartes, récits). Changer son seul identifiant casserait ces liens : migration globale proposée
@@ -2772,7 +2792,7 @@ $('openCr').onclick = () => {
   }
 };
 </script>
-<script src="../../shared/repository_nav.js?v=45f0fdc6"></script>
+<script src="../../shared/repository_nav.js?v=5c2496fc"></script>
 <script src="../../shared/app_framework.js?v=a2972a9a"></script>
 <script src="../../shared/content_i18n.js?v=7afecb78"></script><script src="sia_i18n.js?v=89764b48"></script>
 </body></html>

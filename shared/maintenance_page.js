@@ -37,6 +37,14 @@
     });
   };
   const pill = (level, text) => `<span class="mt-pill mt-${level}">${level === 'ok' ? '✓' : level === 'warn' ? '⚠' : level === 'err' ? '✗' : 'ℹ'} ${esc(text)}</span>`;
+  /** Registre des missions : index IndexedDB (shared/data_index.js), sinon ancienne copie du navigateur. */
+  const regIndex = async () => {
+    await window.MissionIndex?.ready;
+    return window.MissionIndex ? {
+      missions: window.MissionIndex.all(),
+      updatedAt: window.MissionIndex.updatedAt()
+    } : readJson('missionRegistry:v1', null);
+  };
   const readJson = (k, d = null) => {
     try {
       return JSON.parse(localStorage.getItem(k) || 'null') ?? d;
@@ -748,10 +756,13 @@
     const ps = readJson('flightPerfState', {});
     const profs = Object.values(ps?.profiles || {});
     add(G.user, t(['Profils d’appareils du planificateur', 'Planner aircraft profiles']), `${profs.length}`, '', '', 'flightPerfState');
-    const ledger = readJson('missionCoreLedger:v2', null);
-    const ledgerAt = /updatedAt: "([^"]+)"/.exec(ledger?.text || '')?.[1] || ledger?.savedAt || '';
-    add(G.user, t(['Registre des CR (missions.yaml)', 'Report ledger (missions.yaml)']), `${((ledger?.text || '').match(/^ {2}- schemaVersion/gm) || []).length} CR`, fmtDate(ledgerAt), '', 'CR DEFA');
-    const reg = readJson('missionRegistry:v1', null);
+    // registre des CR : copie indexée (shared/data_index.js), sinon ancienne copie texte du navigateur
+    const crMeta = await window.ReportIndex?.meta?.();
+    const ledger = crMeta ? null : readJson('missionCoreLedger:v2', null);
+    const ledgerAt = crMeta?.updatedAt || /updatedAt: "([^"]+)"/.exec(ledger?.text || '')?.[1] || ledger?.savedAt || '';
+    const crCount = crMeta ? await window.ReportIndex.count() : ((ledger?.text || '').match(/^ {2}- schemaVersion/gm) || []).length;
+    add(G.user, t(['Registre des CR (missions.yaml)', 'Report ledger (missions.yaml)']), `${crCount} CR`, fmtDate(ledgerAt), '', 'CR DEFA');
+    const reg = await regIndex();
     add(G.user, t(['Registre des missions générées', 'Generated mission registry']), `${(reg?.missions || []).length}`, fmtDate(reg?.updatedAt), '', 'mission_registry.yaml');
     const land = await idbAll('LandingPerformanceDashboardCache', 'datasets');
     const lands = Object.values(land || {});
@@ -1234,7 +1245,7 @@
       const mf = siaFolderState?.fixed.find(x => x.id === 'mora')?.file,
         text = mf ? await mf.file.text() : '';
       // théâtres couverts, plus les emprises des missions du registre situées ailleurs (relief et sommets seulement : pas d'obstacles hors AIXM)
-      const extra = window.SiaBase.moraZonesOfMissions?.(readJson('missionRegistry:v1', null)?.missions || []) || [];
+      const extra = window.SiaBase.moraZonesOfMissions?.((await regIndex())?.missions || []) || [];
       const cells = await window.SiaBase.computeMoraGrid(b.obstacleMax, {}, (d, n, step) => {
         say(`<span class="mt-small">${esc(step)} : ${d}/${n}…</span>`);
         job?.set(d, n, step);
@@ -1325,7 +1336,7 @@
     const perf = window.AIRCRAFT_PERF || {};
     // terrains des missions du registre présents dans l'AIXM
     const ads = new Set((b?.aero?.aerodromes || []).map(a => a.code || a.icao || a.id).filter(Boolean));
-    const reg = readJson('missionRegistry:v1', null)?.missions || [],
+    const reg = (await regIndex())?.missions || [],
       regUrl = new URL('apps/cpco/mission_registry.html', root()).href;
     const regEmpty = pill('info', t(['registre des missions vide dans ce navigateur : ouvrir le Registre des missions (il relit data/missions), puis « Contrôler à nouveau »', 'mission registry empty in this browser: open the Mission registry (it re-reads data/missions), then “Check again”'])) + ` <a class="mt-link" href="${esc(regUrl)}" target="_blank" rel="noopener">${esc(t(['Registre des missions', 'Mission registry']))}</a>`;
     const used = [...new Set(reg.flatMap(m => [m.origin, m.destination]).map(s => /\(([A-Z]{4})\)|\b(LF[A-Z]{2})\b/.exec(s || '')).filter(Boolean).map(m => m[1] || m[2]))];

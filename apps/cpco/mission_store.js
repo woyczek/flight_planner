@@ -913,7 +913,8 @@
   function nextNumbering(family) {
     let reg = [];
     try {
-      reg = (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('missionRegistry:v1', null) : JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null'))?.missions || []; // lecture mémorisée (texte inchangé : pas de nouvelle analyse)
+      // registre des missions : copie en mémoire de l'index (shared/data_index.js), lue à l'ouverture de la page
+      reg = (window.MissionIndex ? window.MissionIndex.all() : (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('missionRegistry:v1', null) : JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null'))?.missions) || [];
     } catch {
       /* registre illisible */
     }

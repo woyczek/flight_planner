@@ -67,7 +67,8 @@ extrapolée. Servir le dépôt avec le lanceur, ouvrir <code>/tools/perf_scale.h
   }
   let regSample = null, crSample = null;
   async function samples() {
-    try { regSample = JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions?.slice(0, 50) || null; } catch {}
+    await window.MissionIndex?.ready; // registre : index IndexedDB (shared/data_index.js), sinon ancienne clé, sinon fichier
+    try { regSample = (window.MissionIndex?.all() || JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null')?.missions)?.slice(0, 50) || null; } catch {}
     if (!regSample?.length) {
       const y = jsyaml.load(await (await fetch('../data/missions/mission_registry.yaml')).text());
       regSample = (y?.missions || []).slice(0, 50);
@@ -103,14 +104,45 @@ extrapolée. Servir le dépôt avec le lanceur, ouvrir <code>/tools/perf_scale.h
         localStorage.removeItem('perfScaleProbe');
         return ms;
       } },
+    // registre dans l'index IndexedDB (shared/data_index.js, docs/INDEX_DONNEES.md) : base d'essai à part, jamais l'index réel
+    { id: 'registre-index', label: 'Registre dans l’index IndexedDB : écriture + lecture (n missions)', unit: 'missions', sizes: [73, 300, 1200, 2400, 10000],
+      async run(n) {
+        const rows = replicate(regSample, n, (m, i) => ({ ...m, id: `X-${i}`, folder: `X/${i}` })).map(m => ({ k: m.id, m }));
+        const db = await new Promise((res, rej) => {
+          const q = indexedDB.open('perfScaleBench', 1);
+          q.onupgradeneeded = () => q.result.createObjectStore('missions', { keyPath: 'k' });
+          q.onsuccess = () => res(q.result);
+          q.onerror = () => rej(q.error);
+        });
+        const done = tx => new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+        try {
+          return await time(async () => {
+            const tx = db.transaction('missions', 'readwrite');
+            tx.objectStore('missions').clear();
+            for (const r of rows) tx.objectStore('missions').put(r);
+            await done(tx);
+            await new Promise(res => { const q = db.transaction('missions').objectStore('missions').getAll(); q.onsuccess = () => res(q.result); });
+          }, 1);
+        } finally {
+          db.close();
+          indexedDB.deleteDatabase('perfScaleBench');
+        }
+      } },
     { id: 'estimation', label: 'Estimation de route d\'une mission avec un registre de n missions', unit: 'missions', sizes: [73, 300, 1200, 2400],
       async run(n) {
         const reg = { missions: replicate(regSample, n, (m, i) => ({ ...m, id: `X-${i}` })) };
+        // registre fictif : copie en mémoire de l'index remplacée le temps de la mesure (l'index réel n'est pas touché) ;
+        // sans index (version ancienne) : ancienne clé du navigateur
+        const IDX = window.MissionIndex, keepAll = IDX?.all;
         const keep = localStorage.getItem('missionRegistry:v1');
-        try { localStorage.setItem('missionRegistry:v1', JSON.stringify(reg)); } catch { return null; }
+        if (IDX) IDX.all = () => reg.missions;
+        else try { localStorage.setItem('missionRegistry:v1', JSON.stringify(reg)); } catch { return null; }
         const y = { mission: { id: 'T-1' }, aircraft: [{ type: 'NH90', cruise_speed_kt: 130 }], origin: { name: 'LFRL', lat: 48.45, lon: -4.42 }, destination: { name: 'LFRL', lat: 48.45, lon: -4.42 }, target: { id: 'TARGET', lat: 48.1, lon: -4.9, time_on_task_min: 20 }, route_order: ['ORIGIN', 'TARGET', 'DESTINATION'] };
         try { return await time(() => { for (let i = 0; i < 20; i++) window.MissionEstimate.estimate(y); }) / 20; }
-        finally { keep == null ? localStorage.removeItem('missionRegistry:v1') : localStorage.setItem('missionRegistry:v1', keep); }
+        finally {
+          if (IDX) IDX.all = keepAll;
+          else keep == null ? localStorage.removeItem('missionRegistry:v1') : localStorage.setItem('missionRegistry:v1', keep);
+        }
       } },
     { id: 'cr', label: 'Registre des CR : lire missions.yaml (n CR)', unit: 'CR', sizes: [100, 500, 2000, 6000],
       async run(n) {
@@ -139,7 +171,7 @@ extrapolée. Servir le dépôt avec le lanceur, ouvrir <code>/tools/perf_scale.h
     const b = xs.reduce((s, x, i) => s + (x - mx) * (ys[i] - my), 0) / xs.reduce((s, x) => s + (x - mx) ** 2, 0);
     return { a: Math.exp(my - b * mx), b };
   }
-  const TARGETS = { affectations: [5000, 20000, 100000], 'odv-grille': [5000, 20000, 100000], 'registre-stockage': [500, 2000, 5000], estimation: [500, 2000, 5000], cr: [1000, 5000, 20000], traduction: [3000, 10000, 30000] };
+  const TARGETS = { affectations: [5000, 20000, 100000], 'odv-grille': [5000, 20000, 100000], 'registre-stockage': [500, 2000, 5000], 'registre-index': [20000, 50000, 100000], estimation: [500, 2000, 5000], cr: [1000, 5000, 20000], traduction: [3000, 10000, 30000] };
   let last = null;
   $('go').onclick = async () => {
     const keepCfg = localStorage.getItem('missionReportingConfig:v1');

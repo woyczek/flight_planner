@@ -713,7 +713,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     } catch {
       /* base SIA absente */
     }
-    for (const m of json('missionRegistry:v1', {})?.missions || [])
+    await window.MissionIndex?.ready; // registre des missions (index IndexedDB, shared/data_index.js)
+    for (const m of (window.MissionIndex ? window.MissionIndex.all() : json('missionRegistry:v1', {})?.missions) || [])
       for (const p of [m.origin, m.destination])
         if (p && typeof p === 'object' && geo.icaoOf(p) && Number.isFinite(+p.lat)) airports[geo.icaoOf(p)] ||= {
           lat: +p.lat,

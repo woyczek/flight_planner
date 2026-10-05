@@ -4,7 +4,7 @@
   // (missionNN.yaml, summaryNN.md, schéma helo-xp-mission) et des missions commandées, avec choix par type, sous-type,
   // rendez-vous, nombre et types d'équipes, ravitaillement, théâtre, statut ; tirage au sort ; ouverture dans le
   // générateur, le studio ou un nouveau CR ; commande d'une nouvelle mission (prompt ChatGPT réglé).
-  // Données : localStorage missionRegistry:v1 (sauvegardé avec les données locales) et fichier
+  // Données : index IndexedDB « defaIndex » (MissionIndex, shared/data_index.js ; sauvegardé avec les données locales) et fichier
   // Missions/mission_registry.yaml (dossier autorisé __missions). Statut « CR fait » repris du registre des CR
   // (missionCoreLedger:v2 : metadata.missionNumber = identifiant de la mission).
   const host = document.getElementById('missionRegistry'); // page du registre ; ailleurs : noyau seul (MissionRegistryCore)
@@ -93,13 +93,106 @@
     updatedAt: '',
     missions: []
   });
-  let reg = readJson(KEY, null) || empty();
+  // registre gardé dans l'index IndexedDB (MissionIndex, shared/data_index.js) : plus de limite du stockage du
+  // navigateur ; ancienne copie localStorage seulement sans IndexedDB
+  const IDX = window.MissionIndex;
+  const loadReg = () => IDX ? {
+    ...empty(),
+    updatedAt: IDX.updatedAt(),
+    missions: IDX.all()
+  } : readJson(KEY, null) || empty();
+  let reg = loadReg();
   const keyOf = m => `${m.folder || ''}|${m.id || m.title || ''}`;
 
   function persist() {
     reg.updatedAt = new Date().toISOString();
-    writeJson(KEY, reg);
+    if (IDX) IDX.save(reg.missions, reg.updatedAt).catch(e => window.AppFramework?.notify?.(t(['Registre des missions non enregistré dans le navigateur : {e}', 'Mission registry not saved in the browser: {e}', 'Missionsregister im Browser nicht gespeichert: {e}', 'Registro de misiones no guardado en el navegador: {e}'], {
+      e: e?.message || e
+    }), 'err'));
+    else writeJson(KEY, reg);
     writeFile().catch(() => {});
+  }
+  // ---- suivi du Centre (statut, notes, date de vol) : suivi.yaml dans le dossier de chaque mission
+  // (docs/INDEX_DONNEES.md § 6) : partagé avec les autres postes et la synchronisation, relu par la relecture du
+  // dossier ; écrit à chaque changement, sous verrou, fusionné champ par champ si un autre poste l'a modifié entre-temps
+  const SUIVI = 'suivi.yaml',
+    SUIVI_FIELDS = ['status', 'statusAt', 'notes', 'flownAt'];
+  const suiviBase = new Map(); // id → suivi tel que lu ou écrit en dernier par cette page (base de la fusion)
+  const readSuivi = text => {
+    try {
+      const y = window.jsyaml?.load(String(text || '')) || null;
+      return y && typeof y === 'object' ? y : null;
+    } catch {
+      return null;
+    }
+  };
+  const me = () => {
+    try {
+      return JSON.parse(localStorage.getItem('missionReportingConfig:v1') || '{}').trigram || '';
+    } catch {
+      return '';
+    }
+  };
+  /** Écrit le suivi d'une mission rangée (dossier autorisé, sans demande) ; false sinon. */
+  async function writeSuivi(m) {
+    if (!m?.id || !m.folder || !window.jsyaml) return false;
+    const dir = await missionsDir(false);
+    if (!dir) return false;
+    const run = async () => {
+      let h = dir;
+      for (const part of m.folder.split('/').filter(Boolean)) h = await h.getDirectoryHandle(part);
+      let theirs = null;
+      try {
+        theirs = readSuivi(await (await (await h.getFileHandle(SUIVI)).getFile()).text());
+      } catch {
+        theirs = null;
+      }
+      const base = suiviBase.get(m.id) || null,
+        out = {},
+        clash = [];
+      for (const k of SUIVI_FIELDS) {
+        const mine = m[k] ?? '',
+          th = theirs?.[k] ?? '',
+          b = base?.[k] ?? '';
+        // changé ailleurs depuis la base et pas ici → le leur ; changé des deux côtés → le mien, signalé
+        if (theirs && String(th) !== String(b) && String(mine) === String(b)) out[k] = th;
+        else {
+          if (theirs && base && String(th) !== String(b) && String(mine) !== String(th)) clash.push(k);
+          out[k] = mine;
+        }
+      }
+      const now = new Date().toISOString();
+      const doc = {
+        mission: m.id,
+        ...out,
+        updated_at: now,
+        by: me()
+      };
+      const w = await (await h.getFileHandle(SUIVI, {
+        create: true
+      })).createWritable();
+      await w.write(`# Suivi de la mission par le Centre — XPlane Web Suite (registre des missions)\n` + window.jsyaml.dump(doc, {
+        lineWidth: -1
+      }));
+      await w.close();
+      Object.assign(m, out, {
+        suiviAt: now
+      });
+      suiviBase.set(m.id, doc);
+      return clash;
+    };
+    try {
+      const clash = await (navigator.locks?.request ? navigator.locks.request(`defa:suivi:${m.id}`, run) : run());
+      if (clash.length) window.AppFramework?.notify?.(t(['{id} : suivi modifié en même temps sur un autre poste ({k}) ; votre saisie est gardée.', '{id}: tracking changed at the same time on another computer ({k}); your entry is kept.', '{id}: Verfolgung gleichzeitig auf einem anderen Rechner geändert ({k}); Ihre Eingabe bleibt.', '{id}: seguimiento modificado a la vez en otro equipo ({k}); se conserva su entrada.'], {
+        id: m.id,
+        k: clash.join(', ')
+      }), 'warn');
+      persist();
+      return true;
+    } catch (e) {
+      console.warn('suivi.yaml non écrit :', m.id, e);
+      return false;
+    }
   }
   /** Écrit Missions/mission_registry.yaml (dossier autorisé, sans demande). */
   async function writeFile(request = false) {
@@ -274,6 +367,16 @@
       request: prev?.request || null,
       addedAt: prev?.addedAt || new Date().toISOString()
     };
+    // suivi.yaml du dossier plus récent que ce que ce navigateur en connaît : il fait foi (autre poste, synchronisation)
+    if (e.suivi) {
+      if (String(e.suivi.updated_at || '') > String(prev?.suiviAt || '')) {
+        for (const k of SUIVI_FIELDS)
+          if (e.suivi[k] !== undefined) merged[k] = e.suivi[k];
+        merged.suiviAt = e.suivi.updated_at || '';
+      }
+      suiviBase.set(merged.id, e.suivi);
+      delete merged.suivi;
+    }
     if (i >= 0) reg.missions[i] = merged;
     else if (j >= 0) reg.missions[j] = merged;
     else reg.missions.push(merged);
@@ -558,7 +661,8 @@
     } catch (e) {
       res.error = e.message;
     }
-    reg = readJson(KEY, null) || empty();
+    await IDX?.ready;
+    reg = loadReg();
     const e = entryOf(doc, {
       folder: res.folder,
       files: res.folder ? [`mission${normMissionId(doc.yaml?.mission?.id)}.yaml`, ...(md ? [`summary${normMissionId(doc.yaml?.mission?.id)}.md`] : [])] : [],
@@ -715,6 +819,7 @@
       const files = [],
         subs = [],
         images = [];
+      let suiviFile = null; // suivi.yaml : statut, notes, date de vol (Centre), hors fichiers de la mission
       for await (const [name, x] of h.entries()) {
         if (x.kind === 'directory') {
           if (SUB[name]) {
@@ -722,11 +827,13 @@
               for await (const [n2, y2] of x.entries()) if (y2.kind === 'file' && /\.(png|jpe?g|webp)$/i.test(n2)) images.push(n2);
           } else if (depth < 3 && !/^(_|\.)/.test(name)) subs.push([name, x]);
         } else if (/\.(png|jpe?g|webp)$/i.test(name)) images.push(name);
+        else if (name === SUIVI) suiviFile = x;
         else if (/\.(ya?ml|md)$/i.test(name) && name !== FILE && !/^(maps_manifest|AAR_TRACKS_REFERENCE|OSM_WORK_PROMPT|README|VALIDATION)/i.test(name)) files.push(x);
       }
       if (files.length) {
         const got = await Promise.all(files.map(fh => fh.getFile()));
-        const sig = [...got.map(f => `${f.name}:${f.lastModified}:${f.size}`), ...images].sort().join('|');
+        const sf = suiviFile ? await suiviFile.getFile() : null;
+        const sig = [...got.map(f => `${f.name}:${f.lastModified}:${f.size}`), ...images, ...(sf ? [`${SUIVI}:${sf.lastModified}:${sf.size}`] : [])].sort().join('|');
         nextSig[path] = sig;
         const known = reg.missions.filter(m => m.source === 'dossier' && m.folder === path);
         if (seenSig[path] === sig && known.length) {
@@ -748,14 +855,17 @@
           const {
             docs
           } = window.SiaMission.fromTextsBatch(texts);
+          const suivi = sf ? readSuivi(await sf.text()) : null;
           for (const d of docs) {
             const names = d.sourceNames || [];
-            found.push(entryOf(d, {
+            const e = entryOf(d, {
               folder: path,
               files: names,
               generatedAt: new Date(newest).toISOString(),
               images
-            }));
+            });
+            if (suivi && (!suivi.mission || suivi.mission === e.id)) e.suivi = suivi;
+            found.push(e);
           }
         } catch (e) {
           problems.push(`${path || '.'} : ${e.message}`);
@@ -817,18 +927,30 @@
     persist();
     return n;
   }
+  // CR du registre des CR : copie indexée (ReportIndex, shared/data_index.js), lue à l'ouverture et quand un CR est
+  // enregistré ; sans index : ancienne copie texte du navigateur (analyse YAML)
+  let crList = null;
+  async function loadReports() {
+    const i = await window.ReportIndex?.load?.();
+    if (i) crList = i.missions;
+    else try {
+      crList = window.jsyaml?.load(readJson('missionCoreLedger:v2', null)?.text || '')?.missions || [];
+    } catch {
+      crList = [];
+    }
+    return crList;
+  }
   /** CR de chaque mission (registre des CR, missionCoreLedger:v2) : n° de CR CR<mission>-<vol> (ou metadata.missionNumber).
    *  m.reports = [{ missionId, family, date, index }] du plus récent au plus ancien (index : rang dans la famille, lien
    *  ?edit= de la page de CR) ; m.report = le dernier ; statut « CR fait » dès le premier. Une mission récurrente (ravitaillement
    *  sur SIMONE, dix fois par mois) garde tous ses vols : CRR-001-1, CRR-001-2… */
   function linkReports() {
-    let crs = [];
-    try {
-      const c = readJson('missionCoreLedger:v2', null);
-      crs = window.jsyaml.load(c?.text || '')?.missions || [];
-    } catch {
-      /* registre illisible */
-    }
+    // CR pas encore lus : liaison faite dès qu'ils le sont (jamais avec une liste vide, qui effacerait les liens)
+    if (!crList) return void loadReports().then(() => {
+      linkReports();
+      if (host) render();
+    });
+    const crs = crList;
     const rank = {},
       all = crs.map(r => ({
         r,
@@ -1250,17 +1372,20 @@
       m.statusAt = new Date().toISOString();
       if (m.status === 'flown' && !m.flownAt) m.flownAt = new Date().toISOString().slice(0, 10);
       persist();
+      writeSuivi(m);
       render();
     };
     box.querySelector('#rgFlown').onchange = e => {
       m.flownAt = e.target.value;
       if (m.flownAt && ['generated', 'planned', 'ordered'].includes(m.status)) m.status = 'flown';
       persist();
+      writeSuivi(m);
       render();
     };
     box.querySelector('#rgNotes').onchange = e => {
       m.notes = e.target.value;
       persist();
+      writeSuivi(m);
     };
     box.querySelectorAll('[data-go]').forEach(x => x.onclick = () => go(m, x.dataset.go));
     box.querySelectorAll('[data-op-select]').forEach(x => x.onclick = () => {
@@ -1630,6 +1755,7 @@
           m.status = 'flown';
           m.flownAt = m.flownAt || new Date().toISOString().slice(0, 10);
           persist();
+          await writeSuivi(m); // avant de quitter la page
         }
         location.href = new URL(`apps/cr/${target.cr}?from=sia`, window.RepositoryNav.root).href;
         return;
@@ -1639,6 +1765,7 @@
         m.status = 'planned';
         m.statusAt = new Date().toISOString();
         persist();
+        await writeSuivi(m); // avant de quitter la page
       }
       location.href = new URL(where === 'studio' ? 'apps/cpco/map_parser.html' : 'apps/cpco/mission_editor.html', window.RepositoryNav.root).href;
     } catch (e) {
@@ -1694,18 +1821,33 @@
   window.MissionRouting?.loadFromBase().then(ok => {
     if (ok) renderDetail();
   });
-  window.addEventListener('local-store-restored', () => {
-    reg = readJson(KEY, null) || empty();
+  // sauvegarde restaurée (ancienne copie du registre comprise : reprise si plus récente), registre enregistré par un
+  // autre onglet : relu
+  window.addEventListener('local-store-restored', async () => {
+    await IDX?.ready; // reprise de la copie restaurée : MissionIndex (mission-index-change)
+    if (!IDX) reg = loadReg();
     render();
   });
-  window.addEventListener('storage', e => {
+  window.addEventListener('mission-index-change', () => {
+    reg = loadReg();
+    render();
+  });
+  // CR enregistré dans un autre onglet (MissionLedger, message « defa-data ») : CR des missions relus
+  if (typeof BroadcastChannel === 'function') new BroadcastChannel('defa-data').addEventListener('message', e => {
+    if (e.data?.path === 'data/cr/missions.yaml') loadReports().then(() => {
+      linkReports();
+      render();
+    });
+  });
+  if (!IDX) window.addEventListener('storage', e => {
     if (e.key === KEY) {
-      reg = readJson(KEY, null) || empty();
+      reg = loadReg();
       render();
     }
   });
   window.MissionRegistry = {
     scan,
+    writeSuivi,
     cleanup,
     addOrder,
     addFiles,
@@ -1725,6 +1867,9 @@
   };
   (async () => {
     await waitFor('jsyaml', 3000);
+    await IDX?.ready; // registre lu dans l'index (ouverture de la page)
+    reg = loadReg();
+    await loadReports();
     linkReports();
     // ?mission=M-016 (retour du générateur, du studio ou d'un CR) : mission choisie et affichée
     const want = normMissionId(new URLSearchParams(location.search).get('mission') || '');

@@ -1083,6 +1083,7 @@
     window.addEventListener('repository-language-change', () => setTimeout(render));
     window.addEventListener('repository-design-change', () => setTimeout(render)); // palette, style des graphiques
     window.addEventListener('local-store-restored', () => L2.load(true).then(render));
+    window.addEventListener('mission-ledger-change', () => render()); // enregistré dans un autre onglet (déjà relu)
     const ready = L2.load().then(render).catch(error => {
       status.textContent = error.message;
       render();

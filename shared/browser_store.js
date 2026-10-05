@@ -348,6 +348,36 @@
       entries = snapshot(),
       indexed = await indexedSnapshot(),
       savedAt = new Date().toISOString();
+    // registre des missions (index IndexedDB, shared/data_index.js) : sauvegardé sous son ancienne clé, repris par
+    // l'index à la restauration s'il est plus récent (MissionIndex.adoptLegacy) ; sauvegardes anciennes comprises
+    // registre des CR : sa copie texte (missionCoreLedger:v2) n'existe plus au-delà de 2 Mo ; reconstituée depuis la
+    // copie indexée pour la sauvegarde (relue par MissionLedger à la restauration si plus récente)
+    if (!entries['missionCoreLedger:v2'] && window.ReportIndex) {
+      const crs = await window.ReportIndex.load();
+      if (crs?.missions.length) entries['missionCoreLedger:v2'] = {
+        filename: 'missions.yaml',
+        updatedAt: crs.meta.updatedAt || '',
+        text: Y.dump({
+          schemaVersion: 2,
+          updatedAt: crs.meta.updatedAt || '',
+          legacyImported: crs.meta.legacyImported || {},
+          missions: crs.missions
+        }, {
+          lineWidth: -1,
+          noRefs: true
+        })
+      };
+    }
+    const IDX = window.MissionIndex;
+    if (IDX && !IDX.fallback) {
+      await IDX.ready;
+      if (IDX.all().length) entries['missionRegistry:v1'] = {
+        schema: 'mission-registry',
+        version: 1,
+        updatedAt: IDX.updatedAt(),
+        missions: IDX.all()
+      };
+    }
     const text = `# Données locales du navigateur — DEFA Virtual (${location.origin})\n# Restauration : menu ☰ › ${TEXT.fr.title} › ${TEXT.fr.restore}\n` +
       Y.dump({
         schema: SCHEMA,

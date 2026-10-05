@@ -906,7 +906,15 @@
       // durée estimée de la mission (registre des missions, shared/mission_estimate.js) et écart avec ce vol
       let est = null;
       try {
-        est = ((window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('missionRegistry:v1', null) : JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null'))?.missions || []).find(x => x.id === id)?.estimate || null;
+        const IDX = window.MissionIndex; // registre des missions : index IndexedDB (shared/data_index.js)
+        est = ((IDX ? IDX.all() : (window.RepositoryKit?.store?.jsonCached ? window.RepositoryKit.store.jsonCached('missionRegistry:v1', null) : JSON.parse(localStorage.getItem('missionRegistry:v1') || 'null'))?.missions) || []).find(x => x.id === id)?.estimate || null;
+        if (IDX && !IDX.loaded && !missionLink.waiting) { // index pas encore lu : lien refait dès qu'il l'est
+          missionLink.waiting = true;
+          IDX.ready.then(() => {
+            missionLink.waiting = false;
+            missionLink();
+          });
+        }
       } catch {
         /* registre illisible */
       }
@@ -1394,6 +1402,15 @@
       if (dirty) {
         event.preventDefault();
         event.returnValue = t('leave');
+      }
+    });
+    // Registre enregistré par un autre onglet (déjà relu par MissionLedger) : informations et n° proposé à jour, saisie
+    // en cours intacte.
+    window.addEventListener('mission-ledger-change', () => {
+      ledgerInfo();
+      if (!edit && !dirty) {
+        mission = fresh();
+        redraw();
       }
     });
     // Données locales restaurées (menu ☰ › Données locales) : registre relu.
