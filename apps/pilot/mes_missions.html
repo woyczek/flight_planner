@@ -99,6 +99,21 @@
   #pmMission {
     container: pmdossier / inline-size
   }
+  /* animations du dossier : couverture posée en absolu le temps du mouvement, ancien dossier (pm-ghost) par-dessus */
+  #pmDetail {
+    position: relative
+  }
+  #pmDetail.pm-swapping {
+    overflow-x: clip
+  }
+  .pm-ghost {
+    position: absolute;
+    z-index: 4;
+    top: 0;
+    left: 0;
+    right: 0;
+    pointer-events: none
+  }
   #pilotMissions.pm-dossier:not(.pm-wide) .pm-col-r>.repo-block:not(#pmMission):not(.pm-unfold)>:not(.repo-block-heading) {
     display: none
   }
@@ -437,11 +452,14 @@
        --pm-cover-sealed     couverture scellée (mission non ouverte) ; défaut : --pm-cover
        --pm-seal             calque du scellé posé par-dessus (ficelle, ruban, cachet), à la toile exacte du dossier
        --pm-ratio(-sealed), --pm-cwk(-sealed)   proportions, largeur (part du dossier ouvert) par état
-       --pm-label-top(-sealed), --pm-label-rot(-sealed)   place de l'étiquette par état
+       --pm-label-top(-sealed), --pm-label-rot(-sealed)   place de l'étiquette par état ; --pm-label-dx décalage
+                             latéral du dossier fermé (lu)
        --pm-tape-1 / -2      scotchs de l'étiquette scellée (facultatifs)
        --pm-open-fade        0 : le dossier scellé s'efface entier à l'ouverture (couverture scellée propre) ;
                              1 (défaut) : seul le calque s'efface
        --pm-open-bottom      place du bouton « Ouvrir »
+       --pm-band, --pm-band-l, --pm-band-w   élastique du dossier fermé (bande verticale découpée dans la couverture,
+                             reposée par-dessus l'étiquette et son tampon ; facultatif)
      Ouvrir brise le sceau ; dossier rouvert après lecture : couverture fermée, sans calque. */
   html[data-design="cabinet"] {
     --pm-cover: url("../../shared/deco/cabinet/mission-cover.webp?v=2bf76d77");
@@ -450,7 +468,7 @@
     --pm-cwk: .4266
   }
   /* Carnet de vol : scellé, l'enveloppe cachetée (en-tête du ministère), la mission sur une étiquette scotchée de
-     travers ; lu, le carnet fermé (étiquette sous la plaque) */
+     travers ; lu, le carnet fermé (étiquette collée sur la plaque, prise sous l'élastique avec son tampon) */
   html[data-design="flightlog"] {
     --pm-cover: url("../../shared/deco/flightlog/mission-closed.webp?v=3ad105ce");
     --pm-cover-sealed: url("../../shared/deco/flightlog/mission-sealed.webp?v=d2ff2cc7");
@@ -458,8 +476,15 @@
     --pm-ratio-sealed: 640/900;
     --pm-cwk: .509;
     --pm-cwk-sealed: .54;
-    --pm-label-top: 30%;
+    --pm-label-top: 13%;
     --pm-label-top-sealed: 56%;
+    --pm-stamp-top: 9px;
+    --pm-stamp-right: 6px;
+    --pm-label-dx: 6%;
+    --pm-stamp-w: 118px;
+    --pm-band: url("../../shared/deco/flightlog/mission-elastic.webp?v=5e69d3b5");
+    --pm-band-l: 84%;
+    --pm-band-w: 8%;
     --pm-label-rot-sealed: 1.8deg;
     --pm-tape-1: url("../../shared/deco/flightlog/tape-1.webp?v=463c91c8");
     --pm-tape-2: url("../../shared/deco/flightlog/tape-2.webp?v=9cba6e50");
@@ -514,6 +539,18 @@
     pointer-events: none;
     transition: opacity .38s ease-in
   }
+  /* élastique du dossier fermé, par-dessus l'étiquette (jeton --pm-band ; sans jeton : rien) */
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-cover:not(.sealed)::after {
+    content: "";
+    position: absolute;
+    z-index: 2;
+    top: 0;
+    bottom: 0;
+    left: var(--pm-band-l, 0);
+    width: var(--pm-band-w, 0);
+    background: var(--pm-band, none) center/100% 100% no-repeat;
+    pointer-events: none
+  }
   html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-cover.sealed.open::after {
     opacity: 0
   }
@@ -542,7 +579,7 @@
   }
   html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-cover .pm-label {
     margin-top: var(--pm-label-top, 4%);
-    transform: rotate(var(--pm-label-rot, -1.2deg))
+    transform: translateX(var(--pm-label-dx, 0)) rotate(var(--pm-label-rot, -1.2deg))
   }
   html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-cover.sealed .pm-label {
     margin-top: var(--pm-label-top-sealed, var(--pm-label-top, 4%));
@@ -1662,7 +1699,11 @@
 </div>
 </main>
 <script src="../../shared/kit.js?v=65a16a49"></script>
-<script src="../../shared/repository_nav.js?v=9444f0da"></script>
+<<<<<<< Updated upstream
+<script src="../../shared/repository_nav.js?v=7ab6d554"></script>
+=======
+<script src="../../shared/repository_nav.js?v=7ab6d554"></script>
+>>>>>>> Stashed changes
 <script src="mes_missions_i18n.js?v=8e114df2" defer></script>
 <script src="../../shared/dispos_editor.js?v=65e6c131"></script>
 <script src="../../shared/content_i18n.js?v=7afecb78"></script>
@@ -1991,6 +2032,299 @@
   const titleOf = a => a.role === 'convoyage' ? `Convoyage ${a.aircraft?.registration || ''} ${a.departure || '?'} → ${a.destination || '?'}`.replace(/\s+/g, ' ') : a.title || '';
   const labelHtml = a => `<div class="pm-label"><small aria-label="Confidentiel">CONFIDENTIEL</small><b>${esc(a.mission)}</b><span>${esc(titleOf(a))}</span>
       <dl><dt>Appareil</dt><dd>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' ') || '—')}</dd><dt>Indicatif</dt><dd>${esc(a.callsign || '—')}</dd><dt>Décollage</dt><dd>${esc(a.alert ? 'astreinte ' + hhmm(Date.parse(a.alert.ready_at_utc)) : fmt(A.when(a)))}</dd></dl></div>`;
+  // ---- animations du dossier : ouverture et fermeture propres à chaque design (Cabinet : la couverture tourne sur le
+  // dos ; Carnet de vol : le carnet sort de l'enveloppe, puis s'ouvre et se ferme comme un livre ; Aqua : le dossier
+  // s'agrandit en livre (zoom) ; Durci : la fermeture résiste puis cède, la couverture s'ouvre lourdement ; autres
+  // designs : fondu), changement de mission (l'ancien dossier part à gauche, le nouveau vient de la droite).
+  // Rien si l'utilisateur demande moins d'animations.
+  const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const designNow = () => document.documentElement.dataset.design || '';
+  /** Achève les animations en cours du dossier (un nouveau geste part d'un état posé). */
+  function settle() {
+    const host = $('pmDetail');
+    host.getAnimations({
+      subtree: true
+    }).filter(x => !(x instanceof CSSAnimation) && !(x instanceof CSSTransition)).forEach(x => { // celles du dossier seules
+      try {
+        x.finish();
+      } catch {
+        x.cancel();
+      }
+    });
+    host.querySelectorAll('.pm-ghost').forEach(g => g.remove());
+  }
+  /** Pose el en absolu à sa place actuelle dans le dossier ; rend son rectangle (écran). */
+  function pin(el) {
+    const h = $('pmDetail').getBoundingClientRect(),
+      r = el.getBoundingClientRect();
+    Object.assign(el.style, {
+      position: 'absolute',
+      zIndex: 5,
+      left: `${r.left - h.left}px`,
+      top: `${r.top - h.top}px`,
+      width: `${r.width}px`,
+      height: `${r.height}px`,
+      margin: 0
+    });
+    return r;
+  }
+  const unpin = el => {
+    el.getAnimations().forEach(x => x.cancel());
+    el.removeAttribute('style');
+  };
+  const PERSP = 'perspective(2200px) ';
+  /** La couverture tourne sur son bord gauche (le dos) ; le livre se découvre (ou se recouvre) pendant la moitié du
+   *  mouvement où la couverture passe de l'autre côté. */
+  function flip(cv, book, C, B, opening, end) {
+    const d = designNow(),
+      x = Math.max(0, Math.min(60, (C.left - B.left) / B.width * 100)),
+      dur = d === 'field' ? 780 : 640,
+      ease = d === 'field' ? (opening ? 'cubic-bezier(.3,1.25,.55,1)' : 'cubic-bezier(.5,0,.7,1)') : 'cubic-bezier(.45,.05,.3,1)';
+    cv.style.transformOrigin = 'left center';
+    cv.style.backfaceVisibility = 'hidden';
+    const turn = [{
+      transform: `${PERSP}rotateY(0deg)`
+    }, {
+      transform: `${PERSP}rotateY(-180deg)`
+    }];
+    cv.animate(opening ? turn : turn.reverse(), {
+      duration: dur,
+      easing: ease,
+      fill: 'forwards'
+    });
+    const shut = `inset(0 0 0 ${x}%)`,
+      clip = opening ? [{
+        clipPath: shut
+      }, {
+        clipPath: shut,
+        offset: .45
+      }, {
+        clipPath: 'inset(0 0 0 0%)'
+      }] : [{
+        clipPath: 'inset(0 0 0 0%)'
+      }, {
+        clipPath: shut,
+        offset: .55
+      }, {
+        clipPath: shut
+      }];
+    book.animate(clip, {
+      duration: dur,
+      easing: ease
+    }).onfinish = end;
+  }
+  /** Aqua : le livre s'agrandit depuis le dossier (ouverture) ou s'y résorbe (fermeture). */
+  function zoom(cv, book, C, B, opening, end) {
+    const toC = `translate(${C.left - B.left}px, ${C.top - B.top}px) scale(${C.width / B.width}, ${C.height / B.height})`,
+      toB = `translate(${B.left - C.left}px, ${B.top - C.top}px) scale(${B.width / C.width}, ${B.height / C.height})`,
+      ease = 'cubic-bezier(.2,.85,.25,1)';
+    cv.style.transformOrigin = book.style.transformOrigin = '0 0';
+    const bk = [{
+        transform: toC,
+        opacity: .3
+      }, {
+        transform: 'none',
+        opacity: 1
+      }],
+      ck = [{
+        transform: 'none',
+        opacity: 1
+      }, {
+        transform: toB,
+        opacity: 0
+      }];
+    cv.animate(opening ? ck : ck.reverse(), {
+      duration: opening ? 300 : 420,
+      easing: ease,
+      fill: 'forwards'
+    });
+    book.animate(opening ? bk : bk.reverse(), {
+      duration: opening ? 460 : 380,
+      easing: opening ? ease : 'cubic-bezier(.55,0,.75,.2)',
+      fill: 'forwards'
+    }).onfinish = () => {
+      book.getAnimations().forEach(x => x.cancel());
+      book.style.transformOrigin = '';
+      end();
+    };
+  }
+  /** Ouverture animée de la couverture cv ; done() pose l'état ouvert (et marque la mission lue). */
+  function animateOpen(cv, sealed, done) {
+    const host = $('pmDetail'),
+      content = host.querySelector('.pm-content'),
+      book = content?.querySelector('.pm-book'),
+      d = designNow();
+    if (still() || !content) return done();
+    if (!book) { // présentation ordinaire : fondu
+      cv.animate([{
+        opacity: 1,
+        transform: 'none'
+      }, {
+        opacity: 0,
+        transform: 'scale(.97)'
+      }], {
+        duration: 170,
+        easing: 'ease-in',
+        fill: 'forwards'
+      }).onfinish = () => {
+        done();
+        content.animate([{
+          opacity: 0,
+          transform: 'translateY(10px)'
+        }, {
+          opacity: 1,
+          transform: 'none'
+        }], {
+          duration: 230,
+          easing: 'ease-out'
+        });
+      };
+      return;
+    }
+    const envelope = sealed && d === 'flightlog';
+    // scellé : le calque (ficelle, ruban, cachet) s'efface d'abord ; Durci : la fermeture résiste, puis cède
+    if (sealed && !envelope) cv.classList.add('open');
+    if (sealed && d === 'field') cv.animate([0, -3, 3, -2, 2, 0].map(v => ({
+      transform: `translateX(${v}px)`
+    })), {
+      duration: 360
+    });
+    setTimeout(() => {
+      if (!cv.isConnected) return;
+      const C = pin(cv);
+      content.hidden = false;
+      const B = book.getBoundingClientRect();
+      if (envelope) { // Carnet de vol : l'enveloppe glisse et s'efface, le carnet en sort
+        cv.animate([{
+          transform: 'none',
+          opacity: 1
+        }, {
+          transform: 'translateY(16%) rotate(2deg)',
+          opacity: 0
+        }], {
+          duration: 420,
+          easing: 'ease-in',
+          fill: 'forwards'
+        });
+        book.animate([{
+          transform: 'translateY(48px)',
+          opacity: 0
+        }, {
+          transform: 'none',
+          opacity: 1
+        }], {
+          duration: 540,
+          delay: 150,
+          easing: 'cubic-bezier(.2,.8,.3,1)',
+          fill: 'backwards'
+        }).onfinish = done;
+      } else if (d === 'aqua') zoom(cv, book, C, B, true, done);
+      else flip(cv, book, C, B, true, done);
+    }, sealed && !envelope ? 380 : 0);
+  }
+  /** Fermeture animée du dossier de la mission a (même mouvement à l'envers ; le carnet lu se referme comme un livre). */
+  function animateClose(a) {
+    const host = $('pmDetail'),
+      content = host.querySelector('.pm-content'),
+      book = content?.querySelector('.pm-book');
+    settle();
+    if (still() || !content || content.hidden) return setClosed(a, true);
+    if (!book) {
+      content.animate([{
+        opacity: 1
+      }, {
+        opacity: 0,
+        transform: 'translateY(6px)'
+      }], {
+        duration: 160,
+        easing: 'ease-in'
+      }).onfinish = () => {
+        setClosed(a, true);
+        host.querySelector('.pm-cover')?.animate([{
+          opacity: 0,
+          transform: 'scale(.97)'
+        }, {
+          opacity: 1,
+          transform: 'none'
+        }], {
+          duration: 220,
+          easing: 'ease-out'
+        });
+      };
+      return;
+    }
+    setClosed(a, true); // couverture posée à sa place, livre caché…
+    const cv = host.querySelector('.pm-cover');
+    if (!cv) return;
+    const C = pin(cv);
+    content.hidden = false; // … puis remontré le temps du mouvement
+    const B = book.getBoundingClientRect();
+    const end = () => {
+      content.hidden = true;
+      book.getAnimations().forEach(x => x.cancel());
+      unpin(cv);
+    };
+    if (designNow() === 'aqua') zoom(cv, book, C, B, false, end);
+    else flip(cv, book, C, B, false, end);
+  }
+  /** Image du dossier affiché, avant qu'une autre mission le remplace (changement de mission). */
+  function snapshot() {
+    const host = $('pmDetail');
+    settle();
+    if (still() || !host.firstElementChild) return null;
+    const g = document.createElement('div');
+    g.className = 'pm-ghost';
+    g.setAttribute('aria-hidden', 'true');
+    g.inert = true;
+    g.append(...[...host.children].map(n => n.cloneNode(true)));
+    return {
+      g,
+      tops: [...host.querySelectorAll('.pm-page')].map(p => p.scrollTop)
+    };
+  }
+  /** Changement de mission : l'ancien dossier part à gauche, le nouveau arrive de la droite (de biais, comme glissé
+   *  sur un bureau ; à plat pour Aqua et les designs ordinaires). */
+  function slideIn(s) {
+    const host = $('pmDetail');
+    if (!s || still()) return;
+    const d = designNow(),
+      tilt = {
+        cabinet: 4,
+        flightlog: 3,
+        field: 2
+      }[d] || 0,
+      dur = d === 'aqua' ? 420 : 520;
+    host.prepend(s.g);
+    s.g.querySelectorAll('.pm-page').forEach((p, i) => p.scrollTop = s.tops[i] || 0);
+    host.classList.add('pm-swapping');
+    s.g.animate([{
+      transform: 'none',
+      opacity: 1
+    }, {
+      transform: `translateX(-80%) rotate(${-tilt}deg)`,
+      opacity: 0
+    }], {
+      duration: dur,
+      easing: 'cubic-bezier(.55,0,.8,.3)',
+      fill: 'forwards'
+    }).onfinish = () => s.g.remove();
+    const fresh = [...host.children].filter(c => c !== s.g);
+    fresh.forEach((c, i) => {
+      const x = c.animate([{
+        transform: `translateX(80%) rotate(${tilt}deg)`,
+        opacity: 0
+      }, {
+        transform: 'none',
+        opacity: 1
+      }], {
+        duration: dur,
+        delay: dur * .3,
+        easing: 'cubic-bezier(.2,.8,.3,1)',
+        fill: 'backwards'
+      });
+      if (i === fresh.length - 1) x.onfinish = x.oncancel = () => host.classList.remove('pm-swapping');
+    });
+  }
   /** Dossier fermé ou ouvert, sans rien redessiner : la couverture (scellée si la mission n'est pas lue, sinon simple)
    *  prend la place du contenu ; la barre d'actions reste (grisée tant que la mission est scellée) : pas de saut de mise
    *  en page. Ouvrir une mission scellée brise le sceau (Cabinet) et la marque lue (pastille du menu, pli cacheté). */
@@ -2013,9 +2347,9 @@
     cv.innerHTML = `${labelHtml(a)}<p class="pm-open"><button type="button" class="primary" data-open>${sealed ? 'Ouvrir la mission' : 'Ouvrir le dossier'}</button></p>`;
     host.insertBefore(cv, actions || null);
     const open = () => {
-      cv.classList.add('open');
-      const anim = sealed && ['cabinet', 'flightlog', 'aqua', 'field'].includes(document.documentElement.dataset.design) && !matchMedia('(prefers-reduced-motion: reduce)').matches;
-      setTimeout(() => {
+      if (cv.dataset.opening) return;
+      cv.dataset.opening = '1';
+      animateOpen(cv, sealed, () => {
         if (sealed) {
           A.markRead(a);
           logMission(a, 'mission ouverte (scellé brisé)');
@@ -2024,7 +2358,7 @@
           });
         }
         setClosed(a, false);
-      }, anim ? 380 : 0);
+      });
     };
     cv.onclick = open;
     cv.onkeydown = e => {
@@ -2071,8 +2405,10 @@
       $('pmDetail').innerHTML = `<p class="pm-empty">${esc(tv(['Chargement de la mission…', 'Loading the mission…', 'Mission wird geladen…', 'Cargando la misión…']))}</p>`;
     }, 400);
     /** Nouvelle mission prête : état de la page remplacé, dossier dessiné, bloc montré et amené à l'écran. */
+    let ghost = null; // dossier précédent, qui part à gauche
     const commit = (y, urls, docs) => {
       clearTimeout(waitTimer);
+      if (hadBook) ghost = snapshot();
       mission = y;
       mapUrls = urls;
       exDocs = docs;
@@ -2104,6 +2440,7 @@
         logMission(a, 'convoyage ouvert');
       }
       setClosed(a, !open && !A.isRead(a));
+      slideIn(ghost);
       return;
     }
     const yf = await A.missionFirst(a.folder, [a.files?.yaml, `mission${a.mission}.yaml`, `mission${bare}.yaml`]);
@@ -2150,6 +2487,7 @@
       logMission(a, 'mission ouverte (scellé brisé)');
     }
     setClosed(a, !open && !A.isRead(a));
+    slideIn(ghost);
   }
 
   /** Points de la route dans l'ordre (origine, points tournants, rendez-vous, cible, destination) ; route_order si présent. */
@@ -2622,7 +2960,7 @@
       setClosed(a, true);
     };
     const close = $('pmDetail').querySelector('[data-close-book]');
-    if (close) close.onclick = () => setClosed(a, true); // dossier refermé, non rescellé (mission lue)
+    if (close) close.onclick = () => animateClose(a); // dossier refermé, non rescellé (mission lue)
     bookify();
     if (auto) mtFlush();
     // contenu (dossier ou présentation ordinaire) dans un conteneur : masqué quand le dossier est fermé
