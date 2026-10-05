@@ -342,7 +342,7 @@
     if (document.getElementById("repoDesignDeco")) return;
     const d = document.createElement("script");
     d.id = "repoDesignDeco";
-    d.src = new URL("design_deco.js?v=e37acc6f", script.src).href;
+    d.src = new URL("design_deco.js?v=5ea5b4d3", script.src).href;
     document.head.append(d);
   };
   designCss(design);

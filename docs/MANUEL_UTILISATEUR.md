@@ -128,7 +128,7 @@ La suite propose plusieurs designs. Ils changent la forme des pages, pas les inf
 
 Cette page réunit les missions que le Centre vous affecte, le dossier de chacune, vos disponibilités et votre trigramme.
 On y arrive par l'entrée « Mes missions » de la barre latérale, par le pli cacheté de l'en-tête ou par l'onglet « Mes missions ».
-Mise en page : deux colonnes. À gauche, la liste des missions et le dossier ouvert ; à droite, « Mes disponibilités » et « Pilote ». Sur un écran étroit (moins de 1100 px), tout passe sur une seule colonne.
+Mise en page : deux colonnes. À gauche, la liste des missions et le dossier ouvert ; à droite, « Mes disponibilités » et « Pilote ». Sur un écran étroit (moins de 1100 px), tout passe sur une seule colonne. Quand un dossier est ouvert, la colonne des missions passe aux deux tiers de la largeur.
 En mode production, la page demande d'abord de se connecter.
 
 ### Mes missions de la semaine

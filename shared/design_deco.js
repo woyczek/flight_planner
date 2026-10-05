@@ -315,7 +315,8 @@
     if (!set || set.dir == null || !fullDecor()) return; // jeu absent pour ce ton (ex. Carnet de vol sombre)
     let prev = '';
     document.querySelectorAll('.repo-block').forEach(b => {
-      if (b.hidden || !b.offsetHeight || b.classList.contains('repo-has-bg') || b.parentElement.closest('.repo-block.repo-has-bg')) return;
+      // data-no-deco : bloc sans panneau (texte long, ex. la page Aide : un panneau couvrirait tout le document)
+      if (b.hidden || !b.offsetHeight || b.hasAttribute('data-no-deco') || b.classList.contains('repo-has-bg') || b.parentElement.closest('.repo-block.repo-has-bg')) return;
       const f = prev = panelOf(b, set, prev);
       const el = document.createElement('div');
       el.className = 'repo-deco-bgimg repo-deco-panel';

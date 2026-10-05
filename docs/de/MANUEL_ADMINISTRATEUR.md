@@ -418,7 +418,7 @@ Diese Tabelle umfasst 7 Tage × 3 Zeitfenster. Jedes Feld nennt die Zahl der **f
 #### Fenster „Freie Piloten zuweisen“
 
 Voraussetzungen zum Öffnen: Zentrum aktiviert und Missionsregister in diesem Browser vorhanden (andernfalls öffnen Sie das Register des Zentrums und lesen den Missionsordner neu).
-1. **Der Tag in drei Blöcken** (Morgen, Nachmittag, Abend) belegt den oberen Teil des Fensters. Jeder Block nennt seine Uhrzeiten, die Zahl der freien Piloten und der Missionen, und „laufend“ für das aktuelle Zeitfenster. Das Zeitfenster des Fensters ist hervorgehoben. Ein Klick auf einen anderen Block öffnet dieses Zeitfenster; bleiben ungespeicherte Auswahlen, wird eine Bestätigung verlangt.
+1. **Der Tag in drei Blöcken** (Morgen, Nachmittag, Abend) belegt den oberen Teil des Fensters. Jeder Block nennt seine Uhrzeiten, die Zahl der freien Piloten und der Missionen, und „laufend“ für das aktuelle Zeitfenster. Das Zeitfenster des Fensters ist hervorgehoben. Ein Klick auf einen anderen Block öffnet dieses Zeitfenster; bleiben ungespeicherte Auswahlen, wird eine Bestätigung verlangt. Das Fenster bleibt geöffnet und wechselt zu diesem Zeitfenster.
 2. Die freien Piloten werden mit den von ihnen angegebenen Luftfahrzeugtypen aufgelistet (fett: beherrscht). Wählen Sie eine „Familie“ („alle“; „(vorgeschlagen)“ kennzeichnet die für das Zeitfenster vorgeschlagene Familie). Die Zeile „Zu meiden:“ erinnert an die durch eine ATC-Sitzung geschlossenen CTR und TMA.
 3. Haken Sie in der Matrix eine Mission an (Spalte „Planen“). Wählen Sie dann das „Luftfahrzeug“: Die Liste reicht vom nächstgelegenen bis zum entferntesten vom Abflugort und zeigt „vor Ort“ oder die Überführungsdauer. Wählen Sie schließlich den „Pilot“: Zuerst kommen die Piloten „Bis zum Ende frei, mit dem Luftfahrzeug“.
 4. Ist das Luftfahrzeug anderswo stationiert, erscheint eine Zeile „Überführung“. Wählen Sie, wer überführt („durch“): ein freier Pilot, der Pilot selbst (die Mission verschiebt sich dann entsprechend) oder „zuzuweisen (Überführungsmission)“.
@@ -450,7 +450,7 @@ Dieser Block schlägt für jedes Zeitfenster, das den Schwellenwert „Mindesten
 | Gemeinsame Simulatoren, Punktzahl, Regel | geteilte Simulatoren; Punktzahl (ausführliche Berechnung beim Überfahren); Regel der Familie |
 | Planen (Missionen des Registers) | „Planen“ oder „Ändern“: öffnet das Fenster des Zeitfensters, gefiltert auf die Familie |
 
-- Klicken Sie auf eine Zeile (außerhalb der Schaltfläche), um ihre Zusammenfassung aufzuklappen: Zeitfenster, vorgeschlagene Besatzung, Verstärkungen, Regel, Punktzahl, Kontext (ATC-Sitzungen, Fluglotsen, Events), Simulatoren, bereits zugewiesene Missionen.
+- Klicken Sie auf eine Zeile (außerhalb der Schaltfläche), um ihre Zusammenfassung aufzuklappen: Zeitfenster, vorgeschlagene Besatzung, Verstärkungen, Regel, Punktzahl, Kontext (ATC-Sitzungen, Fluglotsen, Events), Simulatoren, bereits zugewiesene Missionen. Das Dreieck ▸ bewirkt dasselbe; es ist immer nur eine Zeile aufgeklappt.
 - „Regeln der Familien und der Punktzahl“ klappt unter der Tabelle auf. Punktzahl = Anzahl der Teilnehmer, + 2 pro Pilot mit eingeschränktem Code, der in seinem Bereich eingesetzt wird, + 1 pro Fluglotse online bei TRAINING (höchstens 2). Eine oft gespielte Familie fällt etwas zurück (je nach Anzahl der Berichte im Register), damit die Missionen abwechseln.
 - Die Anzahl der pro Zeitfenster gezeigten Missionen und die Vorzugsreihenfolge bei gleicher Punktzahl werden unter Einstellungen › Zentrum › ODV-Planung (DEFA) eingestellt.
 - Die Tabelle ist nach Spalte sortierbar. Die aus dem Blatt FLOTTE übernommenen Rollen bleiben Richtwerte: Der Planer entscheidet.
@@ -583,6 +583,7 @@ Siehe [Installation](../INSTALL.md), § 1.
 Diese Rubrik ist der einzige Ort, an dem die lokalen Ordner und die Adressen der externen Quellen eingestellt werden.
 - **Erststart** (Ankunft aus dem Starter): Ein Kasten bittet darum, die erste Zeile zu wählen, „Repository-Ordner“. Die anderen Ordner werden daraus abgeleitet.
 - **Lokale Ordner**: Jede Zeile hat ihre Auswahlschaltfläche und einen Zustand („nicht gewählt“, „erlaubt“, „erneut erlauben“). Eine Prüfung meldet einen Ordner, der nicht der richtige zu sein scheint (Markierungsdatei fehlt). Der Browser speichert die Erlaubnis, kann aber nach einem Neustart eine Bestätigung verlangen.
+- **Ordnerhinweis**: Kann die Suite nicht prüfen, ob der freigegebene Datenordner zur ausgelieferten Suite gehört, weist ein einmaliger Hinweis darauf hin (Lesen und Schreiben erfolgen dann in diesem Ordner); bleibt eine Speicherung im Browser, weil sie nicht geschrieben werden kann, nennt der Hinweis den tatsächlichen Grund.
 
 | Ordner | Erwarteter Inhalt |
 |---|---|

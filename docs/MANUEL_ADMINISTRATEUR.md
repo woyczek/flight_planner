@@ -418,7 +418,7 @@ Ce tableau couvre les 7 jours × 3 créneaux. Chaque case donne le nombre de **p
 #### Fenêtre « Affecter les pilotes libres »
 
 Conditions d'ouverture : Centre activé, et registre des missions présent dans ce navigateur (sinon, ouvrez le registre du Centre et relisez le dossier des missions).
-1. **La journée en trois blocs** (Matin, Après-midi, Soir) occupe le haut de la fenêtre. Chaque bloc donne ses heures, le nombre de pilotes libres et de missions, et « en cours » pour le créneau présent. Le créneau de la fenêtre est en surbrillance. Cliquer sur un autre bloc ouvre ce créneau ; s'il reste des choix non enregistrés, une confirmation est demandée.
+1. **La journée en trois blocs** (Matin, Après-midi, Soir) occupe le haut de la fenêtre. Chaque bloc donne ses heures, le nombre de pilotes libres et de missions, et « en cours » pour le créneau présent. Le créneau de la fenêtre est en surbrillance. Cliquer sur un autre bloc ouvre ce créneau ; s'il reste des choix non enregistrés, une confirmation est demandée. La fenêtre reste ouverte et passe à ce créneau.
 2. Les pilotes libres sont listés avec les types d'appareils qu'ils ont déclarés (en gras : maîtrisés). Choisissez une « Famille » (« toutes » ; « (proposée) » signale la famille proposée pour le créneau). La ligne « À éviter : » rappelle les CTR et TMA fermées par une session ATC.
 3. Dans la matrice, cochez une mission (colonne « Planifier »). Choisissez ensuite l'« Appareil » : la liste va du plus proche au plus lointain du départ et indique « sur place » ou la durée de convoyage. Choisissez enfin le « Pilote » : en tête viennent les pilotes « Libres jusqu'à la fin, avec l'appareil ».
 4. Si l'appareil est basé ailleurs, une ligne « Convoyage » apparaît. Choisissez qui convoie (« par ») : un pilote libre, le pilote lui-même (la mission est alors décalée d'autant) ou « à affecter (mission de convoyage) ».
@@ -450,7 +450,7 @@ Ce bloc propose, pour chaque créneau qui atteint le seuil « Au moins N pilote(
 | Simulateurs communs, Score, Règle | simulateurs partagés ; score (calcul détaillé au survol) ; règle de la famille |
 | Planifier (missions du registre) | « Planifier » ou « Modifier » : ouvre la fenêtre du créneau, filtrée sur la famille |
 
-- Cliquez sur une ligne (en dehors du bouton) pour déplier son résumé : créneau, équipage proposé, renforts, règle, score, contexte (sessions ATC, contrôleurs, événements), simulateurs, missions déjà affectées.
+- Cliquez sur une ligne (en dehors du bouton) pour déplier son résumé : créneau, équipage proposé, renforts, règle, score, contexte (sessions ATC, contrôleurs, événements), simulateurs, missions déjà affectées. Le triangle ▸ fait de même ; une seule ligne est dépliée à la fois.
 - « Règles des familles et du score » se déplie sous le tableau. Score = nombre de participants, + 2 par pilote à code restreint employé dans son domaine, + 1 par contrôleur en ligne pour TRAINING (2 au plus). Une famille souvent jouée recule un peu (selon le nombre de CR du registre) pour varier les missions.
 - Le nombre de missions montrées par créneau et l'ordre de préférence à score égal se règlent dans Paramètres › Centre › Planning ODV (DEFA).
 - Le tableau se trie par colonne. Les rôles tirés de la feuille FLOTTE restent indicatifs : le planificateur valide.
@@ -583,6 +583,7 @@ Voir [Installation](INSTALL.md), § 1.
 Cette rubrique est le seul endroit où régler les dossiers locaux et les adresses des sources externes.
 - **Premier lancement** (arrivée depuis le lanceur) : un encadré demande de choisir la première ligne, « Dossier du dépôt ». Les autres dossiers en sont déduits.
 - **Dossiers locaux** : chaque ligne a son bouton de choix et un état (« non choisi », « autorisé », « à ré-autoriser »). Un contrôle signale un dossier qui ne semble pas être le bon (fichier repère absent). Le navigateur mémorise l'autorisation, mais peut demander de la confirmer après un redémarrage.
+- **Alerte de dossier** : si la suite ne peut pas vérifier que le dossier des données autorisé est celui de la suite servie, une alerte le signale une fois (lecture et écriture se font alors dans ce dossier) ; si un enregistrement reste dans le navigateur faute de pouvoir l'écrire, l'alerte en donne la raison réelle.
 
 | Dossier | Contenu attendu |
 |---|---|

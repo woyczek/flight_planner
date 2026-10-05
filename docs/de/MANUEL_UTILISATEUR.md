@@ -128,7 +128,7 @@ Die Suite bietet mehrere Designs. Sie ändern die Form der Seiten, nicht die Inf
 
 Diese Seite vereint die Missionen, die Ihnen das Zentrum zuweist, die Mappe jeder Mission, Ihre Verfügbarkeit und Ihr Kürzel.
 Sie erreichen sie über den Eintrag „Meine Missionen“ der Seitenleiste, über den versiegelten Umschlag der Kopfzeile oder über die Registerkarte „Meine Missionen“.
-Aufbau: zwei Spalten. Links die Liste der Missionen und die geöffnete Mappe; rechts „Meine Verfügbarkeit“ und „Pilot“. Auf einem schmalen Bildschirm (unter 1100 px) steht alles in einer einzigen Spalte.
+Aufbau: zwei Spalten. Links die Liste der Missionen und die geöffnete Mappe; rechts „Meine Verfügbarkeit“ und „Pilot“. Auf einem schmalen Bildschirm (unter 1100 px) steht alles in einer einzigen Spalte. Ist eine Mappe geöffnet, nimmt die Missionsspalte zwei Drittel der Breite ein.
 Im Produktionsmodus verlangt die Seite zuerst eine Anmeldung.
 
 ### Meine Missionen der Woche

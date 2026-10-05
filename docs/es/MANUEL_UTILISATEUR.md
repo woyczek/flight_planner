@@ -128,7 +128,7 @@ La suite ofrece varios diseños. Cambian la forma de las páginas, no la informa
 
 Esta página reúne las misiones que el Centro le asigna, la carpeta de cada una, su disponibilidad y su trigrama.
 Se llega a ella por la entrada «Mis misiones» de la barra lateral, por el sobre sellado de la cabecera o por la pestaña «Mis misiones».
-Diseño de la página: dos columnas. A la izquierda, la lista de misiones y la carpeta abierta; a la derecha, «Mi disponibilidad» y «Piloto». En una pantalla estrecha (menos de 1100 px), todo pasa a una sola columna.
+Diseño de la página: dos columnas. A la izquierda, la lista de misiones y la carpeta abierta; a la derecha, «Mi disponibilidad» y «Piloto». En una pantalla estrecha (menos de 1100 px), todo pasa a una sola columna. Cuando hay una carpeta abierta, la columna de misiones ocupa dos tercios del ancho.
 En modo producción, la página pide primero conectarse.
 
 ### Mis misiones de la semana

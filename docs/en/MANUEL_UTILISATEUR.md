@@ -128,7 +128,7 @@ The suite offers several designs. They change the shape of the pages, not the in
 
 This page brings together the missions the Centre assigns to you, the folder of each one, your availability and your trigram.
 You reach it from the “My missions” entry of the side bar, from the sealed envelope in the header or from the “My missions” tab.
-Layout: two columns. On the left, the list of missions and the open folder; on the right, “My availability” and “Pilot”. On a narrow screen (less than 1100 px), everything moves to a single column.
+Layout: two columns. On the left, the list of missions and the open folder; on the right, “My availability” and “Pilot”. On a narrow screen (less than 1100 px), everything moves to a single column. When a folder is open, the missions column widens to two thirds of the width.
 In production mode, the page first asks you to sign in.
 
 ### My missions this week

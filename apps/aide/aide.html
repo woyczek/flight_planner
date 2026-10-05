@@ -90,6 +90,16 @@
   article.doc-body :is(h1, h2, h3, h4) {
     scroll-margin-top: calc(var(--repo-header-h, 84px) + 16px) /* sous l'en-tête collé en haut */
   }
+  /* liens : couleur du texte, soulignement discret (comme ailleurs dans la suite ; Durci : couleur de ses blocs) */
+  article.doc-body a {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+    text-underline-offset: 2px
+  }
+  article.doc-body a:hover {
+    text-decoration-color: currentColor
+  }
   article.doc-body .doc-anchor {
     margin-left: .4em;
     opacity: 0;
@@ -156,17 +166,17 @@
      la page d'où l'on vient (commentaires « page: apps/…html » placés sous le titre du chapitre dans les manuels). Rendu : apps/aide/markdown.js. -->
 <header class="mc-header"><h1>Aide</h1><p>Manuels, guides et documentation de la suite</p></header>
 <main class="doc-page">
-  <nav class="doc-side" aria-label="Documentation">
+  <nav class="doc-side repo-block" data-no-deco aria-label="Documentation">
     <input type="search" class="doc-search" placeholder="Rechercher dans les manuels…" aria-label="Rechercher dans les manuels">
     <ul class="doc-hits" hidden></ul>
     <div class="doc-index"></div>
     <h3 class="doc-toc-title" hidden>Dans ce document</h3>
     <ul class="doc-toc"></ul>
   </nav>
-  <article class="doc-body" data-no-i18n><p class="doc-empty">Chargement de la documentation…</p></article>
+  <article class="doc-body repo-block" data-no-deco data-no-i18n><p class="doc-empty">Chargement de la documentation…</p></article>
 </main>
 <script src="../../shared/kit.js?v=a819e6df"></script>
-<script src="../../shared/repository_nav.js?v=9fc4e247"></script>
+<script src="../../shared/repository_nav.js?v=dbce8060"></script>
 <script src="../../shared/content_i18n.js?v=7afecb78"></script>
 <script src="markdown.js?v=bb3dd74e"></script>
 <script src="aide.js?v=d0b1950f"></script>

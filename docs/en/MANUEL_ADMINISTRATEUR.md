@@ -418,7 +418,7 @@ This table covers the 7 days × 3 slots. Each cell gives the number of **free pi
 #### “Assign the free pilots” window
 
 Opening conditions: Centre enabled, and mission registry present in this browser (otherwise, open the Centre registry and re-read the missions folder).
-1. **The day in three blocks** (Morning, Afternoon, Evening) fills the top of the window. Each block gives its hours, the number of free pilots and of missions, and “now” for the current slot. The window's slot is highlighted. Clicking another block opens that slot; if unsaved choices remain, a confirmation is asked.
+1. **The day in three blocks** (Morning, Afternoon, Evening) fills the top of the window. Each block gives its hours, the number of free pilots and of missions, and “now” for the current slot. The window's slot is highlighted. Clicking another block opens that slot; if unsaved choices remain, a confirmation is asked. The window stays open and switches to that slot.
 2. The free pilots are listed with the aircraft types they have declared (in bold: mastered). Choose a “Family” (“all”; “(suggested)” flags the family suggested for the slot). The “To avoid:” line recalls the CTRs and TMAs closed by an ATC session.
 3. In the matrix, tick a mission (“Plan” column). Then choose the “Aircraft”: the list goes from the nearest to the farthest from the departure and shows “on site” or the ferry time. Finally choose the “Pilot”: at the top come the pilots “Free until the end, with the aircraft”.
 4. If the aircraft is based elsewhere, a “Ferry” row appears. Choose who ferries it (“by”): a free pilot, the pilot themselves (the mission is then shifted accordingly) or “to assign (ferry mission)”.
@@ -450,7 +450,7 @@ For each slot that reaches the “At least N pilot(s)” threshold, this block s
 | Common simulators, Score, Rule | shared simulators; score (detailed calculation on hover); family rule |
 | Plan (registry missions) | “Plan” or “Edit”: opens the slot window, filtered on the family |
 
-- Click a row (outside the button) to expand its summary: slot, suggested crew, reinforcements, rule, score, context (ATC sessions, controllers, events), simulators, missions already assigned.
+- Click a row (outside the button) to expand its summary: slot, suggested crew, reinforcements, rule, score, context (ATC sessions, controllers, events), simulators, missions already assigned. The ▸ triangle does the same; only one row is expanded at a time.
 - “Family and score rules” expands under the table. Score = number of participants, + 2 per pilot with a restricted code used in their field, + 1 per online controller for TRAINING (2 at most). A family played often moves back a little (depending on the number of reports in the registry) to vary the missions.
 - The number of missions shown per slot and the order of preference at equal score are set in Settings › Centre › ODV planning (DEFA).
 - The table sorts by column. The roles taken from the FLOTTE sheet remain indicative: the planner validates.
@@ -583,6 +583,7 @@ See [Installation](../INSTALL.md), § 1.
 This section is the only place to set the local folders and the addresses of the external sources.
 - **First run** (arriving from the launcher): a frame asks you to choose the first row, “Repository folder”. The other folders are deduced from it.
 - **Local folders**: each row has its choose button and a state (“not chosen”, “authorised”, “to re-authorise”). A check flags a folder that does not seem to be the right one (marker file missing). The browser remembers the authorisation, but may ask you to confirm it after a restart.
+- **Folder alert**: if the suite cannot check that the authorised data folder is the one of the served suite, an alert says so once (reading and writing then use that folder); if a save stays in the browser because it cannot be written, the alert gives the actual reason.
 
 | Folder | Expected content |
 |---|---|

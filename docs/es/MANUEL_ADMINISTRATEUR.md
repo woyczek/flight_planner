@@ -418,7 +418,7 @@ Esta tabla cubre los 7 días × 3 franjas. Cada casilla da el número de **pilot
 #### Ventana «Asignar los pilotos libres»
 
 Condiciones de apertura: Centro activado y registro de misiones presente en este navegador (si no, abra el registro del Centro y relea la carpeta de misiones).
-1. **El día en tres bloques** (Mañana, Tarde, Noche) ocupa la parte superior de la ventana. Cada bloque indica sus horas, el número de pilotos libres y de misiones, y «en curso» para la franja actual. La franja de la ventana aparece resaltada. Al hacer clic en otro bloque se abre esa franja; si quedan elecciones sin guardar, se pide confirmación.
+1. **El día en tres bloques** (Mañana, Tarde, Noche) ocupa la parte superior de la ventana. Cada bloque indica sus horas, el número de pilotos libres y de misiones, y «en curso» para la franja actual. La franja de la ventana aparece resaltada. Al hacer clic en otro bloque se abre esa franja; si quedan elecciones sin guardar, se pide confirmación. La ventana permanece abierta y pasa a esa franja.
 2. Los pilotos libres aparecen con los tipos de aeronave que han declarado (en negrita: dominados). Elija una «Familia» («todas»; «(propuesta)» señala la familia propuesta para la franja). La línea «A evitar:» recuerda las CTR y TMA cerradas por una sesión ATC.
 3. En la matriz, marque una misión (columna «Planificar»). Elija después la «Aeronave»: la lista va de la más cercana a la más lejana de la salida e indica «en el lugar» o la duración del traslado. Elija por último el «Piloto»: primero aparecen los pilotos «Libres hasta el final, con la aeronave».
 4. Si la aeronave tiene su base en otro lugar, aparece una línea «Traslado». Elija quién la traslada («por»): un piloto libre, el propio piloto (la misión se retrasa entonces en la misma medida) o «por asignar (misión de traslado)».
@@ -450,7 +450,7 @@ Este bloque propone, para cada franja que alcanza el umbral «Al menos N piloto(
 | Simuladores comunes, Puntuación, Regla | simuladores compartidos; puntuación (cálculo detallado al pasar el ratón); regla de la familia |
 | Planificar (misiones del registro) | «Planificar» o «Modificar»: abre la ventana de la franja, filtrada por la familia |
 
-- Haga clic en una línea (fuera del botón) para desplegar su resumen: franja, tripulación propuesta, refuerzos, regla, puntuación, contexto (sesiones ATC, controladores, eventos), simuladores, misiones ya asignadas.
+- Haga clic en una línea (fuera del botón) para desplegar su resumen: franja, tripulación propuesta, refuerzos, regla, puntuación, contexto (sesiones ATC, controladores, eventos), simuladores, misiones ya asignadas. El triángulo ▸ hace lo mismo; solo se despliega una fila a la vez.
 - «Reglas de las familias y de la puntuación» se despliega bajo la tabla. Puntuación = número de participantes, + 2 por cada piloto con código restringido empleado en su ámbito, + 1 por cada controlador en línea para TRAINING (2 como máximo). Una familia jugada a menudo retrocede un poco (según el número de informes del registro) para variar las misiones.
 - El número de misiones mostradas por franja y el orden de preferencia en caso de empate se ajustan en Ajustes › Centro › Planificación ODV (DEFA).
 - La tabla se ordena por columna. Las funciones sacadas de la hoja FLOTTE son orientativas: el planificador valida.
@@ -583,6 +583,7 @@ Véase [Instalación](../INSTALL.md), § 1.
 Este apartado es el único lugar donde se ajustan las carpetas locales y las direcciones de las fuentes externas.
 - **Primer arranque** (llegada desde el lanzador): un recuadro pide elegir la primera línea, «Carpeta del repositorio». Las demás carpetas se deducen de ella.
 - **Carpetas locales**: cada línea tiene su botón de elección y un estado («no elegida», «autorizada», «a reautorizar»). Un control señala una carpeta que no parece la correcta (falta el archivo de referencia). El navegador recuerda la autorización, pero puede pedir que se confirme tras un reinicio.
+- **Aviso de carpeta**: si la suite no puede comprobar que la carpeta de datos autorizada es la de la suite servida, un aviso lo indica una vez (la lectura y la escritura se hacen entonces en esa carpeta); si un guardado se queda en el navegador por no poder escribirse, el aviso indica la causa real.
 
 | Carpeta | Contenido esperado |
 |---|---|
