@@ -17,11 +17,11 @@ et dans le navigateur.
 
 | Application | Pages | Rôle | Documentation |
 |---|---|---|---|
-| **CR DEFA** (Mission Report Core) | `apps/cr/` — ☰ › Reporting missions, Nouveau compte rendu, Paramétrage | Comptes rendus de mission de 15 familles, registre unique, reporting et graphiques, bases de la flotte et des indicatifs, envoi des CR | [Tutoriel](docs/TUTORIAL.md) · [Manuel d'exploitation](docs/MANUEL_EXPLOITATION.md) · [Notes de conception](docs/mission_report_core_audit.md) |
-| **Landing Performance Dashboard** | `apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html` | Analyse des atterrissages (score, FPM, G) à partir des journaux CSV / LOG, tendances, filtres | [docs/LANDING_DASHBOARD.md](docs/LANDING_DASHBOARD.md) · [mise à jour de la base d'aéronefs](apps/landing/README.md) |
-| **Flight Performance & Fuel Planner** | `apps/planner/flight_performance_planner.html` | Profils de performance par avion, devis carburant, altitude optimale, calibration SimBrief, échange Little Navmap | [docs/FLIGHT_PLANNER.md](docs/FLIGHT_PLANNER.md) |
-| **Missions SIA** | `apps/cpco/` — ☰ › Centre — Générateur de mission, Centre — Studio cartographique | Brief de mission (textes, points, PDF final) et cartes PNG / SVG depuis les données AIRAC du SIA : zones, MORA, quadrillage, hippodromes de ravitaillement, fonds OSM ; passerelle vers un CR DEFA pré-rempli | [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md) |
-| **Framework commun** | `config/repository_tree`, `shared/`, `AircraftDB/`, `tools/` | Bandeau et menu ☰, langues, blocs, période et zoom (TimePeriod), graphiques, tableaux, profil pilote, données locales, bases d'aéronefs | [docs/FRAMEWORK.md](docs/FRAMEWORK.md) |
+| **CR DEFA** (Mission Report Core) | `apps/cr/` — ☰ › Reporting missions, Nouveau compte rendu, Paramétrage | Comptes rendus de mission de 15 familles, registre unique, reporting et graphiques, bases de la flotte et des indicatifs, envoi des CR | [Tutoriel](TUTORIAL.md) · [Manuel d'exploitation](MANUEL_EXPLOITATION.md) · [Notes de conception](technique/mission_report_core_audit.md) |
+| **Landing Performance Dashboard** | `apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html` | Analyse des atterrissages (score, FPM, G) à partir des journaux CSV / LOG, tendances, filtres | [docs/LANDING_DASHBOARD.md](LANDING_DASHBOARD.md) · [mise à jour de la base d'aéronefs](LANDING_DASHBOARD.md) |
+| **Flight Performance & Fuel Planner** | `apps/planner/flight_performance_planner.html` | Profils de performance par avion, devis carburant, altitude optimale, calibration SimBrief, échange Little Navmap | [docs/FLIGHT_PLANNER.md](FLIGHT_PLANNER.md) |
+| **Missions SIA** | `apps/cpco/` — ☰ › Centre — Générateur de mission, Centre — Studio cartographique | Brief de mission (textes, points, PDF final) et cartes PNG / SVG depuis les données AIRAC du SIA : zones, MORA, quadrillage, hippodromes de ravitaillement, fonds OSM ; passerelle vers un CR DEFA pré-rempli | [docs/SIA_MISSIONS.md](SIA_MISSIONS.md) |
+| **Framework commun** | `config/repository_tree`, `shared/`, `AircraftDB/`, `tools/` | Bandeau et menu ☰, langues, blocs, période et zoom (TimePeriod), graphiques, tableaux, profil pilote, données locales, bases d'aéronefs | [docs/FRAMEWORK.md](technique/FRAMEWORK.md) |
 
 Les applications se parlent par le framework : même profil pilote (IVAO, VATSIM,
 SimBrief), même composant de période (zoom par glisser sur les graphiques, boutons ◀ 🔍− ▶
@@ -84,7 +84,7 @@ Points forts :
 
 ### Missions SIA — générateur de mission et studio cartographique
 
-Dossier `apps/cpco/` ; détail : [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md).
+Dossier `apps/cpco/` ; détail : [docs/SIA_MISSIONS.md](SIA_MISSIONS.md).
 
 - **Générateur de mission (brief)** : import YAML (`helo-xp-mission`) ou Markdown, textes
   proposés à partir des données quand ils manquent (points, rendez-vous, consignes, axe de
@@ -99,7 +99,7 @@ Dossier `apps/cpco/` ; détail : [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md).
   ravitaillement** MILAIP ENR 5.7 tracés exactement ; génération PNG / SVG / ZIP robuste
   (cartes en échec rapportées, les autres produites).
 
-### Framework commun (résumé — détail : [docs/FRAMEWORK.md](docs/FRAMEWORK.md))
+### Framework commun (résumé — détail : [docs/FRAMEWORK.md](technique/FRAMEWORK.md))
 
 - `config/repository_tree` : arborescence des pages, libellés, thèmes, favicons (fichier JavaScript
   sans extension).
@@ -158,7 +158,7 @@ Version 2.3.0. Contournements indiqués en fin de ligne.
 1. Récupérer le dossier et lancer `lancer.cmd` (Windows) ou `sh lancer.sh` (macOS / Linux) — voir
    [INSTALL.md](INSTALL.md) ; la page des paramètres s'ouvre : choisir le dossier de l'application.
 3. ☰ › Profil pilote : saisir ses ID IVAO / VATSIM (et l'identifiant SimBrief).
-4. Suivre le [tutoriel](docs/TUTORIAL.md).
+4. Suivre le [tutoriel](TUTORIAL.md).
 
 ## Confidentialité
 

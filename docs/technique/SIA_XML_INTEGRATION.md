@@ -1,7 +1,7 @@
 # Intégration de l'application « SIA XML » — analyse et plan
 
 Notes de conception de l'intégration (2026-09-24 / 25). **Documentation de l'application :
-[SIA_MISSIONS.md](SIA_MISSIONS.md).** Tout le plan du § 2 est réalisé : en-tête et menu communs,
+[SIA_MISSIONS.md](../SIA_MISSIONS.md).** Tout le plan du § 2 est réalisé : en-tête et menu communs,
 blocs, thème `sia` et `assets/favicon-sia.svg`, js-yaml commun, dossier SIA mémorisé
 (`FileAccess`, `__sia`), collage de mission et de listes de zones (`pastePanel`), couche des
 hippodromes, passerelle vers CR DEFA (`?from=sia`, `siaMissionToCr:v1`,

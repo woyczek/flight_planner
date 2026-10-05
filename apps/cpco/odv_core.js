@@ -1434,7 +1434,7 @@
     const hasSim = t => !settings.sim || (profile(t)?.sims || []).includes(settings.sim);
     const order = new Map(data.pilotes.map((p, i) => [p.trigramme, i]));
     const themeText = fold(data.theme || '');
-    // thèmes ouverts (docs/DISPOS_ET_REORGANISATION.md § 1, shared/dispos.js) : ceux de la déclaration, sinon ceux de la
+    // thèmes ouverts (docs/technique/DISPOS_ET_REORGANISATION.md § 1, shared/dispos.js) : ceux de la déclaration, sinon ceux de la
     // catégorie du code du classeur avec les préférences du pilote (settings.prefsOf) ; null : anciennes règles (rôle
     // imposé par le code, DOMAIN)
     const SD = settings.dispos || window.SuiteDispos;

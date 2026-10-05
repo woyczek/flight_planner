@@ -761,7 +761,7 @@ html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-ic
   width: 56px;
   height: 56px
 }
-/* palette « outil sombre » (docs/REFACTORING_TOOLKIT.md, C) : pages d'outil à fond sombre en design standard (Landing,
+/* palette « outil sombre » (docs/technique/REFACTORING_TOOLKIT.md, C) : pages d'outil à fond sombre en design standard (Landing,
    planificateur, planning ODV, reporting des opérations) ; mêmes noms que la palette claire de mission_core/core.css,
    pour que les designs les atteignent ; une page la demande par <html data-tool="dark"> (color-scheme : à la page) */
 @layer app {

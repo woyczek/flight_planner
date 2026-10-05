@@ -317,7 +317,7 @@ def main():
     for m, folder, files, parts in out:
         doc = {'mission': m['id'], 'updated_at': at, 'by': BY, 'h_hour': None, 'participants': parts, 'alert': None, 'phantom': True}
         (folder / 'affectations.yaml').write_text(
-            f"# Affectations de la mission {m['id']} — docs/AFFECTATION_MISSIONS.md (jeu de test fantôme)\n"
+            f"# Affectations de la mission {m['id']} — docs/technique/AFFECTATION_MISSIONS.md (jeu de test fantôme)\n"
             + yaml.safe_dump(doc, allow_unicode=True, sort_keys=False, width=10000), encoding='utf-8', newline='\n')
         common = {'mission': m['id'], 'title': m.get('title') or '', 'type': m.get('family') or m.get('type') or '',
                   'folder': m['folder'], 'files': files, 'h_hour': None, 'alert': None, 'updated_at': at, 'by': BY}

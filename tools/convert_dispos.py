@@ -1,4 +1,4 @@
-"""Conversion des disponibilités en grille (ancien format) vers le format par plages (docs/DISPOS_ET_REORGANISATION.md § 1.3).
+"""Conversion des disponibilités en grille (ancien format) vers le format par plages (docs/technique/DISPOS_ET_REORGANISATION.md § 1.3).
 
 Ancien format : data/disponibilites/<TRI>.json, grille 7 jours × 24 heures (UTC) de codes de l'ODV, par semaine (weeks,
 clé : lundi ISO) ou une seule grille (grid) rattachée à la semaine de sa saisie (updated_at).

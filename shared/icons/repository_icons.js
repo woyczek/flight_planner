@@ -1,4 +1,4 @@
-// Jeu d'icônes de la suite (voir docs/PROPOSITION_DESIGN_ICONES.md ; chargé par repository_nav.js).
+// Jeu d'icônes de la suite (voir docs/technique/PROPOSITION_DESIGN_ICONES.md ; chargé par repository_nav.js).
 // Icônes au trait, grille 24 × 24, trait 2, extrémités arrondies, couleur = currentColor : elles prennent la couleur
 // du texte ou de la variable --repo-icon posée par block_icons.js (contraste contrôlé sur la surface du bloc).
 // Dessins faits pour ce prototype dans le style de Lucide (https://lucide.dev, licence ISC) ; en production, les

@@ -19,7 +19,7 @@ ravitaillement ENR 5.7), composants du
 framework (bandeau et menu ☰, blocs, `FileAccess`, fenêtres de copier-coller, sauvegarde locale).
 Bibliothèques livrées dans le dossier : MapLibre GL (`maplibre-gl.js/.css`), jsPDF
 (`jspdf.umd.min.js`) ; js-yaml est celui du framework. Notes de conception :
-[SIA_XML_INTEGRATION.md](SIA_XML_INTEGRATION.md).
+[SIA_XML_INTEGRATION.md](technique/SIA_XML_INTEGRATION.md).
 
 ## 1. Données
 
@@ -51,7 +51,7 @@ version précédente est relue automatiquement si l'accès au dossier est déjà
 ## 2. Format des missions
 
 Pour faire produire une série par un assistant externe (ChatGPT…) : prompt complet, aligné sur ce que lit
-la suite, dans [PROMPT_GENERATEUR_MISSIONS.md](PROMPT_GENERATEUR_MISSIONS.md).
+la suite, dans [PROMPT_GENERATEUR_MISSIONS.md](technique/PROMPT_GENERATEUR_MISSIONS.md).
 
 **Identifiants** : lettre de la famille + tiret + numéro d'opération sur 3 chiffres, compté par famille, + lettre d'équipe
 quand l'opération engage plusieurs équipes — « M-016 », « S-002A », « S-002B ». Lettres : M HEMS / MEDEVAC, H HADR,
@@ -233,7 +233,7 @@ les familles sont concernées (ISR, HEMS, FIRE, COMMAND…).
   piste, décollage = départ moins le transit estimé).
 - **Réception** (« Mes missions », pilote) : les événements adressés à l'équipage sont des plis scellés derrière le
   signet, ouverts à leur heure ; pistes et cartes d'exercice n'y paraissent qu'à l'ouverture (voir
-  [AFFECTATION_MISSIONS.md](AFFECTATION_MISSIONS.md), § 10).
+  [AFFECTATION_MISSIONS.md](technique/AFFECTATION_MISSIONS.md), § 10).
 - **Ancien format** (`tracks`, `injects`, `phases` dans une mission) : toujours lu, converti en événements adressés à
   l'équipage de la mission ; « Créer l'organisation de l'exercice » les reprend dans la nouvelle mission Z.
 
@@ -325,7 +325,7 @@ Page `apps/cpco/mission_editor.html`.
    équipes au sol, ravitaillement ; réglages partagés (`missionRegistryOrder:v1`) ; « Commander » inscrit la mission au
    registre (« commandée »), copie le prompt réglé pour une seule mission et ouvre ChatGPT dans un nouvel onglet (coller,
    envoyer, puis charger ou coller `mission<ID>.yaml` et `summary<ID>.md`). Le prompt vient de
-   [PROMPT_GENERATEUR_MISSIONS.md](PROMPT_GENERATEUR_MISSIONS.md), embarqué dans `apps/cpco/mission_prompt.js` par
+   [PROMPT_GENERATEUR_MISSIONS.md](technique/PROMPT_GENERATEUR_MISSIONS.md), embarqué dans `apps/cpco/mission_prompt.js` par
    `tools/build_mission_prompt.py` (relancé par `tools/bump_versions.py`) : pas de lecture réseau du dossier docs/.
    (« ou coller son contenu… », Markdown reconnu à ses titres `##`) (fusionnés, lecture commune avec le
    studio : `SiaMission.fromTexts`), et les cartes (PNG ou

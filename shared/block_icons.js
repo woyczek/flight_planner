@@ -1,5 +1,5 @@
 // Framework — icônes, numéros et sous-titres des blocs, sous-cartes, zones de dépôt de fichiers.
-// Voir docs/PROPOSITION_DESIGN_ICONES.md. Chargé sur toutes les pages par repository_nav.js (avec
+// Voir docs/technique/PROPOSITION_DESIGN_ICONES.md. Chargé sur toutes les pages par repository_nav.js (avec
 // shared/icons/repository_icons.js et side_nav.js) ; charge block_icons.css.
 //
 // Déclaration dans le HTML (rien à écrire en JavaScript) :
@@ -22,7 +22,7 @@
   {
     const css = document.createElement('link');
     css.rel = 'stylesheet';
-    css.href = new URL('block_icons.css?v=3d23e4d4', script.src).href; // version : empreinte de la feuille (tools/bump_versions.py)
+    css.href = new URL('block_icons.css?v=97d558a6', script.src).href; // version : empreinte de la feuille (tools/bump_versions.py)
     document.head.append(css);
   }
   const K = window.RepositoryKit; // utilitaires communs (shared/kit.js)

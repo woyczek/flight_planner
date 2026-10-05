@@ -1,7 +1,7 @@
 /* Designs à matières : Cabinet (cabinet de navigation), Carnet de vol (sa déclinaison aéronautique), Durci (console de
    terrain), Aqua (métal brossé, verre, gel). Chargé à la demande par repository_nav.js (designs.list[id].css de
    repository_tree), versionné comme les autres.
-   Organisation (docs/FRAMEWORK.md § 2 bis, docs/REFACTORING_TOOLKIT.md) :
+   Organisation (docs/technique/FRAMEWORK.md § 2 bis, docs/technique/REFACTORING_TOOLKIT.md) :
    - sélecteurs posés d'après le registre des designs (repository_tree, designs.list) : html[data-skeuo] (tout design à
      matières), html[data-skeuo="frame"] (cadre cousu autour de la page : Cabinet, Carnet de vol, Durci),
      html[data-design-base="cabinet"] (Cabinet et sa déclinaison Carnet de vol), html[data-design="…"] (un seul design) ;
@@ -17,7 +17,7 @@
    - les règles propres à une page vivent dans la feuille de cette page (Mission Core : shared/mission_core/core.css ;
      planificateur, éditeur de mission, Apparence), avec les jetons d'ici ;
    - vérification de toute retouche : tools/skeuo_regression.html (styles calculés, avant / après).
-   Principe (docs/FRAMEWORK.md § 2 bis) :
+   Principe (docs/technique/FRAMEWORK.md § 2 bis) :
    - les MATIÈRES (cuir, bois, parchemin, laiton, peinture olive, acier, verre) ont une palette propre au design,
      textures WebP de shared/textures/ (générées par tools/textures_generator.html) ;
    - les COULEURS D'INFORMATION restent celles du thème : Cabinet assombrit le bandeau du thème (bandeau, boutons
@@ -2848,7 +2848,7 @@ html[data-skeuo] .repo-seg:not([aria-pressed="true"]):is(:hover, :focus-visible)
    rail à angles droits, vissé aux deux bouts, et une plaque ou un poussoir par page ; la page courante est éclairée, les
    autres un peu éteintes. Cabinet, Durci : plaque gravée vissée (jetons --sk-plate-*) ; Carnet de vol : bouton du design
    (cuir sombre cerclé de laiton) et voyant ambre sur la page courante ; Aqua : bouton gel.
-   Images à venir (docs/ASSETS_A_FOURNIR.md, famille « Onglets de page ») : posées par design dès que les fichiers sont
+   Images à venir (docs/technique/ASSETS_A_FOURNIR.md, famille « Onglets de page ») : posées par design dès que les fichiers sont
    là, en découpe 9 parties (border-image) — --sk-tabs-rail-img / --sk-tabs-rail-slice (rail), --sk-tab-img /
    --sk-tab-img-on / --sk-tab-slice (poussoir relâché / enfoncé) ; sans elles, les jetons ci-dessous. */
 html[data-skeuo] {
@@ -2988,7 +2988,7 @@ html[data-design="flightlog"] .repo-tab[aria-current="page"]::before {
     display: none
   }
 }
-/* ---- onglets en images (tools/cut_tabs.py depuis docs/planches/onglets_<design>.webp) ----------------------------- */
+/* ---- onglets en images (tools/cut_tabs.py depuis docs/technique/planches/onglets_<design>.webp) ----------------------------- */
 /* Carnet de vol : la barre de laiton de la planche — chaque onglet est une cellule du rail (demi-séparateurs rivetés,
    fenêtre, poussoir : relâché, ou allumé avec voyant et lueur), les cellules accolées refont la barre, ses embouts
    vissés la ferment ; elle a la longueur des onglets (barre fermée, comme la planche). Échelle : 52 px de haut pour
@@ -3176,7 +3176,7 @@ html[data-design="field"] .repo-tab:not([aria-current="page"]):is(:hover, :focus
 }
 /* Liseré du bloc à onglets : le bloc qui suit la barre d'onglets (main) est entouré d'un liseré — laiton (Cabinet,
    Carnet de vol), acier (Durci, Aqua) — qui le désigne comme la page des onglets. Liseré : cadre à coins arrondis de
-   la planche (tools/cut_tabs.py, docs/planches/lisere_*.webp), trait d'environ 6 px ; découpe 75 (laiton) / 85 (acier). */
+   la planche (tools/cut_tabs.py, docs/technique/planches/lisere_*.webp), trait d'environ 6 px ; découpe 75 (laiton) / 85 (acier). */
 html[data-skeuo] .repo-tabs + main:not(#imp) {
   margin-top: 8px;
   padding-top: 10px;

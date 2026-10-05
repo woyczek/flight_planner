@@ -3,7 +3,7 @@
 Lit, dans apps/pilot/mes_missions.html, les règles « html[data-design="X"] #pmDetail[data-family="F"] .pm-book
 .pm-head { background-image: url(…order-header-Y.webp) } » (en-tête de l'émetteur selon la famille de la mission),
 les tampons « --pm-fam-stamp » (Carnet de vol) et l'en-tête par défaut de chaque design, puis assemble une planche
-par design (docs/planches/rubriques_<design>.jpg) et une planche d'ensemble (docs/planches/rubriques_mission.jpg) :
+par design (docs/technique/planches/rubriques_<design>.jpg) et une planche d'ensemble (docs/technique/planches/rubriques_mission.jpg) :
 chaque vignette porte l'organisme et les familles de mission qui y mènent.
 
 Usage (à la racine du dépôt) : python tools/planche_rubriques.py
@@ -15,7 +15,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 PAGE = os.path.join(ROOT, 'apps', 'pilot', 'mes_missions.html')
-OUT = os.path.join(ROOT, 'docs', 'planches')
+OUT = os.path.join(ROOT, 'docs', 'technique', 'planches')
 DESIGNS = {'cabinet': 'Cabinet', 'flightlog': 'Carnet de vol', 'field': 'Durci', 'aqua': 'Aqua'}
 NAMES = {
     # Durci

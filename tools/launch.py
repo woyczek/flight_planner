@@ -295,17 +295,17 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             return self._json({'error': 'fichier trop gros'}, 413)
         body = self.rfile.read(size) if size else b''
         if path == '/__setup/perf':
-            # mesures de l'audit de performance (tools/perf_audit.html) : docs/perf/runs/<nom>.json
+            # mesures de l'audit de performance (tools/perf_audit.html) : docs/technique/perf/runs/<nom>.json
             name = re.sub(r'[^\w.-]+', '_', urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('name', ['audit'])[0])[:80]
             try:
                 json.loads(body or b'null')
             except ValueError:
                 return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
-            out = os.path.join(ROOT, 'docs', 'perf', 'runs')
+            out = os.path.join(ROOT, 'docs', 'technique', 'perf', 'runs')
             os.makedirs(out, exist_ok=True)
             with open(os.path.join(out, name + '.json'), 'wb') as f:
                 f.write(body)
-            return self._json({'ok': True, 'file': f'docs/perf/runs/{name}.json'})
+            return self._json({'ok': True, 'file': f'docs/technique/perf/runs/{name}.json'})
         if path == '/__setup/sync-remote':
             # dépôt git de synchronisation de data/ (premier lancement) : vérifié (git ls-remote), enregistré si demandé ;
             # jamais bloquant : le compte rendu dit seulement si le dépôt répond
@@ -485,9 +485,9 @@ SYNC_LOCK = threading.Lock()  # une synchronisation git à la fois (tools/data_s
 def index_availability():
     """data/disponibilites/_index.json : pilotes qui ont déclaré leurs disponibilités. Les pages ne demandent que ces
     fichiers (l'ODV en demandait un par pilote, presque tous absents). Entrée d'un pilote : { weeks: [semaines ISO du
-    dossier <TRI>/ (format par plages, docs/DISPOS_ET_REORGANISATION.md § 1.3)], at: { semaine: updated_at du fichier }
+    dossier <TRI>/ (format par plages, docs/technique/DISPOS_ET_REORGANISATION.md § 1.3)], at: { semaine: updated_at du fichier }
     (signature : les pages gardent les fichiers dans leur index et ne relisent que ceux dont la date a changé,
-    docs/INDEX_DONNEES.md § 3), legacy: true (ancien fichier <TRI>.json), legacy_at (sa signature) }. Refait à chaque demande de l'index (do_GET) ;
+    docs/technique/INDEX_DONNEES.md § 3), legacy: true (ancien fichier <TRI>.json), legacy_at (sa signature) }. Refait à chaque demande de l'index (do_GET) ;
     réécrit seulement s'il change ; ignoré par git (régénéré)."""
     d = os.path.join(DATA, 'disponibilites')
     if not os.path.isdir(d):
@@ -528,7 +528,7 @@ def updated_at(path):
 
 def index_users():
     """data/utilisateurs/_index.json : trigramme → rôle, actif, nom, updated_at de la fiche (signature, comme
-    index_availability) (fiches <TRI>.json, docs/DISPOS_ET_REORGANISATION.md § 2). Les pages s'en servent pour lister
+    index_availability) (fiches <TRI>.json, docs/technique/DISPOS_ET_REORGANISATION.md § 2). Les pages s'en servent pour lister
     les utilisateurs ; refait à chaque demande ; réécrit seulement s'il change."""
     d = os.path.join(DATA, 'utilisateurs')
     if not os.path.isdir(d):

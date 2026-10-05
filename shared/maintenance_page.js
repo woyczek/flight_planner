@@ -860,13 +860,13 @@
       l: [...new Set(profUnknown)].join(', ')
     })) : pill('ok', ''));
     // prompt des missions
-    const md = await repoText('docs/PROMPT_GENERATEUR_MISSIONS.md');
+    const md = await repoText('docs/technique/PROMPT_GENERATEUR_MISSIONS.md');
     let promptState = pill('info', t(['non lisible', 'not readable']));
     if (md && typeof window.MISSION_PROMPT === 'string') {
       const block = /```text\n([\s\S]*?)\n```/.exec(md.text.replace(/\r\n/g, '\n'))?.[1];
       promptState = block == null ? pill('warn', '?') : block.trim() === window.MISSION_PROMPT.trim() ? pill('ok', t(['synchronisé', 'in sync'])) : pill('warn', t(['à régénérer : python tools/build_mission_prompt.py', 'rebuild: python tools/build_mission_prompt.py']));
     }
-    add(t(['Prompt des missions', 'Mission prompt']), 'apps/cpco/mission_prompt.js ← docs/PROMPT_GENERATEUR_MISSIONS.md', t(['git ; en-tête « GÉNÉRÉ »', 'git; “GENERATED” header']), 'build_mission_prompt.py (bump_versions.py)', t(['générateur, registre des missions', 'generator, mission registry']), promptState);
+    add(t(['Prompt des missions', 'Mission prompt']), 'apps/cpco/mission_prompt.js ← docs/technique/PROMPT_GENERATEUR_MISSIONS.md', t(['git ; en-tête « GÉNÉRÉ »', 'git; “GENERATED” header']), 'build_mission_prompt.py (bump_versions.py)', t(['générateur, registre des missions', 'generator, mission registry']), promptState);
     host.innerHTML = `<p class="row"><button type="button" class="secondary" id="mtDepRefresh" data-icon="refresh">${esc(t(['Vérifier', 'Check', 'Prüfen', 'Comprobar']))}</button></p>
       <div class="mt-scroll"><table class="mt-table mt-wide"><thead><tr><th>${esc(t(['Référence', 'Reference', 'Referenz', 'Referencia']))}</th><th>${esc(t(['Fichier', 'File', 'Datei', 'Archivo']))}</th><th>${esc(t(['Traçage', 'Tracing', 'Nachverfolgung', 'Trazado']))}</th><th>${esc(t(['Mise à jour', 'Update', 'Aktualisierung', 'Actualización']))}</th><th>${esc(t(['Dépendants', 'Dependents', 'Abhängige', 'Dependientes']))}</th><th>${esc(t(['Contrôle', 'Check', 'Prüfung', 'Control']))}</th></tr></thead><tbody>
       ${rows.map(r => `<tr><td><b>${esc(r.ref)}</b></td><td class="mt-small"><code>${esc(r.file)}</code></td><td class="mt-small">${esc(r.traced)}</td><td class="mt-small">${esc(r.process)}</td><td class="mt-small">${esc(r.dependents)}</td><td>${r.state}</td></tr>`).join('')}

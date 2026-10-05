@@ -1,4 +1,4 @@
-"""Retire les !important des styles propres d'une page (docs/REFACTORING_TOOLKIT.md, chantier 3 : couches CSS).
+"""Retire les !important des styles propres d'une page (docs/technique/REFACTORING_TOOLKIT.md, chantier 3 : couches CSS).
 
 Préalable aux couches : dans une couche, un !important l'emporte sur celui d'une règle hors couche (ordre inversé) ;
 les !important des styles de page empêcheraient les designs de l'emporter. On les retire donc d'abord, hors couche,

@@ -17,12 +17,12 @@ browser.
 
 | Application | Pages | Purpose | Documentation (French) |
 |---|---|---|---|
-| **CR DEFA** (Mission Report Core) | `apps/cr/` — ☰ › Reporting missions, new report, settings | Mission reports for 15 families, single ledger, reporting and charts, fleet and callsign databases, report sending | [Tutorial](docs/TUTORIAL.md) · [Operations manual](docs/MANUEL_EXPLOITATION.md) · [Design notes](docs/mission_report_core_audit.md) |
-| **Landing Performance Dashboard** | `apps/landing/ LandingPerformance_Dashboard_MultiCSV_i18n.html` | Landing analysis (score, FPM, G) from CSV / LOG journals, trends, filters | [docs/LANDING_DASHBOARD.md](docs/LANDING_DASHBOARD.md) · [aircraft database updater](apps/landing/README.md) |
-| **Flight Performance & Fuel Planner** | `apps/planner/flight_performance_planner.html` | Aircraft performance profiles, fuel quote, optimum altitude, SimBrief calibration, Little Navmap exchange | [docs/FLIGHT_PLANNER.md](docs/FLIGHT_PLANNER.md) |
-| **SIA missions** | `apps/cpco/` — ☰ › Centre — Générateur de mission, Centre — Studio cartographique | Mission brief (texts, points, final PDF) and PNG / SVG maps from SIA AIRAC data: airspaces, MORA, graticule, air-to-air refuelling tracks, OSM base maps; opens a pre-filled CR DEFA report | [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md) |
-| **Flight maps** | `apps/planner/map_planner.html` — ☰ › Cartes de vol (public) | Route search (airways, RTBA low level), topographic route, approach, rendezvous and destination maps, vertical profile; built from the Centre's map studio by `tools/build_map_planner.py` | [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md) |
-| **Shared framework** | `repository_tree`, `shared/`, `AircraftDB/`, `tools/` | Header and ☰ menu, languages, blocks, period and zoom (TimePeriod), charts, tables, pilot profile, local data, aircraft databases | [docs/FRAMEWORK.md](docs/FRAMEWORK.md) |
+| **CR DEFA** (Mission Report Core) | `apps/cr/` — ☰ › Reporting missions, new report, settings | Mission reports for 15 families, single ledger, reporting and charts, fleet and callsign databases, report sending | [Tutorial](TUTORIAL.md) · [Operations manual](MANUEL_EXPLOITATION.md) · [Design notes](technique/mission_report_core_audit.md) |
+| **Landing Performance Dashboard** | `apps/landing/ LandingPerformance_Dashboard_MultiCSV_i18n.html` | Landing analysis (score, FPM, G) from CSV / LOG journals, trends, filters | [docs/LANDING_DASHBOARD.md](LANDING_DASHBOARD.md) · [aircraft database updater](LANDING_DASHBOARD.md) |
+| **Flight Performance & Fuel Planner** | `apps/planner/flight_performance_planner.html` | Aircraft performance profiles, fuel quote, optimum altitude, SimBrief calibration, Little Navmap exchange | [docs/FLIGHT_PLANNER.md](FLIGHT_PLANNER.md) |
+| **SIA missions** | `apps/cpco/` — ☰ › Centre — Générateur de mission, Centre — Studio cartographique | Mission brief (texts, points, final PDF) and PNG / SVG maps from SIA AIRAC data: airspaces, MORA, graticule, air-to-air refuelling tracks, OSM base maps; opens a pre-filled CR DEFA report | [docs/SIA_MISSIONS.md](SIA_MISSIONS.md) |
+| **Flight maps** | `apps/planner/map_planner.html` — ☰ › Cartes de vol (public) | Route search (airways, RTBA low level), topographic route, approach, rendezvous and destination maps, vertical profile; built from the Centre's map studio by `tools/build_map_planner.py` | [docs/SIA_MISSIONS.md](SIA_MISSIONS.md) |
+| **Shared framework** | `repository_tree`, `shared/`, `AircraftDB/`, `tools/` | Header and ☰ menu, languages, blocks, period and zoom (TimePeriod), charts, tables, pilot profile, local data, aircraft databases | [docs/FRAMEWORK.md](technique/FRAMEWORK.md) |
 
 The applications talk through the framework: same pilot profile (IVAO, VATSIM,
 SimBrief), same period component (drag-to-zoom on charts, ◀ 🔍− ▶ buttons in the header),
@@ -81,7 +81,7 @@ Highlights:
 
 ### SIA missions — mission generator and map studio
 
-Folder `apps/cpco/`; details (French): [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md).
+Folder `apps/cpco/`; details (French): [docs/SIA_MISSIONS.md](SIA_MISSIONS.md).
 
 - **Mission generator (brief)**: YAML (`helo-xp-mission`) or Markdown import, texts proposed
   from the data when missing (points, rendezvous, instructions, refuelling track), YAML /
@@ -94,7 +94,7 @@ Folder `apps/cpco/`; details (French): [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.
   graticule; computed **MORA grid** (terrain, peaks, SIA obstacles); exact **air-to-air
   refuelling racetracks** (MILAIP ENR 5.7); robust PNG / SVG / ZIP generation.
 
-### Shared framework (summary — details: [docs/FRAMEWORK.md](docs/FRAMEWORK.md))
+### Shared framework (summary — details: [docs/FRAMEWORK.md](technique/FRAMEWORK.md))
 
 - `repository_tree`: page tree, labels, themes, favicons (JavaScript file without
   extension).
@@ -150,7 +150,7 @@ Version 2.3.0. Workarounds at the end of each line.
 2. Serve it locally, e.g. `python -m http.server 8000` at the repository root, and open
    <http://127.0.0.1:8000/apps/cr/mission_cr.html> in Chrome or Edge.
 3. ☰ › Profil pilote: enter your IVAO / VATSIM IDs (and SimBrief username).
-4. Follow [docs/TUTORIAL.md](docs/TUTORIAL.md).
+4. Follow [docs/TUTORIAL.md](TUTORIAL.md).
 
 ## Privacy
 

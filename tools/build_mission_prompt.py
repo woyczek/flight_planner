@@ -1,4 +1,4 @@
-"""Construit « apps/cpco/mission_prompt.js » à partir de docs/PROMPT_GENERATEUR_MISSIONS.md (bloc ```text).
+"""Construit « apps/cpco/mission_prompt.js » à partir de docs/technique/PROMPT_GENERATEUR_MISSIONS.md (bloc ```text).
 
 Le bouton « ChatGPT → » du générateur de mission lit le prompt dans ce fichier JavaScript, chargé par
 <script> comme les autres (fonctionne aussi hors serveur web, sans lecture réseau du dossier docs/).
@@ -10,7 +10,7 @@ Usage (à la racine du dépôt) :  python tools/build_mission_prompt.py
 import io, json, os, re, sys
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-SRC = os.path.join(ROOT, 'docs', 'PROMPT_GENERATEUR_MISSIONS.md')
+SRC = os.path.join(ROOT, 'docs', 'technique', 'PROMPT_GENERATEUR_MISSIONS.md')
 OUT = os.path.join(ROOT, 'apps', 'cpco', 'mission_prompt.js')
 
 
@@ -20,7 +20,7 @@ def build(verbose=True):
     if not m:
         sys.exit('Bloc ```text introuvable dans ' + SRC)
     js = ('// Prompt de génération de missions (ChatGPT…), GÉNÉRÉ par tools/build_mission_prompt.py depuis\n'
-          '// docs/PROMPT_GENERATEUR_MISSIONS.md : ne pas éditer à la main.\n'
+          '// docs/technique/PROMPT_GENERATEUR_MISSIONS.md : ne pas éditer à la main.\n'
           'window.MISSION_PROMPT = ' + json.dumps(m.group(1), ensure_ascii=False) + ';\n')
     old = io.open(OUT, encoding='utf-8').read() if os.path.exists(OUT) else ''
     if js != old:

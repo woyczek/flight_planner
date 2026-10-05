@@ -6,7 +6,7 @@ Usage (à la racine du dépôt) :
     python tools/cut_banner.py <planche.png> [--design aqua] [--largeur 2000]
 
 Les bandes sont trouvées d'après les lignes non blanches de la planche (fond blanc entre elles) : la première est le ton
-sombre, la seconde le ton clair. Copie de la planche : docs/planches/banniere_<design>.webp.
+sombre, la seconde le ton clair. Copie de la planche : docs/technique/planches/banniere_<design>.webp.
 """
 import argparse, os, sys
 from PIL import Image
@@ -48,7 +48,7 @@ def main():
         p = os.path.join(dest, f'footer-{ton}.webp')
         band.save(p, 'WEBP', quality=86, method=6)
         print(f'{os.path.relpath(p, ROOT)} {band.size} {os.path.getsize(p) // 1024} ko')
-    planches = os.path.join(ROOT, 'docs', 'planches')
+    planches = os.path.join(ROOT, 'docs', 'technique', 'planches')
     os.makedirs(planches, exist_ok=True)
     p = os.path.join(planches, f'banniere_{o.design}.webp')
     im.save(p, 'WEBP', quality=88, method=6)

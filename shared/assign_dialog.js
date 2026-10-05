@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  // Centre : affecter une mission à un ou plusieurs pilotes (docs/AFFECTATION_MISSIONS.md). Ouvert par « Affecter… » du
+  // Centre : affecter une mission à un ou plusieurs pilotes (docs/technique/AFFECTATION_MISSIONS.md). Ouvert par « Affecter… » du
   // registre des missions et par le planning ODV (créneau cliqué : pilotes et heure préremplis). Outils communs (convoyage,
   // qualification, créneaux, conflits, écriture) : shared/assignments.js.
   //   · heure : décollage (UTC), ou heure H d'un exercice (décollage du participant = H + son décalage) ; astreinte ;

@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  // Planning ODV ↔ affectations des missions (docs/AFFECTATION_MISSIONS.md) : déclarations des pilotes (disponibilités
+  // Planning ODV ↔ affectations des missions (docs/technique/AFFECTATION_MISSIONS.md) : déclarations des pilotes (disponibilités
   // d'une heure ramenées aux créneaux matin / après-midi / soir, appareils) et affectations de la semaine, pour la
   // grille (seconde ligne par pilote : sa déclaration ; non affecté et disponible : encadré rouge ; affecté : n° de la
   // mission) et pour affecter depuis un créneau (dialogue « Affecter… », pilotes et heure préremplis).
@@ -170,7 +170,7 @@
     const tip = [SD.label(SD.group(d.groupe)?.label || d.groupe), ...cs.map(c => `· ${SD.code(c)} ${SD.label(c.label)}`), K.t(['déclaration du pilote (Mes missions)', 'pilot declaration (My missions)', 'Pilotenangabe (Meine Missionen)', 'declaración del piloto (Mis misiones)'])].join('\n');
     return `<span class="odv-code c-${esc(d.category || 'inconnu')}" style="background:${esc(bg)};color:${ink}" title="${esc(tip)}">${esc(cs.map(SD.code).filter(Boolean).join('/'))}</span>`;
   }
-  /** Déclaration regroupée (docs/DISPOS_ET_REORGANISATION.md § 1.2) : lettre (court : D, E, O, I) et couleur du groupe
+  /** Déclaration regroupée (docs/technique/DISPOS_ET_REORGANISATION.md § 1.2) : lettre (court : D, E, O, I) et couleur du groupe
    *  (Disponible, Exercice DEFA, Occupé, Indisponible) ; catégories et thèmes ouverts dans l'infobulle. */
   function groupCell(d) {
     const SD = window.SuiteDispos,

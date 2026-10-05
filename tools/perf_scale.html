@@ -21,7 +21,7 @@
 registre et estimation de route, registre des CR, couche de traduction). Chaque mesure est la médiane de trois essais ;
 la croissance est ajustée en loi de puissance <code>t = a·n^b</code> (b ≈ 1 : linéaire ; b ≈ 2 : quadratique) puis
 extrapolée. Servir le dépôt avec le lanceur, ouvrir <code>/tools/perf_scale.html</code>.</p>
-<p><label>Libellé <input id="label" size="24" value="avant"></label> <button id="go">Mesurer</button> <button id="save">Enregistrer dans docs/perf</button> <span id="state" class="mut"></span></p>
+<p><label>Libellé <input id="label" size="24" value="avant"></label> <button id="go">Mesurer</button> <button id="save">Enregistrer dans docs/technique/perf</button> <span id="state" class="mut"></span></p>
 <div id="out"></div>
 <script>
   // sans sonde ni mode « sans serveur » (audit de parcours) : mesures du code seul
@@ -104,7 +104,7 @@ extrapolée. Servir le dépôt avec le lanceur, ouvrir <code>/tools/perf_scale.h
         localStorage.removeItem('perfScaleProbe');
         return ms;
       } },
-    // registre dans l'index IndexedDB (shared/data_index.js, docs/INDEX_DONNEES.md) : base d'essai à part, jamais l'index réel
+    // registre dans l'index IndexedDB (shared/data_index.js, docs/technique/INDEX_DONNEES.md) : base d'essai à part, jamais l'index réel
     { id: 'registre-index', label: 'Registre dans l’index IndexedDB : écriture + lecture (n missions)', unit: 'missions', sizes: [73, 300, 1200, 2400, 10000],
       async run(n) {
         const rows = replicate(regSample, n, (m, i) => ({ ...m, id: `X-${i}`, folder: `X/${i}` })).map(m => ({ k: m.id, m }));

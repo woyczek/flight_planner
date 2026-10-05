@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  // Utilisateurs et droits (docs/DISPOS_ET_REORGANISATION.md § 2), chargé sur chaque page par repository_nav.js.
+  // Utilisateurs et droits (docs/technique/DISPOS_ET_REORGANISATION.md § 2), chargé sur chaque page par repository_nav.js.
   //   · fiche par utilisateur data/utilisateurs/<TRI>.json (pool synchronisé) : trigramme, nom, rôle « admin_centre » ou
   //     « utilisateur », actif, mot de passe (empreinte PBKDF2-SHA256 salée, WebCrypto — jamais en clair), préférences de
   //     thèmes, compagnie (va) ; index data/utilisateurs/_index.json (trigramme → rôle, actif) ;
@@ -11,7 +11,7 @@
   //   · session de ce navigateur (suiteSession:v1) : { tri, role, at, as } ; as : utilisateur usurpé par un admin —
   //     bandeau « Usurpation : utilisateur TOTO » sur toutes les pages, écritures signées by: "ADM pour TOTO".
   // Limite : tout se vérifie dans le navigateur ; la vérification passera côté serveur avec le webservice
-  // (docs/INDEX_DONNEES.md § 9). Le verrou du Centre (cpcoAccess:v1, repository_nav.js) reste indépendant.
+  // (docs/technique/INDEX_DONNEES.md § 9). Le verrou du Centre (cpcoAccess:v1, repository_nav.js) reste indépendant.
   // API (window.SuiteUsers) : mode(), config(), setMode(mode), session(), effective(), by(), isAdmin(),
   //   trigramLocked(), get(TRI), list(), save(fiche), create(TRI, { nom, role }), seed(), login(TRI, mot de passe),
   //   logout(), changePassword(ancien, nouveau), resetPassword(TRI, nouveau), impersonate(TRI), stopImpersonation(),

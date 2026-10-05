@@ -21,10 +21,10 @@ try {
 } catch {
   /* stockage indisponible : pas de sonde */
 }
-// Index des données (shared/data_index.js : registre des missions en IndexedDB, docs/INDEX_DONNEES.md) : inséré de même,
+// Index des données (shared/data_index.js : registre des missions en IndexedDB, docs/technique/INDEX_DONNEES.md) : inséré de même,
 // avant les scripts de la page ; kit chargé après coup (page déjà lue) : ajouté à la fin du document.
 if (!window.DataIndex) {
-  const src = new URL('data_index.js?v=3d3efd41', document.currentScript?.src || location.href).href;
+  const src = new URL('data_index.js?v=1d9fdbb3', document.currentScript?.src || location.href).href;
   if (document.readyState === 'loading') document.write(`<script src="${src}"></scr` + 'ipt>');
   else document.head.append(Object.assign(document.createElement('script'), { src }));
 }
@@ -32,7 +32,7 @@ if (!window.DataIndex) {
   'use strict';
   if (window.RepositoryKit) return;
 
-  // ------------------------------------------------------------------ couches CSS (docs/REFACTORING_TOOLKIT.md, phase 3)
+  // ------------------------------------------------------------------ couches CSS (docs/technique/REFACTORING_TOOLKIT.md, phase 3)
   // Socle, styles des pages et styles posés par les scripts partagent la couche « app » (ordre et spécificité entre eux
   // inchangés) ; les designs restent hors couche, au-dessus, et l'emportent sans !important. Les feuilles du socle et les
   // <style> des pages sont rangés par tools/layer_app.py (data-layer) ; ici, tout autre <style> — posé par un script,

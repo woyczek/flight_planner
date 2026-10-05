@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  // Saisie des disponibilités par plages (docs/DISPOS_ET_REORGANISATION.md § 1.5) : même interface pour tous les pilotes,
+  // Saisie des disponibilités par plages (docs/technique/DISPOS_ET_REORGANISATION.md § 1.5) : même interface pour tous les pilotes,
   // dans Mes missions › Mes disponibilités et seule (apps/pilot/disponibilites.html).
   //   · semaine affichée (flèches, date, « semaine en cours ») — ou celle de la page hôte (nav: false, set({ week })) ;
   //   · ajout : Groupe → Catégorie (selon le groupe) → jours (lundi … dimanche) → horaires facultatifs (UTC, au quart

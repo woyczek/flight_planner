@@ -343,7 +343,7 @@ main.ap-page .ap-pill.ok{background:#e3f4e8!important/*garder*/;color:#14532d!im
         nav().setTheme(previewTheme || nav().settings.theme);
         render();
       } else if (b.id === 'apDemo') {
-        location.href = new URL('docs/demo_design_icones.html', nav().root).href;
+        location.href = new URL('docs/technique/demo_design_icones.html', nav().root).href;
       } else if (b.id === 'apReset') {
         Object.keys(a.current().colors).forEach(n => a.setColor(n, null));
         a.setIcons(null);

@@ -1,0 +1,47 @@
+# Documentation technique — Suite DEFA Virtual
+
+*[← Index documentaire](../README.md)* · Conception, architecture, projet, audits et propositions : pour qui développe
+ou maintient la suite. Les manuels et guides d'utilisation sont au [premier niveau](../README.md).
+
+## Architecture et données
+
+| Document | Pour |
+|---|---|
+| [Synchronisation des données](SYNCHRONISATION.md) | architecture de la synchronisation (bouton « Synchroniser », conflits fiche par fiche, plusieurs utilisateurs) |
+| [Index des données](INDEX_DONNEES.md) | index du navigateur, réplication, expiration, conflits, étapes |
+| [Framework commun](FRAMEWORK.md) | en-tête, menu, blocs, dossiers, données locales |
+| [Boîte à outils](REFACTORING_TOOLKIT.md) | designs à matières, couches CSS, banc de non-régression |
+| [Intégration SIA XML](SIA_XML_INTEGRATION.md) | lecture des données AIXM du SIA |
+
+## Conception des fonctions
+
+| Document | Pour |
+|---|---|
+| [Affectation des missions](AFFECTATION_MISSIONS.md) | conception de l'affectation des missions aux pilotes et de « Mes missions » |
+| [Disponibilités et réorganisation](DISPOS_ET_REORGANISATION.md) | catégories de disponibilité, paramètres en quatre pages, utilisateurs et droits (décisions du 5 octobre 2026) |
+| [Prompt du générateur de missions](PROMPT_GENERATEUR_MISSIONS.md) | prompt de génération des missions (source de `apps/cpco/mission_prompt.js`) |
+
+## Projet
+
+| Document | Pour |
+|---|---|
+| [Feuille de route](ROADMAP.md) | où va la suite, dans quel ordre, décisions en attente |
+| [Dette technique](DETTE_TECHNIQUE.md) | points connus, gardés en l'état, à reprendre |
+
+## Designs et images
+
+| Document | Pour |
+|---|---|
+| [Assets à fournir](ASSETS_A_FOURNIR.md) | images à produire pour chaque design à matières |
+| [Prompts phase 2](PROMPTS_ASSETS_PHASE2.md) · [Prompts du livre de mission](PROMPTS_LIVRE_MISSION.md) | prompts des images des designs |
+| [Icônes des designs](PROPOSITION_DESIGN_ICONES.md) · [démonstration](demo_design_icones.html) | proposition : icônes, numéros et sous-titres de blocs, barre latérale |
+| Planches (`planches/`) | planches de référence et sources des découpes (onglets, liserés, bannières, rubriques) |
+
+## Audits et mesures
+
+| Document | Pour |
+|---|---|
+| [Mission Report Core](mission_report_core_audit.md) | audit et plan d'intégration du socle des comptes rendus |
+| [Audit du 28 septembre 2026](AUDIT_2026-09-28.md) | entrées SIA, installation, git |
+| [Audit de sécurité du 2 octobre 2026](AUDIT_SECURITE_2026-10-02.md) | pages, scripts, lanceur |
+| [Performances : synthèse](perf/SYNTHESE.md) · [rapport](perf/RAPPORT_PERF.md) · [plan](perf/PLAN_PERF_2026-10-04.md) | audit de performance avant / après, extrapolation |

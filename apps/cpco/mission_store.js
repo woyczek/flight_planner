@@ -869,7 +869,7 @@
   }
   // ---- numérotation : lettre de FAMILLE + tiret + numéro sur 3 chiffres par famille (+ lettre d'équipe) — « M-016 », « S-002A »
   // (écritures sans tiret « M016 » acceptées et ramenées à ce format).
-  // Même table que tools/family_letters.py et que le prompt (docs/PROMPT_GENERATEUR_MISSIONS.md, § 3).
+  // Même table que tools/family_letters.py et que le prompt (docs/technique/PROMPT_GENERATEUR_MISSIONS.md, § 3).
   const FAMILY_LETTERS = {
     HEMS: 'M',
     MEDEVAC: 'M',
@@ -937,7 +937,7 @@
     }).join(' · ');
   }
   // ---- Markdown d'une mission (summary<ID>.md) produit depuis son YAML : format du § 9 du prompt de génération
-  //      (docs/PROMPT_GENERATEUR_MISSIONS.md), relu par fromTexts ; mission d'organisation (…Z) : son format propre.
+  //      (docs/technique/PROMPT_GENERATEUR_MISSIONS.md), relu par fromTexts ; mission d'organisation (…Z) : son format propre.
   //      docs : autres missions de l'opération (YAML), pour la section « Exercice » d'une mission d'équipage.
   function markdownOf(y, {
     docs = []

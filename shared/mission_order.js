@@ -7,7 +7,7 @@
   //   · paramètres : type, sous-type (§ 2 du prompt), théâtre(s), série (vide = la suivante), identifiant calculé
   //     (SiaMission.nextNumbering), équipes DEFA en vol et aéronef de chaque équipe (A, B, C… ; vide = automatique ;
   //     complétion par les types courants et la flotte DEFA), rendez-vous, équipes au sol, ravitaillement en vol ;
-  //   · prompt : window.MISSION_PROMPT (apps/cpco/mission_prompt.js, construit depuis docs/PROMPT_GENERATEUR_MISSIONS.md
+  //   · prompt : window.MISSION_PROMPT (apps/cpco/mission_prompt.js, construit depuis docs/technique/PROMPT_GENERATEUR_MISSIONS.md
   //     par tools/build_mission_prompt.py), paramètres réglés en tête, copié puis ChatGPT ouvert dans un nouvel onglet ;
   //   · la commande est inscrite au registre (statut « commandée », missionRegistry:v1) puis rapprochée de la mission
   //     générée à la relecture du dossier (même série) ;
@@ -53,7 +53,7 @@
     }
   };
 
-  /** Familles et sous-types : § 2 du prompt de génération (source unique : docs/PROMPT_GENERATEUR_MISSIONS.md). */
+  /** Familles et sous-types : § 2 du prompt de génération (source unique : docs/technique/PROMPT_GENERATEUR_MISSIONS.md). */
   function families() {
     const text = String(window.MISSION_PROMPT || ''),
       out = [];
@@ -194,7 +194,7 @@
     writeJson(REG_KEY, reg);
   }
 
-  /** Prompt de génération réglé (paramètres en tête du bloc de docs/PROMPT_GENERATEUR_MISSIONS.md) copié, puis ChatGPT ouvert.
+  /** Prompt de génération réglé (paramètres en tête du bloc de docs/technique/PROMPT_GENERATEUR_MISSIONS.md) copié, puis ChatGPT ouvert.
    *  out : élément du message (copie faite, ou texte à copier à la main si le navigateur refuse). Retourne le prompt. */
   async function sendPrompt(r, out) {
     const base = window.MISSION_PROMPT;

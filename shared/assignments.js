@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  // Affectations des missions aux pilotes (docs/AFFECTATION_MISSIONS.md) : socle commun, chargé sur chaque page par
+  // Affectations des missions aux pilotes (docs/technique/AFFECTATION_MISSIONS.md) : socle commun, chargé sur chaque page par
   // repository_nav.js.
   //   · identité : trigramme du profil pilote (☰ › Profil pilote, missionReportingConfig:v1.trigram) ;
   //   · index des affectations : data/missions/affectations.json (écrit par le Centre, lu par fetch — pas d'autorisation de
@@ -136,7 +136,7 @@
       lock: (name, fn) => navigator.locks?.request ? navigator.locks.request(`defa:${name}`, fn) : fn()
     };
   })();
-  // ---- fichiers du pool synchronisé (docs/INDEX_DONNEES.md § 9 : disponibilités, utilisateurs, configuration partagée) :
+  // ---- fichiers du pool synchronisé (docs/technique/INDEX_DONNEES.md § 9 : disponibilités, utilisateurs, configuration partagée) :
   // écrits dans le dossier des données autorisé (Paramètres › Installation › Sources et dossiers), sous verrou, puis
   // annoncés (store.changed) ; sans dossier autorisé, gardés dans ce navigateur (boîte d'envoi suiteDataOutbox:v1, relue
   // en priorité tant qu'elle est plus récente que le fichier) et écrits au prochain flushData().
@@ -241,7 +241,7 @@
     if (local && (!served || String(local.value?.updated_at || local.at) >= String(served.updated_at || ''))) return local.value;
     return served;
   }
-  /** Fichier du pool lu par l'index (docs/INDEX_DONNEES.md § 3) : sig = signature donnée par l'index du dossier
+  /** Fichier du pool lu par l'index (docs/technique/INDEX_DONNEES.md § 3) : sig = signature donnée par l'index du dossier
    *  (updated_at du fichier, data/disponibilites/_index.json, data/utilisateurs/_index.json) ; la copie de l'index
    *  (base defaIndex, store files) sert sans requête tant qu'elle a cette signature, sinon le fichier est relu et sa
    *  copie remplacée. Sans signature, fichier dans la boîte d'envoi, lecture « fraîche » ou index indisponible :
@@ -596,7 +596,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     const entry = idx?.pilots?.[tri];
     // ancien fichier : lu par l'index du navigateur tant que sa signature (legacy_at) n'a pas changé
     if (!doc && (!idx?.pilots || entry === true || entry?.legacy)) doc = entry?.legacy_at ? await readIndexed(`disponibilites/${tri}.json`, entry.legacy_at) : await store.read(`data/disponibilites/${encodeURIComponent(tri)}.json`);
-    // nouveau format (docs/DISPOS_ET_REORGANISATION.md § 1.3, shared/dispos.js) : une déclaration par semaine ISO ;
+    // nouveau format (docs/technique/DISPOS_ET_REORGANISATION.md § 1.3, shared/dispos.js) : une déclaration par semaine ISO ;
     // préférences de thèmes du pilote (fiche utilisateur) pour calculer les thèmes ouverts
     const weeks2 = await window.SuiteDispos?.readPilot?.(tri).catch(() => ({})) || {};
     const prefs = await window.SuiteUsers?.themePrefs?.(tri).catch(() => null) || null;

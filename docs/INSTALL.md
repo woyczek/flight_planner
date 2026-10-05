@@ -55,7 +55,7 @@ la suite démarre sur les exemples d'`examples/`. Deux façons d'avoir les donn�
   `lancer.cmd`), relancer — elle est extraite dans `data/` (archive reconnue à son fichier `data_tree.js`).
 
 Conseil : un dossier synchronisé (Synology Drive, OneDrive…) convient, **en excluant les dossiers `.git`** de la
-synchronisation (la synchronisation de `.git` corrompt les dépôts, voir [AUDIT_2026-09-28.md](AUDIT_2026-09-28.md)).
+synchronisation (la synchronisation de `.git` corrompt les dépôts, voir [AUDIT_2026-09-28.md](technique/AUDIT_2026-09-28.md)).
 
 ## 3. Navigateur
 

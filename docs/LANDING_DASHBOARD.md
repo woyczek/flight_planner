@@ -7,7 +7,7 @@ avion et dans le temps.
 
 Code : la page elle-même (thème sombre « landing »), `shared/landing_ui.js` (actions du menu
 ☰, langue), composants du framework : bandeau et menu ☰, blocs déplaçables / masquables,
-**période TimePeriod** (voir [FRAMEWORK.md](FRAMEWORK.md)). Bases partagées :
+**période TimePeriod** (voir [FRAMEWORK.md](technique/FRAMEWORK.md)). Bases partagées :
 `AircraftDB/aircraft_db.js` et `aircraft_icons.js`. Le script de mise à jour de la base
 d'aéronefs utilisée par la page est documenté dans
 [apps/landing/README.md](../apps/landing/README.md).

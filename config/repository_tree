@@ -118,7 +118,7 @@ window.REPOSITORY_TREE={
     "apps/cr/COMBAT":{theme:"combat",favicon:"assets/favicon-combat.svg"},
     "apps/landing":{theme:"landing",favicon:"assets/favicon-landing.svg"}
   },
-  // Barre latérale (shared/repository_nav.js) : entrées dans l'ordre, pilote d'abord puis Centre (docs/DISPOS_ET_REORGANISATION.md
+  // Barre latérale (shared/repository_nav.js) : entrées dans l'ordre, pilote d'abord puis Centre (docs/technique/DISPOS_ET_REORGANISATION.md
   // § 3). Entrée : icon (registre d'icônes), path (page déclarée ci-dessous), label et title [fr, en, de, es], match
   // (texte ou liste : entrée active aussi sur les pages dont le chemin le contient), menu:true (ouvre le menu ☰).
   // Séparateur : {sep:true} ; title : séparateur titré (masqué, comme le Centre, si toutes ses entrées sont du Centre) ;
@@ -155,7 +155,7 @@ window.REPOSITORY_TREE={
       {path:"apps/settings/installation.html",label:["Installation","Installation","Installation","Instalación"]},
       {path:"apps/settings/maintenance.html",label:["Maintenance","Maintenance","Wartung","Mantenimiento"]}]}
   ],
-  // Paramètres en quatre pages (docs/DISPOS_ET_REORGANISATION.md § 2) : rubrique (?base=<id> de shared/data_admin.js et
+  // Paramètres en quatre pages (docs/technique/DISPOS_ET_REORGANISATION.md § 2) : rubrique (?base=<id> de shared/data_admin.js et
   // shared/settings_panels.js, ?m=<id> de shared/maintenance_page.js) → page. Les anciennes adresses
   // (parametrage.html?base=…, ?m=…, maintenance.html#…) y renvoient ; RepositoryNav.settingsUrl(rubrique) en donne l'adresse.
   settings:{
@@ -264,4 +264,4 @@ window.REPOSITORY_TREE.iconComposed={"brass":{"normal":"cabinet/vierge.webp","ce
 // scripts de fin de page — sans cela, la page paraissait à moitié construite puis se complétait (clignotement au
 // changement de page) ; le navigateur garde la page précédente à l'écran en attendant.
 // Versions : tools/bump_versions.py (empreinte de designs.css, table FILE_V des feuilles des designs à matières).
-(function(){try{var c=document.currentScript,T=window.REPOSITORY_TREE,L=T.designs&&T.designs.list||{},g=localStorage.getItem("repositoryDesign"),id=L[g]?g:(T.designs&&L[T.designs.default]?T.designs.default:"standard"),x=L[id]||{},d=document.documentElement,FILE_V = {"designs_skeuo.css": "985bd3de"};if(!c||c.hasAttribute("data-no-design"))return;d.dataset.design=id;d.dataset.designBase=x.base||id;if(x.skeuo)d.dataset.skeuo=x.frame?"frame":"";d.dataset.decor=localStorage.getItem("repositoryDecor")||"full";document.write('<script type="module" blocking="render" src="'+new URL("../shared/render_gate.js?v=65174496",c.src).href+'"><\/script><link rel="stylesheet" id="repoDesignsCss" href="'+new URL("../shared/designs.css?v=51c18d91",c.src).href+'">'+(x.css?'<link rel="stylesheet" data-design-css="'+x.css+'" href="'+new URL("../shared/"+x.css+"?v="+(FILE_V[x.css]||""),c.src).href+'">':""))}catch(e){}})();
+(function(){try{var c=document.currentScript,T=window.REPOSITORY_TREE,L=T.designs&&T.designs.list||{},g=localStorage.getItem("repositoryDesign"),id=L[g]?g:(T.designs&&L[T.designs.default]?T.designs.default:"standard"),x=L[id]||{},d=document.documentElement,FILE_V = {"designs_skeuo.css": "ad6ac871"};if(!c||c.hasAttribute("data-no-design"))return;d.dataset.design=id;d.dataset.designBase=x.base||id;if(x.skeuo)d.dataset.skeuo=x.frame?"frame":"";d.dataset.decor=localStorage.getItem("repositoryDecor")||"full";document.write('<script type="module" blocking="render" src="'+new URL("../shared/render_gate.js?v=65174496",c.src).href+'"><\/script><link rel="stylesheet" id="repoDesignsCss" href="'+new URL("../shared/designs.css?v=51c18d91",c.src).href+'">'+(x.css?'<link rel="stylesheet" data-design-css="'+x.css+'" href="'+new URL("../shared/"+x.css+"?v="+(FILE_V[x.css]||""),c.src).href+'">':""))}catch(e){}})();

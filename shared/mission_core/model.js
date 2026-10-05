@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  // Mission Report Core — modèle de données (§E.1 de docs/mission_report_core_audit.md).
+  // Mission Report Core — modèle de données (§E.1 de docs/technique/mission_report_core_audit.md).
   // Une mission est un objet arborescent versionné (schemaVersion) ; les familles ajoutent
   // leurs données sous `missionData` sans toucher au tronc commun.
   const SCHEMA_VERSION = 2;

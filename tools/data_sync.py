@@ -1,4 +1,4 @@
-"""Synchronisation git du pool de données (docs/INDEX_DONNEES.md § 9, étape 8), appelée par le lanceur
+"""Synchronisation git du pool de données (docs/technique/INDEX_DONNEES.md § 9, étape 8), appelée par le lanceur
 (tools/launch.py : GET /__setup/sync-status, POST /__setup/sync, bouton « Synchroniser » de l'en-tête, shared/sync.js).
 
 Un passage de synchronisation (run) :

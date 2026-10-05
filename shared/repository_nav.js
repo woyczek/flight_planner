@@ -326,7 +326,7 @@
   // Designs à matières (Cabinet, Durci, Aqua : textures, plaques, vis) : feuille propre (designs.list[id].css),
   // chargée seulement quand l'un d'eux est choisi, avec sa propre version (empreinte de son contenu, table FILE_V
   // écrite par tools/bump_versions.py).
-  const FILE_V = {"designs_skeuo.css": "985bd3de"};
+  const FILE_V = {"designs_skeuo.css": "ad6ac871"};
   const designCss = id => {
     const f = designs[id]?.css;
     if (!f) return;
@@ -534,7 +534,7 @@
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
-      sc.src = new URL("appearance_page.js?v=12af19ea", script.src).href;
+      sc.src = new URL("appearance_page.js?v=48974e65", script.src).href;
       sc.onload = show;
       document.head.append(sc);
     }
@@ -1029,7 +1029,7 @@
     files.src = new URL("file_access.js?v=726783dc", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=58f492d6", "block_icons.js?v=562bd4e5", "side_nav.js?v=355697e6"]) {
+    for (const f of ["icons/repository_icons.js?v=27853364", "block_icons.js?v=c8ee7213", "side_nav.js?v=19f74efd"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
@@ -1039,19 +1039,19 @@
     store.src = new URL("browser_store.js?v=7860c8db", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
-    assign.src = new URL("assignments.js?v=e00e5f6e", script.src).href;
+    assign.src = new URL("assignments.js?v=9e7845c6", script.src).href;
     document.head.append(assign);
     /* Utilisateurs et droits : mode develop / production, connexion, usurpation (bandeau sur toutes les pages) */
     const users = document.createElement("script");
-    users.src = new URL("users.js?v=1db04bb0", script.src).href;
+    users.src = new URL("users.js?v=5d9d50a7", script.src).href;
     document.head.append(users);
     /* Synchronisation git du pool de données : bouton « Synchroniser » de l'en-tête (lanceur, data/ dépôt git) */
     const sync = document.createElement("script");
-    sync.src = new URL("sync.js?v=c2644b6c", script.src).href;
+    sync.src = new URL("sync.js?v=14aeb29b", script.src).href;
     document.head.append(sync);
     /* Disponibilités : catégories configurables, thèmes ouverts, déclarations par semaine */
     const dispos = document.createElement("script");
-    dispos.src = new URL("dispos.js?v=f07e0591", script.src).href;
+    dispos.src = new URL("dispos.js?v=d99a8e23", script.src).href;
     document.head.append(dispos);
     const update = document.createElement("script");
     update.src = new URL("suite_update.js?v=a6f1e9d1", script.src).href;

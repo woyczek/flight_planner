@@ -147,7 +147,7 @@ raw = open(p, 'rb').read().decode('utf-8'); crlf = '\r\n' in raw; s = raw.replac
 if BEGIN in s:
     s = s[:s.index(BEGIN)] + s[s.index(END) + len(END):].lstrip('\n')
 # !important convertis en règles renforcées « :not(#imp) » (designs hors couche ; étape 4 des couches CSS,
-# docs/REFACTORING_TOOLKIT.md) ; restent ceux suivis de /*garder*/ (taille en ligne des icônes de la barre)
+# docs/technique/REFACTORING_TOOLKIT.md) ; restent ceux suivis de /*garder*/ (taille en ligne des icônes de la barre)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from strip_page_important import bump_css
 s = s.rstrip('\n') + '\n' + bump_css('\n'.join(out), designs=True)[0] + '\n'

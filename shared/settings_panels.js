@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  // Rubriques des pages de Paramètres écrites hors de shared/data_admin.js (docs/DISPOS_ET_REORGANISATION.md § 2) :
+  // Rubriques des pages de Paramètres écrites hors de shared/data_admin.js (docs/technique/DISPOS_ET_REORGANISATION.md § 2) :
   //   · Mon profil — identité (trigramme, IVAO, VATSIM, SimBrief, identifiants du site DEFA, langue), connexion et mot de
   //     passe, préférences de thèmes (listes blanches / noires par domaine), appareils et simulateurs ;
   //   · Centre — utilisateurs et droits (shared/users.js), catégories de disponibilité (shared/dispos.js) ;

@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  // Synchronisation git du pool de données (docs/INDEX_DONNEES.md § 9, étape 8) : bouton « Synchroniser » de l'en-tête,
+  // Synchronisation git du pool de données (docs/technique/INDEX_DONNEES.md § 9, étape 8) : bouton « Synchroniser » de l'en-tête,
   // affiché quand la suite est servie par le lanceur et que data/ est un dépôt git. Un clic : boîte d'envoi du
   // navigateur écrite dans le dossier (si autorisé), puis le lanceur commite les fichiers du pool au nom du trigramme
   // connecté, récupère et fusionne la branche distante (fiche par fiche en cas de conflit, la plus récente l'emporte,

@@ -30,7 +30,7 @@ du stockage du navigateur, JSON analysé, ouvertures IndexedDB, accès aux dossi
 page ne répond pas. Deux modes : <b>serveur</b> (lanceur) et <b>sans serveur</b> (données non servies, dossiers
 autorisés simulés — le chemin d'une page ouverte en <code>file://</code>). Servir le dépôt avec
 <code>python tools/launch.py</code>, ouvrir <code>/tools/perf_audit.html</code>, lancer ; les mesures sont gardées dans ce
-navigateur (perfAuditRuns) et exportables en JSON (docs/perf/).</p>
+navigateur (perfAuditRuns) et exportables en JSON (docs/technique/perf/).</p>
 <div class="row">
   <label>Libellé <input id="label" size="28" placeholder="avant / après…"></label>
   <label><input type="checkbox" id="srv" checked> serveur</label>
@@ -38,7 +38,7 @@ navigateur (perfAuditRuns) et exportables en JSON (docs/perf/).</p>
   <label>Trigramme <input id="tri" size="4" value="RBR"></label>
   <button id="go">Lancer l'audit</button>
   <button id="export">Exporter les mesures (JSON)</button>
-  <button id="save" title="Lanceur seulement : écrit docs/perf/runs/&lt;libellé&gt;.json (mesures de ce navigateur)">Enregistrer dans docs/perf</button>
+  <button id="save" title="Lanceur seulement : écrit docs/technique/perf/runs/&lt;libellé&gt;.json (mesures de ce navigateur)">Enregistrer dans docs/perf</button>
   <span id="state" class="mut"></span>
 </div>
 <div id="out"></div>
@@ -210,7 +210,7 @@ navigateur (perfAuditRuns) et exportables en JSON (docs/perf/).</p>
     const blob = new Blob([JSON.stringify(runs(), null, 1)], { type: 'application/json' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `perf_audit_${new Date().toISOString().slice(0, 10)}.json`; a.click();
   };
-  // mesures arrondies (sans l'agent du navigateur) : écrites par le lanceur dans docs/perf/runs/<libellé>.json
+  // mesures arrondies (sans l'agent du navigateur) : écrites par le lanceur dans docs/technique/perf/runs/<libellé>.json
   const compact = list => list.map(r => ({ ...r, ua: undefined, steps: r.steps.map(s => ({ page: s.page, step: s.step, done: s.done, timeout: s.timeout, settleMs: s.settleMs, nodes: s.nodes, resources: s.resources, counters: Object.fromEntries(Object.entries(s.counters || {}).map(([k, v]) => [k, Math.round(v * 10) / 10])), observers: Object.fromEntries(Object.entries(s.observers || {}).filter(([, o]) => o.calls).map(([k, o]) => [k, { calls: o.calls, ms: Math.round(o.ms * 10) / 10 }])), callers: s.callers, storageKeys: s.storageKeys })) })); // origines (fichier:ligne, clés lues) : pistes pour l'audit suivant
   async function saveToRepo(name, list) {
     const r = await fetch(`../__setup/perf?name=${encodeURIComponent(name)}`, { method: 'POST', headers: { 'X-DEFA-Setup': '1', 'Content-Type': 'application/json' }, body: JSON.stringify(compact(list), null, 1) });

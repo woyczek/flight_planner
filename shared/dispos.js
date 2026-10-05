@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  // Disponibilités en catégories configurables (docs/DISPOS_ET_REORGANISATION.md § 1), chargé sur chaque page par
+  // Disponibilités en catégories configurables (docs/technique/DISPOS_ET_REORGANISATION.md § 1), chargé sur chaque page par
   // repository_nav.js.
   //   · configuration partagée data/config/disponibilites.json (synchronisée, datée, va) : groupes (affichés dans l'ODV :
   //     Disponible, Exercice DEFA, Occupé, Indisponible), catégories (libellés [fr, en, de, es], couleur, thèmes ouverts,

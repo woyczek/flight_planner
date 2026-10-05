@@ -1,6 +1,6 @@
-"""Découpe des onglets de page d'un design à matières (docs/ASSETS_A_FOURNIR.md § 6) depuis sa planche.
+"""Découpe des onglets de page d'un design à matières (docs/technique/ASSETS_A_FOURNIR.md § 6) depuis sa planche.
 
-Planche source : docs/planches/onglets_<design>.webp (fond transparent ; poussoir relâché, poussoir enfoncé, rail),
+Planche source : docs/technique/planches/onglets_<design>.webp (fond transparent ; poussoir relâché, poussoir enfoncé, rail),
 cadrages en pixels de la planche dans CONFIG ci-dessous (à mesurer à l'arrivée d'une planche). Sortie :
 shared/deco/<design>/tabs/rail.webp, tab.webp, tab-on.webp — sans texte (libellés posés par la page), en résolution
 d'origine (la feuille de style les met à l'échelle par border-image).
@@ -157,7 +157,7 @@ def cells(im, c):
 
 def cut(design):
     c = CONFIG[design]
-    im = Image.open(os.path.join(ROOT, 'docs', 'planches', c['sheet'])).convert('RGBA')
+    im = Image.open(os.path.join(ROOT, 'docs', 'technique', 'planches', c['sheet'])).convert('RGBA')
     out = os.path.join(ROOT, 'shared', 'deco', design, 'tabs')
     os.makedirs(out, exist_ok=True)
     left, right = crop(im, c['rail_left']), crop(im, c['rail_right'])
@@ -198,7 +198,7 @@ def cut(design):
 
 def lisere(design):
     name, box = LISERES[LISERE_OF[design]]
-    img = crop(Image.open(os.path.join(ROOT, 'docs', 'planches', name)).convert('RGBA'), box)
+    img = crop(Image.open(os.path.join(ROOT, 'docs', 'technique', 'planches', name)).convert('RGBA'), box)
     out = os.path.join(ROOT, 'shared', 'deco', design, 'tabs')
     os.makedirs(out, exist_ok=True)
     img.save(os.path.join(out, 'lisere.webp'), 'WEBP', quality=88, method=6)

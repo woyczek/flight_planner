@@ -1,5 +1,5 @@
 /* Framework — icônes, numéros, sous-titres des blocs, sous-cartes, zones de dépôt, bandeau d'information, barre
-   latérale et design « Console » (voir docs/PROPOSITION_DESIGN_ICONES.md). Chargé par shared/block_icons.js.
+   latérale et design « Console » (voir docs/technique/PROPOSITION_DESIGN_ICONES.md). Chargé par shared/block_icons.js.
    Mêmes règles que designs.css : couleurs issues du thème (--repo-bar, --repo-bar-text, --repo-page, --repo-accent)
    ou de la surface (currentColor) ; --repo-icon (≥ 3:1) et --repo-ink (≥ 4,5:1) sont choisis par block_icons.js
    parmi les couleurs du thème d'après la surface réelle de chaque bloc. */

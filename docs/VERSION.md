@@ -136,7 +136,7 @@ Entre deux versions, le pied de page affiche le commit en cours (`v4.6.0+abc1234
 ### Notes
 
 - Toolkit : phase 2 terminée ; phase 3 (couches CSS, retrait des `!important`) commencée — le rendu peut encore
-  légèrement bouger. Plan : [docs/REFACTORING_TOOLKIT.md](docs/REFACTORING_TOOLKIT.md).
+  légèrement bouger. Plan : [docs/REFACTORING_TOOLKIT.md](technique/REFACTORING_TOOLKIT.md).
 - La punaise des cartes posées sur la feuille de Durci reprend celle de Cabinet (une punaise propre à Durci peut être
   fournie : `shared/deco/field/`).
 - Durci en ton sombre : pas de carnet sous les tableaux de registre (bloc d'acier), comme Cabinet et Carnet de vol.

@@ -50,7 +50,7 @@ L'en-tête porte le titre de la page et son sous-titre. À droite se trouvent le
 - Un clic écrit d'abord les fichiers gardés dans le navigateur, puis envoie vos modifications (signées de votre trigramme), récupère celles des autres et les fusionne.
 - En cas de conflit sur une même fiche, la version la plus récente est gardée ; l'autre est copiée dans `_conflits/` et une notification le signale.
 - L'infobulle donne le détail (modifications à envoyer, éléments à recevoir, dernière synchronisation). L'état est revérifié toutes les 5 minutes.
-- Sans trigramme réglé, la synchronisation refuse de partir : réglez-le dans Paramètres › Mon profil. Voir [l'architecture de la synchronisation](SYNCHRONISATION.md).
+- Sans trigramme réglé, la synchronisation refuse de partir : réglez-le dans Paramètres › Mon profil. Voir [l'architecture de la synchronisation](technique/SYNCHRONISATION.md).
 
 **« Sauvegarder dans le dossier »** copie toutes les données gardées par le navigateur (brouillons, profil, préférences…) dans le fichier `defa_local_store.yaml` du dossier de sauvegarde.
 - Le premier clic demande de choisir ce dossier ; sans dossier possible, la sauvegarde est téléchargée.
@@ -263,7 +263,7 @@ Astuces et limites :
 - Une adresse de la forme `disponibilites.html?semaine=2026-W41` ouvre directement une semaine donnée.
 - Si la semaine est encore en cours de lecture, une retouche est refusée avec « Semaine en cours de lecture : réessayer dans un instant. »
 
-Pour la façon dont le Centre exploite ces déclarations, voir [disponibilités et réorganisation](DISPOS_ET_REORGANISATION.md).
+Pour la façon dont le Centre exploite ces déclarations, voir [disponibilités et réorganisation](technique/DISPOS_ET_REORGANISATION.md).
 
 ## Mon profil
 <!-- page: apps/settings/profil.html -->
@@ -434,7 +434,7 @@ Deux possibilités :
   HTTPS `https://hôte/compte/dépôt.git` (identifiants enregistrés dans Git). La carte affiche le dépôt actuel ;
   « Vérifier » dit s'il répond depuis ce poste (30 s au plus), « Enregistrer » en fait le dépôt distant de `data/`
   (sans données encore, l'adresse sert à les récupérer). Rien n'est bloquant : un dépôt qui ne répond pas est signalé,
-  la suite fonctionne sans partage. Détails : [synchronisation](SYNCHRONISATION.md).
+  la suite fonctionne sans partage. Détails : [synchronisation](technique/SYNCHRONISATION.md).
 - Une fois les données présentes, la carte facultative « Journal des vols DEFA » propose « Journal DEFA (.html)… » : la page « Log des vols » du site DEFA, enregistrée, remplit les pilotes et appareils de la référence DEFA (aide à la saisie).
 
 ### 2 Profil

@@ -1,4 +1,4 @@
-// Index des données (docs/INDEX_DONNEES.md) : base IndexedDB « defaIndex », copie organisée des fichiers de data/ pour
+// Index des données (docs/technique/INDEX_DONNEES.md) : base IndexedDB « defaIndex », copie organisée des fichiers de data/ pour
 // lire vite. Les fichiers font foi ; l'index se reconstruit à tout moment (DataIndex.rebuild, Paramètres › Maintenance).
 // Chargé par shared/kit.js sur toutes les pages, avant leurs scripts.
 //
@@ -13,7 +13,7 @@
   if (window.DataIndex) return;
   const NAME = 'defaIndex',
     VERSION = 2; // 2 : index « mission » des CR
-  // stores et index secondaires (docs/INDEX_DONNEES.md § 2) ; un store ajouté plus tard = VERSION + 1
+  // stores et index secondaires (docs/technique/INDEX_DONNEES.md § 2) ; un store ajouté plus tard = VERSION + 1
   const STORES = {
     // enregistrement { k, m } : k = identifiant de la mission (ou dossier | titre pour une entrée sans identifiant)
     missions: { keyPath: 'k', indexes: { id: 'm.id', family: 'm.type', status: 'm.status', folder: 'm.folder' } },

@@ -154,7 +154,7 @@ zippé de Durci), s'ouvre comme un livre dont on tourne les pages ; Planning ODV
 - **Affectation des missions aux pilotes** : bouton « Affecter… » du registre (pilotes, appareils, heure, astreinte,
   convoyage, postes par équipage, conflits), vivier de pilotes disponibles possédant l'appareil, matrice d'un créneau
   ODV, journal des affectations (date, qui, quoi, à qui) ; trigramme dans le profil pilote ; bloc `alert` (astreinte)
-  dans le prompt du générateur. Conception : [docs/AFFECTATION_MISSIONS.md](docs/AFFECTATION_MISSIONS.md).
+  dans le prompt du générateur. Conception : [docs/AFFECTATION_MISSIONS.md](technique/AFFECTATION_MISSIONS.md).
 - **Page pilote « Mes missions »** : missions de la semaine, disponibilités aux codes et couleurs de l'ODV, appareils
   du pilote ; pli cacheté dans l'en-tête pour une mission non lue ; transferts Cartes de vol, Carburant, CR.
 - **Dossier de mission** dans les designs à matières : mission non lue scellée (ficelle et cachet, ruban noué,
@@ -181,7 +181,7 @@ sombres ; messages clairs quand le navigateur ne permet pas de choisir un dossie
 
 > **Annonce : suite du refactoring du toolkit.** La phase 3 (couches CSS, retrait des `!important`) se poursuit et
 > pourra encore modifier légèrement l'apparence des designs à matières. Plan :
-> [docs/REFACTORING_TOOLKIT.md](docs/REFACTORING_TOOLKIT.md).
+> [docs/REFACTORING_TOOLKIT.md](technique/REFACTORING_TOOLKIT.md).
 
 ### Ajouté
 
@@ -539,7 +539,7 @@ plans trois vues du Carnet de vol.
   commentaire, contrôleurs, événements, vols posés), missions probables par règles expliquées (familles de la suite +
   TRAINING avec contrôleur), vols de la frise contrôlés contre les disponibilités, zones à activer ; décalage de date
   de la frise et anomalies signalés par notifications ; exports CSV, JSON et récapitulatif texte. Voir
-  [docs/ODV_PLANNING.md](docs/ODV_PLANNING.md).
+  [docs/ODV_PLANNING.md](ODV_PLANNING.md).
 
 ## [4.1.0] — 2026-09-29
 
@@ -880,7 +880,7 @@ Migration d'une installation v2 : INSTALL.md § 2 (`tools/migrate_v3.py`).
 - **Corrigé** : `tools/bump_versions.py` re-versionne aussi les scripts de `SIA XML/` (`mission_store.js`,
   `sia_i18n.js`…). Manuel : la version de la suite vient de `repository_tree` (`VERSION.json`, ignoré et périmé,
   n'est lu par rien).
-- **Audit** du 28/09/2026 (entrées SIA, installation, git, dépendances) : [docs/AUDIT_2026-09-28.md](docs/AUDIT_2026-09-28.md).
+- **Audit** du 28/09/2026 (entrées SIA, installation, git, dépendances) : [docs/AUDIT_2026-09-28.md](technique/AUDIT_2026-09-28.md).
 
 ## [2.5.0] — 2026-09-27
 
@@ -1469,7 +1469,7 @@ de la suite.
 
 ### Missions SIA (nouvelle application, dossier `SIA XML/`)
 
-- **Documentation** : [docs/SIA_MISSIONS.md](docs/SIA_MISSIONS.md) (générateur de mission et studio :
+- **Documentation** : [docs/SIA_MISSIONS.md](SIA_MISSIONS.md) (générateur de mission et studio :
   données, format des missions, profils, zones, MORA, hippodromes, stockage, services) ; README
   EN / FR (quatre applications), INSTALL (données SIA), tutoriel (§ 13, mission SIMONE), manuel
   d'exploitation (§ 9.1 : cycle AIRAC, MORA, axes ENR 5.7), FRAMEWORK (`aar_tracks.js`,

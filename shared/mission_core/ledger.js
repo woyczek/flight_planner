@@ -102,7 +102,7 @@
     if (id === HANDLE) store.folder = h.name;
     return h;
   }
-  // ---- écritures concurrentes (docs/INDEX_DONNEES.md § 5) : un autre onglet, un autre poste sur le même dossier
+  // ---- écritures concurrentes (docs/technique/INDEX_DONNEES.md § 5) : un autre onglet, un autre poste sur le même dossier
   // Base = missions telles que lues ou écrites en dernier par cette page ; à l'enregistrement, si le registre a changé
   // ailleurs depuis, fusion mission par mission (base, mienne, la leur) au lieu d'écraser.
   let base = new Map(),
@@ -431,7 +431,7 @@
     })();
     return loading;
   }
-  // ---- copie indexée (shared/data_index.js, docs/INDEX_DONNEES.md § 2) : remplace l'ancienne copie texte du
+  // ---- copie indexée (shared/data_index.js, docs/technique/INDEX_DONNEES.md § 2) : remplace l'ancienne copie texte du
   // navigateur (missionCoreLedger:v2), gardée pour la compatibilité tant qu'elle fait moins de 2 Mo
   let lastSig = {};
   const MIRROR_MAX = 2e6;
@@ -574,7 +574,7 @@
         written = false;
       }
       // sans dossier : versions écartées gardées dans le navigateur (20 dernières ; vue dans Paramètres : étape 6 de
-      // docs/INDEX_DONNEES.md)
+      // docs/technique/INDEX_DONNEES.md)
       if (conflicts.length && !written) try {
         const kept = JSON.parse(localStorage.getItem(CONFLICTS) || '[]');
         kept.unshift(...conflicts.map(m => ({

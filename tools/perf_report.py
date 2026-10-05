@@ -1,5 +1,5 @@
-"""Rapport de performance : docs/perf/RAPPORT_PERF.md et ses graphes (docs/perf/img/*.svg), d'après les mesures de
-docs/perf/runs/ (tools/perf_audit.html : parcours de clics ; tools/perf_scale.html : montée en charge).
+"""Rapport de performance : docs/technique/perf/RAPPORT_PERF.md et ses graphes (docs/technique/perf/img/*.svg), d'après les mesures de
+docs/technique/perf/runs/ (tools/perf_audit.html : parcours de clics ; tools/perf_scale.html : montée en charge).
 
 Usage (à la racine du dépôt) :
     python tools/perf_report.py                      → compare les deux mesures les plus récentes de chaque sorte
@@ -13,9 +13,9 @@ import os
 import sys
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-RUNS = os.path.join(ROOT, 'docs', 'perf', 'runs')
-IMG = os.path.join(ROOT, 'docs', 'perf', 'img')
-OUT = os.path.join(ROOT, 'docs', 'perf', 'RAPPORT_PERF.md')
+RUNS = os.path.join(ROOT, 'docs', 'technique', 'perf', 'runs')
+IMG = os.path.join(ROOT, 'docs', 'technique', 'perf', 'img')
+OUT = os.path.join(ROOT, 'docs', 'technique', 'perf', 'RAPPORT_PERF.md')
 C_BEFORE, C_AFTER, INK, MUT, LINE = '#d8763b', '#3b6fd8', '#1b1f24', '#5b6470', '#d5d9df'
 KEYS = [('settleMs', 'temps jusqu’à page stable (ms)'), ('longtask.ms', 'temps de blocage (tâches longues, ms)'), ('blocked.ms', 'retard de minuterie > 50 ms (ms)'), ('fetch', 'requêtes'),
         ('fetch.404', 'requêtes en 404'), ('idb.open', 'ouvertures IndexedDB'), ('json.parse', 'analyses JSON'),
@@ -189,9 +189,9 @@ def write(name, svg):
 def main():
     la, lb = (sys.argv[1], sys.argv[2]) if len(sys.argv) > 2 else (None, None)
     audits, scales = load_runs()
-    md = ['# Rapport de performance', '', 'Généré par `python tools/perf_report.py` d’après `docs/perf/runs/` (méthode et plan d’action :',
+    md = ['# Rapport de performance', '', 'Généré par `python tools/perf_report.py` d’après `docs/technique/perf/runs/` (méthode et plan d’action :',
           '[PLAN_PERF_2026-10-04.md](PLAN_PERF_2026-10-04.md)). Barres orange : avant ; bleues : après.', '']
-    syn = os.path.join(ROOT, 'docs', 'perf', 'SYNTHESE.md')  # lecture des résultats, écrite à la main après l'audit
+    syn = os.path.join(ROOT, 'docs', 'technique', 'perf', 'SYNTHESE.md')  # lecture des résultats, écrite à la main après l'audit
     if os.path.exists(syn):
         md += [io.open(syn, encoding='utf-8').read().rstrip(), '']
     for mode in ('serveur', 'sans serveur'):

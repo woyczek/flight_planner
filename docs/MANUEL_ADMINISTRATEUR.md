@@ -90,7 +90,7 @@ Pendant l'usurpation, le trigramme de travail est celui de l'utilisateur usurpé
 
 Le générateur prépare le dossier d'une mission : identification, textes du brief, exercice, durée estimée, zones à activer, puis les PDF à remettre aux équipages. Il sert aussi à commander une mission à ChatGPT et à recevoir sa réponse.
 Accès : barre latérale « Missions » (section « Centre ») ou ☰ › « Centre — Générateur de mission ». Depuis le registre, « Ouvrir dans le générateur » charge la mission choisie.
-Voir aussi [missions SIA](SIA_MISSIONS.md) et [prompt du générateur](PROMPT_GENERATEUR_MISSIONS.md).
+Voir aussi [missions SIA](SIA_MISSIONS.md) et [prompt du générateur](technique/PROMPT_GENERATEUR_MISSIONS.md).
 
 ### Onglets « Générateur de mission » et « Studio cartographique »
 
@@ -307,7 +307,7 @@ La fiche affiche le statut, l'itinéraire, les équipes et indicatifs, puis :
 - état des cartes : « complète », « partielle : cartes à compléter » ou « partielle : cartes non générées (régénérables) » ;
 - « Durée estimée » avec la comparaison aux CR.
 
-Boutons : « Ouvrir dans le générateur », « Ouvrir dans le studio », « Affecter… » (sauf organisation …Z ; voir [affectation des missions](AFFECTATION_MISSIONS.md)), « Créer le CR » ou « Nouveau CR (vol n) », et « Recopier le prompt » pour une mission commandée.
+Boutons : « Ouvrir dans le générateur », « Ouvrir dans le studio », « Affecter… » (sauf organisation …Z ; voir [affectation des missions](technique/AFFECTATION_MISSIONS.md)), « Créer le CR » ou « Nouveau CR (vol n) », et « Recopier le prompt » pour une mission commandée.
 
 ### Suivi du Centre : statut, date de vol, notes
 
@@ -436,7 +436,7 @@ Limites :
 - Les missions déjà affectées (cette semaine ou avant) sont masquées.
 - Un pilote ne reçoit qu'une mission par créneau.
 - Pour enregistrer, le dossier des missions doit être autorisé (Paramètres › Installation › Sources et dossiers).
-Règles détaillées : [affectation des missions](AFFECTATION_MISSIONS.md).
+Règles détaillées : [affectation des missions](technique/AFFECTATION_MISSIONS.md).
 
 ### Missions probables
 
@@ -507,7 +507,7 @@ Cette rubrique gère les fiches des utilisateurs. Il y a une fiche par utilisate
 - Si des fichiers n'ont pas encore pu être écrits dans le dossier des données, cliquez sur « Écrire dans le dossier des données ».
 - En mode production, la réinitialisation d'un mot de passe, l'usurpation et le changement de mode sont réservés à un
   `admin_centre` connecté ; l'ajout d'un utilisateur et la modification d'une ligne (rôle, actif) ne sont protégés que
-  par le verrou du Centre (voir la [dette technique](DETTE_TECHNIQUE.md)).
+  par le verrou du Centre (voir la [dette technique](technique/DETTE_TECHNIQUE.md)).
 
 ### Catégories de disponibilité
 
@@ -528,7 +528,7 @@ Cette rubrique définit ce que les pilotes peuvent déclarer comme disponibilit�
 - Plus bas : « Groupes (ODV) » (libellé, couleur) et « Thèmes par domaine » (familles de mission séparées par des espaces).
 - Traductions : si vous modifiez un libellé français, il perd ses traductions anglaise, allemande et espagnole jusqu'au prochain audit des traductions (`tools/audit_i18n.html`).
 - « Valeurs par défaut » rétablit les catégories d'origine. Les catégories ajoutées sont gardées, mais retirées.
-Voir aussi [disponibilités et réorganisation](DISPOS_ET_REORGANISATION.md).
+Voir aussi [disponibilités et réorganisation](technique/DISPOS_ET_REORGANISATION.md).
 
 ### Planning ODV (DEFA)
 
@@ -832,7 +832,7 @@ Les identifiants git sont ceux du système (clé SSH, gestionnaire d'identifiant
   données ») : jamais bloquant, un dépôt qui ne répond pas est seulement signalé.
 - Un poste sans git ni droit d'écriture peut écrire dans un **dossier partagé** (Synology, OneDrive…) qu'un poste
   équipé synchronise. Le serveur central supprimera ces prérequis : un compte suffira
-  ([feuille de route](ROADMAP.md), étape 2).
+  ([feuille de route](technique/ROADMAP.md), étape 2).
 
 ### Conflits et dossier `_conflits/`
 
@@ -847,7 +847,7 @@ Après une notification de conflit :
 3. synchronisez de nouveau, puis supprimez la copie.
 Le registre des CR (`cr/missions.yaml`) se fusionne à la main.
 Message « Une fusion ou un rebase est en cours dans data/ » : terminez ou annulez l'opération git (`git -C data merge --abort`), puis recommencez.
-Détails, schémas et essais sans risque : [architecture de la synchronisation](SYNCHRONISATION.md).
+Détails, schémas et essais sans risque : [architecture de la synchronisation](technique/SYNCHRONISATION.md).
 
 ## Lanceur, données et sauvegardes
 

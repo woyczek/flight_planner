@@ -264,7 +264,7 @@ webservice d'envoi des CR. Événement `local-store-restored` après une restaur
 **Bases IndexedDB sauvegardées** (section `indexed` du fichier) : `FlightPerfCache` (OFP, calibrations,
 airframes du planificateur) et `LandingPerformanceDashboardCache` (journal d'atterrissages chargé) — liste
 `IDB_SAVED`. Hors sauvegarde : base SIA (relue depuis le dossier officiel), autorisations de dossiers.
-Inventaire complet des données et de leur provenance : [DONNEES.md](DONNEES.md).
+Inventaire complet des données et de leur provenance : [DONNEES.md](../DONNEES.md).
 
 ### Rappel de sauvegarde
 
@@ -298,7 +298,7 @@ suite.channel`).
 
 Les données DEFA et recalculées vivent dans `data/` (clone du dépôt de données, ignoré par git ; marqueur
 `data/data_tree.js`). Une page charge un fichier de données par
-`<script src="…/shared/data_files.js?v=…" data-file="references/aircraft_fleet.js"></script>` : le premier appel lit le
+`<script src="../…/shared/data_files.js?v=…" data-file="references/aircraft_fleet.js"></script>` : le premier appel lit le
 marqueur, puis chaque fichier est pris dans `data/`, sinon dans `examples/` (chargement synchrone, ordre conservé). API :
 `DataFiles.available()`, `DataFiles.url(chemin)`, `DataFiles.dataUrl(chemin)`. Registres : `data/cr/` (`ledger.js`,
 `mission_reporting_config.js`) ; SIA : `data/sia/` (villes livrées dans `shared/carto/`). `FileAccess` :

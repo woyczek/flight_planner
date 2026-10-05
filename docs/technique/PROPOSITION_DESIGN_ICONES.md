@@ -141,7 +141,7 @@ Le prototype enveloppe `AppFramework.refresh()` et observe le DOM pour rester no
 | Option | Avantages | Inconvénients | Avis |
 |---|---|---|---|
 | **Registre JS de tracés SVG** (`repository_icons.js`) | aucun fichier à charger, marche en `file://` et à l'impression, `currentColor`, extensible par page (`RepositoryIcons.add`) | icônes dans un fichier JS (≈ 150 octets par icône) | **retenu** |
-| Sprite SVG externe (`<use href="icons.svg#x">`) | fichier SVG standard | bloqué en `file://`, une requête, pas de `currentColor` fiable selon les navigateurs anciens | non |
+| Sprite SVG externe (`<use href="../icons.svg#x">`) | fichier SVG standard | bloqué en `file://`, une requête, pas de `currentColor` fiable selon les navigateurs anciens | non |
 | Police d'icônes locale | une balise CSS | rendu flou, accessibilité médiocre (caractères privés), une seule couleur, fichier binaire | non |
 | Emoji (état actuel : 💾 📅 ⏱ ✓ ⚠) | rien à faire | rendu différent selon le système, couleurs imposées, pas thémables | à remplacer progressivement ; ✓ / ⚠ peuvent rester dans les textes |
 

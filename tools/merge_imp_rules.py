@@ -1,4 +1,4 @@
-"""Fusionne les règles renforcées « :not(#imp) » que l'audit montre inutiles (docs/REFACTORING_TOOLKIT.md, couches CSS).
+"""Fusionne les règles renforcées « :not(#imp) » que l'audit montre inutiles (docs/technique/REFACTORING_TOOLKIT.md, couches CSS).
 
 La conversion des !important (strip_page_important.py --bump) a scindé des règles : une règle ordinaire, puis la même
 au sélecteur renforcé. tools/imp_audit.html retire le renfort de chacune, page par page, design par design, ton par ton,

@@ -1,4 +1,4 @@
-"""État des assets des designs à matières : ce que le code attend, ce qui est là, ce qui manque (docs/ASSETS_A_FOURNIR.md
+"""État des assets des designs à matières : ce que le code attend, ce qui est là, ce qui manque (docs/technique/ASSETS_A_FOURNIR.md
 pour les consignes de génération et d'intégration).
 
 Usage (à la racine du dépôt) :
@@ -70,7 +70,7 @@ SPEC = {
     'Pli scellé de l’exercice (Mes missions)': (True, {
         'cabinet': ['pli-sealed.webp'], 'flightlog': ['pli-sealed.webp'], 'field': ['pli-sealed.webp'], 'aqua': ['pli-sealed.webp']}),
     # onglets en tête de page (repository_nav.js, REPOSITORY_TREE.tabs) : rail, poussoir relâché, poussoir enfoncé et
-    # éclairé (page courante) ; sans texte (libellés en 4 langues posés par la page) ; docs/ASSETS_A_FOURNIR.md § 6
+    # éclairé (page courante) ; sans texte (libellés en 4 langues posés par la page) ; docs/technique/ASSETS_A_FOURNIR.md § 6
     'Onglets de page (Paramètres, générateur ⇄ studio)': (True, {d: TABS + (['tabs/led.webp'] if d == 'field' else []) for d in DESIGNS}),
     'Liseré du bloc à onglets (laiton : Cabinet, Carnet de vol ; acier : Durci, Aqua)': (True, {d: ['tabs/lisere.webp'] for d in DESIGNS}),
 }
