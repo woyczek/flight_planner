@@ -506,10 +506,16 @@ cerclés de laiton avec voyant ambre (Carnet de vol), verre et gel (Aqua). Trois
   milieu s'étire en largeur. Garder les bouts dans les ~24 px de chaque côté (rail : ~40 px), le milieu uniforme
   (pas de motif qui trahirait l'étirement).
 - `tab.webp` et `tab-on.webp` exactement superposables : seul l'état change (enfoncement, lumière, voyant).
-- Une maquette d'ensemble (comme les captures de Cabinet et de Carnet de vol) suffit : les trois images en sont
-  découpées, puis branchées dans la section du design par trois jetons — `--sk-tabs-rail-img` /
-  `--sk-tabs-rail-slice`, `--sk-tab-img` / `--sk-tab-img-on` / `--sk-tab-slice` (et `--sk-tab-slice-w`, largeur des
-  bouts à l'écran) — sans autre retouche des pages.
+- **Planche** : une image à fond transparent avec le poussoir relâché, le poussoir enfoncé et le rail (plus, si l'on
+  veut, un aperçu monté), rangée sous `docs/planches/onglets_<design>.webp` ; `tools/cut_tabs.py` en tire les trois
+  images d'après ses cadrages (table `CONFIG`, mesurés à l'arrivée de la planche), puis la section « onglets en
+  images » de `designs_skeuo.css` les monte (`border-image`) — sans retouche des pages. Deux montages :
+  « plaques » (Cabinet : la plaque de la planche posée sur le rail, qui court sur toute la largeur) et « cellules »
+  (Carnet de vol : rail à fenêtres — chaque onglet est une cellule du rail avec le poussoir dedans, les cellules
+  accolées refont la barre, fermée par ses embouts).
+- Fait : Carnet de vol (barre de laiton à fenêtres, poussoirs à voyant ambre), Cabinet (étiquettes en cadre d'acier ;
+  rail provisoire, liseré de laiton à venir). À venir : Aqua, Durci (en attendant : rail et onglets dessinés par les
+  jetons du design, rail sur toute la largeur de la page).
 - État : `python tools/assets_status.py` (famille « Onglets de page »).
 
 ---
