@@ -256,7 +256,7 @@
       // papier (dans le cadre), tranches répétées (arrêtées aux coins), coins et en-tête, puis accessoire du bord gauche
       el.innerHTML = '<i class="sh-paper"></i><i class="sh-top"></i><i class="sh-bot"></i><i class="sh-left"></i><i class="sh-right"></i><i class="sh-frame"></i><i class="sh-acc"></i>';
       b.classList.add('repo-has-sheet', 'repo-has-bg');
-      b.prepend(el);
+      if (reuse(el, b) === el) b.prepend(el);
     });
   }
 
@@ -275,7 +275,7 @@
       el.src = DECO(d)(hit[1]);
       el.style.width = `${hit[2]}px`;
       b.classList.add('repo-has-prop');
-      b.append(el);
+      if (reuse(el, b) === el) b.append(el);
     });
   }
 
@@ -300,7 +300,7 @@
 
   /** Fonds des blocs : feuille de registre, puis panneaux (un bloc n'en reçoit qu'un). */
   function backgrounds(d) {
-    document.querySelectorAll('.repo-deco-bgimg,.repo-deco-prop,.repo-deco-sheet').forEach(n => n.remove());
+    // anciens fonds laissés en place (render : repris s'ils sont identiques, sinon retirés à la fin de la passe)
     document.querySelectorAll('.repo-has-bg,.repo-has-prop,.repo-has-sheet')
       .forEach(b => b.classList.remove('repo-has-bg', 'repo-has-prop', 'repo-has-sheet'));
 
@@ -319,16 +319,23 @@
       el.setAttribute('aria-hidden', 'true');
       el.style.backgroundImage = `url("${DECO(d)(f)}")`;
       b.classList.add('repo-has-bg');
-      b.prepend(el);
+      if (reuse(el, b) === el) b.prepend(el);
     });
   }
 
   // ------------------------------------------------------------------ décor de page
-  let nodes = [];
-  const clear = () => {
-    nodes.forEach(n => n.remove());
-    nodes = [];
-  };
+  let nodes = [],
+    keep = []; // décor de la passe précédente, réutilisable
+  /** Décor recalculé (page qui change de hauteur, dossier animé…) : un nœud identique à un nœud de la passe précédente
+   *  (même balisage à la création, même bloc pour les fonds) est repris tel quel au lieu d'être recréé — ses images ne
+   *  sont ni rechargées ni redessinées : plus de clignotement ni de travail pendant les animations. */
+  function reuse(el, parent) {
+    const s = el.outerHTML,
+      i = keep.findIndex(n => n._sig === s && (!parent || n.parentNode === parent));
+    const n = i < 0 ? el : keep.splice(i, 1)[0];
+    n._sig = s;
+    return n;
+  }
   /** Image d'un objet entre les blocs, avec son option (voir SETS.between). */
   const betweenHtml = (src, w, opt) => {
     if (opt === 'pair') {
@@ -350,7 +357,7 @@
     const scale = () => Math.min(1, dv.clientWidth / (set.offsetWidth || 1));
     const room = () => Math.max(0, dv.clientWidth - set.offsetWidth * scale());
     let frac = Math.min(1, Math.max(0, +K.store.get(deviceKey(d), 0) || 0));
-    const place = () => {
+    const place = dv._place = () => {
       set.style.transform = `translateX(${-Math.round(frac * room())}px) scale(${scale().toFixed(3)})`;
     };
     requestAnimationFrame(place);
@@ -385,8 +392,20 @@
   }
 
   function render() {
-    clear();
+    // décor de page retiré (mesures des écarts sans lui), fonds des blocs laissés en place ; repris s'ils reviennent
+    keep = nodes.map(n => (n.remove(), n));
+    nodes = [];
+    keep.push(...document.querySelectorAll('.repo-deco-bgimg,.repo-deco-prop,.repo-deco-sheet'));
     shown = blocksShown();
+    try {
+      build();
+    } finally {
+      keep.forEach(n => n.remove());
+      keep = [];
+    }
+  }
+
+  function build() {
     const d = html.dataset.design,
       set = SETS[d];
     backgrounds(d);
@@ -407,10 +426,11 @@
       const a = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
       b.style.animationDelay = `${(a / 360 * 5).toFixed(2)}s`;
     });
-    const footer = document.querySelector('body>footer.repo-footer');
-    if (footer) footer.before(foot);
-    else document.body.append(foot);
-    nodes.push(foot);
+    const footer = document.querySelector('body>footer.repo-footer'),
+      ft = reuse(foot);
+    if (footer) footer.before(ft);
+    else document.body.append(ft);
+    nodes.push(ft);
     state();
 
     // 2. entre les blocs : un intervalle sur deux, dans chaque conteneur de blocs empilés ; l'appareil de page prend
@@ -438,9 +458,11 @@
           dv.innerHTML = `<span class="repo-deco-device-set">${set.device
             .map(([n, h, rot]) => `<img src="${img(n)}" alt="" draggable="false" style="height:${h}px${rot ? `;transform:rotate(${rot}deg)` : ''}">`)
             .join('')}</span>`;
-          b.before(dv);
-          slideDevice(dv, d);
-          nodes.push(dv);
+          const dn = reuse(dv);
+          b.before(dn);
+          if (dn === dv) slideDevice(dv, d);
+          else requestAnimationFrame(dn._place); // repris : position recalculée pour la largeur actuelle
+          nodes.push(dn);
           return;
         }
         if (i % 2 || !ok || !set.between?.length) return;
@@ -451,8 +473,9 @@
         sep.setAttribute('aria-hidden', 'true');
         sep.innerHTML = betweenHtml(img(name), w, opt);
         sep.style.top = `${-gap / 2}px`;
-        b.before(sep);
-        nodes.push(sep);
+        const sn = reuse(sep);
+        b.before(sn);
+        nodes.push(sn);
       });
     });
 
@@ -478,8 +501,9 @@
       el.alt = '';
       el.setAttribute('aria-hidden', 'true');
       el.style.cssText = `width:${w}px;top:${top}px;${left ? `left:${x}px` : `right:${x}px`};transform:rotate(${[-8, 5, -3, 7][n % 4]}deg)`;
-      document.body.append(el);
-      nodes.push(el);
+      const en = reuse(el);
+      document.body.append(en);
+      nodes.push(en);
     }
   }
   if (window.__perf) { // audit de performance : durée et nombre de passes (tools/perf_audit.html)
