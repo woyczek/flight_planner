@@ -5,6 +5,8 @@
   //   ?doc=MANUEL_UTILISATEUR.md#ancre : document et chapitre ;
   //   ?from=apps/pilot/mes_missions.html : chapitre de cette page (entrée « Aide » de la barre latérale) — cherché dans
   //   le manuel utilisateur puis le manuel administrateur (commentaires <!-- page: … --> après le titre du chapitre).
+  // Langue de la suite (en, de, es) : traduction docs/<langue>/<FICHIER>.md si elle existe, sinon le français ; les
+  // adresses (?doc=) restent sans langue, la page suit le changement de langue.
   const DOCS = new URL('../../docs/', location.href),
     MANUALS = ['MANUEL_UTILISATEUR.md', 'MANUEL_ADMINISTRATEUR.md'],
     INDEX = 'README.md';
@@ -22,6 +24,15 @@
   window.addEventListener('resize', headerOffset);
   window.addEventListener('repository-design-change', () => setTimeout(headerOffset, 100));
   const cache = new Map();
+  const tr = row => window.RepositoryKit?.t ? window.RepositoryKit.t(row) : row[0];
+  // libellés fixes de la page (couche de traduction commune)
+  window.RepositoryContentI18n?.([
+    ['Aide', 'Help', 'Hilfe', 'Ayuda'],
+    ['Manuels, guides et documentation de la suite', 'Manuals, guides and documentation of the suite', 'Handbücher, Anleitungen und Dokumentation der Suite', 'Manuales, guías y documentación de la suite'],
+    ['Rechercher dans les manuels…', 'Search the manuals…', 'In den Handbüchern suchen…', 'Buscar en los manuales…'],
+    ['Dans ce document', 'In this document', 'In diesem Dokument', 'En este documento'],
+    ['Chargement de la documentation…', 'Loading the documentation…', 'Dokumentation wird geladen…', 'Cargando la documentación…']
+  ]);
   /** Texte d'un document de docs/ (gardé pour la recherche) ; null s'il est absent. */
   async function text(name) {
     if (!cache.has(name)) cache.set(name, fetch(new URL(name, DOCS), {
@@ -29,11 +40,23 @@
     }).then(r => r.ok ? r.text() : null).catch(() => null));
     return cache.get(name);
   }
-  /** Adresse dans l'aide d'un lien écrit dans un document (autre .md : ouvert ici ; le reste : relatif à docs/). */
+  const LANGS = ['en', 'de', 'es'];
+  const lang = () => {
+    const l = window.RepositoryNav?.getLanguage?.() || 'fr';
+    return LANGS.includes(l) ? l : 'fr';
+  };
+  /** Fichier à lire pour un document : sa traduction dans la langue de la suite si elle existe, sinon le français. */
+  async function localized(name) {
+    const l = lang();
+    if (l === 'fr' || name.includes('/')) return name;
+    return (await text(`${l}/${name}`)) != null ? `${l}/${name}` : name;
+  }
+  /** Adresse dans l'aide d'un lien écrit dans un document (autre .md : ouvert ici, sans dossier de langue ; le reste :
+   *  relatif à docs/). */
   const link = (href, from) => {
     if (/^(https?:|mailto:|#)/i.test(href)) return href;
     const u = new URL(href, new URL(from, DOCS));
-    const rel = u.href.startsWith(DOCS.href) ? u.href.slice(DOCS.href.length) : '';
+    const rel = u.href.startsWith(DOCS.href) ? u.href.slice(DOCS.href.length).replace(/^(en|de|es)\//, '') : '';
     if (rel && /\.md$/i.test(u.pathname)) return `?doc=${encodeURIComponent(rel.split('#')[0])}${u.hash}`;
     return u.href;
   };
@@ -44,7 +67,8 @@
 
   // ---- index documentaire : liens de docs/README.md, par section
   async function drawIndex(current) {
-    const md = await text(INDEX),
+    const file = await localized(INDEX),
+      md = await text(file),
       host = $('.doc-index');
     if (!md) {
       host.innerHTML = '<p class="doc-empty">Index documentaire introuvable (docs/README.md).</p>';
@@ -58,34 +82,39 @@
         title: h[1],
         items: []
       });
-      for (const m of line.matchAll(/\[([^\]]+)\]\(([^)\s]+\.md)(#[^)\s]*)?\)/g))
-        if (g && !g.items.some(x => x.file === m[2])) g.items.push({
+      for (const m of line.matchAll(/\[([^\]]+)\]\(([^)\s]+\.md)(#[^)\s]*)?\)/g)) {
+        const doc = decodeURIComponent(link(m[2], file).replace(/^\?doc=/, '')); // relatif à docs/, sans langue
+        if (g && !g.items.some(x => x.file === doc)) g.items.push({
           label: m[1],
-          file: m[2]
+          file: doc
         });
+      }
     }
     host.innerHTML = [{
-      title: 'Accueil',
+      title: tr(['Accueil', 'Home', 'Start', 'Inicio']),
       items: [{
-        label: 'Index documentaire',
+        label: tr(['Index documentaire', 'Documentation index', 'Dokumentationsverzeichnis', 'Índice de la documentación']),
         file: INDEX
       }]
     }, ...groups].filter(x => x.items.length).map(x => `<h3>${esc(x.title)}</h3><ul>${x.items.map(i => `<li><a href="?doc=${encodeURIComponent(i.file)}"${i.file === current ? ' class="on"' : ''}>${esc(i.label)}</a></li>`).join('')}</ul>`).join('');
   }
 
   // ---- document
-  let shown = '';
+  let shown = '', // fichier affiché (langue comprise)
+    current = INDEX; // document affiché (sans langue)
   async function show(name, hash = '') {
-    const md = await text(name);
+    const file = await localized(name),
+      md = await text(file);
     if (md == null) {
       body.innerHTML = `<p class="doc-empty">Document introuvable : docs/${esc(name)}. La documentation se lit depuis la suite servie par le lanceur.</p>`;
       return;
     }
-    if (shown !== name) {
-      const r = render(md, name);
+    if (shown !== file) {
+      const r = render(md, file);
       body.innerHTML = r.html;
-      shown = name;
-      document.title = `Aide — ${r.headings[0]?.text || name}`;
+      shown = file;
+      current = name;
+      document.title = `${tr(['Aide', 'Help', 'Hilfe', 'Ayuda'])} — ${r.headings[0]?.text || name}`;
       const toc = r.headings.filter(h => h.level === 2 || h.level === 3);
       $('.doc-toc-title').hidden = !toc.length;
       $('.doc-toc').innerHTML = toc.map(h => `<li class="l${h.level}"><a href="#${esc(h.id)}">${esc(h.text.replace(/\*\*/g, ''))}</a></li>`).join('');
@@ -105,9 +134,10 @@
   /** Chapitre d'une page de la suite : { doc, id } (manuel utilisateur d'abord), null sinon. */
   async function chapterOf(page) {
     for (const m of MANUALS) {
-      const md = await text(m);
+      const f = await localized(m),
+        md = await text(f);
       if (!md) continue;
-      const id = render(md, m).pages[page];
+      const id = render(md, f).pages[page];
       if (id !== undefined) return {
         doc: m,
         id
@@ -139,7 +169,7 @@
     if (href.startsWith('#')) {
       e.preventDefault();
       history.pushState(null, '', href);
-      show(shown, href);
+      show(current, href);
     } else if (href.startsWith('?doc=')) {
       e.preventDefault();
       history.pushState(null, '', href);
@@ -162,9 +192,10 @@
       }
       const found = [];
       for (const m of [...MANUALS, 'TUTORIAL.md', 'MANUEL_EXPLOITATION.md']) {
-        const md = await text(m);
+        const f = await localized(m),
+          md = await text(f);
         if (!md) continue;
-        const heads = render(md, m).headings.slice();
+        const heads = render(md, f).headings.slice();
         // découpe par titre : chaque section cherchée dans son texte, rattachée à son titre (même texte, dans l'ordre)
         const parts = md.split(/\r?\n(?=#{1,4}\s)/);
         parts.forEach(part => {
@@ -182,9 +213,15 @@
         });
       }
       hits.hidden = false;
-      hits.innerHTML = found.length ? found.slice(0, 40).map(f => `<li><a href="?doc=${encodeURIComponent(f.doc)}#${esc(f.id)}">${esc(f.text)}<small>${esc(f.doc.replace(/\.md$/, '').replace(/_/g, ' ').toLowerCase())}</small></a></li>`).join('') : '<li class="doc-empty">Aucun résultat.</li>';
+      hits.innerHTML = found.length ? found.slice(0, 40).map(f => `<li><a href="?doc=${encodeURIComponent(f.doc)}#${esc(f.id)}">${esc(f.text)}<small>${esc(f.doc.replace(/\.md$/, '').replace(/_/g, ' ').toLowerCase())}</small></a></li>`).join('') : `<li class="doc-empty">${esc(tr(['Aucun résultat.', 'No results.', 'Keine Ergebnisse.', 'Sin resultados.']))}</li>`;
     }, 200);
   });
 
+  // langue changée : documents relus dans la nouvelle langue
+  window.addEventListener('repository-language-change', () => {
+    shown = '';
+    cache.clear();
+    route();
+  });
   route();
 })();
