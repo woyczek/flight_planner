@@ -916,9 +916,12 @@
     // haut de la barre : logo DEFA décliné selon le design (shared/icons/defa/<id du design à matières>.webp, sinon
     // flat), lien vers le site de la flotte DEFA Virtual (nouvel onglet : la page en cours reste ouverte)
     const logoSrc = () => new URL(`icons/defa/${designs[doc.dataset.design]?.skeuo ? doc.dataset.design : "flat"}.webp${ver}`, script.src).href;
-    side.innerHTML = `<a class="repo-sidenav-brand" href="${K.esc(vaUrl("home"))}" target="_blank" rel="noopener" title="${K.esc(va().name)} — ${K.esc(source("defa").replace(/^https?:\/\//, ""))}"><img class="repo-sidenav-logo" src="${logoSrc()}" alt="${K.esc(va().name)}"></a><ul></ul>`;
-    const ul = side.querySelector("ul");
+    side.innerHTML = `<a class="repo-sidenav-brand" href="${K.esc(vaUrl("home"))}" target="_blank" rel="noopener" title="${K.esc(va().name)} — ${K.esc(source("defa").replace(/^https?:\/\//, ""))}"><img class="repo-sidenav-logo" src="${logoSrc()}" alt="${K.esc(va().name)}"></a><ul></ul><ul class="repo-sidenav-foot"></ul>`;
+    // entrées du bas (séparateur « bottom » et suivantes : Apparence, Paramètres, Aide) dans leur propre liste, fixée en
+    // bas de la barre ; seule la liste du haut défile quand les entrées dépassent la hauteur de la fenêtre
+    let ul = side.querySelector("ul");
     items.forEach((it, i) => {
+      if (it.bottom) ul = side.querySelector(".repo-sidenav-foot");
       const li = document.createElement("li");
       if (it.sep) {
         li.className = "repo-sidenav-sep" + (it.bottom ? " repo-sidenav-bottom" : "") + (it.title ? " repo-sidenav-titled" : "");
