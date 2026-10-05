@@ -513,9 +513,15 @@ cerclés de laiton avec voyant ambre (Carnet de vol), verre et gel (Aqua). Trois
   « plaques » (Cabinet : la plaque de la planche posée sur le rail, qui court sur toute la largeur) et « cellules »
   (Carnet de vol : rail à fenêtres — chaque onglet est une cellule du rail avec le poussoir dedans, les cellules
   accolées refont la barre, fermée par ses embouts).
-- Fait : Carnet de vol (barre de laiton à fenêtres, poussoirs à voyant ambre), Cabinet (étiquettes en cadre d'acier ;
-  rail provisoire, liseré de laiton à venir). À venir : Aqua, Durci (en attendant : rail et onglets dessinés par les
-  jetons du design, rail sur toute la largeur de la page).
+- Troisième montage, « barre montée » (Durci : barre livrée d'une pièce) : cellules prises telles quelles d'un jour de
+  toile au suivant, voyant de la cellule allumée découpé à part (`tabs/led.webp`, reposé au centre de l'onglet
+  courant : il ne s'étire pas) et effacé de la cellule, sangle prolongée sur toute la largeur.
+- **Liseré** : cadre à coins arrondis (`docs/planches/lisere_laiton.webp`, `lisere_acier.webp`) posé autour du bloc qui
+  suit la barre d'onglets (`.repo-tabs + main`) pour le désigner comme la page des onglets — laiton pour Cabinet et
+  Carnet de vol, acier pour Durci et Aqua (`tabs/lisere.webp`, table `LISERE_OF` de `cut_tabs.py`).
+- Fait : Carnet de vol (barre de laiton à fenêtres, poussoirs à voyant ambre), Cabinet (étiquettes en cadre d'acier sur
+  rail d'acier), Durci (sangle de toile, cadres vissés, voyant), liserés des quatre designs. À venir : onglets d'Aqua
+  (en attendant : verre et gel dessinés par les jetons, rail sur toute la largeur de la page).
 - État : `python tools/assets_status.py` (famille « Onglets de page »).
 
 ---

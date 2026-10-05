@@ -3070,3 +3070,85 @@ html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab[aria-c
 html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:not([aria-current="page"]):is(:hover, :focus-visible):not(#imp) {
   filter: brightness(1.08)
 }
+/* Durci : sangle de toile cousue sur toute la largeur de la page (embouts vissés, toile répétée), une cellule par
+   onglet (cadre d'acier vissé, bouton de toile ; page courante : toile éclairée et voyant ambre au centre, posé à part
+   pour ne pas s'étirer avec la cellule). Échelle : 56 px de haut pour 385 px d'image (× .1455) ; embouts 99 / 105 px,
+   cellule 80 px de chaque côté (cadre et vis) ; voyant 119 × 79 px à 20 px du haut. */
+html[data-design="field"] .repo-tabs:not(#imp) {
+  gap: 0;
+  padding: 0 16px;
+  background: none;
+  box-shadow: none;
+  border: 0;
+  border-image: url("deco/field/tabs/rail.webp?v=7b0fa1f5") 0 105 0 99 fill / 0 15.3px 0 14.4px round stretch
+}
+html[data-design="field"] .repo-tabs::before,
+html[data-design="field"] .repo-tabs::after,
+html[data-design="field"] .repo-tab::before,
+html[data-design="field"] .repo-tab::after {
+  content: none
+}
+html[data-design="field"] .repo-tab:not(#imp) {
+  height: 56px;
+  padding: 0 20px;
+  line-height: 56px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  filter: none;
+  transform: none;
+  color: #e6e2c8;
+  text-shadow: 0 1px 1px #000, 0 0 4px rgba(0, 0, 0, .5);
+  border: 0;
+  border-image: url("deco/field/tabs/tab.webp?v=c2977df9") 0 80 0 80 fill / 0 11.6px 0 11.6px stretch
+}
+html[data-design="field"] .repo-tab[aria-current="page"]:not(#imp) {
+  color: #262612;
+  text-shadow: 0 1px 0 rgba(255, 240, 180, .55);
+  box-shadow: none;
+  filter: none;
+  transform: none;
+  border-image: url("deco/field/tabs/tab-on.webp?v=2cce5070") 0 80 0 80 fill / 0 11.6px 0 11.6px stretch
+}
+html[data-design="field"] .repo-tab[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  top: 2.9px;
+  left: 50%;
+  width: 17.3px;
+  height: 11.5px;
+  margin: 0 0 0 -8.65px;
+  border-radius: 0;
+  box-shadow: none;
+  background: url("deco/field/tabs/led.webp?v=2c3c2da4") center/100% 100% no-repeat
+}
+html[data-design="field"] .repo-tab:not([aria-current="page"]):is(:hover, :focus-visible):not(#imp) {
+  filter: brightness(1.12)
+}
+/* Liseré du bloc à onglets : le bloc qui suit la barre d'onglets (main) est entouré d'un liseré — laiton (Cabinet,
+   Carnet de vol), acier (Durci, Aqua) — qui le désigne comme la page des onglets. Liseré : cadre à coins arrondis de
+   la planche (tools/cut_tabs.py, docs/planches/lisere_*.webp), trait d'environ 6 px ; découpe 75 (laiton) / 85 (acier). */
+html[data-skeuo] .repo-tabs + main:not(#imp) {
+  margin-top: 8px;
+  padding-top: 10px;
+  border: 6px solid transparent;
+  border-image: var(--sk-tabs-lisere, none) var(--sk-tabs-lisere-slice, 0) / var(--sk-tabs-lisere-w, 0) stretch
+}
+html[data-design-base="cabinet"] {
+  --sk-tabs-lisere: url("deco/cabinet/tabs/lisere.webp?v=062612e9");
+  --sk-tabs-lisere-slice: 75;
+  --sk-tabs-lisere-w: 12.8px
+}
+html[data-design="flightlog"] {
+  --sk-tabs-lisere: url("deco/flightlog/tabs/lisere.webp?v=062612e9")
+}
+html[data-design="field"] {
+  --sk-tabs-lisere: url("deco/field/tabs/lisere.webp?v=5582b766");
+  --sk-tabs-lisere-slice: 85;
+  --sk-tabs-lisere-w: 12.2px
+}
+html[data-design="aqua"] {
+  --sk-tabs-lisere: url("deco/aqua/tabs/lisere.webp?v=5582b766");
+  --sk-tabs-lisere-slice: 85;
+  --sk-tabs-lisere-w: 12.2px
+}

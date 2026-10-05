@@ -71,7 +71,8 @@ SPEC = {
         'cabinet': ['pli-sealed.webp'], 'flightlog': ['pli-sealed.webp'], 'field': ['pli-sealed.webp'], 'aqua': ['pli-sealed.webp']}),
     # onglets en tête de page (repository_nav.js, REPOSITORY_TREE.tabs) : rail, poussoir relâché, poussoir enfoncé et
     # éclairé (page courante) ; sans texte (libellés en 4 langues posés par la page) ; docs/ASSETS_A_FOURNIR.md § 6
-    'Onglets de page (Paramètres, générateur ⇄ studio)': (True, {d: TABS for d in DESIGNS}),
+    'Onglets de page (Paramètres, générateur ⇄ studio)': (True, {d: TABS + (['tabs/led.webp'] if d == 'field' else []) for d in DESIGNS}),
+    'Liseré du bloc à onglets (laiton : Cabinet, Carnet de vol ; acier : Durci, Aqua)': (True, {d: ['tabs/lisere.webp'] for d in DESIGNS}),
 }
 
 

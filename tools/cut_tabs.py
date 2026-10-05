@@ -38,6 +38,23 @@ CONFIG = {
         'rail_left': (46, 362, 137, 558),
         'rail_right': (1862, 362, 1953, 558),
     },
+    # Durci : barre montée d'une pièce (sangle de toile cousue, cadres d'acier vissés, boutons de toile) — cellules
+    # prises telles quelles (d'un jour de toile au suivant) ; voyant de la cellule allumée découpé à part (led.webp,
+    # reposé au centre de l'onglet par la feuille de style : il ne s'étire pas avec la cellule) et effacé de la cellule
+    # (zone recopiée de la cellule éteinte) ; sangle prolongée sur toute la largeur (jour de toile répété)
+    'field': {
+        'sheet': 'onglets_field.webp',
+        'mode': 'montage',
+        'cell': (560, 128, 998, 512),
+        'cell_on': (999, 128, 1437, 512),
+        'led': (1158, 148, 1276, 226),
+        'led_fill_from': 22,  # largeur de la bande de la cellule allumée, juste à gauche du voyant, répétée à sa place
+        'rail_left': (17, 128, 115, 512),
+        'rail_right': (1877, 128, 1981, 512),
+        # sangle sans cadre : bord et couture du haut, toile répétée, couture et bord du bas (au-dessus et au-dessous
+        # d'un cadre : pas d'ombre de cadre)
+        'rail_band': {'x': (600, 900), 'top': (128, 176), 'tile': (162, 176), 'bottom': (462, 512)},
+    },
     'cabinet': {
         'sheet': 'onglets_cabinet.webp',
         'mode': 'plaques',
@@ -49,11 +66,29 @@ CONFIG = {
     },
 }
 FILL_W = 240  # largeur du milieu du rail
+# liserés (cadre à coins arrondis, intérieur transparent) qui entourent le bloc auquel appartiennent les onglets :
+# planche, boîte ; design → liseré (tabs/lisere.webp)
+LISERES = {'laiton': ('lisere_laiton.webp', (50, 198, 1950, 466)), 'acier': ('lisere_acier.webp', (37, 189, 1963, 474))}
+LISERE_OF = {'cabinet': 'laiton', 'flightlog': 'laiton', 'field': 'acier', 'aqua': 'acier'}
 
 
 def crop(im, box):
     x0, y0, x1, y1 = box
     return im.crop((x0, y0, x1 + 1, y1 + 1))
+
+
+def band(im, bd, h):
+    """Milieu de rail reconstruit à la hauteur h : rangées du haut, rangées répétées, rangées du bas (boîte x)."""
+    x0, x1 = bd['x']
+    top = crop(im, (x0, bd['top'][0], x1, bd['top'][1]))
+    tile = crop(im, (x0, bd['tile'][0], x1, bd['tile'][1]))
+    bot = crop(im, (x0, bd['bottom'][0], x1, bd['bottom'][1]))
+    fill = Image.new('RGBA', (x1 - x0 + 1, h), (0, 0, 0, 0))
+    fill.paste(top, (0, 0))
+    for y in range(top.size[1], h - bot.size[1], tile.size[1]):
+        fill.paste(tile, (0, y))
+    fill.paste(bot, (0, h - bot.size[1]))
+    return fill
 
 
 def rail_of(left, right, fill=None):
@@ -122,6 +157,24 @@ def cut(design):
     if c['mode'] == 'cellules':
         tab, on = cells(im, c)
         rail = rail_of(left, right)
+    elif c['mode'] == 'montage':
+        tab, on = crop(im, c['cell']), crop(im, c['cell_on'])
+        lx0, ly0, lx1, ly1 = c['led']
+        ox, oy = c['cell_on'][0], c['cell_on'][1]
+        rel = (lx0 - ox, ly0 - oy, lx1 - ox + 1, ly1 - oy + 1)
+        led = crop(im, c['led'])
+        # voyant effacé : bande voisine de la même cellule (même éclairage) répétée à sa place
+        k = c.get('led_fill_from', 20)
+        strip = on.crop((rel[0] - k, rel[1], rel[0], rel[3]))
+        for x in range(rel[0], rel[2], k):
+            on.paste(strip, (x, rel[1]))
+        # voyant détouré en douceur (ellipse floutée) pour se poser sur n'importe quelle largeur d'onglet
+        mask = Image.new('L', led.size, 0)
+        ImageDraw.Draw(mask).ellipse((6, 4, led.size[0] - 7, led.size[1] - 5), fill=255)
+        led.putalpha(mask.filter(ImageFilter.GaussianBlur(5)))
+        led.save(os.path.join(out, 'led.webp'), 'WEBP', quality=90, method=6)
+        print(f'{design}/tabs/led.webp : {led.size[0]} × {led.size[1]} (à {rel[0]}, {rel[1]} dans la cellule)')
+        rail = rail_of(left, right, band(im, c['rail_band'], left.size[1]) if 'rail_band' in c else crop(im, c['rail_fill']))
     else:
         tab, on = crop(im, c['tab']), crop(im, c['tab_on'])
         rail = rail_of(left, right, crop(im, c['rail_fill']))
@@ -133,6 +186,18 @@ def cut(design):
     print(f'  rail : embouts {left.size[0]} et {right.size[0]} px, hauteur {rail.size[1]} px')
 
 
+def lisere(design):
+    name, box = LISERES[LISERE_OF[design]]
+    img = crop(Image.open(os.path.join(ROOT, 'docs', 'planches', name)).convert('RGBA'), box)
+    out = os.path.join(ROOT, 'shared', 'deco', design, 'tabs')
+    os.makedirs(out, exist_ok=True)
+    img.save(os.path.join(out, 'lisere.webp'), 'WEBP', quality=88, method=6)
+    print(f'{design}/tabs/lisere.webp ({LISERE_OF[design]}) : {img.size[0]} × {img.size[1]}')
+
+
 if __name__ == '__main__':
-    for d in sys.argv[1:] or CONFIG:
-        cut(d)
+    for d in sys.argv[1:] or sorted(set(CONFIG) | set(LISERE_OF)):
+        if d in CONFIG:
+            cut(d)
+        if d in LISERE_OF:
+            lisere(d)
