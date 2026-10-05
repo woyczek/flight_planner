@@ -62,11 +62,22 @@
     const mem = new Map(), // adresse → { at, value } (value null : fichier absent)
       TTL = 60e3;
     const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('defa-data') : null;
+    // fichiers écrits depuis leur dernière lecture : relus sans requête conditionnelle (le lanceur date les fichiers à la
+    // seconde : un fichier réécrit dans la seconde de sa lecture répondait « 304, inchangé » et l'ancien contenu restait
+    // — utilisateur ajouté absent de la liste, index des disponibilités d'avant l'enregistrement)
+    const written = new Set();
     const drop = path => {
-      if (!path) mem.clear();
-      else
-        for (const k of [...mem.keys()])
-          if (k.split('?')[0].endsWith(path)) mem.delete(k);
+      if (!path) {
+        mem.clear();
+        inflight.clear();
+      } else
+        for (const m of [mem, inflight])
+          for (const k of [...m.keys()])
+            if (k.split('?')[0].endsWith(path)) {
+              m.delete(k); // lecture en cours d'avant l'écriture : plus partagée avec les lectures suivantes
+              written.add(k);
+            }
+      if (path) written.add(new URL(path, root()).href);
     };
     const announce = path => window.dispatchEvent(new CustomEvent('defa-data-change', {
       detail: {
@@ -87,11 +98,13 @@
         if (hit && !fresh && Date.now() - hit.at < TTL) return hit.value;
         // lecture déjà en cours pour cette adresse (appels parallèles : un par pilote de l'ODV) : partagée
         if (inflight.has(url)) return inflight.get(url);
+        // lecture « fraîche » ou fichier écrit depuis : sans cache HTTP (pas de 304 sur une date à la seconde)
+        const bypass = fresh || written.delete(url);
         const p = (async () => {
           let value = null;
           try {
             const r = await fetch(url, {
-              cache: 'no-cache'
+              cache: bypass ? 'no-store' : 'no-cache'
             });
             value = r.ok ? await r.json() : null;
           } catch {
@@ -107,7 +120,7 @@
         try {
           return await p;
         } finally {
-          inflight.delete(url);
+          if (inflight.get(url) === p) inflight.delete(url); // pas une lecture plus récente (après écriture)
         }
       },
       /** Fichier écrit : oublié ici et dans les autres onglets, qui relisent à la demande. */

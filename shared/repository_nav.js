@@ -1037,7 +1037,7 @@
     store.src = new URL("browser_store.js?v=7860c8db", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
-    assign.src = new URL("assignments.js?v=1d7adcf5", script.src).href;
+    assign.src = new URL("assignments.js?v=852dfbfd", script.src).href;
     document.head.append(assign);
     /* Utilisateurs et droits : mode develop / production, connexion, usurpation (bandeau sur toutes les pages) */
     const users = document.createElement("script");

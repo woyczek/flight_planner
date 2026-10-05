@@ -282,8 +282,31 @@
         body.textContent = K.t(['Module des utilisateurs non chargé.', 'Users module not loaded.', 'Benutzermodul nicht geladen.', 'Módulo de usuarios no cargado.']);
         return;
       }
+      // relecture des fiches (une par utilisateur) : texte d'attente dans le panneau et barre de progression du framework
+      body.innerHTML = `<p class="sp-hint">${esc(L('Lecture des fiches utilisateurs…', 'Reading user files…', 'Benutzerdateien werden gelesen…', 'Leyendo las fichas de usuario…'))}</p>`;
+      const readAll = async () => {
+        const tris = Object.keys(await U.index(true)).sort();
+        const job = window.AppFramework?.task?.(L('Relecture des fiches utilisateurs', 'Reading user files', 'Benutzerdateien lesen', 'Lectura de las fichas de usuario'), {
+          total: tris.length
+        });
+        let done = 0;
+        try {
+          const users = await Promise.all(tris.map(async tri => {
+            const u = await U.get(tri, {
+              fresh: true
+            });
+            job?.set(++done, tris.length, tri);
+            return u;
+          }));
+          job?.end();
+          return users.filter(Boolean);
+        } catch (err) {
+          job?.fail(err);
+          throw err;
+        }
+      };
       await U.loadConfig(true);
-      let list = await U.list(true);
+      let list = await readAll();
       // dossier vide : une fiche par pilote de la référence DEFA
       if (!list.length && (window.DEFA_REFERENCE?.file || window.DEFA_REFERENCE)?.pilots?.length) {
         const made = await U.seed();
@@ -295,7 +318,7 @@
             where: 'local'
           });
         }
-        list = await U.list(true);
+        list = await readAll();
       }
       const s = U.session(),
         pending = (A()?.pendingData?.() || []).filter(p => /^(utilisateurs|config)\//.test(p));
@@ -400,10 +423,14 @@
         e.preventDefault();
         const f = e.target;
         try {
-          wrote(await U.create(f.tri.value, {
+          const tri = f.tri.value.trim().toUpperCase();
+          wrote(await U.create(tri, {
             nom: f.nom.value.trim(),
             role: f.role.value
           }));
+          notify(tf(['{t} ajouté.', '{t} added.', '{t} hinzugefügt.', '{t} añadido.'], {
+            t: tri
+          }), 'ok');
           api.show();
         } catch (err) {
           notify(err.message, 'warn');
