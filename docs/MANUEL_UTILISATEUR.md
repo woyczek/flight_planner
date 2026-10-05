@@ -128,7 +128,7 @@ La suite propose plusieurs designs. Ils changent la forme des pages, pas les inf
 
 Cette page réunit les missions que le Centre vous affecte, le dossier de chacune, vos disponibilités et votre trigramme.
 On y arrive par l'entrée « Mes missions » de la barre latérale, par le pli cacheté de l'en-tête ou par l'onglet « Mes missions ».
-Mise en page : deux colonnes. À gauche, la liste des missions et le dossier ouvert ; à droite, « Mes disponibilités » et « Pilote ». Sur un écran étroit (moins de 1100 px), tout passe sur une seule colonne. Quand un dossier est ouvert, la colonne des missions passe aux deux tiers de la largeur.
+Mise en page : la liste des missions et le dossier ouvert côte à côte (le dossier prend les deux tiers de la largeur), « Mes disponibilités » en dessous, sur toute la largeur. Sans dossier ouvert, la liste occupe toute la largeur. Sur un écran étroit (moins de 1100 px), tout passe sur une seule colonne : missions, dossier, disponibilités.
 En mode production, la page demande d'abord de se connecter.
 
 ### Mes missions de la semaine
@@ -141,7 +141,8 @@ La liste des missions qui vous sont affectées pour la semaine affichée, triée
 - Une mention « convoyage » indique que vous convoyez un appareil pour un autre pilote : seul l'ordre de convoyage vous est remis, pas le brief de la mission.
 - Un clic sur une ligne ouvre la mission dans le bloc « Mission ».
 - Case « afficher aussi les missions passées » : par défaut, une mission disparaît quelques heures après son décollage. Le choix est mémorisé.
-- Sans trigramme réglé, la liste indique « Aucun trigramme réglé. » (voir le bloc « Pilote »).
+- Sans trigramme réglé, la liste indique « Aucun trigramme réglé. » ; le bouton « Pilote » mène à la rubrique où le saisir.
+- **Pilote**, **Appareils maîtrisés**, **Simulateurs** : trois boutons sous la liste, vers Paramètres › Mon profil (rubrique « Identité et réseaux » pour le trigramme ; rubrique « Appareils et simulateurs », à la carte des appareils ou à celle des simulateurs). Le bouton « Pilote » affiche le trigramme utilisé pour trouver vos missions et vos disponibilités. En mode production ou pendant une usurpation, c'est le trigramme de la connexion.
 
 ### Mission
 
@@ -186,7 +187,7 @@ Le dossier de la mission choisie, en lecture seule. Ce bloc n'apparaît qu'aprè
 | « Refermer le dossier » | Referme le dossier (la mission reste lue). |
 
 Ces boutons sont grisés si la mission ne fournit pas ce qu'il faut (fichier de mission absent, route trop courte).
-Le bouton « ⤢ Pleine largeur » du titre du bloc étale le dossier sur toute la largeur, au-dessus des deux colonnes ; « ⇥ Dans la colonne » le remet sous la liste. Le choix est mémorisé.
+Le bouton « ⤢ Pleine largeur » du titre du bloc étale le dossier sur toute la largeur, au-dessus de la liste ; « ⇥ À côté de la liste » le remet à côté. Le choix est mémorisé.
 
 **Animations** (désactivées si le système demande moins d'animations)
 - Cabinet : la liasse sort du range-dossier, qui s'ouvre, puis la page tourne.
@@ -230,15 +231,6 @@ Une case partagée entre plusieurs catégories est rayée ; une heure couverte e
 Le message sous le bloc indique où la saisie est partie : « Enregistré dans le dossier des données. », ou « Gardé dans ce navigateur, le Centre ne le voit pas : … » si le dossier des données n'est pas autorisé (voir [Premier lancement](#premier-lancement), étape 3).
 Une ancienne grille horaire existante est importée automatiquement dans la semaine.
 Le lien « Ouvrir la saisie des disponibilités seule » mène à la page Mes disponibilités.
-
-### Pilote
-
-Le trigramme utilisé pour trouver vos missions et vos disponibilités.
-
-- Champ « Trigramme » : saisissez votre trigramme DEFA (par exemple RBR). Il est partagé avec ☰ › Profil pilote et Paramètres › Mon profil.
-- Sans trigramme, le bloc affiche « Saisir votre trigramme (ex. RBR) pour voir les missions qui vous sont affectées. »
-- En mode production ou pendant une usurpation, le champ est en lecture seule : c'est le trigramme de la connexion.
-- Le lien « Mes appareils et simulateurs (Mon profil) » ouvre la rubrique où déclarer vos appareils et simulateurs. Ces informations ne se règlent plus sur cette page.
 
 ## Mes disponibilités
 <!-- page: apps/pilot/disponibilites.html -->

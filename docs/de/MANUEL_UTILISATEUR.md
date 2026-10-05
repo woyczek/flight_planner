@@ -128,7 +128,7 @@ Die Suite bietet mehrere Designs. Sie ändern die Form der Seiten, nicht die Inf
 
 Diese Seite vereint die Missionen, die Ihnen das Zentrum zuweist, die Mappe jeder Mission, Ihre Verfügbarkeit und Ihr Kürzel.
 Sie erreichen sie über den Eintrag „Meine Missionen“ der Seitenleiste, über den versiegelten Umschlag der Kopfzeile oder über die Registerkarte „Meine Missionen“.
-Aufbau: zwei Spalten. Links die Liste der Missionen und die geöffnete Mappe; rechts „Meine Verfügbarkeit“ und „Pilot“. Auf einem schmalen Bildschirm (unter 1100 px) steht alles in einer einzigen Spalte. Ist eine Mappe geöffnet, nimmt die Missionsspalte zwei Drittel der Breite ein.
+Aufbau: die Liste der Missionen und die geöffnete Mappe nebeneinander (die Mappe nimmt zwei Drittel der Breite ein), „Meine Verfügbarkeit“ darunter, über die ganze Breite. Ohne geöffnete Mappe nimmt die Liste die ganze Breite ein. Auf einem schmalen Bildschirm (unter 1100 px) steht alles in einer einzigen Spalte: Missionen, Mappe, Verfügbarkeit.
 Im Produktionsmodus verlangt die Seite zuerst eine Anmeldung.
 
 ### Meine Missionen der Woche
@@ -141,7 +141,8 @@ Die Liste der Missionen, die Ihnen für die angezeigte Woche zugewiesen sind, so
 - Der Vermerk „Überführung“ zeigt, dass Sie ein Luftfahrzeug für einen anderen Piloten überführen: Sie erhalten nur den Überführungsbefehl, nicht das Briefing der Mission.
 - Ein Klick auf eine Zeile öffnet die Mission im Block „Mission“.
 - Kästchen „auch vergangene Missionen anzeigen“: Standardmäßig verschwindet eine Mission einige Stunden nach ihrem Start. Die Wahl wird gespeichert.
-- Ohne eingestelltes Kürzel zeigt die Liste „Kein Kürzel eingestellt.“ (siehe Block „Pilot“).
+- Ohne eingestelltes Kürzel zeigt die Liste „Kein Kürzel eingestellt.“; der Knopf „Pilot“ führt zum Abschnitt, in dem Sie es eingeben.
+- **Pilot**, **Beherrschte Luftfahrzeuge**, **Simulatoren**: drei Knöpfe unter der Liste, zu Einstellungen › Mein Profil (Abschnitt „Identität und Netzwerke“ für das Kürzel; Abschnitt „Luftfahrzeuge und Simulatoren“, bei der Karte der Luftfahrzeuge oder der Simulatoren). Der Knopf „Pilot“ zeigt das Kürzel, mit dem Ihre Missionen und Ihre Verfügbarkeit gefunden werden. Im Produktionsmodus oder während einer Identitätsübernahme ist es das Kürzel der Anmeldung.
 
 ### Mission
 
@@ -186,7 +187,7 @@ Die Mappe der gewählten Mission, nur lesbar. Dieser Block erscheint erst nach e
 | „Mappe schließen“ | Schließt die Mappe (die Mission bleibt gelesen). |
 
 Diese Knöpfe sind ausgegraut, wenn die Mission nicht das Nötige liefert (Missionsdatei fehlt, Route zu kurz).
-Der Knopf „⤢ Volle Breite“ im Blocktitel breitet die Mappe über die ganze Breite aus, oberhalb der beiden Spalten; „⇥ In der Spalte“ setzt sie wieder unter die Liste. Die Wahl wird gespeichert.
+Der Knopf „⤢ Volle Breite“ im Blocktitel breitet die Mappe über die ganze Breite aus, oberhalb der Liste; „⇥ Neben der Liste“ setzt sie wieder daneben. Die Wahl wird gespeichert.
 
 **Animationen** (deaktiviert, wenn das System weniger Animationen verlangt)
 - Kabinett: Das Aktenbündel kommt aus der Ablage, die sich öffnet, dann wird die Seite umgeblättert.
@@ -230,15 +231,6 @@ Ein Feld, das sich mehrere Kategorien teilen, ist schraffiert; eine teilweise be
 Die Meldung unter dem Block zeigt, wohin die Eingabe gegangen ist: „Im Datenordner gespeichert.“ oder „In diesem Browser behalten, das Zentrum sieht es nicht: …“, wenn der Datenordner nicht freigegeben ist (siehe [Erststart](#erststart), Schritt 3).
 Ein vorhandenes altes Stundenraster wird automatisch in die Woche übernommen.
 Der Link „Verfügbarkeitseingabe einzeln öffnen“ führt zur Seite Meine Verfügbarkeit.
-
-### Pilot
-
-Das Kürzel, mit dem Ihre Missionen und Ihre Verfügbarkeit gefunden werden.
-
-- Feld „Kürzel“: Geben Sie Ihr DEFA-Kürzel ein (zum Beispiel RBR). Es wird mit ☰ › Pilotenprofil und Einstellungen › Mein Profil geteilt.
-- Ohne Kürzel zeigt der Block „Trigramm eingeben (z. B. RBR), um Ihre zugewiesenen Missionen zu sehen.“
-- Im Produktionsmodus oder während einer Identitätsübernahme ist das Feld nur lesbar: Es ist das Kürzel der Anmeldung.
-- Der Link „Meine Luftfahrzeuge und Simulatoren (Mein Profil)“ öffnet den Abschnitt, in dem Sie Ihre Luftfahrzeuge und Simulatoren angeben. Diese Angaben werden nicht mehr auf dieser Seite eingestellt.
 
 ## Meine Verfügbarkeit
 <!-- page: apps/pilot/disponibilites.html -->

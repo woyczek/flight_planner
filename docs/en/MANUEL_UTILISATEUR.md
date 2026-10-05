@@ -128,7 +128,7 @@ The suite offers several designs. They change the shape of the pages, not the in
 
 This page brings together the missions the Centre assigns to you, the folder of each one, your availability and your trigram.
 You reach it from the “My missions” entry of the side bar, from the sealed envelope in the header or from the “My missions” tab.
-Layout: two columns. On the left, the list of missions and the open folder; on the right, “My availability” and “Pilot”. On a narrow screen (less than 1100 px), everything moves to a single column. When a folder is open, the missions column widens to two thirds of the width.
+Layout: the list of missions and the open folder side by side (the folder takes two thirds of the width), “My availability” below, across the full width. With no folder open, the list takes the full width. On a narrow screen (less than 1100 px), everything moves to a single column: missions, folder, availability.
 In production mode, the page first asks you to sign in.
 
 ### My missions this week
@@ -141,7 +141,8 @@ The list of the missions assigned to you for the week shown, sorted by take-off 
 - A “ferry” mention means that you are ferrying an aircraft for another pilot: you only receive the ferry order, not the mission brief.
 - A click on a line opens the mission in the “Mission” block.
 - “also show past missions” box: by default, a mission disappears a few hours after its take-off. The choice is remembered.
-- Without a trigram set, the list shows “No trigram set.” (see the “Pilot” block).
+- Without a trigram set, the list shows “No trigram set.”; the “Pilot” button leads to the section where you enter it.
+- **Pilot**, **Aircraft mastered**, **Simulators**: three buttons under the list, to Settings › My profile (“Identity and networks” section for the trigram; “Aircraft and simulators” section, at the aircraft card or the simulators card). The “Pilot” button shows the trigram used to find your missions and your availability. In production mode or during an impersonation, it is the trigram you signed in with.
 
 ### Mission
 
@@ -186,7 +187,7 @@ The folder of the chosen mission, read-only. This block only appears after a cli
 | “Close the folder” | Closes the folder (the mission stays read). |
 
 These buttons are greyed out if the mission does not provide what is needed (mission file missing, route too short).
-The “⤢ Full width” button in the block title spreads the folder across the full width, above the two columns; “⇥ In the column” puts it back under the list. The choice is remembered.
+The “⤢ Full width” button in the block title spreads the folder across the full width, above the list; “⇥ Beside the list” puts it back alongside. The choice is remembered.
 
 **Animations** (turned off if the system asks for fewer animations)
 - Cabinet: the bundle of papers comes out of the file holder, which opens, then the page turns.
@@ -230,15 +231,6 @@ A cell shared between several categories is striped; an hour partly covered (ent
 The message under the block tells you where the entry went: “Saved to the data folder.”, or “Kept in this browser, the Centre cannot see it: …” if the data folder is not allowed (see [First run](#first-run), step 3).
 An existing old hourly grid is imported automatically into the week.
 The “Open the availability entry on its own” link leads to the My availability page.
-
-### Pilot
-
-The trigram used to find your missions and your availability.
-
-- “Trigram” field: enter your DEFA trigram (for example RBR). It is shared with ☰ › Pilot profile and Settings › My profile.
-- Without a trigram, the block shows “Enter your trigram (e.g. RBR) to see the missions assigned to you.”
-- In production mode or during an impersonation, the field is read-only: it is the trigram you signed in with.
-- The “My aircraft and simulators (My profile)” link opens the section where you declare your aircraft and simulators. This information is no longer set on this page.
 
 ## My availability
 <!-- page: apps/pilot/disponibilites.html -->

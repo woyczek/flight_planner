@@ -128,7 +128,7 @@ La suite ofrece varios diseños. Cambian la forma de las páginas, no la informa
 
 Esta página reúne las misiones que el Centro le asigna, la carpeta de cada una, su disponibilidad y su trigrama.
 Se llega a ella por la entrada «Mis misiones» de la barra lateral, por el sobre sellado de la cabecera o por la pestaña «Mis misiones».
-Diseño de la página: dos columnas. A la izquierda, la lista de misiones y la carpeta abierta; a la derecha, «Mi disponibilidad» y «Piloto». En una pantalla estrecha (menos de 1100 px), todo pasa a una sola columna. Cuando hay una carpeta abierta, la columna de misiones ocupa dos tercios del ancho.
+Diseño de la página: la lista de misiones y la carpeta abierta una al lado de la otra (la carpeta ocupa dos tercios del ancho), «Mi disponibilidad» debajo, a todo el ancho. Sin carpeta abierta, la lista ocupa todo el ancho. En una pantalla estrecha (menos de 1100 px), todo pasa a una sola columna: misiones, carpeta, disponibilidad.
 En modo producción, la página pide primero conectarse.
 
 ### Mis misiones de la semana
@@ -141,7 +141,8 @@ La lista de las misiones que tiene asignadas para la semana mostrada, ordenadas 
 - Una mención «traslado» indica que traslada una aeronave para otro piloto: solo se le entrega la orden de traslado, no el brief de la misión.
 - Un clic en una línea abre la misión en el bloque «Misión».
 - Casilla «mostrar también las misiones pasadas»: por defecto, una misión desaparece unas horas después de su despegue. La elección se memoriza.
-- Sin trigrama configurado, la lista indica «Ningún trigrama configurado.» (consulte el bloque «Piloto»).
+- Sin trigrama configurado, la lista indica «Ningún trigrama configurado.»; el botón «Piloto» lleva a la sección donde introducirlo.
+- **Piloto**, **Aeronaves dominadas**, **Simuladores**: tres botones bajo la lista, hacia Ajustes › Mi perfil (sección «Identidad y redes» para el trigrama; sección «Aeronaves y simuladores», en la tarjeta de aeronaves o en la de simuladores). El botón «Piloto» muestra el trigrama utilizado para encontrar sus misiones y su disponibilidad. En modo producción o durante una suplantación, es el trigrama de la conexión.
 
 ### Misión
 
@@ -186,7 +187,7 @@ La carpeta de la misión elegida, en solo lectura. Este bloque solo aparece tras
 | «Cerrar la carpeta» | Cierra la carpeta (la misión sigue marcada como leída). |
 
 Estos botones están en gris si la misión no aporta lo necesario (falta el archivo de misión, ruta demasiado corta).
-El botón «⤢ Ancho completo» del título del bloque extiende la carpeta a todo el ancho, por encima de las dos columnas; «⇥ En la columna» la vuelve a poner bajo la lista. La elección se memoriza.
+El botón «⤢ Ancho completo» del título del bloque extiende la carpeta a todo el ancho, por encima de la lista; «⇥ Junto a la lista» la vuelve a poner al lado. La elección se memoriza.
 
 **Animaciones** (desactivadas si el sistema pide menos animaciones)
 - Gabinete: el legajo sale del archivador, que se abre, y luego la página pasa.
@@ -230,15 +231,6 @@ Una casilla compartida entre varias categorías aparece rayada; una hora cubiert
 El mensaje bajo el bloque indica adónde se ha enviado lo introducido: «Guardado en la carpeta de datos.», o «Guardado en este navegador, el Centro no lo ve: …» si la carpeta de datos no está autorizada (consulte [Primer arranque](#primer-arranque), paso 3).
 Una cuadrícula horaria antigua existente se importa automáticamente en la semana.
 El enlace «Abrir solo la introducción de disponibilidad» lleva a la página Mi disponibilidad.
-
-### Piloto
-
-El trigrama utilizado para encontrar sus misiones y su disponibilidad.
-
-- Campo «Trigrama»: introduzca su trigrama DEFA (por ejemplo, RBR). Se comparte con ☰ › Perfil de piloto y Ajustes › Mi perfil.
-- Sin trigrama, el bloque muestra «Introduzca su trigrama (p. ej. RBR) para ver las misiones que tiene asignadas.»
-- En modo producción o durante una suplantación, el campo es de solo lectura: es el trigrama de la conexión.
-- El enlace «Mis aeronaves y simuladores (Mi perfil)» abre la sección donde se declaran sus aeronaves y simuladores. Esta información ya no se configura en esta página.
 
 ## Mi disponibilidad
 <!-- page: apps/pilot/disponibilites.html -->
