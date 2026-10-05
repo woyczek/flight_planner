@@ -189,7 +189,7 @@ reçus, les écritures (§ 5) appellent `push` après le fichier. Le transport s
 | 4. Affectations et disponibilités indexées | fait : déclarations (semaines et anciens fichiers) et fiches utilisateurs lues par signature (§ 3.1) — ODV, 2e ouverture : 11 requêtes au lieu de 114, données à 1,6 s au lieu de 7,2 s ; affectations : un seul fichier (≈ 23 Ko, ≈ 40 ms), pas indexé (rien à gagner) |
 | 5. CR indexés, relus seulement si un fichier a changé (signature, 304) | fait (`c1ffb070`) |
 | 6. Suivi des missions dans `suivi.yaml` (fusion champ par champ) | fait (`eabd0a6f`) ; affectations : remplacement par mission sous verrou (existant) |
-| 7. Découpage par année | à faire avant le 31 décembre |
+| 7. Découpage par année | classé en dette technique (docs/DETTE_TECHNIQUE.md), gardé par la session « fond » : avant le 31 décembre 2026 |
 | 8. Synchronisation git par le lanceur | fait (§ 9.4) : bouton « Synchroniser » de l'en-tête, auteur = trigramme connecté, fusion fiche par fiche ; essais sur des copies (`python tools/data_sync.py --essai`, lanceur `--data <copie>`) |
 | 9. Moteur central minimal et transport webservice | à faire |
 | 10. Mode `production` | à faire |

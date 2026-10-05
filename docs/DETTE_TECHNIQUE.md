@@ -1,9 +1,36 @@
 # Dette technique
 
-Points connus, gardés en l'état par choix, à reprendre plus tard. Chaque entrée : ce qui se passe, pourquoi on le
-garde, ce qu'il faudrait faire.
+Points connus, gardés en l'état par choix ou faute de temps, à reprendre. Chaque entrée : ce qui se passe, pourquoi on
+le garde, ce qu'il faudrait faire. Mise à jour : 5 octobre 2026.
+
+## Données et synchronisation
+
+| Depuis | Sujet | Constat | Pourquoi on garde | À faire |
+|---|---|---|---|---|
+| 05/10/2026 | **Découpage des CR par année** (index des données, étape 7) | tous les CR sont dans un seul fichier, `data/cr/missions.yaml`, qui grossit sans fin ; en synchronisation, deux postes qui ajoutent un CR chacun entrent en conflit sur ce fichier (la version la plus récente est gardée, l'autre va dans `_conflits/`, à fusionner à la main) | volume encore faible ; décidé le 5 octobre | `data/cr/<année>.yaml`, lecture de l'ancien fichier gardée le temps de la bascule ; **à faire avant le 31 décembre 2026** (pris en charge par la session « fond ») |
+| 05/10/2026 | **CR sans métadonnées par enregistrement** | un CR n'a ni `updated_at`, ni `by`, ni compteur de révision ; seule la date du fichier existe (docs/INDEX_DONNEES.md § 5, point 1) | la fusion à trois du registre (navigateur) suffit sur un seul poste | ajouter `updated_at`, `by`, `rev` à chaque CR (avec le découpage par année) : fusion fiche par fiche possible aussi par la synchronisation |
+| 05/10/2026 | **Pas de pierres tombales** | une fiche supprimée à l'intérieur d'un fichier qui en regroupe plusieurs (CR) peut revenir par l'autre copie lors d'une fusion | les suppressions sont rares | suppression = `deleted: true`, `deleted_at`, `by`, purgée après 90 jours (§ 5, point 4) |
+| 05/10/2026 | **Expiration non faite** | les marques de lecture (`assignmentsRead:v1`) et l'état des plis (`pilotPlis:v2`) ne sont jamais purgés ; les brouillons de CR non plus (§ 4) | quelques Ko par mois | purge à 6 mois après le décollage (marques, plis), 90 jours sans modification (brouillons, avec notification) |
+| 05/10/2026 | **Stores de l'index déclarés, vides** | `assignments`, `availability`, `readMarks` existent dans la base `defaIndex` mais ne sont pas remplis : les fichiers du pool passent par le store `files` (§ 3.1), les marques restent dans `localStorage` | pas de gain mesuré à les remplir aujourd'hui | les remplir quand une page en a besoin (requêtes par jour ou par semaine), ou les retirer à la prochaine version de la base |
+| 05/10/2026 | **Index du dossier sans lanceur** | sans lanceur (pages ouvertes depuis le disque), l'index du dossier n'est tenu à jour que par les écritures des pages : un fichier changé de l'extérieur (git sans lanceur) garde une vieille copie dans le navigateur | cas rare : la suite est servie par le lanceur | Paramètres › Maintenance › Caches › Index des données (purger) ; à terme : signature lue dans le fichier lui-même |
+| 05/10/2026 | **Dossier autorisé ≠ copie servie** | quand la page ne peut pas dire si le dossier autorisé est la copie servie (`sameAsServed` null), la valeur est relue dans le dossier mais la signature vient de l'index servi | sans danger tant que les deux sont le même `data/` (jonctions actuelles) | garde : signature relue dans le même lieu que la valeur |
+| 05/10/2026 | **Relève du dépôt distant par trois lanceurs** | chaque lanceur relit le dépôt distant de `data/` (git fetch) toutes les 5 minutes, sur le même dépôt (jonctions) : verrous git possibles, sans conséquence (relève suivante) | inoffensif | une seule relève par dépôt (verrou fichier), ou relève à la demande seulement |
+| 05/10/2026 | Données partagées sur la branche `test` | le `data/` commun aux trois espaces (`E:\DEFA\data`) est sur la branche `test`, qui porte le jeu de test fantôme (`tools/jeu_fantome.py`) ; c'est la seule base de référence | pas de mission réelle sur cette suite | avant une mise en service réelle : revenir sur `main`, décider du sort des affectations du jeu de test |
+| 05/10/2026 | `utilisateurs/_index.json` hors `.gitignore` | régénéré (lanceur, pages), exclu des commits de synchronisation, mais affiché comme fichier non suivi dans `data/` | décision en attente | l'ajouter au `.gitignore` de `data/` comme `disponibilites/_index.json` |
+| 05/10/2026 | Anciennes disponibilités | l'ancien format (`disponibilites/<TRI>.json`, grille horaire) reste lu à côté du nouveau (plages par semaine) | bascule progressive ; conversion : `tools/convert_dispos.py` | convertir tout, puis retirer la lecture de l'ancien format |
+| 05/10/2026 | Réglages du planning ODV par navigateur | heures des créneaux, lecture du classeur… (`odvPlanning:v1`) sont gardés dans le navigateur, pas dans le pool synchronisé | un seul poste du Centre aujourd'hui | les passer dans `data/config/` (comme les catégories de disponibilité) |
+
+## Pages
 
 | Depuis | Sujet | Constat | Pourquoi on garde | À faire |
 |---|---|---|---|---|
 | 05/10/2026 | ODV, fenêtre « Affecter les pilotes libres » | « Enregistrer (2) » affiché dès l'ouverture d'un créneau qui a déjà des missions (les affectations existantes comptent comme modifications) | pas gênant à l'usage | ne compter que les changements par rapport aux affectations lues à l'ouverture (`apps/cpco/odv_assign.js`) |
-| 05/10/2026 | Données partagées sur la branche `test` | le `data/` commun aux trois espaces de travail (`E:\DEFA\data`) est sur la branche `test`, qui porte le jeu de test fantôme (`tools/jeu_fantome.py`) ; c'est la seule base de référence | pas de mission réelle sur cette suite : la base de test sert de référence | avant une mise en service réelle : revenir sur `main`, décider du sort des affectations du jeu de test |
+| 05/10/2026 | Libellés de configuration en français seul | les libellés des catégories de disponibilité se saisissent en français ; les traductions manquantes sont listées par l'audit (`tools/audit_i18n.html`) mais se complètent à la main dans `data/config/disponibilites.json` | décidé le 5 octobre | saisie des traductions dans l'audit lui-même |
+| 05/10/2026 | Range-dossier du Cabinet en calques | l'animation du Cabinet utilise trois calques découpés dans la couverture (`tools/cabinet_layers.py`) | — | relancer le script si l'image de la couverture change (mesures reprises dans `mes_missions.html`, constante `CAB`) |
+
+## Outillage
+
+| Depuis | Sujet | Constat | Pourquoi on garde | À faire |
+|---|---|---|---|---|
+| 02/10/2026 | Fichier de compatibilité `repository_tree` à la racine | écrit par `tools/bump_versions.py` pour le contrôle des mises à jour des versions 4.6.0 et antérieures | des postes peuvent encore être en 4.6 | à retirer à partir de la 4.9 |
+| 05/10/2026 | Lanceur `--data` | avec `--data <copie>`, le repère d'installation (`.defa_instance`) est encore écrit dans le `data/` de la suite, pas dans la copie | sans effet sur les essais | écrire le repère dans le dossier servi |
