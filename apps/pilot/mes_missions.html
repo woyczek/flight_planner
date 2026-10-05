@@ -1664,7 +1664,7 @@
 <script src="../../shared/kit.js?v=65a16a49"></script>
 <script src="../../shared/repository_nav.js?v=9444f0da"></script>
 <script src="mes_missions_i18n.js?v=8e114df2" defer></script>
-<script src="../../shared/dispos_editor.js?v=7fbf34bd"></script>
+<script src="../../shared/dispos_editor.js?v=65e6c131"></script>
 <script src="../../shared/content_i18n.js?v=7afecb78"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=74550207"></script>
@@ -2990,6 +2990,8 @@
     });
     for (let n = 0; !window.SuiteDispos && n < 60; n++) await new Promise(r => setTimeout(r, 50)); // chargé par repository_nav.js
     if (!window.DisposEditor || !window.SuiteDispos) return;
+    // l'éditeur importe l'ancienne grille de la semaine (shared/dispos_editor.js) : plus de copie en lecture seule à côté
+    $('pmGridOld').hidden = true;
     dispoEd ||= window.DisposEditor.mount($('pmDispos'), {
       nav: false // semaine de la page (barre commune à la liste)
     });

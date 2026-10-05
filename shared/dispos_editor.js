@@ -49,10 +49,11 @@
   const colorOf = c => window.RepositoryNav?.chartColor?.(c?.couleur || '#BFBFBF') || c?.couleur || '#BFBFBF';
   // lettre affichée dans la grille : le code ODV de la catégorie s'il est unique, sinon un abrégé (catégories sans code
   // ou à plusieurs codes : défense, personnalisées) ; champ « lettre » de la configuration s'il est donné
+  // (+ : tout le domaine ; − : personnalisée, thèmes choisis dans les préférences)
   const SHORT = {
-    defense: 'D',
-    secu_perso: 'SC+',
-    defense_perso: 'D+'
+    defense: 'D+',
+    secu_perso: 'SC-',
+    defense_perso: 'D-'
   };
   // libellé court de la palette : sans le nom du groupe en tête ni la précision entre parenthèses, mots longs abrégés (libellé complet en infobulle)
   const shortOf = (c, g) => {
@@ -125,6 +126,13 @@
       docKey = `${t0}|${w0}`;
       const av = await A()?.availability?.(t0);
       if (seq !== loadSeq || !shownIs(t0, w0)) return;
+      // semaine sans déclaration au nouveau format mais avec une ancienne grille horaire (fichier <TRI>.json non converti,
+      // ou copie gardée dans ce navigateur) : importée telle quelle, mêmes règles que tools/convert_dispos.py, puis
+      // enregistrée — plus de semaine vide à côté d'une « ancienne grille » en lecture seule
+      const imported = !weeks[w0] && importOld(av, w0);
+      if (imported) doc = {
+        dispos: imported
+      };
       extra = {
         appareils: {
           possedes: av?.aircraft?.owned || [],
@@ -133,6 +141,41 @@
         simulateurs: av?.sims || []
       };
       render();
+      if (imported) await save(t(['Ancienne grille horaire importée dans la semaine.', 'Former hourly grid imported into the week.', 'Frühere Stundentabelle in die Woche übernommen.', 'Antigua cuadrícula horaria importada en la semana.']));
+    }
+    /** Ancienne grille horaire de la semaine (ISO « 2026-W41 ») convertie en plages par jour ; null si elle est vide.
+     *  Heures consécutives du même code → une plage (fin « 24:00 » : jusqu'à minuit), journée entière → debut / fin
+     *  null ; code → catégorie par la configuration (codes ODV des catégories). */
+    function importOld(av, w) {
+      const D = SD(),
+        mon = D.weekMonday(w),
+        grid = av && A()?.weekGrid?.(av, isoDay(mon));
+      if (!grid?.some(r => r.some(Boolean))) return null;
+      const hh = h => `${String(h).padStart(2, '0')}:00`,
+        out = {};
+      grid.forEach((row, j) => {
+        for (let h = 0; h < 24;) {
+          const code = row[h];
+          if (!code) {
+            h++;
+            continue;
+          }
+          let k = h;
+          while (k < 24 && row[k] === code) k++;
+          const cat = D.codeCategory(code);
+          if (cat) (out[isoDay(mon + j * 864e5)] ||= []).push(h === 0 && k === 24 ? {
+            debut: null,
+            fin: null,
+            categorie: cat
+          } : {
+            debut: hh(h),
+            fin: hh(k),
+            categorie: cat
+          });
+          h = k;
+        }
+      });
+      return Object.keys(out).length ? out : null;
     }
     /** Enregistre la semaine (dossier des données, sinon ce navigateur) et redessine. */
     async function save(text) {
