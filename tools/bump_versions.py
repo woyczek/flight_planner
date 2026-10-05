@@ -161,7 +161,7 @@ if not os.path.isfile(compat_path) or io.open(compat_path, encoding='utf-8').rea
 design_css = sorted(set(re.findall(r'css:"([\w.-]+\.css)"', tree)))
 # 3. chargements écrits dans les scripts, jusqu'à stabilité (une empreinte changée change le script qui la cite)
 scripts = [p for p in glob.glob(os.path.join(ROOT, 'shared', '**', '*.js'), recursive=True) + glob.glob(os.path.join(ROOT, 'apps', '**', '*.js'), recursive=True)
-           if not re.search(r'\.min\.js$|maplibre|jspdf', p)]
+           if not re.search(r'\.min\.js$|maplibre|jspdf|docs_bundle\.js$', p)]  # docs_bundle.js : texte des documents, pas des chargements
 # config/repository_tree : feuilles du design posées dès l'en-tête (designs.css, table FILE_V)
 tree_path = os.path.join(ROOT, 'config', 'repository_tree')
 scripts.append(tree_path)

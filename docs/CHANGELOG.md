@@ -10,6 +10,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+## [4.8.0] — 2026-10-05
+
+Les données se partagent : bouton « Synchroniser » (dépôt git de `data/`, fusion fiche par fiche), utilisateurs et
+droits, disponibilités en catégories configurables, index des données dans le navigateur. Paramètres en quatre pages ;
+Aide intégrée (fenêtre au chapitre de la page, manuels utilisateur et administrateur en quatre langues, sans lanceur
+aussi) ; documentation réorganisée. Mes missions : dossier animé selon le design, liste et dossier côte à côte. Briefs
+traduits, compagnie virtuelle configurable, en-têtes de l'ordre selon la famille, onglets habillés par design.
+
 ### Ajouté
 
 - **En-têtes de l'ordre selon la famille** pour Durci (EMA, BSPP, SSA, HIA, DCSSA, EMZD, DMD, CPCO), Cabinet (aéronautique
@@ -21,7 +29,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Brief de mission traduit** : bloc `i18n` du YAML (réglage « Traductions » du générateur, `en` par défaut), lu par
   `shared/mission_i18n.js` ; Mes missions affiche le brief, les plis et les pistes dans la langue de la page (repli sur
   le français champ par champ). Doc : `docs/SIA_MISSIONS.md` § 2 sexies.
-- Audit de sécurité (`docs/AUDIT_SECURITE_2026-10-02.md`).
+- Audit de sécurité (`docs/technique/AUDIT_SECURITE_2026-10-02.md`).
 - **Livre de mission traduit automatiquement** quand la mission n'apporte pas sa traduction (pas de bloc `i18n`) :
   traducteur intégré du navigateur (Chrome / Edge, sur l'ordinateur, rien n'est envoyé), résultats gardés
   (`shared/machine_translate.js`) ; note en tête de l'ordre, bouton quand la langue doit d'abord être téléchargée.
@@ -42,6 +50,35 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   ligne de l'opération (décalage par rapport à H), Mes missions (brief, consignes, plis adressés par id de piste ou
   indicatif). Prompt du générateur mis à jour ; pour les opérations existantes, bouton « Créer les missions des
   chiffons joués » dans le bloc Opération du générateur.
+
+- **Synchronisation des données** : bouton « Synchroniser (n) » de l'en-tête (`shared/sync.js`) — fichiers du pool
+  commités au nom du trigramme connecté, fusion fiche par fiche par le lanceur (`tools/data_sync.py`), copies de
+  conflit dans `_conflits/` ; dépôt git de `data/` (git@ ou https) renseigné et vérifié dans Premier lancement, sans
+  bloquer. Architecture : `docs/technique/SYNCHRONISATION.md`.
+- **Utilisateurs et droits** : fiches `data/utilisateurs/<TRI>.json` (rôle, actif, empreinte PBKDF2-SHA256 salée), mode
+  `develop` / `production` (`data/config/suite.json`), connexion, changement et réinitialisation du mot de passe,
+  usurpation par l'administrateur du Centre.
+- **Disponibilités en catégories configurables** (Paramètres › Centre › Catégories, `data/config/disponibilites.json`) :
+  palette d'une ligne par groupe, libellés abrégés (infobulles), plages précises à la minute, préférences de thèmes par
+  domaine (Mon profil) ; ancienne grille horaire importée dans la semaine ; planning ODV aux couleurs des catégories,
+  sessions ATC VATSIM / IVAO.
+- **Index des données** (IndexedDB) : registres des missions et des CR, suivi du Centre, disponibilités et fiches
+  utilisateurs lus par signature (`_index.json` tenus par le lanceur) ; « Index des données » dans Maintenance › caches.
+- **Aide** : entrée « Aide » de la barre latérale (à la place de « Menu ») et ☰ › Aide, en fenêtre au-dessus de la page,
+  au chapitre de la page en cours ; index documentaire, sommaire, recherche ; **manuels utilisateur et administrateur**
+  (un chapitre par page, une section par bloc) en français, anglais, allemand et espagnol ; documents intégrés
+  (`apps/aide/docs_bundle.js`, `tools/build_docs_bundle.py`) pour l'ouverture sans lanceur.
+- **Mes missions : dossier animé** selon le design — ouverture et fermeture propres à chacun (Cabinet : liasse sortie
+  du range-dossier, couverture tournée ; Carnet de vol : carnet sorti de l'enveloppe) ; changement de mission : le
+  dossier se referme, part à gauche, le suivant arrive de la droite et se rouvre s'il l'était.
+- **Paramètres en quatre pages** : Mon profil, Centre, Installation, Maintenance.
+- **Flotte DEFA** : « Coller la page Flotte du site… » (Paramètres › Maintenance › Flotte DEFA).
+- Barre latérale configurable (Apparence) ; Apparence, Paramètres et Aide fixés en bas ; bouton « Missions » du
+  générateur et du studio.
+- Onglets de page habillés par design à matières (Carnet de vol, Cabinet, Durci, Aqua).
+- Planning ODV : résumé d'une mission probable déplié sous sa ligne.
+- Outils : sommaire `tools/index.html`, jeu de test fantôme, `tools/cabinet_layers.py` ; lanceur `--data <dossier>`
+  (servir une copie des données pour les essais).
 
 ### Modifié
 
@@ -64,7 +101,29 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   par le dossier autorisé quand il est celui de la suite servie ; registre : relecture incrémentale du dossier (dossiers
   inchangés repris sans réanalyse) et `mission_registry.yaml` réécrit seulement s'il change ; Mes missions se met à jour
   dès qu'un autre onglet écrit une affectation.
-- Sources remises en forme (`tools/format_sources.py`) ; commentaires d'en-tête et `docs/FRAMEWORK.md` à jour.
+- Sources remises en forme (`tools/format_sources.py`) ; commentaires d'en-tête et `docs/technique/FRAMEWORK.md` à jour.
+- **Mes missions** : liste et dossier côte à côte, disponibilités en dessous sur toute la largeur ; bloc « Pilote »
+  remplacé par trois boutons vers Mon profil (Pilote, Appareils maîtrisés, Simulateurs) ; appareils et simulateurs
+  saisis dans Paramètres › Mon profil.
+- **Documentation réorganisée** : au premier niveau de `docs/`, installation, paramétrage, utilisation et versions ; la
+  documentation technique (architecture, synchronisation, feuille de route, dette technique, audits, propositions)
+  dans `docs/technique/`.
+- Planning ODV : classeur ODV masqué par défaut ; changement de créneau sans clignotement.
+- Performances : audit et actions de priorité 1 et 2 (`docs/technique/perf/`) ; changement de page par les onglets et
+  décor recalculé sans clignotement.
+- Versions de cache : l'empreinte des images d'un script ne couvre que les images suivies par git.
+- Aqua : bannière livrée en bas de page (sombre / clair selon le ton) ; Durci : poignées latérales retirées.
+
+### Corrigé
+
+- Disponibilités : plus de perte en changeant de semaine.
+- Mes missions : le livre ne clignote plus au clic sur une mission ; cartes sans doublons ; CR créé depuis une mission
+  avec l'immatriculation de l'appareil affecté.
+- Cartes de vol : mission reçue plus remplacée par « Tracer » / « Carburant ».
+- Atterrissages : plusieurs fichiers CSV / LOG lus ensemble (bouton et glisser-déposer).
+- Paramètres › Centre : utilisateur ajouté affiché aussitôt ; préférences de thèmes lisibles en Cabinet et Carnet de vol.
+- Plaques de titre : plus de texte qui déborde dans une colonne étroite.
+- Données lues là où elles sont écrites (alerte sinon).
 
 ### Sécurité
 
