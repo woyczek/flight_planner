@@ -10,6 +10,9 @@
     rel = decodeURIComponent(location.href.startsWith(root.href) ? location.href.slice(root.href.length).split(/[?#]/)[0] : "");
   const page = cfg.pages.find(p => p.path === rel) || cfg.pages.find(p => location.pathname.endsWith("/" + p.path)),
     doc = document.documentElement;
+  // page ouverte dans la fenêtre d'aide d'une autre page (cadre « repo-help », voir openHelp) : sans en-tête ni barre
+  // latérale (repository_nav.css, html[data-help-frame])
+  if (window.name === "repo-help" && window.top !== window.self) doc.setAttribute("data-help-frame", "");
   const folderPath = (page?.path || rel).split("/").slice(0, -1),
     folderSettings = {};
   Object.assign(folderSettings, cfg.folders?.[""] || {});
@@ -540,6 +543,61 @@
     }
     return true;
   }
+  /** Aide en fenêtre modale au-dessus de la page courante (plutôt qu'en changeant de page) : apps/aide/aide.html dans
+   *  un cadre nommé « repo-help » (la page s'y montre sans en-tête ni barre latérale), ouverte au chapitre de la page
+   *  courante, ou au document du lien (?doc=) ; cadre gardé d'une ouverture à l'autre (lecture reprise où elle en
+   *  était). Marche aussi en fichier local (file://) : le cadre ne parle à la page que par messages (fermeture par
+   *  Échap, adresse lue pour « ↗ »). Sur la page Aide elle-même ou dans le cadre : rien (false, le lien s'ouvre). */
+  const HELP = "apps/aide/aide.html";
+  let helpDialog = null,
+    helpAt = "";
+
+  function openHelp(href = "") {
+    if (rel === HELP || page?.path === HELP || doc.hasAttribute("data-help-frame")) return false;
+    const base = new URL(HELP, root).href,
+      wanted = /[?&]doc=/.test(href) ? base + href.slice(href.indexOf("?")) : "",
+      from = page?.path || rel;
+    if (!helpDialog) {
+      helpDialog = document.createElement("dialog");
+      helpDialog.className = "repo-ap-dialog repo-help-dialog";
+      helpDialog.setAttribute("data-no-i18n", "");
+      helpDialog.innerHTML = '<div class="repo-ap-head repo-header"><div class="repo-header-line1"><h1></h1><span class="repo-header-spacer"></span><a class="repo-ap-close repo-help-page repo-plain">↗</a><button type="button" class="repo-ap-close repo-plain">✕</button></div></div><iframe name="repo-help" class="repo-help-frame"></iframe>';
+      document.body.append(helpDialog);
+      const frame = helpDialog.querySelector("iframe");
+      frame.src = helpAt = wanted || base + (from ? `?from=${encodeURIComponent(from)}` : "");
+      helpDialog.querySelector("button.repo-ap-close").onclick = () => helpDialog.close();
+      helpDialog.addEventListener("click", e => {
+        if (e.target === helpDialog) helpDialog.close();
+      });
+      // « ↗ » : l'aide en page entière, là où on en est
+      helpDialog.querySelector(".repo-help-page").onclick = e => {
+        e.preventDefault();
+        location.href = helpAt;
+      };
+      window.addEventListener("message", e => {
+        if (e.source !== frame.contentWindow || !e.data?.repoHelp) return;
+        if (e.data.repoHelp === "close") helpDialog.close();
+        else if (e.data.repoHelp === "at" && typeof e.data.href === "string") helpAt = e.data.href;
+      });
+    } else if (wanted) helpDialog.querySelector("iframe").src = helpAt = wanted;
+    const i = Math.max(0, ["fr", "en", "de", "es"].indexOf(language));
+    helpDialog.querySelector("h1").textContent = ["Aide", "Help", "Hilfe", "Ayuda"][i];
+    helpDialog.querySelector(".repo-help-page").title = ["Ouvrir l'aide en page entière", "Open the help as a full page", "Hilfe als ganze Seite öffnen", "Abrir la ayuda en página completa"][i];
+    helpDialog.querySelector("button.repo-ap-close").setAttribute("aria-label", ["Fermer", "Close", "Schließen", "Cerrar"][i]);
+    if (!helpDialog.open) helpDialog.showModal();
+    return true;
+  }
+  // tout lien vers l'Aide (barre latérale, menu ☰, liens des pages) : fenêtre d'aide ; Ctrl/Maj-clic, autre cible :
+  // lien ordinaire
+  document.addEventListener("click", e => {
+    const a = e.target.closest?.("a[href]");
+    if (!a || e.defaultPrevented || e.button || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || (a.target && a.target !== "_self")) return;
+    if (a.href.split(/[?#]/)[0] !== new URL(HELP, root).href) return;
+    if (openHelp(a.getAttribute("href"))) {
+      e.preventDefault();
+      close();
+    }
+  });
   /** Ferme le menu ☰ et le menu des langues. */
   const close = () => {
     menu.hidden = true;

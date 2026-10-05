@@ -20,7 +20,14 @@
       '"': '&quot;'
     } [c]));
   // hauteur de l'en-tête collé en haut (selon le design) : marge de défilement des titres visés (aide.html)
-  const headerOffset = () => document.documentElement.style.setProperty('--repo-header-h', `${document.querySelector('.repo-header')?.offsetHeight || 84}px`);
+  // dans la fenêtre d'aide d'une autre page (cadre de shared/repository_nav.js, openHelp) : pas d'en-tête ; la fenêtre
+  // est prévenue de l'adresse lue (bouton « ↗ ») et fermée par Échap
+  const FRAMED = document.documentElement.hasAttribute('data-help-frame');
+  const tell = msg => FRAMED && window.parent.postMessage(msg, '*');
+  if (FRAMED) document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !e.defaultPrevented) tell({ repoHelp: 'close' });
+  });
+  const headerOffset = () => document.documentElement.style.setProperty('--repo-header-h', `${FRAMED ? 0 : document.querySelector('.repo-header')?.offsetHeight || 84}px`);
   headerOffset();
   window.addEventListener('resize', headerOffset);
   window.addEventListener('repository-design-change', () => setTimeout(headerOffset, 100));
@@ -47,7 +54,7 @@
   const loadBundle = () => bundle ||= new Promise(res => {
     if (window.DOC_BUNDLE) return res(window.DOC_BUNDLE);
     const sc = document.createElement('script');
-    sc.src = new URL('docs_bundle.js?v=e2075299', HERE).href;
+    sc.src = new URL('docs_bundle.js?v=1c1127ec', HERE).href;
     sc.onload = () => res(window.DOC_BUNDLE || {});
     sc.onerror = () => res({});
     document.head.append(sc);
@@ -135,6 +142,7 @@
   let shown = '', // fichier affiché (langue comprise)
     current = INDEX; // document affiché (sans langue)
   async function show(name, hash = '') {
+    tell({ repoHelp: 'at', href: location.href });
     const file = await localized(name),
       md = await text(file);
     if (md == null && LOCAL) {
@@ -205,6 +213,13 @@
     const a = e.target.closest('a[href]');
     if (!a || e.ctrlKey || e.metaKey || e.shiftKey || a.target) return;
     const href = a.getAttribute('href');
+    // dans la fenêtre d'aide : site extérieur dans un nouvel onglet, page de la suite à la place de la page appelante
+    if (FRAMED && !/^(#|\?doc=)/.test(href)) {
+      e.preventDefault();
+      if (/^https?:/i.test(href) && new URL(href).origin !== location.origin) window.open(href, '_blank', 'noopener');
+      else window.top.location.href = a.href;
+      return;
+    }
     if (href.startsWith('#')) {
       e.preventDefault();
       history.pushState(null, '', href);

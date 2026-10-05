@@ -29,7 +29,7 @@ Die linke Spalte führt zu den Anwendungen. Der Eintrag der angezeigten Seite is
 
 - Die Gruppe **„Zentrum“** („Missionen“, „Register“, „ODV“) erscheint nur, wenn das Zentrum in diesem Browser freigeschaltet ist (Einstellungen › Zentrum). Für einen Piloten bleibt sie normalerweise verborgen.
 - Unten in der Spalte: „Darstellung“ (öffnet die Anzeigeeinstellungen in einem Fenster über der aktuellen Seite), „Einstellungen“ (Mein Profil und die anderen Einstellungsseiten) und **„Hilfe“**. Diese drei Einträge bleiben unten am Bildschirm fixiert: Nur die obere Liste scrollt, wenn es zu viele Symbole gibt (Fenster unter 460 px Höhe: Die ganze Leiste scrollt).
-- „Hilfe“ öffnet die Dokumentation direkt beim Kapitel der Seite, auf der Sie sich befinden. Sie ersetzt den früheren Eintrag „Menü“. Sie funktioniert auch, wenn die Suite ohne Starter direkt von der Festplatte geöffnet wird: Die Dokumente sind in die Seite eingebaut.
+- „Hilfe“ öffnet die Dokumentation in einem Fenster über der aktuellen Seite, direkt beim Kapitel dieser Seite. Das Fenster schließt sich mit ✕, Esc oder einem Klick daneben; erneut geöffnet, setzt es dort fort, wo Sie waren. „↗“ öffnet sie als ganze Seite (Strg-Klick auf „Hilfe“: in einem neuen Tab). Sie ersetzt den früheren Eintrag „Menü“. Sie funktioniert auch, wenn die Suite ohne Starter direkt von der Festplatte geöffnet wird: Die Dokumente sind in die Seite eingebaut.
 - Das Logo oben in der Spalte öffnet die Website der virtuellen Fluggesellschaft in einem neuen Tab.
 - Die Leiste ist auf einem schmalen Bildschirm (unter 760 px) und beim Drucken ausgeblendet. Man kann sie ausblenden oder immer anzeigen: Darstellung › Symbole › „Seitenleiste“.
 

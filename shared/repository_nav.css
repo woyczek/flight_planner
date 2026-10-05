@@ -602,6 +602,33 @@
   .repo-ap-close:hover {
     background: color-mix(in srgb, var(--repo-bar-text) 16%, transparent)
   }
+  /* fenêtre d'aide (repository_nav.js, openHelp) : page Aide dans un cadre, sur toute la hauteur de la fenêtre */
+  dialog.repo-help-dialog[open] {
+    width: min(1440px, 96vw);
+    height: 92vh;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden
+  }
+  .repo-help-frame {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 0;
+    border: 0;
+    background: transparent
+  }
+  a.repo-help-page {
+    text-decoration: none;
+    font-size: 18px
+  }
+  /* page dans le cadre de la fenêtre d'aide : ni en-tête ni barre latérale (la fenêtre a les siens) */
+  html[data-help-frame] {
+    padding-left: 0 !important
+  }
+  html[data-help-frame] :is(.repo-sidenav, body > header.repo-header) {
+    display: none !important
+  }
   dialog.repo-ap-dialog main.ap-page {
     max-width: none;
     margin: 0;
