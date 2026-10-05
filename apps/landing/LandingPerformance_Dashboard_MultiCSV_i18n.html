@@ -1222,9 +1222,9 @@
     </div>
   </div>
       <div class="control"><span id="csvLabel">Data file</span>
-    <button id="fileButton" type="button">Choose file</button>
+    <button id="fileButton" type="button">Choose files</button>
     <span id="fileName" data-no-i18n class="file-name">No file selected</span>
-    <input id="fileInput" type="file" accept=".csv,.log,text/csv,text/plain" hidden>
+    <input id="fileInput" type="file" accept=".csv,.log,text/csv,text/plain" multiple hidden>
   </div>
     </div>
     <button id="printBtn" type="button">Print / PDF</button>
@@ -1306,7 +1306,7 @@
 
 <main>
 <div id="status" class="status">
-  <span id="statusText" data-no-i18n>Choose or drop a CSV or LOG file.</span>
+  <span id="statusText" data-no-i18n>Choose or drop one or more CSV or LOG files.</span>
 </div>
 <div id="dashboard" class="hidden">
   <div id="formatNote" data-no-i18n class="format-note"></div>
@@ -1364,7 +1364,7 @@ const TR = {
     exclude: "exclure les mesures manifestement aberrantes",
     window: "Fenêtre récente",
     print: "Imprimer / PDF",
-    choose: "Choisis ou dépose un fichier CSV ou LOG.",
+    choose: "Choisis ou dépose un ou plusieurs fichiers CSV ou LOG.",
     evolution: "Évolution",
     summary: "Synthèse par appareil",
     quality: "Qualité des données",
@@ -1449,7 +1449,7 @@ const TR = {
     exclude: "exclude clearly implausible measurements",
     window: "Recent window",
     print: "Print / PDF",
-    choose: "Choose or drop a CSV or LOG file.",
+    choose: "Choose or drop one or more CSV or LOG files.",
     evolution: "Evolution",
     summary: "Summary by aircraft",
     quality: "Data quality",
@@ -1534,7 +1534,7 @@ const TR = {
     exclude: "offensichtlich unplausible Messwerte ausschließen",
     window: "Letztes Fenster",
     print: "Drucken / PDF",
-    choose: "CSV- oder LOG-Datei auswählen oder hier ablegen.",
+    choose: "Eine oder mehrere CSV- oder LOG-Dateien auswählen oder hier ablegen.",
     evolution: "Entwicklung",
     summary: "Übersicht nach Flugzeug",
     quality: "Datenqualität",
@@ -1619,7 +1619,7 @@ const TR = {
     exclude: "excluir mediciones claramente inverosímiles",
     window: "Ventana reciente",
     print: "Imprimir / PDF",
-    choose: "Elige o suelta un archivo CSV o LOG.",
+    choose: "Elige o suelta uno o varios archivos CSV o LOG.",
     evolution: "Evolución",
     summary: "Resumen por aeronave",
     quality: "Calidad de datos",
@@ -1701,7 +1701,7 @@ const TR = {
 const EXTRA = {
   fr: {
     dataFile: "Fichier de données",
-    chooseFile: "Choisir un fichier",
+    chooseFile: "Choisir des fichiers",
     noFile: "Aucun fichier sélectionné",
     emptyFile: "Fichier vide.",
     scoreSigma: "σ score",
@@ -1744,7 +1744,7 @@ const EXTRA = {
   },
   en: {
     dataFile: "Data file",
-    chooseFile: "Choose file",
+    chooseFile: "Choose files",
     noFile: "No file selected",
     emptyFile: "Empty file.",
     scoreSigma: "σ score",
@@ -1787,7 +1787,7 @@ const EXTRA = {
   },
   de: {
     dataFile: "Datendatei",
-    chooseFile: "Datei auswählen",
+    chooseFile: "Dateien auswählen",
     noFile: "Keine Datei ausgewählt",
     emptyFile: "Leere Datei.",
     scoreSigma: "σ Score",
@@ -1830,7 +1830,7 @@ const EXTRA = {
   },
   es: {
     dataFile: "Archivo de datos",
-    chooseFile: "Elegir archivo",
+    chooseFile: "Elegir archivos",
     noFile: "Ningún archivo seleccionado",
     emptyFile: "Archivo vacío.",
     scoreSigma: "σ score",
@@ -3427,11 +3427,8 @@ window.addEventListener("languagechange", () => {
 });
 $("fileButton").addEventListener("click", () => $("fileInput").click());
 $("fileInput").addEventListener("change", e => {
-  const f = e.target.files[0];
-  if (f) {
-    $("fileName").textContent = f.name;
-    loadFile(f)
-  }
+  loadFiles(e.target.files);
+  e.target.value = ""; // mêmes fichiers rechoisis : relus
 });
 $("aircraftSelect").addEventListener("change", () => {
   rememberPreference("aircraft", $("aircraftSelect").value);
@@ -3489,11 +3486,7 @@ $("printBtn").addEventListener("click", () => window.print());
 document.body.addEventListener("dragover", e => e.preventDefault());
 document.body.addEventListener("drop", e => {
   e.preventDefault();
-  const f = e.dataTransfer.files[0];
-  if (f) {
-    $("fileName").textContent = f.name;
-    loadFile(f)
-  }
+  loadFiles(e.dataTransfer.files);
 });
 
 const CACHE_DB_NAME = "LandingPerformanceDashboardCache";
@@ -3569,6 +3562,51 @@ async function restoreCachedDataset() {
     cached: true
   });
   return true;
+}
+
+/** Un ou plusieurs fichiers CSV / LOG (bouton, glisser-déposer) : un seul → loadFile ; plusieurs → lignes réunies en un
+ *  jeu de données, sous l'en-tête du premier fichier (colonnes reprises par leur nom ; fichier sans en-tête : colonnes
+ *  dans le même ordre), atterrissages en double (même ligne dans deux fichiers) comptés une fois ; gardé en cache comme
+ *  un fichier. */
+async function loadFiles(list) {
+  const files = [...(list || [])].filter(Boolean);
+  if (files.length < 2) return files[0] && loadFile(files[0]);
+  try {
+    const tables = (await Promise.all(files.map(f => f.text()))).map(parseCSV);
+    const key = h => String(h).trim().replace(/^\uFEFF/, "").toLowerCase(),
+      isHead = r => r.map(key).includes("timestamp") && r.map(key).includes("aircraft");
+    const head = isHead(tables[0][0]) ? tables[0][0] : null,
+      seen = new Set(),
+      body = [];
+    for (const tb of tables) {
+      const own = isHead(tb[0]) ? tb[0] : null,
+        idx = head && own ? head.map(h => own.findIndex(x => key(x) === key(h))) : null;
+      for (const r of own ? tb.slice(1) : tb) {
+        const row = idx ? idx.map(i => i < 0 ? "" : r[i] ?? "") : r;
+        const k = row.join("\u0001");
+        if (!seen.has(k)) {
+          seen.add(k);
+          body.push(row);
+        }
+      }
+    }
+    const cellOut = v => /[",\n\r]/.test(v) ? `"${String(v).replace(/"/g, '""')}"` : v;
+    const text = [...(head ? [head] : []), ...body].map(r => r.map(cellOut).join(",")).join("\n"),
+      name = `${files[0].name} + ${files.length - 1}`,
+      lastModified = Math.max(...files.map(f => Number(f.lastModified) || 0));
+    saveCachedDataset({
+      name,
+      text,
+      lastModified,
+      size: text.length,
+      savedAt: Date.now()
+    });
+    loadDatasetText(name, text, {
+      lastModified
+    });
+  } catch (err) {
+    $("statusText").textContent = t("error") + " : " + err.message;
+  }
 }
 
 function loadFile(file) {
