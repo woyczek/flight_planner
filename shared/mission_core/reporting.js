@@ -98,6 +98,12 @@
       if (o) rows.set(o.label[0], o.label);
       return o ? o.label[0] : value || t('none');
     };
+    /** Même libellé, déjà dans la langue de la page : textes composés que le traducteur commun ne reconnaît pas
+     *  (infobulles des barres du graphique : « période — total », puis « série : n » par ligne). */
+    const labelNow = (list, value) => {
+      const o = list.find(x => x.value === value);
+      return o ? tr(o.label) : value || tr(UI.none);
+    };
 
     root.classList.add('mc-reporting');
     // En-tête collé : nouveau CR, période (◀ zoom − ▶, composant TimePeriod), regroupement et
@@ -380,7 +386,7 @@
         });
         const series = seriesIds.map((id, i) => ({
           id,
-          label: label(family.series || [], id),
+          label: labelNow(family.series || [], id),
           color: PALETTE[i % PALETTE.length]
         }));
         const dates = all.map(r => r.date).filter(Boolean).sort();

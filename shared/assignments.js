@@ -323,6 +323,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     ["A : CONTRÔLE (marque de suivi)", "A: CHECK (tracking mark)", "A: KONTROLLE (Markierung)", "A: CONTROL (marca de seguimiento)"],
   ];
   const legendI18n = () => window.RepositoryContentI18n?.(LEGEND_I18N);
+  /** Ligne [fr, en, de, es] d'un libellé de la légende (texte français exact), sinon null (Planning ODV). */
+  const legendRow = label => LEGEND_I18N.find(r => r[0] === label) || null;
   document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', legendI18n, {
     once: true
   }) : legendI18n();
@@ -1558,6 +1560,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     envelope,
     DAYS,
     LEGEND,
+    legendRow,
     emptyGrid,
     availability,
     availabilityAt,

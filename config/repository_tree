@@ -180,6 +180,7 @@ window.REPOSITORY_TREE={
     "Paramétrage — bases de données":["Paramétrage — bases de données","Settings — databases","Einstellungen — Datenbanken","Configuración — bases de datos"],
     "Paramètres — bases de données et maintenance":["Paramètres — bases de données et maintenance","Settings — databases and maintenance","Einstellungen — Datenbanken und Wartung","Ajustes — bases de datos y mantenimiento"],
     "Cartes de vol":["Cartes de vol","Flight maps","Flugkarten","Mapas de vuelo"],
+    "Mes missions":["Mes missions","My missions","Meine Missionen","Mis misiones"],
     "Centre — Planning ODV":["Centre — Planning ODV","Centre — ODV planning","Zentrum — ODV-Planung","Centro — Planificación ODV"],
     "Apparence":["Apparence","Appearance","Darstellung","Apariencia"],
     "Paramètres":["Paramètres","Settings","Einstellungen","Ajustes"],

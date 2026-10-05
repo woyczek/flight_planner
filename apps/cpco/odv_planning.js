@@ -199,7 +199,7 @@
         dep: a.departure || '',
         arr: a.destination || a.departure || '',
         appareil: [a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' '),
-        objet: a.role === 'convoyage' ? `Convoyage ${a.mission}${a.pilot ? '' : ' (à affecter)'}` : [a.mission, a.title].filter(Boolean).join(' '),
+        objet: a.role === 'convoyage' ? L(['Convoyage {m}{s}', 'Ferry {m}{s}', 'Überführung {m}{s}', 'Traslado {m}{s}'], { m: a.mission, s: a.pilot ? '' : L([' (à affecter)', ' (to assign)', ' (zuzuweisen)', ' (por asignar)']) }) : [a.mission, a.title].filter(Boolean).join(' '),
         indicatif: a.callsign || '',
         equipage: [a.pilot].filter(Boolean),
         roles_type: [...C.rolesOfTypes(`${a.aircraft?.type || ''} ${models[a.aircraft?.type] || ''}`)],
@@ -272,12 +272,29 @@
     soir: ['soir', 'evening', 'Abend', 'noche']
   };
   const wordL = w => DAY_ROWS[String(w || '').toLowerCase()] ? L(DAY_ROWS[String(w).toLowerCase()]) : w;
+  const capL = w => (s => s.charAt(0).toUpperCase() + s.slice(1))(String(wordL(w) ?? '')); // « Matin » → « Morning »
+  const dayAbbr = d => String(wordL(d) ?? '').slice(0, +L(['3', '3', '2', '3'])); // Lun, Mon, Mo, Lun
+  // initiale du créneau (SHORT : M / A / S) dans la langue de la page
+  const shortL = k => L([['M', 'M', 'M', 'M'], ['A', 'A', 'N', 'T'], ['S', 'E', 'A', 'N']][k] || [SHORT[k] || '']);
+  // catégories de disponibilité (OdvCore.CATEGORIES, en français), sens des codes et sources des cases, à l'affichage ;
+  // phrases produites par odv_core.js (rapport, alertes, calcul, contexte) : C.say
+  const catL = c => C.categoryLabel(c);
+  const sensL = s => C.sensLabel(s);
+  const SRC_ROWS = {
+    'pas de classeur': ['pas de classeur', 'no workbook', 'keine Arbeitsmappe', 'sin libro'],
+    'déclaration du pilote': ['déclaration du pilote', 'pilot declaration', 'Angabe des Piloten', 'declaración del piloto']
+  };
+  const srcL = s => SRC_ROWS[s] ? L(SRC_ROWS[s]) : s;
+  /** « 3 grilles remplies » (pluriel à partir de 2, comme le texte français d'origine). */
+  const gridsL = n => L(n > 1 ? ['{n} grilles remplies', '{n} grids filled', '{n} Raster ausgefüllt', '{n} cuadrículas rellenadas'] : ['{n} grille remplie', '{n} grid filled', '{n} Raster ausgefüllt', '{n} cuadrícula rellenada'], {
+    n
+  });
   const slotTitle = s => `${wordL(s.jour)} ${dateFr(s.date)} — ${wordL(s.creneau)} (${s.heures})`;
   /** Case de la grille : code en couleur de la légende, commentaire au survol. */
   function codeCell(r) {
     const e = r.code ? gridData().legende[r.code] : null,
       col = e?.couleur || null;
-    const title = [r.code ? `${r.code}${r.marque ? ' + ' + r.marque : ''} : ${r.sens || C.CATEGORIES[r.categorie]}` : C.CATEGORIES[r.categorie], r.commentaire ? `« ${r.commentaire} »` : '', r.source].filter(Boolean).join('\n');
+    const title = [r.code ? L(['{c} : {s}', '{c}: {s}', '{c}: {s}', '{c}: {s}'], { c: `${r.code}${r.marque ? ' + ' + r.marque : ''}`, s: sensL(r.sens) || catL(r.categorie) }) : catL(r.categorie), r.commentaire ? L(['« {c} »', '“{c}”', '„{c}“', '«{c}»'], { c: r.commentaire }) : '', srcL(r.source)].filter(Boolean).join('\n');
     const style = col ? ` style="background:#${col};color:${inkOn(col)}"` : '';
     const label = r.code ? r.code + (r.marque || '') : r.categorie === 'hors_legende' ? String(r.code_brut).trim() : '·';
     return `<span class="odv-code c-${r.categorie}${r.commentaire ? ' has-note' : ''}"${style} title="${esc(title)}">${esc(label)}</span>`;
@@ -318,7 +335,7 @@
   } = {}) {
     jumpToXl = jump;
     if (!file) return;
-    if (!/\.xlsx$/i.test(file.name)) notify(`« ${file.name} » n’a pas l’extension .xlsx : lecture tentée quand même.`, 'warn');
+    if (!/\.xlsx$/i.test(file.name)) notify(L(['« {f} » n’a pas l’extension .xlsx : lecture tentée quand même.', '“{f}” does not have the .xlsx extension: reading attempted anyway.', '„{f}“ hat nicht die Endung .xlsx: Lesen wird trotzdem versucht.', '«{f}» no tiene la extensión .xlsx: se intenta leer de todos modos.'], { f: file.name }), 'warn');
     try {
       book = await C.openWorkbook(file);
       fileName = file.name;
@@ -328,7 +345,7 @@
       announce();
     } catch (e) {
       console.error(e);
-      notify(`Lecture impossible : ${e.message}`, 'err');
+      notify(L(['Lecture impossible : {e}', 'Cannot read the file: {e}', 'Lesen nicht möglich: {e}', 'Lectura imposible: {e}'], { e: e.message }), 'err');
     }
   }
   /** Relit le classeur selon les réglages, recalcule créneaux et contrôles, redessine tout. */
@@ -340,7 +357,7 @@
       jumpToXl = false;
     } catch (e) {
       console.error(e);
-      notify(`Analyse impossible : ${e.message}`, 'err');
+      notify(L(['Analyse impossible : {e}', 'Cannot analyse the workbook: {e}', 'Analyse nicht möglich: {e}', 'Análisis imposible: {e}'], { e: e.message }), 'err');
       xl = null;
     }
     await showWeek();
@@ -434,14 +451,20 @@
   function announce() {
     if (!data) return;
     const filled = data.pilotes.filter(p => p.rempli).length;
-    notify(`${fileName} lu : S${data.semaine ?? '?'}, ${data.pilotes.length} pilotes (${filled} grille${filled > 1 ? 's' : ''} remplie${filled > 1 ? 's' : ''}), ${data.vols.length} vol${data.vols.length > 1 ? 's' : ''} sur la frise.`, 'ok');
+    notify(L(['{f} lu : S{w}, {n} pilotes ({g}), {v}.', '{f} read: week {w}, {n} pilots ({g}), {v}.', '{f} gelesen: KW {w}, {n} Piloten ({g}), {v}.', '{f} leído: semana {w}, {n} pilotos ({g}), {v}.'], {
+      f: fileName,
+      w: data.semaine ?? '?',
+      n: data.pilotes.length,
+      g: gridsL(filled),
+      v: L(data.vols.length > 1 ? ['{n} vols sur la frise', '{n} flights on the timeline', '{n} Flüge auf der Zeitleiste', '{n} vuelos en la cronología'] : ['{n} vol sur la frise', '{n} flight on the timeline', '{n} Flug auf der Zeitleiste', '{n} vuelo en la cronología'], { n: data.vols.length })
+    }), 'ok');
     const shift = data.anomalies.find(a => a.decalage);
-    if (shift) notify(shift.texte, 'warn');
+    if (shift) notify(C.say(shift.texte), 'warn');
     const warns = data.anomalies.filter(a => a.niveau === 'warn' && !a.decalage);
-    if (warns.length === 1) notify(warns[0].texte, 'warn');
-    else if (warns.length > 1) notify(`${warns.length} avertissements de lecture : voir le rapport du bloc « Classeur ODV ».`, 'warn');
+    if (warns.length === 1) notify(C.say(warns[0].texte), 'warn');
+    else if (warns.length > 1) notify(L(['{n} avertissements de lecture : voir le rapport du bloc « Classeur ODV ».', '{n} reading warnings: see the report in the “ODV workbook” block.', '{n} Lesewarnungen: siehe Bericht im Block „ODV-Arbeitsmappe“.', '{n} avisos de lectura: vea el informe del bloque «Libro ODV».'], { n: warns.length }), 'warn');
     const bad = flights.filter(f => f.alertes.length);
-    if (bad.length) notify(`${bad.length} vol${bad.length > 1 ? 's' : ''} de la frise à vérifier (équipier codé indisponible ou hors de son code) : voir « Vols de la frise horaire ».`, 'warn');
+    if (bad.length) notify(L(bad.length > 1 ? ['{n} vols de la frise à vérifier (équipier codé indisponible ou hors de son code) : voir « Vols de la frise horaire ».', '{n} timeline flights to check (crew member coded unavailable or outside their code): see “Timeline flights”.', '{n} Flüge der Zeitleiste zu prüfen (Besatzungsmitglied als nicht verfügbar oder außerhalb seines Codes eingetragen): siehe „Flüge der Zeitleiste“.', '{n} vuelos de la cronología por verificar (tripulante codificado no disponible o fuera de su código): vea «Vuelos de la cronología».'] : ['{n} vol de la frise à vérifier (équipier codé indisponible ou hors de son code) : voir « Vols de la frise horaire ».', '{n} timeline flight to check (crew member coded unavailable or outside their code): see “Timeline flights”.', '{n} Flug der Zeitleiste zu prüfen (Besatzungsmitglied als nicht verfügbar oder außerhalb seines Codes eingetragen): siehe „Flüge der Zeitleiste“.', '{n} vuelo de la cronología por verificar (tripulante codificado no disponible o fuera de su código): vea «Vuelos de la cronología».'], { n: bad.length }), 'warn');
   }
 
   function clearAll() {
@@ -459,7 +482,7 @@
     $('odvRecapText').value = '';
     render();
     window.OdvAssign?.load(emptyWeek(), settings).then(refreshNoBook).catch(() => {});
-    notify('Données effacées de la page.', 'info');
+    notify(L(['Données effacées de la page.', 'Data cleared from the page.', 'Daten von der Seite gelöscht.', 'Datos borrados de la página.']), 'info');
   }
 
   // ------------------------------------------------------------------ rendu
@@ -486,22 +509,29 @@
     const d = data,
       filled = d.pilotes.filter(p => p.rempli).length,
       flotteN = Object.keys(d.flotte).length;
-    const week = d.semaine == null ? '<span class="odv-bad">introuvable</span>' :
-      `S${d.semaine} ${d.annee || ''} — du lundi ${esc(dateFr(d.dates[0]))} au dimanche ${esc(dateFr(d.dates[6]))}/${esc((d.dates[6] || '').slice(0, 4))} (${d.dateSource === 'frise' && d.friseLundi ? 'dates de la frise' : 'semaine ISO'})`;
-    const shift = d.decalageJours ? ` <span class="odv-bad">— frise : lundi au ${esc(d.friseLundi.split('-').reverse().join('/'))} (écart ${d.decalageJours > 0 ? '+' : ''}${d.decalageJours} j)</span>` : '';
+    const week = d.semaine == null ? `<span class="odv-bad">${L(['introuvable', 'not found', 'nicht gefunden', 'no encontrada'])}</span>` :
+      L(['S{w} {y} — du lundi {a} au dimanche {b}/{z} ({s})', 'Week {w} {y} — from Monday {a} to Sunday {b}/{z} ({s})', 'KW {w} {y} — von Montag {a} bis Sonntag {b}/{z} ({s})', 'Semana {w} {y} — del lunes {a} al domingo {b}/{z} ({s})'], {
+        w: d.semaine,
+        y: d.annee || '',
+        a: esc(dateFr(d.dates[0])),
+        b: esc(dateFr(d.dates[6])),
+        z: esc((d.dates[6] || '').slice(0, 4)),
+        s: d.dateSource === 'frise' && d.friseLundi ? L(['dates de la frise', 'timeline dates', 'Daten der Zeitleiste', 'fechas de la cronología']) : L(['semaine ISO', 'ISO week', 'ISO-Woche', 'semana ISO'])
+      });
+    const shift = d.decalageJours ? ` <span class="odv-bad">— ${L(['frise : lundi au {d} (écart {n} j)', 'timeline: Monday on {d} (offset {n} d)', 'Zeitleiste: Montag am {d} (Abweichung {n} T)', 'cronología: lunes el {d} (desfase {n} d)'], { d: esc(d.friseLundi.split('-').reverse().join('/')), n: `${d.decalageJours > 0 ? '+' : ''}${d.decalageJours}` })}</span>` : '';
     const warns = d.anomalies.filter(a => a.niveau === 'warn').length,
       infos = d.anomalies.length - warns;
     host.innerHTML = `<dl class="odv-kv">
-      <dt>Fichier</dt><dd>${esc(d.fichier)} <span class="mut">(feuilles ${esc(d.lecture.feuilleOdv)}${d.lecture.feuilleFlotte ? ' et ' + esc(d.lecture.feuilleFlotte) : ''} ; jours en ligne ${d.lecture.ligneJours}, grille ${esc(d.lecture.grille)})</span></dd>
-      <dt>Semaine</dt><dd>${week}${shift}</dd>
-      <dt>Officier de permanence</dt><dd>${d.duty ? tri(d.duty) : '<span class="mut">non trouvé</span>'}</dd>
-      ${d.theme ? `<dt>Thème de la semaine</dt><dd>${esc(d.theme)}</dd>` : ''}
-      <dt>Pilotes</dt><dd>${d.pilotes.length} trouvés — ${filled} grille${filled > 1 ? 's' : ''} remplie${filled > 1 ? 's' : ''}, ${d.pilotes.length - filled} vide${d.pilotes.length - filled > 1 ? 's' : ''} (case vide : ${settings.emptyAs === 'indispo' ? 'indisponible' : 'non renseignée'})</dd>
-      <dt>FLOTTE</dt><dd>${flotteN ? `${flotteN} profils (rôles et simulateurs indicatifs)` : '<span class="mut">absente</span>'}</dd>
-      <dt>Frise horaire</dt><dd>${d.vols.length} vols, ${d.frise.length} contrôles ou divers, ${d.zones.length} zones à activer${d.lecture.frise ? ` <span class="mut">(début ${esc(d.lecture.frise.debut)}, ${d.lecture.frise.largeurJour} colonnes par jour, ${d.lecture.frise.colonnesParHeure} par heure)</span>` : ''}</dd>
-      <dt>Lecture</dt><dd>${warns} avertissement${warns > 1 ? 's' : ''}, ${infos} remarque${infos > 1 ? 's' : ''}</dd>
+      <dt>${L(['Fichier', 'File', 'Datei', 'Archivo'])}</dt><dd>${esc(d.fichier)} <span class="mut">(${L(['feuilles {a}{b} ; jours en ligne {r}, grille {g}', 'sheets {a}{b}; days in row {r}, grid {g}', 'Blätter {a}{b}; Tage in Zeile {r}, Raster {g}', 'hojas {a}{b}; días en la fila {r}, cuadrícula {g}'], { a: esc(d.lecture.feuilleOdv), b: d.lecture.feuilleFlotte ? L([' et {x}', ' and {x}', ' und {x}', ' y {x}'], { x: esc(d.lecture.feuilleFlotte) }) : '', r: d.lecture.ligneJours, g: esc(d.lecture.grille) })})</span></dd>
+      <dt>${L(['Semaine', 'Week', 'Woche', 'Semana'])}</dt><dd>${week}${shift}</dd>
+      <dt>${L(['Officier de permanence', 'Duty officer', 'Diensthabender Offizier', 'Oficial de guardia'])}</dt><dd>${d.duty ? tri(d.duty) : `<span class="mut">${L(['non trouvé', 'not found', 'nicht gefunden', 'no encontrado'])}</span>`}</dd>
+      ${d.theme ? `<dt>${L(['Thème de la semaine', 'Theme of the week', 'Thema der Woche', 'Tema de la semana'])}</dt><dd>${esc(d.theme)}</dd>` : ''}
+      <dt>${L(['Pilotes', 'Pilots', 'Piloten', 'Pilotos'])}</dt><dd>${L(['{n} trouvés — {g}, {e} (case vide : {c})', '{n} found — {g}, {e} (empty cell: {c})', '{n} gefunden — {g}, {e} (leere Zelle: {c})', '{n} encontrados — {g}, {e} (casilla vacía: {c})'], { n: d.pilotes.length, g: gridsL(filled), e: L(d.pilotes.length - filled > 1 ? ['{n} vides', '{n} empty', '{n} leer', '{n} vacías'] : ['{n} vide', '{n} empty', '{n} leer', '{n} vacía'], { n: d.pilotes.length - filled }), c: settings.emptyAs === 'indispo' ? L(['indisponible', 'unavailable', 'nicht verfügbar', 'no disponible']) : L(['non renseignée', 'not filled in', 'nicht ausgefüllt', 'sin rellenar']) })}</dd>
+      <dt>${L(['FLOTTE', 'FLOTTE sheet', 'Blatt FLOTTE', 'Hoja FLOTTE'])}</dt><dd>${flotteN ? L(['{n} profils (rôles et simulateurs indicatifs)', '{n} profiles (roles and simulators for guidance)', '{n} Profile (Rollen und Simulatoren als Richtwert)', '{n} perfiles (roles y simuladores orientativos)'], { n: flotteN }) : `<span class="mut">${L(['absente', 'missing', 'fehlt', 'ausente'])}</span>`}</dd>
+      <dt>${L(['Frise horaire', 'Timeline', 'Zeitleiste', 'Cronología'])}</dt><dd>${L(['{v} vols, {f} contrôles ou divers, {z} zones à activer', '{v} flights, {f} control or miscellaneous items, {z} zones to activate', '{v} Flüge, {f} Lotsendienste oder Sonstiges, {z} zu aktivierende Zonen', '{v} vuelos, {f} controles o varios, {z} zonas por activar'], { v: d.vols.length, f: d.frise.length, z: d.zones.length })}${d.lecture.frise ? ` <span class="mut">(${L(['début {d}, {w} colonnes par jour, {h} par heure', 'start {d}, {w} columns per day, {h} per hour', 'Beginn {d}, {w} Spalten pro Tag, {h} pro Stunde', 'inicio {d}, {w} columnas por día, {h} por hora'], { d: esc(d.lecture.frise.debut), w: d.lecture.frise.largeurJour, h: d.lecture.frise.colonnesParHeure })})</span>` : ''}</dd>
+      <dt>${L(['Lecture', 'Reading', 'Lesen', 'Lectura'])}</dt><dd>${L(warns > 1 ? ['{n} avertissements', '{n} warnings', '{n} Warnungen', '{n} avisos'] : ['{n} avertissement', '{n} warning', '{n} Warnung', '{n} aviso'], { n: warns })}, ${L(infos > 1 ? ['{n} remarques', '{n} notes', '{n} Hinweise', '{n} observaciones'] : ['{n} remarque', '{n} note', '{n} Hinweis', '{n} observación'], { n: infos })}</dd>
     </dl>
-    ${d.anomalies.length ? `<details${warns ? ' open' : ''}><summary class="mut">Rapport de lecture (${d.anomalies.length})</summary><ul class="odv-notes">${d.anomalies.map(a => `<li class="${a.niveau}">${a.niveau === 'warn' ? '⚠ ' : ''}${esc(a.texte)}</li>`).join('')}</ul></details>` : ''}`;
+    ${d.anomalies.length ? `<details${warns ? ' open' : ''}><summary class="mut">${L(['Rapport de lecture ({n})', 'Reading report ({n})', 'Lesebericht ({n})', 'Informe de lectura ({n})'], { n: d.anomalies.length })}</summary><ul class="odv-notes">${d.anomalies.map(a => `<li class="${a.niveau}">${a.niveau === 'warn' ? '⚠ ' : ''}${esc(C.say(a.texte))}</li>`).join('')}</ul></details>` : ''}`;
   }
 
   // --- grille
@@ -523,7 +553,7 @@
     const opt = (v, l, cur) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(l)}</option>`;
     host.innerHTML = `<label><input type="checkbox" id="odvHideEmpty"${view.hideEmpty ? ' checked' : ''}> ${L(['Masquer les grilles vides', 'Hide empty grids', 'Leere Raster ausblenden', 'Ocultar las cuadrículas vacías'])}</label>
       ${colors.length ? `<label>${L(['Couleur du trigramme', 'Trigram colour', 'Farbe des Kürzels', 'Color del trigrama'])} <select id="odvColor">${opt('', L(['toutes', 'all', 'alle', 'todas']), view.color)}${colors.map(c => opt(c, `#${c} (${data.pilotes.filter(p => p.couleur === c).length})`, view.color)).join('')}</select></label>` : ''}
-      <label>${L(['Rôle', 'Role', 'Rolle', 'Función'])} (${data.virtuel ? L(['appareils déclarés', 'declared aircraft', 'angegebene Luftfahrzeuge', 'aeronaves declaradas']) : 'FLOTTE'}) <select id="odvRole">${opt('', L(['tous', 'all', 'alle', 'todos']), view.role)}${roles.map(r => opt(r, C.ROLES[r] || r, view.role)).join('')}</select></label>
+      <label>${L(['Rôle', 'Role', 'Rolle', 'Función'])} (${data.virtuel ? L(['appareils déclarés', 'declared aircraft', 'angegebene Luftfahrzeuge', 'aeronaves declaradas']) : L(['FLOTTE', 'FLOTTE sheet', 'Blatt FLOTTE', 'hoja FLOTTE'])}) <select id="odvRole">${opt('', L(['tous', 'all', 'alle', 'todos']), view.role)}${roles.map(r => opt(r, C.roleLabel(r), view.role)).join('')}</select></label>
       <label>${L(['Simulateur', 'Simulator', 'Simulator', 'Simulador'])} <select id="odvSimF">${opt('', L(['tous', 'all', 'alle', 'todos']), view.sim)}${sims.map(s => opt(s, s, view.sim)).join('')}</select></label>`;
     $('odvHideEmpty').onchange = e => {
       view.hideEmpty = e.target.checked;
@@ -554,8 +584,8 @@
     const counts = {};
     for (const r of data.records)
       if (r.code) counts[r.code] = (counts[r.code] || 0) + 1;
-    $('odvLegend').innerHTML = (data.virtuel ? `<span class="odv-noxl">${L(['Pas de classeur : semaine du {a} au {b}, ligne du classeur vide ; déclarations des pilotes et affectations.', 'No workbook: week from {a} to {b}, workbook row empty; pilot declarations and assignments.', 'Keine Arbeitsmappe: Woche vom {a} bis {b}, Zeile der Arbeitsmappe leer; Pilotenangaben und Zuweisungen.', 'Sin libro: semana del {a} al {b}, fila del libro vacía; declaraciones de los pilotos y asignaciones.'], { a: esc(dateFr(data.dates[0])), b: esc(dateFr(data.dates[6])) })}</span>` : '') + Object.values(data.legende).map(e => `<span>${codeCell({ code: e.code, sens: e.sens, categorie: e.categorie, source: '' })} ${esc(e.sens)}${counts[e.code] ? ` <b>${counts[e.code]}</b>` : ''}</span>`).join('') +
-      `<span>${codeCell({ categorie: 'inconnu', source: '' })} ${esc(C.CATEGORIES.inconnu)}</span>`;
+    $('odvLegend').innerHTML = (data.virtuel ? `<span class="odv-noxl">${L(['Pas de classeur : semaine du {a} au {b}, ligne du classeur vide ; déclarations des pilotes et affectations.', 'No workbook: week from {a} to {b}, workbook row empty; pilot declarations and assignments.', 'Keine Arbeitsmappe: Woche vom {a} bis {b}, Zeile der Arbeitsmappe leer; Pilotenangaben und Zuweisungen.', 'Sin libro: semana del {a} al {b}, fila del libro vacía; declaraciones de los pilotos y asignaciones.'], { a: esc(dateFr(data.dates[0])), b: esc(dateFr(data.dates[6])) })}</span>` : '') + Object.values(data.legende).map(e => `<span>${codeCell({ code: e.code, sens: e.sens, categorie: e.categorie, source: '' })} ${esc(sensL(e.sens))}${counts[e.code] ? ` <b>${counts[e.code]}</b>` : ''}</span>`).join('') +
+      `<span>${codeCell({ categorie: 'inconnu', source: '' })} ${esc(catL('inconnu'))}</span>`;
     const byPilot = new Map(data.pilotes.map(p => [p.trigramme, []]));
     for (const r of data.records) byPilot.get(r.pilote)?.push(r);
     // grille non vide : cases du classeur, ou seconde ligne du pilote (déclaration faite dans la suite — copie de ce
@@ -573,7 +603,7 @@
             recs,
             dispo: recs.filter(r => r.categorie === 'dispo').length,
             atc: recs.filter(r => r.categorie === 'atc').length,
-            roles: (p.profil?.roles || []).map(r => C.ROLES[r] || r).join(', '),
+            roles: (p.profil?.roles || []).map(r => C.roleLabel(r)).join(', '),
             sims: (p.profil?.sims || []).join(', ')
           };
         recs.forEach(r => {
@@ -586,8 +616,8 @@
     // déclaration du pilote (Mes missions) — encadré rouge : disponible et non affecté ; n° de mission : affecté ; clic
     // sur la déclaration : affecter sur ce créneau. Rôles et simulateurs (feuille FLOTTE) : infobulle du pilote.
     const withDecl = !!window.OdvAssign;
-    const head = `<thead><tr><th rowspan="2" class="odv-d-pil">Pilote</th><th rowspan="2" class="odv-d-n" title="Créneaux disponibles (+ contrôle)">Dispo</th>${C.DAYS.map((d, j) => `<th colspan="3" class="odv-d-day">${esc(d.slice(0, 3))} ${esc(dateFr(data.dates[j]))}</th>`).join('')}</tr>
-      <tr>${C.DAYS.map(() => SHORT.map((s, k) => `<th class="odv-d-slot" title="${esc(L([['matin', 'morning', 'Morgen', 'mañana'], ['après-midi', 'afternoon', 'Nachmittag', 'tarde'], ['soir', 'evening', 'Abend', 'noche']][k] || [s, s, s, s]))} (${esc(`${String(settings.hours[k][0]).padStart(2, '0')}-${String(settings.hours[k][1]).padStart(2, '0')}z`)})">${s}</th>`).join('')).join('')}</tr></thead>`;
+    const head = `<thead><tr><th rowspan="2" class="odv-d-pil">${L(['Pilote', 'Pilot', 'Pilot', 'Piloto'])}</th><th rowspan="2" class="odv-d-n" title="${esc(L(['Créneaux disponibles (+ contrôle)', 'Available slots (+ ATC)', 'Verfügbare Zeitfenster (+ Lotse)', 'Franjas disponibles (+ control)']))}">${L(['Dispo', 'Avail.', 'Verf.', 'Disp.'])}</th>${C.DAYS.map((d, j) => `<th colspan="3" class="odv-d-day">${esc(dayAbbr(d))} ${esc(dateFr(data.dates[j]))}</th>`).join('')}</tr>
+      <tr>${C.DAYS.map(() => SHORT.map((s, k) => `<th class="odv-d-slot" title="${esc(L([['matin', 'morning', 'Morgen', 'mañana'], ['après-midi', 'afternoon', 'Nachmittag', 'tarde'], ['soir', 'evening', 'Abend', 'noche']][k] || [s, s, s, s]))} (${esc(`${String(settings.hours[k][0]).padStart(2, '0')}-${String(settings.hours[k][1]).padStart(2, '0')}z`)})">${esc(shortL(k))}</th>`).join('')).join('')}</tr></thead>`;
     const body = rows.map(r => {
       const tip = [r.roles && L(['Rôles : {x}', 'Roles: {x}', 'Rollen: {x}', 'Funciones: {x}'], { x: r.roles }), r.sims && L(['Simulateurs : {x}', 'Simulators: {x}', 'Simulatoren: {x}', 'Simuladores: {x}'], { x: r.sims }), L(['Ligne {n} du classeur', 'Workbook row {n}', 'Zeile {n} der Arbeitsmappe', 'Fila {n} del libro'], { n: r.ligne })].filter(Boolean).join('\n');
       return `<tr><th class="odv-d-pil" title="${esc(tip)}">${tri(r.pilote, r.couleur, false)}</th><td class="odv-d-n">${r.dispo}${r.atc ? `<small>+${r.atc}</small>` : ''}</td>${C.DAYS.map((_, j) => [0, 1, 2].map(k => {
@@ -598,9 +628,9 @@
     delete tables.odvGrid;
     const week = window.OdvAssign?.week() || [];
     const journal = window.OdvAssign?.journal?.() || [];
-    const journalHtml = journal.length ? `<details class="odv-journal"><summary>Journal des affectations (${journal.length})</summary><ul>${journal.slice(0, 30).map(e => `<li>${esc(window.MissionAssignments.logText(e))}</li>`).join('')}</ul></details>` : '';
-    const weekHtml = week.length ? `<h4 class="odv-week-h">Missions affectées cette semaine (${new Set(week.map(a => a.mission)).size})</h4><table class="odv-week"><thead><tr><th>Décollage</th><th>Mission</th><th>Pilote</th><th>Appareil</th><th>Terrain</th><th>Rôle</th></tr></thead><tbody>${week.map(a => `<tr><td>${esc(dateFr(String(a.takeoff).slice(0, 10)))} ${esc(String(a.takeoff).slice(11, 16))}Z</td><td><b>${esc(a.mission)}</b> ${esc(a.title || '')}</td><td>${a.pilot ? tri(a.pilot, null, false) : '<i>à affecter</i>'}</td><td>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' '))}</td><td>${esc(a.departure || '')}</td><td>${a.role === 'convoyage' ? `convoyage pour ${esc(a.for_pilot || '')}` : a.ferry ? `mission (convoyage dès ${esc(String(a.ferry.takeoff || '').slice(11, 16))}Z)` : 'mission'}</td></tr>`).join('')}</tbody></table>` : '<p class="mut odv-d-note">Aucune mission affectée cette semaine.</p>';
-    $('odvGrid').innerHTML = rows.length ? `<div class="odv-dense-wrap"><table class="odv-dense">${head}<tbody>${body}</tbody></table></div><p class="mut odv-d-note">${withDecl ? 'Par pilote : code du classeur, puis sa déclaration (encadré rouge : disponible et non affecté ; clic : affecter). ' : ''}Rôles et simulateurs au survol du trigramme.</p>${weekHtml}${journalHtml}` : '<p class="odv-empty">Aucun pilote ne correspond aux filtres.</p>';
+    const journalHtml = journal.length ? `<details class="odv-journal"><summary>${L(['Journal des affectations ({n})', 'Assignment log ({n})', 'Zuweisungsprotokoll ({n})', 'Registro de asignaciones ({n})'], { n: journal.length })}</summary><ul>${journal.slice(0, 30).map(e => `<li>${esc(window.MissionAssignments.logText(e))}</li>`).join('')}</ul></details>` : '';
+    const weekHtml = week.length ? `<h4 class="odv-week-h">${L(['Missions affectées cette semaine ({n})', 'Missions assigned this week ({n})', 'Diese Woche zugewiesene Missionen ({n})', 'Misiones asignadas esta semana ({n})'], { n: new Set(week.map(a => a.mission)).size })}</h4><table class="odv-week"><thead><tr><th>${L(['Décollage', 'Take-off', 'Start', 'Despegue'])}</th><th>${L(['Mission', 'Mission', 'Mission', 'Misión'])}</th><th>${L(['Pilote', 'Pilot', 'Pilot', 'Piloto'])}</th><th>${L(['Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'])}</th><th>${L(['Terrain', 'Airfield', 'Flugplatz', 'Aeródromo'])}</th><th>${L(['Rôle', 'Role', 'Rolle', 'Función'])}</th></tr></thead><tbody>${week.map(a => `<tr><td>${esc(dateFr(String(a.takeoff).slice(0, 10)))} ${esc(String(a.takeoff).slice(11, 16))}Z</td><td><b>${esc(a.mission)}</b> ${esc(a.title || '')}</td><td>${a.pilot ? tri(a.pilot, null, false) : `<i>${L(['à affecter', 'to assign', 'zuzuweisen', 'por asignar'])}</i>`}</td><td>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' '))}</td><td>${esc(a.departure || '')}</td><td>${a.role === 'convoyage' ? L(['convoyage pour {p}', 'ferry for {p}', 'Überführung für {p}', 'traslado para {p}'], { p: esc(a.for_pilot || '') }) : a.ferry ? L(['mission (convoyage dès {t}Z)', 'mission (ferry from {t}Z)', 'Mission (Überführung ab {t}Z)', 'misión (traslado desde {t}Z)'], { t: esc(String(a.ferry.takeoff || '').slice(11, 16)) }) : L(['mission', 'mission', 'Mission', 'misión'])}</td></tr>`).join('')}</tbody></table>` : `<p class="mut odv-d-note">${L(['Aucune mission affectée cette semaine.', 'No mission assigned this week.', 'Diese Woche keine Mission zugewiesen.', 'Ninguna misión asignada esta semana.'])}</p>`;
+    $('odvGrid').innerHTML = rows.length ? `<div class="odv-dense-wrap"><table class="odv-dense">${head}<tbody>${body}</tbody></table></div><p class="mut odv-d-note">${withDecl ? L(['Par pilote : code du classeur, puis sa déclaration (encadré rouge : disponible et non affecté ; clic : affecter). ', 'Per pilot: workbook code, then their declaration (red frame: available and not assigned; click: assign). ', 'Pro Pilot: Code der Arbeitsmappe, dann seine Angabe (roter Rahmen: verfügbar und nicht zugewiesen; Klick: zuweisen). ', 'Por piloto: código del libro y luego su declaración (recuadro rojo: disponible y sin asignar; clic: asignar). ']) : ''}${L(['Rôles et simulateurs au survol du trigramme.', 'Roles and simulators when hovering over the trigram.', 'Rollen und Simulatoren beim Überfahren des Kürzels.', 'Roles y simuladores al pasar el ratón por el trigrama.'])}</p>${weekHtml}${journalHtml}` : `<p class="odv-empty">${L(['Aucun pilote ne correspond aux filtres.', 'No pilot matches the filters.', 'Kein Pilot entspricht den Filtern.', 'Ningún piloto coincide con los filtros.'])}</p>`;
   }
 
   // --- créneaux communs
@@ -636,17 +666,17 @@
     if (!data) {
       $('odvHeat').innerHTML = '';
       $('odvSlotDetail').innerHTML = '';
-      resetTable('odvSlots', '<p class="odv-empty">Chargez un classeur ODV.</p>');
+      resetTable('odvSlots', `<p class="odv-empty">${L(['Chargez un classeur ODV.', 'Load an ODV workbook.', 'ODV-Arbeitsmappe laden.', 'Cargue un libro ODV.'])}</p>`);
       return;
     }
     const max = Math.max(1, ...slots.map(s => s.n));
-    let html = '<div class="odv-heat"><span></span>' + C.SLOT_LABELS.map((l, k) => `<span class="h">${esc(l)}<br><span class="mut">${esc(slots[k].heures)}</span></span>`).join('');
+    let html = '<div class="odv-heat"><span></span>' + C.SLOT_LABELS.map((l, k) => `<span class="h">${esc(capL(l))}<br><span class="mut">${esc(slots[k].heures)}</span></span>`).join('');
     for (let j = 0; j < 7; j++) {
-      html += `<span class="d">${esc(C.DAYS[j])} ${esc(dateFr(data.dates[j]))}</span>`;
+      html += `<span class="d">${esc(wordL(C.DAYS[j]))} ${esc(dateFr(data.dates[j]))}</span>`;
       for (let k = 0; k < 3; k++) {
         const s = slots[j * 3 + k],
           key = `${j}${k}`;
-        const bits = [s.atc.length ? `+${s.atc.length} ctrl` : '', s.vols.length ? `✈ ${s.vols.length}` : '', s.evenements.length ? '★' : ''].filter(Boolean).join(' · ');
+        const bits = [s.atc.length ? L(['+{n} ctrl', '+{n} ATC', '+{n} ATC', '+{n} ctrl'], { n: s.atc.length }) : '', s.vols.length ? `✈ ${s.vols.length}` : '', s.evenements.length ? '★' : ''].filter(Boolean).join(' · ');
         html += `<button type="button" data-slot="${key}" class="repo-plain${selected === key ? ' sel' : ''}${s.n0 < settings.minPilots ? ' low' : ''}" style="--pct:${Math.round(s.n / max * 70)}%" title="${esc(L(s.n0 > s.n ? ['{t} : {n} pilote(s) libre(s) sur {m}, {a} contrôleur(s)', '{t}: {n} free pilot(s) of {m}, {a} controller(s)', '{t}: {n} freie(r) Pilot(en) von {m}, {a} Lotse(n)', '{t}: {n} piloto(s) libre(s) de {m}, {a} controlador(es)'] : ['{t} : {n} pilote(s) libre(s), {a} contrôleur(s)', '{t}: {n} free pilot(s), {a} controller(s)', '{t}: {n} freie(r) Pilot(en), {a} Lotse(n)', '{t}: {n} piloto(s) libre(s), {a} controlador(es)'], { t: slotTitle(s), n: s.n, m: s.n0, a: s.atc.length }))}"><b>${s.n}</b><small>${esc(bits || ' ')}</small></button>`;
       }
     }
@@ -658,67 +688,67 @@
     table('odvSlots', {
       columns: [{
         key: 'jour',
-        label: 'Créneau',
+        label: L(['Créneau', 'Slot', 'Zeitfenster', 'Franja']),
         sortValue: s => s.jourIndex * 3 + s.creneauIndex,
-        html: (v, s) => `<span title="${esc(`${s.jour} ${dateFr(s.date)} ${s.creneau}`)}">${esc(s.jour.slice(0, 3))} ${esc(dateFr(s.date))} ${esc(SHORT[s.creneauIndex] || s.creneau)}</span>`
+        html: (v, s) => `<span title="${esc(`${wordL(s.jour)} ${dateFr(s.date)} ${wordL(s.creneau)}`)}">${esc(dayAbbr(s.jour))} ${esc(dateFr(s.date))} ${esc(SHORT[s.creneauIndex] ? shortL(s.creneauIndex) : wordL(s.creneau))}</span>`
       }, {
         key: 'heures',
-        label: 'Heures',
+        label: L(['Heures', 'Hours', 'Stunden', 'Horas']),
         icon: 'clock'
       }, {
         key: 'n',
-        label: 'Pilotes libres',
+        label: L(['Pilotes libres', 'Free pilots', 'Freie Piloten', 'Pilotos libres']),
         icon: 'users',
         type: 'number',
-        html: (v, s) => s.n0 > s.n ? `${v} <small class="mut" title="${s.n0 - s.n} déjà affecté(s)">/ ${s.n0}</small>` : esc(v)
+        html: (v, s) => s.n0 > s.n ? `${v} <small class="mut" title="${esc(L(['{n} déjà affecté(s)', '{n} already assigned', '{n} bereits zugewiesen', '{n} ya asignado(s)'], { n: s.n0 - s.n }))}">/ ${s.n0}</small>` : esc(v)
       }, {
         key: 'pilotes',
-        label: 'Disponibles',
+        label: L(['Disponibles', 'Available', 'Verfügbar', 'Disponibles']),
         sortValue: s => s.pilotes.map(p => p.trigramme).join(' '),
         html: v => v.map(p => `${tri(p.trigramme, null, false)}${p.code !== 'O' ? `<small class="mut"> ${esc(p.code)}</small>` : ''}`).join(' ')
       }, {
         key: 'atc',
-        label: 'Contrôleurs',
+        label: L(['Contrôleurs', 'Controllers', 'Lotsen', 'Controladores']),
         icon: 'headset',
         sortValue: s => s.atc.length,
         html: v => v.length ? v.map(p => `${tri(p.trigramme, null, false)}<small class="mut"> ${esc(p.code)}</small>`).join(' ') : '—'
       }, {
         key: 'roles',
-        label: 'Rôles possibles',
+        label: L(['Rôles possibles', 'Possible roles', 'Mögliche Rollen', 'Funciones posibles']),
         icon: 'shield',
         html: v => {
-          const t = v.map(r => C.ROLES[r] || r).join(', ');
+          const t = v.map(r => C.roleLabel(r)).join(', ');
           return `<span class="odv-cut" title="${esc(t)}">${esc(t || '—')}</span>`;
         }
       }, {
         key: 'simsCommuns',
-        label: 'Simulateurs communs',
+        label: L(['Simulateurs communs', 'Common simulators', 'Gemeinsame Simulatoren', 'Simuladores comunes']),
         icon: 'layers',
         sortValue: s => s.simsCommuns.length,
         html: v => `<span class="odv-sims">${window.MissionAssignments?.simChips(v) || esc(v.join(', ') || '—')}</span>`
       }, {
         key: 'mission',
-        label: 'Mission probable',
+        label: L(['Mission probable', 'Likely mission', 'Wahrscheinliche Mission', 'Misión probable']),
         icon: 'target',
         sortValue: s => s.missions[0]?.famille || '',
         html: (v, s) => s.missions[0] ? `<span class="odv-fam">${esc(s.missions[0].famille)}</span>` : '—'
       }, {
         key: 'registre',
-        label: 'Planifier (missions du registre)',
+        label: L(['Planifier (missions du registre)', 'Plan (registry missions)', 'Planen (Missionen des Registers)', 'Planificar (misiones del registro)']),
         icon: 'clipboard',
         sortValue: s => s.n,
         html: (v, s) => pickButton(s, '', true) || '—'
       }, {
         key: 'contexte',
-        label: 'Contexte (vols posés, événements, horaires)',
+        label: L(['Contexte (vols posés, événements, horaires)', 'Context (logged flights, events, times)', 'Kontext (eingetragene Flüge, Ereignisse, Zeiten)', 'Contexto (vuelos registrados, eventos, horarios)']),
         icon: 'info',
-        html: (v, s) => `<span class="odv-wrap">${esc([s.evenements.length ? '★ ' + s.evenements.map(e => e.groupe).join(', ') : '', s.vols.length ? `✈ ${s.vols.length} vol(s) posé(s)` : '', s.pilotes.some(p => p.commentaire) ? '✎ horaires en commentaire' : ''].filter(Boolean).join(' · ') || '—')}</span>`
+        html: (v, s) => `<span class="odv-wrap">${esc([s.evenements.length ? '★ ' + s.evenements.map(e => e.groupe).join(', ') : '', s.vols.length ? L(['✈ {n} vol(s) posé(s)', '✈ {n} flight(s) logged', '✈ {n} Flug/Flüge eingetragen', '✈ {n} vuelo(s) registrado(s)'], { n: s.vols.length }) : '', s.pilotes.some(p => p.commentaire) ? L(['✎ horaires en commentaire', '✎ times in comments', '✎ Zeiten im Kommentar', '✎ horarios en comentario']) : ''].filter(Boolean).join(' · ') || '—')}</span>`
       }],
       defaultSortKey: 'n',
       defaultDir: -1,
       onRowClick: s => select(`${s.jourIndex}${s.creneauIndex}`),
-      rowTitle: 'Cliquer pour le détail du créneau',
-      emptyText: `Aucun créneau avec au moins ${settings.minPilots} pilote(s).`,
+      rowTitle: L(['Cliquer pour le détail du créneau', 'Click for the slot details', 'Klicken für die Details des Zeitfensters', 'Haga clic para ver el detalle de la franja']),
+      emptyText: L(['Aucun créneau avec au moins {n} pilote(s).', 'No slot with at least {n} pilot(s).', 'Kein Zeitfenster mit mindestens {n} Pilot(en).', 'Ninguna franja con al menos {n} piloto(s).'], { n: settings.minPilots }),
       storageKey: 'sortedTableWidths:odvPlanning#slots'
     }, rows);
     renderDetail();
@@ -739,20 +769,20 @@
     const data = basis,
       s = data && selected ? slots.find(x => `${x.jourIndex}${x.creneauIndex}` === selected) : null;
     if (!s) {
-      host.innerHTML = data ? '<p class="mut">Cliquez un créneau (carte ou tableau) pour son détail.</p>' : '';
+      host.innerHTML = data ? `<p class="mut">${L(['Cliquez un créneau (carte ou tableau) pour son détail.', 'Click a slot (map or table) for its details.', 'Ein Zeitfenster anklicken (Karte oder Tabelle), um die Details zu sehen.', 'Haga clic en una franja (mapa o tabla) para ver su detalle.'])}</p>` : '';
       return;
     }
     const li = arr => arr.length ? `<ul>${arr.join('')}</ul>` : '<p class="mut">—</p>';
     host.innerHTML = `<div class="odv-detail"><h3 style="margin-top:0">${esc(slotTitle(s))}</h3>
-      <b>Pilotes disponibles (${s.n})</b>${li(s.pilotes.map(p => `<li>${tri(p.trigramme)} <b>${esc(p.code)}</b> — ${esc(p.roles.map(r => C.ROLES[r] || r).join(', ') || 'rôles inconnus')}${p.commentaire ? ` — <i>« ${esc(p.commentaire)} »</i>` : ''}</li>`))}
-      ${s.horsSim.length ? `<p class="mut">Disponibles sans le simulateur ${esc(settings.sim)} : ${esc(s.horsSim.join(', '))}</p>` : ''}
-      <b>Contrôleurs (${s.atc.length})</b>${li(s.atc.map(p => `<li>${tri(p.trigramme)} <b>${esc(p.code)}</b>${p.commentaire ? ` — <i>« ${esc(p.commentaire)} »</i>` : ''}</li>`))}
-      <b>Événements de groupe</b>${li(s.evenements.map(e => `<li>${esc(e.groupe)}${e.commentaire ? ` — ${esc(e.commentaire)}` : ''}${e.recurrent ? ' <span class="mut">(tous les jours : habillage probable)</span>' : ''}</li>`))}
-      <b>Vols déjà posés sur la frise</b>${li(s.vols.map(v => `<li>${esc(v.debut)}–${esc(v.fin)}z ${esc(v.dep)}-${esc(v.arr)} · ${esc(v.appareil)} · ${esc(v.objet)} — ${v.equipage.map(t => tri(t, null, false)).join(' ') || '?'}</li>`).concat(s.autres.map(v => `<li class="mut">${esc(v.debut)}z ${esc(v.couloir)} : ${esc(v.texte)} ${v.equipage.map(t => tri(t, null, false)).join(' ')}</li>`)))}
-      <b>Missions probables</b>${li(s.toutesMissions.map((m, i) => `<li>${i < settings.top ? '' : '<span class="mut">'}<span class="odv-fam">${esc(m.famille)}</span> ${m.affectation.map(a => `${tri(a.pilote, null, false)} <small class="mut">${esc(a.role === '*' ? 'autre pilote' : C.ROLES[a.role] || a.role)}</small>`).join(' + ')}${m.renforts.length ? ` (+ ${esc(m.renforts.join(', '))})` : ''} — ${esc(m.calcul)} ; règle : ${esc(m.regle)}${i < settings.top ? '' : '</span>'}</li>`))}
+      <b>${L(['Pilotes disponibles ({n})', 'Available pilots ({n})', 'Verfügbare Piloten ({n})', 'Pilotos disponibles ({n})'], { n: s.n })}</b>${li(s.pilotes.map(p => `<li>${tri(p.trigramme)} <b>${esc(p.code)}</b> — ${esc(p.roles.map(r => C.roleLabel(r)).join(', ') || L(['rôles inconnus', 'unknown roles', 'Rollen unbekannt', 'roles desconocidos']))}${p.commentaire ? ` — <i>« ${esc(p.commentaire)} »</i>` : ''}</li>`))}
+      ${s.horsSim.length ? `<p class="mut">${L(['Disponibles sans le simulateur {s} : {l}', 'Available without the {s} simulator: {l}', 'Verfügbar ohne den Simulator {s}: {l}', 'Disponibles sin el simulador {s}: {l}'], { s: esc(settings.sim), l: esc(s.horsSim.join(', ')) })}</p>` : ''}
+      <b>${L(['Contrôleurs ({n})', 'Controllers ({n})', 'Lotsen ({n})', 'Controladores ({n})'], { n: s.atc.length })}</b>${li(s.atc.map(p => `<li>${tri(p.trigramme)} <b>${esc(p.code)}</b>${p.commentaire ? ` — <i>« ${esc(p.commentaire)} »</i>` : ''}</li>`))}
+      <b>${L(['Événements de groupe', 'Group events', 'Gruppenereignisse', 'Eventos de grupo'])}</b>${li(s.evenements.map(e => `<li>${esc(e.groupe)}${e.commentaire ? ` — ${esc(e.commentaire)}` : ''}${e.recurrent ? ` <span class="mut">${L(['(tous les jours : habillage probable)', '(every day: probably decoration)', '(jeden Tag: wahrscheinlich Gestaltung)', '(todos los días: probablemente decoración)'])}</span>` : ''}</li>`))}
+      <b>${L(['Vols déjà posés sur la frise', 'Flights already on the timeline', 'Bereits auf der Zeitleiste eingetragene Flüge', 'Vuelos ya en la cronología'])}</b>${li(s.vols.map(v => `<li>${esc(v.debut)}–${esc(v.fin)}z ${esc(v.dep)}-${esc(v.arr)} · ${esc(v.appareil)} · ${esc(v.objet)} — ${v.equipage.map(t => tri(t, null, false)).join(' ') || '?'}</li>`).concat(s.autres.map(v => `<li class="mut">${esc(v.debut)}z ${L(['{c} : {t}', '{c}: {t}', '{c}: {t}', '{c}: {t}'], { c: esc(v.couloir), t: esc(v.texte) })} ${v.equipage.map(t => tri(t, null, false)).join(' ')}</li>`)))}
+      <b>${L(['Missions probables', 'Likely missions', 'Wahrscheinliche Missionen', 'Misiones probables'])}</b>${li(s.toutesMissions.map((m, i) => `<li>${i < settings.top ? '' : '<span class="mut">'}<span class="odv-fam">${esc(m.famille)}</span> ${m.affectation.map(a => `${tri(a.pilote, null, false)} <small class="mut">${esc(a.role === '*' ? L(['autre pilote', 'other pilot', 'anderer Pilot', 'otro piloto']) : C.roleLabel(a.role))}</small>`).join(' + ')}${m.renforts.length ? ` (+ ${esc(m.renforts.join(', '))})` : ''} — ${L(['{c} ; règle : {r}', '{c}; rule: {r}', '{c}; Regel: {r}', '{c}; regla: {r}'], { c: esc(C.say(m.calcul)), r: esc(C.say(m.regle)) })}${i < settings.top ? '' : '</span>'}</li>`))}
       ${pickButton(s) ? `<p>${pickButton(s)}</p>` : ''}
-      ${s.eviter.length ? `<b>Espaces à éviter</b>${li(s.eviter.map(e => `<li><b>${esc(e.type)} ${esc(e.position)}</b> : pas de mission dans la CTR de ${esc(e.icao)}, et si possible hors de ses TMA — <i>« ${esc(e.texte)} »</i></li>`))}` : ''}
-      ${s.contexte.length ? `<b>Contexte</b>${li(s.contexte.map(c => `<li>${esc(c)}</li>`))}` : ''}
+      ${s.eviter.length ? `<b>${L(['Espaces à éviter', 'Airspaces to avoid', 'Zu meidende Lufträume', 'Espacios a evitar'])}</b>${li(s.eviter.map(e => `<li>${L(['{z} : pas de mission dans la CTR de {i}, et si possible hors de ses TMA — {t}', '{z}: no mission in the {i} CTR, and if possible outside its TMAs — {t}', '{z}: keine Mission in der CTR von {i}, und möglichst außerhalb ihrer TMAs — {t}', '{z}: ninguna misión en la CTR de {i} y, si es posible, fuera de sus TMA — {t}'], { z: `<b>${esc(C.kindLabel(e.type))} ${esc(e.position)}</b>`, i: esc(e.icao), t: `<i>« ${esc(e.texte)} »</i>` })}</li>`))}` : ''}
+      ${s.contexte.length ? `<b>${L(['Contexte', 'Context', 'Kontext', 'Contexto'])}</b>${li(s.contexte.map(c => `<li>${esc(C.say(c))}</li>`))}` : ''}
     </div>`;
   }
 
@@ -828,7 +858,7 @@
       inR = window.SiaBase?.inRing;
     if (!inR || !S.length) return S.length ? [] : [{
       grave: false,
-      texte: 'route inconnue (registre à relire)'
+      texte: L(['route inconnue (registre à relire)', 'unknown route (registry to re-read)', 'Route unbekannt (Register neu einlesen)', 'ruta desconocida (volver a leer el registro)'])
     }];
     const first = list => list.find(a => S.some(p => (a.rings || []).some(r => inR(r, p.lat, p.lon))));
     const out = [];
@@ -837,14 +867,14 @@
       if (c) {
         out.push({
           grave: true,
-          texte: `traverse la CTR ${c.name} (${z.type} ${z.position})`
+          texte: L(['traverse la CTR {n} ({z})', 'crosses the {n} CTR ({z})', 'durchquert die CTR {n} ({z})', 'atraviesa la CTR {n} ({z})'], { n: c.name, z: `${C.kindLabel(z.type)} ${z.position}` })
         });
         continue;
       }
       const t = first(z.tma);
       if (t) out.push({
         grave: false,
-        texte: `traverse la TMA ${t.name} (${z.type} ${z.position})`
+        texte: L(['traverse la TMA {n} ({z})', 'crosses the {n} TMA ({z})', 'durchquert die TMA {n} ({z})', 'atraviesa la TMA {n} ({z})'], { n: t.name, z: `${C.kindLabel(z.type)} ${z.position}` })
       });
     }
     return out;
@@ -871,15 +901,15 @@
       k = s.creneauIndex,
       range = O?.range(j, k);
     if (!centreOn()) {
-      notify('Registre des missions : Centre verrouillé — l’activer dans Paramètres › Centre (CPCO).', 'warn');
+      notify(L(['Registre des missions : Centre verrouillé — l’activer dans Paramètres › Centre (CPCO).', 'Mission registry: Centre locked — enable it in Settings › Centre (CPCO).', 'Missionsregister: Zentrum gesperrt — in Einstellungen › Zentrum (CPCO) aktivieren.', 'Registro de misiones: Centro bloqueado — actívelo en Ajustes › Centro (CPCO).']), 'warn');
       return;
     }
     const all = regMissions();
     if (!all.length) {
-      notify('Registre des missions vide dans ce navigateur : ouvrir le registre du Centre et relire le dossier des missions.', 'warn');
+      notify(L(['Registre des missions vide dans ce navigateur : ouvrir le registre du Centre et relire le dossier des missions.', 'Mission registry empty in this browser: open the Centre registry and re-read the missions folder.', 'Missionsregister in diesem Browser leer: das Register des Zentrums öffnen und den Missionsordner neu einlesen.', 'Registro de misiones vacío en este navegador: abra el registro del Centro y vuelva a leer la carpeta de misiones.']), 'warn');
       return;
     }
-    if (!O?.write || !M?.postsOf || !AD?.frame) return notify('Affectations : modules absents (assignments.js, odv_assign.js, assign_dialog.js).', 'err');
+    if (!O?.write || !M?.postsOf || !AD?.frame) return notify(L(['Affectations : modules absents (assignments.js, odv_assign.js, assign_dialog.js).', 'Assignments: modules missing (assignments.js, odv_assign.js, assign_dialog.js).', 'Zuweisungen: Module fehlen (assignments.js, odv_assign.js, assign_dialog.js).', 'Asignaciones: faltan módulos (assignments.js, odv_assign.js, assign_dialog.js).']), 'err');
     const zones = await zonesToAvoid(s.eviter);
     const fams = [...new Set([...s.toutesMissions.map(m => m.famille), ...all.map(m => fold(m.family || m.type)).filter(Boolean)])].sort();
     const chip = AD.chip,
@@ -893,7 +923,7 @@
     const TURN = M.TURN_MIN,
       blockOf = m => +(m.estimate?.block ?? m.estimate?.flight) || 120,
       hm = ms => new Date(ms).toISOString().slice(11, 16) + 'Z',
-      slotName = ([jj, kk]) => (sl => `${sl.jour} ${sl.creneau}`)(slotOf(jj, kk));
+      slotName = ([jj, kk]) => (sl => `${wordL(sl.jour)} ${wordL(sl.creneau)}`)(slotOf(jj, kk));
     /** Horaire des missions (cochées d'abord) : convoyages (convoyeur choisi s'il reste libre, sinon le meilleur pilote
      *  libre sur tout le convoyage, avec l'appareil ; à défaut le pilote de la mission, qui la décale), décollage, fin,
      *  créneaux mobilisés, pilote libre sur toute la mission. Un convoyeur ne sert qu'une fois. */
@@ -1004,7 +1034,7 @@
           f,
           nm: here ? 0 : dep.pos && from ? M.geo.nm(from, dep.pos) : null,
           min: here ? 0 : ferry?.minutes ?? null,
-          why: here ? '' : !f.base ? 'base non renseignée dans la flotte' : !dep.pos ? 'départ sans position' : !from ? `position de ${f.base} inconnue (base SIA à charger)` : ''
+          why: here ? '' : !f.base ? L(['base non renseignée dans la flotte', 'base not set in the fleet', 'Basis in der Flotte nicht angegeben', 'base sin indicar en la flota']) : !dep.pos ? L(['départ sans position', 'departure without position', 'Abflug ohne Position', 'salida sin posición']) : !from ? L(['position de {b} inconnue (base SIA à charger)', '{b} position unknown (SIA database to load)', 'Position von {b} unbekannt (SIA-Datenbank laden)', 'posición de {b} desconocida (cargar la base SIA)'], { b: f.base }) : ''
         };
       }));
       return out.sort((a, b) => (a.nm ?? 1e9) - (b.nm ?? 1e9) || (b.f.operational !== false) - (a.f.operational !== false) || a.f.registration.localeCompare(b.f.registration));
@@ -1244,7 +1274,7 @@
         beforeClose: () => !dirty() || confirm(L(['Abandonner les affectations en attente (non enregistrées) ?', 'Discard the pending (unsaved) assignments?', 'Ausstehende (nicht gespeicherte) Zuweisungen verwerfen?', '¿Descartar las asignaciones pendientes (no guardadas)?'])),
         body: `<p class="ad-help">${L(['Cocher la mission, choisir l’appareil (du plus proche au plus lointain du départ, temps de convoyage indiqué), puis le pilote. Missions déjà affectées (cette semaine ou avant) masquées{h}. Une mission plus longue que le créneau mobilise les suivants ; appareil basé ailleurs : convoyage confié à un pilote libre avant le créneau, sinon fait par le pilote de la mission, décalée d’autant.', 'Tick the mission, choose the aircraft (nearest to farthest from the departure, ferry time shown), then the pilot. Missions already assigned (this week or before) hidden{h}. A mission longer than the slot uses the following ones; aircraft based elsewhere: ferry given to a pilot free before the slot, otherwise flown by the mission pilot, the mission shifted accordingly.', 'Mission anhaken, Luftfahrzeug wählen (vom nächsten zum fernsten zum Abflug, Überführungszeit angegeben), dann den Piloten. Bereits zugewiesene Missionen (diese Woche oder früher) ausgeblendet{h}. Eine Mission, die länger als das Zeitfenster ist, belegt die folgenden; anderswo stationiertes Luftfahrzeug: Überführung durch einen vorher freien Piloten, sonst durch den Missionspiloten, Mission entsprechend verschoben.', 'Marque la misión, elija la aeronave (de la más cercana a la más lejana de la salida, tiempo de traslado indicado) y luego el piloto. Misiones ya asignadas (esta semana o antes) ocultas{h}. Una misión más larga que la franja ocupa las siguientes; aeronave basada en otro lugar: traslado confiado a un piloto libre antes de la franja, si no lo hace el piloto de la misión, desplazada en consecuencia.'], { h: ctx.hidden ? `: ${ctx.hidden}` : '' })}</p><p class="ad-facts">${free.length ? free.map(tr => pendOf(tr) ? chip(`${tri(tr, null, false)} → <b>${esc(pendOf(tr).m.id)}</b> · ${esc(pendOf(tr).r.registration)}${pendOf(tr).r.callsign ? ` · ${esc(pendOf(tr).r.callsign)}` : ''}`, 'ok') : chip(`${tri(tr, null, false)} ${types(tr)}`, tr === focus ? 'focus' : '')).join('') : chip(L(['aucun pilote libre (tous affectés ou indisponibles)', 'no free pilot (all assigned or unavailable)', 'kein freier Pilot (alle zugewiesen oder nicht verfügbar)', 'ningún piloto libre (todos asignados o no disponibles)']), 'warn')}</p>
         <p><label class="ad-inline">${L(['Famille', 'Family', 'Familie', 'Familia'])} <select data-fam><option value="">${L(['toutes', 'all', 'alle', 'todas'])}</option>${fams.map(f => `<option value="${esc(f)}"${f === famSel ? ' selected' : ''}>${esc(f)}${s.missions[0]?.famille === f ? L([' (proposée)', ' (suggested)', ' (vorgeschlagen)', ' (propuesta)']) : ''}</option>`).join('')}</select></label></p>
-        ${zones.length ? `<p class="ad-note">${L(['À éviter :', 'To avoid:', 'Zu meiden:', 'A evitar:'])} ${zones.map(z => `<b>${esc(z.type)} ${esc(z.position)}</b> — CTR ${esc(z.ctr.map(a => a.name).join(', ') || '?')}${z.tma.length ? `, TMA ${esc(z.tma.map(a => a.name).join(', '))} ${L(['(si possible)', '(if possible)', '(wenn möglich)', '(si es posible)'])}` : ''}`).join(' · ')}</p>` : ''}
+        ${zones.length ? `<p class="ad-note">${L(['À éviter :', 'To avoid:', 'Zu meiden:', 'A evitar:'])} ${zones.map(z => `<b>${esc(C.kindLabel(z.type))} ${esc(z.position)}</b> — CTR ${esc(z.ctr.map(a => a.name).join(', ') || '?')}${z.tma.length ? `, TMA ${esc(z.tma.map(a => a.name).join(', '))} ${L(['(si possible)', '(if possible)', '(wenn möglich)', '(si es posible)'])}` : ''}`).join(' · ')}</p>` : ''}
         ${d.size ? `<table class="ad-table ad-matrix"><thead><tr><th>${L(['Planifier', 'Plan', 'Planen', 'Planificar'])}</th><th>${L(['Mission', 'Mission', 'Mission', 'Misión'])}</th><th>${L(['Poste', 'Post', 'Posten', 'Puesto'])}</th><th>${L(['Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'])}</th><th>${L(['Pilote', 'Pilot', 'Pilot', 'Piloto'])}</th><th>${L(['Indicatif', 'Callsign', 'Rufzeichen', 'Indicativo'])}</th><th>${L(['État', 'Status', 'Status', 'Estado'])}</th></tr></thead>${body}</table>` : `<p class="ad-help">${L(['Aucune mission du registre pour ces pilotes et cette famille.', 'No registry mission for these pilots and this family.', 'Keine Registermission für diese Piloten und diese Familie.', 'Ninguna misión del registro para estos pilotos y esta familia.'])}</p>`}
         ${ferries.length ? `<section class="ad-card"><h4>${L(['Convoyages à affecter ({n})', 'Ferries to assign ({n})', 'Zuzuweisende Überführungen ({n})', 'Traslados por asignar ({n})'], { n: ferries.length })}</h4><table class="ad-table"><thead><tr><th>${L(['Mission', 'Mission', 'Mission', 'Misión'])}</th><th>${L(['Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'])}</th><th>${L(['Trajet', 'Route', 'Strecke', 'Trayecto'])}</th><th>${L(['Heures', 'Times', 'Zeiten', 'Horas'])}</th><th>${L(['Convoyeur', 'Ferry pilot', 'Überführungspilot', 'Piloto de traslado'])}</th><th></th></tr></thead><tbody>${ferries.map((a, i) => {
           const from = Date.parse(a.takeoff),
@@ -1428,7 +1458,7 @@
         try {
           await M.missionsDir();
         } catch (err) {
-          msg.innerHTML = `<span class="err">${esc(err.message)} — l’autoriser dans Paramètres › Maintenance › Sources et dossiers.</span>`;
+          msg.innerHTML = `<span class="err">${L(['{e} — l’autoriser dans Paramètres › Maintenance › Sources et dossiers.', '{e} — allow it in Settings › Maintenance › Sources and folders.', '{e} — in Einstellungen › Wartung › Quellen und Ordner erlauben.', '{e} — autorícelo en Ajustes › Mantenimiento › Fuentes y carpetas.'], { e: esc(err.message) })}</span>`;
           return;
         }
         const ok = [],
@@ -1474,8 +1504,9 @@
   const pickButton = (s, fam = '', short = false) => {
     const has = (window.OdvAssign?.inSlot(s.jourIndex, s.creneauIndex) || []).some(a => a.role !== 'convoyage');
     if (s.n < 1 && !has) return '';
-    const label = has ? (short ? 'Modifier' : 'Modifier la mission…') : short ? 'Planifier' : 'Missions du registre…';
-    return `<button type="button" class="odv-pick-btn" data-pick="${s.jourIndex}${s.creneauIndex}" data-fam="${esc(fam)}"${centreOn() ? ` title="${has ? 'Modifier les missions affectées sur ce créneau, ou en planifier d’autres' : 'Missions du registre…'}"` : ' disabled title="Centre verrouillé : l’activer dans Paramètres › Centre (CPCO)"'}>${label}</button>`;
+    const reg = L(['Missions du registre…', 'Registry missions…', 'Missionen des Registers…', 'Misiones del registro…']);
+    const label = has ? (short ? L(['Modifier', 'Edit', 'Ändern', 'Modificar']) : L(['Modifier la mission…', 'Edit the mission…', 'Mission ändern…', 'Modificar la misión…'])) : short ? L(['Planifier', 'Plan', 'Planen', 'Planificar']) : reg;
+    return `<button type="button" class="odv-pick-btn" data-pick="${s.jourIndex}${s.creneauIndex}" data-fam="${esc(fam)}"${centreOn() ? ` title="${esc(has ? L(['Modifier les missions affectées sur ce créneau, ou en planifier d’autres', 'Edit the missions assigned in this slot, or plan others', 'Die in diesem Zeitfenster zugewiesenen Missionen ändern oder weitere planen', 'Modificar las misiones asignadas en esta franja o planificar otras']) : reg)}"` : ` disabled title="${esc(L(['Centre verrouillé : l’activer dans Paramètres › Centre (CPCO)', 'Centre locked: enable it in Settings › Centre (CPCO)', 'Zentrum gesperrt: in Einstellungen › Zentrum (CPCO) aktivieren', 'Centro bloqueado: actívelo en Ajustes › Centro (CPCO)']))}"`}>${esc(label)}</button>`;
   };
   document.addEventListener('click', e => {
     const c = e.target.closest('[data-odv-slot]');
@@ -1501,10 +1532,10 @@
   // --- missions probables
   function renderMissions() {
     const rules = $('odvRules');
-    rules.innerHTML = `<summary>Règles des familles et du score</summary><ul>${Object.entries(C.FAMILIES).map(([f, d]) => `<li><span class="odv-fam">${esc(f)}</span> ${esc(d.rule)}</li>`).join('')}</ul>
-      <p class="mut">Rôles d'un pilote : le code impose le rôle (SC → sécu civile + hélico / avion sécu d'après FLOTTE, C → chasse, T → transport + ravitailleur / largage, N → FNY / maritime, S → exercice + rôles FLOTTE) ; O → tous les rôles que FLOTTE lui attribue. Score = participants + 2 par pilote à code restreint employé dans son domaine (SC : SAR, FIRE, HEMS ; N : MARITIME ; C : AAR, ISR, SPECIAL ; T : AIRLIFT, AIRBORNE, AAR) + 1 par contrôleur en ligne (2 au plus) pour TRAINING. Famille déjà jouée : − ${esc(String(settings.playWeight ?? 0.5).replace('.', ','))} × log2(1 + nombre de CR) (1 CR : − 0,5 ; 7 CR : − 1,5), pour varier. À score égal : ordre de préférence des réglages (${esc(settings.preference.join(', '))}). Les rôles FLOTTE restent indicatifs : le planificateur valide.</p>`;
+    rules.innerHTML = `<summary>${L(['Règles des familles et du score', 'Family and score rules', 'Regeln der Familien und der Punktzahl', 'Reglas de las familias y de la puntuación'])}</summary><ul>${Object.entries(C.FAMILIES).map(([f, d]) => `<li><span class="odv-fam">${esc(f)}</span> ${esc(C.familyRule(f) ?? d.rule)}</li>`).join('')}</ul>
+      <p class="mut">${L(['Rôles d\'un pilote : le code impose le rôle (SC → sécu civile + hélico / avion sécu d\'après FLOTTE, C → chasse, T → transport + ravitailleur / largage, N → FNY / maritime, S → exercice + rôles FLOTTE) ; O → tous les rôles que FLOTTE lui attribue. Score = participants + 2 par pilote à code restreint employé dans son domaine (SC : SAR, FIRE, HEMS ; N : MARITIME ; C : AAR, ISR, SPECIAL ; T : AIRLIFT, AIRBORNE, AAR) + 1 par contrôleur en ligne (2 au plus) pour TRAINING. Famille déjà jouée : − {wc} × log2(1 + nombre de CR) (1 CR : − 0,5 ; 7 CR : − 1,5), pour varier. À score égal : ordre de préférence des réglages ({p}). Les rôles FLOTTE restent indicatifs : le planificateur valide.', 'Pilot roles: the code sets the role (SC → civil security + helicopter / civil security aircraft according to FLOTTE, C → fighter, T → transport + tanker / airdrop, N → FNY / maritime, S → exercise + FLOTTE roles); O → all the roles FLOTTE gives the pilot. Score = participants + 2 per restricted-code pilot used in their domain (SC: SAR, FIRE, HEMS; N: MARITIME; C: AAR, ISR, SPECIAL; T: AIRLIFT, AIRBORNE, AAR) + 1 per online controller (2 at most) for TRAINING. Family already flown: − {wp} × log2(1 + number of CRs) (1 CR: − 0.5; 7 CRs: − 1.5), for variety. On equal score: preference order from the settings ({p}). FLOTTE roles are only indicative: the planner validates.', 'Rollen eines Piloten: Der Code legt die Rolle fest (SC → Zivilschutz + Hubschrauber / Zivilschutzflugzeug laut FLOTTE, C → Jagd, T → Transport + Tanker / Absetzen, N → FNY / maritim, S → Übung + FLOTTE-Rollen); O → alle Rollen, die FLOTTE ihm zuweist. Punktzahl = Teilnehmer + 2 je Pilot mit eingeschränktem Code, der in seinem Bereich eingesetzt wird (SC: SAR, FIRE, HEMS; N: MARITIME; C: AAR, ISR, SPECIAL; T: AIRLIFT, AIRBORNE, AAR) + 1 je Lotse online (höchstens 2) für TRAINING. Bereits geflogene Familie: − {wc} × log2(1 + Anzahl der CR) (1 CR: − 0,5; 7 CR: − 1,5), zur Abwechslung. Bei gleicher Punktzahl: Rangfolge aus den Einstellungen ({p}). Die FLOTTE-Rollen sind nur Richtwerte: der Planer entscheidet.', 'Roles de un piloto: el código impone el rol (SC → seguridad civil + helicóptero / avión de seguridad civil según FLOTTE, C → caza, T → transporte + cisterna / lanzamiento, N → FNY / marítimo, S → ejercicio + roles FLOTTE); O → todos los roles que FLOTTE le atribuye. Puntuación = participantes + 2 por piloto de código restringido empleado en su ámbito (SC: SAR, FIRE, HEMS; N: MARITIME; C: AAR, ISR, SPECIAL; T: AIRLIFT, AIRBORNE, AAR) + 1 por controlador en línea (2 como máximo) para TRAINING. Familia ya volada: − {wc} × log2(1 + número de CR) (1 CR: − 0,5; 7 CR: − 1,5), para variar. A igual puntuación: orden de preferencia de los ajustes ({p}). Los roles FLOTTE son solo orientativos: el planificador valida.'], { wc: esc(String(settings.playWeight ?? 0.5).replace('.', ',')), wp: esc(String(settings.playWeight ?? 0.5)), p: esc(settings.preference.join(', ')) })}</p>`;
     if (!basis) {
-      resetTable('odvMissions', '<p class="odv-empty">Chargez un classeur ODV.</p>');
+      resetTable('odvMissions', `<p class="odv-empty">${L(['Chargez un classeur ODV.', 'Load an ODV workbook.', 'ODV-Arbeitsmappe laden.', 'Cargue un libro ODV.'])}</p>`);
       return;
     }
     const rows = [];
@@ -1518,18 +1549,18 @@
     table('odvMissions', {
       columns: [{
         key: 'ordre',
-        label: 'Créneau',
+        label: L(['Créneau', 'Slot', 'Zeitfenster', 'Franja']),
         type: 'number',
-        html: (v, r) => `${esc(r.slot.jour.slice(0, 3))} ${esc(dateFr(r.slot.date))} ${esc(SHORT[r.slot.creneauIndex] || r.slot.creneau)}<sup class="odv-rank" title="Rang ${r.rang}">${r.rang}</sup>`
+        html: (v, r) => `${esc(dayAbbr(r.slot.jour))} ${esc(dateFr(r.slot.date))} ${esc(SHORT[r.slot.creneauIndex] ? shortL(r.slot.creneauIndex) : wordL(r.slot.creneau))}<sup class="odv-rank" title="${esc(L(['Rang {n}', 'Rank {n}', 'Rang {n}', 'Puesto {n}'], { n: r.rang }))}">${r.rang}</sup>`
       }, {
         key: 'famille',
-        label: 'Famille',
+        label: L(['Famille', 'Family', 'Familie', 'Familia']),
         html: v => `<span class="odv-fam">${esc(v)}</span>`
       }, {
         key: 'affectation',
-        label: 'Affectation proposée',
+        label: L(['Affectation proposée', 'Proposed assignment', 'Vorgeschlagene Zuweisung', 'Asignación propuesta']),
         sortValue: r => r.affectation.map(a => a.pilote).join(' '),
-        html: v => v.map(a => `${tri(a.pilote, null, false)}<small class="mut"> ${esc(a.role === '*' ? 'autre' : String(C.ROLES[a.role] || a.role).replace(/\s*\(.*\)$/, ''))}</small>`).join(' + ')
+        html: v => v.map(a => `${tri(a.pilote, null, false)}<small class="mut"> ${esc(a.role === '*' ? L(['autre', 'other', 'andere', 'otro']) : String(C.roleLabel(a.role)).replace(/\s*\(.*\)$/, ''))}</small>`).join(' + ')
       }, {
         key: 'renforts',
         label: '+',
@@ -1537,30 +1568,30 @@
         html: v => v.length ? v.map(t => tri(t, null, false)).join(' ') : '—'
       }, {
         key: 'sims',
-        label: 'Simulateurs communs',
+        label: L(['Simulateurs communs', 'Common simulators', 'Gemeinsame Simulatoren', 'Simuladores comunes']),
         icon: 'layers',
         sortValue: r => r.slot.simsCommuns.length,
         html: (v, r) => `<span class="odv-sims">${window.MissionAssignments?.simChips(r.slot.simsCommuns) || '—'}</span>`
       }, {
         key: 'score',
-        label: 'Score',
+        label: L(['Score', 'Score', 'Punktzahl', 'Puntuación']),
         type: 'number',
-        html: (v, r) => `<span title="${esc(r.calcul)}">${esc(String(v).replace('.', ','))}</span>`
+        html: (v, r) => `<span title="${esc(C.say(r.calcul))}">${esc(L(['{c}', '{p}', '{c}', '{c}'], { c: String(v).replace('.', ','), p: String(v) }))}</span>`
       }, {
         key: 'registre',
-        label: 'Planifier (missions du registre)',
+        label: L(['Planifier (missions du registre)', 'Plan (registry missions)', 'Planen (Missionen des Registers)', 'Planificar (misiones del registro)']),
         icon: 'clipboard',
         sortValue: r => r.slot.n,
         html: (v, r) => pickButton(r.slot, r.famille, true) || '—'
       }, {
         key: 'calcul',
-        label: 'Règle',
-        html: (v, r) => `<span class="odv-why" title="${esc([v, `Règle : ${r.regle}`, ...(r.rang === 1 ? r.slot.contexte : [])].join('\n'))}">${esc(r.regle)}</span>`
+        label: L(['Règle', 'Rule', 'Regel', 'Regla']),
+        html: (v, r) => `<span class="odv-why" title="${esc([C.say(v), L(['Règle : {r}', 'Rule: {r}', 'Regel: {r}', 'Regla: {r}'], { r: C.say(r.regle) }), ...(r.rang === 1 ? r.slot.contexte.map(C.say) : [])].join('\n'))}">${esc(C.say(r.regle))}</span>`
       }],
       defaultSortKey: 'ordre',
       onRowClick: r => select(`${r.slot.jourIndex}${r.slot.creneauIndex}`),
-      rowTitle: 'Cliquer pour le détail du créneau',
-      emptyText: `Aucun créneau avec au moins ${settings.minPilots} pilote(s).`,
+      rowTitle: L(['Cliquer pour le détail du créneau', 'Click for the slot details', 'Klicken für die Details des Zeitfensters', 'Haga clic para ver el detalle de la franja']),
+      emptyText: L(['Aucun créneau avec au moins {n} pilote(s).', 'No slot with at least {n} pilot(s).', 'Kein Zeitfenster mit mindestens {n} Pilot(en).', 'Ninguna franja con al menos {n} piloto(s).'], { n: settings.minPilots }),
       storageKey: 'sortedTableWidths:odvPlanning#missions'
     }, rows);
   }
@@ -1570,7 +1601,7 @@
     const data = basis;
     if (!data) {
       $('odvZones').innerHTML = '';
-      resetTable('odvFlights', '<p class="odv-empty">Chargez un classeur ODV.</p>');
+      resetTable('odvFlights', `<p class="odv-empty">${L(['Chargez un classeur ODV.', 'Load an ODV workbook.', 'ODV-Arbeitsmappe laden.', 'Cargue un libro ODV.'])}</p>`);
       resetTable('odvOthers', '<p class="odv-empty">—</p>');
       return;
     }
@@ -1579,50 +1610,51 @@
       j,
       list: data.zones.filter(z => z.jourIndex === j)
     })).filter(x => x.list.length);
-    $('odvZones').innerHTML = zones.length ? `<p class="mut" style="margin:0 0 4px">Zones à activer (frise) :</p><ul class="odv-notes" style="margin-bottom:10px">${zones.map(x => `<li><b>${esc(x.d)} ${esc(dateFr(data.dates[x.j]))}</b> : ${x.list.map(z => `${esc(z.heure)}z ${esc(z.texte)}`).join(' ; ')}</li>`).join('')}</ul>` : '';
+    $('odvZones').innerHTML = zones.length ? `<p class="mut" style="margin:0 0 4px">${L(['Zones à activer (frise) :', 'Zones to activate (timeline):', 'Zu aktivierende Zonen (Zeitleiste):', 'Zonas por activar (cronología):'])}</p><ul class="odv-notes" style="margin-bottom:10px">${zones.map(x => `<li>${L(['{d} : {l}', '{d}: {l}', '{d}: {l}', '{d}: {l}'], { d: `<b>${esc(wordL(x.d))} ${esc(dateFr(data.dates[x.j]))}</b>`, l: x.list.map(z => `${esc(z.heure)}z ${esc(z.texte)}`).join(' ; ') })}</li>`).join('')}</ul>` : '';
     const when = {
       key: 'ordre',
-      label: 'Jour',
+      label: L(['Jour', 'Day', 'Tag', 'Día']),
       type: 'number',
-      format: (v, r) => `${r.jour} ${dateFr(r.date)}`
+      format: (v, r) => `${wordL(r.jour)} ${dateFr(r.date)}`
     };
     table('odvFlights', {
       columns: [
         when, {
           key: 'debut',
-          label: 'Heures z',
+          label: L(['Heures z', 'Times z', 'Zeiten z', 'Horas z']),
           format: (v, r) => `${r.debut}–${r.fin}`
         }, {
           key: 'creneau',
-          label: 'Créneau'
+          label: L(['Créneau', 'Slot', 'Zeitfenster', 'Franja']),
+          format: v => String(v ?? '').split(' / ').map(wordL).join(' / ')
         }, {
           key: 'trajet',
-          label: 'Trajet'
+          label: L(['Trajet', 'Route', 'Strecke', 'Trayecto'])
         }, {
           key: 'appareil',
-          label: 'Appareil'
+          label: L(['Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'])
         }, {
           key: 'objet',
-          label: 'Objet',
+          label: L(['Objet', 'Purpose', 'Zweck', 'Objeto']),
           html: v => `<span class="odv-wrap">${esc(v)}</span>`
         }, {
           key: 'indicatif',
-          label: 'Indicatif'
+          label: L(['Indicatif', 'Callsign', 'Rufzeichen', 'Indicativo'])
         }, {
           key: 'equipage',
-          label: 'Équipage',
+          label: L(['Équipage', 'Crew', 'Besatzung', 'Tripulación']),
           sortValue: r => r.equipage.join(' '),
           html: v => v.length ? v.map(t => tri(t)).join(' ') : '<span class="odv-alert">?</span>'
         }, {
           key: 'mission',
-          label: 'Mission',
+          label: L(['Mission', 'Mission', 'Mission', 'Misión']),
           sortValue: r => r.slotKey,
-          html: (v, r) => r.slotKey ? `<button type="button" class="repo-plain ad-link" data-pick="${r.slotKey}">${(window.OdvAssign?.inSlot(+r.slotKey[0], +r.slotKey[1]) || []).some(a => a.role !== 'convoyage') ? 'Modifier…' : 'Planifier…'}</button>` : '—'
+          html: (v, r) => r.slotKey ? `<button type="button" class="repo-plain ad-link" data-pick="${r.slotKey}">${(window.OdvAssign?.inSlot(+r.slotKey[0], +r.slotKey[1]) || []).some(a => a.role !== 'convoyage') ? L(['Modifier…', 'Edit…', 'Ändern…', 'Modificar…']) : L(['Planifier…', 'Plan…', 'Planen…', 'Planificar…'])}</button>` : '—'
         }, {
           key: 'alertes',
-          label: 'Disponibilités',
+          label: L(['Disponibilités', 'Availability', 'Verfügbarkeit', 'Disponibilidad']),
           sortValue: r => r.alertes.length,
-          html: v => v.length ? `<span class="odv-wrap odv-alert">⚠ ${v.map(esc).join('<br>⚠ ')}</span>` : '<span class="odv-ok">✓</span>'
+          html: v => v.length ? `<span class="odv-wrap odv-alert">⚠ ${v.map(x => esc(C.say(x))).join('<br>⚠ ')}</span>` : '<span class="odv-ok">✓</span>'
         }
       ],
       defaultSortKey: 'ordre',
@@ -1639,24 +1671,24 @@
       columns: [
         when, {
           key: 'debut',
-          label: 'Heures z',
+          label: L(['Heures z', 'Times z', 'Zeiten z', 'Horas z']),
           format: (v, r) => `${r.debut}–${r.fin}`
         }, {
           key: 'couloir',
-          label: 'Couloir'
+          label: L(['Couloir', 'Lane', 'Spur', 'Carril'])
         }, {
           key: 'texte',
-          label: 'Élément',
+          label: L(['Élément', 'Item', 'Element', 'Elemento']),
           html: v => `<span class="odv-wrap">${esc(v)}</span>`
         }, {
           key: 'equipage',
-          label: 'Trigrammes',
+          label: L(['Trigrammes', 'Trigrams', 'Kürzel', 'Trigramas']),
           sortValue: r => r.equipage.join(' '),
           html: v => v.map(t => tri(t, null, false)).join(' ') || '—'
         }
       ],
       defaultSortKey: 'ordre',
-      emptyText: 'Aucun élément.',
+      emptyText: L(['Aucun élément.', 'No item.', 'Kein Element.', 'Ningún elemento.']),
       storageKey: 'sortedTableWidths:odvPlanning#others'
     }, data.frise.map(f => ({
       ...f,
@@ -1666,7 +1698,7 @@
 
   // ------------------------------------------------------------------ réglages : formulaire
   function fillSettings() {
-    $('odvHours').innerHTML = C.SLOT_LABELS.map((l, k) => `<span>${esc(l)}</span><input type="number" min="0" max="24" step="0.5" data-h="${k}0" value="${settings.hours[k][0]}"><span>à</span><input type="number" min="0" max="24" step="0.5" data-h="${k}1" value="${settings.hours[k][1]}"><span>z</span>`).join('');
+    $('odvHours').innerHTML = C.SLOT_LABELS.map((l, k) => `<span>${esc(capL(l))}</span><input type="number" min="0" max="24" step="0.5" data-h="${k}0" value="${settings.hours[k][0]}"><span>${L(['à', 'to', 'bis', 'a'])}</span><input type="number" min="0" max="24" step="0.5" data-h="${k}1" value="${settings.hours[k][1]}"><span>z</span>`).join('');
     $('odvDateSource').value = settings.dateSource;
     $('odvEmptyAs').value = settings.emptyAs;
     $('odvFlotteLevel').value = settings.flotteLevel;
@@ -1686,7 +1718,7 @@
       h[k][e] = Math.max(0, Math.min(24, +i.value || 0));
     });
     if (h.some(([a, b]) => b <= a)) {
-      notify('Créneau invalide : l’heure de fin doit suivre l’heure de début.', 'warn');
+      notify(L(['Créneau invalide : l’heure de fin doit suivre l’heure de début.', 'Invalid slot: the end time must follow the start time.', 'Ungültiges Zeitfenster: Die Endzeit muss nach der Startzeit liegen.', 'Franja no válida: la hora de fin debe seguir a la hora de inicio.']), 'warn');
       fillSettings();
       return;
     }
@@ -1728,7 +1760,7 @@
     $('odvPref').onchange = e => {
       const list = e.target.value.toUpperCase().split(/[\s,;]+/).filter(Boolean),
         bad = list.filter(f => !C.FAMILIES[f]);
-      if (bad.length) notify(`Familles inconnues ignorées : ${bad.join(', ')} (connues : ${Object.keys(C.FAMILIES).join(', ')}).`, 'warn');
+      if (bad.length) notify(L(['Familles inconnues ignorées : {b} (connues : {k}).', 'Unknown families ignored: {b} (known: {k}).', 'Unbekannte Familien ignoriert: {b} (bekannt: {k}).', 'Familias desconocidas ignoradas: {b} (conocidas: {k}).'], { b: bad.join(', '), k: Object.keys(C.FAMILIES).join(', ') }), 'warn');
       settings.preference = list.filter(f => C.FAMILIES[f]);
       if (!settings.preference.length) settings.preference = clone(C.DEFAULTS.preference);
       e.target.value = settings.preference.join(', ');
@@ -1739,7 +1771,7 @@
       saveSettings();
       fillSettings();
       rebuild();
-      notify('Réglages par défaut rétablis.', 'info');
+      notify(L(['Réglages par défaut rétablis.', 'Default settings restored.', 'Standardeinstellungen wiederhergestellt.', 'Ajustes por defecto restablecidos.']), 'info');
     };
   }
 
@@ -1807,10 +1839,10 @@
       if (!t) return;
       try {
         await navigator.clipboard.writeText(t);
-        notify('Récapitulatif copié dans le presse-papiers.', 'ok');
+        notify(L(['Récapitulatif copié dans le presse-papiers.', 'Summary copied to the clipboard.', 'Zusammenfassung in die Zwischenablage kopiert.', 'Resumen copiado en el portapapeles.']), 'ok');
       } catch {
         $('odvRecapText').select();
-        notify('Copie automatique refusée par le navigateur : texte sélectionné, Ctrl+C pour copier.', 'warn');
+        notify(L(['Copie automatique refusée par le navigateur : texte sélectionné, Ctrl+C pour copier.', 'Automatic copy refused by the browser: text selected, press Ctrl+C to copy.', 'Automatisches Kopieren vom Browser verweigert: Text markiert, Strg+C zum Kopieren.', 'Copia automática rechazada por el navegador: texto seleccionado, Ctrl+C para copiar.']), 'warn');
       }
     };
   }
@@ -1818,7 +1850,7 @@
   // ------------------------------------------------------------------ démarrage
   function start() {
     if (!C || !window.SortedTable) {
-      notify('Planning ODV : composants manquants (odv_core.js, mission_table.js).', 'err');
+      notify(L(['Planning ODV : composants manquants (odv_core.js, mission_table.js).', 'ODV planning: missing components (odv_core.js, mission_table.js).', 'ODV-Planung: fehlende Komponenten (odv_core.js, mission_table.js).', 'Planificación ODV: faltan componentes (odv_core.js, mission_table.js).']), 'err');
       return;
     }
     fillSettings();
@@ -1838,6 +1870,14 @@
       }); // choisi à la main : sa semaine affichée
     });
     $('odvClear').onclick = clearAll;
+    // langue changée : zones calculées redessinées dans la nouvelle langue (classeur gardé en mémoire, non relu) ;
+    // tableaux recréés (libellés des colonnes posés à leur création)
+    window.addEventListener('repository-language-change', () => setTimeout(() => {
+      Object.keys(tables).forEach(id => delete tables[id]);
+      fillSettings();
+      if (basis) compute();
+      render();
+    }));
     render();
     autoLoad();
   }

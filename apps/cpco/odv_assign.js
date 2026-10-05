@@ -10,6 +10,7 @@
   //   line(TRI, j, k, cellule), assign(entrée, [TRI…], début, note), write(entrée, lignes, décollage)
   const M = () => window.MissionAssignments;
   const esc = s => window.RepositoryKit.esc(s);
+  const L = (row, vals) => window.RepositoryKit.tf(row, vals); // phrase traduite, valeurs {clé} insérées (shared/kit.js)
   let D = null, // données ODV (dates, pilotes)
     S = null, // réglages (heures des créneaux)
     decl = {}, // TRI → déclaration (grille, appareils)
@@ -98,7 +99,7 @@
     const lines = list.filter(a => a.mission === line.mission && a.role !== 'convoyage');
     const parts = lines.map(a => Object.fromEntries(keys.filter(k => k in a).map(k => [k, a[k]])));
     const p = parts.find(x => x.pilot === line.for_pilot && x.aircraft?.registration === line.aircraft?.registration && x.ferry?.open);
-    if (!p) throw new Error(`convoyage de ${line.mission} introuvable dans ses affectations`);
+    if (!p) throw new Error(L(['convoyage de {m} introuvable dans ses affectations', 'ferry of {m} not found in its assignments', 'Überführung von {m} in ihren Zuweisungen nicht gefunden', 'traslado de {m} no encontrado en sus asignaciones'], { m: line.mission }));
     p.ferry = {
       ...p.ferry,
       pilot: tri,
@@ -143,9 +144,12 @@
         code: d.code,
         sens: d.label,
         categorie: M().LEGEND[d.code][1],
-        source: 'déclaration du pilote (Mes missions)'
-      }) : '<span class="odv-code c-inconnu" title="Pas de déclaration du pilote">·</span>';
-    const title = a.length ? `Affecté : ${a.map(x => `${x.mission}${x.role === 'convoyage' ? ' (convoyage)' : ''}`).join(', ')}` : isFree ? 'Disponible, non affecté : cliquer pour affecter une mission sur ce créneau' : 'Cliquer pour affecter une mission sur ce créneau';
+        source: L(['déclaration du pilote (Mes missions)', 'pilot declaration (My missions)', 'Angabe des Piloten (Meine Missionen)', 'declaración del piloto (Mis misiones)'])
+      }) : `<span class="odv-code c-inconnu" title="${esc(L(['Pas de déclaration du pilote', 'No pilot declaration', 'Keine Angabe des Piloten', 'Sin declaración del piloto']))}">·</span>`;
+    const ferry = L(['convoyage', 'ferry', 'Überführung', 'traslado']);
+    const title = a.length ? L(['Affecté : {m}', 'Assigned: {m}', 'Zugewiesen: {m}', 'Asignado: {m}'], {
+      m: a.map(x => `${x.mission}${x.role === 'convoyage' ? ` (${ferry})` : ''}`).join(', ')
+    }) : isFree ? L(['Disponible, non affecté : cliquer pour affecter une mission sur ce créneau', 'Available, not assigned: click to assign a mission on this slot', 'Verfügbar, nicht zugewiesen: klicken, um diesem Zeitfenster eine Mission zuzuweisen', 'Disponible, sin asignar: haga clic para asignar una misión en esta franja']) : L(['Cliquer pour affecter une mission sur ce créneau', 'Click to assign a mission on this slot', 'Klicken, um diesem Zeitfenster eine Mission zuzuweisen', 'Haga clic para asignar una misión en esta franja']);
     return `<span class="odv-decl${isFree ? ' odv-free' : ''}" data-odv-slot="${j}${k}" data-tri="${esc(tri)}" title="${esc(title)}">${decl}${a.length ? `<b class="odv-asg">${esc(a[0].mission)}${a.length > 1 ? '+' : ''}</b>` : ''}</span>`;
   }
   /** Yaml d'une mission du registre (fetch) ; {} si illisible. */
@@ -163,7 +167,7 @@
   /** Ouvre le dialogue d'affectation pour une mission du registre, pilotes et heure préremplis (sans pilotes : son
    *  affectation enregistrée, à modifier) ; rend la fenêtre, qui émet « reloaded » une fois les affectations relues. */
   async function assign(m, pilots, takeoff, note = '') {
-    if (!window.AssignDialog) throw new Error('Dialogue d’affectation absent');
+    if (!window.AssignDialog) throw new Error(L(['Dialogue d’affectation absent', 'Assignment dialog missing', 'Zuweisungsdialog fehlt', 'Falta el diálogo de asignación']));
     const y = await yamlOf(m);
     const dlg = await window.AssignDialog.open(m, y, {
       maps: m.images || [],

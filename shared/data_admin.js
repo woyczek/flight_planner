@@ -31,9 +31,18 @@
   const rows = [];
   // allemand et espagnol : table DataAdminI18n (shared/data_admin_i18n.js), repérée par le texte français ; sinon anglais
   /** Texte source (français) d'un libellé de la page ; enregistre sa ligne de traduction [fr, en, de, es] pour le traducteur commun (de / es tirés de DataAdminI18n par le texte français, anglais à défaut). Retourne fr : la traduction se fait à l'affichage. */
+  // lignes déjà données au traducteur commun (une fois chacune) ; celles qui n'apparaissent qu'après le premier affichage
+  // (sections ouvertes ensuite : « Enregistrer », « entrées »…) lui sont données par lot, sinon elles restaient en français
+  const seen = new Set(),
+    pending = [];
+  let registered = false;
   const T = (fr, en) => {
-    const x = window.DataAdminI18n?.[fr];
-    rows.push([fr, en, x?.[0] || en, x?.[1] || en]);
+    if (seen.has(fr)) return fr;
+    seen.add(fr);
+    const x = window.DataAdminI18n?.[fr],
+      row = [fr, en, x?.[0] || en, x?.[1] || en];
+    rows.push(row);
+    if (registered && pending.push(row) === 1) queueMicrotask(() => window.RepositoryContentI18n?.(pending.splice(0)));
     return fr;
   };
   // sous-titre de la page Paramètres (« DEFA Virtual — … » : la couche de traduction traduit la partie après le tiret)
@@ -985,7 +994,9 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         })) : Object.values(raw).map(r => ({
           ...r
         }));
-      status(`${list.length} ${T('entrées', 'entries')}`);
+      status(window.RepositoryKit.tf(['{n} entrées', '{n} entries', '{n} Einträge', '{n} entradas'], {
+        n: list.length
+      }));
       grid(body, {
         columns: set.columns,
         data: list,
@@ -1429,6 +1440,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
 
     show();
     window.RepositoryContentI18n?.(rows);
+    registered = true;
   }
 
   window.DataAdmin = {
