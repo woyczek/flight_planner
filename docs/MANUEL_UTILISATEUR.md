@@ -525,7 +525,7 @@ s'ouvre directement dans la bonne famille, déjà rempli.
 
 Ce qui est repris : nom de l'exercice / opération (titre de la mission), identifiant de la mission (champ
 « Mission »), objectif et instructions (bloc Tâche), terrains de départ et d'arrivée, points tournants et
-coordonnées, zone, appareils (type OACI, indicatif), organisme, et un rappel de la mission et de la charge
+coordonnées, zone, appareils (type OACI, immatriculation, indicatif), organisme, et un rappel de la mission et de la charge
 dans les Remarques. Les aides habituelles s'appliquent ensuite (appareil connu, terrain, météo).
 
 - La famille est déduite du type de mission (MEDEVAC → HEMS, TRAINING → SPECIAL…).
@@ -1203,7 +1203,7 @@ La page n'affiche pas de bloc « Mission » : la mission arrive toute seule depu
 4. Réglez au besoin chaque carte, puis générez le ZIP dans « Aperçus et génération ».
 
 Le pied de page indique le nombre de cartes du ZIP (« … carte(s) dans le ZIP + carte d'assemblage »), ou « Aucune mission chargée ».
-Limite : « Créer les cartes », et « Tracer » ou « Carburant » avant toute création, fabriquent une mission « Vol départ → destination » à partir du cheminement. Elle remplace la mission reçue dans la page. Générez donc d'abord les cartes de la mission reçue.
+Mission reçue : « Tracer » et « Carburant » travaillent sur la mission chargée sans la remplacer. « Créer les cartes » demande confirmation avant de la remplacer par un vol libre « Vol départ → destination » construit à partir du cheminement ; sans mission chargée, les cartes sont créées directement.
 
 ### Cheminement
 
@@ -1444,8 +1444,8 @@ Le dernier fichier chargé est gardé et rechargé à l'ouverture. Ses appareils
 
 ### Chargement du fichier
 
-1. Cliquez sur « Choisir un fichier » (« Fichier de données ») ou sur ☰ › « Choisir les fichiers CSV / LOG ». Vous pouvez aussi déposer le fichier sur la page.
-2. Choisissez un fichier CSV ou LOG. Un seul fichier est lu à la fois : il remplace le précédent.
+1. Cliquez sur « Choisir un fichier » (« Fichier de données ») ou sur ☰ › « Choisir les fichiers CSV / LOG ». Vous pouvez aussi déposer les fichiers sur la page.
+2. Choisissez un ou plusieurs fichiers CSV ou LOG (ou déposez-les ensemble) : ils sont réunis en un seul jeu de données, nommé « premier.csv + n » ; les colonnes sont associées par leur nom, et un atterrissage présent dans deux fichiers n'est compté qu'une fois.
 3. La page indique le format reconnu : « Format riche détecté » (score, FPM, G, vitesse sol…) ou « Format historique allégé détecté » (progression estimée sans score ni G final).
 
 Avant tout fichier, la page affiche « Choisis ou dépose un fichier CSV ou LOG. »
