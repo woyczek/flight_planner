@@ -134,6 +134,8 @@
       if (inputs[name].value !== before[name]) propagate(name, inputs[name].value, before[name]);
     });
   });
+  // profil enregistré par une page de la suite (Paramètres › Mon profil) : champs du menu relus
+  window.addEventListener('pilot-profile-change', () => setTimeout(refresh));
   window.addEventListener('repository-language-change', translate);
   translate();
   refresh();

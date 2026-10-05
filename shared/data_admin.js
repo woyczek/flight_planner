@@ -832,7 +832,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       intro: T('Équivalences mémorisées par « Fusionner avec… / renommer » des fiches : appliquées au journal DEFA rechargé, à la référence et au catalogue. Une boucle (A → B et B → A) échange les deux noms : supprime l’entrée fautive, puis refais la fusion depuis la fiche.', 'Equivalences stored by the sheets’ “Merge with… / rename”: applied to the reloaded DEFA log, the reference and the catalogue. A loop (A → B and B → A) swaps both names: delete the wrong entry, then redo the merge from the sheet.')
     }, {
       id: 'send',
-      group: T('Missions', 'Missions'),
+      group: T('Centre (CPCO)', 'Centre (CPCO)'),
       title: T('Envoi des comptes rendus (webservice)', 'Report sending (web service)'),
       custom: true,
       intro: T('Bouton « Envoyer le CR » des pages de saisie : POST JSON (mission, CR HTML et texte, calculs) vers l’adresse ci-dessous. La clef reste dans ce navigateur (missionSendKey:v1), hors sauvegarde locale. Le service doit accepter les appels de cette origine (CORS).', '“Send report” button of the entry pages: JSON POST (mission, report HTML and text, calculations) to the address below. The key stays in this browser (missionSendKey:v1), outside the local backup. The service must accept calls from this origin (CORS).')
@@ -865,11 +865,28 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     const status = text => {
       root.querySelector('.da-status').textContent = text;
     };
+    // Paramètres en quatre pages (main[data-settings] : profile, centre, installation, maintenance) : rubriques de la
+    // page seulement (REPOSITORY_TREE.settings.sections), dans l'ordre de cette table ; rubriques ajoutées par
+    // shared/settings_panels.js (window.SettingsPanels : { id, group, title, intro, render(body, api) }). Sans
+    // data-settings : toutes les rubriques (ancienne page unique).
+    const page = root.dataset.settings || '',
+      sections = window.REPOSITORY_TREE?.settings?.sections || {},
+      order = Object.keys(sections);
+    const SETS = [...DATASETS, ...(window.SettingsPanels?.list || [])].filter(d => !page || sections[d.id] === page)
+      .sort((a, b) => page ? order.indexOf(a.id) - order.indexOf(b.id) : 0);
+    // page Centre : rubriques réservées tant que le Centre est verrouillé (seul l'accès reste)
+    const locked = d => sections[d.id] === 'centre' && d.id !== 'cpco' && !window.RepositoryNav?.cpco?.enabled?.();
+    const wanted = new URLSearchParams(location.search).get('base');
+    // rubrique d'une autre page (ancien lien, lien interne) : ouverte sur sa page
+    if (page && wanted && sections[wanted] && sections[wanted] !== page && window.RepositoryNav?.settingsUrl) {
+      location.replace(window.RepositoryNav.settingsUrl(wanted));
+      return;
+    }
     const current = {
-      id: new URLSearchParams(location.search).get('base') || 'fleet'
+      id: SETS.some(d => d.id === wanted) ? wanted : SETS[0]?.id || 'fleet'
     };
-    const groups = [...new Set(DATASETS.map(d => d.group))];
-    root.innerHTML = `<aside class="da-nav">${groups.map(g => `<h3>${esc(g)}</h3>${DATASETS.filter(d => d.group === g).map(d => `<button type="button" data-set="${d.id}">${esc(d.title)}</button>`).join('')}`).join('')}</aside>
+    const groups = [...new Set(SETS.map(d => d.group))];
+    root.innerHTML = `<aside class="da-nav">${groups.map(g => `<h3>${esc(g)}</h3>${SETS.filter(d => d.group === g).map(d => `<button type="button" data-set="${d.id}">${esc(d.title)}</button>`).join('')}`).join('')}</aside>
       <section class="da-main" data-icon="database"><h2></h2><p class="small da-intro"></p><div class="row da-actions"></div><p class="small da-status"></p><div class="da-body"></div><details class="da-howto"><summary>${esc(T('Mode opératoire', 'Procedure'))}</summary><div></div></details></section>`;
     // Dossiers mémorisés et sources externes : réglés dans Paramètres › Maintenance (bloc « Sources et dossiers »).
     root.querySelectorAll('[data-set]').forEach(b => b.onclick = async () => {
@@ -913,8 +930,28 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     }
 
     /** Affiche la base choisie : titre, présentation, mode d'emploi, éditeur (tableaux ou panneau dédié : envoi, journal DEFA, fusions, registres). */
+    /** Rubriques réservées au Centre masquées tant qu'il est verrouillé (titres de groupe vides compris). */
+    function lockNav() {
+      root.querySelectorAll('.da-nav [data-set]').forEach(b => {
+        b.hidden = locked(SETS.find(d => d.id === b.dataset.set) || {});
+      });
+      root.querySelectorAll('.da-nav h3').forEach(h => {
+        let n = h.nextElementSibling,
+          any = false;
+        for (; n && n.matches('[data-set]'); n = n.nextElementSibling) any ||= !n.hidden;
+        h.hidden = !any;
+      });
+    }
+    window.addEventListener('cpco-access-change', () => {
+      lockNav();
+      if (locked(SETS.find(d => d.id === current.id) || {})) current.id = 'cpco';
+      if (!root.querySelector('.da-main').hidden) show();
+    });
     function show() {
-      const set = DATASETS.find(d => d.id === current.id) || DATASETS[0];
+      let set = SETS.find(d => d.id === current.id) || SETS[0];
+      if (locked(set)) set = SETS.find(d => d.id === 'cpco') || set;
+      current.id = set.id;
+      lockNav();
       // rubrique Maintenance (maintenance_page.js) : ses blocs se masquent quand une base est affichée
       root.querySelector('.da-main').hidden = false;
       window.dispatchEvent(new CustomEvent('data-admin-show', {
@@ -930,6 +967,21 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       howto.querySelector('div').innerHTML = set.howto || '';
       const body = root.querySelector('.da-body');
       body.innerHTML = '';
+      // rubrique de shared/settings_panels.js : sa propre interface, avec les outils de la page
+      if (set.render) return set.render(body, {
+        status,
+        actions,
+        changed,
+        saved: () => {
+          dirty = false;
+        },
+        show,
+        open: id => {
+          current.id = id;
+          history.replaceState(null, '', `?base=${id}`);
+          show();
+        }
+      });
       if (set.custom) return set.id === 'cpco' ? cpcoSettings(body) : set.id === 'planner' ? plannerSettings(body) : set.id === 'send' ? sendSettings(body) : set.id === 'defaLog' ? defaLog(body) : set.id === 'merges' ? merges(body) : ledgers(body);
       if (set.file) {
         const w = work[set.id];

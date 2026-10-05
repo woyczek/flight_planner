@@ -2,7 +2,7 @@
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Premier lancement</title>
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=9e05640b"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=7e4ed0f1">
-<script src="../../config/repository_tree?v=5e4a8cb2"></script>
+<script src="../../config/repository_tree?v=a9735c6a"></script>
 <style>
   main.pl-page {
     max-width: 980px;
@@ -114,8 +114,7 @@
 </head><body>
 <!-- Premier lancement : page ouverte par le lanceur (lancer.cmd / lancer.sh → tools/launch.py). Quatre étapes :
      données (identifiants framagit → clone par le serveur du lanceur, ou archive reçue par mail ; journal DEFA en
-     option → référence DEFA), profil (trigramme, IVAO, VATSIM, SimBrief ; identifiants DEFA gardés dans ce navigateur,
-     hors sauvegardes), dossiers (dossier de l'application : tous les dossiers déduits ; classeur ODV : dossier OneDrive
+     option → référence DEFA), profil (trigramme, IVAO, VATSIM, SimBrief ; identifiants DEFA : Paramètres › Mon profil), dossiers (dossier de l'application : tous les dossiers déduits ; classeur ODV : dossier OneDrive
      ou, à défaut, le fichier Excel gardé dans le navigateur), puis la mise à jour SIA. Les étapes « données » passent par
      l'interface locale du lanceur (/__setup/…) ; sans lanceur, la page le dit. Une fois terminé (suiteSetup:v1), le
      lanceur renvoie vers l'accueil. -->
@@ -148,7 +147,7 @@
   </section>
 
   <section id="plProfile"><h2><span class="pl-n">2</span>Profil</h2>
-    <p class="pl-hint">Repris par toutes les pages (☰ › Profil pilote). Les identifiants DEFA restent dans ce navigateur et ne sont jamais écrits dans une sauvegarde.</p>
+    <p class="pl-hint">Repris par toutes les pages (☰ › Profil pilote). Les identifiants du site DEFA, le mot de passe et les préférences se règlent ensuite dans <a href="profil.html">Paramètres › Mon profil</a>.</p>
     <div class="pl-grid">
       <div class="pl-card"><h3>Pilote</h3>
         <div class="pl-form">
@@ -156,12 +155,6 @@
           <label for="plIvao">ID IVAO (VID)</label><input type="text" id="plIvao" inputmode="numeric">
           <label for="plVatsim">ID VATSIM (CID)</label><input type="text" id="plVatsim" inputmode="numeric">
           <label for="plSimbrief">SimBrief</label><input type="text" id="plSimbrief" spellcheck="false">
-        </div>
-      </div>
-      <div class="pl-card"><h3>Site DEFA</h3>
-        <div class="pl-form">
-          <label for="plDefaLogin">Identifiant</label><input type="text" id="plDefaLogin" autocomplete="off" spellcheck="false">
-          <label for="plDefaPass">Mot de passe</label><input type="password" id="plDefaPass" autocomplete="off">
         </div>
       </div>
     </div>
@@ -201,8 +194,8 @@
   </section>
 </main>
 <script src="../../shared/kit.js?v=65a16a49"></script>
-<script src="../../shared/repository_nav.js?v=a0c82dfb"></script>
-<script src="../../shared/content_i18n.js?v=7afecb78"></script><script src="premier_lancement_i18n.js?v=57246529"></script>
+<script src="../../shared/repository_nav.js?v=deb06dd6"></script>
+<script src="../../shared/content_i18n.js?v=7afecb78"></script><script src="premier_lancement_i18n.js?v=70e328e2"></script>
 <script src="../../shared/app_framework.js?v=a2972a9a"></script>
 <script>
 (() => {
@@ -315,14 +308,11 @@
 
   // 2. profil
   function profileLoad() {
-    const p = read(PROFILE),
-      d = read(DEFA);
+    const p = read(PROFILE);
     $('plTri').value = p.trigram || '';
     $('plIvao').value = p.ivaoId || '';
     $('plVatsim').value = p.vatsimId || '';
     $('plSimbrief').value = p.simbriefUser || '';
-    $('plDefaLogin').value = d.login || '';
-    $('plDefaPass').value = d.password || '';
     done('plProfile', p.trigram);
   }
   on('click', 'plSaveProfile', () => {
@@ -334,13 +324,6 @@
       simbriefUser: $('plSimbrief').value.trim()
     });
     localStorage.setItem(PROFILE, JSON.stringify(p));
-    const login = $('plDefaLogin').value.trim(),
-      password = $('plDefaPass').value;
-    if (login || password) localStorage.setItem(DEFA, JSON.stringify({
-      login,
-      password
-    }));
-    else localStorage.removeItem(DEFA);
     msg('plProfileMsg', 'Profil enregistré.', 'ok');
     done('plProfile', p.trigram);
   });
@@ -381,7 +364,7 @@
     localStorage.setItem(DONE, JSON.stringify({
       at: new Date().toISOString()
     }));
-    location.href = 'parametrage.html?m=sia';
+    location.href = 'maintenance.html?m=sia';
   });
 
   // recommencer : réglages de ce navigateur effacés (fichiers sur le disque intacts), page rechargée

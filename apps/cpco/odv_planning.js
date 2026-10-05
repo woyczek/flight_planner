@@ -1467,7 +1467,7 @@
         try {
           await M.missionsDir();
         } catch (err) {
-          msg.innerHTML = `<span class="err">${L(['{e} — l’autoriser dans Paramètres › Maintenance › Sources et dossiers.', '{e} — allow it in Settings › Maintenance › Sources and folders.', '{e} — in Einstellungen › Wartung › Quellen und Ordner erlauben.', '{e} — autorícelo en Ajustes › Mantenimiento › Fuentes y carpetas.'], { e: esc(err.message) })}</span>`;
+          msg.innerHTML = `<span class="err">${L(['{e} — l’autoriser dans Paramètres › Installation › Sources et dossiers.', '{e} — allow it in Settings › Installation › Sources and folders.', '{e} — in Einstellungen › Installation › Quellen und Ordner erlauben.', '{e} — autorícelo en Ajustes › Instalación › Fuentes y carpetas.'], { e: esc(err.message) })}</span>`;
           return;
         }
         const ok = [],

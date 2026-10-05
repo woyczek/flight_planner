@@ -211,6 +211,12 @@
     title: ['Journal des sauvegardes et rechargements', 'Backup and reload journal', 'Protokoll der Sicherungen und Wiederherstellungen', 'Registro de copias y recargas'],
     sub: ['Chaque sauvegarde, restauration ou rechargement : date, origine, ce qui a changé', 'Every backup, restore or reload: date, origin, what changed', 'Jede Sicherung oder Wiederherstellung: Datum, Herkunft, Änderungen', 'Cada copia o recarga: fecha, origen, qué cambió']
   }];
+  // Paramètres en quatre pages (main[data-settings]) : blocs de la page seulement dans le menu (REPOSITORY_TREE.settings
+  // .sections : « Sources et dossiers » sur Installation, les autres sur Maintenance) ; un bloc d'une autre page s'ouvre
+  // sur sa page. Sans data-settings (page autonome, ancienne page unique) : tous les blocs.
+  const PAGE = embedded ? main.dataset.settings || '' : '',
+    SECTIONS = window.REPOSITORY_TREE?.settings?.sections || {};
+  const onPage = id => !PAGE || !SECTIONS[id] || SECTIONS[id] === PAGE;
   const hosts = {};
   for (const b of BLOCKS) {
     const s = document.createElement('section');
@@ -249,7 +255,7 @@
 
   function navLabels() {
     if (!navHost) return;
-    navHost.querySelector('h3').textContent = t(['Maintenance', 'Maintenance', 'Wartung', 'Mantenimiento']);
+    navHost.querySelector('h3').textContent = PAGE === 'installation' ? t(['Dossiers et sources', 'Folders and sources', 'Ordner und Quellen', 'Carpetas y fuentes']) : t(['Maintenance', 'Maintenance', 'Wartung', 'Mantenimiento']);
     navHost.querySelectorAll('[data-mt]').forEach(b => {
       b.textContent = t(NAV[b.dataset.mt]);
     });
@@ -273,6 +279,7 @@
   });
 
   function showBlock(id) {
+    if (embedded && NAV[id] && !onPage(id) && window.RepositoryNav?.settingsUrl) return location.assign(window.RepositoryNav.settingsUrl(id));
     if (!embedded || !document.getElementById(id) || cpcoLocked(id)) return;
     main.querySelector('.da-main')?.setAttribute('hidden', '');
     BLOCKS.forEach(b => {
@@ -291,8 +298,9 @@
     if (nav) {
       navHost = document.createElement('div');
       navHost.className = 'da-mt-nav';
-      navHost.innerHTML = `<h3></h3>${BLOCKS.map(b => `<button type="button" data-mt="${b.id}"></button>`).join('')}`;
-      nav.append(navHost);
+      navHost.innerHTML = `<h3></h3>${BLOCKS.filter(b => onPage(b.id)).map(b => `<button type="button" data-mt="${b.id}"></button>`).join('')}`;
+      if (PAGE === 'maintenance') nav.prepend(navHost); // page Maintenance : les blocs d'abord, les fichiers de référence ensuite
+      else nav.append(navHost);
       navHost.querySelectorAll('[data-mt]').forEach(b => b.onclick = () => showBlock(b.dataset.mt));
       cpcoNav();
     }
@@ -2279,12 +2287,16 @@
         ['Journal', renderJournal, hosts.journal],
         ['Caches', renderCaches, hosts.caches],
         ['Espace disque', renderStorage, hosts.storage]
-      ]) guard(what, fn, host);
-    await guard('Versions et synchronisation', renderVersions, hosts.versions);
-    await guard('Références et dépendances', renderDeps, hosts.deps);
+      ]) {
+      if (!onPage(Object.keys(hosts).find(k => hosts[k] === host))) continue; // bloc d'une autre page de Paramètres
+      guard(what, fn, host);
+    }
+    if (onPage('versions')) await guard('Versions et synchronisation', renderVersions, hosts.versions);
+    if (onPage('deps')) await guard('Références et dépendances', renderDeps, hosts.deps);
     const want = new URLSearchParams(location.search).get('m') || location.hash.slice(1);
     if (embedded) {
       if (NAV[want]) showBlock(want);
+      else if (PAGE === 'maintenance' && !new URLSearchParams(location.search).get('base')) showBlock('updates');
     } else {
       const target = want && document.getElementById(want);
       if (target) setTimeout(() => target.scrollIntoView({

@@ -136,7 +136,7 @@ window.REPOSITORY_TREE={
     {icon:"calendar",path:"apps/cpco/odv_planning.html",label:["ODV","ODV","ODV","ODV"],title:["Planning ODV (Centre) : créneaux communs, missions probables","ODV planning (Centre): common slots, likely missions","ODV-Planung (Zentrum): gemeinsame Zeitfenster, wahrscheinliche Missionen","Planificación ODV (Centro): franjas comunes, misiones probables"]},
     {sep:true,bottom:true},
     {icon:"palette",path:"apps/settings/apparence.html",label:["Apparence","Appearance","Darstellung","Apariencia"]},
-    {icon:"settings",path:"apps/settings/parametrage.html",match:"apps/settings/",label:["Paramètres","Settings","Einstellungen","Ajustes"],title:["Paramètres : mon profil, Centre, installation, maintenance","Settings: my profile, Centre, installation, maintenance","Einstellungen: mein Profil, Zentrum, Installation, Wartung","Ajustes: mi perfil, Centro, instalación, mantenimiento"]},
+    {icon:"settings",path:"apps/settings/profil.html",match:"apps/settings/",label:["Paramètres","Settings","Einstellungen","Ajustes"],title:["Paramètres : mon profil, Centre, installation, maintenance","Settings: my profile, Centre, installation, maintenance","Einstellungen: mein Profil, Zentrum, Installation, Wartung","Ajustes: mi perfil, Centro, instalación, mantenimiento"]},
     {icon:"help",menu:true,label:["Menu","Menu","Menü","Menú"],title:["Toutes les pages, profil, données locales, design","All pages, profile, local data, design","Alle Seiten, Profil, lokale Daten, Design","Todas las páginas, perfil, datos locales, diseño"]}
   ],
   // Onglets en tête de page (shared/repository_nav.js) : pages sœurs d'un même bouton de la barre latérale. Clic : événement
@@ -145,8 +145,27 @@ window.REPOSITORY_TREE={
   tabs:[
     {id:"missions",pages:[
       {path:"apps/cpco/mission_editor.html",label:["Générateur de mission","Mission generator","Missionsgenerator","Generador de misiones"]},
-      {path:"apps/cpco/map_parser.html",label:["Studio cartographique","Map studio","Kartenstudio","Estudio cartográfico"]}]}
+      {path:"apps/cpco/map_parser.html",label:["Studio cartographique","Map studio","Kartenstudio","Estudio cartográfico"]}]},
+    {id:"settings",pages:[
+      {path:"apps/settings/profil.html",label:["Mon profil","My profile","Mein Profil","Mi perfil"]},
+      {path:"apps/settings/centre.html",label:["Centre","Centre","Zentrum","Centro"]},
+      {path:"apps/settings/installation.html",label:["Installation","Installation","Installation","Instalación"]},
+      {path:"apps/settings/maintenance.html",label:["Maintenance","Maintenance","Wartung","Mantenimiento"]}]}
   ],
+  // Paramètres en quatre pages (docs/DISPOS_ET_REORGANISATION.md § 2) : rubrique (?base=<id> de shared/data_admin.js et
+  // shared/settings_panels.js, ?m=<id> de shared/maintenance_page.js) → page. Les anciennes adresses
+  // (parametrage.html?base=…, ?m=…, maintenance.html#…) y renvoient ; RepositoryNav.settingsUrl(rubrique) en donne l'adresse.
+  settings:{
+    pages:{profile:"apps/settings/profil.html",centre:"apps/settings/centre.html",installation:"apps/settings/installation.html",maintenance:"apps/settings/maintenance.html"},
+    sections:{
+      identity:"profile",account:"profile",themes:"profile",equipment:"profile",planner:"profile",
+      cpco:"centre",users:"centre",dispoCategories:"centre",send:"centre",
+      setup:"installation",sources:"installation",
+      fleet:"maintenance",aircraftDb:"maintenance",callsigns:"maintenance",defaReference:"maintenance",defaLog:"maintenance",merges:"maintenance",ledgers:"maintenance",
+      registry:"maintenance",localTypes:"maintenance",learned:"maintenance",airports:"maintenance",
+      updates:"maintenance",versions:"maintenance",deps:"maintenance",sia:"maintenance",caches:"maintenance",storage:"maintenance",backup:"maintenance",journal:"maintenance"
+    }
+  },
   pages:[
     {path:"apps/cr/FIRE/fire_cr.html",menu:false,label:"FIRE / GAAR — Compte rendu de mission"},
     {path:"apps/cr/FIRE/fire_reporting.html",menu:false,label:"FIRE / GAAR — Reporting missions"},
@@ -186,10 +205,13 @@ window.REPOSITORY_TREE={
     {path:"apps/cr/mission_operations_reporting.html",menu:"Reporting missions",label:"Reporting missions — CR DEFA",theme:"landing",favicon:"assets/favicon-landing.svg",files:{gaarLedgerName:"FIRE/mission_ledger.csv",ledgerName:"HEMS/hems_mission_ledger.csv"}},
     {path:"apps/cr/appareil.html",menu:false,label:"Fiche appareil",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/cr/equipage.html",menu:false,label:"Fiche équipage",theme:"core",favicon:"assets/favicon-flight.svg"},
-    {path:"apps/settings/parametrage.html",menu:false,slot:"settings",label:"Paramètres — bases de données et maintenance",theme:"core",favicon:"assets/favicon-flight.svg"},
+    {path:"apps/settings/parametrage.html",menu:false,label:"Paramètres",theme:"core",favicon:"assets/favicon-flight.svg"},
+    {path:"apps/settings/profil.html",menu:false,slot:"settings",label:"Mon profil",theme:"core",favicon:"assets/favicon-flight.svg"},
+    {path:"apps/settings/centre.html",menu:false,slot:"settings",label:"Paramètres — Centre",theme:"core",favicon:"assets/favicon-flight.svg"},
+    {path:"apps/settings/installation.html",menu:false,slot:"settings",label:"Paramètres — Installation",theme:"core",favicon:"assets/favicon-flight.svg"},
+    {path:"apps/settings/maintenance.html",menu:false,slot:"settings",label:"Paramètres — Maintenance",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/settings/apparence.html",menu:false,slot:"settings",label:"Apparence",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/settings/premier_lancement.html",menu:false,slot:"settings",label:"Premier lancement",theme:"core",favicon:"assets/favicon-flight.svg"},
-    {path:"apps/settings/maintenance.html",menu:false,slot:"settings",label:"Maintenance",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html",menu:"Landing Performance Dashboard",label:"Landing Performance Dashboard"},
     {path:"apps/cpco/mission_editor.html",menu:"Centre — Générateur de mission",label:"Générateur de mission — Centre de planification et de conduite des opérations"},
     {path:"apps/cpco/map_parser.html",menu:"Centre — Studio cartographique",label:"Studio cartographique — Centre de planification et de conduite des opérations"},
@@ -213,6 +235,11 @@ window.REPOSITORY_TREE={
     "Centre — Planning ODV":["Centre — Planning ODV","Centre — ODV planning","Zentrum — ODV-Planung","Centro — Planificación ODV"],
     "Apparence":["Apparence","Appearance","Darstellung","Apariencia"],
     "Paramètres":["Paramètres","Settings","Einstellungen","Ajustes"],
+    "Mon profil":["Mon profil","My profile","Mein Profil","Mi perfil"],
+    "Premier lancement":["Premier lancement","First run","Erststart","Primer arranque"],
+    "Paramètres — Centre":["Paramètres — Centre","Settings — Centre","Einstellungen — Zentrum","Ajustes — Centro"],
+    "Paramètres — Installation":["Paramètres — Installation","Settings — Installation","Einstellungen — Installation","Ajustes — Instalación"],
+    "Paramètres — Maintenance":["Paramètres — Maintenance","Settings — Maintenance","Einstellungen — Wartung","Ajustes — Mantenimiento"],
     "Apparence…":["Apparence (design, icônes, couleurs)…","Appearance (design, icons, colours)…","Darstellung (Design, Symbole, Farben)…","Apariencia (diseño, iconos, colores)…"]
   }
 };

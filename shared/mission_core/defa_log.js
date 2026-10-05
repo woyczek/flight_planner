@@ -479,7 +479,7 @@
     done: ['{n} vols lus, {a} nouveaux — journal : {t} vols ({d1} → {d2})', '{n} flights read, {a} new — log: {t} flights ({d1} → {d2})', '{n} Flüge gelesen, {a} neu — Journal: {t} Flüge ({d1} → {d2})', '{n} vuelos leídos, {a} nuevos — diario: {t} vuelos ({d1} → {d2})'],
     none: ['Aucun vol reconnu dans ce texte.', 'No flight recognised in this text.', 'Kein Flug erkannt.', 'Ningún vuelo reconocido.']
   };
-  // page « Log des vols » du site DEFA (adresse réglable : Paramètres › Maintenance › Sources et dossiers)
+  // page « Log des vols » du site DEFA (adresse réglable : Paramètres › Installation › Sources et dossiers)
   const defaUrl = () => window.RepositoryNav?.source?.('defa') || 'https://flotte.defa-virtual.fr';
   const LOG_URL = window.RepositoryNav?.vaUrl?.('log') || defaUrl() + '/log_vols.php'; // page du log de la compagnie virtuelle
 

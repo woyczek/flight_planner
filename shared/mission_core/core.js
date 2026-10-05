@@ -272,7 +272,7 @@
       tools.querySelector(`[data-menu="${k}"]`).textContent = t(key);
     });
     /** Lien vers Paramétrage (base donnée ouverte). */
-    const settingsUrl = base => new URL(`parametrage.html${base ? `?base=${base}` : ''}`, window.MissionLedger.APP).href;
+    const settingsUrl = base => window.RepositoryNav?.settingsUrl?.(base) || new URL(`parametrage.html${base ? `?base=${base}` : ''}`, window.MissionLedger.APP).href;
     $a('sendSettings').textContent = t('sendSettings');
     $a('sendSettings').href = settingsUrl('send');
     $a('settings').textContent = t('settingsPage');

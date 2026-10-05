@@ -1,0 +1,288 @@
+/* Pages de Paramètres (apps/settings : profil, centre, installation, maintenance) : menu des rubriques à gauche, rubrique
+   à droite (shared/data_admin.js, shared/maintenance_page.js, shared/settings_panels.js). */
+@layer app {
+  main.da-page {
+    max-width: 1500px;
+    margin: 20px auto;
+    padding: 0 16px 40px;
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 18px;
+    align-items: start
+  }
+  .da-nav,
+  .da-main {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px
+  }
+  .da-nav {
+    position: sticky;
+    top: 60px
+  }
+  .da-nav h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--muted);
+    margin: 12px 0 6px
+  }
+  .da-nav button[data-set] {
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: 0;
+    background: transparent;
+    padding: 7px 9px;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--ink)
+  }
+  .da-nav button[data-set]:hover {
+    background: var(--soft)
+  }
+  .da-nav button[data-set].active {
+    background: var(--accent);
+    color: #fff
+  }
+  .da-main h2 {
+    font-size: 17px;
+    margin: 0 0 6px
+  }
+  .da-main h3 {
+    font-size: 14px;
+    margin: 16px 0 6px
+  }
+  .da-main button,
+  .da-nav .da-repo {
+    border: 0;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer
+  }
+  .da-main .primary {
+    background: var(--accent);
+    color: #fff
+  }
+  .da-main .secondary,
+  .da-nav .da-repo {
+    background: #e5e7eb;
+    color: var(--ink)
+  }
+  .da-main .row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center
+  }
+  .da-actions {
+    margin: 8px 0
+  }
+  .da-grid-tools {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin: 6px 0
+  }
+  .da-grid-tools input {
+    padding: 7px 9px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font: inherit;
+    min-width: 220px
+  }
+  .da-scroll {
+    max-height: 62vh;
+    overflow: auto;
+    border: 1px solid var(--line);
+    border-radius: 10px
+  }
+  .da-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 10px;
+    max-width: 900px
+  }
+  .da-form label {
+    display: grid;
+    gap: 4px;
+    font-size: 13px
+  }
+  .da-form input {
+    padding: 6px 8px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font: inherit
+  }
+  table.da-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13px
+  }
+  .da-folders {
+    display: grid;
+    gap: 6px
+  }
+  .da-folder {
+    text-align: left;
+    white-space: normal;
+    font-size: 12px
+  }
+  .da-folder[data-folder-state="prompt"] {
+    border-color: #f59e0b
+  }
+  .da-file {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--soft)
+  }
+  .da-table td.num {
+    text-align: right
+  }
+  .da-defa-filter {
+    min-width: 360px;
+    padding: 6px 8px
+  }
+  .da-table th {
+    position: sticky;
+    top: 0;
+    background: var(--soft);
+    text-align: left;
+    padding: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    z-index: 1
+  }
+  .da-table td {
+    padding: 2px 4px;
+    border-top: 1px solid var(--line);
+    vertical-align: middle
+  }
+  .da-table input:not([type=checkbox]),
+  .da-table select {
+    width: 100%;
+    min-width: 5em;
+    padding: 4px 6px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    font: inherit;
+    background: transparent;
+    color: inherit
+  }
+  .da-table input:focus,
+  .da-table select:focus {
+    border-color: var(--accent);
+    background: #fff;
+    outline: none
+  }
+  .da-del {
+    font-size: 16px
+  }
+  .da-del:not(#imp) {
+    background: transparent;
+    color: #b91c1c;
+    padding: 2px 8px
+  }
+  .da-yaml textarea {
+    width: 100%;
+    min-height: 55vh;
+    font: 12px/1.4 ui-monospace, Consolas, monospace;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-sizing: border-box
+  }
+  .da-howto {
+    margin-top: 14px;
+    border-top: 1px dashed var(--line);
+    padding-top: 10px
+  }
+  .da-howto summary {
+    cursor: pointer;
+    font-weight: 650
+  }
+  .da-howto code {
+    background: var(--soft);
+    padding: 1px 5px;
+    border-radius: 5px
+  }
+  @media(max-width:900px) {
+    main.da-page {
+      grid-template-columns: 1fr
+    }
+    .da-nav {
+      position: static
+    }
+  }
+}
+
+/* rubriques de shared/settings_panels.js (profil, utilisateurs, catégories de disponibilité) */
+@layer app {
+  .sp-form {
+    display: grid;
+    grid-template-columns: minmax(160px, max-content) minmax(180px, 360px);
+    gap: 8px 12px;
+    align-items: center;
+    max-width: 760px
+  }
+  .sp-form input:not([type=checkbox]):not([type=radio]),
+  .sp-form select {
+    padding: 6px 8px;
+    border: 1px solid var(--line);
+    border-radius: calc(6px * var(--repo-round, 1));
+    font: inherit
+  }
+  .sp-hint {
+    font-size: 12.5px;
+    opacity: .8;
+    margin: 6px 0
+  }
+  .sp-card {
+    border: 1px solid var(--line);
+    border-radius: calc(10px * var(--repo-round, 1));
+    padding: 10px 14px;
+    margin: 10px 0
+  }
+  .sp-card h3 {
+    margin: 0 0 6px
+  }
+  .sp-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin: 6px 0
+  }
+  .sp-chips label {
+    display: inline-flex;
+    gap: 5px;
+    align-items: center;
+    font-size: 13px
+  }
+  .sp-swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: calc(3px * var(--repo-round, 1));
+    border: 1px solid rgba(0, 0, 0, .25);
+    vertical-align: middle
+  }
+  .sp-retired {
+    opacity: .55
+  }
+  .sp-role {
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: calc(4px * var(--repo-round, 1));
+    background: color-mix(in srgb, var(--accent) 16%, transparent)
+  }
+}

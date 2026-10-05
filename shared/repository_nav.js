@@ -87,6 +87,17 @@
   const cpcoOn = () => readPref(CPCO_KEY, "") === "on",
     isCpco = p => String(p || "").startsWith("apps/cpco/");
   doc.dataset.cpco = cpcoOn() ? "on" : "off";
+  /** Adresse d'une rubrique de Paramètres (REPOSITORY_TREE.settings : rubrique → page ; ?base= pour les rubriques de
+   *  data_admin.js et settings_panels.js, ?m= pour les blocs de maintenance_page.js) ; sans rubrique : Mon profil. */
+  const MT_BLOCKS = ["updates", "sources", "versions", "deps", "sia", "caches", "storage", "backup", "journal"];
+  const settingsUrl = (section, hash = "") => {
+    const s = cfg.settings || {},
+      page = s.pages?.[s.sections?.[section]] || s.pages?.profile || "apps/settings/parametrage.html",
+      u = new URL(page, root);
+    if (section) u.search = `?${MT_BLOCKS.includes(section) ? "m" : "base"}=${encodeURIComponent(section)}`;
+    if (hash) u.hash = hash;
+    return u.href;
+  };
   const cpco = {
     enabled: cpcoOn,
     /** Active le Centre si le mot de passe est bon ; true si activé. */
@@ -118,7 +129,7 @@
       const box = document.createElement("div");
       box.className = "cpco-lock";
       box.setAttribute("role", "alert");
-      box.innerHTML = `<div><b>Centre de planification et de conduite des opérations</b><p>Accès réservé. Le Centre s'active dans Paramètres › Centre (CPCO).</p><a href="${new URL("apps/settings/parametrage.html?base=cpco", root).href}">Activer le Centre…</a> · <a href="${new URL("index.html", root).href}">Accueil</a></div>`;
+      box.innerHTML = `<div><b>Centre de planification et de conduite des opérations</b><p>Accès réservé. Le Centre s'active dans Paramètres › Centre (CPCO).</p><a href="${settingsUrl("cpco")}">Activer le Centre…</a> · <a href="${new URL("index.html", root).href}">Accueil</a></div>`;
       document.body.append(box);
     };
     if (document.body) lockNotice();
@@ -474,8 +485,8 @@
       close();
     }
   });
-  menu.querySelector(".repo-parametrage-link").href = new URL("apps/settings/parametrage.html", root).href;
-  // Maintenance (mises à jour, sources et dossiers, SIA, sauvegarde) : rubrique de Paramètres (parametrage.html?m=…)
+  menu.querySelector(".repo-parametrage-link").href = settingsUrl();
+  // Maintenance (mises à jour, sources et dossiers, SIA, sauvegarde) : page Paramètres › Maintenance (maintenance.html?m=…)
   menu.insertAdjacentHTML("beforeend", '<div class="repo-page-actions"></div>');
   /** Enregistre et applique le design id (événement « repository-design-change »). */
   const setDesign = id => {
@@ -616,6 +627,14 @@
   // API publique.
   window.RepositoryNav = {
     cpco,
+    settingsUrl,
+    /** Langue de la suite : "auto" (navigateur) ou fr / en / de / es ; mémorisée, appliquée à la page. */
+    setLanguage(value) {
+      if (value !== "auto" && !supported.includes(value)) return;
+      mode = value;
+      K.store.set("repositoryLanguageMode", mode);
+      applyLanguage();
+    },
     source,
     va,
     vaUrl,
@@ -856,7 +875,7 @@
         label: ["Apparence", "Appearance", "Darstellung", "Apariencia"]
       }, {
         icon: "settings",
-        path: "apps/settings/parametrage.html",
+        path: "apps/settings/profil.html",
         match: "apps/settings/",
         label: ["Paramètres", "Settings", "Einstellungen", "Ajustes"]
       }, {
@@ -1002,7 +1021,7 @@
   } {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=f1357c65", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=0f76e1a5", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
     files.src = new URL("file_access.js?v=1e823776", script.src).href;
@@ -1018,10 +1037,10 @@
     store.src = new URL("browser_store.js?v=7860c8db", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
-    assign.src = new URL("assignments.js?v=c10fed62", script.src).href;
+    assign.src = new URL("assignments.js?v=1a2f7c8f", script.src).href;
     document.head.append(assign);
     const update = document.createElement("script");
-    update.src = new URL("suite_update.js?v=649cb695", script.src).href;
+    update.src = new URL("suite_update.js?v=a6f1e9d1", script.src).href;
     document.head.append(update)
   }
   {

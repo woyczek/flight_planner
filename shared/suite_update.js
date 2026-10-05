@@ -379,7 +379,7 @@
     airac: ['AIRAC', 'AIRAC', 'AIRAC', 'AIRAC'],
     airacTitle: ['Cycle AIRAC {e} en vigueur ; base SIA du studio : {b} — mettre à jour les données SIA (Paramètres › Maintenance)', 'AIRAC cycle {e} in force; map studio SIA base: {b} — update SIA data (Settings › Maintenance)', 'AIRAC-Zyklus {e} gültig; SIA-Basis des Studios: {b} — SIA-Daten aktualisieren', 'Ciclo AIRAC {e} vigente; base SIA del estudio: {b} — actualizar los datos SIA']
   };
-  const page = block => new URL(`apps/settings/parametrage.html?m=${block}`, nav.root).href; // Paramètres › Maintenance
+  const page = block => nav.settingsUrl?.(block) || new URL(`apps/settings/maintenance.html?m=${block}`, nav.root).href; // Paramètres › Maintenance
   let host = null;
 
   function badge() {

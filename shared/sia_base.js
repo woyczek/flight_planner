@@ -1112,7 +1112,7 @@
   } = {}) {
     if (!dir) {
       const st = await window.FileAccess?.status?.('__sia');
-      if (!st?.handle) throw new Error('Dossier SIA non choisi : Paramètres › Maintenance › Sources et dossiers (dossier des données).');
+      if (!st?.handle) throw new Error('Dossier SIA non choisi : Paramètres › Installation › Sources et dossiers (dossier des données).');
       dir = st.handle;
       if (st.permission !== 'granted') {
         if (!request || await dir.requestPermission({
