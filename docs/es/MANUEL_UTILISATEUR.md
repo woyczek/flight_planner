@@ -362,7 +362,7 @@ La forma de las páginas: esquinas redondeadas, densidad, títulos, barra latera
 - Gabinete, Cuaderno de vuelo, Robusto y Aqua añaden sus materiales; los colores de información siguen siendo los del tema.
 
 **«Decoración (diseños con materiales)»**:
-- «Completo» (por defecto): paneles ilustrados de los bloques, hojas de registro, tornillos, asas, radar;
+- «Completo» (por defecto): paneles ilustrados de los bloques, hojas de registro, tornillos, radar;
 - «Sobrio»: solo materiales y placas, en todas las páginas.
 
 **«Color Aqua»**: color de los botones e iconos del diseño Aqua (Azul, Turquesa, Verde, Grafito, Violeta, Naranja, Rojo, Rosa), o «Color de cada aplicación». Los iconos de estado conservan sus colores originales.

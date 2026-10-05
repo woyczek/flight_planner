@@ -362,7 +362,7 @@ The shape of the pages: corners, density, titles, side bar.
 - Cabinet, Flight log, Rugged and Aqua add their materials; the information colours stay those of the theme.
 
 **“Decoration (material designs)”**:
-- “Full” (default): illustrated block panels, register sheets, screws, handles, radar;
+- “Full” (default): illustrated block panels, register sheets, screws, radar;
 - “Plain”: materials and plates only, on all pages.
 
 **“Aqua colour”**: colour of the buttons and icons of the Aqua design (Blue, Teal, Green, Graphite, Violet, Orange, Red, Pink), or “Colour of each application”. Status icons keep their original colours.

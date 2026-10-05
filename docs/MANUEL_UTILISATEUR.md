@@ -362,7 +362,7 @@ La forme des pages : arrondis, densité, titres, barre latérale.
 - Cabinet, Carnet de vol, Durci et Aqua ajoutent leurs matières ; les couleurs d'information restent celles du thème.
 
 **« Décor (designs à matières) »** :
-- « Complet » (par défaut) : panneaux illustrés des blocs, feuilles de registre, vis, poignées, radar ;
+- « Complet » (par défaut) : panneaux illustrés des blocs, feuilles de registre, vis, radar ;
 - « Sobre » : matières et plaques seulement, sur toutes les pages.
 
 **« Couleur Aqua »** : couleur des boutons et icônes du design Aqua (Bleu, Turquoise, Vert, Graphite, Violet, Orange, Rouge, Rose), ou « Couleur de chaque application ». Les icônes d'état gardent leurs couleurs d'origine.

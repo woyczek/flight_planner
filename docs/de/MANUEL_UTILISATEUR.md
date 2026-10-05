@@ -362,7 +362,7 @@ Die Form der Seiten: Ecken, Dichte, Titel, Seitenleiste.
 - Kabinett, Flugbuch, Robust und Aqua bringen ihre Materialien mit; die Informationsfarben bleiben die des Themas.
 
 **„Dekor (Material-Designs)“**:
-- „Vollständig“ (Standard): illustrierte Blockflächen, Registerblätter, Schrauben, Griffe, Radar;
+- „Vollständig“ (Standard): illustrierte Blockflächen, Registerblätter, Schrauben, Radar;
 - „Schlicht“: nur Materialien und Schilder, auf allen Seiten.
 
 **„Aqua-Farbe“**: Farbe der Knöpfe und Symbole des Aqua-Designs (Blau, Türkis, Grün, Graphit, Violett, Orange, Rot, Rosa) oder „Farbe jeder Anwendung“. Die Statussymbole behalten ihre ursprünglichen Farben.
