@@ -210,6 +210,11 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             git = shutil.which('git')
             return self._json({'server': True, 'root': ROOT, 'git': bool(git), 'data': has_data(),
                                'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url()})
+        if self.path.split('?')[0] == '/__setup/tools':
+            # outils de tools/ (sommaire tools/index.html) : nom, sorte, titre et en-tête de chaque fichier
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            return self._json({'tools': tools_inventory()})
         if self.path.split('?')[0] == '/__setup/sia-zip':
             # ZIP du SIA téléchargé : ?info → nom, taille, date ; sinon le fichier lui-même
             if not self._allowed():
@@ -288,6 +293,42 @@ def downloads_dirs():
             pass
     dirs += [os.path.join(os.path.expanduser('~'), 'Downloads'), os.path.join(os.path.expanduser('~'), 'Téléchargements'), ROOT]
     return [d for i, d in enumerate(dirs) if os.path.isdir(d) and d not in dirs[:i]]
+
+
+def tools_inventory():
+    """Outils de tools/ pour le sommaire tools/index.html : nom, sorte (page, python, shell, dossier), titre (<title> d'une
+    page) et en-tête (meta description, docstring de tête d'un script Python, commentaires de tête d'un script shell).
+    Fichiers « _… » (brouillons), README et caches exclus."""
+    out = []
+    base = os.path.join(ROOT, 'tools')
+    for name in sorted(os.listdir(base), key=str.lower):
+        p = os.path.join(base, name)
+        if name.startswith(('_', '.')) or name in ('README.md', 'index.html', '__pycache__'):
+            continue
+        item = {'name': name, 'kind': 'dossier' if os.path.isdir(p) else os.path.splitext(name)[1].lstrip('.'), 'title': '', 'head': ''}
+        if os.path.isfile(p):
+            try:
+                with open(p, encoding='utf-8', errors='replace') as f:
+                    text = f.read(12000)
+            except OSError:
+                text = ''
+            if name.endswith('.html'):
+                m = re.search(r'<title>(.*?)</title>', text, re.S | re.I)
+                item['title'] = re.sub(r'\s+', ' ', m.group(1)).strip() if m else ''
+                m = re.search(r'<meta\s+name="description"\s+content="([^"]*)"', text, re.I)
+                item['head'] = m.group(1) if m else ''
+            elif name.endswith('.py'):
+                m = re.search(r'^(?:#.*\n|\s*\n)*(?:r|u)?("""|\'\'\')(.*?)\1', text, re.S)
+                item['head'] = m.group(2).strip() if m else ''
+            elif name.endswith('.sh'):
+                lines = []
+                for l in text.splitlines()[1:]:  # bloc de commentaires sous le shebang
+                    if not l.startswith('#'):
+                        break
+                    lines.append(l[1:].strip())
+                item['head'] = '\n'.join(lines)
+        out.append(item)
+    return out
 
 
 def sia_zip():

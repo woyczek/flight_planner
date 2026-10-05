@@ -5,6 +5,9 @@ Python 3 et bibliothèque standard sauf mention contraire. Chaque script détail
 (`python tools/<script>.py --help` n'existe pas toujours : lire l'en-tête). Les pages HTML s'ouvrent dans le
 navigateur (servies par `tools/save_textures.py` quand elles écrivent des fichiers).
 
+Sommaire navigable de tous les outils, avec ces explications : **`tools/index.html`** (dépôt servi par le lanceur ;
+sans lui, seuls les outils décrits ici sont listés).
+
 Trois familles :
 
 1. **Outils courants** — à relancer à chaque fois que leur source change ;
@@ -35,6 +38,9 @@ Trois familles :
 | `new_family_pages.py` | ajout d'une famille de CR | Crée les deux pages d'une nouvelle famille du Mission Report Core (saisie de CR et reporting, copiées de HEMS) et les déclare dans `repository_tree`, d'après un petit fichier JSON (famille, dossier, préfixe, couleur). Reste à déclarer la famille dans `shared/mission_core/vocab.js`. |
 | `migrate_missions_schema.py` | après une montée du format de mission | Passe les YAML de `data/missions` au format `helo-xp-mission` courant (2.0) ; aperçu sans `--write`. Les fichiers hors format sont signalés, pas modifiés. |
 | `data_template/` | création d'un dépôt de données | Squelette du dépôt `data/` (README, `data_tree.js`), repris par `migrate_v3.py`. |
+| `install_hooks.sh` | une fois par clone | Pose dans les crochets git locaux (post-commit, post-checkout, post-merge) l'appel de `write_build.sh`, puis l'exécute. |
+| `write_build.sh` | appelé par les crochets git | Écrit `config/build.js` (commit, branche, étiquette courants, hors dépôt) : le pied de page affiche la version exacte, même en `file://`. |
+| `planche_rubriques.py` | après retouche des en-têtes de l'ordre de mission | Planche contact des en-têtes de l'ordre de mission par organisme, pour chaque design à matières (`docs/planches/rubriques_<design>.jpg` et planche d'ensemble), d'après les règles de `apps/pilot/mes_missions.html`. |
 
 ## 2. Ateliers graphiques (designs skeuomorphes)
 
@@ -71,6 +77,20 @@ même nom de fichier ; relancer ensuite les deux mêmes commandes.
 |---|---|
 | `skeuo_regression.html` | Non-régression des designs à matières : relève les styles calculés des composants du framework sur six pages témoins (4 designs × 2 tons), puis compare un état ultérieur à cette référence, propriété par propriété. À lancer avant et après toute retouche de `designs_skeuo.css` (dépôt servi par `python -m http.server 8767 --bind 127.0.0.1`, puis `http://127.0.0.1:8767/tools/skeuo_regression.html`). |
 | `stub_marker_offset.html` | Marqueurs des points de route (bloc Route) comparés aux positions exactes dessinées par la carte ; boutons de décalage X / Y au pixel, ancre, étiquettes : mesure du décalage à corriger. Ouvrir tel quel. |
+| `jeu_fantome.py` | Jeu de test « fantôme », **sur une branche de test du dépôt de données** (jamais `main`) : déclarations de disponibilités d'une semaine (défaut : la semaine en cours) pour des pilotes de la référence DEFA sans déclaration réelle, et missions du registre affectées à ces pilotes (disponibles au décollage, appareil de la flotte libre, patrouilles de chasseurs). Tout est marqué `phantom: true`, `by: FANTOME`. Sans option : aperçu ; `--write` : écrit ; `--clean --write` : retire les fantômes ; `--week`, `--pilots`, `--missions`, `--seed`. PyYAML. |
+| `audit_i18n.html` | Audit des traductions : charge chaque page de l'index dans une langue (`?lang=en`, `de` ou `es` ; `&auto` lance aussitôt, `&only=<expression>` filtre les pages) et relève les textes visibles et infobulles restés en français. Les données (missions, noms propres) peuvent rester en français : liste de pistes. |
+| `verify_format.html` | Contrôle obligatoire après `format_sources.py` : compare avant / après les arbres syntaxiques JavaScript (acorn) et les règles CSS lues par le navigateur ; seuls les blancs doivent avoir changé. |
+
+## Chantier des couches CSS
+
+Outils du refactoring `docs/REFACTORING_TOOLKIT.md` (designs qui l'emportent sur l'application sans `!important`) ;
+chaque passage se vérifie au banc `skeuo_regression.html`. Tous ont `--check` (aperçu sans écrire).
+
+| Outil | Ce qu'il fait |
+|---|---|
+| `strip_page_important.py` | Retire les `!important` des styles propres d'une page ou d'une feuille (préalable aux couches) ; `--bump` les convertit plutôt en règles renforcées `:not(#imp)`. |
+| `layer_pages.py` | Range les styles d'une page en couches (`lib` < `page` < hors couche) ; les règles propres aux designs restent hors couche. |
+| `layer_app.py` | Modèle « app » : socle, styles des scripts et des pages dans une seule couche `app`, bibliothèques dans `lib`, designs au-dessus (`--css` pour les feuilles du socle). |
 
 ## 3. Migrations ponctuelles (déjà passées)
 

@@ -66,7 +66,10 @@ Servir le dépôt (<code>python tools/launch.py</code> ou <code>python -m http.s
       await new Promise(r => { f.onload = r; setTimeout(r, 9000); });
       await new Promise(r => setTimeout(r, 3500));
       let list = [];
-      try { list = frenchTexts(f.contentDocument); } catch (e) { list = ['(lecture impossible : ' + e.message + ')']; }
+      // page encore sans corps (redirection, rechargement) : on l'attend jusqu'à 5 s de plus
+      for (let k = 0; k < 25 && !f.contentDocument?.body; k++) await new Promise(r => setTimeout(r, 200));
+      const doc = f.contentDocument;
+      try { list = doc?.body ? frenchTexts(doc) : [`(page sans contenu lisible : ${f.contentWindow?.location?.href || 'adresse inconnue'})`]; } catch (e) { list = ['(lecture impossible : ' + e.message + ')']; }
       f.remove();
       all[p] = list;
       out.insertAdjacentHTML('beforeend', `<tr><td><a href="../${esc(p)}" target="_blank">${esc(p)}</a></td><td class="${list.length ? 'bad' : 'ok'}">${list.length ? `<b>${list.length}</b><br>${list.map(esc).join('<br>')}` : '—'}</td></tr>`);
