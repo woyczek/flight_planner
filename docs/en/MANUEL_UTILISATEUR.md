@@ -28,8 +28,8 @@ The left-hand column gives access to the applications. The entry of the page on 
 | “Reporting” | Mission reporting (DEFA reports) |
 
 - The **“Centre”** group (“Missions”, “Registry”, “ODV”) only appears if the Centre is unlocked in this browser (Settings › Centre). For a pilot, it normally stays hidden.
-- At the bottom of the column: “Appearance” (opens the display settings in a window, above the current page), “Settings” (My profile and the other settings pages) and **“Help”**.
-- “Help” opens the documentation directly at the chapter of the page you are on. It replaces the old “Menu” entry.
+- At the bottom of the column: “Appearance” (opens the display settings in a window, above the current page), “Settings” (My profile and the other settings pages) and **“Help”**. These three entries stay fixed at the bottom of the screen: only the upper list scrolls when there are too many icons (window less than 460 px high: the whole bar scrolls).
+- “Help” opens the documentation directly at the chapter of the page you are on. It replaces the old “Menu” entry. It also works when the suite is opened from the disk, without the launcher: the documents are built into the page.
 - The logo at the top of the column opens the virtual airline's website in a new tab.
 - The bar is hidden on a narrow screen (less than 760 px) and when printing. You can hide it or always show it: Appearance › Icons › “Side bar”.
 

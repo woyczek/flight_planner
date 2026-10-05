@@ -115,6 +115,9 @@ PAGEIMG = re.compile(r'(url\(["\']?)([^"\'()?#:]+\.(?:webp|png|jpe?g|svg))\?v=\w
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import build_mission_prompt
 build_mission_prompt.build(verbose=False)
+# documents de l'Aide pour l'ouverture en fichier local (tools/build_docs_bundle.py)
+import build_docs_bundle
+build_docs_bundle.build(verbose=False)
 
 # 1. images des feuilles des designs
 for css in ('designs_skeuo.css', 'block_icons.css'):

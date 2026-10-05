@@ -28,8 +28,8 @@ La columna de la izquierda da acceso a las aplicaciones. La entrada de la págin
 | «Informes» | Informes de las misiones (Informe DEFA) |
 
 - El grupo **«Centro»** («Misiones», «Registro», «ODV») solo aparece si el Centro está desbloqueado en este navegador (Ajustes › Centro). Para un piloto, normalmente permanece oculto.
-- Al pie de la columna: «Apariencia» (abre los ajustes de visualización en una ventana, encima de la página actual), «Ajustes» (Mi perfil y las demás páginas de ajustes) y **«Ayuda»**.
-- «Ayuda» abre la documentación directamente en el capítulo de la página en la que se encuentra. Sustituye a la antigua entrada «Menú».
+- Al pie de la columna: «Apariencia» (abre los ajustes de visualización en una ventana, encima de la página actual), «Ajustes» (Mi perfil y las demás páginas de ajustes) y **«Ayuda»**. Estas tres entradas permanecen fijas al pie de la pantalla: solo la lista superior se desplaza cuando hay demasiados iconos (ventana de menos de 460 px de alto: se desplaza toda la barra).
+- «Ayuda» abre la documentación directamente en el capítulo de la página en la que se encuentra. Sustituye a la antigua entrada «Menú». También funciona cuando la suite se abre desde el disco, sin el lanzador: los documentos están integrados en la página.
 - El logotipo de la parte superior de la columna abre el sitio de la aerolínea virtual en una nueva pestaña.
 - La barra se oculta en una pantalla estrecha (menos de 760 px) y al imprimir. Puede ocultarse o mostrarse siempre: Apariencia › Iconos › «Barra lateral».
 

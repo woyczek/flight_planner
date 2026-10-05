@@ -28,8 +28,8 @@ La colonne de gauche donne accès aux applications. L'entrée de la page affich�
 | « Reporting » | Reportings des missions (CR DEFA) |
 
 - Le groupe **« Centre »** (« Missions », « Registre », « ODV ») n'apparaît que si le Centre est déverrouillé dans ce navigateur (Paramètres › Centre). Pour un pilote, il reste normalement caché.
-- En bas de la colonne : « Apparence » (ouvre les réglages d'affichage dans une fenêtre, au-dessus de la page en cours), « Paramètres » (Mon profil et les autres pages de réglage) et **« Aide »**.
-- « Aide » ouvre la documentation directement au chapitre de la page où vous êtes. Elle remplace l'ancienne entrée « Menu ».
+- En bas de la colonne : « Apparence » (ouvre les réglages d'affichage dans une fenêtre, au-dessus de la page en cours), « Paramètres » (Mon profil et les autres pages de réglage) et **« Aide »**. Ces trois entrées restent fixées en bas de l'écran : seule la liste du haut défile quand il y a trop d'icônes (fenêtre de moins de 460 px de haut : toute la barre défile).
+- « Aide » ouvre la documentation directement au chapitre de la page où vous êtes. Elle remplace l'ancienne entrée « Menu ». Elle fonctionne aussi quand la suite est ouverte depuis le disque, sans le lanceur : les documents sont intégrés à la page.
 - Le logo en haut de la colonne ouvre le site de la compagnie virtuelle dans un nouvel onglet.
 - La barre est masquée sur un écran étroit (moins de 760 px) et à l'impression. On peut la masquer ou l'afficher toujours : Apparence › Icônes › « Barre latérale ».
 
