@@ -2054,19 +2054,40 @@
     current = a;
     shown = '';
     document.querySelectorAll('#pmList tr').forEach(tr => tr.classList.toggle('pm-current', list[+tr.dataset.i] === a));
-    $('pmMission').hidden = false;
-    $('pilotMissions').classList.add('pm-dossier'); // colonne de droite élargie (ou dossier en pleine largeur)
-    applyWide();
-    $('pmDetail').innerHTML = '<p class="pm-empty">Chargement de la mission…</p>';
-    $('pmMission').scrollIntoView({
-      behavior: 'smooth',
-      block: 'start'
-    });
+    // le dossier déjà affiché reste en place pendant le chargement de la nouvelle mission, puis il est remplacé d'un
+    // coup (avant : vidé et remplacé par « Chargement… », le livre clignotait) ; premier dossier : bloc et colonnes
+    // posés avec le contenu, « Chargement… » seulement si la lecture dure
+    const hadBook = !$('pmMission').hidden && !!$('pmDetail').querySelector('.pm-content, .pm-cover');
+    const reveal = () => {
+      $('pmMission').hidden = false;
+      $('pilotMissions').classList.add('pm-dossier'); // colonne de droite élargie (ou dossier en pleine largeur)
+      applyWide();
+    };
+    let waitTimer = 0;
+    if (hadBook) $('pmDetail').setAttribute('aria-busy', 'true');
+    else waitTimer = setTimeout(() => {
+      if (stale()) return;
+      reveal();
+      $('pmDetail').innerHTML = `<p class="pm-empty">${esc(tv(['Chargement de la mission…', 'Loading the mission…', 'Mission wird geladen…', 'Cargando la misión…']))}</p>`;
+    }, 400);
+    /** Nouvelle mission prête : état de la page remplacé, dossier dessiné, bloc montré et amené à l'écran. */
+    const commit = (y, urls, docs) => {
+      clearTimeout(waitTimer);
+      mission = y;
+      mapUrls = urls;
+      exDocs = docs;
+      $('pmDetail').removeAttribute('aria-busy');
+      reveal();
+      // défilement seulement si le haut du dossier n'est pas à l'écran (sinon rien ne bouge)
+      const top = $('pmMission').getBoundingClientRect().top;
+      if (top < 0 || top > innerHeight * .6) $('pmMission').scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    };
     // fichiers de la mission : dossier des missions autorisé d'abord (même hors de la copie servie), sinon copie servie
     const bare = String(a.mission).replace('-', '');
-    mission = null;
-    mapUrls = {};
-    exDocs = [];
+    let y = null;
     // convoyage : l'ordre de convoyage seul (départ, arrivée, appareil, heure), pas le brief de la mission
     if (a.role === 'convoyage') {
       let log = [];
@@ -2075,6 +2096,7 @@
       } catch {
         /* pas de journal */ }
       if (stale()) return;
+      commit(null, {}, []);
       render(a, {}, '', log);
       shown = A.key(a);
       if (open && !A.isRead(a)) {
@@ -2087,13 +2109,13 @@
     const yf = await A.missionFirst(a.folder, [a.files?.yaml, `mission${a.mission}.yaml`, `mission${bare}.yaml`]);
     if (stale()) return;
     try {
-      if (yf) mission = window.jsyaml.load(yf.value.replace(/^#.*\n/, ''));
+      if (yf) y = window.jsyaml.load(yf.value.replace(/^#.*\n/, ''));
     } catch {
       /* mission illisible : affectation seule */ }
     const md = (await A.missionFirst(a.folder, [a.files?.md, `summary${a.mission}.md`, `summary${bare}.md`]))?.value || '';
     if (!yf) window.AppFramework?.notify?.(`Mission ${a.mission} : fichier introuvable (dossier « ${a.folder} »), ni dans le dossier des missions autorisé ni dans la copie servie — seule l’affectation est affichée.`, 'warn');
     // cartes : index de l'affectation, sinon yaml ; adresse résolue (cartes/x.png, sinon x.png)
-    const mapNames = a.files?.maps?.length ? a.files.maps : (mission?.maps || []).map(m => m?.filename).filter(Boolean);
+    const mapNames = a.files?.maps?.length ? a.files.maps : (y?.maps || []).map(m => m?.filename).filter(Boolean);
     // cartes : cherchées en parallèle, d'abord là où la mission range ses cartes (dossier cartes/ ou racine, appris sur
     // la première trouvée) — plus deux requêtes en série, dont une en 404, par carte
     const urls = {},
@@ -2112,8 +2134,7 @@
       }))?.value || '';
     }));
     if (stale()) return;
-    mapUrls = urls;
-    exDocs = await exerciseDocs(a, mission);
+    const docs = await exerciseDocs(a, y);
     if (stale()) return;
     let log = [];
     try {
@@ -2121,7 +2142,8 @@
     } catch {
       /* pas de journal */ }
     if (stale()) return;
-    render(a, mission || {}, md, log);
+    commit(y, urls, docs);
+    render(a, y || {}, md, log);
     shown = A.key(a);
     if (open && !A.isRead(a)) {
       A.markRead(a);
