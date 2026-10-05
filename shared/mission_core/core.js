@@ -1579,7 +1579,11 @@
         ...(known?.category ? {
           category: known.category
         } : {}),
-        callsign: String(a.callsign || '').replace(/\s+/g, '')
+        callsign: String(a.callsign || '').replace(/\s+/g, ''),
+        // appareil affecté (Mes missions : immatriculation de l'affectation) : repris tel quel
+        ...(a.registration ? {
+          registration: String(a.registration).trim().toUpperCase()
+        } : {})
       });
     });
     m.organisation.organisation = aircraft[0]?.operator || m.organisation.organisation;

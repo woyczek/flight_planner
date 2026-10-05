@@ -4474,7 +4474,11 @@ async function drawVprofPreview() {
     $('vprofImg').hidden = false;
     ensureVprofEditor();
     vprofEditor?.update(data);
-    $('vprofStatus').textContent = `${(data.total/1852).toFixed(1)} NM, ${data.crossed.length} traversée(s) d’espace, ${data.obstacles.length} obstacle(s) à moins de 1 NM.`;
+    $('vprofStatus').textContent = window.RepositoryKit.tf(['{d} NM, {c} traversée(s) d’espace, {o} obstacle(s) à moins de 1 NM.', '{d} NM, {c} airspace crossing(s), {o} obstacle(s) within 1 NM.', '{d} NM, {c} Luftraumdurchquerung(en), {o} Hindernis(se) im Umkreis von 1 NM.', '{d} NM, {c} cruce(s) de espacio aéreo, {o} obstáculo(s) a menos de 1 NM.'], {
+      d: (data.total / 1852).toFixed(1),
+      c: data.crossed.length,
+      o: data.obstacles.length
+    });
     if (!data.plan) $('vprofStatus').insertAdjacentHTML('beforeend', ' <span class="err">Trajectoire non tracée : ni niveau de croisière, ni altitude dans le cheminement (« /3000 », « /FL65 » ou « N0450F350 »).</span>')
   } catch (e) {
     $('vprofStatus').innerHTML = `<span class="err">${esc(e.message)}</span>`
@@ -6775,9 +6779,11 @@ function build(quiet){
  if(!quiet){say(`${maps.length} carte(s) prête(s) : ${esc(maps.map(m=>m.description).join(', '))}, et le profil vertical de la route. Réglages et aperçus dans « Cartes à produire », fichiers dans « Aperçus et génération ».`,'ok')}
  return true;
 }
-$v('volBuild').onclick=()=>build(false);
-// « Tracer » ou « Planificateur carburant » avant la création : la mission du vol est d'abord créée
-for(const id of ['vprofDraw','vprofToPlanner'])$v(id).addEventListener('click',e=>{if(sharedDoc?.yaml?.mission?.id==='VOL')return;e.stopImmediatePropagation();if(build(true))setTimeout(()=>$v(id).click(),600)},true);
+// mission reçue (Mes missions, registre…) : « Créer les cartes » la remplacerait par un vol libre tracé sur le cheminement — confirmation
+$v('volBuild').onclick=async()=>{const id=sharedDoc?.yaml?.mission?.id;if(id&&id!=='VOL'&&!await window.AppFramework.ask(window.RepositoryKit.tf(['Remplacer la mission {m} par un vol libre tracé sur le cheminement ? Ses cartes à produire seront remplacées (la mission elle-même n’est pas modifiée).','Replace mission {m} with a free flight drawn along the route? Its maps to produce will be replaced (the mission itself is not changed).','Mission {m} durch einen freien Flug entlang der Route ersetzen? Ihre zu erstellenden Karten werden ersetzt (die Mission selbst bleibt unverändert).','¿Reemplazar la misión {m} por un vuelo libre trazado sobre la ruta? Sus mapas por producir se reemplazarán (la misión en sí no se modifica).'],{m:id})))return;build(false)};
+// « Tracer » ou « Planificateur carburant » sans mission chargée : la mission du vol est d'abord créée ; mission chargée
+// (vol libre, ou mission reçue de Mes missions : points ORIGIN, PT1… de la mission) : tracé et carburant directs, sans la remplacer
+for(const id of ['vprofDraw','vprofToPlanner'])$v(id).addEventListener('click',e=>{if(sharedDoc?.yaml?.mission?.id)return;e.stopImmediatePropagation();if(build(true))setTimeout(()=>$v(id).click(),600)},true);
 // route modifiée (saisie, recherche, carte ou coupe) : mission, cartes et profil mis à jour
 const follow=()=>{saveForm();if(sharedDoc?.yaml?.mission?.id==='VOL')build(true)};
 $v('vprofRoute').addEventListener('change',follow);
