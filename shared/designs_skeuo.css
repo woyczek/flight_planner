@@ -764,8 +764,7 @@ html[data-design="aqua"] {
   --sk-header-margin: 0 0 10px;
   --sk-header-ink: var(--aq-ink);
   /* pleine largeur : angles droits, filet bas */
-  /* bannière (tools/cut_banner.py) : extrémités calées à gauche et à droite, métal uni du milieu étiré */
-  --sk-header-bg: linear-gradient(rgba(255, 255, 255, .3), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, .05)), url("deco/aqua/header/clair-gauche.webp?v=f9298be9") left center/auto 100% no-repeat, url("deco/aqua/header/clair-droite.webp?v=32364778") right center/auto 100% no-repeat, url("deco/aqua/header/clair-milieu.webp?v=634cc8cf") center/100% 100% no-repeat, #d8dde2;
+  --sk-header-bg: linear-gradient(rgba(255, 255, 255, .45), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, .05)), #d8dde2 url("textures/brushed-light.webp?v=6bef2cba") center/256px;
   --sk-header-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(0, 0, 0, .12), 0 6px 16px rgba(40, 60, 90, .18);
   --sk-mbtn-bg: linear-gradient(#ffffff, #dfe6ee);
   --sk-mbtn-ink: var(--aq-ink);
@@ -851,13 +850,6 @@ html[data-design="aqua"] .repo-header-subtitle,
 html[data-design="aqua"] .repo-language-label {
   color: var(--aq-ink-2)
 }
-/* bannière : titre et sous-titre lisibles sur les objets des extrémités (halo de la couleur du fond) */
-html[data-design="aqua"] .repo-header :is(h1, p, .repo-header-subtitle, .cpco-eyebrow) {
-  text-shadow: 0 0 3px rgba(240, 244, 248, .95), 0 0 8px rgba(240, 244, 248, .85)
-}
-html[data-design="aqua"][data-tone="dark"] .repo-header :is(h1, p, .repo-header-subtitle, .cpco-eyebrow) {
-  text-shadow: 0 0 3px rgba(16, 22, 30, .95), 0 0 8px rgba(16, 22, 30, .85)
-}
 html[data-design="aqua"] :is(.repo-menu-button, .repo-language-button) {
   box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 0, 0, .15)
 }
@@ -927,7 +919,7 @@ html[data-design="aqua"][data-tone="dark"] {
   --aq-ink-2: #aebccb;
   --repo-surface: #26303b;
   --sk-header-border: 0 solid #0b0f14;
-  --sk-header-bg: linear-gradient(rgba(255, 255, 255, .08), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, .2)), url("deco/aqua/header/sombre-gauche.webp?v=38989973") left center/auto 100% no-repeat, url("deco/aqua/header/sombre-droite.webp?v=ee10ca3b") right center/auto 100% no-repeat, url("deco/aqua/header/sombre-milieu.webp?v=8bf0af71") center/100% 100% no-repeat, #1c2430;
+  --sk-header-bg: linear-gradient(rgba(255, 255, 255, .12), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, .2)), linear-gradient(rgba(20, 26, 34, .72), rgba(20, 26, 34, .72)), #d8dde2 url("textures/brushed-light.webp?v=6bef2cba") center/256px;
   --sk-header-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 6px 16px rgba(0, 0, 0, .45);
   --sk-menu-bg: rgba(30, 37, 46, .95);
   --sk-menu-border: 1px solid #46525f;

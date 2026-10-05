@@ -38,7 +38,8 @@
 
   // ------------------------------------------------------------------ décor de page, par design
   // (tous facultatifs sauf foot)
-  // foot     : frise du pied de page, liste de composants (FOOT) : 'strip' (image « footer » du design), 'plate'
+  // foot     : frise du pied de page, liste de composants (FOOT) : 'strip' (image « footer » du design ; footTones :
+  //            « footer-sombre » ou « footer-clair » selon le ton, tools/cut_banner.py), 'plate'
   //            (plaque DEFA), 'radar' (écran de veille animé), 'status' (voyant de sauvegarde, fonction réelle) ;
   // between  : objets entre les blocs, tour à tour : [image, largeur px, option] ; option : 'pair' (deux exemplaires)
   //            ou { x, y, rot } (décalage en px depuis le centre, inclinaison en degrés) ;
@@ -48,7 +49,7 @@
   // sides    : objets des marges, alternativement à gauche et à droite : [image, largeur px maximale].
   // composants de la frise : img(nom) → adresse de l'image du design
   const FOOT = {
-    strip: img => `<img class="repo-deco-strip" src="${img('footer')}" alt="">`,
+    strip: (img, set) => `<img class="repo-deco-strip" src="${img(set?.footTones ? `footer-${html.dataset.tone === 'dark' ? 'sombre' : 'clair'}` : 'footer')}" alt="">`,
     plate: img => `<div class="repo-deco-plate-img"><img src="${img('plate-defa')}" alt=""></div>`,
     // plots du radar : position dans l'écran (%) et couleur ; délai d'allumage calculé au rendu (passage du balayage)
     radar: img => `<div class="repo-deco-radar" title="${tr('radar')}"><div class="repo-deco-radar-stage">` +
@@ -69,9 +70,11 @@
   };
   const DEVICE_AT = 2; // appareil de page : entre les blocs 2 et 3 (tous les designs ; une page à 3 blocs l'accueille)
   const SETS = {
-    // Aqua : frise de verre bleu ; appareil de page : défibrillateur posé à côté du moniteur de surveillance
+    // Aqua : bandeau du bas sombre ou clair selon le ton (planche « bannière ») ; appareil de page : défibrillateur posé
+    // à côté du moniteur de surveillance
     aqua: {
       foot: ['strip'],
+      footTones: true,
       device: [
         ['defibrillator', 170, -5],
         ['monitor', 230]
@@ -417,7 +420,7 @@
     const foot = document.createElement('div');
     foot.className = 'repo-deco no-print';
     foot.dataset.for = d;
-    foot.innerHTML = set.foot.map(k => FOOT[k](img)).join('');
+    foot.innerHTML = set.foot.map(k => FOOT[k](img, set)).join('');
     // radar (Durci) : chaque plot s'allume au passage du front (rotation horaire de 5 s partant du haut, centre du
     // réticule 49,86 % / 46,44 % d'un écran 1402 × 478) → délai d'animation = angle du plot depuis le haut / 360 × période
     foot.querySelectorAll('.repo-deco-radar i').forEach(b => {
@@ -567,6 +570,11 @@
   new MutationObserver(state).observe(html, {
     attributes: true,
     attributeFilter: ['data-dirty']
+  });
+  // ton clair / sombre changé (thème) : bandeau du bas du ton (footTones)
+  new MutationObserver(later).observe(html, {
+    attributes: true,
+    attributeFilter: ['data-tone']
   });
   // blocs et pied de page posés au chargement complet (app_framework.js) ; les pages rendues plus tard (CR) se
   // stabilisent ensuite : nouvelle passe après une seconde
