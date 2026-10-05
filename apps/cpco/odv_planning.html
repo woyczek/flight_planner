@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Planning ODV</title>
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=92453e77">
-<script src="../../config/repository_tree?v=a9735c6a"></script>
+<script src="../../config/repository_tree?v=af2d3fa7"></script>
 <style data-layer="app">
 @layer app {
   /* Couleurs : sombres par défaut (thème du planificateur), claires si le ton de la page est clair (Apparence). */
@@ -401,6 +401,148 @@
   .odv-week-h {
     margin: 14px 0 4px
   }
+  /* matrice des créneaux : clic = fenêtre d'affectation ; créneau qui a déjà des missions affectées (✎) */
+  .odv-heat button {
+    cursor: pointer
+  }
+  .odv-heat button.has {
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--repo-accent, #71b7ff) 75%, transparent)
+  }
+  .odv-about {
+    margin: 0 0 8px;
+    font-size: 13px;
+    max-width: 90ch
+  }
+  /* missions affectées : créneau en trois cases (M A S, celle du créneau en surbrillance), ligne cliquable */
+  .odv-tri3 {
+    display: inline-flex;
+    gap: 2px
+  }
+  .odv-tri3 i {
+    display: inline-grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+    font: 600 9px/1 system-ui, sans-serif;
+    font-style: normal;
+    opacity: .45
+  }
+  .odv-tri3 i.on {
+    opacity: 1;
+    background: var(--repo-accent, #71b7ff);
+    border-color: var(--repo-accent, #71b7ff);
+    color: #fff
+  }
+  .odv-week tr[data-edit-assign] {
+    cursor: pointer
+  }
+  .odv-week tr[data-edit-assign]:hover {
+    background: color-mix(in srgb, currentColor 8%, transparent)
+  }
+  /* planning heure par heure : un pilote par ligne, blocs colorés par mission (indicatif), créneaux en fond */
+  .odv-plan-days {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 4px 0 8px
+  }
+  .odv-plan {
+    display: grid;
+    gap: 3px;
+    overflow-x: auto;
+    padding-bottom: 4px
+  }
+  .odv-plan-row {
+    display: grid;
+    grid-template-columns: 70px minmax(560px, 1fr);
+    align-items: center;
+    gap: 6px
+  }
+  .odv-plan-track {
+    position: relative;
+    height: 26px;
+    background: color-mix(in srgb, currentColor 4%, transparent)
+  }
+  .odv-plan-head .odv-plan-track {
+    height: 16px;
+    background: none;
+    font: 10px/16px system-ui, sans-serif;
+    opacity: .7
+  }
+  .odv-plan-head .odv-plan-track span {
+    position: absolute;
+    transform: translateX(-50%)
+  }
+  .odv-plan-band {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-left: 1px dashed color-mix(in srgb, currentColor 25%, transparent);
+    border-right: 1px dashed color-mix(in srgb, currentColor 25%, transparent)
+  }
+  .odv-plan-band.cur {
+    background: color-mix(in srgb, var(--repo-accent, #71b7ff) 14%, transparent)
+  }
+  .odv-plan-now {
+    position: absolute;
+    top: -2px;
+    bottom: -2px;
+    width: 2px;
+    background: #d23c3c;
+    z-index: 2
+  }
+  .odv-plan-blk {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    z-index: 1;
+    overflow: hidden;
+    padding: 0 5px;
+    background: var(--c);
+    color: #fff;
+    font: 600 11px/20px system-ui, sans-serif;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    text-align: left;
+    cursor: pointer
+  }
+  .odv-plan-blk.ferry {
+    background: repeating-linear-gradient(135deg, var(--c) 0 6px, color-mix(in srgb, var(--c) 70%, #fff) 6px 12px)
+  }
+  .odv-plan-blk:hover {
+    filter: brightness(1.12);
+    z-index: 3
+  }
+  /* fenêtre d'affectation : la journée en trois blocs, celui de la fenêtre en surbrillance, heure présente marquée */
+  .odv-daystrip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin: 0 0 10px
+  }
+  .odv-daystrip button {
+    display: grid;
+    gap: 2px;
+    padding: 6px 8px;
+    text-align: left;
+    border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+    background: color-mix(in srgb, currentColor 4%, transparent);
+    cursor: pointer
+  }
+  .odv-daystrip button span {
+    font-size: 12px;
+    opacity: .8
+  }
+  .odv-daystrip button.cur {
+    border: 2px solid var(--repo-accent, #71b7ff);
+    background: color-mix(in srgb, var(--repo-accent, #71b7ff) 18%, transparent);
+    cursor: default
+  }
+  .odv-daystrip button.live small {
+    color: #d23c3c;
+    font-weight: 700
+  }
   .odv-week {
     border-collapse: collapse;
     font-size: 12px
@@ -623,23 +765,11 @@ html[data-design="field"] .odv-heat button.sel {
 <header><h1><span class="cpco-eyebrow">Centre de planification et de conduite des opérations</span>Planning ODV</h1></header>
 <main class="odv-page">
 <section data-block-id="import" data-icon="upload" data-subtitle="Classeur hebdomadaire de l'escadrille (.xlsx), lu dans ce navigateur."><h2>Classeur ODV</h2>
+  <p class="odv-about">Le classeur ODV est le tableau Excel hebdomadaire de l'escadrille, rempli par les pilotes (feuille ODV : un code couleur par jour et par créneau matin, après-midi, soir ; feuille FLOTTE : appareils maîtrisés et simulateurs). La suite peut s'en passer : sans classeur, la semaine se construit à partir des disponibilités déclarées dans Mes missions. Chargé, il complète ces déclarations (pilotes qui ne déclarent pas dans la suite), fournit les rôles de la feuille FLOTTE et crée les préférences de thèmes des pilotes qui n'en ont pas.</p>
+  <p class="odv-about">Réglages des créneaux et de la lecture du classeur : <a href="../settings/centre.html?base=odv">Paramètres › Centre › Planning ODV (DEFA)</a>.</p>
   <p class="odv-privacy repo-notice" data-icon="info">Données personnelles : le fichier est lu dans ce navigateur, rien n'est envoyé ni conservé (seuls les réglages sont mémorisés). Ne publiez pas les exports.</p>
   <div class="row"><input type="file" id="odvFile" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" data-dropzone><button type="button" id="odvClear" data-icon="trash" disabled>Effacer les données</button></div>
   <div id="odvReport" data-no-i18n></div>
-</section>
-<section data-block-id="settings" data-icon="settings" data-subtitle="Heures des créneaux, lecture des dates et des cases, règles des missions."><h2>Réglages</h2>
-  <div class="odv-settings">
-    <div><div class="mut" style="font-weight:600;margin-bottom:4px">Créneaux (heures z)</div>
-      <div class="odv-hours" id="odvHours"></div></div>
-    <label>Dates de la semaine<select id="odvDateSource"><option value="iso">Semaine ISO (n° de semaine du fichier)</option><option value="frise">Date saisie sur la frise</option></select></label>
-    <label>Case vide<select id="odvEmptyAs"><option value="inconnu">Non renseignée</option><option value="indispo">Indisponible</option></select></label>
-    <label>Types FLOTTE retenus pour les rôles<select id="odvFlotteLevel"><option value="noRed">Tous sauf les rouges (non maîtrisés)</option><option value="green">Verts seuls (maîtrisés)</option><option value="all">Tous</option></select></label>
-    <label>Missions montrées par créneau<input type="number" id="odvTop" min="1" max="10" step="1"></label>
-    <label>Ordre de préférence à score égal<input type="text" id="odvPref" spellcheck="false"></label>
-    <label class="odv-check"><input type="checkbox" id="odvStrict"> Code restreint (SC, C, T, N) : rôles de son domaine seulement</label>
-    <label class="odv-check"><input type="checkbox" id="odvRecurring"> Ignorer une ligne de groupe colorée les 7 jours sur un créneau (habillage)</label>
-  </div>
-  <p class="row" style="margin:10px 0 0"><button type="button" id="odvReset" data-icon="refresh">Réglages par défaut</button></p>
 </section>
 <section data-block-id="grid" data-icon="calendar" data-subtitle="Pilotes × jours × matin, après-midi, soir ; commentaires au survol."><h2>Grille de disponibilité</h2>
   <div class="row odv-week-nav" id="odvWeekNav"></div>
@@ -647,21 +777,13 @@ html[data-design="field"] .odv-heat button.sel {
   <div class="odv-legend" id="odvLegend" data-no-i18n></div>
   <div id="odvGrid" data-no-i18n><p class="odv-empty">Chargez un classeur ODV.</p></div>
 </section>
-<section data-block-id="slots" data-icon="users" data-subtitle="Nombre de pilotes disponibles par créneau, contrôleurs, rôles possibles."><h2>Créneaux communs</h2>
+<section data-block-id="slots" data-icon="users" data-subtitle="Pilotes libres par créneau ; clic sur un créneau : modifier les missions affectées ou en planifier."><h2>Créneaux communs</h2>
   <div class="odv-filters" id="odvSlotFilters"></div>
   <div id="odvHeat" data-no-i18n></div>
-  <div id="odvSlots" data-no-i18n></div>
-  <div id="odvSlotDetail" data-no-i18n></div>
 </section>
 <section data-block-id="missions" data-icon="target" data-subtitle="Familles de missions compatibles avec chaque créneau, règle et calcul affichés."><h2>Missions probables</h2>
   <div id="odvMissions" data-no-i18n><p class="odv-empty">Chargez un classeur ODV.</p></div>
   <details class="odv-rules" id="odvRules" data-no-i18n></details>
-</section>
-<section data-block-id="flights" data-icon="plane" data-subtitle="Vols posés sur la frise horaire (heures z à ±15 min) et contrôle des disponibilités."><h2>Vols de la frise horaire</h2>
-  <div id="odvZones" data-no-i18n></div>
-  <div id="odvFlights" data-no-i18n><p class="odv-empty">Chargez un classeur ODV.</p></div>
-  <h3>Contrôles et divers</h3>
-  <div id="odvOthers" data-no-i18n><p class="odv-empty">—</p></div>
 </section>
 <section data-block-id="export" data-icon="download" data-subtitle="Fichiers enregistrés sur cet ordinateur ; données nominatives : ne pas publier." class="odv-export"><h2>Export</h2>
   <div class="row"><button type="button" id="odvCsv" data-icon="download" disabled>Grille (CSV)</button><button type="button" id="odvJson" data-icon="download" disabled>Toutes les données (JSON)</button><button type="button" id="odvRecap" data-icon="file-text" disabled>Récapitulatif texte</button><button type="button" id="odvCopy" data-icon="clipboard" disabled>Copier</button><button type="button" id="odvTxt" data-icon="download" disabled>Récapitulatif (.txt)</button></div>
@@ -669,19 +791,24 @@ html[data-design="field"] .odv-heat button.sel {
 </section>
 </main>
 <script src="../../shared/kit.js?v=65a16a49"></script>
-<script src="../../shared/repository_nav.js?v=5d569e40"></script>
+<script src="../../shared/repository_nav.js?v=9013ad3a"></script>
 <script src="../../shared/zip_store.js?v=1b42107f"></script>
 <script src="../../shared/data_files.js?v=50601f47" data-file="references/defa_reference.js"></script>
 <script src="../../shared/mission_table.js?v=308deca1"></script>
-<script src="../../shared/sia_base.js?v=43fc60bd"></script><script src="odv_core.js?v=0a0f4ad2"></script>
-<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/assignments.js?v=0052ac84"></script><script src="../../shared/assign_dialog.js?v=02da111e"></script><script src="odv_assign.js?v=e31a3aa7"></script>
-<script src="odv_planning.js?v=48980d02"></script>
+<script src="../../shared/sia_base.js?v=43fc60bd"></script><script src="odv_core.js?v=394929c5"></script>
+<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/assignments.js?v=1d7adcf5"></script><script src="../../shared/assign_dialog.js?v=02da111e"></script><script src="odv_assign.js?v=22942a85"></script>
+<script src="odv_settings.js?v=e6309d00"></script>
+<script src="odv_planning.js?v=38efc791"></script>
 <script src="../../shared/app_framework.js?v=a2972a9a"></script>
 <script src="../../shared/content_i18n.js?v=7afecb78"></script>
 <script>
 // Traductions des textes fixes de la page (les contenus calculés restent en français, zones data-no-i18n).
 RepositoryContentI18n([
   ["Planning ODV", "ODV planning", "ODV-Planung", "Planificación ODV"],
+  ["Le classeur ODV est le tableau Excel hebdomadaire de l'escadrille, rempli par les pilotes (feuille ODV : un code couleur par jour et par créneau matin, après-midi, soir ; feuille FLOTTE : appareils maîtrisés et simulateurs). La suite peut s'en passer : sans classeur, la semaine se construit à partir des disponibilités déclarées dans Mes missions. Chargé, il complète ces déclarations (pilotes qui ne déclarent pas dans la suite), fournit les rôles de la feuille FLOTTE et crée les préférences de thèmes des pilotes qui n'en ont pas.", "The ODV workbook is the squadron's weekly Excel sheet, filled in by the pilots (ODV sheet: a colour code per day and per morning, afternoon and evening slot; FLOTTE sheet: aircraft mastered and simulators). The suite can do without it: with no workbook, the week is built from the availability declared in My missions. When loaded, it completes those declarations (pilots who do not declare in the suite), provides the roles of the FLOTTE sheet and creates theme preferences for pilots who have none.", "Die ODV-Arbeitsmappe ist die wöchentliche Excel-Tabelle der Staffel, von den Piloten ausgefüllt (Blatt ODV: ein Farbcode pro Tag und Zeitfenster Morgen, Nachmittag, Abend; Blatt FLOTTE: beherrschte Luftfahrzeuge und Simulatoren). Die Suite kommt ohne sie aus: ohne Arbeitsmappe wird die Woche aus den in Meine Missionen angegebenen Verfügbarkeiten gebildet. Geladen ergänzt sie diese Angaben (Piloten, die nicht in der Suite angeben), liefert die Rollen des Blatts FLOTTE und legt Themenpräferenzen für Piloten ohne solche an.", "El libro ODV es la hoja Excel semanal de la escuadrilla, rellenada por los pilotos (hoja ODV: un código de color por día y por franja de mañana, tarde y noche; hoja FLOTTE: aeronaves dominadas y simuladores). La suite puede prescindir de él: sin libro, la semana se construye a partir de las disponibilidades declaradas en Mis misiones. Cargado, completa esas declaraciones (pilotos que no declaran en la suite), aporta los roles de la hoja FLOTTE y crea preferencias de temas para los pilotos que no las tienen."],
+  ["Réglages des créneaux et de la lecture du classeur :", "Slot and workbook reading settings:", "Einstellungen der Zeitfenster und des Lesens der Arbeitsmappe:", "Ajustes de las franjas y de la lectura del libro:"],
+  ["Paramètres › Centre › Planning ODV (DEFA)", "Settings › Centre › ODV planning (DEFA)", "Einstellungen › Zentrum › ODV-Planung (DEFA)", "Ajustes › Centro › Planificación ODV (DEFA)"],
+  ["Pilotes libres par créneau ; clic sur un créneau : modifier les missions affectées ou en planifier.", "Free pilots per slot; click a slot: edit the assigned missions or plan new ones.", "Freie Piloten pro Zeitfenster; Klick auf ein Zeitfenster: zugewiesene Missionen ändern oder neue planen.", "Pilotos libres por franja; clic en una franja: modificar las misiones asignadas o planificar otras."],
   ["Classeur ODV", "ODV workbook", "ODV-Arbeitsmappe", "Libro ODV"],
   ["Classeur hebdomadaire de l'escadrille (.xlsx), lu dans ce navigateur.", "Squadron weekly workbook (.xlsx), read in this browser.", "Wöchentliche Arbeitsmappe der Staffel (.xlsx), in diesem Browser gelesen.", "Libro semanal de la escuadrilla (.xlsx), leído en este navegador."],
   ["Données personnelles : le fichier est lu dans ce navigateur, rien n'est envoyé ni conservé (seuls les réglages sont mémorisés). Ne publiez pas les exports.", "Personal data: the file is read in this browser, nothing is sent or kept (only the settings are remembered). Do not publish the exports.", "Personenbezogene Daten: Die Datei wird in diesem Browser gelesen, nichts wird gesendet oder gespeichert (nur die Einstellungen). Exporte nicht veröffentlichen.", "Datos personales: el archivo se lee en este navegador, no se envía ni se guarda nada (solo los ajustes). No publique las exportaciones."],

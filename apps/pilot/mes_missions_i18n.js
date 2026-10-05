@@ -183,5 +183,14 @@ RepositoryContentI18n([
   ["Revenir à la semaine en cours", "Back to the current week", "Zurück zur aktuellen Woche", "Volver a la semana actual"],
   ["Semaine en cours", "Current week", "Aktuelle Woche", "Semana actual"],
   ['oui', 'yes', 'ja', 'sí'],
-  ['non', 'no', 'nein', 'no']
+  ['non', 'no', 'nein', 'no'],
+  // disponibilités par plages (shared/dispos_editor.js), page seule apps/pilot/disponibilites.html
+  ['Semaine affichée, heures UTC : groupe, catégorie, jours et horaires (facultatifs), puis « Ajouter » ; clic sur une plage pour la modifier ou la retirer. Le Centre s’en sert pour affecter les missions.', 'Shown week, UTC hours: group, category, days and times (optional), then “Add”; click a range to change or remove it. The Centre uses it to assign missions.', 'Angezeigte Woche, UTC-Stunden: Gruppe, Kategorie, Tage und Zeiten (optional), dann „Hinzufügen“; Klick auf einen Zeitraum zum Ändern oder Entfernen. Das Zentrum nutzt sie zur Zuweisung.', 'Semana mostrada, horas UTC: grupo, categoría, días y horarios (opcionales), luego «Añadir»; clic en un intervalo para modificarlo o quitarlo. El Centro la usa para asignar misiones.'],
+  ['Groupe, catégorie, jours et horaires (facultatifs), puis « Ajouter » ; clic sur une plage pour la modifier ou la retirer. Le Centre s’en sert pour affecter les missions.', 'Group, category, days and times (optional), then “Add”; click a range to change or remove it. The Centre uses it to assign missions.', 'Gruppe, Kategorie, Tage und Zeiten (optional), dann „Hinzufügen“; Klick auf einen Zeitraum zum Ändern oder Entfernen. Das Zentrum nutzt sie zur Zuweisung.', 'Grupo, categoría, días y horarios (opcionales), luego «Añadir»; clic en un intervalo para modificarlo o quitarlo. El Centro la usa para asignar misiones.'],
+  ['Ancienne grille horaire (lecture seule)', 'Former hourly grid (read only)', 'Frühere Stundenrasterung (nur lesen)', 'Antigua cuadrícula horaria (solo lectura)'],
+  ['Ouvrir la saisie des disponibilités seule', 'Open the availability entry on its own', 'Verfügbarkeitseingabe einzeln öffnen', 'Abrir solo la introducción de disponibilidad'],
+  ['Mes disponibilités', 'My availability', 'Meine Verfügbarkeit', 'Mi disponibilidad'],
+  ['Enregistré dans ce navigateur, et avec la semaine affichée de vos disponibilités (pour le Centre).', 'Saved in this browser, and with the shown week of your availability (for the Centre).', 'In diesem Browser gespeichert und mit der angezeigten Woche Ihrer Verfügbarkeit (für das Zentrum).', 'Guardado en este navegador y con la semana mostrada de su disponibilidad (para el Centro).'],
+  ['Gardé dans ce navigateur et recopié dans la semaine affichée de vos disponibilités.', 'Kept in this browser and copied into the shown week of your availability.', 'In diesem Browser behalten und in die angezeigte Woche Ihrer Verfügbarkeit übernommen.', 'Guardado en este navegador y copiado en la semana mostrada de su disponibilidad.'],
+  ['Plages de la semaine, par catégorie (heures UTC)', 'Ranges of the week, by category (UTC hours)', 'Zeiträume der Woche, nach Kategorie (UTC-Stunden)', 'Intervalos de la semana, por categoría (horas UTC)']
 ]);

@@ -6,7 +6,7 @@
   // mission) et pour affecter depuis un créneau (dialogue « Affecter… », pilotes et heure préremplis).
   // Outils communs : shared/assignments.js (MissionAssignments) ; dialogue : shared/assign_dialog.js (AssignDialog).
   // API (window.OdvAssign) : load(données ODV, réglages), declaration(TRI), range(j, k), declared(TRI, j, k), assigned(TRI, j, k),
-  //   free(TRI, j, k), freePilots(j, k), freeOver(TRI, début, fin), slotsOver(début, fin), pilots(), inSlot(j, k), week(),
+  //   free(TRI, j, k), slotAt(ms), freePilots(j, k), freeOver(TRI, début, fin), slotsOver(début, fin), pilots(), inSlot(j, k), week(),
   //   line(TRI, j, k, cellule), assign(entrée, [TRI…], début, note), write(entrée, lignes, décollage)
   const M = () => window.MissionAssignments;
   const esc = s => window.RepositoryKit.esc(s);
@@ -14,6 +14,7 @@
   let D = null, // données ODV (dates, pilotes)
     S = null, // réglages (heures des créneaux)
     decl = {}, // TRI → déclaration (grille, appareils)
+    prefs = {}, // TRI → préférences de thèmes (fiche utilisateur)
     list = [], // affectations (index)
     journal = []; // journal des affectations (récentes d'abord)
   const hooks = []; // à rappeler après une affectation (grille redessinée)
@@ -28,8 +29,11 @@
       fresh: true
     })).assignments;
     journal = await M().readLog().catch(() => []);
+    prefs = {};
     await Promise.all(data.pilotes.map(async p => {
       decl[p.trigramme] = await M().availability(p.trigramme);
+      // préférences de thèmes (fiche utilisateur) : aussi pour les pilotes sans déclaration (codes du classeur)
+      prefs[p.trigramme] = decl[p.trigramme]?.prefs ?? await window.SuiteUsers?.themePrefs?.(p.trigramme).catch(() => null) ?? null;
     }));
   }
   /** Plage d'un créneau (jour j, créneau k) : [début, fin] en ms ; null sans date. */
@@ -140,10 +144,10 @@
     const d = declared(tri, j, k),
       a = assigned(tri, j, k),
       isFree = free(tri, j, k, xlRecord),
-      decl = d ? codeCell({
+      decl = d?.groupe && window.SuiteDispos ? groupCell(d) : d ? codeCell({
         code: d.code,
         sens: d.label,
-        categorie: M().LEGEND[d.code][1],
+        categorie: M().LEGEND[d.code]?.[1] || d.category,
         source: L(['déclaration du pilote (Mes missions)', 'pilot declaration (My missions)', 'Angabe des Piloten (Meine Missionen)', 'declaración del piloto (Mis misiones)'])
       }) : `<span class="odv-code c-inconnu" title="${esc(L(['Pas de déclaration du pilote', 'No pilot declaration', 'Keine Angabe des Piloten', 'Sin declaración del piloto']))}">·</span>`;
     const ferry = L(['convoyage', 'ferry', 'Überführung', 'traslado']);
@@ -151,6 +155,18 @@
       m: a.map(x => `${x.mission}${x.role === 'convoyage' ? ` (${ferry})` : ''}`).join(', ')
     }) : isFree ? L(['Disponible, non affecté : cliquer pour affecter une mission sur ce créneau', 'Available, not assigned: click to assign a mission on this slot', 'Verfügbar, nicht zugewiesen: klicken, um diesem Zeitfenster eine Mission zuzuweisen', 'Disponible, sin asignar: haga clic para asignar una misión en esta franja']) : L(['Cliquer pour affecter une mission sur ce créneau', 'Click to assign a mission on this slot', 'Klicken, um diesem Zeitfenster eine Mission zuzuweisen', 'Haga clic para asignar una misión en esta franja']);
     return `<span class="odv-decl${isFree ? ' odv-free' : ''}" data-odv-slot="${j}${k}" data-tri="${esc(tri)}" title="${esc(title)}">${decl}${a.length ? `<b class="odv-asg">${esc(a[0].mission)}${a.length > 1 ? '+' : ''}</b>` : ''}</span>`;
+  }
+  /** Déclaration regroupée (docs/DISPOS_ET_REORGANISATION.md § 1.2) : lettre (court : D, E, O, I) et couleur du groupe
+   *  (Disponible, Exercice DEFA, Occupé, Indisponible) ; catégories et thèmes ouverts dans l'infobulle. */
+  function groupCell(d) {
+    const SD = window.SuiteDispos,
+      K = window.RepositoryKit,
+      g = SD.group(d.groupe) || {},
+      name = SD.label(g.label || d.groupe),
+      col = window.RepositoryNav?.chartColor?.(g.couleur || '#BFBFBF') || g.couleur || '#BFBFBF',
+      ink = (K.color.luminance(col) ?? 1) < .35 ? '#fff' : '#1b1b1b';
+    const tip = [name, ...(d.details || [d]).map(x => `· ${x.label}`), K.t(['déclaration du pilote (Mes missions)', 'pilot declaration (My missions)', 'Pilotenangabe (Meine Missionen)', 'declaración del piloto (Mis misiones)'])].join('\n');
+    return `<span class="odv-code c-${esc(d.category || 'inconnu')}" style="background:${esc(col)};color:${ink}" title="${esc(tip)}">${esc(g.court || name.slice(0, 1).toUpperCase())}</span>`;
   }
   /** Yaml d'une mission du registre (fetch) ; {} si illisible. */
   async function yamlOf(m) {
@@ -203,8 +219,12 @@
 
   window.OdvAssign = {
     load,
+    groupCell,
     declaration: tri => decl[tri] || null,
+    /** Préférences de thèmes d'un pilote (missions probables : thèmes ouverts des codes du classeur). */
+    prefsOf: tri => prefs[tri] || null,
     range,
+    slotAt,
     declared,
     assigned,
     free,

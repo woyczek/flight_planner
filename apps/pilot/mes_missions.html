@@ -2,7 +2,7 @@
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mes missions</title>
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=92453e77"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=7e4ed0f1">
-<script src="../../config/repository_tree?v=a9735c6a"></script>
+<script src="../../config/repository_tree?v=af2d3fa7"></script>
 <style>
   /* liste en cours de lecture (affectations) : estompée */
   #pmList[aria-busy="true"] {
@@ -1525,7 +1525,7 @@
 </head><body>
 <!-- Missions affectées au pilote (trigramme du profil pilote) par le Centre : liste des missions à venir, mission en lecture
      seule (appareil, terrain, heure de décollage ou consigne d'astreinte, route, cartes fournies), transfert vers les Cartes
-     de vol et le planificateur carburant, création du CR ; disponibilités de la semaine type (grille d'une heure).
+     de vol et le planificateur carburant, création du CR ; disponibilités par plages de la semaine (shared/dispos_editor.js ; ancienne grille d'une heure en lecture).
      Dossier de mission en livre (designs à matières) : signet posé à la fin du dossier, annexes derrière lui (plis de
      l'exercice scellés jusqu'à leur heure, MissionExercise), brief dans la langue de la page (bloc i18n, MissionI18n),
      convoyage : ordre de convoyage seul ; gestes du pilote portés au journal (LocalStore.logEvent, kind « mission »).
@@ -1544,29 +1544,30 @@
 <section data-block-id="mission" data-icon="target" data-subtitle="Mission affectée, en lecture seule : ce qui vous est demandé, la route, les cartes fournies." id="pmMission" hidden><h2>Mission</h2>
   <div id="pmDetail"></div>
 </section>
-<section data-block-id="availability" data-icon="clock" data-subtitle="Semaine affichée, heures UTC, codes de l’ODV : choisir un code, puis cliquer ou tracer un rectangle sur les cases ; un second clic sur une case de ce code l’efface. Le Centre s’en sert pour affecter les missions."><h2>Mes disponibilités</h2>
+<section data-block-id="availability" data-icon="clock" data-subtitle="Semaine affichée, heures UTC : groupe, catégorie, jours et horaires (facultatifs), puis « Ajouter » ; clic sur une plage pour la modifier ou la retirer. Le Centre s’en sert pour affecter les missions."><h2>Mes disponibilités</h2>
   <div class="pm-week" data-weekbar></div>
-  <div id="pmGrid"></div>
-  <div class="pm-actions"><button type="button" id="pmGridSave" class="secondary" data-icon="save">Enregistrer dans le dossier des données</button><button type="button" id="pmGridCopy" class="secondary" title="Recopier les disponibilités de la semaine précédente">⧉ S-1</button><button type="button" id="pmGridClear" class="ghost">Tout effacer</button></div>
-  <p id="pmGridMsg" class="small" data-status></p>
+  <div id="pmDispos"></div>
+  <details id="pmGridOld" class="pm-legacy" hidden><summary>Ancienne grille horaire (lecture seule)</summary><div id="pmGrid"></div></details>
+  <p class="small"><a href="disponibilites.html">Ouvrir la saisie des disponibilités seule</a></p>
 </section>
 <section data-block-id="aircraft" data-icon="plane" data-subtitle="Types de la flotte que vous possédez dans votre simulateur et ceux que vous maîtrisez : le Centre s’en sert pour vous affecter un appareil."><h2>Mes appareils</h2>
   <div id="pmTypes" class="pm-types"></div>
-  <p id="pmTypesMsg" class="small">Enregistré dans ce navigateur, et avec vos disponibilités (« Enregistrer dans le dossier des données »).</p>
+  <p id="pmTypesMsg" class="small">Enregistré dans ce navigateur, et avec la semaine affichée de vos disponibilités (pour le Centre).</p>
 </section>
 <section data-block-id="sims" data-icon="layers" data-subtitle="Simulateurs et outils installés (colonnes de la feuille FLOTTE du classeur ODV) : le Centre s’en sert pour réunir des pilotes sur un simulateur commun."><h2>Mes simulateurs</h2>
   <div id="pmSims" class="pm-sims"></div>
-  <p id="pmSimsMsg" class="small">Enregistré dans ce navigateur, et avec vos disponibilités (« Enregistrer dans le dossier des données »).</p>
+  <p id="pmSimsMsg" class="small">Enregistré dans ce navigateur, et avec la semaine affichée de vos disponibilités (pour le Centre).</p>
 </section>
 </main>
 <script src="../../shared/kit.js?v=65a16a49"></script>
-<script src="../../shared/repository_nav.js?v=5d569e40"></script>
-<script src="mes_missions_i18n.js?v=0207db7b" defer></script>
+<script src="../../shared/repository_nav.js?v=9013ad3a"></script>
+<script src="mes_missions_i18n.js?v=8e114df2" defer></script>
+<script src="../../shared/dispos_editor.js?v=1febe8bc"></script>
 <script src="../../shared/content_i18n.js?v=7afecb78"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=74550207"></script>
 <script src="../../shared/mission_estimate.js?v=1e7731a5"></script><script src="../../shared/mission_i18n.js?v=bfd45c20"></script><script src="../../shared/machine_translate.js?v=c029bc1a"></script><script src="../../shared/mission_exercise.js?v=6c6aed4f"></script>
-<script src="../../shared/assignments.js?v=0052ac84"></script>
+<script src="../../shared/assignments.js?v=1d7adcf5"></script>
 <script>
 (() => {
   'use strict';
@@ -2752,7 +2753,8 @@
       mastered.clear();
       decl.aircraft.mastered.forEach(x => mastered.add(x));
       $('pmTypesSum').textContent = summary();
-      $('pmTypesMsg').textContent = 'Gardé dans ce navigateur ; « Enregistrer dans le dossier des données » (disponibilités) pour le Centre.';
+      dispoEd?.touch?.(); // déclaration de la semaine affichée : appareils à jour
+      $('pmTypesMsg').textContent = 'Gardé dans ce navigateur et recopié dans la semaine affichée de vos disponibilités.';
     };
     window.AppFramework?.refresh?.(); // en-têtes des sous-cartes (icône, titre, sous-titre)
   }
@@ -2770,84 +2772,36 @@
         return;
       }
       A.saveSims(tri, [...host.querySelectorAll('[data-sim]:checked')].map(x => x.dataset.sim));
-      $('pmSimsMsg').textContent = 'Gardé dans ce navigateur ; « Enregistrer dans le dossier des données » (disponibilités) pour le Centre.';
+      dispoEd?.touch?.(); // déclaration de la semaine affichée : simulateurs à jour
+      $('pmSimsMsg').textContent = 'Gardé dans ce navigateur et recopié dans la semaine affichée de vos disponibilités.';
     };
   }
 
-  // ---- disponibilités
-  let grid = null;
-  let doc = null; // déclaration lue (ce poste, sinon le fichier) : ses semaines
+  // ---- disponibilités : saisie par plages (shared/dispos_editor.js, semaine de la page) ; l'ancienne grille horaire de la
+  // semaine reste visible en lecture seule tant qu'elle existe (docs/DISPOS_ET_REORGANISATION.md § 1.5)
+  let doc = null; // déclaration lue (ce poste, sinon les fichiers) : anciennes semaines
+  let dispoEd = null;
   async function gridLoad() {
     const tri = A.trigram();
     doc = tri ? await A.availability(tri) : null;
-    grid = editor(A.weekGrid(doc, week));
-  }
-  /** Éditeur de la grille : chaque retouche gardée dans ce navigateur ; code de la palette gardé (view.brush). */
-  function editor(g) {
-    const tri = A.trigram();
-    return A.gridEditor($('pmGrid'), g, x => {
-      if (tri) A.saveAvailability(tri, x, {
-        week,
-        base: doc
-      });
-      $('pmGridMsg').textContent = 'Gardé dans ce navigateur ; « Enregistrer dans le dossier des données » pour le Centre.';
-    }, {
-      code: view.brush,
-      onBrush: b => {
-        view.brush = b;
-        saveView();
-      },
+    const old = A.weekGrid(doc, week);
+    $('pmGridOld').hidden = !old.some(r => r.some(Boolean));
+    if (!$('pmGridOld').hidden) A.gridEditor($('pmGrid'), old, null, {
+      readOnly: true,
       days: Array.from({
         length: 7
       }, (_, i) => dayFr(week, i))
     });
+    for (let n = 0; !window.SuiteDispos && n < 60; n++) await new Promise(r => setTimeout(r, 50)); // chargé par repository_nav.js
+    if (!window.DisposEditor || !window.SuiteDispos) return;
+    dispoEd ||= window.DisposEditor.mount($('pmDispos'), {
+      nav: false // semaine de la page (barre commune à la liste)
+    });
+    await dispoEd.set({
+      tri,
+      week: window.SuiteDispos.weekId(Date.parse(`${week}T12:00:00Z`))
+    });
   }
-  $('pmGridSave').onclick = async () => {
-    const tri = A.trigram();
-    if (!tri) {
-      $('pmGridMsg').innerHTML = '<span class="err">Trigramme non réglé.</span>';
-      return;
-    }
-    try {
-      const f = await A.saveAvailability(tri, grid, {
-        toFolder: true,
-        week,
-        base: doc
-      });
-      $('pmGridMsg').innerHTML = `<span class="ok">Disponibilités enregistrées : ${esc(f)}</span>`;
-      window.AppFramework?.notify?.(`Disponibilités enregistrées : ${f}`, 'ok');
-    } catch (e) {
-      $('pmGridMsg').innerHTML = `<span class="err">${esc(e.message)}</span>`;
-    }
-  };
-  $('pmGridClear').onclick = () => {
-    grid = editor(A.emptyGrid());
-    A.saveAvailability(A.trigram(), grid, {
-      week,
-      base: doc
-    });
-  };
-  // recopie de la semaine précédente (remplace la semaine affichée)
-  $('pmGridCopy').onclick = async () => {
-    const tri = A.trigram();
-    if (!tri) {
-      $('pmGridMsg').innerHTML = '<span class="err">Trigramme non réglé.</span>';
-      return;
-    }
-    doc = await A.availability(tri);
-    const prev = A.weekGrid(doc, A.addWeeks(week, -1));
-    if (!prev.some(r => r.some(Boolean))) {
-      $('pmGridMsg').innerHTML = '<span class="err">Semaine précédente vide : rien à recopier.</span>';
-      return;
-    }
-    grid = editor(prev);
-    await A.saveAvailability(tri, grid, {
-      week,
-      base: doc
-    });
-    doc = await A.availability(tri);
-    $('pmGridMsg').textContent = `Disponibilités de la semaine du ${dayFr(A.addWeeks(week, -1), 0)} recopiées (gardées dans ce navigateur).`;
-  };
 
   // index complet gardé pour les coéquipiers
   const keepAll = async () => {

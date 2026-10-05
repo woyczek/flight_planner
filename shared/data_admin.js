@@ -942,6 +942,11 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         h.hidden = !any;
       });
     }
+    // rubriques de settings_panels.js (textes composés dans la langue courante) : refaites au changement de langue
+    window.addEventListener('repository-language-change', () => {
+      const set = SETS.find(d => d.id === current.id);
+      if (set?.render && !dirty && !root.querySelector('.da-main').hidden) show();
+    });
     window.addEventListener('cpco-access-change', () => {
       lockNav();
       if (locked(SETS.find(d => d.id === current.id) || {})) current.id = 'cpco';

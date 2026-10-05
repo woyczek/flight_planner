@@ -143,3 +143,16 @@ des séparateurs titrés (« Centre »).
 2. Classeur ODV secondaire ; préférences créées à l'import pour un pilote qui n'en a pas.
 3. Utilisateurs et rôles dans un fichier partagé et synchronisé ; mode `develop` / `production` ; usurpation affichée.
 4. Barre latérale : pilote d'abord.
+
+## 5. Mise en œuvre (branche `feature/dispos-reorg`)
+
+| Sujet | Où |
+|---|---|
+| Barre latérale (clé `sidebar`), onglets en tête de page (clé `tabs` : Mes missions ⇄ Mes disponibilités, générateur ⇄ studio, Paramètres) | `config/repository_tree`, `shared/repository_nav.js` |
+| Paramètres en quatre pages ; rubrique → page (clé `settings`) ; anciennes adresses renvoyées par `parametrage.html` | `apps/settings/{profil,centre,installation,maintenance}.html`, `shared/settings_panels.js`, `shared/data_admin.js`, `shared/maintenance_page.js` |
+| Utilisateurs, mode develop / production, connexion, usurpation | `shared/users.js`, `data/utilisateurs/`, `data/config/suite.json` |
+| Fichiers du pool écrits sous verrou (dossier des données, sinon boîte d'envoi du navigateur `suiteDataOutbox:v1`) | `MissionAssignments.readData` / `writeData` / `flushData` (`shared/assignments.js`) |
+| Catégories, thèmes ouverts, déclarations par semaine | `shared/dispos.js`, `data/config/disponibilites.json`, `data/disponibilites/<TRI>/<AAAA>-W<nn>.json` |
+| Saisie par plages (Mes missions et page seule) ; ancienne grille en lecture | `shared/dispos_editor.js`, `apps/pilot/disponibilites.html` |
+| ODV : déclarations regroupées, missions probables et contrôles des vols par thèmes, préférences créées à l'import du classeur | `apps/cpco/odv_core.js`, `odv_assign.js`, `odv_planning.js` |
+| Conversion des grilles | `python tools/convert_dispos.py` (aperçu), `--write` |

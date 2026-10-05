@@ -351,7 +351,8 @@
   }
 
   // ---- préférences de thèmes (par domaine : { mode: 'tous' | 'blanche' | 'noire', liste: [THÈMES] })
-  const themePrefs = async tri => (await get(tri))?.preferences?.themes || null;
+  // fiche lue seulement si l'index la connaît (l'ODV en demande une par pilote : pas de rafale de 404)
+  const themePrefs = async tri => (await index())[norm(tri)] ? (await get(tri))?.preferences?.themes || null : null;
   async function setThemePrefs(tri, themes) {
     tri = norm(tri);
     const u = (await get(tri, {

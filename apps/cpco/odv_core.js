@@ -1434,19 +1434,33 @@
     const hasSim = t => !settings.sim || (profile(t)?.sims || []).includes(settings.sim);
     const order = new Map(data.pilotes.map((p, i) => [p.trigramme, i]));
     const themeText = fold(data.theme || '');
+    // thèmes ouverts (docs/DISPOS_ET_REORGANISATION.md § 1, shared/dispos.js) : ceux de la déclaration, sinon ceux de la
+    // catégorie du code du classeur avec les préférences du pilote (settings.prefsOf) ; null : anciennes règles (rôle
+    // imposé par le code, DOMAIN)
+    const SD = settings.dispos || window.SuiteDispos;
+    const themesOf = r => Array.isArray(r.themes) ? new Set(r.themes) : SD && r.code && SD.codeCategory(r.code) ? SD.openThemes(SD.codeCategory(r.code), settings.prefsOf?.(r.pilote)) : null;
+    const opensFam = (p, fam) => !p.themes || (fam === 'TRAINING' ? p.themes.size > 0 : SD.opens(p.themes, fam));
     const slots = [];
     for (let j = 0; j < 7; j++)
       for (let k = 0; k < 3; k++) {
         const recs = data.records.filter(r => r.jourIndex === j && r.creneauIndex === k);
         const dispo = recs.filter(r => r.categorie === 'dispo' && hasSim(r.pilote))
-          // pilotes à code restreint en tête : affectés en priorité à leur domaine
-          .sort((a, b) => (a.code === 'O') - (b.code === 'O') || order.get(a.pilote) - order.get(b.pilote))
-          .map(r => ({
-            trigramme: r.pilote,
-            code: r.code,
-            roles: eligible(r, profile(r.pilote), settings),
-            commentaire: r.commentaire
-          }));
+          .map(r => {
+            const themes = themesOf(r);
+            return {
+              trigramme: r.pilote,
+              code: r.code,
+              // thèmes connus : rôles d'après les appareils seulement (le thème remplace le rôle imposé par le code)
+              roles: eligible(themes ? {
+                ...r,
+                role_impose: themes.has('EXERCICE') ? 'EXERCICE' : null
+              } : r, profile(r.pilote), settings),
+              themes,
+              commentaire: r.commentaire
+            };
+          })
+          // pilotes restreints (code restreint, thèmes choisis) en tête : affectés en priorité à leurs thèmes
+          .sort((a, b) => (a.themes ? a.themes.has('*') : a.code === 'O') - (b.themes ? b.themes.has('*') : b.code === 'O') || order.get(a.trigramme) - order.get(b.trigramme));
         const atc = recs.filter(r => r.categorie === 'atc').map(r => ({
           trigramme: r.pilote,
           code: r.code,
@@ -1466,18 +1480,24 @@
             needs = ['*'];
             joins = ['*'];
           }
-          const a = dispo.length ? assign(needs, dispo) : null;
+          // pilotes dont les thèmes ouverts couvrent la famille
+          const pool = dispo.filter(p => opensFam(p, fam));
+          const a = pool.length ? assign(needs, pool) : null;
           if (!a) continue;
           const taken = new Set(a.map(x => x.pilote));
-          const part = dispo.filter(p => taken.has(p.trigramme) || joins.includes('*') || joins.some(r => p.roles.has(r))).map(p => p.trigramme);
-          const inDomain = part.filter(t => (DOMAIN[dispo.find(p => p.trigramme === t).code] || []).includes(fam));
+          const part = pool.filter(p => taken.has(p.trigramme) || joins.includes('*') || joins.some(r => p.roles.has(r))).map(p => p.trigramme);
+          // bonus : pilote restreint employé dans ses thèmes (thèmes choisis), ou code restreint dans son domaine (ancien)
+          const inDomain = part.filter(t => {
+            const p = dispo.find(x => x.trigramme === t);
+            return p.themes ? !p.themes.has('*') && fam !== 'TRAINING' && SD.opens(p.themes, fam) : (DOMAIN[p.code] || []).includes(fam);
+          });
           const ctrl = fam === 'TRAINING' ? Math.min(2, atc.length) : 0;
           // famille déjà jouée (CR) : léger recul, pour varier ; log : chaque CR de plus pèse moins
           const played = +settings.plays?.[fam] || 0,
             malus = played ? Math.round(settings.playWeight * Math.log2(1 + played) * 10) / 10 : 0;
           const score = Math.round((part.length + 2 * inDomain.length + ctrl - malus) * 10) / 10;
           const why = [rowOf(part.length > 1 ? ['{n} participants', '{n} participants', '{n} Teilnehmer', '{n} participantes'] : ['{n} participant', '{n} participant', '{n} Teilnehmer', '{n} participante'], { n: part.length })];
-          if (inDomain.length) why.push(rowOf(['+2 × {n} (code restreint dans son domaine : {l})', '+2 × {n} (restricted code in its domain: {l})', '+2 × {n} (eingeschränkter Code in seinem Bereich: {l})', '+2 × {n} (código restringido en su ámbito: {l})'], { n: inDomain.length, l: inDomain.map(t => `${t} ${dispo.find(p => p.trigramme === t).code}`).join(', ') }));
+          if (inDomain.length) why.push(rowOf(['+2 × {n} (pilote employé dans ses thèmes : {l})', '+2 × {n} (pilot used within their themes: {l})', '+2 × {n} (Pilot in seinen Themen eingesetzt: {l})', '+2 × {n} (piloto empleado en sus temas: {l})'], { n: inDomain.length, l: inDomain.map(t => `${t} ${dispo.find(p => p.trigramme === t).code}`).join(', ') }));
           if (ctrl) why.push(rowOf(ctrl > 1 ? ['+{n} (contrôleurs en ligne : {l})', '+{n} (online controllers: {l})', '+{n} (Lotsen online: {l})', '+{n} (controladores en línea: {l})'] : ['+{n} (contrôleur en ligne : {l})', '+{n} (online controller: {l})', '+{n} (Lotse online: {l})', '+{n} (controlador en línea: {l})'], { n: ctrl, l: atc.map(x => x.trigramme).join(', ') }));
           if (malus) why.push(rowOf(['{s} {m} (déjà jouée : {p} CR)', '{s} {m} (already flown: {p} CR)', '{s} {m} (bereits geflogen: {p} CR)', '{s} {m} (ya volada: {p} CR)'], { s: malus > 0 ? '−' : '+', m: num(Math.abs(malus)), p: played }));
           cands.push({
@@ -1529,7 +1549,8 @@
           n: dispo.length,
           pilotes: dispo.map(p => ({
             ...p,
-            roles: [...p.roles].sort()
+            roles: [...p.roles].sort(),
+            themes: p.themes ? [...p.themes] : null
           })),
           atc,
           horsSim,
@@ -1555,6 +1576,7 @@
       ...DEFAULTS,
       ...settings
     };
+    const SD = settings.dispos || window.SuiteDispos;
     const CODE_ROLES = {
       SC: ['HELICO', 'SECU_AVION'],
       C: ['CHASSE'],
@@ -1577,7 +1599,11 @@
         const r = recs.find(x => x.categorie === 'dispo') || recs.find(x => x.categorie === 'atc') || recs.find(x => x.categorie !== 'inconnu') || recs[0];
         if (r.categorie === 'inconnu') alerts.push(phrase(['{t} : grille non renseignée ({w})', '{t}: grid not filled in ({w})', '{t}: Raster nicht ausgefüllt ({w})', '{t}: cuadrícula sin rellenar ({w})'], { t, w: whenRow }));
         else if (r.categorie !== 'dispo') alerts.push(phrase(['{t} : codé {c} ({s}) — {w}', '{t}: coded {c} ({s}) — {w}', '{t}: codiert {c} ({s}) — {w}', '{t}: codificado {c} ({s}) — {w}'], { t, c: recs.map(x => x.code || '·').join(' / '), s: r.sens ? sensRow(r.sens) : catRow(r.categorie), w: whenRow }));
-        else if (CODE_ROLES[r.code] && v.roles_type.length && !v.roles_type.some(x => CODE_ROLES[r.code].includes(x))) alerts.push(phrase(['{t} : code {c} ({s}) mais appareil {a} ({r})', '{t}: code {c} ({s}) but aircraft {a} ({r})', '{t}: Code {c} ({s}), aber Luftfahrzeug {a} ({r})', '{t}: código {c} ({s}) pero aeronave {a} ({r})'], { t, c: r.code, s: sensRow(r.sens) ?? String(r.sens), a: v.appareil, r: joinRows(v.roles_type.map(roleRow), ', ') }));
+        else if (SD && v.famille && (Array.isArray(r.themes) || SD.codeCategory(r.code))) {
+          // thèmes ouverts du pilote (déclaration, sinon catégorie du code et préférences) : famille du vol couverte ?
+          const th = Array.isArray(r.themes) ? new Set(r.themes) : SD.openThemes(SD.codeCategory(r.code), settings.prefsOf?.(t));
+          if (!SD.opens(th, v.famille)) alerts.push(phrase(['{t} : {s} — {f} hors de ses thèmes ouverts', '{t}: {s} — {f} outside their open themes', '{t}: {s} — {f} außerhalb seiner offenen Themen', '{t}: {s} — {f} fuera de sus temas abiertos'], { t, s: r.sens ? (sensRow(r.sens) ?? String(r.sens)) : r.code, f: v.famille }));
+        } else if (CODE_ROLES[r.code] && v.roles_type.length && !v.roles_type.some(x => CODE_ROLES[r.code].includes(x))) alerts.push(phrase(['{t} : code {c} ({s}) mais appareil {a} ({r})', '{t}: code {c} ({s}) but aircraft {a} ({r})', '{t}: Code {c} ({s}), aber Luftfahrzeug {a} ({r})', '{t}: código {c} ({s}) pero aeronave {a} ({r})'], { t, c: r.code, s: sensRow(r.sens) ?? String(r.sens), a: v.appareil, r: joinRows(v.roles_type.map(roleRow), ', ') }));
       }
       return {
         ...v,

@@ -359,7 +359,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
 .repo-sidenav-item{position:relative}.repo-assign-badge{position:absolute;top:2px;right:6px;min-width:15px;height:15px;padding:0 3px;border-radius:calc(8px * var(--repo-round, 1));background:#c62828;color:#fff;font:700 9.5px/15px system-ui,sans-serif;text-align:center}
 .pa-grid{overflow-x:auto;user-select:none;touch-action:none}.pa-grid table{border-collapse:collapse;font:11px/1 system-ui,sans-serif}
 .pa-grid th{padding:3px 4px;font-weight:600;opacity:.8;text-align:center}.pa-grid tbody th{text-align:left;padding-right:8px}
-.pa-grid td{width:22px;height:20px;border:1px solid color-mix(in srgb,currentColor 22%,transparent);background:color-mix(in srgb,currentColor 6%,transparent);cursor:pointer}
+.pa-grid td{width:22px;height:20px;border:1px solid color-mix(in srgb,currentColor 22%,transparent);background:color-mix(in srgb,currentColor 6%,transparent);cursor:pointer}.pa-readonly td{cursor:default}
 .pa-grid td{font:700 9.5px/20px system-ui,sans-serif;text-align:center}.pa-grid td:nth-child(7n+1){border-left-width:2px}
 .pa-palette{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 8px}.pa-palette .pa-code{display:inline-flex;align-items:baseline;gap:5px;padding:3px 7px;border:2px solid transparent;border-radius:calc(4px * var(--repo-round, 1));font:700 11px/1.3 system-ui,sans-serif;cursor:pointer}
 .pa-palette .pa-code small{font-weight:500;font-size:10.5px;opacity:.9}.pa-palette .pa-code[aria-checked=true]{border-color:currentColor;box-shadow:0 0 0 2px rgba(0,0,0,.35)}`;
@@ -485,15 +485,32 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     // déclaration servie (petite base : gardée une minute, fichier absent compris — plus de rafale de 404 à chaque
     // reconstruction de l'ODV ; oubliée dès qu'un onglet l'écrit)
     // index des déclarations (data/disponibilites/_index.json : pilotes qui ont un fichier) : un pilote absent de
-    // l'index n'est pas demandé (l'ODV demandait un fichier par pilote, presque tous en 404) ; sans index, comme avant
-    if (!doc) {
-      const idx = await store.read('data/disponibilites/_index.json');
-      if (!idx?.pilots || idx.pilots[tri]) doc = await store.read(`data/disponibilites/${encodeURIComponent(tri)}.json`);
-    }
-    return doc ? {
-      ...doc,
-      grid: normGrid(doc.grid)
+    // l'index n'est pas demandé (l'ODV demandait un fichier par pilote, presque tous en 404) ; sans index, comme avant.
+    // Entrée de l'index : true (ancien fichier <TRI>.json) ou { weeks, legacy } (fichiers par semaine, ancien fichier).
+    const idx = await store.read('data/disponibilites/_index.json');
+    const entry = idx?.pilots?.[tri];
+    if (!doc && (!idx?.pilots || entry === true || entry?.legacy)) doc = await store.read(`data/disponibilites/${encodeURIComponent(tri)}.json`);
+    // nouveau format (docs/DISPOS_ET_REORGANISATION.md § 1.3, shared/dispos.js) : une déclaration par semaine ISO ;
+    // préférences de thèmes du pilote (fiche utilisateur) pour calculer les thèmes ouverts
+    const weeks2 = await window.SuiteDispos?.readPilot?.(tri).catch(() => ({})) || {};
+    const prefs = await window.SuiteUsers?.themePrefs?.(tri).catch(() => null) || null;
+    const has2 = Object.keys(weeks2).length > 0;
+    if (!doc && !has2) return null;
+    // appareils et simulateurs : semaine déclarée la plus récente, sinon l'ancienne déclaration
+    const last = has2 ? weeks2[Object.keys(weeks2).sort().pop()] : null;
+    const ac = last?.appareils && (last.appareils.possedes?.length || last.appareils.maitrises?.length) ? {
+      owned: last.appareils.possedes || [],
+      mastered: last.appareils.maitrises || []
     } : null;
+    return {
+      pilot: tri,
+      ...(doc || {}),
+      grid: normGrid(doc?.grid),
+      weeks2,
+      prefs,
+      aircraft: local?.aircraft || ac || doc?.aircraft || null,
+      sims: local?.sims || (last?.simulateurs?.length ? last.simulateurs : null) || doc?.sims || null
+    };
   }
   /** Mémorise la grille (local) et, si demandé, l'écrit dans data/disponibilites/<TRI>.json (dossier des données). */
   async function saveAvailability(tri, grid, {
@@ -661,7 +678,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   function gridEditor(host, grid, onChange, {
     code = 'O',
     onBrush = null, // code choisi dans la palette (pour le garder)
-    days = null // libellés des lignes (ex. « Lun 28/09 ») ; sinon jours de la semaine
+    days = null, // libellés des lignes (ex. « Lun 28/09 ») ; sinon jours de la semaine
+    readOnly = false // ancienne grille montrée en lecture seule (saisie par plages : shared/dispos_editor.js)
   } = {}) {
     grid = normGrid(grid);
     const dayLabel = i => days?.[i] || t(DAYS[i]);
@@ -671,6 +689,12 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     const cell = (d, h, v) => `<td data-d="${d}" data-h="${h}" title="${K.esc(dayLabel(d))} ${h}h–${h + 1}h UTC${v ? ' · ' + K.esc(LEGEND[v][0]) : ''}"${v ? ` data-code="${v}" style="background-color:${colorOf(v)} !important;color:${inkOf(v)} !important"` : ''}>${v}</td>`;
     const rows = () => DAYS.map((_, i) => `<tr><th>${K.esc(dayLabel(i))}</th>${grid[i].map((v, h) => cell(i, h, v)).join('')}</tr>`).join('');
     host.classList.add('pa-grid');
+    host.classList.toggle('pa-readonly', readOnly);
+    if (readOnly) {
+      host.innerHTML = `<table><thead><tr><th></th>${Array.from({ length: 24 }, (_, h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows()}</tbody></table>`;
+      host.onpointerdown = host.onpointerover = host.onpointerup = host.onpointerleave = null;
+      return grid;
+    }
     host.innerHTML = `<div class="pa-palette" role="radiogroup" aria-label="${K.esc(t(['Code à poser', 'Code to paint', 'Zu setzender Code', 'Código a pintar']))}">${Object.entries(LEGEND).map(([k, [label]]) => `<button type="button" class="repo-plain pa-code" data-code="${k}" role="radio" aria-checked="${k === brush}" title="${K.esc(label)}" style="background:${colorOf(k)};color:${inkOf(k)}">${k}<small>${K.esc(label)}</small></button>`).join('')}</div>
       <table><thead><tr><th></th>${Array.from({ length: 24 }, (_, h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows()}</tbody></table>`;
     host.querySelector('.pa-palette').onclick = e => {
@@ -725,11 +749,22 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   /** Disponibilité à une heure UTC (grille semaine type) : { code, label, category, role, ok } ; null si non renseignée.
    *  ok : code « dispo » qui couvre la famille de la mission (rôle ; O : tout rôle). */
   function availabilityAt(av, ms, family) {
+    const SD = window.SuiteDispos;
+    // nouveau format : plages de la semaine déclarée (plusieurs possibles, superposées)
+    const entries = SD && ms ? SD.entriesAt(av?.weeks2, ms) : null;
+    if (entries) return entries.length ? themed(av, entries.map(x => ({
+      categorie: x.categorie
+    })), family) : null;
     const g = ms ? gridAt(av, ms) : null;
     if (!g) return null;
     const d = new Date(ms),
       code = normGrid(g)[(d.getUTCDay() + 6) % 7]?.[d.getUTCHours()];
     if (!code) return null;
+    // ancienne grille : code de l'ODV ramené à sa catégorie (thèmes : catégorie + préférences du pilote)
+    if (SD?.codeCategory(code)) return themed(av, [{
+      categorie: SD.codeCategory(code),
+      code
+    }], family);
     const [label, category, role] = LEGEND[code];
     const roles = FAMILY_ROLES[String(family || '').toUpperCase()];
     return {
@@ -738,6 +773,44 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       category,
       role,
       ok: category === 'dispo' && (!role || !roles || roles.includes(role))
+    };
+  }
+  const TYPE_RANK = {
+    dispo: 0,
+    atc: 1,
+    occupe: 2,
+    indispo: 3
+  };
+  /** Disponibilité tirée des catégories (shared/dispos.js) : la plus favorable pour la famille — ouverte à la famille,
+   *  puis par type (dispo, contrôle, occupé, indisponible). { code (code ODV de la catégorie, sinon son identifiant),
+   *  label, category (type), categorie, groupe, themes, ok, others } ; ok : type « dispo » et famille ouverte. */
+  function themed(av, list, family) {
+    const SD = window.SuiteDispos;
+    const all = list.map(x => {
+      const c = SD.category(x.categorie);
+      if (!c) return null;
+      const th = SD.openThemes(c, av?.prefs);
+      return {
+        c,
+        code: x.code || c.odv?.[0] || c.id,
+        th,
+        ok: c.type === 'dispo' && SD.opens(th, family)
+      };
+    }).filter(Boolean).sort((a, b) => b.ok - a.ok || (TYPE_RANK[a.c.type] ?? 9) - (TYPE_RANK[b.c.type] ?? 9));
+    if (!all.length) return null;
+    const best = all[0];
+    const themes = [...best.th];
+    const restricted = themes.length && !best.th.has('*') && best.c.type === 'dispo';
+    return {
+      code: best.code,
+      label: SD.label(best.c.label) + (restricted ? ` (${themes.map(SD.themeLabel).join(', ')})` : ''),
+      category: best.c.type,
+      role: null,
+      categorie: best.c.id,
+      groupe: best.c.groupe,
+      themes,
+      ok: best.ok,
+      others: all.slice(1).map(x => x.c.id)
     };
   }
   /** Disponible à une heure UTC (code « dispo ») ; null si non renseigné. */
@@ -1044,19 +1117,31 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   /** Déclaration d'un pilote sur une plage : code dominant (les « dispo » d'abord), dispo, codes rencontrés. */
   function declaredOver(av, start, end) {
     if (!av || !start || !end) return null;
-    const codes = {};
-    for (let ms = start; ms < end; ms += 36e5) {
+    // pas d'un quart d'heure pour les déclarations par plages (nouveau format), d'une heure pour les anciennes grilles
+    const step = av.weeks2 && Object.keys(av.weeks2).length ? 9e5 : 36e5;
+    const codes = {},
+      seen = {};
+    for (let ms = start; ms < end; ms += step) {
       const a = availabilityAt(av, ms);
-      if (a) codes[a.code] = (codes[a.code] || 0) + 1;
+      if (!a) continue;
+      codes[a.code] = (codes[a.code] || 0) + 1;
+      seen[a.code] ||= a;
     }
-    const list = Object.entries(codes).sort((x, y) => (LEGEND[y[0]][1] === 'dispo') - (LEGEND[x[0]][1] === 'dispo') || y[1] - x[1]);
+    const isDispo = c => (seen[c].category || LEGEND[c]?.[1]) === 'dispo';
+    const list = Object.entries(codes).sort((x, y) => isDispo(y[0]) - isDispo(x[0]) || y[1] - x[1]);
     if (!list.length) return null;
-    const code = list[0][0];
+    const code = list[0][0],
+      a = seen[code];
     return {
       code,
-      label: LEGEND[code][0],
-      dispo: LEGEND[code][1] === 'dispo',
-      codes
+      label: a.label,
+      dispo: isDispo(code),
+      category: a.category,
+      categorie: a.categorie || null,
+      groupe: a.groupe || null,
+      themes: a.themes || null,
+      codes,
+      details: list.map(([c]) => seen[c])
     };
   }
   /** Plage occupée par une affectation : du décollage (ou du convoyage, ou de l'astreinte) à l'atterrissage estimé,

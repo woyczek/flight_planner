@@ -389,13 +389,25 @@ INSTANCE_DIRS = ('', 'data', os.path.join('data', 'missions'), os.path.join('dat
 
 
 def index_availability():
-    """data/disponibilites/_index.json : pilotes qui ont déclaré leurs disponibilités (fichier <TRI>.json). Les pages
-    ne demandent que ces fichiers (l'ODV en demandait un par pilote, presque tous absents). Réécrit seulement s'il
-    change ; ignoré par git (régénéré)."""
+    """data/disponibilites/_index.json : pilotes qui ont déclaré leurs disponibilités. Les pages ne demandent que ces
+    fichiers (l'ODV en demandait un par pilote, presque tous absents). Entrée d'un pilote : { weeks: [semaines ISO du
+    dossier <TRI>/ (format par plages, docs/DISPOS_ET_REORGANISATION.md § 1.3)], legacy: true (ancien fichier
+    <TRI>.json) }. Réécrit seulement s'il change ; ignoré par git (régénéré)."""
     d = os.path.join(DATA, 'disponibilites')
     if not os.path.isdir(d):
         return
-    pilots = {m.group(1).upper(): True for m in (re.match(r'^([A-Za-z0-9]{2,5})\.json$', n) for n in sorted(os.listdir(d))) if m}
+    pilots = {}
+    for n in sorted(os.listdir(d)):
+        m = re.match(r'^([A-Za-z0-9]{2,5})(\.json)?$', n)
+        if not m:
+            continue
+        p = os.path.join(d, n)
+        if m.group(2) and os.path.isfile(p):
+            pilots.setdefault(m.group(1).upper(), {})['legacy'] = True
+        elif not m.group(2) and os.path.isdir(p):
+            weeks = sorted(x[:-5] for x in os.listdir(p) if re.match(r'^\d{4}-W\d{2}\.json$', x))
+            if weeks:
+                pilots.setdefault(m.group(1).upper(), {})['weeks'] = weeks
     p = os.path.join(d, '_index.json')
     try:
         old = json.load(open(p, encoding='utf-8')).get('pilots')
@@ -403,7 +415,7 @@ def index_availability():
         old = None
     if old != pilots:
         with open(p, 'w', encoding='utf-8', newline='\n') as f:
-            json.dump({'updated_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'pilots': pilots}, f, indent=1)
+            json.dump({'schema': 2, 'updated_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'pilots': pilots}, f, indent=1)
 
 
 def index_users():

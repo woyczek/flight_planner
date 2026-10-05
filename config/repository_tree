@@ -124,7 +124,7 @@ window.REPOSITORY_TREE={
   // Séparateur : {sep:true} ; title : séparateur titré (masqué, comme le Centre, si toutes ses entrées sont du Centre) ;
   // bottom : la suite est rangée en bas de la colonne.
   sidebar:[
-    {icon:"send",path:"apps/pilot/mes_missions.html",label:["Mes missions","My missions","Meine Missionen","Mis misiones"],title:["Missions qui vous sont affectées par le Centre, vos disponibilités et vos appareils","Missions assigned to you by the Centre, your availability and aircraft","Vom Zentrum zugewiesene Missionen, Verfügbarkeit und Luftfahrzeuge","Misiones asignadas por el Centro, disponibilidad y aeronaves"]},
+    {icon:"send",path:"apps/pilot/mes_missions.html",match:"apps/pilot/",label:["Mes missions","My missions","Meine Missionen","Mis misiones"],title:["Missions qui vous sont affectées par le Centre, vos disponibilités et vos appareils","Missions assigned to you by the Centre, your availability and aircraft","Vom Zentrum zugewiesene Missionen, Verfügbarkeit und Luftfahrzeuge","Misiones asignadas por el Centro, disponibilidad y aeronaves"]},
     {icon:"clipboard",path:"apps/cr/mission_cr.html",match:"apps/cr/",label:["CR DEFA","DEFA report","DEFA-Bericht","Informe DEFA"]},
     {icon:"map",path:"apps/planner/map_planner.html",label:["Cartes de vol","Flight maps","Flugkarten","Mapas de vuelo"],title:["Cartes de vol : route, topo, approche, rendez-vous, destination","Flight maps: route, topo, approach, rendezvous, destination","Flugkarten: Route, Topo, Anflug, Treffpunkt, Ziel","Mapas de vuelo: ruta, topo, aproximación, encuentro, destino"]},
     {icon:"fuel",path:"apps/planner/flight_performance_planner.html",label:["Carburant","Fuel","Kraftstoff","Combustible"]},
@@ -143,6 +143,9 @@ window.REPOSITORY_TREE={
   // « repository-tab-leave » (detail : { from, to }) pour que la page transmette son travail (mission partagée), puis
   // ouverture de l'onglet.
   tabs:[
+    {id:"pilot",pages:[
+      {path:"apps/pilot/mes_missions.html",label:["Mes missions","My missions","Meine Missionen","Mis misiones"]},
+      {path:"apps/pilot/disponibilites.html",label:["Mes disponibilités","My availability","Meine Verfügbarkeit","Mi disponibilidad"]}]},
     {id:"missions",pages:[
       {path:"apps/cpco/mission_editor.html",label:["Générateur de mission","Mission generator","Missionsgenerator","Generador de misiones"]},
       {path:"apps/cpco/map_parser.html",label:["Studio cartographique","Map studio","Kartenstudio","Estudio cartográfico"]}]},
@@ -159,7 +162,7 @@ window.REPOSITORY_TREE={
     pages:{profile:"apps/settings/profil.html",centre:"apps/settings/centre.html",installation:"apps/settings/installation.html",maintenance:"apps/settings/maintenance.html"},
     sections:{
       identity:"profile",account:"profile",themes:"profile",equipment:"profile",planner:"profile",
-      cpco:"centre",users:"centre",dispoCategories:"centre",send:"centre",
+      cpco:"centre",users:"centre",dispoCategories:"centre",odv:"centre",send:"centre",
       setup:"installation",sources:"installation",
       fleet:"maintenance",aircraftDb:"maintenance",callsigns:"maintenance",defaReference:"maintenance",defaLog:"maintenance",merges:"maintenance",ledgers:"maintenance",
       registry:"maintenance",localTypes:"maintenance",learned:"maintenance",airports:"maintenance",
@@ -217,6 +220,7 @@ window.REPOSITORY_TREE={
     {path:"apps/cpco/map_parser.html",menu:"Centre — Studio cartographique",label:"Studio cartographique — Centre de planification et de conduite des opérations"},
     {path:"apps/cpco/mission_registry.html",menu:"Centre — Registre des missions",label:"Registre des missions — Centre de planification et de conduite des opérations"},
     {path:"apps/planner/flight_performance_planner.html",menu:"Flight Performance & Fuel Planner",label:"Flight Performance & Fuel Planner"},
+    {path:"apps/pilot/disponibilites.html",menu:false,label:"Mes disponibilités — saisie par plages, par catégorie"},
     {path:"apps/pilot/mes_missions.html",menu:"Mes missions",label:"Mes missions — missions affectées par le Centre, disponibilités"},
     {path:"apps/planner/map_planner.html",menu:"Cartes de vol",label:"Cartes de vol — route, cartes topographiques, approche, rendez-vous, destination"},
     {path:"apps/cpco/odv_planning.html",menu:"Centre — Planning ODV",label:"Planning ODV — Centre de planification et de conduite des opérations"}

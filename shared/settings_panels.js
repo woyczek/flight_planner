@@ -1,8 +1,9 @@
 (() => {
   'use strict';
   // Rubriques des pages de Paramètres écrites hors de shared/data_admin.js (docs/DISPOS_ET_REORGANISATION.md § 2) :
-  //   · Mon profil — identité (trigramme, IVAO, VATSIM, SimBrief, identifiants du site DEFA, langue), appareils et
-  //     simulateurs ;
+  //   · Mon profil — identité (trigramme, IVAO, VATSIM, SimBrief, identifiants du site DEFA, langue), connexion et mot de
+  //     passe, préférences de thèmes (listes blanches / noires par domaine), appareils et simulateurs ;
+  //   · Centre — utilisateurs et droits (shared/users.js), catégories de disponibilité (shared/dispos.js) ;
   //   · Installation — premier lancement.
   // Chaque rubrique : { id, group, title, intro, render(body, api) } dans window.SettingsPanels.list, lue par
   // DataAdmin.mount (page : REPOSITORY_TREE.settings.sections) ; api : status(texte), actions([[libellé, fn, classe]]),
@@ -415,8 +416,232 @@
     }
   };
 
+  // ---------------------------------------------------------------- Mon profil › Préférences de thèmes
+  const MODES = [
+    ['tous', L('Tous les thèmes du domaine', 'Every theme of the domain', 'Alle Themen des Bereichs', 'Todos los temas del dominio')],
+    ['blanche', L('Liste blanche : seulement ces thèmes', 'Allow list: only these themes', 'Positivliste: nur diese Themen', 'Lista blanca: solo estos temas')],
+    ['noire', L('Liste noire : tous sauf ces thèmes', 'Block list: all but these themes', 'Negativliste: alle außer diesen Themen', 'Lista negra: todos menos estos temas')]
+  ];
+  const themesPanel = {
+    id: 'themes',
+    group: GROUP_PROFILE,
+    title: L('Préférences de thèmes', 'Theme preferences', 'Themenpräferenzen', 'Preferencias de temas'),
+    intro: L('Thèmes de mission ouverts par les catégories personnalisées (« sécurité civile personnalisée », « défense personnalisée ») de vos disponibilités : pour chaque domaine, une liste blanche (seulement ces thèmes) ou une liste noire (tous sauf ces thèmes). Gardées dans votre fiche utilisateur, synchronisée.', 'Mission themes opened by the custom categories (“custom civil security”, “custom defence”) of your availability: for each domain, an allow list (only these themes) or a block list (all but these themes). Kept in your user file, synchronised.', 'Missionsthemen, die die Kategorien nach Wahl („Zivilschutz nach Wahl“, „Verteidigung nach Wahl“) Ihrer Verfügbarkeit öffnen: je Bereich eine Positivliste (nur diese Themen) oder eine Negativliste (alle außer diesen). In Ihrer synchronisierten Benutzerdatei gespeichert.', 'Temas de misión abiertos por las categorías personalizadas («seguridad civil personalizada», «defensa personalizada») de su disponibilidad: por dominio, una lista blanca (solo estos temas) o una lista negra (todos menos estos). Guardadas en su ficha de usuario, sincronizada.'),
+    async render(body, api) {
+      const [U, SD] = [await need('SuiteUsers'), await need('SuiteDispos')];
+      const tri = A()?.trigram?.() || '';
+      if (!U || !SD || !tri) {
+        body.innerHTML = `<p>${esc(L('Trigramme non réglé : le régler dans « Identité et réseaux ».', 'Trigram not set: set it in “Identity and networks”.', 'Kürzel nicht gesetzt: unter „Identität und Netzwerke“ festlegen.', 'Trigrama no definido: definirlo en «Identidad y redes».'))}</p>`;
+        api.actions([]);
+        return;
+      }
+      const prefs = (await U.themePrefs(tri)) || {};
+      body.innerHTML = SD.domains().map(d => {
+        const p = prefs[d.id] || {
+          mode: 'tous',
+          liste: []
+        };
+        return `<div class="sp-card" data-dom="${esc(d.id)}" data-no-i18n><h3>${esc(SD.label(d.label))}</h3>
+          <div class="sp-chips">${MODES.map(([m]) => `<label><input type="radio" name="m-${esc(d.id)}" value="${m}"${(p.mode || 'tous') === m ? ' checked' : ''}> ${esc(K.t(rowOf(m)))}</label>`).join('')}</div>
+          <div class="sp-chips" data-list>${d.themes.map(th => `<label><input type="checkbox" value="${esc(th)}"${(p.liste || []).includes(th) ? ' checked' : ''}> <b>${esc(th)}</b> ${esc(SD.themeLabel(th))}</label>`).join('')}</div>
+          <p class="sp-hint" data-open></p></div>`;
+      }).join('');
+      // thèmes réellement ouverts, recalculés à chaque coche
+      const read = () => Object.fromEntries([...body.querySelectorAll('[data-dom]')].map(c => [c.dataset.dom, {
+        mode: c.querySelector('input[type=radio]:checked')?.value || 'tous',
+        liste: [...c.querySelectorAll('[data-list] input:checked')].map(x => x.value)
+      }]));
+      const preview = () => {
+        const p = read();
+        body.querySelectorAll('[data-dom]').forEach(c => {
+          const cat = SD.categories({
+            all: true
+          }).find(x => x.ouverts === `prefs:${c.dataset.dom}`);
+          const open = cat ? [...SD.openThemes(cat, p)] : [];
+          c.querySelector('[data-list]').style.opacity = p[c.dataset.dom].mode === 'tous' ? '.55' : '';
+          c.querySelector('[data-open]').textContent = cat ? tf(['« {c} » ouvre : {t}', '“{c}” opens: {t}', '„{c}“ öffnet: {t}', '«{c}» abre: {t}'], {
+            c: SD.label(cat.label),
+            t: open.map(SD.themeLabel).join(', ') || '—'
+          }) : '';
+        });
+      };
+      body.onchange = () => {
+        api.changed();
+        preview();
+      };
+      preview();
+      api.status(tf(['Pilote {t}', 'Pilot {t}', 'Pilot {t}', 'Piloto {t}'], {
+        t: tri
+      }));
+      api.actions([
+        [L('Enregistrer', 'Save', 'Speichern', 'Guardar'), async () => {
+          const p = read();
+          // « tous » : pas de liste (préférence effacée pour ce domaine)
+          const themes = Object.fromEntries(Object.entries(p).filter(([, v]) => v.mode !== 'tous'));
+          wrote(await U.setThemePrefs(tri, themes));
+          api.saved();
+          api.status(K.t(['Préférences enregistrées.', 'Preferences saved.', 'Präferenzen gespeichert.', 'Preferencias guardadas.']));
+        }, 'primary']
+      ]);
+    }
+  };
+  const rowOf = m => ({
+    tous: ['Tous les thèmes du domaine', 'Every theme of the domain', 'Alle Themen des Bereichs', 'Todos los temas del dominio'],
+    blanche: ['Liste blanche : seulement ces thèmes', 'Allow list: only these themes', 'Positivliste: nur diese Themen', 'Lista blanca: solo estos temas'],
+    noire: ['Liste noire : tous sauf ces thèmes', 'Block list: all but these themes', 'Negativliste: alle außer diesen Themen', 'Lista negra: todos menos estos temas']
+  })[m];
+
+  // ---------------------------------------------------------------- Centre › Catégories de disponibilité
+  const OUVERTS = [
+    ['all', ['tous les thèmes', 'every theme', 'alle Themen', 'todos los temas']],
+    ['none', ['aucun', 'none', 'keine', 'ninguno']]
+  ];
+  const TYPES = [
+    ['dispo', ['disponible', 'available', 'verfügbar', 'disponible']],
+    ['atc', ['contrôle', 'control', 'Lotsendienst', 'control']],
+    ['occupe', ['occupé', 'busy', 'beschäftigt', 'ocupado']],
+    ['indispo', ['indisponible', 'unavailable', 'nicht verfügbar', 'no disponible']]
+  ];
+  const categoriesPanel = {
+    id: 'dispoCategories',
+    group: GROUP_CENTRE,
+    title: L('Catégories de disponibilité', 'Availability categories', 'Verfügbarkeitskategorien', 'Categorías de disponibilidad'),
+    intro: L('Ce que les pilotes déclarent (data/config/disponibilites.json, synchronisé) : groupes affichés dans l’ODV, catégories (libellés, couleur, thèmes ouverts, type, codes du classeur ODV), thèmes par domaine. Une catégorie qui a servi se retire (cachée des listes, gardée pour l’historique), elle ne s’efface pas.', 'What pilots declare (data/config/disponibilites.json, synchronised): groups shown in the ODV, categories (labels, colour, open themes, type, ODV workbook codes), themes per domain. A category that has been used is retired (hidden from lists, kept for history), never deleted.', 'Was die Piloten angeben (data/config/disponibilites.json, synchronisiert): in der ODV angezeigte Gruppen, Kategorien (Bezeichnungen, Farbe, offene Themen, Typ, Codes der ODV-Arbeitsmappe), Themen je Bereich. Eine benutzte Kategorie wird zurückgezogen (in Listen ausgeblendet, für den Verlauf behalten), nie gelöscht.', 'Lo que declaran los pilotos (data/config/disponibilites.json, sincronizado): grupos mostrados en el ODV, categorías (etiquetas, color, temas abiertos, tipo, códigos del libro ODV), temas por dominio. Una categoría usada se retira (oculta en las listas, guardada para el historial), nunca se borra.'),
+    async render(body, api) {
+      const SD = await need('SuiteDispos');
+      if (!SD) {
+        body.textContent = K.t(['Module des disponibilités non chargé.', 'Availability module not loaded.', 'Verfügbarkeitsmodul nicht geladen.', 'Módulo de disponibilidad no cargado.']);
+        return;
+      }
+      const cfg = structuredClone(await SD.load(true));
+      const known = new Set((cfg.categories || []).map(c => c.id)); // catégories existantes : identifiant figé, pas de suppression
+      const ouvertsOpts = c => {
+        const v = Array.isArray(c.ouverts) ? 'list' : c.ouverts || 'none';
+        return [...OUVERTS, ...cfg.domaines.flatMap(d => [
+          [`domain:${d.id}`, [`domaine ${SD.label(d.label)} : {t}`, `domain ${SD.label(d.label)}: {t}`, `Bereich ${SD.label(d.label)}: {t}`, `dominio ${SD.label(d.label)}: {t}`], d],
+          [`prefs:${d.id}`, [`${SD.label(d.label)} selon les préférences, parmi {t}`, `${SD.label(d.label)} per preferences, among {t}`, `${SD.label(d.label)} nach Präferenzen, aus {t}`, `${SD.label(d.label)} según preferencias, entre {t}`], d]
+        ]), ['list', ['liste de thèmes', 'theme list', 'Themenliste', 'lista de temas']]].map(([k, row, d]) => `<option value="${esc(k)}"${k === v ? ' selected' : ''}>${esc(d ? tf(row, { t: d.themes.join(' ') }) : K.t(row))}</option>`).join('');
+      };
+      const L4 = (row, k) => `<input data-k="${k}0" value="${esc((Array.isArray(row) ? row[0] : row) || '')}" style="width:16em">`; // français seul : les autres langues passent par l'audit i18n
+      const catRow = c => `<tr data-id="${esc(c.id)}"${c.retiree ? ' class="sp-retired"' : ''}><td>${known.has(c.id) ? `<code>${esc(c.id)}</code>` : `<input data-k="id" value="${esc(c.id)}" style="width:8em">`}</td>
+        <td><select data-k="groupe">${cfg.groupes.map(g => `<option value="${esc(g.id)}"${g.id === c.groupe ? ' selected' : ''}>${esc(SD.label(g.label))}</option>`).join('')}</select></td>
+        <td>${L4(c.label, 'l')}</td><td><input type="color" data-k="couleur" value="${esc(c.couleur || '#bfbfbf')}"></td>
+        <td><select data-k="ouverts">${ouvertsOpts(c)}</select><input data-k="liste" value="${esc(Array.isArray(c.ouverts) ? c.ouverts.join(' ') : '')}" placeholder="EXERCICE CONTROLE" title="${esc(K.t(['Thèmes séparés par des espaces', 'Themes separated by spaces', 'Themen durch Leerzeichen getrennt', 'Temas separados por espacios']))}" style="width:9em"${Array.isArray(c.ouverts) ? '' : ' hidden'}></td>
+        <td><select data-k="type">${TYPES.map(([k, row]) => `<option value="${k}"${k === c.type ? ' selected' : ''}>${esc(K.t(row))}</option>`).join('')}</select></td>
+        <td><input data-k="odv" value="${esc((c.odv || []).join(' '))}" title="${esc(K.t(['Codes des cases du classeur ODV lus comme cette catégorie à l’import, séparés par des espaces ; le premier s’affiche dans la grille des disponibilités', 'ODV workbook cell codes read as this category on import, separated by spaces; the first one is shown in the availability grid', 'Zellcodes der ODV-Arbeitsmappe, die beim Import als diese Kategorie gelesen werden, durch Leerzeichen getrennt; der erste erscheint im Verfügbarkeitsraster', 'Códigos de celda del libro ODV leídos como esta categoría al importar, separados por espacios; el primero se muestra en la cuadrícula de disponibilidad']))}" style="width:6em"></td>
+        <td>${known.has(c.id) ? `<input type="checkbox" data-k="retiree"${c.retiree ? ' checked' : ''}>` : `<button type="button" class="repo-plain da-del" data-drop title="${esc(K.t(['Supprimer cette nouvelle catégorie', 'Delete this new category', 'Diese neue Kategorie löschen', 'Eliminar esta nueva categoría']))}">✕</button>`}</td></tr>`;
+      const draw = () => {
+        body.innerHTML = `<div data-no-i18n><h3>${esc(K.t(['Catégories', 'Categories', 'Kategorien', 'Categorías']))}</h3><div class="da-scroll"><table class="da-table"><thead><tr><th>id</th><th>${esc(K.t(['Groupe', 'Group', 'Gruppe', 'Grupo']))}</th><th>${esc(K.t(['Libellé', 'Label', 'Bezeichnung', 'Etiqueta']))}</th><th>${esc(K.t(['Couleur', 'Colour', 'Farbe', 'Color']))}</th><th>${esc(K.t(['Thèmes ouverts', 'Open themes', 'Offene Themen', 'Temas abiertos']))}</th><th>Type</th><th>${esc(K.t(['Codes ODV', 'ODV codes', 'ODV-Codes', 'Códigos ODV']))}</th><th>${esc(K.t(['Retirée', 'Retired', 'Zurückgezogen', 'Retirada']))}</th></tr></thead>
+          <tbody data-cats>${cfg.categories.map(catRow).join('')}</tbody></table></div>
+          <p class="row"><button type="button" class="secondary" data-addcat>${esc(K.t(['Ajouter une catégorie', 'Add a category', 'Kategorie hinzufügen', 'Añadir una categoría']))}</button></p>
+          <h3>${esc(K.t(['Groupes (ODV)', 'Groups (ODV)', 'Gruppen (ODV)', 'Grupos (ODV)']))}</h3><table class="da-table"><tbody data-groups>${cfg.groupes.map(g => `<tr data-id="${esc(g.id)}"><td><code>${esc(g.id)}</code></td><td>${L4(g.label, 'l')}</td><td><input type="color" data-k="couleur" value="${esc(g.couleur || '#bfbfbf')}"></td></tr>`).join('')}</tbody></table>
+          <h3>${esc(K.t(['Thèmes par domaine', 'Themes per domain', 'Themen je Bereich', 'Temas por dominio']))}</h3><table class="da-table"><tbody data-domains>${cfg.domaines.map(d => `<tr data-id="${esc(d.id)}"><td><code>${esc(d.id)}</code></td><td>${L4(d.label, 'l')}</td><td><input data-k="themes" value="${esc(d.themes.join(' '))}" style="width:28em"></td></tr>`).join('')}</tbody></table>
+          <p class="sp-hint">${esc(K.t(['Thème = famille de mission (COMBAT, SAR, HEMS…), séparés par des espaces ; un nouveau thème reçoit son libellé dans le fichier (themes). Libellés en français seulement : les traductions manquantes sont relevées par l’audit des traductions (tools/audit_i18n.html) ; un libellé modifié perd ses traductions jusqu’au prochain audit.', 'Theme = mission family (COMBAT, SAR, HEMS…), separated by spaces; a new theme gets its label in the file (themes). Labels in French only: missing translations are listed by the translation audit (tools/audit_i18n.html); a changed label loses its translations until the next audit.', 'Thema = Missionsfamilie (COMBAT, SAR, HEMS…), durch Leerzeichen getrennt; ein neues Thema erhält seine Bezeichnung in der Datei (themes). Bezeichnungen nur auf Französisch: fehlende Übersetzungen erfasst das Übersetzungsaudit (tools/audit_i18n.html); eine geänderte Bezeichnung verliert ihre Übersetzungen bis zum nächsten Audit.', 'Tema = familia de misión (COMBAT, SAR, HEMS…), separados por espacios; un tema nuevo recibe su etiqueta en el archivo (themes). Etiquetas solo en francés: las traducciones que faltan las recoge la auditoría de traducciones (tools/audit_i18n.html); una etiqueta modificada pierde sus traducciones hasta la próxima auditoría.']))}</p></div>`;
+      };
+      draw();
+      /** Configuration d'après le formulaire. */
+      const collect = () => {
+        const val = (tr, k) => tr.querySelector(`[data-k="${k}"]`);
+        // libellé français saisi ; en, de, es gardés s'il n'a pas changé, sinon vidés (l'audit des traductions les relève)
+        const lab = (tr, prev) => {
+          const old = Array.isArray(prev) ? prev : [prev || ''],
+            fr = val(tr, 'l0').value.trim();
+          return fr === old[0] ? [fr, ...[1, 2, 3].map(i => old[i] || '')] : [fr, '', '', ''];
+        };
+        const cats = [...body.querySelectorAll('[data-cats] tr')].map(tr => {
+          const id = known.has(tr.dataset.id) ? tr.dataset.id : val(tr, 'id').value.trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_');
+          const o = val(tr, 'ouverts').value;
+          const prev = cfg.categories.find(c => c.id === tr.dataset.id) || {};
+          return {
+            ...prev,
+            id,
+            groupe: val(tr, 'groupe').value,
+            type: val(tr, 'type').value,
+            label: lab(tr, prev.label),
+            couleur: val(tr, 'couleur').value,
+            ouverts: o === 'list' ? val(tr, 'liste').value.split(/[,\s]+/).map(x => x.trim().toUpperCase()).filter(Boolean) : o,
+            odv: val(tr, 'odv').value.split(/[,\s]+/).map(x => x.trim().toUpperCase()).filter(Boolean),
+            ...(known.has(tr.dataset.id) ? {
+              retiree: val(tr, 'retiree').checked || undefined
+            } : {})
+          };
+        });
+        const groupes = [...body.querySelectorAll('[data-groups] tr')].map(tr => ({
+          ...cfg.groupes.find(g => g.id === tr.dataset.id),
+          label: lab(tr, cfg.groupes.find(g => g.id === tr.dataset.id)?.label),
+          couleur: val(tr, 'couleur').value
+        }));
+        const domaines = [...body.querySelectorAll('[data-domains] tr')].map(tr => ({
+          ...cfg.domaines.find(d => d.id === tr.dataset.id),
+          label: lab(tr, cfg.domaines.find(d => d.id === tr.dataset.id)?.label),
+          themes: val(tr, 'themes').value.split(/[,\s]+/).map(x => x.trim().toUpperCase()).filter(Boolean)
+        }));
+        return {
+          ...cfg,
+          categories: cats,
+          groupes,
+          domaines
+        };
+      };
+      body.oninput = body.onchange = e => {
+        if (e.target.matches('[data-k="ouverts"]')) e.target.nextElementSibling.hidden = e.target.value !== 'list';
+        api.changed();
+      };
+      body.onclick = e => {
+        if (e.target.closest('[data-addcat]')) {
+          Object.assign(cfg, collect());
+          cfg.categories.push({
+            id: `categorie_${cfg.categories.length + 1}`,
+            groupe: 'dispo',
+            type: 'dispo',
+            label: ['', '', '', ''],
+            couleur: '#7f9cc0',
+            ouverts: 'none',
+            odv: []
+          });
+          draw();
+          api.changed();
+        }
+        const drop = e.target.closest('[data-drop]');
+        if (drop) {
+          drop.closest('tr').remove();
+          api.changed();
+        }
+      };
+      api.status(tf(['{n} catégorie(s), {r} retirée(s)', '{n} categor(y/ies), {r} retired', '{n} Kategorie(n), {r} zurückgezogen', '{n} categoría(s), {r} retirada(s)'], {
+        n: cfg.categories.length,
+        r: cfg.categories.filter(c => c.retiree).length
+      }));
+      api.actions([
+        [L('Enregistrer', 'Save', 'Speichern', 'Guardar'), async () => {
+          const next = collect();
+          const ids = next.categories.map(c => c.id);
+          if (ids.some(x => !x) || new Set(ids).size !== ids.length) return api.status(K.t(['Identifiants vides ou en double.', 'Empty or duplicate ids.', 'Leere oder doppelte Kennungen.', 'Identificadores vacíos o duplicados.']));
+          if (next.categories.some(c => !c.label[0])) return api.status(K.t(['Chaque catégorie a besoin au moins d’un libellé français.', 'Each category needs at least a French label.', 'Jede Kategorie braucht mindestens eine französische Bezeichnung.', 'Cada categoría necesita al menos una etiqueta en francés.']));
+          wrote(await SD.save(next));
+          api.saved();
+          api.show();
+          api.status(K.t(['Catégories enregistrées.', 'Categories saved.', 'Kategorien gespeichert.', 'Categorías guardadas.']));
+        }, 'primary'],
+        [L('Valeurs par défaut', 'Default values', 'Standardwerte', 'Valores por defecto'), async () => {
+          if (!await window.AppFramework.ask(K.t(['Revenir aux catégories par défaut ? (les catégories ajoutées sont gardées, retirées)', 'Back to the default categories? (added categories are kept, retired)', 'Zu den Standardkategorien zurück? (hinzugefügte bleiben, zurückgezogen)', '¿Volver a las categorías por defecto? (las añadidas se conservan, retiradas)']))) return;
+          const def = structuredClone(SD.DEFAULT),
+            extra = cfg.categories.filter(c => !def.categories.some(d => d.id === c.id)).map(c => ({
+              ...c,
+              retiree: true
+            }));
+          wrote(await SD.save({
+            ...def,
+            categories: [...def.categories, ...extra]
+          }));
+          api.show();
+        }]
+      ]);
+    }
+  };
+
   window.SettingsPanels = {
-    list: [identity, account, equipment, setup, users],
+    list: [identity, account, themesPanel, equipment, setup, users, categoriesPanel],
     /** Ajoute une rubrique (autre module : utilisateurs, catégories de disponibilité). */
     add(panel) {
       this.list.push(panel);
