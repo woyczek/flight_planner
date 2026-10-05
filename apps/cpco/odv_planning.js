@@ -1499,7 +1499,7 @@
         const kk = +bt.dataset.goslot;
         if (kk === k) return;
         if (dirty() && !await window.AppFramework.ask(L(['Changer de créneau abandonne les affectations en attente. Continuer ?', 'Changing slot discards the pending assignments. Continue?', 'Ein Wechsel des Zeitfensters verwirft die ausstehenden Zuweisungen. Fortfahren?', 'Cambiar de franja descarta las asignaciones pendientes. ¿Continuar?']))) return;
-        dlg.close();
+        // même fenêtre, contenu remplacé (AssignDialog.frame) : la fermer puis la rouvrir faisait clignoter la page
         pickMission(slotOf(j, kk));
       });
       // mission enregistrée : affectation complète rouverte avec ses valeurs ; relue puis fenêtre recalculée
