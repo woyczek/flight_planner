@@ -3106,7 +3106,6 @@ html[data-design="field"] .repo-tabs:not(#imp) {
 }
 html[data-design="field"] .repo-tabs::before,
 html[data-design="field"] .repo-tabs::after,
-html[data-design="field"] .repo-tab::before,
 html[data-design="field"] .repo-tab::after {
   content: none
 }
@@ -3132,7 +3131,9 @@ html[data-design="field"] .repo-tab[aria-current="page"]:not(#imp) {
   transform: none;
   border-image: url("deco/field/tabs/tab-on.webp?v=2cce5070") 0 80 0 80 fill / 0 11.6px 0 11.6px stretch
 }
-html[data-design="field"] .repo-tab[aria-current="page"]::before {
+/* voyant au centre du haut de chaque onglet : éteint (tabs/led.off.webp, fourni par l'utilisateur), allumé sur la page
+   courante (tabs/led.webp) */
+html[data-design="field"] .repo-tab::before {
   content: "";
   position: absolute;
   top: 2.9px;
@@ -3142,7 +3143,10 @@ html[data-design="field"] .repo-tab[aria-current="page"]::before {
   margin: 0 0 0 -8.65px;
   border-radius: 0;
   box-shadow: none;
-  background: url("deco/field/tabs/led.webp?v=2c3c2da4") center/100% 100% no-repeat
+  background: url("deco/field/tabs/led.off.webp?v=4e819eef") center/100% 100% no-repeat
+}
+html[data-design="field"] .repo-tab[aria-current="page"]::before {
+  background-image: url("deco/field/tabs/led.webp?v=2c3c2da4")
 }
 html[data-design="field"] .repo-tab:not([aria-current="page"]):is(:hover, :focus-visible):not(#imp) {
   filter: brightness(1.12)
