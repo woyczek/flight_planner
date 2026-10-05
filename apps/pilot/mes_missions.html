@@ -2819,7 +2819,16 @@
     const md = (await A.missionFirst(a.folder, [a.files?.md, `summary${a.mission}.md`, `summary${bare}.md`]))?.value || '';
     if (!yf) window.AppFramework?.notify?.(`Mission ${a.mission} : fichier introuvable (dossier « ${a.folder} »), ni dans le dossier des missions autorisé ni dans la copie servie — seule l’affectation est affichée.`, 'warn');
     // cartes : index de l'affectation, sinon yaml ; adresse résolue (cartes/x.png, sinon x.png)
-    const mapNames = a.files?.maps?.length ? a.files.maps : (y?.maps || []).map(m => m?.filename).filter(Boolean);
+    // cartes : celles que déclare la mission (yaml) font foi ; sinon la liste de l'index de l'affectation (fichiers du
+    // dossier), sans les doublons d'avant la renumérotation (« cibleM004.png » à côté de « cibleM-004.png »)
+    const sameMap = n => String(n).toLowerCase().replace(/([a-z])-(\d)/g, '$1$2');
+    const declaredMaps = (y?.maps || []).map(m => m?.filename).filter(Boolean),
+      mapNames = declaredMaps.length ? declaredMaps : (a.files?.maps || []).filter((n, i, all) => {
+        const k = sameMap(n),
+          twins = all.filter(x => sameMap(x) === k);
+        // garde le nom à tiret s'il existe (forme actuelle), sinon le premier
+        return n === (twins.find(x => /[A-Za-z]-\d/.test(x)) || twins[0]);
+      });
     // cartes : cherchées en parallèle, d'abord là où la mission range ses cartes (dossier cartes/ ou racine, appris sur
     // la première trouvée) — plus deux requêtes en série, dont une en 404, par carte
     const urls = {},
@@ -3173,7 +3182,9 @@
     const alertText = alert ? `<p class="pm-alert">${tv(['Soyez prêt à {t} sur {ad} et attendez les ordres ; décollage prévisible en {n} minutes.{end}', 'Be ready at {t} on {ad} and await orders; take-off expected within {n} minutes.{end}', 'Seien Sie um {t} in {ad} bereit und warten Sie auf Befehle; Start voraussichtlich in {n} Minuten.{end}', 'Esté listo a las {t} en {ad} y espere órdenes; despegue previsible en {n} minutos.{end}'], { t: esc(hhmm(Date.parse(alert.ready_at_utc))), ad: esc(alert.aerodrome || a.departure || ''), n: esc(alert.notice_min ?? '?'), end: alert.window_end_utc ? ' ' + tv(['Fin d’astreinte {t}.', 'End of standby {t}.', 'Ende der Bereitschaft {t}.', 'Fin de la guardia {t}.'], { t: esc(hhmm(Date.parse(alert.window_end_utc))) }) : '' })}</p>` : '';
     const team = a.role === 'convoyage' ? [] : (A._all || []).filter(x => x.mission === a.mission && x.pilot !== a.pilot);
     const teams = (y.teams || []).filter(t => t?.name && !/^[-\s]*$/.test(t.name));
-    const maps = (a.files?.maps?.length ? a.files.maps : (y.maps || []).map(m => m?.filename).filter(Boolean)).filter(m => mapUrls[m] && !isExerciseMap(y, m));
+    // ordre de la mission (cartes déclarées), sinon celui de l'index ; seules les cartes retenues et trouvées (mapUrls)
+    const declared = (y.maps || []).map(m => m?.filename).filter(Boolean);
+    const maps = (declared.length ? declared : a.files?.maps || []).filter(m => mapUrls[m] && !isExerciseMap(y, m));
     const mapCaption = m => (y.maps || []).find(x => x?.filename === m)?.description || m;
     const figure = m => `<figure><a href="${esc(mapUrls[m])}" target="_blank" rel="noopener"><img loading="lazy" src="${esc(mapUrls[m])}" alt="${esc(m)}"></a><figcaption>${esc(mapCaption(m))}</figcaption></figure>`;
     // plis : scellés (enveloppe, heure d'ouverture) jusqu'à l'heure, puis contenu et cartes (deux par bloc)
