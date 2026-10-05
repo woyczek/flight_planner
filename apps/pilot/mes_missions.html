@@ -107,12 +107,45 @@
     overflow-x: clip
   }
   .pm-ghost {
-    position: absolute;
+    position: absolute !important;
     z-index: 4;
-    top: 0;
-    left: 0;
-    right: 0;
+    margin: 0 !important;
     pointer-events: none
+  }
+  /* Cabinet : scène de l'ouverture (range-dossier en calques, liasse, volet gauche du dossier ouvert) */
+  .pm-stage {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    pointer-events: none
+  }
+  .pm-stage>div {
+    position: absolute;
+    margin: 0
+  }
+  .pm-st-back {
+    background: var(--pm-wallet-back) center/100% 100% no-repeat;
+    filter: drop-shadow(0 10px 16px rgba(0, 0, 0, .45))
+  }
+  .pm-st-front {
+    background: var(--pm-wallet-front) center/100% 100% no-repeat
+  }
+  .pm-st-sheet {
+    background: var(--pm-sheets) center/100% 100% no-repeat;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .25));
+    transition: filter .3s
+  }
+  .pm-st-sheet.lift {
+    filter: drop-shadow(0 14px 18px rgba(0, 0, 0, .38))
+  }
+  .pm-st-panel {
+    background-repeat: no-repeat;
+    background-position: 0 0;
+    transform-origin: right center;
+    backface-visibility: hidden
+  }
+  .pm-book.pm-bare>* {
+    visibility: hidden
   }
   #pilotMissions.pm-dossier:not(.pm-wide) .pm-col-r>.repo-block:not(#pmMission):not(.pm-unfold)>:not(.repo-block-heading) {
     display: none
@@ -462,6 +495,9 @@
                              reposée par-dessus l'étiquette et son tampon ; facultatif)
      Ouvrir brise le sceau ; dossier rouvert après lecture : couverture fermée, sans calque. */
   html[data-design="cabinet"] {
+    --pm-wallet-back: url("../../shared/deco/cabinet/mission-wallet-back.webp?v=06188663");
+    --pm-wallet-front: url("../../shared/deco/cabinet/mission-wallet-front.webp?v=91202ded");
+    --pm-sheets: url("../../shared/deco/cabinet/mission-sheets.webp?v=e7dc8c1c");
     --pm-cover: url("../../shared/deco/cabinet/mission-cover.webp?v=2bf76d77");
     --pm-seal: url("../../shared/deco/cabinet/mission-seal-fitted.webp?v=9c2ac112");
     --pm-ratio: 720/1015;
@@ -1699,7 +1735,7 @@
 </div>
 </main>
 <script src="../../shared/kit.js?v=65a16a49"></script>
-<script src="../../shared/repository_nav.js?v=7ab6d554"></script>
+<script src="../../shared/repository_nav.js?v=1ab6eec4"></script>
 <script src="mes_missions_i18n.js?v=8e114df2" defer></script>
 <script src="../../shared/dispos_editor.js?v=65e6c131"></script>
 <script src="../../shared/content_i18n.js?v=7afecb78"></script>
@@ -2028,40 +2064,68 @@
   const titleOf = a => a.role === 'convoyage' ? `Convoyage ${a.aircraft?.registration || ''} ${a.departure || '?'} → ${a.destination || '?'}`.replace(/\s+/g, ' ') : a.title || '';
   const labelHtml = a => `<div class="pm-label"><small aria-label="Confidentiel">CONFIDENTIEL</small><b>${esc(a.mission)}</b><span>${esc(titleOf(a))}</span>
       <dl><dt>Appareil</dt><dd>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' ') || '—')}</dd><dt>Indicatif</dt><dd>${esc(a.callsign || '—')}</dd><dt>Décollage</dt><dd>${esc(a.alert ? 'astreinte ' + hhmm(Date.parse(a.alert.ready_at_utc)) : fmt(A.when(a)))}</dd></dl></div>`;
-  // ---- animations du dossier : ouverture et fermeture propres à chaque design (Cabinet : la couverture tourne sur le
-  // dos ; Carnet de vol : le carnet sort de l'enveloppe, puis s'ouvre et se ferme comme un livre ; Aqua : le dossier
-  // s'agrandit en livre (zoom) ; Durci : la fermeture résiste puis cède, la couverture s'ouvre lourdement ; autres
-  // designs : fondu), changement de mission (l'ancien dossier part à gauche, le nouveau vient de la droite).
-  // Rien si l'utilisateur demande moins d'animations.
+  // ---- animations du dossier : ouverture et fermeture propres à chaque design — Cabinet : la liasse sort du
+  // range-dossier, le range-dossier s'ouvre, la liasse glisse sur la page de droite, puis la page de droite tourne
+  // (rangement : l'inverse) ; Carnet de vol : le carnet sort de l'enveloppe, puis s'ouvre et se ferme comme un livre ;
+  // Aqua : le dossier s'agrandit en livre (zoom) ; Durci : la fermeture résiste puis cède, la couverture s'ouvre
+  // lourdement ; autres designs : fondu. Changement de mission : le dossier ouvert se referme, le dossier fermé part à
+  // gauche, le nouveau arrive de la droite (les boutons ne bougent pas), puis il s'ouvre si l'autre l'était.
+  // Rien si l'utilisateur demande moins d'animations. Chaque mouvement rend une promesse (enchaînements).
   const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   const designNow = () => document.documentElement.dataset.design || '';
-  /** Achève les animations en cours du dossier (un nouveau geste part d'un état posé). */
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  let tempo = 1; // < 1 : mouvements raccourcis (changement de mission : fermeture, glissement, ouverture à la suite)
+  const T = ms => Math.round(ms * tempo);
+  /** Anime el (Web Animations) ; promesse résolue à la fin, ou à l'abandon (dossier redessiné entre-temps). */
+  const play = (el, kf, opt) => el.animate(kf, opt).finished.catch(() => {});
+  /** Achève les mouvements en cours du dossier (un nouveau geste part d'un état posé) ; les animations CSS du design
+   *  (pastilles, transitions) ne sont pas touchées. */
   function settle() {
     const host = $('pmDetail');
     host.getAnimations({
       subtree: true
-    }).filter(x => !(x instanceof CSSAnimation) && !(x instanceof CSSTransition)).forEach(x => { // celles du dossier seules
+    }).filter(x => !(x instanceof CSSAnimation) && !(x instanceof CSSTransition)).forEach(x => {
       try {
         x.finish();
       } catch {
         x.cancel();
       }
     });
-    host.querySelectorAll('.pm-ghost').forEach(g => g.remove());
+    host.querySelectorAll('.pm-ghost, .pm-stage').forEach(g => g.remove());
   }
-  /** Pose el en absolu à sa place actuelle dans le dossier ; rend son rectangle (écran). */
-  function pin(el) {
+  /** Rectangle de el relatif au dossier (#pmDetail). */
+  const rel = el => {
     const h = $('pmDetail').getBoundingClientRect(),
       r = el.getBoundingClientRect();
+    return {
+      x: r.left - h.left,
+      y: r.top - h.top,
+      w: r.width,
+      h: r.height
+    };
+  };
+  const box = (el, r) => Object.assign(el.style, {
+    left: `${r.x}px`,
+    top: `${r.y}px`,
+    width: `${r.w}px`,
+    height: `${r.h}px`
+  });
+  const boxKf = r => ({
+    left: `${r.x}px`,
+    top: `${r.y}px`,
+    width: `${r.w}px`,
+    height: `${r.h}px`
+  });
+  /** Pose el en absolu à sa place actuelle dans le dossier ; rend son rectangle (écran). */
+  function pin(el) {
+    const r = el.getBoundingClientRect(),
+      b = rel(el);
     Object.assign(el.style, {
       position: 'absolute',
       zIndex: 5,
-      left: `${r.left - h.left}px`,
-      top: `${r.top - h.top}px`,
-      width: `${r.width}px`,
-      height: `${r.height}px`,
       margin: 0
     });
+    box(el, b);
     return r;
   }
   const unpin = el => {
@@ -2071,10 +2135,10 @@
   const PERSP = 'perspective(2200px) ';
   /** La couverture tourne sur son bord gauche (le dos) ; le livre se découvre (ou se recouvre) pendant la moitié du
    *  mouvement où la couverture passe de l'autre côté. */
-  function flip(cv, book, C, B, opening, end) {
+  async function flip(cv, book, C, B, opening) {
     const d = designNow(),
       x = Math.max(0, Math.min(60, (C.left - B.left) / B.width * 100)),
-      dur = d === 'field' ? 780 : 640,
+      dur = T(d === 'field' ? 780 : 640),
       ease = d === 'field' ? (opening ? 'cubic-bezier(.3,1.25,.55,1)' : 'cubic-bezier(.5,0,.7,1)') : 'cubic-bezier(.45,.05,.3,1)';
     cv.style.transformOrigin = 'left center';
     cv.style.backfaceVisibility = 'hidden';
@@ -2083,34 +2147,33 @@
     }, {
       transform: `${PERSP}rotateY(-180deg)`
     }];
-    cv.animate(opening ? turn : turn.reverse(), {
+    play(cv, opening ? turn : turn.reverse(), {
       duration: dur,
       easing: ease,
       fill: 'forwards'
     });
-    const shut = `inset(0 0 0 ${x}%)`,
-      clip = opening ? [{
-        clipPath: shut
-      }, {
-        clipPath: shut,
-        offset: .45
-      }, {
-        clipPath: 'inset(0 0 0 0%)'
-      }] : [{
-        clipPath: 'inset(0 0 0 0%)'
-      }, {
-        clipPath: shut,
-        offset: .55
-      }, {
-        clipPath: shut
-      }];
-    book.animate(clip, {
+    const shut = `inset(0 0 0 ${x}%)`;
+    await play(book, opening ? [{
+      clipPath: shut
+    }, {
+      clipPath: shut,
+      offset: .45
+    }, {
+      clipPath: 'inset(0 0 0 0%)'
+    }] : [{
+      clipPath: 'inset(0 0 0 0%)'
+    }, {
+      clipPath: shut,
+      offset: .55
+    }, {
+      clipPath: shut
+    }], {
       duration: dur,
       easing: ease
-    }).onfinish = end;
+    });
   }
   /** Aqua : le livre s'agrandit depuis le dossier (ouverture) ou s'y résorbe (fermeture). */
-  function zoom(cv, book, C, B, opening, end) {
+  async function zoom(cv, book, C, B, opening) {
     const toC = `translate(${C.left - B.left}px, ${C.top - B.top}px) scale(${C.width / B.width}, ${C.height / B.height})`,
       toB = `translate(${B.left - C.left}px, ${B.top - C.top}px) scale(${B.width / C.width}, ${B.height / C.height})`,
       ease = 'cubic-bezier(.2,.85,.25,1)';
@@ -2129,197 +2192,482 @@
         transform: toB,
         opacity: 0
       }];
-    cv.animate(opening ? ck : ck.reverse(), {
-      duration: opening ? 300 : 420,
+    play(cv, opening ? ck : ck.reverse(), {
+      duration: T(opening ? 300 : 420),
       easing: ease,
       fill: 'forwards'
     });
-    book.animate(opening ? bk : bk.reverse(), {
-      duration: opening ? 460 : 380,
+    await play(book, opening ? bk : bk.reverse(), {
+      duration: T(opening ? 460 : 380),
       easing: opening ? ease : 'cubic-bezier(.55,0,.75,.2)',
       fill: 'forwards'
-    }).onfinish = () => {
-      book.getAnimations().forEach(x => x.cancel());
-      book.style.transformOrigin = '';
-      end();
+    });
+    book.getAnimations().forEach(x => x.cancel());
+    book.style.transformOrigin = '';
+  }
+
+  // ---- Cabinet : range-dossier en calques (tools/cabinet_layers.py) — fond vide, liasse, coins et poche par-dessus ;
+  // mesures de la liasse et du haut de la poche en part de la couverture (720 x 1015 px), dos du dossier ouvert
+  const CAB = {
+    sx: 87 / 720,
+    sy: 40 / 1015,
+    sw: 591 / 720,
+    sh: 950 / 1015,
+    pocket: 717 / 1015,
+    spine: .496
+  };
+  /** Scène Cabinet posée sur le dossier : range-dossier (fond, avant) au rectangle c de la couverture, liasse (avec une
+   *  copie de l'étiquette, label) à sa place dedans, volet gauche du dossier ouvert (caché) contre le dos du livre b. */
+  function cabStage(c, b, book, label) {
+    const st = document.createElement('div');
+    st.className = 'pm-stage';
+    st.setAttribute('aria-hidden', 'true');
+    st.innerHTML = '<div class="pm-st-back"></div><div class="pm-st-sheet"></div><div class="pm-st-front"></div><div class="pm-st-panel"></div>';
+    $('pmDetail').append(st);
+    const [back, sheet, front, panel] = st.children; // liasse sous les coins et la poche
+    box(back, c);
+    box(front, c);
+    const s0 = {
+      x: c.x + c.w * CAB.sx,
+      y: c.y + c.h * CAB.sy,
+      w: c.w * CAB.sw,
+      h: c.h * CAB.sh
+    };
+    box(sheet, s0);
+    if (label) { // l'étiquette collée sur la liasse, à la place qu'elle a sur la couverture
+      const l = label.el.cloneNode(true);
+      l.removeAttribute('style');
+      Object.assign(l.style, {
+        position: 'absolute',
+        margin: 0,
+        left: `${label.x - (s0.x - c.x)}px`,
+        top: `${label.y - (s0.y - c.y)}px`,
+        width: `${label.w}px`,
+        transform: label.t
+      });
+      sheet.append(l);
+    }
+    box(panel, {
+      x: b.x,
+      y: b.y,
+      w: b.w * CAB.spine,
+      h: b.h
+    });
+    panel.style.backgroundImage = getComputedStyle(book).getPropertyValue('--pm-open');
+    panel.style.backgroundSize = `${b.w}px ${b.h}px`;
+    panel.style.visibility = 'hidden';
+    const pct = n => (parseFloat(getComputedStyle(book).getPropertyValue(n)) || 0) / 100,
+      area = p => ({ // feuille du dossier ouvert (p : '' droite, 'b' gauche)
+        x: b.x + b.w * pct(`--pm-${p}sheet-l`),
+        y: b.y + b.h * pct(`--pm-${p}sheet-t`),
+        w: b.w * (1 - pct(`--pm-${p}sheet-l`) - pct(`--pm-${p}sheet-r`)),
+        h: b.h * (1 - pct(`--pm-${p}sheet-t`) - pct(`--pm-${p}sheet-b`))
+      });
+    return {
+      st,
+      back,
+      front,
+      panel,
+      sheet,
+      s0,
+      up: { // liasse sortie de la poche (au-dessus du range-dossier)
+        ...s0,
+        y: c.y + c.h * CAB.pocket - s0.h - 4
+      },
+      left: area('b'),
+      right: area(''),
+      wing: { // volet droit du dossier ouvert (là où le range-dossier se pose en s'ouvrant)
+        x: b.x + b.w * CAB.spine,
+        y: b.y,
+        w: b.w * (1 - CAB.spine),
+        h: b.h
+      }
     };
   }
+  /** Étiquette de la couverture : place dans la couverture et inclinaison (copiée sur la liasse). */
+  const labelOf = cv => {
+    const el = cv.querySelector('.pm-label');
+    return el && {
+      el,
+      x: el.offsetLeft,
+      y: el.offsetTop,
+      w: el.offsetWidth,
+      t: getComputedStyle(el).transform
+    };
+  };
+  /** Pages et coins du livre montrés (fondu) ou cachés : le dossier vide, le temps que la liasse s'y pose. */
+  async function bare(book, on) {
+    if (on) {
+      await Promise.all([...book.children].map(ch => play(ch, [{
+        opacity: 1
+      }, {
+        opacity: 0
+      }], {
+        duration: T(200)
+      })));
+      book.classList.add('pm-bare');
+    } else {
+      book.classList.remove('pm-bare');
+      await Promise.all([...book.children].map(ch => play(ch, [{
+        opacity: 0
+      }, {
+        opacity: 1
+      }], {
+        duration: T(240)
+      })));
+    }
+  }
+  /** Ouverture Cabinet : la liasse sort du range-dossier, il s'ouvre, elle glisse sur la page de droite, la page
+   *  de droite tourne. */
+  async function cabinetOpen(cv, sealed, content, book, done) {
+    if (sealed) { // ficelle et cachet s'effacent d'abord
+      cv.classList.add('open');
+      await wait(380);
+    }
+    if (!cv.isConnected) return;
+    const c = rel(cv),
+      label = labelOf(cv);
+    cv.style.display = 'none';
+    content.hidden = false;
+    book.classList.add('pm-bare');
+    book.style.visibility = 'hidden';
+    const b = rel(book),
+      S = cabStage(c, b, book, label);
+    // 1. la liasse sort de la poche, puis passe au-dessus et se pose à gauche, le temps d'ouvrir le range-dossier
+    await play(S.sheet, [boxKf(S.s0), boxKf(S.up)], {
+      duration: T(560),
+      easing: 'cubic-bezier(.45,0,.25,1)',
+      fill: 'forwards'
+    });
+    if (!S.st.isConnected) return;
+    S.sheet.classList.add('lift');
+    S.st.append(S.sheet); // sortie : au-dessus de tout
+    const aside = play(S.sheet, [boxKf(S.up), boxKf(S.left)], {
+      duration: T(640),
+      easing: 'cubic-bezier(.3,.7,.3,1)',
+      fill: 'forwards'
+    });
+    // 2. le range-dossier vide s'ouvre : il se pose en volet droit du dossier ouvert, le volet gauche se déplie
+    await wait(T(260));
+    if (!S.st.isConnected) return;
+    book.style.visibility = '';
+    book.style.clipPath = `inset(0 0 0 ${CAB.spine * 100}%)`;
+    play(S.back, [{
+      ...boxKf(c),
+      opacity: 1
+    }, {
+      ...boxKf(S.wing),
+      opacity: 0
+    }], {
+      duration: T(380),
+      easing: 'ease-out',
+      fill: 'forwards'
+    });
+    play(S.front, [{
+      ...boxKf(c),
+      opacity: 1
+    }, {
+      ...boxKf(S.wing),
+      opacity: 0
+    }], {
+      duration: T(380),
+      easing: 'ease-out',
+      fill: 'forwards'
+    });
+    S.panel.style.visibility = '';
+    await play(S.panel, [{
+      transform: `${PERSP}rotateY(-180deg)`
+    }, {
+      transform: `${PERSP}rotateY(0deg)`
+    }], {
+      duration: T(700),
+      easing: 'cubic-bezier(.4,.1,.25,1)',
+      fill: 'forwards'
+    });
+    await aside;
+    if (!S.st.isConnected) return;
+    book.style.clipPath = '';
+    S.panel.style.visibility = 'hidden';
+    // 3. la liasse glisse sur la page de droite et s'y pose ; les pages du dossier prennent sa place
+    await play(S.sheet, [boxKf(S.left), boxKf(S.right)], {
+      duration: T(620),
+      easing: 'cubic-bezier(.35,.1,.25,1)',
+      fill: 'forwards'
+    });
+    if (!S.st.isConnected) return;
+    S.sheet.classList.remove('lift');
+    await Promise.all([bare(book, false), play(S.sheet, [{
+      opacity: 1
+    }, {
+      opacity: 0
+    }], {
+      duration: T(240),
+      fill: 'forwards'
+    })]);
+    S.st.remove();
+    done();
+    // 4. la page de droite tourne : première double page du dossier
+    if (book.isConnected && book.pmPages?.() > 2) await book.pmTurn(1);
+  }
+  /** Rangement Cabinet (l'inverse) : retour à la première page, la liasse quitte la page de droite, le dossier se
+   *  referme en range-dossier, la liasse y rentre. */
+  async function cabinetClose(a, content, book) {
+    const at = book.pmAt?.() || 0;
+    if (at > 2) book.pmGoto(2);
+    if (at > 0) await book.pmTurn(-1);
+    if (!book.isConnected) return;
+    setClosed(a, true); // couverture posée (mesures), livre caché…
+    const cv = $('pmDetail').querySelector('.pm-cover');
+    if (!cv) return;
+    const c = rel(cv),
+      label = labelOf(cv);
+    cv.style.display = 'none';
+    content.hidden = false; // … puis remontré le temps du mouvement
+    const b = rel(book),
+      S = cabStage(c, b, book, label);
+    box(S.sheet, S.right);
+    S.st.append(S.sheet); // posée sur la page : au-dessus de tout
+    S.back.style.opacity = S.front.style.opacity = '0';
+    // 1. la liasse prend la place des pages, se soulève et glisse à gauche
+    await Promise.all([bare(book, true), play(S.sheet, [{
+      opacity: 0
+    }, {
+      opacity: 1
+    }], {
+      duration: T(200)
+    })]);
+    if (!S.st.isConnected) return;
+    S.sheet.classList.add('lift');
+    const aside = play(S.sheet, [boxKf(S.right), boxKf(S.left)], {
+      duration: T(620),
+      easing: 'cubic-bezier(.35,.1,.25,1)',
+      fill: 'forwards'
+    });
+    await wait(T(380));
+    if (!S.st.isConnected) return;
+    // 2. le volet gauche se replie sur le droit, le dossier redevient range-dossier
+    book.style.clipPath = `inset(0 0 0 ${CAB.spine * 100}%)`;
+    S.panel.style.visibility = '';
+    await play(S.panel, [{
+      transform: `${PERSP}rotateY(0deg)`
+    }, {
+      transform: `${PERSP}rotateY(-180deg)`
+    }], {
+      duration: T(680),
+      easing: 'cubic-bezier(.4,.1,.25,1)',
+      fill: 'forwards'
+    });
+    if (!S.st.isConnected) return;
+    S.panel.style.visibility = 'hidden';
+    book.style.visibility = 'hidden';
+    const wallet = [S.back, S.front].map(el => play(el, [{
+      ...boxKf(S.wing),
+      opacity: 0
+    }, {
+      ...boxKf(c),
+      opacity: 1
+    }], {
+      duration: T(380),
+      easing: 'ease-out',
+      fill: 'forwards'
+    }));
+    await Promise.all([aside, ...wallet]);
+    if (!S.st.isConnected) return;
+    // 3. la liasse revient au-dessus du range-dossier, puis glisse dans la poche
+    await play(S.sheet, [boxKf(S.left), boxKf(S.up)], {
+      duration: T(600),
+      easing: 'cubic-bezier(.3,.7,.3,1)',
+      fill: 'forwards'
+    });
+    if (!S.st.isConnected) return;
+    S.sheet.classList.remove('lift');
+    S.st.insertBefore(S.sheet, S.front); // sous les coins et la poche
+    await play(S.sheet, [boxKf(S.up), boxKf(S.s0)], {
+      duration: T(520),
+      easing: 'cubic-bezier(.45,0,.25,1)',
+      fill: 'forwards'
+    });
+    if (!S.st.isConnected) return;
+    S.st.remove();
+    content.hidden = true;
+    book.classList.remove('pm-bare');
+    book.style.visibility = book.style.clipPath = '';
+    cv.style.display = '';
+  }
+
   /** Ouverture animée de la couverture cv ; done() pose l'état ouvert (et marque la mission lue). */
-  function animateOpen(cv, sealed, done) {
+  async function animateOpen(cv, sealed, done) {
     const host = $('pmDetail'),
       content = host.querySelector('.pm-content'),
       book = content?.querySelector('.pm-book'),
       d = designNow();
     if (still() || !content) return done();
     if (!book) { // présentation ordinaire : fondu
-      cv.animate([{
+      await play(cv, [{
         opacity: 1,
         transform: 'none'
       }, {
         opacity: 0,
         transform: 'scale(.97)'
       }], {
-        duration: 170,
+        duration: T(170),
         easing: 'ease-in',
         fill: 'forwards'
-      }).onfinish = () => {
-        done();
-        content.animate([{
-          opacity: 0,
-          transform: 'translateY(10px)'
-        }, {
-          opacity: 1,
-          transform: 'none'
-        }], {
-          duration: 230,
-          easing: 'ease-out'
-        });
-      };
+      });
+      done();
+      await play(content, [{
+        opacity: 0,
+        transform: 'translateY(10px)'
+      }, {
+        opacity: 1,
+        transform: 'none'
+      }], {
+        duration: T(230),
+        easing: 'ease-out'
+      });
       return;
     }
+    if (d === 'cabinet') return cabinetOpen(cv, sealed, content, book, done);
     const envelope = sealed && d === 'flightlog';
-    // scellé : le calque (ficelle, ruban, cachet) s'efface d'abord ; Durci : la fermeture résiste, puis cède
+    // scellé : le calque (ruban, cachet) s'efface d'abord ; Durci : la fermeture résiste, puis cède
     if (sealed && !envelope) cv.classList.add('open');
-    if (sealed && d === 'field') cv.animate([0, -3, 3, -2, 2, 0].map(v => ({
+    if (sealed && d === 'field') play(cv, [0, -3, 3, -2, 2, 0].map(v => ({
       transform: `translateX(${v}px)`
     })), {
       duration: 360
     });
-    setTimeout(() => {
-      if (!cv.isConnected) return;
-      const C = pin(cv);
-      content.hidden = false;
-      const B = book.getBoundingClientRect();
-      if (envelope) { // Carnet de vol : l'enveloppe glisse et s'efface, le carnet en sort
-        cv.animate([{
-          transform: 'none',
-          opacity: 1
-        }, {
-          transform: 'translateY(16%) rotate(2deg)',
-          opacity: 0
-        }], {
-          duration: 420,
-          easing: 'ease-in',
-          fill: 'forwards'
-        });
-        book.animate([{
-          transform: 'translateY(48px)',
-          opacity: 0
-        }, {
-          transform: 'none',
-          opacity: 1
-        }], {
-          duration: 540,
-          delay: 150,
-          easing: 'cubic-bezier(.2,.8,.3,1)',
-          fill: 'backwards'
-        }).onfinish = done;
-      } else if (d === 'aqua') zoom(cv, book, C, B, true, done);
-      else flip(cv, book, C, B, true, done);
-    }, sealed && !envelope ? 380 : 0);
+    if (sealed && !envelope) await wait(380);
+    if (!cv.isConnected) return;
+    const C = pin(cv);
+    content.hidden = false;
+    const B = book.getBoundingClientRect();
+    if (envelope) { // Carnet de vol : l'enveloppe glisse et s'efface, le carnet en sort
+      play(cv, [{
+        transform: 'none',
+        opacity: 1
+      }, {
+        transform: 'translateY(16%) rotate(2deg)',
+        opacity: 0
+      }], {
+        duration: T(420),
+        easing: 'ease-in',
+        fill: 'forwards'
+      });
+      await play(book, [{
+        transform: 'translateY(48px)',
+        opacity: 0
+      }, {
+        transform: 'none',
+        opacity: 1
+      }], {
+        duration: T(540),
+        delay: T(150),
+        easing: 'cubic-bezier(.2,.8,.3,1)',
+        fill: 'backwards'
+      });
+    } else if (d === 'aqua') await zoom(cv, book, C, B, true);
+    else await flip(cv, book, C, B, true);
+    done();
   }
-  /** Fermeture animée du dossier de la mission a (même mouvement à l'envers ; le carnet lu se referme comme un livre). */
-  function animateClose(a) {
+  /** Fermeture animée du dossier de la mission a (même mouvement à l'envers ; le carnet lu se referme comme un
+   *  livre). */
+  async function animateClose(a) {
     const host = $('pmDetail'),
       content = host.querySelector('.pm-content'),
       book = content?.querySelector('.pm-book');
     settle();
     if (still() || !content || content.hidden) return setClosed(a, true);
     if (!book) {
-      content.animate([{
+      await play(content, [{
         opacity: 1
       }, {
         opacity: 0,
         transform: 'translateY(6px)'
       }], {
-        duration: 160,
+        duration: T(160),
         easing: 'ease-in'
-      }).onfinish = () => {
-        setClosed(a, true);
-        host.querySelector('.pm-cover')?.animate([{
-          opacity: 0,
-          transform: 'scale(.97)'
-        }, {
-          opacity: 1,
-          transform: 'none'
-        }], {
-          duration: 220,
-          easing: 'ease-out'
-        });
-      };
+      });
+      setClosed(a, true);
+      const cv = host.querySelector('.pm-cover');
+      if (cv) await play(cv, [{
+        opacity: 0,
+        transform: 'scale(.97)'
+      }, {
+        opacity: 1,
+        transform: 'none'
+      }], {
+        duration: T(220),
+        easing: 'ease-out'
+      });
       return;
     }
+    if (designNow() === 'cabinet') return cabinetClose(a, content, book);
     setClosed(a, true); // couverture posée à sa place, livre caché…
     const cv = host.querySelector('.pm-cover');
     if (!cv) return;
     const C = pin(cv);
     content.hidden = false; // … puis remontré le temps du mouvement
     const B = book.getBoundingClientRect();
-    const end = () => {
-      content.hidden = true;
-      book.getAnimations().forEach(x => x.cancel());
-      unpin(cv);
-    };
-    if (designNow() === 'aqua') zoom(cv, book, C, B, false, end);
-    else flip(cv, book, C, B, false, end);
+    if (designNow() === 'aqua') await zoom(cv, book, C, B, false);
+    else await flip(cv, book, C, B, false);
+    if (!cv.isConnected) return;
+    content.hidden = true;
+    book.getAnimations().forEach(x => x.cancel());
+    unpin(cv);
   }
-  /** Image du dossier affiché, avant qu'une autre mission le remplace (changement de mission). */
+  /** Couverture du dossier fermé, copiée avant qu'une autre mission la remplace (changement de mission). */
   function snapshot() {
-    const host = $('pmDetail');
-    settle();
-    if (still() || !host.firstElementChild) return null;
-    const g = document.createElement('div');
-    g.className = 'pm-ghost';
+    const cv = $('pmDetail').querySelector('.pm-cover');
+    if (still() || !cv) return null;
+    const g = cv.cloneNode(true),
+      r = rel(cv);
+    g.classList.add('pm-ghost');
     g.setAttribute('aria-hidden', 'true');
+    g.removeAttribute('tabindex');
     g.inert = true;
-    g.append(...[...host.children].map(n => n.cloneNode(true)));
-    return {
-      g,
-      tops: [...host.querySelectorAll('.pm-page')].map(p => p.scrollTop)
-    };
+    box(g, r);
+    return g;
   }
-  /** Changement de mission : l'ancien dossier part à gauche, le nouveau arrive de la droite (de biais, comme glissé
-   *  sur un bureau ; à plat pour Aqua et les designs ordinaires). */
-  function slideIn(s) {
-    const host = $('pmDetail');
-    if (!s || still()) return;
+  /** Changement de mission : l'ancien dossier fermé part à gauche, le nouveau arrive de la droite (de biais, comme
+   *  glissé sur un bureau ; à plat pour Aqua et les designs ordinaires). Les boutons restent en place. */
+  async function slideIn(g) {
+    const host = $('pmDetail'),
+      cv = host.querySelector('.pm-cover');
+    if (!g) return;
+    if (!cv || still()) return g.remove();
     const d = designNow(),
       tilt = {
         cabinet: 4,
         flightlog: 3,
         field: 2
       }[d] || 0,
-      dur = d === 'aqua' ? 420 : 520;
-    host.prepend(s.g);
-    s.g.querySelectorAll('.pm-page').forEach((p, i) => p.scrollTop = s.tops[i] || 0);
+      dur = T(d === 'aqua' ? 420 : 520);
+    host.append(g);
     host.classList.add('pm-swapping');
-    s.g.animate([{
+    await Promise.all([play(g, [{
       transform: 'none',
       opacity: 1
     }, {
-      transform: `translateX(-80%) rotate(${-tilt}deg)`,
+      transform: `translateX(-90%) rotate(${-tilt}deg)`,
       opacity: 0
     }], {
       duration: dur,
       easing: 'cubic-bezier(.55,0,.8,.3)',
       fill: 'forwards'
-    }).onfinish = () => s.g.remove();
-    const fresh = [...host.children].filter(c => c !== s.g);
-    fresh.forEach((c, i) => {
-      const x = c.animate([{
-        transform: `translateX(80%) rotate(${tilt}deg)`,
-        opacity: 0
-      }, {
-        transform: 'none',
-        opacity: 1
-      }], {
-        duration: dur,
-        delay: dur * .3,
-        easing: 'cubic-bezier(.2,.8,.3,1)',
-        fill: 'backwards'
-      });
-      if (i === fresh.length - 1) x.onfinish = x.oncancel = () => host.classList.remove('pm-swapping');
-    });
+    }), play(cv, [{
+      transform: `translateX(90%) rotate(${tilt}deg)`,
+      opacity: 0
+    }, {
+      transform: 'none',
+      opacity: 1
+    }], {
+      duration: dur,
+      delay: dur * .3,
+      easing: 'cubic-bezier(.2,.8,.3,1)',
+      fill: 'backwards'
+    })]);
+    g.remove();
+    host.classList.remove('pm-swapping');
   }
   /** Dossier fermé ou ouvert, sans rien redessiner : la couverture (scellée si la mission n'est pas lue, sinon simple)
    *  prend la place du contenu ; la barre d'actions reste (grisée tant que la mission est scellée) : pas de saut de mise
@@ -2343,9 +2691,9 @@
     cv.innerHTML = `${labelHtml(a)}<p class="pm-open"><button type="button" class="primary" data-open>${sealed ? 'Ouvrir la mission' : 'Ouvrir le dossier'}</button></p>`;
     host.insertBefore(cv, actions || null);
     const open = () => {
-      if (cv.dataset.opening) return;
+      if (cv.dataset.opening) return Promise.resolve();
       cv.dataset.opening = '1';
-      animateOpen(cv, sealed, () => {
+      return animateOpen(cv, sealed, () => {
         if (sealed) {
           A.markRead(a);
           logMission(a, 'mission ouverte (scellé brisé)');
@@ -2357,6 +2705,7 @@
       });
     };
     cv.onclick = open;
+    cv.pmOpen = open;
     cv.onkeydown = e => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
@@ -2401,10 +2750,19 @@
       $('pmDetail').innerHTML = `<p class="pm-empty">${esc(tv(['Chargement de la mission…', 'Loading the mission…', 'Mission wird geladen…', 'Cargando la misión…']))}</p>`;
     }, 400);
     /** Nouvelle mission prête : état de la page remplacé, dossier dessiné, bloc montré et amené à l'écran. */
-    let ghost = null; // dossier précédent, qui part à gauche
-    const commit = (y, urls, docs) => {
+    let ghost = null, // dossier précédent (fermé), qui part à gauche
+      wasOpen = false; // il était ouvert : le nouveau s'ouvre à son tour (s'il n'est pas sous scellés)
+    const commit = async (y, urls, docs) => {
       clearTimeout(waitTimer);
-      if (hadBook) ghost = snapshot();
+      if (hadBook && !still()) {
+        settle();
+        wasOpen = !!$('pmDetail').querySelector('.pm-content:not([hidden])');
+        tempo = .7;
+        if (wasOpen && lastRender) await animateClose(lastRender[0]);
+        tempo = 1;
+        if (stale()) return false;
+        ghost = snapshot();
+      }
       mission = y;
       mapUrls = urls;
       exDocs = docs;
@@ -2416,6 +2774,26 @@
         behavior: 'smooth',
         block: 'start'
       });
+      return true;
+    };
+    /** Dossier de la nouvelle mission posé : premier dossier comme avant (ouvert si lue ou demandé) ; changement de
+     *  mission : fermé, il arrive de la droite, puis s'ouvre si le précédent l'était (ou si c'est demandé). */
+    const land = async logText => {
+      shown = A.key(a);
+      if (!ghost) {
+        if (open && !A.isRead(a)) {
+          A.markRead(a);
+          logMission(a, logText);
+        }
+        setClosed(a, !open && !A.isRead(a));
+        return;
+      }
+      setClosed(a, true);
+      await slideIn(ghost);
+      if (stale() || !(open || (wasOpen && A.isRead(a)))) return;
+      tempo = .7;
+      await $('pmDetail').querySelector('.pm-cover')?.pmOpen?.();
+      tempo = 1;
     };
     // fichiers de la mission : dossier des missions autorisé d'abord (même hors de la copie servie), sinon copie servie
     const bare = String(a.mission).replace('-', '');
@@ -2427,16 +2805,9 @@
         log = (await A.readLog()).filter(e => e.mission === a.mission);
       } catch {
         /* pas de journal */ }
-      if (stale()) return;
-      commit(null, {}, []);
+      if (stale() || !await commit(null, {}, [])) return;
       render(a, {}, '', log);
-      shown = A.key(a);
-      if (open && !A.isRead(a)) {
-        A.markRead(a);
-        logMission(a, 'convoyage ouvert');
-      }
-      setClosed(a, !open && !A.isRead(a));
-      slideIn(ghost);
+      await land('convoyage ouvert');
       return;
     }
     const yf = await A.missionFirst(a.folder, [a.files?.yaml, `mission${a.mission}.yaml`, `mission${bare}.yaml`]);
@@ -2474,16 +2845,9 @@
       log = (await A.readLog()).filter(e => e.mission === a.mission);
     } catch {
       /* pas de journal */ }
-    if (stale()) return;
-    commit(y, urls, docs);
+    if (stale() || !await commit(y, urls, docs)) return;
     render(a, y || {}, md, log);
-    shown = A.key(a);
-    if (open && !A.isRead(a)) {
-      A.markRead(a);
-      logMission(a, 'mission ouverte (scellé brisé)');
-    }
-    setClosed(a, !open && !A.isRead(a));
-    slideIn(ghost);
+    await land('mission ouverte (scellé brisé)');
   }
 
   /** Points de la route dans l'ordre (origine, points tournants, rendez-vous, cible, destination) ; route_order si présent. */
@@ -3182,6 +3546,19 @@
     };
     right.onclick = pageClick(next);
     left.onclick = pageClick(prev);
+    // pour les animations du dossier (Cabinet : tourner la page de droite à l'ouverture, revenir au début au rangement)
+    book.pmAt = () => at;
+    book.pmPages = () => pages.length;
+    book.pmGoto = n => {
+      at = Math.max(0, Math.min(n, pages.length - 1)) & ~1;
+      draw();
+    };
+    book.pmTurn = (dir, to = at + 2 * dir) => new Promise(r => {
+      const moves = !busy && to !== at && to >= 0 && to < pages.length;
+      if (!moves) return r();
+      turn(dir, to);
+      setTimeout(r, still() ? 0 : 720);
+    });
     draw();
   }
 
