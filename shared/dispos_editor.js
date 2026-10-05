@@ -54,13 +54,16 @@
     secu_perso: 'SC+',
     defense_perso: 'D+'
   };
-  // libellé court de la palette : sans le nom du groupe en tête ni la précision entre parenthèses (libellé complet en infobulle)
+  // libellé court de la palette : sans le nom du groupe en tête ni la précision entre parenthèses, mots longs abrégés (libellé complet en infobulle)
   const shortOf = (c, g) => {
     const full = SD().label(c.label),
       grp = SD().label(g?.label || '');
     let s = full.replace(/\s*\([^)]*\)\s*$/, '');
     if (grp && s.toLowerCase().startsWith(grp.toLowerCase() + ' ')) s = s.slice(grp.length + 1);
-    return s ? s[0].toUpperCase() + s.slice(1) : full;
+    if (!s) return full;
+    s = s[0].toUpperCase() + s.slice(1);
+    // libellé long : mots de plus de 6 lettres abrégés à 5 (« Sécurité civile personnalisée » → « Sécur. civile perso. »)
+    return s.length > 12 ? s.split(' ').map(w => w.length > 6 ? w.slice(0, 5) + '.' : w).join(' ') : s;
   };
   const codeOf = c => c?.lettre || (c?.odv?.length === 1 ? c.odv[0] : SHORT[c?.id]) || c?.odv?.[0] || '';
 
@@ -71,7 +74,7 @@
     s.textContent = `.de-wrap{display:grid;gap:10px}.de-nav,.de-add,.de-actions{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
 .de-add label{display:inline-flex;gap:5px;align-items:center;font-size:13px}.de-add select,.de-add input[type=time],.de-edit select,.de-edit input[type=time]{padding:4px 6px;font:inherit}
 .de-days{display:inline-flex;flex-wrap:wrap;gap:2px 8px}.de-days label{font-size:12.5px}.de-themes{margin:0;font-size:12.5px;opacity:.85}
-.de-pal{display:flex;flex-wrap:wrap;gap:3px 4px;align-items:center}.de-pal-g{font:400 10px/1 system-ui,sans-serif;opacity:.65;margin-left:6px}.de-brush{padding:1px 5px !important;min-height:0 !important;height:auto !important;border:1px solid rgba(0,0,0,.3) !important;background:var(--c) !important;color:var(--k) !important;font:400 10.5px/1.3 system-ui,sans-serif !important;letter-spacing:0 !important;text-transform:none !important;text-shadow:none !important;box-shadow:none;cursor:pointer}.de-brush.on{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--c) !important}.de-gridwrap{overflow-x:auto}.de-grid{border-collapse:collapse;user-select:none;touch-action:none;font:11px/1 system-ui,sans-serif}.de-grid th{padding:2px 4px;font-weight:400;white-space:nowrap}.de-grid thead th{font-weight:500;opacity:.7}.de-grid td{width:22px;min-width:22px;height:22px;padding:0;border:1px solid color-mix(in srgb,currentColor 18%,transparent);cursor:crosshair;text-align:center;font:700 9px/1 system-ui,sans-serif;overflow:hidden;white-space:nowrap;outline:none}.de-grid td.part{opacity:.55}.de-grid tr.today th{color:var(--repo-accent,#69a7ff)}.de-help{margin:0}.de-msg{margin:0}`;
+.de-pal{display:grid;grid-template-columns:max-content 1fr;gap:3px 6px;align-items:center}.de-pal-r{display:flex;flex-wrap:wrap;gap:2px}.de-pal-n{font:400 10.5px/1.2 system-ui,sans-serif;color:inherit;opacity:.85;white-space:nowrap}.de-pal-g{font:400 10px/1 system-ui,sans-serif;opacity:.65;margin-left:6px}.de-brush{padding:0 3px !important;min-height:0 !important;height:auto !important;border:1px solid rgba(0,0,0,.3) !important;background:var(--c) !important;color:var(--k) !important;font:400 9.5px/1.45 system-ui,sans-serif !important;border-radius:0 !important;white-space:nowrap;letter-spacing:0 !important;text-transform:none !important;text-shadow:none !important;box-shadow:none;cursor:pointer}.de-brush.on{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--c) !important}.de-gridwrap{overflow-x:auto}.de-grid{border-collapse:collapse;user-select:none;touch-action:none;font:11px/1 system-ui,sans-serif}.de-grid th{padding:2px 4px;font-weight:400;white-space:nowrap}.de-grid thead th{font-weight:500;opacity:.7}.de-grid td{width:22px;min-width:22px;height:22px;padding:0;border:1px solid color-mix(in srgb,currentColor 18%,transparent);cursor:crosshair;text-align:center;font:700 9px/1 system-ui,sans-serif;overflow:hidden;white-space:nowrap;outline:none}.de-grid td.part{opacity:.55}.de-grid tr.today th{color:var(--repo-accent,#69a7ff)}.de-help{margin:0}.de-msg{margin:0}`;
     document.head.append(s);
   }
 
@@ -176,7 +179,7 @@
       };
       const gridHtml = `<div class="de-pal">${groups.map(g => {
         const list = cats.filter(c => c.groupe === g.id);
-        return list.length ? `<span class="de-pal-g">${esc(D.label(g.label))}</span>${list.map(c => `<button type="button" class="repo-plain de-brush${c.id === brush ? ' on' : ''}" data-brush="${esc(c.id)}" style="--c:${colorOf(c)};--k:${ink(colorOf(c))}" title="${esc(D.label(c.label))}">${esc(codeOf(c))} · ${esc(shortOf(c, g))}</button>`).join('')}` : '';
+        return list.length ? `<span class="de-pal-n">${esc(D.label(g.label))}</span><span class="de-pal-r">${list.map(c => `<button type="button" class="repo-plain de-brush${c.id === brush ? ' on' : ''}" data-brush="${esc(c.id)}" style="--c:${colorOf(c)};--k:${ink(colorOf(c))}" title="${esc(`${codeOf(c)} — ${D.label(c.label)}`)}">${esc(codeOf(c))} ${esc(shortOf(c, g))}</button>`).join('')}</span>` : '';
       }).join('')}</div>
         <div class="de-gridwrap"><table class="de-grid"><thead><tr><th></th>${Array.from({ length: 24 }, (_, h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${days.map((day, j) => {
           const cv = cover(day);
