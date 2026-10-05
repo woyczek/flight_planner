@@ -106,6 +106,10 @@
     FIELDS.forEach(name => {
       if (document.activeElement !== inputs[name]) inputs[name].value = config[name] || '';
     });
+    // mode production ou usurpation (shared/users.js) : trigramme fixé par la connexion
+    const U = window.SuiteUsers;
+    inputs.trigram.readOnly = !!U?.trigramLocked?.();
+    if (inputs.trigram.readOnly) inputs.trigram.value = U.effective() || '';
   };
 
   FIELDS.forEach(name => {
@@ -136,6 +140,7 @@
   });
   // profil enregistré par une page de la suite (Paramètres › Mon profil) : champs du menu relus
   window.addEventListener('pilot-profile-change', () => setTimeout(refresh));
+  for (const ev of ['suite-session-change', 'suite-mode-change']) window.addEventListener(ev, () => setTimeout(refresh));
   window.addEventListener('repository-language-change', translate);
   translate();
   refresh();

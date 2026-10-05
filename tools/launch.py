@@ -406,6 +406,32 @@ def index_availability():
             json.dump({'updated_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'pilots': pilots}, f, indent=1)
 
 
+def index_users():
+    """data/utilisateurs/_index.json : trigramme → rôle, actif, nom (fiches <TRI>.json, docs/DISPOS_ET_REORGANISATION.md
+    § 2). Les pages s'en servent pour lister les utilisateurs ; réécrit seulement s'il change."""
+    d = os.path.join(DATA, 'utilisateurs')
+    if not os.path.isdir(d):
+        return
+    users = {}
+    for n in sorted(os.listdir(d)):
+        m = re.match(r'^([A-Z0-9]{2,5})\.json$', n)
+        if not m:
+            continue
+        try:
+            u = json.load(open(os.path.join(d, n), encoding='utf-8'))
+        except (OSError, ValueError):
+            continue
+        users[m.group(1)] = {'role': u.get('role') or 'utilisateur', 'actif': u.get('actif') is not False, 'nom': u.get('nom') or ''}
+    p = os.path.join(d, '_index.json')
+    try:
+        old = json.load(open(p, encoding='utf-8')).get('utilisateurs')
+    except (OSError, ValueError):
+        old = None
+    if old != users:
+        with open(p, 'w', encoding='utf-8', newline='\n') as f:
+            json.dump({'schema': 1, 'va': 'DEFA', 'updated_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'utilisateurs': users}, f, indent=1, ensure_ascii=False)
+
+
 def mark_instance():
     token = secrets.token_hex(8)
     for d in INSTANCE_DIRS:
@@ -452,6 +478,7 @@ def main():
     Setup.port = port
     mark_instance()
     index_availability()
+    index_users()
     handler = lambda *x, **k: Setup(*x, directory=ROOT, **k)
     srv = Server(('127.0.0.1', port), handler)
     url = f'http://127.0.0.1:{port}/{a.page}?t={int(time.time())}'  # adresse neuve : page jamais reprise du cache

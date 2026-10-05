@@ -1021,10 +1021,10 @@
   } {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=0f76e1a5", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=78a8d79d", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=1e823776", script.src).href;
+    files.src = new URL("file_access.js?v=f710a485", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
     for (const f of ["icons/repository_icons.js?v=58f492d6", "block_icons.js?v=562bd4e5", "side_nav.js?v=355697e6"]) {
@@ -1037,8 +1037,12 @@
     store.src = new URL("browser_store.js?v=7860c8db", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
-    assign.src = new URL("assignments.js?v=1a2f7c8f", script.src).href;
+    assign.src = new URL("assignments.js?v=0052ac84", script.src).href;
     document.head.append(assign);
+    /* Utilisateurs et droits : mode develop / production, connexion, usurpation (bandeau sur toutes les pages) */
+    const users = document.createElement("script");
+    users.src = new URL("users.js?v=39ec4d9e", script.src).href;
+    document.head.append(users);
     const update = document.createElement("script");
     update.src = new URL("suite_update.js?v=a6f1e9d1", script.src).href;
     document.head.append(update)

@@ -47,8 +47,11 @@
     }
   };
 
-  /** Trigramme de l'utilisateur (profil pilote), en capitales ; '' s'il n'est pas réglé. */
-  const trigram = () => String(json(PROFILE, {})?.trigram || '').trim().toUpperCase();
+  /** Trigramme du profil pilote (☰ › Profil pilote), en capitales ; '' s'il n'est pas réglé. */
+  const profileTrigram = () => String(json(PROFILE, {})?.trigram || '').trim().toUpperCase();
+  /** Trigramme de l'utilisateur : utilisateur usurpé, utilisateur connecté (mode production) ou profil pilote
+   *  (shared/users.js : SuiteUsers.effective) ; '' s'il n'est pas réglé. */
+  const trigram = () => window.SuiteUsers?.effective?.() || profileTrigram();
 
   // ---- petite base de fichiers (données servies par la suite) : lectures gardées en mémoire et revalidées à bas coût
   // (requête conditionnelle : 304 du lanceur si le fichier n'a pas changé ; fichier absent gardé aussi), invalidées
@@ -119,6 +122,100 @@
       lock: (name, fn) => navigator.locks?.request ? navigator.locks.request(`defa:${name}`, fn) : fn()
     };
   })();
+  // ---- fichiers du pool synchronisé (docs/INDEX_DONNEES.md § 9 : disponibilités, utilisateurs, configuration partagée) :
+  // écrits dans le dossier des données autorisé (Paramètres › Installation › Sources et dossiers), sous verrou, puis
+  // annoncés (store.changed) ; sans dossier autorisé, gardés dans ce navigateur (boîte d'envoi suiteDataOutbox:v1, relue
+  // en priorité tant qu'elle est plus récente que le fichier) et écrits au prochain flushData().
+  const OUTBOX = 'suiteDataOutbox:v1';
+  const outbox = () => json(OUTBOX, {}) || {};
+  /** Dossier des données autorisé en écriture (handle) ; erreur expliquée sinon. */
+  async function dataDir() {
+    const FA = window.FileAccess;
+    const st = FA ? await FA.status('__data') : null;
+    let dir = st?.handle;
+    if (dir && st.permission !== 'granted') {
+      try {
+        if ((await dir.requestPermission({
+            mode: 'readwrite'
+          })) !== 'granted') dir = null;
+      } catch {
+        dir = null; // sans geste de l'utilisateur, l'autorisation ne peut pas être demandée
+      }
+    }
+    if (!dir) throw new Error(t(['Dossier des données non autorisé : le choisir dans Paramètres › Installation › Sources et dossiers.', 'Data folder not authorised: choose it in Settings › Installation › Sources and folders.', 'Datenordner nicht freigegeben: unter Einstellungen › Installation › Quellen und Ordner wählen.', 'Carpeta de datos no autorizada: elegirla en Ajustes › Instalación › Fuentes y carpetas.']));
+    if (await FA.sameAsServed?.('__data', dir) === false) throw new Error(t(['Dossier des données d’une autre copie de la suite : rechoisir le dossier de l’application (Premier lancement).', 'Data folder of another copy of the suite: choose the application folder again (First run).', 'Datenordner einer anderen Kopie der Suite: Anwendungsordner neu wählen (Erststart).', 'Carpeta de datos de otra copia de la suite: volver a elegir la carpeta de la aplicación (Primer arranque).']));
+    return dir;
+  }
+  /** Écrit value (JSON) dans data/<rel> du dossier autorisé ; null : supprime le fichier. */
+  async function writeFile(dir, rel, value) {
+    const parts = rel.split('/'),
+      name = parts.pop();
+    let d = dir;
+    for (const p of parts) d = await d.getDirectoryHandle(p, {
+      create: true
+    });
+    if (value === null) return d.removeEntry(name).catch(() => {});
+    const w = await (await d.getFileHandle(name, {
+      create: true
+    })).createWritable();
+    await w.write(JSON.stringify(value, null, 1));
+    await w.close();
+  }
+  /** Fichier du pool : boîte d'envoi de ce navigateur si plus récente, sinon fichier servi (data/<rel>) ; null si absent. */
+  async function readData(rel, {
+    fresh = false
+  } = {}) {
+    const local = outbox()[rel],
+      served = await store.read(`data/${rel}`, {
+        fresh
+      });
+    if (local && (!served || String(local.value?.updated_at || local.at) >= String(served.updated_at || ''))) return local.value;
+    return served;
+  }
+  /** Écrit un fichier du pool (data/<rel>) : dossier autorisé (sous le verrou du fichier), sinon boîte d'envoi de ce
+   *  navigateur. Retour : { where: 'folder' | 'local', error } ; événement « defa-data-change » dans tous les onglets. */
+  async function writeData(rel, value) {
+    const box = outbox();
+    box[rel] = {
+      at: new Date().toISOString(),
+      value
+    };
+    setJson(OUTBOX, box);
+    let where = 'local',
+      error = null;
+    try {
+      const dir = await dataDir();
+      await store.lock(`data:${rel}`, () => writeFile(dir, rel, value));
+      const b = outbox();
+      delete b[rel];
+      setJson(OUTBOX, b);
+      where = 'folder';
+    } catch (e) {
+      error = e;
+    }
+    store.changed(`data/${rel}`);
+    return {
+      where,
+      error
+    };
+  }
+  /** Écrit dans le dossier autorisé les fichiers restés dans la boîte d'envoi ; retour : chemins écrits. */
+  async function flushData() {
+    const dir = await dataDir(),
+      done = [];
+    for (const [rel, e] of Object.entries(outbox())) {
+      await store.lock(`data:${rel}`, () => writeFile(dir, rel, e.value));
+      const b = outbox();
+      delete b[rel];
+      setJson(OUTBOX, b);
+      store.changed(`data/${rel}`);
+      done.push(rel);
+    }
+    return done;
+  }
+  /** Chemins (sous data/) encore dans la boîte d'envoi de ce navigateur. */
+  const pendingData = () => Object.keys(outbox());
+
   // dossier des missions autorisé, par rapport à la suite servie : true (le même : la copie servie suffit), false
   // (autre copie : ignoré), null (contrôle impossible : sans lanceur, le dossier est lu directement)
   async function missionsSource() {
@@ -1471,7 +1568,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     const doc = {
       mission: mission.id,
       updated_at: at,
-      by: extra.by || trigram() || 'CPCO',
+      by: extra.by || window.SuiteUsers?.by?.() || trigram() || 'CPCO',
       h_hour: extra.h_hour || null,
       participants,
       alert: extra.alert || null
@@ -1549,6 +1646,13 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     PAGE,
     TURN_MIN,
     trigram,
+    profileTrigram,
+    // fichiers du pool synchronisé (utilisateurs, configuration partagée, disponibilités)
+    dataStore: store,
+    readData,
+    writeData,
+    flushData,
+    pendingData,
     index,
     mine,
     key,

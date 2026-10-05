@@ -342,10 +342,10 @@
   }
 
   // ---- ouverture de fichiers : sélecteur du système dans le dossier paramétré
-  // Dossier par défaut selon la page (application CR DEFA : registre ; Paramétrage : dépôt).
+  // Dossier par défaut selon la page (application CR DEFA : registre ; Paramètres : dépôt).
   const defaultFolder = () => {
     const p = decodeURI(location.pathname);
-    if (/\/apps\/settings\/parametrage\.html$/.test(p)) return '__data';
+    if (/\/apps\/settings\/(parametrage|profil|centre|installation|maintenance)\.html$/.test(p)) return '__data';
     if (/\/apps\/cr\//.test(p)) return '__ledger';
     if (/\/apps\/planner\//.test(p)) return '__perf';
     if (/\/apps\/landing\//.test(p)) return '__xplane';
