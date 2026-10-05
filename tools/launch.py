@@ -86,11 +86,11 @@ def from_archive():
 
 
 def git_env():
-    """Git sans question dans le terminal ni fenêtre d'identifiants (la page les demande)."""
-    return dict(os.environ, GIT_TERMINAL_PROMPT='0', GCM_INTERACTIVE='never')
+    """Git sans question dans le terminal ni fenêtre d'identifiants (la page les demande), SSH compris."""
+    return data_sync.git_env()
 
 
-def clone(user=None, secret=None, remember=False):
+def clone(user=None, secret=None, remember=False, url=None):
     """Clone du dépôt de données ; identifiants : ceux de la page (le temps du clone), sinon ceux que Git connaît.
     Retourne (ok, journal)."""
     git = shutil.which('git')
@@ -100,7 +100,9 @@ def clone(user=None, secret=None, remember=False):
         return False, 'Le dossier data/ existe déjà et n’est pas vide : il est laissé tel quel.'
     if any(c in (user or '') + (secret or '') for c in '\r\n\0'):
         return False, 'Identifiant ou mot de passe invalide (retour à la ligne).'  # pas de champ glissé dans « git credential »
-    url = data_repo_url()
+    url = (url or '').strip() or data_repo_url()  # dépôt précisé au premier lancement, sinon celui de la configuration
+    if not data_sync.REMOTE_RE.match(url):
+        return False, 'Adresse du dépôt invalide.'
     env = git_env()
     cmd = [git]
     if user and secret:
@@ -237,6 +239,11 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             git = shutil.which('git')
             return self._json({'server': True, 'root': ROOT, 'git': bool(git), 'data': has_data(),
                                'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url()})
+        if self.path.split('?')[0] == '/__setup/sync-remote':
+            # dépôt git de synchronisation de data/ : adresse actuelle (ou celle du clone par défaut)
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            return self._json({**data_sync.remote_info(DATA), 'default': data_repo_url()})
         if self.path.split('?')[0] == '/__setup/sync-status':
             # synchronisation git du pool (tools/data_sync.py) : état pour le bouton de l'en-tête ; ?fetch=1 : relu
             # sur le dépôt distant (commits à recevoir)
@@ -299,6 +306,18 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             with open(os.path.join(out, name + '.json'), 'wb') as f:
                 f.write(body)
             return self._json({'ok': True, 'file': f'docs/perf/runs/{name}.json'})
+        if path == '/__setup/sync-remote':
+            # dépôt git de synchronisation de data/ (premier lancement) : vérifié (git ls-remote), enregistré si demandé ;
+            # jamais bloquant : le compte rendu dit seulement si le dépôt répond
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                a = {}
+            url = str(a.get('url') or '').strip()
+            r = {'check': data_sync.check_remote(url)}
+            if a.get('save'):
+                r['saved'] = data_sync.set_remote(DATA, url)
+            return self._json(r)
         if path == '/__setup/sync':
             # un passage de synchronisation (commit au nom du trigramme, fusion fiche par fiche, envoi), un à la fois
             try:
@@ -317,7 +336,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 a = json.loads(body or b'{}')
             except ValueError:
                 a = {}
-            ok, log = clone((a.get('user') or '').strip(), a.get('secret') or '', bool(a.get('remember')))
+            ok, log = clone((a.get('user') or '').strip(), a.get('secret') or '', bool(a.get('remember')), a.get('url'))
             return self._json({'ok': ok, 'message': log})
         if path == '/__setup/upload':
             kind = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('kind', [''])[0]

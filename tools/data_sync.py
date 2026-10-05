@@ -30,8 +30,65 @@ except ImportError:  # pragma: no cover
 
 
 def git_env():
-    """Git sans question dans le terminal ni fenêtre d'identifiants."""
-    return dict(os.environ, GIT_TERMINAL_PROMPT='0', GCM_INTERACTIVE='never')
+    """Git sans question dans le terminal ni fenêtre d'identifiants ; SSH sans question non plus (clé ou rien ; hôte
+    inconnu accepté à la première connexion, refusé s'il a changé)."""
+    return dict(os.environ, GIT_TERMINAL_PROMPT='0', GCM_INTERACTIVE='never',
+                GIT_SSH_COMMAND=os.environ.get('GIT_SSH_COMMAND', 'ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15'))
+
+
+# ---- dépôt distant de synchronisation (premier lancement : adresse précisée, vérifiée, jamais bloquante)
+REMOTE_RE = re.compile(r'^(?:[\w.-]+@[\w.-]+:[\w./~-]+|ssh://\S+|https?://\S+)$')
+
+
+def remote_info(data):
+    """Dépôt distant de data/ : { repo, remote (nom), url, branch }."""
+    if not is_repo(data):
+        return {'repo': False, 'remote': '', 'url': '', 'branch': ''}
+    br, _, remote = branch_info(data)
+    url = git(data, 'remote', 'get-url', remote)[1] if remote else ''
+    return {'repo': True, 'remote': remote, 'url': url, 'branch': br}
+
+
+def check_remote(url):
+    """Le dépôt répond-il ? git ls-remote, sans question (identifiants, clé SSH) ; rend { ok, message, branches }."""
+    url = (url or '').strip()
+    if not REMOTE_RE.match(url):
+        return {'ok': False, 'message': 'Adresse invalide : git@hôte:compte/dépôt.git ou https://hôte/compte/dépôt.git.', 'branches': []}
+    if not shutil.which('git'):
+        return {'ok': False, 'message': 'Git n’est pas installé sur cet ordinateur.', 'branches': []}
+    try:
+        r = subprocess.run(['git', 'ls-remote', '--heads', url], capture_output=True, text=True, encoding='utf-8',
+                           errors='replace', env=git_env(), timeout=30)
+    except subprocess.TimeoutExpired:
+        return {'ok': False, 'message': 'Pas de réponse en 30 s (réseau, adresse, pare-feu).', 'branches': []}
+    except OSError as e:
+        return {'ok': False, 'message': str(e), 'branches': []}
+    out = (r.stdout + r.stderr).strip()
+    if r.returncode:
+        if re.search(r'Permission denied|publickey|Authentication failed|could not read Username|403|401|terminal prompts disabled', out, re.I):
+            msg = 'Le dépôt existe peut-être, mais l’accès est refusé : clé SSH (adresse git@…) ou identifiants enregistrés dans Git (adresse https://…) à régler sur cet ordinateur.'
+        elif re.search(r'not found|does not exist|Repository not found|404', out, re.I):
+            msg = 'Dépôt introuvable à cette adresse.'
+        elif re.search(r'Could not resolve|unable to access|Connection|timed out', out, re.I):
+            msg = 'Hôte injoignable (réseau, nom d’hôte, pare-feu).'
+        else:
+            msg = out[-300:] or 'Échec de git ls-remote.'
+        return {'ok': False, 'message': msg, 'branches': []}
+    branches = [l.split('refs/heads/', 1)[1] for l in r.stdout.splitlines() if 'refs/heads/' in l]
+    return {'ok': True, 'message': f'Le dépôt répond : {len(branches)} branche(s).', 'branches': branches}
+
+
+def set_remote(data, url):
+    """Adresse du dépôt distant de data/ (dépôt distant de la branche, sinon origin, créé au besoin)."""
+    url = (url or '').strip()
+    if not REMOTE_RE.match(url):
+        return {'ok': False, 'message': 'Adresse invalide.'}
+    if not is_repo(data):
+        return {'ok': False, 'message': 'data/ n’est pas encore un dépôt git : l’adresse servira à récupérer les données.'}
+    info = remote_info(data)
+    name = info['remote'] or 'origin'
+    code, out = git(data, 'remote', 'set-url', name, url) if info['remote'] else git(data, 'remote', 'add', name, url)
+    return {'ok': code == 0, 'message': f'Dépôt distant « {name} » : {url}' if code == 0 else out}
 
 
 def git(data, *args, env=None, check=False):

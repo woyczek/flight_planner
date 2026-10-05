@@ -140,7 +140,26 @@ sequenceDiagram
 - **Droits** : en transport git, chacun peut écrire tout le pool (les rôles sont vérifiés par les pages). La
   vérification par un serveur viendra avec le moteur central (voir la [feuille de route](ROADMAP.md)).
 
-## 9. Exploitation
+## 9. Plusieurs utilisateurs, en attendant le serveur central
+
+- **Recevoir** : à chaque lancement, le lanceur fait un `git pull` de `data/` ; le bouton « Synchroniser » reçoit
+  aussi ce qui est arrivé depuis (son compteur l'annonce, dépôt distant relu toutes les 5 minutes).
+- **Envoyer** : le bouton « Synchroniser » commite les changements du poste, fusionne avec ceux des autres et pousse.
+- **Ce qu'il faut à chaque poste qui envoie** : git installé, la suite ouverte par le lanceur, un **droit d'écriture
+  sur le dépôt de données** (un compte par personne sur l'hébergeur git, ou un compte partagé), et une **clé SSH**
+  (adresse `git@…`) ou des **identifiants HTTPS enregistrés dans git** (adresse `https://…`).
+- **Préciser et vérifier le dépôt** : Premier lancement, étape 1, carte « Dépôt git de synchronisation des données » —
+  adresse `git@hôte:compte/dépôt.git` ou `https://hôte/compte/dépôt.git`, « Vérifier » (le dépôt répond-il depuis ce
+  poste ? `git ls-remote`, 30 s au plus, sans aucune question) et « Enregistrer » (dépôt distant de `data/` ; sans
+  données encore, l'adresse sert à les récupérer). **Jamais bloquant** : un dépôt qui ne répond pas (accès refusé,
+  introuvable, hôte injoignable) est signalé, la suite fonctionne, sans partage. Une branche absente du dépôt distant
+  est créée par la première synchronisation.
+- **Poste sans git ni droit d'écriture** : choisir comme dossier des données un **dossier partagé** (Synology,
+  OneDrive…) que synchronise un poste qui a git (le Centre, par exemple) ; ses écritures arrivent dans ce dossier, le
+  poste équipé les envoie au dépôt. C'est ce que le serveur central rendra inutile : un compte suffira
+  ([ROADMAP.md](ROADMAP.md), étape 2).
+
+## 10. Exploitation
 
 | Situation | Que faire |
 |---|---|
@@ -159,13 +178,13 @@ sequenceDiagram
 - `python tools/launch.py --port 8774 --data <copie de data>` : sert une copie de `data/` (par exemple un clone d'un
   dépôt nu) pour essayer le bouton dans le navigateur sans toucher au vrai dépôt.
 
-## 10. Évolution : le webservice
+## 11. Évolution : le webservice
 
 Le même pool pourra passer par un **moteur central** (webservice) au lieu de git, sans changer le format des fichiers :
 `GET /v1/changes?since=`, `GET /v1/file/<chemin>` (avec `ETag`), `PUT` avec `If-Match` (412 → fusion fiche par fiche,
 nouvel essai), comptes et rôles vérifiés par le serveur. Détail et calendrier : [ROADMAP.md](ROADMAP.md).
 
-## 11. Fichiers
+## 12. Fichiers
 
 | Fichier | Contenu |
 |---|---|

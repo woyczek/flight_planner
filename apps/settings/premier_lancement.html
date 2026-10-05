@@ -2,7 +2,7 @@
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Premier lancement</title>
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=30896184"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=7e4ed0f1">
-<script src="../../config/repository_tree?v=1ff42153"></script>
+<script src="../../config/repository_tree?v=7d1aa5fa"></script>
 <style>
   main.pl-page {
     max-width: 980px;
@@ -87,6 +87,9 @@
   .pl-msg.err {
     color: var(--bad, #c62828)
   }
+  .pl-msg.warn {
+    color: var(--warn, #b26a00)
+  }
   .pl-hint {
     font-size: 12.5px;
     opacity: .8;
@@ -138,6 +141,13 @@
         <div class="pl-row"><button type="button" class="secondary" data-pick="plZip">Archive des données…</button><input type="file" id="plZip" accept=".zip" hidden></div>
         <p class="pl-msg" id="plZipMsg"></p>
       </div>
+    </div>
+    <div class="pl-card" id="plRepoCard" hidden style="margin-top:14px"><h3>Dépôt git de synchronisation des données</h3>
+      <p class="pl-hint">Dépôt distant du dossier <code>data/</code> : il partage les données entre les postes (bouton « Synchroniser » de l’en-tête). Adresse SSH <code>git@hôte:compte/dépôt.git</code> (clé SSH de cet ordinateur) ou HTTPS <code>https://hôte/compte/dépôt.git</code> (identifiants enregistrés dans Git). Facultatif et jamais bloquant : sans dépôt qui répond, la suite fonctionne, sans partage.</p>
+      <p class="pl-hint" id="plRepoNow"></p>
+      <div class="pl-form"><label for="plRepo">Adresse du dépôt</label><input type="text" id="plRepo" spellcheck="false" autocomplete="off" placeholder="git@hôte:compte/defa-data.git"></div>
+      <div class="pl-row"><button type="button" class="secondary" id="plRepoCheck">Vérifier</button><button type="button" class="primary" id="plRepoSave">Enregistrer</button></div>
+      <p class="pl-msg" id="plRepoMsg"></p>
     </div>
     <div class="pl-card" id="plLogCard" hidden style="margin-top:14px"><h3>Journal des vols DEFA (facultatif)</h3>
       <p class="pl-hint">La page « Log des vols » du site DEFA enregistrée (<code>.html</code>) : pilotes et appareils de la référence DEFA (aide à la saisie).</p>
@@ -194,8 +204,8 @@
   </section>
 </main>
 <script src="../../shared/kit.js?v=65a16a49"></script>
-<script src="../../shared/repository_nav.js?v=f4421f4c"></script>
-<script src="../../shared/content_i18n.js?v=7afecb78"></script><script src="premier_lancement_i18n.js?v=70e328e2"></script>
+<script src="../../shared/repository_nav.js?v=0e930309"></script>
+<script src="../../shared/content_i18n.js?v=7afecb78"></script><script src="premier_lancement_i18n.js?v=27fc60e6"></script>
 <script src="../../shared/app_framework.js?v=a2972a9a"></script>
 <script>
 (() => {
@@ -254,7 +264,7 @@
     done('plData', st.data);
     $('plLogCard').hidden = !st.data;
     $('plDataForms').hidden = st.data;
-    $('plDataState').textContent = st.data ? `Données présentes${st.dataGit ? ' (dépôt git, mis à jour à chaque lancement)' : ''}.` :
+    $('plDataState').textContent = st.data ? `Données présentes${st.dataGit ? ' (dépôt git : reçu à chaque lancement, envoyé et partagé par le bouton « Synchroniser » de l’en-tête)' : ''}.` :
       st.git ? 'Pas encore de données : identifiants framagit, ou archive reçue par mail.' : 'Pas encore de données. Git n’est pas installé : archive reçue par mail (ou installer Git, puis relancer).';
     $('plClone').disabled = !st.git;
   }
@@ -273,19 +283,68 @@
         body: JSON.stringify({
           user,
           secret,
-          remember: $('plRemember').checked
+          remember: $('plRemember').checked,
+          url: $('plRepo').value.trim() // dépôt précisé ci-dessous (sinon celui de la configuration)
         })
       });
       msg('plCloneMsg', r.message, r.ok ? 'ok' : 'err');
       if (r.ok) {
         $('plSecret').value = '';
         dataState();
+        repoState();
       }
     } catch (e) {
       msg('plCloneMsg', `Échec : ${e.message}`, 'err');
     }
     $('plClone').disabled = false;
   });
+  // dépôt git de synchronisation de data/ (docs/SYNCHRONISATION.md § 9) : précisé ici, vérifié (git ls-remote),
+  // enregistré comme dépôt distant de data/ ; jamais bloquant
+  let repo = null;
+  async function repoState() {
+    try {
+      repo = await api('sync-remote');
+    } catch {
+      return; // sans lanceur : carte masquée
+    }
+    $('plRepoCard').hidden = false;
+    if (!$('plRepo').value) $('plRepo').value = repo.url || repo.default || '';
+    $('plRepoNow').textContent = !repo.repo ? 'data/ n’est pas encore un dépôt git : cette adresse servira à récupérer les données (carte « J’ai un accès au dépôt »).' :
+      repo.url ? `Actuel : dépôt distant « ${repo.remote} » — ${repo.url} (branche ${repo.branch}).` :
+      'data/ est un dépôt git sans dépôt distant : rien n’est partagé tant qu’aucune adresse n’est enregistrée.';
+    $('plRepoSave').disabled = !repo.repo;
+    done('plRepoCard', repo.repo && !!repo.url);
+  }
+  const repoCheck = async save => {
+    const url = $('plRepo').value.trim();
+    if (!url) return msg('plRepoMsg', 'Adresse du dépôt à préciser (git@… ou https://…).', 'err');
+    $('plRepoCheck').disabled = $('plRepoSave').disabled = true;
+    msg('plRepoMsg', save ? 'Enregistrement, puis vérification…' : 'Vérification… (jusqu’à 30 s)');
+    try {
+      const r = await api('sync-remote', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          url,
+          save
+        })
+      });
+      const c = r.check || {};
+      let text = c.message || '';
+      if (c.ok && repo?.branch && !(c.branches || []).includes(repo.branch)) text += ` La branche « ${repo.branch} » n’y est pas encore : la première synchronisation la créera.`;
+      if (!c.ok) text += '\nCe n’est pas bloquant : la suite fonctionne sans synchronisation ; à régler avant d’utiliser le bouton « Synchroniser ».';
+      if (r.saved) text = `${r.saved.message}\n${text}`;
+      msg('plRepoMsg', text, r.saved && !r.saved.ok ? 'err' : c.ok ? 'ok' : 'warn');
+    } catch (e) {
+      msg('plRepoMsg', `Échec : ${e.message}`, 'err');
+    }
+    $('plRepoCheck').disabled = false;
+    await repoState();
+  };
+  on('click', 'plRepoCheck', () => repoCheck(false));
+  on('click', 'plRepoSave', () => repoCheck(true));
   const upload = (id, kind, out, after) => on('change', id, async e => {
     const input = e.target,
       f = input.files?.[0];
@@ -397,6 +456,7 @@
       return;
     }
     dataState();
+    repoState();
     profileLoad();
     foldersState();
     // Paramètres › Sources et dossiers › « Nettoyer et recommencer… » : même nettoyage, confirmé ici

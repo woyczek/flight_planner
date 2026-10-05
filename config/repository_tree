@@ -137,7 +137,7 @@ window.REPOSITORY_TREE={
     {sep:true,bottom:true},
     {icon:"palette",path:"apps/settings/apparence.html",label:["Apparence","Appearance","Darstellung","Apariencia"]},
     {icon:"settings",path:"apps/settings/profil.html",match:"apps/settings/",label:["Paramètres","Settings","Einstellungen","Ajustes"],title:["Paramètres : mon profil, Centre, installation, maintenance","Settings: my profile, Centre, installation, maintenance","Einstellungen: mein Profil, Zentrum, Installation, Wartung","Ajustes: mi perfil, Centro, instalación, mantenimiento"]},
-    {icon:"help",menu:true,label:["Menu","Menu","Menü","Menú"],title:["Toutes les pages, profil, données locales, design","All pages, profile, local data, design","Alle Seiten, Profil, lokale Daten, Design","Todas las páginas, perfil, datos locales, diseño"]}
+    {icon:"help",path:"apps/aide/aide.html",label:["Aide","Help","Hilfe","Ayuda"],title:["Aide : manuels et documentation, au chapitre de la page en cours","Help: manuals and documentation, at the chapter of the current page","Hilfe: Handbücher und Dokumentation, beim Kapitel der aktuellen Seite","Ayuda: manuales y documentación, en el capítulo de la página actual"]}
   ],
   // Onglets en tête de page (shared/repository_nav.js) : pages sœurs d'un même bouton de la barre latérale. Clic : événement
   // « repository-tab-leave » (detail : { from, to }) pour que la page transmette son travail (mission partagée), puis
@@ -214,6 +214,7 @@ window.REPOSITORY_TREE={
     {path:"apps/settings/installation.html",menu:false,slot:"settings",label:"Paramètres — Installation",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/settings/maintenance.html",menu:false,slot:"settings",label:"Paramètres — Maintenance",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/settings/apparence.html",menu:false,slot:"settings",label:"Apparence",theme:"core",favicon:"assets/favicon-flight.svg"},
+    {path:"apps/aide/aide.html",menu:"Aide",label:"Aide — manuels et documentation de la suite",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/settings/premier_lancement.html",menu:false,slot:"settings",label:"Premier lancement",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html",menu:"Landing Performance Dashboard",label:"Landing Performance Dashboard"},
     {path:"apps/cpco/mission_editor.html",menu:"Centre — Générateur de mission",label:"Générateur de mission — Centre de planification et de conduite des opérations"},

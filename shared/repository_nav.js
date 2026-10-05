@@ -880,8 +880,8 @@
         label: ["Paramètres", "Settings", "Einstellungen", "Ajustes"]
       }, {
         icon: "help",
-        menu: true,
-        label: ["Menu", "Menu", "Menü", "Menú"]
+        path: "apps/aide/aide.html",
+        label: ["Aide", "Help", "Hilfe", "Ayuda"]
       }
     ];
     // libellés du menu : aussi pour les titres de page qui les reprennent (« Paramètres ») — couche de traduction
@@ -944,6 +944,8 @@
           document.querySelector(".repo-menu-button")?.click();
         };
       } else a.href = new URL(it.path, root).href;
+      // Aide : ouverte au chapitre de la page d'où l'on vient (apps/aide/aide.js, ?from=)
+      if (it.path === "apps/aide/aide.html" && current && current !== it.path) a.href += `?from=${encodeURIComponent(current)}`;
       if (it.path === "apps/settings/apparence.html") a.addEventListener("click", e => {
         if (openAppearance()) e.preventDefault();
       });
