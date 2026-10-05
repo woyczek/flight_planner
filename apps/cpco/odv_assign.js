@@ -170,14 +170,6 @@
     const tip = [SD.label(SD.group(d.groupe)?.label || d.groupe), ...cs.map(c => `· ${SD.code(c)} ${SD.label(c.label)}`), K.t(['déclaration du pilote (Mes missions)', 'pilot declaration (My missions)', 'Pilotenangabe (Meine Missionen)', 'declaración del piloto (Mis misiones)'])].join('\n');
     return `<span class="odv-code c-${esc(d.category || 'inconnu')}" style="background:${esc(bg)};color:${ink}" title="${esc(tip)}">${esc(cs.map(SD.code).filter(Boolean).join('/'))}</span>`;
   }
-  /** Pastille d'une catégorie pour la légende (lettre sur sa couleur, libellé court), comme la palette de Mes missions. */
-  function catChip(c) {
-    const SD = window.SuiteDispos,
-      K = window.RepositoryKit,
-      col = SD.color(c),
-      ink = (K.color.luminance(col) ?? 1) < .4 ? '#fff' : '#1b1b1b';
-    return `<span><span class="odv-code" style="background:${esc(col)};color:${ink}" title="${esc(`${SD.code(c)} — ${SD.label(c.label)}`)}">${esc(SD.code(c))}</span> ${esc(SD.shortLabel(c))}</span>`;
-  }
   /** Déclaration regroupée (docs/DISPOS_ET_REORGANISATION.md § 1.2) : lettre (court : D, E, O, I) et couleur du groupe
    *  (Disponible, Exercice DEFA, Occupé, Indisponible) ; catégories et thèmes ouverts dans l'infobulle. */
   function groupCell(d) {
@@ -243,7 +235,6 @@
     load,
     groupCell,
     catCell,
-    catChip,
     declaration: tri => decl[tri] || null,
     /** Préférences de thèmes d'un pilote (missions probables : thèmes ouverts des codes du classeur). */
     prefsOf: tri => prefs[tri] || null,
