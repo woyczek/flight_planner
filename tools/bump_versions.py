@@ -79,7 +79,7 @@ def versionner(texte, base, motif):
     return motif.sub(sub, texte)
 
 
-IMG = re.compile(r'(\(\s*["\']?)((?:textures|deco/[\w/]+|icons/skeuo/[\w/-]+)/[\w-]+\.webp)\?v=\w+')
+IMG = re.compile(r'(\(\s*["\']?)((?:textures|deco/[\w/]+|icons/skeuo/[\w/-]+)/[\w.-]+\.webp)\?v=\w+')  # noms à point compris (rail.vierge.webp)
 LIT = re.compile(r'(["\'`])((?:\.{1,2}/)?[\w./-]+\.(?:js|css))\?v=\w+')
 ATTR = re.compile(r'((?:src|href)=["\'])([^"\'?#:]+)\?v=\w+')
 IMPORT = re.compile(r'(@import url\(["\'])([^"\'?#:]+)\?v=\w+')   # feuilles importées dans une couche (tools/layer_pages.py)

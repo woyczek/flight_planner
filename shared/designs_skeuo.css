@@ -3020,12 +3020,14 @@ html[data-design="flightlog"] .repo-tab[aria-current="page"]:not(#imp) {
 html[data-design="flightlog"] .repo-tab:not([aria-current="page"]):is(:hover, :focus-visible):not(#imp) {
   filter: brightness(1.15)
 }
-/* Cabinet : étiquettes dans leur cadre d'acier à pattes rivetées, posées sur le rail (sur toute la largeur de la page ;
-   rail provisoire, liseré de laiton à venir). Étiquette : 44 px de haut pour 269 px d'image (× .1636), découpe autour
-   du papier (64 / 168 / 54 / 165) ; rail : 23.6 px pour 144 px, embouts 99 / 100. */
+/* Cabinet : étiquettes « complémentaires » (retouche de l'utilisateur) — chaque plaque porte une demi-patte rivetée à
+   chaque bout : accolées, deux plaques forment une patte entière ; aux deux bouts de la rangée, la demi-patte qui
+   manque est prise dans l'autre bout de la plaque (pseudo-éléments) ; barre d'acier nue (tabs/rail.vierge.webp) sous
+   toute la rangée, sur toute la largeur de la page. Plaque : 44 px de haut pour 269 px d'image (× .1636), découpe
+   autour du papier (64 / 138 / 58 / 132), demi-pattes de 38 px (6.2 px) ; barre : 79 px → 12.9 px. */
 html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tabs:not(#imp) {
-  gap: 6px;
-  padding: 4px 22px;
+  gap: 0;
+  padding: 4px 24px;
   background: none;
   box-shadow: none;
   border: 0;
@@ -3034,20 +3036,40 @@ html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tabs:not(#
 html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tabs::before {
   inset: 50% 0 auto;
   width: auto;
-  height: 23.6px;
-  margin-top: -11.8px;
-  background: none;
-  border-image: url("deco/cabinet/tabs/rail.webp?v=8b012951") 0 100 0 99 fill / 0 16.4px 0 16.2px stretch
+  height: 12.9px;
+  margin-top: -6.45px;
+  border-image: none;
+  background: url("deco/cabinet/tabs/rail.vierge.webp?v=d6cb265f") left center/auto 100% repeat-x
 }
 html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tabs::after,
 html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab::before,
 html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab::after {
   content: none
 }
+/* bouts de la rangée : demi-patte complémentaire (bout droit de la plaque à gauche, bout gauche à droite) */
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:first-child::before,
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:last-child::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 6.2px;
+  height: 100%;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none
+}
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:first-child::before {
+  left: -6.2px;
+  background: url("deco/cabinet/tabs/tab.webp?v=7d2ddfc4") right center/auto 100% no-repeat
+}
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:last-child::after {
+  right: -6.2px;
+  background: url("deco/cabinet/tabs/tab.webp?v=7d2ddfc4") left center/auto 100% no-repeat
+}
 html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:not(#imp) {
   z-index: 1;
   height: 44px;
-  padding: 0 30px;
+  padding: 0 24px;
   line-height: 44px;
   border-radius: 0;
   background: none;
@@ -3057,7 +3079,7 @@ html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:not(#i
   color: #2b2418;
   text-shadow: 0 1px 0 rgba(255, 248, 225, .6);
   border: 0;
-  border-image: url("deco/cabinet/tabs/tab.webp?v=d16ee137") 64 168 54 165 fill / 10.5px 27.5px 8.8px 27px stretch
+  border-image: url("deco/cabinet/tabs/tab.webp?v=7d2ddfc4") 64 138 58 132 fill / 10.5px 22.6px 9.5px 21.6px stretch
 }
 html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab[aria-current="page"]:not(#imp) {
   color: #3a2808;
@@ -3065,7 +3087,7 @@ html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab[aria-c
   box-shadow: none;
   filter: none;
   transform: none;
-  border-image: url("deco/cabinet/tabs/tab-on.webp?v=e859fde7") 64 168 54 165 fill / 10.5px 27.5px 8.8px 27px stretch
+  border-image: url("deco/cabinet/tabs/tab-on.webp?v=88e2b4fe") 64 138 58 132 fill / 10.5px 22.6px 9.5px 21.6px stretch
 }
 html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:not([aria-current="page"]):is(:hover, :focus-visible):not(#imp) {
   filter: brightness(1.08)

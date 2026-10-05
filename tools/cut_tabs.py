@@ -66,6 +66,10 @@ CONFIG = {
         'rail_left': (78, 450, 176, 593),
         'rail_right': (1824, 450, 1923, 593),
         'rail_fill': (250, 450, 550, 593),
+        # plaques « complémentaires » retouchées par l'utilisateur (une demi-patte rivetée à chaque bout : deux plaques
+        # accolées forment une patte entière) et barre nue tabs/rail.vierge.webp posée sous la rangée : gardées, sauf
+        # --force (rail.webp, ses embouts, n'est plus monté)
+        'retouche': ('tab.webp', 'tab-on.webp'),
     },
 }
 FILL_W = 240  # largeur du milieu du rail
