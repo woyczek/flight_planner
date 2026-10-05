@@ -16,6 +16,22 @@
     width: 100%;
     border-collapse: collapse
   }
+  /* liste dans une colonne étroite (dossier ouvert : un tiers de la page) : terrain et indicatif, puis appareil, laissés
+     au dossier ; défilement horizontal en dernier recours */
+  .pm-list {
+    container: pmliste / inline-size;
+    overflow-x: auto
+  }
+  @container pmliste (max-width:620px) {
+    .pm-list :is(th, td):nth-child(n+5) {
+      display: none
+    }
+  }
+  @container pmliste (max-width:420px) {
+    .pm-list :is(th, td):nth-child(4) {
+      display: none
+    }
+  }
   .pm-list th,
   .pm-list td {
     padding: 5px 8px;
@@ -61,13 +77,77 @@
     margin: 6px 0 10px;
     font-weight: 600
   }
+  /* deux colonnes : missions et disponibilités à gauche, dossier et le reste à droite ; dossier ouvert : colonne de
+     droite élargie (1/3 – 2/3), ou dossier en pleine largeur au-dessus (pm-wide) ; écran étroit : une colonne, dossier
+     juste après la liste. Le livre suit la largeur de son bloc (requêtes de conteneur « pmdossier », pas d'écran). */
+  /* colonnes sur toute la largeur de la fenêtre : pas de plafond de page de reporting (main.mc-reporting : 1280 px) */
+  main#pilotMissions {
+    max-width: none
+  }
+  .pm-cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 18px;
+    align-items: start
+  }
+  .pm-col {
+    min-width: 0
+  }
+  #pilotMissions.pm-dossier:not(.pm-wide) .pm-cols {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr)
+  }
+  #pmMission {
+    container: pmdossier / inline-size
+  }
+  #pilotMissions.pm-dossier:not(.pm-wide) .pm-col-r>.repo-block:not(#pmMission):not(.pm-unfold)>:not(.repo-block-heading) {
+    display: none
+  }
+  #pilotMissions.pm-dossier:not(.pm-wide) .pm-col-r>.repo-block:not(#pmMission) h2 {
+    cursor: pointer
+  }
+  .pm-wide-btn {
+    margin-left: auto;
+    padding: 2px 10px;
+    font-size: 12px
+  }
+  @media (max-width:1100px) {
+    .pm-cols {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch /* blocs pleine largeur (le dossier, conteneur de requêtes, n'a pas de largeur propre) */
+    }
+    .pm-col {
+      display: contents
+    }
+    #pilotMissions [data-block-id="list"] {
+      order: 1
+    }
+    #pilotMissions [data-block-id="mission"] {
+      order: 2
+    }
+    #pilotMissions [data-block-id="availability"] {
+      order: 3
+    }
+    #pilotMissions [data-block-id="who"] {
+      order: 4
+    }
+    #pilotMissions [data-block-id="aircraft"] {
+      order: 5
+    }
+    #pilotMissions [data-block-id="sims"] {
+      order: 6
+    }
+    .pm-wide-btn {
+      display: none
+    }
+  }
   .pm-route {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 320px;
     gap: 14px;
     align-items: start
   }
-  @media (max-width:900px) {
+  @container pmdossier (max-width:900px) {
     .pm-route {
       grid-template-columns: 1fr
     }
@@ -316,6 +396,20 @@
   .pm-open {
     margin: 0
   }
+  /* étiquette sur la page du livre : tailles proportionnées au livre (mêmes valeurs en pleine taille, 1064 px), pour
+     qu'elle tienne sur sa page quand le dossier est dans la colonne */
+  .pm-book .pm-label b {
+    font-size: clamp(12px, 2.07cqw, 22px)
+  }
+  .pm-book .pm-label span {
+    font-size: clamp(10px, 1.22cqw, 13px)
+  }
+  .pm-book .pm-label dl {
+    font-size: clamp(10px, 1.18cqw, 12.5px)
+  }
+  .pm-book .pm-label small {
+    width: min(var(--pm-stamp-w, 180px), 16.9cqw)
+  }
   /* « CONFIDENTIEL » : tampon encreur (image commune aux designs) ; le mot reste lu par les lecteurs d'écran */
   .pm-label {
     position: relative;
@@ -426,7 +520,7 @@
   html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-cover.sealed.open {
     opacity: var(--pm-open-fade, 1)
   }
-  @media (max-width:759px) {
+  @container pmdossier (max-width:759px) {
     html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"], [data-design="field"]) .pm-cover {
       width: min(380px, 92%);
       margin: 0 auto
@@ -630,7 +724,7 @@
     bottom: var(--pm-page-b);
     overflow: auto;
     padding: 1.6cqw 2.4cqw 5.2cqw;
-    font: 12.5px/1.5 var(--pm-font, "Courier Prime", "Courier New", Courier, monospace);
+    font: clamp(11px, 1.18cqw, 13px)/1.5 var(--pm-font, "Courier Prime", "Courier New", Courier, monospace); /* suit la taille du livre (12,5 px en pleine taille) */
     color: var(--pm-ink, #2b2112);
     scrollbar-width: thin
   }
@@ -933,7 +1027,7 @@
     background: var(--pm-face) center/100% 100%;
     box-shadow: 0 0 22px rgba(0, 0, 0, .25);
     padding: var(--pm-pad);
-    font: 12.5px/1.5 var(--pm-font, "Courier Prime", "Courier New", Courier, monospace);
+    font: clamp(11px, 1.18cqw, 13px)/1.5 var(--pm-font, "Courier Prime", "Courier New", Courier, monospace); /* suit la taille du livre (12,5 px en pleine taille) */
     color: var(--pm-ink, #2b2112)
   }
   .pm-leaf .pm-back {
@@ -1533,22 +1627,28 @@
      socle : shared/assignments.js. Conception : docs/AFFECTATION_MISSIONS.md (§ 10). -->
 <header class="mc-header"><h1>Mes missions</h1><p>Missions affectées par le Centre, disponibilités</p></header>
 <main id="pilotMissions" class="mc-reporting">
-<section data-block-id="who" data-icon="users" data-subtitle="Trigramme DEFA du profil pilote (menu ☰) : les missions affectées à ce trigramme s'affichent ici."><h2>Pilote</h2>
-  <div class="pm-who"><label>Trigramme <input id="pmTri" maxlength="4" autocomplete="off"></label><span id="pmWhoNote" class="small"></span></div>
-</section>
+<!-- deux colonnes : à gauche les missions et les disponibilités, à droite le dossier ouvert et le reste ; une
+     colonne sur écran étroit (ordre : missions, dossier, disponibilités…) ; dossier en pleine largeur au choix -->
+<div class="pm-cols">
+<div class="pm-col pm-col-l">
 <section data-block-id="list" data-icon="calendar" data-subtitle="Missions de la semaine affichée, par heure de décollage (UTC) ; ● : nouvelle, pas encore ouverte."><h2>Mes missions de la semaine</h2>
   <div class="pm-week" data-weekbar></div>
   <div id="pmList" class="pm-list"><p class="pm-empty">Chargement…</p></div>
   <p class="small"><label><input type="checkbox" id="pmAll"> afficher aussi les missions passées</label></p>
-</section>
-<section data-block-id="mission" data-icon="target" data-subtitle="Mission affectée, en lecture seule : ce qui vous est demandé, la route, les cartes fournies." id="pmMission" hidden><h2>Mission</h2>
-  <div id="pmDetail"></div>
 </section>
 <section data-block-id="availability" data-icon="clock" data-subtitle="Semaine affichée, heures UTC : groupe, catégorie, jours et horaires (facultatifs), puis « Ajouter » ; clic sur une plage pour la modifier ou la retirer. Le Centre s’en sert pour affecter les missions."><h2>Mes disponibilités</h2>
   <div class="pm-week" data-weekbar></div>
   <div id="pmDispos"></div>
   <details id="pmGridOld" class="pm-legacy" hidden><summary>Ancienne grille horaire (lecture seule)</summary><div id="pmGrid"></div></details>
   <p class="small"><a href="disponibilites.html">Ouvrir la saisie des disponibilités seule</a></p>
+</section>
+</div>
+<div class="pm-col pm-col-r">
+<section data-block-id="mission" data-icon="target" data-subtitle="Mission affectée, en lecture seule : ce qui vous est demandé, la route, les cartes fournies." id="pmMission" hidden><h2>Mission</h2>
+  <div id="pmDetail"></div>
+</section>
+<section data-block-id="who" data-icon="users" data-subtitle="Trigramme DEFA du profil pilote (menu ☰) : les missions affectées à ce trigramme s'affichent ici."><h2>Pilote</h2>
+  <div class="pm-who"><label>Trigramme <input id="pmTri" maxlength="4" autocomplete="off"></label><span id="pmWhoNote" class="small"></span></div>
 </section>
 <section data-block-id="aircraft" data-icon="plane" data-subtitle="Types de la flotte que vous possédez dans votre simulateur et ceux que vous maîtrisez : le Centre s’en sert pour vous affecter un appareil."><h2>Mes appareils</h2>
   <div id="pmTypes" class="pm-types"></div>
@@ -1558,6 +1658,8 @@
   <div id="pmSims" class="pm-sims"></div>
   <p id="pmSimsMsg" class="small">Enregistré dans ce navigateur, et avec la semaine affichée de vos disponibilités (pour le Centre).</p>
 </section>
+</div>
+</div>
 </main>
 <script src="../../shared/kit.js?v=65a16a49"></script>
 <script src="../../shared/repository_nav.js?v=9013ad3a"></script>
@@ -1597,24 +1699,55 @@
       last = new Date(Date.parse(`${end}T00:00:00Z`) - 864e5).toISOString().slice(0, 10);
     const label = tv(week === A.weekKey(Date.now()) ? ['du {a} au {b} (cette semaine)', 'from {a} to {b} (this week)', 'vom {a} bis {b} (diese Woche)', 'del {a} al {b} (esta semana)'] : ['du {a} au {b}', 'from {a} to {b}', 'vom {a} bis {b}', 'del {a} al {b}'], { a: dayFr(week, 0), b: dayFr(week, 6) });
     document.querySelectorAll('[data-weekbar]').forEach(b => {
-      b.innerHTML = `<button type="button" class="secondary" data-wk="-1" title="Semaine précédente">‹</button><input type="date" data-wk-date value="${week}" title="Aller à la semaine d’une date"><button type="button" class="secondary" data-wk="1" title="Semaine suivante">›</button>${week === A.weekKey(Date.now()) ? '' : '<button type="button" class="secondary" data-wk="0" title="Revenir à la semaine en cours" aria-label="Semaine en cours">⟲</button>'}<span class="small">${esc(label)}</span>`;
+      b.innerHTML = `<button type="button" class="secondary" data-wk="-1" title="${esc(tv(['Semaine précédente', 'Previous week', 'Vorherige Woche', 'Semana anterior']))}">‹</button><input type="date" data-wk-date value="${week}" title="${esc(tv(['Aller à la semaine d’une date', 'Go to the week of a date', 'Zur Woche eines Datums', 'Ir a la semana de una fecha']))}"><button type="button" class="secondary" data-wk="1" title="${esc(tv(['Semaine suivante', 'Next week', 'Nächste Woche', 'Semana siguiente']))}">›</button>${week === A.weekKey(Date.now()) ? '' : `<button type="button" class="secondary" data-wk="0" title="${esc(tv(['Revenir à la semaine en cours', 'Back to the current week', 'Zurück zur aktuellen Woche', 'Volver a la semana actual']))}" aria-label="${esc(tv(['Semaine en cours', 'Current week', 'Aktuelle Woche', 'Semana actual']))}">⟲</button>`}<span class="small">${esc(label)}</span>`;
       b.dataset.end = last;
     });
   }
 
   function goWeek(w) {
-    if (!w || w === week) return;
+    if (!w || w === week) return null;
     week = w;
     weekBars();
-    load();
-    gridLoad();
+    return Promise.allSettled([load(), gridLoad()]);
+  }
+  /** Barre de semaine utilisée gardée à sa place à l'écran pendant que la liste et les disponibilités se rechargent
+   *  (la liste, au-dessus de « Mes disponibilités », change de hauteur : sans cela le bloc glissait sous le pointeur) ;
+   *  le focus revient sur le même contrôle. Fin : 2 s, ou dès que l'utilisateur fait défiler lui-même. */
+  function anchored(bar, key, go) {
+    const top0 = bar.getBoundingClientRect().top;
+    // correction après chaque changement de mise en page, avant l'affichage (ResizeObserver) : aucun saut visible
+    const fix = () => {
+      const d = bar.getBoundingClientRect().top - top0;
+      if (Math.abs(d) >= 1) window.scrollBy({ top: d, behavior: 'instant' });
+    };
+    let stopped = false;
+    const ro = new ResizeObserver(fix),
+      evs = ['wheel', 'touchmove', 'keydown', 'mousedown'],
+      quit = () => {
+        stopped = true;
+        ro.disconnect();
+        clearTimeout(timer);
+        evs.forEach(ev => removeEventListener(ev, quit, { capture: true }));
+      },
+      timer = setTimeout(quit, 2000);
+    evs.forEach(ev => addEventListener(ev, quit, { passive: true, capture: true }));
+    ro.observe(document.body);
+    // blocs de la colonne (la liste peut rapetisser d'autant que les disponibilités grandissent : page de même hauteur)
+    (bar.closest('.pm-col') || document.querySelector('main'))?.querySelectorAll(':scope > section, :scope > *').forEach(el => ro.observe(el));
+    const done = go();
+    (bar.querySelector(key) || bar.querySelector('[data-wk="1"]'))?.focus({ preventScroll: true });
+    fix();
+    // fin des rechargements (liste, disponibilités) : dernier recalage, même si la page n'a pas été redessinée entre-temps
+    done?.then(() => {
+      if (!stopped) fix();
+    });
   }
   document.addEventListener('click', e => {
     const b = e.target.closest('[data-weekbar] [data-wk]');
-    if (b) goWeek(+b.dataset.wk ? A.addWeeks(week, +b.dataset.wk) : A.weekKey(Date.now()));
+    if (b) anchored(b.closest('[data-weekbar]'), `[data-wk="${b.dataset.wk}"]`, () => goWeek(+b.dataset.wk ? A.addWeeks(week, +b.dataset.wk) : A.weekKey(Date.now())));
   });
   document.addEventListener('change', e => {
-    if (e.target.matches('[data-weekbar] [data-wk-date]') && e.target.value) goWeek(A.weekKey(Date.parse(`${e.target.value}T12:00:00Z`)));
+    if (e.target.matches('[data-weekbar] [data-wk-date]') && e.target.value) anchored(e.target.closest('[data-weekbar]'), '[data-wk-date]', () => goWeek(A.weekKey(Date.parse(`${e.target.value}T12:00:00Z`))));
   });
   weekBars();
   // affectation écrite dans un autre onglet (Centre, ODV) : liste relue aussitôt (index revalidé, sans tout relire)
@@ -1627,6 +1760,7 @@
   pageTitle();
   window.addEventListener('repository-language-change', () => {
     pageTitle();
+    if ($('pmWide')) applyWide(); // libellé du bouton de largeur du dossier
     weekBars();
     load();
     gridLoad();
@@ -1720,7 +1854,8 @@
   const VIEW_KEY = 'pilotMissionsView:v1';
   const view = {
     all: false,
-    brush: 'O'
+    brush: 'O',
+    wide: false // dossier de mission en pleine largeur (sinon dans la colonne de droite)
   };
   try {
     Object.assign(view, JSON.parse(localStorage.getItem(VIEW_KEY) || '{}') || {});
@@ -1732,6 +1867,43 @@
     } catch {
       /* stockage refusé */ }
   };
+  // ---- deux colonnes : dossier ouvert → colonne de droite élargie, ou pleine largeur au-dessus des colonnes (view.wide)
+  const NARROW = matchMedia('(max-width: 1100px)'); // une seule colonne : le choix de largeur ne s'applique pas
+  function applyWide() {
+    const host = $('pilotMissions'),
+      box = $('pmMission'),
+      wide = !!view.wide && !NARROW.matches;
+    host.classList.toggle('pm-wide', wide);
+    if (wide) host.insertBefore(box, host.querySelector('.pm-cols'));
+    else host.querySelector('.pm-col-r').prepend(box);
+    let b = $('pmWide');
+    if (!b) {
+      b = document.createElement('button');
+      b.type = 'button';
+      b.id = 'pmWide';
+      b.className = 'ghost pm-wide-btn';
+      b.onclick = () => {
+        view.wide = !view.wide;
+        saveView();
+        applyWide();
+        box.scrollIntoView({
+          block: 'start'
+        });
+      };
+      const head = box.querySelector('.repo-block-heading');
+      head ? head.insertBefore(b, head.querySelector('.repo-block-tools')) : box.querySelector('h2')?.after(b);
+    }
+    b.textContent = wide ? tv(['⇥ Dans la colonne', '⇥ In the column', '⇥ In der Spalte', '⇥ En la columna']) : tv(['⤢ Pleine largeur', '⤢ Full width', '⤢ Volle Breite', '⤢ Ancho completo']);
+    b.title = wide ? tv(['Dossier dans la colonne de droite, la liste des missions à côté', 'Folder in the right column, mission list alongside', 'Mappe in der rechten Spalte, Missionsliste daneben', 'Carpeta en la columna derecha, lista de misiones al lado']) : tv(['Dossier sur toute la largeur, au-dessus des colonnes (double page plus grande)', 'Folder across the whole width, above the columns (larger double page)', 'Mappe über die ganze Breite, über den Spalten (größere Doppelseite)', 'Carpeta a todo el ancho, encima de las columnas (doble página más grande)']);
+  }
+  NARROW.addEventListener('change', applyWide);
+  // dossier ouvert dans la colonne : profil, appareils et simulateurs repliés sous lui ; clic sur leur titre pour déplier
+  $('pilotMissions').addEventListener('click', e => {
+    const h = e.target.closest('h2'),
+      sec = h?.closest('.pm-col-r > .repo-block');
+    if (!sec || sec.id === 'pmMission' || !$('pilotMissions').matches('.pm-dossier:not(.pm-wide)')) return;
+    sec.classList.toggle('pm-unfold');
+  });
   $('pmAll').checked = !!view.all;
   $('pmAll').addEventListener('change', () => {
     view.all = $('pmAll').checked;
@@ -1883,6 +2055,8 @@
     shown = '';
     document.querySelectorAll('#pmList tr').forEach(tr => tr.classList.toggle('pm-current', list[+tr.dataset.i] === a));
     $('pmMission').hidden = false;
+    $('pilotMissions').classList.add('pm-dossier'); // colonne de droite élargie (ou dossier en pleine largeur)
+    applyWide();
     $('pmDetail').innerHTML = '<p class="pm-empty">Chargement de la mission…</p>';
     $('pmMission').scrollIntoView({
       behavior: 'smooth',
