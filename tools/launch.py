@@ -220,6 +220,12 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             if not self._allowed():
                 return self._json({'error': 'refusé'}, 403)
             return self._json({'tools': tools_inventory()})
+        if self.path.split('?')[0] == '/__setup/vatsim-bookings':
+            # réservations ATC publiques de VATSIM (Planning ODV, shared/atc_sessions.js) : l'API ne permet pas la
+            # lecture directe depuis une page (pas d'en-tête CORS) ; relayées ici
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            return self._json(vatsim_bookings())
         if self.path.split('?')[0] == '/__setup/sia-zip':
             # ZIP du SIA téléchargé : ?info → nom, taille, date ; sinon le fichier lui-même
             if not self._allowed():
@@ -383,6 +389,25 @@ def free(port):
             return True
         except OSError:
             return False
+
+
+VATSIM_BOOKINGS = 'https://atc-bookings.vatsim.net/api/booking'
+_vatsim = {'at': 0.0, 'data': None}
+
+
+def vatsim_bookings():
+    """Réservations ATC de VATSIM (toutes divisions ; trainings, examens, événements, réservations) : { bookings: […] },
+    gardées 5 minutes ; { error } si l'API ne répond pas."""
+    if _vatsim['data'] is not None and time.time() - _vatsim['at'] < 300:
+        return _vatsim['data']
+    try:
+        req = urllib.request.Request(VATSIM_BOOKINGS, headers={'User-Agent': 'DEFA-suite', 'Accept': 'application/json'})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            data = json.load(r)
+    except (OSError, ValueError) as e:
+        return {'error': str(e)}
+    _vatsim.update(at=time.time(), data={'bookings': data if isinstance(data, list) else []})
+    return _vatsim['data']
 
 
 # Repère de cette installation : un jeton tiré à chaque lancement, écrit à la racine et dans les dossiers de données.

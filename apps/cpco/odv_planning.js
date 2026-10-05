@@ -387,6 +387,7 @@
   async function showWeek() {
     data = xl && xl.dates[0] === isoDay(shownMonday()) ? xl : null;
     await window.OdvAssign?.load(data || emptyWeek(), settings).catch(e => console.warn(e)); // déclarations, affectations
+    await loadAtc();
     compute(); // après les affectations : créneaux et missions probables sur les pilotes libres
     render();
   }
@@ -452,7 +453,7 @@
    *  place (seuil « au moins N pilotes ») d'après son effectif avant affectations (n0), pour proposer encore des
    *  missions aux pilotes restés libres. */
   function compute() {
-    const all = data || declWeek(),
+    const all = withAtc(data || declWeek()),
       O = window.OdvAssign;
     basis = O ? {
       ...all,
@@ -518,7 +519,7 @@
     $('odvFile').dispatchEvent(new Event('change'));
     $('odvRecapText').value = '';
     render();
-    window.OdvAssign?.load(emptyWeek(), settings).then(refreshNoBook).catch(() => {});
+    window.OdvAssign?.load(emptyWeek(), settings).then(() => loadAtc()).then(refreshNoBook).catch(() => {});
     notify(L(['Données effacées de la page.', 'Data cleared from the page.', 'Daten von der Seite gelöscht.', 'Datos borrados de la página.']), 'info');
   }
 
@@ -532,9 +533,128 @@
     renderReport();
     renderWeekNav();
     renderGrid();
+    renderAtc();
     renderSlots();
     renderMissions();
     renderFlights();
+  }
+
+  // ------------------------------------------------------------------ sessions ATC des réseaux (shared/atc_sessions.js)
+  // trainings, examens, événements et réservations VATSIM / IVAO de la semaine affichée : saisis à la main ou récupérés
+  // (VATSIM, France métropolitaine) ; comptés dans les créneaux (★, CTR du terrain à éviter en training ou examen)
+  let atc = {
+    week: '',
+    list: []
+  };
+  const atcWeek = () => window.SuiteAtc?.weekId(shownMonday()) || '';
+  async function loadAtc(fresh = false) {
+    const S = window.SuiteAtc,
+      w = atcWeek();
+    if (!S || !w) return;
+    const list = await S.read(w, {
+      fresh
+    });
+    if (w === atcWeek()) atc = {
+      week: w,
+      list
+    };
+  }
+  /** Données du calcul complétées des sessions ATC de leur semaine. */
+  function withAtc(d) {
+    const S = window.SuiteAtc;
+    if (!S || !atc.list.length || atc.week !== S.weekId(Date.parse(`${d.dates[0]}T12:00:00Z`))) return d;
+    const p = S.toPlan(atc.list, d.dates, settings.hours);
+    return {
+      ...d,
+      frise: [...d.frise, ...p.frise],
+      evenements: [...d.evenements, ...p.evenements]
+    };
+  }
+  async function saveAtc(list, text) {
+    const w = atcWeek();
+    let r;
+    try {
+      r = await window.SuiteAtc.save(w, list);
+    } catch (e) {
+      return notify(e.message, 'err');
+    }
+    if (w !== atcWeek()) return;
+    atc = {
+      week: w,
+      list
+    };
+    if (r.where === 'folder') notify(text, 'ok'); // gardé dans ce navigateur : alerte (et raison) données par writeData
+    compute();
+    render();
+  }
+  function renderAtc() {
+    const host = $('odvAtc'),
+      S = window.SuiteAtc;
+    if (!host) return;
+    if (!S) {
+      host.innerHTML = '';
+      return;
+    }
+    const dates = gridData().dates,
+      list = atc.week === atcWeek() ? atc.list : [];
+    const dayOpt = dates.map((d, j) => `<option value="${d}">${esc(wordL(C.DAYS[j]))} ${esc(dateFr(d))}</option>`).join('');
+    const rows = list.map((x, i) => `<tr><td>${esc(wordL(C.DAYS[dates.indexOf(x.date)] || ''))} ${esc(dateFr(x.date))}</td><td>${esc(x.debut)}–${esc(x.fin)}z</td><td><b>${esc(x.position)}</b></td><td>${esc(x.reseau)}</td><td>${esc(S.typeLabel(x.type))}</td><td>${esc(x.texte || '')}</td><td class="mut">${x.source === 'vatsim' ? L(['récupérée', 'fetched', 'abgerufen', 'recuperada']) : L(['saisie', 'entered', 'eingegeben', 'introducida'])}</td><td><button type="button" class="ghost" data-atc-del="${i}" title="${esc(L(['Retirer cette session', 'Remove this session', 'Diese Sitzung entfernen', 'Quitar esta sesión']))}">×</button></td></tr>`).join('');
+    host.innerHTML = `${list.length ? `<table class="odv-week odv-atc"><thead><tr><th>${L(['Jour', 'Day', 'Tag', 'Día'])}</th><th>${L(['Heures (UTC)', 'Hours (UTC)', 'Uhrzeit (UTC)', 'Horas (UTC)'])}</th><th>${L(['Position', 'Position', 'Position', 'Posición'])}</th><th>${L(['Réseau', 'Network', 'Netzwerk', 'Red'])}</th><th>${L(['Type', 'Type', 'Art', 'Tipo'])}</th><th>${L(['Commentaire', 'Comment', 'Kommentar', 'Comentario'])}</th><th>${L(['Source', 'Source', 'Quelle', 'Fuente'])}</th><th></th></tr></thead><tbody>${rows}</tbody></table>` : `<p class="mut odv-d-note">${L(['Aucune session ATC enregistrée pour cette semaine.', 'No ATC session recorded for this week.', 'Für diese Woche keine ATC-Sitzung erfasst.', 'Ninguna sesión ATC registrada para esta semana.'])}</p>`}
+      <form class="row odv-atc-form" data-atc-form>
+        <select data-atc="date" aria-label="${esc(L(['Jour', 'Day', 'Tag', 'Día']))}">${dayOpt}</select>
+        <input type="time" data-atc="debut" value="18:00" step="900" required aria-label="${esc(L(['Début (UTC)', 'Start (UTC)', 'Beginn (UTC)', 'Inicio (UTC)']))}">
+        <input type="time" data-atc="fin" value="20:00" step="900" required aria-label="${esc(L(['Fin (UTC)', 'End (UTC)', 'Ende (UTC)', 'Fin (UTC)']))}">
+        <input type="text" data-atc="position" required placeholder="LFBO_APP" size="11" pattern="[A-Za-z]{4}(_[A-Za-z0-9]+)*_([Dd][Ee][Ll]|[Gg][Nn][Dd]|[Tt][Ww][Rr]|[Aa][Pp][Pp]|[Dd][Ee][Pp]|[Cc][Tt][Rr]|[Ff][Ss][Ss]|[Rr][Mm][Pp]|[Aa][Tt][Ii][Ss])" title="${esc(L(['Position ATC : terrain OACI et poste, ex. LFBO_APP, LFMN_TWR, LFFF_CTR', 'ATC position: ICAO airfield and station, e.g. LFBO_APP, LFMN_TWR, LFFF_CTR', 'ATC-Position: ICAO-Flugplatz und Station, z. B. LFBO_APP, LFMN_TWR, LFFF_CTR', 'Posición ATC: aeródromo OACI y puesto, p. ej. LFBO_APP, LFMN_TWR, LFFF_CTR']))}">
+        <select data-atc="reseau">${S.NETWORKS.map(n => `<option>${n}</option>`).join('')}</select>
+        <select data-atc="type">${Object.keys(S.TYPES).map(k => `<option value="${k}">${esc(S.typeLabel(k))}</option>`).join('')}</select>
+        <input type="text" data-atc="texte" placeholder="${esc(L(['Commentaire (facultatif)', 'Comment (optional)', 'Kommentar (optional)', 'Comentario (opcional)']))}">
+        <button type="submit" class="secondary" data-icon="plus">${L(['Ajouter', 'Add', 'Hinzufügen', 'Añadir'])}</button>
+      </form>
+      <div class="row"><button type="button" class="secondary" data-atc-vatsim data-icon="refresh">${L(['Récupérer VATSIM (France métropolitaine)', 'Fetch VATSIM (metropolitan France)', 'VATSIM abrufen (Frankreich, Mutterland)', 'Recuperar VATSIM (Francia metropolitana)'])}</button>
+      <span class="mut small">${L(['IVAO : saisie à la main (l’API des réservations IVAO demande une authentification).', 'IVAO: entered by hand (the IVAO bookings API requires authentication).', 'IVAO: manuelle Eingabe (die IVAO-Buchungs-API verlangt eine Anmeldung).', 'IVAO: introducción manual (la API de reservas de IVAO requiere autenticación).'])}</span></div>`;
+    const f = host.querySelector('[data-atc-form]'),
+      v = k => f.querySelector(`[data-atc="${k}"]`).value.trim();
+    f.onsubmit = e => {
+      e.preventDefault();
+      if (v('fin') <= v('debut')) return notify(L(['La fin doit suivre le début (même jour, heures UTC).', 'The end must follow the start (same day, UTC hours).', 'Das Ende muss nach dem Beginn liegen (gleicher Tag, UTC).', 'El fin debe seguir al inicio (mismo día, horas UTC).']), 'err');
+      const s = {
+        id: `manuel-${Date.now().toString(36)}`,
+        date: v('date'),
+        debut: v('debut'),
+        fin: v('fin'),
+        position: v('position').toUpperCase(),
+        reseau: v('reseau'),
+        type: v('type'),
+        texte: v('texte'),
+        source: 'manuel'
+      };
+      saveAtc([...list, s], L(['Session {p} ajoutée.', 'Session {p} added.', 'Sitzung {p} hinzugefügt.', 'Sesión {p} añadida.'], {
+        p: s.position
+      }));
+    };
+    host.querySelectorAll('[data-atc-del]').forEach(b => b.onclick = () => {
+      const x = list[+b.dataset.atcDel];
+      saveAtc(list.filter(y => y !== x), L(['Session {p} retirée.', 'Session {p} removed.', 'Sitzung {p} entfernt.', 'Sesión {p} quitada.'], {
+        p: x.position
+      }));
+    });
+    host.querySelector('[data-atc-vatsim]').onclick = async e => {
+      const b = e.currentTarget,
+        w = atcWeek();
+      b.disabled = true;
+      try {
+        const got = await S.fetchVatsim(w);
+        if (w !== atcWeek()) return;
+        // récupérées remplacées (annulations comprises), saisies gardées
+        await saveAtc([...list.filter(x => x.source !== 'vatsim'), ...got], L(['VATSIM : {n} session(s) de France métropolitaine cette semaine.', 'VATSIM: {n} session(s) in metropolitan France this week.', 'VATSIM: {n} Sitzung(en) in Frankreich (Mutterland) diese Woche.', 'VATSIM: {n} sesión(es) en Francia metropolitana esta semana.'], {
+          n: got.length
+        }));
+      } catch (err) {
+        notify(err.message, 'err');
+      } finally {
+        b.disabled = false;
+      }
+    };
   }
 
   function renderReport() {
@@ -1848,7 +1968,7 @@
       return;
     }
     bindExports();
-    window.OdvAssign?.load(emptyWeek(), settings).then(refreshNoBook).catch(() => {}); // sans classeur : déclarations
+    window.OdvAssign?.load(emptyWeek(), settings).then(() => loadAtc()).then(refreshNoBook).catch(() => {}); // sans classeur : déclarations
     loadPlays().then(() => {
       if (basis) {
         compute();

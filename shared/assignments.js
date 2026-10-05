@@ -29,6 +29,7 @@
     AVAIL = 'pilotAvailability:v1',
     PAGE = 'apps/pilot/mes_missions.html';
   const t = row => K?.t ? K.t(row) : row[0];
+  const tf = (row, v) => K?.tf ? K.tf(row, v) : row[0].replace(/\{(\w+)\}/g, (_, k) => v[k] ?? '');
   const root = () => window.RepositoryNav?.root || new URL('../', document.currentScript?.src || location.href).href;
   // lectures mémorisées (RepositoryKit.store.jsonCached) : analyse refaite seulement si le texte a changé — isRead,
   // pliState, disponibilités… sont lus à chaque ligne de la liste et à chaque case de la grille
@@ -174,14 +175,69 @@
     await w.write(JSON.stringify(value, null, 1));
     await w.close();
   }
-  /** Fichier du pool : boîte d'envoi de ce navigateur si plus récente, sinon fichier servi (data/<rel>) ; null si absent. */
+  // ---- lecture et écriture au même endroit : dossier autorisé reconnu comme celui de la suite servie → écrit dans le
+  // dossier, relu par le serveur (même fichiers) ; contrôle impossible (sans lanceur, jeton non servi) → écrit ET relu
+  // dans le dossier ; autre copie → rien d'écrit dans le dossier (boîte d'envoi) ; alerte dans les deux derniers cas
+  let srcMemo = null;
+  /** Dossier des données accordé et résultat du contrôle de copie : { dir, same } (mémorisé 5 s). */
+  function poolSource() {
+    if (srcMemo && Date.now() - srcMemo.at < 5e3) return srcMemo.p;
+    const p = (async () => {
+      const FA = window.FileAccess,
+        st = FA ? await FA.status('__data') : null;
+      if (!st?.handle || st.permission !== 'granted') return {
+        dir: null,
+        same: null
+      };
+      return {
+        dir: st.handle,
+        same: (await FA.sameAsServed?.('__data', st.handle)) ?? null
+      };
+    })().catch(() => ({
+      dir: null,
+      same: null
+    }));
+    srcMemo = {
+      at: Date.now(),
+      p
+    };
+    return p;
+  }
+  window.addEventListener('file-access-change', () => {
+    srcMemo = null;
+  });
+  const alerted = new Map(); // message → instant (une alerte identique toutes les 5 s au plus : fichier + index)
+  function alertOnce(text) {
+    if (Date.now() - (alerted.get(text) || 0) < 5e3) return;
+    alerted.set(text, Date.now());
+    window.AppFramework?.notify?.(text, 'warn');
+  }
+  const uncheckedText = name => tf(['Dossier des données « {n} » : impossible de vérifier qu’il est celui de la suite servie (lanceur absent ou d’une version antérieure). Les données sont lues et écrites dans ce dossier.', 'Data folder “{n}”: cannot check that it is the one of the served suite (launcher missing or from an earlier version). Data is read from and written to this folder.', 'Datenordner „{n}“: Es lässt sich nicht prüfen, ob er der der bereitgestellten Suite ist (Starter fehlt oder ist älter). Daten werden in diesem Ordner gelesen und geschrieben.', 'Carpeta de datos «{n}»: no se puede comprobar que sea la de la suite servida (lanzador ausente o de una versión anterior). Los datos se leen y escriben en esta carpeta.'], {
+    n: name
+  });
+  /** JSON de data/<rel> lu dans le dossier autorisé ; null s'il est absent ou illisible. */
+  async function readFile(dir, rel) {
+    const parts = rel.split('/'),
+      name = parts.pop();
+    try {
+      let d = dir;
+      for (const p of parts) d = await d.getDirectoryHandle(p);
+      return JSON.parse(await (await (await d.getFileHandle(name)).getFile()).text());
+    } catch {
+      return null;
+    }
+  }
+  /** Fichier du pool : boîte d'envoi de ce navigateur si plus récente, sinon fichier servi (data/<rel>) — ou, si le
+   *  dossier autorisé ne peut pas être comparé à la suite servie, ce dossier (celui où writeData écrit) ; null si absent. */
   async function readData(rel, {
     fresh = false
   } = {}) {
     const local = outbox()[rel],
-      served = await store.read(`data/${rel}`, {
-        fresh
-      });
+      src = await poolSource();
+    if (src.dir && src.same === null) alertOnce(uncheckedText(src.dir.name));
+    const served = src.dir && src.same === null ? await readFile(src.dir, rel) : await store.read(`data/${rel}`, {
+      fresh
+    });
     if (local && (!served || String(local.value?.updated_at || local.at) >= String(served.updated_at || ''))) return local.value;
     return served;
   }
@@ -203,8 +259,14 @@
       delete b[rel];
       setJson(OUTBOX, b);
       where = 'folder';
+      srcMemo = null; // autorisation peut-être accordée à l'instant : relue
+      if ((await poolSource()).same === null) alertOnce(uncheckedText(dir.name));
     } catch (e) {
       error = e;
+      // gardé dans ce navigateur : raison réelle (dossier non autorisé, autre copie de la suite…), pas seulement l'absence
+      alertOnce(tf(['Enregistré dans ce navigateur seulement : {e}', 'Saved in this browser only: {e}', 'Nur in diesem Browser gespeichert: {e}', 'Guardado solo en este navegador: {e}'], {
+        e: e?.message || String(e)
+      }));
     }
     store.changed(`data/${rel}`);
     return {

@@ -183,11 +183,9 @@
       setTimeout(poll, 50);
     })();
   });
-  /** Résultat d'une écriture du pool (writeData) : notification si gardée dans ce navigateur seulement. */
-  const wrote = r => {
-    if (r?.where === 'local') notify(K.t(['Gardé dans ce navigateur : dossier des données non autorisé (Paramètres › Installation › Sources et dossiers). À écrire ensuite dans le dossier.', 'Kept in this browser: data folder not authorised (Settings › Installation › Sources and folders). To be written to the folder later.', 'In diesem Browser behalten: Datenordner nicht freigegeben (Einstellungen › Installation › Quellen und Ordner). Später in den Ordner schreiben.', 'Guardado en este navegador: carpeta de datos no autorizada (Ajustes › Instalación › Fuentes y carpetas). Escribirlo luego en la carpeta.']), 'warn');
-    return r;
-  };
+  /** Résultat d'une écriture du pool (writeData) : gardée dans ce navigateur seulement → alerte donnée par writeData,
+   *  avec sa raison réelle (dossier non autorisé, autre copie de la suite…). */
+  const wrote = r => r;
   const ROLE_LABEL = {
     admin_centre: L('Administrateur du Centre', 'Centre administrator', 'Administrator des Zentrums', 'Administrador del Centro'),
     utilisateur: L('Utilisateur', 'User', 'Benutzer', 'Usuario')

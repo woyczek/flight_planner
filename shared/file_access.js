@@ -123,7 +123,6 @@
     __perf: 'data/planner/'
   };
   const INSTANCE = '.defa_instance';
-  const served = {}; // jeton servi par dossier (une lecture par page)
   /** true : le dossier est celui de la suite servie ; false : autre copie ; null : contrôle impossible. */
   // résultat gardé 30 s par dossier (nom) : les lectures de fichiers d'une page ne relisent pas le repère à chaque fois ;
   // oublié quand un dossier est rechoisi
@@ -136,10 +135,12 @@
     if (hit && Date.now() - hit.at < 30e3) return hit.value;
     const value = await (async () => {
       try {
-        served[key] ??= fetch(new URL(REL[key] + INSTANCE, ROOT_URL), {
+        // jeton servi relu à chaque contrôle (mémo de 30 s ci-dessous) : data/ partagé par plusieurs copies (lien) reçoit
+        // un nouveau jeton à chaque lancement de l'une d'elles ; gardé toute la vie de la page, l'ancien faisait conclure
+        // « autre copie » et les écritures restaient dans le navigateur
+        const want = await fetch(new URL(REL[key] + INSTANCE, ROOT_URL), {
           cache: 'no-store'
         }).then(r => r.ok ? r.text() : null).then(s => s?.trim() || null, () => null);
-        const want = await served[key];
         if (!want) return null;
         const got = (await (await handle.getFileHandle(INSTANCE)).getFile().then(f => f.text())).trim();
         return got === want;

@@ -191,10 +191,11 @@
         const r = await SD().saveWeek(t0, w0, doc.dispos, extra);
         if (!shownIs(t0, w0)) return saved(); // semaine changée entre-temps : enregistrée, mais plus affichée
         doc = r.doc;
-        if (r.where === 'local') {
-          msg(t(['Gardé dans ce navigateur : dossier des données non autorisé (Paramètres › Installation › Sources et dossiers).', 'Kept in this browser: data folder not authorised (Settings › Installation › Sources and folders).', 'In diesem Browser behalten: Datenordner nicht freigegeben (Einstellungen › Installation › Quellen und Ordner).', 'Guardado en este navegador: carpeta de datos no autorizada (Ajustes › Instalación › Fuentes y carpetas).']), 'warn');
-          window.AppFramework?.notify?.(t(['Disponibilités gardées dans ce navigateur : choisir le dossier des données pour que le Centre les voie.', 'Availability kept in this browser: choose the data folder so the Centre can see it.', 'Verfügbarkeit in diesem Browser behalten: Datenordner wählen, damit das Zentrum sie sieht.', 'Disponibilidad guardada en este navegador: elegir la carpeta de datos para que el Centro la vea.']), 'warn');
-        } else msg(text || t(['Enregistré dans le dossier des données.', 'Saved to the data folder.', 'Im Datenordner gespeichert.', 'Guardado en la carpeta de datos.']), 'ok');
+        // gardé dans ce navigateur : raison réelle (non autorisé, autre copie…) ; alerte donnée par writeData
+        if (r.where === 'local') msg(tf(['Gardé dans ce navigateur, le Centre ne le voit pas : {e}', 'Kept in this browser, the Centre cannot see it: {e}', 'In diesem Browser behalten, das Zentrum sieht es nicht: {e}', 'Guardado en este navegador, el Centro no lo ve: {e}'], {
+          e: r.error?.message || ''
+        }), 'warn');
+        else msg(text || t(['Enregistré dans le dossier des données.', 'Saved to the data folder.', 'Im Datenordner gespeichert.', 'Guardado en la carpeta de datos.']), 'ok');
       } catch (e) {
         if (!shownIs(t0, w0)) return window.AppFramework?.notify?.(e.message, 'err');
         msg(e.message, 'err');
