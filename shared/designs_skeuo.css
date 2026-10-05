@@ -3058,13 +3058,22 @@ html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:last-c
   border-radius: 0;
   box-shadow: none
 }
+/* mesures de l'image (797 px, × .1636) : opaque de x 1 à 794, cadre de 36 à 758 — demi-patte gauche x 1–35 (35 px,
+   5.73 px), droite x 759–794 (36 px, 5.89 px) ; chaque terminateur montre exactement sa demi-patte (colonnes
+   transparentes et début du cadre exclus) et se colle à la plaque */
 html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:first-child::before {
-  left: -6.2px;
-  background: url("deco/cabinet/tabs/tab.webp?v=7d2ddfc4") right center/auto 100% no-repeat
+  left: -5.72px;
+  width: 5.89px;
+  background: url("deco/cabinet/tabs/tab.webp?v=7d2ddfc4") right -0.33px center/auto 100% no-repeat
 }
 html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:last-child::after {
-  right: -6.2px;
-  background: url("deco/cabinet/tabs/tab.webp?v=7d2ddfc4") left center/auto 100% no-repeat
+  right: -5.4px;
+  width: 5.73px;
+  background: url("deco/cabinet/tabs/tab.webp?v=7d2ddfc4") left -0.16px center/auto 100% no-repeat
+}
+/* plaques serrées d'1 px : colonnes transparentes des bords (1 + 2 px d'image) sans fente entre deux demi-pattes */
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab + .repo-tab:not(#imp) {
+  margin-left: -1px
 }
 html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:not(#imp) {
   z-index: 1;
