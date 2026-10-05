@@ -1962,6 +1962,17 @@
     };
   }
   const CACHES = () => [{
+    id: 'dataIndex',
+    icon: 'refresh',
+    label: ['Index des données', 'Data index', 'Datenindex', 'Índice de datos'],
+    where: 'IndexedDB defaIndex',
+    state: () => t(['Registre des missions, CR, copies des fichiers du pool (disponibilités, fiches) ; les fichiers font foi.', 'Mission registry, reports, copies of pool files (availability, user cards); the files prevail.']),
+    after: ['Base effacée, reconstruite depuis les fichiers au prochain chargement des pages (après un changement extérieur des fichiers sans lanceur, par exemple).', 'Base erased, rebuilt from the files when pages next load (after the files changed outside the suite without the launcher, for example).'],
+    purge: async () => {
+      await window.DataIndex?.rebuild?.();
+      return t(['Index des données effacé : il se reconstruit depuis les fichiers.', 'Data index erased: it rebuilds from the files.']);
+    }
+  }, {
     id: 'airports',
     icon: 'map',
     label: ['Aérodromes utilisés', 'Aerodromes used', 'Verwendete Flugplätze', 'Aeródromos usados'],

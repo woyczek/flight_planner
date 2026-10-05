@@ -134,10 +134,11 @@
     }
     return out;
   }
-  /** Fiches de tous les utilisateurs (ordre des trigrammes). */
+  /** Fiches de tous les utilisateurs (ordre des trigrammes) ; une fiche dont la signature (updated_at dans l'index) n'a
+   *  pas changé est lue dans l'index du navigateur, sans requête. */
   async function list(fresh = false) {
     const idx = await index(fresh);
-    const users = await Promise.all(Object.keys(idx).sort().map(tri => get(tri, {
+    const users = await Promise.all(Object.keys(idx).sort().map(tri => getIndexed(tri, {
       fresh
     })));
     return users.filter(Boolean);
@@ -168,7 +169,8 @@
       idx.utilisateurs[tri] = {
         role: doc.role,
         actif: doc.actif,
-        nom: doc.nom || ''
+        nom: doc.nom || '',
+        updated_at: doc.updated_at // signature de la fiche
       };
       idx.updated_at = doc.updated_at;
       idx.va = VA();
@@ -352,7 +354,13 @@
 
   // ---- préférences de thèmes (par domaine : { mode: 'tous' | 'blanche' | 'noire', liste: [THÈMES] })
   // fiche lue seulement si l'index la connaît (l'ODV en demande une par pilote : pas de rafale de 404)
-  const themePrefs = async tri => (await index())[norm(tri)] ? (await get(tri))?.preferences?.themes || null : null;
+  /** Fiche lue par l'index du navigateur (sans requête tant que sa signature, updated_at de l'index, n'a pas changé). */
+  async function getIndexed(tri, opts = {}) {
+    const idx = await index(opts.fresh);
+    if (!idx[norm(tri)]) return null;
+    return A()?.readIndexed ? A().readIndexed(`${DIR}/${norm(tri)}.json`, idx[norm(tri)].updated_at, opts) : get(tri, opts);
+  }
+  const themePrefs = async tri => (await getIndexed(tri))?.preferences?.themes || null;
   async function setThemePrefs(tri, themes) {
     tri = norm(tri);
     const u = (await get(tri, {

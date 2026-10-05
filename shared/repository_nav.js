@@ -1037,15 +1037,15 @@
     store.src = new URL("browser_store.js?v=7860c8db", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
-    assign.src = new URL("assignments.js?v=53c15050", script.src).href;
+    assign.src = new URL("assignments.js?v=e00e5f6e", script.src).href;
     document.head.append(assign);
     /* Utilisateurs et droits : mode develop / production, connexion, usurpation (bandeau sur toutes les pages) */
     const users = document.createElement("script");
-    users.src = new URL("users.js?v=fd81f4c1", script.src).href;
+    users.src = new URL("users.js?v=1db04bb0", script.src).href;
     document.head.append(users);
     /* Disponibilités : catégories configurables, thèmes ouverts, déclarations par semaine */
     const dispos = document.createElement("script");
-    dispos.src = new URL("dispos.js?v=19270ca3", script.src).href;
+    dispos.src = new URL("dispos.js?v=f07e0591", script.src).href;
     document.head.append(dispos);
     const update = document.createElement("script");
     update.src = new URL("suite_update.js?v=a6f1e9d1", script.src).href;

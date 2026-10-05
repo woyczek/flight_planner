@@ -211,11 +211,14 @@
     tri = String(tri || '').toUpperCase();
     if (!tri || !A()?.readData) return {};
     let ids = weeks;
+    // index du dossier : semaines déclarées et signature de chaque fichier (at : semaine → updated_at) ; une semaine dont
+    // la signature n'a pas changé est lue dans l'index du navigateur, sans requête (MissionAssignments.readIndexed)
+    const idx = await A().readData(INDEX, {
+      fresh
+    }).catch(() => null);
+    const e = idx?.pilots?.[tri],
+      sigs = e && typeof e === 'object' ? e.at || {} : {};
     if (!ids) {
-      const idx = await A().readData(INDEX, {
-        fresh
-      }).catch(() => null);
-      const e = idx?.pilots?.[tri];
       const pend = (A().pendingData?.() || []).map(p => new RegExp(`^disponibilites/${tri}/(\\d{4}-W\\d{2})\\.json$`).exec(p)?.[1]).filter(Boolean);
       const from = addWeek(weekId(Date.now()), -12);
       let listed = Array.isArray(e?.weeks) ? e.weeks : null;
@@ -225,9 +228,11 @@
     }
     const out = {};
     await Promise.all(ids.map(async w => {
-      const d = await A().readData(fileOf(tri, w), {
+      const d = await (A().readIndexed ? A().readIndexed(fileOf(tri, w), sigs[w], {
         fresh
-      }).catch(() => null);
+      }) : A().readData(fileOf(tri, w), {
+        fresh
+      })).catch(() => null);
       if (d?.dispos) out[w] = d;
     }));
     return out;
@@ -274,7 +279,11 @@
         else if (s && typeof s === 'object') idx.pilots[p] = {
           ...s,
           ...(typeof mine === 'object' ? mine : {}),
-          weeks: [...new Set([...(Array.isArray(s.weeks) ? s.weeks : []), ...(Array.isArray(mine?.weeks) ? mine.weeks : [])])].sort()
+          weeks: [...new Set([...(Array.isArray(s.weeks) ? s.weeks : []), ...(Array.isArray(mine?.weeks) ? mine.weeks : [])])].sort(),
+          at: {
+            ...(s.at || {}),
+            ...(typeof mine === 'object' ? mine.at || {} : {})
+          }
         };
       }
       const e = idx.pilots[tri];
@@ -285,6 +294,10 @@
           legacy: true
         } : {}),
         weeks: [...weeks].sort(),
+        at: {
+          ...(e && typeof e === 'object' ? e.at || {} : {}),
+          [week]: doc.updated_at // signature de la semaine écrite
+        },
         updated_at: doc.updated_at
       };
       idx.updated_at = doc.updated_at;

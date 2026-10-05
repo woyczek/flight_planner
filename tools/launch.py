@@ -208,6 +208,15 @@ class Setup(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if not self._local_host():
             return self._json({'error': 'refusé'}, 403)
+        # index du pool demandés : refaits d'abord (fichiers changés depuis le démarrage : git, autre poste, éditeur),
+        # leurs signatures doivent dire vrai — une page sert sa copie d'un fichier tant que sa signature n'a pas changé
+        idx = self.path.split('?')[0]
+        if idx.endswith('/data/disponibilites/_index.json'):
+            with INDEX_LOCK:  # serveur à fils : une seule réécriture à la fois
+                index_availability()
+        elif idx.endswith('/data/utilisateurs/_index.json'):
+            with INDEX_LOCK:
+                index_users()
         self._purge = Setup.purge and re.search(r'(\.html|/)$', self.path.split('?')[0]) is not None
         if self.path.split('?')[0] == '/__setup/status':
             if not self._allowed():
@@ -418,11 +427,16 @@ INSTANCE_DIRS = ('', 'data', os.path.join('data', 'missions'), os.path.join('dat
                  os.path.join('data', 'planner'))
 
 
+INDEX_LOCK = threading.Lock()  # index du pool refaits à la demande (do_GET)
+
+
 def index_availability():
     """data/disponibilites/_index.json : pilotes qui ont déclaré leurs disponibilités. Les pages ne demandent que ces
     fichiers (l'ODV en demandait un par pilote, presque tous absents). Entrée d'un pilote : { weeks: [semaines ISO du
-    dossier <TRI>/ (format par plages, docs/DISPOS_ET_REORGANISATION.md § 1.3)], legacy: true (ancien fichier
-    <TRI>.json) }. Réécrit seulement s'il change ; ignoré par git (régénéré)."""
+    dossier <TRI>/ (format par plages, docs/DISPOS_ET_REORGANISATION.md § 1.3)], at: { semaine: updated_at du fichier }
+    (signature : les pages gardent les fichiers dans leur index et ne relisent que ceux dont la date a changé,
+    docs/INDEX_DONNEES.md § 3), legacy: true (ancien fichier <TRI>.json), legacy_at (sa signature) }. Refait à chaque demande de l'index (do_GET) ;
+    réécrit seulement s'il change ; ignoré par git (régénéré)."""
     d = os.path.join(DATA, 'disponibilites')
     if not os.path.isdir(d):
         return
@@ -433,11 +447,15 @@ def index_availability():
             continue
         p = os.path.join(d, n)
         if m.group(2) and os.path.isfile(p):
-            pilots.setdefault(m.group(1).upper(), {})['legacy'] = True
+            e = pilots.setdefault(m.group(1).upper(), {})
+            e['legacy'] = True
+            e['legacy_at'] = updated_at(p)
         elif not m.group(2) and os.path.isdir(p):
             weeks = sorted(x[:-5] for x in os.listdir(p) if re.match(r'^\d{4}-W\d{2}\.json$', x))
             if weeks:
-                pilots.setdefault(m.group(1).upper(), {})['weeks'] = weeks
+                e = pilots.setdefault(m.group(1).upper(), {})
+                e['weeks'] = weeks
+                e['at'] = {w: updated_at(os.path.join(p, w + '.json')) for w in weeks}
     p = os.path.join(d, '_index.json')
     try:
         old = json.load(open(p, encoding='utf-8')).get('pilots')
@@ -448,9 +466,18 @@ def index_availability():
             json.dump({'schema': 2, 'updated_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'pilots': pilots}, f, indent=1)
 
 
+def updated_at(path):
+    """Champ updated_at d'un fichier JSON du pool (signature dans les index) ; '' s'il est illisible."""
+    try:
+        return str(json.load(open(path, encoding='utf-8')).get('updated_at') or '')
+    except (OSError, ValueError, AttributeError):
+        return ''
+
+
 def index_users():
-    """data/utilisateurs/_index.json : trigramme → rôle, actif, nom (fiches <TRI>.json, docs/DISPOS_ET_REORGANISATION.md
-    § 2). Les pages s'en servent pour lister les utilisateurs ; réécrit seulement s'il change."""
+    """data/utilisateurs/_index.json : trigramme → rôle, actif, nom, updated_at de la fiche (signature, comme
+    index_availability) (fiches <TRI>.json, docs/DISPOS_ET_REORGANISATION.md § 2). Les pages s'en servent pour lister
+    les utilisateurs ; refait à chaque demande ; réécrit seulement s'il change."""
     d = os.path.join(DATA, 'utilisateurs')
     if not os.path.isdir(d):
         return
@@ -463,7 +490,8 @@ def index_users():
             u = json.load(open(os.path.join(d, n), encoding='utf-8'))
         except (OSError, ValueError):
             continue
-        users[m.group(1)] = {'role': u.get('role') or 'utilisateur', 'actif': u.get('actif') is not False, 'nom': u.get('nom') or ''}
+        users[m.group(1)] = {'role': u.get('role') or 'utilisateur', 'actif': u.get('actif') is not False, 'nom': u.get('nom') or '',
+                             'updated_at': str(u.get('updated_at') or '')}
     p = os.path.join(d, '_index.json')
     try:
         old = json.load(open(p, encoding='utf-8')).get('utilisateurs')

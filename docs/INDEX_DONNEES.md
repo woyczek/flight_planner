@@ -44,6 +44,18 @@ fichiers** ; l'index se contente de suivre.
   « Relire ».
 - **Sans serveur** (`file://`) : mêmes règles, la signature vient du dossier autorisé (File System Access).
 
+### 3.1 Fichiers du pool lus par signature (fait)
+
+Les index du dossier portent la signature de chaque fichier : `data/disponibilites/_index.json` (`at` : semaine →
+`updated_at` du fichier de la semaine ; `legacy_at` : ancien fichier `<TRI>.json`) et `data/utilisateurs/_index.json`
+(`updated_at` de chaque fiche). Le lanceur les refait **à chaque demande** (fichiers changés par git, un autre poste
+ou un éditeur : la signature dit vrai) ; une page qui écrit met à jour l'entrée du fichier écrit. La page lit l'index
+du dossier (une requête), puis `MissionAssignments.readIndexed(fichier, signature)` : la copie du store `files`
+(chemin, signature, contenu) sert sans requête tant qu'elle a la même signature ; sinon le fichier est relu et sa copie
+remplacée. Pas de copie utilisée pour un fichier de la boîte d'envoi, une lecture « fraîche », ou sans signature
+(ancien lanceur). Sans lanceur, l'index du dossier n'est tenu à jour que par les écritures des pages : après un
+changement extérieur (git sans lanceur), Paramètres › Maintenance › Caches › Index des données (Purger).
+
 ## 4. Expiration
 
 - **Pas de durée de vie pour l'exactitude** : une entrée d'index est valable tant que la signature de son fichier n'a
@@ -154,7 +166,7 @@ reçus, les écritures (§ 5) appellent `push` après le fichier. Le transport s
 | 1. Registre des CR sous verrou, fusion par CR, onglets prévenus | fait (`a33c7f84`, course corrigée `c1ffb070`) |
 | 2. `shared/data_index.js` (base `defaIndex`) | fait (`72be400c`) |
 | 3. Registre des missions dans l'index (fin du quota), copie de compatibilité < 2 Mo | fait (`72be400c`, `ec676adb`) |
-| 4. Affectations et disponibilités indexées | en attente du nouveau format des disponibilités (branche `feature/dispos-reorg`) |
+| 4. Affectations et disponibilités indexées | fait : déclarations (semaines et anciens fichiers) et fiches utilisateurs lues par signature (§ 3.1) — ODV, 2e ouverture : 11 requêtes au lieu de 114, données à 1,6 s au lieu de 7,2 s ; affectations : un seul fichier (≈ 23 Ko, ≈ 40 ms), pas indexé (rien à gagner) |
 | 5. CR indexés, relus seulement si un fichier a changé (signature, 304) | fait (`c1ffb070`) |
 | 6. Suivi des missions dans `suivi.yaml` (fusion champ par champ) | fait (`eabd0a6f`) ; affectations : remplacement par mission sous verrou (existant) |
 | 7. Découpage par année | à faire avant le 31 décembre |

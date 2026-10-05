@@ -241,6 +241,35 @@
     if (local && (!served || String(local.value?.updated_at || local.at) >= String(served.updated_at || ''))) return local.value;
     return served;
   }
+  /** Fichier du pool lu par l'index (docs/INDEX_DONNEES.md § 3) : sig = signature donnée par l'index du dossier
+   *  (updated_at du fichier, data/disponibilites/_index.json, data/utilisateurs/_index.json) ; la copie de l'index
+   *  (base defaIndex, store files) sert sans requête tant qu'elle a cette signature, sinon le fichier est relu et sa
+   *  copie remplacée. Sans signature, fichier dans la boîte d'envoi, lecture « fraîche » ou index indisponible :
+   *  readData. Une page qui lit cinquante fiches n'envoie plus que les requêtes des fiches changées. */
+  async function readIndexed(rel, sig, {
+    fresh = false
+  } = {}) {
+    const I = window.DataIndex,
+      path = `data/${rel}`;
+    if (sig && !fresh && I && !(rel in outbox())) {
+      const hit = await I.get('files', path).catch(() => null);
+      if (hit && hit.sig === sig) return hit.value;
+    }
+    const value = await readData(rel, {
+      fresh
+    });
+    keep(rel, value);
+    return value;
+  }
+  /** Copie d'un fichier du pool dans l'index, signée de son updated_at (rien sans updated_at). */
+  function keep(rel, value) {
+    if (value?.updated_at && window.DataIndex) window.DataIndex.put('files', {
+      path: `data/${rel}`,
+      sig: String(value.updated_at),
+      value,
+      at: Date.now()
+    }).catch(() => {});
+  }
   /** Écrit un fichier du pool (data/<rel>) : dossier autorisé (sous le verrou du fichier), sinon boîte d'envoi de ce
    *  navigateur. Retour : { where: 'folder' | 'local', error } ; événement « defa-data-change » dans tous les onglets. */
   async function writeData(rel, value) {
@@ -269,6 +298,7 @@
       }));
     }
     store.changed(`data/${rel}`);
+    keep(rel, value); // l'index suit ce qui vient d'être écrit (la signature de l'index du dossier sera la sienne)
     return {
       where,
       error
@@ -564,7 +594,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     // Entrée de l'index : true (ancien fichier <TRI>.json) ou { weeks, legacy } (fichiers par semaine, ancien fichier).
     const idx = await store.read('data/disponibilites/_index.json');
     const entry = idx?.pilots?.[tri];
-    if (!doc && (!idx?.pilots || entry === true || entry?.legacy)) doc = await store.read(`data/disponibilites/${encodeURIComponent(tri)}.json`);
+    // ancien fichier : lu par l'index du navigateur tant que sa signature (legacy_at) n'a pas changé
+    if (!doc && (!idx?.pilots || entry === true || entry?.legacy)) doc = entry?.legacy_at ? await readIndexed(`disponibilites/${tri}.json`, entry.legacy_at) : await store.read(`data/disponibilites/${encodeURIComponent(tri)}.json`);
     // nouveau format (docs/DISPOS_ET_REORGANISATION.md § 1.3, shared/dispos.js) : une déclaration par semaine ISO ;
     // préférences de thèmes du pilote (fiche utilisateur) pour calculer les thèmes ouverts
     const weeks2 = await window.SuiteDispos?.readPilot?.(tri).catch(() => ({})) || {};
@@ -1810,6 +1841,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     // fichiers du pool synchronisé (utilisateurs, configuration partagée, disponibilités)
     dataStore: store,
     readData,
+    readIndexed,
     writeData,
     flushData,
     pendingData,
