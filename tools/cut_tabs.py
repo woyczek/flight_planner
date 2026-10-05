@@ -13,7 +13,8 @@ Deux montages :
   avec une lueur sur le bord de la fenêtre) ; les cellules accolées refont le rail, ses embouts (rail.webp : embout
   gauche, milieu transparent, embout droit) le ferment.
 
-Usage (racine du dépôt) : python tools/cut_tabs.py [design…]   (défaut : tous les designs de CONFIG)
+Usage (racine du dépôt) : python tools/cut_tabs.py [design…] [--force]   (défaut : tous les designs de CONFIG ;
+images retouchées à la main — CONFIG[design]['retouche'] — gardées, sauf --force)
 Puis : python tools/bump_versions.py. Les découpes à 9 parties sont dans la section du design de
 shared/designs_skeuo.css (« ONGLETS DE PAGE ») ; les largeurs utiles sont affichées ici. Dépend de Pillow.
 """
@@ -34,6 +35,8 @@ CONFIG = {
         'button': (255, 117, 863, 263),
         'button_on': (1147, 117, 1755, 263),
         'glow': (255, 170, 40),
+        # retouchés à la main par l'utilisateur (creux du bouton) : gardés, sauf --force
+        'retouche': ('tab.webp', 'tab-on.webp'),
         # embouts du rail, chacun jusqu'au milieu de séparateur équivalent
         'rail_left': (46, 362, 137, 558),
         'rail_right': (1862, 362, 1953, 558),
@@ -181,6 +184,9 @@ def cut(design):
     if tab.size != on.size:
         sys.exit(f'{design} : onglets relâché {tab.size} et enfoncé {on.size} de tailles différentes')
     for name, img in (('tab.webp', tab), ('tab-on.webp', on), ('rail.webp', rail)):
+        if name in c.get('retouche', ()) and not FORCE and os.path.exists(os.path.join(out, name)):
+            print(f'{design}/tabs/{name} : retouché à la main, gardé (--force pour le refaire)')
+            continue
         img.save(os.path.join(out, name), 'WEBP', quality=88, method=6)
         print(f'{design}/tabs/{name} : {img.size[0]} × {img.size[1]}')
     print(f'  rail : embouts {left.size[0]} et {right.size[0]} px, hauteur {rail.size[1]} px')
@@ -195,8 +201,10 @@ def lisere(design):
     print(f'{design}/tabs/lisere.webp ({LISERE_OF[design]}) : {img.size[0]} × {img.size[1]}')
 
 
+FORCE = '--force' in sys.argv  # refaire aussi les images retouchées à la main (CONFIG[design]['retouche'])
+
 if __name__ == '__main__':
-    for d in sys.argv[1:] or sorted(set(CONFIG) | set(LISERE_OF)):
+    for d in [a for a in sys.argv[1:] if a != '--force'] or sorted(set(CONFIG) | set(LISERE_OF)):
         if d in CONFIG:
             cut(d)
         if d in LISERE_OF:

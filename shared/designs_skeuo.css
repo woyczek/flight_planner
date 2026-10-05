@@ -3007,7 +3007,7 @@ html[data-design="flightlog"] .repo-tab:not(#imp) {
   color: #e9e2cf;
   text-shadow: 0 1px 0 #000, 0 0 6px rgba(0, 0, 0, .6);
   border: 0;
-  border-image: url("deco/flightlog/tabs/tab.webp?v=4a819fda") 0 70 0 110 fill / 0 18.5px 0 29px stretch
+  border-image: url("deco/flightlog/tabs/tab.webp?v=958ae537") 0 70 0 110 fill / 0 18.5px 0 29px stretch
 }
 html[data-design="flightlog"] .repo-tab[aria-current="page"]:not(#imp) {
   color: #ffe2a8;
@@ -3015,7 +3015,7 @@ html[data-design="flightlog"] .repo-tab[aria-current="page"]:not(#imp) {
   box-shadow: none;
   filter: none;
   transform: none;
-  border-image: url("deco/flightlog/tabs/tab-on.webp?v=39f475f6") 0 70 0 110 fill / 0 18.5px 0 29px stretch
+  border-image: url("deco/flightlog/tabs/tab-on.webp?v=f6c9c38b") 0 70 0 110 fill / 0 18.5px 0 29px stretch
 }
 html[data-design="flightlog"] .repo-tab:not([aria-current="page"]):is(:hover, :focus-visible):not(#imp) {
   filter: brightness(1.15)
