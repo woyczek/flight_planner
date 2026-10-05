@@ -307,8 +307,32 @@
     return (doc.dispos?.[day] || []).filter(x => (!x.debut || x.debut <= t) && (!x.fin || t < x.fin));
   }
 
+  // ---- affichage d'une catégorie, commun à la grille de Mes missions (dispos_editor.js) et au Planning ODV
+  // lettre : champ « lettre » de la configuration, sinon le code ODV de la catégorie s'il est unique, sinon un abrégé
+  // (+ : tout le domaine ; − : personnalisée, thèmes choisis dans les préférences)
+  const SHORT = {
+    defense: 'D+',
+    secu_perso: 'SC-',
+    defense_perso: 'D-'
+  };
+  const code = c => c?.lettre || (c?.odv?.length === 1 ? c.odv[0] : SHORT[c?.id]) || c?.odv?.[0] || '';
+  const color = c => window.RepositoryNav?.chartColor?.(c?.couleur || '#BFBFBF') || c?.couleur || '#BFBFBF';
+  /** Libellé court (palettes) : sans le nom du groupe en tête ni la précision entre parenthèses, mots longs abrégés. */
+  function shortLabel(c) {
+    const full = label(c.label),
+      grp = label(group(c.groupe)?.label || '');
+    let s = full.replace(/\s*\([^)]*\)\s*$/, '');
+    if (grp && s.toLowerCase().startsWith(grp.toLowerCase() + ' ')) s = s.slice(grp.length + 1);
+    if (!s) return full;
+    s = s[0].toUpperCase() + s.slice(1);
+    // « Sécurité civile personnalisée » → « Sécur. civile perso. »
+    return s.length > 12 ? s.split(' ').map(w => w.length > 6 ? w.slice(0, 5) + '.' : w).join(' ') : s;
+  }
   window.SuiteDispos = {
     DEFAULT,
+    code,
+    color,
+    shortLabel,
     config,
     load,
     save,

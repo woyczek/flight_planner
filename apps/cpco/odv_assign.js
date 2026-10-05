@@ -144,7 +144,7 @@
     const d = declared(tri, j, k),
       a = assigned(tri, j, k),
       isFree = free(tri, j, k, xlRecord),
-      decl = d?.groupe && window.SuiteDispos ? groupCell(d) : d ? codeCell({
+      decl = d?.groupe && window.SuiteDispos ? catCell(d) : d ? codeCell({
         code: d.code,
         sens: d.label,
         categorie: M().LEGEND[d.code]?.[1] || d.category,
@@ -155,6 +155,28 @@
       m: a.map(x => `${x.mission}${x.role === 'convoyage' ? ` (${ferry})` : ''}`).join(', ')
     }) : isFree ? L(['Disponible, non affecté : cliquer pour affecter une mission sur ce créneau', 'Available, not assigned: click to assign a mission on this slot', 'Verfügbar, nicht zugewiesen: klicken, um diesem Zeitfenster eine Mission zuzuweisen', 'Disponible, sin asignar: haga clic para asignar una misión en esta franja']) : L(['Cliquer pour affecter une mission sur ce créneau', 'Click to assign a mission on this slot', 'Klicken, um diesem Zeitfenster eine Mission zuzuweisen', 'Haga clic para asignar una misión en esta franja']);
     return `<span class="odv-decl${isFree ? ' odv-free' : ''}" data-odv-slot="${j}${k}" data-tri="${esc(tri)}" title="${esc(title)}">${decl}${a.length ? `<b class="odv-asg">${esc(a[0].mission)}${a.length > 1 ? '+' : ''}</b>` : ''}</span>`;
+  }
+  /** Déclaration par catégories, même rendu que la grille de Mes missions (shared/dispos_editor.js) : lettre de chaque
+   *  catégorie du créneau (O, SC, D+, SC-…) sur sa couleur (plusieurs : bandes) ; groupe, catégories et thèmes ouverts
+   *  dans l'infobulle. Ancienne grille sans catégorie : lettre du groupe (groupCell). */
+  function catCell(d) {
+    const SD = window.SuiteDispos,
+      K = window.RepositoryKit;
+    const cs = [...new Set((d.details || [d]).map(x => x.categorie).filter(Boolean))].map(id => SD.category(id)).filter(Boolean);
+    if (!cs.length || !SD.code) return groupCell(d);
+    const cols = cs.map(SD.color),
+      bg = cols.length === 1 ? cols[0] : `linear-gradient(135deg,${cols.map((c, n) => `${c} ${n * 100 / cols.length}% ${(n + 1) * 100 / cols.length}%`).join(',')})`,
+      ink = (K.color.luminance(cols[0]) ?? 1) < .4 ? '#fff' : '#1b1b1b';
+    const tip = [SD.label(SD.group(d.groupe)?.label || d.groupe), ...cs.map(c => `· ${SD.code(c)} ${SD.label(c.label)}`), K.t(['déclaration du pilote (Mes missions)', 'pilot declaration (My missions)', 'Pilotenangabe (Meine Missionen)', 'declaración del piloto (Mis misiones)'])].join('\n');
+    return `<span class="odv-code c-${esc(d.category || 'inconnu')}" style="background:${esc(bg)};color:${ink}" title="${esc(tip)}">${esc(cs.map(SD.code).filter(Boolean).join('/'))}</span>`;
+  }
+  /** Pastille d'une catégorie pour la légende (lettre sur sa couleur, libellé court), comme la palette de Mes missions. */
+  function catChip(c) {
+    const SD = window.SuiteDispos,
+      K = window.RepositoryKit,
+      col = SD.color(c),
+      ink = (K.color.luminance(col) ?? 1) < .4 ? '#fff' : '#1b1b1b';
+    return `<span><span class="odv-code" style="background:${esc(col)};color:${ink}" title="${esc(`${SD.code(c)} — ${SD.label(c.label)}`)}">${esc(SD.code(c))}</span> ${esc(SD.shortLabel(c))}</span>`;
   }
   /** Déclaration regroupée (docs/DISPOS_ET_REORGANISATION.md § 1.2) : lettre (court : D, E, O, I) et couleur du groupe
    *  (Disponible, Exercice DEFA, Occupé, Indisponible) ; catégories et thèmes ouverts dans l'infobulle. */
@@ -220,6 +242,8 @@
   window.OdvAssign = {
     load,
     groupCell,
+    catCell,
+    catChip,
     declaration: tri => decl[tri] || null,
     /** Préférences de thèmes d'un pilote (missions probables : thèmes ouverts des codes du classeur). */
     prefsOf: tri => prefs[tri] || null,

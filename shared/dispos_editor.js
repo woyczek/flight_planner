@@ -46,27 +46,10 @@
   /** « 07:30 » → minutes ; vide → null. */
   const mins = s => s ? +s.slice(0, 2) * 60 + +s.slice(3, 5) : null;
   const ink = c => (K.color.luminance(c) ?? 1) < .4 ? '#fff' : '#1b1b1b';
-  const colorOf = c => window.RepositoryNav?.chartColor?.(c?.couleur || '#BFBFBF') || c?.couleur || '#BFBFBF';
-  // lettre affichée dans la grille : le code ODV de la catégorie s'il est unique, sinon un abrégé (catégories sans code
-  // ou à plusieurs codes : défense, personnalisées) ; champ « lettre » de la configuration s'il est donné
-  // (+ : tout le domaine ; − : personnalisée, thèmes choisis dans les préférences)
-  const SHORT = {
-    defense: 'D+',
-    secu_perso: 'SC-',
-    defense_perso: 'D-'
-  };
-  // libellé court de la palette : sans le nom du groupe en tête ni la précision entre parenthèses, mots longs abrégés (libellé complet en infobulle)
-  const shortOf = (c, g) => {
-    const full = SD().label(c.label),
-      grp = SD().label(g?.label || '');
-    let s = full.replace(/\s*\([^)]*\)\s*$/, '');
-    if (grp && s.toLowerCase().startsWith(grp.toLowerCase() + ' ')) s = s.slice(grp.length + 1);
-    if (!s) return full;
-    s = s[0].toUpperCase() + s.slice(1);
-    // libellé long : mots de plus de 6 lettres abrégés à 5 (« Sécurité civile personnalisée » → « Sécur. civile perso. »)
-    return s.length > 12 ? s.split(' ').map(w => w.length > 6 ? w.slice(0, 5) + '.' : w).join(' ') : s;
-  };
-  const codeOf = c => c?.lettre || (c?.odv?.length === 1 ? c.odv[0] : SHORT[c?.id]) || c?.odv?.[0] || '';
+  // lettre, couleur et libellé court d'une catégorie : communs avec le Planning ODV (shared/dispos.js)
+  const colorOf = c => SD().color(c);
+  const shortOf = c => SD().shortLabel(c);
+  const codeOf = c => SD().code(c);
 
   function css() {
     if (document.getElementById('disposEditorCss')) return;
@@ -242,7 +225,7 @@
       };
       const gridHtml = `<div class="de-pal">${groups.map(g => {
         const list = cats.filter(c => c.groupe === g.id);
-        return list.length ? `<span class="de-pal-n">${esc(D.label(g.label))}</span><span class="de-pal-r">${list.map(c => `<button type="button" class="repo-plain de-brush${c.id === brush ? ' on' : ''}" data-brush="${esc(c.id)}" style="--c:${colorOf(c)};--k:${ink(colorOf(c))}" title="${esc(`${codeOf(c)} — ${D.label(c.label)}`)}">${esc(codeOf(c))} ${esc(shortOf(c, g))}</button>`).join('')}</span>` : '';
+        return list.length ? `<span class="de-pal-n">${esc(D.label(g.label))}</span><span class="de-pal-r">${list.map(c => `<button type="button" class="repo-plain de-brush${c.id === brush ? ' on' : ''}" data-brush="${esc(c.id)}" style="--c:${colorOf(c)};--k:${ink(colorOf(c))}" title="${esc(`${codeOf(c)} — ${D.label(c.label)}`)}">${esc(codeOf(c))} ${esc(shortOf(c))}</button>`).join('')}</span>` : '';
       }).join('')}</div>
         <div class="de-gridwrap"><table class="de-grid"><thead><tr><th></th>${Array.from({ length: 24 }, (_, h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${days.map((day, j) => {
           const cv = cover(day);

@@ -838,10 +838,14 @@
     const counts = {};
     for (const r of data.records)
       if (r.code) counts[r.code] = (counts[r.code] || 0) + 1;
-    $('odvLegend').innerHTML = (data.virtuel ? `<span class="odv-noxl">${L(['Pas de classeur : semaine du {a} au {b}, ligne du classeur vide ; déclarations des pilotes et affectations.', 'No workbook: week from {a} to {b}, workbook row empty; pilot declarations and assignments.', 'Keine Arbeitsmappe: Woche vom {a} bis {b}, Zeile der Arbeitsmappe leer; Pilotenangaben und Zuweisungen.', 'Sin libro: semana del {a} al {b}, fila del libro vacía; declaraciones de los pilotos y asignaciones.'], { a: esc(dateFr(data.dates[0])), b: esc(dateFr(data.dates[6])) })}</span>` : '') + Object.values(data.legende).map(e => `<span>${codeCell({ code: e.code, sens: e.sens, categorie: e.categorie, source: '' })} ${esc(sensL(e.sens))}${counts[e.code] ? ` <b>${counts[e.code]}</b>` : ''}</span>`).join('') +
+    $('odvLegend').innerHTML = (data.virtuel ? `<span class="odv-noxl">${L(['Pas de classeur : semaine du {a} au {b}, ligne du classeur vide ; déclarations des pilotes et affectations.', 'No workbook: week from {a} to {b}, workbook row empty; pilot declarations and assignments.', 'Keine Arbeitsmappe: Woche vom {a} bis {b}, Zeile der Arbeitsmappe leer; Pilotenangaben und Zuweisungen.', 'Sin libro: semana del {a} al {b}, fila del libro vacía; declaraciones de los pilotos y asignaciones.'], { a: esc(dateFr(data.dates[0])), b: esc(dateFr(data.dates[6])) })}</span>` : '') + (data.virtuel ? [] : Object.values(data.legende)).map(e => `<span>${codeCell({ code: e.code, sens: e.sens, categorie: e.categorie, source: '' })} ${esc(sensL(e.sens))}${counts[e.code] ? ` <b>${counts[e.code]}</b>` : ''}</span>`).join('') +
       `<span>${codeCell({ categorie: 'inconnu', source: '' })} ${esc(catL('inconnu'))}</span>` +
       // déclarations des pilotes : regroupées (Disponible, Exercice DEFA, Occupé, Indisponible), détail au survol
-      (window.SuiteDispos && window.OdvAssign?.groupCell ? `<span class="odv-legend-decl">${L(['Déclarations :', 'Declarations:', 'Angaben:', 'Declaraciones:'])} ${window.SuiteDispos.groups().map(g => `${window.OdvAssign.groupCell({ groupe: g.id, category: '', label: window.SuiteDispos.label(g.label) })} ${esc(window.SuiteDispos.label(g.label))}`).join(' ')}</span>` : '');
+      (window.SuiteDispos && window.OdvAssign?.catChip ? `<span class="odv-legend-decl">${L(['Déclarations :', 'Declarations:', 'Angaben:', 'Declaraciones:'])}</span>${window.SuiteDispos.groups().map(g => {
+        // catégories par groupe, comme la palette de Mes missions (lettre sur sa couleur, libellé court)
+        const cs = window.SuiteDispos.categories().filter(c => c.groupe === g.id);
+        return cs.length ? `<span class="odv-legend-grp"><i>${esc(window.SuiteDispos.label(g.label))}</i>${cs.map(window.OdvAssign.catChip).join('')}</span>` : '';
+      }).join('')}` : '');
     const byPilot = new Map(data.pilotes.map(p => [p.trigramme, []]));
     for (const r of data.records) byPilot.get(r.pilote)?.push(r);
     // grille non vide : cases du classeur, ou seconde ligne du pilote (déclaration faite dans la suite — copie de ce
