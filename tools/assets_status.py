@@ -26,6 +26,7 @@ THEMES = ['aircraft', 'airfield', 'time', 'radio', 'nav', 'gear', 'awards', 'fam
 PANELS = [f'panel-{t}-{o}.webp' for t in THEMES for o in 'wt']
 SHEET = [f'sheet-{p}.webp' for p in ('tl', 'tr', 'bl', 'br', 'top', 'bot', 'left', 'right', 'paper')]
 DESIGNS = ['cabinet', 'flightlog', 'field', 'aqua']
+TABS = ['tabs/rail.webp', 'tabs/tab.webp', 'tabs/tab-on.webp']
 NAMES = {'cabinet': 'Cabinet', 'flightlog': 'Carnet de vol', 'field': 'Durci', 'aqua': 'Aqua'}
 
 # famille → (facultative ?, {design: [fichiers attendus, relatifs à shared/deco/<design>/]} ; None : sans objet)
@@ -68,6 +69,9 @@ SPEC = {
                       'order-stamp-helico.webp', 'order-stamp-sna.webp', 'order-stamp-alat.webp', 'order-stamp-aeronavale.webp']}),
     'Pli scellé de l’exercice (Mes missions)': (True, {
         'cabinet': ['pli-sealed.webp'], 'flightlog': ['pli-sealed.webp'], 'field': ['pli-sealed.webp'], 'aqua': ['pli-sealed.webp']}),
+    # onglets en tête de page (repository_nav.js, REPOSITORY_TREE.tabs) : rail, poussoir relâché, poussoir enfoncé et
+    # éclairé (page courante) ; sans texte (libellés en 4 langues posés par la page) ; docs/ASSETS_A_FOURNIR.md § 6
+    'Onglets de page (Paramètres, générateur ⇄ studio)': (True, {d: TABS for d in DESIGNS}),
 }
 
 

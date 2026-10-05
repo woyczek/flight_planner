@@ -486,6 +486,34 @@ Intégration :
 
 ---
 
+## 6. Tous les designs : onglets de page (`shared/deco/<design>/tabs/`)
+
+Les onglets en tête de page (les quatre pages de Paramètres, générateur ⇄ studio, et toute page groupée plus tard dans
+`REPOSITORY_TREE.tabs`) sont un composant du framework (`repository_nav.js`) habillé par design dans `designs_skeuo.css`
+(section « ONGLETS DE PAGE ») : en attendant les images, plaques gravées vissées (Cabinet, Durci), poussoirs sombres
+cerclés de laiton avec voyant ambre (Carnet de vol), verre et gel (Aqua). Trois images par design, facultatives :
+
+| Fichier | Contenu | Forme |
+|---|---|---|
+| `tabs/rail.webp` | rail ou plaque de fer blanc gravée qui porte les onglets, vis aux deux bouts | bande horizontale, ~1200 × 56, fond transparent hors du rail |
+| `tabs/tab.webp` | poussoir relâché (page non affichée), **sans texte** | ~240 × 44, transparent autour |
+| `tabs/tab-on.webp` | même poussoir enfoncé et éclairé (page courante), **sans texte** | même taille et même cadrage que `tab.webp` |
+
+- **Sans texte** : les libellés (4 langues, longueurs variables) sont posés par la page, gravés ou imprimés par la
+  feuille de style (encre, ombre portée du design). Laisser au centre une zone unie, lisible, d'au moins 60 % de la
+  largeur.
+- **Découpe en 9 parties** (`border-image`) : les coins et les bouts (vis, rivets, embouts) restent à leur taille, le
+  milieu s'étire en largeur. Garder les bouts dans les ~24 px de chaque côté (rail : ~40 px), le milieu uniforme
+  (pas de motif qui trahirait l'étirement).
+- `tab.webp` et `tab-on.webp` exactement superposables : seul l'état change (enfoncement, lumière, voyant).
+- Une maquette d'ensemble (comme les captures de Cabinet et de Carnet de vol) suffit : les trois images en sont
+  découpées, puis branchées dans la section du design par trois jetons — `--sk-tabs-rail-img` /
+  `--sk-tabs-rail-slice`, `--sk-tab-img` / `--sk-tab-img-on` / `--sk-tab-slice` (et `--sk-tab-slice-w`, largeur des
+  bouts à l'écran) — sans autre retouche des pages.
+- État : `python tools/assets_status.py` (famille « Onglets de page »).
+
+---
+
 ## Ordre conseillé
 
 Du plus grand nombre d'exceptions supprimées au plus petit (l'effort est indiqué entre parenthèses) :

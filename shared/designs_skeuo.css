@@ -2829,3 +2829,150 @@ html[data-design="field"] .repo-seg[aria-pressed="true"]::before {
 html[data-skeuo] .repo-seg:not([aria-pressed="true"]):is(:hover, :focus-visible) {
   filter: brightness(1.1)
 }
+/* ================================================================================================ ONGLETS DE PAGE (repo-tabs)
+   Onglets en tête de page (repository_nav.js, REPOSITORY_TREE.tabs : pages de Paramètres, générateur ⇄ studio) : un
+   rail à angles droits, vissé aux deux bouts, et une plaque ou un poussoir par page ; la page courante est éclairée, les
+   autres un peu éteintes. Cabinet, Durci : plaque gravée vissée (jetons --sk-plate-*) ; Carnet de vol : bouton du design
+   (cuir sombre cerclé de laiton) et voyant ambre sur la page courante ; Aqua : bouton gel.
+   Images à venir (docs/ASSETS_A_FOURNIR.md, famille « Onglets de page ») : posées par design dès que les fichiers sont
+   là, en découpe 9 parties (border-image) — --sk-tabs-rail-img / --sk-tabs-rail-slice (rail), --sk-tab-img /
+   --sk-tab-img-on / --sk-tab-slice (poussoir relâché / enfoncé) ; sans elles, les jetons ci-dessous. */
+html[data-skeuo] {
+  --sk-tab-bg: var(--sk-plate-bg, var(--sk-btn-bg));
+  --sk-tab-ink: var(--sk-plate-ink, var(--sk-btn-ink));
+  --sk-tab-font: var(--sk-plate-font, 600 .9rem/1.2 var(--sk-btn-family, inherit));
+  --sk-tab-text-shadow: var(--sk-plate-text-shadow, var(--sk-btn-text-shadow, none));
+  --sk-tab-shadow: var(--sk-plate-shadow, var(--sk-btn-shadow));
+  --sk-tab-padding: 6px 28px;
+  --sk-tab-screw: var(--sk-screw, none);
+  --sk-tab-screw-size: var(--sk-plate-screw, 10px);
+  --sk-tab-glow: rgba(255, 214, 120, .55);
+  --sk-tabs-rail: linear-gradient(rgba(0, 0, 0, .3), rgba(0, 0, 0, .42));
+  --sk-tabs-rail-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), inset 0 -1px 0 rgba(0, 0, 0, .5), 0 2px 4px rgba(0, 0, 0, .35)
+}
+/* Carnet de vol : poussoirs sombres cerclés de laiton sur un rail de laiton, voyant ambre */
+html[data-design="flightlog"] {
+  --sk-tab-bg: var(--sk-btn-bg);
+  --sk-tab-ink: var(--sk-btn-ink);
+  --sk-tab-font: 700 .9rem/1.2 var(--sk-btn-family, inherit);
+  --sk-tab-text-shadow: var(--sk-btn-text-shadow, none);
+  --sk-tab-shadow: var(--sk-btn-shadow);
+  --sk-tab-padding: 6px 22px;
+  --sk-tab-screw: none;
+  --sk-tab-led: #ffb020;
+  --sk-tabs-rail: #a8823a url("textures/brass.webp?v=f418b500") center/256px;
+  --sk-tabs-rail-shadow: inset 0 1px 0 #fff3c4, inset 0 -2px 0 rgba(60, 40, 10, .45), 0 2px 4px rgba(0, 0, 0, .4)
+}
+/* Aqua : comme le sélecteur segmenté — verre clair, page courante en gel ; rail de métal brossé, sans vis */
+html[data-design="aqua"] {
+  --sk-tab-bg: var(--sk-seg-bg);
+  --sk-tab-ink: var(--sk-seg-ink);
+  --sk-tab-text-shadow: var(--sk-seg-shadow);
+  --sk-tab-shadow: inset 0 1px 0 #fff, 0 0 0 1px #9aa6b2, 0 1px 3px rgba(0, 0, 0, .18);
+  --sk-tab-on-bg: var(--sk-seg-on-bg);
+  --sk-tab-on-ink: var(--sk-seg-on-ink);
+  --sk-tab-on-text-shadow: var(--sk-seg-on-text-shadow);
+  --sk-tab-font: 600 .9rem/1.2 system-ui, "Segoe UI", Arial, sans-serif;
+  --sk-tab-off-filter: none;
+  --sk-tab-glow: color-mix(in srgb, var(--aq-gel) 45%, transparent);
+  --sk-tab-padding: 6px 18px;
+  --sk-tab-screw: none;
+  --sk-tabs-rail: linear-gradient(#e9edf2, #c9d1da);
+  --sk-tabs-rail-shadow: inset 0 1px 0 #fff, 0 1px 3px rgba(0, 0, 0, .25)
+}
+html[data-skeuo] .repo-tabs:not(#imp) {
+  position: relative;
+  gap: 8px;
+  width: fit-content;
+  max-width: calc(100% - 32px);
+  margin: 8px 16px 0;
+  padding: 8px 30px;
+  border: 0;
+  border-radius: 0;
+  background: var(--sk-tabs-rail);
+  box-shadow: var(--sk-tabs-rail-shadow);
+  border-style: solid;
+  border-width: var(--sk-tabs-rail-slice-w, 0);
+  border-image: var(--sk-tabs-rail-img, none) var(--sk-tabs-rail-slice, 0) fill / var(--sk-tabs-rail-slice-w, 0) stretch
+}
+/* vis du rail, aux deux bouts */
+html[data-skeuo] .repo-tabs::before,
+html[data-skeuo] .repo-tabs::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin-top: -6px;
+  background: var(--sk-screw, none) center/12px no-repeat
+}
+html[data-skeuo] .repo-tabs::before {
+  left: 9px
+}
+html[data-skeuo] .repo-tabs::after {
+  right: 9px
+}
+html[data-skeuo] .repo-tab:not(#imp) {
+  position: relative;
+  margin: 0;
+  padding: var(--sk-tab-padding);
+  border: 0;
+  border-radius: 4px;
+  font: var(--sk-tab-font);
+  color: var(--sk-tab-ink);
+  text-shadow: var(--sk-tab-text-shadow);
+  background: var(--sk-tab-bg);
+  box-shadow: var(--sk-tab-shadow);
+  opacity: 1;
+  filter: var(--sk-tab-off-filter, brightness(.8) saturate(.85));
+  border-style: solid;
+  border-width: var(--sk-tab-slice-w, 0);
+  border-image: var(--sk-tab-img, none) var(--sk-tab-slice, 0) fill / var(--sk-tab-slice-w, 0) stretch;
+  transition: filter .12s
+}
+html[data-skeuo] .repo-tab:not([aria-current="page"]):is(:hover, :focus-visible):not(#imp) {
+  filter: brightness(.95)
+}
+/* page courante : poussoir enfoncé et éclairé */
+html[data-skeuo] .repo-tab[aria-current="page"]:not(#imp) {
+  margin: 0;
+  background: var(--sk-tab-on-bg, var(--sk-tab-bg));
+  color: var(--sk-tab-on-ink, var(--sk-tab-ink));
+  text-shadow: var(--sk-tab-on-text-shadow, var(--sk-tab-text-shadow));
+  filter: brightness(1.1);
+  box-shadow: var(--sk-tab-shadow), 0 0 12px var(--sk-tab-glow);
+  border-image: var(--sk-tab-img-on, var(--sk-tab-img, none)) var(--sk-tab-slice, 0) fill / var(--sk-tab-slice-w, 0) stretch;
+  transform: translateY(1px)
+}
+/* vis de la plaque, aux deux bouts (Cabinet, Durci) */
+html[data-skeuo] .repo-tab::before,
+html[data-skeuo] .repo-tab::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: var(--sk-tab-screw-size);
+  height: var(--sk-tab-screw-size);
+  margin-top: calc(var(--sk-tab-screw-size) / -2);
+  background: var(--sk-tab-screw) center/var(--sk-tab-screw-size) no-repeat
+}
+html[data-skeuo] .repo-tab::before {
+  left: 9px
+}
+html[data-skeuo] .repo-tab::after {
+  right: 9px
+}
+/* voyant de la page courante (Carnet de vol : --sk-tab-led) à la place de la vis de gauche */
+html[data-design="flightlog"] .repo-tab[aria-current="page"]::before {
+  width: 8px;
+  height: 8px;
+  left: 8px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff2c8, var(--sk-tab-led) 55%, #a05a00);
+  box-shadow: 0 0 6px var(--sk-tab-led), 0 0 12px color-mix(in srgb, var(--sk-tab-led) 60%, transparent)
+}
+@media print {
+  html[data-skeuo] .repo-tabs {
+    display: none
+  }
+}
