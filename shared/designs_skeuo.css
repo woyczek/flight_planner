@@ -1510,30 +1510,6 @@ html[data-design="field"] {
 html[data-design-base="cabinet"] {
   --cab-screw: url("deco/cabinet/tack.webp?v=d13b9116")
 }
-/* poignées de Durci : celles de la planche, au premier plan (devant blocs et en-tête collant, 1000 ; sous les menus
-   et la barre latérale, 1100), aux deux tiers sur la page */
-@media (min-width:1100px) {
-  html[data-design="field"][data-decor="full"] body::before,
-  html[data-design="field"][data-decor="full"] body::after {
-    content: "";
-    position: absolute;
-    top: 140px;
-    width: 42px;
-    height: 180px;
-    background: url("deco/field/handle-v.webp?v=6f1ff9fd") center/contain no-repeat;
-    z-index: 1050
-  }
-  html[data-design="field"][data-decor="full"] body::before {
-    left: -12px
-  }
-  html[data-design="field"][data-decor="full"] body::after {
-    right: -12px
-  }
-}
-/* (poignées débordant de la marge droite : pas de défilement horizontal de la page) */
-html[data-design="field"][data-decor="full"] {
-  overflow-x: clip
-}
 /* ================================================================================================ DÉCORS DISSÉMINÉS (design_deco.js)
    Entre les blocs (sans décaler la mise en page : hauteur nulle, image centrée sur l'intervalle) et dans les marges
    de la page (grands écrans). Invisibles hors Cabinet / Durci en décor complet. */
