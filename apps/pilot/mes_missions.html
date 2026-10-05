@@ -77,8 +77,8 @@
     margin: 6px 0 10px;
     font-weight: 600
   }
-  /* deux colonnes : missions et disponibilités à gauche, dossier et le reste à droite ; dossier ouvert : colonne de
-     droite élargie (1/3 – 2/3), ou dossier en pleine largeur au-dessus (pm-wide) ; écran étroit : une colonne, dossier
+  /* deux colonnes : missions à gauche (liste, puis dossier), disponibilités et pilote à droite ; dossier ouvert : colonne
+     de gauche élargie (2/3 – 1/3), ou dossier en pleine largeur au-dessus (pm-wide) ; écran étroit : une colonne, dossier
      juste après la liste. Le livre suit la largeur de son bloc (requêtes de conteneur « pmdossier », pas d'écran). */
   /* colonnes sur toute la largeur de la fenêtre : pas de plafond de page de reporting (main.mc-reporting : 1280 px) */
   main#pilotMissions {
@@ -94,7 +94,7 @@
     min-width: 0
   }
   #pilotMissions.pm-dossier:not(.pm-wide) .pm-cols {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr)
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr)
   }
   #pmMission {
     container: pmdossier / inline-size
@@ -159,12 +159,6 @@
     background: none;
     filter: none;
     pointer-events: none
-  }
-  #pilotMissions.pm-dossier:not(.pm-wide) .pm-col-r>.repo-block:not(#pmMission):not(.pm-unfold)>:not(.repo-block-heading) {
-    display: none
-  }
-  #pilotMissions.pm-dossier:not(.pm-wide) .pm-col-r>.repo-block:not(#pmMission) h2 {
-    cursor: pointer
   }
   .pm-wide-btn {
     margin-left: auto;
@@ -1660,16 +1654,16 @@
   <div id="pmList" class="pm-list"><p class="pm-empty">Chargement…</p></div>
   <p class="small"><label><input type="checkbox" id="pmAll"> afficher aussi les missions passées</label></p>
 </section>
+<section data-block-id="mission" data-icon="target" data-subtitle="Mission affectée, en lecture seule : ce qui vous est demandé, la route, les cartes fournies." id="pmMission" hidden><h2>Mission</h2>
+  <div id="pmDetail"></div>
+</section>
+</div>
+<div class="pm-col pm-col-r">
 <section data-block-id="availability" data-icon="clock" data-subtitle="Semaine affichée, heures UTC : groupe, catégorie, jours et horaires (facultatifs), puis « Ajouter » ; clic sur une plage pour la modifier ou la retirer. Le Centre s’en sert pour affecter les missions."><h2>Mes disponibilités</h2>
   <div class="pm-week" data-weekbar></div>
   <div id="pmDispos"></div>
   <details id="pmGridOld" class="pm-legacy" hidden><summary>Ancienne grille horaire (lecture seule)</summary><div id="pmGrid"></div></details>
   <p class="small"><a href="disponibilites.html">Ouvrir la saisie des disponibilités seule</a></p>
-</section>
-</div>
-<div class="pm-col pm-col-r">
-<section data-block-id="mission" data-icon="target" data-subtitle="Mission affectée, en lecture seule : ce qui vous est demandé, la route, les cartes fournies." id="pmMission" hidden><h2>Mission</h2>
-  <div id="pmDetail"></div>
 </section>
 <section data-block-id="who" data-icon="users" data-subtitle="Trigramme DEFA du profil pilote (menu ☰) : les missions affectées à ce trigramme s'affichent ici."><h2>Pilote</h2>
   <div class="pm-who"><label>Trigramme <input id="pmTri" maxlength="4" autocomplete="off"></label><span id="pmWhoNote" class="small"></span></div>
@@ -1870,7 +1864,7 @@
   const view = {
     all: false,
     brush: 'O',
-    wide: false // dossier de mission en pleine largeur (sinon dans la colonne de droite)
+    wide: false // dossier de mission en pleine largeur (sinon dans la colonne de gauche, sous la liste)
   };
   try {
     Object.assign(view, JSON.parse(localStorage.getItem(VIEW_KEY) || '{}') || {});
@@ -1882,7 +1876,7 @@
     } catch {
       /* stockage refusé */ }
   };
-  // ---- deux colonnes : dossier ouvert → colonne de droite élargie, ou pleine largeur au-dessus des colonnes (view.wide)
+  // ---- deux colonnes : dossier ouvert → colonne de gauche élargie, ou pleine largeur au-dessus des colonnes (view.wide)
   const NARROW = matchMedia('(max-width: 1100px)'); // une seule colonne : le choix de largeur ne s'applique pas
   function applyWide() {
     const host = $('pilotMissions'),
@@ -1890,7 +1884,7 @@
       wide = !!view.wide && !NARROW.matches;
     host.classList.toggle('pm-wide', wide);
     if (wide) host.insertBefore(box, host.querySelector('.pm-cols'));
-    else host.querySelector('.pm-col-r').prepend(box);
+    else host.querySelector('[data-block-id="list"]').after(box); // sous la liste des missions
     let b = $('pmWide');
     if (!b) {
       b = document.createElement('button');
@@ -1909,16 +1903,9 @@
       head ? head.insertBefore(b, head.querySelector('.repo-block-tools')) : box.querySelector('h2')?.after(b);
     }
     b.textContent = wide ? tv(['⇥ Dans la colonne', '⇥ In the column', '⇥ In der Spalte', '⇥ En la columna']) : tv(['⤢ Pleine largeur', '⤢ Full width', '⤢ Volle Breite', '⤢ Ancho completo']);
-    b.title = wide ? tv(['Dossier dans la colonne de droite, la liste des missions à côté', 'Folder in the right column, mission list alongside', 'Mappe in der rechten Spalte, Missionsliste daneben', 'Carpeta en la columna derecha, lista de misiones al lado']) : tv(['Dossier sur toute la largeur, au-dessus des colonnes (double page plus grande)', 'Folder across the whole width, above the columns (larger double page)', 'Mappe über die ganze Breite, über den Spalten (größere Doppelseite)', 'Carpeta a todo el ancho, encima de las columnas (doble página más grande)']);
+    b.title = wide ? tv(['Dossier dans la colonne des missions, sous la liste ; disponibilités à côté', 'Folder in the missions column, under the list; availability alongside', 'Mappe in der Missionsspalte, unter der Liste; Verfügbarkeit daneben', 'Carpeta en la columna de misiones, bajo la lista; disponibilidad al lado']) : tv(['Dossier sur toute la largeur, au-dessus des colonnes (double page plus grande)', 'Folder across the whole width, above the columns (larger double page)', 'Mappe über die ganze Breite, über den Spalten (größere Doppelseite)', 'Carpeta a todo el ancho, encima de las columnas (doble página más grande)']);
   }
   NARROW.addEventListener('change', applyWide);
-  // dossier ouvert dans la colonne : profil, appareils et simulateurs repliés sous lui ; clic sur leur titre pour déplier
-  $('pilotMissions').addEventListener('click', e => {
-    const h = e.target.closest('h2'),
-      sec = h?.closest('.pm-col-r > .repo-block');
-    if (!sec || sec.id === 'pmMission' || !$('pilotMissions').matches('.pm-dossier:not(.pm-wide)')) return;
-    sec.classList.toggle('pm-unfold');
-  });
   $('pmAll').checked = !!view.all;
   $('pmAll').addEventListener('change', () => {
     view.all = $('pmAll').checked;
@@ -2732,7 +2719,7 @@
     const hadBook = !$('pmMission').hidden && !!$('pmDetail').querySelector('.pm-content, .pm-cover');
     const reveal = () => {
       $('pmMission').hidden = false;
-      $('pilotMissions').classList.add('pm-dossier'); // colonne de droite élargie (ou dossier en pleine largeur)
+      $('pilotMissions').classList.add('pm-dossier'); // colonne des missions élargie (ou dossier en pleine largeur)
       applyWide();
     };
     let waitTimer = 0;
