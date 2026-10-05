@@ -176,7 +176,12 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             self.send_header('Clear-Site-Data', '"cache"')
             Setup.purge = False
         self.send_header('X-Content-Type-Options', 'nosniff')
-        self.send_header('Cache-Control', 'no-cache')  # revalidé à chaque fois : jamais de script périmé (ni de type) en cache
+        # fichier versionné par son empreinte (?v=…, tools/bump_versions.py : elle change avec le contenu) : gardé tel
+        # quel, sans revalidation — une quarantaine d'allers-retours de moins par page, qui retardaient la fin de
+        # l'analyse et laissaient voir la page à moitié construite ; le reste (pages, données) : revalidé à chaque fois,
+        # jamais de script périmé (ni de type) en cache
+        versioned = re.search(r'[?&]v=[0-9a-f]{6,}', self.path or '')
+        self.send_header('Cache-Control', 'public, max-age=31536000, immutable' if versioned else 'no-cache')
         super().end_headers()
 
     def guess_type(self, path):

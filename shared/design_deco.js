@@ -547,10 +547,16 @@
   // blocs et pied de page posés au chargement complet (app_framework.js) ; les pages rendues plus tard (CR) se
   // stabilisent ensuite : nouvelle passe après une seconde
   if (document.readyState === 'complete') render();
-  else window.addEventListener('load', () => {
-    render();
-    setTimeout(render, 1200);
-  });
+  else {
+    // blocs posés par app_framework.js dès la fin de l'analyse : décor rendu aussitôt (premier affichage retenu
+    // jusque-là, config/repository_tree) au lieu d'attendre la fin du chargement, qui le faisait apparaître après coup
+    if (document.readyState === 'interactive') setTimeout(render);
+    else document.addEventListener('DOMContentLoaded', () => setTimeout(render));
+    window.addEventListener('load', () => {
+      render();
+      setTimeout(render, 1200);
+    });
+  }
   window.RepositoryDeco = {
     render
   };

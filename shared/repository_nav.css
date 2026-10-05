@@ -781,3 +781,15 @@ html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-ic
     --bad: #e05a63
   }
 }
+/* Changement de page dans la suite (onglets, barre latérale) : la page précédente reste à l'écran jusqu'au premier
+   affichage de la suivante (retenu jusqu'à la fin de sa construction : config/repository_tree), puis fondu court ;
+   rien si moins d'animations est demandé. */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: .16s
+  }
+}
