@@ -118,6 +118,35 @@ window.REPOSITORY_TREE={
     "apps/cr/COMBAT":{theme:"combat",favicon:"assets/favicon-combat.svg"},
     "apps/landing":{theme:"landing",favicon:"assets/favicon-landing.svg"}
   },
+  // Barre latérale (shared/repository_nav.js) : entrées dans l'ordre, pilote d'abord puis Centre (docs/DISPOS_ET_REORGANISATION.md
+  // § 3). Entrée : icon (registre d'icônes), path (page déclarée ci-dessous), label et title [fr, en, de, es], match
+  // (texte ou liste : entrée active aussi sur les pages dont le chemin le contient), menu:true (ouvre le menu ☰).
+  // Séparateur : {sep:true} ; title : séparateur titré (masqué, comme le Centre, si toutes ses entrées sont du Centre) ;
+  // bottom : la suite est rangée en bas de la colonne.
+  sidebar:[
+    {icon:"send",path:"apps/pilot/mes_missions.html",label:["Mes missions","My missions","Meine Missionen","Mis misiones"],title:["Missions qui vous sont affectées par le Centre, vos disponibilités et vos appareils","Missions assigned to you by the Centre, your availability and aircraft","Vom Zentrum zugewiesene Missionen, Verfügbarkeit und Luftfahrzeuge","Misiones asignadas por el Centro, disponibilidad y aeronaves"]},
+    {icon:"clipboard",path:"apps/cr/mission_cr.html",match:"apps/cr/",label:["CR DEFA","DEFA report","DEFA-Bericht","Informe DEFA"]},
+    {icon:"map",path:"apps/planner/map_planner.html",label:["Cartes de vol","Flight maps","Flugkarten","Mapas de vuelo"],title:["Cartes de vol : route, topo, approche, rendez-vous, destination","Flight maps: route, topo, approach, rendezvous, destination","Flugkarten: Route, Topo, Anflug, Treffpunkt, Ziel","Mapas de vuelo: ruta, topo, aproximación, encuentro, destino"]},
+    {icon:"fuel",path:"apps/planner/flight_performance_planner.html",label:["Carburant","Fuel","Kraftstoff","Combustible"]},
+    {icon:"plane",path:"apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html",label:["Atterrissages","Landings","Landungen","Aterrizajes"]},
+    {icon:"chart",path:"apps/cr/mission_operations_reporting.html",match:"_reporting.html",label:["Reporting","Reporting","Berichte","Informes"]},
+    {sep:true,title:["Centre","Centre","Zentrum","Centro"]},
+    {icon:"target",path:"apps/cpco/mission_editor.html",match:["apps/cpco/mission_editor.html","apps/cpco/map_parser.html"],label:["Missions","Missions","Missionen","Misiones"],title:["Générateur de mission et studio cartographique du Centre","Centre mission generator and map studio","Missionsgenerator und Kartenstudio des Zentrums","Generador de misiones y estudio cartográfico del Centro"]},
+    {icon:"list",path:"apps/cpco/mission_registry.html",label:["Registre","Registry","Register","Registro"],title:["Registre des missions générées","Generated mission registry","Register der erzeugten Missionen","Registro de misiones generadas"]},
+    {icon:"calendar",path:"apps/cpco/odv_planning.html",label:["ODV","ODV","ODV","ODV"],title:["Planning ODV (Centre) : créneaux communs, missions probables","ODV planning (Centre): common slots, likely missions","ODV-Planung (Zentrum): gemeinsame Zeitfenster, wahrscheinliche Missionen","Planificación ODV (Centro): franjas comunes, misiones probables"]},
+    {sep:true,bottom:true},
+    {icon:"palette",path:"apps/settings/apparence.html",label:["Apparence","Appearance","Darstellung","Apariencia"]},
+    {icon:"settings",path:"apps/settings/parametrage.html",match:"apps/settings/",label:["Paramètres","Settings","Einstellungen","Ajustes"],title:["Paramètres : mon profil, Centre, installation, maintenance","Settings: my profile, Centre, installation, maintenance","Einstellungen: mein Profil, Zentrum, Installation, Wartung","Ajustes: mi perfil, Centro, instalación, mantenimiento"]},
+    {icon:"help",menu:true,label:["Menu","Menu","Menü","Menú"],title:["Toutes les pages, profil, données locales, design","All pages, profile, local data, design","Alle Seiten, Profil, lokale Daten, Design","Todas las páginas, perfil, datos locales, diseño"]}
+  ],
+  // Onglets en tête de page (shared/repository_nav.js) : pages sœurs d'un même bouton de la barre latérale. Clic : événement
+  // « repository-tab-leave » (detail : { from, to }) pour que la page transmette son travail (mission partagée), puis
+  // ouverture de l'onglet.
+  tabs:[
+    {id:"missions",pages:[
+      {path:"apps/cpco/mission_editor.html",label:["Générateur de mission","Mission generator","Missionsgenerator","Generador de misiones"]},
+      {path:"apps/cpco/map_parser.html",label:["Studio cartographique","Map studio","Kartenstudio","Estudio cartográfico"]}]}
+  ],
   pages:[
     {path:"apps/cr/FIRE/fire_cr.html",menu:false,label:"FIRE / GAAR — Compte rendu de mission"},
     {path:"apps/cr/FIRE/fire_reporting.html",menu:false,label:"FIRE / GAAR — Reporting missions"},

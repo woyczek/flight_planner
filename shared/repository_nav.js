@@ -803,53 +803,49 @@
   // side_nav.js dans les emplacements réservés (span[data-sidenav-icon], taille fixe : pas de décalage).
   // Entrées : REPOSITORY_TREE.sidebar si présent, sinon la liste ci-dessous ; seules les pages déclarées sont retenues.
   {
+    // liste de secours (repository_tree sans clé sidebar) : même ordre, pilote d'abord, puis le Centre
     const items = cfg.sidebar || [{
-        icon: "target",
-        path: "apps/cpco/mission_editor.html",
-        label: ["Missions", "Missions", "Missionen", "Misiones"]
-      }, {
-        icon: "list",
-        path: "apps/cpco/mission_registry.html",
-        label: ["Registre", "Registry", "Register", "Registro"],
-        title: ["Registre des missions générées", "Generated mission registry", "Register der erzeugten Missionen", "Registro de misiones generadas"]
-      }, {
-        icon: "calendar",
-        path: "apps/cpco/odv_planning.html",
-        label: ["ODV", "ODV", "ODV", "ODV"],
-        title: ["Planning ODV (Centre) : créneaux communs, missions probables", "ODV planning (Centre)", "ODV-Planung (Zentrum)", "Planificación ODV (Centro)"]
-      }, {
-        icon: "map",
-        path: "apps/cpco/map_parser.html",
-        label: ["Studio", "Studio", "Studio", "Estudio"],
-        title: ["Studio cartographique du Centre", "Centre map studio", "Kartenstudio des Zentrums", "Estudio cartográfico del Centro"]
+        icon: "send",
+        path: "apps/pilot/mes_missions.html",
+        label: ["Mes missions", "My missions", "Meine Missionen", "Mis misiones"]
       }, {
         icon: "clipboard",
         path: "apps/cr/mission_cr.html",
         match: "apps/cr/",
         label: ["CR DEFA", "DEFA report", "DEFA-Bericht", "Informe DEFA"]
       }, {
-        icon: "chart",
-        path: "apps/cr/mission_operations_reporting.html",
-        match: "_reporting.html",
-        label: ["Reporting", "Reporting", "Berichte", "Informes"]
+        icon: "map",
+        path: "apps/planner/map_planner.html",
+        label: ["Cartes de vol", "Flight maps", "Flugkarten", "Mapas de vuelo"]
       }, {
         icon: "fuel",
         path: "apps/planner/flight_performance_planner.html",
         label: ["Carburant", "Fuel", "Kraftstoff", "Combustible"]
       }, {
-        icon: "map",
-        path: "apps/planner/map_planner.html",
-        label: ["Cartes", "Maps", "Karten", "Mapas"],
-        title: ["Cartes de vol : route, topo, approche, rendez-vous, destination", "Flight maps: route, topo, approach, rendezvous, destination", "Flugkarten", "Mapas de vuelo"]
-      }, {
-        icon: "send",
-        path: "apps/pilot/mes_missions.html",
-        label: ["Mes missions", "My missions", "Meine Missionen", "Mis misiones"],
-        title: ["Missions qui vous sont affectées par le Centre, vos disponibilités et vos appareils", "Missions assigned to you by the Centre, your availability and aircraft", "Vom Zentrum zugewiesene Missionen, Verfügbarkeit und Luftfahrzeuge", "Misiones asignadas por el Centro, disponibilidad y aeronaves"]
-      }, {
         icon: "plane",
         path: "apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html",
         label: ["Atterrissages", "Landings", "Landungen", "Aterrizajes"]
+      }, {
+        icon: "chart",
+        path: "apps/cr/mission_operations_reporting.html",
+        match: "_reporting.html",
+        label: ["Reporting", "Reporting", "Berichte", "Informes"]
+      }, {
+        sep: true,
+        title: ["Centre", "Centre", "Zentrum", "Centro"]
+      }, {
+        icon: "target",
+        path: "apps/cpco/mission_editor.html",
+        match: ["apps/cpco/mission_editor.html", "apps/cpco/map_parser.html"],
+        label: ["Missions", "Missions", "Missionen", "Misiones"]
+      }, {
+        icon: "list",
+        path: "apps/cpco/mission_registry.html",
+        label: ["Registre", "Registry", "Register", "Registro"]
+      }, {
+        icon: "calendar",
+        path: "apps/cpco/odv_planning.html",
+        label: ["ODV", "ODV", "ODV", "ODV"]
       }, {
         sep: true,
         bottom: true
@@ -861,12 +857,12 @@
       }, {
         icon: "settings",
         path: "apps/settings/parametrage.html",
+        match: "apps/settings/",
         label: ["Paramètres", "Settings", "Einstellungen", "Ajustes"]
       }, {
         icon: "help",
         menu: true,
-        label: ["Menu", "Menu", "Menü", "Menú"],
-        title: ["Toutes les pages, profil, données locales, design", "All pages, profile, local data, design", "Alle Seiten, Profil, lokale Daten, Design", "Todas las páginas, perfil, datos locales, diseño"]
+        label: ["Menu", "Menu", "Menü", "Menú"]
       }
     ];
     // libellés du menu : aussi pour les titres de page qui les reprennent (« Paramètres ») — couche de traduction
@@ -883,7 +879,7 @@
       current = page?.path || "";
     // entrée active : la page elle-même, sinon la première entrée dont « match » est contenu dans le chemin courant
     let active = items.findIndex(x => x.path === current);
-    if (active < 0) active = items.findIndex(x => x.match && current.includes(x.match));
+    if (active < 0) active = items.findIndex(x => x.match && [].concat(x.match).some(m => current.includes(m)));
     const side = document.createElement("nav");
     side.className = "repo-sidenav no-print";
     side.setAttribute("aria-label", "Applications");
@@ -906,7 +902,15 @@
     items.forEach((it, i) => {
       const li = document.createElement("li");
       if (it.sep) {
-        li.className = "repo-sidenav-sep" + (it.bottom ? " repo-sidenav-bottom" : "");
+        li.className = "repo-sidenav-sep" + (it.bottom ? " repo-sidenav-bottom" : "") + (it.title ? " repo-sidenav-titled" : "");
+        if (it.title) {
+          // séparateur titré (« Centre ») : masqué avec le Centre si toutes ses entrées en sont
+          li._it = it;
+          li.innerHTML = '<span class="repo-sidenav-sep-title"></span>';
+          const next = items.slice(i + 1),
+            group = next.slice(0, (next.findIndex(x => x.sep) + 1 || next.length + 1) - 1).filter(x => x.path);
+          if (group.length && group.every(x => isCpco(x.path))) li.classList.add("cpco-only");
+        }
         ul.append(li);
         return;
       }
@@ -937,6 +941,9 @@
         a.querySelector(".repo-sidenav-label").textContent = a._it.label[i] || a._it.label[0];
         a.title = a._it.title?.[i] || a._it.title?.[0] || a._it.label[i] || a._it.label[0];
       });
+      side.querySelectorAll(".repo-sidenav-titled").forEach(li => {
+        li.querySelector(".repo-sidenav-sep-title").textContent = li._it.title[i] || li._it.title[0];
+      });
     };
     label();
     window.addEventListener("repository-language-change", label);
@@ -953,6 +960,45 @@
       element: side,
       set: on => window.RepositoryNav.appearance.setSidenav(on)
     };
+  }
+  // ---- Onglets en tête de page (REPOSITORY_TREE.tabs) : pages sœurs d'un même bouton de la barre latérale (générateur
+  // et studio sous « Missions », les quatre pages de Paramètres). Avant de partir, événement « repository-tab-leave »
+  // (detail : { from, to }) : la page transmet son travail (mission partagée) ; un écouteur peut annuler (preventDefault).
+  {
+    const current = page?.path || rel,
+      group = (cfg.tabs || []).find(g => g.pages.some(p => p.path === current));
+    if (group) {
+      const bar = document.createElement("nav");
+      bar.className = "repo-tabs no-print";
+      bar.dataset.tabs = group.id;
+      bar.setAttribute("data-no-i18n", "");
+      bar.setAttribute("aria-label", group.id);
+      for (const p of group.pages) {
+        const a = document.createElement("a");
+        a.className = "repo-tab" + (isCpco(p.path) && !isCpco(current) ? " cpco-only" : "");
+        a.href = new URL(p.path, root).href;
+        a._label = p.label;
+        if (p.path === current) a.setAttribute("aria-current", "page");
+        else a.addEventListener("click", e => {
+          if (e.ctrlKey || e.metaKey || e.shiftKey || e.button) return; // nouvel onglet du navigateur : rien à transmettre
+          const ev = new CustomEvent("repository-tab-leave", {
+            cancelable: true,
+            detail: {
+              from: current,
+              to: p.path
+            }
+          });
+          if (!window.dispatchEvent(ev)) e.preventDefault();
+        });
+        bar.append(a);
+      }
+      header.after(bar);
+      const tabLabels = () => bar.querySelectorAll(".repo-tab").forEach(a => {
+        a.textContent = a._label[Math.max(0, supported.indexOf(language))] || a._label[0];
+      });
+      tabLabels();
+      window.addEventListener("repository-language-change", tabLabels);
+    }
   } {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");

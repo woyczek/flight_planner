@@ -102,7 +102,6 @@
     ["Données complémentaires", "Additional data", "Ergänzende Daten", "Datos complementarios"],
     ["Villes, grille MORA, relief et autres couches.", "Cities, MORA grid, terrain and other layers.", "Städte, MORA-Raster, Gelände und weitere Ebenen.", "Ciudades, cuadrícula MORA, relieve y otras capas."],
     ["Générateur complet de mission", "Complete mission generator", "Vollständiger Missionsgenerator", "Generador completo de misiones"],
-    ["Transmettre au studio cartographique →", "Send to the map studio →", "An das Kartenstudio übergeben →", "Enviar al estudio cartográfico →"],
     ["Créer le CR DEFA →", "Create the DEFA report →", "DEFA-Bericht erstellen →", "Crear el informe DEFA →"],
     ["1. Importer une mission", "1. Import a mission", "1. Mission importieren", "1. Importar una misión"],
     ["YAML et/ou Markdown", "YAML and/or Markdown", "YAML und/oder Markdown", "YAML y/o Markdown"],
@@ -146,7 +145,6 @@
     ["Changelog / notes de version", "Changelog / release notes", "Änderungsprotokoll / Versionshinweise", "Registro de cambios / notas de versión"],
     // ---- studio cartographique : en-tête, mission
     ["Studio cartographique aéronautique SIA", "SIA aeronautical map studio", "SIA-Luftfahrtkartenstudio", "Estudio cartográfico aeronáutico SIA"],
-    ["← Retour au générateur de mission", "← Back to the mission generator", "← Zurück zum Missionsgenerator", "← Volver al generador de misiones"],
     ["1. Mission", "1. Mission", "1. Mission", "1. Misión"],
     ["Ouvrir une mission Markdown ou YAML", "Open a Markdown or YAML mission", "Markdown- oder YAML-Mission öffnen", "Abrir una misión Markdown o YAML"],
     ["ou coller son contenu…", "or paste its content…", "oder Inhalt einfügen…", "o pegar su contenido…"],
