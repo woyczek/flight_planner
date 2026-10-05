@@ -1667,7 +1667,8 @@ html[data-skeuo] :is(dialog.repo-ap-dialog.ad-dialog, dialog.repo-ask) {
    premier plan, visibles et cliquables, même dans les blocs étroits (reportings). */
 html[data-skeuo] .repo-block-titles {
   flex: 1 1 0;
-  min-width: 0
+  min-width: 0;
+  container-type: inline-size
 }
 html[data-skeuo] :is(.repo-block-titles, .repo-block-heading)>h2 {
   max-width: 100%;
@@ -1675,6 +1676,15 @@ html[data-skeuo] :is(.repo-block-titles, .repo-block-heading)>h2 {
   overflow-wrap: normal;
   word-break: normal;
   hyphens: manual
+}
+/* colonne étroite (« Mes disponibilités » à côté de l'icône et des outils) : plaque plus compacte ; un mot encore plus
+   large que la colonne est coupé plutôt que de dépasser de la plaque (dernier recours, les mots courts restent entiers) */
+@container (max-width: 240px) {
+  html[data-skeuo] .repo-block-titles>h2:not(#imp) {
+    font-size: .8rem;
+    letter-spacing: .02em;
+    overflow-wrap: anywhere
+  }
 }
 /* blocs étroits (grilles du reporting…) : la plaque reste sur la première ligne, à côté de l'icône (outils au coin du
    bloc, hors du flux) ; elle passe à la ligne entre les mots, jamais au milieu d'un mot */
