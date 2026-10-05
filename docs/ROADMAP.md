@@ -89,15 +89,19 @@ lui parle directement : plus besoin du lanceur pour partager, ni de git sur chaq
 - Usurpation d'un utilisateur par un admin tracée dans le journal du serveur.
 - Retour des données sur la branche de référence (`main`) et sort du jeu de test (voir la dette technique).
 
-## Étape 4 — Webservices du site DEFA (quand le site sera en ligne)
+## Étape 4 — Le site de la DEFA (en ligne depuis le 5 octobre 2026)
 
-**But** : ne plus importer à la main ce que le site DEFA connaît déjà.
+Le site n'a **pas d'API** : on récupère ses données par **copier-coller** de ses pages (`flotte.defa-virtual.fr`).
 
-- **Récupérer** la flotte, le planning et les missions depuis le site (remplace les imports manuels : page Flotte,
-  journal des vols, classeur ODV).
-- **Envoyer** au site les comptes rendus et les affectations.
-- Identifiants : ceux saisis au premier lancement (gardés dans le navigateur, jamais écrits dans un fichier ni une
-  sauvegarde), inutilisés jusque-là.
+| Page du site | Dans la suite | État |
+|---|---|---|
+| Log des vols | Paramètres › Maintenance › Base DEFA › Journal des vols : « Charger / mettre à jour le journal (page copiée ou enregistrée) », puis référence DEFA (pilotes, appareils) mise à jour depuis le journal | fait |
+| Flotte virtuelle | Paramètres › Maintenance › Flotte DEFA : « Coller la page Flotte du site… » (mêmes règles que `AircraftDB/update_fleet.py`, sans script), puis « Enregistrer dans le dépôt » | fait (5 octobre) |
+| Maintenance, Statistiques | — | rien à reprendre pour l'instant |
+| Enregistrer mon vol (connexion requise) | — | l'envoi des CR au site reste manuel : pas d'API, et pas question d'automatiser un formulaire avec les identifiants d'un pilote |
+
+Si le site ouvre un jour une API : reprendre ce tableau (lecture automatique, puis envoi des CR et des affectations
+avec les identifiants saisis au premier lancement, jamais écrits dans un fichier).
 
 ## En continu
 

@@ -245,6 +245,167 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
   /** Organismes connus (table des indicatifs + SAMU), pour les listes de choix. */
   // (les organismes sont dans work.callsigns.data.operators et dans le tableau « Organismes » en cours d'édition — l'ancienne
   // lecture de work.callsigns.operators, inexistant, ne proposait que SAMU)
+  // ---- page « Flotte virtuelle » du site de la DEFA, copiée-collée (ou enregistrée) : mêmes règles que
+  // AircraftDB/update_fleet.py — une section par opérateur, une ligne par appareil (type, immatriculation, code, numéro,
+  // indicatif, base, emplacement, heures de vol, opérationnel)
+  const FLEET_OPERATORS = {
+    "Armee de l'Air et de l'Espace": "Armée de l'Air et de l'Espace",
+    'Sécurite Civile': 'Sécurité civile',
+    'Marine Nationale': 'Marine nationale',
+    'Gendarmerie Nationale': 'Gendarmerie nationale'
+  };
+  const FLEET_VARIANTS = {
+    'A332 MRTT': 'A330 MRTT Phénix',
+    'A332 PAX': 'A330-200',
+    'A332 VIP': 'A330-200 VIP',
+    'MIR2 5': 'Mirage 2000-5',
+    'MIR2 B': 'Mirage 2000B',
+    'MIR2 D': 'Mirage 2000D',
+    'RFAL B': 'Rafale B',
+    'RFAL C': 'Rafale C',
+    'RFAL M': 'Rafale M',
+    'H145 D3': 'H145 D3'
+  };
+  // en-têtes de colonnes et menu du site : jamais pris pour un nom d'opérateur (copie en texte)
+  const FLEET_NOISE = /^(appareil|immatriculation|code|numéro|callsign|base|emplacement|heures de vol|op[ée]rationn?el|▲\s*▼|accueil|enregistrer mon vol|log des vols|flotte virtuelle|maintenance|statistiques|connexion)$/i;
+  /** Appareils d'une page Flotte collée : HTML (tableaux, titres d'opérateur) ou texte (colonnes séparées par des
+   *  tabulations, titre d'opérateur seul sur sa ligne). */
+  function parseFleetPage(text) {
+    const out = [],
+      blank = v => v === '-' ? '' : v,
+      reg = v => {
+        v = v.trim().toUpperCase();
+        return /^[FD][A-Z]{4}$/.test(v) ? `${v[0]}-${v.slice(1)}` : v;
+      };
+    const row = (operator, cells) => {
+      if (cells.length < 9) return;
+      const [name, registration, code, number, callsign, base, , , operational] = cells.map(c => String(c).replace(/\s+/g, ' ').trim());
+      if (!name || !registration || FLEET_NOISE.test(name)) return;
+      out.push({
+        operator: FLEET_OPERATORS[operator] || operator,
+        type: name.split(' ')[0].toUpperCase(),
+        variant: FLEET_VARIANTS[name] || '',
+        registration: reg(registration),
+        tacticalNumber: blank(code),
+        number: blank(number),
+        callsigns: blank(callsign).toUpperCase().split('/').filter(c => c && !c.includes(' ')),
+        base: blank(base).toUpperCase(),
+        operational: /^oui/i.test(operational)
+      });
+    };
+    let operator = '';
+    if (/<t[dr][\s>]/i.test(text)) {
+      const doc = new DOMParser().parseFromString(text, 'text/html');
+      doc.querySelectorAll('h1, h2, h3, h4, tr').forEach(el => {
+        if (el.tagName !== 'TR') {
+          const h = el.textContent.replace(/\s+/g, ' ').trim();
+          if (h && !FLEET_NOISE.test(h)) operator = h;
+        } else row(operator, [...el.querySelectorAll('td')].map(td => td.textContent));
+      });
+    } else
+      for (const line of String(text).split(/\r?\n/)) {
+        const cells = line.split('\t');
+        if (cells.length >= 9) row(operator, cells);
+        else if (cells.length === 1 && line.trim() && !FLEET_NOISE.test(line.trim())) operator = line.trim();
+      }
+    return out;
+  }
+  /** Fusion avec la flotte du fichier (update_fleet.py) : un appareil de la page remplace celui du fichier (même
+   *  immatriculation) en gardant ses indicatifs supplémentaires ; les appareils absents de la page sont conservés. */
+  function mergeFleet(rows, page) {
+    const known = new Map(page.map(a => [a.registration, a]));
+    let updated = 0,
+      kept = 0;
+    for (const old of rows) {
+      const r = old.registration;
+      if (known.has(r)) {
+        const a = known.get(r);
+        for (const c of [].concat(old.callsigns || [])) if (c && !a.callsigns.includes(c)) a.callsigns.push(c);
+        updated++;
+      } else if (r) {
+        page.push({
+          ...old
+        });
+        known.set(r, old);
+        kept++;
+      }
+    }
+    return {
+      rows: page,
+      added: page.length - updated - kept,
+      updated,
+      kept
+    };
+  }
+  /** Fenêtre « Coller la page Flotte du site » : collage (HTML de préférence), presse-papiers, ou page enregistrée ;
+   *  onRows(appareils) avec les appareils lus. */
+  function fleetPasteDialog(onRows) {
+    const url = window.RepositoryNav?.vaUrl?.('fleet') || 'https://flotte.defa-virtual.fr/flotte.php';
+    const dialog = document.createElement('dialog');
+    dialog.className = 'defa-loader';
+    dialog.innerHTML = `<form method="dialog"><h3>${esc(T('Flotte — coller la page du site', 'Fleet — paste the website page'))}</h3>
+      <p class="small">${esc(T('Ouvrir la page « Flotte virtuelle » du site, tout sélectionner (Ctrl+A), copier (Ctrl+C), puis coller ici (Ctrl+V).', 'Open the “Virtual fleet” page of the website, select all (Ctrl+A), copy (Ctrl+C), then paste here (Ctrl+V).'))}</p>
+      <p><a target="_blank" rel="noopener" href="${esc(url)}">${esc(url)} ↗</a></p>
+      <textarea rows="7" spellcheck="false" placeholder="Ctrl+V"></textarea>
+      <div class="dl-row"><button type="button" data-a="clip">${esc(T('Lire le presse-papiers', 'Read the clipboard'))}</button><label class="dl-file"><span>${esc(T('ou page enregistrée…', 'or saved page…'))}</span><input type="file" accept=".html,.htm,.txt"></label></div>
+      <div class="dl-row"><button type="button" data-a="load" class="primary">${esc(T('Lire', 'Read'))}</button></div>
+      <p class="small dl-result"></p></form>`;
+    const area = dialog.querySelector('textarea'),
+      result = dialog.querySelector('.dl-result');
+    const run = text => {
+      const list = parseFleetPage(text || '');
+      if (!list.length) {
+        result.textContent = T('Aucun appareil reconnu : copier toute la page « Flotte virtuelle » (tableaux compris).', 'No aircraft recognised: copy the whole “Virtual fleet” page (tables included).');
+        return;
+      }
+      dialog.close();
+      onRows(list);
+    };
+    dialog.querySelector('[data-a="load"]').onclick = () => run(area.value);
+    area.addEventListener('paste', e => {
+      const html = e.clipboardData?.getData('text/html') || '';
+      if (/<tr[\s>]/i.test(html)) {
+        e.preventDefault();
+        run(html);
+        return;
+      }
+      setTimeout(() => run(area.value));
+    });
+    dialog.querySelector('[data-a="clip"]').onclick = async () => {
+      try {
+        let text = '';
+        for (const item of await navigator.clipboard.read?.() || []) {
+          if (item.types.includes('text/html')) text = await (await item.getType('text/html')).text();
+          if (!/<tr[\s>]/i.test(text) && item.types.includes('text/plain')) text = await (await item.getType('text/plain')).text();
+        }
+        run(text || await navigator.clipboard.readText());
+      } catch {
+        result.textContent = T('Presse-papiers illisible ici : coller avec Ctrl+V dans la zone.', 'Clipboard unreadable here: paste with Ctrl+V into the box.');
+      }
+    };
+    const file = dialog.querySelector('input[type=file]');
+    file.onchange = async () => {
+      if (file.files[0]) run(await file.files[0].text());
+      file.value = '';
+    };
+    dialog.addEventListener('close', () => dialog.remove());
+    const panel = window.FileAccess?.pastePanel?.({
+      root: dialog.querySelector('form'),
+      area,
+      run: dialog.querySelector('[data-a="load"]'),
+      close: () => dialog.close(),
+      runLabel: () => T('Lire', 'Read')
+    });
+    if (!panel) {
+      const close = document.createElement('button');
+      close.type = 'submit';
+      close.textContent = T('Fermer', 'Close');
+      dialog.querySelector('.dl-row:last-of-type').append(close);
+    }
+    document.body.append(dialog);
+    dialog.showModal();
+    area.focus();
+  }
   const operatorNames = () => [...(work.callsigns?.operatorRows || []).map(r => r.name), ...Object.keys(work.callsigns?.data?.operators || {}),
     ...(work.callsigns?.data?.table || []).map(r => r.operator), 'SAMU'
   ].filter((v, i, a) => v && a.indexOf(v) === i).sort((a, b) => a.localeCompare(b, 'fr'));
@@ -433,7 +594,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         ['data/references/aircraft_fleet.js', render(FLEET_COMMENT, fleetData(), 'dataOverride:fleet:v1', "window.DEFA_FLEET = data.rows.map(row => ({ ...row, callsign: (row.callsigns || [])[0] || '' })); window.DEFA_FLEET_META = META; window.DEFA_FLEET_FILE = fileData.rows;", stamp)]
       ],
       overlay: () => fleetData(),
-      howto: `<p>${T('Mise à jour complète depuis le site de la flotte :', 'Full update from the fleet website:')}</p>
+      howto: `<p>${T('Mise à jour depuis le site : « Coller la page Flotte du site… » (copier-coller de la page « Flotte virtuelle »), vérifier, puis « Enregistrer dans le dépôt ». Ou, avec le script :', 'Update from the website: “Paste the website Fleet page…” (copy-paste of the “Virtual fleet” page), check, then “Save to repository”. Or, with the script:')}</p>
         <ol><li>${T('Ouvrir', 'Open')} <a href="${esc(window.RepositoryNav?.vaUrl?.('fleet') || 'https://flotte.defa-virtual.fr/flotte.php')}" target="_blank" rel="noopener">${esc((window.RepositoryNav?.source?.('defa') || 'flotte.defa-virtual.fr').replace(/^https?:\/\//, ''))} › ${T('Flotte virtuelle', 'Virtual fleet')}</a>, <span>${T('puis Fichier › Enregistrer sous… (« Flotte.html »).', 'then File › Save as… (“Flotte.html”).')}</span></li>
         <li>${T('À la racine du dépôt :', 'At the repository root:')} <code>python AircraftDB/update_fleet.py Flotte.html</code></li>
         <li>${T('Les appareils de la page remplacent ceux du fichier ; les indicatifs supplémentaires et les appareils ajoutés ici sont conservés.', 'Aircraft from the page replace those of the file; extra callsigns and aircraft added here are kept.')}</li>
@@ -1002,6 +1163,15 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           });
         });
         actions([
+          ...(set.id === 'fleet' ? [
+            [T('Coller la page Flotte du site…', 'Paste the website Fleet page…'), () => fleetPasteDialog(page => {
+              const r = mergeFleet(w.data.rows, page);
+              w.data.rows.splice(0, w.data.rows.length, ...r.rows);
+              changed();
+              show();
+              status(T('Page Flotte lue', 'Fleet page read') + ` : ${r.updated} ${T('appareils mis à jour', 'aircraft updated')}, ${r.added} ${T('ajoutés', 'added')}, ${r.kept} ${T('conservés (absents de la page)', 'kept (not on the page)')} — ${T('vérifier, puis « Enregistrer dans le dépôt »', 'check, then “Save to repository”')}`);
+            }), 'primary']
+          ] : []),
           [T('Appliquer dans ce navigateur', 'Apply in this browser'), async () => {
             const stamp = now();
             write(set.overrideKey, {

@@ -836,5 +836,61 @@ window.DataAdminI18n = {
   "Valeur par défaut rétablie": [
     "Standardwert wiederhergestellt",
     "Valor por defecto restablecido"
+  ],
+  "Flotte — coller la page du site": [
+    "Flotte — Seite der Website einfügen",
+    "Flota — pegar la página del sitio"
+  ],
+  "Ouvrir la page « Flotte virtuelle » du site, tout sélectionner (Ctrl+A), copier (Ctrl+C), puis coller ici (Ctrl+V).": [
+    "Die Seite „Virtuelle Flotte“ der Website öffnen, alles auswählen (Strg+A), kopieren (Strg+C) und hier einfügen (Strg+V).",
+    "Abrir la página «Flota virtual» del sitio, seleccionar todo (Ctrl+A), copiar (Ctrl+C) y pegar aquí (Ctrl+V)."
+  ],
+  "Lire le presse-papiers": [
+    "Zwischenablage lesen",
+    "Leer el portapapeles"
+  ],
+  "ou page enregistrée…": [
+    "oder gespeicherte Seite…",
+    "o página guardada…"
+  ],
+  "Lire": [
+    "Lesen",
+    "Leer"
+  ],
+  "Aucun appareil reconnu : copier toute la page « Flotte virtuelle » (tableaux compris).": [
+    "Kein Flugzeug erkannt: die ganze Seite „Virtuelle Flotte“ kopieren (mit Tabellen).",
+    "Ningún avión reconocido: copiar toda la página «Flota virtual» (con las tablas)."
+  ],
+  "Presse-papiers illisible ici : coller avec Ctrl+V dans la zone.": [
+    "Zwischenablage hier nicht lesbar: mit Strg+V in das Feld einfügen.",
+    "Portapapeles ilegible aquí: pegar con Ctrl+V en el cuadro."
+  ],
+  "Coller la page Flotte du site…": [
+    "Flottenseite der Website einfügen…",
+    "Pegar la página Flota del sitio…"
+  ],
+  "Page Flotte lue": [
+    "Flottenseite gelesen",
+    "Página Flota leída"
+  ],
+  "appareils mis à jour": [
+    "Flugzeuge aktualisiert",
+    "aviones actualizados"
+  ],
+  "ajoutés": [
+    "hinzugefügt",
+    "añadidos"
+  ],
+  "conservés (absents de la page)": [
+    "behalten (nicht auf der Seite)",
+    "conservados (ausentes de la página)"
+  ],
+  "vérifier, puis « Enregistrer dans le dépôt »": [
+    "prüfen, dann „Im Repository speichern“",
+    "comprobar y luego «Guardar en el repositorio»"
+  ],
+  "Mise à jour depuis le site : « Coller la page Flotte du site… » (copier-coller de la page « Flotte virtuelle »), vérifier, puis « Enregistrer dans le dépôt ». Ou, avec le script :": [
+    "Aktualisierung von der Website: „Flottenseite der Website einfügen…“ (Kopieren und Einfügen der Seite „Virtuelle Flotte“), prüfen, dann „Im Repository speichern“. Oder mit dem Skript:",
+    "Actualización desde el sitio: «Pegar la página Flota del sitio…» (copiar y pegar la página «Flota virtual»), comprobar y luego «Guardar en el repositorio». O, con el script:"
   ]
 };
