@@ -485,7 +485,7 @@
             all: true
           }).find(x => x.ouverts === `prefs:${c.dataset.dom}`);
           const open = cat ? [...SD.openThemes(cat, p)] : [];
-          c.querySelector('[data-list]').style.opacity = p[c.dataset.dom].mode === 'tous' ? '.55' : '';
+          c.querySelector('[data-list]').style.opacity = p[c.dataset.dom].mode === 'tous' ? '.7' : '';
           c.querySelector('[data-open]').textContent = cat ? tf(['« {c} » ouvre : {t}', '“{c}” opens: {t}', '„{c}“ öffnet: {t}', '«{c}» abre: {t}'], {
             c: SD.label(cat.label),
             t: open.map(SD.themeLabel).join(', ') || '—'

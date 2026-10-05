@@ -1899,6 +1899,10 @@ html[data-design="cabinet"] .repo-has-bg:has(>.repo-deco-panel) {
 html[data-design="cabinet"][data-tone="dark"] .repo-has-bg:has(>.repo-deco-panel) {
   --repo-veil: rgba(14, 22, 40, .62)
 }
+/* Carnet de vol, ton clair : panneaux chargés (cadrans, cartes) ; voile papier comme Cabinet */
+html[data-design="flightlog"] .repo-has-bg:has(>.repo-deco-panel) {
+  --repo-veil: rgba(246, 240, 226, .82)
+}
 html .repo-block.repo-has-bg:has(>.repo-deco-panel) table:not(.report table):not(#imp) {
   background-color: var(--repo-veil)
 }

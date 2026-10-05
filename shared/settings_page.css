@@ -252,6 +252,15 @@
     padding: 10px 14px;
     margin: 10px 0
   }
+  /* bloc habillé d'un panneau (designs à matières) : voile de la surface du bloc sous la carte, texte lisible */
+  .repo-has-bg .sp-card,
+  .repo-has-bg .da-intro:not(:empty) {
+    background-color: var(--repo-veil, transparent)
+  }
+  .repo-has-bg .da-intro:not(:empty) {
+    padding: 4px 8px;
+    border-radius: calc(6px * var(--repo-round, 1))
+  }
   .sp-card h3 {
     margin: 0 0 6px
   }
