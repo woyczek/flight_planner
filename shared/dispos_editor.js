@@ -100,17 +100,31 @@
       }
     };
 
+    // lecture ou enregistrement d'une autre semaine (ou d'un autre pilote) terminé après un changement de semaine : son
+    // document ne doit pas remplacer celui qui est affiché (sinon la semaine suivante montrait les plages de la
+    // précédente, et la retouche suivante les enregistrait sous son nom, à la place de ses propres plages)
+    let loadSeq = 0,
+      docKey = ''; // pilote et semaine du document tenu (doc)
+    const shownIs = (t, w) => t === tri && w === week;
+    /** Document de la semaine affichée chargé : retouches permises (pas pendant la lecture d'une autre semaine). */
+    const docReady = () => !!doc && docKey === `${tri}|${week}`;
     async function load() {
       await need('SuiteDispos');
       if (!tri || !week) return render();
-      const weeks = await SD().readPilot(tri, {
-        weeks: [week],
+      const seq = ++loadSeq,
+        t0 = tri,
+        w0 = week;
+      const weeks = await SD().readPilot(t0, {
+        weeks: [w0],
         fresh: true
       });
-      doc = weeks[week] || {
+      if (seq !== loadSeq || !shownIs(t0, w0)) return;
+      doc = weeks[w0] || {
         dispos: {}
       };
-      const av = await A()?.availability?.(tri);
+      docKey = `${t0}|${w0}`;
+      const av = await A()?.availability?.(t0);
+      if (seq !== loadSeq || !shownIs(t0, w0)) return;
       extra = {
         appareils: {
           possedes: av?.aircraft?.owned || [],
@@ -122,23 +136,28 @@
     }
     /** Enregistre la semaine (dossier des données, sinon ce navigateur) et redessine. */
     async function save(text) {
+      const t0 = tri,
+        w0 = week;
+      const saved = () => window.dispatchEvent(new CustomEvent('dispos-week-saved', {
+        detail: {
+          tri: t0,
+          week: w0
+        }
+      }));
       try {
-        const r = await SD().saveWeek(tri, week, doc.dispos, extra);
+        const r = await SD().saveWeek(t0, w0, doc.dispos, extra);
+        if (!shownIs(t0, w0)) return saved(); // semaine changée entre-temps : enregistrée, mais plus affichée
         doc = r.doc;
         if (r.where === 'local') {
           msg(t(['Gardé dans ce navigateur : dossier des données non autorisé (Paramètres › Installation › Sources et dossiers).', 'Kept in this browser: data folder not authorised (Settings › Installation › Sources and folders).', 'In diesem Browser behalten: Datenordner nicht freigegeben (Einstellungen › Installation › Quellen und Ordner).', 'Guardado en este navegador: carpeta de datos no autorizada (Ajustes › Instalación › Fuentes y carpetas).']), 'warn');
           window.AppFramework?.notify?.(t(['Disponibilités gardées dans ce navigateur : choisir le dossier des données pour que le Centre les voie.', 'Availability kept in this browser: choose the data folder so the Centre can see it.', 'Verfügbarkeit in diesem Browser behalten: Datenordner wählen, damit das Zentrum sie sieht.', 'Disponibilidad guardada en este navegador: elegir la carpeta de datos para que el Centro la vea.']), 'warn');
         } else msg(text || t(['Enregistré dans le dossier des données.', 'Saved to the data folder.', 'Im Datenordner gespeichert.', 'Guardado en la carpeta de datos.']), 'ok');
       } catch (e) {
+        if (!shownIs(t0, w0)) return window.AppFramework?.notify?.(e.message, 'err');
         msg(e.message, 'err');
       }
       render();
-      window.dispatchEvent(new CustomEvent('dispos-week-saved', {
-        detail: {
-          tri,
-          week
-        }
-      }));
+      saved();
     }
 
     function render() {
@@ -325,7 +344,7 @@
     });
     host.addEventListener('pointerdown', e => {
       const c = cellAt(e.target);
-      if (!c || !tri || !doc || e.button) return;
+      if (!c || !tri || !docReady() || e.button) return;
       e.preventDefault();
       const D = SD(),
         cat = brushOf(D.categories()),
@@ -356,6 +375,7 @@
         D = SD(),
         mon = D.weekMonday(week);
       drag = null;
+      if (!docReady()) return render(); // semaine changée pendant le tracé
       for (let j = Math.min(d.j0, d.j1); j <= Math.max(d.j0, d.j1); j++) paintDay(isoDay(mon + j * 864e5), Math.min(d.h0, d.h1), Math.max(d.h0, d.h1), d.cat, d.erase);
       render(); // grille redessinée tout de suite, puis enregistrement
       save(d.erase ? t(['Cases effacées.', 'Cells cleared.', 'Zellen gelöscht.', 'Celdas borradas.']) : t(['Disponibilité enregistrée.', 'Availability saved.', 'Verfügbarkeit gespeichert.', 'Disponibilidad guardada.']));
@@ -383,6 +403,8 @@
       }
       const wk = e.target.closest('[data-wk]');
       if (wk) return setWeek(+wk.dataset.wk ? D.addWeek(week, +wk.dataset.wk) : D.weekId(Date.now()));
+      // ajout, recopie, effacement : seulement sur le document de la semaine affichée (pas pendant sa lecture)
+      if (e.target.closest('[data-add], [data-copy], [data-clear]') && !docReady()) return msg(t(['Semaine en cours de lecture : réessayer dans un instant.', 'Week still loading: try again in a moment.', 'Woche wird noch gelesen: gleich noch einmal versuchen.', 'Semana aún cargando: reintentar en un momento.']), 'warn');
       if (e.target.closest('[data-add]')) {
         const cat = host.querySelector('[data-c]').value,
           days = [...host.querySelectorAll('[data-day]:checked')].map(x => +x.dataset.day);
@@ -405,13 +427,16 @@
         }));
       }
       if (e.target.closest('[data-copy]')) {
-        const prevId = D.addWeek(week, -1),
+        const key = docKey,
+          prevId = D.addWeek(week, -1),
           prev = (await D.readPilot(tri, {
             weeks: [prevId],
             fresh: true
           }))[prevId];
+        if (docKey !== key || !docReady()) return; // semaine changée pendant la lecture
         if (!prev || !Object.keys(prev.dispos || {}).length) return msg(t(['Semaine précédente vide : rien à recopier.', 'Previous week empty: nothing to copy.', 'Vorwoche leer: nichts zu übernehmen.', 'Semana anterior vacía: nada que copiar.']), 'err');
         if (Object.keys(doc.dispos || {}).length && !await window.AppFramework.ask(t(['Remplacer les plages de la semaine affichée par celles de la semaine précédente ?', 'Replace the ranges of the shown week by those of the previous week?', 'Die Zeiträume der angezeigten Woche durch die der Vorwoche ersetzen?', '¿Reemplazar los intervalos de la semana mostrada por los de la semana anterior?']))) return;
+        if (docKey !== key || !docReady()) return;
         doc.dispos = Object.fromEntries(Object.entries(prev.dispos).map(([d, l]) => [isoDay(Date.parse(`${d}T00:00:00Z`) + 7 * 864e5), l.map(x => ({
           ...x
         }))]));
@@ -419,9 +444,11 @@
       }
       if (e.target.closest('[data-clear]')) {
         if (!Object.keys(doc.dispos || {}).length) return;
+        const key = docKey;
         if (!await window.AppFramework.ask(t(['Effacer toutes les plages de la semaine affichée ?', 'Clear every range of the shown week?', 'Alle Zeiträume der angezeigten Woche löschen?', '¿Borrar todos los intervalos de la semana mostrada?']), {
             danger: true
           })) return;
+        if (docKey !== key || !docReady()) return; // semaine changée pendant la question
         doc.dispos = {};
         return save(t(['Semaine effacée.', 'Week cleared.', 'Woche gelöscht.', 'Semana borrada.']));
       }

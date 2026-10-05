@@ -262,6 +262,21 @@
         pilots: {}
       };
       idx.pilots ||= {};
+      // copie de ce navigateur (boîte d'envoi) et fichier servi fusionnés, pilote par pilote et semaine par semaine :
+      // readData rend la plus récente des deux, et une vieille copie locale (écrite sans dossier autorisé) faisait
+      // perdre à l'index tous les pilotes ajoutés depuis par un autre poste ou par la conversion
+      const served = await Promise.resolve(A().dataStore?.read?.(`data/${INDEX}`, {
+        fresh: true
+      })).catch(() => null);
+      for (const [p, s] of Object.entries(served?.pilots || {})) {
+        const mine = idx.pilots[p];
+        if (!mine) idx.pilots[p] = s;
+        else if (s && typeof s === 'object') idx.pilots[p] = {
+          ...s,
+          ...(typeof mine === 'object' ? mine : {}),
+          weeks: [...new Set([...(Array.isArray(s.weeks) ? s.weeks : []), ...(Array.isArray(mine?.weeks) ? mine.weeks : [])])].sort()
+        };
+      }
       const e = idx.pilots[tri];
       const weeks = new Set(Array.isArray(e?.weeks) ? e.weeks : []);
       weeks.add(week);
