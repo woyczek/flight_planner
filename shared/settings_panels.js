@@ -128,29 +128,20 @@
     id: 'equipment',
     group: GROUP_PROFILE,
     title: L('Appareils et simulateurs', 'Aircraft and simulators', 'Luftfahrzeuge und Simulatoren', 'Aeronaves y simuladores'),
-    intro: L('Types de la flotte possédés et maîtrisés, simulateurs installés : déclarés avec vos disponibilités (Mes missions), le Centre s’en sert pour vous affecter un appareil.', 'Fleet types owned and mastered, installed simulators: declared with your availability (My missions), the Centre uses them to assign you an aircraft.', 'Besessene und beherrschte Flottentypen, installierte Simulatoren: mit Ihrer Verfügbarkeit erklärt (Meine Missionen), das Zentrum nutzt sie für die Zuweisung.', 'Tipos de la flota poseídos y dominados, simuladores instalados: declarados con su disponibilidad (Mis misiones), el Centro los usa para asignarle una aeronave.'),
+    intro: L('Types de la flotte possédés et maîtrisés, simulateurs installés : le Centre s’en sert pour vous affecter un appareil et réunir des pilotes sur un simulateur commun. Recopiés dans vos semaines de disponibilités déclarées.', 'Fleet types owned and mastered, installed simulators: the Centre uses them to assign you an aircraft and to gather pilots on a common simulator. Copied into your declared availability weeks.', 'Besessene und beherrschte Flottentypen, installierte Simulatoren: Das Zentrum nutzt sie für die Zuweisung eines Luftfahrzeugs und um Piloten auf einem gemeinsamen Simulator zusammenzubringen. In Ihre angegebenen Verfügbarkeitswochen übernommen.', 'Tipos de la flota poseídos y dominados, simuladores instalados: el Centro los usa para asignarle una aeronave y reunir a pilotos en un simulador común. Copiados en sus semanas de disponibilidad declaradas.'),
     async render(body, api) {
-      const A = window.MissionAssignments,
+      // éditeur (shared/equipment_editor.js) : avant, blocs « Mes appareils » et « Mes simulateurs » de Mes missions
+      const [A, E] = [await need('MissionAssignments'), await need('EquipmentEditor')],
         tri = A?.trigram?.() || '';
-      const mm = new URL('apps/pilot/mes_missions.html', nav().root).href;
-      if (!tri) {
-        body.innerHTML = `<p>${esc(L('Trigramme non réglé : le régler dans « Identité et réseaux ».', 'Trigram not set: set it in “Identity and networks”.', 'Kürzel nicht gesetzt: unter „Identität und Netzwerke“ festlegen.', 'Trigrama no definido: definirlo en «Identidad y redes».'))}</p>`;
-        api.actions([]);
+      api.actions([]);
+      if (!A || !E || !tri) {
+        body.innerHTML = `<p>${esc(!tri && A ? L('Trigramme non réglé : le régler dans « Identité et réseaux ».', 'Trigram not set: set it in “Identity and networks”.', 'Kürzel nicht gesetzt: unter „Identität und Netzwerke“ festlegen.', 'Trigrama no definido: definirlo en «Identidad y redes».') : K.t(['Composant manquant (shared/equipment_editor.js, shared/assignments.js).', 'Missing component (shared/equipment_editor.js, shared/assignments.js).', 'Fehlende Komponente (shared/equipment_editor.js, shared/assignments.js).', 'Falta un componente (shared/equipment_editor.js, shared/assignments.js).']))}</p>`;
         return;
       }
-      const decl = await A.availability(tri),
-        ac = decl?.aircraft || {},
-        sims = decl?.sims || [];
-      body.innerHTML = `<div class="sp-card" data-no-i18n><h3>${esc(K.t(['Appareils', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves']))}</h3><p>${esc(tf(['{m} type(s) maîtrisé(s), {o} possédé(s).', '{m} type(s) mastered, {o} owned.', '{m} Typ(en) beherrscht, {o} besessen.', '{m} tipo(s) dominado(s), {o} poseído(s).'], {
-          m: (ac.mastered || []).length,
-          o: new Set([...(ac.owned || []), ...(ac.mastered || [])]).size
-        }))}</p><p class="sp-hint">${esc([...(ac.mastered || [])].join(', ') || '—')}</p></div>
-        <div class="sp-card" data-no-i18n><h3>${esc(K.t(['Simulateurs', 'Simulators', 'Simulatoren', 'Simuladores']))}</h3><p>${A.simChips?.(sims) || ''}${esc(sims.join(', ') || '—')}</p></div>
-        <p><a class="secondary" href="${esc(mm)}#aircraft">${esc(L('Modifier dans Mes missions (Mes appareils, Mes simulateurs)', 'Edit in My missions (My aircraft, My simulators)', 'In Meine Missionen bearbeiten (Meine Luftfahrzeuge, Meine Simulatoren)', 'Editar en Mis misiones (Mis aeronaves, Mis simuladores)'))}</a></p>`;
+      await E.mount(body, tri);
       api.status(tf(['Pilote {t}', 'Pilot {t}', 'Pilot {t}', 'Piloto {t}'], {
         t: tri
       }));
-      api.actions([]);
     }
   };
 

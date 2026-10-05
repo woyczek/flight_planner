@@ -183,6 +183,16 @@
         }
       }));
       try {
+        // appareils et simulateurs relus à chaque enregistrement : modifiés entre-temps dans Mon profil (autre onglet),
+        // ceux lus à l'ouverture de la semaine écraseraient les nouveaux
+        const av = await Promise.resolve(A()?.availability?.(t0)).catch(() => null);
+        if (av) extra = {
+          appareils: {
+            possedes: av.aircraft?.owned || [],
+            maitrises: av.aircraft?.mastered || []
+          },
+          simulateurs: av.sims || []
+        };
         const r = await SD().saveWeek(t0, w0, doc.dispos, extra);
         if (!shownIs(t0, w0)) return saved(); // semaine changée entre-temps : enregistrée, mais plus affichée
         doc = r.doc;

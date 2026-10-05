@@ -192,12 +192,6 @@
     #pilotMissions [data-block-id="who"] {
       order: 4
     }
-    #pilotMissions [data-block-id="aircraft"] {
-      order: 5
-    }
-    #pilotMissions [data-block-id="sims"] {
-      order: 6
-    }
     .pm-wide-btn {
       display: none
     }
@@ -1635,62 +1629,6 @@
   .pm-week button {
     min-width: 2.2em
   }
-  .pm-types-sum {
-    margin: 0 0 8px;
-    font-weight: 600
-  }
-  .pm-sims {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 6px 14px
-  }
-  .pm-sims label {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin: 0
-  }
-  .pm-sims input {
-    margin: 0
-  }
-  .pm-types-cards {
-    display: grid;
-    gap: 10px
-  }
-  .pm-type-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 12.5px
-  }
-  .pm-type-table th,
-  .pm-type-table td {
-    padding: 5px 8px;
-    text-align: left;
-    vertical-align: middle;
-    border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent)
-  }
-  .pm-type-table th {
-    font-size: 11.5px;
-    font-weight: 700;
-    opacity: .8
-  }
-  .pm-type-table .pm-c {
-    width: 5.5em;
-    text-align: center
-  }
-  .pm-type-table .pm-c input {
-    margin: 0;
-    width: 16px;
-    height: 16px;
-    vertical-align: middle;
-    cursor: pointer
-  }
-  .pm-type-table code {
-    font-size: 11px
-  }
-  .pm-type-table small {
-    opacity: .75
-  }
   .pm-who {
     display: flex;
     gap: 8px;
@@ -1735,22 +1673,15 @@
 </section>
 <section data-block-id="who" data-icon="users" data-subtitle="Trigramme DEFA du profil pilote (menu ☰) : les missions affectées à ce trigramme s'affichent ici."><h2>Pilote</h2>
   <div class="pm-who"><label>Trigramme <input id="pmTri" maxlength="4" autocomplete="off"></label><span id="pmWhoNote" class="small"></span></div>
-</section>
-<section data-block-id="aircraft" data-icon="plane" data-subtitle="Types de la flotte que vous possédez dans votre simulateur et ceux que vous maîtrisez : le Centre s’en sert pour vous affecter un appareil."><h2>Mes appareils</h2>
-  <div id="pmTypes" class="pm-types"></div>
-  <p id="pmTypesMsg" class="small">Enregistré dans ce navigateur, et avec la semaine affichée de vos disponibilités (pour le Centre).</p>
-</section>
-<section data-block-id="sims" data-icon="layers" data-subtitle="Simulateurs et outils installés (colonnes de la feuille FLOTTE du classeur ODV) : le Centre s’en sert pour réunir des pilotes sur un simulateur commun."><h2>Mes simulateurs</h2>
-  <div id="pmSims" class="pm-sims"></div>
-  <p id="pmSimsMsg" class="small">Enregistré dans ce navigateur, et avec la semaine affichée de vos disponibilités (pour le Centre).</p>
+  <p class="small"><a class="secondary" data-icon="plane" href="../settings/profil.html?base=equipment">Mes appareils et simulateurs (Mon profil)</a></p>
 </section>
 </div>
 </div>
 </main>
 <script src="../../shared/kit.js?v=65a16a49"></script>
 <script src="../../shared/repository_nav.js?v=cf8455fb"></script>
-<script src="mes_missions_i18n.js?v=8e114df2" defer></script>
-<script src="../../shared/dispos_editor.js?v=7bd66b60"></script>
+<script src="mes_missions_i18n.js?v=cda1e60a" defer></script>
+<script src="../../shared/dispos_editor.js?v=3123375b"></script>
 <script src="../../shared/content_i18n.js?v=7afecb78"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=74550207"></script>
@@ -1888,8 +1819,6 @@
   for (const ev of ['suite-session-change', 'suite-mode-change']) window.addEventListener(ev, () => {
     load();
     gridLoad();
-    typesLoad();
-    simsLoad();
   });
 
   // ---- liste
@@ -3684,81 +3613,6 @@
     }
   }
 
-  // ---- appareils du pilote : types de la flotte possédés (dans son simulateur) / maîtrisés — une sous-carte par catégorie
-  // (hélicoptères, réacteurs, turbopropulseurs, pistons), tableau : type (désignateur et modèle), variantes de la flotte,
-  // appareils et bases, cases Possédé / Maîtrisé (maîtrisé implique possédé)
-  async function typesLoad() {
-    const tri = A.trigram(),
-      host = $('pmTypes');
-    const types = A.fleetTypes();
-    if (!types.length) {
-      host.innerHTML = '<p class="small">Flotte non chargée.</p>';
-      return;
-    }
-    const ac = (tri ? (await A.availability(tri))?.aircraft : null) || {
-      owned: [],
-      mastered: []
-    };
-    const owned = new Set([...ac.owned, ...ac.mastered]),
-      mastered = new Set(ac.mastered);
-    const groups = [...new Set(types.map(x => x.category))].map(c => types.filter(x => x.category === c));
-    const ICON = {
-      helico: 'propeller',
-      jet: 'plane',
-      turboprop: 'propeller',
-      piston: 'propeller',
-      other: 'plane'
-    };
-    const summary = () => tv(['{m} type(s) maîtrisé(s), {o} possédé(s) sur {n} types de la flotte.', '{m} type(s) mastered, {o} owned out of {n} fleet types.', '{m} Typ(en) beherrscht, {o} besessen von {n} Flottentypen.', '{m} tipo(s) dominado(s), {o} poseído(s) de {n} tipos de la flota.'], { m: mastered.size, o: owned.size, n: types.length });
-    host.innerHTML = `<p class="pm-types-sum" id="pmTypesSum">${esc(summary())}</p><div class="pm-types-cards">${groups.map(g => `<div class="repo-card pm-type-card" data-icon="${ICON[g[0].category] || 'plane'}" data-subtitle="${g.length} type(s)"><h3>${esc(g[0].categoryLabel)}</h3>
-      <table class="pm-type-table"><thead><tr><th>Type</th><th>Variantes de la flotte</th><th>Appareils</th><th class="pm-c">Possédé</th><th class="pm-c">Maîtrisé</th></tr></thead><tbody>${g.map(x => `<tr>
-        <td><b>${esc(x.model)}</b><br><code>${esc(x.type)}</code>${x.description ? ` <small title="Description OACI (Doc 8643)">${esc(x.description)}</small>` : ''}</td>
-        <td>${esc(x.variants.join(', ') || '—')}</td>
-        <td><b>${x.operational}</b>${x.operational < x.count ? `<small> / ${x.count}</small>` : ''}<br><small title="${esc(x.bases.join(', '))}">${esc(x.bases.slice(0, 3).join(', '))}${x.bases.length > 3 ? '…' : ''}</small></td>
-        <td class="pm-c"><input type="checkbox" data-own="${esc(x.type)}" ${owned.has(x.type) ? 'checked' : ''} aria-label="${esc(x.model)} possédé"></td>
-        <td class="pm-c"><input type="checkbox" data-master="${esc(x.type)}" ${mastered.has(x.type) ? 'checked' : ''} aria-label="${esc(x.model)} maîtrisé"></td></tr>`).join('')}</tbody></table></div>`).join('')}</div>`;
-    host.onchange = e => {
-      if (!tri) {
-        $('pmTypesMsg').textContent = 'Trigramme non réglé.';
-        return;
-      }
-      const m = e.target.dataset.master,
-        o = e.target.dataset.own;
-      if (m && e.target.checked) host.querySelector(`[data-own="${m}"]`).checked = true; // maîtrisé → possédé
-      if (o && !e.target.checked) host.querySelector(`[data-master="${o}"]`).checked = false; // non possédé → non maîtrisé
-      const decl = A.saveAircraft(tri, {
-        owned: [...host.querySelectorAll('[data-own]:checked')].map(x => x.dataset.own),
-        mastered: [...host.querySelectorAll('[data-master]:checked')].map(x => x.dataset.master)
-      });
-      owned.clear();
-      decl.aircraft.owned.forEach(x => owned.add(x));
-      mastered.clear();
-      decl.aircraft.mastered.forEach(x => mastered.add(x));
-      $('pmTypesSum').textContent = summary();
-      dispoEd?.touch?.(); // déclaration de la semaine affichée : appareils à jour
-      $('pmTypesMsg').textContent = 'Gardé dans ce navigateur et recopié dans la semaine affichée de vos disponibilités.';
-    };
-    window.AppFramework?.refresh?.(); // en-têtes des sous-cartes (icône, titre, sous-titre)
-  }
-
-  // ---- simulateurs (liste de la feuille FLOTTE du classeur ODV)
-  async function simsLoad() {
-    const tri = A.trigram(),
-      host = $('pmSims');
-    const mine = new Set((tri ? (await A.availability(tri))?.sims : null) || []);
-    const list = [...new Set([...A.simulators(), ...mine])];
-    host.innerHTML = list.map(s => `<label><input type="checkbox" data-sim="${esc(s)}" ${mine.has(s) ? 'checked' : ''}> ${A.simChips([s])}${esc(s)}</label>`).join('');
-    host.onchange = () => {
-      if (!tri) {
-        $('pmSimsMsg').textContent = 'Trigramme non réglé.';
-        return;
-      }
-      A.saveSims(tri, [...host.querySelectorAll('[data-sim]:checked')].map(x => x.dataset.sim));
-      dispoEd?.touch?.(); // déclaration de la semaine affichée : simulateurs à jour
-      $('pmSimsMsg').textContent = 'Gardé dans ce navigateur et recopié dans la semaine affichée de vos disponibilités.';
-    };
-  }
-
   // ---- disponibilités : saisie par plages (shared/dispos_editor.js, semaine de la page) ; l'ancienne grille horaire de la
   // semaine reste visible en lecture seule tant qu'elle existe (docs/DISPOS_ET_REORGANISATION.md § 1.5)
   let doc = null; // déclaration lue (ce poste, sinon les fichiers) : anciennes semaines
@@ -3795,11 +3649,9 @@
     if (e.key === PROFILE) {
       load();
       gridLoad();
-      typesLoad();
-      simsLoad();
     }
   });
-  keepAll().then(load).then(gridLoad).then(typesLoad).then(simsLoad);
+  keepAll().then(load).then(gridLoad);
 })();
 </script>
 <script src="../../shared/app_framework.js?v=a2972a9a"></script>

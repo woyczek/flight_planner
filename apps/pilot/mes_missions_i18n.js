@@ -20,6 +20,7 @@ RepositoryContentI18n([
   ['Enregistrer dans le dossier des données', 'Save to the data folder', 'Im Datenordner speichern', 'Guardar en la carpeta de datos'],
   ['Recopier les disponibilités de la semaine précédente', 'Copy the previous week’s availability', 'Verfügbarkeit der Vorwoche übernehmen', 'Copiar la disponibilidad de la semana anterior'],
   ['Tout effacer', 'Clear all', 'Alles löschen', 'Borrar todo'],
+  ['Mes appareils et simulateurs (Mon profil)', 'My aircraft and simulators (My profile)', 'Meine Luftfahrzeuge und Simulatoren (Mein Profil)', 'Mis aeronaves y simuladores (Mi perfil)'],
   ['Mes appareils', 'My aircraft', 'Meine Luftfahrzeuge', 'Mis aeronaves'],
   ['Types de la flotte que vous possédez dans votre simulateur et ceux que vous maîtrisez : le Centre s’en sert pour vous affecter un appareil.', 'Fleet types you own in your simulator and those you master: the Centre uses it to assign you an aircraft.', 'Flottentypen, die Sie im Simulator besitzen, und die, die Sie beherrschen: das Zentrum weist Ihnen danach ein Luftfahrzeug zu.', 'Tipos de la flota que posee en su simulador y los que domina: el Centro lo usa para asignarle una aeronave.'],
   ['Enregistré dans ce navigateur, et avec vos disponibilités (« Enregistrer dans le dossier des données »).', 'Saved in this browser, and with your availability (“Save to the data folder”).', 'In diesem Browser gespeichert, und mit Ihrer Verfügbarkeit („Im Datenordner speichern“).', 'Guardado en este navegador, y con su disponibilidad («Guardar en la carpeta de datos»).'],
