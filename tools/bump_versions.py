@@ -9,7 +9,8 @@ Ce qui est versionné :
 - pages HTML : attributs src / href « …?v=… », @import url("…?v=…") et images des styles de la page
   url("…image?v=…") vers un fichier du dépôt (chemin relatif à la page) ;
 - scripts : chargements « 'fichier.js?v=…' » / « "feuille.css?v=…" » écrits dans le code (chemin relatif au script) ;
-- repository_nav.js : table FILE_V des feuilles de design chargées à la demande (designs.list[id].css) ;
+- repository_nav.js et config/repository_tree : table FILE_V des feuilles de design (designs.list[id].css) ;
+  repository_tree : aussi « ../shared/designs.css?v=… » (feuilles posées dès l'en-tête) ;
 - feuilles des designs (designs_skeuo.css, block_icons.css) : images textures / deco / icons/skeuo.
 Un script qui versionne ses images avec son propre ?v= (DEPENDANCES) reçoit une empreinte qui couvre aussi ces images.
 Les empreintes se propagent : une image modifiée change la feuille qui la nomme, donc la page qui charge la feuille.
@@ -132,15 +133,18 @@ design_css = sorted(set(re.findall(r'css:"([\w.-]+\.css)"', tree)))
 # 3. chargements écrits dans les scripts, jusqu'à stabilité (une empreinte changée change le script qui la cite)
 scripts = [p for p in glob.glob(os.path.join(ROOT, 'shared', '**', '*.js'), recursive=True) + glob.glob(os.path.join(ROOT, 'apps', '**', '*.js'), recursive=True)
            if not re.search(r'\.min\.js$|maplibre|jspdf', p)]
+# config/repository_tree : feuilles du design posées dès l'en-tête (designs.css, table FILE_V)
+tree_path = os.path.join(ROOT, 'config', 'repository_tree')
+scripts.append(tree_path)
 nav = os.path.join(SHARED, 'repository_nav.js')
 for _ in range(8):
     change = False
     for p in scripts:
         s = io.open(p, encoding='utf-8', newline='').read()
         t = versionner(s, os.path.dirname(p), LIT)
-        if p == nav:
+        if p in (nav, tree_path):
             table = json.dumps({f: empreinte(os.path.join(SHARED, f)) for f in design_css}, separators=(', ', ': '))
-            t = re.sub(r'const FILE_V = \{[^}]*\};', f'const FILE_V = {table};', t)
+            t = re.sub(r'\bFILE_V = \{[^}]*\};', f'FILE_V = {table};', t)
         change |= ecrire_si_change(p, s, t)
     if not change:
         break

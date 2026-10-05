@@ -305,7 +305,7 @@
   /** Dossier des images d'un jeu d'icônes à matières : id du design à matières dont c'est le jeu (brass → cabinet…). */
   const iconFolder = set => Object.keys(designs).find(id => designs[id].skeuo && designs[id].icons === set) || null;
   doc.dataset.icons = iconsFor(design);
-  {
+  if (!document.getElementById("repoDesignsCss")) { // déjà posée dès l'en-tête par config/repository_tree, en général
     const css = document.createElement("link");
     css.rel = "stylesheet";
     css.href = new URL("designs.css?v=51c18d91", script.src).href;
@@ -318,15 +318,20 @@
   const FILE_V = {"designs_skeuo.css": "3c1a100f"};
   const designCss = id => {
     const f = designs[id]?.css;
-    if (!f || document.querySelector(`link[data-design-css="${f}"]`)) return;
-    const l = document.createElement("link");
-    l.rel = "stylesheet";
-    l.dataset.designCss = f;
-    l.href = new URL(`${f}?v=${FILE_V[f] || ""}`, script.src).href;
-    document.head.append(l);
-    // illustrations du décor complet (frise de Cabinet, radar de Durci), même version
+    if (!f) return;
+    // feuille déjà posée dès l'en-tête (config/repository_tree) ou par un choix précédent : gardée
+    if (!document.querySelector(`link[data-design-css="${f}"]`)) {
+      const l = document.createElement("link");
+      l.rel = "stylesheet";
+      l.dataset.designCss = f;
+      l.href = new URL(`${f}?v=${FILE_V[f] || ""}`, script.src).href;
+      document.head.append(l);
+    }
+    // illustrations du décor complet (frise de Cabinet, radar de Durci), une fois
+    if (document.getElementById("repoDesignDeco")) return;
     const d = document.createElement("script");
-    d.src = new URL("design_deco.js?v=03695d26", script.src).href;
+    d.id = "repoDesignDeco";
+    d.src = new URL("design_deco.js?v=9692c5ef", script.src).href;
     document.head.append(d);
   };
   designCss(design);

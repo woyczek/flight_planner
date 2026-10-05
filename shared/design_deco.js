@@ -386,6 +386,7 @@
 
   function render() {
     clear();
+    shown = blocksShown();
     const d = html.dataset.design,
       set = SETS[d];
     backgrounds(d);
@@ -517,6 +518,28 @@
       later();
     }
   }).observe(document.body);
+  // blocs affichés qui changent sans changer la hauteur de la page (Paramètres : une section remplace l'autre dans le
+  // même bloc, même hauteur) : le décor d'avant (accessoire, panneau) resterait — recalcul si la liste des blocs de
+  // premier niveau affichés (titre, icône, identifiant) a changé ; vérifiée une fois par image, sans lire la mise en page
+  let shown = '',
+    checking = false;
+  function blocksShown() {
+    return [...document.querySelectorAll('.repo-block')].filter(b => !b.hidden && !b.parentElement.closest('.repo-block')).map(blockText).join('|');
+  }
+  new MutationObserver(() => {
+    if (checking) return;
+    checking = true;
+    requestAnimationFrame(() => {
+      checking = false;
+      if (blocksShown() !== shown) later();
+    });
+  }).observe(document.body, {
+    childList: true,
+    subtree: true,
+    characterData: true,
+    attributes: true,
+    attributeFilter: ['hidden']
+  });
   new MutationObserver(state).observe(html, {
     attributes: true,
     attributeFilter: ['data-dirty']

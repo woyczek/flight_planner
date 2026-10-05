@@ -558,7 +558,11 @@
       `<span>${codeCell({ categorie: 'inconnu', source: '' })} ${esc(C.CATEGORIES.inconnu)}</span>`;
     const byPilot = new Map(data.pilotes.map(p => [p.trigramme, []]));
     for (const r of data.records) byPilot.get(r.pilote)?.push(r);
-    const rows = data.pilotes.filter(p => (!view.hideEmpty || p.rempli) && (!view.color || p.couleur === view.color) &&
+    // grille non vide : cases du classeur, ou seconde ligne du pilote (déclaration faite dans la suite — copie de ce
+    // navigateur ou data/disponibilites — ou mission affectée sur un créneau de la semaine)
+    const O = window.OdvAssign,
+      declared = p => !!O && C.DAYS.some((_, j) => [0, 1, 2].some(k => O.declared(p.trigramme, j, k) || O.assigned(p.trigramme, j, k)?.length));
+    const rows = data.pilotes.filter(p => (!view.hideEmpty || p.rempli || declared(p)) && (!view.color || p.couleur === view.color) &&
         (!view.role || (p.profil?.roles || []).includes(view.role)) && (!view.sim || (p.profil?.sims || []).includes(view.sim)))
       .map(p => {
         const recs = byPilot.get(p.trigramme),

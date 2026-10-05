@@ -2,7 +2,7 @@
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mes missions</title>
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=d774850b"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=7e4ed0f1">
-<script src="../../config/repository_tree?v=73e716b3"></script>
+<script src="../../config/repository_tree?v=0fd760aa"></script>
 <style>
   /* liste en cours de lecture (affectations) : estompée */
   #pmList[aria-busy="true"] {
@@ -748,11 +748,12 @@
     right: -6px;
     transform: rotate(-6deg)
   }
-  /* logo en page 1 (Cabinet, Carnet de vol, Durci) : l'en-tête de l'ordre, en haut à gauche, au-dessus de l'étiquette */
+  /* logo en page 1 (Cabinet, Carnet de vol, Durci, Aqua) : l'en-tête de l'ordre, en haut à gauche, au-dessus de l'étiquette
+     (Cabinet : ailes et « DEFA Virtual CPCO » ; les autres : l'en-tête de l'émetteur de la famille, comme en page 2) */
   .pm-logo {
     display: none
   }
-  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="field"]) .pm-book [data-part="title"] .pm-logo {
+  html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="field"], [data-design="aqua"]) .pm-book [data-part="title"] .pm-logo {
     position: absolute;
     top: 0;
     left: 0;
@@ -764,10 +765,10 @@
     right: 0;
     border-bottom: 0
   }
-  html[data-design="flightlog"] .pm-book [data-part="title"] .pm-logo {
+  html:is([data-design="flightlog"], [data-design="aqua"]) .pm-book [data-part="title"] .pm-logo {
     right: 0
   }
-  html:not([data-design="cabinet"], [data-design="flightlog"], [data-design="field"]) .pm-book .pm-logo {
+  html:not([data-design="cabinet"], [data-design="flightlog"], [data-design="field"], [data-design="aqua"]) .pm-book .pm-logo {
     display: none
   }
   .pm-mdtable {
@@ -1144,32 +1145,32 @@
     font-size: 11px;
     letter-spacing: .06em
   }
-  html[data-design="cabinet"] #pmDetail[data-family="COMMAND"] .pm-book .pm-head,
-  html[data-design="cabinet"] #pmDetail[data-family="SPECIAL"] .pm-book .pm-head,
+  html[data-design="cabinet"] #pmDetail[data-family="COMMAND"] .pm-book [data-part="order"] .pm-head,
+  html[data-design="cabinet"] #pmDetail[data-family="SPECIAL"] .pm-book [data-part="order"] .pm-head,
   html[data-design="cabinet"] #pmDetail[data-family="SOF"] .pm-book [data-part="order"] .pm-head {
     background-image: url("../../shared/deco/cabinet/order-header-emg.webp?v=2f0f1503");
     aspect-ratio: 761/233;
   }
-  html[data-design="cabinet"] #pmDetail[data-family="AAR"] .pm-book .pm-head,
+  html[data-design="cabinet"] #pmDetail[data-family="AAR"] .pm-book [data-part="order"] .pm-head,
   html[data-design="cabinet"] #pmDetail[data-family="AIRBORNE"] .pm-book [data-part="order"] .pm-head {
     background-image: url("../../shared/deco/cabinet/order-header-fam.webp?v=1ded3e31");
     aspect-ratio: 635/210;
   }
-  html[data-design="cabinet"] #pmDetail[data-family="SURVEY"] .pm-book .pm-head,
+  html[data-design="cabinet"] #pmDetail[data-family="SURVEY"] .pm-book [data-part="order"] .pm-head,
   html[data-design="cabinet"] #pmDetail[data-family="FI"] .pm-book [data-part="order"] .pm-head {
     background-image: url("../../shared/deco/cabinet/order-header-dfam.webp?v=8a9b6aa6");
     aspect-ratio: 863/208;
   }
-  html[data-design="cabinet"] #pmDetail[data-family="LE"] .pm-book .pm-head,
-  html[data-design="cabinet"] #pmDetail[data-family="MARITIME"] .pm-book .pm-head,
-  html[data-design="cabinet"] #pmDetail[data-family="SAR"] .pm-book .pm-head,
+  html[data-design="cabinet"] #pmDetail[data-family="LE"] .pm-book [data-part="order"] .pm-head,
+  html[data-design="cabinet"] #pmDetail[data-family="MARITIME"] .pm-book [data-part="order"] .pm-head,
+  html[data-design="cabinet"] #pmDetail[data-family="SAR"] .pm-book [data-part="order"] .pm-head,
   html[data-design="cabinet"] #pmDetail[data-family="FIRE"] .pm-book [data-part="order"] .pm-head {
     background-image: url("../../shared/deco/cabinet/order-header-prefmar.webp?v=8ea59c39");
     aspect-ratio: 724/189;
   }
-  html[data-design="cabinet"] #pmDetail[data-family="AIRLIFT"] .pm-book .pm-head,
-  html[data-design="cabinet"] #pmDetail[data-family="HEMS"] .pm-book .pm-head,
-  html[data-design="cabinet"] #pmDetail[data-family="MEDEVAC"] .pm-book .pm-head,
+  html[data-design="cabinet"] #pmDetail[data-family="AIRLIFT"] .pm-book [data-part="order"] .pm-head,
+  html[data-design="cabinet"] #pmDetail[data-family="HEMS"] .pm-book [data-part="order"] .pm-head,
+  html[data-design="cabinet"] #pmDetail[data-family="MEDEVAC"] .pm-book [data-part="order"] .pm-head,
   html[data-design="cabinet"] #pmDetail[data-family="HADR"] .pm-book [data-part="order"] .pm-head {
     background-image: url("../../shared/deco/cabinet/order-header-ban.webp?v=76f49d13");
     aspect-ratio: 841/171;
@@ -1559,7 +1560,7 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=42566549"></script>
-<script src="../../shared/repository_nav.js?v=18652d6f"></script>
+<script src="../../shared/repository_nav.js?v=b6d79f2e"></script>
 <script src="mes_missions_i18n.js?v=0207db7b" defer></script>
 <script src="../../shared/content_i18n.js?v=7afecb78"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script>
