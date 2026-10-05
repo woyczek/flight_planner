@@ -1721,6 +1721,24 @@
   }, true);
 
   // --- missions probables
+  /** Résumé d'une mission probable (déplié sous sa ligne) : créneau, équipage proposé et renforts, règle, calcul du
+   *  score, contexte (sessions ATC, contrôleurs, événements, thème), simulateurs communs, missions déjà affectées. */
+  function probableSummary(r) {
+    const s = r.slot,
+      O = window.OdvAssign,
+      assigned = [...new Set((O?.inSlot(s.jourIndex, s.creneauIndex) || []).filter(a => a.role !== 'convoyage').map(a => `${a.mission}${a.title ? ` ${a.title}` : ''}`))];
+    const row = (k, v) => v ? `<dt>${k}</dt><dd>${v}</dd>` : '';
+    return `<dl class="odv-mp-sum">${[
+      row(L(['Créneau', 'Slot', 'Zeitfenster', 'Franja']), `${esc(wordL(s.jour))} ${esc(dateFr(s.date))}, ${esc(wordL(s.creneau))} (${esc(s.heures)}) — ${esc(L(['{n} pilote(s) libre(s)', '{n} free pilot(s)', '{n} freie(r) Pilot(en)', '{n} piloto(s) libre(s)'], { n: s.n }))}`),
+      row(L(['Équipage proposé', 'Proposed crew', 'Vorgeschlagene Besatzung', 'Tripulación propuesta']), r.affectation.map(a => `${tri(a.pilote, null, false)} <small class="mut">${esc(a.role === '*' ? L(['autre', 'other', 'andere', 'otro']) : C.roleLabel(a.role))}</small>`).join(' + ')),
+      row(L(['Renforts possibles', 'Possible reinforcements', 'Mögliche Verstärkung', 'Refuerzos posibles']), r.renforts.map(t => tri(t, null, false)).join(' ')),
+      row(L(['Règle', 'Rule', 'Regel', 'Regla']), esc(C.say(r.regle))),
+      row(L(['Score', 'Score', 'Punktzahl', 'Puntuación']), esc(C.say(r.calcul))),
+      row(L(['Contexte', 'Context', 'Kontext', 'Contexto']), s.contexte.length ? `<ul>${s.contexte.map(c => `<li>${esc(C.say(c))}</li>`).join('')}</ul>` : ''),
+      row(L(['Simulateurs communs', 'Common simulators', 'Gemeinsame Simulatoren', 'Simuladores comunes']), s.simsCommuns.length ? `${window.MissionAssignments?.simChips(s.simsCommuns) || ''}${esc(s.simsCommuns.join(', '))}` : ''),
+      row(L(['Déjà affecté sur le créneau', 'Already assigned in the slot', 'Im Zeitfenster bereits zugewiesen', 'Ya asignado en la franja']), esc(assigned.join(' · ')))
+    ].join('')}</dl>`;
+  }
   function renderMissions() {
     const rules = $('odvRules');
     rules.innerHTML = `<summary>${L(['Règles des familles et du score', 'Family and score rules', 'Regeln der Familien und der Punktzahl', 'Reglas de las familias y de la puntuación'])}</summary><ul>${Object.entries(C.FAMILIES).map(([f, d]) => `<li><span class="odv-fam">${esc(f)}</span> ${esc(C.familyRule(f) ?? d.rule)}</li>`).join('')}</ul>
@@ -1780,8 +1798,10 @@
         html: (v, r) => `<span class="odv-why" title="${esc([C.say(v), L(['Règle : {r}', 'Rule: {r}', 'Regel: {r}', 'Regla: {r}'], { r: C.say(r.regle) }), ...(r.rang === 1 ? r.slot.contexte.map(C.say) : [])].join('\n'))}">${esc(C.say(r.regle))}</span>`
       }],
       defaultSortKey: 'ordre',
-      onRowClick: r => select(`${r.slot.jourIndex}${r.slot.creneauIndex}`),
-      rowTitle: L(['Cliquer pour le détail du créneau', 'Click for the slot details', 'Klicken für die Details des Zeitfensters', 'Haga clic para ver el detalle de la franja']),
+      // clic sur la ligne (hors « Planifier » / « Modifier ») : résumé de la mission probable déplié sous elle
+      detail: probableSummary,
+      detailKey: r => `${r.slot.jourIndex}${r.slot.creneauIndex}-${r.famille}`,
+      rowTitle: L(['Cliquer pour déplier le résumé', 'Click to expand the summary', 'Klicken, um die Zusammenfassung aufzuklappen', 'Haga clic para desplegar el resumen']),
       emptyText: L(['Aucun créneau avec au moins {n} pilote(s).', 'No slot with at least {n} pilot(s).', 'Kein Zeitfenster mit mindestens {n} Pilot(en).', 'Ninguna franja con al menos {n} piloto(s).'], { n: settings.minPilots }),
       storageKey: 'sortedTableWidths:odvPlanning#missions'
     }, rows);
