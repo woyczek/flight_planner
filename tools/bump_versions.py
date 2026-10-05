@@ -12,14 +12,17 @@ Ce qui est versionné :
 - repository_nav.js et config/repository_tree : table FILE_V des feuilles de design (designs.list[id].css) ;
   repository_tree : aussi « ../shared/designs.css?v=… » (feuilles posées dès l'en-tête) ;
 - feuilles des designs (designs_skeuo.css, block_icons.css) : images textures / deco / icons/skeuo.
-Un script qui versionne ses images avec son propre ?v= (DEPENDANCES) reçoit une empreinte qui couvre aussi ces images.
+Un script qui versionne ses images avec son propre ?v= (DEPENDANCES) reçoit une empreinte qui couvre aussi ces images
+— seulement celles que git suit (index : image ajoutée par « git add »), par leur identifiant git : les images déposées
+dans un espace de travail et pas encore ajoutées ne changent rien, et l'empreinte est la même dans tous les espaces
+(fichier LFS téléchargé ou non). Sans git : contenu des images présentes, comme avant.
 Les empreintes se propagent : une image modifiée change la feuille qui la nomme, donc la page qui charge la feuille.
 Fins de ligne normalisées avant calcul (même empreinte quelle que soit l'extraction git).
 
 Écrit aussi repository_tree à la racine : fichier de compatibilité (bloc release seul, lu par le contrôle des mises à
 jour des versions 4.6.0 et antérieures, qui ne cherchaient pas encore dans config/). À retirer à partir de la 4.9.
 """
-import glob, hashlib, io, json, os, re, sys
+import glob, hashlib, io, json, os, re, subprocess, sys
 sys.stdout.reconfigure(encoding='utf-8')
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 SHARED = os.path.join(ROOT, 'shared')
@@ -44,15 +47,38 @@ def lire(path):
     return b if path.lower().endswith(BINAIRE) else b.replace(b'\r\n', b'\n')
 
 
+_suivis = None
+
+
+def suivis():
+    """Fichiers suivis par git (index) → identifiant du blob ; None sans git ou hors d'un dépôt."""
+    global _suivis
+    if _suivis is None:
+        try:
+            out = subprocess.run(['git', 'ls-files', '-s', '-z', '--', 'shared'], cwd=ROOT, capture_output=True, check=True).stdout
+            _suivis = {}
+            for ligne in out.decode('utf-8').split('\0'):
+                if '\t' in ligne:
+                    tete, chemin = ligne.split('\t', 1)
+                    _suivis[chemin] = tete.split()[1]
+        except (OSError, subprocess.CalledProcessError, IndexError):
+            _suivis = False
+    return _suivis or None
+
+
 def empreinte(path):
     """Empreinte du fichier (et de ses dépendances déclarées) ; 8 caractères hexadécimaux."""
     path = os.path.normpath(path)
     if path in _cache:
         return _cache[path]
     h = hashlib.sha1(lire(path))
+    idx = suivis()
     for motif in DEPENDANCES.get(rel(path), []):
         for dep in sorted(glob.glob(os.path.join(ROOT, motif), recursive=True)):
-            h.update(rel(dep).encode() + hashlib.sha1(lire(dep)).digest())
+            if idx is None:  # sans git : contenu des images présentes
+                h.update(rel(dep).encode() + hashlib.sha1(lire(dep)).digest())
+            elif rel(dep) in idx:  # image suivie : son identifiant git (le même partout)
+                h.update(rel(dep).encode() + idx[rel(dep)].encode())
     _cache[path] = h.hexdigest()[:8]
     return _cache[path]
 

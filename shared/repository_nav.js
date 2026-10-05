@@ -342,7 +342,7 @@
     if (document.getElementById("repoDesignDeco")) return;
     const d = document.createElement("script");
     d.id = "repoDesignDeco";
-    d.src = new URL("design_deco.js?v=5ef55512", script.src).href;
+    d.src = new URL("design_deco.js?v=988fb15f", script.src).href;
     document.head.append(d);
   };
   designCss(design);
@@ -534,7 +534,7 @@
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
-      sc.src = new URL("appearance_page.js?v=8a5411fc", script.src).href;
+      sc.src = new URL("appearance_page.js?v=29f91bf9", script.src).href;
       sc.onload = show;
       document.head.append(sc);
     }
