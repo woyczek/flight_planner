@@ -1809,6 +1809,7 @@
         n: opVols.length
       }))}</button>`;
       if (e.mission && window.AssignDialog) extra += `<button type="button" data-assign title="${esc(t(L4('Affectations de l’équipage (appareil, indicatif, décollage) : l’ordre de mission que les pilotes reçoivent dans Mes missions', 'Crew assignments (aircraft, callsign, take-off): the mission order the pilots receive in My missions', 'Zuweisungen der Besatzung (Luftfahrzeug, Rufzeichen, Start): der Missionsbefehl, den die Piloten in Meine Missionen erhalten', 'Asignaciones de la tripulación (aeronave, indicativo, despegue): la orden de misión que los pilotos reciben en Mis misiones')))}">${esc(t(L4('Ordre de mission…', 'Mission order…', 'Missionsbefehl…', 'Orden de misión…')))}</button>`;
+      if (e.convoyage && window.AssignDialog) extra += `<button type="button" data-ferryorder title="${esc(t(L4('Ordre de mission du vol servi, convoyage compris : le convoyeur reçoit son ordre de convoyage dans Mes missions (sauf s’il est le pilote de la mission : une ligne de son ordre de mission)', 'Mission order of the flight served, ferry included: the ferry pilot receives their ferry order in My missions (unless they are the mission pilot: a line of their mission order)', 'Missionsbefehl des versorgten Flugs mit Überführung: der Überführungspilot erhält seinen Überführungsbefehl in Meine Missionen (außer er ist der Missionspilot: eine Zeile seines Missionsbefehls)', 'Orden de misión del vuelo servido, con traslado: el piloto del traslado recibe su orden de traslado en Mis misiones (salvo si es el piloto de la misión: una línea de su orden de misión)')))}">${esc(t(L4('Ordre de convoyage…', 'Ferry order…', 'Überführungsbefehl…', 'Orden de traslado…')))}</button>`;
       if (S.editable && e.convoyage) extra += `<button type="button" data-selfferry title="${esc(t(L4('Le pilote de cet appareil sur la mission fait aussi le convoyage', 'The pilot of this aircraft on the mission also flies the ferry', 'Der Pilot dieses Luftfahrzeugs auf der Mission fliegt auch die Überführung', 'El piloto de esta aeronave en la misión hace también el traslado')))}">${esc(t(L4('Par le pilote de la mission', 'By the mission pilot', 'Durch den Missionspiloten', 'Por el piloto de la misión')))}</button>`;
       if (S.editable && !e.convoyage) extra += `<button type="button" data-order title="${esc(t(L4('Commander une mission au générateur : durée, avions et ravitaillement de la plaquette préremplis', 'Order a mission from the generator: duration, aircraft and refuelling of the strip prefilled', 'Mission beim Generator bestellen: Dauer, Luftfahrzeuge und Betankung des Streifens vorausgefüllt', 'Encargar una misión al generador: duración, aeronaves y reabastecimiento de la ficha prerrellenados')))}">${esc(t(L4('Commander une mission…', 'Order a mission…', 'Mission bestellen…', 'Encargar una misión…')))}</button>`;
       if (S.editable) extra += `<button type="button" data-reserve title="${esc(t(L4('Retirer de la frise, garder dans la réserve des vols', 'Remove from the timeline, keep in the flight pool', 'Von der Zeitleiste nehmen, im Flugvorrat behalten', 'Quitar de la cronología, guardar en la reserva de vuelos')))}">${esc(t(L4('↩ Réserve', '↩ Pool', '↩ Vorrat', '↩ Reserva')))}</button>`;
@@ -1842,6 +1843,12 @@
       const op = reg(e.mission)?.operation?.id;
       const vols = S.doc.elements.filter(x => x.type === 'vol' && x.date === e.date && x.mission && reg(x.mission)?.operation?.id === op).sort((a, b) => min(a.debut) - min(b.debut));
       for (const v of vols) await assignMission(v);
+    });
+    d.querySelector('[data-ferryorder]')?.addEventListener('click', () => {
+      const v = S.doc.elements.find(x => x.id === e.convoyage?.pour);
+      if (!v) return notify(t(L4('Vol servi introuvable.', 'Flight served not found.', 'Versorgter Flug nicht gefunden.', 'Vuelo servido no encontrado.')), 'warn');
+      d.close('cancel');
+      assignMission(v);
     });
     d.querySelector('[data-selfferry]')?.addEventListener('click', () => {
       const v = S.doc.elements.find(x => x.id === e.convoyage?.pour);
@@ -2439,6 +2446,7 @@
     const y = await yamlOf(m);
     await window.AssignDialog.open(m, y, {
       maps: m.images || [],
+      departure: depOf(m) || undefined,
       pilots: [],
       takeoff: Date.parse(`${e.date}T${d.querySelector('[name=debut]')?.value || e.debut}:00Z`),
       alert: d.querySelector('[name=astreinte]')?.checked ? {
@@ -2474,6 +2482,17 @@
       }
     }).catch(err => notify(String(err?.message || err), 'error'));
   }
+  /** Plaquette de convoyage d'un appareil du vol, transmise à la fenêtre d'affectation : heure, durée, terrain (gardée telle
+   *  quelle, déplacement à la main compris, tant que l'appareil ne change pas). */
+  function ferryOf(e, immat) {
+    const c = immat && S.doc.elements.find(x => x.convoyage?.pour === e.id && x.convoyage.immat === immat);
+    return c ? {
+      registration: immat,
+      from: c.convoyage.from,
+      minutes: c.duree,
+      takeoff: Date.parse(`${c.date}T${c.debut}:00Z`)
+    } : null;
+  }
   async function assignMission(e) {
     const m = reg(e.mission) || (window.MissionIndex?.all?.() || []).find(x => x.id === e.mission);
     if (!m) return notify(tf(L4('Mission {m} absente du registre', 'Mission {m} not in the registry', 'Mission {m} nicht im Register', 'Misión {m} ausente del registro'), {
@@ -2493,12 +2512,15 @@
     const crew = planes.map(a => a.pilote);
     const dlg = await window.AssignDialog.open(m, y, {
       maps: m.images || [],
+      // terrain de départ de secours (yaml sans origine lisible) : convoyage calculé et affiché quand même
+      departure: depOf(m) || undefined,
       pilots: crew,
       takeoff: Date.parse(`${e.date}T${e.debut}:00Z`),
       rows: planes.length ? planes.map((a, i) => ({
         pilot: a.pilote,
         registration: a.appareil?.immat || '',
         callsign: a.poste?.callsign || (e.indicatif ? next(e.indicatif, i) : ''),
+        ferry: ferryOf(e, a.appareil?.immat),
         // convoyeur : pilote glissé sur la plaquette de convoyage de cet appareil, sinon « à affecter »
         ferryPilot: (() => {
           const c = S.doc.elements.find(x => x.convoyage?.pour === e.id && x.convoyage.immat === a.appareil?.immat);
