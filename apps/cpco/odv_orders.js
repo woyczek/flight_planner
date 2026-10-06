@@ -575,6 +575,40 @@
       cat
     });
   }
+  /** Ligne RTBA · LL en segments : journée découpée à chaque début ou fin d'activation ; un segment par intervalle où des
+   *  zones sont actives, séparé du voisin, teinté selon le nombre de zones (hachuré si l'une n'est que demandée ou
+   *  refusée) ; infobulle « début–fin z » puis une ligne par zone (nom · réseau · état). */
+  function llSegments(X, P) {
+    const spans = S.llRows.flatMap(r => (r.creneaux || []).map(c => ({
+      a: min(c.debut),
+      b: min(c.fin) || 1440,
+      r
+    }))).filter(x => x.b > x.a);
+    if (!spans.length) return '';
+    const cuts = [...new Set(spans.flatMap(x => [x.a, x.b]))].sort((p, q) => p - q);
+    const rank = {
+      refusee: 3,
+      demandee: 2,
+      active: 1
+    };
+    const out = [];
+    for (let i = 0; i + 1 < cuts.length; i++) {
+      const a = cuts[i],
+        b = cuts[i + 1];
+      const on = spans.filter(x => x.a < b && a < x.b).map(x => x.r);
+      if (!on.length) continue;
+      const zones = [...new Map(on.map(r => [`${r.nom}|${r.reseau || ''}|${r.etat || ''}`, r])).values()].sort((p, q) => String(p.nom).localeCompare(String(q.nom)));
+      const worst = zones.map(r => r.etat || 'active').sort((p, q) => (rank[q] || 0) - (rank[p] || 0))[0];
+      const pct = Math.min(100, 40 + 15 * zones.length);
+      const tip = [`${hhmm(a)}–${hhmm(b)}z · ${tf(L4('{n} zone(s)', '{n} area(s)', '{n} Gebiet(e)', '{n} zona(s)'), {
+        n: zones.length
+      })}`, ...zones.map(r => [r.nom, r.reseau || t(L4('tous réseaux', 'all networks', 'alle Netzwerke', 'todas las redes')), t(TX.zoneEtats[r.etat || 'active'] || [r.etat, r.etat, r.etat, r.etat])].join(' · '))].join('\n');
+      const w = (b - a) * P;
+      const label = w > 90 ? zones.map(r => r.nom).join(', ') : w > 22 ? String(zones.length) : '';
+      out.push(`<div class="odvo-ll${worst !== 'active' ? ' odvo-ll-' + esc(worst) : ''}" style="left:${X(a)}px;width:${w}px;background:color-mix(in srgb, ${esc(tint(zones[0].couleur || '#4ADE80'))} ${pct}%, transparent)" title="${esc(tip)}">${esc(label)}</div>`);
+    }
+    return out.join('');
+  }
   function paintZones() {
     const host = $('#odvoGrid'),
       s0 = +host?.dataset.s0;
@@ -583,7 +617,7 @@
       X = m => (m - s0) * P;
     const ll = $('#odvoLL'),
       zn = $('#odvoZones');
-    if (ll) ll.innerHTML = S.llRows.flatMap(r => (r.creneaux || []).map(c => `<div class="odvo-ll${r.etat && r.etat !== 'active' ? ' odvo-ll-' + esc(r.etat) : ''}" style="left:${X(min(c.debut))}px;width:${(min(c.fin) - min(c.debut)) * P}px;background:${esc(tint(r.couleur || '#4ADE80'))}" title="${esc(`${r.nom} ${c.debut}–${c.fin}z${r.reseau ? ' · ' + r.reseau : ''}${r.etat ? ' · ' + t(TX.zoneEtats[r.etat] || [r.etat, r.etat, r.etat, r.etat]) : ''}`)}">${esc(r.nom)}</div>`)).join('') || (S.airMissing ? `<a class="mut" href="${esc(S.airMissing.url || '#')}">${esc(t(L4('Base aéronautique à installer', 'Aeronautical database to install', 'Luftfahrtdatenbank installieren', 'Base aeronáutica por instalar')))}</a>` : '');
+    if (ll) ll.innerHTML = llSegments(X, P) || (S.airMissing ? `<a class="mut" href="${esc(S.airMissing.url || '#')}">${esc(t(L4('Base aéronautique à installer', 'Aeronautical database to install', 'Luftfahrtdatenbank installieren', 'Base aeronáutica por instalar')))}</a>` : '');
     if (zn) zn.innerHTML = S.zoneRows.map(({
       vol,
       zones
