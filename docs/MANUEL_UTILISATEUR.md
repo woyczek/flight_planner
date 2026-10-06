@@ -606,7 +606,7 @@ Résultat de la mission et suites à donner (bloc placé en 2e position pour la 
 
 1. Choisissez le « Résultat » : Succès, Succès partiel, Interrompue, Annulée, Déroutée, Pas de contact,
    Objectif non trouvé, Météo, Technique, Opérationnel, Autre.
-2. Pour tout résultat autre que Succès ou Autre, le champ « Motif d'interruption » apparaît.
+2. Pour tout résultat autre que Succès ou Autre, les champs « Motif d'interruption » et « Causes » apparaissent ; cochez toutes les causes (météo, technique, simulateur, pilote absent, contrôle absent, réseau, zone non activée, ravitailleur absent, manque de temps…) : elles remontent sur la plaquette de l'ordre de vol (MNE).
 3. Complétez si besoin « Résultat détaillé », « Incidents » et « Anomalies techniques ».
 
 Ce résultat alimente le taux de réussite et le graphique « Résultats » des reportings.

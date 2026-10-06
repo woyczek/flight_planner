@@ -469,6 +469,79 @@ Dieser Block speichert Dateien auf diesem Computer. Sie enthalten personenbezoge
 
 Verweigert der Browser das automatische Kopieren, wird der Text markiert: Kopieren Sie ihn mit Strg+C.
 
+## Flugbefehle
+<!-- page: apps/cpco/odv_orders.html -->
+
+Die Seite Flugbefehle erstellt den Flugbefehl der Woche: Flugstreifen, Lotsendienst, Sonstiges und Notizen auf einer Zeitleiste, mit Verfügbarkeits- und Gebietskonflikten.
+Zum Öffnen: Seitenleiste › Rubrik „Zentrum“ › „Befehle“. Wie das übrige Zentrum setzt sie das aktivierte Zentrum voraus; im Produktionsmodus muss man zudem mit der Rolle `admin_centre` angemeldet sein. Sonst öffnet sich die Seite schreibgeschützt.
+Alles wird im gemeinsamen Datenpool gespeichert: der Befehl der Woche in `data/odv/<Jahr>-W<Woche>.json`, die Einstellungen in `data/config/odv.json`. Die Verfügbarkeiten bleiben die der Piloten, die Besatzung eines Missionsflugs die der Zuweisungen.
+Die Zeiten sind in z (UTC). Datenmodell: [Flugbefehle](../technique/ODV_ORDRES.md).
+
+### Woche
+
+- „◀“ und „▶“ wechseln die Woche, „Diese Woche“ kehrt zur laufenden Woche zurück.
+- Die Tagesreiter zeigen in Rot die Zahl der Elemente im Konflikt an diesem Tag.
+- „Tag“, „Woche“ und „Statistik“ wechseln die Ansicht.
+- „Dienst“ bestimmt den Diensthabenden der Woche.
+- „Briefing“ (oder die Taste F) zeigt den Tagesbefehl im Vollbild; die Pfeile ← und → wechseln den Tag.
+- Die Statuszeile zeigt „Gespeichert“ oder „In diesem Browser gespeichert“, wenn der Datenordner nicht freigegeben ist.
+
+### Tagesbefehl
+
+Links die Palette: Vorlagen für Flüge, Lotsendienst und Sonstiges, die Notiz, dann die Mitglieder (Stab, dann Mitglieder) mit dem Balken ihrer Verfügbarkeit an diesem Tag. Rechts die Zeitleiste:
+- gepunktete Linien: Zeitfenster Morgen, Nachmittag und Abend der ODV-Planung; rote Linie: aktuelle Uhrzeit; dunkle Bereiche: Luftfahrtnacht am eingestellten Flugplatz;
+- „RTBA · LL“: Aktivitätszeitfenster des RTBA (eingegebene oder importierte Aktivierungen, sonst die Zeitfenster der Einstellungen);
+- „Gebiete“: von jedem Flug benötigte Gebiete (die seiner Mission oder die für einen Übungsflug eingegebenen), grün wenn im Netzwerk des Flugs aktiv, orange wenn beantragt, sonst rot;
+- „Gemeinsam verfügbar“: Zeiträume, in denen mindestens zwei Mitglieder für einen Flug einsetzbar sind;
+- Abschnitte „Flüge“, „Lotsendienst“, „Sonstiges“, „Notizen“: die Elemente stapeln sich von selbst.
+
+Bedienung:
+- eine Vorlage auf ihren Abschnitt ziehen: das Element wird zur Ablagezeit (in 5-Minuten-Schritten) angelegt und sein Fenster öffnet sich;
+- eine Karte der Palette doppelt anklicken, um sie automatisch zu setzen: zum Synchronzeitpunkt bei einer weiteren Besatzung einer Mission mit mehreren Besatzungen (Versatz der Übung der Operation gegenüber H, sonst Zeit der bereits gesetzten verbundenen Rotte; Tanker: 30 min vor der Betankung oder vor der Rotte, die er versorgt), sonst ins erste stimmige Zeitfenster des Tages (Dienstzeiten, nicht vor der aktuellen Uhrzeit, Besatzung einsetzbar und frei, oder genug gemeinsam verfügbare Mitglieder);
+- ein Mitglied aus der Palette auf einen Streifen ziehen, um es hinzuzufügen, oder ein Trigramm von einem Streifen auf einen anderen, um es zu verschieben;
+- einen Streifen ziehen, um seine Uhrzeit zu ändern, seinen rechten Rand, um seine Dauer zu ändern; ein einfacher Klick öffnet sein Fenster;
+- in der Palette behält „Flugvorrat“ die von der Zeitleiste genommenen Streifen (auf die Palette gezogen oder „↩ Vorrat“ in ihrem Fenster), und „Formationen der Missionen“ bietet an, was die gesetzten Missionsflüge verlangen: Rotten der anderen Missionen der Formation, Tanker, die sie versorgen, Chiffons der Operation;
+- „Zoom“ stellt den Maßstab der Zeitleiste ein.
+
+Auf einem Streifen: „⚠ n“ zählt seine Konflikte, „P“ zeigt an, dass in den 90 Minuten vor dem Flug kein Besatzungsmitglied verfügbar ist, „↻“ eine Wiederholung; ein grüner (erledigt) oder oranger (nicht erledigt) Balken unterstreicht den Status; ein abgesagter Streifen ist durchgestrichen. Unter der Zeitleiste listet „Einteilungsprobleme“ die Konflikte des Tages: ein Klick zeigt den Streifen.
+
+### Fenster eines Elements
+
+- **Flug**: Bezeichnung, Rufzeichen, Mission des Registers (leer: Übung), Netzwerk, Beginn, Dauer, Farbe, Gebiete eines Übungsflugs, Strecke und Abgabe eines Tankerflugs, Tanker und Betankungszeit, Luftfahrzeuge (Pilot, Navigator, abgesagt; höchstens acht), Aufgaben (eine pro Zeile, „Name = TRI“), Infos, Status, Grund, Bericht (ME, Bâché, MNE), teilweise, MNE-Ursachen.
+- Ein eingegebenes Rufzeichen schlägt die Mission der Zuweisung vor, die dieses Rufzeichen an diesem Tag trägt.
+- „Mission des Registers und Team“: eine Zeile je fliegendem Team jeder Mission (Rufzeichen, Luftfahrzeug, Rolle, Familie, Flugplätze, Operation, geschätzte Dauer), nach Dauer sortiert; „⚠“ und eine Benachrichtigung melden eine geschätzte Dauer, die von der gewünschten abweicht (mehr als 15 min oder 15 %). „Übung (ohne Mission)“ lässt den Streifen ohne Mission.
+- „Betankung“: eine Tankermission (die der gleichen Operation oder der gleichen Strecke zuerst), deren Streifen an diesem Tag gesetzt wird, falls noch nicht vorhanden, oder ein bereits gesetzter Tankerflug; die Betankungszeit wird daneben eingestellt.
+- **PTA** (principal training audience): Mitglieder, die das Element vorrangig trainiert, in der Luftfahrzeugtabelle (Flug) oder in der PTA-Liste (Lotsendienst, Sonstiges) angekreuzt; sie sind auf dem Streifen eingekreist. **Konfiguration**: auf dem Luftfahrzeug geladene Konfigurationen (KNON = Kanone, TALIOS = Pod…), aus den Einstellungen vorgeschlagen. **DLO** (desired learning objectives): Ziele jedes Mitglieds für das Element, eine Zeile pro Mitglied „TRI = Ziele“; „◎“ am Trigramm, Ziele beim Überfahren.
+- **Luftfahrzeuge**: zu Beginn zwei Plätze („+ Flügelmann“ fügt weitere hinzu, höchstens acht); für jeden das Luftfahrzeug (Typ der Mission vorgeschlagen ★, nicht vorgeschrieben, oder ein Luftfahrzeug der Flotte), der Pilot und der Navigator. Vorgeschlagen wird das Rufzeichen der Mission, sonst die der Rufzeichentabelle für diesen Typ; es folgt der Mission, wenn sie es ändert. **Betankung**: Strecke wählen, dann eine Tankermission dieser Strecke; ist ihr Streifen nicht gesetzt, kommt er in die Palette, und der Flug hängt sich beim Setzen an ihn. Der Streifen zeigt die Mission (Titel, Familie, Flugplatz), die von einem Tanker gehaltene Strecke und für einen Empfänger „⛽ Tanker Strecke Zeit“.
+- Missionsflug: die Besatzung kommt aus den Zuweisungen der Mission; „Missionsbefehl…“ öffnet das Zuweisungsfenster des Zentrums, vorausgefüllt mit den Luftfahrzeugen des Streifens (Pilot, Kennzeichen, Rufzeichen der Rotte): die gespeicherten Zuweisungen sind der Missionsbefehl, den die Piloten in Meine Missionen erhalten (Kennzeichen „OM“ auf dem Streifen). „Mission bestellen…“ öffnet das Bestellformular des Generators, nach dem Streifen voreingestellt (Teams, Luftfahrzeugtypen, Dauer, Betankung). Der Missionsbericht ist maßgeblich: beim Öffnen der Woche werden Status und Bericht daraus übernommen; ohne Bericht nach der eingestellten Frist wird der Flug MNE (Ursache „kein Bericht“).
+- **Lotsendienst**, **Sonstiges**: Bezeichnung, Position (Lotsendienst), Beginn, Dauer, Farbe, Status, Grund, Besatzung (Kästchen der Mitglieder), Notizen (Sonstiges).
+- **Notiz**: freier Text.
+- „Wiederholen“ (täglich, wöchentlich, alle zwei Wochen) und „Bis“ setzen das Element beim ersten Öffnen der folgenden Wochen ein, nie vor seinem Datum.
+- „Löschen“ entfernt das Element.
+
+### Konflikte
+
+| Konflikt | Bedeutung |
+|---|---|
+| Woche nicht angegeben | das Mitglied hat seine Verfügbarkeiten der Woche nicht angegeben |
+| nicht für die ganze Dauer verfügbar | kein Zeitraum deckt das ganze Element ab |
+| nicht einsetzbar (Kategorie) | ein Zeitraum einer Kategorie, die diese Art Element nicht öffnet, überschneidet das Element |
+| zu dieser Zeit schon eingeteilt | das Mitglied ist zur selben Zeit auf einem anderen Element |
+| zweimal im Element | dasselbe Mitglied belegt zwei Plätze |
+| Gebiet nicht aktiviert, beantragt, verboten | benötigtes Gebiet ohne „aktive“ Aktivierung seines Netzwerks über den ganzen Flug, oder P-Gebiet |
+
+Ein Flug verlangt eine verfügbare Kategorie; ein Lotsendienst eine verfügbare Kategorie oder „SOG-Lotsendienst“; Sonstiges akzeptiert auch „Nur am Boden verfügbar“. Lotsendienst und Flug außerhalb SOG, DCS, nicht verfügbar und Ausgleich sind nie einsetzbar.
+
+### Woche und Statistik
+
+- **Woche**: eine Zeile pro Mitglied, eine Zelle pro Tag mit dem Balken der angegebenen Verfügbarkeiten und der Zahl der Elemente, auf denen es steht. Ein Klick auf eine Zelle öffnet seine Zeiträume des Tages: Kategorie, Beginn, Ende und „Ausgleich ab“, der einen Ausgleich bis Mitternacht setzt. Die Zeiträume werden in die Angabe des Piloten geschrieben.
+- „Verfügbarkeitsänderungen“ listet die seit ihrer letzten Berücksichtigung geänderten Angaben; „Berücksichtigt“ und „Alle berücksichtigen“ markieren sie in diesem Browser.
+- **Statistik**: geplante Flüge, Gesamtdauer, erledigt, nicht erledigt, abgesagt, AAR, ME, Bâchés, MNE; je Mitglied: verfügbare Zeit in den Dienstzeiten, Flugzeit, Auslastung (orange über 70 %, rot über 100 % oder ohne Verfügbarkeit).
+
+### Gebietsaktivierungen
+
+Dieser Block erfasst die Gebietsaktivierungen der Woche je Netzwerk und Zeitraum (`data/atc/activations/<Jahr>-W<Woche>.json`): Tag, Gebiet, Netzwerk, Status (aktiv, beantragt, abgelehnt), Beginn, Ende, Bemerkung. „Von IVAO importieren“ übernimmt die von IVAO veröffentlichten Zeiten (API-Schlüssel im Starter eingestellt); manuelle Eingaben bleiben. Eine Änderung berechnet die Gebiete der Flüge sofort neu.
+
 ## Einstellungen › Zentrum
 <!-- page: apps/settings/centre.html -->
 
@@ -546,6 +619,25 @@ Diese Rubrik enthält die spezifischen Einstellungen der Seite ODV-Planung. Sie 
 | Eine an allen 7 Tagen eines Zeitfensters gefärbte Gruppenzeile ignorieren (Gestaltung) | angehakt |
 
 Jede Änderung wird sofort gespeichert. „Standardeinstellungen“ stellt alle obigen Werte wieder her.
+
+### Flugbefehle
+
+Diese Rubrik stellt die Seite Flugbefehle ein (`data/config/odv.json`, synchronisiert).
+
+| Einstellung | Verwendung |
+|---|---|
+| Flugplatz (ICAO) | Luftfahrttag und -nacht auf der Zeitleiste |
+| Standardnetzwerk der Flüge | IVAO oder VATSIM, für den Status der Gebietsaktivierungen |
+| Frist ohne Bericht bis MNE (Stunden) | standardmäßig 48 |
+| Angezeigte Tage, Dienstzeiten | 7 Tage, 06:00 bis 23:00 z; für Zeitleiste und Statistik |
+| Vorlagen für Flüge, Sonstiges, Lotsendienst | Bezeichnung, Dauer, Farbe, gefüllt; „Farbe des Rufzeichens“: der Streifen nimmt die Farbe seines Rufzeichens an |
+| Farben der Rufzeichen | Präfix (das längste im Rufzeichen enthaltene gewinnt), Füllung, Rahmen |
+| Luftfahrzeugkonfigurationen | Text (KNON, TALIOS…), Farbe; in der Luftfahrzeugtabelle eines Flugs vorgeschlagen |
+| LL-/RTBA-Zeitfenster (Ersatz) | Name, Beginn, Ende, Tage, Farbe, Gebiet der Datenbank |
+| Personal | Gruppe Stab oder Mitglieder, Farbe, Reihenfolge in der Palette |
+| Wiederholungen | wiederholte Elemente; „✕“ beendet eine Wiederholung |
+
+„Speichern“ schreibt die Einstellungen; „Standardwerte“ stellt die ursprünglichen Einstellungen wieder her, außer Personal, Rufzeichenfarben, LL-Zeitfenstern und Wiederholungen.
 
 ### Berichtsversand (Webdienst)
 

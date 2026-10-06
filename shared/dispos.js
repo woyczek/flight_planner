@@ -15,7 +15,8 @@
   // API (window.SuiteDispos) : DEFAULT, config(), load(fresh), save(config), groups(), categories({ all }),
   //   category(id), domains(), themes(), label(ligne), themeLabel(id), codeCategory(code ODV), themeOfFamily(famille),
   //   openThemes(catégorie, préférences), opens(thèmes, famille), prefsFromCodes(codes), weekId(ms), weekMonday(id),
-  //   addWeek(id, n), readPilot(TRI, { weeks, fresh }), saveWeek(TRI, semaine, dispos, extra), entriesAt(semaines, ms).
+  //   addWeek(id, n), readPilot(TRI, { weeks, fresh }), saveWeek(TRI, semaine, dispos, extra), entriesAt(semaines, ms),
+  //   affectable(catégorie) (éléments d'un ordre de vol ouverts par la catégorie : vol, controle, divers).
   if (window.SuiteDispos) return;
   const K = window.RepositoryKit;
   const A = () => window.MissionAssignments;
@@ -65,7 +66,8 @@
       { id: 'exercice_ctrl', groupe: 'exercice', type: 'atc', label: L4('Contrôle SOG', 'SOG control', 'SOG-Lotsendienst', 'Control SOG'), couleur: '#C4BD97', ouverts: ['CONTROLE'], odv: ['AM'] },
       { id: 'vol_hors', groupe: 'occupe', type: 'occupe', label: L4('Vol hors SOG (IVAO / VATSIM)', 'Flight outside SOG (IVAO / VATSIM)', 'Flug außerhalb SOG (IVAO / VATSIM)', 'Vuelo fuera de SOG (IVAO / VATSIM)'), couleur: '#FFD966', ouverts: 'none', odv: ['G'] },
       { id: 'dcs', groupe: 'occupe', type: 'occupe', label: L4('DCS', 'DCS', 'DCS', 'DCS'), couleur: '#002060', ouverts: 'none', odv: ['DC'] },
-      { id: 'ctrl_hors', groupe: 'occupe', type: 'atc', label: L4('Contrôle hors DEFA (IVAO / VATSIM)', 'Control outside DEFA (IVAO / VATSIM)', 'Lotsendienst außerhalb DEFA (IVAO / VATSIM)', 'Control fuera de DEFA (IVAO / VATSIM)'), couleur: '#7030A0', ouverts: 'none', odv: ['AT'] },
+      { id: 'sol', groupe: 'occupe', type: 'occupe', label: L4('Disponible au sol seulement', 'Available on the ground only', 'Nur am Boden verfügbar', 'Disponible solo en tierra'), couleur: '#A9D08E', ouverts: 'none', odv: [], affectable: ['divers'] },
+      { id: 'ctrl_hors', groupe: 'occupe', type: 'atc', label: L4('Contrôle hors SOG (IVAO / VATSIM)', 'Control outside SOG (IVAO / VATSIM)', 'Lotsendienst außerhalb SOG (IVAO / VATSIM)', 'Control fuera de SOG (IVAO / VATSIM)'), couleur: '#7030A0', ouverts: 'none', odv: ['AT'] },
       { id: 'indispo', groupe: 'indispo', type: 'indispo', label: L4('Indisponible', 'Unavailable', 'Nicht verfügbar', 'No disponible'), couleur: '#BFBFBF', ouverts: 'none', odv: ['IN'] },
       { id: 'conges', groupe: 'indispo', type: 'indispo', label: L4('Congés', 'Holidays', 'Urlaub', 'Vacaciones'), couleur: '#FFC000', ouverts: 'none', odv: ['V'] },
       { id: 'recup', groupe: 'indispo', type: 'indispo', label: L4('Récupération', 'Time off', 'Ausgleich', 'Descanso'), couleur: '#D9D9D9', ouverts: 'none', odv: ['Q'] },
@@ -127,6 +129,18 @@
     ...(cfg.themes || {})
   });
   const themeLabel = id => label(themes()[id] || id);
+  // Ordres de vols (docs/technique/ODV_ORDRES.md § 2) : éléments auxquels une catégorie rend un membre affectable — champ
+  // affectable de la catégorie, sinon d'après son type ; groupe « occupe » (vol, contrôle hors SOG, DCS) : jamais.
+  const AFFECTABLE = {
+    dispo: ['vol', 'controle', 'divers'],
+    atc: ['controle']
+  };
+  function affectable(id) {
+    const c = category(id);
+    if (!c) return [];
+    if (Array.isArray(c.affectable)) return c.affectable;
+    return c.groupe === 'occupe' ? [] : AFFECTABLE[c.type] || [];
+  }
   /** Catégorie d'un code du classeur ODV (champ odv) ; null si aucune. */
   const codeCategory = code => code ? (cfg.categories || []).find(c => (c.odv || []).includes(code))?.id || null : null;
   /** Thème d'une famille de mission ('*' : toute catégorie disponible) ; null si inconnue. */
@@ -358,6 +372,7 @@
     themes,
     themeLabel,
     codeCategory,
+    affectable,
     themeOfFamily,
     openThemes,
     opens,

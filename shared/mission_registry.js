@@ -312,6 +312,8 @@
       callsigns: [...new Set(aircraft.map(a => String(a.callsign || '').trim()).filter(Boolean))],
       rdv: rdv.length,
       aar: !!(y.air_refueling?.planned || /AAR/i.test(meta.type || '')),
+      aarRole: String(y.air_refueling?.role || '').toLowerCase(), // tanker | receiver (missions d'une opération : même axe)
+      aarTrack: String(y.air_refueling?.track || '').toUpperCase(),
       theatre: theatreOf(+pt.lat, +pt.lon) || theatreOf(+y.destination?.lat, +y.destination?.lon) || foreignTheatre(meta, pt),
       origin: String(y.origin?.name || ''),
       destination: String(y.destination?.name || ''),

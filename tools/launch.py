@@ -15,7 +15,7 @@
 Usage : python tools/launch.py [--port 8000] [--page apps/…] [--no-browser] [--no-data]
 Arrêt : fermer la fenêtre, ou Ctrl+C.
 """
-import argparse, glob, http.server, io, json, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
+import argparse, datetime, glob, http.server, io, json, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
 import urllib.parse, urllib.request, webbrowser, zipfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import data_sync  # synchronisation git du pool de données (bouton « Synchroniser »)

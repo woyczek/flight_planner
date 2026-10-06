@@ -78,7 +78,7 @@
       return o ? label(o.label) : String(value);
     }
     if (field.type === 'checkgroup') return value.map(code => {
-      const o = allCapabilityItems.find(x => x.value === code);
+      const o = (field.groups && !field.groups.some(g => V.capabilityGroups.includes(g)) ? field.groups.flatMap(g => g.items) : allCapabilityItems).find(x => x.value === code);
       return o ? label(o.label) : code;
     }).join(', ');
     if (field.type === 'number' && unit) return `${value} ${unit}`;
@@ -141,7 +141,7 @@
       return body ? `<h4>${esc(t(b.title))}</h4>${body}` : '';
     }).join('');
     // 10–14
-    const results = meta(fieldsBoxes(B.results.fields.filter(f => ['results.outcome', 'results.interruptionReason', 'results.detail'].includes(f.path))));
+    const results = meta(fieldsBoxes(B.results.fields.filter(f => ['results.outcome', 'results.interruptionReason', 'results.causes', 'results.detail'].includes(f.path))));
     const fuel = meta(fieldsBoxes(B.fuel.fields.filter(f => f.path !== 'fuel.unit'), mission, '', unit) + box(['Carburant consommé', 'Fuel used', 'Kraftstoffverbrauch', 'Combustible consumido'], stats.fuelUsed == null ? '' : `${stats.fuelUsed} ${unit}`) + box(['Carburant sur zone', 'Fuel on station', 'Kraftstoff im Einsatzraum', 'Combustible en zona'], stats.fuelOnStation == null ? '' : `${stats.fuelOnStation} ${unit}`));
     const incidents = meta(fieldsBoxes(B.results.fields.filter(f => ['results.incidents', 'results.anomalies'].includes(f.path))));
     const remarks = mission.remarks?.observations ? `<div class="box">${esc(mission.remarks.observations)}</div>` : '';

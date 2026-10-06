@@ -13,7 +13,10 @@
   //     générée à la relecture du dossier (même série) ;
   //   · réglages du formulaire : localStorage missionRegistryOrder:v1 (partagés entre les deux pages).
   //
-  // API : MissionOrder.mount(host, { hint, onOrdered }) · sendPrompt(request, out) · families() · numbering(type)
+  // API : MissionOrder.mount(host, { hint, onOrdered, preset }) · sendPrompt(request, out) · families() · numbering(type)
+  //   preset : réglages imposés à l'ouverture (ordres de vols : plaquette sans mission) — { type, subtype, theatre, teams,
+  //   teamSlots: [aéronef de A, B…], duration: XS | S | M | L | XL, aar: oui | non | libre, rdv, ground } ; repris dans
+  //   les réglages mémorisés comme une saisie
   const ORDER_KEY = 'missionRegistryOrder:v1',
     REG_KEY = 'missionRegistry:v1';
   const TEAM_PRESETS = ['A400M', 'C-130J', 'CASA CN235', 'A330 MRTT', 'E-3F', 'Rafale', 'Falcon 50M', 'Atlantique 2', 'Dash 8 (Milan)', 'CL-415', 'H225 Caracal', 'NH90', 'EC145 (Dragon)', 'H160', 'AS365 Dauphin', 'Beech 200 / TBM', 'drone', 'équipe au sol'];
@@ -262,11 +265,18 @@
   /** Monte le formulaire de commande dans host. hint : consigne après la commande (texte) ; onOrdered(request) : rappel. */
   function mount(host, {
     hint = '',
-    onOrdered = null
+    onOrdered = null,
+    preset = null
   } = {}) {
     if (!host) return;
     const o = load(),
       fam = families();
+    if (preset && typeof preset === 'object') {
+      const keys = ['type', 'subtype', 'theatre', 'theatre2', 'teams', 'teamSlots', 'duration', 'aar', 'rdv', 'ground', 'serie'];
+      for (const k of keys)
+        if (preset[k] != null && preset[k] !== '') o[k] = Array.isArray(preset[k]) ? [...preset[k]] : preset[k];
+      save(o);
+    }
     const draw = () => {
       const f = fam.find(x => x.id === o.type),
         nx = numbering(o.type);

@@ -494,6 +494,17 @@
       f('results.interruptionReason', L('Motif d’interruption', 'Interruption reason', 'Abbruchgrund', 'Motivo de interrupción'), 'text', {
         when: ctx => V.interruptedOutcomes.has(ctx.mission.results?.outcome)
       }),
+      // causes (plusieurs) d'une mission non effectuée ou partielle : MNE des ordres de vols (shared/odv_reports.js)
+      f('results.causes', L('Causes', 'Causes', 'Ursachen', 'Causas'), 'checkgroup', {
+        groups: [{
+          id: 'mneCauses',
+          title: L('Causes', 'Causes', 'Ursachen', 'Causas'),
+          unfiltered: true,
+          items: V.mneCauses
+        }],
+        full: true,
+        when: ctx => V.interruptedOutcomes.has(ctx.mission.results?.outcome)
+      }),
       f('results.detail', L('Résultat détaillé', 'Detailed result', 'Detailliertes Ergebnis', 'Resultado detallado'), 'textarea', {
         full: true
       }),

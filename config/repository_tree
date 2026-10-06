@@ -141,6 +141,7 @@ window.REPOSITORY_TREE={
     {icon:"target",path:"apps/cpco/mission_editor.html",match:["apps/cpco/mission_editor.html","apps/cpco/map_parser.html"],label:["Missions","Missions","Missionen","Misiones"],title:["Générateur de mission et studio cartographique du Centre","Centre mission generator and map studio","Missionsgenerator und Kartenstudio des Zentrums","Generador de misiones y estudio cartográfico del Centro"]},
     {icon:"list",path:"apps/cpco/mission_registry.html",label:["Registre","Registry","Register","Registro"],title:["Registre des missions générées","Generated mission registry","Register der erzeugten Missionen","Registro de misiones generadas"]},
     {icon:"calendar",path:"apps/cpco/odv_planning.html",label:["ODV","ODV","ODV","ODV"],title:["Planning ODV (Centre) : créneaux communs, missions probables","ODV planning (Centre): common slots, likely missions","ODV-Planung (Zentrum): gemeinsame Zeitfenster, wahrscheinliche Missionen","Planificación ODV (Centro): franjas comunes, misiones probables"]},
+    {icon:"clock",path:"apps/cpco/odv_orders.html",label:["Ordres","Orders","Befehle","Órdenes"],title:["Ordres de vols (Centre) : frise de la semaine, plaquettes, conflits","Flight orders (Centre): weekly timeline, flight strips, conflicts","Flugbefehle (Zentrum): Wochenzeitleiste, Flugstreifen, Konflikte","Órdenes de vuelo (Centro): cronología semanal, fichas, conflictos"]},
     {sep:true,bottom:true},
     {icon:"palette",path:"apps/settings/apparence.html",label:["Apparence","Appearance","Darstellung","Apariencia"]},
     {icon:"settings",path:"apps/settings/profil.html",match:"apps/settings/",label:["Paramètres","Settings","Einstellungen","Ajustes"],title:["Paramètres : mon profil, Centre, installation, maintenance","Settings: my profile, Centre, installation, maintenance","Einstellungen: mein Profil, Zentrum, Installation, Wartung","Ajustes: mi perfil, Centro, instalación, mantenimiento"]},
@@ -169,7 +170,7 @@ window.REPOSITORY_TREE={
     pages:{profile:"apps/settings/profil.html",centre:"apps/settings/centre.html",installation:"apps/settings/installation.html",maintenance:"apps/settings/maintenance.html"},
     sections:{
       identity:"profile",account:"profile",themes:"profile",equipment:"profile",planner:"profile",
-      cpco:"centre",users:"centre",dispoCategories:"centre",odv:"centre",send:"centre",
+      cpco:"centre",users:"centre",dispoCategories:"centre",odv:"centre",odvOrders:"centre",send:"centre",
       setup:"installation",sources:"installation",
       fleet:"maintenance",aircraftDb:"maintenance",callsigns:"maintenance",defaReference:"maintenance",defaLog:"maintenance",merges:"maintenance",ledgers:"maintenance",
       registry:"maintenance",localTypes:"maintenance",learned:"maintenance",airports:"maintenance",
@@ -231,7 +232,8 @@ window.REPOSITORY_TREE={
     {path:"apps/pilot/disponibilites.html",menu:false,label:"Mes disponibilités — saisie par plages, par catégorie"},
     {path:"apps/pilot/mes_missions.html",menu:"Mes missions",label:"Mes missions — missions affectées par le Centre, disponibilités"},
     {path:"apps/planner/map_planner.html",menu:"Cartes de vol",label:"Cartes de vol — route, cartes topographiques, approche, rendez-vous, destination"},
-    {path:"apps/cpco/odv_planning.html",menu:"Centre — Planning ODV",label:"Planning ODV — Centre de planification et de conduite des opérations"}
+    {path:"apps/cpco/odv_planning.html",menu:"Centre — Planning ODV",label:"Planning ODV — Centre de planification et de conduite des opérations"},
+    {path:"apps/cpco/odv_orders.html",menu:"Centre — Ordres de vols",label:"Ordres de vols — Centre de planification et de conduite des opérations"}
   ],
   // Libellés du menu ☰ dans les 4 langues (fr, en, de, es) : clé = libellé français de menu / label.
   labels:{
@@ -245,6 +247,7 @@ window.REPOSITORY_TREE={
     "Cartes de vol":["Cartes de vol","Flight maps","Flugkarten","Mapas de vuelo"],
     "Mes missions":["Mes missions","My missions","Meine Missionen","Mis misiones"],
     "Centre — Planning ODV":["Centre — Planning ODV","Centre — ODV planning","Zentrum — ODV-Planung","Centro — Planificación ODV"],
+    "Centre — Ordres de vols":["Centre — Ordres de vols","Centre — Flight orders","Zentrum — Flugbefehle","Centro — Órdenes de vuelo"],
     "Apparence":["Apparence","Appearance","Darstellung","Apariencia"],
     "Paramètres":["Paramètres","Settings","Einstellungen","Ajustes"],
     "Mon profil":["Mon profil","My profile","Mein Profil","Mi perfil"],
