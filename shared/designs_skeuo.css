@@ -3048,17 +3048,18 @@ html[data-design="flightlog"] .repo-tab:last-child::after {
   border-radius: 0;
   box-shadow: none
 }
-/* mesures de l'image (797 px, × .1636) : opaque de x 1 à 794, cadre de 36 à 758 — demi-patte gauche x 1–35 (35 px,
-   5.73 px), droite x 759–794 (36 px, 5.89 px) ; chaque terminateur montre exactement sa demi-patte (colonnes
-   transparentes et début du cadre exclus) et se colle à la plaque */
+/* mesures de l'image (797 px, × .1636) : opaque de x 1 à 794 ; les coins arrondis du cadre débordent en x 29–34 et
+   760–765 au-dessus et au-dessous de la patte (traits verticaux aux bouts de la rangée) — terminateurs pris dans les
+   colonnes propres : gauche x 766–794 (29 px, 4.74 px), droite x 1–28 (28 px, 4.58 px), collés à la partie opaque de la
+   plaque (ses colonnes transparentes : 1 px à gauche, 2 px à droite, soit .16 et .33 px) */
 html[data-design="flightlog"] .repo-tab:first-child::before {
-  left: -5.72px;
-  width: 5.89px;
+  left: -4.58px;
+  width: 4.74px;
   background: url("deco/flightlog/tabs/tab.webp?v=7d2ddfc4") right -0.33px center/auto 100% no-repeat
 }
 html[data-design="flightlog"] .repo-tab:last-child::after {
-  right: -5.4px;
-  width: 5.73px;
+  right: -4.25px;
+  width: 4.58px;
   background: url("deco/flightlog/tabs/tab.webp?v=7d2ddfc4") left -0.16px center/auto 100% no-repeat
 }
 /* plaques serrées d'1 px : colonnes transparentes des bords (1 + 2 px d'image) sans fente entre deux demi-pattes */
@@ -3081,6 +3082,8 @@ html[data-design="flightlog"] .repo-tab:not(#imp) {
   border-image: url("deco/flightlog/tabs/tab.webp?v=7d2ddfc4") 64 138 58 132 fill / 10.5px 22.6px 9.5px 21.6px stretch
 }
 html[data-design="flightlog"] .repo-tab[aria-current="page"]:not(#imp) {
+  /* pas de fond : celui de l'onglet courant (bleu marine du thème) débordait autour de la plaque */
+  background: none;
   color: #3a2808;
   text-shadow: 0 1px 0 rgba(255, 244, 200, .8);
   box-shadow: none;

@@ -22,6 +22,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   (Sources et dossiers).
 - `tools/aero_fetch.py` : téléchargement des données libres (openAIP par pays, FAA, ENAIRE) dans `data/sia/<source>/`,
   en ligne de commande ou par le lanceur (`POST /__setup/aero-fetch`).
+- `tools/publish_dist.py` (lanceurs `publish_dist.sh` / `.cmd`) : archive de livraison d’une version publiée,
+  `dist/xplane-web-suite-<version>.zip` — le code seul au tag (ni `data/` ni `examples/`), vraies images LFS (pas de
+  pointeurs), archive reproductible — empreinte SHA-256 et rubrique « Livraison » dans la section de la version.
 
 ## [4.8.0] — 2026-10-05
 
@@ -144,6 +147,10 @@ traduits, compagnie virtuelle configurable, en-têtes de l'ordre selon la famill
   identifiants framagit sans retour à la ligne.
 - Planificateur : commentaire et noms de phase d'un profil importé échappés.
 - Webservice d'envoi des CR : `https://` obligatoire (hors localhost).
+
+### Livraison
+
+- Archive de livraison : `xplane-web-suite-4.8.0.zip` — SHA-256 `ae688fc9cf1479f5442d9b6700c105cb01e54050370c9829da166932cc5d48ff` (code seul, hors dépôt : dossier `dist/`).
 
 ## [4.7.0] — 2026-10-02
 
