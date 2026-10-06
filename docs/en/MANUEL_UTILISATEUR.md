@@ -380,7 +380,7 @@ The stroke width of the icons, or no icons at all. Each row shows a preview of t
 | “Brass (medallions)”, “Steel (plates)”, “Gel (bubbles)”, “Avionics (dials)” | Material sets |
 | “No icons” | No icons |
 
-**“Side bar”**: “Depending on design”, “Always” or “Never”. By default, it is always shown (except on a narrow screen and when printing).
+**“Side bar”**: “Depending on design”, “Always” or “Never”. By default, it is always shown (except on a narrow screen and when printing). “Icon size”: “Small”, “Medium” (default) or “Large”. “Display”: “Icon and label” (default), “Icon only” (narrower bar, entry name as a tooltip) or “Label only”.
 
 ### Theme colours
 

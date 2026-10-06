@@ -380,7 +380,7 @@ Die Strichstärke der Symbole oder gar keine Symbole. Jede Zeile zeigt eine Vors
 | „Messing (Medaillons)“, „Stahl (Platten)“, „Gel (Blasen)“, „Avionik (Instrumente)“ | Material-Sätze |
 | „Keine Symbole“ | Keine Symbole |
 
-**„Seitenleiste“**: „Je nach Design“, „Immer“ oder „Nie“. Standardmäßig wird sie immer angezeigt (außer bei schmalem Bildschirm und beim Drucken).
+**„Seitenleiste“**: „Je nach Design“, „Immer“ oder „Nie“. Standardmäßig wird sie immer angezeigt (außer bei schmalem Bildschirm und beim Drucken). „Symbolgröße“: „Klein“, „Mittel“ (Standard) oder „Groß“. „Anzeige“: „Symbol und Beschriftung“ (Standard), „Nur Symbol“ (schmalere Leiste, Name des Eintrags als Tooltip) oder „Nur Beschriftung“.
 
 ### Themenfarben
 

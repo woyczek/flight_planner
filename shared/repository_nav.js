@@ -287,6 +287,9 @@
     const sn = readPref("repositorySidenav", null);
     if (sn === "auto") delete doc.dataset.sidenav;
     else doc.dataset.sidenav = sn || "on";
+    // taille des icônes (s, m, l) et affichage (both : icône et libellé ; icon : icône seule ; label : libellé seul)
+    doc.dataset.sidenavSize = readPref("repositorySidenavSize", null) || "m";
+    doc.dataset.sidenavShow = readPref("repositorySidenavShow", null) || "both";
   } // barre latérale affichée par défaut ; « auto » : selon le design
   // Design graphique (REPOSITORY_TREE.designs, règles dans designs.css) : choix mémorisé (repositoryDesign),
   // posé dès le chargement sur <html data-design> pour éviter un changement visible.
@@ -766,6 +769,8 @@
         icons: doc.dataset.icons || "line",
         iconsSaved: readPref("repositoryIcons", null),
         sidenav: doc.dataset.sidenav || "",
+        sidenavSize: doc.dataset.sidenavSize || "m",
+        sidenavShow: doc.dataset.sidenavShow || "both",
         decor: doc.dataset.decor,
         decorSaved: readPref("repositoryDecor", null),
         colors: readJson("repositoryColors") || {},
@@ -845,6 +850,19 @@
           doc.dataset.sidenav = on ? "on" : "off";
           writePref("repositorySidenav", doc.dataset.sidenav);
         }
+      },
+      /** Taille des icônes de la barre latérale : "s", "m" (défaut, null), "l". */
+      setSidenavSize(v) {
+        v = ["s", "l"].includes(v) ? v : "m";
+        writePref("repositorySidenavSize", v === "m" ? null : v);
+        doc.dataset.sidenavSize = v;
+      },
+      /** Affichage des entrées de la barre latérale : "both" (défaut, null), "icon" (icône seule, libellé en infobulle),
+       *  "label" (libellé seul). */
+      setSidenavShow(v) {
+        v = ["icon", "label"].includes(v) ? v : "both";
+        writePref("repositorySidenavShow", v === "both" ? null : v);
+        doc.dataset.sidenavShow = v;
       },
       /** Couleurs du thème name : { family, tone } (famille de REPOSITORY_TREE.colorFamilies), ou null pour revenir à repository_tree. */
       setColor(name, v) {
