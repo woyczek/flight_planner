@@ -8,7 +8,9 @@
   //     disponibilité à l'heure), appareil du type demandé (basé au terrain de départ d'abord ; ailleurs : convoyage,
   //     confiable à un autre pilote), conflits ;
   //   · enregistrement : MissionAssignments.writeAssignment (affectations.yaml de la mission + index).
-  // API : AssignDialog.open(entrée du registre, yaml de la mission, { maps, pilots: [TRI…], takeoff: ms, note }) ;
+  // API : AssignDialog.open(entrée du registre, yaml de la mission, { maps, pilots: [TRI…], takeoff: ms, note, alert }) ;
+  //   alert : astreinte préréglée { notice_min, window_h } (case cochée, préavis et fin) ; rows[].ferryPilot « __open » :
+  //   convoyage à affecter (ferry.open, comme la matrice du Planning ODV) ;
   //   { rows, apply } : lignes préremplies, résultat rendu à apply(lignes) au lieu d'être écrit (matrice d'un créneau) ;
   //   frame(id, { title, subtitle, body, foot, wide, beforeClose }) : fenêtre au même gabarit ; chip(texte, ok|warn|err|focus).
   const K = window.RepositoryKit,
@@ -97,6 +99,7 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
     takeoff: presetTakeoff = 0,
     note = '',
     rows: presetRows = null,
+    alert: presetAlert = null,
     apply = null
   } = {}) {
     const M = A(),
@@ -139,7 +142,7 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
       pilot: a.pilot,
       registration: a.aircraft?.registration || '',
       callsign: a.callsign || '',
-      ferryPilot: a.ferry?.pilot && a.ferry.pilot !== a.pilot ? a.ferry.pilot : '',
+      ferryPilot: a.ferry?.open ? '__open' : a.ferry?.pilot && a.ferry.pilot !== a.pilot ? a.ferry.pilot : '',
       post: posts.find(p => p.callsign && p.callsign === a.callsign) || postOfType(a.aircraft?.type)
     })) : Array.from({
       length: Math.max(posts.length, preset.length)
@@ -155,7 +158,8 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
     const poolOpts = (sel, at, {
       exclude = [],
       none = '',
-      spec = ''
+      spec = '',
+      open = false // convoyage : « à affecter »
     } = {}) => {
       const list = M.pool(pilotList, decls, {
         type: spec,
@@ -166,7 +170,7 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
       const opt = c => `<option value="${esc(c.tri)}" ${c.tri === sel ? 'selected' : ''}>${esc(M.poolLabel(c))}</option>`;
       const ok = list.filter(c => c.ok),
         other = list.filter(c => !c.ok);
-      return `<option value="">${esc(none || L(['— pilote —', '— pilot —', '— Pilot —', '— piloto —']))}</option>${ok.length ? `<optgroup label="${L(['Disponibles, possèdent : {t} ({n})', 'Available, owning: {t} ({n})', 'Verfügbar, besitzen: {t} ({n})', 'Disponibles, poseen: {t} ({n})'], { t: esc(typeLabel(spec)), n: ok.length })}">${ok.map(opt).join('')}</optgroup>` : ''}<optgroup label="${L(['Autres (non déclarés, indisponibles ou sans l’appareil)', 'Others (not declared, unavailable or without the aircraft)', 'Andere (nicht angegeben, nicht verfügbar oder ohne das Luftfahrzeug)', 'Otros (no declarados, no disponibles o sin la aeronave)'])}">${other.map(opt).join('')}</optgroup>`;
+      return `<option value="">${esc(none || L(['— pilote —', '— pilot —', '— Pilot —', '— piloto —']))}</option>${open ? `<option value="__open" ${sel === '__open' ? 'selected' : ''}>${esc(L(['— à affecter (convoyage à part) —', '— to be assigned (separate ferry) —', '— zuzuweisen (eigene Überführung) —', '— por asignar (traslado aparte) —']))}</option>` : ''}${ok.length ? `<optgroup label="${L(['Disponibles, possèdent : {t} ({n})', 'Available, owning: {t} ({n})', 'Verfügbar, besitzen: {t} ({n})', 'Disponibles, poseen: {t} ({n})'], { t: esc(typeLabel(spec)), n: ok.length })}">${ok.map(opt).join('')}</optgroup>` : ''}<optgroup label="${L(['Autres (non déclarés, indisponibles ou sans l’appareil)', 'Others (not declared, unavailable or without the aircraft)', 'Andere (nicht angegeben, nicht verfügbar oder ohne das Luftfahrzeug)', 'Otros (no declarados, no disponibles o sin la aeronave)'])}">${other.map(opt).join('')}</optgroup>`;
     };
 
     if (!dlg) {
@@ -185,9 +189,9 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
         ${note ? `<p class="ad-note">${esc(note)}</p>` : ''}
         <fieldset class="ad-when"><legend>${L(['Horaire', 'Timing', 'Zeitplan', 'Horario'])}</legend>
           <label>${ex ? L(['Heure H', 'H-hour', 'Stunde H', 'Hora H']) : L(['Décollage', 'Take-off', 'Start', 'Despegue'])}<input type="datetime-local" data-k="t" value="${esc(toInput(ex && !presetTakeoff && existing[0] ? t0 - myOffset * 6e4 : t0))}"></label>
-          <label class="ad-check-l"><input type="checkbox" data-k="alert" ${alert0 || y.alert ? 'checked' : ''}> ${L(['Astreinte', 'Standby', 'Bereitschaft', 'Guardia'])} <small>${L(['prêt à l’heure, décollage sur ordre', 'ready at the time, take-off on order', 'zur Zeit bereit, Start auf Befehl', 'listo a la hora, despegue por orden'])}</small></label>
-          <label>${L(['Préavis (min)', 'Notice (min)', 'Vorlauf (min)', 'Preaviso (min)'])}<input type="number" min="0" data-k="notice" value="${esc(alert0?.notice_min ?? y.alert?.notice_min ?? 15)}"></label>
-          <label>${L(['Fin d’astreinte (h après)', 'End of standby (h after)', 'Ende der Bereitschaft (h danach)', 'Fin de la guardia (h después)'])}<input type="number" min="0" step="0.5" data-k="window" value="${esc(alert0?.window_end_utc ? (Date.parse(alert0.window_end_utc) - Date.parse(alert0.ready_at_utc)) / 36e5 : 2)}"></label>
+          <label class="ad-check-l"><input type="checkbox" data-k="alert" ${alert0 || presetAlert || y.alert ? 'checked' : ''}> ${L(['Astreinte', 'Standby', 'Bereitschaft', 'Guardia'])} <small>${L(['prêt à l’heure, décollage sur ordre', 'ready at the time, take-off on order', 'zur Zeit bereit, Start auf Befehl', 'listo a la hora, despegue por orden'])}</small></label>
+          <label>${L(['Préavis (min)', 'Notice (min)', 'Vorlauf (min)', 'Preaviso (min)'])}<input type="number" min="0" data-k="notice" value="${esc(alert0?.notice_min ?? presetAlert?.notice_min ?? y.alert?.notice_min ?? 15)}"></label>
+          <label>${L(['Fin d’astreinte (h après)', 'End of standby (h after)', 'Ende der Bereitschaft (h danach)', 'Fin de la guardia (h después)'])}<input type="number" min="0" step="0.5" data-k="window" value="${esc(alert0?.window_end_utc ? (Date.parse(alert0.window_end_utc) - Date.parse(alert0.ready_at_utc)) / 36e5 : presetAlert?.window_h ?? 2)}"></label>
         </fieldset>
         <div class="ad-rows"></div>
         <p><button type="button" class="secondary" data-add>${L(['+ Équipier (patrouille)', '+ Wingman (patrol)', '+ Flügelmann (Rotte)', '+ Punto (patrulla)'])}</button></p>
@@ -227,12 +231,13 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
           departure,
           type,
           takeoff: tk,
-          pilot: r.ferryPilot || r.pilot
+          pilot: r.ferryPilot === '__open' ? '' : r.ferryPilot || r.pilot
         }) : null;
+        if (ferry && r.ferryPilot === '__open') ferry.open = true; // convoyage à affecter : une mission à part, sans pilote
         const fz = card?.querySelector('.ad-ferry');
         if (fz) {
           fz.hidden = !ferry;
-          if (ferry) fz.innerHTML = `${ferry.minutes ? L(['Convoyage {r} ≈ {m} min, décollage {t}', 'Ferry {r} ≈ {m} min, take-off {t}', 'Überführung {r} ≈ {m} min, Start {t}', 'Traslado {r} ≈ {m} min, despegue {t}'], { r: `<b>${esc(ferry.from)} → ${esc(departure)}</b>`, m: ferry.minutes, t: `<b>${hhmm(Date.parse(ferry.takeoff))}</b>` }) : L(['Convoyage depuis {f} : distance inconnue', 'Ferry from {f}: distance unknown', 'Überführung ab {f}: Entfernung unbekannt', 'Traslado desde {f}: distancia desconocida'], { f: `<b>${esc(ferry.from)}</b>` })} — ${L(['par', 'by', 'durch', 'por'])} <select data-r="ferryPilot">${poolOpts(r.ferryPilot, ferry.takeoff ? Date.parse(ferry.takeoff) : tk, { spec: type, none: L(['{p} (le pilote de la mission)', '{p} (the mission pilot)', '{p} (der Missionspilot)', '{p} (el piloto de la misión)'], { p: r.pilot || L(['le pilote', 'the pilot', 'der Pilot', 'el piloto']) }), exclude: [r.pilot] })}</select>`;
+          if (ferry) fz.innerHTML = `${ferry.minutes ? L(['Convoyage {r} ≈ {m} min, décollage {t}', 'Ferry {r} ≈ {m} min, take-off {t}', 'Überführung {r} ≈ {m} min, Start {t}', 'Traslado {r} ≈ {m} min, despegue {t}'], { r: `<b>${esc(ferry.from)} → ${esc(departure)}</b>`, m: ferry.minutes, t: `<b>${hhmm(Date.parse(ferry.takeoff))}</b>` }) : L(['Convoyage depuis {f} : distance inconnue', 'Ferry from {f}: distance unknown', 'Überführung ab {f}: Entfernung unbekannt', 'Traslado desde {f}: distancia desconocida'], { f: `<b>${esc(ferry.from)}</b>` })} — ${L(['par', 'by', 'durch', 'por'])} <select data-r="ferryPilot">${poolOpts(r.ferryPilot, ferry.takeoff ? Date.parse(ferry.takeoff) : tk, { spec: type, none: L(['{p} (le pilote de la mission)', '{p} (the mission pilot)', '{p} (der Missionspilot)', '{p} (el piloto de la misión)'], { p: r.pilot || L(['le pilote', 'the pilot', 'der Pilot', 'el piloto']) }), exclude: [r.pilot], open: true })}</select>`;
         }
         if (plane?.operational === false) notes.push(chip(L(['appareil non opérationnel', 'aircraft not operational', 'Luftfahrzeug nicht einsatzbereit', 'aeronave no operativa']), 'err'));
         if (r.pilot) {
@@ -243,7 +248,8 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
           notes.push(!s ? chip(L(['disponibilité non renseignée', 'availability not filled in', 'Verfügbarkeit nicht angegeben', 'disponibilidad no indicada'])) : chip(`${esc(s.code)} — ${esc(s.label)}`, s.ok ? 'ok' : s.category === 'dispo' ? 'warn' : 'err'));
           if (!ref.some(p => p.trigram === r.pilot)) notes.push(chip(L(['trigramme inconnu de la référence', 'trigram unknown in the reference', 'Kürzel in der Referenz unbekannt', 'trigrama desconocido en la referencia']), 'warn'));
         }
-        if (ferry?.takeoff && r.ferryPilot && r.ferryPilot !== r.pilot) {
+        if (ferry && r.ferryPilot === '__open') notes.push(chip(L(['convoyage à affecter', 'ferry to be assigned', 'Überführung zuzuweisen', 'traslado por asignar']), 'warn'));
+        else if (ferry?.takeoff && r.ferryPilot && r.ferryPilot !== r.pilot) {
           const s = M.availabilityAt(await declOf(r.ferryPilot), Date.parse(ferry.takeoff), '');
           notes.push(chip(L(['convoyeur {p} : {s}', 'ferry pilot {p}: {s}', 'Überführungspilot {p}: {s}', 'piloto de traslado {p}: {s}'], {
             p: esc(r.ferryPilot),
@@ -255,7 +261,7 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
             mission: m.id,
             pilot: r.pilot,
             registration: r.registration,
-            ferryPilot: r.ferryPilot,
+            ferryPilot: r.ferryPilot === '__open' ? '' : r.ferryPilot,
             from,
             to: tk + (blockMin + M.TURN_MIN) * 6e4
           })) notes.push(chip(esc(c), 'err'));
@@ -276,7 +282,7 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
           } : null,
           departure,
           takeoff: new Date(tk).toISOString(),
-          ferry: ferry?.minutes ? ferry : null,
+          ferry: ferry?.minutes || ferry?.open ? ferry : null,
           block_min: blockMin,
           status: 'affectée'
         });
@@ -288,7 +294,7 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
       if (!card || !k) return;
       const i = +card.dataset.i;
       let v = e.target.value.trim();
-      if (k === 'pilot' || k === 'ferryPilot') v = v.toUpperCase();
+      if ((k === 'pilot' || k === 'ferryPilot') && v !== '__open') v = v.toUpperCase();
       if (k === 'registration' && v === '__other') v = (prompt(L(['Immatriculation de l’appareil', 'Aircraft registration', 'Kennzeichen des Luftfahrzeugs', 'Matrícula de la aeronave'])) || '').trim().toUpperCase();
       rows[i][k] = v;
       if (k === 'pilot') draw();

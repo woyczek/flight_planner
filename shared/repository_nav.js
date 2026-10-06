@@ -1169,7 +1169,6 @@
     };
     const rebrand = () => {
       const v = va(),
-        d = cfg.va || {},
         rules = [
           [/\bSO Group Virtual\b/g, v.name, SOURCE.name],
           [/\bVirtual Special Operation Group\b/g, v.fullName || v.name, SOURCE.fullName],
