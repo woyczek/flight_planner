@@ -118,7 +118,7 @@ La suite propose plusieurs designs. Ils changent la forme des pages, pas les inf
 | Design | En bref |
 |---|---|
 | Standard, Aéro, Opérationnel, Console | Designs « plats » : arrondis, densité, titres, barre latérale. |
-| Cabinet, Carnet de vol, Durci, Aqua | Designs à matières (cuir, bois, laiton, aluminium, acier, verre). Aqua est le design d'une nouvelle installation. |
+| Cabinet, Carnet de vol, Durci, Aqua, Tactique | Designs à matières (cuir, bois, laiton, aluminium, acier, verre) ; Tactique : nuit, verre fumé, accent cyan, titres Orbitron, sans image. Aqua est le design d'une nouvelle installation. |
 
 - Dans les designs à matières, le dossier de mission de « Mes missions » devient un véritable livre, avec ses animations.
 - Le choix se fait dans Apparence : chaque design y est montré en vignette et s'applique aussitôt. Voir le chapitre [Apparence](#apparence).
@@ -350,9 +350,9 @@ Les réglages sont mémorisés dans ce navigateur et s'appliquent à toutes les 
 
 La forme des pages : arrondis, densité, titres, barre latérale.
 
-- Chaque design est présenté par une vignette dessinée dans son style, avec son nom et sa description : Standard, Aéro, Opérationnel, Console, Cabinet, Carnet de vol, Durci, Aqua.
+- Chaque design est présenté par une vignette dessinée dans son style, avec son nom et sa description : Standard, Aéro, Opérationnel, Console, Cabinet, Carnet de vol, Durci, Aqua, Tactique.
 - Un clic sur une vignette applique le design aussitôt. La vignette choisie est encadrée.
-- Cabinet, Carnet de vol, Durci et Aqua ajoutent leurs matières ; les couleurs d'information restent celles du thème.
+- Cabinet, Carnet de vol, Durci et Aqua ajoutent leurs matières, Tactique son verre fumé sur fond de nuit ; les couleurs d'information restent celles du thème (Tactique : liseré en haut des blocs).
 
 **« Décor (designs à matières) »** :
 - « Complet » (par défaut) : panneaux illustrés des blocs, feuilles de registre, vis, radar ;

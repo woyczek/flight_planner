@@ -118,7 +118,7 @@ Die Suite bietet mehrere Designs. Sie ändern die Form der Seiten, nicht die Inf
 | Design | Kurz gesagt |
 |---|---|
 | Standard, Aero, Operativ, Konsole | „Flache“ Designs: Ecken, Dichte, Titel, Seitenleiste. |
-| Kabinett, Flugbuch, Robust, Aqua | Material-Designs (Leder, Holz, Messing, Aluminium, Stahl, Glas). Aqua ist das Design einer neuen Installation. |
+| Kabinett, Flugbuch, Robust, Aqua, Taktisch | Material-Designs (Leder, Holz, Messing, Aluminium, Stahl, Glas); Taktisch: Nacht, Rauchglas, Cyan-Akzent, Orbitron-Titel, ohne Bilder. Aqua ist das Design einer neuen Installation. |
 
 - In den Material-Designs wird die Missionsmappe von „Meine Missionen“ zu einem richtigen Buch, mit seinen Animationen.
 - Die Wahl erfolgt unter Darstellung: Jedes Design wird dort als Vorschaubild gezeigt und sofort angewendet. Siehe das Kapitel [Darstellung](#darstellung).
@@ -350,9 +350,9 @@ Die Einstellungen werden in diesem Browser gespeichert und gelten für alle Seit
 
 Die Form der Seiten: Ecken, Dichte, Titel, Seitenleiste.
 
-- Jedes Design wird durch ein in seinem Stil gezeichnetes Vorschaubild dargestellt, mit Name und Beschreibung: Standard, Aero, Operativ, Konsole, Kabinett, Flugbuch, Robust, Aqua.
+- Jedes Design wird durch ein in seinem Stil gezeichnetes Vorschaubild dargestellt, mit Name und Beschreibung: Standard, Aero, Operativ, Konsole, Kabinett, Flugbuch, Robust, Aqua, Taktisch.
 - Ein Klick auf ein Vorschaubild wendet das Design sofort an. Das gewählte Vorschaubild ist umrahmt.
-- Kabinett, Flugbuch, Robust und Aqua bringen ihre Materialien mit; die Informationsfarben bleiben die des Themas.
+- Kabinett, Flugbuch, Robust und Aqua bringen ihre Materialien mit, Taktisch sein Rauchglas auf Nachthintergrund; die Informationsfarben bleiben die des Themas (Taktisch: Kante oben an den Blöcken).
 
 **„Dekor (Material-Designs)“**:
 - „Vollständig“ (Standard): illustrierte Blockflächen, Registerblätter, Schrauben, Radar;

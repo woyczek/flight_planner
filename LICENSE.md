@@ -46,6 +46,7 @@ Modules Python utilisés par certains outils, installés à part et non inclus :
 |---|---|---|
 | Textures photographiques (`shared/textures/*.webp`) | ambientCG — <https://ambientcg.com> (correspondance fichier par fichier : [shared/textures/CREDITS.md](shared/textures/CREDITS.md)) | CC0 1.0 (domaine public) |
 | Icônes de ligne (`shared/icons/repository_icons.js`) | dessinées pour le projet, dans le style de Lucide (<https://lucide.dev>) ; aucun tracé de Lucide n'est copié | celle du projet (section 1) |
+| Polices Inter et Orbitron (`shared/fonts/*.woff2`, design Tactique) | Inter : The Inter Project Authors (<https://github.com/rsms/inter>) ; Orbitron : The Orbitron Project Authors (<https://github.com/theleagueof/orbitron>) — sous-ensembles latins de Fontsource ; textes de licence : `shared/fonts/OFL-*.txt` | SIL Open Font License 1.1 |
 
 ## 4. Données incluses dans le dépôt
 

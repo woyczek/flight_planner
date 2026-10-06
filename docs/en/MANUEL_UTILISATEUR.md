@@ -118,7 +118,7 @@ The suite offers several designs. They change the shape of the pages, not the in
 | Design | In short |
 |---|---|
 | Standard, Aero, Operational, Console | “Flat” designs: corners, density, titles, side bar. |
-| Cabinet, Flight log, Rugged, Aqua | Material designs (leather, wood, brass, aluminium, steel, glass). Aqua is the design of a new installation. |
+| Cabinet, Flight log, Rugged, Aqua, Tactical | Material designs (leather, wood, brass, aluminium, steel, glass); Tactical: night, smoked glass, cyan accent, Orbitron titles, no images. Aqua is the design of a new installation. |
 
 - In the material designs, the mission folder in “My missions” becomes a real book, with its animations.
 - You choose in Appearance: each design is shown as a thumbnail and applies at once. See the [Appearance](#appearance) chapter.
@@ -350,9 +350,9 @@ The settings are remembered in this browser and apply to all pages; they do not 
 
 The shape of the pages: corners, density, titles, side bar.
 
-- Each design is presented by a thumbnail drawn in its style, with its name and description: Standard, Aero, Operational, Console, Cabinet, Flight log, Rugged, Aqua.
+- Each design is presented by a thumbnail drawn in its style, with its name and description: Standard, Aero, Operational, Console, Cabinet, Flight log, Rugged, Aqua, Tactical.
 - A click on a thumbnail applies the design at once. The chosen thumbnail is framed.
-- Cabinet, Flight log, Rugged and Aqua add their materials; the information colours stay those of the theme.
+- Cabinet, Flight log, Rugged and Aqua add their materials, Tactical its smoked glass on a night background; the information colours stay those of the theme (Tactical: edge at the top of the blocks).
 
 **“Decoration (material designs)”**:
 - “Full” (default): illustrated block panels, register sheets, screws, radar;
