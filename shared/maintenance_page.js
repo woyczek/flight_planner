@@ -1583,7 +1583,7 @@
         tracks: r.tracks,
         issues: r.issues,
         parsed: r,
-        edition: amdt ? `AMDT ${amdt}${date ? ` du ${date}` : ''}` : ''
+        edition: amdt ? `AMDT ${amdt}${date ? ` — ${date}` : ''}` : '' // même forme que l'édition en service (AMDT 10/24 — 05 SEP 24)
       };
     } catch (e) {
       enr57 = {
