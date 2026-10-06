@@ -389,6 +389,17 @@
     background: var(--odvo-surface);
     color: var(--odvo-ink)
   }
+  /* qualification sur le type (signal) : trait sous le trigramme */
+  .odvo-tri.q-mastered {
+    box-shadow: inset 0 -2px 0 #16a34a
+  }
+  .odvo-tri.q-owned,
+  .odvo-tri.q-flown {
+    box-shadow: inset 0 -2px 0 #f59e0b
+  }
+  .odvo-tri.q-none {
+    box-shadow: inset 0 -2px 0 #dc2626
+  }
   .odvo-tri.bad {
     background: #dc2626;
     color: #fff;
@@ -737,8 +748,8 @@
 <script src="../../shared/odv_airspace.js?v=649e93b8"></script>
 <script src="../../shared/odv_activations_editor.js?v=2d510137"></script>
 <script src="../../shared/odv_reports.js?v=c059b0de"></script>
-<script src="../../shared/odv_orders_store.js?v=e9cb0500"></script>
-<script src="odv_orders.js?v=6e03b3f7"></script>
+<script src="../../shared/odv_orders_store.js?v=941e3842"></script>
+<script src="odv_orders.js?v=7087cc6e"></script>
 <script src="../../shared/app_framework.js?v=ae60867a"></script>
 <script src="../../shared/content_i18n.js?v=7afecb78"></script>
 <script>

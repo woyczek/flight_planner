@@ -174,6 +174,7 @@
     }).catch(() => null);
     S.affect = idx?.assignments || [];
     S.registry = await registryList();
+    S.decls = await MA()?.declarations?.(tris).catch(() => ({})) || {};
     const tr = await window.OdvAirspace?.aarTracks?.().catch(() => []);
     S.tracks = [...new Set([...(Array.isArray(tr) ? tr.map(x => x.nom || x.id) : []), ...S.registry.filter(isTankerMission).map(trackOf).filter(Boolean)])].sort();
     syncCallsigns();
@@ -262,6 +263,8 @@
     if (!S.editable) return notify(t(L4('Lecture seule : déverrouillez le Centre (et connectez-vous en admin_centre en mode production).', 'Read only: unlock the Centre (and log in as admin_centre in production mode).', 'Nur lesen: Zentrum entsperren (im Produktionsmodus als admin_centre anmelden).', 'Solo lectura: desbloquee el Centro (y conéctese como admin_centre en modo producción).')), 'warn');
     fn(S.doc);
     S.rev = (S.rev || 0) + 1;
+    clearTimeout(ferryRun);
+    ferryRun = setTimeout(() => syncFerries().catch(() => {}), 60);
     delete S.doc._nouveau;
     recompute();
     render();
@@ -493,8 +496,12 @@
     const col = S.members.find(m => m.tri === tri)?.couleur;
     const pta = (e.pta || []).includes(tri),
       dlo = e.dlo?.[tri];
-    const tip = [memberName(tri), pta ? 'PTA' : '', dlo ? `DLO : ${dlo}` : '', c ? conflictText(c) : ''].filter(Boolean).join(' — ');
-    return `<span class="odvo-tri${c ? ' bad' : ''}${pta ? ' pta' : ''}" data-tri="${esc(tri)}" draggable="${S.editable && !locked}" title="${esc(tip)}"${col ? ` style="border-color:${esc(tint(col))}"` : ''}>${esc(tri)}${dlo ? '<i class="odvo-dlo">◎</i>' : ''}</span>`;
+    // qualification sur le type de l'avion (signal seulement) : maîtrisé, possédé, connu, non, inconnu
+    const av = e.type === 'vol' ? (e.avions || []).find(a => a.pilote === tri || a.nav === tri) : null;
+    const ty = av?.appareil?.type || av?.poste?.type || '';
+    const q = ty && MA()?.qualification ? MA().qualification(S.decls?.[tri], tri, ty) : null;
+    const tip = [memberName(tri), pta ? 'PTA' : '', dlo ? `DLO : ${dlo}` : '', q?.text || '', c ? conflictText(c) : ''].filter(Boolean).join(' — ');
+    return `<span class="odvo-tri${q ? ' q-' + q.level : ''}${c ? ' bad' : ''}${pta ? ' pta' : ''}" data-tri="${esc(tri)}" draggable="${S.editable && !locked}" title="${esc(tip)}"${col ? ` style="border-color:${esc(tint(col))}"` : ''}>${esc(tri)}${dlo ? '<i class="odvo-dlo">◎</i>' : ''}</span>`;
   }
   /** Configurations chargées d'un avion (KNON, TALIOS…), couleurs des réglages. */
   const cfgChips = list => (list || []).map(x => {
@@ -542,8 +549,9 @@
         return `⛽ ${esc(tv?.indicatif || ownCs(tm) || r.mission || '?')}${r.axe || trackOf(tm) ? ' ' + esc(r.axe || trackOf(tm)) : ''}${r.heure ? ' ' + esc(r.heure) + 'z' : ''}${tv ? '' : ' (' + esc(t(L4('en réserve', 'in the pool', 'im Vorrat', 'en reserva'))) + ')'}`;
       }).join(' ');
       body = `<div class="odvo-it-h"><b>${esc(e.libelle || '—')}</b>${e.indicatif ? ` <span>${esc(e.indicatif)}</span>` : ''}${e.mission ? ` <span class="odvo-mis" title="${esc(t(L4('Mission du registre', 'Registry mission', 'Mission des Registers', 'Misión del registro')))}">${esc(e.mission)}</span>` : ` <span class="odvo-mis">${esc(t(L4('entr.', 'train.', 'Übung', 'entr.')))}</span>`}${aff.length ? ` <span class="odvo-om" title="${esc(t(L4('Ordre de mission émis : affectations de la mission (Mes missions)', 'Mission order issued: mission assignments (My missions)', 'Missionsbefehl erteilt: Zuweisungen der Mission (Meine Missionen)', 'Orden de misión emitida: asignaciones de la misión (Mis misiones)')))}">OM</span>` : ''}${e.cr ? ` <span class="odvo-cr odvo-cr-${esc(e.cr)}">${esc(e.cr === 'BACHE' ? 'Bâché' : e.cr)}${e.partiel ? '½' : ''}</span>` : ''}${!prep && crew.length && e.etat === 'prevu' ? ` <span class="odvo-p" title="${esc(t(L4('P — aucun équipier disponible dans l’heure et demie avant le vol', 'P — no crew member available in the hour and a half before the flight', 'P — kein Besatzungsmitglied in den 90 Minuten vor dem Flug verfügbar', 'P — ningún tripulante disponible en la hora y media previa al vuelo')))}">P</span>` : ''}</div>
+        ${e.convoyage ? `<div class="odvo-it-m">⇢ ${esc(e.convoyage.immat)} ${esc(e.convoyage.from)} → ${esc(e.convoyage.to)}${e.avions.some(a => a.pilote) ? '' : ' · ' + esc(t(L4('à affecter', 'to be assigned', 'zuzuweisen', 'por asignar')))}</div>` : ''}
         ${mis ? `<div class="odvo-it-m">${esc([mis.title, [mis.family, mis.subtype].filter(Boolean).join('/'), mis.origin].filter(Boolean).join(' · '))}</div>` : ''}
-        <div class="odvo-it-t">${esc(e.debut)}z · ${esc(String(e.duree))}′${e.zones?.length ? ' · ' + esc(e.zones.map(z => z.nom).join(', ')) : ''}${axe ? ` · <b>AAR ${esc(axe)}</b>` : ''}${rvs ? ' · ' + rvs : ''}</div>
+        <div class="odvo-it-t">${esc(e.debut)}z · ${esc(String(e.duree))}′${e.zones?.length ? ' · ' + esc(e.zones.map(z => z.nom).join(', ')) : ''}${axe ? ` · <b>AAR ${esc(axe)}</b>` : ''}${rvs ? ' · ' + rvs : ''}${e.astreinte ? ` · ⏱ ${esc(t(L4('astreinte', 'standby', 'Bereitschaft', 'guardia')))} → ${esc(hhmm(Math.min(1440, min(e.debut) + Math.round(e.astreinte.finH * 60))))}z` : ''}</div>
         <div class="odvo-it-c">${planes.map(p => `<span class="odvo-plane">${p.ac ? `<span class="odvo-ac">${esc(p.ac)}</span>` : ''}${p.tris.map(x => crewChip(x, e, p.locked)).join('')}${cfgChips(p.config)}</span>`).join('')}</div>`;
     } else if (e.type === 'note') body = `<div class="odvo-it-n">${esc(e.texte || '…')}</div>`;
     else body = `<div class="odvo-it-h"><b>${esc(e.libelle || '—')}</b>${e.position ? ` <span>${esc(e.position)}</span>` : ''}</div><div class="odvo-it-c">${e.equipage.map(x => crewChip(x, e)).join('')}</div>`;
@@ -1282,7 +1290,7 @@
   } = {}) {
     const d = document.createElement('dialog');
     d.className = 'odvo-dlg';
-    d.innerHTML = `<form method="dialog"><header><b>${esc(title)}</b></header><div class="odvo-dlg-b">${body}</div><footer>${onDelete && S.editable ? `<button type="button" data-del class="danger">${esc(t(L4('Supprimer', 'Delete', 'Löschen', 'Eliminar')))}</button>` : ''}${extra}<span style="flex:1"></span><button value="cancel">${esc(t(L4('Fermer', 'Close', 'Schließen', 'Cerrar')))}</button>${onOk && S.editable ? `<button value="ok" class="primary">${esc(t(L4('Enregistrer', 'Save', 'Speichern', 'Guardar')))}</button>` : ''}</footer></form>`;
+    d.innerHTML = `<form method="dialog" novalidate><header><b>${esc(title)}</b></header><div class="odvo-dlg-b">${body}</div><footer>${onDelete && S.editable ? `<button type="button" data-del class="danger">${esc(t(L4('Supprimer', 'Delete', 'Löschen', 'Eliminar')))}</button>` : ''}${extra}<span style="flex:1"></span><button value="cancel">${esc(t(L4('Fermer', 'Close', 'Schließen', 'Cerrar')))}</button>${onOk && S.editable ? `<button value="ok" class="primary">${esc(t(L4('Enregistrer', 'Save', 'Speichern', 'Guardar')))}</button>` : ''}</footer></form>`;
     document.body.append(d);
     // validation lue à l'envoi du formulaire (synchrone), fermeture ensuite
     d.querySelector('form').addEventListener('submit', ev => {
@@ -1303,7 +1311,7 @@
   async function openEdit(id) {
     const e = S.doc.elements.find(x => x.id === id);
     if (!e) return;
-    const common = field(L4('Début (z)', 'Start (z)', 'Beginn (z)', 'Inicio (z)'), `<input name="debut" type="time" step="300" value="${esc(e.debut)}">`) + field(L4('Durée (min)', 'Duration (min)', 'Dauer (min)', 'Duración (min)'), `<input name="duree" type="number" min="5" step="5" value="${e.duree}">`);
+    const common = field(L4('Début (z)', 'Start (z)', 'Beginn (z)', 'Inicio (z)'), `<input name="debut" type="time" step="300" value="${esc(e.debut)}">`) + field(L4('Durée (min)', 'Duration (min)', 'Dauer (min)', 'Duración (min)'), `<input name="duree" type="number" min="5" step="1" value="${e.duree}">`);
     const etat = (e.type !== 'note') ? field(L4('État', 'Status', 'Status', 'Estado'), `<select name="etat">${O().ETATS.map(x => opt(x, e.etat, t(TX.etats[x]))).join('')}</select>`) + field(L4('Motif', 'Reason', 'Grund', 'Motivo'), `<input name="motif" value="${esc(e.motif || '')}">`) : '';
     const colors = e.type !== 'note' ? field(L4('Couleur', 'Colour', 'Farbe', 'Color'), `<input name="couleur" type="color" value="${esc(e.couleur || '#64748b')}">`) + field(L4('Fond plein', 'Solid fill', 'Gefüllt', 'Relleno'), `<input name="fondOn" type="checkbox"${e.fond ? ' checked' : ''}>`) : '';
     let body = '',
@@ -1334,13 +1342,7 @@
       <h4>${esc(t(L4('Avions', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves')))}</h4>
       ${aff.length ? `<p class="mut">${esc(t(L4('Équipage tiré des affectations de la mission :', 'Crew taken from the mission assignments:', 'Besatzung aus den Zuweisungen der Mission:', 'Tripulación tomada de las asignaciones de la misión:')))} ${esc(aff.map(a => `${a.pilot} ${a.callsign || ''} ${a.aircraft?.type || ''}`).join(' · '))}</p>` : ''}
       <datalist id="odvoCfg">${(S.cfg.configs || []).map(k => `<option value="${esc(k.texte)}">`).join('')}</datalist>
-      <table class="odvo-av"><thead><tr><th>#</th><th>${esc(t(L4('Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave')))}</th><th>${esc(t(L4('Pilote', 'Pilot', 'Pilot', 'Piloto')))}</th><th title="${esc(t(TX.ptaTip))}">PTA</th><th>${esc(t(L4('Navigateur', 'Navigator', 'Navigator', 'Navegante')))}</th><th title="${esc(t(TX.ptaTip))}">PTA</th><th>${esc(t(L4('Configuration', 'Configuration', 'Konfiguration', 'Configuración')))}</th><th>${esc(t(L4('Annulé', 'Cancelled', 'Abgesagt', 'Cancelado')))}</th></tr></thead><tbody>${Array.from({
-        length: 8
-      }, (_, i) => {
-        const a = e.avions[i] || {};
-        const chk = (n, tri) => `<input type="checkbox" name="${n}${i}"${tri && e.pta.includes(tri) ? ' checked' : ''}>`;
-        return `<tr${i >= Math.max(2, e.avions.length) ? ' hidden data-more' : ''}><td>${i + 1}</td><td><select name="a${i}">${planeOptions(e, a)}</select></td><td><select name="p${i}">${memOpts(a.pilote)}</select></td><td>${chk('tp', a.pilote)}</td><td><select name="n${i}">${memOpts(a.nav)}</select></td><td>${chk('tn', a.nav)}</td><td><input name="c${i}" list="odvoCfg" value="${esc((a.config || []).join(' '))}" placeholder="KNON TALIOS" style="width:9em"></td><td><input type="checkbox" name="x${i}"${a.annule ? ' checked' : ''}></td></tr>`;
-      }).join('')}</tbody></table>
+      <div class="odvo-av-wrap">${await avionsTable(e, e.mission)}</div>
       <button type="button" data-wing>${esc(t(L4('+ Ailier', '+ Wingman', '+ Flügelmann', '+ Punto')))}</button>
       ${dloField(e)}
       ${field(L4('Tâches (une par ligne : nom = TRI)', 'Tasks (one per line: name = TRI)', 'Aufgaben (eine pro Zeile: Name = TRI)', 'Tareas (una por línea: nombre = TRI)'), `<textarea name="taches" rows="2">${esc(e.taches.map(x => `${x.nom} = ${x.pilote || ''}`).join('\n'))}</textarea>`, true)}
@@ -1348,6 +1350,9 @@
       <div class="odvo-grid2">${etat}
         ${field(L4('CR', 'Report', 'Bericht', 'Informe'), `<select name="cr"><option value="">—</option>${O().CR.map(x => opt(x, e.cr, t(TX.cr[x]))).join('')}</select>`)}
         ${field(L4('Partielle', 'Partial', 'Teilweise', 'Parcial'), `<input name="partiel" type="checkbox"${e.partiel ? ' checked' : ''}>`)}
+        ${field(L4('Astreinte (prêt à l’heure, décollage sur ordre)', 'Standby (ready at the time, take-off on order)', 'Bereitschaft (zur Zeit bereit, Start auf Befehl)', 'Guardia (listo a la hora, despegue por orden)'), `<input name="astreinte" type="checkbox"${e.astreinte ? ' checked' : ''}>`)}
+        ${field(L4('Préavis (min)', 'Notice (min)', 'Vorlauf (min)', 'Preaviso (min)'), `<input name="preavis" type="number" min="0" step="5" value="${esc(e.astreinte?.preavis ?? 15)}">`)}
+        ${field(L4('Fin d’astreinte (h après)', 'End of standby (h after)', 'Ende der Bereitschaft (h danach)', 'Fin de la guardia (h después)'), `<input name="finH" type="number" min="0" step="0.5" value="${esc(e.astreinte?.finH ?? 2)}">`)}
       </div>
       ${Object.keys(causes).length ? `<fieldset class="odvo-causes"><legend>${esc(t(L4('Causes (MNE)', 'Causes (MNE)', 'Ursachen (MNE)', 'Causas (MNE)')))}</legend>${Object.entries(causes).filter(([k]) => k !== 'NO_REPORT' || e.causes.includes(k)).map(([k, row]) => `<label><input type="checkbox" name="cause" value="${esc(k)}"${e.causes.includes(k) ? ' checked' : ''}> ${esc(t(row))}</label>`).join('')}</fieldset>` : ''}
       ${e.mission ? `<p class="mut">${esc(t(L4('Le CR de la mission fait foi : état et CR sont repris à l’ouverture de la semaine.', 'The mission report is authoritative: status and report are taken over when the week is opened.', 'Der Missionsbericht ist maßgeblich: Status und Bericht werden beim Öffnen der Woche übernommen.', 'El informe de la misión es la referencia: estado e informe se recogen al abrir la semana.')))}</p>` : ''}
@@ -1394,14 +1399,13 @@
         ind = d.querySelector('[name=indicatif]');
       if (m && ind && (!ind.value || ind.value === e.indicatif)) ind.value = ownCs(m);
       d.querySelector('#odvoCs').innerHTML = csOptions(v, typeCode(ownTeam(m).type));
-      d.querySelectorAll('select[name^=a]').forEach(s => {
-        if (m && !s.value) s.innerHTML = planeOptions({
-          mission: v
-        }, {});
-      });
+      // postes de la mission choisie : tableau des avions refait (postes, appareils triés par distance)
+      avionsTable(e, v).then(html => (d.querySelector('.odvo-av-wrap').innerHTML = html));
     });
     wirePicker(d, 'rv');
-    d.querySelector('[data-wing]')?.addEventListener('click', () => d.querySelector('tr[data-more][hidden]')?.removeAttribute('hidden'));
+    d.addEventListener('click', ev => {
+      if (ev.target.closest('[data-wing]')) d.querySelector('.odvo-av-wrap tr[data-more][hidden]')?.removeAttribute('hidden');
+    });
     // axe choisi : seules ses missions ravitailleur restent dans la liste
     d.querySelector('[name=rvAxe]')?.addEventListener('change', ev => d.querySelectorAll('[data-mp=rv] .odvo-mp-row[data-axe]').forEach(b => (b.hidden = !!ev.target.value && b.dataset.axe !== ev.target.value)));
     // indicatif saisi : proposer la mission de l'affectation (même indicatif, ce jour-là)
@@ -1424,6 +1428,166 @@
     const byType = type ? tab.filter(x => (x.types || []).map(typeCode).includes(typeCode(type))) : [];
     const list = [...new Set([own, ...(byType.length ? byType : tab).map(x => x.prefix)].filter(Boolean))];
     return list.map(c => `<option value="${esc(c)}">`).join('');
+  }
+  // ---- postes, appareils, convoyages (comme la fenêtre d'affectation du Centre et le Planning ODV)
+  /** Terrain de départ d'une mission (OACI tiré de son origine) ; '' si inconnu. */
+  const depOf = m => m ? MA()?.geo?.icaoOf?.({
+    name: m.origin || ''
+  }) || '' : '';
+  const nextCs = (cs, n) => String(cs || '').replace(/(\d+)(?!.*\d)/, x => String(+x + n).padStart(x.length, '0'));
+  /** Durée d'un convoyage (min) de base à départ pour un type : distance ÷ croisière + 20 min ; null si un terrain est
+   *  sans coordonnées. */
+  async function ferryMin(base, dep, type) {
+    if (!base || !dep || base === dep || !MA()?.coordsOf) return base === dep ? 0 : null;
+    const [a, b] = await Promise.all([MA().coordsOf(base), MA().coordsOf(dep)]).catch(() => []);
+    if (!a || !b) return null;
+    return Math.round(MA().geo.nm(a, b) / MA().cruiseKt(MA().typeOf(type)) * 60 + 20);
+  }
+  const fmtMin = n => `${Math.floor(n / 60)} h ${String(n % 60).padStart(2, '0')}`;
+  /** Appareils proposés pour un poste : compatibles (planesFor), sur place d'abord puis du plus proche au plus lointain ;
+   *  libellé « sur place » ou « convoyage x h xx » ; grisés si déjà pris ce jour-là pendant le vol (autre plaquette). */
+  async function planeChoices(e, spec, dep, cur) {
+    const list = spec && MA()?.planesFor ? MA().planesFor(spec, dep) : [...(window.DEFA_FLEET || [])];
+    const s = min(e.debut),
+      f = s + e.duree;
+    const taken = new Set(S.doc.elements.filter(x => x.type === 'vol' && x.id !== e.id && x.date === e.date && min(x.debut) < f && s < min(x.debut) + x.duree).flatMap(x => x.avions.map(a => a.appareil?.immat)).filter(Boolean));
+    const rows = await Promise.all(list.filter(x => x.registration).map(async x => ({
+      x,
+      fm: await ferryMin(x.base, dep, x.type)
+    })));
+    rows.sort((a, b) => (a.fm ?? 1e6) - (b.fm ?? 1e6) || (b.x.operational !== false) - (a.x.operational !== false) || String(a.x.registration).localeCompare(String(b.x.registration)));
+    const want = typeCode(spec?.type || '');
+    const types = [...new Set([want, cur?.type].filter(Boolean))];
+    const curV = cur ? `${cur.type || ''}|${cur.immat || ''}` : want ? `${want}|` : '';
+    return `<option value="">—</option>${types.map(ty => opt(`${ty}|`, curV, `${ty} (${t(L4('type seul', 'type only', 'nur Typ', 'solo tipo'))})`)).join('')}${rows.map(({
+      x,
+      fm
+    }) => {
+      const v = `${typeCode(x.type)}|${x.registration}`;
+      const where = !dep ? x.base || '' : fm === 0 ? t(L4('sur place', 'on site', 'vor Ort', 'en el sitio')) : fm == null ? `${x.base} — ${t(L4('distance inconnue', 'distance unknown', 'Entfernung unbekannt', 'distancia desconocida'))}` : `${x.base} — ${t(L4('convoyage', 'ferry', 'Überführung', 'traslado'))} ${fmtMin(fm)}`;
+      const busy = taken.has(x.registration) && v !== curV;
+      return `<option value="${esc(v)}"${v === curV ? ' selected' : ''}${busy ? ' disabled' : ''}>${esc(`${x.registration} · ${x.variant || x.type} · ${where}${x.operational === false ? ' · ' + t(L4('non opérationnel', 'not operational', 'nicht einsatzbereit', 'no operativo')) : ''}${busy ? ' · ' + t(L4('déjà pris', 'already taken', 'schon belegt', 'ya ocupado')) : ''}`)}</option>`;
+    }).join('')}`;
+  }
+  /** Tableau des avions d'un vol : une ligne par poste de la mission (équipier : indicatif suivant), deux places au moins,
+   *  huit au plus ; appareil, pilote, PTA, navigateur, PTA, configuration, annulé. */
+  async function avionsTable(e, mid) {
+    const m = reg(mid);
+    const posts = m && MA()?.postsOf ? MA().postsOf(m) : [];
+    const dep = depOf(m);
+    const n = Math.max(2, posts.length, e.avions.length);
+    const rows = [];
+    for (let i = 0; i < 8; i++) {
+      const a = e.avions[i] || {};
+      const p0 = posts[0];
+      const poste = (mid === e.mission ? a.poste : null) || posts[i] || (p0 && i ? {
+        callsign: nextCs(p0.callsign, i),
+        type: p0.type,
+        label: p0.label
+      } : null);
+      const opts = await planeChoices(e, poste?.type || poste?.kind ? poste : a.appareil?.type ? {
+        type: a.appareil.type
+      } : null, dep, a.appareil);
+      const chk = (k, tri) => `<input type="checkbox" name="${k}${i}"${tri && e.pta.includes(tri) ? ' checked' : ''}>`;
+      rows.push(`<tr${i >= n ? ' hidden data-more' : ''}><td>${i + 1}</td><td><input type="hidden" name="po${i}" value="${esc(poste ? `${poste.callsign || ''}|${poste.type || ''}|${poste.label || ''}` : '')}"><small>${esc(poste ? [poste.callsign, poste.label || poste.type].filter(Boolean).join(' · ') : '—')}</small></td><td><select name="a${i}">${opts}</select></td><td><select name="p${i}">${memOpts(a.pilote)}</select></td><td>${chk('tp', a.pilote)}</td><td><select name="n${i}">${memOpts(a.nav)}</select></td><td>${chk('tn', a.nav)}</td><td><input name="c${i}" list="odvoCfg" value="${esc((a.config || []).join(' '))}" placeholder="KNON TALIOS" style="width:8em"></td><td><input type="checkbox" name="x${i}"${a.annule ? ' checked' : ''}></td></tr>`);
+    }
+    return `${dep ? `<p class="mut">${esc(tf(L4('Départ de la mission : {d}. Un appareil basé ailleurs génère une plaquette de convoyage (« à affecter »), qui arrive 30 min avant le décollage.', 'Mission departure: {d}. An aircraft based elsewhere generates a ferry strip (“to be assigned”), arriving 30 min before take-off.', 'Abflug der Mission: {d}. Ein anderswo stationiertes Luftfahrzeug erzeugt einen Überführungsstreifen („zuzuweisen“), Ankunft 30 min vor dem Start.', 'Salida de la misión: {d}. Una aeronave basada en otro lugar genera una ficha de traslado («por asignar»), que llega 30 min antes del despegue.'), {
+      d: dep
+    }))}</p>` : ''}<table class="odvo-av"><thead><tr><th>#</th><th>${esc(t(L4('Poste', 'Post', 'Posten', 'Puesto')))}</th><th>${esc(t(L4('Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave')))}</th><th>${esc(t(L4('Pilote', 'Pilot', 'Pilot', 'Piloto')))}</th><th title="${esc(t(TX.ptaTip))}">PTA</th><th>${esc(t(L4('Navigateur', 'Navigator', 'Navigator', 'Navegante')))}</th><th title="${esc(t(TX.ptaTip))}">PTA</th><th>${esc(t(L4('Configuration', 'Configuration', 'Konfiguration', 'Configuración')))}</th><th>${esc(t(L4('Annulé', 'Cancelled', 'Abgesagt', 'Cancelado')))}</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+  }
+  /** Plaquettes de convoyage tenues à jour : une par appareil d'un vol de mission basé ailleurs que le départ, arrivée
+   *  30 min avant le décollage, pilote « à affecter » (gardé s'il a été glissé) ; retirées si l'appareil change. */
+  let ferryRun = null;
+  async function syncFerries() {
+    const doc = S.doc;
+    const want = [];
+    let unknown = [];
+    for (const v of doc.elements.filter(x => x.type === 'vol' && x.mission && !x.convoyage)) {
+      const dep = depOf(reg(v.mission));
+      if (!dep) continue;
+      for (const a of v.avions) {
+        const f = a.appareil?.immat && (window.DEFA_FLEET || []).find(x => x.registration === a.appareil.immat);
+        if (!f?.base || f.base === dep) continue;
+        const fm = await ferryMin(f.base, dep, f.type);
+        if (fm == null) {
+          unknown.push(`${f.registration} ${f.base} → ${dep}`);
+          continue;
+        }
+        want.push({
+          v,
+          f,
+          dep,
+          fm
+        });
+      }
+    }
+    if (doc !== S.doc) return;
+    let changed = false;
+    const keep = new Set();
+    for (const {
+        v,
+        f,
+        dep,
+        fm
+      } of want) {
+      const s0 = Math.max(0, min(v.debut) - 30 - fm);
+      let c = doc.elements.find(x => x.convoyage?.pour === v.id && x.convoyage.immat === f.registration);
+      if (!c) {
+        c = O().normalize({
+          type: 'vol',
+          date: v.date,
+          debut: hhmm(s0),
+          duree: Math.max(5, fm),
+          libelle: '⇢',
+          indicatif: f.registration,
+          couleur: '#64748b',
+          reseau: v.reseau,
+          convoyage: {
+            pour: v.id,
+            immat: f.registration,
+            from: f.base,
+            to: dep
+          },
+          avions: [{
+            appareil: {
+              type: typeCode(f.type),
+              immat: f.registration
+            }
+          }]
+        });
+        doc.elements.push(c);
+        changed = true;
+      } else if (c.debut !== hhmm(s0) || c.duree !== Math.max(5, fm) || c.date !== v.date || c.convoyage.from !== f.base || c.convoyage.to !== dep) {
+        Object.assign(c, {
+          date: v.date,
+          debut: hhmm(s0),
+          duree: Math.max(5, fm)
+        });
+        c.convoyage = {
+          ...c.convoyage,
+          from: f.base,
+          to: dep
+        };
+        changed = true;
+      }
+      keep.add(c.id);
+    }
+    const before = doc.elements.length;
+    doc.elements = doc.elements.filter(x => !x.convoyage || keep.has(x.id));
+    if (doc.elements.length !== before) changed = true;
+    unknown = unknown.filter(u => !S.ferryWarned?.has(u));
+    if (unknown.length) {
+      (S.ferryWarned ||= new Set());
+      unknown.forEach(u => S.ferryWarned.add(u));
+      notify(tf(L4('Convoyage non calculé (terrain sans coordonnées) : {l}', 'Ferry not computed (airfield without coordinates): {l}', 'Überführung nicht berechnet (Flugplatz ohne Koordinaten): {l}', 'Traslado no calculado (aeródromo sin coordenadas): {l}'), {
+        l: unknown.join(', ')
+      }), 'warn');
+    }
+    if (!changed) return;
+    S.rev = (S.rev || 0) + 1;
+    recompute();
+    render();
+    queueSave();
   }
   /** Appareils proposés pour une place : appareils de la flotte du type de la mission d'abord, puis les autres. */
   function planeOptions(e, a) {
@@ -1481,6 +1645,14 @@
               immat: im || ''
             } : null;
           })(),
+          poste: (() => {
+            const [cs, ty, lb] = String(g(`po${i}`) || '').split('|');
+            return cs || ty || lb ? {
+              callsign: cs,
+              type: ty,
+              label: lb
+            } : null;
+          })(),
           pilote: g(`p${i}`) || null,
           nav: g(`n${i}`) || null,
           annule: !!g(`x${i}`),
@@ -1508,6 +1680,10 @@
           heure,
           offload: tank?.offload ?? null
         }] : [];
+        e.astreinte = g('astreinte') ? {
+          preavis: +g('preavis') || 15,
+          finH: +g('finH') || 2
+        } : null;
         e.cr = g('cr') || null;
         e.partiel = !!g('partiel');
         e.causes = f.getAll('cause');
@@ -1671,8 +1847,17 @@
       rows: planes.length ? planes.map((a, i) => ({
         pilot: a.pilote,
         registration: a.appareil?.immat || '',
-        callsign: e.indicatif ? next(e.indicatif, i) : ''
-      })) : null
+        callsign: a.poste?.callsign || (e.indicatif ? next(e.indicatif, i) : ''),
+        // convoyeur : pilote glissé sur la plaquette de convoyage de cet appareil, sinon « à affecter »
+        ferryPilot: (() => {
+          const c = S.doc.elements.find(x => x.convoyage?.pour === e.id && x.convoyage.immat === a.appareil?.immat);
+          return c ? c.avions[0]?.pilote || '__open' : '';
+        })()
+      })) : null,
+      alert: e.astreinte ? {
+        notice_min: e.astreinte.preavis,
+        window_h: e.astreinte.finH
+      } : null
     });
     dlg?.addEventListener('assigned', async () => {
       S.affect = (await MA().index({

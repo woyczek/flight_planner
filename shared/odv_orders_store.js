@@ -234,6 +234,12 @@
           type: String(a.appareil.type || '').toUpperCase(),
           immat: a.appareil.immat || ''
         } : null,
+        // poste d'équipage de la mission (indicatif, type ou catégorie) : comme la fenêtre d'affectation du Centre
+        poste: a?.poste?.callsign || a?.poste?.type || a?.poste?.label ? {
+          callsign: a.poste.callsign || '',
+          type: a.poste.type || '',
+          label: a.poste.label || ''
+        } : null,
         pilote: a?.pilote || null,
         nav: a?.nav || null,
         annule: !!a?.annule,
@@ -261,6 +267,18 @@
         offload: x?.offload ?? null
       })),
       infos: e.infos || '',
+      // astreinte : prêt à l'heure, décollage sur ordre (préavis en minutes, fin en heures après le début)
+      astreinte: e.astreinte ? {
+        preavis: Math.max(0, +e.astreinte.preavis || 15),
+        finH: Math.max(0, +e.astreinte.finH || 2)
+      } : null,
+      // convoyage généré (appareil basé sur un autre terrain que le départ de la mission) : vol qu'il sert, appareil, terrains
+      convoyage: e.convoyage?.pour ? {
+        pour: e.convoyage.pour,
+        immat: e.convoyage.immat || '',
+        from: e.convoyage.from || '',
+        to: e.convoyage.to || ''
+      } : null,
       ...training(e),
       etat: ETATS.includes(e.etat) ? e.etat : 'prevu',
       cr: CR.includes(e.cr) ? e.cr : null,
@@ -391,7 +409,8 @@
       raison: 'non_couvert'
     };
   }
-  const range = e => [min(e.debut), min(e.debut) + e.duree];
+  // occupation : du début à la fin, astreinte comprise (fin d'astreinte)
+  const range = e => [min(e.debut), Math.max(min(e.debut) + e.duree, e.astreinte ? min(e.debut) + Math.round(e.astreinte.finH * 60) : 0)];
   /** Conflits de l'ordre de vol : Map id → [{ code: non_declare (semaine non déclarée) | non_couvert (pas de plage
    *  affectable sur toute la durée) | non_affectable (plage d'une catégorie non affectable) | chevauchement | doublon, tri,
    *  categorie?, avec? }] ; éléments annulés et notes ignorés. Les zones (OdvAirspace.check) sont vérifiées par la page. */
