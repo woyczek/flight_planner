@@ -1,6 +1,6 @@
 # Données de la suite — provenance, mise à jour, sauvegarde
 
-Depuis la v3, les données (tout ce qui est DEFA, saisi ou recalculé) sont **hors du dépôt de l'application**, dans le
+Depuis la v3, les données (tout ce qui est, saisi ou recalculé) sont **hors du dépôt de l'application**, dans le
 dépôt de données (privé) cloné dans `data/` : `references/`, `cr/`, `missions/`, `sia/`, `planner/` (voir [INSTALL.md](INSTALL.md),
 `tools/data_template/README.md`). Le dépôt de l'application ne garde que le code, les bases OACI / APD générées et des
 exemples fictifs (`examples/`).
@@ -12,7 +12,7 @@ Règle : **aucune donnée ne reste seulement dans le navigateur.** Chaque base e
 - soit un **cache** reconstructible depuis l'une des deux premières.
 
 Une correction de référence passe par un outil (surcharge traçable, ou correction du scrapper), jamais
-par une valeur écrite dans le code. Exemple : les codes de la flotte DEFA E2C et RQ9P sont des alias vers les
+par une valeur écrite dans le code. Exemple : les codes de la flotte E2C et RQ9P sont des alias vers les
 désignateurs OACI E2 et Q9 dans `aircraft_overrides.json` ; les 20 types militaires autrefois écrits dans
 `aircraft_catalog.js` viennent désormais de la liste OACI.
 
@@ -22,8 +22,8 @@ désignateurs OACI E2 et Q9 dans `aircraft_overrides.json` ; les 20 types milita
 |---|---|---|---|---|
 | Types d'aéronefs OACI | `AircraftDB/aircraft_db.js` (non publié, complété sur chaque poste) | OACI Doc 8643 (liste officielle JSON, doc8643.icao.int), EUROCONTROL (aile), Wikidata (repli, filtré) | Paramètres › Maintenance › Références et dépendances (type par type), ou `python update_aircraft_db.py --only CODE…` (dans `AircraftDB/`) | `aircraft_overrides.json` (alias et fiches, appliqués par l'outil) ; page Paramétrage |
 | Performances par type | `AircraftDB/aircraft_perf.js` (non publié, complété sur chaque poste) | EUROCONTROL Aircraft Performance Database | même carte, ou `python update_aircraft_db.py --apd CODE…` | aucune : on corrige le parseur |
-| Flotte DEFA | `data/references/aircraft_fleet.js` | page « Flotte virtuelle » de flotte.defa-virtual.fr (enregistrée) | `python AircraftDB/update_fleet.py Flotte.html` | page Paramétrage (conservées par l'outil) |
-| Référence DEFA (pilotes, appareils, terrains) | `data/references/defa_reference.js` | journal des vols DEFA (page enregistrée, non committée) | `python tools/defa_reference.py "Log des vols.html"` | page Paramétrage (conservées par l'outil) |
+| Flotte | `data/references/aircraft_fleet.js` | page « Flotte virtuelle » de flotte.defa-virtual.fr (enregistrée) | `python AircraftDB/update_fleet.py Flotte.html` | page Paramétrage (conservées par l'outil) |
+| Référence (pilotes, appareils, terrains) | `data/references/defa_reference.js` | journal des vols (page enregistrée, non committée) | `python tools/defa_reference.py "Log des vols.html"` | page Paramétrage (conservées par l'outil) |
 | Base SIA (espaces, aérodromes, obstacles…) | cache du Studio (IndexedDB `sia-map-parser`, cycle `airac`) | export officiel du SIA (dossier choisi dans le Studio ; seul le cycle le plus récent est lu) | Paramètres › Maintenance › Mise à jour SIA pas à pas | — (source officielle) |
 | Grille MORA | `data/sia/mora.csv` (cycle des obstacles dans `source`) | relief Terrarium + sommets OSM + obstacles de l'AIXM | Studio › bloc 5 (complet) ; Maintenance › étape 6 (recalcul simple : obstacles d'un nouveau cycle) | — |
 | Axes de ravitaillement en vol | lus par `shared/aar_tracks.js` | MILAIP France ENR 5.7 (XML de coordonnées) | chargement du XML (Studio / CR AAR) | — |
@@ -64,7 +64,7 @@ la plus récente l'emporte).
 | Base SIA (IndexedDB `sia-map-parser`) | relue depuis le dossier SIA officiel (son cycle : `airac`, résumé `siaBaseInfo:v1`) |
 | Résultat du contrôle de mise à jour, état git lu (`suiteUpdateCheck:v1`, `suiteGitInfo:v1`) | recalculés à la demande |
 | Autorisations de dossiers (IndexedDB `missionCore / handles`) | non exportables par le navigateur ; redemandées |
-| Journal des vols DEFA (`defaFlightLog:v1`) | rechargé depuis sa page ; seule la référence agrégée est committée |
+| Journal des vols (`defaFlightLog:v1`) | rechargé depuis sa page ; seule la référence agrégée est committée |
 | Clef du webservice d'envoi des CR (`missionSendKey:v1`) | secret : jamais dans un fichier |
 | Suivi réseau en cours (`networkWatch:*`) | propre à l'onglet, éphémère |
 | Cache HTTP du scrapper (`AircraftDB/aircraft_http_cache.json`) | cache de pages publiques, ignoré par git |

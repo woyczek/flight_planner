@@ -105,8 +105,8 @@ Même page pour tous les pilotes (Mes missions › Mes disponibilités, et ouvra
 |---|---|---|
 | **Mon profil** | chaque utilisateur, ses propres données | trigramme, identifiants **VATSIM, IVAO**, SimBrief, identifiants du site DEFA (aujourd'hui saisis au premier lancement seulement), mot de passe, **préférences de thèmes** (listes blanches / noires), langue, appareils et simulateurs |
 | **Centre** (CPCO, déverrouillé) | quotidien | **utilisateurs et droits**, **catégories de disponibilité**, réglages du routage, envoi des CR (webservice) |
-| **Installation** | une fois | premier lancement, dépôt de données, dossiers, compagnie virtuelle (DEFA par défaut), canal de mise à jour |
-| **Maintenance** | de temps en temps | mises à jour, versions, dépendances, base SIA (28 jours), caches (dont « reconstruire l'index »), stockage, sauvegarde totale, journal, fichiers de référence (flotte, types OACI, indicatifs, base DEFA, renommages, registre des CR) |
+| **Installation** | une fois | premier lancement, dépôt de données, dossiers, compagnie virtuelle (SO Group par défaut), canal de mise à jour |
+| **Maintenance** | de temps en temps | mises à jour, versions, dépendances, base SIA (28 jours), caches (dont « reconstruire l'index »), stockage, sauvegarde totale, journal, fichiers de référence (flotte, types OACI, indicatifs, base, renommages, registre des CR) |
 
 Apparence reste une page (et une fenêtre depuis le menu).
 
@@ -129,7 +129,7 @@ Apparence reste une page (et une fenêtre depuis le menu).
 
 Ordre proposé, par usage (pilote d'abord, puis Centre) :
 
-1. Mes missions · 2. CR DEFA · 3. Cartes de vol · 4. Carburant · 5. Atterrissages · 6. Reporting
+1. Mes missions · 2. CR · 3. Cartes de vol · 4. Carburant · 5. Atterrissages · 6. Reporting
 — *Centre* — 7. **Missions** (générateur **et** studio cartographique : un bouton, deux pages, le bouton reste actif
 sur les deux ; passage de l'une à l'autre par des onglets en tête de page) · 8. Registre · 9. ODV
 — *bas* — Apparence · Paramètres · Menu

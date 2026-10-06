@@ -13,7 +13,7 @@
   // - l'historique des connexions VATSIM (JSON de api.vatsim.net) → délégué au suivi réseau ;
   // - un METAR.
   // Une page d'un autre site ne peut pas être lue par la page du CR (règle de même origine) :
-  // copier-coller, ou favori « → CR DEFA » (BOOKMARKLET) qui copie la page du tracker.
+  // copier-coller, ou favori « → CR » (BOOKMARKLET) qui copie la page du tracker.
   const M = window.MissionModel;
   /** Texte en majuscules sans blancs de bord. */
   const up = v => String(v ?? '').trim().toUpperCase();
@@ -391,7 +391,7 @@
       if (result.takeoffTime) set('timeline.takeoff', clock(result.takeoffTime, tz));
       if (result.landingTime) set('timeline.landing', clock(result.landingTime, tz));
       const track = analyseTrack(result.samples, rotary);
-      if (result.tracksMissing) notes.push('table des positions absente (section « Tracks Table » repliée) : utilisez le favori « → CR DEFA », qui déplie tout, ou dépliez « Tracks Table » avant de copier');
+      if (result.tracksMissing) notes.push('table des positions absente (section « Tracks Table » repliée) : utilisez le favori « → CR », qui déplie tout, ou dépliez « Tracks Table » avant de copier');
       if (result.connected) setDate(day(result.connected, tz));
       // Début / fin de mission ≈ connexion / déconnexion (période volée sur le réseau).
       if (result.connected) set('timeline.missionStart', clock(result.connected, tz));
@@ -483,7 +483,7 @@
     const text = lines.join('\n');
     try {
       await navigator.clipboard.writeText(text);
-      alert('CR DEFA : page copiée (' + lines.length + ' éléments). Revenez sur le compte rendu.');
+      alert('CR : page copiée (' + lines.length + ' éléments). Revenez sur le compte rendu.');
     } catch (error) {
       const area = document.createElement('textarea');
       area.value = text;
@@ -491,7 +491,7 @@
       area.select();
       const ok = document.execCommand('copy');
       area.remove();
-      alert(ok ? 'CR DEFA : page copiée. Revenez sur le compte rendu.' : 'CR DEFA : copie impossible (' + error.message + ').');
+      alert(ok ? 'CR : page copiée. Revenez sur le compte rendu.' : 'CR : copie impossible (' + error.message + ').');
     }
   }
   const BOOKMARKLET = 'javascript:(' + trackerCopy.toString().replace(/\s*\n\s*/g, ' ') + ')()';

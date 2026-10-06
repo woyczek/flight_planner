@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Planning ODV</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=bc0f3060">
-<script src="../../config/repository_tree?v=2bea194f"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=eabb4b35">
+<script src="../../config/repository_tree?v=6831d352"></script>
 <style data-layer="app">
 @layer app {
   /* Couleurs : sombres par défaut (thème du planificateur), claires si le ton de la page est clair (Apparence). */
@@ -807,7 +807,7 @@ html[data-design="field"] .odv-heat button.sel {
 <main class="odv-page">
 <section data-block-id="import" data-default-hidden="1" data-icon="upload" data-subtitle="Classeur hebdomadaire de l'escadrille (.xlsx), lu dans ce navigateur."><h2>Classeur ODV</h2>
   <p class="odv-about">Le classeur ODV est le tableau Excel hebdomadaire de l'escadrille, rempli par les pilotes (feuille ODV : un code couleur par jour et par créneau matin, après-midi, soir ; feuille FLOTTE : appareils maîtrisés et simulateurs). La suite peut s'en passer : sans classeur, la semaine se construit à partir des disponibilités déclarées dans Mes missions. Chargé, il complète ces déclarations (pilotes qui ne déclarent pas dans la suite), fournit les rôles de la feuille FLOTTE et crée les préférences de thèmes des pilotes qui n'en ont pas.</p>
-  <p class="odv-about">Réglages des créneaux et de la lecture du classeur : <a href="../settings/centre.html?base=odv">Paramètres › Centre › Planning ODV (DEFA)</a>.</p>
+  <p class="odv-about">Réglages des créneaux et de la lecture du classeur : <a href="../settings/centre.html?base=odv">Paramètres › Centre › Planning ODV</a>.</p>
   <p class="odv-privacy repo-notice" data-icon="info">Données personnelles : le fichier est lu dans ce navigateur, rien n'est envoyé ni conservé (seuls les réglages sont mémorisés). Ne publiez pas les exports.</p>
   <div class="row"><input type="file" id="odvFile" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" data-dropzone><button type="button" id="odvClear" data-icon="trash" disabled>Effacer les données</button></div>
   <div id="odvReport" data-no-i18n></div>
@@ -835,17 +835,17 @@ html[data-design="field"] .odv-heat button.sel {
 </section>
 </main>
 <script src="../../shared/kit.js?v=a819e6df"></script>
-<script src="../../shared/repository_nav.js?v=6262a76e"></script>
+<script src="../../shared/repository_nav.js?v=ccf77a24"></script>
 <script src="../../shared/zip_store.js?v=1b42107f"></script>
-<script src="../../shared/data_files.js?v=50601f47" data-file="references/defa_reference.js"></script>
+<script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/defa_reference.js"></script>
 <script src="../../shared/mission_table.js?v=2ecaeba4"></script>
 <script src="../../shared/sia_base.js?v=0872dd35"></script><script src="odv_core.js?v=e1e7d2da"></script>
-<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/assignments.js?v=9e7845c6"></script><script src="../../shared/assign_dialog.js?v=685b7192"></script><script src="odv_assign.js?v=b8e299e1"></script>
+<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/assignments.js?v=aeb13216"></script><script src="../../shared/assign_dialog.js?v=685b7192"></script><script src="odv_assign.js?v=b8e299e1"></script>
 <script src="../../shared/dispos_editor.js?v=53d09022"></script>
-<script src="odv_settings.js?v=e6309d00"></script>
+<script src="odv_settings.js?v=dee80a0d"></script>
 <script src="../../shared/atc_sessions.js?v=8ec73b13"></script>
-<script src="odv_planning.js?v=99fabc9e"></script>
-<script src="../../shared/app_framework.js?v=cc5e8c7b"></script>
+<script src="odv_planning.js?v=70393a26"></script>
+<script src="../../shared/app_framework.js?v=278663dd"></script>
 <script src="../../shared/content_i18n.js?v=7afecb78"></script>
 <script>
 // Traductions des textes fixes de la page (les contenus calculés restent en français, zones data-no-i18n).
@@ -853,7 +853,7 @@ RepositoryContentI18n([
   ["Planning ODV", "ODV planning", "ODV-Planung", "Planificación ODV"],
   ["Le classeur ODV est le tableau Excel hebdomadaire de l'escadrille, rempli par les pilotes (feuille ODV : un code couleur par jour et par créneau matin, après-midi, soir ; feuille FLOTTE : appareils maîtrisés et simulateurs). La suite peut s'en passer : sans classeur, la semaine se construit à partir des disponibilités déclarées dans Mes missions. Chargé, il complète ces déclarations (pilotes qui ne déclarent pas dans la suite), fournit les rôles de la feuille FLOTTE et crée les préférences de thèmes des pilotes qui n'en ont pas.", "The ODV workbook is the squadron's weekly Excel sheet, filled in by the pilots (ODV sheet: a colour code per day and per morning, afternoon and evening slot; FLOTTE sheet: aircraft mastered and simulators). The suite can do without it: with no workbook, the week is built from the availability declared in My missions. When loaded, it completes those declarations (pilots who do not declare in the suite), provides the roles of the FLOTTE sheet and creates theme preferences for pilots who have none.", "Die ODV-Arbeitsmappe ist die wöchentliche Excel-Tabelle der Staffel, von den Piloten ausgefüllt (Blatt ODV: ein Farbcode pro Tag und Zeitfenster Morgen, Nachmittag, Abend; Blatt FLOTTE: beherrschte Luftfahrzeuge und Simulatoren). Die Suite kommt ohne sie aus: ohne Arbeitsmappe wird die Woche aus den in Meine Missionen angegebenen Verfügbarkeiten gebildet. Geladen ergänzt sie diese Angaben (Piloten, die nicht in der Suite angeben), liefert die Rollen des Blatts FLOTTE und legt Themenpräferenzen für Piloten ohne solche an.", "El libro ODV es la hoja Excel semanal de la escuadrilla, rellenada por los pilotos (hoja ODV: un código de color por día y por franja de mañana, tarde y noche; hoja FLOTTE: aeronaves dominadas y simuladores). La suite puede prescindir de él: sin libro, la semana se construye a partir de las disponibilidades declaradas en Mis misiones. Cargado, completa esas declaraciones (pilotos que no declaran en la suite), aporta los roles de la hoja FLOTTE y crea preferencias de temas para los pilotos que no las tienen."],
   ["Réglages des créneaux et de la lecture du classeur :", "Slot and workbook reading settings:", "Einstellungen der Zeitfenster und des Lesens der Arbeitsmappe:", "Ajustes de las franjas y de la lectura del libro:"],
-  ["Paramètres › Centre › Planning ODV (DEFA)", "Settings › Centre › ODV planning (DEFA)", "Einstellungen › Zentrum › ODV-Planung (DEFA)", "Ajustes › Centro › Planificación ODV (DEFA)"],
+  ["Paramètres › Centre › Planning ODV", "Settings › Centre › ODV planning", "Einstellungen › Zentrum › ODV-Planung", "Ajustes › Centro › Planificación ODV"],
   ["Pilotes libres par créneau ; clic sur un créneau : modifier les missions affectées ou en planifier.", "Free pilots per slot; click a slot: edit the assigned missions or plan new ones.", "Freie Piloten pro Zeitfenster; Klick auf ein Zeitfenster: zugewiesene Missionen ändern oder neue planen.", "Pilotos libres por franja; clic en una franja: modificar las misiones asignadas o planificar otras."],
   ["Classeur ODV", "ODV workbook", "ODV-Arbeitsmappe", "Libro ODV"],
   ["Classeur hebdomadaire de l'escadrille (.xlsx), lu dans ce navigateur.", "Squadron weekly workbook (.xlsx), read in this browser.", "Wöchentliche Arbeitsmappe der Staffel (.xlsx), in diesem Browser gelesen.", "Libro semanal de la escuadrilla (.xlsx), leído en este navegador."],

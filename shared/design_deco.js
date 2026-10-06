@@ -40,7 +40,7 @@
   // (tous facultatifs sauf foot)
   // foot     : frise du pied de page, liste de composants (FOOT) : 'strip' (image « footer » du design ; footTones :
   //            « footer-sombre » ou « footer-clair » selon le ton, tools/cut_banner.py), 'plate'
-  //            (plaque DEFA), 'radar' (écran de veille animé), 'status' (voyant de sauvegarde, fonction réelle) ;
+  //            (plaque), 'radar' (écran de veille animé), 'status' (voyant de sauvegarde, fonction réelle) ;
   // between  : objets entre les blocs, tour à tour : [image, largeur px, option] ; option : 'pair' (deux exemplaires)
   //            ou { x, y, rot } (décalage en px depuis le centre, inclinaison en degrés) ;
   // device   : appareil de page, un objet posé à côté d'un poste (radio, DME), côte à côte calés à droite et
@@ -136,7 +136,7 @@
         ['gauge-alt', 120]
       ]
     },
-    // Durci : plaque DEFA, écran radar et voyant de sauvegarde en pied de page ; plaques, pochoirs et objets du pupitre
+    // Durci : plaque, écran radar et voyant de sauvegarde en pied de page ; plaques, pochoirs et objets du pupitre
     // (grille d'aération, lampe grillagée, plaque vierge, blindage riveté, interrupteur à capot, crayon, cadran) ; appareil
     // de page : câble et poste radio
     field: {

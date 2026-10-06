@@ -121,7 +121,7 @@
       f = document.querySelector("footer") || document.createElement("footer");
     f.className = "repo-footer no-print";
     // licences : dernier lien (le premier est celui de la version, retouché plus bas)
-    f.innerHTML = `© RBR - DEFA Virtual - ${r.date||"2026-09-21"} - <a href="${r.changelog||"https://framagit.org/asr/flight_planner/-/blob/master/docs/CHANGELOG.md"}" target="_blank" rel="noopener" title="Changelog / notes de version">v${r.version||"2026.09"}</a> - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a> - <a href="https://framagit.org/asr/flight_planner/-/blob/master/LICENSE.md" target="_blank" rel="noopener" title="Code : MPL 2.0 · contenu : CC BY-SA 4.0 · licences et crédits des composants et des données tiers">MPL 2.0 · CC BY-SA 4.0</a>`;
+    f.innerHTML = `© RBR - SO Group Virtual - ${r.date||"2026-09-21"} - <a href="${r.changelog||"https://framagit.org/asr/flight_planner/-/blob/master/docs/CHANGELOG.md"}" target="_blank" rel="noopener" title="Changelog / notes de version">v${r.version||"2026.09"}</a> - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a> - <a href="https://framagit.org/asr/flight_planner/-/blob/master/LICENSE.md" target="_blank" rel="noopener" title="Code : MPL 2.0 · contenu : CC BY-SA 4.0 · licences et crédits des composants et des données tiers">MPL 2.0 · CC BY-SA 4.0</a>`;
     if (!f.isConnected) document.body.append(f);
     buildOf(r).then(b => {
       if (!b) return;

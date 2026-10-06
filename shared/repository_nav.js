@@ -329,7 +329,7 @@
   // Designs à matières (Cabinet, Durci, Aqua : textures, plaques, vis) : feuille propre (designs.list[id].css),
   // chargée seulement quand l'un d'eux est choisi, avec sa propre version (empreinte de son contenu, table FILE_V
   // écrite par tools/bump_versions.py).
-  const FILE_V = {"designs_skeuo.css": "884885bd"};
+  const FILE_V = {"designs_skeuo.css": "f5c37539"};
   const designCss = id => {
     const f = designs[id]?.css;
     if (!f) return;
@@ -345,7 +345,7 @@
     if (document.getElementById("repoDesignDeco")) return;
     const d = document.createElement("script");
     d.id = "repoDesignDeco";
-    d.src = new URL("design_deco.js?v=c88277a2", script.src).href;
+    d.src = new URL("design_deco.js?v=d2aeb44d", script.src).href;
     document.head.append(d);
   };
   designCss(design);
@@ -537,7 +537,7 @@
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
-      sc.src = new URL("appearance_page.js?v=8faa77a7", script.src).href;
+      sc.src = new URL("appearance_page.js?v=c8c4e255", script.src).href;
       sc.onload = show;
       document.head.append(sc);
     }
@@ -655,14 +655,14 @@
   document.body.style.backgroundColor = theme.page || "";
   /** Adresse d'une source externe : réglage local (suiteSources:v1, Paramètres › Maintenance) sinon repository_tree.sources. */
   const source = key => String(K.store.json("suiteSources:v1", {})[key] || cfg.sources?.[key]?.url || "").replace(/\/+$/, "");
-  /** Compagnie virtuelle : repository_tree.va (DEFA Virtual par défaut) et réglage local (suiteVA:v1) ; url : site
+  /** Compagnie virtuelle : repository_tree.va (SO Group Virtual par défaut) et réglage local (suiteVA:v1) ; url : site
    *  (sources.defa). { name, short, centre, centreName, url, pages: { home, log, fleet, aircraft } }. */
   const va = () => {
     const d = cfg.va || {},
       o = K.store.json("suiteVA:v1", {}) || {};
     return {
-      name: o.name || d.name || "DEFA Virtual",
-      short: o.short || d.short || "DEFA",
+      name: o.name || d.name || "SO Group Virtual",
+      short: o.short || d.short || "SO Group",
       centre: o.centre || d.centre || "CPCO",
       centreName: o.centreName || d.centreName || "",
       url: source("defa"),
@@ -889,7 +889,7 @@
         icon: "clipboard",
         path: "apps/cr/mission_cr.html",
         match: "apps/cr/",
-        label: ["CR DEFA", "DEFA report", "DEFA-Bericht", "Informe DEFA"]
+        label: ["CR", "Report", "Bericht", "Informe"]
       }, {
         icon: "map",
         path: "apps/planner/map_planner.html",
@@ -972,7 +972,7 @@
       return `<img class="repo-sidenav-img" src="${new URL(`icons/skeuo/${d}/${name}.webp${ver}`, script.src).href}" alt="">`;
     };
     // haut de la barre : logo de la compagnie virtuelle décliné selon le design (<id du design à matières>.webp, sinon
-    // flat) — celui de la DEFA (shared/icons/defa) si la compagnie est DEFA Virtual, sinon le logo générique (cible,
+    // flat) — celui de la compagnie (shared/icons/defa) si la compagnie réglée est SO Group Virtual, sinon le logo générique (cible,
     // shared/icons/generic) ; lien vers le site de la compagnie (nouvel onglet : la page en cours reste ouverte)
     const logoSrc = () => new URL(`icons/${/\bDEFA\b/i.test(`${va().short} ${va().name}`) ? "defa" : "generic"}/${designs[doc.dataset.design]?.skeuo ? doc.dataset.design : "flat"}.webp${ver}`, script.src).href;
     side.innerHTML = `<a class="repo-sidenav-brand" href="${K.esc(vaUrl("home"))}" target="_blank" rel="noopener" title="${K.esc(va().name)} — ${K.esc(source("defa").replace(/^https?:\/\//, ""))}"><img class="repo-sidenav-logo" src="${logoSrc()}" alt="${K.esc(va().name)}"></a><ul></ul><ul class="repo-sidenav-foot"></ul>`;
@@ -1085,10 +1085,10 @@
   } {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=78a8d79d", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=60bc0e70", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=85671199", script.src).href;
+    files.src = new URL("file_access.js?v=33aec18d", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
     for (const f of ["icons/repository_icons.js?v=27853364", "block_icons.js?v=c8ee7213", "side_nav.js?v=19f74efd"]) {
@@ -1098,14 +1098,14 @@
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=7860c8db", script.src).href;
+    store.src = new URL("browser_store.js?v=dd1e8ec1", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
-    assign.src = new URL("assignments.js?v=9e7845c6", script.src).href;
+    assign.src = new URL("assignments.js?v=aeb13216", script.src).href;
     document.head.append(assign);
     /* Utilisateurs et droits : mode develop / production, connexion, usurpation (bandeau sur toutes les pages) */
     const users = document.createElement("script");
-    users.src = new URL("users.js?v=5d9d50a7", script.src).href;
+    users.src = new URL("users.js?v=b9f71929", script.src).href;
     document.head.append(users);
     /* Synchronisation git du pool de données : bouton « Synchroniser » de l'en-tête (lanceur, data/ dépôt git) */
     const sync = document.createElement("script");
@@ -1120,16 +1120,21 @@
     document.head.append(update)
   }
   {
-    /* Autre compagnie virtuelle que DEFA (Paramètres › Sources et dossiers) : « DEFA Virtual », « DEFA » et « CPCO »
-       des textes de la suite affichés avec le nom, le sigle et le centre réglés (nœuds texte et infobulles, pages et
-       contenus ajoutés ensuite). Rien n'est fait avec les réglages par défaut. */
+    /* Autre compagnie virtuelle que celle écrite dans les sources (Paramètres › Sources et dossiers) : « SO Group
+       Virtual », « SO Group » et « CPCO » des textes de la suite affichés avec le nom, le sigle et le centre réglés
+       (nœuds texte et infobulles, pages et contenus ajoutés ensuite). Comparaison avec la marque des sources (et non
+       avec repository_tree.va) : la couche agit dès que la compagnie réglée en diffère. */
+    const SOURCE = {
+      name: "SO Group Virtual",
+      short: "SO Group",
+      centre: "CPCO"
+    };
     const rebrand = () => {
       const v = va(),
-        d = cfg.va || {},
         rules = [
-          [/\bDEFA Virtual\b/g, v.name, d.name || "DEFA Virtual"],
-          [/\bDEFA\b/g, v.short, d.short || "DEFA"],
-          [/\bCPCO\b/g, v.centre, d.centre || "CPCO"]
+          [/SO Group Virtual/g, v.name, SOURCE.name],
+          [/SO Group(?! Virtual)/g, v.short, SOURCE.short],
+          [/CPCO/g, v.centre, SOURCE.centre]
         ].filter(([, to, from]) => to && to !== from);
       if (!rules.length) return;
       const fix = s => rules.reduce((x, [re, to]) => x.replace(re, to), s);
@@ -1137,19 +1142,19 @@
       const walk = root => {
         const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
         for (let n; (n = w.nextNode());)
-          if (!skip(n.parentElement) && /DEFA|CPCO/.test(n.nodeValue)) {
+          if (!skip(n.parentElement) && /SO Group|CPCO/.test(n.nodeValue)) {
             const s = fix(n.nodeValue);
             if (s !== n.nodeValue) n.nodeValue = s;
           }
         if (root.querySelectorAll)
           for (const el of root.querySelectorAll("[title]"))
-            if (/DEFA|CPCO/.test(el.title)) el.title = fix(el.title);
+            if (/SO Group|CPCO/.test(el.title)) el.title = fix(el.title);
       };
       walk(document.body);
       if (document.title) document.title = fix(document.title);
       new MutationObserver(list => {
         for (const m of list)
-          for (const n of m.type === "characterData" ? [m.target] : m.addedNodes) n.nodeType === 3 ? (!skip(n.parentElement) && /DEFA|CPCO/.test(n.nodeValue) && (n.nodeValue = fix(n.nodeValue))) : n.nodeType === 1 && !skip(n) && walk(n);
+          for (const n of m.type === "characterData" ? [m.target] : m.addedNodes) n.nodeType === 3 ? (!skip(n.parentElement) && /SO Group|CPCO/.test(n.nodeValue) && (n.nodeValue = fix(n.nodeValue))) : n.nodeType === 1 && !skip(n) && walk(n);
       }).observe(document.body, {
         childList: true,
         characterData: true, // textes traduits ensuite (content_i18n.js)

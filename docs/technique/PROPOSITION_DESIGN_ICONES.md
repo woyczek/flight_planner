@@ -24,7 +24,7 @@ fichier refusé), Masquer / Afficher.
 
 | Élément de la maquette | Existant dans le framework | Écart |
 |---|---|---|
-| Barre latérale sombre (Missions, Générateur, Cartes, CR DEFA, Paramètres, Aide) | menu ☰ (`repository_nav.js`), arborescence complète de `repository_tree` | nouvelle : raccourcis permanents vers les applications, en complément du ☰ |
+| Barre latérale sombre (Missions, Générateur, Cartes, CR, Paramètres, Aide) | menu ☰ (`repository_nav.js`), arborescence complète de `repository_tree` | nouvelle : raccourcis permanents vers les applications, en complément du ☰ |
 | En-tête : icône + titre + sous-titre | `.repo-header`, `<h1>` de la page | icône et sous-titre du titre |
 | Sélecteur de mission ◀ liste ▶ + boutons d'action | propre au générateur et au studio (lots de missions, v2.2.8) | à factoriser plus tard (même composant dans les deux pages) |
 | Bloc numéroté (pastille « 1 »), titre en capitales, sous-titre, « ˄ Masquer » | bloc `.repo-block` + `.repo-block-heading` (`app_framework.js`), numéro écrit dans le titre (« 1. Importer une mission ») | pastille, sous-titre, icône ; capitales = forme (design) |
@@ -100,7 +100,7 @@ modifier ce texte casserait la retraduction au changement de langue (constaté e
 <button data-icon="plus">Nouvelle mission</button>
 <button data-icon="sparkles" data-icon-end="arrow-right">ChatGPT</button>
 <label data-icon="globe">Théâtre<select>…</select></label>
-<h1 data-icon="target" data-subtitle="Créez, importez et préparez vos missions DEFA">Générateur complet de mission</h1>
+<h1 data-icon="target" data-subtitle="Créez, importez et préparez vos missions">Générateur complet de mission</h1>
 <p class="repo-notice" data-icon="info">Aucune mission chargée.</p>
 ```
 
@@ -176,7 +176,7 @@ Générée par `side_nav.js` à partir de `repository_tree` — une seule source
 sidebar:[
   {icon:"target",   path:"apps/cpco/mission_editor.html", label:["Missions","Missions","Missionen","Misiones"]},
   {icon:"map",      path:"apps/cpco/map_parser.html",     label:["Cartes","Maps","Karten","Mapas"]},
-  {icon:"clipboard",path:"apps/cr/mission_cr.html", match:"apps/cr/", label:["CR DEFA", …]},
+  {icon:"clipboard",path:"apps/cr/mission_cr.html", match:"apps/cr/", label:["CR", …]},
   {icon:"chart",    path:"apps/cr/mission_operations_reporting.html", match:"_reporting.html", label:[…]},
   {icon:"fuel",     path:"apps/planner/flight_performance_planner.html", label:[…]},
   {icon:"plane",    path:"apps/landing/…", label:[…]},
@@ -187,7 +187,7 @@ sidebar:[
 ```
 
 - Entrée active : la page elle-même, sinon `match` contenu dans le chemin (tous les CR d'une famille allument
-  « CR DEFA »).
+  « CR »).
 - Seules les pages déclarées dans `pages` sont affichées ; liens calculés depuis la racine (comme le ☰).
 - Le **☰ reste** la navigation complète (arborescence, actions de page, profil, données locales, design) ; la
   barre n'en est qu'un raccourci.
@@ -289,7 +289,7 @@ rapports pour chaque thème à chaque modification de `repository_tree`.
 |---|---|---|---|
 | Générateur (`apps/cpco/mission_editor.html`) | 6 `section`, titres numérotés, `.pasteBox`, `<input type=file>` dans des `<label>` | `data-step/icon/subtitle`, `.repo-card` pour les sous-blocs, `data-dropzone`, icônes des boutons ; lignes `sia_i18n.js` | **session parallèle en cours sur ce fichier** : attendre sa fin |
 | Studio (`map_parser.html`) | 5 `section`, colonne d'aperçu collante (`StickyFrame.stick`) | idem ; `StickyFrame.refresh()` après décor (hauteur d'en-tête modifiée) | idem (session parallèle) |
-| CR DEFA (Mission Core, 16 familles + démo) | blocs générés par `form.js` depuis `blocks.js`, `core.css`, outils d'en-tête en `summary` | `icon`/`subtitle` dans `blocks.js`, 10 lignes dans `form.js` | faible ; vérifier l'impression (`core.css` masque déjà `.repo-block-heading` du rapport) |
+| CR (Mission Core, 16 familles + démo) | blocs générés par `form.js` depuis `blocks.js`, `core.css`, outils d'en-tête en `summary` | `icon`/`subtitle` dans `blocks.js`, 10 lignes dans `form.js` | faible ; vérifier l'impression (`core.css` masque déjà `.repo-block-heading` du rapport) |
 | Reportings (général, familles, HEMS/GAAR anciens) | `section.section` + `h2` avec `.mcg-sub` | icônes par section, `.mcg-sub` → sous-titre | faible |
 | Planificateur (`apps/planner/flight_performance_planner.html`) | 13 blocs, en-têtes `.row>h2` avec contrôles, thème sombre, `StickyFrame.follow`, `ColumnResize` | icônes seulement (pas de numéros : pas de parcours linéaire) | règle `.perf-side>[data-block-id=result].is-stuck>:not(.repo-block-heading)` : l'en-tête reste enfant direct, OK ; densité |
 | Landing Dashboard | thème sombre, dictionnaire propre `TR` | icônes ; sous-titres via `landingI18nRows()` | faible |

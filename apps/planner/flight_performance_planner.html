@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Flight Performance & Fuel Planner</title>
-<link rel="stylesheet" href="../../shared/repository_nav.css?v=bc0f3060">
-<script src="../../config/repository_tree?v=2bea194f"></script>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=eabb4b35">
+<script src="../../config/repository_tree?v=6831d352"></script>
 <style data-layer="app">
 @layer app {
   :root {
@@ -1079,8 +1079,8 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
 
 <!-- navigation (en-tête, barre latérale) avant les scripts de calcul : la barre et la marge du contenu paraissent tout de suite -->
 <script src="../../shared/kit.js?v=a819e6df"></script>
-<script src="../../shared/repository_nav.js?v=6262a76e"></script>
-<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=50601f47" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=69e8ef45"></script>
+<script src="../../shared/repository_nav.js?v=ccf77a24"></script>
+<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=3731594c"></script>
 <script src="../../AircraftDB/aircraft_icons.js"></script>
 <script src="../../AircraftDB/aircraft_perf.js"></script>
 <script src="../../shared/sticky_frame.js?v=90db4df1"></script><script src="../../shared/flight_profile_help.js?v=07335da9"></script><script src="../../shared/column_resize.js?v=953e38b1"></script><script src="../../shared/flight_instruments.js?v=d88a5a54"></script><script src="../../shared/flight_perf_view.js?v=f333994e"></script>
@@ -1653,7 +1653,7 @@ function phaseFuelDisplay(phaseName) {
     text = `${showFuel(ff)} ${fuelUnit()}/h`;
   return rpm !== null ? `${rpm} RPM · ${text}${map?" (cartographie)":""}` : text
 }
-/** Fiche du profil actif (nom, type, unités, vitesses, débits par phase, TOD), table RPM en lecture, fiches DEFA du type, puis l'éditeur. */
+/** Fiche du profil actif (nom, type, unités, vitesses, débits par phase, TOD), table RPM en lecture, fiches du type, puis l'éditeur. */
 function renderProfile() {
   if (!active) return;
   renderDefaSheets();
@@ -3222,13 +3222,13 @@ async function refreshLandingAircraft() {
   landingAircraft = rec && typeof rec.text === "string" ? landingAircraftFromCsv(rec.text) : [];
   return true
 }
-/** Nom affiché d'un appareil connu seulement du Landing / de la DEFA : modèle de la base des types (référence et surnom
+/** Nom affiché d'un appareil connu seulement du Landing / de la compagnie : modèle de la base des types (référence et surnom
  *  d'abord, constructeur ensuite : AircraftCatalog.displayName ; hors libellés de navigation mal lus) et code. */
 function landingName(code, rec) {
   const m = String(rec?.model || "").trim();
   return m && !/^(Aircraft Performance Database|Skip to aircraft details)$/i.test(m) ? `${window.AircraftCatalog?.displayName(m) || m} (${code})` : code
 }
-/** Appareils du Landing Performance et types DEFA qui n'ont pas encore de profil (proposés dans la liste, profil vide créé au choix). */
+/** Appareils du Landing Performance et types qui n'ont pas encore de profil (proposés dans la liste, profil vide créé au choix). */
 function landingOnlyAircraft(profiles) {
   const db = window.AIRCRAFT_DB || {},
     resolve = n => {
@@ -3244,7 +3244,7 @@ function landingOnlyAircraft(profiles) {
       const r = resolve(v);
       if (r?.tdesig) known.add(aKey(r.tdesig))
     }
-  /* Types employés par la DEFA (catalogue commun : flotte, référence DEFA, missions) : proposés même sans profil. */
+  /* Types employés par la compagnie (catalogue commun : flotte, référence, missions) : proposés même sans profil. */
   const defa = new Set((window.AircraftCatalog?.defaTypes() || []).map(t => t.type));
   return [...new Set([...landingAircraft, ...defa])].filter(n => {
     const r = resolve(n);
@@ -3262,7 +3262,7 @@ function landingOnlyAircraft(profiles) {
     })
   })
 }
-/** Profil vide pour un appareil connu seulement du Landing / de la DEFA (performances à renseigner) ; null si inconnu. */
+/** Profil vide pour un appareil connu seulement du Landing / de la compagnie (performances à renseigner) ; null si inconnu. */
 function newProfileFromLanding(id) {
   const s = landingOnlyAircraft(Object.values(state.profiles || {}).filter(p => p && typeof p === "object").map(p => normalize(p))).find(p => p.id === id);
   return s ? normalize({
@@ -3270,7 +3270,7 @@ function newProfileFromLanding(id) {
     icao: s.icao,
     type: s.type,
     name: s.name,
-    description: s._landing ? "Créé depuis le Landing Performance : perfs à renseigner." : "Type utilisé par la DEFA : perfs à renseigner."
+    description: s._landing ? "Créé depuis le Landing Performance : perfs à renseigner." : "Type utilisé par la compagnie : perfs à renseigner."
   }) : null
 }
 /** Menu des appareils de l'en-tête : profils et appareils sans profil, groupés par catégorie ; le choix rend le profil actif (ou le crée). */
@@ -3290,7 +3290,7 @@ function listAircraft() {
     if (!groups.has(g[0])) groups.set(g[0], []);
     groups.get(g[0]).push([p, g])
   }
-  $("aircraftMenu").innerHTML = [...groups].map(([label, items]) => `<div class="aircraft-group">${escXml(label)}</div>` + items.map(([p, g]) => `<button class="aircraft-item ${active?.id===p.id?"active":""}" type="button" role="menuitemradio" aria-checked="${active?.id===p.id}" data-id="${escXml(p.id)}"${p._landingOnly?` data-landing="1" title="${p._landing?"Connu du Landing Performance":"Utilisé par la DEFA"}, pas encore de profil : un profil vide sera créé"`:""}><span>${aircraftIcon(p)}</span><span class="aircraft-current-text">${escXml(p.name||p.id)}</span><span class="ac-meta">${escXml(g[2]||"")}${p._landingOnly?(p._landing?" · landing":" · DEFA, sans profil"):""}</span></button>`).join("")).join("") || '<div class="mut" style="padding:8px">Aucun avion. Importe un profil, choisis le dossier performances ou charge des atterrissages dans le Landing Performance.</div>';
+  $("aircraftMenu").innerHTML = [...groups].map(([label, items]) => `<div class="aircraft-group">${escXml(label)}</div>` + items.map(([p, g]) => `<button class="aircraft-item ${active?.id===p.id?"active":""}" type="button" role="menuitemradio" aria-checked="${active?.id===p.id}" data-id="${escXml(p.id)}"${p._landingOnly?` data-landing="1" title="${p._landing?"Connu du Landing Performance":"Utilisé par la compagnie"}, pas encore de profil : un profil vide sera créé"`:""}><span>${aircraftIcon(p)}</span><span class="aircraft-current-text">${escXml(p.name||p.id)}</span><span class="ac-meta">${escXml(g[2]||"")}${p._landingOnly?(p._landing?" · landing":" · flotte, sans profil"):""}</span></button>`).join("")).join("") || '<div class="mut" style="padding:8px">Aucun avion. Importe un profil, choisis le dossier performances ou charge des atterrissages dans le Landing Performance.</div>';
   $("aircraftMenu").querySelectorAll(".aircraft-item").forEach(x => x.onclick = () => {
     const p = x.dataset.landing ? newProfileFromLanding(x.dataset.id) : state.profiles?.[x.dataset.id];
     if (p) setActive(p, x.dataset.landing ? "avion du Landing Performance" : "cache local");
@@ -3346,9 +3346,9 @@ $("prefsEditorBtn").onclick = () => {
 document.addEventListener("click", e => {
   if (!e.target.closest(".lang-popup,.prefs-popup,.aircraft-popup")) closeHeaderMenus()
 });
-/* Fiches appareils DEFA du type actif (apps/cr/appareil.html) : même catalogue commun que les CR et le reporting. */
-// Fiches des appareils DEFA de ce type (flotte virtuelle).
-/** Liens vers les fiches des appareils DEFA du type actif (apps/cr/appareil.html). */
+/* Fiches appareils du type actif (apps/cr/appareil.html) : même catalogue commun que les CR et le reporting. */
+// Fiches des appareils de ce type (flotte virtuelle).
+/** Liens vers les fiches des appareils du type actif (apps/cr/appareil.html). */
 function renderDefaSheets() {
   const box = $("defaSheets");
   if (!box) return;
@@ -3359,9 +3359,9 @@ function renderDefaSheets() {
     const k = aKey(a.type);
     return k && (k === t || k === r || aKey(db.__aliases?.[k]) === r)
   });
-  box.innerHTML = list.length ? `Appareils DEFA de ce type (fiche : statut, terrain, activité) : ${list.map(a=>`<a href="../cr/appareil.html?reg=${encodeURIComponent(a.registration)}">${escXml(a.registration)}</a>`).join(" · ")}` : ""
+  box.innerHTML = list.length ? `Appareils de ce type (fiche : statut, terrain, activité) : ${list.map(a=>`<a href="../cr/appareil.html?reg=${encodeURIComponent(a.registration)}">${escXml(a.registration)}</a>`).join(" · ")}` : ""
 }
-/* ?aircraft=<type ou profil> : ouverture depuis une fiche appareil (profil existant, sinon créé depuis le type DEFA) ;
+/* ?aircraft=<type ou profil> : ouverture depuis une fiche appareil (profil existant, sinon créé depuis le type) ;
    transfert d'une mission (?handoff=1, plannerHandoff:v1 : Mes missions, studio, Cartes de vol) : son appareil, si
    l'adresse n'en donne pas. */
 refreshLandingAircraft();
@@ -3391,16 +3391,16 @@ applyHeaderPreferences();
     cand = k && !found && landingOnlyAircraft(Object.values(state.profiles || {}).filter(p => p && typeof p === "object").map(p => normalize(p))).find(p => [p.id, p.icao, p.type].some(same)),
     created = cand && newProfileFromLanding(cand.id);
   if (found) setActive(found, why);
-  else if (created) setActive(created, `${why} (type DEFA)`);
+  else if (created) setActive(created, `${why} (type)`);
   else if (state.lastAircraft && state.profiles[state.lastAircraft]) setActive(state.profiles[state.lastAircraft], "état restauré");
   else syncAircraftPicker();
 }
 </script>
-<script src="../../shared/app_framework.js?v=cc5e8c7b"></script>
+<script src="../../shared/app_framework.js?v=278663dd"></script>
 <script src="../../shared/flight_ui.js?v=d3c58dea"></script>
 <script src="../../shared/carto/aero_symbols.js?v=50ad43df"></script><script src="../../shared/carto/vertical_profile.js?v=75163ccf"></script><script src="../../shared/flight_vertical_profile.js?v=90896573"></script>
-<script src="../../shared/content_i18n.js?v=7afecb78"></script><script src="../../shared/flight_i18n.js?v=0f0c2730"></script>
-<footer class="repo-footer no-print">© RBR - DEFA Virtual - 2026-09-21 - 2.0.7 - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a></footer>
+<script src="../../shared/content_i18n.js?v=7afecb78"></script><script src="../../shared/flight_i18n.js?v=9907934a"></script>
+<footer class="repo-footer no-print">© RBR - SO Group Virtual - 2026-09-21 - 2.0.7 - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a></footer>
 <script>
 /* Colonnes redimensionnables (framework : shared/column_resize.js) ; poignées sur la hauteur des deux premières rangées */
 (() => {

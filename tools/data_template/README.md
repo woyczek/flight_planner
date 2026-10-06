@@ -1,4 +1,4 @@
-# Données DEFA — XPlane Web Suite
+# Données — XPlane Web Suite
 
 Dépôt **privé** des données de la suite (application : <https://framagit.org/asr/flight_planner>), cloné dans le
 dossier `data/` à la racine de l'application :
@@ -14,7 +14,7 @@ sont déduits).
 
 | Dossier | Contenu | Origine |
 |---|---|---|
-| `references/` | `aircraft_fleet.js` (flotte DEFA), `defa_reference.js` (pilotes, appareils — anonymisée), `callsigns.js` (indicatifs), `aircraft_overrides.json` (corrections de la base OACI) | outils `AircraftDB/update_fleet.py`, `tools/defa_reference.py` ; Paramétrage ; corrections manuelles (non recalculables) |
+| `references/` | `aircraft_fleet.js` (flotte), `defa_reference.js` (pilotes, appareils — anonymisée), `callsigns.js` (indicatifs), `aircraft_overrides.json` (corrections de la base OACI) | outils `AircraftDB/update_fleet.py`, `tools/defa_reference.py` ; Paramétrage ; corrections manuelles (non recalculables) |
 | `cr/` | `missions.yaml` (registre unique des CR), `FIRE/`, `HEMS/` (registres historiques, CR, packs FMS GAAR), `mission_ledger_defaults.js` | pages de CR ; saisies (non recalculables) |
 | `missions/` | séries générées (`missionNN.yaml`, `summaryNN.md`), `mission_registry.yaml` | générateur de missions, registre |
 | `sia/` | `mora.csv` (grille MORA calculée), `miam-enr-5-7-*.xml` (axes AAR), `Lisez_moi.txt` ; XML AIRAC du cycle **hors git** | studio cartographique, Maintenance › Mise à jour SIA |

@@ -1,6 +1,6 @@
 # Administratorhandbuch
 
-Dieses Handbuch beschreibt die Suite DEFA Virtual für das **Zentrum** (Planung und Führung der Operationen) und für die
+Dieses Handbuch beschreibt die Suite SO Group Virtual für das **Zentrum** (Planung und Führung der Operationen) und für die
 **Administratoren** der Suite: ein Kapitel pro Seite, ein Abschnitt pro Reiter, Rubrik oder Block, danach die
 Synchronisierung der Daten und der Starter. In der Suite öffnet der Eintrag **„Hilfe“** der Seitenleiste dieses Handbuch
 beim Kapitel der aktuellen Seite (Seiten des Zentrums und der Einstellungen). Die Seiten der Piloten beschreibt das
@@ -20,7 +20,7 @@ Die Sperre blendet das Zentrum aus, solange es in diesem Browser nicht aktiviert
 
 - Zentrum gesperrt: Die Seiten des Zentrums verschwinden aus dem Menü ☰, aus der Seitenleiste (Trenner „Zentrum“ und Einträge „Missionen“, „Register“, „ODV“) und von der Startseite.
 - Eine direkt geöffnete Seite des Zentrums (Lesezeichen, Link) wird von einem Hinweis „Zugang beschränkt“ mit den Links „Zentrum aktivieren…“ und „Startseite“ überdeckt.
-- Unter Einstellungen › Zentrum bleibt nur die Rubrik „Zugang zum Zentrum und Einstellungen“ sichtbar; die anderen („Benutzer und Rechte“, „Verfügbarkeitskategorien“, „ODV-Planung (DEFA)“, „Berichtsversand (Webdienst)“) sind ausgeblendet.
+- Unter Einstellungen › Zentrum bleibt nur die Rubrik „Zugang zum Zentrum und Einstellungen“ sichtbar; die anderen („Benutzer und Rechte“, „Verfügbarkeitskategorien“, „ODV-Planung“, „Berichtsversand (Webdienst)“) sind ausgeblendet.
 - Die Aktivierung wird nur in diesem Browser gespeichert: Sie ist auf jedem Rechner und nach dem Löschen der Websitedaten erneut vorzunehmen.
 
 Grenze: Dies ist eine Nutzungssperre, keine Sicherheitsmaßnahme. Die Seiten bleiben Dateien, die jeder mit Zugriff auf den Ordner lesen kann.
@@ -57,7 +57,7 @@ Verwaltung unter Einstellungen › Zentrum › „Benutzer und Rechte“:
 - „Zurücksetzen…“ öffnet „Passwort von TRI zurücksetzen“: Geben Sie ein vorläufiges Passwort ein (mindestens 8 Zeichen), das der Benutzer bei seiner nächsten Anmeldung ändern muss;
 - „Benutzer hinzufügen“: Kürzel, Anzeigename, Rolle, dann „Hinzufügen“.
 
-Tipp: Ist der Benutzerordner leer, legt die Rubrik ein Datenblatt pro Pilot der DEFA-Referenz an.
+Tipp: Ist der Benutzerordner leer, legt die Rubrik ein Datenblatt pro Pilot der Referenz an.
 
 ### Modus develop und Modus production
 
@@ -99,7 +99,7 @@ Beide Seiten teilen sich einen Reiter am Kopf und arbeiten an **derselben Missio
 - Jede Änderung wird in diesem Browser gespeichert und sofort von der anderen geöffneten Seite übernommen (zum Beispiel Ausdehnungen, im Studio hinzugefügte oder gelöschte Karten). Der Generator zeigt dann „Mission vom Kartenstudio aktualisiert“.
 
 Der Kopf bietet außerdem:
-- „DEFA-Bericht erstellen →“: öffnet einen neuen Bericht der zum Missionstyp passenden Familie, mit der Mission vorausgefüllt;
+- „Bericht erstellen →“: öffnet einen neuen Bericht der zum Missionstyp passenden Familie, mit der Mission vorausgefüllt;
 - wenn eine Operation mehrere Missionen umfasst: ◀ und ▶ („Vorherige Mission“, „Nächste Mission“) und eine Liste, um die Mission des Pakets zu wechseln;
 - nach dem Öffnen aus dem Register: „← Register (M-016)“, um dorthin zurückzukehren.
 
@@ -336,7 +336,7 @@ Die Verfolgung wird in `suivi.yaml` im Missionsordner geschrieben; sie wird mit 
 Gemeinsames Formular mit dem Generator.
 1. Stellen Sie „Typ“, „Untertyp“, „Einsatzgebiet“ und „Zweites Einsatzgebiet“ („Land“ für das Ausland), „Serie“ ein (leer = die nächste).
 2. Prüfen Sie „Kennung“ (berechnet, nur lesbar).
-3. Stellen Sie „DEFA-Flugbesatzungen“, „Treffpunkt“, „Bodenteams“, „Dauer“ (XS bis XL), „Übersetzungen“, „Luftbetankung“ ein.
+3. Stellen Sie „Flugbesatzungen“, „Treffpunkt“, „Bodenteams“, „Dauer“ (XS bis XL), „Übersetzungen“, „Luftbetankung“ ein.
 4. Geben Sie unter „Luftfahrzeug jedes fliegenden Teams“ das Luftfahrzeug der Teams A, B… ein (leer = automatisch).
 5. Klicken Sie auf „Bestellen: Prompt kopieren und ChatGPT öffnen“, fügen Sie in ChatGPT ein (Strg+V) und senden Sie ab.
 
@@ -360,7 +360,7 @@ Dieser Block lädt die Wochenarbeitsmappe der Staffel (`.xlsx`). Er ist **standa
 - Auffälligkeiten (Code außerhalb der Legende, doppeltes Kürzel, verschobenes Datum der Zeitleiste…) werden als schwebende Benachrichtigungen gemeldet, ohne das Lesen je zu blockieren.
 - Hat ein Pilot der Arbeitsmappe noch keine Präferenzen für Missionsarten, legt die Suite sie anhand seiner Codes an (C → Jagd, T → Transport…) und schreibt sie in sein Benutzerdatenblatt.
 - „Daten löschen“ leert die Seite. Die Schaltfläche bleibt ausgegraut, solange keine Arbeitsmappe geladen ist.
-- Der Link „Einstellungen › Zentrum › ODV-Planung (DEFA)“ führt zu den Einstellungen der Zeitfenster und des Lesens der Arbeitsmappe.
+- Der Link „Einstellungen › Zentrum › ODV-Planung“ führt zu den Einstellungen der Zeitfenster und des Lesens der Arbeitsmappe.
 - Personenbezogene Daten: Veröffentlichen Sie die Exporte nicht. Format der Arbeitsmappe und Leseregeln: [ODV-Planung](../ODV_PLANNING.md).
 
 ### Verfügbarkeitsraster
@@ -452,7 +452,7 @@ Dieser Block schlägt für jedes Zeitfenster, das den Schwellenwert „Mindesten
 
 - Klicken Sie auf eine Zeile (außerhalb der Schaltfläche), um ihre Zusammenfassung aufzuklappen: Zeitfenster, vorgeschlagene Besatzung, Verstärkungen, Regel, Punktzahl, Kontext (ATC-Sitzungen, Fluglotsen, Events), Simulatoren, bereits zugewiesene Missionen. Das Dreieck ▸ bewirkt dasselbe; es ist immer nur eine Zeile aufgeklappt.
 - „Regeln der Familien und der Punktzahl“ klappt unter der Tabelle auf. Punktzahl = Anzahl der Teilnehmer, + 2 pro Pilot mit eingeschränktem Code, der in seinem Bereich eingesetzt wird, + 1 pro Fluglotse online bei TRAINING (höchstens 2). Eine oft gespielte Familie fällt etwas zurück (je nach Anzahl der Berichte im Register), damit die Missionen abwechseln.
-- Die Anzahl der pro Zeitfenster gezeigten Missionen und die Vorzugsreihenfolge bei gleicher Punktzahl werden unter Einstellungen › Zentrum › ODV-Planung (DEFA) eingestellt.
+- Die Anzahl der pro Zeitfenster gezeigten Missionen und die Vorzugsreihenfolge bei gleicher Punktzahl werden unter Einstellungen › Zentrum › ODV-Planung eingestellt.
 - Die Tabelle ist nach Spalte sortierbar. Die aus dem Blatt FLOTTE übernommenen Rollen bleiben Richtwerte: Der Planer entscheidet.
 
 ### Export
@@ -503,7 +503,7 @@ Diese Rubrik verwaltet die Datenblätter der Benutzer. Es gibt ein Datenblatt pr
 - **„Zurücksetzen…“**: Geben Sie ein vorläufiges Passwort ein (mindestens 8 Zeichen), dann „Passwort zurücksetzen“. Der Benutzer muss es bei seiner nächsten Anmeldung ändern.
 - **„Übernehmen“**: Sie handeln im Namen des Benutzers. Ein Banner erinnert auf allen Seiten daran, jeder Schreibvorgang wird mit „ADM pour TOTO“ signiert, und die Schaltfläche „Übernahme beenden“ beendet sie.
 - **„Benutzer hinzufügen“**: Kürzel, Anzeigename, Rolle, dann „Hinzufügen“.
-- Ist der Ordner leer, wird für jeden Piloten der DEFA-Referenz ein Datenblatt angelegt.
+- Ist der Ordner leer, wird für jeden Piloten der Referenz ein Datenblatt angelegt.
 - Konnten Dateien noch nicht in den Datenordner geschrieben werden, klicken Sie auf „In den Datenordner schreiben“.
 - Im Modus production sind das Zurücksetzen eines Passworts, die Identitätsübernahme und der Moduswechsel einem angemeldeten
   `admin_centre` vorbehalten; das Hinzufügen eines Benutzers und die Änderung einer Zeile (Rolle, aktiv) sind nur durch
@@ -530,9 +530,9 @@ Diese Rubrik legt fest, was die Piloten als Verfügbarkeiten angeben können (`d
 - „Standardwerte“ stellt die ursprünglichen Kategorien wieder her. Hinzugefügte Kategorien bleiben erhalten, werden aber zurückgezogen.
 Siehe auch [Verfügbarkeiten und Umorganisation](../technique/DISPOS_ET_REORGANISATION.md).
 
-### ODV-Planung (DEFA)
+### ODV-Planung
 
-Diese Rubrik enthält die DEFA-spezifischen Einstellungen der Seite ODV-Planung. Sie bleiben in diesem Browser und werden nicht synchronisiert. Eine in einem anderen Tab geöffnete ODV-Seite übernimmt sie sofort.
+Diese Rubrik enthält die spezifischen Einstellungen der Seite ODV-Planung. Sie bleiben in diesem Browser und werden nicht synchronisiert. Eine in einem anderen Tab geöffnete ODV-Seite übernimmt sie sofort.
 
 | Einstellung | Standard |
 |---|---|
@@ -569,7 +569,7 @@ Diese Rubriken werden der Seite durch `config/repository_tree` zugeordnet (Schl�
 
 Diese Rubrik zeigt, ob der Erststart in diesem Browser abgeschlossen ist, und an welchem Datum.
 - „Erststart öffnen“ öffnet den Assistenten erneut (`premier_lancement.html?force`). Er läuft in vier Schritten ab:
-  1. Daten: „Daten abrufen“ (Klon des Datenrepositorys) oder „Datenarchiv…“; optional „DEFA-Journal (.html)…“.
+  1. Daten: „Daten abrufen“ (Klon des Datenrepositorys) oder „Datenarchiv…“; optional „Journal (.html)…“.
   2. Profil: „Profil speichern“.
   3. Ordner: „Anwendungsordner wählen“, dann die ODV-Arbeitsmappe („OneDrive-Ordner…“ oder „oder die Excel-Datei…“).
   4. „Abschließen und SIA-Daten aktualisieren“.
@@ -594,7 +594,7 @@ Diese Rubrik ist der einzige Ort, an dem die lokalen Ordner und die Adressen der
 | Ordner X-Plane (Landungen), Ordner Leistungsdaten, Ordner der lokalen Sicherung | CSV-Protokolle, Profile `.lnmperf` / `.json`, `defa_local_store.yaml` |
 
 - **Externe Quellen**: Die Standardadresse wird grau angezeigt. Ein eingegebener Wert gilt nur für diesen Browser; „↺“ kehrt zum Standardwert zurück, und „Öffnen ↗“ öffnet die Adresse.
-- **Virtuelle Fluggesellschaft**: „Name“, „Kürzel“, „Zentrum (Kürzel)“, „Zentrum (voller Name)“, und die Seiten der Website („Startseite“, „Flugbuch“, „Flotte“, „Flugzeugseite“). Ein leeres Feld behält den Standardwert. „Zurück zu DEFA Virtual“ löscht alle diese Einstellungen.
+- **Virtuelle Fluggesellschaft**: „Name“, „Kürzel“, „Zentrum (Kürzel)“, „Zentrum (voller Name)“, und die Seiten der Website („Startseite“, „Flugbuch“, „Flotte“, „Flugzeugseite“). Ein leeres Feld behält den Standardwert. „Zurück zu SO Group Virtual“ löscht alle diese Einstellungen.
 - **Erststart**: „Ersten Start erneut öffnen“; „Bereinigen und neu beginnen…“ löscht die gespeicherten Ordner, die Kopie der ODV-Arbeitsmappe, die Zugangsdaten der DEFA-Website und das Profil. Die Dateien auf der Festplatte bleiben unberührt.
 
 ## Einstellungen › Wartung
@@ -604,7 +604,7 @@ Diese Seite dient der Pflege der Suite: Updates, Versionen, SIA-Daten, Caches, S
 Zum Öffnen: Seitenleiste › „Einstellungen“, dann der Reiter „Wartung“. Die Seite öffnet sich auf „Updates“.
 Das Seitenmenü hat zwei Teile:
 - die Gruppe „Wartung“: Updates, Versionen, Referenzen und Abhängigkeiten, Luftfahrtdaten, Caches, Speicherplatz, Vollständige Sicherung, Protokoll;
-- die Datenbanken, geordnet in den Gruppen „Dateien des Repositorys“, „DEFA-Datenbank“, „Missionen“ und „Browserdaten“.
+- die Datenbanken, geordnet in den Gruppen „Dateien des Repositorys“, „Datenbank“, „Missionen“ und „Browserdaten“.
 
 ### Aktualisierungen der Suite
 
@@ -622,7 +622,7 @@ Dieser Block legt fest, woher die Code-Updates kommen und wann die Suite nach ih
 Diese Tabelle nennt Version und Aktualisierungsdatum jedes Elements, mit einem Zustand (✓, ⚠, ✗) und der Quelle oder dem Werkzeug zur Aktualisierung.
 - Code: Suite (`repository_tree`), Cache-Version der Skripte, Git, entfernter Kanal.
 - SIA / AIRAC: gültiger und nächster Zyklus, Datenbank des Kartenstudios, Ordner SIA XML, `mora.csv`, AAR-Achsen (ENR 5.7).
-- Referenzdatenbanken: ICAO-Muster, APD-Leistungsdaten, DEFA-Flotte, DEFA-Referenz, Rufzeichen.
+- Referenzdatenbanken: ICAO-Muster, APD-Leistungsdaten, Flotte, Referenz, Rufzeichen.
 - Benutzerdaten: SimBrief-Flugpläne, Profile des Planers, Berichtsregister, Register der erzeugten Missionen, Landeprotokolle, lokale Daten, letzte vollständige Sicherung.
 - „Aktualisieren“ liest den Git-Status und den SIA-Ordner neu.
 - Eine Warnung erscheint, wenn die lokalen Daten seit mehr als 7 Tagen nicht gesichert wurden oder es seit mehr als 30 Tagen keine vollständige Sicherung gab.
@@ -639,7 +639,7 @@ Dieser Block beschreibt jede Referenz der Suite:
 | Abhängige | Daten, die davon abhängen |
 | Prüfung | geprüfte Konsistenz |
 
-Verfolgte Referenzen: SIA-XML, analysierte Datenbank des Studios, MORA-Raster, AAR-Achsen, APD-Leistungsdaten, DEFA-Flotte, Profile des Planers und Missions-Prompt.
+Verfolgte Referenzen: SIA-XML, analysierte Datenbank des Studios, MORA-Raster, AAR-Achsen, APD-Leistungsdaten, Flotte, Profile des Planers und Missions-Prompt.
 Beispiele für Prüfungen: gemischte Zyklen in der SIA-Datenbank, MORA-Hindernisse eines anderen Zyklus, Flottenmuster, die in der ICAO-Datenbank fehlen, neu zu erzeugender Prompt (`python tools/build_mission_prompt.py`).
 Die Schaltfläche „Prüfen“ startet die Prüfungen erneut.
 
@@ -723,7 +723,7 @@ Protokollierte Vorgänge:
 - MORA-Neuberechnung.
 Solange keiner dieser Vorgänge stattgefunden hat, ist das Protokoll leer.
 
-### DEFA-Flotte (bekannte Flugzeuge)
+### Flotte (bekannte Flugzeuge)
 
 Diese Datenbank (`data/references/aircraft_fleet.js`) listet die in den Berichten angebotenen Flugzeuge: „Betreiber“, „ICAO-Muster“, „Variante“, „Kennzeichen“, „Code“, „Nummer“, „Rufzeichen“ (durch Kommas getrennt), „Basis“, „Einsatzbereit“.
 - **„Flottenseite der Website einfügen…“**:
@@ -750,35 +750,35 @@ Diese Datenbank (`data/references/callsigns.js`) verknüpft das vollständige Ru
 - Tabelle „Rufzeichen“: „Vollständiges Rufzeichen“, „Flugplan“, „Andere Formen“, „Organisation“, „OPR/“, „Muster“, „Rolle“, „Allgemein“, „Sprechfunk“, „Notiz“.
 - Tabelle „Organisationen → ICAO-Kennung (OPR/)“.
 - Es gibt kein Skript: Diese Seite (oder die von Hand bearbeitete Datei) ist die Quelle.
-- Zum Befüllen: Die in den Berichten korrigierten Formen landen in „Gelernte Rufzeichen“, und die im DEFA-Journal gesehenen Serien kommen über „Hinzufügen“ oder „Ergänzen“.
+- Zum Befüllen: Die in den Berichten korrigierten Formen landen in „Gelernte Rufzeichen“, und die im Journal gesehenen Serien kommen über „Hinzufügen“ oder „Ergänzen“.
 
-### DEFA-Referenz (anonymisiert, im Repository)
+### Referenz (anonymisiert, im Repository)
 
-Diese Datenbank (`data/references/defa_reference.js`) erfasst die Piloten (Kürzel) und die Flugzeuge der DEFA, ohne Flüge und Missionen. Sie dient als Eingabehilfe und ist nicht vollständig.
+Diese Datenbank (`data/references/defa_reference.js`) erfasst die Piloten (Kürzel) und die Flugzeuge der, ohne Flüge und Missionen. Sie dient als Eingabehilfe und ist nicht vollständig.
 - Tabelle „Flugzeuge“: Kennzeichen, Muster, Variante, Status, Zuordnung (änderbar), letzter bekannter Flugplatz, Indienststellung, verwendete Rufzeichen, erster und letzter Flug, Flüge, Flottenblatt, Notiz.
 - Tabelle „Piloten“: Kürzel, erster und letzter Flug, Flüge, Muster, Notiz.
 - Aktualisierung:
   1. Laden Sie das Flugbuch (nächste Rubrik);
-  2. klicken Sie auf „DEFA-Referenz aktualisieren (anonymisiert)“: Nichts wird gelöscht, und manuelle Eingaben bleiben erhalten;
+  2. klicken Sie auf „Referenz aktualisieren (anonymisiert)“: Nichts wird gelöscht, und manuelle Eingaben bleiben erhalten;
   3. „Im Repository speichern“, dann committen.
 - Alternative per Skript: `tools/defa_reference.py`.
 
-### DEFA-Flugbuch (geflogene Flüge)
+### Flugbuch (geflogene Flüge)
 
 Diese Datenbank ist vom Missionsregister getrennt. Sie wird nur in diesem Browser gehalten: außerhalb des Repositorys und der lokalen Sicherung, da sie Kürzel enthält.
 - „Flugbuch laden / aktualisieren…“ akzeptiert die kopierte oder gespeicherte Seite „Log des vols“ oder einen CSV- / JSON-Export. Die Flüge werden ohne Duplikate zusammengeführt.
 - „Rufzeichenserien“: „Hinzufügen“ legt die Zeile in der Rufzeichen-Zuordnung an; „Ergänzen“ fügt dort die gesehenen Formen und Muster hinzu.
 - „Flüge“: Volltextfilter, höchstens 300 angezeigte Zeilen.
 - Aktionen:
-  - „DEFA-Referenz aktualisieren (anonymisiert)“;
+  - „Referenz aktualisieren (anonymisiert)“;
   - „CSV exportieren“;
   - „JSON exportieren (neu ladbar)“;
-  - „DEFA-Datenbank aus diesem Browser löschen“.
+  - „Datenbank aus diesem Browser löschen“.
 
 ### Zusammenführungen und Umbenennungen (Piloten, Flugzeuge)
 
 Diese Tabelle listet die Entsprechungen, die über „Zusammenführen mit… / umbenennen“ aus den Datenblättern angelegt wurden. Spalten: „Typ“ (Pilot oder Flugzeug), „Alt“, „Wird zu“, „Ergebnis“.
-Diese Entsprechungen gelten für das neu geladene DEFA-Journal, die Referenz und den Katalog.
+Diese Entsprechungen gelten für das neu geladene Journal, die Referenz und den Katalog.
 „Löschen“ entfernt eine Entsprechung nach Bestätigung.
 Eine Schleife (A → B und B → A) ist hervorgehoben: Sie vertauscht die beiden Namen. Löschen Sie den fehlerhaften Eintrag und führen Sie die Zusammenführung erneut aus dem Datenblatt aus.
 

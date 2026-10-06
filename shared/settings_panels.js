@@ -33,7 +33,7 @@
   const notify = (m, k) => window.AppFramework?.notify?.(m, k);
   const nav = () => window.RepositoryNav;
 
-  // sous-titres des en-têtes des quatre pages (« DEFA Virtual — … » : la couche de traduction traduit la partie après le tiret)
+  // sous-titres des en-têtes des quatre pages (« SO Group Virtual — … » : la couche de traduction traduit la partie après le tiret)
   L('trigramme, identifiants VATSIM, IVAO, SimBrief et du site DEFA, connexion et mot de passe, types de missions, langue, appareils et simulateurs', 'trigram, VATSIM, IVAO, SimBrief and DEFA website credentials, sign-in and password, mission types, language, aircraft and simulators', 'Kürzel, VATSIM-, IVAO-, SimBrief- und DEFA-Website-Zugangsdaten, Anmeldung und Passwort, Missionsarten, Sprache, Luftfahrzeuge und Simulatoren', 'trigrama, credenciales de VATSIM, IVAO, SimBrief y del sitio DEFA, conexión y contraseña, tipos de misión, idioma, aeronaves y simuladores');
   L('accès au Centre, utilisateurs et droits, catégories de disponibilité, réglages du routage, envoi des comptes rendus', 'Centre access, users and rights, availability categories, routing settings, report sending', 'Zugang zum Zentrum, Benutzer und Rechte, Verfügbarkeitskategorien, Routing-Einstellungen, Berichtsversand', 'acceso al Centro, usuarios y derechos, categorías de disponibilidad, ajustes de rutas, envío de informes');
   L('premier lancement, dépôt de données, dossiers, compagnie virtuelle', 'first run, data repository, folders, virtual airline', 'Erststart, Datenrepository, Ordner, virtuelle Fluggesellschaft', 'primer arranque, repositorio de datos, carpetas, aerolínea virtual');
@@ -54,7 +54,7 @@
     id: 'identity',
     group: GROUP_PROFILE,
     title: L('Identité et réseaux', 'Identity and networks', 'Identität und Netzwerke', 'Identidad y redes'),
-    intro: L('Trigramme DEFA, identifiants des réseaux (VATSIM, IVAO), SimBrief et du site DEFA, langue de la suite. Repris par toutes les pages (☰ › Profil pilote, comptes rendus, reportings).', 'DEFA trigram, network IDs (VATSIM, IVAO), SimBrief and DEFA website credentials, suite language. Used by every page (☰ › Pilot profile, reports, reportings).', 'DEFA-Kürzel, Netzwerk-IDs (VATSIM, IVAO), SimBrief- und DEFA-Website-Zugangsdaten, Sprache der Suite. Von allen Seiten verwendet (☰ › Pilotenprofil, Berichte).', 'Trigrama DEFA, identificadores de redes (VATSIM, IVAO), SimBrief y del sitio DEFA, idioma de la suite. Usado por todas las páginas (☰ › Perfil de piloto, informes).'),
+    intro: L('Trigramme, identifiants des réseaux (VATSIM, IVAO), SimBrief et du site DEFA, langue de la suite. Repris par toutes les pages (☰ › Profil pilote, comptes rendus, reportings).', 'Trigram, network IDs (VATSIM, IVAO), SimBrief and DEFA website credentials, suite language. Used by every page (☰ › Pilot profile, reports, reportings).', 'Kürzel, Netzwerk-IDs (VATSIM, IVAO), SimBrief- und DEFA-Website-Zugangsdaten, Sprache der Suite. Von allen Seiten verwendet (☰ › Pilotenprofil, Berichte).', 'Trigrama, identificadores de redes (VATSIM, IVAO), SimBrief y del sitio DEFA, idioma de la suite. Usado por todas las páginas (☰ › Perfil de piloto, informes).'),
     render(body, api) {
       const p = read(PROFILE),
         d = read(DEFA),
@@ -69,7 +69,7 @@
       ];
       const mode = nav()?.getLanguageMode?.() || 'auto';
       body.innerHTML = `<div class="sp-card"><h3>${esc(L('Pilote', 'Pilot', 'Pilot', 'Piloto'))}</h3><div class="sp-form">
-          ${field(L('Trigramme DEFA', 'DEFA trigram', 'DEFA-Kürzel', 'Trigrama DEFA'), `data-f="trigram" maxlength="4" style="text-transform:uppercase"${triLocked ? ' readonly' : ''}`)}
+          ${field(L('Trigramme', 'Trigram', 'Kürzel', 'Trigrama'), `data-f="trigram" maxlength="4" style="text-transform:uppercase"${triLocked ? ' readonly' : ''}`)}
           ${field(L('ID VATSIM (CID)', 'VATSIM ID (CID)', 'VATSIM-ID (CID)', 'ID VATSIM (CID)'), 'data-f="vatsimId" inputmode="numeric"')}
           ${field(L('ID IVAO (VID)', 'IVAO ID (VID)', 'IVAO-ID (VID)', 'ID IVAO (VID)'), 'data-f="ivaoId" inputmode="numeric"')}
           ${field(L('SimBrief (utilisateur ou ID)', 'SimBrief (username or ID)', 'SimBrief (Benutzer oder ID)', 'SimBrief (usuario o ID)'), 'data-f="simbriefUser"')}
@@ -150,7 +150,7 @@
     id: 'setup',
     group: L('Installation', 'Installation', 'Installation', 'Instalación'),
     title: L('Premier lancement', 'First run', 'Erststart', 'Primer arranque'),
-    intro: L('Réglages faits une fois : données (dépôt framagit ou archive), profil, dossier de l’application, classeur ODV, puis données SIA. La compagnie virtuelle (DEFA par défaut) et les dossiers se règlent dans « Sources et dossiers », le canal de mise à jour dans Maintenance › Mises à jour.', 'One-time settings: data (framagit repository or archive), profile, application folder, ODV workbook, then SIA data. The virtual airline (DEFA by default) and folders are set in “Sources and folders”, the update channel in Maintenance › Updates.', 'Einmalige Einstellungen: Daten (framagit-Repository oder Archiv), Profil, Anwendungsordner, ODV-Arbeitsmappe, dann SIA-Daten. Virtuelle Fluggesellschaft (standardmäßig DEFA) und Ordner unter „Quellen und Ordner“, Update-Kanal unter Wartung › Updates.', 'Ajustes hechos una vez: datos (repositorio framagit o archivo), perfil, carpeta de la aplicación, libro ODV y luego datos SIA. La aerolínea virtual (DEFA por defecto) y las carpetas se ajustan en «Fuentes y carpetas», el canal de actualización en Mantenimiento › Actualizaciones.'),
+    intro: L('Réglages faits une fois : données (dépôt framagit ou archive), profil, dossier de l’application, classeur ODV, puis données SIA. La compagnie virtuelle (SO Group par défaut) et les dossiers se règlent dans « Sources et dossiers », le canal de mise à jour dans Maintenance › Mises à jour.', 'One-time settings: data (framagit repository or archive), profile, application folder, ODV workbook, then SIA data. The virtual airline (SO Group by default) and folders are set in “Sources and folders”, the update channel in Maintenance › Updates.', 'Einmalige Einstellungen: Daten (framagit-Repository oder Archiv), Profil, Anwendungsordner, ODV-Arbeitsmappe, dann SIA-Daten. Virtuelle Fluggesellschaft (standardmäßig SO Group) und Ordner unter „Quellen und Ordner“, Update-Kanal unter Wartung › Updates.', 'Ajustes hechos una vez: datos (repositorio framagit o archivo), perfil, carpeta de la aplicación, libro ODV y luego datos SIA. La aerolínea virtual (SO Group por defecto) y las carpetas se ajustan en «Fuentes y carpetas», el canal de actualización en Mantenimiento › Actualizaciones.'),
     render(body, api) {
       const done = K.store.json('suiteSetup:v1', null);
       body.innerHTML = `<p data-no-i18n>${esc(done?.at ? tf(['Premier lancement terminé le {d}.', 'First run completed on {d}.', 'Erststart abgeschlossen am {d}.', 'Primer arranque terminado el {d}.'], {
@@ -296,11 +296,11 @@
       };
       await U.loadConfig(true);
       let list = await readAll();
-      // dossier vide : une fiche par pilote de la référence DEFA
+      // dossier vide : une fiche par pilote de la référence
       if (!list.length && (window.DEFA_REFERENCE?.file || window.DEFA_REFERENCE)?.pilots?.length) {
         const made = await U.seed();
         if (made.length) {
-          notify(tf(['{n} fiches créées d’après la référence DEFA.', '{n} user files created from the DEFA reference.', '{n} Benutzerdateien aus der DEFA-Referenz erstellt.', '{n} fichas creadas a partir de la referencia DEFA.'], {
+          notify(tf(['{n} fiches créées d’après la référence.', '{n} user files created from the reference.', '{n} Benutzerdateien aus der Referenz erstellt.', '{n} fichas creadas a partir de la referencia.'], {
             n: made.length
           }), 'ok');
           if ((A()?.pendingData?.() || []).some(p => p.startsWith('utilisateurs/'))) wrote({

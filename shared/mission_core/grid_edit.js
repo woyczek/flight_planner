@@ -210,7 +210,7 @@
     crew: {},
     ...(read(MAP_KEY) || {})
   });
-  // Équivalences mémorisées (journal DEFA rechargé, référence, catalogue) : A → B.
+  // Équivalences mémorisées (journal rechargé, référence, catalogue) : A → B.
   // Chaîne A → B → C suivie jusqu'au bout ; une boucle (A → B puis B → A) est arrêtée au premier
   // retour : elle ne fait plus « échanger » deux noms (bug GRR / RBR).
   const resolve = (m, k) => {
@@ -269,7 +269,7 @@
         via: 'merge'
       });
     });
-    // Équivalence mémorisée (données rechargées plus tard : journal DEFA, référence).
+    // Équivalence mémorisée (données rechargées plus tard : journal, référence).
     // Équivalence : les entrées contraires (cible → … → source) sont retirées, tout ce qui menait à la
     // source mène désormais à la cible — renommer GRR en RBR après une fusion RBR → GRR fonctionne.
     const map = mergeMap(),
@@ -345,7 +345,7 @@
     outcomes = [],
     label = o => o.label?.[0] || o.value
   } = {}) {
-    if (mission.__readOnly) return null; // journal DEFA : lecture seule
+    if (mission.__readOnly) return null; // journal : lecture seule
     const v = valueOf(mission, field),
       at = `data-edit="${field}" data-uid="${uid}"`;
     if (field === 'series' || field === 'outcome') {

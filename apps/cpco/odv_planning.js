@@ -16,8 +16,8 @@
 
   // ------------------------------------------------------------------ réglages (seules données mémorisées)
 
-  // réglages propres à la DEFA (créneaux, lecture du classeur, missions probables) : saisis dans Paramètres › Centre ›
-  // Planning ODV (DEFA), module commun apps/cpco/odv_settings.js ; ici, lus (et les filtres de la page enregistrés)
+  // réglages propres à la compagnie (créneaux, lecture du classeur, missions probables) : saisis dans Paramètres › Centre ›
+  // Planning ODV, module commun apps/cpco/odv_settings.js ; ici, lus (et les filtres de la page enregistrés)
   const loadSettings = () => window.OdvSettings.load();
   const saveSettings = () => window.OdvSettings.save(settings);
   let settings = loadSettings();
@@ -62,7 +62,7 @@
   const tables = {};
 
   // ------------------------------------------------------------------ semaine sans classeur
-  // Sans classeur, la grille reste affichée : pilotes de la référence DEFA, semaine en cours, ligne du classeur vide
+  // Sans classeur, la grille reste affichée : pilotes de la référence, semaine en cours, ligne du classeur vide
   // (« non renseigné »), déclarations des pilotes et affectations ; légende par défaut (OdvCore.LEGEND).
   let virtual = null;
   const isoDay = ms => new Date(ms).toISOString().slice(0, 10);
@@ -229,7 +229,7 @@
   };
 
   // ------------------------------------------------------------------ outils d'affichage
-  /** Nom complet d'un pilote s'il est connu localement (référence DEFA, champ nom facultatif), sinon ''. */
+  /** Nom complet d'un pilote s'il est connu localement (référence, champ nom facultatif), sinon ''. */
   function fullName(t) {
     const p = (window.DEFA_REFERENCE?.pilots || []).find(x => String(x.trigram || x.trigramme || '').toUpperCase() === t);
     if (!p) return '';

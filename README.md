@@ -103,7 +103,7 @@ pour arrêter.
 
 ## Les données
 
-Les données DEFA (flotte, missions, registres…) sont dans un **dépôt privé**, rangé dans le dossier `data/`. La page
+Les données (flotte, missions, registres…) sont dans un **dépôt privé**, rangé dans le dossier `data/`. La page
 de premier lancement le récupère avec vos identifiants framagit (mot de passe, ou jeton d'accès si votre compte a la
 double authentification). Pas encore d'accès ? Demandez **un jeu de données par mail** et donnez l'archive `.zip` à la
 même page (ou déposez-la à côté de `lancer.cmd` et relancez).
@@ -137,7 +137,7 @@ Tout est dans [docs/](docs/README.md) : installation détaillée, tutoriel, manu
 
 ---
 
-*English*: a set of local web pages for DEFA Virtual flight operations (mission reports, reporting, fuel and SIA
+*English*: a set of local web pages for SO Group Virtual flight operations (mission reports, reporting, fuel and SIA
 charts, Centre missions, pilot page). Download the folder, run **`lancer.cmd`** (Windows) or **`sh lancer.sh`**
 (macOS / Linux), then in the Settings page that opens choose **this folder** on the first row. Data come from a private
 repository (or a `.zip` set sent by mail, dropped next to the launcher). Full documentation:

@@ -15,7 +15,7 @@ local. Rien à compiler.
 3. Dans la page **Premier lancement** qui s'ouvre (`apps/settings/premier_lancement.html`) :
    1. **Données** : identifiants framagit (mot de passe ou jeton ; « mémoriser » les confie au gestionnaire
       d'identifiants de Git) → clone de `data/` ; ou l'archive `.zip` reçue par mail. En option, le journal des vols
-      DEFA (page « Log des vols » enregistrée, `.html`) → référence DEFA (`tools/defa_reference.py`) ;
+      DEFA (page « Log des vols » enregistrée, `.html`) → référence (`tools/defa_reference.py`) ;
    2. **Profil** : trigramme, ID IVAO, ID VATSIM, SimBrief ; identifiants du site DEFA, gardés dans ce navigateur et
       exclus des sauvegardes ;
    3. **Dossiers** : dossier de l'application (données, registre, missions, SIA, performances et sauvegarde locale en
@@ -45,7 +45,7 @@ Depuis la version 3, **l'application et les données sont séparées** :
 | Dépôt | Contenu | Où |
 |---|---|---|
 | Application (public) — <https://framagit.org/asr/flight_planner> | pages, framework, bases OACI / APD générées, outils, docs, exemples | dossier de votre choix |
-| Données (privé) — <https://framagit.org/defa-virtual/missions-defa> | flotte et référence DEFA, indicatifs, registres et CR, missions générées, affectations, MORA, axes ENR 5.7, base de performances | `data/` **dans** le dossier de l'application (ignoré par git) |
+| Données (privé) — <https://framagit.org/defa-virtual/missions-defa> | flotte et référence, indicatifs, registres et CR, missions générées, affectations, MORA, axes ENR 5.7, base de performances | `data/` **dans** le dossier de l'application (ignoré par git) |
 
 Le dépôt des données est **privé** : si l'accès n'est pas encore donné (ou si Git ne s'authentifie pas tout de suite),
 la suite démarre sur les exemples d'`examples/`. Deux façons d'avoir les données :
@@ -116,7 +116,7 @@ dossier sont lus en lecture seule.
 
 ## 5. Réglages suivants (5 minutes)
 
-1. **Profil pilote** — ☰ › Profil pilote : trigramme DEFA (page « Mes missions »), ID IVAO (VID), ID VATSIM (CID),
+1. **Profil pilote** — ☰ › Profil pilote : trigramme (page « Mes missions »), ID IVAO (VID), ID VATSIM (CID),
    identifiant SimBrief. Repris par toutes les pages.
 2. **Langue** — drapeau du bandeau : automatique, FR, EN, DE, ES.
 3. **Dossier X-Plane** (journaux d'atterrissage) — Paramètres › Sources et dossiers, si vous utilisez le Landing

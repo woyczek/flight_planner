@@ -115,13 +115,13 @@
       };
       walk(m, '');
     });
-    // Référence DEFA anonymisée (committée) : trigrammes des pilotes, terrains des appareils.
+    // Référence anonymisée (committée) : trigrammes des pilotes, terrains des appareils.
     (window.DEFA_REFERENCE?.pilots || []).forEach(p => add('person', p.trigram, p.last || ''));
     (window.DEFA_REFERENCE?.aircraft || []).forEach(a => {
       add('aerodrome', a.homeAd, a.last || '');
       add('aerodrome', a.lastAd, a.last || '');
     });
-    // Base DEFA (journal des vols) : trigrammes des pilotes, terrains de départ / arrivée.
+    // Base (journal des vols) : trigrammes des pilotes, terrains de départ / arrivée.
     try {
       ((JSON.parse(localStorage.getItem('defaFlightLog:v1') || 'null') || {}).records || []).forEach(r => {
         add('person', r.trigram, r.date);

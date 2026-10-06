@@ -1,4 +1,4 @@
-# Documentation technique — Suite DEFA Virtual
+# Documentation technique — Suite SO Group Virtual
 
 *[← Index documentaire](../README.md)* · Conception, architecture, projet, audits et propositions : pour qui développe
 ou maintient la suite. Les manuels et guides d'utilisation sont au [premier niveau](../README.md).

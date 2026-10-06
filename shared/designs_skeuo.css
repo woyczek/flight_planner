@@ -1320,7 +1320,7 @@ html[data-design="field"][data-decor="full"] .repo-deco {
   gap: 12px 14px;
   align-items: center
 }
-/* radar : presque toute la largeur (plaque DEFA et voyant empilés dans la colonne de droite) */
+/* radar : presque toute la largeur (plaque et voyant empilés dans la colonne de droite) */
 html[data-design="field"][data-decor="full"] .repo-deco>.repo-deco-radar {
   grid-column: 1;
   grid-row: 1/3

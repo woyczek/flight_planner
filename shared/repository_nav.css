@@ -372,7 +372,7 @@
     min-height: 64px;
     margin-top: 16px
   }
-  /* contenu de la barre un peu descendu : logo DEFA centré dans sa case */
+  /* contenu de la barre un peu descendu : logo centré dans sa case */
   /* modèle de boîte imposé : la barre ne dépend pas du CSS de la page (le studio n'a pas de box-sizing global :
    liens de 84 px + retrait + liseré = 95 px, icônes décalées) */
   .repo-sidenav,
@@ -634,7 +634,7 @@
     margin: 0;
     padding: 16px 18px 20px
   }
-  /* logo DEFA en haut de la barre latérale (lien vers le site de la flotte) */
+  /* logo en haut de la barre latérale (lien vers le site de la flotte) */
   a.repo-sidenav-brand {
     text-decoration: none
   }

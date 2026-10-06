@@ -45,7 +45,7 @@
     if (registered && pending.push(row) === 1) queueMicrotask(() => window.RepositoryContentI18n?.(pending.splice(0)));
     return fr;
   };
-  // sous-titre de la page Paramètres (« DEFA Virtual — … » : la couche de traduction traduit la partie après le tiret)
+  // sous-titre de la page Paramètres (« SO Group Virtual — … » : la couche de traduction traduit la partie après le tiret)
   T('bases de données (flotte, types, indicatifs, registres…) et maintenance (mises à jour, sources et dossiers, données SIA, sauvegarde)', 'databases (fleet, types, callsigns, ledgers…) and maintenance (updates, sources and folders, SIA data, backup)');
 
   // ---- format commun des fichiers de données (identique à AircraftDB/datafile.py)
@@ -409,7 +409,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
   const operatorNames = () => [...(work.callsigns?.operatorRows || []).map(r => r.name), ...Object.keys(work.callsigns?.data?.operators || {}),
     ...(work.callsigns?.data?.table || []).map(r => r.operator), 'SAMU'
   ].filter((v, i, a) => v && a.indexOf(v) === i).sort((a, b) => a.localeCompare(b, 'fr'));
-  const FLEET_COMMENT = ['Flotte DEFA Virtual : base commune des appareils connus (CR HEMS / FIRE, Mission Report Core).',
+  const FLEET_COMMENT = ['Flotte SO Group Virtual : base commune des appareils connus (CR HEMS / FIRE, Mission Report Core).',
     'Source : page « Flotte virtuelle » de flotte.defa-virtual.fr (python AircraftDB/update_fleet.py Flotte.html),',
     'complétée à la main ou par la page Paramétrage. Colonnes : opérateur, type OACI, variante,',
     'immatriculation, code (numéro tactique), numéro, indicatifs, base, opérationnel.'
@@ -423,7 +423,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
   const FLEET_COLS = ['operator', 'type', 'variant', 'registration', 'tacticalNumber', 'number', 'callsigns', 'base', 'operational'];
   const work = {};
 
-  /** Copie de travail de chaque base éditable (flotte, indicatifs, types OACI, référence DEFA) : fichier ou modification locale plus récente. */
+  /** Copie de travail de chaque base éditable (flotte, indicatifs, types OACI, référence) : fichier ou modification locale plus récente. */
   function loadWork() {
     const fleetFile = {
       rows: (window.DEFA_FLEET_FILE || window.DEFA_FLEET || []).map(r => Object.fromEntries(FLEET_COLS.map(k => [k, r[k] ?? (k === 'callsigns' ? [] : '')])))
@@ -547,7 +547,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
   const DATASETS = [{
       id: 'fleet',
       group: T('Fichiers du dépôt', 'Repository files'),
-      title: T('Flotte DEFA (appareils connus)', 'DEFA fleet (known aircraft)'),
+      title: T('Flotte (appareils connus)', 'Fleet (known aircraft)'),
       file: 'data/references/aircraft_fleet.js',
       overrideKey: 'dataOverride:fleet:v1',
       intro: T('Appareils proposés dans les CR : immatriculation, type, indicatifs, base, opérateur. Plusieurs indicatifs : séparés par des virgules.', 'Aircraft offered in reports: registration, type, callsigns, base, operator. Several callsigns: comma-separated.'),
@@ -881,11 +881,11 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       }]
     }, {
       id: 'defaReference',
-      group: T('Base DEFA', 'DEFA base'),
-      title: T('Référence DEFA (anonymisée, dans le dépôt)', 'DEFA reference (anonymised, in the repository)'),
+      group: T('Base', 'Base'),
+      title: T('Référence (anonymisée, dans le dépôt)', 'Reference (anonymised, in the repository)'),
       file: 'data/references/defa_reference.js',
       overrideKey: 'dataOverride:defaReference:v1',
-      intro: T('Pilotes (trigrammes) et appareils de la DEFA — immatriculation, type, indicatifs utilisés, terrain de rattachement (modifiable), dernier terrain connu, statut — sans les vols ni les missions. Utilisée par les trois applications (CR, Landing Dashboard, Flight Planner). Base « lâche » : aide à la saisie, non exhaustive. Mise à jour : « Base DEFA » › « Mettre à jour la référence », ou tools/defa_reference.py.', 'DEFA pilots (trigrams) and aircraft — registration, type, callsigns used, home aerodrome (editable), last known aerodrome, status — without flights or missions. Used by the three applications. Loose base: input aid, not exhaustive.'),
+      intro: T('Pilotes (trigrammes) et appareils de la compagnie — immatriculation, type, indicatifs utilisés, terrain de rattachement (modifiable), dernier terrain connu, statut — sans les vols ni les missions. Utilisée par les trois applications (CR, Landing Dashboard, Flight Planner). Base « lâche » : aide à la saisie, non exhaustive. Mise à jour : « Base » › « Mettre à jour la référence », ou tools/defa_reference.py.', 'Pilots (trigrams) and aircraft — registration, type, callsigns used, home aerodrome (editable), last known aerodrome, status — without flights or missions. Used by the three applications. Loose base: input aid, not exhaustive.'),
       tables: () => [{
         title: T('Appareils', 'Aircraft'),
         columns: [{
@@ -969,7 +969,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         data: work.defaReference.data.pilots
       }],
       files: stamp => [
-        ['data/references/defa_reference.js', render(['Référence DEFA anonymisée : pilotes (trigrammes), appareils (immatriculation, type, indicatifs', 'utilisés, dernier terrain connu, terrain de rattachement), sans les vols ni les missions.', 'Générée par tools/defa_reference.py ou Paramétrage › Base DEFA ; complétée à la main.', 'Base « lâche » : aide à la saisie, non exhaustive.'], {
+        ['data/references/defa_reference.js', render(['Référence anonymisée : pilotes (trigrammes), appareils (immatriculation, type, indicatifs', 'utilisés, dernier terrain connu, terrain de rattachement), sans les vols ni les missions.', 'Générée par tools/defa_reference.py ou Paramétrage › Base ; complétée à la main.', 'Base « lâche » : aide à la saisie, non exhaustive.'], {
           pilots: work.defaReference.data.pilots.filter(p => p.trigram),
           aircraft: work.defaReference.data.aircraft.filter(a => a.registration)
         }, 'dataOverride:defaReference:v1', 'window.DEFA_REFERENCE = { META, pilots: data.pilots, aircraft: data.aircraft, file: fileData };', stamp)]
@@ -978,19 +978,19 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         pilots: work.defaReference.data.pilots.filter(p => p.trigram),
         aircraft: work.defaReference.data.aircraft.filter(a => a.registration)
       }),
-      howto: `<ol><li>${T('Charger le journal des vols (Base DEFA › Journal des vols DEFA).', 'Load the flight log (DEFA base › DEFA flight log).')}</li><li>${T('« Mettre à jour la référence DEFA » : pilotes et appareils ajoutés ou complétés (rien n’est supprimé ; terrain de rattachement, statut, mise en service et notes saisis ici sont conservés).', '“Update the DEFA reference”: pilots and aircraft added or completed (nothing removed; home AD, status, commissioning and notes kept).')}</li><li>${T('« Enregistrer dans le dépôt », puis committer data/references/defa_reference.js.', '“Save to repository”, then commit data/references/defa_reference.js.')}</li></ol><p>${T('Ou, à la racine du dépôt :', 'Or, at the repository root:')} <code>python tools/defa_reference.py "Log des vols.html"</code></p>`
+      howto: `<ol><li>${T('Charger le journal des vols (Base › Journal des vols).', 'Load the flight log (Base › Flight log).')}</li><li>${T('« Mettre à jour la référence » : pilotes et appareils ajoutés ou complétés (rien n’est supprimé ; terrain de rattachement, statut, mise en service et notes saisis ici sont conservés).', '“Update the reference”: pilots and aircraft added or completed (nothing removed; home AD, status, commissioning and notes kept).')}</li><li>${T('« Enregistrer dans le dépôt », puis committer data/references/defa_reference.js.', '“Save to repository”, then commit data/references/defa_reference.js.')}</li></ol><p>${T('Ou, à la racine du dépôt :', 'Or, at the repository root:')} <code>python tools/defa_reference.py "Log des vols.html"</code></p>`
     }, {
       id: 'defaLog',
-      group: T('Base DEFA', 'DEFA base'),
-      title: T('Journal des vols DEFA (vols réalisés)', 'DEFA flight log (flights flown)'),
+      group: T('Base', 'Base'),
+      title: T('Journal des vols (vols réalisés)', 'Flight log (flights flown)'),
       custom: true,
       intro: T('Base distincte du registre des missions : page « Log des vols » de la DEFA enregistrée (Ctrl+S, page web complète ou HTML seul), ou export CSV / JSON de cette base. Chargée à la demande, gardée dans ce navigateur seulement (hors dépôt et hors sauvegarde locale : trigrammes des pilotes). Les CR s’en servent pour les appareils connus (immatriculation → type, indicatifs utilisés), les trigrammes d’équipage et les terrains ; l’analyse des indicatifs alimente la table de correspondance.', 'Separate from the mission ledger: DEFA “Log des vols” page saved (Ctrl+S), or CSV / JSON export of this base. Loaded on demand, kept in this browser only (not in the repository nor the local backup: pilot trigrams). Reports use it for known aircraft, crew trigrams and aerodromes; the callsign analysis feeds the correspondence table.')
     }, {
       id: 'merges',
-      group: T('Base DEFA', 'DEFA base'),
+      group: T('Base', 'Base'),
       title: T('Fusions et renommages (pilotes, appareils)', 'Merges and renames (pilots, aircraft)'),
       custom: true,
-      intro: T('Équivalences mémorisées par « Fusionner avec… / renommer » des fiches : appliquées au journal DEFA rechargé, à la référence et au catalogue. Une boucle (A → B et B → A) échange les deux noms : supprime l’entrée fautive, puis refais la fusion depuis la fiche.', 'Equivalences stored by the sheets’ “Merge with… / rename”: applied to the reloaded DEFA log, the reference and the catalogue. A loop (A → B and B → A) swaps both names: delete the wrong entry, then redo the merge from the sheet.')
+      intro: T('Équivalences mémorisées par « Fusionner avec… / renommer » des fiches : appliquées au journal rechargé, à la référence et au catalogue. Une boucle (A → B et B → A) échange les deux noms : supprime l’entrée fautive, puis refais la fusion depuis la fiche.', 'Equivalences stored by the sheets’ “Merge with… / rename”: applied to the reloaded log, the reference and the catalogue. A loop (A → B and B → A) swaps both names: delete the wrong entry, then redo the merge from the sheet.')
     }, {
       id: 'send',
       group: T('Centre (CPCO)', 'Centre (CPCO)'),
@@ -1090,7 +1090,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       });
     }
 
-    /** Affiche la base choisie : titre, présentation, mode d'emploi, éditeur (tableaux ou panneau dédié : envoi, journal DEFA, fusions, registres). */
+    /** Affiche la base choisie : titre, présentation, mode d'emploi, éditeur (tableaux ou panneau dédié : envoi, journal, fusions, registres). */
     /** Rubriques réservées au Centre masquées tant qu'il est verrouillé (titres de groupe vides compris). */
     function lockNav() {
       root.querySelectorAll('.da-nav [data-set]').forEach(b => {
@@ -1255,7 +1255,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       actions(buttons);
     }
 
-    // Base DEFA : import du journal des vols, analyse des séries d'indicatifs (ajout / complément
+    // Base : import du journal des vols, analyse des séries d'indicatifs (ajout / complément
     // de la table de correspondance), consultation filtrée, export, effacement.
     function defaLog(body) {
       const D = window.DefaFlightLog,
@@ -1285,7 +1285,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       }
       const dates = list.map(r => r.date).sort(),
         minutes = list.reduce((a, r) => a + (r.durationMin || 0), 0);
-      /** Nombre de valeurs distinctes d'un champ dans le journal DEFA chargé. */
+      /** Nombre de valeurs distinctes d'un champ dans le journal chargé. */
       const count = key => new Set(list.map(r => r[key]).filter(Boolean)).size;
       body.querySelector('.da-defa-stats').textContent = `${data.source || '—'} · ${T('chargé le', 'loaded on')} ${new Date(data.importedAt).toLocaleString()} · ${list.length} ${T('vols', 'flights')} · ${dates[0]} → ${dates[dates.length - 1]} · ${hours(minutes)} · ${count('trigram')} ${T('pilotes', 'pilots')} · ${count('registration')} ${T('appareils', 'aircraft')} · ${count('type')} types`;
       // Séries : état dans la table de correspondance (indicatif, forme plan de vol ou autre forme).
@@ -1316,7 +1316,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         return `<tr><td><b>${esc(s.prefix)}</b></td><td>${esc(forms)}</td><td class="num">${s.count}</td><td title="${esc(numbers.join(' '))}">${numbers.length ? `${numbers.length} : ${esc(numbers.slice(0, 8).join(' '))}${numbers.length > 8 ? '…' : ''}` : '—'}</td><td>${esc([...s.suffixes].join(' ') || '—')}</td><td>${esc(types)}</td><td>${esc(s.first)} → ${esc(s.last)}</td><td>${state}</td></tr>`;
       }).join('');
       body.querySelector('.da-defa-series').innerHTML = `<table class="da-table"><thead><tr><th>${esc(T('Série', 'Series'))}</th><th>${esc(T('Formes vues (vols)', 'Seen forms (flights)'))}</th><th>${esc(T('Vols', 'Flights'))}</th><th>${esc(T('Numéros', 'Numbers'))}</th><th>${esc(T('Suffixes', 'Suffixes'))}</th><th>Types</th><th>${esc(T('Période', 'Period'))}</th><th>${esc(T('Correspondance', 'Correspondence'))}</th></tr></thead><tbody>${rows}</tbody></table>`;
-      /** Passe à la table des indicatifs (depuis le journal DEFA), séries manquantes proposées. */
+      /** Passe à la table des indicatifs (depuis le journal), séries manquantes proposées. */
       const toCallsigns = () => {
         current.id = 'callsigns';
         history.replaceState(null, '', '?base=callsigns');
@@ -1335,7 +1335,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           operator: '',
           designator: '',
           types: topTypes(s),
-          note: `${T('journal DEFA', 'DEFA log')} ${s.first} → ${s.last} : ${s.count} ${T('vols', 'flights')}${s.suffixes.size ? ` · ${T('suffixes', 'suffixes')} ${[...s.suffixes].join(' ')}` : ''}`
+          note: `${T('journal', 'Log')} ${s.first} → ${s.last} : ${s.count} ${T('vols', 'flights')}${s.suffixes.size ? ` · ${T('suffixes', 'suffixes')} ${[...s.suffixes].join(' ')}` : ''}`
         });
         toCallsigns();
       });
@@ -1357,13 +1357,13 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       filter.oninput = paint;
       paint();
       actions([
-        [T('Mettre à jour la référence DEFA (anonymisée)', 'Update the DEFA reference (anonymised)'), () => {
+        [T('Mettre à jour la référence (anonymisée)', 'Update the reference (anonymised)'), () => {
           work.defaReference.data = D.reference(list, work.defaReference.data);
           current.id = 'defaReference';
           history.replaceState(null, '', '?base=defaReference');
           show();
           changed();
-          status(T('Référence DEFA complétée depuis le journal : vérifier, puis « Enregistrer dans le dépôt » (data/references/defa_reference.js).', 'DEFA reference completed from the log: check, then save to repository.'));
+          status(T('Référence complétée depuis le journal : vérifier, puis « Enregistrer dans le dépôt » (data/references/defa_reference.js).', 'Reference completed from the log: check, then save to repository.'));
         }, 'primary'],
         [T('Exporter en CSV', 'Export CSV'), () => download('defa_log_des_vols.csv', D.toCsv(list), 'text/csv')],
         [T('Exporter en JSON (rechargeable)', 'Export JSON (reloadable)'), () => download('defa_log_des_vols.json', JSON.stringify({
@@ -1371,10 +1371,10 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           importedAt: data.importedAt,
           records: list
         }, null, 1), 'application/json')],
-        [T('Effacer la base DEFA de ce navigateur', 'Clear the DEFA base from this browser'), async () => {
-          if (!await window.AppFramework.ask(T('Effacer le journal des vols DEFA de ce navigateur ? (rechargeable depuis le fichier)', 'Clear the DEFA flight log from this browser? (reloadable from the file)'))) return;
+        [T('Effacer la base de ce navigateur', 'Clear the base from this browser'), async () => {
+          if (!await window.AppFramework.ask(T('Effacer le journal des vols de ce navigateur ? (rechargeable depuis le fichier)', 'Clear the flight log from this browser? (reloadable from the file)'))) return;
           D.clear();
-          status(T('Base DEFA effacée', 'DEFA base cleared'));
+          status(T('Base effacée', 'Base cleared'));
           defaLog(body);
         }]
       ]);
@@ -1573,7 +1573,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       body.innerHTML = `<p class="small"></p><table class="da-table"><thead><tr><th>${esc(T('Famille', 'Family'))}</th><th>${esc(T('Missions', 'Missions'))}</th><th></th></tr></thead><tbody></tbody></table><div class="da-yaml" hidden><h3></h3><textarea spellcheck="false"></textarea><div class="row"><button type="button" class="primary" data-yaml="save"></button><button type="button" class="secondary" data-yaml="close"></button></div></div>`;
       /** Résumé du registre des missions : fichier, nombre de missions, source. */
       const info = () => {
-        body.querySelector('p.small').textContent = `${L.FILE} (CR DEFA) · ${store.missions.length} ${T('missions', 'missions')} · ${T('source', 'source')} : ${store.source}${store.folder ? ` (${store.folder})` : ''} · ${T('mis à jour', 'updated')} ${store.updatedAt ? new Date(store.updatedAt).toLocaleString() : '—'}${Object.keys(store.legacyImported || {}).length ? ` · ${T('anciens registres repris', 'legacy ledgers merged')} : ${Object.keys(store.legacyImported).join(', ')}` : ''}`;
+        body.querySelector('p.small').textContent = `${L.FILE} (CR) · ${store.missions.length} ${T('missions', 'missions')} · ${T('source', 'source')} : ${store.source}${store.folder ? ` (${store.folder})` : ''} · ${T('mis à jour', 'updated')} ${store.updatedAt ? new Date(store.updatedAt).toLocaleString() : '—'}${Object.keys(store.legacyImported || {}).length ? ` · ${T('anciens registres repris', 'legacy ledgers merged')} : ${Object.keys(store.legacyImported).join(', ')}` : ''}`;
       };
       info();
       const tbody = body.querySelector('tbody'),
@@ -1586,7 +1586,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       };
       editor.querySelector('[data-yaml="close"]').textContent = T('Fermer', 'Close');
       /** Texte du résultat d'un enregistrement de registre (fichier écrit ou navigateur seulement). */
-      const result = r => `${r.written ? `${T('fichier', 'file')} ${store.folder}/${L.FILE}` : T('navigateur (dossier « CR DEFA » non autorisé : « Dossier du registre… »)', 'browser (“CR DEFA” folder not authorised: “Ledger folder…”)')}`;
+      const result = r => `${r.written ? `${T('fichier', 'file')} ${store.folder}/${L.FILE}` : T('navigateur (dossier « CR » non autorisé : « Dossier du registre… »)', 'browser (“CR” folder not authorised: “Ledger folder…”)')}`;
       // Éditeur YAML : registre complet (family absent) ou missions d'une famille.
       function edit(familyId) {
         const view = familyId ? L.open({

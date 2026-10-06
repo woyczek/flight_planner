@@ -159,7 +159,7 @@ def ensure_data():
 # à laquelle ce serveur ne répond pas)
 class Setup(http.server.SimpleHTTPRequestHandler):
     port = 0
-    MAX_UPLOAD = 512 * 1024 * 1024  # archive des données ou journal DEFA : 512 Mo au plus
+    MAX_UPLOAD = 512 * 1024 * 1024  # archive des données ou journal : 512 Mo au plus
 
     def log_message(self, *a):
         pass
@@ -374,7 +374,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                         return self._json({'ok': False, 'message': 'Installez d’abord les données (étape 1).'})
                     r = subprocess.run([sys.executable, os.path.join(ROOT, 'tools', 'defa_reference.py'), tmp], cwd=ROOT,
                                        capture_output=True, text=True, encoding='utf-8', errors='replace')
-                    return self._json({'ok': r.returncode == 0, 'message': (r.stdout + r.stderr).strip()[-1500:] or 'Référence DEFA mise à jour.'})
+                    return self._json({'ok': r.returncode == 0, 'message': (r.stdout + r.stderr).strip()[-1500:] or 'Référence mise à jour.'})
                 return self._json({'ok': False, 'message': 'Type de fichier inconnu.'}, 400)
             finally:
                 try:
@@ -651,7 +651,7 @@ def main():
     if sys.version_info < (3, 8):
         say('Python 3.8 ou plus récent est nécessaire : https://www.python.org/downloads/')
         return 1
-    say('Suite DEFA — lanceur')
+    say('X-Plane Web Suite — lanceur')
     say(f'Dossier : {ROOT}')
     if a.data:
         say(f'Données : {DATA} (--data)')

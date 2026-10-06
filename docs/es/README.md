@@ -1,4 +1,4 @@
-# Índice de la documentación — Suite DEFA Virtual
+# Índice de la documentación — Suite SO Group Virtual
 
 *[← Volver a la carpeta](../../README.md)* · En la suite: entrada **«Ayuda»** de la barra lateral (abierta en el
 capítulo de la página actual) o ☰ › Ayuda. Los documentos aún no traducidos se abren en francés.

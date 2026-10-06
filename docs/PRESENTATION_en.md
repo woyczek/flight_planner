@@ -1,4 +1,4 @@
-# X-Plane Web Suite — DEFA Virtual
+# X-Plane Web Suite — SO Group Virtual
 
 *[Documentation index](README.md) · [Version française](PRESENTATION.md)*
 
@@ -17,19 +17,19 @@ browser.
 
 | Application | Pages | Purpose | Documentation (French) |
 |---|---|---|---|
-| **CR DEFA** (Mission Report Core) | `apps/cr/` — ☰ › Reporting missions, new report, settings | Mission reports for 15 families, single ledger, reporting and charts, fleet and callsign databases, report sending | [Tutorial](TUTORIAL.md) · [Operations manual](MANUEL_EXPLOITATION.md) · [Design notes](technique/mission_report_core_audit.md) |
+| **CR** (Mission Report Core) | `apps/cr/` — ☰ › Reporting missions, new report, settings | Mission reports for 15 families, single ledger, reporting and charts, fleet and callsign databases, report sending | [Tutorial](TUTORIAL.md) · [Operations manual](MANUEL_EXPLOITATION.md) · [Design notes](technique/mission_report_core_audit.md) |
 | **Landing Performance Dashboard** | `apps/landing/ LandingPerformance_Dashboard_MultiCSV_i18n.html` | Landing analysis (score, FPM, G) from CSV / LOG journals, trends, filters | [docs/LANDING_DASHBOARD.md](LANDING_DASHBOARD.md) · [aircraft database updater](LANDING_DASHBOARD.md) |
 | **Flight Performance & Fuel Planner** | `apps/planner/flight_performance_planner.html` | Aircraft performance profiles, fuel quote, optimum altitude, SimBrief calibration, Little Navmap exchange | [docs/FLIGHT_PLANNER.md](FLIGHT_PLANNER.md) |
-| **SIA missions** | `apps/cpco/` — ☰ › Centre — Générateur de mission, Centre — Studio cartographique | Mission brief (texts, points, final PDF) and PNG / SVG maps from SIA AIRAC data: airspaces, MORA, graticule, air-to-air refuelling tracks, OSM base maps; opens a pre-filled CR DEFA report | [docs/SIA_MISSIONS.md](SIA_MISSIONS.md) |
+| **SIA missions** | `apps/cpco/` — ☰ › Centre — Générateur de mission, Centre — Studio cartographique | Mission brief (texts, points, final PDF) and PNG / SVG maps from SIA AIRAC data: airspaces, MORA, graticule, air-to-air refuelling tracks, OSM base maps; opens a pre-filled CR report | [docs/SIA_MISSIONS.md](SIA_MISSIONS.md) |
 | **Flight maps** | `apps/planner/map_planner.html` — ☰ › Cartes de vol (public) | Route search (airways, RTBA low level), topographic route, approach, rendezvous and destination maps, vertical profile; built from the Centre's map studio by `tools/build_map_planner.py` | [docs/SIA_MISSIONS.md](SIA_MISSIONS.md) |
 | **Shared framework** | `repository_tree`, `shared/`, `AircraftDB/`, `tools/` | Header and ☰ menu, languages, blocks, period and zoom (TimePeriod), charts, tables, pilot profile, local data, aircraft databases | [docs/FRAMEWORK.md](technique/FRAMEWORK.md) |
 
 The applications talk through the framework: same pilot profile (IVAO, VATSIM,
 SimBrief), same period component (drag-to-zoom on charts, ◀ 🔍− ▶ buttons in the header),
 same aircraft type database; the Planner lists the aircraft of the Landing Dashboard's last
-file; an SIA mission opens a pre-filled CR DEFA report.
+file; an SIA mission opens a pre-filled CR report.
 
-### Mission Report Core — the “CR DEFA” application
+### Mission Report Core — the “CR” application
 
 All the pages and ledgers of the application live in the `apps/cr/` folder;
 shared code stays in `shared/`, `AircraftDB/` and `assets/`.
@@ -48,7 +48,7 @@ Highlights:
   blocks, fields and events; fields irrelevant to a family are hidden.
 - **Input assistance**: previously entered values offered in every field; aircraft
   registration / callsign / ICAO type / variant filter each other and fill in when only
-  one match remains; DEFA fleet (205 aircraft); callsign = series + number with its
+  one match remains; fleet (205 aircraft); callsign = series + number with its
   7-character ICAO flight plan form (DRAGON76 ↔ DRAGO76, PELICAN31 ↔ PCAN31) and ICAO
   operator (OPR/).
 - **Filed flight plan import**: SimBrief, IVAO (live), VATSIM (live or prefiled).
@@ -57,7 +57,7 @@ Highlights:
   `RMK CALC OPEN-METEO`; real VATSIM METAR for a flight today, within the hour), sunrise /
   sunset (Open-Meteo, local calculation as fallback) and day / night phase. Only empty or
   automatically filled fields are written.
-- **DEFA base** (settings): flown-flights log loaded on demand (saved “Log des vols” page),
+- **Base** (settings): flown-flights log loaded on demand (saved “Log des vols” page),
   separate from the ledger; aircraft, callsigns, trigrams and aerodromes offered in reports;
   callsign series analysis (≈ 60 series from 2025-2026 added to the correspondence table).
 - **Smart callsign**: typing `ctm58` in the callsign field gives COTAM / 58 / CTM58, OPR/ CTM
@@ -67,7 +67,7 @@ Highlights:
 - **Live network tracking** (IVAO / VATSIM) filling engine start, take-off, landing and
   mission end; VATSIM history import.
 - **Single ledger**: all families in one YAML file (`data/cr/missions.yaml`), written in the
-  `CR DEFA` folder authorised once (Chrome / Edge), with a simplified CSV export; former
+  `CR` folder authorised once (Chrome / Edge), with a simplified CSV export; former
   per-family ledgers are merged automatically. Legacy HEMS / GAAR CSV ledgers can be imported.
 - **Plain text fields in capitals** (callsigns, aerodromes, waypoints, crew…), older entries
   converted on reading; free text areas keep their case.
@@ -86,7 +86,7 @@ Folder `apps/cpco/`; details (French): [docs/SIA_MISSIONS.md](SIA_MISSIONS.md).
 - **Mission generator (brief)**: YAML (`helo-xp-mission`) or Markdown import, texts proposed
   from the data when missing (points, rendezvous, instructions, refuelling track), YAML /
   Markdown / **final PDF** exports named `S1-M11_AIRLIFT_Pont_logistique_vers_Solenzara`,
-  hand-off to the studio, **pre-filled CR DEFA report** (family from the mission type).
+  hand-off to the studio, **pre-filled CR report** (family from the mission type).
 - **Map studio**: SIA database (AIXM 4.5, AIRAC cycle) read from the remembered folder;
   **display profiles** (local PNG, OSM, OpenTopoMap, OpenFreeMap / VersaTiles vector styles;
   layers, airspaces, elements) with a live control map; airspace selection by allow / block

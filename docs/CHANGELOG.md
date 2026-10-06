@@ -10,6 +10,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+### Modifié
+
+- **Renommage : DEFA Virtual → SO Group Virtual** (écriture statique dans les sources, les quatre langues et la
+  documentation) : nom de la compagnie « SO Group Virtual » (`repository_tree.va`, en-têtes, pieds de page, PDF, YAML,
+  sauvegardes) ; « DEFA » qualificatif retiré (« CR DEFA » → « CR » / « Report », flotte, référence, base, journal,
+  trigramme, équipes et aéronefs du générateur, Planning ODV) ; logo générique (cible) ; couche de renommage pour une
+  autre compagnie comparée désormais à la marque des sources. Gardés : identifiants (`ÉQUIPES_DEFA`, `X-DEFA-Setup`,
+  clés), adresses defa-virtual.fr, champ `va` des données. En attente de décision : site et identifiants de la
+  compagnie, page « Log des vols » ; catégories de disponibilité (`data/config/disponibilites.json`).
+
 ## [4.9.0] — 2026-10-06
 
 Données aéronautiques d'autres pays : lecteurs AIXM 5.1, GeoJSON, OpenAir et X-Plane, téléchargements (openAIP, FAA,

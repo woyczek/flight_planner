@@ -1,6 +1,6 @@
 # Manuel administrateur
 
-Ce manuel décrit la suite DEFA Virtual pour le **Centre** (planification et conduite des opérations) et pour les
+Ce manuel décrit la suite SO Group Virtual pour le **Centre** (planification et conduite des opérations) et pour les
 **administrateurs** de la suite : un chapitre par page, une section par onglet, rubrique ou bloc, puis la
 synchronisation des données et le lanceur. Dans la suite, l'entrée **« Aide »** de la barre latérale ouvre ce manuel
 au chapitre de la page en cours (pages du Centre et des paramètres). Les pages des pilotes sont décrites dans le
@@ -20,7 +20,7 @@ Le verrou masque le Centre tant qu'il n'a pas été activé dans ce navigateur.
 
 - Centre verrouillé : les pages du Centre disparaissent du menu ☰, de la barre latérale (séparateur « Centre » et entrées « Missions », « Registre », « ODV ») et de l'accueil.
 - Une page du Centre ouverte directement (favori, lien) est recouverte d'un avis « Accès réservé » avec les liens « Activer le Centre… » et « Accueil ».
-- Dans Paramètres › Centre, seule la rubrique « Accès au Centre et réglages » reste visible ; les autres (« Utilisateurs et droits », « Catégories de disponibilité », « Planning ODV (DEFA) », « Envoi des comptes rendus (webservice) ») sont cachées.
+- Dans Paramètres › Centre, seule la rubrique « Accès au Centre et réglages » reste visible ; les autres (« Utilisateurs et droits », « Catégories de disponibilité », « Planning ODV », « Envoi des comptes rendus (webservice) ») sont cachées.
 - L'activation est mémorisée dans ce navigateur seulement : à refaire sur chaque poste et après un effacement des données du site.
 
 Limite : c'est un verrou d'usage, pas une sécurité. Les pages restent des fichiers lisibles par qui a accès au dossier.
@@ -57,7 +57,7 @@ Gestion dans Paramètres › Centre › « Utilisateurs et droits » :
 - « Réinitialiser… » ouvre « Réinitialiser le mot de passe de TRI » : saisissez un mot de passe provisoire (8 caractères au moins), que l'utilisateur devra changer à sa prochaine connexion ;
 - « Ajouter un utilisateur » : trigramme, nom affiché, rôle, puis « Ajouter ».
 
-Astuce : si le dossier des utilisateurs est vide, la rubrique crée une fiche par pilote de la référence DEFA.
+Astuce : si le dossier des utilisateurs est vide, la rubrique crée une fiche par pilote de la référence.
 
 ### Mode develop et mode production
 
@@ -99,7 +99,7 @@ Les deux pages partagent un onglet en tête et travaillent sur **la même missio
 - Toute modification est enregistrée dans ce navigateur et relue aussitôt par l'autre page ouverte (emprises, cartes ajoutées ou supprimées dans le studio, par exemple). Le générateur affiche alors « Mission mise à jour par le studio cartographique ».
 
 L'en-tête propose aussi :
-- « Créer le CR DEFA → » : ouvre un nouveau compte rendu de la famille correspondant au type de mission, pré-rempli avec la mission ;
+- « Créer le CR → » : ouvre un nouveau compte rendu de la famille correspondant au type de mission, pré-rempli avec la mission ;
 - quand une opération compte plusieurs missions : ◀ et ▶ (« Mission précédente », « Mission suivante ») et une liste pour changer de mission du lot ;
 - après une ouverture depuis le registre : « ← Registre (M-016) » pour y revenir.
 
@@ -336,7 +336,7 @@ Le suivi est écrit dans `suivi.yaml`, dans le dossier de la mission ; il est pa
 Formulaire commun avec le générateur.
 1. Réglez « Type », « Sous-type », « Théâtre » et « Second théâtre » (« Pays » pour l'étranger), « Série » (vide = la suivante).
 2. Vérifiez « Identifiant » (calculé, en lecture seule).
-3. Réglez « Équipes DEFA en vol », « Rendez-vous », « Équipes au sol », « Durée » (XS à XL), « Traductions », « Ravitaillement en vol ».
+3. Réglez « Équipes en vol », « Rendez-vous », « Équipes au sol », « Durée » (XS à XL), « Traductions », « Ravitaillement en vol ».
 4. Sous « Aéronef de chaque équipe en vol », saisissez l'appareil des équipes A, B… (vide = automatique).
 5. Cliquez « Commander : copier le prompt et ouvrir ChatGPT », collez dans ChatGPT (Ctrl+V) puis envoyez.
 
@@ -360,7 +360,7 @@ Ce bloc charge le classeur hebdomadaire de l'escadrille (`.xlsx`). Il est **masq
 - Les anomalies (code hors légende, trigramme en double, date de la frise décalée…) sont signalées par des notifications flottantes, sans jamais bloquer la lecture.
 - Si un pilote du classeur n'a pas encore de préférences de types de missions, la suite en crée d'après ses codes (C → chasse, T → transport…) et les écrit dans sa fiche utilisateur.
 - « Effacer les données » vide la page. Le bouton reste grisé tant qu'aucun classeur n'est chargé.
-- Le lien « Paramètres › Centre › Planning ODV (DEFA) » mène aux réglages des créneaux et de la lecture du classeur.
+- Le lien « Paramètres › Centre › Planning ODV » mène aux réglages des créneaux et de la lecture du classeur.
 - Données personnelles : ne publiez pas les exports. Format du classeur et règles de lecture : [Planning ODV](ODV_PLANNING.md).
 
 ### Grille de disponibilité
@@ -452,7 +452,7 @@ Ce bloc propose, pour chaque créneau qui atteint le seuil « Au moins N pilote(
 
 - Cliquez sur une ligne (en dehors du bouton) pour déplier son résumé : créneau, équipage proposé, renforts, règle, score, contexte (sessions ATC, contrôleurs, événements), simulateurs, missions déjà affectées. Le triangle ▸ fait de même ; une seule ligne est dépliée à la fois.
 - « Règles des familles et du score » se déplie sous le tableau. Score = nombre de participants, + 2 par pilote à code restreint employé dans son domaine, + 1 par contrôleur en ligne pour TRAINING (2 au plus). Une famille souvent jouée recule un peu (selon le nombre de CR du registre) pour varier les missions.
-- Le nombre de missions montrées par créneau et l'ordre de préférence à score égal se règlent dans Paramètres › Centre › Planning ODV (DEFA).
+- Le nombre de missions montrées par créneau et l'ordre de préférence à score égal se règlent dans Paramètres › Centre › Planning ODV.
 - Le tableau se trie par colonne. Les rôles tirés de la feuille FLOTTE restent indicatifs : le planificateur valide.
 
 ### Export
@@ -503,7 +503,7 @@ Cette rubrique gère les fiches des utilisateurs. Il y a une fiche par utilisate
 - **« Réinitialiser… »** : saisissez un mot de passe provisoire (8 caractères au moins), puis « Réinitialiser le mot de passe ». L'utilisateur devra le changer à sa prochaine connexion.
 - **« Usurper »** : vous agissez au nom de l'utilisateur. Un bandeau le rappelle sur toutes les pages, chaque écriture est signée « ADM pour TOTO », et le bouton « Terminer l'usurpation » y met fin.
 - **« Ajouter un utilisateur »** : trigramme, nom affiché, rôle, puis « Ajouter ».
-- Si le dossier est vide, une fiche est créée pour chaque pilote de la référence DEFA.
+- Si le dossier est vide, une fiche est créée pour chaque pilote de la référence.
 - Si des fichiers n'ont pas encore pu être écrits dans le dossier des données, cliquez sur « Écrire dans le dossier des données ».
 - En mode production, la réinitialisation d'un mot de passe, l'usurpation et le changement de mode sont réservés à un
   `admin_centre` connecté ; l'ajout d'un utilisateur et la modification d'une ligne (rôle, actif) ne sont protégés que
@@ -530,9 +530,9 @@ Cette rubrique définit ce que les pilotes peuvent déclarer comme disponibilit�
 - « Valeurs par défaut » rétablit les catégories d'origine. Les catégories ajoutées sont gardées, mais retirées.
 Voir aussi [disponibilités et réorganisation](technique/DISPOS_ET_REORGANISATION.md).
 
-### Planning ODV (DEFA)
+### Planning ODV
 
-Cette rubrique contient les réglages propres à la DEFA pour la page Planning ODV. Ils sont gardés dans ce navigateur et ne sont pas synchronisés. Une page ODV ouverte dans un autre onglet les applique aussitôt.
+Cette rubrique contient les réglages propres à la compagnie pour la page Planning ODV. Ils sont gardés dans ce navigateur et ne sont pas synchronisés. Une page ODV ouverte dans un autre onglet les applique aussitôt.
 
 | Réglage | Défaut |
 |---|---|
@@ -569,7 +569,7 @@ Ces rubriques sont attribuées à la page par `config/repository_tree` (clé `se
 
 Cette rubrique indique si le premier lancement est terminé dans ce navigateur, et à quelle date.
 - « Ouvrir le premier lancement » rouvre l'assistant (`premier_lancement.html?force`). Il se déroule en quatre étapes :
-  1. Données : « Récupérer les données » (clone du dépôt de données) ou « Archive des données… » ; en option, « Journal DEFA (.html)… ».
+  1. Données : « Récupérer les données » (clone du dépôt de données) ou « Archive des données… » ; en option, « Journal (.html)… ».
   2. Profil : « Enregistrer le profil ».
   3. Dossiers : « Choisir le dossier de l'application », puis le classeur ODV (« Dossier OneDrive… » ou « ou le fichier Excel… »).
   4. « Terminer et mettre à jour les données SIA ».
@@ -594,7 +594,7 @@ Cette rubrique est le seul endroit où régler les dossiers locaux et les adress
 | Dossier X-Plane (atterrissages), Dossier performances, Dossier de sauvegarde locale | journaux CSV, profils `.lnmperf` / `.json`, `defa_local_store.yaml` |
 
 - **Sources externes** : l'adresse par défaut s'affiche en grisé. Une valeur saisie ne vaut que pour ce navigateur ; « ↺ » revient à la valeur par défaut et « Ouvrir ↗ » ouvre l'adresse.
-- **Compagnie virtuelle** : « Nom », « Sigle », « Centre (sigle) », « Centre (nom complet) », et les pages du site (« Page d'accueil », « Log des vols », « Flotte », « Fiche d'un appareil »). Un champ vide garde la valeur par défaut. « Revenir à DEFA Virtual » efface tous ces réglages.
+- **Compagnie virtuelle** : « Nom », « Sigle », « Centre (sigle) », « Centre (nom complet) », et les pages du site (« Page d'accueil », « Log des vols », « Flotte », « Fiche d'un appareil »). Un champ vide garde la valeur par défaut. « Revenir à SO Group Virtual » efface tous ces réglages.
 - **Premier lancement** : « Rouvrir le premier lancement » ; « Nettoyer et recommencer… » efface les dossiers mémorisés, la copie du classeur ODV, les identifiants du site DEFA et le profil. Les fichiers sur le disque ne sont pas touchés.
 
 ## Paramètres › Maintenance
@@ -604,7 +604,7 @@ Cette page sert à l'entretien de la suite : mises à jour, versions, données S
 Pour l'ouvrir : barre latérale › « Paramètres », puis l'onglet « Maintenance ». La page s'ouvre sur « Mises à jour ».
 Le menu latéral comporte deux parties :
 - le groupe « Maintenance » : Mises à jour, Versions et synchros, Références et dépendances, Données aéronautiques, Caches, Espace disque, Sauvegarde totale, Journal ;
-- les bases de données, rangées dans les groupes « Fichiers du dépôt », « Base DEFA », « Missions » et « Données du navigateur ».
+- les bases de données, rangées dans les groupes « Fichiers du dépôt », « Base », « Missions » et « Données du navigateur ».
 
 ### Mises à jour de la suite
 
@@ -622,7 +622,7 @@ Ce bloc règle d'où viennent les mises à jour du code et quand la suite les ch
 Ce tableau donne la version et la date de mise à jour de chaque élément, avec un état (✓, ⚠, ✗) et la source ou l'outil de mise à jour.
 - Code : suite (`repository_tree`), version de cache des scripts, git, canal distant.
 - SIA / AIRAC : cycle en vigueur et cycle suivant, base du studio cartographique, dossier SIA XML, `mora.csv`, axes AAR (ENR 5.7).
-- Bases de référence : types OACI, performances APD, flotte DEFA, référence DEFA, indicatifs.
+- Bases de référence : types OACI, performances APD, flotte, référence, indicatifs.
 - Données utilisateur : plans de vol SimBrief, profils du planificateur, registre des CR, registre des missions générées, journaux d'atterrissage, données locales, dernière sauvegarde totale.
 - « Actualiser » relit l'état git et le dossier SIA.
 - Un avertissement s'affiche si les données locales n'ont pas été sauvegardées depuis plus de 7 jours, ou s'il n'y a pas eu de sauvegarde totale depuis plus de 30 jours.
@@ -639,7 +639,7 @@ Ce bloc décrit chaque référence de la suite :
 | Dépendants | données qui en dépendent |
 | Contrôle | cohérence vérifiée |
 
-Références suivies : XML SIA, base analysée du studio, grille MORA, axes AAR, performances APD, flotte DEFA, profils du planificateur et prompt des missions.
+Références suivies : XML SIA, base analysée du studio, grille MORA, axes AAR, performances APD, flotte, profils du planificateur et prompt des missions.
 Exemples de contrôles : cycles mélangés dans la base SIA, obstacles MORA d'un autre cycle, types de la flotte absents de la base OACI, prompt à régénérer (`python tools/build_mission_prompt.py`).
 Le bouton « Vérifier » relance les contrôles.
 
@@ -723,7 +723,7 @@ Opérations tracées :
 - recalcul MORA.
 Tant qu'aucune de ces opérations n'a eu lieu, le journal est vide.
 
-### Flotte DEFA (appareils connus)
+### Flotte (appareils connus)
 
 Cette base (`data/references/aircraft_fleet.js`) liste les appareils proposés dans les CR : « Opérateur », « Type OACI », « Variante », « Immatriculation », « Code », « Numéro », « Indicatifs » (séparés par des virgules), « Base », « Opérationnel ».
 - **« Coller la page Flotte du site… »** :
@@ -750,35 +750,35 @@ Cette base (`data/references/callsigns.js`) relie l'indicatif complet (conservé
 - Tableau « Indicatifs » : « Indicatif complet », « Plan de vol », « Autres formes », « Organisme », « OPR/ », « Types », « Fonction », « Générique », « Radiotéléphonie », « Note ».
 - Tableau « Organismes → désignateur OACI (OPR/) ».
 - Il n'existe pas de script : cette page (ou le fichier, édité à la main) est la source.
-- Pour l'alimenter : les formes corrigées dans les CR arrivent dans « Indicatifs appris », et les séries vues dans le journal DEFA arrivent par « Ajouter » ou « Compléter ».
+- Pour l'alimenter : les formes corrigées dans les CR arrivent dans « Indicatifs appris », et les séries vues dans le journal arrivent par « Ajouter » ou « Compléter ».
 
-### Référence DEFA (anonymisée, dans le dépôt)
+### Référence (anonymisée, dans le dépôt)
 
-Cette base (`data/references/defa_reference.js`) recense les pilotes (trigrammes) et les appareils de la DEFA, sans les vols ni les missions. Elle sert d'aide à la saisie et n'est pas exhaustive.
+Cette base (`data/references/defa_reference.js`) recense les pilotes (trigrammes) et les appareils de la compagnie, sans les vols ni les missions. Elle sert d'aide à la saisie et n'est pas exhaustive.
 - Tableau « Appareils » : immatriculation, type, variante, statut, rattachement (modifiable), dernier AD connu, mise en service, indicatifs utilisés, premier et dernier vol, vols, fiche flotte, note.
 - Tableau « Pilotes » : trigramme, premier et dernier vol, vols, types, note.
 - Mise à jour :
   1. chargez le journal des vols (rubrique suivante) ;
-  2. cliquez sur « Mettre à jour la référence DEFA (anonymisée) » : rien n'est supprimé, et les saisies manuelles sont gardées ;
+  2. cliquez sur « Mettre à jour la référence (anonymisée) » : rien n'est supprimé, et les saisies manuelles sont gardées ;
   3. « Enregistrer dans le dépôt », puis committez.
 - Alternative par script : `tools/defa_reference.py`.
 
-### Journal des vols DEFA (vols réalisés)
+### Journal des vols (vols réalisés)
 
 Cette base est distincte du registre des missions. Elle n'est gardée que dans ce navigateur : hors dépôt et hors sauvegarde locale, car elle contient des trigrammes.
 - « Charger / mettre à jour le journal… » accepte la page « Log des vols » copiée ou enregistrée, ou un export CSV / JSON. Les vols sont fusionnés sans doublon.
 - « Séries d'indicatifs » : « Ajouter » crée la ligne dans la correspondance des indicatifs ; « Compléter » y ajoute les formes et les types vus.
 - « Vols » : filtre plein texte, 300 lignes affichées au plus.
 - Actions :
-  - « Mettre à jour la référence DEFA (anonymisée) » ;
+  - « Mettre à jour la référence (anonymisée) » ;
   - « Exporter en CSV » ;
   - « Exporter en JSON (rechargeable) » ;
-  - « Effacer la base DEFA de ce navigateur ».
+  - « Effacer la base de ce navigateur ».
 
 ### Fusions et renommages (pilotes, appareils)
 
 Ce tableau liste les équivalences créées par « Fusionner avec… / renommer » depuis les fiches. Colonnes : « Type » (pilote ou appareil), « Ancien », « Devient », « Résultat ».
-Ces équivalences s'appliquent au journal DEFA rechargé, à la référence et au catalogue.
+Ces équivalences s'appliquent au journal rechargé, à la référence et au catalogue.
 « Supprimer » retire une équivalence, après confirmation.
 Une boucle (A → B et B → A) est surlignée : elle échange les deux noms. Supprimez l'entrée fautive, puis refaites la fusion depuis la fiche.
 

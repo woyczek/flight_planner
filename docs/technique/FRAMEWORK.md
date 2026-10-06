@@ -1,6 +1,6 @@
 # Framework commun
 
-Les trois applications de la suite — **CR DEFA** (Mission Report Core), **Landing Performance
+Les trois applications de la suite — **CR** (Mission Report Core), **Landing Performance
 Dashboard** et **Flight Performance & Fuel Planner** — partagent un framework sans dépendance
 ni étape de compilation : des fichiers JavaScript chargés par `<script>`, qui s'activent
 seuls sur chaque page. Ce document décrit chaque composant, son rôle et son interface.
@@ -12,17 +12,17 @@ seuls sur chaque page. Ce document décrit chaque composant, son rôle et son in
 | Apparence (designs, icônes, barre latérale, couleurs) | `shared/designs.css`, `block_icons.js/.css`, `icons/repository_icons.js`, `side_nav.js`, `appearance_page.js` | toutes les pages ; réglages sur la page Apparence |
 | Colonnes redimensionnables | `shared/column_resize.js` | Planner |
 | Blocs (déplacer / masquer) | `shared/app_framework.js` | toutes les pages |
-| Traduction des textes | `shared/content_i18n.js` | CR DEFA, Planner, reportings |
+| Traduction des textes | `shared/content_i18n.js` | CR, Planner, reportings |
 | Profil pilote | `shared/pilot_profile.js` | toutes les pages (menu ☰) |
 | Données locales ⇄ fichier, rappel de sauvegarde | `shared/browser_store.js` | toutes les pages (menu ☰, en-tête) |
 | Dossiers autorisés, ouverture des fichiers | `shared/file_access.js` | toutes les pages |
 | Période d'analyse (zoom) | `shared/time_period.js` | reportings, Landing Dashboard |
 | Graphiques SVG | `shared/mission_core/charts.js` | reportings |
 | Tableau triable | `shared/mission_table.js` | reportings |
-| Bases de données éditables | `shared/data_admin.js` (page Paramétrage) | CR DEFA |
+| Bases de données éditables | `shared/data_admin.js` (page Paramétrage) | CR |
 | Base des types d'aéronefs | `AircraftDB/` | les trois applications |
-| Catalogue commun (types, appareils DEFA) | `shared/aircraft_catalog.js` | les trois applications |
-| Référence DEFA anonymisée | `data/references/defa_reference.js` | les trois applications |
+| Catalogue commun (types, appareils) | `shared/aircraft_catalog.js` | les trois applications |
+| Référence anonymisée | `data/references/defa_reference.js` | les trois applications |
 | Mises à jour (canal, contrôle, pastilles) | `shared/suite_update.js`, `tools/update_suite.py` | toutes les pages ; réglages Paramètres › Maintenance |
 | Cycles AIRAC, dossier et base SIA, recalcul MORA | `shared/airac.js` | Maintenance |
 | Archives ZIP (écriture, lecture, SHA-256) | `shared/zip_store.js` | Maintenance (sauvegarde totale, export SIA) |
@@ -296,7 +296,7 @@ suite.channel`).
 
 ## 6 sexies. `data_files.js` — données hors de l'application (v3)
 
-Les données DEFA et recalculées vivent dans `data/` (clone du dépôt de données, ignoré par git ; marqueur
+Les données de la compagnie et recalculées vivent dans `data/` (clone du dépôt de données, ignoré par git ; marqueur
 `data/data_tree.js`). Une page charge un fichier de données par
 `<script src="../…/shared/data_files.js?v=…" data-file="references/aircraft_fleet.js"></script>` : le premier appel lit le
 marqueur, puis chaque fichier est pris dans `data/`, sinon dans `examples/` (chargement synchrone, ordre conservé). API :
@@ -310,7 +310,7 @@ dossier `__data` ; registre (`cr`), missions, SIA en sont déduits, performances
 `repository_tree.sources` : adresses par défaut (`defa`, `siaData`, `siaCycle` — gabarit `{nn}` / `{yy}` —, `siaEaip`,
 `suiteRepo`, `dataRepo`). `RepositoryNav.source(clé)` : surcharge locale (`suiteSources:v1`, réglée dans
 Paramètres › Maintenance › Sources et dossiers) sinon valeur par défaut ; `RepositoryNav.setSource(clé, valeur)`
-(événement `suite-sources-change`). Aucune adresse DEFA ou SIA n'est écrite en dur dans le code des pages.
+(événement `suite-sources-change`). Aucune adresse ou SIA n'est écrite en dur dans le code des pages.
 
 ## 6 quater. `airac.js`, `zip_store.js`
 
@@ -328,26 +328,26 @@ Paramètres › Maintenance › Sources et dossiers) sinon valeur par défaut ; 
   contient `config/repository_tree` — le choisir règle d'un coup `data/` et ses sous-dossiers, et la sauvegarde locale
   si elle n'est pas choisie : `deriveFromRepo`), **classeur ODV** (`__odv` : dossier OneDrive du classeur ; copie du
   dernier classeur gardée sous `__odvFile`), **registre** (`__ledger` :
-  `Documentation/CR DEFA`, qui contient `mission_cr.html`), **sauvegarde locale** (`__store`),
+  `Documentation/CR`, qui contient `mission_cr.html`), **sauvegarde locale** (`__store`),
   **performances** (`__perf`, Flight Planner), **SIA XML** (`__sia` : données AIRAC, témoin
   `mora.csv`), **missions** (`__missions` : `Documentation/Missions`, séries générées ; registre
   `mission_registry.yaml`), **X-Plane** (`__xplane` : journaux CSV du plugin d'atterrissage, dossier par défaut du
   Landing Dashboard). Tous se règlent dans Paramètres › Maintenance › Sources et dossiers.
 - `FileAccess.pickFolder(clé)` : le sélecteur s'ouvre sur le dossier actuel ; contrôle du
   contenu attendu (fichier témoin) avec confirmation.
-- `FileAccess.decorate(bouton, clé)` : le bouton affiche « Dossier du registre : CR DEFA ✓ »
+- `FileAccess.decorate(bouton, clé)` : le bouton affiche « Dossier du registre : CR ✓ »
   (✓ autorisé, ⚠ à ré-autoriser au prochain accès) ; l'infobulle donne le dossier attendu et
   l'état — l'explication au survol plutôt qu'à l'écran.
 - **Tout** `<input type="file">` de la suite ouvre le sélecteur du système **directement dans
   le dossier paramétré** : `data-picker-folder="__ledger"` sur le champ, sinon dossier par
-  défaut de la page (application CR DEFA : registre ; Paramétrage : dépôt ; Flight Planner :
+  défaut de la page (application CR : registre ; Paramétrage : dépôt ; Flight Planner :
   performances ; Missions SIA : SIA XML), sinon le dernier dossier utilisé pour ce bouton. Le code des pages ne change
   pas (événement `change` habituel). Navigateurs sans l'API : sélecteur natif. Les sélecteurs
   de **dossier** (`webkitdirectory`) gardent le sélecteur natif.
 
 ### Panneaux de copier-coller (`FileAccess.pastePanel`)
 
-Toute fenêtre où l'on colle un texte (CR › Analyse / import, journal DEFA, historique VATSIM du
+Toute fenêtre où l'on colle un texte (CR › Analyse / import, journal, historique VATSIM du
 suivi réseau, mission et liste de zones du studio SIA, mission du générateur) : **×** en haut à droite et bouton **Fermer** ; le bouton de chargement est
 **désactivé** tant que la zone est vide, devient **✓ Valider** (vert, ferme la fenêtre) après un
 chargement réussi, et redevient « Charger » dès que la zone est de nouveau remplie.
@@ -427,7 +427,7 @@ que le fichier ; « Enregistrer dans le dépôt » réécrit le fichier (format 
 
 `aircraft_db.js` (types OACI : désignateur, modèle, catégorie…), `aircraft_icons.js`
 (silhouettes), `aircraft_overrides.json` (corrections locales), scripts
-`update_aircraft_db.py` (mise à jour), `update_fleet.py` (flotte DEFA),
+`update_aircraft_db.py` (mise à jour), `update_fleet.py` (flotte),
 `datafile.py` (format commun des fichiers de données).
 
 ## 11 bis. `aircraft_catalog.js` et `defa_reference.js` — catalogue commun
@@ -439,14 +439,14 @@ Chargés juste après `AircraftDB/aircraft_db.js` dans **toutes** les pages qui 
   types militaires absents de la base (`SUPPLEMENT` : RFAL, MIR2, A400, E3CF, H160, TIGR…) et
   types ajoutés localement dans les CR (`missionAircraftTypes:v1`), fusionnés dans
   `window.AIRCRAFT_DB` — les trois applications voient les mêmes types ;
-- **appareils DEFA** (`AircraftCatalog.defaAircraft()`) : flotte, référence DEFA, appareils des
-  missions enregistrées et journal DEFA chargé, par immatriculation (la donnée la plus récente
+- **appareils** (`AircraftCatalog.defaAircraft()`) : flotte, référence, appareils des
+  missions enregistrées et journal chargé, par immatriculation (la donnée la plus récente
   l'emporte) : type, variante, indicatifs, terrain de rattachement, dernier terrain connu ;
   `defaTypes()` : types employés, avec leurs appareils ; `pilots()` : trigrammes.
 - `defa_reference.js` : référence **anonymisée** committée (pilotes : trigramme, période, vols,
   types ; appareils : immatriculation, type, indicatifs utilisés, rattachement, dernier terrain,
   statut, mise en service) — sans les vols ni les missions. Générée par
-  `tools/defa_reference.py` ou Paramétrage › Base DEFA, éditable dans Paramétrage.
+  `tools/defa_reference.py` ou Paramétrage › Base, éditable dans Paramétrage.
 
 Base « lâche » : aide à la saisie, jamais une contrainte — une valeur absente reste saisissable.
 
@@ -466,7 +466,7 @@ appareil). `link(item)` : lien en tête de carte (fiche appareil). Ajout par le 
   l'hippodrome (branche aller IP → CP, retour décalé, demi-cercles), cap, longueur, largeur, côté.
 - `toGeoJson`, `nearest` : tracés MapLibre / SVG, axe le plus proche d'un point.
 
-## 11 quater. Passerelle mission → CR DEFA
+## 11 quater. Passerelle mission → CR
 
 - `MissionVocab.familyForType(type)` (`shared/mission_core/vocab.js`) : famille de CR d'après
   un type de mission libre (MEDEVAC → HEMS, TRAINING → SPECIAL…).
@@ -485,7 +485,7 @@ appareil). `link(item)` : lien en tête de carte (fiche appareil). Ajout par le 
 - `tools/update_suite.py` : état git (`status`), canal (`channel master|develop`), mise à jour sûre (`update` :
   fast-forward, refus si fichiers modifiés, journal `.git/suite-update.log`), diagnostic (`doctor` : remote, branches,
   branches fusionnées, packs orphelins, `VERSION.json`, fichiers suivis mais ignorés, `core.autocrlf`).
-- `tools/defa_reference.py "Log des vols.html"` : référence DEFA anonymisée
+- `tools/defa_reference.py "Log des vols.html"` : référence anonymisée
   (`data/references/defa_reference.js`) depuis le journal des vols (complète sans rien supprimer).
 - `tools/new_family_pages.py` : crée les pages d'une nouvelle famille de missions dans
   `apps/cr/`.
@@ -496,7 +496,7 @@ appareil). `link(item)` : lien en tête de carte (fiche appareil). Ajout par le 
   archive `.zip` déposée, ou clone du dépôt privé), serveur local (`http://127.0.0.1`, premier port libre à partir de
   8000), navigateur sur `apps/settings/premier_lancement.html`.
 - Le serveur du lanceur porte une interface locale `/__setup/` (état, clone avec identifiants, envoi de l'archive ou du
-  journal DEFA), refusée hors des pages qu'il sert (hôte `127.0.0.1:<port>` et en-tête `X-DEFA-Setup` exigés).
+  journal), refusée hors des pages qu'il sert (hôte `127.0.0.1:<port>` et en-tête `X-DEFA-Setup` exigés).
 - Premier lancement : données, profil (`missionReportingConfig:v1` ; identifiants DEFA `defaCredentials:v1`, exclus des
   sauvegardes par `browser_store.js`), dossiers (`__repo`, `__odv` / `__odvFile`), puis Paramètres › Mise à jour SIA ;
   `suiteSetup:v1` marque la suite réglée (le lanceur ouvre alors l'accueil), « Nettoyer » l'efface.

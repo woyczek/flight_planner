@@ -1,6 +1,6 @@
 # Benutzerhandbuch
 
-Dieses Handbuch beschreibt die Suite DEFA Virtual für **Piloten**: ein Kapitel pro Seite, ein Abschnitt pro Registerkarte
+Dieses Handbuch beschreibt die Suite SO Group Virtual für **Piloten**: ein Kapitel pro Seite, ein Abschnitt pro Registerkarte
 oder Block, in der Reihenfolge, in der sie erscheinen. In der Suite öffnet der Eintrag **„Hilfe“** der Seitenleiste dieses
 Handbuch beim Kapitel der aktuellen Seite. Das Zentrum und die Verwaltung der Suite sind im
 [Administratorhandbuch](MANUEL_ADMINISTRATEUR.md) beschrieben; für einen ersten Bericht Schritt für Schritt siehe das
@@ -9,7 +9,7 @@ Handbuch beim Kapitel der aktuellen Seite. Das Zentrum und die Verwaltung der Su
 ## Erste Schritte
 <!-- page: index.html -->
 
-Die Suite „DEFA Virtual“ vereint im Browser alles, was der Pilot braucht: vom Zentrum zugewiesene Missionen, Verfügbarkeit, Flugkarten, Kraftstoff, Berichte, Landungen und Auswertungen.
+Die Suite „SO Group Virtual“ vereint im Browser alles, was der Pilot braucht: vom Zentrum zugewiesene Missionen, Verfügbarkeit, Flugkarten, Kraftstoff, Berichte, Landungen und Auswertungen.
 Alle Seiten haben dieselben Orientierungspunkte: links eine Seitenleiste, oben eine Kopfzeile, manchmal Registerkarten, dann Blöcke.
 Dieses Kapitel beschreibt diese gemeinsamen Elemente; die folgenden Kapitel erklären jede Seite im Detail.
 Die Startseite (`index.html`) listet die Anwendungen als Karten auf und zeigt die Version der Suite.
@@ -21,11 +21,11 @@ Die linke Spalte führt zu den Anwendungen. Der Eintrag der angezeigten Seite is
 | Eintrag | Was er öffnet |
 |---|---|
 | „Meine Missionen“ | Vom Zentrum zugewiesene Missionen und Verfügbarkeit (mit rotem Punkt: Anzahl ungelesener Missionen) |
-| „DEFA-Bericht“ | Eingabe eines neuen Missionsberichts |
+| „Bericht“ | Eingabe eines neuen Missionsberichts |
 | „Flugkarten“ | Flugkarten: Route, Topo, Anflug, Treffpunkt, Ziel |
 | „Kraftstoff“ | Leistungs- und Kraftstoffplaner |
 | „Landungen“ | Übersicht der Landungen |
-| „Berichte“ | Auswertungen der Missionen (DEFA-Berichte) |
+| „Berichte“ | Auswertungen der Missionen (Berichte) |
 
 - Die Gruppe **„Zentrum“** („Missionen“, „Register“, „ODV“) erscheint nur, wenn das Zentrum in diesem Browser freigeschaltet ist (Einstellungen › Zentrum). Für einen Piloten bleibt sie normalerweise verborgen.
 - Unten in der Spalte: „Darstellung“ (öffnet die Anzeigeeinstellungen in einem Fenster über der aktuellen Seite), „Einstellungen“ (Mein Profil und die anderen Einstellungsseiten) und **„Hilfe“**. Diese drei Einträge bleiben unten am Bildschirm fixiert: Nur die obere Liste scrollt, wenn es zu viele Symbole gibt (Fenster unter 460 px Höhe: Die ganze Leiste scrollt).
@@ -271,7 +271,7 @@ Ihre Identität in der Suite, die alle Seiten übernehmen (☰ › Pilotenprofil
 
 | Karte | Felder |
 |---|---|
-| „Pilot“ | „DEFA-Kürzel“, „VATSIM-ID (CID)“, „IVAO-ID (VID)“, „SimBrief (Benutzer oder ID)“ |
+| „Pilot“ | „Kürzel“, „VATSIM-ID (CID)“, „IVAO-ID (VID)“, „SimBrief (Benutzer oder ID)“ |
 | „DEFA-Website“ | „Kennung“, „Passwort“ |
 | „Sprache“ | „Sprache der Suite“: Automatisch (Browsersprache), Français, English, Deutsch, Español |
 
@@ -315,7 +315,7 @@ Die Typen der Flotte, die Sie besitzen und beherrschen, und Ihre Simulatoren. Da
 | Spalte | Inhalt |
 |---|---|
 | „Typ“ | Modell und ICAO-Kennung |
-| „Flottenvarianten“ | In der DEFA-Flotte vorhandene Varianten |
+| „Flottenvarianten“ | In der Flotte vorhandene Varianten |
 | „Luftfahrzeuge“ | Anzahl der Luftfahrzeuge im Dienst (von der Gesamtzahl) und ihre Basen |
 | „Besessen“ | Sie haben diesen Typ in Ihrem Simulator |
 | „Beherrscht“ | Sie fliegen ihn sicher |
@@ -385,7 +385,7 @@ Die Strichstärke der Symbole oder gar keine Symbole. Jede Zeile zeigt eine Vors
 
 Jede Seite der Suite hat ein Farbthema (Leiste, Text der Leiste, Akzent). Für jedes Thema wählen Sie eine Farbfamilie und einen Ton; daraus werden die Farben berechnet, mit einer Lesbarkeitsprüfung.
 
-Die Themen werden als Karten dargestellt, in zwei Gruppen: „Anwendungen“ (Kraftstoff, Landungen, Zentrum, DEFA-Bericht) und „Berichtsfamilien“.
+Die Themen werden als Karten dargestellt, in zwei Gruppen: „Anwendungen“ (Kraftstoff, Landungen, Zentrum, Bericht) und „Berichtsfamilien“.
 
 Auf jeder Karte:
 1. Die Vorschau zeigt einen „Titel“ auf der Leiste, eine „Schaltfläche“ und einen „Link, Symbol“.
@@ -427,13 +427,13 @@ Zwei Möglichkeiten:
   „Prüfen“ sagt, ob es von diesem Rechner aus antwortet (höchstens 30 s), „Speichern“ macht es zum entfernten Repository von `data/`
   (sind noch keine Daten vorhanden, dient die Adresse dazu, sie zu holen). Nichts ist blockierend: Ein Repository, das nicht antwortet, wird gemeldet,
   die Suite funktioniert ohne Teilen. Einzelheiten: [Synchronisierung](../technique/SYNCHRONISATION.md).
-- Sind die Daten vorhanden, bietet die optionale Karte „DEFA-Flugbuch“ den Knopf „DEFA-Journal (.html)…“: Die gespeicherte Seite „Log des vols“ der DEFA-Website füllt die Piloten und Luftfahrzeuge der DEFA-Referenz (Eingabehilfe).
+- Sind die Daten vorhanden, bietet die optionale Karte „Flugbuch“ den Knopf „Journal (.html)…“: Die gespeicherte Seite „Log des vols“ der DEFA-Website füllt die Piloten und Luftfahrzeuge der Referenz (Eingabehilfe).
 
 ### 2 Profil
 
 Ihr Pilotenprofil, das alle Seiten übernehmen (☰ › Pilotenprofil).
 
-1. Füllen Sie die Karte „Pilot“ aus: „DEFA-Kürzel“, „IVAO-ID (VID)“, „VATSIM-ID (CID)“, „SimBrief“.
+1. Füllen Sie die Karte „Pilot“ aus: „Kürzel“, „IVAO-ID (VID)“, „VATSIM-ID (CID)“, „SimBrief“.
 2. Klicken Sie auf „Profil speichern“.
 
 Die Zugangsdaten der DEFA-Website, das Passwort und die Einstellungen werden danach in [Mein Profil](#mein-profil) eingestellt.
@@ -470,7 +470,7 @@ Um den Erststart von vorn zu beginnen, und nur in diesem Fall.
 
 Diese Seite ist der Einstieg für jeden Missionsbericht: Sie wählen hier die Familie der
 Mission, dann öffnet sich die Berichtsseite dieser Familie. Sie richtet sich an alle Piloten.
-Zugang: Seitenleiste › **DEFA-Bericht** oder der Knopf „Neuer Bericht“ in der Kopfzeile der
+Zugang: Seitenleiste › **Bericht** oder der Knopf „Neuer Bericht“ in der Kopfzeile der
 allgemeinen Auswertung. Ein Bericht kann sich auch direkt und bereits ausgefüllt öffnen, aus einer Mission, die Ihnen
 zugewiesen wurde (siehe unten). Vollständige Schritt-für-Schritt-Anleitung: [Tutorial](../TUTORIAL.md).
 
@@ -513,7 +513,7 @@ Hat Ihnen das Zentrum eine Mission zugewiesen, ist die Wahl der Familie unnötig
 |---|---|
 | **Meine Missionen** (Missionsmappe geöffnet) | „Bericht erstellen“ (ausgegraut, wenn die Mission keine Missionsdatei hat) |
 | **Register** der Missionen (Zentrum) | „Bericht erstellen“ oder „Neuer Bericht (Flug n)“, wenn die Mission bereits Berichte hat |
-| **Missionsgenerator** (Zentrum) | Knopf der Kopfzeile „DEFA-Bericht erstellen →“ |
+| **Missionsgenerator** (Zentrum) | Knopf der Kopfzeile „Bericht erstellen →“ |
 
 Was übernommen wird: Name der Übung / Operation (Titel der Mission), Kennung der Mission (Feld
 „Mission“), Ziel und Anweisungen (Block Auftrag), Abflug- und Zielflugplatz, Wegpunkte und
@@ -559,7 +559,7 @@ Die Kopfzeile bleibt oben auf der Seite fixiert. Von links nach rechts:
 |---|---|
 | „SAR · SAR an Land ▾“ (Familie · Untertyp) | Popup „Einsatzfamilie“ (öffnet die Seite der anderen Familie) und „Einsatz-Untertyp“ |
 | „Ins Register aufnehmen“ / „Änderungen speichern“ | legt die Mission im Register ab |
-| „Bericht senden“ | übermittelt den Bericht an den Webservice der DEFA (gestrichelt, solange er nicht eingerichtet ist) |
+| „Bericht senden“ | übermittelt den Bericht an den Webservice der (gestrichelt, solange er nicht eingerichtet ist) |
 | „Auswerten / importieren…“ ▾ | einen Flugplan, eine Tracker-Seite, ein METAR einfügen; eine Datei importieren |
 | „Netzwerk-Tracking“ ▾ | Live-Verfolgung IVAO / VATSIM, VATSIM-Historie |
 | „Einsatz“ ▾ | „Neue Mission“, „Einsatz exportieren (YAML)“, „Diesen Einsatz löschen“ (bei Bearbeitung) |
@@ -804,7 +804,7 @@ Menü der Kopfzeile, um den Bericht aus einem eingefügten Text zu füllen. **Nu
 3. Das Ergebnis zeigt die erkannte Quelle und die gefüllten Felder; der Knopf wird zu „✓ Übernehmen“.
 
 Die Links „↗ IVAO-Tracker (meine Verbindungen)“ und „↗ Meine StatSim-Flüge (VATSIM)“ öffnen Ihre Seiten. Der
-Link „→ DEFA-Bericht“, in die Lesezeichenleiste gezogen, kopiert die Tracker-Seite mit einem Klick. Unten
+Link „→ Bericht“, in die Lesezeichenleiste gezogen, kopiert die Tracker-Seite mit einem Klick. Unten
 lädt „Importieren (YAML / altes JSON)“ eine Missionsdatei. Einzelheiten: [Tutorial](../TUTORIAL.md), § 6.
 
 ### Netzwerk-Tracking
@@ -892,7 +892,7 @@ Der Titel zeigt Kennzeichen, Typ und Modell. Darunter drei Hinweise:
 
 - der **Status** (Verfügbar, Nicht verfügbar, In Wartung, Außer Dienst gestellt), farbig;
 - „📍 Derzeit in“: letzter bekannter Flugplatz (Ankunft der letzten Mission oder des letzten Flugs des
-  DEFA-Journals);
+  Journals);
 - „🏠 Heimatflugplatz“.
 
 Die **Zeitraum**-Leiste der Auswertungen (Voreinstellungen, Daten, ◀ − ▶) steht in der Kopfzeile: Aktivität,
@@ -907,7 +907,7 @@ Blatt füllt sich mit den Berichten“.
 | „Heimatflugplatz“ | ja | ICAO-Code, in Großbuchstaben |
 | „In Dienst gestellt“ | ja | Datum |
 | „Muster“, „Variante“, „Flügel“, „Wirbelschleppe“, „Betreiber“ | nein | übernommen aus der Flotte und der Typendatenbank |
-| „DEFA-Flottenblatt“ | nein | Link zum Blatt des Luftfahrzeugs auf der Flotten-Website |
+| „Flottenblatt“ | nein | Link zum Blatt des Luftfahrzeugs auf der Flotten-Website |
 | „Verwendete Rufzeichen“, „Ausrüstung“ | nein | aus den Missionen erfasst, mit ihrer Anzahl |
 | „Notizen“ | ja | freier Text |
 
@@ -951,10 +951,10 @@ Ohne Profil zeigt der Block „Noch kein Leistungsprofil für dieses Muster: im 
 ### Einsätze und Flüge
 
 Tabelle der Missionen und Flüge des Luftfahrzeugs im Zeitraum: Datum, Familie, Nr., Rufzeichen, Abflug →
-Ankunft, Besatzung, Flugstunden, Quelle („Register“ oder „DEFA-Flugbuch“).
+Ankunft, Besatzung, Flugstunden, Quelle („Register“ oder „Flugbuch“).
 
 - Klicken Sie auf einen Spaltentitel, um zu sortieren.
-- Klicken Sie auf eine Mission des Registers, um ihren Bericht zur Bearbeitung zu öffnen; die Flüge des DEFA-Journals sind
+- Klicken Sie auf eine Mission des Registers, um ihren Bericht zur Bearbeitung zu öffnen; die Flüge des Journals sind
   nur lesbar.
 - Unter der Tabelle, wenn ein Zeitraum gewählt ist: Knöpfe, um die Missionen vor oder nach dem
   Zeitraum zu sehen, und Zoom − / +.
@@ -987,13 +987,13 @@ Karten des Zeitraums: „Einsätze / Flüge“, „Flugstunden“, „Erster Flu
 „Nach Muster“: Flugstunden pro Luftfahrzeugtyp. Das Diagramm stapelt die Stunden nach Familie; Ziehen
 oder Klicken zoomt, Doppelklicken zoomt heraus.
 
-Für einen Piloten ohne Mission im Register stammen die Zahlen aus der DEFA-Referenz, wenn sie ihn kennt.
+Für einen Piloten ohne Mission im Register stammen die Zahlen aus der Referenz, wenn sie ihn kennt.
 
 ### Einsätze und Flüge
 
 Dieselbe Tabelle wie beim Luftfahrzeugblatt, zusätzlich mit der Spalte „Kennz.“ (Link zum Blatt des
 Luftfahrzeugs) und dem Typ. Sortieren über den Spaltentitel; Klick auf eine Mission des Registers: Bericht zur
-Bearbeitung; Flüge des DEFA-Journals nur lesbar.
+Bearbeitung; Flüge des Journals nur lesbar.
 
 ## Auswertung
 <!-- page: apps/cr/mission_operations_reporting.html -->
@@ -1013,7 +1013,7 @@ Die Kopfzeile bleibt oben auf der Seite sichtbar.
 | „Familien“ | ein farbiger Chip pro Familie: Klick zum Aus- / Einblenden, Strg + Klick, um nur eine zu behalten, „Alle“, um alles umzuschalten |
 | „Gruppierung“ | Automatisch, Tag, Woche, Monat, Quartal, Jahr |
 | „Messgröße“ | Einsätze, Flugstunden, Blockstunden, Zeit im Einsatzraum, Missionsstunden, Einsätze (Flüge), Distanz (NM) |
-| „Daten“ | „Meine Einsätze (Register)“, „DEFA-Journal (durchgeführte Flüge)“ (nur lesbar) oder „DEFA-Journal laden / aktualisieren…“ |
+| „Daten“ | „Meine Einsätze (Register)“, „Journal (durchgeführte Flüge)“ (nur lesbar) oder „Journal laden / aktualisieren…“ |
 
 Der Zeitraum wird mit den Familienauswertungen und den Blättern geteilt. Familien, Gruppierung und Messgröße
 werden gespeichert.
@@ -1089,7 +1089,7 @@ Eine ohne Uhrzeiten eingegebene Dauer gilt als „angegeben“ (≈), wird gezä
 die Uhrzeiten im Bericht eingegeben sind.
 
 Unter der Tabelle, wenn ein Zeitraum gewählt ist: „◀ n vor dem Zeitraum“, „− / +“, „m nach dem
-Zeitraum ▶“. Die Flüge des DEFA-Journals sind nur lesbar.
+Zeitraum ▶“. Die Flüge des Journals sind nur lesbar.
 
 ### Einsatzregister
 
@@ -1135,7 +1135,7 @@ nach Familie“ der allgemeinen Auswertung oder über das Popup in der Kopfzeile
 | „+ Neuer Bericht“ | öffnet direkt die Berichtsseite der Familie |
 | Zeitraum | dieselbe Komponente und derselbe Zeitraum wie in der allgemeinen Auswertung |
 | „Gruppierung“, „Messgröße“ | Einstellungen des Aktivitätsdiagramms (Einsätze, Flugzeit, Blockzeit, Zeit im Einsatzraum), mit der allgemeinen Auswertung geteilt |
-| „Daten“ | Register oder DEFA-Journal, wie in der allgemeinen Auswertung |
+| „Daten“ | Register oder Journal, wie in der allgemeinen Auswertung |
 
 ### Einsatzregister
 
@@ -1301,7 +1301,7 @@ Kopfzeile: Menü „Flugzeug“, Knopf „Letzten SimBrief-FPL abrufen“, „Ei
 
 1. Klicken Sie auf den Flugzeugknopf der Kopfzeile (anfangs „Kein Flugzeug“).
 2. Wählen Sie ein Profil in der Liste, nach Kategorie gruppiert (Hubschrauber, Jets, einmotorige, Turboprops…).
-3. Ein als „DEFA, ohne Profil“ markierter Typ erzeugt ein leeres Profil: Seine Leistungsdaten sind einzutragen.
+3. Ein als „Flotte, ohne Profil“ markierter Typ erzeugt ein leeres Profil: Seine Leistungsdaten sind einzutragen.
 
 Die Leiste unten auf der Seite zeigt „Profil gespeichert — …“ oder „Nicht gespeicherte Änderungen — …“. Sie trägt „Lokale Datenbank neu laden“, „Profil speichern“ und „Dieses Flugzeug löschen“.
 Wechseln Sie das Flugzeug mit nicht gespeicherten Änderungen, bietet die Seite „Bleiben“, „Verwerfen und wechseln“ oder „Speichern und wechseln“ an.
@@ -1343,7 +1343,7 @@ Dieser Block in der rechten Spalte folgt der Seite, während Sie durch die Kurve
 - Berechnungsgrundlage: gewählte Flughöhe und gewähltes Steiggesetz.
 - Einzelheiten: Rollen, Steigflug, Reiseflug, Sinkflug, Unvorhergesehenes, Reserve; geplante Startmasse und MTOW, wenn Sie sie eingegeben haben (rot, wenn sie überschritten ist).
 - Karte des Cursors (⌖ beim Überfahren, 📌 angeheftet): Kraftstoff und Zeit der Strecke auf dieser Höhe, maximale Steigrate, Steiggeschwindigkeiten; „lösen“ entfernt die Anheftung.
-- Aufklappbare Gruppe „Flugphasen — Profil ↔ Kennfeld“: IAS, Steigrate, Triebwerksdrehzahl und Durchfluss pro Phase, verglichen mit dem Triebwerkskennfeld. Sie enthält auch das Feld „SimBrief Airframe Internal ID“ und die Links zu den Blättern der DEFA-Luftfahrzeuge dieses Typs.
+- Aufklappbare Gruppe „Flugphasen — Profil ↔ Kennfeld“: IAS, Steigrate, Triebwerksdrehzahl und Durchfluss pro Phase, verglichen mit dem Triebwerkskennfeld. Sie enthält auch das Feld „SimBrief Airframe Internal ID“ und die Links zu den Blättern der Luftfahrzeuge dieses Typs.
 
 „Anheften“ behält den ganzen Block, wenn er der Seite folgt; sonst klappt er zusammen. Unter dem Block gibt ein Feld pro Kurve die Optima, die Grenzen (Gipfelhöhe, angeforderte Flughöhe) und eine Lesehilfe an. Eine Instrumentenspalte zeigt IAS, Steigrate, Höhe, Kraftstoff und Flugzeit.
 

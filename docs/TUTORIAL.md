@@ -87,7 +87,7 @@ chaque champ, les valeurs déjà saisies dans vos missions sont proposées.
 
 Deux façons, au choix :
 
-- (si la **base DEFA** est chargée — ☰ › Paramétrage › Base DEFA — les appareils, indicatifs,
+- (si la **base** est chargée — ☰ › Paramétrage › Base — les appareils, indicatifs,
   trigrammes et terrains des vols réalisés sont aussi proposés) ;
 - **par l'immatriculation** : commencer à taper `F-ZB…` — la liste propose les appareils de
   la flotte avec type, variante, indicatif, opérateur et base. Choisir `F-ZBME` ;
@@ -148,12 +148,12 @@ plan de vol `PCAN44`** (7 caractères OACI), exploitant **OPR/ FRU**, base **LFT
   distance parcourue ; sur la liste des connexions : heures de connexion du jour de la mission ;
 - la page d'un **vol StatSim** (VATSIM, statsim.net › mes vols › un vol) : indicatif, appareil et
   équipements, route, niveau, terrains, heures de départ / d'arrivée (décollage / atterrissage),
-  table des positions (mise en route / arrêt, distance) — Ctrl+A, Ctrl+C ou favori « → CR DEFA » ;
+  table des positions (mise en route / arrêt, distance) — Ctrl+A, Ctrl+C ou favori « → CR » ;
 - l'**historique VATSIM** (JSON ouvert par « Récupérer l'historique VATSIM ») : heures de connexion
   du jour de la mission ≈ mise en route / fin de mission ;
 - un **METAR**.
 
-Plus rapide et plus complet : glisser le lien **→ CR DEFA** de la fenêtre dans la barre des
+Plus rapide et plus complet : glisser le lien **→ CR** de la fenêtre dans la barre des
 favoris ; sur la page « détails » du tracker, un clic **déplie les sections repliées** (révisions,
 « Tracks Table »), charge toute la table des positions et copie la page entière ; au retour sur
 le CR (fenêtre ouverte), elle est analysée. Avec un Ctrl+A / Ctrl+C manuel, seules les sections
@@ -188,7 +188,7 @@ données sensibles.
 ## 8. Enregistrer dans le registre
 
 1. La première fois : **Registre des missions ▾ › Dossier du registre…** et choisir le dossier
-   `CR DEFA` du dépôt (autorisation du navigateur, une fois pour toutes les familles).
+   `CR` du dépôt (autorisation du navigateur, une fois pour toutes les familles).
 2. « **Ajouter au registre** » : la mission est écrite dans le registre unique `data/cr/missions.yaml`. Si le
    n° existe déjà, une alerte le signale.
 3. La page passe en mode modification : le bouton devient « Enregistrer les modifications »,
@@ -198,7 +198,7 @@ données sensibles.
 **Mission ▾ › Nouvelle mission** repart d'un CR vierge.
 
 « **Envoyer le CR** » transmet le compte rendu (mission, CR en HTML et en texte, calculs) au
-webservice de la DEFA, une fois celui-ci réglé : **Registre des missions ▾ › Paramétrer
+webservice de la compagnie, une fois celui-ci réglé : **Registre des missions ▾ › Paramétrer
 l'envoi des CR (webservice)…** (ou ☰ › Paramétrage › Envoi des comptes rendus). Tant qu'il ne
 l'est pas, le bouton est en pointillés et propose d'ouvrir ce paramétrage. La bulle du bouton indique le dernier envoi de cette mission.
 
@@ -227,8 +227,8 @@ l'est pas, le bouton est en pointillés et propose d'ouvrir ce paramétrage. La 
   **fiche appareil** ; **par membre d'équipage** → **fiche équipage** (voir ci-dessous).
 - Sous le tableau des missions, quand une période est choisie : **◀ n avant la période**,
   **− / +** (zoom arrière / avant), **m après la période ▶**.
-- **Données** (en-tête) : « Mes missions (registre) », « Journal DEFA (vols réalisés) » —
-  historique complet, en lecture seule — ou **« Charger / mettre à jour le journal DEFA… »** :
+- **Données** (en-tête) : « Mes missions (registre) », « Journal (vols réalisés) » —
+  historique complet, en lecture seule — ou **« Charger / mettre à jour le journal… »** :
   ouvrir « Log des vols » sur le site de la DEFA (lien dans la fenêtre), **Ctrl+A, Ctrl+C**, puis
   **Ctrl+V** dans la fenêtre (ou choisir la page enregistrée par Ctrl+S). « Mettre à jour »
   ajoute les nouveaux vols et garde l'historique (seules les lignes identiques sont fusionnées) ;
@@ -271,7 +271,7 @@ Sur un autre poste : « Restaurer / resynchroniser ».
 - **Correspondance des indicatifs** : ajouter une série (ex. `KETOUPA` → plan de vol `KETOU`,
   Gendarmerie nationale, OPR/ `FGN`, types `EC35`), puis « Appliquer dans ce navigateur »
   (effet immédiat) et « Enregistrer dans le dépôt ».
-- **Flotte DEFA** : ajouter ou corriger un appareil, plusieurs indicatifs séparés par des
+- **Flotte** : ajouter ou corriger un appareil, plusieurs indicatifs séparés par des
   virgules.
 - **Indicatifs appris**, **Types ajoutés localement** : « Intégrer à la base du dépôt ».
 - **Registres des missions** : édition directe du YAML d'une famille, contrôlée avant
@@ -288,13 +288,13 @@ le [manuel d'exploitation](MANUEL_EXPLOITATION.md).
 - en tête : **statut** (disponible, indisponible, en maintenance, retiré), **📍 actuellement à**
   (dernier terrain connu : arrivée de la dernière mission ou du dernier vol du journal),
   **🏠 terrain de rattachement** (modifiable) ;
-- identité : type, variante, voilure, turbulence de sillage, opérateur, fiche de la flotte DEFA,
+- identité : type, variante, voilure, turbulence de sillage, opérateur, fiche de la flotte,
   **mise en service** (modifiable), indicatifs utilisés (avec leur nombre), équipements, notes ;
 - activité : missions / vols, heures de vol et bloc, premier / dernier vol, graphique par période ;
 - **vie de l'appareil** : maintenance, inspections, incidents, modifications, convoyages (« + ») ;
 - **performances** : profil du Flight Planner pour ce type (consommations et vitesses par phase,
   courbe RPM / puissance → consommation), bouton « Ouvrir dans le Flight Planner » ; dans le
-  Planner, les appareils DEFA du type actif renvoient à leur fiche ;
+  Planner, les appareils du type actif renvoient à leur fiche ;
 - missions et vols (clic : CR en modification pour les missions du registre).
 
 Les fiches ont la **période** des reportings dans leur en-tête (préréglages, dates, ◀ zoom − ▶,
@@ -307,9 +307,9 @@ notes (modifiables) ; fonctions tenues, heures par type, activité, missions et 
 **Fusionner avec… / renommer** (dans chaque fiche) : deux appareils ou deux pilotes n'en font
 plus qu'un (ex. GRR → RBR) — les missions du registre prennent la nouvelle valeur (trace dans
 chaque mission), la fiche complète celle de la cible, et l'équivalence est mémorisée pour le
-journal DEFA rechargé et le catalogue (`missionMergeMap:v1`).
+journal rechargé et le catalogue (`missionMergeMap:v1`).
 
-Base « lâche » : tout ce qui est connu est repris (flotte, référence DEFA, missions, journal),
+Base « lâche » : tout ce qui est connu est repris (flotte, référence, missions, journal),
 rien n'est obligatoire ; ce qui est saisi dans une fiche reste dans le navigateur
 (`missionAircraftSheets:v1`, `missionCrewSheets:v1`, inclus dans la sauvegarde locale).
 
@@ -334,6 +334,6 @@ Exemple : `examples/missions/Mission 02.md` (ravitaillement en vol sur l'axe SIM
    - bloc 5 : un profil par carte (ou « Désactivé »), puis **Générer les cartes et le ZIP**.
 4. **Dossier final** : retour au générateur (« ← Retour ») › « Cartes ou ZIP livré par le
    générateur » → le ZIP ; **Exporter le PDF final** (`M02_TRAINING_VAILLANT_31_Axe_SIMONE.pdf`).
-5. **Après le vol** : « Créer le CR DEFA → » ouvre un nouveau compte rendu de la bonne famille
+5. **Après le vol** : « Créer le CR → » ouvre un nouveau compte rendu de la bonne famille
    (TRAINING → SPECIAL), déjà rempli (nom, objectif, points, appareils) ; compléter comme aux
    § 3 à 8.

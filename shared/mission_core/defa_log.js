@@ -1,8 +1,8 @@
 (() => {
   'use strict';
   // Base « DEFA » : journal des vols réalisés (page « Log des vols » de la DEFA enregistrée,
-  // ou export CSV / JSON), distincte du registre des missions CR DEFA. Chargée à la demande
-  // (Paramétrage › Base DEFA) et gardée dans ce navigateur (defaFlightLog:v1) — jamais dans le
+  // ou export CSV / JSON), distincte du registre des missions CR. Chargée à la demande
+  // (Paramétrage › Base) et gardée dans ce navigateur (defaFlightLog:v1) — jamais dans le
   // dépôt (trigrammes des pilotes), ni dans la sauvegarde locale (rechargeable depuis le fichier).
   // Exploitée par les CR : appareils connus (immatriculation → type, indicatifs utilisés),
   // trigrammes proposés pour l'équipage, terrains ; et par l'analyse des séries d'indicatifs.
@@ -21,7 +21,7 @@
   };
   /** Texte en majuscules sans accents ni blancs de bord. */
   const up = v => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
-  /** Journal DEFA mémorisé (defaFlightLog:v1) ; null sinon. */
+  /** Journal mémorisé (defaFlightLog:v1) ; null sinon. */
   const read = () => {
     try {
       return JSON.parse(localStorage.getItem(KEY) || 'null');
@@ -100,7 +100,7 @@
   }
 
   // ---- stockage (navigateur uniquement)
-  /** Journal DEFA du navigateur ({ records, source, importedAt }) ; vide si absent. */
+  /** Journal du navigateur ({ records, source, importedAt }) ; vide si absent. */
   function load() {
     return read() || {
       importedAt: '',
@@ -140,14 +140,14 @@
     return data;
   }
 
-  /** Efface le journal DEFA du navigateur. */
+  /** Efface le journal du navigateur. */
   function clear() {
     localStorage.removeItem(KEY);
     window.dispatchEvent(new CustomEvent('defa-log-change', {
       detail: null
     }));
   }
-  /** Vols du journal DEFA. */
+  /** Vols du journal. */
   const records = () => load().records || [];
 
   // ---- indicatifs : séries
@@ -389,7 +389,7 @@
     const t = (Number(m[1]) * 60 + Number(m[2]) + minutes) % 1440;
     return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
   };
-  /** Vols du journal convertis en missions du Core (reportings sur « journal DEFA ») : famille, heures, appareil, équipage, fusions / renommages appliqués. */
+  /** Vols du journal convertis en missions du Core (reportings sur « journal ») : famille, heures, appareil, équipage, fusions / renommages appliqués. */
   function toMissions(list = records()) {
     const M = window.MissionModel,
       G = window.MissionGridEdit;
@@ -450,7 +450,7 @@
       return mission;
     });
   }
-  // Source des reportings : registre des missions (défaut) ou journal DEFA.
+  // Source des reportings : registre des missions (défaut) ou journal.
   const SOURCE = 'missionReportingSource:v1';
   /** Source des reportings : « defa » (journal chargé et choisi) ou « ledger » (registre des missions). */
   const source = () => (localStorage.getItem(SOURCE) === 'defa' && records().length ? 'defa' : 'ledger');
@@ -464,7 +464,7 @@
 
   // ---- chargement / mise à jour (reportings, Paramétrage) : page DEFA copiée ou enregistrée
   const LOADER = {
-    title: ['Journal DEFA — charger / mettre à jour', 'DEFA log — load / update', 'DEFA-Journal — laden / aktualisieren', 'Diario DEFA — cargar / actualizar'],
+    title: ['Journal — charger / mettre à jour', 'Log — load / update', 'Journal — laden / aktualisieren', 'Diario — cargar / actualizar'],
     step1: ['1. Ouvrir « Log des vols » sur le site de la DEFA (connexion DEFA) :', '1. Open “Log des vols” on the DEFA website (DEFA login):', '1. „Log des vols“ auf der DEFA-Website öffnen:', '1. Abrir «Log des vols» en el sitio DEFA:'],
     step2: ['2. Sur cette page : un clic sur le favori ci-dessous copie toute la page (ou Ctrl+A puis Ctrl+C) ; revenir ici et coller (Ctrl+V ou « Coller depuis le presse-papiers ») — ou choisir la page enregistrée (Ctrl+S).', '2. On that page: one click on the bookmark below copies the whole page (or Ctrl+A then Ctrl+C); come back here and paste (Ctrl+V or “Paste from clipboard”) — or choose the saved page (Ctrl+S).', '2. Dort: ein Klick auf das Lesezeichen unten kopiert die ganze Seite (oder Strg+A, Strg+C); hierher zurück und einfügen (Strg+V oder „Aus der Zwischenablage einfügen“) — oder die gespeicherte Seite wählen.', '2. En esa página: un clic en el marcador de abajo copia toda la página (o Ctrl+A y Ctrl+C); volver aquí y pegar (Ctrl+V o «Pegar desde el portapapeles») — o elegir la página guardada.'],
     bookmark: ['← à glisser dans la barre des favoris (une fois) : sur la page « Log des vols », un clic copie toute la page, tableau compris.', '← drag to the bookmarks bar (once): on the “Log des vols” page, one click copies the whole page, table included.', '← einmal in die Lesezeichenleiste ziehen: auf der Seite „Log des vols“ kopiert ein Klick die ganze Seite samt Tabelle.', '← arrastrar a la barra de marcadores (una vez): en la página «Log des vols», un clic copia toda la página, tabla incluida.'],
@@ -483,7 +483,7 @@
   const defaUrl = () => window.RepositoryNav?.source?.('defa') || 'https://flotte.defa-virtual.fr';
   const LOG_URL = window.RepositoryNav?.vaUrl?.('log') || defaUrl() + '/log_vols.php'; // page du log de la compagnie virtuelle
 
-  // Favori (bookmarklet) « → Journal DEFA », à glisser dans la barre des favoris : sur la page « Log des vols » du site,
+  // Favori (bookmarklet) « → Journal », à glisser dans la barre des favoris : sur la page « Log des vols » du site,
   // copie la page entière (son HTML : le tableau garde ses colonnes et les liens des appareils) ; la suite la lit comme
   // la page enregistrée. Le copier-coller ordinaire ne donne que du texte, souvent sans les colonnes.
   // Pas de commentaire de ligne ni de « % » dans cette fonction : elle devient une adresse javascript: sur une ligne.
@@ -504,7 +504,7 @@
     }
   }
   const LOG_BOOKMARKLET = 'javascript:(' + defaLogCopy.toString().replace(/\s*\n\s*/g, ' ') + ')()';
-  /** Fenêtre de chargement du journal DEFA (fichier ou copier-coller de la page « Log des vols »), onLoaded appelé après chargement. */
+  /** Fenêtre de chargement du journal (fichier ou copier-coller de la page « Log des vols »), onLoaded appelé après chargement. */
   function loaderDialog({
     onLoaded
   } = {}) {

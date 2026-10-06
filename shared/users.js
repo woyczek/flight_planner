@@ -203,7 +203,7 @@
       preferences: {}
     });
   }
-  /** Dossier vide : une fiche « utilisateur » par pilote de la référence DEFA. Retour : trigrammes créés. */
+  /** Dossier vide : une fiche « utilisateur » par pilote de la référence. Retour : trigrammes créés. */
   async function seed() {
     if (Object.keys(await index(true)).length) return [];
     const ref = window.DEFA_REFERENCE || {},

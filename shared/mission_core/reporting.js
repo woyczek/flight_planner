@@ -71,7 +71,7 @@
     legacyDone: L('missions importées de l’ancien registre ; déjà présentes (même n° et date) :', 'missions imported from the legacy ledger; already present (same ID and date):', 'Einsätze aus dem alten Register importiert; bereits vorhanden (gleiche ID und Datum):', 'misiones importadas del registro antiguo; ya presentes (mismo ID y fecha):')
   };
 
-  /** Page de reporting d'une famille : période, statistiques, graphiques, tableau des missions (modifiable dans le tableau), import / export, source (registre ou journal DEFA). */
+  /** Page de reporting d'une famille : période, statistiques, graphiques, tableau des missions (modifiable dans le tableau), import / export, source (registre ou journal). */
   function mount({
     family: familyId,
     root
@@ -295,27 +295,27 @@
     if (switchBox) tools.prepend(switchBox); // famille · série en tête de la barre
     /** Texte d'une ligne [fr, en, de, es] dans la langue de la page. */
     const tr = row => row[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'))] || row[0];
-    // Données des reportings : registre des missions (défaut) ou journal DEFA (vols réalisés,
-    // chargé dans Paramétrage › Base DEFA ; lecture seule). Choix commun à tous les reportings.
+    // Données des reportings : registre des missions (défaut) ou journal (vols réalisés,
+    // chargé dans Paramétrage › Base ; lecture seule). Choix commun à tous les reportings.
     const SRC = {
       label: L('Données', 'Data', 'Daten', 'Datos'),
       ledger: L('Mes missions (registre)', 'My missions (ledger)', 'Meine Einsätze (Register)', 'Mis misiones (registro)'),
-      defa: L('Journal DEFA (vols réalisés)', 'DEFA log (flights flown)', 'DEFA-Journal (durchgeführte Flüge)', 'Diario DEFA (vuelos realizados)'),
-      readOnly: L('Vol du journal DEFA : lecture seule (pas de CR à modifier).', 'DEFA log flight: read-only (no report to edit).', 'Flug aus dem DEFA-Journal: nur lesbar.', 'Vuelo del diario DEFA: solo lectura.')
+      defa: L('Journal (vols réalisés)', 'Log (flights flown)', 'Journal (durchgeführte Flüge)', 'Diario (vuelos realizados)'),
+      readOnly: L('Vol du journal : lecture seule (pas de CR à modifier).', 'Log flight: read-only (no report to edit).', 'Flug aus dem Journal: nur lesbar.', 'Vuelo del diario: solo lectura.')
     };
     let logMissions = null;
-    /** Vrai si les reportings lisent le journal DEFA. */
+    /** Vrai si les reportings lisent le journal. */
     const logSource = () => window.DefaFlightLog?.source?.() === 'defa';
-    /** Missions du journal DEFA (converties une fois), ou null si la source est le registre. */
+    /** Missions du journal (converties une fois), ou null si la source est le registre. */
     const sourceMissions = () => logSource() ? (logMissions ||= window.DefaFlightLog.toMissions()) : null;
     window.addEventListener('defa-log-change', () => {
       logMissions = null;
     });
-    // Menu « Données » toujours visible : registre, journal DEFA (s'il est chargé) et chargement /
+    // Menu « Données » toujours visible : registre, journal (s'il est chargé) et chargement /
     // mise à jour du journal (page DEFA copiée ou enregistrée) sans passer par le Paramétrage.
-    const SRC_LOAD = L('Charger / mettre à jour le journal DEFA…', 'Load / update the DEFA log…', 'DEFA-Journal laden / aktualisieren…', 'Cargar / actualizar el diario DEFA…');
+    const SRC_LOAD = L('Charger / mettre à jour le journal…', 'Load / update the log…', 'Journal laden / aktualisieren…', 'Cargar / actualizar el diario…');
 
-    /** Choix de la source des reportings (registre / journal DEFA) et chargement du journal. */
+    /** Choix de la source des reportings (registre / journal) et chargement du journal. */
     function sourcePicker(host) {
       if (!host || !window.DefaFlightLog) return;
       const label = document.createElement('label');

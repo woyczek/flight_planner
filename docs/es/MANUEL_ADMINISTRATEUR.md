@@ -1,6 +1,6 @@
 # Manual del administrador
 
-Este manual describe la suite DEFA Virtual para el **Centro** (planificación y conducción de las operaciones) y para los
+Este manual describe la suite SO Group Virtual para el **Centro** (planificación y conducción de las operaciones) y para los
 **administradores** de la suite: un capítulo por página, una sección por pestaña, apartado o bloque, y después la
 sincronización de los datos y el lanzador. En la suite, la entrada **«Ayuda»** de la barra lateral abre este manual
 en el capítulo de la página actual (páginas del Centro y de los ajustes). Las páginas de los pilotos se describen en el
@@ -20,7 +20,7 @@ El bloqueo oculta el Centro mientras no se haya activado en este navegador.
 
 - Centro bloqueado: las páginas del Centro desaparecen del menú ☰, de la barra lateral (separador «Centro» y entradas «Misiones», «Registro», «ODV») y de la página de inicio.
 - Una página del Centro abierta directamente (favorito, enlace) queda cubierta por un aviso «Acceso reservado» con los enlaces «Activar el Centro…» e «Inicio».
-- En Ajustes › Centro solo queda visible el apartado «Acceso al Centro y ajustes»; los demás («Usuarios y derechos», «Categorías de disponibilidad», «Planificación ODV (DEFA)», «Envío de informes (servicio web)») quedan ocultos.
+- En Ajustes › Centro solo queda visible el apartado «Acceso al Centro y ajustes»; los demás («Usuarios y derechos», «Categorías de disponibilidad», «Planificación ODV», «Envío de informes (servicio web)») quedan ocultos.
 - La activación se guarda solo en este navegador: hay que repetirla en cada puesto y después de borrar los datos del sitio.
 
 Límite: es un bloqueo de uso, no una medida de seguridad. Las páginas siguen siendo archivos legibles por quien tenga acceso a la carpeta.
@@ -57,7 +57,7 @@ Gestión en Ajustes › Centro › «Usuarios y derechos»:
 - «Restablecer…» abre «Restablecer la contraseña de TRI»: introduzca una contraseña provisional (8 caracteres como mínimo), que el usuario deberá cambiar en su próxima conexión;
 - «Añadir un usuario»: trigrama, nombre mostrado, rol y después «Añadir».
 
-Consejo: si la carpeta de usuarios está vacía, el apartado crea una ficha por cada piloto de la referencia DEFA.
+Consejo: si la carpeta de usuarios está vacía, el apartado crea una ficha por cada piloto de la referencia.
 
 ### Modo develop y modo production
 
@@ -99,7 +99,7 @@ Las dos páginas comparten una pestaña en la cabecera y trabajan sobre **la mis
 - Todo cambio se guarda en este navegador y la otra página abierta lo vuelve a leer de inmediato (extensiones, mapas añadidos o eliminados en el estudio, por ejemplo). El generador muestra entonces «Misión actualizada por el estudio cartográfico».
 
 La cabecera ofrece además:
-- «Crear el informe DEFA →»: abre un nuevo informe de la familia que corresponde al tipo de misión, rellenado con la misión;
+- «Crear el informe →»: abre un nuevo informe de la familia que corresponde al tipo de misión, rellenado con la misión;
 - cuando una operación tiene varias misiones: ◀ y ▶ («Misión anterior», «Misión siguiente») y una lista para cambiar de misión dentro del lote;
 - tras abrir desde el registro: «← Registro (M-016)» para volver a él.
 
@@ -336,7 +336,7 @@ El seguimiento se escribe en `suivi.yaml`, en la carpeta de la misión; se compa
 Formulario común con el generador.
 1. Ajuste «Tipo», «Subtipo», «Teatro» y «Segundo teatro» («País» para el extranjero), «Serie» (vacío = la siguiente).
 2. Compruebe «Identificador» (calculado, de solo lectura).
-3. Ajuste «Equipos DEFA en vuelo», «Encuentro», «Equipos en tierra», «Duración» (XS a XL), «Traducciones», «Reabastecimiento en vuelo».
+3. Ajuste «Equipos en vuelo», «Encuentro», «Equipos en tierra», «Duración» (XS a XL), «Traducciones», «Reabastecimiento en vuelo».
 4. En «Aeronave de cada equipo», introduzca la aeronave de los equipos A, B… (vacío = automático).
 5. Haga clic en «Encargar: copiar el prompt y abrir ChatGPT», pegue en ChatGPT (Ctrl+V) y envíe.
 
@@ -360,7 +360,7 @@ Este bloque carga el libro semanal de la escuadrilla (`.xlsx`). Está **oculto p
 - Las anomalías (código fuera de la leyenda, trigrama duplicado, fecha de la cronología desfasada…) se señalan mediante notificaciones flotantes, sin bloquear nunca la lectura.
 - Si un piloto del libro aún no tiene preferencias de tipos de misión, la suite las crea a partir de sus códigos (C → caza, T → transporte…) y las escribe en su ficha de usuario.
 - «Borrar los datos» vacía la página. El botón sigue en gris mientras no haya ningún libro cargado.
-- El enlace «Ajustes › Centro › Planificación ODV (DEFA)» lleva a los ajustes de las franjas y de la lectura del libro.
+- El enlace «Ajustes › Centro › Planificación ODV» lleva a los ajustes de las franjas y de la lectura del libro.
 - Datos personales: no publique las exportaciones. Formato del libro y reglas de lectura: [Planificación ODV](../ODV_PLANNING.md).
 
 ### Cuadrícula de disponibilidad
@@ -452,7 +452,7 @@ Este bloque propone, para cada franja que alcanza el umbral «Al menos N piloto(
 
 - Haga clic en una línea (fuera del botón) para desplegar su resumen: franja, tripulación propuesta, refuerzos, regla, puntuación, contexto (sesiones ATC, controladores, eventos), simuladores, misiones ya asignadas. El triángulo ▸ hace lo mismo; solo se despliega una fila a la vez.
 - «Reglas de las familias y de la puntuación» se despliega bajo la tabla. Puntuación = número de participantes, + 2 por cada piloto con código restringido empleado en su ámbito, + 1 por cada controlador en línea para TRAINING (2 como máximo). Una familia jugada a menudo retrocede un poco (según el número de informes del registro) para variar las misiones.
-- El número de misiones mostradas por franja y el orden de preferencia en caso de empate se ajustan en Ajustes › Centro › Planificación ODV (DEFA).
+- El número de misiones mostradas por franja y el orden de preferencia en caso de empate se ajustan en Ajustes › Centro › Planificación ODV.
 - La tabla se ordena por columna. Las funciones sacadas de la hoja FLOTTE son orientativas: el planificador valida.
 
 ### Exportación
@@ -503,7 +503,7 @@ Este apartado gestiona las fichas de los usuarios. Hay una ficha por usuario (`d
 - **«Restablecer…»**: introduzca una contraseña provisional (8 caracteres como mínimo) y después «Restablecer la contraseña». El usuario deberá cambiarla en su próxima conexión.
 - **«Suplantar»**: usted actúa en nombre del usuario. Una banda lo recuerda en todas las páginas, cada escritura se firma «ADM pour TOTO» y el botón «Terminar la suplantación» le pone fin.
 - **«Añadir un usuario»**: trigrama, nombre mostrado, rol y después «Añadir».
-- Si la carpeta está vacía, se crea una ficha para cada piloto de la referencia DEFA.
+- Si la carpeta está vacía, se crea una ficha para cada piloto de la referencia.
 - Si todavía no se han podido escribir algunos archivos en la carpeta de datos, haga clic en «Escribir en la carpeta de datos».
 - En modo production, el restablecimiento de una contraseña, la suplantación y el cambio de modo están reservados a un
   `admin_centre` conectado; añadir un usuario y modificar una línea (rol, activo) solo están protegidos
@@ -530,9 +530,9 @@ Este apartado define lo que los pilotos pueden declarar como disponibilidades (`
 - «Valores por defecto» restablece las categorías de origen. Las categorías añadidas se conservan, pero retiradas.
 Véase también [disponibilidades y reorganización](../technique/DISPOS_ET_REORGANISATION.md).
 
-### Planificación ODV (DEFA)
+### Planificación ODV
 
-Este apartado contiene los ajustes propios de la DEFA para la página Planificación ODV. Se guardan en este navegador y no se sincronizan. Una página ODV abierta en otra pestaña los aplica de inmediato.
+Este apartado contiene los ajustes propios de la compagnie para la página Planificación ODV. Se guardan en este navegador y no se sincronizan. Una página ODV abierta en otra pestaña los aplica de inmediato.
 
 | Ajuste | Por defecto |
 |---|---|
@@ -569,7 +569,7 @@ Estos apartados se asignan a la página mediante `config/repository_tree` (clave
 
 Este apartado indica si el primer arranque se ha completado en este navegador, y en qué fecha.
 - «Abrir el primer arranque» vuelve a abrir el asistente (`premier_lancement.html?force`). Se desarrolla en cuatro pasos:
-  1. Datos: «Obtener los datos» (clon del repositorio de datos) o «Archivo de datos…»; opcionalmente, «Diario DEFA (.html)…».
+  1. Datos: «Obtener los datos» (clon del repositorio de datos) o «Archivo de datos…»; opcionalmente, «Diario (.html)…».
   2. Perfil: «Guardar el perfil».
   3. Carpetas: «Elegir la carpeta de la aplicación» y después el libro ODV («Carpeta OneDrive…» u «o el archivo Excel…»).
   4. «Terminar y actualizar los datos SIA».
@@ -594,7 +594,7 @@ Este apartado es el único lugar donde se ajustan las carpetas locales y las dir
 | Carpeta X-Plane (aterrizajes), Carpeta de rendimiento, Carpeta de copia local | registros CSV, perfiles `.lnmperf` / `.json`, `defa_local_store.yaml` |
 
 - **Fuentes externas**: la dirección por defecto aparece en gris. Un valor introducido solo vale para este navegador; «↺» vuelve al valor por defecto y «Abrir ↗» abre la dirección.
-- **Aerolínea virtual**: «Nombre», «Sigla», «Centro (sigla)», «Centro (nombre completo)» y las páginas del sitio («Página de inicio», «Registro de vuelos», «Flota», «Ficha de un avión»). Un campo vacío mantiene el valor por defecto. «Volver a DEFA Virtual» borra todos estos ajustes.
+- **Aerolínea virtual**: «Nombre», «Sigla», «Centro (sigla)», «Centro (nombre completo)» y las páginas del sitio («Página de inicio», «Registro de vuelos», «Flota», «Ficha de un avión»). Un campo vacío mantiene el valor por defecto. «Volver a SO Group Virtual» borra todos estos ajustes.
 - **Primer arranque**: «Reabrir el primer inicio»; «Limpiar y empezar de nuevo…» borra las carpetas recordadas, la copia del libro ODV, los identificadores del sitio DEFA y el perfil. Los archivos del disco no se tocan.
 
 ## Ajustes › Mantenimiento
@@ -604,7 +604,7 @@ Esta página sirve para el mantenimiento de la suite: actualizaciones, versiones
 Para abrirla: barra lateral › «Ajustes» y después la pestaña «Mantenimiento». La página se abre en «Actualizaciones».
 El menú lateral tiene dos partes:
 - el grupo «Mantenimiento»: Actualizaciones, Versiones, Referencias y dependencias, Datos aeronáuticos, Cachés, Espacio en disco, Copia total, Registro;
-- las bases de datos, agrupadas en «Archivos del repositorio», «Base DEFA», «Misiones» y «Datos del navegador».
+- las bases de datos, agrupadas en «Archivos del repositorio», «Base», «Misiones» y «Datos del navegador».
 
 ### Actualizaciones de la suite
 
@@ -622,7 +622,7 @@ Este bloque define de dónde vienen las actualizaciones del código y cuándo la
 Esta tabla da la versión y la fecha de actualización de cada elemento, con un estado (✓, ⚠, ✗) y la fuente o la herramienta de actualización.
 - Código: suite (`repository_tree`), versión de caché de los scripts, git, canal remoto.
 - SIA / AIRAC: ciclo vigente y ciclo siguiente, base del estudio cartográfico, carpeta SIA XML, `mora.csv`, ejes AAR (ENR 5.7).
-- Bases de referencia: tipos OACI, rendimientos APD, flota DEFA, referencia DEFA, indicativos.
+- Bases de referencia: tipos OACI, rendimientos APD, flota, referencia, indicativos.
 - Datos de usuario: planes de vuelo SimBrief, perfiles del planificador, registro de informes, registro de misiones generadas, registros de aterrizaje, datos locales, última copia de seguridad total.
 - «Actualizar» vuelve a leer el estado git y la carpeta SIA.
 - Aparece un aviso si los datos locales no se han guardado desde hace más de 7 días, o si no ha habido una copia de seguridad total desde hace más de 30 días.
@@ -639,7 +639,7 @@ Este bloque describe cada referencia de la suite:
 | Dependientes | datos que dependen de ella |
 | Control | coherencia comprobada |
 
-Referencias seguidas: XML SIA, base analizada del estudio, cuadrícula MORA, ejes AAR, rendimientos APD, flota DEFA, perfiles del planificador y prompt de las misiones.
+Referencias seguidas: XML SIA, base analizada del estudio, cuadrícula MORA, ejes AAR, rendimientos APD, flota, perfiles del planificador y prompt de las misiones.
 Ejemplos de controles: ciclos mezclados en la base SIA, obstáculos MORA de otro ciclo, tipos de la flota ausentes de la base OACI, prompt que regenerar (`python tools/build_mission_prompt.py`).
 El botón «Comprobar» vuelve a lanzar los controles.
 
@@ -723,7 +723,7 @@ Operaciones registradas:
 - recálculo MORA.
 Mientras no haya tenido lugar ninguna de estas operaciones, el registro está vacío.
 
-### Flota DEFA (aeronaves conocidas)
+### Flota (aeronaves conocidas)
 
 Esta base (`data/references/aircraft_fleet.js`) lista las aeronaves propuestas en los informes: «Operador», «Tipo OACI», «Variante», «Matrícula», «Código», «Número», «Indicativos» (separados por comas), «Base», «Operativo».
 - **«Pegar la página Flota del sitio…»**:
@@ -750,35 +750,35 @@ Esta base (`data/references/callsigns.js`) relaciona el indicativo completo (con
 - Tabla «Indicativos»: «Indicativo completo», «Plan de vuelo», «Otras formas», «Organización», «OPR/», «Tipos», «Función», «Genérico», «Radiotelefonía», «Nota».
 - Tabla «Organizaciones → designador OACI (OPR/)».
 - No existe ningún script: esta página (o el archivo, editado a mano) es la fuente.
-- Para alimentarla: las formas corregidas en los informes llegan a «Indicativos aprendidos», y las series vistas en el diario DEFA llegan mediante «Añadir» o «Completar».
+- Para alimentarla: las formas corregidas en los informes llegan a «Indicativos aprendidos», y las series vistas en el diario llegan mediante «Añadir» o «Completar».
 
-### Referencia DEFA (anonimizada, en el repositorio)
+### Referencia (anonimizada, en el repositorio)
 
-Esta base (`data/references/defa_reference.js`) recoge los pilotos (trigramas) y las aeronaves de la DEFA, sin los vuelos ni las misiones. Sirve de ayuda a la introducción de datos y no es exhaustiva.
+Esta base (`data/references/defa_reference.js`) recoge los pilotos (trigramas) y las aeronaves de la compagnie, sin los vuelos ni las misiones. Sirve de ayuda a la introducción de datos y no es exhaustiva.
 - Tabla «Aeronaves»: matrícula, tipo, variante, estado, adscripción (modificable), último AD conocido, puesta en servicio, indicativos utilizados, primer y último vuelo, vuelos, ficha de flota, nota.
 - Tabla «Pilotos»: trigrama, primer y último vuelo, vuelos, tipos, nota.
 - Actualización:
   1. cargue el registro de vuelos (apartado siguiente);
-  2. haga clic en «Actualizar la referencia DEFA (anonimizada)»: no se elimina nada y se conservan las entradas manuales;
+  2. haga clic en «Actualizar la referencia (anonimizada)»: no se elimina nada y se conservan las entradas manuales;
   3. «Guardar en el repositorio» y después haga commit.
 - Alternativa por script: `tools/defa_reference.py`.
 
-### Registro de vuelos DEFA (vuelos realizados)
+### Registro de vuelos (vuelos realizados)
 
 Esta base es distinta del registro de misiones. Solo se guarda en este navegador: fuera del repositorio y fuera de la copia local, porque contiene trigramas.
 - «Cargar / actualizar el registro…» acepta la página «Log des vols» copiada o guardada, o una exportación CSV / JSON. Los vuelos se fusionan sin duplicados.
 - «Series de indicativos»: «Añadir» crea la línea en la correspondencia de indicativos; «Completar» le añade las formas y los tipos vistos.
 - «Vuelos»: filtro de texto completo, 300 líneas mostradas como máximo.
 - Acciones:
-  - «Actualizar la referencia DEFA (anonimizada)»;
+  - «Actualizar la referencia (anonimizada)»;
   - «Exportar CSV»;
   - «Exportar JSON (recargable)»;
-  - «Borrar la base DEFA de este navegador».
+  - «Borrar la base de este navegador».
 
 ### Fusiones y renombrados (pilotos, aeronaves)
 
 Esta tabla lista las equivalencias creadas con «Fusionar con… / renombrar» desde las fichas. Columnas: «Tipo» (piloto o aeronave), «Antiguo», «Pasa a ser», «Resultado».
-Estas equivalencias se aplican al diario DEFA recargado, a la referencia y al catálogo.
+Estas equivalencias se aplican al diario recargado, a la referencia y al catálogo.
 «Eliminar» quita una equivalencia, previa confirmación.
 Un bucle (A → B y B → A) aparece resaltado: intercambia los dos nombres. Elimine la entrada errónea y después vuelva a hacer la fusión desde la ficha.
 

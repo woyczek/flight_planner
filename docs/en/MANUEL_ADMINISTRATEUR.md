@@ -1,6 +1,6 @@
 # Administrator manual
 
-This manual describes the DEFA Virtual suite for the **Centre** (planning and conduct of operations) and for the
+This manual describes the SO Group Virtual suite for the **Centre** (planning and conduct of operations) and for the
 suite **administrators**: one chapter per page, one section per tab, section or block, then data
 synchronisation and the launcher. In the suite, the **“Help”** entry of the sidebar opens this manual
 at the chapter of the current page (Centre and settings pages). The pilot pages are described in the
@@ -20,7 +20,7 @@ The lock hides the Centre until it has been enabled in this browser.
 
 - Centre locked: the Centre pages disappear from the ☰ menu, from the sidebar (“Centre” separator and “Missions”, “Registry” and “ODV” entries) and from the home page.
 - A Centre page opened directly (bookmark, link) is covered by a “Restricted access” notice with the links “Enable the Centre…” and “Home”.
-- In Settings › Centre, only the “Centre access and settings” section stays visible; the others (“Users and rights”, “Availability categories”, “ODV planning (DEFA)”, “Report sending (web service)”) are hidden.
+- In Settings › Centre, only the “Centre access and settings” section stays visible; the others (“Users and rights”, “Availability categories”, “ODV planning”, “Report sending (web service)”) are hidden.
 - Activation is stored in this browser only: repeat it on each computer and after clearing the site data.
 
 Limit: this is a usage lock, not security. The pages remain files readable by anyone with access to the folder.
@@ -57,7 +57,7 @@ Management in Settings › Centre › “Users and rights”:
 - “Reset…” opens “Reset the password of TRI”: enter a temporary password (at least 8 characters), which the user must change at their next sign-in;
 - “Add a user”: trigram, display name, role, then “Add”.
 
-Tip: if the users folder is empty, the section creates one record per pilot of the DEFA reference.
+Tip: if the users folder is empty, the section creates one record per pilot of the reference.
 
 ### Develop mode and production mode
 
@@ -99,7 +99,7 @@ The two pages share a tab at the top and work on **the same mission**.
 - Every change is saved in this browser and read at once by the other open page (extents, maps added or deleted in the studio, for example). The generator then shows “Mission updated by the map studio”.
 
 The header also offers:
-- “Create the DEFA report →”: opens a new report of the family matching the mission type, pre-filled with the mission;
+- “Create the report →”: opens a new report of the family matching the mission type, pre-filled with the mission;
 - when an operation has several missions: ◀ and ▶ (“Previous mission”, “Next mission”) and a list to switch to another mission of the batch;
 - after opening from the registry: “← Registry (M-016)” to go back.
 
@@ -336,7 +336,7 @@ The follow-up is written to `suivi.yaml`, in the mission folder; it is shared wi
 Form shared with the generator.
 1. Set “Type”, “Subtype”, “Theatre” and “Second theatre” (“Country” for abroad), “Series” (empty = the next one).
 2. Check “Identifier” (computed, read-only).
-3. Set “DEFA flying teams”, “Rendezvous”, “Ground teams”, “Duration” (XS to XL), “Translations”, “Air refuelling”.
+3. Set “Flying teams”, “Rendezvous”, “Ground teams”, “Duration” (XS to XL), “Translations”, “Air refuelling”.
 4. Under “Aircraft of each flying team”, enter the aircraft of teams A, B… (empty = automatic).
 5. Click “Order: copy prompt and open ChatGPT”, paste into ChatGPT (Ctrl+V) then send.
 
@@ -360,7 +360,7 @@ This block loads the squadron's weekly workbook (`.xlsx`). It is **hidden by def
 - Anomalies (code not in the legend, duplicate trigram, offset timeline date…) are flagged by floating notifications, without ever blocking the reading.
 - If a pilot of the workbook has no mission-type preferences yet, the suite creates them from their codes (C → fighter, T → transport…) and writes them into their user record.
 - “Clear data” empties the page. The button stays greyed out as long as no workbook is loaded.
-- The link “Settings › Centre › ODV planning (DEFA)” leads to the settings of the slots and of the workbook reading.
+- The link “Settings › Centre › ODV planning” leads to the settings of the slots and of the workbook reading.
 - Personal data: do not publish the exports. Workbook format and reading rules: [ODV planning](../ODV_PLANNING.md).
 
 ### Availability grid
@@ -452,7 +452,7 @@ For each slot that reaches the “At least N pilot(s)” threshold, this block s
 
 - Click a row (outside the button) to expand its summary: slot, suggested crew, reinforcements, rule, score, context (ATC sessions, controllers, events), simulators, missions already assigned. The ▸ triangle does the same; only one row is expanded at a time.
 - “Family and score rules” expands under the table. Score = number of participants, + 2 per pilot with a restricted code used in their field, + 1 per online controller for TRAINING (2 at most). A family played often moves back a little (depending on the number of reports in the registry) to vary the missions.
-- The number of missions shown per slot and the order of preference at equal score are set in Settings › Centre › ODV planning (DEFA).
+- The number of missions shown per slot and the order of preference at equal score are set in Settings › Centre › ODV planning.
 - The table sorts by column. The roles taken from the FLOTTE sheet remain indicative: the planner validates.
 
 ### Export
@@ -503,7 +503,7 @@ This section manages the user records. There is one record per user (`data/utili
 - **“Reset…”**: enter a temporary password (at least 8 characters), then “Reset the password”. The user must change it at their next sign-in.
 - **“Impersonate”**: you act on behalf of the user. A banner recalls it on every page, each write is signed “ADM pour TOTO”, and the “End impersonation” button ends it.
 - **“Add a user”**: trigram, display name, role, then “Add”.
-- If the folder is empty, a record is created for each pilot of the DEFA reference.
+- If the folder is empty, a record is created for each pilot of the reference.
 - If some files could not yet be written to the data folder, click “Write to the data folder”.
 - In production mode, resetting a password, impersonation and changing the mode are reserved for a
   signed-in `admin_centre`; adding a user and editing a row (role, active) are only protected
@@ -530,9 +530,9 @@ This section defines what the pilots can declare as availability (`data/config/d
 - “Default values” restores the original categories. Added categories are kept, but retired.
 See also [availability and reorganisation](../technique/DISPOS_ET_REORGANISATION.md).
 
-### ODV planning (DEFA)
+### ODV planning
 
-This section contains the DEFA-specific settings for the ODV planning page. They are kept in this browser and are not synchronised. An ODV page open in another tab applies them at once.
+This section contains the Settings of the ODV planning page. They are kept in this browser and are not synchronised. An ODV page open in another tab applies them at once.
 
 | Setting | Default |
 |---|---|
@@ -569,7 +569,7 @@ These sections are assigned to the page by `config/repository_tree` (key `settin
 
 This section shows whether the first run is complete in this browser, and on what date.
 - “Open the first run” reopens the wizard (`premier_lancement.html?force`). It runs in four steps:
-  1. Data: “Fetch the data” (clone of the data repository) or “Data archive…”; optionally, “DEFA log (.html)…”.
+  1. Data: “Fetch the data” (clone of the data repository) or “Data archive…”; optionally, “Log (.html)…”.
   2. Profile: “Save the profile”.
   3. Folders: “Choose the application folder”, then the ODV workbook (“OneDrive folder…” or “or the Excel file…”).
   4. “Finish and update the SIA data”.
@@ -594,7 +594,7 @@ This section is the only place to set the local folders and the addresses of the
 | X-Plane folder (landings), Performance folder, Local backup folder | CSV logs, `.lnmperf` / `.json` profiles, `defa_local_store.yaml` |
 
 - **External sources**: the default address is shown greyed out. An entered value applies to this browser only; “↺” goes back to the default value and “Open ↗” opens the address.
-- **Virtual airline**: “Name”, “Short name”, “Centre (short)”, “Centre (full name)”, and the site pages (“Home page”, “Flight log”, “Fleet”, “Aircraft page”). An empty field keeps the default value. “Back to DEFA Virtual” clears all these settings.
+- **Virtual airline**: “Name”, “Short name”, “Centre (short)”, “Centre (full name)”, and the site pages (“Home page”, “Flight log”, “Fleet”, “Aircraft page”). An empty field keeps the default value. “Back to SO Group Virtual” clears all these settings.
 - **First run**: “Reopen the first run”; “Clean and start over…” clears the stored folders, the copy of the ODV workbook, the DEFA site credentials and the profile. The files on disk are not touched.
 
 ## Settings › Maintenance
@@ -604,7 +604,7 @@ This page is used to maintain the suite: updates, versions, SIA data, caches, ba
 To open it: sidebar › “Settings”, then the “Maintenance” tab. The page opens on “Updates”.
 The side menu has two parts:
 - the “Maintenance” group: Updates, Versions and sync, References and dependencies, Aeronautical data, Caches, Disk space, Full backup, Journal;
-- the databases, arranged in the groups “Repository files”, “DEFA base”, “Missions” and “Browser data”.
+- the databases, arranged in the groups “Repository files”, “Base”, “Missions” and “Browser data”.
 
 ### Suite updates
 
@@ -622,7 +622,7 @@ This block sets where code updates come from and when the suite looks for them.
 This table gives the version and update date of each item, with a state (✓, ⚠, ✗) and the source or update tool.
 - Code: suite (`repository_tree`), script cache version, git, remote channel.
 - SIA / AIRAC: current cycle and next cycle, map studio base, SIA XML folder, `mora.csv`, AAR tracks (ENR 5.7).
-- Reference databases: ICAO types, APD performance, DEFA fleet, DEFA reference, callsigns.
+- Reference databases: ICAO types, APD performance, fleet, reference, callsigns.
 - User data: SimBrief flight plans, planner profiles, report ledger, generated mission registry, landing logs, local data, last full backup.
 - “Refresh” re-reads the git state and the SIA folder.
 - A warning is shown if the local data has not been backed up for more than 7 days, or if there has been no full backup for more than 30 days.
@@ -639,7 +639,7 @@ This block describes each reference of the suite:
 | Dependents | data that depend on it |
 | Check | consistency checked |
 
-References tracked: SIA XML, studio analysed base, MORA grid, AAR tracks, APD performance, DEFA fleet, planner profiles and mission prompt.
+References tracked: SIA XML, studio analysed base, MORA grid, AAR tracks, APD performance, fleet, planner profiles and mission prompt.
 Examples of checks: mixed cycles in the SIA base, MORA obstacles from another cycle, fleet types missing from the ICAO base, prompt to regenerate (`python tools/build_mission_prompt.py`).
 The “Check” button reruns the checks.
 
@@ -723,7 +723,7 @@ Operations logged:
 - MORA recalculation.
 As long as none of these operations has taken place, the journal is empty.
 
-### DEFA fleet (known aircraft)
+### fleet (known aircraft)
 
 This database (`data/references/aircraft_fleet.js`) lists the aircraft offered in the reports: “Operator”, “ICAO type”, “Variant”, “Registration”, “Code”, “Number”, “Callsigns” (comma-separated), “Base”, “Operational”.
 - **“Paste the website Fleet page…”**:
@@ -750,35 +750,35 @@ This database (`data/references/callsigns.js`) links the full callsign (kept in 
 - “Callsigns” table: “Full callsign”, “Flight plan”, “Other forms”, “Organisation”, “OPR/”, “Types”, “Role”, “Generic”, “Telephony”, “Note”.
 - “Organisations → ICAO designator (OPR/)” table.
 - There is no script: this page (or the file, edited by hand) is the source.
-- To feed it: forms corrected in the reports arrive in “Learned callsigns”, and the series seen in the DEFA log arrive through “Add” or “Complete”.
+- To feed it: forms corrected in the reports arrive in “Learned callsigns”, and the series seen in the log arrive through “Add” or “Complete”.
 
-### DEFA reference (anonymised, in the repository)
+### reference (anonymised, in the repository)
 
-This database (`data/references/defa_reference.js`) lists the DEFA pilots (trigrams) and aircraft, without the flights or the missions. It is an input aid and is not exhaustive.
+This database (`data/references/defa_reference.js`) lists the pilots (trigrams) and aircraft, without the flights or the missions. It is an input aid and is not exhaustive.
 - “Aircraft” table: registration, type, variant, status, home base (editable), last known AD, entry into service, callsigns used, first and last flight, flights, fleet record, note.
 - “Pilots” table: trigram, first and last flight, flights, types, note.
 - Update:
   1. load the flight log (next section);
-  2. click “Update the DEFA reference (anonymised)”: nothing is deleted, and manual entries are kept;
+  2. click “Update the reference (anonymised)”: nothing is deleted, and manual entries are kept;
   3. “Save to repository”, then commit.
 - Script alternative: `tools/defa_reference.py`.
 
-### DEFA flight log (flights performed)
+### flight log (flights performed)
 
 This database is separate from the mission registry. It is kept only in this browser: out of the repository and out of the local backup, because it contains trigrams.
 - “Load / update the log…” accepts the “Log des vols” page copied or saved, or a CSV / JSON export. Flights are merged without duplicates.
 - “Callsign series”: “Add” creates the row in the callsign correspondence; “Complete” adds the forms and types seen to it.
 - “Flights”: full-text filter, 300 rows shown at most.
 - Actions:
-  - “Update the DEFA reference (anonymised)”;
+  - “Update the reference (anonymised)”;
   - “Export CSV”;
   - “Export JSON (reloadable)”;
-  - “Clear the DEFA base from this browser”.
+  - “Clear the base from this browser”.
 
 ### Merges and renames (pilots, aircraft)
 
 This table lists the equivalences created by “Merge with… / rename” from the records. Columns: “Type” (pilot or aircraft), “Old”, “Becomes”, “Result”.
-These equivalences apply to the reloaded DEFA log, to the reference and to the catalogue.
+These equivalences apply to the reloaded log, to the reference and to the catalogue.
 “Delete” removes an equivalence, after confirmation.
 A loop (A → B and B → A) is highlighted: it swaps the two names. Delete the faulty entry, then redo the merge from the record.
 

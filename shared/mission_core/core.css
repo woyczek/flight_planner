@@ -1299,7 +1299,7 @@
     }
   }
 
-  /* Reportings : choix des données (registre / journal DEFA) */
+  /* Reportings : choix des données (registre / journal) */
   .mc-source {
     display: inline-flex;
     gap: 6px;

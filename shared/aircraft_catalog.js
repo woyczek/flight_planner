@@ -1,13 +1,13 @@
 (() => {
   'use strict';
-  // Catalogue d'aéronefs commun aux trois applications (CR DEFA, Landing Performance
+  // Catalogue d'aéronefs commun aux trois applications (CR, Landing Performance
   // Dashboard, Flight Planner) — chargé juste après AircraftDB/aircraft_db.js :
   //   · types : base OACI (aircraft_db.js, avec les modifications de la page Paramétrage plus
   //     récentes que le fichier), types ajoutés
   //     localement dans les CR (missionAircraftTypes:v1) — fusionnés dans window.AIRCRAFT_DB :
   //     toutes les pages voient les mêmes types ;
-  //   · appareils DEFA : flotte (aircraft_fleet.js), référence DEFA anonymisée (defa_reference.js),
-  //     appareils des missions enregistrées, journal DEFA chargé — base « lâche » : aide à la
+  //   · appareils : flotte (aircraft_fleet.js), référence anonymisée (defa_reference.js),
+  //     appareils des missions enregistrées, journal chargé — base « lâche » : aide à la
   //     saisie, jamais une contrainte (un appareil absent reste saisissable).
   const read = key => {
     try {
@@ -18,8 +18,8 @@
   };
   /** Clé de comparaison : majuscules, lettres et chiffres seulement. */
   const key = v => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-  // Plus de types écrits dans le code : les types de la flotte DEFA viennent de la base OACI (aircraft_db.js, liste
-  // officielle Doc 8643 via AircraftDB/update_aircraft_db.py), les codes propres à la DEFA (E2C, RQ9P) y sont des
+  // Plus de types écrits dans le code : les types de la flotte viennent de la base OACI (aircraft_db.js, liste
+  // officielle Doc 8643 via AircraftDB/update_aircraft_db.py), les codes propres à la compagnie (E2C, RQ9P) y sont des
   // alias (aircraft_overrides.json). Objet vide gardé pour les modules qui le lisent encore.
   const SUPPLEMENT = {};
 
@@ -42,7 +42,7 @@
   };
   Object.entries(read('missionAircraftTypes:v1') || {}).forEach(([code, entry]) => addType(code, entry || {}, 'local'));
 
-  // ---- appareils DEFA (par immatriculation ; la donnée la plus récente l'emporte)
+  // ---- appareils (par immatriculation ; la donnée la plus récente l'emporte)
   function defaAircraft() {
     const out = new Map();
     // Fusions mémorisées (fiche appareil › fusionner) : A → B.
@@ -98,7 +98,7 @@
     }, `${r.date} ${r.time || ''}`));
     return [...out.values()].sort((a, b) => a.registration.localeCompare(b.registration));
   }
-  // Types employés par la DEFA (avec leurs appareils) : Planner, Landing, reportings.
+  // Types employés par la compagnie (avec leurs appareils) : Planner, Landing, reportings.
   function defaTypes() {
     const out = new Map();
     defaAircraft().forEach(a => {
@@ -115,7 +115,7 @@
     });
     return [...out.values()].sort((a, b) => a.type.localeCompare(b.type));
   }
-  /** Pilotes de la référence DEFA (trigrammes, activité). */
+  /** Pilotes de la référence (trigrammes, activité). */
   const pilots = () => window.DEFA_REFERENCE?.pilots || [];
 
   /** Nom d'affichage d'un modèle de la base OACI (« CONSTRUCTEUR RÉF Surnom ») : référence et surnom d'abord,

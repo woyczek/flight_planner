@@ -69,7 +69,7 @@
   const PALETTE = ['#67b6ff', '#bb8cff', '#65d394', '#fbbf24', '#f472b6', '#2dd4bf', '#fb923c', '#a3e635', '#818cf8', '#f87171'];
 
   const UI = {
-    title: L('Reporting missions — CR DEFA', 'Mission reporting — CR DEFA', 'Einsatzauswertung — CR DEFA', 'Informe de misiones — CR DEFA'),
+    title: L('Reporting missions — CR', 'Mission reporting — CR', 'Einsatzauswertung — CR', 'Informe de misiones — CR'),
     subtitle: L('Toutes les familles de missions · registre unique data/cr/missions.yaml', 'All mission families · single ledger data/cr/missions.yaml', 'Alle Einsatzfamilien · zentrales Register data/cr/missions.yaml', 'Todas las familias de misiones · registro único data/cr/missions.yaml'),
     newReport: L('Nouveau compte rendu', 'New report', 'Neuer Bericht', 'Nuevo informe'),
     period: L('Période et filtres', 'Period and filters', 'Zeitraum und Filter', 'Periodo y filtros'),
@@ -230,7 +230,7 @@
     }
   };
 
-  /** Reporting général (toutes familles) : période, puces de familles, cartes, graphiques d'activité, répartitions, tableau des missions (modifiable dans le tableau), source (registre ou journal DEFA), reprise des anciens registres. */
+  /** Reporting général (toutes familles) : période, puces de familles, cartes, graphiques d'activité, répartitions, tableau des missions (modifiable dans le tableau), source (registre ou journal), reprise des anciens registres. */
   function mount(root) {
     const rows = new Map(),
       tr = row => {
@@ -374,27 +374,27 @@
       return row;
     };
     // Position de la mission dans sa famille (adresse de modification du CR).
-    // Données des reportings : registre des missions (défaut) ou journal DEFA (vols réalisés,
-    // chargé dans Paramétrage › Base DEFA ; lecture seule). Choix commun à tous les reportings.
+    // Données des reportings : registre des missions (défaut) ou journal (vols réalisés,
+    // chargé dans Paramétrage › Base ; lecture seule). Choix commun à tous les reportings.
     const SRC = {
       label: L('Données', 'Data', 'Daten', 'Datos'),
       ledger: L('Mes missions (registre)', 'My missions (ledger)', 'Meine Einsätze (Register)', 'Mis misiones (registro)'),
-      defa: L('Journal DEFA (vols réalisés)', 'DEFA log (flights flown)', 'DEFA-Journal (durchgeführte Flüge)', 'Diario DEFA (vuelos realizados)'),
-      readOnly: L('Vol du journal DEFA : lecture seule (pas de CR à modifier).', 'DEFA log flight: read-only (no report to edit).', 'Flug aus dem DEFA-Journal: nur lesbar.', 'Vuelo del diario DEFA: solo lectura.')
+      defa: L('Journal (vols réalisés)', 'Log (flights flown)', 'Journal (durchgeführte Flüge)', 'Diario (vuelos realizados)'),
+      readOnly: L('Vol du journal : lecture seule (pas de CR à modifier).', 'Log flight: read-only (no report to edit).', 'Flug aus dem Journal: nur lesbar.', 'Vuelo del diario: solo lectura.')
     };
     let logMissions = null;
-    /** Vrai si le reporting lit le journal DEFA. */
+    /** Vrai si le reporting lit le journal. */
     const logSource = () => window.DefaFlightLog?.source?.() === 'defa';
-    /** Missions du journal DEFA (converties une fois), ou null si la source est le registre. */
+    /** Missions du journal (converties une fois), ou null si la source est le registre. */
     const sourceMissions = () => logSource() ? (logMissions ||= window.DefaFlightLog.toMissions()) : null;
     window.addEventListener('defa-log-change', () => {
       logMissions = null;
     });
-    // Menu « Données » toujours visible : registre, journal DEFA (s'il est chargé) et chargement /
+    // Menu « Données » toujours visible : registre, journal (s'il est chargé) et chargement /
     // mise à jour du journal (page DEFA copiée ou enregistrée) sans passer par le Paramétrage.
-    const SRC_LOAD = L('Charger / mettre à jour le journal DEFA…', 'Load / update the DEFA log…', 'DEFA-Journal laden / aktualisieren…', 'Cargar / actualizar el diario DEFA…');
+    const SRC_LOAD = L('Charger / mettre à jour le journal…', 'Load / update the log…', 'Journal laden / aktualisieren…', 'Cargar / actualizar el diario…');
 
-    /** Choix de la source (registre / journal DEFA) et chargement du journal. */
+    /** Choix de la source (registre / journal) et chargement du journal. */
     function sourcePicker(host) {
       if (!host || !window.DefaFlightLog) return;
       const label = document.createElement('label');
@@ -431,7 +431,7 @@
       });
       host.append(label);
     }
-    /** Lignes de toutes les missions de la source (journal DEFA ou registre), avec leur rang dans leur famille. */
+    /** Lignes de toutes les missions de la source (journal ou registre), avec leur rang dans leur famille. */
     const allRows = () => {
       const seen = {};
       return (sourceMissions() || L2.store.missions).map(m => toRow(m, (seen[m.family] = (seen[m.family] ?? -1) + 1)));

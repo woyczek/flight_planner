@@ -1,4 +1,4 @@
-# Documentation index — DEFA Virtual suite
+# Documentation index — SO Group Virtual suite
 
 *[← Back to the folder](../../README.md)* · In the suite: **“Help”** entry of the sidebar (opened at the chapter of the
 current page) or ☰ › Help. Documents not yet translated open in French.

@@ -2,7 +2,7 @@
   'use strict';
   // Composant de framework « FileAccess » : dossiers autorisés et ouverture des fichiers.
   //   · dossiers mémorisés (IndexedDB missionCore › handles, clés folder:<clé>) : dépôt, registre
-  //     CR DEFA, sauvegarde locale, performances (Flight Planner), SIA XML, missions générées — nom, état de l'autorisation,
+  //     CR, sauvegarde locale, performances (Flight Planner), SIA XML, missions générées — nom, état de l'autorisation,
   //     dossier attendu (infobulle) ;
   //   · tout <input type="file"> de la suite ouvre le sélecteur du système directement dans le
   //     dossier paramétré (data-picker-folder, ou dossier par défaut de la page), sinon dans le
@@ -221,7 +221,7 @@
     return done;
   }
   // Passage à la v3 (une fois) : les dossiers mémorisés qui désignaient des dossiers de l'ancienne arborescence
-  // (« CR DEFA », « Missions », « SIA XML ») sont oubliés ; ils sont redéduits du dossier des données.
+  // (« CR », « Missions », « SIA XML ») sont oubliés ; ils sont redéduits du dossier des données.
   (async () => {
     try {
       if (localStorage.getItem('fileAccessLayout') === '3') return;
@@ -299,7 +299,7 @@
     if (key === '__repo') handle.derived = await deriveFromRepo(handle);
     return handle;
   }
-  // Libellé et infobulle d'un dossier : « Dossier du registre : CR DEFA ✓ ».
+  // Libellé et infobulle d'un dossier : « Dossier du registre : CR ✓ ».
   async function describe(key) {
     const s = await status(key),
       info = FOLDERS[key] || {
@@ -347,7 +347,7 @@
   }
 
   // ---- ouverture de fichiers : sélecteur du système dans le dossier paramétré
-  // Dossier par défaut selon la page (application CR DEFA : registre ; Paramètres : dépôt).
+  // Dossier par défaut selon la page (application CR : registre ; Paramètres : dépôt).
   const defaultFolder = () => {
     const p = decodeURI(location.pathname);
     if (/\/apps\/settings\/(parametrage|profil|centre|installation|maintenance)\.html$/.test(p)) return '__data';
@@ -417,7 +417,7 @@
     return `${tr(STATE.opensIn)} : ${d.label} — ${d.name || tr(STATE.none)}`;
   }
 
-  // ---- panneaux de copier-coller (analyse de texte, journal DEFA, historique VATSIM…)
+  // ---- panneaux de copier-coller (analyse de texte, journal, historique VATSIM…)
   //   · « × » en haut à droite et bouton « Fermer » ;
   //   · bouton de chargement désactivé tant que la zone est vide ; après un chargement réussi
   //     (panel.done()), il devient « Valider » (vert) et ferme le panneau ; il redevient

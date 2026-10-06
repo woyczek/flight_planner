@@ -1,6 +1,6 @@
 # Manuel utilisateur
 
-Ce manuel décrit la suite DEFA Virtual pour les **pilotes** : un chapitre par page, une section par onglet ou par
+Ce manuel décrit la suite SO Group Virtual pour les **pilotes** : un chapitre par page, une section par onglet ou par
 bloc, dans l'ordre où ils apparaissent. Dans la suite, l'entrée **« Aide »** de la barre latérale ouvre ce manuel au
 chapitre de la page en cours. Le Centre et l'administration de la suite sont décrits dans le
 [manuel administrateur](MANUEL_ADMINISTRATEUR.md) ; pour un premier compte rendu pas à pas, voir le
@@ -9,7 +9,7 @@ chapitre de la page en cours. Le Centre et l'administration de la suite sont dé
 ## Prise en main
 <!-- page: index.html -->
 
-La suite « DEFA Virtual » rassemble dans le navigateur tout ce dont le pilote a besoin : missions affectées par le Centre, disponibilités, cartes de vol, carburant, comptes rendus (CR), atterrissages et reportings.
+La suite « SO Group Virtual » rassemble dans le navigateur tout ce dont le pilote a besoin : missions affectées par le Centre, disponibilités, cartes de vol, carburant, comptes rendus (CR), atterrissages et reportings.
 Toutes les pages partagent les mêmes repères : une barre latérale à gauche, un en-tête en haut, parfois des onglets, puis des blocs.
 Ce chapitre décrit ces éléments communs ; les chapitres suivants détaillent chaque page.
 La page d'accueil (`index.html`) liste les applications sous forme de cartes et affiche la version de la suite.
@@ -21,11 +21,11 @@ La colonne de gauche donne accès aux applications. L'entrée de la page affich�
 | Entrée | Ce qu'elle ouvre |
 |---|---|
 | « Mes missions » | Missions affectées par le Centre et disponibilités (avec une pastille rouge : nombre de missions non lues) |
-| « CR DEFA » | Saisie d'un nouveau compte rendu de mission |
+| « CR » | Saisie d'un nouveau compte rendu de mission |
 | « Cartes de vol » | Cartes de vol : route, topo, approche, rendez-vous, destination |
 | « Carburant » | Planificateur de performances et de carburant |
 | « Atterrissages » | Tableau de bord des atterrissages |
-| « Reporting » | Reportings des missions (CR DEFA) |
+| « Reporting » | Reportings des missions (CR) |
 
 - Le groupe **« Centre »** (« Missions », « Registre », « ODV ») n'apparaît que si le Centre est déverrouillé dans ce navigateur (Paramètres › Centre). Pour un pilote, il reste normalement caché.
 - En bas de la colonne : « Apparence » (ouvre les réglages d'affichage dans une fenêtre, au-dessus de la page en cours), « Paramètres » (Mon profil et les autres pages de réglage) et **« Aide »**. Ces trois entrées restent fixées en bas de l'écran : seule la liste du haut défile quand il y a trop d'icônes (fenêtre de moins de 460 px de haut : toute la barre défile).
@@ -271,7 +271,7 @@ Votre identité dans la suite, reprise par toutes les pages (☰ › Profil pilo
 
 | Carte | Champs |
 |---|---|
-| « Pilote » | « Trigramme DEFA », « ID VATSIM (CID) », « ID IVAO (VID) », « SimBrief (utilisateur ou ID) » |
+| « Pilote » | « Trigramme », « ID VATSIM (CID) », « ID IVAO (VID) », « SimBrief (utilisateur ou ID) » |
 | « Site DEFA » | « Identifiant », « Mot de passe » |
 | « Langue » | « Langue de la suite » : Automatique (langue du navigateur), Français, English, Deutsch, Español |
 
@@ -315,7 +315,7 @@ Les types de la flotte que vous possédez et maîtrisez, et vos simulateurs. Le 
 | Colonne | Contenu |
 |---|---|
 | « Type » | Modèle et désignateur OACI |
-| « Variantes de la flotte » | Variantes présentes dans la flotte DEFA |
+| « Variantes de la flotte » | Variantes présentes dans la flotte |
 | « Appareils » | Nombre d'appareils en service (sur le total) et leurs bases |
 | « Possédé » | Vous avez ce type dans votre simulateur |
 | « Maîtrisé » | Vous le pilotez avec aisance |
@@ -385,7 +385,7 @@ L'épaisseur du trait des icônes, ou pas d'icônes du tout. Chaque rangée mont
 
 Chaque page de la suite a un thème de couleurs (bandeau, texte du bandeau, accent). Pour chaque thème, vous choisissez une famille de couleurs et un ton ; les couleurs en sont calculées, avec un contrôle de lisibilité.
 
-Les thèmes sont présentés en cartes, en deux groupes : « Applications » (Carburant, Atterrissages, Centre, CR DEFA) et « Familles de comptes rendus ».
+Les thèmes sont présentés en cartes, en deux groupes : « Applications » (Carburant, Atterrissages, Centre, CR) et « Familles de comptes rendus ».
 
 Sur chaque carte :
 1. L'aperçu montre un « Titre » sur le bandeau, un « Bouton » et un « Lien, icône ».
@@ -427,13 +427,13 @@ Deux possibilités :
   « Vérifier » dit s'il répond depuis ce poste (30 s au plus), « Enregistrer » en fait le dépôt distant de `data/`
   (sans données encore, l'adresse sert à les récupérer). Rien n'est bloquant : un dépôt qui ne répond pas est signalé,
   la suite fonctionne sans partage. Détails : [synchronisation](technique/SYNCHRONISATION.md).
-- Une fois les données présentes, la carte facultative « Journal des vols DEFA » propose « Journal DEFA (.html)… » : la page « Log des vols » du site DEFA, enregistrée, remplit les pilotes et appareils de la référence DEFA (aide à la saisie).
+- Une fois les données présentes, la carte facultative « Journal des vols » propose « Journal (.html)… » : la page « Log des vols » du site DEFA, enregistrée, remplit les pilotes et appareils de la référence (aide à la saisie).
 
 ### 2 Profil
 
 Votre profil pilote, repris par toutes les pages (☰ › Profil pilote).
 
-1. Remplissez la carte « Pilote » : « Trigramme DEFA », « ID IVAO (VID) », « ID VATSIM (CID) », « SimBrief ».
+1. Remplissez la carte « Pilote » : « Trigramme », « ID IVAO (VID) », « ID VATSIM (CID) », « SimBrief ».
 2. Cliquez sur « Enregistrer le profil ».
 
 Les identifiants du site DEFA, le mot de passe et les préférences se règlent ensuite dans [Mon profil](#mon-profil).
@@ -470,7 +470,7 @@ Pour reprendre le premier lancement de zéro, et seulement dans ce cas.
 
 Cette page est la porte d'entrée de tout compte rendu (CR) de mission : vous y choisissez la famille de
 mission, puis la page de CR de cette famille s'ouvre. Elle s'adresse à tous les pilotes.
-Pour y aller : barre latérale › **CR DEFA**, ou le bouton « Nouveau compte rendu » de l'en-tête du
+Pour y aller : barre latérale › **CR**, ou le bouton « Nouveau compte rendu » de l'en-tête du
 reporting général. Un CR peut aussi s'ouvrir directement, déjà rempli, depuis une mission qui vous a été
 affectée (voir plus bas). Pas à pas complet : [tutoriel](TUTORIAL.md).
 
@@ -513,7 +513,7 @@ s'ouvre directement dans la bonne famille, déjà rempli.
 |---|---|
 | **Mes missions** (dossier de la mission ouvert) | « Créer le CR » (grisé si la mission n'a pas de fichier de mission) |
 | **Registre** des missions (Centre) | « Créer le CR », ou « Nouveau CR (vol n) » si la mission a déjà des CR |
-| **Générateur de mission** (Centre) | bouton de l'en-tête « Créer le CR DEFA → » |
+| **Générateur de mission** (Centre) | bouton de l'en-tête « Créer le CR → » |
 
 Ce qui est repris : nom de l'exercice / opération (titre de la mission), identifiant de la mission (champ
 « Mission »), objectif et instructions (bloc Tâche), terrains de départ et d'arrivée, points tournants et
@@ -559,7 +559,7 @@ L'en-tête reste collé en haut de page. De gauche à droite :
 |---|---|
 | « SAR · SAR terrestre ▾ » (famille · sous-type) | popup « Famille de mission » (ouvre la page de l'autre famille) et « Sous-type de mission » |
 | « Ajouter au registre » / « Enregistrer les modifications » | range la mission dans le registre |
-| « Envoyer le CR » | transmet le CR au webservice de la DEFA (en pointillés tant qu'il n'est pas paramétré) |
+| « Envoyer le CR » | transmet le CR au webservice de la compagnie (en pointillés tant qu'il n'est pas paramétré) |
 | « Analyser / importer… » ▾ | coller un plan de vol, une page de tracker, un METAR ; importer un fichier |
 | « Suivi réseau » ▾ | suivi en direct IVAO / VATSIM, historique VATSIM |
 | « Mission » ▾ | « Nouvelle mission », « Exporter la mission (YAML) », « Supprimer cette mission » (en modification) |
@@ -804,7 +804,7 @@ Menu de l'en-tête pour remplir le CR à partir d'un texte collé. **Seuls les c
 3. Le résultat indique la source reconnue et les champs remplis ; le bouton devient « ✓ Valider ».
 
 Les liens « ↗ Tracker IVAO (mes connexions) » et « ↗ Mes vols StatSim (VATSIM) » ouvrent vos pages. Le
-lien « → CR DEFA », à glisser dans la barre des favoris, copie la page du tracker en un clic. En bas,
+lien « → CR », à glisser dans la barre des favoris, copie la page du tracker en un clic. En bas,
 « Importer (YAML / ancien JSON) » charge un fichier de mission. Détails : [tutoriel](TUTORIAL.md), § 6.
 
 ### Suivi réseau
@@ -892,7 +892,7 @@ Le titre affiche l'immatriculation, le type et le modèle. Dessous, trois pastil
 
 - le **statut** (Disponible, Indisponible, En maintenance, Retiré du service), en couleur ;
 - « 📍 Actuellement à » : dernier terrain connu (arrivée de la dernière mission ou du dernier vol du
-  journal DEFA) ;
+  journal) ;
 - « 🏠 Terrain de rattachement ».
 
 La barre de **période** des reportings (préréglages, dates, ◀ − ▶) est dans l'en-tête : activité,
@@ -907,7 +907,7 @@ fiche se remplira au fil des CR ».
 | « Terrain de rattachement » | oui | code OACI, en majuscules |
 | « Mise en service » | oui | date |
 | « Type », « Variante », « Voilure », « Turbulence de sillage », « Opérateur » | non | repris de la flotte et de la base des types |
-| « Fiche flotte DEFA » | non | lien vers la fiche de l'appareil sur le site de la flotte |
+| « Fiche flotte » | non | lien vers la fiche de l'appareil sur le site de la flotte |
 | « Indicatifs utilisés », « Équipements » | non | relevés dans les missions, avec leur nombre |
 | « Notes » | oui | texte libre |
 
@@ -952,10 +952,10 @@ Flight Planner. »
 ### Missions et vols
 
 Tableau des missions et vols de l'appareil sur la période : date, famille, n°, indicatif, départ →
-arrivée, équipage, heures de vol, source (« registre » ou « journal DEFA »).
+arrivée, équipage, heures de vol, source (« registre » ou « journal »).
 
 - Cliquez un titre de colonne pour trier.
-- Cliquez une mission du registre pour ouvrir son CR en modification ; les vols du journal DEFA sont en
+- Cliquez une mission du registre pour ouvrir son CR en modification ; les vols du journal sont en
   lecture seule.
 - Sous le tableau, quand une période est choisie : boutons pour voir les missions avant ou après la
   période, et zoom − / +.
@@ -988,13 +988,13 @@ Cartes de la période : « Missions / vols », « Heures de vol », « Premier v
 « Par type » : heures de vol par type d'appareil. Le graphique empile les heures par famille ; glisser
 ou cliquer zoome, double-cliquer dézoome.
 
-Pour un pilote sans mission au registre, les chiffres viennent de la référence DEFA si elle le connaît.
+Pour un pilote sans mission au registre, les chiffres viennent de la référence si elle le connaît.
 
 ### Missions et vols
 
 Même tableau que la fiche appareil, avec en plus la colonne « Immat. » (lien vers la fiche de
 l'appareil) et le type. Tri par titre de colonne ; clic sur une mission du registre : CR en
-modification ; vols du journal DEFA en lecture seule.
+modification ; vols du journal en lecture seule.
 
 ## Reporting
 <!-- page: apps/cr/mission_operations_reporting.html -->
@@ -1014,7 +1014,7 @@ L'en-tête reste visible en haut de page.
 | « Familles » | une puce colorée par famille : clic pour masquer / afficher, Ctrl + clic pour n'en garder qu'une, « Toutes » pour tout basculer |
 | « Regroupement » | Automatique, Jour, Semaine, Mois, Trimestre, Année |
 | « Mesure » | Missions, Heures de vol, Heures bloc, Temps sur zone, Heures de mission, Sorties, Distance (NM) |
-| « Données » | « Mes missions (registre) », « Journal DEFA (vols réalisés) » (lecture seule) ou « Charger / mettre à jour le journal DEFA… » |
+| « Données » | « Mes missions (registre) », « Journal (vols réalisés) » (lecture seule) ou « Charger / mettre à jour le journal… » |
 
 La période est partagée avec les reportings de famille et les fiches. Familles, regroupement et mesure
 sont mémorisés.
@@ -1090,7 +1090,7 @@ Une durée saisie sans heures est « déclarée » (≈), comptée, et signalée
 la saisie des heures dans le CR.
 
 Sous le tableau, quand une période est choisie : « ◀ n avant la période », « − / + », « m après la
-période ▶ ». Les vols du journal DEFA sont en lecture seule.
+période ▶ ». Les vols du journal sont en lecture seule.
 
 ### Registre des missions
 
@@ -1136,7 +1136,7 @@ par famille » du reporting général, ou par la popup de l'en-tête d'une autre
 | « + Nouveau compte rendu » | ouvre directement la page de CR de la famille |
 | Période | même composant et même période que le reporting général |
 | « Regroupement », « Mesure » | réglages du graphique d'activité (Missions, Temps de vol, Temps bloc, Temps sur zone), partagés avec le reporting général |
-| « Données » | registre ou journal DEFA, comme au reporting général |
+| « Données » | registre ou journal, comme au reporting général |
 
 ### Registre des missions
 
@@ -1302,7 +1302,7 @@ En-tête : menu « Avion », bouton « Récupérer dernier FPL SimBrief », « U
 
 1. Cliquez sur le bouton d'avion de l'en-tête (« Aucun avion » au départ).
 2. Choisissez un profil dans la liste, groupée par catégorie (hélicoptères, jets, monomoteurs, turboprops…).
-3. Un type marqué « DEFA, sans profil » crée un profil vide : ses performances sont à renseigner.
+3. Un type marqué « flotte, sans profil » crée un profil vide : ses performances sont à renseigner.
 
 La barre en bas de page indique « Profil enregistré — … » ou « Modifications non enregistrées — … ». Elle porte « Recharger la base locale », « Enregistrer le profil » et « Supprimer cet avion ».
 Si vous changez d'avion avec des modifications non enregistrées, la page propose « Rester », « Abandonner et changer » ou « Enregistrer et changer ».
@@ -1344,7 +1344,7 @@ Ce bloc, dans la colonne de droite, suit la page pendant que vous faites défile
 - Base du calcul : niveau et loi de montée retenus.
 - Détail : taxi, montée, croisière, descente, contingence, réserve ; masse au décollage prévue et MTOW si vous l'avez saisie (en rouge si elle est dépassée).
 - Fiche du curseur (⌖ au survol, 📌 épinglé) : carburant et temps du trajet à ce niveau, vario max, vitesses de montée ; « désépingler » retire l'épingle.
-- Groupe repliable « Régimes de vol — profil ↔ cartographie » : Badin, vario, régime moteur et débit par phase, comparés à la cartographie moteur. Il contient aussi le champ « SimBrief Airframe Internal ID » et les liens vers les fiches des appareils DEFA de ce type.
+- Groupe repliable « Régimes de vol — profil ↔ cartographie » : Badin, vario, régime moteur et débit par phase, comparés à la cartographie moteur. Il contient aussi le champ « SimBrief Airframe Internal ID » et les liens vers les fiches des appareils de ce type.
 
 « Épingler » garde le bloc entier quand il suit la page ; sinon, il se replie. Sous le bloc, un panneau par courbe donne les optimums, les limites (plafond, niveau demandé) et une aide à la lecture. Une colonne d'instruments reprend Badin, vario, altitude, carburant et temps de vol.
 

@@ -1,4 +1,4 @@
-"""Référence DEFA anonymisée (committée) à partir du journal des vols DEFA (non committé).
+"""Référence anonymisée (committée) à partir du journal des vols (non committé).
 
 Usage : python tools/defa_reference.py "Stub/Log des vols.html"  [--dry-run]
 
@@ -10,7 +10,7 @@ Paramétrage › Bases de données) — seulement des informations agrégées :
   aircraft : immatriculation, type, variante, fiche flotte, indicatifs utilisés,
              première / dernière activité, nombre de vols, dernier terrain connu (lastAd),
              terrain de rattachement (homeAd : départ le plus fréquent).
-Ni les vols eux-mêmes, ni les missions (le journal reste dans le navigateur : Base DEFA).
+Ni les vols eux-mêmes, ni les missions (le journal reste dans le navigateur : Base).
 Les entrées existantes sont complétées, jamais supprimées (base « lâche », non exhaustive) ;
 les champs modifiés à la main (homeAd, notes…) sont conservés.
 """
@@ -29,9 +29,9 @@ import datafile  # noqa: E402
 TARGET = ROOT / 'data' / 'references' / 'defa_reference.js'  # dépôt de données (v3)
 OVERRIDE = 'dataOverride:defaReference:v1'
 COMMENT = [
-    "Référence DEFA anonymisée : pilotes (trigrammes), appareils (immatriculation, type, indicatifs",
+    "Référence anonymisée : pilotes (trigrammes), appareils (immatriculation, type, indicatifs",
     "utilisés, dernier terrain connu, terrain de rattachement), sans les vols ni les missions.",
-    "Générée par tools/defa_reference.py depuis le journal des vols DEFA (non committé) ; complétée",
+    "Générée par tools/defa_reference.py depuis le journal des vols (non committé) ; complétée",
     "à la main dans Paramétrage › Bases de données. Base « lâche » : aide à la saisie, non exhaustive.",
 ]
 

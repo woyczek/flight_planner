@@ -11,7 +11,7 @@
   const VER = new URL(document.currentScript?.src || location.href).search; // version des images (celle de ce script)
   const K = window.RepositoryKit; // utilitaires communs (shared/kit.js)
   const T = {
-    sub: ['DEFA Virtual — design, icônes, barre latérale et couleurs, pour toutes les pages de la suite', 'DEFA Virtual — design, icons, side bar and colours, for every page of the suite', 'DEFA Virtual — Design, Symbole, Seitenleiste und Farben für alle Seiten der Suite', 'DEFA Virtual — diseño, iconos, barra lateral y colores, para todas las páginas'],
+    sub: ['SO Group Virtual — design, icônes, barre latérale et couleurs, pour toutes les pages de la suite', 'SO Group Virtual — design, icons, side bar and colours, for every page of the suite', 'SO Group Virtual — Design, Symbole, Seitenleiste und Farben für alle Seiten der Suite', 'SO Group Virtual — diseño, iconos, barra lateral y colores, para todas las páginas'],
     design: ['Design', 'Design', 'Design', 'Diseño'],
     designSub: ['La forme des pages : arrondis, densité, titres, barre latérale. Cabinet, Durci et Aqua ajoutent leurs matières (cuir, bois, laiton, acier, verre) ; les couleurs d’information restent celles du thème.', 'The shape of the pages: corners, density, titles, side bar. Cabinet, Rugged and Aqua add their materials (leather, wood, brass, steel, glass); information colours stay those of the theme.', 'Die Form der Seiten: Ecken, Dichte, Titel, Seitenleiste. Kabinett, Robust und Aqua bringen eigene Materialien (Leder, Holz, Messing, Stahl, Glas); Informationsfarben bleiben die des Themas.', 'La forma de las páginas: esquinas, densidad, títulos, barra lateral. Gabinete, Robusto y Aqua añaden sus materiales (cuero, madera, latón, acero, vidrio); los colores de información siguen siendo los del tema.'],
     charts: ['Graphiques', 'Charts', 'Diagramme', 'Gráficos'],
@@ -94,7 +94,7 @@
     landing: ['Atterrissages', 'Landings', 'Landungen', 'Aterrizajes'],
     sia: ['Missions SIA (générateur, studio)', 'SIA missions (generator, studio)', 'SIA-Missionen (Generator, Studio)', 'Misiones SIA (generador, estudio)'],
     cpco: ['Centre (CPCO : générateur, studio, registre)', 'Centre (CPCO: generator, studio, registry)', 'Zentrum (CPCO: Generator, Studio, Register)', 'Centro (CPCO: generador, estudio, registro)'],
-    core: ['CR DEFA (pages communes)', 'DEFA reports (common pages)', 'DEFA-Berichte (gemeinsame Seiten)', 'Informes DEFA (páginas comunes)']
+    core: ['CR (pages communes)', 'Reports (common pages)', 'Berichte (gemeinsame Seiten)', 'Informes (páginas comunes)']
   };
   const APPS = ['flight', 'landing', 'cpco', 'core'];
   const nav = () => window.RepositoryNav,

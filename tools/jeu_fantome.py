@@ -10,11 +10,11 @@ Options : --week AAAA-MM-JJ (lundi ; défaut : semaine en cours), --pilots N (d�
 
 Écrit, marqué `phantom: true` (et `by: FANTOME`) :
 - data/disponibilites/<TRI>.json : déclaration de la semaine (grille horaire UTC, codes de la légende ODV), appareils
-  (types de la référence DEFA du pilote), simulateurs ; pilotes de la référence DEFA qui n'ont pas de déclaration
+  (types de la référence du pilote), simulateurs ; pilotes de la référence qui n'ont pas de déclaration
   réelle (un fichier non fantôme n'est jamais touché) ; index _index.json refait d'après le dossier ;
 - data/missions/<dossier>/affectations.yaml, data/missions/affectations.json (index), affectations_log.json
   (journal) : missions du registre qui ont un dossier et ne sont pas encore affectées, confiées à des pilotes fantômes
-  disponibles à l'heure du décollage et qui connaissent le type d'appareil (flotte DEFA), parfois en patrouille.
+  disponibles à l'heure du décollage et qui connaissent le type d'appareil (flotte), parfois en patrouille.
 Formats : ceux de shared/assignments.js (saveAvailability, writeAssignment, logEntries). Dépend de PyYAML.
 """
 import argparse

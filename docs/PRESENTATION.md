@@ -1,4 +1,4 @@
-# X-Plane Web Suite — DEFA Virtual
+# X-Plane Web Suite — SO Group Virtual
 
 *[Sommaire de la documentation](README.md) · [English version](PRESENTATION_en.md)*
 
@@ -17,18 +17,18 @@ et dans le navigateur.
 
 | Application | Pages | Rôle | Documentation |
 |---|---|---|---|
-| **CR DEFA** (Mission Report Core) | `apps/cr/` — ☰ › Reporting missions, Nouveau compte rendu, Paramétrage | Comptes rendus de mission de 15 familles, registre unique, reporting et graphiques, bases de la flotte et des indicatifs, envoi des CR | [Tutoriel](TUTORIAL.md) · [Manuel d'exploitation](MANUEL_EXPLOITATION.md) · [Notes de conception](technique/mission_report_core_audit.md) |
+| **CR** (Mission Report Core) | `apps/cr/` — ☰ › Reporting missions, Nouveau compte rendu, Paramétrage | Comptes rendus de mission de 15 familles, registre unique, reporting et graphiques, bases de la flotte et des indicatifs, envoi des CR | [Tutoriel](TUTORIAL.md) · [Manuel d'exploitation](MANUEL_EXPLOITATION.md) · [Notes de conception](technique/mission_report_core_audit.md) |
 | **Landing Performance Dashboard** | `apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html` | Analyse des atterrissages (score, FPM, G) à partir des journaux CSV / LOG, tendances, filtres | [docs/LANDING_DASHBOARD.md](LANDING_DASHBOARD.md) · [mise à jour de la base d'aéronefs](LANDING_DASHBOARD.md) |
 | **Flight Performance & Fuel Planner** | `apps/planner/flight_performance_planner.html` | Profils de performance par avion, devis carburant, altitude optimale, calibration SimBrief, échange Little Navmap | [docs/FLIGHT_PLANNER.md](FLIGHT_PLANNER.md) |
-| **Missions SIA** | `apps/cpco/` — ☰ › Centre — Générateur de mission, Centre — Studio cartographique | Brief de mission (textes, points, PDF final) et cartes PNG / SVG depuis les données AIRAC du SIA : zones, MORA, quadrillage, hippodromes de ravitaillement, fonds OSM ; passerelle vers un CR DEFA pré-rempli | [docs/SIA_MISSIONS.md](SIA_MISSIONS.md) |
+| **Missions SIA** | `apps/cpco/` — ☰ › Centre — Générateur de mission, Centre — Studio cartographique | Brief de mission (textes, points, PDF final) et cartes PNG / SVG depuis les données AIRAC du SIA : zones, MORA, quadrillage, hippodromes de ravitaillement, fonds OSM ; passerelle vers un CR pré-rempli | [docs/SIA_MISSIONS.md](SIA_MISSIONS.md) |
 | **Framework commun** | `config/repository_tree`, `shared/`, `AircraftDB/`, `tools/` | Bandeau et menu ☰, langues, blocs, période et zoom (TimePeriod), graphiques, tableaux, profil pilote, données locales, bases d'aéronefs | [docs/FRAMEWORK.md](technique/FRAMEWORK.md) |
 
 Les applications se parlent par le framework : même profil pilote (IVAO, VATSIM,
 SimBrief), même composant de période (zoom par glisser sur les graphiques, boutons ◀ 🔍− ▶
 dans l'en-tête), même base de types d'aéronefs ; le Planner reprend les avions du dernier
-fichier du Landing Dashboard ; une mission SIA ouvre un CR DEFA pré-rempli.
+fichier du Landing Dashboard ; une mission SIA ouvre un CR pré-rempli.
 
-### Mission Report Core — l’application « CR DEFA »
+### Mission Report Core — l’application « CR »
 
 Toutes les pages et tous les registres de l’application sont dans le dossier `apps/cr/` ;
 le code commun reste dans `shared/`, `AircraftDB/` et `assets/`.
@@ -48,7 +48,7 @@ Points forts :
   champs et événements propres à chaque famille ; les champs sans objet sont masqués.
 - **Aide à la saisie** : valeurs déjà saisies proposées dans chaque champ ; immatriculation,
   indicatif, type OACI et variante se filtrent mutuellement et se complètent quand il ne
-  reste qu'une possibilité ; flotte DEFA (205 appareils) ; indicatif = série + numéro, avec
+  reste qu'une possibilité ; flotte (205 appareils) ; indicatif = série + numéro, avec
   sa forme plan de vol OACI de 7 caractères (DRAGON76 ↔ DRAGO76, PELICAN31 ↔ PCAN31) et
   l'exploitant OACI (OPR/).
 - **Import du plan de vol déposé** : SimBrief, IVAO (vol en cours), VATSIM (en cours ou
@@ -58,7 +58,7 @@ Points forts :
   `RMK CALC OPEN-METEO` ; METAR réel VATSIM pour un vol du jour, dans l'heure), lever /
   coucher du soleil (Open-Meteo, calcul local à défaut) et phase jour / nuit. Seuls les
   champs vides ou remplis automatiquement sont écrits.
-- **Base DEFA** (Paramétrage) : journal des vols réalisés chargé à la demande (page « Log des
+- **Base** (Paramétrage) : journal des vols réalisés chargé à la demande (page « Log des
   vols » enregistrée), distinct du registre ; appareils, indicatifs, trigrammes et terrains
   proposés dans les CR ; analyse des séries d'indicatifs (≈ 60 séries relevées sur 2025-2026
   dans la table de correspondance).
@@ -69,7 +69,7 @@ Points forts :
 - **Suivi réseau en direct** (IVAO / VATSIM) : mise en route, décollage, atterrissage, fin de
   mission ; import de l'historique VATSIM.
 - **Registre unique** : toutes les familles dans un seul fichier YAML (`data/cr/missions.yaml`),
-  écrit dans le dossier `CR DEFA` autorisé une fois (Chrome / Edge), export CSV simplifié ;
+  écrit dans le dossier `CR` autorisé une fois (Chrome / Edge), export CSV simplifié ;
   anciens registres par famille repris automatiquement. Import des anciens registres CSV
   HEMS / GAAR.
 - **Champs de texte simple en majuscules** (indicatifs, terrains, points tournants,

@@ -64,7 +64,7 @@ if os.path.exists(OUT):
             fleet.append(entry); known[r] = entry; added += 1
 
 text = datafile.render(
-    ["Flotte DEFA Virtual : base commune des appareils connus (CR HEMS / FIRE, Mission Report Core).",
+    ["Flotte SO Group Virtual : base commune des appareils connus (CR HEMS / FIRE, Mission Report Core).",
      "Source : page « Flotte virtuelle » de flotte.defa-virtual.fr (python AircraftDB/update_fleet.py Flotte.html),",
      "complétée à la main ou par la page Paramétrage. Colonnes : opérateur, type OACI, variante,",
      "immatriculation, code (numéro tactique), numéro, indicatifs, base, opérationnel."],
