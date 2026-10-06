@@ -1162,8 +1162,9 @@
           const pl = planeOf(r.registration),
             dep = r.dep || x.dep; // opération : départ de la mission du poste
           // départ sans terrain (mission en mer, sur un objectif) : l'appareil part de sa base, pas de convoyage
-          return pl && dep.code && dep.pos && pl.base && !(await atDeparture(pl.base, dep)) ? await M.ferryOf({
-            base: pl.base,
+          const at = adOf(pl);
+          return pl && dep.code && dep.pos && at && !(await atDeparture(at, dep)) ? await M.ferryOf({
+            base: at,
             departure: dep.code,
             to: dep.pos,
             type: pl.type,
@@ -1242,14 +1243,18 @@
     /** Proposition : missions des options (proposition d'abord), postes préremplis (pilote proposé, premier appareil libre). */
     /** L'appareil basé à base est-il au départ (même terrain, ou base à moins de 3 NM d'un départ donné par sa position) ? */
     const atDeparture = async (base, dep) => !!base && ((!!dep.code && base === dep.code) || (!!dep.pos && (q => !!q && M.geo.nm(q, dep.pos) < 3)(await M.coordsOf(base))));
+    /** Terrain actuel d'un appareil (site ou CR issu d'un ordre de mission : shared/aircraft_positions.js), sinon la base. */
+    const adOf = f => window.AircraftPositions?.adOf?.(f) || f?.base || '';
     /** Appareils compatibles d'un poste, du plus proche au plus lointain du terrain de départ : { f, nm, min }
      *  (min : convoyage en minutes, 0 sur place, null distance inconnue). */
     async function planeList(post, dep) {
+      await window.AircraftPositions?.load?.();
       const out = await Promise.all(M.planesFor(post, dep.code).map(async f => {
-        const from = f.base ? await M.coordsOf(f.base) : null,
-          here = await atDeparture(f.base, dep),
-          ferry = f.base && !here ? await M.ferryOf({
-            base: f.base,
+        const at = adOf(f),
+          from = at ? await M.coordsOf(at) : null,
+          here = await atDeparture(at, dep),
+          ferry = at && !here ? await M.ferryOf({
+            base: at,
             departure: dep.code,
             to: dep.pos,
             type: f.type
@@ -1258,7 +1263,7 @@
           f,
           nm: here ? 0 : dep.pos && from ? M.geo.nm(from, dep.pos) : null,
           min: here ? 0 : ferry?.minutes ?? null,
-          why: here ? '' : !f.base ? L(['base non renseignée dans la flotte', 'base not set in the fleet', 'Basis in der Flotte nicht angegeben', 'base sin indicar en la flota']) : !dep.pos ? L(['départ sans position', 'departure without position', 'Abflug ohne Position', 'salida sin posición']) : !from ? L(['position de {b} inconnue (base SIA à charger)', '{b} position unknown (SIA database to load)', 'Position von {b} unbekannt (SIA-Datenbank laden)', 'posición de {b} desconocida (cargar la base SIA)'], { b: f.base }) : ''
+          why: here ? '' : !at ? L(['base non renseignée dans la flotte', 'base not set in the fleet', 'Basis in der Flotte nicht angegeben', 'base sin indicar en la flota']) : !dep.pos ? L(['départ sans position', 'departure without position', 'Abflug ohne Position', 'salida sin posición']) : !from ? L(['position de {b} inconnue (base SIA à charger)', '{b} position unknown (SIA database to load)', 'Position von {b} unbekannt (SIA-Datenbank laden)', 'posición de {b} desconocida (cargar la base SIA)'], { b: f.base }) : ''
         };
       }));
       return out.sort((a, b) => (a.nm ?? 1e9) - (b.nm ?? 1e9) || (b.f.operational !== false) - (a.f.operational !== false) || a.f.registration.localeCompare(b.f.registration));
@@ -1429,7 +1434,7 @@
           });
         // appareil déjà pris par un autre poste coché (équipier, autre mission) ou engagé ailleurs : grisé
         const taken = reg => reg !== r.registration && (busy.has(reg) || on.some(y => y.rows.some(o => o !== r && o.registration === reg)));
-        return `<option value="">${L(['— appareil —', '— aircraft —', '— Luftfahrzeug —', '— aeronave —'])}</option>${x.planes[i].map(({ f, min, why }) => `<option value="${esc(f.registration)}"${f.registration === r.registration ? ' selected' : ''}${taken(f.registration) ? ' disabled' : ''}>${esc(f.registration)} · ${esc(f.variant || f.type)} · ${esc(f.base || '?')} — ${away(min, why)}${f.operational === false ? L([' — indisponible', ' — unavailable', ' — nicht verfügbar', ' — no disponible']) : ''}${busy.has(f.registration) ? L([' — engagé', ' — engaged', ' — eingesetzt', ' — asignada']) : taken(f.registration) ? L([' — déjà affecté', ' — already assigned', ' — bereits zugewiesen', ' — ya asignada']) : ''}</option>`).join('')}`;
+        return `<option value="">${L(['— appareil —', '— aircraft —', '— Luftfahrzeug —', '— aeronave —'])}</option>${x.planes[i].map(({ f, min, why }) => `<option value="${esc(f.registration)}"${f.registration === r.registration ? ' selected' : ''}${taken(f.registration) ? ' disabled' : ''}>${esc(f.registration)} · ${esc(f.variant || f.type)} · ${esc(adOf(f) || '?')} — ${away(min, why)}${f.operational === false ? L([' — indisponible', ' — unavailable', ' — nicht verfügbar', ' — no disponible']) : ''}${busy.has(f.registration) ? L([' — engagé', ' — engaged', ' — eingesetzt', ' — asignada']) : taken(f.registration) ? L([' — déjà affecté', ' — already assigned', ' — bereits zugewiesen', ' — ya asignada']) : ''}</option>`).join('')}`;
       };
       /** Convoyage d'un poste : trajet, heure, convoyeur (pilotes libres avant le créneau, ou le pilote : mission décalée). */
       const ferryLine = r => {

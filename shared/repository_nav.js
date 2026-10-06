@@ -1137,8 +1137,12 @@
     store.src = new URL("browser_store.js?v=1e959067", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
-    assign.src = new URL("assignments.js?v=f83cafc0", script.src).href;
+    assign.src = new URL("assignments.js?v=cbeb62aa", script.src).href;
     document.head.append(assign);
+    /* Terrain actuel des appareils : site (emplacement) ou CR issu d'un ordre de mission (après assignments.js) */
+    const positions = document.createElement("script");
+    positions.src = new URL("aircraft_positions.js?v=2d298903", script.src).href;
+    document.head.append(positions);
     /* Utilisateurs et droits : mode develop / production, connexion, usurpation (bandeau sur toutes les pages) */
     const users = document.createElement("script");
     users.src = new URL("users.js?v=3d869bdc", script.src).href;

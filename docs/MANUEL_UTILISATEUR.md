@@ -340,7 +340,7 @@ C'est une information seulement : le calcul n'est pas limité. Le réglage est g
 
 ### Mes appareils (reporting)
 
-Les appareils que vous avez pilotés ou reportés : ceux des comptes rendus où votre trigramme figure dans l'équipage (l'appareil de votre poste quand le CR le précise), avec type, variante, indicatifs, exploitant, nombre de vols et dernier vol. La coche grisée « Flotte DEFA » indique si l'appareil appartient à la flotte (cochée) ou non (décochée, indicatif compris) ; elle ne se modifie pas ici. La liste complète, avec la case « personnel », est dans Paramètres › Centre › Flotte (réservée au Centre).
+Les appareils que vous avez pilotés ou reportés : ceux des comptes rendus où votre trigramme figure dans l'équipage, ou que vous avez rédigés (CR enregistrés depuis cette version) (l'appareil de votre poste quand le CR le précise), avec type, variante, indicatifs, exploitant, nombre de vols et dernier vol. La coche grisée « Flotte DEFA » indique si l'appareil appartient à la flotte (cochée) ou non (décochée, indicatif compris) ; elle ne se modifie pas ici. La liste complète, avec la case « personnel », est dans Paramètres › Centre › Flotte (réservée au Centre). En tête, le décompte du journal : CR au total, CR à vous, CR sans équipage saisi (ils ne comptent pour personne).
 
 ## Apparence
 <!-- page: apps/settings/apparence.html -->
@@ -631,6 +631,7 @@ Une carte par appareil engagé ; il y en a toujours au moins un. Le « + » du t
 | « ⟲ Effacer » | vide l'appareil pour relancer la recherche (mauvais appareil ou mauvais type) |
 | « Exploitant OACI (OPR/, case 18) » | déduit de l'organisme ou de l'appareil connu |
 | « Base de départ », « Base de retour », masses, « Endurance disponible (min) », « Configuration mission » | à compléter si utile |
+| « Terrain d'atterrissage réel (OACI) » | terrain où l'appareil s'est vraiment posé, jamais prérempli ; dans un CR ouvert depuis « Mes missions » (ordre de mission ou de convoyage), il place l'appareil à ce terrain pour les convoyages suivants. Un CR hors ordre de mission ne déplace pas l'appareil |
 | « Équipements / capacités techniques de l'appareil » | replié ; repris de l'appareil connu ou du plan de vol |
 
 Les champs se filtrent entre eux (voilure, type, série). Choisir un autre appareil remplace ce qui avait

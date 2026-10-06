@@ -17,6 +17,7 @@
     callsignNumber: '',
     callsignFpl: '',
     operatorCode: '',
+    landingAd: '', // terrain d'atterrissage réel (OACI), jamais prérempli : déplace l'appareil si le CR vient d'un ordre de mission
     baseDeparture: '',
     baseReturn: '',
     massTakeoff: null,
@@ -42,7 +43,8 @@
       classification: 'UNCLASSIFIED',
       context: 'EXERCISE',
       operationName: '',
-      orderRef: ''
+      orderRef: '',
+      reportedBy: '' // trigramme de qui a rédigé le CR (posé à l'enregistrement)
     },
     organisation: {
       organisation: '',

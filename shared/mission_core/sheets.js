@@ -315,10 +315,12 @@
       };
     const typeInfo = window.MissionAircraft?.lookupType?.(known.type) || (window.AIRCRAFT_DB || {})[key(known.type)] || null;
     const all = (await missions()).filter(x => (x.m.aircraft || []).some(a => key(a.registration) === reg)).sort((a, b) => String(b.m.metadata?.date).localeCompare(String(a.m.metadata?.date)));
-    // terrain actuel : il ne change que par la mise à jour depuis le site (journal des vols : lastAd) ou par un CR issu
-    // d'un ordre de mission avec un vrai terrain d'atterrissage — lien CR ↔ ordre de mission pas encore enregistré :
-    // un CR quelconque (hors ordre de mission, landing report) ne déplace pas l'appareil
-    const nowAt = known.lastAd || known.homeAd || '';
+    // terrain actuel : il ne change que par la mise à jour depuis le site (emplacement de la page Flotte, sinon le journal
+    // des vols : lastAd) ou par un CR issu d'un ordre de mission avec un terrain d'atterrissage réel
+    // (shared/aircraft_positions.js) ; un CR quelconque (hors ordre de mission, landing report) ne déplace pas l'appareil
+    const fleetRow = (window.DEFA_FLEET || []).find(f => key(f.registration) === reg);
+    if (fleetRow) await window.AircraftPositions?.load?.();
+    const nowAt = (fleetRow && window.AircraftPositions?.adOf?.(fleetRow)) || known.lastAd || known.homeAd || '';
     const flight = all.reduce((a, x) => a + (x.s.flightMinutes || 0), 0),
       block = all.reduce((a, x) => a + (x.s.blockMinutes || 0), 0);
     const callsigns = new Map();

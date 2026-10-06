@@ -340,7 +340,7 @@ Es solo una información: el cálculo no se limita. El ajuste se guarda en este 
 
 ### Mis aeronaves (reporting)
 
-Las aeronaves que ha pilotado o reportado: las de los informes con su trigrama en la tripulación (la aeronave de su puesto cuando el informe lo indica), con tipo, variante, indicativos, operador, número de vuelos y último vuelo. La casilla gris «Flota DEFA» indica si la aeronave pertenece a la flota (marcada) o no (desmarcada, indicativo incluido); no se modifica aquí. La lista completa, con la casilla «personal», está en Ajustes › Centro › Flota (reservada al Centro).
+Las aeronaves que ha pilotado o reportado: las de los informes con su trigrama en la tripulación, o que usted redactó (informes guardados desde esta versión) (la aeronave de su puesto cuando el informe lo indica), con tipo, variante, indicativos, operador, número de vuelos y último vuelo. La casilla gris «Flota DEFA» indica si la aeronave pertenece a la flota (marcada) o no (desmarcada, indicativo incluido); no se modifica aquí. La lista completa, con la casilla «personal», está en Ajustes › Centro › Flota (reservada al Centro). Arriba, el recuento del diario: informes en total, sus informes, informes sin tripulación introducida (no cuentan para nadie).
 
 ## Apariencia
 <!-- page: apps/settings/apparence.html -->
@@ -631,6 +631,7 @@ Una tarjeta por aeronave desplegada; siempre hay al menos una. El «+» del tít
 | «⟲ Borrar» | vacía la aeronave para volver a buscar (aeronave o tipo equivocado) |
 | «Operador OACI (OPR/, casilla 18)» | deducido del organismo o de la aeronave conocida |
 | «Base de salida», «Base de regreso», masas, «Autonomía disponible (min)», «Configuración de misión» | completar si es útil |
+| «Aeródromo de aterrizaje real (OACI)» | aeródromo donde la aeronave aterrizó realmente, nunca prerrellenado; en un informe abierto desde «Mis misiones» (orden de misión o de traslado), sitúa la aeronave en ese aeródromo para los traslados siguientes. Un informe fuera de orden de misión no desplaza la aeronave |
 | «Equipamiento / capacidades técnicas de la aeronave» | plegado; tomado de la aeronave conocida o del plan de vuelo |
 
 Los campos se filtran entre sí (tipo de ala, tipo, serie). Elegir otra aeronave sustituye lo que se había

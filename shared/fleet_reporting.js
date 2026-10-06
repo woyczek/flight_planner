@@ -40,7 +40,8 @@
   /** Le trigramme figure-t-il dans un nom d'équipage (« BRV », « BRV — Jean B. ») ? */
   const isTri = (name, tri) => new RegExp(`^${tri}(?![A-Z0-9])`).test(String(name || '').toUpperCase().trim());
   /** Appareils du journal des missions, regroupés par immatriculation (les sans immatriculation : par indicatif) ;
-   *  pilot : seulement les CR où ce trigramme est dans l'équipage (l'appareil de son poste quand il est précisé). */
+   *  pilot : seulement les CR où ce trigramme est dans l'équipage (l'appareil de son poste quand il est précisé) ou
+   *  qu'il a rédigés (metadata.reportedBy) ; liste.stats = { missions, mine, noCrew }. */
   async function aircraft({
     pilot = ''
   } = {}) {
@@ -50,14 +51,23 @@
     try {
       await L.load();
     } catch {}
-    const by = new Map();
+    const by = new Map(),
+      stats = {
+        missions: 0,
+        mine: 0,
+        noCrew: 0
+      };
     for (const m of L.store?.missions || []) {
       const date = String(m?.metadata?.date || '').slice(0, 10);
+      stats.missions++;
+      if (!(m?.crew || []).some(c => c.name)) stats.noCrew++;
       let mine = null; // index des appareils du pilote (null : tous)
       if (tri) {
-        const seats = (m?.crew || []).filter(c => isTri(c.name, tri));
-        if (!seats.length) continue;
-        mine = seats.some(c => !+c.aircraft) ? null : new Set(seats.map(c => +c.aircraft - 1));
+        const seats = (m?.crew || []).filter(c => isTri(c.name, tri)),
+          wrote = String(m?.metadata?.reportedBy || '').toUpperCase() === tri;
+        if (!seats.length && !wrote) continue;
+        mine = !seats.length || seats.some(c => !+c.aircraft) ? null : new Set(seats.map(c => +c.aircraft - 1));
+        stats.mine++;
       }
       (m?.aircraft || []).forEach((a, i) => {
         if (mine && !mine.has(i)) return;
@@ -88,7 +98,9 @@
         if (date && date > x.last) x.last = date;
       });
     }
-    return [...by.values()].sort((a, b) => (b.last || '').localeCompare(a.last || '') || a.key.localeCompare(b.key));
+    const list = [...by.values()].sort((a, b) => (b.last || '').localeCompare(a.last || '') || a.key.localeCompare(b.key));
+    list.stats = stats;
+    return list;
   }
   /** Fichier des appareils individuels (reporting hors flotte), au format des fichiers de données. */
   async function personalFile(render, rows) {
@@ -222,7 +234,9 @@
           number: '',
           callsigns: [...a.callsigns],
           base: '', // terrain : mise à jour depuis le site ou CR issu d'un ordre de mission
-          operational: true
+          operational: true,
+          location: '',
+          locationAt: ''
         });
         else if (box.checked && i >= 0) rows.splice(i, 1);
         onChange();
@@ -258,8 +272,10 @@
     const isFleet = a => !!a.registration && fleet.has(keyOf(a.registration));
     const head = `<thead><tr><th>${esc(t(['Flotte DEFA', 'DEFA fleet', 'DEFA-Flotte', 'Flota DEFA']))}</th><th>${esc(t(['Immatriculation', 'Registration', 'Kennzeichen', 'Matrícula']))}</th><th>${esc(t(['Type', 'Type', 'Typ', 'Tipo']))}</th><th>${esc(t(['Variante', 'Variant', 'Variante', 'Variante']))}</th><th>${esc(t(['Indicatifs', 'Callsigns', 'Rufzeichen', 'Indicativos']))}</th><th>${esc(t(['Exploitant', 'Operator', 'Betreiber', 'Operador']))}</th><th>${esc(t(['Vols', 'Flights', 'Flüge', 'Vuelos']))}</th><th>${esc(t(['Dernier vol', 'Last flight', 'Letzter Flug', 'Último vuelo']))}</th></tr></thead>`;
     const row = a => `<tr><td><input type="checkbox" disabled${isFleet(a) ? ' checked' : ''} title="${esc(isFleet(a) ? t(['appareil de la flotte DEFA', 'DEFA fleet aircraft', 'Luftfahrzeug der DEFA-Flotte', 'aeronave de la flota DEFA']) : t(['appareil hors flotte DEFA', 'aircraft outside the DEFA fleet', 'Luftfahrzeug außerhalb der DEFA-Flotte', 'aeronave fuera de la flota DEFA']))}"></td><td><b>${esc(a.registration || '—')}</b></td><td>${esc(a.type || '?')}</td><td>${esc(a.variant || '')}</td><td>${esc(a.callsigns.join(', '))}</td><td>${esc(a.operator || '')}</td><td class="num">${a.flights}</td><td>${esc(a.last || '')}</td></tr>`;
-    const n = list.filter(isFleet).length;
-    host.innerHTML = `<p class="fr-note">${esc(tf(['{t} : {a} appareil(s) dans vos CR — {f} de la flotte DEFA, {o} hors flotte. La liste complète et la case « personnel » : Paramètres › Centre › Flotte.', '{t}: {a} aircraft in your reports — {f} from the DEFA fleet, {o} outside it. Full list and “personal” box: Settings › Centre › Fleet.', '{t}: {a} Luftfahrzeug(e) in Ihren Berichten — {f} aus der DEFA-Flotte, {o} außerhalb. Vollständige Liste und Kästchen „Privat“: Einstellungen › Zentrum › Flotte.', '{t}: {a} aeronave(s) en sus informes — {f} de la flota DEFA, {o} fuera de ella. Lista completa y casilla «personal»: Ajustes › Centro › Flota.'], { t: tri, a: list.length, f: n, o: list.length - n }))}</p>
+    const n = list.filter(isFleet).length,
+      st = list.stats || {};
+    host.innerHTML = `<p class="fr-note">${esc(tf(['Journal des missions : {m} CR, dont {y} à vous (votre trigramme dans l’équipage, ou rédigés par vous) ; {c} CR sans équipage saisi ne comptent pour personne. Les CR enregistrés avant cette version ne gardent pas leur rédacteur : seul l’équipage compte pour eux.', 'Mission log: {m} reports, {y} of them yours (your trigram in the crew, or written by you); {c} reports with no crew entered count for nobody. Reports saved before this version do not keep their author: only the crew counts for them.', 'Missionsjournal: {m} Berichte, davon {y} Ihre (Ihr Kürzel in der Besatzung oder von Ihnen verfasst); {c} Berichte ohne erfasste Besatzung zählen für niemanden. Vor dieser Version gespeicherte Berichte behalten ihren Verfasser nicht: Für sie zählt nur die Besatzung.', 'Diario de misiones: {m} informes, {y} suyos (su trigrama en la tripulación, o redactados por usted); {c} informes sin tripulación introducida no cuentan para nadie. Los informes guardados antes de esta versión no conservan su autor: para ellos solo cuenta la tripulación.'], { m: st.missions || 0, y: st.mine || 0, c: st.noCrew || 0 }))}</p>
+      <p class="fr-note">${esc(tf(['{t} : {a} appareil(s) dans vos CR — {f} de la flotte DEFA, {o} hors flotte. La liste complète et la case « personnel » : Paramètres › Centre › Flotte.', '{t}: {a} aircraft in your reports — {f} from the DEFA fleet, {o} outside it. Full list and “personal” box: Settings › Centre › Fleet.', '{t}: {a} Luftfahrzeug(e) in Ihren Berichten — {f} aus der DEFA-Flotte, {o} außerhalb. Vollständige Liste und Kästchen „Privat“: Einstellungen › Zentrum › Flotte.', '{t}: {a} aeronave(s) en sus informes — {f} de la flota DEFA, {o} fuera de ella. Lista completa y casilla «personal»: Ajustes › Centro › Flota.'], { t: tri, a: list.length, f: n, o: list.length - n }))}</p>
       ${list.length ? `<div class="fr-scroll"><table>${head}<tbody>${list.map(row).join('')}</tbody></table></div>` : `<p class="fr-note">${esc(t(['Aucun CR avec votre trigramme dans l’équipage.', 'No report with your trigram in the crew.', 'Kein Bericht mit Ihrem Kürzel in der Besatzung.', 'Ningún informe con su trigrama en la tripulación.']))}</p>`}`;
     window.AppFramework?.refresh?.(host);
   }

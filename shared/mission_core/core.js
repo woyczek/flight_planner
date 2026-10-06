@@ -1201,7 +1201,13 @@
         };
         history.replaceState(null, '', `?edit=${index}&id=${encodeURIComponent(mission.metadata.missionId)}`);
       }
+      // rédacteur du CR (trigramme connecté), gardé à la première écriture : « Mes appareils » de Mon profil
+      if (!mission.metadata.reportedBy) mission.metadata.reportedBy = window.SuiteUsers?.effective?.() || window.MissionAssignments?.trigram?.() || '';
       A.recordMission(mission);
+      // CR issu d'un ordre de mission : appareils au terrain d'atterrissage réel saisi (shared/aircraft_positions.js)
+      Promise.resolve(window.AircraftPositions?.recordFromCr?.(mission)).then(n => {
+        if (n) window.AppFramework?.notify?.(window.RepositoryKit.t(L('Terrain actuel de l’appareil mis à jour (terrain d’atterrissage réel, ordre de mission).', 'Aircraft current aerodrome updated (actual landing aerodrome, mission order).', 'Aktueller Flugplatz des Luftfahrzeugs aktualisiert (tatsächlicher Landeflugplatz, Missionsbefehl).', 'Aeródromo actual de la aeronave actualizado (aeródromo de aterrizaje real, orden de misión).')), 'ok');
+      }).catch(() => {});
       await persist('stored');
       dirty = false;
       modeUi();
@@ -1560,6 +1566,15 @@
     m.tasking.instructions = y.detailed_description || y.description_detaillee || '';
     m.navigation.dep = icao(y.origin);
     m.navigation.arr = icao(y.destination) || m.navigation.dep;
+    // CR ouvert depuis un ordre de mission (« Mes missions ») : référence gardée (déplacement de l'appareil au terrain
+    // d'atterrissage réel) ; ordre de convoyage : départ et arrivée du convoyage
+    if (y.__order?.ref) {
+      m.metadata.orderRef = String(y.__order.ref);
+      if (y.__order.role === 'convoyage') {
+        if (y.__order.dep) m.navigation.dep = String(y.__order.dep).toUpperCase();
+        if (y.__order.arr) m.navigation.arr = String(y.__order.arr).toUpperCase();
+      }
+    }
     const points = y.turning_points || [];
     m.navigation.waypoints = points.map(p => p.name || p.id).join(' ');
     m.navigation.coordinates = [y.origin, ...points, ...(y.rendezvous || []), y.target, y.destination].map(place).filter(Boolean).filter((v, i, all) => all.indexOf(v) === i).join('\n');

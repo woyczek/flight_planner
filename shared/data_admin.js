@@ -279,7 +279,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       };
     const row = (operator, cells) => {
       if (cells.length < 9) return;
-      const [name, registration, code, number, callsign, base, , , operational] = cells.map(c => String(c).replace(/\s+/g, ' ').trim());
+      const [name, registration, code, number, callsign, base, location, , operational] = cells.map(c => String(c).replace(/\s+/g, ' ').trim());
       if (!name || !registration || FLEET_NOISE.test(name)) return;
       out.push({
         operator: FLEET_OPERATORS[operator] || operator,
@@ -290,7 +290,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         number: blank(number),
         callsigns: blank(callsign).toUpperCase().split('/').filter(c => c && !c.includes(' ')),
         base: blank(base).toUpperCase(),
-        operational: /^oui/i.test(operational)
+        operational: /^oui/i.test(operational),
+        location: blank(location).toUpperCase() // emplacement actuel sur le site (terrain actuel : aircraft_positions.js)
       });
     };
     let operator = '';
@@ -321,6 +322,11 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       if (known.has(r)) {
         const a = known.get(r);
         for (const c of [].concat(old.callsigns || [])) if (c && !a.callsigns.includes(c)) a.callsigns.push(c);
+        // même emplacement : sa date est gardée (l'appareil n'a pas bougé sur le site) — toutes les lignes de
+        // l'immatriculation (une immatriculation peut figurer deux fois sur la page)
+        if (old.locationAt) page.forEach(x => {
+          if (x.registration === r && x.location === old.location) x.locationAt = old.locationAt;
+        });
         updated++;
       } else if (r) {
         page.push({
@@ -330,6 +336,10 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         kept++;
       }
     }
+    const stamp = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+    page.forEach(a => {
+      if (a.location && !a.locationAt) a.locationAt = stamp;
+    });
     return {
       rows: page,
       added: page.length - updated - kept,
@@ -420,7 +430,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     'de la série), role (indicatif de fonction : pas de choix automatique), generic (désignateur générique),',
     'telephony, note. operators : organisme → désignateur OACI (OPR/).'
   ];
-  const FLEET_COLS = ['operator', 'type', 'variant', 'registration', 'tacticalNumber', 'number', 'callsigns', 'base', 'operational'];
+  const FLEET_COLS = ['operator', 'type', 'variant', 'registration', 'tacticalNumber', 'number', 'callsigns', 'base', 'operational', 'location', 'locationAt'];
   const work = {};
 
   /** Copie de travail de chaque base éditable (flotte, indicatifs, types OACI, référence) : fichier ou modification locale plus récente. */
@@ -587,6 +597,10 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           key: 'operational',
           label: T('Opérationnel', 'Operational'),
           type: 'bool'
+        }, {
+          key: 'location',
+          label: T('Emplacement (site)', 'Location (website)'),
+          upper: true
         }],
         data: work.fleet.data.rows
       }],

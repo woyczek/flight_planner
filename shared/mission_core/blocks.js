@@ -167,6 +167,11 @@
           upper: true,
           pool: 'aerodrome'
         }),
+        // terrain réellement atteint, jamais prérempli : un CR issu d'un ordre de mission y place l'appareil
+        f('landingAd', L('Terrain d’atterrissage réel (OACI)', 'Actual landing aerodrome (ICAO)', 'Tatsächlicher Landeflugplatz (ICAO)', 'Aeródromo de aterrizaje real (OACI)'), 'text', {
+          upper: true,
+          pool: 'aerodrome'
+        }),
         f('massTakeoff', L('Masse au décollage (kg)', 'Take-off mass (kg)', 'Startmasse (kg)', 'Masa al despegue (kg)'), 'number'),
         f('massLanding', L('Masse à l’atterrissage (kg)', 'Landing mass (kg)', 'Landemasse (kg)', 'Masa al aterrizaje (kg)'), 'number', {
           hideFor: ['HEMS']
