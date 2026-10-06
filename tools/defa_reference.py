@@ -26,7 +26,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'AircraftDB'))
 import datafile  # noqa: E402
 
-TARGET = ROOT / 'data' / 'references' / 'defa_reference.js'  # dépôt de données (v3)
+# --out=CHEMIN : fichier lu et écrit (le lanceur y met son dossier de données, --data) ; sinon le dépôt de données (v3)
+_OUT = next((a.split('=', 1)[1] for a in sys.argv[1:] if a.startswith('--out=')), '')
+TARGET = Path(_OUT).resolve() if _OUT else ROOT / 'data' / 'references' / 'defa_reference.js'
 OVERRIDE = 'dataOverride:defaReference:v1'
 COMMENT = [
     "Référence anonymisée : pilotes (trigrammes), appareils (immatriculation, type, indicatifs",
@@ -110,7 +112,7 @@ def main():
         return 0
     text = datafile.render(COMMENT, data, OVERRIDE, 'window.DEFA_REFERENCE = { META, pilots: data.pilots, aircraft: data.aircraft, file: fileData };')
     TARGET.write_text(text, encoding='utf-8', newline='\n')
-    print('écrit', TARGET.relative_to(ROOT))
+    print('écrit', TARGET.relative_to(ROOT) if TARGET.is_relative_to(ROOT) else TARGET)
     return 0
 
 

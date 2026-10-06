@@ -844,7 +844,7 @@ This database (`data/references/aircraft_fleet.js`) lists the aircraft offered i
 - An aircraft from the page replaces the one in the file (same registration) but keeps its extra callsigns. Aircraft missing from the page are kept.
 - The status line gives the number of aircraft updated, added and kept. Check, then “Save to repository”.
 - **Buttons common to the repository databases**: “Apply in this browser” (local changes take priority), “Save to repository” (writes the file to the Repository folder, to be committed), “Download”, “Discard changes”, “Back to repository file”.
-- Script method, instead of pasting: `python AircraftDB/update_fleet.py Flotte.html` (“Procedure”).
+- **Automatic**: the launcher itself reads the website's public Fleet and Flight log pages (no login), once a day when a page opens, with the same rules as pasting; it writes `data/references/aircraft_fleet.js` and `defa_reference.js`, to be sent with “Synchronise”. Setting and “Update now”: Settings › Maintenance › References and dependencies, “DEFA fleet and flight log (website)” card. Pasting and the script (`python AircraftDB/update_fleet.py Flotte.html`) remain possible.
 
 ### Aircraft types (ICAO base)
 

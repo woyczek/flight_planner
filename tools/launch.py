@@ -310,6 +310,11 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 return self._json({'error': 'refusé'}, 403)
             q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
             return self._json(ivao_activations(q.get('from', [''])[0], q.get('to', [''])[0]))
+        if self.path.split('?')[0] == '/__setup/defa-site':
+            # état de la mise à jour de la flotte et du journal DEFA depuis le site (Paramètres › Maintenance)
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            return self._json(defa_state())
         if self.path.split('?')[0] == '/__setup/ivao-bookings':
             # réservations ATC d'IVAO (trainings, examens, réservations ; shared/atc_sessions.js) : API sous clé
             # (ivao_key), jamais transmise à la page
@@ -397,6 +402,16 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 a = {}
             return self._json({'started': aircraft_start(a.get('codes') or []), **AIRCRAFT, **aircraft_files()})
+        if path == '/__setup/defa-site':
+            # flotte et journal DEFA depuis le site : { refresh, auto, force } (une fois par jour en auto) ou
+            # { auto_enabled } (réglage de Paramètres › Maintenance)
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                a = {}
+            if 'auto_enabled' in a:
+                return self._json(defa_set_auto(bool(a['auto_enabled'])))
+            return self._json(defa_refresh(force=bool(a.get('force')), auto=bool(a.get('auto'))))
         if path == '/__setup/secrets':
             try:
                 a = json.loads(body or b'{}')
@@ -440,7 +455,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 if kind == 'log':
                     if not has_data():
                         return self._json({'ok': False, 'message': 'Installez d’abord les données (étape 1).'})
-                    r = subprocess.run([sys.executable, os.path.join(ROOT, 'tools', 'defa_reference.py'), tmp], cwd=ROOT,
+                    r = subprocess.run([sys.executable, os.path.join(ROOT, 'tools', 'defa_reference.py'), tmp,
+                                        '--out=' + os.path.join(DATA, 'references', 'defa_reference.js')], cwd=ROOT,
                                        capture_output=True, text=True, encoding='utf-8', errors='replace')
                     return self._json({'ok': r.returncode == 0, 'message': (r.stdout + r.stderr).strip()[-1500:] or 'Référence mise à jour.'})
                 return self._json({'ok': False, 'message': 'Type de fichier inconnu.'}, 400)
@@ -721,6 +737,81 @@ def ivao_activations(day_from='', day_to=''):
                                 'debut': hm(t.get('startTime')), 'fin': hm(t.get('endTime')), 'source': 'horaire',
                                 'texte': str(a.get('activationDetails', ''))[:200]})
     return {'activations': out, 'zones': len(_ivao['areas'])}
+
+
+# ---- flotte et journal DEFA depuis le site (pages publiques de flotte.defa-virtual.fr, lues sans connexion) : passés
+# aux scripts du collage (AircraftDB/update_fleet.py, tools/defa_reference.py), écrits dans le dossier de données servi
+# (data/references/ ou --data) ; au plus une fois par jour calendaire à l'ouverture d'une page (shared/defa_site.js,
+# réglage « automatique » gardé ici, hors des données), ou à la demande (Paramètres › Maintenance).
+DEFA_SITE = {
+    'flotte': ('https://flotte.defa-virtual.fr/flotte.php', ('AircraftDB', 'update_fleet.py'), 'aircraft_fleet.js'),
+    'log': ('https://flotte.defa-virtual.fr/log_vols.php', ('tools', 'defa_reference.py'), 'defa_reference.js'),
+}
+DEFA_STATE = os.path.join(ROOT, 'tools', '.defa_site.json')
+DEFA_LOCK = threading.Lock()
+
+
+def defa_state():
+    """{ auto, last (dernière tentative, heure locale ISO), pages: { flotte|log: { at, ok, message } } }."""
+    s = _read_json(DEFA_STATE)
+    return {'auto': s.get('auto', True), 'last': str(s.get('last') or ''), 'pages': s.get('pages') or {}}
+
+
+def _defa_save(s):
+    try:
+        with open(DEFA_STATE, 'w', encoding='utf-8') as f:
+            json.dump(s, f, ensure_ascii=False, indent=1)
+    except OSError:
+        pass
+
+
+def defa_set_auto(on):
+    s = defa_state()
+    s['auto'] = on
+    _defa_save(s)
+    return s
+
+
+def defa_refresh(force=False, auto=False):
+    """Télécharge les pages Flotte et Log des vols et les passe aux scripts ; auto : seulement si le réglage le permet
+    et qu'aucune tentative n'a eu lieu aujourd'hui (échec compris) ; une passe à la fois."""
+    s = defa_state()
+    if auto and not force and (not s['auto'] or s['last'][:10] == datetime.date.today().isoformat()):
+        return {**s, 'skipped': True}
+    if not has_data():
+        return {**s, 'error': 'données absentes (data/data_tree.js)'}
+    if not DEFA_LOCK.acquire(blocking=False):
+        return {**s, 'busy': True}
+    try:
+        s['last'] = datetime.datetime.now().isoformat(timespec='seconds')
+        _defa_save(s)  # les autres onglets voient la tentative du jour
+        for page, (url, script, out) in DEFA_SITE.items():
+            r = {'at': s['last']}
+            tmp = ''
+            try:
+                req = urllib.request.Request(url, headers={'User-Agent': 'SOG-suite (flotte et journal)'})
+                with urllib.request.urlopen(req, timeout=30) as f:
+                    raw = f.read()
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.html') as f:
+                    f.write(raw)
+                    tmp = f.name
+                p = subprocess.run([sys.executable, os.path.join(ROOT, *script), tmp, '--out=' + os.path.join(DATA, 'references', out)],
+                                   cwd=ROOT, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=180,
+                                   env={**os.environ, 'PYTHONIOENCODING': 'utf-8'})
+                r.update(ok=p.returncode == 0, message=(p.stdout + p.stderr).strip()[-600:])
+            except (OSError, ValueError, subprocess.SubprocessError) as e:
+                r.update(ok=False, message=str(e)[:300])
+            finally:
+                if tmp:
+                    try:
+                        os.remove(tmp)
+                    except OSError:
+                        pass
+            s['pages'][page] = r
+        _defa_save(s)
+        return {**s, 'ran': True}
+    finally:
+        DEFA_LOCK.release()
 
 
 _ivao_book = {}  # date → (instant, réservations du jour)

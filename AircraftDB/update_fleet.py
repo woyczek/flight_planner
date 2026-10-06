@@ -1,7 +1,9 @@
 """Génère data/references/aircraft_fleet.js depuis la page « Flotte virtuelle » de flotte.defa-virtual.fr
 enregistrée (navigateur : Enregistrer sous…), fusionnée avec le fichier existant.
 
-Usage : python AircraftDB/update_fleet.py <Flotte.html>
+Usage : python AircraftDB/update_fleet.py <Flotte.html> [--out=CHEMIN]
+  (--out : fichier écrit, data/references/aircraft_fleet.js par défaut ; le lanceur y met son dossier de données)
+  Le lanceur le lance aussi lui-même sur la page publique, une fois par jour (shared/defa_site.js).
 
 - Les appareils de la page remplacent ceux du fichier (même immatriculation) ; les
   indicatifs supplémentaires du fichier sont conservés ; les appareils absents de la page
@@ -14,8 +16,10 @@ sys.stdout.reconfigure(encoding='utf-8')
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import datafile
 
-SRC = sys.argv[1] if len(sys.argv) > 1 else 'Flotte.html'
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'references', 'aircraft_fleet.js')  # dépôt de données (v3)
+_ARGS = [a for a in sys.argv[1:] if not a.startswith('--')]
+_OUT = next((a.split('=', 1)[1] for a in sys.argv[1:] if a.startswith('--out=')), '')
+SRC = _ARGS[0] if _ARGS else 'Flotte.html'
+OUT = os.path.abspath(_OUT) if _OUT else os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'references', 'aircraft_fleet.js')  # dépôt de données (v3)
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 
 OPERATORS = {"Armee de l'Air et de l'Espace": "Armée de l'Air et de l'Espace", 'Sécurite Civile': 'Sécurité civile', 'Marine Nationale': 'Marine nationale',

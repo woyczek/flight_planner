@@ -844,7 +844,7 @@ Esta base (`data/references/aircraft_fleet.js`) lista las aeronaves propuestas e
 - Una aeronave de la página sustituye a la del archivo (misma matrícula) pero conserva sus indicativos adicionales. Las aeronaves ausentes de la página se conservan.
 - La línea de estado da el número de aeronaves actualizadas, añadidas y conservadas. Compruebe y después «Guardar en el repositorio».
 - **Botones comunes a las bases del repositorio**: «Aplicar en este navegador» (cambios locales prioritarios), «Guardar en el repositorio» (escribe el archivo en la Carpeta del repositorio, para hacer commit), «Descargar», «Descartar cambios», «Volver al archivo del repositorio».
-- Método por script, en lugar de pegar: `python AircraftDB/update_fleet.py Flotte.html` («Procedimiento»).
+- **Automático**: el lanzador lee él mismo las páginas públicas Flota y Diario de vuelos del sitio (sin conexión), una vez al día al abrir una página, con las mismas reglas que el pegado; escribe `data/references/aircraft_fleet.js` y `defa_reference.js`, que se envían con «Sincronizar». Ajuste y «Actualizar ahora»: Ajustes › Mantenimiento › Referencias y dependencias, tarjeta «Flota y diario DEFA (sitio)». El pegado y el script (`python AircraftDB/update_fleet.py Flotte.html`) siguen siendo posibles.
 
 ### Tipos de aeronave (base OACI)
 

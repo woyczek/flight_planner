@@ -24,6 +24,7 @@ VERSION.json
 defa_local_store.yaml
 flight_performance_database_merged.fpdb.json
 tools/.assets_seen.json
+tools/.defa_site.json
 
 # Commit courant pour le pied de page (tools/write_build.sh, crochets git)
 config/build.js

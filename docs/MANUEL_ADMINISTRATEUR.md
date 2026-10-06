@@ -844,7 +844,7 @@ Cette base (`data/references/aircraft_fleet.js`) liste les appareils proposés d
 - Un appareil de la page remplace celui du fichier (même immatriculation) mais garde ses indicatifs supplémentaires. Les appareils absents de la page sont conservés.
 - La ligne d'état donne le nombre d'appareils mis à jour, ajoutés et conservés. Vérifiez, puis « Enregistrer dans le dépôt ».
 - **Boutons communs aux bases du dépôt** : « Appliquer dans ce navigateur » (modifications locales prioritaires), « Enregistrer dans le dépôt » (écrit le fichier dans le Dossier du dépôt, à committer), « Télécharger », « Annuler les modifications », « Revenir au fichier du dépôt ».
-- Méthode par script, à la place du collage : `python AircraftDB/update_fleet.py Flotte.html` (« Mode opératoire »).
+- **Automatique** : le lanceur lit lui-même les pages publiques Flotte et Log des vols du site (sans connexion), une fois par jour à l'ouverture d'une page, avec les mêmes règles que le collage ; il écrit `data/references/aircraft_fleet.js` et `defa_reference.js`, à envoyer par « Synchroniser ». Réglage et « Mettre à jour maintenant » : Paramètres › Maintenance › Références et dépendances, carte « Flotte et journal DEFA (site) ». Le collage et le script (`python AircraftDB/update_fleet.py Flotte.html`) restent possibles.
 
 ### Types d'aéronefs (base OACI)
 

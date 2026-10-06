@@ -844,7 +844,7 @@ Diese Datenbank (`data/references/aircraft_fleet.js`) listet die in den Berichte
 - Ein Flugzeug der Seite ersetzt das der Datei (gleiches Kennzeichen), behält aber seine zusätzlichen Rufzeichen. Flugzeuge, die auf der Seite fehlen, bleiben erhalten.
 - Die Statuszeile nennt die Anzahl der aktualisierten, hinzugefügten und beibehaltenen Flugzeuge. Prüfen Sie, dann „Im Repository speichern“.
 - **Gemeinsame Schaltflächen der Repository-Datenbanken**: „In diesem Browser anwenden“ (lokale Änderungen haben Vorrang), „Im Repository speichern“ (schreibt die Datei in den Repository-Ordner, zu committen), „Herunterladen“, „Änderungen verwerfen“, „Zurück zur Repository-Datei“.
-- Skriptmethode anstelle des Einfügens: `python AircraftDB/update_fleet.py Flotte.html` („Vorgehen“).
+- **Automatisch**: Der Starter liest die öffentlichen Seiten Flotte und Flugbuch der Website selbst (ohne Anmeldung), einmal am Tag beim Öffnen einer Seite, nach denselben Regeln wie beim Einfügen; er schreibt `data/references/aircraft_fleet.js` und `defa_reference.js`, die mit „Synchronisieren“ zu senden sind. Einstellung und „Jetzt aktualisieren“: Einstellungen › Wartung › Referenzen und Abhängigkeiten, Karte „DEFA-Flotte und Flugbuch (Website)“. Einfügen und Skript (`python AircraftDB/update_fleet.py Flotte.html`) bleiben möglich.
 
 ### Luftfahrzeugmuster (ICAO-Datenbank)
 
