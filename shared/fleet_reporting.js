@@ -15,8 +15,12 @@
   //   · « Rafraîchir types et performances » : types inconnus de la base (flotte et reporting) complétés par le lanceur
   //     (POST /__setup/aircraft-db, OACI Doc 8643 et EUROCONTROL, type par type) ; mise à jour de la flotte et du
   //     journal depuis le site (shared/defa_site.js).
-  // API (window.FleetReporting) : aircraft() → [{ key, registration, type, variant, callsigns, operator, flights, first,
-  //   last }], mount(hôte, { rows: lignes de travail de la flotte, onChange }), personalFile(render) → [chemin, texte].
+  // Mon profil (rubrique « Mes appareils (reporting) ») : la même liste réduite aux CR où le trigramme connecté figure
+  // dans l'équipage (l'appareil de son poste quand le CR le précise), en lecture seule : coche grisée « Flotte DEFA »
+  // (cochée : appareil de la flotte ; décochée : appareil hors flotte, indicatif compris).
+  // API (window.FleetReporting) : aircraft({ pilot }) → [{ key, registration, type, variant, callsigns, operator,
+  //   flights, first, last }], mount(hôte, { rows: lignes de travail de la flotte, onChange }), mountMine(hôte),
+  //   personalFile(render, lignes) → [chemin, texte].
   if (window.FleetReporting) return;
   const K = window.RepositoryKit,
     esc = K?.esc || (s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`)),
@@ -33,8 +37,14 @@
     'indicatifs, exploitant, vols, premier et dernier vol.'
   ];
 
-  /** Appareils du journal des missions, regroupés par immatriculation (les sans immatriculation : par indicatif). */
-  async function aircraft() {
+  /** Le trigramme figure-t-il dans un nom d'équipage (« BRV », « BRV — Jean B. ») ? */
+  const isTri = (name, tri) => new RegExp(`^${tri}(?![A-Z0-9])`).test(String(name || '').toUpperCase().trim());
+  /** Appareils du journal des missions, regroupés par immatriculation (les sans immatriculation : par indicatif) ;
+   *  pilot : seulement les CR où ce trigramme est dans l'équipage (l'appareil de son poste quand il est précisé). */
+  async function aircraft({
+    pilot = ''
+  } = {}) {
+    const tri = String(pilot || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
     const L = window.MissionLedger;
     if (!L) return [];
     try {
@@ -43,7 +53,14 @@
     const by = new Map();
     for (const m of L.store?.missions || []) {
       const date = String(m?.metadata?.date || '').slice(0, 10);
+      let mine = null; // index des appareils du pilote (null : tous)
+      if (tri) {
+        const seats = (m?.crew || []).filter(c => isTri(c.name, tri));
+        if (!seats.length) continue;
+        mine = seats.some(c => !+c.aircraft) ? null : new Set(seats.map(c => +c.aircraft - 1));
+      }
       (m?.aircraft || []).forEach((a, i) => {
+        if (mine && !mine.has(i)) return;
         const reg = keyOf(a.registration),
           cs = String(a.callsign || '').toUpperCase().trim();
         if (!reg && !cs && !a.type) return;
@@ -224,9 +241,43 @@
     };
   }
 
+  /** Mon profil : appareils pilotés ou reportés par le trigramme connecté, coche grisée « Flotte DEFA ». */
+  async function mountMine(host) {
+    style();
+    host.classList.add('fr-rep');
+    const tri = window.SuiteUsers?.effective?.() || window.MissionAssignments?.trigram?.() || '';
+    if (!tri) {
+      host.innerHTML = `<p class="fr-note">${esc(t(['Trigramme non réglé (Identité, ci-dessus) : la liste des appareils ne peut pas être établie.', 'Trigram not set (Identity, above): the aircraft list cannot be built.', 'Kürzel nicht eingestellt (Identität, oben): Die Liste der Luftfahrzeuge kann nicht erstellt werden.', 'Trigrama no definido (Identidad, arriba): no se puede establecer la lista de aeronaves.']))}</p>`;
+      return;
+    }
+    host.innerHTML = `<p class="fr-note">${esc(t(['Lecture du journal des missions…', 'Reading the mission log…', 'Missionsjournal wird gelesen…', 'Leyendo el diario de misiones…']))}</p>`;
+    const list = await aircraft({
+      pilot: tri
+    });
+    const fleet = new Set((window.DEFA_FLEET || []).map(r => keyOf(r.registration)).filter(Boolean));
+    const isFleet = a => !!a.registration && fleet.has(keyOf(a.registration));
+    const head = `<thead><tr><th>${esc(t(['Flotte DEFA', 'DEFA fleet', 'DEFA-Flotte', 'Flota DEFA']))}</th><th>${esc(t(['Immatriculation', 'Registration', 'Kennzeichen', 'Matrícula']))}</th><th>${esc(t(['Type', 'Type', 'Typ', 'Tipo']))}</th><th>${esc(t(['Variante', 'Variant', 'Variante', 'Variante']))}</th><th>${esc(t(['Indicatifs', 'Callsigns', 'Rufzeichen', 'Indicativos']))}</th><th>${esc(t(['Exploitant', 'Operator', 'Betreiber', 'Operador']))}</th><th>${esc(t(['Vols', 'Flights', 'Flüge', 'Vuelos']))}</th><th>${esc(t(['Dernier vol', 'Last flight', 'Letzter Flug', 'Último vuelo']))}</th></tr></thead>`;
+    const row = a => `<tr><td><input type="checkbox" disabled${isFleet(a) ? ' checked' : ''} title="${esc(isFleet(a) ? t(['appareil de la flotte DEFA', 'DEFA fleet aircraft', 'Luftfahrzeug der DEFA-Flotte', 'aeronave de la flota DEFA']) : t(['appareil hors flotte DEFA', 'aircraft outside the DEFA fleet', 'Luftfahrzeug außerhalb der DEFA-Flotte', 'aeronave fuera de la flota DEFA']))}"></td><td><b>${esc(a.registration || '—')}</b></td><td>${esc(a.type || '?')}</td><td>${esc(a.variant || '')}</td><td>${esc(a.callsigns.join(', '))}</td><td>${esc(a.operator || '')}</td><td class="num">${a.flights}</td><td>${esc(a.last || '')}</td></tr>`;
+    const n = list.filter(isFleet).length;
+    host.innerHTML = `<p class="fr-note">${esc(tf(['{t} : {a} appareil(s) dans vos CR — {f} de la flotte DEFA, {o} hors flotte. La liste complète et la case « personnel » : Paramètres › Centre › Flotte.', '{t}: {a} aircraft in your reports — {f} from the DEFA fleet, {o} outside it. Full list and “personal” box: Settings › Centre › Fleet.', '{t}: {a} Luftfahrzeug(e) in Ihren Berichten — {f} aus der DEFA-Flotte, {o} außerhalb. Vollständige Liste und Kästchen „Privat“: Einstellungen › Zentrum › Flotte.', '{t}: {a} aeronave(s) en sus informes — {f} de la flota DEFA, {o} fuera de ella. Lista completa y casilla «personal»: Ajustes › Centro › Flota.'], { t: tri, a: list.length, f: n, o: list.length - n }))}</p>
+      ${list.length ? `<div class="fr-scroll"><table>${head}<tbody>${list.map(row).join('')}</tbody></table></div>` : `<p class="fr-note">${esc(t(['Aucun CR avec votre trigramme dans l’équipage.', 'No report with your trigram in the crew.', 'Kein Bericht mit Ihrem Kürzel in der Besatzung.', 'Ningún informe con su trigrama en la tripulación.']))}</p>`}`;
+    window.AppFramework?.refresh?.(host);
+  }
+
   window.FleetReporting = {
     aircraft,
     mount,
+    mountMine,
     personalFile
   };
+  // rubrique de Mon profil (page chargée avec shared/settings_panels.js)
+  window.SettingsPanels?.add({
+    id: 'myAircraft',
+    group: window.SettingsPanels.L('Mon profil', 'My profile', 'Mein Profil', 'Mi perfil'),
+    title: window.SettingsPanels.L('Mes appareils (reporting)', 'My aircraft (reporting)', 'Meine Luftfahrzeuge (Reporting)', 'Mis aeronaves (reporting)'),
+    intro: window.SettingsPanels.L('Appareils que vous avez pilotés ou reportés (CR où votre trigramme figure dans l’équipage) ; coche grisée : appareil de la flotte DEFA ou non.', 'Aircraft you flew or reported (reports with your trigram in the crew); greyed box: DEFA fleet aircraft or not.', 'Luftfahrzeuge, die Sie geflogen oder berichtet haben (Berichte mit Ihrem Kürzel in der Besatzung); grau: Luftfahrzeug der DEFA-Flotte oder nicht.', 'Aeronaves que ha pilotado o reportado (informes con su trigrama en la tripulación); casilla gris: aeronave de la flota DEFA o no.'),
+    render(body) {
+      mountMine(body);
+    }
+  });
 })();

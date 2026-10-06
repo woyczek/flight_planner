@@ -338,6 +338,10 @@ This section (“Fuel planner” group) sets the threshold above which the plann
 Reference values shown under the field: 10,000 ft (common practice, EASA NCO), 12,500 ft (FAA, crew beyond 30 minutes), 14,000 ft (FAA, crew at all times).
 This is information only: the calculation is not limited. The setting is kept in this browser.
 
+### My aircraft (reporting)
+
+The aircraft you flew or reported: those of the reports with your trigram in the crew (the aircraft of your seat when the report says so), with type, variant, callsigns, operator, number of flights and last flight. The greyed “DEFA fleet” box shows whether the aircraft belongs to the fleet (ticked) or not (unticked, callsign included); it cannot be changed here. The full list, with the “personal” box, is in Settings › Centre › Fleet (restricted to the Centre).
+
 ## Appearance
 <!-- page: apps/settings/apparence.html -->
 

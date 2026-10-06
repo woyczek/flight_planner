@@ -338,6 +338,10 @@ Dieser Abschnitt (Gruppe „Kraftstoffplaner“) legt die Schwelle fest, oberhal
 Unter dem Feld angezeigte Richtwerte: 10.000 ft (übliche Praxis, EASA NCO), 12.500 ft (FAA, Besatzung über 30 Minuten), 14.000 ft (FAA, Besatzung ständig).
 Dies ist nur ein Hinweis: Die Berechnung wird nicht begrenzt. Die Einstellung wird in diesem Browser gespeichert.
 
+### Meine Luftfahrzeuge (Reporting)
+
+Die Luftfahrzeuge, die Sie geflogen oder berichtet haben: die der Berichte mit Ihrem Kürzel in der Besatzung (das Luftfahrzeug Ihres Platzes, wenn der Bericht es angibt), mit Typ, Variante, Rufzeichen, Betreiber, Anzahl der Flüge und letztem Flug. Das graue Kästchen „DEFA-Flotte“ zeigt, ob das Luftfahrzeug zur Flotte gehört (angehakt) oder nicht (nicht angehakt, Rufzeichen inbegriffen); es lässt sich hier nicht ändern. Die vollständige Liste mit dem Kästchen „Privat“ steht unter Einstellungen › Zentrum › Flotte (dem Zentrum vorbehalten).
+
 ## Darstellung
 <!-- page: apps/settings/apparence.html -->
 
@@ -947,7 +951,8 @@ Leistungsprofil des Flight Planner für diesen Luftfahrzeugtyp.
 - Kurve Drehzahl / Leistung → Verbrauch, wenn das Profil eine enthält (Überfahren für die Werte).
 - „Im Flight Planner öffnen ↗“ öffnet den Planer mit diesem Typ.
 
-Ohne Profil zeigt der Block „Noch kein Leistungsprofil für dieses Muster: im Flight Planner anlegen.“
+Ohne Profil zeigt der Block „Noch kein Leistungsprofil für dieses Muster: im
+Flight Planner anlegen.“
 
 ### Einsätze und Flüge
 

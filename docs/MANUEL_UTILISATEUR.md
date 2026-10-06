@@ -338,6 +338,10 @@ Cette rubrique (groupe « Planificateur carburant ») règle le seuil au-dessus 
 Repères rappelés sous le champ : 10 000 ft (usage courant, EASA NCO), 12 500 ft (FAA, équipage au-delà de 30 minutes), 14 000 ft (FAA, équipage en permanence).
 C'est une information seulement : le calcul n'est pas limité. Le réglage est gardé dans ce navigateur.
 
+### Mes appareils (reporting)
+
+Les appareils que vous avez pilotés ou reportés : ceux des comptes rendus où votre trigramme figure dans l'équipage (l'appareil de votre poste quand le CR le précise), avec type, variante, indicatifs, exploitant, nombre de vols et dernier vol. La coche grisée « Flotte DEFA » indique si l'appareil appartient à la flotte (cochée) ou non (décochée, indicatif compris) ; elle ne se modifie pas ici. La liste complète, avec la case « personnel », est dans Paramètres › Centre › Flotte (réservée au Centre).
+
 ## Apparence
 <!-- page: apps/settings/apparence.html -->
 
