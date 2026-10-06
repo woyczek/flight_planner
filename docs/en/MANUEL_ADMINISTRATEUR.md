@@ -549,6 +549,10 @@ A flight needs an available category; a control item, an available category or �
 
 This block enters the week's area activations (`data/atc/activations/<year>-W<week>.json`), in two side-by-side columns, VATSIM and IVAO: day, area, status (active, requested, refused), start, end, remark, network. A “both networks” activation appears in both columns; changing its network moves it. VATSIM does not publish activations: its column is entered by hand. In the IVAO column, “Import from IVAO” takes the schedules published by IVAO (installation API key), folded under the list; entries made by hand stay. A change recomputes the flights' areas at once. The ODV planning shows the same block, on the same data.
 
+### Reservation requests
+
+This block lists the areas crossed by the week's mission flights (planned route and working areas of the mission, areas entered for a training flight) without an “active” activation of their network: day, area, network, slot, flights, status. “Record as requested” (or “Record all as requested”) adds them to the shared activations; the request itself is made on the network's site (“Copy the list”, link to the IVAO activation requests). A P area is flagged “to avoid”. When a week is opened, the page imports the IVAO ATC sessions (trainings, exams, bookings) automatically, at most once an hour, with the import shared with the ODV planning.
+
 ## Settings › Centre
 <!-- page: apps/settings/centre.html -->
 

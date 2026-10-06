@@ -549,6 +549,10 @@ Un vol demande une catégorie disponible ; un contrôle, une catégorie disponib
 
 Ce bloc saisit les activations de zones de la semaine (`data/atc/activations/<année>-W<semaine>.json`), en deux colonnes côte à côte, VATSIM et IVAO : jour, zone, état (active, demandée, refusée), début, fin, remarque, réseau. Une activation « les deux réseaux » paraît dans les deux colonnes ; changer son réseau la déplace. VATSIM ne publie pas d'activations : sa colonne se saisit à la main. Dans la colonne IVAO, « Importer d'IVAO » reprend les horaires publiés par IVAO (clé d'API de l'installation), repliés sous la liste ; les saisies à la main restent. Une modification recalcule aussitôt les zones des vols. Le Planning ODV montre le même bloc, sur les mêmes données.
 
+### Demandes de réservation
+
+Ce bloc liste les zones que traversent les vols de mission de la semaine (route prévue et zones de travail de la mission, zones saisies d'un entraînement) sans activation « active » de leur réseau : jour, zone, réseau, créneau, vols, état. « Inscrire comme demandée » (ou « Tout inscrire comme demandé ») les ajoute aux activations communes ; la demande elle-même se fait sur le site du réseau (« Copier la liste », lien vers les demandes d'activation IVAO). Une zone P est signalée « à éviter ». À l'ouverture d'une semaine, la page importe d'office les sessions ATC IVAO (trainings, examens, réservations), au plus une fois par heure, avec l'import commun au Planning ODV.
+
 ## Paramètres › Centre
 <!-- page: apps/settings/centre.html -->
 

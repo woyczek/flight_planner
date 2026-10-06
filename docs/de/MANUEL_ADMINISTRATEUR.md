@@ -549,6 +549,10 @@ Ein Flug verlangt eine verfügbare Kategorie; ein Lotsendienst eine verfügbare 
 
 Dieser Block erfasst die Gebietsaktivierungen der Woche (`data/atc/activations/<Jahr>-W<Woche>.json`) in zwei Spalten nebeneinander, VATSIM und IVAO: Tag, Gebiet, Status (aktiv, beantragt, abgelehnt), Beginn, Ende, Bemerkung, Netzwerk. Eine Aktivierung „beide Netze“ erscheint in beiden Spalten; ein Wechsel des Netzwerks verschiebt sie. VATSIM veröffentlicht keine Aktivierungen: Seine Spalte wird von Hand erfasst. In der IVAO-Spalte übernimmt „Von IVAO importieren“ die von IVAO veröffentlichten Zeiten (API-Schlüssel der Installation), unter der Liste eingeklappt; manuelle Eingaben bleiben. Eine Änderung berechnet die Gebiete der Flüge sofort neu. Die ODV-Planung zeigt denselben Block mit denselben Daten.
 
+### Reservierungsanträge
+
+Dieser Block listet die von den Missionsflügen der Woche durchflogenen Gebiete (geplante Route und Arbeitsgebiete der Mission, für einen Übungsflug eingegebene Gebiete) ohne „aktive“ Aktivierung ihres Netzwerks: Tag, Gebiet, Netzwerk, Zeitfenster, Flüge, Status. „Als beantragt eintragen“ (oder „Alle als beantragt eintragen“) fügt sie den gemeinsamen Aktivierungen hinzu; der Antrag selbst wird auf der Seite des Netzwerks gestellt („Liste kopieren“, Link zu den IVAO-Aktivierungsanträgen). Ein P-Gebiet wird als „meiden“ gemeldet. Beim Öffnen einer Woche importiert die Seite die IVAO-ATC-Sitzungen (Trainings, Prüfungen, Buchungen) automatisch, höchstens einmal pro Stunde, mit dem gemeinsamen Import der ODV-Planung.
+
 ## Einstellungen › Zentrum
 <!-- page: apps/settings/centre.html -->
 

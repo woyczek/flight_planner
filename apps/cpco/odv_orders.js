@@ -196,6 +196,8 @@
     render();
     refreshAirspace();
     loadSun();
+    requestsSoon();
+    autoImportAtc();
   }
   /** Indicatif des vols de mission tenu à jour : celui que la mission donne à sa patrouille (registre), s'il a changé. */
   function syncCallsigns() {
@@ -327,6 +329,7 @@
     clearTimeout(ferryRun);
     ferryRun = setTimeout(() => syncFerries().catch(() => {}), 60);
     autoDlo();
+    requestsSoon();
     delete S.doc._nouveau;
     recompute();
     render();
@@ -370,8 +373,8 @@
     for (const v of vols) {
       let zones = v.zones || [];
       if (v.mission) {
-        const aff = O().missionCrew(v, S.affect)[0] || S.affect.find(a => a.mission === v.mission);
-        const mz = aff ? await A.missionZones(aff).catch(() => null) : null;
+        const ref = missionRef(v);
+        const mz = ref ? await A.missionZones(ref).catch(() => null) : null;
         if (mz?.missing) return missingBase(mz);
         if (mz?.zones?.length) zones = [...mz.zones, ...zones.filter(z => !mz.zones.some(m => m.id === z.id))];
       }
@@ -424,6 +427,136 @@
         }
       }
     paintZones();
+  }
+  /** Référence d'une mission pour OdvAirspace.missionZones : son affectation, sinon son entrée du registre. */
+  function missionRef(v) {
+    const aff = O().missionCrew(v, S.affect)[0] || S.affect.find(a => a.mission === v.mission);
+    if (aff) return aff;
+    const m = reg(v.mission);
+    return m ? {
+      mission: m.id,
+      folder: m.folder,
+      files: {
+        yaml: (m.files || []).find(f => /\.ya?ml$/i.test(f) && !/^affectations/i.test(f)) || ''
+      }
+    } : null;
+  }
+
+  // ---- demandes de réservation : zones que traversent les vols de mission de la semaine (route prévue, zones de
+  // travail) sans activation « active » de leur réseau ; inscrites comme « demandées » dans les activations communes
+  // (data/atc/activations, mêmes fichiers que le Planning ODV) ; la demande elle-même se fait sur le site du réseau
+  const IVAO_REQUESTS = 'https://www.ivao.fr/fr/so/special_areas/activations/requests';
+  let reqTimer = null;
+  const requestsSoon = () => {
+    clearTimeout(reqTimer);
+    reqTimer = setTimeout(() => renderRequests().catch(() => {}), 1200);
+  };
+  /** Sessions ATC IVAO (trainings, examens, réservations) importées d'office à l'ouverture d'une semaine, au plus une fois
+   *  par heure : import commun SuiteAtc.importNetwork (même code et mêmes fichiers que le Planning ODV) ; page en
+   *  écriture seulement. */
+  async function autoImportAtc() {
+    if (!canEdit()) return;
+    const KEY = 'odvoAtcImport:v1',
+      seen = K.store.json(KEY, {}) || {};
+    if (Date.now() - (seen[S.week] || 0) < 36e5) return;
+    try {
+      if (!window.SuiteAtc) await loadScript('../../shared/atc_sessions.js?v=35e94da6');
+    } catch {
+      return;
+    }
+    if (!window.SuiteAtc?.importNetwork) return;
+    const week = S.week;
+    const r = await window.SuiteAtc.importNetwork(week, 'IVAO').catch(err => ({
+      error: err
+    }));
+    if (r?.error) {
+      if (!S.atcWarned) notify(tf(L4('Import IVAO des sessions ATC impossible : {e}', 'IVAO import of ATC sessions failed: {e}', 'IVAO-Import der ATC-Sitzungen fehlgeschlagen: {e}', 'Importación IVAO de las sesiones ATC imposible: {e}'), {
+        e: String(r.error?.message || r.error)
+      }), 'warn');
+      S.atcWarned = true;
+      return;
+    }
+    K.store.setJson(KEY, {
+      ...seen,
+      [week]: Date.now()
+    });
+    if (week === S.week) refreshAirspace();
+  }
+  async function zoneRequests() {
+    const A = AS();
+    if (!A?.missionZones || !A?.check) return null;
+    const out = new Map();
+    for (const date of dates())
+      for (const v of S.doc.elements.filter(x => x.type === 'vol' && x.date === date && x.mission && !x.convoyage && x.etat !== 'annule')) {
+        const ref = missionRef(v);
+        const mz = ref ? await A.missionZones(ref).catch(() => null) : null;
+        if (mz?.missing) return mz;
+        const zones = [...(mz?.zones || []), ...(v.zones || []).filter(z => !(mz?.zones || []).some(m => m.id === z.id))];
+        if (!zones.length) continue;
+        const reseau = v.reseau || S.cfg.reseau || null;
+        const checked = await A.check(zones, {
+          date,
+          debut: v.debut,
+          duree: v.duree,
+          reseau
+        }).catch(() => null);
+        if (!Array.isArray(checked)) continue;
+        for (const z of checked.filter(z => z.etat !== 'active')) {
+          const key = `${z.id || z.nom}|${reseau}|${date}`;
+          const r = out.get(key) || out.set(key, {
+            zone: z.id || '',
+            nom: z.nom || z.id,
+            reseau,
+            date,
+            debut: 1440,
+            fin: 0,
+            etat: z.etat,
+            vols: []
+          }).get(key);
+          r.debut = Math.min(r.debut, min(v.debut));
+          r.fin = Math.max(r.fin, min(v.debut) + v.duree);
+          r.vols.push(`${v.indicatif || v.libelle} (${v.mission})`);
+        }
+      }
+    return [...out.values()].sort((a, b) => `${a.date} ${a.debut} ${a.nom}`.localeCompare(`${b.date} ${b.debut} ${b.nom}`));
+  }
+  const reqLine = r => `${r.nom} · ${r.reseau || t(L4('tous réseaux', 'all networks', 'alle Netzwerke', 'todas las redes'))} · ${r.date.slice(8, 10)}/${r.date.slice(5, 7)} ${hhmm(r.debut)}–${hhmm(Math.min(1440, r.fin))}z · ${r.vols.join(', ')}`;
+  async function renderRequests() {
+    const host = $('#odvoRequests');
+    if (!host) return;
+    const list = await zoneRequests();
+    if (list === null) return void(host.innerHTML = `<p class="mut">${esc(t(L4('Module des zones indisponible.', 'Areas module unavailable.', 'Gebietsmodul nicht verfügbar.', 'Módulo de zonas no disponible.')))}</p>`);
+    if (list?.missing) return void(host.innerHTML = `<p class="mut">${esc(t(L4('Base aéronautique absente : les zones traversées par les missions ne peuvent pas être calculées.', 'Aeronautical database missing: the areas crossed by the missions cannot be computed.', 'Luftfahrtdatenbank fehlt: die von den Missionen durchflogenen Gebiete können nicht berechnet werden.', 'Base aeronáutica ausente: no se pueden calcular las zonas que atraviesan las misiones.')))} <a href="${esc(list.url || '#')}">${esc(t(L4('Données aéronautiques', 'Aeronautical data', 'Luftfahrtdaten', 'Datos aeronáuticos')))}</a></p>`);
+    S.requests = list;
+    const todo = list.filter(r => r.etat === 'absente' && r.zone);
+    host.innerHTML = list.length ? `<table class="odvo-wk"><thead><tr><th>${esc(t(L4('Jour', 'Day', 'Tag', 'Día')))}</th><th>${esc(t(L4('Zone', 'Area', 'Gebiet', 'Zona')))}</th><th>${esc(t(L4('Réseau', 'Network', 'Netzwerk', 'Red')))}</th><th>${esc(t(L4('Créneau (z)', 'Slot (z)', 'Zeitfenster (z)', 'Franja (z)')))}</th><th>${esc(t(L4('Vols', 'Flights', 'Flüge', 'Vuelos')))}</th><th>${esc(t(L4('État', 'Status', 'Status', 'Estado')))}</th><th></th></tr></thead><tbody>${list.map((r, i) => `<tr><td>${esc(r.date.slice(8, 10))}/${esc(r.date.slice(5, 7))}</td><td>${esc(r.nom)}</td><td>${esc(r.reseau || '—')}</td><td>${esc(hhmm(r.debut))}–${esc(hhmm(Math.min(1440, r.fin)))}</td><td>${esc(r.vols.join(', '))}</td><td><span class="odvo-z odvo-z-${esc(r.etat)}">${esc(t(TX.zoneEtats[r.etat] || [r.etat, r.etat, r.etat, r.etat]))}</span></td><td>${r.etat === 'absente' && r.zone && S.editable ? `<button type="button" data-req="${i}">${esc(t(L4('Inscrire comme demandée', 'Record as requested', 'Als beantragt eintragen', 'Inscribir como solicitada')))}</button>` : r.etat === 'interdite' ? esc(t(L4('zone P : à éviter', 'P area: avoid', 'P-Gebiet: meiden', 'zona P: evitar'))) : ''}</td></tr>`).join('')}</tbody></table>
+      <div class="row">${todo.length && S.editable ? `<button type="button" data-req="all">${esc(tf(L4('Tout inscrire comme demandé ({n})', 'Record all as requested ({n})', 'Alle als beantragt eintragen ({n})', 'Inscribir todo como solicitado ({n})'), {
+        n: todo.length
+      }))}</button>` : ''}<button type="button" data-req="copy">${esc(t(L4('Copier la liste', 'Copy the list', 'Liste kopieren', 'Copiar la lista')))}</button><a href="${IVAO_REQUESTS}" target="_blank" rel="noopener">${esc(t(L4('Demandes d’activation IVAO', 'IVAO activation requests', 'IVAO-Aktivierungsanträge', 'Solicitudes de activación IVAO')))}</a></div>` : `<p class="mut">${esc(t(L4('Aucune zone à demander : les zones des vols de mission de la semaine sont actives sur leur réseau.', 'No area to request: the areas of the week’s mission flights are active on their network.', 'Kein Gebiet zu beantragen: die Gebiete der Missionsflüge der Woche sind in ihrem Netzwerk aktiv.', 'Ninguna zona que solicitar: las zonas de los vuelos de misión de la semana están activas en su red.')))}</p>`;
+  }
+  async function recordRequests(rows) {
+    const A = AS();
+    const list = await A.activations(S.week).catch(() => []);
+    for (const r of rows) list.push({
+      zone: r.zone,
+      nom: r.nom,
+      reseau: r.reseau,
+      etat: 'demandee',
+      date: r.date,
+      debut: hhmm(r.debut),
+      fin: hhmm(Math.min(1440, r.fin)),
+      texte: `${t(L4('Ordres de vols', 'Flight orders', 'Flugbefehle', 'Órdenes de vuelo'))} : ${r.vols.join(', ')}`
+    });
+    const res = await A.saveActivations(S.week, list).catch(err => ({
+      error: err
+    }));
+    if (res?.error && res.where !== 'local') return notify(String(res.error?.message || res.error), 'error');
+    notify(tf(L4('{n} demande(s) inscrite(s) dans les activations : à faire sur le site du réseau.', '{n} request(s) recorded in the activations: to be made on the network’s site.', '{n} Antrag/Anträge in den Aktivierungen eingetragen: auf der Seite des Netzwerks stellen.', '{n} solicitud(es) inscrita(s) en las activaciones: hay que hacerla(s) en el sitio de la red.'), {
+      n: rows.length
+    }), 'info');
+    activations?.refresh?.();
+    refreshAirspace();
+    renderRequests();
   }
   function missingBase(r) {
     if (!S.airMissing) {
@@ -2390,6 +2523,14 @@
         const [tri, date] = c.dataset.cell.split('|');
         openDispos(tri, date);
       }
+    });
+    $('#odvoRequests')?.addEventListener('click', ev => {
+      const b = ev.target.closest('[data-req]');
+      if (!b || !S.requests) return;
+      const v = b.dataset.req;
+      if (v === 'copy') return navigator.clipboard?.writeText(S.requests.map(reqLine).join('\n')).then(() => notify(t(L4('Liste copiée.', 'List copied.', 'Liste kopiert.', 'Lista copiada.')), 'info'));
+      const rows = v === 'all' ? S.requests.filter(r => r.etat === 'absente' && r.zone) : [S.requests[+v]].filter(Boolean);
+      if (rows.length) recordRequests(rows);
     });
     $('#odvoZoom').addEventListener('input', ev => {
       S.zoom = +ev.target.value;
