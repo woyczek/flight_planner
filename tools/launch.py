@@ -808,10 +808,48 @@ def defa_refresh(force=False, auto=False):
                     except OSError:
                         pass
             s['pages'][page] = r
+        # types d'aéronefs inconnus de la base (flotte, journal, appareils individuels) : une passe sur ces seuls codes
+        s['types'] = defa_types_pass()
         _defa_save(s)
         return {**s, 'ran': True}
     finally:
         DEFA_LOCK.release()
+
+
+def _data_rows(name, key):
+    """Lignes d'un fichier de données de data/references/ (format AircraftDB/datafile.py : « let data = {…}; »)."""
+    try:
+        with open(os.path.join(DATA, 'references', name), encoding='utf-8') as f:
+            m = re.search(r'let data = (\{.*?\n\});', f.read(), re.S)
+        return (json.loads(m.group(1)) if m else {}).get(key) or []
+    except (OSError, ValueError, AttributeError):
+        return []
+
+
+def unknown_types():
+    """Types OACI de la flotte, du journal (référence) et des appareils individuels absents de la base des types
+    (AircraftDB/aircraft_db.js, alias compris) ; tous si la base manque."""
+    try:
+        with open(os.path.join(ROOT, 'AircraftDB', 'aircraft_db.js'), encoding='utf-8') as f:
+            m = re.search(r'window\.AIRCRAFT_DB = (\{.*\});', f.read(), re.S)
+        db = json.loads(m.group(1)) if m else {}
+    except (OSError, ValueError):
+        db = {}
+    aliases = db.get('__aliases') or {}
+    codes = set()
+    for name, key in (('aircraft_fleet.js', 'rows'), ('defa_reference.js', 'aircraft'), ('aircraft_personal.js', 'rows')):
+        for r in _data_rows(name, key):
+            c = str((r or {}).get('type') or '').upper().strip()
+            if re.fullmatch('[A-Z0-9]{2,4}', c):
+                codes.add(c)
+    return sorted(c for c in codes if c not in db and aliases.get(c, c) not in db)
+
+
+def defa_types_pass():
+    """Après la mise à jour depuis le site : passe de la base des types sur les codes inconnus (au plus 200), si aucune
+    passe ne tourne ; { codes, started }."""
+    codes = unknown_types()[:200]
+    return {'codes': codes, 'started': bool(codes) and aircraft_start(codes)}
 
 
 _ivao_book = {}  # date → (instant, réservations du jour)

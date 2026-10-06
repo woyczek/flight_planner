@@ -550,7 +550,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       title: T('Flotte (appareils connus)', 'Fleet (known aircraft)'),
       file: 'data/references/aircraft_fleet.js',
       overrideKey: 'dataOverride:fleet:v1',
-      intro: T('Appareils proposés dans les CR : immatriculation, type, indicatifs, base, opérateur. Plusieurs indicatifs : séparés par des virgules.', 'Aircraft offered in reports: registration, type, callsigns, base, operator. Several callsigns: comma-separated.'),
+      intro: T('Flotte du SOG : appareils affectables et proposés dans les CR (immatriculation, type, indicatifs, base, opérateur ; plusieurs indicatifs séparés par des virgules). Dessous : les appareils qui volent dans le reporting, avec la case « personnel » (hors flotte).', 'SOG fleet: assignable aircraft offered in reports (registration, type, callsigns, base, operator; several callsigns comma-separated). Below: the aircraft flying in the reporting, with the “personal” box (outside the fleet).'),
       tables: () => [{
         columns: [{
           key: 'operator',
@@ -590,11 +590,13 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         }],
         data: work.fleet.data.rows
       }],
-      files: stamp => [
+      files: async stamp => [
+        // index des appareils individuels (reporting hors flotte), recalculé à chaque enregistrement de la flotte
+        ...(window.FleetReporting ? [await window.FleetReporting.personalFile(render, work.fleet.data.rows)] : []),
         ['data/references/aircraft_fleet.js', render(FLEET_COMMENT, fleetData(), 'dataOverride:fleet:v1', "window.DEFA_FLEET = data.rows.map(row => ({ ...row, callsign: (row.callsigns || [])[0] || '' })); window.DEFA_FLEET_META = META; window.DEFA_FLEET_FILE = fileData.rows;", stamp)]
       ],
       overlay: () => fleetData(),
-      howto: `<p>${T('Mise à jour depuis le site : « Coller la page Flotte du site… » (copier-coller de la page « Flotte virtuelle »), vérifier, puis « Enregistrer dans le dépôt ». Ou, avec le script :', 'Update from the website: “Paste the website Fleet page…” (copy-paste of the “Virtual fleet” page), check, then “Save to repository”. Or, with the script:')}</p>
+      howto: `<p>${T('Mise à jour depuis le site : automatique une fois par jour (lanceur, réglage sous la liste des appareils du reporting) ; à la main, « Coller la page Flotte du site… » (copier-coller de la page « Flotte virtuelle »), vérifier, puis « Enregistrer dans le dépôt ». Ou, avec le script :', 'Update from the website: “Paste the website Fleet page…” (copy-paste of the “Virtual fleet” page), check, then “Save to repository”. Or, with the script:')}</p>
         <ol><li>${T('Ouvrir', 'Open')} ${window.RepositoryNav?.siteLink?.('fleet', {}, T('Flotte virtuelle', 'Virtual fleet')) || ''}, <span>${T('puis Fichier › Enregistrer sous… (« Flotte.html »).', 'then File › Save as… (“Flotte.html”).')}</span></li>
         <li>${T('À la racine du dépôt :', 'At the repository root:')} <code>python AircraftDB/update_fleet.py Flotte.html</code></li>
         <li>${T('Les appareils de la page remplacent ceux du fichier ; les indicatifs supplémentaires et les appareils ajoutés ici sont conservés.', 'Aircraft from the page replace those of the file; extra callsigns and aircraft added here are kept.')}</li>
@@ -1165,6 +1167,18 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
             onChange: changed
           });
         });
+        // flotte : appareils du reporting (case « personnel »), types et mise à jour depuis le site (fleet_reporting.js)
+        if (set.id === 'fleet' && window.FleetReporting) {
+          const rep = document.createElement('div');
+          body.append(rep);
+          window.FleetReporting.mount(rep, {
+            rows: w.data.rows,
+            onChange: () => {
+              changed();
+              show();
+            }
+          });
+        }
         actions([
           ...(set.id === 'fleet' ? [
             [T('Coller la page Flotte du site…', 'Paste the website Fleet page…'), () => fleetPasteDialog(page => {

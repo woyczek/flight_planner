@@ -927,7 +927,7 @@
       promptState = block == null ? pill('warn', '?') : block.trim() === window.MISSION_PROMPT.trim() ? pill('ok', t(['synchronisé', 'in sync'])) : pill('warn', t(['à régénérer : python tools/build_mission_prompt.py', 'rebuild: python tools/build_mission_prompt.py']));
     }
     add(t(['Prompt des missions', 'Mission prompt']), 'apps/cpco/mission_prompt.js ← docs/technique/PROMPT_GENERATEUR_MISSIONS.md', t(['git ; en-tête « GÉNÉRÉ »', 'git; “GENERATED” header']), 'build_mission_prompt.py (bump_versions.py)', t(['générateur, registre des missions', 'generator, mission registry']), promptState);
-    host.innerHTML = `<div id="mtDefaSite"></div><div id="mtAircraftDb"></div><p class="row"><button type="button" class="secondary" id="mtDepRefresh" data-icon="refresh">${esc(t(['Vérifier', 'Check', 'Prüfen', 'Comprobar']))}</button></p>
+    host.innerHTML = `<div id="mtAircraftDb"></div><p class="row"><button type="button" class="secondary" id="mtDepRefresh" data-icon="refresh">${esc(t(['Vérifier', 'Check', 'Prüfen', 'Comprobar']))}</button></p>
       <div class="mt-scroll"><table class="mt-table mt-wide"><thead><tr><th>${esc(t(['Référence', 'Reference', 'Referenz', 'Referencia']))}</th><th>${esc(t(['Fichier', 'File', 'Datei', 'Archivo']))}</th><th>${esc(t(['Traçage', 'Tracing', 'Nachverfolgung', 'Trazado']))}</th><th>${esc(t(['Mise à jour', 'Update', 'Aktualisierung', 'Actualización']))}</th><th>${esc(t(['Dépendants', 'Dependents', 'Abhängige', 'Dependientes']))}</th><th>${esc(t(['Contrôle', 'Check', 'Prüfung', 'Control']))}</th></tr></thead><tbody>
       ${rows.map(r => `<tr><td><b>${esc(r.ref)}</b></td><td class="mt-small"><code>${esc(r.file)}</code></td><td class="mt-small">${esc(r.traced)}</td><td class="mt-small">${esc(r.process)}</td><td class="mt-small">${esc(r.dependents)}</td><td>${r.state}</td></tr>`).join('')}
       </tbody></table></div>`;
@@ -941,7 +941,6 @@
       fleet: [...new Set((window.DEFA_FLEET || []).map(r => r.type).filter(Boolean))],
       missions: [...new Set(reg.flatMap(m => m.aircraftTypes || []))]
     });
-    defaSiteCard(host.querySelector('#mtDefaSite'));
     window.AppFramework?.refresh?.();
   }
 
@@ -962,43 +961,6 @@
       siaFolderState = null;
     }
     return siaFolderState;
-  }
-  // ---- flotte et journal DEFA depuis le site (shared/defa_site.js, lanceur /__setup/defa-site) : dernière mise à jour
-  // de chaque page, réglage « automatique » (une fois par jour à l'ouverture d'une page), mise à jour à la demande.
-  async function defaSiteCard(el) {
-    if (!el?.isConnected) return;
-    // module chargé par repository_nav.js : attendu un instant à l'ouverture de la page
-    for (let i = 0; i < 20 && !window.DefaSite; i++) await new Promise(r => setTimeout(r, 100));
-    const D = window.DefaSite,
-      s = D ? await D.status() : null;
-    const when = at => at ? new Date(at).toLocaleString(undefined, {
-      dateStyle: 'short',
-      timeStyle: 'short'
-    }) : '';
-    const rows = s ? Object.entries(D.PAGES).map(([p, def]) => {
-      const r = s.pages?.[p];
-      return `<li><b>${esc(t(def.name))}</b> (<code>data/references/${esc(def.file)}</code>) : ${r ? `${pill(r.ok ? 'ok' : 'err', when(r.at))} <span class="mt-small">${esc(String(r.message || '').trim().split('\n')[0])}</span>` : esc(t(['jamais mis à jour depuis le site', 'never updated from the website', 'nie von der Website aktualisiert', 'nunca actualizado desde el sitio']))}</li>`;
-    }).join('') : '';
-    el.innerHTML = `<div class="repo-card" data-icon="download" data-subtitle="${esc(t(['Pages publiques de flotte.defa-virtual.fr (Flotte, Log des vols), lues sans connexion par le lanceur et passées aux mêmes règles que le collage ; à envoyer ensuite par « Synchroniser ».', 'Public pages of flotte.defa-virtual.fr (Fleet, Flight log), read without login by the launcher and processed by the same rules as pasting; then send them with “Synchronise”.', 'Öffentliche Seiten von flotte.defa-virtual.fr (Flotte, Flugbuch), vom Starter ohne Anmeldung gelesen und nach denselben Regeln wie beim Einfügen verarbeitet; danach mit „Synchronisieren“ senden.', 'Páginas públicas de flotte.defa-virtual.fr (Flota, Diario de vuelos), leídas sin conexión por el lanzador y tratadas con las mismas reglas que el pegado; luego enviarlas con «Sincronizar».']))}"><h3>${esc(t(['Flotte et journal DEFA (site)', 'DEFA fleet and flight log (website)', 'DEFA-Flotte und Flugbuch (Website)', 'Flota y diario DEFA (sitio)']))}</h3>
-      ${!s ? `<p class="mt-small">${esc(t(['Lanceur absent : coller les pages dans Paramétrage › Bases de données (« Coller la page Flotte du site… », « Charger le journal… »).', 'No launcher: paste the pages in Configuration › Databases (“Paste the website Fleet page…”, “Load the log…”).', 'Kein Starter: Seiten in Konfiguration › Datenbanken einfügen („Flotte-Seite der Website einfügen…“, „Flugbuch laden…“).', 'Sin lanzador: pegar las páginas en Configuración › Bases de datos («Pegar la página Flota del sitio…», «Cargar el diario…»).']))}</p>` : `<ul class="mt-small">${rows}</ul>
-      <p class="row"><label class="mt-small"><input type="checkbox" data-defa-auto${s.auto ? ' checked' : ''}> ${esc(t(['Automatique : une fois par jour, à l’ouverture d’une page', 'Automatic: once a day, when a page opens', 'Automatisch: einmal am Tag, beim Öffnen einer Seite', 'Automático: una vez al día, al abrir una página']))}</label>
-      <button type="button" class="primary" data-defa-now data-icon="download">${esc(t(['Mettre à jour maintenant', 'Update now', 'Jetzt aktualisieren', 'Actualizar ahora']))}</button></p>`}</div>`;
-    el.querySelector('[data-defa-auto]')?.addEventListener('change', async e => {
-      await D.setAuto(e.target.checked);
-      defaSiteCard(el);
-    });
-    el.querySelector('[data-defa-now]')?.addEventListener('click', async e => {
-      const b = e.currentTarget;
-      b.disabled = true;
-      b.textContent = t(['Mise à jour…', 'Updating…', 'Aktualisierung…', 'Actualizando…']);
-      const r = await D.refresh({
-        force: true
-      });
-      if (r?.busy) window.AppFramework?.notify?.(t(['Une mise à jour depuis le site est déjà en cours.', 'An update from the website is already running.', 'Eine Aktualisierung von der Website läuft bereits.', 'Ya hay una actualización desde el sitio en curso.']), 'info');
-      else if (r?.error) window.AppFramework?.notify?.(r.error, 'error');
-      defaSiteCard(el);
-    });
-    window.AppFramework?.refresh?.(el);
   }
   // ---- base des types d'aéronefs (OACI Doc 8643, performances EUROCONTROL) : non publiée, complétée sur ce poste type
   // par type par le lanceur (AircraftDB/update_aircraft_db.py ; GET / POST /__setup/aircraft-db { codes }) : un nouvel

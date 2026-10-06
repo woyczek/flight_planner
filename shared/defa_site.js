@@ -4,7 +4,8 @@
   // d'une page servie par le lanceur, une demande au lanceur (tools/launch.py, /__setup/defa-site) qui, au plus une fois
   // par jour calendaire et si le réglage « automatique » le permet, télécharge la page Flotte et le Log des vols et les
   // passe aux mêmes scripts que le collage (AircraftDB/update_fleet.py, tools/defa_reference.py) : data/references/
-  // aircraft_fleet.js et defa_reference.js. Une demande par onglet et par session au plus ; résultat en notification
+  // aircraft_fleet.js et defa_reference.js ; puis les types d'aéronefs inconnus de la base (flotte, journal, appareils
+  // individuels) sont complétés en tâche de fond. Une demande par onglet et par session au plus ; résultat en notification
   // flottante quand une mise à jour a eu lieu (à relire : rechargement ; à envoyer : « Synchroniser »).
   // Réglage et mise à jour à la demande : Paramètres › Maintenance › Références et dépendances.
   // Chargé par repository_nav.js sur toutes les pages. API : window.DefaSite = { status(), refresh({ force }),
@@ -50,6 +51,9 @@
     if (bad.length) notify(tf(['Mise à jour depuis le site DEFA impossible : {l}.', 'Update from the DEFA website failed: {l}.', 'Aktualisierung von der DEFA-Website fehlgeschlagen: {l}.', 'Actualización desde el sitio DEFA imposible: {l}.'], {
       l: bad.map(([p, r]) => `${t(PAGES[p].name)} — ${last(r)}`).join(' ; ')
     }), 'warn');
+    if (s.types?.started) notify(tf(['Types d’aéronefs inconnus ({l}) : passe lancée en tâche de fond (OACI, EUROCONTROL).', 'Unknown aircraft types ({l}): pass started in the background (ICAO, EUROCONTROL).', 'Unbekannte Luftfahrzeugtypen ({l}): Durchlauf im Hintergrund gestartet (ICAO, EUROCONTROL).', 'Tipos de aeronave desconocidos ({l}): pasada iniciada en segundo plano (OACI, EUROCONTROL).'], {
+      l: s.types.codes.slice(0, 12).join(' ') + (s.types.codes.length > 12 ? '…' : '')
+    }), 'info');
     // une version appliquée dans ce navigateur (Paramétrage › Bases de données) masque le fichier mis à jour
     for (const [p] of ok) {
       let shadow = false;

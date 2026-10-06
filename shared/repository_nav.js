@@ -1149,7 +1149,7 @@
     document.head.append(sync);
     /* Flotte et journal DEFA depuis le site : une fois par jour à l'ouverture d'une page (lanceur) */
     const defaSite = document.createElement("script");
-    defaSite.src = new URL("defa_site.js?v=d4be2556", script.src).href;
+    defaSite.src = new URL("defa_site.js?v=9903c8d6", script.src).href;
     document.head.append(defaSite);
     /* Disponibilités : catégories configurables, thèmes ouverts, déclarations par semaine */
     const dispos = document.createElement("script");
