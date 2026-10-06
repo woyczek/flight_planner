@@ -322,7 +322,9 @@
         pour: e.convoyage.pour,
         immat: e.convoyage.immat || '',
         from: e.convoyage.from || '',
-        to: e.convoyage.to || ''
+        to: e.convoyage.to || '',
+        // début du vol servi au dernier calcul : le convoyage suit le vol, mais garde un déplacement fait à la main
+        volDebut: e.convoyage.volDebut || null
       } : null,
       ...training(e),
       etat: ETATS.includes(e.etat) ? e.etat : 'prevu',
