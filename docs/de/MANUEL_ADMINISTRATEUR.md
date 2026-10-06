@@ -923,6 +923,7 @@ Die gemeinsamen Daten (Verfügbarkeiten, Benutzer, Konfiguration, Missionen und 
   3. er holt und führt die Änderungen der anderen Rechner zusammen und sendet dann.
 - Ohne Kürzel wird die Synchronisierung abgelehnt: Stellen Sie es unter Einstellungen › Mein Profil ein.
 - Am Ende nennt eine Benachrichtigung die Anzahl der gesendeten und empfangenen Dateien, und die Seiten lesen die geänderten Dateien neu.
+- **Abstand zur Sicherung**: Die Schaltfläche wird orange (Änderung seit über 48 h nicht gesendet, 20 oder mehr zu sendende Dateien, 10 zu empfangende Commits, nicht gesendeter Commit, außerhalb der synchronisierten Daten geänderte Datei) oder rot (`data/` ohne Git-Repository oder ohne entferntes Repository, laufende Zusammenführung, hohe Schwellen: 100 Dateien, 7 Tage, 50 Commits); Gründe im Tooltip, Warnung als Benachrichtigung einmal pro Sitzung. Ohne Git-Repository (außer Testdaten) meldet es eine Schaltfläche „⚠ Sicherung“. Schwellen einstellbar: `data/config/suite.json`, Schlüssel `sync`.
 
 ### Erste Synchronisierung
 
