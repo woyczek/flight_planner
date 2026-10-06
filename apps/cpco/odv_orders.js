@@ -923,16 +923,44 @@
         s = min(e.debut),
         d = e.duree,
         P = ppm();
-      let moved = false;
+      let moved = false,
+        ghost = null;
+      const y0 = ev.clientY,
+        box = it.getBoundingClientRect(),
+        pal = $('#odvoPalette');
+      const overPalette = m => {
+        const r = pal.getBoundingClientRect();
+        return m.clientX >= r.left && m.clientX <= r.right && m.clientY >= r.top && m.clientY <= r.bottom;
+      };
       it.setPointerCapture(ev.pointerId);
       const move = m => {
         const dm = snap((m.clientX - x0) / P);
-        if (Math.abs(m.clientX - x0) > 3) moved = true;
+        if (Math.abs(m.clientX - x0) > 3 || Math.abs(m.clientY - y0) > 3) moved = true;
         if (!moved) return;
-        if (rsz) it.style.width = `${Math.max(5, d + dm) * P}px`;
-        else it.style.transform = `translateX(${dm * P}px)`;
+        it.classList.add('odvo-dragging');
+        if (rsz) return void(it.style.width = `${Math.max(5, d + dm) * P}px`);
+        // copie flottante au premier plan (hors de la frise, qui rogne son contenu) : suit le pointeur jusqu'à la palette
+        if (!ghost) {
+          ghost = it.cloneNode(true);
+          ghost.classList.add('odvo-ghost');
+          Object.assign(ghost.style, {
+            left: `${box.left}px`,
+            top: `${box.top}px`,
+            width: `${box.width}px`,
+            height: `${box.height}px`
+          });
+          document.body.append(ghost);
+        }
+        const onPal = overPalette(m);
+        pal.classList.toggle('odvo-drop', onPal);
+        ghost.style.transform = onPal ? `translate(${m.clientX - x0}px, ${m.clientY - y0}px)` : `translate(${dm * P}px, ${m.clientY - y0}px)`;
+        it.style.transform = `translateX(${dm * P}px)`;
       };
       const stop = () => {
+        ghost?.remove();
+        ghost = null;
+        pal.classList.remove('odvo-drop');
+        it.classList.remove('odvo-dragging');
         it.removeEventListener('pointermove', move);
         it.removeEventListener('pointerup', up);
         it.removeEventListener('pointercancel', cancel);
@@ -946,8 +974,7 @@
       const up = m => {
         stop();
         if (!moved) return openEdit(e.id);
-        const pal = $('#odvoPalette').getBoundingClientRect();
-        if (!rsz && m.clientX >= pal.left && m.clientX <= pal.right && m.clientY >= pal.top && m.clientY <= pal.bottom) return toReserve(e.id);
+        if (!rsz && overPalette(m)) return toReserve(e.id);
         const dm = snap((m.clientX - x0) / P);
         mutate(() => {
           if (rsz) e.duree = Math.max(5, Math.min(1440 - s, d + dm));
