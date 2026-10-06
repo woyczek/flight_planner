@@ -16,8 +16,8 @@
 
   // ------------------------------------------------------------------ réglages (seules données mémorisées)
 
-  // réglages propres à la DEFA (créneaux, lecture du classeur, missions probables) : saisis dans Paramètres › Centre ›
-  // Planning ODV (DEFA), module commun apps/cpco/odv_settings.js ; ici, lus (et les filtres de la page enregistrés)
+  // réglages propres à la compagnie (créneaux, lecture du classeur, missions probables) : saisis dans Paramètres › Centre ›
+  // Planning ODV, module commun apps/cpco/odv_settings.js ; ici, lus (et les filtres de la page enregistrés)
   const loadSettings = () => window.OdvSettings.load();
   const saveSettings = () => window.OdvSettings.save(settings);
   let settings = loadSettings();
@@ -62,7 +62,7 @@
   const tables = {};
 
   // ------------------------------------------------------------------ semaine sans classeur
-  // Sans classeur, la grille reste affichée : pilotes de la référence DEFA, semaine en cours, ligne du classeur vide
+  // Sans classeur, la grille reste affichée : pilotes de la référence, semaine en cours, ligne du classeur vide
   // (« non renseigné »), déclarations des pilotes et affectations ; légende par défaut (OdvCore.LEGEND).
   let virtual = null;
   const isoDay = ms => new Date(ms).toISOString().slice(0, 10);
@@ -229,7 +229,7 @@
   };
 
   // ------------------------------------------------------------------ outils d'affichage
-  /** Nom complet d'un pilote s'il est connu localement (référence DEFA, champ nom facultatif), sinon ''. */
+  /** Nom complet d'un pilote s'il est connu localement (référence, champ nom facultatif), sinon ''. */
   function fullName(t) {
     const p = (window.DEFA_REFERENCE?.pilots || []).find(x => String(x.trigram || x.trigramme || '').toUpperCase() === t);
     if (!p) return '';
@@ -840,7 +840,7 @@
       if (r.code) counts[r.code] = (counts[r.code] || 0) + 1;
     $('odvLegend').innerHTML = (data.virtuel ? `<span class="odv-noxl">${L(['Pas de classeur : semaine du {a} au {b} ; déclarations des pilotes et affectations.', 'No workbook: week from {a} to {b}; pilot declarations and assignments.', 'Keine Arbeitsmappe: Woche vom {a} bis {b}; Pilotenangaben und Zuweisungen.', 'Sin libro: semana del {a} al {b}; declaraciones de los pilotos y asignaciones.'], { a: esc(dateFr(data.dates[0])), b: esc(dateFr(data.dates[6])) })}</span>` : '') + (data.virtuel ? [] : Object.values(data.legende)).map(e => `<span>${codeCell({ code: e.code, sens: e.sens, categorie: e.categorie, source: '' })} ${esc(sensL(e.sens))}${counts[e.code] ? ` <b>${counts[e.code]}</b>` : ''}</span>`).join('') +
       (data.virtuel ? '' : `<span>${codeCell({ categorie: 'inconnu', source: '' })} ${esc(catL('inconnu'))}</span>`) +
-      // déclarations des pilotes : regroupées (Disponible, Exercice DEFA, Occupé, Indisponible), détail au survol
+      // déclarations des pilotes : regroupées (Disponible, Exercice SOG, Occupé, Indisponible), détail au survol
       (window.DisposEditor?.legend ? `<div class="odv-legend-decl"><b>${L(['Déclarations des pilotes', 'Pilot declarations', 'Pilotenangaben', 'Declaraciones de los pilotos'])}</b>${window.DisposEditor.legend()}</div>` : ''); // même légende que Mes missions
     const byPilot = new Map(data.pilotes.map(p => [p.trigramme, []]));
     for (const r of data.records) byPilot.get(r.pilote)?.push(r);

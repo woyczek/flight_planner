@@ -15,7 +15,7 @@
   const FILE = 'defa_local_store.yaml',
     SCHEMA = 1;
   // Suivi réseau en cours (propre à l'onglet) ; clef du webservice d'envoi des CR (secret, jamais dans un fichier).
-  // Base DEFA (journal des vols) : rechargeable depuis son fichier, gardée hors sauvegarde ; identifiants du site DEFA
+  // Base (journal des vols) : rechargeable depuis son fichier, gardée hors sauvegarde ; identifiants du site de la compagnie
   // (page de premier lancement) : secrets, jamais dans un fichier.
   const SKIP = [/^networkWatch:/, /^missionSendKey:/, /^defaFlightLog:/, /^defaCredentials:/];
   const META = 'defaLocalStore:v1'; // { savedAt, hash } — non sauvegardé lui-même
@@ -286,7 +286,7 @@
     }
   };
 
-  /** Instantané du localStorage à sauvegarder : toutes les clés sauf méta-données et exclusions (SKIP : secret, suivi réseau, journal DEFA). */
+  /** Instantané du localStorage à sauvegarder : toutes les clés sauf méta-données et exclusions (SKIP : secret, suivi réseau, journal). */
   function snapshot() {
     const entries = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -378,7 +378,7 @@
         missions: IDX.all()
       };
     }
-    const text = `# Données locales du navigateur — DEFA Virtual (${location.origin})\n# Restauration : menu ☰ › ${TEXT.fr.title} › ${TEXT.fr.restore}\n` +
+    const text = `# Données locales du navigateur — SO Group Virtual (${location.origin})\n# Restauration : menu ☰ › ${TEXT.fr.title} › ${TEXT.fr.restore}\n` +
       Y.dump({
         schema: SCHEMA,
         savedAt,

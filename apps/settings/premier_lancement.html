@@ -121,7 +121,7 @@
      ou, à défaut, le fichier Excel gardé dans le navigateur), puis la mise à jour SIA. Les étapes « données » passent par
      l'interface locale du lanceur (/__setup/…) ; sans lanceur, la page le dit. Une fois terminé (suiteSetup:v1), le
      lanceur renvoie vers l'accueil. -->
-<header class="mc-header"><h1>Premier lancement</h1><p>DEFA Virtual — régler la suite en quatre étapes</p></header>
+<header class="mc-header"><h1>Premier lancement</h1><p>SO Group Virtual (Virtual Special Operation Group) — régler la suite en quatre étapes</p></header>
 <main class="pl-page">
   <section id="plData"><h2><span class="pl-n">1</span>Données</h2>
     <p class="pl-state" id="plDataState">Vérification…</p>
@@ -149,19 +149,19 @@
       <div class="pl-row"><button type="button" class="secondary" id="plRepoCheck">Vérifier</button><button type="button" class="primary" id="plRepoSave">Enregistrer</button></div>
       <p class="pl-msg" id="plRepoMsg"></p>
     </div>
-    <div class="pl-card" id="plLogCard" hidden style="margin-top:14px"><h3>Journal des vols DEFA (facultatif)</h3>
-      <p class="pl-hint">La page « Log des vols » du site DEFA enregistrée (<code>.html</code>) : pilotes et appareils de la référence DEFA (aide à la saisie).</p>
-      <div class="pl-row"><button type="button" class="secondary" data-pick="plLog">Journal DEFA (.html)…</button><input type="file" id="plLog" accept=".html,.htm" hidden></div>
+    <div class="pl-card" id="plLogCard" hidden style="margin-top:14px"><h3>Journal des vols (facultatif)</h3>
+      <p class="pl-hint">La page « Log des vols » du site de la compagnie enregistrée (<code>.html</code>) : pilotes et appareils de la référence (aide à la saisie).</p>
+      <div class="pl-row"><button type="button" class="secondary" data-pick="plLog">Journal (.html)…</button><input type="file" id="plLog" accept=".html,.htm" hidden></div>
       <p class="pl-msg" id="plLogMsg"></p>
     </div>
   </section>
 
   <section id="plProfile"><h2><span class="pl-n">2</span>Profil</h2>
-    <p class="pl-hint">Repris par toutes les pages (☰ › Profil pilote). Les identifiants du site DEFA, le mot de passe et les préférences se règlent ensuite dans <a href="profil.html">Paramètres › Mon profil</a>.</p>
+    <p class="pl-hint">Repris par toutes les pages (☰ › Profil pilote). Les identifiants du site de la compagnie, le mot de passe et les préférences se règlent ensuite dans <a href="profil.html">Paramètres › Mon profil</a>.</p>
     <div class="pl-grid">
       <div class="pl-card"><h3>Pilote</h3>
         <div class="pl-form">
-          <label for="plTri">Trigramme DEFA</label><input type="text" id="plTri" maxlength="4" spellcheck="false">
+          <label for="plTri">Trigramme</label><input type="text" id="plTri" maxlength="4" spellcheck="false">
           <label for="plIvao">ID IVAO (VID)</label><input type="text" id="plIvao" inputmode="numeric">
           <label for="plVatsim">ID VATSIM (CID)</label><input type="text" id="plVatsim" inputmode="numeric">
           <label for="plSimbrief">SimBrief</label><input type="text" id="plSimbrief" spellcheck="false">
@@ -197,7 +197,7 @@
   <section id="plReset"><h2>Recommencer</h2>
     <div class="pl-warn"><b>⚠ Nettoyer efface les réglages de ce navigateur</b> : dossiers mémorisés (application, données,
       registre, missions, SIA, ODV, X-Plane, performances, sauvegarde locale), copie du classeur ODV, identifiants du site
-      DEFA, profil (trigramme, IVAO, VATSIM, SimBrief) et l’indicateur « suite réglée ». Les fichiers sur le disque —
+      de la compagnie, profil (trigramme, IVAO, VATSIM, SimBrief) et l’indicateur « suite réglée ». Les fichiers sur le disque —
       dossier <code>data/</code>, registres, sauvegarde <code>defa_local_store.yaml</code> — ne sont pas touchés.
       À faire seulement pour reprendre le premier lancement de zéro.</div>
     <div class="pl-row"><button type="button" class="pl-danger" id="plClean">Nettoyer et recommencer…</button></div>
@@ -218,7 +218,7 @@
   const api = (path, opts = {}) => fetch(`/__setup/${path}`, {
       ...opts,
       headers: {
-        'X-DEFA-Setup': '1',
+        'X-SOG-Setup': '1',
         ...(opts.headers || {})
       },
       cache: 'no-store'
@@ -428,7 +428,7 @@
 
   // recommencer : réglages de ce navigateur effacés (fichiers sur le disque intacts), page rechargée
   on('click', 'plClean', async () => {
-    if (!await window.AppFramework.ask('Nettoyer les réglages du premier lancement dans ce navigateur (dossiers mémorisés, classeur ODV gardé, identifiants DEFA, profil) ? Les fichiers sur le disque ne sont pas touchés.')) return;
+    if (!await window.AppFramework.ask('Nettoyer les réglages du premier lancement dans ce navigateur (dossiers mémorisés, classeur ODV gardé, identifiants du site de la compagnie, profil) ? Les fichiers sur le disque ne sont pas touchés.')) return;
     const FA = window.FileAccess;
     if (FA)
       for (const key of [...Object.keys(FA.FOLDERS), '__odvFile']) await FA.set(key, null);

@@ -1,6 +1,6 @@
 # Manual de usuario
 
-Este manual describe la suite DEFA Virtual para los **pilotos**: un capítulo por página, una sección por pestaña o por
+Este manual describe la suite SO Group Virtual (Virtual Special Operation Group) para los **pilotos**: un capítulo por página, una sección por pestaña o por
 bloque, en el orden en que aparecen. En la suite, la entrada **«Ayuda»** de la barra lateral abre este manual en el
 capítulo de la página actual. El Centro y la administración de la suite se describen en el
 [manual del administrador](MANUEL_ADMINISTRATEUR.md); para un primer informe paso a paso, consulte el
@@ -9,7 +9,7 @@ capítulo de la página actual. El Centro y la administración de la suite se de
 ## Primeros pasos
 <!-- page: index.html -->
 
-La suite «DEFA Virtual» reúne en el navegador todo lo que el piloto necesita: misiones asignadas por el Centro, disponibilidad, mapas de vuelo, combustible, informes de misión, aterrizajes e informes estadísticos.
+La suite «SO Group Virtual» reúne en el navegador todo lo que el piloto necesita: misiones asignadas por el Centro, disponibilidad, mapas de vuelo, combustible, informes de misión, aterrizajes e informes estadísticos.
 Todas las páginas comparten las mismas referencias: una barra lateral a la izquierda, una cabecera arriba, a veces pestañas y, después, bloques.
 Este capítulo describe estos elementos comunes; los capítulos siguientes detallan cada página.
 La página de inicio (`index.html`) muestra las aplicaciones en forma de tarjetas y la versión de la suite.
@@ -21,11 +21,11 @@ La columna de la izquierda da acceso a las aplicaciones. La entrada de la págin
 | Entrada | Lo que abre |
 |---|---|
 | «Mis misiones» | Misiones asignadas por el Centro y disponibilidad (con una pastilla roja: número de misiones no leídas) |
-| «Informe DEFA» | Introducción de un nuevo informe de misión |
+| «Informe» | Introducción de un nuevo informe de misión |
 | «Mapas de vuelo» | Mapas de vuelo: ruta, topográfico, aproximación, encuentro, destino |
 | «Combustible» | Planificador de rendimiento y de combustible |
 | «Aterrizajes» | Panel de los aterrizajes |
-| «Informes» | Informes de las misiones (Informe DEFA) |
+| «Informes» | Informes de las misiones (Informe) |
 
 - El grupo **«Centro»** («Misiones», «Registro», «ODV») solo aparece si el Centro está desbloqueado en este navegador (Ajustes › Centro). Para un piloto, normalmente permanece oculto.
 - Al pie de la columna: «Apariencia» (abre los ajustes de visualización en una ventana, encima de la página actual), «Ajustes» (Mi perfil y las demás páginas de ajustes) y **«Ayuda»**. Estas tres entradas permanecen fijas al pie de la pantalla: solo la lista superior se desplaza cuando hay demasiados iconos (ventana de menos de 460 px de alto: se desplaza toda la barra).
@@ -203,15 +203,15 @@ El botón «⤢ Ancho completo» del título del bloque extiende la carpeta a to
 
 Su disponibilidad de la semana mostrada, en horas UTC. El Centro la utiliza para asignarle misiones. Es el mismo editor que en la página Mi disponibilidad (capítulo siguiente); aquí, la semana es la de la barra de semana de la lista.
 
-**Paleta**: las categorías se ordenan por grupo («Disponible», «Ejercicio DEFA», «Ocupado», «No disponible»). Cada pastilla lleva la letra de código ODV y un texto corto; el texto emergente da el nombre completo. La categoría elegida se memoriza.
+**Paleta**: las categorías se ordenan por grupo («Disponible», «Ejercicio SOG», «Ocupado», «No disponible»). Cada pastilla lleva la letra de código ODV y un texto corto; el texto emergente da el nombre completo. La categoría elegida se memoriza.
 
 Categorías por defecto (el Centro puede modificar esta lista):
 
 | Grupo | Categorías (código ODV) |
 |---|---|
 | Disponible | Disponible para todo (O), Disponible seguridad civil (SC), Disponible defensa (D+), Seguridad civil personalizada (SC-), Defensa personalizada (D-) |
-| Ejercicio DEFA | Vuelo en ejercicio DEFA (S), Control DEFA (AM) |
-| Ocupado | Vuelo fuera de DEFA (IVAO / VATSIM) (G), DCS (DC), Control fuera de DEFA (IVAO / VATSIM) (AT) |
+| Ejercicio SOG | Vuelo en ejercicio SOG (S), Control SOG (AM) |
+| Ocupado | Vuelo fuera de SOG (IVAO / VATSIM) (G), DCS (DC), Control fuera de SOG (IVAO / VATSIM) (AT) |
 | No disponible | No disponible (IN), Vacaciones (V), Descanso (Q), Actividad real (IR) |
 
 **Cuadrícula hora por hora**: una línea por día (hoy resaltado), una columna por hora de 0 a 23 UTC.
@@ -271,15 +271,16 @@ Su identidad en la suite, que usan todas las páginas (☰ › Perfil de piloto,
 
 | Tarjeta | Campos |
 |---|---|
-| «Piloto» | «Trigrama DEFA», «ID VATSIM (CID)», «ID IVAO (VID)», «SimBrief (usuario o ID)» |
-| «Sitio DEFA» | «Identificador», «Contraseña» |
+| «Piloto» | «Trigrama», «ID VATSIM (CID)», «ID IVAO (VID)», «SimBrief (usuario o ID)» |
+| «Sitio de la aerolínea» | «Identificador», «Contraseña» |
+| «IVAO — cliente OAuth (personal)» | «Identificador del cliente (client ID)», «Secreto del cliente», «Dirección de redirección a declarar en IVAO» (a copiar en developers.ivao.aero); botón «Guardar el cliente IVAO»: guardado por el lanzador de este equipo, el secreto nunca se vuelve a mostrar |
 | «Idioma» | «Idioma de la suite»: Automático (idioma del navegador), Français, English, Deutsch, Español |
 
 1. Rellene los campos.
 2. Haga clic en «Guardar». El mensaje de estado confirma «Perfil guardado en este navegador».
 
 - El trigrama tiene de 2 a 4 letras o cifras; sirve para encontrar sus misiones asignadas.
-- Los identificadores del sitio DEFA se quedan solo en este navegador: nunca se escriben en un archivo ni en una copia de seguridad.
+- Los identificadores del sitio de la aerolínea se quedan solo en este navegador: nunca se escriben en un archivo ni en una copia de seguridad.
 - El idioma se aplica en cuanto se elige, sin «Guardar».
 - En modo producción, el trigrama es el del usuario conectado y no se modifica aquí.
 
@@ -315,7 +316,7 @@ Los tipos de la flota que posee y domina, y sus simuladores. El Centro los utili
 | Columna | Contenido |
 |---|---|
 | «Tipo» | Modelo y designador OACI |
-| «Variantes de la flota» | Variantes presentes en la flota DEFA |
+| «Variantes de la flota» | Variantes presentes en la flota |
 | «Aeronaves» | Número de aeronaves en servicio (sobre el total) y sus bases |
 | «Poseído» | Tiene este tipo en su simulador |
 | «Dominado» | Lo pilota con soltura |
@@ -385,7 +386,7 @@ El grosor del trazo de los iconos, o ningún icono. Cada fila muestra una vista 
 
 Cada página de la suite tiene un tema de colores (barra, texto de la barra, acento). Para cada tema, elige una familia de colores y un tono; los colores se calculan a partir de ellos, con un control de legibilidad.
 
-Los temas se presentan en tarjetas, en dos grupos: «Aplicaciones» (Combustible, Aterrizajes, Centro, Informe DEFA) y «Familias de informes».
+Los temas se presentan en tarjetas, en dos grupos: «Aplicaciones» (Combustible, Aterrizajes, Centro, Informe) y «Familias de informes».
 
 En cada tarjeta:
 1. La vista previa muestra un «Título» sobre la barra, un «Botón» y un «Enlace, icono».
@@ -427,16 +428,16 @@ Dos posibilidades:
   «Comprobar» dice si responde desde este equipo (30 s como máximo), «Guardar» lo convierte en el repositorio remoto de `data/`
   (si aún no hay datos, la dirección sirve para obtenerlos). Nada es bloqueante: un repositorio que no responde se señala,
   y la suite funciona sin compartir. Detalles: [sincronización](../technique/SYNCHRONISATION.md).
-- Una vez presentes los datos, la tarjeta opcional «Registro de vuelos DEFA» ofrece «Registro DEFA (.html)…»: la página «Log des vols» del sitio DEFA, guardada, rellena los pilotos y las aeronaves de la referencia DEFA (ayuda a la introducción).
+- Una vez presentes los datos, la tarjeta opcional «Registro de vuelos» ofrece «Registro (.html)…»: la página «Log des vols» del sitio de la aerolínea, guardada, rellena los pilotos y las aeronaves de la referencia (ayuda a la introducción).
 
 ### 2 Perfil
 
 Su perfil de piloto, que usan todas las páginas (☰ › Perfil de piloto).
 
-1. Rellene la tarjeta «Piloto»: «Trigrama DEFA», «ID IVAO (VID)», «ID VATSIM (CID)», «SimBrief».
+1. Rellene la tarjeta «Piloto»: «Trigrama», «ID IVAO (VID)», «ID VATSIM (CID)», «SimBrief».
 2. Haga clic en «Guardar el perfil».
 
-Los identificadores del sitio DEFA, la contraseña y las preferencias se configuran después en [Mi perfil](#mi-perfil).
+Los identificadores del sitio de la aerolínea, la contraseña y las preferencias se configuran después en [Mi perfil](#mi-perfil).
 
 ### 3 Carpetas
 
@@ -461,7 +462,7 @@ El enlace «Inicio» lleva a la página de inicio sin terminar.
 
 Para retomar el primer arranque desde cero, y solo en ese caso.
 
-- «Limpiar y empezar de nuevo…» borra, **en este navegador**, las carpetas recordadas (aplicación, datos, registro, misiones, SIA, ODV, X-Plane, rendimiento, copia local), la copia del libro ODV, los identificadores del sitio DEFA, el perfil (trigrama, IVAO, VATSIM, SimBrief) y el indicador «suite configurada».
+- «Limpiar y empezar de nuevo…» borra, **en este navegador**, las carpetas recordadas (aplicación, datos, registro, misiones, SIA, ODV, X-Plane, rendimiento, copia local), la copia del libro ODV, los identificadores del sitio de la aerolínea, el perfil (trigrama, IVAO, VATSIM, SimBrief) y el indicador «suite configurada».
 - Se pide una confirmación y, después, la página se recarga en el paso 1.
 - Los archivos del disco no se tocan: carpeta `data/`, registros, copia `defa_local_store.yaml`.
 
@@ -470,7 +471,7 @@ Para retomar el primer arranque desde cero, y solo en ese caso.
 
 Esta página es la puerta de entrada de todo informe de misión: en ella elige la familia de
 misión y, después, se abre la página de informe de esa familia. Está dirigida a todos los pilotos.
-Para ir a ella: barra lateral › **Informe DEFA**, o el botón «Nuevo informe» de la cabecera del
+Para ir a ella: barra lateral › **Informe**, o el botón «Nuevo informe» de la cabecera del
 informe general de misiones. Un informe también puede abrirse directamente, ya rellenado, desde una misión que se le ha
 asignado (véase más abajo). Paso a paso completo: [tutorial](../TUTORIAL.md).
 
@@ -513,7 +514,7 @@ se abre directamente en la familia correcta, ya rellenado.
 |---|---|
 | **Mis misiones** (carpeta de la misión abierta) | «Crear el informe» (en gris si la misión no tiene archivo de misión) |
 | **Registro** de misiones (Centro) | «Crear informe», o «Nuevo informe (vuelo n)» si la misión ya tiene informes |
-| **Generador de misiones** (Centro) | botón de la cabecera «Crear el informe DEFA →» |
+| **Generador de misiones** (Centro) | botón de la cabecera «Crear el informe →» |
 
 Lo que se recupera: nombre del ejercicio / operación (título de la misión), identificador de la misión (campo
 «Misión»), objetivo e instrucciones (bloque Tarea), aeródromos de salida y de llegada, puntos de ruta y
@@ -559,7 +560,7 @@ La cabecera permanece fija en la parte superior de la página. De izquierda a de
 |---|---|
 | «SAR · SAR terrestre ▾» (familia · subtipo) | ventana «Familia de misión» (abre la página de la otra familia) y «Subtipo de misión» |
 | «Añadir al registro» / «Guardar cambios» | guarda la misión en el registro |
-| «Enviar informe» | transmite el informe al servicio web de la DEFA (con línea de puntos mientras no esté configurado) |
+| «Enviar informe» | transmite el informe al servicio web de la compagnie (con línea de puntos mientras no esté configurado) |
 | «Analizar / importar…» ▾ | pegar un plan de vuelo, una página de tracker, un METAR; importar un archivo |
 | «Seguimiento de red» ▾ | seguimiento en directo IVAO / VATSIM, historial VATSIM |
 | «Misión» ▾ | «Nueva misión», «Exportar misión (YAML)», «Eliminar esta misión» (en modificación) |
@@ -804,7 +805,7 @@ Menú de la cabecera para rellenar el informe a partir de un texto pegado. **Sol
 3. El resultado indica la fuente reconocida y los campos rellenados; el botón pasa a ser «✓ Validar».
 
 Los enlaces «↗ Tracker IVAO (mis conexiones)» y «↗ Mis vuelos StatSim (VATSIM)» abren sus páginas. El
-enlace «→ CR DEFA», que se arrastra a la barra de marcadores, copia la página del tracker con un clic. Abajo,
+enlace «→ CR», que se arrastra a la barra de marcadores, copia la página del tracker con un clic. Abajo,
 «Importar (YAML / JSON antiguo)» carga un archivo de misión. Detalles: [tutorial](../TUTORIAL.md), § 6.
 
 ### Seguimiento de red
@@ -892,7 +893,7 @@ El título muestra la matrícula, el tipo y el modelo. Debajo, tres pastillas:
 
 - el **estado** (Disponible, No disponible, En mantenimiento, Retirado), en color;
 - «📍 Actualmente en»: último aeródromo conocido (llegada de la última misión o del último vuelo del
-  diario DEFA);
+  diario);
 - «🏠 Aeródromo de base».
 
 La barra de **periodo** de los informes estadísticos (preajustes, fechas, ◀ − ▶) está en la cabecera: la actividad, el
@@ -907,7 +908,7 @@ ficha se completará con los informes».
 | «Aeródromo de base» | sí | código OACI, en mayúsculas |
 | «Puesta en servicio» | sí | fecha |
 | «Tipo», «Variante», «Ala», «Estela», «Operador» | no | tomados de la flota y de la base de tipos |
-| «Ficha de flota DEFA» | no | enlace a la ficha de la aeronave en el sitio de la flota |
+| «Ficha de flota» | no | enlace a la ficha de la aeronave en el sitio de la flota |
 | «Indicativos usados», «Equipamiento» | no | tomados de las misiones, con su número |
 | «Notas» | sí | texto libre |
 
@@ -952,10 +953,10 @@ Flight Planner.»
 ### Misiones y vuelos
 
 Tabla de las misiones y vuelos de la aeronave en el periodo: fecha, familia, n.º, indicativo, salida →
-llegada, tripulación, horas de vuelo, fuente («registro» o «diario DEFA»).
+llegada, tripulación, horas de vuelo, fuente («registro» o «diario»).
 
 - Haga clic en un título de columna para ordenar.
-- Haga clic en una misión del registro para abrir su informe en modo de modificación; los vuelos del diario DEFA son de
+- Haga clic en una misión del registro para abrir su informe en modo de modificación; los vuelos del diario son de
   solo lectura.
 - Bajo la tabla, cuando se elige un periodo: botones para ver las misiones anteriores o posteriores al
   periodo, y zoom − / +.
@@ -988,13 +989,13 @@ Tarjetas del periodo: «Misiones / vuelos», «Horas de vuelo», «Primer vuelo�
 «Por tipo»: horas de vuelo por tipo de aeronave. El gráfico apila las horas por familia; arrastrar
 o hacer clic hace zoom, hacer doble clic lo quita.
 
-Para un piloto sin misiones en el registro, las cifras proceden de la referencia DEFA si lo conoce.
+Para un piloto sin misiones en el registro, las cifras proceden de la referencia si lo conoce.
 
 ### Misiones y vuelos
 
 La misma tabla que en la ficha de aeronave, con además la columna «Matr.» (enlace a la ficha de
 la aeronave) y el tipo. Ordenación por título de columna; clic en una misión del registro: informe en
-modo de modificación; vuelos del diario DEFA en solo lectura.
+modo de modificación; vuelos del diario en solo lectura.
 
 ## Informes
 <!-- page: apps/cr/mission_operations_reporting.html -->
@@ -1014,7 +1015,7 @@ La cabecera permanece visible en la parte superior de la página.
 | «Familias» | una etiqueta de color por familia: clic para ocultar / mostrar, Ctrl + clic para conservar solo una, «Todas» para cambiarlas todas |
 | «Agrupación» | Automático, Día, Semana, Mes, Trimestre, Año |
 | «Medida» | Misiones, Horas de vuelo, Horas calzo a calzo, Tiempo en zona, Horas de misión, Salidas, Distancia (NM) |
-| «Datos» | «Mis misiones (registro)», «Diario DEFA (vuelos realizados)» (solo lectura) o «Cargar / actualizar el diario DEFA…» |
+| «Datos» | «Mis misiones (registro)», «Diario (vuelos realizados)» (solo lectura) o «Cargar / actualizar el diario…» |
 
 El periodo se comparte con los informes de familia y las fichas. Las familias, la agrupación y la medida
 se memorizan.
@@ -1090,7 +1091,7 @@ Una duración introducida sin horas queda «declarada» (≈), se cuenta y se se
 que se introduzcan las horas en el informe.
 
 Bajo la tabla, cuando se elige un periodo: «◀ n antes del periodo», «− / +», «m después del
-periodo ▶». Los vuelos del diario DEFA son de solo lectura.
+periodo ▶». Los vuelos del diario son de solo lectura.
 
 ### Registro de misiones
 
@@ -1136,7 +1137,7 @@ por familia» del informe general de misiones, o por la ventana de la cabecera d
 | «+ Nuevo informe» | abre directamente la página de informe de la familia |
 | Periodo | el mismo componente y el mismo periodo que el informe general de misiones |
 | «Agrupación», «Medida» | ajustes del gráfico de actividad (Misiones, Tiempo de vuelo, Tiempo calzo a calzo, Tiempo en zona), compartidos con el informe general de misiones |
-| «Datos» | registro o diario DEFA, como en el informe general de misiones |
+| «Datos» | registro o diario, como en el informe general de misiones |
 
 ### Registro de misiones
 
@@ -1302,7 +1303,7 @@ Cabecera: menú «Avión», botón «Recuperar último FPL de SimBrief», «Unid
 
 1. Haga clic en el botón de avión de la cabecera («Ningún avión» al principio).
 2. Elija un perfil en la lista, agrupada por categoría (helicópteros, reactores, monomotores, turbohélices…).
-3. Un tipo marcado «DEFA, sin perfil» crea un perfil vacío: hay que rellenar sus prestaciones.
+3. Un tipo marcado «flota, sin perfil» crea un perfil vacío: hay que rellenar sus prestaciones.
 
 La barra al pie de la página indica «Perfil guardado — …» o «Cambios sin guardar — …». Contiene «Recargar la base local», «Guardar perfil» y «Eliminar este avión».
 Si cambia de avión con cambios sin guardar, la página propone «Quedarse», «Descartar y cambiar» o «Guardar y cambiar».
@@ -1344,7 +1345,7 @@ Este bloque, en la columna de la derecha, acompaña a la página mientras se des
 - Base del cálculo: nivel y ley de ascenso utilizados.
 - Detalle: rodaje, ascenso, crucero, descenso, contingencia, reserva; masa de despegue prevista y MTOW si la ha introducido (en rojo si se supera).
 - Ficha del cursor (⌖ al pasar el ratón, 📌 fijado): combustible y tiempo del trayecto a ese nivel, régimen de ascenso máximo, velocidades de ascenso; «soltar» quita la fijación.
-- Grupo plegable «Regímenes de vuelo — perfil ↔ mapa»: IAS, régimen de ascenso, régimen del motor y flujo por fase, comparados con el mapa del motor. También contiene el campo «SimBrief Airframe Internal ID» y los enlaces a las fichas de las aeronaves DEFA de ese tipo.
+- Grupo plegable «Regímenes de vuelo — perfil ↔ mapa»: IAS, régimen de ascenso, régimen del motor y flujo por fase, comparados con el mapa del motor. También contiene el campo «SimBrief Airframe Internal ID» y los enlaces a las fichas de las aeronaves de ese tipo.
 
 «Fijar» conserva el bloque entero cuando acompaña a la página; si no, se pliega. Bajo el bloque, un panel por curva da los óptimos, los límites (techo, nivel solicitado) y una ayuda de lectura. Una columna de instrumentos muestra IAS, variómetro, altitud, combustible y tiempo de vuelo.
 

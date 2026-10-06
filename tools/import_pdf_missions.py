@@ -27,7 +27,7 @@ def pdf_text(path):
     r = pypdf.PdfReader(path)
     pages = [p.extract_text() or '' for p in r.pages]
     text = '\n'.join(pages)
-    text = re.sub(r'^© DEFA Virtual.*$', '', text, flags=re.M)          # pieds de page
+    text = re.sub(r'^© (?:DEFA|SO Group) Virtual.*$', '', text, flags=re.M)          # pieds de page (ancien et nouveau nom)
     text = re.sub(r'^Carte d.assemblage\s*$|^Carte générale\s*$', '', text, flags=re.M)
     return text
 

@@ -24,7 +24,7 @@
     CONFIG = 'config/suite.json',
     DIR = 'utilisateurs',
     INDEX = 'utilisateurs/_index.json',
-    VA = () => window.RepositoryNav?.va?.().short || 'DEFA',
+    VA = () => window.RepositoryNav?.va?.().short || 'SOG',
     ITER = 310000; // PBKDF2-SHA256 : itérations (recommandation OWASP pour SHA-256 dans le navigateur)
   const ROLES = ['admin_centre', 'utilisateur'];
   /** Socle des fichiers du pool (shared/assignments.js, chargé avec ce script). */
@@ -203,7 +203,7 @@
       preferences: {}
     });
   }
-  /** Dossier vide : une fiche « utilisateur » par pilote de la référence DEFA. Retour : trigrammes créés. */
+  /** Dossier vide : une fiche « utilisateur » par pilote de la référence. Retour : trigrammes créés. */
   async function seed() {
     if (Object.keys(await index(true)).length) return [];
     const ref = window.DEFA_REFERENCE || {},

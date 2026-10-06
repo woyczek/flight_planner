@@ -3,7 +3,7 @@
 Ancien format : data/disponibilites/<TRI>.json, grille 7 jours × 24 heures (UTC) de codes de l'ODV, par semaine (weeks,
 clé : lundi ISO) ou une seule grille (grid) rattachée à la semaine de sa saisie (updated_at).
 Nouveau format : un fichier par pilote et par semaine ISO, data/disponibilites/<TRI>/<AAAA>-W<nn>.json :
-    { "schema": 2, "va": "DEFA", "pilote": "RBR", "semaine": "2026-W41", "updated_at": "…", "by": "conversion",
+    { "schema": 2, "va": "SOG", "pilote": "RBR", "semaine": "2026-W41", "updated_at": "…", "by": "conversion",
       "dispos": { "2026-10-06": [ { "debut": "19:00", "fin": "22:00", "categorie": "defense_perso" } ] },
       "appareils": { "possedes": [], "maitrises": [] }, "simulateurs": [] }
 Heures consécutives du même code → une plage ; journée entière → debut / fin null. Code → catégorie : champ « odv » des
@@ -34,6 +34,17 @@ DEFAULT_CODES = {'O': 'tout', 'SC': 'secu', 'C': 'defense_perso', 'T': 'defense_
 DEFAULT_IMPORT = {'C': {'defense': ['COMBAT', 'ISR', 'COMMAND', 'AAR']}, 'T': {'defense': ['AIRLIFT', 'AIRBORNE', 'AAR']},
                   'N': {'defense': ['MARITIME'], 'secu': ['SAR']}}
 NOW = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
+def va_short():
+    """Sigle de la compagnie virtuelle (config/repository_tree, va.short), écrit dans le champ va des fichiers de données ;
+    repli : SOG."""
+    try:
+        with open(os.path.join(ROOT, 'config', 'repository_tree'), encoding='utf-8') as f:
+            m = re.search(r'\bva:\{[^}]*?\bshort:"([^"]+)"', f.read())
+        return m.group(1) if m else 'SOG'
+    except OSError:
+        return 'SOG'
 
 
 def load_json(path):
@@ -110,7 +121,7 @@ def main():
         for code in c.get('odv') or []:
             codes[code] = c['id']
     imp = cfg.get('import') or DEFAULT_IMPORT
-    va = cfg.get('va') or 'DEFA'
+    va = cfg.get('va') or va_short()
     written, prefs_made = 0, 0
     for name in sorted(os.listdir(d)):
         m = re.match(r'^([A-Z0-9]{2,5})\.json$', name, re.I)

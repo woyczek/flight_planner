@@ -1,9 +1,9 @@
 (() => {
   'use strict';
-  // Réglages du planning ODV propres à la DEFA : heures des créneaux, dates de la semaine (n° de semaine ISO du fichier
+  // Réglages du planning ODV propres à la compagnie : heures des créneaux, dates de la semaine (n° de semaine ISO du fichier
   // ou date de la frise), case vide, types FLOTTE retenus, missions montrées, préférence à score égal, codes restreints,
   // lignes de groupe récurrentes. Gardés dans ce navigateur (localStorage odvPlanning:v1, aucun trigramme), lus par la
-  // page ODV (apps/cpco/odv_planning.js) ; saisis dans Paramètres › Centre, rubrique « Planning ODV (DEFA) ».
+  // page ODV (apps/cpco/odv_planning.js) ; saisis dans Paramètres › Centre, rubrique « Planning ODV ».
   // Valeurs par défaut et familles : apps/cpco/odv_core.js (OdvCore.DEFAULTS, OdvCore.FAMILIES).
   // API (window.OdvSettings) : KEY, load(), save(réglages), render(hôte, { onChange }) ; événement « odv-settings-change ».
   const KEY = 'odvPlanning:v1';
@@ -132,8 +132,8 @@
   window.SettingsPanels?.add({
     id: 'odv',
     group: window.SettingsPanels.L('Centre (CPCO)', 'Centre (CPCO)', 'Zentrum (CPCO)', 'Centro (CPCO)'),
-    title: window.SettingsPanels.L('Planning ODV (DEFA)', 'ODV planning (DEFA)', 'ODV-Planung (DEFA)', 'Planificación ODV (DEFA)'),
-    intro: window.SettingsPanels.L('Réglages propres à la DEFA pour la page Planning ODV : heures des créneaux matin, après-midi et soir, lecture du classeur (dates de la semaine, case vide, types FLOTTE), missions probables. Gardés dans ce navigateur.', 'DEFA-specific settings for the ODV planning page: morning, afternoon and evening slot hours, workbook reading (dates of the week, empty cell, FLOTTE types), likely missions. Kept in this browser.', 'DEFA-spezifische Einstellungen für die ODV-Planung: Stunden der Zeitfenster Morgen, Nachmittag und Abend, Lesen der Arbeitsmappe (Daten der Woche, leere Zelle, FLOTTE-Typen), wahrscheinliche Missionen. In diesem Browser gespeichert.', 'Ajustes propios de la DEFA para la página de planificación ODV: horas de las franjas de mañana, tarde y noche, lectura del libro (fechas de la semana, celda vacía, tipos FLOTTE), misiones probables. Guardados en este navegador.'),
+    title: window.SettingsPanels.L('Planning ODV', 'ODV planning', 'ODV-Planung', 'Planificación ODV'),
+    intro: window.SettingsPanels.L('Réglages de la page Planning ODV : heures des créneaux matin, après-midi et soir, lecture du classeur (dates de la semaine, case vide, types FLOTTE), missions probables. Gardés dans ce navigateur.', 'Settings of the ODV planning page: morning, afternoon and evening slot hours, workbook reading (dates of the week, empty cell, FLOTTE types), likely missions. Kept in this browser.', 'Einstellungen für die ODV-Planung: Stunden der Zeitfenster Morgen, Nachmittag und Abend, Lesen der Arbeitsmappe (Daten der Woche, leere Zelle, FLOTTE-Typen), wahrscheinliche Missionen. In diesem Browser gespeichert.', 'Ajustes de la página de planificación ODV: horas de las franjas de mañana, tarde y noche, lectura del libro (fechas de la semana, celda vacía, tipos FLOTTE), misiones probables. Guardados en este navegador.'),
     render(body) {
       render(body);
     }

@@ -108,7 +108,7 @@
     importVatsim: L('Historique VATSIM analysé (voir le suivi réseau dans l’en-tête).', 'VATSIM history analysed (see network tracking in the header).', 'VATSIM-Historie ausgewertet (siehe Netzwerk-Tracking in der Kopfzeile).', 'Historial VATSIM analizado (ver el seguimiento de red en la cabecera).'),
     importUnknown: L('Texte non reconnu : plan de vol « (FPL-…) », page du tracker IVAO, historique VATSIM (JSON) ou METAR attendus.', 'Text not recognised: flight plan “(FPL-…)”, IVAO tracker page, VATSIM history (JSON) or METAR expected.', 'Text nicht erkannt: Flugplan „(FPL-…)“, IVAO-Tracker-Seite, VATSIM-Historie (JSON) oder METAR erwartet.', 'Texto no reconocido: se espera un plan de vuelo «(FPL-…)», una página del tracker IVAO, el historial VATSIM (JSON) o un METAR.'),
     importClipDenied: L('Lecture du presse-papiers refusée : collez dans la zone (Ctrl+V).', 'Clipboard access denied: paste into the box (Ctrl+V).', 'Zugriff auf die Zwischenablage verweigert: in das Feld einfügen (Strg+V).', 'Acceso al portapapeles denegado: pegue en el cuadro (Ctrl+V).'),
-    importPasteHint: L('Collez avec Ctrl+V dans la zone (analyse immédiate). « Coller depuis le presse-papiers » demande l’autorisation une fois ; ensuite, le retour depuis le tracker (favori « → CR DEFA ») est analysé automatiquement.', 'Paste with Ctrl+V in the box (immediate analysis). “Paste from clipboard” asks for permission once; then returning from the tracker (“→ CR DEFA” bookmark) is analysed automatically.', 'Mit Strg+V in das Feld einfügen (sofortige Auswertung). „Aus Zwischenablage einfügen“ fragt einmal nach der Erlaubnis; danach wird die Rückkehr vom Tracker (Lesezeichen „→ CR DEFA“) automatisch ausgewertet.', 'Pegue con Ctrl+V en el cuadro (análisis inmediato). «Pegar desde el portapapeles» pide permiso una vez; después, la vuelta desde el tracker (marcador «→ CR DEFA») se analiza automáticamente.'),
+    importPasteHint: L('Collez avec Ctrl+V dans la zone (analyse immédiate). « Coller depuis le presse-papiers » demande l’autorisation une fois ; ensuite, le retour depuis le tracker (favori « → CR ») est analysé automatiquement.', 'Paste with Ctrl+V in the box (immediate analysis). “Paste from clipboard” asks for permission once; then returning from the tracker (“→ CR” bookmark) is analysed automatically.', 'Mit Strg+V in das Feld einfügen (sofortige Auswertung). „Aus Zwischenablage einfügen“ fragt einmal nach der Erlaubnis; danach wird die Rückkehr vom Tracker (Lesezeichen „→ CR“) automatisch ausgewertet.', 'Pegue con Ctrl+V en el cuadro (análisis inmediato). «Pegar desde el portapapeles» pide permiso una vez; después, la vuelta desde el tracker (marcador «→ CR») se analiza automáticamente.'),
     importStatsim: L('StatSim (VATSIM) — détails du vol', 'StatSim (VATSIM) — flight details', 'StatSim (VATSIM) — Flugdetails', 'StatSim (VATSIM) — detalle del vuelo'),
     importOpenIvao: L('↗ Tracker IVAO (mes connexions)', '↗ IVAO tracker (my connections)', '↗ IVAO-Tracker (meine Verbindungen)', '↗ Tracker IVAO (mis conexiones)'),
     importOpenStatsim: L('↗ Mes vols StatSim (VATSIM)', '↗ My StatSim flights (VATSIM)', '↗ Meine StatSim-Flüge (VATSIM)', '↗ Mis vuelos StatSim (VATSIM)'),
@@ -405,7 +405,7 @@
         set('callsign', M.joinCallsign(prefix, parts.number));
       }
       fplAssist(item, auto);
-      // Flotte DEFA : base d'attache et opérateur, si non renseignés.
+      // Flotte : base d'attache et opérateur, si non renseignés.
       if (known.base && (!item.baseDeparture || item.baseDeparture === auto.baseDeparture)) take('baseDeparture', known.base);
       if (known.operator && index === 0 && (!mission.organisation.organisation || mission.organisation.organisation === autoOperator)) mission.organisation.organisation = autoOperator = String(known.operator).toUpperCase();
       autoFilled.set(item, auto);
@@ -999,7 +999,7 @@
     importBox.querySelector('[data-import="clip"]').textContent = t('importClip');
     importBox.querySelector('.mc-import-hint').textContent = t('importBookmarklet');
     const bookmarklet = importBox.querySelector('.mc-bookmarklet');
-    bookmarklet.textContent = '→ CR DEFA';
+    bookmarklet.textContent = '→ CR';
     bookmarklet.href = window.MissionTextImport?.BOOKMARKLET || '#';
     bookmarklet.onclick = event => {
       event.preventDefault();
@@ -1134,7 +1134,7 @@
         importResult.textContent = inLanguage(UI.importPasteHint);
       }
     });
-    // Départ vers le tracker, retour sur la page (favori « → CR DEFA ») : une seule lecture, et
+    // Départ vers le tracker, retour sur la page (favori « → CR ») : une seule lecture, et
     // seulement si l'autorisation est déjà accordée (jamais de demande automatique).
     window.addEventListener('blur', () => {
       if (importBox.open && !clipBusy) clipArmed = true;
@@ -1478,7 +1478,7 @@
         mission = draft ? M.migrate(draft, family.id) : fresh();
         dirty = !!draft;
       }
-      // Mission générée par le générateur SIA XML (« Créer le CR DEFA ») : nouveau CR pré-rempli.
+      // Mission générée par le générateur SIA XML (« Créer le CR ») : nouveau CR pré-rempli.
       let sia = null;
       if (!edit && params.get('from') === 'sia') {
         try {

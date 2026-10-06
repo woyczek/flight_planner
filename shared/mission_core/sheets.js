@@ -1,8 +1,8 @@
 (() => {
   'use strict';
   // Fiches « appareil » et « membre d'équipage » (apps/cr/appareil.html, equipage.html).
-  // Base « lâche » : tout ce qui est connu est repris (catalogue commun — flotte, référence DEFA,
-  // missions, journal DEFA —, missions du registre, journal alternatif, profil du Flight Planner),
+  // Base « lâche » : tout ce qui est connu est repris (catalogue commun — flotte, référence,
+  // missions, journal —, missions du registre, journal alternatif, profil du Flight Planner),
   // rien n'est obligatoire ; ce qui est saisi ici (statut, rattachement, mise en service,
   // événements, qualifications…) est gardé dans le navigateur (missionAircraftSheets:v1,
   // missionCrewSheets:v1 — inclus dans la sauvegarde locale).
@@ -70,7 +70,7 @@
     category: L('Voilure', 'Wing', 'Flügel', 'Ala'),
     wtc: L('Turbulence de sillage', 'Wake turbulence', 'Wirbelschleppe', 'Estela'),
     operator: L('Opérateur', 'Operator', 'Betreiber', 'Operador'),
-    fleet: L('Fiche flotte DEFA', 'DEFA fleet sheet', 'DEFA-Flottenblatt', 'Ficha de flota DEFA'),
+    fleet: L('Fiche flotte', 'Fleet sheet', 'Flottenblatt', 'Ficha de flota'),
     callsigns: L('Indicatifs utilisés', 'Callsigns used', 'Verwendete Rufzeichen', 'Indicativos usados'),
     equipment: L('Équipements', 'Equipment', 'Ausrüstung', 'Equipamiento'),
     notes: L('Notes', 'Notes', 'Notizen', 'Notas'),
@@ -91,7 +91,7 @@
     openPlanner: L('Ouvrir dans le Flight Planner', 'Open in the Flight Planner', 'Im Flight Planner öffnen', 'Abrir en el Flight Planner'),
     source: L('Source', 'Source', 'Quelle', 'Fuente'),
     ledger: L('registre', 'ledger', 'Register', 'registro'),
-    log: L('journal DEFA', 'DEFA log', 'DEFA-Journal', 'diario DEFA'),
+    log: L('journal', 'Log', 'Journal', 'diario'),
     family: L('Famille', 'Family', 'Familie', 'Familia'),
     callsign: L('Indicatif', 'Callsign', 'Rufzeichen', 'Indicativo'),
     route: L('Départ → arrivée', 'Departure → arrival', 'Abflug → Ankunft', 'Salida → llegada'),
@@ -103,7 +103,7 @@
     byType: L('Par type', 'By type', 'Nach Muster', 'Por tipo'),
     unknown: L('Inconnu dans les bases : la fiche se remplira au fil des CR (base « lâche »).', 'Unknown in the bases: the sheet will fill as reports come in (loose base).', 'In den Datenbanken unbekannt: das Blatt füllt sich mit den Berichten.', 'Desconocido en las bases: la ficha se completará con los informes.'),
     merge: L('Fusionner avec… / renommer', 'Merge with… / rename', 'Zusammenführen mit… / umbenennen', 'Fusionar con… / renombrar'),
-    mergeHint: L('Les missions du registre qui portent cette valeur prennent la nouvelle (trace dans chaque mission) ; cette fiche complète celle de la cible ; le journal DEFA rechargé suivra.', 'Ledger missions carrying this value take the new one (traced in each mission); this sheet completes the target one; the reloaded DEFA log will follow.', 'Einsätze mit diesem Wert übernehmen den neuen (Spur im Einsatz); dieses Blatt ergänzt das Ziel.', 'Las misiones con este valor toman el nuevo (traza en cada misión); esta ficha completa la de destino.'),
+    mergeHint: L('Les missions du registre qui portent cette valeur prennent la nouvelle (trace dans chaque mission) ; cette fiche complète celle de la cible ; le journal rechargé suivra.', 'Ledger missions carrying this value take the new one (traced in each mission); this sheet completes the target one; the reloaded log will follow.', 'Einsätze mit diesem Wert übernehmen den neuen (Spur im Einsatz); dieses Blatt ergänzt das Ziel.', 'Las misiones con este valor toman el nuevo (traza en cada misión); esta ficha completa la de destino.'),
     mergeGo: L('Fusionner', 'Merge', 'Zusammenführen', 'Fusionar'),
     mergeConfirm: L('{n} mission(s) du registre passeront de {a} à {b}. Continuer ?', '{n} ledger mission(s) will change from {a} to {b}. Continue?', '{n} Einsatz/Einsätze wechseln von {a} zu {b}. Fortfahren?', '{n} misión(es) pasarán de {a} a {b}. ¿Continuar?'),
     back: L('← Reporting missions', '← Mission reporting', '← Einsatzauswertung', '← Informe de misiones')
@@ -123,8 +123,8 @@
   };
   const EVENT_KINDS = ['MAINTENANCE', 'INSPECTION', 'INCIDENT', 'MODIFICATION', 'CONVOYAGE', 'AUTRE'];
 
-  // ---- missions connues (registre + journal DEFA chargé)
-  /** Missions connues pour les fiches : registre des missions et journal DEFA chargé. */
+  // ---- missions connues (registre + journal chargé)
+  /** Missions connues pour les fiches : registre des missions et journal chargé. */
   async function missions() {
     try {
       await window.MissionLedger?.load();
@@ -351,7 +351,7 @@
         <div><span class="small">${esc(tr(UI.variant))}</span><b>${esc(known.variant || '—')}</b></div>
         <div><span class="small">${esc(tr(UI.category))}</span><b>${esc(catLabel ? tr(catLabel.label) : category || '—')}</b>${typeInfo?.wtc ? ` · ${esc(tr(UI.wtc))} ${esc(typeInfo.wtc)}` : ''}</div>
         <div><span class="small">${esc(tr(UI.operator))}</span><b>${esc(known.operator || '—')}</b></div>
-        <div><span class="small">${esc(tr(UI.fleet))}</span>${known.fleetId ? `<a href="${esc(window.RepositoryNav?.vaUrl?.('aircraft', { id: known.fleetId }) || `https://flotte.defa-virtual.fr/appareil.php?id=${known.fleetId}`)}" target="_blank" rel="noopener">#${esc(known.fleetId)} ↗</a>` : '—'}</div>
+        <div><span class="small">${esc(tr(UI.fleet))}</span>${known.fleetId ? (window.RepositoryNav?.vaUrl?.('aircraft', { id: known.fleetId }) ? `<a href="${esc(window.RepositoryNav.vaUrl('aircraft', { id: known.fleetId }))}" target="_blank" rel="noopener">#${esc(known.fleetId)} ↗</a>` : `#${esc(known.fleetId)}`) : '—'}</div>
         <div class="sh-wide"><span class="small">${esc(tr(UI.callsigns))}</span><div class="sh-chips">${[...callsigns].sort((a, b) => b[1] - a[1]).map(([c, n]) => `<span class="sh-chip">${esc(c)}${n ? ` <em>${n}</em>` : ''}</span>`).join('') || '—'}</div></div>
         <div class="sh-wide"><span class="small">${esc(tr(UI.equipment))}</span><div class="sh-chips">${[...equipment].map(e => `<span class="sh-chip">${esc(e)}</span>`).join('') || '—'}</div></div>
         <label class="sh-wide">${esc(tr(UI.notes))}<textarea data-sheet="notes" rows="2">${esc(sheet.notes)}</textarea></label>

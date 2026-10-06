@@ -33,9 +33,9 @@ window.DataAdminI18n = {
     "Dateien des Repositorys",
     "Archivos del repositorio"
   ],
-  "Flotte DEFA (appareils connus)": [
-    "DEFA-Flotte (bekannte Flugzeuge)",
-    "Flota DEFA (aeronaves conocidas)"
+  "Flotte (appareils connus)": [
+    "Flotte (bekannte Flugzeuge)",
+    "Flota (aeronaves conocidas)"
   ],
   "Appareils proposés dans les CR : immatriculation, type, indicatifs, base, opérateur. Plusieurs indicatifs : séparés par des virgules.": [
     "In Berichten angebotene Flugzeuge: Kennzeichen, Muster, Rufzeichen, Basis, Betreiber. Mehrere Rufzeichen: durch Kommas getrennt.",
@@ -289,17 +289,17 @@ window.DataAdminI18n = {
     "Zeitzone",
     "Zona horaria"
   ],
-  "Base DEFA": [
-    "DEFA-Datenbank",
-    "Base DEFA"
+  "Base": [
+    "Datenbank",
+    "Base"
   ],
-  "Référence DEFA (anonymisée, dans le dépôt)": [
-    "DEFA-Referenz (anonymisiert, im Repository)",
-    "Referencia DEFA (anonimizada, en el repositorio)"
+  "Référence (anonymisée, dans le dépôt)": [
+    "Referenz (anonymisiert, im Repository)",
+    "Referencia (anonimizada, en el repositorio)"
   ],
-  "Pilotes (trigrammes) et appareils de la DEFA — immatriculation, type, indicatifs utilisés, terrain de rattachement (modifiable), dernier terrain connu, statut — sans les vols ni les missions. Utilisée par les trois applications (CR, Landing Dashboard, Flight Planner). Base « lâche » : aide à la saisie, non exhaustive. Mise à jour : « Base DEFA » › « Mettre à jour la référence », ou tools/defa_reference.py.": [
-    "DEFA-Piloten (Trigramme) und Flugzeuge — Kennzeichen, Muster, verwendete Rufzeichen, Heimatflugplatz (bearbeitbar), letzter bekannter Flugplatz, Status — ohne Flüge oder Missionen. Von den drei Anwendungen genutzt. Lockere Datenbank: Eingabehilfe, nicht vollständig.",
-    "Pilotos DEFA (trigramas) y aeronaves — matrícula, tipo, indicativos usados, aeródromo base (editable), último aeródromo conocido, estado — sin vuelos ni misiones. Usada por las tres aplicaciones. Base flexible: ayuda a la entrada, no exhaustiva."
+  "Pilotes (trigrammes) et appareils de la compagnie — immatriculation, type, indicatifs utilisés, terrain de rattachement (modifiable), dernier terrain connu, statut — sans les vols ni les missions. Utilisée par les trois applications (CR, Landing Dashboard, Flight Planner). Base « lâche » : aide à la saisie, non exhaustive. Mise à jour : « Base » › « Mettre à jour la référence », ou tools/defa_reference.py.": [
+    "Piloten (Trigramme) und Flugzeuge — Kennzeichen, Muster, verwendete Rufzeichen, Heimatflugplatz (bearbeitbar), letzter bekannter Flugplatz, Status — ohne Flüge oder Missionen. Von den drei Anwendungen genutzt. Lockere Datenbank: Eingabehilfe, nicht vollständig.",
+    "Pilotos (trigramas) y aeronaves — matrícula, tipo, indicativos usados, aeródromo base (editable), último aeródromo conocido, estado — sin vuelos ni misiones. Usada por las tres aplicaciones. Base flexible: ayuda a la entrada, no exhaustiva."
   ],
   "Appareils": [
     "Flugzeuge",
@@ -349,13 +349,13 @@ window.DataAdminI18n = {
     "Trigramm",
     "Trigrama"
   ],
-  "Charger le journal des vols (Base DEFA › Journal des vols DEFA).": [
-    "Flugbuch laden (DEFA-Datenbank › DEFA-Flugbuch).",
-    "Cargar el registro de vuelos (base DEFA › registro de vuelos DEFA)."
+  "Charger le journal des vols (Base › Journal des vols).": [
+    "Flugbuch laden (Datenbank › Flugbuch).",
+    "Cargar el registro de vuelos (base › registro de vuelos)."
   ],
-  "« Mettre à jour la référence DEFA » : pilotes et appareils ajoutés ou complétés (rien n’est supprimé ; terrain de rattachement, statut, mise en service et notes saisis ici sont conservés).": [
-    "„DEFA-Referenz aktualisieren“: Piloten und Flugzeuge hinzugefügt oder ergänzt (nichts entfernt; Heimat-AD, Status, Indienststellung und Notizen bleiben).",
-    "«Actualizar la referencia DEFA»: pilotos y aeronaves añadidos o completados (nada se elimina; se conservan AD base, estado, puesta en servicio y notas)."
+  "« Mettre à jour la référence » : pilotes et appareils ajoutés ou complétés (rien n’est supprimé ; terrain de rattachement, statut, mise en service et notes saisis ici sont conservés).": [
+    "„Referenz aktualisieren“: Piloten und Flugzeuge hinzugefügt oder ergänzt (nichts entfernt; Heimat-AD, Status, Indienststellung und Notizen bleiben).",
+    "«Actualizar la referencia»: pilotos y aeronaves añadidos o completados (nada se elimina; se conservan AD base, estado, puesta en servicio y notas)."
   ],
   "« Enregistrer dans le dépôt », puis committer data/references/defa_reference.js.": [
     "„Im Repository speichern“, dann data/references/defa_reference.js committen.",
@@ -365,21 +365,21 @@ window.DataAdminI18n = {
     "Oder im Stammverzeichnis des Repositorys:",
     "O bien, en la raíz del repositorio:"
   ],
-  "Journal des vols DEFA (vols réalisés)": [
-    "DEFA-Flugbuch (geflogene Flüge)",
-    "Registro de vuelos DEFA (vuelos realizados)"
+  "Journal des vols (vols réalisés)": [
+    "Flugbuch (geflogene Flüge)",
+    "Registro de vuelos (vuelos realizados)"
   ],
-  "Base distincte du registre des missions : page « Log des vols » de la DEFA enregistrée (Ctrl+S, page web complète ou HTML seul), ou export CSV / JSON de cette base. Chargée à la demande, gardée dans ce navigateur seulement (hors dépôt et hors sauvegarde locale : trigrammes des pilotes). Les CR s’en servent pour les appareils connus (immatriculation → type, indicatifs utilisés), les trigrammes d’équipage et les terrains ; l’analyse des indicatifs alimente la table de correspondance.": [
-    "Getrennt vom Missionsregister: gespeicherte DEFA-Seite „Log des vols“ (Strg+S) oder CSV- / JSON-Export dieser Datenbank. Bei Bedarf geladen, nur in diesem Browser gehalten (nicht im Repository noch in der lokalen Sicherung: Piloten-Trigramme). Berichte nutzen es für bekannte Flugzeuge, Besatzungs-Trigramme und Flugplätze; die Rufzeichenanalyse speist die Zuordnungstabelle.",
-    "Separado del registro de misiones: página DEFA «Log des vols» guardada (Ctrl+S), o exportación CSV / JSON de esta base. Se carga a demanda y solo se guarda en este navegador (ni en el repositorio ni en la copia local: trigramas de pilotos). Los informes lo usan para aeronaves conocidas, trigramas de tripulación y aeródromos; el análisis de indicativos alimenta la tabla de correspondencia."
+  "Base distincte du registre des missions : page « Log des vols » du site de la compagnie enregistrée (Ctrl+S, page web complète ou HTML seul), ou export CSV / JSON de cette base. Chargée à la demande, gardée dans ce navigateur seulement (hors dépôt et hors sauvegarde locale : trigrammes des pilotes). Les CR s’en servent pour les appareils connus (immatriculation → type, indicatifs utilisés), les trigrammes d’équipage et les terrains ; l’analyse des indicatifs alimente la table de correspondance.": [
+    "Getrennt vom Missionsregister: gespeicherte Seite „Log des vols“ (Strg+S) oder CSV- / JSON-Export dieser Datenbank. Bei Bedarf geladen, nur in diesem Browser gehalten (nicht im Repository noch in der lokalen Sicherung: Piloten-Trigramme). Berichte nutzen es für bekannte Flugzeuge, Besatzungs-Trigramme und Flugplätze; die Rufzeichenanalyse speist die Zuordnungstabelle.",
+    "Separado del registro de misiones: página «Log des vols» guardada (Ctrl+S), o exportación CSV / JSON de esta base. Se carga a demanda y solo se guarda en este navegador (ni en el repositorio ni en la copia local: trigramas de pilotos). Los informes lo usan para aeronaves conocidas, trigramas de tripulación y aeródromos; el análisis de indicativos alimenta la tabla de correspondencia."
   ],
   "Fusions et renommages (pilotes, appareils)": [
     "Zusammenführungen und Umbenennungen (Piloten, Flugzeuge)",
     "Fusiones y renombrados (pilotos, aeronaves)"
   ],
-  "Équivalences mémorisées par « Fusionner avec… / renommer » des fiches : appliquées au journal DEFA rechargé, à la référence et au catalogue. Une boucle (A → B et B → A) échange les deux noms : supprime l’entrée fautive, puis refais la fusion depuis la fiche.": [
-    "Durch „Zusammenführen mit… / umbenennen“ der Blätter gespeicherte Entsprechungen: auf das neu geladene DEFA-Flugbuch, die Referenz und den Katalog angewendet. Eine Schleife (A → B und B → A) vertauscht beide Namen: falschen Eintrag löschen, dann die Zusammenführung vom Blatt aus wiederholen.",
-    "Equivalencias guardadas por «Fusionar con… / renombrar» de las fichas: aplicadas al registro DEFA recargado, a la referencia y al catálogo. Un bucle (A → B y B → A) intercambia los dos nombres: elimine la entrada errónea y rehaga la fusión desde la ficha."
+  "Équivalences mémorisées par « Fusionner avec… / renommer » des fiches : appliquées au journal rechargé, à la référence et au catalogue. Une boucle (A → B et B → A) échange les deux noms : supprime l’entrée fautive, puis refais la fusion depuis la fiche.": [
+    "Durch „Zusammenführen mit… / umbenennen“ der Blätter gespeicherte Entsprechungen: auf das neu geladene Flugbuch, die Referenz und den Katalog angewendet. Eine Schleife (A → B und B → A) vertauscht beide Namen: falschen Eintrag löschen, dann die Zusammenführung vom Blatt aus wiederholen.",
+    "Equivalencias guardadas por «Fusionar con… / renombrar» de las fichas: aplicadas al registro recargado, a la referencia y al catálogo. Un bucle (A → B y B → A) intercambia los dos nombres: elimine la entrada errónea y rehaga la fusión desde la ficha."
   ],
   "Missions": [
     "Missionen",
@@ -569,9 +569,9 @@ window.DataAdminI18n = {
     "Rufzeichen-Zuordnung geändert: prüfen, dann anwenden oder speichern.",
     "Correspondencia de indicativos modificada: compruebe y luego aplique o guarde."
   ],
-  "journal DEFA": [
-    "DEFA-Flugbuch",
-    "Registro DEFA"
+  "journal": [
+    "Flugbuch",
+    "Registro"
   ],
   "suffixes": [
     "Suffixe",
@@ -601,13 +601,13 @@ window.DataAdminI18n = {
     "Ank.",
     "Lleg."
   ],
-  "Mettre à jour la référence DEFA (anonymisée)": [
-    "DEFA-Referenz aktualisieren (anonymisiert)",
-    "Actualizar la referencia DEFA (anonimizada)"
+  "Mettre à jour la référence (anonymisée)": [
+    "Referenz aktualisieren (anonymisiert)",
+    "Actualizar la referencia (anonimizada)"
   ],
-  "Référence DEFA complétée depuis le journal : vérifier, puis « Enregistrer dans le dépôt » (data/references/defa_reference.js).": [
-    "DEFA-Referenz aus dem Flugbuch ergänzt: prüfen, dann im Repository speichern.",
-    "Referencia DEFA completada a partir del registro: compruebe y guarde en el repositorio."
+  "Référence complétée depuis le journal : vérifier, puis « Enregistrer dans le dépôt » (data/references/defa_reference.js).": [
+    "Referenz aus dem Flugbuch ergänzt: prüfen, dann im Repository speichern.",
+    "Referencia completada a partir del registro: compruebe y guarde en el repositorio."
   ],
   "Exporter en CSV": [
     "CSV exportieren",
@@ -617,17 +617,17 @@ window.DataAdminI18n = {
     "JSON exportieren (neu ladbar)",
     "Exportar JSON (recargable)"
   ],
-  "Effacer la base DEFA de ce navigateur": [
-    "DEFA-Datenbank aus diesem Browser löschen",
-    "Borrar la base DEFA de este navegador"
+  "Effacer la base de ce navigateur": [
+    "Datenbank aus diesem Browser löschen",
+    "Borrar la base de este navegador"
   ],
-  "Effacer le journal des vols DEFA de ce navigateur ? (rechargeable depuis le fichier)": [
-    "DEFA-Flugbuch aus diesem Browser löschen? (aus der Datei neu ladbar)",
-    "¿Borrar el registro de vuelos DEFA de este navegador? (recargable desde el archivo)"
+  "Effacer le journal des vols de ce navigateur ? (rechargeable depuis le fichier)": [
+    "Flugbuch aus diesem Browser löschen? (aus der Datei neu ladbar)",
+    "¿Borrar el registro de vuelos de este navegador? (recargable desde el archivo)"
   ],
-  "Base DEFA effacée": [
-    "DEFA-Datenbank gelöscht",
-    "Base DEFA borrada"
+  "Base effacée": [
+    "Datenbank gelöscht",
+    "Base borrada"
   ],
   "Adresse du webservice (https://…)": [
     "Adresse des Webdienstes (https://…)",
@@ -749,9 +749,9 @@ window.DataAdminI18n = {
     "Datei",
     "archivo"
   ],
-  "navigateur (dossier « CR DEFA » non autorisé : « Dossier du registre… »)": [
-    "Browser (Ordner „CR DEFA“ nicht freigegeben: „Registerordner…“)",
-    "navegador (carpeta «CR DEFA» no autorizada: «Carpeta del registro…»)"
+  "navigateur (dossier « CR » non autorisé : « Dossier du registre… »)": [
+    "Browser (Ordner „CR“ nicht freigegeben: „Registerordner…“)",
+    "navegador (carpeta «CR» no autorizada: «Carpeta del registro…»)"
   ],
   "Registre complet": [
     "Vollständiges Register",

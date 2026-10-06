@@ -18,7 +18,7 @@ applications (reporting, CR, planificateur, studio…) n'est touché que là où
 2. **`designs_skeuo.css` : exceptions empilées** — 695 lignes, 262 `!important` (719 dans toute la CSS du socle),
    ~160 règles par design qui redisent souvent la même chose (`.repo-block` surchargé 77 fois, `.repo-block-tools` 32,
    `.repo-header` 22) ; jetons peu utilisés.
-3. **Règles de pages dans le socle** : 63 sélecteurs `.mc-*` (Mission Core), `.ap-*`, `.fp-*`, sections « CR DEFA » et
+3. **Règles de pages dans le socle** : 63 sélecteurs `.mc-*` (Mission Core), `.ap-*`, `.fp-*`, sections « CR » et
    « Planificateur » dans `designs_skeuo.css` ; 6 pages ont leur propre palette `:root` que le socle doit contrer
    (contrastes ratés du Planning ODV).
 4. **Utilitaires recopiés** : échappement HTML (21 copies), traduction d'une ligne `[fr, en, de, es]` (20 fichiers),

@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  // Profil pilote partagé : trigramme DEFA (missions affectées : shared/assignments.js), ID IVAO (VID), ID VATSIM (CID)
+  // Profil pilote partagé : trigramme (missions affectées : shared/assignments.js), ID IVAO (VID), ID VATSIM (CID)
   // et identifiant SimBrief (import
   // du plan de vol dans les CR du Mission Report Core) saisis une seule fois dans
   // le menu du framework, disponibles sur toutes les pages (chargé par repository_nav.js).
@@ -33,28 +33,28 @@
   const TEXT = {
     fr: {
       title: 'Profil pilote',
-      trigram: 'Trigramme DEFA (missions affectées)',
+      trigram: 'Trigramme (missions affectées)',
       ivaoId: 'ID IVAO (VID)',
       vatsimId: 'ID VATSIM (CID)',
       simbriefUser: 'SimBrief (utilisateur ou ID)'
     },
     en: {
       title: 'Pilot profile',
-      trigram: 'DEFA trigram (assigned missions)',
+      trigram: 'Trigram (assigned missions)',
       ivaoId: 'IVAO ID (VID)',
       vatsimId: 'VATSIM ID (CID)',
       simbriefUser: 'SimBrief (username or ID)'
     },
     de: {
       title: 'Pilotenprofil',
-      trigram: 'DEFA-Kürzel (zugewiesene Missionen)',
+      trigram: 'Kürzel (zugewiesene Missionen)',
       ivaoId: 'IVAO-ID (VID)',
       vatsimId: 'VATSIM-ID (CID)',
       simbriefUser: 'SimBrief (Benutzer oder ID)'
     },
     es: {
       title: 'Perfil de piloto',
-      trigram: 'Trigrama DEFA (misiones asignadas)',
+      trigram: 'Trigrama (misiones asignadas)',
       ivaoId: 'ID IVAO (VID)',
       vatsimId: 'ID VATSIM (CID)',
       simbriefUser: 'SimBrief (usuario o ID)'

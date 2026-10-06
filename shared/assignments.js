@@ -1162,7 +1162,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       };
     }).sort((a, b) => a.model.localeCompare(b.model));
   }
-  /** Qualification d'un pilote sur un type : déclaration (maîtrisé, possédé), sinon vols connus de la référence DEFA.
+  /** Qualification d'un pilote sur un type : déclaration (maîtrisé, possédé), sinon vols connus de la référence.
    *  { level: 'mastered' | 'owned' | 'flown' | 'none' | 'unknown', text } */
   function qualification(decl, tri, type) {
     if (type && typeof type === 'object') {

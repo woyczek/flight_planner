@@ -171,7 +171,7 @@
     return `<span class="odv-code c-${esc(d.category || 'inconnu')}" style="background:${esc(bg)};color:${ink}" title="${esc(tip)}">${esc(cs.map(SD.code).filter(Boolean).join('/'))}</span>`;
   }
   /** Déclaration regroupée (docs/technique/DISPOS_ET_REORGANISATION.md § 1.2) : lettre (court : D, E, O, I) et couleur du groupe
-   *  (Disponible, Exercice DEFA, Occupé, Indisponible) ; catégories et thèmes ouverts dans l'infobulle. */
+   *  (Disponible, Exercice SOG, Occupé, Indisponible) ; catégories et thèmes ouverts dans l'infobulle. */
   function groupCell(d) {
     const SD = window.SuiteDispos,
       K = window.RepositoryKit,

@@ -96,7 +96,7 @@
   }
   async function inventory() { // lanceur : tous les fichiers de tools/ avec leur en-tête
     try {
-      const r = await fetch('../__setup/tools', { headers: { 'X-DEFA-Setup': '1' }, cache: 'no-store' });
+      const r = await fetch('../__setup/tools', { headers: { 'X-SOG-Setup': '1' }, cache: 'no-store' });
       return r.ok ? (await r.json()).tools : null;
     } catch { return null; }
   }

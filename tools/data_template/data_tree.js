@@ -4,7 +4,7 @@ window.DATA_TREE = {
   version: 1,
   repository: 'https://framagit.org/defa-virtual/missions-defa',
   layout: {
-    references: 'flotte DEFA, référence DEFA, indicatifs, corrections OACI (aircraft_overrides.json)',
+    references: 'flotte, référence, indicatifs, corrections OACI (aircraft_overrides.json)',
     cr: 'registre unique missions.yaml, registres CSV historiques (FIRE, HEMS), CR, packs FMS GAAR',
     missions: 'séries de missions générées (missionNN.yaml, summaryNN.md), mission_registry.yaml',
     sia: 'mora.csv, axes ENR 5.7, Lisez_moi du SIA ; XML AIRAC du cycle (hors git)',

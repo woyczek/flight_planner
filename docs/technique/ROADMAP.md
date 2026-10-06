@@ -95,8 +95,8 @@ Le site n'a **pas d'API** : on récupère ses données par **copier-coller** de 
 
 | Page du site | Dans la suite | État |
 |---|---|---|
-| Log des vols | Paramètres › Maintenance › Base DEFA › Journal des vols : « Charger / mettre à jour le journal (page copiée ou enregistrée) », puis référence DEFA (pilotes, appareils) mise à jour depuis le journal | fait |
-| Flotte virtuelle | Paramètres › Maintenance › Flotte DEFA : « Coller la page Flotte du site… » (mêmes règles que `AircraftDB/update_fleet.py`, sans script), puis « Enregistrer dans le dépôt » | fait (5 octobre) |
+| Log des vols | Paramètres › Maintenance › Base › Journal des vols : « Charger / mettre à jour le journal (page copiée ou enregistrée) », puis référence (pilotes, appareils) mise à jour depuis le journal | fait |
+| Flotte virtuelle | Paramètres › Maintenance › Flotte : « Coller la page Flotte du site… » (mêmes règles que `AircraftDB/update_fleet.py`, sans script), puis « Enregistrer dans le dépôt » | fait (5 octobre) |
 | Maintenance, Statistiques | — | rien à reprendre pour l'instant |
 | Enregistrer mon vol (connexion requise) | — | l'envoi des CR au site reste manuel : pas d'API, et pas question d'automatiser un formulaire avec les identifiants d'un pilote |
 

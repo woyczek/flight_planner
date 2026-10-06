@@ -484,7 +484,7 @@ html[data-skeuo] .repo-block .mapCard.missing:not(#imp) {
 </style>
 </head>
 <body>
-<header><div class="header-row"><h1><span class="cpco-eyebrow">Centre de planification et de conduite des opérations</span>Générateur de mission</h1><button id="openCr" class="headerButton" type="button" title="Nouveau compte rendu CR DEFA pré-rempli (famille d’après le type de mission)">Créer le CR DEFA →</button></div></header>
+<header><div class="header-row"><h1><span class="cpco-eyebrow">Centre de planification et de conduite des opérations</span>Générateur de mission</h1><button id="openCr" class="headerButton" type="button" title="Nouveau compte rendu CR pré-rempli (famille d’après le type de mission)">Créer le CR →</button></div></header>
 
 <main>
 <section data-block-id="mission-import" data-deco-bg="import" data-icon="upload" data-subtitle="Mission chargée, enregistrement et brouillon ; importer une autre mission ou en commander une à ChatGPT."><h2>Mission</h2><div class="actions"><button id="newMission" data-icon="plus" class="ghost" type="button">Nouvelle mission</button><button id="orderGpt" data-icon="sparkles" class="secondary" type="button" title="Ouvrir le formulaire de commande : type, théâtre, équipes, aéronefs ; le prompt est copié et ChatGPT s’ouvre">Commander à ChatGPT…</button><button id="saveToFolder" data-icon="save" class="secondary" type="button" title="Enregistrer le YAML de la mission (modifications comprises) dans son dossier : data/missions/&lt;lettre&gt;_&lt;FAMILLE&gt;/&lt;ID&gt;/">Enregistrer dans le dossier</button><button id="saveDraft" data-icon="bookmark" class="secondary" type="button">Mémoriser le brouillon</button><button id="loadDraft" data-icon="refresh" class="secondary" type="button">Recharger le brouillon</button></div><div id="status" class="status" data-status>Aucune mission chargée.</div><p id="registryInfo" class="small" hidden><span></span> <button type="button" id="storeMission" class="secondary" data-icon="folder" hidden>Ranger dans le dossier des missions…</button> <a href="mission_registry.html">Ouvrir le registre ↗</a></p><details id="importMore" class="importMore"><summary>Importer une autre mission : fichiers, texte collé, commande ChatGPT</summary><div class="grid"><label>YAML et/ou Markdown<input id="missionFiles" type="file" accept=".yaml,.yml,.md,text/markdown,text/yaml" multiple data-dropzone><button id="openMissionPaste" data-icon="link" class="secondary" type="button" style="margin-top:6px">ou coller son contenu…</button></label><label>Cartes ou ZIP livré par le générateur<input id="mapFiles" type="file" accept=".zip,application/zip,image/png,image/jpeg,image/webp" multiple data-dropzone></label></div><div class="subBlocks"><details id="gptBox" class="pasteBox gptBox"><summary><strong>Commander une mission à ChatGPT</strong> <span class="small">type, théâtre, équipes, aéronefs : le prompt est copié et ChatGPT s’ouvre</span></summary><div id="gptOrder"></div></details><div id="missionPaste" class="pasteBox" hidden><strong>Coller le contenu Markdown ou YAML de la mission</strong><textarea id="missionText" placeholder="Colle ici le contenu Markdown ou YAML de la mission…"></textarea><div class="actions"><button id="parseMission" data-icon="eye" type="button">Lire la mission</button></div></div></div><p class="small">Tu peux sélectionner le YAML et le Markdown ensemble. Pour les cartes, sélectionne directement le ZIP produit par le générateur : les PNG, dont la carte d’assemblage, seront extraits et associés automatiquement.</p></details></section>
@@ -1855,7 +1855,7 @@ function addPdfFooters(doc) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(70, 79, 84);
-    doc.text(pdfSafe(`© DEFA Virtual - ${date} - Auteur : ${author}`), 12, ph - 6);
+    doc.text(pdfSafe(`© SO Group Virtual - ${date} - Auteur : ${author}`), 12, ph - 6);
     doc.text(`${page} / ${count}`, pw - 12, ph - 6, {
       align: 'right'
     });
@@ -1996,7 +1996,7 @@ async function exportOrganisationPdf(zy, opts) {
   else doc.setProperties({
     title: pdfSafe(name),
     subject: 'Dossier organisation d’exercice',
-    author: pdfSafe(zy.author || 'DEFA Virtual')
+    author: pdfSafe(zy.author || 'SO Group Virtual')
   });
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
@@ -2095,7 +2095,7 @@ async function exportPdf(opts) {
   else doc.setProperties({
     title: pdfSafe(pdfTitle()),
     subject: 'Dossier de mission de simulation',
-    author: pdfSafe(common('author', 'DEFA Virtual'))
+    author: pdfSafe(common('author', 'SO Group Virtual'))
   });
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
@@ -2209,7 +2209,7 @@ async function exportOperationPdf() {
   doc.setProperties({
     title: pdfSafe(name),
     subject: 'Dossier d’opération de simulation',
-    author: pdfSafe(first.author || 'DEFA Virtual')
+    author: pdfSafe(first.author || 'SO Group Virtual')
   });
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
@@ -2220,7 +2220,7 @@ async function exportOperationPdf() {
   let y = 24 + tl.length * 8 + 4;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
-  doc.text(pdfSafe(`${b.docs.length} missions — une par équipe DEFA`), 105, y, {
+  doc.text(pdfSafe(`${b.docs.length} missions — une par équipe`), 105, y, {
     align: 'center'
   });
   y += 12;
@@ -2777,7 +2777,7 @@ SiaMission.subscribe('generator', d => {
   renderAll();
   setStatus(`Mission mise à jour par le studio cartographique (révision ${d.rev}).`, 'ok')
 });
-// Passerelle vers CR DEFA : la mission (YAML) est confiée au CR de la famille correspondante.
+// Passerelle vers CR : la mission (YAML) est confiée au CR de la famille correspondante.
 $('openCr').onclick = () => {
   try {
     syncNarrative();

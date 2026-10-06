@@ -468,7 +468,7 @@
 
   // ---- YAML : écriture sûre (toutes les chaînes entre guillemets : heures, dates, immat.)
   // et lecture en schéma YAML 1.2 « core » (aucune conversion implicite de date).
-  function toYaml(mission, header = 'Mission Report — DEFA Virtual') {
+  function toYaml(mission, header = 'Mission Report — SO Group Virtual') {
     if (!window.jsyaml) throw new Error('Bibliothèque YAML absente');
     const body = window.jsyaml.dump(mission, {
       forceQuotes: true,

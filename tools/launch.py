@@ -40,6 +40,17 @@ def config_text():
     return ''
 
 
+def va_short():
+    """Sigle de la compagnie virtuelle (config/repository_tree, va.short), écrit dans le champ va des fichiers de données ;
+    repli : SOG."""
+    try:
+        with open(os.path.join(ROOT, 'config', 'repository_tree'), encoding='utf-8') as f:
+            m = re.search(r'\bva:\{[^}]*?\bshort:"([^"]+)"', f.read())
+        return m.group(1) if m else 'SOG'
+    except OSError:
+        return 'SOG'
+
+
 def data_repo_url():
     m = re.search(r'dataRepo\s*:\s*\{\s*url\s*:\s*"([^"]+)"', config_text())
     url = m.group(1) if m else 'https://framagit.org/defa-virtual/missions-defa'
@@ -155,11 +166,11 @@ def ensure_data():
 
 
 # ---- interface de la page de premier lancement (/__setup/…) : seulement depuis la page servie ici (adresse
-# 127.0.0.1:<port> exigée, en-tête X-DEFA-Setup : une autre page web ne peut pas l'envoyer sans pré-vérification CORS,
+# 127.0.0.1:<port> exigée, en-tête X-SOG-Setup : une autre page web ne peut pas l'envoyer sans pré-vérification CORS,
 # à laquelle ce serveur ne répond pas)
 class Setup(http.server.SimpleHTTPRequestHandler):
     port = 0
-    MAX_UPLOAD = 512 * 1024 * 1024  # archive des données ou journal DEFA : 512 Mo au plus
+    MAX_UPLOAD = 512 * 1024 * 1024  # archive des données ou journal : 512 Mo au plus
 
     def log_message(self, *a):
         pass
@@ -170,7 +181,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         return self.headers.get('Host') in (f'127.0.0.1:{self.port}', f'localhost:{self.port}', f'[::1]:{self.port}')
 
     def _allowed(self):
-        return self._local_host() and self.headers.get('X-DEFA-Setup') == '1'
+        return self._local_host() and (self.headers.get('X-SOG-Setup') == '1' or self.headers.get('X-DEFA-Setup') == '1')
 
     def translate_path(self, path):
         """/data/… : dossier de données choisi (--data), s'il n'est pas celui de la suite."""
@@ -374,7 +385,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                         return self._json({'ok': False, 'message': 'Installez d’abord les données (étape 1).'})
                     r = subprocess.run([sys.executable, os.path.join(ROOT, 'tools', 'defa_reference.py'), tmp], cwd=ROOT,
                                        capture_output=True, text=True, encoding='utf-8', errors='replace')
-                    return self._json({'ok': r.returncode == 0, 'message': (r.stdout + r.stderr).strip()[-1500:] or 'Référence DEFA mise à jour.'})
+                    return self._json({'ok': r.returncode == 0, 'message': (r.stdout + r.stderr).strip()[-1500:] or 'Référence mise à jour.'})
                 return self._json({'ok': False, 'message': 'Type de fichier inconnu.'}, 400)
             finally:
                 try:
@@ -620,7 +631,7 @@ def index_users():
         old = None
     if old != users:
         with open(p, 'w', encoding='utf-8', newline='\n') as f:
-            json.dump({'schema': 1, 'va': 'DEFA', 'updated_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'utilisateurs': users}, f, indent=1, ensure_ascii=False)
+            json.dump({'schema': 1, 'va': va_short(), 'updated_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'utilisateurs': users}, f, indent=1, ensure_ascii=False)
 
 
 def mark_instance():
@@ -651,7 +662,7 @@ def main():
     if sys.version_info < (3, 8):
         say('Python 3.8 ou plus récent est nécessaire : https://www.python.org/downloads/')
         return 1
-    say('Suite DEFA — lanceur')
+    say('X-Plane Web Suite — lanceur')
     say(f'Dossier : {ROOT}')
     if a.data:
         say(f'Données : {DATA} (--data)')

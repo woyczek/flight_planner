@@ -7,7 +7,7 @@
   // ajouté à la base locale lors de l'enregistrement au registre).
   //
   // Appareils connus (registre par immatriculation), sources par ordre d'ancienneté :
-  // flotte DEFA (data/references/aircraft_fleet.js), associations des CR HEMS/FIRE
+  // flotte (data/references/aircraft_fleet.js), associations des CR HEMS/FIRE
   // (missionAircraftDirectory:v1), registres HEMS/FIRE en cache, missions enregistrées
   // avec le Core (missionAircraftRegistry:v1, équipements compris). En cas de conflit,
   // la donnée la plus récente l'emporte, champ par champ.
@@ -72,7 +72,7 @@
     A: 'amphibious',
     S: 'amphibious'
   })[String(description || '').charAt(0).toUpperCase()] || '';
-  // Types de la flotte DEFA absents de la base OACI importée : catalogue commun
+  // Types de la flotte absents de la base OACI importée : catalogue commun
   // (shared/aircraft_catalog.js, aussi utilisé par le Landing Dashboard et le Planner).
   const SUPPLEMENT = window.AircraftCatalog?.SUPPLEMENT || {};
   /** Types ajoutés localement dans les CR (missionAircraftTypes:v1) et supplément. */
@@ -142,7 +142,7 @@
   }
 
   // ---- registre des appareils connus
-  /** Appareils connus de toutes les sources (flotte DEFA, annuaire local, registres HEMS / FIRE en cache, registre des missions…), chacun avec sa date pour départager. */
+  /** Appareils connus de toutes les sources (flotte, annuaire local, registres HEMS / FIRE en cache, registre des missions…), chacun avec sa date pour départager. */
   function sources() {
     const records = [];
     (window.DEFA_FLEET || []).forEach(e => records.push({
@@ -172,7 +172,7 @@
         });
       });
     });
-    // Base DEFA (journal des vols réalisés, Paramétrage › Base DEFA) : type, variante et
+    // Base (journal des vols réalisés, Paramétrage › Base) : type, variante et
     // indicatifs utilisés par immatriculation — sans indicatif par défaut (numéro propre au vol).
     ((read('defaFlightLog:v1') || {}).records || []).forEach(r => {
       if (r.registration) records.push({
@@ -183,7 +183,7 @@
         date: r.date
       });
     });
-    // Référence DEFA anonymisée (defa_reference.js) : type, indicatifs utilisés, terrains.
+    // Référence anonymisée (defa_reference.js) : type, indicatifs utilisés, terrains.
     (window.DEFA_REFERENCE?.aircraft || []).forEach(r => records.push({
       registration: r.registration,
       type: r.type,
@@ -215,7 +215,7 @@
     out.push(value);
     return out.map(v => v.trim());
   }
-  // base / operator / number : flotte DEFA (base d'attache, opérateur, numéro de l'appareil).
+  // base / operator / number : flotte (base d'attache, opérateur, numéro de l'appareil).
   const FIELDS = ['registration', 'type', 'variant', 'category', 'callsign', 'tacticalNumber', 'configuration', 'equipment', 'base', 'operator', 'number'];
   // Fusion par immatriculation, du plus ancien au plus récent : chaque champ non vide
   // écrase la valeur précédente → « la dernière en date ».
@@ -341,7 +341,7 @@
   }
 
   // Base des indicatifs connus : indicatif (DRAGON, PELICAN, SAMU…) → numéros, appareils,
-  // types et opérateurs associés (flotte DEFA + appareils des missions enregistrées) ;
+  // types et opérateurs associés (flotte + appareils des missions enregistrées) ;
   // les formes abrégées de plan de vol (DRAGO) sont rattachées à leur indicatif complet.
   function callsignSeries() {
     const split = window.MissionModel.splitCallsign,

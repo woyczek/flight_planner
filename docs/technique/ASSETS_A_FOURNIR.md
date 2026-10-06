@@ -237,7 +237,7 @@ Intégration : `design_deco.js`, `SETS.aqua.device = [['<principal>', <hauteur
   petit
 - [ ] livré · [ ] intégré — (facultatif) `footer.webp`, frise de pied de page 1394 × ≈ 90, opaque
 
-Règle de choix : chaque objet évoque un domaine de la DEFA (navigation, transmissions, météo, documents, instruments de
+Règle de choix : chaque objet évoque un domaine de la compagnie (navigation, transmissions, météo, documents, instruments de
 bord) et reste dans le vocabulaire Aqua (verre, aluminium, gel, eau) ; pas de doublon de sujet entre `between` et
 `sides` ; variété de formes (rond, allongé, carré) pour l'alternance. Une planche de 4 à 6 objets par demande, découpée
 ensuite dans `tools/icons_from_sheets.html`, garde la cohérence d'échelle et de lumière.
@@ -405,7 +405,7 @@ mieux une planche paysage où la frise occupe toute la largeur. Modèles : `sh
 `shared/deco/flightlog/footer.webp` (objets de la matière posés côte à côte, de bord à bord).
 
 Contenu : pupitre olive vu de face avec, de gauche à droite, un écran radar vert (éteint ou figé, repris de `radar.webp`),
-la plaque DEFA (`plate-defa.webp` : seule inscription admise, recopiée de l'image jointe), puis des éléments de pupitre
+la plaque (`plate-defa.webp` : seule inscription admise, recopiée de l'image jointe), puis des éléments de pupitre
 (interrupteurs, grilles, voyants) ; **laisser à droite une zone de tôle unie d'environ 220 × 90 px** où se posera le
 voyant de sauvegarde (composant commun, pas dans l'image).
 

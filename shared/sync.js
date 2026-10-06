@@ -17,7 +17,7 @@
     ...opts,
     cache: 'no-store',
     headers: {
-      'X-DEFA-Setup': '1',
+      'X-SOG-Setup': '1',
       ...(opts.body ? {
         'Content-Type': 'application/json'
       } : {})

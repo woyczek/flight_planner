@@ -654,20 +654,26 @@
   };
   document.body.style.backgroundColor = theme.page || "";
   /** Adresse d'une source externe : réglage local (suiteSources:v1, Paramètres › Maintenance) sinon repository_tree.sources. */
-  const source = key => String(K.store.json("suiteSources:v1", {})[key] || cfg.sources?.[key]?.url || "").replace(/\/+$/, "");
-  /** Compagnie virtuelle : repository_tree.va (DEFA Virtual par défaut) et réglage local (suiteVA:v1) ; url : site
-   *  (sources.defa). { name, short, centre, centreName, url, pages: { home, log, fleet, aircraft } }. */
+  // Site de la compagnie (source « defa », va.pages) : les adresses par défaut de repository_tree sont celles de DEFA
+  // Virtual et ne valent que pour elle ; autre compagnie : adresses réglées (Paramètres › Installation › Sources et
+  // dossiers) ou aucune — jamais de lien inventé (siteLink : invitation à renseigner l'adresse)
+  const DEFAULT_SITE_FOR = "DEFA Virtual";
+  const vaName = () => (K.store.json("suiteVA:v1", {}) || {}).name || cfg.va?.name || "SO Group Virtual";
+  const source = key => String(K.store.json("suiteSources:v1", {})[key] || (key === "defa" && vaName() !== DEFAULT_SITE_FOR ? "" : cfg.sources?.[key]?.url) || "").replace(/\/+$/, "");
+  /** Compagnie virtuelle : repository_tree.va (SO Group Virtual par défaut) et réglage local (suiteVA:v1) ; url : site
+   *  (sources.defa). { name, fullName, short, centre, centreName, url, pages: { home, log, fleet, aircraft } }. */
   const va = () => {
     const d = cfg.va || {},
       o = K.store.json("suiteVA:v1", {}) || {};
     return {
-      name: o.name || d.name || "DEFA Virtual",
-      short: o.short || d.short || "DEFA",
+      name: o.name || d.name || "SO Group Virtual",
+      fullName: o.fullName || d.fullName || "",
+      short: o.short || d.short || "SOG",
       centre: o.centre || d.centre || "CPCO",
       centreName: o.centreName || d.centreName || "",
       url: source("defa"),
       pages: {
-        ...(d.pages || {}),
+        ...(vaName() === DEFAULT_SITE_FOR ? d.pages || {} : {}),
         ...(o.pages || {})
       }
     };
@@ -676,7 +682,16 @@
   const vaUrl = (pageKey, vars = {}) => {
     const v = va(),
       p = String(v.pages[pageKey] ?? "").replace(/\{(\w+)\}/g, (_, k) => encodeURIComponent(vars[k] ?? ""));
-    return /^https?:/i.test(p) ? p : v.url + (p && !p.startsWith("/") ? "/" : "") + p;
+    if (/^https?:/i.test(p)) return p;
+    return v.url ? v.url + (p && !p.startsWith("/") ? "/" : "") + p : "";
+  };
+  /** Lien HTML vers une page du site de la compagnie (texte : celui donné, sinon l'adresse) ; adresse inconnue : lien
+   *  vers le réglage de l'adresse (Paramètres › Installation › Sources et dossiers). */
+  const siteLink = (pageKey, vars = {}, text = "") => {
+    const u = vaUrl(pageKey, vars),
+      i = Math.max(0, supported.indexOf(language));
+    return u ? `<a href="${K.esc(u)}" target="_blank" rel="noopener">${K.esc(text || u.replace(/^https?:\/\//, ""))} ↗</a>` :
+      `<a href="${K.esc(settingsUrl("sources"))}" title="${K.esc(["Paramètres › Installation › Sources et dossiers", "Settings › Installation › Sources and folders", "Einstellungen › Installation › Quellen und Ordner", "Ajustes › Instalación › Fuentes y carpetas"][i])}">${K.esc(["adresse du site de la compagnie à renseigner", "airline website address to be set", "Website-Adresse der Fluggesellschaft eintragen", "dirección del sitio de la aerolínea por indicar"][i])}</a>`;
   };
   /** Émet « repository-design-change » (detail : ce qui a changé) : décors, icônes, graphiques des pages se refont. */
   const designChanged = detail => window.dispatchEvent(new CustomEvent("repository-design-change", {
@@ -696,6 +711,7 @@
     source,
     va,
     vaUrl,
+    siteLink,
     /** Enregistre la surcharge locale de la compagnie virtuelle (objet vide : défauts) ; événement « suite-sources-change ». */
     setVa(o) {
       const clean = Object.fromEntries(Object.entries(o || {}).filter(([k, v]) => k === "pages" ? v && Object.values(v).some(Boolean) : String(v || "").trim()));
@@ -889,7 +905,7 @@
         icon: "clipboard",
         path: "apps/cr/mission_cr.html",
         match: "apps/cr/",
-        label: ["CR DEFA", "DEFA report", "DEFA-Bericht", "Informe DEFA"]
+        label: ["CR", "Report", "Bericht", "Informe"]
       }, {
         icon: "map",
         path: "apps/planner/map_planner.html",
@@ -972,7 +988,7 @@
       return `<img class="repo-sidenav-img" src="${new URL(`icons/skeuo/${d}/${name}.webp${ver}`, script.src).href}" alt="">`;
     };
     // haut de la barre : logo de la compagnie virtuelle décliné selon le design (<id du design à matières>.webp, sinon
-    // flat) — celui de la DEFA (shared/icons/defa) si la compagnie est DEFA Virtual, sinon le logo générique (cible,
+    // flat) — celui de la compagnie (shared/icons/defa) si la compagnie réglée est SO Group Virtual, sinon le logo générique (cible,
     // shared/icons/generic) ; lien vers le site de la compagnie (nouvel onglet : la page en cours reste ouverte)
     const logoSrc = () => new URL(`icons/${/\bDEFA\b/i.test(`${va().short} ${va().name}`) ? "defa" : "generic"}/${designs[doc.dataset.design]?.skeuo ? doc.dataset.design : "flat"}.webp${ver}`, script.src).href;
     side.innerHTML = `<a class="repo-sidenav-brand" href="${K.esc(vaUrl("home"))}" target="_blank" rel="noopener" title="${K.esc(va().name)} — ${K.esc(source("defa").replace(/^https?:\/\//, ""))}"><img class="repo-sidenav-logo" src="${logoSrc()}" alt="${K.esc(va().name)}"></a><ul></ul><ul class="repo-sidenav-foot"></ul>`;
@@ -1120,16 +1136,25 @@
     document.head.append(update)
   }
   {
-    /* Autre compagnie virtuelle que DEFA (Paramètres › Sources et dossiers) : « DEFA Virtual », « DEFA » et « CPCO »
-       des textes de la suite affichés avec le nom, le sigle et le centre réglés (nœuds texte et infobulles, pages et
-       contenus ajoutés ensuite). Rien n'est fait avec les réglages par défaut. */
+    /* Autre compagnie virtuelle que celle écrite dans les sources (Paramètres › Sources et dossiers) : « SO Group
+       Virtual », « Virtual Special Operation Group », « SOG » et « CPCO » des textes de la suite affichés avec le nom, le
+       nom long, le sigle et le centre réglés (nœuds texte et infobulles, pages et contenus ajoutés ensuite).
+       Comparaison avec la marque des sources (et non avec repository_tree.va) : la couche agit dès que la compagnie
+       réglée en diffère. */
+    const SOURCE = {
+      name: "SO Group Virtual",
+      fullName: "Virtual Special Operation Group",
+      short: "SOG",
+      centre: "CPCO"
+    };
     const rebrand = () => {
       const v = va(),
         d = cfg.va || {},
         rules = [
-          [/\bDEFA Virtual\b/g, v.name, d.name || "DEFA Virtual"],
-          [/\bDEFA\b/g, v.short, d.short || "DEFA"],
-          [/\bCPCO\b/g, v.centre, d.centre || "CPCO"]
+          [/\bSO Group Virtual\b/g, v.name, SOURCE.name],
+          [/\bVirtual Special Operation Group\b/g, v.fullName || v.name, SOURCE.fullName],
+          [/\bSOG\b/g, v.short, SOURCE.short],
+          [/\bCPCO\b/g, v.centre, SOURCE.centre]
         ].filter(([, to, from]) => to && to !== from);
       if (!rules.length) return;
       const fix = s => rules.reduce((x, [re, to]) => x.replace(re, to), s);
@@ -1137,19 +1162,19 @@
       const walk = root => {
         const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
         for (let n; (n = w.nextNode());)
-          if (!skip(n.parentElement) && /DEFA|CPCO/.test(n.nodeValue)) {
+          if (!skip(n.parentElement) && /SO Group|Special Operation|SOG|CPCO/.test(n.nodeValue)) {
             const s = fix(n.nodeValue);
             if (s !== n.nodeValue) n.nodeValue = s;
           }
         if (root.querySelectorAll)
           for (const el of root.querySelectorAll("[title]"))
-            if (/DEFA|CPCO/.test(el.title)) el.title = fix(el.title);
+            if (/SO Group|Special Operation|SOG|CPCO/.test(el.title)) el.title = fix(el.title);
       };
       walk(document.body);
       if (document.title) document.title = fix(document.title);
       new MutationObserver(list => {
         for (const m of list)
-          for (const n of m.type === "characterData" ? [m.target] : m.addedNodes) n.nodeType === 3 ? (!skip(n.parentElement) && /DEFA|CPCO/.test(n.nodeValue) && (n.nodeValue = fix(n.nodeValue))) : n.nodeType === 1 && !skip(n) && walk(n);
+          for (const n of m.type === "characterData" ? [m.target] : m.addedNodes) n.nodeType === 3 ? (!skip(n.parentElement) && /SO Group|Special Operation|SOG|CPCO/.test(n.nodeValue) && (n.nodeValue = fix(n.nodeValue))) : n.nodeType === 1 && !skip(n) && walk(n);
       }).observe(document.body, {
         childList: true,
         characterData: true, // textes traduits ensuite (content_i18n.js)

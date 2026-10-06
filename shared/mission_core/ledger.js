@@ -2,7 +2,7 @@
   'use strict';
   // Mission Report Core — registre UNIQUE des missions, toutes familles : data/cr/missions.yaml
   // (chaque mission porte sa famille). Sources, la plus récente (updatedAt) l'emporte :
-  // fichier du dossier « CR DEFA » autorisé (Chrome / Edge, une seule autorisation), copie du
+  // fichier du dossier « CR » autorisé (Chrome / Edge, une seule autorisation), copie du
   // navigateur (partagée entre pages), fichier servi avec le dépôt (lecture seule).
   //
   // Vues par famille : MissionLedger.open(famille) — missions de la famille, index propres à
@@ -82,7 +82,7 @@
       missions: missions.map(m => M.migrate(m, m?.family || data.family || family))
     };
   };
-  /** Dossier du registre (CR DEFA) autorisé ; request : demande l'autorisation. null sinon. */
+  /** Dossier du registre (CR) autorisé ; request : demande l'autorisation. null sinon. */
   async function directory(request = false, id = HANDLE) {
     const h = id === HANDLE ? (handle = handle || await idbGet(HANDLE)) : await idbGet(id);
     if (!h) return null;
@@ -472,7 +472,7 @@
     missions: store.missions
   });
   /** Texte YAML du registre (ou d'une sélection de missions). */
-  const yaml = (missions = store.missions, title = 'Registre des missions — toutes familles — Mission Report — DEFA Virtual') => M.toYaml({
+  const yaml = (missions = store.missions, title = 'Registre des missions — toutes familles — Mission Report — SO Group Virtual') => M.toYaml({
     ...doc(),
     missions
   }, title);
@@ -742,7 +742,7 @@
       setMissions: missions => {
         store.missions = store.missions.filter(m => m.family !== id).concat(missions.map(withFamily));
       },
-      downloadYaml: () => download(`${id.toLowerCase()}_missions.yaml`, yaml(list(), `Missions ${id} (extrait du registre ${FILE}) — Mission Report — DEFA Virtual`), 'text/yaml;charset=utf-8'),
+      downloadYaml: () => download(`${id.toLowerCase()}_missions.yaml`, yaml(list(), `Missions ${id} (extrait du registre ${FILE}) — Mission Report — SO Group Virtual`), 'text/yaml;charset=utf-8'),
       downloadCsv: () => download(`${id.toLowerCase()}_missions.csv`, csv(list()), 'text/csv;charset=utf-8'),
       // Import : missions sans famille rattachées à celle-ci ; les autres gardent la leur.
       async importFile(text) {

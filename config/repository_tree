@@ -12,13 +12,13 @@ window.REPOSITORY_TREE={
   },
   // Sources externes (adresses par défaut ; réglables dans Paramètres › Maintenance › Sources et dossiers, surcharge
   // locale suiteSources:v1) : RepositoryNav.source(clé). {nn} / {yy} : numéro du cycle AIRAC et année sur deux chiffres.
-  // Compagnie virtuelle (DEFA Virtual par défaut ; réglable dans Paramètres › Maintenance › Sources et dossiers,
+  // Compagnie virtuelle (SO Group Virtual par défaut ; réglable dans Paramètres › Maintenance › Sources et dossiers,
   // surcharge locale suiteVA:v1) : RepositoryNav.va() ; adresse du site : sources.defa ; pages : chemins sous ce site,
   // {id} remplacé (RepositoryNav.vaUrl(page, { id })).
-  va:{name:"DEFA Virtual",short:"DEFA",centre:"CPCO",centreName:"Centre de planification et de conduite des opérations",
+  va:{name:"SO Group Virtual",fullName:"Virtual Special Operation Group",short:"SOG",centre:"CPCO",centreName:"Centre de planification et de conduite des opérations",
     pages:{home:"/index.php",log:"/log_vols.php",fleet:"/flotte.php",aircraft:"/appareil.php?id={id}"}},
   sources:{
-    defa:{url:"https://flotte.defa-virtual.fr",label:["Site de la compagnie virtuelle (DEFA Virtual)","Virtual airline website (DEFA Virtual)","Website der virtuellen Fluggesellschaft (DEFA Virtual)","Sitio de la aerolínea virtual (DEFA Virtual)"]},
+    defa:{url:"https://flotte.defa-virtual.fr",label:["Site de la compagnie virtuelle","Virtual airline website","Website der virtuellen Fluggesellschaft","Sitio de la aerolínea virtual"]},
     siaData:{url:"https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/les-bases-de-donnees-sia.html",label:["SIA — bases de données (export XML)","SIA — databases (XML export)","SIA — Datenbanken (XML-Export)","SIA — bases de datos (XML)"]},
     siaCycle:{url:"https://www.sia.aviation-civile.gouv.fr/donnees-aeronautiques-xml-airac-{nn}-{yy}.html",label:["SIA — page d’un cycle AIRAC","SIA — AIRAC cycle page","SIA — Seite eines AIRAC-Zyklus","SIA — página de un ciclo AIRAC"]},
     siaEaip:{url:"https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/eaip.html",label:["SIA — eAIP","SIA — eAIP","SIA — eAIP","SIA — eAIP"]},
@@ -125,7 +125,7 @@ window.REPOSITORY_TREE={
   // bottom : la suite est rangée en bas de la colonne.
   sidebar:[
     {icon:"send",path:"apps/pilot/mes_missions.html",match:"apps/pilot/",label:["Mes missions","My missions","Meine Missionen","Mis misiones"],title:["Missions qui vous sont affectées par le Centre, vos disponibilités et vos appareils","Missions assigned to you by the Centre, your availability and aircraft","Vom Zentrum zugewiesene Missionen, Verfügbarkeit und Luftfahrzeuge","Misiones asignadas por el Centro, disponibilidad y aeronaves"]},
-    {icon:"clipboard",path:"apps/cr/mission_cr.html",match:"apps/cr/",label:["CR DEFA","DEFA report","DEFA-Bericht","Informe DEFA"]},
+    {icon:"clipboard",path:"apps/cr/mission_cr.html",match:"apps/cr/",label:["CR","Report","Bericht","Informe"]},
     {icon:"map",path:"apps/planner/map_planner.html",label:["Cartes de vol","Flight maps","Flugkarten","Mapas de vuelo"],title:["Cartes de vol : route, topo, approche, rendez-vous, destination","Flight maps: route, topo, approach, rendezvous, destination","Flugkarten: Route, Topo, Anflug, Treffpunkt, Ziel","Mapas de vuelo: ruta, topo, aproximación, encuentro, destino"]},
     {icon:"fuel",path:"apps/planner/flight_performance_planner.html",label:["Carburant","Fuel","Kraftstoff","Combustible"]},
     {icon:"plane",path:"apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html",label:["Atterrissages","Landings","Landungen","Aterrizajes"]},
@@ -205,7 +205,7 @@ window.REPOSITORY_TREE={
     {path:"apps/cr/MissionCore/demo_cr.html",menu:false,label:"Démonstration — compte rendu de mission"},
     {path:"apps/cr/MissionCore/demo_reporting.html",menu:false,label:"Démonstration — reporting missions"},
     {path:"apps/cr/mission_cr.html",menu:false,label:"Nouveau compte rendu de mission",theme:"core",favicon:"assets/favicon-flight.svg"},
-    {path:"apps/cr/mission_operations_reporting.html",menu:"Reporting missions",label:"Reporting missions — CR DEFA",theme:"landing",favicon:"assets/favicon-landing.svg",files:{gaarLedgerName:"FIRE/mission_ledger.csv",ledgerName:"HEMS/hems_mission_ledger.csv"}},
+    {path:"apps/cr/mission_operations_reporting.html",menu:"Reporting missions",label:"Reporting missions — CR",theme:"landing",favicon:"assets/favicon-landing.svg",files:{gaarLedgerName:"FIRE/mission_ledger.csv",ledgerName:"HEMS/hems_mission_ledger.csv"}},
     {path:"apps/cr/appareil.html",menu:false,label:"Fiche appareil",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/cr/equipage.html",menu:false,label:"Fiche équipage",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/settings/parametrage.html",menu:false,label:"Paramètres",theme:"core",favicon:"assets/favicon-flight.svg"},

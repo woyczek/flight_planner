@@ -134,7 +134,7 @@ sequenceDiagram
 - **Auteur des commits** : le trigramme de l'utilisateur connecté (utilisateur usurpé compris), adresse
   `<tri>@defa.local`. Sans trigramme, la synchronisation est refusée (notification).
 - **Accès** : les routes `/__setup/sync-status` et `/__setup/sync` ne répondent qu'aux pages de cette machine (en-tête
-  `Host` local, en-tête `X-DEFA-Setup`), comme les autres routes du lanceur.
+  `Host` local, en-tête `X-SOG-Setup`), comme les autres routes du lanceur.
 - **Identifiants git** : ceux du système (clé SSH, gestionnaire d'identifiants) ; git ne pose jamais de question
   (`GIT_TERMINAL_PROMPT=0`) ; la suite ne stocke aucun identifiant.
 - **Droits** : en transport git, chacun peut écrire tout le pool (les rôles sont vérifiés par les pages). La

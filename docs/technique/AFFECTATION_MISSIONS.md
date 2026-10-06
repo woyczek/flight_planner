@@ -44,7 +44,7 @@ venir qui lui sont affectées, signalées par un pli cacheté dans l'en-tête.
 ## 3. Identité de l'utilisateur
 
 Réglage local **« Mon trigramme »** (Paramètres, `defaUser:v1` dans ce navigateur, non partagé) : trigramme choisi dans
-la référence DEFA (`data/references/defa_reference.js`, `pilots[].trigram`). Sert à « Mes missions », au pli cacheté et,
+la référence (`data/references/defa_reference.js`, `pilots[].trigram`). Sert à « Mes missions », au pli cacheté et,
 plus tard, à préremplir l'équipage des CR. Pas de mot de passe : la suite reste locale ; ce n'est pas un contrôle d'accès.
 
 ## 4. Données
@@ -173,7 +173,7 @@ ailleurs. Clic → « Mes missions » ; ouvrir la mission marque l'affectation l
 ## 10. Réalisation (branche feature/affectations)
 
 - **Socle** `shared/assignments.js` (toutes les pages, chargé par `repository_nav.js`) : trigramme du profil pilote
-  (☰ › Profil pilote, champ « Trigramme DEFA »), index `data/missions/affectations.json` lu par fetch, lu / non lu local
+  (☰ › Profil pilote, champ « Trigramme »), index `data/missions/affectations.json` lu par fetch, lu / non lu local
   (`assignmentsRead:v1`), **pli cacheté** dans l'en-tête (enveloppe à cachet de cire, compteur ; habillage des designs à
   matières), grille de disponibilités, écriture d'une affectation (Centre).
 - **Page pilote** `apps/pilot/mes_missions.html` (menu ☰ « Mes missions ») : missions à venir, mission en lecture seule
@@ -187,7 +187,7 @@ ailleurs. Clic → « Mes missions » ; ouvrir la mission marque l'affectation l
   décollage et avertit s'il ne couvre pas la famille de la mission (ex. T « Transport » sur une mission COMBAT).
 - **Centre** : bouton **« Affecter… »** du détail d'une mission (registre ; pas pour les missions d'organisation Z),
   `shared/assign_dialog.js` : heure de décollage ou heure H (exercice : décalage du participant), astreinte (prêt à,
-  préavis, fin), participants (+ équipier, indicatif suivi), pilote (référence DEFA : qualification sur le type,
+  préavis, fin), participants (+ équipier, indicatif suivi), pilote (référence : qualification sur le type,
   disponibilité à l'heure), appareil du type demandé (flotte ; basé au terrain de départ ou **convoyage** : distance
   depuis la base SIA, le registre ou la base mondiale des aérodromes, vitesse de croisière + 20 min, décollage du
   convoyage = décollage − durée − 30 min), conflits (pilote ou appareil déjà pris, doublons), enregistrement

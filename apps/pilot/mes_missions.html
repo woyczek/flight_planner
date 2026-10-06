@@ -925,7 +925,7 @@
     transform: rotate(-6deg)
   }
   /* logo en page 1 (Cabinet, Carnet de vol, Durci, Aqua) : l'en-tête de l'ordre, en haut à gauche, au-dessus de l'étiquette
-     (Cabinet : ailes et « DEFA Virtual CPCO » ; les autres : l'en-tête de l'émetteur de la famille, comme en page 2) */
+     (Cabinet : ailes et « SO Group Virtual CPCO » ; les autres : l'en-tête de l'émetteur de la famille, comme en page 2) */
   .pm-logo {
     display: none
   }
@@ -3169,8 +3169,8 @@
     });
     // famille de la mission : en-tête de l'ordre propre à la famille quand le design en a un (feuille de la page)
     $('pmDetail').dataset.family = window.MissionVocab?.familyForType?.(y.mission?.type || a.type) || '';
-    $('pmDetail').innerHTML = `<div data-part="title"><header class="pm-head pm-logo" aria-hidden="true"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>DEFA Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div></header>${labelHtml({ ...a, title: y.title || a.title })}</div>
-      <div data-part="order"><header class="pm-head"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>DEFA Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div><span class="pm-no">N° ${esc(a.mission)}</span></header>
+    $('pmDetail').innerHTML = `<div data-part="title"><header class="pm-head pm-logo" aria-hidden="true"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>SO Group Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div></header>${labelHtml({ ...a, title: y.title || a.title })}</div>
+      <div data-part="order"><header class="pm-head"><img class="pm-emblem" src="../../shared/deco/cabinet/emblem-wings.webp?v=79ab9a8f" alt=""><div><b>SO Group Virtual CPCO</b><span>Centre de planification et de conduite des opérations</span></div><span class="pm-no">N° ${esc(a.mission)}</span></header>
         <i class="pm-dr" aria-label="Diffusion restreinte"></i>
         <h3>${a.role === 'convoyage' ? `Ordre de convoyage — ${esc(titleOf(a).replace(/^Convoyage /, ''))}` : `Ordre de mission — ${esc(y.title || a.title || '')}`}</h3>
         ${auto ? `<p class="pm-mt small" data-mt-note data-no-i18n>${mtNoteHtml()}</p>` : ''}
