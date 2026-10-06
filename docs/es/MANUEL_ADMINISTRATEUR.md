@@ -404,7 +404,7 @@ Este bloque reúne los entrenamientos, exámenes, eventos y reservas de VATSIM /
 - Las dos horas deben caer el mismo día: el fin debe ser posterior al inicio.
 - «Recuperar VATSIM (Francia metropolitana)» importa las reservas VATSIM de la semana. Las sesiones ya recuperadas se sustituyen (anulaciones incluidas); las introducidas a mano se conservan.
 - «Recuperar IVAO (Francia metropolitana)» importa igualmente los entrenamientos, exámenes y reservas IVAO de la semana, con la clave de API IVAO de la instalación (Ajustes › Instalación). Estos dos botones son la importación común con las órdenes de vuelo: un solo archivo, las mismas sesiones en ambas páginas.
-- El botón «×» de una línea quita la sesión. La columna «Fuente» indica «recuperada» o «introducida».
+- El botón «×» de una línea quita la sesión. La columna «Fuente» indica «recuperada» o «introducida». La tabla muestra primero los entrenamientos, exámenes y eventos (examen y entrenamiento marcados en el margen); las simples reservas de posición, numerosas una vez importadas, se pliegan bajo «n reserva(s) de posición».
 - **Efecto en la planificación**: una sesión se cuenta en su franja (★). Un entrenamiento o un examen deja la CTR del aeródromo no disponible para las misiones de esa franja; las TMA que contienen el aeródromo deben evitarse en lo posible.
 
 ### Activaciones de zonas por red

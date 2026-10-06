@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Planning ODV, sessions ATC** : trainings, examens et événements en tête du tableau (repérés en marge), simples
+  réservations de position repliées ; message d'import détaillé (trainings, examens, autres sessions).
 - **« Importer d'IVAO » importe aussi les sessions ATC IVAO** (trainings, examens, réservations) ; import IVAO
   automatique à l'ouverture d'une semaine, au plus une fois par heure, si la page peut écrire (`SuiteAtc.autoImport`,
   commun au Planning ODV et aux Ordres de vols).

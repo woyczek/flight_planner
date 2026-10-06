@@ -404,7 +404,7 @@ Dieser Block sammelt die Trainings, Prüfungen, Events und Buchungen von VATSIM 
 - Beide Zeiten müssen auf denselben Tag fallen: Das Ende muss nach dem Beginn liegen.
 - „VATSIM abrufen (Frankreich, Mutterland)“ importiert die VATSIM-Buchungen der Woche. Bereits abgerufene Sitzungen werden ersetzt (einschließlich Stornierungen); manuelle Eingaben bleiben erhalten.
 - „IVAO abrufen (Frankreich, Mutterland)“ importiert ebenso die IVAO-Trainings, -Prüfungen und -Buchungen der Woche, mit dem IVAO-API-Schlüssel der Installation (Einstellungen › Installation). Diese beiden Schaltflächen sind der mit den Flugbefehlen gemeinsame Import: eine Datei, dieselben Sitzungen auf beiden Seiten.
-- Die Schaltfläche „×“ einer Zeile entfernt die Sitzung. Die Spalte „Quelle“ zeigt „abgerufen“ oder „eingegeben“.
+- Die Schaltfläche „×“ einer Zeile entfernt die Sitzung. Die Spalte „Quelle“ zeigt „abgerufen“ oder „eingegeben“. Die Tabelle zeigt zuerst Trainings, Prüfungen und Veranstaltungen (Prüfung und Training am Rand markiert); einfache Positionsbuchungen, nach dem Import zahlreich, sind unter „n Positionsbuchung(en)“ eingeklappt.
 - **Wirkung auf die Planung**: Eine Sitzung wird in ihrem Zeitfenster gezählt (★). Ein Training oder eine Prüfung macht die CTR des Flugplatzes für die Missionen dieses Zeitfensters unverfügbar; die TMA, die den Flugplatz enthalten, sind möglichst zu meiden.
 
 ### Gebietsaktivierungen nach Netzwerk

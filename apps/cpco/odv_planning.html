@@ -575,6 +575,18 @@
     text-align: left;
     border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent)
   }
+  /* sessions ATC : examen et training repérés (CTR du terrain à éviter), réservations repliées */
+  .odv-atc tr.odv-atc-examen td:first-child {
+    box-shadow: inset 3px 0 #b91c1c
+  }
+  .odv-atc tr.odv-atc-training td:first-child {
+    box-shadow: inset 3px 0 #e39b1b
+  }
+  .odv-atc-resa summary {
+    cursor: pointer;
+    margin: 6px 0;
+    font-size: 12px
+  }
   .odv-d-note {
     margin: 4px 0 0;
     font-size: 11px
@@ -849,7 +861,7 @@ html[data-design="field"] .odv-heat button.sel {
 <script src="../../shared/atc_sessions.js?v=ab462121"></script>
 <script src="../../shared/odv_airspace.js?v=146a3974"></script>
 <script src="../../shared/odv_activations_editor.js?v=1e9f18fd"></script>
-<script src="odv_planning.js?v=52bde580"></script>
+<script src="odv_planning.js?v=5d555d44"></script>
 <script src="../../shared/app_framework.js?v=ae60867a"></script>
 <script src="../../shared/content_i18n.js?v=7afecb78"></script>
 <script>

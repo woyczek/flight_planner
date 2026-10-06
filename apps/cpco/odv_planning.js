@@ -614,8 +614,15 @@
     const dates = gridData().dates,
       list = atc.week === atcWeek() ? atc.list : [];
     const dayOpt = dates.map((d, j) => `<option value="${d}">${esc(wordL(C.DAYS[j]))} ${esc(dateFr(d))}</option>`).join('');
-    const rows = list.map((x, i) => `<tr><td>${esc(wordL(C.DAYS[dates.indexOf(x.date)] || ''))} ${esc(dateFr(x.date))}</td><td>${esc(x.debut)}–${esc(x.fin)}z</td><td><b>${esc(x.position)}</b></td><td>${esc(x.reseau)}</td><td>${esc(S.typeLabel(x.type))}</td><td>${esc(x.texte || '')}</td><td class="mut">${x.source === 'vatsim' || x.source === 'ivao' ? L(['récupérée', 'fetched', 'abgerufen', 'recuperada']) : L(['saisie', 'entered', 'eingegeben', 'introducida'])}</td><td><button type="button" class="ghost" data-atc-del="${i}" title="${esc(L(['Retirer cette session', 'Remove this session', 'Diese Sitzung entfernen', 'Quitar esta sesión']))}">×</button></td></tr>`).join('');
-    host.innerHTML = `${list.length ? `<table class="odv-week odv-atc"><thead><tr><th>${L(['Jour', 'Day', 'Tag', 'Día'])}</th><th>${L(['Heures (UTC)', 'Hours (UTC)', 'Uhrzeit (UTC)', 'Horas (UTC)'])}</th><th>${L(['Position', 'Position', 'Position', 'Posición'])}</th><th>${L(['Réseau', 'Network', 'Netzwerk', 'Red'])}</th><th>${L(['Type', 'Type', 'Art', 'Tipo'])}</th><th>${L(['Commentaire', 'Comment', 'Kommentar', 'Comentario'])}</th><th>${L(['Source', 'Source', 'Quelle', 'Fuente'])}</th><th></th></tr></thead><tbody>${rows}</tbody></table>` : `<p class="mut odv-d-note">${L(['Aucune session ATC enregistrée pour cette semaine.', 'No ATC session recorded for this week.', 'Für diese Woche keine ATC-Sitzung erfasst.', 'Ninguna sesión ATC registrada para esta semana.'])}</p>`}
+    // trainings, examens et événements en tête ; simples réservations (contexte ★, nombreuses une fois importées) repliées
+    const row = (x, i) => `<tr class="odv-atc-${esc(x.type)}"><td>${esc(wordL(C.DAYS[dates.indexOf(x.date)] || ''))} ${esc(dateFr(x.date))}</td><td>${esc(x.debut)}–${esc(x.fin)}z</td><td><b>${esc(x.position)}</b></td><td>${esc(x.reseau)}</td><td>${esc(S.typeLabel(x.type))}</td><td>${esc(x.texte || '')}</td><td class="mut">${x.source === 'vatsim' || x.source === 'ivao' ? L(['récupérée', 'fetched', 'abgerufen', 'recuperada']) : L(['saisie', 'entered', 'eingegeben', 'introducida'])}</td><td><button type="button" class="ghost" data-atc-del="${i}" title="${esc(L(['Retirer cette session', 'Remove this session', 'Diese Sitzung entfernen', 'Quitar esta sesión']))}">×</button></td></tr>`;
+    const indexed = list.map((x, i) => [x, i]),
+      key = indexed.filter(([x]) => x.type !== 'reservation'),
+      resa = indexed.filter(([x]) => x.type === 'reservation');
+    const head = `<thead><tr><th>${L(['Jour', 'Day', 'Tag', 'Día'])}</th><th>${L(['Heures (UTC)', 'Hours (UTC)', 'Uhrzeit (UTC)', 'Horas (UTC)'])}</th><th>${L(['Position', 'Position', 'Position', 'Posición'])}</th><th>${L(['Réseau', 'Network', 'Netzwerk', 'Red'])}</th><th>${L(['Type', 'Type', 'Art', 'Tipo'])}</th><th>${L(['Commentaire', 'Comment', 'Kommentar', 'Comentario'])}</th><th>${L(['Source', 'Source', 'Quelle', 'Fuente'])}</th><th></th></tr></thead>`;
+    const table = l => `<table class="odv-week odv-atc">${head}<tbody>${l.map(([x, i]) => row(x, i)).join('')}</tbody></table>`;
+    host.innerHTML = `${key.length ? table(key) : `<p class="mut odv-d-note">${list.length ? L(['Aucun training, examen ou événement ATC cette semaine.', 'No ATC training, exam or event this week.', 'Diese Woche kein ATC-Training, keine Prüfung, keine Veranstaltung.', 'Ningún entrenamiento, examen ni evento ATC esta semana.']) : L(['Aucune session ATC enregistrée pour cette semaine.', 'No ATC session recorded for this week.', 'Für diese Woche keine ATC-Sitzung erfasst.', 'Ninguna sesión ATC registrada para esta semana.'])}</p>`}
+      ${resa.length ? `<details class="odv-atc-resa"><summary class="mut">${L(['{n} réservation(s) de position (contexte ★ des créneaux)', '{n} position booking(s) (★ slot context)', '{n} Positionsbuchung(en) (★ Kontext der Zeitfenster)', '{n} reserva(s) de posición (contexto ★ de las franjas)'], { n: resa.length })}</summary>${table(resa)}</details>` : ''}
       <form class="row odv-atc-form" data-atc-form>
         <select data-atc="date" aria-label="${esc(L(['Jour', 'Day', 'Tag', 'Día']))}">${dayOpt}</select>
         <input type="time" data-atc="debut" value="18:00" step="900" required aria-label="${esc(L(['Début (UTC)', 'Start (UTC)', 'Beginn (UTC)', 'Inicio (UTC)']))}">
@@ -668,9 +675,14 @@
         week: w,
         list: r.sessions
       };
-      if (r.where === 'folder') notify(L(['{r} : {n} session(s) de France métropolitaine cette semaine.', '{r}: {n} session(s) in metropolitan France this week.', '{r}: {n} Sitzung(en) in Frankreich (Mutterland) diese Woche.', '{r}: {n} sesión(es) en Francia metropolitana esta semana.'], {
+      const mine = r.sessions.filter(x => x.reseau === net && x.source !== 'manuel'),
+        tr = mine.filter(x => x.type === 'training').length,
+        ex = mine.filter(x => x.type === 'examen').length;
+      if (r.where === 'folder') notify(L(['{r} : {t} training(s), {e} examen(s) et {b} autre(s) session(s) de France métropolitaine cette semaine.', '{r}: {t} training(s), {e} exam(s) and {b} other session(s) in metropolitan France this week.', '{r}: {t} Training(s), {e} Prüfung(en) und {b} weitere Sitzung(en) in Frankreich (Mutterland) diese Woche.', '{r}: {t} entrenamiento(s), {e} examen(es) y {b} otra(s) sesión(es) en Francia metropolitana esta semana.'], {
         r: net,
-        n: r.n
+        t: tr,
+        e: ex,
+        b: r.n - tr - ex
       }), 'ok');
       compute();
       render();

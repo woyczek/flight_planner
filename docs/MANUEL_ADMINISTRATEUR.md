@@ -404,7 +404,7 @@ Ce bloc rassemble les trainings, examens, événements et réservations VATSIM /
 - Les deux heures doivent tomber le même jour : la fin doit suivre le début.
 - « Récupérer VATSIM (France métropolitaine) » importe les réservations VATSIM de la semaine. Les sessions déjà récupérées sont remplacées (annulations comprises) ; les saisies manuelles sont gardées.
 - « Récupérer IVAO (France métropolitaine) » importe de même les trainings, examens et réservations IVAO de la semaine, avec la clé d'API IVAO de l'installation (Paramètres › Installation). Ces deux boutons sont l'import commun aux Ordres de vols : un seul fichier, mêmes sessions sur les deux pages.
-- Le bouton « × » d'une ligne retire la session. La colonne « Source » indique « récupérée » ou « saisie ».
+- Le bouton « × » d'une ligne retire la session. La colonne « Source » indique « récupérée » ou « saisie ». Le tableau montre d'abord les trainings, examens et événements (examen et training repérés en marge) ; les simples réservations de position, nombreuses une fois importées, sont repliées sous « n réservation(s) de position ».
 - **Effet sur la planification** : une session est comptée dans son créneau (★). Un training ou un examen rend la CTR du terrain indisponible pour les missions de ce créneau ; les TMA qui contiennent le terrain sont à éviter si possible.
 
 ### Activations des zones par réseau

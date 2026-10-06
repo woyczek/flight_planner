@@ -404,7 +404,7 @@ This block gathers the VATSIM / IVAO trainings, exams, events and bookings of th
 - Both times must fall on the same day: the end must come after the start.
 - “Fetch VATSIM (metropolitan France)” imports the week's VATSIM bookings. Sessions already fetched are replaced (cancellations included); manual entries are kept.
 - “Fetch IVAO (metropolitan France)” likewise imports the week's IVAO trainings, exams and bookings, with the installation's IVAO API key (Settings › Installation). These two buttons are the import shared with the flight orders: a single file, the same sessions on both pages.
-- The “×” button of a row removes the session. The “Source” column shows “fetched” or “entered”.
+- The “×” button of a row removes the session. The “Source” column shows “fetched” or “entered”. The table first shows trainings, exams and events (exam and training marked in the margin); plain position bookings, numerous once imported, are folded under “n position booking(s)”.
 - **Effect on planning**: a session is counted in its slot (★). A training or an exam makes the airfield CTR unavailable for missions in that slot; the TMAs containing the airfield should be avoided if possible.
 
 ### Area activations by network
