@@ -26,6 +26,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   du premier lancement, des présentations et des manuels), sigle « SOG » ; champ `va` des nouveaux fichiers de
   données : le sigle réglé (les fichiers existants gardent « DEFA »). Couche de renommage pour une autre compagnie
   réparée (expressions régulières abîmées par fc0f4408).
+- **Dossier d'une autre copie de la suite : confirmation explicite** : « Suite lancée depuis <dossier servi>, dossier
+  déclaré <dossier choisi>. Cela peut conduire à des incohérences. Confirmer ? » (4 langues ; chemin complet du dossier
+  choisi lu dans son repère `.defa_instance`, dont le lanceur écrit maintenant le chemin réel en 2e ligne — sinon son
+  nom). Confirmé, le dossier et ce qui s'en déduit (data/missions, cr, sia…) sont lus ET écrits directement, avec un
+  rappel du même message ; la confirmation est oubliée si le dossier est rechoisi sans elle. Non confirmé (choix
+  antérieur), rien n'y est écrit et le message dit pourquoi, au lieu de « Dossier des données d'une autre copie… ».
 
 ## [4.9.0] — 2026-10-06
 

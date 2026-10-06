@@ -99,8 +99,11 @@
     });
     return value;
   }
-  /** Mémorise le dossier handle sous la clé key. */
-  async function set(key, handle) {
+  /** Mémorise le dossier handle sous la clé key ; accepted : dossier d'une autre copie de la suite choisi en
+   *  connaissance de cause (confirmation de pickFolder) — sinon une confirmation précédente pour cette clé est oubliée. */
+  async function set(key, handle, {
+    accepted = false
+  } = {}) {
     const db = await idb();
     await new Promise(res => {
       const tx = db.transaction('handles', 'readwrite');
@@ -108,15 +111,24 @@
       tx.oncomplete = res;
       tx.onerror = res;
     });
+    const m = okMap();
+    if (accepted) m[key] = handle.name;
+    else delete m[key];
+    try {
+      localStorage.setItem(OK, JSON.stringify(m));
+    } catch {
+      /* stockage indisponible : la confirmation sera redemandée */
+    }
     window.dispatchEvent(new CustomEvent('file-access-change', {
       detail: {
         key
       }
     }));
   }
-  // ---- même installation que la suite servie ? Le lanceur (tools/launch.py) écrit à chaque démarrage un jeton dans
-  // .defa_instance (racine, data/, data/missions…) : lu par le serveur et dans le dossier autorisé, deux jetons
-  // différents = le dossier choisi est une autre copie de la suite (« DEFA - Copy »…). Sans lanceur : pas de contrôle.
+  // ---- même installation que la suite servie ? Le lanceur (tools/launch.py) écrit à chaque démarrage, à la racine et
+  // dans data/, data/missions…, un repère .defa_instance : un jeton, puis le chemin réel du dossier. Lu par le serveur et
+  // dans le dossier autorisé : deux jetons différents = le dossier choisi est celui d'une autre copie de la suite
+  // (« DEFA - Copy »…). Sans lanceur : pas de contrôle.
   const ROOT_URL = new URL('../', document.currentScript?.src || location.href).href;
   const REL = {
     __repo: '',
@@ -127,36 +139,64 @@
     __perf: 'data/planner/'
   };
   const INSTANCE = '.defa_instance';
+  /** Repère lu : { token, path } (path : chemin réel, absent des repères d'un lanceur antérieur) ; null sans repère. */
+  const parseMark = s => {
+    const [token = '', path = ''] = String(s || '').split(/\r?\n/).map(x => x.trim());
+    return token ? {
+      token,
+      path
+    } : null;
+  };
+  const folderMark = handle => handle.getFileHandle(INSTANCE).then(h => h.getFile()).then(f => f.text()).then(parseMark, () => null);
+  // Autre copie confirmée (clé → nom du dossier) : ce dossier est alors lu ET écrit directement, comme sans lanceur
+  // (sameAsServed : null) — lecture et écriture au même endroit ; avertissement rappelé (otherState : 'accepted')
+  const OK = 'fileAccessOtherOk:v1';
+  function okMap() {
+    try {
+      return JSON.parse(localStorage.getItem(OK) || '{}') || {};
+    } catch {
+      return {};
+    }
+  }
   /** true : le dossier est celui de la suite servie ; false : autre copie ; null : contrôle impossible. */
   // résultat gardé 30 s par dossier (nom) : les lectures de fichiers d'une page ne relisent pas le repère à chaque fois ;
   // oublié quand un dossier est rechoisi
   const sameMemo = new Map();
   window.addEventListener('file-access-change', () => sameMemo.clear());
-  async function sameAsServed(key, handle) {
+  async function compare(key, handle) {
     if (!(key in REL) || !handle || !/^https?:$/.test(location.protocol)) return null;
     const memoKey = `${key}|${handle.name}`,
       hit = sameMemo.get(memoKey);
     if (hit && Date.now() - hit.at < 30e3) return hit.value;
     const value = await (async () => {
-      try {
-        // jeton servi relu à chaque contrôle (mémo de 30 s ci-dessous) : data/ partagé par plusieurs copies (lien) reçoit
-        // un nouveau jeton à chaque lancement de l'une d'elles ; gardé toute la vie de la page, l'ancien faisait conclure
-        // « autre copie » et les écritures restaient dans le navigateur
-        const want = await fetch(new URL(REL[key] + INSTANCE, ROOT_URL), {
-          cache: 'no-store'
-        }).then(r => r.ok ? r.text() : null).then(s => s?.trim() || null, () => null);
-        if (!want) return null;
-        const got = (await (await handle.getFileHandle(INSTANCE)).getFile().then(f => f.text())).trim();
-        return got === want;
-      } catch {
-        return false; // pas de repère dans le dossier choisi alors que la suite servie en a un : autre dossier
-      }
+      // jeton servi relu à chaque contrôle (mémo de 30 s ci-dessus) : data/ partagé par plusieurs copies (lien) reçoit
+      // un nouveau jeton à chaque lancement de l'une d'elles ; gardé toute la vie de la page, l'ancien faisait conclure
+      // « autre copie » et les écritures restaient dans le navigateur
+      const want = await fetch(new URL(REL[key] + INSTANCE, ROOT_URL), {
+        cache: 'no-store'
+      }).then(r => r.ok ? r.text() : null).then(parseMark, () => null);
+      if (!want) return null;
+      // pas de repère dans le dossier choisi alors que la suite servie en a un : autre dossier
+      return (await folderMark(handle))?.token === want.token;
     })();
     sameMemo.set(memoKey, {
       at: Date.now(),
       value
     });
     return value;
+  }
+  /** 'same' (dossier de la suite servie), 'other' (autre copie), 'accepted' (autre copie confirmée), null (sans contrôle). */
+  async function otherState(key, handle) {
+    const v = await compare(key, handle);
+    if (v === null) return null;
+    if (v) return 'same';
+    return okMap()[key] === handle.name ? 'accepted' : 'other';
+  }
+  /** true : dossier de la suite servie ; false : autre copie non confirmée ; null : dossier lu et écrit directement
+   *  (contrôle impossible, ou autre copie confirmée). */
+  async function sameAsServed(key, handle) {
+    const s = await otherState(key, handle);
+    return s === 'same' ? true : s === 'other' ? false : null;
   }
   /** Dossier de la suite servie (chemin donné par le lanceur), pour le message. */
   const servedRoot = () => fetch(new URL('__setup/status', ROOT_URL), {
@@ -165,8 +205,20 @@
     },
     cache: 'no-store'
   }).then(r => r.json()).then(j => j.root || '', () => '');
-  const OTHER = L('n’est pas le dossier de la suite lancée ({root}) : autre copie ?', 'is not the folder of the running suite ({root}): another copy?', 'ist nicht der Ordner der gestarteten Suite ({root}): eine andere Kopie?', 'no es la carpeta de la suite iniciada ({root}): ¿otra copia?');
-  const otherText = async (key, name) => `${tr(FOLDERS[key]?.label || L(key, key))} « ${name} » ${tr(OTHER).replace('{root}', await servedRoot() || '?')}`;
+  const OTHER = {
+    ask: L('Suite lancée depuis {root}, dossier déclaré {dir}. Cela peut conduire à des incohérences. Confirmer ?', 'Suite launched from {root}, declared folder {dir}. This may lead to inconsistencies. Confirm?', 'Suite gestartet aus {root}, angegebener Ordner {dir}. Das kann zu Inkonsistenzen führen. Bestätigen?', 'Suite iniciada desde {root}, carpeta declarada {dir}. Esto puede provocar incoherencias. ¿Confirmar?'),
+    accepted: L('Suite lancée depuis {root}, dossier déclaré {dir} (confirmé) : les données sont lues et écrites dans ce dossier.', 'Suite launched from {root}, declared folder {dir} (confirmed): data is read from and written to this folder.', 'Suite gestartet aus {root}, angegebener Ordner {dir} (bestätigt): Daten werden in diesem Ordner gelesen und geschrieben.', 'Suite iniciada desde {root}, carpeta declarada {dir} (confirmada): los datos se leen y escriben en esta carpeta.'),
+    other: L('Suite lancée depuis {root}, dossier déclaré {dir} : rien n’y est écrit tant que ce choix n’est pas confirmé (rechoisir le dossier).', 'Suite launched from {root}, declared folder {dir}: nothing is written there until this choice is confirmed (choose the folder again).', 'Suite gestartet aus {root}, angegebener Ordner {dir}: dort wird nichts geschrieben, solange diese Wahl nicht bestätigt ist (Ordner neu wählen).', 'Suite iniciada desde {root}, carpeta declarada {dir}: no se escribe nada allí mientras no se confirme esta elección (volver a elegir la carpeta).')
+  };
+  /** Message « Suite lancée depuis …, dossier déclaré … » ; kind : ask (question), accepted, other. Chemin du dossier
+   *  déclaré : celui de son repère (lanceur de cette version), sinon son nom seul. */
+  async function otherText(key, handle, kind = 'other') {
+    const dir = handle ? (await folderMark(handle))?.path || `…/${handle.name}/` : '?';
+    return window.RepositoryKit.tf(OTHER[kind] || OTHER.other, {
+      root: await servedRoot() || '?',
+      dir
+    });
+  }
   const warned = new Set(); // une notification par dossier et par page
 
   /** État d'un dossier mémorisé : { handle, name, permission } (permission : granted / prompt / denied / none). */
@@ -204,15 +256,20 @@
     __store: 'local'
   };
   const ALWAYS = ['__ledger', '__missions', '__sia'];
-  /** Mémorise les sous-dossiers de data/ (créés au besoin) ; retourne la liste des clés réglées. */
-  async function deriveFromData(dataHandle) {
+  /** Mémorise les sous-dossiers de data/ (créés au besoin) ; retourne la liste des clés réglées. accepted : data/ d'une
+   *  autre copie confirmé, confirmation étendue à ses sous-dossiers. */
+  async function deriveFromData(dataHandle, {
+    accepted = false
+  } = {}) {
     const done = [];
     for (const [key, sub] of Object.entries(DERIVED)) {
       if (!ALWAYS.includes(key) && await get(key)) continue;
       try {
         await set(key, await dataHandle.getDirectoryHandle(sub, {
           create: true
-        }));
+        }), {
+          accepted
+        });
         done.push(key);
       } catch {
         /* lecture seule */
@@ -255,13 +312,19 @@
   /** Dossier du dépôt choisi : tout ce qui s'en déduit est réglé d'un coup — data/ (s'il contient data_tree.js) et ses
    *  sous-dossiers (registre, missions, SIA, performances), sauvegarde locale (racine du dépôt, si elle n'est pas
    *  déjà choisie : defa_local_store.yaml y est ignoré par git). Retourne les clés réglées. */
-  async function deriveFromRepo(repo) {
+  async function deriveFromRepo(repo, {
+    accepted = false
+  } = {}) {
     const done = [];
     try {
       const data = await repo.getDirectoryHandle('data');
       if (await has(data, 'data_tree.js')) {
-        await set('__data', data);
-        done.push('__data', ...await deriveFromData(data));
+        await set('__data', data, {
+          accepted
+        });
+        done.push('__data', ...await deriveFromData(data, {
+          accepted
+        }));
       }
     } catch {
       /* pas de data/ : données par exemples ou par archive, à choisir à part */
@@ -290,13 +353,21 @@
       const ok = await has(handle, info.check);
       if (!ok && !await window.AppFramework.ask(`« ${handle.name} » ${tr(STATE.notExpected).replace('{f}', info.check)}\n${tr(STATE.expected)} : ${tr(info.expect)}`)) throw new Error('Dossier refusé');
     }
-    // autre copie de la suite que celle qui est servie : confirmation
-    if (await sameAsServed(key, handle) === false && !await window.AppFramework.ask(await otherText(key, handle.name), {
+    // autre copie de la suite que celle qui est servie : « Suite lancée depuis …, dossier déclaré … Confirmer ? » ;
+    // confirmé, le dossier (et ce qui s'en déduit) est lu et écrit directement
+    const accepted = await compare(key, handle) === false;
+    if (accepted && !await window.AppFramework.ask(await otherText(key, handle, 'ask'), {
         danger: true
       })) throw new Error('Dossier refusé');
-    await set(key, handle);
-    if (key === '__data') await deriveFromData(handle);
-    if (key === '__repo') handle.derived = await deriveFromRepo(handle);
+    await set(key, handle, {
+      accepted
+    });
+    if (key === '__data') await deriveFromData(handle, {
+      accepted
+    });
+    if (key === '__repo') handle.derived = await deriveFromRepo(handle, {
+      accepted
+    });
     return handle;
   }
   // Libellé et infobulle d'un dossier : « Dossier du registre : CR ✓ ».
@@ -306,13 +377,16 @@
         label: L(key, key),
         expect: L('', '')
       };
-    const other = s.permission === 'granted' && await sameAsServed(key, s.handle) === false;
+    // autre copie, confirmée ou non : ⚠ et message dans l'infobulle
+    const state = s.permission === 'granted' ? await otherState(key, s.handle) : null,
+      other = state === 'other' || state === 'accepted';
     const mark = other ? '⚠' : s.permission === 'granted' ? '✓' : s.permission === 'none' ? '' : '⚠';
     const short = s.name ? `${s.name} ${mark}`.trim() : tr(STATE.none);
-    const title = `${tr(info.label)} — ${tr(STATE.expected)} : ${tr(info.expect)}\n${tr(STATE.current)} : ${s.name ? `${s.name} (${tr(STATE[s.permission] || STATE.prompt)})` : tr(STATE.none)}${other ? `\n⚠ ${await otherText(key, s.name)}` : ''}`;
+    const title = `${tr(info.label)} — ${tr(STATE.expected)} : ${tr(info.expect)}\n${tr(STATE.current)} : ${s.name ? `${s.name} (${tr(STATE[s.permission] || STATE.prompt)})` : tr(STATE.none)}${other ? `\n⚠ ${await otherText(key, s.handle, state)}` : ''}`;
     return {
       ...s,
       other,
+      state,
       label: tr(info.label),
       short,
       title
@@ -333,7 +407,7 @@
       button.dataset.folderState = d.other ? 'other' : d.permission;
       if (d.other && !warned.has(key)) {
         warned.add(key);
-        window.AppFramework?.notify?.(await otherText(key, d.name), 'warn');
+        window.AppFramework?.notify?.(await otherText(key, d.handle, d.state), 'warn');
       }
     };
     await refresh();
@@ -522,6 +596,8 @@
     deriveFromData,
     deriveFromRepo,
     has,
-    sameAsServed
+    sameAsServed,
+    otherState,
+    otherText
   };
 })();
