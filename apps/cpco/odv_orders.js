@@ -240,22 +240,27 @@
     S.zoneConf = new Map();
     S.zoneRows = [];
     S.llRows = [];
+    // repli : créneaux LL saisis dans les réglages (sans module de zones, ou base absente)
+    const fallback = () => (S.cfg.ll || []).filter(l => !l.jours?.length || l.jours.includes(dow(date))).map(l => ({
+      nom: l.nom,
+      couleur: l.couleur,
+      creneaux: [{
+        debut: l.debut,
+        fin: l.fin
+      }],
+      etat: 'active'
+    }));
     if (!A) {
-      S.llRows = (S.cfg.ll || []).filter(l => !l.jours?.length || l.jours.includes(dow(date))).map(l => ({
-        nom: l.nom,
-        couleur: l.couleur,
-        creneaux: [{
-          debut: l.debut,
-          fin: l.fin
-        }],
-        etat: 'active'
-      }));
+      S.llRows = fallback();
       return paintZones();
     }
     const rt = await A.rtba(date, {
       ll: S.cfg.ll || []
     }).catch(() => []);
-    if (rt?.missing) return missingBase(rt);
+    if (rt?.missing) {
+      S.llRows = fallback();
+      return missingBase(rt);
+    }
     S.llRows = (rt || []).map(r => ({
       ...r,
       couleur: (S.cfg.ll || []).find(l => l.nom === r.nom)?.couleur || '#4ADE80'
