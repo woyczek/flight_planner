@@ -828,6 +828,7 @@ Los datos compartidos (disponibilidades, usuarios, configuración, misiones y as
   3. recupera y fusiona los cambios de los demás puestos y después envía.
 - Sin trigrama, la sincronización se rechaza: ajústelo en Ajustes › Mi perfil.
 - Al terminar, una notificación da el número de archivos enviados y recibidos, y las páginas vuelven a leer los archivos modificados.
+- **Desfase con la copia**: el botón pasa a naranja (cambio sin enviar desde hace más de 48 h, 20 archivos o más por enviar, 10 commits por recibir, commit sin enviar, archivo modificado fuera de los datos sincronizados) o a rojo (`data/` sin repositorio git o sin remoto, fusión en curso, umbrales altos: 100 archivos, 7 días, 50 commits); motivos en la información emergente, alerta en notificación una vez por sesión. Sin repositorio git (salvo datos de prueba), un botón «⚠ Copia» lo indica. Umbrales ajustables: `data/config/suite.json`, clave `sync`.
 
 ### Primera sincronización
 

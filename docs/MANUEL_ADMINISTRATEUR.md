@@ -828,6 +828,7 @@ Les données partagées (disponibilités, utilisateurs, configuration, missions 
   3. il récupère et fusionne les modifications des autres postes, puis envoie.
 - Sans trigramme, la synchronisation est refusée : réglez-le dans Paramètres › Mon profil.
 - À la fin, une notification donne le nombre de fichiers envoyés et reçus, et les pages relisent les fichiers changés.
+- **Écart avec la sauvegarde** : le bouton passe à l'orange (modification non envoyée depuis plus de 48 h, 20 fichiers ou plus à envoyer, 10 commits à recevoir, commit non envoyé, fichier modifié hors des données synchronisées) ou au rouge (`data/` sans dépôt git ou sans dépôt distant, fusion en cours, seuils hauts : 100 fichiers, 7 jours, 50 commits) ; raisons en infobulle, alerte en notification une fois par session. Sans dépôt git (hors jeu d'essai), un bouton « ⚠ Sauvegarde » le signale. Seuils réglables : `data/config/suite.json`, clé `sync`.
 
 ### Première synchronisation
 

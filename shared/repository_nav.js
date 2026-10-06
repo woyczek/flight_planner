@@ -1145,7 +1145,7 @@
     document.head.append(users);
     /* Synchronisation git du pool de données : bouton « Synchroniser » de l'en-tête (lanceur, data/ dépôt git) */
     const sync = document.createElement("script");
-    sync.src = new URL("sync.js?v=ccb12def", script.src).href;
+    sync.src = new URL("sync.js?v=cb7ad0ea", script.src).href;
     document.head.append(sync);
     /* Disponibilités : catégories configurables, thèmes ouverts, déclarations par semaine */
     const dispos = document.createElement("script");

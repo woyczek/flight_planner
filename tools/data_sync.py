@@ -19,7 +19,7 @@ temporaire, modifications croisées, conflits, vérifications).
 import json, os, re, shutil, subprocess, sys, tempfile, time
 
 # chemins synchronisés (relatifs à data/) ; index régénérés et repère du lanceur exclus
-POOL = ['disponibilites', 'utilisateurs', 'config', 'missions', 'cr', 'atc']
+POOL = ['disponibilites', 'utilisateurs', 'config', 'missions', 'cr', 'atc', 'odv']
 EXCLUDE = [':(exclude,glob)**/_index.json', ':(exclude,glob)**/_conflits/**', ':(exclude).defa_instance']
 TIMEOUT = 120
 
@@ -131,10 +131,10 @@ def branch_info(data):
     return br, up, remote
 
 
-def pool_changes(data):
-    """Fichiers du pool modifiés, ajoutés ou supprimés sur ce poste (non commités)."""
+def pool_changes(data, spec=None):
+    """Fichiers du pool (ou d'autres chemins : spec) modifiés, ajoutés ou supprimés sur ce poste (non commités)."""
     try:  # sortie brute, -z : l'espace de tête du code d'état compte (pas de strip) ; chemins sans guillemets
-        out = subprocess.run(['git', '-C', data, 'status', '--porcelain', '-z', '-uall', '--', *POOL, *EXCLUDE],
+        out = subprocess.run(['git', '-C', data, 'status', '--porcelain', '-z', '-uall', '--', *(spec or [*POOL, *EXCLUDE])],
                              capture_output=True, env=git_env(), timeout=TIMEOUT).stdout.decode('utf-8', errors='replace')
     except (OSError, subprocess.SubprocessError):
         return []
@@ -151,21 +151,106 @@ def pool_changes(data):
     return files
 
 
+# ---- écart entre data/ et sa sauvegarde git distante : seuils [à synchroniser, alerte] ; surchargeables dans
+# data/config/suite.json, clé « sync » ({ "changes": [20, 100], … })
+DIVERGENCE = {
+    'changes': [20, 100],  # fichiers du pool modifiés sur ce poste, pas encore envoyés
+    'age_h': [48, 168],  # âge (heures) de la plus ancienne modification non envoyée
+    'behind': [10, 50],  # commits du dépôt distant pas encore reçus
+    'ahead': [1, 20],  # commits locaux pas encore envoyés (envoi échoué)
+    'outside': [1, 50],  # fichiers modifiés hors du pool : jamais envoyés par « Synchroniser »
+}
+
+
+def thresholds(data):
+    t = {k: list(v) for k, v in DIVERGENCE.items()}
+    try:
+        with open(os.path.join(data, 'config', 'suite.json'), encoding='utf-8') as f:
+            o = json.load(f).get('sync') or {}
+        for k, v in o.items():
+            if k in t and isinstance(v, list) and len(v) == 2 and all(isinstance(x, (int, float)) for x in v):
+                t[k] = v
+    except (OSError, ValueError, AttributeError):
+        pass
+    return t
+
+
+def is_trial(data):
+    """Jeu d'essai (tools/jeu_essai.py : repère data_tree.js « jeu_essai: true ») : pas de sauvegarde attendue."""
+    try:
+        with open(os.path.join(data, 'data_tree.js'), encoding='utf-8') as f:
+            return 'jeu_essai: true' in f.read(4000)
+    except OSError:
+        return False
+
+
+def outside_changes(data):
+    """Fichiers modifiés ou nouveaux de data/ hors du pool (références, SIA…) : ignorés par « Synchroniser »."""
+    return pool_changes(data, ['.', *[f':(exclude){p}' for p in POOL], *EXCLUDE, ':(exclude)local/**'])
+
+
+def oldest_age_h(data, files):
+    now, ages = time.time(), []
+    for p in files:
+        try:
+            ages.append((now - os.path.getmtime(os.path.join(data, p))) / 3600)
+        except OSError:
+            pass  # fichier supprimé
+    return round(max(ages), 1) if ages else 0
+
+
+def divergence(data, st):
+    """Niveau d'écart : none (rien à sauvegarder), ok, warn (à synchroniser), alert ; raisons [{ code, n, seuil }]."""
+    if not st.get('repo'):
+        if is_trial(data):
+            return {'level': 'none', 'reasons': [{'code': 'trial'}]}
+        return {'level': 'alert', 'reasons': [{'code': 'no_repo' if shutil.which('git') else 'no_git'}]}
+    reasons, level = [], 'ok'
+    rank = {'ok': 0, 'warn': 1, 'alert': 2}
+
+    def bump(lv, r):
+        nonlocal level
+        reasons.append(r)
+        if rank[lv] > rank[level]:
+            level = lv
+    if not st.get('remote'):
+        bump('alert', {'code': 'no_remote'})
+    if st.get('merging'):
+        bump('alert', {'code': 'merging'})
+    t = thresholds(data)
+    for code, n in (('changes', st.get('changes', 0)), ('age_h', st.get('oldest_h', 0) if st.get('changes') else 0),
+                    ('behind', st.get('behind', 0)), ('ahead', st.get('ahead', 0)), ('outside', len(st.get('outside') or []))):
+        warn, alert = t[code]
+        if n >= alert:
+            bump('alert', {'code': code, 'n': n, 'seuil': alert})
+        elif n >= warn:
+            bump('warn', {'code': code, 'n': n, 'seuil': warn})
+    return {'level': level, 'reasons': reasons}
+
+
 def status(data, fetch=False):
-    """État pour l'en-tête : dépôt, branche, modifications locales, commits à envoyer / à recevoir."""
+    """État pour l'en-tête : dépôt, branche, modifications locales, commits à envoyer / à recevoir, écart avec la
+    sauvegarde distante (divergence : niveau et raisons)."""
     if not is_repo(data):
-        return {'repo': False}
+        st = {'repo': False}
+        st['divergence'] = divergence(data, st)
+        return st
     br, up, remote = branch_info(data)
+    fetched = False
     if fetch and remote:
-        git(data, 'fetch', '--quiet', remote)
+        fetched = git(data, 'fetch', '--quiet', remote)[0] == 0
     ahead = behind = 0
     if up:
         code, out = git(data, 'rev-list', '--left-right', '--count', f'HEAD...{up}')
         if code == 0 and len(out.split()) == 2:
             ahead, behind = map(int, out.split())
     merging = os.path.exists(os.path.join(data, '.git', 'MERGE_HEAD'))
-    return {'repo': True, 'branch': br, 'upstream': up, 'remote': remote, 'changes': len(pool_changes(data)),
-            'ahead': ahead, 'behind': behind, 'merging': merging, 'last': last_sync(data)}
+    changes = pool_changes(data)
+    st = {'repo': True, 'branch': br, 'upstream': up, 'remote': remote, 'changes': len(changes),
+          'oldest_h': oldest_age_h(data, changes), 'outside': outside_changes(data)[:200],
+          'ahead': ahead, 'behind': behind, 'merging': merging, 'fetched': fetched, 'last': last_sync(data)}
+    st['divergence'] = divergence(data, st)
+    return st
 
 
 def last_sync(data):

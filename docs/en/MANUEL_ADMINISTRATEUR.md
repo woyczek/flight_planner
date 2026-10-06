@@ -828,6 +828,7 @@ The shared data (availability, users, configuration, missions and assignments, r
   3. it fetches and merges the changes of the other computers, then pushes.
 - Without a trigram, synchronisation is refused: set it in Settings › My profile.
 - At the end, a notification gives the number of files sent and received, and the pages re-read the changed files.
+- **Gap with the backup**: the button turns orange (change not sent for more than 48 h, 20 or more files to send, 10 commits to receive, unsent commit, file changed outside the synchronised data) or red (`data/` without a git repository or without a remote, merge in progress, high thresholds: 100 files, 7 days, 50 commits); reasons in the tooltip, alert as a notification once per session. Without a git repository (except the trial data), a “⚠ Backup” button says so. Thresholds can be set in `data/config/suite.json`, key `sync`.
 
 ### First synchronisation
 

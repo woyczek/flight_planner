@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Écart entre `data/` et sa sauvegarde git** (`tools/data_sync.py` : `divergence`, `shared/sync.js`) : bouton
+  « Synchroniser » orange ou rouge selon les modifications non envoyées (nombre, âge), les commits à recevoir ou non
+  envoyés, les fichiers modifiés hors des données synchronisées, l'absence de dépôt git ou distant, une fusion en cours ;
+  raisons en infobulle, alerte en notification une fois par session ; bouton « ⚠ Sauvegarde » si `data/` n'est pas un
+  dépôt git (hors jeu d'essai) ; seuils dans `data/config/suite.json` (`sync`). `odv/` rejoint les données synchronisées.
 - **CR : « Causes »** (plusieurs cases) d'une mission non effectuée ou partielle : météo, technique, simulateur, pilote ou
   équipage absent, contrôle absent, réseau, zone non activée, ravitailleur absent, manque de temps, opérationnel, autre
   (`results.causes`, `MissionVocab.mneCauses`), affichées dans le compte rendu.
