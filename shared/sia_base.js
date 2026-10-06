@@ -233,16 +233,22 @@
 
   function remember(s) {
     if (!s) return;
+    const next = {
+      airac: s.airac,
+      mixed: s.mixed,
+      cachedAt: s.cachedAt,
+      folderName: s.folderName,
+      counts: {
+        ...s.counts,
+        byType: undefined
+      }
+    };
+    // résumé inchangé : pas de réécriture (chaque écriture réveille les autres onglets, événement storage)
+    const cur = info();
+    if (cur && JSON.stringify([cur.airac, cur.mixed, cur.cachedAt, cur.folderName, cur.counts]) === JSON.stringify([next.airac, next.mixed, next.cachedAt, next.folderName, JSON.parse(JSON.stringify(next.counts))])) return;
     try {
       localStorage.setItem(INFO, JSON.stringify({
-        airac: s.airac,
-        mixed: s.mixed,
-        cachedAt: s.cachedAt,
-        folderName: s.folderName,
-        counts: {
-          ...s.counts,
-          byType: undefined
-        },
+        ...next,
         checkedAt: new Date().toISOString()
       }));
     } catch {

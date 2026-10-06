@@ -2953,16 +2953,28 @@
     });
   }
   // Filet : au retour sur l'onglet, relire le résumé s'il a changé (l'événement storage peut manquer, ex. file://).
-  let lastInfo = localStorage.getItem('siaBaseInfo:v1');
-  window.addEventListener('focus', () => {
-    const cur = localStorage.getItem('siaBaseInfo:v1');
-    if (cur !== lastInfo) {
-      lastInfo = cur;
-      baseChanged();
+  // Seule une autre base compte (cycle, date de lecture, nombres) : pas l'heure du dernier contrôle (checkedAt), que
+  // chaque page réécrit — deux onglets de Paramètres se relançaient sans fin (bloc redessiné en boucle, clics perdus).
+  const baseKey = v => {
+    try {
+      const o = JSON.parse(v || 'null');
+      return o ? JSON.stringify([o.airac, o.cachedAt, o.folderName, o.mixed, o.counts]) : '';
+    } catch {
+      return '';
     }
+  };
+  let lastInfo = baseKey(localStorage.getItem('siaBaseInfo:v1'));
+  const infoChanged = () => {
+    const cur = baseKey(localStorage.getItem('siaBaseInfo:v1'));
+    if (cur === lastInfo) return false;
+    lastInfo = cur;
+    return true;
+  };
+  window.addEventListener('focus', () => {
+    if (infoChanged()) baseChanged();
   });
   window.addEventListener('storage', async e => {
-    if (e.key === 'siaBaseInfo:v1') await baseChanged();
+    if (e.key === 'siaBaseInfo:v1' && infoChanged()) await baseChanged();
     if (e.key === 'suiteBackupLog:v1') renderJournal();
   });
   renderAll();
