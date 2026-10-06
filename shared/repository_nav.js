@@ -350,7 +350,7 @@
     if (document.getElementById("repoDesignDeco")) return;
     const d = document.createElement("script");
     d.id = "repoDesignDeco";
-    d.src = new URL("design_deco.js?v=c88277a2", script.src).href;
+    d.src = new URL("design_deco.js?v=d2aeb44d", script.src).href;
     document.head.append(d);
   };
   designCss(design);
@@ -542,7 +542,7 @@
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
-      sc.src = new URL("appearance_page.js?v=8faa77a7", script.src).href;
+      sc.src = new URL("appearance_page.js?v=092dabae", script.src).href;
       sc.onload = show;
       document.head.append(sc);
     }
@@ -1121,35 +1121,35 @@
   } {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */
     const profile = document.createElement("script");
-    profile.src = new URL("pilot_profile.js?v=78a8d79d", script.src).href;
+    profile.src = new URL("pilot_profile.js?v=60bc0e70", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=85671199", script.src).href;
+    files.src = new URL("file_access.js?v=235a1c37", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=27853364", "block_icons.js?v=c8ee7213", "side_nav.js?v=19f74efd"]) {
+    for (const f of ["icons/repository_icons.js?v=27853364", "block_icons.js?v=2a7d496a", "side_nav.js?v=19f74efd"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;
       document.head.append(sc);
     }
     const store = document.createElement("script");
-    store.src = new URL("browser_store.js?v=7860c8db", script.src).href;
+    store.src = new URL("browser_store.js?v=1e959067", script.src).href;
     document.head.append(store); /* Canal et contrôle des mises à jour, pastilles « Mise à jour » / « AIRAC » de l'en-tête */
     const assign = document.createElement("script"); /* Missions affectées : pli cacheté de l'en-tête, « Mes missions » */
-    assign.src = new URL("assignments.js?v=9e7845c6", script.src).href;
+    assign.src = new URL("assignments.js?v=f83cafc0", script.src).href;
     document.head.append(assign);
     /* Utilisateurs et droits : mode develop / production, connexion, usurpation (bandeau sur toutes les pages) */
     const users = document.createElement("script");
-    users.src = new URL("users.js?v=5d9d50a7", script.src).href;
+    users.src = new URL("users.js?v=3d869bdc", script.src).href;
     document.head.append(users);
     /* Synchronisation git du pool de données : bouton « Synchroniser » de l'en-tête (lanceur, data/ dépôt git) */
     const sync = document.createElement("script");
-    sync.src = new URL("sync.js?v=14aeb29b", script.src).href;
+    sync.src = new URL("sync.js?v=cb7ad0ea", script.src).href;
     document.head.append(sync);
     /* Disponibilités : catégories configurables, thèmes ouverts, déclarations par semaine */
     const dispos = document.createElement("script");
-    dispos.src = new URL("dispos.js?v=d99a8e23", script.src).href;
+    dispos.src = new URL("dispos.js?v=d6965971", script.src).href;
     document.head.append(dispos);
     const update = document.createElement("script");
     update.src = new URL("suite_update.js?v=a6f1e9d1", script.src).href;
