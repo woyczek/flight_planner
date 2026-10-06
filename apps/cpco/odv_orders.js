@@ -572,9 +572,14 @@
       reseau: type === 'vol' ? S.cfg.reseau || null : undefined
     });
   }
+  /** Ajoute le membre à l'élément ; vrai s'il y est ajouté (faux : refusé ou déjà présent). */
   function addMember(e, tri) {
     if (e.type === 'vol') {
-      if (e.mission && O().missionCrew(e, S.affect).length) return notify(t(L4('Vol de mission : l’équipage se modifie par « Affecter… » (affectations de la mission).', 'Mission flight: the crew is changed with “Assign…” (mission assignments).', 'Missionsflug: Besatzung über „Zuweisen…“ ändern (Zuweisungen der Mission).', 'Vuelo de misión: la tripulación se cambia con «Asignar…» (asignaciones de la misión).')), 'warn');
+      if (e.mission && O().missionCrew(e, S.affect).length) {
+        notify(t(L4('Vol de mission : l’équipage se modifie par « Affecter… » (affectations de la mission).', 'Mission flight: the crew is changed with “Assign…” (mission assignments).', 'Missionsflug: Besatzung über „Zuweisen…“ ändern (Zuweisungen der Mission).', 'Vuelo de misión: la tripulación se cambia con «Asignar…» (asignaciones de la misión).')), 'warn');
+        return false;
+      }
+      if (e.avions.some(a => a.pilote === tri || a.nav === tri)) return false;
       const free = e.avions.find(a => !a.pilote);
       if (free) free.pilote = tri;
       else if (e.avions.length < 8) e.avions.push({
@@ -582,10 +587,17 @@
         nav: null,
         annule: false
       });
-      else return notify(t(L4('Huit avions au plus', 'Eight aircraft at most', 'Höchstens acht Luftfahrzeuge', 'Ocho aeronaves como máximo')), 'warn');
-    } else if (e.type === 'divers' || e.type === 'controle') {
-      if (!e.equipage.includes(tri)) e.equipage.push(tri);
+      else {
+        notify(t(L4('Huit avions au plus', 'Eight aircraft at most', 'Höchstens acht Luftfahrzeuge', 'Ocho aeronaves como máximo')), 'warn');
+        return false;
+      }
+      return true;
     }
+    if ((e.type === 'divers' || e.type === 'controle') && !e.equipage.includes(tri)) {
+      e.equipage.push(tri);
+      return true;
+    }
+    return false;
   }
   function wireGrid() {
     const host = $('#odvoDay');
@@ -628,9 +640,10 @@
         openEdit(el.id);
       } else if (d.k === 'mem' && it) mutate(doc => {
         const e = doc.elements.find(x => x.id === it.dataset.id);
-        if (!e) return;
-        if (d.from && d.from !== e.id) removeMember(doc.elements.find(x => x.id === d.from), d.v);
-        addMember(e, d.v);
+        // même plaquette : rien ; plaquette qui refuse (vol de mission, huit avions, déjà à bord) : le trigramme reste
+        // sur la plaquette d'origine — retiré de celle-ci seulement une fois ajouté à la cible
+        if (!e || d.from === e.id || !addMember(e, d.v)) return;
+        if (d.from) removeMember(doc.elements.find(x => x.id === d.from), d.v);
       });
     });
     host.addEventListener('dragend', () => (drag = null));
@@ -654,9 +667,19 @@
         if (rsz) it.style.width = `${Math.max(5, d + dm) * P}px`;
         else it.style.transform = `translateX(${dm * P}px)`;
       };
-      const up = m => {
+      const stop = () => {
         it.removeEventListener('pointermove', move);
         it.removeEventListener('pointerup', up);
+        it.removeEventListener('pointercancel', cancel);
+      };
+      // geste interrompu (défilement tactile, perte de la capture) : plaquette remise en place, rien d'enregistré
+      const cancel = () => {
+        stop();
+        it.style.transform = '';
+        it.style.width = '';
+      };
+      const up = m => {
+        stop();
         if (!moved) return openEdit(e.id);
         const dm = snap((m.clientX - x0) / P);
         mutate(() => {
@@ -669,6 +692,7 @@
       };
       it.addEventListener('pointermove', move);
       it.addEventListener('pointerup', up);
+      it.addEventListener('pointercancel', cancel);
     });
     host.addEventListener('click', ev => {
       const g = ev.target.closest('[data-goto]');
