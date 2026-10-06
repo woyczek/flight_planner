@@ -28,7 +28,7 @@
   let aeroLoad = null;
   const needAero = () => aeroLoad ||= window.AeroSources ? Promise.resolve(window.AeroSources) : new Promise(res => {
     const sc = document.createElement('script');
-    sc.src = new URL('aero_sources.js?v=769e86d5', SCRIPT_URL).href;
+    sc.src = new URL('aero_sources.js?v=8898b924', SCRIPT_URL).href;
     sc.onload = () => res(window.AeroSources || null);
     sc.onerror = () => res(null);
     document.head.append(sc);
@@ -347,7 +347,12 @@
         mora: c[ix('mora')],
         moraFt: ix('mora_ft') >= 0 ? +c[ix('mora_ft')] : null,
         latStep: ix('lat_step') >= 0 ? (+c[ix('lat_step')] || 1) : 1,
-        lonStep: ix('lon_step') >= 0 ? (+c[ix('lon_step')] || 1) : 1
+        lonStep: ix('lon_step') >= 0 ? (+c[ix('lon_step')] || 1) : 1,
+        // gardés pour une réécriture (calcul d'une zone, MORA d'X-Plane) : sans eux, les autres cases perdaient leur
+        // relief (recalcul simple impossible ensuite) et leur source
+        terrainFt: ix('terrain_ft') >= 0 && c[ix('terrain_ft')] !== '' ? +c[ix('terrain_ft')] : null,
+        obstacleFt: ix('obstacle_ft') >= 0 && c[ix('obstacle_ft')] !== '' ? +c[ix('obstacle_ft')] : null,
+        source: ix('source') >= 0 ? c[ix('source')] || '' : ''
       };
       if (Number.isFinite(cell.lat) && Number.isFinite(cell.lon) && cell.mora && !unique.has(cell.lat + '|' + cell.lon)) unique.set(cell.lat + '|' + cell.lon, cell);
     }
@@ -362,7 +367,8 @@
   } = {}) {
     const source = MORA_SOURCE + (cells.peaksOk === false ? ' (sommets OSM indisponibles : relief majoré de 100 m)' : '') + (airac ? ` — obstacles AIRAC ${airac}` : '');
     return '﻿' + ['lat,lon,mora,mora_ft,lat_step,lon_step,terrain_ft,obstacle_ft,source',
-      ...cells.map(m => [m.lat.toFixed(1), m.lon.toFixed(1), m.mora, m.moraFt, 1, 1, m.terrainFt ?? '', m.obstacleFt ?? '', source].map(csvField).join(','))
+      // source propre à la case (relue de mora.csv, MORA d'X-Plane) gardée ; sinon celle du calcul
+      ...cells.map(m => [m.lat.toFixed(1), m.lon.toFixed(1), m.mora, m.moraFt, 1, 1, m.terrainFt ?? '', m.obstacleFt ?? '', m.keepSource && m.source ? m.source : source].map(csvField).join(','))
     ].join('\r\n') + '\r\n';
   }
   /** Recalcul simple : obstacles obstacleMax ({ 'lat|lon' : ft }) d'un nouveau cycle, relief (terrain_ft) du mora.csv existant.

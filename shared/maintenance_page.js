@@ -1452,9 +1452,18 @@
   // un seul calcul de MORA à la fois (zone, simple, complet) : boutons désactivés pendant le calcul, un clic de plus
   // ne relance rien (deux calculs mêlaient leurs progressions, comme un calcul qui tourne en boucle)
   let moraBusy = false;
-  const moraButtons = () => document.querySelectorAll('#mtMora, #mtMoraFull, [data-mora-zone]').forEach(x => {
+  const moraButtons = () => document.querySelectorAll('#mtMora, #mtMoraFull, #mtMoraXp, [data-mora-zone]').forEach(x => {
     x.disabled = moraBusy;
   });
+  /** Cases d'un degré d'une zone (« lat|lon » du coin sud-ouest) : celles dont le centre est dans un contour, plus
+   *  celles que traverse un contour (îles plus petites qu'une case : La Réunion, Mayotte, les Antilles…, que le test du
+   *  coin d'une case manquait — la MORA d'une zone se limitait alors à la métropole). */
+  function zoneCellKeys(Z, id) {
+    const out = new Set(Z.cellsOf(id));
+    for (const r of Z.ringsOf(id))
+      for (const [lon, lat] of r) out.add(`${Math.floor(lat)}|${Math.floor(lon)}`);
+    return out;
+  }
   async function moraExclusive(fn, ...args) {
     if (moraBusy) return window.AppFramework?.notify?.(t(['Calcul de la MORA déjà en cours : attendez qu’il se termine.', 'MORA calculation already running: wait for it to finish.', 'MORA-Berechnung läuft bereits: bitte warten, bis sie fertig ist.', 'Cálculo de la MORA ya en curso: espere a que termine.']), 'warn');
     moraBusy = true;
@@ -1502,12 +1511,15 @@
         cells.push(...part);
         if (part.peaksOk === false) cells.peaksOk = false;
       }
-      const inZ = Z.inZones([id], .5),
-        mine = cells.filter(c => inZ(c.lat, c.lon)),
+      const zk = zoneCellKeys(Z, id),
+        mine = cells.filter(c => zk.has(`${Math.floor(c.lat)}|${Math.floor(c.lon)}`)),
         keys = new Set(mine.map(c => c.lat + '|' + c.lon));
       const before = text ? window.SiaBase.parseMora(text) : [],
         old = new Map(before.map(c => [c.lat + '|' + c.lon, c]));
-      const merged = before.filter(c => !keys.has(c.lat + '|' + c.lon)).concat(mine);
+      const merged = before.filter(c => !keys.has(c.lat + '|' + c.lon)).map(c => ({
+        ...c,
+        keepSource: true
+      })).concat(mine);
       moraPlan = {
         csv: window.SiaBase.moraCsv(merged, {
           airac: b?.airac || ''
@@ -1714,7 +1726,7 @@
       <div class="repo-card" id="mt-aero-base" data-icon="refresh" data-subtitle="${esc(t(['Zones actives et sources cochées : la base sert au studio, aux cartes de vol, au profil vertical et aux espaces à activer.', 'Active zones and ticked sources: the database feeds the studio, flight maps, vertical profile and airspace to activate.']))}"><h3>${esc(t(['Reconstruire la base aéronautique', 'Rebuild the aeronautical database', 'Luftfahrtdatenbank neu aufbauen', 'Reconstruir la base aeronáutica']))}</h3><div id="mtBasePanel"></div></div>
       <div class="repo-card" data-icon="clock"><h3>${esc(t(['Cycles AIRAC et âge des données', 'AIRAC cycles and data age', 'AIRAC-Zyklen und Alter der Daten', 'Ciclos AIRAC y antigüedad de los datos']))}</h3><div id="mtAeroAges">${aeroAgesHtml(Z)}</div></div>
       <div class="repo-card" id="mt-aero-mora" data-icon="chart" data-subtitle="${esc(t(['Sources de MORA : grille calculée (relief, sommets, obstacles ; ici pour la France et les missions, ou zone par zone dans le panneau), X-Plane (grille mondiale) ; la grille calculée a la priorité.', 'MORA sources: computed grid (terrain, peaks, obstacles; here for France and the missions, or zone by zone in the panel), X-Plane (world grid); the computed grid has priority.']))}"><h3>MORA</h3>
-        <p class="row"><button type="button" class="secondary" id="mtMora"${moraBusy ? ' disabled' : ''} data-icon="refresh" title="${esc(t(['Obstacles du nouveau cycle, relief du mora.csv actuel — sans réseau, immédiat', 'New-cycle obstacles, terrain from the current mora.csv — offline, immediate']))}">${esc(t(['Recalcul simple', 'Simple recalculation', 'Einfache Neuberechnung', 'Recálculo simple']))}</button><button type="button" class="secondary" id="mtMoraFull"${moraBusy ? ' disabled' : ''} data-icon="chart">${esc(t(['Calcul complet', 'Full calculation', 'Vollständige Berechnung', 'Cálculo completo']))}</button>${moraPlan && !moraPlan.written ? `<button type="button" class="primary" id="mtMoraWrite" data-icon="save">${esc(t(['Écrire mora.csv (ancien archivé)', 'Write mora.csv (old one archived)', 'mora.csv schreiben (alte archiviert)', 'Escribir mora.csv (antiguo archivado)']))}</button><button type="button" class="secondary" id="mtMoraDl" data-icon="download">mora.csv</button>` : ''}</p>
+        <p class="row"><button type="button" class="secondary" id="mtMora"${moraBusy ? ' disabled' : ''} data-icon="refresh" title="${esc(t(['Obstacles du nouveau cycle, relief du mora.csv actuel — sans réseau, immédiat', 'New-cycle obstacles, terrain from the current mora.csv — offline, immediate']))}">${esc(t(['Recalcul simple', 'Simple recalculation', 'Einfache Neuberechnung', 'Recálculo simple']))}</button><button type="button" class="secondary" id="mtMoraXp"${moraBusy ? ' disabled' : ''} data-icon="download" title="${esc(t(['Cases de la MORA d’X-Plane (zones actives, source X-Plane) absentes de mora.csv', 'X-Plane MORA cells (active zones, X-Plane source) missing from mora.csv', 'X-Plane-MORA-Felder (aktive Zonen), die in mora.csv fehlen', 'Casillas MORA de X-Plane (zonas activas) ausentes de mora.csv']))}">${esc(t(['MORA d’X-Plane → mora.csv', 'X-Plane MORA → mora.csv', 'X-Plane-MORA → mora.csv', 'MORA de X-Plane → mora.csv']))}</button><button type="button" class="secondary" id="mtMoraFull"${moraBusy ? ' disabled' : ''} data-icon="chart">${esc(t(['Calcul complet', 'Full calculation', 'Vollständige Berechnung', 'Cálculo completo']))}</button>${moraPlan && !moraPlan.written ? `<button type="button" class="primary" id="mtMoraWrite" data-icon="save">${esc(t(['Écrire mora.csv (ancien archivé)', 'Write mora.csv (old one archived)', 'mora.csv schreiben (alte archiviert)', 'Escribir mora.csv (antiguo archivado)']))}</button><button type="button" class="secondary" id="mtMoraDl" data-icon="download">mora.csv</button>` : ''}</p>
         <div id="mtMoraMsg">${moraMsg}</div><div>${moraPlan ? moraHtml(moraPlan) : ''}</div></div>
       <div class="repo-card" data-icon="plane" data-subtitle="${esc(t(['Espaces, appareils, flotte, performances, terrains des missions', 'Airspace, aircraft, fleet, performance, mission aerodromes']))}"><h3>${esc(t(['Cohérence', 'Consistency', 'Konsistenz', 'Coherencia']))}</h3><div id="mtUsage"><p class="row"><button type="button" class="secondary" id="mtUsageRun" data-icon="search">${esc(t(['Contrôler', 'Check', 'Prüfen', 'Comprobar']))}</button></p></div></div>`;
     host.querySelector('#mtAeroMapSlot').replaceWith(await aeroMapInit(Z));
@@ -1776,6 +1788,7 @@
     host.querySelector('#mtBasePanel').replaceWith(basePanelEl);
     host.querySelector('#mtMora').onclick = () => moraExclusive(planMora);
     host.querySelector('#mtMoraFull').onclick = () => moraExclusive(planMoraFull);
+    host.querySelector('#mtMoraXp').onclick = () => moraExclusive(planMoraXplane);
     host.querySelector('#mtMoraWrite')?.addEventListener('click', writeMora);
     host.querySelector('#mtMoraDl')?.addEventListener('click', () => {
       const a = document.createElement('a');
@@ -1940,6 +1953,60 @@
     renderDeps();
   }
 
+  /** MORA d'X-Plane (earth_mora.dat, lue dans la base pour les zones actives qui ont coché X-Plane) → mora.csv : les
+   *  cases absentes de la grille calculée sont ajoutées (le calcul garde la priorité), à écrire ensuite. */
+  async function planMoraXplane() {
+    moraMsg = '';
+    moraPlan = null;
+    try {
+      const b = await window.SiaBase.get();
+      if (!b) throw new Error(t(['base absente : « Reconstruire la base aéronautique »', 'no base: “Rebuild the aeronautical database”', 'keine Basis: „Luftfahrtdatenbank neu aufbauen“', 'sin base: «Reconstruir la base aeronáutica»']));
+      const xp = (b.moraCells || []).filter(c => c.src === 'xplane');
+      if (!xp.length) throw new Error(t(['Aucune case MORA d’X-Plane dans la base : choisir le dossier du simulateur X-Plane (Installation › Sources et dossiers), cocher la source X-Plane d’une zone active, puis « Reconstruire la base aéronautique ».', 'No X-Plane MORA cell in the database: choose the X-Plane simulator folder (Installation › Sources and folders), tick the X-Plane source of an active zone, then “Rebuild the aeronautical database”.', 'Keine X-Plane-MORA-Felder in der Basis: X-Plane-Simulatorordner wählen (Installation › Quellen und Ordner), Quelle X-Plane einer aktiven Zone ankreuzen, dann „Luftfahrtdatenbank neu aufbauen“.', 'Ninguna casilla MORA de X-Plane en la base: elegir la carpeta del simulador X-Plane (Instalación › Fuentes y carpetas), marcar la fuente X-Plane de una zona activa y «Reconstruir la base aeronáutica».']));
+      if (!siaFolderState) await scanSiaFolder(true);
+      const mf = siaFolderState?.fixed.find(x => x.id === 'mora')?.file,
+        text = mf ? await mf.file.text() : '';
+      const key = c => `${Math.floor(c.lat)}|${Math.floor(c.lon)}`,
+        before = text ? window.SiaBase.parseMora(text) : [],
+        have = new Set(before.map(key));
+      // cases d'X-Plane : centre de case (lat + 0,5) → coin sud-ouest, comme mora.csv
+      const add = xp.filter(c => !have.has(key(c))).map(c => ({
+        lat: Math.floor(c.lat),
+        lon: Math.floor(c.lon),
+        mora: c.mora,
+        moraFt: c.moraFt,
+        terrainFt: null,
+        obstacleFt: null,
+        source: 'X-Plane earth_mora.dat (grille ARINC 424 du simulateur) — non certifiée',
+        keepSource: true
+      }));
+      const merged = before.map(c => ({
+        ...c,
+        keepSource: true
+      })).concat(add);
+      moraPlan = {
+        csv: window.SiaBase.moraCsv(merged, {
+          airac: b.airac || ''
+        }),
+        cells: merged,
+        changes: add.map(c => ({
+          lat: c.lat,
+          lon: c.lon,
+          before: 0,
+          after: c.moraFt,
+          obstacleBefore: '',
+          obstacleAfter: ''
+        })),
+        cycle: b.airac || '',
+        previousCycle: window.SiaBase.moraCycle(text),
+        written: !add.length,
+        mode: 'xplane'
+      };
+    } catch (e) {
+      moraMsg = pill('err', e.message);
+    }
+    renderSia();
+  }
   async function planMora() {
     moraMsg = '';
     moraPlan = null;
@@ -2031,7 +2098,7 @@
       ${p.changes.length ? `<div class="mt-scroll mt-short"><table class="mt-table"><thead><tr><th>lat</th><th>lon</th><th>MORA</th><th>${esc(t(['obstacle (ft)', 'obstacle (ft)']))}</th></tr></thead><tbody>${p.changes.map(c => `<tr><td>${c.lat}</td><td>${c.lon}</td><td>${c.before} → <b class="${c.after > c.before ? 'mt-minus' : c.after < c.before ? 'mt-plus' : ''}">${c.after}</b></td><td>${c.obstacleBefore} → ${c.obstacleAfter}</td></tr>`).join('')}</tbody></table></div>` : ''}
       ${p.zoneBoxes?.length ? `<p class="mt-small">${esc(t(['Zone calculée : {z} ; les autres cases de mora.csv sont gardées. Obstacles : ceux de la base aéronautique (zones actives).', 'Computed zone: {z}; the other mora.csv cells are kept. Obstacles: those of the aeronautical database (active zones).', 'Berechnete Zone: {z}; die übrigen Zellen von mora.csv bleiben. Hindernisse: die der Luftfahrtdatenbank (aktive Zonen).', 'Zona calculada: {z}; las demás celdas de mora.csv se conservan. Obstáculos: los de la base aeronáutica (zonas activas).'], { z: p.zoneBoxes.join(' ; ') }))}</p>` : ''}
       ${p.extraZones?.length ? `<p class="mt-small">${esc(t(['Hors des théâtres couverts, pour les missions du registre : {z} — relief et sommets seulement (pas d’obstacles hors de l’AIXM française).', 'Outside the covered theatres, for the registry missions: {z} — terrain and peaks only (no obstacles outside the French AIXM).'], { z: p.extraZones.join(' ; ') }))}</p>` : ''}
-      <p class="mt-small">${esc(p.mode === 'full' ? t(['Calcul complet : relief Terrarium + sommets OSM{o} + obstacles de l’AIRAC {c} ; + 1000 ft (2000 ft au-delà de 5000 ft), centaine supérieure.', 'Full calculation: Terrarium terrain + OSM peaks{o} + AIRAC {c} obstacles.'], { c: p.cycle, o: p.peaksOk === false ? t([' (indisponibles : relief majoré de 100 m)', ' (unavailable: terrain +100 m)']) : '' }) : t(['Recalcul simple : obstacles de l’AIRAC {c}, relief du mora.csv conservé ; + 1000 ft (2000 ft au-delà de 5000 ft), centaine supérieure.', 'Simple recalculation: AIRAC {c} obstacles, terrain kept.'], { c: p.cycle }))}</p>`;
+      <p class="mt-small">${esc(p.mode === 'xplane' ? t(['MORA d’X-Plane (earth_mora.dat) : cases absentes de la grille calculée ajoutées ; les cases calculées sont gardées.', 'X-Plane MORA (earth_mora.dat): cells missing from the computed grid added; computed cells kept.', 'X-Plane-MORA (earth_mora.dat): fehlende Felder des berechneten Rasters ergänzt; berechnete Felder bleiben.', 'MORA de X-Plane (earth_mora.dat): casillas ausentes de la cuadrícula calculada añadidas; las calculadas se conservan.']) : p.mode === 'full' ? t(['Calcul complet : relief Terrarium + sommets OSM{o} + obstacles de l’AIRAC {c} ; + 1000 ft (2000 ft au-delà de 5000 ft), centaine supérieure.', 'Full calculation: Terrarium terrain + OSM peaks{o} + AIRAC {c} obstacles.'], { c: p.cycle, o: p.peaksOk === false ? t([' (indisponibles : relief majoré de 100 m)', ' (unavailable: terrain +100 m)']) : '' }) : t(['Recalcul simple : obstacles de l’AIRAC {c}, relief du mora.csv conservé ; + 1000 ft (2000 ft au-delà de 5000 ft), centaine supérieure.', 'Simple recalculation: AIRAC {c} obstacles, terrain kept.'], { c: p.cycle }))}</p>`;
   }
   async function writeMora() {
     try {
@@ -2115,7 +2182,7 @@
           return c && inZ(c[0], c[1]);
         }),
         ads = (b.aero?.aerodromes || []).filter(a => Number.isFinite(a.lat) && inZ(a.lat, a.lon)).length,
-        cells = Z.cellsOf(id),
+        cells = zoneCellKeys(Z, id),
         covered = [...cells].filter(k => mora.has(k)).length;
       const moraPill = !cells.size ? '' : covered === cells.size ? pill('ok', t(['MORA {c}/{n} cases', 'MORA {c}/{n} cells', 'MORA {c}/{n} Felder', 'MORA {c}/{n} casillas'], {
         c: covered,

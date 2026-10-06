@@ -861,7 +861,8 @@
             mora: `${Math.floor(h / 10)}${'⁰¹²³⁴⁵⁶⁷⁸⁹' [h % 10]}`,
             moraFt: h * 100,
             latStep: 1,
-            lonStep: 1
+            lonStep: 1,
+            src: 'xplane' // reconnue par « MORA d'X-Plane → mora.csv » (Paramètres › Maintenance)
           });
         });
       }
