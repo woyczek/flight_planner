@@ -116,6 +116,51 @@
     return r;
   }
 
+  // ---- DLO permanentes par membre (desired learning objectives) et butées : data/odv/dlo.json { schema: 1, va,
+  // updated_at, by, membres: { TRI → [{ id, texte, echeance "AAAA-MM-JJ" | null (butée), etat: a_faire | fait | annule,
+  // auto (fermée par un vol fait), fait_le, vol }] } } ; courent d'une semaine à l'autre
+  const DLO_FILE = 'odv/dlo.json';
+  async function loadDlo({
+    fresh = false
+  } = {}) {
+    const v = await A()?.readData?.(DLO_FILE, {
+      fresh
+    }).catch(() => null);
+    return {
+      schema: 1,
+      membres: {},
+      ...(v || {})
+    };
+  }
+  async function saveDlo(doc) {
+    const out = {
+      ...doc,
+      schema: 1,
+      va: VA(),
+      updated_at: new Date().toISOString(),
+      by: by(),
+      membres: Object.fromEntries(Object.entries(doc.membres || {}).map(([k, l]) => [k, (l || []).filter(x => x?.texte)]).filter(([, l]) => l.length))
+    };
+    const r = await A().writeData(DLO_FILE, out);
+    return {
+      ...r,
+      doc: out
+    };
+  }
+  /** Jours ouvrés (lundi-vendredi) d'aujourd'hui à une échéance ; négatif si dépassée. */
+  function workdaysTo(date, from = new Date().toISOString().slice(0, 10)) {
+    const a = Date.parse(`${from}T12:00:00Z`),
+      b = Date.parse(`${date}T12:00:00Z`);
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+    const sign = b >= a ? 1 : -1;
+    let n = 0;
+    for (let t = a; sign > 0 ? t < b : t > b; t += sign * 864e5) {
+      const d = new Date(t + sign * 864e5).getUTCDay();
+      if (d !== 0 && d !== 6) n += sign;
+    }
+    return n;
+  }
+
   // ---- semaine
   /** Dates « AAAA-MM-JJ » des nbJours premiers jours de la semaine ISO (lundi d'abord). */
   function weekDates(week, n = 7) {
@@ -581,6 +626,9 @@
     uid,
     loadConfig,
     saveConfig,
+    loadDlo,
+    saveDlo,
+    workdaysTo,
     weekDates,
     emptyWeek,
     recurrencesFor,

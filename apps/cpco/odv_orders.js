@@ -180,7 +180,13 @@
     syncCallsigns();
     fillTracks();
     fillExercises();
+    S.dlo = await O().loadDlo({
+      fresh
+    }).catch(() => ({
+      membres: {}
+    }));
     await applyReports();
+    autoDlo();
     recompute();
     render();
     refreshAirspace();
@@ -265,6 +271,7 @@
     S.rev = (S.rev || 0) + 1;
     clearTimeout(ferryRun);
     ferryRun = setTimeout(() => syncFerries().catch(() => {}), 60);
+    autoDlo();
     delete S.doc._nouveau;
     recompute();
     render();
@@ -596,7 +603,9 @@
     const mem = grp => S.members.filter(m => m.groupe === grp).map(m => {
       const day = S.dispos[m.tri]?.[date];
       const bar = dispoBar(day, 0, 1440);
-      return `<div class="odvo-mem" draggable="${S.editable}" data-mem="${esc(m.tri)}" title="${esc(m.nom || m.tri)}"><b${m.couleur ? ` style="color:${esc(tint(m.couleur))}"` : ''}>${esc(m.tri)}</b>${bar}</div>`;
+      const od = openDlo(m.tri),
+        u = od.map(urgency).find(c => c === 'u-red') || od.map(urgency).find(c => c === 'u-yellow') || '';
+      return `<div class="odvo-mem" draggable="${S.editable}" data-mem="${esc(m.tri)}" title="${esc([m.nom || m.tri, ...od.map(dloLabel)].join('\n'))}"><b${m.couleur ? ` style="color:${esc(tint(m.couleur))}"` : ''}>${esc(m.tri)}${od.length ? `<i class="odvo-dlon ${u}">◎${od.length}</i>` : ''}</b>${bar}</div>`;
     }).join('') || `<p class="mut">—</p>`;
     const gen = generated(date).map(g => {
       const tm = g.m ? ownTeam(g.m) : g.team;
@@ -1597,7 +1606,93 @@
     const types = [...new Set([want, a?.appareil?.type, ...fleet.map(f => typeCode(f.type))].filter(Boolean))];
     return `<option value="">—</option>${types.map(ty => opt(`${ty}|`, curV, `${ty}${ty === want ? ' ★' : ''}`)).join('')}${fleet.map(f => opt(`${typeCode(f.type)}|${f.registration}`, curV, `${f.registration} · ${f.variant || f.type}${f.base ? ' · ' + f.base : ''}${typeCode(f.type) === want ? ' ★' : ''}`)).join('')}`;
   }
-  const dloField = e => field(L4('DLO — objectifs de chaque membre sur cet élément (une ligne par membre : TRI = objectifs)', 'DLO — objectives of each member on this item (one line per member: TRI = objectives)', 'DLO — Ziele jedes Mitglieds für dieses Element (eine Zeile pro Mitglied: TRI = Ziele)', 'DLO — objetivos de cada miembro en este elemento (una línea por miembro: TRI = objetivos)'), `<textarea name="dlo" rows="2" placeholder="RBR = FULL COMMS no L16">${esc(Object.entries(e.dlo || {}).map(([k, v]) => `${k} = ${v}`).join('\n'))}</textarea>`, true);
+  // ---- DLO permanentes par membre et butées (data/odv/dlo.json)
+  const openDlo = tri => (S.dlo?.membres?.[tri] || []).filter(x => x.etat === 'a_faire');
+  /** Couleur d'urgence d'une butée : jours ouvrés restants ≤ 3 rouge, ≤ 10 jaune, sinon vert ; dépassée : rouge. */
+  const urgency = x => {
+    if (!x.echeance || x.etat !== 'a_faire') return '';
+    const n = O().workdaysTo(x.echeance);
+    return n == null ? '' : n <= 3 ? 'u-red' : n <= 10 ? 'u-yellow' : 'u-green';
+  };
+  const dloLabel = x => `${x.texte}${x.echeance ? ` (${x.echeance.slice(8, 10)}/${x.echeance.slice(5, 7)})` : ''}`;
+  /** DLO fermées par un vol fait de la semaine : le membre est dans son équipage et l'objectif figure dans la DLO de
+   *  l'élément, son libellé, sa mission (famille, sous-type, titre). */
+  function autoDlo() {
+    let changed = false;
+    const today = new Date().toISOString().slice(0, 10);
+    for (const e of S.doc.elements.filter(x => x.type === 'vol' && x.etat === 'fait')) {
+      const m = reg(e.mission);
+      const hay = tri => `${e.dlo?.[tri] || ''} ${e.libelle} ${e.indicatif} ${m?.family || ''} ${m?.subtype || ''} ${m?.title || ''}`.toLowerCase();
+      for (const tri of new Set(O().crewOf(e, S.affect)))
+        for (const x of openDlo(tri))
+          if (x.auto !== false && hay(tri).includes(String(x.texte).toLowerCase())) {
+            Object.assign(x, {
+              etat: 'fait',
+              fait_le: e.date || today,
+              vol: e.id
+            });
+            changed = true;
+          }
+    }
+    if (changed && S.editable) saveDloSoon();
+  }
+  let dloTimer = null;
+  function saveDloSoon() {
+    clearTimeout(dloTimer);
+    dloTimer = setTimeout(async () => {
+      const r = await O().saveDlo(S.dlo).catch(err => ({
+        error: err
+      }));
+      if (r?.doc) S.dlo = r.doc;
+      if (r?.error && r.where !== 'local') notify(String(r.error?.message || r.error), 'error');
+    }, 400);
+  }
+  function dloChips(tri) {
+    const list = S.dlo?.membres?.[tri] || [];
+    return list.map(x => `<button type="button" class="odvo-dlochip ${esc(x.etat)} ${urgency(x)}" data-dlo="${esc(tri)}|${esc(x.id)}" title="${esc([x.texte, x.echeance ? t(L4('butée', 'deadline', 'Frist', 'plazo')) + ' ' + x.echeance : '', x.etat === 'fait' && x.fait_le ? t(L4('fait le', 'done on', 'erledigt am', 'hecho el')) + ' ' + x.fait_le : ''].filter(Boolean).join(' — '))}">${esc(dloLabel(x))}</button>`).join('');
+  }
+  function openDloEdit(tri, id) {
+    S.dlo ||= {
+      membres: {}
+    };
+    const list = (S.dlo.membres[tri] ||= []);
+    const x = list.find(y => y.id === id) || null;
+    const body = `<div class="odvo-grid2">
+      ${field(L4('Objectif (DLO)', 'Objective (DLO)', 'Ziel (DLO)', 'Objetivo (DLO)'), `<input name="texte" value="${esc(x?.texte || '')}" placeholder="CAS, AAR, GCI dépendant…">`, true)}
+      ${field(L4('Butée (date limite)', 'Deadline', 'Frist', 'Fecha límite'), `<input name="echeance" type="date" value="${esc(x?.echeance || '')}">`)}
+      ${field(L4('État', 'Status', 'Status', 'Estado'), `<select name="etat">${[['a_faire', L4('à faire', 'to do', 'zu tun', 'por hacer')], ['fait', L4('fait', 'done', 'erledigt', 'hecho')], ['annule', L4('annulé', 'cancelled', 'abgesagt', 'cancelado')]].map(([v, l]) => opt(v, x?.etat || 'a_faire', t(l))).join('')}</select>`)}
+      ${field(L4('Fermée par un vol fait (auto)', 'Closed by a flight done (auto)', 'Durch erledigten Flug geschlossen (auto)', 'Cerrado por un vuelo hecho (auto)'), `<input name="auto" type="checkbox"${x?.auto === false ? '' : ' checked'}>`)}
+    </div>`;
+    dialog(`DLO · ${tri}`, body, {
+      onOk: dl => {
+        const f = new FormData(dl.querySelector('form'));
+        const texte = String(f.get('texte') || '').trim();
+        if (!texte) return;
+        const next = {
+          id: x?.id || O().uid(),
+          texte,
+          echeance: f.get('echeance') || null,
+          etat: f.get('etat') || 'a_faire',
+          auto: !!f.get('auto'),
+          fait_le: x?.fait_le || null,
+          vol: x?.vol || null
+        };
+        if (x) Object.assign(x, next);
+        else list.push(next);
+        saveDloSoon();
+        render();
+      },
+      onDelete: x ? () => {
+        S.dlo.membres[tri] = list.filter(y => y.id !== x.id);
+        saveDloSoon();
+        render();
+      } : null
+    });
+  }
+  const dloField = e => field(L4('DLO — objectifs de chaque membre sur cet élément (une ligne par membre : TRI = objectifs)', 'DLO — objectives of each member on this item (one line per member: TRI = objectives)', 'DLO — Ziele jedes Mitglieds für dieses Element (eine Zeile pro Mitglied: TRI = Ziele)', 'DLO — objetivos de cada miembro en este elemento (una línea por miembro: TRI = objetivos)'), `<textarea name="dlo" rows="2" placeholder="RBR = FULL COMMS no L16">${esc(Object.entries(e.dlo || {}).map(([k, v]) => `${k} = ${v}`).join('\n'))}</textarea>${(() => {
+    const open = [...new Set(O().crewOf(e, S.affect))].map(tri => [tri, openDlo(tri)]).filter(([, l]) => l.length);
+    return open.length ? `<small class="mut">${esc(t(L4('DLO en cours de l’équipage :', 'Crew’s open DLO:', 'Offene DLO der Besatzung:', 'DLO abiertos de la tripulación:')))} ${esc(open.map(([tri, l]) => `${tri} : ${l.map(dloLabel).join(', ')}`).join(' · '))}</small>` : '';
+  })()}`, true);
   /** Lignes « TRI = texte » → { TRI → texte }. */
   const parseDlo = txt => Object.fromEntries(String(txt || '').split('\n').map(l => {
     const i = l.indexOf('=');
@@ -1885,6 +1980,9 @@
       <table class="odvo-wk"><thead><tr><th></th>${ds.map((d, i) => `<th>${esc(t(TX.days[i]))} ${esc(d.slice(8, 10))}/${esc(d.slice(5, 7))}</th>`).join('')}</tr></thead>
       <tbody>${['staff', 'autre'].map(g => S.members.filter(m => m.groupe === g).map(row).join('')).join('')}</tbody></table>
       <p class="mut">${esc(t(L4('Clic sur une case : plages déclarées du membre ce jour-là (récup comprise).', 'Click a cell: the member’s declared ranges that day (time off included).', 'Klick auf eine Zelle: angegebene Zeiträume des Mitglieds an diesem Tag (Ausgleich inklusive).', 'Clic en una casilla: franjas declaradas por el miembro ese día (descanso incluido).')))}</p>
+      <h3>${esc(t(L4('DLO et butées', 'DLO and deadlines', 'DLO und Fristen', 'DLO y plazos')))}</h3>
+      <p class="mut">${esc(t(L4('Objectifs de chaque membre, d’une semaine à l’autre ; butée : date limite (rouge à 3 jours ouvrés ou moins, jaune à 10 ou moins) ; fermés d’office par un vol fait qui les contient.', 'Each member’s objectives, from one week to the next; deadline: red at 3 working days or less, yellow at 10 or less; closed automatically by a flight done that contains them.', 'Ziele jedes Mitglieds über die Wochen; Frist: rot bei höchstens 3 Arbeitstagen, gelb bei höchstens 10; durch einen erledigten Flug, der sie enthält, automatisch geschlossen.', 'Objetivos de cada miembro de una semana a otra; plazo: rojo a 3 días hábiles o menos, amarillo a 10 o menos; cerrados automáticamente por un vuelo hecho que los contiene.')))}</p>
+      <table class="odvo-wk odvo-dlotab"><tbody>${S.members.map(m => `<tr><th>${esc(m.tri)}</th><td>${dloChips(m.tri)}${S.editable ? `<button type="button" class="odvo-dloadd" data-dlo="${esc(m.tri)}|" title="${esc(t(L4('Ajouter une DLO', 'Add a DLO', 'DLO hinzufügen', 'Añadir un DLO')))}">＋</button>` : ''}</td></tr>`).join('')}</tbody></table>
       <h3>${esc(t(L4('Modifications de dispo', 'Availability changes', 'Verfügbarkeitsänderungen', 'Cambios de disponibilidad')))}</h3>
       ${changes.length ? `<ul class="odvo-chg">${changes.map(([tri, d]) => `<li><b>${esc(tri)}</b> ${esc(String(d.updated_at).slice(0, 16).replace('T', ' '))}z ${d.by && d.by !== tri ? `(${esc(d.by)})` : ''} <button type="button" data-seen="${esc(tri)}">${esc(t(L4('Pris en compte', 'Noted', 'Berücksichtigt', 'Tenido en cuenta')))}</button></li>`).join('')}</ul><button type="button" data-seen="*">${esc(t(L4('Tout prendre en compte', 'Note all', 'Alle berücksichtigen', 'Tener todo en cuenta')))}</button>` : `<p class="mut">${esc(t(L4('Aucune modification depuis la dernière prise en compte.', 'No change since last noted.', 'Keine Änderung seit der letzten Berücksichtigung.', 'Ningún cambio desde la última vez.')))}</p>`}`;
   }
@@ -1979,6 +2077,11 @@
       if (ev.target.dataset.act === 'perm') mutate(doc => (doc.permanence = ev.target.value));
     });
     $('#odvoWeekView').addEventListener('click', ev => {
+      const dl = ev.target.closest('[data-dlo]');
+      if (dl && S.editable) {
+        const [tri, id] = dl.dataset.dlo.split('|');
+        return openDloEdit(tri, id);
+      }
       const c = ev.target.closest('[data-cell]'),
         sn = ev.target.closest('[data-seen]');
       if (sn) {

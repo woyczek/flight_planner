@@ -558,6 +558,43 @@
     font-size: 11px;
     color: var(--muted)
   }
+  /* DLO et butées */
+  .odvo-dlochip {
+    font-size: 11px !important;
+    padding: 1px 6px !important;
+    margin: 0 4px 3px 0;
+    border-left: 4px solid var(--line) !important
+  }
+  .odvo-dlochip.fait {
+    text-decoration: line-through;
+    opacity: .6
+  }
+  .odvo-dlochip.annule {
+    opacity: .4
+  }
+  .odvo-dlochip.u-red,
+  .odvo-dlon.u-red {
+    border-left-color: #dc2626 !important;
+    color: #dc2626
+  }
+  .odvo-dlochip.u-yellow,
+  .odvo-dlon.u-yellow {
+    border-left-color: #f59e0b !important;
+    color: #e08a00
+  }
+  .odvo-dlochip.u-green {
+    border-left-color: #16a34a !important
+  }
+  .odvo-dlon {
+    font-style: normal;
+    font-size: 10px;
+    margin-left: 3px;
+    color: #f59e0b
+  }
+  .odvo-dloadd {
+    font-size: 11px !important;
+    padding: 0 6px !important
+  }
   .odvo-chg {
     font-size: 12px;
     padding-left: 18px
@@ -748,8 +785,8 @@
 <script src="../../shared/odv_airspace.js?v=649e93b8"></script>
 <script src="../../shared/odv_activations_editor.js?v=2d510137"></script>
 <script src="../../shared/odv_reports.js?v=c059b0de"></script>
-<script src="../../shared/odv_orders_store.js?v=941e3842"></script>
-<script src="odv_orders.js?v=7087cc6e"></script>
+<script src="../../shared/odv_orders_store.js?v=ca3dfb34"></script>
+<script src="odv_orders.js?v=d13322d2"></script>
 <script src="../../shared/app_framework.js?v=ae60867a"></script>
 <script src="../../shared/content_i18n.js?v=7afecb78"></script>
 <script>

@@ -184,6 +184,6 @@ présentation des vols de mission.
 
 ## 7. Questions ouvertes
 
-1. **DLO par membre** (hors élément : « RBR : missions de CAS, AAR ») et **butées** : où les garder (fiche utilisateur
-   ou fichier de suivi), et rapprochement automatique avec les vols faits (V0 : statut « auto »).
+1. Faits depuis : DLO permanentes par membre et butées (`data/odv/dlo.json`), postes, appareils et convoyage comme le
+   Planning ODV (plaquette de convoyage générée, « à affecter »), astreinte, qualification sur le type en signal.
 2. **NLT** : repère horaire du jour (feuille de route avec les marqueurs).
