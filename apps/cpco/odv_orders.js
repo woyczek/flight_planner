@@ -180,6 +180,7 @@
     }).catch(() => null);
     S.affect = idx?.assignments || [];
     S.registry = await registryList();
+    await window.AircraftPositions?.load?.().catch(() => {});
     S.log = await MA()?.readLog?.().catch(() => []) || [];
     S.decls = await MA()?.declarations?.(tris).catch(() => ({})) || {};
     const tr = await window.OdvAirspace?.aarTracks?.().catch(() => []);
@@ -1923,6 +1924,9 @@
     name: m.origin || ''
   }) || '' : '';
   const nextCs = (cs, n) => String(cs || '').replace(/(\d+)(?!.*\d)/, x => String(+x + n).padStart(x.length, '0'));
+  // terrain actuel d'un appareil (AircraftPositions : CR d'un ordre de mission récent, sinon emplacement du site, sinon
+  // base) ; le convoyage part de là
+  const adOf = f => window.AircraftPositions?.adOf?.(f) || f?.base || '';
   /** Durée d'un convoyage (min) de base à départ pour un type : distance ÷ croisière + 20 min ; null si un terrain est
    *  sans coordonnées. */
   async function ferryMin(base, dep, type) {
@@ -1941,7 +1945,7 @@
     const taken = new Set(S.doc.elements.filter(x => x.type === 'vol' && x.id !== e.id && x.date === e.date && min(x.debut) < f && s < min(x.debut) + x.duree).flatMap(x => x.avions.map(a => a.appareil?.immat)).filter(Boolean));
     const rows = await Promise.all(list.filter(x => x.registration).map(async x => ({
       x,
-      fm: await ferryMin(x.base, dep, x.type)
+      fm: await ferryMin(adOf(x), dep, x.type)
     })));
     rows.sort((a, b) => (a.fm ?? 1e6) - (b.fm ?? 1e6) || (b.x.operational !== false) - (a.x.operational !== false) || String(a.x.registration).localeCompare(String(b.x.registration)));
     const want = typeCode(spec?.type || '');
@@ -1952,7 +1956,7 @@
       fm
     }) => {
       const v = `${typeCode(x.type)}|${x.registration}`;
-      const where = !dep ? x.base || '' : fm === 0 ? t(L4('sur place', 'on site', 'vor Ort', 'en el sitio')) : fm == null ? `${x.base} — ${t(L4('distance inconnue', 'distance unknown', 'Entfernung unbekannt', 'distancia desconocida'))}` : `${x.base} — ${t(L4('convoyage', 'ferry', 'Überführung', 'traslado'))} ${fmtMin(fm)}`;
+      const where = !dep ? adOf(x) : fm === 0 ? t(L4('sur place', 'on site', 'vor Ort', 'en el sitio')) : fm == null ? `${adOf(x)} — ${t(L4('distance inconnue', 'distance unknown', 'Entfernung unbekannt', 'distancia desconocida'))}` : `${adOf(x)} — ${t(L4('convoyage', 'ferry', 'Überführung', 'traslado'))} ${fmtMin(fm)}`;
       const busy = taken.has(x.registration) && v !== curV;
       return `<option value="${esc(v)}"${v === curV ? ' selected' : ''}${busy ? ' disabled' : ''}>${esc(`${x.registration} · ${x.variant || x.type} · ${where}${x.operational === false ? ' · ' + t(L4('non opérationnel', 'not operational', 'nicht einsatzbereit', 'no operativo')) : ''}${busy ? ' · ' + t(L4('déjà pris', 'already taken', 'schon belegt', 'ya ocupado')) : ''}`)}</option>`;
     }).join('')}`;
@@ -1995,10 +1999,10 @@
       if (!dep) continue;
       for (const a of v.avions) {
         const f = a.appareil?.immat && (window.DEFA_FLEET || []).find(x => x.registration === a.appareil.immat);
-        if (!f?.base || f.base === dep) continue;
-        const fm = await ferryMin(f.base, dep, f.type);
+        if (!adOf(f) || adOf(f) === dep) continue;
+        const fm = await ferryMin(adOf(f), dep, f.type);
         if (fm == null) {
-          unknown.push(`${f.registration} ${f.base} → ${dep}`);
+          unknown.push(`${f.registration} ${adOf(f)} → ${dep}`);
           continue;
         }
         want.push({
@@ -2036,7 +2040,7 @@
           convoyage: {
             pour: v.id,
             immat: f.registration,
-            from: f.base,
+            from: adOf(f),
             to: dep,
             volDebut: v.debut
           },
@@ -2054,7 +2058,7 @@
         // le vol a bougé : le convoyage le suit du même écart ; sinon il garde sa place (déplacement à la main)
         const shift = c.convoyage.volDebut ? min(v.debut) - min(c.convoyage.volDebut) : 0;
         const nd = c.convoyage.volDebut ? Math.max(0, Math.min(1440 - Math.max(5, fm), min(c.debut) + shift)) : s0;
-        if (hhmm(nd) !== c.debut || c.duree !== Math.max(5, fm) || c.date !== v.date || c.convoyage.from !== f.base || c.convoyage.to !== dep || c.convoyage.volDebut !== v.debut) {
+        if (hhmm(nd) !== c.debut || c.duree !== Math.max(5, fm) || c.date !== v.date || c.convoyage.from !== adOf(f) || c.convoyage.to !== dep || c.convoyage.volDebut !== v.debut) {
           Object.assign(c, {
             date: v.date,
             debut: hhmm(nd),
@@ -2064,7 +2068,7 @@
         }
         c.convoyage = {
           ...c.convoyage,
-          from: f.base,
+          from: adOf(f),
           to: dep,
           volDebut: v.debut
         };
@@ -2094,7 +2098,7 @@
     const curV = a?.appareil ? `${a.appareil.type}|${a.appareil.immat || ''}` : want ? `${want}|` : '';
     const fleet = [...(window.DEFA_FLEET || [])].filter(f => f.operational !== false).sort((x, y) => (typeCode(y.type) === want) - (typeCode(x.type) === want) || String(x.type).localeCompare(String(y.type)) || String(x.registration).localeCompare(String(y.registration)));
     const types = [...new Set([want, a?.appareil?.type, ...fleet.map(f => typeCode(f.type))].filter(Boolean))];
-    return `<option value="">—</option>${types.map(ty => opt(`${ty}|`, curV, `${ty}${ty === want ? ' ★' : ''}`)).join('')}${fleet.map(f => opt(`${typeCode(f.type)}|${f.registration}`, curV, `${f.registration} · ${f.variant || f.type}${f.base ? ' · ' + f.base : ''}${typeCode(f.type) === want ? ' ★' : ''}`)).join('')}`;
+    return `<option value="">—</option>${types.map(ty => opt(`${ty}|`, curV, `${ty}${ty === want ? ' ★' : ''}`)).join('')}${fleet.map(f => opt(`${typeCode(f.type)}|${f.registration}`, curV, `${f.registration} · ${f.variant || f.type}${adOf(f) ? ' · ' + adOf(f) : ''}${typeCode(f.type) === want ? ' ★' : ''}`)).join('')}`;
   }
   // ---- DLO permanentes par membre et butées (data/odv/dlo.json)
   const openDlo = tri => (S.dlo?.membres?.[tri] || []).filter(x => x.etat === 'a_faire');
