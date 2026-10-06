@@ -1,0 +1,86 @@
+# Mission A-001D — played bandit TRACK 401 of A-001Z, created by the brief generator on 03/10/2026
+schema: helo-xp-mission
+schema_version: '2.0'
+mission:
+  series: 1
+  number: 1
+  id: A-001D
+  type: COMBAT
+  subtype: CHIFFON
+  role: chiffon
+operation:
+  id: A-001
+  name: BOXING GLOVES
+  missions:
+    - A-001A
+    - A-001B
+    - A-001C
+    - A-001D
+    - A-001E
+  organisation: A-001Z
+title: BOXING GLOVES — bandit TRACK 401
+author: ''
+date: '2026-10-03'
+summary: |-
+  Played bandit of exercise BOXING GLOVES: CHIFFON401, adversary training fighter.
+
+  Track starts at H+5 at the first point, engagement in TRA 34 A until knock-it-off, exit via the last point, FL180–FL260, 420 kt; return to base.
+
+  Expected from the crews: establish the threat type, the approach geometry, the behaviour at the merge and the outcome of the engagement.
+detailed_description: |-
+  CHIFFON401 enters the sector at the given slot and flies a profile converging towards the centre of TRA 34 A. It remains non-cooperative until visual acquisition, then starts an aggressive defensive manoeuvre at the merge.
+
+  The bandit strictly respects the area, the announced levels and any separation instruction. On a knock-it-off call or on the exercise director's order, it immediately breaks off the engagement, stabilises its flight path and leaves the sector via the south-east leg.
+aircraft:
+  - id: AC1
+    type: MIR2 Mirage 2000B
+    callsign: CHIFFON401
+    role: exercise bandit (TRACK 401)
+    cruise_speed_kt: 420
+    cruise_level: FL180–FL260
+origin:
+  name: BA 118 Mont-de-Marsan (LFBM)
+  lat: 43.911667
+  lon: -0.5075
+destination:
+  name: BA 118 Mont-de-Marsan (LFBM)
+  lat: 43.911667
+  lon: -0.5075
+turning_points:
+  - id: P1
+    name: TRA 34 A — north-west sector
+    lat: 44.18
+    lon: -0.52
+    role: track start (H+5)
+    time_on_task_min: 0
+  - id: P2
+    name: TRA 34 A — central sector
+    lat: 44.05
+    lon: -0.35
+    role: BFM engagement with the fighter elements, until knock-it-off
+    time_on_task_min: 20
+  - id: P3
+    name: TRA 34 A — south-east sector
+    lat: 43.92
+    lon: -0.18
+    role: sector exit
+    time_on_task_min: 0
+route_order:
+  - ORIGIN
+  - P1
+  - P2
+  - P3
+  - DESTINATION
+timing:
+  estimated_flight_min: 37
+  estimated_block_min: 67
+teams:
+  - name: CHIFFON401
+    service: French Air and Space Force
+    department: Landes
+    type: MIR2 Mirage 2000B
+    role: exercise bandit (TRACK 401)
+notes:
+  - 'Exercise bandit: track TRACK-401, held in organisation A-001Z (reveals to crews, map). Take-off H.'
+  - 'Air simulation exercise.'
+maps: []

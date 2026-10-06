@@ -1,0 +1,443 @@
+{
+ "schema": 1,
+ "va": "SOG",
+ "groupes": [
+  {
+   "id": "dispo",
+   "label": [
+    "Disponible",
+    "Available",
+    "Verfügbar",
+    "Disponible"
+   ],
+   "court": "D",
+   "couleur": "#00b050"
+  },
+  {
+   "id": "exercice",
+   "label": [
+    "Exercice SOG",
+    "SOG exercise",
+    "SOG-Übung",
+    "Ejercicio SOG"
+   ],
+   "court": "E",
+   "couleur": "#e03c31"
+  },
+  {
+   "id": "occupe",
+   "label": [
+    "Occupé",
+    "Busy",
+    "Beschäftigt",
+    "Ocupado"
+   ],
+   "court": "O",
+   "couleur": "#ffd966"
+  },
+  {
+   "id": "indispo",
+   "label": [
+    "Indisponible",
+    "Unavailable",
+    "Nicht verfügbar",
+    "No disponible"
+   ],
+   "court": "I",
+   "couleur": "#bfbfbf"
+  }
+ ],
+ "domaines": [
+  {
+   "id": "secu",
+   "label": [
+    "Sécurité civile",
+    "Civil security",
+    "Zivilschutz",
+    "Seguridad civil"
+   ],
+   "themes": [
+    "HEMS",
+    "SAR",
+    "FIRE",
+    "LE",
+    "HADR"
+   ]
+  },
+  {
+   "id": "defense",
+   "label": [
+    "Défense",
+    "Defence",
+    "Verteidigung",
+    "Defensa"
+   ],
+   "themes": [
+    "COMBAT",
+    "ISR",
+    "COMMAND",
+    "AAR",
+    "AIRLIFT",
+    "AIRBORNE",
+    "MARITIME",
+    "SPECIAL"
+   ]
+  }
+ ],
+ "themes": {
+  "HEMS": [
+   "Secours héliporté, medevac",
+   "Helicopter rescue, medevac",
+   "Hubschrauberrettung, Medevac",
+   "Rescate en helicóptero, medevac"
+  ],
+  "SAR": [
+   "Recherche et sauvetage",
+   "Search and rescue",
+   "Suche und Rettung",
+   "Búsqueda y rescate"
+  ],
+  "FIRE": [
+   "Feux",
+   "Firefighting",
+   "Brandbekämpfung",
+   "Incendios"
+  ],
+  "LE": [
+   "Police, douane",
+   "Law enforcement, customs",
+   "Polizei, Zoll",
+   "Policía, aduanas"
+  ],
+  "HADR": [
+   "Aide humanitaire",
+   "Humanitarian aid",
+   "Humanitäre Hilfe",
+   "Ayuda humanitaria"
+  ],
+  "COMBAT": [
+   "Chasse",
+   "Fighter",
+   "Jagd",
+   "Caza"
+  ],
+  "ISR": [
+   "Renseignement, surveillance",
+   "Intelligence, surveillance",
+   "Aufklärung, Überwachung",
+   "Inteligencia, vigilancia"
+  ],
+  "COMMAND": [
+   "Commandement",
+   "Command",
+   "Führung",
+   "Mando"
+  ],
+  "AAR": [
+   "Ravitaillement en vol",
+   "Air-to-air refuelling",
+   "Luftbetankung",
+   "Reabastecimiento en vuelo"
+  ],
+  "AIRLIFT": [
+   "Transport",
+   "Airlift",
+   "Lufttransport",
+   "Transporte aéreo"
+  ],
+  "AIRBORNE": [
+   "Largage",
+   "Airdrop",
+   "Absetzen",
+   "Lanzamiento"
+  ],
+  "MARITIME": [
+   "Marine",
+   "Maritime",
+   "Marine",
+   "Marítimo"
+  ],
+  "SPECIAL": [
+   "Spécial",
+   "Special",
+   "Spezial",
+   "Especial"
+  ],
+  "EXERCICE": [
+   "Exercice SOG",
+   "SOG exercise",
+   "SOG-Übung",
+   "Ejercicio SOG"
+  ],
+  "CONTROLE": [
+   "Contrôleur d’exercice",
+   "Exercise controller",
+   "Übungslotse",
+   "Controlador de ejercicio"
+  ]
+ },
+ "alias": {
+  "MEDEVAC": "HEMS",
+  "SOF": "SPECIAL",
+  "FLIGHTINSPECTION": "SPECIAL",
+  "SURVEY": "SPECIAL",
+  "TRAINING": "*"
+ },
+ "categories": [
+  {
+   "id": "tout",
+   "groupe": "dispo",
+   "type": "dispo",
+   "label": [
+    "Disponible pour tout",
+    "Available for everything",
+    "Für alles verfügbar",
+    "Disponible para todo"
+   ],
+   "couleur": "#00b050",
+   "ouverts": "all",
+   "odv": [
+    "O"
+   ]
+  },
+  {
+   "id": "secu",
+   "groupe": "dispo",
+   "type": "dispo",
+   "label": [
+    "Disponible sécurité civile",
+    "Available civil security",
+    "Verfügbar Zivilschutz",
+    "Disponible seguridad civil"
+   ],
+   "couleur": "#2f5597",
+   "ouverts": "domain:secu",
+   "odv": [
+    "SC"
+   ]
+  },
+  {
+   "id": "defense",
+   "groupe": "dispo",
+   "type": "dispo",
+   "label": [
+    "Disponible défense",
+    "Available defence",
+    "Verfügbar Verteidigung",
+    "Disponible defensa"
+   ],
+   "couleur": "#0070c0",
+   "ouverts": "domain:defense",
+   "odv": [
+    "D+"
+   ]
+  },
+  {
+   "id": "secu_perso",
+   "groupe": "dispo",
+   "type": "dispo",
+   "label": [
+    "Sécurité civile personnalisée",
+    "Custom civil security",
+    "Zivilschutz nach Wahl",
+    "Seguridad civil personalizada"
+   ],
+   "couleur": "#6c8ebf",
+   "ouverts": "prefs:secu",
+   "odv": [
+    "SC-"
+   ]
+  },
+  {
+   "id": "defense_perso",
+   "groupe": "dispo",
+   "type": "dispo",
+   "label": [
+    "Défense personnalisée",
+    "Custom defence",
+    "Verteidigung nach Wahl",
+    "Defensa personalizada"
+   ],
+   "couleur": "#8693a0",
+   "ouverts": "prefs:defense",
+   "odv": [
+    "D-"
+   ]
+  },
+  {
+   "id": "exercice_vol",
+   "groupe": "exercice",
+   "type": "dispo",
+   "label": [
+    "Vol en exercice SOG",
+    "SOG exercise flight",
+    "Flug in SOG-Übung",
+    "Vuelo en ejercicio SOG"
+   ],
+   "couleur": "#ff0000",
+   "ouverts": [
+    "EXERCICE"
+   ],
+   "odv": [
+    "S"
+   ]
+  },
+  {
+   "id": "exercice_ctrl",
+   "groupe": "exercice",
+   "type": "atc",
+   "label": [
+    "Contrôle SOG",
+    "SOG control",
+    "SOG-Lotsendienst",
+    "Control SOG"
+   ],
+   "couleur": "#c4bd97",
+   "ouverts": [
+    "CONTROLE"
+   ],
+   "odv": [
+    "AM"
+   ]
+  },
+  {
+   "id": "vol_hors",
+   "groupe": "occupe",
+   "type": "occupe",
+   "label": [
+    "Vol hors SOG (IVAO / VATSIM)",
+    "Flight outside SOG (IVAO / VATSIM)",
+    "Flug außerhalb SOG (IVAO / VATSIM)",
+    "Vuelo fuera de SOG (IVAO / VATSIM)"
+   ],
+   "couleur": "#ffd966",
+   "ouverts": "none",
+   "odv": [
+    "G"
+   ]
+  },
+  {
+   "id": "dcs",
+   "groupe": "occupe",
+   "type": "occupe",
+   "label": [
+    "DCS",
+    "DCS",
+    "DCS",
+    "DCS"
+   ],
+   "couleur": "#002060",
+   "ouverts": "none",
+   "odv": [
+    "DC"
+   ]
+  },
+  {
+   "id": "ctrl_hors",
+   "groupe": "occupe",
+   "type": "atc",
+   "label": [
+    "Contrôle hors SOG (IVAO / VATSIM)",
+    "Control outside SOG (IVAO / VATSIM)",
+    "Lotsendienst außerhalb SOG (IVAO / VATSIM)",
+    "Control fuera de SOG (IVAO / VATSIM)"
+   ],
+   "couleur": "#7030a0",
+   "ouverts": "none",
+   "odv": [
+    "AT"
+   ]
+  },
+  {
+   "id": "indispo",
+   "groupe": "indispo",
+   "type": "indispo",
+   "label": [
+    "Indisponible",
+    "Unavailable",
+    "Nicht verfügbar",
+    "No disponible"
+   ],
+   "couleur": "#bfbfbf",
+   "ouverts": "none",
+   "odv": [
+    "IN"
+   ]
+  },
+  {
+   "id": "conges",
+   "groupe": "indispo",
+   "type": "indispo",
+   "label": [
+    "Congés",
+    "Holidays",
+    "Urlaub",
+    "Vacaciones"
+   ],
+   "couleur": "#ffc000",
+   "ouverts": "none",
+   "odv": [
+    "V"
+   ]
+  },
+  {
+   "id": "recup",
+   "groupe": "indispo",
+   "type": "indispo",
+   "label": [
+    "Récupération",
+    "Time off",
+    "Ausgleich",
+    "Descanso"
+   ],
+   "couleur": "#d9d9d9",
+   "ouverts": "none",
+   "odv": [
+    "Q"
+   ]
+  },
+  {
+   "id": "irl",
+   "groupe": "indispo",
+   "type": "indispo",
+   "label": [
+    "Activité réelle",
+    "Real-life activity",
+    "Termin im echten Leben",
+    "Actividad real"
+   ],
+   "couleur": "#ffff00",
+   "ouverts": "none",
+   "odv": [
+    "IR"
+   ]
+  }
+ ],
+ "import": {
+  "C": {
+   "defense": [
+    "COMBAT",
+    "ISR",
+    "COMMAND",
+    "AAR"
+   ]
+  },
+  "T": {
+   "defense": [
+    "AIRLIFT",
+    "AIRBORNE",
+    "AAR"
+   ]
+  },
+  "N": {
+   "defense": [
+    "MARITIME"
+   ],
+   "secu": [
+    "SAR"
+   ]
+  }
+ },
+ "updated_at": "2026-10-06T12:00:00.000Z",
+ "by": "JEU_ESSAI"
+}

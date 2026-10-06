@@ -1,0 +1,146 @@
+schema: helo-xp-mission
+schema_version: '2.0'
+mission:
+  series: 1
+  number: 1
+  id: 'N-001'
+  former_id: '21'
+  type: MARITIME
+  subtype: OFFSHORE / PERSONNEL
+title: Embarked crew change off Ouessant
+summary: >-
+  Deliver a team of six technicians from Lanvéoc to a command ship on exercise west of Ouessant. The crew must first make a
+  rendezvous with an escort helicopter, then a second one with the ship before the transfer. The mission focuses on maritime
+  coordination, visual identification of the ship and handling of the relative wind on scene.
+aircraft:
+- id: AC1
+  type: H225M Caracal
+  callsign: VAILLANT21
+  operator: French Air and Space Force
+  role: primary aircraft
+origin:
+  name: BAN Lanvéoc-Poulmic (LFRL)
+  lat: 48.281667
+  lon: -4.445
+destination:
+  name: Maritime point OUESSANT WEST
+  lat: 48.45
+  lon: -5.65
+target:
+  id: TARGET
+  name: Command ship — Ouessant West sector
+  lat: 48.45
+  lon: -5.65
+payload:
+  category: PERSONNEL
+  description: Six naval support technicians and 350 kg of baggage/tools
+  mass_kg: 350
+  passengers: 6
+  constraints:
+  - Baggage split between cabin and hold
+  - Equipment secured for the sea crossing
+  - Final transfer under the ship's control
+turning_points:
+- id: PT1
+  name: Pointe Saint-Mathieu
+  lat: 48.330833
+  lon: -4.770278
+  role: coast-out point
+- id: PT2
+  name: Ouessant south
+  lat: 48.43
+  lon: -5.1
+  role: maritime checkpoint
+rendezvous:
+- id: RDV-1
+  name: Ouessant south
+  lat: 48.43
+  lon: -5.1
+  participants:
+  - VAILLANT21
+  - CAIMAN23
+  role: join-up with escort element
+- id: RDV-2
+  name: Ship sector
+  lat: 48.45
+  lon: -5.65
+  participants:
+  - VAILLANT21
+  - Command ship
+  role: transfer coordination
+zones: []
+teams:
+- name: VAILLANT21
+  service: French Air and Space Force
+  department: Finistère
+  type: H225M
+  role: primary transport
+- name: CAIMAN23
+  service: French Navy
+  department: Finistère
+  type: NH90
+  role: escort / identification
+- name: Deck team
+  service: French Navy
+  department: —
+  type: Ship team
+  role: transfer guidance
+objectives:
+  primary: Deliver the technical team to the ship at the planned maritime point.
+  secondary:
+  - Make the RDV with CAIMAN23 before entering the sector
+  - Hold an arrival slot of ±10 min
+  - Bring back two relieved technicians if the final mass allows
+risks:
+- hazard: Maritime wind
+  consequence: Drift and turbulence on scene
+  mitigation: Update the wind and keep a fuel margin
+- hazard: Maritime traffic
+  consequence: Identification confusion
+  mitigation: Confirm the ship's position, heading and identification before the transfer
+air_refueling:
+  capable: true
+  planned: false
+  compatible_tanker: A400M tanker
+  preferred_track: EDWIGE
+  trigger: on-station extension > 45 min or prolonged diversion
+maps:
+- id: general
+  filename: generalN-001.png
+  type: general
+  description: General view covering departure, destination, turning points, RDV, target and zones
+  include:
+    origin: true
+    destination: true
+    turning_points: true
+    target: true
+    rendezvous: true
+    zones: true
+- id: cible
+  filename: cibleN-001.png
+  type: target
+  description: Local view centred on TARGET, approximate radius 50 km
+  centre_ref: TARGET
+  range_km: 50
+- id: detail_cible
+  filename: detail_cibleN-001.png
+  type: detail
+  description: Detailed 8 × 5 km view around TARGET
+  centre_ref: TARGET
+  width_km: 8
+  height_km: 5
+- id: detail_rdv_1
+  filename: detail_rdvN-001-1.png
+  type: detail_rdv
+  description: Detailed 8 × 5 km view around RDV-1
+  centre_ref: RDV-1
+  width_km: 8
+  height_km: 5
+rendering:
+  north_up: true
+  draw_routes: false
+  add_markers: false
+  attribution_required: true
+notes:
+- >-
+  Flight simulation exercise. Maritime positions away from airfields are exercise points within real geographic areas.

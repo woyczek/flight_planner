@@ -1,0 +1,225 @@
+# Mission I-001A — received in the brief generator on 29/09/2026 08:53:23
+schema: helo-xp-mission
+schema_version: '1.0'
+mission:
+  series: 1
+  number: 1
+  id: I-001A
+  type: ISR
+  subtype: ISR
+operation:
+  id: I-001
+  name: EYE OF SOLOGNE
+  missions:
+    - I-001A
+    - I-001B
+    - I-001C
+title: EYE OF SOLOGNE — the big dish is listening
+summary: |-
+  An E-3F of the 36th Wing takes off from Avord to build an air and electromagnetic picture over west-central France, in coordination with a Phénix and a Rafale flight. The exercise includes a refuelling sequence on the SIMONE track before taking station, the scenario having decided that an aircraft with a nine-metre rotodome still lacked a little visibility.
+
+  The crew must join SIMONE, refuel, set up surveillance of the Brenne sector, then pass the Rafales the tracks and data needed for their reconnaissance phase. Success depends on keeping the shared time slot, maintaining a continuous tactical picture and returning to Avord with the planned reserves.
+detailed_description: |-
+  Operation EYE OF SOLOGNE brings together three SOG crews: an E-3F for surveillance and coordination, an A330 MRTT Phénix for air-to-air refuelling, and a Rafale flight to exploit the information gathered. The scenario covers building a coherent air picture over west-central France and passing simulated tracks between the three crews. The big dish on top of the fuselage does not, therefore, excuse the crew from watching the rendezvous time.
+
+  The E-3F takes off from BA 702 Avord, climbs to FL240 and proceeds direct to the ARIP of the SIMONE track, about 90 NM from the base. The initial transit takes about 15 minutes at 360 kt true airspeed, plus the climb and joining the track. After refuelling, the aircraft continues to the Brenne sector to set up its surveillance orbit at FL260.
+
+  At RDV-1, the E-3F joins the Phénix COTAM3510 on SIMONE and takes on the planned fuel before leaving the track via the ARCP. It then proceeds to ZONE-1 and holds an orbit for 45 minutes to build and disseminate the simulated air picture. Relevant information is passed to the RAFALE31 flight, which in turn joins the package to correlate the detected tracks and fly its reconnaissance sequence.
+
+  Tanker unavailability, a delay of more than ten minutes at the rendezvous or weather incompatible with holding station leads to a shorter surveillance period rather than eating into the return reserves. If the link with RAFALE31 is lost, the E-3F keeps the picture and continues surveillance without attempting an improvised rendezvous. Bourges is the primary diversion if a direct return to Avord is temporarily impossible.
+
+  After the surveillance period, the E-3F leaves the Brenne to the north-east, picks up a route to Avord and descends for arrival at BA 702. The mission is complete once the aircraft has landed at Avord and the simulated tracks, rendezvous times and refuelling sequence have been logged for the debrief.
+aircraft:
+  - id: AC1
+    type: E3CF E-3F AWACS
+    callsign: CYRANO01
+    operator: French Air and Space Force
+    role: airborne surveillance and operation coordination
+    cruise_speed_kt: 360
+    cruise_level: FL260
+origin:
+  name: BA 702 Avord (LFOA)
+  lat: 47.056944
+  lon: 2.638889
+destination:
+  name: BA 702 Avord (LFOA)
+  lat: 47.056944
+  lon: 2.638889
+target:
+  id: TARGET
+  name: Brenne Regional Nature Park
+  lat: 46.77
+  lon: 1.25
+  time_on_task_min: 0
+turning_points:
+  - id: PT1
+    name: SIMONE ARIP
+    lat: 46.444167
+    lon: 1.486
+    role: entry to the SIMONE refuelling track
+    time_on_task_min: 0
+  - id: PT2
+    name: SIMONE ARCP
+    lat: 47.231833
+    lon: 1.689
+    role: track exit after refuelling
+    time_on_task_min: 0
+  - id: PT3
+    name: Châteauroux
+    lat: 46.811389
+    lon: 1.691111
+    role: reporting point before taking station
+    time_on_task_min: 0
+rendezvous:
+  - id: RDV-1
+    name: SIMONE ARIP
+    lat: 46.444167
+    lon: 1.486
+    participants:
+      - CYRANO01
+      - COTAM3510
+    role: join-up with the tanker and start of the AAR sequence
+    time_on_task_min: 5
+  - id: RDV-2
+    name: Brenne sector
+    lat: 46.77
+    lon: 1.25
+    participants:
+      - CYRANO01
+      - RAFALE31
+    role: tactical check-in and handover of simulated tracks
+    time_on_task_min: 5
+zones:
+  - id: ZONE-1
+    name: Brenne surveillance area
+    centre:
+      lat: 46.77
+      lon: 1.25
+    radius_km: 35
+    role: ISR surveillance orbit and air coordination
+    time_on_task_min: 45
+route_order:
+  - ORIGIN
+  - PT1
+  - RDV-1
+  - PT2
+  - PT3
+  - TARGET
+  - RDV-2
+  - ZONE-1
+  - DESTINATION
+return_options:
+  - name: Bourges (LFLD)
+    lat: 47.058056
+    lon: 2.370278
+    condition: Avord temporarily unavailable or weather below return minima
+    time_on_task_min: 15
+    then_base: true
+timing:
+  estimated_flight_min: 155
+  estimated_block_min: 175
+teams:
+  - name: CYRANO01
+    service: French Air and Space Force
+    department: Cher
+    type: E3CF E-3F AWACS
+    role: airborne surveillance, air picture building and coordination
+  - name: COTAM3510
+    service: French Air and Space Force
+    department: Bouches-du-Rhône
+    type: A332 A330 MRTT Phénix
+    role: operation tanker on the SIMONE track
+  - name: RAFALE31
+    service: French Air and Space Force
+    department: Haute-Marne
+    type: RFAL Rafale
+    role: exploitation and reconnaissance flight
+payload:
+  category: SENSOR
+  description: Airborne warning and control system, primary radar and tactical datalink equipment
+  mass_kg: 0
+  passengers: 0
+  constraints:
+    - Maintain continuous surveillance while taking station and during exchanges with RAFALE31.
+    - Keep the reserves needed to return to Avord regardless of the time actually achieved on station.
+objectives:
+  primary: Build and maintain a simulated air picture over the Brenne sector for 45 minutes after refuelling on SIMONE.
+  secondary:
+    - Make the rendezvous with COTAM3510 and complete the refuelling sequence on the SIMONE track.
+    - Pass RAFALE31 the simulated tracks it needs for its exploitation phase.
+    - Return to BA 702 Avord with the planned reserves.
+risks:
+  - hazard: Slot slippage
+    consequence: Missed rendezvous with the Phénix and less time available on station.
+    mitigation: Check the estimated time at the ARIP from the climb onwards and adjust speed before joining the track.
+  - hazard: Conflict on the track
+    consequence: Insufficient separation between aircraft during the AAR sequence.
+    mitigation: Follow the join-up procedure, the assigned levels and the tanker's instructions.
+  - hazard: Weather at altitude
+    consequence: Turbulence or icing reducing the effectiveness of the refuelling sequence.
+    mitigation: Adjust the track level within the available limits and stop the sequence if the criteria are exceeded.
+  - hazard: Workload
+    consequence: Degraded surveillance during coordination phases with the other crews.
+    mitigation: Explicitly split tasks between flying the aircraft, surveillance and tactical datalink.
+air_refueling:
+  capable: true
+  planned: true
+  role: receiver
+  track: SIMONE
+vertical_profile:
+  route: ORIGIN, FL240, PT1, RDV-1, PT2, FL260, PT3, TARGET, RDV-2, ZONE-1, FL260, DESTINATION
+  cruise: FL260
+maps:
+  - id: general
+    filename: generalI-001A.png
+    type: general
+    description: Overview covering Avord, the SIMONE track, Châteauroux, the Brenne, the rendezvous points and the surveillance area
+    include:
+      origin: true
+      destination: true
+      turning_points: true
+      target: true
+      rendezvous: true
+      zones: true
+  - id: cible
+    filename: cibleI-001A.png
+    type: target
+    description: Local view centred on the Brenne Regional Nature Park
+    centre_ref: TARGET
+    range_km: 50
+  - id: detail_cible
+    filename: detail_cibleI-001A.png
+    type: detail
+    description: Detailed 8 × 5 km view around the centre of the target area
+    centre_ref: TARGET
+    width_km: 8
+    height_km: 5
+  - id: detail_rdv_1
+    filename: detail_rdvI-001A-1.png
+    type: detail_rdv
+    description: Detailed view of the SIMONE ARIP join-up point
+    centre_ref: RDV-1
+    width_km: 8
+    height_km: 5
+  - id: detail_rdv_2
+    filename: detail_rdvI-001A-2.png
+    type: detail_rdv
+    description: Detailed view of the tactical rendezvous in the Brenne sector
+    centre_ref: RDV-2
+    width_km: 8
+    height_km: 5
+  - id: zone_1
+    filename: zoneI-001A.png
+    type: zone
+    description: View of the ISR surveillance area around the Brenne
+    centre_ref: ZONE-1
+    range_km: 70
+rendering:
+  north_up: true
+  draw_routes: false
+  add_markers: false
+  attribution_required: true
+notes:
+  - Air simulation exercise.
+  - The SIMONE ARIP and ARCP coordinates are the positions published in the French MILAIP ENR 5.7.
+  - The centre of the Brenne surveillance area is a scenario point placed in the regional nature park; it does not represent a real facility.

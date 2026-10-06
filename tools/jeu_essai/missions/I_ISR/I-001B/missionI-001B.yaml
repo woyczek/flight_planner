@@ -1,0 +1,231 @@
+# Mission I-001B — received in the brief generator on 29/09/2026 08:53:36
+schema: helo-xp-mission
+schema_version: '1.0'
+mission:
+  series: 1
+  number: 1
+  id: I-001B
+  type: ISR
+  subtype: ISR
+operation:
+  id: I-001
+  name: EYE OF SOLOGNE
+  missions:
+    - I-001A
+    - I-001B
+    - I-001C
+title: EYE OF SOLOGNE — the filling station takes to the skies
+summary: |-
+  An A330 MRTT Phénix takes off from BA 125 Istres-Le Tubé to support Operation EYE OF SOLOGNE over west-central France. Its task is to reach the SIMONE track, refuel first the E-3F CYRANO01 and then the RAFALE31 flight, and keep enough reserve to return to Istres, proof that even a flying filling station has to watch its own gauge.
+
+  The crew must meet both receivers' time slots, run a stable refuelling on the track and leave the area once the transfers are complete. The main constraint is balancing timing accuracy, transferable fuel and return reserve on a long mission.
+detailed_description: |-
+  Operation EYE OF SOLOGNE brings together three SOG crews: the E-3F CYRANO01 for surveillance and coordination, the Phénix COTAM3510 for air-to-air refuelling, and the RAFALE31 flight to exploit the simulated tracks. The Phénix is the shared support asset that lets the other two crews extend their time in the exercise area. On the whiteboard the plan is simple: arrive on time, hand out fuel and leave with enough fuel for yourself.
+
+  COTAM3510 takes off from BA 125 Istres-Le Tubé, climbs to FL280 and heads north towards central France at around 460 kt true airspeed. The transit to the SIMONE track covers about 260 NM and takes some forty minutes, excluding climb and joining. The aircraft reaches the SIMONE ARIP from the south and settles into its configuration before the first receiver arrives.
+
+  At RDV-1, COTAM3510 picks up CYRANO01 and completes the first transfer before continuing the refuelling racetrack. RAFALE31 then joins on the same track for a second sequence, with time separation between the two receivers. Once the transfers are complete, the tanker holds station for a few minutes to confirm both crews' fuel state before leaving SIMONE via the ARCP.
+
+  A significant delay by a receiver, insufficient transferable fuel or atmospheric conditions incompatible with a stable contact leads to the relevant transfer being reduced or cancelled. The priority remains keeping the reserves needed to return to Istres and, if necessary, divert to Orange-Caritat. The racetrack is never extended at the expense of this margin.
+
+  After the last receiver departs, COTAM3510 leaves the SIMONE track, turns back south and descends towards Istres. The mission ends on return to BA 125 once the quantities delivered, contact times and any anomalies have been logged for the joint debrief.
+aircraft:
+  - id: AC1
+    type: A332 A330 MRTT Phénix
+    callsign: COTAM3510
+    operator: French Air and Space Force
+    role: primary tanker of the operation
+    cruise_speed_kt: 460
+    cruise_level: FL280
+origin:
+  name: BA 125 Istres-Le Tubé (LFMI)
+  lat: 43.522778
+  lon: 4.923889
+destination:
+  name: BA 125 Istres-Le Tubé (LFMI)
+  lat: 43.522778
+  lon: 4.923889
+target:
+  id: TARGET
+  name: SIMONE refuelling track
+  lat: 46.838
+  lon: 1.59
+  time_on_task_min: 0
+turning_points:
+  - id: PT1
+    name: Montélimar
+    lat: 44.581667
+    lon: 4.733333
+    role: transit point heading north
+    time_on_task_min: 0
+  - id: PT2
+    name: Clermont-Ferrand
+    lat: 45.786667
+    lon: 3.169167
+    role: transit point before joining SIMONE
+    time_on_task_min: 0
+  - id: PT3
+    name: SIMONE ARIP
+    lat: 46.444167
+    lon: 1.486
+    role: entry to the SIMONE refuelling track
+    time_on_task_min: 0
+  - id: PT4
+    name: SIMONE ARCP
+    lat: 47.231833
+    lon: 1.689
+    role: track exit after the refuelling sequences
+    time_on_task_min: 0
+rendezvous:
+  - id: RDV-1
+    name: SIMONE ARIP
+    lat: 46.444167
+    lon: 1.486
+    participants:
+      - COTAM3510
+      - CYRANO01
+    role: join-up with CYRANO01 and start of the first AAR sequence
+    time_on_task_min: 5
+  - id: RDV-2
+    name: SIMONE ARIP
+    lat: 46.444167
+    lon: 1.486
+    participants:
+      - COTAM3510
+      - RAFALE31
+    role: join-up with RAFALE31 for the second AAR sequence
+    time_on_task_min: 5
+zones:
+  - id: ZONE-1
+    name: SIMONE AAR track
+    centre:
+      lat: 46.838
+      lon: 1.59
+    radius_km: 50
+    role: refuelling racetrack and tanker holding
+    time_on_task_min: 45
+route_order:
+  - ORIGIN
+  - PT1
+  - PT2
+  - PT3
+  - RDV-1
+  - TARGET
+  - RDV-2
+  - ZONE-1
+  - PT4
+  - DESTINATION
+return_options:
+  - name: BA 115 Orange-Caritat (LFMO)
+    lat: 44.140278
+    lon: 4.866667
+    condition: Istres unavailable or weather incompatible with a direct return
+    time_on_task_min: 20
+    then_base: true
+timing:
+  estimated_flight_min: 190
+  estimated_block_min: 210
+teams:
+  - name: COTAM3510
+    service: French Air and Space Force
+    department: Bouches-du-Rhône
+    type: A332 A330 MRTT Phénix
+    role: operation tanker on the SIMONE track
+  - name: CYRANO01
+    service: French Air and Space Force
+    department: Cher
+    type: E3CF E-3F AWACS
+    role: first receiver, surveillance and operation coordination
+  - name: RAFALE31
+    service: French Air and Space Force
+    department: Haute-Marne
+    type: RFAL Rafale
+    role: second receiver and simulated-track exploitation crew
+payload:
+  category: FUEL
+  description: Fuel for the CYRANO01 and RAFALE31 refuelling sequences
+  mass_kg: 30000
+  passengers: 0
+  constraints:
+    - Always keep the reserve needed to return to Istres or reach the planned diversion.
+    - Adjust the quantity transferred to each receiver to the actual reserve state and the time left on the track.
+objectives:
+  primary: Refuel CYRANO01 and then RAFALE31 on the SIMONE track before returning to BA 125 Istres.
+  secondary:
+    - Be established on SIMONE before the first receiver arrives.
+    - Keep clear time separation between the two refuelling sequences.
+    - Leave the track with the planned reserve for the return or diversion.
+risks:
+  - hazard: Receiver delay
+    consequence: Longer racetrack and extra tanker fuel burn.
+    mitigation: Set a contact cut-off time and reduce the time available to any late receiver.
+  - hazard: Transferable fuel
+    consequence: Insufficient tanker return reserve after the transfers.
+    mitigation: Recompute the maximum transferable quantity before each sequence and keep the diversion reserve.
+  - hazard: Turbulence on the track
+    consequence: Unstable contact and risk of the refuelling being interrupted.
+    mitigation: Adjust the level within the track limits and suspend the transfer if the stability criteria are no longer met.
+  - hazard: Two AAR slots
+    consequence: Sequencing conflict between CYRANO01 and RAFALE31.
+    mitigation: Give each receiver a separate slot and confirm the track is clear before the next sequence.
+air_refueling:
+  capable: true
+  planned: true
+  role: tanker
+  track: SIMONE
+vertical_profile:
+  route: ORIGIN, FL280, PT1, PT2, PT3, RDV-1, TARGET, RDV-2, ZONE-1, PT4, FL280, DESTINATION
+  cruise: FL280
+maps:
+  - id: general
+    filename: generalI-001B.png
+    type: general
+    description: Overview covering Istres, the transit to central France, the SIMONE track, the rendezvous points and the return
+    include:
+      origin: true
+      destination: true
+      turning_points: true
+      target: true
+      rendezvous: true
+      zones: true
+  - id: cible
+    filename: cibleI-001B.png
+    type: target
+    description: Local view centred on the SIMONE refuelling track
+    centre_ref: TARGET
+    range_km: 70
+  - id: detail_cible
+    filename: detail_cibleI-001B.png
+    type: detail
+    description: Detailed 8 × 5 km view around the centre of the SIMONE track
+    centre_ref: TARGET
+    width_km: 8
+    height_km: 5
+  - id: detail_rdv_1
+    filename: detail_rdvI-001B-1.png
+    type: detail_rdv
+    description: Detailed view of the first rendezvous at SIMONE ARIP
+    centre_ref: RDV-1
+    width_km: 8
+    height_km: 5
+  - id: detail_rdv_2
+    filename: detail_rdvI-001B-2.png
+    type: detail_rdv
+    description: Detailed view of the second rendezvous at SIMONE ARIP
+    centre_ref: RDV-2
+    width_km: 8
+    height_km: 5
+  - id: zone_1
+    filename: zoneI-001B.png
+    type: zone
+    description: View of the whole tanker operating area on SIMONE
+    centre_ref: ZONE-1
+    range_km: 100
+rendering:
+  north_up: true
+  draw_routes: false
+  add_markers: false
+  attribution_required: true
+notes:
+  - Air simulation exercise.
+  - The SIMONE ARIP and ARCP coordinates are the same as those used by the other missions of the operation.

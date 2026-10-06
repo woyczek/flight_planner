@@ -1,0 +1,135 @@
+schema: helo-xp-mission
+schema_version: '2.0'
+mission:
+  series: 1
+  number: 1
+  id: 'T-001'
+  former_id: '11'
+  type: AIRLIFT
+  subtype: STRATEGIC / CARGO
+title: Logistics air bridge to Solenzara
+summary: Fly a heavy, high-priority load from Orléans-Bricy to restore the capability of a detachment deployed at Solenzara. The flight combines load preparation, centre-of-gravity management, a long-range transit and arrival at an active military base. The logistics unit reports that the two generators are "ready on a single pallet"; two separate pallets are eventually presented for loading. The mission remains planned for a sequenced unload so that electrical power is available first.
+aircraft:
+- id: AC1
+  type: A400M Atlas
+  callsign: VENGA41
+  operator: French Air and Space Force
+  role: primary transport
+origin:
+  name: BA 123 Orléans-Bricy (LFOJ)
+  lat: 47.987778
+  lon: 1.760556
+destination:
+  name: BA 126 Solenzara (LFKS)
+  lat: 41.926389
+  lon: 9.405278
+target:
+  id: TARGET
+  name: BA 126 Solenzara (LFKS)
+  lat: 41.926389
+  lon: 9.405278
+payload:
+  category: CARGO
+  description: Two palletised generators, telecommunications modules and consumables for a temporary detachment.
+  mass_kg: 12800
+  passengers: 0
+  constraints:
+  - Palletised freight secured and distributed to respect centre of gravity and floor loading limits.
+  - Telecommunications equipment handled as sensitive to shock and humidity.
+  - 'Unloading order: electrical power before telecommunications modules.'
+turning_points:
+- id: PT1
+  name: BOURGES
+  lat: 47.081012
+  lon: 2.398782
+  role: checkpoint after leaving the Orléans sector
+- id: PT2
+  name: LE PUY-EN-VELAY
+  lat: 45.04396
+  lon: 3.88556
+  role: transit landmark before the Rhône valley corridor
+- id: PT3
+  name: MONTELIMAR
+  lat: 44.558393
+  lon: 4.750944
+  role: checkpoint before the transit towards the Mediterranean
+- id: PT4
+  name: MACINAGGIO
+  lat: 42.959722
+  lon: 9.453611
+  role: entry into the Corsica sector via Cap Corse
+rendezvous:
+- id: RDV-1
+  name: BA 126 Solenzara cargo apron
+  lat: 41.926389
+  lon: 9.405278
+  participants:
+  - VENGA41
+  - Solenzara reception team
+  role: handover and joint inspection of the freight
+teams:
+- name: VENGA41
+  service: French Air and Space Force
+  department: Loiret
+  type: A400M Atlas
+  role: primary transport
+- name: BA 123 cargo team
+  service: French Air and Space Force
+  department: Loiret
+  type: Loading team
+  role: preparation, weighing and tie-down
+- name: Solenzara reception team
+  service: French Air and Space Force
+  department: Corse-du-Sud
+  type: Ground team
+  role: reception and unloading
+objectives:
+  primary: Deliver the 12,800 kg of priority freight to Solenzara within the planned logistics window, undamaged and with a compliant centre of gravity.
+  secondary:
+  - Meet an arrival window of ±15 minutes around the planned time.
+  - Prepare an alternate airfield before departure and keep the associated reserve.
+  - Unload the generators before the telecommunications modules.
+risks:
+- hazard: En-route weather and sea crossing
+  consequence: A front or local convection may increase flight time or force a detour.
+  mitigation: Update weather and fuel before departure; keep a routing and diversion margin.
+- hazard: Military traffic at Solenzara
+  consequence: An arrival slot may be delayed by local activity.
+  mitigation: Plan holding fuel and early radio coordination.
+- hazard: Heavy palletised load
+  consequence: Poor distribution may degrade the centre of gravity and floor loading.
+  mitigation: Check mass, pallet positions, tie-down and load sheet before closing up.
+maps:
+- id: general
+  filename: generalT-001.png
+  type: general
+  description: General view covering departure, turning points, rendezvous, target and destination
+  include:
+    origin: true
+    destination: true
+    turning_points: true
+    target: true
+    rendezvous: true
+    zones: true
+- id: cible
+  filename: cibleT-001.png
+  type: target
+  description: Local view centred on the target, approximate range 50 km
+  centre_ref: TARGET
+  range_km: 50
+- id: detail_cible
+  filename: detail_cibleT-001.png
+  type: detail
+  description: Detailed 8 × 5 km view around the target
+  centre_ref: TARGET
+  width_km: 8
+  height_km: 5
+rendering:
+  north_up: true
+  draw_routes: false
+  add_markers: false
+  attribution_required: true
+notes:
+- WGS84 coordinates in decimal degrees, rounded to six decimal places.
+- Scenario intended exclusively for flight simulation.
+zones: []
