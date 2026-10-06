@@ -4,7 +4,7 @@ Mission reports, reporting, flight preparation (fuel, SIA charts), Centre missio
 
 ## SO Group Virtual — Concise Project Overview
 
-**SO Group Virtual is an integrated suite for planning, preparing, documenting and analysing virtual flight operations.** It connects pilots and an operations centre through a shared workflow, from the initial mission brief to the final debrief.
+**SO Group Virtual (Virtual Special Operation Group) is an integrated suite for planning, preparing, documenting and analysing virtual flight operations.** It connects pilots and an operations centre through a shared workflow, from the initial mission brief to the final debrief.
 
 The suite supports civil protection, humanitarian, transport and defence scenarios across **16 mission families**, including medical evacuation, firefighting, search and rescue, airlift, air-to-air refuelling and reconnaissance.
 

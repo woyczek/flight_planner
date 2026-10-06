@@ -15,7 +15,7 @@ window.REPOSITORY_TREE={
   // Compagnie virtuelle (SO Group Virtual par défaut ; réglable dans Paramètres › Maintenance › Sources et dossiers,
   // surcharge locale suiteVA:v1) : RepositoryNav.va() ; adresse du site : sources.defa ; pages : chemins sous ce site,
   // {id} remplacé (RepositoryNav.vaUrl(page, { id })).
-  va:{name:"SO Group Virtual",short:"SO Group",centre:"CPCO",centreName:"Centre de planification et de conduite des opérations",
+  va:{name:"SO Group Virtual",fullName:"Virtual Special Operation Group",short:"SOG",centre:"CPCO",centreName:"Centre de planification et de conduite des opérations",
     pages:{home:"/index.php",log:"/log_vols.php",fleet:"/flotte.php",aircraft:"/appareil.php?id={id}"}},
   sources:{
     defa:{url:"https://flotte.defa-virtual.fr",label:["Site de la compagnie virtuelle","Virtual airline website","Website der virtuellen Fluggesellschaft","Sitio de la aerolínea virtual"]},

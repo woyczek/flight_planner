@@ -56,7 +56,7 @@
     const list = [...sessions].sort((a, b) => `${a.date} ${a.debut} ${a.position}`.localeCompare(`${b.date} ${b.debut} ${b.position}`));
     return A().writeData(fileOf(week), {
       schema: 1,
-      va: window.RepositoryNav?.va?.().short || 'DEFA',
+      va: window.RepositoryNav?.va?.().short || 'SOG',
       semaine: week,
       updated_at: new Date().toISOString(),
       by: window.SuiteUsers?.by?.() || '',

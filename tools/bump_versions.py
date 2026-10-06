@@ -137,7 +137,7 @@ COMPAT = '''/* ═════════════════════�
 
                       ___|___
           ===========(___o___)===========
-                  ____|_____|____             « SO Group 01, ici le Centre : vous êtes dans un fichier de
+                  ____|_____|____             « SOG 01, ici le Centre : vous êtes dans un fichier de
                  /  _    ___    _ \              compatibilité. Remettez les gaz, tour de piste à gauche,
             ====|  |_|  |___|  |_| |====          rappelez vent arrière config/. »
                  \_______________/

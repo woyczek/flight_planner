@@ -2,7 +2,7 @@
 
 *[Documentation index](README.md) · [Version française](PRESENTATION.md)*
 
-A set of static web pages for virtual flight operations (X-Plane, IVAO, VATSIM): mission
+The suite of SO Group Virtual (Virtual Special Operation Group): a set of static web pages for virtual flight operations (X-Plane, IVAO, VATSIM): mission
 reports for 15 mission families, reporting and statistics, fleet and aircraft databases,
 landing performance analysis, flight / fuel planning, and mission briefs with aeronautical
 maps built from official French AIS (SIA) data. No server, no account, no build

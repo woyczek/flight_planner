@@ -1,6 +1,6 @@
 # Manual del administrador
 
-Este manual describe la suite SO Group Virtual para el **Centro** (planificación y conducción de las operaciones) y para los
+Este manual describe la suite SO Group Virtual (Virtual Special Operation Group) para el **Centro** (planificación y conducción de las operaciones) y para los
 **administradores** de la suite: un capítulo por página, una sección por pestaña, apartado o bloque, y después la
 sincronización de los datos y el lanzador. En la suite, la entrada **«Ayuda»** de la barra lateral abre este manual
 en el capítulo de la página actual (páginas del Centro y de los ajustes). Las páginas de los pilotos se describen en el
@@ -594,7 +594,7 @@ Este apartado es el único lugar donde se ajustan las carpetas locales y las dir
 | Carpeta X-Plane (aterrizajes), Carpeta de rendimiento, Carpeta de copia local | registros CSV, perfiles `.lnmperf` / `.json`, `defa_local_store.yaml` |
 
 - **Fuentes externas**: la dirección por defecto aparece en gris. Un valor introducido solo vale para este navegador; «↺» vuelve al valor por defecto y «Abrir ↗» abre la dirección.
-- **Aerolínea virtual**: «Nombre», «Sigla», «Centro (sigla)», «Centro (nombre completo)» y las páginas del sitio («Página de inicio», «Registro de vuelos», «Flota», «Ficha de un avión»). Un campo vacío mantiene el valor por defecto. «Volver a SO Group Virtual» borra todos estos ajustes.
+- **Aerolínea virtual**: «Nombre», «Nombre completo», «Sigla», «Centro (sigla)», «Centro (nombre completo)» y las páginas del sitio («Página de inicio», «Registro de vuelos», «Flota», «Ficha de un avión»). Un campo vacío mantiene el valor por defecto. «Volver a SO Group Virtual» borra todos estos ajustes.
 - **Primer arranque**: «Reabrir el primer inicio»; «Limpiar y empezar de nuevo…» borra las carpetas recordadas, la copia del libro ODV, los identificadores del sitio de la aerolínea y el perfil. Los archivos del disco no se tocan.
 
 ## Ajustes › Mantenimiento

@@ -24,7 +24,7 @@
     CONFIG = 'config/suite.json',
     DIR = 'utilisateurs',
     INDEX = 'utilisateurs/_index.json',
-    VA = () => window.RepositoryNav?.va?.().short || 'DEFA',
+    VA = () => window.RepositoryNav?.va?.().short || 'SOG',
     ITER = 310000; // PBKDF2-SHA256 : itérations (recommandation OWASP pour SHA-256 dans le navigateur)
   const ROLES = ['admin_centre', 'utilisateur'];
   /** Socle des fichiers du pool (shared/assignments.js, chargé avec ce script). */

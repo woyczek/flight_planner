@@ -1,6 +1,6 @@
 # User manual
 
-This manual describes the SO Group Virtual suite for **pilots**: one chapter per page, one section per tab or per
+This manual describes the SO Group Virtual (Virtual Special Operation Group) suite for **pilots**: one chapter per page, one section per tab or per
 block, in the order in which they appear. In the suite, the **“Help”** entry of the side bar opens this manual at the
 chapter of the current page. The Centre and the administration of the suite are described in the
 [administrator manual](MANUEL_ADMINISTRATEUR.md); for a first step-by-step report, see the

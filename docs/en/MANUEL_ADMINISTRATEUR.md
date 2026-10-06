@@ -1,6 +1,6 @@
 # Administrator manual
 
-This manual describes the SO Group Virtual suite for the **Centre** (planning and conduct of operations) and for the
+This manual describes the SO Group Virtual (Virtual Special Operation Group) suite for the **Centre** (planning and conduct of operations) and for the
 suite **administrators**: one chapter per page, one section per tab, section or block, then data
 synchronisation and the launcher. In the suite, the **“Help”** entry of the sidebar opens this manual
 at the chapter of the current page (Centre and settings pages). The pilot pages are described in the
@@ -594,7 +594,7 @@ This section is the only place to set the local folders and the addresses of the
 | X-Plane folder (landings), Performance folder, Local backup folder | CSV logs, `.lnmperf` / `.json` profiles, `defa_local_store.yaml` |
 
 - **External sources**: the default address is shown greyed out. An entered value applies to this browser only; “↺” goes back to the default value and “Open ↗” opens the address.
-- **Virtual airline**: “Name”, “Short name”, “Centre (short)”, “Centre (full name)”, and the site pages (“Home page”, “Flight log”, “Fleet”, “Aircraft page”). An empty field keeps the default value. “Back to SO Group Virtual” clears all these settings.
+- **Virtual airline**: “Name”, “Full name”, “Short name”, “Centre (short)”, “Centre (full name)”, and the site pages (“Home page”, “Flight log”, “Fleet”, “Aircraft page”). An empty field keeps the default value. “Back to SO Group Virtual” clears all these settings.
 - **First run**: “Reopen the first run”; “Clean and start over…” clears the stored folders, the copy of the ODV workbook, the airline site credentials and the profile. The files on disk are not touched.
 
 ## Settings › Maintenance

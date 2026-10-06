@@ -40,6 +40,17 @@ def config_text():
     return ''
 
 
+def va_short():
+    """Sigle de la compagnie virtuelle (config/repository_tree, va.short), écrit dans le champ va des fichiers de données ;
+    repli : SOG."""
+    try:
+        with open(os.path.join(ROOT, 'config', 'repository_tree'), encoding='utf-8') as f:
+            m = re.search(r'\bva:\{[^}]*?\bshort:"([^"]+)"', f.read())
+        return m.group(1) if m else 'SOG'
+    except OSError:
+        return 'SOG'
+
+
 def data_repo_url():
     m = re.search(r'dataRepo\s*:\s*\{\s*url\s*:\s*"([^"]+)"', config_text())
     url = m.group(1) if m else 'https://framagit.org/defa-virtual/missions-defa'
@@ -620,7 +631,7 @@ def index_users():
         old = None
     if old != users:
         with open(p, 'w', encoding='utf-8', newline='\n') as f:
-            json.dump({'schema': 1, 'va': 'DEFA', 'updated_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'utilisateurs': users}, f, indent=1, ensure_ascii=False)
+            json.dump({'schema': 1, 'va': va_short(), 'updated_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'utilisateurs': users}, f, indent=1, ensure_ascii=False)
 
 
 def mark_instance():

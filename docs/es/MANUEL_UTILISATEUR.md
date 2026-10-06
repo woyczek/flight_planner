@@ -1,6 +1,6 @@
 # Manual de usuario
 
-Este manual describe la suite SO Group Virtual para los **pilotos**: un capítulo por página, una sección por pestaña o por
+Este manual describe la suite SO Group Virtual (Virtual Special Operation Group) para los **pilotos**: un capítulo por página, una sección por pestaña o por
 bloque, en el orden en que aparecen. En la suite, la entrada **«Ayuda»** de la barra lateral abre este manual en el
 capítulo de la página actual. El Centro y la administración de la suite se describen en el
 [manual del administrador](MANUEL_ADMINISTRATEUR.md); para un primer informe paso a paso, consulte el

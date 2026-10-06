@@ -2,7 +2,7 @@
 
 *[Sommaire de la documentation](README.md) · [English version](PRESENTATION_en.md)*
 
-Un ensemble de pages web statiques pour les opérations aériennes virtuelles (X-Plane,
+La suite de SO Group Virtual (Virtual Special Operation Group) : un ensemble de pages web statiques pour les opérations aériennes virtuelles (X-Plane,
 IVAO, VATSIM) : comptes rendus de mission pour 15 familles de missions, reporting et
 statistiques, bases de la flotte et des aéronefs, analyse des atterrissages, préparation
 des performances et du carburant, dossiers de mission et cartes aéronautiques (données SIA). Ni serveur, ni compte, ni compilation : les pages

@@ -1,6 +1,6 @@
 # Benutzerhandbuch
 
-Dieses Handbuch beschreibt die Suite SO Group Virtual für **Piloten**: ein Kapitel pro Seite, ein Abschnitt pro Registerkarte
+Dieses Handbuch beschreibt die Suite SO Group Virtual (Virtual Special Operation Group) für **Piloten**: ein Kapitel pro Seite, ein Abschnitt pro Registerkarte
 oder Block, in der Reihenfolge, in der sie erscheinen. In der Suite öffnet der Eintrag **„Hilfe“** der Seitenleiste dieses
 Handbuch beim Kapitel der aktuellen Seite. Das Zentrum und die Verwaltung der Suite sind im
 [Administratorhandbuch](MANUEL_ADMINISTRATEUR.md) beschrieben; für einen ersten Bericht Schritt für Schritt siehe das

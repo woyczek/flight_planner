@@ -661,13 +661,14 @@
   const vaName = () => (K.store.json("suiteVA:v1", {}) || {}).name || cfg.va?.name || "SO Group Virtual";
   const source = key => String(K.store.json("suiteSources:v1", {})[key] || (key === "defa" && vaName() !== DEFAULT_SITE_FOR ? "" : cfg.sources?.[key]?.url) || "").replace(/\/+$/, "");
   /** Compagnie virtuelle : repository_tree.va (SO Group Virtual par défaut) et réglage local (suiteVA:v1) ; url : site
-   *  (sources.defa). { name, short, centre, centreName, url, pages: { home, log, fleet, aircraft } }. */
+   *  (sources.defa). { name, fullName, short, centre, centreName, url, pages: { home, log, fleet, aircraft } }. */
   const va = () => {
     const d = cfg.va || {},
       o = K.store.json("suiteVA:v1", {}) || {};
     return {
       name: o.name || d.name || "SO Group Virtual",
-      short: o.short || d.short || "SO Group",
+      fullName: o.fullName || d.fullName || "",
+      short: o.short || d.short || "SOG",
       centre: o.centre || d.centre || "CPCO",
       centreName: o.centreName || d.centreName || "",
       url: source("defa"),
@@ -1120,7 +1121,7 @@
     document.head.append(assign);
     /* Utilisateurs et droits : mode develop / production, connexion, usurpation (bandeau sur toutes les pages) */
     const users = document.createElement("script");
-    users.src = new URL("users.js?v=b9f71929", script.src).href;
+    users.src = new URL("users.js?v=3d869bdc", script.src).href;
     document.head.append(users);
     /* Synchronisation git du pool de données : bouton « Synchroniser » de l'en-tête (lanceur, data/ dépôt git) */
     const sync = document.createElement("script");
@@ -1128,7 +1129,7 @@
     document.head.append(sync);
     /* Disponibilités : catégories configurables, thèmes ouverts, déclarations par semaine */
     const dispos = document.createElement("script");
-    dispos.src = new URL("dispos.js?v=8a2333d5", script.src).href;
+    dispos.src = new URL("dispos.js?v=d6fa159c", script.src).href;
     document.head.append(dispos);
     const update = document.createElement("script");
     update.src = new URL("suite_update.js?v=a6f1e9d1", script.src).href;
@@ -1136,20 +1137,23 @@
   }
   {
     /* Autre compagnie virtuelle que celle écrite dans les sources (Paramètres › Sources et dossiers) : « SO Group
-       Virtual », « SO Group » et « CPCO » des textes de la suite affichés avec le nom, le sigle et le centre réglés
-       (nœuds texte et infobulles, pages et contenus ajoutés ensuite). Comparaison avec la marque des sources (et non
-       avec repository_tree.va) : la couche agit dès que la compagnie réglée en diffère. */
+       Virtual », « Virtual Special Operation Group », « SOG » et « CPCO » des textes de la suite affichés avec le nom, le
+       nom long, le sigle et le centre réglés (nœuds texte et infobulles, pages et contenus ajoutés ensuite).
+       Comparaison avec la marque des sources (et non avec repository_tree.va) : la couche agit dès que la compagnie
+       réglée en diffère. */
     const SOURCE = {
       name: "SO Group Virtual",
-      short: "SO Group",
+      fullName: "Virtual Special Operation Group",
+      short: "SOG",
       centre: "CPCO"
     };
     const rebrand = () => {
       const v = va(),
         rules = [
-          [/SO Group Virtual/g, v.name, SOURCE.name],
-          [/SO Group(?! Virtual)/g, v.short, SOURCE.short],
-          [/CPCO/g, v.centre, SOURCE.centre]
+          [/\bSO Group Virtual\b/g, v.name, SOURCE.name],
+          [/\bVirtual Special Operation Group\b/g, v.fullName || v.name, SOURCE.fullName],
+          [/\bSOG\b/g, v.short, SOURCE.short],
+          [/\bCPCO\b/g, v.centre, SOURCE.centre]
         ].filter(([, to, from]) => to && to !== from);
       if (!rules.length) return;
       const fix = s => rules.reduce((x, [re, to]) => x.replace(re, to), s);
@@ -1157,19 +1161,19 @@
       const walk = root => {
         const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
         for (let n; (n = w.nextNode());)
-          if (!skip(n.parentElement) && /SO Group|CPCO/.test(n.nodeValue)) {
+          if (!skip(n.parentElement) && /SO Group|Special Operation|SOG|CPCO/.test(n.nodeValue)) {
             const s = fix(n.nodeValue);
             if (s !== n.nodeValue) n.nodeValue = s;
           }
         if (root.querySelectorAll)
           for (const el of root.querySelectorAll("[title]"))
-            if (/SO Group|CPCO/.test(el.title)) el.title = fix(el.title);
+            if (/SO Group|Special Operation|SOG|CPCO/.test(el.title)) el.title = fix(el.title);
       };
       walk(document.body);
       if (document.title) document.title = fix(document.title);
       new MutationObserver(list => {
         for (const m of list)
-          for (const n of m.type === "characterData" ? [m.target] : m.addedNodes) n.nodeType === 3 ? (!skip(n.parentElement) && /SO Group|CPCO/.test(n.nodeValue) && (n.nodeValue = fix(n.nodeValue))) : n.nodeType === 1 && !skip(n) && walk(n);
+          for (const n of m.type === "characterData" ? [m.target] : m.addedNodes) n.nodeType === 3 ? (!skip(n.parentElement) && /SO Group|Special Operation|SOG|CPCO/.test(n.nodeValue) && (n.nodeValue = fix(n.nodeValue))) : n.nodeType === 1 && !skip(n) && walk(n);
       }).observe(document.body, {
         childList: true,
         characterData: true, // textes traduits ensuite (content_i18n.js)

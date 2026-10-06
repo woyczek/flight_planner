@@ -1,6 +1,6 @@
 # Manuel utilisateur
 
-Ce manuel décrit la suite SO Group Virtual pour les **pilotes** : un chapitre par page, une section par onglet ou par
+Ce manuel décrit la suite SO Group Virtual (Virtual Special Operation Group) pour les **pilotes** : un chapitre par page, une section par onglet ou par
 bloc, dans l'ordre où ils apparaissent. Dans la suite, l'entrée **« Aide »** de la barre latérale ouvre ce manuel au
 chapitre de la page en cours. Le Centre et l'administration de la suite sont décrits dans le
 [manuel administrateur](MANUEL_ADMINISTRATEUR.md) ; pour un premier compte rendu pas à pas, voir le

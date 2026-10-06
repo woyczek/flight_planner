@@ -1,6 +1,6 @@
 # Manuel administrateur
 
-Ce manuel décrit la suite SO Group Virtual pour le **Centre** (planification et conduite des opérations) et pour les
+Ce manuel décrit la suite SO Group Virtual (Virtual Special Operation Group) pour le **Centre** (planification et conduite des opérations) et pour les
 **administrateurs** de la suite : un chapitre par page, une section par onglet, rubrique ou bloc, puis la
 synchronisation des données et le lanceur. Dans la suite, l'entrée **« Aide »** de la barre latérale ouvre ce manuel
 au chapitre de la page en cours (pages du Centre et des paramètres). Les pages des pilotes sont décrites dans le
@@ -594,7 +594,7 @@ Cette rubrique est le seul endroit où régler les dossiers locaux et les adress
 | Dossier X-Plane (atterrissages), Dossier performances, Dossier de sauvegarde locale | journaux CSV, profils `.lnmperf` / `.json`, `defa_local_store.yaml` |
 
 - **Sources externes** : l'adresse par défaut s'affiche en grisé. Une valeur saisie ne vaut que pour ce navigateur ; « ↺ » revient à la valeur par défaut et « Ouvrir ↗ » ouvre l'adresse.
-- **Compagnie virtuelle** : « Nom », « Sigle », « Centre (sigle) », « Centre (nom complet) », et les pages du site (« Page d'accueil », « Log des vols », « Flotte », « Fiche d'un appareil »). Un champ vide garde la valeur par défaut. « Revenir à SO Group Virtual » efface tous ces réglages.
+- **Compagnie virtuelle** : « Nom », « Nom long », « Sigle », « Centre (sigle) », « Centre (nom complet) », et les pages du site (« Page d'accueil », « Log des vols », « Flotte », « Fiche d'un appareil »). Un champ vide garde la valeur par défaut. « Revenir à SO Group Virtual » efface tous ces réglages.
 - **Premier lancement** : « Rouvrir le premier lancement » ; « Nettoyer et recommencer… » efface les dossiers mémorisés, la copie du classeur ODV, les identifiants du site de la compagnie et le profil. Les fichiers sur le disque ne sont pas touchés.
 
 ## Paramètres › Maintenance

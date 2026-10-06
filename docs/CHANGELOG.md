@@ -21,8 +21,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   Virtual — sinon aucun lien inventé, invitation à renseigner l'adresse (`RepositoryNav.siteLink`) ; libellés « site de
   la compagnie ». **Catégories de disponibilité** : « Exercice SOG », « Vol hors SOG »… (4 langues). En-tête du lanceur
   `X-SOG-Setup` (l'ancien `X-DEFA-Setup` reste accepté pour cette version : **relancer le lanceur** après la mise à
-  jour) ; constante du générateur `ÉQUIPES_SOG` (l'ancien nom reste lu). Gardés : identifiants et clés, champ `va` des
-  données.
+  jour) ; constante du générateur `ÉQUIPES_SOG` (l'ancien nom reste lu). Noms : « SO Group Virtual », nom long
+  « Virtual Special Operation Group » (nouveau champ de Paramètres › Sources et dossiers, première mention de l'accueil,
+  du premier lancement, des présentations et des manuels), sigle « SOG » ; champ `va` des nouveaux fichiers de
+  données : le sigle réglé (les fichiers existants gardent « DEFA »). Couche de renommage pour une autre compagnie
+  réparée (expressions régulières abîmées par fc0f4408).
 
 ## [4.9.0] — 2026-10-06
 

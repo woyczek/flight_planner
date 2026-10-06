@@ -25,7 +25,7 @@
   const L4 = (fr, en, de, es) => [fr, en, de, es];
   const DEFAULT = {
     schema: 1,
-    va: 'DEFA',
+    va: window.RepositoryNav?.va?.().short || 'SOG', // sigle de la compagnie réglée
     groupes: [
       { id: 'dispo', label: L4('Disponible', 'Available', 'Verfügbar', 'Disponible'), court: 'D', couleur: '#00B050' },
       { id: 'exercice', label: L4('Exercice SOG', 'SOG exercise', 'SOG-Übung', 'Ejercicio SOG'), court: 'E', couleur: '#E03C31' },
@@ -101,7 +101,7 @@
     const doc = {
       ...next,
       schema: 1,
-      va: window.RepositoryNav?.va?.().short || 'DEFA',
+      va: window.RepositoryNav?.va?.().short || 'SOG',
       updated_at: new Date().toISOString(),
       by: window.SuiteUsers?.by?.() || A()?.trigram?.() || 'CPCO'
     };
@@ -247,7 +247,7 @@
     })).sort((a, b) => String(a.debut ?? '').localeCompare(String(b.debut ?? '')))]).filter(([, l]) => l.length).sort(([a], [b]) => a.localeCompare(b)));
     const doc = {
       schema: 2,
-      va: window.RepositoryNav?.va?.().short || 'DEFA',
+      va: window.RepositoryNav?.va?.().short || 'SOG',
       pilote: tri,
       semaine: week,
       updated_at: new Date().toISOString(),

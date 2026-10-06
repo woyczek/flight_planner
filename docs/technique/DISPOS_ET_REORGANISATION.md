@@ -105,7 +105,7 @@ Même page pour tous les pilotes (Mes missions › Mes disponibilités, et ouvra
 |---|---|---|
 | **Mon profil** | chaque utilisateur, ses propres données | trigramme, identifiants **VATSIM, IVAO**, SimBrief, identifiants du site de la compagnie (aujourd'hui saisis au premier lancement seulement), mot de passe, **préférences de thèmes** (listes blanches / noires), langue, appareils et simulateurs |
 | **Centre** (CPCO, déverrouillé) | quotidien | **utilisateurs et droits**, **catégories de disponibilité**, réglages du routage, envoi des CR (webservice) |
-| **Installation** | une fois | premier lancement, dépôt de données, dossiers, compagnie virtuelle (SO Group par défaut), canal de mise à jour |
+| **Installation** | une fois | premier lancement, dépôt de données, dossiers, compagnie virtuelle (SO Group Virtual par défaut), canal de mise à jour |
 | **Maintenance** | de temps en temps | mises à jour, versions, dépendances, base SIA (28 jours), caches (dont « reconstruire l'index »), stockage, sauvegarde totale, journal, fichiers de référence (flotte, types OACI, indicatifs, base, renommages, registre des CR) |
 
 Apparence reste une page (et une fenêtre depuis le menu).
