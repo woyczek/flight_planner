@@ -548,6 +548,11 @@
       <h3>${esc(t(['Sources externes', 'External sources', 'Externe Quellen', 'Fuentes externas']))}</h3>
       <p class="mt-small">${esc(t(['Adresses par défaut livrées avec l’application (repository_tree) ; une valeur saisie ici ne vaut que pour ce navigateur (sauvegardée avec les données locales). Les adresses du SIA, de la DIRCAM, de NATS, de l’AIP militaire britannique et de NAV CANADA servent aux liens des sources de Paramètres › Maintenance › Données aéronautiques ; les dossiers SIA et X-Plane ci-dessus sont les mêmes que là-bas.', 'Default addresses ship with the application (repository_tree); a value entered here applies to this browser only (saved with local data). The SIA, DIRCAM, NATS, UK military AIP and NAV CANADA addresses are the source links of Settings › Maintenance › Aeronautical data; the SIA and X-Plane folders above are the same as there.', 'Standardadressen werden mit der Anwendung geliefert (repository_tree); ein hier eingegebener Wert gilt nur für diesen Browser. Die Adressen von SIA, DIRCAM, NATS, britischem Militär-AIP und NAV CANADA sind die Quellen-Links unter Einstellungen › Wartung › Luftfahrtdaten; die SIA- und X-Plane-Ordner oben sind dieselben wie dort.', 'Direcciones por defecto entregadas con la aplicación (repository_tree); un valor introducido aquí solo vale para este navegador. Las direcciones del SIA, la DIRCAM, NATS, el AIP militar británico y NAV CANADA son los enlaces de las fuentes de Ajustes › Mantenimiento › Datos aeronáuticos; las carpetas SIA y X-Plane de arriba son las mismas que allí.']))} <a class="mt-link" href="${esc(window.RepositoryNav?.settingsUrl?.('sia') || '?m=sia')}">${esc(t(['Données aéronautiques →', 'Aeronautical data →', 'Luftfahrtdaten →', 'Datos aeronáuticos →']))}</a></p>
       <table class="mt-table mt-wide mt-sources"><tbody>${Object.entries(src).map(([k, v]) => `<tr data-src="${esc(k)}"><td><b>${esc(t(v.label || [k]))}</b></td><td><input type="url" class="mt-url" value="${esc(local[k] || '')}" placeholder="${esc(v.url)}" spellcheck="false"></td><td class="mt-nowrap">${local[k] ? pill('info', t(['modifiée', 'changed', 'geändert', 'cambiada'])) : ''} <button type="button" class="secondary" data-reset ${local[k] ? '' : 'hidden'}>↺</button> <a class="mt-link" href="${esc(openUrl(k, nav.source(k)))}" target="_blank" rel="noopener">${esc(t(['Ouvrir', 'Open', 'Öffnen', 'Abrir']))} ↗</a></td></tr>`).join('')}</tbody></table>
+      <h3>${esc(t(['Clés d’API (services externes)', 'API keys (external services)', 'API-Schlüssel (externe Dienste)', 'Claves de API (servicios externos)']))}</h3>
+      <p class="mt-small">${esc(t(['Clés de la suite, communes à tous ses utilisateurs : gardées par le lanceur dans secrets/ à la racine de l’application (exclu de git, hors des données et des sauvegardes), jamais renvoyées à la page. Les identifiants personnels (client OAuth IVAO) se règlent dans Mon profil.', 'Suite keys, shared by all its users: kept by the launcher in secrets/ at the application root (excluded from git, outside the data and the backups), never sent back to the page. Personal credentials (IVAO OAuth client) are set in My profile.', 'Schlüssel der Suite, für alle ihre Benutzer: vom Starter in secrets/ im Anwendungsordner gehalten (von Git ausgeschlossen, außerhalb der Daten und Sicherungen), nie an die Seite zurückgegeben. Persönliche Zugangsdaten (IVAO-OAuth-Client) unter Mein Profil.', 'Claves de la suite, comunes a todos sus usuarios: guardadas por el lanzador en secrets/ en la raíz de la aplicación (excluido de git, fuera de los datos y de las copias), nunca devueltas a la página. Las credenciales personales (cliente OAuth de IVAO) se ajustan en Mi perfil.']))}</p>
+      <table class="mt-table mt-wide mt-keys"><tbody><tr data-secret="ivao.apiKey"><td><b>${esc(t(['IVAO — clé d’API', 'IVAO — API key', 'IVAO — API-Schlüssel', 'IVAO — clave de API']))}</b><br><span class="mt-small">${esc(t(['Activations des zones de France (horaires publiés, RTBA, NOTAM) pour les ordres de vols. developers.ivao.aero', 'French area activations (published schedules, RTBA, NOTAM) for flight orders. developers.ivao.aero', 'Aktivierungen französischer Gebiete (Zeiten, RTBA, NOTAM) für die Flugbefehle. developers.ivao.aero', 'Activaciones de las zonas de Francia (horarios, RTBA, NOTAM) para las órdenes de vuelo. developers.ivao.aero']))}</span></td>
+        <td><input type="password" class="mt-url" autocomplete="off" spellcheck="false" aria-label="${esc(t(['Clé d’API IVAO', 'IVAO API key', 'IVAO-API-Schlüssel', 'Clave de API de IVAO']))}"></td>
+        <td class="mt-nowrap"><span data-state></span> <button type="button" class="secondary" data-save data-icon="save">${esc(t(['Enregistrer', 'Save', 'Speichern', 'Guardar']))}</button> <button type="button" class="secondary" data-clear hidden>${esc(t(['Effacer', 'Clear', 'Löschen', 'Borrar']))}</button></td></tr></tbody></table>
       <h3>${esc(t(['Compagnie virtuelle', 'Virtual airline', 'Virtuelle Fluggesellschaft', 'Aerolínea virtual']))}</h3>
       <p class="mt-small">${esc(t(['Nom, sigle et centre affichés dans la suite (SO Group Virtual, SOG, CPCO par défaut) et pages du site de la compagnie (adresse : « Site de la compagnie virtuelle » ci-dessus ; chemin sous ce site, ou adresse complète ; {id} : numéro de l’appareil). Vide : valeur par défaut. Vaut pour ce navigateur.', 'Name, short name and centre shown in the suite (SO Group Virtual, SOG, CPCO by default) and pages of the airline website (address: “Virtual airline website” above; path under that site, or full address; {id}: aircraft number). Empty: default value. Applies to this browser.', 'Name, Kürzel und Zentrum in der Suite (standardmäßig SO Group Virtual, DEFA, CPCO) und Seiten der Website (Adresse: oben; Pfad unter dieser Website oder vollständige Adresse; {id}: Flugzeugnummer). Leer: Standardwert. Gilt für diesen Browser.', 'Nombre, sigla y centro mostrados en la suite (SO Group Virtual, SOG, CPCO por defecto) y páginas del sitio de la aerolínea (dirección: arriba; ruta bajo ese sitio o dirección completa; {id}: número del avión). Vacío: valor por defecto. Vale para este navegador.']))}</p>
       <table class="mt-table mt-wide mt-va"><tbody>${vaRows()}</tbody></table>
@@ -572,6 +577,7 @@
       nav.setVa({});
       renderSources();
     };
+    secretsRows(host);
     host.querySelector('#mtSetupOpen').onclick = () => location.assign('premier_lancement.html?force');
     host.querySelector('#mtSetupClean').onclick = () => location.assign('premier_lancement.html?force&clean');
     if (setup && !repo.handle) host.querySelector('tr[data-key="__repo"]')?.classList.add('mt-setup-row');
@@ -603,6 +609,59 @@
       };
     });
     window.AppFramework?.refresh?.();
+  }
+
+  // ---- clés d'API de la suite (lanceur : GET / POST /__setup/secrets ; secrets/<service>.json) : la page n'en reçoit
+  // que l'état (enregistrée, 4 derniers caractères) ; saisie vide + « Enregistrer » ne change rien, « Effacer » la retire
+  async function secretsRows(host) {
+    const api = (body = null) => fetch('/__setup/secrets', {
+      method: body ? 'POST' : 'GET',
+      headers: {
+        'X-SOG-Setup': '1',
+        'Content-Type': 'application/json'
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      cache: 'no-store'
+    }).then(r => r.ok ? r.json() : null).catch(() => null);
+    const rows = [...host.querySelectorAll('tr[data-secret]')];
+    const draw = st => rows.forEach(tr => {
+      const [service, key] = tr.dataset.secret.split('.'),
+        v = st?.app?.[service]?.[key],
+        input = tr.querySelector('input');
+      tr.querySelector('[data-state]').innerHTML = !st ? pill('info', t(['lanceur absent', 'no launcher', 'kein Starter', 'sin lanzador'])) : v?.env ? pill('ok', t(['variable d’environnement', 'environment variable', 'Umgebungsvariable', 'variable de entorno'])) : v?.set ? pill('ok', t(['enregistrée {h}', 'saved {h}', 'gespeichert {h}', 'guardada {h}'], {
+        h: v.hint
+      })) : pill('warn', t(['absente', 'missing', 'fehlt', 'ausente']));
+      input.disabled = !st;
+      input.placeholder = v?.set ? t(['(inchangée)', '(unchanged)', '(unverändert)', '(sin cambios)']) : '';
+      tr.querySelector('[data-save]').disabled = !st;
+      tr.querySelector('[data-clear]').hidden = !v?.set || !!v?.env;
+    });
+    draw(await api());
+    rows.forEach(tr => {
+      const [service, key] = tr.dataset.secret.split('.'),
+        input = tr.querySelector('input');
+      const send = async value => {
+        const r = await api({
+          scope: 'app',
+          service,
+          values: {
+            [key]: value
+          }
+        });
+        input.value = '';
+        if (!r?.ok) window.AppFramework?.notify?.(t(['Clé non enregistrée : {e}', 'Key not saved: {e}', 'Schlüssel nicht gespeichert: {e}', 'Clave no guardada: {e}'], {
+          e: r?.message || t(['lanceur injoignable', 'launcher unreachable', 'Starter nicht erreichbar', 'lanzador inaccesible'])
+        }), 'error');
+        draw(r?.ok ? r : await api());
+      };
+      tr.querySelector('[data-save]').onclick = () => input.value.trim() && send(input.value.trim());
+      tr.querySelector('[data-clear]').onclick = async () => {
+        if (await window.AppFramework?.ask?.(t(['Effacer cette clé du lanceur ?', 'Remove this key from the launcher?', 'Diesen Schlüssel vom Starter entfernen?', '¿Borrar esta clave del lanzador?']), {
+            danger: true
+          }) === false) return;
+        send('');
+      };
+    });
   }
 
   // ---- types d'aéronefs : base OACI fusionnée (aircraft_catalog.js) et alias (AIRCRAFT_DB.__aliases : H145 → EC45…)
@@ -1686,24 +1745,7 @@
       document.addEventListener('keydown', e => {
         if (e.key === 'Escape' && aeroLocked && hosts.sia.isConnected && !hosts.sia.closest('[hidden]')) aeroPin(Z, null);
       });
-      let info;
-      try {
-        const r = await api('?info');
-        if (!r.ok) throw new Error(r.status);
-        info = await r.json();
-      } catch {
-        return say(t(['Le serveur du lanceur ne répond pas : ouvrez la suite avec lancer.cmd / lancer.sh, ou choisissez le ZIP avec « ZIP d’export du SIA… ».', 'The launcher server does not answer: open the suite with lancer.cmd / lancer.sh, or pick the ZIP with “SIA export ZIP…”.']));
-      }
-      if (!info.found) return say(t(['Aucun export_xml_bd_SIA_….zip dans {d} : téléchargez-le d’abord sur le site du SIA (étape 1).', 'No export_xml_bd_SIA_….zip in {d}: download it from the SIA site first (step 1).'], {
-        d: info.where.join(', ')
-      }));
-      const blob = await (await api('')).blob();
-      extractZip(new File([blob], info.name, {
-        type: 'application/zip',
-        lastModified: info.mtime * 1000
-      }));
-    };
-    host.querySelector('#mtArchive')?.addEventListener('click', archiveOld);
+    }
     // Bloc commun (SiaBase.panel) créé une fois, replacé à chaque rendu : ses messages restent affichés.
     basePanelEl ??= (() => {
       const el = document.createElement('div');

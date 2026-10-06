@@ -296,6 +296,20 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             if not self._allowed():
                 return self._json({'error': 'refusé'}, 403)
             return self._json(vatsim_bookings())
+        if self.path.split('?')[0] == '/__setup/secrets':
+            # clés et identifiants des services externes (Paramètres : Installation pour la suite, Mon profil pour un
+            # utilisateur) : indicateurs seulement (enregistré, 4 derniers caractères), jamais les valeurs secrètes
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            return self._json(secrets_view(q.get('tri', [''])[0]))
+        if self.path.split('?')[0] == '/__setup/ivao-activations':
+            # zones spéciales IVAO activées (Ordres de vols, shared/odv_airspace.js) : NOTAM de la division liés à une
+            # zone et horaires publiés des zones de France ; clé d'API locale (ivao_key), jamais transmise à la page
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            return self._json(ivao_activations(q.get('from', [''])[0], q.get('to', [''])[0]))
         if self.path.split('?')[0] == '/__setup/aircraft-db':
             if not self._allowed():
                 return self._json({'error': 'refusé'}, 403)
@@ -376,6 +390,12 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 a = {}
             return self._json({'started': aircraft_start(a.get('codes') or []), **AIRCRAFT, **aircraft_files()})
+        if path == '/__setup/secrets':
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+            return self._json(secrets_save(a))
         if path == '/__setup/aero-fetch':
             # données aéronautiques d'autres pays (tools/aero_fetch.py) : téléchargées dans data/sia/<source>/
             try:
@@ -529,6 +549,165 @@ def vatsim_bookings():
         return {'error': str(e)}
     _vatsim.update(at=time.time(), data={'bookings': data if isinstance(data, list) else []})
     return _vatsim['data']
+
+
+IVAO_API = 'https://api.ivao.aero/v2'
+_ivao = {'at': 0.0, 'areas': None}
+
+
+# ---- secrets locaux (dossier secrets/ à la racine de la suite, exclu de git, hors des données et des sauvegardes) :
+#   secrets/<service>.json            clés de la suite (IVAO : apiKey) — Paramètres › Installation › Sources et dossiers
+#   secrets/users/<TRI>.json          identifiants d'un utilisateur ({ ivao: { clientId, clientSecret } }) — Mon profil
+# Champs admis par service et portée ; écrits par POST /__setup/secrets, jamais relus par la page (indicateurs seuls).
+SECRET_FIELDS = {'app': {'ivao': {'apiKey': True}}, 'user': {'ivao': {'clientId': False, 'clientSecret': True}}}
+SECRETS = os.path.join(ROOT, 'secrets')
+
+
+def _secret_file(scope, tri='', service=''):
+    if scope == 'app':
+        return os.path.join(SECRETS, f'{service}.json')
+    return os.path.join(SECRETS, 'users', f'{tri}.json')
+
+
+def _read_json(path):
+    try:
+        with open(path, encoding='utf-8') as f:
+            v = json.load(f)
+        return v if isinstance(v, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _write_json(path, value):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + '.tmp'
+    with open(tmp, 'w', encoding='utf-8', newline='\n') as f:
+        json.dump(value, f, ensure_ascii=False, indent=1)
+    os.replace(tmp, path)
+
+
+def _hint(v):
+    v = str(v or '')
+    return {'set': bool(v), 'hint': ('…' + v[-4:]) if len(v) >= 8 else ''}
+
+
+def secrets_view(tri=''):
+    """Indicateurs des secrets : { app: { ivao: { apiKey: { set, hint, env } } }, user: { ivao: { clientId (en clair :
+    pas secret), clientSecret: { set, hint } } } } (user : trigramme donné)."""
+    out = {'app': {}, 'user': {}}
+    for service, fields in SECRET_FIELDS['app'].items():
+        cur = _read_json(_secret_file('app', service=service))
+        out['app'][service] = {k: _hint(cur.get(k)) for k in fields}
+    if os.environ.get('IVAO_API_KEY'):
+        out['app']['ivao']['apiKey'] = {**_hint(os.environ['IVAO_API_KEY']), 'env': True}
+    tri = str(tri or '').upper()
+    if re.fullmatch(r'[A-Z0-9]{2,5}', tri):
+        cur = _read_json(_secret_file('user', tri))
+        for service, fields in SECRET_FIELDS['user'].items():
+            s = cur.get(service) or {}
+            out['user'][service] = {k: (_hint(s.get(k)) if secret else str(s.get(k) or '')) for k, secret in fields.items()}
+    return out
+
+
+def secrets_save(a):
+    """{ scope: app | user, tri (user), service, values: { champ: valeur } } : valeur vide = effacée, champ absent =
+    inchangé ; champs hors de SECRET_FIELDS refusés."""
+    scope, service = str(a.get('scope') or ''), str(a.get('service') or '')
+    fields = SECRET_FIELDS.get(scope, {}).get(service)
+    values = a.get('values') if isinstance(a.get('values'), dict) else None
+    if not fields or values is None or any(k not in fields for k in values):
+        return {'ok': False, 'message': 'service ou champ inconnu'}
+    tri = str(a.get('tri') or '').upper()
+    if scope == 'user' and not re.fullmatch(r'[A-Z0-9]{2,5}', tri):
+        return {'ok': False, 'message': 'trigramme manquant ou invalide'}
+    path = _secret_file(scope, tri, service)
+    cur = _read_json(path)
+    target = cur if scope == 'app' else cur.setdefault(service, {})
+    for k, v in values.items():
+        v = str(v or '').strip()[:500]
+        if v:
+            target[k] = v
+        else:
+            target.pop(k, None)
+    if scope == 'user' and not target:
+        cur.pop(service, None)
+    try:
+        if cur:
+            _write_json(path, cur)
+        elif os.path.exists(path):
+            os.remove(path)
+    except OSError as e:
+        return {'ok': False, 'message': str(e)}
+    if scope == 'app' and service == 'ivao':
+        _ivao.update(at=0.0, areas=None)  # clé changée : zones relues
+    return {'ok': True, **secrets_view(tri)}
+
+
+def ivao_key():
+    """Clé d'API IVAO (en-tête apiKey) : variable d'environnement IVAO_API_KEY, sinon secrets/ivao.json { "apiKey" }
+    (Paramètres › Installation › Sources et dossiers) ; '' si absente."""
+    k = os.environ.get('IVAO_API_KEY', '').strip()
+    return k or str(_read_json(_secret_file('app', service='ivao')).get('apiKey', '')).strip()
+
+
+def _ivao_get(path, key):
+    req = urllib.request.Request(IVAO_API + path, headers={'User-Agent': 'SOG-suite', 'Accept': 'application/json', 'apiKey': key})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        return json.load(r)
+
+
+def ivao_activations(day_from='', day_to=''):
+    """Zones spéciales IVAO de France actives entre deux dates (AAAA-MM-JJ, incluses) : { activations: [{ ivao, zone,
+    type, date, debut, fin, source: 'notam' | 'horaire', texte }], zones } ; NOTAM de la division FR liés à une zone
+    (specialAreaId), horaires publiés des zones (times : jours et heures UTC) ; { error } sans clé ou sans réponse.
+    Zones gardées une heure, NOTAM relus à chaque appel."""
+    key = ivao_key()
+    if not key:
+        return {'error': 'clé IVAO absente : variable IVAO_API_KEY ou secrets/ivao.json { "apiKey" }'}
+    try:
+        d0 = datetime.date.fromisoformat(day_from) if day_from else datetime.date.today()
+        d1 = datetime.date.fromisoformat(day_to) if day_to else d0 + datetime.timedelta(days=6)
+    except ValueError:
+        return {'error': 'dates attendues : from=AAAA-MM-JJ&to=AAAA-MM-JJ'}
+    try:
+        if _ivao['areas'] is None or time.time() - _ivao['at'] > 3600:
+            areas = _ivao_get('/specialAreas/all?now=false', key)
+            _ivao.update(at=time.time(), areas=[a for a in areas if str(a.get('name', '')).startswith('LF') and any(str(c.get('id', '')).startswith('LF') for c in a.get('centers') or [])])
+        notams = _ivao_get('/divisions/FR/notams/all?now=false', key)
+    except (OSError, ValueError) as e:
+        return {'error': f'IVAO : {e}'}
+    by_id = {a['id']: a for a in _ivao['areas']}
+    out = []
+    days = [d0 + datetime.timedelta(days=i) for i in range((d1 - d0).days + 1)][:62]
+    def hm(v):
+        return str(v or '')[:5]
+    for n in notams if isinstance(notams, list) else []:
+        a = by_id.get(n.get('specialAreaId'))
+        if not a:
+            continue
+        try:
+            s = datetime.datetime.fromisoformat(str(n['startTime']).replace('Z', '+00:00'))
+            e = datetime.datetime.fromisoformat(str(n['endTime']).replace('Z', '+00:00')) if n.get('endTime') else None
+        except (KeyError, ValueError):
+            continue
+        for d in days:
+            if s.date() > d or (e and e.date() < d):
+                continue
+            out.append({'ivao': a['id'], 'zone': a['name'], 'type': a.get('type', ''), 'date': d.isoformat(),
+                        'debut': s.strftime('%H:%M') if s.date() == d else '00:00',
+                        'fin': e.strftime('%H:%M') if e and e.date() == d else '24:00',
+                        'source': 'notam', 'texte': str(n.get('description', '')).split('E)')[-1].strip()[:200]})
+    names = ['dayMon', 'dayTue', 'dayWed', 'dayThu', 'dayFri', 'daySat', 'daySun']
+    for a in _ivao['areas']:
+        for t in a.get('times') or []:
+            if not t.get('endTime'):  # « sur NOTAM » ou H24 possible : pas d'horaire publié
+                continue
+            for d in days:
+                if t.get(names[d.weekday()]):
+                    out.append({'ivao': a['id'], 'zone': a['name'], 'type': a.get('type', ''), 'date': d.isoformat(),
+                                'debut': hm(t.get('startTime')), 'fin': hm(t.get('endTime')), 'source': 'horaire',
+                                'texte': str(a.get('activationDetails', ''))[:200]})
+    return {'activations': out, 'zones': len(_ivao['areas'])}
 
 
 # Repère de cette installation : un jeton tiré à chaque lancement, écrit à la racine et dans les dossiers de données.
