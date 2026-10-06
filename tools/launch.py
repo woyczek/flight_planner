@@ -511,6 +511,12 @@ class Server(http.server.ThreadingHTTPServer):
         super().handle_error(request, client_address)
 
 
+class Server6(Server):
+    """Même serveur sur l'adresse IPv6 locale (::1) : « localhost » y mène d'abord sous Windows ; sans elle, chaque
+    connexion attend le repli sur 127.0.0.1 (≈ 0,2 à 0,3 s par fichier, page affichée en 1,5 s au lieu de 0,15 s)."""
+    address_family = socket.AF_INET6
+
+
 def ours(port):
     """Vrai si la suite répond déjà sur ce port (lanceur relancé)."""
     for path in ('config/repository_tree', 'repository_tree'):
@@ -903,6 +909,11 @@ def main():
         say("  Base des types d'aéronefs absente : la compléter dans Paramètres › Maintenance › Références et dépendances.")
     handler = lambda *x, **k: Setup(*x, directory=ROOT, **k)
     srv = Server(('127.0.0.1', port), handler)
+    try:  # localhost rapide (IPv6 locale), seulement si la machine la propose et que le port y est libre
+        srv6 = Server6(('::1', port), handler)
+        threading.Thread(target=srv6.serve_forever, daemon=True).start()
+    except OSError:
+        pass
     url = f'http://127.0.0.1:{port}/{a.page}?t={int(time.time())}'  # adresse neuve : page jamais reprise du cache
     say(f'  Suite servie sur http://127.0.0.1:{port}/')
     say('')
