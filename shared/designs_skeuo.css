@@ -2965,11 +2965,11 @@ html[data-design="flightlog"] .repo-tab[aria-current="page"]::before {
   }
 }
 /* ---- onglets en images (tools/cut_tabs.py depuis docs/technique/planches/onglets_<design>.webp) ----------------------------- */
-/* Carnet de vol : la barre de laiton de la planche — chaque onglet est une cellule du rail (demi-séparateurs rivetés,
+/* Cabinet : la barre de laiton de la planche — chaque onglet est une cellule du rail (demi-séparateurs rivetés,
    fenêtre, poussoir : relâché, ou allumé avec voyant et lueur), les cellules accolées refont la barre, ses embouts
    vissés la ferment ; elle a la longueur des onglets (barre fermée, comme la planche). Échelle : 52 px de haut pour
    197 px d'image (× .264) ; découpes : embouts 92 px, cellule 110 px à gauche (voyant compris) et 70 px à droite. */
-html[data-design="flightlog"] .repo-tabs:not(#imp) {
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tabs:not(#imp) {
   width: fit-content;
   max-width: calc(100% - 32px);
   gap: 0;
@@ -2977,15 +2977,15 @@ html[data-design="flightlog"] .repo-tabs:not(#imp) {
   background: none;
   box-shadow: none;
   border: 0;
-  border-image: url("deco/flightlog/tabs/rail.webp?v=a3e12860") 0 92 0 92 / 0 24px 0 24px stretch
+  border-image: url("deco/cabinet/tabs/rail.webp?v=a3e12860") 0 92 0 92 / 0 24px 0 24px stretch
 }
-html[data-design="flightlog"] .repo-tabs::before,
-html[data-design="flightlog"] .repo-tabs::after,
-html[data-design="flightlog"] .repo-tab::before,
-html[data-design="flightlog"] .repo-tab::after {
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tabs::before,
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tabs::after,
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab::before,
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab::after {
   content: none
 }
-html[data-design="flightlog"] .repo-tab:not(#imp) {
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:not(#imp) {
   height: 52px;
   padding: 0 24px 0 34px;
   line-height: 52px;
@@ -2997,25 +2997,25 @@ html[data-design="flightlog"] .repo-tab:not(#imp) {
   color: #e9e2cf;
   text-shadow: 0 1px 0 #000, 0 0 6px rgba(0, 0, 0, .6);
   border: 0;
-  border-image: url("deco/flightlog/tabs/tab.webp?v=958ae537") 0 70 0 110 fill / 0 18.5px 0 29px stretch
+  border-image: url("deco/cabinet/tabs/tab.webp?v=958ae537") 0 70 0 110 fill / 0 18.5px 0 29px stretch
 }
-html[data-design="flightlog"] .repo-tab[aria-current="page"]:not(#imp) {
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab[aria-current="page"]:not(#imp) {
   color: #ffe2a8;
   text-shadow: 0 1px 0 #000, 0 0 8px rgba(255, 170, 40, .55);
   box-shadow: none;
   filter: none;
   transform: none;
-  border-image: url("deco/flightlog/tabs/tab-on.webp?v=f6c9c38b") 0 70 0 110 fill / 0 18.5px 0 29px stretch
+  border-image: url("deco/cabinet/tabs/tab-on.webp?v=f6c9c38b") 0 70 0 110 fill / 0 18.5px 0 29px stretch
 }
-html[data-design="flightlog"] .repo-tab:not([aria-current="page"]):is(:hover, :focus-visible):not(#imp) {
+html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:not([aria-current="page"]):is(:hover, :focus-visible):not(#imp) {
   filter: brightness(1.15)
 }
-/* Cabinet : étiquettes « complémentaires » (retouche de l'utilisateur) — chaque plaque porte une demi-patte rivetée à
+/* Carnet de vol : étiquettes « complémentaires » (retouche de l'utilisateur) — chaque plaque porte une demi-patte rivetée à
    chaque bout : accolées, deux plaques forment une patte entière ; aux deux bouts de la rangée, la demi-patte qui
-   manque est prise dans l'autre bout de la plaque (pseudo-éléments) ; barre d'acier nue (tabs/rail.vierge.webp) sous
+   manque est prise dans l'autre bout de la plaque (pseudo-éléments) ; barre d'aluminium nue (tabs/rail.vierge.webp) sous
    toute la rangée, sur toute la largeur de la page. Plaque : 44 px de haut pour 269 px d'image (× .1636), découpe
    autour du papier (64 / 138 / 58 / 132), demi-pattes de 38 px (6.2 px) ; barre : 79 px → 12.9 px. */
-html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tabs:not(#imp) {
+html[data-design="flightlog"] .repo-tabs:not(#imp) {
   gap: 0;
   padding: 4px 24px;
   background: none;
@@ -3023,22 +3023,22 @@ html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tabs:not(#
   border: 0;
   border-image: none
 }
-html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tabs::before {
+html[data-design="flightlog"] .repo-tabs::before {
   inset: 50% 0 auto;
   width: auto;
   height: 12.9px;
   margin-top: -6.45px;
   border-image: none;
-  background: url("deco/cabinet/tabs/rail.vierge.webp?v=d6cb265f") left center/auto 100% repeat-x
+  background: url("deco/flightlog/tabs/rail.vierge.webp?v=d6cb265f") left center/auto 100% repeat-x
 }
-html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tabs::after,
-html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab::before,
-html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab::after {
+html[data-design="flightlog"] .repo-tabs::after,
+html[data-design="flightlog"] .repo-tab::before,
+html[data-design="flightlog"] .repo-tab::after {
   content: none
 }
 /* bouts de la rangée : demi-patte complémentaire (bout droit de la plaque à gauche, bout gauche à droite) */
-html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:first-child::before,
-html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:last-child::after {
+html[data-design="flightlog"] .repo-tab:first-child::before,
+html[data-design="flightlog"] .repo-tab:last-child::after {
   content: "";
   position: absolute;
   top: 0;
@@ -3051,21 +3051,21 @@ html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:last-c
 /* mesures de l'image (797 px, × .1636) : opaque de x 1 à 794, cadre de 36 à 758 — demi-patte gauche x 1–35 (35 px,
    5.73 px), droite x 759–794 (36 px, 5.89 px) ; chaque terminateur montre exactement sa demi-patte (colonnes
    transparentes et début du cadre exclus) et se colle à la plaque */
-html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:first-child::before {
+html[data-design="flightlog"] .repo-tab:first-child::before {
   left: -5.72px;
   width: 5.89px;
-  background: url("deco/cabinet/tabs/tab.webp?v=7d2ddfc4") right -0.33px center/auto 100% no-repeat
+  background: url("deco/flightlog/tabs/tab.webp?v=7d2ddfc4") right -0.33px center/auto 100% no-repeat
 }
-html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:last-child::after {
+html[data-design="flightlog"] .repo-tab:last-child::after {
   right: -5.4px;
   width: 5.73px;
-  background: url("deco/cabinet/tabs/tab.webp?v=7d2ddfc4") left -0.16px center/auto 100% no-repeat
+  background: url("deco/flightlog/tabs/tab.webp?v=7d2ddfc4") left -0.16px center/auto 100% no-repeat
 }
 /* plaques serrées d'1 px : colonnes transparentes des bords (1 + 2 px d'image) sans fente entre deux demi-pattes */
-html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab + .repo-tab:not(#imp) {
+html[data-design="flightlog"] .repo-tab + .repo-tab:not(#imp) {
   margin-left: -1px
 }
-html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:not(#imp) {
+html[data-design="flightlog"] .repo-tab:not(#imp) {
   z-index: 1;
   height: 44px;
   padding: 0 24px;
@@ -3078,17 +3078,17 @@ html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:not(#i
   color: #2b2418;
   text-shadow: 0 1px 0 rgba(255, 248, 225, .6);
   border: 0;
-  border-image: url("deco/cabinet/tabs/tab.webp?v=7d2ddfc4") 64 138 58 132 fill / 10.5px 22.6px 9.5px 21.6px stretch
+  border-image: url("deco/flightlog/tabs/tab.webp?v=7d2ddfc4") 64 138 58 132 fill / 10.5px 22.6px 9.5px 21.6px stretch
 }
-html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab[aria-current="page"]:not(#imp) {
+html[data-design="flightlog"] .repo-tab[aria-current="page"]:not(#imp) {
   color: #3a2808;
   text-shadow: 0 1px 0 rgba(255, 244, 200, .8);
   box-shadow: none;
   filter: none;
   transform: none;
-  border-image: url("deco/cabinet/tabs/tab-on.webp?v=88e2b4fe") 64 138 58 132 fill / 10.5px 22.6px 9.5px 21.6px stretch
+  border-image: url("deco/flightlog/tabs/tab-on.webp?v=88e2b4fe") 64 138 58 132 fill / 10.5px 22.6px 9.5px 21.6px stretch
 }
-html[data-design-base="cabinet"]:not([data-design="flightlog"]) .repo-tab:not([aria-current="page"]):is(:hover, :focus-visible):not(#imp) {
+html[data-design="flightlog"] .repo-tab:not([aria-current="page"]):is(:hover, :focus-visible):not(#imp) {
   filter: brightness(1.08)
 }
 /* Durci : sangle de toile cousue sur toute la largeur de la page (embouts vissés, toile répétée), une cellule par
@@ -3165,7 +3165,9 @@ html[data-design-base="cabinet"] {
   --sk-tabs-lisere-w: 12.8px
 }
 html[data-design="flightlog"] {
-  --sk-tabs-lisere: url("deco/flightlog/tabs/lisere.webp?v=062612e9")
+  --sk-tabs-lisere: url("deco/flightlog/tabs/lisere.webp?v=5582b766");
+  --sk-tabs-lisere-slice: 85;
+  --sk-tabs-lisere-w: 12.2px
 }
 html[data-design="field"] {
   --sk-tabs-lisere: url("deco/field/tabs/lisere.webp?v=5582b766");

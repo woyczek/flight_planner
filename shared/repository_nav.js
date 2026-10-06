@@ -329,7 +329,7 @@
   // Designs à matières (Cabinet, Durci, Aqua : textures, plaques, vis) : feuille propre (designs.list[id].css),
   // chargée seulement quand l'un d'eux est choisi, avec sa propre version (empreinte de son contenu, table FILE_V
   // écrite par tools/bump_versions.py).
-  const FILE_V = {"designs_skeuo.css": "f210af06"};
+  const FILE_V = {"designs_skeuo.css": "4f0087ac"};
   const designCss = id => {
     const f = designs[id]?.css;
     if (!f) return;
@@ -345,7 +345,7 @@
     if (document.getElementById("repoDesignDeco")) return;
     const d = document.createElement("script");
     d.id = "repoDesignDeco";
-    d.src = new URL("design_deco.js?v=5ea5b4d3", script.src).href;
+    d.src = new URL("design_deco.js?v=270bf0e1", script.src).href;
     document.head.append(d);
   };
   designCss(design);
@@ -537,7 +537,7 @@
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
-      sc.src = new URL("appearance_page.js?v=48974e65", script.src).href;
+      sc.src = new URL("appearance_page.js?v=909a03c7", script.src).href;
       sc.onload = show;
       document.head.append(sc);
     }
