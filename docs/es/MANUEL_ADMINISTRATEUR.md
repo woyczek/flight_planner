@@ -745,6 +745,7 @@ El botón «Comprobar» vuelve a lanzar los controles.
   - una descarga directa por el lanzador (`tools/aero_fetch.py`): openAIP (cada país), ENAIRE (España), FAA (Estados Unidos: zonas y rutas militares, clases de espacio);
   - un pedido o un registro, con el enlace y el modo de empleo: SIA Francia (pedido a 0 €, a repetir en cada ciclo), NATS (Reino Unido, archivo depositado en `data/sia/zones/gb/`);
   - un PDF, con el enlace y el modo de empleo: DIRCAM / MILAIP ENR 5.7 (ejes de reabastecimiento), AIP militar británico, NAV CANADA;
+    DIRCAM: «Importar el PDF MILAIP…» lee el PDF de la sección ENR 5.7 (pdf.js, red en la primera importación), muestra el número de ejes y las anomalías encontradas, y luego «Escribir miam-enr-5-7-tracks.xml» guarda el archivo en la carpeta SIA (el anterior en `_archives/`) y actualiza la base;
   - una carpeta del ordenador: X-Plane (radioayudas, puntos, aerovías, rejilla MORA, recortados a los contornos de las zonas activas que lo marcaron);
   - un cálculo: la MORA de la zona.
 - SIA Francia (zona Francia): «Recuperar el ZIP descargado» (el lanzador lo toma de Descargas), «ZIP de exportación…», «Extraer …» si ya está en la carpeta, «Archivar los ciclos antiguos» (`_archives/`); «Contenido de la carpeta SIA» lista los archivos del ciclo.
@@ -786,6 +787,7 @@ Purgue el «Índice de datos» cuando una página muestre un dato caducado tras 
 
 Este bloque solo aparece si el Centro está activado.
 - «Calcular el espacio usado» mide la carpeta de misiones (`data/missions`): por misión, por tipo de archivo y en total. Indica también el espacio usado por el navegador.
+- «Datos aeronáuticos, por zona»: espacio de la carpeta SIA por zona (fuentes y número de archivos; mora.csv cuenta para todas las zonas). Una zona desactivada conserva sus archivos: borrarlos a mano para liberar espacio.
 - «Eliminar los mapas sobrantes» quita los mapas que ya no figuran en la lista de su misión.
 - «Purgar todos los mapas generados» y «Purgar los PDF» liberan espacio; estos archivos se regeneran a partir del YAML.
 - Cada eliminación pide confirmación.

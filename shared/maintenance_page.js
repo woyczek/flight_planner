@@ -1199,6 +1199,7 @@
       const S = Z.SOURCES[src];
       const url = Z.linkOf(src),
         link = url ? `<a class="mt-link" href="${esc(url)}" target="_blank" rel="noopener">${esc(t(['Ouvrir le site', 'Open the website', 'Website öffnen', 'Abrir el sitio']))} ↗</a>` : '';
+      if (src === 'dircam') return `<p class="mt-small">${esc(t(S.howto || ['', '']))}</p><p class="row">${link} <label class="secondary mt-file" data-icon="upload" title="${esc(t(['PDF de la MILAIP (section ENR 5.7) téléchargé sur le site de la DIRCAM : axes et points lus, anomalies à valider, puis écriture de miam-enr-5-7-tracks.xml dans le dossier SIA', 'MILAIP PDF (section ENR 5.7) downloaded from the DIRCAM website: tracks and points read, anomalies to check, then miam-enr-5-7-tracks.xml written to the SIA folder']))}">${esc(t(['Importer le PDF MILAIP…', 'Import the MILAIP PDF…', 'MILAIP-PDF importieren…', 'Importar el PDF MILAIP…']))}<input type="file" id="mtEnr57" accept=".pdf,application/pdf" hidden></label></p><div id="mtEnr57Msg">${enr57Html()}</div>`;
       if (src === 'sia') {
         const eff = window.Airac.cycle();
         return `<p class="mt-small">${esc(t(S.howto))}</p><p class="row"><a class="mt-link" href="${esc(eff.url)}" target="_blank" rel="noopener">SIA — AIRAC ${esc(eff.label)} ↗</a>
@@ -1521,6 +1522,104 @@
   // compte rendu du dernier téléchargement de chaque source (zone|source), gardé au panneau quand il est redessiné
   const aeroFetchMsg = {},
     aeroFetching = new Set();
+  // ---- axes de ravitaillement : PDF de la MILAIP (DIRCAM, section ENR 5.7) → miam-enr-5-7-tracks.xml du dossier SIA
+  // pdf.js chargé à la demande (jsDelivr, réseau au premier import) ; texte des pages lu par AarTracks.parseEnr57,
+  // anomalies (miam:issues) montrées avant l'écriture ; l'ancien fichier part dans _archives/, la base est mise à jour.
+  const PDFJS = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/';
+  let enr57 = null; // { busy, error, file, tracks, issues, edition, xml, written }
+  function enr57Html() {
+    const r = enr57;
+    if (!r) return '';
+    if (r.busy) return `<p class="mt-small">${esc(r.busy)}</p>`;
+    if (r.error) return `<p>${pill('err', r.error)}</p>`;
+    const issues = r.issues.length ? `<details class="mt-small"><summary>${esc(t(['{n} anomalie(s) à vérifier', '{n} anomaly(ies) to check', '{n} Auffälligkeit(en) zu prüfen', '{n} anomalía(s) que verificar'], { n: r.issues.length }))}</summary><ul>${r.issues.map(i => `<li>p. ${esc(i.page)} · ${esc(i.kind)} — ${esc(i.text)}</li>`).join('')}</ul></details>` : `<p class="mt-small">${pill('ok', t(['aucune anomalie relevée', 'no anomaly found', 'keine Auffälligkeit', 'ninguna anomalía']))}</p>`;
+    return `<p class="mt-small">${pill(r.tracks.length ? 'ok' : 'warn', t(['{n} axe(s) lu(s) dans {f}', '{n} track(s) read from {f}', '{n} Strecke(n) aus {f} gelesen', '{n} eje(s) leído(s) en {f}'], { n: r.tracks.length, f: r.file }))}</p>${issues}
+      ${r.written ? `<p>${pill('ok', t(['miam-enr-5-7-tracks.xml écrit (ancien archivé) et base mise à jour', 'miam-enr-5-7-tracks.xml written (old one archived) and database updated', 'miam-enr-5-7-tracks.xml geschrieben (alte archiviert), Datenbank aktualisiert', 'miam-enr-5-7-tracks.xml escrito (anterior archivado) y base actualizada']))}</p>` : r.tracks.length ? `<p class="row"><label class="mt-small">${esc(t(['Édition', 'Edition', 'Ausgabe', 'Edición']))} <input type="text" id="mtEnr57Edition" size="26" value="${esc(r.edition)}" spellcheck="false"></label> <button type="button" class="primary" id="mtEnr57Write" data-icon="save">${esc(t(['Écrire miam-enr-5-7-tracks.xml', 'Write miam-enr-5-7-tracks.xml', 'miam-enr-5-7-tracks.xml schreiben', 'Escribir miam-enr-5-7-tracks.xml']))}</button></p>` : ''}`;
+  }
+  function enr57Show() {
+    const el = document.getElementById('mtEnr57Msg');
+    if (el) el.innerHTML = enr57Html();
+  }
+  async function importEnr57(file) {
+    enr57 = {
+      busy: t(['Lecture du PDF…', 'Reading the PDF…', 'PDF wird gelesen…', 'Leyendo el PDF…'])
+    };
+    enr57Show();
+    const job = window.AppFramework?.task?.(t(['Import de la MILAIP ENR 5.7', 'MILAIP ENR 5.7 import', 'Import MILAIP ENR 5.7', 'Importación MILAIP ENR 5.7']));
+    try {
+      if (!window.AarTracks) await new Promise(res => {
+        const sc = document.createElement('script');
+        sc.src = new URL('shared/aar_tracks.js', root()).href;
+        sc.onload = sc.onerror = res;
+        document.head.append(sc);
+      });
+      if (!window.AarTracks) throw new Error('shared/aar_tracks.js');
+      let pdfjs;
+      try {
+        pdfjs = await import(`${PDFJS}pdf.min.mjs`);
+      } catch {
+        throw new Error(t(['pdf.js injoignable (réseau nécessaire au premier import)', 'pdf.js unreachable (network needed for the first import)', 'pdf.js nicht erreichbar (Netz für den ersten Import nötig)', 'pdf.js inaccesible (red necesaria en la primera importación)']));
+      }
+      pdfjs.GlobalWorkerOptions.workerSrc = `${PDFJS}pdf.worker.min.mjs`;
+      const doc = await pdfjs.getDocument({
+        data: new Uint8Array(await file.arrayBuffer())
+      }).promise;
+      const pages = [];
+      for (let i = 1; i <= doc.numPages; i++) {
+        const c = await (await doc.getPage(i)).getTextContent();
+        pages.push(c.items.map(it => it.str + (it.hasEOL ? '\n' : ' ')).join(''));
+        job?.set?.(i, doc.numPages);
+      }
+      // MILAIP complète déposée : seules les pages de la section ENR 5.7 (sinon toutes)
+      const own = pages.filter(p => /ENR\s*5\.7/.test(p));
+      const r = window.AarTracks.parseEnr57(own.length ? own : pages);
+      const all = pages.join(' '),
+        amdt = /AMDT\s*(\d{1,2}\/\d{2})/i.exec(all)?.[1],
+        date = /(\d{2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+\d{2})/.exec(all)?.[1];
+      enr57 = {
+        file: file.name,
+        tracks: r.tracks,
+        issues: r.issues,
+        parsed: r,
+        edition: amdt ? `AMDT ${amdt}${date ? ` du ${date}` : ''}` : ''
+      };
+    } catch (e) {
+      enr57 = {
+        error: e.message
+      };
+      job?.fail?.(e);
+    } finally {
+      job?.end?.();
+    }
+    enr57Show();
+  }
+  async function writeEnr57() {
+    const r = enr57;
+    if (!r?.parsed) return;
+    try {
+      const dir = await folder('__sia', true);
+      if (!dir) throw new Error(t(['dossier SIA non autorisé', 'SIA folder not authorised', 'SIA-Ordner nicht erlaubt', 'carpeta SIA no autorizada']));
+      r.edition = document.getElementById('mtEnr57Edition')?.value.trim() || r.edition;
+      const xml = window.AarTracks.toXml(r.parsed, {
+        edition: r.edition
+      });
+      const name = 'miam-enr-5-7-tracks.xml',
+        old = await fileAt(dir, name);
+      if (old) await writeAt(dir, `_archives/miam-enr-5-7-tracks_${new Date(old.lastModified).toISOString().slice(0, 10)}.xml`, await old.arrayBuffer());
+      await writeAt(dir, name, xml);
+      await window.SiaBase.patch?.({
+        aarXml: xml
+      });
+      r.written = true;
+      aeroInv = await aeroInventory();
+      aeroRefresh(await window.SiaBase.zones());
+    } catch (e) {
+      window.AppFramework?.notify?.(t(['Axes non écrits : {e}', 'Tracks not written: {e}', 'Strecken nicht geschrieben: {e}', 'Ejes no escritos: {e}'], {
+        e: e.message
+      }), 'error');
+    }
+    enr57Show();
+  }
   /** Téléchargement d'une source par le lanceur (tools/aero_fetch.py) ; état et résultat sous le bouton. */
   async function aeroFetch(provider, args, btn, zone = '', src = '') {
     const say = (m, k = 'warn') => window.AppFramework.notify(m, k),
@@ -1617,12 +1716,17 @@
       else if (b.id === 'mtArchive') archiveOld();
       else if (b.id === 'mtSiaZipFolder') extractZip(siaFolderState.zips[0].file);
       else if (b.id === 'mtSiaFetch') siaFetchZip();
+      else if (b.id === 'mtEnr57Write') writeEnr57();
     };
     panel.onchange = e => {
       const c = e.target;
       if (c.dataset.zoneSrc) {
         Z.setSource(panel.dataset.zone, c.dataset.zoneSrc, c.checked);
         aeroRefresh(Z);
+      } else if (c.id === 'mtEnr57') {
+        const file = c.files[0];
+        c.value = '';
+        if (file) importEnr57(file);
       } else if (c.id === 'mtSiaZip') {
         const file = c.files[0];
         c.value = '';
@@ -2844,6 +2948,61 @@
     };
   }
 
+  /** Place des données aéronautiques du dossier SIA, par zone (AeroZones.fileSource : SIA et DIRCAM → France,
+   *  openaip/<pays>_…, aixm5/LE_… → Espagne, geojson/faa_… → États-Unis, zones/<zone>/…) ; mora.csv : toutes zones. */
+  async function aeroSizes(el) {
+    if (!el) return;
+    const st = await window.FileAccess?.status?.('__sia');
+    const Z = await window.SiaBase?.zones?.();
+    const head = `<h3>${esc(t(['Données aéronautiques, par zone', 'Aeronautical data, by zone', 'Luftfahrtdaten, nach Zone', 'Datos aeronáuticos, por zona']))}</h3>`;
+    if (!Z || !st?.handle || st.permission !== 'granted') {
+      el.innerHTML = `${head}<p class="mt-small">${esc(t(['Dossier SIA non autorisé : Paramètres › Maintenance › Données aéronautiques.', 'SIA folder not authorised: Settings › Maintenance › Aeronautical data.', 'SIA-Ordner nicht erlaubt: Einstellungen › Wartung › Luftfahrtdaten.', 'Carpeta SIA no autorizada: Ajustes › Mantenimiento › Datos aeronáuticos.']))}</p>`;
+      return;
+    }
+    const B = window.MissionRegistryCore?.fmtBytes || fmtSize;
+    let files = [];
+    try {
+      const root = await window.SiaBase.filesOf(st.handle);
+      files = root.map(f => ({
+        rel: f.name,
+        size: f.size
+      }));
+      const extra = await window.SiaBase.extraFiles(st.handle, {});
+      for (const [k, l] of Object.entries(extra))
+        if (k !== 'xplane') files.push(...l.map(f => ({
+          rel: f.__rel || `${k}/${f.name}`,
+          size: f.size
+        })));
+    } catch (e) {
+      el.innerHTML = `${head}<p>${pill('err', e.message)}</p>`;
+      return;
+    }
+    const by = new Map(); // zone → { total, n, src: Map source → octets }
+    let other = 0;
+    for (const f of files) {
+      const fs = Z.fileSource(f.rel);
+      if (!fs) {
+        other += f.size;
+        continue;
+      }
+      const z = by.get(fs.zone) || by.set(fs.zone, {
+        total: 0,
+        n: 0,
+        src: new Map()
+      }).get(fs.zone);
+      z.total += f.size;
+      z.n++;
+      z.src.set(fs.source, (z.src.get(fs.source) || 0) + f.size);
+    }
+    const name = id => id === '*' ? t(['toutes zones', 'all zones', 'alle Zonen', 'todas las zonas']) : t(Z.byId(id)?.name || [id.toUpperCase()]);
+    const rows = [...by].sort((a, b) => b[1].total - a[1].total).map(([id, z]) => `<tr><td><b>${esc(name(id))}</b>${id !== '*' && !Z.isOn(id) ? ` <span class="mt-small">(${esc(t(['inactive', 'inactive', 'inaktiv', 'inactiva']))})</span>` : ''}</td><td class="mt-small">${[...z.src].sort((a, b) => b[1] - a[1]).map(([s, n]) => `${esc(t(Z.SOURCES[s]?.label || [s]).split(/ — | \(/)[0])} ${esc(B(n))}`).join(' · ')}</td><td class="num">${z.n}</td><td class="num"><b>${esc(B(z.total))}</b></td></tr>`).join('');
+    const total = [...by.values()].reduce((a, z) => a + z.total, 0) + other;
+    el.innerHTML = `${head}<p class="mt-small">${esc(t(['Dossier SIA ({d}) : {t} au total ; X-Plane, dossier du simulateur, non compté. Une zone inactive garde ses fichiers : les supprimer à la main dans le dossier pour libérer la place.', 'SIA folder ({d}): {t} in total; X-Plane, the simulator folder, not counted. An inactive zone keeps its files: delete them by hand in the folder to free the space.', 'SIA-Ordner ({d}): insgesamt {t}; X-Plane (Simulatorordner) nicht gezählt. Eine inaktive Zone behält ihre Dateien: zum Freigeben von Hand im Ordner löschen.', 'Carpeta SIA ({d}): {t} en total; X-Plane, carpeta del simulador, no contado. Una zona inactiva conserva sus archivos: borrarlos a mano en la carpeta para liberar espacio.'], {
+      d: st.handle.name,
+      t: B(total)
+    }))}</p>${rows ? `<div class="mt-scroll"><table class="mt-table mt-wide"><thead><tr><th>${esc(t(['Zone', 'Zone', 'Zone', 'Zona']))}</th><th>${esc(t(['Sources', 'Sources', 'Quellen', 'Fuentes']))}</th><th class="num">${esc(t(['Fichiers', 'Files', 'Dateien', 'Archivos']))}</th><th class="num">${esc(t(['Taille', 'Size', 'Größe', 'Tamaño']))}</th></tr></thead><tbody>${rows}${other ? `<tr><td>${esc(t(['autres fichiers', 'other files', 'andere Dateien', 'otros archivos']))}</td><td></td><td></td><td class="num">${esc(B(other))}</td></tr>` : ''}</tbody></table></div>` : `<p class="mt-small">${esc(t(['Aucune donnée dans le dossier.', 'No data in the folder.', 'Keine Daten im Ordner.', 'Ningún dato en la carpeta.']))}</p>`}`;
+  }
+
   function renderStorage() {
     const host = hosts.storage,
       C = window.MissionRegistryCore,
@@ -2852,14 +3011,16 @@
     const intro = `<p class="mt-small">${esc(t(['Dossier des missions (data/missions) : données (YAML, Markdown), cartes générées, PDF, versions précédentes, textes reçus. Les cartes se régénèrent depuis le YAML (studio) ; une carte surnuméraire n’est plus dans la liste des cartes de sa mission. Versions et textes reçus sont l’historique : ils ne sont pas purgés ici.', 'Missions folder (data/missions): data (YAML, Markdown), generated maps, PDFs, previous versions, received texts. Maps are regenerated from the YAML (studio); a surplus map is no longer in its mission’s map list. Versions and received texts are history: not purged here.']))}</p>`;
     const actions = `<p class="row"><button type="button" class="primary" id="mtStorageScan" data-icon="refresh">${esc(t(['Calculer la place utilisée', 'Compute used space', 'Belegten Platz berechnen', 'Calcular el espacio usado']))}</button>${st ? `<button type="button" class="secondary" id="mtPurgeSurplus" data-icon="trash"${st.totals.surplus ? '' : ' disabled'}>${esc(t(['Supprimer les cartes surnuméraires ({n}, {s})', 'Delete surplus maps ({n}, {s})'], { n: st.rows.reduce((a, r) => a + r.surplusList.length, 0), s: B(st.totals.surplus) }))}</button><button type="button" class="secondary" id="mtPurgeMaps" data-icon="trash"${st.totals.maps ? '' : ' disabled'}>${esc(t(['Purger toutes les cartes générées ({n}, {s})', 'Purge all generated maps ({n}, {s})'], { n: st.rows.reduce((a, r) => a + r.mapList.length, 0), s: B(st.totals.maps) }))}</button><button type="button" class="secondary" id="mtPurgePdf" data-icon="trash"${st.totals.pdf ? '' : ' disabled'}>${esc(t(['Purger les PDF ({n}, {s})', 'Purge PDFs ({n}, {s})', 'PDFs löschen ({n}, {s})', 'Purgar los PDF ({n}, {s})'], { n: st.rows.reduce((a, r) => a + r.pdfList.length, 0), s: B(st.totals.pdf) }))}</button>` : ''}<a class="mt-link" href="?m=caches">${esc(t(['Caches du navigateur →', 'Browser caches →']))}</a></p>`;
     if (!st) {
-      host.innerHTML = intro + actions;
+      host.innerHTML = intro + actions + '<div id="mtAeroSizes"></div>';
+      aeroSizes(host.querySelector('#mtAeroSizes'));
       bindStorage();
       return;
     }
     const tot = st.totals;
     const br = st.browser ? `<p>${esc(t(['Navigateur (bases locales, caches, base SIA…) : {u} utilisés sur {q} disponibles.', 'Browser (local databases, caches, SIA base…): {u} used of {q} available.'], { u: B(st.browser.usage || 0), q: B(st.browser.quota || 0) }))}</p>` : '';
     host.innerHTML = `${intro}${actions}<p>${esc(t(['Dossier des missions : {t} ({n} missions) — données {d}, cartes {m} (dont surnuméraires {s}), PDF {p}, versions {v}, textes reçus {r}. Calculé le {at}.', 'Missions folder: {t} ({n} missions) — data {d}, maps {m} (surplus {s}), PDF {p}, versions {v}, received {r}. Computed {at}.'], { t: B(tot.total), n: st.rows.length, d: B(tot.data), m: B(tot.maps), s: B(tot.surplus), p: B(tot.pdf), v: B(tot.versions), r: B(tot.recu), at: fmtDate(st.at) }))}</p>${br}
-      <div id="mtStorageTable" class="mt-scroll mt-short"></div>`;
+      <div id="mtStorageTable" class="mt-scroll mt-short"></div><div id="mtAeroSizes"></div>`;
+    aeroSizes(host.querySelector('#mtAeroSizes'));
     // tableau du framework (shared/mission_table.js) : tri par colonne, largeurs réglables, en-tête fixe
     const size = k => ({
       key: k,

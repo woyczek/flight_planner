@@ -745,6 +745,7 @@ Die Schaltfläche „Prüfen“ startet die Prüfungen erneut.
   - einen direkten Download über den Starter (`tools/aero_fetch.py`): openAIP (jedes Land), ENAIRE (Spanien), FAA (USA: Militärgebiete und -routen, Luftraumklassen);
   - eine Bestellung oder Registrierung, mit Link und Anleitung: SIA Frankreich (Bestellung zu 0 €, bei jedem Zyklus erneut), NATS (Vereinigtes Königreich, Datei in `data/sia/zones/gb/` abgelegt);
   - ein PDF, mit Link und Anleitung: DIRCAM / MILAIP ENR 5.7 (Betankungsstrecken), britisches Militär-AIP, NAV CANADA;
+    DIRCAM: „MILAIP-PDF importieren…“ liest das PDF des Abschnitts ENR 5.7 (pdf.js, Netz beim ersten Import), zeigt die Zahl der Strecken und die gefundenen Auffälligkeiten, dann legt „miam-enr-5-7-tracks.xml schreiben“ die Datei im SIA-Ordner ab (alte in `_archives/`) und aktualisiert die Datenbank;
   - einen Ordner des Rechners: X-Plane (Funkfeuer, Punkte, Luftstraßen, MORA-Gitter, zugeschnitten auf die aktiven Zonen, die es angehakt haben);
   - eine Berechnung: die MORA der Zone.
 - SIA Frankreich (Zone Frankreich): „Heruntergeladenes ZIP holen“ (der Starter nimmt es aus dem Download-Ordner), „SIA-Export-ZIP…“, „… entpacken“, wenn es schon im Ordner liegt, „Alte Zyklen archivieren“ (`_archives/`); „Inhalt des SIA-Ordners“ listet die Dateien des Zyklus.
@@ -786,6 +787,7 @@ Leeren Sie den „Datenindex“, wenn eine Seite nach einer außerhalb der Suite
 
 Dieser Block erscheint nur, wenn das Zentrum aktiviert ist.
 - „Belegten Platz berechnen“ misst den Missionsordner (`data/missions`): pro Mission, pro Dateityp und insgesamt. Er zeigt auch den vom Browser belegten Platz.
+- „Luftfahrtdaten, nach Zone“: Platz des SIA-Ordners nach Zone (Quellen und Zahl der Dateien; mora.csv zählt für alle Zonen). Eine deaktivierte Zone behält ihre Dateien: zum Freigeben von Hand löschen.
 - „Überzählige Karten löschen“ entfernt die Karten, die nicht mehr in der Liste ihrer Mission stehen.
 - „Alle erzeugten Karten leeren“ und „PDFs löschen“ schaffen Platz; diese Dateien lassen sich aus dem YAML neu erzeugen.
 - Jedes Löschen verlangt eine Bestätigung.

@@ -745,6 +745,7 @@ The “Check” button reruns the checks.
   - a direct download through the launcher (`tools/aero_fetch.py`): openAIP (each country), ENAIRE (Spain), FAA (United States: military areas and routes, airspace classes);
   - an order or a registration, with the link and the instructions: SIA France (0 € order, to redo at each cycle), NATS (United Kingdom, file dropped into `data/sia/zones/gb/`);
   - a PDF, with the link and the instructions: DIRCAM / MILAIP ENR 5.7 (refuelling tracks), UK military AIP, NAV CANADA;
+    DIRCAM: “Import the MILAIP PDF…” reads the PDF of section ENR 5.7 (pdf.js, network at the first import), shows the number of tracks and the anomalies found, then “Write miam-enr-5-7-tracks.xml” stores the file in the SIA folder (old one in `_archives/`) and updates the database;
   - a folder of the computer: X-Plane (navaids, fixes, airways, MORA grid, cut to the outlines of the active zones that ticked it);
   - a calculation: the zone MORA.
 - SIA France (France zone): “Fetch the downloaded ZIP” (the launcher takes it from Downloads), “SIA export ZIP…”, “Extract …” if it is already in the folder, “Archive the old cycles” (`_archives/`); “SIA folder content” lists the cycle files.
@@ -786,6 +787,7 @@ Purge the “Data index” when a page shows outdated data after a file change m
 
 This block only appears if the Centre is enabled.
 - “Compute used space” measures the missions folder (`data/missions`): per mission, per file type and in total. It also shows the space used by the browser.
+- “Aeronautical data, by zone”: space of the SIA folder by zone (sources and number of files; mora.csv counts for all zones). A deactivated zone keeps its files: delete them by hand to free the space.
 - “Delete surplus maps” removes the maps that are no longer in their mission's list.
 - “Purge all generated maps” and “Purge PDFs” free up space; these files are regenerated from the YAML.
 - Each deletion asks for confirmation.

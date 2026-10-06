@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Axes de ravitaillement depuis le PDF de la MILAIP** : Données aéronautiques › zone France › DIRCAM › « Importer le
+  PDF MILAIP… » (pdf.js chargé à la demande, `AarTracks.parseEnr57`), anomalies à valider, édition repérée (AMDT),
+  écriture de `miam-enr-5-7-tracks.xml` dans le dossier SIA (ancien archivé) et mise à jour de la base.
+- **Espace disque : données aéronautiques par zone** (place du dossier SIA, sources, fichiers ; zones inactives signalées).
 - **Design « Tactique »** (Apparence) : repris de l'outil Ordres de vols — fond de nuit dégradé à halos, verre fumé
   (flou, bord lumineux), accent cyan, texte Inter, titres Orbitron en capitales, liseré du thème en haut des blocs. Sans
   image ni texture (aucun décor, logo et icônes plats) ; polices dans `shared/fonts/` (SIL OFL). Règles dans

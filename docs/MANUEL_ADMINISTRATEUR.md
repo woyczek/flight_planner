@@ -745,6 +745,7 @@ Le bouton « Vérifier » relance les contrôles.
   - un téléchargement direct par le lanceur (`tools/aero_fetch.py`) : openAIP (chaque pays), ENAIRE (Espagne), FAA (États-Unis : zones et routes militaires, classes d'espace) ;
   - une commande ou une inscription, avec le lien et le mode d'emploi : SIA France (commande à 0 €, à refaire à chaque cycle), NATS (Royaume-Uni, fichier déposé dans `data/sia/zones/gb/`) ;
   - un PDF, avec le lien et le mode d'emploi : DIRCAM / MILAIP ENR 5.7 (axes de ravitaillement), AIP militaire britannique, NAV CANADA ;
+    DIRCAM : « Importer le PDF MILAIP… » lit le PDF de la section ENR 5.7 (pdf.js, réseau au premier import), montre le nombre d'axes et les anomalies relevées, puis « Écrire miam-enr-5-7-tracks.xml » range le fichier dans le dossier SIA (ancien dans `_archives/`) et met la base à jour ;
   - un dossier de l'ordinateur : X-Plane (balises, points, voies aériennes, grille MORA, découpés aux contours des zones actives qui l'ont cochée) ;
   - un calcul : la MORA de la zone.
 - SIA France (zone France) : « Récupérer le ZIP téléchargé » (le lanceur le prend dans Téléchargements), « ZIP d'export du SIA… », « Extraire … » s'il est déjà dans le dossier, « Archiver les anciens cycles » (`_archives/`) ; « Contenu du dossier SIA » liste les fichiers du cycle.
@@ -786,6 +787,7 @@ Purgez l'« Index des données » quand une page affiche une donnée périmée a
 
 Ce bloc n'apparaît que si le Centre est activé.
 - « Calculer la place utilisée » mesure le dossier des missions (`data/missions`) : par mission, par type de fichier et au total. Il indique aussi la place utilisée par le navigateur.
+- « Données aéronautiques, par zone » : place du dossier SIA par zone (sources et nombre de fichiers ; mora.csv compte pour toutes les zones). Une zone désactivée garde ses fichiers : les supprimer à la main pour libérer la place.
 - « Supprimer les cartes surnuméraires » retire les cartes qui ne figurent plus dans la liste de leur mission.
 - « Purger toutes les cartes générées » et « Purger les PDF » libèrent de la place ; ces fichiers se régénèrent depuis le YAML.
 - Chaque suppression demande confirmation.
