@@ -146,10 +146,13 @@
       fresh
     });
     S.members = await membersList();
-    S.doc = await O().readWeek(week, {
+    // relecture pendant une modification (glisser, fenêtre…) : la semaine modifiée l'emporte sur celle lue avant
+    const rev0 = S.rev || 0;
+    const doc = await O().readWeek(week, {
       fresh,
       config: S.cfg
     });
+    if ((S.rev || 0) === rev0 || S.doc?.semaine !== week) S.doc = doc;
     const tris = S.members.map(m => m.tri);
     S.disposDocs = {};
     await Promise.all(tris.map(async tri => {
@@ -165,11 +168,28 @@
     }).catch(() => null);
     S.affect = idx?.assignments || [];
     S.registry = await registryList();
+    const tr = await window.OdvAirspace?.aarTracks?.().catch(() => []);
+    S.tracks = [...new Set([...(Array.isArray(tr) ? tr.map(x => x.nom || x.id) : []), ...S.registry.filter(isTankerMission).map(trackOf).filter(Boolean)])].sort();
+    syncCallsigns();
+    fillTracks();
     await applyReports();
     recompute();
     render();
     refreshAirspace();
     loadSun();
+  }
+  /** Indicatif des vols de mission tenu à jour : celui que la mission donne à sa patrouille (registre), s'il a changé. */
+  function syncCallsigns() {
+    let changed = false;
+    for (const e of S.doc.elements) {
+      const m = e.type === 'vol' && e.mission ? S.registry.find(x => x.id === e.mission) : null;
+      const cs = ownCs(m);
+      if (!cs || e.equipe === cs) continue;
+      if (!e.indicatif || e.indicatif === e.equipe) e.indicatif = cs;
+      e.equipe = cs;
+      changed = true;
+    }
+    if (changed && canEdit()) queueSave();
   }
   /** États repris des CR (le CR fait foi) ; enregistré si quelque chose change et que la page peut écrire. */
   async function applyReports() {
@@ -212,9 +232,14 @@
   async function save() {
     clearTimeout(S.timer);
     S.timer = null;
+    const rev0 = S.rev || 0;
+    S.savedAt = Date.now();
     const r = await O().saveWeek(S.doc).catch(e => ({
       error: e
     }));
+    S.savedAt = Date.now();
+    // modifié pendant l'écriture : la page garde sa version (réenregistrée ensuite)
+    if ((S.rev || 0) !== rev0) return queueSave();
     if (r.doc) S.doc = {
       ...r.doc,
       elements: r.doc.elements.map(O().normalize)
@@ -229,6 +254,7 @@
   function mutate(fn) {
     if (!S.editable) return notify(t(L4('Lecture seule : déverrouillez le Centre (et connectez-vous en admin_centre en mode production).', 'Read only: unlock the Centre (and log in as admin_centre in production mode).', 'Nur lesen: Zentrum entsperren (im Produktionsmodus als admin_centre anmelden).', 'Solo lectura: desbloquee el Centro (y conéctese como admin_centre en modo producción).')), 'warn');
     fn(S.doc);
+    S.rev = (S.rev || 0) + 1;
     delete S.doc._nouveau;
     recompute();
     render();
@@ -419,7 +445,7 @@
       note: 'note'
     };
     const H = {
-      vol: 74,
+      vol: 86,
       controle: 40,
       divers: 40,
       note: 30
@@ -488,17 +514,27 @@
       const planes = aff.length ? aff.map(a => ({
         tris: [a.pilot],
         config: e.avions.find(x => x.pilote === a.pilot)?.config || []
-      })) : e.avions.filter(a => a.pilote || a.nav).map(a => ({
+      })) : e.avions.filter(a => a.pilote || a.nav || a.appareil).map(a => ({
         tris: [a.pilote, a.nav].filter(Boolean),
-        config: a.config
+        config: a.config,
+        ac: a.appareil?.immat || a.appareil?.type || ''
       }));
       const prep = O().prepReady(e, {
         dispos: S.dispos,
         affectations: S.affect
       });
+      // détails de la mission : titre, famille, terrain ; axe tenu (ravitailleur) ; ravitaillements (receveur)
+      const mis = reg(e.mission);
+      const axe = e.axe || (isTankerMission(mis) ? trackOf(mis) : '');
+      const rvs = (e.ravitaillements || []).map(r => {
+        const tv = S.doc.elements.find(x => x.id === r.vol),
+          tm = reg(r.mission || tv?.mission);
+        return `⛽ ${esc(tv?.indicatif || ownCs(tm) || r.mission || '?')}${r.axe || trackOf(tm) ? ' ' + esc(r.axe || trackOf(tm)) : ''}${r.heure ? ' ' + esc(r.heure) + 'z' : ''}${tv ? '' : ' (' + esc(t(L4('en réserve', 'in the pool', 'im Vorrat', 'en reserva'))) + ')'}`;
+      }).join(' ');
       body = `<div class="odvo-it-h"><b>${esc(e.libelle || '—')}</b>${e.indicatif ? ` <span>${esc(e.indicatif)}</span>` : ''}${e.mission ? ` <span class="odvo-mis" title="${esc(t(L4('Mission du registre', 'Registry mission', 'Mission des Registers', 'Misión del registro')))}">${esc(e.mission)}</span>` : ` <span class="odvo-mis">${esc(t(L4('entr.', 'train.', 'Übung', 'entr.')))}</span>`}${e.cr ? ` <span class="odvo-cr odvo-cr-${esc(e.cr)}">${esc(e.cr === 'BACHE' ? 'Bâché' : e.cr)}${e.partiel ? '½' : ''}</span>` : ''}${!prep && crew.length && e.etat === 'prevu' ? ` <span class="odvo-p" title="${esc(t(L4('P — aucun équipier disponible dans l’heure et demie avant le vol', 'P — no crew member available in the hour and a half before the flight', 'P — kein Besatzungsmitglied in den 90 Minuten vor dem Flug verfügbar', 'P — ningún tripulante disponible en la hora y media previa al vuelo')))}">P</span>` : ''}</div>
-        <div class="odvo-it-t">${esc(e.debut)}z · ${esc(String(e.duree))}′${e.zones?.length ? ' · ' + esc(e.zones.map(z => z.nom).join(', ')) : ''}${e.axe ? ' · AAR ' + esc(e.axe) : ''}${e.ravitaillements?.length ? ' · ⛽' + e.ravitaillements.length : ''}</div>
-        <div class="odvo-it-c">${planes.map(p => `<span class="odvo-plane">${p.tris.map(x => crewChip(x, e)).join('')}${cfgChips(p.config)}</span>`).join('')}</div>`;
+        ${mis ? `<div class="odvo-it-m">${esc([mis.title, [mis.family, mis.subtype].filter(Boolean).join('/'), mis.origin].filter(Boolean).join(' · '))}</div>` : ''}
+        <div class="odvo-it-t">${esc(e.debut)}z · ${esc(String(e.duree))}′${e.zones?.length ? ' · ' + esc(e.zones.map(z => z.nom).join(', ')) : ''}${axe ? ` · <b>AAR ${esc(axe)}</b>` : ''}${rvs ? ' · ' + rvs : ''}</div>
+        <div class="odvo-it-c">${planes.map(p => `<span class="odvo-plane">${p.ac ? `<span class="odvo-ac">${esc(p.ac)}</span>` : ''}${p.tris.map(x => crewChip(x, e)).join('')}${cfgChips(p.config)}</span>`).join('')}</div>`;
     } else if (e.type === 'note') body = `<div class="odvo-it-n">${esc(e.texte || '…')}</div>`;
     else body = `<div class="odvo-it-h"><b>${esc(e.libelle || '—')}</b>${e.position ? ` <span>${esc(e.position)}</span>` : ''}</div><div class="odvo-it-c">${e.equipage.map(x => crewChip(x, e)).join('')}</div>`;
     return `<div class="odvo-it odvo-${e.type}${state}${conf.length ? ' conflit' : ''}" data-id="${esc(e.id)}" style="left:${X(s)}px;top:${top}px;width:${w}px;height:${h}px;background:${fill};border-color:${border};color:${fg}" title="${esc(tip)}">${conf.length ? `<span class="odvo-warn">⚠ ${conf.length}</span>` : ''}${e.recurrence ? '<span class="odvo-rec" title="↻">↻</span>' : ''}${body}<span class="odvo-rsz" data-rsz></span></div>`;
@@ -544,8 +580,18 @@
       const bar = dispoBar(day, 0, 1440);
       return `<div class="odvo-mem" draggable="${S.editable}" data-mem="${esc(m.tri)}" title="${esc(m.nom || m.tri)}"><b${m.couleur ? ` style="color:${esc(tint(m.couleur))}"` : ''}>${esc(m.tri)}</b>${bar}</div>`;
     }).join('') || `<p class="mut">—</p>`;
+    const gen = generated(date).map(g => {
+      const tm = g.m ? ownTeam(g.m) : g.team;
+      const v = g.m ? `gen:${g.m.id}` : `genteam:${tm.name}|${typeCode(tm.type)}`;
+      const c = O().colorFor(tm.name, S.cfg);
+      const sub = [typeCode(tm.type), g.m?.id, g.m && blockOf(g.m) ? `${blockOf(g.m)}′` : '', g.why].filter(Boolean).join(' · ');
+      return `<div class="odvo-tpl odvo-gen" draggable="${S.editable}" data-tpl="${esc(v)}" style="border-color:${esc(tint(c?.contour || c?.fond || '#787808'))}" title="${esc([g.m?.title, tm.role].filter(Boolean).join(' — '))}">${esc(tm.name || g.m?.id)} <small>${esc(sub)}</small></div>`;
+    }).join('');
+    const res = (S.doc.reserve || []).map(r => `<div class="odvo-tpl odvo-res" draggable="${S.editable}" data-tpl="res:${esc(r.id)}" style="border-color:${esc(tint(r.couleur || '#64748b'))}" title="${esc(t(L4('Glisser sur la frise pour la reposer', 'Drag onto the timeline to place it again', 'Auf die Zeitleiste ziehen, um ihn wieder zu setzen', 'Arrastrar a la cronología para volver a colocarla')))}">${esc(r.indicatif || r.libelle || r.texte || r.type)} <small>${esc([r.mission, `${r.duree}′`].filter(Boolean).join(' · '))}</small></div>`).join('');
     $('#odvoPalette').innerHTML = `
+      ${res ? `<h3>${esc(t(L4('Réserve des vols', 'Flight pool', 'Flugvorrat', 'Reserva de vuelos')))}</h3>${res}` : ''}
       <h3>${esc(t(TX.sections.vol))}</h3>${tpl('vol', M.vols)}
+      ${gen ? `<h3>${esc(t(L4('Formations des missions', 'Mission formations', 'Formationen der Missionen', 'Formaciones de las misiones')))}</h3>${gen}` : ''}
       <h3>${esc(t(TX.sections.controle))}</h3>${tpl('controle', M.controle)}
       <h3>${esc(t(TX.sections.divers))}</h3>${tpl('divers', M.divers)}${note}
       <h3>${esc(t(L4('Staff', 'Staff', 'Stab', 'Staff')))}</h3>${mem('staff')}
@@ -571,6 +617,37 @@
     return Math.max(0, Math.min(1435, snap(s0 + (clientX - lane.getBoundingClientRect().left) / ppm())));
   }
   function fromTemplate(type, id, date, debut) {
+    if (type === 'gen' || type === 'genteam') {
+      // plaquette générée : patrouille d'une mission (indicatif, type, durée estimée), ou patrouille sans mission
+      const m = type === 'gen' ? reg(id) : null;
+      const [name, tcode] = type === 'genteam' ? id.split('|') : [ownCs(m), typeCode(ownTeam(m).type)];
+      const c = O().colorFor(name, S.cfg);
+      return O().normalize({
+        type: 'vol',
+        date,
+        debut: hhmm(debut),
+        duree: blockOf(m) || 105,
+        mission: m?.id || null,
+        equipe: m ? name : null,
+        indicatif: name,
+        libelle: m ? (isTankerMission(m) ? 'AAR' : m.subtype || m.family || '') : '',
+        axe: isTankerMission(m) ? trackOf(m) || null : null,
+        couleur: c?.contour || '#787808',
+        fond: c?.fond || null,
+        reseau: S.cfg.reseau || null,
+        avions: [{
+          appareil: tcode ? {
+            type: tcode,
+            immat: ''
+          } : null
+        }, {
+          appareil: tcode ? {
+            type: tcode,
+            immat: ''
+          } : null
+        }]
+      });
+    }
     if (type === 'note') return O().normalize({
       type: 'note',
       date,
@@ -589,6 +666,19 @@
       couleur: m.couleur,
       fond: m.fond,
       reseau: type === 'vol' ? S.cfg.reseau || null : undefined
+    });
+  }
+  /** Remet une plaquette dans la réserve des vols (palette) : elle garde ses réglages ; un vol qui s'y ravitaillait
+   *  garde la mission ravitailleur, sans plaquette. */
+  function toReserve(id) {
+    mutate(doc => {
+      const i = doc.elements.findIndex(x => x.id === id);
+      if (i < 0) return;
+      const [el] = doc.elements.splice(i, 1);
+      doc.reserve = [...(doc.reserve || []), el];
+      for (const v of doc.elements)
+        for (const r of v.ravitaillements || [])
+          if (r.vol === id) r.vol = null;
     });
   }
   /** Ajoute le membre à l'élément ; vrai s'il y est ajouté (faux : refusé ou déjà présent). */
@@ -642,7 +732,7 @@
       if (!drag) return;
       const lane = ev.target.closest('[data-lane]'),
         it = ev.target.closest('.odvo-it');
-      if (drag.k === 'tpl' && lane && laneAccepts(lane.dataset.lane, drag.v.split(':')[0])) ev.preventDefault();
+      if (drag.k === 'tpl' && lane && laneAccepts(lane.dataset.lane, tplType(drag.v))) ev.preventDefault();
       if (drag.k === 'mem' && it) ev.preventDefault();
     });
     host.addEventListener('drop', ev => {
@@ -656,11 +746,39 @@
       // page, le navigateur ne termine pas le glisser et l'écran reste grisé jusqu'au glisser suivant
       const later = fn => setTimeout(fn, 30);
       const target = it?.dataset.id;
-      if (d.k === 'tpl' && lane) {
+      if (d.k === 'tpl' && lane && d.v.startsWith('res:')) {
+        if (!laneAccepts(lane.dataset.lane, tplType(d.v))) return;
+        const id = d.v.slice(4),
+          debut = hhmm(minuteAt(lane, ev.clientX)),
+          date = curDate();
+        later(() => mutate(doc => {
+          const i = (doc.reserve || []).findIndex(x => x.id === id);
+          if (i < 0) return;
+          const [el] = doc.reserve.splice(i, 1);
+          Object.assign(el, O().normalize({
+            ...el,
+            date,
+            debut
+          }));
+          doc.elements.push(el);
+          if (el.mission)
+            for (const v of doc.elements)
+              if (v.type === 'vol' && v.date === el.date)
+                for (const r of v.ravitaillements || [])
+                  if (r.mission === el.mission && !r.vol) r.vol = el.id;
+        }));
+      } else if (d.k === 'tpl' && lane) {
         const [type, id] = d.v.split(':');
         const el = fromTemplate(type, id, curDate(), minuteAt(lane, ev.clientX));
         later(() => {
-          mutate(doc => doc.elements.push(el));
+          mutate(doc => {
+            doc.elements.push(el);
+            if (el.mission)
+              for (const v of doc.elements)
+                if (v.type === 'vol' && v.date === el.date)
+                  for (const r of v.ravitaillements || [])
+                    if (r.mission === el.mission && !r.vol) r.vol = el.id;
+          });
           openEdit(el.id);
         });
       } else if (d.k === 'mem' && it) later(() => mutate(doc => {
@@ -706,6 +824,8 @@
       const up = m => {
         stop();
         if (!moved) return openEdit(e.id);
+        const pal = $('#odvoPalette').getBoundingClientRect();
+        if (!rsz && m.clientX >= pal.left && m.clientX <= pal.right && m.clientY >= pal.top && m.clientY <= pal.bottom) return toReserve(e.id);
         const dm = snap((m.clientX - x0) / P);
         mutate(() => {
           if (rsz) e.duree = Math.max(5, Math.min(1440 - s, d + dm));
@@ -735,7 +855,12 @@
       if (ze && !S.editable) return;
     });
   }
-  const laneAccepts = (lane, type) => lane === type || (lane === 'note' && type === 'note');
+  /** Genre d'élément d'une carte de la palette (plaquette de réserve : son propre type). */
+  const tplType = v => {
+    const [ty, id] = String(v).split(':');
+    return ty === 'res' ? (S.doc.reserve || []).find(x => x.id === id)?.type : ty;
+  };
+  const laneAccepts = (lane, type) => lane === type || (lane === 'vol' && (type === 'gen' || type === 'genteam'));
   function removeMember(e, tri) {
     if (!e) return;
     if (e.type === 'vol') {
@@ -760,6 +885,83 @@
     }
     return list.filter(m => m?.id && !m.organisation);
   }
+  // une mission = une patrouille : son indicatif (callsigns[0]) et son type (aircraftTypes[0]) ; teams = toute la
+  // formation du scénario (autres patrouilles, ravitailleur, équipes au sol)
+  const ownCs = m => (m?.callsigns || [])[0] || '';
+  const ownTeam = m => (m?.teams || []).find(x => x.name === ownCs(m)) || {
+    name: ownCs(m),
+    type: (m?.aircraftTypes || [])[0] || '',
+    role: ''
+  };
+  const typeCode = s => String(s || '').trim().split(/\s+/)[0].toUpperCase();
+  const isTankerMission = m => !!m && (m.aarRole === 'tanker' || /tanker|ravitaill|refuel/i.test(ownTeam(m).role || '') || /tanker|MRTT/i.test((m.aircraftTypes || []).join(' ')));
+  const reg = id => (S.registry || []).find(m => m.id === id) || null;
+  const trackOf = m => m ? m.aarTrack || S.trackCache?.[m.id] || /\bsur\s+([A-Z][A-Z0-9-]{1,15})\s*$/.exec(m.title || '')?.[1] || '' : '';
+  /** Axes des missions ravitailleur de la semaine lus par OdvReports.trackOf (yaml de la mission), s'il existe. */
+  async function fillTracks() {
+    if (!REP()?.trackOf) return;
+    S.trackCache ||= {};
+    const ids = new Set();
+    for (const e of [...S.doc.elements, ...(S.doc.reserve || [])]) {
+      if (e.mission && isTankerMission(reg(e.mission))) ids.add(e.mission);
+      for (const r of e.ravitaillements || []) if (r.mission) ids.add(r.mission);
+    }
+    let found = false;
+    await Promise.all([...ids].filter(id => !(id in S.trackCache)).map(async id => {
+      const tr = await REP().trackOf(id).catch(() => '');
+      S.trackCache[id] = tr || '';
+      found ||= !!tr;
+    }));
+    if (found && S.view === 'jour') renderDay();
+  }
+  /** Mission qui fait voler une patrouille de ce nom : de la même opération d'abord. */
+  const ownerOf = (name, near) => (S.registry || []).find(x => (x.callsigns || []).includes(name) && near?.operation?.id && x.operation?.id === near.operation.id) || (S.registry || []).find(x => (x.callsigns || []).includes(name)) || null;
+  /** Types d'aéronefs connus (flotte, table des indicatifs) : une équipe d'un autre type (VSAV, navire…) est au sol. */
+  const knownTypes = () => new Set([...(window.DEFA_FLEET || []).map(f => typeCode(f.type)), ...(window.MISSION_CALLSIGNS?.table || []).flatMap(x => x.types || []).map(typeCode)]);
+  const isAirTeam = tm => !!ownerOf(tm.name) || isTanker(tm) || knownTypes().has(typeCode(tm.type));
+  /** Plaquettes générées pour un jour : formation complémentaire des vols de mission posés (patrouilles des autres
+   *  missions, ravitailleurs qui les servent, chiffons de l'opération, patrouilles sans mission), et missions
+   *  ravitailleur choisies sur un axe mais pas encore posées ; rien de ce qui est déjà posé ce jour. */
+  function generated(date) {
+    const vols = S.doc.elements.filter(e => e.type === 'vol' && e.date === date);
+    const placed = new Set([...vols, ...(S.doc.reserve || [])].map(e => e.mission).filter(Boolean));
+    const out = new Map();
+    const add = (k, v) => !out.has(k) && out.set(k, v);
+    for (const v of vols) {
+      for (const r of v.ravitaillements || [])
+        if (r.mission && !placed.has(r.mission) && reg(r.mission)) add(r.mission, {
+          m: reg(r.mission),
+          why: tf(L4('ravitaille {cs}', 'refuels {cs}', 'betankt {cs}', 'reabastece a {cs}'), {
+            cs: v.indicatif || v.libelle
+          })
+        });
+      const m = reg(v.mission);
+      if (!m) continue;
+      for (const tm of m.teams || []) {
+        if (tm.name === ownCs(m)) continue;
+        const ow = ownerOf(tm.name, m);
+        if (ow && ow.id !== m.id) {
+          if (!placed.has(ow.id)) add(ow.id, {
+            m: ow,
+            why: m.id
+          });
+        } else if (!ow && isAirTeam(tm) && !vols.some(x => x.indicatif === tm.name)) add(`cs:${tm.name}`, {
+          team: tm,
+          why: m.id
+        });
+      }
+      for (const x of S.registry || []) {
+        if (x.id === m.id || placed.has(x.id)) continue;
+        const serves = isTankerMission(x) && (x.teams || []).some(tm => tm.name === ownCs(m));
+        const chiffon = m.operation?.id && x.operation?.id === m.operation.id && /CHIFFON/i.test(x.subtype || '');
+        if (serves || chiffon) add(x.id, {
+          m: x,
+          why: m.id
+        });
+      }
+    }
+    return [...out.values()];
+  }
   const blockOf = m => Math.round(m?.estimate?.block ?? m?.estimate?.flight ?? 0) || null;
   const isTanker = team => /tanker|ravitaill|refuel/i.test(team?.role || '');
   /** Durée de la mission compatible avec la durée demandée (écart ≤ 15 min ou 15 %) ; null si la mission n'en a pas. */
@@ -775,16 +977,13 @@
   } = {}) {
     const rows = [];
     for (const m of S.registry || []) {
-      // équipes en vol seulement (type d'aéronef « RFAL Rafale », « H225M »… ; navires et vedettes écartés)
-      let teams = (m.teams || []).filter(x => /^[A-Z][A-Z0-9]{1,4}\b/.test(x?.type || '') && (tankers ? isTanker(x) : !isTanker(x)));
-      if (tankers && !teams.length && !(m.aarRole === 'tanker' || linked[m.id])) continue;
-      if (!teams.length) teams = [null];
-      for (const team of teams) rows.push({
-        key: `${m.id}|${team?.name || ''}`,
+      if (tankers && !isTankerMission(m) && !linked[m.id]) continue;
+      rows.push({
+        key: m.id,
         m,
-        team,
+        team: ownTeam(m),
         block: blockOf(m),
-        fit: fits(m, duree),
+        fit: tankers ? null : fits(m, duree),
         lien: linked[m.id] || ''
       });
     }
@@ -796,13 +995,14 @@
       tm = r.team;
     const where = [m.origin, m.destination].filter(Boolean).join(' → ');
     const lien = r.lien === 'operation' ? t(L4('même opération', 'same operation', 'gleiche Operation', 'misma operación')) : r.lien === 'axe' ? t(L4('même axe', 'same track', 'gleiche Strecke', 'mismo eje')) : '';
-    const line2 = [tm ? [tm.name, tm.type, tm.role].filter(Boolean).join(' · ') : '', [m.family, m.subtype].filter(Boolean).join(' / '), where, m.operation?.name ? `op. ${m.operation.name}` : '', m.aar ? 'AAR' : '', lien, m.status || ''].filter(Boolean).join(' · ');
-    return `<button type="button" class="odvo-mp-row${r.fit === false ? ' warn' : ''}" data-v="${esc(r.key)}" data-q="${esc(`${m.id} ${m.title} ${line2}`.toLowerCase())}"><span><b>${esc(m.id)}</b> ${esc(m.title || '')}</span><span class="odvo-mp-d" title="${esc(t(L4('Durée bloc estimée de la mission', 'Estimated block time of the mission', 'Geschätzte Blockzeit der Mission', 'Tiempo bloque estimado de la misión')))}">${r.block != null ? `${r.block} min` : '—'}${r.fit === false ? ' ⚠' : ''}</span><small>${esc(line2)}</small></button>`;
+    const avec = (m.teams || []).filter(x => x.name !== tm?.name && isAirTeam(x)).map(x => x.name);
+    const line2 = [tm?.name ? [tm.name, tm.type, tm.role].filter(Boolean).join(' · ') : '', [m.family, m.subtype].filter(Boolean).join(' / '), where, m.operation?.name ? `op. ${m.operation.name}` : '', trackOf(m) ? `AAR ${trackOf(m)}` : m.aar ? 'AAR' : '', avec.length ? `${t(L4('avec', 'with', 'mit', 'con'))} ${avec.join(', ')}` : '', lien, m.status || ''].filter(Boolean).join(' · ');
+    return `<button type="button" class="odvo-mp-row${r.fit === false ? ' warn' : ''}" data-v="${esc(r.key)}" data-axe="${esc(trackOf(m))}" data-q="${esc(`${m.id} ${m.title} ${line2}`.toLowerCase())}"><span><b>${esc(m.id)}</b> ${esc(m.title || '')}</span><span class="odvo-mp-d" title="${esc(t(L4('Durée bloc estimée de la mission', 'Estimated block time of the mission', 'Geschätzte Blockzeit der Mission', 'Tiempo bloque estimado de la misión')))}">${r.block != null ? `${r.block} min` : '—'}${r.fit === false ? ' ⚠' : ''}</span><small>${esc(line2)}</small></button>`;
   }
   /** Liste de choix déroulante (champ caché name) : lignes détaillées, filtre. */
   function pickerHtml(name, rows, cur, emptyLabel, extraRows = '') {
     const sel = rows.find(r => r.key === cur);
-    const label = sel ? `${sel.m.id}${sel.team ? ' · ' + sel.team.name : ''} — ${sel.m.title || ''}` : cur ? cur.replace(/^vol:/, '') : emptyLabel;
+    const label = sel ? `${sel.m.id}${sel.team?.name ? ' · ' + sel.team.name : ''} — ${sel.m.title || ''}` : cur ? cur.replace(/^vol:/, '') : emptyLabel;
     // registre vide (jamais lu dans ce navigateur, pas de mission_registry.yaml servi) : le dire, avec le chemin
     const empty = S.registry?.length ? '' : `<p class="odvo-mp-warn">${esc(t(L4('Registre des missions vide dans ce navigateur : ouvrez le Registre des missions du Centre et lisez le dossier des missions.', 'Mission registry empty in this browser: open the Centre’s Mission registry and read the missions folder.', 'Missionsregister in diesem Browser leer: Missionsregister des Zentrums öffnen und den Missionsordner einlesen.', 'Registro de misiones vacío en este navegador: abra el Registro de misiones del Centro y lea la carpeta de misiones.')))} <a href="mission_registry.html" target="_blank" rel="noopener">${esc(t(L4('Registre des missions', 'Mission registry', 'Missionsregister', 'Registro de misiones')))}</a></p>`;
     return `<div class="odvo-mp" data-mp="${esc(name)}">${empty}<input type="hidden" name="${esc(name)}" value="${esc(cur || '')}"><button type="button" class="odvo-mp-btn">${esc(label)} ▾</button><div class="odvo-mp-pop" hidden><input type="search" placeholder="${esc(t(L4('Filtrer…', 'Filter…', 'Filtern…', 'Filtrar…')))}"><div class="odvo-mp-list"><button type="button" class="odvo-mp-row" data-v="" data-q=""><span>${esc(emptyLabel)}</span></button>${extraRows}${rows.map(mpRow).join('')}</div></div><div class="odvo-mp-warn">${sel?.fit === false ? esc(t(TX.durWarn)) : ''}</div></div>`;
@@ -869,35 +1069,36 @@
       const aff = O().missionCrew(e, S.affect);
       // ravitailleurs : vols ravitailleurs posés ce jour, puis missions ravitailleur, celles liées à la mission (même
       // opération, même axe : OdvReports.tankersFor) en tête
-      const tankerFlights = S.doc.elements.filter(x => x.type === 'vol' && x.id !== e.id && x.date === e.date && (x.axe || isTanker((S.registry.find(m => m.id === x.mission)?.teams || []).find(tm => tm.name === x.equipe))));
+      const tankerFlights = S.doc.elements.filter(x => x.type === 'vol' && x.id !== e.id && x.date === e.date && (x.axe || isTankerMission(reg(x.mission))));
       const linked = Object.fromEntries((e.mission && REP()?.tankersFor ? await REP().tankersFor(e.mission).catch(() => []) : []).map(x => [x.id, x.lien || 'operation']));
-      const css = window.MISSION_CALLSIGNS?.table?.map(x => x.prefix) || [];
       const causes = REP()?.CAUSES || {};
       body = `<div class="odvo-grid2">
         ${field(L4('Libellé', 'Label', 'Bezeichnung', 'Etiqueta'), `<input name="libelle" value="${esc(e.libelle)}">`)}
-        ${field(L4('Indicatif', 'Callsign', 'Rufzeichen', 'Indicativo'), `<input name="indicatif" list="odvoCs" value="${esc(e.indicatif)}"><datalist id="odvoCs">${css.map(c => `<option value="${esc(c)}">`).join('')}</datalist>`)}
-        ${field(L4('Mission du registre et équipe (triées par durée)', 'Registry mission and team (sorted by duration)', 'Mission des Registers und Team (nach Dauer sortiert)', 'Misión del registro y equipo (ordenadas por duración)'), pickerHtml('mission', missionRows(e.duree), e.mission ? `${e.mission}|${e.equipe || ''}` : '', t(L4('Entraînement (sans mission)', 'Training (no mission)', 'Übung (ohne Mission)', 'Entrenamiento (sin misión)'))), true)}
+        ${field(L4('Indicatif (mission, sinon indicatifs du type d’appareil)', 'Callsign (mission, otherwise callsigns of the aircraft type)', 'Rufzeichen (Mission, sonst Rufzeichen des Luftfahrzeugtyps)', 'Indicativo (misión, si no indicativos del tipo de aeronave)'), `<input name="indicatif" list="odvoCs" value="${esc(e.indicatif)}"><datalist id="odvoCs">${csOptions(e.mission, planeType(e))}</datalist>`)}
+        ${field(L4('Mission du registre et équipe (triées par durée)', 'Registry mission and team (sorted by duration)', 'Mission des Registers und Team (nach Dauer sortiert)', 'Misión del registro y equipo (ordenadas por duración)'), pickerHtml('mission', missionRows(e.duree), e.mission || '', t(L4('Entraînement (sans mission)', 'Training (no mission)', 'Übung (ohne Mission)', 'Entrenamiento (sin misión)'))), true)}
         ${field(L4('Réseau', 'Network', 'Netzwerk', 'Red'), `<select name="reseau">${['', 'IVAO', 'VATSIM'].map(x => opt(x, e.reseau, x || t(L4('par défaut', 'default', 'Standard', 'por defecto')))).join('')}</select>`)}
         ${common}${colors}
         ${field(L4('Zones (entraînement, séparées par des virgules)', 'Areas (training, comma-separated)', 'Gebiete (Übung, durch Kommas getrennt)', 'Zonas (entrenamiento, separadas por comas)'), `<input name="zones" value="${esc(e.zones.map(z => z.nom).join(', '))}">`, true)}
         ${field(L4('Axe AAR (vol ravitailleur)', 'AAR track (tanker flight)', 'AAR-Strecke (Tankerflug)', 'Eje AAR (vuelo cisterna)'), `<input name="axe" value="${esc(e.axe || '')}">`)}
         ${field(L4('Offload (t)', 'Offload (t)', 'Abgabe (t)', 'Descarga (t)'), `<input name="offload" type="number" step="0.5" value="${esc(e.offload ?? '')}">`)}
-        ${field(L4('Ravitaillement : mission ravitailleur, ou vol ravitailleur du jour', 'Refuelling: tanker mission, or tanker flight of the day', 'Betankung: Tankermission oder Tankerflug des Tages', 'Reabastecimiento: misión cisterna, o vuelo cisterna del día'), pickerHtml('rv', missionRows(e.duree, {
+        ${field(L4('Ravitaillement : axe', 'Refuelling: track', 'Betankung: Strecke', 'Reabastecimiento: eje'), `<select name="rvAxe"><option value="">${esc(t(L4('tous les axes', 'all tracks', 'alle Strecken', 'todos los ejes')))}</option>${(S.tracks || []).map(x => opt(x, e.ravitaillements[0]?.axe)).join('')}</select>`)}
+        ${field(L4('Ravitaillement : mission ravitailleur de l’axe (sa plaquette rejoint la réserve des vols), ou vol ravitailleur du jour', 'Refuelling: tanker mission on the track (its strip joins the flight pool), or tanker flight of the day', 'Betankung: Tankermission der Strecke (ihr Streifen kommt in den Flugvorrat) oder Tankerflug des Tages', 'Reabastecimiento: misión cisterna del eje (su ficha pasa a la reserva de vuelos), o vuelo cisterna del día'), pickerHtml('rv', missionRows(e.duree, {
           tankers: true,
           linked
-        }), e.ravitaillements[0]?.vol ? `vol:${e.ravitaillements[0].vol}` : '', t(L4('Pas de ravitaillement', 'No refuelling', 'Keine Betankung', 'Sin reabastecimiento')), tankerFlights.map(x => `<button type="button" class="odvo-mp-row" data-v="vol:${esc(x.id)}" data-q="${esc(`${x.libelle} ${x.indicatif} ${x.mission || ''} ${x.axe || ''}`.toLowerCase())}"><span><b>${esc(x.indicatif || x.libelle)}</b> ${esc(x.debut)}z · ${esc(x.axe || '')}</span><span class="odvo-mp-d">${esc(t(L4('vol du jour', 'flight of the day', 'Flug des Tages', 'vuelo del día')))}</span><small>${esc([x.mission, x.libelle].filter(Boolean).join(' · '))}</small></button>`).join('')), true)}
+        }), e.ravitaillements[0]?.vol ? `vol:${e.ravitaillements[0].vol}` : e.ravitaillements[0]?.mission || '', t(L4('Pas de ravitaillement', 'No refuelling', 'Keine Betankung', 'Sin reabastecimiento')), tankerFlights.map(x => `<button type="button" class="odvo-mp-row" data-v="vol:${esc(x.id)}" data-q="${esc(`${x.libelle} ${x.indicatif} ${x.mission || ''} ${x.axe || ''}`.toLowerCase())}"><span><b>${esc(x.indicatif || x.libelle)}</b> ${esc(x.debut)}z · ${esc(x.axe || '')}</span><span class="odvo-mp-d">${esc(t(L4('vol du jour', 'flight of the day', 'Flug des Tages', 'vuelo del día')))}</span><small>${esc([x.mission, x.libelle].filter(Boolean).join(' · '))}</small></button>`).join('')), true)}
         ${field(L4('Heure du ravitaillement (z)', 'Refuelling time (z)', 'Betankungszeit (z)', 'Hora del reabastecimiento (z)'), `<input name="rvHeure" type="time" step="300" value="${esc(e.ravitaillements[0]?.heure || '')}">`)}
       </div>
       <h4>${esc(t(L4('Avions', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves')))}</h4>
       ${aff.length ? `<p class="mut">${esc(t(L4('Équipage tiré des affectations de la mission :', 'Crew taken from the mission assignments:', 'Besatzung aus den Zuweisungen der Mission:', 'Tripulación tomada de las asignaciones de la misión:')))} ${esc(aff.map(a => `${a.pilot} ${a.callsign || ''} ${a.aircraft?.type || ''}`).join(' · '))}</p>` : ''}
       <datalist id="odvoCfg">${(S.cfg.configs || []).map(k => `<option value="${esc(k.texte)}">`).join('')}</datalist>
-      <table class="odvo-av"><thead><tr><th>#</th><th>${esc(t(L4('Pilote', 'Pilot', 'Pilot', 'Piloto')))}</th><th title="${esc(t(TX.ptaTip))}">PTA</th><th>${esc(t(L4('Navigateur', 'Navigator', 'Navigator', 'Navegante')))}</th><th title="${esc(t(TX.ptaTip))}">PTA</th><th>${esc(t(L4('Configuration', 'Configuration', 'Konfiguration', 'Configuración')))}</th><th>${esc(t(L4('Annulé', 'Cancelled', 'Abgesagt', 'Cancelado')))}</th></tr></thead><tbody>${Array.from({
+      <table class="odvo-av"><thead><tr><th>#</th><th>${esc(t(L4('Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave')))}</th><th>${esc(t(L4('Pilote', 'Pilot', 'Pilot', 'Piloto')))}</th><th title="${esc(t(TX.ptaTip))}">PTA</th><th>${esc(t(L4('Navigateur', 'Navigator', 'Navigator', 'Navegante')))}</th><th title="${esc(t(TX.ptaTip))}">PTA</th><th>${esc(t(L4('Configuration', 'Configuration', 'Konfiguration', 'Configuración')))}</th><th>${esc(t(L4('Annulé', 'Cancelled', 'Abgesagt', 'Cancelado')))}</th></tr></thead><tbody>${Array.from({
         length: 8
       }, (_, i) => {
         const a = e.avions[i] || {};
         const chk = (n, tri) => `<input type="checkbox" name="${n}${i}"${tri && e.pta.includes(tri) ? ' checked' : ''}>`;
-        return `<tr><td>${i + 1}</td><td><select name="p${i}">${memOpts(a.pilote)}</select></td><td>${chk('tp', a.pilote)}</td><td><select name="n${i}">${memOpts(a.nav)}</select></td><td>${chk('tn', a.nav)}</td><td><input name="c${i}" list="odvoCfg" value="${esc((a.config || []).join(' '))}" placeholder="KNON TALIOS" style="width:9em"></td><td><input type="checkbox" name="x${i}"${a.annule ? ' checked' : ''}></td></tr>`;
+        return `<tr${i >= Math.max(2, e.avions.length) ? ' hidden data-more' : ''}><td>${i + 1}</td><td><select name="a${i}">${planeOptions(e, a)}</select></td><td><select name="p${i}">${memOpts(a.pilote)}</select></td><td>${chk('tp', a.pilote)}</td><td><select name="n${i}">${memOpts(a.nav)}</select></td><td>${chk('tn', a.nav)}</td><td><input name="c${i}" list="odvoCfg" value="${esc((a.config || []).join(' '))}" placeholder="KNON TALIOS" style="width:9em"></td><td><input type="checkbox" name="x${i}"${a.annule ? ' checked' : ''}></td></tr>`;
       }).join('')}</tbody></table>
+      <button type="button" data-wing>${esc(t(L4('+ Ailier', '+ Wingman', '+ Flügelmann', '+ Punto')))}</button>
       ${dloField(e)}
       ${field(L4('Tâches (une par ligne : nom = TRI)', 'Tasks (one per line: name = TRI)', 'Aufgaben (eine pro Zeile: Name = TRI)', 'Tareas (una por línea: nombre = TRI)'), `<textarea name="taches" rows="2">${esc(e.taches.map(x => `${x.nom} = ${x.pilote || ''}`).join('\n'))}</textarea>`, true)}
       ${field(L4('Infos', 'Info', 'Infos', 'Información'), `<textarea name="infos" rows="2">${esc(e.infos)}</textarea>`, true)}
@@ -909,6 +1110,7 @@
       ${e.mission ? `<p class="mut">${esc(t(L4('Le CR de la mission fait foi : état et CR sont repris à l’ouverture de la semaine.', 'The mission report is authoritative: status and report are taken over when the week is opened.', 'Der Missionsbericht ist maßgeblich: Status und Bericht werden beim Öffnen der Woche übernommen.', 'El informe de la misión es la referencia: estado e informe se recogen al abrir la semana.')))}</p>` : ''}
       ${repeatFields(e)}`;
       if (e.mission && window.AssignDialog) extra = `<button type="button" data-assign>${esc(t(L4('Affecter…', 'Assign…', 'Zuweisen…', 'Asignar…')))}</button>`;
+      if (S.editable) extra += `<button type="button" data-reserve title="${esc(t(L4('Retirer de la frise, garder dans la réserve des vols', 'Remove from the timeline, keep in the flight pool', 'Von der Zeitleiste nehmen, im Flugvorrat behalten', 'Quitar de la cronología, guardar en la reserva de vuelos')))}">${esc(t(L4('↩ Réserve', '↩ Pool', '↩ Vorrat', '↩ Reserva')))}</button>`;
     } else if (e.type === 'note') body = `<div class="odvo-grid2">${common}</div>${field(L4('Texte', 'Text', 'Text', 'Texto'), `<textarea name="texte" rows="4">${esc(e.texte)}</textarea>`, true)}`;
     else body = `<div class="odvo-grid2">
         ${field(L4('Libellé', 'Label', 'Bezeichnung', 'Etiqueta'), `<input name="libelle" value="${esc(e.libelle)}">`)}
@@ -934,13 +1136,26 @@
       })
     });
     d.querySelector('[data-assign]')?.addEventListener('click', () => assignMission(e));
+    d.querySelector('[data-reserve]')?.addEventListener('click', () => {
+      d.close('cancel');
+      toReserve(e.id);
+    });
     wirePicker(d, 'mission', v => {
-      // mission choisie : indicatif de l'équipe proposé
-      const team = String(v || '').split('|')[1];
-      const ind = d.querySelector('[name=indicatif]');
-      if (team && ind && !ind.value) ind.value = team;
+      // mission choisie : indicatif de sa patrouille, indicatifs de son type, type proposé aux places libres
+      const m = reg(v),
+        ind = d.querySelector('[name=indicatif]');
+      if (m && ind && (!ind.value || ind.value === e.indicatif)) ind.value = ownCs(m);
+      d.querySelector('#odvoCs').innerHTML = csOptions(v, typeCode(ownTeam(m).type));
+      d.querySelectorAll('select[name^=a]').forEach(s => {
+        if (m && !s.value) s.innerHTML = planeOptions({
+          mission: v
+        }, {});
+      });
     });
     wirePicker(d, 'rv');
+    d.querySelector('[data-wing]')?.addEventListener('click', () => d.querySelector('tr[data-more][hidden]')?.removeAttribute('hidden'));
+    // axe choisi : seules ses missions ravitailleur restent dans la liste
+    d.querySelector('[name=rvAxe]')?.addEventListener('change', ev => d.querySelectorAll('[data-mp=rv] .odvo-mp-row[data-axe]').forEach(b => (b.hidden = !!ev.target.value && b.dataset.axe !== ev.target.value)));
     // indicatif saisi : proposer la mission de l'affectation (même indicatif, ce jour-là)
     d.querySelector('[name=indicatif]')?.addEventListener('change', async ev => {
       const box = d.querySelector('[name=mission]');
@@ -949,8 +1164,26 @@
         indicatif: ev.target.value,
         date: e.date
       }).catch(() => '');
-      if (m) d.querySelector(`[data-mp=mission] .odvo-mp-row[data-v^="${CSS.escape(m)}|"]`)?.click();
+      if (m) d.querySelector(`[data-mp=mission] .odvo-mp-row[data-v="${CSS.escape(m)}"]`)?.click();
     });
+  }
+  /** Type d'appareil d'un vol : celui de la mission, sinon celui du premier avion. */
+  const planeType = e => typeCode(ownTeam(reg(e.mission)).type) || e.avions?.find(a => a.appareil?.type)?.appareil.type || '';
+  /** Indicatifs proposés : celui de la mission, puis ceux de la table dont la série vole ce type (sinon tous). */
+  function csOptions(mission, type) {
+    const tab = window.MISSION_CALLSIGNS?.table || [];
+    const own = ownCs(reg(mission));
+    const byType = type ? tab.filter(x => (x.types || []).map(typeCode).includes(typeCode(type))) : [];
+    const list = [...new Set([own, ...(byType.length ? byType : tab).map(x => x.prefix)].filter(Boolean))];
+    return list.map(c => `<option value="${esc(c)}">`).join('');
+  }
+  /** Appareils proposés pour une place : appareils de la flotte du type de la mission d'abord, puis les autres. */
+  function planeOptions(e, a) {
+    const want = typeCode(ownTeam(reg(e.mission)).type);
+    const curV = a?.appareil ? `${a.appareil.type}|${a.appareil.immat || ''}` : want ? `${want}|` : '';
+    const fleet = [...(window.DEFA_FLEET || [])].filter(f => f.operational !== false).sort((x, y) => (typeCode(y.type) === want) - (typeCode(x.type) === want) || String(x.type).localeCompare(String(y.type)) || String(x.registration).localeCompare(String(y.registration)));
+    const types = [...new Set([want, a?.appareil?.type, ...fleet.map(f => typeCode(f.type))].filter(Boolean))];
+    return `<option value="">—</option>${types.map(ty => opt(`${ty}|`, curV, `${ty}${ty === want ? ' ★' : ''}`)).join('')}${fleet.map(f => opt(`${typeCode(f.type)}|${f.registration}`, curV, `${f.registration} · ${f.variant || f.type}${f.base ? ' · ' + f.base : ''}${typeCode(f.type) === want ? ' ★' : ''}`)).join('')}`;
   }
   const dloField = e => field(L4('DLO — objectifs de chaque membre sur cet élément (une ligne par membre : TRI = objectifs)', 'DLO — objectives of each member on this item (one line per member: TRI = objectives)', 'DLO — Ziele jedes Mitglieds für dieses Element (eine Zeile pro Mitglied: TRI = Ziele)', 'DLO — objetivos de cada miembro en este elemento (una línea por miembro: TRI = objetivos)'), `<textarea name="dlo" rows="2" placeholder="RBR = FULL COMMS no L16">${esc(Object.entries(e.dlo || {}).map(([k, v]) => `${k} = ${v}`).join('\n'))}</textarea>`, true);
   /** Lignes « TRI = texte » → { TRI → texte }. */
@@ -977,11 +1210,11 @@
       }
       if (f.has('etat')) e.etat = g('etat');
       if (e.type === 'vol') {
-        const [mid, team] = String(g('mission') || '').split('|');
+        const mid = String(g('mission') || '').split('|')[0];
+        const mis = reg(mid);
         e.mission = mid || null;
-        e.equipe = (mid && team) || null;
-        if (mid && team && !e.indicatif) e.indicatif = team;
-        const mis = S.registry.find(m => m.id === mid);
+        e.equipe = ownCs(mis) || null;
+        if (e.equipe && !e.indicatif) e.indicatif = e.equipe;
         if (mis && fits(mis, e.duree) === false) notify(tf(L4('Mission {m} : durée estimée {b} min, demandée {d} min.', 'Mission {m}: estimated duration {b} min, requested {d} min.', 'Mission {m}: geschätzte Dauer {b} min, gewünscht {d} min.', 'Misión {m}: duración estimada {b} min, solicitada {d} min.'), {
           m: mid,
           b: blockOf(mis),
@@ -997,11 +1230,18 @@
         e.avions = Array.from({
           length: 8
         }, (_, i) => ({
+          appareil: (() => {
+            const [ty, im] = String(g(`a${i}`) || '').split('|');
+            return ty || im ? {
+              type: ty,
+              immat: im || ''
+            } : null;
+          })(),
           pilote: g(`p${i}`) || null,
           nav: g(`n${i}`) || null,
           annule: !!g(`x${i}`),
           config: String(g(`c${i}`) || '').split(/[,\s]+/).map(x => x.trim().toUpperCase()).filter(Boolean)
-        })).filter((a, i) => i === 0 || a.pilote || a.nav);
+        })).filter((a, i) => i < 2 || a.pilote || a.nav || a.appareil?.immat);
         e.pta = Array.from({
           length: 8
         }, (_, i) => [g(`tp${i}`) && g(`p${i}`), g(`tn${i}`) && g(`n${i}`)]).flat().filter(Boolean);
@@ -1009,37 +1249,17 @@
           nom: n.trim(),
           pilote: (p || '').trim().toUpperCase() || null
         }));
-        // ravitaillement : vol ravitailleur du jour, ou mission ravitailleur — sa plaquette est reprise ou posée ce jour
+        // ravitaillement : vol ravitailleur du jour, ou mission ravitailleur choisie sur l'axe — posée ce jour : accrochée ;
+        // sinon sa plaquette rejoint la réserve de la palette (formations des missions), à poser à la main
         const rv = String(g('rv') || ''),
           heure = g('rvHeure') || e.debut;
         let tankId = rv.startsWith('vol:') ? rv.slice(4) : null;
-        if (rv && !tankId) {
-          const [tm, team] = rv.split('|');
-          const mt = S.registry.find(m => m.id === tm);
-          const found = doc.elements.find(x => x.type === 'vol' && x.date === e.date && x.mission === tm && (!team || x.equipe === team));
-          if (found) tankId = found.id;
-          else {
-            const dur = blockOf(mt) || 120,
-              s0 = Math.max(0, Math.min(1440 - dur, min(heure) - 30));
-            const tank = O().normalize({
-              type: 'vol',
-              date: e.date,
-              debut: hhmm(s0),
-              duree: dur,
-              mission: tm,
-              equipe: team || null,
-              indicatif: team || '',
-              libelle: 'AAR',
-              axe: mt?.aarTrack || null,
-              couleur: '#787808',
-              reseau: e.reseau || S.cfg.reseau || null
-            });
-            doc.elements.push(tank);
-            tankId = tank.id;
-          }
-        }
+        const tankMission = tankId ? doc.elements.find(x => x.id === tankId)?.mission || null : rv || null;
+        if (!tankId && tankMission) tankId = doc.elements.find(x => x.type === 'vol' && x.date === e.date && x.mission === tankMission)?.id || null;
         const tank = doc.elements.find(x => x.id === tankId);
-        e.ravitaillements = tankId ? [{
+        e.ravitaillements = rv ? [{
+          mission: tankMission,
+          axe: g('rvAxe') || trackOf(reg(tankMission)) || tank?.axe || null,
           vol: tankId,
           heure,
           offload: tank?.offload ?? null
@@ -1292,7 +1512,8 @@
     window.addEventListener('repository-language-change', render);
     window.addEventListener('defa-data-change', ev => {
       const p = ev.detail?.path || ev.detail?.rel || '';
-      if (/odv\/|disponibilites\/|affectations/.test(p) && !S.timer) load(S.week, {
+      // écriture de cette page (son propre enregistrement) : pas de relecture
+      if (/odv\/|disponibilites\/|affectations/.test(p) && !S.timer && Date.now() - (S.savedAt || 0) > 3000) load(S.week, {
         fresh: true
       });
     });

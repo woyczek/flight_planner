@@ -130,7 +130,9 @@
     va: VA(),
     semaine: week,
     permanence: '',
-    elements: []
+    elements: [],
+    // réserve des vols : plaquettes retirées de la frise (ou à poser), gardées avec leurs réglages, sans place
+    reserve: []
   });
   /** Éléments que les récurrences posent sur une semaine (jamais avant leur date de début, ni après leur fin). */
   function recurrencesFor(conf, week) {
@@ -170,7 +172,8 @@
     if (v && Array.isArray(v.elements)) return {
       ...emptyWeek(week),
       ...v,
-      elements: v.elements.map(normalize)
+      elements: v.elements.map(normalize),
+      reserve: (v.reserve || []).map(normalize)
     };
     return {
       ...emptyWeek(week),
@@ -190,7 +193,8 @@
       va: VA(),
       updated_at: new Date().toISOString(),
       by: by(),
-      elements: [...(doc.elements || [])].map(normalize).sort((a, b) => `${a.date} ${a.debut}`.localeCompare(`${b.date} ${b.debut}`))
+      elements: [...(doc.elements || [])].map(normalize).sort((a, b) => `${a.date} ${a.debut}`.localeCompare(`${b.date} ${b.debut}`)),
+      reserve: (doc.reserve || []).map(normalize)
     };
     const r = await A().writeData(fileOf(doc.semaine), out);
     window.dispatchEvent(new CustomEvent('odv-orders-week', {
@@ -223,7 +227,13 @@
       reseau: e.reseau || null,
       couleur: e.couleur || '#64748b',
       fond: e.fond ?? null,
-      avions: (Array.isArray(e.avions) && e.avions.length ? e.avions : [{}]).slice(0, 8).map(a => ({
+      // deux places au départ ; ailiers ajoutés (huit avions au plus) ; appareil : type (imposé par la mission, sans être
+      // forcé) et immatriculation de la flotte
+      avions: (Array.isArray(e.avions) && e.avions.length ? e.avions : [{}, {}]).slice(0, 8).map(a => ({
+        appareil: a?.appareil?.type || a?.appareil?.immat ? {
+          type: String(a.appareil.type || '').toUpperCase(),
+          immat: a.appareil.immat || ''
+        } : null,
         pilote: a?.pilote || null,
         nav: a?.nav || null,
         annule: !!a?.annule,
@@ -242,7 +252,10 @@
       }),
       axe: e.axe || null,
       offload: e.offload ?? null,
+      // ravitaillement : mission ravitailleur choisie sur un axe ; vol = sa plaquette une fois posée (sinon : réserve)
       ravitaillements: (e.ravitaillements || []).map(x => ({
+        mission: x?.mission || null,
+        axe: x?.axe || null,
         vol: x?.vol || null,
         heure: x?.heure || null,
         offload: x?.offload ?? null

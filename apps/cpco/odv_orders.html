@@ -348,6 +348,13 @@
     gap: 2px;
     margin-top: 2px
   }
+  .odvo-it-m {
+    font-size: 10px;
+    opacity: .9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis
+  }
   .odvo-it-n {
     font-style: italic;
     white-space: nowrap;
@@ -387,6 +394,17 @@
     gap: 2px;
     align-items: center;
     margin-right: 4px
+  }
+  .odvo-ac {
+    font-size: 9px;
+    opacity: .8
+  }
+  .odvo-gen {
+    border-style: dashed
+  }
+  .odvo-res {
+    border-style: double;
+    border-left-width: 4px
   }
   .odvo-cfg {
     font-size: 9px;
@@ -686,6 +704,7 @@
 <script src="../../shared/mission_core/vendor/js-yaml.min.js?v=64052ae4"></script>
 <script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/callsigns.js"></script>
 <script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/defa_reference.js"></script>
+<script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=51b46b47"></script>
 <script src="../../shared/sia_base.js?v=50435856"></script>
 <script src="../../shared/assignments.js?v=130797f4"></script>
@@ -696,8 +715,8 @@
 <script src="../../shared/odv_airspace.js?v=649e93b8"></script>
 <script src="../../shared/odv_activations_editor.js?v=2d510137"></script>
 <script src="../../shared/odv_reports.js?v=dad6bbad"></script>
-<script src="../../shared/odv_orders_store.js?v=edee3153"></script>
-<script src="odv_orders.js?v=c2678713"></script>
+<script src="../../shared/odv_orders_store.js?v=e9cb0500"></script>
+<script src="odv_orders.js?v=2554aeb6"></script>
 <script src="../../shared/app_framework.js?v=278663dd"></script>
 <script src="../../shared/content_i18n.js?v=7afecb78"></script>
 <script>
