@@ -296,6 +296,13 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             if not self._allowed():
                 return self._json({'error': 'refusé'}, 403)
             return self._json(vatsim_bookings())
+        if self.path.split('?')[0] == '/__setup/secrets':
+            # clés et identifiants des services externes (Paramètres : Installation pour la suite, Mon profil pour un
+            # utilisateur) : indicateurs seulement (enregistré, 4 derniers caractères), jamais les valeurs secrètes
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            return self._json(secrets_view(q.get('tri', [''])[0]))
         if self.path.split('?')[0] == '/__setup/ivao-activations':
             # zones spéciales IVAO activées (Ordres de vols, shared/odv_airspace.js) : NOTAM de la division liés à une
             # zone et horaires publiés des zones de France ; clé d'API locale (ivao_key), jamais transmise à la page
@@ -383,6 +390,12 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 a = {}
             return self._json({'started': aircraft_start(a.get('codes') or []), **AIRCRAFT, **aircraft_files()})
+        if path == '/__setup/secrets':
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+            return self._json(secrets_save(a))
         if path == '/__setup/aero-fetch':
             # données aéronautiques d'autres pays (tools/aero_fetch.py) : téléchargées dans data/sia/<source>/
             try:
@@ -542,17 +555,99 @@ IVAO_API = 'https://api.ivao.aero/v2'
 _ivao = {'at': 0.0, 'areas': None}
 
 
+# ---- secrets locaux (dossier secrets/ à la racine de la suite, exclu de git, hors des données et des sauvegardes) :
+#   secrets/<service>.json            clés de la suite (IVAO : apiKey) — Paramètres › Installation › Sources et dossiers
+#   secrets/users/<TRI>.json          identifiants d'un utilisateur ({ ivao: { clientId, clientSecret } }) — Mon profil
+# Champs admis par service et portée ; écrits par POST /__setup/secrets, jamais relus par la page (indicateurs seuls).
+SECRET_FIELDS = {'app': {'ivao': {'apiKey': True}}, 'user': {'ivao': {'clientId': False, 'clientSecret': True}}}
+SECRETS = os.path.join(ROOT, 'secrets')
+
+
+def _secret_file(scope, tri='', service=''):
+    if scope == 'app':
+        return os.path.join(SECRETS, f'{service}.json')
+    return os.path.join(SECRETS, 'users', f'{tri}.json')
+
+
+def _read_json(path):
+    try:
+        with open(path, encoding='utf-8') as f:
+            v = json.load(f)
+        return v if isinstance(v, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _write_json(path, value):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + '.tmp'
+    with open(tmp, 'w', encoding='utf-8', newline='\n') as f:
+        json.dump(value, f, ensure_ascii=False, indent=1)
+    os.replace(tmp, path)
+
+
+def _hint(v):
+    v = str(v or '')
+    return {'set': bool(v), 'hint': ('…' + v[-4:]) if len(v) >= 8 else ''}
+
+
+def secrets_view(tri=''):
+    """Indicateurs des secrets : { app: { ivao: { apiKey: { set, hint, env } } }, user: { ivao: { clientId (en clair :
+    pas secret), clientSecret: { set, hint } } } } (user : trigramme donné)."""
+    out = {'app': {}, 'user': {}}
+    for service, fields in SECRET_FIELDS['app'].items():
+        cur = _read_json(_secret_file('app', service=service))
+        out['app'][service] = {k: _hint(cur.get(k)) for k in fields}
+    if os.environ.get('IVAO_API_KEY'):
+        out['app']['ivao']['apiKey'] = {**_hint(os.environ['IVAO_API_KEY']), 'env': True}
+    tri = str(tri or '').upper()
+    if re.fullmatch(r'[A-Z0-9]{2,5}', tri):
+        cur = _read_json(_secret_file('user', tri))
+        for service, fields in SECRET_FIELDS['user'].items():
+            s = cur.get(service) or {}
+            out['user'][service] = {k: (_hint(s.get(k)) if secret else str(s.get(k) or '')) for k, secret in fields.items()}
+    return out
+
+
+def secrets_save(a):
+    """{ scope: app | user, tri (user), service, values: { champ: valeur } } : valeur vide = effacée, champ absent =
+    inchangé ; champs hors de SECRET_FIELDS refusés."""
+    scope, service = str(a.get('scope') or ''), str(a.get('service') or '')
+    fields = SECRET_FIELDS.get(scope, {}).get(service)
+    values = a.get('values') if isinstance(a.get('values'), dict) else None
+    if not fields or values is None or any(k not in fields for k in values):
+        return {'ok': False, 'message': 'service ou champ inconnu'}
+    tri = str(a.get('tri') or '').upper()
+    if scope == 'user' and not re.fullmatch(r'[A-Z0-9]{2,5}', tri):
+        return {'ok': False, 'message': 'trigramme manquant ou invalide'}
+    path = _secret_file(scope, tri, service)
+    cur = _read_json(path)
+    target = cur if scope == 'app' else cur.setdefault(service, {})
+    for k, v in values.items():
+        v = str(v or '').strip()[:500]
+        if v:
+            target[k] = v
+        else:
+            target.pop(k, None)
+    if scope == 'user' and not target:
+        cur.pop(service, None)
+    try:
+        if cur:
+            _write_json(path, cur)
+        elif os.path.exists(path):
+            os.remove(path)
+    except OSError as e:
+        return {'ok': False, 'message': str(e)}
+    if scope == 'app' and service == 'ivao':
+        _ivao.update(at=0.0, areas=None)  # clé changée : zones relues
+    return {'ok': True, **secrets_view(tri)}
+
+
 def ivao_key():
     """Clé d'API IVAO (en-tête apiKey) : variable d'environnement IVAO_API_KEY, sinon secrets/ivao.json { "apiKey" }
-    à la racine de la suite (dossier hors git, .gitignore) ; '' si absente."""
+    (Paramètres › Installation › Sources et dossiers) ; '' si absente."""
     k = os.environ.get('IVAO_API_KEY', '').strip()
-    if k:
-        return k
-    try:
-        with open(os.path.join(ROOT, 'secrets', 'ivao.json'), encoding='utf-8') as f:
-            return str(json.load(f).get('apiKey', '')).strip()
-    except (OSError, ValueError):
-        return ''
+    return k or str(_read_json(_secret_file('app', service='ivao')).get('apiKey', '')).strip()
 
 
 def _ivao_get(path, key):

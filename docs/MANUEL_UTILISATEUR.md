@@ -273,6 +273,7 @@ Votre identité dans la suite, reprise par toutes les pages (☰ › Profil pilo
 |---|---|
 | « Pilote » | « Trigramme », « ID VATSIM (CID) », « ID IVAO (VID) », « SimBrief (utilisateur ou ID) » |
 | « Site de la compagnie » | « Identifiant », « Mot de passe » |
+| « IVAO — client OAuth (personnel) » | « Identifiant du client (client ID) », « Secret du client », « Adresse de redirection à déclarer chez IVAO » (à recopier sur developers.ivao.aero) ; bouton « Enregistrer le client IVAO » : gardé par le lanceur de ce poste, le secret n'est jamais réaffiché |
 | « Langue » | « Langue de la suite » : Automatique (langue du navigateur), Français, English, Deutsch, Español |
 
 1. Remplissez les champs.

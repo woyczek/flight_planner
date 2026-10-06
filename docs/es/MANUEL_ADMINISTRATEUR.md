@@ -594,6 +594,7 @@ Este apartado es el único lugar donde se ajustan las carpetas locales y las dir
 | Carpeta X-Plane (aterrizajes), Carpeta de rendimiento, Carpeta de copia local | registros CSV, perfiles `.lnmperf` / `.json`, `defa_local_store.yaml` |
 
 - **Fuentes externas**: la dirección por defecto aparece en gris. Un valor introducido solo vale para este navegador; «↺» vuelve al valor por defecto y «Abrir ↗» abre la dirección.
+- **Claves de API (servicios externos)**: claves de la suite, comunes a todos sus usuarios (IVAO: clave de API para las activaciones de zonas de las órdenes de vuelo). «Guardar» las confía al lanzador (`secrets/` en la raíz de la aplicación, excluido de git, fuera de los datos y de las copias); la página solo ve su estado y los 4 últimos caracteres; «Borrar» la retira.
 - **Aerolínea virtual**: «Nombre», «Nombre completo», «Sigla», «Centro (sigla)», «Centro (nombre completo)» y las páginas del sitio («Página de inicio», «Registro de vuelos», «Flota», «Ficha de un avión»). Un campo vacío mantiene el valor por defecto. «Volver a SO Group Virtual» borra todos estos ajustes.
 - **Primer arranque**: «Reabrir el primer inicio»; «Limpiar y empezar de nuevo…» borra las carpetas recordadas, la copia del libro ODV, los identificadores del sitio de la aerolínea y el perfil. Los archivos del disco no se tocan.
 
@@ -645,7 +646,7 @@ El botón «Comprobar» vuelve a lanzar los controles.
 
 ### Datos aeronáuticos: zonas del mundo, fuentes y ciclos AIRAC
 
-**Mapa de zonas**: una zona por país (Francia agrupa la metrópoli y ultramar, cobertura del SIA). Un clic en una zona la activa o la desactiva; al pasar el ratón se muestran sus fuentes en el panel derecho, que luego conserva la última zona elegida.
+**Mapa de zonas**: una zona por país (Francia agrupa la metrópoli y ultramar, cobertura del SIA). Al pasar el ratón se muestran sus fuentes en el panel derecho; un clic la fija: el panel se queda en ella para activarla («Activar la zona») y ajustar sus fuentes. Nuevo clic en la zona, Esc o «📌 Soltar» la liberan.
 - Colores: solo contorno = inactiva, sin datos; gris = inactiva, con datos; naranja = activa, datos incompletos; verde = activa, todos los datos de las fuentes marcadas; azul = zona bajo el ratón.
 - Cada fuente se marca o desmarca para su zona; solo las fuentes marcadas de las zonas activas entran en la base. Una fuente «enlace» (PDF o sitio de consulta) no la lee la suite.
 - Según la fuente, el panel ofrece:

@@ -548,6 +548,11 @@
       <h3>${esc(t(['Sources externes', 'External sources', 'Externe Quellen', 'Fuentes externas']))}</h3>
       <p class="mt-small">${esc(t(['Adresses par défaut livrées avec l’application (repository_tree) ; une valeur saisie ici ne vaut que pour ce navigateur (sauvegardée avec les données locales). Les adresses du SIA, de la DIRCAM, de NATS, de l’AIP militaire britannique et de NAV CANADA servent aux liens des sources de Paramètres › Maintenance › Données aéronautiques ; les dossiers SIA et X-Plane ci-dessus sont les mêmes que là-bas.', 'Default addresses ship with the application (repository_tree); a value entered here applies to this browser only (saved with local data). The SIA, DIRCAM, NATS, UK military AIP and NAV CANADA addresses are the source links of Settings › Maintenance › Aeronautical data; the SIA and X-Plane folders above are the same as there.', 'Standardadressen werden mit der Anwendung geliefert (repository_tree); ein hier eingegebener Wert gilt nur für diesen Browser. Die Adressen von SIA, DIRCAM, NATS, britischem Militär-AIP und NAV CANADA sind die Quellen-Links unter Einstellungen › Wartung › Luftfahrtdaten; die SIA- und X-Plane-Ordner oben sind dieselben wie dort.', 'Direcciones por defecto entregadas con la aplicación (repository_tree); un valor introducido aquí solo vale para este navegador. Las direcciones del SIA, la DIRCAM, NATS, el AIP militar británico y NAV CANADA son los enlaces de las fuentes de Ajustes › Mantenimiento › Datos aeronáuticos; las carpetas SIA y X-Plane de arriba son las mismas que allí.']))} <a class="mt-link" href="${esc(window.RepositoryNav?.settingsUrl?.('sia') || '?m=sia')}">${esc(t(['Données aéronautiques →', 'Aeronautical data →', 'Luftfahrtdaten →', 'Datos aeronáuticos →']))}</a></p>
       <table class="mt-table mt-wide mt-sources"><tbody>${Object.entries(src).map(([k, v]) => `<tr data-src="${esc(k)}"><td><b>${esc(t(v.label || [k]))}</b></td><td><input type="url" class="mt-url" value="${esc(local[k] || '')}" placeholder="${esc(v.url)}" spellcheck="false"></td><td class="mt-nowrap">${local[k] ? pill('info', t(['modifiée', 'changed', 'geändert', 'cambiada'])) : ''} <button type="button" class="secondary" data-reset ${local[k] ? '' : 'hidden'}>↺</button> <a class="mt-link" href="${esc(openUrl(k, nav.source(k)))}" target="_blank" rel="noopener">${esc(t(['Ouvrir', 'Open', 'Öffnen', 'Abrir']))} ↗</a></td></tr>`).join('')}</tbody></table>
+      <h3>${esc(t(['Clés d’API (services externes)', 'API keys (external services)', 'API-Schlüssel (externe Dienste)', 'Claves de API (servicios externos)']))}</h3>
+      <p class="mt-small">${esc(t(['Clés de la suite, communes à tous ses utilisateurs : gardées par le lanceur dans secrets/ à la racine de l’application (exclu de git, hors des données et des sauvegardes), jamais renvoyées à la page. Les identifiants personnels (client OAuth IVAO) se règlent dans Mon profil.', 'Suite keys, shared by all its users: kept by the launcher in secrets/ at the application root (excluded from git, outside the data and the backups), never sent back to the page. Personal credentials (IVAO OAuth client) are set in My profile.', 'Schlüssel der Suite, für alle ihre Benutzer: vom Starter in secrets/ im Anwendungsordner gehalten (von Git ausgeschlossen, außerhalb der Daten und Sicherungen), nie an die Seite zurückgegeben. Persönliche Zugangsdaten (IVAO-OAuth-Client) unter Mein Profil.', 'Claves de la suite, comunes a todos sus usuarios: guardadas por el lanzador en secrets/ en la raíz de la aplicación (excluido de git, fuera de los datos y de las copias), nunca devueltas a la página. Las credenciales personales (cliente OAuth de IVAO) se ajustan en Mi perfil.']))}</p>
+      <table class="mt-table mt-wide mt-keys"><tbody><tr data-secret="ivao.apiKey"><td><b>${esc(t(['IVAO — clé d’API', 'IVAO — API key', 'IVAO — API-Schlüssel', 'IVAO — clave de API']))}</b><br><span class="mt-small">${esc(t(['Activations des zones de France (horaires publiés, RTBA, NOTAM) pour les ordres de vols. developers.ivao.aero', 'French area activations (published schedules, RTBA, NOTAM) for flight orders. developers.ivao.aero', 'Aktivierungen französischer Gebiete (Zeiten, RTBA, NOTAM) für die Flugbefehle. developers.ivao.aero', 'Activaciones de las zonas de Francia (horarios, RTBA, NOTAM) para las órdenes de vuelo. developers.ivao.aero']))}</span></td>
+        <td><input type="password" class="mt-url" autocomplete="off" spellcheck="false" aria-label="${esc(t(['Clé d’API IVAO', 'IVAO API key', 'IVAO-API-Schlüssel', 'Clave de API de IVAO']))}"></td>
+        <td class="mt-nowrap"><span data-state></span> <button type="button" class="secondary" data-save data-icon="save">${esc(t(['Enregistrer', 'Save', 'Speichern', 'Guardar']))}</button> <button type="button" class="secondary" data-clear hidden>${esc(t(['Effacer', 'Clear', 'Löschen', 'Borrar']))}</button></td></tr></tbody></table>
       <h3>${esc(t(['Compagnie virtuelle', 'Virtual airline', 'Virtuelle Fluggesellschaft', 'Aerolínea virtual']))}</h3>
       <p class="mt-small">${esc(t(['Nom, sigle et centre affichés dans la suite (SO Group Virtual, SOG, CPCO par défaut) et pages du site de la compagnie (adresse : « Site de la compagnie virtuelle » ci-dessus ; chemin sous ce site, ou adresse complète ; {id} : numéro de l’appareil). Vide : valeur par défaut. Vaut pour ce navigateur.', 'Name, short name and centre shown in the suite (SO Group Virtual, SOG, CPCO by default) and pages of the airline website (address: “Virtual airline website” above; path under that site, or full address; {id}: aircraft number). Empty: default value. Applies to this browser.', 'Name, Kürzel und Zentrum in der Suite (standardmäßig SO Group Virtual, DEFA, CPCO) und Seiten der Website (Adresse: oben; Pfad unter dieser Website oder vollständige Adresse; {id}: Flugzeugnummer). Leer: Standardwert. Gilt für diesen Browser.', 'Nombre, sigla y centro mostrados en la suite (SO Group Virtual, SOG, CPCO por defecto) y páginas del sitio de la aerolínea (dirección: arriba; ruta bajo ese sitio o dirección completa; {id}: número del avión). Vacío: valor por defecto. Vale para este navegador.']))}</p>
       <table class="mt-table mt-wide mt-va"><tbody>${vaRows()}</tbody></table>
@@ -572,6 +577,7 @@
       nav.setVa({});
       renderSources();
     };
+    secretsRows(host);
     host.querySelector('#mtSetupOpen').onclick = () => location.assign('premier_lancement.html?force');
     host.querySelector('#mtSetupClean').onclick = () => location.assign('premier_lancement.html?force&clean');
     if (setup && !repo.handle) host.querySelector('tr[data-key="__repo"]')?.classList.add('mt-setup-row');
@@ -603,6 +609,59 @@
       };
     });
     window.AppFramework?.refresh?.();
+  }
+
+  // ---- clés d'API de la suite (lanceur : GET / POST /__setup/secrets ; secrets/<service>.json) : la page n'en reçoit
+  // que l'état (enregistrée, 4 derniers caractères) ; saisie vide + « Enregistrer » ne change rien, « Effacer » la retire
+  async function secretsRows(host) {
+    const api = (body = null) => fetch('/__setup/secrets', {
+      method: body ? 'POST' : 'GET',
+      headers: {
+        'X-SOG-Setup': '1',
+        'Content-Type': 'application/json'
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      cache: 'no-store'
+    }).then(r => r.ok ? r.json() : null).catch(() => null);
+    const rows = [...host.querySelectorAll('tr[data-secret]')];
+    const draw = st => rows.forEach(tr => {
+      const [service, key] = tr.dataset.secret.split('.'),
+        v = st?.app?.[service]?.[key],
+        input = tr.querySelector('input');
+      tr.querySelector('[data-state]').innerHTML = !st ? pill('info', t(['lanceur absent', 'no launcher', 'kein Starter', 'sin lanzador'])) : v?.env ? pill('ok', t(['variable d’environnement', 'environment variable', 'Umgebungsvariable', 'variable de entorno'])) : v?.set ? pill('ok', t(['enregistrée {h}', 'saved {h}', 'gespeichert {h}', 'guardada {h}'], {
+        h: v.hint
+      })) : pill('warn', t(['absente', 'missing', 'fehlt', 'ausente']));
+      input.disabled = !st;
+      input.placeholder = v?.set ? t(['(inchangée)', '(unchanged)', '(unverändert)', '(sin cambios)']) : '';
+      tr.querySelector('[data-save]').disabled = !st;
+      tr.querySelector('[data-clear]').hidden = !v?.set || !!v?.env;
+    });
+    draw(await api());
+    rows.forEach(tr => {
+      const [service, key] = tr.dataset.secret.split('.'),
+        input = tr.querySelector('input');
+      const send = async value => {
+        const r = await api({
+          scope: 'app',
+          service,
+          values: {
+            [key]: value
+          }
+        });
+        input.value = '';
+        if (!r?.ok) window.AppFramework?.notify?.(t(['Clé non enregistrée : {e}', 'Key not saved: {e}', 'Schlüssel nicht gespeichert: {e}', 'Clave no guardada: {e}'], {
+          e: r?.message || t(['lanceur injoignable', 'launcher unreachable', 'Starter nicht erreichbar', 'lanzador inaccesible'])
+        }), 'error');
+        draw(r?.ok ? r : await api());
+      };
+      tr.querySelector('[data-save]').onclick = () => input.value.trim() && send(input.value.trim());
+      tr.querySelector('[data-clear]').onclick = async () => {
+        if (await window.AppFramework?.ask?.(t(['Effacer cette clé du lanceur ?', 'Remove this key from the launcher?', 'Diesen Schlüssel vom Starter entfernen?', '¿Borrar esta clave del lanzador?']), {
+            danger: true
+          }) === false) return;
+        send('');
+      };
+    });
   }
 
   // ---- types d'aéronefs : base OACI fusionnée (aircraft_catalog.js) et alias (AIRCRAFT_DB.__aliases : H145 → EC45…)
@@ -959,6 +1018,7 @@
   let aeroMapEl = null,
     aeroMap = null,
     aeroPinned = 'fr',
+    aeroLocked = false, // zone épinglée d'un clic : le panneau reste sur elle malgré le survol
     aeroHover = null,
     aeroInv = null;
   const AERO_STATE = {
@@ -1104,7 +1164,7 @@
       return `<li class="mt-aero-src"><label><input type="checkbox" data-zone-src="${esc(src)}"${Z.srcOn(id, src) ? ' checked' : ''}> <b>${esc(t(S.label))}</b></label> ${mark}
         <div class="mt-small">${esc(t(S.gives))} · ${esc(st.text)} · ${esc(S.licence || '')}</div>${action(src)}</li>`;
     }).join('');
-    return `<h3>${esc(zName(z))} <span class="mt-small">(${esc(id.toUpperCase())})</span></h3>
+    return `<h3>${esc(zName(z))} <span class="mt-small">(${esc(id.toUpperCase())})</span>${aeroLocked && id === aeroPinned ? ` <button type="button" class="secondary" data-zone-unpin title="${esc(t(['Le panneau suit de nouveau le survol de la carte (aussi : nouveau clic sur la zone, Échap)', 'The panel follows the map hover again (also: click the zone again, Esc)', 'Das Feld folgt wieder dem Überfahren der Karte (auch: erneuter Klick auf die Zone, Esc)', 'El panel vuelve a seguir el paso del ratón (también: nuevo clic en la zona, Esc)']))}">📌 ${esc(t(['Libérer', 'Release', 'Lösen', 'Soltar']))}</button>` : ''}</h3>
       <p><span class="mt-aero-dot" style="background:${AERO_COLOR[state]}${state === 'blank' ? ';opacity:.25' : ''}"></span> ${esc(t(AERO_STATE[state]))}
         <button type="button" class="${on ? 'secondary' : 'primary'}" data-zone-toggle="${esc(id)}">${esc(on ? t(['Désactiver la zone', 'Deactivate the zone', 'Zone deaktivieren', 'Desactivar la zona']) : t(['Activer la zone', 'Activate the zone', 'Zone aktivieren', 'Activar la zona']))}</button></p>
       <ul class="mt-aero-srcs">${rows}</ul>`;
@@ -1204,8 +1264,8 @@
         type: 'line',
         source: 'zones',
         paint: {
-          'line-color': ['case', ['boolean', ['feature-state', 'hover'], false], '#1e6fd9', ['match', ['get', 'state'], 'blank', '#9aa3ad', color]],
-          'line-width': ['case', ['boolean', ['feature-state', 'hover'], false], 2.4, ['match', ['get', 'state'], 'blank', .5, 1.2]]
+          'line-color': ['case', ['boolean', ['feature-state', 'pinned'], false], '#0b2f6b', ['boolean', ['feature-state', 'hover'], false], '#1e6fd9', ['match', ['get', 'state'], 'blank', '#9aa3ad', color]],
+          'line-width': ['case', ['boolean', ['feature-state', 'pinned'], false], 3.2, ['boolean', ['feature-state', 'hover'], false], 2.4, ['match', ['get', 'state'], 'blank', .5, 1.2]]
         }
       });
       let hovered = null;
@@ -1227,7 +1287,7 @@
           hover: true
         });
         aeroMap.getCanvas().style.cursor = 'pointer';
-        if (panel()) aeroPanelShow(Z, id);
+        if (panel() && !aeroLocked) aeroPanelShow(Z, id);
       });
       aeroMap.on('mouseleave', 'zones-fill', () => {
         if (hovered) aeroMap.setFeatureState({
@@ -1238,20 +1298,44 @@
         });
         hovered = aeroHover = null;
         aeroMap.getCanvas().style.cursor = '';
-        if (panel()) aeroPanelShow(Z, aeroPinned);
+        if (panel() && !aeroLocked) aeroPanelShow(Z, aeroPinned);
       });
+      // clic : épingle la zone (activation et sources dans le panneau) ; second clic sur elle : relâchée
       aeroMap.on('click', 'zones-fill', e => {
         const id = e.features?.[0]?.properties?.zone;
-        if (!id) return;
-        Z.setZone(id, !Z.isOn(id));
-        aeroPinned = id;
-        aeroRefresh(Z);
+        if (id) aeroPin(Z, aeroLocked && aeroPinned === id ? null : id);
+      });
+      if (aeroLocked) aeroMap.setFeatureState({
+        source: 'zones',
+        id: aeroPinned
+      }, {
+        pinned: true
       });
     };
     aeroMap.on('style.load', setup);
     aeroMap.on('load', setup);
     if (aeroMap.style?._loaded) setup();
     return aeroMapEl;
+  }
+  /** Zone du panneau : l'épinglée, sinon la survolée, sinon la dernière choisie. */
+  const aeroShown = () => aeroLocked ? aeroPinned : aeroHover || aeroPinned;
+  /** Épingle une zone (clic sur la carte) ou la relâche (null, clic sur la zone épinglée, Échap, « Libérer »). */
+  function aeroPin(Z, id) {
+    if (aeroMap?.getSource?.('zones') && aeroPinned) aeroMap.setFeatureState({
+      source: 'zones',
+      id: aeroPinned
+    }, {
+      pinned: false
+    });
+    aeroLocked = !!id;
+    if (id) aeroPinned = id;
+    if (aeroLocked && aeroMap?.getSource?.('zones')) aeroMap.setFeatureState({
+      source: 'zones',
+      id
+    }, {
+      pinned: true
+    });
+    aeroPanelShow(Z, aeroShown());
   }
   /** Panneau d'une zone (survolée ou choisie), avec ses actions. */
   function aeroPanelShow(Z, id) {
@@ -1266,12 +1350,13 @@
     }, {
       withLabel: false
     }));
-    window.AppFramework?.refresh?.(el);
+    // icônes des boutons posées par block_icons.js (observateur des ajouts) : pas de rafraîchissement de la page à chaque
+    // survol (il redécorait tous les blocs)
   }
   /** États de la carte, panneau et tableau des cycles redessinés (après un réglage ou un téléchargement). */
   function aeroRefresh(Z) {
     aeroMap?.getSource?.('zones')?.setData(aeroGeo(Z));
-    aeroPanelShow(Z, aeroHover || aeroPinned);
+    aeroPanelShow(Z, aeroShown());
     const ages = document.getElementById('mtAeroAges');
     if (ages) ages.innerHTML = aeroAgesHtml(Z);
   }
@@ -1406,10 +1491,10 @@
     if (!siaFolderState) await scanSiaFolder(false);
     const legend = Object.entries(AERO_STATE).map(([k, row]) => `<span><i class="mt-aero-dot" style="background:${AERO_COLOR[k]}${k === 'blank' ? ';opacity:.25' : ''}"></i>${esc(t(row))}</span>`).join('') + `<span><i class="mt-aero-dot" style="background:#1e6fd9"></i>${esc(t(['survol : sources de la zone dans le panneau', 'hover: zone sources in the panel', 'Überfahren: Quellen der Zone im Feld', 'al pasar: fuentes de la zona en el panel']))}</span>`;
     host.innerHTML = `
-      <p class="mt-small">${esc(t(['Cliquer une zone l’active ou la désactive ; la survoler montre ses sources à droite. Cocher les sources voulues, les récupérer (téléchargement, commande, PDF ou dossier), puis « Reconstruire la base aéronautique ».', 'Clicking a zone activates or deactivates it; hovering shows its sources on the right. Tick the wanted sources, get them (download, order, PDF or folder), then “Rebuild the aeronautical database”.', 'Ein Klick auf eine Zone aktiviert oder deaktiviert sie; beim Überfahren erscheinen ihre Quellen rechts. Gewünschte Quellen anhaken, beschaffen (Download, Bestellung, PDF oder Ordner), dann „Luftfahrtdatenbank neu aufbauen“.', 'Un clic en una zona la activa o desactiva; al pasar el ratón se muestran sus fuentes a la derecha. Marque las fuentes deseadas, obténgalas (descarga, pedido, PDF o carpeta) y luego «Reconstruir la base aeronáutica».']))}</p>
+      <p class="mt-small">${esc(t(['Survoler une zone montre ses sources à droite ; un clic l’épingle (le panneau reste sur elle : « Activer la zone », sources) — nouveau clic, Échap ou « Libérer » pour la relâcher. Cocher les sources voulues, les récupérer (téléchargement, commande, PDF ou dossier), puis « Reconstruire la base aéronautique ».', 'Hovering a zone shows its sources on the right; a click pins it (the panel stays on it: “Activate the zone”, sources) — click again, Esc or “Release” to let it go. Tick the wanted sources, get them (download, order, PDF or folder), then “Rebuild the aeronautical database”.', 'Beim Überfahren einer Zone erscheinen ihre Quellen rechts; ein Klick heftet sie an (das Feld bleibt bei ihr: „Zone aktivieren“, Quellen) — erneuter Klick, Esc oder „Lösen“ gibt sie frei. Gewünschte Quellen anhaken, beschaffen (Download, Bestellung, PDF oder Ordner), dann „Luftfahrtdatenbank neu aufbauen“.', 'Al pasar el ratón por una zona se muestran sus fuentes a la derecha; un clic la fija (el panel se queda en ella: «Activar la zona», fuentes) — nuevo clic, Esc o «Soltar» para liberarla. Marque las fuentes deseadas, obténgalas (descarga, pedido, PDF o carpeta) y luego «Reconstruir la base aeronáutica».']))}</p>
       <div class="mt-aero">
         <div class="mt-aero-left"><div id="mtAeroMapSlot"></div><div class="mt-aero-legend mt-small">${legend}</div>
-          <p class="row mt-small"><span id="mtSiaFolder"></span></p></div>
+</div>
         <aside class="mt-aero-panel" id="mtAeroPanel"></aside>
       </div>
       <div class="repo-card" id="mt-aero-base" data-icon="refresh" data-subtitle="${esc(t(['Zones actives et sources cochées : la base sert au studio, aux cartes de vol, au profil vertical et aux espaces à activer.', 'Active zones and ticked sources: the database feeds the studio, flight maps, vertical profile and airspace to activate.']))}"><h3>${esc(t(['Reconstruire la base aéronautique', 'Rebuild the aeronautical database', 'Luftfahrtdatenbank neu aufbauen', 'Reconstruir la base aeronáutica']))}</h3><div id="mtBasePanel"></div></div>
@@ -1420,22 +1505,16 @@
       <div class="repo-card" data-icon="plane" data-subtitle="${esc(t(['Espaces, appareils, flotte, performances, terrains des missions', 'Airspace, aircraft, fleet, performance, mission aerodromes']))}"><h3>${esc(t(['Cohérence', 'Consistency', 'Konsistenz', 'Coherencia']))}</h3><div id="mtUsage"><p class="row"><button type="button" class="secondary" id="mtUsageRun" data-icon="search">${esc(t(['Contrôler', 'Check', 'Prüfen', 'Comprobar']))}</button></p></div></div>`;
     host.querySelector('#mtAeroMapSlot').replaceWith(await aeroMapInit(Z));
     setTimeout(() => aeroMap?.resize?.(), 50);
-    aeroPanelShow(Z, aeroHover || aeroPinned);
-    host.querySelector('#mtSiaFolder').append(folderButton('__sia', async () => {
-      await scanSiaFolder(true);
-      aeroInv = await aeroInventory();
-      renderSia();
-      renderVersions();
-      renderDeps();
-    }));
+    aeroPanelShow(Z, aeroShown());
     // actions du panneau (redessiné au survol : délégation)
     const panel = host.querySelector('#mtAeroPanel');
     panel.onclick = async e => {
       const b = e.target.closest('button');
       if (!b) return;
-      if (b.dataset.zoneToggle) {
+      if (b.hasAttribute('data-zone-unpin')) aeroPin(Z, null);
+      else if (b.dataset.zoneToggle) {
         Z.setZone(b.dataset.zoneToggle, !Z.isOn(b.dataset.zoneToggle));
-        aeroPinned = b.dataset.zoneToggle;
+        aeroPin(Z, b.dataset.zoneToggle); // la zone reste au panneau pour régler ses sources
         aeroRefresh(Z);
       } else if (b.dataset.aeroFetch) aeroFetch(b.dataset.aeroFetch, b.dataset.args.split(' ').filter(Boolean), b);
       else if (b.dataset.moraZone) planMoraZone(b.dataset.moraZone);
@@ -1456,8 +1535,15 @@
     };
     // le panneau suit le survol ; on y travaille : la zone survolée en dernier y reste
     panel.onmouseenter = () => {
-      if (aeroHover) aeroPinned = aeroHover;
+      if (aeroHover && !aeroLocked) aeroPinned = aeroHover;
     };
+    // Échap : zone relâchée
+    if (!host.dataset.escBound) {
+      host.dataset.escBound = '1';
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && aeroLocked && hosts.sia.isConnected && !hosts.sia.closest('[hidden]')) aeroPin(Z, null);
+      });
+    }
     // Bloc commun (SiaBase.panel) créé une fois, replacé à chaque rendu : ses messages restent affichés.
     basePanelEl ??= (() => {
       const el = document.createElement('div');

@@ -594,6 +594,7 @@ Cette rubrique est le seul endroit où régler les dossiers locaux et les adress
 | Dossier X-Plane (atterrissages), Dossier performances, Dossier de sauvegarde locale | journaux CSV, profils `.lnmperf` / `.json`, `defa_local_store.yaml` |
 
 - **Sources externes** : l'adresse par défaut s'affiche en grisé. Une valeur saisie ne vaut que pour ce navigateur ; « ↺ » revient à la valeur par défaut et « Ouvrir ↗ » ouvre l'adresse.
+- **Clés d'API (services externes)** : clés de la suite, communes à tous ses utilisateurs (IVAO : clé d'API pour les activations de zones des ordres de vols). « Enregistrer » les confie au lanceur (`secrets/` à la racine de l'application, exclu de git, hors des données et des sauvegardes) ; la page n'en voit que l'état et les 4 derniers caractères ; « Effacer » la retire.
 - **Compagnie virtuelle** : « Nom », « Nom long », « Sigle », « Centre (sigle) », « Centre (nom complet) », et les pages du site (« Page d'accueil », « Log des vols », « Flotte », « Fiche d'un appareil »). Un champ vide garde la valeur par défaut. « Revenir à SO Group Virtual » efface tous ces réglages.
 - **Premier lancement** : « Rouvrir le premier lancement » ; « Nettoyer et recommencer… » efface les dossiers mémorisés, la copie du classeur ODV, les identifiants du site de la compagnie et le profil. Les fichiers sur le disque ne sont pas touchés.
 
@@ -645,7 +646,7 @@ Le bouton « Vérifier » relance les contrôles.
 
 ### Données aéronautiques : zones du monde, sources et cycles AIRAC
 
-**Carte des zones** : une zone par pays (la France regroupe la métropole et l'outre-mer, couverture du SIA). Cliquer une zone l'active ou la désactive ; la survoler affiche ses sources dans le panneau de droite, qui garde ensuite la dernière zone choisie.
+**Carte des zones** : une zone par pays (la France regroupe la métropole et l'outre-mer, couverture du SIA). La survoler affiche ses sources dans le panneau de droite ; un clic l'épingle : le panneau reste sur elle, le temps de l'activer (« Activer la zone ») et de régler ses sources. Nouveau clic sur la zone, Échap ou « 📌 Libérer » la relâchent.
 - Couleurs : contour seul = inactive, sans données ; gris = inactive, avec des données ; orange = active, données incomplètes ; vert = active, toutes les données des sources cochées ; bleu = zone survolée.
 - Chaque source se coche ou se décoche pour sa zone ; seules les sources cochées des zones actives entrent dans la base. Une source « lien » (PDF ou site de consultation) n'est pas lue par la suite.
 - Selon la source, le panneau propose :

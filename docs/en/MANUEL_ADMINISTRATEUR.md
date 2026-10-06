@@ -594,6 +594,7 @@ This section is the only place to set the local folders and the addresses of the
 | X-Plane folder (landings), Performance folder, Local backup folder | CSV logs, `.lnmperf` / `.json` profiles, `defa_local_store.yaml` |
 
 - **External sources**: the default address is shown greyed out. An entered value applies to this browser only; “↺” goes back to the default value and “Open ↗” opens the address.
+- **API keys (external services)**: suite keys, shared by all its users (IVAO: API key for the flight order area activations). “Save” hands them to the launcher (`secrets/` at the application root, excluded from git, outside the data and the backups); the page only sees their state and last 4 characters; “Clear” removes the key.
 - **Virtual airline**: “Name”, “Full name”, “Short name”, “Centre (short)”, “Centre (full name)”, and the site pages (“Home page”, “Flight log”, “Fleet”, “Aircraft page”). An empty field keeps the default value. “Back to SO Group Virtual” clears all these settings.
 - **First run**: “Reopen the first run”; “Clean and start over…” clears the stored folders, the copy of the ODV workbook, the airline site credentials and the profile. The files on disk are not touched.
 
@@ -645,7 +646,7 @@ The “Check” button reruns the checks.
 
 ### Aeronautical data: world zones, sources and AIRAC cycles
 
-**Zone map**: one zone per country (France groups mainland and overseas territories, the SIA coverage). Clicking a zone activates or deactivates it; hovering shows its sources in the right-hand panel, which then keeps the last zone chosen.
+**Zone map**: one zone per country (France groups mainland and overseas territories, the SIA coverage). Hovering it shows its sources in the right-hand panel; a click pins it: the panel stays on it while you activate it (“Activate the zone”) and set its sources. Clicking the zone again, Esc or “📌 Release” let it go.
 - Colours: outline only = inactive, no data; grey = inactive, with data; orange = active, incomplete data; green = active, all data of the ticked sources; blue = hovered zone.
 - Each source is ticked or unticked for its zone; only the ticked sources of the active zones go into the database. A “link” source (PDF or reference website) is not read by the suite.
 - Depending on the source, the panel offers:

@@ -273,6 +273,7 @@ Su identidad en la suite, que usan todas las páginas (☰ › Perfil de piloto,
 |---|---|
 | «Piloto» | «Trigrama», «ID VATSIM (CID)», «ID IVAO (VID)», «SimBrief (usuario o ID)» |
 | «Sitio de la aerolínea» | «Identificador», «Contraseña» |
+| «IVAO — cliente OAuth (personal)» | «Identificador del cliente (client ID)», «Secreto del cliente», «Dirección de redirección a declarar en IVAO» (a copiar en developers.ivao.aero); botón «Guardar el cliente IVAO»: guardado por el lanzador de este equipo, el secreto nunca se vuelve a mostrar |
 | «Idioma» | «Idioma de la suite»: Automático (idioma del navegador), Français, English, Deutsch, Español |
 
 1. Rellene los campos.

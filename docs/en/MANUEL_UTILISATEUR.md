@@ -273,6 +273,7 @@ Your identity in the suite, used by all pages (☰ › Pilot profile, reports, r
 |---|---|
 | “Pilot” | “Trigram”, “VATSIM ID (CID)”, “IVAO ID (VID)”, “SimBrief (username or ID)” |
 | “Airline website” | “Login”, “Password” |
+| “IVAO — OAuth client (personal)” | “Client ID”, “Client secret”, “Redirect URL to declare at IVAO” (to copy on developers.ivao.aero); “Save the IVAO client” button: kept by this computer’s launcher, the secret is never shown again |
 | “Language” | “Suite language”: Automatic (browser language), Français, English, Deutsch, Español |
 
 1. Fill in the fields.

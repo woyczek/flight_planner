@@ -594,6 +594,7 @@ Diese Rubrik ist der einzige Ort, an dem die lokalen Ordner und die Adressen der
 | Ordner X-Plane (Landungen), Ordner Leistungsdaten, Ordner der lokalen Sicherung | CSV-Protokolle, Profile `.lnmperf` / `.json`, `defa_local_store.yaml` |
 
 - **Externe Quellen**: Die Standardadresse wird grau angezeigt. Ein eingegebener Wert gilt nur für diesen Browser; „↺“ kehrt zum Standardwert zurück, und „Öffnen ↗“ öffnet die Adresse.
+- **API-Schlüssel (externe Dienste)**: Schlüssel der Suite, für alle ihre Benutzer (IVAO: API-Schlüssel für die Gebietsaktivierungen der Flugbefehle). „Speichern“ übergibt sie dem Starter (`secrets/` im Anwendungsordner, von Git ausgeschlossen, außerhalb der Daten und Sicherungen); die Seite sieht nur ihren Status und die letzten 4 Zeichen; „Löschen“ entfernt den Schlüssel.
 - **Virtuelle Fluggesellschaft**: „Name“, „Vollständiger Name“, „Kürzel“, „Zentrum (Kürzel)“, „Zentrum (voller Name)“, und die Seiten der Website („Startseite“, „Flugbuch“, „Flotte“, „Flugzeugseite“). Ein leeres Feld behält den Standardwert. „Zurück zu SO Group Virtual“ löscht alle diese Einstellungen.
 - **Erststart**: „Ersten Start erneut öffnen“; „Bereinigen und neu beginnen…“ löscht die gespeicherten Ordner, die Kopie der ODV-Arbeitsmappe, die Zugangsdaten der Website der Fluggesellschaft und das Profil. Die Dateien auf der Festplatte bleiben unberührt.
 
@@ -645,7 +646,7 @@ Die Schaltfläche „Prüfen“ startet die Prüfungen erneut.
 
 ### Luftfahrtdaten: Zonen der Welt, Quellen und AIRAC-Zyklen
 
-**Zonenkarte**: eine Zone pro Land (Frankreich umfasst Mutterland und Überseegebiete, Abdeckung des SIA). Ein Klick auf eine Zone aktiviert oder deaktiviert sie; beim Überfahren erscheinen ihre Quellen im rechten Feld, das danach die zuletzt gewählte Zone behält.
+**Zonenkarte**: eine Zone pro Land (Frankreich umfasst Mutterland und Überseegebiete, Abdeckung des SIA). Beim Überfahren erscheinen ihre Quellen im rechten Feld; ein Klick heftet sie an: Das Feld bleibt bei ihr, um sie zu aktivieren („Zone aktivieren“) und ihre Quellen einzustellen. Erneuter Klick auf die Zone, Esc oder „📌 Lösen“ geben sie frei.
 - Farben: nur Umriss = inaktiv, ohne Daten; grau = inaktiv, mit Daten; orange = aktiv, Daten unvollständig; grün = aktiv, alle Daten der angehakten Quellen; blau = überfahrene Zone.
 - Jede Quelle wird für ihre Zone angehakt oder nicht; nur die angehakten Quellen der aktiven Zonen gehen in die Datenbank. Eine „Link“-Quelle (PDF oder Informationsseite) wird von der Suite nicht gelesen.
 - Je nach Quelle bietet das Feld:

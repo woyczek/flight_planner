@@ -273,6 +273,7 @@ Ihre Identität in der Suite, die alle Seiten übernehmen (☰ › Pilotenprofil
 |---|---|
 | „Pilot“ | „Kürzel“, „VATSIM-ID (CID)“, „IVAO-ID (VID)“, „SimBrief (Benutzer oder ID)“ |
 | „Website der Fluggesellschaft“ | „Kennung“, „Passwort“ |
+| „IVAO — OAuth-Client (persönlich)“ | „Client-ID“, „Client-Geheimnis“, „Bei IVAO anzugebende Weiterleitungsadresse“ (auf developers.ivao.aero einzutragen); Schaltfläche „IVAO-Client speichern“: vom Starter dieses Rechners gehalten, das Geheimnis wird nie wieder angezeigt |
 | „Sprache“ | „Sprache der Suite“: Automatisch (Browsersprache), Français, English, Deutsch, Español |
 
 1. Füllen Sie die Felder aus.

@@ -78,6 +78,12 @@
           ${field(L('Identifiant', 'Login', 'Kennung', 'Identificador'), 'data-defa="login"')}
           <label>${esc(L('Mot de passe', 'Password', 'Passwort', 'Contraseña'))}</label><input type="password" data-defa="password" autocomplete="off">
         </div><p class="sp-hint">${esc(L('Gardés dans ce navigateur seulement : jamais écrits dans un fichier ni dans une sauvegarde.', 'Kept in this browser only: never written to a file or a backup.', 'Nur in diesem Browser gespeichert: nie in eine Datei oder Sicherung geschrieben.', 'Guardadas solo en este navegador: nunca escritas en un archivo ni en una copia.'))}</p></div>
+        <div class="sp-card" data-ivc-card><h3>${esc(L('IVAO — client OAuth (personnel)', 'IVAO — OAuth client (personal)', 'IVAO — OAuth-Client (persönlich)', 'IVAO — cliente OAuth (personal)'))}</h3><div class="sp-form">
+          ${field(L('Identifiant du client (client ID)', 'Client ID', 'Client-ID', 'Identificador del cliente (client ID)'), 'data-ivc="clientId" autocomplete="off" spellcheck="false"')}
+          <label>${esc(L('Secret du client', 'Client secret', 'Client-Geheimnis', 'Secreto del cliente'))}</label><input type="password" data-ivc="clientSecret" autocomplete="off" spellcheck="false">
+          <label>${esc(L('Adresse de redirection à déclarer chez IVAO', 'Redirect URL to declare at IVAO', 'Bei IVAO anzugebende Weiterleitungsadresse', 'Dirección de redirección a declarar en IVAO'))}</label><input type="text" data-ivc-redirect readonly>
+        </div><p class="sp-hint">${esc(L('Client créé sur developers.ivao.aero, à votre nom. Gardé par le lanceur de ce poste (secrets/users/<trigramme>.json, exclu de git, hors des données et des sauvegardes) ; le secret n’est jamais renvoyé à la page. La clé d’API de la suite se règle dans Paramètres › Installation.', 'Client created on developers.ivao.aero, in your name. Kept by this computer’s launcher (secrets/users/<trigram>.json, excluded from git, outside the data and the backups); the secret is never sent back to the page. The suite API key is set in Settings › Installation.', 'Auf developers.ivao.aero auf Ihren Namen angelegter Client. Vom Starter dieses Rechners gehalten (secrets/users/<Kürzel>.json, von Git ausgeschlossen, außerhalb der Daten und Sicherungen); das Geheimnis wird nie an die Seite zurückgegeben. Der API-Schlüssel der Suite wird unter Einstellungen › Installation eingestellt.', 'Cliente creado en developers.ivao.aero, a su nombre. Guardado por el lanzador de este equipo (secrets/users/<trigrama>.json, excluido de git, fuera de los datos y de las copias); el secreto nunca se devuelve a la página. La clave de API de la suite se ajusta en Ajustes › Instalación.'))}</p>
+        <p class="row"><button type="button" class="secondary" data-ivc-save>${esc(L('Enregistrer le client IVAO', 'Save the IVAO client', 'IVAO-Client speichern', 'Guardar el cliente IVAO'))}</button> <button type="button" class="secondary" data-ivc-clear hidden>${esc(L('Effacer', 'Clear', 'Löschen', 'Borrar'))}</button> <span class="sp-hint" data-ivc-state data-no-i18n></span></p></div>
         <div class="sp-card"><h3>${esc(L('Langue', 'Language', 'Sprache', 'Idioma'))}</h3><div class="sp-form"><label>${esc(L('Langue de la suite', 'Suite language', 'Sprache der Suite', 'Idioma de la suite'))}</label>
           <select data-lang>${LANG.map(([v, l]) => `<option value="${v}"${v === mode ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></div></div>`;
       body.querySelectorAll('[data-f]').forEach(i => {
@@ -86,7 +92,8 @@
       });
       body.querySelector('[data-defa="login"]').value = d.login || '';
       body.querySelector('[data-defa="password"]').value = d.password || '';
-      body.querySelectorAll('input').forEach(i => i.oninput = api.changed);
+      body.querySelectorAll('input:not([data-ivc]):not([data-ivc-redirect])').forEach(i => i.oninput = api.changed);
+      ivaoClient(body, (U?.effective?.() || p.trigram || '').toUpperCase());
       // langue : appliquée tout de suite (comme le sélecteur de l'en-tête)
       body.querySelector('[data-lang]').onchange = e => nav()?.setLanguage?.(e.target.value);
       api.status(p.trigram ? tf(['Trigramme : {t}', 'Trigram: {t}', 'Kürzel: {t}', 'Trigrama: {t}'], {
@@ -122,6 +129,71 @@
       ]);
     }
   };
+
+  /** Carte « IVAO — client OAuth » : identifiants personnels gardés par le lanceur (GET / POST /__setup/secrets, portée
+   *  user), jamais relus en clair (secret : état et 4 derniers caractères) ; adresse de redirection du lanceur. */
+  async function ivaoClient(body, tri) {
+    const card = body.querySelector('[data-ivc-card]');
+    if (!card) return;
+    const $ = s => card.querySelector(s),
+      say = txt => $('[data-ivc-state]').textContent = txt;
+    $('[data-ivc-redirect]').value = `${location.origin}/__setup/ivao-callback`;
+    const api = (b = null) => fetch(`/__setup/secrets${b ? '' : `?tri=${encodeURIComponent(tri)}`}`, {
+      method: b ? 'POST' : 'GET',
+      headers: {
+        'X-SOG-Setup': '1',
+        'Content-Type': 'application/json'
+      },
+      body: b ? JSON.stringify(b) : undefined,
+      cache: 'no-store'
+    }).then(r => r.ok ? r.json() : null).catch(() => null);
+    const draw = st => {
+      const v = st?.user?.ivao;
+      card.querySelectorAll('input[data-ivc], button').forEach(e => e.disabled = !st || !tri);
+      if (!st) return say(K.t(['Lanceur absent : ouvrez la suite avec lancer.cmd / lancer.sh.', 'No launcher: open the suite with lancer.cmd / lancer.sh.', 'Kein Starter: Suite mit lancer.cmd / lancer.sh öffnen.', 'Sin lanzador: abra la suite con lancer.cmd / lancer.sh.']));
+      if (!tri) return say(K.t(['Trigramme non réglé : le régler ci-dessus.', 'Trigram not set: set it above.', 'Kürzel nicht gesetzt: oben festlegen.', 'Trigrama no definido: definirlo arriba.']));
+      $('[data-ivc="clientId"]').value = v?.clientId || '';
+      $('[data-ivc="clientSecret"]').value = '';
+      $('[data-ivc="clientSecret"]').placeholder = v?.clientSecret?.set ? K.t(['(inchangé)', '(unchanged)', '(unverändert)', '(sin cambios)']) : '';
+      $('[data-ivc-clear]').hidden = !(v?.clientId || v?.clientSecret?.set);
+      say(v?.clientSecret?.set ? tf(['Client de {t} enregistré, secret {h}.', 'Client of {t} saved, secret {h}.', 'Client von {t} gespeichert, Geheimnis {h}.', 'Cliente de {t} guardado, secreto {h}.'], {
+        t: tri,
+        h: v.clientSecret.hint
+      }) : tf(['Aucun client IVAO pour {t}.', 'No IVAO client for {t}.', 'Kein IVAO-Client für {t}.', 'Ningún cliente IVAO para {t}.'], {
+        t: tri
+      }));
+    };
+    const send = async values => {
+      const r = await api({
+        scope: 'user',
+        tri,
+        service: 'ivao',
+        values
+      });
+      if (!r?.ok) window.AppFramework?.notify?.(tf(['Client IVAO non enregistré : {e}', 'IVAO client not saved: {e}', 'IVAO-Client nicht gespeichert: {e}', 'Cliente IVAO no guardado: {e}'], {
+        e: r?.message || '?'
+      }), 'error');
+      draw(r?.ok ? r : await api());
+    };
+    $('[data-ivc-save]').onclick = () => {
+      const values = {
+          clientId: $('[data-ivc="clientId"]').value.trim()
+        },
+        secret = $('[data-ivc="clientSecret"]').value.trim();
+      if (secret) values.clientSecret = secret; // vide : secret inchangé
+      send(values);
+    };
+    $('[data-ivc-clear]').onclick = async () => {
+      if (await window.AppFramework?.ask?.(K.t(['Effacer le client IVAO de ce poste ?', 'Remove the IVAO client from this computer?', 'IVAO-Client von diesem Rechner entfernen?', '¿Borrar el cliente IVAO de este equipo?']), {
+          danger: true
+        }) === false) return;
+      send({
+        clientId: '',
+        clientSecret: ''
+      });
+    };
+    draw(tri ? await api() : {});
+  }
 
   // ---------------------------------------------------------------- Mon profil › Appareils et simulateurs
   const equipment = {
