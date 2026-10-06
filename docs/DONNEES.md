@@ -24,8 +24,8 @@ désignateurs OACI E2 et Q9 dans `aircraft_overrides.json` ; les 20 types milita
 | Performances par type | `AircraftDB/aircraft_perf.js` (non publié, complété sur chaque poste) | EUROCONTROL Aircraft Performance Database | même carte, ou `python update_aircraft_db.py --apd CODE…` | aucune : on corrige le parseur |
 | Flotte | `data/references/aircraft_fleet.js` | page « Flotte virtuelle » de flotte.defa-virtual.fr (enregistrée) | `python AircraftDB/update_fleet.py Flotte.html` | page Paramétrage (conservées par l'outil) |
 | Référence (pilotes, appareils, terrains) | `data/references/defa_reference.js` | journal des vols (page enregistrée, non committée) | `python tools/defa_reference.py "Log des vols.html"` | page Paramétrage (conservées par l'outil) |
-| Base SIA (espaces, aérodromes, obstacles…) | cache du Studio (IndexedDB `sia-map-parser`, cycle `airac`) | export officiel du SIA (dossier choisi dans le Studio ; seul le cycle le plus récent est lu) | Paramètres › Maintenance › Mise à jour SIA pas à pas | — (source officielle) |
-| Grille MORA | `data/sia/mora.csv` (cycle des obstacles dans `source`) | relief Terrarium + sommets OSM + obstacles de l'AIXM | Studio › bloc 5 (complet) ; Maintenance › étape 6 (recalcul simple : obstacles d'un nouveau cycle) | — |
+| Base SIA (espaces, aérodromes, obstacles…) | cache du Studio (IndexedDB `sia-map-parser`, cycle `airac`) | export officiel du SIA (dossier choisi dans le Studio ; seul le cycle le plus récent est lu) | Paramètres › Maintenance › Données aéronautiques (zone France, source SIA) | — (source officielle) |
+| Grille MORA | `data/sia/mora.csv` (cycle des obstacles dans `source`) | relief Terrarium + sommets OSM + obstacles de l'AIXM | Studio › bloc 5 (complet) ; Maintenance › Données aéronautiques › MORA (recalcul simple : obstacles d'un nouveau cycle ; calcul par zone) | — |
 | Axes de ravitaillement en vol | lus par `shared/aar_tracks.js` | MILAIP France ENR 5.7 (XML de coordonnées) | chargement du XML (Studio / CR AAR) | — |
 
 ## 2. Données utilisateur

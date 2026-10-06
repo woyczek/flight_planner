@@ -38,7 +38,7 @@ déposent dans le dossier `apps/cpco/` ; `.gitignore` les tient hors du dépôt.
 
 **Un seul cycle** : quand le dossier contient plusieurs cycles, le studio ne lit que le plus récent (les autres sont
 signalés, à archiver) et mémorise le cycle dans la base (`airac`, résumé `siaBaseInfo:v1` pour la pastille « AIRAC » de
-l'en-tête). Procédure de mise à jour : ☰ › Paramètres › Maintenance › Données aéronautiques (SIA France : pas à pas) ; `map_parser.html?relire=1`
+l'en-tête). Procédure de mise à jour : ☰ › Paramètres › Maintenance › Données aéronautiques (carte des zones, source SIA de la zone France) ; `map_parser.html?relire=1`
 relit le dossier mémorisé.
 
 **Autres pays et autres sources** (`shared/aero_sources.js`, réglées dans Paramètres › Maintenance › Données
@@ -59,7 +59,7 @@ par une mission figurent dans ses espaces à activer (§ 2 sexies). Sources, for
 
 **Dossier mémorisé** : « Dossier SIA XML : … » (studio, bloc 1) choisit le dossier une fois ;
 il est retenu comme les autres dossiers de la suite (☰ › Paramétrage) et les sélecteurs de
-fichiers des deux pages s'y ouvrent. « Relire le dossier » après un nouveau cycle AIRAC. La base
+fichiers des deux pages s'y ouvrent. « Reconstruire la base aéronautique » après un nouveau cycle AIRAC. La base
 analysée (contours, villes, MORA, obstacles, axes ENR 5.7) est gardée dans le navigateur
 (IndexedDB `sia-map-parser`) : le studio s'ouvre sans relire les 80 Mo d'XML. Une base d'une
 version précédente est relue automatiquement si l'accès au dossier est déjà accordé.

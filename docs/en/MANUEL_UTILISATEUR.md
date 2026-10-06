@@ -451,7 +451,7 @@ This step matters: without an allowed data folder, your availability stays in th
 
 Maps and missions use the SIA AIRAC data (28-day cycle).
 
-1. Click “Finish and update the SIA data”. The suite is marked as “set up” and the Maintenance page opens on the SIA update.
+1. Click “Finish and update the SIA data”. The suite is marked as “set up” and the Maintenance page opens on the aeronautical data (zone map; France is active by default).
 2. Follow the guided steps: on the SIA website (free account), “Ajouter au panier” the cycle product (0 €), then “Passer commande” accepting the licence.
 3. Take the downloaded ZIP back with “Fetch the downloaded ZIP”.
 
@@ -1285,7 +1285,7 @@ The buttons stay greyed out as long as there is no map to produce.
 This block is hidden by default: click “Show”. It reads the SIA folder (AIXM) and keeps it in the browser. Without it, the page recognises no airfields, no beacons and no airspaces.
 
 - “SIA folder: …” button: choose the `data/sia` folder (the browser asks for access), then reading.
-- “Re-read the folder”: to do after each AIRAC update. A gauge follows the reading; “Cancel” interrupts it without touching the database kept.
+- “Rebuild the aeronautical database”: to do after each AIRAC update; reads the active zones of Settings › Maintenance › Aeronautical data. A gauge follows the reading; “Cancel” interrupts it without touching the database kept.
 - “Purge the cache”: clears the database kept (it will be rebuilt at the next reading).
 - The status line shows the database kept, its AIRAC cycle and its date; “outdated cycle” is shown if a more recent cycle is in force. “Files analysed” lists the files read.
 

@@ -261,11 +261,11 @@ Ausgabeart (PNG, bearbeitbares SVG) und Breite der PNGs: Menü ☰ › „Karten
 
 Block standardmäßig ausgeblendet: Klicken Sie in seinem Kopf auf „Anzeigen“.
 - Ordner `data/sia`, gespeichert wie die anderen Ordner der Suite.
-- „Ordner neu lesen“ nach jeder AIRAC-Aktualisierung; „Abbrechen“ unterbricht, ohne die gespeicherte Datenbank zu ändern.
+- „Luftfahrtdatenbank neu aufbauen“ nach jeder AIRAC-Aktualisierung; „Abbrechen“ unterbricht, ohne die gespeicherte Datenbank zu ändern.
 - „Cache leeren“ löscht die in diesem Browser gespeicherte Datenbank (danach neu einzulesen).
 - Die Statuszeile zeigt die gespeicherte Datenbank (Ordner, AIRAC-Zyklus, Datum); „Analysierte Dateien“ listet die gelesenen XML.
 
-Enthält der Ordner mehrere Zyklen, wird nur der neueste gelesen; die anderen werden gemeldet und sind zu archivieren. Es ist derselbe Block wie unter Einstellungen › Wartung › Luftfahrtdaten (Schritt 4).
+Enthält der Ordner mehrere Zyklen, wird nur der neueste gelesen; die anderen werden gemeldet und sind zu archivieren. Es ist derselbe Block wie unter Einstellungen › Wartung › Luftfahrtdaten („Luftfahrtdatenbank neu aufbauen“), der die aktiven Zonen und ihre angehakten Quellen liest.
 
 ## Missionsregister
 <!-- page: apps/cpco/mission_registry.html -->
@@ -643,33 +643,35 @@ Verfolgte Referenzen: SIA-XML, analysierte Datenbank des Studios, MORA-Raster, A
 Beispiele für Prüfungen: gemischte Zyklen in der SIA-Datenbank, MORA-Hindernisse eines anderen Zyklus, Flottenmuster, die in der ICAO-Datenbank fehlen, neu zu erzeugender Prompt (`python tools/build_mission_prompt.py`).
 Die Schaltfläche „Prüfen“ startet die Prüfungen erneut.
 
-### Luftfahrtdaten: Quellen und SIA-Aktualisierung (AIRAC)
+### Luftfahrtdaten: Zonen der Welt, Quellen und AIRAC-Zyklen
 
-**Quellen**: eine Zeile pro Datenquelle, jeweils angehakt (gelesen) oder nicht; Änderungen gelten beim nächsten Neuaufbau der Basis („Ordner neu einlesen“, Schritt 4). Das SIA hat Vorrang: in den französischen FIR zählen nur seine Lufträume; anderswo wird ein bereits gelesener Luftraum, Flugplatz oder ein Funkfeuer nicht ein zweites Mal hinzugefügt.
-- **SIA Frankreich** (AIXM 4.5, XML_SIA) und **DIRCAM / MILAIP** (RTBA-/AZBA-Gebiete, Betankungsstrecken ENR 5.7): Schritt für Schritt unten.
-- **AIXM 5.1** (andere Länder): `.xml`-Dateien im Ordner `data/sia/aixm5/`. „ENAIRE (Spanien): herunterladen“ holt die zuletzt veröffentlichten Datensätze (Lufträume, Strecken). Vereinigtes Königreich (NATS): Registrierung auf der Website, Datei von Hand ablegen.
-- **GeoJSON**: `.geojson`- oder `.json`-Dateien (und OpenAir `.txt`) in `data/sia/geojson/`. „FAA (USA): Sonderlufträume und Militärrouten“ lädt die Sonderlufträume (MOA, R, W, A, P) und die MTR-Routen, als Korridore gelesen; „FAA: Luftraumklassen“ ist eine große Datei.
-- **openAIP**: Ländercodes mit zwei Buchstaben, durch Leerzeichen getrennt, dann „openAIP: Länder herunterladen“ (Lufträume, Flugplätze, Funkfeuer, VFR-Punkte in `data/sia/openaip/`). Gemeinschaftsdaten, nicht kommerzielle Nutzung (CC BY-NC 4.0).
-- **X-Plane**: Knopf für den X-Plane-Installationsordner; Funkfeuer, Punkte, Luftstraßen und MORA-Gitter aus den Dateien `earth_*.dat` („Custom Data“ zuerst), OpenAir-Lufträume, falls vorhanden.
-- Die Downloads laufen über den Starter (`tools/aero_fetch.py`, auch über die Befehlszeile nutzbar). Ohne Starter: die Dateien von Hand herunterladen und in den Unterordner der Quelle legen.
-- Außerhalb Frankreichs erscheinen die von einer Mission gekreuzten Gebiete R, D, TRA, TSA, MOA, W, A und MTR-Routen unter ihren zu aktivierenden Lufträumen.
+**Zonenkarte**: eine Zone pro Land (Frankreich umfasst Mutterland und Überseegebiete, Abdeckung des SIA). Ein Klick auf eine Zone aktiviert oder deaktiviert sie; beim Überfahren erscheinen ihre Quellen im rechten Feld, das danach die zuletzt gewählte Zone behält.
+- Farben: nur Umriss = inaktiv, ohne Daten; grau = inaktiv, mit Daten; orange = aktiv, Daten unvollständig; grün = aktiv, alle Daten der angehakten Quellen; blau = überfahrene Zone.
+- Jede Quelle wird für ihre Zone angehakt oder nicht; nur die angehakten Quellen der aktiven Zonen gehen in die Datenbank. Eine „Link“-Quelle (PDF oder Informationsseite) wird von der Suite nicht gelesen.
+- Je nach Quelle bietet das Feld:
+  - einen direkten Download über den Starter (`tools/aero_fetch.py`): openAIP (jedes Land), ENAIRE (Spanien), FAA (USA: Militärgebiete und -routen, Luftraumklassen);
+  - eine Bestellung oder Registrierung, mit Link und Anleitung: SIA Frankreich (Bestellung zu 0 €, bei jedem Zyklus erneut), NATS (Vereinigtes Königreich, Datei in `data/sia/zones/gb/` abgelegt);
+  - ein PDF, mit Link und Anleitung: DIRCAM / MILAIP ENR 5.7 (Betankungsstrecken), britisches Militär-AIP, NAV CANADA;
+  - einen Ordner des Rechners: X-Plane (Funkfeuer, Punkte, Luftstraßen, MORA-Gitter, zugeschnitten auf die aktiven Zonen, die es angehakt haben);
+  - eine Berechnung: die MORA der Zone.
+- SIA Frankreich (Zone Frankreich): „Heruntergeladenes ZIP holen“ (der Starter nimmt es aus dem Download-Ordner), „SIA-Export-ZIP…“, „… entpacken“, wenn es schon im Ordner liegt, „Alte Zyklen archivieren“ (`_archives/`); „Inhalt des SIA-Ordners“ listet die Dateien des Zyklus.
+- Der SIA hat Vorrang: in den französischen FIR zählen nur seine Lufträume; anderswo wird ein bereits gelesener Luftraum, Flugplatz oder Funkfeuer nicht doppelt aufgenommen. Außerhalb Frankreichs erscheinen von einer Mission geschnittene R-, D-, TRA-, TSA-, MOA-, W-, A-Gebiete und MTR-Routen in ihren zu aktivierenden Lufträumen.
+- Die Website-Adressen (SIA, DIRCAM, NATS, britisches Militär-AIP, NAV CANADA) werden unter Einstellungen › Installation › Quellen und Ordner › Externe Quellen eingestellt; die SIA- und X-Plane-Ordner dort sind dieselben wie hier.
 
-**SIA Frankreich: neuer AIRAC-Zyklus Schritt für Schritt**
+**Luftfahrtdatenbank neu aufbauen**: liest die angehakten Quellen aller aktiven Zonen (einige Sekunden; der Browser kann nach der Erlaubnis für den Ordner fragen). Derselbe Block wie im Kartenstudio.
 
-Alle 28 Tage tritt ein neuer AIRAC-Zyklus in Kraft. Sechs Schritte, in dieser Reihenfolge; der Punkt jedes Schritts wird grün, wenn der Schritt erledigt ist. Die „Anleitung“ erläutert jeden Schritt.
-1. **AIRAC-Zyklus**: Stellen Sie den gültigen Zyklus, den nächsten und den der Studiodatenbank fest. Links führen zu den Seiten des SIA.
-2. **Export des SIA herunterladen und entpacken**:
-   - auf der Website des SIA: Konto (kostenlos), „Ajouter au panier“ (0 €), dann „Passer commande“ unter Annahme der Lizenz;
-   - zurück in der Suite: „Heruntergeladenes ZIP holen“ (der Starter nimmt es aus Downloads), oder „SIA-Export-ZIP…“, um es auszuwählen, oder „Entpacken …“, wenn es schon im Ordner liegt;
-   - wählen Sie bei Bedarf den SIA-Ordner, dann „Analysieren“.
-3. **Alte Zyklen**: „In _archives/ archivieren“.
-4. **SIA-Datenbank neu aufbauen**: „Ordner neu lesen“. Das Neueinlesen dauert einige Sekunden; es ist derselbe Block wie im Kartenstudio.
-5. **Unterschiede zur vorherigen Datenbank prüfen**: Gehen Sie die hinzugefügten oder entfernten Lufträume durch, dann „Erledigt“.
-6. **Neu berechnen (MORA) und Konsistenz prüfen**:
-   - „Einfache Neuberechnung“ (offline) oder „Vollständige Berechnung“ (Netzwerk, etwa eine Minute);
-   - wenn sich Zellen ändern: „mora.csv schreiben (alte archiviert)“, dann committen Sie das Datenrepository;
-   - zum Schluss die Konsistenz „Prüfen“.
-Die AIRAC-XML (etwa 80 MB pro Zyklus) bleiben außerhalb des Repositorys, wie die Dateien der anderen Quellen. Die MORA-Werte sind berechnet, nicht zertifiziert.
+**AIRAC-Zyklen und Alter der Daten**: gültiger Zyklus, nächster Zyklus und Zyklus der Datenbank, dann eine Zeile pro angehakter Quelle der aktiven Zonen:
+- SIA: Zyklus aus den Dateinamen, „alt“, wenn er vor dem gültigen Zyklus liegt;
+- X-Plane: Zyklus von „Custom Data“;
+- heruntergeladene Dateien: „alt“ nach 28 Tagen (ein AIRAC-Zyklus).
+
+**MORA**: mehrere Quellen.
+- Das berechnete Gitter (`data/sia/mora.csv`) hat Vorrang. „Einfache Neuberechnung“ übernimmt die Hindernisse des neuen Zyklus (offline); „Vollständige Berechnung“ berechnet Gelände und Gipfel neu (Netz, etwa eine Minute) für Einsatzräume und Missionen; „MORA der Zone berechnen“ (Feld) tut es über die Ausdehnung einer Zone, die übrigen Zellen bleiben.
+- Wenn sich Zellen ändern: „mora.csv schreiben (alte archiviert)“, dann das Daten-Repository committen.
+- Anderswo ergänzt das MORA-Gitter von X-Plane, wenn die Quelle X-Plane angehakt ist.
+
+**Konsistenz**: „Prüfen“ kontrolliert Lufträume, Luftfahrzeuge, Flotte, Leistungen und Flugplätze der Missionen.
+Die AIRAC-XML-Dateien (etwa 80 MB pro Zyklus) bleiben außerhalb des Repositorys, wie die Dateien der anderen Quellen. Die MORA-Werte sind berechnet, nicht zertifiziert.
 
 ### Caches
 

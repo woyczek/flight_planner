@@ -451,7 +451,7 @@ Cette étape est importante : sans dossier des données autorisé, vos disponibi
 
 Cartes et missions utilisent les données AIRAC du SIA (cycle de 28 jours).
 
-1. Cliquez sur « Terminer et mettre à jour les données SIA ». La suite est notée « réglée » et la page Maintenance s'ouvre sur la mise à jour SIA.
+1. Cliquez sur « Terminer et mettre à jour les données SIA ». La suite est notée « réglée » et la page Maintenance s'ouvre sur les données aéronautiques (carte des zones ; la France est active par défaut).
 2. Suivez les étapes guidées : sur le site du SIA (compte gratuit), « Ajouter au panier » le produit du cycle (0 €), puis « Passer commande » en acceptant la licence.
 3. Reprenez le ZIP téléchargé avec « Récupérer le ZIP téléchargé ».
 
@@ -1285,7 +1285,7 @@ Les boutons restent grisés tant qu'aucune carte n'est à produire.
 Ce bloc est masqué par défaut : cliquez sur « Afficher ». Il lit le dossier SIA (AIXM) et le garde dans le navigateur. Sans lui, la page ne reconnaît ni terrains, ni balises, ni espaces.
 
 - Bouton « Dossier SIA : … » : choisir le dossier `data/sia` (le navigateur demande l'accès), puis lecture.
-- « Relire le dossier » : à faire après chaque mise à jour AIRAC. Une jauge suit la lecture ; « Annuler » l'interrompt sans toucher à la base gardée.
+- « Reconstruire la base aéronautique » : à faire après chaque mise à jour AIRAC ; lit les zones actives de Paramètres › Maintenance › Données aéronautiques. Une jauge suit la lecture ; « Annuler » l'interrompt sans toucher à la base gardée.
 - « Purger le cache » : efface la base gardée (elle sera reconstruite à la prochaine relecture).
 - La ligne d'état indique la base gardée, son cycle AIRAC et sa date ; « cycle périmé » s'affiche si un cycle plus récent est en vigueur. « Fichiers analysés » liste les fichiers lus.
 
