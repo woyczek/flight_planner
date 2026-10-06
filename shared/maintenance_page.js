@@ -1576,6 +1576,8 @@
       const all = pages.join(' '),
         amdt = /AMDT\s*(\d{1,2}\/\d{2})/i.exec(all)?.[1],
         date = /(\d{2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+\d{2})/.exec(all)?.[1];
+      // aucun axe : autre document (AIP civile ENR 5.7 du SIA : survols interdits à basse hauteur, même numéro de section)
+      if (!r.tracks.length) throw new Error(/survols? interdits?|overflight/i.test(all) && !/ravitaillement|refuel/i.test(all) ? t(['ce PDF est l’ENR 5.7 de l’AIP civile du SIA (survols interdits à basse hauteur), pas la MILAIP ENR 5.7 de la DIRCAM (zones de ravitaillement en vol)', 'this PDF is the SIA civil AIP ENR 5.7 (low-level overflight restrictions), not the DIRCAM MILAIP ENR 5.7 (air refuelling areas)', 'dieses PDF ist ENR 5.7 des zivilen AIP des SIA (Überflugverbote in geringer Höhe), nicht ENR 5.7 der MILAIP der DIRCAM (Luftbetankungszonen)', 'este PDF es la ENR 5.7 del AIP civil del SIA (sobrevuelos prohibidos a baja altura), no la MILAIP ENR 5.7 de la DIRCAM (zonas de reabastecimiento en vuelo)']) : t(['aucun axe de ravitaillement trouvé : ce PDF ne semble pas être la MILAIP ENR 5.7 de la DIRCAM', 'no refuelling track found: this PDF does not seem to be the DIRCAM MILAIP ENR 5.7', 'keine Betankungsstrecke gefunden: dieses PDF scheint nicht ENR 5.7 der MILAIP der DIRCAM zu sein', 'ningún eje de reabastecimiento: este PDF no parece ser la MILAIP ENR 5.7 de la DIRCAM']));
       enr57 = {
         file: file.name,
         tracks: r.tracks,
