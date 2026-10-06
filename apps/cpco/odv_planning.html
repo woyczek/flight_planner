@@ -830,7 +830,7 @@ html[data-design="field"] .odv-heat button.sel {
   <div class="odv-legend" id="odvLegend" data-no-i18n></div>
   <div id="odvGrid" data-no-i18n><p class="odv-empty">Chargez un classeur ODV.</p></div>
 </section>
-<section data-block-id="atc" data-icon="clock" data-subtitle="Trainings, examens, événements et réservations VATSIM / IVAO de la semaine : saisis à la main ou récupérés (VATSIM, IVAO : France métropolitaine ; même import que les Ordres de vols). Comptés dans les créneaux : ★, CTR du terrain à éviter en training ou examen."><h2>Sessions ATC des réseaux</h2>
+<section data-block-id="atc" data-icon="clock" data-subtitle="Trainings, examens, événements et réservations VATSIM / IVAO de la semaine : saisis à la main ou récupérés (VATSIM, IVAO : pays préféré, France par défaut ; même import que les Ordres de vols). Comptés dans les créneaux : ★, CTR du terrain à éviter en training ou examen."><h2>Sessions ATC des réseaux</h2>
   <div id="odvAtc" data-no-i18n></div>
 </section>
 <section data-block-id="activations" data-icon="target" data-subtitle="Zones activées (RTBA, R, D, TRA…) par réseau, VATSIM et IVAO côte à côte : saisies à la main, import IVAO. Les mêmes que dans les Ordres de vols."><h2>Activations des zones par réseau</h2>
@@ -854,14 +854,14 @@ html[data-design="field"] .odv-heat button.sel {
 <script src="../../shared/zip_store.js?v=1b42107f"></script>
 <script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/defa_reference.js"></script>
 <script src="../../shared/mission_table.js?v=2ecaeba4"></script>
-<script src="../../shared/sia_base.js?v=3652e618"></script><script src="odv_core.js?v=e1e7d2da"></script>
+<script src="../../shared/sia_base.js?v=3652e618"></script><script src="odv_core.js?v=0bf35b41"></script>
 <script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/aircraft_fleet.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/assignments.js?v=f83cafc0"></script><script src="../../shared/assign_dialog.js?v=637235a1"></script><script src="odv_assign.js?v=8afe155a"></script>
 <script src="../../shared/dispos_editor.js?v=53d09022"></script>
-<script src="odv_settings.js?v=dee80a0d"></script>
-<script src="../../shared/atc_sessions.js?v=ab462121"></script>
-<script src="../../shared/odv_airspace.js?v=146a3974"></script>
+<script src="odv_settings.js?v=3f700fe5"></script>
+<script src="../../shared/atc_sessions.js?v=b49318e3"></script>
+<script src="../../shared/odv_airspace.js?v=b9c75e90"></script>
 <script src="../../shared/odv_activations_editor.js?v=1e9f18fd"></script>
-<script src="odv_planning.js?v=5d555d44"></script>
+<script src="odv_planning.js?v=00c534e9"></script>
 <script src="../../shared/app_framework.js?v=ae60867a"></script>
 <script src="../../shared/content_i18n.js?v=7afecb78"></script>
 <script>
@@ -897,7 +897,7 @@ RepositoryContentI18n([
   ["Grille de disponibilité", "Availability grid", "Verfügbarkeitsraster", "Cuadrícula de disponibilidad"],
   ["Pilotes × jours × matin, après-midi, soir ; commentaires au survol.", "Pilots × days × morning, afternoon, evening; comments on hover.", "Piloten × Tage × Vormittag, Nachmittag, Abend; Kommentare beim Überfahren.", "Pilotos × días × mañana, tarde, noche; comentarios al pasar el ratón."],
   ["Sessions ATC des réseaux", "Network ATC sessions", "ATC-Sitzungen der Netzwerke", "Sesiones ATC de las redes"],
-  ["Trainings, examens, événements et réservations VATSIM / IVAO de la semaine : saisis à la main ou récupérés (VATSIM, IVAO : France métropolitaine ; même import que les Ordres de vols). Comptés dans les créneaux : ★, CTR du terrain à éviter en training ou examen.", "VATSIM / IVAO trainings, exams, events and bookings of the week: entered by hand or fetched (VATSIM, IVAO: metropolitan France; same import as the flight orders). Counted in the slots: ★, airfield CTR to avoid during a training or exam.", "VATSIM-/IVAO-Trainings, Prüfungen, Veranstaltungen und Buchungen der Woche: manuell eingegeben oder abgerufen (VATSIM, IVAO: Frankreich Mutterland; derselbe Import wie bei den Flugbefehlen). In den Zeitfenstern berücksichtigt: ★, CTR des Flugplatzes bei Training oder Prüfung meiden.", "Entrenamientos, exámenes, eventos y reservas VATSIM / IVAO de la semana: introducidos a mano o recuperados (VATSIM, IVAO: Francia metropolitana; misma importación que las órdenes de vuelo). Contados en las franjas: ★, CTR del aeródromo que evitar durante un entrenamiento o examen."],
+  ["Trainings, examens, événements et réservations VATSIM / IVAO de la semaine : saisis à la main ou récupérés (VATSIM, IVAO : pays préféré, France par défaut ; même import que les Ordres de vols). Comptés dans les créneaux : ★, CTR du terrain à éviter en training ou examen.", "VATSIM / IVAO trainings, exams, events and bookings of the week: entered by hand or fetched (VATSIM, IVAO: preferred country, France by default; same import as the flight orders). Counted in the slots: ★, airfield CTR to avoid during a training or exam.", "VATSIM-/IVAO-Trainings, Prüfungen, Veranstaltungen und Buchungen der Woche: manuell eingegeben oder abgerufen (VATSIM, IVAO: bevorzugtes Land, standardmäßig Frankreich; derselbe Import wie bei den Flugbefehlen). In den Zeitfenstern berücksichtigt: ★, CTR des Flugplatzes bei Training oder Prüfung meiden.", "Entrenamientos, exámenes, eventos y reservas VATSIM / IVAO de la semana: introducidos a mano o recuperados (VATSIM, IVAO: país preferido, Francia por defecto; misma importación que las órdenes de vuelo). Contados en las franjas: ★, CTR del aeródromo que evitar durante un entrenamiento o examen."],
   ["Activations des zones par réseau", "Area activations by network", "Gebietsaktivierungen nach Netzwerk", "Activaciones de zonas por red"],
   ["Zones activées (RTBA, R, D, TRA…) par réseau, VATSIM et IVAO côte à côte : saisies à la main, import IVAO. Les mêmes que dans les Ordres de vols.", "Activated areas (RTBA, R, D, TRA…) by network, VATSIM and IVAO side by side: entered by hand, IVAO import. The same as in the flight orders.", "Aktivierte Gebiete (RTBA, R, D, TRA…) nach Netzwerk, VATSIM und IVAO nebeneinander: manuell eingegeben, IVAO-Import. Dieselben wie in den Flugbefehlen.", "Zonas activadas (RTBA, R, D, TRA…) por red, VATSIM e IVAO lado a lado: introducidas a mano, importación IVAO. Las mismas que en las órdenes de vuelo."],
   ["Créneaux communs", "Common slots", "Gemeinsame Zeitfenster", "Franjas comunes"],

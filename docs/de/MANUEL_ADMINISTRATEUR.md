@@ -402,8 +402,8 @@ Diese Planung zeigt einen Tag der Woche im Detail.
 Dieser Block sammelt die Trainings, Prüfungen, Events und Buchungen von VATSIM / IVAO der angezeigten Woche. Sie werden im gemeinsamen Datenpool gespeichert (`data/atc/<année>-W<semaine>.json`).
 - **Sitzung erfassen**: Geben Sie Tag, Beginn und Ende (UTC-Zeiten, in 15-Minuten-Schritten), Position (z. B. `LFBO_APP`, `LFMN_TWR`), Netzwerk (VATSIM oder IVAO), Art (Training, Prüfung, Event, Buchung) und einen optionalen Kommentar ein. Klicken Sie dann auf „Hinzufügen“.
 - Beide Zeiten müssen auf denselben Tag fallen: Das Ende muss nach dem Beginn liegen.
-- „VATSIM abrufen (Frankreich, Mutterland)“ importiert die VATSIM-Buchungen der Woche. Bereits abgerufene Sitzungen werden ersetzt (einschließlich Stornierungen); manuelle Eingaben bleiben erhalten.
-- „IVAO abrufen (Frankreich, Mutterland)“ importiert ebenso die IVAO-Trainings, -Prüfungen und -Buchungen der Woche, mit dem IVAO-API-Schlüssel der Installation (Einstellungen › Installation). Diese beiden Schaltflächen sind der mit den Flugbefehlen gemeinsame Import: eine Datei, dieselben Sitzungen auf beiden Seiten.
+- „VATSIM abrufen (bevorzugtes Land)“ importiert die VATSIM-Buchungen der Woche. Bereits abgerufene Sitzungen werden ersetzt (einschließlich Stornierungen); manuelle Eingaben bleiben erhalten. Nur Positionen des bevorzugten Landes werden importiert (Einstellungen › Zentrum › ODV-Planung; standardmäßig Frankreich, Mutterland); die Schaltfläche trägt seinen Namen.
+- „IVAO abrufen (bevorzugtes Land)“ importiert ebenso die IVAO-Trainings, -Prüfungen und -Buchungen der Woche, mit dem IVAO-API-Schlüssel der Installation (Einstellungen › Installation). Diese beiden Schaltflächen sind der mit den Flugbefehlen gemeinsame Import: eine Datei, dieselben Sitzungen auf beiden Seiten.
 - Die Schaltfläche „×“ einer Zeile entfernt die Sitzung. Die Spalte „Quelle“ zeigt „abgerufen“ oder „eingegeben“. Die Tabelle zeigt zuerst Trainings, Prüfungen und Veranstaltungen (Prüfung und Training am Rand markiert); einfache Positionsbuchungen, nach dem Import zahlreich, sind unter „n Positionsbuchung(en)“ eingeklappt.
 - **Wirkung auf die Planung**: Eine Sitzung wird in ihrem Zeitfenster gezählt (★). Ein Training oder eine Prüfung macht die CTR des Flugplatzes für die Missionen dieses Zeitfensters unverfügbar; die TMA, die den Flugplatz enthalten, sind möglichst zu meiden.
 
@@ -622,6 +622,7 @@ Diese Rubrik enthält die spezifischen Einstellungen der Seite ODV-Planung. Sie 
 | Einstellung | Standard |
 |---|---|
 | Zeitfenster (Uhrzeit z): Morgen, Nachmittag, Abend | 8 bis 12, 12 bis 18, 18 bis 23 (in halben Stunden; das Ende muss nach dem Beginn liegen) |
+| Bevorzugtes Land (ATC-Bereich) | „Frankreich (Mutterland)“; ATC-Sitzungen (Trainings, Prüfungen, Buchungen) nur für dieses Land importiert und gezeigt, ODV-Planung und Flugbefehle (ICAO-Kennungen des Landes: LF außer LFV für Frankreich) |
 | Daten der Woche | „ISO-Woche (Wochennummer der Datei)“; sonst „Auf der Zeitleiste eingetragenes Datum“ |
 | Leeres Feld | „Nicht ausgefüllt“ (nie als verfügbar gezählt); sonst „Nicht verfügbar“ |
 | Für die Rollen berücksichtigte FLOTTE-Typen | „Alle außer rot (nicht beherrscht)“; „Nur grün (beherrscht)“; „Alle“ |

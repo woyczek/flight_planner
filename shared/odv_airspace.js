@@ -21,7 +21,7 @@
 //                            sans activation « active » du réseau couvrant le vol)
 //  3. Contrôle ouvert : atcOpen(date, { live }) → [{ position, reseau, source "en_ligne" | "reservation", type, debut,
 //     fin, icao, espaces: [noms] }] : réservations (shared/atc_sessions.js, data/atc/<semaine>.json) et, le jour même,
-//     positions en ligne (flux publics VATSIM data v3, IVAO whazzup) ; France métropolitaine (SuiteAtc.franceMetro)
+//     positions en ligne (flux publics VATSIM data v3, IVAO whazzup) ; périmètre réglé (SuiteAtc.inPerimeter : pays préféré)
 //  4. Zones en conflit : conflicts(date) → examens et trainings du jour, avec les CTR / TMA de leur terrain
 // Repli et utilitaires : zones(date, { ll }) (espaces activables de la base, plaquettes saisies à la main),
 // aarTracks() (axes ENR 5.7), zonesToAvoid(dep, arr) (CTR / TMA des terrains), match(nom) (id de base d'un nom local).
@@ -354,7 +354,7 @@
       espaces: (b.airspaces || []).filter(a => types.includes(a.type) && (a.rings || []).some(r => window.SiaBase.inRing(r, ad.lat, ad.lon))).map(a => a.name || a.key)
     };
   }
-  const metro = pos => window.SuiteAtc?.franceMetro ? window.SuiteAtc.franceMetro(pos) : /^LF(?!V)[A-Z]{2}_/.test(String(pos || '').toUpperCase());
+  const metro = pos => window.SuiteAtc?.inPerimeter ? window.SuiteAtc.inPerimeter(pos) : /^LF(?!V)[A-Z]{2}_/.test(String(pos || '').toUpperCase());
   /** Positions en ligne maintenant (flux publics, CORS ouvert) : [{ position, reseau, debut }]. */
   async function online() {
     const out = [];

@@ -36,6 +36,7 @@
       [18, 23]
     ], // créneaux en heures z (aucune heure dans le fichier)
     dateSource: 'iso', // 'iso' : lundi de la semaine ISO ; 'frise' : date saisie sur la frise
+    pays: 'fr', // pays préféré : périmètre des sessions ATC (shared/atc_sessions.js, SuiteAtc.PREFIXES)
     emptyAs: 'inconnu', // case vide : 'inconnu' (non renseigné) ou 'indispo'
     flotteLevel: 'noRed', // types FLOTTE retenus : 'all', 'noRed' (sans les rouges), 'green' (verts seuls)
     strictCodes: true, // un code restreint (SC, C, T, N) limite les rôles à son domaine

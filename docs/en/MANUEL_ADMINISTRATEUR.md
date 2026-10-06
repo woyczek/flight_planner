@@ -402,8 +402,8 @@ This planning details one day of the week.
 This block gathers the VATSIM / IVAO trainings, exams, events and bookings of the displayed week. They are saved in the shared data pool (`data/atc/<année>-W<semaine>.json`).
 - **Enter a session**: fill in the day, the start and the end (UTC times, in 15-min steps), the position (e.g. `LFBO_APP`, `LFMN_TWR`), the network (VATSIM or IVAO), the type (Training, Exam, Event, Booking) and an optional comment. Then click “Add”.
 - Both times must fall on the same day: the end must come after the start.
-- “Fetch VATSIM (metropolitan France)” imports the week's VATSIM bookings. Sessions already fetched are replaced (cancellations included); manual entries are kept.
-- “Fetch IVAO (metropolitan France)” likewise imports the week's IVAO trainings, exams and bookings, with the installation's IVAO API key (Settings › Installation). These two buttons are the import shared with the flight orders: a single file, the same sessions on both pages.
+- “Fetch VATSIM (preferred country)” imports the week's VATSIM bookings. Sessions already fetched are replaced (cancellations included); manual entries are kept. Only positions of the preferred country are imported (Settings › Centre › ODV planning; metropolitan France by default); the button shows its name.
+- “Fetch IVAO (preferred country)” likewise imports the week's IVAO trainings, exams and bookings, with the installation's IVAO API key (Settings › Installation). These two buttons are the import shared with the flight orders: a single file, the same sessions on both pages.
 - The “×” button of a row removes the session. The “Source” column shows “fetched” or “entered”. The table first shows trainings, exams and events (exam and training marked in the margin); plain position bookings, numerous once imported, are folded under “n position booking(s)”.
 - **Effect on planning**: a session is counted in its slot (★). A training or an exam makes the airfield CTR unavailable for missions in that slot; the TMAs containing the airfield should be avoided if possible.
 
@@ -622,6 +622,7 @@ This section contains the Settings of the ODV planning page. They are kept in th
 | Setting | Default |
 |---|---|
 | Slots (z hours): Morning, Afternoon, Evening | 8 to 12, 12 to 18, 18 to 23 (by half hour; the end must come after the start) |
+| Preferred country (ATC perimeter) | “metropolitan France”; ATC sessions (trainings, exams, bookings) imported and shown for this country only, ODV planning and flight orders (the country's ICAO indicators: LF except LFV for France) |
 | Week dates | “ISO week (week number of the file)”; otherwise “Date entered on the timeline” |
 | Empty cell | “Not filled in” (never counted as available); otherwise “Unavailable” |
 | FLOTTE types kept for roles | “All but red (not mastered)”; “Green only”; “All” |

@@ -542,7 +542,8 @@
 
   // ------------------------------------------------------------------ sessions ATC des réseaux (shared/atc_sessions.js)
   // trainings, examens, événements et réservations VATSIM / IVAO de la semaine affichée : saisis à la main ou récupérés
-  // (VATSIM, France métropolitaine) ; comptés dans les créneaux (★, CTR du terrain à éviter en training ou examen)
+  // (VATSIM, IVAO : périmètre du pays préféré, SuiteAtc.perimeter) ; comptés dans les créneaux (★, CTR du terrain à éviter
+  // en training ou examen)
   let atc = {
     week: '',
     list: []
@@ -612,6 +613,7 @@
       return;
     }
     const dates = gridData().dates,
+      per = S.perimeter(),
       list = atc.week === atcWeek() ? atc.list : [];
     const dayOpt = dates.map((d, j) => `<option value="${d}">${esc(wordL(C.DAYS[j]))} ${esc(dateFr(d))}</option>`).join('');
     // trainings, examens et événements en tête ; simples réservations (contexte ★, nombreuses une fois importées) repliées
@@ -633,8 +635,8 @@
         <input type="text" data-atc="texte" placeholder="${esc(L(['Commentaire (facultatif)', 'Comment (optional)', 'Kommentar (optional)', 'Comentario (opcional)']))}">
         <button type="submit" class="secondary" data-icon="plus">${L(['Ajouter', 'Add', 'Hinzufügen', 'Añadir'])}</button>
       </form>
-      <div class="row"><button type="button" class="secondary" data-atc-net="VATSIM" data-icon="refresh">${L(['Récupérer VATSIM (France métropolitaine)', 'Fetch VATSIM (metropolitan France)', 'VATSIM abrufen (Frankreich, Mutterland)', 'Recuperar VATSIM (Francia metropolitana)'])}</button>
-      <button type="button" class="secondary" data-atc-net="IVAO" data-icon="refresh" title="${esc(L(['Trainings, examens et réservations IVAO de France métropolitaine ; clé d’API IVAO de l’installation (Paramètres › Installation).', 'IVAO trainings, exams and bookings in metropolitan France; installation IVAO API key (Settings › Installation).', 'IVAO-Trainings, -Prüfungen und -Buchungen in Frankreich (Mutterland); IVAO-API-Schlüssel der Installation (Einstellungen › Installation).', 'Entrenamientos, exámenes y reservas IVAO de Francia metropolitana; clave de API IVAO de la instalación (Ajustes › Instalación).']))}">${L(['Récupérer IVAO (France métropolitaine)', 'Fetch IVAO (metropolitan France)', 'IVAO abrufen (Frankreich, Mutterland)', 'Recuperar IVAO (Francia metropolitana)'])}</button></div>`;
+      <div class="row"><button type="button" class="secondary" data-atc-net="VATSIM" data-icon="refresh">${L(['Récupérer VATSIM ({p})', 'Fetch VATSIM ({p})', 'VATSIM abrufen ({p})', 'Recuperar VATSIM ({p})'], { p: esc(per.label) })}</button>
+      <button type="button" class="secondary" data-atc-net="IVAO" data-icon="refresh" title="${esc(L(['Trainings, examens et réservations IVAO ({p}) ; clé d’API IVAO de l’installation (Paramètres › Installation). Pays : Paramètres › Centre › Planning ODV.', 'IVAO trainings, exams and bookings ({p}); installation IVAO API key (Settings › Installation). Country: Settings › Centre › ODV planning.', 'IVAO-Trainings, -Prüfungen und -Buchungen ({p}); IVAO-API-Schlüssel der Installation (Einstellungen › Installation). Land: Einstellungen › Zentrum › ODV-Planung.', 'Entrenamientos, exámenes y reservas IVAO ({p}); clave de API IVAO de la instalación (Ajustes › Instalación). País: Ajustes › Centro › Planificación ODV.'], { p: per.label }))}">${L(['Récupérer IVAO ({p})', 'Fetch IVAO ({p})', 'IVAO abrufen ({p})', 'Recuperar IVAO ({p})'], { p: esc(per.label) })}</button></div>`;
     const f = host.querySelector('[data-atc-form]'),
       v = k => f.querySelector(`[data-atc="${k}"]`).value.trim();
     f.onsubmit = e => {
@@ -678,7 +680,8 @@
       const mine = r.sessions.filter(x => x.reseau === net && x.source !== 'manuel'),
         tr = mine.filter(x => x.type === 'training').length,
         ex = mine.filter(x => x.type === 'examen').length;
-      if (r.where === 'folder') notify(L(['{r} : {t} training(s), {e} examen(s) et {b} autre(s) session(s) de France métropolitaine cette semaine.', '{r}: {t} training(s), {e} exam(s) and {b} other session(s) in metropolitan France this week.', '{r}: {t} Training(s), {e} Prüfung(en) und {b} weitere Sitzung(en) in Frankreich (Mutterland) diese Woche.', '{r}: {t} entrenamiento(s), {e} examen(es) y {b} otra(s) sesión(es) en Francia metropolitana esta semana.'], {
+      if (r.where === 'folder') notify(L(['{r} : {t} training(s), {e} examen(s) et {b} autre(s) session(s) cette semaine ({p}).', '{r}: {t} training(s), {e} exam(s) and {b} other session(s) this week ({p}).', '{r}: {t} Training(s), {e} Prüfung(en) und {b} weitere Sitzung(en) diese Woche ({p}).', '{r}: {t} entrenamiento(s), {e} examen(es) y {b} otra(s) sesión(es) esta semana ({p}).'], {
+        p: S.perimeter().label,
         r: net,
         t: tr,
         e: ex,

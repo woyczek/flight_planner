@@ -402,8 +402,8 @@ Esta planificación detalla un día de la semana.
 Este bloque reúne los entrenamientos, exámenes, eventos y reservas de VATSIM / IVAO de la semana mostrada. Se guardan en el conjunto de datos compartido (`data/atc/<année>-W<semaine>.json`).
 - **Introducir una sesión**: indique el día, el inicio y el fin (horas UTC, en pasos de 15 min), la posición (p. ej. `LFBO_APP`, `LFMN_TWR`), la red (VATSIM o IVAO), el tipo (Entrenamiento, Examen, Evento, Reserva) y un comentario opcional. Después haga clic en «Añadir».
 - Las dos horas deben caer el mismo día: el fin debe ser posterior al inicio.
-- «Recuperar VATSIM (Francia metropolitana)» importa las reservas VATSIM de la semana. Las sesiones ya recuperadas se sustituyen (anulaciones incluidas); las introducidas a mano se conservan.
-- «Recuperar IVAO (Francia metropolitana)» importa igualmente los entrenamientos, exámenes y reservas IVAO de la semana, con la clave de API IVAO de la instalación (Ajustes › Instalación). Estos dos botones son la importación común con las órdenes de vuelo: un solo archivo, las mismas sesiones en ambas páginas.
+- «Recuperar VATSIM (país preferido)» importa las reservas VATSIM de la semana. Las sesiones ya recuperadas se sustituyen (anulaciones incluidas); las introducidas a mano se conservan. Solo se importan las posiciones del país preferido (Ajustes › Centro › Planificación ODV; Francia metropolitana por defecto); el botón lleva su nombre.
+- «Recuperar IVAO (país preferido)» importa igualmente los entrenamientos, exámenes y reservas IVAO de la semana, con la clave de API IVAO de la instalación (Ajustes › Instalación). Estos dos botones son la importación común con las órdenes de vuelo: un solo archivo, las mismas sesiones en ambas páginas.
 - El botón «×» de una línea quita la sesión. La columna «Fuente» indica «recuperada» o «introducida». La tabla muestra primero los entrenamientos, exámenes y eventos (examen y entrenamiento marcados en el margen); las simples reservas de posición, numerosas una vez importadas, se pliegan bajo «n reserva(s) de posición».
 - **Efecto en la planificación**: una sesión se cuenta en su franja (★). Un entrenamiento o un examen deja la CTR del aeródromo no disponible para las misiones de esa franja; las TMA que contienen el aeródromo deben evitarse en lo posible.
 
@@ -622,6 +622,7 @@ Este apartado contiene los ajustes propios de la compagnie para la página Plani
 | Ajuste | Por defecto |
 |---|---|
 | Franjas (horas z): Mañana, Tarde, Noche | 8 a 12, 12 a 18, 18 a 23 (por medias horas; el fin debe ser posterior al inicio) |
+| País preferido (perímetro ATC) | «Francia metropolitana»; sesiones ATC (entrenamientos, exámenes, reservas) importadas y mostradas solo para este país, planificación ODV y órdenes de vuelo (indicadores OACI del país: LF salvo LFV para Francia) |
 | Fechas de la semana | «Semana ISO (n.º de semana del archivo)»; si no, «Fecha introducida en la cronología» |
 | Casilla vacía | «Sin rellenar» (nunca cuenta como disponible); si no, «No disponible» |
 | Tipos FLOTTE tenidos en cuenta para las funciones | «Todos salvo los rojos (no dominados)»; «Solo verdes»; «Todos» |

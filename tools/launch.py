@@ -316,7 +316,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             if not self._allowed():
                 return self._json({'error': 'refusé'}, 403)
             q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
-            return self._json(ivao_bookings(q.get('from', [''])[0], q.get('to', [''])[0]))
+            return self._json(ivao_bookings(q.get('from', [''])[0], q.get('to', [''])[0], q.get('pre', ['LF'])[0]))
         if self.path.split('?')[0] == '/__setup/aircraft-db':
             if not self._allowed():
                 return self._json({'error': 'refusé'}, 403)
@@ -726,11 +726,12 @@ def ivao_activations(day_from='', day_to=''):
 _ivao_book = {}  # date → (instant, réservations du jour)
 
 
-def ivao_bookings(day_from='', day_to=''):
+def ivao_bookings(day_from='', day_to='', pre='LF'):
     """Réservations ATC d'IVAO entre deux dates (AAAA-MM-JJ, incluses, 8 jours au plus) : { bookings: [{ id, startDate,
-    endDate, training ('training', 'exam'… ou null), atcPosition }] }, positions LF seulement (le tri fin est fait par
-    la page : SuiteAtc.franceMetro) ; un appel /atc/bookings/daily par jour, gardé 5 minutes ; { error } sans clé ou
-    sans réponse."""
+    endDate, training ('training', 'exam'… ou null), atcPosition }] }, positions commençant par un des préfixes OACI
+    du périmètre (pre : « LF » ou « ED,ET »… ; le tri fin est fait par la page : SuiteAtc.inPerimeter) ; un appel
+    /atc/bookings/daily par jour, gardé 5 minutes ; { error } sans clé ou sans réponse."""
+    prefixes = tuple(p for p in str(pre or '').upper().split(',') if re.fullmatch('[A-Z]{1,3}', p)) or ('LF',)
     key = ivao_key()
     if not key:
         return {'error': 'clé IVAO absente : Paramètres › Installation › Sources et dossiers (ou variable IVAO_API_KEY)'}
@@ -752,9 +753,9 @@ def ivao_bookings(day_from='', day_to=''):
                 return {'error': f'IVAO : {e}'}
             day = [{'id': b.get('id'), 'startDate': b.get('startDate'), 'endDate': b.get('endDate'),
                     'training': b.get('training'), 'atcPosition': str(b.get('atcPosition', ''))}
-                   for b in (got if isinstance(got, list) else []) if str(b.get('atcPosition', '')).upper().startswith('LF')]
-            _ivao_book[d] = (time.time(), day)
-        out.extend(day)
+                   for b in (got if isinstance(got, list) else [])]
+            _ivao_book[d] = (time.time(), day)  # journée entière gardée : un autre périmètre la relit sans appel
+        out.extend(b for b in day if b['atcPosition'].upper().startswith(prefixes))
     return {'bookings': out}
 
 

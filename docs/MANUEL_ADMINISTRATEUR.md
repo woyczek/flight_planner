@@ -402,8 +402,8 @@ Ce planning détaille une journée de la semaine.
 Ce bloc rassemble les trainings, examens, événements et réservations VATSIM / IVAO de la semaine affichée. Ils sont enregistrés dans le pool de données partagé (`data/atc/<année>-W<semaine>.json`).
 - **Saisir une session** : renseignez le jour, le début et la fin (heures UTC, par pas de 15 min), la position (ex. `LFBO_APP`, `LFMN_TWR`), le réseau (VATSIM ou IVAO), le type (Training, Examen, Événement, Réservation) et un commentaire facultatif. Cliquez ensuite sur « Ajouter ».
 - Les deux heures doivent tomber le même jour : la fin doit suivre le début.
-- « Récupérer VATSIM (France métropolitaine) » importe les réservations VATSIM de la semaine. Les sessions déjà récupérées sont remplacées (annulations comprises) ; les saisies manuelles sont gardées.
-- « Récupérer IVAO (France métropolitaine) » importe de même les trainings, examens et réservations IVAO de la semaine, avec la clé d'API IVAO de l'installation (Paramètres › Installation). Ces deux boutons sont l'import commun aux Ordres de vols : un seul fichier, mêmes sessions sur les deux pages.
+- « Récupérer VATSIM (pays préféré) » importe les réservations VATSIM de la semaine. Les sessions déjà récupérées sont remplacées (annulations comprises) ; les saisies manuelles sont gardées. Seules les positions du pays préféré sont importées (Paramètres › Centre › Planning ODV ; France métropolitaine par défaut) ; le bouton porte son nom.
+- « Récupérer IVAO (pays préféré) » importe de même les trainings, examens et réservations IVAO de la semaine, avec la clé d'API IVAO de l'installation (Paramètres › Installation). Ces deux boutons sont l'import commun aux Ordres de vols : un seul fichier, mêmes sessions sur les deux pages.
 - Le bouton « × » d'une ligne retire la session. La colonne « Source » indique « récupérée » ou « saisie ». Le tableau montre d'abord les trainings, examens et événements (examen et training repérés en marge) ; les simples réservations de position, nombreuses une fois importées, sont repliées sous « n réservation(s) de position ».
 - **Effet sur la planification** : une session est comptée dans son créneau (★). Un training ou un examen rend la CTR du terrain indisponible pour les missions de ce créneau ; les TMA qui contiennent le terrain sont à éviter si possible.
 
@@ -622,6 +622,7 @@ Cette rubrique contient les réglages propres à la compagnie pour la page Plann
 | Réglage | Défaut |
 |---|---|
 | Créneaux (heures z) : Matin, Après-midi, Soir | 8 à 12, 12 à 18, 18 à 23 (par demi-heure ; la fin doit suivre le début) |
+| Pays préféré (périmètre ATC) | « France métropolitaine » ; sessions ATC (trainings, examens, réservations) importées et montrées pour ce pays seul, Planning ODV et Ordres de vols (indicatifs OACI du pays : LF hors LFV pour la France) |
 | Dates de la semaine | « Semaine ISO (n° de semaine du fichier) » ; sinon « Date saisie sur la frise » |
 | Case vide | « Non renseignée » (jamais comptée disponible) ; sinon « Indisponible » |
 | Types FLOTTE retenus pour les rôles | « Tous sauf les rouges (non maîtrisés) » ; « Verts seuls » ; « Tous » |

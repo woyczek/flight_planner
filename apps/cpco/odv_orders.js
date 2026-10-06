@@ -538,7 +538,7 @@
   async function autoImportAtc() {
     if (!canEdit()) return;
     try {
-      if (!window.SuiteAtc) await loadScript('../../shared/atc_sessions.js?v=ab462121');
+      if (!window.SuiteAtc) await loadScript('../../shared/atc_sessions.js?v=b49318e3');
     } catch {
       return;
     }
