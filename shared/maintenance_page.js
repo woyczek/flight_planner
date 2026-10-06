@@ -1074,13 +1074,15 @@
       inv.folder = true;
       inv.files.push(...root.map(f => ({
         rel: f.name,
-        at: f.lastModified
+        at: f.lastModified,
+        size: f.size
       })));
       const extra = await window.SiaBase.extraFiles(st.handle, {});
       for (const [k, l] of Object.entries(extra))
         if (k !== 'xplane') inv.files.push(...l.map(f => ({
           rel: f.__rel || `${k}/${f.name}`,
-          at: f.lastModified
+          at: f.lastModified,
+          size: f.size
         })));
       const mora = root.find(f => /^mora\.csv$/i.test(f.name));
       if (mora) inv.moraCells = window.SiaBase.parseMora(await mora.text());
@@ -1381,6 +1383,23 @@
     if (aeroMap.style?._loaded) setup();
     return aeroMapEl;
   }
+  /** Ligne du tableau des sources : zone épinglée au panneau, source mise en vue et son action principale lancée
+   *  (téléchargement, ZIP du SIA, import du PDF MILAIP, choix du dossier X-Plane, MORA de la zone) ; dans le geste de
+   *  l'utilisateur, pour les sélecteurs de fichiers et de dossiers. */
+  function aeroRowAction(Z, id, src) {
+    aeroPin(Z, id);
+    const panel = document.getElementById('mtAeroPanel'),
+      li = panel?.querySelector(`[data-zone-src="${src}"]`)?.closest('li');
+    if (!li) return;
+    li.scrollIntoView({
+      block: 'center',
+      behavior: 'smooth'
+    });
+    li.classList.add('repo-block-flash');
+    setTimeout(() => li.classList.remove('repo-block-flash'), 1600);
+    const ctl = src === 'sia' ? li.querySelector('#mtSiaFetch') : src === 'dircam' ? li.querySelector('#mtEnr57') : src === 'mora' ? li.querySelector('[data-mora-zone]') : src === 'xplane' ? li.querySelector('button.mt-folder') : li.querySelector('[data-aero-fetch]');
+    if (ctl && !ctl.disabled) ctl.click();
+  }
   /** Zone du panneau : l'épinglée, sinon la survolée, sinon la dernière choisie. */
   const aeroShown = () => aeroLocked ? aeroPinned : aeroHover || aeroPinned;
   /** Épingle une zone (clic sur la carte) ou la relâche (null, clic sur la zone épinglée, Échap, « Libérer »). */
@@ -1434,19 +1453,34 @@
     if (ages) ages.innerHTML = aeroAgesHtml(Z);
   }
   /** Cycles AIRAC et âge des données des zones actives. */
+  /** Fichiers d'une source d'une zone (inventaire du dossier SIA) : [{ rel, at, size }] ; mora.csv pour la MORA. */
+  const aeroFilesOf = (Z, id, src) => (aeroInv?.files || []).filter(f => {
+    const fs = Z.fileSource(f.rel);
+    return fs && fs.source === src && (fs.zone === id || fs.zone === '*');
+  });
+  /** Tableau de toutes les sources cochées des zones actives : zone, source, fichiers, cycle ou date, âge, taille, état ;
+   *  une ligne cliquable relance le traitement de sa source (aeroRowAction). */
   function aeroAgesHtml(Z) {
     const eff = window.Airac.cycle(),
       nxt = window.Airac.next(),
       info = window.SiaBase.info();
     const active = Z.zones().filter(z => Z.isOn(z.id));
+    const days = at => at ? Math.max(0, Math.floor((Date.now() - at) / 864e5)) : null;
     const rows = active.flatMap(z => z.sources.filter(s => Z.srcOn(z.id, s) && Z.SOURCES[s].readable).map(s => {
       const S = Z.SOURCES[s],
         st = aeroSourceStatus(Z, z.id, s),
-        age = aeroAge(S, st);
-      return `<tr><td>${esc(zName(z))}</td><td>${esc(t(S.label))}</td><td class="mt-small">${esc(st.text)}</td><td>${age === 'none' ? pill('err', t(['manquant', 'missing', 'fehlt', 'falta'])) : age === 'warn' ? pill('warn', t(['ancien', 'old', 'alt', 'antiguo'])) : pill('ok', t(['à jour', 'up to date', 'aktuell', 'al día']))}</td></tr>`;
+        age = aeroAge(S, st),
+        files = s === 'xplane' ? [] : aeroFilesOf(Z, z.id, s),
+        size = files.reduce((n, f) => n + (f.size || 0), 0),
+        at = Math.max(0, ...files.map(f => f.at || 0)),
+        cyc = st.airac || (at ? fmtDate(at, false) : ''),
+        d = s === 'xplane' ? null : days(at);
+      const state = age === 'none' ? pill('err', t(['manquant', 'missing', 'fehlt', 'falta'])) : age === 'warn' ? pill('warn', t(['ancien', 'old', 'alt', 'antiguo'])) : pill('ok', t(['à jour', 'up to date', 'aktuell', 'al día']));
+      const what = s === 'xplane' ? esc(st.text) : files.length ? `<span title="${esc(files.map(f => f.rel).join('\n'))}">${files.length}</span>` : '—';
+      return `<tr class="mt-aero-row" data-zone="${esc(z.id)}" data-src="${esc(s)}" tabindex="0" title="${esc(t(['Cliquer : mettre à jour cette source (téléchargement, ZIP, import ou calcul), puis « Tout recalculer »', 'Click: update this source (download, ZIP, import or computation), then “Recompute all”', 'Klicken: diese Quelle aktualisieren (Download, ZIP, Import oder Berechnung), dann „Alles neu berechnen“', 'Clic: actualizar esta fuente (descarga, ZIP, importación o cálculo), luego «Recalcular todo»']))}"><td>${esc(zName(z))}</td><td>${esc(t(S.label).split(/ — | \(/)[0])}</td><td class="num">${what}</td><td>${esc(cyc || '—')}</td><td class="num">${d == null ? '—' : esc(t(['{n} j', '{n} d', '{n} T', '{n} d'], { n: d }))}</td><td class="num">${size ? esc(fmtSize(size)) : '—'}</td><td>${state}</td></tr>`;
     })).join('');
     return `<p>${esc(t(['Cycle AIRAC en vigueur', 'AIRAC cycle in force', 'Gültiger AIRAC-Zyklus', 'Ciclo AIRAC vigente']))} : <b>${esc(eff.label)}</b> (${esc(fmtDate(eff.date, false))} → ${esc(fmtDate(eff.until, false))}) · ${esc(t(['suivant', 'next', 'nächster', 'siguiente']))} : <b>${esc(nxt.label)}</b> (${esc(fmtDate(nxt.date, false))}) · ${esc(t(['base aéronautique', 'aeronautical database', 'Luftfahrtdatenbank', 'base aeronáutica']))} : ${info ? `${esc(info.airac || '—')} (${esc(fmtDate(info.cachedAt))})` : '—'}</p>
-      ${rows ? `<div class="mt-scroll"><table class="mt-table"><tbody>${rows}</tbody></table></div>` : `<p class="mt-small">${esc(t(['Aucune zone active : cliquer les zones voulues sur la carte.', 'No active zone: click the wanted zones on the map.', 'Keine aktive Zone: gewünschte Zonen auf der Karte anklicken.', 'Ninguna zona activa: haga clic en las zonas deseadas en el mapa.']))}</p>`}
+      ${rows ? `<div class="mt-scroll"><table class="mt-table mt-wide mt-aero-table"><thead><tr><th>${esc(t(['Zone', 'Zone', 'Zone', 'Zona']))}</th><th>${esc(t(['Source', 'Source', 'Quelle', 'Fuente']))}</th><th class="num">${esc(t(['Fichiers', 'Files', 'Dateien', 'Archivos']))}</th><th>${esc(t(['Cycle ou date', 'Cycle or date', 'Zyklus oder Datum', 'Ciclo o fecha']))}</th><th class="num">${esc(t(['Âge', 'Age', 'Alter', 'Antigüedad']))}</th><th class="num">${esc(t(['Taille', 'Size', 'Größe', 'Tamaño']))}</th><th>${esc(t(['État', 'State', 'Status', 'Estado']))}</th></tr></thead><tbody>${rows}</tbody></table></div>` : `<p class="mt-small">${esc(t(['Aucune zone active : cliquer les zones voulues sur la carte.', 'No active zone: click the wanted zones on the map.', 'Keine aktive Zone: gewünschte Zonen auf der Karte anklicken.', 'Ninguna zona activa: haga clic en las zonas deseadas en el mapa.']))}</p>`}
       <p class="mt-small">${esc(t(['Données téléchargées : à rafraîchir au-delà de 28 jours (un cycle AIRAC) ; SIA : cycle du nom des fichiers ; X-Plane : cycle de « Custom Data ».', 'Downloaded data: to refresh after 28 days (one AIRAC cycle); SIA: cycle in the file names; X-Plane: “Custom Data” cycle.']))}</p>`;
   }
   // un seul calcul de MORA à la fois (zone, simple, complet) : boutons désactivés pendant le calcul, un clic de plus
@@ -1723,8 +1757,7 @@
 </div>
         <aside class="mt-aero-panel" id="mtAeroPanel" data-no-i18n></aside>
       </div>
-      <div class="repo-card" id="mt-aero-base" data-icon="refresh" data-subtitle="${esc(t(['Zones actives et sources cochées : la base sert au studio, aux cartes de vol, au profil vertical et aux espaces à activer.', 'Active zones and ticked sources: the database feeds the studio, flight maps, vertical profile and airspace to activate.']))}"><h3>${esc(t(['Reconstruire la base aéronautique', 'Rebuild the aeronautical database', 'Luftfahrtdatenbank neu aufbauen', 'Reconstruir la base aeronáutica']))}</h3><div id="mtBasePanel"></div></div>
-      <div class="repo-card" data-icon="clock"><h3>${esc(t(['Cycles AIRAC et âge des données', 'AIRAC cycles and data age', 'AIRAC-Zyklen und Alter der Daten', 'Ciclos AIRAC y antigüedad de los datos']))}</h3><div id="mtAeroAges">${aeroAgesHtml(Z)}</div></div>
+      <div class="repo-card" id="mt-aero-base" data-icon="refresh" data-subtitle="${esc(t(['Toutes les sources cochées des zones actives : cycle, âge, taille ; un clic sur une ligne met sa source à jour. « Tout recalculer » reconstruit la base (studio, cartes de vol, profil vertical, espaces à activer) ; « Purger le cache » la vide.', 'All ticked sources of the active zones: cycle, age, size; a click on a row updates its source. “Recompute all” rebuilds the database (studio, flight maps, vertical profile, airspace to activate); “Purge the cache” empties it.', 'Alle angehakten Quellen der aktiven Zonen: Zyklus, Alter, Größe; ein Klick auf eine Zeile aktualisiert ihre Quelle. „Alles neu berechnen“ baut die Datenbank neu auf; „Cache leeren“ leert sie.', 'Todas las fuentes marcadas de las zonas activas: ciclo, antigüedad, tamaño; un clic en una fila actualiza su fuente. «Recalcular todo» reconstruye la base; «Vaciar la caché» la vacía.']))}"><h3>${esc(t(['Base aéronautique : sources, cycles et reconstruction', 'Aeronautical database: sources, cycles and rebuild', 'Luftfahrtdatenbank: Quellen, Zyklen und Neuaufbau', 'Base aeronáutica: fuentes, ciclos y reconstrucción']))}</h3><div id="mtAeroAges">${aeroAgesHtml(Z)}</div><div id="mtBasePanel"></div></div>
       <div class="repo-card" id="mt-aero-mora" data-icon="chart" data-subtitle="${esc(t(['Sources de MORA : grille calculée (relief, sommets, obstacles ; ici pour la France et les missions, ou zone par zone dans le panneau), X-Plane (grille mondiale) ; la grille calculée a la priorité.', 'MORA sources: computed grid (terrain, peaks, obstacles; here for France and the missions, or zone by zone in the panel), X-Plane (world grid); the computed grid has priority.']))}"><h3>MORA</h3>
         <p class="row"><button type="button" class="secondary" id="mtMora"${moraBusy ? ' disabled' : ''} data-icon="refresh" title="${esc(t(['Obstacles du nouveau cycle, relief du mora.csv actuel — sans réseau, immédiat', 'New-cycle obstacles, terrain from the current mora.csv — offline, immediate']))}">${esc(t(['Recalcul simple', 'Simple recalculation', 'Einfache Neuberechnung', 'Recálculo simple']))}</button><button type="button" class="secondary" id="mtMoraXp"${moraBusy ? ' disabled' : ''} data-icon="download" title="${esc(t(['Cases de la MORA d’X-Plane (zones actives, source X-Plane) absentes de mora.csv', 'X-Plane MORA cells (active zones, X-Plane source) missing from mora.csv', 'X-Plane-MORA-Felder (aktive Zonen), die in mora.csv fehlen', 'Casillas MORA de X-Plane (zonas activas) ausentes de mora.csv']))}">${esc(t(['MORA d’X-Plane → mora.csv', 'X-Plane MORA → mora.csv', 'X-Plane-MORA → mora.csv', 'MORA de X-Plane → mora.csv']))}</button><button type="button" class="secondary" id="mtMoraFull"${moraBusy ? ' disabled' : ''} data-icon="chart">${esc(t(['Calcul complet', 'Full calculation', 'Vollständige Berechnung', 'Cálculo completo']))}</button>${moraPlan && !moraPlan.written ? `<button type="button" class="primary" id="mtMoraWrite" data-icon="save">${esc(t(['Écrire mora.csv (ancien archivé)', 'Write mora.csv (old one archived)', 'mora.csv schreiben (alte archiviert)', 'Escribir mora.csv (antiguo archivado)']))}</button><button type="button" class="secondary" id="mtMoraDl" data-icon="download">mora.csv</button>` : ''}</p>
         <div id="mtMoraMsg">${moraMsg}</div><div>${moraPlan ? moraHtml(moraPlan) : ''}</div></div>
@@ -1780,12 +1813,26 @@
     basePanelEl ??= (() => {
       const el = document.createElement('div');
       window.SiaBase.panel(el, {
+        rereadLabel: ['Tout recalculer', 'Recompute all', 'Alles neu berechnen', 'Recalcular todo'],
         onLoaded: () => baseChanged(true),
         onPurged: () => baseChanged(false)
       });
       return el;
     })();
     host.querySelector('#mtBasePanel').replaceWith(basePanelEl);
+    // ligne du tableau des sources : sa source mise à jour (délégation : le tableau est redessiné)
+    const ages = host.querySelector('#mtAeroAges');
+    ages.onclick = e => {
+      const tr = e.target.closest('tr.mt-aero-row');
+      if (tr) aeroRowAction(Z, tr.dataset.zone, tr.dataset.src);
+    };
+    ages.onkeydown = e => {
+      const tr = e.target.closest('tr.mt-aero-row');
+      if (tr && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        aeroRowAction(Z, tr.dataset.zone, tr.dataset.src);
+      }
+    };
     host.querySelector('#mtMora').onclick = () => moraExclusive(planMora);
     host.querySelector('#mtMoraFull').onclick = () => moraExclusive(planMoraFull);
     host.querySelector('#mtMoraXp').onclick = () => moraExclusive(planMoraXplane);

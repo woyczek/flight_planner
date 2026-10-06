@@ -754,9 +754,9 @@ El botón «Comprobar» vuelve a lanzar los controles.
 - El SIA conserva la prioridad: dentro de las FIR francesas solo cuentan sus espacios; en otros lugares, un espacio, aeródromo o radioayuda ya leído no se añade dos veces. Fuera de Francia, las zonas R, D, TRA, TSA, MOA, W, A y las rutas MTR que cruza una misión figuran en sus espacios por activar.
 - Las direcciones de los sitios (SIA, DIRCAM, NATS, AIP militar británico, NAV CANADA) se ajustan en Ajustes › Instalación › Fuentes y carpetas › Fuentes externas; las carpetas SIA y X-Plane de allí son las mismas que aquí.
 
-**Reconstruir la base aeronáutica**: lee las fuentes marcadas de todas las zonas activas (unos segundos; el navegador puede pedir autorizar la carpeta). Es el mismo bloque que en el estudio cartográfico.
-
-**Ciclos AIRAC y antigüedad de los datos**: ciclo vigente, ciclo siguiente y ciclo de la base, luego una fila por fuente marcada de las zonas activas:
+**Base aeronáutica: fuentes, ciclos y reconstrucción**: ciclo vigente, ciclo siguiente y ciclo de la base, y luego una tabla de todas las fuentes marcadas de las zonas activas (zona, fuente, archivos, ciclo o fecha, antigüedad, tamaño, estado). Un clic en una fila fija su zona y actualiza la fuente (descarga, ZIP del SIA, importación del PDF MILAIP, carpeta X-Plane, MORA de la zona).
+«Recalcular todo» reconstruye la base con todas las zonas activas (unos segundos; el navegador puede pedir autorizar la carpeta); «Vaciar la caché» la vacía. Es el mismo bloque que en el estudio cartográfico.
+Estados de la tabla:
 - SIA: ciclo leído en el nombre de los archivos, «antiguo» si precede al ciclo vigente;
 - X-Plane: ciclo de «Custom Data»;
 - archivos descargados: «antiguo» pasados 28 días (un ciclo AIRAC).

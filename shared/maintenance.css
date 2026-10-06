@@ -405,3 +405,13 @@ html[data-design="field"] .mt-block :is(button.secondary, .mt-file):not(#imp) {
     outline-offset: 2px
   }
 }
+
+/* Données aéronautiques : lignes du tableau des sources cliquables (mise à jour de la source) */
+@layer app {
+  .mt-aero-table tr.mt-aero-row {
+    cursor: pointer
+  }
+  .mt-aero-table tr.mt-aero-row:is(:hover, :focus-visible)>td {
+    background-color: color-mix(in srgb, var(--repo-accent, #38bdf8) 10%, transparent)
+  }
+}

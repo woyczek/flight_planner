@@ -754,9 +754,9 @@ The “Check” button reruns the checks.
 - The SIA keeps priority: inside the French FIRs only its airspace counts; elsewhere an airspace, aerodrome or navaid already read is not added twice. Outside France, R, D, TRA, TSA, MOA, W, A areas and MTR routes crossed by a mission appear in its airspace to activate.
 - Website addresses (SIA, DIRCAM, NATS, UK military AIP, NAV CANADA) are set in Settings › Installation › Sources and folders › External sources; the SIA and X-Plane folders there are the same as here.
 
-**Rebuild the aeronautical database**: reads the ticked sources of all active zones (a few seconds; the browser may ask to authorise the folder). It is the same block as in the map studio.
-
-**AIRAC cycles and data age**: cycle in force, next cycle and database cycle, then one row per ticked source of the active zones:
+**Aeronautical database: sources, cycles and rebuild**: cycle in force, next cycle and database cycle, then a table of all ticked sources of the active zones (zone, source, files, cycle or date, age, size, state). A click on a row pins its zone and updates the source (download, SIA ZIP, MILAIP PDF import, X-Plane folder, zone MORA).
+“Recompute all” rebuilds the database with all active zones (a few seconds; the browser may ask to authorise the folder); “Purge the cache” empties it. It is the same block as in the map studio.
+Table states:
 - SIA: cycle read from the file names, “old” if it precedes the cycle in force;
 - X-Plane: “Custom Data” cycle;
 - downloaded files: “old” after 28 days (one AIRAC cycle).

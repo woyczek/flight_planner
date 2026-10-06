@@ -754,9 +754,9 @@ Le bouton « Vérifier » relance les contrôles.
 - Le SIA garde la priorité : dans les FIR françaises, seuls ses espaces comptent ; ailleurs, un espace, un aérodrome ou une balise déjà lu n'est pas ajouté une deuxième fois. Hors de France, les zones R, D, TRA, TSA, MOA, W, A et les routes MTR recoupées par une mission figurent dans ses espaces à activer.
 - Les adresses des sites (SIA, DIRCAM, NATS, AIP militaire britannique, NAV CANADA) se règlent dans Paramètres › Installation › Sources et dossiers › Sources externes ; les dossiers SIA et X-Plane y sont les mêmes qu'ici.
 
-**Reconstruire la base aéronautique** : lit les sources cochées de toutes les zones actives (quelques secondes ; le navigateur peut demander d'autoriser le dossier). C'est le même bloc que dans le studio cartographique.
-
-**Cycles AIRAC et âge des données** : cycle en vigueur, cycle suivant et cycle de la base, puis une ligne par source cochée des zones actives :
+**Base aéronautique : sources, cycles et reconstruction** : cycle en vigueur, cycle suivant et cycle de la base, puis un tableau de toutes les sources cochées des zones actives (zone, source, fichiers, cycle ou date, âge, taille, état). Un clic sur une ligne épingle sa zone et met la source à jour (téléchargement, ZIP du SIA, import du PDF MILAIP, dossier X-Plane, MORA de la zone).
+« Tout recalculer » reconstruit la base avec toutes les zones actives (quelques secondes ; le navigateur peut demander d'autoriser le dossier) ; « Purger le cache » la vide. C'est le même bloc que dans le studio cartographique.
+États du tableau :
 - SIA : cycle lu dans le nom des fichiers, « ancien » s'il précède le cycle en vigueur ;
 - X-Plane : cycle de « Custom Data » ;
 - fichiers téléchargés : « ancien » au-delà de 28 jours (un cycle AIRAC).

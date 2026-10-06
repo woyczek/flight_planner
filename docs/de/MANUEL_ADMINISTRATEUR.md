@@ -754,9 +754,9 @@ Die Schaltfläche „Prüfen“ startet die Prüfungen erneut.
 - Der SIA hat Vorrang: in den französischen FIR zählen nur seine Lufträume; anderswo wird ein bereits gelesener Luftraum, Flugplatz oder Funkfeuer nicht doppelt aufgenommen. Außerhalb Frankreichs erscheinen von einer Mission geschnittene R-, D-, TRA-, TSA-, MOA-, W-, A-Gebiete und MTR-Routen in ihren zu aktivierenden Lufträumen.
 - Die Website-Adressen (SIA, DIRCAM, NATS, britisches Militär-AIP, NAV CANADA) werden unter Einstellungen › Installation › Quellen und Ordner › Externe Quellen eingestellt; die SIA- und X-Plane-Ordner dort sind dieselben wie hier.
 
-**Luftfahrtdatenbank neu aufbauen**: liest die angehakten Quellen aller aktiven Zonen (einige Sekunden; der Browser kann nach der Erlaubnis für den Ordner fragen). Derselbe Block wie im Kartenstudio.
-
-**AIRAC-Zyklen und Alter der Daten**: gültiger Zyklus, nächster Zyklus und Zyklus der Datenbank, dann eine Zeile pro angehakter Quelle der aktiven Zonen:
+**Luftfahrtdatenbank: Quellen, Zyklen und Neuaufbau**: gültiger Zyklus, nächster Zyklus und Zyklus der Datenbank, dann eine Tabelle aller angehakten Quellen der aktiven Zonen (Zone, Quelle, Dateien, Zyklus oder Datum, Alter, Größe, Status). Ein Klick auf eine Zeile heftet ihre Zone an und aktualisiert die Quelle (Download, SIA-ZIP, MILAIP-PDF-Import, X-Plane-Ordner, MORA der Zone).
+„Alles neu berechnen“ baut die Datenbank mit allen aktiven Zonen neu auf (einige Sekunden; der Browser kann nach der Erlaubnis für den Ordner fragen); „Cache leeren“ leert sie. Derselbe Block wie im Kartenstudio.
+Status der Tabelle:
 - SIA: Zyklus aus den Dateinamen, „alt“, wenn er vor dem gültigen Zyklus liegt;
 - X-Plane: Zyklus von „Custom Data“;
 - heruntergeladene Dateien: „alt“ nach 28 Tagen (ein AIRAC-Zyklus).
