@@ -1568,7 +1568,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     dep ||= await departureOf(y);
     const departure = dep.code,
       blockMin = +y?.timing?.estimated_block_min || +y?.timing?.estimated_flight_min || 120,
-      out = [];
+      out = [],
+      unknown = []; // convoyages non calculés (terrain sans coordonnées) : signalés, plus abandonnés en silence
     for (const [i, r] of rows.entries()) {
       const plane = (window.DEFA_FLEET || []).find(f => f.registration === r.registration),
         tk = takeoff + i * 6e4;
@@ -1582,6 +1583,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
         pilot: r.ferryPilot === '__open' ? '' : r.ferryPilot || r.pilot
       }) : null;
       if (ferry && r.ferryPilot === '__open') ferry.open = true; // convoyage à affecter : une mission à part, sans pilote
+      if (ferry && !ferry.minutes) unknown.push(`${r.pilot || '?'} ${ferry.from} → ${ferry.to}`);
       out.push({
         pilot: r.pilot,
         callsign: r.callsign || '',
@@ -1598,6 +1600,9 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
         status: 'affectée'
       });
     }
+    if (unknown.length) window.AppFramework?.notify?.(tf(['Convoyage non calculé (terrain sans coordonnées dans la base aéronautique) : {l}. À prévoir à la main (Ordre de mission).', 'Ferry flight not calculated (aerodrome without coordinates in the aeronautical database): {l}. To plan by hand (Mission order).', 'Überführung nicht berechnet (Flugplatz ohne Koordinaten in der Luftfahrtdatenbank): {l}. Von Hand planen (Einsatzbefehl).', 'Traslado no calculado (aeródromo sin coordenadas en la base aeronáutica): {l}. A prever a mano (Orden de misión).'], {
+      l: unknown.join(', ')
+    }), 'warn');
     return out;
   }
   // ---- journal des affectations : data/missions/affectations_log.json { entries: [{ at, by, action, mission, title,

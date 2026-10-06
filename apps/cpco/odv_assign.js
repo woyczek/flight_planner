@@ -222,10 +222,18 @@
     const M = window.MissionAssignments,
       y = await yamlOf(m);
     const parts = await M.buildParticipants(y, rows, takeoff, dep);
+    // heure H et astreinte déjà posées (fenêtre d'affectation) gardées : la matrice ne les règle pas, un extra vide
+    // les remettait à null
+    const prev = ((await M.index({
+      fresh: true
+    }).catch(() => null))?.assignments || []).find(a => a.mission === m.id);
     const f = await M.writeAssignment({
       ...m,
       maps: m.images || []
-    }, parts, {});
+    }, parts, {
+      h_hour: prev?.h_hour ?? null,
+      alert: prev?.alert ?? null
+    });
     await load(D, S);
     hooks.forEach(h => h());
     return f;
