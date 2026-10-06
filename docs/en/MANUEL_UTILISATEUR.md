@@ -412,15 +412,15 @@ The number of each step turns green when it is done.
 
 This step installs the airline's data (missions, references…). It goes through the launcher: without it, the page shows “For this step, open the suite with the launcher…”.
 
-Two options:
+Three options:
 
 | Card | How to proceed |
 |---|---|
-| “I have access to the repository (framagit)” | Enter “Login” and “Password or token”, tick “remember in Git’s credential manager” if needed, then “Fetch the data”. The first download takes a few minutes. |
+| “Sample data set” | “Install the sample data”: fictitious data shipped with the suite (missions including an exercise, pilots, fleet, availability and assignments for the current week), to discover the suite; to be replaced later by the airline’s data. Refused if data is already there. |
+| “Data repository” | Enter “Repository address” (given by your airline: `https://…` or `git@…`), if needed “Login (optional)” and “Password or token (optional)”, tick “remember in Git’s credential manager” if needed, then “Fetch the data”. The first download takes a few minutes. |
 | “I received the data by e-mail” | “Data archive…”: choose the `.zip` archive you received (it contains `data_tree.js`). |
-
-- Account with two-factor authentication: use an access token (framagit › Preferences › Access tokens, `read_repository` right).
-- If Git is not installed, only the archive is possible (or install Git, then start again).
+- No address is prefilled. Private repository over HTTPS: login and password, or a read access token if the account uses two-factor authentication; over SSH (`git@…`), the computer’s SSH key.
+- If Git is not installed: sample data set or archive (or install Git, then start again).
 - **“Git repository for data synchronisation”**: the address of the remote repository of `data/`, which shares the data
   between computers (“Synchronise” button). SSH address `git@hôte:compte/dépôt.git` (the computer's SSH key) or
   HTTPS `https://hôte/compte/dépôt.git` (credentials saved in Git). The card shows the current repository;

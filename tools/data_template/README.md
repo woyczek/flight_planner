@@ -1,11 +1,11 @@
 # Données — XPlane Web Suite
 
-Dépôt **privé** des données de la suite (application : <https://framagit.org/asr/flight_planner>), cloné dans le
+Dépôt **privé** des données de la suite, propre à chaque compagnie virtuelle (application : <https://framagit.org/asr/flight_planner>), cloné dans le
 dossier `data/` à la racine de l'application :
 
 ```bash
 cd flight_planner
-git clone https://framagit.org/defa-virtual/missions-defa.git data
+git clone <adresse du dépôt de données de votre compagnie> data
 ```
 
 L'application lit `data/` si ce dossier contient `data_tree.js`, sinon ses exemples (`examples/`). Dans le navigateur :

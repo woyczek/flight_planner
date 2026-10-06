@@ -45,12 +45,15 @@ Depuis la version 3, **l'application et les données sont séparées** :
 | Dépôt | Contenu | Où |
 |---|---|---|
 | Application (public) — <https://framagit.org/asr/flight_planner> | pages, framework, bases OACI / APD générées, outils, docs, exemples | dossier de votre choix |
-| Données (privé) — <https://framagit.org/defa-virtual/missions-defa> | flotte et référence, indicatifs, registres et CR, missions générées, affectations, MORA, axes ENR 5.7, base de performances | `data/` **dans** le dossier de l'application (ignoré par git) |
+| Données (privé, propre à chaque compagnie ; adresse donnée par la compagnie) | flotte et référence, indicatifs, registres et CR, missions générées, affectations, MORA, axes ENR 5.7, base de performances | `data/` **dans** le dossier de l'application (ignoré par git) |
 
-Le dépôt des données est **privé** : si l'accès n'est pas encore donné (ou si Git ne s'authentifie pas tout de suite),
-la suite démarre sur les exemples d'`examples/`. Deux façons d'avoir les données :
+Le dépôt des données est **privé** et propre à chaque compagnie : aucune adresse n'est fournie avec la suite. Tant qu'il
+n'y a pas de données, la suite démarre sur les exemples d'`examples/`. Trois façons d'avoir les données, proposées par
+la page de premier lancement :
 
-- demander l'accès (compte framagit), puis relancer le lanceur, qui clone `data/` ;
+- le **jeu d'essai** livré avec la suite (données fictives, pour la découvrir ; `tools/jeu_essai.py`) ;
+- l'**adresse du dépôt de données** de votre compagnie (`https://…` ou `git@…`), avec au besoin vos identifiants :
+  le lanceur clone `data/` ;
 - demander **un jeu de données par mail** : déposer l'archive `.zip` reçue dans le dossier de l'application (à côté de
   `lancer.cmd`), relancer — elle est extraite dans `data/` (archive reconnue à son fichier `data_tree.js`).
 
@@ -83,7 +86,7 @@ restent lisibles. Le lanceur sert la suite pour éviter ce cas.
 ```bash
 git clone https://framagit.org/asr/flight_planner.git
 cd flight_planner
-git clone https://framagit.org/defa-virtual/missions-defa.git data
+git clone <adresse du dépôt de données de votre compagnie> data
 python -m http.server 8000 --bind 127.0.0.1
 ```
 
@@ -171,7 +174,7 @@ locales).
 ## Annexe — depuis une version 2
 
 Passer sur la version 3 (`python tools/update_suite.py update`), puis
-`python tools/migrate_v3.py --data-url https://framagit.org/defa-virtual/missions-defa.git` : `data/` est créé (clone,
+`python tools/migrate_v3.py --data-url <adresse du dépôt de données>` : `data/` est créé (clone,
 ou dépôt local à relier), les données y sont rangées, puis Paramètres › Sources et dossiers › **Dossier du dépôt**.
 Anciennes adresses : `CR DEFA/…` → `apps/cr/…`, `SIA XML/…` → `apps/cpco/…`, Paramétrage / Apparence / Maintenance →
 `apps/settings/…`, planificateur → `apps/planner/…`, Landing → `apps/landing/…` ; page d'accueil : `index.html`.

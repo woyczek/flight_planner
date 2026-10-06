@@ -412,15 +412,15 @@ El número de cada paso se pone en verde cuando está hecho.
 
 Este paso instala los datos de la aerolínea (misiones, referencias…). Pasa por el lanzador: sin él, la página muestra «Para este paso, abra la suite con el lanzador…».
 
-Dos posibilidades:
+Tres posibilidades:
 
 | Tarjeta | Procedimiento |
 |---|---|
-| «Tengo acceso al repositorio (framagit)» | Introduzca «Identificador» y «Contraseña o token», marque si es necesario «recordar en el gestor de credenciales de Git» y, después, «Obtener los datos». La primera descarga tarda unos minutos. |
+| «Conjunto de prueba» | «Instalar el conjunto de prueba»: datos ficticios entregados con la suite (misiones con un ejercicio, pilotos, flota, disponibilidad y asignaciones de la semana en curso), para descubrir la suite; para sustituir más adelante por los datos de la aerolínea. Se rechaza si ya hay datos. |
+| «Repositorio de datos» | Introduzca «Dirección del repositorio» (facilitada por su aerolínea: `https://…` o `git@…`), si hace falta «Identificador (opcional)» y «Contraseña o token (opcional)», marque si hace falta «recordar en el gestor de credenciales de Git» y luego «Obtener los datos». La primera descarga tarda unos minutos. |
 | «He recibido los datos por correo» | «Archivo de datos…»: elija el archivo `.zip` recibido (contiene `data_tree.js`). |
-
-- Cuenta con doble autenticación: utilice un token de acceso (framagit › Preferencias › Tokens de acceso, permiso `read_repository`).
-- Si Git no está instalado, solo es posible el archivo (o instale Git y vuelva a arrancar).
+- No hay ninguna dirección rellenada de antemano. Repositorio privado por HTTPS: identificador y contraseña, o un token de acceso de lectura si la cuenta tiene doble autenticación; por SSH (`git@…`), la clave SSH del equipo.
+- Si Git no está instalado: conjunto de prueba o archivo (o instale Git y vuelva a arrancar).
 - **«Repositorio git de sincronización de datos»**: la dirección del repositorio remoto de `data/`, que comparte los datos
   entre los equipos (botón «Sincronizar»). Dirección SSH `git@hôte:compte/dépôt.git` (clave SSH del equipo) o
   HTTPS `https://hôte/compte/dépôt.git` (identificadores registrados en Git). La tarjeta muestra el repositorio actual;

@@ -412,15 +412,15 @@ Le numéro de chaque étape passe au vert quand elle est faite.
 
 Cette étape installe les données de la compagnie (missions, références…). Elle passe par le lanceur : sans lui, la page affiche « Pour cette étape, ouvrez la suite avec le lanceur… ».
 
-Deux possibilités :
+Trois possibilités :
 
 | Carte | Marche à suivre |
 |---|---|
-| « J'ai un accès au dépôt (framagit) » | Saisissez « Identifiant » et « Mot de passe ou jeton », cochez au besoin « mémoriser dans le gestionnaire d'identifiants de Git », puis « Récupérer les données ». Le premier téléchargement prend quelques minutes. |
+| « Jeu d’essai » | « Installer le jeu d’essai » : données fictives livrées avec la suite (missions dont un exercice, pilotes, flotte, disponibilités et affectations de la semaine en cours), pour découvrir la suite ; à remplacer plus tard par les données de la compagnie. Refusé si des données sont déjà là. |
+| « Dépôt de données » | Saisissez « Adresse du dépôt » (donnée par votre compagnie : `https://…` ou `git@…`), au besoin « Identifiant (facultatif) » et « Mot de passe ou jeton (facultatif) », cochez au besoin « mémoriser dans le gestionnaire d’identifiants de Git », puis « Récupérer les données ». Le premier téléchargement prend quelques minutes. |
 | « J'ai reçu les données par mail » | « Archive des données… » : choisissez l'archive `.zip` reçue (elle contient `data_tree.js`). |
-
-- Compte avec double authentification : utilisez un jeton d'accès (framagit › Préférences › Jetons d'accès, droit `read_repository`).
-- Si Git n'est pas installé, seule l'archive est possible (ou installez Git, puis relancez).
+- Aucune adresse n’est préremplie. Dépôt privé en HTTPS : identifiant et mot de passe, ou un jeton d’accès en lecture si le compte a la double authentification ; en SSH (`git@…`), la clé SSH de l’ordinateur.
+- Si Git n'est pas installé : jeu d’essai ou archive (ou installez Git, puis relancez).
 - **« Dépôt git de synchronisation des données »** : l'adresse du dépôt distant de `data/`, qui partage les données
   entre les postes (bouton « Synchroniser »). Adresse SSH `git@hôte:compte/dépôt.git` (clé SSH de l'ordinateur) ou
   HTTPS `https://hôte/compte/dépôt.git` (identifiants enregistrés dans Git). La carte affiche le dépôt actuel ;

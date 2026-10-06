@@ -54,7 +54,7 @@
   const loadBundle = () => bundle ||= new Promise(res => {
     if (window.DOC_BUNDLE) return res(window.DOC_BUNDLE);
     const sc = document.createElement('script');
-    sc.src = new URL('docs_bundle.js?v=1160d2ff', HERE).href;
+    sc.src = new URL('docs_bundle.js?v=5d59b046', HERE).href;
     sc.onload = () => res(window.DOC_BUNDLE || {});
     sc.onerror = () => res({});
     document.head.append(sc);

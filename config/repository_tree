@@ -24,7 +24,7 @@ window.REPOSITORY_TREE={
     siaEaip:{url:"https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/eaip.html",label:["SIA — eAIP","SIA — eAIP","SIA — eAIP","SIA — eAIP"]},
     suiteRepo:{url:"https://framagit.org/asr/flight_planner",label:["Dépôt de l’application","Application repository","Anwendungs-Repository","Repositorio de la aplicación"]},
     airports:{url:"https://cdn.jsdelivr.net/gh/mwgg/Airports@master/airports.json",label:["Base mondiale des aérodromes (mwgg/Airports via jsDelivr)","World aerodrome base (mwgg/Airports via jsDelivr)","Weltweite Flugplatzbasis (mwgg/Airports über jsDelivr)","Base mundial de aeródromos (mwgg/Airports vía jsDelivr)"]},
-    dataRepo:{url:"https://framagit.org/defa-virtual/missions-defa",label:["Dépôt des données (privé)","Data repository (private)","Daten-Repository (privat)","Repositorio de datos (privado)"]}
+    dataRepo:{url:"",label:["Dépôt des données (privé)","Data repository (private)","Daten-Repository (privat)","Repositorio de datos (privado)"]}
   },
   themes:{
     gaar:{bar:"#773131",barText:"#ffffff",page:"#ffffff",accent:"#773131",favicon:"assets/favicon-gaar.svg"},

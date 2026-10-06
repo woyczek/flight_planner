@@ -2,7 +2,7 @@
 // Sa présence fait lire data/ plutôt que les exemples (shared/data_files.js). Ne pas renommer.
 window.DATA_TREE = {
   version: 1,
-  repository: 'https://framagit.org/defa-virtual/missions-defa',
+  repository: '', // adresse du dépôt de données de la compagnie (aucune par défaut)
   layout: {
     references: 'flotte, référence, indicatifs, corrections OACI (aircraft_overrides.json)',
     cr: 'registre unique missions.yaml, registres CSV historiques (FIRE, HEMS), CR, packs FMS GAAR',
