@@ -55,6 +55,14 @@
       controle: [{ id: 'controle', libelle: 'CONTRÔLE', duree: 120, couleur: '#7300ff', fond: '#7300ff' }]
     },
     indicatifs: {},
+    // configurations d'avion affichées sur la plaquette (KNON : canon chargé, TALIOS : pod de désignation…)
+    configs: [{
+      texte: 'KNON',
+      couleur: '#9a3010'
+    }, {
+      texte: 'TALIOS',
+      couleur: '#1a5898'
+    }],
     ll: [],
     recurrences: []
   };
@@ -218,7 +226,8 @@
       avions: (Array.isArray(e.avions) && e.avions.length ? e.avions : [{}]).slice(0, 8).map(a => ({
         pilote: a?.pilote || null,
         nav: a?.nav || null,
-        annule: !!a?.annule
+        annule: !!a?.annule,
+        config: (Array.isArray(a?.config) ? a.config : []).map(x => String(x).trim().toUpperCase()).filter(Boolean)
       })),
       taches: (e.taches || []).map(x => ({
         nom: x?.nom || '',
@@ -239,6 +248,7 @@
         offload: x?.offload ?? null
       })),
       infos: e.infos || '',
+      ...training(e),
       etat: ETATS.includes(e.etat) ? e.etat : 'prevu',
       cr: CR.includes(e.cr) ? e.cr : null,
       partiel: !!e.partiel,
@@ -257,6 +267,7 @@
       couleur: e.couleur || (t === 'controle' ? '#7300ff' : '#8a6010'),
       fond: e.fond ?? null,
       equipage: [...new Set((e.equipage || []).filter(Boolean))],
+      ...training(e),
       etat: ETATS.includes(e.etat) ? e.etat : 'prevu',
       motif: e.motif || '',
       recurrence: e.recurrence || null
@@ -264,6 +275,15 @@
     return {
       ...base,
       texte: String(e?.texte || '')
+    };
+  }
+  /** Entraînement d'un élément : PTA (principal training audience : membres que l'élément entraîne en priorité, entourés
+   *  sur l'ordre) et DLO (desired learning objectives : objectifs de chaque membre sur cet élément, { TRI → texte }). */
+  function training(e) {
+    const tri = x => String(x || '').trim().toUpperCase();
+    return {
+      pta: [...new Set((e?.pta || []).map(tri).filter(Boolean))],
+      dlo: Object.fromEntries(Object.entries(e?.dlo || {}).map(([k, v]) => [tri(k), String(v || '').trim()]).filter(([k, v]) => k && v))
     };
   }
   /** Genre d'affectation d'un élément (SuiteDispos.affectable) ; null pour une note. */

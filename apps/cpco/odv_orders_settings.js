@@ -36,6 +36,8 @@
     couleur: L('Couleur', 'Colour', 'Farbe', 'Color'),
     fond: L('Fond plein', 'Solid fill', 'Gefüllt', 'Relleno'),
     parIndicatif: L('Couleur de l’indicatif', 'Callsign colour', 'Farbe des Rufzeichens', 'Color del indicativo'),
+    configs: L('Configurations d’avion (KNON, TALIOS…)', 'Aircraft configurations (KNON, TALIOS…)', 'Luftfahrzeugkonfigurationen (KNON, TALIOS…)', 'Configuraciones de aeronave (KNON, TALIOS…)'),
+    texte: L('Texte', 'Text', 'Text', 'Texto'),
     indicatifs: L('Couleurs des indicatifs', 'Callsign colours', 'Farben der Rufzeichen', 'Colores de los indicativos'),
     prefixe: L('Préfixe', 'Prefix', 'Präfix', 'Prefijo'),
     contour: L('Contour', 'Outline', 'Rahmen', 'Contorno'),
@@ -109,6 +111,9 @@
           <datalist id="odvoSetCs">${prefixes.map(p => `<option value="${esc(p)}">`).join('')}</datalist>
           <table class="da-table"><thead><tr><th>${esc(H.prefixe)}</th><th>${esc(H.fond)}</th><th>${esc(H.contour)}</th><th></th></tr></thead><tbody data-cs data-no-i18n>${Object.entries(cfg.indicatifs || {}).map(([p, c]) => csRow(p, c)).join('')}</tbody></table>
           <button type="button" data-add="cs">${esc(H.ajouter)}</button>
+          <h3>${esc(H.configs)}</h3>
+          <table class="da-table"><thead><tr><th>${esc(H.texte)}</th><th>${esc(H.couleur)}</th><th></th></tr></thead><tbody data-cfgs data-no-i18n>${(cfg.configs || []).map(k => `<tr><td>${text('texte', k.texte, ' style="width:9em;text-transform:uppercase"')}</td><td>${color('couleur', k.couleur)}</td><td>${drop}</td></tr>`).join('')}</tbody></table>
+          <button type="button" data-add="cfg">${esc(H.ajouter)}</button>
           <h3>${esc(H.ll)}</h3>
           <div class="da-scroll"><table class="da-table"><thead><tr><th>${esc(H.nom)}</th><th>${esc(H.debut)}</th><th>${esc(H.fin)}</th><th>${esc(H.joursSem)}</th><th>${esc(H.couleur)}</th><th>${esc(H.sia)}</th><th></th></tr></thead><tbody data-ll data-no-i18n>${(cfg.ll || []).map(llRow).join('')}</tbody></table></div>
           <button type="button" data-add="ll">${esc(H.ajouter)}</button>
@@ -155,6 +160,10 @@
             fond: val(tr, 'fond').value,
             contour: val(tr, 'contour').value
           }]).filter(([p]) => p)),
+          configs: [...body.querySelectorAll('[data-cfgs] tr')].map(tr => ({
+            texte: val(tr, 'texte').value.trim().toUpperCase(),
+            couleur: val(tr, 'couleur').value
+          })).filter(k => k.texte),
           ll: [...body.querySelectorAll('[data-ll] tr')].map(tr => ({
             nom: val(tr, 'nom').value.trim(),
             debut: val(tr, 'debut').value,
@@ -189,6 +198,10 @@
             contour: '#000000'
           }
         };
+        else if (add === 'cfg') cfg.configs = [...(cfg.configs || []), {
+          texte: 'CONFIG',
+          couleur: '#64748b'
+        }];
         else if (add === 'll') cfg.ll = [...cfg.ll, {
           nom: 'RTBA',
           debut: '08:00',

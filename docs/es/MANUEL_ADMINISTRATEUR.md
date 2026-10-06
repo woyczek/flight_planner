@@ -509,6 +509,7 @@ En una ficha: «⚠ n» cuenta sus conflictos, «P» indica que ningún tripulan
 - Un indicativo introducido propone la misión de la asignación que lleva ese indicativo ese día.
 - «Misión del registro y equipo»: una fila por equipo en vuelo de cada misión (indicativo, aeronave, función, familia, aeródromos, operación, duración estimada), ordenada por duración; «⚠» y una notificación señalan una duración estimada distinta de la solicitada (diferencia de más de 15 min o 15 %). «Entrenamiento (sin misión)» deja la ficha sin misión.
 - «Reabastecimiento»: una misión cisterna (primero las de la misma operación o del mismo eje), cuya ficha se coloca ese día si aún no está, o un vuelo cisterna ya colocado; la hora del reabastecimiento se ajusta al lado.
+- **PTA** (principal training audience): miembros a los que el elemento entrena en prioridad, marcados en la tabla de aeronaves (vuelo) o en la lista PTA (control, varios); aparecen rodeados en la ficha. **Configuración**: configuraciones cargadas en la aeronave (KNON = cañón, TALIOS = pod…), propuestas según los ajustes. **DLO** (desired learning objectives): objetivos de cada miembro en el elemento, una línea por miembro «TRI = objetivos»; «◎» en el trigrama, objetivos al pasar el ratón.
 - Vuelo de misión: la tripulación viene de las asignaciones de la misión; «Asignar…» abre la ventana de asignación del Centro. El informe de la misión es la referencia: al abrir la semana, estado e informe se toman de él; sin informe pasado el plazo configurado, el vuelo pasa a MNE (causa «sin informe»).
 - **Control**, **Varios**: etiqueta, posición (control), inicio, duración, color, estado, motivo, tripulación (casillas de los miembros), notas (varios).
 - **Nota**: texto libre.
@@ -628,6 +629,7 @@ Esta sección ajusta la página Órdenes de vuelo (`data/config/odv.json`, sincr
 | Días mostrados, horas de servicio | 7 días, de 06:00 a 23:00 z; sirven a la cronología y a las estadísticas |
 | Plantillas de vuelos, de varios, de control | etiqueta, duración, color, relleno; «Color del indicativo»: la ficha toma el color de su indicativo |
 | Colores de los indicativos | prefijo (gana el más largo contenido en el indicativo), relleno, contorno |
+| Configuraciones de aeronave | texto (KNON, TALIOS…), color; propuestas en la tabla de aeronaves de un vuelo |
 | Franjas LL / RTBA (respaldo) | nombre, inicio, fin, días, color, zona de la base |
 | Personal | grupo Staff o Miembros, color, orden en la paleta |
 | Recurrencias | elementos repetidos; «✕» detiene una recurrencia |

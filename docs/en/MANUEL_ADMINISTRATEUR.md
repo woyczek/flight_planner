@@ -509,6 +509,7 @@ On a strip: “⚠ n” counts its conflicts, “P” flags that no crew member 
 - A callsign entered suggests the mission of the assignment that carries this callsign that day.
 - “Registry mission and team”: one row per flying team of each mission (callsign, aircraft, role, family, airfields, operation, estimated duration), sorted by duration; “⚠” and a notification flag an estimated duration that differs from the requested one (gap of more than 15 min or 15 %). “Training (no mission)” leaves the strip without a mission.
 - “Refuelling”: a tanker mission (those of the same operation or on the same track first), whose strip is placed that day if it is not there yet, or a tanker flight already placed; the refuelling time is set next to it.
+- **PTA** (principal training audience): members the item trains first, ticked in the aircraft table (flight) or in the PTA list (control, miscellaneous); they are circled on the strip. **Configuration**: configurations loaded on the aircraft (KNON = gun, TALIOS = pod…), suggested from the settings. **DLO** (desired learning objectives): objectives of each member on the item, one line per member “TRI = objectives”; “◎” on the trigram, objectives on hover.
 - Mission flight: the crew comes from the mission's assignments; “Assign…” opens the Centre's assignment window. The mission report is authoritative: when the week is opened, status and report are taken from it; with no report after the set delay, the flight becomes MNE (cause “no report”).
 - **Control**, **Miscellaneous**: label, position (control), start, duration, colour, status, reason, crew (member boxes), notes (miscellaneous).
 - **Note**: free text.
@@ -628,6 +629,7 @@ This section sets the Flight orders page (`data/config/odv.json`, synchronised).
 | Days shown, duty hours | 7 days, 06:00 to 23:00 z; used by the timeline and the statistics |
 | Flight, miscellaneous and control templates | label, duration, colour, solid fill; “Callsign colour”: the strip takes the colour of its callsign |
 | Callsign colours | prefix (the longest one contained in the callsign wins), fill, outline |
+| Aircraft configurations | text (KNON, TALIOS…), colour; suggested in the aircraft table of a flight |
 | LL / RTBA slots (fallback) | name, start, end, days, colour, database area |
 | Personnel | Staff or Members group, colour, order in the palette |
 | Recurrences | repeated items; “✕” stops a recurrence |

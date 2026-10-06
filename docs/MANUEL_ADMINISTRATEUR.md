@@ -509,6 +509,7 @@ Sur une plaquette : « ⚠ n » compte ses conflits, « P » signale qu'aucun é
 - Un indicatif saisi propose la mission de l'affectation qui porte cet indicatif ce jour-là.
 - « Mission du registre et équipe » : une ligne par équipe en vol de chaque mission (indicatif, appareil, rôle, famille, terrains, opération, durée estimée), triée par durée ; « ⚠ » et une notification signalent une durée estimée différente de la durée demandée (écart de plus de 15 min ou 15 %). « Entraînement (sans mission) » laisse la plaquette sans mission.
 - « Ravitaillement » : une mission ravitailleur (celles de la même opération ou du même axe en tête), dont la plaquette est posée ce jour-là si elle n'y est pas déjà, ou un vol ravitailleur déjà posé ; l'heure du ravitaillement se règle à côté.
+- **PTA** (principal training audience) : membres que l'élément entraîne en priorité, cochés dans le tableau des avions (vol) ou dans la liste PTA (contrôle, divers) ; ils sont entourés sur la plaquette. **Configuration** : configurations chargées sur l'avion (KNON = canon, TALIOS = pod…), proposées d'après les réglages. **DLO** (desired learning objectives) : objectifs de chaque membre sur l'élément, une ligne par membre « TRI = objectifs » ; « ◎ » sur le trigramme, objectifs au survol.
 - Vol de mission : l'équipage vient des affectations de la mission ; « Affecter… » ouvre la fenêtre d'affectation du Centre. Le CR de la mission fait foi : à l'ouverture de la semaine, état et CR en sont repris ; sans CR passé le délai réglé, le vol passe en MNE (cause « pas de CR »).
 - **Contrôle**, **Divers** : libellé, position (contrôle), début, durée, couleur, état, motif, équipage (cases des membres), notes (divers).
 - **Note** : texte libre.
@@ -628,6 +629,7 @@ Cette rubrique règle la page Ordres de vols (`data/config/odv.json`, synchronis
 | Jours affichés, heures de service | 7 jours, 06:00 à 23:00 z ; servent à la frise et aux statistiques |
 | Modèles de vols, de divers, de contrôle | libellé, durée, couleur, fond plein ; « Couleur de l'indicatif » : la plaquette prend la couleur de son indicatif |
 | Couleurs des indicatifs | préfixe (le plus long contenu dans l'indicatif l'emporte), fond, contour |
+| Configurations d'avion | texte (KNON, TALIOS…), couleur ; proposées dans le tableau des avions d'un vol |
 | Créneaux LL / RTBA (repli) | nom, début, fin, jours, couleur, zone de la base |
 | Personnel | groupe Staff ou Membres, couleur, ordre dans la palette |
 | Récurrences | éléments répétés ; « ✕ » arrête une récurrence |

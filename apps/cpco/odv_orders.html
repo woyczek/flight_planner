@@ -371,6 +371,28 @@
     color: #fff;
     border-color: #dc2626
   }
+  /* PTA : trigramme entouré, comme sur les ordres de vols papier ; DLO : objectif noté (◎, détail au survol) */
+  .odvo-tri.pta {
+    outline: 2px solid #ff3b3b;
+    outline-offset: 1px;
+    border-radius: 50%
+  }
+  .odvo-dlo {
+    font-style: normal;
+    margin-left: 2px;
+    color: #f59e0b
+  }
+  .odvo-plane {
+    display: inline-flex;
+    gap: 2px;
+    align-items: center;
+    margin-right: 4px
+  }
+  .odvo-cfg {
+    font-size: 9px;
+    padding: 0 2px;
+    border: 1px dashed currentColor
+  }
   .odvo-mis,
   .odvo-cr,
   .odvo-p {
@@ -674,8 +696,8 @@
 <script src="../../shared/odv_airspace.js?v=649e93b8"></script>
 <script src="../../shared/odv_activations_editor.js?v=2d510137"></script>
 <script src="../../shared/odv_reports.js?v=dad6bbad"></script>
-<script src="../../shared/odv_orders_store.js?v=0703aa48"></script>
-<script src="odv_orders.js?v=d9409a65"></script>
+<script src="../../shared/odv_orders_store.js?v=edee3153"></script>
+<script src="odv_orders.js?v=c2678713"></script>
 <script src="../../shared/app_framework.js?v=278663dd"></script>
 <script src="../../shared/content_i18n.js?v=7afecb78"></script>
 <script>

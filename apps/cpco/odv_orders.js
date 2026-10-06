@@ -60,6 +60,7 @@
       doublon: L4('{tri} : deux fois sur l’élément', '{tri}: twice on the item', '{tri}: zweimal im Element', '{tri}: dos veces en el elemento'),
       zone: L4('Zone {z} : {e}', 'Area {z}: {e}', 'Gebiet {z}: {e}', 'Zona {z}: {e}')
     },
+    ptaTip: L4('PTA — principal training audience : membre que l’élément entraîne en priorité (entouré)', 'PTA — principal training audience: member the item trains first (circled)', 'PTA — principal training audience: Mitglied, das das Element vorrangig trainiert (eingekreist)', 'PTA — principal training audience: miembro al que el elemento entrena en prioridad (rodeado)'),
     durWarn: L4('⚠ Durée estimée de la mission différente de la durée demandée', '⚠ Estimated mission duration differs from the requested duration', '⚠ Geschätzte Missionsdauer weicht von der gewünschten Dauer ab', '⚠ Duración estimada de la misión distinta de la solicitada'),
     zoneEtats: {
       active: L4('active', 'active', 'aktiv', 'activa'),
@@ -455,8 +456,16 @@
   function crewChip(tri, e) {
     const c = (S.conf.get(e.id) || []).find(x => x.tri === tri);
     const col = S.members.find(m => m.tri === tri)?.couleur;
-    return `<span class="odvo-tri${c ? ' bad' : ''}" data-tri="${esc(tri)}" title="${esc(memberName(tri) + (c ? ' — ' + conflictText(c) : ''))}"${col ? ` style="border-color:${esc(tint(col))}"` : ''}>${esc(tri)}</span>`;
+    const pta = (e.pta || []).includes(tri),
+      dlo = e.dlo?.[tri];
+    const tip = [memberName(tri), pta ? 'PTA' : '', dlo ? `DLO : ${dlo}` : '', c ? conflictText(c) : ''].filter(Boolean).join(' — ');
+    return `<span class="odvo-tri${c ? ' bad' : ''}${pta ? ' pta' : ''}" data-tri="${esc(tri)}" title="${esc(tip)}"${col ? ` style="border-color:${esc(tint(col))}"` : ''}>${esc(tri)}${dlo ? '<i class="odvo-dlo">◎</i>' : ''}</span>`;
   }
+  /** Configurations chargées d'un avion (KNON, TALIOS…), couleurs des réglages. */
+  const cfgChips = list => (list || []).map(x => {
+    const c = (S.cfg.configs || []).find(k => k.texte === x)?.couleur;
+    return `<span class="odvo-cfg"${c ? ` style="border-color:${esc(tint(c))};color:${esc(tint(c))}"` : ''}>${esc(x)}</span>`;
+  }).join('');
   function itemHtml(e, X, P, top, h) {
     const s = min(e.debut),
       w = Math.max(18, e.duree * P);
@@ -475,13 +484,21 @@
     if (e.type === 'vol') {
       const aff = O().missionCrew(e, S.affect);
       const crew = aff.length ? aff.map(a => a.pilot) : e.avions.filter(a => a.pilote || a.nav).flatMap(a => [a.pilote, a.nav].filter(Boolean));
+      // un avion : pilote, navigateur, configurations ; vol de mission : pilotes des affectations, configurations saisies
+      const planes = aff.length ? aff.map(a => ({
+        tris: [a.pilot],
+        config: e.avions.find(x => x.pilote === a.pilot)?.config || []
+      })) : e.avions.filter(a => a.pilote || a.nav).map(a => ({
+        tris: [a.pilote, a.nav].filter(Boolean),
+        config: a.config
+      }));
       const prep = O().prepReady(e, {
         dispos: S.dispos,
         affectations: S.affect
       });
       body = `<div class="odvo-it-h"><b>${esc(e.libelle || '—')}</b>${e.indicatif ? ` <span>${esc(e.indicatif)}</span>` : ''}${e.mission ? ` <span class="odvo-mis" title="${esc(t(L4('Mission du registre', 'Registry mission', 'Mission des Registers', 'Misión del registro')))}">${esc(e.mission)}</span>` : ` <span class="odvo-mis">${esc(t(L4('entr.', 'train.', 'Übung', 'entr.')))}</span>`}${e.cr ? ` <span class="odvo-cr odvo-cr-${esc(e.cr)}">${esc(e.cr === 'BACHE' ? 'Bâché' : e.cr)}${e.partiel ? '½' : ''}</span>` : ''}${!prep && crew.length && e.etat === 'prevu' ? ` <span class="odvo-p" title="${esc(t(L4('P — aucun équipier disponible dans l’heure et demie avant le vol', 'P — no crew member available in the hour and a half before the flight', 'P — kein Besatzungsmitglied in den 90 Minuten vor dem Flug verfügbar', 'P — ningún tripulante disponible en la hora y media previa al vuelo')))}">P</span>` : ''}</div>
         <div class="odvo-it-t">${esc(e.debut)}z · ${esc(String(e.duree))}′${e.zones?.length ? ' · ' + esc(e.zones.map(z => z.nom).join(', ')) : ''}${e.axe ? ' · AAR ' + esc(e.axe) : ''}${e.ravitaillements?.length ? ' · ⛽' + e.ravitaillements.length : ''}</div>
-        <div class="odvo-it-c">${crew.map(x => crewChip(x, e)).join('')}</div>`;
+        <div class="odvo-it-c">${planes.map(p => `<span class="odvo-plane">${p.tris.map(x => crewChip(x, e)).join('')}${cfgChips(p.config)}</span>`).join('')}</div>`;
     } else if (e.type === 'note') body = `<div class="odvo-it-n">${esc(e.texte || '…')}</div>`;
     else body = `<div class="odvo-it-h"><b>${esc(e.libelle || '—')}</b>${e.position ? ` <span>${esc(e.position)}</span>` : ''}</div><div class="odvo-it-c">${e.equipage.map(x => crewChip(x, e)).join('')}</div>`;
     return `<div class="odvo-it odvo-${e.type}${state}${conf.length ? ' conflit' : ''}" data-id="${esc(e.id)}" style="left:${X(s)}px;top:${top}px;width:${w}px;height:${h}px;background:${fill};border-color:${border};color:${fg}" title="${esc(tip)}">${conf.length ? `<span class="odvo-warn">⚠ ${conf.length}</span>` : ''}${e.recurrence ? '<span class="odvo-rec" title="↻">↻</span>' : ''}${body}<span class="odvo-rsz" data-rsz></span></div>`;
@@ -873,12 +890,15 @@
       </div>
       <h4>${esc(t(L4('Avions', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves')))}</h4>
       ${aff.length ? `<p class="mut">${esc(t(L4('Équipage tiré des affectations de la mission :', 'Crew taken from the mission assignments:', 'Besatzung aus den Zuweisungen der Mission:', 'Tripulación tomada de las asignaciones de la misión:')))} ${esc(aff.map(a => `${a.pilot} ${a.callsign || ''} ${a.aircraft?.type || ''}`).join(' · '))}</p>` : ''}
-      <table class="odvo-av"><thead><tr><th>#</th><th>${esc(t(L4('Pilote', 'Pilot', 'Pilot', 'Piloto')))}</th><th>${esc(t(L4('Navigateur', 'Navigator', 'Navigator', 'Navegante')))}</th><th>${esc(t(L4('Annulé', 'Cancelled', 'Abgesagt', 'Cancelado')))}</th></tr></thead><tbody>${Array.from({
+      <datalist id="odvoCfg">${(S.cfg.configs || []).map(k => `<option value="${esc(k.texte)}">`).join('')}</datalist>
+      <table class="odvo-av"><thead><tr><th>#</th><th>${esc(t(L4('Pilote', 'Pilot', 'Pilot', 'Piloto')))}</th><th title="${esc(t(TX.ptaTip))}">PTA</th><th>${esc(t(L4('Navigateur', 'Navigator', 'Navigator', 'Navegante')))}</th><th title="${esc(t(TX.ptaTip))}">PTA</th><th>${esc(t(L4('Configuration', 'Configuration', 'Konfiguration', 'Configuración')))}</th><th>${esc(t(L4('Annulé', 'Cancelled', 'Abgesagt', 'Cancelado')))}</th></tr></thead><tbody>${Array.from({
         length: 8
       }, (_, i) => {
         const a = e.avions[i] || {};
-        return `<tr><td>${i + 1}</td><td><select name="p${i}">${memOpts(a.pilote)}</select></td><td><select name="n${i}">${memOpts(a.nav)}</select></td><td><input type="checkbox" name="x${i}"${a.annule ? ' checked' : ''}></td></tr>`;
+        const chk = (n, tri) => `<input type="checkbox" name="${n}${i}"${tri && e.pta.includes(tri) ? ' checked' : ''}>`;
+        return `<tr><td>${i + 1}</td><td><select name="p${i}">${memOpts(a.pilote)}</select></td><td>${chk('tp', a.pilote)}</td><td><select name="n${i}">${memOpts(a.nav)}</select></td><td>${chk('tn', a.nav)}</td><td><input name="c${i}" list="odvoCfg" value="${esc((a.config || []).join(' '))}" placeholder="KNON TALIOS" style="width:9em"></td><td><input type="checkbox" name="x${i}"${a.annule ? ' checked' : ''}></td></tr>`;
       }).join('')}</tbody></table>
+      ${dloField(e)}
       ${field(L4('Tâches (une par ligne : nom = TRI)', 'Tasks (one per line: name = TRI)', 'Aufgaben (eine pro Zeile: Name = TRI)', 'Tareas (una por línea: nombre = TRI)'), `<textarea name="taches" rows="2">${esc(e.taches.map(x => `${x.nom} = ${x.pilote || ''}`).join('\n'))}</textarea>`, true)}
       ${field(L4('Infos', 'Info', 'Infos', 'Información'), `<textarea name="infos" rows="2">${esc(e.infos)}</textarea>`, true)}
       <div class="odvo-grid2">${etat}
@@ -895,6 +915,8 @@
         ${e.type === 'controle' ? field(L4('Position', 'Position', 'Position', 'Posición'), `<input name="position" value="${esc(e.position || '')}" placeholder="LFOA_TWR">`) : ''}
         ${common}${colors}${etat}</div>
       <fieldset class="odvo-crew"><legend>${esc(t(L4('Équipage', 'Crew', 'Besatzung', 'Tripulación')))}</legend>${S.members.map(m => `<label><input type="checkbox" name="eq" value="${esc(m.tri)}"${e.equipage.includes(m.tri) ? ' checked' : ''}> ${esc(m.tri)}</label>`).join('')}</fieldset>
+      <fieldset class="odvo-crew"><legend title="${esc(t(TX.ptaTip))}">PTA</legend>${S.members.map(m => `<label><input type="checkbox" name="pta" value="${esc(m.tri)}"${e.pta.includes(m.tri) ? ' checked' : ''}> ${esc(m.tri)}</label>`).join('')}</fieldset>
+      ${dloField(e)}
       ${e.type === 'divers' ? field(L4('Notes', 'Notes', 'Notizen', 'Notas'), `<textarea name="notes" rows="2">${esc(e.notes || '')}</textarea>`, true) : ''}
       ${repeatFields(e)}`;
     const title = {
@@ -930,6 +952,12 @@
       if (m) d.querySelector(`[data-mp=mission] .odvo-mp-row[data-v^="${CSS.escape(m)}|"]`)?.click();
     });
   }
+  const dloField = e => field(L4('DLO — objectifs de chaque membre sur cet élément (une ligne par membre : TRI = objectifs)', 'DLO — objectives of each member on this item (one line per member: TRI = objectives)', 'DLO — Ziele jedes Mitglieds für dieses Element (eine Zeile pro Mitglied: TRI = Ziele)', 'DLO — objetivos de cada miembro en este elemento (una línea por miembro: TRI = objetivos)'), `<textarea name="dlo" rows="2" placeholder="RBR = FULL COMMS no L16">${esc(Object.entries(e.dlo || {}).map(([k, v]) => `${k} = ${v}`).join('\n'))}</textarea>`, true);
+  /** Lignes « TRI = texte » → { TRI → texte }. */
+  const parseDlo = txt => Object.fromEntries(String(txt || '').split('\n').map(l => {
+    const i = l.indexOf('=');
+    return i < 0 ? ['', ''] : [l.slice(0, i).trim().toUpperCase(), l.slice(i + 1).trim()];
+  }).filter(([k, v]) => k && v));
   function repeatFields(e) {
     const r = (S.cfg.recurrences || []).find(x => x.id === e.recurrence);
     return `<div class="odvo-grid2">${field(L4('Répéter', 'Repeat', 'Wiederholen', 'Repetir'), `<select name="rythme">${[['', L4('non', 'no', 'nein', 'no')], ['quotidien', L4('chaque jour', 'every day', 'täglich', 'cada día')], ['hebdo', L4('chaque semaine', 'every week', 'wöchentlich', 'cada semana')], ['bimensuel', L4('une semaine sur deux', 'every other week', 'alle zwei Wochen', 'cada dos semanas')]].map(([v, l]) => opt(v, r?.rythme || '', t(l))).join('')}</select>`)}${field(L4('Jusqu’au', 'Until', 'Bis', 'Hasta'), `<input name="rfin" type="date" value="${esc(r?.fin || '')}">`)}</div>`;
@@ -971,8 +999,12 @@
         }, (_, i) => ({
           pilote: g(`p${i}`) || null,
           nav: g(`n${i}`) || null,
-          annule: !!g(`x${i}`)
+          annule: !!g(`x${i}`),
+          config: String(g(`c${i}`) || '').split(/[,\s]+/).map(x => x.trim().toUpperCase()).filter(Boolean)
         })).filter((a, i) => i === 0 || a.pilote || a.nav);
+        e.pta = Array.from({
+          length: 8
+        }, (_, i) => [g(`tp${i}`) && g(`p${i}`), g(`tn${i}`) && g(`n${i}`)]).flat().filter(Boolean);
         e.taches = String(g('taches') || '').split('\n').map(l => l.split('=')).filter(([n]) => n?.trim()).map(([n, p]) => ({
           nom: n.trim(),
           pilote: (p || '').trim().toUpperCase() || null
@@ -1022,7 +1054,11 @@
           MNE: e.partiel ? 'fait' : 'non_fait'
         }[e.cr];
         resolveZones(e);
-      } else if (e.type !== 'note') e.equipage = f.getAll('eq');
+      } else if (e.type !== 'note') {
+        e.equipage = f.getAll('eq');
+        e.pta = f.getAll('pta');
+      }
+      if (f.has('dlo')) e.dlo = parseDlo(g('dlo'));
       Object.assign(e, O().normalize(e));
       setRecurrence(e, g('rythme'), g('rfin'));
     });

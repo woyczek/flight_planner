@@ -70,6 +70,14 @@ Les 12 types de l'outil V0 correspondent aux catégories de `data/config/disponi
 | Récup | — | dispos du membre (catégorie `recup`) |
 | Zones | zones | calculées : RTBA actif par réseau, zones de la mission, zones ouvertes au contrôle, zones en conflit (`OdvAirspace`, lot L4) ; activations saisies : `data/atc/activations/<AAAA>-W<nn>.json` (`OdvActivationsEditor`) |
 
+- **Vocabulaire des ordres de vols** (précisé par l'escadron le 6 octobre 2026) : **PTA** (principal training audience)
+  = membres qu'un élément entraîne en priorité, entourés sur l'ordre ; **DLO** (desired learning objectives) = ce qu'un
+  membre doit travailler, en général ou sur une mission (« RBR : CAS, AAR », « RAKI : GCI dépendant », « RBR : FULL COMMS
+  no L16 ») ; **KNON**, **TALIOS** = configurations chargées sur un avion (canon, pod) — les « Conf. Avions » (`cavTpls`)
+  de V0 ; **butée** = échéance d'un membre.
+- **Équipe** : une plaquette de vol de mission porte une équipe en vol de la mission (`equipe` = indicatif de l'équipe du
+  registre) ; BLUE / RED de V0 = deux équipes (camps) d'une mission ; mission choisie dans une liste triée par durée
+  estimée (`estimate.block`), ⚠ au-delà de 15 min ou 15 % d'écart avec la durée demandée.
 - **AAR** : une mission ravitailleur du registre, souvent impliquée par une autre mission (missions complexes) ; sa
   plaquette est un vol de mission avec `axe` et `offload` ; les vols ravitaillés s'y accrochent (`ravitaillements`).
 - Retirés de V0 : plaquettes de zone et LL saisies à la main comme source principale (repli `ll` gardé), marqueurs et
@@ -94,6 +102,7 @@ Les 12 types de l'outil V0 correspondent aux catégories de `data/config/disponi
     "controle": [{ "id": "…", "libelle": "CONTRÔLE", "duree": 120, "couleur": "#7300ff" }]
   },
   "indicatifs": { "MASTIFF": { "fond": "#a49ea0", "contour": "#cd030d" } },
+  "configs": [{ "texte": "KNON", "couleur": "#9a3010" }, { "texte": "TALIOS", "couleur": "#1a5898" }],
   "ll": [{ "nom": "RTBA Lorraine", "debut": "11:30", "fin": "15:00", "jours": [1], "couleur": "#4ADE80", "sia": null }],
   "recurrences": [{ "id": "…", "element": { "type": "divers", "…": "…" }, "rythme": "hebdo", "jour": 2, "debut": "2026-10-12", "fin": null }]
 }
@@ -120,7 +129,9 @@ présentation des vols de mission.
   "elements": [
     { "id": "…", "type": "vol", "date": "2026-10-13", "debut": "09:30", "duree": 105,
       "mission": "A-001C", "libelle": "BLUE", "indicatif": "MASTIFF45", "reseau": "IVAO", "couleur": "#1a5898", "fond": null,
-      "avions": [{ "pilote": "ABC", "nav": null, "annule": false }],
+      "equipe": "MERCURE31",
+      "avions": [{ "pilote": "ABC", "nav": null, "annule": false, "config": ["KNON"] }],
+      "pta": ["ABC"], "dlo": { "ABC": "GCI dépendant" },
       "taches": [{ "nom": "Leader", "pilote": "ABC" }],
       "zones": [{ "id": "<id base>", "nom": "R 45 A" }],
       "axe": null, "offload": null,
@@ -133,8 +144,8 @@ présentation des vols de mission.
 | `type` | champs propres |
 |---|---|
 | `vol` | voir l'exemple ; `mission` null = **entraînement** ; jusqu'à 8 avions (pilote + navigateur) |
-| `divers` | `libelle`, `equipage: [TRI]`, `notes`, `etat`, `motif` |
-| `controle` | `libelle`, `position`, `equipage: [TRI]`, `etat` |
+| `divers` | `libelle`, `equipage: [TRI]`, `notes`, `etat`, `motif`, `pta`, `dlo` |
+| `controle` | `libelle`, `position`, `equipage: [TRI]`, `etat`, `pta`, `dlo` |
 | `note` | `texte` (texte simple : plus de HTML, risque d'injection de V0 supprimé) |
 
 - Vol de mission : l'équipage, l'indicatif et le décollage font foi **dans les affectations** ; `avions` en est la copie
@@ -173,6 +184,6 @@ présentation des vols de mission.
 
 ## 7. Questions ouvertes
 
-1. **Butées et DLO** (V0 : listes par membre rangées dans la semaine) : une liste d'échéances par membre, hors semaine ?
-2. **NLT** : repère horaire du jour (feuille de route avec les marqueurs) ou lié aux DLO ?
-3. **PTA** : sens métier inconnu ; non repris.
+1. **DLO par membre** (hors élément : « RBR : missions de CAS, AAR ») et **butées** : où les garder (fiche utilisateur
+   ou fichier de suivi), et rapprochement automatique avec les vols faits (V0 : statut « auto »).
+2. **NLT** : repère horaire du jour (feuille de route avec les marqueurs).
