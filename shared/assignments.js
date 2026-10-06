@@ -157,7 +157,7 @@
       }
     }
     if (!dir) throw new Error(t(['Dossier des données non autorisé : le choisir dans Paramètres › Installation › Sources et dossiers.', 'Data folder not authorised: choose it in Settings › Installation › Sources and folders.', 'Datenordner nicht freigegeben: unter Einstellungen › Installation › Quellen und Ordner wählen.', 'Carpeta de datos no autorizada: elegirla en Ajustes › Instalación › Fuentes y carpetas.']));
-    if (await FA.sameAsServed?.('__data', dir) === false) throw new Error(t(['Dossier des données d’une autre copie de la suite : rechoisir le dossier de l’application (Premier lancement).', 'Data folder of another copy of the suite: choose the application folder again (First run).', 'Datenordner einer anderen Kopie der Suite: Anwendungsordner neu wählen (Erststart).', 'Carpeta de datos de otra copia de la suite: volver a elegir la carpeta de la aplicación (Primer arranque).']));
+    if (await FA.sameAsServed?.('__data', dir) === false) throw new Error(await FA.otherText('__data', dir, 'other'));
     return dir;
   }
   /** Écrit value (JSON) dans data/<rel> du dossier autorisé ; null : supprime le fichier. */
@@ -215,6 +215,9 @@
   const uncheckedText = name => tf(['Dossier des données « {n} » : impossible de vérifier qu’il est celui de la suite servie (lanceur absent ou d’une version antérieure). Les données sont lues et écrites dans ce dossier.', 'Data folder “{n}”: cannot check that it is the one of the served suite (launcher missing or from an earlier version). Data is read from and written to this folder.', 'Datenordner „{n}“: Es lässt sich nicht prüfen, ob er der der bereitgestellten Suite ist (Starter fehlt oder ist älter). Daten werden in diesem Ordner gelesen und geschrieben.', 'Carpeta de datos «{n}»: no se puede comprobar que sea la de la suite servida (lanzador ausente o de una versión anterior). Los datos se leen y escriben en esta carpeta.'], {
     n: name
   });
+  /** Avertissement d'un dossier des données lu et écrit directement : autre copie confirmée (« Suite lancée depuis… »),
+   *  sinon contrôle impossible. */
+  const directText = async dir => await window.FileAccess?.otherState?.('__data', dir) === 'accepted' ? window.FileAccess.otherText('__data', dir, 'accepted') : uncheckedText(dir.name);
   /** JSON de data/<rel> lu dans le dossier autorisé ; null s'il est absent ou illisible. */
   async function readFile(dir, rel) {
     const parts = rel.split('/'),
@@ -234,7 +237,7 @@
   } = {}) {
     const local = outbox()[rel],
       src = await poolSource();
-    if (src.dir && src.same === null) alertOnce(uncheckedText(src.dir.name));
+    if (src.dir && src.same === null) alertOnce(await directText(src.dir));
     const served = src.dir && src.same === null ? await readFile(src.dir, rel) : await store.read(`data/${rel}`, {
       fresh
     });
@@ -289,7 +292,7 @@
       setJson(OUTBOX, b);
       where = 'folder';
       srcMemo = null; // autorisation peut-être accordée à l'instant : relue
-      if ((await poolSource()).same === null) alertOnce(uncheckedText(dir.name));
+      if ((await poolSource()).same === null) alertOnce(await directText(dir));
     } catch (e) {
       error = e;
       // gardé dans ce navigateur : raison réelle (dossier non autorisé, autre copie de la suite…), pas seulement l'absence
@@ -357,7 +360,7 @@
       const src = await missionsSource();
       if (src.same === false && !warnedOther) {
         warnedOther = true;
-        window.AppFramework?.notify?.(t(['Affectations : le dossier des missions autorisé appartient à une autre copie de la suite — ignoré ; rechoisir data/missions de la suite (Premier lancement ou Paramètres).', 'Assignments: the authorised missions folder belongs to another copy of the suite — ignored; choose the suite’s data/missions again (First run or Settings).']), 'warn');
+        window.AppFramework?.notify?.(await window.FileAccess.otherText('__missions', src.handle, 'other'), 'warn');
       }
       if (src.handle && src.same === null) local = JSON.parse(await (await (await src.handle.getFileHandle('affectations.json')).getFile()).text());
     } catch {
@@ -657,7 +660,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       })) !== 'granted') dir = null;
     if (!dir) throw new Error(t(['Dossier des données non autorisé : le choisir dans Paramètres › Installation › Sources et dossiers.', 'Data folder not authorised: choose it in Settings › Installation › Sources and folders.']));
     // dossier des données d'une autre copie de la suite : le Centre ne verrait pas la déclaration
-    if (await FA.sameAsServed?.('__data', dir) === false) throw new Error(t(['Dossier des données d’une autre copie de la suite : rechoisir le dossier de l’application (Premier lancement).', 'Data folder of another copy of the suite: choose the application folder again (First run).']));
+    if (await FA.sameAsServed?.('__data', dir) === false) throw new Error(await FA.otherText('__data', dir, 'other'));
     const path = `data/disponibilites/${tri}.json`;
     await store.lock(`disponibilites:${tri}`, async () => {
       const sub = await dir.getDirectoryHandle('disponibilites', {

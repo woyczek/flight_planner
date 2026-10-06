@@ -640,8 +640,10 @@ def mark_instance():
         p = os.path.join(ROOT, d)
         if os.path.isdir(p):
             try:
+                # 2e ligne : chemin réel du dossier (liens résolus), cité par les pages quand ce dossier est choisi
+                # depuis une autre copie de la suite (le navigateur ne donne que le nom du dossier)
                 with open(os.path.join(p, INSTANCE_FILE), 'w', encoding='utf-8', newline='\n') as f:
-                    f.write(token + '\n')
+                    f.write(token + '\n' + os.path.realpath(p) + '\n')
             except OSError:
                 pass  # dossier en lecture seule : pas de contrôle pour lui
     return token
