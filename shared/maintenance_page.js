@@ -1823,7 +1823,8 @@
     try {
       if (!siaFolderState) await scanSiaFolder(true);
       const mf = siaFolderState?.fixed.find(x => x.id === 'mora')?.file;
-      if (!mf) throw new Error(t(['mora.csv absent du dossier SIA XML (ou dossier non lu)', 'mora.csv missing from the SIA XML folder (or folder not read)']));
+      // le recalcul simple met à jour les obstacles d'une grille existante : sans grille, il n'y a rien à recalculer
+      if (!mf) throw new Error(t(['Pas de grille MORA (data/sia/mora.csv absent, ou dossier SIA non autorisé) : le recalcul simple part de la grille existante. Calculez-la d’abord : « Calculer la MORA de la zone » (zone sur la carte ci-dessus) ou « Calcul complet ».', 'No MORA grid (data/sia/mora.csv missing, or SIA folder not authorised): the simple recalculation starts from the existing grid. Compute it first: “Compute the zone MORA” (zone on the map above) or “Full calculation”.', 'Kein MORA-Raster (data/sia/mora.csv fehlt oder SIA-Ordner nicht freigegeben): die einfache Neuberechnung geht vom vorhandenen Raster aus. Zuerst berechnen: „MORA der Zone berechnen“ (Zone auf der Karte oben) oder „Vollständige Berechnung“.', 'Sin cuadrícula MORA (falta data/sia/mora.csv, o carpeta SIA no autorizada): el recálculo simple parte de la cuadrícula existente. Calcúlela primero: «Calcular la MORA de la zona» (zona en el mapa de arriba) o «Cálculo completo».']));
       const b = await window.SiaBase.get();
       if (!b?.obstacleMax) throw new Error(t(['base absente : « Reconstruire la base aéronautique »', 'no base: “Rebuild the aeronautical database”', 'keine Basis: „Luftfahrtdatenbank neu aufbauen“', 'sin base: «Reconstruir la base aeronáutica»']));
       const cyc = b.airac || '';
@@ -1942,6 +1943,68 @@
     renderVersions();
     renderDeps();
   }
+  /** Contrôles des données étendues : [libellé, pastilles] — zones actives et base reconstruite pour elles, espaces par
+   *  source, puis pour chaque zone active : espaces (centre dans la zone) par source, terrains, cases de la grille MORA. */
+  async function extendedChecks(b) {
+    const rows = [];
+    let Z = null;
+    try {
+      Z = await window.SiaBase.zones?.();
+    } catch {
+      Z = null; // module des zones indisponible : contrôles SIA seuls
+    }
+    if (!Z) return rows;
+    const SRC = {
+      sia: 'SIA',
+      dircam: 'DIRCAM',
+      aixm5: 'AIXM 5.1',
+      geojson: 'GeoJSON',
+      openaip: 'openAIP',
+      openair: 'OpenAir',
+      xplane: 'X-Plane'
+    };
+    const bySrc = list => {
+      const n = {};
+      for (const a of list) n[a.src || 'sia'] = (n[a.src || 'sia'] || 0) + 1;
+      return Object.entries(n).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${SRC[k] || k} ${v}`).join(' · ') || '0';
+    };
+    const zoneName = id => t(Z.byId(id)?.name || [id.toUpperCase()]);
+    const on = Z.zones().map(z => z.id).filter(id => Z.isOn(id)),
+      built = b.sources?.zones || []; // zones de la dernière reconstruction (sia_base.js : base.sources.zones)
+    const same = on.length === built.length && on.every(id => built.includes(id));
+    rows.push([t(['Zones actives', 'Active zones', 'Aktive Zonen', 'Zonas activas']), !on.length ? pill('warn', t(['aucune zone active : la base ne contient que le SIA', 'no active zone: the database holds the SIA only', 'keine aktive Zone: die Basis enthält nur das SIA', 'ninguna zona activa: la base solo contiene el SIA'])) : same ? pill('ok', on.map(zoneName).join(', ')) : pill('warn', t(['base reconstruite pour : {b} ; zones actives : {z} — « Reconstruire la base aéronautique »', 'database rebuilt for: {b}; active zones: {z} — “Rebuild the aeronautical database”', 'Basis aufgebaut für: {b}; aktive Zonen: {z} — „Luftfahrtdatenbank neu aufbauen“', 'base reconstruida para: {b}; zonas activas: {z} — «Reconstruir la base aeronáutica»'], {
+      b: built.map(zoneName).join(', ') || '—',
+      z: on.map(zoneName).join(', ')
+    }))]);
+    rows.push([t(['Espaces par source', 'Airspace by source', 'Lufträume nach Quelle', 'Espacios por fuente']), pill('info', bySrc(b.airspaces || []))]);
+    const centre = a => {
+      let s = 90, n = -90, w = 180, e = -180;
+      for (const [la, lo] of a.rings?.[0] || []) {
+        s = Math.min(s, la), n = Math.max(n, la), w = Math.min(w, lo), e = Math.max(e, lo);
+      }
+      return s <= n ? [(s + n) / 2, (w + e) / 2] : null;
+    };
+    const mora = new Set((b.moraCells || []).map(c => `${Math.floor(c.lat)}|${Math.floor(c.lon)}`));
+    for (const id of on) {
+      const inZ = Z.inZones([id], .2),
+        sp = (b.airspaces || []).filter(a => {
+          const c = centre(a);
+          return c && inZ(c[0], c[1]);
+        }),
+        ads = (b.aero?.aerodromes || []).filter(a => Number.isFinite(a.lat) && inZ(a.lat, a.lon)).length,
+        cells = Z.cellsOf(id),
+        covered = [...cells].filter(k => mora.has(k)).length;
+      const moraPill = !cells.size ? '' : covered === cells.size ? pill('ok', t(['MORA {c}/{n} cases', 'MORA {c}/{n} cells', 'MORA {c}/{n} Felder', 'MORA {c}/{n} casillas'], {
+        c: covered,
+        n: cells.size
+      })) : pill('warn', t(['MORA {c}/{n} cases — « Calculer la MORA de la zone »', 'MORA {c}/{n} cells — “Compute the zone MORA”', 'MORA {c}/{n} Felder — „MORA der Zone berechnen“', 'MORA {c}/{n} casillas — «Calcular la MORA de la zona»'], {
+        c: covered,
+        n: cells.size
+      }));
+      rows.push([`${t(['Zone', 'Zone', 'Zone', 'Zona'])} ${zoneName(id)}`, `${pill(sp.length ? 'info' : 'warn', t(['espaces : {l}', 'airspace: {l}', 'Lufträume: {l}', 'espacios: {l}'], { l: sp.length ? bySrc(sp) : '0' }))} ${pill(ads ? 'info' : 'warn', t(['{n} terrain(s)', '{n} aerodrome(s)', '{n} Flugplatz/-plätze', '{n} aeródromo(s)'], { n: ads }))} ${moraPill}`]);
+    }
+    return rows;
+  }
   async function usageCheck() {
     const box = document.getElementById('mtUsage');
     box.innerHTML = `<p class="mt-small">${esc(t(['Contrôle…', 'Checking…']))}</p>`;
@@ -1956,21 +2019,24 @@
     const regEmpty = pill('info', t(['registre des missions vide dans ce navigateur : ouvrir le Registre des missions (il relit data/missions), puis « Contrôler à nouveau »', 'mission registry empty in this browser: open the Mission registry (it re-reads data/missions), then “Check again”'])) + ` <a class="mt-link" href="${esc(regUrl)}" target="_blank" rel="noopener">${esc(t(['Registre des missions', 'Mission registry']))}</a>`;
     const used = [...new Set(reg.flatMap(m => [m.origin, m.destination]).map(s => /\(([A-Z]{4})\)|\b(LF[A-Z]{2})\b/.exec(s || '')).filter(Boolean).map(m => m[1] || m[2]))];
     const missingAd = ads.size ? used.filter(c => !ads.has(c)) : [];
-    out.push([t(['Terrains des missions du registre', 'Registry mission aerodromes']), !b ? pill('info', t(['base absente : « Reconstruire la base aéronautique »', 'no base: “Rebuild the aeronautical database”', 'keine Basis: „Luftfahrtdatenbank neu aufbauen“', 'sin base: «Reconstruir la base aeronáutica»'])) : !reg.length ? regEmpty : !used.length ? pill('info', t(['{n} mission(s), aucun code OACI « (LFxx) » dans leurs terrains', '{n} mission(s), no “(LFxx)” ICAO code in their aerodromes'], {
+    out.push([t(['Terrains des missions du registre', 'Registry mission aerodromes', 'Flugplätze der Registermissionen', 'Aeródromos de las misiones del registro']), !b ? pill('info', t(['base absente : « Reconstruire la base aéronautique »', 'no base: “Rebuild the aeronautical database”', 'keine Basis: „Luftfahrtdatenbank neu aufbauen“', 'sin base: «Reconstruir la base aeronáutica»'])) : !reg.length ? regEmpty : !used.length ? pill('info', t(['{n} mission(s), aucun code OACI « (LFxx) » dans leurs terrains', '{n} mission(s), no “(LFxx)” ICAO code in their aerodromes', '{n} Mission(en), kein ICAO-Code „(LFxx)“ in ihren Flugplätzen', '{n} misión(es), ningún código OACI «(LFxx)» en sus aeródromos'], {
       n: reg.length
-    })) : missingAd.length ? pill('warn', t(['{n}/{m} absents de l’AIXM : {l}', '{n}/{m} not in AIXM: {l}'], {
+    })) : missingAd.length ? pill('warn', t(['{n}/{m} absents de la base aéronautique (SIA et sources des zones actives) : {l}', '{n}/{m} not in the aeronautical database (SIA and sources of the active zones): {l}', '{n}/{m} fehlen in der Luftfahrtdatenbank (SIA und Quellen der aktiven Zonen): {l}', '{n}/{m} ausentes de la base aeronáutica (SIA y fuentes de las zonas activas): {l}'], {
       n: missingAd.length,
       m: used.length,
       l: missingAd.join(', ')
-    })) : pill('ok', t(['{m} terrain(s) présents dans l’AIXM', '{m} aerodrome(s) found in AIXM'], {
+    })) : pill('ok', t(['{m} terrain(s) présents dans la base aéronautique', '{m} aerodrome(s) found in the aeronautical database', '{m} Flugplatz/-plätze in der Luftfahrtdatenbank', '{m} aeródromo(s) presentes en la base aeronáutica'], {
       m: used.length
     }))]);
     // espaces
     const info = window.SiaBase.info();
-    out.push([t(['Espaces (base du studio)', 'Airspace (studio base)']), info ? pill(info.mixed ? 'err' : 'ok', t(['{n} espaces, cycle {c}', '{n} airspaces, cycle {c}'], {
+    out.push([t(['Espaces (base du studio)', 'Airspace (studio base)', 'Lufträume (Studio-Basis)', 'Espacios (base del estudio)']), info ? pill(info.mixed ? 'err' : 'ok', t(['{n} espaces, cycle {c}', '{n} airspaces, cycle {c}', '{n} Lufträume, Zyklus {c}', '{n} espacios, ciclo {c}'], {
       n: info.counts?.airspaces ?? '?',
       c: info.airac
     })) : pill('info', '—')]);
+    // données étendues (zones actives, Paramètres › Maintenance › Données aéronautiques) : base reconstruite pour les
+    // zones actives, espaces par source, puis par zone : espaces, terrains, couverture de la grille MORA
+    if (b) out.push(...await extendedChecks(b));
     // appareils et flotte
     const fleet = window.DEFA_FLEET || [];
     const fleetTypes = [...new Set(fleet.map(r => r.type).filter(Boolean))];
