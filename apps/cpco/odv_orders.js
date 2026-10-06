@@ -61,6 +61,12 @@
       zone: L4('Zone {z} : {e}', 'Area {z}: {e}', 'Gebiet {z}: {e}', 'Zona {z}: {e}')
     },
     ptaTip: L4('PTA — principal training audience : membre que l’élément entraîne en priorité (entouré)', 'PTA — principal training audience: member the item trains first (circled)', 'PTA — principal training audience: Mitglied, das das Element vorrangig trainiert (eingekreist)', 'PTA — principal training audience: miembro al que el elemento entrena en prioridad (rodeado)'),
+    types: {
+      vol: L4('Vol', 'Flight', 'Flug', 'Vuelo'),
+      divers: L4('Divers', 'Miscellaneous', 'Sonstiges', 'Varios'),
+      controle: L4('Contrôle', 'Control', 'Lotsendienst', 'Control'),
+      note: L4('Note', 'Note', 'Notiz', 'Nota')
+    },
     durWarn: L4('⚠ Durée estimée de la mission différente de la durée demandée', '⚠ Estimated mission duration differs from the requested duration', '⚠ Geschätzte Missionsdauer weicht von der gewünschten Dauer ab', '⚠ Duración estimada de la misión distinta de la solicitada'),
     zoneEtats: {
       active: L4('active', 'active', 'aktiv', 'activa'),
@@ -479,13 +485,13 @@
     renderProblems(date);
     paintZones();
   }
-  function crewChip(tri, e) {
+  function crewChip(tri, e, locked = false) {
     const c = (S.conf.get(e.id) || []).find(x => x.tri === tri);
     const col = S.members.find(m => m.tri === tri)?.couleur;
     const pta = (e.pta || []).includes(tri),
       dlo = e.dlo?.[tri];
     const tip = [memberName(tri), pta ? 'PTA' : '', dlo ? `DLO : ${dlo}` : '', c ? conflictText(c) : ''].filter(Boolean).join(' — ');
-    return `<span class="odvo-tri${c ? ' bad' : ''}${pta ? ' pta' : ''}" data-tri="${esc(tri)}" title="${esc(tip)}"${col ? ` style="border-color:${esc(tint(col))}"` : ''}>${esc(tri)}${dlo ? '<i class="odvo-dlo">◎</i>' : ''}</span>`;
+    return `<span class="odvo-tri${c ? ' bad' : ''}${pta ? ' pta' : ''}" data-tri="${esc(tri)}" draggable="${S.editable && !locked}" title="${esc(tip)}"${col ? ` style="border-color:${esc(tint(col))}"` : ''}>${esc(tri)}${dlo ? '<i class="odvo-dlo">◎</i>' : ''}</span>`;
   }
   /** Configurations chargées d'un avion (KNON, TALIOS…), couleurs des réglages. */
   const cfgChips = list => (list || []).map(x => {
@@ -512,6 +518,7 @@
       const crew = aff.length ? aff.map(a => a.pilot) : e.avions.filter(a => a.pilote || a.nav).flatMap(a => [a.pilote, a.nav].filter(Boolean));
       // un avion : pilote, navigateur, configurations ; vol de mission : pilotes des affectations, configurations saisies
       const planes = aff.length ? aff.map(a => ({
+        locked: true,
         tris: [a.pilot],
         config: e.avions.find(x => x.pilote === a.pilot)?.config || []
       })) : e.avions.filter(a => a.pilote || a.nav || a.appareil).map(a => ({
@@ -531,10 +538,10 @@
           tm = reg(r.mission || tv?.mission);
         return `⛽ ${esc(tv?.indicatif || ownCs(tm) || r.mission || '?')}${r.axe || trackOf(tm) ? ' ' + esc(r.axe || trackOf(tm)) : ''}${r.heure ? ' ' + esc(r.heure) + 'z' : ''}${tv ? '' : ' (' + esc(t(L4('en réserve', 'in the pool', 'im Vorrat', 'en reserva'))) + ')'}`;
       }).join(' ');
-      body = `<div class="odvo-it-h"><b>${esc(e.libelle || '—')}</b>${e.indicatif ? ` <span>${esc(e.indicatif)}</span>` : ''}${e.mission ? ` <span class="odvo-mis" title="${esc(t(L4('Mission du registre', 'Registry mission', 'Mission des Registers', 'Misión del registro')))}">${esc(e.mission)}</span>` : ` <span class="odvo-mis">${esc(t(L4('entr.', 'train.', 'Übung', 'entr.')))}</span>`}${e.cr ? ` <span class="odvo-cr odvo-cr-${esc(e.cr)}">${esc(e.cr === 'BACHE' ? 'Bâché' : e.cr)}${e.partiel ? '½' : ''}</span>` : ''}${!prep && crew.length && e.etat === 'prevu' ? ` <span class="odvo-p" title="${esc(t(L4('P — aucun équipier disponible dans l’heure et demie avant le vol', 'P — no crew member available in the hour and a half before the flight', 'P — kein Besatzungsmitglied in den 90 Minuten vor dem Flug verfügbar', 'P — ningún tripulante disponible en la hora y media previa al vuelo')))}">P</span>` : ''}</div>
+      body = `<div class="odvo-it-h"><b>${esc(e.libelle || '—')}</b>${e.indicatif ? ` <span>${esc(e.indicatif)}</span>` : ''}${e.mission ? ` <span class="odvo-mis" title="${esc(t(L4('Mission du registre', 'Registry mission', 'Mission des Registers', 'Misión del registro')))}">${esc(e.mission)}</span>` : ` <span class="odvo-mis">${esc(t(L4('entr.', 'train.', 'Übung', 'entr.')))}</span>`}${aff.length ? ` <span class="odvo-om" title="${esc(t(L4('Ordre de mission émis : affectations de la mission (Mes missions)', 'Mission order issued: mission assignments (My missions)', 'Missionsbefehl erteilt: Zuweisungen der Mission (Meine Missionen)', 'Orden de misión emitida: asignaciones de la misión (Mis misiones)')))}">OM</span>` : ''}${e.cr ? ` <span class="odvo-cr odvo-cr-${esc(e.cr)}">${esc(e.cr === 'BACHE' ? 'Bâché' : e.cr)}${e.partiel ? '½' : ''}</span>` : ''}${!prep && crew.length && e.etat === 'prevu' ? ` <span class="odvo-p" title="${esc(t(L4('P — aucun équipier disponible dans l’heure et demie avant le vol', 'P — no crew member available in the hour and a half before the flight', 'P — kein Besatzungsmitglied in den 90 Minuten vor dem Flug verfügbar', 'P — ningún tripulante disponible en la hora y media previa al vuelo')))}">P</span>` : ''}</div>
         ${mis ? `<div class="odvo-it-m">${esc([mis.title, [mis.family, mis.subtype].filter(Boolean).join('/'), mis.origin].filter(Boolean).join(' · '))}</div>` : ''}
         <div class="odvo-it-t">${esc(e.debut)}z · ${esc(String(e.duree))}′${e.zones?.length ? ' · ' + esc(e.zones.map(z => z.nom).join(', ')) : ''}${axe ? ` · <b>AAR ${esc(axe)}</b>` : ''}${rvs ? ' · ' + rvs : ''}</div>
-        <div class="odvo-it-c">${planes.map(p => `<span class="odvo-plane">${p.ac ? `<span class="odvo-ac">${esc(p.ac)}</span>` : ''}${p.tris.map(x => crewChip(x, e)).join('')}${cfgChips(p.config)}</span>`).join('')}</div>`;
+        <div class="odvo-it-c">${planes.map(p => `<span class="odvo-plane">${p.ac ? `<span class="odvo-ac">${esc(p.ac)}</span>` : ''}${p.tris.map(x => crewChip(x, e, p.locked)).join('')}${cfgChips(p.config)}</span>`).join('')}</div>`;
     } else if (e.type === 'note') body = `<div class="odvo-it-n">${esc(e.texte || '…')}</div>`;
     else body = `<div class="odvo-it-h"><b>${esc(e.libelle || '—')}</b>${e.position ? ` <span>${esc(e.position)}</span>` : ''}</div><div class="odvo-it-c">${e.equipage.map(x => crewChip(x, e)).join('')}</div>`;
     return `<div class="odvo-it odvo-${e.type}${state}${conf.length ? ' conflit' : ''}" data-id="${esc(e.id)}" style="left:${X(s)}px;top:${top}px;width:${w}px;height:${h}px;background:${fill};border-color:${border};color:${fg}" title="${esc(tip)}">${conf.length ? `<span class="odvo-warn">⚠ ${conf.length}</span>` : ''}${e.recurrence ? '<span class="odvo-rec" title="↻">↻</span>' : ''}${body}<span class="odvo-rsz" data-rsz></span></div>`;
@@ -587,7 +594,7 @@
       const sub = [typeCode(tm.type), g.m?.id, g.m && blockOf(g.m) ? `${blockOf(g.m)}′` : '', g.why].filter(Boolean).join(' · ');
       return `<div class="odvo-tpl odvo-gen" draggable="${S.editable}" data-tpl="${esc(v)}" style="border-color:${esc(tint(c?.contour || c?.fond || '#787808'))}" title="${esc([g.m?.title, tm.role].filter(Boolean).join(' — '))}">${esc(tm.name || g.m?.id)} <small>${esc(sub)}</small></div>`;
     }).join('');
-    const res = (S.doc.reserve || []).map(r => `<div class="odvo-tpl odvo-res" draggable="${S.editable}" data-tpl="res:${esc(r.id)}" style="border-color:${esc(tint(r.couleur || '#64748b'))}" title="${esc(t(L4('Glisser sur la frise pour la reposer', 'Drag onto the timeline to place it again', 'Auf die Zeitleiste ziehen, um ihn wieder zu setzen', 'Arrastrar a la cronología para volver a colocarla')))}">${esc(r.indicatif || r.libelle || r.texte || r.type)} <small>${esc([r.mission, `${r.duree}′`].filter(Boolean).join(' · '))}</small></div>`).join('');
+    const res = (S.doc.reserve || []).map(r => `<div class="odvo-tpl odvo-res" draggable="${S.editable}" data-tpl="res:${esc(r.id)}" style="border-color:${esc(tint(r.couleur || '#64748b'))}" title="${esc(t(L4('Glisser sur la frise pour la reposer', 'Drag onto the timeline to place it again', 'Auf die Zeitleiste ziehen, um ihn wieder zu setzen', 'Arrastrar a la cronología para volver a colocarla')))}">${esc(r.indicatif || r.libelle || r.texte || t(TX.types[r.type] || TX.types.note))} <small>${esc([r.mission, `${r.duree}′`].filter(Boolean).join(' · '))}</small></div>`).join('');
     $('#odvoPalette').innerHTML = `
       ${res ? `<h3>${esc(t(L4('Réserve des vols', 'Flight pool', 'Flugvorrat', 'Reserva de vuelos')))}</h3>${res}` : ''}
       <h3>${esc(t(TX.sections.vol))}</h3>${tpl('vol', M.vols)}
@@ -1109,7 +1116,8 @@
       ${Object.keys(causes).length ? `<fieldset class="odvo-causes"><legend>${esc(t(L4('Causes (MNE)', 'Causes (MNE)', 'Ursachen (MNE)', 'Causas (MNE)')))}</legend>${Object.entries(causes).filter(([k]) => k !== 'NO_REPORT' || e.causes.includes(k)).map(([k, row]) => `<label><input type="checkbox" name="cause" value="${esc(k)}"${e.causes.includes(k) ? ' checked' : ''}> ${esc(t(row))}</label>`).join('')}</fieldset>` : ''}
       ${e.mission ? `<p class="mut">${esc(t(L4('Le CR de la mission fait foi : état et CR sont repris à l’ouverture de la semaine.', 'The mission report is authoritative: status and report are taken over when the week is opened.', 'Der Missionsbericht ist maßgeblich: Status und Bericht werden beim Öffnen der Woche übernommen.', 'El informe de la misión es la referencia: estado e informe se recogen al abrir la semana.')))}</p>` : ''}
       ${repeatFields(e)}`;
-      if (e.mission && window.AssignDialog) extra = `<button type="button" data-assign>${esc(t(L4('Affecter…', 'Assign…', 'Zuweisen…', 'Asignar…')))}</button>`;
+      if (e.mission && window.AssignDialog) extra = `<button type="button" data-assign title="${esc(t(L4('Affectations de l’équipage (appareil, indicatif, décollage) : l’ordre de mission que les pilotes reçoivent dans Mes missions', 'Crew assignments (aircraft, callsign, take-off): the mission order the pilots receive in My missions', 'Zuweisungen der Besatzung (Luftfahrzeug, Rufzeichen, Start): der Missionsbefehl, den die Piloten in Meine Missionen erhalten', 'Asignaciones de la tripulación (aeronave, indicativo, despegue): la orden de misión que los pilotos reciben en Mis misiones')))}">${esc(t(L4('Ordre de mission…', 'Mission order…', 'Missionsbefehl…', 'Orden de misión…')))}</button>`;
+      if (S.editable) extra += `<button type="button" data-order title="${esc(t(L4('Commander une mission au générateur : durée, avions et ravitaillement de la plaquette préremplis', 'Order a mission from the generator: duration, aircraft and refuelling of the strip prefilled', 'Mission beim Generator bestellen: Dauer, Luftfahrzeuge und Betankung des Streifens vorausgefüllt', 'Encargar una misión al generador: duración, aeronaves y reabastecimiento de la ficha prerrellenados')))}">${esc(t(L4('Commander une mission…', 'Order a mission…', 'Mission bestellen…', 'Encargar una misión…')))}</button>`;
       if (S.editable) extra += `<button type="button" data-reserve title="${esc(t(L4('Retirer de la frise, garder dans la réserve des vols', 'Remove from the timeline, keep in the flight pool', 'Von der Zeitleiste nehmen, im Flugvorrat behalten', 'Quitar de la cronología, guardar en la reserva de vuelos')))}">${esc(t(L4('↩ Réserve', '↩ Pool', '↩ Vorrat', '↩ Reserva')))}</button>`;
     } else if (e.type === 'note') body = `<div class="odvo-grid2">${common}</div>${field(L4('Texte', 'Text', 'Text', 'Texto'), `<textarea name="texte" rows="4">${esc(e.texte)}</textarea>`, true)}`;
     else body = `<div class="odvo-grid2">
@@ -1136,6 +1144,10 @@
       })
     });
     d.querySelector('[data-assign]')?.addEventListener('click', () => assignMission(e));
+    d.querySelector('[data-order]')?.addEventListener('click', () => {
+      d.close('cancel');
+      orderMission(e);
+    });
     d.querySelector('[data-reserve]')?.addEventListener('click', () => {
       d.close('cancel');
       toReserve(e.id);
@@ -1341,8 +1353,53 @@
       recurrences: list
     })).catch(err => notify(String(err?.message || err), 'error'));
   }
+  // commande d'une mission (générateur, MissionOrder) préremplie d'après la plaquette ; scripts chargés à la demande
+  const SELF = document.currentScript?.src || location.href;
+  const loadScript = src => new Promise((ok, ko) => {
+    const url = new URL(src, SELF).href.split('?')[0];
+    if ([...document.scripts].some(x => x.src.split('?')[0] === url)) return ok();
+    const s = document.createElement('script');
+    s.src = new URL(src, SELF).href;
+    s.onload = ok;
+    s.onerror = () => ko(new Error(src));
+    document.head.append(s);
+  });
+  async function orderMission(e) {
+    try {
+      for (const src of ['mission_store.js?v=bc7f59ef', 'mission_prompt.js?v=8774038d', '../../shared/mission_order.js?v=ac4119b1']) await loadScript(src);
+    } catch (err) {
+      return notify(String(err?.message || err), 'error');
+    }
+    if (!window.MissionOrder?.mount) return notify('MissionOrder ?', 'error');
+    const planes = e.avions.filter(a => a.pilote || a.appareil);
+    const n = Math.max(1, Math.min(5, planes.length || 1)),
+      d = e.duree;
+    const preset = {
+      teams: n,
+      teamSlots: planes.slice(0, n).map(a => a.appareil?.type || ''),
+      duration: d < 45 ? 'XS' : d <= 90 ? 'S' : d <= 180 ? 'M' : d <= 300 ? 'L' : 'XL',
+      aar: e.ravitaillements?.length ? 'oui' : 'non'
+    };
+    const dl = document.createElement('dialog');
+    dl.className = 'odvo-dlg';
+    dl.innerHTML = `<header><b>${esc(t(L4('Commander une mission', 'Order a mission', 'Mission bestellen', 'Encargar una misión')))}</b></header><div class="odvo-dlg-b"><p class="mut">${esc(tf(L4('Préréglée d’après la plaquette {p} : {n} équipe(s), durée {d}, ravitaillement {a}. Une fois la mission générée et le dossier relu dans le Registre, liez-la à la plaquette.', 'Preset from strip {p}: {n} team(s), duration {d}, refuelling {a}. Once the mission is generated and the folder read again in the Registry, link it to the strip.', 'Voreingestellt nach Streifen {p}: {n} Team(s), Dauer {d}, Betankung {a}. Sobald die Mission erzeugt und der Ordner im Register neu gelesen ist, mit dem Streifen verknüpfen.', 'Preajustada según la ficha {p}: {n} equipo(s), duración {d}, reabastecimiento {a}. Una vez generada la misión y releída la carpeta en el Registro, vincúlela a la ficha.'), {
+      p: e.indicatif || e.libelle || e.debut,
+      n,
+      d: preset.duration,
+      a: t(preset.aar === 'oui' ? L4('oui', 'yes', 'ja', 'sí') : L4('non', 'no', 'nein', 'no'))
+    }))}</p><div id="odvoOrder"></div></div><footer><span style="flex:1"></span><button type="button" data-close>${esc(t(L4('Fermer', 'Close', 'Schließen', 'Cerrar')))}</button></footer>`;
+    document.body.append(dl);
+    dl.querySelector('[data-close]').addEventListener('click', () => dl.close());
+    dl.addEventListener('close', () => dl.remove());
+    window.MissionOrder.mount(dl.querySelector('#odvoOrder'), {
+      preset,
+      hint: t(L4('Enregistrez les fichiers dans le dossier des missions, puis « Relire le dossier » dans le Registre.', 'Save the files in the missions folder, then “Read the folder again” in the Registry.', 'Dateien im Missionsordner speichern, dann im Register „Ordner neu lesen“.', 'Guarde los archivos en la carpeta de misiones y luego «Releer la carpeta» en el Registro.')),
+      onOrdered: () => notify(t(L4('Mission commandée : elle apparaît au registre (« commandée »).', 'Mission ordered: it appears in the registry (“ordered”).', 'Mission bestellt: sie erscheint im Register („bestellt“).', 'Misión encargada: aparece en el registro («encargada»).')), 'info')
+    });
+    dl.showModal();
+  }
   async function assignMission(e) {
-    const m = (window.MissionIndex?.all?.() || []).find(x => x.id === e.mission);
+    const m = reg(e.mission) || (window.MissionIndex?.all?.() || []).find(x => x.id === e.mission);
     if (!m) return notify(tf(L4('Mission {m} absente du registre', 'Mission {m} not in the registry', 'Mission {m} nicht im Register', 'Misión {m} ausente del registro'), {
       m: e.mission
     }), 'warn');
@@ -1354,11 +1411,19 @@
     } catch {
       y = {};
     }
-    const crew = e.avions.flatMap(a => [a.pilote]).filter(Boolean);
+    // un avion de la plaquette = une ligne : pilote, immatriculation, indicatif (patrouille : MERCURE31, MERCURE32…)
+    const next = (cs, n) => String(cs || '').replace(/(\d+)(?!.*\d)/, x => String(+x + n).padStart(x.length, '0'));
+    const planes = e.avions.filter(a => a.pilote);
+    const crew = planes.map(a => a.pilote);
     const dlg = await window.AssignDialog.open(m, y, {
       maps: m.images || [],
       pilots: crew,
-      takeoff: Date.parse(`${e.date}T${e.debut}:00Z`)
+      takeoff: Date.parse(`${e.date}T${e.debut}:00Z`),
+      rows: planes.length ? planes.map((a, i) => ({
+        pilot: a.pilote,
+        registration: a.appareil?.immat || '',
+        callsign: e.indicatif ? next(e.indicatif, i) : ''
+      })) : null
     });
     dlg?.addEventListener('assigned', async () => {
       S.affect = (await MA().index({
