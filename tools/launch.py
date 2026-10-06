@@ -310,6 +310,13 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 return self._json({'error': 'refusé'}, 403)
             q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
             return self._json(ivao_activations(q.get('from', [''])[0], q.get('to', [''])[0]))
+        if self.path.split('?')[0] == '/__setup/ivao-bookings':
+            # réservations ATC d'IVAO (trainings, examens, réservations ; shared/atc_sessions.js) : API sous clé
+            # (ivao_key), jamais transmise à la page
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            return self._json(ivao_bookings(q.get('from', [''])[0], q.get('to', [''])[0]))
         if self.path.split('?')[0] == '/__setup/aircraft-db':
             if not self._allowed():
                 return self._json({'error': 'refusé'}, 403)
@@ -669,7 +676,7 @@ def ivao_activations(day_from='', day_to=''):
     Zones gardées une heure, NOTAM relus à chaque appel."""
     key = ivao_key()
     if not key:
-        return {'error': 'clé IVAO absente : variable IVAO_API_KEY ou secrets/ivao.json { "apiKey" }'}
+        return {'error': 'clé IVAO absente : Paramètres › Installation › Sources et dossiers (ou variable IVAO_API_KEY)'}
     try:
         d0 = datetime.date.fromisoformat(day_from) if day_from else datetime.date.today()
         d1 = datetime.date.fromisoformat(day_to) if day_to else d0 + datetime.timedelta(days=6)
@@ -714,6 +721,41 @@ def ivao_activations(day_from='', day_to=''):
                                 'debut': hm(t.get('startTime')), 'fin': hm(t.get('endTime')), 'source': 'horaire',
                                 'texte': str(a.get('activationDetails', ''))[:200]})
     return {'activations': out, 'zones': len(_ivao['areas'])}
+
+
+_ivao_book = {}  # date → (instant, réservations du jour)
+
+
+def ivao_bookings(day_from='', day_to=''):
+    """Réservations ATC d'IVAO entre deux dates (AAAA-MM-JJ, incluses, 8 jours au plus) : { bookings: [{ id, startDate,
+    endDate, training ('training', 'exam'… ou null), atcPosition }] }, positions LF seulement (le tri fin est fait par
+    la page : SuiteAtc.franceMetro) ; un appel /atc/bookings/daily par jour, gardé 5 minutes ; { error } sans clé ou
+    sans réponse."""
+    key = ivao_key()
+    if not key:
+        return {'error': 'clé IVAO absente : Paramètres › Installation › Sources et dossiers (ou variable IVAO_API_KEY)'}
+    try:
+        d0 = datetime.date.fromisoformat(day_from) if day_from else datetime.date.today()
+        d1 = datetime.date.fromisoformat(day_to) if day_to else d0 + datetime.timedelta(days=6)
+    except ValueError:
+        return {'error': 'dates attendues : from=AAAA-MM-JJ&to=AAAA-MM-JJ'}
+    out = []
+    for i in range(min((d1 - d0).days + 1, 8)):
+        d = (d0 + datetime.timedelta(days=i)).isoformat()
+        hit = _ivao_book.get(d)
+        if hit and time.time() - hit[0] < 300:
+            day = hit[1]
+        else:
+            try:
+                got = _ivao_get(f'/atc/bookings/daily?date={d}', key)
+            except (OSError, ValueError) as e:
+                return {'error': f'IVAO : {e}'}
+            day = [{'id': b.get('id'), 'startDate': b.get('startDate'), 'endDate': b.get('endDate'),
+                    'training': b.get('training'), 'atcPosition': str(b.get('atcPosition', ''))}
+                   for b in (got if isinstance(got, list) else []) if str(b.get('atcPosition', '')).upper().startswith('LF')]
+            _ivao_book[d] = (time.time(), day)
+        out.extend(day)
+    return {'bookings': out}
 
 
 # Repère de cette installation : un jeton tiré à chaque lancement, écrit à la racine et dans les dossiers de données.

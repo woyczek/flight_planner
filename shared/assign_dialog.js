@@ -11,7 +11,8 @@
   // API : AssignDialog.open(entrée du registre, yaml de la mission, { maps, pilots: [TRI…], takeoff: ms, note, alert }) ;
   //   alert : astreinte préréglée { notice_min, window_h } (case cochée, préavis et fin) ; rows[].ferryPilot « __open » :
   //   convoyage à affecter (ferry.open, comme la matrice du Planning ODV) ;
-  //   { rows, apply } : lignes préremplies, résultat rendu à apply(lignes) au lieu d'être écrit (matrice d'un créneau) ;
+  //   { rows, apply } : lignes préremplies, résultat rendu à apply(lignes, { takeoff: ms, h_hour: ms|null,
+  //   alert: { notice_min, window_h }|null, block_min }) au lieu d'être écrit (matrice d'un créneau) ;
   //   frame(id, { title, subtitle, body, foot, wide, beforeClose }) : fenêtre au même gabarit ; chip(texte, ok|warn|err|focus).
   const K = window.RepositoryKit,
     esc = K.esc,
@@ -322,9 +323,19 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
     $('[data-save]').onclick = async () => {
       const msg = $('.ad-msg');
       if (apply) { // ouvert depuis la matrice d'un créneau : le résultat y revient, en attente (rien n'est écrit ici)
+        // 2e argument : heure et astreinte choisies dans la fenêtre (décollage du premier participant, heure H appliquée)
+        const t = takeoffOf();
         apply(rows.map(r => ({
           ...r
-        })));
+        })), {
+          takeoff: t,
+          h_hour: ex ? t - myOffset * 6e4 : null,
+          alert: $('[data-k="alert"]').checked ? {
+            notice_min: +$('[data-k="notice"]').value || 0,
+            window_h: +$('[data-k="window"]').value || 2
+          } : null,
+          block_min: blockMin
+        });
         dlg.close();
         return;
       }

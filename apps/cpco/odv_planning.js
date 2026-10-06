@@ -534,6 +534,7 @@
     renderWeekNav();
     renderGrid();
     renderAtc();
+    renderActivations();
     renderSlots();
     renderMissions();
     renderFlights();
@@ -598,7 +599,7 @@
     const dates = gridData().dates,
       list = atc.week === atcWeek() ? atc.list : [];
     const dayOpt = dates.map((d, j) => `<option value="${d}">${esc(wordL(C.DAYS[j]))} ${esc(dateFr(d))}</option>`).join('');
-    const rows = list.map((x, i) => `<tr><td>${esc(wordL(C.DAYS[dates.indexOf(x.date)] || ''))} ${esc(dateFr(x.date))}</td><td>${esc(x.debut)}–${esc(x.fin)}z</td><td><b>${esc(x.position)}</b></td><td>${esc(x.reseau)}</td><td>${esc(S.typeLabel(x.type))}</td><td>${esc(x.texte || '')}</td><td class="mut">${x.source === 'vatsim' ? L(['récupérée', 'fetched', 'abgerufen', 'recuperada']) : L(['saisie', 'entered', 'eingegeben', 'introducida'])}</td><td><button type="button" class="ghost" data-atc-del="${i}" title="${esc(L(['Retirer cette session', 'Remove this session', 'Diese Sitzung entfernen', 'Quitar esta sesión']))}">×</button></td></tr>`).join('');
+    const rows = list.map((x, i) => `<tr><td>${esc(wordL(C.DAYS[dates.indexOf(x.date)] || ''))} ${esc(dateFr(x.date))}</td><td>${esc(x.debut)}–${esc(x.fin)}z</td><td><b>${esc(x.position)}</b></td><td>${esc(x.reseau)}</td><td>${esc(S.typeLabel(x.type))}</td><td>${esc(x.texte || '')}</td><td class="mut">${x.source === 'vatsim' || x.source === 'ivao' ? L(['récupérée', 'fetched', 'abgerufen', 'recuperada']) : L(['saisie', 'entered', 'eingegeben', 'introducida'])}</td><td><button type="button" class="ghost" data-atc-del="${i}" title="${esc(L(['Retirer cette session', 'Remove this session', 'Diese Sitzung entfernen', 'Quitar esta sesión']))}">×</button></td></tr>`).join('');
     host.innerHTML = `${list.length ? `<table class="odv-week odv-atc"><thead><tr><th>${L(['Jour', 'Day', 'Tag', 'Día'])}</th><th>${L(['Heures (UTC)', 'Hours (UTC)', 'Uhrzeit (UTC)', 'Horas (UTC)'])}</th><th>${L(['Position', 'Position', 'Position', 'Posición'])}</th><th>${L(['Réseau', 'Network', 'Netzwerk', 'Red'])}</th><th>${L(['Type', 'Type', 'Art', 'Tipo'])}</th><th>${L(['Commentaire', 'Comment', 'Kommentar', 'Comentario'])}</th><th>${L(['Source', 'Source', 'Quelle', 'Fuente'])}</th><th></th></tr></thead><tbody>${rows}</tbody></table>` : `<p class="mut odv-d-note">${L(['Aucune session ATC enregistrée pour cette semaine.', 'No ATC session recorded for this week.', 'Für diese Woche keine ATC-Sitzung erfasst.', 'Ninguna sesión ATC registrada para esta semana.'])}</p>`}
       <form class="row odv-atc-form" data-atc-form>
         <select data-atc="date" aria-label="${esc(L(['Jour', 'Day', 'Tag', 'Día']))}">${dayOpt}</select>
@@ -610,8 +611,8 @@
         <input type="text" data-atc="texte" placeholder="${esc(L(['Commentaire (facultatif)', 'Comment (optional)', 'Kommentar (optional)', 'Comentario (opcional)']))}">
         <button type="submit" class="secondary" data-icon="plus">${L(['Ajouter', 'Add', 'Hinzufügen', 'Añadir'])}</button>
       </form>
-      <div class="row"><button type="button" class="secondary" data-atc-vatsim data-icon="refresh">${L(['Récupérer VATSIM (France métropolitaine)', 'Fetch VATSIM (metropolitan France)', 'VATSIM abrufen (Frankreich, Mutterland)', 'Recuperar VATSIM (Francia metropolitana)'])}</button>
-      <span class="mut small">${L(['IVAO : saisie à la main (l’API des réservations IVAO demande une authentification).', 'IVAO: entered by hand (the IVAO bookings API requires authentication).', 'IVAO: manuelle Eingabe (die IVAO-Buchungs-API verlangt eine Anmeldung).', 'IVAO: introducción manual (la API de reservas de IVAO requiere autenticación).'])}</span></div>`;
+      <div class="row"><button type="button" class="secondary" data-atc-net="VATSIM" data-icon="refresh">${L(['Récupérer VATSIM (France métropolitaine)', 'Fetch VATSIM (metropolitan France)', 'VATSIM abrufen (Frankreich, Mutterland)', 'Recuperar VATSIM (Francia metropolitana)'])}</button>
+      <button type="button" class="secondary" data-atc-net="IVAO" data-icon="refresh" title="${esc(L(['Trainings, examens et réservations IVAO de France métropolitaine ; clé d’API IVAO de l’installation (Paramètres › Installation).', 'IVAO trainings, exams and bookings in metropolitan France; installation IVAO API key (Settings › Installation).', 'IVAO-Trainings, -Prüfungen und -Buchungen in Frankreich (Mutterland); IVAO-API-Schlüssel der Installation (Einstellungen › Installation).', 'Entrenamientos, exámenes y reservas IVAO de Francia metropolitana; clave de API IVAO de la instalación (Ajustes › Instalación).']))}">${L(['Récupérer IVAO (France métropolitaine)', 'Fetch IVAO (metropolitan France)', 'IVAO abrufen (Frankreich, Mutterland)', 'Recuperar IVAO (Francia metropolitana)'])}</button></div>`;
     const f = host.querySelector('[data-atc-form]'),
       v = k => f.querySelector(`[data-atc="${k}"]`).value.trim();
     f.onsubmit = e => {
@@ -638,23 +639,46 @@
         p: x.position
       }));
     });
-    host.querySelector('[data-atc-vatsim]').onclick = async e => {
-      const b = e.currentTarget,
+    // import d'un réseau : le même que celui des Ordres de vols (SuiteAtc.importNetwork : récupérées remplacées,
+    // annulations comprises, saisies gardées)
+    host.querySelectorAll('[data-atc-net]').forEach(b => b.onclick = async () => {
+      const net = b.dataset.atcNet,
         w = atcWeek();
       b.disabled = true;
-      try {
-        const got = await S.fetchVatsim(w);
-        if (w !== atcWeek()) return;
-        // récupérées remplacées (annulations comprises), saisies gardées
-        await saveAtc([...list.filter(x => x.source !== 'vatsim'), ...got], L(['VATSIM : {n} session(s) de France métropolitaine cette semaine.', 'VATSIM: {n} session(s) in metropolitan France this week.', 'VATSIM: {n} Sitzung(en) in Frankreich (Mutterland) diese Woche.', 'VATSIM: {n} sesión(es) en Francia metropolitana esta semana.'], {
-          n: got.length
-        }));
-      } catch (err) {
-        notify(err.message, 'err');
-      } finally {
-        b.disabled = false;
-      }
-    };
+      const r = await S.importNetwork(w, net);
+      b.disabled = false;
+      if (r.error) return notify(r.error, 'err');
+      if (w !== atcWeek()) return;
+      atc = {
+        week: w,
+        list: r.sessions
+      };
+      if (r.where === 'folder') notify(L(['{r} : {n} session(s) de France métropolitaine cette semaine.', '{r}: {n} session(s) in metropolitan France this week.', '{r}: {n} Sitzung(en) in Frankreich (Mutterland) diese Woche.', '{r}: {n} sesión(es) en Francia metropolitana esta semana.'], {
+        r: net,
+        n: r.n
+      }), 'ok');
+      compute();
+      render();
+    });
+  }
+
+  // ------------------------------------------------------------------ activations des zones par réseau
+  // même éditeur et même fichier que les Ordres de vols (shared/odv_activations_editor.js, OdvAirspace :
+  // data/atc/activations/<semaine>.json) ; retouche réservée comme aux Ordres (Centre activé, hors production : admin)
+  let activations = null;
+  const canEditActivations = () => !!window.RepositoryNav?.cpco?.enabled?.() && (window.SuiteUsers?.mode?.() !== 'production' || !!window.SuiteUsers?.isAdmin?.());
+  function renderActivations() {
+    const host = $('odvActivations'),
+      w = atcWeek();
+    if (!host || !window.OdvActivationsEditor || !w) return;
+    if (activations) return activations.set({
+      semaine: w,
+      readOnly: !canEditActivations()
+    });
+    activations = window.OdvActivationsEditor.mount(host, {
+      semaine: w,
+      readOnly: !canEditActivations()
+    });
   }
 
   function renderReport() {

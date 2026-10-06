@@ -6,6 +6,10 @@
   // est enregistrée (600 ms après la dernière) ; avertissements en notifications flottantes (AppFramework.notify).
   // Zones proposées : espaces activables de la base aéronautique (OdvAirspace.zones) ; une zone inconnue de la base reste
   // saisissable (nom libre).
+  // Une colonne par réseau (VATSIM, IVAO), côte à côte : saisies à la main du réseau (une activation « les deux » paraît
+  // dans les deux colonnes, ses deux copies tenues ensemble), activations importées repliées, boutons du réseau. VATSIM
+  // ne publie pas d'activations : saisie à la main seulement ; IVAO : import (OdvAirspace.importIvao, le même pour
+  // toutes les pages qui montent cet éditeur).
   // API (window.OdvActivationsEditor) : mount(hôte, { semaine, readOnly = false, onChange(liste) }) →
   //   { set({ semaine, readOnly }), refresh(), list() }.
   if (window.OdvActivationsEditor) return;
@@ -34,7 +38,10 @@
     ivaoTitre: ['Zones spéciales de France actives cette semaine sur IVAO (horaires publiés, dont le RTBA, et NOTAM) : remplacent l’import précédent ; les saisies à la main restent. Lanceur et clé d’API IVAO requis.', 'French special areas active this week on IVAO (published schedules, RTBA included, and NOTAMs): replace the previous import; manual entries stay. Launcher and IVAO API key required.', 'Auf IVAO diese Woche aktive französische Sondergebiete (veröffentlichte Zeiten, inkl. RTBA, und NOTAM): ersetzen den vorigen Import; manuelle Einträge bleiben. Starter und IVAO-API-Schlüssel nötig.', 'Zonas especiales de Francia activas esta semana en IVAO (horarios publicados, RTBA incluido, y NOTAM): sustituyen la importación anterior; las entradas manuales se conservan. Requiere el lanzador y la clave de API de IVAO.'],
     ivaoOk: ['{n} activation(s) IVAO importée(s).', '{n} IVAO activation(s) imported.', '{n} IVAO-Aktivierung(en) importiert.', '{n} activación(es) IVAO importada(s).'],
     ivaoErr: ['Import IVAO impossible : {e}', 'IVAO import failed: {e}', 'IVAO-Import fehlgeschlagen: {e}', 'Importación IVAO imposible: {e}'],
-    ivaoListe: ['{n} activation(s) importée(s) d’IVAO (remplacées au prochain import)', '{n} activation(s) imported from IVAO (replaced at the next import)', '{n} von IVAO importierte Aktivierung(en) (beim nächsten Import ersetzt)', '{n} activación(es) importada(s) de IVAO (sustituidas en la próxima importación)']
+    ivaoListe: ['{n} activation(s) importée(s) d’IVAO (remplacées au prochain import)', '{n} activation(s) imported from IVAO (replaced at the next import)', '{n} von IVAO importierte Aktivierung(en) (beim nächsten Import ersetzt)', '{n} activación(es) importada(s) de IVAO (sustituidas en la próxima importación)'],
+    videNet: ['Aucune activation saisie pour {r} cette semaine.', 'No activation entered for {r} this week.', 'Keine Aktivierung für {r} diese Woche erfasst.', 'Ninguna activación introducida para {r} esta semana.'],
+    vatsimNote: ['VATSIM ne publie pas d’activations : saisie à la main.', 'VATSIM does not publish activations: entered by hand.', 'VATSIM veröffentlicht keine Aktivierungen: manuelle Eingabe.', 'VATSIM no publica activaciones: introducción manual.'],
+    deux: ['les deux réseaux', 'both networks', 'beide Netze', 'ambas redes']
   };
   const ETAT = {
     active: ['active', 'active', 'aktiv', 'activa'],
@@ -70,7 +77,7 @@
     if (css) return;
     css = true;
     const s = document.createElement('style');
-    s.textContent = `@layer app{.odv-act table{border-collapse:collapse;width:100%}.odv-act th,.odv-act td{padding:3px 5px;text-align:left;vertical-align:middle}.odv-act th{font-size:12px;font-weight:650}.odv-act input[type=text]{width:100%;min-width:7em}.odv-act input[type=time]{width:6.5em}.odv-act .odv-act-scroll{max-width:100%;overflow-x:auto}.odv-act tr[data-etat=active] td:first-child{box-shadow:inset 3px 0 #2e9d4f}.odv-act tr[data-etat=demandee] td:first-child{box-shadow:inset 3px 0 #e39b1b}.odv-act tr[data-etat=refusee] td:first-child{box-shadow:inset 3px 0 #b91c1c}.odv-act .odv-act-note{font-size:12px;opacity:.8;margin:4px 0}.odv-act .odv-act-ivao summary{cursor:pointer;font-size:13px;margin:6px 0}}`;
+    s.textContent = `@layer app{.odv-act table{border-collapse:collapse;width:100%}.odv-act th,.odv-act td{padding:3px 5px;text-align:left;vertical-align:middle}.odv-act th{font-size:12px;font-weight:650}.odv-act input[type=text]{width:100%;min-width:7em}.odv-act input[type=time]{width:6.5em}.odv-act .odv-act-scroll{max-width:100%;overflow-x:auto}.odv-act tr[data-etat=active] td:first-child{box-shadow:inset 3px 0 #2e9d4f}.odv-act tr[data-etat=demandee] td:first-child{box-shadow:inset 3px 0 #e39b1b}.odv-act tr[data-etat=refusee] td:first-child{box-shadow:inset 3px 0 #b91c1c}.odv-act .odv-act-note{font-size:12px;opacity:.8;margin:4px 0}.odv-act .odv-act-ivao summary{cursor:pointer;font-size:13px;margin:6px 0}.odv-act .odv-act-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,30em),1fr));gap:12px 18px;align-items:start}.odv-act .odv-act-net{min-width:0}.odv-act .odv-act-net>h4{margin:4px 0 6px;font-size:14px;letter-spacing:.04em}.odv-act tr[data-both] td:first-child{background-image:linear-gradient(90deg,color-mix(in srgb,currentColor 8%,transparent),transparent)}}`;
     document.head.append(s);
   }
 
@@ -114,27 +121,38 @@
       return z ? z.id : s;
     };
 
+    /** Activation importée (fichier d'un réseau, remplacée à chaque import) : pas de retouche à la main. */
+    const imported = r => !!r.source && r.source !== 'saisie';
+    const byTime = (a, b) => `${a.date} ${a.debut} ${a.nom}`.localeCompare(`${b.date} ${b.debut} ${b.nom}`);
+
     function render() {
       const days = daysOf(week);
-      // saisies à la main éditables ; activations importées d'IVAO (nombreuses, remplacées à chaque import) repliées
-      const mine = rows.map((r, i) => [r, i]).filter(([r]) => r.source !== 'ivao'),
-        ivao = rows.filter(r => r.source === 'ivao').sort((a, b) => `${a.date} ${a.debut} ${a.nom}`.localeCompare(`${b.date} ${b.debut} ${b.nom}`));
-      const head = [T.jour, T.zone, T.reseau, T.etat, T.de, T.a, T.texte].map(x => `<th>${esc(t(x))}</th>`).join('');
+      const head = [T.jour, T.zone, T.etat, T.de, T.a, T.texte, T.reseau].map(x => `<th>${esc(t(x))}</th>`).join('');
       const sel = (name, value, opts) => `<select data-k="${name}"${ro ? ' disabled' : ''}>${opts.map(([v, l]) => `<option value="${esc(v)}"${v === value ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
-      const line = (r, i) => `<tr data-i="${i}" data-etat="${esc(r.etat)}">
+      const line = (r, i) => `<tr data-i="${i}" data-etat="${esc(r.etat)}"${r.reseau ? '' : ` data-both title="${esc(t(T.deux))}"`}>
         <td>${sel('date', r.date, days.map(d => [d, dayLabel(d)]))}</td>
         <td><input type="text" data-k="zone" list="${listId}" value="${esc(zoneName(r.zone))}" spellcheck="false"${ro ? ' disabled' : ''}></td>
-        <td>${sel('reseau', r.reseau || '', [['', t(T.tous)], ...O().NETWORKS.map(n => [n, n])])}</td>
         <td>${sel('etat', r.etat, O().ETATS.map(e => [e, t(ETAT[e])]))}</td>
         <td><input type="time" step="900" data-k="debut" value="${esc(r.debut)}"${ro ? ' disabled' : ''}></td>
         <td><input type="time" step="900" data-k="fin" value="${esc(r.fin === '24:00' ? '23:59' : r.fin)}"${ro ? ' disabled' : ''}></td>
         <td><input type="text" data-k="texte" value="${esc(r.texte || '')}"${ro ? ' disabled' : ''}></td>
+        <td>${sel('reseau', r.reseau || '', [...O().NETWORKS.map(n => [n, n]), ['', t(T.tous)]])}</td>
         <td>${ro ? '' : `<button type="button" class="secondary" data-del title="${esc(t(T.retirer))}" aria-label="${esc(t(T.retirer))}">×</button>`}</td></tr>`;
+      // une colonne par réseau : saisies du réseau (et « les deux »), importées repliées, boutons du réseau
+      const column = net => {
+        const mine = rows.map((r, i) => [r, i]).filter(([r]) => !imported(r) && (!r.reseau || r.reseau === net)),
+          got = rows.filter(r => imported(r) && r.reseau === net).sort(byTime);
+        const ivao = net === 'IVAO';
+        return `<section class="odv-act-net" data-net="${esc(net)}"><h4>${esc(net)}</h4>
+          ${ivao ? '' : `<p class="odv-act-note">${esc(t(T.vatsimNote))}</p>`}
+          ${mine.length ? `<div class="odv-act-scroll"><table><thead><tr>${head}<th></th></tr></thead><tbody>${mine.map(([r, i]) => line(r, i)).join('')}</tbody></table></div>` : `<p class="odv-act-note">${esc(tf(T.videNet, { r: net }))}</p>`}
+          ${got.length ? `<details class="odv-act-ivao"><summary>${esc(tf(T.ivaoListe, { n: got.length }))}</summary><div class="odv-act-scroll"><table><thead><tr>${head}</tr></thead><tbody>${got.map(r => `<tr data-etat="${esc(r.etat)}"><td>${esc(dayLabel(r.date))}</td><td>${esc(zoneName(r.zone))}</td><td>${esc(t(ETAT[r.etat] || [r.etat]))}</td><td>${esc(r.debut)}</td><td>${esc(r.fin)}</td><td>${esc(r.texte || '')}</td><td>${esc(r.reseau)}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
+          ${ro ? '' : `<p class="row"><button type="button" class="secondary" data-add="${esc(net)}" data-icon="plus">${esc(t(T.ajouter))}</button>${ivao ? ` <button type="button" class="secondary" data-ivao data-icon="download" title="${esc(t(T.ivaoTitre))}">${esc(t(T.ivao))}</button>` : ''}</p>`}
+        </section>`;
+      };
       host.innerHTML = `${zonesNote ? `<p class="odv-act-note">${esc(zonesNote)}</p>` : ''}
         <datalist id="${listId}">${zones.map(z => `<option value="${esc(z.nom)}">${esc(`${z.type} · ${z.plancher || '?'} – ${z.plafond || '?'}`)}</option>`).join('')}</datalist>
-        ${mine.length ? `<div class="odv-act-scroll"><table><thead><tr>${head}<th></th></tr></thead><tbody>${mine.map(([r, i]) => line(r, i)).join('')}</tbody></table></div>` : `<p class="odv-act-note">${esc(t(T.vide))}</p>`}
-        ${ivao.length ? `<details class="odv-act-ivao"><summary>${esc(tf(T.ivaoListe, { n: ivao.length }))}</summary><div class="odv-act-scroll"><table><thead><tr>${head}</tr></thead><tbody>${ivao.map(r => `<tr data-etat="${esc(r.etat)}"><td>${esc(dayLabel(r.date))}</td><td>${esc(zoneName(r.zone))}</td><td>${esc(r.reseau || t(T.tous))}</td><td>${esc(t(ETAT[r.etat] || [r.etat]))}</td><td>${esc(r.debut)}</td><td>${esc(r.fin)}</td><td>${esc(r.texte || '')}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
-        ${ro ? '' : `<p class="row"><button type="button" class="secondary" data-add data-icon="plus">${esc(t(T.ajouter))}</button> <button type="button" class="secondary" data-ivao data-icon="download" title="${esc(t(T.ivaoTitre))}">${esc(t(T.ivao))}</button></p>`}`;
+        <div class="odv-act-cols">${O().NETWORKS.map(column).join('')}</div>`;
       window.AppFramework?.refresh?.(host);
     }
 
@@ -167,6 +185,13 @@
       else if (k === 'reseau') r.reseau = el.value || null;
       else r[k] = el.value;
       if (k === 'etat') tr.dataset.etat = r.etat;
+      if (k === 'reseau') render(); // la ligne change de colonne
+      else host.querySelectorAll(`tr[data-i="${tr.dataset.i}"]`).forEach(x => {
+        if (x === tr) return;
+        const twin = x.querySelector(`[data-k="${k}"]`);
+        if (twin) twin.value = el.value;
+        x.dataset.etat = r.etat;
+      });
       changed();
     });
     host.addEventListener('click', e => {
@@ -194,12 +219,13 @@
           })));
         })();
       } else if (b.hasAttribute('data-add')) {
-        const last = rows[rows.length - 1],
+        const net = b.dataset.add || null,
+          last = [...rows].reverse().find(r => !imported(r) && r.reseau === net),
           days = daysOf(week);
         rows.push({
           zone: '',
           nom: '',
-          reseau: last?.reseau ?? null,
+          reseau: net,
           etat: 'demandee',
           date: last?.date || days[0] || '',
           debut: last?.debut || '08:00',
@@ -207,7 +233,7 @@
           texte: ''
         });
         render();
-        host.querySelector('tr[data-i]:last-child input[data-k=zone]')?.focus();
+        host.querySelector(`.odv-act-net[data-net="${net}"] tr[data-i="${rows.length - 1}"] input[data-k=zone]`)?.focus();
       } else if (b.hasAttribute('data-del')) {
         rows.splice(+b.closest('tr[data-i]').dataset.i, 1);
         render();

@@ -403,9 +403,13 @@ This block gathers the VATSIM / IVAO trainings, exams, events and bookings of th
 - **Enter a session**: fill in the day, the start and the end (UTC times, in 15-min steps), the position (e.g. `LFBO_APP`, `LFMN_TWR`), the network (VATSIM or IVAO), the type (Training, Exam, Event, Booking) and an optional comment. Then click “Add”.
 - Both times must fall on the same day: the end must come after the start.
 - “Fetch VATSIM (metropolitan France)” imports the week's VATSIM bookings. Sessions already fetched are replaced (cancellations included); manual entries are kept.
-- IVAO is entered by hand: its bookings API requires authentication.
+- “Fetch IVAO (metropolitan France)” likewise imports the week's IVAO trainings, exams and bookings, with the installation's IVAO API key (Settings › Installation). These two buttons are the import shared with the flight orders: a single file, the same sessions on both pages.
 - The “×” button of a row removes the session. The “Source” column shows “fetched” or “entered”.
 - **Effect on planning**: a session is counted in its slot (★). A training or an exam makes the airfield CTR unavailable for missions in that slot; the TMAs containing the airfield should be avoided if possible.
+
+### Area activations by network
+
+This block is the one of the flight orders (see “Area activations”): RTBA, R, D, TRA… activations of the displayed week, VATSIM and IVAO side by side, same data. Editing restricted as in the flight orders (Centre enabled; in production, administrator).
 
 ### Common slots
 
@@ -543,7 +547,7 @@ A flight needs an available category; a control item, an available category or �
 
 ### Area activations
 
-This block enters the week's area activations, per network and per time range (`data/atc/activations/<year>-W<week>.json`): day, area, network, status (active, requested, refused), start, end, remark. “Import from IVAO” takes the schedules published by IVAO (API key set on the launcher); entries made by hand stay. A change recomputes the flights' areas at once.
+This block enters the week's area activations (`data/atc/activations/<year>-W<week>.json`), in two side-by-side columns, VATSIM and IVAO: day, area, status (active, requested, refused), start, end, remark, network. A “both networks” activation appears in both columns; changing its network moves it. VATSIM does not publish activations: its column is entered by hand. In the IVAO column, “Import from IVAO” takes the schedules published by IVAO (installation API key), folded under the list; entries made by hand stay. A change recomputes the flights' areas at once. The ODV planning shows the same block, on the same data.
 
 ## Settings › Centre
 <!-- page: apps/settings/centre.html -->
@@ -689,7 +693,7 @@ This section is the only place to set the local folders and the addresses of the
 | X-Plane folder (landings), Performance folder, Local backup folder | CSV logs, `.lnmperf` / `.json` profiles, `defa_local_store.yaml` |
 
 - **External sources**: the default address is shown greyed out. An entered value applies to this browser only; “↺” goes back to the default value and “Open ↗” opens the address.
-- **API keys (external services)**: suite keys, shared by all its users (IVAO: API key for the flight order area activations). “Save” hands them to the launcher (`secrets/` at the application root, excluded from git, outside the data and the backups); the page only sees their state and last 4 characters; “Clear” removes the key.
+- **API keys (external services)**: suite keys, shared by all its users (IVAO: API key for the area activations and the ATC sessions — trainings, exams, bookings — of the ODV planning and the flight orders). “Save” hands them to the launcher (`secrets/` at the application root, excluded from git, outside the data and the backups); the page only sees their state and last 4 characters; “Clear” removes the key.
 - **Virtual airline**: “Name”, “Full name”, “Short name”, “Centre (short)”, “Centre (full name)”, and the site pages (“Home page”, “Flight log”, “Fleet”, “Aircraft page”). An empty field keeps the default value. “Back to SO Group Virtual” clears all these settings.
 - **First run**: “Reopen the first run”; “Clean and start over…” clears the stored folders, the copy of the ODV workbook, the airline site credentials and the profile. The files on disk are not touched.
 

@@ -403,9 +403,13 @@ Este bloque reúne los entrenamientos, exámenes, eventos y reservas de VATSIM /
 - **Introducir una sesión**: indique el día, el inicio y el fin (horas UTC, en pasos de 15 min), la posición (p. ej. `LFBO_APP`, `LFMN_TWR`), la red (VATSIM o IVAO), el tipo (Entrenamiento, Examen, Evento, Reserva) y un comentario opcional. Después haga clic en «Añadir».
 - Las dos horas deben caer el mismo día: el fin debe ser posterior al inicio.
 - «Recuperar VATSIM (Francia metropolitana)» importa las reservas VATSIM de la semana. Las sesiones ya recuperadas se sustituyen (anulaciones incluidas); las introducidas a mano se conservan.
-- IVAO se introduce a mano: su API de reservas requiere autenticación.
+- «Recuperar IVAO (Francia metropolitana)» importa igualmente los entrenamientos, exámenes y reservas IVAO de la semana, con la clave de API IVAO de la instalación (Ajustes › Instalación). Estos dos botones son la importación común con las órdenes de vuelo: un solo archivo, las mismas sesiones en ambas páginas.
 - El botón «×» de una línea quita la sesión. La columna «Fuente» indica «recuperada» o «introducida».
 - **Efecto en la planificación**: una sesión se cuenta en su franja (★). Un entrenamiento o un examen deja la CTR del aeródromo no disponible para las misiones de esa franja; las TMA que contienen el aeródromo deben evitarse en lo posible.
+
+### Activaciones de zonas por red
+
+Este bloque es el de las órdenes de vuelo (ver «Activaciones de zonas»): activaciones RTBA, R, D, TRA… de la semana mostrada, VATSIM e IVAO lado a lado, mismos datos. Edición restringida como en las órdenes de vuelo (Centro activado; en producción, administrador).
 
 ### Franjas comunes
 
@@ -543,7 +547,7 @@ Un vuelo requiere una categoría disponible; un control, una categoría disponib
 
 ### Activaciones de zonas
 
-Este bloque introduce las activaciones de zonas de la semana, por red y por franja (`data/atc/activations/<año>-W<semana>.json`): día, zona, red, estado (activa, solicitada, rechazada), inicio, fin, observación. «Importar de IVAO» recoge los horarios publicados por IVAO (clave de API configurada en el lanzador); las entradas a mano se conservan. Un cambio recalcula al instante las zonas de los vuelos.
+Este bloque introduce las activaciones de zonas de la semana (`data/atc/activations/<año>-W<semana>.json`), en dos columnas lado a lado, VATSIM e IVAO: día, zona, estado (activa, solicitada, rechazada), inicio, fin, observación, red. Una activación «ambas redes» aparece en las dos columnas; cambiar su red la desplaza. VATSIM no publica activaciones: su columna se introduce a mano. En la columna IVAO, «Importar de IVAO» recoge los horarios publicados por IVAO (clave de API de la instalación), plegados bajo la lista; las entradas a mano se conservan. Un cambio recalcula al instante las zonas de los vuelos. La planificación ODV muestra el mismo bloque, con los mismos datos.
 
 ## Ajustes › Centro
 <!-- page: apps/settings/centre.html -->
@@ -689,7 +693,7 @@ Este apartado es el único lugar donde se ajustan las carpetas locales y las dir
 | Carpeta X-Plane (aterrizajes), Carpeta de rendimiento, Carpeta de copia local | registros CSV, perfiles `.lnmperf` / `.json`, `defa_local_store.yaml` |
 
 - **Fuentes externas**: la dirección por defecto aparece en gris. Un valor introducido solo vale para este navegador; «↺» vuelve al valor por defecto y «Abrir ↗» abre la dirección.
-- **Claves de API (servicios externos)**: claves de la suite, comunes a todos sus usuarios (IVAO: clave de API para las activaciones de zonas de las órdenes de vuelo). «Guardar» las confía al lanzador (`secrets/` en la raíz de la aplicación, excluido de git, fuera de los datos y de las copias); la página solo ve su estado y los 4 últimos caracteres; «Borrar» la retira.
+- **Claves de API (servicios externos)**: claves de la suite, comunes a todos sus usuarios (IVAO: clave de API para las activaciones de zonas y las sesiones ATC — entrenamientos, exámenes, reservas — de la planificación ODV y de las órdenes de vuelo). «Guardar» las confía al lanzador (`secrets/` en la raíz de la aplicación, excluido de git, fuera de los datos y de las copias); la página solo ve su estado y los 4 últimos caracteres; «Borrar» la retira.
 - **Aerolínea virtual**: «Nombre», «Nombre completo», «Sigla», «Centro (sigla)», «Centro (nombre completo)» y las páginas del sitio («Página de inicio», «Registro de vuelos», «Flota», «Ficha de un avión»). Un campo vacío mantiene el valor por defecto. «Volver a SO Group Virtual» borra todos estos ajustes.
 - **Primer arranque**: «Reabrir el primer inicio»; «Limpiar y empezar de nuevo…» borra las carpetas recordadas, la copia del libro ODV, los identificadores del sitio de la aerolínea y el perfil. Los archivos del disco no se tocan.
 

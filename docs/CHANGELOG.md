@@ -12,6 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Activations des zones par réseau, VATSIM et IVAO côte à côte** (Ordres de vols et Planning ODV, même éditeur,
+  mêmes données) : saisies de chaque réseau, activations « les deux réseaux » dans les deux colonnes, import IVAO replié
+  dans sa colonne ; VATSIM ne publie pas d'activations (saisie à la main).
+- **Sessions ATC : import IVAO** (trainings, examens, réservations de France métropolitaine, clé d'API de
+  l'installation, lanceur `/__setup/ivao-bookings`) ; un seul import par réseau pour toutes les pages
+  (`SuiteAtc.importNetwork`).
+- **Fenêtre d'affectation sans écriture** : `apply(lignes, { takeoff, h_hour, alert, block_min })` rend aussi l'heure
+  et l'astreinte choisies (Ordres de vols : plaquette remplie en entier).
 - **Données aéronautiques : un seul bloc « Base aéronautique : sources, cycles et reconstruction »** (fusion de
   « Reconstruire la base aéronautique » et « Cycles AIRAC et âge des données ») : tableau de toutes les sources cochées des
   zones actives (zone, source, fichiers, cycle ou date, âge, taille, état), ligne cliquable qui met la source à jour,

@@ -403,9 +403,13 @@ Dieser Block sammelt die Trainings, Prüfungen, Events und Buchungen von VATSIM 
 - **Sitzung erfassen**: Geben Sie Tag, Beginn und Ende (UTC-Zeiten, in 15-Minuten-Schritten), Position (z. B. `LFBO_APP`, `LFMN_TWR`), Netzwerk (VATSIM oder IVAO), Art (Training, Prüfung, Event, Buchung) und einen optionalen Kommentar ein. Klicken Sie dann auf „Hinzufügen“.
 - Beide Zeiten müssen auf denselben Tag fallen: Das Ende muss nach dem Beginn liegen.
 - „VATSIM abrufen (Frankreich, Mutterland)“ importiert die VATSIM-Buchungen der Woche. Bereits abgerufene Sitzungen werden ersetzt (einschließlich Stornierungen); manuelle Eingaben bleiben erhalten.
-- IVAO wird von Hand erfasst: Seine Buchungs-API verlangt eine Authentifizierung.
+- „IVAO abrufen (Frankreich, Mutterland)“ importiert ebenso die IVAO-Trainings, -Prüfungen und -Buchungen der Woche, mit dem IVAO-API-Schlüssel der Installation (Einstellungen › Installation). Diese beiden Schaltflächen sind der mit den Flugbefehlen gemeinsame Import: eine Datei, dieselben Sitzungen auf beiden Seiten.
 - Die Schaltfläche „×“ einer Zeile entfernt die Sitzung. Die Spalte „Quelle“ zeigt „abgerufen“ oder „eingegeben“.
 - **Wirkung auf die Planung**: Eine Sitzung wird in ihrem Zeitfenster gezählt (★). Ein Training oder eine Prüfung macht die CTR des Flugplatzes für die Missionen dieses Zeitfensters unverfügbar; die TMA, die den Flugplatz enthalten, sind möglichst zu meiden.
+
+### Gebietsaktivierungen nach Netzwerk
+
+Dieser Block ist der der Flugbefehle (siehe „Gebietsaktivierungen“): RTBA-, R-, D-, TRA-Aktivierungen… der angezeigten Woche, VATSIM und IVAO nebeneinander, dieselben Daten. Bearbeitung wie bei den Flugbefehlen beschränkt (Centre aktiviert; im Produktivbetrieb Administrator).
 
 ### Gemeinsame Zeitfenster
 
@@ -543,7 +547,7 @@ Ein Flug verlangt eine verfügbare Kategorie; ein Lotsendienst eine verfügbare 
 
 ### Gebietsaktivierungen
 
-Dieser Block erfasst die Gebietsaktivierungen der Woche je Netzwerk und Zeitraum (`data/atc/activations/<Jahr>-W<Woche>.json`): Tag, Gebiet, Netzwerk, Status (aktiv, beantragt, abgelehnt), Beginn, Ende, Bemerkung. „Von IVAO importieren“ übernimmt die von IVAO veröffentlichten Zeiten (API-Schlüssel im Starter eingestellt); manuelle Eingaben bleiben. Eine Änderung berechnet die Gebiete der Flüge sofort neu.
+Dieser Block erfasst die Gebietsaktivierungen der Woche (`data/atc/activations/<Jahr>-W<Woche>.json`) in zwei Spalten nebeneinander, VATSIM und IVAO: Tag, Gebiet, Status (aktiv, beantragt, abgelehnt), Beginn, Ende, Bemerkung, Netzwerk. Eine Aktivierung „beide Netze“ erscheint in beiden Spalten; ein Wechsel des Netzwerks verschiebt sie. VATSIM veröffentlicht keine Aktivierungen: Seine Spalte wird von Hand erfasst. In der IVAO-Spalte übernimmt „Von IVAO importieren“ die von IVAO veröffentlichten Zeiten (API-Schlüssel der Installation), unter der Liste eingeklappt; manuelle Eingaben bleiben. Eine Änderung berechnet die Gebiete der Flüge sofort neu. Die ODV-Planung zeigt denselben Block mit denselben Daten.
 
 ## Einstellungen › Zentrum
 <!-- page: apps/settings/centre.html -->
@@ -689,7 +693,7 @@ Diese Rubrik ist der einzige Ort, an dem die lokalen Ordner und die Adressen der
 | Ordner X-Plane (Landungen), Ordner Leistungsdaten, Ordner der lokalen Sicherung | CSV-Protokolle, Profile `.lnmperf` / `.json`, `defa_local_store.yaml` |
 
 - **Externe Quellen**: Die Standardadresse wird grau angezeigt. Ein eingegebener Wert gilt nur für diesen Browser; „↺“ kehrt zum Standardwert zurück, und „Öffnen ↗“ öffnet die Adresse.
-- **API-Schlüssel (externe Dienste)**: Schlüssel der Suite, für alle ihre Benutzer (IVAO: API-Schlüssel für die Gebietsaktivierungen der Flugbefehle). „Speichern“ übergibt sie dem Starter (`secrets/` im Anwendungsordner, von Git ausgeschlossen, außerhalb der Daten und Sicherungen); die Seite sieht nur ihren Status und die letzten 4 Zeichen; „Löschen“ entfernt den Schlüssel.
+- **API-Schlüssel (externe Dienste)**: Schlüssel der Suite, für alle ihre Benutzer (IVAO: API-Schlüssel für die Gebietsaktivierungen und die ATC-Sitzungen — Trainings, Prüfungen, Buchungen — der ODV-Planung und der Flugbefehle). „Speichern“ übergibt sie dem Starter (`secrets/` im Anwendungsordner, von Git ausgeschlossen, außerhalb der Daten und Sicherungen); die Seite sieht nur ihren Status und die letzten 4 Zeichen; „Löschen“ entfernt den Schlüssel.
 - **Virtuelle Fluggesellschaft**: „Name“, „Vollständiger Name“, „Kürzel“, „Zentrum (Kürzel)“, „Zentrum (voller Name)“, und die Seiten der Website („Startseite“, „Flugbuch“, „Flotte“, „Flugzeugseite“). Ein leeres Feld behält den Standardwert. „Zurück zu SO Group Virtual“ löscht alle diese Einstellungen.
 - **Erststart**: „Ersten Start erneut öffnen“; „Bereinigen und neu beginnen…“ löscht die gespeicherten Ordner, die Kopie der ODV-Arbeitsmappe, die Zugangsdaten der Website der Fluggesellschaft und das Profil. Die Dateien auf der Festplatte bleiben unberührt.
 
