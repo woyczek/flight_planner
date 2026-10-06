@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Base des types d'aéronefs plus visible** : carte en tête de Références et dépendances, encadrée et signalée par une
+  notification quand la base est vide, bouton « Compléter la base » (types de la flotte et des missions), « Recharger la
+  page » à la fin d'une passe, fichiers écrits expliqués.
+- **Lanceur plus rapide sur `localhost`** : écoute aussi sur `::1` (sous Windows, chaque fichier attendait ≈ 0,2 s le repli
+  IPv6 → IPv4 : page et fond affichés en 1,5 s au lieu de 0,15 s).
 - **Clés d'API et identifiants des services externes** : Paramètres › Installation › Sources et dossiers › « Clés
   d'API » (IVAO, commune à la suite) et Mon profil › « IVAO — client OAuth (personnel) » (client ID, secret, adresse de
   redirection à déclarer) ; gardés par le lanceur (`secrets/`, exclu de git, hors des données et des sauvegardes ;

@@ -398,3 +398,10 @@ html[data-design="field"] .mt-block :is(button.secondary, .mt-file):not(#imp) {
     }
   }
 }
+/* base des types d'aéronefs vide : carte mise en avant (Références et dépendances) */
+@layer app {
+  .mt-ac-empty {
+    outline: 2px solid #e39b1b;
+    outline-offset: 2px
+  }
+}
