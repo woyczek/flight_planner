@@ -497,7 +497,7 @@ Links die Palette: Vorlagen für Flüge, Lotsendienst und Sonstiges, die Notiz, 
 
 Bedienung:
 - eine Vorlage auf ihren Abschnitt ziehen: das Element wird zur Ablagezeit (in 5-Minuten-Schritten) angelegt und sein Fenster öffnet sich;
-- eine Karte der Palette doppelt anklicken, um sie automatisch zu setzen: zum Synchronzeitpunkt bei einer weiteren Besatzung einer Mission mit mehreren Besatzungen (Zeit der bereits gesetzten verbundenen Rotte; Tanker: 30 min vor der Betankung), sonst ins erste stimmige Zeitfenster des Tages (Dienstzeiten, nicht vor der aktuellen Uhrzeit, Besatzung einsetzbar und frei, oder genug gemeinsam verfügbare Mitglieder);
+- eine Karte der Palette doppelt anklicken, um sie automatisch zu setzen: zum Synchronzeitpunkt bei einer weiteren Besatzung einer Mission mit mehreren Besatzungen (Versatz der Übung der Operation gegenüber H, sonst Zeit der bereits gesetzten verbundenen Rotte; Tanker: 30 min vor der Betankung oder vor der Rotte, die er versorgt), sonst ins erste stimmige Zeitfenster des Tages (Dienstzeiten, nicht vor der aktuellen Uhrzeit, Besatzung einsetzbar und frei, oder genug gemeinsam verfügbare Mitglieder);
 - ein Mitglied aus der Palette auf einen Streifen ziehen, um es hinzuzufügen, oder ein Trigramm von einem Streifen auf einen anderen, um es zu verschieben;
 - einen Streifen ziehen, um seine Uhrzeit zu ändern, seinen rechten Rand, um seine Dauer zu ändern; ein einfacher Klick öffnet sein Fenster;
 - in der Palette behält „Flugvorrat“ die von der Zeitleiste genommenen Streifen (auf die Palette gezogen oder „↩ Vorrat“ in ihrem Fenster), und „Formationen der Missionen“ bietet an, was die gesetzten Missionsflüge verlangen: Rotten der anderen Missionen der Formation, Tanker, die sie versorgen, Chiffons der Operation;

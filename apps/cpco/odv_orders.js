@@ -178,6 +178,7 @@
     S.tracks = [...new Set([...(Array.isArray(tr) ? tr.map(x => x.nom || x.id) : []), ...S.registry.filter(isTankerMission).map(trackOf).filter(Boolean)])].sort();
     syncCallsigns();
     fillTracks();
+    fillExercises();
     await applyReports();
     recompute();
     render();
@@ -675,6 +676,34 @@
       reseau: type === 'vol' ? S.cfg.reseau || null : undefined
     });
   }
+  // ---- heures d'exercice : décalages par rapport à H des missions d'une opération (organisation : exercise.participants
+  // et exercise.tracks jouées, takeoff « H-20mn »), lus dans le yaml de l'organisation, gardés en mémoire
+  async function fillExercises(extra = []) {
+    S.exOff ||= {};
+    const ops = new Set([...S.doc.elements, ...extra].map(e => reg(e.mission)?.operation?.id).filter(Boolean));
+    await Promise.all((S.orgs || []).filter(o => ops.has(o.operation?.id) && !(o.operation.id in S.exOff)).map(async o => {
+      S.exOff[o.operation.id] = {};
+      const file = (o.files || []).find(f => /\.ya?ml$/i.test(f) && !/^affectations/i.test(f)) || `mission${o.id}.yaml`;
+      const found = await MA()?.missionFirst?.(o.folder, [file]).catch(() => null);
+      let y = null;
+      try {
+        y = found && window.jsyaml ? window.jsyaml.load(found.value.replace(/^#.*\n/, '')) : null;
+      } catch {
+        y = null;
+      }
+      const ex = y?.exercise || {};
+      for (const p of [...(ex.participants || []), ...(ex.tracks || []).filter(x => x?.played && x.mission)]) {
+        const off = K.hOffset?.(p.takeoff ?? p.start ?? '');
+        if (p?.mission && Number.isFinite(off)) S.exOff[o.operation.id][String(p.mission).toUpperCase()] = off;
+      }
+    }));
+  }
+  /** Décalage (minutes, par rapport à H) d'une mission dans l'exercice de son opération ; null si inconnu. */
+  const exOffset = m => {
+    const v = S.exOff?.[m?.operation?.id]?.[m?.id];
+    return Number.isFinite(v) ? v : null;
+  };
+
   // ---- pose automatique (double clic sur une carte de la palette)
   /** Position de synchro d'une plaquette de mission : ravitailleur → 30 min avant le ravitaillement d'un vol qui l'attend ;
    *  autre équipage de la formation (même opération, ou patrouille citée par l'une ou l'autre mission) → heure de la
@@ -686,12 +715,21 @@
     for (const v of vols)
       for (const r of v.ravitaillements || [])
         if (r.mission === m.id && r.heure) return Math.max(0, min(r.heure) - 30);
+    // même opération avec exercice : H déduite de la patrouille posée (son décalage), puis le décalage de celle-ci
+    const off = exOffset(m);
+    if (off != null)
+      for (const v of vols) {
+        const vo = exOffset(reg(v.mission));
+        if (vo != null && reg(v.mission)?.operation?.id === m.operation?.id) return Math.max(0, min(v.debut) - vo + off);
+      }
     const rel = vols.find(v => {
       const vm = reg(v.mission);
       if (!vm) return false;
       return (m.operation?.id && vm.operation?.id === m.operation.id) || (vm.teams || []).some(x => x.name === ownCs(m)) || (m.teams || []).some(x => x.name === ownCs(vm) || x.name === v.indicatif);
     });
-    return rel ? min(rel.debut) : null;
+    if (!rel) return null;
+    // ravitailleur sans ravitaillement saisi : 30 min avant la patrouille qu'il sert
+    return Math.max(0, min(rel.debut) - (isTankerMission(m) && !isTankerMission(reg(rel.mission)) ? 30 : 0));
   }
   /** Premier créneau cohérent du jour (pas de 5 min, heures de service, pas avant maintenant) : équipage affectable et
    *  libre sur toute la durée ; sans équipage, assez de membres affectables ensemble (une place par avion) ; à défaut,
@@ -715,7 +753,7 @@
     return s0;
   }
   /** Pose une carte de la palette (modèle, formation, réserve) au créneau de synchro, sinon au premier cohérent. */
-  function autoPlace(v) {
+  async function autoPlace(v) {
     const [ty, ...rest] = String(v).split(':'),
       id = rest.join(':'),
       date = curDate();
@@ -725,6 +763,8 @@
       date
     }) : fromTemplate(ty, id, date, 0);
     if (!el) return;
+    // heures d'exercice de l'opération lues avant le calcul (première pose d'une formation)
+    await fillExercises([el]).catch(() => {});
     const start = Math.min(1440 - el.duree, syncStart(el, date) ?? firstSlot(el, date));
     mutate(doc => {
       if (src) doc.reserve = doc.reserve.filter(x => x.id !== id);
@@ -965,6 +1005,8 @@
     } catch {
       list = [];
     }
+    // organisations d'exercice (A-001Z…) gardées à part : heures relatives des équipages (H-20mn…)
+    S.orgs = list.filter(m => m?.id && m.organisation);
     return list.filter(m => m?.id && !m.organisation);
   }
   // une mission = une patrouille : son indicatif (callsigns[0]) et son type (aircraftTypes[0]) ; teams = toute la

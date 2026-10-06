@@ -497,7 +497,7 @@ Les heures sont en z (UTC). Modèle de données : [Ordres de vols](technique/ODV
 
 Manipulations :
 - glissez un modèle sur sa section : l'élément est créé à l'heure du dépôt (par pas de 5 min) et sa fenêtre s'ouvre ;
-- double-cliquez une carte de la palette pour la poser d'office : au créneau de synchro pour un autre équipage d'une mission à plusieurs équipages (heure de la patrouille liée déjà posée ; ravitailleur : 30 min avant le ravitaillement), sinon au premier créneau cohérent du jour (heures de service, pas avant l'heure présente, équipage affectable et libre, ou assez de membres disponibles ensemble) ;
+- double-cliquez une carte de la palette pour la poser d'office : au créneau de synchro pour un autre équipage d'une mission à plusieurs équipages (décalage de l'exercice de l'opération par rapport à H, sinon heure de la patrouille liée déjà posée ; ravitailleur : 30 min avant le ravitaillement, ou avant la patrouille qu'il sert), sinon au premier créneau cohérent du jour (heures de service, pas avant l'heure présente, équipage affectable et libre, ou assez de membres disponibles ensemble) ;
 - glissez un membre de la palette sur une plaquette pour l'y ajouter, ou un trigramme d'une plaquette à une autre pour l'y déplacer ;
 - faites glisser une plaquette pour changer son heure, son bord droit pour changer sa durée ; un simple clic ouvre sa fenêtre ;
 - dans la palette, « Réserve des vols » garde les plaquettes retirées de la frise (glissées sur la palette, ou « ↩ Réserve » dans leur fenêtre) et « Formations des missions » propose ce que les vols de mission posés appellent : patrouilles des autres missions de la formation, ravitailleurs qui les servent, chiffons de l'opération ;
