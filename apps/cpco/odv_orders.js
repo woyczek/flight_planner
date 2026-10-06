@@ -1363,6 +1363,14 @@
     const gap = r => r.block == null ? 1e6 : Math.abs(r.block - duree);
     return rows.sort((a, b) => (!!b.lien - !!a.lien) || ((a.fit === false) - (b.fit === false)) || gap(a) - gap(b) || a.key.localeCompare(b.key));
   }
+  // classe d'appareil de l'estimation (MissionEstimate : libellé français gardé au registre) dans la langue de la page
+  const CLASS_LABELS = {
+    'hélicoptère': L4('hélicoptère', 'helicopter', 'Hubschrauber', 'helicóptero'),
+    'avion à pistons': L4('avion à pistons', 'piston aircraft', 'Kolbenflugzeug', 'avión de pistón'),
+    turbopropulseur: L4('turbopropulseur', 'turboprop', 'Turboprop', 'turbohélice'),
+    'réacteur': L4('réacteur', 'jet', 'Strahlflugzeug', 'reactor')
+  };
+  const classLabel = s => s ? t(CLASS_LABELS[String(s).toLowerCase()] || [s, s, s, s]) : '';
   /** Estimation de la mission (registre : estimate) en clair, avec la durée demandée. */
   function estText(m, duree) {
     const x = m?.estimate || {};
@@ -1377,7 +1385,7 @@
     }) : '', x.min && x.max ? tf(L4('fourchette {a}–{b} min', 'range {a}–{b} min', 'Spanne {a}–{b} min', 'horquilla {a}–{b} min'), {
       a: Math.round(x.min),
       b: Math.round(x.max)
-    }) : '', x.label || ''].filter(Boolean).join(', ');
+    }) : '', classLabel(x.label)].filter(Boolean).join(', ');
     return tf(L4('Estimation : bloc {b} min ({p}) ; demandée : {d} min', 'Estimate: block {b} min ({p}); requested: {d} min', 'Schätzung: Block {b} min ({p}); gewünscht: {d} min', 'Estimación: bloque {b} min ({p}); solicitada: {d} min'), {
       b: blockOf(m),
       p: parts || '—',
