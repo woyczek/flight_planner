@@ -370,7 +370,8 @@ html[data-design="field"] .mt-block :is(button.secondary, .mt-file):not(#imp) {
   }
   .mt-aero-panel {
     border: 1px solid var(--line);
-    padding: 8px 12px
+    padding: 8px 12px;
+    min-height: 420px /* hauteur de la carte : la page ne saute pas d'une zone à l'autre */
   }
   .mt-aero-panel h3 {
     margin: 0 0 4px

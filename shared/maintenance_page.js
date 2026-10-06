@@ -953,7 +953,13 @@
   async function scanSiaFolder(request = false) {
     const dir = await folder('__sia', request);
     if (!dir) return (siaFolderState = null);
-    siaFolderState = window.Airac.inspectFolder(await window.Airac.filesOf(dir));
+    try {
+      siaFolderState = window.Airac.inspectFolder(await window.Airac.filesOf(dir));
+    } catch (e) {
+      // dossier mémorisé déplacé, supprimé ou à la demande (Synology) : traité comme absent, sans casser le bloc
+      console.warn('Dossier SIA illisible :', e);
+      siaFolderState = null;
+    }
     return siaFolderState;
   }
   // ---- base des types d'aéronefs (OACI Doc 8643, performances EUROCONTROL) : non publiée, complétée sur ce poste type
@@ -1019,6 +1025,8 @@
     aeroMap = null,
     aeroPinned = 'fr',
     aeroLocked = false, // zone épinglée d'un clic : le panneau reste sur elle malgré le survol
+    aeroHoverTimer = 0,
+    aeroXpLabel = '', // libellé du bouton du dossier X-Plane, repris au redessin du panneau (pas de bouton vide un instant)
     aeroHover = null,
     aeroInv = null;
   const AERO_STATE = {
@@ -1043,9 +1051,9 @@
       xplane: null
     };
     const st = await window.FileAccess?.status?.('__sia');
-    if (st?.handle && st.permission === 'granted') {
-      inv.folder = true;
+    if (st?.handle && st.permission === 'granted') try {
       const root = await window.SiaBase.filesOf(st.handle);
+      inv.folder = true;
       inv.files.push(...root.map(f => ({
         rel: f.name,
         at: f.lastModified
@@ -1058,6 +1066,10 @@
         })));
       const mora = root.find(f => /^mora\.csv$/i.test(f.name));
       if (mora) inv.moraCells = window.SiaBase.parseMora(await mora.text());
+    } catch (e) {
+      // dossier mémorisé déplacé ou supprimé : comme non autorisé (à rechoisir)
+      console.warn('Dossier SIA illisible :', e);
+      inv.folder = false;
     }
     const xs = await window.FileAccess?.status?.('__xpnav');
     if (xs?.handle) {
@@ -1289,9 +1301,11 @@
           hover: true
         });
         aeroMap.getCanvas().style.cursor = 'pointer';
-        if (panel() && !aeroLocked) aeroPanelShow(Z, id, {
+        // panneau mis à jour après un court arrêt sur la zone : en traversant la carte, pas de redessin à chaque pays
+        clearTimeout(aeroHoverTimer);
+        if (panel() && !aeroLocked) aeroHoverTimer = setTimeout(() => aeroHover === id && !aeroLocked && aeroPanelShow(Z, id, {
           force: false
-        });
+        }), 220);
       });
       aeroMap.on('mouseleave', 'zones-fill', () => {
         if (hovered) aeroMap.setFeatureState({
@@ -1300,11 +1314,12 @@
         }, {
           hover: false
         });
+        // la zone affichée au panneau y reste (on va vers lui pour la régler) : pas de redessin en quittant la carte
+        clearTimeout(aeroHoverTimer);
+        const shown = document.getElementById('mtAeroPanel')?.dataset.zone;
+        if (shown && !aeroLocked) aeroPinned = shown;
         hovered = aeroHover = null;
         aeroMap.getCanvas().style.cursor = '';
-        if (panel() && !aeroLocked) aeroPanelShow(Z, aeroPinned, {
-          force: false
-        });
       });
       // clic : épingle la zone (activation et sources dans le panneau) ; second clic sur elle : relâchée
       aeroMap.on('click', 'zones-fill', e => {
@@ -1354,12 +1369,17 @@
     el.innerHTML = aeroPanel(Z, id);
     el.dataset.zone = id;
     const xp = el.querySelector('[data-aero-xp]');
-    if (xp) xp.append(folderButton('__xpnav', async () => {
-      aeroInv = await aeroInventory();
-      aeroRefresh(Z);
-    }, {
-      withLabel: false
-    }));
+    if (xp) {
+      const b = folderButton('__xpnav', async () => {
+        aeroInv = await aeroInventory();
+        aeroRefresh(Z);
+      }, {
+        withLabel: false
+      });
+      if (aeroXpLabel) b.textContent = aeroXpLabel;
+      xp.append(b);
+      setTimeout(() => b.isConnected && b.textContent.trim() && (aeroXpLabel = b.textContent), 400);
+    }
     // icônes des boutons posées par block_icons.js (observateur des ajouts) : pas de rafraîchissement de la page à chaque
     // survol (il redécorait tous les blocs)
   }
@@ -1529,7 +1549,7 @@
       <div class="mt-aero">
         <div class="mt-aero-left"><div id="mtAeroMapSlot"></div><div class="mt-aero-legend mt-small">${legend}</div>
 </div>
-        <aside class="mt-aero-panel" id="mtAeroPanel"></aside>
+        <aside class="mt-aero-panel" id="mtAeroPanel" data-no-i18n></aside>
       </div>
       <div class="repo-card" id="mt-aero-base" data-icon="refresh" data-subtitle="${esc(t(['Zones actives et sources cochées : la base sert au studio, aux cartes de vol, au profil vertical et aux espaces à activer.', 'Active zones and ticked sources: the database feeds the studio, flight maps, vertical profile and airspace to activate.']))}"><h3>${esc(t(['Reconstruire la base aéronautique', 'Rebuild the aeronautical database', 'Luftfahrtdatenbank neu aufbauen', 'Reconstruir la base aeronáutica']))}</h3><div id="mtBasePanel"></div></div>
       <div class="repo-card" data-icon="clock"><h3>${esc(t(['Cycles AIRAC et âge des données', 'AIRAC cycles and data age', 'AIRAC-Zyklen und Alter der Daten', 'Ciclos AIRAC y antigüedad de los datos']))}</h3><div id="mtAeroAges">${aeroAgesHtml(Z)}</div></div>
@@ -1569,7 +1589,8 @@
     };
     // le panneau suit le survol ; on y travaille : la zone survolée en dernier y reste
     panel.onmouseenter = () => {
-      if (aeroHover && !aeroLocked) aeroPinned = aeroHover;
+      clearTimeout(aeroHoverTimer);
+      if (!aeroLocked && panel.dataset.zone) aeroPinned = panel.dataset.zone;
     };
     // Échap : zone relâchée
     if (!host.dataset.escBound) {
