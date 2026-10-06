@@ -507,6 +507,8 @@ En una ficha: «⚠ n» cuenta sus conflictos, «P» indica que ningún tripulan
 
 - **Vuelo**: etiqueta, indicativo, misión del registro (vacío: entrenamiento), red, inicio, duración, color, zonas de un entrenamiento, eje y descarga de un vuelo cisterna, cisterna y hora del reabastecimiento, aeronaves (piloto, navegante, cancelado; ocho como máximo), tareas (una por línea, «nombre = TRI»), información, estado, motivo, informe (ME, Bâché, MNE), parcial, causas de MNE.
 - Un indicativo introducido propone la misión de la asignación que lleva ese indicativo ese día.
+- «Misión del registro y equipo»: una fila por equipo en vuelo de cada misión (indicativo, aeronave, función, familia, aeródromos, operación, duración estimada), ordenada por duración; «⚠» y una notificación señalan una duración estimada distinta de la solicitada (diferencia de más de 15 min o 15 %). «Entrenamiento (sin misión)» deja la ficha sin misión.
+- «Reabastecimiento»: una misión cisterna (primero las de la misma operación o del mismo eje), cuya ficha se coloca ese día si aún no está, o un vuelo cisterna ya colocado; la hora del reabastecimiento se ajusta al lado.
 - Vuelo de misión: la tripulación viene de las asignaciones de la misión; «Asignar…» abre la ventana de asignación del Centro. El informe de la misión es la referencia: al abrir la semana, estado e informe se toman de él; sin informe pasado el plazo configurado, el vuelo pasa a MNE (causa «sin informe»).
 - **Control**, **Varios**: etiqueta, posición (control), inicio, duración, color, estado, motivo, tripulación (casillas de los miembros), notas (varios).
 - **Nota**: texto libre.

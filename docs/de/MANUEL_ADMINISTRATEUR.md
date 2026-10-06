@@ -507,6 +507,8 @@ Auf einem Streifen: „⚠ n“ zählt seine Konflikte, „P“ zeigt an, dass i
 
 - **Flug**: Bezeichnung, Rufzeichen, Mission des Registers (leer: Übung), Netzwerk, Beginn, Dauer, Farbe, Gebiete eines Übungsflugs, Strecke und Abgabe eines Tankerflugs, Tanker und Betankungszeit, Luftfahrzeuge (Pilot, Navigator, abgesagt; höchstens acht), Aufgaben (eine pro Zeile, „Name = TRI“), Infos, Status, Grund, Bericht (ME, Bâché, MNE), teilweise, MNE-Ursachen.
 - Ein eingegebenes Rufzeichen schlägt die Mission der Zuweisung vor, die dieses Rufzeichen an diesem Tag trägt.
+- „Mission des Registers und Team“: eine Zeile je fliegendem Team jeder Mission (Rufzeichen, Luftfahrzeug, Rolle, Familie, Flugplätze, Operation, geschätzte Dauer), nach Dauer sortiert; „⚠“ und eine Benachrichtigung melden eine geschätzte Dauer, die von der gewünschten abweicht (mehr als 15 min oder 15 %). „Übung (ohne Mission)“ lässt den Streifen ohne Mission.
+- „Betankung“: eine Tankermission (die der gleichen Operation oder der gleichen Strecke zuerst), deren Streifen an diesem Tag gesetzt wird, falls noch nicht vorhanden, oder ein bereits gesetzter Tankerflug; die Betankungszeit wird daneben eingestellt.
 - Missionsflug: die Besatzung kommt aus den Zuweisungen der Mission; „Zuweisen…“ öffnet das Zuweisungsfenster des Zentrums. Der Missionsbericht ist maßgeblich: beim Öffnen der Woche werden Status und Bericht daraus übernommen; ohne Bericht nach der eingestellten Frist wird der Flug MNE (Ursache „kein Bericht“).
 - **Lotsendienst**, **Sonstiges**: Bezeichnung, Position (Lotsendienst), Beginn, Dauer, Farbe, Status, Grund, Besatzung (Kästchen der Mitglieder), Notizen (Sonstiges).
 - **Notiz**: freier Text.

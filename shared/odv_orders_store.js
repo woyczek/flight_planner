@@ -209,6 +209,7 @@
     if (t === 'vol') return {
       ...base,
       mission: e.mission || null,
+      equipe: e.equipe || null,
       libelle: e.libelle || '',
       indicatif: e.indicatif || '',
       reseau: e.reseau || null,

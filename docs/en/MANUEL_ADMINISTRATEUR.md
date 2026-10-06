@@ -507,6 +507,8 @@ On a strip: “⚠ n” counts its conflicts, “P” flags that no crew member 
 
 - **Flight**: label, callsign, registry mission (empty: training), network, start, duration, colour, areas of a training flight, track and offload of a tanker flight, tanker and refuelling time, aircraft (pilot, navigator, cancelled; eight at most), tasks (one per line, “name = TRI”), info, status, reason, report (ME, Bâché, MNE), partial, MNE causes.
 - A callsign entered suggests the mission of the assignment that carries this callsign that day.
+- “Registry mission and team”: one row per flying team of each mission (callsign, aircraft, role, family, airfields, operation, estimated duration), sorted by duration; “⚠” and a notification flag an estimated duration that differs from the requested one (gap of more than 15 min or 15 %). “Training (no mission)” leaves the strip without a mission.
+- “Refuelling”: a tanker mission (those of the same operation or on the same track first), whose strip is placed that day if it is not there yet, or a tanker flight already placed; the refuelling time is set next to it.
 - Mission flight: the crew comes from the mission's assignments; “Assign…” opens the Centre's assignment window. The mission report is authoritative: when the week is opened, status and report are taken from it; with no report after the set delay, the flight becomes MNE (cause “no report”).
 - **Control**, **Miscellaneous**: label, position (control), start, duration, colour, status, reason, crew (member boxes), notes (miscellaneous).
 - **Note**: free text.
