@@ -456,19 +456,18 @@
    *  écriture seulement. */
   async function autoImportAtc() {
     if (!canEdit()) return;
-    const KEY = 'odvoAtcImport:v1',
-      seen = K.store.json(KEY, {}) || {};
-    if (Date.now() - (seen[S.week] || 0) < 36e5) return;
     try {
       if (!window.SuiteAtc) await loadScript('../../shared/atc_sessions.js?v=ab462121');
     } catch {
       return;
     }
-    if (!window.SuiteAtc?.importNetwork) return;
+    if (!window.SuiteAtc?.autoImport) return;
+    // marque horaire commune au Planning ODV (suiteAtcAuto:IVAO:<semaine>) : une seule tentative par heure, échec compris
     const week = S.week;
-    const r = await window.SuiteAtc.importNetwork(week, 'IVAO').catch(err => ({
+    const r = await window.SuiteAtc.autoImport(week, 'IVAO').catch(err => ({
       error: err
     }));
+    if (r?.skipped) return;
     if (r?.error) {
       if (!S.atcWarned) notify(tf(L4('Import IVAO des sessions ATC impossible : {e}', 'IVAO import of ATC sessions failed: {e}', 'IVAO-Import der ATC-Sitzungen fehlgeschlagen: {e}', 'Importación IVAO de las sesiones ATC imposible: {e}'), {
         e: String(r.error?.message || r.error)
@@ -476,10 +475,6 @@
       S.atcWarned = true;
       return;
     }
-    K.store.setJson(KEY, {
-      ...seen,
-      [week]: Date.now()
-    });
     if (week === S.week) refreshAirspace();
   }
   async function zoneRequests() {
@@ -2586,7 +2581,15 @@
     activations = window.OdvActivationsEditor.mount(host, {
       semaine: S.week,
       readOnly: !S.editable,
-      onChange: () => refreshAirspace()
+      onChange: () => {
+        refreshAirspace();
+        requestsSoon();
+      },
+      // import IVAO (activations et sessions ATC) : zones, conflits ATC et demandes recalculés
+      onImport: () => {
+        refreshAirspace();
+        requestsSoon();
+      }
     });
   }
 
