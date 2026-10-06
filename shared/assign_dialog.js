@@ -13,6 +13,9 @@
   //   convoyage à affecter (ferry.open, comme la matrice du Planning ODV) ;
   //   { rows, apply } : lignes préremplies, résultat rendu à apply(lignes, { takeoff: ms, h_hour: ms|null,
   //   alert: { notice_min, window_h }|null, block_min }) au lieu d'être écrit (matrice d'un créneau) ;
+  //   departure : terrain de départ de secours (OACI) quand le yaml de la mission n'en donne pas (Ordres de vols : celui
+  //   du registre) ; rows[].ferry { registration, from, minutes, takeoff (ms) } : convoyage déjà placé (plaquette de
+  //   convoyage des Ordres de vols), repris tel quel tant que l'appareil de la ligne est le même (sinon recalculé) ;
   //   frame(id, { title, subtitle, body, foot, wide, beforeClose }) : fenêtre au même gabarit ; chip(texte, ok|warn|err|focus).
   const K = window.RepositoryKit,
     esc = K.esc,
@@ -101,6 +104,7 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
     note = '',
     rows: presetRows = null,
     alert: presetAlert = null,
+    departure: presetDeparture = '',
     apply = null
   } = {}) {
     const M = A(),
@@ -114,7 +118,7 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
       postOfType = ty => posts.find(p => M.fits(p, ty)) || M.postsOf({
         aircraftTypes: [ty]
       })[0],
-      departure = M.geo.icaoOf(y.origin) || existing[0]?.departure || '',
+      departure = M.geo.icaoOf(y.origin) || String(presetDeparture || '').toUpperCase() || existing[0]?.departure || '',
       callsign = posts[0]?.callsign || '',
       blockMin = +y.timing?.estimated_block_min || +y.timing?.estimated_flight_min || 120,
       ex = y.exercise,
@@ -138,6 +142,7 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
       registration: r.registration || '',
       callsign: r.callsign || posts[i]?.callsign || '',
       ferryPilot: r.ferryPilot || '',
+      ferryPreset: r.ferry?.from && Number.isFinite(+r.ferry.takeoff) ? r.ferry : null,
       post: r.post || posts[i] || posts[0]
     })) : existing.length && !preset.length ? existing.map(a => ({
       pilot: a.pilot,
@@ -227,7 +232,17 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
           tk = t + i * 6e4,
           notes = [];
         const type = plane?.type || r.post?.type || '';
-        const ferry = plane ? await M.ferryOf({
+        // convoyage déjà placé (plaquette des Ordres de vols) pour cet appareil : repris tel quel ; sinon calculé
+        const fp = r.ferryPreset && (!r.ferryPreset.registration || r.ferryPreset.registration === r.registration) ? r.ferryPreset : null;
+        const ferry = fp ? {
+          from: String(fp.from).toUpperCase(),
+          to: departure,
+          baseKnown: true,
+          minutes: Number.isFinite(+fp.minutes) && +fp.minutes > 0 ? Math.round(+fp.minutes) : null,
+          takeoff: new Date(+fp.takeoff).toISOString(),
+          pilot: r.ferryPilot === '__open' ? '' : r.ferryPilot || r.pilot,
+          placed: true
+        } : plane ? await M.ferryOf({
           base: plane.base,
           departure,
           type,
@@ -238,7 +253,7 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
         const fz = card?.querySelector('.ad-ferry');
         if (fz) {
           fz.hidden = !ferry;
-          if (ferry) fz.innerHTML = `${ferry.minutes ? L(['Convoyage {r} ≈ {m} min, décollage {t}', 'Ferry {r} ≈ {m} min, take-off {t}', 'Überführung {r} ≈ {m} min, Start {t}', 'Traslado {r} ≈ {m} min, despegue {t}'], { r: `<b>${esc(ferry.from)} → ${esc(departure)}</b>`, m: ferry.minutes, t: `<b>${hhmm(Date.parse(ferry.takeoff))}</b>` }) : L(['Convoyage depuis {f} : distance inconnue', 'Ferry from {f}: distance unknown', 'Überführung ab {f}: Entfernung unbekannt', 'Traslado desde {f}: distancia desconocida'], { f: `<b>${esc(ferry.from)}</b>` })} — ${L(['par', 'by', 'durch', 'por'])} <select data-r="ferryPilot">${poolOpts(r.ferryPilot, ferry.takeoff ? Date.parse(ferry.takeoff) : tk, { spec: type, none: L(['{p} (le pilote de la mission)', '{p} (the mission pilot)', '{p} (der Missionspilot)', '{p} (el piloto de la misión)'], { p: r.pilot || L(['le pilote', 'the pilot', 'der Pilot', 'el piloto']) }), exclude: [r.pilot], open: true })}</select>`;
+          if (ferry) fz.innerHTML = `${ferry.placed ? `<small class="ad-ferry-src">${L(['plaquette de convoyage', 'ferry strip', 'Überführungsstreifen', 'tira de traslado'])}</small> ` : ''}${ferry.minutes ? L(['Convoyage {r} ≈ {m} min, décollage {t}', 'Ferry {r} ≈ {m} min, take-off {t}', 'Überführung {r} ≈ {m} min, Start {t}', 'Traslado {r} ≈ {m} min, despegue {t}'], { r: `<b>${esc(ferry.from)} → ${esc(departure)}</b>`, m: ferry.minutes, t: `<b>${hhmm(Date.parse(ferry.takeoff))}</b>` }) : L(['Convoyage depuis {f} : distance inconnue', 'Ferry from {f}: distance unknown', 'Überführung ab {f}: Entfernung unbekannt', 'Traslado desde {f}: distancia desconocida'], { f: `<b>${esc(ferry.from)}</b>` })} — ${L(['par', 'by', 'durch', 'por'])} <select data-r="ferryPilot">${poolOpts(r.ferryPilot, ferry.takeoff ? Date.parse(ferry.takeoff) : tk, { spec: type, none: L(['{p} (le pilote de la mission)', '{p} (the mission pilot)', '{p} (der Missionspilot)', '{p} (el piloto de la misión)'], { p: r.pilot || L(['le pilote', 'the pilot', 'der Pilot', 'el piloto']) }), exclude: [r.pilot], open: true })}</select>`;
         }
         if (plane?.operational === false) notes.push(chip(L(['appareil non opérationnel', 'aircraft not operational', 'Luftfahrzeug nicht einsatzbereit', 'aeronave no operativa']), 'err'));
         if (r.pilot) {
@@ -283,7 +298,10 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
           } : null,
           departure,
           takeoff: new Date(tk).toISOString(),
-          ferry: ferry?.minutes || ferry?.open ? ferry : null,
+          ferry: ferry?.minutes || ferry?.open ? (({
+            placed,
+            ...f
+          }) => f)(ferry) : null,
           block_min: blockMin,
           status: 'affectée'
         });
