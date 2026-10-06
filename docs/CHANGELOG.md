@@ -18,7 +18,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   `GET` / `POST /__setup/secrets`), jamais renvoyés à la page (état et 4 derniers caractères).
 - **Carte des zones : épinglage** — un clic garde la zone au panneau (activation par « Activer la zone », sources) ;
   nouveau clic, Échap ou « Libérer » la relâchent. Carte redimensionnée quand le bloc s'ouvre depuis le menu ; bouton
-  du dossier SIA en double retiré ; plus de rafraîchissement de la page à chaque survol.
+  du dossier SIA en double retiré ; plus de rafraîchissement de la page à chaque survol ; panneau sans barre de défilement
+  propre (la page défile ; molette au-dessus de la carte : la page, zoom avec Ctrl) ; « Télécharger » : état et résultat
+  sous le bouton, avertissement si les fichiers écrits ne sont pas visibles (dossier SIA non autorisé ou autre).
 - **Écart entre `data/` et sa sauvegarde git** (`tools/data_sync.py` : `divergence`, `shared/sync.js`) : bouton
   « Synchroniser » orange ou rouge selon les modifications non envoyées (nombre, âge), les commits à recevoir ou non
   envoyés, les fichiers modifiés hors des données synchronisées, l'absence de dépôt git ou distant, une fusion en cours ;

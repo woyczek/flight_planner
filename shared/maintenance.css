@@ -370,9 +370,7 @@ html[data-design="field"] .mt-block :is(button.secondary, .mt-file):not(#imp) {
   }
   .mt-aero-panel {
     border: 1px solid var(--line);
-    padding: 8px 12px;
-    max-height: 520px;
-    overflow: auto
+    padding: 8px 12px
   }
   .mt-aero-panel h3 {
     margin: 0 0 4px

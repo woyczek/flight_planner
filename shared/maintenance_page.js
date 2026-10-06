@@ -1151,7 +1151,7 @@
           <button type="button" class="secondary" id="mtSiaFetch" data-icon="download" title="${esc(t(['Prend le dernier export_xml_bd_SIA_….zip du dossier Téléchargements (serveur du lanceur)', 'Takes the latest export_xml_bd_SIA_….zip from the Downloads folder (launcher server)']))}">${esc(t(['Récupérer le ZIP téléchargé', 'Fetch the downloaded ZIP', 'Heruntergeladenes ZIP holen', 'Recuperar el ZIP descargado']))}</button><label class="secondary mt-file">${esc(t(['ZIP d’export du SIA…', 'SIA export ZIP…', 'SIA-Export-ZIP…', 'ZIP de exportación…']))}<input type="file" id="mtSiaZip" accept=".zip" hidden data-picker-folder="__sia"></label>${f?.zips?.length ? `<button type="button" class="secondary" id="mtSiaZipFolder" data-icon="box">${esc(t(['Extraire {z}', 'Extract {z}'], { z: f.zips[0].name }))}</button>` : ''}${f?.old?.length ? `<button type="button" class="secondary" id="mtArchive" data-icon="box" title="${esc(f.old.map(o => o.date).join(', '))}">${esc(t(['Archiver les anciens cycles', 'Archive the old cycles', 'Alte Zyklen archivieren', 'Archivar los ciclos antiguos']))}</button>` : ''}</p>
           <p class="mt-small" id="mtExtract">${extractMsg}${archiveMsg ? ' ' + archiveMsg : ''}</p>${f ? `<details class="mt-small"><summary>${esc(t(['Contenu du dossier SIA', 'SIA folder content', 'Inhalt des SIA-Ordners', 'Contenido de la carpeta SIA']))}</summary>${folderTable(f)}</details>` : ''}`;
       }
-      if (S.kind === 'download') return `<p class="row"><button type="button" class="secondary" data-aero-fetch="${esc(S.provider)}" data-args="${esc((S.args || [id]).join(' '))}" data-icon="download">${esc(t(['Télécharger', 'Download', 'Herunterladen', 'Descargar']))}</button></p>`;
+      if (S.kind === 'download') return `<p class="row"><button type="button" class="secondary" data-aero-fetch="${esc(S.provider)}" data-src="${esc(src)}" data-args="${esc((S.args || [id]).join(' '))}" data-icon="download"${aeroFetching.has(`${id}|${src}`) ? ' disabled' : ''}>${esc(t(['Télécharger', 'Download', 'Herunterladen', 'Descargar']))}</button> <span class="mt-small" data-fetch-msg>${aeroFetchMsg[`${id}|${src}`] || ''}</span></p>`;
       if (S.kind === 'local') return `<p class="mt-small">${esc(t(S.howto))}</p><p class="row" data-aero-xp></p>`;
       if (S.kind === 'computed') return `<p class="row"><button type="button" class="secondary" data-mora-zone="${esc(id)}" data-icon="chart" title="${esc(t(['Relief Terrarium, sommets OpenStreetMap et obstacles de la base, sur l’emprise de la zone (réseau)', 'Terrarium terrain, OpenStreetMap peaks and base obstacles, over the zone extent (network)']))}">${esc(t(['Calculer la MORA de la zone', 'Compute the zone MORA', 'MORA der Zone berechnen', 'Calcular la MORA de la zona']))}</button></p><p class="mt-small">${esc(t(['Autre source de MORA : X-Plane (grille mondiale, si la source X-Plane est cochée) ; la grille calculée a la priorité.', 'Other MORA source: X-Plane (world grid, if the X-Plane source is ticked); the computed grid has priority.']))}</p>`;
       return `<p class="mt-small">${esc(t(S.howto || ['', '']))}</p>${link ? `<p class="row">${link}</p>` : ''}`;
@@ -1233,6 +1233,8 @@
       zoom: 1.2,
       maxZoom: 7,
       renderWorldCopies: false,
+      // molette : la page défile ; zoom de la carte avec Ctrl (ou deux doigts), comme une carte intégrée à une page
+      cooperativeGestures: true,
       attributionControl: {
         compact: true
       }
@@ -1287,7 +1289,9 @@
           hover: true
         });
         aeroMap.getCanvas().style.cursor = 'pointer';
-        if (panel() && !aeroLocked) aeroPanelShow(Z, id);
+        if (panel() && !aeroLocked) aeroPanelShow(Z, id, {
+          force: false
+        });
       });
       aeroMap.on('mouseleave', 'zones-fill', () => {
         if (hovered) aeroMap.setFeatureState({
@@ -1298,7 +1302,9 @@
         });
         hovered = aeroHover = null;
         aeroMap.getCanvas().style.cursor = '';
-        if (panel() && !aeroLocked) aeroPanelShow(Z, aeroPinned);
+        if (panel() && !aeroLocked) aeroPanelShow(Z, aeroPinned, {
+          force: false
+        });
       });
       // clic : épingle la zone (activation et sources dans le panneau) ; second clic sur elle : relâchée
       aeroMap.on('click', 'zones-fill', e => {
@@ -1338,9 +1344,13 @@
     aeroPanelShow(Z, aeroShown());
   }
   /** Panneau d'une zone (survolée ou choisie), avec ses actions. */
-  function aeroPanelShow(Z, id) {
+  function aeroPanelShow(Z, id, {
+    force = true
+  } = {}) {
     const el = document.getElementById('mtAeroPanel');
     if (!el) return;
+    // survol : la même zone n'est pas redessinée (boutons, cases, position de la page gardés)
+    if (!force && el.dataset.zone === id) return;
     el.innerHTML = aeroPanel(Z, id);
     el.dataset.zone = id;
     const xp = el.querySelector('[data-aero-xp]');
@@ -1446,10 +1456,26 @@
     }
     renderSia();
   }
-  /** Téléchargement d'une source par le lanceur (tools/aero_fetch.py). */
-  async function aeroFetch(provider, args, btn) {
-    const say = (m, k = 'warn') => window.AppFramework.notify(m, k);
+  // compte rendu du dernier téléchargement de chaque source (zone|source), gardé au panneau quand il est redessiné
+  const aeroFetchMsg = {},
+    aeroFetching = new Set();
+  /** Téléchargement d'une source par le lanceur (tools/aero_fetch.py) ; état et résultat sous le bouton. */
+  async function aeroFetch(provider, args, btn, zone = '', src = '') {
+    const say = (m, k = 'warn') => window.AppFramework.notify(m, k),
+      key = `${zone}|${src}`;
+    const show = html => {
+      aeroFetchMsg[key] = html;
+      const p = document.getElementById('mtAeroPanel');
+      if (p?.dataset.zone === zone) p.querySelectorAll(`[data-src="${src}"]`).forEach(b => {
+        b.disabled = aeroFetching.has(key);
+        const m = b.parentElement.querySelector('[data-fetch-msg]');
+        if (m) m.innerHTML = html;
+      });
+    };
+    aeroFetching.add(key);
     btn.disabled = true;
+    show(esc(t(['téléchargement en cours…', 'downloading…', 'wird heruntergeladen…', 'descargando…'])));
+    let res = null;
     const job = window.AppFramework?.task?.(t(['Téléchargement des données', 'Downloading the data', 'Daten werden heruntergeladen', 'Descargando los datos']));
     try {
       const r = await fetch('/__setup/aero-fetch', {
@@ -1464,7 +1490,7 @@
         })
       });
       if (!r.ok) throw new Error(r.status);
-      const res = await r.json();
+      res = await r.json();
       if (res.files.length) say(t(['Téléchargé : {f}.', 'Downloaded: {f}.', 'Heruntergeladen: {f}.', 'Descargado: {f}.'], {
         f: res.files.map(f => f.name + (f.features != null ? ` (${f.features})` : '')).join(', ')
       }), res.errors.length ? 'warn' : 'ok');
@@ -1474,10 +1500,18 @@
       say(t(['Le serveur du lanceur ne répond pas : ouvrez la suite avec lancer.cmd / lancer.sh.', 'The launcher server does not answer: open the suite with lancer.cmd / lancer.sh.']));
     } finally {
       job?.end?.();
-      btn.disabled = false;
+      aeroFetching.delete(key);
     }
     aeroInv = await aeroInventory();
-    aeroRefresh(await window.SiaBase.zones());
+    const Z = await window.SiaBase.zones();
+    if (!res) show(pill('err', t(['lanceur injoignable', 'launcher unreachable', 'Starter nicht erreichbar', 'lanzador inaccesible'])));
+    else {
+      const seen = !zone || aeroSourceStatus(Z, zone, src).has;
+      show([res.files.length ? pill('ok', t(['{n} fichier(s) téléchargé(s)', '{n} file(s) downloaded', '{n} Datei(en) heruntergeladen', '{n} archivo(s) descargado(s)'], {
+        n: res.files.length
+      })) : '', res.errors.length ? pill('err', res.errors.join(' · ')) : '', !res.files.length && !res.errors.length ? pill('info', t(['rien à télécharger', 'nothing to download', 'nichts herunterzuladen', 'nada que descargar'])) : '', res.files.length && !seen ? pill('warn', t(['écrits dans data/sia du lanceur, mais le dossier SIA de ce navigateur n’est pas autorisé ou en est un autre : « Dossier SIA » ci-dessous', 'written to the launcher’s data/sia, but this browser’s SIA folder is not authorised or is another one: “SIA folder” below', 'in data/sia des Starters geschrieben, aber der SIA-Ordner dieses Browsers ist nicht erlaubt oder ein anderer: „SIA-Ordner“ unten', 'escritos en data/sia del lanzador, pero la carpeta SIA de este navegador no está autorizada o es otra: «Carpeta SIA» abajo'])) : ''].join(' '));
+    }
+    aeroRefresh(Z);
   }
 
   async function renderSia() {
@@ -1516,7 +1550,7 @@
         Z.setZone(b.dataset.zoneToggle, !Z.isOn(b.dataset.zoneToggle));
         aeroPin(Z, b.dataset.zoneToggle); // la zone reste au panneau pour régler ses sources
         aeroRefresh(Z);
-      } else if (b.dataset.aeroFetch) aeroFetch(b.dataset.aeroFetch, b.dataset.args.split(' ').filter(Boolean), b);
+      } else if (b.dataset.aeroFetch) aeroFetch(b.dataset.aeroFetch, b.dataset.args.split(' ').filter(Boolean), b, panel.dataset.zone, b.dataset.src);
       else if (b.dataset.moraZone) planMoraZone(b.dataset.moraZone);
       else if (b.id === 'mtArchive') archiveOld();
       else if (b.id === 'mtSiaZipFolder') extractZip(siaFolderState.zips[0].file);
