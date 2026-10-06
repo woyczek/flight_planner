@@ -303,6 +303,16 @@
     opt('WEATHER', L('Météo', 'Weather', 'Wetter', 'Meteorología')), opt('TECHNICAL', L('Technique', 'Technical', 'Technisch', 'Técnico')),
     opt('OPERATIONAL', L('Opérationnel', 'Operational', 'Operativ', 'Operacional')), opt('OTHER', L('Autre', 'Other', 'Andere', 'Otro'))
   ];
+  // Causes d'une mission non effectuée ou partiellement effectuée (CR : results.causes, plusieurs cases ; ordres de
+  // vols : MNE de la plaquette, shared/odv_reports.js).
+  const mneCauses = [
+    opt('WEATHER', L('Météo', 'Weather', 'Wetter', 'Meteorología')), opt('TECHNICAL', L('Technique (appareil)', 'Technical (aircraft)', 'Technisch (Luftfahrzeug)', 'Técnico (aeronave)')),
+    opt('SIMULATOR', L('Simulateur', 'Simulator', 'Simulator', 'Simulador')), opt('CREW', L('Pilote ou équipage absent', 'Pilot or crew missing', 'Pilot oder Besatzung fehlt', 'Piloto o tripulación ausente')),
+    opt('ATC', L('Contrôle absent', 'No ATC', 'Keine Flugsicherung', 'Sin control')), opt('NETWORK', L('Réseau (déconnexion, panne)', 'Network (disconnection, outage)', 'Netz (Trennung, Ausfall)', 'Red (desconexión, caída)')),
+    opt('AIRSPACE', L('Zone non activée', 'Airspace not activated', 'Luftraum nicht aktiviert', 'Zona no activada')), opt('TANKER', L('Ravitailleur absent', 'Tanker missing', 'Tanker fehlt', 'Cisterna ausente')),
+    opt('TIME', L('Manque de temps', 'Lack of time', 'Zeitmangel', 'Falta de tiempo')), opt('OPERATIONAL', L('Opérationnel', 'Operational', 'Operativ', 'Operacional')),
+    opt('OTHER', L('Autre', 'Other', 'Andere', 'Otro'))
+  ];
   // Résultats qui appellent un motif d'interruption.
   const interruptedOutcomes = new Set(['PARTIAL_SUCCESS', 'ABORTED', 'CANCELLED', 'DIVERTED', 'NO_CONTACT', 'TARGET_NOT_FOUND', 'WEATHER', 'TECHNICAL', 'OPERATIONAL']);
 
@@ -496,6 +506,7 @@
     capabilityGroups,
     equipmentGroups,
     outcomes,
+    mneCauses,
     interruptedOutcomes,
     eventTypes,
     eventTypesFor,

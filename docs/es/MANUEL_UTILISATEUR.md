@@ -605,7 +605,7 @@ Resultado de la misión y acciones que derivan de él (bloque situado en 2.ª po
 
 1. Elija el «Resultado»: Éxito, Éxito parcial, Abortada, Cancelada, Desviada, Sin contacto,
    Objetivo no encontrado, Meteorología, Técnico, Operacional, Otro.
-2. Para cualquier resultado distinto de Éxito u Otro, aparece el campo «Motivo de interrupción».
+2. Para cualquier resultado distinto de Éxito u Otro, aparecen los campos «Motivo de interrupción» y «Causas»; marque todas las causas (meteorología, técnica, simulador, piloto ausente, sin control, red, zona no activada, cisterna ausente, falta de tiempo…): suben a la plaqueta de la orden de vuelo (MNE).
 3. Complete si es necesario «Resultado detallado», «Incidentes» y «Anomalías técnicas».
 
 Este resultado alimenta la tasa de éxito y el gráfico «Resultados» de los informes estadísticos.

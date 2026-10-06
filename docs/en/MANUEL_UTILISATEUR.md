@@ -605,7 +605,7 @@ Result of the mission and follow-up (block placed in 2nd position for reading th
 
 1. Choose the “Outcome”: Success, Partial success, Aborted, Cancelled, Diverted, No contact,
    Target not found, Weather, Technical, Operational, Other.
-2. For any outcome other than Success or Other, the “Interruption reason” field appears.
+2. For any outcome other than Success or Other, the “Interruption reason” and “Causes” fields appear; tick every cause (weather, technical, simulator, pilot missing, no ATC, network, airspace not activated, tanker missing, lack of time…): they go up to the flight order tile (MNE).
 3. If needed, complete “Detailed result”, “Incidents” and “Technical anomalies”.
 
 This outcome feeds the success rate and the “Outcomes” chart of the reporting pages.

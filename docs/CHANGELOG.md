@@ -12,6 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **CR : « Causes »** (plusieurs cases) d'une mission non effectuée ou partielle : météo, technique, simulateur, pilote ou
+  équipage absent, contrôle absent, réseau, zone non activée, ravitailleur absent, manque de temps, opérationnel, autre
+  (`results.causes`, `MissionVocab.mneCauses`), affichées dans le compte rendu.
+- **Ordres de vols : modules partagés** — `shared/odv_airspace.js` (activations de zones par réseau et par plage,
+  `data/atc/activations/<semaine>.json` ; zones requises d'une mission et leur état ; contrôle ouvert ; examens et
+  trainings), `shared/odv_activations_editor.js` (saisie des activations), `shared/odv_reports.js` (missions ravitailleur
+  liées ; CR → plaquette : succès = ME, succès partiel ou échec = MNE avec causes, annulée = BÂCHÉ, sans CR après le délai
+  = MNE « pas de CR »). Registre des missions : rôle et axe de ravitaillement (`aarRole`, `aarTrack`).
 - **Données aéronautiques : carte des zones du monde** (Paramètres › Maintenance › Données aéronautiques). Une zone par
   pays (Natural Earth, domaine public ; la France regroupe métropole et outre-mer), activée d'un clic ; au survol, ses
   sources dans le panneau : téléchargement (openAIP, ENAIRE, FAA), commande ou inscription avec lien et mode d'emploi

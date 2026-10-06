@@ -605,7 +605,7 @@ Ergebnis der Mission und Folgemaßnahmen (Block an 2. Stelle für das Lesen des 
 
 1. Wählen Sie das „Ergebnis“: Erfolgreich, Teilweise erfolgreich, Abgebrochen, Storniert, Umgeleitet, Kein Kontakt,
    Ziel nicht gefunden, Wetter, Technisch, Operativ, Andere.
-2. Bei jedem Ergebnis außer Erfolgreich oder Andere erscheint das Feld „Abbruchgrund“.
+2. Bei jedem Ergebnis außer Erfolgreich oder Andere erscheinen die Felder „Abbruchgrund“ und „Ursachen“; alle Ursachen ankreuzen (Wetter, Technik, Simulator, Pilot fehlt, keine Flugsicherung, Netz, Luftraum nicht aktiviert, Tanker fehlt, Zeitmangel…): sie erscheinen auf der Kachel des Flugbefehls (MNE).
 3. Ergänzen Sie bei Bedarf „Detailliertes Ergebnis“, „Vorfälle“ und „Technische Störungen“.
 
 Dieses Ergebnis speist die Erfolgsquote und das Diagramm „Ergebnisse“ der Auswertungen.
