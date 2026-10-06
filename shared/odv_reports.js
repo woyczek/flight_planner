@@ -23,8 +23,11 @@
   //   outcomeOf(code, causes) → { etat, cr, partiel, causes } ; CAUSES : causes de MNE { code: [fr, en, de, es] }
   //   (celles du CR, plus NO_REPORT) ;
   //   reports() → CR du registre (ReportIndex, sinon copie du navigateur missionCoreLedger:v2) ;
-  //   missionFor({ indicatif, date }) → identifiant de mission de l'affectation (indicatif, décollage ce jour-là) ou ''.
+  //   missionFor({ indicatif, date }) → identifiant de mission de l'affectation (indicatif, décollage ce jour-là) ou '' ;
+  //   trackOf(id) → axe de ravitaillement de la mission (air_refueling.track, yaml lu dans son dossier, gardé en mémoire ;
+  //   registre : aarTrack s'il est rempli) ou ''.
   if (window.OdvReports) return;
+  const SCRIPT = document.currentScript?.src || location.href;
   const registry = async () => {
     await window.MissionIndex?.ready;
     if (window.MissionIndex) return window.MissionIndex.all();
@@ -169,7 +172,36 @@
     return a ? String(a.mission || '') : '';
   }
 
+  const tracks = new Map();
+  async function trackOf(id) {
+    const key = norm(id);
+    if (!key) return '';
+    if (tracks.has(key)) return tracks.get(key);
+    const p = (async () => {
+      const m = (await registry()).find(x => norm(x.id) === key);
+      if (m?.aarTrack) return m.aarTrack;
+      const A = window.MissionAssignments;
+      if (!m?.folder || !A?.missionFirst) return '';
+      if (!window.jsyaml) await new Promise(res => {
+        const sc = document.createElement('script');
+        sc.src = new URL('mission_core/vendor/js-yaml.min.js', SCRIPT).href;
+        sc.onload = sc.onerror = res;
+        document.head.append(sc);
+      });
+      const bare = key.replace('-', ''),
+        f = await A.missionFirst(m.folder, [...(m.files || []).filter(n => /\.ya?ml$/i.test(n)), `mission${key}.yaml`, `mission${bare}.yaml`]).catch(() => null);
+      try {
+        return f && window.jsyaml ? norm(window.jsyaml.load(f.value.replace(/^#.*\n/, ''))?.air_refueling?.track) : '';
+      } catch {
+        return '';
+      }
+    })();
+    tracks.set(key, p);
+    return p;
+  }
+
   window.OdvReports = {
+    trackOf,
     tankersFor: id => linked(id, isTanker),
     receiversFor: id => linked(id, isReceiver),
     get CAUSES() {
