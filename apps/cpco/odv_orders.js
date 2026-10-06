@@ -411,6 +411,13 @@
     return [Math.floor(s / 60) * 60, Math.min(1440, Math.ceil(e / 60) * 60)];
   }
   const ppm = () => PPH * ZOOMS[S.zoom] / 60;
+  // hauteur d'un couloir par section (plaquettes empilées)
+  const LANE_H = {
+    vol: 86,
+    controle: 40,
+    divers: 40,
+    note: 30
+  };
   /** Couloirs : éléments d'une section rangés sans recouvrement (premier couloir libre). */
   function lanes(list) {
     const ends = [];
@@ -451,12 +458,7 @@
       divers: 'divers',
       note: 'note'
     };
-    const H = {
-      vol: 86,
-      controle: 40,
-      divers: 40,
-      note: 30
-    };
+    const H = LANE_H;
     const blocks = {};
     for (const key of Object.keys(secOf)) {
       const list = lanes(S.doc.elements.filter(e => e.date === date && e.type === key));
@@ -619,7 +621,19 @@
   }
 
   // ---- glisser-déposer
-  let drag = null;
+  let drag = null,
+    dragGhost = null;
+  /** Élément qu'une carte de la palette posera (aperçu pendant le glisser) : modèle, formation, réserve. */
+  function previewElement(v) {
+    const [ty, ...rest] = String(v).split(':'),
+      id = rest.join(':');
+    if (ty === 'res') return (S.doc.reserve || []).find(x => x.id === id) || null;
+    try {
+      return fromTemplate(ty, id, curDate(), 0);
+    } catch {
+      return null;
+    }
+  }
   function minuteAt(lane, clientX) {
     const s0 = +$('#odvoGrid').dataset.s0;
     return Math.max(0, Math.min(1435, snap(s0 + (clientX - lane.getBoundingClientRect().left) / ppm())));
@@ -844,7 +858,54 @@
         from: tr.closest('[data-id]')?.dataset.id
       } : null;
       if (drag) ev.dataTransfer.setData('text/plain', drag.v);
+      // carte de la palette : la plaquette suit le pointeur à sa taille calculée (durée à l'échelle de la frise), calée sur
+      // l'heure au-dessus de sa section — comme une plaquette déplacée de la frise vers la palette
+      if (drag?.k === 'tpl') {
+        const el = previewElement(drag.v);
+        if (el) {
+          const P = ppm(),
+            hgt = (LANE_H[el.type] || 40) - 4;
+          const box = document.createElement('div');
+          box.innerHTML = itemHtml(el, () => 0, P, 0, hgt);
+          dragGhost = box.firstElementChild;
+          dragGhost.classList.add('odvo-ghost');
+          if (/transparent/.test(dragGhost.style.background)) Object.assign(dragGhost.style, {
+            background: 'var(--odvo-surface)',
+            color: 'var(--odvo-ink)'
+          });
+          Object.assign(dragGhost.style, {
+            left: `${ev.clientX - 12}px`,
+            top: `${ev.clientY - 12}px`
+          });
+          dragGhost.dataset.type = el.type;
+          dragGhost.dataset.duree = el.duree;
+          document.body.append(dragGhost);
+          const blank = new Image();
+          blank.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+          ev.dataTransfer.setDragImage(blank, 0, 0);
+        }
+      }
     });
+    // copie de la carte glissée : suit le pointeur, calée sur la section qui l'accepte
+    document.addEventListener('dragover', ev => {
+      if (!dragGhost) return;
+      const lane = document.elementFromPoint(ev.clientX, ev.clientY)?.closest?.('[data-lane]');
+      if (lane && laneAccepts(lane.dataset.lane, dragGhost.dataset.type)) {
+        const r = lane.getBoundingClientRect(),
+          s0 = +$('#odvoGrid').dataset.s0;
+        dragGhost.style.left = `${r.left + (minuteAt(lane, ev.clientX) - s0) * ppm()}px`;
+        dragGhost.style.top = `${r.top + 2}px`;
+      } else {
+        dragGhost.style.left = `${ev.clientX - 12}px`;
+        dragGhost.style.top = `${ev.clientY - 12}px`;
+      }
+    });
+    const dropGhost = () => {
+      dragGhost?.remove();
+      dragGhost = null;
+    };
+    document.addEventListener('drop', dropGhost);
+    document.addEventListener('dragend', dropGhost);
     host.addEventListener('dragover', ev => {
       if (!drag) return;
       const lane = ev.target.closest('[data-lane]'),
