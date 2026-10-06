@@ -19,6 +19,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   si des données sont déjà là), « Dépôt de données » (adresse saisie, identifiants facultatifs), archive reçue par mail.
   Plus aucune adresse de dépôt de données en dur : `sources.dataRepo` vide, pas de clone automatique sans adresse,
   modèle `tools/data_template` sans adresse ; identifiants en double de la page corrigés (`plRepo`, `plRepoMsg`).
+  **Contenu du jeu d'essai** (`tools/jeu_essai/`, voir son README) : 12 missions générées traduites en anglais —
+  BOXING GLOVES (exercice A-001 : organisation, deux éléments Rafale, ravitailleur, deux chiffons révélés par radio à
+  l'heure dite), EYE OF SOLOGNE (I-001 : E-3F « le grand disque », ravitailleur, Rafale), S-001, N-001, T-001 — ; quatre
+  pilotes fictifs (ALF, BRV, CHL, DLT), flotte des types de ces missions, indicatifs, configuration SOG ; disponibilités
+  (semaine en cours et suivante) et cinq affectations datées à l'installation (exercice le lendemain, heure H 19:00Z).
+  `--force` ne réinstalle que par-dessus un jeu d'essai (dates remises à jour).
 
 ### Modifié
 

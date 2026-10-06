@@ -136,7 +136,8 @@
       box.innerHTML = `<div><b>${T(["Centre de planification et de conduite des opérations", "Operations planning and command centre", "Einsatzplanungs- und Führungszentrum", "Centro de planificación y conducción de operaciones"])}</b><p>${T(["Accès réservé. Le Centre s'active dans Paramètres › Centre (CPCO).", "Restricted access. The Centre is enabled in Settings › Centre (CPCO).", "Zugang beschränkt. Das Zentrum wird unter Einstellungen › Zentrum (CPCO) aktiviert.", "Acceso restringido. El Centro se activa en Ajustes › Centro (CPCO)."])}</p><a href="${settingsUrl("cpco")}">${T(["Activer le Centre…", "Enable the Centre…", "Zentrum aktivieren…", "Activar el Centro…"])}</a> · <a href="${new URL("index.html", root).href}">${T(["Accueil", "Home", "Startseite", "Inicio"])}</a></div>`;
       document.body.append(box);
     };
-    if (document.body) lockNotice();
+    // après ce script : langue de la page réglée (RepositoryNav.getLanguage) avant la traduction du message
+    if (document.body) setTimeout(lockNotice);
     else document.addEventListener("DOMContentLoaded", lockNotice);
   }
   let currentTheme = themeName;
