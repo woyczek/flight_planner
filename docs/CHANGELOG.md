@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **« Importer d'IVAO » importe aussi les sessions ATC IVAO** (trainings, examens, réservations) ; import IVAO
+  automatique à l'ouverture d'une semaine, au plus une fois par heure, si la page peut écrire (`SuiteAtc.autoImport`,
+  commun au Planning ODV et aux Ordres de vols).
 - **Activations des zones par réseau, VATSIM et IVAO côte à côte** (Ordres de vols et Planning ODV, même éditeur,
   mêmes données) : saisies de chaque réseau, activations « les deux réseaux » dans les deux colonnes, import IVAO replié
   dans sa colonne ; VATSIM ne publie pas d'activations (saisie à la main).

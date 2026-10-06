@@ -12,7 +12,9 @@
   //     remplace les sessions déjà récupérées de ce réseau (annulations comprises), garde les saisies, enregistre.
   // API (window.SuiteAtc) : TYPES, NETWORKS, typeLabel(type), weekId(ms), read(semaine, { fresh }), save(semaine,
   //   sessions), fetchVatsim(semaine), fetchIvao(semaine), importNetwork(semaine, "VATSIM" | "IVAO") → { sessions,
-  //   n, where } ou { error }, franceMetro(position), toPlan(sessions, dates, heures des créneaux).
+  //   n, where } ou { error }, autoImport(semaine, réseau, { everyMs = 1 h }) → idem, ou { skipped } si un import de
+  //   cette semaine et de ce réseau a été tenté depuis moins d'everyMs dans ce navigateur (échec compris : pas de
+  //   relance à chaque ouverture sans clé), franceMetro(position), toPlan(sessions, dates, heures des créneaux).
   if (window.SuiteAtc) return;
   const K = window.RepositoryKit;
   const A = () => window.MissionAssignments;
@@ -178,6 +180,24 @@
       };
     }
   }
+  /** Import automatique d'un réseau (ouverture d'une semaine) : au plus une tentative par période, semaine et réseau,
+   *  notée dans ce navigateur ; à n'appeler que si la page peut écrire. Sans alerte : l'appelant décide. */
+  async function autoImport(week, reseau = 'IVAO', {
+    everyMs = 36e5
+  } = {}) {
+    const key = `suiteAtcAuto:${reseau}:${week}`;
+    let last = 0;
+    try {
+      last = +localStorage.getItem(key) || 0;
+    } catch {}
+    if (Date.now() - last < everyMs) return {
+      skipped: true
+    };
+    try {
+      localStorage.setItem(key, String(Date.now()));
+    } catch {}
+    return importNetwork(week, reseau);
+  }
   const hours = hm => {
     const [h, m] = String(hm || '0:0').split(':').map(Number);
     return (h || 0) + (m || 0) / 60;
@@ -231,6 +251,7 @@
     fetchVatsim,
     fetchIvao,
     importNetwork,
+    autoImport,
     franceMetro,
     toPlan
   };

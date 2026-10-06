@@ -216,7 +216,8 @@
     return {
       ajoutees: r.activations.length,
       total: keep.length + r.activations.length,
-      error: w?.error || '',
+      // gardées dans ce navigateur (where « local ») : enregistrées quand même, alerte donnée par writeData
+      error: w?.where === 'local' ? '' : String(w?.error?.message || w?.error || ''),
       where: w?.where || ''
     };
   }

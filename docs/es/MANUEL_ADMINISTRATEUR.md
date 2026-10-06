@@ -547,7 +547,7 @@ Un vuelo requiere una categoría disponible; un control, una categoría disponib
 
 ### Activaciones de zonas
 
-Este bloque introduce las activaciones de zonas de la semana (`data/atc/activations/<año>-W<semana>.json`), en dos columnas lado a lado, VATSIM e IVAO: día, zona, estado (activa, solicitada, rechazada), inicio, fin, observación, red. Una activación «ambas redes» aparece en las dos columnas; cambiar su red la desplaza. VATSIM no publica activaciones: su columna se introduce a mano. En la columna IVAO, «Importar de IVAO» recoge los horarios publicados por IVAO (clave de API de la instalación), plegados bajo la lista; las entradas a mano se conservan. Un cambio recalcula al instante las zonas de los vuelos. La planificación ODV muestra el mismo bloque, con los mismos datos.
+Este bloque introduce las activaciones de zonas de la semana (`data/atc/activations/<año>-W<semana>.json`), en dos columnas lado a lado, VATSIM e IVAO: día, zona, estado (activa, solicitada, rechazada), inicio, fin, observación, red. Una activación «ambas redes» aparece en las dos columnas; cambiar su red la desplaza. VATSIM no publica activaciones: su columna se introduce a mano. En la columna IVAO, «Importar de IVAO» recoge los horarios publicados por IVAO (clave de API de la instalación), plegados bajo la lista, así como los entrenamientos, exámenes y reservas IVAO de la semana (sesiones ATC); las entradas a mano se conservan. Las sesiones IVAO también se importan solas al abrir una semana, como máximo una vez por hora, si la página puede escribir. Un cambio recalcula al instante las zonas de los vuelos. La planificación ODV muestra el mismo bloque, con los mismos datos.
 
 ### Solicitudes de reserva
 

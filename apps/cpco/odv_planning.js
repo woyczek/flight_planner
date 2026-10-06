@@ -559,6 +559,21 @@
       week: w,
       list
     };
+    autoAtc(w);
+  }
+  /** Import IVAO automatique de la semaine ouverte (trainings, examens, réservations), au plus une fois par heure :
+   *  le même que celui des Ordres de vols (SuiteAtc.autoImport), seulement si la page peut écrire ; sans alerte. */
+  function autoAtc(w) {
+    if (!window.SuiteAtc?.autoImport || !canEditActivations()) return;
+    window.SuiteAtc.autoImport(w, 'IVAO').then(r => {
+      if (r.skipped || r.error || w !== atcWeek()) return;
+      atc = {
+        week: w,
+        list: r.sessions
+      };
+      compute();
+      render();
+    });
   }
   /** Données du calcul complétées des sessions ATC de leur semaine. */
   function withAtc(d) {
@@ -677,7 +692,18 @@
     });
     activations = window.OdvActivationsEditor.mount(host, {
       semaine: w,
-      readOnly: !canEditActivations()
+      readOnly: !canEditActivations(),
+      onImport: ({
+        sessions
+      }) => {
+        if (sessions?.error || atcWeek() !== w) return;
+        atc = {
+          week: w,
+          list: sessions.sessions
+        };
+        compute();
+        render();
+      }
     });
   }
 

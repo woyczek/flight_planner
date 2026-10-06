@@ -10,14 +10,28 @@
   // dans les deux colonnes, ses deux copies tenues ensemble), activations importées repliées, boutons du réseau. VATSIM
   // ne publie pas d'activations : saisie à la main seulement ; IVAO : import (OdvAirspace.importIvao, le même pour
   // toutes les pages qui montent cet éditeur).
-  // API (window.OdvActivationsEditor) : mount(hôte, { semaine, readOnly = false, onChange(liste) }) →
-  //   { set({ semaine, readOnly }), refresh(), list() }.
+  // « Importer d'IVAO » reprend aussi les sessions ATC IVAO de la semaine (trainings, examens, réservations :
+  // SuiteAtc.importNetwork, shared/atc_sessions.js chargé au besoin).
+  // API (window.OdvActivationsEditor) : mount(hôte, { semaine, readOnly = false, onChange(liste), onImport({ activations,
+  //   sessions }) }) → { set({ semaine, readOnly }), refresh(), list() }.
   if (window.OdvActivationsEditor) return;
   const K = window.RepositoryKit,
     esc = K?.esc || (s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`)),
     t = row => K?.t ? K.t(row) : row[0],
     tf = (row, v) => K?.tf ? K.tf(row, v) : row[0].replace(/\{(\w+)\}/g, (_, k) => v[k] ?? '');
   const O = () => window.OdvAirspace;
+  const SRC = document.currentScript?.src || '';
+  /** SuiteAtc (shared/atc_sessions.js), chargé au besoin à côté de ce fichier. */
+  async function suiteAtc() {
+    if (window.SuiteAtc || !SRC) return window.SuiteAtc;
+    await new Promise(res => {
+      const sc = document.createElement('script');
+      sc.src = new URL('atc_sessions.js', SRC).href;
+      sc.onload = sc.onerror = res;
+      document.head.append(sc);
+    });
+    return window.SuiteAtc;
+  }
   const T = {
     jour: ['Jour', 'Day', 'Tag', 'Día'],
     zone: ['Zone', 'Area', 'Zone', 'Zona'],
@@ -32,11 +46,12 @@
     vide: ['Aucune activation saisie pour cette semaine.', 'No activation entered for this week.', 'Keine Aktivierung für diese Woche erfasst.', 'Ninguna activación introducida para esta semana.'],
     absent: ['Saisie des activations indisponible : shared/odv_airspace.js n’est pas chargé.', 'Activation entry unavailable: shared/odv_airspace.js is not loaded.', 'Erfassung der Aktivierungen nicht verfügbar: shared/odv_airspace.js nicht geladen.', 'Introducción de activaciones no disponible: shared/odv_airspace.js no está cargado.'],
     base: ['Base aéronautique absente ou zone France inactive : zones à saisir par leur nom.', 'Aeronautical database missing or France zone inactive: enter zones by name.', 'Luftfahrtdatenbank fehlt oder Zone Frankreich inaktiv: Zonen mit Namen eingeben.', 'Base aeronáutica ausente o zona Francia inactiva: introducir las zonas por su nombre.'],
-    local: ['Activations gardées dans ce navigateur : le dossier des données n’est pas autorisé.', 'Activations kept in this browser: the data folder is not authorised.', 'Aktivierungen in diesem Browser gespeichert: Datenordner nicht erlaubt.', 'Activaciones guardadas en este navegador: carpeta de datos no autorizada.'],
     erreur: ['Activations non enregistrées : {e}', 'Activations not saved: {e}', 'Aktivierungen nicht gespeichert: {e}', 'Activaciones no guardadas: {e}'],
     ivao: ['Importer d’IVAO', 'Import from IVAO', 'Von IVAO importieren', 'Importar de IVAO'],
     ivaoTitre: ['Zones spéciales de France actives cette semaine sur IVAO (horaires publiés, dont le RTBA, et NOTAM) : remplacent l’import précédent ; les saisies à la main restent. Lanceur et clé d’API IVAO requis.', 'French special areas active this week on IVAO (published schedules, RTBA included, and NOTAMs): replace the previous import; manual entries stay. Launcher and IVAO API key required.', 'Auf IVAO diese Woche aktive französische Sondergebiete (veröffentlichte Zeiten, inkl. RTBA, und NOTAM): ersetzen den vorigen Import; manuelle Einträge bleiben. Starter und IVAO-API-Schlüssel nötig.', 'Zonas especiales de Francia activas esta semana en IVAO (horarios publicados, RTBA incluido, y NOTAM): sustituyen la importación anterior; las entradas manuales se conservan. Requiere el lanzador y la clave de API de IVAO.'],
     ivaoOk: ['{n} activation(s) IVAO importée(s).', '{n} IVAO activation(s) imported.', '{n} IVAO-Aktivierung(en) importiert.', '{n} activación(es) IVAO importada(s).'],
+    atcOk: ['{n} session(s) ATC IVAO (trainings, examens, réservations) importée(s).', '{n} IVAO ATC session(s) (trainings, exams, bookings) imported.', '{n} IVAO-ATC-Sitzung(en) (Trainings, Prüfungen, Buchungen) importiert.', '{n} sesión(es) ATC IVAO (entrenamientos, exámenes, reservas) importada(s).'],
+    atcErr: ['Sessions ATC IVAO non importées : {e}', 'IVAO ATC sessions not imported: {e}', 'IVAO-ATC-Sitzungen nicht importiert: {e}', 'Sesiones ATC IVAO no importadas: {e}'],
     ivaoErr: ['Import IVAO impossible : {e}', 'IVAO import failed: {e}', 'IVAO-Import fehlgeschlagen: {e}', 'Importación IVAO imposible: {e}'],
     ivaoListe: ['{n} activation(s) importée(s) d’IVAO (remplacées au prochain import)', '{n} activation(s) imported from IVAO (replaced at the next import)', '{n} von IVAO importierte Aktivierung(en) (beim nächsten Import ersetzt)', '{n} activación(es) importada(s) de IVAO (sustituidas en la próxima importación)'],
     videNet: ['Aucune activation saisie pour {r} cette semaine.', 'No activation entered for {r} this week.', 'Keine Aktivierung für {r} diese Woche erfasst.', 'Ninguna activación introducida para {r} esta semana.'],
@@ -84,7 +99,8 @@
   function mount(host, {
     semaine = '',
     readOnly = false,
-    onChange = null
+    onChange = null,
+    onImport = null
   } = {}) {
     style();
     let week = semaine,
@@ -166,10 +182,10 @@
     async function save() {
       timer = 0;
       const r = await O().saveActivations(week, rows.filter(x => x.zone));
-      if (r?.error) notify(tf(T.erreur, {
-        e: r.error
+      // gardées dans ce navigateur (where « local ») : enregistrées quand même, alerte et raison données par writeData
+      if (r?.error && r.where !== 'local') notify(tf(T.erreur, {
+        e: r.error?.message || r.error
       }), 'error');
-      else if (r?.where === 'local') notify(t(T.local));
     }
 
     host.addEventListener('change', e => {
@@ -206,17 +222,32 @@
             clearTimeout(timer);
             await save();
           }
-          const r = await O().importIvao(week);
+          // activations (zones) et sessions ATC (trainings, examens, réservations) : les deux imports communs
+          const S = await suiteAtc();
+          const [r, a] = await Promise.all([O().importIvao(week), S ? S.importNetwork(week, 'IVAO') : Promise.resolve({
+            error: 'shared/atc_sessions.js'
+          })]);
           if (r.error) notify(tf(T.ivaoErr, {
             e: r.error
           }), 'error');
           else notify(tf(T.ivaoOk, {
             n: r.ajoutees
           }), 'ok');
+          if (a.error) notify(tf(T.atcErr, {
+            e: a.error
+          }), 'error');
+          else if (a.where === 'folder') notify(tf(T.atcOk, {
+            n: a.n
+          }), 'ok');
+          b.disabled = false;
           await load();
           onChange?.(rows.map(x => ({
             ...x
           })));
+          onImport?.({
+            activations: r,
+            sessions: a
+          });
         })();
       } else if (b.hasAttribute('data-add')) {
         const net = b.dataset.add || null,

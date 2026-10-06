@@ -460,7 +460,7 @@
       seen = K.store.json(KEY, {}) || {};
     if (Date.now() - (seen[S.week] || 0) < 36e5) return;
     try {
-      if (!window.SuiteAtc) await loadScript('../../shared/atc_sessions.js?v=35e94da6');
+      if (!window.SuiteAtc) await loadScript('../../shared/atc_sessions.js?v=ab462121');
     } catch {
       return;
     }

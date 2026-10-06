@@ -547,7 +547,7 @@ A flight needs an available category; a control item, an available category or �
 
 ### Area activations
 
-This block enters the week's area activations (`data/atc/activations/<year>-W<week>.json`), in two side-by-side columns, VATSIM and IVAO: day, area, status (active, requested, refused), start, end, remark, network. A “both networks” activation appears in both columns; changing its network moves it. VATSIM does not publish activations: its column is entered by hand. In the IVAO column, “Import from IVAO” takes the schedules published by IVAO (installation API key), folded under the list; entries made by hand stay. A change recomputes the flights' areas at once. The ODV planning shows the same block, on the same data.
+This block enters the week's area activations (`data/atc/activations/<year>-W<week>.json`), in two side-by-side columns, VATSIM and IVAO: day, area, status (active, requested, refused), start, end, remark, network. A “both networks” activation appears in both columns; changing its network moves it. VATSIM does not publish activations: its column is entered by hand. In the IVAO column, “Import from IVAO” takes the schedules published by IVAO (installation API key), folded under the list, along with the week's IVAO trainings, exams and bookings (ATC sessions); entries made by hand stay. IVAO sessions are also imported automatically when a week is opened, at most once an hour, if the page can write. A change recomputes the flights' areas at once. The ODV planning shows the same block, on the same data.
 
 ### Reservation requests
 
