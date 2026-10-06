@@ -699,13 +699,24 @@
     overflow: auto
   }
   .odvo-mp-row {
-    display: grid !important;
+    display: grid;
     grid-template-columns: 1fr auto;
     gap: 0 8px;
     width: 100%;
     text-align: left;
     margin: 0 0 2px;
-    background: transparent !important
+    padding: 4px 6px;
+    cursor: pointer;
+    border: 1px solid var(--line);
+    background: var(--odvo-surface);
+    color: var(--odvo-ink);
+    font-size: 12px
+  }
+  .odvo-mp-row[hidden] {
+    display: none
+  }
+  .odvo-mp-pop {
+    color: var(--odvo-ink)
   }
   .odvo-mp-row:hover {
     outline: 1px solid var(--repo-accent, #71b7ff)
@@ -788,8 +799,8 @@
 <script src="../../shared/odv_airspace.js?v=649e93b8"></script>
 <script src="../../shared/odv_activations_editor.js?v=2d510137"></script>
 <script src="../../shared/odv_reports.js?v=c059b0de"></script>
-<script src="../../shared/odv_orders_store.js?v=ca3dfb34"></script>
-<script src="odv_orders.js?v=05f28d2a"></script>
+<script src="../../shared/odv_orders_store.js?v=d32c5ce6"></script>
+<script src="odv_orders.js?v=37f88f1d"></script>
 <script src="../../shared/app_framework.js?v=ae60867a"></script>
 <script src="../../shared/content_i18n.js?v=7afecb78"></script>
 <script>

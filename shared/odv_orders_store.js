@@ -272,9 +272,9 @@
       reseau: e.reseau || null,
       couleur: e.couleur || '#64748b',
       fond: e.fond ?? null,
-      // deux places au départ ; ailiers ajoutés (huit avions au plus) ; appareil : type (imposé par la mission, sans être
+      // une place au départ ; ailiers ajoutés (huit avions au plus) ; appareil : type (imposé par la mission, sans être
       // forcé) et immatriculation de la flotte
-      avions: (Array.isArray(e.avions) && e.avions.length ? e.avions : [{}, {}]).slice(0, 8).map(a => ({
+      avions: (Array.isArray(e.avions) && e.avions.length ? e.avions : [{}]).slice(0, 8).map(a => ({
         appareil: a?.appareil?.type || a?.appareil?.immat ? {
           type: String(a.appareil.type || '').toUpperCase(),
           immat: a.appareil.immat || ''
