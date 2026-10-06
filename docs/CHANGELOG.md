@@ -49,6 +49,10 @@ d'aéronefs complétés sur chaque poste, type par type. Outil de livraison des 
   `dist/xplane-web-suite-<version>.zip` — le code seul au tag (ni `data/` ni `examples/`), vraies images LFS (pas de
   pointeurs), archive reproductible — empreinte SHA-256 et rubrique « Livraison » dans la section de la version.
 
+### Livraison
+
+- Archive de livraison : `xplane-web-suite-4.9.0.zip` — SHA-256 `0826c50f0764eb64b9913d3bf803593e331b9d6425fa00ecaad24185275b0da9` (code seul, hors dépôt : dossier `dist/`).
+
 ## [4.8.0] — 2026-10-05
 
 Les données se partagent : bouton « Synchroniser » (dépôt git de `data/`, fusion fiche par fiche), utilisateurs et
