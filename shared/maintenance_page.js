@@ -2726,8 +2726,14 @@
     if (onPage('versions')) await guard('Versions et synchronisation', renderVersions, hosts.versions);
     if (onPage('deps')) await guard('Références et dépendances', renderDeps, hosts.deps);
     const want = new URLSearchParams(location.search).get('m') || location.hash.slice(1);
+    // ancre d'un élément d'un bloc (#mt-aero-base, anciennes ancres #mt-step-N du studio) : le bloc qui le contient est
+    // affiché (l'ancre y fait défiler une fois visible), pas « Mises à jour »
+    const anchor = /^mt-step-/.test(want) ? 'mt-aero-base' : want,
+      inBlock = !NAV[want] && anchor && (BLOCKS.find(b => document.getElementById(b.id)?.querySelector(`#${CSS.escape(anchor)}`))?.id ||
+        (/^mt-aero/.test(anchor) ? 'sia' : ''));
     if (embedded) {
       if (NAV[want]) showBlock(want);
+      else if (inBlock) showBlock(inBlock);
       else if (PAGE === 'maintenance' && !new URLSearchParams(location.search).get('base')) showBlock('updates');
     } else {
       const target = want && document.getElementById(want);
