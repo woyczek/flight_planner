@@ -469,6 +469,73 @@ Ce bloc enregistre des fichiers sur cet ordinateur. Ils contiennent des données
 
 Si le navigateur refuse la copie automatique, le texte est sélectionné : copiez-le avec Ctrl+C.
 
+## Ordres de vols
+<!-- page: apps/cpco/odv_orders.html -->
+
+La page Ordres de vols construit l'ordre de vol de la semaine : plaquettes de vol, contrôle, divers et notes posés sur une frise horaire, avec les conflits de disponibilité et de zones.
+Pour l'ouvrir : barre latérale › rubrique « Centre » › « Ordres ». Comme le reste du Centre, elle demande le Centre activé ; en mode production, il faut aussi être connecté avec le rôle `admin_centre`. Sinon, la page s'ouvre en lecture seule.
+Tout est enregistré dans le pool de données partagé : l'ordre de la semaine dans `data/odv/<année>-W<semaine>.json`, les réglages dans `data/config/odv.json`. Les dispos restent celles des pilotes, l'équipage d'un vol de mission celui des affectations.
+Les heures sont en z (UTC). Modèle de données : [Ordres de vols](technique/ODV_ORDRES.md).
+
+### Semaine
+
+- « ◀ » et « ▶ » changent de semaine, « Cette semaine » revient à la semaine en cours.
+- Les onglets des jours portent, en rouge, le nombre d'éléments en conflit du jour.
+- « Jour », « Semaine » et « Statistiques » changent de vue.
+- « Permanence » désigne l'officier de permanence de la semaine.
+- « Briefing » (ou la touche F) passe l'ordre du jour en plein écran ; les flèches ← et → changent de jour.
+- La ligne d'état indique « Enregistré », ou « Enregistré dans ce navigateur » si le dossier des données n'est pas autorisé.
+
+### Ordre du jour
+
+À gauche, la palette : modèles de vols, de contrôle et de divers, la note, puis les membres (Staff, puis Membres) avec la barre de leurs dispos du jour. À droite, la frise :
+- traits pointillés : tranches matin, après-midi et soir du Planning ODV ; trait rouge : heure présente ; zones sombres : nuit aéronautique du terrain réglé ;
+- « RTBA · LL » : créneaux d'activité du RTBA (activations saisies ou importées, sinon créneaux des réglages) ;
+- « Zones » : zones requises par chaque vol (celles de sa mission, ou celles saisies pour un entraînement), en vert si actives sur le réseau du vol, en orange si demandées, en rouge sinon ;
+- « Dispos ensemble » : plages où au moins deux membres sont affectables à un vol ;
+- sections « Vols », « Contrôle », « Divers », « Notes » : les éléments s'empilent d'eux-mêmes.
+
+Manipulations :
+- glissez un modèle sur sa section : l'élément est créé à l'heure du dépôt (par pas de 5 min) et sa fenêtre s'ouvre ;
+- glissez un membre de la palette sur une plaquette pour l'y ajouter, ou un trigramme d'une plaquette à une autre pour l'y déplacer ;
+- faites glisser une plaquette pour changer son heure, son bord droit pour changer sa durée ; un simple clic ouvre sa fenêtre ;
+- « Zoom » règle l'échelle de la frise.
+
+Sur une plaquette : « ⚠ n » compte ses conflits, « P » signale qu'aucun équipier n'est disponible dans l'heure et demie qui précède le vol, « ↻ » une récurrence ; une barre verte (fait) ou orange (non fait) souligne l'état ; une plaquette annulée est barrée. Sous la frise, « Problèmes d'affectation » liste les conflits du jour : un clic montre la plaquette.
+
+### Fenêtre d'un élément
+
+- **Vol** : libellé, indicatif, mission du registre (vide : entraînement), réseau, début, durée, couleur, zones d'un entraînement, axe et offload d'un vol ravitailleur, ravitailleur et heure du ravitaillement, avions (pilote, navigateur, annulé ; huit au plus), tâches (une par ligne, « nom = TRI »), infos, état, motif, CR (ME, Bâché, MNE), partielle, causes de MNE.
+- Un indicatif saisi propose la mission de l'affectation qui porte cet indicatif ce jour-là.
+- Vol de mission : l'équipage vient des affectations de la mission ; « Affecter… » ouvre la fenêtre d'affectation du Centre. Le CR de la mission fait foi : à l'ouverture de la semaine, état et CR en sont repris ; sans CR passé le délai réglé, le vol passe en MNE (cause « pas de CR »).
+- **Contrôle**, **Divers** : libellé, position (contrôle), début, durée, couleur, état, motif, équipage (cases des membres), notes (divers).
+- **Note** : texte libre.
+- « Répéter » (chaque jour, chaque semaine, une semaine sur deux) et « Jusqu'au » posent l'élément sur les semaines suivantes à leur première ouverture, jamais avant sa date.
+- « Supprimer » retire l'élément.
+
+### Conflits
+
+| Conflit | Signification |
+|---|---|
+| semaine non déclarée | le membre n'a pas déclaré ses dispos de la semaine |
+| pas disponible sur toute la durée | aucune plage ne couvre tout l'élément |
+| non affectable (catégorie) | une plage d'une catégorie qui n'ouvre pas ce genre d'élément recoupe l'élément |
+| déjà pris à cette heure | le membre est sur un autre élément au même moment |
+| deux fois sur l'élément | le même membre occupe deux places |
+| zone non activée, demandée, interdite | zone requise sans activation « active » de son réseau sur toute la durée du vol, ou zone P |
+
+Un vol demande une catégorie disponible ; un contrôle, une catégorie disponible ou « Contrôle SOG » ; un divers accepte aussi « Disponible au sol seulement ». Contrôle et vol hors SOG, DCS, indisponible et récupération ne sont jamais affectables.
+
+### Semaine et statistiques
+
+- **Semaine** : une ligne par membre, une case par jour avec la barre des dispos déclarées et le nombre d'éléments où il figure. Un clic sur une case ouvre ses plages du jour : catégorie, début, fin, et « Récup à partir de », qui pose une récupération jusqu'à minuit. Les plages sont écrites dans la déclaration du pilote.
+- « Modifications de dispo » liste les déclarations modifiées depuis leur dernière prise en compte ; « Pris en compte » et « Tout prendre en compte » les marquent dans ce navigateur.
+- **Statistiques** : vols prévus, durée cumulée, faits, non faits, annulés, AAR, ME, Bâchés, MNE ; par membre : temps disponible sur les heures de service, temps de vol, charge (orange au-delà de 70 %, rouge au-delà de 100 % ou sans dispo).
+
+### Activations des zones
+
+Ce bloc saisit les activations de zones de la semaine, par réseau et par plage (`data/atc/activations/<année>-W<semaine>.json`) : jour, zone, réseau, état (active, demandée, refusée), début, fin, remarque. « Importer d'IVAO » reprend les horaires publiés par IVAO (clé d'API réglée sur le lanceur) ; les saisies à la main restent. Une modification recalcule aussitôt les zones des vols.
+
 ## Paramètres › Centre
 <!-- page: apps/settings/centre.html -->
 
@@ -546,6 +613,24 @@ Cette rubrique contient les réglages propres à la compagnie pour la page Plann
 | Ignorer une ligne de groupe colorée les 7 jours sur un créneau (habillage) | coché |
 
 Chaque modification est enregistrée aussitôt. « Réglages par défaut » rétablit toutes les valeurs ci-dessus.
+
+### Ordres de vols
+
+Cette rubrique règle la page Ordres de vols (`data/config/odv.json`, synchronisé).
+
+| Réglage | Usage |
+|---|---|
+| Terrain (OACI) | jour et nuit aéronautiques de la frise |
+| Réseau par défaut des vols | IVAO ou VATSIM, pour l'état des activations de zones |
+| Délai sans CR avant MNE (heures) | 48 par défaut |
+| Jours affichés, heures de service | 7 jours, 06:00 à 23:00 z ; servent à la frise et aux statistiques |
+| Modèles de vols, de divers, de contrôle | libellé, durée, couleur, fond plein ; « Couleur de l'indicatif » : la plaquette prend la couleur de son indicatif |
+| Couleurs des indicatifs | préfixe (le plus long contenu dans l'indicatif l'emporte), fond, contour |
+| Créneaux LL / RTBA (repli) | nom, début, fin, jours, couleur, zone de la base |
+| Personnel | groupe Staff ou Membres, couleur, ordre dans la palette |
+| Récurrences | éléments répétés ; « ✕ » arrête une récurrence |
+
+« Enregistrer » écrit les réglages ; « Valeurs par défaut » rétablit les réglages d'origine, sauf le personnel, les couleurs des indicatifs, les créneaux LL et les récurrences.
 
 ### Envoi des comptes rendus (webservice)
 

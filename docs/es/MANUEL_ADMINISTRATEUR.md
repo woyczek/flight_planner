@@ -469,6 +469,73 @@ Este bloque guarda archivos en este ordenador. Contienen datos nominativos: no l
 
 Si el navegador rechaza la copia automática, el texto queda seleccionado: cópielo con Ctrl+C.
 
+## Órdenes de vuelo
+<!-- page: apps/cpco/odv_orders.html -->
+
+La página Órdenes de vuelo construye la orden de vuelo de la semana: fichas de vuelo, control, varios y notas colocados en una cronología, con los conflictos de disponibilidad y de zonas.
+Para abrirla: barra lateral › sección «Centro» › «Órdenes». Como el resto del Centro, requiere el Centro activado; en modo producción, también hay que estar conectado con el rol `admin_centre`. Si no, la página se abre en solo lectura.
+Todo se guarda en el pool de datos compartido: la orden de la semana en `data/odv/<año>-W<semana>.json`, los ajustes en `data/config/odv.json`. Las disponibilidades siguen siendo las de los pilotos, y la tripulación de un vuelo de misión la de las asignaciones.
+Las horas están en z (UTC). Modelo de datos: [Órdenes de vuelo](../technique/ODV_ORDRES.md).
+
+### Semana
+
+- «◀» y «▶» cambian de semana, «Esta semana» vuelve a la semana en curso.
+- Las pestañas de los días muestran, en rojo, el número de elementos en conflicto del día.
+- «Día», «Semana» y «Estadísticas» cambian de vista.
+- «Guardia» designa al oficial de guardia de la semana.
+- «Briefing» (o la tecla F) muestra la orden del día en pantalla completa; las flechas ← y → cambian de día.
+- La línea de estado indica «Guardado», o «Guardado en este navegador» si la carpeta de datos no está autorizada.
+
+### Orden del día
+
+A la izquierda, la paleta: plantillas de vuelos, de control y de varios, la nota, y luego los miembros (Staff, luego Miembros) con la barra de su disponibilidad del día. A la derecha, la cronología:
+- líneas de puntos: franjas de mañana, tarde y noche de la planificación ODV; línea roja: hora actual; zonas oscuras: noche aeronáutica del aeródromo configurado;
+- «RTBA · LL»: franjas de actividad del RTBA (activaciones introducidas o importadas, si no las franjas de los ajustes);
+- «Zonas»: zonas requeridas por cada vuelo (las de su misión, o las introducidas para un entrenamiento), en verde si están activas en la red del vuelo, en naranja si están solicitadas, en rojo si no;
+- «Disponibles juntos»: franjas en las que al menos dos miembros son asignables a un vuelo;
+- secciones «Vuelos», «Control», «Varios», «Notas»: los elementos se apilan solos.
+
+Manejo:
+- arrastre una plantilla a su sección: el elemento se crea a la hora de la colocación (en pasos de 5 min) y se abre su ventana;
+- arrastre un miembro de la paleta a una ficha para añadirlo, o un trigrama de una ficha a otra para moverlo;
+- arrastre una ficha para cambiar su hora, su borde derecho para cambiar su duración; un simple clic abre su ventana;
+- «Zoom» ajusta la escala de la cronología.
+
+En una ficha: «⚠ n» cuenta sus conflictos, «P» indica que ningún tripulante está disponible en la hora y media previa al vuelo, «↻» una recurrencia; una barra verde (hecho) o naranja (no hecho) subraya el estado; una ficha cancelada aparece tachada. Bajo la cronología, «Problemas de asignación» lista los conflictos del día: un clic muestra la ficha.
+
+### Ventana de un elemento
+
+- **Vuelo**: etiqueta, indicativo, misión del registro (vacío: entrenamiento), red, inicio, duración, color, zonas de un entrenamiento, eje y descarga de un vuelo cisterna, cisterna y hora del reabastecimiento, aeronaves (piloto, navegante, cancelado; ocho como máximo), tareas (una por línea, «nombre = TRI»), información, estado, motivo, informe (ME, Bâché, MNE), parcial, causas de MNE.
+- Un indicativo introducido propone la misión de la asignación que lleva ese indicativo ese día.
+- Vuelo de misión: la tripulación viene de las asignaciones de la misión; «Asignar…» abre la ventana de asignación del Centro. El informe de la misión es la referencia: al abrir la semana, estado e informe se toman de él; sin informe pasado el plazo configurado, el vuelo pasa a MNE (causa «sin informe»).
+- **Control**, **Varios**: etiqueta, posición (control), inicio, duración, color, estado, motivo, tripulación (casillas de los miembros), notas (varios).
+- **Nota**: texto libre.
+- «Repetir» (cada día, cada semana, cada dos semanas) y «Hasta» colocan el elemento en las semanas siguientes al abrirlas por primera vez, nunca antes de su fecha.
+- «Eliminar» quita el elemento.
+
+### Conflictos
+
+| Conflicto | Significado |
+|---|---|
+| semana no declarada | el miembro no ha declarado su disponibilidad de la semana |
+| no disponible durante toda la duración | ninguna franja cubre todo el elemento |
+| no asignable (categoría) | una franja de una categoría que no abre este tipo de elemento se solapa con el elemento |
+| ya ocupado a esa hora | el miembro está en otro elemento al mismo tiempo |
+| dos veces en el elemento | el mismo miembro ocupa dos puestos |
+| zona no activada, solicitada, prohibida | zona requerida sin activación «activa» de su red durante todo el vuelo, o zona P |
+
+Un vuelo requiere una categoría disponible; un control, una categoría disponible o «Control SOG»; un elemento varios acepta también «Disponible solo en tierra». Control y vuelo fuera de SOG, DCS, no disponible y descanso nunca son asignables.
+
+### Semana y estadísticas
+
+- **Semana**: una fila por miembro, una casilla por día con la barra de las disponibilidades declaradas y el número de elementos en los que figura. Un clic en una casilla abre sus franjas del día: categoría, inicio, fin, y «Descanso desde», que coloca un descanso hasta medianoche. Las franjas se escriben en la declaración del piloto.
+- «Cambios de disponibilidad» lista las declaraciones modificadas desde la última vez que se tuvieron en cuenta; «Tenido en cuenta» y «Tener todo en cuenta» las marcan en este navegador.
+- **Estadísticas**: vuelos previstos, duración total, hechos, no hechos, cancelados, AAR, ME, Bâchés, MNE; por miembro: tiempo disponible en las horas de servicio, tiempo de vuelo, carga (naranja por encima del 70 %, rojo por encima del 100 % o sin disponibilidad).
+
+### Activaciones de zonas
+
+Este bloque introduce las activaciones de zonas de la semana, por red y por franja (`data/atc/activations/<año>-W<semana>.json`): día, zona, red, estado (activa, solicitada, rechazada), inicio, fin, observación. «Importar de IVAO» recoge los horarios publicados por IVAO (clave de API configurada en el lanzador); las entradas a mano se conservan. Un cambio recalcula al instante las zonas de los vuelos.
+
 ## Ajustes › Centro
 <!-- page: apps/settings/centre.html -->
 
@@ -546,6 +613,24 @@ Este apartado contiene los ajustes propios de la compagnie para la página Plani
 | Ignorar una línea de grupo coloreada los 7 días en una franja (decoración) | marcado |
 
 Cada cambio se guarda de inmediato. «Ajustes por defecto» restablece todos los valores anteriores.
+
+### Órdenes de vuelo
+
+Esta sección ajusta la página Órdenes de vuelo (`data/config/odv.json`, sincronizado).
+
+| Ajuste | Uso |
+|---|---|
+| Aeródromo (OACI) | día y noche aeronáuticos en la cronología |
+| Red por defecto de los vuelos | IVAO o VATSIM, para el estado de las activaciones de zonas |
+| Plazo sin informe antes de MNE (horas) | 48 por defecto |
+| Días mostrados, horas de servicio | 7 días, de 06:00 a 23:00 z; sirven a la cronología y a las estadísticas |
+| Plantillas de vuelos, de varios, de control | etiqueta, duración, color, relleno; «Color del indicativo»: la ficha toma el color de su indicativo |
+| Colores de los indicativos | prefijo (gana el más largo contenido en el indicativo), relleno, contorno |
+| Franjas LL / RTBA (respaldo) | nombre, inicio, fin, días, color, zona de la base |
+| Personal | grupo Staff o Miembros, color, orden en la paleta |
+| Recurrencias | elementos repetidos; «✕» detiene una recurrencia |
+
+«Guardar» escribe los ajustes; «Valores por defecto» restablece los ajustes de origen, salvo el personal, los colores de los indicativos, las franjas LL y las recurrencias.
 
 ### Envío de informes (servicio web)
 

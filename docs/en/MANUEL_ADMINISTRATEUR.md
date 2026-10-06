@@ -469,6 +469,73 @@ This block saves files on this computer. They contain personal data: do not publ
 
 If the browser refuses automatic copying, the text is selected: copy it with Ctrl+C.
 
+## Flight orders
+<!-- page: apps/cpco/odv_orders.html -->
+
+The Flight orders page builds the week's flight order: flight strips, control, miscellaneous items and notes placed on a timeline, with availability and area conflicts.
+To open it: sidebar › “Centre” section › “Orders”. Like the rest of the Centre, it needs the Centre enabled; in production mode, you must also be logged in with the `admin_centre` role. Otherwise the page opens read-only.
+Everything is saved in the shared data pool: the week's order in `data/odv/<year>-W<week>.json`, the settings in `data/config/odv.json`. Availability stays the pilots' own, and the crew of a mission flight comes from the assignments.
+Times are in z (UTC). Data model: [Flight orders](../technique/ODV_ORDRES.md).
+
+### Week
+
+- “◀” and “▶” change the week, “This week” goes back to the current week.
+- The day tabs show, in red, the number of items in conflict that day.
+- “Day”, “Week” and “Statistics” change the view.
+- “Duty officer” names the week's duty officer.
+- “Briefing” (or the F key) puts the order of the day in full screen; the ← and → arrows change the day.
+- The status line shows “Saved”, or “Saved in this browser” if the data folder is not authorised.
+
+### Order of the day
+
+On the left, the palette: flight, control and miscellaneous templates, the note, then the members (Staff, then Members) with the bar of their availability that day. On the right, the timeline:
+- dotted lines: morning, afternoon and evening slots of the ODV planning; red line: current time; dark areas: aeronautical night at the set airfield;
+- “RTBA · LL”: RTBA activity slots (activations entered or imported, otherwise the slots from the settings);
+- “Areas”: areas required by each flight (those of its mission, or those entered for a training flight), green if active on the flight's network, orange if requested, red otherwise;
+- “Available together”: ranges where at least two members can be assigned to a flight;
+- “Flights”, “Control”, “Miscellaneous”, “Notes” sections: items stack by themselves.
+
+Handling:
+- drag a template onto its section: the item is created at the drop time (in 5-minute steps) and its window opens;
+- drag a member from the palette onto a strip to add them, or a trigram from one strip to another to move them;
+- drag a strip to change its time, its right edge to change its duration; a single click opens its window;
+- “Zoom” sets the timeline scale.
+
+On a strip: “⚠ n” counts its conflicts, “P” flags that no crew member is available in the hour and a half before the flight, “↻” a recurrence; a green (done) or orange (not done) bar underlines the status; a cancelled strip is struck through. Below the timeline, “Assignment problems” lists the day's conflicts: a click shows the strip.
+
+### Item window
+
+- **Flight**: label, callsign, registry mission (empty: training), network, start, duration, colour, areas of a training flight, track and offload of a tanker flight, tanker and refuelling time, aircraft (pilot, navigator, cancelled; eight at most), tasks (one per line, “name = TRI”), info, status, reason, report (ME, Bâché, MNE), partial, MNE causes.
+- A callsign entered suggests the mission of the assignment that carries this callsign that day.
+- Mission flight: the crew comes from the mission's assignments; “Assign…” opens the Centre's assignment window. The mission report is authoritative: when the week is opened, status and report are taken from it; with no report after the set delay, the flight becomes MNE (cause “no report”).
+- **Control**, **Miscellaneous**: label, position (control), start, duration, colour, status, reason, crew (member boxes), notes (miscellaneous).
+- **Note**: free text.
+- “Repeat” (every day, every week, every other week) and “Until” place the item on the following weeks when they are first opened, never before its date.
+- “Delete” removes the item.
+
+### Conflicts
+
+| Conflict | Meaning |
+|---|---|
+| week not declared | the member has not declared their availability for the week |
+| not available for the whole duration | no range covers the whole item |
+| not assignable (category) | a range of a category that does not open this kind of item overlaps the item |
+| already busy at that time | the member is on another item at the same time |
+| twice on the item | the same member holds two places |
+| area not activated, requested, prohibited | required area without an “active” activation of its network over the whole flight, or P area |
+
+A flight needs an available category; a control item, an available category or “SOG control”; a miscellaneous item also accepts “Available on the ground only”. Control and flight outside SOG, DCS, unavailable and time off can never be assigned.
+
+### Week and statistics
+
+- **Week**: one row per member, one cell per day with the bar of declared availability and the number of items they appear on. A click on a cell opens their ranges for the day: category, start, end, and “Time off from”, which sets time off until midnight. The ranges are written into the pilot's declaration.
+- “Availability changes” lists the declarations changed since they were last noted; “Noted” and “Note all” mark them in this browser.
+- **Statistics**: planned flights, total duration, done, not done, cancelled, AAR, ME, Bâchés, MNE; per member: time available over duty hours, flight time, load (orange above 70 %, red above 100 % or with no availability).
+
+### Area activations
+
+This block enters the week's area activations, per network and per time range (`data/atc/activations/<year>-W<week>.json`): day, area, network, status (active, requested, refused), start, end, remark. “Import from IVAO” takes the schedules published by IVAO (API key set on the launcher); entries made by hand stay. A change recomputes the flights' areas at once.
+
 ## Settings › Centre
 <!-- page: apps/settings/centre.html -->
 
@@ -546,6 +613,24 @@ This section contains the Settings of the ODV planning page. They are kept in th
 | Ignore a group row coloured all 7 days on a slot (decoration) | ticked |
 
 Each change is saved at once. “Default settings” restores all the values above.
+
+### Flight orders
+
+This section sets the Flight orders page (`data/config/odv.json`, synchronised).
+
+| Setting | Use |
+|---|---|
+| Airfield (ICAO) | aeronautical day and night on the timeline |
+| Default network of flights | IVAO or VATSIM, for the status of area activations |
+| Delay without report before MNE (hours) | 48 by default |
+| Days shown, duty hours | 7 days, 06:00 to 23:00 z; used by the timeline and the statistics |
+| Flight, miscellaneous and control templates | label, duration, colour, solid fill; “Callsign colour”: the strip takes the colour of its callsign |
+| Callsign colours | prefix (the longest one contained in the callsign wins), fill, outline |
+| LL / RTBA slots (fallback) | name, start, end, days, colour, database area |
+| Personnel | Staff or Members group, colour, order in the palette |
+| Recurrences | repeated items; “✕” stops a recurrence |
+
+“Save” writes the settings; “Default values” restores the original settings, except personnel, callsign colours, LL slots and recurrences.
 
 ### Report sending (web service)
 
