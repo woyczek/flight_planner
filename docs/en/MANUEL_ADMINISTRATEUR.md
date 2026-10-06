@@ -496,6 +496,7 @@ On the left, the palette: flight, control and miscellaneous templates, the note,
 - dotted lines: morning, afternoon and evening slots of the ODV planning; red line: current time; dark areas: aeronautical night at the set airfield;
 - “RTBA · LL”: RTBA activity slots (activations entered or imported, otherwise the slots from the settings);
 - “Areas”: areas required by each flight (those of its mission, or those entered for a training flight), green if active on the flight's network, orange if requested, red otherwise;
+- “ATC”: the day's ATC sessions within the perimeter (country set in Settings › Centre › ODV planning, shown on hovering the label): trainings and exams in purple, events in blue, bookings faded; a session is outlined in red when it hinders a mission flight (its departure or arrival airfield during the flight);
 - “Available together”: ranges where at least two members can be assigned to a flight;
 - “Flights”, “Control”, “Miscellaneous”, “Notes” sections: items stack by themselves.
 

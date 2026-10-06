@@ -35,6 +35,7 @@
     sections: {
       ll: L4('RTBA · LL', 'RTBA · LL', 'RTBA · LL', 'RTBA · LL'),
       zones: L4('Zones', 'Areas', 'Gebiete', 'Zonas'),
+      atc: L4('ATC', 'ATC', 'ATC', 'ATC'),
       ensemble: L4('Dispos ensemble', 'Available together', 'Gemeinsam verfügbar', 'Disponibles juntos'),
       vol: L4('Vols', 'Flights', 'Flüge', 'Vuelos'),
       controle: L4('Contrôle', 'Control', 'Lotsendienst', 'Control'),
@@ -364,7 +365,9 @@
         f = s + e.duree;
       for (const tri of new Set(O().crewOf(e, S.affect))) {
         const cats = (S.dispos[tri]?.[e.date] || []).filter(p => (p.debut ? min(p.debut) : 0) < f && s < (p.fin ? min(p.fin) : 1440) && (SD().affectable(p.categorie) || []).includes('vol')).map(p => p.categorie);
-        if (!cats.length || cats.some(c => SD().opens(SD().openThemes(c, S.decls?.[tri]?.prefs), fam))) continue;
+        // mission d'un exercice (opération avec organisation) : ouverte aussi par les catégories « exercice »
+        const fams = reg(e.mission)?.operation?.organisation || reg(e.mission)?.exercise ? [fam, 'EXERCICE'] : [fam];
+        if (!cats.length || cats.some(c => fams.some(fm => SD().opens(SD().openThemes(c, S.decls?.[tri]?.prefs), fm)))) continue;
         const list = S.conf.get(e.id) || S.conf.set(e.id, []).get(e.id);
         list.push({
           code: 'theme',
@@ -419,12 +422,60 @@
   }
 
   // ---- zones (OdvAirspace, facultatif)
+  /** Sessions ATC du jour dans le périmètre (pays du Planning ODV, SuiteAtc.perimeter) : trainings, examens, événements,
+   *  réservations ; mêmes fichiers data/atc que le Planning ODV. */
+  async function loadAtcDay(date) {
+    try {
+      if (!window.SuiteAtc) await loadScript('../../shared/atc_sessions.js?v=b49318e3');
+    } catch {
+      return;
+    }
+    const AT = window.SuiteAtc;
+    if (!AT?.read) return;
+    const list = await AT.read(S.week).catch(() => []);
+    const per = AT.perimeter?.();
+    S.atcLabel = per?.label || '';
+    S.atcDay = list.filter(s => s.date === date && (!AT.inPerimeter || AT.inPerimeter(s.position, per)));
+  }
+  /** Examens et trainings ATC du jour (périmètre) sur le terrain de départ ou d'arrivée d'un vol de mission pendant le
+   *  vol : CTR à éviter, signalé dans les zones du vol ; ne demande pas la base aéronautique (OACI de la position). */
+  function atcConflicts(date) {
+    const atc = (S.atcDay || []).filter(s => s.type === 'examen' || s.type === 'training');
+    if (!atc.length) return;
+    for (const v of S.doc.elements.filter(x => x.type === 'vol' && x.date === date && x.mission && x.etat !== 'annule')) {
+      const m = reg(v.mission);
+      const ads = [depOf(m), MA()?.geo?.icaoOf?.({
+        name: m?.destination || ''
+      }) || ''].filter(Boolean);
+      const s = min(v.debut),
+        f = s + v.duree;
+      for (const x of atc) {
+        const icao = String(x.position || '').slice(0, 4).toUpperCase();
+        if (!ads.includes(icao) || !(min(x.debut) < f && s < (min(x.fin) || 1440))) continue;
+        const z = {
+          id: `atc:${x.position}`,
+          nom: `${x.type} ${x.position} ${x.debut}–${x.fin}z`,
+          etat: 'atc',
+          conflit: true
+        };
+        (S.zoneConf.get(v.id) || S.zoneConf.set(v.id, []).get(v.id)).push(z);
+        const row = S.zoneRows.find(r => r.vol.id === v.id);
+        if (row) row.zones.push(z);
+        else S.zoneRows.push({
+          vol: v,
+          zones: [z]
+        });
+      }
+    }
+  }
   async function refreshAirspace() {
     const date = curDate();
     const A = AS();
+    await loadAtcDay(date);
     S.zoneConf = new Map();
     S.zoneRows = [];
     S.llRows = [];
+    atcConflicts(date);
     // repli : créneaux LL saisis dans les réglages (sans module de zones, ou base absente)
     const fallback = () => (S.cfg.ll || []).filter(l => !l.jours?.length || l.jours.includes(dow(date))).map(l => ({
       nom: l.nom,
@@ -479,34 +530,6 @@
       const bad = list.filter(z => z.conflit);
       if (bad.length) S.zoneConf.set(v.id, bad);
     }
-    // examens et trainings ATC du jour (module des zones, mêmes données que le Planning ODV) : CTR du terrain de départ ou
-    // d'arrivée d'un vol de mission à éviter pendant la session
-    const atc = await A.conflicts?.(date).catch(() => []);
-    if (Array.isArray(atc) && atc.length)
-      for (const v of S.doc.elements.filter(x => x.type === 'vol' && x.date === date && x.mission && x.etat !== 'annule')) {
-        const m = reg(v.mission);
-        const ads = [depOf(m), MA()?.geo?.icaoOf?.({
-          name: m?.destination || ''
-        }) || ''].filter(Boolean);
-        const s = min(v.debut),
-          f = s + v.duree;
-        for (const x of atc) {
-          if (!ads.includes(String(x.icao || '').toUpperCase()) || !(min(x.debut) < f && s < (min(x.fin) || 1440))) continue;
-          const z = {
-            id: `atc:${x.position}`,
-            nom: `${x.type} ${x.position} ${x.debut}–${x.fin}z${x.espaces?.length ? ' (' + x.espaces.join(', ') + ')' : ''}`,
-            etat: 'atc',
-            conflit: true
-          };
-          (S.zoneConf.get(v.id) || S.zoneConf.set(v.id, []).get(v.id)).push(z);
-          const row = S.zoneRows.find(r => r.vol.id === v.id);
-          if (row) row.zones.push(z);
-          else S.zoneRows.push({
-            vol: v,
-            zones: [z]
-          });
-        }
-      }
     paintZones();
   }
   /** Référence d'une mission pour OdvAirspace.missionZones : son affectation, sinon son entrée du registre. */
@@ -779,6 +802,7 @@
       <div class="odvo-overlay" style="width:${W}px">${tr}${night}${nowLine}</div>
       ${sect('ll', '<div id="odvoLL"></div>', 24)}
       ${sect('zones', '<div id="odvoZones"></div>', 30)}
+      ${sect('atc', '<div id="odvoAtc"></div>', 26)}
       ${sect('ensemble', together, 26)}
       ${sect('vol', blocks.vol.html, blocks.vol.h)}
       ${sect('controle', blocks.controle.html, blocks.controle.h)}
@@ -912,12 +936,45 @@
     const P = ppm(),
       X = m => (m - s0) * P;
     const ll = $('#odvoLL'),
-      zn = $('#odvoZones');
+      zn = $('#odvoZones'),
+      at = $('#odvoAtc');
+    if (at) {
+      // sessions qui se chevauchent : couloirs (hauteur partagée) ; trainings et examens mis en avant, réservations
+      // estompées ; encadrée si un vol de mission la rencontre (CTR à éviter)
+      const hit = new Set([...S.zoneConf.values()].flat().filter(z => z.etat === 'atc').map(z => String(z.id).slice(4)));
+      const list = (S.atcDay || []).map(s => ({
+        ...s,
+        a: min(s.debut) ?? 0,
+        b: min(s.fin) || 1440
+      })).sort((p, q) => p.a - q.a);
+      const ends = [];
+      const placed = list.map(s => {
+        let i = ends.findIndex(e => e <= s.a);
+        if (i < 0) i = ends.push(0) - 1;
+        ends[i] = s.b;
+        return [s, i];
+      });
+      const n = Math.max(1, ends.length),
+        hh = 22 / n;
+      const lbl = $('.odvo-sec-atc .odvo-lbl');
+      if (lbl) lbl.title = tf(L4('Sessions ATC du jour — périmètre : {p}', 'ATC sessions of the day — perimeter: {p}', 'ATC-Sitzungen des Tages — Bereich: {p}', 'Sesiones ATC del día — perímetro: {p}'), {
+        p: S.atcLabel || '—'
+      });
+      at.innerHTML = placed.map(([s, i]) => `<div class="odvo-atc odvo-atc-${esc(s.type || 'reservation')}${hit.has(String(s.position)) ? ' conflit' : ''}" style="left:${X(Math.max(s.a, s0))}px;width:${Math.max(6, (s.b - Math.max(s.a, s0)) * P)}px;top:${2 + i * hh}px;height:${hh - 1}px" title="${esc([`${s.position} · ${t(window.SuiteAtc?.TYPES?.[s.type] || [s.type, s.type, s.type, s.type])} · ${s.reseau || ''}`, `${s.debut}–${s.fin}z`, s.texte || '', hit.has(String(s.position)) ? t(L4('Gêne un vol de mission (CTR du terrain à éviter)', 'Hinders a mission flight (airfield CTR to avoid)', 'Behindert einen Missionsflug (CTR des Flugplatzes meiden)', 'Molesta un vuelo de misión (CTR del aeródromo que evitar)')) : '', S.atcLabel ? tf(L4('Périmètre : {p}', 'Perimeter: {p}', 'Bereich: {p}', 'Perímetro: {p}'), {
+        p: S.atcLabel
+      }) : ''].filter(Boolean).join('\n'))}">${esc(s.position)}</div>`).join('') || `<span class="mut odvo-atc-none">${esc(tf(L4('Aucune session ATC ce jour ({p})', 'No ATC session this day ({p})', 'Keine ATC-Sitzung an diesem Tag ({p})', 'Ninguna sesión ATC ese día ({p})'), {
+        p: S.atcLabel || '—'
+      }))}</span>`;
+    }
     if (ll) ll.innerHTML = llSegments(X, P) || (S.airMissing ? `<a class="mut" href="${esc(S.airMissing.url || '#')}">${esc(t(L4('Base aéronautique à installer', 'Aeronautical database to install', 'Luftfahrtdatenbank installieren', 'Base aeronáutica por instalar')))}</a>` : '');
     if (zn) zn.innerHTML = S.zoneRows.map(({
       vol,
       zones
     }) => `<div class="odvo-zn" style="left:${X(min(vol.debut))}px;width:${Math.max(18, vol.duree * P)}px">${zones.map(z => `<span class="odvo-z odvo-z-${esc(z.etat || 'absente')}" title="${esc(`${z.nom || z.id} · ${t(TX.zoneEtats[z.etat] || TX.zoneEtats.absente)}${z.ou?.length ? ' · ' + z.ou.join(', ') : ''}`)}">${esc(z.nom || z.id)}</span>`).join('')}</div>`).join('');
+    if (S.view === 'jour' && S.zoneConf.size) {
+      renderProblems(curDate());
+      renderBar();
+    }
   }
   /** Journal des affectations : 30 dernières opérations (affecte, modifie, retire, convoyage), repliable. */
   function renderLog() {

@@ -496,6 +496,7 @@ A la izquierda, la paleta: plantillas de vuelos, de control y de varios, la nota
 - líneas de puntos: franjas de mañana, tarde y noche de la planificación ODV; línea roja: hora actual; zonas oscuras: noche aeronáutica del aeródromo configurado;
 - «RTBA · LL»: franjas de actividad del RTBA (activaciones introducidas o importadas, si no las franjas de los ajustes);
 - «Zonas»: zonas requeridas por cada vuelo (las de su misión, o las introducidas para un entrenamiento), en verde si están activas en la red del vuelo, en naranja si están solicitadas, en rojo si no;
+- «ATC»: sesiones ATC del día dentro del perímetro (país ajustado en Ajustes › Centro › Planificación ODV, al pasar sobre la etiqueta): entrenamientos y exámenes en violeta, eventos en azul, reservas atenuadas; una sesión se recuadra en rojo cuando molesta a un vuelo de misión (su aeródromo de salida o de llegada durante el vuelo);
 - «Disponibles juntos»: franjas en las que al menos dos miembros son asignables a un vuelo;
 - secciones «Vuelos», «Control», «Varios», «Notas»: los elementos se apilan solos.
 

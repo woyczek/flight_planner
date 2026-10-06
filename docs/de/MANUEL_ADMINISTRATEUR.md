@@ -496,6 +496,7 @@ Links die Palette: Vorlagen für Flüge, Lotsendienst und Sonstiges, die Notiz, 
 - gepunktete Linien: Zeitfenster Morgen, Nachmittag und Abend der ODV-Planung; rote Linie: aktuelle Uhrzeit; dunkle Bereiche: Luftfahrtnacht am eingestellten Flugplatz;
 - „RTBA · LL“: Aktivitätszeitfenster des RTBA (eingegebene oder importierte Aktivierungen, sonst die Zeitfenster der Einstellungen);
 - „Gebiete“: von jedem Flug benötigte Gebiete (die seiner Mission oder die für einen Übungsflug eingegebenen), grün wenn im Netzwerk des Flugs aktiv, orange wenn beantragt, sonst rot;
+- „ATC“: ATC-Sitzungen des Tages im Bereich (Land aus Einstellungen › Zentrum › ODV-Planung, beim Überfahren der Beschriftung): Trainings und Prüfungen violett, Veranstaltungen blau, Buchungen blass; eine Sitzung wird rot umrandet, wenn sie einen Missionsflug behindert (sein Abflug- oder Zielflugplatz während des Flugs);
 - „Gemeinsam verfügbar“: Zeiträume, in denen mindestens zwei Mitglieder für einen Flug einsetzbar sind;
 - Abschnitte „Flüge“, „Lotsendienst“, „Sonstiges“, „Notizen“: die Elemente stapeln sich von selbst.
 

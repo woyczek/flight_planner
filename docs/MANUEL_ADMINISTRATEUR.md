@@ -496,6 +496,7 @@ Les heures sont en z (UTC). Modèle de données : [Ordres de vols](technique/ODV
 - traits pointillés : tranches matin, après-midi et soir du Planning ODV ; trait rouge : heure présente ; zones sombres : nuit aéronautique du terrain réglé ;
 - « RTBA · LL » : créneaux d'activité du RTBA (activations saisies ou importées, sinon créneaux des réglages) ;
 - « Zones » : zones requises par chaque vol (celles de sa mission, ou celles saisies pour un entraînement), en vert si actives sur le réseau du vol, en orange si demandées, en rouge sinon ;
+- « ATC » : sessions ATC du jour dans le périmètre (pays réglé dans Paramètres › Centre › Planning ODV, au survol de l'étiquette) : trainings et examens en violet, événements en bleu, réservations estompées ; une session est encadrée en rouge quand elle gêne un vol de mission (son terrain de départ ou d'arrivée pendant le vol) ;
 - « Dispos ensemble » : plages où au moins deux membres sont affectables à un vol ;
 - sections « Vols », « Contrôle », « Divers », « Notes » : les éléments s'empilent d'eux-mêmes.
 
