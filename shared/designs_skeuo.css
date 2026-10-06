@@ -1025,6 +1025,17 @@ html[data-skeuo] .repo-card {
   box-shadow: var(--sk-card-shadow);
   color: var(--sk-ink)
 }
+/* menu latéral des Paramètres (Maintenance, données : settings_page.css) : matière des cartes, pas le fond blanc */
+html[data-skeuo] .da-nav:not(#imp) {
+  background: var(--sk-card-bg);
+  border: var(--sk-card-border);
+  border-radius: var(--sk-card-radius);
+  box-shadow: var(--sk-card-shadow);
+  color: var(--sk-ink)
+}
+html[data-skeuo] .da-nav h3:not(#imp) {
+  color: var(--sk-ink-2)
+}
 html[data-skeuo] .repo-dropzone {
   background: var(--sk-drop-bg);
   border: var(--sk-drop-border);
