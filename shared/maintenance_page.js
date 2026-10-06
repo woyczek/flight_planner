@@ -1177,6 +1177,9 @@
         compact: true
       }
     });
+    // carte créée bloc masqué (Paramètres : bloc affiché au choix dans le menu) : taille suivie à chaque changement du
+    // cadre (affichage du bloc, largeur de la fenêtre), sinon elle reste à sa taille par défaut, vide
+    if (window.ResizeObserver) new ResizeObserver(() => aeroMapEl.offsetWidth && aeroMap.resize()).observe(aeroMapEl);
     // zones posées dès le style chargé (« load » attend toutes les tuiles du fond : lent si le serveur OSM l'est) ;
     // « style.load » peut précéder l'abonnement : les deux événements, une seule fois
     const setup = () => {
