@@ -333,6 +333,23 @@
    ]
   },
   {
+   "id": "sol",
+   "groupe": "occupe",
+   "type": "occupe",
+   "label": [
+    "Disponible au sol seulement",
+    "Available on the ground only",
+    "Nur am Boden verfügbar",
+    "Disponible solo en tierra"
+   ],
+   "couleur": "#A9D08E",
+   "ouverts": "none",
+   "odv": [],
+   "affectable": [
+    "divers"
+   ]
+  },
+  {
    "id": "ctrl_hors",
    "groupe": "occupe",
    "type": "atc",
