@@ -163,8 +163,9 @@ Terrarium terrain (AWS) and Overpass API (peaks). Mission data stay in your brow
 
 ## Licence and credits
 
-CC RBR — DEFA Virtual. Bundled third-party code: js-yaml 4.1.0 (MIT,
-`shared/mission_core/vendor/`); MapLibre GL JS (BSD-3-Clause) and jsPDF (MIT) in
-`apps/cpco/`. World aerodrome data: github.com/mwgg/Airports (MIT), loaded on demand.
-Aeronautical data: SIA (AIP France, AIXM 4.5) and DIRCAM (MILAIP ENR 5.7); cities: GeoNames
-(CC BY 4.0); maps © OpenStreetMap contributors, OpenTopoMap (CC-BY-SA).
+© 2026 Gaétan Ryckeboer (RBR) and contributors. Code under the Mozilla Public License 2.0, content (documentation,
+images) under CC BY-SA 4.0. Bundled third-party code: MapLibre GL JS 5.6.0 (BSD 3-Clause, `shared/carto/`), jsPDF 2.5.2
+(MIT, `apps/cpco/`), js-yaml 4.1.0 (MIT, `shared/mission_core/vendor/`). Full list of licences and credits — code,
+textures (ambientCG, CC0), cities (GeoNames, CC BY 4.0), aeronautical data (SIA, DIRCAM, FAA, openAIP, ENAIRE, NATS,
+X-Plane), base maps (© OpenStreetMap contributors, OpenTopoMap, OpenFreeMap, VersaTiles), terrain, weather (Open-Meteo)
+and networks (VATSIM, IVAO, SimBrief): [LICENSE.md](../LICENSE.md).

@@ -143,4 +143,4 @@ charts, Centre missions, pilot page). Download the folder, run **`lancer.cmd`** 
 repository (or a `.zip` set sent by mail, dropped next to the launcher). Full documentation:
 [docs/PRESENTATION_en.md](docs/PRESENTATION_en.md).
 
-CC RBR — DEFA Virtual. Licences des composants tiers : [docs/PRESENTATION.md](docs/PRESENTATION.md#licence-et-crédits).
+© 2026 Gaétan Ryckeboer (RBR) and contributors — code under the [Mozilla Public License 2.0](LICENSES/MPL-2.0.txt), content (documentation, images) under [CC BY-SA 4.0](LICENSES/CC-BY-SA-4.0.txt). Third-party code, images, data and services, with their licences and required credits: [LICENSE.md](LICENSE.md).
