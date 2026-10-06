@@ -32,6 +32,7 @@
     state.order ??= {};
     const blocks = [...main.querySelectorAll("section,.panel,.format-note,.analysis-dock,.trend-card")].filter(el => !el.closest("section") || el.matches("section,.panel"));
     const parents = new Map();
+    let movingBlock = null; // bloc en cours de déplacement (poignée ↕), sinon null
     blocks.forEach((el, i) => {
       const id = el.dataset.blockId || el.id || `block-${i+1}`;
       el.dataset.blockId = id;
@@ -73,11 +74,18 @@
         };
         head.querySelector(".repo-drag").onpointerdown = () => el.draggable = true
       }
+      // déplacement d'un bloc (poignée ↕) seulement : les glissers des éléments du bloc (cartes, plaquettes, membres des
+      // Ordres de vols…) remontent jusqu'ici ; pris pour un déplacement du bloc, ils l'estompaient (« écran grisé ») et
+      // faisaient accepter un dépôt n'importe où
       el.ondragstart = e => {
+        if (e.target !== el) return;
+        movingBlock = el;
         el.classList.add("repo-block-dragging");
         e.dataTransfer.effectAllowed = "move"
       };
-      el.ondragend = () => {
+      el.ondragend = e => {
+        if (e.target !== el) return;
+        movingBlock = null;
         el.draggable = false;
         el.classList.remove("repo-block-dragging");
         document.querySelectorAll(".repo-block-drop-before").forEach(x => x.classList.remove("repo-block-drop-before"));
@@ -85,14 +93,15 @@
         write(state)
       };
       el.ondragover = e => {
+        if (!movingBlock) return;
         e.preventDefault();
         el.classList.add("repo-block-drop-before")
       };
       el.ondragleave = () => el.classList.remove("repo-block-drop-before");
       el.ondrop = e => {
+        if (!movingBlock) return;
         e.preventDefault();
-        const moving = el.parentElement.querySelector(".repo-block-dragging");
-        if (moving && moving !== el) el.parentElement.insertBefore(moving, el);
+        if (movingBlock !== el && movingBlock.parentElement === el.parentElement) el.parentElement.insertBefore(movingBlock, el);
         el.classList.remove("repo-block-drop-before")
       };
     });
