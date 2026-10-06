@@ -893,8 +893,12 @@
       if (lane && laneAccepts(lane.dataset.lane, dragGhost.dataset.type)) {
         const r = lane.getBoundingClientRect(),
           s0 = +$('#odvoGrid').dataset.s0;
-        dragGhost.style.left = `${r.left + (minuteAt(lane, ev.clientX) - s0) * ppm()}px`;
+        const mn = minuteAt(lane, ev.clientX);
+        dragGhost.style.left = `${r.left + (mn - s0) * ppm()}px`;
         dragGhost.style.top = `${r.top + 2}px`;
+        // heure affichée : celle du dépôt sous le pointeur
+        const tt = dragGhost.querySelector('.odvo-it-t');
+        if (tt) tt.innerHTML = tt.innerHTML.replace(/^\d\d:\d\dz/, `${hhmm(mn)}z`);
       } else {
         dragGhost.style.left = `${ev.clientX - 12}px`;
         dragGhost.style.top = `${ev.clientY - 12}px`;
