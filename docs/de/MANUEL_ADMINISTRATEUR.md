@@ -162,7 +162,7 @@ Liste der Gebiete R, D, TRA und des RTBA, die von der wahrscheinlichen Route und
 - Mission einer koordinierten Übung: Liste nur zur Information.
 - Einzelmission: Anträge durch die Besatzung; die Liste wird ins Briefing-PDF übernommen.
 
-Grenze: Die Berechnung ist ein Richtwert und ersetzt weder die AZBA-Karten noch die NOTAM. Ohne SIA-Datenbank gibt der Block an, wo sie zu lesen ist (Studio, Block „SIA-Datenbank“, oder Einstellungen › Wartung › SIA-Aktualisierung).
+Grenze: Die Berechnung ist ein Richtwert und ersetzt weder die AZBA-Karten noch die NOTAM. Ohne SIA-Datenbank gibt der Block an, wo sie zu lesen ist (Studio, Block „SIA-Datenbank“, oder Einstellungen › Wartung › Luftfahrtdaten).
 
 ### Übung
 
@@ -217,7 +217,7 @@ Es arbeitet an der mit dem Generator geteilten Mission. Technische Details: [SIA
 ### Mission
 
 - Statuszeile der geladenen Mission und Schaltfläche „Im Ordner speichern“: schreibt die Mission und die Einstellungen des Studios (Profil und Ausschnitt jeder Karte, Linien, Spuren) in `mission<ID>.yaml`. Das Ergebnis erscheint neben der Schaltfläche und als Benachrichtigung.
-- Zeile „SIA-Datenbank“: AIRAC-Zyklus, Anzahl der Lufträume und der MORA-Zellen, Link zu Einstellungen › Wartung › SIA-Aktualisierung.
+- Zeile „SIA-Datenbank“: AIRAC-Zyklus, Anzahl der Lufträume und der MORA-Zellen, Link zu Einstellungen › Wartung › Luftfahrtdaten.
 - „Andere Mission öffnen: Markdown-/YAML-Datei oder eingefügter Text“ (eingeklappt, wenn eine Mission geladen ist): Wählen Sie eine Datei, oder „oder Inhalt einfügen…“ und dann „Mission lesen“.
 
 Die hier geöffnete Mission wird zur mit dem Generator geteilten Mission. Bei einer Übungsmission werden fehlende Übungskarten automatisch hinzugefügt: Speichern Sie die Mission, um sie zu behalten.
@@ -265,7 +265,7 @@ Block standardmäßig ausgeblendet: Klicken Sie in seinem Kopf auf „Anzeigen�
 - „Cache leeren“ löscht die in diesem Browser gespeicherte Datenbank (danach neu einzulesen).
 - Die Statuszeile zeigt die gespeicherte Datenbank (Ordner, AIRAC-Zyklus, Datum); „Analysierte Dateien“ listet die gelesenen XML.
 
-Enthält der Ordner mehrere Zyklen, wird nur der neueste gelesen; die anderen werden gemeldet und sind zu archivieren. Es ist derselbe Block wie unter Einstellungen › Wartung › SIA-Aktualisierung (Schritt 4).
+Enthält der Ordner mehrere Zyklen, wird nur der neueste gelesen; die anderen werden gemeldet und sind zu archivieren. Es ist derselbe Block wie unter Einstellungen › Wartung › Luftfahrtdaten (Schritt 4).
 
 ## Missionsregister
 <!-- page: apps/cpco/mission_registry.html -->
@@ -603,7 +603,7 @@ Diese Rubrik ist der einzige Ort, an dem die lokalen Ordner und die Adressen der
 Diese Seite dient der Pflege der Suite: Updates, Versionen, SIA-Daten, Caches, Sicherungen und Referenzdatenbanken.
 Zum Öffnen: Seitenleiste › „Einstellungen“, dann der Reiter „Wartung“. Die Seite öffnet sich auf „Updates“.
 Das Seitenmenü hat zwei Teile:
-- die Gruppe „Wartung“: Updates, Versionen, Referenzen und Abhängigkeiten, SIA-Update (AIRAC), Caches, Speicherplatz, Vollständige Sicherung, Protokoll;
+- die Gruppe „Wartung“: Updates, Versionen, Referenzen und Abhängigkeiten, Luftfahrtdaten, Caches, Speicherplatz, Vollständige Sicherung, Protokoll;
 - die Datenbanken, geordnet in den Gruppen „Dateien des Repositorys“, „DEFA-Datenbank“, „Missionen“ und „Browserdaten“.
 
 ### Aktualisierungen der Suite
@@ -643,7 +643,18 @@ Verfolgte Referenzen: SIA-XML, analysierte Datenbank des Studios, MORA-Raster, A
 Beispiele für Prüfungen: gemischte Zyklen in der SIA-Datenbank, MORA-Hindernisse eines anderen Zyklus, Flottenmuster, die in der ICAO-Datenbank fehlen, neu zu erzeugender Prompt (`python tools/build_mission_prompt.py`).
 Die Schaltfläche „Prüfen“ startet die Prüfungen erneut.
 
-### Aktualisierung der SIA-Daten (AIRAC) — Schritt für Schritt
+### Luftfahrtdaten: Quellen und SIA-Aktualisierung (AIRAC)
+
+**Quellen**: eine Zeile pro Datenquelle, jeweils angehakt (gelesen) oder nicht; Änderungen gelten beim nächsten Neuaufbau der Basis („Ordner neu einlesen“, Schritt 4). Das SIA hat Vorrang: ein bereits gelesener Luftraum, Flugplatz oder ein Funkfeuer wird nicht ein zweites Mal hinzugefügt.
+- **SIA Frankreich** (AIXM 4.5, XML_SIA) und **DIRCAM / MILAIP** (RTBA-/AZBA-Gebiete, Betankungsstrecken ENR 5.7): Schritt für Schritt unten.
+- **AIXM 5.1** (andere Länder): `.xml`-Dateien im Ordner `data/sia/aixm5/`. „ENAIRE (Spanien): herunterladen“ holt die zuletzt veröffentlichten Datensätze (Lufträume, Strecken). Vereinigtes Königreich (NATS): Registrierung auf der Website, Datei von Hand ablegen.
+- **GeoJSON**: `.geojson`- oder `.json`-Dateien (und OpenAir `.txt`) in `data/sia/geojson/`. „FAA (USA): Sonderlufträume und Militärrouten“ lädt die Sonderlufträume (MOA, R, W, A, P) und die MTR-Routen, als Korridore gelesen; „FAA: Luftraumklassen“ ist eine große Datei.
+- **openAIP**: Ländercodes mit zwei Buchstaben, durch Leerzeichen getrennt, dann „openAIP: Länder herunterladen“ (Lufträume, Flugplätze, Funkfeuer, VFR-Punkte in `data/sia/openaip/`). Gemeinschaftsdaten, nicht kommerzielle Nutzung (CC BY-NC 4.0).
+- **X-Plane**: Knopf für den X-Plane-Installationsordner; Funkfeuer, Punkte, Luftstraßen und MORA-Gitter aus den Dateien `earth_*.dat` („Custom Data“ zuerst), OpenAir-Lufträume, falls vorhanden.
+- Die Downloads laufen über den Starter (`tools/aero_fetch.py`, auch über die Befehlszeile nutzbar). Ohne Starter: die Dateien von Hand herunterladen und in den Unterordner der Quelle legen.
+- Außerhalb Frankreichs erscheinen die von einer Mission gekreuzten Gebiete R, D, TRA, TSA, MOA, W, A und MTR-Routen unter ihren zu aktivierenden Lufträumen.
+
+**SIA Frankreich: neuer AIRAC-Zyklus Schritt für Schritt**
 
 Alle 28 Tage tritt ein neuer AIRAC-Zyklus in Kraft. Sechs Schritte, in dieser Reihenfolge; der Punkt jedes Schritts wird grün, wenn der Schritt erledigt ist. Die „Anleitung“ erläutert jeden Schritt.
 1. **AIRAC-Zyklus**: Stellen Sie den gültigen Zyklus, den nächsten und den der Studiodatenbank fest. Links führen zu den Seiten des SIA.
@@ -658,7 +669,7 @@ Alle 28 Tage tritt ein neuer AIRAC-Zyklus in Kraft. Sechs Schritte, in dieser Re
    - „Einfache Neuberechnung“ (offline) oder „Vollständige Berechnung“ (Netzwerk, etwa eine Minute);
    - wenn sich Zellen ändern: „mora.csv schreiben (alte archiviert)“, dann committen Sie das Datenrepository;
    - zum Schluss die Konsistenz „Prüfen“.
-Die AIRAC-XML (etwa 80 MB pro Zyklus) bleiben außerhalb des Repositorys. Die MORA-Werte sind berechnet, nicht zertifiziert.
+Die AIRAC-XML (etwa 80 MB pro Zyklus) bleiben außerhalb des Repositorys, wie die Dateien der anderen Quellen. Die MORA-Werte sind berechnet, nicht zertifiziert.
 
 ### Caches
 

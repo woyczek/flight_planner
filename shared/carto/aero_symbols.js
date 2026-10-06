@@ -398,7 +398,7 @@
         B: 1,
         A: 2
       },
-      isRdp = a => a.type === 'R' || a.type === 'D' || a.type === 'P';
+      isRdp = a => a.type === 'R' || a.type === 'D' || a.type === 'P' || a.type === 'W' || a.type === 'A'; // W, A : zones d'alerte et d'avertissement (autres pays)
     const sorted = [...zones].sort((a, c) => (isRdp(a) ? 3 : order[a.cls] ?? 1) - (isRdp(c) ? 3 : order[c.cls] ?? 1));
     for (const a of sorted) {
       const ring = bigRing(a);
@@ -455,7 +455,7 @@
           } else if (/^(RMZ|TMZ|RMZ-TMZ)$/.test(a.type)) {
             stroke = 'rgba(40,40,40,.18)';
             line = '#222';
-          } else if (a.type === 'TRA') {
+          } else if (/^(TRA|TSA|MOA|MTR)$/.test(a.type)) { // TSA, MOA, routes MTR : zones militaires activables (autres pays)
             stroke = 'rgba(214,23,63,.25)';
             line = C.red;
           } else if (a.cls === 'E' || a.cls === 'G' || a.type === 'SIV') {
@@ -479,7 +479,7 @@
           ringPath(ctx, r, toC);
           ctx.lineWidth = lineW;
           ctx.strokeStyle = line;
-          if (/^(RMZ|TMZ|RMZ-TMZ|TRA)$/.test(a.type)) ctx.setLineDash([6 * scale, 3 * scale, 1.5 * scale, 3 * scale]);
+          if (/^(RMZ|TMZ|RMZ-TMZ|TRA|TSA|MOA|MTR)$/.test(a.type)) ctx.setLineDash([6 * scale, 3 * scale, 1.5 * scale, 3 * scale]);
           ctx.stroke();
           ctx.restore();
         }

@@ -1289,7 +1289,7 @@ Ce bloc est masqué par défaut : cliquez sur « Afficher ». Il lit le dossier 
 - « Purger le cache » : efface la base gardée (elle sera reconstruite à la prochaine relecture).
 - La ligne d'état indique la base gardée, son cycle AIRAC et sa date ; « cycle périmé » s'affiche si un cycle plus récent est en vigueur. « Fichiers analysés » liste les fichiers lus.
 
-C'est le même bloc que Paramètres › Maintenance › Mise à jour SIA. La même base sert au profil vertical du planificateur carburant. Détails : [missions SIA](SIA_MISSIONS.md).
+C'est le même bloc que Paramètres › Maintenance › Données aéronautiques. La même base sert au profil vertical du planificateur carburant. Détails : [missions SIA](SIA_MISSIONS.md).
 
 ## Carburant
 <!-- page: apps/planner/flight_performance_planner.html -->

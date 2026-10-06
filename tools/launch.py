@@ -18,6 +18,7 @@ import argparse, glob, http.server, io, json, os, re, secrets, shutil, socket, s
 import urllib.parse, urllib.request, webbrowser, zipfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import data_sync  # synchronisation git du pool de données (bouton « Synchroniser »)
+import aero_fetch  # données aéronautiques d'autres pays (Paramètres › Maintenance › Données aéronautiques)
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 DATA = os.path.join(ROOT, 'data')
@@ -331,6 +332,15 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                     index_availability()
                     index_users()
             return self._json(r)
+        if path == '/__setup/aero-fetch':
+            # données aéronautiques d'autres pays (tools/aero_fetch.py) : téléchargées dans data/sia/<source>/
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                a = {}
+            args = [str(x)[:12] for x in (a.get('args') or [])][:40]
+            with AERO_LOCK:
+                return self._json(aero_fetch.fetch(DATA, str(a.get('provider') or ''), args))
         if path == '/__setup/clone':
             try:
                 a = json.loads(body or b'{}')
@@ -479,6 +489,7 @@ INSTANCE_DIRS = ('', 'data', os.path.join('data', 'missions'), os.path.join('dat
 
 
 INDEX_LOCK = threading.Lock()
+AERO_LOCK = threading.Lock()  # un téléchargement de données aéronautiques à la fois (tools/aero_fetch.py)
 SYNC_LOCK = threading.Lock()  # une synchronisation git à la fois (tools/data_sync.py)  # index du pool refaits à la demande (do_GET)
 
 

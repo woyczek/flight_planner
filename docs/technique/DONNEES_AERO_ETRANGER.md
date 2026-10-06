@@ -4,6 +4,16 @@
 FR », XML_SIA) et DIRCAM / MILAIP (RTBA, AZBA, ENR 5.7) pour le Royaume-Uni, le reste de l'Europe et les États-Unis.
 **[V]** = vérifié sur le site ; **[?]** = non confirmé, à vérifier avant de développer.
 
+## Dans la suite (6 octobre 2026)
+
+Réalisé : lecteurs AIXM 5.1, GeoJSON (openAIP, FAA ADDS, générique), OpenAir et X-Plane (`shared/aero_sources.js`),
+lus par la base SIA (`shared/sia_base.js`, version 16) ; sources actives ou non dans Paramètres › Maintenance ›
+Données aéronautiques ; téléchargements ENAIRE, FAA (zones, routes MTR, classes) et openAIP par
+`tools/aero_fetch.py` (lanceur : `POST /__setup/aero-fetch`). Essais : Espagne (520 espaces, 147 balises, 901 tronçons),
+États-Unis (1 542 zones, 3 654 segments MTR), Belgique et Luxembourg (openAIP), avec le SIA du cycle 2026-10-01.
+À faire : Royaume-Uni (fichier NATS à déposer à la main ; zones de vol à basse altitude de la Mil AIP à extraire des
+PDF, comme l'ENR 5.7) ; format exact de `earth_mora.dat` à confirmer sur un X-Plane 12 installé.
+
 ## Royaume-Uni
 
 - **Civil — NATS pour la CAA** (<https://nats-uk.ead-it.com/cms-nats/opencms/en/Publications/digital-datasets/>) :

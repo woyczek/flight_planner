@@ -1289,7 +1289,7 @@ Este bloque está oculto por defecto: haga clic en «Mostrar». Lee la carpeta S
 - «Vaciar la caché»: borra la base guardada (se reconstruirá en la siguiente relectura).
 - La línea de estado indica la base guardada, su ciclo AIRAC y su fecha; se muestra «ciclo caducado» si hay un ciclo más reciente en vigor. «Archivos analizados» muestra los archivos leídos.
 
-Es el mismo bloque que Ajustes › Mantenimiento › Actualización SIA. La misma base sirve para el perfil vertical del planificador de combustible. Detalles: [misiones SIA](../SIA_MISSIONS.md).
+Es el mismo bloque que Ajustes › Mantenimiento › Datos aeronáuticos. La misma base sirve para el perfil vertical del planificador de combustible. Detalles: [misiones SIA](../SIA_MISSIONS.md).
 
 ## Combustible
 <!-- page: apps/planner/flight_performance_planner.html -->

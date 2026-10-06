@@ -162,7 +162,7 @@ Lista de las zonas R, D, TRA y de la RTBA atravesadas por la ruta probable y las
 - Misión de un ejercicio coordinado: lista solo a título informativo.
 - Misión aislada: solicitudes que debe hacer la tripulación; la lista se incluye en el briefing PDF.
 
-Límite: cálculo indicativo, que no sustituye ni los mapas AZBA ni los NOTAM. Sin base SIA, el bloque indica dónde leerla (estudio, bloque «Base de datos SIA», o Ajustes › Mantenimiento › Actualización SIA).
+Límite: cálculo indicativo, que no sustituye ni los mapas AZBA ni los NOTAM. Sin base SIA, el bloque indica dónde leerla (estudio, bloque «Base de datos SIA», o Ajustes › Mantenimiento › Datos aeronáuticos).
 
 ### Ejercicio
 
@@ -217,7 +217,7 @@ Trabaja sobre la misión compartida con el generador. Detalles técnicos: [misio
 ### Misión
 
 - Línea de estado de la misión cargada y botón «Guardar en la carpeta»: escribe la misión y los ajustes del estudio (perfil y encuadre de cada mapa, trazados, pistas) en `mission<ID>.yaml`. El resultado aparece junto al botón y en una notificación.
-- Línea «Base SIA»: ciclo AIRAC, número de espacios y de celdas MORA, enlace a Ajustes › Mantenimiento › Actualización SIA.
+- Línea «Base SIA»: ciclo AIRAC, número de espacios y de celdas MORA, enlace a Ajustes › Mantenimiento › Datos aeronáuticos.
 - «Abrir otra misión: archivo Markdown / YAML o texto pegado» (plegado cuando hay una misión cargada): elija un archivo, o «o pegar su contenido…» y después «Leer la misión».
 
 La misión abierta aquí pasa a ser la misión compartida con el generador. En una misión de ejercicio, los mapas de ejercicio que faltan se añaden automáticamente: guarde la misión para conservarlos.
@@ -265,7 +265,7 @@ Bloque oculto por defecto: haga clic en «Mostrar» en su cabecera.
 - «Vaciar la caché» borra la base guardada en este navegador (hay que releerla después).
 - La línea de estado indica la base guardada (carpeta, ciclo AIRAC, fecha); «Archivos analizados» lista los XML leídos.
 
-Si la carpeta contiene varios ciclos, solo se lee el más reciente; los demás se señalan para archivarlos. Es el mismo bloque que Ajustes › Mantenimiento › Actualización SIA (paso 4).
+Si la carpeta contiene varios ciclos, solo se lee el más reciente; los demás se señalan para archivarlos. Es el mismo bloque que Ajustes › Mantenimiento › Datos aeronáuticos (paso 4).
 
 ## Registro de misiones
 <!-- page: apps/cpco/mission_registry.html -->
@@ -603,7 +603,7 @@ Este apartado es el único lugar donde se ajustan las carpetas locales y las dir
 Esta página sirve para el mantenimiento de la suite: actualizaciones, versiones, datos SIA, cachés, copias de seguridad y bases de referencia.
 Para abrirla: barra lateral › «Ajustes» y después la pestaña «Mantenimiento». La página se abre en «Actualizaciones».
 El menú lateral tiene dos partes:
-- el grupo «Mantenimiento»: Actualizaciones, Versiones, Referencias y dependencias, Actualización SIA (AIRAC), Cachés, Espacio en disco, Copia total, Registro;
+- el grupo «Mantenimiento»: Actualizaciones, Versiones, Referencias y dependencias, Datos aeronáuticos, Cachés, Espacio en disco, Copia total, Registro;
 - las bases de datos, agrupadas en «Archivos del repositorio», «Base DEFA», «Misiones» y «Datos del navegador».
 
 ### Actualizaciones de la suite
@@ -643,7 +643,18 @@ Referencias seguidas: XML SIA, base analizada del estudio, cuadrícula MORA, eje
 Ejemplos de controles: ciclos mezclados en la base SIA, obstáculos MORA de otro ciclo, tipos de la flota ausentes de la base OACI, prompt que regenerar (`python tools/build_mission_prompt.py`).
 El botón «Comprobar» vuelve a lanzar los controles.
 
-### Actualización de los datos SIA (AIRAC) — paso a paso
+### Datos aeronáuticos: fuentes y actualización SIA (AIRAC)
+
+**Fuentes**: una línea por fuente de datos, cada una marcada (leída) o no; los cambios se aplican en la próxima reconstrucción de la base («Releer la carpeta», paso 4). El SIA tiene prioridad: un espacio, aeródromo o radioayuda ya leído no se añade una segunda vez.
+- **SIA Francia** (AIXM 4.5, XML_SIA) y **DIRCAM / MILAIP** (zonas RTBA / AZBA, ejes de reabastecimiento ENR 5.7): el paso a paso de abajo.
+- **AIXM 5.1** (otros países): archivos `.xml` de la carpeta `data/sia/aixm5/`. «ENAIRE (España): descargar» toma los últimos conjuntos publicados (espacios, en ruta). Reino Unido (NATS): registro en el sitio, archivo depositado a mano.
+- **GeoJSON**: archivos `.geojson` o `.json` (y OpenAir `.txt`) de `data/sia/geojson/`. «FAA (EE. UU.): espacios de uso especial y rutas militares» descarga los espacios de uso especial (MOA, R, W, A, P) y las rutas MTR, leídas como corredores; «FAA: clases de espacio» es un archivo grande.
+- **openAIP**: códigos de país de dos letras separados por espacios, luego «openAIP: descargar los países» (espacios, aeródromos, radioayudas, puntos VFR en `data/sia/openaip/`). Datos comunitarios, uso no comercial (CC BY-NC 4.0).
+- **X-Plane**: botón de la carpeta de instalación de X-Plane; radioayudas, puntos, aerovías y rejilla MORA de los archivos `earth_*.dat` («Custom Data» primero), espacios OpenAir si los hay.
+- Las descargas pasan por el lanzador (`tools/aero_fetch.py`, utilizable también en línea de comandos). Sin lanzador: descargar los archivos a mano y depositarlos en la subcarpeta de la fuente.
+- Fuera de Francia, las zonas R, D, TRA, TSA, MOA, W, A y las rutas MTR que cruza una misión aparecen en sus espacios a activar.
+
+**SIA Francia: nuevo ciclo AIRAC paso a paso**
 
 Cada 28 días entra en vigor un nuevo ciclo AIRAC. Seis pasos, en orden; el indicador de cada paso pasa a verde cuando el paso está hecho. El «Modo de empleo» detalla cada paso.
 1. **Ciclo AIRAC**: compruebe el ciclo vigente, el siguiente y el de la base del estudio. Hay enlaces a las páginas del SIA.
@@ -658,7 +669,7 @@ Cada 28 días entra en vigor un nuevo ciclo AIRAC. Seis pasos, en orden; el indi
    - «Recálculo simple» (sin conexión) o «Cálculo completo» (red, alrededor de un minuto);
    - si cambian celdas: «Escribir mora.csv (anterior archivado)» y después haga commit del repositorio de datos;
    - por último, «Comprobar» la coherencia.
-Los XML AIRAC (unos 80 MB por ciclo) quedan fuera del repositorio. Los valores MORA son calculados, no certificados.
+Los XML AIRAC (unos 80 MB por ciclo) quedan fuera del repositorio, como los archivos de las demás fuentes. Los valores MORA son calculados, no certificados.
 
 ### Cachés
 

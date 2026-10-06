@@ -1289,7 +1289,7 @@ This block is hidden by default: click “Show”. It reads the SIA folder (AIXM
 - “Purge the cache”: clears the database kept (it will be rebuilt at the next reading).
 - The status line shows the database kept, its AIRAC cycle and its date; “outdated cycle” is shown if a more recent cycle is in force. “Files analysed” lists the files read.
 
-It is the same block as Settings › Maintenance › SIA update. The same database is used for the vertical profile of the fuel planner. Details: [SIA missions](../SIA_MISSIONS.md).
+It is the same block as Settings › Maintenance › Aeronautical data. The same database is used for the vertical profile of the fuel planner. Details: [SIA missions](../SIA_MISSIONS.md).
 
 ## Fuel
 <!-- page: apps/planner/flight_performance_planner.html -->

@@ -38,8 +38,24 @@ déposent dans le dossier `apps/cpco/` ; `.gitignore` les tient hors du dépôt.
 
 **Un seul cycle** : quand le dossier contient plusieurs cycles, le studio ne lit que le plus récent (les autres sont
 signalés, à archiver) et mémorise le cycle dans la base (`airac`, résumé `siaBaseInfo:v1` pour la pastille « AIRAC » de
-l'en-tête). Procédure de mise à jour : ☰ › Paramètres › Maintenance › Mise à jour des données SIA — pas à pas ; `map_parser.html?relire=1`
+l'en-tête). Procédure de mise à jour : ☰ › Paramètres › Maintenance › Données aéronautiques (SIA France : pas à pas) ; `map_parser.html?relire=1`
 relit le dossier mémorisé.
+
+**Autres pays et autres sources** (`shared/aero_sources.js`, réglées dans Paramètres › Maintenance › Données
+aéronautiques, chacune active ou non) : lues à la même relecture et ajoutées sans doublon après le SIA (le SIA garde la
+priorité) ; chaque espace porte sa source (`src` : `sia`, `dircam`, `aixm5`, `geojson`, `openaip`, `xplane`).
+
+| Source | Fichiers | Contenu |
+|---|---|---|
+| AIXM 5.1 | `data/sia/aixm5/*.xml` (ENAIRE, NATS, DFS, FAA…) | espaces (P, R, D, TRA, TSA, CTR, TMA, CTA, ATZ…), balises, points, aérodromes, tronçons de route, obstacles |
+| GeoJSON | `data/sia/geojson/*.geojson`, `.json` (et OpenAir `.txt`) | FAA ADDS : espaces à usage spécial (MOA, R, W, A, P), routes MTR (IR, VR, SR) lues en couloirs de leur largeur, classes d'espace ; autres GeoJSON par leurs propriétés usuelles |
+| openAIP | `data/sia/openaip/<pays>_<couche>.geojson` | espaces, aérodromes, balises, points VFR (CC BY-NC 4.0, © openAIP) |
+| X-Plane | dossier d'installation du simulateur (dossier mémorisé `__xpnav`) | `earth_nav.dat`, `earth_fix.dat` (points de route), `earth_awy.dat`, `earth_mora.dat` (cases MORA hors de la grille calculée), espaces OpenAir |
+
+Téléchargement des sources libres : boutons de la rubrique, ou `python tools/aero_fetch.py openaip|faa|enaire …`
+(dans `data/sia/<source>/`, hors dépôt). Hors de France, les zones R, D, TRA, TSA, MOA, W, A et les routes MTR recoupées
+par une mission figurent dans ses espaces à activer (§ 2 sexies). Sources, formats et licences :
+[DONNEES_AERO_ETRANGER.md](technique/DONNEES_AERO_ETRANGER.md).
 
 **Dossier mémorisé** : « Dossier SIA XML : … » (studio, bloc 1) choisit le dossier une fois ;
 il est retenu comme les autres dossiers de la suite (☰ › Paramétrage) et les sélecteurs de
@@ -367,7 +383,7 @@ un **profil d'affichage**, puis le studio produit PNG / SVG et un ZIP.
 
 Blocs : 1. Mission · 2. Cartes et cadrage · 3. Profil vertical · 4. Aperçus et génération ·
 5. Base de données SIA (masqué par défaut). La mise à jour AIRAC et le calcul de la grille MORA se font dans
-Paramètres › Maintenance › Mise à jour SIA ; le bloc Mission en rappelle l'état (cycle, espaces, cellules MORA).
+Paramètres › Maintenance › Données aéronautiques ; le bloc Mission en rappelle l'état (cycle, espaces, cellules MORA).
 
 ### 4.1 Mission (bloc 1)
 
@@ -530,7 +546,7 @@ l'écrêtage des sommets par le modèle de terrain. Théâtres couverts (`SiaBas
 Antilles, Guyane, Saint-Pierre-et-Miquelon, Réunion, Mayotte, Nouvelle-Calédonie, Polynésie (îles de la Société),
 Wallis-et-Futuna, plus les emprises des missions du registre situées ailleurs (théâtre étranger : degrés entiers
 autour de leur route, marge d'un demi-degré, fusionnées ; relief et sommets seulement, pas d'obstacles hors de l'AIXM
-française) ; calcul dans Paramètres › Maintenance › Mise à jour SIA.
+française) ; calcul dans Paramètres › Maintenance › Données aéronautiques.
 
 Affichage : **valeurs seules**, centrées dans les carrés du quadrillage (notation 3⁵ = 3500 ft) ;
 en zoom arrière, cellules fusionnées par 2 × 2 puis 4 × 4 en gardant la valeur la plus haute,

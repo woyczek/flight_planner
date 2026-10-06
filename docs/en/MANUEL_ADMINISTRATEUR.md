@@ -162,7 +162,7 @@ List of the R, D, TRA zones and of the RTBA crossed by the probable route and th
 - Mission of a coordinated exercise: list for information only.
 - Single mission: requests to be made by the crew; the list is included in the PDF brief.
 
-Limit: indicative calculation, which replaces neither the AZBA charts nor the NOTAMs. Without an SIA base, the block says where to read it (studio, “SIA database” block, or Settings › Maintenance › SIA update).
+Limit: indicative calculation, which replaces neither the AZBA charts nor the NOTAMs. Without an SIA base, the block says where to read it (studio, “SIA database” block, or Settings › Maintenance › Aeronautical data).
 
 ### Exercise
 
@@ -217,7 +217,7 @@ It works on the mission shared with the generator. Technical details: [SIA missi
 ### Mission
 
 - Status line of the loaded mission and “Save to the folder” button: writes the mission and the studio settings (profile and framing of each map, traces, tracks) to `mission<ID>.yaml`. The result is shown next to the button and as a notification.
-- “SIA base” line: AIRAC cycle, number of airspaces and of MORA cells, link to Settings › Maintenance › SIA update.
+- “SIA base” line: AIRAC cycle, number of airspaces and of MORA cells, link to Settings › Maintenance › Aeronautical data.
 - “Open another mission: Markdown / YAML file or pasted text” (collapsed when a mission is loaded): choose a file, or “or paste its content…” then “Read the mission”.
 
 The mission opened here becomes the mission shared with the generator. For an exercise mission, the missing exercise maps are added automatically: save the mission to keep them.
@@ -265,7 +265,7 @@ Block hidden by default: click “Show” in its header.
 - “Purge the cache” clears the base kept in this browser (to be re-read afterwards).
 - The status line shows the stored base (folder, AIRAC cycle, date); “Files analysed” lists the XML files read.
 
-If the folder contains several cycles, only the most recent is read; the others are flagged, to be archived. This is the same block as Settings › Maintenance › SIA update (step 4).
+If the folder contains several cycles, only the most recent is read; the others are flagged, to be archived. This is the same block as Settings › Maintenance › Aeronautical data (step 4).
 
 ## Mission registry
 <!-- page: apps/cpco/mission_registry.html -->
@@ -603,7 +603,7 @@ This section is the only place to set the local folders and the addresses of the
 This page is used to maintain the suite: updates, versions, SIA data, caches, backups and reference databases.
 To open it: sidebar › “Settings”, then the “Maintenance” tab. The page opens on “Updates”.
 The side menu has two parts:
-- the “Maintenance” group: Updates, Versions and sync, References and dependencies, SIA update (AIRAC), Caches, Disk space, Full backup, Journal;
+- the “Maintenance” group: Updates, Versions and sync, References and dependencies, Aeronautical data, Caches, Disk space, Full backup, Journal;
 - the databases, arranged in the groups “Repository files”, “DEFA base”, “Missions” and “Browser data”.
 
 ### Suite updates
@@ -643,7 +643,18 @@ References tracked: SIA XML, studio analysed base, MORA grid, AAR tracks, APD pe
 Examples of checks: mixed cycles in the SIA base, MORA obstacles from another cycle, fleet types missing from the ICAO base, prompt to regenerate (`python tools/build_mission_prompt.py`).
 The “Check” button reruns the checks.
 
-### SIA data update (AIRAC) — step by step
+### Aeronautical data: sources and SIA update (AIRAC)
+
+**Sources**: one line per data source, each ticked (read) or not; changes apply at the next rebuild of the base (“Re-read the folder”, step 4). The SIA keeps priority: an airspace, aerodrome or navaid already read is not added a second time.
+- **SIA France** (AIXM 4.5, XML_SIA) and **DIRCAM / MILAIP** (RTBA / AZBA areas, ENR 5.7 refuelling tracks): the step by step below.
+- **AIXM 5.1** (other countries): `.xml` files in the `data/sia/aixm5/` folder. “ENAIRE (Spain): download” takes the latest published datasets (airspace, en route). United Kingdom (NATS): register on the site, drop the file by hand.
+- **GeoJSON**: `.geojson` or `.json` files (and OpenAir `.txt`) in `data/sia/geojson/`. “FAA (USA): special use airspace and military routes” downloads the special use airspace (MOA, R, W, A, P) and the MTR routes, read as corridors; “FAA: airspace classes” is a large file.
+- **openAIP**: two-letter country codes separated by spaces, then “openAIP: download the countries” (airspace, aerodromes, navaids, VFR points in `data/sia/openaip/`). Community data, non-commercial use (CC BY-NC 4.0).
+- **X-Plane**: button for the X-Plane installation folder; navaids, fixes, airways and MORA grid from the `earth_*.dat` files (“Custom Data” first), OpenAir airspace if any.
+- Downloads go through the launcher (`tools/aero_fetch.py`, also usable on the command line). Without the launcher: download the files by hand and drop them into the source's subfolder.
+- Outside France, the R, D, TRA, TSA, MOA, W, A areas and MTR routes crossed by a mission appear in its airspace to activate.
+
+**SIA France: new AIRAC cycle step by step**
 
 A new AIRAC cycle comes into force every 28 days. Six steps, in order; the badge of each step turns green when the step is done. The “How to” details each step.
 1. **AIRAC cycle**: note the current cycle, the next one and that of the studio base. Links lead to the SIA pages.
@@ -658,7 +669,7 @@ A new AIRAC cycle comes into force every 28 days. Six steps, in order; the badge
    - “Simple recalculation” (offline) or “Full calculation” (network, about one minute);
    - if cells change: “Write mora.csv (old one archived)”, then commit the data repository;
    - finally “Check” the consistency.
-The AIRAC XML files (about 80 MB per cycle) stay out of the repository. The MORA values are computed, not certified.
+The AIRAC XML files (about 80 MB per cycle) stay out of the repository, like the files of the other sources. The MORA values are computed, not certified.
 
 ### Caches
 
