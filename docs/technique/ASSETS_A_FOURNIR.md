@@ -510,17 +510,17 @@ cerclés de laiton avec voyant ambre (Carnet de vol), verre et gel (Aqua). Trois
   veut, un aperçu monté), rangée sous `docs/planches/onglets_<design>.webp` ; `tools/cut_tabs.py` en tire les trois
   images d'après ses cadrages (table `CONFIG`, mesurés à l'arrivée de la planche), puis la section « onglets en
   images » de `designs_skeuo.css` les monte (`border-image`) — sans retouche des pages. Deux montages :
-  « plaques » (Cabinet : la plaque de la planche posée sur le rail, qui court sur toute la largeur) et « cellules »
-  (Carnet de vol : rail à fenêtres — chaque onglet est une cellule du rail avec le poussoir dedans, les cellules
+  « plaques » (Carnet de vol : la plaque de la planche posée sur le rail, qui court sur toute la largeur) et
+  « cellules » (Cabinet : rail à fenêtres — chaque onglet est une cellule du rail avec le poussoir dedans, les cellules
   accolées refont la barre, fermée par ses embouts).
 - Troisième montage, « barre montée » (Durci : barre livrée d'une pièce) : cellules prises telles quelles d'un jour de
   toile au suivant, voyant de la cellule allumée découpé à part (`tabs/led.webp`, reposé au centre de l'onglet
   courant : il ne s'étire pas) et effacé de la cellule, sangle prolongée sur toute la largeur.
 - **Liseré** : cadre à coins arrondis (`docs/planches/lisere_laiton.webp`, `lisere_acier.webp`) posé autour du bloc qui
-  suit la barre d'onglets (`.repo-tabs + main`) pour le désigner comme la page des onglets — laiton pour Cabinet et
-  Carnet de vol, acier pour Durci et Aqua (`tabs/lisere.webp`, table `LISERE_OF` de `cut_tabs.py`).
-- Fait : Carnet de vol (barre de laiton à fenêtres, poussoirs à voyant ambre), Cabinet (étiquettes en cadre d'acier sur
-  rail d'acier), Durci (sangle de toile, cadres vissés, voyant), liserés des quatre designs. À venir : onglets d'Aqua
+  suit la barre d'onglets (`.repo-tabs + main`) pour le désigner comme la page des onglets — laiton pour Cabinet,
+  acier (aluminium) pour Carnet de vol, Durci et Aqua (`tabs/lisere.webp`, table `LISERE_OF` de `cut_tabs.py`).
+- Fait : Cabinet (barre de laiton à fenêtres, poussoirs à voyant ambre), Carnet de vol (étiquettes en cadre
+  d'aluminium sur barre nue ; échangés le 6 octobre 2026 : le laiton va au Cabinet, l'aluminium au Carnet de vol), Durci (sangle de toile, cadres vissés, voyant), liserés des quatre designs. À venir : onglets d'Aqua
   (en attendant : verre et gel dessinés par les jetons, rail sur toute la largeur de la page).
 - État : `python tools/assets_status.py` (famille « Onglets de page »).
 

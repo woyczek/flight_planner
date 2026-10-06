@@ -32,7 +32,7 @@ DEPENDANCES = {
     'shared/design_deco.js': ['shared/deco/**/*.webp'],
     'shared/appearance_page.js': ['shared/textures/**/*.webp', 'shared/icons/skeuo/**/*.webp', 'shared/deco/**/*.webp'],
     'shared/flight_instruments.js': ['shared/deco/**/*.webp', 'shared/textures/**/*.webp'],
-    'shared/repository_nav.js': ['shared/icons/skeuo/**/*.webp'],   # icônes de la barre latérale
+    'shared/repository_nav.js': ['shared/icons/skeuo/**/*.webp', 'shared/icons/defa/*.webp', 'shared/icons/generic/*.webp'],   # icônes et logo de la barre latérale
 }
 BINAIRE = ('.webp', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.woff', '.woff2')
 _cache = {}

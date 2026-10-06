@@ -173,8 +173,9 @@ votre navigateur et dans les fichiers que vous choisissez.
 
 ## Licence et crédits
 
-CC RBR — DEFA Virtual. Code tiers inclus : js-yaml 4.1.0 (MIT,
-`shared/mission_core/vendor/`) ; MapLibre GL JS (BSD-3-Clause) et jsPDF (MIT) dans
-`apps/cpco/`. Données des aérodromes : github.com/mwgg/Airports (MIT), chargées à la demande.
-Données aéronautiques : SIA (AIP France, AIXM 4.5) et DIRCAM (MILAIP ENR 5.7) ; villes :
-GeoNames (CC BY 4.0) ; cartographie © contributeurs OpenStreetMap, OpenTopoMap (CC-BY-SA).
+© 2026 Gaétan Ryckeboer (RBR) et contributeurs. Code sous Mozilla Public License 2.0, contenu (documentation,
+images) sous CC BY-SA 4.0. Code tiers inclus : MapLibre GL JS 5.6.0 (BSD 3-Clause, `shared/carto/`), jsPDF 2.5.2 (MIT,
+`apps/cpco/`), js-yaml 4.1.0 (MIT, `shared/mission_core/vendor/`). Liste complète des licences et des crédits — code,
+textures (ambientCG, CC0), villes (GeoNames, CC BY 4.0), données aéronautiques (SIA, DIRCAM, FAA, openAIP, ENAIRE,
+NATS, X-Plane), fonds de carte (© contributeurs OpenStreetMap, OpenTopoMap, OpenFreeMap, VersaTiles), relief, météo
+(Open-Meteo) et réseaux (VATSIM, IVAO, SimBrief) : [LICENSE.md](../LICENSE.md).

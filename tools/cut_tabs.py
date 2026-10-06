@@ -6,9 +6,9 @@ shared/deco/<design>/tabs/rail.webp, tab.webp, tab-on.webp — sans texte (libel
 d'origine (la feuille de style les met à l'échelle par border-image).
 
 Deux montages :
-- « plaques » (Cabinet) : chaque onglet est la plaque de la planche, posée sur le rail ; rail = embout gauche + milieu
+- « plaques » (Carnet de vol) : chaque onglet est la plaque de la planche, posée sur le rail ; rail = embout gauche + milieu
   uni répété (section lisse, sans rivet : il s'étire sur toute la largeur de la page) + embout droit ;
-- « cellules » (Carnet de vol) : le rail fourni a des fenêtres ; chaque onglet est une cellule du rail (demi-séparateur,
+- « cellules » (Cabinet) : le rail fourni a des fenêtres ; chaque onglet est une cellule du rail (demi-séparateur,
   fenêtre élargie à la longueur du bouton, demi-séparateur) avec le bouton de la planche dedans (relâché, ou allumé
   avec une lueur sur le bord de la fenêtre) ; les cellules accolées refont le rail, ses embouts (rail.webp : embout
   gauche, milieu transparent, embout droit) le ferment.
@@ -25,8 +25,8 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 # boîtes (x0, y0, x1, y1), bornes incluses, en pixels de la planche
 CONFIG = {
-    'flightlog': {
-        'sheet': 'onglets_flightlog.webp',
+    'cabinet': {
+        'sheet': 'onglets_cabinet.webp',
         'mode': 'cellules',
         # cellule du rail : du milieu d'un séparateur au milieu du suivant ; fenêtre (transparente) dedans
         'cell': (570, 362, 999, 558),
@@ -58,8 +58,8 @@ CONFIG = {
         # d'un cadre : pas d'ombre de cadre)
         'rail_band': {'x': (600, 900), 'top': (128, 176), 'tile': (162, 176), 'bottom': (462, 512)},
     },
-    'cabinet': {
-        'sheet': 'onglets_cabinet.webp',
+    'flightlog': {
+        'sheet': 'onglets_flightlog.webp',
         'mode': 'plaques',
         'tab': (76, 120, 958, 388),
         'tab_on': (1041, 120, 1923, 388),
@@ -76,7 +76,7 @@ FILL_W = 240  # largeur du milieu du rail
 # liserés (cadre à coins arrondis, intérieur transparent) qui entourent le bloc auquel appartiennent les onglets :
 # planche, boîte ; design → liseré (tabs/lisere.webp)
 LISERES = {'laiton': ('lisere_laiton.webp', (50, 198, 1950, 466)), 'acier': ('lisere_acier.webp', (37, 189, 1963, 474))}
-LISERE_OF = {'cabinet': 'laiton', 'flightlog': 'laiton', 'field': 'acier', 'aqua': 'acier'}
+LISERE_OF = {'cabinet': 'laiton', 'flightlog': 'acier', 'field': 'acier', 'aqua': 'acier'}
 
 
 def crop(im, box):

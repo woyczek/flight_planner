@@ -188,8 +188,8 @@
   }, {
     id: 'sia',
     icon: 'map',
-    title: ['Mise à jour des données SIA (AIRAC) — pas à pas', 'SIA data update (AIRAC) — step by step', 'Aktualisierung der SIA-Daten (AIRAC) — Schritt für Schritt', 'Actualización de los datos SIA (AIRAC) — paso a paso'],
-    sub: ['Nouveau cycle : téléchargement, dossier, anciens cycles, relecture par le studio, différences, recalculs (MORA, espaces, appareils, flotte, performances)', 'New cycle: download, folder, old cycles, studio re-read, differences, recalculations (MORA, airspace, aircraft, fleet, performance)', 'Neuer Zyklus: Download, Ordner, alte Zyklen, Neueinlesen, Unterschiede, Neuberechnungen', 'Nuevo ciclo: descarga, carpeta, ciclos antiguos, relectura, diferencias, recálculos']
+    title: ['Données aéronautiques : sources et mise à jour SIA (AIRAC)', 'Aeronautical data: sources and SIA update (AIRAC)', 'Luftfahrtdaten: Quellen und SIA-Aktualisierung (AIRAC)', 'Datos aeronáuticos: fuentes y actualización SIA (AIRAC)'],
+    sub: ['Sources actives (SIA, DIRCAM, AIXM 5.1, GeoJSON, openAIP, X-Plane) et téléchargements ; nouveau cycle SIA pas à pas : téléchargement, dossier, anciens cycles, relecture, différences, recalculs (MORA, espaces, appareils, flotte, performances)', 'Active sources (SIA, DIRCAM, AIXM 5.1, GeoJSON, openAIP, X-Plane) and downloads; new SIA cycle step by step: download, folder, old cycles, re-read, differences, recalculations', 'Aktive Quellen (SIA, DIRCAM, AIXM 5.1, GeoJSON, openAIP, X-Plane) und Downloads; neuer SIA-Zyklus Schritt für Schritt', 'Fuentes activas (SIA, DIRCAM, AIXM 5.1, GeoJSON, openAIP, X-Plane) y descargas; nuevo ciclo SIA paso a paso']
   }, {
     id: 'caches',
     icon: 'trash',
@@ -245,7 +245,7 @@
     sources: ['Sources et dossiers', 'Sources and folders', 'Quellen und Ordner', 'Fuentes y carpetas'],
     versions: ['Versions et synchros', 'Versions and sync', 'Versionen', 'Versiones'],
     deps: ['Références et dépendances', 'References and dependencies', 'Referenzen', 'Referencias'],
-    sia: ['Mise à jour SIA (AIRAC)', 'SIA update (AIRAC)', 'SIA-Update (AIRAC)', 'Actualización SIA (AIRAC)'],
+    sia: ['Données aéronautiques', 'Aeronautical data', 'Luftfahrtdaten', 'Datos aeronáuticos'],
     caches: ['Caches', 'Caches', 'Caches', 'Cachés'],
     storage: ['Espace disque', 'Disk space', 'Speicherplatz', 'Espacio en disco'],
     backup: ['Sauvegarde totale', 'Full backup', 'Vollsicherung', 'Copia total'],
@@ -479,7 +479,7 @@
   // ===== 1 bis. Sources et dossiers
   // premier lancement (lanceur : ?m=sources&setup=1), lu une fois : la page réécrit ensuite son adresse (?m=…)
   const SETUP = new URLSearchParams(location.search).has('setup');
-  const FOLDER_ORDER = ['__repo', '__data', '__ledger', '__missions', '__sia', '__odv', '__xplane', '__perf', '__store']; // le dépôt d'abord : les autres s'en déduisent
+  const FOLDER_ORDER = ['__repo', '__data', '__ledger', '__missions', '__sia', '__odv', '__xplane', '__xpnav', '__perf', '__store']; // le dépôt d'abord : les autres s'en déduisent
   async function renderSources() {
     const host = hosts.sources,
       FA = await waitFor('FileAccess'),
@@ -870,11 +870,17 @@
     host.innerHTML = `<p class="row"><button type="button" class="secondary" id="mtDepRefresh" data-icon="refresh">${esc(t(['Vérifier', 'Check', 'Prüfen', 'Comprobar']))}</button></p>
       <div class="mt-scroll"><table class="mt-table mt-wide"><thead><tr><th>${esc(t(['Référence', 'Reference', 'Referenz', 'Referencia']))}</th><th>${esc(t(['Fichier', 'File', 'Datei', 'Archivo']))}</th><th>${esc(t(['Traçage', 'Tracing', 'Nachverfolgung', 'Trazado']))}</th><th>${esc(t(['Mise à jour', 'Update', 'Aktualisierung', 'Actualización']))}</th><th>${esc(t(['Dépendants', 'Dependents', 'Abhängige', 'Dependientes']))}</th><th>${esc(t(['Contrôle', 'Check', 'Prüfung', 'Control']))}</th></tr></thead><tbody>
       ${rows.map(r => `<tr><td><b>${esc(r.ref)}</b></td><td class="mt-small"><code>${esc(r.file)}</code></td><td class="mt-small">${esc(r.traced)}</td><td class="mt-small">${esc(r.process)}</td><td class="mt-small">${esc(r.dependents)}</td><td>${r.state}</td></tr>`).join('')}
-      </tbody></table></div>`;
+      </tbody></table></div><div id="mtAircraftDb"></div>`;
     host.querySelector('#mtDepRefresh').onclick = async () => {
       await scanSiaFolder(false);
       renderDeps();
     };
+    // types d'aéronefs : complétés type par type (flotte, missions du registre et de l'ODV)
+    const reg = (await regIndex().catch(() => null))?.missions || [];
+    aircraftDbState(host.querySelector('#mtAircraftDb'), {
+      fleet: [...new Set((window.DEFA_FLEET || []).map(r => r.type).filter(Boolean))],
+      missions: [...new Set(reg.flatMap(m => m.aircraftTypes || []))]
+    });
     window.AppFramework?.refresh?.();
   }
 
@@ -893,6 +899,179 @@
     return siaFolderState;
   }
   const stepHead = (n, level, title) => `<div class="mt-step-head"><span class="mt-step-num mt-${level}">${n}</span><h3>${esc(title)}</h3></div>`;
+  // ---- sources des données aéronautiques (shared/aero_sources.js) : actives ou non, fichiers trouvés, téléchargements
+  // par le lanceur (tools/aero_fetch.py, POST /__setup/aero-fetch) dans les sous-dossiers de data/sia
+  const AERO_TOOLS = {
+    aixm5: [{
+      provider: 'enaire',
+      label: ['ENAIRE (Espagne) : télécharger', 'ENAIRE (Spain): download', 'ENAIRE (Spanien): herunterladen', 'ENAIRE (España): descargar'],
+      title: ['Derniers jeux AIXM 5.1 publiés (espaces, en route) → data/sia/aixm5/', 'Latest published AIXM 5.1 datasets (airspace, en route) → data/sia/aixm5/']
+    }],
+    geojson: [{
+      provider: 'faa',
+      args: ['sua', 'mtr'],
+      label: ['FAA (États-Unis) : zones et routes militaires', 'FAA (USA): special use airspace and military routes', 'FAA (USA): Sonderlufträume und Militärrouten', 'FAA (EE. UU.): espacios de uso especial y rutas militares'],
+      title: ['Espaces à usage spécial (MOA, R, W, A, P) et routes MTR (IR, VR, SR), domaine public → data/sia/geojson/', 'Special use airspace (MOA, R, W, A, P) and MTR routes (IR, VR, SR), public domain → data/sia/geojson/']
+    }, {
+      provider: 'faa',
+      args: ['class'],
+      label: ['FAA : classes d’espace (B, C, D, E)', 'FAA: airspace classes (B, C, D, E)', 'FAA: Luftraumklassen (B, C, D, E)', 'FAA: clases de espacio (B, C, D, E)'],
+      title: ['Gros fichier (plusieurs dizaines de Mo) → data/sia/geojson/', 'Large file (tens of MB) → data/sia/geojson/']
+    }],
+    openaip: [{
+      provider: 'openaip',
+      countries: true,
+      label: ['openAIP : télécharger les pays', 'openAIP: download the countries', 'openAIP: Länder herunterladen', 'openAIP: descargar los países'],
+      title: ['Espaces, aérodromes, balises, points VFR de chaque pays → data/sia/openaip/ (CC BY-NC 4.0, © openAIP)', 'Airspace, aerodromes, navaids, VFR points of each country → data/sia/openaip/ (CC BY-NC 4.0, © openAIP)']
+    }]
+  };
+  const AERO_NOTES = {
+    sia: ['AIXM 4.5 et XML_SIA du dossier data/sia : pas à pas ci-dessous.', 'AIXM 4.5 and XML_SIA in data/sia: step by step below.', 'AIXM 4.5 und XML_SIA in data/sia: Schritt für Schritt unten.', 'AIXM 4.5 y XML_SIA de data/sia: paso a paso abajo.'],
+    dircam: ['Zones RTBA / AZBA du SIA et axes de ravitaillement (miam-enr-5-7-tracks.xml).', 'RTBA / AZBA areas from the SIA and refuelling tracks (miam-enr-5-7-tracks.xml).', 'RTBA-/AZBA-Gebiete des SIA und Betankungsstrecken (miam-enr-5-7-tracks.xml).', 'Zonas RTBA / AZBA del SIA y ejes de reabastecimiento (miam-enr-5-7-tracks.xml).'],
+    aixm5: ['Fichiers .xml dans data/sia/aixm5/. Royaume-Uni (NATS) : inscription sur le site, fichier déposé à la main.', '.xml files in data/sia/aixm5/. United Kingdom (NATS): register on the site, drop the file by hand.', '.xml-Dateien in data/sia/aixm5/. Vereinigtes Königreich (NATS): Registrierung, Datei von Hand ablegen.', 'Archivos .xml en data/sia/aixm5/. Reino Unido (NATS): registro en el sitio, archivo depositado a mano.'],
+    geojson: ['Fichiers .geojson ou .json dans data/sia/geojson/ (aussi : OpenAir .txt).', '.geojson or .json files in data/sia/geojson/ (also OpenAir .txt).', '.geojson- oder .json-Dateien in data/sia/geojson/ (auch OpenAir .txt).', 'Archivos .geojson o .json en data/sia/geojson/ (también OpenAir .txt).'],
+    openaip: ['Codes pays ISO à deux lettres, séparés par des espaces. Données communautaires, usage non commercial (CC BY-NC 4.0).', 'Two-letter ISO country codes, separated by spaces. Community data, non-commercial use (CC BY-NC 4.0).', 'ISO-Ländercodes mit zwei Buchstaben, durch Leerzeichen getrennt. Gemeinschaftsdaten, nicht kommerziell (CC BY-NC 4.0).', 'Códigos de país ISO de dos letras, separados por espacios. Datos comunitarios, uso no comercial (CC BY-NC 4.0).'],
+    xplane: ['Dossier d’installation d’X-Plane : balises, points, voies aériennes, grille MORA (earth_*.dat) et espaces OpenAir s’il y en a.', 'X-Plane installation folder: navaids, fixes, airways, MORA grid (earth_*.dat) and OpenAir airspace if any.', 'X-Plane-Installationsordner: Funkfeuer, Punkte, Luftstraßen, MORA-Gitter (earth_*.dat) und OpenAir-Lufträume.', 'Carpeta de instalación de X-Plane: radioayudas, puntos, aerovías, rejilla MORA (earth_*.dat) y espacios OpenAir si los hay.']
+  };
+  /** Fichiers trouvés pour une source (sous-dossier de data/sia, dossier X-Plane) ; null si le dossier n'est pas autorisé. */
+  async function aeroFileCount(id) {
+    const st = await window.FileAccess?.status?.(id === 'xplane' ? '__xpnav' : '__sia');
+    if (!st?.handle || st.permission !== 'granted') return null;
+    try {
+      if (id === 'xplane') return (await window.SiaBase.extraFiles(st.handle, {})).xplane?.length ?? 0;
+      const d = await st.handle.getDirectoryHandle(id);
+      let n = 0;
+      for await (const h of d.values())
+        if (h.kind === 'file' && /\.(xml|geojson|json|txt|air)$/i.test(h.name)) n++;
+      return n;
+    } catch {
+      return 0;
+    }
+  }
+  async function renderAeroSources(box) {
+    const AS = await window.SiaBase?.aero?.();
+    if (!box || !AS) return;
+    const s = AS.settings(),
+      lang = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'));
+    const counts = Object.fromEntries(await Promise.all(AS.SOURCES.filter(x => x.dir || x.id === 'xplane').map(async x => [x.id, await aeroFileCount(x.id)])));
+    const row = x => {
+      const n = counts[x.id],
+        tools = (AERO_TOOLS[x.id] || []).map((tl, i) => `${tl.countries ? `<input type="text" class="mt-aero-cc" value="${esc(s.openaipCountries)}" size="18" spellcheck="false" aria-label="${esc(t(['Pays', 'Countries', 'Länder', 'Países']))}">` : ''}<button type="button" class="secondary" data-aero-fetch="${x.id}:${i}" data-icon="download" title="${esc(t(tl.title))}">${esc(t(tl.label))}</button>`).join(' ');
+      return `<tr><td><label class="mt-aero-on"><input type="checkbox" data-aero-on="${x.id}"${s.enabled[x.id] ? ' checked' : ''}> <b>${esc(x.label[lang] || x.label[0])}</b></label><div class="mt-small">${esc(t(AERO_NOTES[x.id]))}</div></td>
+        <td class="mt-aero-files">${n == null ? (x.dir || x.id === 'xplane' ? `<span class="mt-small">${esc(t(['dossier non autorisé', 'folder not authorised', 'Ordner nicht erlaubt', 'carpeta no autorizada']))}</span>` : '') : `${n} ${esc(t(['fichier(s)', 'file(s)', 'Datei(en)', 'archivo(s)']))}`}</td>
+        <td class="row">${x.id === 'xplane' ? '<span data-aero-xp></span>' : ''}${tools}</td></tr>`;
+    };
+    box.innerHTML = `<div class="repo-card" data-icon="layers" data-subtitle="${esc(t(['Chaque source se lit à la reconstruction de la base (« Relire le dossier », étape 4) ; le SIA garde la priorité sur les doublons.', 'Each source is read when the base is rebuilt (“Re-read the folder”, step 4); the SIA wins over duplicates.', 'Jede Quelle wird beim Neuaufbau der Basis gelesen („Ordner neu einlesen“, Schritt 4); das SIA hat Vorrang.', 'Cada fuente se lee al reconstruir la base («Releer la carpeta», paso 4); el SIA tiene prioridad sobre los duplicados.']))}"><h3>${esc(t(['Sources', 'Sources', 'Quellen', 'Fuentes']))}</h3>
+      <table class="mt-table mt-aero"><tbody>${AS.SOURCES.map(row).join('')}</tbody></table>
+      <p class="mt-small" id="mtAeroMsg" aria-live="polite"></p></div>`;
+    const xp = box.querySelector('[data-aero-xp]');
+    if (xp) xp.append(folderButton('__xpnav', () => renderAeroSources(box), {
+      withLabel: false
+    }));
+    box.querySelectorAll('[data-aero-on]').forEach(c => c.onchange = () => {
+      AS.save({
+        enabled: {
+          ...AS.settings().enabled,
+          [c.dataset.aeroOn]: c.checked
+        }
+      });
+      box.querySelector('#mtAeroMsg').textContent = t(['Sources changées : « Relire le dossier » (étape 4) pour reconstruire la base.', 'Sources changed: “Re-read the folder” (step 4) to rebuild the base.', 'Quellen geändert: „Ordner neu einlesen“ (Schritt 4), um die Basis neu aufzubauen.', 'Fuentes cambiadas: «Releer la carpeta» (paso 4) para reconstruir la base.']);
+    });
+    const cc = box.querySelector('.mt-aero-cc');
+    if (cc) cc.onchange = () => AS.save({
+      openaipCountries: cc.value.toLowerCase().split(/[\s,;]+/).filter(x => /^[a-z]{2}$/.test(x)).join(' ')
+    });
+    box.querySelectorAll('[data-aero-fetch]').forEach(b => b.onclick = async () => {
+      const [id, i] = b.dataset.aeroFetch.split(':'),
+        tl = AERO_TOOLS[id][+i],
+        args = tl.countries ? AS.settings().openaipCountries.split(' ') : tl.args || [];
+      const say = (m, k = 'warn') => window.AppFramework.notify(m, k);
+      b.disabled = true;
+      const job = window.AppFramework?.task?.(t(tl.label));
+      try {
+        const r = await fetch('/__setup/aero-fetch', {
+          method: 'POST',
+          headers: {
+            'X-DEFA-Setup': '1',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            provider: tl.provider,
+            args
+          })
+        });
+        if (!r.ok) throw new Error(r.status);
+        const res = await r.json();
+        const files = res.files.map(f => f.name + (f.features != null ? ` (${f.features})` : '')).join(', ');
+        if (res.files.length) say(t(['Téléchargé : {f}. « Relire le dossier » (étape 4) pour les lire.', 'Downloaded: {f}. “Re-read the folder” (step 4) to read them.', 'Heruntergeladen: {f}. „Ordner neu einlesen“ (Schritt 4).', 'Descargado: {f}. «Releer la carpeta» (paso 4).'], {
+          f: files
+        }), res.errors.length ? 'warn' : 'ok');
+        if (res.errors.length) say(res.errors.join(' · '), 'error');
+        if (!res.files.length && !res.errors.length) say(t(['Rien à télécharger.', 'Nothing to download.', 'Nichts herunterzuladen.', 'Nada que descargar.']));
+      } catch {
+        say(t(['Le serveur du lanceur ne répond pas : ouvrez la suite avec lancer.cmd / lancer.sh, ou téléchargez les fichiers à la main (docs/technique/DONNEES_AERO_ETRANGER.md) et déposez-les dans data/sia/<source>/.', 'The launcher server does not answer: open the suite with lancer.cmd / lancer.sh, or download the files by hand and drop them into data/sia/<source>/.']));
+      } finally {
+        job?.end?.();
+        b.disabled = false;
+        renderAeroSources(box);
+      }
+    });
+  }
+
+  // ---- base des types d'aéronefs (OACI Doc 8643, performances EUROCONTROL) : non publiée, complétée sur ce poste type
+  // par type par le lanceur (AircraftDB/update_aircraft_db.py ; GET / POST /__setup/aircraft-db { codes }) : un nouvel
+  // appareil (code saisi), les types de la flotte, ceux des missions (ODV, registre), ou les types encore inconnus de la
+  // base ; jamais toute la base EUROCONTROL. État relu toutes les 5 s pendant une passe.
+  let acTimer = 0,
+    acLists = {};
+  async function aircraftDbState(el, lists) {
+    if (!el?.isConnected) return;
+    if (lists) acLists = lists;
+    clearTimeout(acTimer);
+    const api = (body = null) => fetch('/__setup/aircraft-db', {
+      method: body ? 'POST' : 'GET',
+      headers: {
+        'X-DEFA-Setup': '1',
+        'Content-Type': 'application/json'
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      cache: 'no-store'
+    }).then(r => r.ok ? r.json() : null).catch(() => null);
+    const s = await api();
+    const types = typeSet(),
+      unknown = [...new Set([...(acLists.fleet || []), ...(acLists.missions || [])])].filter(x => !knownType(types, x));
+    const files = s ? (s.db ? t(['base présente ({n} types)', 'database present ({n} types)', 'Basis vorhanden ({n} Typen)', 'base presente ({n} tipos)'], {
+      n: types.size
+    }) : t(['base absente', 'database missing', 'Basis fehlt', 'base ausente'])) : '';
+    const state = !s ? t(['lanceur absent : python update_aircraft_db.py --only CODES puis --apd CODES (dans AircraftDB/)', 'no launcher: python update_aircraft_db.py --only CODES then --apd CODES (in AircraftDB/)']) :
+      s.state === 'running' ? t(['passe en cours : {s}', 'pass running: {s}', 'Durchlauf läuft: {s}', 'pasada en curso: {s}'], {
+        s: s.step
+      }) : s.state === 'done' ? t(['dernière passe terminée ({c})', 'last pass done ({c})', 'letzter Durchlauf beendet ({c})', 'última pasada terminada ({c})'], {
+        c: (s.codes || []).join(' ')
+      }) : s.state === 'error' ? t(['échec de la dernière passe', 'last pass failed', 'letzter Durchlauf fehlgeschlagen', 'falló la última pasada']) : '';
+    const busy = !s || s.state === 'running';
+    const btn = (id, label, list, title) => `<button type="button" class="secondary" data-ac="${id}" data-icon="refresh"${busy || !list.length ? ' disabled' : ''} title="${esc(title + (list.length ? ' : ' + list.slice(0, 20).join(' ') + (list.length > 20 ? '…' : '') : ''))}">${esc(label)} (${list.length})</button>`;
+    el.innerHTML = `<div class="repo-card" data-icon="plane" data-subtitle="${esc(t(['Données de l’OACI (Doc 8643) et d’EUROCONTROL : non publiées avec la suite, complétées sur ce poste, type par type (réseau, quelques secondes par type)', 'ICAO (Doc 8643) and EUROCONTROL data: not published with the suite, completed on this computer type by type (network, a few seconds per type)', 'Daten von ICAO (Doc 8643) und EUROCONTROL: nicht mit der Suite veröffentlicht, auf diesem Rechner Typ für Typ ergänzt', 'Datos de la OACI (Doc 8643) y EUROCONTROL: no publicados con la suite, completados en este equipo tipo por tipo']))}"><h3>${esc(t(['Types d’aéronefs et performances', 'Aircraft types and performance', 'Luftfahrzeugtypen und Leistungen', 'Tipos de aeronave y rendimientos']))}</h3>
+      <p class="mt-small">${esc(files)}${state ? ` · ${esc(state)}` : ''}</p>
+      <p class="row"><input type="text" class="mt-ac-code" size="10" maxlength="40" placeholder="${esc(t(['code OACI', 'ICAO code', 'ICAO-Code', 'código OACI']))}" spellcheck="false" aria-label="${esc(t(['Codes OACI', 'ICAO codes', 'ICAO-Codes', 'Códigos OACI']))}"><button type="button" class="secondary" data-ac="one" data-icon="plus"${busy ? ' disabled' : ''}>${esc(t(['Ajouter / mettre à jour', 'Add / update', 'Hinzufügen / aktualisieren', 'Añadir / actualizar']))}</button></p>
+      <p class="row">${btn('unknown', t(['Types inconnus', 'Unknown types', 'Unbekannte Typen', 'Tipos desconocidos']), unknown, t(['types de la flotte et des missions absents de la base', 'fleet and mission types missing from the database']))} ${btn('fleet', t(['Flotte', 'Fleet', 'Flotte', 'Flota']), acLists.fleet || [], t(['tous les types de la flotte', 'all fleet types']))} ${btn('missions', t(['Missions (ODV, registre)', 'Missions (ODV, registry)', 'Missionen (ODV, Register)', 'Misiones (ODV, registro)']), acLists.missions || [], t(['types demandés par les missions', 'types required by the missions']))}</p>
+      ${s?.log?.length ? `<details class="mt-small"><summary>${esc(t(['Journal', 'Log', 'Protokoll', 'Registro']))}</summary><pre>${esc(s.log.slice(-12).join('\n'))}</pre></details>` : ''}</div>`;
+    const lists2 = {
+      unknown,
+      fleet: acLists.fleet || [],
+      missions: acLists.missions || []
+    };
+    el.querySelectorAll('[data-ac]').forEach(b => b.onclick = async () => {
+      const codes = b.dataset.ac === 'one' ? el.querySelector('.mt-ac-code').value.toUpperCase().split(/[\s,;]+/).filter(Boolean) : lists2[b.dataset.ac];
+      if (!codes.length) return;
+      await api({
+        codes
+      });
+      aircraftDbState(el);
+    });
+    if (s?.state === 'running') acTimer = setTimeout(() => aircraftDbState(el), 5000);
+  }
+
   async function renderSia() {
     const host = hosts.sia,
       A = window.Airac,
@@ -922,6 +1101,8 @@
     const folderCycle = lat?.date || '',
       baseCycle = info?.airac || '';
     host.innerHTML = `
+      <div id="mtAeroSources"></div>
+      <h3 class="mt-sub">${esc(t(['SIA France : nouveau cycle AIRAC pas à pas', 'SIA France: new AIRAC cycle step by step', 'SIA Frankreich: neuer AIRAC-Zyklus Schritt für Schritt', 'SIA Francia: nuevo ciclo AIRAC paso a paso']))}</h3>
       <details class="mt-help"><summary>${esc(t(['Mode d’emploi', 'How to', 'Anleitung', 'Modo de empleo']))}</summary>${help}</details>
       <div class="mt-steps">
         <div class="mt-step" id="mt-step-1">${stepHead(1, s1, t(['Cycle AIRAC', 'AIRAC cycle', 'AIRAC-Zyklus', 'Ciclo AIRAC']))}
@@ -956,6 +1137,7 @@
           <div class="repo-card" data-icon="plane" data-subtitle="${esc(t(['Espaces, appareils, flotte DEFA, performances, terrains des missions', 'Airspace, aircraft, DEFA fleet, performance, mission aerodromes']))}"><h3>${esc(t(['Cohérence', 'Consistency', 'Konsistenz', 'Coherencia']))}</h3><div id="mtUsage"><p class="row"><button type="button" class="secondary" id="mtUsageRun" data-icon="search">${esc(t(['Contrôler', 'Check', 'Prüfen', 'Comprobar']))}</button></p></div></div>
         </div>
       </div>`;
+    renderAeroSources(host.querySelector('#mtAeroSources'));
     const fb = host.querySelector('#mtSiaFolder');
     fb.append(folderButton('__sia', async () => {
       await scanSiaFolder(true);
@@ -2293,7 +2475,7 @@
     for (const [what, fn, host] of [
         ['Mises à jour', renderUpdates, hosts.updates],
         ['Sources et dossiers', renderSources, hosts.sources],
-        ['Mise à jour SIA', renderSia, hosts.sia],
+        ['Données aéronautiques', renderSia, hosts.sia],
         ['Sauvegarde', renderBackup, hosts.backup],
         ['Journal', renderJournal, hosts.journal],
         ['Caches', renderCaches, hosts.caches],

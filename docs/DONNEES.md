@@ -20,8 +20,8 @@ désignateurs OACI E2 et Q9 dans `aircraft_overrides.json` ; les 20 types milita
 
 | Base | Fichier | Source | Outil de mise à jour | Corrections |
 |---|---|---|---|---|
-| Types d'aéronefs OACI | `AircraftDB/aircraft_db.js` | OACI Doc 8643 (liste officielle JSON, doc8643.icao.int), EUROCONTROL (aile), Wikidata (repli, filtré) | `python update_aircraft_db.py [--add CODE…] [--only CODE…]` (dans `AircraftDB/`) | `aircraft_overrides.json` (alias et fiches, appliqués par l'outil) ; page Paramétrage |
-| Performances par type | `AircraftDB/aircraft_perf.js` | EUROCONTROL Aircraft Performance Database | `python update_aircraft_db.py --apd [CODE…]` | aucune : on corrige le parseur |
+| Types d'aéronefs OACI | `AircraftDB/aircraft_db.js` (non publié, complété sur chaque poste) | OACI Doc 8643 (liste officielle JSON, doc8643.icao.int), EUROCONTROL (aile), Wikidata (repli, filtré) | Paramètres › Maintenance › Références et dépendances (type par type), ou `python update_aircraft_db.py --only CODE…` (dans `AircraftDB/`) | `aircraft_overrides.json` (alias et fiches, appliqués par l'outil) ; page Paramétrage |
+| Performances par type | `AircraftDB/aircraft_perf.js` (non publié, complété sur chaque poste) | EUROCONTROL Aircraft Performance Database | même carte, ou `python update_aircraft_db.py --apd CODE…` | aucune : on corrige le parseur |
 | Flotte DEFA | `data/references/aircraft_fleet.js` | page « Flotte virtuelle » de flotte.defa-virtual.fr (enregistrée) | `python AircraftDB/update_fleet.py Flotte.html` | page Paramétrage (conservées par l'outil) |
 | Référence DEFA (pilotes, appareils, terrains) | `data/references/defa_reference.js` | journal des vols DEFA (page enregistrée, non committée) | `python tools/defa_reference.py "Log des vols.html"` | page Paramétrage (conservées par l'outil) |
 | Base SIA (espaces, aérodromes, obstacles…) | cache du Studio (IndexedDB `sia-map-parser`, cycle `airac`) | export officiel du SIA (dossier choisi dans le Studio ; seul le cycle le plus récent est lu) | Paramètres › Maintenance › Mise à jour SIA pas à pas | — (source officielle) |

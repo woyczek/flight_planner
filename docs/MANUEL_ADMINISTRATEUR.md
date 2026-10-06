@@ -162,7 +162,7 @@ Liste des zones R, D, TRA et du RTBA recoupées par la route probable et les zon
 - Mission d'un exercice coordonné : liste pour information seulement.
 - Mission seule : demandes à faire par l'équipage ; la liste est reprise dans le brief PDF.
 
-Limite : calcul indicatif, qui ne remplace ni les cartes AZBA ni les NOTAM. Sans base SIA, le bloc indique où la lire (studio, bloc « Base de données SIA », ou Paramètres › Maintenance › Mise à jour SIA).
+Limite : calcul indicatif, qui ne remplace ni les cartes AZBA ni les NOTAM. Sans base SIA, le bloc indique où la lire (studio, bloc « Base de données SIA », ou Paramètres › Maintenance › Données aéronautiques).
 
 ### Exercice
 
@@ -217,7 +217,7 @@ Il travaille sur la mission partagée avec le générateur. Détails techniques 
 ### Mission
 
 - Ligne d'état de la mission chargée et bouton « Enregistrer dans le dossier » : écrit la mission et les réglages du studio (profil et cadrage de chaque carte, tracés, pistes) dans `mission<ID>.yaml`. Le résultat s'affiche à côté du bouton et en notification.
-- Ligne « Base SIA » : cycle AIRAC, nombre d'espaces et de cellules MORA, lien vers Paramètres › Maintenance › Mise à jour SIA.
+- Ligne « Base SIA » : cycle AIRAC, nombre d'espaces et de cellules MORA, lien vers Paramètres › Maintenance › Données aéronautiques.
 - « Ouvrir une autre mission : fichier Markdown / YAML ou texte collé » (replié quand une mission est chargée) : choisissez un fichier, ou « ou coller son contenu… » puis « Lire la mission ».
 
 La mission ouverte ici devient la mission partagée avec le générateur. Pour une mission d'exercice, les cartes d'exercice manquantes sont ajoutées d'office : enregistrez la mission pour les garder.
@@ -265,7 +265,7 @@ Bloc masqué par défaut : cliquez « Afficher » dans son en-tête.
 - « Purger le cache » efface la base gardée dans ce navigateur (à relire ensuite).
 - La ligne d'état indique la base mémorisée (dossier, cycle AIRAC, date) ; « Fichiers analysés » liste les XML lus.
 
-Si le dossier contient plusieurs cycles, seul le plus récent est lu ; les autres sont signalés, à archiver. C'est le même bloc que Paramètres › Maintenance › Mise à jour SIA (étape 4).
+Si le dossier contient plusieurs cycles, seul le plus récent est lu ; les autres sont signalés, à archiver. C'est le même bloc que Paramètres › Maintenance › Données aéronautiques (étape 4).
 
 ## Registre des missions
 <!-- page: apps/cpco/mission_registry.html -->
@@ -603,7 +603,7 @@ Cette rubrique est le seul endroit où régler les dossiers locaux et les adress
 Cette page sert à l'entretien de la suite : mises à jour, versions, données SIA, caches, sauvegardes et bases de référence.
 Pour l'ouvrir : barre latérale › « Paramètres », puis l'onglet « Maintenance ». La page s'ouvre sur « Mises à jour ».
 Le menu latéral comporte deux parties :
-- le groupe « Maintenance » : Mises à jour, Versions et synchros, Références et dépendances, Mise à jour SIA (AIRAC), Caches, Espace disque, Sauvegarde totale, Journal ;
+- le groupe « Maintenance » : Mises à jour, Versions et synchros, Références et dépendances, Données aéronautiques, Caches, Espace disque, Sauvegarde totale, Journal ;
 - les bases de données, rangées dans les groupes « Fichiers du dépôt », « Base DEFA », « Missions » et « Données du navigateur ».
 
 ### Mises à jour de la suite
@@ -643,7 +643,18 @@ Références suivies : XML SIA, base analysée du studio, grille MORA, axes AAR,
 Exemples de contrôles : cycles mélangés dans la base SIA, obstacles MORA d'un autre cycle, types de la flotte absents de la base OACI, prompt à régénérer (`python tools/build_mission_prompt.py`).
 Le bouton « Vérifier » relance les contrôles.
 
-### Mise à jour des données SIA (AIRAC) — pas à pas
+### Données aéronautiques : sources et mise à jour SIA (AIRAC)
+
+**Sources** : une ligne par source de données, chacune cochée (lue) ou non ; les changements s'appliquent à la prochaine reconstruction de la base (« Relire le dossier », étape 4). Le SIA garde la priorité : dans les FIR françaises, seuls ses espaces comptent ; ailleurs, un espace, un aérodrome ou une balise déjà lu n'est pas ajouté une deuxième fois.
+- **SIA France** (AIXM 4.5, XML_SIA) et **DIRCAM / MILAIP** (zones RTBA / AZBA, axes de ravitaillement ENR 5.7) : le pas à pas ci-dessous.
+- **AIXM 5.1** (autres pays) : fichiers `.xml` du dossier `data/sia/aixm5/`. « ENAIRE (Espagne) : télécharger » prend les derniers jeux publiés (espaces, en route). Royaume-Uni (NATS) : inscription sur le site, fichier déposé à la main.
+- **GeoJSON** : fichiers `.geojson` ou `.json` (et OpenAir `.txt`) de `data/sia/geojson/`. « FAA (États-Unis) : zones et routes militaires » télécharge les espaces à usage spécial (MOA, R, W, A, P) et les routes MTR, lues en couloirs ; « FAA : classes d'espace » est un gros fichier.
+- **openAIP** : codes pays à deux lettres séparés par des espaces, puis « openAIP : télécharger les pays » (espaces, aérodromes, balises, points VFR dans `data/sia/openaip/`). Données communautaires, usage non commercial (CC BY-NC 4.0).
+- **X-Plane** : bouton du dossier d'installation d'X-Plane ; balises, points, voies aériennes et grille MORA des fichiers `earth_*.dat` (« Custom Data » d'abord), espaces OpenAir s'il y en a.
+- Les téléchargements passent par le lanceur (`tools/aero_fetch.py`, utilisable aussi en ligne de commande). Sans lanceur : télécharger les fichiers à la main et les déposer dans le sous-dossier de la source.
+- Hors de France, les zones R, D, TRA, TSA, MOA, W, A et les routes MTR recoupées par une mission figurent dans ses espaces à activer.
+
+**SIA France : nouveau cycle AIRAC pas à pas**
 
 Un nouveau cycle AIRAC entre en vigueur tous les 28 jours. Six étapes, dans l'ordre ; la pastille de chaque étape passe au vert quand l'étape est faite. Le « Mode d'emploi » détaille chaque étape.
 1. **Cycle AIRAC** : constatez le cycle en vigueur, le suivant et celui de la base du studio. Des liens mènent aux pages du SIA.
@@ -658,7 +669,7 @@ Un nouveau cycle AIRAC entre en vigueur tous les 28 jours. Six étapes, dans l'o
    - « Recalcul simple » (hors ligne) ou « Calcul complet » (réseau, environ une minute) ;
    - si des cellules changent : « Écrire mora.csv (ancien archivé) », puis committez le dépôt de données ;
    - enfin « Contrôler » la cohérence.
-Les XML AIRAC (environ 80 Mo par cycle) restent hors dépôt. Les valeurs MORA sont calculées, pas certifiées.
+Les XML AIRAC (environ 80 Mo par cycle) restent hors dépôt, comme les fichiers des autres sources. Les valeurs MORA sont calculées, pas certifiées.
 
 ### Caches
 
@@ -730,7 +741,7 @@ Cette base (`AircraftDB/aircraft_db.js`) contient deux tableaux :
 - « Types » : « Désignateur », « Modèle », « Description OACI », « WTC », « Aile », « Source » ;
 - « Alias (nom courant → désignateur) ».
 Les modifications sont aussi reportées dans `aircraft_overrides.json`. Les boutons sont ceux des bases du dépôt.
-Le « Mode opératoire » donne les commandes du script de rafraîchissement, à lancer depuis `AircraftDB` : `python update_aircraft_db.py --no-network`, `--add <types>`, `--refresh-icao`.
+Le « Mode opératoire » donne les commandes du script de rafraîchissement, à lancer depuis `AircraftDB` : `python update_aircraft_db.py --no-network`, `--add <types>`, `--refresh-icao`. La base n'est pas publiée avec la suite (données de l'OACI et d'EUROCONTROL) : la carte « Types d'aéronefs et performances » de Paramètres › Maintenance › Références et dépendances la complète sur ce poste, type par type, sans jamais tout reprendre — un code saisi (« Ajouter / mettre à jour »), les types inconnus, ceux de la flotte ou ceux des missions (ODV, registre) ; il faut le lanceur et le réseau, puis recharger la page.
 Limite : un type supprimé ici peut revenir au prochain rafraîchissement, s'il fait partie de la liste de base du script.
 
 ### Correspondance des indicatifs

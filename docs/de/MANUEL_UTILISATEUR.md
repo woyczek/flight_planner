@@ -1288,7 +1288,7 @@ Dieser Block ist standardmäßig ausgeblendet: Klicken Sie auf „Anzeigen“. E
 - „Cache leeren“: löscht die gespeicherte Datenbank (sie wird beim nächsten Neulesen wieder aufgebaut).
 - Die Statuszeile zeigt die gespeicherte Datenbank, ihren AIRAC-Zyklus und ihr Datum; „Zyklus veraltet“ erscheint, wenn ein neuerer Zyklus gilt. „Analysierte Dateien“ listet die gelesenen Dateien.
 
-Es ist derselbe Block wie unter Einstellungen › Wartung › SIA-Aktualisierung. Dieselbe Datenbank dient dem Vertikalprofil des Kraftstoffplaners. Einzelheiten: [SIA-Missionen](../SIA_MISSIONS.md).
+Es ist derselbe Block wie unter Einstellungen › Wartung › Luftfahrtdaten. Dieselbe Datenbank dient dem Vertikalprofil des Kraftstoffplaners. Einzelheiten: [SIA-Missionen](../SIA_MISSIONS.md).
 
 ## Kraftstoff
 <!-- page: apps/planner/flight_performance_planner.html -->

@@ -329,7 +329,7 @@
   // Designs à matières (Cabinet, Durci, Aqua : textures, plaques, vis) : feuille propre (designs.list[id].css),
   // chargée seulement quand l'un d'eux est choisi, avec sa propre version (empreinte de son contenu, table FILE_V
   // écrite par tools/bump_versions.py).
-  const FILE_V = {"designs_skeuo.css": "f210af06"};
+  const FILE_V = {"designs_skeuo.css": "884885bd"};
   const designCss = id => {
     const f = designs[id]?.css;
     if (!f) return;
@@ -345,7 +345,7 @@
     if (document.getElementById("repoDesignDeco")) return;
     const d = document.createElement("script");
     d.id = "repoDesignDeco";
-    d.src = new URL("design_deco.js?v=5ea5b4d3", script.src).href;
+    d.src = new URL("design_deco.js?v=c88277a2", script.src).href;
     document.head.append(d);
   };
   designCss(design);
@@ -537,7 +537,7 @@
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
-      sc.src = new URL("appearance_page.js?v=48974e65", script.src).href;
+      sc.src = new URL("appearance_page.js?v=8faa77a7", script.src).href;
       sc.onload = show;
       document.head.append(sc);
     }
@@ -971,9 +971,10 @@
       if (!d || cfg.iconComposed?.[doc.dataset.icons]) return "";
       return `<img class="repo-sidenav-img" src="${new URL(`icons/skeuo/${d}/${name}.webp${ver}`, script.src).href}" alt="">`;
     };
-    // haut de la barre : logo DEFA décliné selon le design (shared/icons/defa/<id du design à matières>.webp, sinon
-    // flat), lien vers le site de la flotte DEFA Virtual (nouvel onglet : la page en cours reste ouverte)
-    const logoSrc = () => new URL(`icons/defa/${designs[doc.dataset.design]?.skeuo ? doc.dataset.design : "flat"}.webp${ver}`, script.src).href;
+    // haut de la barre : logo de la compagnie virtuelle décliné selon le design (<id du design à matières>.webp, sinon
+    // flat) — celui de la DEFA (shared/icons/defa) si la compagnie est DEFA Virtual, sinon le logo générique (cible,
+    // shared/icons/generic) ; lien vers le site de la compagnie (nouvel onglet : la page en cours reste ouverte)
+    const logoSrc = () => new URL(`icons/${/\bDEFA\b/i.test(`${va().short} ${va().name}`) ? "defa" : "generic"}/${designs[doc.dataset.design]?.skeuo ? doc.dataset.design : "flat"}.webp${ver}`, script.src).href;
     side.innerHTML = `<a class="repo-sidenav-brand" href="${K.esc(vaUrl("home"))}" target="_blank" rel="noopener" title="${K.esc(va().name)} — ${K.esc(source("defa").replace(/^https?:\/\//, ""))}"><img class="repo-sidenav-logo" src="${logoSrc()}" alt="${K.esc(va().name)}"></a><ul></ul><ul class="repo-sidenav-foot"></ul>`;
     // entrées du bas (séparateur « bottom » et suivantes : Apparence, Paramètres, Aide) dans leur propre liste, fixée en
     // bas de la barre ; seule la liste du haut défile quand les entrées dépassent la hauteur de la fenêtre
@@ -1087,7 +1088,7 @@
     profile.src = new URL("pilot_profile.js?v=78a8d79d", script.src).href;
     document.head.append(profile); /* Dossiers autorisés et ouverture des fichiers dans le dossier paramétré */
     const files = document.createElement("script");
-    files.src = new URL("file_access.js?v=726783dc", script.src).href;
+    files.src = new URL("file_access.js?v=85671199", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
     for (const f of ["icons/repository_icons.js?v=27853364", "block_icons.js?v=c8ee7213", "side_nav.js?v=19f74efd"]) {

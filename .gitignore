@@ -6,6 +6,11 @@ data/
 __pycache__/
 AircraftDB/aircraft_http_cache.json
 AircraftDB/icao_doc8643_cache/
+# bases des types d'aéronefs (OACI Doc 8643, EUROCONTROL APD) : non publiées, complétées sur chaque poste type par type
+# (Paramètres › Maintenance › Références et dépendances ; LICENSE.md)
+AircraftDB/aircraft_db.js
+AircraftDB/aircraft_perf.js
+AircraftDB/*.tmp
 *.backup-*.html
 Stub/
 .claude/worktrees/

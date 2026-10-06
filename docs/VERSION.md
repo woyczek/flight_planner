@@ -5,6 +5,39 @@ Une section par version publiée, la plus récente en tête, écrite à chaque r
 effectuer** (ce que chacun doit faire après la mise à jour), **notes** (limites connues, points d'attention, à venir).
 Entre deux versions, le pied de page affiche le commit en cours (`v4.6.0+abc1234`).
 
+## 4.9.0 — 6 octobre 2026
+
+### Synthèse
+
+- **Des cartes hors de France.** Paramètres › Maintenance › **Données aéronautiques** (ex-« Mise à jour SIA ») réunit
+  les sources, chacune activable : SIA et DIRCAM comme avant, et désormais l'AIXM 5.1 d'autres pays (Espagne, Royaume-Uni,
+  États-Unis…), des fichiers GeoJSON (zones et routes militaires de la FAA), les exports d'openAIP par pays et les données
+  de navigation d'X-Plane (balises, points, voies, MORA mondiale, espaces). Boutons de téléchargement pour les sources
+  libres. En France, le SIA reste seul.
+- **Zones à activer hors de France** : TSA, MOA, routes MTR, zones d'alerte et d'avertissement, dessinées et comptées.
+- **Licences claires** : code sous MPL 2.0, contenu sous CC BY-SA 4.0 ; `LICENSE.md` cite chaque composant, chaque
+  source de données et chaque service, avec la mention exigée.
+- **Données de tiers non publiées** : la base des types d'aéronefs (OACI, EUROCONTROL) n'est plus livrée avec la suite ;
+  chacun la complète sur son poste, type par type.
+- **Livraison** : archive de chaque version (`tools/publish_dist.py`).
+
+### Actions à effectuer
+
+1. **Relancer le lanceur** (nouvelles routes : téléchargements aéronautiques, types d'aéronefs), puis **recharger chaque
+   page** (Ctrl+F5).
+2. **Avant de tirer la mise à jour**, mettre de côté `AircraftDB/aircraft_db.js` et `AircraftDB/aircraft_perf.js` (la
+   mise à jour les retire du dépôt) et les remettre ensuite : ils ne sont plus suivis par git et restent sur le poste.
+   Sinon, les compléter : Paramètres › Maintenance › Références et dépendances, « Types d'aéronefs et performances »
+   (« Flotte », « Types inconnus », ou un code).
+3. **Données d'autres pays** (facultatif) : Paramètres › Maintenance › Données aéronautiques — cocher les sources,
+   télécharger, puis « Relire le dossier ». X-Plane : choisir le dossier d'installation du simulateur.
+
+### Notes
+
+- openAIP (CC BY-NC) et l'API gratuite d'Open-Meteo sont réservés à un usage non commercial.
+- La grille MORA et les axes ENR 5.7 sont calculés sur le poste et ne sont jamais redistribués (`LICENSE.md`).
+- À venir : renommage de la compagnie (SO Group Virtual) ; zones de vol à basse altitude britanniques (PDF de la Mil AIP).
+
 ## 4.8.0 — 5 octobre 2026
 
 ### Synthèse

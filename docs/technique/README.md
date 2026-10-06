@@ -12,6 +12,7 @@ ou maintient la suite. Les manuels et guides d'utilisation sont au [premier nive
 | [Framework commun](FRAMEWORK.md) | en-tête, menu, blocs, dossiers, données locales |
 | [Boîte à outils](REFACTORING_TOOLKIT.md) | designs à matières, couches CSS, banc de non-régression |
 | [Intégration SIA XML](SIA_XML_INTEGRATION.md) | lecture des données AIXM du SIA |
+| [Données aéronautiques hors de France](DONNEES_AERO_ETRANGER.md) | sources possibles pour le Royaume-Uni, l'Europe et les États-Unis (formats, licences, militaire) |
 
 ## Conception des fonctions
 

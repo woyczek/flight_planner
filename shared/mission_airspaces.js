@@ -1,12 +1,13 @@
 (() => {
   'use strict';
-  // Espaces à activer d'une mission (MissionAirspaces) : zones R, D, TRA, zones du RTBA (AZBA) et zones P recoupées par la
+  // Espaces à activer d'une mission (MissionAirspaces) : zones R, D, TRA (et, hors de France : TSA, MOA, routes MTR,
+  // zones W et A — shared/aero_sources.js), zones du RTBA (AZBA) et zones P recoupées par la
   // route probable (shared/mission_estimate.js, niveau de chaque tronçon, montée au départ et descente à l'arrivée) et
   // par les zones de travail de la mission (cercle ou polygone). Espaces lus dans la base SIA du navigateur
   // (shared/sia_base.js : rings [[lat, lon]], lower / upper en texte, admin et act tirés des remarques AIXM).
   // Calcul indicatif : il ne remplace ni la consultation des cartes AZBA ni les NOTAM.
 
-  const TYPES = new Set(['R', 'D', 'TRA', 'P']);
+  const TYPES = new Set(['R', 'D', 'TRA', 'P', 'TSA', 'MOA', 'MTR', 'W', 'A']);
   /** Limite verticale en ft (« SFC », « FL 65 », « 1500 ft AMSL », « 300 m ASFC ») ; null si inconnue. */
   function levelFt(v) {
     const s = String(v ?? '').trim().toUpperCase();

@@ -45,6 +45,10 @@
       label: L('Dossier X-Plane (atterrissages)', 'X-Plane folder (landings)', 'X-Plane-Ordner (Landungen)', 'Carpeta X-Plane (aterrizajes)'),
       expect: L('dossier où le plugin d’atterrissage d’X-Plane écrit ses journaux CSV (Landing Performance Dashboard)', 'folder where the X-Plane landing plugin writes its CSV logs (Landing Performance Dashboard)', 'Ordner, in den das X-Plane-Landungs-Plugin seine CSV-Protokolle schreibt', 'carpeta donde el plugin de aterrizaje de X-Plane escribe sus registros CSV')
     },
+    __xpnav: {
+      label: L('Dossier du simulateur X-Plane (données de navigation)', 'X-Plane simulator folder (navigation data)', 'X-Plane-Simulatorordner (Navigationsdaten)', 'Carpeta del simulador X-Plane (datos de navegación)'),
+      expect: L('dossier d’installation d’X-Plane (Custom Data, Resources/default data : earth_nav.dat, earth_fix.dat, earth_awy.dat, earth_mora.dat), lu seulement si la source « X-Plane » est active', 'X-Plane installation folder (Custom Data, Resources/default data: earth_nav.dat, earth_fix.dat, earth_awy.dat, earth_mora.dat), read only when the “X-Plane” source is enabled', 'X-Plane-Installationsordner (Custom Data, Resources/default data: earth_*.dat), nur gelesen, wenn die Quelle „X-Plane“ aktiv ist', 'carpeta de instalación de X-Plane (Custom Data, Resources/default data: earth_*.dat), leída solo si la fuente «X-Plane» está activa')
+    },
     __odv: {
       label: L('Dossier du classeur ODV', 'ODV workbook folder', 'Ordner der ODV-Arbeitsmappe', 'Carpeta del libro ODV'),
       expect: L('dossier synchronisé (OneDrive…) où l’escadrille dépose le classeur ODV (.xlsx) : le Planning ODV ouvre le plus récent ; sans OneDrive, le classeur choisi est gardé dans le navigateur', 'synchronised folder (OneDrive…) where the squadron puts the ODV workbook (.xlsx): ODV planning opens the latest; without OneDrive, the chosen workbook is kept in the browser', 'synchronisierter Ordner (OneDrive…) mit der ODV-Arbeitsmappe (.xlsx)', 'carpeta sincronizada (OneDrive…) con el libro ODV (.xlsx)')

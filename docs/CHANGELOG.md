@@ -10,6 +10,45 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Non publié]
 
+## [4.9.0] — 2026-10-06
+
+Données aéronautiques d'autres pays : lecteurs AIXM 5.1, GeoJSON, OpenAir et X-Plane, téléchargements (openAIP, FAA,
+ENAIRE), sources activables dans Paramètres › Maintenance › Données aéronautiques. Licences : code sous MPL 2.0, contenu
+sous CC BY-SA 4.0, crédits de toutes les sources (`LICENSE.md`) ; les données de tiers ne sont plus publiées — types
+d'aéronefs complétés sur chaque poste, type par type. Outil de livraison des versions (`tools/publish_dist.py`).
+
+### Ajouté
+
+- **Types d'aéronefs complétés sur chaque poste, type par type** : les bases OACI (Doc 8643) et EUROCONTROL
+  (`AircraftDB/aircraft_db.js`, `aircraft_perf.js`) ne sont plus publiées (ignorées par git) ; Paramètres › Maintenance ›
+  Références et dépendances, carte « Types d'aéronefs et performances » : un code saisi, les types inconnus, ceux de la
+  flotte ou des missions — jamais toute la base EUROCONTROL (lanceur : `POST /__setup/aircraft-db`,
+  `update_aircraft_db.py --only` puis `--apd`) ; liste des codes de la suite : `AircraftDB/aircraft_types.txt`.
+  `LICENSE.md` : grille MORA (ODbL pour sa part OpenStreetMap) et axes ENR 5.7 calculés sur le poste, jamais
+  redistribués.
+- **Licences** : `LICENSE.md` — code sous Mozilla Public License 2.0, contenu (documentation, images) sous CC BY-SA 4.0
+  (textes complets dans `LICENSES/`) ; licences et crédits exigés de tout ce qui vient de tiers (MapLibre, jsPDF,
+  js-yaml, textures ambientCG, GeoNames, OACI, EUROCONTROL, SIA, DIRCAM, FAA, openAIP, ENAIRE, NATS, Mil AIP, X-Plane,
+  Navigraph, OpenStreetMap, OpenTopoMap, OpenFreeMap, VersaTiles, Terrarium, Open-Meteo, mwgg/Airports, VATSIM, IVAO,
+  SimBrief) ; pied de page : « © RBR » et lien vers les licences (à la place de « CC RBR ») ; README et présentations
+  renvoient à `LICENSE.md`.
+- **Logo générique** (cible, 8 variantes : flat, line, gloss, aqua, cabinet, field, flightlog, wood — `shared/icons/generic/`)
+  en haut de la barre latérale quand la compagnie virtuelle n’est pas DEFA Virtual (ex. SO Group Virtual) ; le logo
+  DEFA reste pour DEFA Virtual (Paramètres › Sources et dossiers).
+- **Données aéronautiques d'autres pays** (`shared/aero_sources.js`) : lecteurs AIXM 5.1 (ENAIRE, NATS, DFS, FAA…),
+  GeoJSON (openAIP, FAA ADDS — espaces à usage spécial, routes MTR en couloirs, classes —, générique), OpenAir et
+  données de navigation de X-Plane (`earth_nav`, `earth_fix`, `earth_awy`, `earth_mora`) ; ajoutés sans doublon après le
+  SIA dans la base (version 16, source de chaque espace) ; zones TSA, MOA, MTR, W, A dessinées et comptées dans les
+  espaces à activer.
+- **Paramètres › Maintenance › Données aéronautiques** (ancienne « Mise à jour SIA ») : sources actives ou non (SIA,
+  DIRCAM, AIXM 5.1, GeoJSON, openAIP, X-Plane), fichiers trouvés, téléchargements ; dossier du simulateur X-Plane
+  (Sources et dossiers).
+- `tools/aero_fetch.py` : téléchargement des données libres (openAIP par pays, FAA, ENAIRE) dans `data/sia/<source>/`,
+  en ligne de commande ou par le lanceur (`POST /__setup/aero-fetch`).
+- `tools/publish_dist.py` (lanceurs `publish_dist.sh` / `.cmd`) : archive de livraison d’une version publiée,
+  `dist/xplane-web-suite-<version>.zip` — le code seul au tag (ni `data/` ni `examples/`), vraies images LFS (pas de
+  pointeurs), archive reproductible — empreinte SHA-256 et rubrique « Livraison » dans la section de la version.
+
 ## [4.8.0] — 2026-10-05
 
 Les données se partagent : bouton « Synchroniser » (dépôt git de `data/`, fusion fiche par fiche), utilisateurs et
@@ -131,6 +170,10 @@ traduits, compagnie virtuelle configurable, en-têtes de l'ordre selon la famill
   identifiants framagit sans retour à la ligne.
 - Planificateur : commentaire et noms de phase d'un profil importé échappés.
 - Webservice d'envoi des CR : `https://` obligatoire (hors localhost).
+
+### Livraison
+
+- Archive de livraison : `xplane-web-suite-4.8.0.zip` — SHA-256 `ae688fc9cf1479f5442d9b6700c105cb01e54050370c9829da166932cc5d48ff` (code seul, hors dépôt : dossier `dist/`).
 
 ## [4.7.0] — 2026-10-02
 
