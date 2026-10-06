@@ -1096,10 +1096,13 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       root.querySelectorAll('.da-nav [data-set]').forEach(b => {
         b.hidden = locked(SETS.find(d => d.id === b.dataset.set) || {});
       });
+      // un titre de groupe suivi de boutons de rubrique (data-set) ou de blocs de Maintenance / Installation (data-mt,
+      // maintenance_page.js) : ces derniers comptaient pour rien, leur titre disparaissait au premier clic et les deux
+      // groupes se collaient
       root.querySelectorAll('.da-nav h3').forEach(h => {
         let n = h.nextElementSibling,
           any = false;
-        for (; n && n.matches('[data-set]'); n = n.nextElementSibling) any ||= !n.hidden;
+        for (; n && n.matches('[data-set], [data-mt]'); n = n.nextElementSibling) any ||= !n.hidden;
         h.hidden = !any;
       });
     }
