@@ -58,6 +58,8 @@
       ferry_late: L4('Convoyage {tri} : arrive à {arr}z, après {lim}z (30 min avant le décollage)', 'Ferry {tri}: arrives at {arr}z, after {lim}z (30 min before take-off)', 'Überführung {tri}: Ankunft {arr}z, nach {lim}z (30 min vor dem Start)', 'Traslado {tri}: llega a las {arr}z, después de las {lim}z (30 min antes del despegue)'),
       theme: L4('{tri} : dispo « {cat} » sans la famille {fam}', '{tri}: availability “{cat}” without family {fam}', '{tri}: Verfügbarkeit „{cat}“ ohne Familie {fam}', '{tri}: disponibilidad «{cat}» sin la familia {fam}'),
       non_affectable: L4('{tri} : non affectable ({cat})', '{tri}: not assignable ({cat})', '{tri}: nicht einsetzbar ({cat})', '{tri}: no asignable ({cat})'),
+      om_absent: L4('Ordre de mission non émis : {tri} ne voit pas la mission dans Mes missions (« Ordre de mission… »)', 'Mission order not issued: {tri} does not see the mission in My missions (“Mission order…”)', 'Missionsbefehl nicht erteilt: {tri} sieht die Mission nicht in Meine Missionen („Missionsbefehl…“)', 'Orden de misión no emitida: {tri} no ve la misión en Mis misiones («Orden de misión…»)'),
+      om_ecart: L4('Ordre de mission à réémettre : plaquette {tri}, affectations {cat}', 'Mission order to reissue: strip {tri}, assignments {cat}', 'Missionsbefehl neu erteilen: Streifen {tri}, Zuweisungen {cat}', 'Orden de misión que reemitir: ficha {tri}, asignaciones {cat}'),
       chevauchement: L4('{tri} : déjà pris à cette heure', '{tri}: already busy at that time', '{tri}: zu dieser Zeit schon eingeteilt', '{tri}: ya ocupado a esa hora'),
       doublon: L4('{tri} : deux fois sur l’élément', '{tri}: twice on the item', '{tri}: zweimal im Element', '{tri}: dos veces en el elemento'),
       zone: L4('Zone {z} : {e}', 'Area {z}: {e}', 'Gebiet {z}: {e}', 'Zona {z}: {e}')
@@ -182,6 +184,7 @@
     const tr = await window.OdvAirspace?.aarTracks?.().catch(() => []);
     S.tracks = [...new Set([...(Array.isArray(tr) ? tr.map(x => x.nom || x.id) : []), ...S.registry.filter(isTankerMission).map(trackOf).filter(Boolean)])].sort();
     syncCallsigns();
+    fromAssignments();
     syncTakeoffs();
     fillTracks();
     fillExercises();
@@ -214,6 +217,68 @@
   }
   /** Heure d'un vol de mission tenue sur le décollage de son affectation (l'ordre de mission fait foi), avec un
    *  avertissement qui liste les écarts corrigés. */
+  /** Affectations de la semaine sans plaquette (mission affectée depuis le Planning ODV, le Registre…) : plaquette créée
+   *  sur la frise, au décollage, avec ses avions (appareil, pilote) et son astreinte ; les convoyages en découlent. */
+  function fromAssignments() {
+    const ds = new Set(dates());
+    const groups = new Map();
+    for (const a of S.affect || []) {
+      if (a.role === 'convoyage' || a.status === 'annulée' || !a.mission || !a.takeoff) continue;
+      const date = String(a.takeoff).slice(0, 10);
+      if (!ds.has(date)) continue;
+      const k = `${a.mission}|${date}`;
+      (groups.get(k) || groups.set(k, []).get(k)).push(a);
+    }
+    const made = [];
+    for (const [k, list] of groups) {
+      const [mid, date] = k.split('|');
+      if ([...S.doc.elements, ...(S.doc.reserve || [])].some(x => x.type === 'vol' && x.mission === mid && x.date === date)) continue;
+      list.sort((x, y) => String(x.takeoff).localeCompare(String(y.takeoff)));
+      const m = reg(mid),
+        a0 = list[0];
+      const c = O().colorFor(a0.callsign || ownCs(m), S.cfg);
+      const al = a0.alert;
+      S.doc.elements.push(O().normalize({
+        type: 'vol',
+        date,
+        debut: String(a0.takeoff).slice(11, 16),
+        duree: Math.round(+a0.block_min || blockOf(m) || 120),
+        mission: mid,
+        equipe: ownCs(m) || a0.callsign || null,
+        indicatif: a0.callsign || ownCs(m) || '',
+        libelle: m ? (isTankerMission(m) ? 'AAR' : m.subtype || m.family || '') : a0.type || '',
+        couleur: c?.contour || '#1a5898',
+        fond: c?.fond || null,
+        reseau: S.cfg.reseau || null,
+        astreinte: al?.ready_at_utc && al?.window_end_utc ? {
+          preavis: +al.notice_min || 15,
+          finH: Math.max(0.5, (Date.parse(al.window_end_utc) - Date.parse(al.ready_at_utc)) / 36e5)
+        } : null,
+        avions: list.map(x => ({
+          appareil: x.aircraft?.type || x.aircraft?.registration ? {
+            type: typeCode(x.aircraft.type || ''),
+            immat: x.aircraft.registration || ''
+          } : null,
+          poste: {
+            callsign: x.callsign || '',
+            type: typeCode(x.aircraft?.type || ''),
+            label: ''
+          },
+          pilote: x.pilot || null
+        }))
+      }));
+      // convoyeur de l'affectation repris par la plaquette de convoyage (tiers, pilote de la mission, ou à affecter)
+      S.doc.elements[S.doc.elements.length - 1]._ferryChoice = Object.fromEntries(list.filter(x => x.ferry && x.aircraft?.registration).map(x => [x.aircraft.registration, x.ferry.open ? '__open' : !x.ferry.pilot || x.ferry.pilot === x.pilot ? '' : x.ferry.pilot]));
+      made.push(`${a0.callsign || mid} ${date.slice(8, 10)}/${date.slice(5, 7)} ${String(a0.takeoff).slice(11, 16)}z`);
+    }
+    if (!made.length) return;
+    notify(tf(L4('Plaquettes créées depuis les affectations (missions affectées ailleurs) : {l}', 'Strips created from the assignments (missions assigned elsewhere): {l}', 'Streifen aus den Zuweisungen erstellt (anderswo zugewiesene Missionen): {l}', 'Fichas creadas a partir de las asignaciones (misiones asignadas en otro lugar): {l}'), {
+      l: made.join(', ')
+    }), 'info');
+    if (canEdit()) queueSave();
+    clearTimeout(ferryRun);
+    ferryRun = setTimeout(() => syncFerries().catch(() => {}), 60);
+  }
   function syncTakeoffs() {
     const moved = [];
     for (const v of S.doc.elements.filter(x => x.type === 'vol' && x.mission && !x.convoyage)) {
@@ -260,6 +325,22 @@
       dispos: S.dispos,
       affectations: S.affect
     });
+    // ordre de mission : vol de mission avec un équipage mais sans affectation (le pilote ne voit rien dans Mes missions),
+    // ou affectations dont les pilotes diffèrent de ceux de la plaquette
+    for (const e of S.doc.elements.filter(x => x.type === 'vol' && x.mission && !x.convoyage && x.etat !== 'annule')) {
+      const aff = O().missionCrew(e, S.affect).map(a => a.pilot).filter(Boolean).sort();
+      const mine = e.avions.map(a => a.pilote).filter(Boolean).sort();
+      const add = c => (S.conf.get(e.id) || S.conf.set(e.id, []).get(e.id)).push(c);
+      if (mine.length && !aff.length) add({
+        code: 'om_absent',
+        tri: mine.join(' ')
+      });
+      else if (mine.length && aff.length && mine.join(' ') !== aff.join(' ')) add({
+        code: 'om_ecart',
+        tri: mine.join(' '),
+        categorie: aff.join(' ')
+      });
+    }
     // convoyage arrivé trop tard : il doit se poser 30 min avant le décollage du vol qu'il sert
     for (const c of S.doc.elements.filter(x => x.convoyage && x.etat !== 'annule')) {
       const v = S.doc.elements.find(x => x.id === c.convoyage.pour);
