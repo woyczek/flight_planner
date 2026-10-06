@@ -1105,6 +1105,31 @@
     }
     return inv;
   }
+  // Cases de mora.csv par zone : index par degré entier, compte par zone gardé tant que l'inventaire ne change pas.
+  // (Avant : chaque survol testait toutes les cases du fichier contre le contour du pays — plusieurs centaines de ms
+  // pour un grand pays, carte figée après un glisser.)
+  let moraIdx = null,
+    moraIdxOf = null;
+  const moraCounts = new Map();
+  function moraCount(Z, id, inv) {
+    const cells = inv?.moraCells || [];
+    if (!cells.length) return 0;
+    if (moraIdxOf !== cells) {
+      moraIdxOf = cells;
+      moraCounts.clear();
+      moraIdx = new Map();
+      for (const c of cells) {
+        const k = `${Math.floor(c.lat)}|${Math.floor(c.lon)}`;
+        if (!moraIdx.has(k)) moraIdx.set(k, []);
+        moraIdx.get(k).push(c);
+      }
+    }
+    if (moraCounts.has(id)) return moraCounts.get(id);
+    let n = 0;
+    for (const k of Z.cellsOf(id)) n += (moraIdx.get(k) || []).length; // cases d'un degré de la zone (AeroZones.cellsOf)
+    moraCounts.set(id, n);
+    return n;
+  }
   /** État d'une source dans une zone : { has (true / false / null : non lue par la suite), n, at, airac, text }. */
   function aeroSourceStatus(Z, id, src) {
     const S = Z.SOURCES[src],
@@ -1125,8 +1150,7 @@
       };
     }
     if (src === 'mora') {
-      const inZ = Z.inZones([id], 0),
-        n = inv.moraCells.filter(c => inZ(c.lat, c.lon)).length;
+      const n = moraCount(Z, id, inv);
       return {
         has: n > 0,
         n,

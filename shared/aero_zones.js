@@ -321,6 +321,34 @@
       [0, -margin]
     ].some(([dx, dy]) => inRing(r, lon + dx, lat + dy))));
   }
+  /** Cases d'un degré d'une zone (centre de la case dans un de ses contours) : Set « lat|lon » (degrés entiers du
+   *  coin sud-ouest), par balayage des lignes (intersections des arêtes avec chaque parallèle à mi-degré) — coût du
+   *  nombre de sommets, pas du nombre de cases ; gardé par zone. */
+  const cellsCache = new Map();
+  function cellsOf(id) {
+    if (cellsCache.has(id)) return cellsCache.get(id);
+    const out = new Set();
+    for (const r of ringsOf(id)) {
+      const rows = new Map(); // ligne (lat entière) → abscisses des intersections
+      for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
+        const [x1, y1] = r[j], [x2, y2] = r[i];
+        if (y1 === y2) continue;
+        const lo = Math.min(y1, y2), hi = Math.max(y1, y2);
+        for (let la = Math.ceil(lo - .5); la + .5 < hi; la++) {
+          const y = la + .5;
+          if (y < lo) continue;
+          (rows.get(la) || rows.set(la, []).get(la)).push(x1 + (y - y1) * (x2 - x1) / (y2 - y1));
+        }
+      }
+      for (const [la, xs] of rows) {
+        xs.sort((a, b) => a - b);
+        for (let k = 0; k + 1 < xs.length; k += 2)
+          for (let lo = Math.ceil(xs[k] - .5); lo + .5 <= xs[k + 1]; lo++) out.add(`${la}|${lo}`);
+      }
+    }
+    cellsCache.set(id, out);
+    return out;
+  }
   /** Cadre d'une zone (tous ses contours). */
   const zoneBox = id => bboxOf(ringsOf(id));
   /** Cadres d'une zone en degrés entiers, un par contour, regroupés s'ils se touchent (calcul de la MORA : la France
@@ -380,6 +408,7 @@
     inZones,
     zoneBox,
     zoneBoxes,
+    cellsOf,
     linkOf,
     bboxOf
   };
