@@ -1882,6 +1882,14 @@ html[data-design="cabinet"] .repo-deco-bgimg.repo-deco-panel {
 .repo-has-bg:has(>.repo-deco-panel) {
   --repo-veil: color-mix(in srgb, Canvas 60%, transparent)
 }
+/* ton du design plutôt que Canvas : une page d'outil sombre (data-tool="dark", color-scheme sombre : Ordres de vols,
+   Planning ODV…) en ton clair avait un voile presque noir sous une encre foncée ; règles par design ci-dessous */
+html[data-tone="light"] .repo-has-bg:has(>.repo-deco-panel) {
+  --repo-veil: rgba(251, 253, 255, .72)
+}
+html[data-tone="dark"] .repo-has-bg:has(>.repo-deco-panel) {
+  --repo-veil: rgba(14, 18, 26, .62)
+}
 html[data-design="field"] .repo-has-bg:has(>.repo-deco-panel) {
   --repo-veil: rgba(30, 34, 24, .62)
 }

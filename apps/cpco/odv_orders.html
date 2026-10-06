@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Ordres de vols</title>
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=f6a61e75">
-<script src="../../config/repository_tree?v=ef6ef518"></script>
+<script src="../../config/repository_tree?v=83468404"></script>
 <style data-layer="app">
 @layer app {
   /* Ordres de vols : frise horaire (heures z) ; angles droits partout (frise, plaquettes, barres). */
@@ -168,13 +168,13 @@
     border: 1px solid var(--line);
     background: var(--repo-veil, transparent)
   }
-  /* frise posée sur le voile des données (--repo-veil, sombre dans les designs à matières) : encre du thème */
+  /* frise posée sur le voile des données (--repo-veil : couleur du ton du design, clair ou sombre) : encre du design */
   .odvo-scroll {
-    color: var(--ink)
+    color: var(--odvo-ink)
   }
   .odvo-scroll .odvo-tri {
-    background: var(--field);
-    color: var(--ink)
+    background: var(--odvo-surface);
+    color: var(--odvo-ink)
   }
   .odvo-frise {
     position: relative;
@@ -682,7 +682,7 @@
 </section>
 </main>
 <script src="../../shared/kit.js?v=a819e6df"></script>
-<script src="../../shared/repository_nav.js?v=e056e6ab"></script>
+<script src="../../shared/repository_nav.js?v=9d6ecb8e"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js?v=64052ae4"></script>
 <script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/callsigns.js"></script>
 <script src="../../shared/data_files.js?v=dcb47c6a" data-file="references/defa_reference.js"></script>
