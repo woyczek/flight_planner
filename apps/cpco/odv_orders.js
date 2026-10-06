@@ -574,7 +574,7 @@
   }
   function renderProblems(date) {
     const items = S.doc.elements.filter(e => e.date === date && (S.conf.get(e.id)?.length || S.zoneConf.get(e.id)?.length));
-    $('#odvoProblems').innerHTML = items.length ? `<b>${esc(t(L4('Problèmes d’affectation', 'Assignment problems', 'Einteilungsprobleme', 'Problemas de asignación')))}</b> ${items.map(e => `<button type="button" class="odvo-prob" data-goto="${esc(e.id)}">${esc(e.libelle || e.texte || e.type)} ${esc(e.debut)}z : ${esc([...(S.conf.get(e.id) || []), ...(S.zoneConf.get(e.id) || []).map(z => ({
+    $('#odvoProblems').innerHTML = items.length ? `<b>${esc(t(L4('Problèmes d’affectation', 'Assignment problems', 'Einteilungsprobleme', 'Problemas de asignación')))}</b> ${items.map(e => `<button type="button" class="odvo-prob" data-goto="${esc(e.id)}">${esc(e.indicatif || e.libelle || e.texte || t(TX.types[e.type] || TX.types.note))} ${esc(e.debut)}z : ${esc([...(S.conf.get(e.id) || []), ...(S.zoneConf.get(e.id) || []).map(z => ({
       code: 'zone',
       z
     }))].map(conflictText).join(' ; '))}</button>`).join('')}` : '';
@@ -943,6 +943,11 @@
         if (!ghost) {
           ghost = it.cloneNode(true);
           ghost.classList.add('odvo-ghost');
+          // plaquette sans fond (couleur en contour seulement) : fond et encre de la page, lisible au-dessus de la palette
+          if (/transparent|rgba\(0, 0, 0, 0\)/.test(getComputedStyle(it).backgroundColor)) Object.assign(ghost.style, {
+            background: 'var(--odvo-surface)',
+            color: 'var(--odvo-ink)'
+          });
           Object.assign(ghost.style, {
             left: `${box.left}px`,
             top: `${box.top}px`,
@@ -1135,11 +1140,33 @@
         team: ownTeam(m),
         block: blockOf(m),
         fit: tankers ? null : fits(m, duree),
+        duree,
         lien: linked[m.id] || ''
       });
     }
     const gap = r => r.block == null ? 1e6 : Math.abs(r.block - duree);
     return rows.sort((a, b) => (!!b.lien - !!a.lien) || ((a.fit === false) - (b.fit === false)) || gap(a) - gap(b) || a.key.localeCompare(b.key));
+  }
+  /** Estimation de la mission (registre : estimate) en clair, avec la durée demandée. */
+  function estText(m, duree) {
+    const x = m?.estimate || {};
+    if (blockOf(m) == null) return '';
+    const parts = [x.flight != null ? tf(L4('vol {n} min', 'flight {n} min', 'Flug {n} min', 'vuelo {n} min'), {
+      n: Math.round(x.flight)
+    }) : '', x.onStation ? tf(L4('sur zone {n} min', 'on station {n} min', 'im Einsatzgebiet {n} min', 'en zona {n} min'), {
+      n: Math.round(x.onStation)
+    }) : '', x.transitOut || x.transitIn ? tf(L4('transits {a} + {b} min', 'transits {a} + {b} min', 'Transit {a} + {b} min', 'tránsitos {a} + {b} min'), {
+      a: Math.round(x.transitOut || 0),
+      b: Math.round(x.transitIn || 0)
+    }) : '', x.min && x.max ? tf(L4('fourchette {a}–{b} min', 'range {a}–{b} min', 'Spanne {a}–{b} min', 'horquilla {a}–{b} min'), {
+      a: Math.round(x.min),
+      b: Math.round(x.max)
+    }) : '', x.label || ''].filter(Boolean).join(', ');
+    return tf(L4('Estimation : bloc {b} min ({p}) ; demandée : {d} min', 'Estimate: block {b} min ({p}); requested: {d} min', 'Schätzung: Block {b} min ({p}); gewünscht: {d} min', 'Estimación: bloque {b} min ({p}); solicitada: {d} min'), {
+      b: blockOf(m),
+      p: parts || '—',
+      d: duree
+    });
   }
   function mpRow(r) {
     const m = r.m,
@@ -1148,7 +1175,7 @@
     const lien = r.lien === 'operation' ? t(L4('même opération', 'same operation', 'gleiche Operation', 'misma operación')) : r.lien === 'axe' ? t(L4('même axe', 'same track', 'gleiche Strecke', 'mismo eje')) : '';
     const avec = (m.teams || []).filter(x => x.name !== tm?.name && isAirTeam(x)).map(x => x.name);
     const line2 = [tm?.name ? [tm.name, tm.type, tm.role].filter(Boolean).join(' · ') : '', [m.family, m.subtype].filter(Boolean).join(' / '), where, m.operation?.name ? `op. ${m.operation.name}` : '', trackOf(m) ? `AAR ${trackOf(m)}` : m.aar ? 'AAR' : '', avec.length ? `${t(L4('avec', 'with', 'mit', 'con'))} ${avec.join(', ')}` : '', lien, m.status || ''].filter(Boolean).join(' · ');
-    return `<button type="button" class="odvo-mp-row${r.fit === false ? ' warn' : ''}" data-v="${esc(r.key)}" data-axe="${esc(trackOf(m))}" data-q="${esc(`${m.id} ${m.title} ${line2}`.toLowerCase())}"><span><b>${esc(m.id)}</b> ${esc(m.title || '')}</span><span class="odvo-mp-d" title="${esc(t(L4('Durée bloc estimée de la mission', 'Estimated block time of the mission', 'Geschätzte Blockzeit der Mission', 'Tiempo bloque estimado de la misión')))}">${r.block != null ? `${r.block} min` : '—'}${r.fit === false ? ' ⚠' : ''}</span><small>${esc(line2)}</small></button>`;
+    return `<button type="button" class="odvo-mp-row${r.fit === false ? ' warn' : ''}" data-est="${esc(estText(m, r.duree))}" data-v="${esc(r.key)}" data-axe="${esc(trackOf(m))}" data-q="${esc(`${m.id} ${m.title} ${line2}`.toLowerCase())}"><span><b>${esc(m.id)}</b> ${esc(m.title || '')}</span><span class="odvo-mp-d" title="${esc(t(L4('Durée bloc estimée de la mission', 'Estimated block time of the mission', 'Geschätzte Blockzeit der Mission', 'Tiempo bloque estimado de la misión')))}">${r.block != null ? `${r.block} min` : '—'}${r.fit === false ? ' ⚠' : ''}</span><small>${esc(line2)}</small></button>`;
   }
   /** Liste de choix déroulante (champ caché name) : lignes détaillées, filtre. */
   function pickerHtml(name, rows, cur, emptyLabel, extraRows = '') {
@@ -1156,7 +1183,7 @@
     const label = sel ? `${sel.m.id}${sel.team?.name ? ' · ' + sel.team.name : ''} — ${sel.m.title || ''}` : cur ? cur.replace(/^vol:/, '') : emptyLabel;
     // registre vide (jamais lu dans ce navigateur, pas de mission_registry.yaml servi) : le dire, avec le chemin
     const empty = S.registry?.length ? '' : `<p class="odvo-mp-warn">${esc(t(L4('Registre des missions vide dans ce navigateur : ouvrez le Registre des missions du Centre et lisez le dossier des missions.', 'Mission registry empty in this browser: open the Centre’s Mission registry and read the missions folder.', 'Missionsregister in diesem Browser leer: Missionsregister des Zentrums öffnen und den Missionsordner einlesen.', 'Registro de misiones vacío en este navegador: abra el Registro de misiones del Centro y lea la carpeta de misiones.')))} <a href="mission_registry.html" target="_blank" rel="noopener">${esc(t(L4('Registre des missions', 'Mission registry', 'Missionsregister', 'Registro de misiones')))}</a></p>`;
-    return `<div class="odvo-mp" data-mp="${esc(name)}">${empty}<input type="hidden" name="${esc(name)}" value="${esc(cur || '')}"><button type="button" class="odvo-mp-btn">${esc(label)} ▾</button><div class="odvo-mp-pop" hidden><input type="search" placeholder="${esc(t(L4('Filtrer…', 'Filter…', 'Filtern…', 'Filtrar…')))}"><div class="odvo-mp-list"><button type="button" class="odvo-mp-row" data-v="" data-q=""><span>${esc(emptyLabel)}</span></button>${extraRows}${rows.map(mpRow).join('')}</div></div><div class="odvo-mp-warn">${sel?.fit === false ? esc(t(TX.durWarn)) : ''}</div></div>`;
+    return `<div class="odvo-mp" data-mp="${esc(name)}">${empty}<input type="hidden" name="${esc(name)}" value="${esc(cur || '')}"><button type="button" class="odvo-mp-btn">${esc(label)} ▾</button><div class="odvo-mp-pop" hidden><input type="search" placeholder="${esc(t(L4('Filtrer…', 'Filter…', 'Filtern…', 'Filtrar…')))}"><div class="odvo-mp-list"><button type="button" class="odvo-mp-row" data-v="" data-q=""><span>${esc(emptyLabel)}</span></button>${extraRows}${rows.map(mpRow).join('')}</div></div><div class="odvo-mp-warn">${sel ? esc((sel.fit === false ? '⚠ ' : '') + estText(sel.m, sel.duree)) : ''}</div></div>`;
   }
   function wirePicker(dlg, name, onPick) {
     const box = dlg.querySelector(`[data-mp="${CSS.escape(name)}"]`);
@@ -1177,7 +1204,7 @@
       inp.value = b.dataset.v;
       box.querySelector('.odvo-mp-btn').textContent = `${b.querySelector('span')?.textContent || ''} ▾`;
       pop.hidden = true;
-      box.querySelector('.odvo-mp-warn').textContent = b.classList.contains('warn') ? t(TX.durWarn) : '';
+      box.querySelector('.odvo-mp-warn').textContent = (b.classList.contains('warn') ? '⚠ ' : '') + (b.dataset.est || '');
       onPick?.(b.dataset.v);
     });
   }
@@ -1371,11 +1398,7 @@
         e.mission = mid || null;
         e.equipe = ownCs(mis) || null;
         if (e.equipe && !e.indicatif) e.indicatif = e.equipe;
-        if (mis && fits(mis, e.duree) === false) notify(tf(L4('Mission {m} : durée estimée {b} min, demandée {d} min.', 'Mission {m}: estimated duration {b} min, requested {d} min.', 'Mission {m}: geschätzte Dauer {b} min, gewünscht {d} min.', 'Misión {m}: duración estimada {b} min, solicitada {d} min.'), {
-          m: mid,
-          b: blockOf(mis),
-          d: e.duree
-        }), 'warn');
+        if (mis && fits(mis, e.duree) === false) notify(`${mid} — ${estText(mis, e.duree)}`, 'warn');
         e.reseau = g('reseau') || null;
         e.zones = String(g('zones') || '').split(',').map(s => s.trim()).filter(Boolean).slice(0, 5).map(nom => ({
           id: e.zones.find(z => z.nom === nom)?.id || '',
@@ -1475,8 +1498,25 @@
         causes,
         motif,
         recurrence,
-        ...element
+        ...rest
       } = e;
+      // la récurrence reprend l'élément sans son équipage (avions vides, pas de PTA ni de DLO)
+      const element = {
+        ...rest,
+        avions: (rest.avions || []).map(a => ({
+          ...a,
+          pilote: null,
+          nav: null,
+          annule: false
+        })),
+        taches: (rest.taches || []).map(x => ({
+          ...x,
+          pilote: null
+        })),
+        equipage: rest.equipage ? [] : undefined,
+        pta: [],
+        dlo: {}
+      };
       const r = {
         id: i >= 0 ? list[i].id : O().uid(),
         element,
@@ -1587,7 +1627,7 @@
     const occ = (tri, date) => S.doc.elements.filter(e => e.date === date && e.etat !== 'annule' && O().crewOf(e, S.affect).includes(tri));
     const row = m => `<tr><th title="${esc(m.nom)}">${esc(m.tri)}</th>${ds.map((d, i) => {
       const o = occ(m.tri, d);
-      return `<td data-cell="${esc(m.tri)}|${esc(d)}" title="${esc(o.map(e => `${e.debut}z ${e.libelle || e.type}`).join('\n'))}">${dispoBar(S.dispos[m.tri]?.[d] ?? (S.dispos[m.tri] ? [] : null), 0, 1440)}${o.length ? `<span class="odvo-occ">${o.length}</span>` : ''}</td>`;
+      return `<td data-cell="${esc(m.tri)}|${esc(d)}" title="${esc(o.map(e => `${e.debut}z ${e.indicatif || e.libelle || t(TX.types[e.type] || TX.types.note)}`).join('\n'))}">${dispoBar(S.dispos[m.tri]?.[d] ?? (S.dispos[m.tri] ? [] : null), 0, 1440)}${o.length ? `<span class="odvo-occ">${o.length}</span>` : ''}</td>`;
     }).join('')}</tr>`;
     const seen = K.store.json(SEEN, {}) || {};
     const changes = Object.entries(S.disposDocs).filter(([tri, d]) => d.updated_at && String(d.updated_at) > String(seen[`${tri}|${S.week}`] || '')).sort((a, b) => String(b[1].updated_at).localeCompare(String(a[1].updated_at)));
