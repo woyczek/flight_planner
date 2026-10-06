@@ -379,7 +379,7 @@ El grosor del trazo de los iconos, o ningún icono. Cada fila muestra una vista 
 | «Latón (medallones)», «Acero (placas)», «Gel (burbujas)», «Aviónica (instrumentos)» | Juegos con materiales |
 | «Sin iconos» | Sin iconos |
 
-**«Barra lateral»**: «Según el diseño», «Siempre» o «Nunca». Por defecto, se muestra siempre (salvo en pantalla estrecha y al imprimir).
+**«Barra lateral»**: «Según el diseño», «Siempre» o «Nunca». Por defecto, se muestra siempre (salvo en pantalla estrecha y al imprimir). «Tamaño de los iconos»: «Pequeño», «Mediano» (por defecto) o «Grande». «Visualización»: «Icono y etiqueta» (por defecto), «Solo icono» (barra más estrecha, nombre de la entrada como información emergente) o «Solo etiqueta».
 
 ### Colores de los temas
 

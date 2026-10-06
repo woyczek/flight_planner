@@ -287,6 +287,9 @@
     const sn = readPref("repositorySidenav", null);
     if (sn === "auto") delete doc.dataset.sidenav;
     else doc.dataset.sidenav = sn || "on";
+    // taille des icônes (s, m, l) et affichage (both : icône et libellé ; icon : icône seule ; label : libellé seul)
+    doc.dataset.sidenavSize = readPref("repositorySidenavSize", null) || "m";
+    doc.dataset.sidenavShow = readPref("repositorySidenavShow", null) || "both";
   } // barre latérale affichée par défaut ; « auto » : selon le design
   // Design graphique (REPOSITORY_TREE.designs, règles dans designs.css) : choix mémorisé (repositoryDesign),
   // posé dès le chargement sur <html data-design> pour éviter un changement visible.
@@ -537,7 +540,7 @@
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
-      sc.src = new URL("appearance_page.js?v=c8c4e255", script.src).href;
+      sc.src = new URL("appearance_page.js?v=3653cd96", script.src).href;
       sc.onload = show;
       document.head.append(sc);
     }
@@ -766,6 +769,8 @@
         icons: doc.dataset.icons || "line",
         iconsSaved: readPref("repositoryIcons", null),
         sidenav: doc.dataset.sidenav || "",
+        sidenavSize: doc.dataset.sidenavSize || "m",
+        sidenavShow: doc.dataset.sidenavShow || "both",
         decor: doc.dataset.decor,
         decorSaved: readPref("repositoryDecor", null),
         colors: readJson("repositoryColors") || {},
@@ -845,6 +850,19 @@
           doc.dataset.sidenav = on ? "on" : "off";
           writePref("repositorySidenav", doc.dataset.sidenav);
         }
+      },
+      /** Taille des icônes de la barre latérale : "s", "m" (défaut, null), "l". */
+      setSidenavSize(v) {
+        v = ["s", "l"].includes(v) ? v : "m";
+        writePref("repositorySidenavSize", v === "m" ? null : v);
+        doc.dataset.sidenavSize = v;
+      },
+      /** Affichage des entrées de la barre latérale : "both" (défaut, null), "icon" (icône seule, libellé en infobulle),
+       *  "label" (libellé seul). */
+      setSidenavShow(v) {
+        v = ["icon", "label"].includes(v) ? v : "both";
+        writePref("repositorySidenavShow", v === "both" ? null : v);
+        doc.dataset.sidenavShow = v;
       },
       /** Couleurs du thème name : { family, tone } (famille de REPOSITORY_TREE.colorFamilies), ou null pour revenir à repository_tree. */
       setColor(name, v) {
@@ -1107,7 +1125,7 @@
     files.src = new URL("file_access.js?v=89012b3d", script.src).href;
     document.head.append(files); /* Données locales du navigateur ⇄ fichier de sauvegarde */
     /* Icônes, sous-titres de blocs, sous-cartes, zones de dépôt, icônes de la barre latérale (ordre conservé) */
-    for (const f of ["icons/repository_icons.js?v=27853364", "block_icons.js?v=9b56fcfd", "side_nav.js?v=19f74efd"]) {
+    for (const f of ["icons/repository_icons.js?v=27853364", "block_icons.js?v=2a7d496a", "side_nav.js?v=19f74efd"]) {
       const sc = document.createElement("script");
       sc.src = new URL(f, script.src).href;
       sc.async = false;

@@ -379,7 +379,7 @@ L'épaisseur du trait des icônes, ou pas d'icônes du tout. Chaque rangée mont
 | « Laiton (médaillons) », « Acier (plaques) », « Gel (bulles) », « Avionique (cadrans) » | Jeux à matières |
 | « Aucune icône » | Pas d'icônes |
 
-**« Barre latérale »** : « Selon le design », « Toujours » ou « Jamais ». Par défaut, elle est toujours affichée (sauf écran étroit et impression).
+**« Barre latérale »** : « Selon le design », « Toujours » ou « Jamais ». Par défaut, elle est toujours affichée (sauf écran étroit et impression). « Taille des icônes » : « Petite », « Moyenne » (par défaut) ou « Grande ». « Affichage » : « Icône et libellé » (par défaut), « Icône seule » (barre plus étroite, nom de l'entrée en infobulle) ou « Libellé seul ».
 
 ### Couleurs des thèmes
 

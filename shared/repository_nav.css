@@ -341,7 +341,32 @@
   /* ---- barre latérale (construite par repository_nav.js dès son exécution, icônes posées par side_nav.js) : ici et non
    dans block_icons.css (chargé plus tard) pour que la barre et la marge du contenu paraissent avec l'en-tête ; préférence html[data-sidenav="on"] ou design « console » */
   :root {
-    --repo-sidenav-w: 84px
+    --repo-sidenav-w: 84px;
+    /* taille des icônes de la barre (Apparence : petite, moyenne, grande) : jeu de lignes / jeux à matières */
+    --repo-sn-ic: 22px;
+    --repo-sn-ic-sk: 40px
+  }
+  html[data-sidenav-size="s"] {
+    --repo-sn-ic: 18px;
+    --repo-sn-ic-sk: 32px
+  }
+  html[data-sidenav-size="l"] {
+    --repo-sn-ic: 28px;
+    --repo-sn-ic-sk: 50px
+  }
+  /* icône seule : barre plus étroite, libellé en infobulle (title des entrées) ; libellé seul : pas d'icône */
+  html[data-sidenav-show="icon"] {
+    --repo-sidenav-w: 64px
+  }
+  html[data-sidenav-size="l"][data-sidenav-show="icon"] {
+    --repo-sidenav-w: 72px
+  }
+  html[data-sidenav-show="icon"] .repo-sidenav-label,
+  html[data-sidenav-show="icon"] .repo-sidenav-sep-title {
+    display: none
+  }
+  html[data-sidenav-show="label"] .repo-sidenav-item .repo-sidenav-ic {
+    display: none
   }
   .repo-sidenav {
     display: none;
@@ -504,13 +529,13 @@
     }
   }
   .repo-sidenav .repo-svg {
-    --rs: 22px
+    --rs: var(--repo-sn-ic)
   }
   .repo-sidenav-ic {
     display: grid;
     place-items: center;
-    width: 22px;
-    height: 22px
+    width: var(--repo-sn-ic);
+    height: var(--repo-sn-ic)
   }
   .repo-sidenav-brand .repo-sidenav-ic {
     width: 30px;
@@ -793,8 +818,8 @@ html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-ic
 }
 /* jeux skeuomorphes : images posées dès la construction de la barre (taille réservée : pas de décalage) ; tracé masqué */
 html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-ic {
-  width: 40px;
-  height: 40px
+  width: var(--repo-sn-ic-sk);
+  height: var(--repo-sn-ic-sk)
 }
 html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-icons="avio"]) .repo-sidenav-brand .repo-sidenav-ic {
   width: 40px;
@@ -835,4 +860,9 @@ html:is([data-icons="brass"], [data-icons="steel"], [data-icons="gel"], [data-ic
   ::view-transition-new(root) {
     animation-duration: .16s
   }
+}
+/* barre latérale en « libellé seul » (Apparence) : entrées un peu plus hautes, aussi avec les jeux d'icônes à matières */
+html[data-sidenav-show="label"] .repo-sidenav-item:not(#imp) {
+  padding-top: 9px;
+  padding-bottom: 9px
 }

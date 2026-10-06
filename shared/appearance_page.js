@@ -67,6 +67,18 @@
       on: ['Toujours', 'Always', 'Immer', 'Siempre'],
       off: ['Jamais', 'Never', 'Nie', 'Nunca']
     },
+    sideSize: ['Taille des icônes', 'Icon size', 'Symbolgröße', 'Tamaño de los iconos'],
+    sideSizeSet: {
+      s: ['Petite', 'Small', 'Klein', 'Pequeño'],
+      m: ['Moyenne', 'Medium', 'Mittel', 'Mediano'],
+      l: ['Grande', 'Large', 'Groß', 'Grande']
+    },
+    sideShow: ['Affichage', 'Display', 'Anzeige', 'Visualización'],
+    sideShowSet: {
+      both: ['Icône et libellé', 'Icon and label', 'Symbol und Beschriftung', 'Icono y etiqueta'],
+      icon: ['Icône seule', 'Icon only', 'Nur Symbol', 'Solo icono'],
+      label: ['Libellé seul', 'Label only', 'Nur Beschriftung', 'Solo etiqueta']
+    },
     colors: ['Couleurs des thèmes', 'Theme colours', 'Themenfarben', 'Colores de los temas'],
     colorsSub: ['Pour chaque thème : une famille de couleurs et un ton. Bandeau, texte et accent en sont calculés ; les contrastes WCAG sont vérifiés en direct.', 'For each theme: a colour family and a tone. Bar, text and accent are derived from them; WCAG contrast is checked live.', 'Je Thema: eine Farbfamilie und ein Ton. Leiste, Text und Akzent werden daraus berechnet; der WCAG-Kontrast wird live geprüft.', 'Para cada tema: una familia de colores y un tono. Barra, texto y acento se calculan a partir de ellos; el contraste WCAG se comprueba en directo.'],
     groupPages: ['Applications', 'Applications', 'Anwendungen', 'Aplicaciones'],
@@ -149,7 +161,9 @@
       return `<button type="button" class="ap-iconrow repo-plain" data-chart-palette="${id}" aria-pressed="${id === ch.palette}"><b>${esc(t(T.chartPalette[id]))}</b><span class="ap-swatches">${a.chartSample(eff).map(c => `<i style="background:${c}"></i>`).join('')}</span></button>`;
     }).join('') : '';
     const side = cur.sidenav || 'auto',
-      sideBtns = Object.entries(T.sideSet).map(([id, row]) => `<button type="button" class="ap-seg repo-seg repo-plain" data-side="${id}" aria-pressed="${id === side}">${esc(t(row))}</button>`).join('');
+      sideBtns = Object.entries(T.sideSet).map(([id, row]) => `<button type="button" class="ap-seg repo-seg repo-plain" data-side="${id}" aria-pressed="${id === side}">${esc(t(row))}</button>`).join(''),
+      sizeBtns = Object.entries(T.sideSizeSet).map(([id, row]) => `<button type="button" class="ap-seg repo-seg repo-plain" data-side-size="${id}" aria-pressed="${id === (cur.sidenavSize || 'm')}">${esc(t(row))}</button>`).join(''),
+      showBtns = Object.entries(T.sideShowSet).map(([id, row]) => `<button type="button" class="ap-seg repo-seg repo-plain" data-side-show="${id}" aria-pressed="${id === (cur.sidenavShow || 'both')}">${esc(t(row))}</button>`).join('');
     // --- couleurs : une carte par thème, groupées (applications, familles de CR)
     const card = name => {
       const o = cur.colors[name] || null,
@@ -169,7 +183,7 @@
     host.innerHTML =
       block('ap-design', 'layers', t(T.design), t(T.designSub), `<div class="ap-thumbs">${thumbs}</div><div class="ap-sidebar"><b>${esc(t(T.decor))}</b><span class="ap-segs repo-segs" role="group">${decorBtns}</span><small class="ap-help">${esc(t(T.decorHelp))}</small></div>${a.aquaColors ? `<div class="ap-sidebar"><b>${esc(t(T.aqua))}</b><span class="repo-plain ap-dots" role="group" aria-label="${esc(t(T.aqua))}">${aquaDots}</span><small class="ap-help">${esc(t(T.aquaHelp))}</small></div>` : ''}`) +
       (ch ? block('ap-charts', 'chart', t(T.charts), t(T.chartsSub), `<div class="ap-iconrows">${chRows}</div><div class="ap-sidebar"><b>${esc(t(T.chartStyle))}</b><span class="ap-segs repo-segs" role="group">${chStyle}</span></div>`) : '') +
-      block('ap-icons', 'box', t(T.icons), t(T.iconsSub), `<div class="ap-iconrows">${iconRows}</div><div class="ap-sidebar"><b>${esc(t(T.side))}</b><span class="ap-segs repo-segs" role="group">${sideBtns}</span></div>`) +
+      block('ap-icons', 'box', t(T.icons), t(T.iconsSub), `<div class="ap-iconrows">${iconRows}</div><div class="ap-sidebar"><b>${esc(t(T.side))}</b><span class="ap-segs repo-segs" role="group">${sideBtns}</span></div><div class="ap-sidebar"><b>${esc(t(T.sideSize))}</b><span class="ap-segs repo-segs" role="group">${sizeBtns}</span></div><div class="ap-sidebar"><b>${esc(t(T.sideShow))}</b><span class="ap-segs repo-segs" role="group">${showBtns}</span></div>`) +
       block('ap-colors', 'eye', t(T.colors), t(T.colorsSub), `<h3>${esc(t(T.groupPages))}</h3><div class="ap-cards">${APPS.filter(n => a.themes[n]).map(card).join('')}</div><h3>${esc(t(T.groupCr))}</h3><div class="ap-cards">${crs.map(card).join('')}</div>`) +
       `<p class="ap-foot"><button type="button" id="apDemo" class="repo-plain" data-icon="eye" title="${esc(t(T.demo))}">${esc(t(T.demoBtn))}</button><button type="button" id="apReset" class="repo-plain" data-icon="refresh">${esc(t(T.reset))}</button></p>`;
     host.querySelectorAll('.ap-card').forEach(paint);
@@ -330,6 +344,12 @@ main.ap-page .ap-pill.ok{background:#e3f4e8!important/*garder*/;color:#14532d!im
       } else if (b.dataset.side) {
         a.setSidenav(b.dataset.side === 'auto' ? null : b.dataset.side === 'on');
         render();
+      } else if (b.dataset.sideSize) {
+        a.setSidenavSize?.(b.dataset.sideSize);
+        render();
+      } else if (b.dataset.sideShow) {
+        a.setSidenavShow?.(b.dataset.sideShow);
+        render();
       } else if (b.classList.contains('ap-dot')) {
         const cardEl = b.closest('.ap-card');
         cardEl.querySelectorAll('.ap-dot').forEach(d => d.setAttribute('aria-pressed', String(d === b)));
@@ -348,6 +368,8 @@ main.ap-page .ap-pill.ok{background:#e3f4e8!important/*garder*/;color:#14532d!im
         Object.keys(a.current().colors).forEach(n => a.setColor(n, null));
         a.setIcons(null);
         a.setSidenav('default');
+        a.setSidenavSize?.(null);
+        a.setSidenavShow?.(null);
         a.setDecor(null);
         a.setAqua?.(null);
         a.setChart?.('style', null);
