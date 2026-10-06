@@ -11,7 +11,7 @@ Ce qui est versionné :
 - scripts : chargements « 'fichier.js?v=…' » / « "feuille.css?v=…" » écrits dans le code (chemin relatif au script) ;
 - repository_nav.js et config/repository_tree : table FILE_V des feuilles de design (designs.list[id].css) ;
   repository_tree : aussi « ../shared/designs.css?v=… » (feuilles posées dès l'en-tête) ;
-- feuilles des designs (designs_skeuo.css, block_icons.css) : images textures / deco / icons/skeuo.
+- feuilles des designs (designs_skeuo.css, block_icons.css) : images textures / deco / icons/skeuo, polices fonts/*.woff2.
 Un script qui versionne ses images avec son propre ?v= (DEPENDANCES) reçoit une empreinte qui couvre aussi ces images
 — seulement celles que git suit (index : image ajoutée par « git add »), par leur identifiant git : les images déposées
 dans un espace de travail et pas encore ajoutées ne changent rien, et l'empreinte est la même dans tous les espaces
@@ -105,7 +105,7 @@ def versionner(texte, base, motif):
     return motif.sub(sub, texte)
 
 
-IMG = re.compile(r'(\(\s*["\']?)((?:textures|deco/[\w/]+|icons/skeuo/[\w/-]+)/[\w.-]+\.webp)\?v=\w+')  # noms à point compris (rail.vierge.webp)
+IMG = re.compile(r'(\(\s*["\']?)((?:textures|deco/[\w/]+|icons/skeuo/[\w/-]+)/[\w.-]+\.webp|fonts/[\w.-]+\.woff2)\?v=\w+')  # noms à point compris (rail.vierge.webp) ; polices des designs (Tactique)
 LIT = re.compile(r'(["\'`])((?:\.{1,2}/)?[\w./-]+\.(?:js|css))\?v=\w+')
 ATTR = re.compile(r'((?:src|href)=["\'])([^"\'?#:]+)\?v=\w+')
 IMPORT = re.compile(r'(@import url\(["\'])([^"\'?#:]+)\?v=\w+')   # feuilles importées dans une couche (tools/layer_pages.py)

@@ -118,7 +118,7 @@ La suite ofrece varios diseños. Cambian la forma de las páginas, no la informa
 | Diseño | En resumen |
 |---|---|
 | Estándar, Aero, Operativo, Consola | Diseños «planos»: esquinas redondeadas, densidad, títulos, barra lateral. |
-| Gabinete, Cuaderno de vuelo, Robusto, Aqua | Diseños con materiales (cuero, madera, latón, aluminio, acero, cristal). Aqua es el diseño de una instalación nueva. |
+| Gabinete, Cuaderno de vuelo, Robusto, Aqua, Táctico | Diseños con materiales (cuero, madera, latón, aluminio, acero, cristal); Táctico: noche, vidrio ahumado, acento cian, títulos Orbitron, sin imágenes. Aqua es el diseño de una instalación nueva. |
 
 - En los diseños con materiales, la carpeta de misión de «Mis misiones» se convierte en un auténtico libro, con sus animaciones.
 - La elección se hace en Apariencia: cada diseño se muestra en miniatura y se aplica al instante. Consulte el capítulo [Apariencia](#apariencia).
@@ -350,9 +350,9 @@ Los ajustes se memorizan en este navegador y se aplican a todas las páginas; no
 
 La forma de las páginas: esquinas redondeadas, densidad, títulos, barra lateral.
 
-- Cada diseño se presenta con una miniatura dibujada en su estilo, con su nombre y su descripción: Estándar, Aero, Operativo, Consola, Gabinete, Cuaderno de vuelo, Robusto, Aqua.
+- Cada diseño se presenta con una miniatura dibujada en su estilo, con su nombre y su descripción: Estándar, Aero, Operativo, Consola, Gabinete, Cuaderno de vuelo, Robusto, Aqua, Táctico.
 - Un clic en una miniatura aplica el diseño al instante. La miniatura elegida aparece enmarcada.
-- Gabinete, Cuaderno de vuelo, Robusto y Aqua añaden sus materiales; los colores de información siguen siendo los del tema.
+- Gabinete, Cuaderno de vuelo, Robusto y Aqua añaden sus materiales, Táctico su vidrio ahumado sobre fondo nocturno; los colores de información siguen siendo los del tema (Táctico: filete en lo alto de los bloques).
 
 **«Decoración (diseños con materiales)»**:
 - «Completo» (por defecto): paneles ilustrados de los bloques, hojas de registro, tornillos, radar;

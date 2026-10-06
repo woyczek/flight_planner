@@ -334,7 +334,7 @@
   // Designs à matières (Cabinet, Durci, Aqua : textures, plaques, vis) : feuille propre (designs.list[id].css),
   // chargée seulement quand l'un d'eux est choisi, avec sa propre version (empreinte de son contenu, table FILE_V
   // écrite par tools/bump_versions.py).
-  const FILE_V = {"designs_skeuo.css": "e5fdba8d"};
+  const FILE_V = {"designs_skeuo.css": "08932b65"};
   const designCss = id => {
     const f = designs[id]?.css;
     if (!f) return;
@@ -542,7 +542,7 @@
     if (window.RepositoryAppearance) show();
     else {
       const sc = document.createElement("script");
-      sc.src = new URL("appearance_page.js?v=3653cd96", script.src).href;
+      sc.src = new URL("appearance_page.js?v=092dabae", script.src).href;
       sc.onload = show;
       document.head.append(sc);
     }
@@ -1010,7 +1010,7 @@
     // haut de la barre : logo de la compagnie virtuelle décliné selon le design (<id du design à matières>.webp, sinon
     // flat) — celui de la compagnie (shared/icons/defa) si la compagnie réglée est SO Group Virtual, sinon le logo générique (cible,
     // shared/icons/generic) ; lien vers le site de la compagnie (nouvel onglet : la page en cours reste ouverte)
-    const logoSrc = () => new URL(`icons/${/\bDEFA\b/i.test(`${va().short} ${va().name}`) ? "defa" : "generic"}/${designs[doc.dataset.design]?.skeuo ? doc.dataset.design : "flat"}.webp${ver}`, script.src).href;
+    const logoSrc = () => new URL(`icons/${/\bDEFA\b/i.test(`${va().short} ${va().name}`) ? "defa" : "generic"}/${designs[doc.dataset.design]?.skeuo ? designs[doc.dataset.design].logo || doc.dataset.design : "flat"}.webp${ver}`, script.src).href;
     side.innerHTML = `<a class="repo-sidenav-brand"${vaUrl("home") ? ` href="${K.esc(vaUrl("home"))}" target="_blank" rel="noopener"` : ""} title="${K.esc(va().name)} — ${K.esc(source("defa").replace(/^https?:\/\//, ""))}"><img class="repo-sidenav-logo" src="${logoSrc()}" alt="${K.esc(va().name)}"></a><ul></ul><ul class="repo-sidenav-foot"></ul>`;
     // entrées du bas (séparateur « bottom » et suivantes : Apparence, Paramètres, Aide) dans leur propre liste, fixée en
     // bas de la barre ; seule la liste du haut défile quand les entrées dépassent la hauteur de la fenêtre

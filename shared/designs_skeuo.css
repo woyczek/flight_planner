@@ -3203,3 +3203,357 @@ html[data-design="aqua"] {
   --sk-tabs-lisere-slice: 85;
   --sk-tabs-lisere-w: 12.2px
 }
+
+/* ================================================================================================ TACTIQUE
+   Design sombre « opérationnel » repris de l'outil Ordres de vols (V0) : fond bleu nuit dégradé à halos, surfaces de
+   verre fumé (flou, bord fin lumineux, reflet), accent cyan, texte Inter, titres Orbitron en capitales. Sans image ni
+   texture : tout est en couleurs, dégradés et effets (aucun décor design_deco.js, logo et icônes plats). La couleur du
+   thème de la page reste l'information : liseré en haut des blocs. Contrastes : texte #e6eef8 sur verre #141c29 :
+   15,6:1 ; secondaire #8ea7c2 : 7,4:1 ; cyan #7dd3fc (liens) : 10,9:1. */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("fonts/inter-latin-wght.woff2?v=f11d729b") format("woff2")
+}
+@font-face {
+  font-family: "Orbitron";
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url("fonts/orbitron-latin-wght.woff2?v=d686c7f2") format("woff2")
+}
+html[data-design="tactique"] {
+  --tq-bg: #0b1018;
+  --tq-bg2: #161f2e;
+  --tq-bg3: #1b2637;
+  --tq-bg4: #213142;
+  --tq-brd: #293850;
+  --tq-brd2: #3a5372;
+  --tq-acc: #38bdf8;
+  --tq-link: #7dd3fc;
+  --tq-ink: #e6eef8;
+  --tq-ink-2: #8ea7c2;
+  --tq-red: #f87171;
+  --tq-glass: rgba(22, 31, 46, .72);
+  --tq-glass-hi: rgba(38, 54, 78, .55);
+  --tq-glass-brd: rgba(120, 160, 210, .16);
+  --tq-glass-brd-hi: rgba(56, 189, 248, .4);
+  --tq-hairline: rgba(150, 185, 225, .09);
+  --tq-inset: inset 0 1px 0 rgba(255, 255, 255, .05);
+  --tq-glow: 0 0 0 1px rgba(56, 189, 248, .25), 0 4px 20px rgba(56, 189, 248, .14);
+  --tq-gel: var(--tq-acc);
+  --tq-sans: Inter, "Segoe UI", system-ui, sans-serif;
+  --tq-title: Orbitron, Rajdhani, "Exo 2", Inter, sans-serif;
+  --repo-surface: #141c29;
+  --repo-round: 1;
+  --galon: var(--tq-acc);
+  --galon-grad: linear-gradient(90deg, transparent, var(--tq-acc) 30%, #a5e8ff 50%, var(--tq-acc) 70%, transparent);
+  /* typographie */
+  --sk-ink: var(--tq-ink);
+  --sk-ink-2: var(--tq-ink-2);
+  --sk-title-ink: var(--tq-ink);
+  --sk-title-shadow: 0 0 12px rgba(56, 189, 248, .25);
+  --sk-title-family: var(--tq-title);
+  --sk-title-case: uppercase;
+  --sk-title-spacing: .08em;
+  --sk-label-family: var(--tq-sans);
+  --sk-label-ink: var(--tq-ink-2);
+  --sk-btn-family: var(--tq-sans);
+  --sk-lbtn-family: var(--tq-sans);
+  --sk-pick-family: var(--tq-sans);
+  --sk-card-title-family: var(--tq-title);
+  --sk-card-title-case: uppercase;
+  --sk-card-title-spacing: .07em;
+  --sk-card-title-ink: var(--tq-ink);
+  --sk-card-sub-ink: var(--tq-ink-2);
+  --sk-focus: 0 0 0 3px rgba(56, 189, 248, .35);
+  --sk-code-bg: #0f1622;
+  --sk-code-ink: #cfe9ff;
+  --sk-code-border: 1px solid var(--tq-brd);
+  --sk-code-radius: 4px;
+  /* en-tête, menus */
+  --sk-header-radius: 0;
+  --sk-header-border: 0 solid var(--tq-glass-brd);
+  --sk-header-bbw: 1px;
+  --sk-header-margin: 0 0 10px;
+  --sk-header-ink: var(--tq-ink);
+  --sk-header-bg: linear-gradient(180deg, rgba(17, 25, 38, .92), rgba(11, 16, 24, .84));
+  --sk-header-shadow: 0 4px 24px rgba(0, 0, 0, .4), var(--tq-inset);
+  --sk-mbtn-bg: var(--tq-glass-hi);
+  --sk-mbtn-ink: var(--tq-ink);
+  --sk-mbtn-border: 1px solid var(--tq-brd2);
+  --sk-mbtn-radius: 10px;
+  --sk-menu-bg: rgba(17, 25, 38, .96);
+  --sk-menu-ink: var(--tq-ink);
+  --sk-menu-border: 1px solid var(--tq-glass-brd);
+  /* blocs, cartes, zones de dépôt, encadrés */
+  --sk-block-radius: 14px;
+  --sk-block-border: 1px solid var(--tq-glass-brd);
+  --sk-block-bg: linear-gradient(180deg, rgba(24, 34, 50, .82), rgba(18, 26, 39, .78));
+  --sk-block-shadow: 0 10px 34px rgba(0, 0, 0, .5), 0 3px 10px rgba(0, 0, 0, .35), var(--tq-inset), inset 0 2px 0 color-mix(in srgb, var(--repo-accent) 75%, transparent);
+  --sk-card-bg: linear-gradient(180deg, rgba(33, 49, 66, .7), rgba(27, 38, 55, .7));
+  --sk-card-border: 1px solid var(--tq-brd);
+  --sk-card-radius: 12px;
+  --sk-card-shadow: var(--tq-inset), 0 2px 10px rgba(0, 0, 0, .35);
+  --sk-drop-bg: rgba(15, 22, 34, .7);
+  --sk-drop-border: 1px dashed var(--tq-brd2);
+  --sk-drop-radius: 12px;
+  --sk-drop-shadow: inset 0 1px 3px rgba(0, 0, 0, .4);
+  --sk-drop-ink: var(--tq-ink-2);
+  --sk-notice-bg: linear-gradient(rgba(56, 189, 248, .12), rgba(56, 189, 248, .06));
+  --sk-notice-border: 1px solid rgba(56, 189, 248, .3);
+  --sk-notice-radius: 12px;
+  --sk-notice-ink: var(--tq-ink);
+  --sk-status-bg: #0f1622;
+  --sk-status-border: 1px solid var(--tq-brd);
+  --sk-status-ink: var(--tq-ink);
+  /* champs */
+  --sk-input-bg: #0f1622;
+  --sk-input-ink: var(--tq-ink);
+  --sk-input-border: 1px solid var(--tq-brd2);
+  --sk-input-radius: 8px;
+  --sk-input-shadow: inset 0 1px 3px rgba(0, 0, 0, .45);
+  /* boutons : principal en verre cyan (jetons posés sur les boutons : rouge pour « danger »), secondaire en verre */
+  --sk-btn-weight: 600;
+  --sk-btn-radius: 10px;
+  --sk-btn-ink: #e6f7ff;
+  --sk-btn-text-shadow: none;
+  --sk-btn-hover: brightness(1.15);
+  --sk-btn-disabled: grayscale(1) opacity(.45);
+  --sk-lbtn-weight: 600;
+  --sk-lbtn-border: 1px solid var(--tq-brd2);
+  --sk-lbtn-radius: 10px;
+  --sk-lbtn-ink: var(--tq-ink);
+  --sk-lbtn-bg: var(--tq-glass-hi);
+  --sk-lbtn-shadow: var(--tq-inset), 0 2px 8px rgba(0, 0, 0, .3);
+  --sk-pick-ink: var(--tq-ink);
+  --sk-pick-bg: var(--tq-glass-hi);
+  --sk-pick-shadow: var(--tq-inset);
+  --sk-tool-bg: transparent;
+  --sk-tool-ink: var(--tq-ink-2);
+  /* barre latérale, pied, barre d'action, fenêtres */
+  --sk-sidenav-bg: linear-gradient(180deg, rgba(17, 25, 38, .94), rgba(11, 16, 24, .94));
+  --sk-sidenav-border: 1px solid var(--tq-glass-brd);
+  --sk-sidenav-ink: var(--tq-ink);
+  --sk-sidenav-shadow: 4px 0 24px rgba(0, 0, 0, .35);
+  --sk-nav-on-bg: rgba(56, 189, 248, .14);
+  --sk-nav-on-edge: var(--tq-acc);
+  --sk-footer-margin: 12px 0 0;
+  --sk-footer-padding: 8px 14px;
+  --sk-footer-bg: rgba(11, 16, 24, .85);
+  --sk-footer-ink: var(--tq-ink-2);
+  --sk-footer-link: var(--tq-link);
+  --sk-abar-bg: linear-gradient(180deg, rgba(17, 25, 38, .94), rgba(11, 16, 24, .9));
+  --sk-abar-border: 1px solid var(--tq-glass-brd);
+  --sk-abar-ink: var(--tq-ink);
+  --sk-abar-ink-2: var(--tq-ink-2);
+  --sk-dialog-bg: linear-gradient(180deg, #141c29, #0d131d);
+  /* sélecteurs segmentés et onglets */
+  --sk-segs-border: 1px solid var(--tq-brd2);
+  --sk-segs-radius: 10px;
+  --sk-segs-bg: rgba(15, 22, 34, .8);
+  --sk-seg-ink: var(--tq-ink-2);
+  --sk-seg-bg: transparent;
+  --sk-seg-shadow: none;
+  --sk-seg-sep: 1px solid var(--tq-brd);
+  --sk-seg-sep-shadow: none;
+  --sk-seg-on-bg: linear-gradient(180deg, rgba(56, 189, 248, .3), rgba(56, 189, 248, .16));
+  --sk-seg-on-ink: #e6f7ff;
+  --sk-seg-on-text-shadow: 0 0 8px rgba(56, 189, 248, .5);
+  --sk-seg-on-shadow: inset 0 0 0 1px rgba(56, 189, 248, .5);
+  --sk-tab-bg: var(--tq-glass-hi);
+  --sk-tab-ink: var(--tq-ink-2);
+  --sk-tab-text-shadow: none;
+  --sk-tab-shadow: inset 0 0 0 1px var(--tq-brd2), 0 2px 8px rgba(0, 0, 0, .3);
+  --sk-tab-on-bg: var(--sk-seg-on-bg);
+  --sk-tab-on-ink: #e6f7ff;
+  --sk-tab-on-text-shadow: var(--sk-seg-on-text-shadow);
+  --sk-tab-font: 600 .78rem/1.2 var(--tq-title);
+  --sk-tab-off-filter: none;
+  --sk-tab-glow: rgba(56, 189, 248, .45);
+  --sk-tab-padding: 7px 18px;
+  --sk-tab-screw: none;
+  --sk-tabs-rail: linear-gradient(rgba(17, 25, 38, .9), rgba(11, 16, 24, .9));
+  --sk-tabs-rail-shadow: inset 0 -1px 0 var(--tq-glass-brd);
+  --sk-tabs-lisere: none;
+  /* graphiques */
+  --sk-chart-base: #38bdf8;
+  --sk-chart-font: var(--tq-sans);
+  --sk-chart-bg: linear-gradient(#141c29, #0f1622);
+  --sk-chart-border: 1px solid var(--tq-brd);
+  --sk-chart-radius: 12px;
+  --sk-chart-shadow: var(--tq-inset), inset 0 2px 10px rgba(0, 0, 0, .45);
+  --sk-chart-grid: rgba(150, 185, 225, .09);
+  --sk-chart-axis: #5d7896;
+  --sk-chart-text: var(--tq-ink-2);
+  /* curseurs, barres de progression */
+  --sk-slider-track: linear-gradient(90deg, #0f1622, #213142 60%, #0f1622);
+  --sk-slider-track-shadow: inset 0 1px 2px rgba(0, 0, 0, .6);
+  --sk-thumb-w: 18px;
+  --sk-thumb-h: 18px;
+  --sk-thumb-x: -5px;
+  --sk-thumb-radius: 50%;
+  --sk-thumb-border: 1px solid #0b1018;
+  --sk-thumb-bg: radial-gradient(circle at 50% 35%, #a5e8ff, var(--tq-acc) 60%, #0e7fb0);
+  --sk-thumb-shadow: 0 0 10px rgba(56, 189, 248, .55);
+  --sk-prog-track: #0f1622;
+  --sk-prog-fill: linear-gradient(90deg, #0e7fb0, var(--tq-acc));
+  --sk-prog-border: 1px solid var(--tq-brd);
+  --sk-prog-glow: 0 0 10px rgba(56, 189, 248, .45);
+  /* composants communs des pages (boutons d'en-tête, popovers, cartes des listes) */
+  --sk-hb: var(--tq-glass-hi);
+  --sk-hb-fg: var(--tq-ink);
+  --sk-hb-bd: var(--tq-brd2);
+  --sk-acc: linear-gradient(180deg, rgba(56, 189, 248, .32), rgba(56, 189, 248, .18));
+  --sk-acc-fg: #e6f7ff;
+  --sk-pop: rgba(17, 25, 38, .97);
+  --sk-pop-ink: var(--tq-ink);
+  --sk-pop-bd: var(--tq-glass-brd);
+  --sk-pop-hover: rgba(56, 189, 248, .14);
+  --sk-pop-danger: #fca5a5;
+  --sk-card: linear-gradient(180deg, rgba(33, 49, 66, .7), rgba(27, 38, 55, .7));
+  --sk-card-ink: var(--tq-ink);
+  --sk-card-bd: var(--tq-brd);
+  --sk-paper: #141c29;
+  color-scheme: dark;
+  background:
+    radial-gradient(1200px 600px at 15% -5%, rgba(56, 189, 248, .07), transparent 60%),
+    radial-gradient(1000px 700px at 100% 0%, rgba(129, 140, 248, .06), transparent 55%),
+    linear-gradient(180deg, #0d131d 0%, #0b1018 55%, #090d14 100%) fixed
+}
+html[data-design="tactique"] body {
+  color: var(--tq-ink);
+  font-family: var(--tq-sans);
+  -webkit-font-smoothing: antialiased;
+  background: transparent !important
+    /* garder : fond posé en ligne (style) sur body par les pages */
+}
+/* verre : flou sous l'en-tête, les menus, les blocs et la barre latérale */
+html[data-design="tactique"] :is(.repo-header, .repo-menu, .repo-language-menu, .repo-sidenav) {
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%)
+}
+html[data-design="tactique"] .repo-block {
+  backdrop-filter: blur(10px) saturate(130%);
+  -webkit-backdrop-filter: blur(10px) saturate(130%)
+}
+html[data-design="tactique"] .repo-header-subtitle,
+html[data-design="tactique"] .repo-language-label {
+  color: var(--tq-ink-2)
+}
+html[data-design="tactique"] :is(.repo-menu, .repo-language-menu) {
+  border-radius: 12px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .55)
+}
+/* titres : Orbitron en capitales, barrette lumineuse dessous */
+html[data-design="tactique"] :is(.repo-block-titles, .repo-block-heading)>h2 {
+  font-family: var(--tq-title);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-weight: 700;
+  font-size: 1.02rem;
+  color: var(--tq-ink);
+  padding-bottom: 5px;
+  background: var(--galon-grad) left bottom/64px 2px no-repeat
+}
+html[data-design="tactique"] .repo-header :is(h1, .repo-header-title) {
+  font-family: var(--tq-title);
+  letter-spacing: .06em
+}
+html[data-design="tactique"] .repo-block :is(h3, h4) {
+  color: var(--tq-ink)
+}
+/* champs : anneau cyan au focus */
+html[data-design="tactique"] .repo-block :is(input, select, textarea):focus {
+  outline: 0
+}
+html[data-design="tactique"] .repo-block :is(input, select, textarea):focus:not(#imp) {
+  border-color: var(--tq-acc);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, .3), inset 0 1px 3px rgba(0, 0, 0, .45)
+}
+html[data-design="tactique"] .repo-block :is(input, textarea)::placeholder {
+  color: #5d7896
+}
+html[data-design="tactique"] select option {
+  background: #141c29;
+  color: var(--tq-ink)
+}
+html[data-design="tactique"] select:not([multiple]):not([size]):not(#imp) {
+  background-color: #0f1622;
+  color: var(--tq-ink)
+}
+/* boutons : verre teinté de --tq-gel (cyan ; rouge pour « danger »), halo au survol */
+html[data-design="tactique"] :is(button, .buttonLink, a.mc-button) {
+  --sk-btn-border: 1px solid color-mix(in srgb, var(--tq-gel) 55%, transparent);
+  --sk-btn-bg: linear-gradient(180deg, color-mix(in srgb, var(--tq-gel) 30%, rgba(22, 31, 46, .9)), color-mix(in srgb, var(--tq-gel) 16%, rgba(22, 31, 46, .9)));
+  --sk-btn-shadow: var(--tq-inset), 0 0 0 1px color-mix(in srgb, var(--tq-gel) 18%, transparent), 0 4px 16px color-mix(in srgb, var(--tq-gel) 16%, transparent)
+}
+html[data-design="tactique"] button.danger {
+  --tq-gel: var(--tq-red)
+}
+html[data-design="tactique"] :is(button.secondary, a.secondary, label.rg-file, .repo-header button.headerButton:not(:first-of-type), a.headerButton):not(.repo-block-tools button):not(#imp) {
+  border-color: var(--tq-brd2);
+  color: var(--tq-ink);
+  background: var(--tq-glass-hi);
+  box-shadow: var(--tq-inset), 0 2px 8px rgba(0, 0, 0, .3)
+}
+html[data-design="tactique"] button.ghost:not(.repo-block-tools button):not(#imp) {
+  border-color: var(--tq-brd);
+  background: transparent;
+  color: var(--tq-ink-2)
+}
+html[data-design="tactique"] .repo-block-tools button:is(:hover, :focus-visible):not(#imp) {
+  background-color: rgba(56, 189, 248, .12)
+}
+html[data-design="tactique"] :is(.repo-menu-button, .repo-language-button) {
+  box-shadow: var(--tq-inset)
+}
+/* textes des blocs sombres : gras et définitions éclairés, liens cyan, tableaux transparents à filets fins */
+html[data-design="tactique"] .repo-block :is(strong, b, em, dt, dd) {
+  color: var(--tq-ink)
+}
+html[data-design="tactique"] :is(.repo-block, .repo-footer) a:not(.buttonLink):not(.secondary):not(.primary) {
+  color: var(--tq-link)
+}
+html[data-design="tactique"] .repo-block :is(table, thead, tbody, tr, th, td) {
+  background-color: transparent;
+  border-color: var(--tq-hairline)
+}
+html[data-design="tactique"] .repo-block thead th:not(#imp) {
+  background-color: rgba(27, 38, 55, .85);
+  color: var(--tq-ink-2);
+  font-weight: 600;
+  letter-spacing: .03em
+}
+html[data-design="tactique"] .repo-block tbody tr:hover>td {
+  background-color: rgba(56, 189, 248, .05)
+}
+html[data-design="tactique"] .repo-block :is(#status, .status) {
+  background: #0f1622;
+  border-color: var(--tq-brd);
+  color: var(--tq-ink)
+}
+html[data-design="tactique"] .repo-dropzone-pick {
+  border: 1px solid var(--tq-brd2);
+  border-radius: 8px
+}
+html[data-design="tactique"] .repo-dropzone:hover:not(#imp) {
+  border-color: var(--tq-acc);
+  border-style: solid
+}
+/* pied de page pleine largeur : filet lumineux en haut, angles droits */
+html[data-design="tactique"] .repo-footer {
+  border-radius: 0;
+  border-width: 1px 0 0
+}
+/* barres de défilement fines, teintées */
+html[data-design="tactique"] {
+  scrollbar-color: var(--tq-brd2) transparent
+}
+@media print {
+  html[data-design="tactique"] {
+    background: #fff !important
+  }
+}

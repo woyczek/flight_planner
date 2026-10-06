@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Ajouté
 
+- **Design « Tactique »** (Apparence) : repris de l'outil Ordres de vols — fond de nuit dégradé à halos, verre fumé
+  (flou, bord lumineux), accent cyan, texte Inter, titres Orbitron en capitales, liseré du thème en haut des blocs. Sans
+  image ni texture (aucun décor, logo et icônes plats) ; polices dans `shared/fonts/` (SIL OFL). Règles dans
+  `designs_skeuo.css` (jetons des composants communs), clé `logo` du registre des designs (logo plat d'un design à matières).
 - **Base des types d'aéronefs plus visible** : carte en tête de Références et dépendances, encadrée et signalée par une
   notification quand la base est vide, bouton « Compléter la base » (types de la flotte et des missions), « Recharger la
   page » à la fin d'une passe, fichiers écrits expliqués.
