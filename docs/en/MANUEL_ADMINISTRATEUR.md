@@ -261,11 +261,11 @@ Output type (PNG, editable SVG) and PNG width: ☰ menu › “Map outputs”. T
 
 Block hidden by default: click “Show” in its header.
 - `data/sia` folder, stored like the other folders of the suite.
-- “Re-read the folder” after each AIRAC update; “Cancel” stops without changing the stored base.
+- “Rebuild the aeronautical database” after each AIRAC update; “Cancel” stops without changing the stored base.
 - “Purge the cache” clears the base kept in this browser (to be re-read afterwards).
 - The status line shows the stored base (folder, AIRAC cycle, date); “Files analysed” lists the XML files read.
 
-If the folder contains several cycles, only the most recent is read; the others are flagged, to be archived. This is the same block as Settings › Maintenance › Aeronautical data (step 4).
+If the folder contains several cycles, only the most recent is read; the others are flagged, to be archived. This is the same block as Settings › Maintenance › Aeronautical data (“Rebuild the aeronautical database”), which reads the active zones and their ticked sources.
 
 ## Mission registry
 <!-- page: apps/cpco/mission_registry.html -->
@@ -644,33 +644,36 @@ References tracked: SIA XML, studio analysed base, MORA grid, AAR tracks, APD pe
 Examples of checks: mixed cycles in the SIA base, MORA obstacles from another cycle, fleet types missing from the ICAO base, prompt to regenerate (`python tools/build_mission_prompt.py`).
 The “Check” button reruns the checks.
 
-### Aeronautical data: sources and SIA update (AIRAC)
+### Aeronautical data: world zones, sources and AIRAC cycles
 
-**Sources**: one line per data source, each ticked (read) or not; changes apply at the next rebuild of the base (“Re-read the folder”, step 4). The SIA keeps priority: within the French FIRs only its airspace counts; elsewhere, an airspace, aerodrome or navaid already read is not added a second time.
-- **SIA France** (AIXM 4.5, XML_SIA) and **DIRCAM / MILAIP** (RTBA / AZBA areas, ENR 5.7 refuelling tracks): the step by step below.
-- **AIXM 5.1** (other countries): `.xml` files in the `data/sia/aixm5/` folder. “ENAIRE (Spain): download” takes the latest published datasets (airspace, en route). United Kingdom (NATS): register on the site, drop the file by hand.
-- **GeoJSON**: `.geojson` or `.json` files (and OpenAir `.txt`) in `data/sia/geojson/`. “FAA (USA): special use airspace and military routes” downloads the special use airspace (MOA, R, W, A, P) and the MTR routes, read as corridors; “FAA: airspace classes” is a large file.
-- **openAIP**: two-letter country codes separated by spaces, then “openAIP: download the countries” (airspace, aerodromes, navaids, VFR points in `data/sia/openaip/`). Community data, non-commercial use (CC BY-NC 4.0).
-- **X-Plane**: button for the X-Plane installation folder; navaids, fixes, airways and MORA grid from the `earth_*.dat` files (“Custom Data” first), OpenAir airspace if any.
-- Downloads go through the launcher (`tools/aero_fetch.py`, also usable on the command line). Without the launcher: download the files by hand and drop them into the source's subfolder.
-- Outside France, the R, D, TRA, TSA, MOA, W, A areas and MTR routes crossed by a mission appear in its airspace to activate.
+**Zone map**: one zone per country (France groups mainland and overseas territories, the SIA coverage). Hovering it shows its sources in the right-hand panel; a click pins it: the panel stays on it while you activate it (“Activate the zone”) and set its sources. Clicking the zone again, Esc or “📌 Release” let it go.
+- Colours: outline only = inactive, no data; grey = inactive, with data; orange = active, incomplete data; green = active, all data of the ticked sources; blue = hovered zone.
+- Each source is ticked or unticked for its zone; only the ticked sources of the active zones go into the database. A “link” source (PDF or reference website) is not read by the suite.
+- Depending on the source, the panel offers:
+  - a direct download through the launcher (`tools/aero_fetch.py`): openAIP (each country), ENAIRE (Spain), FAA (United States: military areas and routes, airspace classes);
+  - an order or a registration, with the link and the instructions: SIA France (0 € order, to redo at each cycle), NATS (United Kingdom, file dropped into `data/sia/zones/gb/`);
+  - a PDF, with the link and the instructions: DIRCAM / MILAIP ENR 5.7 (refuelling tracks), UK military AIP, NAV CANADA;
+    DIRCAM: “Import the MILAIP PDF…” reads the PDF of section ENR 5.7 (pdf.js, network at the first import), shows the number of tracks and the anomalies found, then “Write miam-enr-5-7-tracks.xml” stores the file in the SIA folder (old one in `_archives/`) and updates the database;
+  - a folder of the computer: X-Plane (navaids, fixes, airways, MORA grid, cut to the outlines of the active zones that ticked it);
+  - a calculation: the zone MORA.
+- SIA France (France zone): “Fetch the downloaded ZIP” (the launcher takes it from Downloads), “SIA export ZIP…”, “Extract …” if it is already in the folder, “Archive the old cycles” (`_archives/`); “SIA folder content” lists the cycle files.
+- The SIA keeps priority: inside the French FIRs only its airspace counts; elsewhere an airspace, aerodrome or navaid already read is not added twice. Outside France, R, D, TRA, TSA, MOA, W, A areas and MTR routes crossed by a mission appear in its airspace to activate.
+- Website addresses (SIA, DIRCAM, NATS, UK military AIP, NAV CANADA) are set in Settings › Installation › Sources and folders › External sources; the SIA and X-Plane folders there are the same as here.
 
-**SIA France: new AIRAC cycle step by step**
+**Rebuild the aeronautical database**: reads the ticked sources of all active zones (a few seconds; the browser may ask to authorise the folder). It is the same block as in the map studio.
 
-A new AIRAC cycle comes into force every 28 days. Six steps, in order; the badge of each step turns green when the step is done. The “How to” details each step.
-1. **AIRAC cycle**: note the current cycle, the next one and that of the studio base. Links lead to the SIA pages.
-2. **Download and extract the SIA export**:
-   - on the SIA website: account (free), “Add to cart” (€0), then “Checkout”, accepting the licence;
-   - back in the suite: “Fetch the downloaded ZIP” (the launcher takes it from Downloads), or “SIA export ZIP…” to choose it, or “Extract …” if it is already in the folder;
-   - choose the SIA folder if needed, then “Analyse”.
-3. **Old cycles**: “Archive into _archives/”.
-4. **Rebuild the SIA base**: “Re-read the folder”. Re-reading takes a few seconds; it is the same block as in the map studio.
-5. **Check the differences with the previous base**: go through the added or removed airspaces, then “Done”.
-6. **Recompute (MORA) and check consistency**:
-   - “Simple recalculation” (offline) or “Full calculation” (network, about one minute);
-   - if cells change: “Write mora.csv (old one archived)”, then commit the data repository;
-   - finally “Check” the consistency.
-The AIRAC XML files (about 80 MB per cycle) stay out of the repository, like the files of the other sources. The MORA values are computed, not certified.
+**AIRAC cycles and data age**: cycle in force, next cycle and database cycle, then one row per ticked source of the active zones:
+- SIA: cycle read from the file names, “old” if it precedes the cycle in force;
+- X-Plane: “Custom Data” cycle;
+- downloaded files: “old” after 28 days (one AIRAC cycle).
+
+**MORA**: several sources.
+- The computed grid (`data/sia/mora.csv`) has priority. “Simple recalculation” takes the obstacles of the new cycle (offline); “Full calculation” redoes terrain and peaks (network, about one minute) for the theatres and missions; “Compute the zone MORA” (panel) does it over the extent of one zone, the other cells being kept.
+- If cells change: “Write mora.csv (old one archived)”, then commit the data repository.
+- Elsewhere, the X-Plane MORA grid completes it, if the X-Plane source is ticked.
+
+**Consistency**: “Check” verifies airspace, aircraft, fleet, performance and mission aerodromes.
+AIRAC XML files (about 80 MB per cycle) stay outside the repository, like the files of the other sources. MORA values are computed, not certified.
 
 ### Caches
 
@@ -692,6 +695,7 @@ Purge the “Data index” when a page shows outdated data after a file change m
 
 This block only appears if the Centre is enabled.
 - “Compute used space” measures the missions folder (`data/missions`): per mission, per file type and in total. It also shows the space used by the browser.
+- “Aeronautical data, by zone”: space of the SIA folder by zone (sources and number of files; mora.csv counts for all zones). A deactivated zone keeps its files: delete them by hand to free the space.
 - “Delete surplus maps” removes the maps that are no longer in their mission's list.
 - “Purge all generated maps” and “Purge PDFs” free up space; these files are regenerated from the YAML.
 - Each deletion asks for confirmation.

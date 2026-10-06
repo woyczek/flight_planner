@@ -188,8 +188,8 @@
   }, {
     id: 'sia',
     icon: 'map',
-    title: ['Données aéronautiques : sources et mise à jour SIA (AIRAC)', 'Aeronautical data: sources and SIA update (AIRAC)', 'Luftfahrtdaten: Quellen und SIA-Aktualisierung (AIRAC)', 'Datos aeronáuticos: fuentes y actualización SIA (AIRAC)'],
-    sub: ['Sources actives (SIA, DIRCAM, AIXM 5.1, GeoJSON, openAIP, X-Plane) et téléchargements ; nouveau cycle SIA pas à pas : téléchargement, dossier, anciens cycles, relecture, différences, recalculs (MORA, espaces, appareils, flotte, performances)', 'Active sources (SIA, DIRCAM, AIXM 5.1, GeoJSON, openAIP, X-Plane) and downloads; new SIA cycle step by step: download, folder, old cycles, re-read, differences, recalculations', 'Aktive Quellen (SIA, DIRCAM, AIXM 5.1, GeoJSON, openAIP, X-Plane) und Downloads; neuer SIA-Zyklus Schritt für Schritt', 'Fuentes activas (SIA, DIRCAM, AIXM 5.1, GeoJSON, openAIP, X-Plane) y descargas; nuevo ciclo SIA paso a paso']
+    title: ['Données aéronautiques : zones du monde, sources et cycles AIRAC', 'Aeronautical data: world zones, sources and AIRAC cycles', 'Luftfahrtdaten: Zonen der Welt, Quellen und AIRAC-Zyklen', 'Datos aeronáuticos: zonas del mundo, fuentes y ciclos AIRAC'],
+    sub: ['Carte des zones (pays) : zones actives, sources de chacune (téléchargement, commande, PDF, dossier) et leur état ; reconstruction de la base aéronautique, âge des données, MORA, cohérence', 'Zone map (countries): active zones, the sources of each (download, order, PDF, folder) and their state; aeronautical database rebuild, data age, MORA, consistency', 'Zonenkarte (Länder): aktive Zonen, ihre Quellen (Download, Bestellung, PDF, Ordner) und deren Stand; Neuaufbau der Luftfahrtdatenbank, Alter der Daten, MORA, Konsistenz', 'Mapa de zonas (países): zonas activas, fuentes de cada una (descarga, pedido, PDF, carpeta) y su estado; reconstrucción de la base aeronáutica, antigüedad de los datos, MORA, coherencia']
   }, {
     id: 'caches',
     icon: 'trash',
@@ -546,7 +546,7 @@
       <p class="mt-small">${esc(t(['Chaque dossier est choisi une fois (le navigateur mémorise l’autorisation, parfois à reconfirmer après un redémarrage). Les sélecteurs de fichiers des pages s’ouvrent directement dans le dossier correspondant.', 'Each folder is chosen once (the browser remembers the permission, sometimes to be confirmed again after a restart). File pickers open directly in the matching folder.']))}</p>
       <div class="mt-scroll"><table class="mt-table mt-wide mt-folders"><tbody>${rows.join('')}</tbody></table></div>
       <h3>${esc(t(['Sources externes', 'External sources', 'Externe Quellen', 'Fuentes externas']))}</h3>
-      <p class="mt-small">${esc(t(['Adresses par défaut livrées avec l’application (repository_tree) ; une valeur saisie ici ne vaut que pour ce navigateur (sauvegardée avec les données locales).', 'Default addresses ship with the application (repository_tree); a value entered here applies to this browser only (saved with local data).']))}</p>
+      <p class="mt-small">${esc(t(['Adresses par défaut livrées avec l’application (repository_tree) ; une valeur saisie ici ne vaut que pour ce navigateur (sauvegardée avec les données locales). Les adresses du SIA, de la DIRCAM, de NATS, de l’AIP militaire britannique et de NAV CANADA servent aux liens des sources de Paramètres › Maintenance › Données aéronautiques ; les dossiers SIA et X-Plane ci-dessus sont les mêmes que là-bas.', 'Default addresses ship with the application (repository_tree); a value entered here applies to this browser only (saved with local data). The SIA, DIRCAM, NATS, UK military AIP and NAV CANADA addresses are the source links of Settings › Maintenance › Aeronautical data; the SIA and X-Plane folders above are the same as there.', 'Standardadressen werden mit der Anwendung geliefert (repository_tree); ein hier eingegebener Wert gilt nur für diesen Browser. Die Adressen von SIA, DIRCAM, NATS, britischem Militär-AIP und NAV CANADA sind die Quellen-Links unter Einstellungen › Wartung › Luftfahrtdaten; die SIA- und X-Plane-Ordner oben sind dieselben wie dort.', 'Direcciones por defecto entregadas con la aplicación (repository_tree); un valor introducido aquí solo vale para este navegador. Las direcciones del SIA, la DIRCAM, NATS, el AIP militar británico y NAV CANADA son los enlaces de las fuentes de Ajustes › Mantenimiento › Datos aeronáuticos; las carpetas SIA y X-Plane de arriba son las mismas que allí.']))} <a class="mt-link" href="${esc(window.RepositoryNav?.settingsUrl?.('sia') || '?m=sia')}">${esc(t(['Données aéronautiques →', 'Aeronautical data →', 'Luftfahrtdaten →', 'Datos aeronáuticos →']))}</a></p>
       <table class="mt-table mt-wide mt-sources"><tbody>${Object.entries(src).map(([k, v]) => `<tr data-src="${esc(k)}"><td><b>${esc(t(v.label || [k]))}</b></td><td><input type="url" class="mt-url" value="${esc(local[k] || '')}" placeholder="${esc(v.url)}" spellcheck="false"></td><td class="mt-nowrap">${local[k] ? pill('info', t(['modifiée', 'changed', 'geändert', 'cambiada'])) : ''} <button type="button" class="secondary" data-reset ${local[k] ? '' : 'hidden'}>↺</button> <a class="mt-link" href="${esc(openUrl(k, nav.source(k)))}" target="_blank" rel="noopener">${esc(t(['Ouvrir', 'Open', 'Öffnen', 'Abrir']))} ↗</a></td></tr>`).join('')}</tbody></table>
       <h3>${esc(t(['Compagnie virtuelle', 'Virtual airline', 'Virtuelle Fluggesellschaft', 'Aerolínea virtual']))}</h3>
       <p class="mt-small">${esc(t(['Nom, sigle et centre affichés dans la suite (SO Group Virtual, SOG, CPCO par défaut) et pages du site de la compagnie (adresse : « Site de la compagnie virtuelle » ci-dessus ; chemin sous ce site, ou adresse complète ; {id} : numéro de l’appareil). Vide : valeur par défaut. Vaut pour ce navigateur.', 'Name, short name and centre shown in the suite (SO Group Virtual, SOG, CPCO by default) and pages of the airline website (address: “Virtual airline website” above; path under that site, or full address; {id}: aircraft number). Empty: default value. Applies to this browser.', 'Name, Kürzel und Zentrum in der Suite (standardmäßig SO Group Virtual, DEFA, CPCO) und Seiten der Website (Adresse: oben; Pfad unter dieser Website oder vollständige Adresse; {id}: Flugzeugnummer). Leer: Standardwert. Gilt für diesen Browser.', 'Nombre, sigla y centro mostrados en la suite (SO Group Virtual, SOG, CPCO por defecto) y páginas del sitio de la aerolínea (dirección: arriba; ruta bajo ese sitio o dirección completa; {id}: número del avión). Vacío: valor por defecto. Vale para este navegador.']))}</p>
@@ -745,7 +745,7 @@
         const mc = window.SiaBase.moraCycle(await mora.file.text());
         add(G.sia, 'mora.csv', mc ? t(['obstacles AIRAC {c}', 'obstacles AIRAC {c}'], {
           c: mc
-        }) : t(['cycle des obstacles non tracé', 'obstacle cycle not traced']), fmtDate(mora.lastModified), mc && info?.airac && mc === info.airac ? pill('ok', '=') : pill('warn', t(['à recalculer / tracer (étape 6)', 'recalculate / trace (step 6)'])), '');
+        }) : t(['cycle des obstacles non tracé', 'obstacle cycle not traced']), fmtDate(mora.lastModified), mc && info?.airac && mc === info.airac ? pill('ok', '=') : pill('warn', t(['à recalculer / tracer (MORA)', 'recalculate / trace (MORA)', 'neu berechnen (MORA)', 'recalcular (MORA)'])), '');
       }
     }
     const tracks = await repoText('data/sia/miam-enr-5-7-tracks.xml');
@@ -810,10 +810,10 @@
     });
     const lat = siaFolderState?.latest;
     // SIA XML
-    let st = !siaFolderState ? pill('info', t(['dossier SIA non lu (étape 2)', 'SIA folder not read (step 2)'])) : !lat ? pill('err', t(['aucun cycle', 'no cycle'])) : !lat.complete ? pill('warn', t(['manque : {m}', 'missing: {m}'], {
+    let st = !siaFolderState ? pill('info', t(['dossier SIA non lu', 'SIA folder not read', 'SIA-Ordner nicht gelesen', 'carpeta SIA no leída'])) : !lat ? pill('err', t(['aucun cycle', 'no cycle'])) : !lat.complete ? pill('warn', t(['manque : {m}', 'missing: {m}'], {
       m: lat.missing.join(', ')
     })) : siaFolderState.old.length ? pill('warn', t(['anciens cycles à archiver', 'old cycles to archive'])) : pill('ok', lat.date);
-    add('SIA AIXM 4.5 · XML-SIA', 'data/sia/*_<date>.xml', t(['cycle dans le nom ; hors git (.gitignore)', 'cycle in file name; outside git (.gitignore)']), t(['§ Mise à jour SIA pas à pas (ci-dessous)', '§ SIA step by step (below)']), t(['base du studio, mora.csv (obstacles), profil vertical, planificateur, terrains des missions', 'studio base, mora.csv (obstacles), vertical profile, planner, mission aerodromes']), st);
+    add('SIA AIXM 4.5 · XML-SIA', 'data/sia/*_<date>.xml', t(['cycle dans le nom ; hors git (.gitignore)', 'cycle in file name; outside git (.gitignore)']), t(['§ Données aéronautiques, zone France, source SIA', '§ Aeronautical data, France zone, SIA source', '§ Luftfahrtdaten, Zone Frankreich, Quelle SIA', '§ Datos aeronáuticos, zona Francia, fuente SIA']), t(['base du studio, mora.csv (obstacles), profil vertical, planificateur, terrains des missions', 'studio base, mora.csv (obstacles), vertical profile, planner, mission aerodromes']), st);
     st = !info ? pill('info', t(['non construite', 'not built'])) : info.mixed ? pill('err', t(['cycles mélangés dans la base : relire le dossier', 'mixed cycles: re-read the folder'])) : lat && info.airac !== lat.date ? pill('warn', t(['base {b} ≠ dossier {d} : relire', 'base {b} ≠ folder {d}: re-read'], {
       b: info.airac,
       d: lat.date
@@ -824,11 +824,11 @@
     add(t(['Base analysée du studio', 'Studio analysed base']), 'IndexedDB sia-map-parser', t(['parserVersion 11 ; cycle mémorisé (airac)', 'parserVersion 11; stored cycle (airac)']), t(['Studio › « Relire le dossier »', 'Studio › “Re-read folder”']), t(['cartes, profil vertical, planificateur', 'maps, vertical profile, planner']), st);
     const moraFile = siaFolderState?.fixed.find(x => x.id === 'mora')?.file;
     const mc = moraFile ? window.SiaBase.moraCycle(await moraFile.file.text()) : '';
-    st = !moraFile ? pill('info', t(['dossier SIA non lu', 'SIA folder not read'])) : !mc ? pill('warn', t(['cycle des obstacles non tracé : étape 6 (recalcul simple) le trace', 'obstacle cycle not traced: step 6 traces it'])) : info?.airac && mc !== info.airac ? pill('warn', t(['obstacles {m} ≠ base {b} : recalcul simple', 'obstacles {m} ≠ base {b}: simple recalculation'], {
+    st = !moraFile ? pill('info', t(['dossier SIA non lu', 'SIA folder not read'])) : !mc ? pill('warn', t(['cycle des obstacles non tracé : MORA, « Recalcul simple » le trace', 'obstacle cycle not traced: MORA, “Simple recalculation” traces it'])) : info?.airac && mc !== info.airac ? pill('warn', t(['obstacles {m} ≠ base {b} : recalcul simple', 'obstacles {m} ≠ base {b}: simple recalculation'], {
       m: mc,
       b: info.airac
     })) : pill('ok', mc);
-    add('Grille MORA', 'data/sia/mora.csv', t(['git ; colonne source (+ cycle des obstacles)', 'git; source column (+ obstacle cycle)']), t(['Studio › bloc 5 (complet, réseau) ; étape 6 (recalcul simple, obstacles)', 'Studio › block 5 (full, network); step 6 (simple, obstacles)']), t(['cartes, profil vertical', 'maps, vertical profile']), st);
+    add('Grille MORA', 'data/sia/mora.csv', t(['git ; colonne source (+ cycle des obstacles)', 'git; source column (+ obstacle cycle)']), t(['Studio › bloc 5 (complet, réseau) ; Données aéronautiques › MORA (recalcul simple, obstacles)', 'Studio › block 5 (full, network); Aeronautical data › MORA (simple, obstacles)']), t(['cartes, profil vertical', 'maps, vertical profile']), st);
     const trk = await repoText('data/sia/miam-enr-5-7-tracks.xml'),
       crd = await repoText('data/sia/miam-enr-5-7-coordinates.xml');
     const ed = x => /<miam:sourceEdition>([^<]+)</.exec(x?.text || '')?.[1] || '';
@@ -886,8 +886,6 @@
   }
 
   // ===== 4. Mise à jour SIA pas à pas
-  const PREV = 'siaBaseInfo:prev'; // écrit par SiaBase.put (base précédente)
-  const ACK = 'siaUpdateAck:v1'; // étapes 5 et 6 marquées « vu » pour une base (cachedAt)
   let extractMsg = '',
     archiveMsg = '',
     moraPlan = null,
@@ -896,129 +894,15 @@
   async function scanSiaFolder(request = false) {
     const dir = await folder('__sia', request);
     if (!dir) return (siaFolderState = null);
-    siaFolderState = window.Airac.inspectFolder(await window.Airac.filesOf(dir));
+    try {
+      siaFolderState = window.Airac.inspectFolder(await window.Airac.filesOf(dir));
+    } catch (e) {
+      // dossier mémorisé déplacé, supprimé ou à la demande (Synology) : traité comme absent, sans casser le bloc
+      console.warn('Dossier SIA illisible :', e);
+      siaFolderState = null;
+    }
     return siaFolderState;
   }
-  const stepHead = (n, level, title) => `<div class="mt-step-head"><span class="mt-step-num mt-${level}">${n}</span><h3>${esc(title)}</h3></div>`;
-  // ---- sources des données aéronautiques (shared/aero_sources.js) : actives ou non, fichiers trouvés, téléchargements
-  // par le lanceur (tools/aero_fetch.py, POST /__setup/aero-fetch) dans les sous-dossiers de data/sia
-  const AERO_TOOLS = {
-    aixm5: [{
-      provider: 'enaire',
-      label: ['ENAIRE (Espagne) : télécharger', 'ENAIRE (Spain): download', 'ENAIRE (Spanien): herunterladen', 'ENAIRE (España): descargar'],
-      title: ['Derniers jeux AIXM 5.1 publiés (espaces, en route) → data/sia/aixm5/', 'Latest published AIXM 5.1 datasets (airspace, en route) → data/sia/aixm5/']
-    }],
-    geojson: [{
-      provider: 'faa',
-      args: ['sua', 'mtr'],
-      label: ['FAA (États-Unis) : zones et routes militaires', 'FAA (USA): special use airspace and military routes', 'FAA (USA): Sonderlufträume und Militärrouten', 'FAA (EE. UU.): espacios de uso especial y rutas militares'],
-      title: ['Espaces à usage spécial (MOA, R, W, A, P) et routes MTR (IR, VR, SR), domaine public → data/sia/geojson/', 'Special use airspace (MOA, R, W, A, P) and MTR routes (IR, VR, SR), public domain → data/sia/geojson/']
-    }, {
-      provider: 'faa',
-      args: ['class'],
-      label: ['FAA : classes d’espace (B, C, D, E)', 'FAA: airspace classes (B, C, D, E)', 'FAA: Luftraumklassen (B, C, D, E)', 'FAA: clases de espacio (B, C, D, E)'],
-      title: ['Gros fichier (plusieurs dizaines de Mo) → data/sia/geojson/', 'Large file (tens of MB) → data/sia/geojson/']
-    }],
-    openaip: [{
-      provider: 'openaip',
-      countries: true,
-      label: ['openAIP : télécharger les pays', 'openAIP: download the countries', 'openAIP: Länder herunterladen', 'openAIP: descargar los países'],
-      title: ['Espaces, aérodromes, balises, points VFR de chaque pays → data/sia/openaip/ (CC BY-NC 4.0, © openAIP)', 'Airspace, aerodromes, navaids, VFR points of each country → data/sia/openaip/ (CC BY-NC 4.0, © openAIP)']
-    }]
-  };
-  const AERO_NOTES = {
-    sia: ['AIXM 4.5 et XML_SIA du dossier data/sia : pas à pas ci-dessous.', 'AIXM 4.5 and XML_SIA in data/sia: step by step below.', 'AIXM 4.5 und XML_SIA in data/sia: Schritt für Schritt unten.', 'AIXM 4.5 y XML_SIA de data/sia: paso a paso abajo.'],
-    dircam: ['Zones RTBA / AZBA du SIA et axes de ravitaillement (miam-enr-5-7-tracks.xml).', 'RTBA / AZBA areas from the SIA and refuelling tracks (miam-enr-5-7-tracks.xml).', 'RTBA-/AZBA-Gebiete des SIA und Betankungsstrecken (miam-enr-5-7-tracks.xml).', 'Zonas RTBA / AZBA del SIA y ejes de reabastecimiento (miam-enr-5-7-tracks.xml).'],
-    aixm5: ['Fichiers .xml dans data/sia/aixm5/. Royaume-Uni (NATS) : inscription sur le site, fichier déposé à la main.', '.xml files in data/sia/aixm5/. United Kingdom (NATS): register on the site, drop the file by hand.', '.xml-Dateien in data/sia/aixm5/. Vereinigtes Königreich (NATS): Registrierung, Datei von Hand ablegen.', 'Archivos .xml en data/sia/aixm5/. Reino Unido (NATS): registro en el sitio, archivo depositado a mano.'],
-    geojson: ['Fichiers .geojson ou .json dans data/sia/geojson/ (aussi : OpenAir .txt).', '.geojson or .json files in data/sia/geojson/ (also OpenAir .txt).', '.geojson- oder .json-Dateien in data/sia/geojson/ (auch OpenAir .txt).', 'Archivos .geojson o .json en data/sia/geojson/ (también OpenAir .txt).'],
-    openaip: ['Codes pays ISO à deux lettres, séparés par des espaces. Données communautaires, usage non commercial (CC BY-NC 4.0).', 'Two-letter ISO country codes, separated by spaces. Community data, non-commercial use (CC BY-NC 4.0).', 'ISO-Ländercodes mit zwei Buchstaben, durch Leerzeichen getrennt. Gemeinschaftsdaten, nicht kommerziell (CC BY-NC 4.0).', 'Códigos de país ISO de dos letras, separados por espacios. Datos comunitarios, uso no comercial (CC BY-NC 4.0).'],
-    xplane: ['Dossier d’installation d’X-Plane : balises, points, voies aériennes, grille MORA (earth_*.dat) et espaces OpenAir s’il y en a.', 'X-Plane installation folder: navaids, fixes, airways, MORA grid (earth_*.dat) and OpenAir airspace if any.', 'X-Plane-Installationsordner: Funkfeuer, Punkte, Luftstraßen, MORA-Gitter (earth_*.dat) und OpenAir-Lufträume.', 'Carpeta de instalación de X-Plane: radioayudas, puntos, aerovías, rejilla MORA (earth_*.dat) y espacios OpenAir si los hay.']
-  };
-  /** Fichiers trouvés pour une source (sous-dossier de data/sia, dossier X-Plane) ; null si le dossier n'est pas autorisé. */
-  async function aeroFileCount(id) {
-    const st = await window.FileAccess?.status?.(id === 'xplane' ? '__xpnav' : '__sia');
-    if (!st?.handle || st.permission !== 'granted') return null;
-    try {
-      if (id === 'xplane') return (await window.SiaBase.extraFiles(st.handle, {})).xplane?.length ?? 0;
-      const d = await st.handle.getDirectoryHandle(id);
-      let n = 0;
-      for await (const h of d.values())
-        if (h.kind === 'file' && /\.(xml|geojson|json|txt|air)$/i.test(h.name)) n++;
-      return n;
-    } catch {
-      return 0;
-    }
-  }
-  async function renderAeroSources(box) {
-    const AS = await window.SiaBase?.aero?.();
-    if (!box || !AS) return;
-    const s = AS.settings(),
-      lang = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'));
-    const counts = Object.fromEntries(await Promise.all(AS.SOURCES.filter(x => x.dir || x.id === 'xplane').map(async x => [x.id, await aeroFileCount(x.id)])));
-    const row = x => {
-      const n = counts[x.id],
-        tools = (AERO_TOOLS[x.id] || []).map((tl, i) => `${tl.countries ? `<input type="text" class="mt-aero-cc" value="${esc(s.openaipCountries)}" size="18" spellcheck="false" aria-label="${esc(t(['Pays', 'Countries', 'Länder', 'Países']))}">` : ''}<button type="button" class="secondary" data-aero-fetch="${x.id}:${i}" data-icon="download" title="${esc(t(tl.title))}">${esc(t(tl.label))}</button>`).join(' ');
-      return `<tr><td><label class="mt-aero-on"><input type="checkbox" data-aero-on="${x.id}"${s.enabled[x.id] ? ' checked' : ''}> <b>${esc(x.label[lang] || x.label[0])}</b></label><div class="mt-small">${esc(t(AERO_NOTES[x.id]))}</div></td>
-        <td class="mt-aero-files">${n == null ? (x.dir || x.id === 'xplane' ? `<span class="mt-small">${esc(t(['dossier non autorisé', 'folder not authorised', 'Ordner nicht erlaubt', 'carpeta no autorizada']))}</span>` : '') : `${n} ${esc(t(['fichier(s)', 'file(s)', 'Datei(en)', 'archivo(s)']))}`}</td>
-        <td class="row">${x.id === 'xplane' ? '<span data-aero-xp></span>' : ''}${tools}</td></tr>`;
-    };
-    box.innerHTML = `<div class="repo-card" data-icon="layers" data-subtitle="${esc(t(['Chaque source se lit à la reconstruction de la base (« Relire le dossier », étape 4) ; le SIA garde la priorité sur les doublons.', 'Each source is read when the base is rebuilt (“Re-read the folder”, step 4); the SIA wins over duplicates.', 'Jede Quelle wird beim Neuaufbau der Basis gelesen („Ordner neu einlesen“, Schritt 4); das SIA hat Vorrang.', 'Cada fuente se lee al reconstruir la base («Releer la carpeta», paso 4); el SIA tiene prioridad sobre los duplicados.']))}"><h3>${esc(t(['Sources', 'Sources', 'Quellen', 'Fuentes']))}</h3>
-      <table class="mt-table mt-aero"><tbody>${AS.SOURCES.map(row).join('')}</tbody></table>
-      <p class="mt-small" id="mtAeroMsg" aria-live="polite"></p></div>`;
-    const xp = box.querySelector('[data-aero-xp]');
-    if (xp) xp.append(folderButton('__xpnav', () => renderAeroSources(box), {
-      withLabel: false
-    }));
-    box.querySelectorAll('[data-aero-on]').forEach(c => c.onchange = () => {
-      AS.save({
-        enabled: {
-          ...AS.settings().enabled,
-          [c.dataset.aeroOn]: c.checked
-        }
-      });
-      box.querySelector('#mtAeroMsg').textContent = t(['Sources changées : « Relire le dossier » (étape 4) pour reconstruire la base.', 'Sources changed: “Re-read the folder” (step 4) to rebuild the base.', 'Quellen geändert: „Ordner neu einlesen“ (Schritt 4), um die Basis neu aufzubauen.', 'Fuentes cambiadas: «Releer la carpeta» (paso 4) para reconstruir la base.']);
-    });
-    const cc = box.querySelector('.mt-aero-cc');
-    if (cc) cc.onchange = () => AS.save({
-      openaipCountries: cc.value.toLowerCase().split(/[\s,;]+/).filter(x => /^[a-z]{2}$/.test(x)).join(' ')
-    });
-    box.querySelectorAll('[data-aero-fetch]').forEach(b => b.onclick = async () => {
-      const [id, i] = b.dataset.aeroFetch.split(':'),
-        tl = AERO_TOOLS[id][+i],
-        args = tl.countries ? AS.settings().openaipCountries.split(' ') : tl.args || [];
-      const say = (m, k = 'warn') => window.AppFramework.notify(m, k);
-      b.disabled = true;
-      const job = window.AppFramework?.task?.(t(tl.label));
-      try {
-        const r = await fetch('/__setup/aero-fetch', {
-          method: 'POST',
-          headers: {
-            'X-DEFA-Setup': '1',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            provider: tl.provider,
-            args
-          })
-        });
-        if (!r.ok) throw new Error(r.status);
-        const res = await r.json();
-        const files = res.files.map(f => f.name + (f.features != null ? ` (${f.features})` : '')).join(', ');
-        if (res.files.length) say(t(['Téléchargé : {f}. « Relire le dossier » (étape 4) pour les lire.', 'Downloaded: {f}. “Re-read the folder” (step 4) to read them.', 'Heruntergeladen: {f}. „Ordner neu einlesen“ (Schritt 4).', 'Descargado: {f}. «Releer la carpeta» (paso 4).'], {
-          f: files
-        }), res.errors.length ? 'warn' : 'ok');
-        if (res.errors.length) say(res.errors.join(' · '), 'error');
-        if (!res.files.length && !res.errors.length) say(t(['Rien à télécharger.', 'Nothing to download.', 'Nichts herunterzuladen.', 'Nada que descargar.']));
-      } catch {
-        say(t(['Le serveur du lanceur ne répond pas : ouvrez la suite avec lancer.cmd / lancer.sh, ou téléchargez les fichiers à la main (docs/technique/DONNEES_AERO_ETRANGER.md) et déposez-les dans data/sia/<source>/.', 'The launcher server does not answer: open the suite with lancer.cmd / lancer.sh, or download the files by hand and drop them into data/sia/<source>/.']));
-      } finally {
-        job?.end?.();
-        b.disabled = false;
-        renderAeroSources(box);
-      }
-    });
-  }
-
   // ---- base des types d'aéronefs (OACI Doc 8643, performances EUROCONTROL) : non publiée, complétée sur ce poste type
   // par type par le lanceur (AircraftDB/update_aircraft_db.py ; GET / POST /__setup/aircraft-db { codes }) : un nouvel
   // appareil (code saisi), les types de la flotte, ceux des missions (ODV, registre), ou les types encore inconnus de la
@@ -1073,106 +957,734 @@
     if (s?.state === 'running') acTimer = setTimeout(() => aircraftDbState(el), 5000);
   }
 
+  // ===== 4. Données aéronautiques : carte des zones du monde (shared/aero_zones.js), sources de chaque zone,
+  // reconstruction de la base aéronautique (zones actives, sources cochées), cycles AIRAC et âge des données, MORA.
+  // États d'une zone sur la carte : vierge, survolée (sources dans le panneau), active incomplète, active complète,
+  // inactive avec des données (grisée). Un clic active ou désactive la zone ; le panneau montre la zone choisie, ou la
+  // zone survolée.
+  let aeroMapEl = null,
+    aeroMap = null,
+    aeroPinned = 'fr',
+    aeroLocked = false, // zone épinglée d'un clic : le panneau reste sur elle malgré le survol
+    aeroHoverTimer = 0,
+    aeroXpLabel = '', // libellé du bouton du dossier X-Plane, repris au redessin du panneau (pas de bouton vide un instant)
+    aeroHover = null,
+    aeroInv = null;
+  const AERO_STATE = {
+    blank: ['inactive, sans données', 'inactive, no data', 'inaktiv, ohne Daten', 'inactiva, sin datos'],
+    data: ['inactive, avec des données', 'inactive, with data', 'inaktiv, mit Daten', 'inactiva, con datos'],
+    partial: ['active, données incomplètes', 'active, incomplete data', 'aktiv, Daten unvollständig', 'activa, datos incompletos'],
+    complete: ['active, toutes les données', 'active, all data', 'aktiv, alle Daten', 'activa, todos los datos']
+  };
+  const AERO_COLOR = {
+    blank: '#8a94a0',
+    data: '#8a94a0',
+    partial: '#e39b1b',
+    complete: '#2e9d4f'
+  };
+  const zName = z => t(z.name || [z.id]);
+  /** Inventaire : fichiers du dossier SIA (racine, sous-dossiers, zones/), cases de mora.csv, dossier X-Plane. */
+  async function aeroInventory() {
+    const inv = {
+      files: [],
+      moraCells: [],
+      folder: false,
+      xplane: null
+    };
+    const st = await window.FileAccess?.status?.('__sia');
+    if (st?.handle && st.permission === 'granted') try {
+      const root = await window.SiaBase.filesOf(st.handle);
+      inv.folder = true;
+      inv.files.push(...root.map(f => ({
+        rel: f.name,
+        at: f.lastModified
+      })));
+      const extra = await window.SiaBase.extraFiles(st.handle, {});
+      for (const [k, l] of Object.entries(extra))
+        if (k !== 'xplane') inv.files.push(...l.map(f => ({
+          rel: f.__rel || `${k}/${f.name}`,
+          at: f.lastModified
+        })));
+      const mora = root.find(f => /^mora\.csv$/i.test(f.name));
+      if (mora) inv.moraCells = window.SiaBase.parseMora(await mora.text());
+    } catch (e) {
+      // dossier mémorisé déplacé ou supprimé : comme non autorisé (à rechoisir)
+      console.warn('Dossier SIA illisible :', e);
+      inv.folder = false;
+    }
+    const xs = await window.FileAccess?.status?.('__xpnav');
+    if (xs?.handle) {
+      inv.xplane = {
+        name: xs.handle.name,
+        granted: xs.permission === 'granted',
+        cycle: ''
+      };
+      if (inv.xplane.granted) try {
+        const cd = await xs.handle.getDirectoryHandle('Custom Data'),
+          txt = await (await (await cd.getFileHandle('cycle_info.txt')).getFile()).text();
+        inv.xplane.cycle = /AIRAC cycle\s*:\s*(\d{4})/i.exec(txt)?.[1] || '';
+      } catch {
+        /* données par défaut seulement */ }
+    }
+    return inv;
+  }
+  // Cases de mora.csv par zone : index par degré entier, compte par zone gardé tant que l'inventaire ne change pas.
+  // (Avant : chaque survol testait toutes les cases du fichier contre le contour du pays — plusieurs centaines de ms
+  // pour un grand pays, carte figée après un glisser.)
+  let moraIdx = null,
+    moraIdxOf = null;
+  const moraCounts = new Map();
+  function moraCount(Z, id, inv) {
+    const cells = inv?.moraCells || [];
+    if (!cells.length) return 0;
+    if (moraIdxOf !== cells) {
+      moraIdxOf = cells;
+      moraCounts.clear();
+      moraIdx = new Map();
+      for (const c of cells) {
+        const k = `${Math.floor(c.lat)}|${Math.floor(c.lon)}`;
+        if (!moraIdx.has(k)) moraIdx.set(k, []);
+        moraIdx.get(k).push(c);
+      }
+    }
+    if (moraCounts.has(id)) return moraCounts.get(id);
+    let n = 0;
+    for (const k of Z.cellsOf(id)) n += (moraIdx.get(k) || []).length; // cases d'un degré de la zone (AeroZones.cellsOf)
+    moraCounts.set(id, n);
+    return n;
+  }
+  /** État d'une source dans une zone : { has (true / false / null : non lue par la suite), n, at, airac, text }. */
+  function aeroSourceStatus(Z, id, src) {
+    const S = Z.SOURCES[src],
+      inv = aeroInv || {
+        files: [],
+        moraCells: []
+      };
+    if (!S?.readable) return {
+      has: null,
+      text: t(['consultation (non lu par la suite)', 'reference only (not read by the suite)', 'nur Ansicht (nicht von der Suite gelesen)', 'solo consulta (no leído por la suite)'])
+    };
+    if (src === 'xplane') {
+      const x = inv.xplane;
+      return {
+        has: !!x?.granted,
+        airac: x?.cycle ? `${x.cycle.slice(2)}/${x.cycle.slice(0, 2)}` : '',
+        text: !x ? t(['dossier d’X-Plane non choisi', 'X-Plane folder not chosen', 'X-Plane-Ordner nicht gewählt', 'carpeta de X-Plane no elegida']) : x.granted ? `${x.name}${x.cycle ? ` — AIRAC ${x.cycle}` : ''}` : t(['dossier à ré-autoriser', 'folder to re-authorise', 'Ordner erneut erlauben', 'carpeta por reautorizar'])
+      };
+    }
+    if (src === 'mora') {
+      const n = moraCount(Z, id, inv);
+      return {
+        has: n > 0,
+        n,
+        text: n ? t(['{n} case(s) dans mora.csv', '{n} cell(s) in mora.csv'], {
+          n
+        }) : t(['pas encore calculée', 'not computed yet', 'noch nicht berechnet', 'aún no calculada'])
+      };
+    }
+    const files = inv.files.filter(f => {
+      const fs = Z.fileSource(f.rel);
+      return fs && fs.zone === id && fs.source === src;
+    });
+    const at = Math.max(0, ...files.map(f => f.at)),
+      airac = src === 'sia' ? files.map(f => /(\d{4}-\d{2}-\d{2})\.xml$/.exec(f.rel)?.[1]).filter(Boolean).sort().pop() || '' : '';
+    return {
+      has: files.length > 0,
+      n: files.length,
+      at,
+      airac,
+      text: files.length ? `${files.length} ${t(['fichier(s)', 'file(s)', 'Datei(en)', 'archivo(s)'])}${airac ? ` — AIRAC ${airac}` : at ? ` — ${fmtDate(at, false)}` : ''}` : inv.folder ? t(['aucun fichier', 'no file', 'keine Datei', 'ningún archivo']) : t(['dossier SIA non autorisé', 'SIA folder not authorised', 'SIA-Ordner nicht erlaubt', 'carpeta SIA no autorizada'])
+    };
+  }
+  /** État d'une zone : blank, data, partial, complete. */
+  function aeroZoneState(Z, z) {
+    const st = Object.fromEntries(z.sources.map(s => [s, aeroSourceStatus(Z, z.id, s)]));
+    if (!Z.isOn(z.id)) return z.sources.some(s => s !== 'xplane' && st[s].has) ? 'data' : 'blank';
+    const need = z.sources.filter(s => Z.srcOn(z.id, s) && st[s].has !== null);
+    return need.length && need.every(s => st[s].has) ? 'complete' : 'partial';
+  }
+  /** Âge d'une source : ok (cycle en vigueur, ou moins de 28 jours), warn (plus ancien), none. */
+  function aeroAge(S, st) {
+    const eff = window.Airac?.cycle?.();
+    if (!st.has) return 'none';
+    if (S.age === 'airac') return st.airac && eff && st.airac >= eff.date ? 'ok' : 'warn';
+    if (S.age === 'xplane') return !st.airac || !eff ? 'ok' : st.airac === eff.label ? 'ok' : 'warn';
+    return st.at && Date.now() - st.at < 28 * 864e5 ? 'ok' : st.at ? 'warn' : 'ok';
+  }
+  /** Panneau d'une zone : état, activation, sources (case, statut, licence, action : téléchargement, lien et mode
+   *  d'emploi, dossier, calcul). */
+  function aeroPanel(Z, id) {
+    const z = Z.byId(id),
+      state = aeroZoneState(Z, z),
+      on = Z.isOn(id),
+      f = siaFolderState;
+    const action = src => {
+      const S = Z.SOURCES[src];
+      const url = Z.linkOf(src),
+        link = url ? `<a class="mt-link" href="${esc(url)}" target="_blank" rel="noopener">${esc(t(['Ouvrir le site', 'Open the website', 'Website öffnen', 'Abrir el sitio']))} ↗</a>` : '';
+      if (src === 'dircam') return `<p class="mt-small">${esc(t(S.howto || ['', '']))}</p><p class="row">${link} <label class="secondary mt-file" data-icon="upload" title="${esc(t(['PDF de la MILAIP (section ENR 5.7) téléchargé sur le site de la DIRCAM : axes et points lus, anomalies à valider, puis écriture de miam-enr-5-7-tracks.xml dans le dossier SIA', 'MILAIP PDF (section ENR 5.7) downloaded from the DIRCAM website: tracks and points read, anomalies to check, then miam-enr-5-7-tracks.xml written to the SIA folder']))}">${esc(t(['Importer le PDF MILAIP…', 'Import the MILAIP PDF…', 'MILAIP-PDF importieren…', 'Importar el PDF MILAIP…']))}<input type="file" id="mtEnr57" accept=".pdf,application/pdf" hidden></label></p><div id="mtEnr57Msg">${enr57Html()}</div>`;
+      if (src === 'sia') {
+        const eff = window.Airac.cycle();
+        return `<p class="mt-small">${esc(t(S.howto))}</p><p class="row"><a class="mt-link" href="${esc(eff.url)}" target="_blank" rel="noopener">SIA — AIRAC ${esc(eff.label)} ↗</a>
+          <button type="button" class="secondary" id="mtSiaFetch" data-icon="download" title="${esc(t(['Prend le dernier export_xml_bd_SIA_….zip du dossier Téléchargements (serveur du lanceur)', 'Takes the latest export_xml_bd_SIA_….zip from the Downloads folder (launcher server)']))}">${esc(t(['Récupérer le ZIP téléchargé', 'Fetch the downloaded ZIP', 'Heruntergeladenes ZIP holen', 'Recuperar el ZIP descargado']))}</button><label class="secondary mt-file">${esc(t(['ZIP d’export du SIA…', 'SIA export ZIP…', 'SIA-Export-ZIP…', 'ZIP de exportación…']))}<input type="file" id="mtSiaZip" accept=".zip" hidden data-picker-folder="__sia"></label>${f?.zips?.length ? `<button type="button" class="secondary" id="mtSiaZipFolder" data-icon="box">${esc(t(['Extraire {z}', 'Extract {z}'], { z: f.zips[0].name }))}</button>` : ''}${f?.old?.length ? `<button type="button" class="secondary" id="mtArchive" data-icon="box" title="${esc(f.old.map(o => o.date).join(', '))}">${esc(t(['Archiver les anciens cycles', 'Archive the old cycles', 'Alte Zyklen archivieren', 'Archivar los ciclos antiguos']))}</button>` : ''}</p>
+          <p class="mt-small" id="mtExtract">${extractMsg}${archiveMsg ? ' ' + archiveMsg : ''}</p>${f ? `<details class="mt-small"><summary>${esc(t(['Contenu du dossier SIA', 'SIA folder content', 'Inhalt des SIA-Ordners', 'Contenido de la carpeta SIA']))}</summary>${folderTable(f)}</details>` : ''}`;
+      }
+      if (S.kind === 'download') return `<p class="row"><button type="button" class="secondary" data-aero-fetch="${esc(S.provider)}" data-src="${esc(src)}" data-args="${esc((S.args || [id]).join(' '))}" data-icon="download"${aeroFetching.has(`${id}|${src}`) ? ' disabled' : ''}>${esc(t(['Télécharger', 'Download', 'Herunterladen', 'Descargar']))}</button> <span class="mt-small" data-fetch-msg>${aeroFetchMsg[`${id}|${src}`] || ''}</span></p>`;
+      if (S.kind === 'local') return `<p class="mt-small">${esc(t(S.howto))}</p><p class="row" data-aero-xp></p>`;
+      if (S.kind === 'computed') return `<p class="row"><button type="button" class="secondary" data-mora-zone="${esc(id)}"${moraBusy ? ' disabled' : ''} data-icon="chart" title="${esc(t(['Relief Terrarium, sommets OpenStreetMap et obstacles de la base, sur l’emprise de la zone (réseau)', 'Terrarium terrain, OpenStreetMap peaks and base obstacles, over the zone extent (network)']))}">${esc(t(['Calculer la MORA de la zone', 'Compute the zone MORA', 'MORA der Zone berechnen', 'Calcular la MORA de la zona']))}</button></p><p class="mt-small">${esc(t(['Autre source de MORA : X-Plane (grille mondiale, si la source X-Plane est cochée) ; la grille calculée a la priorité.', 'Other MORA source: X-Plane (world grid, if the X-Plane source is ticked); the computed grid has priority.']))}</p>`;
+      return `<p class="mt-small">${esc(t(S.howto || ['', '']))}</p>${link ? `<p class="row">${link}</p>` : ''}`;
+    };
+    const rows = z.sources.map(src => {
+      const S = Z.SOURCES[src],
+        st = aeroSourceStatus(Z, id, src),
+        age = aeroAge(S, st);
+      const mark = st.has === null ? pill('info', t(['lien', 'link', 'Link', 'enlace'])) : st.has ? pill(age === 'warn' ? 'warn' : 'ok', age === 'warn' ? t(['à rafraîchir', 'to refresh', 'zu erneuern', 'por actualizar']) : t(['présent', 'present', 'vorhanden', 'presente'])) : pill('err', t(['manquant', 'missing', 'fehlt', 'falta']));
+      return `<li class="mt-aero-src"><label><input type="checkbox" data-zone-src="${esc(src)}"${Z.srcOn(id, src) ? ' checked' : ''}> <b>${esc(t(S.label))}</b></label> ${mark}
+        <div class="mt-small">${esc(t(S.gives))} · ${esc(st.text)} · ${esc(S.licence || '')}</div>${action(src)}</li>`;
+    }).join('');
+    return `<h3>${esc(zName(z))} <span class="mt-small">(${esc(id.toUpperCase())})</span>${aeroLocked && id === aeroPinned ? ` <button type="button" class="secondary" data-zone-unpin title="${esc(t(['Le panneau suit de nouveau le survol de la carte (aussi : nouveau clic sur la zone, Échap)', 'The panel follows the map hover again (also: click the zone again, Esc)', 'Das Feld folgt wieder dem Überfahren der Karte (auch: erneuter Klick auf die Zone, Esc)', 'El panel vuelve a seguir el paso del ratón (también: nuevo clic en la zona, Esc)']))}">📌 ${esc(t(['Libérer', 'Release', 'Lösen', 'Soltar']))}</button>` : ''}</h3>
+      <p><span class="mt-aero-dot" style="background:${AERO_COLOR[state]}${state === 'blank' ? ';opacity:.25' : ''}"></span> ${esc(t(AERO_STATE[state]))}
+        <button type="button" class="${on ? 'secondary' : 'primary'}" data-zone-toggle="${esc(id)}">${esc(on ? t(['Désactiver la zone', 'Deactivate the zone', 'Zone deaktivieren', 'Desactivar la zona']) : t(['Activer la zone', 'Activate the zone', 'Zone aktivieren', 'Activar la zona']))}</button></p>
+      <ul class="mt-aero-srcs">${rows}</ul>`;
+  }
+  /** Zones en GeoJSON (une entité par zone, état en propriété). */
+  const aeroGeo = Z => ({
+    type: 'FeatureCollection',
+    features: Z.zones().map(z => ({
+      type: 'Feature',
+      properties: {
+        zone: z.id,
+        state: aeroZoneState(Z, z)
+      },
+      geometry: {
+        type: 'MultiPolygon',
+        coordinates: Z.ringsOf(z.id).map(r => [r])
+      }
+    }))
+  });
+  /** Carte du monde (MapLibre, fond OpenStreetMap) : créée une fois, reposée à chaque rendu du bloc. */
+  async function aeroMapInit(Z) {
+    if (aeroMapEl) return aeroMapEl;
+    aeroMapEl = document.createElement('div');
+    aeroMapEl.className = 'mt-aero-map';
+    if (!window.maplibregl) {
+      const css = document.createElement('link');
+      css.rel = 'stylesheet';
+      css.href = new URL('shared/carto/maplibre-gl.css', root()).href;
+      document.head.append(css);
+      await new Promise(res => {
+        const sc = document.createElement('script');
+        sc.src = new URL('shared/carto/maplibre-gl.js', root()).href;
+        sc.onload = res;
+        sc.onerror = res;
+        document.head.append(sc);
+      });
+    }
+    if (!window.maplibregl) {
+      aeroMapEl.textContent = t(['Carte indisponible (MapLibre) : la liste des zones reste dans le panneau.', 'Map unavailable (MapLibre).']);
+      return aeroMapEl;
+    }
+    aeroMap = new window.maplibregl.Map({
+      container: aeroMapEl,
+      style: {
+        version: 8,
+        sources: {
+          osm: {
+            type: 'raster',
+            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            maxzoom: 7,
+            attribution: '© OpenStreetMap contributors · Natural Earth'
+          }
+        },
+        layers: [{
+          id: 'osm',
+          type: 'raster',
+          source: 'osm',
+          paint: {
+            'raster-saturation': -0.75,
+            'raster-opacity': 0.7
+          }
+        }]
+      },
+      center: [-20, 40],
+      zoom: 1.2,
+      maxZoom: 7,
+      renderWorldCopies: false,
+      // molette : la page défile ; zoom de la carte avec Ctrl (ou deux doigts), comme une carte intégrée à une page
+      cooperativeGestures: true,
+      attributionControl: {
+        compact: true
+      }
+    });
+    // carte créée bloc masqué (Paramètres : bloc affiché au choix dans le menu) : taille suivie à chaque changement du
+    // cadre (affichage du bloc, largeur de la fenêtre), sinon elle reste à sa taille par défaut, vide
+    if (window.ResizeObserver) new ResizeObserver(() => aeroMapEl.offsetWidth && aeroMap.resize()).observe(aeroMapEl);
+    // zones posées dès le style chargé (« load » attend toutes les tuiles du fond : lent si le serveur OSM l'est) ;
+    // « style.load » peut précéder l'abonnement : les deux événements, une seule fois
+    const setup = () => {
+      if (aeroMap.getSource('zones')) return;
+      aeroMap.addSource('zones', {
+        type: 'geojson',
+        data: aeroGeo(Z),
+        promoteId: 'zone'
+      });
+      const color = ['match', ['get', 'state'], 'partial', AERO_COLOR.partial, 'complete', AERO_COLOR.complete, AERO_COLOR.data];
+      aeroMap.addLayer({
+        id: 'zones-fill',
+        type: 'fill',
+        source: 'zones',
+        paint: {
+          'fill-color': ['case', ['boolean', ['feature-state', 'hover'], false], '#1e6fd9', color],
+          'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], .35, ['match', ['get', 'state'], 'blank', .02, 'data', .35, 'partial', .5, 'complete', .55, .02]]
+        }
+      });
+      aeroMap.addLayer({
+        id: 'zones-line',
+        type: 'line',
+        source: 'zones',
+        paint: {
+          'line-color': ['case', ['boolean', ['feature-state', 'pinned'], false], '#0b2f6b', ['boolean', ['feature-state', 'hover'], false], '#1e6fd9', ['match', ['get', 'state'], 'blank', '#9aa3ad', color]],
+          'line-width': ['case', ['boolean', ['feature-state', 'pinned'], false], 3.2, ['boolean', ['feature-state', 'hover'], false], 2.4, ['match', ['get', 'state'], 'blank', .5, 1.2]]
+        }
+      });
+      let hovered = null;
+      const panel = () => document.getElementById('mtAeroPanel');
+      aeroMap.on('mousemove', 'zones-fill', e => {
+        const id = e.features?.[0]?.properties?.zone;
+        if (!id || id === hovered) return;
+        if (hovered) aeroMap.setFeatureState({
+          source: 'zones',
+          id: hovered
+        }, {
+          hover: false
+        });
+        hovered = aeroHover = id;
+        aeroMap.setFeatureState({
+          source: 'zones',
+          id
+        }, {
+          hover: true
+        });
+        aeroMap.getCanvas().style.cursor = 'pointer';
+        // panneau mis à jour après un court arrêt sur la zone : en traversant la carte, pas de redessin à chaque pays
+        clearTimeout(aeroHoverTimer);
+        if (panel() && !aeroLocked) aeroHoverTimer = setTimeout(() => aeroHover === id && !aeroLocked && aeroPanelShow(Z, id, {
+          force: false
+        }), 220);
+      });
+      aeroMap.on('mouseleave', 'zones-fill', () => {
+        if (hovered) aeroMap.setFeatureState({
+          source: 'zones',
+          id: hovered
+        }, {
+          hover: false
+        });
+        // la zone affichée au panneau y reste (on va vers lui pour la régler) : pas de redessin en quittant la carte
+        clearTimeout(aeroHoverTimer);
+        const shown = document.getElementById('mtAeroPanel')?.dataset.zone;
+        if (shown && !aeroLocked) aeroPinned = shown;
+        hovered = aeroHover = null;
+        aeroMap.getCanvas().style.cursor = '';
+      });
+      // clic : épingle la zone (activation et sources dans le panneau) ; second clic sur elle : relâchée
+      aeroMap.on('click', 'zones-fill', e => {
+        const id = e.features?.[0]?.properties?.zone;
+        if (id) aeroPin(Z, aeroLocked && aeroPinned === id ? null : id);
+      });
+      if (aeroLocked) aeroMap.setFeatureState({
+        source: 'zones',
+        id: aeroPinned
+      }, {
+        pinned: true
+      });
+    };
+    aeroMap.on('style.load', setup);
+    aeroMap.on('load', setup);
+    if (aeroMap.style?._loaded) setup();
+    return aeroMapEl;
+  }
+  /** Zone du panneau : l'épinglée, sinon la survolée, sinon la dernière choisie. */
+  const aeroShown = () => aeroLocked ? aeroPinned : aeroHover || aeroPinned;
+  /** Épingle une zone (clic sur la carte) ou la relâche (null, clic sur la zone épinglée, Échap, « Libérer »). */
+  function aeroPin(Z, id) {
+    if (aeroMap?.getSource?.('zones') && aeroPinned) aeroMap.setFeatureState({
+      source: 'zones',
+      id: aeroPinned
+    }, {
+      pinned: false
+    });
+    aeroLocked = !!id;
+    if (id) aeroPinned = id;
+    if (aeroLocked && aeroMap?.getSource?.('zones')) aeroMap.setFeatureState({
+      source: 'zones',
+      id
+    }, {
+      pinned: true
+    });
+    aeroPanelShow(Z, aeroShown());
+  }
+  /** Panneau d'une zone (survolée ou choisie), avec ses actions. */
+  function aeroPanelShow(Z, id, {
+    force = true
+  } = {}) {
+    const el = document.getElementById('mtAeroPanel');
+    if (!el) return;
+    // survol : la même zone n'est pas redessinée (boutons, cases, position de la page gardés)
+    if (!force && el.dataset.zone === id) return;
+    el.innerHTML = aeroPanel(Z, id);
+    el.dataset.zone = id;
+    const xp = el.querySelector('[data-aero-xp]');
+    if (xp) {
+      const b = folderButton('__xpnav', async () => {
+        aeroInv = await aeroInventory();
+        aeroRefresh(Z);
+      }, {
+        withLabel: false
+      });
+      if (aeroXpLabel) b.textContent = aeroXpLabel;
+      xp.append(b);
+      setTimeout(() => b.isConnected && b.textContent.trim() && (aeroXpLabel = b.textContent), 400);
+    }
+    // icônes des boutons posées par block_icons.js (observateur des ajouts) : pas de rafraîchissement de la page à chaque
+    // survol (il redécorait tous les blocs)
+  }
+  /** États de la carte, panneau et tableau des cycles redessinés (après un réglage ou un téléchargement). */
+  function aeroRefresh(Z) {
+    aeroMap?.getSource?.('zones')?.setData(aeroGeo(Z));
+    aeroPanelShow(Z, aeroShown());
+    const ages = document.getElementById('mtAeroAges');
+    if (ages) ages.innerHTML = aeroAgesHtml(Z);
+  }
+  /** Cycles AIRAC et âge des données des zones actives. */
+  function aeroAgesHtml(Z) {
+    const eff = window.Airac.cycle(),
+      nxt = window.Airac.next(),
+      info = window.SiaBase.info();
+    const active = Z.zones().filter(z => Z.isOn(z.id));
+    const rows = active.flatMap(z => z.sources.filter(s => Z.srcOn(z.id, s) && Z.SOURCES[s].readable).map(s => {
+      const S = Z.SOURCES[s],
+        st = aeroSourceStatus(Z, z.id, s),
+        age = aeroAge(S, st);
+      return `<tr><td>${esc(zName(z))}</td><td>${esc(t(S.label))}</td><td class="mt-small">${esc(st.text)}</td><td>${age === 'none' ? pill('err', t(['manquant', 'missing', 'fehlt', 'falta'])) : age === 'warn' ? pill('warn', t(['ancien', 'old', 'alt', 'antiguo'])) : pill('ok', t(['à jour', 'up to date', 'aktuell', 'al día']))}</td></tr>`;
+    })).join('');
+    return `<p>${esc(t(['Cycle AIRAC en vigueur', 'AIRAC cycle in force', 'Gültiger AIRAC-Zyklus', 'Ciclo AIRAC vigente']))} : <b>${esc(eff.label)}</b> (${esc(fmtDate(eff.date, false))} → ${esc(fmtDate(eff.until, false))}) · ${esc(t(['suivant', 'next', 'nächster', 'siguiente']))} : <b>${esc(nxt.label)}</b> (${esc(fmtDate(nxt.date, false))}) · ${esc(t(['base aéronautique', 'aeronautical database', 'Luftfahrtdatenbank', 'base aeronáutica']))} : ${info ? `${esc(info.airac || '—')} (${esc(fmtDate(info.cachedAt))})` : '—'}</p>
+      ${rows ? `<div class="mt-scroll"><table class="mt-table"><tbody>${rows}</tbody></table></div>` : `<p class="mt-small">${esc(t(['Aucune zone active : cliquer les zones voulues sur la carte.', 'No active zone: click the wanted zones on the map.', 'Keine aktive Zone: gewünschte Zonen auf der Karte anklicken.', 'Ninguna zona activa: haga clic en las zonas deseadas en el mapa.']))}</p>`}
+      <p class="mt-small">${esc(t(['Données téléchargées : à rafraîchir au-delà de 28 jours (un cycle AIRAC) ; SIA : cycle du nom des fichiers ; X-Plane : cycle de « Custom Data ».', 'Downloaded data: to refresh after 28 days (one AIRAC cycle); SIA: cycle in the file names; X-Plane: “Custom Data” cycle.']))}</p>`;
+  }
+  // un seul calcul de MORA à la fois (zone, simple, complet) : boutons désactivés pendant le calcul, un clic de plus
+  // ne relance rien (deux calculs mêlaient leurs progressions, comme un calcul qui tourne en boucle)
+  let moraBusy = false;
+  const moraButtons = () => document.querySelectorAll('#mtMora, #mtMoraFull, [data-mora-zone]').forEach(x => {
+    x.disabled = moraBusy;
+  });
+  async function moraExclusive(fn, ...args) {
+    if (moraBusy) return window.AppFramework?.notify?.(t(['Calcul de la MORA déjà en cours : attendez qu’il se termine.', 'MORA calculation already running: wait for it to finish.', 'MORA-Berechnung läuft bereits: bitte warten, bis sie fertig ist.', 'Cálculo de la MORA ya en curso: espere a que termine.']), 'warn');
+    moraBusy = true;
+    moraButtons();
+    try {
+      return await fn(...args);
+    } finally {
+      moraBusy = false;
+      moraButtons();
+    }
+  }
+  /** MORA calculée sur l'emprise d'une zone, fusionnée avec mora.csv (cases de la zone remplacées), à écrire ensuite. */
+  async function planMoraZone(id) {
+    const Z = await window.SiaBase.zones(),
+      boxes = Z.zoneBoxes(id),
+      cellsN = boxes.reduce((n, b) => n + (b.n - b.s) * (b.e - b.w), 0);
+    const say = x => {
+      const m = hosts.sia.querySelector('#mtMoraMsg');
+      if (m) m.innerHTML = x;
+    };
+    if (cellsN > 1500) return window.AppFramework.notify(t(['Zone trop étendue pour le calcul ({n} cases d’un degré) : utilisez la MORA d’X-Plane pour cette zone.', 'Zone too large for the calculation ({n} one-degree cells): use the X-Plane MORA for this zone.'], {
+      n: cellsN
+    }), 'warn');
+    moraMsg = '';
+    moraPlan = null;
+    const job = window.AppFramework?.task?.(t(['MORA de la zone {z}', 'MORA of zone {z}'], {
+      z: id.toUpperCase()
+    }));
+    try {
+      const b = await window.SiaBase.get();
+      if (!siaFolderState) await scanSiaFolder(true);
+      const mf = siaFolderState?.fixed.find(x => x.id === 'mora')?.file,
+        text = mf ? await mf.file.text() : '';
+      // un calcul par cadre (contours regroupés : métropole, chaque outre-mer…)
+      const cells = [];
+      cells.peaksOk = true;
+      for (const [i, box] of boxes.entries()) {
+        const part = await window.SiaBase.computeMoraGrid(b?.obstacleMax || {}, {
+          ...box,
+          name: `${id}-${i + 1}`
+        }, (d, n, step) => {
+          say(`<span class="mt-small">${esc(id.toUpperCase())} ${i + 1}/${boxes.length} — ${esc(step || '')} : ${d}/${n}…</span>`);
+          job?.set(d, n, step);
+        });
+        cells.push(...part);
+        if (part.peaksOk === false) cells.peaksOk = false;
+      }
+      const inZ = Z.inZones([id], .5),
+        mine = cells.filter(c => inZ(c.lat, c.lon)),
+        keys = new Set(mine.map(c => c.lat + '|' + c.lon));
+      const before = text ? window.SiaBase.parseMora(text) : [],
+        old = new Map(before.map(c => [c.lat + '|' + c.lon, c]));
+      const merged = before.filter(c => !keys.has(c.lat + '|' + c.lon)).concat(mine);
+      moraPlan = {
+        csv: window.SiaBase.moraCsv(merged, {
+          airac: b?.airac || ''
+        }),
+        cells: merged,
+        changes: mine.map(c => ({
+          lat: c.lat,
+          lon: c.lon,
+          before: old.has(c.lat + '|' + c.lon) ? window.SiaBase.moraFtOf(old.get(c.lat + '|' + c.lon)) : 0,
+          after: c.moraFt,
+          obstacleBefore: '',
+          obstacleAfter: c.obstacleFt
+        })).filter(c => c.before !== c.after),
+        cycle: b?.airac || '',
+        previousCycle: window.SiaBase.moraCycle(text),
+        written: false,
+        mode: 'full',
+        peaksOk: cells.peaksOk,
+        zoneBoxes: boxes.map(x => `${id.toUpperCase()} (${x.s}…${x.n}° / ${x.w}…${x.e}°)`)
+      };
+    } catch (e) {
+      moraMsg = pill('err', e.message);
+      job?.fail(e);
+    } finally {
+      job?.end();
+    }
+    renderSia();
+  }
+  // compte rendu du dernier téléchargement de chaque source (zone|source), gardé au panneau quand il est redessiné
+  const aeroFetchMsg = {},
+    aeroFetching = new Set();
+  // ---- axes de ravitaillement : PDF de la MILAIP (DIRCAM, section ENR 5.7) → miam-enr-5-7-tracks.xml du dossier SIA
+  // pdf.js chargé à la demande (jsDelivr, réseau au premier import) ; texte des pages lu par AarTracks.parseEnr57,
+  // anomalies (miam:issues) montrées avant l'écriture ; l'ancien fichier part dans _archives/, la base est mise à jour.
+  const PDFJS = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/';
+  let enr57 = null; // { busy, error, file, tracks, issues, edition, xml, written }
+  function enr57Html() {
+    const r = enr57;
+    if (!r) return '';
+    if (r.busy) return `<p class="mt-small">${esc(r.busy)}</p>`;
+    if (r.error) return `<p>${pill('err', r.error)}</p>`;
+    const issues = r.issues.length ? `<details class="mt-small"><summary>${esc(t(['{n} anomalie(s) à vérifier', '{n} anomaly(ies) to check', '{n} Auffälligkeit(en) zu prüfen', '{n} anomalía(s) que verificar'], { n: r.issues.length }))}</summary><ul>${r.issues.map(i => `<li>p. ${esc(i.page)} · ${esc(i.kind)} — ${esc(i.text)}</li>`).join('')}</ul></details>` : `<p class="mt-small">${pill('ok', t(['aucune anomalie relevée', 'no anomaly found', 'keine Auffälligkeit', 'ninguna anomalía']))}</p>`;
+    return `<p class="mt-small">${pill(r.tracks.length ? 'ok' : 'warn', t(['{n} axe(s) lu(s) dans {f}', '{n} track(s) read from {f}', '{n} Strecke(n) aus {f} gelesen', '{n} eje(s) leído(s) en {f}'], { n: r.tracks.length, f: r.file }))}</p>${issues}
+      ${r.written ? `<p>${pill('ok', t(['miam-enr-5-7-tracks.xml écrit (ancien archivé) et base mise à jour', 'miam-enr-5-7-tracks.xml written (old one archived) and database updated', 'miam-enr-5-7-tracks.xml geschrieben (alte archiviert), Datenbank aktualisiert', 'miam-enr-5-7-tracks.xml escrito (anterior archivado) y base actualizada']))}</p>` : r.tracks.length ? `<p class="row"><label class="mt-small">${esc(t(['Édition', 'Edition', 'Ausgabe', 'Edición']))} <input type="text" id="mtEnr57Edition" size="26" value="${esc(r.edition)}" spellcheck="false"></label> <button type="button" class="primary" id="mtEnr57Write" data-icon="save">${esc(t(['Écrire miam-enr-5-7-tracks.xml', 'Write miam-enr-5-7-tracks.xml', 'miam-enr-5-7-tracks.xml schreiben', 'Escribir miam-enr-5-7-tracks.xml']))}</button></p>` : ''}`;
+  }
+  function enr57Show() {
+    const el = document.getElementById('mtEnr57Msg');
+    if (el) el.innerHTML = enr57Html();
+  }
+  async function importEnr57(file) {
+    enr57 = {
+      busy: t(['Lecture du PDF…', 'Reading the PDF…', 'PDF wird gelesen…', 'Leyendo el PDF…'])
+    };
+    enr57Show();
+    const job = window.AppFramework?.task?.(t(['Import de la MILAIP ENR 5.7', 'MILAIP ENR 5.7 import', 'Import MILAIP ENR 5.7', 'Importación MILAIP ENR 5.7']));
+    try {
+      if (!window.AarTracks) await new Promise(res => {
+        const sc = document.createElement('script');
+        sc.src = new URL('shared/aar_tracks.js', root()).href;
+        sc.onload = sc.onerror = res;
+        document.head.append(sc);
+      });
+      if (!window.AarTracks) throw new Error('shared/aar_tracks.js');
+      let pdfjs;
+      try {
+        pdfjs = await import(`${PDFJS}pdf.min.mjs`);
+      } catch {
+        throw new Error(t(['pdf.js injoignable (réseau nécessaire au premier import)', 'pdf.js unreachable (network needed for the first import)', 'pdf.js nicht erreichbar (Netz für den ersten Import nötig)', 'pdf.js inaccesible (red necesaria en la primera importación)']));
+      }
+      pdfjs.GlobalWorkerOptions.workerSrc = `${PDFJS}pdf.worker.min.mjs`;
+      const doc = await pdfjs.getDocument({
+        data: new Uint8Array(await file.arrayBuffer())
+      }).promise;
+      const pages = [];
+      for (let i = 1; i <= doc.numPages; i++) {
+        const c = await (await doc.getPage(i)).getTextContent();
+        pages.push(c.items.map(it => it.str + (it.hasEOL ? '\n' : ' ')).join(''));
+        job?.set?.(i, doc.numPages);
+      }
+      // MILAIP complète déposée : seules les pages de la section ENR 5.7 (sinon toutes)
+      const own = pages.filter(p => /ENR\s*5\.7/.test(p));
+      const r = window.AarTracks.parseEnr57(own.length ? own : pages);
+      const all = pages.join(' '),
+        amdt = /AMDT\s*(\d{1,2}\/\d{2})/i.exec(all)?.[1],
+        date = /(\d{2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+\d{2})/.exec(all)?.[1];
+      // aucun axe : autre document (AIP civile ENR 5.7 du SIA : survols interdits à basse hauteur, même numéro de section)
+      if (!r.tracks.length) throw new Error(/survols? interdits?|overflight/i.test(all) && !/ravitaillement|refuel/i.test(all) ? t(['ce PDF est l’ENR 5.7 de l’AIP civile du SIA (survols interdits à basse hauteur), pas la MILAIP ENR 5.7 de la DIRCAM (zones de ravitaillement en vol)', 'this PDF is the SIA civil AIP ENR 5.7 (low-level overflight restrictions), not the DIRCAM MILAIP ENR 5.7 (air refuelling areas)', 'dieses PDF ist ENR 5.7 des zivilen AIP des SIA (Überflugverbote in geringer Höhe), nicht ENR 5.7 der MILAIP der DIRCAM (Luftbetankungszonen)', 'este PDF es la ENR 5.7 del AIP civil del SIA (sobrevuelos prohibidos a baja altura), no la MILAIP ENR 5.7 de la DIRCAM (zonas de reabastecimiento en vuelo)']) : t(['aucun axe de ravitaillement trouvé : ce PDF ne semble pas être la MILAIP ENR 5.7 de la DIRCAM', 'no refuelling track found: this PDF does not seem to be the DIRCAM MILAIP ENR 5.7', 'keine Betankungsstrecke gefunden: dieses PDF scheint nicht ENR 5.7 der MILAIP der DIRCAM zu sein', 'ningún eje de reabastecimiento: este PDF no parece ser la MILAIP ENR 5.7 de la DIRCAM']));
+      enr57 = {
+        file: file.name,
+        tracks: r.tracks,
+        issues: r.issues,
+        parsed: r,
+        edition: amdt ? `AMDT ${amdt}${date ? ` — ${date}` : ''}` : '' // même forme que l'édition en service (AMDT 10/24 — 05 SEP 24)
+      };
+    } catch (e) {
+      enr57 = {
+        error: e.message
+      };
+      job?.fail?.(e);
+    } finally {
+      job?.end?.();
+    }
+    enr57Show();
+  }
+  async function writeEnr57() {
+    const r = enr57;
+    if (!r?.parsed) return;
+    try {
+      const dir = await folder('__sia', true);
+      if (!dir) throw new Error(t(['dossier SIA non autorisé', 'SIA folder not authorised', 'SIA-Ordner nicht erlaubt', 'carpeta SIA no autorizada']));
+      r.edition = document.getElementById('mtEnr57Edition')?.value.trim() || r.edition;
+      const xml = window.AarTracks.toXml(r.parsed, {
+        edition: r.edition
+      });
+      const name = 'miam-enr-5-7-tracks.xml',
+        old = await fileAt(dir, name);
+      if (old) await writeAt(dir, `_archives/miam-enr-5-7-tracks_${new Date(old.lastModified).toISOString().slice(0, 10)}.xml`, await old.arrayBuffer());
+      await writeAt(dir, name, xml);
+      await window.SiaBase.patch?.({
+        aarXml: xml
+      });
+      r.written = true;
+      aeroInv = await aeroInventory();
+      aeroRefresh(await window.SiaBase.zones());
+    } catch (e) {
+      window.AppFramework?.notify?.(t(['Axes non écrits : {e}', 'Tracks not written: {e}', 'Strecken nicht geschrieben: {e}', 'Ejes no escritos: {e}'], {
+        e: e.message
+      }), 'error');
+    }
+    enr57Show();
+  }
+  /** Téléchargement d'une source par le lanceur (tools/aero_fetch.py) ; état et résultat sous le bouton. */
+  async function aeroFetch(provider, args, btn, zone = '', src = '') {
+    const say = (m, k = 'warn') => window.AppFramework.notify(m, k),
+      key = `${zone}|${src}`;
+    const show = html => {
+      aeroFetchMsg[key] = html;
+      const p = document.getElementById('mtAeroPanel');
+      if (p?.dataset.zone === zone) p.querySelectorAll(`[data-src="${src}"]`).forEach(b => {
+        b.disabled = aeroFetching.has(key);
+        const m = b.parentElement.querySelector('[data-fetch-msg]');
+        if (m) m.innerHTML = html;
+      });
+    };
+    aeroFetching.add(key);
+    btn.disabled = true;
+    show(esc(t(['téléchargement en cours…', 'downloading…', 'wird heruntergeladen…', 'descargando…'])));
+    let res = null;
+    const job = window.AppFramework?.task?.(t(['Téléchargement des données', 'Downloading the data', 'Daten werden heruntergeladen', 'Descargando los datos']));
+    try {
+      const r = await fetch('/__setup/aero-fetch', {
+        method: 'POST',
+        headers: {
+          'X-SOG-Setup': '1',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          provider,
+          args
+        })
+      });
+      if (!r.ok) throw new Error(r.status);
+      res = await r.json();
+      if (res.files.length) say(t(['Téléchargé : {f}.', 'Downloaded: {f}.', 'Heruntergeladen: {f}.', 'Descargado: {f}.'], {
+        f: res.files.map(f => f.name + (f.features != null ? ` (${f.features})` : '')).join(', ')
+      }), res.errors.length ? 'warn' : 'ok');
+      if (res.errors.length) say(res.errors.join(' · '), 'error');
+      if (!res.files.length && !res.errors.length) say(t(['Rien à télécharger pour cette zone.', 'Nothing to download for this zone.', 'Für diese Zone nichts herunterzuladen.', 'Nada que descargar para esta zona.']));
+    } catch {
+      say(t(['Le serveur du lanceur ne répond pas : ouvrez la suite avec lancer.cmd / lancer.sh.', 'The launcher server does not answer: open the suite with lancer.cmd / lancer.sh.']));
+    } finally {
+      job?.end?.();
+      aeroFetching.delete(key);
+    }
+    aeroInv = await aeroInventory();
+    const Z = await window.SiaBase.zones();
+    if (!res) show(pill('err', t(['lanceur injoignable', 'launcher unreachable', 'Starter nicht erreichbar', 'lanzador inaccesible'])));
+    else {
+      const seen = !zone || aeroSourceStatus(Z, zone, src).has;
+      show([res.files.length ? pill('ok', t(['{n} fichier(s) téléchargé(s)', '{n} file(s) downloaded', '{n} Datei(en) heruntergeladen', '{n} archivo(s) descargado(s)'], {
+        n: res.files.length
+      })) : '', res.errors.length ? pill('err', res.errors.join(' · ')) : '', !res.files.length && !res.errors.length ? pill('info', t(['rien à télécharger', 'nothing to download', 'nichts herunterzuladen', 'nada que descargar'])) : '', res.files.length && !seen ? pill('warn', t(['écrits dans data/sia du lanceur, mais le dossier SIA de ce navigateur n’est pas autorisé ou en est un autre : « Dossier SIA » ci-dessous', 'written to the launcher’s data/sia, but this browser’s SIA folder is not authorised or is another one: “SIA folder” below', 'in data/sia des Starters geschrieben, aber der SIA-Ordner dieses Browsers ist nicht erlaubt oder ein anderer: „SIA-Ordner“ unten', 'escritos en data/sia del lanzador, pero la carpeta SIA de este navegador no está autorizada o es otra: «Carpeta SIA» abajo'])) : ''].join(' '));
+    }
+    aeroRefresh(Z);
+  }
+
   async function renderSia() {
     const host = hosts.sia,
-      A = window.Airac,
-      eff = A.cycle(),
-      nxt = A.next(),
-      info = window.SiaBase.info(),
-      prev = readJson(PREV, null);
-    const f = siaFolderState,
-      lat = f?.latest;
-    const s1 = info?.airac >= eff.date ? 'ok' : 'warn';
-    const s2 = !f ? 'todo' : lat?.complete ? 'ok' : 'warn';
-    const s3 = !f ? 'todo' : f.old.length ? 'warn' : 'ok';
-    const s4 = info && lat && info.airac === lat.date && !info.mixed ? 'ok' : 'todo';
-    const cmp = baseSummary && prev ? diffSummaries(prev, baseSummary) : null;
-    const help = t([
-      `<p>Tous les 28 jours (le jeudi), un nouveau cycle AIRAC entre en vigueur. Le SIA publie ses données environ trois semaines avant : charger le cycle à venir est sans risque. Six étapes, dans l’ordre ; chaque pastille passe au vert quand l’étape est faite.</p><ol><li><b>Cycle AIRAC</b> — constater le cycle en vigueur et celui de la base.</li><li><b>Télécharger</b> — sur le site du SIA, page du cycle (liens de l’étape 1) : se connecter à son compte SIA (création gratuite, une fois), « Ajouter au panier » (produit gratuit, 0 €), ouvrir le panier et « Passer commande » en acceptant la licence d’utilisation ; le ZIP <code>export_xml_bd_SIA_&lt;date&gt;.zip</code> se télécharge depuis la confirmation de commande (ou « Mes commandes »).</li><li><b>Extraire</b> — « Récupérer le ZIP téléchargé » (le serveur du lanceur le prend dans le dossier Téléchargements), ou « ZIP d’export du SIA… » pour le choisir : les XML (<code>AIXM4.5_all_FR_OM_&lt;date&gt;.xml</code>, <code>XML_SIA_&lt;date&gt;.xml</code>, Lisez-moi) sont écrits dans <code>data/sia</code>. Rien d’autre à télécharger.</li><li><b>Archiver</b> les fichiers des cycles précédents (<code>_archives/</code>).</li><li><b>Reconstruire la base</b> — « Relire le dossier » : <code>data/sia</code> est relu ici même (quelques secondes) et la base analysée est mémorisée dans le navigateur ; c’est le même bloc que « Base de données SIA » du studio.</li><li><b>Contrôler les différences</b> avec la base précédente (automatique au retour).</li><li><b>Recalculer</b> la grille MORA (obstacles du nouveau cycle) et contrôler la cohérence ; committer <code>mora.csv</code> s’il a changé.</li></ol><p class="mt-small">Les XML AIRAC restent hors dépôt (≈ 80 Mo par cycle). Valeurs MORA calculées, non certifiées.</p>`,
-      `<p>Every 28 days (Thursday) a new AIRAC cycle comes into force; the SIA publishes it about three weeks ahead. Six steps, in order; each badge turns green when done.</p><ol><li><b>AIRAC cycle</b> — check the cycle in force and the base cycle.</li><li><b>Download and extract</b> the SIA ZIP <code>export_xml_bd_SIA_&lt;date&gt;-vNN.zip</code> into <code>data/sia</code>.</li><li><b>Archive</b> previous cycles (<code>_archives/</code>).</li><li><b>Rebuild the base</b> — “Re-read the folder”: <code>data/sia</code> is re-read right here and the analysed base is stored; same block as the studio’s “SIA database”.</li><li><b>Check the differences</b> (automatic on return).</li><li><b>Recalculate</b> the MORA grid and check consistency; commit <code>mora.csv</code> if it changed.</li></ol>`
-    ]);
-    const todo = (txt, ack) => `<p class="mt-todo"><b>${esc(t(['À faire', 'To do', 'Zu tun', 'Por hacer']))}</b> : ${txt}${ack ? `<button type="button" class="secondary mt-ack" data-ack="${ack}" data-icon="check">${esc(t(['Vu, c’est fait', 'Done', 'Erledigt', 'Hecho']))}</button>` : ''}</p>`;
-    const acks = readJson(ACK, {}),
-      baseKey = String(baseSummary?.cachedAt || info?.cachedAt || ''),
-      acked = n => !!baseKey && acks[n] === baseKey;
-    if (moraPlan?.written && baseKey && acks[6] !== baseKey) {
-      acks[6] = baseKey;
-      writeJson(ACK, acks);
-    } // MORA à jour : étape 6 faite
-    const folderCycle = lat?.date || '',
-      baseCycle = info?.airac || '';
+      Z = await window.SiaBase.zones();
+    if (!Z) {
+      host.innerHTML = `<p class="err">${esc(t(['Zones de données absentes (shared/aero_zones.js).', 'Data zones missing (shared/aero_zones.js).']))}</p>`;
+      return;
+    }
+    aeroInv = await aeroInventory();
+    if (!siaFolderState) await scanSiaFolder(false);
+    const legend = Object.entries(AERO_STATE).map(([k, row]) => `<span><i class="mt-aero-dot" style="background:${AERO_COLOR[k]}${k === 'blank' ? ';opacity:.25' : ''}"></i>${esc(t(row))}</span>`).join('') + `<span><i class="mt-aero-dot" style="background:#1e6fd9"></i>${esc(t(['survol : sources de la zone dans le panneau', 'hover: zone sources in the panel', 'Überfahren: Quellen der Zone im Feld', 'al pasar: fuentes de la zona en el panel']))}</span>`;
     host.innerHTML = `
-      <div id="mtAeroSources"></div>
-      <h3 class="mt-sub">${esc(t(['SIA France : nouveau cycle AIRAC pas à pas', 'SIA France: new AIRAC cycle step by step', 'SIA Frankreich: neuer AIRAC-Zyklus Schritt für Schritt', 'SIA Francia: nuevo ciclo AIRAC paso a paso']))}</h3>
-      <details class="mt-help"><summary>${esc(t(['Mode d’emploi', 'How to', 'Anleitung', 'Modo de empleo']))}</summary>${help}</details>
-      <div class="mt-steps">
-        <div class="mt-step" id="mt-step-1">${stepHead(1, s1, t(['Cycle AIRAC', 'AIRAC cycle', 'AIRAC-Zyklus', 'Ciclo AIRAC']))}
-          <p>${esc(t(['En vigueur', 'In force', 'Gültig', 'Vigente']))} : <b>${esc(eff.label)}</b> (${esc(fmtDate(eff.date, false))} → ${esc(fmtDate(eff.until, false))}) · ${esc(t(['suivant', 'next', 'nächster', 'siguiente']))} : <b>${esc(nxt.label)}</b> ${esc(t(['le', 'on', 'am', 'el']))} ${esc(fmtDate(nxt.date, false))}</p>
-          <p>${esc(t(['Base du studio', 'Studio base', 'Studio-Basis', 'Base del estudio']))} : ${info ? `<b>${esc(info.airac || '?')}</b> (${esc(fmtDate(info.cachedAt))})` : '—'} ${s1 === 'ok' ? pill('ok', t(['à jour', 'up to date'])) : pill('warn', t(['à mettre à jour', 'to update']))}</p>
-          <p class="row"><a class="mt-link" href="${esc(eff.url)}" target="_blank" rel="noopener">SIA — AIRAC ${esc(eff.label)}</a> <a class="mt-link" href="${esc(nxt.url)}" target="_blank" rel="noopener">SIA — AIRAC ${esc(nxt.label)}</a> <a class="mt-link" href="${esc(window.RepositoryNav?.source?.('siaData'))}" target="_blank" rel="noopener">${esc(t(['Bases de données SIA', 'SIA databases']))}</a></p>
-        </div>
-        <div class="mt-step" id="mt-step-2">${stepHead(2, s2, t(['Télécharger et extraire l’export du SIA', 'Download and extract the SIA export', 'SIA-Export herunterladen und entpacken', 'Descargar y extraer la exportación del SIA']))}
-          ${s2 === 'ok' ? '' : todo(esc(t(['sur la page du cycle (étape 1) : compte SIA, « Ajouter au panier » (0 €), « Passer commande » en acceptant la licence, télécharger le ZIP ; puis « Récupérer le ZIP téléchargé » ci-dessous (ou « ZIP d’export du SIA… » pour le choisir, ou « Extraire » s’il est déjà dans le dossier).', 'on the cycle page (step 1): SIA account, “Add to cart” (free), “Checkout” accepting the licence, download the ZIP; then “Fetch the downloaded ZIP” below (or “SIA export ZIP…” to pick it).'])))}
-          <p class="row" id="mtSiaFolder"></p>
-          ${f ? folderTable(f) : `<p class="mt-small">${esc(t(['Choisir (une fois) le dossier des données (Sources et dossiers) — data/sia en est déduit —, puis « Analyser ».', 'Choose the data folder once (Sources and folders) — data/sia is derived from it —, then “Analyse”.']))}</p>`}
-          <p class="row"><button type="button" class="primary" id="mtSiaFetch" data-icon="download" title="${esc(t(['Prend le dernier export_xml_bd_SIA_….zip du dossier Téléchargements (serveur du lanceur)', 'Takes the latest export_xml_bd_SIA_….zip from the Downloads folder (launcher server)']))}">${esc(t(['Récupérer le ZIP téléchargé', 'Fetch the downloaded ZIP', 'Heruntergeladenes ZIP holen', 'Recuperar el ZIP descargado']))}</button><label class="secondary mt-file">${esc(t(['ZIP d’export du SIA…', 'SIA export ZIP…', 'SIA-Export-ZIP…', 'ZIP de exportación…']))}<input type="file" id="mtSiaZip" accept=".zip" hidden data-picker-folder="__sia"></label>${f?.zips?.length ? `<button type="button" class="secondary" id="mtSiaZipFolder" data-icon="box">${esc(t(['Extraire {z}', 'Extract {z}'], { z: f.zips[0].name }))}</button>` : ''} <span class="mt-small" id="mtExtract">${extractMsg}</span></p>
-        </div>
-        <div class="mt-step" id="mt-step-3">${stepHead(3, s3, t(['Anciens cycles', 'Old cycles', 'Alte Zyklen', 'Ciclos antiguos']))}
-          ${!f ? `<p class="mt-small">${esc(t(['Analyser d’abord le dossier (étape 2).', 'Analyse the folder first (step 2).']))}</p>` : f.old.length ? `<p>${f.old.map(o => `<code>${esc(o.date)}</code> (${o.items.length} ${esc(t(['fichier(s)', 'file(s)']))}, ${fmtSize(o.items.reduce((n, i) => n + i.size, 0))})`).join(' · ')}</p><p class="row"><button type="button" class="secondary" id="mtArchive" data-icon="box">${esc(t(['Archiver dans _archives/', 'Archive into _archives/', 'In _archives/ archivieren', 'Archivar en _archives/']))}</button></p>` : `<p>${pill('ok', t(['un seul cycle dans le dossier', 'a single cycle in the folder']))}</p>`}
-          <p class="mt-small">${archiveMsg}</p>
-        </div>
-        <div class="mt-step" id="mt-step-4">${stepHead(4, s4, t(['Reconstruire la base SIA', 'Rebuild the SIA base', 'SIA-Basis neu aufbauen', 'Reconstruir la base SIA']))}
-          <p>${esc(t(['Base mémorisée', 'Stored base', 'Gespeicherte Basis', 'Base guardada']))} : <b>${esc(baseCycle || '—')}</b> · ${esc(t(['dossier data/sia', 'data/sia folder']))} : <b>${esc(folderCycle || '?')}</b> ${s4 === 'ok' ? pill('ok', t(['à jour', 'up to date'])) : baseCycle && folderCycle ? pill('warn', t(['à relire', 'to re-read'])) : ''}</p>
-          ${s4 === 'ok' ? '' : todo(esc(t(['cliquer « Relire le dossier » ci-dessous (quelques secondes ; le navigateur peut demander d’autoriser le dossier). Quand « ✓ Base chargée et mémorisée » s’affiche, les étapes 5 et 6 se mettent à jour.', 'click “Re-read the folder” below (a few seconds). When “✓ Base loaded and stored” shows, steps 5 and 6 update.'])))}
-          <div id="mtBasePanel"></div>
-          <p class="mt-small">${esc(t(['Même bloc que « Base de données SIA » du studio cartographique :', 'Same block as “SIA database” in the map studio:']))} <a class="mt-link" href="${esc(new URL('apps/cpco/map_parser.html#sia-base', root()).href)}" target="_blank" rel="noopener">${esc(t(['ouvrir le studio', 'open the studio']))}</a></p>
-        </div>
-        <div class="mt-step" id="mt-step-5">${stepHead(5, (cmp && acked(5)) || (baseSummary && !prev) ? 'ok' : cmp ? 'warn' : 'todo', t(['Contrôler les différences avec la base précédente', 'Check the differences with the previous base', 'Unterschiede zur vorherigen Basis prüfen', 'Controlar las diferencias con la base anterior']))}
-          ${cmp ? diffHtml(cmp) + (acked(5) ? `<p>${pill('ok', t(['différences vues', 'differences reviewed']))}</p>` : todo(esc(t(['parcourir les espaces ajoutés / retirés (cartes des missions concernées), puis passer à l’étape 6.', 'review added / removed airspaces, then go to step 6.'])), 5)) : baseSummary && !prev ? `<p>${pill('info', t(['aucune base précédente gardée (première lecture ou cache purgé) : rien à comparer — passer à l’étape 6', 'no previous base kept (first read or purged cache): nothing to compare — go to step 6']))}</p>` : `<p class="mt-small">${esc(t(['S’affiche automatiquement après la relecture (étape 4).', 'Shown automatically after the re-read (step 4).']))}</p>`}
-        </div>
-        <div class="mt-step" id="mt-step-6">${stepHead(6, acked(6) || moraPlan?.written ? 'ok' : moraPlan ? 'warn' : 'todo', t(['Recalculer (MORA) et contrôler la cohérence', 'Recalculate (MORA) and check consistency', 'Neu berechnen (MORA) und prüfen', 'Recalcular (MORA) y controlar']))}
-          ${moraPlan?.written || acked(6) ? '' : todo(esc(t(['« Recalcul simple » de la grille MORA ; si des cellules changent, « Écrire mora.csv » puis committer le dépôt de données. Puis « Contrôler » la cohérence.', '“Simple recalculation” of the MORA grid; if cells change, “Write mora.csv” and commit the data repository. Then “Check” consistency.'])), 6)}
-          <div class="repo-card" data-icon="chart" data-subtitle="${esc(t(['Recalcul simple (obstacles du nouveau cycle, hors ligne) ou calcul complet (relief + sommets OSM, réseau) — même calcul que le studio', 'Simple recalculation (new obstacles, offline) or full calculation (terrain + OSM peaks, network) — same as the studio']))}"><h3>MORA</h3>
-            <p class="row"><button type="button" class="secondary" id="mtMora" data-icon="refresh" title="${esc(t(['Obstacles du nouveau cycle, relief du mora.csv actuel — sans réseau, immédiat', 'New-cycle obstacles, terrain from the current mora.csv — offline, instant']))}">${esc(t(['Recalcul simple', 'Simple recalculation', 'Einfache Neuberechnung', 'Recálculo simple']))}</button><button type="button" class="secondary" id="mtMoraFull" data-icon="globe" title="${esc(t(['Relief (tuiles Terrarium) + sommets OSM + obstacles — réseau, environ une minute', 'Terrain (Terrarium tiles) + OSM peaks + obstacles — network, about a minute']))}">${esc(t(['Calcul complet', 'Full calculation', 'Vollständige Berechnung', 'Cálculo completo']))}</button>${moraPlan && !moraPlan.written ? `<button type="button" class="primary" id="mtMoraWrite" data-icon="save">${esc(t(['Écrire mora.csv (ancien archivé)', 'Write mora.csv (old one archived)']))}</button><button type="button" class="secondary" id="mtMoraDl" data-icon="download">${esc(t(['Télécharger', 'Download', 'Herunterladen', 'Descargar']))}</button>` : ''}</p>
-            <div id="mtMoraMsg">${moraMsg}</div><div>${moraPlan ? moraHtml(moraPlan) : ''}</div></div>
-          <div class="repo-card" data-icon="plane" data-subtitle="${esc(t(['Espaces, appareils, flotte DEFA, performances, terrains des missions', 'Airspace, aircraft, DEFA fleet, performance, mission aerodromes']))}"><h3>${esc(t(['Cohérence', 'Consistency', 'Konsistenz', 'Coherencia']))}</h3><div id="mtUsage"><p class="row"><button type="button" class="secondary" id="mtUsageRun" data-icon="search">${esc(t(['Contrôler', 'Check', 'Prüfen', 'Comprobar']))}</button></p></div></div>
-        </div>
-      </div>`;
-    renderAeroSources(host.querySelector('#mtAeroSources'));
-    const fb = host.querySelector('#mtSiaFolder');
-    fb.append(folderButton('__sia', async () => {
-      await scanSiaFolder(true);
-      renderSia();
-      renderVersions();
-      renderDeps();
-    }));
-    const an = document.createElement('button');
-    an.type = 'button';
-    an.className = 'secondary';
-    an.dataset.icon = 'search';
-    an.textContent = t(['Analyser', 'Analyse', 'Analysieren', 'Analizar']);
-    an.onclick = async () => {
-      await scanSiaFolder(true);
-      if (!siaFolderState) window.AppFramework.notify(t(['Dossier SIA XML non choisi ou non autorisé.', 'SIA XML folder not chosen or not authorised.']), 'warn');
-      renderSia();
-      renderVersions();
-      renderDeps();
+      <p class="mt-small">${esc(t(['Survoler une zone montre ses sources à droite ; un clic l’épingle (le panneau reste sur elle : « Activer la zone », sources) — nouveau clic, Échap ou « Libérer » pour la relâcher. Cocher les sources voulues, les récupérer (téléchargement, commande, PDF ou dossier), puis « Reconstruire la base aéronautique ».', 'Hovering a zone shows its sources on the right; a click pins it (the panel stays on it: “Activate the zone”, sources) — click again, Esc or “Release” to let it go. Tick the wanted sources, get them (download, order, PDF or folder), then “Rebuild the aeronautical database”.', 'Beim Überfahren einer Zone erscheinen ihre Quellen rechts; ein Klick heftet sie an (das Feld bleibt bei ihr: „Zone aktivieren“, Quellen) — erneuter Klick, Esc oder „Lösen“ gibt sie frei. Gewünschte Quellen anhaken, beschaffen (Download, Bestellung, PDF oder Ordner), dann „Luftfahrtdatenbank neu aufbauen“.', 'Al pasar el ratón por una zona se muestran sus fuentes a la derecha; un clic la fija (el panel se queda en ella: «Activar la zona», fuentes) — nuevo clic, Esc o «Soltar» para liberarla. Marque las fuentes deseadas, obténgalas (descarga, pedido, PDF o carpeta) y luego «Reconstruir la base aeronáutica».']))}</p>
+      <div class="mt-aero">
+        <div class="mt-aero-left"><div id="mtAeroMapSlot"></div><div class="mt-aero-legend mt-small">${legend}</div>
+</div>
+        <aside class="mt-aero-panel" id="mtAeroPanel" data-no-i18n></aside>
+      </div>
+      <div class="repo-card" id="mt-aero-base" data-icon="refresh" data-subtitle="${esc(t(['Zones actives et sources cochées : la base sert au studio, aux cartes de vol, au profil vertical et aux espaces à activer.', 'Active zones and ticked sources: the database feeds the studio, flight maps, vertical profile and airspace to activate.']))}"><h3>${esc(t(['Reconstruire la base aéronautique', 'Rebuild the aeronautical database', 'Luftfahrtdatenbank neu aufbauen', 'Reconstruir la base aeronáutica']))}</h3><div id="mtBasePanel"></div></div>
+      <div class="repo-card" data-icon="clock"><h3>${esc(t(['Cycles AIRAC et âge des données', 'AIRAC cycles and data age', 'AIRAC-Zyklen und Alter der Daten', 'Ciclos AIRAC y antigüedad de los datos']))}</h3><div id="mtAeroAges">${aeroAgesHtml(Z)}</div></div>
+      <div class="repo-card" id="mt-aero-mora" data-icon="chart" data-subtitle="${esc(t(['Sources de MORA : grille calculée (relief, sommets, obstacles ; ici pour la France et les missions, ou zone par zone dans le panneau), X-Plane (grille mondiale) ; la grille calculée a la priorité.', 'MORA sources: computed grid (terrain, peaks, obstacles; here for France and the missions, or zone by zone in the panel), X-Plane (world grid); the computed grid has priority.']))}"><h3>MORA</h3>
+        <p class="row"><button type="button" class="secondary" id="mtMora"${moraBusy ? ' disabled' : ''} data-icon="refresh" title="${esc(t(['Obstacles du nouveau cycle, relief du mora.csv actuel — sans réseau, immédiat', 'New-cycle obstacles, terrain from the current mora.csv — offline, immediate']))}">${esc(t(['Recalcul simple', 'Simple recalculation', 'Einfache Neuberechnung', 'Recálculo simple']))}</button><button type="button" class="secondary" id="mtMoraFull"${moraBusy ? ' disabled' : ''} data-icon="chart">${esc(t(['Calcul complet', 'Full calculation', 'Vollständige Berechnung', 'Cálculo completo']))}</button>${moraPlan && !moraPlan.written ? `<button type="button" class="primary" id="mtMoraWrite" data-icon="save">${esc(t(['Écrire mora.csv (ancien archivé)', 'Write mora.csv (old one archived)', 'mora.csv schreiben (alte archiviert)', 'Escribir mora.csv (antiguo archivado)']))}</button><button type="button" class="secondary" id="mtMoraDl" data-icon="download">mora.csv</button>` : ''}</p>
+        <div id="mtMoraMsg">${moraMsg}</div><div>${moraPlan ? moraHtml(moraPlan) : ''}</div></div>
+      <div class="repo-card" data-icon="plane" data-subtitle="${esc(t(['Espaces, appareils, flotte, performances, terrains des missions', 'Airspace, aircraft, fleet, performance, mission aerodromes']))}"><h3>${esc(t(['Cohérence', 'Consistency', 'Konsistenz', 'Coherencia']))}</h3><div id="mtUsage"><p class="row"><button type="button" class="secondary" id="mtUsageRun" data-icon="search">${esc(t(['Contrôler', 'Check', 'Prüfen', 'Comprobar']))}</button></p></div></div>`;
+    host.querySelector('#mtAeroMapSlot').replaceWith(await aeroMapInit(Z));
+    setTimeout(() => aeroMap?.resize?.(), 50);
+    aeroPanelShow(Z, aeroShown());
+    // actions du panneau (redessiné au survol : délégation)
+    const panel = host.querySelector('#mtAeroPanel');
+    panel.onclick = async e => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      if (b.hasAttribute('data-zone-unpin')) aeroPin(Z, null);
+      else if (b.dataset.zoneToggle) {
+        Z.setZone(b.dataset.zoneToggle, !Z.isOn(b.dataset.zoneToggle));
+        aeroPin(Z, b.dataset.zoneToggle); // la zone reste au panneau pour régler ses sources
+        aeroRefresh(Z);
+      } else if (b.dataset.aeroFetch) aeroFetch(b.dataset.aeroFetch, b.dataset.args.split(' ').filter(Boolean), b, panel.dataset.zone, b.dataset.src);
+      else if (b.dataset.moraZone) moraExclusive(planMoraZone, b.dataset.moraZone);
+      else if (b.id === 'mtArchive') archiveOld();
+      else if (b.id === 'mtSiaZipFolder') extractZip(siaFolderState.zips[0].file);
+      else if (b.id === 'mtSiaFetch') siaFetchZip();
+      else if (b.id === 'mtEnr57Write') writeEnr57();
     };
-    fb.append(an);
-    host.querySelector('#mtSiaZip').onchange = e => {
-      const file = e.target.files[0];
-      e.target.value = '';
-      if (file) extractZip(file);
+    panel.onchange = e => {
+      const c = e.target;
+      if (c.dataset.zoneSrc) {
+        Z.setSource(panel.dataset.zone, c.dataset.zoneSrc, c.checked);
+        aeroRefresh(Z);
+      } else if (c.id === 'mtEnr57') {
+        const file = c.files[0];
+        c.value = '';
+        if (file) importEnr57(file);
+      } else if (c.id === 'mtSiaZip') {
+        const file = c.files[0];
+        c.value = '';
+        if (file) extractZip(file);
+      }
     };
-    host.querySelector('#mtSiaZipFolder')?.addEventListener('click', () => extractZip(siaFolderState.zips[0].file));
-    // ZIP du SIA pris dans le dossier Téléchargements par le serveur du lanceur (tools/launch.py, /__setup/sia-zip)
-    host.querySelector('#mtSiaFetch').onclick = async () => {
-      const say = (m, k = 'warn') => (window.AppFramework?.notify || alert)(m, k);
-      const api = q => fetch(`/__setup/sia-zip${q}`, {
-        headers: {
-          'X-DEFA-Setup': '1'
-        },
-        cache: 'no-store'
+    // le panneau suit le survol ; on y travaille : la zone survolée en dernier y reste
+    panel.onmouseenter = () => {
+      clearTimeout(aeroHoverTimer);
+      if (!aeroLocked && panel.dataset.zone) aeroPinned = panel.dataset.zone;
+    };
+    // Échap : zone relâchée
+    if (!host.dataset.escBound) {
+      host.dataset.escBound = '1';
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && aeroLocked && hosts.sia.isConnected && !hosts.sia.closest('[hidden]')) aeroPin(Z, null);
       });
       let info;
       try {
@@ -1202,16 +1714,8 @@
       return el;
     })();
     host.querySelector('#mtBasePanel').replaceWith(basePanelEl);
-    host.querySelectorAll('[data-ack]').forEach(b => {
-      b.onclick = () => {
-        const a = readJson(ACK, {});
-        a[b.dataset.ack] = baseKey;
-        writeJson(ACK, a);
-        renderSia();
-      };
-    });
-    host.querySelector('#mtMora').onclick = planMora;
-    host.querySelector('#mtMoraFull').onclick = planMoraFull;
+    host.querySelector('#mtMora').onclick = () => moraExclusive(planMora);
+    host.querySelector('#mtMoraFull').onclick = () => moraExclusive(planMoraFull);
     host.querySelector('#mtMoraWrite')?.addEventListener('click', writeMora);
     host.querySelector('#mtMoraDl')?.addEventListener('click', () => {
       const a = document.createElement('a');
@@ -1224,11 +1728,11 @@
     });
     host.querySelector('#mtUsageRun').onclick = usageCheck;
     window.AppFramework?.refresh?.();
-    // Ancre « #mt-step-N » (lien de retour du studio…) : une fois, au premier rendu.
-    if (!stepHashDone && /^#mt-step-\d$/.test(location.hash)) {
+    // Ancre (lien de retour du studio…) : une fois, au premier rendu ; anciennes ancres « #mt-step-N » : la base.
+    if (!stepHashDone && /^#mt-[\w-]+$/.test(location.hash)) {
       stepHashDone = true;
       // le bloc peut être encore masqué (affichage du bloc demandé par ?m=) : attendre qu'il soit visible
-      const target = location.hash.slice(1);
+      const target = /^#mt-step-/.test(location.hash) ? 'mt-aero-base' : location.hash.slice(1);
       let tries = 0;
       const go = () => {
         const el = document.getElementById(target);
@@ -1242,6 +1746,32 @@
       };
       go();
     }
+  }
+  /** ZIP du SIA pris dans le dossier Téléchargements par le serveur du lanceur (tools/launch.py, /__setup/sia-zip). */
+  async function siaFetchZip() {
+    const say = (m, k = 'warn') => (window.AppFramework?.notify || alert)(m, k);
+    const api = q => fetch(`/__setup/sia-zip${q}`, {
+      headers: {
+        'X-SOG-Setup': '1'
+      },
+      cache: 'no-store'
+    });
+    let info;
+    try {
+      const r = await api('?info');
+      if (!r.ok) throw new Error(r.status);
+      info = await r.json();
+    } catch {
+      return say(t(['Le serveur du lanceur ne répond pas : ouvrez la suite avec lancer.cmd / lancer.sh, ou choisissez le ZIP avec « ZIP d’export du SIA… ».', 'The launcher server does not answer: open the suite with lancer.cmd / lancer.sh, or pick the ZIP with “SIA export ZIP…”.']));
+    }
+    if (!info.found) return say(t(['Aucun export_xml_bd_SIA_….zip dans {d} : téléchargez-le d’abord sur le site du SIA (lien du panneau).', 'No export_xml_bd_SIA_….zip in {d}: download it from the SIA site first (link in the panel).'], {
+      d: info.where.join(', ')
+    }));
+    const blob = await (await api('')).blob();
+    extractZip(new File([blob], info.name, {
+      type: 'application/zip',
+      lastModified: info.mtime * 1000
+    }));
   }
   let stepHashDone = false;
 
@@ -1350,59 +1880,16 @@
     renderDeps();
   }
 
-  function diffSummaries(a, b) {
-    const types = [...new Set([...Object.keys(a.counts?.byType || {}), ...Object.keys(b.counts?.byType || {})])].sort();
-    const setA = new Set(a.names || []),
-      setB = new Set(b.names || []);
-    const added = [...setB].filter(x => !setA.has(x)),
-      removed = [...setA].filter(x => !setB.has(x));
-    const counts = ['airspaces', 'aerodromes', 'navaids', 'obstacleCells', 'cities', 'mora'].map(k => ({
-      k,
-      a: a.counts?.[k] ?? 0,
-      b: b.counts?.[k] ?? 0
-    }));
-    return {
-      from: a.airac,
-      to: b.airac,
-      types: types.map(k => ({
-        k,
-        a: a.counts?.byType?.[k] || 0,
-        b: b.counts?.byType?.[k] || 0
-      })),
-      counts,
-      added,
-      removed,
-      changed: a.airac !== b.airac || added.length || removed.length
-    };
-  }
-
-  function diffHtml(d) {
-    const lbl = {
-      airspaces: t(['espaces', 'airspaces']),
-      aerodromes: t(['aérodromes', 'aerodromes']),
-      navaids: t(['balises', 'navaids']),
-      obstacleCells: t(['cellules avec obstacles', 'cells with obstacles']),
-      cities: t(['villes', 'cities']),
-      mora: 'MORA'
-    };
-    const cell = (a, b) => `${a} → ${b}${a !== b ? ` <b class="${b > a ? 'mt-plus' : 'mt-minus'}">(${b > a ? '+' : ''}${b - a})</b>` : ''}`;
-    const list = (arr, cls) => arr.slice(0, 60).map(x => `<span class="${cls}">${esc(x.replace('|', ' '))}</span>`).join(', ') + (arr.length > 60 ? ` … (+${arr.length - 60})` : '');
-    return `<p>${esc(t(['Cycle', 'Cycle']))} : <b>${esc(d.from || '?')}</b> → <b>${esc(d.to || '?')}</b></p>
-      <table class="mt-table"><tbody>${d.counts.map(c => `<tr><th>${esc(lbl[c.k])}</th><td>${cell(c.a, c.b)}</td></tr>`).join('')}
-      <tr><th>${esc(t(['par type', 'by type']))}</th><td>${d.types.filter(x => x.a || x.b).map(x => `${esc(x.k)} ${cell(x.a, x.b)}`).join(' · ')}</td></tr></tbody></table>
-      ${d.added.length ? `<p><b>${esc(t(['Espaces nouveaux', 'New airspaces']))} (${d.added.length})</b> : ${list(d.added, 'mt-plus')}</p>` : ''}
-      ${d.removed.length ? `<p><b>${esc(t(['Espaces retirés', 'Removed airspaces']))} (${d.removed.length})</b> : ${list(d.removed, 'mt-minus')}</p>` : ''}
-      ${!d.added.length && !d.removed.length ? `<p>${pill('ok', t(['aucun espace ajouté ni retiré (noms)', 'no airspace added or removed (names)']))}</p>` : ''}`;
-  }
   async function planMora() {
     moraMsg = '';
     moraPlan = null;
     try {
       if (!siaFolderState) await scanSiaFolder(true);
       const mf = siaFolderState?.fixed.find(x => x.id === 'mora')?.file;
-      if (!mf) throw new Error(t(['mora.csv absent du dossier SIA XML (ou dossier non lu)', 'mora.csv missing from the SIA XML folder (or folder not read)']));
+      // le recalcul simple met à jour les obstacles d'une grille existante : sans grille, il n'y a rien à recalculer
+      if (!mf) throw new Error(t(['Pas de grille MORA (data/sia/mora.csv absent, ou dossier SIA non autorisé) : le recalcul simple part de la grille existante. Calculez-la d’abord : « Calculer la MORA de la zone » (zone sur la carte ci-dessus) ou « Calcul complet ».', 'No MORA grid (data/sia/mora.csv missing, or SIA folder not authorised): the simple recalculation starts from the existing grid. Compute it first: “Compute the zone MORA” (zone on the map above) or “Full calculation”.', 'Kein MORA-Raster (data/sia/mora.csv fehlt oder SIA-Ordner nicht freigegeben): die einfache Neuberechnung geht vom vorhandenen Raster aus. Zuerst berechnen: „MORA der Zone berechnen“ (Zone auf der Karte oben) oder „Vollständige Berechnung“.', 'Sin cuadrícula MORA (falta data/sia/mora.csv, o carpeta SIA no autorizada): el recálculo simple parte de la cuadrícula existente. Calcúlela primero: «Calcular la MORA de la zona» (zona en el mapa de arriba) o «Cálculo completo».']));
       const b = await window.SiaBase.get();
-      if (!b?.obstacleMax) throw new Error(t(['base du studio absente : relire le dossier (étape 4)', 'no studio base: re-read the folder (step 4)']));
+      if (!b?.obstacleMax) throw new Error(t(['base absente : « Reconstruire la base aéronautique »', 'no base: “Rebuild the aeronautical database”', 'keine Basis: „Luftfahrtdatenbank neu aufbauen“', 'sin base: «Reconstruir la base aeronáutica»']));
       const cyc = b.airac || '';
       const text = await mf.file.text();
       moraPlan = {
@@ -1431,7 +1918,7 @@
     const job = window.AppFramework?.task?.(t(['Calcul complet de la grille MORA', 'Full MORA grid calculation']));
     try {
       const b = await window.SiaBase.get();
-      if (!b?.obstacleMax) throw new Error(t(['base absente : relire le dossier (étape 4)', 'no base: re-read the folder (step 4)']));
+      if (!b?.obstacleMax) throw new Error(t(['base absente : « Reconstruire la base aéronautique »', 'no base: “Rebuild the aeronautical database”', 'keine Basis: „Luftfahrtdatenbank neu aufbauen“', 'sin base: «Reconstruir la base aeronáutica»']));
       if (!siaFolderState) await scanSiaFolder(true);
       const mf = siaFolderState?.fixed.find(x => x.id === 'mora')?.file,
         text = mf ? await mf.file.text() : '';
@@ -1482,6 +1969,7 @@
       obst = p.changes.filter(c => c.after === c.before);
     return `<p>${p.changes.length ? pill('warn', t(['{n} cellule(s) modifiée(s) : {u} en hausse, {d} en baisse, {o} obstacle seul', '{n} cell(s) changed: {u} up, {d} down, {o} obstacle only'], { n: p.changes.length, u: up.length, d: down.length, o: obst.length })) : pill('ok', t(['aucune valeur MORA ne change', 'no MORA value changes']))} ${p.written ? pill('ok', t(['mora.csv tracé AIRAC {c}', 'mora.csv traced AIRAC {c}'], { c: p.cycle })) : ''}</p>
       ${p.changes.length ? `<div class="mt-scroll mt-short"><table class="mt-table"><thead><tr><th>lat</th><th>lon</th><th>MORA</th><th>${esc(t(['obstacle (ft)', 'obstacle (ft)']))}</th></tr></thead><tbody>${p.changes.map(c => `<tr><td>${c.lat}</td><td>${c.lon}</td><td>${c.before} → <b class="${c.after > c.before ? 'mt-minus' : c.after < c.before ? 'mt-plus' : ''}">${c.after}</b></td><td>${c.obstacleBefore} → ${c.obstacleAfter}</td></tr>`).join('')}</tbody></table></div>` : ''}
+      ${p.zoneBoxes?.length ? `<p class="mt-small">${esc(t(['Zone calculée : {z} ; les autres cases de mora.csv sont gardées. Obstacles : ceux de la base aéronautique (zones actives).', 'Computed zone: {z}; the other mora.csv cells are kept. Obstacles: those of the aeronautical database (active zones).', 'Berechnete Zone: {z}; die übrigen Zellen von mora.csv bleiben. Hindernisse: die der Luftfahrtdatenbank (aktive Zonen).', 'Zona calculada: {z}; las demás celdas de mora.csv se conservan. Obstáculos: los de la base aeronáutica (zonas activas).'], { z: p.zoneBoxes.join(' ; ') }))}</p>` : ''}
       ${p.extraZones?.length ? `<p class="mt-small">${esc(t(['Hors des théâtres couverts, pour les missions du registre : {z} — relief et sommets seulement (pas d’obstacles hors de l’AIXM française).', 'Outside the covered theatres, for the registry missions: {z} — terrain and peaks only (no obstacles outside the French AIXM).'], { z: p.extraZones.join(' ; ') }))}</p>` : ''}
       <p class="mt-small">${esc(p.mode === 'full' ? t(['Calcul complet : relief Terrarium + sommets OSM{o} + obstacles de l’AIRAC {c} ; + 1000 ft (2000 ft au-delà de 5000 ft), centaine supérieure.', 'Full calculation: Terrarium terrain + OSM peaks{o} + AIRAC {c} obstacles.'], { c: p.cycle, o: p.peaksOk === false ? t([' (indisponibles : relief majoré de 100 m)', ' (unavailable: terrain +100 m)']) : '' }) : t(['Recalcul simple : obstacles de l’AIRAC {c}, relief du mora.csv conservé ; + 1000 ft (2000 ft au-delà de 5000 ft), centaine supérieure.', 'Simple recalculation: AIRAC {c} obstacles, terrain kept.'], { c: p.cycle }))}</p>`;
   }
@@ -1518,6 +2006,68 @@
     renderVersions();
     renderDeps();
   }
+  /** Contrôles des données étendues : [libellé, pastilles] — zones actives et base reconstruite pour elles, espaces par
+   *  source, puis pour chaque zone active : espaces (centre dans la zone) par source, terrains, cases de la grille MORA. */
+  async function extendedChecks(b) {
+    const rows = [];
+    let Z = null;
+    try {
+      Z = await window.SiaBase.zones?.();
+    } catch {
+      Z = null; // module des zones indisponible : contrôles SIA seuls
+    }
+    if (!Z) return rows;
+    const SRC = {
+      sia: 'SIA',
+      dircam: 'DIRCAM',
+      aixm5: 'AIXM 5.1',
+      geojson: 'GeoJSON',
+      openaip: 'openAIP',
+      openair: 'OpenAir',
+      xplane: 'X-Plane'
+    };
+    const bySrc = list => {
+      const n = {};
+      for (const a of list) n[a.src || 'sia'] = (n[a.src || 'sia'] || 0) + 1;
+      return Object.entries(n).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${SRC[k] || k} ${v}`).join(' · ') || '0';
+    };
+    const zoneName = id => t(Z.byId(id)?.name || [id.toUpperCase()]);
+    const on = Z.zones().map(z => z.id).filter(id => Z.isOn(id)),
+      built = b.sources?.zones || []; // zones de la dernière reconstruction (sia_base.js : base.sources.zones)
+    const same = on.length === built.length && on.every(id => built.includes(id));
+    rows.push([t(['Zones actives', 'Active zones', 'Aktive Zonen', 'Zonas activas']), !on.length ? pill('warn', t(['aucune zone active : la base ne contient que le SIA', 'no active zone: the database holds the SIA only', 'keine aktive Zone: die Basis enthält nur das SIA', 'ninguna zona activa: la base solo contiene el SIA'])) : same ? pill('ok', on.map(zoneName).join(', ')) : pill('warn', t(['base reconstruite pour : {b} ; zones actives : {z} — « Reconstruire la base aéronautique »', 'database rebuilt for: {b}; active zones: {z} — “Rebuild the aeronautical database”', 'Basis aufgebaut für: {b}; aktive Zonen: {z} — „Luftfahrtdatenbank neu aufbauen“', 'base reconstruida para: {b}; zonas activas: {z} — «Reconstruir la base aeronáutica»'], {
+      b: built.map(zoneName).join(', ') || '—',
+      z: on.map(zoneName).join(', ')
+    }))]);
+    rows.push([t(['Espaces par source', 'Airspace by source', 'Lufträume nach Quelle', 'Espacios por fuente']), pill('info', bySrc(b.airspaces || []))]);
+    const centre = a => {
+      let s = 90, n = -90, w = 180, e = -180;
+      for (const [la, lo] of a.rings?.[0] || []) {
+        s = Math.min(s, la), n = Math.max(n, la), w = Math.min(w, lo), e = Math.max(e, lo);
+      }
+      return s <= n ? [(s + n) / 2, (w + e) / 2] : null;
+    };
+    const mora = new Set((b.moraCells || []).map(c => `${Math.floor(c.lat)}|${Math.floor(c.lon)}`));
+    for (const id of on) {
+      const inZ = Z.inZones([id], .2),
+        sp = (b.airspaces || []).filter(a => {
+          const c = centre(a);
+          return c && inZ(c[0], c[1]);
+        }),
+        ads = (b.aero?.aerodromes || []).filter(a => Number.isFinite(a.lat) && inZ(a.lat, a.lon)).length,
+        cells = Z.cellsOf(id),
+        covered = [...cells].filter(k => mora.has(k)).length;
+      const moraPill = !cells.size ? '' : covered === cells.size ? pill('ok', t(['MORA {c}/{n} cases', 'MORA {c}/{n} cells', 'MORA {c}/{n} Felder', 'MORA {c}/{n} casillas'], {
+        c: covered,
+        n: cells.size
+      })) : pill('warn', t(['MORA {c}/{n} cases — « Calculer la MORA de la zone »', 'MORA {c}/{n} cells — “Compute the zone MORA”', 'MORA {c}/{n} Felder — „MORA der Zone berechnen“', 'MORA {c}/{n} casillas — «Calcular la MORA de la zona»'], {
+        c: covered,
+        n: cells.size
+      }));
+      rows.push([`${t(['Zone', 'Zone', 'Zone', 'Zona'])} ${zoneName(id)}`, `${pill(sp.length ? 'info' : 'warn', t(['espaces : {l}', 'airspace: {l}', 'Lufträume: {l}', 'espacios: {l}'], { l: sp.length ? bySrc(sp) : '0' }))} ${pill(ads ? 'info' : 'warn', t(['{n} terrain(s)', '{n} aerodrome(s)', '{n} Flugplatz/-plätze', '{n} aeródromo(s)'], { n: ads }))} ${moraPill}`]);
+    }
+    return rows;
+  }
   async function usageCheck() {
     const box = document.getElementById('mtUsage');
     box.innerHTML = `<p class="mt-small">${esc(t(['Contrôle…', 'Checking…']))}</p>`;
@@ -1532,21 +2082,24 @@
     const regEmpty = pill('info', t(['registre des missions vide dans ce navigateur : ouvrir le Registre des missions (il relit data/missions), puis « Contrôler à nouveau »', 'mission registry empty in this browser: open the Mission registry (it re-reads data/missions), then “Check again”'])) + ` <a class="mt-link" href="${esc(regUrl)}" target="_blank" rel="noopener">${esc(t(['Registre des missions', 'Mission registry']))}</a>`;
     const used = [...new Set(reg.flatMap(m => [m.origin, m.destination]).map(s => /\(([A-Z]{4})\)|\b(LF[A-Z]{2})\b/.exec(s || '')).filter(Boolean).map(m => m[1] || m[2]))];
     const missingAd = ads.size ? used.filter(c => !ads.has(c)) : [];
-    out.push([t(['Terrains des missions du registre', 'Registry mission aerodromes']), !b ? pill('info', t(['base SIA absente : étape 4', 'no SIA base: step 4'])) : !reg.length ? regEmpty : !used.length ? pill('info', t(['{n} mission(s), aucun code OACI « (LFxx) » dans leurs terrains', '{n} mission(s), no “(LFxx)” ICAO code in their aerodromes'], {
+    out.push([t(['Terrains des missions du registre', 'Registry mission aerodromes', 'Flugplätze der Registermissionen', 'Aeródromos de las misiones del registro']), !b ? pill('info', t(['base absente : « Reconstruire la base aéronautique »', 'no base: “Rebuild the aeronautical database”', 'keine Basis: „Luftfahrtdatenbank neu aufbauen“', 'sin base: «Reconstruir la base aeronáutica»'])) : !reg.length ? regEmpty : !used.length ? pill('info', t(['{n} mission(s), aucun code OACI « (LFxx) » dans leurs terrains', '{n} mission(s), no “(LFxx)” ICAO code in their aerodromes', '{n} Mission(en), kein ICAO-Code „(LFxx)“ in ihren Flugplätzen', '{n} misión(es), ningún código OACI «(LFxx)» en sus aeródromos'], {
       n: reg.length
-    })) : missingAd.length ? pill('warn', t(['{n}/{m} absents de l’AIXM : {l}', '{n}/{m} not in AIXM: {l}'], {
+    })) : missingAd.length ? pill('warn', t(['{n}/{m} absents de la base aéronautique (SIA et sources des zones actives) : {l}', '{n}/{m} not in the aeronautical database (SIA and sources of the active zones): {l}', '{n}/{m} fehlen in der Luftfahrtdatenbank (SIA und Quellen der aktiven Zonen): {l}', '{n}/{m} ausentes de la base aeronáutica (SIA y fuentes de las zonas activas): {l}'], {
       n: missingAd.length,
       m: used.length,
       l: missingAd.join(', ')
-    })) : pill('ok', t(['{m} terrain(s) présents dans l’AIXM', '{m} aerodrome(s) found in AIXM'], {
+    })) : pill('ok', t(['{m} terrain(s) présents dans la base aéronautique', '{m} aerodrome(s) found in the aeronautical database', '{m} Flugplatz/-plätze in der Luftfahrtdatenbank', '{m} aeródromo(s) presentes en la base aeronáutica'], {
       m: used.length
     }))]);
     // espaces
     const info = window.SiaBase.info();
-    out.push([t(['Espaces (base du studio)', 'Airspace (studio base)']), info ? pill(info.mixed ? 'err' : 'ok', t(['{n} espaces, cycle {c}', '{n} airspaces, cycle {c}'], {
+    out.push([t(['Espaces (base du studio)', 'Airspace (studio base)', 'Lufträume (Studio-Basis)', 'Espacios (base del estudio)']), info ? pill(info.mixed ? 'err' : 'ok', t(['{n} espaces, cycle {c}', '{n} airspaces, cycle {c}', '{n} Lufträume, Zyklus {c}', '{n} espacios, ciclo {c}'], {
       n: info.counts?.airspaces ?? '?',
       c: info.airac
     })) : pill('info', '—')]);
+    // données étendues (zones actives, Paramètres › Maintenance › Données aéronautiques) : base reconstruite pour les
+    // zones actives, espaces par source, puis par zone : espaces, terrains, couverture de la grille MORA
+    if (b) out.push(...await extendedChecks(b));
     // appareils et flotte
     const fleet = window.DEFA_FLEET || [];
     const fleetTypes = [...new Set(fleet.map(r => r.type).filter(Boolean))];
@@ -2201,7 +2754,7 @@
       c: baseSummary.airac || '?',
       d: fmtDate(baseSummary.cachedAt)
     }) : t(['vide', 'empty']),
-    after: ['À relire depuis le dossier SIA (studio, ou étape 4 de la mise à jour SIA) ; la base précédente (comparaison) est gardée.', 'To be read again from the SIA folder (studio, or step 4 of the SIA update); the previous base (comparison) is kept.'],
+    after: ['À relire depuis le dossier SIA (studio, ou « Reconstruire la base aéronautique » des données aéronautiques) ; la base précédente (comparaison) est gardée.', 'To be read again from the SIA folder (studio, or “Rebuild the aeronautical database” in aeronautical data); the previous base (comparison) is kept.'],
     confirm: ['La base SIA devra être relue depuis le dossier SIA (quelques dizaines de secondes). Purger ?', 'The SIA base will have to be read again from the SIA folder (a few tens of seconds). Purge?'],
     purge: async () => {
       await window.SiaBase?.purge?.();
@@ -2354,6 +2907,61 @@
     };
   }
 
+  /** Place des données aéronautiques du dossier SIA, par zone (AeroZones.fileSource : SIA et DIRCAM → France,
+   *  openaip/<pays>_…, aixm5/LE_… → Espagne, geojson/faa_… → États-Unis, zones/<zone>/…) ; mora.csv : toutes zones. */
+  async function aeroSizes(el) {
+    if (!el) return;
+    const st = await window.FileAccess?.status?.('__sia');
+    const Z = await window.SiaBase?.zones?.();
+    const head = `<h3>${esc(t(['Données aéronautiques, par zone', 'Aeronautical data, by zone', 'Luftfahrtdaten, nach Zone', 'Datos aeronáuticos, por zona']))}</h3>`;
+    if (!Z || !st?.handle || st.permission !== 'granted') {
+      el.innerHTML = `${head}<p class="mt-small">${esc(t(['Dossier SIA non autorisé : Paramètres › Maintenance › Données aéronautiques.', 'SIA folder not authorised: Settings › Maintenance › Aeronautical data.', 'SIA-Ordner nicht erlaubt: Einstellungen › Wartung › Luftfahrtdaten.', 'Carpeta SIA no autorizada: Ajustes › Mantenimiento › Datos aeronáuticos.']))}</p>`;
+      return;
+    }
+    const B = window.MissionRegistryCore?.fmtBytes || fmtSize;
+    let files = [];
+    try {
+      const root = await window.SiaBase.filesOf(st.handle);
+      files = root.map(f => ({
+        rel: f.name,
+        size: f.size
+      }));
+      const extra = await window.SiaBase.extraFiles(st.handle, {});
+      for (const [k, l] of Object.entries(extra))
+        if (k !== 'xplane') files.push(...l.map(f => ({
+          rel: f.__rel || `${k}/${f.name}`,
+          size: f.size
+        })));
+    } catch (e) {
+      el.innerHTML = `${head}<p>${pill('err', e.message)}</p>`;
+      return;
+    }
+    const by = new Map(); // zone → { total, n, src: Map source → octets }
+    let other = 0;
+    for (const f of files) {
+      const fs = Z.fileSource(f.rel);
+      if (!fs) {
+        other += f.size;
+        continue;
+      }
+      const z = by.get(fs.zone) || by.set(fs.zone, {
+        total: 0,
+        n: 0,
+        src: new Map()
+      }).get(fs.zone);
+      z.total += f.size;
+      z.n++;
+      z.src.set(fs.source, (z.src.get(fs.source) || 0) + f.size);
+    }
+    const name = id => id === '*' ? t(['toutes zones', 'all zones', 'alle Zonen', 'todas las zonas']) : t(Z.byId(id)?.name || [id.toUpperCase()]);
+    const rows = [...by].sort((a, b) => b[1].total - a[1].total).map(([id, z]) => `<tr><td><b>${esc(name(id))}</b>${id !== '*' && !Z.isOn(id) ? ` <span class="mt-small">(${esc(t(['inactive', 'inactive', 'inaktiv', 'inactiva']))})</span>` : ''}</td><td class="mt-small">${[...z.src].sort((a, b) => b[1] - a[1]).map(([s, n]) => `${esc(t(Z.SOURCES[s]?.label || [s]).split(/ — | \(/)[0])} ${esc(B(n))}`).join(' · ')}</td><td class="num">${z.n}</td><td class="num"><b>${esc(B(z.total))}</b></td></tr>`).join('');
+    const total = [...by.values()].reduce((a, z) => a + z.total, 0) + other;
+    el.innerHTML = `${head}<p class="mt-small">${esc(t(['Dossier SIA ({d}) : {t} au total ; X-Plane, dossier du simulateur, non compté. Une zone inactive garde ses fichiers : les supprimer à la main dans le dossier pour libérer la place.', 'SIA folder ({d}): {t} in total; X-Plane, the simulator folder, not counted. An inactive zone keeps its files: delete them by hand in the folder to free the space.', 'SIA-Ordner ({d}): insgesamt {t}; X-Plane (Simulatorordner) nicht gezählt. Eine inaktive Zone behält ihre Dateien: zum Freigeben von Hand im Ordner löschen.', 'Carpeta SIA ({d}): {t} en total; X-Plane, carpeta del simulador, no contado. Una zona inactiva conserva sus archivos: borrarlos a mano en la carpeta para liberar espacio.'], {
+      d: st.handle.name,
+      t: B(total)
+    }))}</p>${rows ? `<div class="mt-scroll"><table class="mt-table mt-wide"><thead><tr><th>${esc(t(['Zone', 'Zone', 'Zone', 'Zona']))}</th><th>${esc(t(['Sources', 'Sources', 'Quellen', 'Fuentes']))}</th><th class="num">${esc(t(['Fichiers', 'Files', 'Dateien', 'Archivos']))}</th><th class="num">${esc(t(['Taille', 'Size', 'Größe', 'Tamaño']))}</th></tr></thead><tbody>${rows}${other ? `<tr><td>${esc(t(['autres fichiers', 'other files', 'andere Dateien', 'otros archivos']))}</td><td></td><td></td><td class="num">${esc(B(other))}</td></tr>` : ''}</tbody></table></div>` : `<p class="mt-small">${esc(t(['Aucune donnée dans le dossier.', 'No data in the folder.', 'Keine Daten im Ordner.', 'Ningún dato en la carpeta.']))}</p>`}`;
+  }
+
   function renderStorage() {
     const host = hosts.storage,
       C = window.MissionRegistryCore,
@@ -2362,14 +2970,16 @@
     const intro = `<p class="mt-small">${esc(t(['Dossier des missions (data/missions) : données (YAML, Markdown), cartes générées, PDF, versions précédentes, textes reçus. Les cartes se régénèrent depuis le YAML (studio) ; une carte surnuméraire n’est plus dans la liste des cartes de sa mission. Versions et textes reçus sont l’historique : ils ne sont pas purgés ici.', 'Missions folder (data/missions): data (YAML, Markdown), generated maps, PDFs, previous versions, received texts. Maps are regenerated from the YAML (studio); a surplus map is no longer in its mission’s map list. Versions and received texts are history: not purged here.']))}</p>`;
     const actions = `<p class="row"><button type="button" class="primary" id="mtStorageScan" data-icon="refresh">${esc(t(['Calculer la place utilisée', 'Compute used space', 'Belegten Platz berechnen', 'Calcular el espacio usado']))}</button>${st ? `<button type="button" class="secondary" id="mtPurgeSurplus" data-icon="trash"${st.totals.surplus ? '' : ' disabled'}>${esc(t(['Supprimer les cartes surnuméraires ({n}, {s})', 'Delete surplus maps ({n}, {s})'], { n: st.rows.reduce((a, r) => a + r.surplusList.length, 0), s: B(st.totals.surplus) }))}</button><button type="button" class="secondary" id="mtPurgeMaps" data-icon="trash"${st.totals.maps ? '' : ' disabled'}>${esc(t(['Purger toutes les cartes générées ({n}, {s})', 'Purge all generated maps ({n}, {s})'], { n: st.rows.reduce((a, r) => a + r.mapList.length, 0), s: B(st.totals.maps) }))}</button><button type="button" class="secondary" id="mtPurgePdf" data-icon="trash"${st.totals.pdf ? '' : ' disabled'}>${esc(t(['Purger les PDF ({n}, {s})', 'Purge PDFs ({n}, {s})', 'PDFs löschen ({n}, {s})', 'Purgar los PDF ({n}, {s})'], { n: st.rows.reduce((a, r) => a + r.pdfList.length, 0), s: B(st.totals.pdf) }))}</button>` : ''}<a class="mt-link" href="?m=caches">${esc(t(['Caches du navigateur →', 'Browser caches →']))}</a></p>`;
     if (!st) {
-      host.innerHTML = intro + actions;
+      host.innerHTML = intro + actions + '<div id="mtAeroSizes"></div>';
+      aeroSizes(host.querySelector('#mtAeroSizes'));
       bindStorage();
       return;
     }
     const tot = st.totals;
     const br = st.browser ? `<p>${esc(t(['Navigateur (bases locales, caches, base SIA…) : {u} utilisés sur {q} disponibles.', 'Browser (local databases, caches, SIA base…): {u} used of {q} available.'], { u: B(st.browser.usage || 0), q: B(st.browser.quota || 0) }))}</p>` : '';
     host.innerHTML = `${intro}${actions}<p>${esc(t(['Dossier des missions : {t} ({n} missions) — données {d}, cartes {m} (dont surnuméraires {s}), PDF {p}, versions {v}, textes reçus {r}. Calculé le {at}.', 'Missions folder: {t} ({n} missions) — data {d}, maps {m} (surplus {s}), PDF {p}, versions {v}, received {r}. Computed {at}.'], { t: B(tot.total), n: st.rows.length, d: B(tot.data), m: B(tot.maps), s: B(tot.surplus), p: B(tot.pdf), v: B(tot.versions), r: B(tot.recu), at: fmtDate(st.at) }))}</p>${br}
-      <div id="mtStorageTable" class="mt-scroll mt-short"></div>`;
+      <div id="mtStorageTable" class="mt-scroll mt-short"></div><div id="mtAeroSizes"></div>`;
+    aeroSizes(host.querySelector('#mtAeroSizes'));
     // tableau du framework (shared/mission_table.js) : tri par colonne, largeurs réglables, en-tête fixe
     const size = k => ({
       key: k,
@@ -2488,8 +3098,14 @@
     if (onPage('versions')) await guard('Versions et synchronisation', renderVersions, hosts.versions);
     if (onPage('deps')) await guard('Références et dépendances', renderDeps, hosts.deps);
     const want = new URLSearchParams(location.search).get('m') || location.hash.slice(1);
+    // ancre d'un élément d'un bloc (#mt-aero-base, anciennes ancres #mt-step-N du studio) : le bloc qui le contient est
+    // affiché (l'ancre y fait défiler une fois visible), pas « Mises à jour »
+    const anchor = /^mt-step-/.test(want) ? 'mt-aero-base' : want,
+      inBlock = !NAV[want] && anchor && (BLOCKS.find(b => document.getElementById(b.id)?.querySelector(`#${CSS.escape(anchor)}`))?.id ||
+        (/^mt-aero/.test(anchor) ? 'sia' : ''));
     if (embedded) {
       if (NAV[want]) showBlock(want);
+      else if (inBlock) showBlock(inBlock);
       else if (PAGE === 'maintenance' && !new URLSearchParams(location.search).get('base')) showBlock('updates');
     } else {
       const target = want && document.getElementById(want);
@@ -2508,7 +3124,7 @@
   window.addEventListener('local-store-restored', () => {
     renderVersions();
   });
-  // Base relue (ici par le bloc commun, ou dans le studio, autre onglet) : étapes 4 à 6 recalculées ; après une relecture, étape 5 à l'écran.
+  // Base relue (ici par le bloc commun, ou dans le studio, autre onglet) : zones et MORA recalculées ; après une relecture, la base à l'écran.
   async function baseChanged(scroll = false) {
     baseSummary = await window.SiaBase.summary();
     moraPlan = null;
@@ -2517,22 +3133,34 @@
     renderSia();
     renderVersions();
     renderDeps();
-    if (scroll && baseSummary) document.getElementById('mt-step-5')?.scrollIntoView({
+    if (scroll && baseSummary) document.getElementById('mt-aero-base')?.scrollIntoView({
       behavior: 'smooth',
       block: 'start'
     });
   }
   // Filet : au retour sur l'onglet, relire le résumé s'il a changé (l'événement storage peut manquer, ex. file://).
-  let lastInfo = localStorage.getItem('siaBaseInfo:v1');
-  window.addEventListener('focus', () => {
-    const cur = localStorage.getItem('siaBaseInfo:v1');
-    if (cur !== lastInfo) {
-      lastInfo = cur;
-      baseChanged();
+  // Seule une autre base compte (cycle, date de lecture, nombres) : pas l'heure du dernier contrôle (checkedAt), que
+  // chaque page réécrit — deux onglets de Paramètres se relançaient sans fin (bloc redessiné en boucle, clics perdus).
+  const baseKey = v => {
+    try {
+      const o = JSON.parse(v || 'null');
+      return o ? JSON.stringify([o.airac, o.cachedAt, o.folderName, o.mixed, o.counts]) : '';
+    } catch {
+      return '';
     }
+  };
+  let lastInfo = baseKey(localStorage.getItem('siaBaseInfo:v1'));
+  const infoChanged = () => {
+    const cur = baseKey(localStorage.getItem('siaBaseInfo:v1'));
+    if (cur === lastInfo) return false;
+    lastInfo = cur;
+    return true;
+  };
+  window.addEventListener('focus', () => {
+    if (infoChanged()) baseChanged();
   });
   window.addEventListener('storage', async e => {
-    if (e.key === 'siaBaseInfo:v1') await baseChanged();
+    if (e.key === 'siaBaseInfo:v1' && infoChanged()) await baseChanged();
     if (e.key === 'suiteBackupLog:v1') renderJournal();
   });
   renderAll();

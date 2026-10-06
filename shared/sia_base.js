@@ -33,7 +33,23 @@
     sc.onerror = () => res(null);
     document.head.append(sc);
   });
-  /** Sous-dossiers du dossier SIA par source (fichiers d'autres pays rangés à part). */
+  /** Zones de données (shared/aero_zones.js et leurs contours, shared/carto/aero_zones_geo.js), chargées à la demande ;
+   *  null si elles manquent (tout est lu, comme avant les zones). */
+  let zonesLoad = null;
+  const loadScript = src => new Promise(res => {
+    const sc = document.createElement('script');
+    sc.src = new URL(src, SCRIPT_URL).href;
+    sc.onload = () => res(true);
+    sc.onerror = () => res(false);
+    document.head.append(sc);
+  });
+  const needZones = () => zonesLoad ||= (async () => {
+    if (!window.AERO_ZONES_GEO) await loadScript('carto/aero_zones_geo.js?v=6e9678c4');
+    if (!window.AeroZones) await loadScript('aero_zones.js?v=6df0e0d4');
+    return window.AeroZones || null;
+  })();
+  /** Sous-dossiers du dossier SIA par source (fichiers d'autres pays rangés à part) ; zones/<zone>/ : fichiers déposés
+   *  à la main (NATS…). */
   const SOURCE_DIRS = ['aixm5', 'geojson', 'openaip'];
 
   // ===================================================================== cache IndexedDB
@@ -217,16 +233,22 @@
 
   function remember(s) {
     if (!s) return;
+    const next = {
+      airac: s.airac,
+      mixed: s.mixed,
+      cachedAt: s.cachedAt,
+      folderName: s.folderName,
+      counts: {
+        ...s.counts,
+        byType: undefined
+      }
+    };
+    // résumé inchangé : pas de réécriture (chaque écriture réveille les autres onglets, événement storage)
+    const cur = info();
+    if (cur && JSON.stringify([cur.airac, cur.mixed, cur.cachedAt, cur.folderName, cur.counts]) === JSON.stringify([next.airac, next.mixed, next.cachedAt, next.folderName, JSON.parse(JSON.stringify(next.counts))])) return;
     try {
       localStorage.setItem(INFO, JSON.stringify({
-        airac: s.airac,
-        mixed: s.mixed,
-        cachedAt: s.cachedAt,
-        folderName: s.folderName,
-        counts: {
-          ...s.counts,
-          byType: undefined
-        },
+        ...next,
         checkedAt: new Date().toISOString()
       }));
     } catch {
@@ -993,15 +1015,28 @@
   async function extraFiles(dir, {
     request = false
   } = {}) {
-    const AS = await needAero();
+    const AS = await needAero(),
+      Z = await needZones();
     if (!AS) return {};
-    const out = {};
+    const out = {},
+      ok = f => /\.(xml|geojson|json|txt|air)$/i.test(f.name);
+    // chemin relatif au dossier SIA gardé sur chaque fichier (zone et source : AeroZones.fileSource)
     for (const id of SOURCE_DIRS) {
-      if (!AS.enabled(id)) continue;
       const sd = await subDir(dir, id);
-      if (sd) out[id] = (await filesOf(sd)).filter(f => /\.(xml|geojson|json|txt|air)$/i.test(f.name));
+      if (sd) out[id] = (await filesOf(sd)).filter(ok).map(f => Object.assign(f, {
+        __rel: `${id}/${f.name}`
+      }));
     }
-    if (AS.enabled('xplane')) {
+    const zd = await subDir(dir, 'zones');
+    if (zd)
+      for await (const h of zd.values())
+        if (h.kind === 'directory')
+          for (const f of (await filesOf(h)).filter(ok))(out.aixm5 ||= []).push(Object.assign(f, {
+            __rel: `zones/${h.name}/${f.name}`
+          })); // lecteur choisi par l'extension
+    const s = Z?.settings(),
+      xp = !Z || Object.keys(s.on).some(id => Z.isOn(id, s) && Z.srcOn(id, 'xplane', s));
+    if (xp) {
       const st = await window.FileAccess?.status?.('__xpnav');
       let ok = st?.handle && st.permission === 'granted';
       if (st?.handle && !ok && request) ok = await st.handle.requestPermission({
@@ -1045,20 +1080,32 @@
     const t0 = performance.now(),
       timings = [];
     const AS = await needAero(),
-      on = id => !AS || AS.enabled(id);
+      Z = await needZones(),
+      zs = Z?.settings(),
+      // zones actives et sources cochées (Paramètres › Maintenance › Données aéronautiques) ; sans zones : tout est lu
+      wanted = rel => !Z || Z.fileWanted(rel, zs),
+      xpZones = Z ? Object.keys(zs.on).filter(id => Z.isOn(id, zs) && Z.srcOn(id, 'xplane', zs)) : null;
     // dossier choisi par le sélecteur natif (chemins relatifs) : fichiers des sous-dossiers des sources rangés à part
     extra = {
       ...extra
     };
     files = files.filter(f => {
-      const dir = (f.webkitRelativePath || '').split('/').slice(-2, -1)[0];
+      const parts = (f.webkitRelativePath || '').split('/'),
+        dir = parts.slice(-2, -1)[0];
+      if (parts[parts.length - 3] === 'zones') {
+        f.__rel = `zones/${dir}/${f.name}`;
+        (extra.aixm5 ||= []).push(f);
+        return false;
+      }
       if (!SOURCE_DIRS.includes(dir)) return true;
+      f.__rel = `${dir}/${f.name}`;
       (extra[dir] ||= []).push(f);
       return false;
     });
-    let xmlFiles = on('sia') ? files.filter(f => /\.xml$/i.test(f.name)) : [];
-    const extraCount = Object.entries(extra).filter(([id]) => on(id)).reduce((n, [, l]) => n + l.length, 0);
-    if (!xmlFiles.length && !extraCount) throw new Error(on('sia') ? 'Aucun XML dans le dossier SIA.' : 'Aucune source de données aéronautiques active : Paramètres › Maintenance › Données aéronautiques.');
+    const extraOk = (id, f) => id === 'xplane' ? !xpZones || xpZones.length > 0 : wanted(f.__rel || `${id}/${f.name}`);
+    let xmlFiles = files.filter(f => /\.xml$/i.test(f.name) && !/^miam-enr-5-7-/i.test(f.name) && wanted(f.name));
+    const extraCount = Object.entries(extra).reduce((n, [id, l]) => n + l.filter(f => extraOk(id, f)).length, 0);
+    if (!xmlFiles.length && !extraCount) throw new Error(Z && !Object.values(zs.on).some(Boolean) ? 'Aucune zone active : Paramètres › Maintenance › Données aéronautiques, cliquer les zones voulues sur la carte.' : 'Aucun fichier pour les zones actives et leurs sources cochées : Paramètres › Maintenance › Données aéronautiques.');
     const airacOf = f => AIRAC_NAME.exec(f.name)?.[1] || '',
       dates = [...new Set(xmlFiles.map(airacOf).filter(Boolean))].sort(),
       airac = dates[dates.length - 1] || '';
@@ -1068,9 +1115,9 @@
     const isAixm = f => /AIXM4\.5_all/i.test(f.name),
       isSia = f => /^XML_SIA_/i.test(f.name);
     // Jauge : chaque octet lu compte 1 ; analyse de l'AIXM (DOM) ≈ 0,8 × sa taille ; enregistrement ≈ 15 % du total lu.
-    const moraFile = files.find(f => /^mora\.csv$/i.test(f.name)),
-      tracks = files.find(f => /^miam-enr-5-7-tracks\.xml$/i.test(f.name));
-    const extraSize = Object.entries(extra).filter(([id]) => on(id)).reduce((n, [, l]) => n + l.reduce((m, f) => m + f.size, 0), 0);
+    const moraFile = wanted('mora.csv') ? files.find(f => /^mora\.csv$/i.test(f.name)) : null,
+      tracks = wanted('miam-enr-5-7-tracks.xml') ? files.find(f => /^miam-enr-5-7-tracks\.xml$/i.test(f.name)) : null;
+    const extraSize = Object.entries(extra).reduce((n, [id, l]) => n + l.filter(f => extraOk(id, f)).reduce((m, f) => m + f.size, 0), 0);
     const readSize = xmlFiles.reduce((n, f) => n + f.size, 0) + (moraFile?.size || 0) + (tracks?.size || 0) + 2.5e6 + 1.5 * extraSize;
     const total = readSize + 0.8 * xmlFiles.filter(isAixm).reduce((n, f) => n + f.size, 0) + 0.15 * readSize;
     let doneUnits = 0,
@@ -1142,7 +1189,6 @@
     });
     // sources : SIA (zones AZBA / RTBA : DIRCAM), désactivables
     for (const a of airspaces) a.src ||= a.azba ? 'dircam' : 'sia';
-    if (!on('dircam')) airspaces = airspaces.filter(a => !a.azba);
     if (aero) {
       await step('Aérodromes contrôlés (CTR)…');
       markControlledAerodromes(aero, airspaces);
@@ -1150,7 +1196,7 @@
     }
     const cities = city ? parseCities(await text('Villes (villes_geonames.csv)', city)) : [];
     const moraCells = moraFile ? parseMora(await text('Grille MORA (mora.csv)', moraFile)) : [];
-    const aarXml = tracks && on('dircam') ? await text('Axes de ravitaillement (ENR 5.7)', tracks) : '';
+    const aarXml = tracks ? await text('Axes de ravitaillement (ENR 5.7)', tracks) : '';
     await step('Enregistrement dans le navigateur…');
     const base = {
       parserVersion: VERSION,
@@ -1191,7 +1237,7 @@
     };
     if (AS)
       for (const src of AS.SOURCES.filter(x => x.dir || x.id === 'xplane')) {
-        const list = on(src.id) ? extra[src.id] || [] : [];
+        const list = (extra[src.id] || []).filter(f => extraOk(src.id, f));
         if (!list.length) continue;
         const parts = [];
         for (const f of list) {
@@ -1232,6 +1278,29 @@
             if (p.aero?.airways?.length) p.aero.airways = AS.resolveAirways(p.aero.airways, pts, navs);
           for (const p of parts)
             if (p.aero?.points) p.aero.points = p.aero.points.filter(x => x.type === 'ICAO');
+          // données mondiales : découpées aux contours des zones actives qui ont coché X-Plane (marge d'un demi-degré)
+          if (xpZones) {
+            const inZ = Z.inZones(xpZones),
+              mid = a => {
+                const r = a.rings?.[0] || [];
+                let la = 0,
+                  lo = 0;
+                for (const [y, x] of r) {
+                  la += y;
+                  lo += x;
+                }
+                return r.length ? inZ(la / r.length, lo / r.length) : false;
+              };
+            for (const p of parts) {
+              if (p.airspaces) p.airspaces = p.airspaces.filter(mid);
+              if (p.aero) {
+                for (const k of ['navaids', 'points', 'vrp'])
+                  if (p.aero[k]) p.aero[k] = p.aero[k].filter(x => inZ(x.lat, x.lon));
+                if (p.aero.airways) p.aero.airways = p.aero.airways.filter(w => inZ(w.a.lat, w.a.lon) || inZ(w.b.lat, w.b.lon));
+              }
+              if (p.moraCells) p.moraCells = p.moraCells.filter(c => inZ(c.lat, c.lon));
+            }
+          }
         }
         const before = base.airspaces.length;
         for (const p of parts) {
@@ -1244,7 +1313,9 @@
           airspaces: base.airspaces.length - before
         };
       }
-    base.sources = Object.fromEntries((AS?.SOURCES || []).map(x => [x.id, on(x.id)]));
+    base.sources = Z ? {
+      zones: Object.keys(zs.on).filter(id => Z.isOn(id, zs))
+    } : {};
     base.xmlInventoryData = inventory.map(i => ({
       name: i.file.name,
       role: i.role,
@@ -1308,15 +1379,15 @@
   const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   const T = {
     folder: ['Dossier SIA', 'SIA folder', 'SIA-Ordner', 'Carpeta SIA'],
-    reread: ['Relire le dossier', 'Re-read the folder', 'Ordner neu einlesen', 'Releer la carpeta'],
+    reread: ['Reconstruire la base aéronautique', 'Rebuild the aeronautical database', 'Luftfahrtdatenbank neu aufbauen', 'Reconstruir la base aeronáutica'],
     purge: ['Purger le cache', 'Purge the cache', 'Cache leeren', 'Vaciar la caché'],
     pick: ['Choisir le dossier SIA…', 'Choose the SIA folder…', 'SIA-Ordner wählen…', 'Elegir la carpeta SIA…'],
     none: ['Aucune base mémorisée.', 'No stored base.', 'Keine gespeicherte Basis.', 'Ninguna base guardada.'],
     reading: ['Relecture en cours…', 'Re-reading…', 'Wird eingelesen…', 'Releyendo…'],
-    confirmPurge: ['Purger la base SIA mémorisée dans ce navigateur ? Elle sera reconstruite à la prochaine relecture.', 'Purge the SIA base stored in this browser? It is rebuilt at the next re-read.'],
-    purged: ['Cache purgé : relire le dossier.', 'Cache purged: re-read the folder.'],
+    confirmPurge: ['Purger la base aéronautique mémorisée dans ce navigateur ? Elle sera reconstruite à la prochaine reconstruction.', 'Purge the aeronautical database stored in this browser? It is rebuilt at the next rebuild.', 'Die in diesem Browser gespeicherte Luftfahrtdatenbank leeren? Sie wird beim nächsten Neuaufbau wiederhergestellt.', '¿Vaciar la base aeronáutica guardada en este navegador? Se reconstruirá en la próxima reconstrucción.'],
+    purged: ['Cache purgé : reconstruire la base aéronautique.', 'Cache purged: rebuild the aeronautical database.', 'Cache geleert: Luftfahrtdatenbank neu aufbauen.', 'Caché vaciada: reconstruir la base aeronáutica.'],
     empty: ['Cache déjà vide.', 'Cache already empty.'],
-    old: ['Base mémorisée d’une version précédente : relire le dossier.', 'Stored base from an earlier version: re-read the folder.'],
+    old: ['Base mémorisée d’une version précédente : reconstruire la base aéronautique.', 'Stored base from an earlier version: rebuild the aeronautical database.', 'Gespeicherte Basis einer früheren Version: Luftfahrtdatenbank neu aufbauen.', 'Base guardada de una versión anterior: reconstruir la base aeronáutica.'],
     files: ['Fichiers analysés', 'Analysed files', 'Analysierte Dateien', 'Archivos analizados'],
     cancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
     cancelled: ['Relecture annulée : la base mémorisée n’a pas changé.', 'Re-read cancelled: the stored base is unchanged.'],
@@ -1513,6 +1584,7 @@
   window.SiaBase = {
     VERSION,
     aero: needAero,
+    zones: needZones,
     extraFiles,
     get,
     put,

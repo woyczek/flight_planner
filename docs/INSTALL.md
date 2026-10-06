@@ -20,7 +20,7 @@ local. Rien à compiler.
       exclus des sauvegardes ;
    3. **Dossiers** : dossier de l'application (données, registre, missions, SIA, performances et sauvegarde locale en
       sont déduits) ; classeur ODV : dossier OneDrive où l'escadrille le dépose, ou à défaut le fichier Excel ;
-   4. **Terminer** : mise à jour des données SIA (Paramètres › Maintenance › Mise à jour SIA, étapes guidées ; le
+   4. **Terminer** : mise à jour des données SIA (Paramètres › Maintenance › Données aéronautiques, zone France ; le
       téléchargement sur le site du SIA demande d'accepter sa licence Open Data).
 
    Une fois réglée, la suite s'ouvre sur l'accueil aux lancements suivants (la page reste accessible :
@@ -144,7 +144,7 @@ Bibliothèque standard uniquement :
 ### Données SIA (Missions SIA)
 
 Le studio cartographique utilise les données AIRAC du SIA, **hors dépôt** (≈ 80 Mo par cycle) : Paramètres ›
-Maintenance › Mise à jour SIA, six étapes guidées. Le ZIP s'obtient sur la boutique du SIA, page du cycle : compte SIA
+Maintenance › Données aéronautiques, source SIA de la zone France. Le ZIP s'obtient sur la boutique du SIA, page du cycle : compte SIA
 (gratuit), « Ajouter au panier » (0 €), « Passer commande » en acceptant la licence, téléchargement depuis la
 confirmation ou « Mes commandes ». Puis **Récupérer le ZIP téléchargé** : le serveur du lanceur prend le dernier
 `export_xml_bd_SIA_*.zip` du dossier Téléchargements et la page l'extrait dans `data/sia/`. Détail : [SIA_MISSIONS.md](SIA_MISSIONS.md).

@@ -376,3 +376,76 @@ html[data-design="field"] .mt-block :is(button.secondary, .mt-file):not(#imp) {
   color: #eef0e6;
   border-color: #0b0d08
 }
+
+/* Données aéronautiques : carte des zones du monde (MapLibre) et panneau des sources de la zone survolée ou choisie */
+@layer app {
+  .mt-aero {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(260px, 2fr);
+    gap: 12px;
+    align-items: start;
+    margin: 8px 0 14px
+  }
+  .mt-aero>* {
+    min-width: 0
+  }
+  .mt-aero-map {
+    height: 420px;
+    border: 1px solid var(--line);
+    background: #dfe6ec
+  }
+  .mt-aero-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    margin-top: 6px
+  }
+  .mt-aero-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px
+  }
+  .mt-aero-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 1px solid rgba(0, 0, 0, .35);
+    vertical-align: -1px
+  }
+  .mt-aero-panel {
+    border: 1px solid var(--line);
+    padding: 8px 12px;
+    min-height: 420px /* hauteur de la carte : la page ne saute pas d'une zone à l'autre */
+  }
+  .mt-aero-panel h3 {
+    margin: 0 0 4px
+  }
+  .mt-aero-srcs {
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 0
+  }
+  .mt-aero-src {
+    padding: 6px 0;
+    border-top: 1px solid var(--line);
+    overflow-wrap: anywhere
+  }
+  .mt-aero-src p {
+    margin: 4px 0
+  }
+  @media (max-width: 900px) {
+    .mt-aero {
+      grid-template-columns: 1fr
+    }
+    .mt-aero-map {
+      height: 300px
+    }
+  }
+}
+/* base des types d'aéronefs vide : carte mise en avant (Références et dépendances) */
+@layer app {
+  .mt-ac-empty {
+    outline: 2px solid #e39b1b;
+    outline-offset: 2px
+  }
+}

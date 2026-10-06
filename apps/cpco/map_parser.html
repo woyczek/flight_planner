@@ -1518,9 +1518,9 @@ const OPEN_PARAMS = new URLSearchParams(location.search),
   FROM_UPDATE = OPEN_PARAMS.has('retour');
 
 function showBackToUpdate() {
-  const url = '../settings/maintenance.html?m=sia#mt-step-5',
+  const url = '../settings/maintenance.html?m=sia#mt-aero-base',
     m = basePanel.el.querySelector('.sia-base-msg');
-  m.insertAdjacentHTML('beforeend', `<p class="actions"><a id="backToUpdate" class="buttonLink" href="${url}">↩ Retour à la mise à jour SIA (étape 5 : différences)</a></p>`);
+  m.insertAdjacentHTML('beforeend', `<p class="actions"><a id="backToUpdate" class="buttonLink" href="${url}">↩ Retour aux données aéronautiques</a></p>`);
   $('backToUpdate').onclick = e => {
     if (window.opener && !window.opener.closed) {
       e.preventDefault();

@@ -452,7 +452,7 @@ Dieser Schritt ist wichtig: Ohne freigegebenen Datenordner bleibt Ihre Verfügba
 
 Karten und Missionen nutzen die AIRAC-Daten des SIA (Zyklus von 28 Tagen).
 
-1. Klicken Sie auf „Abschließen und SIA-Daten aktualisieren“. Die Suite wird als „eingerichtet“ vermerkt und die Seite Wartung öffnet sich bei der SIA-Aktualisierung.
+1. Klicken Sie auf „Abschließen und SIA-Daten aktualisieren“. Die Suite wird als „eingerichtet“ vermerkt und die Seite Wartung öffnet sich bei den Luftfahrtdaten (Zonenkarte; Frankreich ist standardmäßig aktiv).
 2. Folgen Sie den geführten Schritten: Auf der Website des SIA (kostenloses Konto) das Produkt des Zyklus (0 €) mit „Ajouter au panier“ in den Warenkorb legen, dann „Passer commande“ und die Lizenz akzeptieren.
 3. Übernehmen Sie das heruntergeladene ZIP mit „Heruntergeladenes ZIP holen“.
 
@@ -1285,7 +1285,7 @@ Die Knöpfe bleiben ausgegraut, solange keine Karte zu erstellen ist.
 Dieser Block ist standardmäßig ausgeblendet: Klicken Sie auf „Anzeigen“. Er liest den SIA-Ordner (AIXM) und hält ihn im Browser. Ohne ihn erkennt die Seite weder Flugplätze noch Funkfeuer noch Lufträume.
 
 - Knopf „SIA-Ordner: …“: den Ordner `data/sia` wählen (der Browser fragt nach dem Zugriff), dann Lesen.
-- „Ordner neu lesen“: nach jeder AIRAC-Aktualisierung auszuführen. Eine Anzeige verfolgt das Lesen; „Abbrechen“ unterbricht es, ohne die gespeicherte Datenbank zu berühren.
+- „Luftfahrtdatenbank neu aufbauen“: nach jeder AIRAC-Aktualisierung auszuführen; liest die aktiven Zonen unter Einstellungen › Wartung › Luftfahrtdaten. Eine Anzeige verfolgt das Lesen; „Abbrechen“ unterbricht es, ohne die gespeicherte Datenbank zu berühren.
 - „Cache leeren“: löscht die gespeicherte Datenbank (sie wird beim nächsten Neulesen wieder aufgebaut).
 - Die Statuszeile zeigt die gespeicherte Datenbank, ihren AIRAC-Zyklus und ihr Datum; „Zyklus veraltet“ erscheint, wenn ein neuerer Zyklus gilt. „Analysierte Dateien“ listet die gelesenen Dateien.
 

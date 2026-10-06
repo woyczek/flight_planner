@@ -452,7 +452,7 @@ Este paso es importante: sin carpeta de datos autorizada, su disponibilidad se q
 
 Los mapas y las misiones utilizan los datos AIRAC del SIA (ciclo de 28 días).
 
-1. Haga clic en «Terminar y actualizar los datos SIA». La suite se marca como «configurada» y la página Mantenimiento se abre en la actualización SIA.
+1. Haga clic en «Terminar y actualizar los datos SIA». La suite se marca como «configurada» y la página Mantenimiento se abre en los datos aeronáuticos (mapa de zonas; Francia está activa por defecto).
 2. Siga los pasos guiados: en el sitio del SIA (cuenta gratuita), «Ajouter au panier» el producto del ciclo (0 €) y, después, «Passer commande» aceptando la licencia.
 3. Recupere el ZIP descargado con «Recuperar el ZIP descargado».
 
@@ -1286,7 +1286,7 @@ Los botones permanecen en gris mientras no haya ningún mapa que producir.
 Este bloque está oculto por defecto: haga clic en «Mostrar». Lee la carpeta SIA (AIXM) y la guarda en el navegador. Sin ella, la página no reconoce aeródromos, balizas ni espacios.
 
 - Botón «Carpeta SIA: …»: elegir la carpeta `data/sia` (el navegador pide acceso) y, después, lectura.
-- «Releer la carpeta»: hay que hacerlo tras cada actualización AIRAC. Un indicador sigue la lectura; «Cancelar» la interrumpe sin tocar la base guardada.
+- «Reconstruir la base aeronáutica»: hay que hacerlo tras cada actualización AIRAC; lee las zonas activas de Ajustes › Mantenimiento › Datos aeronáuticos. Un indicador sigue la lectura; «Cancelar» la interrumpe sin tocar la base guardada.
 - «Vaciar la caché»: borra la base guardada (se reconstruirá en la siguiente relectura).
 - La línea de estado indica la base guardada, su ciclo AIRAC y su fecha; se muestra «ciclo caducado» si hay un ciclo más reciente en vigor. «Archivos analizados» muestra los archivos leídos.
 

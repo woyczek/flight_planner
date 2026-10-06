@@ -261,11 +261,11 @@ Type de sortie (PNG, SVG éditable) et largeur des PNG : menu ☰ › « Sorties
 
 Bloc masqué par défaut : cliquez « Afficher » dans son en-tête.
 - Dossier `data/sia`, mémorisé comme les autres dossiers de la suite.
-- « Relire le dossier » après chaque mise à jour AIRAC ; « Annuler » interrompt sans changer la base mémorisée.
+- « Reconstruire la base aéronautique » après chaque mise à jour AIRAC ; « Annuler » interrompt sans changer la base mémorisée.
 - « Purger le cache » efface la base gardée dans ce navigateur (à relire ensuite).
 - La ligne d'état indique la base mémorisée (dossier, cycle AIRAC, date) ; « Fichiers analysés » liste les XML lus.
 
-Si le dossier contient plusieurs cycles, seul le plus récent est lu ; les autres sont signalés, à archiver. C'est le même bloc que Paramètres › Maintenance › Données aéronautiques (étape 4).
+Si le dossier contient plusieurs cycles, seul le plus récent est lu ; les autres sont signalés, à archiver. C'est le même bloc que Paramètres › Maintenance › Données aéronautiques (« Reconstruire la base aéronautique »), qui lit les zones actives et leurs sources cochées.
 
 ## Registre des missions
 <!-- page: apps/cpco/mission_registry.html -->
@@ -644,32 +644,35 @@ Références suivies : XML SIA, base analysée du studio, grille MORA, axes AAR,
 Exemples de contrôles : cycles mélangés dans la base SIA, obstacles MORA d'un autre cycle, types de la flotte absents de la base OACI, prompt à régénérer (`python tools/build_mission_prompt.py`).
 Le bouton « Vérifier » relance les contrôles.
 
-### Données aéronautiques : sources et mise à jour SIA (AIRAC)
+### Données aéronautiques : zones du monde, sources et cycles AIRAC
 
-**Sources** : une ligne par source de données, chacune cochée (lue) ou non ; les changements s'appliquent à la prochaine reconstruction de la base (« Relire le dossier », étape 4). Le SIA garde la priorité : dans les FIR françaises, seuls ses espaces comptent ; ailleurs, un espace, un aérodrome ou une balise déjà lu n'est pas ajouté une deuxième fois.
-- **SIA France** (AIXM 4.5, XML_SIA) et **DIRCAM / MILAIP** (zones RTBA / AZBA, axes de ravitaillement ENR 5.7) : le pas à pas ci-dessous.
-- **AIXM 5.1** (autres pays) : fichiers `.xml` du dossier `data/sia/aixm5/`. « ENAIRE (Espagne) : télécharger » prend les derniers jeux publiés (espaces, en route). Royaume-Uni (NATS) : inscription sur le site, fichier déposé à la main.
-- **GeoJSON** : fichiers `.geojson` ou `.json` (et OpenAir `.txt`) de `data/sia/geojson/`. « FAA (États-Unis) : zones et routes militaires » télécharge les espaces à usage spécial (MOA, R, W, A, P) et les routes MTR, lues en couloirs ; « FAA : classes d'espace » est un gros fichier.
-- **openAIP** : codes pays à deux lettres séparés par des espaces, puis « openAIP : télécharger les pays » (espaces, aérodromes, balises, points VFR dans `data/sia/openaip/`). Données communautaires, usage non commercial (CC BY-NC 4.0).
-- **X-Plane** : bouton du dossier d'installation d'X-Plane ; balises, points, voies aériennes et grille MORA des fichiers `earth_*.dat` (« Custom Data » d'abord), espaces OpenAir s'il y en a.
-- Les téléchargements passent par le lanceur (`tools/aero_fetch.py`, utilisable aussi en ligne de commande). Sans lanceur : télécharger les fichiers à la main et les déposer dans le sous-dossier de la source.
-- Hors de France, les zones R, D, TRA, TSA, MOA, W, A et les routes MTR recoupées par une mission figurent dans ses espaces à activer.
+**Carte des zones** : une zone par pays (la France regroupe la métropole et l'outre-mer, couverture du SIA). La survoler affiche ses sources dans le panneau de droite ; un clic l'épingle : le panneau reste sur elle, le temps de l'activer (« Activer la zone ») et de régler ses sources. Nouveau clic sur la zone, Échap ou « 📌 Libérer » la relâchent.
+- Couleurs : contour seul = inactive, sans données ; gris = inactive, avec des données ; orange = active, données incomplètes ; vert = active, toutes les données des sources cochées ; bleu = zone survolée.
+- Chaque source se coche ou se décoche pour sa zone ; seules les sources cochées des zones actives entrent dans la base. Une source « lien » (PDF ou site de consultation) n'est pas lue par la suite.
+- Selon la source, le panneau propose :
+  - un téléchargement direct par le lanceur (`tools/aero_fetch.py`) : openAIP (chaque pays), ENAIRE (Espagne), FAA (États-Unis : zones et routes militaires, classes d'espace) ;
+  - une commande ou une inscription, avec le lien et le mode d'emploi : SIA France (commande à 0 €, à refaire à chaque cycle), NATS (Royaume-Uni, fichier déposé dans `data/sia/zones/gb/`) ;
+  - un PDF, avec le lien et le mode d'emploi : DIRCAM / MILAIP ENR 5.7 (axes de ravitaillement), AIP militaire britannique, NAV CANADA ;
+    DIRCAM : « Importer le PDF MILAIP… » lit le PDF de la section ENR 5.7 (pdf.js, réseau au premier import), montre le nombre d'axes et les anomalies relevées, puis « Écrire miam-enr-5-7-tracks.xml » range le fichier dans le dossier SIA (ancien dans `_archives/`) et met la base à jour ;
+  - un dossier de l'ordinateur : X-Plane (balises, points, voies aériennes, grille MORA, découpés aux contours des zones actives qui l'ont cochée) ;
+  - un calcul : la MORA de la zone.
+- SIA France (zone France) : « Récupérer le ZIP téléchargé » (le lanceur le prend dans Téléchargements), « ZIP d'export du SIA… », « Extraire … » s'il est déjà dans le dossier, « Archiver les anciens cycles » (`_archives/`) ; « Contenu du dossier SIA » liste les fichiers du cycle.
+- Le SIA garde la priorité : dans les FIR françaises, seuls ses espaces comptent ; ailleurs, un espace, un aérodrome ou une balise déjà lu n'est pas ajouté une deuxième fois. Hors de France, les zones R, D, TRA, TSA, MOA, W, A et les routes MTR recoupées par une mission figurent dans ses espaces à activer.
+- Les adresses des sites (SIA, DIRCAM, NATS, AIP militaire britannique, NAV CANADA) se règlent dans Paramètres › Installation › Sources et dossiers › Sources externes ; les dossiers SIA et X-Plane y sont les mêmes qu'ici.
 
-**SIA France : nouveau cycle AIRAC pas à pas**
+**Reconstruire la base aéronautique** : lit les sources cochées de toutes les zones actives (quelques secondes ; le navigateur peut demander d'autoriser le dossier). C'est le même bloc que dans le studio cartographique.
 
-Un nouveau cycle AIRAC entre en vigueur tous les 28 jours. Six étapes, dans l'ordre ; la pastille de chaque étape passe au vert quand l'étape est faite. Le « Mode d'emploi » détaille chaque étape.
-1. **Cycle AIRAC** : constatez le cycle en vigueur, le suivant et celui de la base du studio. Des liens mènent aux pages du SIA.
-2. **Télécharger et extraire l'export du SIA** :
-   - sur le site du SIA : compte (gratuit), « Ajouter au panier » (0 €), puis « Passer commande » en acceptant la licence ;
-   - de retour dans la suite : « Récupérer le ZIP téléchargé » (le lanceur le prend dans Téléchargements), ou « ZIP d'export du SIA… » pour le choisir, ou « Extraire … » s'il est déjà dans le dossier ;
-   - choisissez au besoin le dossier SIA, puis « Analyser ».
-3. **Anciens cycles** : « Archiver dans _archives/ ».
-4. **Reconstruire la base SIA** : « Relire le dossier ». La relecture dure quelques secondes ; c'est le même bloc que dans le studio cartographique.
-5. **Contrôler les différences avec la base précédente** : parcourez les espaces ajoutés ou retirés, puis « Vu, c'est fait ».
-6. **Recalculer (MORA) et contrôler la cohérence** :
-   - « Recalcul simple » (hors ligne) ou « Calcul complet » (réseau, environ une minute) ;
-   - si des cellules changent : « Écrire mora.csv (ancien archivé) », puis committez le dépôt de données ;
-   - enfin « Contrôler » la cohérence.
+**Cycles AIRAC et âge des données** : cycle en vigueur, cycle suivant et cycle de la base, puis une ligne par source cochée des zones actives :
+- SIA : cycle lu dans le nom des fichiers, « ancien » s'il précède le cycle en vigueur ;
+- X-Plane : cycle de « Custom Data » ;
+- fichiers téléchargés : « ancien » au-delà de 28 jours (un cycle AIRAC).
+
+**MORA** : plusieurs sources.
+- La grille calculée (`data/sia/mora.csv`) a la priorité. « Recalcul simple » reprend les obstacles du nouveau cycle (hors ligne) ; « Calcul complet » refait relief et sommets (réseau, environ une minute) pour les théâtres et les missions ; « Calculer la MORA de la zone » (panneau) le fait sur l'emprise d'une zone, les autres cases étant gardées.
+- Si des cases changent : « Écrire mora.csv (ancien archivé) », puis committez le dépôt de données.
+- Ailleurs, la grille MORA d'X-Plane complète, si la source X-Plane est cochée.
+
+**Cohérence** : « Contrôler » vérifie espaces, appareils, flotte, performances et terrains des missions.
 Les XML AIRAC (environ 80 Mo par cycle) restent hors dépôt, comme les fichiers des autres sources. Les valeurs MORA sont calculées, pas certifiées.
 
 ### Caches
@@ -692,6 +695,7 @@ Purgez l'« Index des données » quand une page affiche une donnée périmée a
 
 Ce bloc n'apparaît que si le Centre est activé.
 - « Calculer la place utilisée » mesure le dossier des missions (`data/missions`) : par mission, par type de fichier et au total. Il indique aussi la place utilisée par le navigateur.
+- « Données aéronautiques, par zone » : place du dossier SIA par zone (sources et nombre de fichiers ; mora.csv compte pour toutes les zones). Une zone désactivée garde ses fichiers : les supprimer à la main pour libérer la place.
 - « Supprimer les cartes surnuméraires » retire les cartes qui ne figurent plus dans la liste de leur mission.
 - « Purger toutes les cartes générées » et « Purger les PDF » libèrent de la place ; ces fichiers se régénèrent depuis le YAML.
 - Chaque suppression demande confirmation.
