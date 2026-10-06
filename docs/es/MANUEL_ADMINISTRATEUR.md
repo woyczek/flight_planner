@@ -497,6 +497,7 @@ A la izquierda, la paleta: plantillas de vuelos, de control y de varios, la nota
 
 Manejo:
 - arrastre una plantilla a su sección: el elemento se crea a la hora de la colocación (en pasos de 5 min) y se abre su ventana;
+- haga doble clic en una tarjeta de la paleta para colocarla automáticamente: en la franja de sincronización para otra tripulación de una misión con varias tripulaciones (hora de la patrulla vinculada ya colocada; cisterna: 30 min antes del reabastecimiento), si no en la primera franja coherente del día (horas de servicio, no antes de la hora actual, tripulación asignable y libre, o suficientes miembros disponibles juntos);
 - arrastre un miembro de la paleta a una ficha para añadirlo, o un trigrama de una ficha a otra para moverlo;
 - arrastre una ficha para cambiar su hora, su borde derecho para cambiar su duración; un simple clic abre su ventana;
 - en la paleta, «Reserva de vuelos» guarda las fichas quitadas de la cronología (arrastradas a la paleta, o «↩ Reserva» en su ventana) y «Formaciones de las misiones» propone lo que piden los vuelos de misión colocados: patrullas de las otras misiones de la formación, cisternas que las atienden, chiffons de la operación;

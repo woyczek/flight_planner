@@ -675,6 +675,76 @@
       reseau: type === 'vol' ? S.cfg.reseau || null : undefined
     });
   }
+  // ---- pose automatique (double clic sur une carte de la palette)
+  /** Position de synchro d'une plaquette de mission : ravitailleur → 30 min avant le ravitaillement d'un vol qui l'attend ;
+   *  autre équipage de la formation (même opération, ou patrouille citée par l'une ou l'autre mission) → heure de la
+   *  patrouille liée déjà posée ; null sinon. */
+  function syncStart(el, date) {
+    const m = reg(el.mission);
+    if (!m) return null;
+    const vols = S.doc.elements.filter(v => v.type === 'vol' && v.date === date && v.id !== el.id);
+    for (const v of vols)
+      for (const r of v.ravitaillements || [])
+        if (r.mission === m.id && r.heure) return Math.max(0, min(r.heure) - 30);
+    const rel = vols.find(v => {
+      const vm = reg(v.mission);
+      if (!vm) return false;
+      return (m.operation?.id && vm.operation?.id === m.operation.id) || (vm.teams || []).some(x => x.name === ownCs(m)) || (m.teams || []).some(x => x.name === ownCs(vm) || x.name === v.indicatif);
+    });
+    return rel ? min(rel.debut) : null;
+  }
+  /** Premier créneau cohérent du jour (pas de 5 min, heures de service, pas avant maintenant) : équipage affectable et
+   *  libre sur toute la durée ; sans équipage, assez de membres affectables ensemble (une place par avion) ; à défaut,
+   *  le début des heures de service. */
+  function firstSlot(el, date) {
+    const kind = O().kindOf(el);
+    const h = S.cfg.jours?.[dow(date)] || {};
+    const now = new Date();
+    let s0 = min(h.debut) ?? 360;
+    const e0 = min(h.fin) ?? 1380;
+    if (now.toISOString().slice(0, 10) === date) s0 = Math.max(s0, Math.ceil((now.getUTCHours() * 60 + now.getUTCMinutes()) / 5) * 5);
+    if (!kind) return s0;
+    const crew = O().crewOf(el, S.affect);
+    const need = crew.length ? 0 : el.type === 'vol' ? Math.max(1, el.avions.length) : 1;
+    const busy = (tri, a, b) => S.doc.elements.some(x => x.id !== el.id && x.date === date && x.etat !== 'annule' && O().kindOf(x) && O().crewOf(x, S.affect).includes(tri) && min(x.debut) < b && a < min(x.debut) + x.duree);
+    const free = (tri, a, b) => S.dispos[tri] && O().memberState(S.dispos[tri][date] || [], kind, a, b).ok && !busy(tri, a, b);
+    for (let a = s0; a + el.duree <= Math.max(e0, s0 + el.duree); a += 5) {
+      const b = a + el.duree;
+      if (crew.length ? crew.every(tri => free(tri, a, b)) : S.members.filter(m => free(m.tri, a, b)).length >= need) return a;
+    }
+    return s0;
+  }
+  /** Pose une carte de la palette (modèle, formation, réserve) au créneau de synchro, sinon au premier cohérent. */
+  function autoPlace(v) {
+    const [ty, ...rest] = String(v).split(':'),
+      id = rest.join(':'),
+      date = curDate();
+    const src = ty === 'res' ? (S.doc.reserve || []).find(x => x.id === id) : null;
+    const el = src ? O().normalize({
+      ...src,
+      date
+    }) : fromTemplate(ty, id, date, 0);
+    if (!el) return;
+    const start = Math.min(1440 - el.duree, syncStart(el, date) ?? firstSlot(el, date));
+    mutate(doc => {
+      if (src) doc.reserve = doc.reserve.filter(x => x.id !== id);
+      el.debut = hhmm(Math.max(0, start));
+      doc.elements.push(O().normalize(el));
+      if (el.mission)
+        for (const x of doc.elements)
+          if (x.type === 'vol' && x.date === date)
+            for (const r of x.ravitaillements || [])
+              if (r.mission === el.mission && !r.vol) r.vol = el.id;
+    });
+    const it = $(`.odvo-it[data-id="${CSS.escape(el.id)}"]`);
+    it?.scrollIntoView({
+      block: 'nearest',
+      inline: 'center',
+      behavior: 'smooth'
+    });
+    it?.classList.add('flash');
+    setTimeout(() => it?.classList.remove('flash'), 1600);
+  }
   /** Remet une plaquette dans la réserve des vols (palette) : elle garde ses réglages ; un vol qui s'y ravitaillait
    *  garde la mission ravitailleur, sans plaquette. */
   function toReserve(id) {
@@ -797,6 +867,11 @@
       }));
     });
     host.addEventListener('dragend', () => (drag = null));
+    // double clic sur une carte de la palette : pose automatique (synchro, sinon premier créneau cohérent)
+    host.addEventListener('dblclick', ev => {
+      const tp = ev.target.closest('#odvoPalette [data-tpl]');
+      if (tp && S.editable) autoPlace(tp.dataset.tpl);
+    });
     // déplacement et durée à la souris
     host.addEventListener('pointerdown', ev => {
       const it = ev.target.closest('.odvo-it');

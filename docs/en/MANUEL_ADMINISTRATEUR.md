@@ -497,6 +497,7 @@ On the left, the palette: flight, control and miscellaneous templates, the note,
 
 Handling:
 - drag a template onto its section: the item is created at the drop time (in 5-minute steps) and its window opens;
+- double-click a palette card to place it automatically: at the synchronisation slot for another crew of a multi-crew mission (time of the linked patrol already placed; tanker: 30 min before the refuelling), otherwise at the first consistent slot of the day (duty hours, not before the current time, crew assignable and free, or enough members available together);
 - drag a member from the palette onto a strip to add them, or a trigram from one strip to another to move them;
 - drag a strip to change its time, its right edge to change its duration; a single click opens its window;
 - in the palette, “Flight pool” keeps the strips removed from the timeline (dragged onto the palette, or “↩ Pool” in their window) and “Mission formations” offers what the placed mission flights call for: patrols of the other missions of the formation, tankers serving them, chiffons of the operation;
